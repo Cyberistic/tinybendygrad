@@ -850,3 +850,66 @@ RISKS, stated before writing it rather than after:
 - A rule that reads a node other than the one it matched is a SECOND arena read
   and the `+` annotation, which is legal in a def but makes the rule's signature
   part of the table's type. Same trap as `spec.py`'s `Snap`.
+
+## THE STORE PORTED; THE WALK IS BLOCKED ON `is_any`
+
+Follow-up to the section above, with a runnable model:
+`.agents/slop/notes/matcher-store.bend`. `ALL PROOFS CHECK`, both lanes,
+`insert_1_then_3=13 same=1 conflict=0`.
+
+**THE STORE IS DONE, and it confirms the recorded design.** `Store` is a `Data`
+record wrapping `List<&2, Bind>`, and `Bind{name: U32, uop: U32}` keeps the name
+(a pattern-arena concept) and the node (a UOp arena index) apart.
+
+- `insert_1_then_3=13` — `setdefault` on an empty store INSERTS: one binding, and
+  it is bound to node 3.
+- `same=1` — the same name on the SAME node is NOT a reject. This is the identity
+  test, and it is the case that would be easy to get wrong by testing only
+  "is the name present".
+- `conflict=0` — the same name on a DIFFERENT node IS a reject, and this is the
+  one place `UPat.match` can fail on a name alone.
+
+`Store.setdefault.find` also demonstrates the fix for a wall the earlier
+sections describe: walking a list with an early exit needs mutual recursion if the
+decision gets its own def, and the fixpoint script showed the oscillation
+directly. The answer is to evaluate the tail walk EAGERLY and let a leaf `go` pick
+between two already-computed answers. That costs a full tail walk even when the
+answer is in the head, which is the price of a linear store and is fine here.
+
+**THE WALK IS NOT DONE, and the wall is `is_any`.** `is_any` is the one arm that
+recurses over the PATTERN's own src, and it recurses back into the walk. Every
+attempt produced mutual recursion, refused, in this specific shape:
+
+    def pmatch(...)          = pmatch.of(pat_at(p, i), ...)   # read the pattern
+    def pmatch.of(...)       = pmatch.any(...)
+    def pmatch.any.of(...)   = pmatch.is_any(alts0(up), ...)  # or pmatch.op
+    def pmatch.is_any(...)   = pmatch(a, ...)                  # BACK
+
+The read is a CALL, so it cannot be inlined into the `match` that needs its
+result, so it becomes a def, so the chain is a cycle. `pmatch.op` and the six
+rejection tests are the same shape one level down.
+
+Two escapes are visible and NEITHER is written yet, so this is a lead rather
+than an answer:
+
+1. **Hoist the `is_any` flatten out of the recursion.** Pass the alternative list
+   IN, already extracted, so `pmatch` never calls the thing that calls it. The
+   flatten itself needs no recursion -- it is a fold over a list of pattern
+   indices.
+2. **Make the entry point non-recursive.** The pattern read, the `is_any`
+   decision, and the alternative extraction all happen in a def that
+   `pmatch` never calls, and `pmatch` takes the pattern and the alternatives as
+   PARAMETERS.
+
+Either way the cost is that the six rejection tests each become a `Bool` that
+crosses a def boundary, because a `match` may not scrutinise a call. Measured
+while building this: `U32.is_eq(n, name)` in a match arm is refused, and the
+working idiom is to compute it in the arm and pass it to a def as a parameter --
+`Store.setdefault.pick(U32.is_eq(n, name), ...)`, the same shape as
+`intern.find.pick`.
+
+**A MEASURED RULE THIS COST AND DID NOT RECORD:** removing the last use of a
+parameter is a compile error in some positions -- a mutation that made `eq`
+unused stopped the file checking. So an unused parameter is not free to leave
+behind, which matters because the natural way to write a rejection test as a
+one-line helper leaves `eq` unused in the `False` arm.
