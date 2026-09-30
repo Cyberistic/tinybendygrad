@@ -1063,14 +1063,27 @@ def strip_parens(+fst: String) -> String:
 # constraints note asks for: Bend's own shifts are both logical.
 # ===========================================================================
 
-def asr(+v: U32, +n: Nat) -> U32:
-  U32.or(U32.shrn(v, n), U32.shrn(U32.shrn(v, 31n), n))
-
 def i32_is_neg(x: U32) -> Bool:
   U32.is_ge(x, 2147483648)
 
 def i32_neg(x: U32) -> U32:
   U32.sub(0, x)
+
+# asr -- Bend's two shifts are both LOGICAL, so a negative value needs its top
+# `m` bits put back after the shift. The fill is the whole WORD 0xFFFFFFFF and
+# NOT the sign bit: shifting the sign bit right answers 1 rather than a run of
+# ones, which is why the previous `shrn(shrn(v,31),n)` form OR-ed in nothing and
+# returned the plain logical shift for every `n >= 1` -- `asr(-8,1)` printed
+# 2147483644 where helpers.py's `operator.rshift` gives 4294967292.
+#
+# The count is clamped to 31, and that is not a workaround but the WHOLE answer
+# past 31: for any 32-bit two's complement word floor(v/2^n) is -1 when v < 0 and
+# 0 when v >= 0 once n reaches 32, and the clamped form is exactly that number.
+# It is also what keeps `Nat.sub(32n, m)` from underflowing, since Ops.SHR's
+# count is a Python int and may be any size.
+def asr(+v: U32, n: Nat) -> U32:
+  +m = Nat.min(n, 31n)
+  U32.or(U32.shrn(v, m), U32.shln(i32_neg(U32.shrn(v, 31n)), Nat.sub(32n, m)))
 
 def i32_abs(neg: Bool, x: U32) -> U32:
   match neg:
@@ -1148,11 +1161,13 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
 # `ceildiv(10,4)` is 3, and no `cdiv` reading gives it (`-cdiv(10,-4)` is 2,
 # `-cdiv(-10,-4)` is -2); `round_up(-10,4)` is -8 and `cdiv(-7,4)*4` is -4.
 #
-# `floordiv_i32` was WRONG until the `neg` test was fixed, and the three
-# callers below inherited it -- `ceildiv_i32` answered -3 for `ceildiv(10,4)`
-# and `round_up_i32` answered 16 for `round_up(10,4)`. Any file that ports
-# around them (see `uop/symbolic.bend`'s `i32_fdiv`, which recomputes the floor
-# out of `cdiv`) should now be able to use `floordiv_i32` directly.
+# `floordiv_i32` was WRONG until the `neg` test was fixed, and both of the
+# callers below inherited it -- `round_up_i32` answered 16 for `round_up(10,4)`,
+# and `ceildiv_i32` had a second, independent defect of its own (it negated both
+# operands) and answered -3 for `ceildiv(10,4)`. Both are fixed. Any file that
+# ports around them (see `uop/symbolic.bend`'s `i32_fdiv`, which recomputes the
+# floor out of `cdiv` because that fix had not landed when it was written) should
+# now be able to use `floordiv_i32` directly.
 # ===========================================================================
 
 # cdiv -- `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`, using cdiv_sign above.
@@ -1204,8 +1219,13 @@ def cmod_u32(+x: U32, +y: U32) -> U32:
 # arena, and comes back as `ceildiv_uop(num: UOp, amt: UOp)`.
 # ===========================================================================
 
+# ceildiv -- helpers.py:66-68 spells it `-(num // -amt)`: the DIVISOR is negated,
+# the dividend is not. It negates both because `-(num//-amt)` is `floor(num/amt)`
+# and negating both operands would be `floor(num/amt)` only for a negative `amt`.
+# Measured: the two-operand form answered -3 for `ceildiv(10,4)` where helpers.py
+# says 3.
 def ceildiv_i32(num: U32, amt: U32) -> U32:
-  i32_neg(floordiv_i32(i32_neg(num), i32_neg(amt)))
+  i32_neg(floordiv_i32(num, i32_neg(amt)))
 
 # div0 -- Python raises ZeroDivisionError for x//0; tinygrad guards floordiv and
 # cdiv with `if y != 0 else 0` but NOT ceildiv or round_up, which raise. Bend is
