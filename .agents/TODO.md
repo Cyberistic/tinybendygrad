@@ -144,6 +144,22 @@ excluded by tinygrad's own hardware markers, not by us.
       `tinygrad/foo.py` ↔ `tinybendygrad/foo.bend`.
 - [ ] **Index arity bound.** How many indices `SpIdxN` should support. Waiting
       on the rewrite to report the evidence from `tinygrad/uop/ops.py`.
+- [x] **The P3 fold shape: a Kahn worklist.** Decided. The property folds
+      (`dtype`, `_shape`, `device`, `addrspace`, `key`, ...) become ONE def that
+      walks the graph in topological order, carrying a `pending` count per node,
+      rather than a recursive descent from each node. Chosen because it sidesteps
+      both walls at once:
+        * the descent wall — a self-call must pass a field of its own parameter,
+          and an arena index read back out of a store is not one. A worklist is a
+          list, and a list tail IS a valid subterm: `toposort` is already ported
+          and green for exactly this reason, so this shape is proven to check;
+        * the mutual-recursion wall — `dtype_from_uop -> _shape -> simplify ->
+          graph_rewrite -> rules -> dtype` is a cycle, and a single topological
+          pass has no cycle to be in. `graph_rewrite` stays in its own module so
+          nothing in the engine calls back into the fold.
+      Accepted cost: reads are O(n) folds, so the fold is O(n^2) in arena size and
+      the resolved table is a threaded `List`, not an array. Correct and slow
+      rather than fast and uncheckable.
 - [ ] Whether `Sp` (the spec IR) stays a pure tree with the compilation arena
       separate, or the two are unified. Currently separate, because the
       compilation graph has back-edges and the test suite depends on identity.
