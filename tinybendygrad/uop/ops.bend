@@ -1305,6 +1305,27 @@ def eq_cls.CFloat(x: S.Cls, y: S.Cls) -> Bool:
     case S.CFloat{}: True{}
     case _: False{}
 
+def eq_cls.CWeakFloat(x: S.Cls, y: S.Cls) -> Bool:
+  match y:
+    case S.CWeakFloat{}: True{}
+    case _: False{}
+
+# `S.Cls` has SEVEN constructors (spec.bend:66-73) and this ladder had SIX, so
+# `CWeakFloat` fell into `case _:` and was answered as `CFloat`. That made
+# `eq_dt(weakfloat, weakfloat)` FALSE -- dtype.py's `DType` is `@dataclass(frozen=True,
+# eq=False)` and the metaclass caches, so `dtypes.weakfloat == dtypes.weakfloat` is
+# True -- and `intern.find` compares with `eq_node`, so two structurally identical
+# `CAST(..., weakfloat)` nodes did not hash-cons.
+#
+# THE POSITION IS LOAD-BEARING, and `case _` is why. Measured on Bend 2.0.34: an
+# arm AFTER a `case _:` is DEAD, because the catch-all claims every remaining tag
+#     match x: { case A{}: 1; case _: 99; case Cc{}: 3 }   # A=1  Cc=99
+# so appending the seventh arm to the old ladder would have added code that never
+# runs. This ladder is therefore written the way `eq_const.sel` above is written
+# and the way `Cls`'s own declaration order reads: every constructor but the LAST
+# gets its own arm, and the LAST (`CWeakFloat`) is the catch-all. That is also the
+# adjacency `dtype.py` asks for -- `is_float` is `x in (dtypes.floats + (dtypes.weakfloat,))`,
+# so `CWeakFloat` sits next to `CFloat` and nowhere near the integer arms.
 def eq_cls.sel(x: S.Cls, y: S.Cls) -> Bool:
   match x:
     case S.CVoid{}: eq_cls.CVoid(x, y)
@@ -1312,7 +1333,8 @@ def eq_cls.sel(x: S.Cls, y: S.Cls) -> Bool:
     case S.CBool{}: eq_cls.CBool(x, y)
     case S.CUint{}: eq_cls.CUint(x, y)
     case S.CSint{}: eq_cls.CSint(x, y)
-    case _: eq_cls.CFloat(x, y)
+    case S.CFloat{}: eq_cls.CFloat(x, y)
+    case _: eq_cls.CWeakFloat(x, y)
 
 def eq_cls(x: S.Cls, y: S.Cls) -> Bool:
   eq_cls.sel(x, y)
@@ -3586,6 +3608,54 @@ def t_key_eq() -> Bool:
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}}))),
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}})))
 
+# --- eq_dt, and the hash-consing that DEPENDS on it -----------------------------
+# `eq_dt` is the whole of the dtype half of the ucache key, so a row that does not
+# call it cannot see an `eq_cls` bug. This one does, on all SEVEN of `Cls`'s
+# constructors, and the SEVEN is the point: with six arms in `eq_cls.sel` the
+# weakfloat self-equality was False and every other row stayed green.
+#
+# dtype.py:59-62 is the oracle and it is an IDENTITY: `DType` is
+# `@dataclass(frozen=True, eq=False)` under a metaclass that caches by
+# `(priority, bitsize, name, fmt)`, so `dtypes.X == dtypes.X` is True for every
+# dtype and `dtypes.X == dtypes.Y` is False for X != Y. `S.Dt` spells the same
+# comparison out field by field, so a row here is that identity, restricted to
+# one representative per class.
+def t_eq_dt() -> Bool:
+  Bool.and(Bool.and(eq_dt(S.void(), S.void()), eq_dt(S.weakint(), S.weakint())),
+    Bool.and(Bool.and(eq_dt(S.boolean(), S.boolean()), eq_dt(S.uint32(), S.uint32())),
+    Bool.and(Bool.and(eq_dt(S.int32(), S.int32()), eq_dt(S.half(), S.half())),
+    Bool.and(eq_dt(S.single(), S.single()), eq_dt(S.weakfloat(), S.weakfloat())))))
+
+# and the CONFLATION is pinned separately, because a row that only asks "is it
+# equal to itself" would also pass a `Cls` compared by something weaker than
+# identity. These five are the pairs a six-arm ladder gets wrong or gets right by
+# accident, and each names a different arm boundary: weakfloat against the
+# concrete float it used to be conflated with, against the weak int it is one
+# lattice step from, void against either, and the two 16-bit floats whose only
+# difference is `pri`.
+def t_eq_dt_disjoint() -> Bool:
+  Bool.and(Bool.and(Bool.not(eq_dt(S.weakfloat(), S.half())), Bool.not(eq_dt(S.half(), S.weakfloat()))),
+    Bool.and(Bool.and(Bool.not(eq_dt(S.weakfloat(), S.weakint())), Bool.not(eq_dt(S.weakint(), S.weakfloat()))),
+    Bool.and(Bool.not(eq_dt(S.half(), S.bfloat16())), Bool.not(eq_dt(S.void(), S.weakfloat())))))
+
+# THE DAMAGE, not just the predicate. `intern.find` compares with `eq_node`, which
+# reaches `eq_dt` through `eq_arg.ADt`, so a wrong `eq_dt` is a wrong ucache and
+# two equal-in-value nodes become two arena nodes. The CAST is the smallest
+# fixture that carries a dtype in its `arg`: bottom, the CONST, the first CAST
+# and the second -- three nodes when the two CASTs hash-cons to one, four when
+# they do not. `half` is the control: it went through the same `case _:` and was
+# always right, so a row that passed for `half` and failed for `weakfloat` is
+# what a missing seventh arm looks like from outside.
+def g_cast_twice(+dt: S.Dt) -> U32:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +ar = Found.ar(c)
+  +a = UOp.new(ar, OpsCAST{}, [Found.i(c)], ADt{dt}, TNone{})
+  +b = UOp.new(Found.ar(a), OpsCAST{}, [Found.i(c)], ADt{dt}, TNone{})
+  Arena.next(Found.ar(b))
+
+def t_weakfloat_interns() -> Bool:
+  Bool.and(U32.is_eq(g_cast_twice(S.weakfloat()), 3), U32.is_eq(g_cast_twice(S.half()), 3))
+
 # --- the UPat arena ---------------------------------------------------------
 # Four claims, each a decision rather than a transliteration, so each is checked.
 # `pat_base` is the fixture: a pattern arena holding ONE named var at index 0, so
@@ -3732,10 +3802,13 @@ def main() -> IO(Unit):
     d : Unit <- row("toposort", t_toposort())
     e : Unit <- row("cycle_terminates", t_cycle_terminates())
     f : Unit <- row("key_eq", t_key_eq())
-    g : Unit <- row("var_interns", t_var_interns())
-    h : Unit <- row("broadcast_repeats", t_broadcast_repeats())
-    i : Unit <- row("required_len", t_required_len())
-    j : Unit <- row("alu_permutes", t_alu_permutes())
+    g : Unit <- row("eq_dt", t_eq_dt())
+    h : Unit <- row("eq_dt_disjoint", t_eq_dt_disjoint())
+    i : Unit <- row("weakfloat_interns", t_weakfloat_interns())
+    j : Unit <- row("var_interns", t_var_interns())
+    k : Unit <- row("broadcast_repeats", t_broadcast_repeats())
+    l : Unit <- row("required_len", t_required_len())
+    m : Unit <- row("alu_permutes", t_alu_permutes())
     row("early_reject", t_early_reject())
     row("ler_len", t_ler_len())
 
