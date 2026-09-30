@@ -1134,25 +1134,51 @@ in the generated source, through four levels. It remains a structural difference
 between the two implementations, so it is not disproved, only unexercised less
 than feared.
 
-**AND THE SAME PROBE FOUND A REAL BUG.** The `repeat` arm — `src=UPat(...)`, which
-is `itertools.repeat` — resolves its child ONLY at pattern index 0. At index 1 it
-returns `None`, and CPython returns real code:
+**AND THE SAME PROBE FOUND A REAL BUG -- whose first diagnosis was WRONG.**
 
-| the same pattern, child at | port | CPython |
-| --- | --- | --- |
-| index 0 (`pat_repeat`'s shape) | full code, MATCHES CPython | full code |
-| index 1 | **`None`** | full code |
+The `repeat` arm (`src=UPat(...)`, which is `itertools.repeat`) sometimes returns
+`None` where CPython returns a full `compiled_match`. The first reading was "it
+resolves its child only at pattern index 0", because the passing fixture used
+`SOne{0}` and the failing one used `SOne{1}`. **That is falsified.** The
+discriminating experiment is one variable:
 
-`UPat(Ops.INDEX, src=(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")), UPat(name="i")))`
-returns `None` from the port and a full `compiled_match` from CPython. And
+| fixture | repeat child at | an UNREFERENCED pattern in the arena | port |
+| --- | --- | --- | --- |
+| `p_rep_at0` | index 0 | no | full code, MATCHES CPython |
+| `p_rep_dangling` | index 1 | yes, one var no parent references | **`None`** |
+| `p_rep_nested` | index 1 | yes, same shape | **`None`** |
+
+So the repeat index is NOT the trigger. **A pattern in the arena that no parent
+references is.** Same structure, same `SOne{1}`, and adding one dangling pattern
+turns working code into `None`.
+
+Two candidates eliminated while narrowing it, which is the useful part:
+
+- `alt_ys` reads the repeat's index correctly (`case O.UpRepeat{x}: [x]`), so the
+  index is not being dropped.
+- `broken_of` is NOT recursive -- it checks only the top-level UPat's own `src` --
+  and on these shapes it does not fire, so it is not rejecting them either.
+
+That leaves the failure downstream, in the repeat arm of `get_clause.go` (the
+`case alt <> at:` branch, where the walk descends with `alts = Nil{}` and
+`ys = alt_ys(alt)`) or in `final_render` / `code_of`. The walk appears to be
+sensitive to the arena containing patterns the root's subtree does not reach, and
+the natural suspect is anything driven by arena POSITION or by a FIXPOINT over the
+whole arena rather than by the pattern's own subtree -- `pm_proc` is a fixpoint,
+and if it enumerates the arena rather than the reachable tree, a dangling pattern
+is exactly the kind of node that would change the round count.
+
 `repeat` nested inside `is_any` also returns `None` where CPython emits both
-branches — note that CPython's numbering there is PER BRANCH, both branches using
-`a0`, which is another thing the nine rows could not see.
+branches -- and there CPython numbers PER BRANCH, both branches using `a0`, which
+is a third thing the nine rows could not see. Whether that is the same cause is
+NOT established.
 
-The likely site is the repeat handling resolving the child by POSITION rather
-than by the index stored in `UpRepeat{x}` — so `is_rep` / `child_base` /
-`alt_group`. **This is a bug, not a wall**, and it is invisible to the current
-gate because `pat_repeat` happens to put its child at index 0.
+WHY THIS MATTERS BEYOND THE PORT. `UPat.var` and `cvar` are INTERNED, so a name
+built once and reused across rules leaves entries in a pattern arena. If a rule
+builder ever creates a pattern it does not reference -- which `UPat.or_any` does
+when it appends a named copy alongside the original -- then this is reachable in
+ordinary use and not only from a hand-built fixture. That is worth checking before
+assuming the bug is confined to probes.
 
 THE LESSON, which is the point of doing this at all: nine rows against a real
 oracle is strong evidence about the cases the rows cover and NO evidence about
