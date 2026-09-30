@@ -100,6 +100,7 @@
 # per check, because a `Bool` match IS the whole of an `if` here.
 
 import Base
+import ./../helpers.bend as H
 import ./ops.bend as O
 import ./../LAWS/spec.bend as S
 type Lit is Data:
@@ -192,11 +193,23 @@ def marker() -> C:
   C{O.OpsCONST{}, LInt{0}, Nil{}}
 
 # `ret = _get_clause(self, UOp(Ops.CUSTOMI, arg=("uop", dtypes.void)))`
-# `8 * len(pat.upats)`: the header's bound. A BOUND, not a count, and every
+# `32 * len(pat.upats)`: the header's bound. A BOUND, not a count, and every
 # `case 0n:` is `marker()`, so too small a fuel is a missed compile.
+#
+# THE CONSTANT IS 32 AND NOT 8 BECAUSE `proc_fix` IS A WAITLIST, NOT A DEPTH.
+# `unified_rewrite` resolves a node's srcs before the node runs, so a round
+# promotes ONE more level of the whole tree and a store that moves into a branch
+# re-triggers everything above it. Measured on the shape that needs the most --
+# four arena UPats and an AND spine seven deep, `upatfuzz --seeds 158
+# --max-depth 5` seed 157 -- the fixpoint is 33 to 48 rounds, i.e. nine to
+# twelve rounds per UPat, so `8n` was short by four rounds and the port answered
+# `NONE` where CPython answered a whole clause. `12n` is the smallest multiplier
+# that reaches it; 32n is 2.5x that, and over-provisioning a bound costs rounds
+# and nothing else. Nothing here is a COUNT of rounds: it is fuel, and a round
+# that changes nothing ends the loop.
 
 def fuel(pat: O.Pat) -> Nat:
-  Nat.mul(List.length(&2, O.UPat, O.Pat.upats(pat)), 8n)
+  Nat.mul(List.length(&2, O.UPat, O.Pat.upats(pat)), 32n)
 
 def base_clause() -> C:
   C{O.OpsCUSTOMI{}, LText{"uop"}, Nil{}}
@@ -213,14 +226,54 @@ def head1c(gs: List<&2, C>) -> C:
 # `==` on a literal, which is what `dedup` and the duplicate-store test ask.
 # Python gets it from `ucache` (two equal nodes are one object and `UOp.__eq__`
 # is identity); here it is spelled out.
+#
+# THE DEDUP KEY IS THE `arg`, AND THE `arg` OF A MULTI-ELEMENT op/dtype/tag IS A
+# `frozenset` -- upat.py:25, 36 and 43 all build `UOp(Ops.PYLITERAL,
+# arg=frozenset(...))`. So the equality is SET equality and must be spelled as
+# such. Three facts, each measured, and they are why:
+#
+#   * `wrap` (upat.py:121-126) is a `graph_rewrite` RULE, and a rule runs at most
+#     once per UOp object: `unified_rewrite` is `if n in self.replace: continue`
+#     (ops.py:1815), and ops.py:1774 says so in a comment. So one `a{n}` per
+#     distinct PYLITERAL OBJECT -- and NOT per occurrence, and NOT per clause.
+#   * the `ctx` it fills is one `dyn_lookup` for the whole compile
+#     (upat.py:168-169) and the number is `len(ctx)` at first visit, so the scope
+#     is global and the numbering is first-visit order.
+#   * UOps are HASH-CONSED on `(op, src, arg, tag, type(arg))` (ops.py:200;
+#     ops.py:228-233: "structurally identical UOps are the same object and
+#     equality can be identity"), and a PYLITERAL has `src=()` and `tag=None`, so
+#     "same object" is exactly "same `arg` under Python's `==`".
+#
+# VALUE-KEYED IS THEREFORE RIGHT and node-keyed would be the same answer; what was
+# wrong is the `==`. Order-sensitive list equality read `tag=('B','A')` and
+# `tag=('A','B')` as two nodes, so a tag filter reached by two clause branches
+# got one `a{n}` in CPython and a fresh one per path here (upatfuzz seed 50,
+# `--max-depth 8`: `uop.tag in a2` against `uop.tag in a7`). Both directions,
+# because a `frozenset` drops a repeated element and the tuple it came from does
+# not: `has_ops(x, y) and has_ops(y, x)`, never a length test.
+
+def has_ops(+xs: List<&2, O.Op>, +ys: List<&2, O.Op>) -> Bool:
+  match xs:
+    case Nil{}: True{}
+    case x <> t: Bool.and(List.contains(O.Op, O.eq_op, ys, x), has_ops(t, ys))
+
+def has_dts(+xs: List<&2, S.Dt>, +ys: List<&2, S.Dt>) -> Bool:
+  match xs:
+    case Nil{}: True{}
+    case x <> t: Bool.and(List.contains(S.Dt, O.eq_dt, ys, x), has_dts(t, ys))
+
+def has_tags(+xs: List<&2, O.Tag>, +ys: List<&2, O.Tag>) -> Bool:
+  match xs:
+    case Nil{}: True{}
+    case x <> t: Bool.and(List.contains(O.Tag, O.eq_tag, ys, x), has_tags(t, ys))
 
 def eq_lit(a: Lit, b: Lit) -> Bool:
   match a b:
     case LNone{} LNone{}: True{}
     case LText{x} LText{y}: String.eq(x, y)
-    case LOps{x} LOps{y}: O.eq_op_list(x, y)
-    case LDt{x} LDt{y}: O.eq_dt_list(x, y)
-    case LTag{x} LTag{y}: O.eq_tag_list(x, y)
+    case LOps{+x} LOps{+y}: Bool.and(has_ops(x, y), has_ops(y, x))
+    case LDt{+x} LDt{+y}: Bool.and(has_dts(x, y), has_dts(y, x))
+    case LTag{+x} LTag{+y}: Bool.and(has_tags(x, y), has_tags(y, x))
     case LArg{x} LArg{y}: O.eq_arg(x, y)
     case LInt{x} LInt{n}: U32.is_eq(x, n)
     case _ _: False{}
@@ -927,7 +980,7 @@ def get_clause.go(f: Nat, +u: O.UPat, +pat: O.Pat, +base: C, +depth: U32, +k: U3
               a = get_clause.go(q, nth(pat, y), pat, child_base(any, rep, base, depth, k),
                 child_depth(any, rep, depth), 0, alts_of(nth(pat, y)), Nil{},
                 O.UPat.is_any(nth(pat, y)), forked_of(O.UPat.src(nth(pat, y))),
-                True{}, False{}, False{}, Nil{})
+                one_alt(O.UPat.src(nth(pat, y))), False{}, False{}, Nil{})
               get_clause.go(q, u, pat, base, depth, U32.add(k, 1), Nil{}, yt, any, forked, one, nested, rep,
                 List.append(&2, List<&2, C>, gs, a))
         case alt <> at:
@@ -1420,13 +1473,72 @@ def proc.put(c: C, hit: Maybe<&2, C>) -> C:
     case Some{x}: x
     case None{}: c
 
-def proc.go(+ss: List<&2, C>) -> List<&2, C>:
+# ===========================================================================
+# THE WAITLIST. `unified_rewrite` runs a node's rule at ops.py:1852, and the
+# loop before it (ops.py:1843) is what makes the pass bottom-up-to-a-FIXPOINT
+# rather than bottom-up-one-round: a node whose src is not yet in `self.replace`
+# does not run, it registers in `waitlist` and is re-queued when the src
+# resolves, so the rule ALWAYS sees a node whose children are FINAL.
+#
+# The port's fold is a round, and a round is not enough, and the difference is
+# a store. `_get_clause` puts a bind's `STORE` above its children, so a fork one
+# level down has the OR *inside* an AND child: `do_process_and`'s own `for x in
+# a.src` (upat.py:76-81) splices an AND's children into `new_src` WITHOUT
+# reclassifying them, so the OR lands in `new_src`, `or_clause` is empty, and
+# the store takes the `else` at upat.py:100-111 -- the duplicate path -- instead
+# of the push at upat.py:95-99. The rebuilt node is re-queued, and on THAT
+# application the OR is a direct child, so the store is pushed into the branches
+# and the parent never sees it. A round-based fold runs the parent in the first
+# round and merges `[STORE(b), STORE(x)]` into one `dict_stores`, so `b` binds
+# first and the `x=uop` that CPython puts inside the branch is hoisted beside it.
+#
+# So a node whose children CHANGED in this round does not run its rule: it
+# returns its new children and says so, and its parent defers in turn. A node
+# runs on the first round in which its children did not change, which is exactly
+# when they are final, and it runs once. `Pg.ch` is that "did not change" bit
+# summed up the fold, and `proc_fix` stops on it -- the OLD test, "is the root
+# the same", is wrong now, because a deferred root is the same node while its
+# children are not.
+# ===========================================================================
+
+type Pg is Data:
+  Pg{cs: List<&2, C>, ch: Bool}
+
+def Pg.cs(p: Pg) -> List<&2, C>:
+  match p:
+    case Pg{cs, ch}: cs
+
+def Pg.ch(p: Pg) -> Bool:
+  match p:
+    case Pg{cs, ch}: ch
+
+def proc.step(+op: O.Op, +lit: Lit, +cs: List<&2, C>, a: Pg) -> Pg:
+  +c: C = C{op, lit, cs}
+  +d: C = proc.put(c, do_process_and(op, lit, cs))
+  Pg{List.append(&2, C, [d], Pg.cs(a)), Bool.not(eq_c(c, d))}
+
+def proc.node(+op: O.Op, +lit: Lit, b: Pg, a: Pg) -> Pg:
+  match b:
+    case Pg{+cs, ch}:
+      match ch:
+        case True{}: Pg{List.append(&2, C, [C{op, lit, cs}], Pg.cs(a)), True{}}
+        case False{}: proc.step(op, lit, cs, a)
+
+# THE LIST'S `ch` IS THE `or` OVER EVERY ELEMENT, and that is the whole point:
+# the head's bit alone is the FIRST child's, so a parent reading it decides on
+# one child and runs while another is still moving.
+
+def proc.join(+a: Pg, +r: Pg) -> Pg:
+  Pg{Pg.cs(r), Bool.or(Pg.ch(r), Pg.ch(a))}
+
+def proc.go(+ss: List<&2, C>) -> Pg:
   match ss:
-    case Nil{}: Nil{}
-    case C{op, lit, k} <> t:
-      a = proc.go(t)
-      +b: List<&2, C> = proc.go(k)
-      List.append(&2, C, [proc.put(C{op, lit, b}, do_process_and(op, lit, b))], a)
+    case Nil{}: Pg{Nil{}, False{}}
+    case C{+op, +lit, k} <> t:
+      +b: Pg = proc.go(k)
+      +a: Pg = proc.go(t)
+      +r: Pg = proc.node(op, lit, b, a)
+      proc.join(a, r)
 
 
 # `graph_rewrite` is a FIXPOINT and `do_process_and` splices ONE level of AND per
@@ -1436,17 +1548,20 @@ def proc.go(+ss: List<&2, C>) -> List<&2, C>:
 # reachable at all.
 # The FUEL comes first because a self-call must be DECREASING and Bend reads the
 # arguments left to right: everything before the one that shrinks has to be
-# passed unchanged, and the fuel is what shrinks. `proc` is pure, so spelling it
-# three times is three walks of the tree and no state.
+# passed unchanged, and the fuel is what shrinks. `proc` is pure, so the round is
+# walked once and its answer is both the tree and the "anything moved" bit.
 
-def proc(t: C) -> C:
-  match t:
-    case C{+op, +lit, +ss}: proc.put(C{op, lit, proc.go(ss)}, do_process_and(op, lit, proc.go(ss)))
+def proc(t: C) -> Pg:
+  +p: Pg = proc.go([t])
+  Pg{[head1c(Pg.cs(p))], Pg.ch(p)}
 
 def proc_fix(f: Nat, +t: C) -> C:
   match f:
     case 0n: t
-    case 1n+p: Bool.pick(C, eq_c(t, proc(t)), proc(t), proc_fix(p, proc(t)))
+    case 1n+p:
+      +r: Pg = proc(t)
+      +u: C = head1c(Pg.cs(r))
+      Bool.pick(C, Pg.ch(r), proc_fix(p, u), u)
 
 def group1.of(g: List<&2, C>) -> C:
   match g:
@@ -1666,6 +1781,25 @@ def pat_share() -> O.PatFound:
   m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
   O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
 
+# THE SAME LITERAL SPELLED IN A DIFFERENT ORDER --
+# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.int32, dtypes.half), tag=('B','A'),
+# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.half, dtypes.int32), tag=('A','B')),))`.
+# All THREE multi-element arms are one node per axis, so all three print the same
+# `a{n}` twice, and `a0`/`a1`/`a2` are the whole of `dyn_lookup`.
+#
+# `share` cannot see this: it spells `Ops.MUL` twice, which is equal in ANY
+# equality. This is the row that pins `eq_lit`'s three set arms, and the fuzzer
+# does NOT substitute for it -- `--seeds 400 --max-depth 8` finds no seed on
+# which the `LOps` arm alone can be reverted (0 disagreements), so the LTag arm
+# is the only one the harness reaches and only at seed 50. Two UPats with the
+# same op SET in two orders is rare, and rarer still at depth 8.
+
+def pat_set_ord() -> O.PatFound:
+  c = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}, O.OpsMUL{}]}, Some{[S.half(), S.int32()]},
+    Some{[O.TStr{"A"}, O.TStr{"B"}]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(c), Some{[O.OpsMUL{}, O.OpsADD{}]}, Some{[S.int32(), S.half()]},
+    Some{[O.TStr{"B"}, O.TStr{"A"}]}, O.STuple{[0]}, None{}, None{}, False{}, None{}, False{})
+
 # `UPat(Ops.CALL, arg=4)` -- the inline int arm, which spends NO `a{n}`
 
 def pat_argint() -> O.PatFound:
@@ -1734,6 +1868,80 @@ def want_share() -> String:
     "  if uop.op is a0 and len(uop.src) == 2 and uop.src[0].op is a1 and uop.src[1].op is a1 and uop.src[0] is uop.src[1] and (_ret:=_fxn(ctx=ctx, m=uop.src[0])) is not None: return _ret",
     "  return None"], "\n")
 
+def want_set_ord() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if (uop.op in a0 and len(uop.src) == 1 and uop.dtype in a1 and uop.tag in a2 and uop.src[0].op in a0 and uop.src[0].dtype in a1 and uop.src[0].tag in a2) and (_ret:=_fxn(ctx=ctx)) is not None: return _ret",
+    "  return None"], "\n")
+
+# A BIND ONE LEVEL ABOVE A FORK, AND A BIND ABOVE THAT. This is the row that
+# pins `proc`'s WAITLIST, and it is the shape `upatfuzz` reaches at seed 40
+# (`--max-depth 4`, 5 and 6) and seed 39 (`--max-depth 8`).
+#
+#   p0 = UPat()                        -- arena 0
+#   p1 = UPat(tag='A')                 -- arena 1
+#   p2 = UPat(src=[p0, p1])            -- arena 2, the `permutations` fork
+#   p3 = UPat(name='x', src=(p2, p0))  -- arena 3
+#   p4 = UPat(name='b', src=(p0, p3))  -- arena 4, the root
+#
+# `_get_clause` puts p3's `STORE x` ABOVE p2's children, and p2's `OR` is inside
+# p2's own AND, so `do_process_and`'s `for x in a.src` (upat.py:76) splices p3's
+# children and brings the `OR` up as a plain `new_src` entry -- `or_clause` is
+# EMPTY, so without the waitlist p3's `STORE x` and p4's `STORE b` meet in ONE
+# `dict_stores` with `b` first, and the clause reads `b=uop, x=uop.src[1]`.
+# CPython never sees that state: `unified_rewrite` re-queues a node whose src is
+# unresolved (ops.py:1843-1846), so p3 pushes `x` into the branches FIRST and p4's
+# `b` lands after it. The order of two `name=` arguments IS the assertion, and
+# no other row has two binds over a fork.
+
+def pat_store_ord() -> O.PatFound:
+  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p1 = O.UPat.of(O.PatFound.pat(p0), None{}, None{}, Some{[O.TStr{"A"}]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, None{}, O.SList{[0, 1]}, None{}, None{}, False{}, None{}, False{})
+  p3 = O.UPat.of(O.PatFound.pat(p2), None{}, None{}, None{}, O.STuple{[2, 0]}, None{}, Some{"x"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(p3), None{}, None{}, None{}, O.STuple{[0, 3]}, None{}, Some{"b"}, False{}, None{}, False{})
+
+def want_store_ord() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if len(uop.src) == 2 and True and len(uop.src[1].src) == 2 and len(uop.src[1].src[0].src) == 2:",
+    "    if True and uop.src[1].src[0].src[1].tag == a0 and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
+    "    if uop.src[1].src[0].src[0].tag == a0 and True and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
+    "  return None"], "\n")
+
+# THE FUEL BOUND, and the only row that can see it. Five arena UPats and an AND
+# spine seven deep -- the shape `upatfuzz --seeds 158 --max-depth 5` seed 157 and
+# `--seeds 200 --max-depth 12` reach -- and `proc_fix` needs more than 32 rounds
+# to reach its fixpoint, so `8n` answers `NONE` here where CPython answers five
+# lines. Nothing else in the gate is deep enough to notice: `store_ord` is the
+# same bug class at depth two, and it passes on `8n`.
+#
+#   p0 = UPat()                                 -- arena 0
+#   p1 = UPat(name='b', dtype=(f32,h), src=[p0])
+#   p2 = UPat(arg=5, src=[p0, p1])
+#   p3 = UPat(Ops.CONST, name='a', dtype=(h,f32), tag='A', src=(p2, p1))
+#   p4 = UPat(Ops.NEG, dtype=i32, tag=('B','A'), src=(p3, p3, p1))  -- the root
+#
+# `src=(p3, p3, p1)` is what makes the spine: p3 is walked TWICE, at `src[0]` and
+# `src[1]`, and p1 a third time at `src[2]`, so the third walk's pieces are the
+# LAST of a long `new_src` and a fuel that runs out drops exactly them.
+
+def pat_deep() -> O.PatFound:
+  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p1 = O.UPat.of(O.PatFound.pat(p0), None{}, Some{[S.single(), S.half()]}, None{}, O.SList{[0]}, None{}, Some{"b"}, False{}, None{}, False{})
+  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, None{}, O.SList{[0, 1]}, Some{O.ATuple{[5]}}, None{}, False{}, None{}, False{})
+  p3 = O.UPat.of(O.PatFound.pat(p2), Some{[O.OpsCONST{}]}, Some{[S.half(), S.single()]},
+    Some{[O.TStr{"A"}]}, O.STuple{[2, 1]}, None{}, Some{"a"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(p3), Some{[O.OpsNEG{}]}, Some{[S.int32()]},
+    Some{[O.TStr{"B"}, O.TStr{"A"}]}, O.STuple{[3, 3, 1]}, None{}, None{}, False{}, None{}, False{})
+
+def want_deep() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) == 3 and uop.dtype is a1 and uop.tag in a2 and uop.src[0].op is a3 and len(uop.src[0].src) == 2 and uop.src[0].dtype in a4 and uop.src[0].tag == a5 and uop.src[0].src[0].arg == 5 and len(uop.src[0].src[0].src) == 2 and len(uop.src[0].src[1].src) == 1 and uop.src[0].src[1].dtype in a4 and True and uop.src[1].op is a3 and len(uop.src[1].src) == 2 and uop.src[1].dtype in a4 and uop.src[1].tag == a5 and uop.src[1].src[0].arg == 5 and len(uop.src[1].src[0].src) == 2 and len(uop.src[1].src[1].src) == 1 and uop.src[1].src[1].dtype in a4 and len(uop.src[2].src) == 1 and uop.src[2].dtype in a4:",
+    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a4 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a4 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
+    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a4 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a4 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
+    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a4 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a4 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
+    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a4 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a4 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
+    "  return None"], "\n")
+
 def want_noctx() -> String:
   String.join(["def compiled_match(uop, ctx):",
     "  if (_ret:=_fxn(x=uop)) is not None: return _ret", "  return None"], "\n")
@@ -1753,7 +1961,243 @@ def show.of(r: Maybe<&2, Code>) -> String:
 def show(+f: O.PatFound, has_ctx: Bool) -> IO(Unit):
   IO.print(show.of(upat_compile(O.PatFound.pat(f), O.PatFound.i(f), has_ctx)))
 
-def main() -> IO(Unit):
+# ===========================================================================
+# THE FUZZ DRIVER. `main` with NO argument is the gate and nothing else; with
+# ONE argument it reads a case file, builds the case's UPat in the pattern
+# arena, runs the SAME `upat_compile` the gate runs, and prints ONE canonical
+# line. No new logic: everything below is the case FORMAT's reader, and the
+# only call into the port is `upat_compile`.
+#
+# THE CASE IS A STRING AND BOTH SIDES READ IT. A case is one line, the `ctx`
+# flag, and a `|`-separated list of nodes in POST-ORDER -- a node's `src`
+# indices always name nodes already listed. That is what makes the fold below
+# a fold instead of a recursive parser, and it is what lets the fuzzer build
+# the SAME UPat in tinygrad's `UPat` and here from the same text, which is the
+# only way the diff means anything.
+#
+# Each node is eight `;`-separated fields, and EVERY field is spelled rather
+# than derived, so the case can express a shape `__init__` builds and one it
+# does not:
+#
+#   op    `-` (None) or `+`-joined op names -- `ADD`, `MUL`, `SUB`, `MAX`,
+#         `INDEX`, `CONST`, `NEG`, `CALL`. TWO or more is the `in {1}` arm.
+#   name  `-` or a bind name.
+#   arg   `-` (None) | `i<n>` the one-element `ATuple` the port reads as an int
+#         | `s` a string arg | `t<n>,<n>` a two-element tuple, i.e. the SAME
+#         `LArg` payload on the literal arm. `ATuple{[n]}` IS Python's `n`:
+#         that correspondence is the port's, and the fuzzer's cases obey it.
+#   dt    `-` or `+`-joined dtypes -- `f32`, `i32`, `h`.
+#   tag   `-` or `+`-joined tags -- `A`, `B`.
+#   src   `-` (no src) | `r<k>` a repeat of child k | `t<k>,<k>,..` a tuple
+#         | `l<k>,<k>` a list, which is the `permutations` fork.
+#   any   1 for `is_any`, which Python also requires a tuple `src` for.
+#   aal   1 for `allow_any_len`.
+#
+# `strict_length` and `required_len` are NOT fields: `UPat.of` derives them
+# from `src` and `aal` exactly as `__init__` does, so the case tests that
+# derivation too.
+# ===========================================================================
+
+def drv.num(cs: List<&2, Char>, acc: U32) -> U32:
+  match cs:
+    case Nil{}: acc
+    case c <> t: drv.num(t, U32.add(U32.mul(acc, 10), U32.sub(Char.to_u32(c), 48)))
+
+def drv.num.of(s: String) -> U32:
+  drv.num(String.to_list(s), 0)
+
+def drv.nth(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case Some{n}: n
+    case None{}: 0
+
+def drv.one(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case None{}: "-"
+
+def drv.field(ns: List<&2, String>, k: U32) -> String:
+  drv.one(List.get(&2, String, ns, U32.to_nat(k)))
+
+# a `,`-separated index list, so `r0` and `t0,1,2` share one reader
+
+def drv.ids.go(ks: List<&2, String>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: drv.ids.go(t, List.append(&2, U32, acc, [drv.num.of(k)]))
+
+def drv.ids(s: String) -> List<&2, U32>:
+  drv.ids.go(String.split(s, ','), Nil{})
+
+def drv.first(s: String) -> U32:
+  drv.nth(List.get(&2, U32, drv.ids(s), 0n))
+
+# the three literal lists. `+` joins because it is `ge2` that picks the arm,
+# and a two-element list must be reachable.
+
+def drv.op1(s: String) -> O.Op:
+  match s:
+    case "ADD": O.OpsADD{}
+    case "MUL": O.OpsMUL{}
+    case "SUB": O.OpsSUB{}
+    case "MAX": O.OpsMAX{}
+    case "INDEX": O.OpsINDEX{}
+    case "CONST": O.OpsCONST{}
+    case "NEG": O.OpsNEG{}
+    case "CALL": O.OpsCALL{}
+    case _: O.OpsADD{}
+
+def drv.ops.go(ks: List<&2, String>, acc: List<&2, O.Op>) -> List<&2, O.Op>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: drv.ops.go(t, List.append(&2, O.Op, acc, [drv.op1(k)]))
+
+def drv.opm.of(s: String) -> Maybe<&2, List<&2, O.Op>>:
+  match s:
+    case "-": None{}
+    case _: Some{drv.ops.go(String.split(s, '+'), Nil{})}
+
+def drv.dt1(s: String) -> S.Dt:
+  match s:
+    case "i32": S.int32()
+    case "h": S.half()
+    case _: S.single()
+
+def drv.dts.go(ks: List<&2, String>, acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: drv.dts.go(t, List.append(&2, S.Dt, acc, [drv.dt1(k)]))
+
+def drv.dtm.of(s: String) -> Maybe<&2, List<&2, S.Dt>>:
+  match s:
+    case "-": None{}
+    case _: Some{drv.dts.go(String.split(s, '+'), Nil{})}
+
+def drv.tg1(s: String) -> O.Tag:
+  match s:
+    case "A": O.TStr{"A"}
+    case "B": O.TStr{"B"}
+    case _: O.TNone{}
+
+def drv.tgs.go(ks: List<&2, String>, acc: List<&2, O.Tag>) -> List<&2, O.Tag>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: drv.tgs.go(t, List.append(&2, O.Tag, acc, [drv.tg1(k)]))
+
+def drv.tgm.of(s: String) -> Maybe<&2, List<&2, O.Tag>>:
+  match s:
+    case "-": None{}
+    case _: Some{drv.tgs.go(String.split(s, '+'), Nil{})}
+
+def drv.nm.of(s: String) -> Maybe<&2, String>:
+  match s:
+    case "-": None{}
+    case _: Some{s}
+
+# the `src` field, and the `arg` field's three shapes, are the two `match`es
+# that dispatch on a leading character. `xs` is the case-position -> arena-index
+# table, because `UPat.of` INTERNS: two equal nodes are ONE arena entry, so a
+# case position is not an arena index. Reading `2` as an arena index when the
+# first two nodes were equal silently reads the WRONG child, and the fuzzer
+# spends a whole day chasing a bug that is in the reader, not the port.
+
+def drv.at(xs: List<&2, U32>, k: U32) -> U32:
+  drv.nth(List.get(&2, U32, xs, U32.to_nat(k)))
+
+def drv.pick.go(ks: List<&2, U32>, +xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: drv.pick.go(t, xs, List.append(&2, U32, acc, [drv.at(xs, k)]))
+
+def drv.pick(ks: List<&2, U32>, +xs: List<&2, U32>) -> List<&2, U32>:
+  drv.pick.go(ks, xs, Nil{})
+
+def drv.src.of(tag: String, rest: String, +xs: List<&2, U32>) -> O.SrcArg:
+  match tag:
+    case "-": O.SNone{}
+    case "r": O.SOne{drv.at(xs, drv.first(rest))}
+    case "t": O.STuple{drv.pick(drv.ids(rest), xs)}
+    case _: O.SList{drv.pick(drv.ids(rest), xs)}
+
+def drv.src.of2(+s: String, +xs: List<&2, U32>) -> O.SrcArg:
+  drv.src.of(String.take(s, 1n), String.drop(s, 1n), xs)
+
+def drv.am.of(tag: String, rest: String) -> Maybe<&2, O.Arg>:
+  match tag:
+    case "-": None{}
+    case "i": Some{O.ATuple{[drv.first(rest)]}}
+    case "s": Some{O.AStr{"z"}}
+    case _: Some{O.ATuple{drv.ids(rest)}}
+
+def drv.am.of2(+s: String) -> Maybe<&2, O.Arg>:
+  drv.am.of(String.take(s, 1n), String.drop(s, 1n))
+
+def drv.bit.of(s: String) -> Bool:
+  String.eq(s, "1")
+
+
+# ONE node, and the fold that threads the arena. `UPat.of` is the whole
+# construction API the gate's own fixtures use, so the driver adds no shape a
+# fixture could not have written.
+
+def drv.build(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>) -> O.PatFound:
+  +s: O.SrcArg = drv.src.of2(drv.field(ns, 5), xs)
+  O.UPat.of(pat, drv.opm.of(drv.field(ns, 0)), drv.dtm.of(drv.field(ns, 3)),
+    drv.tgm.of(drv.field(ns, 4)), s, drv.am.of2(drv.field(ns, 2)),
+    drv.nm.of(drv.field(ns, 1)), drv.bit.of(drv.field(ns, 7)), None{},
+    drv.bit.of(drv.field(ns, 6)))
+
+# the fold threads the arena AND the case-position -> arena-index table, and
+# `i` is the ROOT's arena index, which is the last one `UPat.of` answered
+
+def drv.go(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>, +i: U32) -> O.PatFound:
+  match ns:
+    case Nil{}: O.PatFound{pat, i}
+    case n <> t:
+      +f: O.PatFound = drv.build(String.split(n, ';'), pat, xs)
+      drv.go(t, O.PatFound.pat(f), List.append(&2, U32, xs, [O.PatFound.i(f)]),
+        O.PatFound.i(f))
+
+# the ctx flag and the node list, split off the `|`
+
+def drv.head(ps: List<&2, String>) -> String:
+  drv.one(List.get(&2, String, ps, 0n))
+
+def drv.rest(ps: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: Nil{}
+    case _ <> t: t
+
+def drv.rest1(ps: List<&1, String>) -> List<&1, String>:
+  match ps:
+    case Nil{}: Nil{}
+    case _ <> t: t
+
+def drv.ctx(s: String) -> Bool:
+  match s:
+    case "noctx": False{}
+    case _: True{}
+
+# THE CANONICAL LINE. The newlines go out as the two characters `\` `n`, so
+# the whole answer is one line, and the `dyn_lookup` KEYS ride along because
+# `_get_code` returns the pair and the gate's `*_dyn` rows check them.
+
+def drv.out.of(r: Maybe<&2, Code>) -> String:
+  match r:
+    case Some{+c}: String.concat([String.join(String.split(Code.s(c), '\n'), "\\n"),
+      " | ", String.join(dyn_names(Code.dyn(c)), ",")])
+    case None{}: "NONE"
+
+
+def drv.run(p: String) -> IO(Unit):
+  do IO<Unit>:
+    line : String <- H.printable(p, 1)
+    +ps : List<&2, String> <- IO.pure(List<&2, String>, String.split(line, '|'))
+    +f : O.PatFound <- IO.pure(O.PatFound, drv.go(drv.rest(ps), O.Pat{Nil{}}, Nil{}, 0))
+    IO.print(drv.out.of(upat_compile(O.PatFound.pat(f), O.PatFound.i(f),
+      drv.ctx(drv.head(ps)))))
+
+def gate() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("var", code_is(pat_var(), True{}, want_var()))
     b : Unit <- row("add", code_is(pat_add(), True{}, want_add()))
@@ -1770,11 +2214,30 @@ def main() -> IO(Unit):
     m : Unit <- row("dup_store", code_is(pat_dup_store(), True{}, want_dup_store()))
     n : Unit <- row("share", code_is(pat_share(), True{}, want_share()))
     o : Unit <- row("rep_src_dyn", dyn_is(pat_rep_src(), True{}, ["a0", "a1", "a2"]))
+    p : Unit <- row("set_ord", code_is(pat_set_ord(), True{}, want_set_ord()))
+    q : Unit <- row("store_ord", code_is(pat_store_ord(), True{}, want_store_ord()))
+    r : Unit <- row("deep", code_is(pat_deep(), True{}, want_deep()))
     show(pat_add(), True{})
+
+# NO ARGUMENT IS THE GATE, ONE ARGUMENT IS THE DRIVER. `sz.bend`'s `main` reads
+# its argument the same way; the dispatch is on the shape of the argument list,
+# so a missing case file cannot be mistaken for a case. The `match` heads the
+# def because a match cannot sit inside a `do` block.
+
+def dispatch(ps: List<&1, String>) -> IO(Unit):
+  match ps:
+    case Nil{}: gate()
+    case p <> _: drv.run(p)
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    as : List<String> <- IO.args()
+    u : Unit <- dispatch(drv.rest1(as))
+    IO.pure(Unit, u)
 
 
 # ===========================================================================
-# THE MUTATION TABLE. Single edits to THIS file, each run through the fifteen
+# THE MUTATION TABLE. Single edits to THIS file, each run through the eighteen
 # rows above. The claim is not "it compiles" but "each of these is the only
 # thing standing between a row and `False`", and the honest entries are the
 # three marked `(none)`.
@@ -1798,6 +2261,10 @@ def main() -> IO(Unit):
 #                                                             dup_store
 #  M8  `is_any` children read `base.index(0)`                  any any_rep
 #  M10 `proc_fix` runs the rewrite once                        too_big
+#  M27 `proc.node` never DEFERS: the waitlist is gone          store_ord deep
+#  M28 `proc.join` answers the HEAD's `ch`, not the list's      store_ord deep
+#  M29 `fuel`'s multiplier 32n -> 8n                            deep
+#  M30 `eq_lit`'s `LTag` arm back to `O.eq_tag_list`            set_ord
 #  M11 `is_rep` is always False: the repeat arm is dead        repeat rep_src
 #                                                             rep_src_src any_rep
 #                                                             dup_store
