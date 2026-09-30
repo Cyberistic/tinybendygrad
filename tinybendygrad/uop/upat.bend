@@ -18,12 +18,17 @@
 # THE PREDICATE TREE IS A TREE, NOT AN ARENA. Python builds the IR out of
 # `UOp(...)`, so it lands in the same `ucache` as the graph and two equal
 # subtrees are ONE object -- which is what `dedup` and the duplicate-store test
-# in `do_process_and` rely on. Here the node is `C{op, lit, ss}` and equality is
-# `eq_c`, structural. Same answers. The ONE place sharing shows is a
-# permutation `src` (`itertools.permutations`, ops.py:1469), where the same
-# sub-pattern is visited once per alternative, and that is what the fuel below
-# bounds. The clause IR is finite and acyclic by construction, so nothing here
-# needs the arena's index-into-a-store.
+# in `do_process_and` rely on, and what makes `wrap` spend one `a{n}` per
+# DISTINCT PYLITERAL instead of one per occurrence. Here the node is
+# `C{op, lit, ss}` and equality is `eq_c`, structural. Same answers, but the
+# ucache has to be SPELLED where the sharing was load-bearing, and there were
+# three such places and all three were wrong at first: `wrap` numbered a shared
+# literal twice, `dup` emitted `k` where Python emits `dict_stores[k]`, and
+# `do_process_and` never read `Ds.out` at all. A permutation `src`
+# (`itertools.permutations`, ops.py:1469) visits the same sub-pattern once per
+# alternative and is the case that made the numbering visible; the fuel below
+# bounds the visit count. The clause IR is finite and acyclic by construction, so
+# nothing here needs the arena's index-into-a-store.
 #
 # THE `(bool, dict)` BECOMES A `String`. `upat_compile` returns a Python closure
 # built by `exec`ing the string this file renders. Bend has no `exec`, no `eval`
@@ -163,6 +168,14 @@ def val_of(l: Lit) -> String:
   match l:
     case LInt{n}: U32.show(n)
     case _ : ""
+
+def Bind.name(b: Bind) -> String:
+  match b:
+    case Bind{name, lit}: name
+
+def Bind.lit(b: Bind) -> Lit:
+  match b:
+    case Bind{name, lit}: lit
 # A one-element `List`, which is what `self.op[0]` and `self.match_dtype[0]`
 # are: the head of a list Python already knows has one element.
 
@@ -281,10 +294,18 @@ def substitute.put(hit: Bool, op: O.Op, lit: Lit, ss: List<&2, C>, rep: C) -> C:
 def substitute.go(+ss: List<&2, C>, +it: C, +rep: C) -> List<&2, C>:
   match ss:
     case Nil{}: Nil{}
+    # THE HEAD GOES FIRST. `List.append(a, b)` is `a ++ b`, so this line is
+    # `[node] ++ tail` and NOT `tail ++ [node]`: a two-element src list COMES BACK
+    # SWAPPED otherwise, and `INDEX(CUSTOMI, CONST)` is two elements. That is
+    # invisible until the repeat arm lifts a store whose value is an INDEX --
+    # i.e. until the repeat's CHILD has a src of its own -- and then `render`'s
+    # `idx` rule sees a CONST first, keeps the INDEX, `all_ci` fails on the
+    # `AND(pred)` inside `all([...])`, `rend.go` sets `bad` and `_get_code`
+    # answers None. `render.go` below spells the same fold the right way round.
     case C{op, lit, k} <> t:
       a = substitute.go(t, it, rep)
       b = substitute.go(k, it, rep)
-      List.append(&2, C, a, [substitute.put(eq_c(C{op, lit, k}, it), op, lit, b, rep)])
+      List.append(&2, C, [substitute.put(eq_c(C{op, lit, k}, it), op, lit, b, rep)], a)
 
 def substitute(t: C, +it: C, +rep: C) -> C:
   match t:
@@ -740,10 +761,21 @@ def Ds.dup(d: Ds) -> Bool:
   match d:
     case Ds{ks, vs, out, dup}: dup
 
+# `dict_stores[store.src[0]]` -- the value the FIRST store of this key bound, NOT
+# the key. `k` is `store.src[0]`, the `CUSTOMI` that names the bind, and rendering
+# it as `{0}` would print the variable name instead of the node it was bound to.
+def dup.first(+ks: List<&2, C>, +vs: List<&2, C>, +k: C) -> C:
+  match ks:
+    case Nil{}: marker()
+    case j <> jt:
+      match vs:
+        case Nil{}: marker()
+        case v <> vt: Bool.pick(C, eq_c(j, k), v, dup.first(jt, vt, k))
+
 def dup.put(hit: Bool, k: C, v: C, +d: Ds) -> Ds:
   match hit:
     case True{}: Ds{Ds.ks(d), Ds.vs(d),
-      List.append(&2, C, Ds.out(d), [C{O.OpsCUSTOM{}, LText{"{0} is {1}"}, [k, v]}]), True{}}
+      List.append(&2, C, Ds.out(d), [C{O.OpsCUSTOM{}, LText{"{0} is {1}"}, [dup.first(Ds.ks(d), Ds.vs(d), k), v]}]), True{}}
     case False{}: Ds{List.append(&2, C, Ds.ks(d), [k]), List.append(&2, C, Ds.vs(d), [v]),
       Ds.out(d), Ds.dup(d)}
 
@@ -937,39 +969,47 @@ def do_process_and.of5(+all: List<&2, C>, found: Bool) -> Maybe<&2, C>:
   do_process_and.of6(dedup.go(all, Nil{}), Bool.or(found,
     U32.is_ne(U32.from_nat(List.length(&2, C, dedup.go(all, Nil{}))), U32.from_nat(List.length(&2, C, all)))))
 
-def do_process_and.of4(ors: List<&2, C>, flat: Bool, found: Bool, srcs: List<&2, C>, +r: Rec) -> Maybe<&2, C>:
-  do_process_and.of5(List.concat(&2, C, [srcs, stores_of(Ds.ks(Rec.d(r)), Ds.vs(Rec.d(r)), Nil{}), Rec.ors(r)]),
+# `stores, new_src = partition(new_src, ...)` LEAVES the stores OUT of `new_src`,
+# so `pred` is `Rp.pred` and not the whole child list: keeping them and leaning on
+# `dedup` happens to agree while every store survives the round trip, and it stops
+# agreeing the moment a duplicate store drops one of them. `Ds.out` is
+# `new_src.append(CUSTOM(dict_stores[k], store.src[1], "{0} is {1}"))`, and it goes
+# between `pred` and `stores_of` because Python appends it inside the store loop
+# and the stores after it.
+def do_process_and.of4(ors: List<&2, C>, flat: Bool, found: Bool, pred: List<&2, C>, +r: Rec) -> Maybe<&2, C>:
+  do_process_and.of5(List.concat(&2, C, [pred, Ds.out(Rec.d(r)),
+    stores_of(Ds.ks(Rec.d(r)), Ds.vs(Rec.d(r)), Nil{}), Rec.ors(r)]),
     Bool.or(Bool.or(flat, found), Rec.found(r)))
 # `if len(stores)`: the OR takes them, otherwise the duplicates become identities
 
-def do_process_and.of3(ors: List<&2, C>, ored: Bool, r: Rp) -> Rec:
+def do_process_and.of3(ors: List<&2, C>, ored: Bool, +r: Rp) -> Rec:
   match ored:
     case True{}: do_process_and.push(ors, Rp.extra(r))
     case False{}: do_process_and.dup(ors, r)
 
-def do_process_and.of1(+ors: List<&2, C>, +ored: Bool, flat: Bool, srcs: List<&2, C>, r: Rp) -> Maybe<&2, C>:
-  do_process_and.of4(ors, flat, ored, srcs, do_process_and.of3(ors, ored, r))
+def do_process_and.of1(+ors: List<&2, C>, +ored: Bool, flat: Bool, pred: List<&2, C>, +r: Rp) -> Maybe<&2, C>:
+  do_process_and.of4(ors, flat, ored, pred, do_process_and.of3(ors, ored, r))
 
-def do_process_and.of2(+ors: List<&2, C>, flat: Bool, ored: Bool, has: Bool, srcs: List<&2, C>, r: Rp) -> Maybe<&2, C>:
+def do_process_and.of2(+ors: List<&2, C>, flat: Bool, ored: Bool, has: Bool, pred: List<&2, C>, +r: Rp) -> Maybe<&2, C>:
   match has:
-    case True{}: do_process_and.of1(ors, ored, flat, srcs, r)
-    case False{}: do_process_and.of4(ors, flat, False{}, srcs, Rec{ors, empty_ds(), False{}})
+    case True{}: do_process_and.of1(ors, ored, flat, pred, r)
+    case False{}: do_process_and.of4(ors, flat, False{}, pred, Rec{ors, empty_ds(), False{}})
 
-def do_process_and.of1.go(ors: List<&2, C>, flat: Bool, +two: Bool, ored: Bool, has: Bool, srcs: List<&2, C>, r: Rp) -> Maybe<&2, C>:
-  do_process_and.of2(ors_of(two, ors), Bool.or(flat, two), ored, has, srcs, r)
+def do_process_and.of1.go(ors: List<&2, C>, flat: Bool, +two: Bool, ored: Bool, has: Bool, +r: Rp) -> Maybe<&2, C>:
+  do_process_and.of2(ors_of(two, ors), Bool.or(flat, two), ored, has, Rp.pred(r), r)
 
 # `if len(or_clause): or_clause = [OR(x.replace(src=x.src+tuple(stores)))]`
 
-def do_process_and.of0.hit(big: Bool, +ors: List<&2, C>, flat: Bool, srcs: List<&2, C>, +r: Rp) -> Maybe<&2, C>:
+def do_process_and.of0.hit(big: Bool, +ors: List<&2, C>, flat: Bool, +r: Rp) -> Maybe<&2, C>:
   match big:
     case True{}: Some{marker()}
-    case False{}: do_process_and.of1.go(ors, flat, ge2(List.length(&2, C, ors)), ne(ors), ne(Rp.extra(r)), srcs, r)
+    case False{}: do_process_and.of1.go(ors, flat, ge2(List.length(&2, C, ors)), ne(ors), ne(Rp.extra(r)), r)
 
-def do_process_and.of0(+ors: List<&2, C>, flat: Bool, srcs: List<&2, C>, +r: Rp) -> Maybe<&2, C>:
-  do_process_and.of0.hit(ge4(List.length(&2, C, ors)), ors, flat, srcs, r)
+def do_process_and.of0(+ors: List<&2, C>, flat: Bool, +r: Rp) -> Maybe<&2, C>:
+  do_process_and.of0.hit(ge4(List.length(&2, C, ors)), ors, flat, r)
 
 def do_process_and.of0.of(+ss: List<&2, C>, +sp: Sp) -> Maybe<&2, C>:
-  do_process_and.of0(Sp.ors(sp), Sp.flat(sp), Sp.srcs(sp), part.go(Sp.srcs(sp), Rp{Nil{}, Nil{}}))
+  do_process_and.of0(Sp.ors(sp), Sp.flat(sp), part.go(Sp.srcs(sp), Rp{Nil{}, Nil{}}))
 
 def do_process_and.of2.of(+ss: List<&2, C>) -> Maybe<&2, C>:
   do_process_and.of0.of(ss, split.go(ss, Sp{Nil{}, Nil{}, False{}}))
@@ -1001,15 +1041,35 @@ def W.d(x: W) -> List<&2, Bind>:
   match x:
     case W{w, n, d}: d
 
-# `wrap(ctx, x) -> UOp`: `ctx[ret:=f"a{len(ctx)}"] = x.arg` and a CUSTOMI naming it.
-# The value is a `Lit` and not a Python object, because rendering a `Lit` back to
-# Python source is the P3 host's `repr`.
+# `ctx[ret:=f"a{len(ctx)}"] = x.arg` and a CUSTOMI naming it. The value is a
+# `Lit` and not a Python object, because rendering a `Lit` back to Python source
+# is the P3 host's `repr`.
+#
+# A SECOND `a{n}` FOR AN EQUAL `Lit`, which is what a tree without sharing gives,
+# is WRONG: Python's `wrap` is a graph rewrite and `UOp(Ops.PYLITERAL, arg=x)` is
+# interned, so a literal that appears twice is ONE node and is wrapped once --
+# `UPat(Ops.ADD, src=UPat(Ops.ADD))` renders `a0` twice, not `a0` and `a1`, and
+# neither does the `itertools.permutations` fork, whose two branches name the same
+# sub-patterns. `Bind.lit` IS the `arg`, so `eq_lit` is the ucache key.
 
-def wrap.node(op: O.Op, lit: Lit, +n: U32, d: List<&2, Bind>) -> W:
+def wrap.found(+bs: List<&2, Bind>, ans: Maybe<&2, String>, +lit: Lit) -> Maybe<&2, String>:
+  match bs:
+    case Nil{}: ans
+    case b <> t: Bool.pick(Maybe<&2, String>, eq_lit(Bind.lit(b), lit), Some{Bind.name(b)},
+      wrap.found(t, ans, lit))
+
+def wrap.fresh(+n: U32, lit: Lit, +d: List<&2, Bind>) -> W:
+  +nm: String = String.concat(["a", U32.show(n)])
+  W{[C{O.OpsCUSTOMI{}, LText{nm}, Nil{}}], U32.add(n, 1), List.append(&2, Bind, d, [Bind{nm, lit}])}
+
+def wrap.node.hit(hit: Maybe<&2, String>, lit: Lit, n: U32, +d: List<&2, Bind>) -> W:
+  match hit:
+    case Some{nm}: W{[C{O.OpsCUSTOMI{}, LText{nm}, Nil{}}], n, d}
+    case None{}: wrap.fresh(n, lit, d)
+
+def wrap.node(op: O.Op, +lit: Lit, +n: U32, +d: List<&2, Bind>) -> W:
   match op:
-    case O.OpsPYLITERAL{}:
-      +nm: String = String.concat(["a", U32.show(n)])
-      W{[C{O.OpsCUSTOMI{}, LText{nm}, Nil{}}], U32.add(n, 1), List.append(&2, Bind, d, [Bind{nm, lit}])}
+    case O.OpsPYLITERAL{}: wrap.node.hit(wrap.found(d, None{}, lit), lit, n, d)
     case _ : W{[C{op, lit, Nil{}}], n, d}
 
 # The node the fold put its own wrap into, with the WRAPPED CHILDREN attached. A
@@ -1490,10 +1550,6 @@ def Code.dyn(c: Code) -> List<&2, Bind>:
   match c:
     case Code{s, dyn}: dyn
 
-def Bind.name(b: Bind) -> String:
-  match b:
-    case Bind{name, lit}: name
-
 def dyn_names(bs: List<&2, Bind>) -> List<&2, String>:
   match bs:
     case Nil{}: Nil{}
@@ -1563,6 +1619,53 @@ def pat_any() -> O.PatFound:
   b = O.UPat.var(O.PatFound.pat(a), Some{"b"}, None{})
   O.UPat.of(O.PatFound.pat(b), None{}, None{}, None{}, O.STuple{[0, 1]}, None{}, None{}, False{}, None{}, True{})
 
+# `UPat(Ops.INDEX, src=(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")),
+# UPat(name="i")))` -- A REPEAT NESTED IN A SRC TUPLE. The repeat's CHILD has no
+# src of its own, so `substitute` only ever meets a one-element `src` and the
+# order it rebuilds cannot show; `rep_src_src` below is the row that sees it.
+
+def pat_rep_src() -> O.PatFound:
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  i = O.UPat.var(O.PatFound.pat(m), Some{"i"}, None{})
+  a = O.UPat.of(O.PatFound.pat(i), Some{[O.OpsADD{}]}, None{}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(a), Some{[O.OpsINDEX{}]}, None{}, None{}, O.STuple{[2, 1]}, None{}, None{}, False{}, None{}, False{})
+
+# THE SAME REPEAT with the CHILD's src a TUPLE, so `substitute` runs on a
+# two-element `INDEX(CUSTOMI, CONST)` and can swap it. This row answers `None`
+# while `substitute.go` rebuilds `tail ++ [node]`.
+
+def pat_rep_src_src() -> O.PatFound:
+  p = O.UPat.var(O.Pat{Nil{}}, Some{"p"}, None{})
+  m = O.UPat.of(O.PatFound.pat(p), Some{[O.OpsMUL{}]}, None{}, None{}, O.STuple{[0]}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsINDEX{}]}, None{}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
+
+# `UPat.any(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")), UPat(Ops.SUB,
+# name="s"))` -- A REPEAT INSIDE `is_any`. BOTH branches render, so the two
+# `ituop0`s and the two `a{n}`s are all exercised at once.
+
+def pat_any_rep() -> O.PatFound:
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  a = O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
+  s = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsSUB{}]}, None{}, None{}, O.SNone{}, None{}, Some{"s"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(s), None{}, None{}, None{}, O.STuple{[1, 2]}, None{}, None{}, False{}, None{}, True{})
+
+# `UPat(Ops.MUL, src=UPat(Ops.ADD, src=(UPat(name="a"), UPat(name="a")),
+# name="m"))` -- THE DUPLICATE STORE. One bind over two srcs, so
+# `do_process_and` owes the clause `uop.src[0].src[0] is uop.src[0].src[1]`.
+
+def pat_dup_store() -> O.PatFound:
+  a = O.UPat.var(O.Pat{Nil{}}, Some{"a"}, None{})
+  m = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsMUL{}]}, None{}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
+
+# `UPat(Ops.ADD, src=(UPat(Ops.MUL, name="m"), UPat(Ops.MUL, name="m")))` --
+# THE SHARED LITERAL. Both `Ops.MUL` PYLITERALs are ONE interned node, so CPython
+# spends `a0` and `a1` and prints `a1` twice.
+
+def pat_share() -> O.PatFound:
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
+
 # `UPat(Ops.CALL, arg=4)` -- the inline int arm, which spends NO `a{n}`
 
 def pat_argint() -> O.PatFound:
@@ -1606,6 +1709,31 @@ def want_any() -> String:
     "    if (_ret:=_fxn(ctx=ctx, a=uop)) is not None: return _ret",
     "    if (_ret:=_fxn(ctx=ctx, b=uop)) is not None: return _ret", "  return None"], "\n")
 
+def want_rep_src() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) == 2 and uop.src[0].op is a1 and len(uop.src[0].src) != 0 and all([(ituop0.op is a2 and ituop0 is uop.src[0].src[0]) for ituop0 in uop.src[0].src]) and (_ret:=_fxn(ctx=ctx, m=uop.src[0].src[0], i=uop.src[1])) is not None: return _ret",
+    "  return None"], "\n")
+
+def want_rep_src_src() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) != 0 and all([(ituop0.op is a1 and len(ituop0.src) == 1 and ituop0 is uop.src[0] and ituop0.src[0] is uop.src[0].src[0]) for ituop0 in uop.src]) and (_ret:=_fxn(ctx=ctx, m=uop.src[0], p=uop.src[0].src[0])) is not None: return _ret",
+    "  return None"], "\n")
+
+def want_any_rep() -> String:
+  String.join(["def compiled_match(uop, ctx):", "  if True:",
+    "    if uop.op is a0 and len(uop.src) != 0 and all([(ituop0.op is a1 and ituop0 is uop.src[0]) for ituop0 in uop.src]) and (_ret:=_fxn(ctx=ctx, m=uop.src[0])) is not None: return _ret",
+    "    if uop.op is a2 and (_ret:=_fxn(ctx=ctx, s=uop)) is not None: return _ret", "  return None"], "\n")
+
+def want_dup_store() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) != 0 and all([(ituop0.op is a1 and len(ituop0.src) == 2 and ituop0 is uop.src[0] and ituop0.src[0] is uop.src[0].src[0] and ituop0.src[1] is uop.src[0].src[1]) for ituop0 in uop.src]) and uop.src[0].src[0] is uop.src[0].src[1] and (_ret:=_fxn(ctx=ctx, m=uop.src[0], a=uop.src[0].src[0])) is not None: return _ret",
+    "  return None"], "\n")
+
+def want_share() -> String:
+  String.join(["def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) == 2 and uop.src[0].op is a1 and uop.src[1].op is a1 and uop.src[0] is uop.src[1] and (_ret:=_fxn(ctx=ctx, m=uop.src[0])) is not None: return _ret",
+    "  return None"], "\n")
+
 def want_noctx() -> String:
   String.join(["def compiled_match(uop, ctx):",
     "  if (_ret:=_fxn(x=uop)) is not None: return _ret", "  return None"], "\n")
@@ -1636,42 +1764,81 @@ def main() -> IO(Unit):
     g : Unit <- row("noctx", code_is(pat_var(), False{}, want_noctx()))
     h : Unit <- row("argint", code_is(pat_argint(), True{}, want_argint()))
     i : Unit <- row("too_big", is_none(pat_bigor(), True{}))
+    j : Unit <- row("rep_src", code_is(pat_rep_src(), True{}, want_rep_src()))
+    k : Unit <- row("rep_src_src", code_is(pat_rep_src_src(), True{}, want_rep_src_src()))
+    l : Unit <- row("any_rep", code_is(pat_any_rep(), True{}, want_any_rep()))
+    m : Unit <- row("dup_store", code_is(pat_dup_store(), True{}, want_dup_store()))
+    n : Unit <- row("share", code_is(pat_share(), True{}, want_share()))
+    o : Unit <- row("rep_src_dyn", dyn_is(pat_rep_src(), True{}, ["a0", "a1", "a2"]))
     show(pat_add(), True{})
 
 
 # ===========================================================================
-# THE MUTATION TABLE. Seventeen single edits to THIS file, each run through the
-# nine rows above. The claim is not "it compiles" but "each of these is the only
-# thing standing between a row and `False`", and the honest entry is M2, which
-# moves nothing.
+# THE MUTATION TABLE. Single edits to THIS file, each run through the fifteen
+# rows above. The claim is not "it compiles" but "each of these is the only
+# thing standing between a row and `False`", and the honest entries are the
+# three marked `(none)`.
 #
 #  #   edit                                                  rows that move
 #  M1  `ge4` 4 -> 8, the `too big to compile` threshold        too_big
 #  M2  `alt_group` swaps its single/fork arms                  (none -- see below)
-#  M3  `loop.put` drops the hoisted STORE from `extra`         repeat
-#  M4  `dedup` becomes a pass-through                          add, add_dyn
-#  M5  `fmt`'s `{k}` counter never advances                    add, repeat, argint
+#  M3  `loop.put` drops the hoisted STORE from `extra`         repeat rep_src
+#                                                             rep_src_src any_rep
+#                                                             dup_store
+#  M4  `dedup` becomes a pass-through                          (none -- see below)
+#  M5  `fmt`'s `{k}` counter never advances                    add repeat argint
+#                                                             rep_src rep_src_src
+#                                                             any_rep dup_store share
 #  M6  `final_shape` swaps its two arms                        var add repeat any
-#                                                             noctx argint
-#  M7  `rep_len` drops the `len({0}.src) != 0` guard           repeat
-#  M8  `is_any` children read `base.index(0)`                  any
-#  M9  `wrap` never numbers a PYLITERAL                        add add_dyn repeat
-#                                                             repeat_dyn argint
+#                                                             noctx argint rep_src
+#                                                             rep_src_src any_rep
+#                                                             dup_store share
+#  M7  `rep_len` drops the `len({0}.src) != 0` guard           repeat rep_src
+#                                                             rep_src_src any_rep
+#                                                             dup_store
+#  M8  `is_any` children read `base.index(0)`                  any any_rep
 #  M10 `proc_fix` runs the rewrite once                        too_big
-#  M11 `is_rep` is always False: the repeat arm is dead        repeat
-#  M12 the store lift skips `substitute`                      repeat
-#  M13 `or_true`: an empty clause is an AND, not `"True"`      all nine
-#  M14 the code header is emitted last                         var add repeat any
-#                                                             noctx argint
-#  M15 `found` drops the nested-AND splice (`flat`)            too_big
-#  M16 `rend.or` does not render a branch into lines           any
-#  M17 `pieces` is the op check alone                          var add repeat any
-#                                                             noctx argint
+#  M11 `is_rep` is always False: the repeat arm is dead        repeat rep_src
+#                                                             rep_src_src any_rep
+#                                                             dup_store
+#  M12 the store lift skips `substitute`                      repeat rep_src
+#                                                             rep_src_src any_rep
+#                                                             dup_store
+#  M13 `or_true`: an empty clause is an AND, not `"True"`      (none -- see below)
+#  M15 `found` drops the nested-AND splice (`flat`)            add too_big rep_src
+#  M16 `rend.or` does not render a branch into lines           any any_rep
+#  M17 `pieces` is the op check alone                          all but var noctx
+#  M18 `substitute.go` rebuilds `tail ++ [node]`               rep_src_src dup_store
+#  M19 `do_process_and` drops `Ds.out`                         dup_store share
+#  M20 `do_process_and` never partitions the STOREs out        dup_store share
+#  M21 `dup.put` puts the KEY in the identity's `{0}`          dup_store share
+#  M22 `dup.first` does not advance `vs`                       dup_store
+#  M23 `wrap` never shares a PYLITERAL                         share
+#  M24 `idx` stops requiring a CUSTOMI first src               add repeat repeat_dyn
+#                                                             rep_src rep_src_src
+#                                                             any_rep dup_store share
+#  M26 `flatands` stops splicing a nested AND                  repeat repeat_dyn
+#                                                             rep_src rep_src_src
+#                                                             any_rep dup_store
+#                                                             rep_src_dyn
 #
-# M2 IS THE INTERESTING ONE. Nesting a single match's children in one AND is
-# what the fork arm does and the single arm does not, and the nine rows cannot
-# tell the difference -- because `proc_fix` splices the extra level away again.
-# The rows are right about the RENDERED SOURCE and blind to the shape, so M2 is
-# reported rather than hidden, and `alt_group` keeps the distinction because
-# Python's `and_clause` really is a list of siblings and the port should say so.
+# M18 IS THE ONE THIS FILE LOST A ROW OVER, and the pair of rows it took is the
+# interesting part. The repeat arm lifts `st.src[1].substitute({it: base.index(0)})`
+# and `INDEX(CUSTOMI, CONST)` is TWO elements, so rebuilding the list tail-first
+# SWAPS them; `render`'s `idx` rule then sees a CONST first, keeps the INDEX,
+# `all_ci` fails on the `AND(pred)` inside `all([...])`, `rend.go` sets `bad` and
+# `_get_code` answers None. `rep_src` -- the repeat inside a src tuple -- does NOT
+# move, because its child is a MUL with no src, so the value being substituted is
+# a childless CUSTOMI and a one-element `src` cannot show the order. The trigger
+# is NOT the repeat index and NOT an unreferenced arena entry, both of which were
+# ruled out by measurement: `rep_src_src` is the LOCALISED row and it is the
+# repeat's CHILD having a src of its own that makes it move.
+#
+# M2, M4 AND M13 MOVE NOTHING, and all three say the same thing. M2 nests a
+# single match's children in one AND, which is what the fork arm does and the
+# single arm does not; M4 stops deduping; M13 makes an empty clause an AND. The
+# rows are right about the RENDERED SOURCE and blind to the shape, because
+# `proc_fix` splices the extra level away again and `and_one` renders an empty AND
+# as `"True"`. `alt_group` keeps the distinction because Python's `and_clause`
+# really is a list of siblings and the port should say so.
 # ===========================================================================
