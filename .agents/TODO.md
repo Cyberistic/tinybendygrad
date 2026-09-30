@@ -3,9 +3,9 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [..........] 0/96
+spec-as-laws    [#########] 9/9      python-to-bend  [#.........] 1/96
 proofs          [##.......] 2/32     oracle-green     [..........] 0/1
-walkthroughs    [###.....] 3/7
+walkthroughs    [####....] 4/7
 ```
 
 ---
@@ -65,8 +65,42 @@ day rediscovering that `2n+p` is not an even-case test.
 
 - [x] `tinygrad/dtype.bend`
 - [x] `tinygrad/helpers.bend`
-- [ ] `uop/ops.bend` — the UOp arena. **The gate: if the arena does not work
-      here, the 30k-line plan changes and we say so rather than limping along.**
+- [~] `uop/ops.bend` — **the gate: the arena WORKS.** A UOp is a `U32` index into
+      an append-only `List<Node>`, threaded through every UOp-taking def and
+      returned by every def that grows it. Both lanes green, no `@unsafe`, six
+      printed answers (`hashcons`, `dtype_key`, `cycle`, `toposort`,
+      `cycle_terminates`, `key_eq`). `--check-only` is
+      `ALL PROOFS CHECK` with exit 0: `./../dtype.bend` is deliberately NOT
+      imported, because its fp16/bf16/fp8/i64 C effects make the checker print
+      "14 defs rely on unsafe or foreign code" and exit 1 for ANY importer
+      (a two-line file that imports it prints the same fourteen lines). `Dt`
+      comes from `./LAWS/spec.bend`, which is the ONE datatype. 3 defs
+      faithful, 27 adapted, 205 inventoried, 5 extra, 0 `@unsafe`.
+
+      **THE WALL, and it is a MODULE wall, not a file wall.** The property
+      folds (`dtype`, `_shape`, `device`, `addrspace`, `_ranges`, `_min_max`,
+      `key`, `axis`, `marg`, `vmin`/`vmax`, …) cannot be written in this
+      representation, for two measured reasons:
+        1. a self-call must pass a **field of its own parameter**, and the
+           arena's field is a `U32` read back out of a store, which the checker
+           cannot see as a subterm; and
+        2. mutual recursion is refused, and
+           `dtype_from_uop` ↔ `_shape` ↔ `simplify()` → `graph_rewrite` → the
+           rules → `dtype` is a cycle Python only breaks with the
+           `recursive_property` memo.
+      `toposort` is unaffected — its recursion is on a WORKLIST, a list tail of
+      its own parameter — so the fix is known and is not a hack: fold dtype and
+      shape into ONE def answering the pair, drive it with a Kahn worklist, and
+      put `graph_rewrite` in a separate module so nothing in the engine calls
+      back into the fold. Recorded in `spec/ops.md` and in the
+      `# THE INVENTORY` block of the file. **P3 decides it.**
+
+- [ ] `uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
+      Ported inside `uop/ops.bend` because the gate needed `match op` to work;
+      split out here.
+- [ ] `uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
+- [ ] `uop/symbolic.bend` — `python_alu`, `exec_alu`, `const_factor`, `divides`,
+      `gcd`, `divide_exact`, `_min_max`, `_sym_fxn`/`sym_infer`.
 
 ## Phases P3–P8 — the port
 
@@ -74,7 +108,7 @@ day rediscovering that `2n+p` is not an even-case test.
 
 | phase | directory | files | status |
 | --- | --- | --- | --- |
-| P3 | `uop/` | 10 | [..........] 0/10 |
+| P3 | `uop/` | 10 | [#.........] 1/10 |
 | P4 | `schedule/` `engine/` | 10 | [..........] 0/10 |
 | P5 | `codegen/` `renderer/` | 30 | [..........] 0/30 |
 | P6 | `runtime/` | 36 | [..........] 0/36 |

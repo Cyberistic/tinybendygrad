@@ -16,6 +16,7 @@ adjectives.
 | --- | --- |
 | [laws.md](laws.md) | tinyspec's prose tables, as Bend types and machine-checked laws |
 | [shape-laws.md](shape-laws.md) | pinning the element count across views; a vacuous law we caught |
+| [ops.md](ops.md) | the UOp arena: a cyclic graph as a `U32` index, and the wall the property folds hit |
 
-The next units of the port add their own file here: `dtype.md`, `ops.md`,
-`schedule.md`, `codegen.md`, `renderer.md`.
+The next units of the port add their own file here: `dtype.md`, `schedule.md`,
+`codegen.md`, `renderer.md`.
