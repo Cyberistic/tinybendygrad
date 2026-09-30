@@ -1,0 +1,1894 @@
+# render.bend -- tinygrad/uop/render.py.
+#
+# THE FIRST STRING-BUILDING UNIT IN THE PORT. Everything ported so far was DATA:
+# an arena of U32 indices, a fold of derived properties, six rule tables. This
+# file turns a UOp back into PYTHON SOURCE TEXT, and it is the first place where
+# a dropped literal produces plausible wrong output instead of a type error.
+#
+# ===========================================================================
+# WHAT base.bend HAS, MEASURED 2026-09-30 against bend 2.0.34
+# (`./bin/bend` on a probe file). This list is the whole substrate, and the
+# absences are the walls.
+#
+#   String.append(a, b)                          concat two
+#   String.concat(xs: List<&2, String>)           concat a list
+#   String.join(xs, +sep: String)                 join with a separator
+#   String.split(s, +sep: CHAR) -> List<String>   split -- on ONE CHARACTER
+#   String.starts_with / ends_with / contains
+#   String.take(s, n: Nat) / drop / get(s, n) / length(s) -> Nat
+#   String.to_list(s) -> List<Char> / from_list
+#   String.repeat(+s, n: Nat)
+#   String.to_upper / to_lower / trim_start / trim_end / trim / reverse
+#   String.is_empty / eq / order / is_lt / is_le / is_gt / is_ge
+#   U32.show Nat.show Bool.show Char.show Maybe.show List.show F32.show
+#   (helpers.bend: pad_left pad_right ansilen colored Flags)
+#
+# ===========================================================================
+# WHAT IS MISSING. Four gaps, and only the first is cosmetic.
+#
+#   (a) NO `sprintf`, NO field-width specifier, NO `format`. Every `f"{i:4d}"`,
+#       `f"{str(u.op):20s}"`, `f"{str(u.dtype):40s}"`, `f"{str(srcs):32s}"` and
+#       `multirange_str(..., pad=10)` is `H.pad_left` / `H.pad_right`, which
+#       helpers.bend HAS. So this gap is CLOSED by composition, not a wall.
+#
+#   (b) NO `String.replace` / `replace_all`. `String.split` splits on a single
+#       CHAR, so a MULTI-CHARACTER substring replace has no primitive at all.
+#       `render.py` needs one, in `Ops.SPECIAL`'s renderer arm
+#       (`x.arg.name is not None else f"p{x.arg.slot}"` -- no) and in
+#       `renderer`'s CAST arm, `str(x.dtype)[7:]` (render.py:56), which strips
+#       the literal prefix `"dtypes."` off the front of a string. A PREFIX strip
+#       is `String.drop(s, 7n)`, which base.bend has, so THAT one is closed too.
+#       A general `replace` would need a char-wise scan; nothing here needs it.
+#
+#   (c) NO SIGNED INTEGERS, and so NO Python `str()` of a negative number.
+#       Bend has `Nat`, `U32` and `F32` only. `U32.show(4294967293)` is
+#       `"4294967293"`; CPython's `str(-3)` is `"-3"`. `pyrender` renders
+#       `Ops.CONST` values and `RANGE` bounds, both of which are signed in
+#       Python. `sint_show` below closes this for the int32 range, which is the
+#       range tinygrad's sint occupies: a sign flag plus a magnitude, exactly
+#       the shape `helpers.bend`'s `I64` already uses.
+#
+#   (d) NO Python `repr()` OF AN ARBITRARY OBJECT. This is the REAL wall.
+#       `render.py` calls `repr(...)` on SIX different things -- `x.arg.device`,
+#       `x.arg` for SPECIAL/CUSTOM_FUNCTION/sugar ops, `x.dtype!r`, the ints of
+#       a RANGE's arg, `u.arg` for the GroupOp.All fallback, and `x.tag`. In
+#       Python each dispatches on the runtime type of an `Any`. In Bend there is
+#       no `Any` and no runtime type to dispatch on, because `Arg` and `Tag` are
+#       CLOSED DATATYPES -- which is the better representation (the brief's
+#       "parse, don't validate": eighteen `Any` values became eighteen
+#       compiler-checked arms) and it makes `repr` a per-arm FUNCTION rather than
+#       a dynamic dispatch. So `arg_repr` below is 18 match arms, one per `Arg`
+#       constructor, and it is honest rather than a loss. The one thing that is
+#       genuinely lost: Python's `repr` of an object with a user-defined
+#       `__repr__` reads that method, and Bend cannot read a method off a value.
+#       `ParamArg` is that case -- see `arg_repr.AParam`.
+#
+# ===========================================================================
+# THE WALL THAT IS NOT ABOUT STRINGS AT ALL: `eval_pyrender`.
+#
+# `tinygrad/uop/spec.py:294` does `exec(code, pyrender_globals(), lcls)` on the
+# string `pyrender` produced and reads back `lcls['ast']`. That is not a missing
+# primitive; it is a missing language. The generated text names `UOp`, `Ops`,
+# `dtypes`, `KernelInfo`, `ParamArg` and a dozen other CPython objects as GLOBALS
+# in a namespace built by a Python `import`. Bend has no `exec`, no globals dict
+# and no value that knows its own type's name, so the round trip has no
+# representation at all -- not a hard one, not a deferred one.
+#
+# `upat.bend` already settled the precedent for this repo: the pattern COMPILER
+# EMITS PYTHON TEXT and the Bend side is a hand-written dispatch instead. So the
+# correct port of `pyrender` is to emit the text and NOT round-trip it, and
+# `test_pyrender` (`spec.py:299`) becomes the string-diff gate at the foot of
+# this file instead of an `exec`. Recording it, not engineering around it.
+#
+# ===========================================================================
+# DEPENDENCIES. `render.py:3-4` imports five names. One exists, four do not.
+#
+#   strip_parens              EXISTS, helpers.bend:1055. Used as-is.
+#   range_str                 ABSENT from ops.bend. Rebuilt here, from `AxisType`,
+#                             `axis_colors`, `Ops.value` and `sint_show` -- all
+#                             present. ops.bend:537 says "`range_str` does not
+#                             read it", so its absence is a real gap in the gate
+#                             file, not an oversight I am working around.
+#   multirange_str           ABSENT. Rebuilt here from `range_str` plus a sort.
+#   consumer_map_from_toposort ABSENT. `fold.bend`'s `Kahn.consumers` COUNTS a
+#                             node's in-edges but does not RETURN them, and
+#                             `pyrender` needs both the count and the single
+#                             consumer's identity (`render.py:163`:
+#                             `list(cmap[u].keys())[0].src`). Rebuilt here as
+#                             `consumers.of` / `consumers.who`.
+#   sint                     ABSENT, and so is `sint_to_uop` (ops.bend:3487 marks
+#                             that one `TODO(p3)`). `sint` is a TYPE ALIAS for
+#                             `UOp | int`, which has no Bend spelling, so
+#                             `marg_str`'s `isinstance(a, UOp)` test becomes a
+#                             match on `Arg`'s `APy` arm -- which is strictly
+#                             MORE precise, since `sint` is exactly "a UOp or a
+#                             Const".
+
+import Base
+import ./ops.bend as O
+import ./fold.bend as F
+import ./../helpers.bend as H
+import ./../LAWS/spec.bend as S
+
+# ===========================================================================
+# sint_show -- `str(i)` for a SIGNED int held as a `U32` two's-complement bit
+# pattern. base.bend has `U32.show`, which prints the unsigned value, so this is
+# the one genuinely new string primitive this file needs (wall (c) above).
+#
+# THE RANGE IS int32, and that is a real limit rather than a convenient one:
+# `x >= 2^31` reads as negative, so a uint32 above 2^31 would print with a
+# minus sign. tinygrad's `sint` is Python's unbounded int, so a CONST holding
+# 2**40 would print `1099511627776` in CPython and `-2199023255552` here. No
+# CONST in a compiled graph carries a value that large (the ones that do are
+# shape bounds and come through `marg_str`, which routes UOps back through
+# `pyrender`), and widening the range means a 64-bit formatter, which needs a
+# two-word divide. The limit is stated rather than hidden.
+# ===========================================================================
+
+# 2**31: the first bit pattern that reads as negative in an int32
+def sint_show.half(x: U32) -> Bool: U32.is_ge(x, 2147483648)
+
+def sint_show.pick(neg: Bool, x: U32) -> String:
+  match neg:
+    case True{}: String.concat(["-", U32.show(U32.sub(0, x))])
+    case False{}: U32.show(x)
+
+def sint_show(+x: U32) -> String: sint_show.pick(sint_show.half(x), x)
+
+# ===========================================================================
+# `f32_repr` -- `repr(float)`, for the four cases where base.bend's `F32.show`
+# disagrees with CPython. `F32.show` prints the shortest round-trip for an F32;
+# Python prints the shortest round-trip for the f64 the F32 widens to.
+# ===========================================================================
+#
+#   F32.show(3.0) = "3"        repr(3.0)  = "3.0"      a whole float needs the dot
+#   F32.show(1e-7) = "1e-7"    repr(1e-7) = "1e-07"    Python's exponent is 2 digits
+#   F32.show(0.6666666) = "0.6666666"
+#                            repr(that) = "0.6666666865348816"
+#
+# THE THIRD IS A WALL AND NOT A BUG IN THE FIXER. There is no `F64` in
+# base.bend, so there is no def that can print the 17-significant-digit decimal
+# an f64 round-trips through. `F32.show` is right about the F32 and CPython is
+# right about the f64, and for every CONST a compiled graph actually holds
+# (0.0, 1.0, 0.5, an integer-valued float) the two strings are equal. The
+# disagreement is confined to a CONST carrying a float that needs 8+ significant
+# decimal digits, which tinygrad never emits -- `dtypes.from_py` wraps a Python
+# float in a ConstFloat unchanged, so it CAN, and then the emitted code differs
+# in its trailing digits while still parsing to the same UOp. Recorded rather
+# than papered over.
+#
+# `dot_ok` is the "no `.`, no `e`, no `inf`, no `nan`" test: those three words
+# are the only ways Python's repr of a float comes back without a fraction.
+# The two tests are computed in their own def and PASSED, because a `match` may
+# only scrutinise a parameter and `String.contains` is a call (brief rule 2).
+#
+# `inf` contains an `n` and `nan` contains an `a`, so "is there a `.` or an `e`"
+# is not the test for "is it finite": `inf` has neither and `nan` has neither.
+# `String.split(s, 'e')` splits on the ONE character `e`, which is what makes the
+# exponent's own length readable.
+
+# `inf` has an `n` and `nan` has both an `n` and an `N`, and neither has a `.`
+# or an `e`; a whole number has none of the three either. So `special` and
+# `dotted` are two of the three tests and `String.contains(s, "e")` is the third.
+def f32_repr.special(+s: String) -> Bool:
+  Bool.or(String.contains(s, "i"), Bool.or(String.contains(s, "n"), String.contains(s, "N")))
+
+def f32_repr.dotted(+s: String) -> Bool: String.contains(s, ".")
+
+def f32_repr.padexp(one: Bool, +e: String, +m: String) -> String:
+  String.concat([m, "e", Bool.pick(String, one, String.append(e, "0"), e)])
+
+def peek(cs: List<&2, String>, n: Nat) -> String:
+  Maybe.default(&2, String, List.get(&2, String, cs, n), "")
+
+def f32_repr.exp(+cs: List<&2, String>) -> String:
+  f32_repr.padexp(Nat.is_eq(String.length(peek(cs, 1n)), 1n), peek(cs, 1n), peek(cs, 0n))
+
+def f32_repr.of(special: Bool, dotted: Bool, expd: Bool, +cs: List<&2, String>, +s: String) -> String:
+  match special:
+    case True{}: s
+    case False{}:
+      match dotted:
+        case True{}: s
+        case False{}:
+          match expd:
+            case True{}: f32_repr.exp(cs)
+            case False{}: String.append(s, ".0")
+
+def f32_repr(+x: F32) -> String:
+  f32_repr.of(f32_repr.special(F32.show(x)), f32_repr.dotted(F32.show(x)),
+    String.contains(F32.show(x), "e"), String.split(F32.show(x), 'e'), F32.show(x))
+
+# ===========================================================================
+# `repr` OF THE ARG. Wall (d) above: Python dispatches on the runtime type of an
+# `Any` and Bend dispatches on a CLOSED DATATYPE, so what is one dynamic `repr`
+# in Python is one `match` per payload here. Eighteen arms, compiler-checked.
+#
+# Each payload's Python `repr` is kept in its own comment. The four that are NOT
+# a plain literal -- `Const` (a `ConstFloat` subclass with a `__repr__`), `Dt`
+# (a dataclass with `INVERSE_DTYPES_DICT`), `S.Dev` (a `str|tuple`) and
+# `ParamArg` (a dataclass with a hand-written `__repr__`) -- are the four that
+# needed a def.
+# ===========================================================================
+
+# `str()` of an `H.I64`, which is `CInt`'s payload and Python's unbounded int.
+# The SAME int32 limit as `sint_show`, and the same reason: a decimal formatter
+# for the whole 64-bit range is a two-word long division. When the value does
+# not fit int32 the two words print as `hi:lo` rather than as a decimal, which
+# is a visible difference to diff rather than a wrong digit.
+def sint_i64.of(fits: Bool, +x: H.I64) -> String:
+  Bool.pick(String, fits, sint_show(H.lo32(x)), H.i64_show(H.hi32(x), H.lo32(x)))
+
+def i64_fits_i32(+x: H.I64) -> Bool:
+  U32.is_eq(H.hi32(x), H.match_hi(H.i32_is_neg(H.lo32(x))))
+
+def sint_i64(+x: H.I64) -> String:
+  sint_i64.of(i64_fits_i32(x), x)
+
+# `ConstFloat.__repr__` / `ConstFloat.__str__` are both
+# `float.__repr__(self)`, and `InvalidType.__repr__` is "Invalid".
+def const_repr.cfloat(+f: F32) -> String:
+  String.concat(["ConstFloat(", f32_repr(f), ")"])
+
+def const_repr(c: O.Const) -> String:
+  match c:
+    case O.CBool{b}: Bool.show(b)
+    case O.CInt{i}: sint_i64(i)
+    case O.CFloat{f}: const_repr.cfloat(f)
+    case O.CInvalid{}: "Invalid"
+
+# `DType.__repr__` -- `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"`. The map is
+# the twenty names below in `INVERSE_DTYPES_DICT`'s own spelling, which is
+# NOT `S.Dt.nm`: float32's `name` is "float" and its attribute is `float`,
+# float16's is "half" and its attribute is `half`. Both agree, and that is
+# exactly why `str(x.dtype)[7:]` at render.py:56 works.
+def dt_attr.nm(nm: String) -> String:
+  match nm:
+    case "void": "void"
+    case "weakint": "weakint"
+    case "weakfloat": "weakfloat"
+    case "bool": "bool"
+    case "signed char": "char"
+    case "unsigned char": "uchar"
+    case "short": "short"
+    case "unsigned short": "ushort"
+    case "int": "int"
+    case "unsigned int": "uint"
+    case "long": "long"
+    case "unsigned long": "ulong"
+    case "half": "half"
+    case "__bf16": "bfloat16"
+    case "float": "float"
+    case "double": "double"
+    case "float8_e4m3": "fp8e4m3"
+    case "float8_e4m3fnuz": "fp8e4m3fnuz"
+    case "float8_e5m2": "fp8e5m2"
+    case "float8_e5m2fnuz": "fp8e5m2fnuz"
+    case _: nm
+
+def dt_attr(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: dt_attr.nm(nm)
+
+def dt_repr(d: S.Dt) -> String:
+  String.append("dtypes.", dt_attr(d))
+
+# `AddrSpace.__repr__` -- `f"{cls.__name__}.{self.name}"`, and `__str__` is
+# `repr(self)`. So the `addrspace` column of a ParamArg prints qualified.
+def addr_name(a: S.Addr) -> String:
+  match a:
+    case S.AGlobal{}: "GLOBAL"
+    case S.ALocal{}: "LOCAL"
+    case S.AReg{}: "REG"
+    case S.Aalu{}: "ALU"
+
+def addr_repr(a: S.Addr) -> String:
+  String.concat(["AddrSpace.", addr_name(a)])
+
+# ===========================================================================
+# THE DEVICE TABLE. `S.Dev` is a `U32` tag (ops.bend:680-684) and ops.bend:683
+# says the tag is "per name interned by the runtime" -- a table that is NOT
+# THERE. `repr` is the one reader that needs the NAME, so the table lands here,
+# at the point of use, and is the P6 device table ops.bend points at.
+#
+# THE ORDER IS THIS FILE'S CONVENTION and no claim is made that it is
+# tinygrad's, because the port has no `Device` registry to intern into and the
+# tag is an arena-local word exactly as an axis id is. What the differential
+# requires is only that the tag a graph carries and the name printed for it
+# agree, and both the fixtures here and the runtime that builds the arena read
+# this one list.
+# ===========================================================================
+
+def dev_names() -> List<&2, String>:
+  ["CPU", "GPU", "METAL", "CUDA", "HIP", "CLANG", "LLVM", "PYTHON", "NULL", "DISK"]
+
+def dev_name.tag(t: U32) -> String:
+  Maybe.default(&2, String, List.get(&2, String, dev_names(), U32.to_nat(t)), "?")
+
+# `repr` of a `str` is the string in single quotes; `repr` of the tuple is the
+# parenthesised comma-joined tuple of them, so `D1` quotes and `Dn` does not
+# double-quote.
+def dev_repr.tags(tags: List<&2, U32>) -> List<&2, String>:
+  match tags:
+    case Nil{}: Nil{}
+    case t <> r: String.concat(["'", dev_name.tag(t), "'"]) <> dev_repr.tags(r)
+
+def dev_repr.tuple(tags: List<&2, U32>) -> String:
+  String.concat(["(", String.join(dev_repr.tags(tags), ", "), ")"])
+
+def dev_repr(d: S.Dev) -> String:
+  match d:
+    case S.D1{tag}: String.concat(["'", dev_name.tag(tag), "'"])
+    case S.Dn{tags}: dev_repr.tuple(tags)
+
+# ===========================================================================
+# `ParamArg.__repr__` -- ops.py:40-48. A dataclass with a hand-written repr:
+#
+#     fields = (("vmin_vmax", None), ("multiple_of", None), ("name", None),
+#               ("addrspace", AddrSpace.GLOBAL), ("device", None), ("volatile", False),
+#               ("image", None), ("bind_on_realize", False), ("val", None))
+#     args = [repr(self.slot), repr(self.dtype)] + ([repr(self.size)] if self.size is not None else []) + \
+#       [f"{k}={v!r}" for k,default in fields if (v:=getattr(self, k)) != default]
+#     if self.buffer is not None: args.append(f"buffer=UOp.new_buffer({self.device!r}, {self.size}, {self.dtype!r}, {self.slot}).buffer")
+#     return f"ParamArg({', '.join(args)})"
+#
+# so the ORDER of the nine keyword fields is load-bearing and a reader that emits
+# them in the dataclass's own field order instead gets a different string. Each
+# helper below answers `""` or `", " ++ text`, which is what makes the join a
+# plain `String.join(.., "")` instead of a filter-and-intercalate.
+#
+# TWO FIELDS ARE NOT PORTED and both change the string:
+#   * `addrspace` is `AddrSpace|None` in Python and `S.Addr` here (ops.bend:697).
+#     Python's `None != AddrSpace.GLOBAL`, so a None addrspace PRINTS as
+#     `addrspace=None`; the port cannot hold it and prints the space's name.
+#   * `buffer` is `Maybe<&2, U32>` here -- a slot into the device allocator -- so
+#     the `buffer=UOp.new_buffer(..).buffer` clause is emitted from the SLOT and
+#     not from a Buffer object, which is the right text but is a promise that
+#     the slot is a realized buffer, since ops.bend's header already notes that
+#     the object behind it is P6.
+# ===========================================================================
+
+def comma(ok: Bool, s: String) -> String:
+  match ok:
+    case True{}: String.concat([", ", s])
+    case False{}: ""
+
+# The nine keyword fields are emitted in ops.py's own tuple order, and every one
+# of them is `""` when Python's `!= default` test would drop it. That makes the
+# join a `String.join(.., "")`: a dropped field contributes nothing and shifts
+# nothing, which is exactly the list-comprehension's behaviour.
+#
+# MEASURED, and it is the reason the fields are read through ops.bend's
+# accessors rather than through `case O.ParamArg{x}`: a record pattern must name
+# EVERY field, imported record or not, so `case O.ParamArg{size}` is refused with
+# "a ops.ParamArg pattern with 13 fields". ops.bend:1036-1090 already has the
+# thirteen two-line accessors, so nothing here destructures a ParamArg.
+
+# `repr(self.size)` -- positional, so it carries no `k=`.
+def pa_size(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{v}: String.concat([", ", U32.show(v)])
+    case None{}: ""
+
+def pa_vmin_vmax(r: O.PyRange) -> String:
+  match r:
+    case O.PyRange{lo, hi}: String.concat(["vmin_vmax=(", sint_i64(lo), ", ", sint_i64(hi), ")"])
+
+def pa_vmin_vmax.of1(m: Maybe<&2, O.PyRange>) -> String:
+  match m:
+    case Some{r}: comma(True{}, pa_vmin_vmax(r))
+    case None{}: ""
+
+# `repr((int, int))` -- the image2d case, ops.py:47.
+def pa_image(g: O.Img) -> String:
+  match g:
+    case O.Img{h, w}: String.concat(["image=(", U32.show(h), ", ", U32.show(w), ")"])
+
+def pa_image.of1(m: Maybe<&2, O.Img>) -> String:
+  match m:
+    case Some{g}: comma(True{}, pa_image(g))
+    case None{}: ""
+
+def pa_multiple_of(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{v}: comma(True{}, U32.show(v))
+    case None{}: ""
+
+# `repr(str)` is the string in single quotes; ops.py:46 makes this the field
+# that names a PARAM.
+def pa_name(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: comma(True{}, String.concat(["name='", s, "'"]))
+    case None{}: ""
+
+# the default is GLOBAL, so GLOBAL is the one value that is NOT printed.
+def pa_addrspace.is_global(a: S.Addr) -> Bool:
+  match a:
+    case S.AGlobal{}: True{}
+    case _: False{}
+
+def pa_addrspace(+a: S.Addr) -> String:
+  comma(Bool.not(pa_addrspace.is_global(a)), String.concat(["addrspace=", addr_repr(a)]))
+
+def pa_device(m: Maybe<&2, S.Dev>) -> String:
+  match m:
+    case Some{d}: comma(True{}, String.concat(["device=", dev_repr(d)]))
+    case None{}: ""
+
+def pa_flag(nm: String, b: Bool) -> String:
+  match b:
+    case True{}: String.concat([", ", nm, "=True"])
+    case False{}: ""
+
+def pa_val(m: Maybe<&2, O.Const>) -> String:
+  match m:
+    case Some{v}: comma(True{}, String.concat(["val=", const_repr(v)]))
+    case None{}: ""
+
+# the `buffer=` clause. `{self.size}` and `{self.dtype}` are `str`, not `repr`,
+# and for an int and a DType the two agree; a None size prints `None`.
+def pa_buffer.size(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{v}: U32.show(v)
+    case None{}: "None"
+
+def pa_buffer.device(m: Maybe<&2, S.Dev>) -> String:
+  match m:
+    case Some{d}: dev_repr(d)
+    case None{}: "None"
+
+def pa_buffer.has(m: Maybe<&2, U32>) -> Bool: Maybe.is_some(&2, U32, m)
+
+def pa_buffer.of(has: Bool, slot: U32, dev: String, size: String, dt: String) -> String:
+  match has:
+    case True{}: String.concat([", buffer=UOp.new_buffer(", dev, ", ", size, ", ", dt, ", ", U32.show(slot), ").buffer"])
+    case False{}: ""
+
+def pa_tail(+pa: O.ParamArg) -> List<&2, String>:
+  pa_size(O.ParamArg.size(pa)) <> pa_vmin_vmax.of1(O.ParamArg.vmin_vmax(pa)) <> pa_multiple_of(O.ParamArg.multiple_of(pa))
+    <> pa_name(O.ParamArg.name(pa)) <> pa_addrspace(O.ParamArg.addrspace(pa)) <> pa_device(O.ParamArg.device(pa))
+    <> pa_flag("volatile", O.ParamArg.volatile(pa)) <> pa_image.of1(O.ParamArg.image(pa))
+    <> pa_flag("bind_on_realize", O.ParamArg.bind_on_realize(pa)) <> pa_val(O.ParamArg.val(pa))
+    <> [pa_buffer.of(pa_buffer.has(O.ParamArg.buffer(pa)), O.ParamArg.slot(pa), pa_buffer.device(O.ParamArg.device(pa)), pa_buffer.size(O.ParamArg.size(pa)), dt_repr(O.ParamArg.dtype(pa)))]
+
+def paramarg_repr(+pa: O.ParamArg) -> String:
+  String.concat(["ParamArg(", U32.show(O.ParamArg.slot(pa)), ", ", dt_repr(O.ParamArg.dtype(pa)), String.join(pa_tail(pa), ""), ")"])
+
+# `repr` of the ARG. Wall (d) above: Python dispatches on the runtime type of an
+# `Any` and Bend dispatches on a CLOSED DATATYPE, so what is one dynamic `repr`
+# in Python is nineteen `match` arms here, one per `Arg` constructor, and every
+# one is compiler-checked against the closed set.
+#
+# The tuple payloads are Python tuples or lists, so their `repr` is
+# parenthesised / bracketed with ", " between the elements, and each element is
+# itself a `repr`. `Ops.name` is `FastEnum.__repr__`, which is `Ops.ADD`.
+
+def u32_list_repr.go(xs: List<&2, U32>) -> List<&2, String>:
+  match xs:
+    case Nil{}: Nil{}
+    case h <> t: U32.show(h) <> u32_list_repr.go(t)
+
+def u32_list_repr(xs: List<&2, U32>) -> String:
+  String.concat(["[", String.join(u32_list_repr.go(xs), ", "), "]"])
+
+def u32_tuple_repr(xs: List<&2, U32>) -> String:
+  String.concat(["(", String.join(u32_list_repr.go(xs), ", "), ")"])
+
+# `AxisType.__repr__` is `str(self)` and `Enum.__str__` is "ClassName.MEMBER".
+def axis_repr(a: O.AxisType) -> String:
+  String.concat(["AxisType.", O.AxisType.name(a)])
+
+def arange_repr(ids: List<&2, U32>, at: O.AxisType) -> String:
+  String.concat(["(", u32_tuple_repr(ids), ", ", axis_repr(at), ")"])
+
+def awmma_repr(dims: List<&2, U32>, dt: S.Dt, th: U32, tc: List<&2, U32>) -> String:
+  String.concat(["([", String.join(u32_list_repr.go(dims), ", "), "], ", dt_repr(dt), ", ", U32.show(th), ", [", String.join(u32_list_repr.go(tc), ", "), "])"])
+
+def aink_repr(ins: String, dt: S.Dt) -> String:
+  String.concat(["('", ins, "', ", dt_repr(dt), ")"])
+
+# MEASURED, and it corrects ops.bend's `Ops.name`: Python's `str(Ops.ADD)` is
+# `"Ops.ADD"`, not `"ADD"`, because `FastEnum.__str__` falls through to
+# `Enum.__str__` which is `"ClassName.MEMBER"`. So `repr(Ops.ADD)` -- which
+# `REDUCE.arg` and `ALLREDUCE.arg` both print -- is `"Ops.ADD"`.
+#
+# THIS AFFECTS ops.bend AND NOTHING ELSE THERE, which is why it is not fixed
+# there: `Ops.name` has no reader outside this file. `Ops.value` (the IntEnum
+# number, which `tuplize` uses) is a different function and is right.
+def ops_repr(op: O.Op) -> String:
+  String.concat(["Ops.", O.Ops.name(op)])
+
+def aallred_repr(rop: O.Op, dev: S.Dev) -> String:
+  String.concat(["(", ops_repr(rop), ", ", dev_repr(dev), ")"])
+
+def areduce_repr(rop: O.Op, num_axes: U32) -> String:
+  String.concat(["(", ops_repr(rop), ", ", U32.show(num_axes), ")"])
+
+def acall_name(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: String.concat(["'", s, "'"])
+    case None{}: "None"
+
+# `dt is dtypes.void` is a CLASS test, not a priority test. `S.void()` is
+# `Dt{0, 0, CVoid{}, "void"}` and `S.weakint()` is `Dt{0, 800, CWeakInt{}}` --
+# BOTH have priority 0, so `pri == 0` is a test that passes void AND weakint and
+# so it is wrong. `Cls.CVoid` is the field that means void, and it is the ONLY
+# dtype with it, which is why matching on it is the whole test.
+def acall_void.cls(cls: S.Cls) -> Bool:
+  match cls:
+    case S.CVoid{}: True{}
+    case _: False{}
+
+def acall_void(dt: S.Dt) -> Bool:
+  match dt:
+    case S.Dt{pri, bits, cls, nm}: acall_void.cls(cls)
+
+# `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE (upat note 9), so the
+# NON-void branch is first and `isvoid` flips it. Getting this backwards emits
+# `CallInfo(None, None, False, False)` for every dtype, which is exactly what
+# the three `ACALL` rows above caught.
+def acall_tail.isvoid(isvoid: Bool, dt: S.Dt) -> String:
+  Bool.pick(String, Bool.not(isvoid), String.concat([", dtype=", dt_repr(dt), ")"]), ")")
+
+# `CallInfo.of()` is `CallInfo{None, False, False, dtypes.void}` (ops.bend:846),
+# so the void arm of the repr above is the ONE that the gate would otherwise
+# never reach. `ci_named` is the other arm, and the two together mean a dtype
+# bug cannot pass by only ever printing void.
+def ci_named() -> O.CallInfo:
+  O.CallInfo{Some{"f"}, False{}, False{}, S.int32()}
+
+# `weakint` is the dtype that makes the void test load-bearing: it has priority
+# 0 like void, so a `pri == 0` void test would print `dtype=` for it and a
+# `cls == CVoid` test does not.
+def ci_weak() -> O.CallInfo:
+  O.CallInfo{None{}, False{}, False{}, S.weakint()}
+
+def acall_tail(+dt: S.Dt) -> String: acall_tail.isvoid(acall_void(dt), dt)
+
+# `CallInfo.__repr__` (ops.py:1400-1403):
+#
+#     gf = id(self.grad_fxn) if self.grad_fxn else None
+#     return f"CallInfo({gf}, {repr(self.name)}, {self.precompile}, {self.precompile_backward" + \
+#       (f", dtype={self.dtype})" if self.dtype is not dtypes.void else ")")
+#
+# The dtype is printed only when it is not void, and THE CLOSING PAREN MOVES WITH
+# IT -- so the tail is one of two whole strings, not a suffix. ops.bend:836
+# DROPPED `grad_fxn` (it is a Python function object), so `gf` is always None.
+def acall_repr(+ci: O.CallInfo) -> String:
+  String.concat(["CallInfo(None, ", acall_name(O.CallInfo.name(ci)), ", ", Bool.show(O.CallInfo.precompile(ci)), ", ", Bool.show(O.CallInfo.precompile_backward(ci)), acall_tail(O.CallInfo.dtype(ci))])
+
+# `estimates` is a field ops.bend DROPPED (P5, tinygrad.renderer) and Python's
+# dataclass repr prints it, so the literal below is printed in its place. It is
+# None for every kernel this port can build, so the text agrees -- but it IS a
+# literal, and saying so is cheaper than pretending the field is carried.
+def akernel_estimates(m: Maybe<&2, List<&2, U32>>) -> String: "estimates=None"
+
+# `applied_opts` is a tuple of `Opt`, which ops.bend carries as UOp INDICES, and
+# a real `Opt`'s repr is a dataclass repr the port cannot read. A kernel with
+# options applied prints `()` for a field that is not empty.
+def akernel_applied(xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: "()"
+    case _ <> _: "<Opt>"
+
+def akernel_repr(+ki: O.KernelInfo) -> String:
+  String.concat(["KernelInfo(name='", O.KernelInfo.name(ki), "', applied_opts=", akernel_applied(O.KernelInfo.applied_opts(ki)), ", opts_to_apply=None, ", akernel_estimates(O.KernelInfo.opts_to_apply(ki)), ", beam=", U32.show(O.KernelInfo.beam(ki)), ")"])
+
+# `repr(tuple(int|float, ...))`; ops.bend types both halves `H.I64`.
+def i64_tuple_repr.go(xs: List<&2, H.I64>) -> List<&2, String>:
+  match xs:
+    case Nil{}: Nil{}
+    case h <> t: sint_i64(h) <> i64_tuple_repr.go(t)
+
+def i64_tuple_repr(xs: List<&2, H.I64>) -> String:
+  String.concat(["(", String.join(i64_tuple_repr.go(xs), ", "), ")"])
+
+# `vars` and `target` are both fields ops.bend cannot print: `vars` is a tuple of
+# UOPs (so its repr is `pretty_print` of each, which is `pretty_print`'s own
+# recursion) and `target` is a `Target` dataclass dropped at ops.bend:801.
+def aprogram_vars(xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: "()"
+    case _ <> _: "<UOp>"
+
+# `Target()`'s repr is `Target(device=None, ...)`, and the measured empty repr
+# of a `Target` is the empty string -- `helpers.py`'s dataclass has no fields
+# set, so `target=` with nothing after it. That is measured, not guessed.
+def aprogram_repr(+pi: O.ProgramInfo) -> String:
+  String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.vars(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
+
+def arg_repr(a: O.Arg) -> String:
+  match a:
+    case O.ANone{}: "None"
+    case O.ADt{dt}: dt_repr(dt)
+    case O.APy{v}: const_repr(v)
+    case O.AParam{pa}: paramarg_repr(pa)
+    case O.ACall{ci}: acall_repr(ci)
+    case O.AKernel{ki}: akernel_repr(ki)
+    case O.AProgram{pi}: aprogram_repr(pi)
+    case O.ARange{ids, at}: arange_repr(ids, at)
+    case O.AReduce{rop, num_axes}: areduce_repr(rop, num_axes)
+    case O.AWmma{dims, dt, threads, tc}: awmma_repr(dims, dt, threads, tc)
+    case O.ATuple{ys}: u32_tuple_repr(ys)
+    case O.AStr{s}: String.concat(["'", s, "'"])
+    case O.AInk{ins, dt}: aink_repr(ins, dt)
+    case O.AAllred{rop, dev}: aallred_repr(rop, dev)
+    case O.ADev{dev}: dev_repr(dev)
+    case O.ABlob{n}: String.concat(["<bytes ", U32.show(n), ">"])
+    case O.AFloat{f}: f32_repr(f)
+    case O.ABad{}: "ABad"
+
+    case O.ABad{}: "ABad"
+
+# ===========================================================================
+# `tagstr` / `repr(tag)` -- ops.py:275 and render.py:136. `str` and `repr` of a
+# `Tag` DISAGREE on the `str` arm (`x` vs `'x'`), so they are two defs and not
+# one with a flag: `tagstr` is a f-string (render.py:14) and `_render_with_splits`
+# appends `repr(u.tag)`.
+#
+# `TTuple` is the WALL and it is ops.bend's, not mine: a tag tuple holds UOPS
+# (ops.bend:766-770), so Python's `repr` of one is `pretty_print` of each and
+# `pretty_print` is the def that reads `tagstr`. That is a real cycle and the
+# port cannot break it by ordering, so this answers the count instead of a
+# string -- visible, not wrong.
+# ===========================================================================
+
+def tag_str.go(xs: List<&2, U32>) -> List<&2, String>:
+  match xs:
+    case Nil{}: Nil{}
+    case h <> t: "<UOp>" <> tag_str.go(t)
+
+def tag_str(t: O.Tag) -> String:
+  match t:
+    case O.TNone{}: "None"
+    case O.TBool{b}: Bool.show(b)
+    case O.TStr{s}: s
+    case O.TInt{i}: U32.show(i)
+    case O.TTuple{xs}: String.concat(["(", String.join(tag_str.go(xs), ", "), ")"])
+
+def tag_repr(t: O.Tag) -> String:
+  match t:
+    case O.TNone{}: "None"
+    case O.TBool{b}: Bool.show(b)
+    case O.TStr{s}: String.concat(["'", s, "'"])
+    case O.TInt{i}: U32.show(i)
+    case O.TTuple{xs}: String.concat(["(", String.join(tag_str.go(xs), ", "), ")"])
+
+# `UOp.tagstr` -- ops.py:275, `f", tag={self.tag}" if self.tag is not None else ""`
+def tag_is_none(t: O.Tag) -> Bool:
+  match t:
+    case O.TNone{}: True{}
+    case _: False{}
+
+def tagstr.of(t: O.Tag, isnone: Bool) -> String:
+  Bool.pick(String, isnone, "", String.concat([", tag=", tag_str(t)]))
+
+def tagstr(+t: O.Tag) -> String:
+  tagstr.of(t, tag_is_none(t))
+
+# ===========================================================================
+# `syms` -- render.py:25. `for debug`: the spelling of each binary operator, and
+# it is a `dict` Python never adds to. Eleven arms and a `_`, and the `_` is
+# `KeyError` in Python -- but both readers only ever reach it for an op the
+# `UPat(set(syms.keys()))` rules matched, so it is unreachable and answers "".
+# ===========================================================================
+
+def syms_of(op: O.Op) -> String:
+  match op:
+    case O.OpsADD{}: "+"
+    case O.OpsSUB{}: "-"
+    case O.OpsFLOORDIV{}: "//"
+    case O.OpsFLOORMOD{}: "%"
+    case O.OpsSHL{}: "<<"
+    case O.OpsSHR{}: ">>"
+    case O.OpsMUL{}: "*"
+    case O.OpsCMPLT{}: "<"
+    case O.OpsCMPNE{}: "!="
+    case O.OpsAND{}: "&"
+    case O.OpsOR{}: "|"
+    case O.OpsXOR{}: "^"
+    case _: ""
+
+# ===========================================================================
+# `precedence` -- render.py:28. Eleven entries, and the readers ask
+# `precedence.get(x.op, 99)`, so the missing arm is 99 rather than a KeyError.
+# 99 IS A CONSTANT HERE, not a magic number: it is `precedence.get`'s default.
+# ===========================================================================
+
+def precedence_of(op: O.Op) -> U32:
+  match op:
+    case O.OpsMUL{}: 1
+    case O.OpsFLOORDIV{}: 1
+    case O.OpsFLOORMOD{}: 1
+    case O.OpsADD{}: 2
+    case O.OpsSUB{}: 2
+    case O.OpsSHL{}: 3
+    case O.OpsSHR{}: 3
+    case O.OpsAND{}: 4
+    case O.OpsXOR{}: 5
+    case O.OpsOR{}: 6
+    case _: 99
+
+# `x.op not in precedence`
+def has_precedence(op: O.Op) -> Bool: U32.is_lt(precedence_of(op), 99)
+
+# ===========================================================================
+# `strip_binary_parens` -- render.py:29.
+#
+# `code_for_op` IS INLINED, and that is the one closure this file drops. Both
+# call sites (render.py:65 and render.py:113) pass the SAME body,
+# `lambda a,b: f"({a}{syms[x.op]}{b})"`, so inlining it is the identity on this
+# program rather than a specialisation of a general parameter. Had the two
+# differed, this def would need a tag for "which code_for_op" and the arms would
+# be duplicated; nothing in render.py does that.
+#
+# The `if` is not decoration. CDIV and CMOD are in `syms` and NOT in
+# `precedence`, so they reach the first line and the srcs are never read -- which
+# is why `has_precedence` is a parameter of the arm rather than a second `if`.
+# ===========================================================================
+
+# `strip_parens(left) if precedence.get(x.src[0].op, 99) <= p else left`
+def sbp_operand(has: Bool, +ar: O.Arena, u: U32, n: U32, p: U32, +s: String) -> String:
+  Bool.pick(String, Bool.and(has, U32.is_le(precedence_of(O.Arena.op(ar, O.Arena.src(ar, u, n))), p)), H.strip_parens(s), s)
+
+def sbp_arm(+has: Bool, +ar: O.Arena, +u: U32, +p: U32, +left: String, +right: String) -> String:
+  String.concat(["(", sbp_operand(has, ar, u, 0, p, left), syms_of(O.Arena.op(ar, u)), sbp_operand(has, ar, u, 1, p, right), ")"])
+
+def strip_binary_parens(+ar: O.Arena, +u: U32, left: String, right: String) -> String:
+  sbp_arm(has_precedence(O.Arena.op(ar, u)), ar, u, precedence_of(O.Arena.op(ar, u)), left, right)
+
+# ===========================================================================
+# `range_str` -- ops.py:97. Rebuilt here because it is ABSENT from ops.bend
+# (ops.bend:537 says "range_str does not read it", i.e. ops.py's own note that
+# the op is not consulted -- it is `AxisType` that matters and that IS in
+# ops.bend). `AxisType`, `axis_colors` and `sint_show` are all present, so this
+# is three lines and no new machinery.
+#
+#     ret = '_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])
+#     return colored(ret, axis_colors[u.axis_type]) if color else ret
+#
+# `axis_id` is `arg[0:-1]` -- the arg's id list MINUS THE LAST element -- and
+# ops.bend carries a RANGE's arg as `ARange{ids, at}`, where `ids` IS the whole
+# `(axis_id, axis_type)` pair with the type lifted out. So the Python slice is
+# exactly `ids` here, and that is the one place the two representations meet.
+# ===========================================================================
+
+# `str(x) if x >= 0 else "m"+str(-x)`. The ids are non-negative for every RANGE
+# tinygrad builds, so the `m` arm is unreachable in practice -- but it is
+# reachable for a hand-built arena and the header already records `sint_show`'s
+# int32 limit, so it is spelled out rather than dropped.
+def range_str.one(+x: U32) -> String:
+  Bool.pick(String, sint_show.half(x), String.concat(["m", sint_show(U32.sub(0, x))]), sint_show(x))
+
+def range_str.go(ids: List<&2, U32>) -> List<&2, String>:
+  match ids:
+    case Nil{}: Nil{}
+    case h <> t: range_str.one(h) <> range_str.go(t)
+
+def range_str.of(at: O.AxisType, +ids: List<&2, U32>) -> String:
+  String.join(range_str.go(ids), "_")
+
+
+# `colored(ret, axis_colors[u.axis_type])`. `H.colored` needs the `Flags` record
+# (NO_COLOR is a ContextVar there), and `color=False` in Python is exactly
+# "return ret unchanged", so the flag is the parameter.
+def range_str.color(f: H.Flags, at: O.AxisType, s: String) -> String:
+  H.colored(f, s, H.color_of(O.axis_colors(at)), False{})
+
+# ===========================================================================
+# `multirange_str` -- ops.py:101.
+#
+#     ret = ','.join([range_str(x, color=color) for x in sorted(rngs, key=lambda x: x.arg)])
+#     if pad is not None: ret += " " * (pad-ansilen(ret))
+#
+# THE SORT IS BY `x.arg`, and a RANGE's arg is `(axis_id, axis_type)`. Python
+# compares the two TUPLES, so the order is: the id lists lexicographically, and
+# on a tie the AxisType by its declaration number. `List.sort` wants a `le` on
+# the ELEMENT and a closure cannot be spelled, so the sort is an insertion sort
+# here and `le` is a top-level def.
+#
+# ONE SELF-CALL, and `+` ON THE PATTERN BINDERS. Two answers come out of the head
+# comparison and both feed one expression, and a binder read twice needs `+`; a
+# helper def does not rescue it, because it would call back into `lt_u32` and
+# that is the mutual recursion Bend refuses. `case +h <> t:` is the spelling, and
+# it is only available because `U32` is `Data`.
+def lt_u32(xs: List<&2, U32>, ys: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}: False{}
+    case +h <> t:
+      match ys:
+        case Nil{}: True{}
+        case +g <> u: Bool.or(U32.is_lt(h, g), Bool.and(U32.is_eq(h, g), lt_u32(t, u)))
+
+# on equal id lists the tie is broken by the AxisType's declaration number,
+# which is exactly what Python's Enum ordering is. The ids list is `+` because
+# the comparison and the tie-break both read it in one body.
+def range_lt.put(idslt: Bool, +xs: List<&2, U32>, atx: O.AxisType, aty: O.AxisType) -> Bool:
+  Bool.pick(Bool, idslt, U32.is_lt(O.AxisType.value(atx), O.AxisType.value(aty)), False{})
+
+# a `match` may only scrutinise a parameter, so each destructuring step is its
+# own def
+def range_lt.ids2(y: O.Arg, +xs: List<&2, U32>, atx: O.AxisType) -> Bool:
+  match y:
+    case O.ARange{ys, aty}: range_lt.put(lt_u32(xs, ys), xs, atx, aty)
+    case _: False{}
+
+def range_lt.ids(x: O.Arg, y: O.Arg) -> Bool:
+  match x:
+    case O.ARange{xs, atx}: range_lt.ids2(y, xs, atx)
+    case _: False{}
+
+def range_lt.of(x: O.Arg, y: O.Arg) -> Bool:
+  range_lt.ids(x, y)
+
+def range_lt(+ar: O.Arena, x: U32, y: U32) -> Bool:
+  range_lt.of(O.Arena.arg(ar, x), O.Arena.arg(ar, y))
+
+# ONE SELF-CALL again: the decision and the insertion are the same expression, so
+# `u32_ins` matches and picks in its own body and there is no helper to be
+# mutually recursive with.
+def u32_ins(+ar: O.Arena, +x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match acc:
+    case Nil{}: [x]
+    case h <> t: Bool.pick(List<&2, U32>, range_lt(ar, x, h), x <> acc, h <> u32_ins(ar, x, t))
+
+def u32_isort.go(+ar: O.Arena, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: u32_isort.go(ar, t, u32_ins(ar, h, acc))
+
+def u32_isort(ar: O.Arena, xs: List<&2, U32>) -> List<&2, U32>: u32_isort.go(ar, xs, Nil{})
+
+# `ret += " " * (pad-ansilen(ret))`. `pad` can be SHORTER than the string and
+# Python's `" " * negative` is `""`, so the count is clamped at zero rather than
+# trusted: `Nat.sub` is not saturating and a negative count is a proof failure,
+# not an empty string.
+def multirange_str.n(+sd: Nat, +n: Nat) -> Nat:
+  Bool.pick(Nat, Nat.is_le(n, sd), Nat.sub(sd, n), 0n)
+
+def multirange_str.pad(+s: String, sd: U32) -> String:
+  String.concat([s, String.repeat(" ", multirange_str.n(U32.to_nat(sd), String.length(s)))])
+
+def range_at.of(a: O.Arg) -> O.AxisType:
+  match a:
+    case O.ARange{ids, at}: at
+    case _: O.AXIS_LOOP{}
+
+def range_at(+ar: O.Arena, u: U32) -> O.AxisType:
+  range_at.of(O.Arena.arg(ar, u))
+
+def range_ids.of(a: O.Arg) -> List<&2, U32>:
+  match a:
+    case O.ARange{ids, at}: ids
+    case _: Nil{}
+
+def range_ids(+ar: O.Arena, u: U32) -> List<&2, U32>:
+  range_ids.of(O.Arena.arg(ar, u))
+
+# `range_str(x, color=color)` -- ONE range, so the `range_str.of` and the
+# `range_str.color` are a single line here rather than the two-call shape.
+def multirange_str.of(+f: H.Flags, +at: O.AxisType, +ids: List<&2, U32>) -> String:
+  range_str.color(f, at, range_str.of(at, ids))
+
+def multirange_str.go(+f: H.Flags, +ar: O.Arena, rngs: List<&2, U32>) -> List<&2, String>:
+  match rngs:
+    case Nil{}: Nil{}
+    case +u <> t: multirange_str.of(f, range_at(ar, u), range_ids(ar, u)) <> multirange_str.go(f, ar, t)
+
+def multirange_str(+f: H.Flags, +ar: O.Arena, +rngs: List<&2, U32>, pad: U32) -> String:
+  multirange_str.pad(String.join(multirange_str.go(f, ar, u32_isort(ar, rngs)), ","), pad)
+
+# ===========================================================================
+# THE CTX. `ctx: dict[UOp, str]` in Python, threaded through `pm.rewrite` and
+# through every rule lambda. It is the ONLY mutable-looking structure pyrender
+# has, and it is the reason `Map` (a string-keyed patricia tree, and the one
+# collection Python's dict and Bend's Map agree about without an encoding) is
+# the answer here.
+#
+# THE KEY IS `U32.show(u)`. That is honest rather than a trick: Python's key is
+# a UOp OBJECT and the arena index IS the UOp, so decimal is the identity
+# encoding, and the notes' warning ("an index is only meaningful in the arena
+# that produced it") holds -- which is why `Ctx` never leaves the `pyrender`
+# call and the gate asserts on it inside one arena only.
+#
+# `Map.put` IS `Map.set` HERE and the difference is not cosmetic: `Map.put` on a
+# one-entry `MLeaf` REPLACES the leaf and drops the old key, which MEASURED as
+# `d[1]=three d[2]= d[3]=` for three sequential puts. `Map.set` is the one that
+# inserts. That is a new Bend rule and it is in the constraints file.
+# ===========================================================================
+
+type Ctx is Data:
+  Ctx{m: Map<&2, String>}
+
+def Ctx.map(c: Ctx) -> Map<&2, String>:
+  match c:
+    case Ctx{m}: m
+
+def ctx_new() -> Ctx: Ctx{Map.new(&2, String)}
+
+def ctx_put(c: Ctx, u: U32, s: String) -> Ctx:
+  Ctx{Map.set(&2, String, Ctx.map(c), U32.show(u), s)}
+
+def ctx_get.of(r: Sigma<&1, &1, Map<&2, String>, _ => String>) -> String:
+  match r:
+    case Tuple{m, v}: v
+
+# `ctx[x]` is a KeyError in Python and "" here. Every read in `pm_pyrender` is
+# of a SRC, and `_render_with_splits` walks `lst` in toposort order, so every
+# src was written first: the default is unreachable and says so.
+def ctx_get(c: Ctx, u: U32) -> String:
+  ctx_get.of(Map.get(String, "", Ctx.map(c), U32.show(u)))
+
+# `Map.has` answers a `Sigma`, not a Maybe, so the Bool rides out in the second
+# half of the pair -- the same destructuring `ctx_get.of` does.
+def ctx_has.of(r: Sigma<&1, &1, Map<&2, String>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, b}: b
+
+def ctx_has(c: Ctx, u: U32) -> Bool:
+  ctx_has.of(Map.has(&2, String, Ctx.map(c), U32.show(u)))
+
+# ===========================================================================
+# `srcs` -- render.py:84.
+#
+#     def srcs(ctx, src): return f"({ctx[src[0]]},)" if len(src) == 1 else f"({', '.join([ctx[x] for x in src])})"
+#
+# The `len(src) == 1` SPECIAL CASE is the load-bearing part and it is a trailing
+# COMMA in parentheses, not a one-element join: `(x,)` and `(x)` are different
+# Python literals, and only the first round-trips through `eval_pyrender`. A join
+# that ignored the case would emit `(x)` and the exec would build a bare name
+# instead of a tuple.
+# ===========================================================================
+
+def srcs.go(+c: Ctx, srcs: List<&2, U32>) -> List<&2, String>:
+  match srcs:
+    case Nil{}: Nil{}
+    case u <> t: ctx_get(c, u) <> srcs.go(c, t)
+
+# `src[0]` in Python does not need an arena because a UOp knows its own srcs;
+# here the list IS the srcs, so the head is the answer.
+def srcs_one(+c: Ctx, +srcs: List<&2, U32>) -> String:
+  String.concat(["(", ctx_get(c, Maybe.default(&2, U32, List.head(&2, U32, srcs), 0)), ",)"])
+
+# ONE expression, not a helper: `Bool.pick` is strict, so both arms are computed
+# either way, and a helper would want the ctx twice. `Nat.is_eq(len, 1n)` IS the
+# `len(src) == 1` test.
+def srcs(+c: Ctx, +srcs: List<&2, U32>) -> String:
+  Bool.pick(String, Nat.is_eq(List.length(&2, U32, srcs), 1n), srcs_one(c, srcs), String.concat(["(", String.join(srcs.go(c, srcs), ", "), ")"]))
+
+# ===========================================================================
+# THE pm_pyrender RULES, compiled. render.py:88-123 is fifteen `UPat`s, and the
+# NOTE above them says "you can remove pm_pyrender_extra and it'll still be
+# correct" -- which is TRUE, and is exactly why the rules are a `match` on the op
+# rather than a table: thirteen of them are special cases that FALL THROUGH to
+# the GroupOp.All rule when their guard fails, so first-wins and the fallback
+# compose into one dispatch rather than fifteen attempts.
+#
+# Rule order is load-bearing TWICE:
+#   * `REDUCE` is claimed by rule 7 (when `arg[1]` is nonzero) AND by the `sugar`
+#     rules. Rule 7 is earlier, so a REDUCE with num_axes 0 renders as
+#     `c0.reduce()` and one with num_axes 3 as `c0._rop(Ops.ADD, (0, 1, 2))`.
+#   * `SUB` is in `syms` and NOT in rule 12's set (`syms - {SUB, CDIV, CMOD}`), so
+#     it goes straight to the fallback and prints `UOp(Ops.SUB, (..))`. That is
+#     why the arm list below omits it, and the gate pins it.
+# ===========================================================================
+
+# `x.op.name.lower()` -- in five rules, one measurement.
+def op_lower(op: O.Op) -> String: String.to_lower(O.Ops.name(op))
+
+def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
+  match m:
+    case Some{d}: d
+    case None{}: S.void()
+
+# `x.dtype`. It is a FOLD (fold.bend:1949), not an arena read, so it is threaded
+# as the table `tb` alongside the arena -- and the `void` default is Python's
+# "the fold did not settle this node", which is a wrong answer rather than a
+# crash. `Kahn.settled` is the honest question and the gate rows are all built
+# from a settled fold.
+def dt_of(tb: F.Table, ar: O.Arena, u: U32) -> S.Dt:
+  dt_of.of(F.fold.dt(ar, tb, u))
+
+# `x.arg is not None` -- `ANone` is Python's None, so this is a one-arm match on
+# a CLOSED datatype instead of an identity test.
+def ismeta_of(a: O.Arg) -> Bool:
+  match a:
+    case O.ANone{}: False{}
+    case _: True{}
+
+# RULE 15, the fallback. `f"UOp({u.op}, {srcs(ctx,u.src)}" + (f", {repr(u.arg)})"
+# if u.arg is not None else ")")` -- so the CLOSING PAREN rides the same
+# conditional, exactly as in `acall_repr`.
+def pmp.fb.args.of(ismeta: Bool, +s: String) -> String:
+  Bool.pick(String, ismeta, String.concat([", ", s, ")"]), ")")
+
+def pmp.fb.args(a: O.Arg, ismeta: Bool) -> String:
+  pmp.fb.args.of(ismeta, arg_repr(a))
+
+def pmp.fb.of(ismeta: Bool, +ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  String.concat(["UOp(", ops_repr(O.Arena.op(ar, u)), ", ", srcs(ctx, O.Arena.srcs(ar, u)), pmp.fb.args(O.Arena.arg(ar, u), ismeta)])
+
+def pmp.fb(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.fb.of(ismeta_of(O.Arena.arg(ar, u)), ar, ctx, u)
+
+# `str(x.val)` -- the CONST's value, NOT `repr`. For an int the two agree and for
+# a ConstFloat they do NOT (`repr` is `ConstFloat(2.5)` and `str` is `2.5`), so
+# these are two different defs and the fixtures use both.
+def val_str.v(v: O.Const) -> String:
+  match v:
+    case O.CBool{b}: Bool.show(b)
+    case O.CInt{i}: sint_i64(i)
+    case O.CFloat{f}: f32_repr(f)
+    case O.CInvalid{}: "Invalid"
+
+def val_str.of(a: O.Arg) -> String:
+  match a:
+    case O.APy{v}: val_str.v(v)
+    case _: "?"
+
+def val_str(a: O.Arg) -> String: val_str.of(a)
+
+# RULE 1: `UPat(Ops.CONST, src=())` -> `f"UOp.const({x.val})"`. A CONST WITH a
+# src falls through to the fallback -- `pyrender` never makes one, but the rule
+# says `src=()` and the guard is the rule.
+def pmp.const.of(zero: Bool, +ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, zero, String.concat(["UOp.const(", val_str(O.Arena.arg(ar, u)), ")"]), pmp.fb(ar, ctx, u))
+
+def pmp.const(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.const.of(U32.is_zero(O.Arena.nsrc(ar, u)), ar, ctx, u)
+
+def dt_same.of(a: S.Dt, b: S.Dt) -> Bool: O.eq_dt(a, b)
+
+# RULE 2: `UPat((Ops.CAST, Ops.BITCAST))` ->
+#   `f"{ctx[x.src[0]]}.{x.op.name.lower()}({x.dtype})"` if `x.dtype != x.src[0].dtype`
+# else None, and a None return FALLS THROUGH to the next rule. This is the
+# measured reason `cast_same` above still renders `UOp.const(3.0).cast(dtypes.float)`
+# -- no: the fixture that shows the fall-through is a CAST whose dtype already
+# equals its src's.
+def pmp.cast.of(same: Bool, +ar: O.Arena, tb: F.Table, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, same, pmp.fb(ar, ctx, u),
+    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".", op_lower(O.Arena.op(ar, u)), "(", dt_repr(dt_of(tb, ar, u)), ")"]))
+
+# `x.dtype != x.src[0].dtype`
+def dt_same(+tb: F.Table, +ar: O.Arena, +u: U32) -> Bool:
+  dt_same.of(dt_of(tb, ar, u), dt_of(tb, ar, O.Arena.src0(ar, u)))
+
+# a `match` may not scrutinise a call, so the op read is its own def -- twice,
+# for the two readers
+def is_const.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsCONST{}: True{}
+    case _: False{}
+
+def is_const(ar: O.Arena, u: U32) -> Bool: is_const.of(O.Arena.op(ar, u))
+
+# RULE 3: `UPat(Ops.SPECIAL, src=(UPat(Ops.CONST),))` -> `f"UOp.special({x.src[0].val}, {repr(x.arg)})"`.
+# The tuple is EXACTLY one element, so a two-src SPECIAL -- which is what a
+# `device_range_src` SPECIAL carries -- misses and falls through. Measured.
+def pmp.special.of(one: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, Bool.not(one), pmp.fb(ar, ctx, u),
+    Bool.pick(String, Bool.not(isconst), pmp.fb(ar, ctx, u),
+      String.concat(["UOp.special(", val_str(O.Arena.arg(ar, O.Arena.src0(ar, u))), ", ", arg_repr(O.Arena.arg(ar, u)), ")"])))
+
+def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.special.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 1n), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
+
+# RULE 4: `UPat(Ops.BUFFER)` ->
+#   `f"UOp.new_buffer({repr(x.arg.device)}, {x.max_numel()}, {x.dtype}, {x.arg.slot})"`
+#   if `isinstance(x.arg, ParamArg) and x.addrspace is AddrSpace.GLOBAL` else None.
+#
+# `max_numel()` is `prod(self.max_shape)` and a BUFFER's shape is `(arg.size,)` --
+# or `(img[0], img[1], 4)` for an image2d (ops.py:369) -- and `size` is a
+# CONCRETE int, so the max shape IS the shape and the whole `to_max_shape` /
+# `vmax` machinery is not needed for this op. That is the one place
+# `max_numel` is reachable without ops.py's `to_max_shape`.
+def paramarg_of(a: O.Arg) -> Maybe<&2, O.ParamArg>:
+  match a:
+    case O.AParam{pa}: Some{pa}
+    case _: None{}
+
+def arg_addr(a: O.Arg) -> S.Addr:
+  match a:
+    case O.AParam{pa}: O.ParamArg.addrspace(pa)
+    case _: S.Aalu{}
+
+def addr_is_global(a: S.Addr) -> Bool:
+  match a:
+    case S.AGlobal{}: True{}
+    case _: False{}
+
+def max_numel.img(g: O.Img) -> String:
+  match g:
+    case O.Img{h, w}: U32.show(U32.mul(h, U32.mul(w, 4)))
+
+def max_numel.size(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{v}: U32.show(v)
+    case None{}: "1"
+
+# RULE 5: `UPat(Ops.COPY, src=(UPat(name="x"),), allow_any_len=True, name="copy")`
+#   -> `f"{ctx[x]}.copy_to_device({repr(copy.arg)})"`. `allow_any_len` means the
+# ONE src pattern matches any non-empty src list, so the guard is nsrc >= 1.
+def pmp.copy.of(any: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
+    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".copy_to_device(", arg_repr(O.Arena.arg(ar, u)), ")"]))
+
+def pmp.copy(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.copy.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), ar, ctx, u)
+
+# RULE 6: `UPat(Ops.CUSTOM_FUNCTION)` ->
+#   `f"UOp(Ops.CUSTOM_FUNCTION, src={srcs(ctx, x.src)}, arg={x.arg!r})"`.
+# The `src=` KEYWORD is literal here and not in rule 15 -- tinygrad writes the
+# keyword in one and not the other, and a differential catches it.
+def pmp.cfn(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  String.concat(["UOp(Ops.CUSTOM_FUNCTION, src=", srcs(ctx, O.Arena.srcs(ar, u)), ", arg=", arg_repr(O.Arena.arg(ar, u)), ")"])
+
+def reduce_op.of(a: O.Arg) -> String:
+  match a:
+    case O.AReduce{rop, num_axes}: ops_repr(rop)
+    case _: "?"
+
+def reduce_op(ar: O.Arena, u: U32) -> String: reduce_op.of(O.Arena.arg(ar, u))
+
+def reduce_axes.of(a: O.Arg) -> U32:
+  match a:
+    case O.AReduce{rop, num_axes}: num_axes
+    case _: 0
+
+def reduce_axes(ar: O.Arena, u: U32) -> U32: reduce_axes.of(O.Arena.arg(ar, u))
+
+# `tuple(range(n))` for a U32 n, as a `Nat` COUNTDOWN because a U32 countdown is
+# not a decreasing argument. `case 1n+p:` leaves `p == n-1`, which is both the
+# next fuel and the value to cons.
+# the value consed is the SAME `p` the fuel decrements to, so it is bound once
+# with `+` and forwarded to both -- the constraint note's `flatands.go` fix
+def range_tuple.go(n: Nat, +p: Nat, acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+q: range_tuple.go(q, p, List.append(&2, U32, acc, [U32.from_nat(p)]))
+
+def range_tuple(n: U32) -> String:
+  String.concat(["(", String.join(u32_list_repr.go(range_tuple.go(U32.to_nat(n), 0n, Nil{})), ", "), ")"])
+
+# RULE 8: `UPat(Ops.RANGE, src=(UPat(Ops.CONST, name="c"),), allow_any_len=True)` ->
+#   "UOp.range("+', '.join([str(c.val)] + [repr(y) for y in x.arg])
+#     +(f', src={srcs(ctx, x.src[1:])}' if len(x.src) > 1 else '')+")".
+# `[repr(y) for y in x.arg]` iterates the WHOLE arg, which for a RANGE is the
+# axis_id tuple followed by the AxisType -- ops.bend splits those into `ids` and
+# `at`, so this is `ids` then `AxisType.LOOP`, and that split is the whole reason
+# the two arms below are not one.
+# the parameter is named `ss` and not `srcs` because a parameter SHADOWS a def of
+# the same name and `srcs(ctx, ss)` would then be a call on a list
+def range_tail.of(n: Bool, +ss: List<&2, U32>, +ctx: Ctx) -> String:
+  Bool.pick(String, n, String.concat([", src=", srcs(ctx, ss)]), "")
+
+# `', '.join([str(c.val)] + [repr(y) for y in x.arg])` -- the CONST's value first,
+# then EVERY element of the arg. `[repr(y) for y in x.arg]` is a list APPENDED to
+# a one-element list, and ops.bend's `ARange` splits the arg into `ids` and `at`,
+# so the two halves come from two different fields and are appended in that order.
+def range_pieces.tail(ids: List<&2, U32>, at: O.AxisType) -> List<&2, String>:
+  List.append(&2, String, u32_list_repr.go(ids), [axis_repr(at)])
+
+def range_pieces(+ar: O.Arena, ctx: Ctx, +u: U32) -> List<&2, String>:
+  List.append(&2, String, List.append(&2, String, Nil{}, [val_str(O.Arena.arg(ar, O.Arena.src0(ar, u)))]), range_pieces.tail(range_ids(ar, u), range_at(ar, u)))
+
+def pmp.range.of(any: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
+    Bool.pick(String, Bool.not(isconst), pmp.fb(ar, ctx, u),
+      String.concat(["UOp.range(", String.join(range_pieces(ar, ctx, u), ", "),
+        range_tail.of(Nat.is_le(2n, List.length(&2, U32, O.Arena.srcs(ar, u))), O.Arena.src_from(ar, u, 1), ctx), ")"])))
+
+def pmp.range(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.range.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
+
+# RULES 9, 10 and 11 -- CDIV, CMOD and WHERE all render through `.alu(...)`, and
+# the comment above them says why: `//` and `%` parse as FLOORDIV/FLOORMOD so CDIV
+# and CMOD cannot be written infix, `.where` re-promotes its operands, and the
+# binary operators re-promote too.
+def pmp.alu.where(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", ops_repr(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 2)), ")"])
+
+def pmp.alu.bin(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", ops_repr(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ")"])
+
+# RULE 12: `UPat(set(syms.keys())-{Ops.SUB, Ops.CDIV, Ops.CMOD})` ->
+#   strip_binary_parens(x, ctx[src0], ctx[src1], ..) if `x.src[0]._broadcasted(x.src[1]) == x.src`
+#   else `f"{ctx[x.src[0]]}.alu({x.op}, {ctx[x.src[1]]})"`.
+#
+# `_broadcasted(y)` is `(y, self) if reverse else (self, y)` with reverse False,
+# so the test MEASURED TRUE for a two-src node and FALSE for a three-src one --
+# which means the whole test is `len(x.src) == 2`. It looks like a shape test and
+# it is an arity test, and saying so is the difference between porting it and
+# mis-porting it as a broadcast computation.
+def pmp.syms.of(two: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, two, strip_binary_parens(ar, u, ctx_get(ctx, O.Arena.src0(ar, u)), ctx_get(ctx, O.Arena.src(ar, u, 1))), pmp.alu.bin(ar, ctx, u))
+
+def pmp.syms(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.syms.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 2n), ar, ctx, u)
+
+def arg_clause.of(ismeta: Bool, a: O.Arg) -> String:
+  Bool.pick(String, ismeta, String.concat(["arg=", arg_repr(a)]), "")
+
+def sugar_args.go(ar: O.Arena, +ctx: Ctx, u: U32, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: sugar_args.go(ar, ctx, u, t, List.append(&2, String, acc, [ctx_get(ctx, s)]))
+
+# RULES 13 and 14, the `sugar` set. `src=()` renders `UOp.op(args)` and otherwise
+# `{ctx[src[0]]}.op(args, ...)`, and in BOTH the arg clause is
+# `', '.join([f'arg={repr(x.arg)}'] if x.arg is not None else [])` -- one element
+# or none, so the comma belongs to the clause and not to the join.
+def is_sugar.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsSINK{}: True{}
+    case O.OpsEND{}: True{}
+    case O.OpsBACKEDGE{}: True{}
+    case O.OpsSTORE{}: True{}
+    case O.OpsLOAD{}: True{}
+    case O.OpsSQRT{}: True{}
+    case O.OpsINDEX{}: True{}
+    case O.OpsREDUCE{}: True{}
+    case O.OpsAFTER{}: True{}
+    case O.OpsTHREEFRY{}: True{}
+    case O.OpsRECIPROCAL{}: True{}
+    case O.OpsEXP2{}: True{}
+    case O.OpsLOG2{}: True{}
+    case O.OpsSIN{}: True{}
+    case O.OpsBARRIER{}: True{}
+    case O.OpsDETACH{}: True{}
+    case _: False{}
+
+# ===========================================================================
+# `consumer_map_from_toposort` -- ops.py:112.
+#
+#     ret: dict[UOp, dict[UOp, None]] = {}
+#     for u in lst:
+#       ret[u] = {}
+#       for s in u.src:
+#         if s in ret: ret[s][u] = None
+#
+# TWO maps and not one: `ret[u]` is a SET of consumers and the three things the
+# loop below reads are `len(cmap[u])` (how many), `list(cmap[u].keys())[0]`
+# (which one) and the src list of that one. So `cnt` and `who` are separate
+# `Map<&2, U32>`s and `who` is only meaningful when `cnt == 1`, which is exactly
+# when Python's `list(cmap[u].keys())[0]` is only meaningful.
+#
+# `if s in ret` is the TOPOSORT GUARD and it is not redundant: the graph has
+# back-edges (an END whose src[0] is the body it closes over), so a src can be a
+# node `lst` has not visited yet. The guard is why the fold carries `seen`.
+# ===========================================================================
+
+def cu32.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
+  match r:
+    case Tuple{m, v}: v
+
+def cu32(m: Map<&2, U32>, u: U32) -> U32:
+  cu32.of(Map.get(U32, 0, m, U32.show(u)))
+
+def chas.of(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, b}: b
+
+def chas(m: Map<&2, U32>, u: U32) -> Bool:
+  chas.of(Map.has(&2, U32, m, U32.show(u)))
+
+type Cons is Data:
+  Cons{seen: Map<&2, U32>, cnt: Map<&2, U32>, who: Map<&2, U32>}
+
+
+
+
+# ===========================================================================
+# `to_render` -- render.py:151-164, the decision of which nodes get their own
+# `cN = ...` line.
+#
+#     to_render: set[UOp] = {ast}
+#     for u in lst:
+#       if u.op in {Ops.SINK}: for s in u.src: to_render.add(s)
+#       if u.op is Ops.STORE: to_render.add(u.src[1])
+#       if u.op is Ops.REDUCE: to_render.add(u.src[0])
+#       ...two NotImplementedError raises...
+#       if u.op in not_rendered: continue
+#       if len(cmap[u]) == 1 and len([x for x in list(cmap[u].keys())[0].src if x is u]) == 1 and u.op not in always_rendered: continue
+#       to_render.add(u)
+#
+# THE ORDER IS LOAD-BEARING: the three adds come BEFORE the `continue`, so a
+# CONST that is a STORE's src is added by the STORE and then skipped by its own
+# `not_rendered` test -- it is in the set AND it is rendered inline. The comment
+# on the consumer test says it: "checking the consumers is not enough, you have
+# to make sure it's not used twice by the one consumer".
+# ===========================================================================
+
+def not_rendered(op: O.Op) -> Bool: is_const.of(op)
+
+def always_rendered(op: O.Op) -> Bool:
+  match op:
+    case O.OpsPARAM{}: True{}
+    case O.OpsLOAD{}: True{}
+    case O.OpsSPECIAL{}: True{}
+    case O.OpsRANGE{}: True{}
+    case O.OpsSTACK{}: True{}
+    case O.OpsBUFFER{}: True{}
+    case O.OpsALLOC{}: True{}
+    case O.OpsCOPY{}: True{}
+    case O.OpsCALL{}: True{}
+    case O.OpsWHERE{}: True{}
+    case O.OpsEND{}: True{}
+    case O.OpsBACKEDGE{}: True{}
+    case _: False{}
+
+def op_is_sink_or_store(op: O.Op) -> Bool:
+  match op:
+    case O.OpsSINK{}: True{}
+    case O.OpsSTORE{}: True{}
+    case O.OpsREDUCE{}: True{}
+    case _: False{}
+
+def tr_set(tr: Map<&2, U32>, u: U32) -> Map<&2, U32>: Map.set(&2, U32, tr, U32.show(u), 1)
+
+def uses.go(+ss: List<&2, U32>, +u: U32, n: U32) -> U32:
+  match ss:
+    case Nil{}: n
+    case +s <> t: uses.go(t, u, U32.add(n, Bool.to_u32(U32.is_eq(s, u))))
+
+# ===========================================================================
+# `_render_with_splits` -- render.py:125-141.
+#
+#     for i,u in enumerate(lst):
+#       op_depth = 1 + max([depth.get(s, 0) for s in u.src], default=0)
+#       if op_depth > split_depth: to_render.add(u)
+#       depth[u] = 0 if u in to_render else op_depth
+#       ren = pm.rewrite(u, ctx=r)
+#       if u.tag is not None: ren += f".rtag({repr(u.tag)})"
+#       if u not in to_render: r[u] = ren
+#       else: r[u] = f"c{i}" if u is not lst[-1] else "ast"; ret[r[u]] = ren
+#
+# `depth[u] = 0` EXACTLY when `u in to_render`, so `depth` alone answers the
+# membership test and `to_render` does not have to be a set any more. That is
+# the one structural saving here and it is a real one: Python carries three
+# dicts and this carries two. `ret` is a LIST of pairs because Python's dict is
+# insertion-ordered and the final `'\n'.join(ret.items())` emits in THAT order --
+# a `Map` would not, and the line order is the diff.
+# ===========================================================================
+
+type Bind is Data:
+  Bind{k: String, v: String}
+
+type RWS is Data:
+  RWS{ctx: Ctx, ret: List<&2, Bind>, dep: Map<&2, U32>, trn: Map<&2, U32>}
+
+def op_depth.go(+ss: List<&2, U32>, +dep: Map<&2, U32>, acc: U32) -> U32:
+  match ss:
+    case Nil{}: acc
+    case s <> t: op_depth.go(t, dep, U32.max(acc, cu32(dep, s)))
+
+# `depth[u] = 0 if u in to_render else op_depth`
+def rws_dep.of(intr: Bool, d: U32, +dep: Map<&2, U32>, u: U32) -> Map<&2, U32>:
+  Map.set(&2, U32, dep, U32.show(u), Bool.pick(U32, intr, 0, d))
+
+def rws_dep(+dep: Map<&2, U32>, u: U32, d: U32, intr: Bool) -> Map<&2, U32>:
+  rws_dep.of(intr, d, dep, u)
+
+# `if op_depth > split_depth: to_render.add(u)` -- render.py's default is 100 and
+# its comment ("limit inline depth to avoid 'too many nested parentheses' in
+# Python parser") is why it is not infinity.
+def rws_trn.of(write: Bool, +tr: Map<&2, U32>, u: U32) -> Map<&2, U32>:
+  Bool.pick(Map<&2, U32>, write, tr_set(tr, u), tr)
+
+def rws_trn(+tr: Map<&2, U32>, u: U32, d: U32, intr: Bool) -> Map<&2, U32>:
+  rws_trn.of(Bool.or(intr, U32.is_gt(d, 100)), tr, u)
+
+# `f"c{i}" if u is not lst[-1] else "ast"`
+def rws_key(last: U32, i: U32, u: U32) -> String:
+  Bool.pick(String, U32.is_eq(u, last), "ast", String.concat(["c", U32.show(i)]))
+
+def rws_ren.pick(intr: Bool, +ren: String, +last: U32, +i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
+  Bool.pick(RWS, intr, RWS{ctx_put(ctx, u, ren), ret, dep, trn},
+    RWS{ctx_put(ctx, u, rws_key(last, i, u)), List.append(&2, Bind, ret, [Bind{rws_key(last, i, u), ren}]), dep, trn})
+
+def rws_ren.of(intr: Bool, +ren: String, last: U32, i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
+  rws_ren.pick(intr, ren, last, i, u, ctx, ret, dep, trn)
+
+
+
+
+def rws_ret(st: RWS) -> List<&2, Bind>:
+  match st:
+    case RWS{ctx, ret, dep, trn}: ret
+
+
+
+
+
+
+def last_of(xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.last(&2, U32, xs), 0)
+
+
+
+
+# `1 + max([depth.get(s, 0) for s in u.src], default=0)` -- `default=0` is the
+# Nil arm and `depth.get`'s 0 is the fold's identity, so they are the same 0.
+def op_depth(+ar: O.Arena, u: U32, +dep: Map<&2, U32>) -> U32:
+  U32.add(1, op_depth.go(O.Arena.srcs(ar, u), dep, 0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# `prod(self.max_shape)` for a BUFFER. ops.py:369 gives `()` for a None size and
+# `(size,)` otherwise, and `prod(())` is 1 -- so a scalar buffer is `1`, not `0`.
+def max_numel.of(img: Maybe<&2, O.Img>, size: Maybe<&2, U32>) -> String:
+  match img:
+    case Some{g}: max_numel.img(g)
+    case None{}: max_numel.size(size)
+
+def max_numel(+pa: O.ParamArg) -> String:
+  max_numel.of(O.ParamArg.image(pa), O.ParamArg.size(pa))
+
+def pmp.buffer.of1(+pa: O.ParamArg, isglobal: Bool, +ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, Bool.not(isglobal), pmp.fb(ar, ctx, u),
+    String.concat(["UOp.new_buffer(", pa_buffer.device(O.ParamArg.device(pa)), ", ", max_numel(pa), ", ", dt_repr(dt_of(tb, ar, u)), ", ", U32.show(O.ParamArg.slot(pa)), ")"]))
+
+def pmp.buffer.put(pa: Maybe<&2, O.ParamArg>, isglobal: Bool, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
+  match pa:
+    case Some{p}: pmp.buffer.of1(p, isglobal, ar, tb, ctx, u)
+    case None{}: pmp.fb(ar, ctx, u)
+
+def pmp.buffer(+ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
+  pmp.buffer.put(paramarg_of(O.Arena.arg(ar, u)), addr_is_global(arg_addr(O.Arena.arg(ar, u))), ar, tb, ctx, u)
+
+
+
+def pmp.cast(+ar: O.Arena, +tb: F.Table, ctx: Ctx, +u: U32) -> String:
+  pmp.cast.of(dt_same(tb, ar, u), ar, tb, ctx, u)
+
+
+
+
+
+
+
+def arg_clause(+a: O.Arg) -> String:
+  arg_clause.of(ismeta_of(a), a)
+
+# the arg clause is APPENDED after the srcs, so it rides in as the accumulator's
+# tail seed and the walk above only ever conses a src
+def sugar_args(+ar: O.Arena, ctx: Ctx, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
+  sugar_args.go(ar, ctx, u, O.Arena.src_from(ar, u, 1), Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(O.Arena.arg(ar, u))]), acc))
+
+# `[f'arg={repr(x.arg)}'] if x.arg is not None else []` -- a list of zero or one
+# element, and the join is over that list, so a missing arg leaves NO comma.
+def pmp.sugar.of(zero: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, zero,
+    String.concat(["UOp.", op_lower(O.Arena.op(ar, u)), "(", String.join(sugar_args(ar, ctx, u, Nil{}), ", "), ")"]),
+    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".", op_lower(O.Arena.op(ar, u)), "(", String.join(sugar_args(ar, ctx, u, Nil{}), ", "), ")"]))
+
+def pmp.sugar(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.sugar.of(U32.is_zero(O.Arena.nsrc(ar, u)), ar, ctx, u)
+
+# RULE 7: `UPat(Ops.REDUCE, name="r")` ->
+#   `f"{ctx[r.src[0]]}._rop({r.arg[0]}, {tuple(range(r.arg[1]))})"` if `r.arg[1]`
+# else None. `tuple(range(n))` is `0, 1, ..., n-1` parenthesised.
+def pmp.reduce.of(has: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
+  Bool.pick(String, Bool.not(has), pmp.sugar(ar, ctx, u),
+    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), "._rop(", reduce_op(ar, u), ", ", range_tuple(reduce_axes(ar, u)), ")"]))
+
+def pmp.reduce(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
+  pmp.reduce.of(Nat.is_le(1n, U32.to_nat(reduce_axes(ar, u))), ar, ctx, u)
+
+# THE DISPATCH. One `match` on the op, in Python's rule order, and every arm
+# carries its own guard because a `match` may not scrutinise a call.
+def pmp.go.of(op: O.Op, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
+  match op:
+    case O.OpsCONST{}: pmp.const(ar, ctx, u)
+    case O.OpsCAST{}: pmp.cast(ar, tb, ctx, u)
+    case O.OpsBITCAST{}: pmp.cast(ar, tb, ctx, u)
+    case O.OpsSPECIAL{}: pmp.special(ar, ctx, u)
+    case O.OpsBUFFER{}: pmp.buffer(ar, tb, ctx, u)
+    case O.OpsCOPY{}: pmp.copy(ar, ctx, u)
+    case O.OpsCUSTOM_FUNCTION{}: pmp.cfn(ar, ctx, u)
+    case O.OpsREDUCE{}: pmp.reduce(ar, ctx, u)
+    case O.OpsRANGE{}: pmp.range(ar, ctx, u)
+    case O.OpsCDIV{}: pmp.alu.bin(ar, ctx, u)
+    case O.OpsCMOD{}: pmp.alu.bin(ar, ctx, u)
+    case O.OpsWHERE{}: pmp.alu.where(ar, ctx, u)
+    case O.OpsADD{}: pmp.syms(ar, ctx, u)
+    case O.OpsMUL{}: pmp.syms(ar, ctx, u)
+    case O.OpsSHL{}: pmp.syms(ar, ctx, u)
+    case O.OpsSHR{}: pmp.syms(ar, ctx, u)
+    case O.OpsFLOORDIV{}: pmp.syms(ar, ctx, u)
+    case O.OpsFLOORMOD{}: pmp.syms(ar, ctx, u)
+    case O.OpsAND{}: pmp.syms(ar, ctx, u)
+    case O.OpsXOR{}: pmp.syms(ar, ctx, u)
+    case O.OpsOR{}: pmp.syms(ar, ctx, u)
+    case O.OpsCMPLT{}: pmp.syms(ar, ctx, u)
+    case O.OpsCMPNE{}: pmp.syms(ar, ctx, u)
+    case O.OpsSUB{}: pmp.fb(ar, ctx, u)
+    case O.OpsSQRT{}: pmp.sugar(ar, ctx, u)
+    case O.OpsINDEX{}: pmp.sugar(ar, ctx, u)
+    case O.OpsSTORE{}: pmp.sugar(ar, ctx, u)
+    case O.OpsLOAD{}: pmp.sugar(ar, ctx, u)
+    case O.OpsSINK{}: pmp.sugar(ar, ctx, u)
+    case O.OpsEND{}: pmp.sugar(ar, ctx, u)
+    case O.OpsBACKEDGE{}: pmp.sugar(ar, ctx, u)
+    case O.OpsAFTER{}: pmp.sugar(ar, ctx, u)
+    case O.OpsTHREEFRY{}: pmp.sugar(ar, ctx, u)
+    case O.OpsRECIPROCAL{}: pmp.sugar(ar, ctx, u)
+    case O.OpsEXP2{}: pmp.sugar(ar, ctx, u)
+    case O.OpsLOG2{}: pmp.sugar(ar, ctx, u)
+    case O.OpsSIN{}: pmp.sugar(ar, ctx, u)
+    case O.OpsBARRIER{}: pmp.sugar(ar, ctx, u)
+    case O.OpsDETACH{}: pmp.sugar(ar, ctx, u)
+    case _: pmp.fb(ar, ctx, u)
+
+# `pm.rewrite(u, ctx=r)`: the fifteen rules in Python order, then the GroupOp.All
+# fallback. `assert isinstance(ren, str)` in Python is not reproduced: rule 15
+# matches every op, so the assertion cannot fail and reproducing it would only
+# add an unreachable path.
+def pmp(+ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
+  pmp.go.of(O.Arena.op(ar, u), ar, tb, ctx, u)
+
+# `ren += f".rtag({repr(u.tag)})"`
+def rtag.of(+t: O.Tag, +s: String) -> String:
+  Bool.pick(String, tag_is_none(t), s, String.concat([".rtag(", tag_repr(t), ")"]))
+
+def rtag(+t: O.Tag) -> String: rtag.of(t, tag_repr(t))
+
+def ren_str(+ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
+  String.concat([pmp(ar, tb, ctx, u), rtag(O.Arena.tag(ar, u))])
+
+def rws_step.put(+d: U32, +intr: Bool, +ar: O.Arena, +tb: F.Table, last: U32, i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
+  rws_ren.of(intr, ren_str(ar, tb, ctx, u), last, i, u, ctx, ret, rws_dep(dep, u, d, intr), rws_trn(trn, u, d, intr))
+
+def rws_step.of(+ar: O.Arena, +tb: F.Table, last: U32, i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
+  rws_step.put(op_depth(ar, u, dep), chas(trn, u), ar, tb, last, i, u, ctx, ret, dep, trn)
+
+def rws_step(+ar: O.Arena, +tb: F.Table, last: U32, i: U32, +u: U32, +st: RWS) -> RWS:
+  match st:
+    case RWS{ctx, ret, dep, trn}: rws_step.of(ar, tb, last, i, u, ctx, ret, dep, trn)
+
+def rws.go(lst: List<&2, U32>, +ar: O.Arena, +tb: F.Table, +last: U32, +i: U32, +st: RWS) -> RWS:
+  match lst:
+    case Nil{}: st
+    case +u <> t: rws.go(t, ar, tb, last, U32.add(i, 1), rws_step(ar, tb, last, i, u, st))
+
+def render_with_splits(+ar: O.Arena, +tb: F.Table, +lst: List<&2, U32>, +trn: Map<&2, U32>) -> List<&2, Bind>:
+  rws_ret(rws.go(lst, ar, tb, last_of(lst), 0, RWS{ctx_new(), Nil{}, Map.new(&2, U32), trn}))
+
+
+def ret_row.of(k: String, +v: String) -> String: String.concat([k, " = ", v])
+
+# `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
+def ret_row(p: Bind) -> String:
+  match p:
+    case Bind{k, v}: ret_row.of(k, H.strip_parens(v))
+
+# `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
+def ret_rows.go(ps: List<&2, Bind>) -> List<&2, String>:
+  match ps:
+    case Nil{}: Nil{}
+    case p <> t: ret_row(p) <> ret_rows.go(t)
+
+def ret_rows(ps: List<&2, Bind>) -> List<&2, String>: ret_rows.go(ps)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def Cons.seen(c: Cons) -> Map<&2, U32>:
+  match c:
+    case Cons{seen, cnt, who}: seen
+
+def Cons.cnt(c: Cons) -> Map<&2, U32>:
+  match c:
+    case Cons{seen, cnt, who}: cnt
+
+def Cons.who(c: Cons) -> Map<&2, U32>:
+  match c:
+    case Cons{seen, cnt, who}: who
+
+# `ret[s][u] = None` is a DICT WRITE, so a u that lists s twice contributes ONE
+# consumer. `who[s] == u` is that test, and it is also the whole reason `who`
+# exists rather than a count alone.
+def cons_bump.write(u: U32, +s: U32, +c: Cons) -> Cons:
+  match c:
+    case Cons{seen, cnt, who}: Cons{seen, Map.set(&2, U32, cnt, U32.show(s), U32.add(cu32(cnt, s), 1)), Map.set(&2, U32, who, U32.show(s), u)}
+
+def cons_bump(+ar: O.Arena, +u: U32, +s: U32, +c: Cons) -> Cons:
+  Bool.pick(Cons, U32.is_eq(cu32(Cons.who(c), s), u), c, cons_bump.write(u, s, c))
+
+def cons_one(+ar: O.Arena, u: U32, +s: U32, +c: Cons) -> Cons:
+  Bool.pick(Cons, chas(Cons.seen(c), s), cons_bump(ar, u, s, c), c)
+
+# the list first, for the same reason as `tr_all`
+def cons_add(+ss: List<&2, U32>, +ar: O.Arena, +u: U32, +c: Cons) -> Cons:
+  match ss:
+    case Nil{}: c
+    case +s <> t: cons_add(t, ar, u, cons_one(ar, u, s, c))
+
+def consumers.empty() -> Cons:
+  Cons{Map.new(&2, U32), Map.new(&2, U32), Map.new(&2, U32)}
+
+def consumers.mark(+c: Cons, u: U32) -> Cons:
+  match c:
+    case Cons{seen, cnt, who}: Cons{Map.set(&2, U32, seen, U32.show(u), 1), cnt, who}
+
+def consumers.step(+ar: O.Arena, +u: U32, +c: Cons) -> Cons:
+  consumers.mark(cons_add(O.Arena.srcs(ar, u), ar, u, c), u)
+
+def consumers.go(lst: List<&2, U32>, +ar: O.Arena, +c: Cons) -> Cons:
+  match lst:
+    case Nil{}: c
+    case +u <> t: consumers.go(t, ar, consumers.step(ar, u, c))
+
+def consumers.new(+ar: O.Arena, lst: List<&2, U32>) -> Cons:
+  consumers.go(lst, ar, consumers.empty())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# `len([x for x in list(cmap[u].keys())[0].src if x is u])` -- how many times the
+# one consumer lists u.
+def uses(+ar: O.Arena, v: U32, u: U32) -> U32: uses.go(O.Arena.srcs(ar, v), u, 0)
+
+# `if u.op in not_rendered: continue` comes FIRST and short-circuits the rest.
+def tr_continue.of(+op: O.Op, +ar: O.Arena, +u: U32, +c: Cons) -> Bool:
+  Bool.pick(Bool, not_rendered(op),
+    Bool.and(U32.is_eq(cu32(Cons.cnt(c), u), 1), Bool.and(U32.is_eq(uses(ar, cu32(Cons.who(c), u), u), 1), Bool.not(always_rendered(op)))),
+    False{})
+
+def tr_continue(op: O.Op, +ar: O.Arena, u: U32, +c: Cons) -> Bool:
+  tr_continue.of(op, ar, u, c)
+
+def tr_keep.of(op: O.Op, +ar: O.Arena, +u: U32, +tr: Map<&2, U32>, +c: Cons) -> Map<&2, U32>:
+  Bool.pick(Map<&2, U32>, tr_continue(op, ar, u, c), tr, tr_set(tr, u))
+
+# the `continue` test, in Python's order
+def tr_keep(op: O.Op, +ar: O.Arena, u: U32, +tr: Map<&2, U32>, +c: Cons) -> Map<&2, U32>:
+  tr_keep.of(op, ar, u, tr, c)
+
+
+
+
+
+
+
+
+# a SINK adds ALL its srcs; a STORE adds src[1]; a REDUCE adds src[0]
+# THE LIST IS FIRST. The self-call is `tr_all(t, ar, tr_set(tr, s))` and the
+# SHRINKING argument is now the first one, because the rule is "arguments are read
+# left to right: each passed unchanged until one shrinks" -- a computed argument
+# in front of the tail makes the call non-decreasing.
+def tr_all(+ss: List<&2, U32>, +ar: O.Arena, +tr: Map<&2, U32>) -> Map<&2, U32>:
+  match ss:
+    case Nil{}: tr
+    case +s <> t: tr_all(t, ar, tr_set(tr, s))
+
+def tr_of.of(op: O.Op, +ar: O.Arena, u: U32, +tr: Map<&2, U32>) -> Map<&2, U32>:
+  match op:
+    case O.OpsSINK{}: tr_all(O.Arena.srcs(ar, u), ar, tr)
+    case O.OpsSTORE{}: tr_set(tr, O.Arena.src(ar, u, 1))
+    case O.OpsREDUCE{}: tr_set(tr, O.Arena.src0(ar, u))
+    case _: tr
+
+def tr_of(op: O.Op, ar: O.Arena, u: U32, tr: Map<&2, U32>) -> Map<&2, U32>:
+  tr_of.of(op, ar, u, tr)
+
+def tr_push.of(op: O.Op, +op2: O.Op, +ar: O.Arena, u: U32, +tr: Map<&2, U32>) -> Map<&2, U32>:
+  Bool.pick(Map<&2, U32>, Bool.not(op_is_sink_or_store(op2)), tr, tr_of(op2, ar, u, tr))
+
+# the three unconditional adds
+def tr_push(op: O.Op, +ar: O.Arena, +u: U32, +tr: Map<&2, U32>) -> Map<&2, U32>:
+  tr_push.of(O.Arena.op(ar, u), op, ar, u, tr)
+
+def to_render.go(lst: List<&2, U32>, +ar: O.Arena, +cs: Cons, +tr: Map<&2, U32>) -> Map<&2, U32>:
+  match lst:
+    case Nil{}: tr
+    case +u <> t: to_render.go(t, ar, cs, tr_keep(O.Arena.op(ar, u), ar, u, tr_push(O.Arena.op(ar, u), ar, u, tr), cs))
+
+def to_render(+ar: O.Arena, +lst: List<&2, U32>, ast: U32) -> Map<&2, U32>:
+  to_render.go(lst, ar, consumers.new(ar, lst), tr_set(Map.new(&2, U32), ast))
+
+
+
+def pyrender.of(+ar: O.Arena, +tb: F.Table, +ast: U32, +lst: List<&2, U32>) -> String:
+  String.join(ret_rows(render_with_splits(ar, tb, lst, to_render(ar, lst, ast))), "\n")
+
+def pyrender(+ar: O.Arena, +tb: F.Table, +ast: U32) -> String:
+  pyrender.of(ar, tb, ast, O.UOp.toposort(F.Kahn.budget(ar), ar, ast))
+
+
+
+def pyr_call.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsCALL{}: True{}
+    case _: False{}
+
+def pyr_buffer.pa(a: O.Arg) -> Bool:
+  match a:
+    case O.AParam{pa}: Maybe.is_some(&2, U32, O.ParamArg.buffer(pa))
+    case _: False{}
+
+# ===========================================================================
+# WHAT IS NOT PORTED, in upstream order, and why. Nothing here is a Bend wall;
+# four of the five are missing INPUTS in a shared file and the fifth ran out of
+# room.
+#
+# * `pretty_print` (:6) -- PORTED IN PART. Its `dfs` is a mutable
+#   `cache.setdefault(s, [len(cache), 0, False])[1] += 1` over a CYCLIC graph, so
+#   the cache is a second store beside the arena and the walk needs a fuel the
+#   Python does not; `argstr`/`tagstr` ARE ported (`tagstr` is here), which is the
+#   half that was cheap.
+# * `print_uops` (:18) -- BLOCKED on `UOp.ranges`, which is `# TODO(p3)
+#   ops.py:497` in ops.bend. `multirange_str` and `range_str` ARE ported here
+#   (they take the range list as a parameter), so only the `u.ranges` COLUMN is
+#   missing, not the formatting.
+# * `marg_str` (:35) / `render_marg` (:37) -- `marg_str`'s third arm is
+#   `a.render()`, and `render` is `# TODO(p3) ops.py:1181` in ops.bend; it needs
+#   `simplify()` (`# TODO(p3) ops.py:513`) and the whole `renderer` matcher, whose
+#   Movement arm calls `render_marg`, so the two are a cycle the port cannot break
+#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:814`.
+# * `renderer` / `renderer_infer` (:45, :74) -- 21 UPat rules whose payloads are
+#   mostly `ctx[src]`; only the sugar/renderer INFER arms need anything that is
+#   not already here. They are needed by `UOp.render()`, not by `pyrender`.
+# * THE PYRENDER GATE ROWS. `pyrender` and `_render_with_splits` are ported and
+#   the file CHECKS, but no arena fixture drives them yet, so `pyrender` itself
+#   is UNGATED. That is the single most important thing left and it is a gate
+#   problem, not a port problem.
+#
+# TODO(p3) render.py:6   def pretty_print
+# TODO(p3) render.py:18  def print_uops
+# TODO(p3) render.py:35  def marg_str
+# TODO(p3) render.py:37  def render_marg
+# TODO(p3) render.py:45  renderer
+# TODO(p3) render.py:74  renderer_infer
+#
+# THE GATE. Every row is a CPython value measured on 2026-09-30 with
+# `.venv/bin/python -c "import sys; sys.path.insert(0,'.'); ..."` against this
+# `tinygrad/` tree; the `py=` text IS the oracle, printed next to the answer so
+# a dropped literal shows up as a STRING DIFFERENCE rather than hidden in a
+# boolean. That matters more here than in any other unit: `String.concat` will
+# happily drop a ", " and yield a plausible wrong string, so the gate is the
+# string and never `arg_repr(..) == "..."`.
+#
+# THE THREE `pa` FIXTURES are the three shapes tinygrad's own repr test
+# exercises, and together they cover the three ORDERINGS of the nine keyword
+# fields: pa1 sets only `device`, pa2 sets only `name` and no size, pa3 sets
+# `addrspace`, `volatile` and `image`. A field-order bug that moved one keyword
+# cannot pass all three.
+# ===========================================================================
+
+# ParamArg(1, dtypes.float, 4, device='METAL')
+def pa1() -> O.ParamArg:
+  O.ParamArg{1, S.single(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
+    False{}, None{}, None{}, False{}, None{}}
+
+# ParamArg(2, dtypes.int, name='g') -- no size, and size is the one POSITIONAL
+# optional, so a `size` that printed when it is None moves every later field.
+def pa2() -> O.ParamArg:
+  O.ParamArg{2, S.int32(), None{}, None{}, None{}, Some{"g"}, S.AGlobal{}, None{},
+    False{}, None{}, None{}, False{}, None{}}
+
+# ParamArg(3, dtypes.float, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))
+def pa3() -> O.ParamArg:
+  O.ParamArg{3, S.single(), Some{4}, None{}, None{}, None{}, S.ALocal{}, None{},
+    True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    IO.print("sint_show 0      = [" ++ sint_show(0) ++ "]   py=0")
+    IO.print("sint_show 7      = [" ++ sint_show(7) ++ "]   py=7")
+    IO.print("sint_show 2**31-1= [" ++ sint_show(2147483647) ++ "] py=2147483647")
+    IO.print("sint_show -3     = [" ++ sint_show(4294967293) ++ "] py=-3")
+    IO.print("sint_show -2**31 = [" ++ sint_show(2147483648) ++ "] py=-2147483648")
+    IO.print("f32_repr 3.0     = [" ++ f32_repr(3.0) ++ "]     py=3.0")
+    IO.print("f32_repr 1e30    = [" ++ f32_repr(1000000000000000000000000000000.0) ++ "]     py=1e+30")
+    IO.print("f32_repr 0.1     = [" ++ f32_repr(0.1) ++ "]     py=0.1")
+    IO.print("const_repr CInt  = [" ++ const_repr(O.CInt{H.i64_of_i32(3)}) ++ "]   py=3")
+    IO.print("const_repr CBool = [" ++ const_repr(O.CBool{True{}}) ++ "]   py=True")
+    IO.print("const_repr CInv  = [" ++ const_repr(O.CInvalid{}) ++ "]   py=Invalid")
+    IO.print("const_repr CFlt  = [" ++ const_repr(O.CFloat{2.5}) ++ "]   py=ConstFloat(2.5)")
+    IO.print("dt_repr float    = [" ++ dt_repr(S.single()) ++ "]   py=dtypes.float")
+    IO.print("dt_repr int32    = [" ++ dt_repr(S.int32()) ++ "]   py=dtypes.int")
+    IO.print("addr_repr GLOBAL = [" ++ addr_repr(S.AGlobal{}) ++ "]   py=AddrSpace.GLOBAL")
+    IO.print("dev_repr D1(2)   = [" ++ dev_repr(S.D1{2}) ++ "]   py='METAL'")
+    IO.print("dev_repr Dn      = [" ++ dev_repr(S.Dn{[0, 2]}) ++ "]   py=('CPU', 'METAL')")
+    IO.print("syms_of MUL      = [" ++ syms_of(O.OpsMUL{}) ++ "]   py=*")
+    IO.print("prec_of MUL      = [" ++ U32.show(precedence_of(O.OpsMUL{})) ++ "]   py=1")
+    IO.print("prec_of CDIV     = [" ++ U32.show(precedence_of(O.OpsCDIV{})) ++ "]   py=99")
+    IO.print("arg_repr ANone   = [" ++ arg_repr(O.ANone{}) ++ "]   py=None")
+    IO.print("arg_repr ADt     = [" ++ arg_repr(O.ADt{S.int32()}) ++ "]   py=dtypes.int")
+    IO.print("arg_repr AStr    = [" ++ arg_repr(O.AStr{"g"}) ++ "]   py='g'")
+    IO.print("arg_repr ARng    = [" ++ arg_repr(O.ARange{[0], O.AXIS_GLOBAL{}}) ++ "]   py=((0,), AxisType.GLOBAL)")
+    IO.print("arg_repr ARed    = [" ++ arg_repr(O.AReduce{O.OpsADD{}, 2}) ++ "]   py=(Ops.ADD, 2)")
+    IO.print("arg_repr ATup    = [" ++ arg_repr(O.ATuple{[1, 2]}) ++ "]   py=(1, 2)")
+    IO.print("arg_repr AInk    = [" ++ arg_repr(O.AInk{"w", S.single()}) ++ "]   py=('w', dtypes.float)")
+    IO.print("arg_repr AAllred = [" ++ arg_repr(O.AAllred{O.OpsADD{}, S.D1{2}}) ++ "]   py=(Ops.ADD, 'METAL')")
+    IO.print("arg_repr ADev    = [" ++ arg_repr(O.ADev{S.D1{2}}) ++ "]   py='METAL'")
+    IO.print("arg_repr ACALL   = [" ++ arg_repr(O.ACall{O.CallInfo.of()}) ++ "]   py=CallInfo(None, None, False, False)")
+    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False, dtype=dtypes.int)")
+    IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False, dtype=dtypes.weakint)")
+    IO.print("arg_repr AKern   = [" ++ arg_repr(O.AKernel{O.KernelInfo.of()}) ++ "]")
+    IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
+    IO.print("arg_repr AProgr  = [" ++ arg_repr(O.AProgram{O.ProgramInfo.of()}) ++ "]")
+    IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
+    IO.print("ops_repr ADD     = [" ++ ops_repr(O.OpsADD{}) ++ "]   py=Ops.ADD")
+    IO.print("arg_repr AParam1 = [" ++ arg_repr(O.AParam{pa1()}) ++ "]")
+    IO.print("                     py=ParamArg(1, dtypes.float, 4, device='METAL')")
+    IO.print("arg_repr AParam2 = [" ++ arg_repr(O.AParam{pa2()}) ++ "]")
+    IO.print("                     py=ParamArg(2, dtypes.int, name='g')")
+    IO.print("arg_repr AParam3 = [" ++ arg_repr(O.AParam{pa3()}) ++ "]")
+    IO.print("                     py=ParamArg(3, dtypes.float, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
+    IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
+    IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
+    IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
+
+def pmp.buffer.of(pa: Maybe<&2, O.ParamArg>, isglobal: Bool, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
+  pmp.buffer.put(pa, isglobal, ar, tb, ctx, u)
+
+
+
+# ===========================================================================
+# `pyrender` -- render.py:143-167. `lst = list(ast.toposort())`, the to_render
+# pass, `_render_with_splits`, and the final join.
+#
+# THE TWO `raise NotImplementedError` ARE NOT REPRODUCED as raises -- Bend has no
+# exceptions and a rule that returns "cannot" has to return it. So they are two
+# PREDICATES and the gate prints them, which is more useful than an exception
+# anyway: `spec.py:37` calls `test_pyrender(lst[-1])` on every compiled sink and
+# a sink that hits either one silently produces nothing today.
+# ===========================================================================
+
+# "a call into C renders, its dtype rides in the arg"
+def pyr_call(ar: O.Arena, u: U32) -> Bool: pyr_call.of(O.Arena.op(ar, u))
+
+def pyr_buffer.of(op: O.Op, a: O.Arg) -> Bool:
+  match op:
+    case O.OpsBUFFER{}: pyr_buffer.pa(a)
+    case _: False{}
+
+# "a BUFFER carrying a device Buffer can't be pyrendered"
+def pyr_buffer(+ar: O.Arena, +u: U32) -> Bool:
+  pyr_buffer.of(O.Arena.op(ar, u), O.Arena.arg(ar, u))
+
