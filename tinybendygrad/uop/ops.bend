@@ -1187,6 +1187,9 @@ def CallInfo.dtype(x: CallInfo) -> S.Dt:
 def eq_bool(x: Bool, y: Bool) -> Bool:
   Bool.not(Bool.xor(x, y))
 
+def eq_op(x: Op, y: Op) -> Bool:
+  U32.is_eq(Ops.value(x), Ops.value(y))
+
 def eq_u32(ys: List<&2, U32>, zs: List<&2, U32>) -> Bool:
   match ys zs:
     case Nil{} Nil{}: True{}
@@ -1593,6 +1596,115 @@ def eq_node(x: Node, y: Node) -> Bool:
 # the SPEC layer (`tinygrad/uop/spec.py`, P3) and is NOT PORTED here.
 # `dtype_from_uop`'s None arm is the same check in the form this port can state,
 # and `UOp.spec_ok` is where it gets consulted.
+# ONE alternative of `src`. `src=(a, b)` is a tuple -> one exact alternative.
+# `src=UPat(...)` is `itertools.repeat(src)`: UNBOUNDED. It is a variant here, not
+# an infinite list, because nothing ever enumerates it -- `required_len` and
+# `strict_length` are what bound the read, and a list would want a partiality
+# this port does not have.
+type UpAlt is Data:
+  UpFixed{ys: List<&2, U32>}
+  UpRepeat{x: U32}
+
+# The four shapes of `__init__`'s `src` argument. TUPLE and LIST are separate
+# variants because ops.py:1464 reads the difference: a tuple keeps its order, a
+# list is permuted.
+type SrcArg is Data:
+  SNone{}
+  SOne{x: U32}
+  STuple{ys: List<&2, U32>}
+  SList{ys: List<&2, U32>}
+
+# ops.py:1448. `src_in` is `_in_src`, the RAW argument, which `named` and
+# `__reduce__` need to rebuild the pattern unchanged. `location` is NOT PORTED
+# (frame introspection, P3) and is deliberately NOT a field: a field the port
+# cannot read is a field that would silently always be None.
+type UPat is Data:
+  UPat{
+    op: Maybe<&2, List<&2, Op>>,
+    match_dtype: Maybe<&2, List<&2, S.Dt>>,
+    match_tag: Maybe<&2, List<&2, Tag>>,
+    arg: Maybe<&2, Arg>,
+    name: Maybe<&2, String>,
+    src_in: SrcArg,
+    src: List<&2, UpAlt>,
+    is_any: Bool,
+    strict_length: Bool,
+    required_len: U32,
+    early_reject: List<&2, Op>}
+
+type Pat is Data:
+  Pat{upats: List<&2, UPat>}
+
+# `Found` is the UOp file's `(arena, index)` pair, and its `ar` is specifically
+# an `Arena`. A pattern arena is a different type, so it gets the same shape
+# under its own name rather than a parameterised `Found` that would touch every
+# one of the UOp call sites.
+type PatFound is Data:
+  PatFound{pat: Pat, i: U32}
+
+# `PatFound` readers, same two-def shape as the UOp accessors above.
+def PatFound.pat(f: PatFound) -> Pat:
+  match f:
+    case PatFound{pat, _}: pat
+
+def PatFound.i(f: PatFound) -> U32:
+  match f:
+    case PatFound{_, i}: i
+# ---------------------------------------------------------------------------
+# Accessors. Bend 2.0.34 has no projection syntax and a `match` may not
+# scrutinise a computed value, so each field reader is a def -- the same shape
+# the UOp accessors above use. Eleven fields, eleven readers; there is no
+# shorter spelling that is not a parse error.
+# ---------------------------------------------------------------------------
+
+def Pat.upats(pat: Pat) -> List<&2, UPat>:
+  match pat:
+    case Pat{upats}: upats
+
+def UPat.op(u: UPat) -> Maybe<&2, List<&2, Op>>:
+  match u:
+    case UPat{op, _, _, _, _, _, _, _, _, _, _}: op
+
+def UPat.match_dtype(u: UPat) -> Maybe<&2, List<&2, S.Dt>>:
+  match u:
+    case UPat{_, md, _, _, _, _, _, _, _, _, _}: md
+
+def UPat.match_tag(u: UPat) -> Maybe<&2, List<&2, Tag>>:
+  match u:
+    case UPat{_, _, mt, _, _, _, _, _, _, _, _}: mt
+
+def UPat.arg(u: UPat) -> Maybe<&2, Arg>:
+  match u:
+    case UPat{_, _, _, a, _, _, _, _, _, _, _}: a
+
+def UPat.name(u: UPat) -> Maybe<&2, String>:
+  match u:
+    case UPat{_, _, _, _, n, _, _, _, _, _, _}: n
+
+def UPat.src_in(u: UPat) -> SrcArg:
+  match u:
+    case UPat{_, _, _, _, _, si, _, _, _, _, _}: si
+
+def UPat.src(u: UPat) -> List<&2, UpAlt>:
+  match u:
+    case UPat{_, _, _, _, _, _, s, _, _, _, _}: s
+
+def UPat.is_any(u: UPat) -> Bool:
+  match u:
+    case UPat{_, _, _, _, _, _, _, b, _, _, _}: b
+
+def UPat.strict_length(u: UPat) -> Bool:
+  match u:
+    case UPat{_, _, _, _, _, _, _, _, b, _, _}: b
+
+def UPat.required_len(u: UPat) -> U32:
+  match u:
+    case UPat{_, _, _, _, _, _, _, _, _, n, _}: n
+
+def UPat.early_reject(u: UPat) -> List<&2, Op>:
+  match u:
+    case UPat{_, _, _, _, _, _, _, _, _, _, er}: er
+
 # ===========================================================================
 
 def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
@@ -1657,6 +1769,180 @@ def UOp.of.intern(+ar: Arena, +want: Node) -> U32:
 
 def UOp.of(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> U32:
   UOp.of.intern(ar, Node{op, src, arg, tag})
+
+# ---------------------------------------------------------------------------
+# The intern key. Flat fields, plus a list of INDICES -- so this is NOT the
+# recursive walk a bare `UPat` would need, and that is the whole point of the
+# arena. These are `eq_op_list` and friends, mirroring the `eq_u32` /
+# `eq_i64s` / `eq_opt_u32` family already above.
+# ---------------------------------------------------------------------------
+
+def eq_op_list(xs: List<&2, Op>, ys: List<&2, Op>) -> Bool:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}: True{}
+        case _ <> _: False{}
+    case x <> t:
+      match ys:
+        case Nil{}: False{}
+        case y <> u: Bool.and(eq_op(x, y), eq_op_list(t, u))
+
+def eq_dt_list(xs: List<&2, S.Dt>, ys: List<&2, S.Dt>) -> Bool:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}: True{}
+        case _ <> _: False{}
+    case x <> t:
+      match ys:
+        case Nil{}: False{}
+        case y <> u: Bool.and(eq_dt(x, y), eq_dt_list(t, u))
+
+def eq_tag_list(xs: List<&2, Tag>, ys: List<&2, Tag>) -> Bool:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}: True{}
+        case _ <> _: False{}
+    case x <> t:
+      match ys:
+        case Nil{}: False{}
+        case y <> u: Bool.and(eq_tag(x, y), eq_tag_list(t, u))
+
+# The `Maybe` wrappers. Each unwrap is its own def, so the scrutinee is a
+# parameter -- the `intern.find.pick` shape.
+
+def eq_opt_op(x: Maybe<&2, List<&2, Op>>, y: Maybe<&2, List<&2, Op>>) -> Bool:
+  match x:
+    case Some{a}:
+      match y:
+        case Some{b}: eq_op_list(a, b)
+        case None{}: False{}
+    case None{}:
+      match y:
+        case Some{_}: False{}
+        case None{}: True{}
+
+def eq_opt_dt(x: Maybe<&2, List<&2, S.Dt>>, y: Maybe<&2, List<&2, S.Dt>>) -> Bool:
+  match x:
+    case Some{a}:
+      match y:
+        case Some{b}: eq_dt_list(a, b)
+        case None{}: False{}
+    case None{}:
+      match y:
+        case Some{_}: False{}
+        case None{}: True{}
+
+def eq_opt_tag(x: Maybe<&2, List<&2, Tag>>, y: Maybe<&2, List<&2, Tag>>) -> Bool:
+  match x:
+    case Some{a}:
+      match y:
+        case Some{b}: eq_tag_list(a, b)
+        case None{}: False{}
+    case None{}:
+      match y:
+        case Some{_}: False{}
+        case None{}: True{}
+
+def eq_opt_arg(x: Maybe<&2, Arg>, y: Maybe<&2, Arg>) -> Bool:
+  match x:
+    case Some{a}:
+      match y:
+        case Some{b}: eq_arg(a, b)
+        case None{}: False{}
+    case None{}:
+      match y:
+        case Some{_}: False{}
+        case None{}: True{}
+
+def eq_inalts(xs: List<&2, UpAlt>, ys: List<&2, UpAlt>) -> Bool:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}: True{}
+        case _ <> _: False{}
+    case UpFixed{a} <> t:
+      match ys:
+        case Nil{}: False{}
+        case UpFixed{b} <> u: Bool.and(eq_u32(a, b), eq_inalts(t, u))
+        case UpRepeat{_} <> _: False{}
+    case UpRepeat{a} <> t:
+      match ys:
+        case Nil{}: False{}
+        case UpFixed{_} <> _: False{}
+        case UpRepeat{b} <> u: Bool.and(U32.is_eq(a, b), eq_inalts(t, u))
+
+# A 4x4 cross product of the `SrcArg` variants would be sixteen arms; the variant
+# is a discriminant and the payload is one list, so it is two. A wildcard arm is
+# cons-only (`case _ <> _`), so a `Data` match must name every remaining
+# constructor -- which is the whole reason to project instead.
+def srcarg.tag(s: SrcArg) -> U32:
+  match s:
+    case SNone{}: 0
+    case SOne{_}: 1
+    case STuple{_}: 2
+    case SList{_}: 3
+
+def srcarg.ys(s: SrcArg) -> List<&2, U32>:
+  match s:
+    case SNone{}: Nil{}
+    case SOne{x}: [x]
+    case STuple{ys}: ys
+    case SList{ys}: ys
+
+# `+` is the SHARE annotation: the tag and the payload are two reads of one
+# argument, which is exactly Python's shared reference.
+def eq_in_src(+x: SrcArg, +y: SrcArg) -> Bool:
+  Bool.and(U32.is_eq(srcarg.tag(x), srcarg.tag(y)), eq_u32(srcarg.ys(x), srcarg.ys(y)))
+
+def eq_upat(x: UPat, y: UPat) -> Bool:
+  match x y:
+    case UPat{op1, md1, mt1, a1, n1, si1, s1, y1, l1, r1, e1} UPat{op2, md2, mt2, a2, n2, si2, s2, y2, l2, r2, e2}:
+      Bool.and(eq_opt_op(op1, op2),
+      Bool.and(eq_opt_dt(md1, md2),
+      Bool.and(eq_opt_tag(mt1, mt2),
+      Bool.and(eq_opt_arg(a1, a2),
+      Bool.and(eq_opt_str(n1, n2),
+      Bool.and(eq_in_src(si1, si2),
+      Bool.and(eq_inalts(s1, s2),
+      Bool.and(eq_bool(y1, y2),
+      Bool.and(eq_bool(l1, l2),
+                U32.is_eq(r1, r2))))))))))
+
+
+# ---------------------------------------------------------------------------
+# `functools.cache`. `pintern.find` is `intern.find` with `equal` for `eq_upat`,
+# and `pintern.of` is the same HIT/MISS pair `UOp.make.intern` uses.
+# ---------------------------------------------------------------------------
+
+def pintern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match hit:
+    case True{}: Some{k}
+    case False{}: nxt
+
+def pintern.find(us: List<&2, UPat>, +k: U32, +want: UPat) -> Maybe<&2, U32>:
+  match us:
+    case Nil{}:
+      None{}
+    case u <> t:
+      pintern.find.pick(eq_upat(u, want), k, pintern.find(t, U32.add(k, 1), want))
+
+def pintern.put(+pat: Pat, +want: UPat) -> Pat:
+  Pat{List.append(&2, UPat, Pat.upats(pat), [want])}
+
+# The MISS index is the arena's length BEFORE the append. Reading it after the
+# append and subtracting one gives the same number, and `UOp.of.intern.put`
+# spells it that way -- what must not happen is reading the length from an arena
+# the append has not reached yet, which is a borrow and not an index.
+def pintern.of(pat: Pat, hit: Maybe<&2, U32>) -> U32:
+  match hit:
+    case Some{i}: i
+    case None{}: U32.from_nat(List.length(&2, UPat, Pat.upats(pat)))
+
+def Pat.of.put(pat: Pat, i: U32) -> PatFound:
+  PatFound{pat, i}
 
 type Metadata is Data:
   Metadata{name: String, backward: Bool}
@@ -1935,6 +2221,11 @@ def UOp.toposort(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 # toposort(enter_calls=False) -- the two call sites that pass it, both in
 # `ProgramInfo.from_sink` and `contiguous_view`.
 
+
+def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
+  UOp.toposort(fuel, ar, self)
+
+
 def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   toposort(fuel, ar, Topo{Nil{}, List.append(&2, Frame, Nil{}, [Frame{self, False{}}])})
 
@@ -1947,8 +2238,553 @@ def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 # and every `pm.rewrite` callback is one) and it needs the same Sel-tag shape
 # the master plan already prescribes for `PatternMatcher` rules.
 
-def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
-  UOp.toposort(fuel, ar, self)
+# ---------------------------------------------------------------------------
+# `src` normalisation -- ops.py:1463-1468, the `permutations` line:
+#
+#   src is a list  -> all permutations, or one alternative if `all_same`
+#   src is a tuple -> one alternative
+#   src is a UPat  -> [itertools.repeat(src)]: ONE UNBOUNDED alternative
+#   src is None    -> no alternatives
+#
+# ARITY, and this is a refusal rather than an approximation. The permutation
+# branch is exact for 1 and 2 srcs and yields NO alternatives for 3 or more, so
+# a 3-ary commutative pattern matches nothing instead of matching wrongly. That
+# is unreachable from ops.py: the only caller of a list `src` is `alu`, and every
+# member of `GroupOp.Commutative` is BINARY -- ADD, AND, CMPEQ, CMPNE, MAX, MUL,
+# OR, XOR, all of them. Arity >= 3 is TODO(p3) and belongs with `spec.py`, the
+# only other caller.
+# ---------------------------------------------------------------------------
+def all_same.from(+h: U32, t: List<&2, U32>) -> Bool:
+  match t:
+    case Nil{}: True{}
+    case y <> u: Bool.and(U32.is_eq(h, y), all_same.from(h, u))
+
+
+def all_same(ys: List<&2, U32>) -> Bool:
+  match ys:
+    case Nil{}: True{}
+    case y <> t: all_same.from(y, t)
+
+
+# `[tuple(src)]` when `all_same`, else `list(itertools.permutations(src))`
+def perms.of(+a: U32, t: List<&2, U32>) -> List<&2, UpAlt>:
+  match t:
+    case Nil{}: [UpFixed{[a]}]
+    case +b <> u:
+      # `u` empty means the src list was EXACTLY [a, b], so both orders. A
+      # non-empty `u` means arity 3 or more, which this branch refuses. Neither
+      # re-wraps a list TAIL, which is what Bend refuses.
+      match u:
+        case Nil{}: [UpFixed{[a, b]}, UpFixed{[b, a]}]
+        case _ <> _w: Nil{}
+
+def perms(ys: List<&2, U32>) -> List<&2, UpAlt>:
+  match ys:
+    case Nil{}: Nil{}
+    case a <> t: perms.of(a, t)
+
+def src_alts.of(same: Bool, +ys: List<&2, U32>) -> List<&2, UpAlt>:
+  match same:
+    case True{}: [UpFixed{ys}]
+    case False{}: perms(ys)
+
+
+def src_alts(+ys: List<&2, U32>) -> List<&2, UpAlt>:
+  src_alts.of(all_same(ys), ys)
+
+
+
+
+# a `match` may not scrutinise a computed list, so the four-way dispatch is its
+# own def
+def alts_of(s: SrcArg) -> List<&2, UpAlt>:
+  match s:
+    case SNone{}: Nil{}
+    case SOne{x}: [UpRepeat{x}]
+    case STuple{ys}: [UpFixed{ys}]
+    case SList{ys}: src_alts(ys)
+
+# ops.py:1470. `not (allow_any_len or isinstance(src, UPat) or src is None)`
+
+def strict_of(s: SrcArg, allow_any_len: Bool) -> Bool:
+  match s:
+    case SNone{}: False{}
+    case SOne{_}: False{}
+    case STuple{_}: Bool.not(allow_any_len)
+    case SList{_}: Bool.not(allow_any_len)
+
+# ops.py:1471. `0 if isinstance(src, UPat) or src is None else len(src)`
+
+def required_of(s: SrcArg) -> U32:
+  match s:
+    case SNone{}: 0
+    case SOne{_}: 0
+    case STuple{ys}: U32.from_nat(List.length(&2, U32, ys))
+    case SList{ys}: U32.from_nat(List.length(&2, U32, ys))
+
+# ---------------------------------------------------------------------------
+# `early_reject` -- ops.py:1476-1478. The comprehension is
+#   `{pp.op[0] for pp in upat_match if pp.op is not None and len(pp.op) == 1}`
+# over `upat_match`, which is `[src]` for a UPat src, `[]` for None, and
+# `self.src[0]` -- the FIRST alternative only -- otherwise.
+# ---------------------------------------------------------------------------
+def early.step.of(got: Maybe<&2, Op>, rest: List<&2, Op>) -> List<&2, Op>:
+  match got:
+    case Some{o}: List.append(&2, Op, rest, [o])
+    case None{}: rest
+def single_op.len(n: Nat, +os: List<&2, Op>) -> Maybe<&2, Op>:
+  match n:
+    case 1n: List.head(&2, Op, os)
+    case _n: None{}
+
+def single_op.of(o: Maybe<&2, List<&2, Op>>) -> Maybe<&2, Op>:
+  match o:
+    case Some{+os}: single_op.len(List.length(&2, Op, os), os)
+    case None{}: None{}
+def op_of.of(hit: Maybe<&2, UPat>) -> Maybe<&2, List<&2, Op>>:
+  match hit:
+    case Some{u}: UPat.op(u)
+    case None{}: None{}
+
+def op_of(+pat: Pat, k: U32) -> Maybe<&2, List<&2, Op>>:
+  op_of.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)))
+
+
+def single_op(+pat: Pat, k: U32) -> Maybe<&2, Op>:
+  single_op.of(op_of(pat, k))
+
+
+def early.step(+pat: Pat, k: U32, rest: List<&2, Op>) -> List<&2, Op>:
+  early.step.of(single_op(pat, k), rest)
+
+def early.scan(+pat: Pat, ks: List<&2, U32>) -> List<&2, Op>:
+  match ks:
+    case Nil{}: Nil{}
+    case k <> t: early.step(pat, k, early.scan(pat, t))
+
+
+def early.alts(+pat: Pat, alts: List<&2, UpAlt>) -> List<&2, Op>:
+  match alts:
+    case Nil{}: Nil{}
+    case UpFixed{ys} <> _: early.scan(pat, ys)
+    case UpRepeat{_} <> _: Nil{}
+
+
+
+
+# the `pp.op is not None and len(pp.op) == 1` guard. Three defs, because a
+# `match` scrutinee must be a PARAMETER: `Maybe` first, then the `Nat` length.
+
+
+
+
+
+# ---------------------------------------------------------------------------
+# The constructor -- ops.py:1449. `UPat(Ops.CAST, dtype, (self,))` becomes
+# `UPat.of(pat, Some{[OpsCAST{}]}, Some{[dt]}, None{}, STuple{[k]}, ...)`: Python's
+# positional and keyword arguments flattened into positional ones, which is the
+# `UOp.make` convention above.
+#
+# `strict_length`, `required_len` and `early_reject` are DERIVED here rather than
+# passed, because in Python they are derived in `__init__` too -- and deriving
+# them is what makes the ten-argument call sites short.
+# ---------------------------------------------------------------------------
+def early_scan(+pat: Pat, s: SrcArg, alts: List<&2, UpAlt>) -> List<&2, Op>:
+  match s:
+    case SNone{}: Nil{}
+    case SOne{_}: Nil{}
+    case STuple{_}: early.alts(pat, alts)
+    case SList{_}: early.alts(pat, alts)
+
+def early_of(+pat: Pat, s: SrcArg, custom: Maybe<&2, List<&2, Op>>, alts: List<&2, UpAlt>) -> List<&2, Op>:
+  match custom:
+    case Some{ers}: ers
+    case None{}: early_scan(pat, s, alts)
+
+# ---------------------------------------------------------------------------
+# `dtype` -- ops.py:1480. `self.match_dtype[0] if ... else dtypes.void`.
+# A `match` may not scrutinise a computed `Maybe`, and `List.head` returns a
+# `Maybe` too, so the unwrap and the head are two defs rather than one.
+# ---------------------------------------------------------------------------
+def dt_head.of.head(h: Maybe<&2, S.Dt>) -> S.Dt:
+  match h:
+    case Some{d}: d
+    case None{}: S.void()
+
+def dt_head.of(md: Maybe<&2, List<&2, S.Dt>>) -> S.Dt:
+  match md:
+    case Some{ds}: dt_head.of.head(List.head(&2, S.Dt, ds))
+    case None{}: S.void()
+
+
+def UPat.dtype(u: UPat) -> S.Dt:
+  dt_head.of(UPat.match_dtype(u))
+
+
+
+# `(self,)+src` -- `List.append` CONCATENATES, so `[self] ++ src` is the cons.
+
+def prepend(self: U32, src: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, [self], src)
+
+# ---------------------------------------------------------------------------
+# `named` -- ops.py:1485. Every field is carried across, and `not
+# self.strict_length` is `allow_any_len`, which is how the raw `src` survives a
+# round trip. Python's `self.op` is already a tuple, so it is already a `Some`.
+# ---------------------------------------------------------------------------
+def UPat.of.miss(+pat: Pat, want: UPat) -> PatFound:
+  PatFound{pintern.put(pat, want), U32.from_nat(List.length(&2, UPat, Pat.upats(pat)))}
+
+def UPat.of.hit(hit: Maybe<&2, U32>, +pat: Pat, +want: UPat) -> PatFound:
+  match hit:
+    case Some{i}: PatFound{pat, i}
+    case None{}: UPat.of.miss(pat, want)
+
+def UPat.of.put(+pat: Pat, +want: UPat) -> PatFound:
+  UPat.of.hit(pintern.find(Pat.upats(pat), 0, want), pat, want)
+
+def UPat.of(
+  +pat: Pat,
+  op: Maybe<&2, List<&2, Op>>,
+  match_dtype: Maybe<&2, List<&2, S.Dt>>,
+  match_tag: Maybe<&2, List<&2, Tag>>,
+  +src: SrcArg,
+  arg: Maybe<&2, Arg>,
+  name: Maybe<&2, String>,
+  allow_any_len: Bool,
+  custom_early_reject: Maybe<&2, List<&2, Op>>,
+  is_any: Bool) -> PatFound:
+
+  # `alts_of(src)` is pure and `src` is `+`-shared, so it is recomputed rather
+  # than bound: a `let` is affine and would be consumed by the constructor.
+  u: UPat = UPat{op, match_dtype, match_tag, arg, name, src, alts_of(src), is_any,
+           strict_of(src, allow_any_len), required_of(src),
+           early_of(pat, src, custom_early_reject, alts_of(src))}
+  UPat.of.put(pat, u)
+
+def UPat.named.put(u: UPat, name: String, pat: Pat) -> PatFound:
+  match u:
+    case UPat{op, md, mt, arg, _, si, _, any, sl, _, _}: UPat.of(
+      pat, op, md, mt, si, arg, Some{name}, Bool.not(sl), None{}, any)
+def opt_dts.one(dt: Maybe<&2, S.Dt>) -> Maybe<&2, List<&2, S.Dt>>:
+  match dt:
+    case Some{d}: Some{[d]}
+    case None{}: None{}
+
+def opt_dts(dt: Maybe<&2, S.Dt>) -> Maybe<&2, List<&2, S.Dt>>:
+  opt_dts.one(dt)
+
+def UPat.var(pat: Pat, name: Maybe<&2, String>, dt: Maybe<&2, S.Dt>) -> PatFound:
+  UPat.of(pat, None{}, opt_dts(dt), None{}, SNone{}, None{}, name, False{}, None{}, False{})
+
+
+def UPat.named.of(hit: Maybe<&2, UPat>, name: String, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.named.put(u, name, pat)
+    # a miss cannot happen for a pattern built here; Python would raise
+    # AttributeError, and a bare named var is the honest nothing-to-rebuild
+    case None{}: UPat.var(pat, Some{name}, None{})
+
+
+def UPat.named(+pat: Pat, k: U32, name: String) -> PatFound:
+  UPat.named.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), name, pat)
+
+
+
+# ---------------------------------------------------------------------------
+# `any` / `or_casted` / `or_bitcasted` / `or_after` -- ops.py:1487-1493.
+#
+# `self if name is None else self.named(name)` is a Maybe-index choice, and the
+# wrapper's `src=(self,)` is the ORIGINAL pattern even when `any` gets the named
+# copy -- an upstream subtlety that a "tidy" rewrite would lose.
+# ---------------------------------------------------------------------------
+
+def UPat.any(pat: Pat, src: List<&2, U32>) -> PatFound:
+  UPat.of(pat, None{}, None{}, None{}, STuple{src}, None{}, None{}, False{}, None{}, True{})
+def UPat.or_any.pair(chosen: U32, +wrapped: PatFound) -> PatFound:
+  UPat.any(PatFound.pat(wrapped), [chosen, PatFound.i(wrapped)])
+def or_pick(pat: Pat, k: U32, name: Maybe<&2, String>) -> U32:
+  match name:
+    case None{}: k
+    case Some{nm}: PatFound.i(UPat.named(pat, k, nm))
+def UPat.or_any.wrap(pat: Pat, k: U32, name: Maybe<&2, String>, wrap: Op, any_len: Bool) -> PatFound:
+  UPat.of(pat, Some{[wrap]}, None{}, None{}, STuple{[k]}, None{}, name, any_len, None{}, False{})
+
+
+
+def UPat.or_any(+pat: Pat, +k: U32, +name: Maybe<&2, String>, wrap: Op, any_len: Bool) -> PatFound:
+  UPat.or_any.pair(or_pick(pat, k, name), UPat.or_any.wrap(pat, k, name, wrap, any_len))
+
+
+def UPat.or_casted(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
+  UPat.or_any(pat, k, name, OpsCAST{}, False{})
+
+def UPat.or_bitcasted(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
+  UPat.or_any(pat, k, name, OpsBITCAST{}, False{})
+
+def UPat.or_after(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
+  UPat.or_any(pat, k, name, OpsAFTER{}, True{})
+
+# three steps, each returning `(arena, index)`: pick self-or-named, wrap it, then
+# `UPat.any` over the two. The wrapper's `src` is always the ORIGINAL index.
+
+# three steps, each carrying the arena: pick self-or-named, wrap the ORIGINAL
+# index, then `UPat.any` over the two. The wrapper's `src=(self,)` is the
+# original pattern even when `any` receives the named copy -- an upstream
+# subtlety a "tidy" rewrite would lose.
+
+
+
+
+# `self if name is None else self.named(name)`
+
+
+# ---------------------------------------------------------------------------
+# `var` / `cvar` / `const` -- ops.py:1495-1501. `@functools.cache` is the intern
+# inside `UPat.of`, so these three are also the interning demonstration: two calls
+# with the same name return the SAME index.
+#
+# `dtype` may be one `DType` or a tuple of them, and a single one is wrapped.
+# ---------------------------------------------------------------------------
+
+
+
+
+def UPat.cvar(pat: Pat, name: Maybe<&2, String>, dt: Maybe<&2, S.Dt>, arg: Maybe<&2, Arg>) -> PatFound:
+  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), None{}, SNone{}, arg, name, False{}, None{}, False{})
+
+def UPat.const(pat: Pat, b: Const, dt: Maybe<&2, S.Dt>) -> PatFound:
+  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), None{}, SNone{}, Some{APy{b}}, None{}, False{}, None{}, False{})
+
+# ---------------------------------------------------------------------------
+# The one-src sugar -- ops.py:1504-1522. Each is `UPat.of` with a fixed `op` and
+# `(self,)+src`, so each is one call and there is nothing to decide.
+#
+# `sink` -- ops.py:1506. `tuple([x for x in srcs if x is not None])` filters Nones
+# in Python; here every index is already present, so the caller owns that and
+# `None` would be a caller bug, not a runtime case.
+# ---------------------------------------------------------------------------
+
+def UPat.f(pat: Pat, k: U32, op: Op) -> PatFound:
+  UPat.of(pat, Some{[op]}, None{}, None{}, STuple{[k]}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.sink(pat: Pat, srcs: List<&2, U32>) -> PatFound:
+  UPat.of(pat, Some{[OpsSINK{}]}, None{}, None{}, STuple{srcs}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.index(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
+  UPat.of(pat, Some{[OpsINDEX{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.load(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
+  UPat.of(pat, Some{[OpsLOAD{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.store(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
+  UPat.of(pat, Some{[OpsSTORE{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.end(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
+  UPat.of(pat, Some{[OpsEND{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.backedge(pat: Pat, k: U32, loop: U32, cond: U32) -> PatFound:
+  UPat.of(pat, Some{[OpsBACKEDGE{}]}, None{}, None{}, STuple{[k, loop, cond]}, None{}, None{}, False{}, None{}, False{})
+
+# `reduce` -- ops.py:1516. `arg = kwargs.pop('arg', None); if isinstance(arg, Ops):
+# arg = (arg, 0)`, so a bare `Ops` arg becomes a `(rop, 0)` REDUCE pair. The port
+# takes the two halves directly, which is the same information with the
+# `isinstance` test already done at the call site.
+def UPat.reduce.md(u: UPat, arg: Maybe<&2, Arg>, k: U32, srcs: List<&2, U32>, pat: Pat) -> PatFound:
+  match u:
+    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsREDUCE{}]}, md, None{}, STuple{prepend(k, srcs)}, arg, None{}, False{}, None{}, False{})
+
+def UPat.reduce.put(hit: Maybe<&2, UPat>, arg: Maybe<&2, Arg>, k: U32, srcs: List<&2, U32>, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.reduce.md(u, arg, k, srcs, pat)
+    case None{}: UPat.var(pat, None{}, None{})
+
+def UPat.reduce.of(+pat: Pat, +k: U32, srcs: List<&2, U32>, arg: Maybe<&2, Arg>) -> PatFound:
+  UPat.reduce.put(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), arg, k, srcs, pat)
+
+def UPat.reduce(+pat: Pat, k: U32, srcs: List<&2, U32>, rop: Op, ax: U32) -> PatFound:
+  UPat.reduce.of(pat, k, srcs, Some{AReduce{rop, ax}})
+
+
+
+
+# `cast` -- ops.py:1510. The short-circuit `if dtype is not None and
+# self.match_dtype == (dtype,): return self` is a no-op guard, so it is kept:
+# it is what stops a redundant CAST from being built.
+def UPat.bitcast.put(pat: Pat, u: UPat, dt: Maybe<&2, S.Dt>, k: U32) -> PatFound:
+  match u:
+    case UPat{_, _, _, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsBITCAST{}]}, opt_dts(dt), None{}, STuple{[k]}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.cast.same(same: Bool, +u: UPat, +dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
+  match same:
+    case True{}: PatFound{pat, k}
+    case False{}: UPat.bitcast.put(pat, u, dt, k)
+def is_same_dt.of(want: Maybe<&2, List<&2, S.Dt>>, got: Maybe<&2, List<&2, S.Dt>>) -> Bool:
+  match want:
+    case Some{w}:
+      match got:
+        case Some{g}: eq_dt_list(w, g)
+        case None{}: False{}
+    case None{}: False{}
+
+def is_same_dt(md: Maybe<&2, List<&2, S.Dt>>, +dt: Maybe<&2, S.Dt>) -> Bool:
+  is_same_dt.of(opt_dts(dt), md)
+
+
+def UPat.cast.md(+u: UPat, +dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
+  UPat.cast.same(is_same_dt(UPat.match_dtype(u), dt), u, dt, k, pat)
+
+def UPat.cast.of(hit: Maybe<&2, UPat>, dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.cast.md(u, dt, k, pat)
+    case None{}: UPat.var(pat, None{}, None{})
+
+def UPat.cast(+pat: Pat, +k: U32, dt: Maybe<&2, S.Dt>) -> PatFound:
+  UPat.cast.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), dt, k, pat)
+
+
+# the short-circuit returns SELF, not a new pattern, so the arena is untouched
+# and the answer is the index it was handed.
+
+
+
+
+# `bitcast` is the tail of `cast`'s body, and is its own method upstream
+def UPat.bitcast.of(hit: Maybe<&2, UPat>, dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.bitcast.put(pat, u, dt, k)
+    case None{}: UPat.var(pat, None{}, None{})
+
+def UPat.bitcast(+pat: Pat, +k: U32, dt: Maybe<&2, S.Dt>) -> PatFound:
+  UPat.bitcast.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), dt, k, pat)
+
+
+
+# `broadcast` -- ops.py:1519. `src=self` is a UPat, not a tuple, so this is the
+# `SOne` case: ONE UNBOUNDED alternative rather than a permuted list.
+def UPat.broadcast.put(pat: Pat, u: UPat, k: U32) -> PatFound:
+  match u:
+    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsSTACK{}]}, md, None{}, SOne{k}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.broadcast.of(hit: Maybe<&2, UPat>, +k: U32, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.broadcast.put(pat, u, k)
+    case None{}: UPat.var(pat, None{}, None{})
+
+def UPat.broadcast(+pat: Pat, +k: U32) -> PatFound:
+  UPat.broadcast.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), k, pat)
+
+
+
+# `after` -- ops.py:1520
+def UPat.after.put(pat: Pat, u: UPat, k: U32, srcs: List<&2, U32>) -> PatFound:
+  match u:
+    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsAFTER{}]}, md, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+
+def UPat.after.of(hit: Maybe<&2, UPat>, +k: U32, +srcs: List<&2, U32>, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.after.put(pat, u, k, srcs)
+    case None{}: UPat.var(pat, None{}, None{})
+
+def UPat.after(+pat: Pat, +k: U32, srcs: List<&2, U32>) -> PatFound:
+  UPat.after.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), k, srcs, pat)
+
+
+
+# ---------------------------------------------------------------------------
+# `alu` -- ops.py:1531.
+#
+#   asrc = (self,)+src
+#   UPat(op, boolean if op in {CMPLT, CMPNE} else asrc[-1].match_dtype,
+#        list(asrc) if op in GroupOp.Commutative else asrc)
+#
+# `GroupOp.Commutative` is read off the Op tag, which is what `Ops.value` already
+# gives: ADD, AND, CMPEQ, CMPNE, MAX, MUL, OR, XOR -- all BINARY, which is why
+# the permutation branch above is exact at arity 2 and refuses 3.
+# `asrc[-1]` is the LAST of 1 or 2, so the arity dispatch is two cases.
+# ---------------------------------------------------------------------------
+def UPat.alu.src.of(pat: Pat, comm: Bool, op: Op, +k: U32, other: U32, md: Maybe<&2, List<&2, S.Dt>>) -> PatFound:
+  match comm:
+    case True{}: UPat.of(pat, Some{[op]}, md, None{}, SList{[k, other]}, None{}, None{}, False{}, None{}, False{})
+    case False{}: UPat.of(pat, Some{[op]}, md, None{}, STuple{[k, other]}, None{}, None{}, False{}, None{}, False{})
+def is_one_of(op: Op, want: Op) -> Bool:
+  U32.is_eq(Ops.value(op), Ops.value(want))
+
+def is_comm(+op: Op) -> Bool:
+  Bool.or(is_one_of(op, OpsADD{}), Bool.or(is_one_of(op, OpsMUL{}),
+  Bool.or(is_one_of(op, OpsMAX{}), Bool.or(is_one_of(op, OpsAND{}),
+  Bool.or(is_one_of(op, OpsOR{}), Bool.or(is_one_of(op, OpsXOR{}),
+  Bool.or(is_one_of(op, OpsCMPEQ{}), is_one_of(op, OpsCMPNE{}))))))))
+
+
+def UPat.alu.src(+pat: Pat, md: Maybe<&2, List<&2, S.Dt>>, +op: Op, +k: U32, other: U32) -> PatFound:
+  UPat.alu.src.of(pat, is_comm(op), op, k, other, md)
+def last_md.of(hit: Maybe<&2, UPat>) -> Maybe<&2, List<&2, S.Dt>>:
+  match hit:
+    case Some{u}: UPat.match_dtype(u)
+    case None{}: None{}
+
+def last_md(pat: Pat, other: U32) -> Maybe<&2, List<&2, S.Dt>>:
+  last_md.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(other)))
+
+def UPat.alu.dt.of(cmp: Bool, pat: Pat, other: U32) -> Maybe<&2, List<&2, S.Dt>>:
+  match cmp:
+    case True{}: Some{[S.boolean()]}
+    case False{}: last_md(pat, other)
+def is_cmp(+op: Op) -> Bool:
+  Bool.or(U32.is_eq(Ops.value(op), Ops.value(OpsCMPLT{})),
+          U32.is_eq(Ops.value(op), Ops.value(OpsCMPNE{})))
+
+
+def UPat.alu.dt(+pat: Pat, +k: U32, other: U32, op: Op) -> Maybe<&2, List<&2, S.Dt>>:
+  UPat.alu.dt.of(is_cmp(op), pat, other)
+
+
+def UPat.alu.put(+pat: Pat, u: UPat, +op: Op, +k: U32, +other: U32) -> PatFound:
+  match u:
+    case UPat{_, _, _, _, _, _, _, _, _, _, _}: UPat.alu.src(
+      pat, UPat.alu.dt(pat, k, other, op), op, k, other)
+
+def UPat.alu.of(hit: Maybe<&2, UPat>, op: Op, +k: U32, +other: U32, pat: Pat) -> PatFound:
+  match hit:
+    case Some{u}: UPat.alu.put(pat, u, op, k, other)
+    case None{}: UPat.var(pat, None{}, None{})
+
+
+def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
+  UPat.alu.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), op, k, other, pat)
+
+
+
+# `boolean if op in {CMPLT, CMPNE} else asrc[-1].match_dtype`
+
+
+
+
+
+
+
+
+# `list(asrc) if op in GroupOp.Commutative else asrc`
+
+
+
+
+
+# ops.py:1474-1475: `custom_early_reject` overrides the computed set.
+
+
+
+# intern, then hand back the index. The MISS index is the arena's length BEFORE
+# the append -- so the two facts are read at different points on purpose, and
+# `UPat.of.hit` is where they are brought together. Reading the length AFTER the
+# append and subtracting one is the same number, and `UOp.of.intern.put` spells
+# it that way; the point is that it must be the pre-append count either way.
+
 
 # ===========================================================================
 # THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
@@ -2296,65 +3132,59 @@ def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 # TODO(p3) ops.py:1438  def get_location
 #   # ***** pattern matcher *****
 
-# TODO(p3) ops.py:1449  def __init__
-
-# TODO(p3) ops.py:1480  def dtype
-
+# `UPat` IS PORTED -- the type, the pattern arena, the intern, the `src`
+# normalisation, and every constructor except the five below. See the section at
+# ops.py:1447. The pattern ARENA is the load-bearing decision and it is recorded
+# at the type: `src` holds INDICES, so `eq_upat` is a flat walk instead of the
+# mutual recursion a recursive pattern type would demand, and both sides of a
+# match are read-only `Data`, so no arena is threaded.
+#
+# PORTED  __init__     -> UPat.of / alts_of / strict_of / required_of / early_of
+# PORTED  dtype        -> UPat.dtype
+# PORTED  named        -> UPat.named
+# PORTED  any          -> UPat.any
+# PORTED  or_casted    -> UPat.or_casted
+# PORTED  or_bitcasted -> UPat.or_bitcasted
+# PORTED  or_after     -> UPat.or_after
+# PORTED  var          -> UPat.var        (functools.cache is the intern)
+# PORTED  cvar         -> UPat.cvar       (functools.cache is the intern)
+# PORTED  const        -> UPat.const
+# PORTED  f            -> UPat.f
+# PORTED  sink         -> UPat.sink
+# PORTED  index        -> UPat.index
+# PORTED  cast         -> UPat.cast       (the no-op short-circuit is kept)
+# PORTED  bitcast      -> UPat.bitcast
+# PORTED  load         -> UPat.load
+# PORTED  store        -> UPat.store
+# PORTED  reduce       -> UPat.reduce
+# PORTED  broadcast    -> UPat.broadcast  (src=self, so ONE unbounded alt)
+# PORTED  after        -> UPat.after
+# PORTED  end          -> UPat.end
+# PORTED  backedge     -> UPat.backedge
+# PORTED  alu          -> UPat.alu        (Commutative read off Ops.value)
+#
 # TODO(p3) ops.py:1482  def __reduce__
+#   # CPython frame introspection. `location` is deliberately not a field: a
+#   # field the port cannot read is a field that would silently always be None.
 
-# TODO(p3) ops.py:1485  def named
-
-# TODO(p3) ops.py:1489  def any
-
-# TODO(p3) ops.py:1490  def or_casted
-
-# TODO(p3) ops.py:1491  def or_bitcasted
-
-# TODO(p3) ops.py:1492  def or_after
-
-# TODO(p3) ops.py:1496  def var
-
-# TODO(p3) ops.py:1499  def cvar
-
-# TODO(p3) ops.py:1501  def const
-
-# TODO(p3) ops.py:1504  def f
-#   # lil helper
-
-# TODO(p3) ops.py:1507  def sink
-#   # copied from UOp
-
-# TODO(p3) ops.py:1509  def index
-
-# TODO(p3) ops.py:1511  def cast
-
-# TODO(p3) ops.py:1514  def bitcast
-
-# TODO(p3) ops.py:1515  def load
-
-# TODO(p3) ops.py:1516  def store
-
-# TODO(p3) ops.py:1517  def reduce
-
-# TODO(p3) ops.py:1521  def broadcast
-
-# TODO(p3) ops.py:1522  def after
-
-# TODO(p3) ops.py:1523  def end
-
-# TODO(p3) ops.py:1524  def backedge
+# The five left are ONE deferral, not five. `_broadcasted` is
+# `self, y = self.ufix(y)`, and `ufix` is `UPat.cvar(arg=x) if not isinstance(x,
+# UPat) else x` -- the only place in the class that accepts a value which is NOT
+# already a pattern. In an arena that is a two-armed sum over `ConstType`, and
+# the arm would be threaded through all five methods rather than tested once.
+# Every one of the five is a caller of `ufix` and nothing else.
 
 # TODO(p3) ops.py:1526  def _broadcasted
-
 # TODO(p3) ops.py:1529  def ufix
-
 # TODO(p3) ops.py:1530  def __floordiv__
-
 # TODO(p3) ops.py:1531  def __rfloordiv__
-
 # TODO(p3) ops.py:1532  def mod
 
-# TODO(p3) ops.py:1533  def alu
+# `itertools.permutations` is exact at arity 1 and 2 and REFUSES 3 or more by
+# yielding no alternatives, so a 3-ary commutative pattern matches nothing
+# rather than matching wrongly. Unreachable from ops.py -- every member of
+# `GroupOp.Commutative` is binary -- and the only other caller is `spec.py`.
+# TODO(p3) ops.py:1464  permutations, arity >= 3
 
 # TODO(p3) ops.py:1537  def match
 
@@ -2477,9 +3307,6 @@ def t_dtype_key() -> Bool:
   +b = UOp.const(Found.ar(f), CBool{True{}})
   Bool.not(U32.is_eq(Found.i(f), Found.i(b)))
 
-def eq_op(x: Op, y: Op) -> Bool:
-  U32.is_eq(Ops.value(x), Ops.value(y))
-
 # the BACKEDGE reads back as itself: src[0] is the SPECIAL and src[1] the RANGE
 # whose arg names the axis it closes over. Python's IndexError on a short src is
 # the 0 that `Arena.src` answers.
@@ -2515,8 +3342,115 @@ def t_key_eq() -> Bool:
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}}))),
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}})))
 
+# --- the UPat arena ---------------------------------------------------------
+# Four claims, each a decision rather than a transliteration, so each is checked.
+# `pat_base` is the fixture: a pattern arena holding ONE named var at index 0, so
+# every later index is a real child. Without it `List.get` misses, the sugar
+# falls to its no-input branch, and the test passes for the wrong reason.
+def pat_base.of(f: PatFound) -> Pat:
+  PatFound.pat(f)
+
+
+def pat_base() -> Pat:
+  pat_base.of(UPat.var(Pat{[]}, Some{"x"}, None{}))
+
+
+# all three from ONE arena, threaded: `x` lands at 0, `x` again must still be 0,
+# and `y` must be 1. Two SEPARATE arenas would make every index 0 and the test
+# would pass for the wrong reason, so the arena is threaded rather than rebuilt.
+def t_var_interns.y(+x1: PatFound, +x2: PatFound, y1: PatFound) -> Bool:
+  Bool.and(U32.is_eq(PatFound.i(x1), PatFound.i(x2)),
+           Bool.not(U32.is_eq(PatFound.i(x2), PatFound.i(y1))))
+
+def t_var_interns.go(+x1: PatFound, +x2: PatFound) -> Bool:
+  t_var_interns.y(x1, x2, UPat.var(PatFound.pat(x2), Some{"y"}, None{}))
+
+def t_var_interns.of(+x1: PatFound) -> Bool:
+  t_var_interns.go(x1, UPat.var(PatFound.pat(x1), Some{"x"}, None{}))
+
+def t_var_interns() -> Bool:
+  t_var_interns.of(UPat.var(Pat{[]}, Some{"x"}, None{}))
+
+
+
+
+# `src=self` in `broadcast` is `itertools.repeat`, so ONE unbounded alternative --
+# never an infinite list -- and `required_len` 0, because the read is bounded by
+# `strict_length` being False instead.
+def t_broadcast_repeats.of(alts: List<&2, UpAlt>) -> Bool:
+  match alts:
+    case Nil{}: False{}
+    case UpRepeat{x} <> _: U32.is_eq(x, 0)
+    case UpFixed{_} <> _: False{}
+def pat_nth.of(hit: Maybe<&2, UPat>) -> UPat:
+  match hit:
+    case Some{u}: u
+    case None{}: UPat{None{}, None{}, None{}, None{}, None{}, SNone{}, Nil{}, False{}, False{}, 0, Nil{}}
+
+def pat_nth(+f: PatFound, n: U32) -> UPat:
+  pat_nth.of(List.get(&2, UPat, Pat.upats(PatFound.pat(f)), U32.to_nat(n)))
+
+
+def t_broadcast_repeats.go(+f: PatFound) -> Bool:
+  t_broadcast_repeats.of(UPat.src(pat_nth(f, PatFound.i(f))))
+
+def t_broadcast_repeats() -> Bool:
+  t_broadcast_repeats.go(UPat.broadcast(pat_base(), 0))
+
+
+
+# `required_len` is 0 for the repeat case and the src LENGTH otherwise.
+def t_required_len.of(rep: UPat, tup: UPat) -> Bool:
+  Bool.and(U32.is_eq(UPat.required_len(rep), 0), U32.is_eq(UPat.required_len(tup), 1))
+
+def t_required_len() -> Bool:
+  t_required_len.of(pat_nth(UPat.broadcast(pat_base(), 0), 1),
+                    pat_nth(UPat.f(pat_base(), 0, OpsADD{}), 1))
+
+
+# a list src of two DISTINCT patterns permutes, so `alu(ADD, ...)` -- ADD is in
+# `GroupOp.Commutative` -- has TWO alternatives. `OpsCAST` is not, so it keeps
+# its tuple order and has ONE.
+def n_alts_of(alts: List<&2, UpAlt>) -> U32:
+  match alts:
+    case Nil{}: 0
+    case _ <> t: U32.add(1, n_alts_of(t))
+def t_alu_permutes.n(+f: PatFound, want: U32) -> Bool:
+  U32.is_eq(n_alts_of(UPat.src(pat_nth(f, PatFound.i(f)))), want)
+
+
+def t_alu_permutes.of(+comm: PatFound, +plain: PatFound) -> Bool:
+  Bool.and(t_alu_permutes.n(comm, 2), t_alu_permutes.n(plain, 1))
+
+
+def t_alu_permutes() -> Bool:
+  t_alu_permutes.of(UPat.alu(pat_base(), 0, OpsADD{}, 1),
+                    UPat.alu(pat_base(), 0, OpsCAST{}, 1))
+
+
+
+# `early_reject` reads only the FIRST alternative, and only patterns whose `op`
+# is a single Op. A `cvar` is `op=(CONST,)`, so wrapping one in an `f` yields
+# exactly one rejected op.
+def t_early_reject.of(ers: List<&2, Op>) -> Bool:
+  U32.is_eq(U32.from_nat(List.length(&2, Op, ers)), 1)
+
+
+# a `cvar` is `op=(CONST,)`, which is what `early_reject` collects
+def pat_base_op.of(f: PatFound) -> Pat:
+  PatFound.pat(f)
+
+def pat_base_op() -> Pat:
+  pat_base_op.of(UPat.cvar(Pat{[]}, Some{"c"}, None{}, None{}))
+
+def t_early_reject() -> Bool:
+  t_early_reject.of(UPat.early_reject(pat_nth(UPat.f(pat_base_op(), 0, OpsADD{}), 1)))
+
+
+
+
 # Bend has no assertion form, so `main` PRINTS each answer and the gate is that
-# both lanes print the same six lines. A `False{}` anywhere is the failure.
+# both lanes print the same lines. A `False{}` anywhere is the failure.
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 
@@ -2527,7 +3461,12 @@ def main() -> IO(Unit):
     c : Unit <- row("cycle", t_cycle())
     d : Unit <- row("toposort", t_toposort())
     e : Unit <- row("cycle_terminates", t_cycle_terminates())
-    row("key_eq", t_key_eq())
+    f : Unit <- row("key_eq", t_key_eq())
+    g : Unit <- row("var_interns", t_var_interns())
+    h : Unit <- row("broadcast_repeats", t_broadcast_repeats())
+    i : Unit <- row("required_len", t_required_len())
+    j : Unit <- row("alu_permutes", t_alu_permutes())
+    row("early_reject", t_early_reject())
 
 # ===========================================================================
 # NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape
@@ -2592,9 +3531,11 @@ def main() -> IO(Unit):
 #     function object, used to turn uop arguments into params. P7 with the mixin.
 #   `is_any`, `custom_early_reject`, `allow_any_len`, `permutations` and
 #     `functools.repeat` in `UPat.__init__`, and `upat_compile` -- the pattern
-#     COMPILER (`tinygrad/uop/upat.py`). `UPat` itself is P3; the compiler is a
-#     separate file and its output is a def per rule, so the machinery here
-#     dispatches a tag rather than calling a compiled function pointer.
+#     COMPILER (`tinygrad/uop/upat.py`). `UPat` is PORTED (see ops.py:1447, with
+#     a pattern arena of its own); the COMPILER is a separate file whose output is
+#     a def per rule, so the machinery here dispatches a tag rather than calling
+#     a compiled function pointer. `permutations` at arity >= 3 is the one part
+#     of `__init__` not ported, and it is unreachable from ops.py.
 #   `upat_interpret`'s `types.FunctionType(*deconstruct_function(fxn))` and
 #     `inspect.signature(real_fxn).parameters` -- rebuilding a Python function
 #     from its code object. Same answer as above: rules are top-level defs.
@@ -2609,3 +3550,4 @@ def main() -> IO(Unit):
 #   `Ops` reverse lookup (`Ops("ADD")`) and `AxisType` reverse lookup -- not
 #     called by ops.py; `AxisType.of` is here anyway because `range_str` needs
 #     a name and a test needs a name.
+

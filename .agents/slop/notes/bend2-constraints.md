@@ -582,3 +582,145 @@ Three more rules this cost:
 And the constraint that survives from the retraction: **the table is linear**, so
 a second pass rebuilds it (`pass2(prev)` calls `engine_pass(table(), prev)`).
 That is the entire structural cost to `uop/spec.py`, and it is one call site.
+
+## Writing a Kahn worklist, which is how the folds get expressed
+
+Measured on `tinybendygrad/uop/fold.bend`: the derived properties of
+`tinygrad/uop/ops.py` as ONE topological fold, 2205 lines, `ALL PROOFS CHECK`
+with no `@unsafe`. This is the shape every recursive property in the port wants,
+so the rules it forced are the rules that decide the port.
+
+### 1. No forward references, and the error lies about the cause
+
+    def caller(n: U32) -> U32:  helper(n)
+    def helper(n: U32) -> U32:  U32.add(n, 1)
+    #| - expected : a filled definition (an unfilled law is a dead claim:
+    #|             live code cannot use it)
+    #| - observed : helper
+
+So **declaration order is a hard ordering constraint** (Python's order is not
+reusable), and the message is the one the compiler also gives for a law
+declaration left unfilled — a mis-ordered def and a dead `def foo:` stub are
+indistinguishable. My order came out of a Tarjan SCC pass over the def graph
+(`slop_topo.py`, since deleted): 0 SCCs, so a plain topological order.
+
+### 2. A self-call SPENDS the list it walks, so a walk cannot return it
+
+    def len2(xs: List<&2, U32>) -> Nat:
+      Nat.add(List.length(&2, U32, xs), List.length(&2, U32, xs))
+    #| - expected : xs
+    #| - observed : xs (consumed more than once)
+
+`+xs` fixes exactly this, and it is accepted on a `List` (measured — `+` is
+refused only for `Type`-kinded values: functions, `Array<T>`, handles, `IO`):
+
+    def len2(+xs: List<&2, U32>) -> Nat:  ...        # ALL PROOFS CHECK
+
+But `+` licenses *the caller's* uses, not the callee's: a self-call still
+consumes its argument, so the recursive arm's value is the **tail**. A fold that
+must return both the list it walked and a number derived from it has to rebuild
+the list in reverse and `List.reverse` it. Two of the five bugs below are this,
+and both were silent.
+
+### 3. A `Data` record is how a list travels with something derived from it
+
+Bend has no tuple, so a fold step that needs `(shapes, max_dim)` needs a record:
+
+    type Shapes is Data: Shapes{ds: List<&2, Sized>, m: Nat}
+
+and the record is `Data` precisely so the step can read both fields. This is
+*not* a workaround: a fold that answers a node's `dtype` and its `shape` has two
+values to hand on, and the arena hands out one.
+
+### 4. A two-scrutinee `match` must cover the cross product, and `_` counts
+
+    match xs b:
+      case Nil{} True{}: 0
+      case Nil{} False{}: 1
+      case h <> t True{}: h
+    #| - expected : cases for False
+    #| - observed : {}
+
+A wildcard is a cover, not a gap: `case Nil{} _:` and `case h <> t _:` check, and
+so does a match of two wildcards. So the rule is plain exhaustiveness over the
+product of the scrutinees' constructors — which is what forces an
+accumulator-carrying walk to enumerate `Nil`/`cons` × `True`/`False` rather than
+return early. **This is why "just return `None` when the answer is no" is not
+available**: an early return from the middle of a walk needs a def that calls
+back into the walk, and that is mutual recursion, which is refused (1.5). The
+flag rides along instead.
+
+### 5. `Nat` and `U32` are different types, and only `Nat` hands out a tail
+
+    U32.is_eq(List.length(&2, U32, xs), 1)
+    #| - expected : U32
+    #| - observed : Nat
+
+`List.length` returns `Nat`, so every length comparison is
+`Nat.is_eq(n, U32.to_nat(x))`. `Nat.to_u32` **does not exist** —
+`expected : a defined name / observed : Nat.to_u32`; use `U32.from_nat` and
+`U32.to_nat`. Numeric patterns are not uniform: `case 0:` on a `U32` and
+`case Some{0}:` on a `Maybe<U32>` both check, while `Nat`'s `1n+p` is a
+first-match prefix (see the correction above) **and is the only pattern that
+binds a smaller Nat**. So a countdown has to be a `Nat`:
+
+    def down(c: U32) -> U32:
+      match c:
+        case 0: 0
+        case _: down(U32.sub(c, 1))
+    #| - expected : a decreasing self-call (arguments are read left to right:
+    #|             each passed unchanged until one shrinks)
+
+`U32` literals pattern fine; what `U32` cannot do is *descend*.
+
+### 6. A `do` block has no statement limit, and bare calls are statements
+
+    def main() -> IO(Unit):
+      do IO<Unit>:
+        IO.print("bare")            # a bare call is a statement
+        a : Unit <- IO.print("x")
+        IO.print("bare again")
+        IO.print("done")            # and the LAST line is a term, not a statement
+
+Measured: 256 bound statements check, and the *only* thing the block insists on
+is that it ends in a term — leaving the final term off gives `expected : a term /
+observed : end of input`, which reads like a truncation bug and is not one. So a
+5-row test table is one `do` block, not five defs.
+
+### 7. A `List` table is O(n²) and `Array` cannot fix it
+
+`Array.get` computes `i & (n-1)`, so `Array.set` cannot grow a table: a resolved
+table that is built by appending **has** to be a `List`, and every read is a
+walk. One walk per src of a popped node, plus one per consumer released. Slow and
+checkable beats fast and unprovable — the alternative was an `Array` whose
+`set` silently writes the wrong cell.
+
+### 8. FIVE bugs that all typechecked, and the test that catches none of them
+
+A `List` fold is where a port stops being a transliteration, and the failures are
+silent, so they are worth writing down. Every one of these five was `ALL PROOFS
+CHECK` and four of them printed plausible output:
+
+1. **A countdown that does not count down.** `case c <> t 0n: c <> Kahn.dec.go(t, p)`
+   keeps the head and recurses. It typechecks, and the fuel runs out.
+2. **The edges, backwards.** Kahn lowers a node's *successors*, not its srcs.
+   Releasing a node's own srcs leaves every node whose src is the arena's bottom
+   unanswered forever — a fold that terminates, answers one node, and is wrong
+   about the rest.
+3. **Membership where the count is wanted.** `u in node.src` is a `Bool`, and a
+   node that names the same src twice has **two** edges into it: Python's
+   `UOp(Ops.BACKEDGE, src=(self, loop, cond))` with `self is cond` is exactly
+   that. The consumer's count never reaches zero and the fold silently drops one
+   node out of five. The fix is a count of occurrences, and it is a one-word
+   change that a Bool cannot express.
+4. **Index order is not resolution order.** `List.get(out, i)` on a table built
+   by appending as the fold answers nodes reads the wrong entry; the table is in
+   *resolution* order, so the read is a search.
+5. **Returning the tail instead of the input** (rule 2), twice.
+
+**The lesson, and it is the one I would hand the next agent: in a Bend port,
+"the fold terminates and prints" is not a test.** Four of these five reached a
+green run. The test has to be a *value* Python specifies — `dtype(CONST(3)) is
+weakint`, `shape(ADD) == (4,)`, `ended_ranges(BACKEDGE) == src[1:2]` — and the
+mutation has to be run: flip `src[1:2]` to `src[0:1]` and the row that owns that
+arm must go `False` and no other.

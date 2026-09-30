@@ -1,0 +1,133 @@
+Name                                         Lines    Tokens/Line
+-----------------------------------------  -------  -------------
+tinygrad/uop/ops.py                           1552           16.5
+tinygrad/viz/js/index.js                      1060            5.4
+tinygrad/nn/onnx.py                           1046           18.1
+tinygrad/runtime/ops_amd.py                    850           18.0
+tinygrad/mixin/op.py                           750           23.3
+tinygrad/llm/kernels/amd.py                    700           21.0
+tinygrad/viz/serve.py                          650           17.4
+tinygrad/runtime/ops_nv.py                     644           19.4
+tinygrad/renderer/amd/sqtt.py                  587            9.2
+tinygrad/runtime/support/am/ip.py              562           20.2
+tinygrad/renderer/isa/x86.py                   551           27.4
+tinygrad/helpers.py                            538           16.3
+tinygrad/runtime/support/nv/ip.py              503           18.3
+tinygrad/renderer/cstyle.py                    500           20.5
+tinygrad/runtime/support/hcq2.py               468           24.1
+tinygrad/device.py                             459           15.6
+tinygrad/llm/model.py                          454           16.9
+tinygrad/renderer/amd/generate.py              430           15.0
+tinygrad/runtime/support/system.py             364           19.8
+tinygrad/codegen/__init__.py                   357           17.9
+tinygrad/tensor.py                             355           15.8
+tinygrad/runtime/support/usb.py                355           21.9
+tinygrad/renderer/amd/dsl.py                   351           14.0
+tinygrad/uop/symbolic.py                       323           28.1
+tinygrad/runtime/support/am/amdev.py           303           18.1
+tinygrad/runtime/ops_qcom.py                   302           19.0
+tinygrad/mixin/elementwise.py                  300           14.3
+tinygrad/dtype.py                              277           15.1
+tinygrad/renderer/nir.py                       261           23.7
+tinygrad/mixin/movement.py                     259           20.6
+tinygrad/schedule/rangeify.py                  255           15.6
+tinygrad/runtime/support/autogen.py            250           18.2
+tinygrad/runtime/ops_dsp.py                    242           17.1
+tinygrad/engine/realize.py                     242           20.7
+tinygrad/renderer/llvmir.py                    235           20.0
+tinygrad/schedule/multi.py                     233           18.8
+tinygrad/codegen/opt/postrange.py              230           18.5
+tinygrad/schedule/indexing.py                  224           14.8
+tinygrad/schedule/__init__.py                  223           16.2
+tinygrad/viz/cli.py                            213           19.2
+tinygrad/runtime/ops_metal.py                  212           18.5
+tinygrad/runtime/support/memory.py             202           18.5
+tinygrad/renderer/ptx.py                       200           26.9
+tinygrad/runtime/support/rdma/bnxtdev.py       193           18.3
+tinygrad/llm/gguf.py                           192           27.5
+tinygrad/codegen/decomp/dtype.py               186           29.4
+tinygrad/llm/cli.py                            184           15.0
+tinygrad/nn/state.py                           183           15.9
+tinygrad/uop/spec.py                           183           25.0
+tinygrad/schedule/prepare.py                   182           22.3
+tinygrad/nn/__init__.py                        177           18.1
+tinygrad/codegen/decomp/transcendental.py      168           18.0
+tinygrad/runtime/ops_python.py                 166           17.8
+tinygrad/runtime/ops_webgpu.py                 161           15.1
+tinygrad/llm/serve.py                          159           13.7
+tinygrad/codegen/opt/search.py                 152           15.6
+tinygrad/engine/jit.py                         148           15.3
+tinygrad/uop/upat.py                           138           17.7
+tinygrad/codegen/opt/heuristic.py              136           19.1
+tinygrad/uop/render.py                         132           26.8
+tinygrad/codegen/late/coalesce.py              130           18.3
+tinygrad/runtime/ops_rdma.py                   128           22.0
+tinygrad/mixin/rand.py                         126           17.0
+tinygrad/mixin/gradient.py                     125           24.9
+tinygrad/runtime/ops_disk.py                   121           14.6
+tinygrad/runtime/support/c.py                  117           16.5
+tinygrad/runtime/ops_cl.py                     114           18.7
+tinygrad/runtime/support/nv/nvdev.py           113           19.7
+tinygrad/codegen/simplify.py                   112           21.8
+tinygrad/nn/optim.py                           109           19.3
+tinygrad/viz/js/worker.js                      107            5.0
+tinygrad/renderer/tc.py                        106           25.6
+tinygrad/runtime/ops_cuda.py                   106           19.7
+tinygrad/runtime/support/compiler_mesa.py      104           16.2
+tinygrad/renderer/wgsl.py                      102           24.8
+tinygrad/runtime/support/compiler_amd.py        92           13.5
+tinygrad/codegen/decomp/op.py                   92           24.2
+tinygrad/runtime/support/compiler_cuda.py       88           17.5
+tinygrad/function.py                            86           14.4
+tinygrad/renderer/amd/elf.py                    86           13.8
+tinygrad/codegen/late/regalloc.py               85           17.3
+tinygrad/uop/validate.py                        81           25.4
+tinygrad/runtime/ops_cpu.py                     75           17.9
+tinygrad/runtime/support/compiler_llvm.py       75           13.7
+tinygrad/renderer/__init__.py                   73           14.3
+tinygrad/codegen/gpudims.py                     72           18.0
+tinygrad/uop/divandmod.py                       70           19.4
+tinygrad/runtime/support/elf.py                 66           19.3
+tinygrad/codegen/late/linearizer.py             66           14.0
+tinygrad/runtime/support/objc.py                65           12.7
+tinygrad/uop/weak.py                            64           24.8
+tinygrad/renderer/amd/__init__.py               59           15.1
+tinygrad/runtime/ops_null.py                    59           24.1
+tinygrad/mixin/creation.py                      58           15.4
+tinygrad/runtime/ops_hip.py                     57           19.8
+tinygrad/schedule/allreduce.py                  56           22.2
+tinygrad/uop/__init__.py                        54           15.9
+tinygrad/schedule/memory.py                     46           17.6
+tinygrad/engine/worker.py                       42            8.9
+tinygrad/renderer/isa/__init__.py               41           11.7
+tinygrad/mixin/dtype.py                         37           11.8
+tinygrad/runtime/support/compiler_qcom.py       37           16.5
+tinygrad/runtime/support/amd.py                 32           24.8
+tinygrad/mixin/reduce.py                        26           18.2
+tinygrad/runtime/support/compiler_cpu.py        21           16.7
+tinygrad/codegen/late/gater.py                  21           31.7
+tinygrad/uop/movement.py                        17           39.9
+tinygrad/codegen/opt/__init__.py                15            9.7
+tinygrad/__init__.py                            12            6.7
+tinygrad/nn/datasets.py                         12           22.2
+tinygrad/runtime/support/compileserver.py       12           15.2
+tinygrad/nn/torch.py                             4           11.2
+tinygrad/runtime/ops_npy.py                      3           14.0
+tinygrad/llm/__main__.py                         2            8.0
+
+tinygrad                       :   1727 in  6 files
+tinygrad/codegen               :   1822 in 14 files
+tinygrad/engine                :    432 in  3 files
+tinygrad/llm                   :   1691 in  6 files
+tinygrad/mixin                 :   1681 in  8 files
+tinygrad/nn                    :   1531 in  6 files
+tinygrad/renderer              :   3582 in 14 files
+tinygrad/runtime               :   7262 in 36 files
+tinygrad/schedule              :   1219 in  7 files
+tinygrad/uop                   :   2614 in 10 files
+tinygrad/viz                   :   2030 in  4 files
+
+        ops: 77
+      flags: 55
+ core lines: 9495
+total lines: 25591
