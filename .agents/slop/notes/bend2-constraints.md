@@ -1108,3 +1108,54 @@ with seven `Bool` parameters and a `match` per arm, which is what `rend.go` and
 `Maybe`-returning helpers (`of0` .. `of6`) that exist only to keep the flag out of
 a record. Both are the direct consequence of rules 1-3, and both would be one
 line each in a language with mutual recursion and a mutable local.
+
+## EXTENDING THE DIFFERENTIAL ORACLE: THE a{n} ORDER HOLDS, AND IT FOUND A BUG
+
+The compiler's nine rows are CPython's own `_get_code` output, which is the right
+kind of evidence, but none of them spends more than one or two `a{n}`s — so the
+NUMBERING, which the port makes a separate pre-order pass, was untested. The
+oracle extends in one command. The probe is
+`.agents/slop/notes/upat-anum-probe.bend`; run it and run CPython's `_get_code`
+on the same patterns and diff.
+
+**THE ORDERING HOLDS.** Four patterns, four levels deep, up to four `a{n}`s, all
+MATCH CPython byte for byte:
+
+| pattern | `a{n}` spent | result |
+| --- | --- | --- |
+| `UPat(Ops.ADD, src=(UPat(Ops.MUL, name="x"), UPat(Ops.CAST, name="y")))` | `a0 a1 a2` | MATCH |
+| `UPat(Ops.CALL, src=(UPat(Ops.PARAM, name="dst"), UPat(Ops.RANGE, name="r")))` | `a0 a1 a2` | MATCH |
+| `UPat.any(UPat(Ops.MUL, name="a"), UPat(Ops.SUB, name="b"))` | `a0 a1` | MATCH |
+| `UPat(Ops.INDEX, src=(UPat(Ops.ADD, src=(UPat(Ops.MUL, name="m"), UPat(Ops.SUB, name="s"))), UPat(name="i")))` | `a0 a1 a2 a3` | MATCH |
+
+So the deviation reported in the compiler commit — Python numbering inside
+`pm_renderer`, the port numbering in a separate pre-order pass — is NOT observable
+in the generated source, through four levels. It remains a structural difference
+between the two implementations, so it is not disproved, only unexercised less
+than feared.
+
+**AND THE SAME PROBE FOUND A REAL BUG.** The `repeat` arm — `src=UPat(...)`, which
+is `itertools.repeat` — resolves its child ONLY at pattern index 0. At index 1 it
+returns `None`, and CPython returns real code:
+
+| the same pattern, child at | port | CPython |
+| --- | --- | --- |
+| index 0 (`pat_repeat`'s shape) | full code, MATCHES CPython | full code |
+| index 1 | **`None`** | full code |
+
+`UPat(Ops.INDEX, src=(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")), UPat(name="i")))`
+returns `None` from the port and a full `compiled_match` from CPython. And
+`repeat` nested inside `is_any` also returns `None` where CPython emits both
+branches — note that CPython's numbering there is PER BRANCH, both branches using
+`a0`, which is another thing the nine rows could not see.
+
+The likely site is the repeat handling resolving the child by POSITION rather
+than by the index stored in `UpRepeat{x}` — so `is_rep` / `child_base` /
+`alt_group`. **This is a bug, not a wall**, and it is invisible to the current
+gate because `pat_repeat` happens to put its child at index 0.
+
+THE LESSON, which is the point of doing this at all: nine rows against a real
+oracle is strong evidence about the cases the rows cover and NO evidence about
+the rest. The cheapest possible extension — six more patterns through the same
+oracle — turned an "unverified deviation" into a "verified ordering plus a
+concrete bug". Neither was findable by reading the code.
