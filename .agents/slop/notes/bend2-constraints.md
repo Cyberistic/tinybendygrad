@@ -1349,3 +1349,713 @@ other side, which is why the port has no closures.
 
 **WHAT DOES NOT HELP:** raising a timeout. Every occurrence here was a genuine
 non-termination, and each one cost 120s of waiting to learn nothing.
+
+## EIGHT MORE RULES, MEASURED 2026-09-30 WHILE PORTING `uop/weak.py`
+
+### 1. `def f.b(...)` MUST BE DECLARED BEFORE `def f.a(...)` THAT CALLS IT
+The "no forward references" rule bites hardest in the `name.phase` naming
+convention, because the reading order a human expects (outer call first, helper
+below) is the order the checker refuses. `weak.py`'s port lost four cycles to it:
+`derived_dtypes.hold`, `commit_srcs_at.bare`, `wk_dt_const.sealed_pick` and
+`wk_blocked.of` each had to be moved ABOVE its own caller. The error reads
+`expected : a filled definition (an unfilled law is a dead claim: live code cannot
+use it) / observed : <name>`, which does not say "declared too late" at all. The
+existing driver `tools/hoist.py` fixes it; the tell is the error text above.
+
+### 2. A `Some{g}` BINDER OVER A `Data` RECORD IS AFFINE: TWO READS NEED `Some{+g}`
+`Found` is `Data`, which makes it shareable ACROSS functions, but a binder pulled
+out of a `Maybe` is a normal affine binder. Measured on
+`case Some{g}: wk_dt(refold(g), wk_src1(refold(g), O.Found.i(g)))` -- two reads of
+`g` and the error is `expected : g / observed : g (consumed more than once)`.
+`+` in the PATTERN position (`Some{+g}`) is the fix, not `+` on the `Maybe`
+parameter, which rule 3 of the section above forbids.
+
+### 3. `Nat` LITERALS ONLY BIND IN A `Nat` CONTEXT, AND `Bool.to_u32` IS NOT ONE
+`Nat.add(n, 1)` is `expected : Nat / observed : U32`; `Nat.add(n, 1n)` is fine.
+There is a `Bool.to_u32` and NO `Bool.to_nat`, so a COUNT over a predicate needs
+its own two-arm def:
+    def nat_of(b: Bool) -> Nat:
+      match b: case True{}: 1n case False{}: 0n
+This is the same shape as `Cmp` being a datatype that a `match` can scrutinise.
+
+### 4. A RECORD PATTERN MAY NAME FEWER FIELDS THAN THE RECORD HAS -- SILENTLY
+`case Fix{fx, wl, a, c, b, bs}` against a SEVEN-field `Fix` is ACCEPTED and the
+missing field is a wildcard. So a partially-updated record type is caught ("a Fix
+pattern with 6 fields") but a partially-updated PATTERN is not: it compiles, reads
+whatever is in the un-named slot, and the gate row that depends on it goes quietly
+wrong. When a `Data` record gains a field, EVERY `case` of it must be updated by
+hand, and `--check-only` will not tell you.
+
+### 5. BEND IS STRICT: AN ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES
+    def pick2(some: Bool, dt: ODt, fx, self, ss) -> O.Arena:
+      pick(some, go(ss, walk_seed(Folded.ar(fx)), fx, ODt.dt(dt)), fx, self)
+The `dt is None` arm of `commit_weak_consts` is Python's identity, but `go` is an
+ARGUMENT, so it runs on that arm too: the walk mints nodes, and `pick` then hands
+back the GROWN arena. It typechecks, it checks, and the gate row that counts arena
+nodes is the only thing that sees it. To keep a branch LAZY the work must be inside
+a `match` ARM of a def whose FIRST parameter is the flag:
+    def walked(some: Bool, dt: ODt, fx, self, ss) -> O.Arena:
+      match some:
+        case True{}: replace_walk(go(ss, walk_seed(...), fx, ODt.dt(dt)), fx, self)
+        case False{}: O.Folded.ar(fx)
+The general rule: **a flag parameter makes the arms cheap, it does not make the
+arguments lazy.**
+
+### 6. A GROWING ACCUMULATOR CANNOT BE THE FIRST PARAMETER OF A SELF-CALL
+Rule 7 of "ELEVEN MORE RULES" makes the SHRINKING argument first when the fuel is a
+`Nat`. The same holds when the fuel is a LIST and the accumulator GROWS: a
+`Walk{arena, srcs}` in the first slot is a `expected : a decreasing self-call`.
+`commit_srcs_at.go(ss, w, fx, dt, bare)` is the shape; `w` in the first slot is
+not. Same cause as the `Nat` case: arguments are read left to right, each passed
+unchanged until one shrinks, and `Walk` never shrinks.
+
+### 7. A `Data` RECORD CAN CARRY THE `Maybe` A PARAMETER CANNOT
+`dt: DType|None` is read once PER SRC in `commit_weak_consts`, and `+` cannot be
+spelled on a `Maybe` parameter (rule 3 above). The port that works is a two-field
+record -- a `Bool` plus the value -- which is rule 15's own spelling (`spec.bend`
+does it for `Pa`, `fold.bend` for `Sized`). Same for `derived_dtypes`' answer:
+`Dts{some: Bool, meet, result}`, read once for `bare` and once for the pair.
+
+### 8. AN `IO<Unit>` `do` BLOCK CAN ONLY BIND AN `IO`
+    f = g_fix()                                  # expected : a pattern
+    f : Fix <- pure(g_fix())                     # expected : a defined name: pure
+    f : Unit <- row(...)                         # OK -- what fold.bend's main does
+A pure value cannot be bound in the block at all, so a fixture has to be passed to
+each row as a PARAMETER (`main` calls `g_fix()` per row) or wrapped in an IO for no
+reason. For an 11-node fixture the repeated `g_fix()` is free; for a real arena it
+would not be, and the honest shape is `Folded` carried in the caller's parameters.
+
+## FIVE MORE RULES, MEASURED 2026-09-30 WHILE PORTING `uop/divandmod.bend`
+
+### 1. A `Maybe` PATTERN BINDER CANNOT BE READ TWICE
+
+`bend2-constraints` rule 3 says a `Data` record PARAMETER needs `+` for two reads
+in one body. A binder from `case Some{f}:` is the same restriction and there is
+no spelling for it:
+
+    def hit(m: Maybe<&2, Found>) -> U32:
+      match m:
+        case Some{f}: Found.ar(f) + Found.i(f)      # refused: f, consumed more than once
+        case None{}: 0
+
+The fix is to hand `f` to a def and put `+` on THAT:
+
+    def hit.put(ar: Arena, +f: Found) -> U32: Found.ar(f) + Found.i(f)
+    def hit(m: Maybe<&2, Found>) -> U32:
+      match m:
+        case Some{f}: hit.put(arena, f)
+        case None{}: 0
+
+So rule 4 ("`+` cannot be spelled on a `Maybe`") and rule 3 meet: the binder is
+unfixable and the parameter is not. **This is not the same as a `Maybe`
+PARAMETER, which `+` handles normally** — it is specifically the binder.
+
+### 2. A COMMUTATIVE `alu` BUILDS AN `is_any`, SO A `+` PATTERN IS A DISJUNCTION
+
+`UPat.alu` (ops.py:1533-1536) passes `list(asrc) if op in GroupOp.Commutative
+else asrc`, and `GroupOp.Commutative` is `{MUL, MAX, CMPNE, CMPEQ, XOR, OR, AND,
+ADD}`. So `UPat.cvar("a") + UPat.cvar("c")` is `is_any` over BOTH ORDERS and a
+port that writes "src0 is the CONST" drops one alternative, typechecks, and is
+wrong on every fixture with the operands the other way round. **There is no
+`reject set` and no `on` flag that catches it**; the two-sided fixture is the
+only thing that does.
+
+### 3. `dm_which`-STYLE DISJUNCTIONS ARE NOT DISTINGUISHABLE BY ONE FIXTURE FAMILY
+
+Two rules each with one commutative `is_any` ("which side is the CONST" and
+"which side is the quotient") move the SAME mutation set from one fixture family,
+because from outside the question is the same question. See `divandmod.bend`'s
+mutation table, notes 1 and 2. Separating them needs a fixture where the two
+answers DISAGREE, not more fixtures of the same shape.
+
+### 4. AN INDEX IS ONLY MEANINGFUL IN THE ARENA THAT PRODUCED IT, AND `+` DOES NOT ENFORCE IT
+
+`+x = O.UOp.new(O.Found.ar(previous), ...)` binds an index into the arena it was
+built in. Building `+b` from `O.Found.ar(a)` when `b` should have been threaded
+through an INTERMEDIATE node silently reuses index `n` for a DIFFERENT node, and
+every read of `Found.i(b)` in the later chain then reads the wrong node. Measured:
+a fixture PARAM created and then dropped from the thread aliased a `FLOORDIV`
+three nodes later, and the gate printed `div25=FLOORDIV` for a node whose divisor
+was a PARAM. `share.py` and `hoist.py` cannot see this — it is not a `+` or an
+order error — **so the last arena threaded is the thing to re-read when a label is
+wrong.** Symptom to recognise: a node's src prints as a plausible index but the
+wrong `op`.
+
+### 5. `floor` IS NOT AVAILABLE AND MUST NOT BE ASSUMED FROM A HELPER NAMED `floordiv`
+
+`H.floordiv_i32` in `helpers.bend:1097` adds one whenever the division is
+inexact and IGNORES the sign, so it is correct for a negative dividend and for an
+exact division and WRONG (off by +1) for a non-negative dividend with an inexact
+division — which is most of them. Measured: `6 // 4 == 2`, `10 // 3 == 4`,
+`1000 // 7 == 143`, `6 % 4 == -2`, against Python's `1, 3, 142, 2`.
+
+**The general rule: a port that depends on floor semantics must TEST the helper
+against the Python answer before using it, and a correct local copy with the
+upstream bug named is better than a gate that pins wrong numbers.** `divandmod.bend`
+carries `dm_floordiv` / `dm_floormod` for exactly this, with the one-line fix and
+the removal condition written down. `H.asr` is broken the same way (see that
+file's header): `shrn(v,31)` is the sign BIT, so `shrn(shrn(v,31), n)` is 0 for
+every `n >= 1` and `H.asr(-1, 1) == 2147483647` where the answer is `4294967295`.
+Both are UNUSED and UNTESTED in `helpers.bend`, which is why ten green rows in
+another unit never saw them.
+
+### 6. A NESTED-FORWARD TREE PRINTER IS A MUTUAL RECURSION, AND BEND REFUSES IT
+
+`print(node) -> fold(srcs) -> print(src)` is two mutually recursive defs. A `Nat`
+fuel does not rescue it: a binop spends one fuel on TWO self-calls, and rule 5
+forbids that. The honest answer is to make the DEPTH a parameter of the printer
+(`dm_sh1` / `dm_sh2` in `divandmod.bend`) and pick the depth the ANSWERS need —
+two levels with CONST VALUES printed reproduces Python's trees exactly for that
+file's rules. **When a printer cannot be recursive, printing less but printing
+VALUES beats printing more but printing op names.**
+
+## SEVEN MORE RULES, MEASURED 2026-09-30 WHILE PORTING `uop/symbolic.py`
+
+Appended, not edited. All seven are Bend 2.0.34 and each one cost a wrong answer
+or a refused file.
+
+### 1. A `Maybe` IS READ ONCE AND CANNOT BE `+`, SO "TEST IT AND USE IT" IS TWO DEFS
+
+`Maybe<&1, T>` is a `Type`, `+` is refused on it (section "THREE" of the
+`spec.py` notes), and it is read once. So the Python
+
+```python
+if c is not None: ... c ...
+```
+
+is three defs, not one, and the test crosses as a `Bool` **beside** the value:
+
+```bend
+def rm_0.ok(hit: Bool, ok: Bool, +x: F.Folded, +u: U32, z: U32) -> Maybe<&1, U32>: ...
+def rm_0.of(hit: Bool, z: Maybe<&1, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+  match z:
+    case Some{v}: rm_0.ok(hit, True{}, x, u, v)
+    case _: rm_0.ok(hit, False{}, x, u, 0)
+```
+
+Writing `Bool.pick(Maybe<&1, U32>, Maybe.is_some(&1, U32, z), Some{f(z)}, None{})`
+is `expected : Data / observed : Type` on the `+z` that `share.py` helpfully
+adds — **and `share.py` will add it every time**, because the error it is fixing
+is real. That is a loop: run `share.py`, get the `+`, get the `Data`/`Type`
+error, restructure, run `share.py` again. The fix is to notice that the shape is
+wrong, not to add annotations.
+
+### 2. `Maybe<a, A>` IS INVARIANT IN ITS USAGE COUNT
+
+`Maybe<&1, O.Const>` and `Maybe<&2, O.Const>` are DIFFERENT types and are not
+interchangeable in a call. A `Data` field cannot hold a `Maybe` at all, and a
+helper that takes a `Maybe` parameter inherits whichever count its call site
+spells. The measured cost was a chain of `sy_maybe_c` / `sy_maybe_c2` — two
+three-line defs with identical bodies — because a FOLD's answer is `&1` and a
+`sy_val` out of `fold.bend` is `&2`. It is not worth deduplicating into a
+typeclass; it is worth knowing before the second one surprises you.
+
+### 3. A `find`-STYLE RECORDER IS USUALLY A FOLD WITH AN INVERTED `Bool`, AND THAT IS THE BUG
+
+`const_i64` was written `Bool.not(Cmp.is_eq(...))` — "the value is NOT `n`" —
+inside a def named `p_is_const_0`. It typechecked, it ran, and it inverted every
+caller. The mutation that catches it is one character (`is_eq` -> `not is_eq`)
+and it moved **three** rows at once, because the predicate is shared by
+`sym_6.pat` and `sym_8`'s shape. A shared predicate is a shared blast radius:
+the mutation table should always include one, because "which rows does this one
+comparison own" is not answerable by reading the rule that uses it.
+
+### 4. `ops.bend`'s `Arena.empty()` SPENDS INDEX 0, SO EVERY FIXTURE IS OFF BY ONE
+
+`# the arena starts with the bottom at index 0, so Arena.next is next(UOp.unique_num)
+# with the first slot already spent` (ops.bend:925). So a graph of two nodes has
+indices 1 and 2, and `Arena.next` is 3. Four of this file's gate rows were `0`
+because every hard-coded index was one short, and `Arena.node` answering
+`Arena.bottom()` for an index past the end means a mis-indexed fixture answers
+`None{}` rather than raising — so the symptom is a rule that silently does not
+fire. **The fixture's own node count is a gate row** (`lay`), and it is the row
+that would have caught it.
+
+### 5. A FIXTURE BUILDER THAT RETURNS AN INDEX THROWS THE GROWN ARENA AWAY
+
+`Arena` is affine, so `sy_cast(ar, ...)` grows a *copy* and the caller keeps the
+old one. A builder written as `-> U32` therefore produces a graph whose last
+node is not in the store, and `fx_castbad` answered `Arena.next == 1` for a graph
+of two nodes. **EVERY construction in a fixture must return a `Found`**, and a
+chain is `+a = ...` then `+b = ...` off `O.Found.ar(a)` — which is the same
+shape `fold.bend`'s `g_keys` uses.
+
+The deeper form of the same fact is the wall this file stands on: a rule
+returning `Maybe<&1, U32>` that GREW the arena gives the caller an index it
+cannot dereference. `Maybe<&1, O.Found>` is expressible (`Found` is `Data`), so
+that is the shape a growing rule should have; it was not written here because
+it touches every rule body, and it is the first thing to change when the tables
+grow past thirteen entries.
+
+### 6. `List.append(a, A, xs, ys)` IS `xs ++ ys`, AND A FOLD THAT USES IT ACCUMULATES IN REVERSE
+
+Already recorded ("THE SAME FOLDS..." / rule 7) and re-measured while porting
+`pm_remove_invalid`'s `src=tuple(...)` and `pm_clean_up_group_sink`'s
+`flatten`. Both read correctly and both are reversed. `List.reverse` at the end
+of the walk is the fix and it costs one call. The new datum is that a fold whose
+accumulator is a `List` of `List` (the sink-flatten case) has the SAME trap one
+level up: `H.flatten_u32` is `List.concat`, so it flattens the accumulated list
+of lists and the order is whatever the accumulation produced.
+
+### 7. TWO RULES THAT CLAIM ONE NODE AND **AGREE** CANNOT SEE FIRST-WINS
+
+Already the brief's trap and it is worth stating with the measured result. The
+first `first` fixture was `GROUP(GROUP(C(7)))`: tags 11 (`GROUP(x)` -> `x`) and
+12 (the flatten) both claim the outer GROUP, and the first-wins -> last-wins
+mutation moved **NOTHING** — because `flatten([inner.src])` happens to rebuild
+the inner GROUP, so both answers are the same index. The fix is a fixture whose
+two answers genuinely differ (`GROUP(SINK(C(7)))`: tag 11 answers the SINK,
+tag 12 answers a fresh GROUP over `[1]`), and with it M1 moves exactly `first`.
+Two rows with two-sided fixtures in the same file (`rebind0`, `xorb0`) had the
+same shape of failure and the same cure: ask for the *absence* of a rewrite, not
+for a particular index, on the negative side. `eq_u(m, 0)` is satisfied by any
+wrong-but-present answer and witnesses nothing.
+
+
+## EIGHT MORE RULES, MEASURED 2026-09-30 FIXING `eq_cls.sel` AND `floordiv_i32`
+
+Appended, not edited. All eight are Bend 2.0.34 and each one cost a wrong answer
+or a change that would have compiled and done nothing.
+
+### 1. AN ARM AFTER A `case _:` IS **DEAD CODE**, AND BEND DOES NOT SAY SO
+
+This is the one that changes how you write a catch-all ladder, and it is
+invisible in the source: the arm is right there, spelled correctly, and never
+runs. Measured, with every arm answering a distinct number:
+
+    type C is Data: A{} B{} Cc{}
+    match x: case A{}: 1; case _: 99; case Cc{}: 3     # A=1  Cc=99
+
+`case _:` claims every remaining tag, so anything written after it is
+unreachable. Bend 2.0.34 accepts it silently -- no error, no warning, and
+`--check-only` still says `ALL PROOFS CHECK`.
+
+**So the last constructor of a sum type is spelled `case _:`, and every other one
+is spelled out.** That is not a style choice, it is the only placement that can
+work, and it is the shape this repo's own `eq_const.sel` already uses: `Const`
+is `CBool CInt CFloat CInvalid`, the ladder writes the first three and gives
+`CInvalid` the catch-all. Arm ORDER among the explicit ones does not matter --
+measured, `case Cc/B/A` and `case A/B/Cc` agree -- so "where do I put the new
+arm" is answered by "which one is last in the type's declaration", not by
+`dtype.py`'s priority order.
+
+Corollary for the "just append the missing arm" instinct: appending to a ladder
+that already ends in `case _:` is the ONE edit guaranteed to do nothing. If a
+`match` over a sum type has an `N`-armed version and the type has `N+1`
+constructors, the fix is to make constructor `N` explicit and move the catch-all
+onto constructor `N+1`.
+
+### 2. A GATE THAT NEVER CALLS THE FUNCTION UNDER REPAIR IS BLIND, AND IT IS NOT AN ACCIDENT
+
+`uop/ops.bend` had twelve rows and all twelve were green while `eq_dt(weakfloat,
+weakfloat)` was `False` and two structurally identical `CAST(..., weakfloat)`
+nodes built FOUR arena nodes where two would do. Nothing was flaky and nothing
+was mis-transcribed; the twelve rows simply never mentioned a dtype except
+`S.void()` and `S.boolean()` in fixtures, and `eq_dt` is reached only through
+`eq_arg.ADt`.
+
+**The test for "is this gate blind to X" is one grep: does any row's fixture
+carry a value of X's type?** If not, the gate cannot see X, and the first thing
+to add is a row whose EXPECTATION COMES FROM THE ORACLE (`dtypes.weakfloat ==
+dtypes.weakfloat` in CPython), not one whose expectation is what the code
+prints. A row that asks "is it equal to itself" for every member of a
+seven-member type is a better gate than none, and it took one line per member.
+
+### 3. `+` IS NEEDED ON A `Data` PARAMETER USED **TWICE IN ONE EXPRESSION**, NOT TWICE IN A BODY
+
+`Bool.and(eq_dt(x, y), Bool.not(eq_dt(y, x)))` is refused with
+`expected : y / observed : y (consumed more than once)`, and the fix is
+`(+x: S.Dt, +y: S.Dt)`. This is not the affine rule ("a binder is used at most
+once") -- the same two values are used once each in every `eq_node`/`eq_paramarg`
+ladder in `uop/ops.bend` and those compile, because they go through a `match`
+that BINDS a fresh name per case. The distinction that matters: passing a binder
+to two calls in the same expression needs `+`; passing it to two calls in two
+DIFFERENT `case` arms does not. Getting this backwards costs a rebuild.
+
+### 4. `U32.show` ON A NEGATIVE `i32` IS THE BIT PATTERN, SO A GATE MUST SAY SO
+
+`-7` in a U32 is `4294967289`, and a gate row that prints the raw U32 next to a
+comment saying `-7` is a gate that needs mental arithmetic to read -- which is
+the failure the repo already hit once. The fix that costs nothing: put the
+pattern in the ROW NAME (`ok_fd_4294967289_4`) rather than in a comment, and have
+the Python oracle print `v & 0xFFFFFFFF`, so both sides are in the same alphabet
+and `diff` is the test. Sign is then visible in the number, not inferred.
+
+### 5. A `(Bool, Bool)` FLAG PAIR IS NOT INTERCHANGEABLE, AND WHICH HALF IS
+###    CONSULTED IS THE WHOLE DEFINITION
+
+`floordiv_i32.trunc.exact(exact, neg, q)` was right for exact divisions, right
+for negative dividends, and wrong for same-sign inexact divisions: it applied
+`q + 1` on the inexact arm unconditionally. The arithmetic is not subtle --
+`x // y` is the truncation, and the truncation is ALREADY the floor whenever the
+two signs agree, so the step belongs to the opposite-sign case alone (`-7 // 4`
+is `-2` because `-1` truncates but `-2` floors). It went unnoticed because the
+two wrong cells and the two right cells interleave, and the fixture set happened
+to hold the right ones.
+
+**So a two-flag ladder wants a truth table written out before it is written in
+Bend, and it wants the fixture set to hold one row per cell.** All four cells
+here are cheap: same-sign/inexact, same-sign/exact, opposite-sign/inexact,
+opposite-sign/exact. A sign matrix is the same idea and generalises: four
+combinations of `(x<0, y<0)` times inexact/exact is eight rows, and it is what
+`.agents/slop/dm.bend` now holds.
+
+### 6. FLOOR AND TRUNCATION ARE TWO FUNCTIONS AND BOTH GET PORTED, SO "DELETE
+###    THE DUPLICATE" IS USUALLY THE WRONG MOVE
+
+`helpers.bend` carries `floordiv_i32`/`floormod_i32` (helpers.py:76-77, Python's
+`//` and `%`, i.e. FLOOR) beside `cdiv_i32_go`/`cmod_i32` (helpers.py:73-74, C
+semantics, i.e. TRUNCATE). They are not a stale duplicate of each other, and
+`ceildiv` (`-(num // -amt)`) and `round_up` (`(num+amt-1)//amt*amt`) are floors
+that CANNOT be spelled with the truncating pair -- measured, `ceildiv(10,4)` is 3
+and neither `-cdiv(10,-4)` (2) nor `-cdiv(-10,-4)` (-2) gives it, and
+`round_up(-10,4)` is -8 while `cdiv(-7,4)*4` is -4.
+
+So when two same-shaped functions disagree, **check what the CALLERS need before
+proposing to delete one.** A caller is the evidence; three callers all wanting
+FLOOR is what settles it. And when a wrong def sits beside a right one, the fix
+is to make the wrong one right AND say in a comment which pair is which, because
+the next reader cannot tell an intentional pair of functions from an accidental
+copy.
+
+### 7. A COMPILED ARENA MAKES A `Dt` A KEY, SO A `Cls` COMPARISON IS NOT A COSMETIC
+###    BUG EVEN WHEN EVERY FIXTURE IS A DIFFERENT `pri`
+
+`eq_dt` also compares `pri` and `bits`, so a conflated `Cls` is invisible on any
+pair of DIFFERENT dtypes -- `eq_dt(weakfloat, half)` was already `False` because
+`9 != 12`. The only reachable symptom is a dtype compared to ITSELF, and the only
+code that does that is the hash-cons table, so the gate needs a row that builds a
+node twice and counts nodes, not a row that compares two dtypes. Building the
+smallest such node is worth the trouble: `bottom + CONST + CAST + CAST` is three
+nodes when the two CASTs intern and four when they do not, and the count is a
+number the oracle can be asked for.
+
+### 8. `.venv/bin/python`, NOT `python3`, FOR A GATE THAT IMPORTS THE ORACLE
+
+`tinygrad.helpers` imports cleanly under the system `python3`, but the house
+invocation pattern is `uv run --with tabulate python3` / `.venv/bin/python`, and
+`mutate-*.py` scripts that shell out to a gate should use the venv explicitly so
+they do not depend on the ambient `PYTHONPATH`. Related and cheap: a shell gate
+script that `cd`s must use an ABSOLUTE path for its own siblings -- `$0` is
+relative to wherever it was invoked from, and `$(dirname "$0")/../..` from
+`.agents/slop/tools/` is `.agents/`, not the repo root. That cost two rounds.
+
+## MEASURED: the Bend INTERPRETER has a hard 32 KiB input cliff
+
+The generic advice is that a Bend "machine stack overflow" is a runaway expansion.
+That was wrong for the one case we actually hit. Measured on a pure-whitespace
+`.js` input, so the LEXER NEVER RUNS:
+
+| input | interpreter |
+| --- | --- |
+| 4 KiB .. 24 KiB | exit 0 |
+| 32768 B | exit 1, `bend: memory fault (machine stack overflow?)` |
+| 49152 B, 65536 B | exit 1, ditto |
+
+The COMPILED lane reads 96 KiB of the same input, and tinygrad's own `ops.py` at
+110 KB, without complaint. So:
+
+- the threshold is exactly 32768, which is a HOST constant, not a property of our
+  recursion depth -- the `.js` lane splits on whitespace and is shallow, yet it
+  dies at the same byte count as the tokenizing `.py` lane;
+- the diagnostic message says "stack overflow", which sends you looking for a
+  non-terminating or over-deep fold in YOUR code. There is none here. **If the
+  failing input is at or above 32 KiB and the compiled lane is fine, stop hunting
+  and use the compiled lane.**
+
+This BOUNDS THE GATE, which is the part worth writing down: an interpreted lane
+cannot exercise any fixture of 32 KiB or more. Those rows are compiled-lane-only,
+and a file whose gate claims otherwise is overstating what it checked.
+
+The earlier reading of this -- "a fold whose fuel never reaches zero", which is
+cause 1 in the section above -- was right in general and wrong here. Both
+descriptions produce the same message, so distinguish them by INPUT SIZE first:
+small input that hangs is our bug; input at or above 32 KiB that dies is the host.
+
+## TWO BENCHMARK LESSONS, BOTH LEARNED THE EXPENSIVE WAY ON `sz`
+
+**1. "x100-x1000 slower" was asserted from MECHANISM and was wrong.** Before
+measuring, the claim was made that the port was 100-1000x slower than CPython,
+derived from: a Bend `String` being a linked list of `Char`s, `String.trim` being
+`reverse . trim_start . reverse` (three rebuilds per line), `lex` doing
+`chars(s) = List.reverse(chars.go(...))` (two full copies of the file), and every
+`U32` op being a net node rather than a machine instruction. Every one of those
+facts is real and measured. **The product of them was never measured, and it is not
+the slowdown.** The compiled lane lands in CPython's own range. Mechanism explains
+a cost's *existence*; it never predicts its *magnitude*. Estimate, then measure,
+and never let the estimate be the finding.
+
+**2. Process-per-invocation timing cannot measure anything this fast.** Timings
+taken that way were dominated by startup and were non-monotonic in input size --
+native got FASTER as the tree grew (0.154s -> 0.049s), and CPython took 1.18s,
+then 0.41s, then 0.15s for MORE input. An empty tree costs 0.00s, so a real
+workload needs to be big enough to swamp it, or measure in-process with min-of-N.
+
+**AND THE ONE THAT MATTERS MOST: compare like with like, or you will "find" a bug
+that is not there.** Diffing `/tmp/sz .` (full display, including directory
+aggregate rows) against CPython's bare `gen_stats()` (flat file table only) showed
+"124 files vs 114" and looked like ten spurious directory rows. It was the harness.
+Running the real CLI on both sides gives **byte-identical output on the real
+`tinygrad/` tree, 131 of 133 lines, the only two differences being `ops: 77` and
+`flags: 55`** -- the two `len(Ops)` / `len(ContextVar._cache)` reflection lines
+`sz.bend` documents as not portable. A synthetic fixture suite said nothing about
+this, because it never contained a real repository.
+
+A speed or equality claim is worthless until you have checked the two sides do the
+SAME WORK. This repo already had one instance of that class shipped (a dropped
+index aliased a FLOORDIV and printed a plausible answer) and one gate row that
+merely restated the code. Check the output before quoting the number.
+
+## CORRECTION to the "32 KiB cliff" entry above -- the number was not reproducible
+
+The entry above claims the interpreter dies at EXACTLY 32768 bytes and calls it a
+host constant. **That precision is false.** Re-running the identical 24576-byte
+case: it read `exit=0` on a quiet machine and `TIMEOUT >45s` on a loaded one. Load
+average was 38.8 on 12 cores -- 3.2x oversubscribed -- at the time of the failing
+run.
+
+So the correct statement is:
+
+- there IS a size-dependent failure in the INTERPRETER, and the compiled lane is
+  unaffected;
+- the threshold is NOT a fixed byte count. It moves with available CPU and memory,
+  so ">= 32 KiB dies, below that it is fine" is NOT a usable rule and must not be
+  relied on or written into a plan;
+- what survives from the original entry is the DIAGNOSTIC: if the interpreter dies
+  and the compiled lane is fine, stop hunting for a non-terminating fold in your
+  own code. That is still good advice, because the failure really is the host's.
+
+This is the third time in this session that a confident number written into these
+notes turned out to be an artifact of when it was measured: first "x100-x1000
+slower" (mechanism, never measured), then "124 vs 114 files" (a harness that
+compared the full display against a bare `gen_stats`), now "exactly 32768" (a
+quiet machine). **Measure under load, or do not claim precision.** A specific
+number with no error bar is worse than a range, because the next agent cannot tell
+which part to distrust.
+
+## PEER-LANGUAGE REFERENCE SOLUTIONS, FOR THE WALLS THIS PORT KEEPS HITTING
+
+Every wall hit in the sz/render work is a solved problem elsewhere. Not measured-Bend
+rules; references so the next agent does not re-derive them.
+
+1. NO MUTATION / accumulators threaded through recursion. Reference: Koka's
+   PERCEUS reuse analysis (Xie & Leijen, OOPSLA 2021) -- "Functional but In-Place"
+   (FBIP); uniqueness types in Clean (1995); Lean 4 reuses uniquely-owned nodes.
+   Bend HAS the static half (+ and &n ownership) but not the reuse pass, which is
+   why Array.set does not mutate in place (see the fold.bend Table note).
+
+2. String IS A LINKED LIST OF CHARS (String.trim = two reverses; lex copies the
+   file twice via chars() + List.reverse). Reference: Haskell's `text` library
+   (the community treats String=[Char] as a mistake it migrated off); Roc built
+   packed UTF-8 Str from day one. Until Bend ships packed strings, hot paths
+   should consume a char list in ONE pass; do not call String.trim in a loop.
+
+3. NO os.walk / filesystem effects in base.bend. Not a research problem: just
+   library maturity (Haskell System.Directory). Keep the foreign effect + TODO.
+
+4. Dev loop where every expectation is manufactured by a hand CPython round trip,
+   and bugs slip that reading cannot see. Reference: PROPERTY-BASED TESTING --
+   QuickCheck (Claessen & Hughes, ICFP 2000), Hypothesis in Python. State the
+   property `forall src. lexer(src) == cpython_tokenize(src)` and generate; the
+   sz 4 lexer bugs and the upat repeat bug are exactly what a generator finds.
+
+5. List.append O(n) / spent-on-read accumulators. Reference: Bagwell's HAMT
+   (2000) -> Clojure's persistent vectors. Reach for a tree-shaped accumulator
+   before threading a List, when the fold is hot.
+
+## NINE MORE RULES, MEASURED 2026-09-30 SPLITTING THE FILESYSTEM WALK OUT OF `sz.bend`
+
+### 1. `--check-only`'s FOREIGN NOTICE IS A "WHO NAMES WHOM" CLOSURE, AND `@unsafe`
+###    DOES NOT SHRINK IT
+
+`bend2/main.ts`'s `book_promises` seeds a `bad` set with every def that is
+`@unsafe` OR foreign, then floods back along every "names" edge (a def's type and
+its body term). So the count is a REACHABILITY closure and the only way to shrink
+it is to shrink the set of defs that name the foreign one. Measured on `sz.bend`:
+marking `Sz.read_dir` and `Sz.is_dir` `@unsafe` left the count at exactly what it
+was, because both were already in the seed set as foreign. `@unsafe` is a promise
+you make, not an exemption you take.
+
+The practical consequence is an ARCHITECTURAL one, and it is the same for every
+port that needs the filesystem: keep the impure loop in as few defs as possible and
+give the pure consumers a value parameter. In `sz.bend` that took the notice from
+10 defs to 7 -- the two effects, the three defs of the walk, and the mode dispatch
+that has to call it -- and left the lexer, both tables and `gen_diff` proving.
+
+### 2. A `U32` LITERAL PATTERN IS A PREFIX MATCH, AND THE ERROR SAYS NOTHING USEFUL
+
+`case 1: ...` then `case 0: ...` is refused, because `1` claims every successor, so
+the `0` arm is dead and the match is not exhaustive. The message is
+
+    - expected : cases for True
+    - observed : \{}
+
+which is the checker explaining its `Empty`-match DEFAULT against `Bool`, not your
+arm order. Write `case 0:` first, or end with `case _:`. (Same fact as §1.1 rule
+9 here, but the diagnostic is the trap, and the first wall cost twenty minutes.)
+
+### 3. `Data` TYPES ARE NOMINAL, so two records with the same fields are TWO TYPES
+
+    type D1 is Data: D1{a: String, b: String}
+    type D2 is Data: D2{a: String, b: String}
+    def take(d: D2) -> String: ...
+    take(make())            #| - expected : D2 / observed : D1
+
+Useful, not a nuisance: it is how `sz.bend` keeps the walk's worklist of
+directories (`Dir`) distinct from the list of files it answers with (`It`), even
+though both are a path to read and a path to print.
+
+### 4. TWO SELF-CALLS IN ONE ARM IS REFUSED EVEN WITH TWO DIFFERENT `Nat` FUELS
+
+    def p4(k: Nat, j: Nat, n: U32) -> U32:
+      match k:
+        case 0n: n
+        case 1n+r: p4(j, r, U32.add(n, 1))
+    #| - expected : a decreasing self-call
+    #|             (arguments are read left to right: each passed unchanged until one shrinks)
+
+So a def cannot fold over two lists by recursing twice per arm. This is why
+`os.walk` cannot become ONE def over a worklist of directories AND a list of that
+directory's names, and why the per-name loop has to be a def of its own that the
+caller calls once per directory.
+
+### 5. A LIST SELF-CALL MUST SHRINK ITS FIRST ARGUMENT, SO A GROWING ACCUMULATOR GOES SECOND
+
+    sz.rows(List.append(&2, Row, xs, [rr]), rest)     #| expected : rest, observed : rest
+                                                      #|  (consumed more than once) / not decreasing
+    sz.rows(rest, List.append(&2, Row, xs, [rr]))     # WORKS
+
+Read left to right, each argument is passed unchanged until one shrinks, so the
+tail comes first. The consequence worth remembering: the accumulator may then be
+read only ONCE per arm, which rules out the `Bool.pick(cond, rec(xs'), rec(xs))`
+shape and wants the pick hoisted into its own `x : List<...> =` binding first.
+
+### 6. AN `IO` EFFECT IS NOT A VALUE: `f(walk(...))` IS A TYPE ERROR, `f`'s arg must be pure
+
+    sz.one(walk(16777216n, Nil{}, [Sz.root(".")]))
+    #| - expected : List<&2, Dir>
+    #| - observed : @-R:Type -> @k:(@_:List<&2, Dir> -> IO.OP<R>) -> IO.OP<R>
+
+`do` blocks desugar to binds, so an effect in an argument position is read as the
+CONSUMER of a bind that has not happened. Bind it in the enclosing block and pass
+the name. A `Bool.pick` branch, by contrast, MAY be a `do` block -- that is how
+`sz.main` gets three different walks out of three arms.
+
+### 7. A `match` CANNOT FOLLOW A `<-` BIND INSIDE A `do` BLOCK
+
+    do IO<U32>:
+      s : String <- IO.get_env("X")
+      match s:                  #| - expected : a term (a match heads a def body, not a term)
+        case SNil{}: ...
+
+Same rule as everywhere else, restated because the do-block looks like a scope: the
+`match` must be the whole body of a def whose parameter is the scrutinee. (So
+`sz.main` is a def that takes the argv and matches, and `main` only reads argv.)
+
+### 8. THE INTERPRETER'S PER-FILE BYTE CLIFF IS 28987/28988, NOT 32768
+
+Measured by bisection on both lanes of `sz.bend`, twice, on a 63-space `.js` file
+and on an `x=1\n` `.py` file:
+
+    largest passing   28987 bytes
+    first failing     28988 bytes   bend: memory fault (machine stack overflow?)
+
+The two lanes AGREE byte for byte, the 63-space `.js` file never runs the lexer
+and has the same cliff, and two `.py` files totalling 29000 bytes are fine in the
+same process -- so it is a per-file limit on the host, not a lexer depth and not a
+per-process total. The "about 32 KB" figure in `spec/sz.md` came from testing only
+round sizes (4096..24576, then 32768). Bisect it, do not sample it.
+
+### 9. THE INTERPRETED LANE RE-CHECKS THE WHOLE FILE ON EVERY RUN, SO BISECTING A CLIFF
+###    IS DOMINATED BY THE CHECK, NOT BY THE PROBE
+
+Each `./bin/bend FILE.bend ARGS` pays a full proof of all 220 defs before it reads a
+byte of the tree, so 21 bisection steps is 21 proofs. If you are measuring something
+in the interpreted lane, either budget 20s+ per probe or move the measurement into
+the compiled lane and only spot-check the boundary in the interpreted one.
+
+## NINE MORE RULES #2, MEASURED 2026-10-01 WRITING THE `uop/upat.bend` FUZZ DRIVER
+
+### 1. A `match` ON A `String` NEEDS A `case _:`, AND WITHOUT ONE THE ERROR IS A PARSE ERROR
+
+String-literal cases work on a `String` parameter. What does NOT work is leaving
+the match without a catch-all, and the diagnostic points at the wrong thing
+entirely -- it is a PARSE error about an SCon, at the `match` line, naming a
+`{}` that appears nowhere near:
+
+    def pick(tag: String) -> S2:
+      match tag:
+        case "x": S2A{1}      #| - expected : cases for SCon
+        case "t": S2B{2}      #| - observed : \{}
+                              #| Location: pick
+
+`String` is a linked list of `Char` and the element type is not closed, so the
+match is not exhaustive and the checker says so in the shape it has for a data
+type. Adding `case _: S2B{0}` fixes it. THE TRAP IS THE MESSAGE: it reads like
+"SCon" and it names `{}`, so the natural reaction is to go looking for an SCon in
+the arms, and there is none -- a `SNone{}` three lines down is a red herring.
+Measured on both an SCon-returning def and a two-constructor one; the return
+type is irrelevant, only the missing catch-all matters.
+
+### 2. `String.take`, `String.drop` and `String.split` CONSUME THE STRING
+
+Every one of them takes their `String` by value, so a def that needs both the
+head and the tail of one string needs `+`:
+
+    def src.of2(s: String) -> O.SrcArg:      #| - expected : s
+      drv.src.of(String.take(s, 1n),        #| - observed : s (consumed more than once)
+        String.drop(s, 1n))
+
+`+s: String` works because `String` is a linked list, so the cost is a reference
+count like any other `Data`. This is the general case of rule 1.1 showing up
+where nobody expects it: reading a string in two pieces is the most ordinary
+thing a parser does.
+
+### 3. `IO.args()` ANSWERS `List<&1, String>`, NOT `List<&2, String>`
+
+A dispatcher that takes the argv tail must be spelled `&1`:
+
+    def dispatch(ps: List<&2, String>) -> IO(Unit):   #| - expected : List<&2, String>
+      ...                                            #| - observed : List<&1, String>
+
+`sz.bend`'s `sz.main` takes `List<&1, Dir>` for the same reason. Reading an `IO`
+value and then handing its payload to a helper is the only place the lifetime
+shows up, and it is the difference between a file that checks and one that does
+not.
+
+### 4. `List.get` ANSWERS A `Maybe`, AND `String.get` ANSWERS A `Maybe<Char>`
+
+    String.join(List.get(&2, String, xs, 0n), "")    #| - expected : List<&2, String>
+                                                    #| - observed : Maybe<&2, String>
+    String.get("abc", 1n)                            #| - expected : String
+                                                    #| - observed : Maybe<&2, Char>
+
+So every positional read needs a total wrapper (`upat.bend` grows two: `drv.one`
+for `String` and `drv.nth` for `U32`), and `String.split(s, sep)` always answers
+at least one piece -- `String.split("", ',')` is `[""]`, NOT `Nil{}` -- so a
+`List.is_empty` test on a split result is the wrong emptiness test.
+
+### 5. `String.to_u32` DOES NOT EXIST; `Char.to_u32` DOES, AND IT RETURNS A CODEPOINT
+
+    String.to_u32("42")     #| - expected : a defined name
+                            #| - observed : String.to_u32
+    Char.to_u32('4')        # 52   (so a digit is `U32.sub(Char.to_u32(c), 48)`)
+
+A decimal parse is therefore a fold over `String.to_list(s)` feeding
+`U32.add(U32.mul(acc, 10), ...)`. `String.show` is also absent -- `U32.show`,
+`Bool.show` and `Nat.show` are the printers -- and `String.is_empty` is absent
+while `List.is_empty` is present, which reads as a typo rather than a gap.
+
+### 6. A `match` INSIDE A `do` BLOCK IS REFUSED, SO DISPATCH GETS ITS OWN DEF
+
+    def main() -> IO(Unit>Unit):
+      do IO<Unit>:
+        as : List<String> <- IO.args()
+        match drv.rest(as):        #| - expected : a term (a match heads a def body, not a term)
+          case Nil{}: gate()       #| - observed : 'match'
+
+Same as rule 7 below, and it is the reason `upat.bend`'s `main` is three lines
+over a `dispatch` def: argv is an effect, the choice on it is a match, and the
+two cannot be one body. The `dispatch` def is the whole of the pattern -- it is
+what `sz.bend` does with `sz.one`/`sz.two` and what every argument-reading
+`main` in the port has to look like.
