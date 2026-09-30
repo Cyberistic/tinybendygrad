@@ -11,21 +11,32 @@
 # node identity. That IR cannot be a pure tree, so the laws cannot reach it; see
 # PORTING.md section 6.
 #
-# TERMINATION IS EXPLICIT FUEL, not @unsafe. Each derived property takes a `fuel:
-# Nat` and spends one per level of the tree it descends, so the decrease check
-# can see the descent and the def needs no escape hatch. The fuel is an upper
-# bound on depth, and a caller that under-counts gets None -- the honest answer
-# for "past this depth the property is unknown" -- not a wrong shape. One fuel
-# parameter covers all five properties at once: the tree is finite and the two
-# folds walk it in lockstep.
+# TERMINATION IS STRUCTURAL: one def per property, no mutual recursion, and
+# every descent passes a FIELD of its own parameter. No @unsafe, and no fuel
+# budget either -- so a law over these folds is a real claim about a total
+# function, not a comparison of two budget-limited `None`s.
 #
-# WHY ONE RECURSIVE DEF AND NOT SEVERAL. The shape fold has to recurse two ways:
-# into a child node, and across a list (Index's index list, Stack's operand
-# list). Two functions means mutual recursion, and mutual recursion means calling
-# a def declared below, which only @unsafe can do. So both cases live in one
-# `Item`, one datatype, one recursive def: `One` is a node, `Many` is a list.
-# Then every recursive call is a self-call on `fuel` and the whole file has no
-# @unsafe in it at all.
+# Four measured facts about bend 2.0.34 decide the shape of what follows:
+#
+#   1. A def may call only defs declared ABOVE it, and mutual recursion is
+#      refused outright. So each property is ONE def over `Sp`, and a helper
+#      that would have to self-call it -- the broadcast of two operands -- cannot
+#      be factored out. Every ALU arm therefore binds its two operand shapes to
+#      locals and calls `dims_zip_max` itself. That is why the broadcast arms
+#      below are three lines each; it is the checker, not sloppiness.
+#   2. A recursive call must be a tail expression, or bound to a local on its
+#      own line. Hence `x = Sp.shape(a)` then `y = Sp.shape(b)`.
+#   3. A recursive call must pass a field of its own parameter, bare or
+#      re-wrapped in the same constructor. A list HEAD binder counts; a list
+#      TAIL does not, in any constructor.
+#   4. So a fold that MAPPS a recursive function over a `List` and COMBINES the
+#      results cannot be written at all: the head and the tail come out of one
+#      destructured list, the tail is unusable by (3), and giving the tail a
+#      field of its own needs a second mutually recursive def, refused by (1).
+#      The two ops that would have needed that fold do not have one. `Stack`'s
+#      shape needs only its HEAD plus the operand count, so it keeps its list.
+#      `Index`'s shape needs EVERY index shape, so its index list cannot stay and
+#      `Index` is bounded-arity instead -- see `SpIdx1` below.
 #
 # ORDER IS LOAD-BEARING otherwise: a def may call only defs declared ABOVE it,
 # and every datatype in this file may name another in any order.
@@ -301,12 +312,23 @@ def prod(ds: List<&2, Sdim>) -> Nat:
     case Nil{}: 1n
     case d <> r: Nat.mul(dim_of(d), prod(r))
 
-# The element count of a shape: the product of its dims.
-def Sp.shape.index(pre: Maybe<&2, Shape>, bt: Maybe<&2, Shape>) -> Maybe<&2, Shape>:
+# The shape of an Index: the index shapes in order, then the base's trailing
+# dims. `k` is the number of indices, and it is the count of dims the base
+# loses -- one per index, which is `UOp._shape` at tinygrad/uop/ops.py:353:
+#
+#     shp:list[sint] = []
+#     for s in self.src[1:]: shp.extend(list(s.shape))
+#     return tuple(shp) + self.src[0].shape[len(self.src[1:]):]
+#
+# `k` is a parameter rather than `Shape.ndim(pre)` because the two differ as
+# soon as there are two indices: `Index(T, ())` removes one dim even though its
+# own shape is empty, so the drop is driven by the arity and not by the rank of
+# the concatenation.
+def Sp.shape.index(pre: Maybe<&2, Shape>, bt: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
   match pre:
     case Some{+p}:
       match bt:
-        case Some{b}: Some{Shape.of(List.append(&2, Sdim, Shape.to_dims(p), drop_n(Shape.to_dims(b), Shape.ndim(p))))}
+        case Some{b}: Some{Shape.of(List.append(&2, Sdim, Shape.to_dims(p), drop_n(Shape.to_dims(b), k)))}
         case None{}: None{}
     case None{}: None{}
 
@@ -345,12 +367,6 @@ def on_shape(m: Maybe<&2, Shape>, k: Shape -> Maybe<&2, Shape>) -> Maybe<&2, Sha
     case None{}: None{}
     case Some{s}: k(s)
 
-def fuel(n: Nat) -> Nat:
-  # spend one unit of fuel: past the end, a fold reports None
-  match n:
-    case 0n: 0n
-    case 1n+p: p
-
 # ===========================================================================
 # The op catalogue -- one constructor per op in tinyspec.tex. The 20 Codegen
 # Ops are not here: tinyspec says of them "these ops are not part of the core
@@ -378,10 +394,44 @@ type Sp is Data:
   SpExpand{t: Sp, pre: List<&2, Sdim>, total: List<&2, Sdim>}
   SpPad{t: Sp, off: List<&2, Sdim>, size: List<&2, Sdim>}
   SpShrink{t: Sp, off: List<&2, Sdim>, size: List<&2, Sdim>}
-  SpIndex{t: Sp, idx: List<&2, Sp>}
   SpStack{ts: List<&2, Sp>}
   SpBitcast{t: Sp, dt: Dt}
   SpUnshard{t: Sp, ranges: List<&2, Sp>, axes: List<&2, Nat>}
+
+  # -- Index, at BOUNDED ARITY. --------------------------------------------
+  # tinyspec: "Index from left. ()-shaped i removes dim; (k,)-shaped makes it
+  # k" -- the shape is the index shapes in order, then the base's trailing dims,
+  # so it needs EVERY index's shape, not just the head. The index list cannot
+  # stay a List: the shape fold has no way to map itself over one (header fact
+  # 4), and an Index of arity k is exactly what makes a fold necessary, because
+  # each index contributes a differently-shaped piece.
+  #
+  # THE BOUND IS FOUR, and the evidence is in tinygrad:
+  #
+  #   * An Index's arity is a USER-LEVEL index tuple, bounded by the base's rank.
+  #     `mixin/movement.py:_normalize_indices` raises `too many indices` above
+  #     `ndim` and otherwise pads the tuple to exactly `ndim` entries, so the
+  #     arity of `x[i0, ..., ik]` is `x.ndim`.
+  #   * Every `.index(...)` written out in tinygrad/ passes at most THREE
+  #     operands: a scan of all 209 static call sites gives 185 with one, 23 with
+  #     two and 1 with three (`renderer/nir.py:141`).
+  #   * The arity that actually dominates a real model is FOUR: instrumenting
+  #     `UOp.index` over a `beautiful_mnist` train step (forward, backward and an
+  #     Adam step) gives 2008 calls at arity 1 and 308 at arity 4.
+  #
+  # WHAT THE BOUND DOES NOT COVER, stated plainly: the schedule builds Index
+  # nodes by SPLAYING a range list -- `schedule/rangeify.py:195` `index(
+  # *orig_ranges)` and `schedule/indexing.py:93` `index(*src_rngs)` -- so the
+  # arity there is a kernel's axis count, and the same instrumented run reaches
+  # 8 (and 0, via `schedule/prepare.py:68`). No finite bound covers that, and
+  # none claims to: those nodes live in the compilation arena, which this file
+  # does not model. What the bound covers is tinyspec's own `Index(T, i_0, ...)`
+  # as a source-level construct, and a rank-4 tensor is the common case.
+  # Raising the bound is mechanical: one constructor, one arm, one `dims_append`.
+  SpIdx1{t: Sp, a: Sp}
+  SpIdx2{t: Sp, a: Sp, b: Sp}
+  SpIdx3{t: Sp, a: Sp, b: Sp, c: Sp}
+  SpIdx4{t: Sp, a: Sp, b: Sp, c: Sp, d: Sp}
 
   # -- reduce ops ----------------------------------------------------------
   SpReduce{t: Sp, ranges: List<&2, Sp>, op: Sp, n: Nat}
@@ -427,143 +477,175 @@ type Sp is Data:
   # Invalid: tinyspec's Pad fills with it and it rides inside a Const's value
   SpInvalid{}
 
-def Sp.shape.stack.at(head: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
+# tinyspec Stack: "Join along a newly created leading axis", so the shape is a
+# NEW leading axis of the operand count followed by the head operand's shape.
+# Only the head is needed, which is a legal descent (a list head binder is a
+# field); the count is read off the tail, which no self-call ever touches.
+def Sp.shape.stack(head: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
   on_shape(head, sh => Some{Shape.prepend(SN{k}, sh)})
 
-def Sp.shape.reduce.at(m: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
+# tinyspec Reduce: "Reduce the first n axes of T", so the shape drops n.
+def Sp.shape.reduce(m: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
   on_shape(m, sh => Some{Shape.drop(sh, k)})
 
-# The shape and dtype folds recurse two ways -- into a child node, and across a
-# list, for Index's index list and Stack's operand list. Bend has no mutual
-# recursion, so both are one `Item` and one def each.
-type Item is Data:
-  One{s: Sp}
-  Many{xs: List<&2, Sp>}
-
 # ===========================================================================
-# Derived property: shape -- tinyspec's shape column, op by op.
+# Derived property: shape -- tinyspec's shape column, op by arm.
 #
-# ONE recursive def, no @unsafe, fuel is explicit. Three facts about Bend 2's
-# termination check drive the shape of this def, each measured against 2.0.34
-# rather than read off the guide:
-#
-#   1. `fuel` is the FIRST parameter. The check reads arguments left to right
-#      and stops at the first that is a strict subterm of its parameter, so the
-#      shrinking one goes first.
-#   2. `case 2n+p:` yields TWO independent strict subterms, which is how ONE arm
-#      makes TWO decreasing calls -- the list fold needs the head and the tail.
-#      `p` and `n` are not interchangeable with `+`: marking a binder reusable
-#      stops it counting as a subterm and the check fails. Two calls, two
-#      ordinary binders.
-#   3. The checker only honours `2n+p` when a `1n+p` sibling is also present.
-#      So odd fuel burns one unit and re-enters: fuel is counted in PAIRS, and
-#      a caller with an odd budget is rounded down rather than told a lie.
-#
-# A caller supplies `2 * depth + 1`, where depth is the tree's height. Too
-# little fuel reports None, which is the honest answer for "past this depth the
-# property is unknown" -- never a wrong shape.
+# ONE recursive def, no @unsafe, no fuel. Every arm binds each operand's shape
+# to its own local and every self-call passes a distinct field of `s`, so the
+# termination check sees a descent in every call and there is nothing for a
+# caller to get wrong. The broadcast arms are three lines each because their
+# shared helper would have to self-call this def, which is mutual recursion; see
+# header fact 1.
 # ===========================================================================
 
-def Sp.shape.item(fuel: Nat, i: Item) -> Maybe<&2, Shape>:
-  match fuel:
-    case 0n: None{}
-    case 1n+p:
-      # an odd budget cannot pay for a pair, so round down and re-enter
-      Sp.shape.item(p, i)
-    case 2n+p:
-      match i:
-        case Many{xs}:
-          match xs:
-            case Nil{}: Some{Shape.empty()}
-            case x <> rest:
-              Sp.shape.index(Sp.shape.item(n, One{x}), Sp.shape.item(p, Many{rest}))
-        case One{s}:
-          match s:
-            # -- source ops
-            case SpBuffer{size, dt, dev, addr}: Some{Shape.of([SN{size}])}
-            case SpAlloc{size, dt, dev, addr}: Some{Shape.of([SN{size}])}
-            case SpParam{size, dt, dev}: Some{Shape.of([SN{size}])}
-            case SpConst{v, dt}: Some{Shape.empty()}    # "A scalar constant with shape ()"
-            case SpBinary{size}: Some{Shape.of([SN{size}])}
+def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
+  match s:
+    # -- source ops
+    case SpBuffer{size, dt, dev, addr}: Some{Shape.of([SN{size}])}
+    case SpAlloc{size, dt, dev, addr}: Some{Shape.of([SN{size}])}
+    case SpParam{size, dt, dev}: Some{Shape.of([SN{size}])}
+    case SpConst{v, dt}: Some{Shape.empty()}    # "A scalar constant with shape ()"
+    case SpBinary{size}: Some{Shape.of([SN{size}])}
 
-            # -- movement ops: all but these pass src[0].shape through
-            case SpPermute{t, order}: Sp.shape.item(n, One{t})
-            case SpFlip{t, flags}: Sp.shape.item(n, One{t})
-            case SpReshape{t, src, dst}: Some{Shape.of(dst)}
-            case SpExpand{t, pre, total}: Some{Shape.of(total)}
-            case SpPad{t, off, size}: Some{Shape.of(size)}
-            case SpShrink{t, off, size}: Some{Shape.of(size)}
-            case SpIndex{t, idx}: Sp.shape.item(n, Many{idx})
-            case SpStack{ts}: Sp.shape.stack(n, ts)
-            # Bitcast rescales the LAST dim by the itemsize ratio and Unshard
-            # multiplies each named axis by its Range, so neither passes
-            # through. TODO: both are stubs; see .agents/TODO.md.
-            case SpBitcast{t, dt}: Sp.shape.item(n, One{t})
-            case SpUnshard{t, ranges, axes}: Sp.shape.item(n, One{t})
+    # -- movement ops: all but these pass src[0].shape through
+    case SpPermute{t, order}: Sp.shape(t)
+    case SpFlip{t, flags}: Sp.shape(t)
+    case SpReshape{t, src, dst}: Some{Shape.of(dst)}
+    case SpExpand{t, pre, total}: Some{Shape.of(total)}
+    case SpPad{t, off, size}: Some{Shape.of(size)}
+    case SpShrink{t, off, size}: Some{Shape.of(size)}
+    # Index: every index shape in order, then the base's trailing dims. Each
+    # index is a distinct field, so each of these is its own descent.
+    case SpIdx1{t, a}:
+      p = Sp.shape(a)
+      bt = Sp.shape(t)
+      Sp.shape.index(p, bt, 1n)
+    case SpIdx2{t, a, b}:
+      p1 = Sp.shape(a)
+      p2 = Sp.shape(b)
+      bt = Sp.shape(t)
+      Sp.shape.index(dims_append(p1, p2), bt, 2n)
+    case SpIdx3{t, a, b, c}:
+      p1 = Sp.shape(a)
+      p2 = Sp.shape(b)
+      p3 = Sp.shape(c)
+      bt = Sp.shape(t)
+      pre = dims_append(dims_append(p1, p2), p3)
+      Sp.shape.index(pre, bt, 3n)
+    case SpIdx4{t, a, b, c, d}:
+      p1 = Sp.shape(a)
+      p2 = Sp.shape(b)
+      p3 = Sp.shape(c)
+      p4 = Sp.shape(d)
+      bt = Sp.shape(t)
+      pre = dims_append(dims_append(dims_append(p1, p2), p3), p4)
+      Sp.shape.index(pre, bt, 4n)
+    # Stack: a new leading axis of the operand count, then the head's shape.
+    # The count comes off the tail, which no self-call touches; "All shapes must
+    # match" is why the head alone carries it, and an empty Stack has no shape.
+    case SpStack{ts}:
+      match ts:
+        case Nil{}: None{}
+        case t <> rest:
+          m = Sp.shape(t)
+          n = List.length(&2, Sp, rest)
+          Sp.shape.stack(m, Nat.add(n, 1n))
+    # Bitcast rescales the LAST dim by the itemsize ratio and Unshard
+    # multiplies each named axis by its Range, so neither passes
+    # through. TODO: both are stubs; see .agents/TODO.md.
+    case SpBitcast{t, dt}: Sp.shape(t)
+    case SpUnshard{t, ranges, axes}: Sp.shape(t)
 
-            # -- reduce op: remove the first k axes
-            case SpReduce{t, ranges, op, k}: Sp.shape.reduce(n, p, t, k)
+    # -- reduce op: remove the first k axes
+    case SpReduce{t, ranges, op, k}:
+      m = Sp.shape(t)
+      Sp.shape.reduce(m, k)
 
-            # -- load ops
-            case SpLoad{buf, alt, gate}: Sp.shape.item(n, One{buf})
-            case SpCopy{buf, dev}: Sp.shape.item(n, One{buf})
+    # -- load ops
+    case SpLoad{buf, alt, gate}: Sp.shape(buf)
+    case SpCopy{buf, dev}: Sp.shape(buf)
 
-            # -- store op: "Output is void"
-            case SpStore{buf, val, gate}: None{}
+    # -- store op: "Output is void"
+    case SpStore{buf, val, gate}: None{}
 
-            # -- ordering ops
-            case SpRange{bound}: Some{Shape.empty()}
-            case SpEnd{body, ranges}: None{}
-            case SpBackedge{body, rng, cond}: None{}
-            case SpAfter{buf, deps}: Sp.shape.item(n, One{buf})
-            case SpGroup{us}: None{}
-            case SpSink{ss}: None{}
-            case SpLinear{uops}: None{}
+    # -- ordering ops
+    case SpRange{bound}: Some{Shape.empty()}
+    case SpEnd{body, ranges}: None{}
+    case SpBackedge{body, rng, cond}: None{}
+    case SpAfter{buf, deps}: Sp.shape(buf)
+    case SpGroup{us}: None{}
+    case SpSink{ss}: None{}
+    case SpLinear{uops}: None{}
 
-            # -- elementwise ops: all inputs same shape, output same shape
-            case SpRecip{a}: Sp.shape.item(n, One{a})
-            case SpTrunc{a}: Sp.shape.item(n, One{a})
-            case SpCast{a, dt}: Sp.shape.item(n, One{a})
-            case SpAdd{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpMul{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpMax{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpMod{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpIdiv{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpCmpLt{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpCmpNe{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpXor{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpOr{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpAnd{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpShr{a, b}: Sp.shape.alu(n, p, a, b)
-            case SpShl{a, b}: Sp.shape.alu(n, p, a, b)
-            # Where: the dtype column says src[1].dtype, so the shape follows `b`
-            case SpWhere{q, a, b}: Sp.shape.alu(n, p, a, b)
+    # -- elementwise ops: "all inputs same shape, output same shape", so each
+    # binary arm is the broadcast of its two operand shapes. The helper cannot
+    # be factored out (header fact 1), hence three lines per arm.
+    case SpRecip{a}: Sp.shape(a)
+    case SpTrunc{a}: Sp.shape(a)
+    case SpCast{a, dt}: Sp.shape(a)
+    case SpAdd{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpMul{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpMax{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpMod{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpIdiv{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpCmpLt{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpCmpNe{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpXor{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpOr{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpAnd{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpShr{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpShl{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    # Where: the dtype column says src[1].dtype, so the shape follows `b`
+    case SpWhere{q, a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
 
-            # -- marker ops: "identity on data"
-            case SpContiguousBackward{a}: Sp.shape.item(n, One{a})
-            case SpDetach{a}: Sp.shape.item(n, One{a})
+    # -- marker ops: "identity on data"
+    case SpContiguousBackward{a}: Sp.shape(a)
+    case SpDetach{a}: Sp.shape(a)
 
-            # -- Call: "A value Call is void"
-            case SpCall{body, args}: None{}
+    # -- Call: "A value Call is void"
+    case SpCall{body, args}: None{}
 
-            case SpInvalid{}: Some{Shape.empty()}
-
-# Broadcast: right-align the two shapes and take the element-wise max.
-def Sp.shape.alu(a: Nat, b: Nat, x: Sp, y: Sp) -> Maybe<&2, Shape>:
-  dims_zip_max(Sp.shape.item(a, One{x}), Sp.shape.item(b, One{y}))
-
-# Stack adds a LEADING axis of the operand count; an empty Stack has no shape.
-def Sp.shape.stack(+fuel: Nat, +ts: List<&2, Sp>) -> Maybe<&2, Shape>:
-  Sp.shape.stack.at(Sp.shape.item(fuel, Many{ts}), List.length(&2, Sp, ts))
-
-# Reduce drops the first k axes of the operand's shape.
-def Sp.shape.reduce(a: Nat, b: Nat, t: Sp, k: Nat) -> Maybe<&2, Shape>:
-  Sp.shape.reduce.at(Sp.shape.item(a, One{t}), k)
-
-# The public entry point. The caller supplies the depth bound; the arena knows
-# the node count, and twice that is the honest upper bound on the height.
-def Sp.shape(s: Sp, depth: Nat) -> Maybe<&2, Shape>:
-  Sp.shape.item(Nat.add(Nat.mul(depth, 2n), 1n), One{s})
+    case SpInvalid{}: Some{Shape.empty()}
 
 # ===========================================================================
 # The named dtypes -- every one of tinygrad's twenty, in dtype.py's own order.
@@ -600,77 +682,69 @@ def single() -> Dt: Dt{14, 32, CFloat{}, "float"}
 def double() -> Dt: Dt{15, 64, CFloat{}, "double"}
 
 # ===========================================================================
-# Derived property: dtype -- tinyspec's dtype column, op by op. Same fuel
-# discipline as the shape fold. Stack takes the head's dtype, which needs only
-# one descent, so it fits the single-call shape of the list arm.
+# Derived property: dtype -- tinyspec's dtype column, op by arm. Same
+# discipline as the shape fold: one def, no @unsafe, no fuel, every descent a
+# field of `s`. A dtype arm reads at most one operand, so no arm needs a local.
 # ===========================================================================
 
-def Sp.dtype.item(fuel: Nat, i: Item) -> Maybe<&2, Dt>:
-  match fuel:
-    case 0n: None{}
-    case 1n+p: Sp.dtype.item(p, i)
-    case 2n+p:
-      match i:
-        case Many{xs}:
-          match xs:
-            case Nil{}: None{}
-            case x <> _:
-              # "All shapes must match", so the head carries the result dtype
-              Sp.dtype.item(n, One{x})
-        case One{s}:
-          match s:
-            case SpBuffer{size, dt, dev, addr}: Some{dt}          # "from arg"
-            case SpAlloc{size, dt, dev, addr}: Some{dt}
-            case SpParam{size, dt, dev}: Some{dt}
-            case SpConst{v, dt}: Some{dt}
-            case SpBinary{size}: Some{uint8()}                    # "has dtype uint8"
+def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
+  match s:
+    case SpBuffer{size, dt, dev, addr}: Some{dt}          # "from arg"
+    case SpAlloc{size, dt, dev, addr}: Some{dt}
+    case SpParam{size, dt, dev}: Some{dt}
+    case SpConst{v, dt}: Some{dt}
+    case SpBinary{size}: Some{uint8()}                    # "has dtype uint8"
 
-            # -- movement ops: src[0].dtype
-            case SpPermute{t, order}: Sp.dtype.item(n, One{t})
-            case SpFlip{t, flags}: Sp.dtype.item(n, One{t})
-            case SpReshape{t, src, dst}: Sp.dtype.item(n, One{t})
-            case SpExpand{t, pre, total}: Sp.dtype.item(n, One{t})
-            case SpPad{t, off, size}: Sp.dtype.item(n, One{t})
-            case SpShrink{t, off, size}: Sp.dtype.item(n, One{t})
-            case SpIndex{t, idx}: Sp.dtype.item(n, One{t})
-            case SpStack{ts}: Sp.dtype.item(n, Many{ts})
-            case SpBitcast{t, dt}: Some{dt}                       # "from arg"
-            case SpUnshard{t, ranges, axes}: Sp.dtype.item(n, One{t})
+    # -- movement ops: src[0].dtype
+    case SpPermute{t, order}: Sp.dtype(t)
+    case SpFlip{t, flags}: Sp.dtype(t)
+    case SpReshape{t, src, dst}: Sp.dtype(t)
+    case SpExpand{t, pre, total}: Sp.dtype(t)
+    case SpPad{t, off, size}: Sp.dtype(t)
+    case SpShrink{t, off, size}: Sp.dtype(t)
+    case SpIdx1{t, a}: Sp.dtype(t)
+    case SpIdx2{t, a, b}: Sp.dtype(t)
+    case SpIdx3{t, a, b, c}: Sp.dtype(t)
+    case SpIdx4{t, a, b, c, d}: Sp.dtype(t)
+    # "All shapes must match", so Stack's dtype is the head's; one descent.
+    case SpStack{ts}:
+      match ts:
+        case Nil{}: None{}
+        case t <> _: Sp.dtype(t)
+    case SpBitcast{t, dt}: Some{dt}                       # "from arg"
+    case SpUnshard{t, ranges, axes}: Sp.dtype(t)
 
-            case SpReduce{t, ranges, op, k}: Sp.dtype.item(n, One{t})
-            case SpLoad{buf, alt, gate}: Sp.dtype.item(n, One{buf})
-            case SpCopy{buf, dev}: Sp.dtype.item(n, One{buf})
-            case SpStore{buf, val, gate}: None{}                  # void
+    case SpReduce{t, ranges, op, k}: Sp.dtype(t)
+    case SpLoad{buf, alt, gate}: Sp.dtype(buf)
+    case SpCopy{buf, dev}: Sp.dtype(buf)
+    case SpStore{buf, val, gate}: None{}                  # void
 
-            case SpRange{bound}: Some{index()}                    # "index"
-            case SpEnd{body, ranges}: None{}
-            case SpBackedge{body, rng, cond}: None{}
-            case SpAfter{buf, deps}: Sp.dtype.item(n, One{buf})
-            case SpGroup{us}: None{}
-            case SpSink{ss}: None{}
-            case SpLinear{uops}: None{}
+    case SpRange{bound}: Some{index()}                    # "index"
+    case SpEnd{body, ranges}: None{}
+    case SpBackedge{body, rng, cond}: None{}
+    case SpAfter{buf, deps}: Sp.dtype(buf)
+    case SpGroup{us}: None{}
+    case SpSink{ss}: None{}
+    case SpLinear{uops}: None{}
 
-            case SpRecip{a}: Sp.dtype.item(n, One{a})
-            case SpTrunc{a}: Sp.dtype.item(n, One{a})
-            case SpCast{a, dt}: Some{dt}                           # "from arg"
-            case SpAdd{a, b}: Sp.dtype.item(n, One{a})
-            case SpMul{a, b}: Sp.dtype.item(n, One{a})
-            case SpMax{a, b}: Sp.dtype.item(n, One{a})
-            case SpMod{a, b}: Sp.dtype.item(n, One{a})
-            case SpIdiv{a, b}: Sp.dtype.item(n, One{a})
-            case SpCmpLt{a, b}: Some{boolean()}                   # bool
-            case SpCmpNe{a, b}: Some{boolean()}
-            case SpXor{a, b}: Sp.dtype.item(n, One{a})
-            case SpOr{a, b}: Sp.dtype.item(n, One{a})
-            case SpAnd{a, b}: Sp.dtype.item(n, One{a})
-            case SpShr{a, b}: Sp.dtype.item(n, One{a})
-            case SpShl{a, b}: Sp.dtype.item(n, One{a})
-            case SpWhere{q, a, b}: Sp.dtype.item(n, One{b})       # src[1].dtype
+    case SpRecip{a}: Sp.dtype(a)
+    case SpTrunc{a}: Sp.dtype(a)
+    case SpCast{a, dt}: Some{dt}                           # "from arg"
+    case SpAdd{a, b}: Sp.dtype(a)
+    case SpMul{a, b}: Sp.dtype(a)
+    case SpMax{a, b}: Sp.dtype(a)
+    case SpMod{a, b}: Sp.dtype(a)
+    case SpIdiv{a, b}: Sp.dtype(a)
+    case SpCmpLt{a, b}: Some{boolean()}                   # bool
+    case SpCmpNe{a, b}: Some{boolean()}
+    case SpXor{a, b}: Sp.dtype(a)
+    case SpOr{a, b}: Sp.dtype(a)
+    case SpAnd{a, b}: Sp.dtype(a)
+    case SpShr{a, b}: Sp.dtype(a)
+    case SpShl{a, b}: Sp.dtype(a)
+    case SpWhere{q, a, b}: Sp.dtype(b)                     # src[1].dtype
 
-            case SpContiguousBackward{a}: Sp.dtype.item(n, One{a})
-            case SpDetach{a}: Sp.dtype.item(n, One{a})
-            case SpCall{body, args}: None{}                        # void
-            case SpInvalid{}: Some{boolean()}
-
-def Sp.dtype(s: Sp, depth: Nat) -> Maybe<&2, Dt>:
-  Sp.dtype.item(Nat.add(Nat.mul(depth, 2n), 1n), One{s})
+    case SpContiguousBackward{a}: Sp.dtype(a)
+    case SpDetach{a}: Sp.dtype(a)
+    case SpCall{body, args}: None{}                        # void
+    case SpInvalid{}: Some{boolean()}

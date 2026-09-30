@@ -25,16 +25,25 @@ shipped code; the port has none.
 
 ## Reference material
 
+Fetched checkouts live under `references/`, which is gitignored. Neither is a
+dependency — the port has none. Both are read-only to every agent; if one appears
+to need changing, that is a finding to report, not an edit to make.
+
+> `AGENTS.md` says to link `references/` in the README. Do not. The README is off
+> limits. This table is the ledger instead.
+
 | what | where | why |
 | --- | --- | --- |
 | `tinygrad/` | this repo, tracked, **read-only** | the thing being ported, and the oracle. Never edited by a port agent. |
 | `spec/tinyspec.tex` | this repo, tracked | the specification. `tinybendygrad/LAWS.bend` is its machine-checked form. |
-| `references/bend` | gitignored | the language itself: `guide/GUIDE.md`, `guide/EFFECTS.md`, `guide/SHADERS.md`, `bend2/base.bend` (the prelude), `bend2/effs/*.c` (the effect ABI), `tests/` (the test convention). |
+| `references/bend` | gitignored, [HigherOrderCO/Bend](https://github.com/HigherOrderCO/Bend) @ `v2.0.34` | the language itself: `guide/GUIDE.md`, `guide/EFFECTS.md`, `guide/SHADERS.md`, `bend2/base.bend` (the prelude), `bend2/effs/*.c` (the effect ABI), `tests/` (the test convention). Fetched by `tools/get-bend.sh`. |
+| `references/tinyquery` | gitignored, [Cyberistic/tinyquery](https://github.com/Cyberistic/tinyquery) | Cyberistic's tinygrad-in-Odin. Not a dependency — a second opinion on the same port, so we can see the decisions a different language forced. Its `sz.odin` is the same line-counting tool we are porting to Bend; `slop/notes/sz-odin-precedent.md` records where it diverges from `sz.py` and which divergences we are deliberately not copying. |
 
 The distilled, hard-won facts about all of the above — the affinity rules, the
-binder-order rule, the `Maybe`-destructuring rule, what Bend's `F32` actually
-does — live in `.agents/slop/notes/bend2-constraints.md`, which is what agents
-are told to read first. Re-derive it there rather than in a comment.
+binder-order rule, the `Maybe`-destructuring rule, the forbidden list-tail descent,
+what Bend's `F32` actually does — live in
+`.agents/slop/notes/bend2-constraints.md`, which is what agents are told to read
+first. Re-derive it there rather than in a comment.
 
 ## No dependencies
 
