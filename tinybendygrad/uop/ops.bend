@@ -2787,6 +2787,238 @@ def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
 
 
 # ===========================================================================
+# `PatternMatcher` -- ops.py:1587, in its COMPILED form.
+#
+# This is not the interpreter. `ops.py:1588` is
+# `compiled=bool(getenv("UPAT_COMPILE", 1))`, so `upat_compile` is the live path
+# and `upat_interpret` is the fallback; and the interpreter is the one carrying a
+# mutable store, a cartesian product, and an `is_any` flatten that recurses over
+# the pattern's own src. All of that is a workaround for not having locals.
+#
+# A compiled rule is a TOP-LEVEL DEF named by a tag, and that is the whole design
+# here. Three consequences, all of them things the interpreter could not do:
+#
+#   * THE TABLE IS `Data`, SO IT IS COPYABLE. `PMEntry` is read by the scan and by
+#     `early_reject` in the same pass, with no `+` and no linear-table
+#     workaround. A table of closures forces `Type`; a table of tags does not.
+#   * A RULE MAY READ THE ARENA AS OFTEN AS IT LIKES. A closure cannot take a
+#     shared argument -- there is no spelling of one in a function type -- so an
+#     interpreter rule could not receive `+Arena`. A def can.
+#   * A RULE'S CAPTURES ARE ITS OWN PARAMETERS. No store, no `setdefault`, no
+#     cartesian product, and `is_any` is a DISJUNCTION rather than a flatten.
+#
+# The cost is the dispatch: Bend has no first-class functions, so a tag selects a
+# top-level def through a `match`. One `case` per rule. For `spec.py`'s 82 rules
+# that is 82 cases, which is the trade the master plan's LOC rule cares about --
+# more lines, in exchange for rules that are individually readable and
+# individually gateable.
+#
+# The runnable model with the gate and the mutation table is
+# .agents/slop/notes/compiled-matcher-shape.bend.
+# ===========================================================================
+
+# One entry per pattern: the op set it claims (`pdict`'s key in Python),
+# `early_reject`, and the tag of the def that IS the compiled rule.
+type PMEntry is Data:
+  PMEntry{tag: U32, ops: List<&2, Op>, rej: List<&2, Op>}
+
+# A rule table. `Data`, so copyable -- see the header.
+type PMEntrys is Data:
+  PMEntrys{es: List<&2, PMEntry>}
+
+def PMEntrys.es(ts: PMEntrys) -> List<&2, PMEntry>:
+  match ts:
+    case PMEntrys{es}: es
+
+def PMEntry.tag(e: PMEntry) -> U32:
+  match e:
+    case PMEntry{tag, ops, rej}: tag
+
+def PMEntry.ops(e: PMEntry) -> List<&2, Op>:
+  match e:
+    case PMEntry{tag, ops, rej}: ops
+
+def PMEntry.rej(e: PMEntry) -> List<&2, Op>:
+  match e:
+    case PMEntry{tag, ops, rej}: rej
+
+# `PatternMatcher.rewrite` returns the FIRST non-None, so this is a fold with
+# first-wins and `pm_keep` is a leaf. Keying on the ACCUMULATOR is what makes it
+# first-wins: keying on the new verdict is last-wins, and a rule that skips then
+# erases every earlier verdict, so most verdicts are destroyed before the pass
+# ends. Measured -- the last-wins mutation moves three of the model's six rows.
+type Verdict is Data:
+  VTrue{}
+  VFalse{}
+  VSkip{}
+
+def pm_keep.take(v: Verdict) -> Verdict:
+  match v:
+    case VSkip{}: VSkip{}
+    case VTrue{}: VTrue{}
+    case VFalse{}: VFalse{}
+def pm_keep.go(acc: Verdict, v: Verdict) -> Verdict:
+  match acc:
+    case VSkip{}: pm_keep.take(v)
+    case VTrue{}: VTrue{}
+    case VFalse{}: VFalse{}
+
+
+def pm_keep(acc: Verdict, v: Verdict) -> Verdict:
+  pm_keep.go(acc, v)
+
+
+# `if cond: v else None`, the shape of most of spec.py's rule bodies. A leaf,
+# and what keeps a rule one def instead of three.
+def pm_when.of(b: Bool, v: Verdict) -> Verdict:
+  match b:
+    case True{}: v
+    case False{}: VSkip{}
+
+def pm_when(b: Bool, v: Verdict) -> Verdict:
+  pm_when.of(b, v)
+
+
+# ===========================================================================
+# THE PASS. `pdict.get(uop.op, [])` as a scan over a flat list in insertion
+# order. Python's dict preserves that order and `Map` here is string-keyed while
+# `Ops.value` gives a number, so a linear scan is both the faithful order and the
+# honest structure.
+# ===========================================================================
+def op_is(ar: Arena, self: U32, want: Op) -> Bool:
+  eq_op(Arena.op(ar, self), want)
+
+def pm_r_sink(ar: Arena, self: U32) -> Verdict:
+  pm_when(op_is(ar, self, OpsSINK{}), VTrue{})
+def pm_r_cast(+ar: Arena, +self: U32) -> Verdict:
+  pm_when(Bool.or(op_is(ar, self, OpsCAST{}), op_is(ar, self, OpsBITCAST{})), VTrue{})
+def pm_r_noop(ar: Arena, self: U32) -> Verdict:
+  pm_when(op_is(ar, self, OpsNOOP{}), VTrue{})
+
+
+
+def pm_dispatch.go(tag: U32, ar: Arena, self: U32) -> Verdict:
+  match tag:
+    case 0: pm_r_sink(ar, self)
+    case 1: pm_r_noop(ar, self)
+    case 2: pm_r_cast(ar, self)
+    case _: VSkip{}
+
+def pm_dispatch(tag: U32, ar: Arena, self: U32) -> Verdict:
+  pm_dispatch.go(tag, ar, self)
+
+def pm_try.go(ok: Bool, tag: U32, ar: Arena, self: U32) -> Verdict:
+  match ok:
+    case True{}: pm_dispatch(tag, ar, self)
+    case False{}: VSkip{}
+
+def pm_try.of(claimed: Bool, early: Bool, tag: U32, ar: Arena, self: U32) -> Verdict:
+  pm_try.go(Bool.and(claimed, early), tag, ar, self)
+def op_in(ops: List<&2, Op>, +want: Op) -> Bool:
+  match ops:
+    case Nil{}: False{}
+    case x <> t: Bool.or(eq_op(x, want), op_in(t, want))
+
+def pm_claimed(ops: List<&2, Op>, ar: Arena, self: U32) -> Bool:
+  op_in(ops, Arena.op(ar, self))
+def pm_early.go(+have: List<&2, Op>, rej: List<&2, Op>) -> Bool:
+  match rej:
+    case Nil{}: True{}
+    case o <> t: Bool.and(op_in(have, o), pm_early.go(have, t))
+# `Arena.src` and `Arena.op` are ops.bend's OWN readers and return bare values,
+# not `Maybe` -- so `ler` is a two-element list built directly, with no
+# unwrapping. The model carried its own `Maybe` readers; this reuses the file's.
+def pm_ler.put(x: List<&2, Op>) -> List<&2, Op>:
+  x
+
+def pm_ler(+ar: Arena, +self: U32) -> List<&2, Op>:
+  pm_ler.put(List.append(&2, Op, [Arena.op(ar, Arena.src(ar, self, 0))],
+                              [Arena.op(ar, Arena.src(ar, self, 1))]))
+
+
+
+def pm_early(ts: PMEntrys, ar: Arena, self: U32, rej: List<&2, Op>) -> Bool:
+  pm_early.go(pm_ler(ar, self), rej)
+
+
+
+def pm_try(ts: PMEntrys, +ar: Arena, +self: U32, +e: PMEntry) -> Verdict:
+  pm_try.of(pm_claimed(PMEntry.ops(e), ar, self), pm_early(ts, ar, self, PMEntry.rej(e)), PMEntry.tag(e), ar, self)
+
+def pm_scan(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc: Verdict) -> Verdict:
+  match todo:
+    case Nil{}: acc
+    case e <> t: pm_scan(ts, ar, self, t, pm_keep(acc, pm_try(ts, ar, self, e)))
+
+
+def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
+  pm_scan(ts, ar, self, PMEntrys.es(ts), VSkip{})
+
+
+# one rule: does it claim this op, and does `early_reject` pass?
+
+
+
+# --- `early_reject`, and THE NAME IS A MISLEADER ---------------------------
+#
+# ops.py:1609 is `if not early_reject.issubset(ler): continue`, so the rule FIRES
+# when the op set IS a subset of `ler` and is SKIPPED when it is not. It reads
+# as a reject set and computes as a NECESSARY CONDITION: it is built from the ops
+# of the pattern's FIRST src, and an empty set is a subset of everything, which is
+# why the many rules with an empty `early_reject` always fire.
+#
+# `ler` is `uop.__dict__['_src_ops']`, CACHED ON THE UOP. There is no mutable uop
+# here, so it is recomputed per rule, and that cache is the one place this port is
+# slower than the thing it ports.
+
+
+# `ler`: the ops among the node's srcs
+
+
+
+
+# --- the op-set membership tests -------------------------------------------
+
+# `uop.op in self.op`
+# `uop.op in self.op`. `Arena.op` is ops.bend's own reader, so no Maybe here.
+
+
+# `uop.op is want`, which is `len(self.op) == 1` specialised
+
+
+# `uop.src[n].op is want` -- the read a capture replaces
+def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
+  op_is(ar, Arena.src(ar, self, n), want)
+
+# ===========================================================================
+# THE DISPATCH. `upat.py` emits a closure; Bend has no first-class functions, so
+# the tag selects a top-level def. THIS is the mechanism, and it is why the table
+# is `Data` rather than a list of closures.
+#
+# `UPatCompileError` -- ops.py:1588 raises when a pattern's source cannot be read,
+# because the compiler reflects on the CALLING FRAME to find the pattern's
+# location. There is no frame here, so a rule that cannot be compiled has no
+# representation at all: it is a missing `case` below, and the honest response is
+# a missing def rather than a runtime error.
+# ===========================================================================
+
+
+
+# --- the rules -------------------------------------------------------------
+#
+# `spec_shared`'s first two entries plus the CAST rule: a leaf, a leaf, and an
+# `is_any` disjunction. These are the three shapes that need nothing from a
+# store, because a compiled rule's captures are its own parameters.
+
+# `(UPat(Ops.SINK, dtypes.void), lambda: True{})`
+
+# `(UPat(Ops.NOOP), lambda: True{})` -- TODO: remove this
+
+# `is_any` is a DISJUNCTION, which is what upat.py:18 compiles it to. The
+# interpreter FLATTENED the alternatives and recursed over the pattern's own src;
+# this is straight-line code, so that recursion is not present.
+
+# ===========================================================================
 # THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
 #
 # THESE ARE NOT DEFS, ON PURPOSE. A def whose body answers a placeholder would be
@@ -3260,7 +3492,7 @@ def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
 #      index is the same number. This is `UOpMetaClass.ucache`, and it is what
 #      makes `UOp.__eq__` identity.
 #   2. THE KEY SEPARATES DTYPES. "a CONST's dtype is the type of its arg, and
-#      True == 1 as dict keys" -- CBool and CInt are two nodes.
+#      True{} == 1 as dict keys" -- CBool and CInt are two nodes.
 #   3. A CYCLE. A node whose src is a LATER index is a legal arena state. That
 #      is the back-edge the range graph makes and the whole reason this is an
 #      index and not a tree.
@@ -3376,7 +3608,7 @@ def t_var_interns() -> Bool:
 
 # `src=self` in `broadcast` is `itertools.repeat`, so ONE unbounded alternative --
 # never an infinite list -- and `required_len` 0, because the read is bounded by
-# `strict_length` being False instead.
+# `strict_length` being False{} instead.
 def t_broadcast_repeats.of(alts: List<&2, UpAlt>) -> Bool:
   match alts:
     case Nil{}: False{}
