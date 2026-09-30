@@ -71,14 +71,23 @@ static void __attribute__((constructor)) sz_read_dir_use(void) {
   io_eff(CID(Sz.read_dir), sz_read_dir_run, 0);
 }
 
-// is_dir: 1 for a directory, 0 for anything else. A stat that fails is 0, which
-// is what os.path.isdir answers and what os.walk's `entry.is_dir() except
+// is_dir: 1 for a directory, 0 for anything else. An lstat that fails is 0,
+// which is what os.path.isdir answers and what os.walk's `entry.is_dir() except
 // OSError: False` asks for.
+//
+// lstat, NOT stat, and the difference is the whole answer. os.walk defaults to
+// followlinks=False and never descends a symlink to a directory; stat() FOLLOWS
+// one, so it answers 1 for a link the walk must not enter. On a symlink cycle --
+// a directory containing a link to itself -- the walk then re-enters its own
+// subtree forever, burns the 2^24 fuel of sz.bend's walk, and RETURNS: a D with
+// no fuel left is dropped without a word, so the table is silently short of rows
+// instead of failing. lstat asks about the name itself, so a link is never a
+// directory here, which is os.walk's own rule.
 Term sz_is_dir_run(Env e, Term* f, IoWork* w) {
   u64 n = 0;
   char* path = io_cstr(e, f[0], &n);
   struct stat st;
-  int yes = n != 0 && stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+  int yes = n != 0 && lstat(path, &st) == 0 && S_ISDIR(st.st_mode);
   free(path);
   return (Term)yes;
 }

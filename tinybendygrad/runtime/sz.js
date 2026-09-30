@@ -23,7 +23,7 @@ io_eff(CID(Sz.read_dir), sz_read_dir);
 // path it cannot stat, and so does os.walk's `entry.is_dir() except OSError`.
 function sz_is_dir(path) {
   try {
-    return require("node:fs").statSync(path).isDirectory() ? 1 : 0;
+    return require("node:fs").lstatSync(path).isDirectory() ? 1 : 0;
   } catch (e) {
     return 0;
   }

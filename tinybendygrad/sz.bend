@@ -1,6 +1,58 @@
 import Base
 
 # ===========================================================================
+# sz.py in Bend: the tokens and the counted lines of every .py and .js file under a
+# tree, and the two tables sz.py prints from them. `spec/sz.md` is what the port
+# cost; `.agents/slop/notes/compare/sz.md` is the def-by-def comparison.
+#
+# It is the only unit in this tree checked against something outside itself: every
+# number it prints is one CPython `tokenize` answer away, so `./bin/bend
+# tinybendygrad/sz.bend` and `python3 sz.py` are diff-able byte for byte, and they
+# are, on all 222 counted files of this tree and on the whole table.
+#
+# Two measured things about the host, both in `spec/sz.md`:
+#
+#   - 7 of the 211 defs reach a foreign or @unsafe def, and all 7 are the walk:
+#     Sz.read_dir, Sz.is_dir, walk.item, walk.scan, walk, and the two defs of the
+#     mode dispatch that call it. The lexer, both tables, gen_diff and the printed
+#     form reach no effect at all, which is why the file is split where it is.
+#   - the INTERPRETED lane dies on any single file of 28988 bytes or more, with
+#     `bend: memory fault (machine stack overflow?)`; 28987 is the largest that
+#     passes. It is the byte count and nothing else: a 63-space `.js` file, which
+#     never runs the lexer, has the same cliff, and two `.py` files totalling
+#     29000 bytes are fine in one process, so it is a per-file host limit. The
+#     compiled lane reads a 1048576-byte `.js` and a 114688-byte `.py` without
+#     complaint, so `sz` is a compiled-lane tool and any fixture at or above 28988
+#     bytes can only be run compiled.
+#
+# WHERE TO LOOK BEFORE TOUCHING THIS FILE, in order:
+#
+#   - ~/Documents/tinyquery/sz.odin -- the reference implementation. The same
+#     program in a systems language: its os.walker owns termination AND symlink
+#     policy, the two things this port reimplements by hand. It is a word-counter,
+#     not a tokenizer; that is most of why it is 247 lines and this is 1671.
+#   - .agents/slop/notes/bend2-constraints.md -- the measured Bend rules this file
+#     depends on (fuel must decrease and be the first parameter; a Data param
+#     needs + for a second read; the memory-fault entry; the benchmark lessons
+#     on why 'x100-x1000 slower' and 'exactly 32768' were both wrong). Also the
+#     peer-language reference solutions for the walls here (Koka Perceus reuse,
+#     packed strings, os.walk as library maturity).
+#   - .agents/slop/tools/szfuzz.py -- the property harness: random trees diffed
+#     against sz.py's own gen_stats. Run it after any lexer or walk change.
+#
+# Two landmines the next reader must not rediscover:
+#
+#   - The walk's fuel (16777216n) is a never-hit cap for the termination checker;
+#     the real termination is the todo list draining (case Nil{} returns on empty
+#     regardless of fuel). There is no closed-form name count, so 2^24 is
+#     deliberate. But Sz.is_dir used to use stat(), which FOLLOWS symlinks, while
+#     os.walk(followlinks=False) never descends a symlinked directory -- on a
+#     symlink cycle this port spins until the fuel runs out and then SILENTLY
+#     TRUNCATES. The fix is stat -> lstat in runtime/sz.c; szfuzz generates
+#     symlink cases that pin it.
+# ===========================================================================
+
+# ===========================================================================
 # A row of either table: the path as os.path.relpath gives it, the lines, the
 # tokens, and -- in the diff table only -- how many lines and tenths of a ratio it
 # gained or lost. An F32 carries those two because they are signed and U32 is not,
@@ -39,11 +91,12 @@ def Row.found(r: Row) -> Bool:
 
 type Dir is Data: Dir{full: String, rel: String}
 
-# It: one name of the walk, already decided. A file's row is counted, so F carries
-# it; a subdirectory is not, so D carries the two paths os.path.join and
-# os.path.relpath give it.
+# It: one name of the walk, already decided, carrying the two paths os.path.join
+# and os.path.relpath give it. A file sz.py counts is an F, a subdirectory is a D,
+# and both carry the pair, so the walk never carries a row: a file's row is built
+# by sz.rows out of the F, which is why the row-building is downstream of nothing.
 type It is Data:
-  F{r: Row}
+  F{full: String, rel: String}
   D{full: String, rel: String}
 
 def Dir.full(d: Dir) -> String:
@@ -58,13 +111,24 @@ def Dir.rel(d: Dir) -> String:
 # The two questions os.walk asks, as effects: the names in a directory, and
 # whether a name is a directory. A directory that cannot be read is no names and a
 # name that cannot be stat'd is no, which is what os.walk answers. Reading a file
-# is Base's File.open/read/close.
+# is Base's File.open/read/close, which is why the walk and the lexer are not
+# foreign: these two are the whole of it. bend 2.0.34's base.bend can ask neither,
+# so each is @unsafe -- a promise the checker reads and never checks, like a foreign
+# def -- and each TODO names the primitive it waits for.
 # ===========================================================================
 
+# TODO(p3) base.bend: File.list(path) -> List<String>  -- no opendir/readdir, so the
+# names of a directory in the order the host lists them are a foreign call, and
+# os.walk keeps that order: runtime/sz.c says why.
+@unsafe
 def Sz.read_dir(path: String) -> IO(List<String>):
   import "./runtime/sz.c"
   import "./runtime/sz.js"
 
+# TODO(p3) base.bend: Path.is_dir(path) -> Bool  -- no stat, so "is this name a
+# directory" is a foreign call, and it is the one that decides whether os.walk
+# walks into a name or counts it.
+@unsafe
 def Sz.is_dir(path: String) -> IO(U32):
   import "./runtime/sz.c"
   import "./runtime/sz.js"
@@ -94,12 +158,11 @@ def skip(+d: String) -> Bool:
   Bool.or(String.contains(d, "tinygrad/runtime/autogen"),
     String.contains(d, "tinygrad/viz/assets"))
 
-def counted.go(+name: String, a: String, b: String) -> Bool:
-  Bool.or(String.ends_with(name, a), String.ends_with(name, b))
-
-def counted(name: String) -> Bool:
-  # the .py and .js files gen_stats reads
-  counted.go(name, ".py", ".js")
+def counted(+name: String) -> Bool:
+  # a name gen_stats counts: sz.py's two `continue`s together, a .py or .js name on
+  # a path it never skips
+  Bool.and(Bool.or(String.ends_with(name, ".py"), String.ends_with(name, ".js")),
+    Bool.not(skip(name)))
 
 def is_js(name: String) -> Bool:
   String.ends_with(name, ".js")
@@ -1015,26 +1078,32 @@ def sz.lane(js: Bool, +s: String, +p: String) -> IO(Row):
 # os.walk yields a directory's files first and then its subdirectories, each in
 # the order the directory itself lists them, and the table keeps that order, so
 # the two effects must not sort: sorting would permute the rows of every table
-# with two files of the same length. A directory is a path to read and the path to
-# print, which is base_path joined to what os.path.relpath gives, so the walk
-# starts at base_path/tinygrad and never carries base_path again.
+# with two files of the same length. A path is a path to read and a path to print,
+# which is base_path joined to what os.path.relpath gives, so the walk starts at
+# base_path/tinygrad and never carries base_path again.
+#
+# The walk is the impure half and sz.rows is the other: `walk` answers with every
+# counted file as a path to read and a path to print, in os.walk's order, and
+# sz.rows reads and lexes them, so the lexer and both tables are downstream of no
+# effect. The walk's one impure step is a name: walk.item stats it and walk lists
+# a directory, and the two effects are in those two defs and nowhere else.
 # ===========================================================================
 
-def walk.file(+a: List<&2, It>, +b: List<&2, It>, +pf: String, +pr: String) -> IO((List<&2, It> & List<&2, It>)):
-  # one counted file, its row on the back of the files, and nothing at all when it
-  # has no lines, which is the one thing that keeps gen_stats from counting it
-  do IO<(List<&2, It> & List<&2, It>)>:
-    t : String <- sz.read(pf)
-    r : Row <- sz.lane(is_js(pf), t, pr)
-    +rr : Row = r
-    Bool.pick(IO((List<&2, It> & List<&2, It>)), U32.is_gt(Row.lines(rr), 0),
-      IO.pure((List<&2, It> & List<&2, It>), (List.append(&2, It, a, [F{rr}]), b)),
-      IO.pure((List<&2, It> & List<&2, It>), (a, b)))
+def Sz.root(base: String) -> It:
+  # the one directory os.walk starts at
+  D{base ++ "/tinygrad", "tinygrad"}
 
 def walk.item(p: (List<&2, It> & List<&2, It>), +n: String, +dd: Dir) -> IO((List<&2, It> & List<&2, It>)):
-  # One name of one directory, and what os.walk makes of it: a subdirectory is a
-  # directory to walk into, a file it counts is a row, and anything else -- a name
-  # on one of the two paths sz.py never counts, or one of neither -- is dropped.
+  # One name of one directory, and what os.walk makes of it: a subdirectory on the
+  # back of the directories, a file sz.py counts on the back of the files, and a name
+  # on one of the two paths sz.py never counts, or one of neither, dropped. The file
+  # is an F carrying its two paths and NO row: the row is built later, by sz.rows.
+  #
+  # The two lists are separate because os.walk yields the files before the
+  # subdirectories, and the grouping has to be built HERE, where the stat is, because
+  # the stat is what says which group a name is in. It is not the lexing that makes
+  # the pair necessary, and moving the lexing out did not remove it: the only way to
+  # one list is to readdir backwards, and a tail cannot be pushed at.
   (a, b) = p
   +a : List<&2, It> = a
   +b : List<&2, It> = b
@@ -1042,49 +1111,75 @@ def walk.item(p: (List<&2, It> & List<&2, It>), +n: String, +dd: Dir) -> IO((Lis
   +pr : String = Dir.rel(dd) ++ "/" ++ n
   do IO<(List<&2, It> & List<&2, It>)>:
     i : U32 <- Sz.is_dir(pf)
-    Bool.pick(IO((List<&2, It> & List<&2, It>)), U32.is_eq(i, 1),
-      IO.pure((List<&2, It> & List<&2, It>), (a, List.append(&2, It, b, [D{pf, pr}]))),
-      Bool.pick(IO((List<&2, It> & List<&2, It>)), Bool.and(counted(pr), Bool.not(skip(pr))),
-        walk.file(a, b, pf, pr), IO.pure((List<&2, It> & List<&2, It>), (a, b))))
+    Bool.pick(IO((List<&2, It> & List<&2, It>)), U32.is_zero(i),
+      Bool.pick(IO((List<&2, It> & List<&2, It>)), counted(pr),
+        IO.pure((List<&2, It> & List<&2, It>), (List.append(&2, It, a, [F{pf, pr}]), b)),
+        IO.pure((List<&2, It> & List<&2, It>), (a, b))),
+      IO.pure((List<&2, It> & List<&2, It>), (a, List.append(&2, It, b, [D{pf, pr}]))))
 
-def walk.join(p: (List<&2, It> & List<&2, It>), rest: List<&2, It>) -> IO(List<&2, It>):
+def walk.join(p: (List<&2, It> & List<&2, It>), rest: List<&2, It>) -> List<&2, It>:
   # os.walk yields a directory's files and then its subdirectories, so the files go
   # in front of the subdirectories and both in front of what was left of the walk
   (a, b) = p
-  IO.pure(List<&2, It>, List.append(&2, It, List.append(&2, It, a, b), rest))
+  List.append(&2, It, a, List.append(&2, It, b, rest))
 
 def walk.scan(names: List<String>, +dd: Dir, p: (List<&2, It> & List<&2, It>),
   rest: List<&2, It>) -> IO(List<&2, It>):
+  # One directory's names, in the order it lists them. The recursion over a
+  # directory's names is a def of its own and not walk, because one arm of a def may
+  # not make two self-calls, so it cannot also be the recursion over the directories.
   match names:
-    case Nil{}: walk.join(p, rest)
+    case Nil{}: IO.pure(List<&2, It>, walk.join(p, rest))
     case n <> t:
       do IO<List<&2, It>>:
         q : (List<&2, It> & List<&2, It>) <- walk.item(p, n, dd)
         walk.scan(t, dd, q, rest)
 
-def walk(k: Nat, o: List<&2, Row>, todo: List<&2, It>) -> IO(List<&2, Row>):
-  # The walk, on a Nat: one name is one step, and a list tail cannot carry what a
-  # tail call would have to add to it, so the count of names left is what decreases.
+def walk(k: Nat, out: List<&2, Dir>, todo: List<&2, It>) -> IO(List<&2, Dir>):
+  # The walk, on a Nat: one step per item of the todo, which is one counted file or
+  # one subdirectory -- a name gen_stats never counts is never an item, so it costs
+  # no step -- and a list tail cannot carry what a tail call would have to add, so
+  # the count of steps left is what decreases. The answer is the files popped, in
+  # the order they were popped, which is os.walk's order; a D with no fuel left to
+  # walk is not in it, silently, and the fuel is 16777216 steps against this tree's
+  # 289, which is a bound os.walk does not have. Measured: a fuel of 100 drops 40 of
+  # this tree's rows, so the bound is not decorative.
   match k:
-    case 0n: IO.pure(List<&2, Row>, o)
+    case 0n: IO.pure(List<&2, Dir>, out)
     case 1n+j:
       match todo:
-        case Nil{}: IO.pure(List<&2, Row>, o)
-        case F{r} <> rest:
-          do IO<List<&2, Row>>:
-            walk(j, List.append(&2, Row, o, [r]), rest)
+        case Nil{}: IO.pure(List<&2, Dir>, out)
+        case F{full, rel} <> rest:
+          do IO<List<&2, Dir>>:
+            walk(j, List.append(&2, Dir, out, [Dir{full, rel}]), rest)
         case D{full, rel} <> rest:
-          do IO<List<&2, Row>>:
+          do IO<List<&2, Dir>>:
             +fu : String = full
             +re : String = rel
             names : List<String> <- Sz.read_dir(fu)
             q : List<&2, It> <- walk.scan(names, Dir{fu, re}, (Nil{}, Nil{}), rest)
-            walk(j, o, q)
+            walk(j, out, q)
 
-def sz.stats(base: String) -> IO(List<&2, Row>):
-  # gen_stats: every counted file under base/tinygrad, in os.walk's order. The Nat
-  # is the walk's bound, a name per directory plus every subdirectory it found
-  walk(16777216n, Nil{}, [D{base ++ "/tinygrad", "tinygrad"}])
+# ===========================================================================
+# The row-building, which the walk hands its files to and which touches no effect
+# but Base's File: the .js lane is whitespace, the .py lane is the lexer.
+# ===========================================================================
+
+def sz.rows(its: List<&2, Dir>, +xs: List<&2, Row>) -> IO(List<&2, Row>):
+  # One row per counted file, in the order the walk found them, and nothing at all
+  # for a file with no lines, which is the one thing that keeps gen_stats from
+  # counting it.
+  match its:
+    case Nil{}: IO.pure(List<&2, Row>, xs)
+    case Dir{full, rel} <> rest:
+      do IO<List<&2, Row>>:
+        +fu : String = full
+        s : String <- sz.read(fu)
+        r : Row <- sz.lane(is_js(fu), s, rel)
+        +rr : Row = r
+        x : List<&2, Row> = Bool.pick(List<&2, Row>, U32.is_gt(Row.lines(rr), 0),
+          List.append(&2, Row, xs, [rr]), xs)
+        sz.rows(rest, x)
 
 # ===========================================================================
 # The ratio, as tenths
@@ -1503,26 +1598,74 @@ def sz.show(+rs: List<&2, Row>, d: U32) -> IO(Unit):
   Bool.pick(IO(Unit), List.is_empty(&2, Row, rs), IO.pure(Unit, Unit{}),
     sz.put(rs, d))
 
-def sz.one(base: String) -> IO(Unit):
+def sz.one(its: List<&2, Dir>) -> IO(Unit):
   do IO<Unit>:
-    rs : List<&2, Row> <- sz.stats(base)
+    rs : List<&2, Row> <- sz.rows(its, Nil{})
     sz.show(rs, 0)
 
-def sz.two(old: String, new: String) -> IO(Unit):
+def sz.two(old: List<&2, Dir>, new: List<&2, Dir>) -> IO(Unit):
   do IO<Unit>:
-    a : List<&2, Row> <- sz.stats(old)
-    b : List<&2, Row> <- sz.stats(new)
+    a : List<&2, Row> <- sz.rows(old, Nil{})
+    b : List<&2, Row> <- sz.rows(new, Nil{})
     sz.show(gen_diff(a, b), 1)
 
 def sz.main(as: List<String>) -> IO(Unit):
   # gen_stats' three modes: the tree under the cwd, under one path, or the
-  # difference of two
+  # difference of two. This is the one def that walks, so the two effects reach
+  # nothing else in the file: sz.one and sz.two take a list of files and print a
+  # table from it, and a table can be printed from a list of files.
   match as:
-    case Nil{}: sz.one(".")
-    case a <> Nil{}: sz.one(a)
-    case a <> b <> _: sz.two(a, b)
+    case Nil{}:
+      do IO<Unit>:
+        x : List<&2, Dir> <- walk(16777216n, Nil{}, [Sz.root(".")])
+        sz.one(x)
+    case a <> Nil{}:
+      do IO<Unit>:
+        x : List<&2, Dir> <- walk(16777216n, Nil{}, [Sz.root(a)])
+        sz.one(x)
+    case a <> b <> _:
+      do IO<Unit>:
+        x : List<&2, Dir> <- walk(16777216n, Nil{}, [Sz.root(a)])
+        y : List<&2, Dir> <- walk(16777216n, Nil{}, [Sz.root(b)])
+        sz.two(x, y)
 
 def main() -> IO(Unit):
   do IO<Unit>:
     as : List<String> <- IO.args()
     sz.main(List.tail(&1, String, as))
+
+# ===========================================================================
+# The mutation table. One edit at a time, compiled from a scratch copy (the file
+# itself is never edited), run on four fixtures, and compared with the unmutated
+# binary: `tree` this repo against `sz.py`, `edge` the trees from sz-mktrees.py,
+# `diff` those two against each other, and `order` 15 files ALL TIED at 3 lines and
+# 3.0 tokens/line, so the stable sort on -lines prints os.walk's order verbatim and
+# any permutation of it is visible. A cell is the number of printed lines that moved,
+# 9 meaning 9 or more. Reproduce with `.agents/slop/tools/mutate-sz.py`.
+#
+#   mutation                                  tree  edge  diff  order
+#   join: dirs before files                      9     5   same      9
+#   join: the rest of the walk is dropped         9     9   same      9
+#   item: a directory is a file                   9     9     8   exit 21
+#   rows: no line_count > 0 test                  9     8   same   same
+#   rows: printed with the full path, not rel     9     9     9      9
+#   root: the walk starts at base, not base/...   9     9     4      9
+#   fuel: 16777216 steps -> 400                 same  same  same   same
+#   fuel: 16777216 steps -> 100                   9     -     -      -
+#
+# What the table says, which is why it is here and not just a habit:
+#
+#   - `diff` moves on 3 of 7 mutations and is `same` on the other 4, so the
+#     two-argument mode is the WEAKEST of the four fixtures, not the strongest: it
+#     is 11 lines, and a permutation of rows that keeps the line counts apart sorts
+#     back to the same table. `order` exists because of that row.
+#   - `rows: no line_count > 0 test` is the one mutation `order` cannot see, because
+#     every file in that fixture has lines. A LOCALISED row: only `edge` (which has an
+#     empty and a comments-only file) and `tree` (which has files with no counted
+#     line) see it.
+#   - `fuel -> 400` is invisible EVERYWHERE, and that is the point of the two fuel
+#     rows. The fuel is one step per item of the todo -- a counted file or a
+#     directory, not a readdir name -- and this tree's todo is 289 items, so 400 does
+#     not bite and 100 does. A single fuel mutation at 400 would have read as "the
+#     bound is untested" when the truth is "400 is above every fixture".
+# ===========================================================================
