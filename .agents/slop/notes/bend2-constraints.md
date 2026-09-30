@@ -538,3 +538,47 @@ many times over a graph. So `graph_rewrite` cannot take the table as a
 parameter. It either constructs the table itself, or takes a thunk that makes a
 fresh one each call. That is a question about ONE function signature -- not about
 restructuring the rule language.
+
+## THE ENGINE SHAPE for a rewrite rule table
+
+Measured over thirteen wrong shapes. `.agents/slop/notes/engine-shape.bend` is a
+working, runnable model — `ALL PROOFS CHECK`, and it prints `27` because the
+arena ends as `[2, 7]` after two passes.
+
+```bend
+type Arena is Type: Nodes{items: List<&2, U32>}
+type Rule  is Type: R{use: (Arena -> Arena)}
+
+def engine_pass(rules: List<Rule>, a: Arena) -> Arena:
+  match rules:
+    case Nil{}: a
+    case R{use} <> rest: engine_pass(rest, use(a))
+```
+
+**The rule returns the ARENA, not a pair.** This is the whole trick. Twelve
+shapes failed before this one, and they all failed the same way:
+
+- a rule returning `(Arena & U32)` works, but then the pass must `match` on the
+  rule's result — and **a `match` may not scrutinise a computed value**, so
+  `match apply(r, a):` is refused;
+- giving it a helper def doesn't help, because the helper has to call back into
+  the pass, and that is **mutual recursion**, which is also refused;
+- ordering the helper above the pass just moves the error to
+  `expected a filled definition ... observed use_go`.
+
+Returning the arena removes the destructuring entirely, so there is no helper
+and no cycle. ONE recursive def does it.
+
+Three more rules this cost:
+
+1. **`case R{use} <> rest:` destructures a rule in the cons position.** The
+   nested `case r:` then `match r:` form is `a R pattern with 2 fields`.
+2. **A `match` cannot head a lambda body either.** `R{a => match a: ...}` is
+   refused; the rule calls a named helper, which must then be declared ABOVE it.
+3. **The arena is `Type`, so a rule consumes it and returns the new one.** That
+   is not a workaround, it is right: applying a rule *grows* the arena, so
+   ownership should move with it.
+
+And the constraint that survives from the retraction: **the table is linear**, so
+a second pass rebuilds it (`pass2(prev)` calls `engine_pass(table(), prev)`).
+That is the entire structural cost to `uop/spec.py`, and it is one call site.
