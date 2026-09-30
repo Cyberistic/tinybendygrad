@@ -913,3 +913,51 @@ parameter is a compile error in some positions -- a mutation that made `eq`
 unused stopped the file checking. So an unused parameter is not free to leave
 behind, which matters because the natural way to write a rejection test as a
 one-line helper leaves `eq` unused in the `False` arm.
+
+## THE COMPILED FORM IS THE RIGHT TARGET, AND IT SUPERSEDES THE INTERPRETER
+
+This supersedes the two sections above it. Measured 2026-09-30 by reading
+`tinygrad/uop/upat.py` rather than by porting, and the reading changed the plan.
+
+**TINYGRAD SHIPS TWO MATCHERS AND THE INTERPRETER IS THE FALLBACK.**
+`ops.py:1588` is `compiled=bool(getenv("UPAT_COMPILE", 1))` -- default 1, so
+`upat_compile` is the live path and `upat_interpret` is not.
+
+**AND THE INTERPRETER CARRIES EVERY AWKWARDNESS, WHILE THE COMPILER ELIMINATES
+EACH ONE:**
+
+| interpreter | compiler (`upat.py`) |
+| --- | --- |
+| mutable `dict` store, `.copy()`ed | `Ops.STORE` is a node in a pattern IR; at emit it is straight-line `x = uop.src[0]` |
+| `-> list[dict[str, UOp]]`, a cartesian product | alternatives become `OR` of `AND` (`upat.py:63`); no early exit, nothing to multiply |
+| `is_any` flattens, recursing over the PATTERN's own src (`:18`) | `AND(OR(clause for s in src[0]))` -- a disjunction, so that recursion is not there |
+| `itertools.repeat` threads the store per src | `all([... for x in base.src])`, a fold |
+
+So the store is an artifact of the interpreter needing a mutable accumulator, and
+the wall I hit -- `is_any` recursing back into the walk -- is a wall in the
+FALLBACK path. Target the compiled form and `Store`, `setdefault`, the product
+and the flatten all disappear. `matcher-store.bend` is a correct implementation
+of a component that should not exist.
+
+**THE BIG WIN, AND IT IS NOT OBVIOUS: THE RULE TABLE BECOMES `Data`.** Every
+constraint in the sections above about a table being linear -- because a closure
+in a datatype field forces `Type` -- applies ONLY to the interpreter, whose rules
+are closures. A compiled rule is a TOP-LEVEL DEF named by a tag, so the table is
+`CRule{tag, ops, rej}` and is copyable. It can be read twice. `spec.py` and
+`schedule` stop paying the linear-table cost entirely, and the `+Arena ->
+...` closure wall does not arise because there are no closures.
+
+**THE TRADE, STATED AND NOT ASSUMED AWAY.** One def per pattern instead of one
+data entry, so `spec.py`'s 82 rules become 82 defs. That is more LOC, which this
+project treats as a quality measure. Against it: each rule is individually
+readable and individually gateable, and `movement`/`symbolic`/`schedule` reuse
+one shape. It is a real trade, not a free win.
+
+**ONE THING TO CHECK BEFORE COMMITTING, because it may be a divergence.** The
+interpreter REJECTS when a name rebinds to a different node
+(`store.setdefault(...) is not uop`). The compiled `Ops.STORE` (`upat.py:33`)
+just overwrites, and the identity check appears only in the `repeat` arm
+(`:54-58`). If a pattern can bind one name to two different nodes, the two paths
+disagree. That is either an ill-formed pattern or a bug in one of them, and it
+should be settled deliberately rather than papered over by porting the
+interpreter "faithfully".
