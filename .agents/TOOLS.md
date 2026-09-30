@@ -50,3 +50,20 @@ first. Re-derive it there rather than in a comment.
 The shipped Bend code depends on nothing outside `Base` and the C standard
 library that clang links by default. No package manager, no vendored library, no
 codegen dependency. `tools/` holds scripts we wrote.
+
+**`uv.lock` IS KEPT, and that is not a contradiction.** Decided 2026-09-30. The
+constraint binds what the Bend port SHIPS, and the port ships nothing: every
+import in `tinybendygrad/` is either `Base` or another `.bend` file in this repo,
+which is checkable in one grep and is the thing to keep checking.
+
+`uv.lock` is not part of the port. It is what lets the ORACLE run -- and the
+oracle is the whole acceptance mechanism for this project, because a Bend file
+that merely compiles proves nothing. `sz.py`, upstream's own line counter, imports
+`tabulate`; with no lockfile the differential test that `sz.bend` has to pass
+cannot be run at all, which is how it was found. An acceptance test you cannot
+execute is not an acceptance test.
+
+So the rule as it now stands, and the reason to word it this way: **nothing is
+added to the Bend port, and `uv.lock` exists to run upstream's Python, not to
+build ours.** If a future agent finds themselves adding a Python import to
+anything under `tinybendygrad/`, that is the violation -- not the lockfile.
