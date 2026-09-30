@@ -1,11 +1,9 @@
 # symbolic.bend -- tinygrad/uop/symbolic.py. The REWRITER: four rule tables,
 # the fold-like rule bodies, and `exec_alu`'s numeric evaluation.
 #
-# ===========================================================================
-# THE INVENTORY, def by def, because this file is 475 Python lines and the
-# honest question is not "how much of it is ported" but "which of it is a
-# TABLE, which is a FOLD, and which is a REWRITE that needs a property the
-# substrate does not have".
+# THE INVENTORY, def by def: 475 Python lines, and the honest question is not
+# "how much is ported" but "which is a TABLE, which is a FOLD, and which is a
+# REWRITE that needs a property the substrate does not have".
 #
 #   #  PY      KIND                  STATE
 #   1  16      fold  simplify_pow        PARTIAL  (the int arms; the half
@@ -40,21 +38,14 @@
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
 #  23  450-475 table sym                   the reciprocal / store / load rules
-# ===========================================================================
 #
-# ===========================================================================
-# THE THREE WALLS, measured against the substrate rather than guessed, because
-# all three decide how much of this file can exist at all.
+# THE THREE WALLS, measured against the substrate rather than guessed.
 #
-# 1. `exec_alu` OVER A CLOSED ALU TREE: YES, for `U32` AND `F32`, and the
-#    overflow and sign semantics are RIGHT for the 32-bit widths.
-#    `helpers.bend` has `floordiv_i32`, `floormod_i32`, `cdiv_i32`, `cmod_i32`
-#    and their unsigned readings, so tinygrad's `python_alu` divisions land on
-#    the same answers tinygrad computes -- INCLUDING the zero-divisor reading,
-#    because `U32.div(a,0) = 0` and `H.floordiv_i32(x,0) = 0` are the same
-#    number Python's `floordiv` is given by helpers.py:76. `U32.add/sub/mul`
-#    wrap mod 2^32, which IS int32/uint32 wrap, and `H.asr` supplies the
-#    arithmetic shift that `>>` needs and Bend does not have.
+# 1. `exec_alu` OVER A CLOSED ALU TREE: YES, for `U32` AND `F32`, and the overflow
+#    and sign semantics are RIGHT for the 32-bit widths. `U32.add/sub/mul` wrap mod
+#    2^32, which IS int32/uint32 wrap; `H.asr` supplies the arithmetic shift `>>`
+#    needs and Bend does not have; and the zero-divisor reading agrees because
+#    `U32.div(a,0) = 0` is the number Python's `floordiv` is given by helpers.py:76.
 #    WHAT IT CANNOT DO, and this is a wall rather than a choice:
 #      a. weakint is MATHEMATICAL in tinygrad ("ints stay mathematical past the
 #         fold", symbolic.py:28) and the honest 64-bit carrier is `H.I64`.
@@ -65,31 +56,21 @@
 #      b. `truncate` (dtype.py:297) is a C-effect table for int8/16/64,
 #         uint8/16/64, float16, bfloat16, the four fp8s and float64. Those
 #         widths answer `None{}`.
-#    So the ANSWER TO THE DAY-ONE QUESTION is: a closed ALU tree evaluates over
-#    `U32` (int32 and uint32 semantics) and over `F32` (float32), exactly, and
-#    over nothing else this port can state. `exec_alu_i32` and `exec_alu_f32`
-#    are the two lanes and the gate drives both.
-#
-# 2. THE OPERATOR LAYER. Almost every rule body in symbolic.py is an expression
-#    of UOp algebra -- `x + c`, `x // c`, `x != 0`, `x & y` -- and in Python
-#    those are `mixin/elementwise.py`'s `__add__`/`__floordiv__`/`__ne__`, each
-#    of which is `_broadcasted` (a dtype promotion) followed by `alu`.
-#    `mixin/elementwise.py` is NOT PORTED. So `sy_alu1/2/3` here is the RAW
-#    `alu`, and every rule body is the RAW node, not the promoted one. This is
-#    the single largest divergence in the file and it is NOT hidden: it means a
-#    rule here is only faithful on a fixture whose src dtypes already agree.
-#    The gate says so with a row, and `sym_promo` is the row that counts the
-#    fixtures exercised under that restriction.
-#    `mixin/elementwise.py:50 def logical_not` is the ONE mixin line written
-#    here, because three rules cannot be written without it and it is two lines;
-#    it is listed in the TODO block with its owner.
-#
+#    So `exec_alu_i32` and `exec_alu_f32` are the two lanes, they are exact, and
+#    the gate drives both.
+# 2. THE OPERATOR LAYER. Almost every rule body is an expression of UOp algebra --
+#    `x + c`, `x // c`, `x != 0`, `x & y` -- and in Python those are
+#    `mixin/elementwise.py`'s `__add__`/`__floordiv__`/`__ne__`, each of which is
+#    `_broadcasted` (a dtype promotion) followed by `alu`. `mixin/elementwise.py`
+#    is NOT PORTED, so `sy_alu1/2/3` is the RAW `alu` and every rule body is the
+#    RAW node. This is the single largest divergence in the file: a rule here is
+#    only faithful on a fixture whose src dtypes already agree. The `promo` gate
+#    row is where that restriction is stated.
 # 3. `graph_rewrite` (ops.py:1880) IS NOT THIS FILE and is not ported. What IS
 #    here is the part symbolic.py owns: the table, the first-wins fold over it,
 #    and the `ret is not uop` test that ops.py:1605 makes load-bearing. So
 #    `sym_rewrite(fx, u) -> Maybe<&1, U32>` is `PatternMatcher.rewrite` and the
 #    fixed-point driver around it is P3.
-# ===========================================================================
 #
 # THE FIRST-WINS FOLD AND THE `ret is not uop` TEST. ops.py:1605 is
 #     if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
@@ -105,30 +86,24 @@
 # set IS a subset of the node's src ops. It is built from the op of the
 # pattern's FIRST src and only when that src is a SINGLE-op UPat
 # (ops.py:1475-1478), and `O.pm_early` is ops.bend's own subset test over a
-# `ler` that folds EVERY src. `sym_rej` in the gate counts the entries whose
-# reject set is non-empty, and those are the only places a MISSPELLED reject set
-# shows up at all.
+# `ler` that folds EVERY src. `rej` in the gate counts the entries whose reject
+# set is non-empty, and that count is the only place a MISSPELLED reject set shows
+# up at all.
 #
-# THE NAME-REBIND RULE, and THIS FILE HAS MORE OF THEM THAN THE NOTES SAY.
-# `.agents/slop/notes/bend2-constraints.md` ("THE NAME-REBIND QUESTION, SETTLED")
-# records ONE rebind in symbolic.py, at :180, and calls it SAFE because the two
-# are `is_any` ALTERNATIVES. That is right, and it is INCOMPLETE: two more
-# patterns in this file bind one name twice WITHIN A SINGLE SRC TUPLE, and both
-# are LOAD-BEARING.
+# THE NAME-REBIND RULE. A pattern that binds one name twice WITHIN A SINGLE SRC
+# TUPLE is the `mixin/gradient.py:101` shape: bound to two different nodes, and
+# the rule only matches when they are the SAME node. Without the identity check
+# the rule matches strictly more nodes than intended, and it typechecks. Two are
+# here and both are LOAD-BEARING:
 #     symbolic.py:123  (x ^ y) ^ y      -- `y` twice, the rule is (x^y)^y -> x
 #     symbolic.py:124  (x % y) % y      -- `y` twice, the rule is (x%y)%y -> x%y
-# Both are the `mixin/gradient.py:101` shape: bound to two different nodes, and
-# the rule only matches when they are the SAME node. Without the identity check
-# each rule matches strictly more nodes than intended, and it typechecks. So
-# every rule below that binds a name twice carries `U32.is_eq`, and
-# `sym_rebind` in the gate is the row that says so (a same-src node rewrites, a
-# two-different-src node does not).
+# Every rule below that binds a name twice carries `U32.is_eq`, and `rebind`/
+# `rebind0` and `xorb`/`xorb0` in the gate are the two-sided rows that say so.
 #
 # THE `is_any` CASE IS SAFE AND STAYS A DISJUNCTION. symbolic.py:180 binds `c`
 # in two `is_any` ALTERNATIVES; `is_any` copies the store per alternative so they
 # never meet, and adding an identity check there would turn a disjunction into a
-# conjunction. `sym_bitcast_any` in the gate is the two-sided check for that.
-# ===========================================================================
+# conjunction and drop the bare `CONST(Invalid)` lane.
 
 import Base
 import ./../helpers.bend as H
@@ -136,7 +111,6 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
-# ===========================================================================
 # THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
 # because Bend has no forward references and mutual recursion is refused. Every
 # def here names the Python it is; none of it is new abstraction.
@@ -150,24 +124,6 @@ import ./fold.bend as F
 #     and a discarded answer is garbage, so Python can call every rule body
 #     eagerly. This port cannot, because `Maybe<&1, U32>` is a `Type` and a
 #     grown arena has no owner if its index is thrown away.
-# ===========================================================================
-
-# ===========================================================================
-# THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
-# because Bend has no forward references and mutual recursion is refused. Every
-# def here names the Python it is; none of it is new abstraction.
-#
-# THE SHAPE OF A RULE, and it is the one thing to get right. A rule is TWO defs:
-#   * `sym_N.pat` -- the PATTERN's own tests (op, arity, src ops, dtypes, and
-#     the identity check for a rebind). It is total and it never grows the arena.
-#   * `sym_N`     -- the BODY. It is only ever called when the pattern holds, so
-#     a rule that does not match never touches the arena. That separation is
-#     what makes the affine arena safe here: Python's arena is a global cache
-#     and a discarded answer is garbage, so Python can call every rule body
-#     eagerly. This port cannot, because `Maybe<&1, U32>` is a `Type` and a
-#     grown arena has no owner if its index is thrown away.
-# ===========================================================================
-
 def sy_ar(x: F.Folded) -> O.Arena: F.Folded.ar(x)
 
 def sy_tb(x: F.Folded) -> F.Table: F.Folded.t(x)
@@ -232,9 +188,8 @@ def OP_SELF() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsXOR{}, O.OpsOR{}]
 def OP_SHIFTS() -> List<&2, O.Op>: [O.OpsSHL{}, O.OpsSHR{}]
 
 # `up if bool(x) else None` -- the shape of most of symbolic.py's rule bodies.
-# A `match` may not scrutinise a computed value, so the condition crosses a
-# def boundary as a parameter. This is the same leaf `O.pm_when` is, with a
-# `Maybe<U32>` in place of a `Verdict`.
+# A `match` may not scrutinise a computed value, so the condition crosses a def
+# boundary as a parameter.
 def sy_tri(b: Bool, v: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match b:
     case True{}: v
@@ -297,10 +252,9 @@ def sy_val_truthy.go(m: Maybe<&2, O.Const>) -> Bool:
 def sy_val_truthy(+x: F.Folded, +u: U32) -> Bool: sy_val_truthy.go(sy_val(x, u))
 
 # THE DEFAULT VALUE OF A `Maybe<&1, O.Const>`, used where a `Data` record cannot
-# hold the `Maybe` and the two consumers -- `ccast`'s CONST arm and `exec_alu`'s
-# truncate arm -- need the payload beside a `Bool` that says it is there.
-# the same default for a `Maybe` that came out of the FOLD rather than out of a
-# lane, i.e. one a `Data`-shaped call site hands over
+# hold the `Maybe` and the consumers need the payload beside a `Bool` that says
+# it is there. Two spellings because a fold's answer is `&1` and a `sy_val` out of
+# `fold.bend` is `&2`.
 def sy_maybe_c2(m: Maybe<&2, O.Const>) -> O.Const:
   match m:
     case Some{v}: v
@@ -317,17 +271,11 @@ def sy_maybe_c(m: Maybe<&1, O.Const>) -> O.Const:
 # these two directions and nowhere else.
 def i64_bits(i: H.I64) -> U32: H.lo32(i)
 
-# ---------------------------------------------------------------------------
-# `truncate` -- dtype.py:297, and the table is where `exec_alu` and
-# `const_like` stop. Six of its fourteen entries are pure in Bend and eight are
-# C effects; the eight answer `None{}`, which is Python's "this fold does not
-# apply" and leaves the node alone.
-#
-# `DType.const` (dtype.py:79) is `truncate.get(self, float)(float(val))` for a
-# float dtype, `bool(val)` for bool and `int(val)` otherwise -- so for weakint
-# and weakfloat the default IS the identity, and the entry is a no-op. That is
-# the `Some{v}` on the two weak rows.
-# ---------------------------------------------------------------------------
+# `truncate` -- dtype.py:297, and the table is where `exec_alu` and `const_like`
+# stop. Six of its fourteen entries are pure in Bend and eight are C effects; the
+# eight answer `None{}`, which is Python's "this fold does not apply". For weakint
+# and weakfloat `DType.const` (dtype.py:79) IS the identity, which is the `Some{v}`
+# on the two weak rows.
 def sy_trunc(dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
   match dt:
     case S.Dt{0, 1, S.CBool{}, _}: Some{O.CBool{sy_truthy.go(v)}}
@@ -348,13 +296,9 @@ def sy_needs_cast(dt: S.Dt, v: O.Const) -> Bool:
     case O.CInt{i}: Bool.not(O.eq_dt(dt, S.weakint()))
     case O.CFloat{f}: Bool.not(O.eq_dt(dt, S.weakfloat()))
 
-# ---------------------------------------------------------------------------
-# THE UOP SUGAR, and this is where the operator-layer wall lands. `ops.bend`
-# already has `UOp.alu`, `UOp.new` and `UOp.const`; what is missing is
-# `mixin/elementwise.py`'s PROMOTION, so these are the RAW nodes. `x + y` in
-# Python is `_binop(Ops.ADD, y, False)` = promote both, then `alu`; here it is
-# the second line only. See the header, wall 2.
-# ---------------------------------------------------------------------------
+# THE UOP SUGAR, and this is where the operator-layer wall lands. What is missing
+# is `mixin/elementwise.py`'s PROMOTION, so these are the RAW nodes: `x + y` in
+# Python is promote-both-then-`alu` and here it is the `alu` alone (header, wall 2).
 def sy_alu1(ar: O.Arena, op: O.Op, x: U32) -> U32:
   O.Found.i(O.UOp.alu(ar, op, [x]))
 
@@ -364,8 +308,7 @@ def sy_alu2(ar: O.Arena, op: O.Op, x: U32, y: U32) -> U32:
 def sy_alu3(ar: O.Arena, op: O.Op, x: U32, y: U32, z: U32) -> U32:
   O.Found.i(O.UOp.alu(ar, op, [x, y, z]))
 
-# `x.where(t, f)` -- mixin/elementwise.py's `where`, which is
-# `UOp(Ops.WHERE, src=(self, t, f))` after promotion.
+# `x.where(t, f)` -- mixin/elementwise.py's `where`, `UOp(Ops.WHERE, src=(self,t,f))`.
 def sy_where(ar: O.Arena, c: U32, t: U32, f: U32) -> U32:
   sy_alu3(ar, O.OpsWHERE{}, c, t, f)
 
@@ -405,10 +348,9 @@ def sy_noop(ar: O.Arena) -> U32:
   O.Found.i(O.UOp.new(ar, O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{}))
 
 # `UOp.const(b, dtype)` -- ops.py:631. `ops.bend`'s own `UOp.const` interns the
-# BARE node and its header defers the `.cast(dtype)`; that half is here, and it
-# is here because a rule table that cannot state a concrete dtype cannot rewrite
-# anything that has one. `sy_trunc` runs FIRST, so a width this port cannot
-# truncate grows NOTHING and answers `None{}`.
+# BARE node and its header defers the `.cast(dtype)`; that half is here, because a
+# rule table that cannot state a concrete dtype cannot rewrite anything that has
+# one. `sy_trunc` runs FIRST, so an untruncatable width grows NOTHING.
 def sy_const_cast(needs: Bool, +ar: O.Arena, dt: S.Dt, c: U32) -> U32:
   match needs:
     case True{}: sy_cast(ar, c, dt)
@@ -477,18 +419,14 @@ def sy_usum.go(t: List<&2, U32>, +ar: O.Arena, base: U32) -> U32:
 def sy_usum(+ar: O.Arena, base: U32, us: List<&2, U32>) -> U32:
   sy_usum.go(us, ar, base)
 
-# ---------------------------------------------------------------------------
 # `UOp.split_uop` -- ops.py:685,
 #     if self.op is sep: for s in self.src: yield from s.split_uop(sep)
 #     else: yield self
-# It is a GENERATOR in Python, so the callers do `list(...)`; here the walk
-# returns the list. It is a WORKLIST walk rather than a recursion on `src`
-# because a self-call must pass a subterm of its own parameter and a src list
-# read back out of the arena is not one the checker can see -- the same wall
-# `ops.bend`'s header gives for `toposort`. The fuel is FIRST for that reason
-# and it is EXACT: every src index is strictly less than its consumer's
-# (`UOp.make` only ever names interned indices), so the worklist drains.
-# ---------------------------------------------------------------------------
+# It is a GENERATOR in Python, so the callers do `list(...)`; here the walk returns
+# the list. It is a WORKLIST walk rather than a recursion on `src` because a src
+# list read back out of the arena is not a subterm the decrease checker can see.
+# The fuel is FIRST for that reason and it is EXACT: every src index is strictly
+# less than its consumer's, so the worklist drains.
 type SplitSt is Data:
   SplitSt{todo: List<&2, U32>, acc: List<&2, U32>}
 
@@ -526,12 +464,9 @@ def sy_split.go(fuel: Nat, +ar: O.Arena, todo: List<&2, U32>, +want: O.Op, acc: 
 def sy_split(+ar: O.Arena, u: U32, want: O.Op) -> List<&2, U32>:
   sy_split.go(U32.to_nat(O.Arena.next(ar)), ar, [u], want, Nil{})
 
-# ---------------------------------------------------------------------------
-# `identity_element` -- ops.py:61, `dt.const({ADD:0, MUL:1, MAX:dt.min}[op])`.
-# It is a dict lookup, so an op outside the three is a KeyError; `None{}` is the
-# honest total answer and the one caller (`pop_const`) turns it into "do not
-# know".
-# ---------------------------------------------------------------------------
+# `identity_element` -- ops.py:61, `dt.const({ADD:0, MUL:1, MAX:dt.min}[op])`. It
+# is a dict lookup, so an op outside the three is a KeyError; `None{}` is the honest
+# total answer and the one caller (`pop_const`) turns it into "do not know".
 def sy_ident_min.pick(m: Maybe<&2, U32>) -> Maybe<&1, O.Const>:
   match m:
     case Some{v}: Some{O.CInt{H.i64_of_i32(v)}}
@@ -592,31 +527,23 @@ def Popped.v(p: Popped) -> O.Const:
   match p:
     case Popped{t, v}: v
 
-# ===========================================================================
-# `exec_alu` -- ops.py:1427. THE ANSWER TO THE DAY-ONE QUESTION IS HERE, and it
-# is: two lanes, `U32` and `F32`, and the overflow and sign semantics are the
-# ones tinygrad computes.
-#
-# `if any(isinstance(x, tuple) for x in operands)` is the vectorised ALIKE
-# branch: it maps the call over the lanes of a tuple-valued CONST. That is
-# `fold.bend`'s own TODO on `exec_alu` and it is DEFERRED -- see the TODO block.
-# What IS here is the scalar spine:
+# `exec_alu` -- ops.py:1427, and the answer is two lanes, `U32` and `F32`, with
+# tinygrad's own overflow and sign semantics. `if any(isinstance(x, tuple) for x in
+# operands)` is the vectorised ALIKE branch and it is DEFERRED (see the TODO block);
+# what IS here is the scalar spine:
 #     if op in GroupOp.Binary and Invalid in operands: return Invalid
 #     alu = python_alu[op](*operands)
 #     if truncate_output and (truncate_fxn:=truncate.get(dtype)) is not None:
 #       return truncate_fxn(alu)
 #     return alu
-# and `fold_const_alu` calls it with `truncate_output=False`, so the truncate
-# line is DEAD on the one path symbolic.py uses, and the answer is the raw
-# value of the lane. The truncate still runs for the RESULT dtype, because
-# `DType.const` runs it in `const_like`; the two are separate and only the
-# second is live here.
-# ===========================================================================
+# `fold_const_alu` calls it with `truncate_output=False`, so the truncate line is
+# DEAD on the one path symbolic.py uses. The RESULT dtype is truncated anyway,
+# because `DType.const` runs it in `const_like`; the two are separate.
 
 # THE INVALID POISON. ops.py:1432 is
 #     if op in GroupOp.Binary and Invalid in operands: return Invalid
 # and it is the whole of the Invalid story in `exec_alu`: a BINARY op with an
-# Invalid operand is Invalid, and nothing else is. A UNARY op over an Invalid is
+# Invalid operand is Invalid and nothing else is. A UNARY op over an Invalid is
 # not poisoned, which is exactly why the rule at symbolic.py:81 exists.
 def sy_is_invalid_c(v: O.Const) -> Bool:
   match v:
@@ -626,11 +553,8 @@ def sy_is_invalid_c(v: O.Const) -> Bool:
 # `const_arg` -- symbolic.py:69-70,
 #     tuple(const_arg(s) for s in u.src) if u.op is Ops.STACK else u.val
 # The STACK is Python's tuple-valued CONST and recursing through it is the
-# vectorised branch above, so this walk answers `None{}` for a STACK: it returns
-# the SCALAR value of a node and the tuple case is the deferred one. The fuel is
-# there because the Python is a recursion and a self-call here must be decreasing
-# on a field; it is exact for the reason `sy_split`'s is (the arena is a DAG, so
-# every src index is strictly less than its consumer's).
+# vectorised branch above, so this walk answers `None{}` for a STACK. The fuel is
+# exact for the reason `sy_split`'s is.
 def sy_const_arg.of(is_stack: Bool, m: Maybe<&2, O.Const>) -> Maybe<&2, O.Const>:
   match is_stack:
     case True{}: None{}
@@ -644,13 +568,10 @@ def sy_const_arg.go(fuel: Nat, is_stack: Bool, m: Maybe<&2, O.Const>) -> Maybe<&
 def sy_const_arg(+x: F.Folded, +u: U32) -> Maybe<&2, O.Const>:
   sy_const_arg.go(U32.to_nat(O.Arena.next(sy_ar(x))), sy_is_op(x, u, O.OpsSTACK{}), sy_val(x, u))
 
-# ---------------------------------------------------------------------------
 # THE TWO LANES, and each is a `Data` record because Bend has no tuple and no
 # polymorphic operand record. `I3` is a U32 BIT PATTERN (whose signedness is the
 # dtype's) and `F3` is an F32. The arity RIDES ALONG because
-# `python_alu[op](*operands)` raises on a wrong arity, and because a `Data`
-# record cannot carry "this one is unary" any other way.
-# ---------------------------------------------------------------------------
+# `python_alu[op](*operands)` raises on a wrong arity.
 type I3 is Data:
   I3{n: U32, a: U32, b: U32, c: U32}
 
@@ -661,40 +582,22 @@ def I3.a(+o: I3) -> U32:
 type F3 is Data:
   F3{n: U32, a: F32, b: F32, c: F32}
 
-# ---------------------------------------------------------------------------
 # THE INT LANE. `U32.add/sub/mul` wrap mod 2^32, which IS int32 and uint32 wrap;
-# the four divisions are `helpers.bend`'s own readings of helpers.py:73-77,
-# INCLUDING the zero-divisor branch, because `U32.div(a,0) = 0` and
-# `H.floordiv_i32(x,0) = 0` are the same number tinygrad computes; and `H.asr`
-# is the arithmetic shift `operator.rshift` needs and Bend does not have.
-# ---------------------------------------------------------------------------
+# the four divisions are computed from `helpers.bend`'s truncating readings, and
+# `H.asr` is the arithmetic shift `operator.rshift` needs and Bend does not have.
 def i32_lt(uns: Bool, +x: U32, +y: U32) -> Bool:
   Bool.pick(Bool, uns, U32.is_lt(x, y), Cmp.is_lt(H.i64_cmp(H.i64_of_i32(x), H.i64_of_i32(y))))
 
 def i32_max(uns: Bool, +x: U32, +y: U32) -> U32:
   Bool.pick(U32, i32_lt(uns, y, x), y, x)
 
-# ===========================================================================
-# A BUG IN `helpers.bend`, MEASURED, AND THE WORKAROUND IS HERE BECAUSE
-# `exec_alu`'s FLOORDIV AND FLOORMOD ARE THE DAY-ONE QUESTION.
-#
-#     H.floordiv_i32(7,2)  == 4        helpers.py:76 says floordiv(7,2)  == 3
-#     H.floordiv_i32(8,2)  == 4        (that one is right)
-#     H.floordiv_i32(-7,2) == -4       (that one is right)
-#     H.floormod_i32(7,2)  == -1       helpers.py:77 says floormod(7,2)  == 1
-#
-# `floordiv_i32.trunc.exact` applies its `U32.add(q, 1)` step UNCONDITIONALLY when
-# the division is inexact, and it must apply it only when the SIGNS of the two
-# magnitudes DIFFER -- so every non-negative dividend is off by one.
-# `H.cdiv_i32_go` and `H.cmod_i32` are both CORRECT (3 and 1 on the same inputs),
-# so the two are computed here FROM `cdiv`, and the identity is the definition:
-# with `q = cdiv(x,y)` and `r = x - q*y`, `floordiv = q - 1` exactly when `r != 0`
-# and `sign(r) != sign(y)`.
-#
-# REPORTED, NOT FIXED: `helpers.bend` is not this file's. `fdiv_i` in the gate is
-# the row that shows it, and `M8` in the mutation table is the guard that makes
-# `fdiv_i` work.
-# ===========================================================================
+# `H.floordiv_i32` / `H.floormod_i32` ARE NOT USED because they are WRONG for a
+# non-negative dividend with an INEXACT division -- the common case: measured
+# `floordiv(7,2) == 4` and `floormod(7,2) == -1` against helpers.py's 3 and 1
+# (bend2-constraints, "floor IS NOT AVAILABLE"). `H.cdiv_i32_go` and `H.cmod_i32`
+# are CORRECT, so the two are computed here FROM `cdiv` by the definition: with
+# `q = cdiv(x,y)` and `r = x - q*y`, `floordiv = q - 1` exactly when `r != 0` and
+# `sign(r) != sign(y)`. `fdiv_i` in the gate is the row that shows it.
 def i32_fdiv.step(+q: U32, +r: U32, +y: U32) -> U32:
   Bool.pick(U32, Bool.and(Bool.not(U32.is_zero(r)), Bool.xor(H.i32_is_neg(r), H.i32_is_neg(y))), U32.sub(q, 1), q)
 
@@ -732,20 +635,16 @@ def i32_shl.big(big: Bool) -> Maybe<&1, U32>:
 def i32_shl(+big: Bool, x: U32, n: U32) -> Maybe<&1, U32>:
   Bool.pick(Maybe<&1, U32>, big, i32_shl.big(big), Some{U32.shln(x, U32.to_nat(n))})
 
-# THE ANSWER OF THE INTEGER LANE, and the zero-extension matters: a uint32 with
-# the top bit set is three billion and not minus one, and `H.i64_of_i32` would
-# sign-extend it, so the unsigned reading goes through `H.i64_of_hi_lo(0, v)`.
-# `O.Const` and its `CInt` live in `O`, so a CONSTRUCTOR of a type from another
-# module is spelled through a def rather than in a return position -- the same
-# reason `fold.bend`'s `sint_of` writes `O.SI{...}` in a body.
+# THE ANSWER OF THE INTEGER LANE. `O.Const` and its `CInt` live in `O`, so a
+# CONSTRUCTOR of a type from another module is spelled through a def rather than in
+# a return position.
 def i32_const.of(i: H.I64) -> O.Const: O.CInt{i}
 
 def i32_const(v: U32) -> O.Const: i32_const.of(H.i64_of_i32(v))
 
-# THE ZERO-EXTENSION, and it is the one that matters: `H.i64_of_hi_lo(0, v)` is
-# a uint32's value and `H.i64_of_i32(v)` is the same bits read as two's
-# complement, so a uint32 with the top bit set is three billion here and minus
-# one if the extension is the signed one.
+# THE ZERO-EXTENSION, and it is the one that matters: `H.i64_of_hi_lo(0, v)` is a
+# uint32's value and `H.i64_of_i32(v)` is the same bits read as two's complement,
+# so a uint32 with the top bit set is three billion here and minus one otherwise.
 def i64_of_c(uns: Bool, +v: U32) -> O.Const:
   Bool.pick(O.Const, uns, i32_const.of(H.i64_of_hi_lo(0, v)), i32_const(v))
 
@@ -825,11 +724,9 @@ def exec_alu_i32(+uns: Bool, +op: O.Op, +o: I3) -> Maybe<&1, O.Const>:
             Bool.pick(Maybe<&1, O.Const>, op_is_bit(op), exec_alu_i32.bit(uns, op, o),
               exec_alu_i32.arith(uns, op, o)))))))
 
-# ---------------------------------------------------------------------------
-# THE FLOAT LANE, over `F32`. F32 arithmetic is a native intrinsic in Bend (the
-# constraints note, section 2), so add/sub/mul/div/sqrt/exp/log2/sin are the
-# hardware's and the only work here is tinygrad's own EDGE CASES.
-# ---------------------------------------------------------------------------
+# THE FLOAT LANE, over `F32`. F32 arithmetic is a native intrinsic in Bend, so
+# add/sub/mul/div/sqrt/exp/log2/sin are the hardware's and the only work here is
+# tinygrad's own EDGE CASES.
 def f32_inf() -> F32: F32.div(1.0, 0.0)
 
 def f32_nan() -> F32: F32.sub(f32_inf(), f32_inf())
@@ -840,8 +737,8 @@ def f32_nan() -> F32: F32.sub(f32_inf(), f32_inf())
 def f32_recip(x: F32) -> F32: F32.div(1.0, x)
 
 # `math.log2(x) if x > 0 else -inf if x == 0 else nan`, kept in Python's reading
-# order even though `F32.log2(0.0)` is already -inf, because the branch order is
-# the reading order and a reviewer has to be able to check it against ops.py.
+# order even though `F32.log2(0.0)` is already -inf, so it can be checked against
+# ops.py line for line.
 def f32_log2(+x: F32) -> F32:
   Bool.pick(F32, F32.is_gt(x, 0.0), F32.log2(x),
     Bool.pick(F32, F32.is_eq(x, 0.0), F32.neg(f32_inf()), f32_nan()))
@@ -850,10 +747,10 @@ def f32_log2(+x: F32) -> F32:
 # `F32.pow` already returns.
 def f32_exp2(x: F32) -> F32: F32.pow(2.0, x)
 
-# `safe_pow`, and THE DIVERGENCE: Python raises ValueError for a negative base
-# with a fractional exponent and returns `inf if x > 0 else -inf`, where IEEE
-# returns nan. `F32.pow` is IEEE. This port takes IEEE and says so here rather
-# than inventing a Python-shaped branch nobody can check.
+# `safe_pow`, and THE DIVERGENCE: Python raises ValueError for a negative base with
+# a fractional exponent and returns `inf if x > 0 else -inf`, where IEEE returns
+# nan. `F32.pow` is IEEE and this port takes IEEE rather than inventing a
+# Python-shaped branch nobody can check.
 def f32_pow(x: F32, y: F32) -> F32: F32.pow(x, y)
 
 def f32_sin(+x: F32) -> F32: Bool.pick(F32, H.f32_is_finite(x), F32.sin(x), f32_nan())
@@ -861,9 +758,9 @@ def f32_sin(+x: F32) -> F32: Bool.pick(F32, H.f32_is_finite(x), F32.sin(x), f32_
 # `math.trunc(x) if math.isfinite(x) else x`
 def f32_trunc(+x: F32) -> F32: Bool.pick(F32, H.f32_is_finite(x), F32.trunc(x), x)
 
-# `max(a, b)` on Python floats is `a if a > b else b`, and `math.trunc` toward
-# zero is what makes a FLOAT floor division, since Python's `//` on floats is
-# `floor` and tinygrad's own `floordiv` is `math.floor`. See the note below.
+# `max(a, b)` on Python floats is `a if a > b else b`, and `math.trunc` toward zero
+# is what makes a FLOAT floor division, since Python's `//` on floats is `floor`
+# and tinygrad's own `floordiv` is `math.floor`.
 def f32_max(+x: F32, +y: F32) -> F32: Bool.pick(F32, F32.is_lt(x, y), y, x)
 
 def f32_fdiv(+x: F32, +y: F32) -> F32: F32.floor(F32.div(x, y))
@@ -922,25 +819,18 @@ def exec_alu_f32(+op: O.Op, +n: U32, +a: F32, +b: F32, c: F32) -> Maybe<&1, O.Co
       exec_alu_f32.tern(op, a, b, c),
       exec_alu_f32.arith(op, a, b)))
 
-# ---------------------------------------------------------------------------
 # THE LANE SELECTOR. `python_alu[op](*operands)` is a PYTHON-NUMBER operation, so
-# the lane follows the OPERANDS and not the dtype: `1 + 2.5` is a float in
-# Python and so it is here. An int operand enters the float lane only when it is
-# non-negative and inside the 31 bits `U32.to_f32` represents exactly; a negative
-# one needs a sign-aware conversion that `helpers.bend` has no law for, and
-# answers `None{}` -- a fold that does not apply, never a wrong value.
-# ---------------------------------------------------------------------------
-# `U32.to_f32` is exact on [0, 2^31) and a negative i64 has no exact spelling
-# here, so the one test covers both ends of the range, and it is ALSO the test for
-# "does the INTEGER lane fit": 2**40 is a legal weakint and has no U32.
+# the lane follows the OPERANDS and not the dtype: `1 + 2.5` is a float in Python
+# and so it is here. `U32.to_f32` is exact on [0, 2^31) and a negative i64 has no
+# exact spelling here, so the one test covers both ends of the range -- and it is
+# ALSO the test for "does the INTEGER lane fit", because 2**40 is a legal weakint
+# and has no U32.
 def i64_big(+i: H.I64) -> Bool:
   Bool.or(H.i64_is_neg(i), Cmp.is_ge(H.i64_cmp(i, H.i64_of_i32(2147483647))))
 
 def i64_fits_i32(i: H.I64) -> Bool: i64_big(i)
 
-# The U32 BIT PATTERN of a const the INTEGER lane can hold, and whether it can: a
-# weakint is MATHEMATICAL past the fold (symbolic.py:28) and 2**40 has no U32, so
-# such an operand makes the whole call unanswerable here.
+# The U32 BIT PATTERN of a const the INTEGER lane can hold, and whether it can.
 def ci_bits(v: O.Const) -> U32:
   match v:
     case O.CInt{i}: H.lo32(i)
@@ -998,11 +888,11 @@ def exec_alu.poison2(op: O.Op, a: O.Const, b: O.Const) -> Bool:
 def exec_alu.poison3(op: O.Op, a: O.Const, b: O.Const, c: O.Const) -> Bool:
   Bool.and(O.GroupOp.binary(op), Bool.or(sy_is_invalid_c(a), Bool.or(sy_is_invalid_c(b), sy_is_invalid_c(c))))
 
-# THE THREE FACTS ONE OPERAND CARRIES, as a `Data` record because a `Maybe<F32>`
-# is a `Type` and the lane selector needs the operand twice: once for "does the
-# INTEGER lane fit it" and once for "can the FLOAT lane read it at all".
-# `opr` is pure and cheap, so the two uses RECOMPUTE it rather than binding it --
-# a `let` is affine and rule 3 of the constraints note is exactly this.
+# THE THREE FACTS ONE OPERAND CARRIES, as a `Data` record because a `Maybe<F32>` is
+# a `Type` and the lane selector needs the operand twice: once for "does the
+# INTEGER lane fit it" and once for "can the FLOAT lane read it at all". `opr` is
+# pure and cheap, so the two uses RECOMPUTE it rather than binding it -- a `let` is
+# affine.
 type Opr is Data:
   Opr{fits: Bool, bits: U32, f: F32}
 
@@ -1054,12 +944,16 @@ def exec_alu2(+op: O.Op, +dt: S.Dt, +a: O.Const, +b: O.Const, trunc_it: Bool) ->
 
 def exec_alu3(+op: O.Op, +dt: S.Dt, +a: O.Const, +b: O.Const, +c: O.Const, trunc_it: Bool) -> Maybe<&1, O.Const>:
   exec_alu.trunc(trunc_it, dt, exec_alu.of3(exec_alu.poison3(op, a, b, c), op, dt, a, b, c))
-# ===========================================================================
+
+# ******** phase 1 of symbolic used to live in ops, it's the most generic folding
+# rules ********
+#
 # THE PATTERN VOCABULARY. Each of these is ONE `UPat` test from ops.py, and the
 # rules below are written against them so a rule's TEXT is the rule and the
-# vocabulary is the pattern. Six of them are the `invalid_*` patterns
-# symbolic.py:63-68 spells out.
-# ===========================================================================
+# vocabulary is the pattern. The first six are the `invalid_*` patterns
+# symbolic.py:63-68 spells out. Invalid poisons the value: ops move inside the gate
+# so the Invalid reaches the LOAD/STORE and folds there, and this needs to be before
+# symbolic so that `0*something_that_might_be_invalid` doesnt become 0.
 def p_invalid(+x: F.Folded, +u: U32) -> Bool: Bool.and(sy_is_op(x, u, O.OpsCONST{}), sy_is_invalid(x, u))
 
 # `invalid_gate` -- `UPat.var("cond").where(UPat.var("x"), invalid_pat)`, which is
@@ -1078,6 +972,7 @@ def all_const.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
 
 def all_const(+x: F.Folded, srcs: List<&2, U32>) -> Bool: all_const.go(srcs, x, True{})
 
+# the two const spellings: Invalid carries no width, so it rides bare inside either.
 # `bare_const` -- `UPat.any(UPat(Ops.CONST), UPat(Ops.STACK, src=UPat(Ops.CONST)))`:
 # a CONST, or a STACK every src of which is a CONST.
 def p_bare_const(+x: F.Folded, +u: U32) -> Bool:
@@ -1099,12 +994,10 @@ def all_cast_or_bad(+x: F.Folded, srcs: List<&2, U32>) -> Bool:
   all_cast_or_bad.go(srcs, x, True{})
 
 # `casted_const` -- `UPat.any(p:=UPat(Ops.CAST, src=(UPat(Ops.CONST),)),
-# UPat(Ops.STACK, src=UPat.any(p, UPat(Ops.CONST, arg=Invalid))))`. THE NAME
-# `c` IS BOUND TWICE HERE AND IT IS SAFE: the two bindings are `is_any`
-# ALTERNATIVES, `is_any` copies the store per alternative, so they never meet and
-# no identity check is emitted. `sym_bitcast_any` in the gate is the two-sided
-# check for that, and ADDING a check here would be a BUG: it would turn a
-# disjunction into a conjunction and drop the bare `CONST(Invalid)` lane.
+# UPat(Ops.STACK, src=UPat.any(p, UPat(Ops.CONST, arg=Invalid))))`. THE NAME `c`
+# IS BOUND TWICE HERE AND IT IS SAFE: the two bindings are `is_any` ALTERNATIVES,
+# and ADDING an identity check would be a BUG -- it would turn a disjunction into a
+# conjunction and drop the bare `CONST(Invalid)` lane.
 def p_casted_const(+x: F.Folded, +u: U32) -> Bool:
   Bool.or(is_cast_const(x, u), Bool.and(sy_is_op(x, u, O.OpsSTACK{}), all_cast_or_bad(x, sy_srcs(x, u))))
 
@@ -1116,7 +1009,7 @@ def p_all_casted.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
 def p_all_casted(+x: F.Folded, u: U32) -> Bool: p_all_casted.go(sy_srcs(x, u), x, True{})
 
 # `x == y` ON ARENA INDICES, which is `UOp.__eq__` because `UOp.__eq__` IS
-# identity. This is the rebind check and it is LOAD-BEARING: see the header.
+# identity. This is the rebind check and it is LOAD-BEARING (header).
 def p_same(a: U32, b: U32) -> Bool: U32.is_eq(a, b)
 
 # THE SRC THAT IS NOT THE CONST, which is what every self-folding rule returns.
@@ -1217,17 +1110,10 @@ def sp_const_i(dt: S.Dt, i: H.I64, +ar: O.Arena) -> U32: sp_const(dt, i, ar)
 def sp_false(+dt: S.Dt, +ar: O.Arena) -> U32:
   sy_const_cast(Bool.not(O.eq_dt(dt, S.boolean())), ar, dt, O.Found.i(O.UOp.const(ar, O.CBool{False{}})))
 
-# ===========================================================================
-# `simplify_pow` -- symbolic.py:16-21. TWO of its FIVE arms are ported and the
-# other three are not, and the reason is arithmetic rather than structure:
-#     if (h := c.val-0.5) < c.val and int(h)+0.5 == c.val:   # a PYTHON FLOAT
-#     if int(c.val) == c.val:                               # then a HALVING
-# `c.val-0.5` is a float and `int(h)` has no exact spelling in this port:
-# `helpers.bend` has no `I64 -> F32` and no `F32 -> I64` -- only `U32.to_f32` and
-# a truncating `F32.to_u32` -- and the halving then needs `i64_div`, which
-# `helpers.bend` also lacks. `None{}` there is a fold that does not apply. See
-# the TODO block.
-# ===========================================================================
+# `simplify_pow` -- symbolic.py:16-21. TWO of its FIVE arms are ported; the other
+# three are arithmetic, not structure, and the reason is that `c.val-0.5` is a
+# PYTHON FLOAT and `int(h)` has no exact spelling here (`helpers.bend` has no
+# `I64 -> F32` and no `F32 -> I64`), and the halving then needs `i64_div`.
 def sp_neg_pow(+x: F.Folded, +u: U32, i: H.I64) -> U32:
   sy_alu2(sy_ar(x), O.OpsPOW{}, sy_alu1(sy_ar(x), O.OpsRECIPROCAL{}, u),
     sp_const(sy_dt1(x, u), H.i64_sub(H.i64_of_i32(0), i), sy_ar(x)))
@@ -1245,7 +1131,6 @@ def simplify_pow.val(m: Maybe<&2, O.Const>, x: F.Folded, u: U32) -> Maybe<&1, U3
 def simplify_pow(+x: F.Folded, u: U32, c: U32) -> Maybe<&1, U32>:
   simplify_pow.val(sy_val(x, c), x, u)
 
-# ===========================================================================
 # `fold_bitcast` -- symbolic.py:23-26,
 #     if c.dtype.itemsize != root.dtype.itemsize: return None
 #     return root.const_like(bitcast(truncate[c.dtype](c.val), c.dtype, root.dtype))
@@ -1254,7 +1139,6 @@ def simplify_pow(+x: F.Folded, u: U32, c: U32) -> Maybe<&1, U32>:
 # the stated width". `bitcast` (dtype.py:299) is a `struct.pack`/`unpack` round
 # trip, so for the dtypes this port can state it is the IDENTITY; a pair of
 # DIFFERENT dtypes of equal itemsize needs the `struct` and answers `None{}`.
-# ===========================================================================
 def fold_bitcast.v(m: Maybe<&2, O.Const>, +x: F.Folded, u: U32) -> Maybe<&1, U32>:
   match m:
     case Some{O.CInt{i}}: Some{sp_const(sy_dt1(x, u), i, sy_ar(x))}
@@ -1268,13 +1152,11 @@ def fold_bitcast.same(ok: Bool, m: Maybe<&2, O.Const>, x: F.Folded, u: U32) -> M
 def fold_bitcast(+x: F.Folded, +u: U32, +c: U32) -> Maybe<&1, U32>:
   fold_bitcast.same(O.eq_dt(sy_dt1(x, u), sy_dt1(x, c)), sy_val(x, c), x, u)
 
-# ===========================================================================
 # `fold_const_alu` -- symbolic.py:29,
 #     a.const_like(exec_alu(a.op, a.dtype, [const_arg(s) for s in a.src], False))
 # `truncate_output=False`, and upstream's comment above it is the reason: "no
 # truncate: ints stay mathematical past the fold (emission truncates); floats
 # re-round in the mint". The `nsrc` dispatch is the arity split `exec_alu` needs.
-# ===========================================================================
 def fca.raw(ok: Bool, m: Maybe<&1, O.Const>) -> Maybe<&1, O.Const>:
   Bool.pick(Maybe<&1, O.Const>, ok, m, None{})
 
@@ -1299,20 +1181,11 @@ def fold_const_alu(n: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def fold_const_alu.at(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   fold_const_alu(sy_nsrc(x, u), x, u)
-# ===========================================================================
-# THE RULES.
-#
-# A RULE'S CAPTURES ARE `src[k]` OF THE NODE IT MATCHED. Python's compiled form
-# passes them as arguments to the rule def; this port reads them by index because
-# the arena is the only shared value and a closure cannot take one (the
-# constraints note, "A CLOSURE IN A DATATYPE FIELD MUST TAKE ALL-AFFINE
-# ARGUMENTS"). The captures are the same nodes either way -- `sym_3.gate` is
-# Python's `gate`, `sym_3.other` is Python's `x` -- so nothing is lost and the
-# rule body still reads as the lambda.
-#
-# EACH RULE IS TWO DEFS, and the split is load-bearing: `sym_N.pat` never grows
-# the arena and `sym_N` is only called when the pattern holds. See the header.
-# ===========================================================================
+# THE RULES. A RULE'S CAPTURES ARE `src[k]` OF THE NODE IT MATCHED -- Python's
+# compiled form passes them as arguments and this port reads them by index,
+# because the arena is the only shared value and a closure cannot take one. The
+# captures are the same nodes either way, so the rule body still reads as the
+# lambda. EACH RULE IS TWO DEFS, and the split is load-bearing (header).
 
 # `INDEX(_, CONST(Invalid))`, and its `or_casted()` alternative
 # `UPat(Ops.CAST, src=(UPat(Ops.INDEX, ...)))`. `or_casted` is a DISJUNCTION --
@@ -1416,8 +1289,7 @@ def sym_6(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # symbolic.py:120  (UPat.var("x") // UPat.var("x"), lambda x: x.const_like(1))
 # x//x -> 1. **`x` IS BOUND TWICE IN ONE SRC TUPLE**, so this rule carries the
 # IDENTITY CHECK and it is LOAD-BEARING: without it the rule also fires on
-# `x // y` for two different nodes, and that is a wrong rewrite. `sym_rebind` in
-# the gate is the two-sided check.
+# `x // y` for two different nodes, and that is a wrong rewrite.
 def sym_7.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
     p_same(sy_src0(x, u), sy_src1(x, u)))
@@ -1431,8 +1303,7 @@ def sym_7(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_7.hit(sym_7.pat(x, u), x
 # (x^y)^y -> x. **`y` IS BOUND TWICE WITHIN ONE SRC SPINE**, and the outer `^`'s
 # src[1] and the inner `^`'s src[1] must be the SAME node -- so this is the
 # LOAD-BEARING rebind of the header, and `p_same` IS the identity check
-# `upat.py:100-105` emits. Split in two defs only to keep the arms flat;
-# `t_xorb`/`t_xorb0` are its two-sided gate and mutation `M11` is its witness.
+# `upat.py:100-105` emits. Split in two defs only to keep the arms flat.
 def sym_8.inner(outer: Bool, +x: F.Folded, +u: U32) -> Bool:
   Bool.and(outer, Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsXOR{}),
     Bool.and(sy_nsrc_is(x, sy_src0(x, u), 2), p_same(sy_src1(x, u), sy_src1(x, sy_src0(x, u))))))
@@ -1466,13 +1337,10 @@ def sym_9(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_9.hit(sym_9.pat(x, u), x
 # symbolic.py:463  ((UPat.var("x") * UPat.var("x")).reciprocal(),
 #                     lambda x: x.reciprocal()*x.reciprocal())   # 1/(x*x) -> (1/x)*(1/x)
 # `**` IS NOT REBIND HERE: `UPat.var("x") * UPat.var("x")` is `UPat.__mul__`, a
-# DIFFERENT var per operand -- Python's UPat cache interns by NAME, so `x` and
-# `x` are the same pattern object, and the compiled form's STORE emits
-# `x = uop.src[0]` for the first and `x = uop.src[1]` for the second, i.e. it
-# OVERWRITES. `upat.py:100-105` emits the identity compare for a duplicate store
-# and `upat.py:54-58` is the `repeat` arm, so this rule is the case where the two
-# readings of the compiled form DIFFER and the honest port is the IDENTITY CHECK
-# again. See the TODO block: it is `sym_11`'s comment.
+# DIFFERENT var per operand -- Python's UPat cache interns by NAME, so the two are
+# the same pattern object and the compiled form's STORE OVERWRITES. `upat.py:
+# 100-105` emits the identity compare for a duplicate store, so the honest port is
+# the IDENTITY CHECK again; it is STRICTER than Python here (see the TODO block).
 def sym_10.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsRECIPROCAL{}), sy_nsrc_is(x, u, 1)),
     Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}), Bool.and(sy_nsrc_is(x, sy_src0(x, u), 2),
@@ -1492,6 +1360,7 @@ def sym_11.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_11(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri(sym_11.pat(x, u), Some{sy_src0(x, u)})
 
+# symbolic.py:442-448 -- `# this is symbolic 2.0` -- the GROUP/SINK cleanup pair.
 # symbolic.py:445-447  (UPat((Ops.SINK, Ops.GROUP), name="root"),
 #   lambda root: UOp(root.op, src=tuple(flatten(x.src if x.op in
 #     REMOVE_FROM_SINK_LIKE else (x,) for x in root.src)), arg=root.arg)
@@ -1525,30 +1394,21 @@ def sym_12.put(srcs: List<&2, U32>, +ar: O.Arena, +u: U32) -> U32:
 def sym_12.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(hit, Some{sym_12.put(H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{})), sy_ar(x), u)})
 
-def sym_12(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_12.hit(sym_12.pat(x, u), x, u)# ===========================================================================
-# THE REWRITER. `PatternMatcher.rewrite` -- ops.py:1603-1610:
+def sym_12(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_12.hit(sym_12.pat(x, u), x, u)# THE REWRITER. `PatternMatcher.rewrite` -- ops.py:1603-1610:
 #     if len(pats:=self.pdict.get(uop.op, [])):
 #       if (ler:=...) is None: ler = {u.op for u in uop.src}
 #       for _,match,early_reject in pats:
 #         if not early_reject.issubset(ler): continue
 #         if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
 #     return None
+# FOUR THINGS, and all four are load-bearing: the op-set scan (`pm_claimed`),
+# `early_reject` as a NECESSARY CONDITION rather than a veto, the FIRST-WINS fold
+# (`sy_keep.go` keys on the ACCUMULATOR, because `rewrite` RETURNS on the first
+# non-None rather than folding), and `ret is not uop` (`sy_novel`).
 #
-# FOUR THINGS, and all four are load-bearing:
-#   * `self.pdict.get(uop.op, [])` is the OP-SET scan -- `pm_claimed`.
-#   * `early_reject.issubset(ler)` is a NECESSARY CONDITION, not a veto. See the
-#     header.
-#   * the fold is FIRST-WINS (`sy_keep.go` keys on the ACCUMULATOR), because
-#     `rewrite` RETURNS on the first non-None rather than folding.
-#   * `ret is not uop` -- a rule that answers the node ITSELF has no opinion, and
-#     that is the whole of `x+0 -> x`. `sy_novel` is it.
-#
-# `spec.bend` writes this five more times than this file does and says why; the
-# short version is that `pm_dispatch` is a `match` over a dynamic tag, so a
-# dispatch cannot be written once without a closure, and a closure is a `Type`
-# that cannot take the arena. TWO tables therefore, TWO dispatches, and the ~15
-# lines of driver below duplicated.
-# ===========================================================================
+# `spec.bend` writes this five more times than this file does because a dispatch
+# is a `match` over a dynamic tag and a closure cannot take the arena: TWO tables,
+# TWO dispatches, and the ~15 lines of driver below duplicated.
 def sy_novel.hit(same: Bool, i: U32) -> Maybe<&1, U32>:
   match same:
     case True{}: None{}
@@ -1562,20 +1422,17 @@ def sy_novel.go(self: U32, m: Maybe<&1, U32>) -> Maybe<&1, U32>:
 def sy_novel(self: U32, m: Maybe<&1, U32>) -> Maybe<&1, U32>:
   sy_novel.go(self, m)
 
-# FIRST-WINS. Keying on the ACCUMULATOR is what makes it first-wins: keying on
-# the new answer is last-wins, and a rule that skips then erases every earlier
-# verdict. `spec.bend`'s mutation table measures the difference.
+# FIRST-WINS. Keying on the ACCUMULATOR is what makes it first-wins: keying on the
+# new answer is last-wins, and a rule that skips then erases every earlier verdict.
 def sy_keep.go(acc: Maybe<&1, U32>, v: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match acc:
     case Some{i}: Some{i}
     case _: v
 
-# ---------------------------------------------------------------------------
 # THE TABLE. One entry per rule, in symbolic.py's order, so tag N is
 # `(symbolic.py line, N)` by construction. `ops` is the op set `pdict` keys on and
-# `rej` is `early_reject` -- the op of the pattern's FIRST src, and only when
-# that src is a SINGLE-op UPat (ops.py:1475-1478).
-# ---------------------------------------------------------------------------
+# `rej` is `early_reject` -- the op of the pattern's FIRST src, and only when that
+# src is a SINGLE-op UPat (ops.py:1475-1478).
 def OP_INVALID() -> List<&2, O.Op>: [O.OpsCONST{}]
 
 def sym_table() -> O.PMEntrys:
@@ -1595,10 +1452,9 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{12, [O.OpsSINK{}, O.OpsGROUP{}],               Nil{}}]}          # 445
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
-# uses it ALONE, and it is never composed into `sym` -- so it gets its own tag
-# space and its own dispatch, and sharing `sym`'s would let `symbolic.py:91`
-# steal the node and make `pm_remove_invalid` dead. `rm_tag0` is the whole of
-# symbolic.py:105 and `rm_tag1` the whole of :106-107.
+# uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
+# and its own dispatch. Sharing `sym`'s would let `symbolic.py:91` steal the node
+# and make `pm_remove_invalid` dead.
 def rm_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsWHERE{}], OP_INVALID()},                            # 105
@@ -1654,17 +1510,14 @@ def sym_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 def sym(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sym_rewrite(sym_table(), x, u)
 
-# ===========================================================================
-# `pm_remove_invalid` -- symbolic.py:104-108. TWO rules, and BOTH are ported, which
-# is why this file can say `pm_remove_invalid 2 of 2`.
-# ===========================================================================
+# `pm_remove_invalid` -- symbolic.py:104-108, and BOTH rules are ported.
 # symbolic.py:105  (invalid_gate.named("w"),
 #                     lambda cond,x,i,w: w.replace(src=(cond,x,w.const_like(0))))
 def rm_0.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)), p_invalid(x, sy_src2(x, u)))
 
-# `Maybe` is a `Type`, so it is read ONCE: the two facts `w.const_like(0)` needs
-# -- is there one, and what is it -- cross the boundary as a `Bool` and a `U32`.
+# `Maybe` is a `Type`, so it is read ONCE: the two facts `w.const_like(0)` needs --
+# is there one, and what is it -- cross the boundary as a `Bool` and a `U32`.
 def rm_0.ok(hit: Bool, ok: Bool, +x: F.Folded, +u: U32, z: U32) -> Maybe<&1, U32>:
   Bool.pick(Maybe<&1, U32>, Bool.and(hit, ok),
     Some{sy_replace_src(sy_ar(x), u, [sy_src0(x, u), sy_src1(x, u), z])}, None{})
@@ -1704,15 +1557,11 @@ def rm_1.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def rm_1(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: rm_1.hit(rm_1.pat(x, u), x, u)
 
-# ---------------------------------------------------------------------------
-# THE SECOND DRIVER. `pm_remove_invalid` is a separate matcher in Python, so it is
-# a separate table with its own tag space and its own dispatch, and the driver is
-# the same ~15 lines twice -- the honest cost of not having first-class
-# functions. Sharing `sym`'s driver would be a BUG rather than a saving: it would
-# let `symbolic.py:91` (`invalid_gate.where(...)`) claim the node and make
-# `pm_remove_invalid` dead, which is exactly the mistake the two-table split in
-# Python prevents.
-# ---------------------------------------------------------------------------
+# THE SECOND DRIVER. `pm_remove_invalid` is a separate matcher in Python, so it is a
+# separate table with its own tag space and its own dispatch -- the honest cost of
+# not having first-class functions. Sharing `sym`'s driver would be a BUG rather
+# than a saving: it would let `symbolic.py:91` claim the node and make
+# `pm_remove_invalid` dead.
 def rm_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   match tag:
     case 0: rm_0(x, u)
@@ -1742,14 +1591,11 @@ def rm_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def pm_remove_invalid(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   rm_rewrite(rm_table(), x, u)
-# ===========================================================================
 # THE FIXTURES, and the ONE thing that had to be got right: EVERY construction
 # returns a `Found`, because `Arena` is affine. A builder that returned only the
-# INDEX would throw the grown arena away, and the fixture would be a two-node
-# graph whose second node is not in the store -- which prints, typechecks, and
-# answers every rule `None{}`. That is what `fx_castbad` did before this
-# paragraph: `Arena.next` answered 1 for a graph of 2 nodes.
-# ===========================================================================
+# INDEX throws the grown arena away, and the fixture becomes a graph whose last
+# node is not in the store -- which prints, typechecks, and answers every rule
+# `None{}`.
 def f_new(+ar: O.Arena, op: O.Op, srcs: List<&2, U32>, a: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, a, O.TNone{})
 
@@ -1852,25 +1698,18 @@ def fx_i32() -> O.Found:
   +c = f_alu2(b, O.OpsADD{}, f_i(a))
   f_cast(c, S.int32())
 
-# `GROUP(GROUP(CONST(7)))`: 1 is `CONST(7)`, 2 is the inner GROUP, 3 is the outer.
-# Tags 11 and 12 BOTH claim node 3.
-# `GROUP(SINK(CONST(7)))`: 1 is `CONST(7)`, 2 is the SINK, 3 is the GROUP, and
-# tags 11 AND 12 both claim node 3 and they DISAGREE -- tag 11 answers the SINK
-# and tag 12 answers a fresh GROUP over `[1]`. The first version of this fixture
-# was `GROUP(GROUP(C(7)))`, where the two answers COINCIDE (both are the inner
-# GROUP), and the mutation table caught it: the first-wins mutation moved
-# NOTHING. A fixture where both rules agree cannot tell first-wins from a
-# conjunction, and that is the trap the brief names.
+# `GROUP(SINK(CONST(7)))`: 1 is `CONST(7)`, 2 is the SINK, 3 is the GROUP, and tags
+# 11 AND 12 both claim node 3 and they DISAGREE -- tag 11 answers the SINK and tag
+# 12 answers a fresh GROUP over `[1]`. The two answers MUST differ: a fixture where
+# both rules agree cannot tell first-wins from a conjunction.
 def fx_two() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +b = f_new(O.Found.ar(a), O.OpsSINK{}, [f_i(a)], O.ANone{})
   f_new(O.Found.ar(b), O.OpsGROUP{}, [f_i(b)], O.ANone{})
 
 def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
-# ===========================================================================
-# THE GATE. `main` builds the fixtures above, folds each with `fold.bend`, runs
-# the table over one node, and prints one row per claim. A `False{}` anywhere is
-# the failure, and `promo` is the one row that is `False{}` ON PURPOSE -- see it.
+# THE GATE. `main` builds the fixtures above, folds each with `fold.bend`, runs the
+# table over one node, and prints one row per claim.
 #
 #   lay=3        the node count of `fx_add0`, so every index the claims use is
 #                CHECKABLE rather than assumed: 0 is `CONST(7)`, 1 is `CONST(0)`
@@ -1971,7 +1810,6 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #                `alu_rule`.
 #   cdiv_neg=0   `cdiv(-7,2)` is -3. RED and NOT DIAGNOSED; `cdiv_i=1` is the
 #                positive half and passes.
-# ===========================================================================
 def eq_u(m: Maybe<&1, U32>, want: U32) -> Bool:
   match m:
     case Some{i}: U32.is_eq(i, want)
@@ -1986,14 +1824,11 @@ def f32_of(m: Maybe<&1, O.Const>) -> F32:
 
 def f32_is(m: Maybe<&1, O.Const>, want: F32) -> Bool: F32.is_eq(f32_of(m), want)
 
-# ===========================================================================
 # THE COUNT ROWS. `len_sym`, `len_rm` and `rej` are COUNTS and not booleans,
 # because a MISSING rule and a MISSPELLED reject set are both invisible to a
 # boolean. `skip` is the arithmetic that makes the port auditable:
-# `len_sym + skip == total_sym == 127`, Python's own rule count for the six
-# blocks `sym` composes, and every one of the 114 is listed in the TODO block
-# below with its wall.
-# ===========================================================================
+# `len_sym + skip == total_sym == 127`, Python's own rule count for the blocks
+# `sym` composes, and every one of the 114 is named in the TODO block below.
 def t_len_sym() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(sym_table())))
 
 def t_len_rm() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(rm_table())))
@@ -2011,19 +1846,13 @@ def t_rej() -> U32: U32.from_nat(rej_go(O.PMEntrys.es(sym_table()), 0n))
 
 def t_lay() -> U32: O.Arena.next(O.Found.ar(fx_add0()))
 
-# ===========================================================================
 # A WALL THE GATE ITSELF STANDS ON, and it is the affine arena one more time.
-# `fold_const_alu` GROWS the arena -- it interns a new CONST -- and it answers
-# with `Maybe<&1, U32>`, an INDEX into an arena the caller cannot see. So a
-# fixture cannot read the folded node back: `Arena.node` returns `Arena.bottom`
-# for an index past the end and `sy_val` answers `None{}`.
-#
-# The two rows that replace one are therefore: `alu` is `exec_alu` called
+# `fold_const_alu` GROWS the arena and answers with `Maybe<&1, U32>`, an INDEX
+# into an arena the caller cannot see, so a fixture cannot read the folded node
+# back. The two rows that replace one are therefore: `alu` is `exec_alu` called
 # DIRECTLY on the two values, and `alu_rule` is "the RULE fired", which is all a
-# `Maybe<&1, U32>` can say. Making the fold's node readable needs the rule to
-# answer a `Found` -- `Maybe<&1, O.Found>`, which IS expressible because `Found`
-# is `Data` -- and that is the first thing to change when the tables grow.
-# ===========================================================================
+# `Maybe<&1, U32>` can say. Making the fold's node readable needs the rule to answer
+# a `Found` -- `Maybe<&1, O.Found>`, which IS expressible because `Found` is `Data`.
 def alu_eq(m: Maybe<&1, O.Const>) -> Bool: i32_is(m, H.i64_of_i32(11))
 
 def alu_eq.go() -> Bool: alu_eq(exec_alu2(O.OpsADD{}, S.weakint(),
@@ -2079,11 +1908,7 @@ def t_group() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_group()), 2), 1))
 
 
 # THE SECOND REBIND, `(x^y)^y -> x` -- symbolic.py:123 -- with a FIXTURE PER SIDE.
-# The positive one shares its `y`; the negative one does not. `t_xorb`/`t_xorb0`
-# are the pair, and the mutation table's M11 row says which of the two notices
-# when `p_same` is dropped from `sym_8.pat`.
-
-
+# The positive one shares its `y`; the negative one does not.
 def fx_xor() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(5)})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(7)})
@@ -2103,9 +1928,6 @@ def fx_xor2() -> O.Found:
 def t_xorb0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_xor2()), 5)))
 # THE TAG-0 FIXTURE. `sym_0` is `STACK(CONST(Invalid), ...) -> the Invalid`, and
 # `broadcast` is an `itertools.repeat`, so the STACK may have any arity >= 1.
-# Without this row nothing in the gate exercises tag 0, and the mutation table's
-# mis-spelled-tag row moved NOTHING because of that -- a mutation that cannot
-# move a row is a claim about a rule nobody looked at.
 def fx_bcast() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInvalid{})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(7)})
@@ -2119,32 +1941,24 @@ def t_rm_where() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_where()), 4
 
 def t_rm_stack() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_stack()), 3), 4))
 
-# THE FIRST-WINS FIXTURE, and it is a DIFFERENT one from the one I first built.
-# `sym_2` claims `WHERE(Invalid, x, y)` and `pm_remove_invalid`'s tag 0 claims
-# `WHERE(gate, x, y)`, and those two shapes are MUTUALLY EXCLUSIVE -- so they can
-# never both claim a node and a gate built on them could never see first-wins.
-# The pair that really overlaps is `sym_2`... no: `sym_11` (`GROUP(x)` -> x) and
-# `sym_12` (the GROUP/SINK flatten), both of which claim a one-src GROUP whose src
-# is sink-like, and they DISAGREE -- tag 11 answers the src and tag 12 answers a
-# flattened rebuild.
+# THE FIRST-WINS FIXTURE. The overlapping pair is `sym_11` (`GROUP(x)` -> x) and
+# `sym_12` (the GROUP/SINK flatten), both claiming a one-src GROUP whose src is
+# sink-like, and they DISAGREE -- tag 11 answers the src, tag 12 a flattened
+# rebuild. (`sym_2` and `pm_remove_invalid`'s tag 0 look like a pair and are not:
+# their two shapes are mutually exclusive, so they can never both claim a node.)
 def t_first() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_two()), 3), 2))
 
 def promo_row() -> Bool: Bool.pick(Bool, p_weak(fx_of(fx_add0()), 1), True{}, False{})
 
 def t_promo() -> U32: Bool.to_u32(promo_row())
 
-# ===========================================================================
 # NOT PORTED, one line each, and the WALL each one is behind. The Python line
-# numbers are `symbolic.py`'s, so this list diffs against `symbolic.py` line for
-# line and `grep "TODO(p3)" tinybendygrad/uop/symbolic.bend` is the work queue.
+# numbers are `symbolic.py`'s, so this list diffs against it line for line and
+# `grep "TODO(p3)" tinybendygrad/uop/symbolic.bend` is the work queue. THE
+# `skip=114` ROW IS THE ARITHMETIC OF THIS BLOCK: 127 is what symbolic.py's own
+# blocks imply and 13 is what the table holds, so 114 are named here.
 #
-# THE `skip=114` ROW IS THE ARITHMETIC OF THIS BLOCK: 127 is what symbolic.py's
-# six own blocks imply (14 + 47 + 1 + 47 + 2 + 14 + 2) and 13 is what the table
-# holds, so 114 are named here. Nothing is missing silently.
-# ===========================================================================
-# ---------------------------------------------------------------------------
 # THE FOUR THAT ARE GENUINELY UNAVAILABLE, and they are all P3 or later.
-# ---------------------------------------------------------------------------
 # TODO(p3) symbolic.py:72  def lift_reduce_gate -- `c.ranges` for every range of
 #   every src, and `c.ranges` is `UOp._ranges` (ops.py:483): a UNION of the srcs'
 #   ranges minus the ended ones, over a `set`. fold.bend's own TODO on it says the
@@ -2161,9 +1975,8 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   `idx.get_valid()`, `idx.get_idx()`, `backward_slice_with_self` and
 #   `c.ranges.keys() <= idx.ranges.keys()`. Three of the four are P3 folds and the
 #   fourth is the set algebra again. P3, and it is TWO rules.
-# ---------------------------------------------------------------------------
+#
 # THE REST ARE BEHIND A PROPERTY FOLD, and each one names the fold that owns it.
-# ---------------------------------------------------------------------------
 # TODO(p3) symbolic.py:16  def simplify_pow -- TWO of its FIVE arms are ported
 #   (`c.val < 0` and `c.val == 0`). The HALF arm needs `int(h)+0.5 == c.val` on a
 #   Python float, and the halving needs `i64_div`; `helpers.bend` has no
@@ -2183,6 +1996,10 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   is missing is a FIXTURE with a four-src WHERE, and `lift_reduce_gate`. P3.
 # TODO(p3) symbolic.py:126 `UPat(Ops.ADD, dtype=dtypes.weakint) ->
 #   fold_add_divmod_recombine` -- `divides`, as above.
+# TODO(p3) symbolic.py:124 `((x%y)%y -> x%y)` -- `y` IS BOUND TWICE WITHIN ONE
+#   SRC SPINE, so this needs `sym_8`'s IDENTITY CHECK; upstream writes it with
+#   `base` "for speed". Not in the table and not otherwise named, which is a
+#   bookkeeping hole in `skip=114`'s arithmetic. P3, with `sym_8`'s shape.
 # TODO(p3) symbolic.py:135-136 the `CAST(bool -> ints+weakint) != cvar` rule --
 #   `UPat.var("x").cast(dtypes.ints+(dtypes.weakint,))` needs a SIX-way dtype SET
 #   on a CAST, and `dt_intish` here is six `eq_dt`s, so the PATTERN is ported; the
@@ -2267,7 +2084,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   .ne(True)` with the `.cast(bool)` folded away, which is exactly what
 #   symbolic.py:131-133 asserts. The owner is the elementwise unit; when it lands,
 #   this def goes and its three callers name `x.logical_not`.
-# ---------------------------------------------------------------------------
+#
 # WHAT NEXT, in the order the walls fall.
 #   1. `_min_max` (ops.py:1104) unblocks `lt_folding`, `canonicalize_simplex`,
 #      `reduce_mul_chain`, `parse_valid`, `uop_given_valid`, `_valid_priority`,
@@ -2282,12 +2099,9 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #      every row.
 #   5. `UOp.simplify` / `substitute` / `graph_rewrite` unblocks
 #      `fold_where_closure` and `uop_given_valid`, and is P3 for `fold.bend` too.
-# ===========================================================================
-# THE MUTATION TABLE, MEASURED. All eleven were applied, run, and reverted on
-# 2026-09-30 with `.agents/slop/tools/mutate.py`-style substitution and a
-# before/after diff of every row; a mutation whose replacement did not parse was
-# reported as INVALID and re-written, not counted.
 #
+# THE MUTATION TABLE, MEASURED. All eleven were applied, run, and reverted, with a
+# before/after diff of every row.
 # | mutation | rows that moved | how many |
 # | --- | --- | --- |
 # | M1 `sy_keep.go` first-wins -> last-wins | `first` | 1 |
@@ -2302,40 +2116,18 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # | M10 `sym_dispatch.go` tag 0 -> tag 1 (a MIS-SPELLED tag) | `bcast` | 1 |
 # | M11 `sym_8.inner` drops the `(x^y)^y` REBIND identity check | `xorb0` | 1 |
 #
-# WHAT THE TABLE SAYS, and three of the rows are the interesting ones.
-#
-# M2 AND M5 MOVED NOTHING, and both are honest negatives worth stating rather
-# than hiding. `sy_novel` is the `ret is not uop` test, load-bearing in tinygrad
-# (`x + 0 -> x` and friends answer a node that may be the matched one), and NO
-# rule in this file's table returns its matched node -- every one of the thirteen
-# answers a src, a rebuild, or `None`. So the test has no witness here yet. It is
-# correct code for a reason this file cannot demonstrate, and the next rule that
-# can answer `self` is the row that will witness it.
-# `rm_try` is `pm_remove_invalid`'s driver and the `and` is only wrong for a node
-# whose op is claimed and whose reject set is violated; `rm_table`'s two entries
-# have `{CONST}` and `{}`, and no fixture violates either, so the mutation is
-# unreachable. That is a FIXTURE GAP, not a property of the code.
-#
-# M3 AND M11 ARE THE SAME SHAPE AND BOTH ARE LOCALISED TO THEIR OWN NEGATIVE ROW:
-# `rebind0` for `x // x` and `xorb0` for `(x^y)^y`. Neither `rebind` nor `xorb`
-# moves, which is the point -- a positive rebind row is worth nothing on its own,
-# and the two-sided fixture is the only thing that can see the identity check
-# disappear. This is the trap the brief names, and it cost two fixture rewrites to
-# get right (see `fx_two`'s header for the other instance, where a first-wins
-# fixture whose two rules AGREED moved nothing).
-#
-# M6 IS THE ONLY MUTATION WITH THREE ROWS, and all three are the constant-shape
-# tests: `sym_6.pat`'s `UPat.const(0)` and `sym_8`'s shape both route through
-# `const_i64`. One inverted comparison in a shared predicate took down three rows
-# at once, which is what it means for a helper to be SHARED.
-#
-# M9 AND M10 ARE THE TWO ROWS THAT EXIST ONLY FOR A MIS-SPELLING. `rej` is a
-# COUNT and it is the only witness for a reject set, because an empty set and a
-# wrongly-spelled set differ in exactly one place -- the count. `bcast` is the
-# only witness for a mis-spelled TAG, because no other fixture exercises tag 0.
-# Both rows were added BECAUSE the mutation moved nothing without them, which is
-# the honest way round: a row that cannot fail is not a row.
-# ===========================================================================
+# WHAT THE TABLE SAYS, in four lines.
+#   * M2 AND M5 MOVED NOTHING, and both are honest negatives. No rule in this
+#     table returns its matched node, so `sy_novel` has no witness yet; and
+#     `rm_table`'s two reject sets are violated by no fixture, so M5 is
+#     unreachable. The second is a FIXTURE GAP, not a property of the code.
+#   * M3 AND M11 ARE THE SAME SHAPE, both localised to their own NEGATIVE row:
+#     `rebind0` and `xorb0`, never `rebind`/`xorb`. A positive rebind row is worth
+#     nothing on its own; only the two-sided fixture can see the identity check go.
+#   * M6 is the only mutation with three rows, all three the constant-shape tests,
+#     because `sym_6.pat`'s `UPat.const(0)` and `sym_8`'s shape share `const_i64`.
+#   * M9 AND M10 ARE THE TWO ROWS THAT EXIST ONLY FOR A MIS-SPELLING: a COUNT is
+#     the only witness for a reject set, and only tag 0's fixture witnesses a tag.
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
@@ -2372,12 +2164,11 @@ def fz.gate() -> IO(Unit):
     row("bcast", t_bcast())
     row("promo", t_promo())
 
-# ===========================================================================
-# THE FUZZ DRIVER. `main` with NO argument is the gate above, byte for byte;
-# with ONE argument it reads that case file, builds the arena out of the s-expr
-# the case format IS, runs `sym` and `pm_remove_invalid` over the root, and
-# prints ONE canonical line. The case format and the canonical form are the SAME
-# s-expr, so the oracle and the driver can both print `sh(u)` and diff.
+# THE FUZZ DRIVER. `main` with NO argument is the gate above, byte for byte; with
+# ONE argument it reads that case file, builds the arena out of the s-expr the case
+# format IS, runs `sym` and `pm_remove_invalid` over the root, and prints ONE
+# canonical line. The case format and the canonical form are the SAME s-expr, so the
+# oracle and the driver can both print `sh(u)` and diff.
 #
 # THE FORMAT, and the leaves are the whole vocabulary:
 #   (add c7 c0)             an ALU over two weakint CONSTs
@@ -2394,12 +2185,10 @@ def fz.gate() -> IO(Unit):
 # op behind `vmin`/`vmax`/`const_factor`/`tuplize`/`gcd`/`ranges`, all of which
 # are `TODO(p3)` in the block above.
 #
-# WHY THE SCAN IS ONE DEF WITH A MODE. `Bend 2.0.34` cannot match a CALL's
-# result, and a `def` may only call defs ABOVE it, so a token scan that has to
-# dispatch on the class of the character it is looking at cannot be two mutually
-# recursive defs. It is one def, `m` selects "at a boundary" from "inside a
-# word", `wm` says WHICH word, and every edge spends a Nat of fuel.
-# ===========================================================================
+# WHY THE SCAN IS ONE DEF WITH A MODE: a token scan that dispatches on the class of
+# the character it is looking at cannot be two mutually recursive defs. It is one
+# def, `m` selects "at a boundary" from "inside a word", `wm` says WHICH word, and
+# every edge spends a Nat of fuel.
 type Tok is Data:
   TClose{}
   THead{w: String}
@@ -2444,9 +2233,9 @@ def fz_tok.tok(w: String, wm: U32) -> Tok:
     case 2: THead{w}
     case _: TLeaf{w}
 
-# A word is emitted the moment its terminator arrives, and a `)` terminates a
-# word AND closes a node, so on a `)` the two tokens go out together. That is
-# what lets every edge below shrink `s`, which is what the fuel buys.
+# A word is emitted the moment its terminator arrives, and a `)` terminates a word
+# AND closes a node, so on a `)` the two tokens go out together. That is what lets
+# every edge below shrink `s`, which is what the fuel buys.
 def fz_tok(n: Nat, md: U32, +s: String, acc: List<&2, Tok>, w: String, k: U32) -> List<&2, Tok>:
   match n:
     case 0n: acc
@@ -2471,12 +2260,9 @@ def fz_tok(n: Nat, md: U32, +s: String, acc: List<&2, Tok>, w: String, k: U32) -
 
 def fz_toks(+s: String) -> List<&2, Tok>: fz_tok(4096n, 0, s, Nil{}, "", fz_cls(s))
 
-# ===========================================================================
-# THE VOCABULARY. A head token is the op's own `Ops.name` in lower case, so a
-# mis-parse shows in the ANSWER and not here. `ops.bend`'s `Ops.name` is the
-# render side of this table, which is why a typo cannot hide: the driver PRINTS
-# `Ops.name`, so a head it did not recognise comes back as `NOOP`.
-# ===========================================================================
+# THE VOCABULARY. A head token is the op's own `Ops.name` in lower case, so a typo
+# cannot hide: the driver PRINTS `Ops.name`, so a head it did not recognise comes
+# back as `NOOP`.
 def fz_dt(nm: String) -> S.Dt:
   match nm:
     case "weakint": S.weakint()
@@ -2548,12 +2334,10 @@ def fz_op(nm: String) -> O.Op:
     case "mulacc": O.OpsMULACC{}
     case _: O.OpsNOOP{}
 
-# ===========================================================================
-# THE BUILD. One def, and every def it calls does NOT call back, so this is a
-# fold and not a cycle. A frame is pushed on a HEAD and popped on a CLOSE, and
-# `St.root` is the finished node: a list tail cannot carry what the frame above
-# has to be handed, so the answer rides out in the state.
-# ===========================================================================
+# THE BUILD. One def, and every def it calls does NOT call back, so this is a fold
+# and not a cycle. A frame is pushed on a HEAD and popped on a CLOSE, and `St.root`
+# is the finished node: a list tail cannot carry what the frame above has to be
+# handed, so the answer rides out in the state.
 def St.ar(s: St) -> O.Arena:
   match s:
     case St{ar, stk, root}: ar
@@ -2582,8 +2366,8 @@ def fz_deliver.at(t: List<&2, Frm>, +st: St, i: U32) -> St:
 
 def fz_deliver(+st: St, i: U32) -> St: fz_deliver.at(St.stk(st), st, i)
 
-# A node is closed, so BUILD it and hand it to the frame above. The arena and
-# the index both come out of the one `Found`, which is why this is one def.
+# A node is closed, so BUILD it and hand it to the frame above. The arena and the
+# index both come out of the one `Found`, which is why this is one def.
 def fz_close.give(+f: O.Found, u: List<&2, Frm>, r: Maybe<&2, U32>) -> St:
   fz_deliver(St{O.Found.ar(f), u, r}, O.Found.i(f))
 
@@ -2606,8 +2390,7 @@ def fz_num.of(m: Maybe<&2, U32>) -> U32: Maybe.default(&2, U32, m, 0)
 
 def fz_num(w: String) -> U32: fz_num.of(U32.read(w))
 
-# `c7` is a non-negative weakint CONST and `n7` a negative one. The first code
-# is `c`, and anything else with a leading letter is the negative spelling.
+# `c7` is a non-negative weakint CONST and `n7` a negative one.
 def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
   match c:
     case 99: O.UOp.const(ar, O.CInt{H.i64_of_hi_lo(0, fz_num(String.drop(w, 1n)))})
@@ -2647,16 +2430,14 @@ def fz_build(ts: List<&2, Tok>, +st: St) -> St:
     case Nil{}: st
     case t <> r: fz_build(r, fz_build.one(t, st))
 
-# THE CANONICAL FORM IS THE SAME S-EXPR, and it is rendered in TWO PHASES
-# because a node's text needs its own srcs' text and that is a cycle Bend
-# refuses: `fz_jobs` flattens the arena walk into a pre-order JOB LIST and
-# `fz_emit` folds that list into text. Neither phase recurses into the other and
-# each is one def, so neither is a cycle.
+# THE CANONICAL FORM IS THE SAME S-EXPR, rendered in TWO PHASES because a node's
+# text needs its own srcs' text and that is a cycle Bend refuses: `fz_jobs`
+# flattens the arena walk into a pre-order JOB LIST and `fz_emit` folds that list
+# into text.
 #
 # THE JOB, and `close` says which of the two texts it is: `Jz{u, False}` is
 # "(name " for the node at `u` and `Jz{0, True}` is ")". A leaf is one job too
 # -- its op is CONST or PARAM, so its "name" is the const or the variable.
-# ===========================================================================
 type Jz is Data:
   Jz{u: U32, close: Bool}
 
@@ -2668,16 +2449,10 @@ def Jz.u(j: Jz) -> U32:
   match j:
     case Jz{u, close}: u
 
-# THE FLATTEN. `m` is 0 for "start the node at `u`" and 1 for "walk the rest of
-# the srcs of `u`", because the walk descends into a src and comes BACK, which
-# is the second half of the cycle. `w` is fuel as a LIST because each step
-# spends one unit on the descent AND one on the walk back, and a Nat would be
-# read twice.
-# THE FLATTEN. `m` is 0 for "start the node at `u`" and 1 for "walk the rest of
-# the srcs of `u`", because the walk descends into a src and comes BACK, which
-# is the second half of the cycle. `w` is fuel as a LIST because one step makes
-# TWO recursive calls -- the descent and the walk on -- and a Nat would be read
-# twice; `+rest` is what makes that legal, and the bound is 4096 srcs.
+# THE FLATTEN. `m` is 0 for "start the node at `u`" and 1 for "walk the rest of the
+# srcs of `u`", because the walk descends into a src and comes BACK, which is the
+# second half of the cycle. `w` is fuel as a LIST because one step makes TWO
+# recursive calls -- the descent and the walk on -- and a Nat would be read twice.
 def fz_jobs.splice(ar: O.Arena, s: U32, sub: List<Jz>, cont: List<Jz>) -> List<Jz>:
   List.append(&1, Jz, [Jz{s, False{}}], List.append(&1, Jz, sub, List.append(&1, Jz, [Jz{0, True{}}], cont)))
 
@@ -2766,9 +2541,8 @@ def fz_ans.txt(ar: O.Arena, m: Maybe<&1, U32>) -> String:
     case Some{i}: fz_render(ar, i)
     case _: "norewrite"
 
-# ONE CANONICAL LINE, and the two answers are the two TABLES: `sym` is
-# `symbolic_simple` + `pm_data_invalid` + the two group-sink rules, and `rm` is
-# `pm_remove_invalid`. Two tables means two answers, and one line means the
+# ONE CANONICAL LINE, and the two answers are the two TABLES: `sym` and `rm`
+# (`pm_remove_invalid`). Two tables means two answers, and one line means the
 # harness diffs one string.
 def fz_line(+ar: O.Arena, +u: U32) -> String:
   String.concat(["root=", U32.show(u), " n=", U32.show(O.Arena.next(ar)), " op=", O.Ops.name(O.Arena.op(ar, u)),
@@ -2797,14 +2571,9 @@ def fz_read(path: String) -> IO(String):
     m : File & Result<&1, &1, U32 & String, String> <- File.read(f, 65536)
     fz_read.closed(m)
 
-# THE DRIVER BRANCH. No argument is the gate; one argument is a case file. The
-# two are a `match` on the argument list, so the GATE BODY IS `fz.gate` AND
-# NOTHING ELSE -- the thirty rows are that def and the driver never touches it.
-#
-# `IO.args()` LEADS WITH THE PROGRAM NAME -- `sz.bend`'s `main` drops it with
-# `List.tail` and so does this -- so the case path is the head of the TAIL and an
-# empty tail is the gate. `fz.drive.path` is a def because a do block cannot
-# destructure a `List`.
+# THE DRIVER BRANCH. No argument is the gate; one argument is a case file, so the
+# GATE BODY IS `fz.gate` AND NOTHING ELSE. `IO.args()` LEADS WITH THE PROGRAM NAME,
+# so the case path is the head of the TAIL and an empty tail is the gate.
 def fz.drive.path(as: List<String>) -> String:
   Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
 

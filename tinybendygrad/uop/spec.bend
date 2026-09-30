@@ -4,85 +4,59 @@
 # WHAT THIS FILE IS. `spec.py` is not a rewriter. It answers, for ONE node, "is
 # this node legal in the graph I am validating", and it does that with the SAME
 # machinery `ops.py` uses to rewrite a graph: a `PatternMatcher` is a table of
-# `(UPat, lambda)` pairs and `rewrite` returns the FIRST non-`None`. So every
-# rule here is a top-level def and every table is a list of tags, which is the
-# compiled form `upat.py` emits -- see `ops.bend`'s `pm_rewrite` and
-# `.agents/slop/notes/compiled-matcher-shape.bend`.
+# `(UPat, lambda)` pairs and `rewrite` returns the FIRST non-`None`. So every rule
+# here is a top-level def and every table is a list of tags, which is the compiled
+# form `upat.py` emits -- see `ops.bend`'s `pm_rewrite`.
 #
-# THE ANSWER IS THREE-VALUED, and that is the thing to get right. Python's rule
-# bodies return `True`, `False`, or `None`, and `None` means "this rule has no
-# opinion, keep scanning":
+# THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or
+# `None`, and `None` means "this rule has no opinion, keep scanning":
 #
 #     ret = check_spec.rewrite(uop)          # ops.py:1611
 #     if ret is not True: raise RuntimeError
 #
-# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. But
-# they are not the same: the fold is FIRST-WINS, so a `VFalse` stops the scan and
-# a `VSkip` lets the next rule try. `spec.py` leans on that distinction in at
-# least four places, and getting it backwards is silent -- the rule still refuses
-# the node, it just refuses it for the wrong reason and the rule that was
-# SUPPOSED to accept it never runs. The four that matter:
+# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. They are
+# not the same: the fold is FIRST-WINS, so a `VFalse` stops the scan and a `VSkip`
+# lets the next rule try, and getting it backwards refuses the node for the wrong
+# reason without the accepting rule ever running.
 #
-#   * `spec.py:70` returns `False` for a float AND/OR/XOR/SHL/SHR, and this is
-#     the first rule that claims a SHL, so it beats `spec.py:71`.
-#   * `spec.py:148`/`:151` return `None` for a non-GLOBAL BUFFER/ALLOC, so the
-#     scan reaches `spec_shared`'s REG/LOCAL rule at `spec.py:93`.
-#   * `spec.py:70`, `:73`, `:83`, `:140` all return `None` rather than `False`
-#     when they cannot decide, and that `None` is load-bearing for every later
-#     rule for the same op.
-#
-# WHY SIX DISPATCHES. `ops.bend` cannot call a def in this file, so
-# `pm_dispatch` there is a `match` with one `case` per rule and this file cannot
-# add to it. `spec.py` has six tables, each its own `PatternMatcher`, so each gets
-# its own dispatch and its own scan: `sh_*`, `te_*`, `pr_*`, `hq_*`, `fu_*`,
-# `kg_*`. That is ~5 lines of driver per table, duplicated six times.
-#
-# IT IS NOT LAZY. A generic dispatch -- a table of tags and one `match` over a
-# dynamic tag set -- needs a CLOSURE, and a closure is single-use, is a `Type`,
-# and cannot take a shared argument, so it cannot be a `Data` field and it cannot
-# receive the arena. Abstracting this would mean putting the rules back in a
-# closure table, which is the interpreter this port exists to avoid. The
-# duplication is the honest consequence of not having first-class functions, and
-# the alternative is a strictly worse program.
+# WHY SIX DISPATCHES. `spec.py` has six tables, each its own `PatternMatcher`, and
+# `ops.bend` cannot call a def in this file, so each gets its own dispatch and its
+# own scan: `sh_*`, `te_*`, `pr_*`, `hq_*`, `fu_*`, `kg_*`. A generic dispatch needs
+# a closure, and a closure cannot be a `Data` field, so the ~5 lines of driver per
+# table are duplicated six times rather than abstracted.
 #
 # WHAT IS SHARED AND WHAT IS NOT. Shared: the property readers (`sp_*`), the
-# `early_reject` subset test (`sp_early`), the op-set membership test, and the
-# `ler` fold -- none of those dispatch on a tag, so one copy is right. Duplicated
-# per table: `try`, `go`, `scan`, `rewrite`, `dispatch`, the table, and the
-# verifier fold. Those six are the ones that must name a rule.
+# `early_reject` subset test, the op-set membership test, and the `ler` fold --
+# none dispatch on a tag, so one copy is right. Duplicated per table: `try`, `go`,
+# `scan`, `rewrite`, `dispatch`, the table, and the verifier fold.
 #
-# THE TAG SPACES ARE PER TABLE, starting at 0, and each rule carries its
-# `spec.py` line. `spec_tensor` and friends are `PatternMatcher(...) + spec_shared`,
-# so a tag means "(table, index in THAT table's own list)" -- see the `+`
-# composition note on `fu_table`.
+# THE TAG SPACES ARE PER TABLE, starting at 0, and each rule carries its `spec.py`
+# line. `spec_tensor` and friends are `PatternMatcher(...) + spec_shared`, so a tag
+# means "(table, index in THAT table's own list)" -- see the `+` composition note on
+# `fu_table`.
 #
 # ---------------------------------------------------------------------------
 # TWO FACTS THAT ARE EASY TO INVERT, both measured against `spec.py`.
 #
-# 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name.
+# 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name:
 #    `ops.py:1609` is `if not early_reject.issubset(ler): continue`, so the rule
-#    FIRES when the op set IS a subset of `ler`. An empty set is a subset of
-#    everything, which is why most rules always fire. It is built from the ops
-#    of the pattern's FIRST src (`ops.py:1478`), and for a pattern whose first
-#    src is an `is_any` the ops are `None` and the set is empty.
-#    `spec.py`'s tables have FOUR non-empty sets -- `sh_15`, `te_19`..`te_22`,
-#    `pr_7`, `kg_2` -- and EVERY one of them is already implied by the rule's own
-#    src-op test, so no verdict in this file is ever decided by it. The gate row
-#    `backedge_ok` and `prog4_ok` exist to catch a MISSPELLED set, which would
-#    silently skip a rule that should have fired; the mutation table records that
-#    flipping the subset test's `and` to its `or` moves NOTHING, which is the
-#    measured proof of "implied" rather than an assertion about it.
+#    FIRES when the op set IS a subset of `ler`, and an empty set is a subset of
+#    everything, which is why most rules always fire. It is built from the ops of
+#    the pattern's FIRST src (`ops.py:1478`), and for a pattern whose first src is
+#    an `is_any` the ops are `None` and the set is empty. `spec.py`'s four
+#    non-empty sets -- `sh_15`, `te_19`..`te_22`, `pr_7`, `kg_2` -- are every one
+#    already implied by the rule's own src-op test, so the `backedge_ok` and
+#    `prog4_ok` rows exist to catch a MISSPELLED set, which would silently skip a
+#    rule that should have fired.
 #
 # 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
 #    as a literal `"{0} is {1}"`, and `mixin/gradient.py:101` and
-#    `schedule/__init__.py:182` both depend on it). `rg -n 'name="' spec.py` says
-#    the only name bound twice in THIS file is `uidx`, in `sh_27`..`sh_30`, and
-#    both bindings are in the two ALTERNATIVES of one `is_any` -- `is_any` copies
-#    the store per alternative, so they never meet and no `is` is emitted. So
-#    there is no identity check to write here, and adding one would be a bug: it
-#    would turn `LOAD(INDEX(...))` and `LOAD(CAST(INDEX(...)))` into a
-#    conjunction. The gate rows `hcq_plain` and `hcq_after` are the two-sided
-#    check that the `is_any` disjunction stayed a disjunction.
+#    `schedule/__init__.py:182` both depend on it). The only name bound twice in
+#    THIS file is `uidx`, in `sh_27`..`sh_30`, and both bindings are in the two
+#    ALTERNATIVES of one `is_any` -- `is_any` copies the store per alternative, so
+#    they never meet and no `is` is emitted. Adding one would be a bug: it would
+#    turn `LOAD(INDEX(...))` and `LOAD(CAST(INDEX(...)))` into a conjunction. The
+#    rows `hcq_plain` and `hcq_after` are the two-sided check.
 # ---------------------------------------------------------------------------
 
 import Base
@@ -126,15 +100,13 @@ def show_v(v: O.Verdict) -> U32:
   show_v.go(v)
 
 # ===========================================================================
-# THE PROPERTY READERS. Every one of them is a read of the FOLD, not of the
-# node, because a node's dtype/shape/device/base/addrspace are derived
-# properties and `fold.bend` is the only well-founded way to answer them: Bend
-# refuses the mutual recursion Python breaks with `recursive_property`'s memo
-# (`ops.py`'s header, point 5).
+# THE PROPERTY READERS. Every one of them is a read of the FOLD, not of the node,
+# because a node's dtype/shape/device/base/addrspace are derived properties and
+# `fold.bend` is the only well-founded way to answer them: Bend refuses the mutual
+# recursion Python breaks with `recursive_property`'s memo (ops.py:218).
 #
-# A `Data` record parameter is NOT implicitly copyable -- two reads of `fx` in
-# one expression need `+fx`, exactly like a `List`. That is measured, and it is
-# why nearly every def below is `+fx`.
+# A `Data` record parameter is NOT implicitly copyable -- two reads of `fx` in one
+# expression need `+fx`, exactly like a `List`.
 # ===========================================================================
 def sp_ar(fx: F.Folded) -> O.Arena: F.Folded.ar(fx)
 
@@ -259,9 +231,7 @@ def sp_base_invalid.of(b: Maybe<&1, U32>, ar: O.Arena) -> Bool:
   sp_base_invalid.pick(b, ar)
 
 # `x.base.is_invalid` -- `matches_dtype` (spec.py:47) and four rule bodies. A node
-# the fold has not answered has no base, and the test is then False: a base this
-# port cannot state is not an Invalid, and claiming it were would accept a node
-# the fold has not proved.
+# the fold has not answered has no base, and the test is then False.
 def sp_base_invalid(+fx: F.Folded, self: U32) -> Bool:
   sp_base_invalid.of(sp_base(fx, self), sp_ar(fx))
 
@@ -489,10 +459,9 @@ def arg_const_int(a: O.Arg) -> Maybe<&2, H.I64>:
   arg_const_int.of(a)
 
 # ===========================================================================
-# THE FOLDS OVER A NODE'S SRCS. One def each, threaded `Bool` accumulator, self-
-# call on the TAIL. Python's `all(... for s in u.src)` and `any(...)` become the
-# same shape here; there is no early exit, which is a cost and not a semantic
-# change, and it is the same trade `fold.bend`'s `Kahn.gather` makes.
+# THE FOLDS OVER A NODE'S SRCS. One def each, threaded `Bool` accumulator, self-call
+# on the TAIL. Python's `all(... for s in u.src)` and `any(...)` become the same
+# shape here; there is no early exit, which is a cost and not a semantic change.
 # ===========================================================================
 def all_void(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
@@ -554,11 +523,9 @@ def all_const_or_param(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case s <> t: all_const_or_param(t, fx, Bool.and(acc, sp_const_or_param(fx, s)))
 
 # `all_same(x.src)` -- helpers.py, on NODE INDICES. tinygrad compares UOp objects
-# and UOp equality IS identity, so the index comparison is the same test and not
-# a weakening of it. The head is threaded in as the reference because the self-
-# call may only pass a SHRINKING first argument, and the head is not a subterm of
-# the list. Python's `all_same([])` is True and then `x.src[0]` raises, so an
-# EMPTY src has no answer and `mstack_body` skips rather than inventing a src[0].
+# and UOp equality IS identity, so the index comparison is the same test. Python's
+# `all_same([])` is True and then `x.src[0]` raises, so an EMPTY src has no answer
+# and `mstack_body` skips rather than inventing a src[0].
 def all_same(srcs: List<&2, U32>, +head: U32, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -626,33 +593,25 @@ def validate_index.of(n: U32, bad: Bool) -> Maybe<&1, Bool>:
 #     if 0<=idx.vmin and idx.vmax<sz: return True
 #     return validate_index_with_z3(sz, idx, gate)
 #
-# THE FIRST TWO RETURNS ARE PORTED and they are both `True`, so they are the
-# whole of what this port can state. Everything past them needs one of four
-# things it does not have: `CHECK_OOB` (a `ContextVar`, and the flag is a
-# process-wide mutable that Bend has no home for), `max_numel` (a product over
-# `shape` with `ssimplify` in it), `vmin`/`vmax` (`_min_max`, ops.py:1104, the
-# largest single piece fold.bend defers) and z3 (`tinygrad/uop/validate.py`,
-# which is not ported at all). So the answer is `None` -- "no opinion" -- and the
-# scan runs on. That is NOT the same as accepting: `type_verify` fails on a
-# `VSkip` exactly as it fails on a `VFalse`, so an out-of-bounds INDEX is still
-# rejected, it is just rejected as "no rule answered" rather than as "this
-# index is out of bounds". See the TODO block for the phase that owns it.
+# The first two returns are ported and they are both `True`, so they are the whole
+# of what this port can state. Everything past them needs one of four things it does
+# not have: `CHECK_OOB`, `max_numel` (a product over `shape` with `ssimplify` in it),
+# `vmin`/`vmax` (`_min_max`, ops.py:1104) and z3 (`tinygrad/uop/validate.py`, not
+# ported at all). So the answer is `None` -- "no opinion" -- and the scan runs on,
+# which is NOT the same as accepting: `type_verify` fails on a `VSkip` exactly as it
+# fails on a `VFalse`.
 # ===========================================================================
 def validate_index(+fx: F.Folded, +uidx: U32) -> Maybe<&1, Bool>:
   validate_index.of(sp_nsrc(fx, uidx), is_invalid_at(sp_ar(fx), sp_src0(fx, uidx)))
 
 # ===========================================================================
-# `early_reject` -- a NECESSARY CONDITION, and see the header for why the
-# direction matters more than anything else in this file.
-#
-# `ler` is Python's `uop.__dict__['_src_ops']`, CACHED ON THE UOP. There is no
-# mutable uop here, so it is rebuilt per rule, and that is the one place this port
+# `early_reject` -- a NECESSARY CONDITION, and see the header for why the direction
+# matters. `ler` is Python's `uop.__dict__['_src_ops']`, CACHED ON THE UOP; there is
+# no mutable uop here, so it is rebuilt per rule, and that is the one place this port
 # is slower than the thing it ports. It folds over ALL of `src`, which is what
 # Python's set comprehension does -- `ops.bend`'s `pm_ler` reads only `src[0]` and
-# `src[1]`, and that is wrong for `te_22` (spec.py:201), whose reject set is all
-# four of a PROGRAM's srcs, so `ops.bend`'s version can never pass it. REPORTED,
-# not fixed: `ops.bend` is not this file's. `prog4_ok` in the gate is the row
-# that shows the difference.
+# `src[1]`, and that is wrong for `te_22` (spec.py:201), whose reject set is all four
+# of a PROGRAM's srcs. `prog4_ok` in the gate is the row that shows the difference.
 # ===========================================================================
 def sp_ler.go(srcs: List<&2, U32>, +ar: O.Arena, acc: List<&2, O.Op>) -> List<&2, O.Op>:
   match srcs:
@@ -702,12 +661,11 @@ def sp_src_dt(+fx: F.Folded, self: U32, n: U32, want: S.Dt) -> Bool:
 def nsrc_ge(fx: F.Folded, self: U32, n: U32) -> Bool:
   Bool.not(U32.is_lt(sp_nsrc(fx, self), n))
 
-# A node's own dtype, as a VALUE, for the rules that compare two NODES' dtypes
-# with each other rather than with a literal. Two unstated dtypes are both the
-# absence of one, so `void` is the right answer for both and the comparison
-# stays true; `sp_dt_is` is the other reader and it answers `False` for an
-# unstated dtype, which is the right answer when the comparison is against a
-# LITERAL the pattern named.
+# A node's own dtype, as a VALUE, for the rules that compare two NODES' dtypes with
+# each other rather than with a literal. Two unstated dtypes are both the absence of
+# one, so `void` is the right answer for both; `sp_dt_is` is the other reader and it
+# answers `False` for an unstated dtype, which is right against a LITERAL the
+# pattern named.
 def sp_dt_v.go(m: Maybe<&2, S.Dt>) -> S.Dt:
   match m:
     case Some{d}: d
@@ -752,15 +710,11 @@ def sp_vb(b: Bool) -> O.Verdict:
 
 # `or_casted()` / `or_bitcasted()` / `or_after()` are `UPat.any`, and `is_any`
 # compiles to a DISJUNCTION (upat.py:18-20), so `X or CAST(X)` is exactly
-# `X or (CAST and X)`. That is also why no identity check is emitted for the
-# doubled `uidx` name: the two bindings are in the two ALTERNATIVES and never
-# meet (see the header).
+# `X or (CAST and X)`. That is also why no identity check is emitted for the doubled
+# `uidx` name: the two bindings are in the two ALTERNATIVES and never meet.
 #
-# THE WRAPPER TEST IS THE NODE'S OWN OP, not its src's. `or_casted` wraps the
-# node, so the node being a CAST is what makes the second alternative true --
-# reading src[0] for the op instead asks whether the node's CHILD is the wrapper,
-# which is the node itself for every well-formed pattern and is false for every
-# `or_after`. `hcq_after` is the row that catches it, and it caught it.
+# THE WRAPPER TEST IS THE NODE'S OWN OP, not its src's: `or_casted` wraps the node,
+# so reading src[0] for the op instead asks whether the node's CHILD is the wrapper.
 def alt_of(plain: Bool, wrapped: Bool, inner: Bool) -> Bool:
   Bool.or(plain, Bool.and(wrapped, inner))
 
@@ -910,9 +864,8 @@ def OP_BITS() -> List<&2, O.Op>:
 
 # spec.py:70  (UPat((Ops.AND, Ops.OR, Ops.XOR, Ops.SHL, Ops.SHR), name="x"),
 #              lambda x: False if any(dtypes.is_float(s.dtype) for s in x.src) else None)
-# THE FIRST RULE THAT CLAIMS A SHL, and it is the one that carries the `False`.
-# That is load-bearing: `sh_8` claims a SHL too and would answer `True`, so with
-# first-wins a float shift is REJECTED and with last-wins it would be accepted.
+# THE FIRST RULE THAT CLAIMS A SHL, and it is the one that carries the `False`, which
+# is load-bearing: `sh_8` claims a SHL too and would answer `True`.
 def sh_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_BITS()), sp_vd(sp_tri(any_float(sp_srcs(fx, self), fx, False{}), False{})))
 
@@ -936,6 +889,7 @@ def sh_9.body(+fx: F.Folded, +self: U32) -> Bool:
 # spec.py:73  (UPat((Ops.CDIV, Ops.CMOD, Ops.FLOORDIV, Ops.FLOORMOD), name="x"),
 #              lambda x: None if dtypes.is_int(x.dtype) or any(s.base.is_invalid for s in x.src)
 #                        else False)
+# `None` rather than `False`, which is load-bearing for every later rule for these ops.
 def sh_9(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_IDIVS()), sp_vd(sp_tri(sh_9.body(fx, self), False{})))
 
@@ -974,6 +928,7 @@ def sh_13.body(+fx: F.Folded, +self: U32) -> Bool:
 # spec.py:83  (UPat(Ops.INDEX, name="x"),
 #              lambda x: len(x.src)>0 and all(dtypes.is_int(y.dtype) or y.base.is_invalid
 #                            for y in x.src[1:]) or None)
+# `None` rather than `False`, which is load-bearing for every later rule for INDEX.
 def sh_13(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsINDEX{}), sp_vd(sp_tri(sh_13.body(fx, self), True{})))
 
@@ -1271,11 +1226,7 @@ def shared_table() -> O.PMEntrys:
     O.PMEntry{32, [O.OpsWMMA{}],               Nil{}}]}  # 137
 
 # ===========================================================================
-# THE DRIVER, and it is duplicated five more times. See the header: the dispatch
-# is a `match` over a dynamic tag, so it needs a closure to be written once, and
-# a closure is a `Type` that cannot take a shared argument and so cannot receive
-# the arena. The property readers and the subset test are NOT duplicated -- they
-# do not dispatch on a tag, so one copy is right.
+# THE DRIVER, and it is duplicated five more times. See the header for why.
 # ===========================================================================
 def sh_dispatch.go(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match tag:
@@ -1370,16 +1321,11 @@ def valid_device_range.go(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Mayb
 #     return rng.op is Ops.RANGE and rng.axis_type is AxisType.DEVICE and \
 #            int(rng.vmax)+1 == len(device)
 #
-# THE `vmax` HALF, and it IS PORTABLE, which was not obvious. ops.py:1139 says
-#     if self.op in (Ops.RANGE, Ops.SPECIAL) and self.dtype is not dtypes.void:
-#       return 0, (self.src[0]-1).vmax
-# so a RANGE's `vmax` is `(src[0] - 1).vmax`, and for a CONST end `src[0]` the
-# one-above-minimum makes that `n - 1` for an int CONST `n`. So
-# `int(rng.vmax)+1 == len(device)` is EXACTLY `src[0]'s value == len(device)`,
-# which is a read of the arg. The one case it does not cover is a NON-constant
-# range end, and there `None` is the answer -- "no opinion" -- because a symbolic
-# end is not a number this port can compare and guessing would be a validator
-# that accepts what it has not checked.
+# THE `vmax` HALF, and it IS PORTABLE. ops.py:1139 says a RANGE's `vmax` is
+# `(src[0]-1).vmax`, and for a CONST end `src[0]` the one-above-minimum makes that
+# `n - 1` for an int CONST `n`, so `int(rng.vmax)+1 == len(device)` is EXACTLY
+# `src[0]'s value == len(device)` -- a read of the arg. A NON-constant range end is
+# the one case it does not cover, and there `None` is the answer.
 # ===========================================================================
 def valid_device_range(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Maybe<&1, Bool>:
   valid_device_range.go(d, srcs, fx)
@@ -1498,13 +1444,11 @@ def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
 # and `S.Dev` is `D1{tag} | Dn{tags}`: `D1` is the `str` case and `Dn` is the
 # `tuple` case, so the two `isinstance` tests are the two constructors and the
 # `all(...)` is the `List` being well-formed. Both are TRUE of every `S.Dev` BY
-# CONSTRUCTION, so `is_device` is total on a `Dev` and the only remaining
-# question is the `None` case, which Python answers False and so do I.
+# CONSTRUCTION, so `is_device` is total on a `Dev` and only the `None` case is a
+# question, which Python answers False and so do I.
 # WHAT IT CANNOT STATE: that a `U32` tag really names a `str`. The tag is an
-# interned device NAME and the table that interns it is `Device.tag`, which is
-# P6 -- there is no device to point at yet. So the string-ness of a device name is
-# an invariant this port INHERITS rather than CHECKS, and a garbage tag would
-# pass every device test in this file.
+# interned device NAME and the table that interns it is `Device.tag`, which is P6,
+# so the string-ness is an invariant this port INHERITS rather than CHECKS.
 # ===========================================================================
 def is_device(m: Maybe<&2, S.Dev>) -> Bool:
   dopt_is(dev_opt(m))
@@ -1580,8 +1524,7 @@ def te_2.size_ok(+present: Bool) -> Bool:
 # `isinstance(x.arg, ParamArg)`, `x.arg.buffer is None` and
 # `x.arg.size is None or isinstance(x.arg.size, int)`. The last is a TAUTOLOGY in
 # this port -- `size` is `Maybe<U32>` and "is an int" is "is not None" -- and it is
-# written out anyway, because a port that silently drops a conjunct is a port
-# nobody can check.
+# written out anyway, so no conjunct is silently dropped.
 def te_2.facts(+p: Pa) -> Bool:
   Bool.and(Pa.ok(p), Bool.and(Bool.not(Pa.buf(p)), te_2.size_ok(Pa.size(p))))
 
@@ -1714,11 +1657,9 @@ def te_10.rest(+fx: F.Folded, +self: U32) -> Maybe<&1, Bool>:
 #                valid_device_range(copy.arg, copy.src[1:]))
 #
 # `is_disk_device` is `tinygrad/device.py`, which is P6 -- there is no device to
-# ask. So the FIRST conjunct is decided and the SECOND IS NOT, and this rule
-# answers `False` when the arg is not a device and `None` when it is. `None` fails
-# `type_verify` exactly as `False` does, so a COPY is rejected either way in this
-# port; what survives is only WHICH of the two it was. See the TODO on
-# `is_disk_device`.
+# ask. So the FIRST conjunct is decided and the SECOND IS NOT, and this rule answers
+# `False` when the arg is not a device and `None` when it is, and `None` fails
+# `type_verify` exactly as `False` does. See the TODO on `is_disk_device`.
 def te_10(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsCOPY{}), nsrc_ge(fx, self, 1)),
             sp_vd(sp_tri_v(is_device(arg_dev(sp_arg(fx, self))), te_10.rest(fx, self))))
@@ -1838,8 +1779,6 @@ def te_17(+fx: F.Folded, +self: U32) -> O.Verdict:
 def te_18(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSOURCE{}), sp_dt_is(fx, self, S.void())), nsrc_is(fx, self, 0)), O.VTrue{})
 
-# positions at or past the arity are not tested: a 2-src PROGRAM has no src[2], and
-# `Arena.src` would answer the bottom's op and fail a test it should not be given.
 # the pipeline PREFIX, and it is cumulative: a 2-src PROGRAM has SINK and LINEAR, a
 # 4-src one has all four. Positions at or past the arity are never asked about --
 # `Arena.src` answers the bottom's op for an index past the end, so a shared "test
@@ -2231,14 +2170,11 @@ def hcq_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
 # followed by `spec_shared` again.
 #
 # PYTHON'S LITERAL LIST IS 137 ENTRIES AND FOUR OF THIS FILE'S BLOCKS ARE
-# 4 + 23 + 33 + 9 + 2 = 71. THE OTHER 66 ARE DEAD, and that is a claim worth
-# making carefully because it is a change in size: `spec_shared` appears three
-# times in `spec_full`'s 137 and only the FIRST is reachable. The fold is
-# first-wins, so a rule that skipped in the first block skips again in the second
-# -- the verdict cannot differ -- and a rule that answered has already stopped the
-# fold. So the two later copies are unreachable rather than merely redundant, and
-# dropping them changes no verdict. `full_len` in the gate is the row that states
-# the count, and the arithmetic above is where the number comes from.
+# 4 + 23 + 33 + 9 + 2 = 71. THE OTHER 66 ARE DEAD: `spec_shared` appears three times
+# in `spec_full`'s 137 and only the FIRST is reachable, because the fold is
+# first-wins -- a rule that skipped in the first block skips again in the second,
+# and a rule that answered has already stopped the fold. `full_len` in the gate is
+# the row that states the count.
 # ===========================================================================
 # spec.py:239 (UPat(Ops.REWRITE_ERROR, dtypes.void, name="x"), lambda x: isinstance(x.arg, str))
 def fu_0(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -2568,13 +2504,11 @@ def topo_budget.f.go(xs: List<&2, O.Node>, acc: U32) -> U32:
 # `type_verify` -- spec.py:35. It walks `ast.toposort()` and raises on the first
 # node no rule answers `True`, and Bend has no `raise`, so this answers the node
 # that failed instead: `None` is "the whole graph is legal" and `Some{i}` is the
-# index the caller has to look at. `O.UOp.toposort` takes a fuel `Nat` because
-# Bend has no `while`, and the budget below is the exact bound -- one entry per
-# zero-src node plus one per edge -- so it can never cut a walk short.
+# index the caller has to look at. `O.UOp.toposort` takes a fuel `Nat` and the
+# budget below is the exact bound -- one entry per zero-src node plus one per edge.
 #
 # `SPEC > 1` and `test_pyrender` (spec.py:37) and the `DEBUG >= 3` print
-# (spec.py:43) are not here: the first is a P3/VIZ flag and the pyrender
-# round-trip is `exec` of generated source. See the TODO block.
+# (spec.py:43) are not here. See the TODO block.
 # ===========================================================================
 def topo_budget.f(xs: List<&2, O.Node>, acc: U32) -> U32:
   topo_budget.f.go(xs, acc)
@@ -2582,10 +2516,9 @@ def topo_budget.f(xs: List<&2, O.Node>, acc: U32) -> U32:
 def topo_budget(+fx: F.Folded) -> Nat:
   U32.to_nat(U32.add(1, U32.add(O.Arena.next(sp_ar(fx)), topo_budget.f(O.Arena.nodes(sp_ar(fx)), 0))))
 
-# ONE FOLD PER TABLE, and the duplication is the same one as the dispatch: the
-# step has to call a table's `rewrite` and there is no way to name "a table's
-# rewrite". `Some{j}` short-circuits: a node already known bad makes the rest of
-# the walk a no-op, which is Python's `raise`.
+# ONE FOLD PER TABLE, and the duplication is the same one as the dispatch: the step
+# has to call a table's `rewrite` and there is no way to name "a table's rewrite".
+# `Some{j}` short-circuits, which is Python's `raise`.
 def bad.pick(v: O.Verdict, i: U32) -> Maybe<&2, U32>:
   match v:
     case O.VTrue{}: None{}

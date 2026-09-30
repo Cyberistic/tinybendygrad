@@ -3,21 +3,19 @@
 #
 # WHAT THIS FILE IS. `ops.bend` builds the arena: a UOp is a `U32` index into an
 # append-only `List<Node>`, so every property read goes through the store. That
-# store is what stops the property folds, and `ops.bend`'s inventory names the two
-# Bend rules that stop them (measured, with reproducers, in its header):
-#
-#   A. a self-call must pass a FIELD of its own parameter, and the arena's field
-#      is a U32 read back out of a store, which the checker cannot see as a
-#      subterm; and
-#   B. mutual recursion is refused, and `dtype_from_uop` <-> `_shape` <->
-#      `simplify()` -> `graph_rewrite` -> the rules -> `dtype` is a cycle.
+# store is what stops the property folds -- a self-call must pass a FIELD of its
+# own parameter and the arena's field is a U32 read back out of a store -- and
+# mutual recursion is refused, and `dtype_from_uop` <-> `_shape` <->
+# `simplify()` -> `graph_rewrite` -> the rules -> `dtype` is a cycle.
 #
 # THE FIX is the shape `toposort` already has in `ops.bend`: ONE def that walks
 # the graph in topological order, so a node is answered only after every node it
-# reads is. A Kahn worklist. The dependency graph of the fold is a DAG BY
-# CONSTRUCTION rather than by discipline, which also settles (B) for the
-# properties that are here: there is no cycle to be in, and `graph_rewrite` is
-# not called, so nothing in the rewrite engine can call back into this file.
+# reads is. Python's `recursive_property` (ops.py:218) replaces
+# `functools.cached_property` in recursive UOp functions to prevent
+# RecursionError; this is the same answer with no recursion at all. The dependency
+# graph of the fold is a DAG BY CONSTRUCTION rather than by discipline, and
+# `graph_rewrite` is not called, so nothing in the rewrite engine can call back
+# into this file.
 #
 # dtype and shape are answered TOGETHER, as one `DtShape`, because they read each
 # other -- `_shape`'s CALL/INS/BITCAST arms read `self.dtype`, and
@@ -27,40 +25,35 @@
 # properties there and separate defs here. `derived` is the one place they are
 # assembled, and it is the only def that knows about all of them.
 #
-# THE ARENA IS A DAG, and that is measured, not assumed. `UOp.make` only ever
-# names src indices that are already in the list, so every src index is STRICTLY
-# LESS than its consumer's and a cycle is unrepresentable. The range graph's
-# back-edges are `Ops.BACKEDGE` MARKER nodes -- `BACKEDGE(src=(rng, loop, cond))`
-# names a range built before it -- not a pointer that runs forwards. So Kahn's
-# incomplete branch is unreachable for any arena this file can build, and the
-# fold settles every node whose rules are ported. The branch is still there and
-# still total, because a node can also fail to be answered by a rule this file
-# does not port (the deferred arms of `dt_shape`, at the bottom), and a fold that
-# cannot say "I do not know" is not a fold.
+# THE ARENA IS A DAG BY CONSTRUCTION -- `UOp.make` only ever names src indices
+# already in the list, so every src index is strictly less than its consumer's,
+# and the range graph's back-edges are `Ops.BACKEDGE` MARKER nodes naming a range
+# built before them -- so `Arena.next(ar) + edges` steps always suffice
+# (`Kahn.budget`) and Kahn's incomplete branch is unreachable for any arena this
+# file can build. The branch is still there and still total, because a node can
+# also fail to be answered by a rule this file does not port (the deferred arms of
+# `dt_shape`, at the bottom), and a fold that cannot say "I do not know" is not a
+# fold.
 #
 # WHAT A PYTHON `raise` BECOMES, uniformly: the node is NOT answered. One rule at
-# every `raise` in `dtype_from_uop` and `_shape`, and it is why the per-node
-# answer is a `Maybe`. Two questions, two types: `None` inside a `Derived` field
-# is "this property has no value" (Python's own `None`), and no entry in the
-# table is "this fold cannot answer this node".
+# every `raise` in `dtype_from_uop` and `_shape`, and it is why the per-node answer
+# is a `Maybe`. Two questions, two types: `None` inside a `Derived` field is "this
+# property has no value" (Python's own `None`), and no entry in the table is "this
+# fold cannot answer this node".
 #
 # THE COST, accepted rather than worked around:
-#   * READS ARE O(n). The resolved table is a `List`, so a lookup is a fold and
-#     the whole fold is O(n^2) in arena size. `Array<T>` would be O(1) and cannot
-#     be used: `Array.get` computes `i & (n-1)`, so `Array.set` cannot grow a
-#     table. Slow and checkable beats fast and unprovable.
+#   * READS ARE O(n). The resolved table is a `List`, so a lookup is a fold and the
+#     whole fold is O(n^2) in arena size. `Array<T>` would be O(1) and cannot be
+#     used: `Array.get` computes `i & (n-1)`, so `Array.set` cannot grow a table.
+#     Slow and checkable beats fast and unprovable.
 #   * `graph_rewrite` IS NOT HERE and nothing here may call it.
-#   * The budget is a `Nat` and it is EXACT, not a guess: one push per zero-src
-#     node plus one per edge, so `Arena.next(ar) + edges` steps always suffice
-#     (`Kahn.budget`).
 #
-# THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs
-# `least_upper_dtype` (dtype.py:193), which `./../dtype.bend` already has in a
-# form this file cannot reach: that file's fp16/bf16/fp8/i64 conversions are C
-# effects, so importing it makes the checker print "14 defs rely on unsafe or
-# foreign code" and exit 1 for ANY importer -- the same wall `ops.bend`'s header
-# documents for `Dt`. The lattice is twenty integers and a lowest-set-bit, all of
-# it pure, so the four defs it needs are here, under dtype.bend's own masks and its
+# THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs `least_upper_dtype`
+# (dtype.py:193), which `./../dtype.bend` already has in a form this file cannot
+# reach: that file's fp16/bf16/fp8/i64 conversions are C effects, so importing it
+# makes the checker print "14 defs rely on unsafe or foreign code" and exit 1 for
+# ANY importer. The lattice is twenty integers and a lowest-set-bit, all of it
+# pure, so the four defs it needs are here, under dtype.bend's own masks and its
 # own rank order. When dtype.bend becomes importable these go back there and the
 # import comes with them; nothing else in this file changes, because `promo_dtype`
 # is the only caller.
@@ -84,9 +77,8 @@ import ./ops.bend as O
 #
 # The twenty dtypes are told apart by LITERAL record patterns, which is why these
 # are twenty short arms rather than twenty equality comparisons: a `match` on a
-# `Dt` may use its fields directly. `void` -- whose priority spec.bend spells 0
-# where dtype.py spells -1 -- is the `case _` arm, and its empty mask is the one
-# totalization this makes.
+# `Dt` may use its fields directly. `void` is the `case _` arm, and its empty mask
+# is the one totalization this makes.
 # ===========================================================================
 
 def promo_mask(d: S.Dt) -> U32:
@@ -216,11 +208,9 @@ def sint_of(+n: U32) -> O.Sint:
 def sint_one() -> O.Sint:
   sint_of(1)
 
-# A COUNT AND THE LIST IT COUNTS, as one value. This is not a convenience: Bend
-# SPENDS a list when it reads it, so `len(s)` and `s` cannot both be live in one
-# expression, and `_align_left` and `is_image_shape` both want exactly that pair.
-# Two callers is enough to name it; the alternative is two near-copies of the same
-# walk. `Sized.n` and `Sized.s` are accessors because Bend has no projections.
+# A COUNT AND THE LIST IT COUNTS, as one value: Bend SPENDS a list when it reads
+# it, so a fold step carrying both needs a Data record. `Sized.n` and `Sized.s`
+# are accessors because Bend has no projections.
 type Sized is Data:
   Sized{n: Nat, s: List<&2, O.Sint>}
 
@@ -232,9 +222,8 @@ def Sized.s(x: Sized) -> List<&2, O.Sint>:
   match x:
     case Sized{n, s}: s
 
-# The list comes back REVERSED and `List.reverse` puts it right, because a self-call
-# that returns the list it consumed has to rebuild it -- and Bend spends a list. This
-# is the O(n) the header already names, paid once more per count.
+# A self-call that returns the list it consumed has to rebuild it -- and Bend
+# spends a list -- so the list comes back REVERSED and `List.reverse` puts it right.
 def sized.go(s: List<&2, O.Sint>, n: Nat, rev: List<&2, O.Sint>) -> Sized:
   match s:
     case Nil{}: Sized{n, List.reverse(&2, O.Sint, rev)}
@@ -249,16 +238,12 @@ def ones.go(+n: Nat, acc: List<&2, O.Sint>) -> List<&2, O.Sint>:
     case 0n: acc
     case 1n+p: ones.go(p, List.append(&2, O.Sint, acc, [sint_one()]))
 
-# `(1,)*(max_dim-len(s))+s`, and the answer is a `Sized` again because the walk that
-# pads hands a length to the next one.
+# `(1,)*(max_dim-len(s))+s`, and a `Sized` again because the walk hands a length on
 def pad_to(+x: Sized, +m: Nat) -> Sized:
   sized(List.append(&2, O.Sint, ones.go(Nat.sub(m, Sized.n(x)), Nil{}), Sized.s(x)))
 
 # THE SHAPES AND THE LONGEST OF THEM, as one value, for the same reason `Sized` is
-# one value: `_align_left` is `max(len(s) for s in shapes)` and then one padding per
-# shape, and a separate pass for the max would be a second read of the same list --
-# which Bend does not allow. So the walk that collects the shapes is the walk that
-# measures them.
+# one value, so the walk that collects the shapes is the walk that measures them.
 type Shapes is Data:
   Shapes{ds: List<&2, Sized>, m: Nat}
 
@@ -303,8 +288,9 @@ def param_shape.of(arg: O.Arg) -> List<&2, O.Sint>:
 def param_shape(arg: O.Arg) -> List<&2, O.Sint>:
   param_shape.of(arg)
 
-# `SInt` equality. A `SU` is an arena index, so the comparison there is identity
-# -- the same identity `UOp.__eq__` has.
+# `SInt` equality. A `SU` is an arena index, so the comparison there is the
+# identity `UOp.__eq__` has: UOps are hash-consed, so structurally identical UOps
+# are the same object and equality can be identity.
 def eq_sint(+x: O.Sint, y: O.Sint) -> Bool:
   match x:
     case O.SI{i}:
@@ -317,9 +303,7 @@ def eq_sint(+x: O.Sint, y: O.Sint) -> Bool:
         case _: False{}
 
 # is_image_shape -- helpers.py:37, `shape is not None and len(shape) == 3 and
-# shape[-1] == 4`. helpers.bend's `is_image_shape` takes the PARSER's `Nest`,
-# because that is what its callers have; this one takes the resolved dims, and the
-# three clauses are the same three.
+# shape[-1] == 4`, over the resolved dims rather than helpers.bend's `Nest`.
 def is_image_shape.four(last: Maybe<&2, O.Sint>) -> Bool:
   match last:
     case Some{d}: eq_sint(d, sint_one())
@@ -345,12 +329,9 @@ def eq_sints(xs: List<&2, O.Sint>, ys: List<&2, O.Sint>) -> Bool:
     case Nil{} _ <> _: False{}
     case _ <> _ Nil{}: False{}
 
-# `xs[n:]` and `xs[:n]`. `List.take` and `List.drop` are base's and are this same
-# countdown, so these are the names the arms read.
+# `xs[n:]` and `xs[:n]` -- `List.drop` and `List.take`
 def take_n(xs: List<&2, O.Sint>, +n: Nat) -> List<&2, O.Sint>:
   List.take(&2, O.Sint, xs, n)
-
-# `xs[:-1]`, the `a.shape[:-1]` of WMMA's `wmma_b`
 
 # `a.shape[:-1]`, and a `Sized` because WMMA's operands feed the same broadcast walk
 # that `_align_left` feeds.
@@ -430,8 +411,7 @@ def bcast_dim.rest(+x: O.Sint, t: List<&2, O.Sint>) -> Maybe<&2, O.Sint>:
     case y <> _: some_if(&2, O.Sint, eq_sint(x, y), x)
 
 # `ret.append(rest[0] if rest else 1)`, and `len(rest) > 1` is the IndexError. A
-# PAIR is all this needs -- two kept sizes disagree exactly when they are unequal --
-# so a two-element list needs no dedup pass.
+# PAIR is all this needs -- two kept sizes disagree exactly when they are unequal.
 def bcast_dim.pair(ks: List<&2, O.Sint>) -> Maybe<&2, O.Sint>:
   match ks:
     case Nil{}: Some{sint_one()}
@@ -439,7 +419,7 @@ def bcast_dim.pair(ks: List<&2, O.Sint>) -> Maybe<&2, O.Sint>:
 
 # `num_axes` is a `U32` count, so the `< 0` test cannot fail
 
-# and its list cousin, `if ok then acc+[x] else acc`
+# the `if ok then acc+[x] else acc` of this file, hoisted
 def add_if(a, -A: Kind(a), ok: Bool, x: A, acc: List<a, A>) -> List<a, A>:
   match ok:
     case True{}: List.append(a, A, acc, [x])
@@ -462,9 +442,7 @@ def bcast.pair.of(xs: List<&2, O.Sint>, ys: List<&2, O.Sint>, acc: List<&2, O.Si
       Maybe.bind(&2, O.Sint, List<&2, O.Sint>, bcast_dim(x, y),
         dx => bcast.pair.of(xt, yt, List.append(&2, O.Sint, acc, [dx])))
 
-# the zip's two lists, with the right-aligned shape split out of its `Sized`. `xs` is
-# the first parameter because the decrease check reads a self-call's arguments left
-# to right and stops at the first that shrinks.
+# the zip's two lists, with the right-aligned shape split out of its `Sized`
 def bcast.pair(xs: List<&2, O.Sint>, y: Sized, acc: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
   bcast.pair.of(xs, Sized.s(y), acc)
 
@@ -479,12 +457,9 @@ def bcast.go(als: List<&2, Sized>, acc: List<&2, O.Sint>) -> Maybe<&2, List<&2, 
 # the next right-aligned shape walks the dims from the left, which is what `zip`
 # does. `_align_left` made every shape the same length, so the walk ends together --
 # and `zip` truncates at the shorter one anyway, which is what the two ragged arms
-# say. A two-list match has to name all four Nil/con pairs, so the raggedness is
-# written rather than asserted away.
-# `zip` needs a first column, and the accumulator IS that column: the first shape
-# seeds it and every later shape extends it. Doing it the other way round -- pairing
-# the empty accumulator with the first shape -- drops the first shape, which is a
-# broadcast that silently answers the wrong dims.
+# say. The accumulator IS the first column: the first shape seeds it and every later
+# shape extends it, and pairing the empty accumulator with the first shape instead
+# would drop that shape, which is a broadcast that answers the wrong dims.
 def bcast.first(als: List<&2, Sized>) -> Maybe<&2, List<&2, O.Sint>>:
   match als:
     case Nil{}: None{}
@@ -505,17 +480,10 @@ def Kahn.seed.keep(deg: U32, k: U32, acc: List<&2, U32>) -> List<&2, U32>:
 #
 # `all_same(shapes): return shapes[0]` is not a fifth rule: right-aligning a set of
 # equal shapes and taking the per-dim maximum IS that shape. The IndexError is the
-# `None` this reports by not answering, as every other `raise` in the two ladders
-# is.
-
-
-# `all_same(())` is True and `shapes[0]` is an IndexError, so an empty shape list
-# is a conflict. `_shape`'s Broadcastable arm is the caller that can reach it, on a
-# zero-operand op.
-# `_broadcast_shape(*input_shapes)`. It takes the Maybe `all_shapes` returns, so the
-# `assert len(self.src) > 0 and all(x is not None for x in input_shapes)` and the
-# call are one value. `all_same(())` is True and `shapes[0]` is an IndexError, so an
-# empty shape list is a conflict too, and it is the same `None`.
+# `None` this reports by not answering, as every other `raise` in the two ladders is.
+# So is `all_same(())` on an empty shape list -- `shapes[0]` is then an IndexError --
+# which `_shape`'s Broadcastable arm reaches on a zero-operand op, and `None` is the
+# same `None`.
 def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:
     case None{}: None{}
@@ -527,6 +495,9 @@ def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
 # `tuple[sint, ...]|None`, `dev` its `str|tuple[str, ...]|None`, `addr` its
 # `AddrSpace|None`, `base` ops.py:785's node as an index, and `ended`
 # ops.py:470's `tuple[UOp, ...]` as a list of indices.
+#
+# A `Data` record and not six parameters because a Bend `List` is spent when read,
+# and `dt_shape` and `ended_of` both want the srcs.
 # ===========================================================================
 
 type Derived is Data:
@@ -669,9 +640,7 @@ def Derived.shape(d: Derived) -> Maybe<&2, List<&2, O.Sint>>:
 def src_shape(k: U32, ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
   Derived.shape(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
 
-# THE SRC LIST AND ITS LENGTH, the second count-and-list of this file and the same
-# rule: WHERE, INDEX, STACK and SHL/SHR read `self.src` and `self.src[1:]` more than
-# once, and `derived.put` reads the list once per property it assembles. `Srcs.tail`
+# THE SRC LIST AND ITS LENGTH, the second count-and-list of this file. `Srcs.tail`
 # is `self.src[1:]` and `Srcs.n` is `len(self.src)`, which is what INDEX's
 # `self.src[0].shape[len(self.src[1:]):]` needs without a second walk of the arena.
 type Srcs is Data:
@@ -719,8 +688,8 @@ def stack_ds.of(+x: Srcs) -> Maybe<&2, DtShape>:
 def stack_ds(ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   stack_ds.of(srcs(ss))
 
-# STACK: `if len(self.src) == 0: return dtypes.void` / `return ()`; else
-# `return promo_dtype(src)` / `return (len(self.src),) + self.src[0].shape`
+# `return self.src[0].dtype` and `return self.src[0]._shape`, which is REDUCE's
+# `return ps[num_axes:]` past the axis check
 def reduce_dims.put(+x: Sized, +n: U32) -> Maybe<&2, List<&2, O.Sint>>:
   some_if(&2, List<&2, O.Sint>, Bool.not(U32.is_gt(n, U32.from_nat(Sized.n(x)))),
     drop_n(Sized.s(x), U32.to_nat(n)))
@@ -778,9 +747,8 @@ def shapes_of.acc(m: Maybe<&2, List<&2, O.Sint>>, acc: Maybe<&2, Shapes>) -> May
 
 # The `assert` and the collection in ONE walk, because `all_shaped` and
 # `shapes_of.go` are two reads of the same list and Bend spends a list when it reads
-# it. The accumulator is a Maybe, and a self-call may not match on a parameter it
-# also rebuilds, so the step is a def: two scrutinees, both parameters, and the
-# three cases a Maybe-squared walk can be in.
+# it. The accumulator is a Maybe and the step is a def, so it is two scrutinees and
+# the three cases a Maybe-squared walk can be in.
 def shapes_of.go(ss: List<&2, Derived>, acc: Maybe<&2, Shapes>) -> Maybe<&2, Shapes>:
   match ss:
     case Nil{}: acc
@@ -794,8 +762,7 @@ def where_ds.of(+x: Srcs) -> Maybe<&2, DtShape>:
     bcast_shape(all_shapes(Srcs.ss(x))))
 
 # WHERE: `if src[0].dtype != dtypes.bool: raise RuntimeError(f"where cond must be
-# bool, got {src[0].dtype}")` then `return promo_dtype(src[1:])`; and the shape is
-# `_broadcast_shape(*input_shapes)` over ALL the srcs.
+# bool, got {src[0].dtype}")` then `return promo_dtype(src[1:])`
 def where_ds(ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   where_ds.of(srcs(ss))
 
@@ -911,10 +878,16 @@ def fold.ended.of(m: Maybe<&2, Derived>) -> Maybe<&2, List<&2, U32>>:
 # it is CLOSED, which is what makes the match total without Python's closing
 # `raise RuntimeError(f"no dtype for {op} with arg {arg}")`: the deferred arms at
 # the bottom are the only `None`s, and each says which rule it is waiting for.
+#
+# ops.py's own comments on the arms, kept: "always void", "pass through first",
+# "passthrough ops", "some ops init the shape", "late ops don't have shape",
+# "derived from the value. order matters: bool is an int subclass, ConstFloat is a
+# float subclass", and the note that CMPLT, CMPNE, CMPEQ, WHERE, SHL and SHR are
+# handled above rather than by the GroupOp fallbacks.
 # ===========================================================================
 
-# `return dtypes.void` and `return None` -- the same twelve ops in both rules, so
-# one def answers both.
+# `always void` in the dtype ladder and `late ops don't have shape` in `_shape`: the
+# same twelve ops in both rules, so one def answers both.
 def late() -> Maybe<&2, DtShape>:
   Some{DtShape{S.void(), None{}}}
 
@@ -1016,12 +989,12 @@ def index_ds.of(+ar: O.Arena, +i: U32, +x: Srcs) -> Maybe<&2, DtShape>:
 
 # INDEX: `if (b:=src[0]).op is Ops.PARAM and is_image_shape(b.shape): return
 # dtypes.float` / `return b.dtype` -- "an image access is always float, no matter
-# the storage dtype" -- and `shp:list[sint] = []` / `for s in self.src[1:]:
+# the storage dtype" (ops.py:144 asks whether there should be a CAST so
+# `src[0].dtype` just works) -- and `shp:list[sint] = []` / `for s in self.src[1:]:
 # shp.extend(list(s.shape))` / `return tuple(shp) + self.src[0].shape[len(self.src[1:]):]`
 def index_ds(ar: O.Arena, i: U32, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   index_ds.of(ar, i, srcs(ss))
 
-# `a.shape[:-1]` for each of the three operands
 # `a.shape[:-1]` for each of the three operands
 def wmma_shapes.of(sh: Shapes) -> List<&2, Sized>:
   wmma_shapes.go(Shapes.ds(sh), Nil{})
@@ -1029,9 +1002,10 @@ def wmma_shapes.of(sh: Shapes) -> List<&2, Sized>:
 def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Maybe<&2, DtShape>:
   wmma_ds.of(dt, bcast_shape(ws), last)
 
-# WMMA: "WMMA output dtype is the accumulator dtype (src[2])" and `wmma_b =
-# _broadcast_shape(self.src[0].shape[:-1], self.src[1].shape[:-1],
-# self.src[2].shape[:-1])` / `return wmma_b + (self.src[2].shape[-1],)`
+# WMMA: "wmma output shape = accumulator shape (src[2])", and the dtype is the
+# accumulator dtype. `wmma_b = _broadcast_shape(self.src[0].shape[:-1],
+# self.src[1].shape[:-1], self.src[2].shape[:-1])` / `return wmma_b +
+# (self.src[2].shape[-1],)`
 def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
 
@@ -1041,9 +1015,8 @@ def num_axes(arg: O.Arg) -> U32:
     case _: 0
 
 # REDUCE: in `GroupOp.Movement.union({Ops.UNSHARD, Ops.REDUCE})` the dtype is the
-# movement pass-through, and `case Ops.REDUCE: num_axes = self.arg[1]` then `if not
-# isinstance(num_axes, int) or num_axes < 0 or num_axes > len(ps): raise ValueError
-# (f"invalid type for axis: {num_axes}")` then `return ps[num_axes:]`.
+# movement pass-through, and `case Ops.REDUCE: num_axes = self.arg[1]` then the axis
+# check then `return ps[num_axes:]`
 def reduce_ds(arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   reduce_ds.go(src_dt(0, ss), reduce_dims(ss, num_axes(arg)))
 
@@ -1063,8 +1036,7 @@ def cconst_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
 # return dtypes.bool  # Invalid is always bool, the promo lattice bottom` / `if
 # isinstance(arg, bool): return dtypes.bool` / `if isinstance(arg, int): return
 # dtypes.weakint` / `if isinstance(arg, float): return dtypes.weakfloat` / `raise
-# TypeError(...)` -- and `case Ops.CONST: return ()`. ORDER MATTERS: bool is an int
-# subclass and ConstFloat is a float subclass.
+# TypeError(...)` -- and `case Ops.CONST: return ()`.
 def const_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   const_ds.pick(cconst_dt(arg))
 
@@ -1094,8 +1066,7 @@ def msel_dev.pick(d: Maybe<&2, S.Dev>, k: U32) -> Maybe<&2, S.Dev>:
     case _: None{}
 
 # `assert isinstance(self.src[0].device, tuple), f"mselect must be on tuple device,
-# getting {self.src[0].device}"` then `return self.src[0].device[self.arg]`. A `D1`
-# is not a tuple, so the assert is the `None` arm.
+# getting {self.src[0].device}"` then `return self.src[0].device[self.arg]`
 def device_of.msel(d: Maybe<&2, S.Dev>, arg: O.Arg) -> Maybe<&2, S.Dev>:
   match arg:
     case O.ATuple{ys}:
@@ -1109,24 +1080,20 @@ def mstack_dev.tag.of(acc: Maybe<&2, List<&2, U32>>, tag: U32) -> Maybe<&2, List
     case Some{ts}: Some{List.append(&2, U32, ts, [tag])}
     case None{}: None{}
 
-# One operand of the tuple: `cast(str, x.device)` waves a tuple device through, and
-# `S.Dn` is the tags in operand order, so a `D1` is the only operand a tuple of
+# One operand of the tuple: `cast(str, x.device)` waves a tuple device through, so
+# `S.Dn` is the tags in operand order and a `D1` is the only operand a tuple of
 # names can be built from. A `None` device is a refused operand.
 def mstack_dev.acc.of(acc: Maybe<&2, List<&2, U32>>, dv: Maybe<&2, S.Dev>) -> Maybe<&2, List<&2, U32>>:
   match dv:
     case Some{S.D1{tag}}: mstack_dev.tag.of(acc, tag)
     case _: None{}
 
-# All four states of (the tags so far, this operand's device), written out because a
-# two-Maybe match cannot lean on a wildcard: `None` anywhere is a refused operand, and
-# `S.D1` is the only device a tuple of names can be built from.
+# all four states of (the tags so far, this operand's device), written out
 def mstack_dev.acc(d: Derived, acc: Maybe<&2, List<&2, U32>>) -> Maybe<&2, List<&2, U32>>:
   mstack_dev.acc.of(acc, Derived.dev(d))
 
 # `return tuple(cast(str, x.device) for x in self.src)`. `S.Dn` is that tuple of
-# names, so it is the operand tags in order; an operand with no device, or with a
-# tuple device, is what `cast` waves through and what no reader of a tuple device
-# can use, so the answer is None.
+# names, so it is the operand tags in order, and an operand with no device is None.
 def mstack_dev.go(ss: List<&2, Derived>, acc: Maybe<&2, List<&2, U32>>) -> Maybe<&2, List<&2, U32>>:
   match ss:
     case Nil{}: acc
@@ -1141,7 +1108,8 @@ def mstack_dev(ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   mstack_dev.put(mstack_dev.go(ss, Some{Nil{}}))
 
 # ===========================================================================
-# `UOp.device` -- ops.py:890. Its own `match op` because Python's is.
+# `UOp.device` -- ops.py:890. Its own `match op` because Python's is. ops.py's own
+# comments, kept: "mselect must be on tuple device".
 # ===========================================================================
 
 def device_of(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
@@ -1168,8 +1136,7 @@ def addrspace_of.param(arg: O.Arg) -> Maybe<&2, S.Addr>:
     case _: None{}
 
 # `ad = [x.addrspace for x in self.src if x.addrspace is not None]` / `if not
-# len(ad) or not all_same(ad): return None` / `return ad[0]`. The fold is the head
-# plus a Bool: an empty list leaves the head at None, and a disagreement clears it.
+# len(ad) or not all_same(ad): return None` / `return ad[0]`
 type Uniq is Data:
   Uniq{ad: Maybe<&2, S.Addr>, ok: Bool}
 
@@ -1218,6 +1185,8 @@ def addrspace_of.rest(+op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
 
 # ===========================================================================
 # `UOp.addrspace` -- ops.py:910. Its own `match op`, and the two group tests.
+# ops.py's own comments, kept: "LOAD brings things into the ALU" and the
+# `ad`/`all_same` rejection spelled out above.
 # ===========================================================================
 
 def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
@@ -1262,7 +1231,6 @@ def base_of.steps(+op: O.Op) -> Bool:
 # `self.src[0].base` for a movement op or for DETACH ("DETACH can't change base")
 # and `self` otherwise, so the fold carries the INDEX rather than the walk: a
 # node's base is a node before it, so the src's base is already in the table.
-# `is_invalid` then reads one node and no table at all.
 # ===========================================================================
 
 def base_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
@@ -1286,7 +1254,8 @@ def is_invalid.go(op: O.Op, arg: O.Arg) -> Bool:
 def is_invalid.of(op: O.Op, arg: O.Arg) -> Bool:
   is_invalid.go(op, arg)
 
-# `self.op is Ops.CONST and self.val is Invalid`
+# `self.op is Ops.CONST and self.val is Invalid`, on the node's OWN arg, so this
+# reader is total where `sp_base` in spec.bend is not
 def is_invalid(+ar: O.Arena, +u: U32) -> Bool:
   is_invalid.of(O.Arena.op(ar, u), O.Arena.arg(ar, u))
 
@@ -1295,7 +1264,7 @@ def unary_dt(ar: O.Arena, +ss: List<&2, Derived>) -> S.Dt:
 
 # SIN | LOG2 | EXP2 | SQRT | RECIPROCAL: `return dtypes.bool if
 # src[0].base.is_invalid else least_upper_float(src[0].dtype)`, and `_shape`'s
-# `GroupOp.Unary` arm `return self.src[0]._shape`.
+# `GroupOp.Unary.union({Ops.CAST})` arm `return self.src[0]._shape`
 def unary_ds(ar: O.Arena, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(unary_dt(ar, ss), src_shape(0, ss))
 
@@ -1313,19 +1282,19 @@ def all_int_or_invalid(ar: O.Arena, ss: List<&2, Derived>) -> Bool:
 def shift_ds.of(ar: O.Arena, +x: Srcs) -> Maybe<&2, DtShape>:
   dt_of_if(all_int_or_invalid(ar, Srcs.ss(x)), src_dt(0, Srcs.ss(x)), bcast_shape(all_shapes(Srcs.ss(x))))
 
-# SHL | SHR: `if not all(dtypes.is_int(x.dtype) or x.base.is_invalid for x in src):
-# raise RuntimeError(f"shift operands must be int, got {[x.dtype for x in src]}")`
-# then `return src[0].dtype`; the shape is the Broadcastable arm.
+# SHL | SHR: the int check, then `return src[0].dtype`; the shape is the
+# Broadcastable arm.
 def shift_ds(ar: O.Arena, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   shift_ds.of(ar, srcs(ss))
 
 # ===========================================================================
-# THE LADDER. Every op, grouped by the rule it uses.
+# THE LADDER. `dtype_from_uop` (ops.py:124) and `UOp._shape` (ops.py:329), together:
+# here are the dtype production rules, total over all Ops, grouped by the RULE each
+# arm uses. See the block above for ops.py's own comments on the arms.
 # ===========================================================================
 
 def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match op:
-    # the two rules that need an op-specific arm
     case O.OpsBUFFER{}: param_ds(arg)
     case O.OpsALLOC{}: param_ds(arg)
     case O.OpsPARAM{}: param_ds(arg)
@@ -1342,11 +1311,11 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsREDUCE{}: reduce_ds(arg, ss)
     case O.OpsGETADDR{}: addr_ds()
 
-    # RANGE | SPECIAL: `return src[0].dtype` then `return ()`
+    # RANGE | SPECIAL: pass through first, then `return ()`
     case O.OpsRANGE{}: rlike(ss)
     case O.OpsSPECIAL{}: rlike(ss)
 
-    # `return dtypes.void` and `return None`: the same twelve ops in both ladders
+    # always void, and late ops don't have shape: the same twelve ops in both ladders
     case O.OpsREWRITE_ERROR{}: late()
     case O.OpsPROGRAM{}: late()
     case O.OpsLINEAR{}: late()
@@ -1360,7 +1329,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsCUSTOM_FUNCTION{}: late()
     case O.OpsPYLITERAL{}: late()
 
-    # `return src[0].dtype` then `return self.src[0]._shape`
+    # pass through first, then the passthrough ops' `return self.src[0]._shape`
     case O.OpsLOAD{}: thru0(ss)
     case O.OpsAFTER{}: thru0(ss)
     case O.OpsEND{}: thru0(ss)
@@ -1375,14 +1344,15 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # `always void` in the dtype ladder, passthrough in `_shape`
     case O.OpsSTORE{}: store_ds(ss)
 
-    # `dtypes.bool if src[0].base.is_invalid else least_upper_float(src[0].dtype)`
+    # `return dtypes.bool if src[0].base.is_invalid else least_upper_float(src[0].dtype)`
     case O.OpsEXP2{}: unary_ds(ar, ss)
     case O.OpsLOG2{}: unary_ds(ar, ss)
     case O.OpsSIN{}: unary_ds(ar, ss)
     case O.OpsSQRT{}: unary_ds(ar, ss)
     case O.OpsRECIPROCAL{}: unary_ds(ar, ss)
 
-    # `return dtypes.bool` then the Broadcastable shape arm
+    # `return dtypes.bool`, then the Broadcastable arm. NOTE: CMPLT, CMPNE, CMPEQ,
+# WHERE, SHL and SHR are handled here rather than by the GroupOp fallbacks.
     case O.OpsCMPLT{}: alu_ds(S.boolean(), ss)
     case O.OpsCMPNE{}: alu_ds(S.boolean(), ss)
     case O.OpsCMPEQ{}: alu_ds(S.boolean(), ss)
@@ -1397,7 +1367,8 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsWHERE{}: where_ds(ss)
 
     # `if op in GroupOp.Broadcastable: return promo_dtype(src)` and the
-    # Broadcastable shape arm
+    # Broadcastable shape arm: "elementwise ops keep the shape the same. all inputs
+    # with shape must match"
     case O.OpsADD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsMUL{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsCDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
@@ -1413,9 +1384,13 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsMULACC{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
 
     # THE DEFERRED OPS. Each is an arm `dtype_from_uop` or `_shape` reaches through
-    # a rule this file does not port, so the fold does not answer the node. The list
-    # is closed: every other op has an arm above, which is what makes the match
-    # total without Python's closing `raise RuntimeError`.
+    # a rule this file does not port, so the fold does not answer the node. ops.py
+    # has three such comments here: "special (terrible) case for RESHAPE on NOOP",
+    # "movement ops change the shape. NOTE: ssimplify is required because the shape
+    # needs to be canonical for broadcasting and same shape checking", and "UNSHARD
+    # marker has no shape". The list is closed: every other op has an arm above,
+    # which is what makes the match total without Python's closing `raise
+    # RuntimeError(f"no dtype for {op} with arg {arg}")`.
     case O.OpsCUSTOM{}: None{}        # `arg[1]`, and the arena's CUSTOM arg is a str
     case O.OpsCUSTOMI{}: None{}       #   (ops.bend's `Arg`), not the `(str, DType)`
     case O.OpsSTAGE{}: None{}         #   pair. P3: that is a change to `Arg`.
@@ -1519,18 +1494,15 @@ def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2,
 #   * `work` is the worklist: the nodes whose count has reached zero.
 #   * `out` is the resolved table, in resolution order: a node index and its pair.
 #
-# THE FUEL IS FIRST, and that is not a budget to tune. The decrease check reads a
-# recursive call's arguments left to right and stops at the first that shrinks, so
-# a shrinking first argument leaves every later one free -- which is what lets the
-# worklist be a list tail passed unchanged while the accumulator is rebuilt. The
-# bound is EXACT: every node is pushed once for having no srcs and once per edge
-# into it, so `n + edges` pops always suffice, and `Kahn.budget` computes it.
+# The bound is EXACT, not a budget to tune: every node is pushed once for having no
+# srcs and once per edge into it, so `Arena.next(ar) + edges` pops always suffice and
+# `Kahn.budget` computes it.
 #
 # A NODE MAY BE QUEUED TWICE, when it is a src of the same node twice (`ADD(x, x)`
 # counts two edges and so decrements twice), and it is pushed again after it is
-# already resolved. `Kahn.step`'s `Kahn.get` is the visited set, which is what
-# makes the worklist a multiset safely. The pending count cannot underflow for the
-# same reason: it starts at `nsrc` and is decremented once per edge.
+# already resolved. `Kahn.step`'s `Kahn.get` is the visited set, which is what makes
+# the worklist a multiset safely. The pending count cannot underflow for the same
+# reason: it starts at `nsrc` and is decremented once per edge.
 # ===========================================================================
 
 type Kahn is Data:
@@ -1540,13 +1512,10 @@ type Kahn is Data:
 type Resolved is Data:
   Resolved{i: U32, d: Derived}
 
-# THE TABLE AS A `Data` VALUE, and this is not a convenience wrapper. The fold reads
-# the table once per SRC of every node it answers, and Bend SPENDS a list when it
-# reads it, so a bare `List` cannot be the store: two reads of the same table is
-# already a type error, and the fold does nothing but read it. A `Data` record is
-# Bend's only way to share a value, so the table is one and `Table.es` hands the list
-# out. The read is a walk, so each read is O(n) and the whole fold is O(n^2) -- the
-# cost the header already names, and it is paid here rather than hidden.
+# THE TABLE AS A `Data` VALUE. The fold reads the table once per SRC of every node
+# it answers, and Bend SPENDS a list when it reads it, so a bare `List` cannot be the
+# store: two reads of the same table is already a type error. `Table.es` hands the
+# list out.
 type Table is Data:
   Table{es: List<&2, Resolved>}
 
@@ -1656,12 +1625,9 @@ def Kahn.reached(+k: Kahn, +s: U32) -> Kahn:
   Kahn.reached.of(Kahn.zero(List.get(&2, U32, Kahn.pend(k), U32.to_nat(s))), k, s)
 
 # how many TIMES `u` is named by `srcs`, which is the edge count the walk below
-# needs. NOT a membership test: a node that names the same src twice has two edges
-# into it -- `UOp.backedge` builds `src=(self, loop, cond)`, and `g_cycle` passes
-# `self` and `cond` the same node -- so a Bool loses the second edge, the consumer's
-# count never reaches zero, and the consumer is never answered. That is a fold that
-# terminates and is silently incomplete, and `Kahn.budget` counts edges, so the fuel
-# would have been exact for a walk that stopped short.
+# needs. NOT a membership test: `UOp.backedge` builds `src=(self, loop, cond)` and
+# `g_cycle` passes `self` and `cond` the same node, so that node has TWO edges into
+# it and a Bool loses the second.
 def Kahn.src_count.add(same: Bool, n: U32) -> U32:
   match same:
     case True{}: U32.add(n, 1)
@@ -1728,11 +1694,8 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 #                     and the fold still terminates and says so by leaving it out.
 # ===========================================================================
 
-# THE FOLDED ARENA AND ITS TABLE, as one `Data` value, and the reason is the same
-# `Data` rule as `Sized` and `Srcs`: every claim below reads the table two or three
-# times, and Bend spends a list. This is the GATE's problem and not the fold's --
-# each `UOp.*` reader below still takes the bare list, and `Folded.t` hands it out
-# fresh every time.
+# THE FOLDED ARENA AND ITS TABLE, as one `Data` value, for the same `Data` rule as
+# `Sized` and `Srcs`: every claim below reads the table two or three times.
 type Folded is Data:
   Folded{ar: O.Arena, tb: Table}
 
@@ -1831,12 +1794,9 @@ def g_gap() -> O.Found:
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 
-# ONE DECREMENT PER OCCURRENCE, one turn each, because the count and the push both
-# change the same `Kahn`. `c` is a `Nat` and not the `U32` `Kahn.src_count` returns
-# because the descent check needs the SMALLER COUNT AS A BINDER, and `1n+p` is the
-# only pattern that hands one out: `U32.sub(c, 1)` is a computed value and
-# `expected : a decreasing self-call (arguments are read left to right: each passed
-# unchanged until one shrinks)`.
+# ONE DECREMENT PER OCCURRENCE, one turn each. `c` is a `Nat` because the descent
+# check needs the SMALLER COUNT AS A BINDER, and `1n+p` is the only pattern that
+# hands one out.
 def Kahn.consumers.times(c: Nat, +v: U32, +k: Kahn) -> Kahn:
   match c:
     case 0n: k
@@ -1846,10 +1806,7 @@ def Kahn.consumers.times(c: Nat, +v: U32, +k: Kahn) -> Kahn:
 def Kahn.consumers.step(nd: O.Node, +u: U32, +v: U32, +k: Kahn) -> Kahn:
   Kahn.consumers.times(U32.to_nat(Kahn.src_count(nd, u)), v, k)
 
-# ONE self-call, so the edge count is a MATCH ARM rather than a second def: two defs
-# here would be mutual recursion, which Bend refuses. `ns` is the first parameter
-# because the decrease check reads a self-call's arguments left to right and stops at
-# the first that shrinks.
+# ONE self-call, so the edge count is a MATCH ARM rather than a second def
 def Kahn.consumers.go(ns: List<&2, O.Node>, +u: U32, +v: U32, +k: Kahn) -> Kahn:
   match ns:
     case Nil{}: k
@@ -1858,15 +1815,9 @@ def Kahn.consumers.go(ns: List<&2, O.Node>, +u: U32, +v: U32, +k: Kahn) -> Kahn:
 # THE EDGES OUT OF THE NODE JUST ANSWERED, which is what Kahn's algorithm actually
 # decrements, and which a forward arena does not store: `Kahn.consumers` is the walk
 # that finds the nodes naming `u` as a src. One O(n) pass over the node list per
-# answered node -- the same order as the O(n) table read the fold already pays, and
-# the price of not building a transpose. `v` is the position in that list, which is
-# the node's index, because `Kahn.seed.pend` counts down the same list.
-#
-# THE DIRECTION MATTERS and getting it backwards is silent: Kahn lowers the count of
-# a node's SUCCESSORS, not of its srcs. Releasing a node's own srcs would leave
-# every node whose src is the arena's bottom unanswered, because nothing ever
-# lowers THEIR counts. That is a fold that terminates, answers one node and is wrong
-# about the rest, which is the worst shape of bug there is.
+# answered node, the price of not building a transpose. `v` is the position in that
+# list, which is the node's index, because `Kahn.seed.pend` counts down the same
+# list.
 def Kahn.consumers(+ar: O.Arena, +u: U32, +k: Kahn) -> Kahn:
   Kahn.consumers.go(O.Arena.nodes(ar), u, 0, k)
 
@@ -1893,9 +1844,7 @@ def Kahn.get.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> May
 
 # THE TABLE LOOKUP, which is an O(n) SEARCH because the table is a `List` AND is in
 # RESOLUTION order rather than index order -- so `List.get(out, i)` would read the
-# wrong entry, and this walk is what replaces it. The result's `&2` is not a claim
-# about the lookup: the accumulator is threaded, so the answer is stored as often as
-# the table is long.
+# wrong entry, and this walk is what replaces it.
 def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
   Kahn.get.go(i, Table.es(tb), None{})
 
@@ -1907,8 +1856,7 @@ def fold.ended(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, List<&2, U32>>:
   fold.ended.of(Kahn.get(i, tb))
 
 # `ended_ranges` on a BACKEDGE is `src[1:2]`, so the one range it holds is `src[1]`
-# and NOT `src[0]` -- and the two are the SPECIAL and the RANGE here, so the check is
-# a wrong answer can make: `src[0]` fails on the index and on the axis alike.
+# and NOT `src[0]`, and here the two are the SPECIAL and the RANGE
 def ended_is.go(m: Maybe<&2, List<&2, U32>>, want: U32) -> Bool:
   match m:
     case Some{w <> Nil{}}: U32.is_eq(w, want)
@@ -1956,8 +1904,7 @@ def dt_is(+x: Folded, i: U32, want: S.Dt) -> Bool:
 # THE READERS. `UOp.dtype(ar, t, i)` and the rest: a table read, so each is a
 # `Maybe` from an index. There is no `UOp.dtype(ar, i)` here, and there cannot be
 # one: answering a single node IS the fold, because the fold is what makes the
-# answer well-founded. That is the whole difference from Python's
-# `recursive_property`, and it is why these take the table.
+# answer well-founded. ops.py spells that `recursive_property` (ops.py:218).
 # ===========================================================================
 
 def UOp.dtype(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, S.Dt>:
@@ -1965,16 +1912,10 @@ def UOp.dtype(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, S.Dt>:
 
 # `self.src`, read back out of the RESOLVED TABLE by index. A src the fold has not
 # answered makes the consumer unanswerable, which is the same one-directional rule
-# as the worklist itself.
-#
-# "has every src been answered" is a THREADED `ok` and not an early `None{}`, which
-# is the only way to keep the walk a single self-call: `None` returned from the
-# middle of a self-call would need a def that returns to the self-call, and that is
-# mutual recursion, which Bend refuses. `Topo.step`'s threaded `visited` is the same
-# move. The cost is the one flagged in the header -- the lookup runs on every src
-# rather than stopping at the first miss -- and it is paid, not hidden.
-# ONE self-call, so the table is read once per src: the accumulator and the flag
-# travel as one `Gathered` because both need the same `Kahn.get`.
+# as the worklist itself. "has every src been answered" is a THREADED `ok` and not an
+# early `None{}`, because an early return from the middle of a self-call would need a
+# def that returns to the self-call, and that is mutual recursion. The accumulator
+# and the flag travel as one `Gathered` because both need the same `Kahn.get`.
 def Kahn.gather.step(hit: Maybe<&2, Derived>, +g: Gathered) -> Gathered:
   match hit:
     case Some{d}: Gathered{List.append(&2, Derived, Gathered.acc(g), [d]), Gathered.ok(g)}
@@ -2058,14 +1999,9 @@ def t_device_ok() -> Bool:
     addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 3), Some{S.AGlobal{}})),
     addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 5), None{}))
 
-# THE CYCLE. `g_cycle` in ops.bend is a BACKEDGE over a SPECIAL and a RANGE, which
-# is the range graph's shape: the back-edge is a MARKER, so the arena is still a
-# DAG and the fold must settle every node. It settles all five, and the fold would
-# NOT settle the BACKEDGE if the walk counted a repeated src once instead of twice
-# -- `g_cycle` passes `self` and `cond` the same node -- so this row is the
-# occurrence count of `Kahn.src_count` as much as it is the cycle.
-# `ended_ranges` is where a wrong answer would show: the BACKEDGE's is `src[1:2]`,
-# the RANGE and NOT the SPECIAL in src[0].
+# THE CYCLE. `g_cycle` in ops.bend is a BACKEDGE over a SPECIAL and a RANGE, which is
+# the range graph's shape: the back-edge is a MARKER, so the arena is still a DAG and
+# the fold must settle every node.
 def t_cycle_safe() -> Bool:
   +f = O.g_cycle()
   +x = folded(O.Found.ar(f))
@@ -2075,10 +2011,8 @@ def t_cycle_safe() -> Bool:
     Bool.and(ended_is(x, be, r), axis_at(x, r, O.AXIS_DEVICE{})))
 
 # THE DEFERRED ARM, which is the other way the fold is incomplete. A RESHAPE needs
-# `marg` and `marg` needs `ssimplify`, so the fold does not answer it -- and the
-# fold must still TERMINATE and REPORT it by leaving it out, not by spinning or by
-# answering it wrongly. Its consumer is a STORE, whose shape is src[0]'s, so the
-# STORE is unanswered too: the incompleteness propagates along the graph.
+# `marg` and `marg` needs `ssimplify`, so the fold does not answer it, and its
+# consumer STORE is unanswered too: the incompleteness propagates along the graph.
 def t_gap_ok() -> Bool:
   +x = folded(O.Found.ar(g_gap()))
   # 1 CONST(0), 2 RESHAPE (deferred), 3 STORE over it (unanswered in turn)
@@ -2098,13 +2032,15 @@ def main() -> IO(Unit):
 # `rg "TODO(p3)" tinybendygrad/uop/fold.bend` is the work queue.
 #
 # THE ONE LINE THAT COVERS MANY: `simplify` (ops.py:513) is `graph_rewrite(self,
-# symbolic)`, and `graph_rewrite` cannot be in this module. The whole point of a
-# Kahn worklist is that the fold's dependency graph is a DAG by construction, and
-# `graph_rewrite` -- whose rules call `dtype` and `shape` -- is what makes
-# tinygrad's version cyclic. So `simplify` is P3 and it is the reason the
+# symbolic)`, and `graph_rewrite`'s rules call `dtype` and `shape`, which is what
+# makes tinygrad's version cyclic. So `simplify` is P3 and it is the reason the
 # movement shapes are deferred rather than ported.
 # ===========================================================================
 # TODO(p3) ops.py: 95  def sym_infer            -- `exec` of generated source; P3/P6.
+# TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
+#   the key must separate nodes of different dtype, a CONST's dtype is the type of
+#   its arg, and True == 1 as dict keys.
+# TODO(p3) ops.py:218  class recursive_property -- PORTED as the fold itself.
 # TODO(p3) ops.py:246  def dtype                -- PORTED, as `UOp.dtype` over a table.
 # TODO(p3) ops.py:267  def key                  -- `hashlib.sha256`. Bend has no rotate
 #   and no popcount (see the constraints note, section 2), and `key` is P3 with the
@@ -2120,6 +2056,11 @@ def main() -> IO(Unit):
 #   a `List` is P3.
 # TODO(p3) ops.py:329  def _shape               -- PORTED, with `UOp.shape` over a table.
 #   Ten of its arms are deferred, in `dt_shape`, each with the rule it waits for.
+#   ops.py's own comments on the arms it DOES port, kept where they load-bear:
+#   "late ops don't have shape", "some ops init the shape", "passthrough ops",
+#   "pass through first", "always void", "special (terrible) case for RESHAPE on
+#   NOOP", "STAGE adds the existing shape to the front, opposite of INDEX", "wmma
+#   output shape = accumulator shape (src[2])", and "UNSHARD marker has no shape".
 # TODO(p3) ops.py:456  def shape                -- `if (ret:=self._shape) is None: raise`,
 #   which is `UOp.shape`'s `Maybe` with the `None` arm the error. One line, and it
 #   is not written because a `raise` is not a value here: the fold reports the
@@ -2149,12 +2090,15 @@ def main() -> IO(Unit):
 # TODO(p3) ops.py:718  def axis                 -- `self.arg` for a movement op, so it is
 #   `marg`-shaped and P3 with `marg`.
 # TODO(p3) ops.py:785  def base                 -- PORTED, as `UOp.base` over the table.
+# TODO(p3) ops.py:790  def unsharded_base        -- `base` plus UNSHARD, one more arm on
+#   `base_of.steps`. P3 with `storage_base`.
 # TODO(p3) ops.py:801  def storage_base         -- `base` with UNSHARD, BITCAST and
 #   AFTER stripped: a `while` over three ops, which the fold would answer with a
 #   seventh `Derived` field. P3.
 # TODO(p3) ops.py:808  def as_shape             -- CONST and STACK only; a shape made of
 #   CONSTs is answerable and a shape made of uops needs `ssimplify`. It is
-#   `marg`'s first half.
+#   `marg`'s first half. ops.py asks why the cached property here makes
+#   external_uop_gc fail; unanswered here too.
 # TODO(p3) ops.py:814  def marg                 -- the three arms are `as_shape`,
 #   `zip(as_shape, as_shape)` and `self.arg`, and two of the three need `ssimplify`.
 #   This is the ONE missing piece behind RESHAPE, EXPAND, PAD, SHRINK, PERMUTE and
@@ -2206,3 +2150,7 @@ def main() -> IO(Unit):
 #   4. `UOp.key` (P3) needs a SHA-256 round, which needs rotate and popcount.
 #   5. `dtypes.weaks` unblocks `is_virtual` and it is free the moment dtype.bend
 #      becomes importable.
+#
+# The fold's own history, the five bugs it took to get right and the mutation table
+# that measures them, is in .agents/slop/notes/bend2-constraints.md under
+# "Writing a Kahn worklist".
