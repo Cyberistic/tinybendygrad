@@ -715,8 +715,8 @@ def i32_cmod(uns: Bool, +x: U32, +y: U32) -> U32:
 
 # `operator.rshift` is an ARITHMETIC shift for a negative int and Bend's two
 # shifts are both logical, so the sign bits come back in -- `helpers.bend`'s
-# `asr`. Past 31 both halves are 0, so a count of 32 or more answers 0 exactly as
-# Python's does for a small x.
+# `asr`, which clamps the count at 31: past 31 the answer is 4294967295 for a
+# negative value and 0 otherwise, exactly what Python's unbounded `>>` gives.
 def i32_shr(uns: Bool, +x: U32, +n: U32) -> U32:
   Bool.pick(U32, uns, U32.shrn(x, U32.to_nat(n)), H.asr(x, U32.to_nat(n)))
 
@@ -2339,7 +2339,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
-def main() -> IO(Unit):
+def fz.gate() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("lay", t_lay())
     b : Unit <- row("len_sym", t_len_sym())
@@ -2371,3 +2371,455 @@ def main() -> IO(Unit):
     row("xorb0", t_xorb0())
     row("bcast", t_bcast())
     row("promo", t_promo())
+
+# ===========================================================================
+# THE FUZZ DRIVER. `main` with NO argument is the gate above, byte for byte;
+# with ONE argument it reads that case file, builds the arena out of the s-expr
+# the case format IS, runs `sym` and `pm_remove_invalid` over the root, and
+# prints ONE canonical line. The case format and the canonical form are the SAME
+# s-expr, so the oracle and the driver can both print `sh(u)` and diff.
+#
+# THE FORMAT, and the leaves are the whole vocabulary:
+#   (add c7 c0)             an ALU over two weakint CONSTs
+#   (cast:int c7)           a CAST naming its dtype after a colon
+#   (xor (xor c5 c7) c7)    a name bound twice, which is the rebind check
+#   c7 c0 n7 bt bf bad      a CONST: non-negative, negative, bool true, bool
+#                           false, and `Invalid`
+#   x xb xf xi              a PARAM (`UOp.variable`) at weakint, bool, weakfloat
+#                           and int32
+# Anything the port cannot state is NOT in the vocabulary, and the exclusions are
+# in the harness rather than discovered: no float CONST (`F32.bits` has no
+# inverse, so a canonical float spelling is not expressible), no CONST outside
+# int32 (`exec_alu`'s integer lane is int32, and its value is an I64), and no
+# op behind `vmin`/`vmax`/`const_factor`/`tuplize`/`gcd`/`ranges`, all of which
+# are `TODO(p3)` in the block above.
+#
+# WHY THE SCAN IS ONE DEF WITH A MODE. `Bend 2.0.34` cannot match a CALL's
+# result, and a `def` may only call defs ABOVE it, so a token scan that has to
+# dispatch on the class of the character it is looking at cannot be two mutually
+# recursive defs. It is one def, `m` selects "at a boundary" from "inside a
+# word", `wm` says WHICH word, and every edge spends a Nat of fuel.
+# ===========================================================================
+type Tok is Data:
+  TClose{}
+  THead{w: String}
+  TLeaf{w: String}
+
+type Frm is Data:
+  Frm{srcs: List<&2, U32>, head: String}
+
+type St is Data:
+  St{ar: O.Arena, stk: List<&2, Frm>, root: Maybe<&2, U32>}
+
+def fz_code(s: String) -> U32:
+  match s:
+    case SNil{}: 0
+    case SCon{Chr{c}, t}: c
+
+def fz_hs(s: String) -> String:
+  match s:
+    case SNil{}: ""
+    case SCon{Chr{c}, t}: String.from_list([Char.from_u32(c)])
+
+# 0 is the end of the line, 1 is `)`, 2 is `(`, 3 is a space, 4 is a word char.
+def fz_cls.pick(cu: U32) -> U32:
+  match cu:
+    case 41: 1
+    case 40: 2
+    case 32: 3
+    case 9: 3
+    case 10: 3
+    case 13: 3
+    case _: 4
+
+def fz_cls.of(s: String, cu: U32) -> U32:
+  match s:
+    case SNil{}: 0
+    case SCon{Chr{c}, t}: fz_cls.pick(cu)
+
+def fz_cls(+s: String) -> U32: fz_cls.of(s, fz_code(s))
+
+def fz_tok.tok(w: String, wm: U32) -> Tok:
+  match wm:
+    case 2: THead{w}
+    case _: TLeaf{w}
+
+# A word is emitted the moment its terminator arrives, and a `)` terminates a
+# word AND closes a node, so on a `)` the two tokens go out together. That is
+# what lets every edge below shrink `s`, which is what the fuel buys.
+def fz_tok(n: Nat, md: U32, +s: String, acc: List<&2, Tok>, w: String, k: U32) -> List<&2, Tok>:
+  match n:
+    case 0n: acc
+    case 1n+p:
+      match md:
+        case 0:
+          match k:
+            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [TClose{}]), "", fz_cls(String.drop(s, 1n)))
+            case 1: fz_tok(p, 0, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
+            case 2: fz_tok(p, 0, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
+            case _: fz_tok(p, 1, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
+        case 1:
+          match k:
+            case 4: fz_tok(p, 1, String.drop(s, 1n), acc, String.concat([w, fz_hs(s)]), fz_cls(String.drop(s, 1n)))
+            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md), TClose{}]), "", fz_cls(String.drop(s, 1n)))
+            case _: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md)]), "", fz_cls(String.drop(s, 1n)))
+        case _:
+          match k:
+            case 4: fz_tok(p, 2, String.drop(s, 1n), acc, String.concat([w, fz_hs(s)]), fz_cls(String.drop(s, 1n)))
+            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md), TClose{}]), "", fz_cls(String.drop(s, 1n)))
+            case _: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md)]), "", fz_cls(String.drop(s, 1n)))
+
+def fz_toks(+s: String) -> List<&2, Tok>: fz_tok(4096n, 0, s, Nil{}, "", fz_cls(s))
+
+# ===========================================================================
+# THE VOCABULARY. A head token is the op's own `Ops.name` in lower case, so a
+# mis-parse shows in the ANSWER and not here. `ops.bend`'s `Ops.name` is the
+# render side of this table, which is why a typo cannot hide: the driver PRINTS
+# `Ops.name`, so a head it did not recognise comes back as `NOOP`.
+# ===========================================================================
+def fz_dt(nm: String) -> S.Dt:
+  match nm:
+    case "weakint": S.weakint()
+    case "bool": S.boolean()
+    case "int": S.int32()
+    case "unsigned int": S.uint32()
+    case "long": S.int64()
+    case "unsigned long": S.uint64()
+    case "float": S.single()
+    case "weakfloat": S.weakfloat()
+    case _: S.void()
+
+def fz_dtnm(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: nm
+
+def fz_part(nm: String, k: Nat) -> String:
+  Maybe.default(&2, String, List.get(&2, String, String.split(nm, Char.from_u32(58)), k), "")
+
+def fz_arg.dt.of(dt: S.Dt) -> O.Arg:
+  match dt:
+    case S.Dt{0, 0, S.CVoid{}, _}: O.ANone{}
+    case _: O.ADt{dt}
+
+def fz_arg(op: O.Op, nm: String) -> O.Arg:
+  match op:
+    case O.OpsCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
+    case O.OpsBITCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
+    case _: O.ANone{}
+
+def fz_op(nm: String) -> O.Op:
+  match nm:
+    case "noop": O.OpsNOOP{}
+    case "sink": O.OpsSINK{}
+    case "group": O.OpsGROUP{}
+    case "stack": O.OpsSTACK{}
+    case "index": O.OpsINDEX{}
+    case "load": O.OpsLOAD{}
+    case "store": O.OpsSTORE{}
+    case "where": O.OpsWHERE{}
+    case "cast": O.OpsCAST{}
+    case "bitcast": O.OpsBITCAST{}
+    case "exp2": O.OpsEXP2{}
+    case "log2": O.OpsLOG2{}
+    case "sin": O.OpsSIN{}
+    case "sqrt": O.OpsSQRT{}
+    case "reciprocal": O.OpsRECIPROCAL{}
+    case "neg": O.OpsNEG{}
+    case "trunc": O.OpsTRUNC{}
+    case "add": O.OpsADD{}
+    case "mul": O.OpsMUL{}
+    case "shl": O.OpsSHL{}
+    case "shr": O.OpsSHR{}
+    case "cdiv": O.OpsCDIV{}
+    case "max": O.OpsMAX{}
+    case "cmod": O.OpsCMOD{}
+    case "cmplt": O.OpsCMPLT{}
+    case "cmpne": O.OpsCMPNE{}
+    case "cmpeq": O.OpsCMPEQ{}
+    case "xor": O.OpsXOR{}
+    case "or": O.OpsOR{}
+    case "and": O.OpsAND{}
+    case "threefry": O.OpsTHREEFRY{}
+    case "sub": O.OpsSUB{}
+    case "fdiv": O.OpsFDIV{}
+    case "pow": O.OpsPOW{}
+    case "floordiv": O.OpsFLOORDIV{}
+    case "floormod": O.OpsFLOORMOD{}
+    case "mulacc": O.OpsMULACC{}
+    case _: O.OpsNOOP{}
+
+# ===========================================================================
+# THE BUILD. One def, and every def it calls does NOT call back, so this is a
+# fold and not a cycle. A frame is pushed on a HEAD and popped on a CLOSE, and
+# `St.root` is the finished node: a list tail cannot carry what the frame above
+# has to be handed, so the answer rides out in the state.
+# ===========================================================================
+def St.ar(s: St) -> O.Arena:
+  match s:
+    case St{ar, stk, root}: ar
+
+def St.stk(s: St) -> List<&2, Frm>:
+  match s:
+    case St{ar, stk, root}: stk
+
+def St.root(s: St) -> Maybe<&2, U32>:
+  match s:
+    case St{ar, stk, root}: root
+
+def Frm.srcs(f: Frm) -> List<&2, U32>:
+  match f:
+    case Frm{srcs, head}: srcs
+
+def Frm.head(f: Frm) -> String:
+  match f:
+    case Frm{srcs, head}: head
+
+def fz_deliver.at(t: List<&2, Frm>, +st: St, i: U32) -> St:
+  match t:
+    case +f <> u: St{St.ar(st), List.append(&2, Frm, u,
+      [Frm{List.append(&2, U32, Frm.srcs(f), [i]), Frm.head(f)}]), St.root(st)}
+    case Nil{}: St{St.ar(st), Nil{}, Some{i}}
+
+def fz_deliver(+st: St, i: U32) -> St: fz_deliver.at(St.stk(st), st, i)
+
+# A node is closed, so BUILD it and hand it to the frame above. The arena and
+# the index both come out of the one `Found`, which is why this is one def.
+def fz_close.give(+f: O.Found, u: List<&2, Frm>, r: Maybe<&2, U32>) -> St:
+  fz_deliver(St{O.Found.ar(f), u, r}, O.Found.i(f))
+
+def fz_close.new.of(+op: O.Op, ar: O.Arena, nm: String, srcs: List<&2, U32>) -> O.Found:
+  O.UOp.new(ar, op, srcs, fz_arg(op, nm), O.TNone{})
+
+def fz_close.new(ar: O.Arena, +nm: String, srcs: List<&2, U32>) -> O.Found:
+  fz_close.new.of(fz_op(fz_part(nm, 0n)), ar, nm, srcs)
+
+def fz_close.at(t: List<&2, Frm>, ar: O.Arena, r: Maybe<&2, U32>) -> St:
+  match t:
+    case +f <> u: fz_close.give(fz_close.new(ar, Frm.head(f), Frm.srcs(f)), u, r)
+    case Nil{}: St{ar, Nil{}, r}
+
+def fz_close(+st: St) -> St: fz_close.at(St.stk(st), St.ar(st), St.root(st))
+
+def fz_i64_neg(u: U32) -> H.I64: H.i64_sub(H.i64_of_hi_lo(0, 0), H.i64_of_hi_lo(0, u))
+
+def fz_num.of(m: Maybe<&2, U32>) -> U32: Maybe.default(&2, U32, m, 0)
+
+def fz_num(w: String) -> U32: fz_num.of(U32.read(w))
+
+# `c7` is a non-negative weakint CONST and `n7` a negative one. The first code
+# is `c`, and anything else with a leading letter is the negative spelling.
+def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
+  match c:
+    case 99: O.UOp.const(ar, O.CInt{H.i64_of_hi_lo(0, fz_num(String.drop(w, 1n)))})
+    case _: O.UOp.const(ar, O.CInt{fz_i64_neg(fz_num(String.drop(w, 1n)))})
+
+# `UOp.variable` -- ops.py:1013, "a Variable is a scalar ALU PARAM with a name
+# and a value range", which is the whole of the `ParamArg` this driver states.
+def fz_var(dt: S.Dt) -> O.Found:
+  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},
+    O.AParam{O.ParamArg{4294967295, dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{"v"}, S.Aalu{},
+      None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+# The four CONST spellings and the four VARIABLE dtypes. A leaf is interned into
+# the arena the state already carries, so a repeated `c7` in one case is ONE
+# node -- which is what makes `x // x` and `x // y` distinguishable at all.
+def fz_leaf.go(+ar: O.Arena, +w: String) -> O.Found:
+  match w:
+    case "bad": O.UOp.const(ar, O.CInvalid{})
+    case "bt": O.UOp.const(ar, O.CBool{True{}})
+    case "bf": O.UOp.const(ar, O.CBool{False{}})
+    case "x": fz_var(S.weakint())
+    case "xb": fz_var(S.boolean())
+    case "xf": fz_var(S.weakfloat())
+    case "xi": fz_var(S.int32())
+    case _: fz_leaf.sgn(fz_code(w), w, ar)
+
+def fz_leaf(+st: St, w: String) -> O.Found: fz_leaf.go(St.ar(st), w)
+
+def fz_build.one(t: Tok, +st: St) -> St:
+  match t:
+    case THead{w}: St{St.ar(st), List.append(&2, Frm, St.stk(st), [Frm{Nil{}, w}]), St.root(st)}
+    case TLeaf{w}: fz_close.give(fz_leaf(st, w), St.stk(st), St.root(st))
+    case TClose{}: fz_close(st)
+
+def fz_build(ts: List<&2, Tok>, +st: St) -> St:
+  match ts:
+    case Nil{}: st
+    case t <> r: fz_build(r, fz_build.one(t, st))
+
+# THE CANONICAL FORM IS THE SAME S-EXPR, and it is rendered in TWO PHASES
+# because a node's text needs its own srcs' text and that is a cycle Bend
+# refuses: `fz_jobs` flattens the arena walk into a pre-order JOB LIST and
+# `fz_emit` folds that list into text. Neither phase recurses into the other and
+# each is one def, so neither is a cycle.
+#
+# THE JOB, and `close` says which of the two texts it is: `Jz{u, False}` is
+# "(name " for the node at `u` and `Jz{0, True}` is ")". A leaf is one job too
+# -- its op is CONST or PARAM, so its "name" is the const or the variable.
+# ===========================================================================
+type Jz is Data:
+  Jz{u: U32, close: Bool}
+
+def Jz.close(j: Jz) -> Bool:
+  match j:
+    case Jz{u, close}: close
+
+def Jz.u(j: Jz) -> U32:
+  match j:
+    case Jz{u, close}: u
+
+# THE FLATTEN. `m` is 0 for "start the node at `u`" and 1 for "walk the rest of
+# the srcs of `u`", because the walk descends into a src and comes BACK, which
+# is the second half of the cycle. `w` is fuel as a LIST because each step
+# spends one unit on the descent AND one on the walk back, and a Nat would be
+# read twice.
+# THE FLATTEN. `m` is 0 for "start the node at `u`" and 1 for "walk the rest of
+# the srcs of `u`", because the walk descends into a src and comes BACK, which
+# is the second half of the cycle. `w` is fuel as a LIST because one step makes
+# TWO recursive calls -- the descent and the walk on -- and a Nat would be read
+# twice; `+rest` is what makes that legal, and the bound is 4096 srcs.
+def fz_jobs.splice(ar: O.Arena, s: U32, sub: List<Jz>, cont: List<Jz>) -> List<Jz>:
+  List.append(&1, Jz, [Jz{s, False{}}], List.append(&1, Jz, sub, List.append(&1, Jz, [Jz{0, True{}}], cont)))
+
+def fz_jobs(w: List<&2, Nat>, m: U32, +ar: O.Arena, +u: U32, t: List<&2, U32>, acc: List<Jz>) -> List<Jz>:
+  match w:
+    case Nil{}: acc
+    case a <> +rest:
+      match m:
+        case 0: fz_jobs(rest, 1, ar, u, O.Arena.srcs(ar, u), List.append(&1, Jz, acc, [Jz{u, False{}}]))
+        case _:
+          match t:
+            case Nil{}: List.append(&1, Jz, acc, [Jz{0, True{}}])
+            case +s <> r: List.append(&1, Jz, acc,
+              fz_jobs.splice(ar, s, fz_jobs(rest, 0, ar, s, Nil{}, Nil{}), fz_jobs(rest, 1, ar, u, r, Nil{})))
+
+def fz_jobs.root(ar: O.Arena, u: U32) -> List<Jz>: fz_jobs([4096n], 0, ar, u, Nil{}, Nil{})
+
+# A LEAF IS ITS OWN TEXT: a CONST is `c7`/`n7`/`bt`/`bf`/`bad` and a PARAM is
+# the variable at its dtype, and neither is a node with a name and srcs.
+def fz_render.i64.of(i: H.I64, neg: Bool) -> String:
+  match neg:
+    case True{}: String.concat(["n", U32.show(U32.sub(0, H.lo32(i)))])
+    case False{}: String.concat(["c", U32.show(H.lo32(i))])
+
+def fz_render.i64(+i: H.I64) -> String: fz_render.i64.of(i, H.i64_is_neg(i))
+
+def fz_render.cval(v: O.Const) -> String:
+  match v:
+    case O.CInvalid{}: "bad"
+    case O.CBool{b}: match b:
+      case True{}: "bt"
+      case False{}: "bf"
+    case O.CInt{i}: fz_render.i64(i)
+    case _: "?"
+
+def fz_render.const(a: O.Arg) -> String:
+  match a:
+    case O.APy{v}: fz_render.cval(v)
+    case _: "?"
+
+def fz_render.dt(d: S.Dt) -> String:
+  match d:
+    case S.Dt{0, 800, S.CWeakInt{}, _}: "x"
+    case S.Dt{0, 1, S.CBool{}, _}: "xb"
+    case S.Dt{9, 800, S.CWeakFloat{}, _}: "xf"
+    case S.Dt{5, 32, S.CSint{}, _}: "xi"
+    case _: "?"
+
+def fz_render.param(a: O.Arg) -> String:
+  match a:
+    case O.AParam{pa}: fz_render.dt(O.ParamArg.dtype(pa))
+    case _: "?"
+
+# THE OP NAME AND ITS DTYPE SUFFIX, which is `Ops.name` plus a `:` and the
+# dtype when the op's arg states one. `(cast:int c7)` and `(add c7 c0)` are the
+# two shapes, and the arg is the only difference.
+def fz_head.sfx(a: O.Arg, nm: String) -> String:
+  match a:
+    case O.ADt{dt}: String.concat([nm, ":", fz_dtnm(dt)])
+    case _: nm
+
+def fz_head.of(op: O.Op, a: O.Arg, ar: O.Arena) -> String:
+  match op:
+    case O.OpsCONST{}: fz_render.const(a)
+    case O.OpsPARAM{}: fz_render.param(a)
+    case _: fz_head.sfx(a, O.Ops.name(op))
+
+def fz_head(+ar: O.Arena, +u: U32) -> String: fz_head.of(O.Arena.op(ar, u), O.Arena.arg(ar, u), ar)
+
+# THE FOLD. One job per step, so the job list IS the fuel and there is no
+# counter. The job is destructured in the LIST pattern, so `close` is a binder
+# and the arm below is legal -- a match on `Jz.close(j)` would be a match on a
+# call, which Bend refuses.
+def fz_emit(w: List<Jz>, +ar: O.Arena, acc: String) -> String:
+  match w:
+    case Nil{}: acc
+    case Jz{u, close} <> rest:
+      match close:
+        case True{}: fz_emit(rest, ar, String.concat([acc, ")"]))
+        case False{}: fz_emit(rest, ar, String.concat([acc, "(", fz_head(ar, u), " "]))
+
+def fz_render(+ar: O.Arena, u: U32) -> String: fz_emit(fz_jobs.root(ar, u), ar, "")
+
+def fz_ans.txt(ar: O.Arena, m: Maybe<&1, U32>) -> String:
+  match m:
+    case Some{i}: fz_render(ar, i)
+    case _: "norewrite"
+
+# ONE CANONICAL LINE, and the two answers are the two TABLES: `sym` is
+# `symbolic_simple` + `pm_data_invalid` + the two group-sink rules, and `rm` is
+# `pm_remove_invalid`. Two tables means two answers, and one line means the
+# harness diffs one string.
+def fz_line(+ar: O.Arena, +u: U32) -> String:
+  String.concat(["root=", U32.show(u), " n=", U32.show(O.Arena.next(ar)), " op=", O.Ops.name(O.Arena.op(ar, u)),
+    " selfadd=", U32.show(Bool.to_u32(eq_u(sym(F.folded(ar), u), 1))),
+    " sym=", fz_ans.txt(ar, sym(F.folded(ar), u)), " rm=", fz_ans.txt(ar, pm_remove_invalid(F.folded(ar), u))])
+
+def fz_run.go(ar: O.Arena, r: Maybe<&2, U32>) -> String:
+  match r:
+    case Some{u}: fz_line(ar, u)
+    case _: "parse-error"
+
+def fz_run.at(+st: St) -> String: fz_run.go(St.ar(st), St.root(st))
+
+def fz_run(+s: String) -> String: fz_run.at(fz_build(fz_toks(s), St{O.Arena.empty(), Nil{}, None{}}))
+
+def fz_read.closed(m: File & Result<&1, &1, U32 & String, String>) -> IO(String):
+  (f, r) = m
+  do IO<String>:
+    s : String <- IO.pass(String, r)
+    u : Unit <- File.close(f)
+    IO.pure(String, s)
+
+def fz_read(path: String) -> IO(String):
+  do IO<String>:
+    f : File <- IO.try(File, File.open(path, "r"))
+    m : File & Result<&1, &1, U32 & String, String> <- File.read(f, 65536)
+    fz_read.closed(m)
+
+# THE DRIVER BRANCH. No argument is the gate; one argument is a case file. The
+# two are a `match` on the argument list, so the GATE BODY IS `fz.gate` AND
+# NOTHING ELSE -- the thirty rows are that def and the driver never touches it.
+#
+# `IO.args()` LEADS WITH THE PROGRAM NAME -- `sz.bend`'s `main` drops it with
+# `List.tail` and so does this -- so the case path is the head of the TAIL and an
+# empty tail is the gate. `fz.drive.path` is a def because a do block cannot
+# destructure a `List`.
+def fz.drive.path(as: List<String>) -> String:
+  Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
+
+def fz.drive.br(as: List<String>) -> IO(Unit):
+  match as:
+    case Nil{}: fz.gate()
+    case _ <> _:
+      do IO<Unit>:
+        s : String <- fz_read(fz.drive.path(as))
+        IO.print(fz_run(s))
+
+def fz.drive.go(as: List<String>) -> IO(Unit):
+  fz.drive.br(List.tail(&1, String, as))
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    as : List<String> <- IO.args()
+    fz.drive.go(as)

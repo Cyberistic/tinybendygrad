@@ -53,7 +53,10 @@
 #        2147483647 where the answer is 4294967295. It is UNUSED and UNTESTED in
 #        `helpers.bend` and this file does not use it, so nothing here is wrong
 #        -- but it is a live bug in a shared file. REPORTED, NOT FIXED, per the
-#        brief. The correct form is `shrn(v,n) | shln(shrn(v,31), 32-n)`.
+#        brief. FIXED 2026-10-01 in helpers.bend: the form this comment
+#        originally recommended was WRONG -- it ORs in a single sign bit, not a
+#        run of n ones (right only at n=1 by luck); the fill must be the whole
+#        word `0 - shrn(v,31)`, count clamped at 31, as `H.asr` now does.
 #
 #    ** THE `fast_idiv` ANSWER, SINCE IT WAS ASKED FOR. `Word.mul` is the only
 #    widening multiply in Bend 2 and `base.bend` does NOT export `Word`'s
@@ -1163,7 +1166,7 @@ def row(nm: String, v: U32) -> IO(Unit):
 def rows(nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
-def main() -> IO(Unit):
+def gate() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("nrules", t_nrules())
     b : Unit <- row("rej0", dm_rejlen(0))
@@ -1223,3 +1226,177 @@ def main() -> IO(Unit):
     row("zero_r25", t_zero(25))
     row("on_r25", t_on(trees(), 25))
     rows("out_r25", t_out(trees(), 25))
+
+# ===========================================================================
+# THE FUZZ DRIVER. NO ARGUMENT IS THE GATE ABOVE, UNCHANGED; ONE ARGUMENT IS A
+# CASE FILE, and the case is ONE LINE `op|a|b` -- a CONST/CONST tree the same way
+# the gate's `r13`..`r16` fixtures build theirs. `sz.bend`'s `main` and
+# `upat.bend`'s `dispatch` read their argument the same way, and for the same
+# reason: the dispatch is on the SHAPE of the argument list, so a missing case
+# file cannot be mistaken for a case.
+#
+# THE CANONICAL LINE IS THE FOLD'S DENOTATION, not its tree, and that is a
+# decision with a reason. `dm_point` answers a CONST/CONST FLOORDIV with
+# `CONST q` and a CONST/CONST FLOORMOD with `SUB(x, MUL(q, y))` (divergence B:
+# Python writes the same number as `ADD(MUL(MUL, C(-1)))`), so a tree-shaped
+# line would compare Python's canonicalisation against this file's -- a
+# divergence the header already states, restated every case. The DENOTATION is
+# the same integer on both sides and is the only line that does not re-report a
+# known divergence, so it is the line. `nofold` is Python's `None`; `RAISED`
+# is its `ZeroDivisionError` at divandmod.py:11, which this file reports as the
+# Bool `dm_zero` and the header already pins at `zero_r04`/`zero_r11`/`zero_r23`.
+# ===========================================================================
+
+# `op` -- the four ops the case format spells. CDIV/CMOD are here because they
+# are REAL Ops that the table does NOT claim, so a case naming one must print
+# `nofold` on both sides: it is the row that says the table's op set is
+# {FLOORDIV, FLOORMOD} and not something wider. FDIV is the float one, for the
+# same reason.
+def dmc.op(s: String) -> O.Op:
+  match s:
+    case "FLOORDIV": O.OpsFLOORDIV{}
+    case "FLOORMOD": O.OpsFLOORMOD{}
+    case "CDIV": O.OpsCDIV{}
+    case "CMOD": O.OpsCMOD{}
+    case "FDIV": O.OpsFDIV{}
+    case _: O.OpsFLOORDIV{}
+
+# a signed decimal literal as a `U32` bit pattern. `a` and `b` are int32 in
+# both languages and this file has no signed type, so the case's decimal is read
+# as a magnitude and NEGATED here -- `H.i32_neg` is `U32.sub(0, x)`, which is
+# the two's complement Python writes. A leading `-` is the only sign, which is
+# all the generator emits.
+def dmc.num.chars(cs: List<&2, Char>, acc: U32) -> U32:
+  match cs:
+    case Nil{}: acc
+    case c <> t: dmc.num.chars(t, U32.add(U32.mul(acc, 10), U32.sub(Char.to_u32(c), 48)))
+
+def dmc.num.of(s: String) -> U32:
+  dmc.num.chars(String.to_list(s), 0)
+
+def dmc.num.put(neg: Bool, v: U32) -> U32:
+  match neg:
+    case True{}: H.i32_neg(v)
+    case False{}: v
+
+def dmc.num.go(neg: Bool, s: String) -> U32:
+  match neg:
+    case True{}: dmc.num.put(True{}, dmc.num.of(String.drop(s, 1n)))
+    case False{}: dmc.num.of(s)
+
+def dmc.num(+s: String) -> U32:
+  dmc.num.go(String.starts_with(s, "-"), s)
+
+def dmc.nth(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case None{}: "0"
+
+def dmc.field(fs: List<&2, String>, k: U32) -> String:
+  dmc.nth(List.get(&2, String, fs, U32.to_nat(k)))
+
+# THE ARENA: two CONSTs and the op node, in binding order, exactly the shape
+# `trees()` builds for `r13`..`r16`. The last arena threaded is the one that
+# produced the index, so every node after `c0` is built from `Found.ar` of the
+# node before it.
+def dmc.arena(op: O.Op, a: U32, b: U32) -> O.Found:
+  +ar = O.Arena.empty()
+  +ca = O.UOp.const(ar, O.CInt{H.i64_of_i32(a)})
+  +cb = O.UOp.const(O.Found.ar(ca), O.CInt{H.i64_of_i32(b)})
+  O.UOp.alu(O.Found.ar(cb), op, [O.Found.i(ca), O.Found.i(cb)])
+
+# THE DENOTATION of a folded node, read off the tree the port ANSWERED with. A
+# CONST is its own value; the `SUB(x, MUL(q, y))` `dm_point.sub` builds is
+# `x - q*y`. `q` is READ from the port's own interned node, never re-derived
+# here, so a port that folded the wrong quotient denotates the wrong number.
+#
+# THE ARITHMETIC IS 32-BIT AND PYTHON'S IS NOT, and that is the point: tinygrad
+# CONSTs are mathematical Python ints, so `1 % -2147483648` is 1 while this
+# file's `MUL(-1, INT_MIN)` is already 2^31 before the SUB. Both sides'
+# TREES denote the same integer -- `1 - 2147483648 == -2147483647` -- and the
+# oracle evaluates the tree in Python's unbounded ints precisely so this line
+# compares denotations and not arithmetic widths.
+def dmc.den.const(ar: O.Arena, i: U32) -> U32:
+  dm_ival(dm_val(ar, i))
+
+def dmc.den.mul(+ar: O.Arena, +m: U32) -> U32:
+  U32.mul(dmc.den.const(ar, O.Arena.src0(ar, m)), dmc.den.const(ar, O.Arena.src(ar, m, 1)))
+
+def dmc.den.sub(+ar: O.Arena, +d: U32) -> U32:
+  U32.sub(dmc.den.const(ar, O.Arena.src0(ar, d)), dmc.den.mul(ar, O.Arena.src(ar, d, 1)))
+
+def dmc.den.go(op: O.Op, ar: O.Arena, i: U32) -> U32:
+  match op:
+    case O.OpsCONST{}: dmc.den.const(ar, i)
+    case O.OpsSUB{}: dmc.den.sub(ar, i)
+    case _: 0
+
+def dmc.den(+ar: O.Arena, +i: U32) -> U32:
+  dmc.den.go(O.Arena.op(ar, i), ar, i)
+
+# THE TWO CANONICAL ANSWERS, plus the one Python REFUSES. `CONST n` is a folded
+# value and `nofold` is its `None`. `RAISED` is its `ZeroDivisionError` at
+# divandmod.py:11: this file has no `raise` and reports the condition as the
+# Bool `dm_zero`, which the gate pins at `zero_r04`/`zero_r11`/`zero_r23`, so
+# `RAISED` is a distinct word and not a synonym for `nofold`.
+def dmc.out.hit.go(on: U32, v: U32) -> String:
+  match on:
+    case 0: "nofold"
+    case _: String.concat(["CONST ", dm_show(v)])
+
+def dmc.out.hit(+h: Hit) -> String:
+  dmc.out.hit.go(Hit.on(h), dmc.den(Hit.ar(h), Hit.i(h)))
+
+def dmc.out(zero: Bool, +h: Hit) -> String:
+  match zero:
+    case True{}: "RAISED"
+    case _: dmc.out.hit(h)
+
+# The zero test is reported ONLY where Python reaches `fold_divmod_general` at
+# all, which is where RULE 2 claims the node: divandmod.py:11 is inside
+# `fold_divmod_general` and rule 2 is its only caller. A CMOD root is claimed by
+# nobody, so Python answers `None` there and never raises -- asking `dm_zero`
+# about it would print `RAISED` for a node Python does not look at, which is the
+# HARNESS re-reporting its own mistake and not the port's. The op set is READ
+# from `dm_table()` rather than spelled here, so a wider rule 2 moves the word
+# with it instead of silently disagreeing with it.
+def dmc.two.go(m: Maybe<&2, O.PMEntry>) -> List<&2, O.Op>:
+  match m:
+    case Some{e}: O.PMEntry.ops(e)
+    case None{}: Nil{}
+
+def dmc.two() -> List<&2, O.Op>:
+  dmc.two.go(List.get(&2, O.PMEntry, O.PMEntrys.es(dm_table()), 2n))
+
+def dmc.of.put.go(zero: Bool, +h: Hit) -> String:
+  dmc.out(zero, h)
+
+def dmc.of.put.reach(+f: O.Found) -> Bool:
+  O.pm_claimed(dmc.two(), O.Found.ar(f), O.Found.i(f))
+
+# the case: `op|a|b`, one line. The zero test is on the ROOT, which is the index
+# the scan was given, and it runs on the arena the scan ran on.
+def dmc.of.put(+f: O.Found) -> String:
+  dmc.of.put.go(Bool.and(dmc.of.put.reach(f), dm_zero(O.Found.ar(f), O.Found.i(f))),
+                div_and_mod_symbolic(F.folded(O.Found.ar(f)), O.Found.i(f)))
+
+def dmc.of(+fs: List<&2, String>) -> String:
+  dmc.of.put(dmc.arena(dmc.op(dmc.field(fs, 0)),
+                       dmc.num(dmc.field(fs, 1)),
+                       dmc.num(dmc.field(fs, 2))))
+
+def dmc.run(p: String) -> IO(Unit):
+  do IO<Unit>:
+    s : String <- H.printable(p, 1)
+    IO.print(dmc.of(String.split(s, '|')))
+
+def dispatch(ps: List<&1, String>) -> IO(Unit):
+  match ps:
+    case Nil{}: gate()
+    case p <> _: dmc.run(p)
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    as : List<String> <- IO.args()
+    u : Unit <- dispatch(List.tail(&1, String, as))
+    IO.pure(Unit, u)
