@@ -1,165 +1,48 @@
 # divandmod.bend -- tinygrad/uop/divandmod.py.
 #
-# WHAT THIS FILE IS. A `PatternMatcher` of three rules that folds FLOORDIV and
-# FLOORMOD when the divisor is a constant, plus the one big helper rule 2 calls.
-# 109 Python lines, and the honest shape of them is that FOUR are the matcher and
-# EIGHTY-NINE are `fold_divmod_general`, and `fold_divmod_general` is the wall.
+# `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
+# and `fold_divmod_general`. Upstream, four of the 109 lines are the matcher and
+# eighty-nine are the big rule, so this file ports the matcher in full and THREE
+# arms of `fold_divmod_general` -- :11, :13 and :15 -- and the TODO block names
+# every line of the rest with the wall behind it. The one wall is `UOp._min_max`
+# (ops.py:1104), P3 and not written (`fold.bend:2176`): the remaining 60 lines are
+# all interval arithmetic over symbolic UOps, which :11 needs too except that a
+# CONST's `_min_max` IS `(val, val)` and a PARAM's IS `arg.vmin_vmax`, both plain
+# field reads, and :15 needs no range at all.
 #
-# ---------------------------------------------------------------------------
-# THE BRIEF'S PREMISE IS WRONG IN THREE PLACES. All three were measured before a
-# line of this file was written, because two of them decide whether the file is
-# possible at all. They are recorded here so nobody re-derives them.
+# `fold_divmod_general` also RECURSES at :61 (`nest_by_factor` calls it on
+# `x//div`), and Bend refuses mutual recursion, so even the shape of that rule is
+# P3 and not only its arithmetic.
 #
-# 1. THERE IS NO `divmod_legal` AND NO `fast_divmod` IN THIS REPO.
-#    `rg -n 'fast_divmod|divmod_legal' tinygrad/ test/` is EMPTY. The magic
-#    multiplier code is `fast_idiv` and it lives in `tinygrad/codegen/decomp/
-#    op.py`, a different unit. So the multiply-high question this file was meant
-#    to answer does not arise here -- and the ANSWER, for whoever takes `fast_idiv`,
-#    is at the end of this block. Do not go looking for a multiply-high below.
+# FOUR DIVERGENCES, stated rather than hidden.
+#   A. NO PROMOTION CASTs. Python's `UOp.__init__` runs `dtype_from_uop` and
+#      `ops.bend`'s `UOp.new` does not, so the trees here are the ones Python
+#      prints with CASTs erased. Same algebra, different node count -- which is
+#      why no Python node count is a gate row and the `grown` rows are
+#      PORT-INTERNAL.
+#   B. NO SUB CANONICALISATION: `x - q*y` is `SUB` here and
+#      `ADD(x, MUL(MUL(q,y), C(-1)))` in Python, because `symbolic.py`'s
+#      `canonicalize` rewrites SUB. `out_r14`/`out_r16` are checked by VALUE.
+#   C. NO CONSTANT FOLDING: `C(5)*C(3)` survives as a MUL here and `simplify()`
+#      folds it in Python, so a folded MUL moves the `grown` count by one.
+#   D. A NON-INT CONST IS NOT A `vmin`: `dm_val` reads `CInt` only, so rules 0 and
+#      1 SKIP on a `CFloat` divisor where Python rewrites.
 #
-# 2. THERE IS NO `graph_rewrite` IN THIS FILE EITHER. `divandmod.py` builds a
-#    `PatternMatcher` and stops; `symbolic.py:7` is what imports it. So the "a
-#    rule RETURNS THE ARENA" engine shape does not apply to the TABLE and this
-#    file uses the same first-wins scan `uop/spec.bend` uses. The one thing the
-#    engine shape's RULE still buys here is the ACCUMULATOR: `Hit` carries the
-#    arena beside the answer, because these rules GROW the arena and a scan
-#    returning only a node index would throw the growth away.
-#
-# 3. THE MATH IS *MOSTLY* SOLVED, IN `helpers.bend`, AND TWO OF THE HELPERS ARE
-#    BUGGY. `divandmod.py` is FLOOR arithmetic end to end, so this was the first
-#    thing measured and it is the headline. All four facts below were measured
-#    with `./bin/bend`:
-#
-#      * `U32.div` / `U32.mod` are UNSIGNED TRUNCATING with `U32.div(a,0) = 0`
-#        and `U32.mod(a,0) = a`.
-#      * `H.cdiv_i32_go` is TRUNCATE and correct (`-1 / 2 == 0`, `6 / 4 == 1`).
-#      * **`H.floordiv_i32` AND `H.floormod_i32` ARE WRONG.** `6 // 4 == 2`,
-#        `10 // 3 == 4`, `1000 // 7 == 143`, `6 % 4 == -2`, `1000 % 7 == -1`,
-#        where Python says 1, 3, 142, 2, 6. They are correct for a NEGATIVE
-#        dividend and for an EXACT division and wrong (off by +1) otherwise, and
-#        a non-negative inexact division is the case `divandmod.py` is ALL about:
-#        `_min_max`'s CDIV/FLOORDIV/FLOORMOD arms and every constant-folded
-#        `//`. `helpers.bend:1097` `floordiv_i32.trunc.exact` adds one whenever
-#        the division is inexact and IGNORES `neg`. THE FIX IS ONE LINE and
-#        `dm_floordiv` / `dm_floormod` below are that fix with the removal
-#        condition written down. REPORTED, NOT FIXED, per the brief:
-#        `helpers.bend` is another unit's. If it is not fixed, every other unit
-#        that divides is silently wrong in the same way.
-#      * `U32.mul` TRUNCATES to 32 bits: `U32.mul(4000000000, 3) == 3410065408`,
-#        the low half of 12000000000. `U32.shl` / `U32.shr` / `shln` / `shrn` are
-#        all LOGICAL; `H.asr` was meant to be the arithmetic one and IS ALSO BROKEN --
-#        it is `shrn(v,n) | shrn(shrn(v,31),n)`, and `shrn(v,31)` is the sign
-#        BIT, so the second term is 0 for every `n >= 1` and `H.asr(-1,1)` prints
-#        2147483647 where the answer is 4294967295. It is UNUSED and UNTESTED in
-#        `helpers.bend` and this file does not use it, so nothing here is wrong
-#        -- but it is a live bug in a shared file. REPORTED, NOT FIXED, per the
-#        brief. FIXED 2026-10-01 in helpers.bend: the form this comment
-#        originally recommended was WRONG -- it ORs in a single sign bit, not a
-#        run of n ones (right only at n=1 by luck); the fill must be the whole
-#        word `0 - shrn(v,31)`, count clamped at 31, as `H.asr` now does.
-#
-#    ** THE `fast_idiv` ANSWER, SINCE IT WAS ASKED FOR. `Word.mul` is the only
-#    widening multiply in Bend 2 and `base.bend` does NOT export `Word`'s
-#    constructors -- `match Word.mul(64n, ...)` is refused with "a declared
-#    constructor (unknown: Word.Nil)" from outside the file. So a magic
-#    multiplier is a WALL, not a TODO, and it is a wall of ONE export: either
-#    `Word` and `WCon` become public, or the port writes the 64-bit product as
-#    four `U32` multiplies and a carry chain (`U32.mul` already truncates, so it
-#    composes). `H.I64{hi,lo}` exists with `i64_add` / `i64_sub` / `i64_cmp` and
-#    NOT `i64_mul` -- the same wall one level up, already recorded for `_min_max`
-#    at `fold.bend:2180`.
-# ---------------------------------------------------------------------------
-#
-# ---------------------------------------------------------------------------
-# THE ONE WALL, AND IT IS NOT A BENCH LIMITATION. It is `_min_max`.
-#
-# `fold_divmod_general` is 89 lines and 60 of them are interval arithmetic over
-# symbolic UOps: `y.vmin==y.vmax==0`, `(x//y).vmin == (x//y).vmax`,
-# `sum(r*v for ...).vmin//c == rem.vmax//c`, `new_x.vmin >= 0`, `x.vmin >= 0`,
-# `0 <= b.vmin and b.vmax < div`. `UOp._min_max` (ops.py:1104) is P3 and NOT
-# WRITTEN: `fold.bend:2176-2184` records it and names the reason -- PyConst is
-# `int|float|bool|Invalid`, `helpers.bend` has `i64_add`/`i64_sub`/`i64_cmp` and
-# NOT `i64_mul`/`i64_div`/`i64_mod`, the arms read `self.dtype.min`/
-# `self.dtype.max` (dtype.bend, unimportable, and it is the C-effect seam) and
-# `self.src[0].buf_uop` (a `while` over five ops). It is the largest single piece
-# left in that half of ops.py. P3, not expressible today.
-#
-# SO THIS FILE PORTS THE PART THAT IS DERIVABLE AND NAMES THE REST. Three arms of
-# `fold_divmod_general` survive and each survives for a stated reason:
-#
-#   * `divandmod.py:11` `if y.vmin==y.vmax==0: raise ZeroDivisionError(...)` -- a
-#     CONST's `_min_max` IS `(val, val)` (ops.py:1151) and a PARAM's IS
-#     `arg.vmin_vmax` (ops.py:1144), so BOTH cases of that test are one `arg`
-#     read. PORTED as a `Bool` because Bend has no `raise`; the rows are that the
-#     flag is SET on exactly the nodes where Python raises, which the oracle
-#     confirms for a `CONST(0)` divisor, for a `PARAM` whose range is `(0,0)`, and
-#     NOT for a divisor of 7.
-#   * `divandmod.py:13` `if (xdiv:=x//y).vmin == xdiv.vmax: return x - xdiv.vmin*y
-#     if d.op is Ops.FLOORMOD else xdiv.const_like(xdiv.vmin)` -- for two CONSTs
-#     `_min_max` is the four-way min/max of `a//b, a//b, a//b, a//b` (ops.py:1127),
-#     the single point `floordiv(a,b)`, so the test is ALWAYS true there and this
-#     arm is EXACT rather than conservative on CONST/CONST. Outside CONST/CONST it
-#     needs the range and is a TODO. `r15` and `v2n_-1000` (`-7 // 4 == -2`,
-#     `-1000 // 4 == -250`) are the rows, and both are FLOOR.
-#   * `divandmod.py:15` `x.op is Ops.PARAM and y.op is Ops.CONST and
-#     x.arg.multiple_of % y.val == 0` -- NO RANGE AT ALL, `arg.multiple_of` is a
-#     field read. PORTED IN FULL, and the DEFAULT is load-bearing:
-#     `UOp.variable`'s `multiple_of` defaults to 1 (ops.py:1013) and `1 % 1 == 0`,
-#     so `FLOORMOD(param, CONST(1))` rewrites to `CONST(0)`. `r18` is that row and
-#     it is the row a wrong default moves.
-#
-# The other two walls behind the remaining 60 lines are `const_factor` / `divides`
-# / `gcd` (ops.py:1058/1067/1083 -- P3, `fold.bend:2174`; `divides` needs `gcd` and
-# `gcd` needs a `Counter` fold) and `simplify` / `ssimplify` (ops.py:513/520 --
-# P3, `fold.bend:2140`).
-#
-# ---------------------------------------------------------------------------
 # TWO THINGS ABOUT THE PATTERNS THAT ARE EASY TO INVERT, both measured against the
-# real `div_and_mod_symbolic` with `PYTHONPATH=. python3`.
+# real `div_and_mod_symbolic`:
 #
-# 1. `Ops.ADD` IS COMMUTATIVE, SO `UPat.cvar("c") + UPat.cvar("a")` IS AN
-#    `is_any` OVER BOTH ORDERS. `UPat.alu` (ops.py:1533-1536) passes
-#    `list(asrc) if op in GroupOp.Commutative else asrc`, and ADD is in
-#    `GroupOp.Commutative`. Both rules' numerators are therefore a TWO-WAY
-#    DISJUNCTION, and writing it as a conjunction -- "src0 is the CONST" -- drops
-#    `r01` and `r08` and typechecks. `dm_which` is the disjunction, and `r01` /
-#    `r08` are the two-sided rows for it. Exactly one alternative can ever match
-#    (both sides cannot be a CONST and a `FLOORDIV(_, CONST)` at once), so there
-#    is no store to disambiguate and NO name is bound twice, which is why there
-#    is not one `U32.is_eq` identity check in this file.
-#
-# 2. THE REJECT SETS ARE NOT EMPTY. `ops.py:1475-1478` builds `early_reject` from
-#    the ops of the pattern's FIRST src, and that first src is the `is_any` --
-#    whose members DO have single-element op sets. Measured: rules 0 and 1 reject
-#    on `[ADD, CONST]`; rule 2 rejects on `[]` because its `src` is `None`. Rules 0
-#    and 1 are also `strict_length=True, required_len=2` and rule 2 is
-#    `strict_length=False, required_len=0`, so a THREE-src FLOORDIV cannot match
-#    rules 0 or 1: it falls to rule 2, whose `x, y = d.src` makes Python raise
-#    `ValueError: too many values to unpack`. `r22` is that row: rule 2 still
-#    CLAIMS it, which is what Python does before it raises.
-#
-# ---------------------------------------------------------------------------
-# WHERE THIS FILE DIVERGES FROM PYTHON. All four, stated rather than hidden.
-#
-# A. NO PROMOTION CASTs. Python's `UOp.__init__` runs `dtype_from_uop`, so `a*c`
-#    with a weakint `a` and an int32 `c` is `CAST(MUL(C(5),C(3)))`. `ops.bend`'s
-#    `UOp.new` is `UOp.make` and nothing else -- dtype is the P3 fold -- so this
-#    file's trees have no CAST. `dm_str` prints the tree Python prints with CASTs
-#    erased, and the oracle erases them too. The ALGEBRA is unchanged; the NODE
-#    COUNT is not, which is why no Python node count is a gate row and why the
-#    `grown` rows below are PORT-INTERNAL counts.
-# B. NO SUB CANONICALISATION. `x - q*y` is `SUB(x, MUL(q,y))` here and
-#    `ADD(x, MUL(MUL(q,y), C(-1)))` in Python, because `symbolic.py`'s
-#    `canonicalize` rewrites SUB. `r14` and `r16` are the two rows where that is
-#    visible, and both are checked by VALUE rather than by shape.
-# C. NO CONSTANT FOLDING. `C(5)*C(3)` survives as a MUL here and `simplify()`
-#    folds it to `C(15)` in Python, so the two "new nodes" counts differ by one
-#    per folded MUL and cannot be compared across the two implementations.
-# D. A NON-INT CONST IS NOT A `vmin`. `UPat.cvar` accepts a `CFloat` and Python's
-#    `d.vmin > 0` then compares a float. `dm_val` reads `CInt` only, so a float
-#    CONST makes rules 0 and 1 SKIP where Python would rewrite. That is the
-#    `_min_max` PyConst wall at miniature size and it is the same TODO.
-# ---------------------------------------------------------------------------
+# 1. `Ops.ADD` IS COMMUTATIVE, so `UPat.cvar("c") + UPat.cvar("a")` is an `is_any`
+#    over BOTH ORDERS -- `UPat.alu` (ops.py:1533) passes `list(asrc)` for an op in
+#    `GroupOp.Commutative`. Both numerators are a TWO-WAY DISJUNCTION, and writing
+#    one as a conjunction drops `r01` and `r08` and typechecks. `dm_which` is the
+#    disjunction and `r01`/`r08` are its two-sided rows. Exactly one alternative
+#    can ever match -- both sides cannot be a CONST and a `FLOORDIV(_, CONST)` at
+#    once -- so no name is bound twice and there is not one identity check here.
+# 2. THE REJECT SETS ARE NOT EMPTY: `[ADD, CONST]`, `[ADD, CONST]`, `[]`, measured.
+#    Rules 0 and 1 are `strict_length=True, required_len=2` and rule 2 is not, so a
+#    THREE-src FLOORDIV falls to rule 2 and Python raises `ValueError` on
+#    `x, y = d.src`. `r22` is that row: rule 2 still CLAIMS it, which is what
+#    Python does before it raises.
 
 import Base
 import ./../helpers.bend as H
@@ -167,13 +50,10 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
-# ===========================================================================
-# THE ACCUMULATOR. `PatternMatcher.rewrite` returns the FIRST non-None, and these
-# rules GROW the arena, so the answer is the arena AND a node index AND whether
-# anything fired. A `Maybe` cannot be a field of a `Data` record (bend2-constraints
-# rule 15), so the flag is a `U32` and the index is meaningless when it is 0 --
-# and 0 is the arena's BOTTOM node, so it cannot serve as the sentinel either.
-# ===========================================================================
+# THE ACCUMULATOR. These rules GROW the arena, so the answer is the arena AND a
+# node index AND whether anything fired. A `Maybe` cannot be a field of a `Data`
+# record, so the flag is a `U32`; the index is meaningless when the flag is 0, and
+# 0 is the arena's BOTTOM node so it cannot serve as the sentinel either.
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32}
 
@@ -192,12 +72,9 @@ def Hit.on(x: Hit) -> U32:
 def miss(ar: O.Arena) -> Hit:
   Hit{ar, 0, 0}
 
-# ===========================================================================
-# THE SHARED READERS. `dm_val` is `y.val` for an INTEGER CONST. It is a `Maybe`
-# because `Arg` is the eighteen-armed `Any` Python spells when one field holds
-# eighteen unrelated things, and because every caller must ASK whether a node is
-# a CONST before it can read it.
-# ===========================================================================
+# `y.val` for an INTEGER CONST. A `Maybe` because `Arg` is the eighteen-armed
+# `Any` Python spells when one field holds eighteen unrelated things, and because
+# every caller must ASK whether a node is a CONST before it can read it.
 def dm_val.go(v: O.Const) -> Maybe<&2, U32>:
   match v:
     case O.CInt{i}: Some{H.lo32(i)}
@@ -230,38 +107,11 @@ def dm_ival.go(m: Maybe<&2, U32>, k: U32) -> U32:
 def dm_ival(m: Maybe<&2, U32>) -> U32:
   dm_ival.go(m, 0)
 
-# `v > 0` for a SIGNED 32-bit constant. `U32.is_gt(v, 0)` is the UNSIGNED reading
-# and rule 0's guard is `d.vmin > 0` with `d` possibly `C(-7)`, so the sign test is
-# the whole of it.
-# ===========================================================================
-# `dm_floordiv` / `dm_floormod` -- AND WHY THEY ARE NOT `H.` HERE.
-#
-# `H.floordiv_i32` and `H.floormod_i32` ARE WRONG for a non-negative dividend
-# with an INEXACT division, which is the only case `divandmod.py` cares about.
-# Measured, with `./bin/bend` against `helpers.bend`:
-#
-#     expr            Bend     Python
-#     6 // 4            2         1
-#     10 // 3           4         3
-#     1000 // 7       143       142
-#     6 % 4            -2         2
-#     1000 % 7          -1         6
-#     -7 // 4           -2        -2     correct
-#     -7 % 4             1         1     correct
-#     4 // 4            1         1     correct (exact)
-#     cdiv_i32_go(6,4)  1         1     correct
-#
-# `helpers.bend:1097` `floordiv_i32.trunc.exact` adds one whenever the division is
-# INEXACT and ignores `neg`, so the sign is only ever applied correctly by luck of
-# the arithmetic. THE FIX IS ONE LINE, in that def: the `False{}` arm must be
-# `put(neg, U32.add(q,1))` only when `neg`, and `put(neg, q)` otherwise -- which
-# is what `dm_floordiv.trunc` below already does.
-#
-# REPORTED, NOT FIXED, per the brief: `helpers.bend` is another unit's. DELETE
-# `dm_floordiv` / `dm_floormod` AND CALL THE `H.` VERSIONS WHEN THAT ONE-LINE
-# FIX LANDS; nothing else in this file changes. The two defs are here because a
-# gate that pins wrong numbers is worse than no gate.
-# ===========================================================================
+# `dm_floordiv` / `dm_floormod` ARE NOT `H.`: `H.floordiv_i32`/`H.floormod_i32` add
+# one on every INEXACT division and ignore the sign, so `6 // 4` answers 2 where
+# Python says 1 (`helpers.bend:1097`; bend2-constraints, "floor IS NOT AVAILABLE").
+# The step belongs to the opposite-sign case alone. DELETE BOTH AND CALL THE `H.`
+# VERSIONS WHEN THAT ONE-LINE FIX LANDS; nothing else in this file changes.
 def dm_floordiv.exact(exact: Bool, q: U32) -> U32:
   match exact:
     case True{}: q
@@ -293,6 +143,9 @@ def dm_floordiv(+x: U32, +y: U32) -> U32:
 def dm_floormod(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(dm_floordiv(x, y), y))
 
+# `v > 0` for a SIGNED 32-bit constant. `U32.is_gt(v, 0)` is the UNSIGNED reading
+# and rule 0's guard is `d.vmin > 0` with `d` possibly `C(-7)`, so the sign test is
+# the whole of it.
 def dm_pos(+v: U32) -> Bool:
   Bool.and(Bool.not(H.i32_is_neg(v)), Bool.not(U32.is_zero(v)))
 
@@ -318,9 +171,8 @@ def dm_which(+ar: O.Arena, +add: U32) -> U32:
   dm_which.go(dm_is_quot(ar, O.Arena.src0(ar, add)), dm_is_quot(ar, O.Arena.src(ar, add, 1)))
 
 # `dtypes.weakint` -- `UPat.var("x", dtypes.weakint)` at divandmod.py:103 and the
-# ROOT's `dtypes.weakint` at :108. `spec.bend` has this test privately; it is four
-# lines and a `Cls` constructor is a legal binder, so it is written again here
-# rather than reaching into another unit's privates.
+# ROOT's `dtypes.weakint` at :108. Written again here rather than reaching into
+# `spec.bend`'s private copy of the same four lines.
 def dm_weak.cls(c: S.Cls) -> Bool:
   match c:
     case S.CWeakInt{}: True{}
@@ -334,16 +186,14 @@ def dm_weak.dt(m: Maybe<&2, S.Dt>) -> Bool:
 def dm_weak(+fx: F.Folded, u: U32) -> Bool:
   dm_weak.dt(F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), u))
 
-# ===========================================================================
-# `fold_divmod_general` -- divandmod.py:8. Three arms ported, in Python's order;
-# the other 60 lines are the `_min_max` / `divides` / `simplify` wall. Python's
+# `fold_divmod_general` -- divandmod.py:8, in Python's order. The other 60 lines
+# are the `_min_max` / `divides` / `simplify` wall (see the header). Python's
 # `raise` at line 11 is a `Bool` here: `dm_zero` REPORTS it and the ladder treats
 # it as a skip, which is the only total reading a pure def has.
-# ===========================================================================
 
-# `y.vmin == y.vmax == 0` -- divandmod.py:11. A PARAM's range is a
-# `PyRange{lo,hi}` of two `I64` and the test is BOTH ends zero, so it is NOT
-# `vmin == vmax`: a PARAM with range (5,5) is a 5, not a zero.
+# `y.vmin==y.vmax==0` -- divandmod.py:11. A PARAM's range is a `PyRange{lo,hi}` of
+# two `I64` and the test is BOTH ends zero, so it is NOT `vmin == vmax`: a PARAM
+# with range (5,5) is a 5, not a zero.
 def dm_zero.range(r: Maybe<&2, O.PyRange>) -> Bool:
   match r:
     case Some{O.PyRange{lo, hi}}: Bool.and(U32.is_zero(H.lo32(lo)), U32.is_zero(H.lo32(hi)))
@@ -364,6 +214,9 @@ def dm_zero.op(op: O.Op, arg: O.Arg) -> Bool:
 def dm_zero(+ar: O.Arena, +d: U32) -> Bool:
   dm_zero.op(O.Arena.op(ar, O.Arena.src(ar, d, 1)), O.Arena.arg(ar, O.Arena.src(ar, d, 1)))
 
+# `x//y is constant` -- divandmod.py:12, and the arm is EXACT rather than
+# conservative on CONST/CONST, where `_min_max` is four identical `a//b` and the
+# test always holds. Outside CONST/CONST it needs the range (see the TODO block).
 # `x - xdiv.vmin*y`, the FLOORMOD half of divandmod.py:13.
 def dm_point.sub(ar: O.Arena, x: U32, y: U32, q: U32) -> O.Found:
   +qc = O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
@@ -391,7 +244,11 @@ def dm_point.go(ar: O.Arena, d: U32, op: O.Op, +cx: Maybe<&2, U32>, +cy: Maybe<&
 def dm_point(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_point.go(ar, d, O.Arena.op(ar, d), dm_val(ar, O.Arena.src0(ar, d)), dm_val(ar, O.Arena.src(ar, d, 1)))
 
-# `x.arg.multiple_of % y.val == 0` -- divandmod.py:15. No range, so PORTED IN FULL.
+# PARAM // c is irreducible -- divandmod.py:15, and it is the last of the three
+# ported arms. `x.arg.multiple_of % y.val == 0`. No range at all, so PORTED IN
+# FULL, and the DEFAULT is load-bearing: `UOp.variable`'s `multiple_of` defaults to
+# 1 (ops.py:1013) and `1 % 1 == 0`, so `FLOORMOD(param, CONST(1))` rewrites to
+# `CONST(0)`. `out_r18` is that row and it is the row a wrong default moves.
 def dm_multiple_of.mod(mult: Maybe<&2, U32>, y: U32) -> Bool:
   match mult:
     case Some{k}: U32.is_zero(dm_floormod(k, y))
@@ -428,8 +285,8 @@ def dm_multiple_of.arm.go(+ar: O.Arena, d: U32, hit: Bool) -> Maybe<&2, O.Found>
 def dm_multiple_of.arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_multiple_of.arm.go(ar, d, dm_multiple_of(ar, d))
 
-# Python's `if ...: return A` twice. A `Maybe<&2, T>` cannot take a `+`
-# (bend2-constraints rule 4), so first-wins is a leaf over two parameters.
+# Python's `if ...: return A` twice. A `Maybe<&2, T>` is a `Type`, so it cannot
+# take a `+`; first-wins is a leaf over two parameters instead.
 def dm_first2.go(b: Maybe<&2, O.Found>, c: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match b:
     case Some{f}: Some{f}
@@ -445,12 +302,10 @@ def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Fou
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))
 
-# ===========================================================================
-# RULE 0 -- divandmod.py:101, the first of the ** 1. Fast Inline Rules **.
-# `(x//c+a)//d -> (x+a*c)//(c*d) for c>0, d>0`. The Python guard is `d.vmin>0` and
-# `d` is a `cvar`, so `d.vmin` IS `d.val` and the range machinery this rule looks
-# like it needs is one signed compare: `dm_pos`.
-# ===========================================================================
+# ** 1. Fast Inline Rules **, rule 0 -- divandmod.py:101.
+# `(x//c+a)//d -> (x+a*c)//(c*d) for c>0, d>0`. The guard is `d.vmin>0` and `d` is
+# a `cvar`, so `d.vmin` IS `d.val` and the range machinery this rule looks like it
+# needs is one signed compare: `dm_pos`.
 def dm_0.build(+ar: O.Arena, q: U32, a: U32, +c: U32, d: U32) -> O.Found:
   +ac = O.UOp.alu(ar, O.OpsMUL{}, [a, c])
   +s = O.UOp.alu(O.Found.ar(ac), O.OpsADD{}, [O.Arena.src0(ar, q), O.Found.i(ac)])
@@ -489,19 +344,13 @@ def dm_0.put(+ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
 def dm_0(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_0.put(F.Folded.ar(fx), self)
 
-# ===========================================================================
-# RULE 1 -- divandmod.py:103-105, the second Fast Inline Rule.
-# `(x+c)//d -> (x+c%d)//d + c//d ; (x+c)%d -> (x+c%d)%d`, and the `cvar("x")` there
-# is `UPat.var("x", dtypes.weakint)`, so the weakint conjunct is on the NUMERATOR
-# and the ROOT is unconstrained. That is load-bearing and `r12` is the row: the
-# same tree with an int32 numerator is not rewritten at all.
-#
-# The guard is a two-armed `or`: `d.val==0` OR `c.val%d.val==c.val`, and the first
-# arm is the ZERO DIVISOR, which Python reports by raising in rule 2 and this file
-# reports as `dm_zero`. `H.floormod_i32` and `H.floordiv_i32` are FLOOR, which is
-# what makes `10 % -7 == -4` and `10 // -7 == -2`; `r10` and `v1n_-1000` are those
-# two numbers and a truncating port gets 3 and -1.
-# ===========================================================================
+# ** 1. Fast Inline Rules **, rule 1 -- divandmod.py:103-105.
+# `(x+c)//d -> (x+c%d)//d + c//d ; (x+c)%d -> (x+c%d)%d`. The `x` there is
+# `UPat.var("x", dtypes.weakint)`, so the weakint conjunct is on the NUMERATOR and
+# the ROOT is unconstrained: load-bearing, and `r12` is the row (the same tree with
+# an int32 numerator is not rewritten at all). The guard is a two-armed `or`:
+# `d.val==0` OR `c.val%d.val==c.val` -- the first arm is the ZERO DIVISOR, which
+# Python reports by raising in rule 2 and this file reports as `dm_zero`.
 def dm_1.fd(ar: O.Arena, x: U32, d: U32, cm: U32, cq: U32) -> O.Found:
   +cmc = O.UOp.const(ar, O.CInt{H.i64_of_i32(cm)})
   +s = O.UOp.alu(O.Found.ar(cmc), O.OpsADD{}, [x, O.Found.i(cmc)])
@@ -582,11 +431,9 @@ def dm_1.put(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 def dm_1(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_1.put(fx, self)
 
-# ===========================================================================
-# RULE 2 -- divandmod.py:108, the ** 2. Slow Rules ** entry. The weakint
-# conjunct is on the ROOT here (contrast rule 1, where it is on the numerator),
-# and there is no arity constraint, so a three-src FLOORDIV still gets here.
-# ===========================================================================
+# ** 2. Slow Rules ** -- divandmod.py:108, the one entry. The weakint conjunct is
+# on the ROOT here (contrast rule 1, where it is on the numerator), and there is no
+# arity constraint, so a three-src FLOORDIV still gets here.
 def dm_2.armed(fx: F.Folded, self: U32, weak: Bool) -> Maybe<&2, O.Found>:
   match weak:
     case True{}: fold_divmod_general(F.Folded.ar(fx), self)
@@ -594,33 +441,21 @@ def dm_2.armed(fx: F.Folded, self: U32, weak: Bool) -> Maybe<&2, O.Found>:
 
 def dm_2.put(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   dm_2.armed(fx, self, dm_weak(fx, self))
-# ===========================================================================
-# RULE 2 -- divandmod.py:108, the ** 2. Slow Rules ** entry. The weakint
-# conjunct is on the ROOT here (contrast rule 1, where it is on the numerator),
-# and there is no arity constraint, so a three-src FLOORDIV still gets here.
-# ===========================================================================
 def dm_2(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_2.put(fx, self)
 
-# ===========================================================================
-# THE TABLE, THE DISPATCH AND THE SCAN -- `spec.bend`'s shape, once.
-# `ops.bend` cannot call a def in this file, so its `pm_dispatch` cannot grow a
-# case for a rule that lives here, and this file gets its own scan. `ops.bend`'s
-# `pm_ler` IS a fold over the src count now, so `O.pm_claimed` and `O.pm_early`
-# are used as they are and NOT re-derived; the report that said otherwise, in
-# `spec.bend`'s mutation table, is stale.
-# ===========================================================================
+# THE TABLE, THE DISPATCH AND THE SCAN -- `spec.bend`'s shape, once. `ops.bend`
+# cannot call a def in this file, so this file gets its own scan, and `O.pm_claimed`
+# and `O.pm_early` are used as they are rather than re-derived.
 def dm_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsFLOORDIV{}], [O.OpsADD{}, O.OpsCONST{}]},                       # 101
              O.PMEntry{1, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], [O.OpsADD{}, O.OpsCONST{}]},         # 103
              O.PMEntry{2, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}}]}                           # 108
 
-# The first non-None wins, so `dm_fold` keys on the ACCUMULATOR. Keying on the new
-# answer is last-wins, and `r02` is the row that tells the two apart: rule 0 grows
-# the arena by 4 and rule 1 by 3, and their trees differ.
-# `+f` here, not a bare binder: a `Maybe` pattern binder CANNOT be read twice
-# (measured -- it is the one case where rule 3 of bend2-constraints bites a
-# binder rather than a parameter), so `f` becomes a `Data` parameter.
+# The first non-None wins, so `dm_fold` keys on the ACCUMULATOR; keying on the new
+# answer is last-wins, and `r02` is the row that tells the two apart (rule 0 grows
+# the arena by 4 and rule 1 by 3, and their trees differ). `+f` here rather than a
+# bare binder because a `Maybe` pattern binder cannot be read twice.
 def dm_fold.put(ar: O.Arena, +f: O.Found) -> Hit:
   Hit{O.Found.ar(f), O.Found.i(f), 1}
 
@@ -669,12 +504,11 @@ def dm_scan(+todo: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32, acc: Hit) -> 
 def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
   dm_scan(O.PMEntrys.es(dm_table()), fx, self, miss(F.Folded.ar(fx)))
 
-# ===========================================================================
 # THE GATE, and what each row is FOR. `1`/`0` is "a rule fired" / "the scan found
-# nothing", and `0` IS Python's `None`. `none` is the same answer as a string. An
-# `out_*` row is the rewritten tree TWO LEVELS DEEP with CONST VALUES printed, and
-# `.agents/slop/dm-oracle.py` prints Python's answer in the same shape -- so a row
-# is a before/after a reviewer can diff by eye against a real interpreter run.
+# nothing", and `0` IS Python's `None`. An `out_*` row is the rewritten tree TWO
+# LEVELS DEEP with CONST VALUES printed, and `.agents/slop/dm-oracle.py` prints
+# Python's answer in the same shape, so a row is a before/after a reviewer can
+# diff by eye against a real interpreter run.
 #
 #   nrules=3       divandmod.py:98-109 is three entries. A COUNT.
 #   rej0=2 rej1=2 rej2=0   the `early_reject` sets, MEASURED against Python:
@@ -754,13 +588,11 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #   on_r23=0 on_r24=0   the two zero-divisor roots, which Python raises on.
 #   on_r25=0 out_r25=none   the (0,5)-range divisor.
 #   grown_r00=4 grown_r01=4   rule 0's shape: MUL, ADD, MUL, FLOORDIV, all new.
-# ---------------------------------------------------------------------------
 #
-# MUTATIONS, all re-run 2026-09-30 against this file by
-# `.agents/slop/tools/mutate-dm.py`, which applies one edit, runs the INTERPRETED
-# lane, diffs the rows against this baseline and restores. A row that only ONE
-# mutation moves is a LOCALISED row; the rest are load-bearing together, and this
-# table is not one-row-per-bug and should not read as if it were.
+# MUTATIONS, measured by `.agents/slop/tools/mutate-dm.py`, which applies one edit,
+# runs the INTERPRETED lane, diffs the rows against this baseline and restores. A
+# row only ONE mutation moves is a LOCALISED row; the rest are load-bearing
+# together, so this table is not one-row-per-bug and should not read as one.
 #
 # | mutation | rows moved | how many |
 # | --- | --- | --- |
@@ -785,51 +617,28 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #
 # FOUR THINGS WORTH READING TWICE.
 #
-# 1. `dm_which.go` and `dm_cside.go` MOVE THE SAME SIXTEEN ROWS. They are the two
-#    halves of the same mistake -- collapsing a commutative `is_any` into a
-#    conjunction -- and the gate cannot tell them apart, because from the outside
-#    "which side is the CONST" and "which side is the quotient" are the same
-#    question. That is a LIMITATION OF THIS GATE, not a coincidence: two rules,
-#    one disjunction each, and one fixture family cannot separate them. Fixing it
-#    needs a fixture where the quotient is on src1 AND the CONST is also on src1,
-#    i.e. `(x//c + d)//e` with `c != d`.
-#
-# 2. `dm_pos` AND `dm_zero.range` MOVE ONE ROW EACH, and both of those rows exist
-#    for exactly that mutation: `out_r03` is the only row with a NEGATIVE
-#    divisor, and `zero_r25` is the only row with a `vmin == 0 < vmax` divisor.
-#    A localised row that is not the row the mutation was written for is the
-#    failure mode `spec.bend` describes; these two are the other side of it.
-#
-# 3. `dm_point`: TRUNCATING instead of floor moves `out_r15` and `out_r16` but
-#    NOTHING in rule 0 or rule 1 -- because every `c` and `d` those two rules see
-#    is positive, or is negative on BOTH sides. The two rows that carry the floor
-#    semantics for `fold_divmod_general` are the only ones that move, which is why
-#    the FLOOR rows are `out_r10` and `out_r15` and not a single combined row.
-#
-# 4. `dm_multiple_of.mod`: reading an unset `multiple_of` as 1 moves EIGHTEEN
-#    rows, more than any other mutation. That is the `multiple_of: int = 1`
-#    default at ops.py:1013 being load-bearing in a place no comment mentions,
-#    and it is the widest single effect in this file.
+# 1. `dm_which.go` AND `dm_cside.go` MOVE THE SAME SIXTEEN ROWS, and the gate
+#    CANNOT TELL THEM APART: from outside, "which side is the CONST" and "which
+#    side is the quotient" are the same question. Two rules, one disjunction each,
+#    one fixture family. Separating them needs `(x//c + d)//e` with `c != d`.
+# 2. `dm_pos` and `dm_zero.range` move ONE ROW EACH, and both of those rows exist
+#    for exactly that mutation (`out_r03` is the only negative divisor,
+#    `zero_r25` the only `vmin == 0 < vmax` divisor) -- the other side of the
+#    localised-row failure mode.
+# 3. `dm_point` truncating instead of floor moves `out_r15`/`out_r16` and NOTHING
+#    in rules 0 or 1, because every `c` and `d` those see is positive or negative
+#    on both sides -- which is why the FLOOR rows are `out_r10` AND `out_r15`.
+# 4. `dm_multiple_of.mod` reading an unset `multiple_of` as 1 moves EIGHTEEN rows,
+#    the widest effect in this file: the `multiple_of: int = 1` default at
+#    ops.py:1013 is load-bearing in a place no code comment mentions.
 
-# ===========================================================================
 # THE GATE'S PRINTER. `dm_sh2` prints a node TWO levels deep, and that is not a
-# shortcut: it is the depth at which it reproduces Python's trees EXACTLY for
-# every rewriting row in this file (rule 0's answer has depth 2, rule 1's has
-# depth 2, `dm_point.sub`'s has depth 2), because CONST VALUES are printed, not
-# just op names -- so `r10`'s `-4` and `-2` ARE the floor-semantics rows and a
-# truncating port prints 3 and -1.
-#
-# WHY NOT A REAL RECURSIVE PRINTER. It needs `print(node) -> srcs -> print`, and
-# Bend refuses mutual recursion outright; a list fold over `Arena.srcs` does not
-# help, because the fold's element step is the recursive call. And a fuel cannot
-# rescue it either -- a binop spends one fuel on TWO self-calls, which is
-# bend2-constraints rule 5. So the depth is a PARAMETER of the printer, not of
-# the walk, and it is exactly as deep as the answers need.
-#
-# A PARAM prints as `P<name>` from `ParamArg.name`, a field both languages read,
-# and NOT an interning counter, which would need a table threaded through for no
-# gain. CASTs are absent (divergence A in the header) and the oracle erases them.
-# ===========================================================================
+# shortcut: two levels with CONST VALUES printed reproduces Python's trees exactly
+# for every rewriting row here, so `out_r10`'s `-4` and `-2` ARE the floor-semantics
+# rows and a truncating port prints 3 and -1. A real recursive printer is a mutual
+# recursion Bend refuses, and a `Nat` fuel does not rescue it (a binop spends one
+# fuel on TWO self-calls), so the DEPTH is a parameter of the printer. A PARAM
+# prints as `P<name>` from `ParamArg.name`, not an interning counter.
 def dm_show.go(neg: Bool, v: U32) -> String:
   match neg:
     case True{}: String.concat(["-", U32.show(H.i32_neg(v))])
@@ -886,18 +695,13 @@ def dm_sh2(+ar: O.Arena, +u: U32) -> String:
   dm_sh2.put(ar, u, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
 
 
-# ===========================================================================
 # THE FIXTURES. One arena, and the roots are addressed BY INDEX rather than by a
-# hand-kept record of indices -- `Gate.rs` is the list `dm_root` indexes and
+# hand-kept record of indices: `Gate.rs` is the list `dm_root` indexes and
 # `nroots` is the count, so a fixture added in the wrong place or a root dropped
-# shows up as a moved row rather than as a silently shorter table. That is the
-# "pin a COUNT, not just a boolean" row the brief asks for.
-#
-# `ParamArg` has thirteen fields and `ops.bend` lays them out in declaration
-# order, so `param` spells them out; the shape is ops.py:1015's
-# `ParamArg(-1, dtype, name=name, vmin_vmax=(min_val,max_val),
-# multiple_of=multiple_of, addrspace=AddrSpace.ALU)`.
-# ===========================================================================
+# shows up as a moved row rather than as a silently shorter table. `ParamArg` has
+# thirteen fields in `ops.bend`'s declaration order, so `dm_param` spells them out
+# against ops.py:1015's `ParamArg(-1, dtype, name=name,
+# vmin_vmax=(min_val,max_val), multiple_of=multiple_of, addrspace=AddrSpace.ALU)`.
 type Gate is Data:
   Gate{ar: O.Arena, rs: List<&2, U32>}
 
@@ -934,11 +738,9 @@ def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
 # `y.vmin == y.vmax == 0` holds for a non-CONST divisor.
 
 # THE NODE LIST, IN BINDING ORDER. 1-11 are the CONSTs, 12-18 the PARAMs, 19 on
-# are the intermediates and then the roots. The comment on each root is the
-# oracle's answer. THE LAST ARENA THREADED IS THE THING TO RE-READ: `py05` is
-# built from `Found.ar(py)` and every node after it is built from `Found.ar(py05)`,
-# because an index is only meaningful in the arena that produced it and `+` does
-# not enforce that (see bend2-constraints, rule 4 of the 2026-09-30 divandmod set).
+# are the intermediates and then the roots. THE LAST ARENA THREADED IS THE THING
+# TO RE-READ: an index is only meaningful in the arena that produced it, and `+`
+# does not enforce that (bend2-constraints, rule 4 of the 2026-09-30 set).
 #  0 bottom NOOP (Arena.empty)
 #  1 CONST 0    2 CONST 1    3 CONST 3    4 CONST 4    5 CONST 5    6 CONST 6
 #  7 CONST 7    8 CONST 10   9 CONST -2  10 CONST -4  11 CONST -7
@@ -1045,48 +847,60 @@ def trees() -> Gate:
   +r25 = O.UOp.alu(O.Found.ar(r24), O.OpsFLOORDIV{}, [O.Found.i(px), O.Found.i(py05)])
   Gate{O.Found.ar(r25), [O.Found.i(r00), O.Found.i(r01), O.Found.i(r02), O.Found.i(r03), O.Found.i(r04), O.Found.i(r05), O.Found.i(r06), O.Found.i(r07), O.Found.i(r08), O.Found.i(r09), O.Found.i(r10), O.Found.i(r11), O.Found.i(r12), O.Found.i(r13), O.Found.i(r14), O.Found.i(r15), O.Found.i(r16), O.Found.i(r17), O.Found.i(r18), O.Found.i(r19), O.Found.i(r20), O.Found.i(r21), O.Found.i(r22), O.Found.i(r23), O.Found.i(r24), O.Found.i(r25)]}
 
-# ===========================================================================
-# NOT PORTED, one line each, with the WALL and the phase that owns it. The
-# block is the same shape `ops.bend` and `fold.bend` use.
-# ===========================================================================
+# NOT PORTED, one line each, with the WALL and the phase that owns it. The block
+# is the same shape `ops.bend` and `fold.bend` use.
 # TODO(p3) divandmod.py:13 the RANGE HALF of `x//y` being a point -- PORTED for
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
 #   the test is always true. Outside CONST/CONST it needs `_min_max`. WALL:
 #   `UOp._min_max`, P3. See fold.bend:2178.
+# TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
+#   `x.pop_const()` and `split_uop(Ops.ADD)`, both op-shape walks over a fuel-bound
+#   src list. Neither has a caller once line 23 is gone, so neither is written.
+#   WALL: none -- these ARE expressible; they are P3 for SCOPE, not for
+#   impossibility, and they land with line 23.
 # TODO(p3) divandmod.py:13-15 a FLOAT CONST -- `_min_max` returns PyConst and
 #   `dm_val` reads `CInt` only, so rules 0 and 1 SKIP on a `CFloat` divisor where
 #   Python rewrites. WALL: PyConst (float | bool | Invalid), P3.
-# TODO(p3) divandmod.py:17-19 `x.pop_const()` and `split_uop(Ops.ADD)` -- both are
-#   op-shape walks over a fuel-bound src list and neither has a caller once line
-#   23 is gone, so neither is written. WALL: none -- these ARE expressible; they
-#   are P3 for SCOPE, not for impossibility, and they land with line 23.
-# TODO(p3) divandmod.py:23-25 `nested_div`, needs `x.src[1].divides(c)`.
-#   WALL: `divides` (ops.py:1067) needs `gcd` (ops.py:1083) needs a `Counter`
-#   fold. fold.bend:2174.
-# TODO(p3) divandmod.py:28-35 `remove_nested_mod` -- `divides`, same wall.
-# TODO(p3) divandmod.py:37-48 `fold_divmod_congruence` -- the WORST one.
-#   `itertools.product` over per-term sign choices, then
+#
+# ** Constant Denominator Rules ** -- divandmod.py:21-70. These rules strictly
+# require y to be a scalar constant > 0, and every one is behind a wall:
+# TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
+#   the mod case is handled by remove_nested_mod below` -- needs
+#   `x.src[1].divides(c)`. WALL: `divides` (ops.py:1067) needs `gcd` (ops.py:1083)
+#   needs a `Counter` fold. fold.bend:2174.
+# TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
+#   `divides`, same wall.
+# TODO(p3) divandmod.py:37 `Shared decomposition for folding rules` and :41-48
+#   `fold_divmod_congruence: fold if a is congruent to an expression whose range is
+#   between 0 and c` -- the WORST one. `itertools.product` over per-term sign
+#   choices (`try both signs of the remainder for a lone term ... otherwise pick
+#   the smaller to keep the product over terms small`), then
 #   `sum(r*v for r,v in zip(...)).vmin//c == rem.vmax//c`. It is interval
 #   arithmetic over a symbolic SUM, so it needs `_min_max` on a node the fold has
 #   never built, AND a cartesian product, AND `min(r, r-c, key=abs)`. WALL:
 #   `_min_max`; the product is a fold over a `List<List<U32>>` and Bend has no
 #   cartesian product and no `min` over three with a key function. P3.
-# TODO(p3) divandmod.py:50-55 `gcd_with_remainder` -- `math.gcd(*factors, c)`,
-#   `divides`, `.simplify()` and `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`,
-#   `simplify`. `math.gcd` over a VARIADIC fold is a fold over a list, which is
-#   expressible; the rest is not.
-# TODO(p3) divandmod.py:57-70 `nest_by_factor` -- the set comprehension
+# TODO(p3) divandmod.py:50-55 `gcd_with_remainder: factor out common gcd from
+#   numerator` -- `math.gcd(*factors, c)`, `divides`, `.simplify()` and
+#   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
+#   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
+# TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
+#   x%c -> (x//f%(c//f))*f + b where b=x%f` and `FLOORDIV identity holds for any
+#   sign of x; FLOORMOD reconstruction needs x.vmin>=0` -- the set comprehension
 #   `{abs(f) for u, f in zip(...) if ...}` is a set (an ORDERED fold with a dedup
 #   step), then a RECURSIVE call to `fold_divmod_general(x//div)` (mutual
 #   recursion, refused), then `backward_slice` twice for the `min(results, key=
-#   len(slice))`. WALL: mutual recursion (Bend refuses it outright, so the port
-#   needs the pass/fold structure `fold.bend` uses for the OTHER direction),
-#   `backward_slice` (a set walk, fold.bend:2130), and `_min_max`. P3, and the
-#   largest single omission in this file.
-# TODO(p3) divandmod.py:75-96 `divide_by_gcd` and `factor_remainder` --
-#   `UOp.gcd(*all_uops, y)`, `.simplify()`, `divide_exact` (which needs `divides`),
-#   `const_factor` (a `Counter` fold), `u.divides(c)*(c%y.val)` and `y.vmin<0` /
-#   `x.vmin<0`. WALL: `gcd`, `const_factor`, `simplify`, `_min_max`. P3.
+#   len(slice))`. WALL: mutual recursion, `backward_slice` (a set walk,
+#   fold.bend:2130), and `_min_max`. P3, and the largest single omission here.
+#
+# ** Variable Denominator / Fallback Rules ** -- divandmod.py:72-96. These rules
+# apply to variables OR constants that failed the checks above, and reconstruct all
+# uops including const for these checks. Both are behind the same walls:
+# TODO(p3) divandmod.py:77-81 `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+#   `factor_remainder: (d*x+y)//d -> x+y//d` -- `UOp.gcd(*all_uops, y)`,
+#   `.simplify()`, `divide_exact` (which needs `divides`), `const_factor` (a
+#   `Counter` fold), `u.divides(c)*(c%y.val)` and `y.vmin<0` / `x.vmin<0`. WALL:
+#   `gcd`, `const_factor`, `simplify`, `_min_max`. P3.
 # TODO(p3) divandmod.py:11 the `raise` itself -- Python's
 #   `ZeroDivisionError(f"{'Division' if d.op is Ops.FLOORDIV else 'Mod'} by zero
 #   trying to rewrite {x.alu(d.op, y)}")` needs a `raise` and an f-string over a
@@ -1094,7 +908,6 @@ def trees() -> Gate:
 #   the rows; rendering the message is the caller's job, exactly as `fold.bend`
 #   does for `UOp.shape`'s `if (ret:=self._shape) is None: raise`. NO ACTION
 #   beyond P3 at the call site.
-# ---------------------------------------------------------------------------
 #
 # WHAT NEXT, in the order the walls fall.
 #   1. `_min_max` (ops.py:1104) unblocks `dm_point`'s range half, the `x.vmin>=0`
@@ -1107,14 +920,12 @@ def trees() -> Gate:
 #   3. `simplify` / `ssimplify` (ops.py:513/520) is what `fold_divmod_general`
 #      line 78 calls on `UOp.gcd(...)`, and `ops.bend` records it as the largest
 #      single unlock in ITS half too.
-#   4. Only after those three does `fold_divmod_congruence` become a question,
-#      and only after THAT does the cartesian product need a shape.
-
-# ===========================================================================
-# THE ROWS. Every one is a claim PYTHON FIXES: a table count, a reject-set
-# length, a `vmin == vmax == 0` flag, a rewritten tree, an arena-growth count,
-# or a fired/skipped flag. Nothing here restates the code.
-# ===========================================================================
+#   4. Only after those three does `fold_divmod_congruence` become a question, and
+#      only after THAT does the cartesian product need a shape.
+#
+# THE ROWS. Every one is a claim PYTHON FIXES: a table count, a reject-set length,
+# a `vmin == vmax == 0` flag, a rewritten tree, an arena-growth count, or a
+# fired/skipped flag. Nothing here restates the code.
 def fx(g: Gate) -> F.Folded:
   F.folded(Gate.ar(g))
 
@@ -1227,31 +1038,22 @@ def gate() -> IO(Unit):
     row("on_r25", t_on(trees(), 25))
     rows("out_r25", t_out(trees(), 25))
 
-# ===========================================================================
-# THE FUZZ DRIVER. NO ARGUMENT IS THE GATE ABOVE, UNCHANGED; ONE ARGUMENT IS A
-# CASE FILE, and the case is ONE LINE `op|a|b` -- a CONST/CONST tree the same way
-# the gate's `r13`..`r16` fixtures build theirs. `sz.bend`'s `main` and
-# `upat.bend`'s `dispatch` read their argument the same way, and for the same
-# reason: the dispatch is on the SHAPE of the argument list, so a missing case
-# file cannot be mistaken for a case.
+# THE FUZZ DRIVER. NO ARGUMENT IS THE GATE ABOVE, UNCHANGED; ONE ARGUMENT IS A CASE
+# FILE, and the case is ONE LINE `op|a|b` -- a CONST/CONST tree built the same way
+# the gate's `r13`..`r16` fixtures build theirs. The dispatch is on the SHAPE of
+# the argument list, so a missing case file cannot be mistaken for a case.
 #
-# THE CANONICAL LINE IS THE FOLD'S DENOTATION, not its tree, and that is a
-# decision with a reason. `dm_point` answers a CONST/CONST FLOORDIV with
-# `CONST q` and a CONST/CONST FLOORMOD with `SUB(x, MUL(q, y))` (divergence B:
-# Python writes the same number as `ADD(MUL(MUL, C(-1)))`), so a tree-shaped
-# line would compare Python's canonicalisation against this file's -- a
-# divergence the header already states, restated every case. The DENOTATION is
-# the same integer on both sides and is the only line that does not re-report a
-# known divergence, so it is the line. `nofold` is Python's `None`; `RAISED`
-# is its `ZeroDivisionError` at divandmod.py:11, which this file reports as the
-# Bool `dm_zero` and the header already pins at `zero_r04`/`zero_r11`/`zero_r23`.
-# ===========================================================================
+# THE CANONICAL LINE IS THE FOLD'S DENOTATION, not its tree: a tree-shaped line
+# would compare Python's SUB canonicalisation against this file's (divergence B)
+# on every case. The denotation is the same integer on both sides. `nofold` is
+# Python's `None`; `RAISED` is its `ZeroDivisionError` at divandmod.py:11, which
+# this file reports as the Bool `dm_zero`.
 
-# `op` -- the four ops the case format spells. CDIV/CMOD are here because they
-# are REAL Ops that the table does NOT claim, so a case naming one must print
-# `nofold` on both sides: it is the row that says the table's op set is
-# {FLOORDIV, FLOORMOD} and not something wider. FDIV is the float one, for the
-# same reason.
+# `op` -- the five ops the case format spells. CDIV/CMOD/FDIV are REAL Ops that
+# the table does NOT claim, so a case naming one must print `nofold` on both
+# sides: the row that says the table's op set is {FLOORDIV, FLOORMOD} and not
+# something wider. `case _` answers FLOORDIV, the only default that cannot make a
+# typo'd case name a DIFFERENT op.
 def dmc.op(s: String) -> O.Op:
   match s:
     case "FLOORDIV": O.OpsFLOORDIV{}
@@ -1296,9 +1098,7 @@ def dmc.field(fs: List<&2, String>, k: U32) -> String:
   dmc.nth(List.get(&2, String, fs, U32.to_nat(k)))
 
 # THE ARENA: two CONSTs and the op node, in binding order, exactly the shape
-# `trees()` builds for `r13`..`r16`. The last arena threaded is the one that
-# produced the index, so every node after `c0` is built from `Found.ar` of the
-# node before it.
+# `trees()` builds for `r13`..`r16`.
 def dmc.arena(op: O.Op, a: U32, b: U32) -> O.Found:
   +ar = O.Arena.empty()
   +ca = O.UOp.const(ar, O.CInt{H.i64_of_i32(a)})
@@ -1306,16 +1106,14 @@ def dmc.arena(op: O.Op, a: U32, b: U32) -> O.Found:
   O.UOp.alu(O.Found.ar(cb), op, [O.Found.i(ca), O.Found.i(cb)])
 
 # THE DENOTATION of a folded node, read off the tree the port ANSWERED with. A
-# CONST is its own value; the `SUB(x, MUL(q, y))` `dm_point.sub` builds is
-# `x - q*y`. `q` is READ from the port's own interned node, never re-derived
-# here, so a port that folded the wrong quotient denotates the wrong number.
+# CONST is its own value; the `SUB(x, MUL(q, y))` `dm_point.sub` builds is `x - q*y`,
+# and `q` is READ from the port's own interned node, never re-derived here.
 #
 # THE ARITHMETIC IS 32-BIT AND PYTHON'S IS NOT, and that is the point: tinygrad
 # CONSTs are mathematical Python ints, so `1 % -2147483648` is 1 while this
-# file's `MUL(-1, INT_MIN)` is already 2^31 before the SUB. Both sides'
-# TREES denote the same integer -- `1 - 2147483648 == -2147483647` -- and the
-# oracle evaluates the tree in Python's unbounded ints precisely so this line
-# compares denotations and not arithmetic widths.
+# file's `MUL(-1, INT_MIN)` is already 2^31 before the SUB. Both trees denote the
+# same integer, and the oracle evaluates the tree in Python's unbounded ints so
+# this line compares denotations and not arithmetic widths.
 def dmc.den.const(ar: O.Arena, i: U32) -> U32:
   dm_ival(dm_val(ar, i))
 
@@ -1335,10 +1133,9 @@ def dmc.den(+ar: O.Arena, +i: U32) -> U32:
   dmc.den.go(O.Arena.op(ar, i), ar, i)
 
 # THE TWO CANONICAL ANSWERS, plus the one Python REFUSES. `CONST n` is a folded
-# value and `nofold` is its `None`. `RAISED` is its `ZeroDivisionError` at
-# divandmod.py:11: this file has no `raise` and reports the condition as the
-# Bool `dm_zero`, which the gate pins at `zero_r04`/`zero_r11`/`zero_r23`, so
-# `RAISED` is a distinct word and not a synonym for `nofold`.
+# value and `nofold` is its `None`. `RAISED` is its `ZeroDivisionError`, and this
+# file has no `raise`: it reports the condition as the Bool `dm_zero`, so `RAISED`
+# is a distinct word and not a synonym for `nofold`.
 def dmc.out.hit.go(on: U32, v: U32) -> String:
   match on:
     case 0: "nofold"
@@ -1352,14 +1149,10 @@ def dmc.out(zero: Bool, +h: Hit) -> String:
     case True{}: "RAISED"
     case _: dmc.out.hit(h)
 
-# The zero test is reported ONLY where Python reaches `fold_divmod_general` at
-# all, which is where RULE 2 claims the node: divandmod.py:11 is inside
-# `fold_divmod_general` and rule 2 is its only caller. A CMOD root is claimed by
-# nobody, so Python answers `None` there and never raises -- asking `dm_zero`
-# about it would print `RAISED` for a node Python does not look at, which is the
-# HARNESS re-reporting its own mistake and not the port's. The op set is READ
-# from `dm_table()` rather than spelled here, so a wider rule 2 moves the word
-# with it instead of silently disagreeing with it.
+# The zero test is reported ONLY where Python reaches `fold_divmod_general` at all,
+# which is where RULE 2 claims the node -- a CMOD root is claimed by nobody, so
+# Python answers `None` there and never raises. The op set is READ from
+# `dm_table()` rather than spelled here, so a wider rule 2 moves the word with it.
 def dmc.two.go(m: Maybe<&2, O.PMEntry>) -> List<&2, O.Op>:
   match m:
     case Some{e}: O.PMEntry.ops(e)
