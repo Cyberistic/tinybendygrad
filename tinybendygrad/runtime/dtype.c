@@ -154,13 +154,11 @@ static Term fp16_run(Env e, Term* f, IoWork* w) {
 }
 
 static Term fp8_to_run(Env e, Term* f, IoWork* w) {
-  return (Term)(intptr_t)fp8_decode((u32)f[0] + ((u32)f[1] << 16), (u32)f[2] & 0xFFu);
+  return (Term)(intptr_t)fp8_decode((u32)f[0] & 0xFFu, (u32)f[1] & 0xFFu);
 }
 
 static Term fp8_from_run(Env e, Term* f, IoWork* w) {
-  u32 xb = (u32)f[0];
-  u32 kind = (u32)f[1] & 0xFFu;
-  return (Term)(intptr_t)fp8_encode(xb, kind);
+  return (Term)(intptr_t)fp8_encode((u32)f[0], (u32)f[1] & 0xFFu);
 }
 
 static Term bf16_run(Env e, Term* f, IoWork* w) {
@@ -168,71 +166,75 @@ static Term bf16_run(Env e, Term* f, IoWork* w) {
   return f32_rewrap((x + 0x7FFFu + ((x >> 16) & 1u)) & 0xFFFF0000u);
 }
 
-// dtype.py's 64-bit helpers. Python's // and % are floor division and its
-// cdiv/cmod are truncate-toward-zero; a signed 64-bit quotient has no U32
-// encoding, which is the reason these are an effect and not a def.
-static void div64_pair(s64 a, s64 b, s64* q, s64* r) {
-  if (b == 0) { *q = 0; *r = a; return; }        // tinygrad's zero-divisor branch
-  *q = a / b; *r = a % b;
-  if (*r != 0 && ((*r < 0) != (b < 0))) { *q -= 1; *r += b; }
-}
-
-static Term div64_floor(s64 a, s64 b) {
-  s64 q, r; div64_pair(a, b, &q, &r);
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)q >> 32), (Term)(intptr_t)(u32)((u64)q));
-}
-
-static Term div64_mod(s64 a, s64 b) {
-  s64 q, r; div64_pair(a, b, &q, &r);
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)r >> 32), (Term)(intptr_t)(u32)((u64)r));
-}
-
-// cdiv truncates toward zero and takes its sign from the operands, not from
-// x*y, because the product would overflow.
-static Term div64_cdiv(s64 a, s64 b) {
-  if (b == 0) return io_tup(e, 0, 0);
-  s64 q = (a < 0 ? -a : a) / (b < 0 ? -b : b);
-  if ((a < 0) != (b < 0)) q = -q;
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)q >> 32), (Term)(intptr_t)(u32)((u64)q));
-}
-
-static Term div64_cmod(s64 a, s64 b) {
-  s64 q, r;
-  if (b == 0) return io_tup(e, (Term)(intptr_t)(u32)((u64)a >> 32), (Term)(intptr_t)(u32)((u64)a));
-  s64 qq = (a < 0 ? -a : a) / (b < 0 ? -b : b);
-  if ((a < 0) != (b < 0)) qq = -qq;
-  r = a - qq * b;
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)r >> 32), (Term)(intptr_t)(u32)((u64)r));
-}
-
-static Term div64_ceildiv(s64 a, s64 b) {
-  if (b == 0) return io_tup(e, 0, 0);
-  // dtype.py ceildiv is -(a // -b)
-  s64 q, r; div64_pair(a, -b, &q, &r);
-  s64 c = -q;
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)c >> 32), (Term)(intptr_t)(u32)((u64)c));
-}
-
-static Term div64_trunc(s64 a) {
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)a >> 32), (Term)(intptr_t)(u32)((u64)a));
-}
-
-// Every run below takes an I64 as (hi, lo) and answers an I64 the same way.
+// ===========================================================================
+// The 64-bit helpers. Python's // and % are floor division; its cdiv/cmod
+// truncate toward zero. A signed 64-bit quotient has no U32 encoding, which is
+// the whole reason these are an effect and not a def.
+//
+// Every one takes an I64 as (hi, lo) and answers one the same way. INT64_MIN
+// has no positive counterpart, so nothing here negates its divisor: cdiv uses
+// |a|//|b| and floor uses one remainder step, which is what Python does anyway.
 static s64 i64_of(Term* f) {
   return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);
 }
 
-static Term i64_run(Env e, Term* f, IoWork* w) {
-  return io_tup(e, (Term)(intptr_t)(u32)(((u64)i64_of(f) >> 32)),
-                   (Term)(intptr_t)(u32)((u64)i64_of(f)));
+static Term pack64(Env e, s64 v) {
+  return io_tup(e, (Term)(intptr_t)(u32)((u64)v >> 32), (Term)(intptr_t)(u32)(u64)v);
 }
 
-static Term div64_floor_run(Env e, Term* f, IoWork* w) { return div64_floor(i64_of(f), i64_of(f + 2)); }
-static Term div64_mod_run(Env e, Term* f, IoWork* w)   { return div64_mod(i64_of(f), i64_of(f + 2)); }
-static Term div64_cdiv_run(Env e, Term* f, IoWork* w)  { return div64_cdiv(i64_of(f), i64_of(f + 2)); }
-static Term div64_cmod_run(Env e, Term* f, IoWork* w)  { return div64_cmod(i64_of(f), i64_of(f + 2)); }
-static Term div64_ceildiv_run(Env e, Term* f, IoWork* w) { return div64_ceildiv(i64_of(f), i64_of(f + 2)); }
-static Term div64_trunc_run(Env e, Term* f, IoWork* w) { return div64_trunc(i64_of(f)); }
+// Python's // and %, together, because they are one computation.
+static Term floor_div_mod(Env e, s64 a, s64 b) {
+  s64 q = 0, r = a;
+  if (b != 0) {
+    q = a / b;
+    r = a % b;
+    if (r != 0 && ((r < 0) != (b < 0))) { q -= 1; r += b; }
+  }
+  return io_tup(e, pack64(e, q), pack64(e, r));
+}
+
+// cdiv truncates toward zero; its sign comes from the operands, not from a*b,
+// because the product would overflow.
+static s64 cdiv_of(s64 a, s64 b) {
+  s64 q = (a < 0 ? -a : a) / (b < 0 ? -b : b);
+  return (a < 0) != (b < 0) ? -q : q;
+}
+
+static Term i64_run(Env e, Term* f, IoWork* w) {
+  return pack64(e, i64_of(f));
+}
+
+static Term div64_floor_run(Env e, Term* f, IoWork* w) {
+  s64 a = i64_of(f), b = i64_of(f + 2);
+  return Pair.fst(U32 & U32, floor_div_mod(e, a, b));
+}
+
+static Term div64_mod_run(Env e, Term* f, IoWork* w) {
+  s64 a = i64_of(f), b = i64_of(f + 2);
+  return Pair.snd(U32 & U32, floor_div_mod(e, a, b));
+}
+
+// a & b and not a & b, so the two answers stay one computation
+
+static Term div64_cdiv_run(Env e, Term* f, IoWork* w) {
+  s64 a = i64_of(f), b = i64_of(f + 2);
+  return pack64(e, b == 0 ? 0 : cdiv_of(a, b));
+}
+
+static Term div64_cmod_run(Env e, Term* f, IoWork* w) {
+  s64 a = i64_of(f), b = i64_of(f + 2);
+  return pack64(e, b == 0 ? a : a - cdiv_of(a, b) * b);
+}
+
+// dtype.py ceildiv is -(a // -b), which is ceil for every b except INT64_MIN.
+// That one case is the ceiling directly, so no negation is needed anywhere.
+static Term div64_ceildiv_run(Env e, Term* f, IoWork* w) {
+  s64 a = i64_of(f), b = i64_of(f + 2);
+  if (b == 0) return pack64(e, 0);
+  s64 c = a / b;
+  if (a % b != 0 && (a < 0) == (b < 0)) c += 1;
+  return pack64(e, c);
+}
 
 #ifdef CID(Dt.bf16)
 static void __attribute__((constructor)) dtype_bf16_use(void) {

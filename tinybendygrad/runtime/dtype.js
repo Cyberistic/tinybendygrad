@@ -132,13 +132,9 @@ function dtype_fp8_to(x, kind) {
 }
 
 // I64 arrives as (hi, lo) and answers the same way, through BigInt so the sign
-// and the full 64 bits survive.
+// and all 64 bits survive.
 function i64_of(p) {
-  return (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0);
-}
-
-function i64_of2(a, b) {
-  return [i64_of(a), i64_of(b)];
+  return BigInt.asIntN(64, (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0));
 }
 
 function pack64(v) {
@@ -146,37 +142,31 @@ function pack64(v) {
   return io_tup(Number((u >> 32n) & 0xffffffffn), Number(u & 0xffffffffn));
 }
 
-function trunc64(a) {
-  return pack64(a);
-}
-
+// Python's // and %: floor division, and the remainder that goes with it.
 function floor_pair(a, b) {
-  if (b === 0n) return [0n, a];
+  if (b === 0n) return [0n, a];              // tinygrad's zero-divisor branch
   let q = a / b, r = a % b;
   if (r !== 0n && ((r < 0n) !== (b < 0n))) { q -= 1n; r += b; }
   return [q, r];
 }
 
+// cdiv truncates toward zero. Its sign comes from the operands, not from a*b:
+// the product would overflow.
 function cdiv_of(a, b) {
-  const aa = a < 0n ? -a : a, bb = b < 0n ? -b : b;
-  const q = aa / bb;
+  const q = (a < 0n ? -a : a) / (b < 0n ? -b : b);
   return (a < 0n) !== (b < 0n) ? -q : q;
-}
-
-function pack_pair(v) {
-  return pack64(v);
 }
 
 io_eff(CID(Dt.bf16), dtype_bf16);
 io_eff(CID(Dt.fp16), dtype_fp16);
 io_eff(CID(Dt.fp8_from), dtype_fp8_from);
 io_eff(CID(Dt.fp8_to), dtype_fp8_to);
-io_eff(CID(Dt.i64_trunc), trunc64);
-io_eff(CID(Dt.i64_floor_div), (a, b) => pack_pair(floor_pair(i64_of(a), i64_of(b))[0]));
-io_eff(CID(Dt.i64_floor_mod), (a, b) => pack_pair(floor_pair(i64_of(a), i64_of(b))[1]));
-io_eff(CID(Dt.i64_cdiv), (a, b) => pack_pair(
+io_eff(CID(Dt.i64_trunc), (a) => pack64(i64_of(a)));
+io_eff(CID(Dt.i64_floor_div), (a, b) => pack64(floor_pair(i64_of(a), i64_of(b))[0]));
+io_eff(CID(Dt.i64_floor_mod), (a, b) => pack64(floor_pair(i64_of(a), i64_of(b))[1]));
+io_eff(CID(Dt.i64_cdiv), (a, b) => pack64(
   i64_of(b) === 0n ? 0n : cdiv_of(i64_of(a), i64_of(b))));
-io_eff(CID(Dt.i64_cmod), (a, b) => pack_pair(
+io_eff(CID(Dt.i64_cmod), (a, b) => pack64(
   i64_of(b) === 0n ? i64_of(a) : i64_of(a) - cdiv_of(i64_of(a), i64_of(b)) * i64_of(b)));
-io_eff(CID(Dt.i64_ceildiv), (a, b) => pack_pair(
+io_eff(CID(Dt.i64_ceildiv), (a, b) => pack64(   // dtype.py ceildiv is -(a // -b)
   i64_of(b) === 0n ? 0n : -floor_pair(i64_of(a), -i64_of(b))[0]));

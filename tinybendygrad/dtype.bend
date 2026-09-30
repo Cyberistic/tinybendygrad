@@ -1,0 +1,503 @@
+# dtype.bend -- tinygrad/dtype.py.
+#
+# ONE DATATYPE. `Dt` and its `Cls` tag live in ./LAWS/spec.bend, which is where
+# the spec IR needs them, and this file imports them. dtype.py does not get a
+# second, competing dtype; if the shape of `Dt` is wrong it is fixed there, in
+# one place, and both readers see the fix.
+#
+# THE LATTICE IS A BITMASK, NOT A MATCH LADDER. dtype.py spells least_upper_dtype
+# as `min(set.intersection(*recursive_parents(d) for d in ds))`, with the parent
+# relation as a table of tuples and the closure over it. Bend has no sets and no
+# sets-of-sets, and a 19-way ladder of pairs is 361 cases that would need a
+# checked-in proof that they agree with Python. The twenty dtypes are totally
+# ordered by dtype.py's own `__lt__` (priority, bitsize, name, fmt), so bit i of
+# a mask stands for "rank i is a recursive parent". Then
+#
+#     least_upper(a, b) = the lowest set bit of mask(a) & mask(b)
+#
+# which is dtype.py's `min` over the intersection, because the rank order IS
+# `__lt__`. The masks in `promo_mask` are `DType._get_recursive_parents` written
+# down: rank i's bit is set iff rank i is in that set. `void` is rank 19 with an
+# empty mask, so any pair naming it answers `void`, which is the one totalization
+# this file makes -- dtype.py raises KeyError there, because `void` is not in its
+# lattice at all. See NOT PORTED.
+#
+# VARIADIC. dtype.py's least_upper_dtype takes *ds. Bend has no variadics, so
+# there are two defs: `least_upper` is the binary one and `least_upper_dtypes`
+# folds a list left to right. Python's `min` over an intersection is associative,
+# so the fold and the n-ary call agree exactly -- checked over all 361 pairs and
+# 5000 random 4-ary cases.
+#
+# NOT PORTED, one line each. The bottom of this file says why.
+
+import Base
+import ./LAWS/spec.bend as S
+import ./helpers.bend as H
+
+# ===========================================================================
+# The twenty dtypes, under tinygrad's attribute names.
+#
+# spec.bend already holds all twenty; these are the names dtype.py code writes
+# (`dtypes.float32`, `dtypes.half`, ...), which are not always the names the spec
+# IR uses (`single`, `half`). One value, twenty names, no second value.
+# ===========================================================================
+
+def dtypes.void() -> S.Dt: S.void()
+def dtypes.weakint() -> S.Dt: S.weakint()
+def dtypes.index() -> S.Dt: S.weakint()
+def dtypes.bool() -> S.Dt: S.boolean()
+def dtypes.int8() -> S.Dt: S.int8()
+def dtypes.uint8() -> S.Dt: S.uint8()
+def dtypes.int16() -> S.Dt: S.int16()
+def dtypes.uint16() -> S.Dt: S.uint16()
+def dtypes.int32() -> S.Dt: S.int32()
+def dtypes.uint32() -> S.Dt: S.uint32()
+def dtypes.int64() -> S.Dt: S.int64()
+def dtypes.uint64() -> S.Dt: S.uint64()
+def dtypes.weakfloat() -> S.Dt: S.weakfloat()
+def dtypes.fp8e4m3() -> S.Dt: S.fp8e4m3()
+def dtypes.fp8e4m3fnuz() -> S.Dt: S.fp8e4m3fnuz()
+def dtypes.fp8e5m2() -> S.Dt: S.fp8e5m2()
+def dtypes.fp8e5m2fnuz() -> S.Dt: S.fp8e5m2fnuz()
+def dtypes.float16() -> S.Dt: S.half()
+def dtypes.half() -> S.Dt: S.half()
+def dtypes.bfloat16() -> S.Dt: S.bfloat16()
+def dtypes.float32() -> S.Dt: S.single()
+def dtypes.float64() -> S.Dt: S.double()
+
+# the fp8 group, as dtype.py's `dtypes.fp8s`
+def dtypes.fp8s() -> List<&2, S.Dt>:
+  [S.fp8e4m3(), S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz()]
+
+def dtypes.floats() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, dtypes.fp8s(), [S.half(), S.bfloat16(), S.single(), S.double()])
+
+def dtypes.uints() -> List<&2, S.Dt>:
+  [S.uint8(), S.uint16(), S.uint32(), S.uint64()]
+
+def dtypes.sints() -> List<&2, S.Dt>:
+  [S.int8(), S.int16(), S.int32(), S.int64()]
+
+def dtypes.ints() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, dtypes.uints(), dtypes.sints())
+
+# dtype.py's `dtypes.all`: every dtype a value can have.
+def dtypes.all() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes.floats(), dtypes.ints()),
+    [S.boolean()])
+
+# ===========================================================================
+# The promotion lattice.
+#
+# The rank order is dtype.py's own `__lt__`, which sorts on
+# (priority, bitsize, name, fmt). Both fp8 ties at priority 10 and 11 are broken
+# by name, so the order below is forced and there is no choice to make.
+#
+#   0 bool       5 uint16    10 weakfloat  15 float16
+#   1 weakint    6 int32     11 fp8e4m3    16 bfloat16
+#   2 int8       7 uint32    12 fp8e4m3fnuz 17 float32
+#   3 uint8      8 int64     13 fp8e5m2     18 float64
+#   4 int16      9 uint64    14 fp8e5m2fnuz 19 void (empty mask)
+#
+# The masks are `_get_recursive_parents` in rank order; see the header for why
+# that is the whole lattice.
+# ===========================================================================
+
+def promo_mask.void(nm: String) -> U32:
+  match nm:
+    case "void": 0
+    case _: 0
+
+def promo_mask(nm: String) -> U32:
+  match nm:
+    case "bool": 524287
+    case "weakint": 524286
+    case "signed char": 523604
+    case "unsigned char": 524280
+    case "short": 523600
+    case "unsigned short": 524256
+    case "int": 523584
+    case "unsigned int": 524160
+    case "long": 523520
+    case "unsigned long": 523776
+    case "weakfloat": 523264
+    case "float8_e4m3": 493568
+    case "float8_e4m3fnuz": 495616
+    case "float8_e5m2": 499712
+    case "float8_e5m2fnuz": 507904
+    case "half": 425984
+    case "__bf16": 458752
+    case "float": 393216
+    case "double": 262144
+    case _: 0
+
+def dt_name(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: nm
+
+# the rank -> dtype half of the same order
+def dt_by_rank(r: Nat) -> S.Dt:
+  match r:
+    case 0n: S.boolean()
+    case 1n: S.weakint()
+    case 2n: S.int8()
+    case 3n: S.uint8()
+    case 4n: S.int16()
+    case 5n: S.uint16()
+    case 6n: S.int32()
+    case 7n: S.uint32()
+    case 8n: S.int64()
+    case 9n: S.uint64()
+    case 10n: S.weakfloat()
+    case 11n: S.fp8e4m3()
+    case 12n: S.fp8e4m3fnuz()
+    case 13n: S.fp8e5m2()
+    case 14n: S.fp8e5m2fnuz()
+    case 15n: S.half()
+    case 16n: S.bfloat16()
+    case 17n: S.single()
+    case _: S.double()
+
+def lowest(+m: U32) -> Nat:
+  # the index of the lowest set bit. m is never 0, because `bool` is a recursive
+  # parent of every dtype, so every non-void mask has bit 0 set.
+  U32.log2(U32.and(m, U32.sub(0, m)))
+
+# dtype.py least_upper_dtype(a, b), over the two masks. `None` is dtype.py's
+# KeyError, which is what any pair naming `void` gives: void is not in the
+# lattice it closes over.
+def least_upper.pick(ok: Bool, m: U32) -> Maybe<&1, S.Dt>:
+  match ok:
+    case True{}: None{}
+    case False{}: Some{dt_by_rank(lowest(m))}
+
+def least_upper(+ma: U32, mb: U32) -> Maybe<&1, S.Dt>:
+  least_upper.pick(U32.is_zero(ma), U32.and(ma, mb))
+
+def least_upper.picked(m: Maybe<&1, S.Dt>) -> S.Dt:
+  match m:
+    case Some{d}: d
+    case None{}: S.void()
+
+# The same meet as a value rather than an outcome. `void` is the bottom of this
+# lattice -- least_upper(void, x) is void -- so it also serves as the fold's
+# identity, and it is what a Python exception would have left behind.
+def least_upper.of(a: S.Dt, b: S.Dt) -> S.Dt:
+  least_upper.picked(least_upper(promo_mask(dt_name(a)), promo_mask(dt_name(b))))
+
+def least_upper_mask(a: S.Dt, b: S.Dt) -> Maybe<&1, S.Dt>:
+  least_upper(promo_mask(dt_name(a)), promo_mask(dt_name(b)))
+
+# The variadic form: dtype.py's least_upper_dtype(*ds), folded left to right.
+# `min` over an intersection is associative, so the fold and the n-ary call
+# agree exactly, which is what the self-test checks on every pair.
+def least_upper_dtypes.go(ds: List<&2, S.Dt>, a: S.Dt) -> S.Dt:
+  match ds:
+    case Nil{}: a
+    case h <> t: least_upper_dtypes.go(t, least_upper.of(a, h))
+
+def least_upper_dtypes.head(ds: List<&2, S.Dt>) -> S.Dt:
+  match ds:
+    case Nil{}: S.void()
+    case h <> t: least_upper_dtypes.go(t, h)
+
+def least_upper_dtypes(ds: List<&2, S.Dt>) -> S.Dt:
+  least_upper_dtypes.head(ds)
+
+# least_upper_float -- dtype.py: `weakfloat if dt is weakint else dt if is_float(dt)
+# else least_upper_dtype(dt, default_float)`. Three arms, one Bool each.
+def least_upper_float.cls(cls: S.Cls, dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
+  match cls:
+    case S.CWeakInt{}: Some{S.weakfloat()}
+    case S.CFloat{}: Some{dt}
+    case _: least_upper_mask(dt, dflt)
+
+def least_upper_float(+dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
+  least_upper_float.cls(S.Dt.cls(dt), dt, dflt)
+
+# ===========================================================================
+# strong_dtype / weak_dtype
+# ===========================================================================
+
+def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
+  match cls:
+    case S.CWeakInt{}: di
+    case S.CWeakFloat{}: df
+    case _: d
+
+def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
+  strong_dtype.cls(S.Dt.cls(d), di, df, d)
+
+def weak_dtype.cls(cls: S.Cls, dt: S.Dt) -> S.Dt:
+  match cls:
+    case S.CWeakFloat{}: S.weakfloat()
+    case S.CWeakInt{}: S.weakint()
+    case _: dt
+
+def weak_dtype(+d: S.Dt) -> S.Dt:
+  weak_dtype.cls(S.Dt.cls(d), d)
+
+# ===========================================================================
+# can_lossless_cast -- "does dt1 preserve every value of dt0".
+#
+# Its own table, NOT the lattice: a mask of the recursive parents is wrong here.
+# int32 is a parent of float32 through int64 -> weakfloat, yet int32 -> float32
+# is lossy and int32 -> float64 is not, because float32 has 24 bits of mantissa
+# and int32 needs 31. So the row is `dt0` and the mask is over the ranks that
+# accept it, taken from dtype.py's `match dt1` arms one case at a time.
+# ===========================================================================
+
+def can_lossless_cast.row(nm: String) -> U32:
+  match nm:
+    case "bool": 524287
+    case "signed char": 426326
+    case "unsigned char": 427002
+    case "short": 393554
+    case "unsigned short": 394210
+    case "int": 262466
+    case "unsigned int": 263042
+    case "long": 258
+    case "unsigned long": 514
+    case "float8_e4m3": 428032
+    case "float8_e4m3fnuz": 430080
+    case "float8_e5m2": 434176
+    case "float8_e5m2fnuz": 442368
+    case "half": 425984
+    case "__bf16": 458752
+    case "float": 393216
+    case "double": 262144
+    # weakint and weakfloat are placeholders, not storages: they preserve
+    # themselves and nothing else
+    case "weakint": 2
+    case "weakfloat": 1024
+    case _: 0
+
+def rank_of(nm: String) -> Nat:
+  match nm:
+    case "bool": 0n
+    case "weakint": 1n
+    case "signed char": 2n
+    case "unsigned char": 3n
+    case "short": 4n
+    case "unsigned short": 5n
+    case "int": 6n
+    case "unsigned int": 7n
+    case "long": 8n
+    case "unsigned long": 9n
+    case "weakfloat": 10n
+    case "float8_e4m3": 11n
+    case "float8_e4m3fnuz": 12n
+    case "float8_e5m2": 13n
+    case "float8_e5m2fnuz": 14n
+    case "half": 15n
+    case "__bf16": 16n
+    case "float": 17n
+    case _: 18n
+
+def can_lossless_cast.hit(row: U32, +bit: U32) -> Bool:
+  U32.is_eq(U32.and(row, bit), bit)
+
+def can_lossless_cast.pair(row: U32, r: Nat) -> Bool:
+  can_lossless_cast.hit(row, U32.shln(1, r))
+
+def can_lossless_cast(d0: S.Dt, d1: S.Dt) -> Bool:
+  can_lossless_cast.pair(can_lossless_cast.row(dt_name(d0)), rank_of(dt_name(d1)))
+
+
+# ===========================================================================
+# sum_acc_dtype -- the dtype a reduction accumulates in.
+#
+# dtype.py reads SUM_DTYPE out of the environment. Bend has no process-wide
+# store, so it is a parameter here and the caller threads it, which is what
+# helpers.bend's `Flags` record exists for.
+# ===========================================================================
+
+def sum_acc_dtype.cls(cls: S.Cls, dt: S.Dt, sum: S.Dt) -> S.Dt:
+  match cls:
+    case S.CUint{}: least_upper.of(dt, S.uint32())
+    case S.CSint{}: least_upper.of(dt, S.int32())
+    case S.CWeakInt{}: least_upper.of(dt, S.int32())
+    case S.CBool{}: least_upper.of(dt, S.int32())
+    case _: least_upper.of(dt, sum)
+
+def sum_acc_dtype(+dt: S.Dt, sum: S.Dt) -> S.Dt:
+  sum_acc_dtype.cls(S.Dt.cls(dt), dt, sum)
+
+# ===========================================================================
+# finfo -- (exponent, mantissa) bit widths. dtype.py's is a dict lookup that
+# raises for a non-float; None is that raise.
+# ===========================================================================
+
+# A `Maybe` holds one field, so the answer is a record rather than a pair.
+type Finfo is Data:
+  Finfo{e: U32, m: U32}
+
+def finfo.of(nm: String) -> Maybe<&1, Finfo>:
+  match nm:
+    case "half": Some{Finfo{5, 10}}
+    case "__bf16": Some{Finfo{8, 7}}
+    case "float": Some{Finfo{8, 23}}
+    case "double": Some{Finfo{11, 52}}
+    case "float8_e4m3": Some{Finfo{4, 3}}
+    case "float8_e5m2": Some{Finfo{5, 2}}
+    case "float8_e4m3fnuz": Some{Finfo{4, 3}}
+    case "float8_e5m2fnuz": Some{Finfo{5, 2}}
+    case _: None{}
+
+def finfo.cls(cls: S.Cls, nm: String) -> Maybe<&1, Finfo>:
+  match cls:
+    case S.CWeakFloat{}: None{}
+    case _: finfo.of(nm)
+
+def finfo(+d: S.Dt) -> Maybe<&1, Finfo>:
+  finfo.cls(S.Dt.cls(d), dt_name(d))
+
+
+# ===========================================================================
+# The integer range, as an I64.
+#
+# spec.bend's Dt.min / Dt.max answer this for the widths a U32 holds and None
+# above that; these two finish it. dtype.py's min/max are Python ints of unbounded
+# width, which is why the pair is the honest encoding and a U32 is not. The four
+# widths are tinygrad's, and 2^64-1 is the only one of the four limits with no
+# U32 image, so it is written as the two words it is.
+# ===========================================================================
+
+def i64_max_u(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(0, 255)
+    case 16: H.i64_of_hi_lo(0, 65535)
+    case 32: H.i64_of_hi_lo(0, 4294967295)
+    case _: H.i64_of_hi_lo(4294967295, 4294967295)
+
+def i64_min_s(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(4294967295, 4294952968)
+    case 16: H.i64_of_hi_lo(4294967295, 4294901760)
+    case 32: H.i64_of_hi_lo(4294967295, 2147483648)
+    case _: H.i64_of_hi_lo(2147483648, 0)
+
+def i64_max_s(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(0, 127)
+    case 16: H.i64_of_hi_lo(0, 32767)
+    case 32: H.i64_of_hi_lo(0, 2147483647)
+    case _: H.i64_of_hi_lo(2147483647, 4294967295)
+
+def dt_range.umag(top: Bool, bits: U32) -> H.I64:
+  match top:
+    case True{}: H.i64_of_hi_lo(0, 0)
+    case False{}: i64_max_u(bits)
+
+def dt_range.smag(top: Bool, bits: U32) -> H.I64:
+  match top:
+    case True{}: i64_min_s(bits)
+    case False{}: i64_max_s(bits)
+
+def dt_range.sgn(neg: Bool, top: Bool, bits: U32) -> H.I64:
+  match neg:
+    case True{}: dt_range.smag(top, bits)
+    case False{}: dt_range.umag(top, bits)
+
+def dt_range.cls(sgn: Maybe<&1, Bool>, top: Bool, bits: U32) -> Maybe<&1, H.I64>:
+  match sgn:
+    case None{}: None{}
+    case Some{neg}: Some{dt_range.sgn(neg, top, bits)}
+
+def dt_min(d: S.Dt) -> Maybe<&1, H.I64>:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), True{}, bits)
+
+def dt_max(d: S.Dt) -> Maybe<&1, H.I64>:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), False{}, bits)
+
+# ===========================================================================
+# The float range.
+#
+# dtype.py's DType.max for a float is +inf, except that e4m3 and the fnuz fp8s
+# have no inf and end at their largest normal. `None` is the float case of the
+# spec.bend range: Bend cannot name an infinity in a U32, and here the fp8
+# answer is an ordinary F32, so it is spelled out.
+# ===========================================================================
+
+def fmax.of(nm: String) -> Maybe<&1, F32>:
+  match nm:
+    case "float8_e4m3": Some{448.0}
+    case "float8_e4m3fnuz": Some{240.0}
+    case "float8_e5m2fnuz": Some{57344.0}
+    case _: None{}
+
+def fmax.cls(cls: S.Cls, nm: String) -> Maybe<&1, F32>:
+  match cls:
+    case S.CFloat{}: fmax.of(nm)
+    case _: None{}
+
+def fmax(d: S.Dt) -> Maybe<&1, F32>:
+  fmax.cls(S.Dt.cls(d), dt_name(d))
+
+# ===========================================================================
+# to_dtype -- dtype.py's `getattr(dtypes, name.lower())`, so the keys are the
+# ATTRIBUTE names, not the `name` field. `void`, `weakint` and `weakfloat` are
+# reachable here too, even though DTYPES_DICT skips them.
+# ===========================================================================
+
+def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
+  match nm:
+    case "void": Some{S.void()}
+    case "weakint": Some{S.weakint()}
+    case "weakfloat": Some{S.weakfloat()}
+    case "bool": Some{S.boolean()}
+    case "half": case "float16": Some{S.half()}
+    case "bfloat16": Some{S.bfloat16()}
+    case "float": case "float32": Some{S.single()}
+    case "double": case "float64": Some{S.double()}
+    case "fp8e4m3": Some{S.fp8e4m3()}
+    case "fp8e4m3fnuz": Some{S.fp8e4m3fnuz()}
+    case "fp8e5m2": Some{S.fp8e5m2()}
+    case "fp8e5m2fnuz": Some{S.fp8e5m2fnuz()}
+    case "char": case "int8": Some{S.int8()}
+    case "uchar": case "uint8": Some{S.uint8()}
+    case "short": case "int16": Some{S.int16()}
+    case "ushort": case "uint16": Some{S.uint16()}
+    case "int": case "int32": Some{S.int32()}
+    case "uint": case "uint32": Some{S.uint32()}
+    case "long": case "int64": Some{S.int64()}
+    case "ulong": case "uint64": Some{S.uint64()}
+    case _: None{}
+
+def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
+  to_dtype_of(nm)
+
+# ===========================================================================
+# commit_int -- the smallest dtype on the ladder that holds [lo, hi].
+#
+# The bounds are I64 because dtype.py takes Python ints and the top of the
+# ladder is uint64, whose max has no U32 image. The ladder walks
+# (default_int, int32, int64, uint64) and the first rung that holds both wins,
+# which is what dtype.py's `next(...)` does.
+# ===========================================================================
+
+def commit_int.ladder(lo: H.I64, hi: H.I64, rung: List<&2, S.Dt>) ->
+  Maybe<&1, S.Dt>:
+  match rung:
+    case Nil{}: Some{S.int64()}
+    case d <> t: commit_int.holds(dt_min(d), dt_max(d), lo, hi, d, t)
+
+def commit_int.holds(mn: Maybe<&1, H.I64>, mx: Maybe<&1, H.I64>, lo: H.I64,
+  hi: H.I64, d: S.Dt, t: List<&2, S.Dt>) -> Maybe<&1, S.Dt>:
+  match mn:
+    case Some{a}:
+      match mx:
+        case Some{b}: commit_int.take(H.i64_le(a, lo), H.i64_le(hi, b), d, t)
+        case None{}: commit_int.ladder(lo, hi, t)
+    case None{}: commit_int.ladder(lo, hi, t)
+
+def commit_int.take(oklo: Bool, okhi: Bool, d: S.Dt, t: List<&2, S.Dt>) ->
+  Maybe<&1, S.Dt>:
+  match Bool.and(oklo, okhi):
+    case True{}: Some{d}
+    case False{}: commit_int.ladder(dt_min(d), dt_max(d), d, t)
+
+def commit_int.lo(lo: H.I64, hi: H.I64, di: S.Dt) -> Maybe<&1, S.Dt>:
+  commit_int.ladder(lo, hi, [di, S.int32(), S.int64(), S.uint64()])

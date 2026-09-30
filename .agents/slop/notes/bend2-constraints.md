@@ -317,3 +317,63 @@ with an extra argument selecting which to run" -- and `Item` is that argument.
 Cost: every call site now passes a depth. A caller that under-counts gets
 `None`, which is the honest answer for "past this depth the property is
 unknown", never a wrong shape.
+
+## Correction: numeric patterns are first-match prefix matches
+
+The fuel section above is wrong in its central claim, and the mistake cost a
+commit. Measured, not read:
+
+```
+match fuel:
+  case 0n: 0
+  case 1n+p: 1
+  case 2n+p: 2
+  case 3n+p: 3
+
+fuel 0..4  ->  1 1 1 1 1      # 1n+p claims every successor
+```
+
+`1n+p` matches ANY positive Nat. `2n+p` is not a disjoint "even" case; it is
+"at least 2", and it only fires if it is listed *before* `1n+p`. Swapping the
+arms gives `2 2 2 2 2`. So any `case 2n+p:` placed after `case 1n+p:` is dead
+code that still typechecks — and a fold built that way answers `None` for
+everything, because fuel walks down to zero one unit at a time.
+
+Also: `2n+p` binds **only** `p`. The `2n` is a literal, not `2` times a binder.
+
+## The real rule for a descent
+
+Two facts, both established by bisection:
+
+1. **A recursive call must be a tail expression, or bound to a local first.**
+   `ca(go(a), go(b))` is rejected; `x = go(a)` then `y = go(b)` then `ca(x, y)`
+   is accepted.
+2. **A recursive call must pass a field of its own parameter**, either bare or
+   re-wrapped in the *same* constructor. `go(One{t})` from `One{Pas{t}}` is
+   fine. `go(Pair{Node{l}, Node{r}})` from `Node{Bin{l,r}}` is rejected — a
+   constructed sibling is not a subterm.
+
+Together these mean: **every recursive call needs its own field.** Which in
+turn means a fold that maps a recursive function over a list, and then combines
+the results, is impossible without fuel — because the head and the tail come
+out of ONE destructured list and so share a binder. `+` on that binder stops it
+counting as a subterm. There is no arrangement that avoids this.
+
+Bounded arity sidesteps it entirely and needs no fuel at all:
+
+```
+type Sp is Data:
+  Buf{v: U32}
+  Idx2{t: Sp, a: Sp, b: Sp}
+  Idx3{t: Sp, a: Sp, b: Sp, c: Sp}
+
+def shape(s: Sp) -> Maybe<&2, U32>:
+  match s:
+    case Buf{v}: Some{v}
+    case Idx2{t, a, b}:
+      r = ca(shape(a), shape(b))
+      ca(shape(t), r)
+```
+
+`ALL PROOFS CHECK`, no `@unsafe`, no fuel. Every descent is a distinct field.
+Verified on both the interpreted and compiled lanes.

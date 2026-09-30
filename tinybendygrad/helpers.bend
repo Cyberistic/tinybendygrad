@@ -1237,6 +1237,43 @@ def hi32(x: I64) -> U32:
   match x:
     case I64{hi, lo}: hi
 
+# A signed comparison of two's complement pairs. Two's complement compares
+# correctly as UNSIGNED words whenever the signs agree, so the only case that
+# needs the sign is when they differ -- and then it is decided outright.
+#
+# Three defs because a `match` cannot scrutinise a computed value: `U32.cmp`
+# answers a Cmp and Cmp is a datatype, so the head comparison arrives as the two
+# Bools it decides and the low word only matters when the high words are equal.
+def i64_cmp.lt(lt: Bool) -> Cmp:
+  match lt:
+    case True{}: LT{}
+    case False{}: GT{}
+
+def i64_cmp.mag(eq: Bool, lt: Bool, eql: Bool, ltl: Bool) -> Cmp:
+  match eq:
+    case True{}:
+      match eql:
+        case True{}: EQ{}
+        case False{}: i64_cmp.lt(ltl)
+    case False{}: i64_cmp.lt(lt)
+
+def i64_cmp.sgn(an: Bool, ah: U32, al: U32, bn: Bool, bh: U32, bl: U32) -> Cmp:
+  match an bn:
+    case True{} False{}: LT{}
+    case False{} True{}: GT{}
+    case _: i64_cmp.mag(U32.is_eq(ah, bh), U32.is_lt(ah, bh),
+      U32.is_eq(al, bl), U32.is_lt(al, bl))
+
+def i64_cmp(a: I64, b: I64) -> Cmp:
+  i64_cmp.sgn(i32_is_neg(hi32(a)), hi32(a), lo32(a),
+    i32_is_neg(hi32(b)), hi32(b), lo32(b))
+
+def i64_is_neg(x: I64) -> Bool:
+  i32_is_neg(hi32(x))
+
+def i64_le(a: I64, b: I64) -> Bool:
+  Cmp.is_le(i64_cmp(a, b))
+
 # data64 -- `(data >> 32, data & 0xFFFFFFFF)`. Python's >> is arithmetic, and
 # the high half of a two's complement 64-bit word IS the arithmetic shift, so
 # the pair already comes out in that order. data64_le swaps it.
