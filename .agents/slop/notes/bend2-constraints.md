@@ -936,8 +936,9 @@ EACH ONE:**
 So the store is an artifact of the interpreter needing a mutable accumulator, and
 the wall I hit -- `is_any` recursing back into the walk -- is a wall in the
 FALLBACK path. Target the compiled form and `Store`, `setdefault`, the product
-and the flatten all disappear. `matcher-store.bend` is a correct implementation
-of a component that should not exist.
+and the flatten all disappear. The store was DELETED rather than kept: it is a correct
+implementation of a component that should not exist, and leaving it invites the
+next agent to build on it.
 
 **THE BIG WIN, AND IT IS NOT OBVIOUS: THE RULE TABLE BECOMES `Data`.** Every
 constraint in the sections above about a table being linear -- because a closure
@@ -961,3 +962,42 @@ just overwrites, and the identity check appears only in the `repeat` arm
 disagree. That is either an ill-formed pattern or a bug in one of them, and it
 should be settled deliberately rather than papered over by porting the
 interpreter "faithfully".
+
+## THE NAME-REBIND QUESTION, SETTLED: THE TWO PATHS AGREE
+
+The loose end from the section above, measured rather than left open. I claimed
+the interpreter REJECTS a name rebinding to a different node while the compiled
+`Ops.STORE` overwrites, and that this might be a divergence. **It is not.**
+
+`upat.py:100-105` builds a `dict_stores` and, on a duplicate, emits the identity
+comparison as an ordinary clause -- with the comment "duplicate store is an
+identity compare":
+
+    if store.src[0] in dict_stores:
+      new_src.append(UOp(Ops.CUSTOM, src=(dict_stores[store.src[0]], store.src[1]),
+                                        arg=("{0} is {1}", dtypes.void)))
+
+So the interpreter states the constraint IMPLICITLY, as a store rejection, and
+the compiler states it EXPLICITLY, as an `is`. Same constraint, two spellings.
+The compiled form is therefore safe to target, and the check ports to an index
+comparison -- `U32.is_eq` on two `U32` arena indices, which is the same thing
+`Store.setdefault.same` did.
+
+**AND IT IS LOAD-BEARING, not decorative.** Scanned all 213 files under
+`tinygrad/` for a pattern binding one name more than once. Three:
+
+| where | names | verdict |
+| --- | --- | --- |
+| `uop/symbolic.py:180` | `c` twice | SAFE -- the two are `is_any` ALTERNATIVES, and `is_any` copies the store per alternative, so they never meet |
+| `mixin/gradient.py:101` | `dest` twice | **LOAD-BEARING** -- bound to `src[0]` AND to `src[1].src[0]`, two different nodes, so the rule only matches when they are the same node |
+| `schedule/__init__.py:182` | `r` three times | **LOAD-BEARING** -- the same `RANGE` node in three positions |
+
+`gradient.py:101` is the clearest statement of intent:
+
+    UPat(Ops.AFTER, src=(UPat(name="dest"), UPat(Ops.STORE, src=(UPat(name="dest"), UPat()))))
+
+"the buffer being stored into is the AFTER's own source" IS this rebind. Without
+the identity check the rule would match strictly more nodes than intended, and it
+would typecheck and run. So a compiled rule that binds a name twice must emit the
+`is` check, and that is a rule to enforce while porting `gradient.py` and
+`schedule/`, not a footnote.
