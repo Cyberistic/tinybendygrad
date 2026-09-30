@@ -7,23 +7,8 @@
 # The rest is I/O or dynamic Python and is listed, with a one-line reason each,
 # in the NOT PORTED block at the end of this file.
 #
-# ORDER. Bend has no forward references: a def may only call a def written
-# above it, or one it is `@unsafe`. Every def here is written callee-first, so
-# the file needs no `@unsafe` at all and `--check-only` is clean.
-#
-# TWO LANGUAGE FACTS THAT SHAPE EVERY LINE HERE (both measured, see
-# .agents/slop/notes/bend2-constraints.md):
-#   1. Affine: a binder is used at most once. `+x` licenses reuse for `Data`.
-#   2. A `match` scrutinises only a parameter or a pattern binder, never a
-#      computed value and never a projection (Bend 2.0.34 has no projection
-#      syntax at all: `f.x` is a name lookup). A computed value gets its own
-#      def, and that def destructures or matches its own parameter. Every
-#      branch on a computed Bool below is therefore a `name.go(flag, rest)`
-#      helper whose FIRST parameter is the flag.
-#
-# `truncate` is listed in my brief as a helpers.py function. It is not: it is
-# tinygrad/dtype.py:296, it needs `dtypes`, and it lives in ./dtype.bend.
-# See dtype.bend `def truncate`.
+# `truncate` is not one of helpers.py's: it is dtype.py:296, it needs `dtypes`,
+# and it lives in ./dtype.bend. See dtype.bend `def truncate`.
 
 import Base
 
@@ -31,20 +16,16 @@ import Base
 # Flags -- the pure port of ContextVar / Context
 #
 # helpers.py's ContextVar is a mutable cell keyed by string, and Context is a
-# context manager that swaps a group of them and restores on exit. Bend has NO
+# context manager that swaps a group of them and restores on exit. Bend has no
 # global mutable state, so the cell becomes a field of an immutable record and
-# the manager becomes "thread a different record through". That is what
-# `Context(DEFAULT_FLOAT=...)` means -- every reader inside the block sees the
-# new value, every reader outside sees the old one -- and it makes the
-# save/restore the caller's problem, which is what the affine rules want.
-# `Flags.defaults` is the module import; `Flags.from_env` is the
-# `ContextVar.__init__` `getenv(key, default)`.
+# the manager becomes "thread a different record through" -- which is what
+# `Context(DEFAULT_FLOAT=...)` means. `Flags.defaults` is the module import;
+# `Flags.from_env` is the `ContextVar.__init__` `getenv(key, default)`.
 #
 # The values stay `String` because that is what the ContextVars hold:
 # `ContextVar("DEFAULT_FLOAT", "float32")` stores the string "float32" and
-# `dtypes.default_float` calls `to_dtype` on it. dtype.bend does that
-# conversion, which is what keeps helpers.bend free of any dtype dependency and
-# the dependency direction the same as Python's (dtype imports helpers).
+# `dtypes.default_float` calls `to_dtype` on it, so the dependency direction is
+# the same as Python's (dtype imports helpers).
 #
 # The variable list is the subset these two files read. The full list is ~40
 # ContextVars and belongs to phase P6, where one `Flags` record replaces this
@@ -57,9 +38,9 @@ type Flags is Data:
 def Flags.defaults() -> Flags:
   Flags{False{}, "float32", "int32", "float32"}
 
-# ContextVar("NO_COLOR", 0): getenv coerces through `type(default)`, so a
-# missing variable is 0 and any text at all is truthy. Python's `bool("0")` is
-# True, so NO_COLOR=0 does NOT switch colour off; this reproduces that.
+# ContextVar("NO_COLOR", 0): getenv coerces through `type(default)` and
+# `__bool__` is `bool(self.value)`, so any text at all is truthy -- NO_COLOR=0
+# does NOT switch colour off, and this reproduces that.
 def no_color_of.go(ise: Bool) -> Bool:
   match ise:
     case True{}: False{}
@@ -91,8 +72,8 @@ def Flags.from_env() -> IO(Flags):
 
 # ===========================================================================
 # prod -- functools.reduce(operator.mul, x, 1). NOTE the Python comment: it
-# answers int 1 for an empty x whatever the element type. `List.foldl` wants a
-# closure and a closure is single-use, so this is its own recursive def.
+# returns int 1 if x is empty regardless of the type of x. `List.foldl` wants a
+# closure, so this is its own recursive def.
 # ===========================================================================
 
 def prod_u32(xs: List<&2, U32>) -> U32:
@@ -110,9 +91,8 @@ def prod_nat(xs: List<&2, Nat>) -> Nat:
       Nat.mul(h, prod_nat(t))
 
 # ===========================================================================
-# dedup -- list(dict.fromkeys(x)): first occurrence wins, list order retained.
-# Bend's Map is string-keyed only, so the set is a linear scan. `List.contains`
-# wants the element reusable, hence the `+`.
+# dedup -- list(dict.fromkeys(x)): first occurrence wins, retains list order.
+# Bend's Map is string-keyed only, so the set is a linear scan.
 # ===========================================================================
 
 def dedup_u32.put(seen: Bool, h: U32, r: List<&2, U32>) -> List<&2, U32>:
@@ -168,10 +148,11 @@ def argfix_seq(xs: List<&2, U32>) -> List<&2, U32>:
   xs
 
 # ===========================================================================
-# argsort -- `type(x)(sorted(range(len(x)), key=x.__getitem__))`. Python's
-# sort is stable, so the index breaks ties by position: compare (value, index).
-# `List.sort` wants a closure and a closure is single-use, so the comparison is
-# a top-level def over an (index, value) pair.
+# argsort -- `type(x)(sorted(range(len(x)), key=x.__getitem__))`.
+# https://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python
+# Python's sort is stable, so the index breaks ties by position: compare
+# (value, index). `List.sort` wants a closure, so the comparison is a top-level
+# def over an (index, value) pair.
 # ===========================================================================
 
 type Ix is Data:
@@ -191,8 +172,7 @@ def ix_le(a: Ix, b: Ix) -> Bool:
   match a b:
     case Ix{i, +v} Ix{j, +w}: ix_le.cmp(U32.is_le(v, w), v, w, i, j)
 
-# the list is field 1 so the recursive call's first argument is the shrinking
-# one; the counter is carried unchanged and bumped
+# the list is field 1 so the recursive call's first argument is the shrinking one
 def ix_of.go(xs: List<&2, U32>, +i: U32) -> List<&2, Ix>:
   match xs:
     case Nil{}: Nil{}
@@ -217,13 +197,10 @@ def argsort_u32(xs: List<&2, U32>) -> List<&2, U32>:
   ix_map(List.sort(Ix, ix_le, ix_of(xs)))
 
 # ===========================================================================
-# all_same -- `all(x == items[0] for x in items)`, which is True for an empty
-# input. `List.all` already is that, so these pin the element type.
+# all_same -- `all(x == items[0] for x in items)`, which works for empty input.
+# The head is peeled once and every other element is compared against it.
 # ===========================================================================
 
-# all_same -- `all(x == items[0] for x in items)`, True for an empty input.
-# The head is peeled once and every other element is compared against it, which
-# is the same predicate without currying a binary equality into `List.all`.
 def all_same_u32.go(xs: List<&2, U32>, +head: U32) -> Bool:
   match xs:
     case Nil{}: True{}
@@ -247,17 +224,17 @@ def all_same_str(xs: List<&2, String>) -> Bool:
 # ===========================================================================
 # get_shape -- `def get_shape(x) -> tuple[int, ...]`
 #
-# DEVIATION, stated: Python walks any object with `__len__` and `__getitem__`
-# and special-cases `str`, because iterating a string still yields strings.
-# Bend has no dynamic types and no duck typing, so the input is the `Nest`
-# tree below: `Ns` is a scalar, `Nl` is a sequence. That is the same
-# information Python reads off the object, made explicit at the boundary.
+# DEVIATION, stated: Python walks any object with `__len__` and `__getitem__`,
+# and NOTE `str` is special because iterating it still yields strs. Bend has no
+# duck typing, so the input is the `Nest` tree below: `Ns` is a scalar, `Nl` is
+# a sequence -- the same information Python reads off the object, made explicit
+# at the boundary.
 #
-# Python returns () for a scalar, for a string, and for an object whose
-# `.shape` is (); it raises ValueError for an inhomogeneous shape. Those are
-# three outcomes, so they are three constructors and none of them is a silent
-# None. Note that a sequence of scalars is NOT (): get_shape([1,2]) is (2,),
-# and get_shape([]) is (0,).
+# Python returns () for a scalar, for a string, and for an object whose `.shape`
+# is (); it raises ValueError for an inhomogeneous shape. Those are three
+# outcomes, so they are three constructors and none of them is a silent None. A
+# sequence of scalars is NOT (): get_shape([1,2]) is (2,) and get_shape([]) is
+# (0,).
 # ===========================================================================
 
 type ShapeRes is Data:
@@ -276,13 +253,11 @@ type Nest is Data:
   Nl{ss: List<&2, Nest>}
 
 # `ShapeRes.of` is Python's `if not all_same(subs): raise; (len(subs),) +
-# subs[0]`. A sequence of scalars therefore has shape (n,), not (), and an empty
-# sequence has shape (0,).
-# The all_same walk over the children's shapes is ONE def carrying the state
-# Python's `all(...)` generator carries: `ref` is the first non-() child's dims
-# (None while every child so far is a scalar) and `bad` is "a () met a non-()".
-# The child list is the FIRST argument so the recursion decreases structurally
-# and the rest of the state is free, per the termination rule.
+# subs[0]`, so a sequence of scalars has shape (n,), not (), and an empty
+# sequence has shape (0,). The all_same walk is ONE def carrying the state
+# Python's generator carries: `ref` is the first non-() child's dims and `bad`
+# is "a () met a non()". The child list is the FIRST argument so the recursion
+# decreases structurally and the rest of the state is free.
 #
 # The three rules are Python's `all_same`:
 #   all ()        -> (n,)            every child is a scalar
@@ -313,12 +288,9 @@ def ShapeRes.dims.ans(ref: Maybe<&2, List<&2, U32>>, n: U32) -> ShapeRes:
     case None{}: SShape{[n]}
     case Some{d}: SShape{n <> d}
 
-# ONE def, ONE recursion. `r` is field 1 and `bad` is field 2, so the two are
-# matched as one pair in binder order; the call decreases on `r` alone and the
-# accumulated state after it is free. Python's three-way all_same is the inner
-# match: a child that is itself SBad poisons, a scalar child means the shape is
-# (n,) so a shaped sibling is inhomogeneous, and a shaped child must agree with
-# the reference.
+# Python's three-way all_same is the inner match: a child that is itself SBad
+# poisons, a scalar child means the shape is (n,) so a shaped sibling is
+# inhomogeneous, and a shaped child must agree with the reference.
 def ShapeRes.dims(r: List<&2, ShapeRes>, bad: Bool, +ref: Maybe<&2, List<&2, U32>>,
   n: U32) -> ShapeRes:
   match r bad:
@@ -342,16 +314,9 @@ def ShapeRes.of(+ss: List<&2, ShapeRes>) -> ShapeRes:
 
 # `get_shape` in Python is a mutual recursion: a node's shape is built from its
 # children's shapes, and computing a child's shape recurses. Bend has no mutual
-# recursion, so this is ONE def returning BOTH halves -- the node's own shape
-# and the list of its direct children's shapes -- and the parent consumes the
-# second. `ShapeRes.of` above then does Python's all_same check, and the
-# recursion decreases structurally on the child list alone.
-#
-# The walk below needs a STACK of open groups, each holding the children's
-# shapes seen so far. A list of lists cannot be consed in one term (the `<>`
-# operator infers a single element type), so both levels are records. Every
-# accessor takes the stack as a parameter and destructures it, because Bend
-# 2.0.34 has no projection syntax at all.
+# recursion, so the walk below carries a STACK of open groups, each holding the
+# children's shapes seen so far. A list of lists cannot be consed in one term
+# (the `<>` operator infers a single element type), so both levels are records.
 type Frame is Data:
   Frame{v: List<&2, ShapeRes>}
 
@@ -417,32 +382,14 @@ type GIn is Data:
   GN{n: Nest}
   GC{}
 
-# ONE def, ONE recursion. Python's get_shape is a mutual recursion (a node's
-# shape is built from its children's shapes, and computing a child's shape
-# recurses); Bend has no mutual recursion, so the children go on an explicit
-# work list and the open groups on an explicit stack, which unties the knot into
-# one pass. `k` is the FIRST parameter so `match k` then `match ws` follows
-# binder order, and each arm's recursive call passes a structural sub-part of
-# the fuel, which is what the termination checker reads. The fuel is a backstop:
-# the work list is finite by construction, and running out answers SBad rather
-# than hanging.
-#
-# The three outcomes are Python's all_same over the children, in ShapeRes.of:
-#   all ()        -> (n,)
-#   all equal d   -> (n,) + d
-#   anything else -> SBad (Python's ValueError)
 # ONE def, ONE recursion, everything inlined. Python's get_shape is a mutual
 # recursion (a node's shape is built from its children's shapes, and computing a
 # child's shape recurses); Bend has no mutual recursion, so the children go on
 # an explicit work list and the open groups on an explicit stack, which unties
-# the knot into a single self-call.
-#
-# `k` is the FIRST parameter so `match k` then `match ws` then `match st`
-# follows binder order, and every recursive call passes `p`, a structural
-# sub-part of `k`, in the first slot -- which is exactly what the termination
-# checker reads, and it makes the remaining two arguments free. The fuel is a
-# backstop: the work list is finite by construction, and running out answers
-# SBad rather than hanging.
+# the knot into a single self-call. `k` is the FIRST parameter so `match k` then
+# `match ws` then `match st` follows binder order, and every recursive call
+# passes `p` in the first slot. The fuel is a backstop: the work list is finite
+# by construction, and running out answers SBad rather than hanging.
 #
 # The three outcomes are Python's all_same over the children, computed in
 # ShapeRes.of when a GC pops a frame:
@@ -468,13 +415,9 @@ def get_shape.go(k: Nat, ws: List<&2, GIn>, st: Stk) -> ShapeRes:
             case Ns{v}: get_shape.go(p, t, stk.push2(st, SNoShape{}))
             case Nl{ss}: get_shape.go(p, st.splice(ss, {GC{} : GIn} <> t), stk.open(st))
 
-# The backstop fuel. Measuring the tree's node count exactly would itself be a
-# mutual recursion (a node's size needs its children's, and a child's size
-# recurses), which Bend forbids, so this is a fixed budget instead. It is a
-# BACKSTOP only: the work list is finite by construction -- every node is opened
-# once (one GN) and closed once (one GC) -- so the walk always terminates on its
-# own and the fuel is never the binding constraint. The shapes this file is
-# asked about are 0-3 deep, four orders of magnitude below this.
+# The backstop fuel, a fixed budget rather than the tree's exact node count (that
+# would itself be a mutual recursion). BACKSTOP only: every node is opened once
+# (one GN) and closed once (one GC), so the walk always terminates on its own.
 def nest_nodes() -> Nat:
   1000000n
 
@@ -513,14 +456,10 @@ def is_image_shape.go(+d: List<&2, U32>) -> Bool:
 def is_image_shape(r: ShapeRes) -> Bool:
   is_image_shape.go(is_image_shape.rank(r))
 
-# all_int -- True when every element is a Python int. On a `Nest` that is
-# exactly "no Nl node anywhere": an Nl node is a sequence by construction and a
-# sequence is not an int. This is a structural recursion on the tree, not a
-# `List.all` over it, because the predicate is the recursive def itself.
-# all_int is "no Nl node anywhere", which is exactly "the tree is a bare leaf":
-# if the ROOT is an Nl the answer is already False and no descent is needed, and
-# if the root is an Ns there is nothing below it. That makes it a single def with
-# no recursion at all -- which is why it checks structurally.
+# all_int -- True when every element is a Python int. On a `Nest` that is exactly
+# "no Nl node anywhere": an Nl node is a sequence by construction and a sequence
+# is not an int. If the ROOT is an Nl the answer is already False and if it is an
+# Ns there is nothing below it, so this checks the root alone.
 def all_int_nest(n: Nest) -> Bool:
   match n:
     case Ns{v}: True{}
@@ -528,11 +467,10 @@ def all_int_nest(n: Nest) -> Bool:
 
 # fully_flatten -- `[x for li in l for x in fully_flatten(li)]` over the same
 # Nest tree, with Python's guard that a non-sequence (and a string) is `[l]`.
-# ONE def over a work list with a `Nat` fuel in the first slot: a node's
-# children are spliced in front of the pending work (which GROWS the list, so a
-# structural decrease is not available) and the fuel is what the termination
-# checker reads. Leaves accumulate in `acc` and are reversed at the end, so the
-# document order is the tree's preorder.
+# ONE def over a work list with a `Nat` fuel in the first slot, because splicing
+# children in front of the pending work GROWS the list. Leaves accumulate in
+# `acc` and are reversed at the end, so the document order is the tree's
+# preorder.
 def fully_flatten.go(k: Nat, ws: List<&2, Nest>, acc: List<&2, Nest>) -> List<&2, Nest>:
   match k:
     case 0n: List.reverse(&2, Nest, acc)
@@ -554,13 +492,11 @@ def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
 # ===========================================================================
 # F32 text
 #
-# `F32.show` is a law with no body: it is an axiom, and the interpreted lane
-# prints the term unevaluated. So does every other F32 law, which is why this
-# file's self-test runs in the native lane. The port therefore needs its own
-# F32 formatter, and `f"{x:.2f}"` (time_to_str, size_to_str, colorize_float) has
-# no base equivalent either. `f32_fixed` walks the decimal expansion of the f32
-# two digits at a time, which is printf's `%.2f` on a value that came out of an
-# f32.
+# `F32.show` is a law with no body -- it is an axiom -- and so is every other F32
+# law, so the port needs its own F32 formatter. `f"{x:.2f}"` (time_to_str,
+# size_to_str, colorize_float) has no base equivalent either. `f32_fixed` walks
+# the decimal expansion of the f32 two digits at a time, which is printf's
+# `%.2f` on a value that came out of an f32.
 # ===========================================================================
 
 # 0x7F800000 is the f32 exponent field; all ones means inf or nan, and the
@@ -578,9 +514,8 @@ def f32_is_neg(+x: F32) -> Bool:
   U32.is_ge(F32.bits(x), 2147483648)
 
 # The decimal digits after the point. The state is a `Frac` record (remainder,
-# digits so far) advanced by a top-level step, so the recursion is one
-# structural descent on the digit count; a closure would be single-use, which is
-# why the step is a def and not a lambda.
+# digits so far) advanced by a top-level step, so the recursion is one structural
+# descent on the digit count.
 type Frac is Data:
   Frac{f: F32, acc: String}
 
@@ -708,11 +643,11 @@ def pad_right(+s: String, w: U32) -> String:
 
 # ===========================================================================
 # colored -- `f"\u001b[{10*background+60*(color.upper()==color)+30+index}m{st}
-# \u001b[0m"`. The colour is a U32 index into
-# ['black','red','green','yellow','blue','magenta','cyan','white']; Python
-# raises ValueError on a name outside it, so `colored` takes `Maybe<&1, U32>`
-# and None is Python's `color is None`, which returns the plain string.
-# NO_COLOR is a ContextVar, so it arrives inside the `Flags` record.
+# \u001b[0m"`, which replaces the termcolor library. The colour is a U32 index
+# into ['black','red','green','yellow','blue','magenta','cyan','white']; Python
+# raises ValueError on a name outside it, so `colored` takes `Maybe<&1, U32>` and
+# None is Python's `color is None`, which returns the plain string. NO_COLOR is a
+# ContextVar, so it arrives inside the `Flags` record.
 # ===========================================================================
 
 def color_code(ci: U32, background: Bool) -> U32:
@@ -750,8 +685,7 @@ def colored.go(f: Flags, st: String, color: Maybe<&1, U32>, background: Bool) ->
 def colored(f: Flags, st: String, color: Maybe<&1, U32>, background: Bool) -> String:
   colored.go(f, st, color, background)
 
-# colorize_float -- f"{x:7.2f}x", green below 0.75, red above 1.15, else yellow.
-# The thresholds compare in F32, exactly as Python compares its f64s.
+# colorize_float -- f"{x:7.2f}x", green below 0.75, red above 1.15, else yellow
 def colorize_float.hi(gt: Bool) -> Maybe<&1, U32>:
   match gt:
     case True{}: Some{1}
@@ -813,18 +747,15 @@ def size_to_str(+s: U32) -> String:
 
 # ===========================================================================
 # ansistrip -- re.sub('\x1b\[(K|.*?m)', '', s). The regex is an ESC, '[', then
-# either the single letter K or the SHORTEST run of characters ending in 'm'.
-# `String.to_list` turns the string into a Char list, so the walk is a plain
-# recursion. An unterminated run does not match, so its ESC '[' and its body
-# stay in the output.
-# ===========================================================================
-
-# The state is a mode plus the output so far and the escape body so far:
+# either the single letter K or the SHORTEST run of characters ending in 'm',
+# so the state is a mode plus the output so far and the escape body so far:
 #   0n -- normal: an ESC opens an escape, anything else is output
 #   1n -- just after an ESC: a '[' opens a sequence, anything else keeps the ESC
 #   2n -- inside a sequence: 'K' or 'm' closes it, anything else is body
-# An unterminated run does not match the regex, so its ESC, '[' and body are
-# emitted; that is what `done` does for modes 1n and 2n.
+# An unterminated run does not match, so its ESC, '[' and body stay in the
+# output; that is what `done` does for modes 1n and 2n.
+# ===========================================================================
+
 type Ast is Data:
   Ast{c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>}
 
@@ -852,10 +783,9 @@ def ansistrip.done(st: Ast) -> List<&2, Char>:
 def ansistrip.go.esc(h: Char, acc: List<&2, Char>) -> List<&2, Char>:
   List.append(&2, Char, [Char.from_u32(27)], List.append(&2, Char, [h], acc))
 
-# ONE def, ONE recursion: the char list shrinks on every call, which is what
-# the termination checker reads. The state carries the previous char's code so
-# the transition table can be a two-scrutinee match on two fields of the same
-# record, in binder order.
+# ONE def, ONE recursion: the char list shrinks on every call. The state carries
+# the previous char's code so the transition table is a two-scrutinee match on
+# two fields of the same record, in binder order.
 def ansistrip.go(cs: List<&2, Char>, st: Ast) -> List<&2, Char>:
   match cs:
     case Nil{}: ansistrip.done(st)
@@ -913,10 +843,10 @@ def to_tuple_seq(xs: List<&2, U32>) -> List<&2, U32>:
 # flat_to_grouped
 # `(padding_left, padding_right, padding_top, padding_bottom, ...)` ->
 # `(..., (padding_top, padding_bottom), (padding_left, padding_right))`, i.e.
-# `tuple(zip(padding[-2::-2], padding[::-2]))`. That is: pair the elements up
-# from the END, so [a,b,c,d] -> [(c,d),(a,b)] and [a,b,c] -> [(b,c)] and
-# [a,b] -> [(a,b)] and [a] -> []. The pairs, read FORWARD, are the consecutive
-# pairs starting at index (n mod 2), and the answer is that list reversed.
+# `tuple(zip(padding[-2::-2], padding[::-2]))`: pair the elements up from the END,
+# so [a,b,c,d] -> [(c,d),(a,b)] and [a,b,c] -> [(b,c)] and [a,b] -> [(a,b)] and
+# [a] -> []. The pairs, read FORWARD, are the consecutive pairs starting at index
+# (n mod 2), and the answer is that list reversed.
 # ===========================================================================
 
 def fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
@@ -941,7 +871,7 @@ def flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
 # ===========================================================================
 # resolve_pool_pads -- int -> [p] * 2*dims; a sequence of 2*dims -> as is; a
 # sequence of dims -> `[p for p in padding for _ in range(2)][::-1]`. Python
-# raises ValueError on any other length; that is the Maybe.
+# raises ValueError on any other length, and that is the Maybe.
 # ===========================================================================
 
 def resolve_pool_pads_int.go(n: Nat, +p: U32) -> List<&2, U32>:
@@ -981,10 +911,9 @@ def resolve_pool_pads(+p: List<&2, U32>, +dims: U32) -> Maybe<&1, List<&2, U32>>
 
 # ===========================================================================
 # _is_balanced / strip_parens
-# `_is_balanced(s)`: the Python one-liner is "no prefix closes more than it
-# opens, and the depths end at zero". The depth is a U32, so underflow is the
-# wrap past 2^31. `s[1:-1]` and `fst[:1]` / `fst[-1:]` are String.drop and
-# String.take.
+# `_is_balanced(s)` is "no prefix closes more than it opens, and the depths end
+# at zero". The depth is a U32, so underflow is the wrap past 2^31. `s[1:-1]` and
+# `fst[:1]` / `fst[-1:]` are String.drop and String.take.
 # ===========================================================================
 
 def bal.next.step(c: U32, d: U32) -> U32:
@@ -999,9 +928,8 @@ def bal.next(h: Char, d: U32) -> U32:
 def bal.under(nd: U32) -> Bool:
   U32.is_ge(nd, 2147483648)
 
-# the walk carries its depth as a record rather than as two parameters: the
-# depth has to be matched (for the end test) while the char list is matched for
-# the walk, and bend wants one binder order per def
+# the walk carries its depth as a record rather than as two parameters: the depth
+# has to be matched (for the end test) while the char list is matched for the walk
 type Depth is Data:
   Depth{d: U32, under: Bool}
 
@@ -1059,8 +987,7 @@ def strip_parens(+fst: String) -> String:
 # Signed 32-bit arithmetic on a U32 bit pattern
 #
 # Bend has no signed integers, so a signed value is its two's complement bit
-# pattern and every comparison is a sign test. `asr` is the arithmetic shift the
-# constraints note asks for: Bend's own shifts are both logical.
+# pattern and every comparison is a sign test.
 # ===========================================================================
 
 def i32_is_neg(x: U32) -> Bool:
@@ -1072,15 +999,9 @@ def i32_neg(x: U32) -> U32:
 # asr -- Bend's two shifts are both LOGICAL, so a negative value needs its top
 # `m` bits put back after the shift. The fill is the whole WORD 0xFFFFFFFF and
 # NOT the sign bit: shifting the sign bit right answers 1 rather than a run of
-# ones, which is why the previous `shrn(shrn(v,31),n)` form OR-ed in nothing and
-# returned the plain logical shift for every `n >= 1` -- `asr(-8,1)` printed
-# 2147483644 where helpers.py's `operator.rshift` gives 4294967292.
-#
-# The count is clamped to 31, and that is not a workaround but the WHOLE answer
-# past 31: for any 32-bit two's complement word floor(v/2^n) is -1 when v < 0 and
-# 0 when v >= 0 once n reaches 32, and the clamped form is exactly that number.
-# It is also what keeps `Nat.sub(32n, m)` from underflowing, since Ops.SHR's
-# count is a Python int and may be any size.
+# ones. The count is clamped to 31, and that is not a workaround but the WHOLE
+# answer past 31: floor(v/2^n) is -1 when v < 0 and 0 when v >= 0 once n reaches
+# 32, and the clamped form is exactly that number.
 def asr(+v: U32, n: Nat) -> U32:
   +m = Nat.min(n, 31n)
   U32.or(U32.shrn(v, m), U32.shln(i32_neg(U32.shrn(v, 31n)), Nat.sub(32n, m)))
@@ -1090,15 +1011,13 @@ def i32_abs(neg: Bool, x: U32) -> U32:
     case True{}: i32_neg(x)
     case False{}: x
 
-# cdiv and floordiv both need "the two signs differ", so it is defined here
-# rather than down in the cdiv block. Python gets it from `x*y<0`; multiplying
-# first would overflow in 32 bits and could flip the answer, so the XOR of the
-# two sign bits is used. Same predicate on exact integers.
+# cdiv and floordiv both need "the two signs differ". Python gets it from `x*y<0`;
+# multiplying first would overflow in 32 bits and could flip the answer, so the XOR
+# of the two sign bits is used.
 def cdiv_sign(x: U32, y: U32) -> Bool:
   Bool.xor(i32_is_neg(x), i32_is_neg(y))
 
-# floordiv -- `x//y if y != 0 else 0`: truncate toward zero and step down one
-# more when the division was inexact and the signs differ.
+# python floor div and mod: `x//y if y != 0 else 0`
 def floordiv_i32.exact(ax: U32, ay: U32) -> Bool:
   U32.is_zero(U32.mod(ax, ay))
 
@@ -1108,18 +1027,9 @@ def floordiv_i32.trunc.put(neg: Bool, q: U32) -> U32:
     case False{}: q
 
 # floordiv -- `x//y if y != 0 else 0`: truncate toward zero, and step DOWN one
-# more only when the division was inexact AND the two signs DIFFER.
-#
-# THE TWO FLAGS ARE NOT INTERCHANGEABLE, which is the whole of this def and the
-# whole of the bug that was here. For a same-sign division the truncation
-# already IS the floor (`-7 // -4 == 1`, `6 // 4 == 1`), so the step belongs to
-# the opposite-sign case alone (`-7 // 4 == -2`). The previous version applied
-# `U32.add(q, 1)` on the inexact arm unconditionally, so EVERY same-sign inexact
-# division was one too big -- and it is `put(neg, ...)` on top of that, so the
-# answer was `q + 1` for a positive dividend and `-(q + 1)` for a negative one.
-# Measured against helpers.py:76 (`floordiv`): `6 // 4` gave 2, `10 // 3` gave 4,
-# `1000 // 7` gave 143, `-7 // -4` gave 2. The negative-dividend rows and the
-# exact rows were right, which is why nothing saw it.
+# more only when the division was inexact AND the two signs DIFFER. For a
+# same-sign division the truncation already IS the floor, so the step belongs to
+# the opposite-sign case alone.
 def floordiv_i32.trunc.exact(exact: Bool, neg: Bool, q: U32) -> U32:
   match exact:
     case True{}: floordiv_i32.trunc.put(neg, q)
@@ -1131,7 +1041,6 @@ def floordiv_i32.trunc.exact(exact: Bool, neg: Bool, q: U32) -> U32:
 def floordiv_i32.trunc(neg: Bool, exact: Bool, q: U32) -> U32:
   floordiv_i32.trunc.exact(exact, neg, q)
 
-# floordiv -- `x//y if y != 0 else 0`
 def floordiv_i32.pick(zero: Bool, neg: Bool, exact: Bool, ax: U32, ay: U32) -> U32:
   match zero:
     case True{}: 0
@@ -1143,34 +1052,17 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
     i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y))
 
 # ===========================================================================
-# WHICH OF THE TWO PAIRS IS WHICH. `cdiv_i32_go`/`cmod_i32` and
-# `floordiv_i32`/`floormod_i32` are BOTH correct and both exported, and they are
-# NOT duplicates -- they are the two different divisions tinygrad asks for, so
-# picking the wrong one is a wrong answer rather than a slower right one.
-#
-#   helpers.py:73-74  cdiv/cmod     TRUNCATE toward zero. C semantics. `-7 // 4`
-#                     is `-1` here, not `-2`. `cdiv_i32_go`, `cmod_i32`.
-#   helpers.py:76-77  floordiv/mod  FLOOR, which is Python's `//` and `%`.
-#                     `-7 // 4` is `-2`. `floordiv_i32`, `floormod_i32`.
-#
-# So `uop/symbolic.bend`'s `exec_alu` reaching for `cdiv_i32_go` is right, and
-# `ceildiv_i32` and `round_up_i32` below reaching for `floordiv_i32` is right
-# too: `ceildiv` is `-(num // -amt)` and `round_up` is `(num+amt-1)//amt*amt`,
-# and BOTH of those are floors, so neither can be spelled with a truncating
-# division. Measured, because it is the reason `floordiv_i32` is not deletable:
-# `ceildiv(10,4)` is 3, and no `cdiv` reading gives it (`-cdiv(10,-4)` is 2,
-# `-cdiv(-10,-4)` is -2); `round_up(-10,4)` is -8 and `cdiv(-7,4)*4` is -4.
-#
-# `floordiv_i32` was WRONG until the `neg` test was fixed, and both of the
-# callers below inherited it -- `round_up_i32` answered 16 for `round_up(10,4)`,
-# and `ceildiv_i32` had a second, independent defect of its own (it negated both
-# operands) and answered -3 for `ceildiv(10,4)`. Both are fixed. Any file that
-# ports around them (see `uop/symbolic.bend`'s `i32_fdiv`, which recomputes the
-# floor out of `cdiv` because that fix had not landed when it was written) should
-# now be able to use `floordiv_i32` directly.
+# WHICH OF THE TWO PAIRS IS WHICH. `cdiv_i32_go`/`cmod_i32` TRUNCATE toward zero
+# (helpers.py:73-74, C semantics, `-7 // 4` is `-1`) and
+# `floordiv_i32`/`floormod_i32` FLOOR (helpers.py:76-77, Python's `//` and `%`,
+# `-7 // 4` is `-2`). Both are correct, both are exported, and they are NOT
+# duplicates: `ceildiv` is `-(num // -amt)` and `round_up` is
+# `(num+amt-1)//amt*amt`, and BOTH are floors, so neither can be spelled with a
+# truncating division. Picking the wrong pair is a wrong answer, not a slower
+# right one.
 # ===========================================================================
 
-# cdiv -- `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`, using cdiv_sign above.
+# cstyle div and mod: `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`
 def cdiv_i32.put(neg: Bool, q: U32) -> U32:
   match neg:
     case True{}: i32_neg(q)
@@ -1210,28 +1102,21 @@ def cmod_u32(+x: U32, +y: U32) -> U32:
 # ceildiv / round_up / round_down / next_power2
 #
 # ceildiv -- `if hasattr(num,'vmin') and num.vmin >= 0 and amt > 0: (num+amt-1)//
-# amt`, else `-(num // -amt)`. The first arm duck-types on a UOp and there is
-# no UOp in this phase: it is the branch tinygrad takes so a *symbolic*
-# non-negative numerator never meets the C/Python division disagreement. The
+# amt`, else `-(num // -amt)`. The first arm is there to avoid C/Python division
+# mismatch, and it duck-types on a UOp; there is no UOp in this phase, and the
 # two arms agree on ints, so the integer port is the second one, which is total
-# over negatives as well. SYMBOLIC CASE, LATER PHASE (P3,
-# uop/symbolic.bend): it needs `vmin`, the bound a Variable carries in the
-# arena, and comes back as `ceildiv_uop(num: UOp, amt: UOp)`.
+# over negatives as well. It spells `-(num // -amt)`: the DIVISOR is negated, the
+# dividend is not. SYMBOLIC CASE, LATER PHASE (P3, uop/symbolic.bend): it needs
+# `vmin`, the bound a Variable carries in the arena, and comes back as
+# `ceildiv_uop(num: UOp, amt: UOp)`.
 # ===========================================================================
 
-# ceildiv -- helpers.py:66-68 spells it `-(num // -amt)`: the DIVISOR is negated,
-# the dividend is not. It negates both because `-(num//-amt)` is `floor(num/amt)`
-# and negating both operands would be `floor(num/amt)` only for a negative `amt`.
-# Measured: the two-operand form answered -3 for `ceildiv(10,4)` where helpers.py
-# says 3.
 def ceildiv_i32(num: U32, amt: U32) -> U32:
   i32_neg(floordiv_i32(num, i32_neg(amt)))
 
 # div0 -- Python raises ZeroDivisionError for x//0; tinygrad guards floordiv and
 # cdiv with `if y != 0 else 0` but NOT ceildiv or round_up, which raise. Bend is
-# total, so the guarded reading (0) is the one every zero-divisor def here
-# answers, and ceildiv/round_up are the two places Python would have raised. The
-# self-test exercises the guarded reading and says so.
+# total, so the guarded reading (0) is the one every zero-divisor def here answers.
 def div0(zero: Bool, v: U32) -> U32:
   match zero:
     case True{}: 0
@@ -1252,10 +1137,10 @@ def round_up_u32(num: U32, +amt: U32) -> U32:
 def round_down_u32(num: U32, amt: U32) -> U32:
   i32_neg(round_up_u32(i32_neg(num), amt))
 
-# `1 if x == 0 else 1 << (x-1).bit_length()`: the smallest power of two that
-# is >= x, with 0 answering 1. The fold needs a fuel because p grows rather
-# than shrinks; 33 steps cover every x a U32 holds. x > 2^31 has no
-# representable answer (Python answers 2^32) and is documented as such.
+# `1 if x == 0 else 1 << (x-1).bit_length()`: the smallest power of two that is
+# >= x, with 0 answering 1. The fold needs a fuel because p grows rather than
+# shrinks; 33 steps cover every x a U32 holds. x > 2^31 has no representable
+# answer (Python answers 2^32) and is documented as such.
 def next_power2.go(k: Nat, lt: Bool, +x: U32, +p: U32) -> U32:
   match k:
     case 0n: p
@@ -1270,11 +1155,10 @@ def next_power2(+x: U32) -> U32:
 # ===========================================================================
 # 64-bit words
 #
-# helpers.py's lo32 / hi32 / data64 / to_be64 all say "Any is sint", so the
+# helpers.py's lo32 / hi32 / data64 / data64_le all say "Any is sint", so the
 # value they take is a signed 64-bit int. Bend has no 64-bit word, so it is the
-# pair of halves in two's complement: lossless, and it makes every one of these
-# a total pure function. Build one with i64_of_i32 (sign-extends) or
-# i64_of_hi_lo.
+# pair of halves in two's complement. Build one with i64_of_i32 (sign-extends)
+# or i64_of_hi_lo.
 # ===========================================================================
 
 type I64 is Data:
@@ -1301,9 +1185,7 @@ def hi32(x: I64) -> U32:
 
 # A signed comparison of two's complement pairs. Two's complement compares
 # correctly as UNSIGNED words whenever the signs agree, so the only case that
-# needs the sign is when they differ -- and then it is decided outright.
-#
-# Three defs because a `match` cannot scrutinise a computed value: `U32.cmp`
+# needs the sign is when they differ -- and then it is decided outright. `U32.cmp`
 # answers a Cmp and Cmp is a datatype, so the head comparison arrives as the two
 # Bools it decides and the low word only matters when the high words are equal.
 def i64_cmp.lt(lt: Bool) -> Cmp:
@@ -1356,9 +1238,9 @@ def i64_add(+a: I64, +b: I64) -> I64:
 def i64_sub(+a: I64, +b: I64) -> I64:
   i64_of_hi_lo(U32.sub(hi32(a), hi32(b)), U32.sub(lo32(a), lo32(b)))
 
-# data64 -- `(data >> 32, data & 0xFFFFFFFF)`. Python's >> is arithmetic, and
-# the high half of a two's complement 64-bit word IS the arithmetic shift, so
-# the pair already comes out in that order. data64_le swaps it.
+# data64 -- `(data >> 32, data & 0xFFFFFFFF)`; data64_le swaps it. Python's >> is
+# arithmetic and the high half of a two's complement 64-bit word IS the
+# arithmetic shift, so the pair already comes out in that order.
 def data64_hi(r: U32 & U32) -> U32:
   (hi, lo) = r
   hi
@@ -1403,12 +1285,11 @@ def i2u(neg: Bool, bits: Nat, value: U32) -> U32:
 # ===========================================================================
 # merge_dicts
 #
-# `{k:v for d in ds for k,v in d.items()}` after checking that no key carries
-# two values. Python's dict is a `Map`, and Bend's `Map` is string-keyed with
-# an awkward `Map.get` (it wants a default value and hands back the rest of the
-# map), so a list of pairs is the honest representation: it is what
-# `d.items()` yields, it keeps insertion order, and the conflict scan is a fold.
-# `Some{seen}` is Python's RuntimeError.
+# `{k:v for d in ds for k,v in d.items()}` after checking that no key carries two
+# values. Bend's `Map` is string-keyed with an awkward `Map.get`, so a list of
+# pairs is the honest representation: it is what `d.items()` yields, it keeps
+# insertion order, and the conflict scan is a fold. `None` is Python's RuntimeError
+# "contains different values for the same key".
 # ===========================================================================
 
 type KV is Data:
@@ -1432,9 +1313,8 @@ def kv_find.pick(found: Maybe<&1, U32>, same: Bool, kv: KV) -> Maybe<&1, U32>:
     case Some{v}: Some{v}
     case None{}: kv_find.hit(same, kv)
 
-# the scan folds rather than returning early: first match wins because `pick`
-# keeps whatever `found` already holds, and a fold is the shape bend's
-# decreasing-self-call rule wants (the list is the first argument).
+# the scan folds rather than returning early, because first match wins and `pick`
+# keeps whatever `found` already holds
 def kv_find.go(l: List<&2, KV>, +k: String, found: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match l:
     case Nil{}: found
@@ -1448,14 +1328,11 @@ def kv_conflict.pick(found: Maybe<&1, U32>, kv: KV) -> Bool:
     case None{}: False{}
     case Some{v}: U32.is_ne(v, kv_val(kv))
 
-# a repeat of the SAME value is not a conflict; Python dedups the pair set
-# first, so only a different value under an existing key raises.
+# a repeat of the SAME value is not a conflict; Python dedups the pair set first
 def kv_conflict(seen: List<&2, KV>, +kv: KV) -> Bool:
   kv_conflict.pick(kv_find(seen, kv_key(kv)), kv)
 
-# The flag rides in the accumulator, not beside the list: bend matches
-# parameters in signature order and shrinks the list first, so a flag
-# parameter ahead of the list could not be both matched and rewritten.
+# The flag rides in the accumulator, not beside the list, so the walk is one call
 type Merged is Data:
   Merged{bad: Bool, seen: List<&2, KV>}
 
@@ -1496,7 +1373,7 @@ def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
 
 # ===========================================================================
 # partition -- `for s in itr: (ret[0] if fxn(s) else ret[1]).append(s)`.
-# `fxn` is a Python callback and a Bend closure is single-use, so the predicate
+# `fxn` is a Python callback and a Bend closure cannot be stored, so the predicate
 # is a `Sel` tag and each tag is a top-level def. part_test's tags:
 # 0 = x > 0, 1 = x < 0, 2 = x == 0, 3 = x is even, anything else = keep all.
 # The accumulator is a record so the recursion never needs a `+` on a list;
@@ -1506,8 +1383,7 @@ def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
 type Parted is Data:
   Parted{yes: List<&2, U32>, no: List<&2, U32>}
 
-# binder order: p is field 1, keep is field 2, so the record is destructured
-# before the flag is matched
+# binder order: p is field 1, keep is field 2
 def part_put(p: Parted, keep: Bool, h: U32) -> Parted:
   match p:
     case Parted{yes, no}:
@@ -1546,12 +1422,10 @@ def partition(sel: U32, itr: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
 # ===========================================================================
 # unwrap / get_single_element
 #
-# Both Python functions are `assert`s, and Bend has no `Empty` to absorb: an
-# assertion is not a value, so a total def cannot say "the caller promised".
-# The faithful total form therefore takes the fallback the caller would have
-# died for. `unwrap_or(m, d)` is `unwrap(m)`; `get_single(xs)` is
-# `get_single_element(xs)` and answers None when the length is not 1, which is
-# the only case Python's assert rejects.
+# Both Python functions are `assert`s, and an assertion is not a value, so a
+# total def cannot say "the caller promised". The faithful total form therefore
+# takes the fallback the caller would have died for. `get_single(xs)` answers
+# None when the length is not 1, the only case Python's assert rejects.
 # ===========================================================================
 
 def unwrap_or(m: Maybe<&1, U32>, d: U32) -> U32:
@@ -1573,8 +1447,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
 # `class Timing(contextlib.ContextDecorator)`: __enter__ stamps
 # time.perf_counter_ns(), __exit__ prints f"{prefix}{et*1e-6:6.2f} ms". A `with`
 # is not a term, so the shape becomes a stamp and a report and the caller keeps
-# the two calls adjacent. `Timing.now` is IO.now, the host clock; the
-# arithmetic is pure.
+# the two calls adjacent.
 # ===========================================================================
 
 def Timing.now() -> IO(Nat):
@@ -1598,8 +1471,7 @@ def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
 # `lines(fn)` opens a file and readlines()s it, answering [] on FileNotFound or
 # OSError; Bend's File.read answers a Result and [] is the Fail arm.
 # `printable(loc)` is lines(loc[0])[loc[1]-1].strip() with IndexError ->
-# "<missing>". `File.read` hands the handle back beside the result, so both
-# helpers close it.
+# "<missing>".
 # ===========================================================================
 
 def lines.done(f: File, value: String) -> IO(List<&2, String>):
@@ -1646,8 +1518,7 @@ def printable(path: String, line: U32) -> IO(String):
 # The 64-bit signed div/mod (ceildiv64, cdiv64, cmod64, floordiv64, floormod64)
 # and the 64-bit integer truncation are C effects, not pure defs: a signed
 # 64-bit quotient and a 2^64-1 bound have no U32 encoding. They are declared in
-# ./dtype.bend next to the runtime/dtype.c that implements them, because the
-# brief keeps both lanes of one seam in one file.
+# ./dtype.bend next to the runtime/dtype.c that implements them.
 #
 # The ContextVar variable list is 3 of ~40. The rest (DEBUG, BEAM, NOOPT, DEV,
 # CACHELEVEL, ...) is phase P6: they need a process-wide store with save and
