@@ -3,8 +3,8 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [#.........] 1/96
-proofs          [##.......] 2/32     oracle-green     [..........] 0/1
+spec-as-laws    [#########] 9/9      python-to-bend  [#.........] 1/96  (1 file, 31 defs outstanding)
+proofs          [########.] 28/34    oracle-green     [..........] 0/1
 walkthroughs    [####....] 4/7
 ```
 
@@ -76,6 +76,12 @@ day rediscovering that `2n+p` is not an even-case test.
       (a two-line file that imports it prints the same fourteen lines). `Dt`
       comes from `./LAWS/spec.bend`, which is the ONE datatype. 3 defs
       faithful, 27 adapted, 205 inventoried, 5 extra, 0 `@unsafe`.
+
+      **OUTSTANDING, counted properly this time.** 238 rows, 5 of the
+      `not blocked` set are ported, **31 are not**. (Two earlier counts of mine
+      were wrong — a grep that matched `# TODO(p3)` comments as if they were
+      defs, then the reverse. `grep '^def '` is the only reliable check.)
+      The backlog is `rg "TODO\(p3\)"` — 212 rows, each naming its Python line.
 
       **THE WALL, and it is a MODULE wall, not a file wall.** The property
       folds (`dtype`, `_shape`, `device`, `addrspace`, `_ranges`, `_min_max`,
