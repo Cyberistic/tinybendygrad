@@ -4,7 +4,8 @@ The port's state. Progress bars are `[###.....] n/m`.
 
 ```
 spec-as-laws    [#########] 9/9      python-to-bend  [..........] 0/96
-proofs          [###.....] 3/32     oracle-green     [..........] 0/1
+proofs          [##.......] 2/32     oracle-green     [..........] 0/1
+walkthroughs    [###.....] 3/7
 ```
 
 ---
@@ -24,7 +25,6 @@ proofs          [###.....] 3/32     oracle-green     [..........] 0/1
 
 - [x] `.agents/slop/notes/bend2-constraints.md` — the Bend rules, all measured
 - [x] `.agents/slop/plans/00-master-plan.md` — phases, the 1:1 rule, agent protocol
-- [x] `AFFINITY.tsv` — every `@unsafe` and every `+`, with its reason
 - [x] `LAWS/spec.bend` — the spec IR and its five derived properties
 - [x] `LAWS/alu.bend` — tinyspec's decomposed-elementwise-ops table
 - [x] `LAWS.bend` — 32 laws
@@ -34,6 +34,32 @@ proofs          [###.....] 3/32     oracle-green     [..........] 0/1
       Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
 - [ ] `PROOF-ALL.bend` green
+
+### The fuel detour — done, and it is worth remembering
+
+`Sp.shape`/`Sp.dtype` were parameterised with an explicit `Nat` fuel instead of
+`@unsafe`, and 23 laws grew a `for +depth: Nat` binder to match. That design is
+**retracted**: numeric patterns in Bend are first-match prefix matches, so the
+`case 2n+p:` arm was dead code that typechecked, both folds answered `None` for
+every operand, and 6 laws were refuted outright because of it.
+
+The replacement is bounded arity with no fuel at all. The two facts that force
+it, both measured and recorded in `.agents/slop/notes/bend2-constraints.md`:
+
+- a recursive call must pass a **field** of its own parameter (bare, or
+  re-wrapped in the same constructor); and
+- re-wrapping a **list tail** in any constructor is rejected, while a list
+  *head* binder re-wrapped is fine.
+
+Together those mean a fold that maps a recursive function over a `List<Sp>` and
+combines the results is unwritable: the head is fine, the tail cannot be
+re-wrapped, and turning the tail into a struct field needs a second
+mutually-recursive def, which Bend also rejects. So `SpIndex` becomes an
+arity-indexed family rather than holding a list.
+
+Cost of the detour: two commits and one subagent's worth of reverted work.
+Benefit: the notes now say something true, and the next agent does not spend a
+day rediscovering that `2n+p` is not an even-case test.
 
 ## Phase P2 — trial run
 
@@ -70,13 +96,17 @@ excluded by tinygrad's own hardware markers, not by us.
 
 ## Open decisions
 
-- [ ] **Turing completeness needs approval.** 19 `@unsafe` defs in
-      `LAWS/spec.bend` are mutually recursive structural folds over a finite
-      tree, so they terminate and are not a while-loop in disguise. But
-      `@unsafe` lifts the termination check in general, and the project rule says
-      any Turing completeness must be approved first. Awaiting a decision on
-      whether the fold group is in bounds; if not, the alternative is an explicit
-      fuel argument threaded through every derived property.
+- [x] **Turing completeness.** Asked, answered: no `@unsafe`. Resolved without
+      fuel in the end — bounded arity terminates structurally, so the question
+      does not arise. `spec.bend` has zero `@unsafe` and zero fuel.
+- [x] **Port directory name.** `bendgrad/` → `tinybendygrad/`, with the inner
+      `tinygrad/` mirror dropped. One level shallower; the 1:1 rule is now
+      `tinygrad/foo.py` ↔ `tinybendygrad/foo.bend`.
+- [ ] **Index arity bound.** How many indices `SpIdxN` should support. Waiting
+      on the rewrite to report the evidence from `tinygrad/uop/ops.py`.
 - [ ] Whether `Sp` (the spec IR) stays a pure tree with the compilation arena
       separate, or the two are unified. Currently separate, because the
       compilation graph has back-edges and the test suite depends on identity.
+- [ ] **The empty-Stack case has no law.** tinyspec plus `Nil{} -> None{}` mean
+      an empty Stack has no shape; the stack law covers only the non-empty case.
+      Worth its own law.

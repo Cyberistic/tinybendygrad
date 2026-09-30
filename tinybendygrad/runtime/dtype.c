@@ -29,6 +29,10 @@
 #define FP8_E4M3FNUZ  2
 #define FP8_E5M2FNUZ  3
 
+// bend2's generated C declares u64/u32/u8 but no signed 64-bit type; the
+// div/mod half of this file needs one and the casts are the whole of the cost.
+typedef int64_t s64;
+
 static const u32 fp8_bias[4]      = {  7, 15,  8, 16 };
 static const u32 fp8_sig[4]       = {  4,  3,  4,  3 };
 static const u32 fp8_mant[4]      = { 0x7, 0x3, 0x7, 0x3 };
@@ -84,7 +88,7 @@ static u32 fp8_encode(u32 xb, u32 kind) {
 
 // dtype.py fp8_to_float, answering the f32 bit pattern of the value.
 static u32 fp8_decode(u32 x, u32 kind) {
-  u32 sig = fp8_sig[kind];
+  u32 sig = fp8_sig[kind], bias = fp8_bias[kind];
   if (fp8_is_fnuz(kind) && x == 0x80u) return 0x7FC00000u;   // nan
   if ((x & 0x7Fu) == 0) return (x & 0x80u) ? 0x80000000u : 0u;
   u32 mant_bits = sig - 1, exp_bits = 8 - sig;
@@ -162,8 +166,13 @@ static Term fp8_from_run(Env e, Term* f, IoWork* w) {
 }
 
 static Term bf16_run(Env e, Term* f, IoWork* w) {
+  // dtype.py: round the f32 bits to bf16 with round-half-to-even, and answer
+  // the value. bf16 IS the top half of an f32 pattern, so the rounded pattern
+  // is the answer with no rebias -- which is exactly why this one differs from
+  // the half above. NOTE the explicit u32: f32_rewrap takes an f32, so handing
+  // it a u32 would reinterpret the bits as a float and back.
   u32 x = (u32)f[0];
-  return f32_rewrap((x + 0x7FFFu + ((x >> 16) & 1u)) & 0xFFFF0000u);
+  return (Term)(intptr_t)((x + 0x7FFFu + ((x >> 16) & 1u)) & 0xFFFF0000u);
 }
 
 // ===========================================================================
@@ -173,24 +182,17 @@ static Term bf16_run(Env e, Term* f, IoWork* w) {
 //
 // Every one takes an I64 as (hi, lo) and answers one the same way. INT64_MIN
 // has no positive counterpart, so nothing here negates its divisor: cdiv uses
-// |a|//|b| and floor uses one remainder step, which is what Python does anyway.
-static s64 i64_of(Term* f) {
-  return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);
-}
+// |a|//|b| and the ceiling is computed directly, which is what Python's
+// -(a // -b) means without the negation.
+typedef struct { s64 q, r; } DivMod;
 
-static Term pack64(Env e, s64 v) {
-  return io_tup(e, (Term)(intptr_t)(u32)((u64)v >> 32), (Term)(intptr_t)(u32)(u64)v);
-}
-
-// Python's // and %, together, because they are one computation.
-static Term floor_div_mod(Env e, s64 a, s64 b) {
-  s64 q = 0, r = a;
-  if (b != 0) {
-    q = a / b;
-    r = a % b;
-    if (r != 0 && ((r < 0) != (b < 0))) { q -= 1; r += b; }
-  }
-  return io_tup(e, pack64(e, q), pack64(e, r));
+static DivMod floor_div_mod(s64 a, s64 b) {
+  DivMod d;
+  if (b == 0) { d.q = 0; d.r = a; return d; }   // tinygrad's zero-divisor branch
+  d.q = a / b;
+  d.r = a % b;
+  if (d.r != 0 && ((d.r < 0) != (b < 0))) { d.q -= 1; d.r += b; }
+  return d;
 }
 
 // cdiv truncates toward zero; its sign comes from the operands, not from a*b,
@@ -200,21 +202,25 @@ static s64 cdiv_of(s64 a, s64 b) {
   return (a < 0) != (b < 0) ? -q : q;
 }
 
+static s64 i64_of(Term* f) {
+  return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);
+}
+
+static Term pack64(Env e, s64 v) {
+  return io_tup(e, (Term)(intptr_t)(u32)((u64)v >> 32), (Term)(intptr_t)(u32)(u64)v);
+}
+
 static Term i64_run(Env e, Term* f, IoWork* w) {
   return pack64(e, i64_of(f));
 }
 
 static Term div64_floor_run(Env e, Term* f, IoWork* w) {
-  s64 a = i64_of(f), b = i64_of(f + 2);
-  return Pair.fst(U32 & U32, floor_div_mod(e, a, b));
+  return pack64(e, floor_div_mod(i64_of(f), i64_of(f + 2)).q);
 }
 
 static Term div64_mod_run(Env e, Term* f, IoWork* w) {
-  s64 a = i64_of(f), b = i64_of(f + 2);
-  return Pair.snd(U32 & U32, floor_div_mod(e, a, b));
+  return pack64(e, floor_div_mod(i64_of(f), i64_of(f + 2)).r);
 }
-
-// a & b and not a & b, so the two answers stay one computation
 
 static Term div64_cdiv_run(Env e, Term* f, IoWork* w) {
   s64 a = i64_of(f), b = i64_of(f + 2);
@@ -226,8 +232,6 @@ static Term div64_cmod_run(Env e, Term* f, IoWork* w) {
   return pack64(e, b == 0 ? a : a - cdiv_of(a, b) * b);
 }
 
-// dtype.py ceildiv is -(a // -b), which is ceil for every b except INT64_MIN.
-// That one case is the ceiling directly, so no negation is needed anywhere.
 static Term div64_ceildiv_run(Env e, Term* f, IoWork* w) {
   s64 a = i64_of(f), b = i64_of(f + 2);
   if (b == 0) return pack64(e, 0);
@@ -236,21 +240,56 @@ static Term div64_ceildiv_run(Env e, Term* f, IoWork* w) {
   return pack64(e, c);
 }
 
+// One guard per registration, the way base.bend's file_read.c does it: CID is
+// only defined for an effect the calling program actually uses, so a program
+// that never calls fp8_from must not name it.
 #ifdef CID(Dt.bf16)
 static void __attribute__((constructor)) dtype_bf16_use(void) {
   io_eff(CID(Dt.bf16), bf16_run, 0);
+}
+#endif
+#ifdef CID(Dt.fp16)
+static void __attribute__((constructor)) dtype_fp16_use(void) {
   io_eff(CID(Dt.fp16), fp16_run, 0);
+}
+#endif
+#ifdef CID(Dt.fp8_from)
+static void __attribute__((constructor)) dtype_fp8_from_use(void) {
   io_eff(CID(Dt.fp8_from), fp8_from_run, 0);
+}
+#endif
+#ifdef CID(Dt.fp8_to)
+static void __attribute__((constructor)) dtype_fp8_to_use(void) {
   io_eff(CID(Dt.fp8_to), fp8_to_run, 0);
 }
 #endif
-#ifdef CID(Dt.i64_floor_div)
-static void __attribute__((constructor)) dtype_div64_use(void) {
+#ifdef CID(Dt.i64_trunc)
+static void __attribute__((constructor)) dtype_i64_trunc_use(void) {
   io_eff(CID(Dt.i64_trunc), i64_run, 0);
+}
+#endif
+#ifdef CID(Dt.i64_floor_div)
+static void __attribute__((constructor)) dtype_i64_floor_div_use(void) {
   io_eff(CID(Dt.i64_floor_div), div64_floor_run, 0);
+}
+#endif
+#ifdef CID(Dt.i64_floor_mod)
+static void __attribute__((constructor)) dtype_i64_floor_mod_use(void) {
   io_eff(CID(Dt.i64_floor_mod), div64_mod_run, 0);
+}
+#endif
+#ifdef CID(Dt.i64_cdiv)
+static void __attribute__((constructor)) dtype_i64_cdiv_use(void) {
   io_eff(CID(Dt.i64_cdiv), div64_cdiv_run, 0);
+}
+#endif
+#ifdef CID(Dt.i64_cmod)
+static void __attribute__((constructor)) dtype_i64_cmod_use(void) {
   io_eff(CID(Dt.i64_cmod), div64_cmod_run, 0);
+}
+#endif
+#ifdef CID(Dt.i64_ceildiv)
+static void __attribute__((constructor)) dtype_i64_ceildiv_use(void) {
   io_eff(CID(Dt.i64_ceildiv), div64_ceildiv_run, 0);
 }
 #endif

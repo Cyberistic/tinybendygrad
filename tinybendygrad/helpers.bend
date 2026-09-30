@@ -1257,14 +1257,16 @@ def i64_cmp.mag(eq: Bool, lt: Bool, eql: Bool, ltl: Bool) -> Cmp:
         case False{}: i64_cmp.lt(ltl)
     case False{}: i64_cmp.lt(lt)
 
-def i64_cmp.sgn(an: Bool, ah: U32, al: U32, bn: Bool, bh: U32, bl: U32) -> Cmp:
+def i64_cmp.sgn(an: Bool, +ah: U32, +al: U32, bn: Bool, +bh: U32, +bl: U32) -> Cmp:
   match an bn:
     case True{} False{}: LT{}
     case False{} True{}: GT{}
-    case _: i64_cmp.mag(U32.is_eq(ah, bh), U32.is_lt(ah, bh),
+    case True{} True{}: i64_cmp.mag(U32.is_eq(ah, bh), U32.is_lt(ah, bh),
+      U32.is_eq(al, bl), U32.is_lt(al, bl))
+    case False{} False{}: i64_cmp.mag(U32.is_eq(ah, bh), U32.is_lt(ah, bh),
       U32.is_eq(al, bl), U32.is_lt(al, bl))
 
-def i64_cmp(a: I64, b: I64) -> Cmp:
+def i64_cmp(+a: I64, +b: I64) -> Cmp:
   i64_cmp.sgn(i32_is_neg(hi32(a)), hi32(a), lo32(a),
     i32_is_neg(hi32(b)), hi32(b), lo32(b))
 
@@ -1273,6 +1275,24 @@ def i64_is_neg(x: I64) -> Bool:
 
 def i64_le(a: I64, b: I64) -> Bool:
   Cmp.is_le(i64_cmp(a, b))
+
+# An I64 prints as its two words, so a value never has to leave U32 to be read.
+# `hi:lo` rather than a decimal because 2^63 has no U32 image, and a dump the
+# oracle can diff line for line is worth more here than a prettier one.
+def i64_show(hi: U32, lo: U32) -> String:
+  String.concat([U32.show(hi), ":", U32.show(lo)])
+
+def i64_text(+x: I64) -> String:
+  i64_show(hi32(x), lo32(x))
+
+# 64-bit add and subtract, so a boundary generator can step either side of a
+# limit without an effect. Carrying into the high word is all either has to get
+# right, and U32's wrap does that for free.
+def i64_add(+a: I64, +b: I64) -> I64:
+  i64_of_hi_lo(U32.add(hi32(a), hi32(b)), U32.add(lo32(a), lo32(b)))
+
+def i64_sub(+a: I64, +b: I64) -> I64:
+  i64_of_hi_lo(U32.sub(hi32(a), hi32(b)), U32.sub(lo32(a), lo32(b)))
 
 # data64 -- `(data >> 32, data & 0xFFFFFFFF)`. Python's >> is arithmetic, and
 # the high half of a two's complement 64-bit word IS the arithmetic shift, so

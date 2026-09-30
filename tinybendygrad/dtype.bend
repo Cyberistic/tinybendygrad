@@ -433,7 +433,7 @@ def fmax.cls(cls: S.Cls, nm: String) -> Maybe<&1, F32>:
     case S.CFloat{}: fmax.of(nm)
     case _: None{}
 
-def fmax(d: S.Dt) -> Maybe<&1, F32>:
+def fmax(+d: S.Dt) -> Maybe<&1, F32>:
   fmax.cls(S.Dt.cls(d), dt_name(d))
 
 # ===========================================================================
@@ -448,22 +448,33 @@ def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
     case "weakint": Some{S.weakint()}
     case "weakfloat": Some{S.weakfloat()}
     case "bool": Some{S.boolean()}
-    case "half": case "float16": Some{S.half()}
+    case "half": Some{S.half()}
+    case "float16": Some{S.half()}
     case "bfloat16": Some{S.bfloat16()}
-    case "float": case "float32": Some{S.single()}
-    case "double": case "float64": Some{S.double()}
+    case "float": Some{S.single()}
+    case "float32": Some{S.single()}
+    case "double": Some{S.double()}
+    case "float64": Some{S.double()}
     case "fp8e4m3": Some{S.fp8e4m3()}
     case "fp8e4m3fnuz": Some{S.fp8e4m3fnuz()}
     case "fp8e5m2": Some{S.fp8e5m2()}
     case "fp8e5m2fnuz": Some{S.fp8e5m2fnuz()}
-    case "char": case "int8": Some{S.int8()}
-    case "uchar": case "uint8": Some{S.uint8()}
-    case "short": case "int16": Some{S.int16()}
-    case "ushort": case "uint16": Some{S.uint16()}
-    case "int": case "int32": Some{S.int32()}
-    case "uint": case "uint32": Some{S.uint32()}
-    case "long": case "int64": Some{S.int64()}
-    case "ulong": case "uint64": Some{S.uint64()}
+    case "char": Some{S.int8()}
+    case "int8": Some{S.int8()}
+    case "uchar": Some{S.uint8()}
+    case "uint8": Some{S.uint8()}
+    case "short": Some{S.int16()}
+    case "int16": Some{S.int16()}
+    case "ushort": Some{S.uint16()}
+    case "uint16": Some{S.uint16()}
+    case "int": Some{S.int32()}
+    case "int32": Some{S.int32()}
+    case "uint": Some{S.uint32()}
+    case "uint32": Some{S.uint32()}
+    case "long": Some{S.int64()}
+    case "int64": Some{S.int64()}
+    case "ulong": Some{S.uint64()}
+    case "uint64": Some{S.uint64()}
     case _: None{}
 
 def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
@@ -472,32 +483,119 @@ def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
 # ===========================================================================
 # commit_int -- the smallest dtype on the ladder that holds [lo, hi].
 #
-# The bounds are I64 because dtype.py takes Python ints and the top of the
-# ladder is uint64, whose max has no U32 image. The ladder walks
-# (default_int, int32, int64, uint64) and the first rung that holds both wins,
-# which is what dtype.py's `next(...)` does.
-# ===========================================================================
+# The bounds are I64 because dtype.py takes Python ints and the ladder's top rung
+# is uint64, whose max has no U32 image. Two consequences, both facts rather than
+# simplifications:
+#
+#   * every I64 is inside int64's range, so the ladder's int64 rung always fits
+#     and its uint64 rung can never be reached. dtype.py returns `long` when it
+#     runs off the end anyway, so the answer is the same either way; the uint64
+#     rung is unreachable here and the fallback IS dtype.py's fallback.
+#   * the ladder starts at default_int, which may already be int32, so the int32
+#     test runs twice in that case. That is dtype.py's behaviour, kept.
+def i64_min_s32() -> H.I64: H.i64_of_hi_lo(4294967295, 2147483648)
+def i64_max_s31() -> H.I64: H.i64_of_hi_lo(0, 2147483647)
 
-def commit_int.ladder(lo: H.I64, hi: H.I64, rung: List<&2, S.Dt>) ->
-  Maybe<&1, S.Dt>:
-  match rung:
-    case Nil{}: Some{S.int64()}
-    case d <> t: commit_int.holds(dt_min(d), dt_max(d), lo, hi, d, t)
+def commit_int.i32fit(lo: H.I64, hi: H.I64) -> Bool:
+  Bool.and(H.i64_le(i64_min_s32(), lo), H.i64_le(hi, i64_max_s31()))
 
-def commit_int.holds(mn: Maybe<&1, H.I64>, mx: Maybe<&1, H.I64>, lo: H.I64,
-  hi: H.I64, d: S.Dt, t: List<&2, S.Dt>) -> Maybe<&1, S.Dt>:
+def commit_int.i32(fit: Bool) -> Maybe<&1, S.Dt>:
+  match fit:
+    case True{}: Some{S.int32()}
+    case False{}: Some{S.int64()}
+
+def commit_int.hit(ok: Bool, di: S.Dt, fit: Bool) -> Maybe<&1, S.Dt>:
+  match ok:
+    case True{}: Some{di}
+    case False{}: commit_int.i32(fit)
+
+def commit_int.pick(m: Maybe<&1, Bool>, di: S.Dt, fit: Bool) -> Maybe<&1, S.Dt>:
+  match m:
+    case Some{ok}: commit_int.hit(ok, di, fit)
+    case None{}: commit_int.hit(False{}, di, fit)
+
+def commit_int.bounds(mn: Maybe<&1, H.I64>, mx: Maybe<&1, H.I64>, lo: H.I64,
+  hi: H.I64) -> Maybe<&1, Bool>:
   match mn:
     case Some{a}:
       match mx:
-        case Some{b}: commit_int.take(H.i64_le(a, lo), H.i64_le(hi, b), d, t)
-        case None{}: commit_int.ladder(lo, hi, t)
-    case None{}: commit_int.ladder(lo, hi, t)
+        case Some{b}: Some{Bool.and(H.i64_le(a, lo), H.i64_le(hi, b))}
+        case None{}: None{}
+    case None{}: None{}
 
-def commit_int.take(oklo: Bool, okhi: Bool, d: S.Dt, t: List<&2, S.Dt>) ->
-  Maybe<&1, S.Dt>:
-  match Bool.and(oklo, okhi):
-    case True{}: Some{d}
-    case False{}: commit_int.ladder(dt_min(d), dt_max(d), d, t)
+def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
+  commit_int.pick(commit_int.bounds(dt_min(di), dt_max(di), lo, hi), di,
+    commit_int.i32fit(lo, hi))
 
-def commit_int.lo(lo: H.I64, hi: H.I64, di: S.Dt) -> Maybe<&1, S.Dt>:
-  commit_int.ladder(lo, hi, [di, S.int32(), S.int64(), S.uint64()])
+# ===========================================================================
+# The conversion seam. See ./runtime/dtype.c for why these are effects: Bend
+# reads an F32's bits (F32.bits) but cannot build an F32 from a bit pattern, and
+# every conversion here runs bits in both directions.
+#
+# The `kind` argument is the fp8 id the C and the JS share, so the two lanes
+# cannot drift on which format is which.
+# ===========================================================================
+
+def Dt.bf16(bits: U32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.fp16(x: F32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.fp8_from(bits: U32, kind: U32) -> IO(U32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.fp8_to(bits: U32, kind: U32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_trunc(x: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_floor_div(a: H.I64, b: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_floor_mod(a: H.I64, b: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_cdiv(a: H.I64, b: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_cmod(a: H.I64, b: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.i64_ceildiv(a: H.I64, b: H.I64) -> IO(H.I64):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+# The fp8 id, as the C and the JS agree on it.
+def fp8_kind(nm: String) -> U32:
+  match nm:
+    case "float8_e4m3": 0
+    case "float8_e5m2": 1
+    case "float8_e4m3fnuz": 2
+    case _: 3
+
+# dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because
+# dtype.py's first step is `struct.pack('f', truncate[float](x))` and Bend's F32
+# is already that pattern; the round is the whole of dtype.py's function.
+def float_to_bf16(x: F32) -> IO(F32):
+  Dt.bf16(F32.bits(x))
+
+# dtype.py's float_to_fp16 / float_to_fp8 / fp8_to_float.
+def float_to_fp16(x: F32) -> IO(F32):
+  Dt.fp16(x)
+
+def float_to_fp8(x: F32, dtype: S.Dt) -> IO(U32):
+  Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
+
+def fp8_to_float(x: U32, dtype: S.Dt) -> IO(F32):
+  Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
