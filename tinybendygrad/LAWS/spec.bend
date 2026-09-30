@@ -295,11 +295,14 @@ def Shape.max_dim(a: Sdim, b: Sdim) -> Sdim:
         case SS{q}: SS{p}
 
 def zip_max(a: List<&2, Sdim>, b: List<&2, Sdim>) -> List<&2, Sdim>:
+  # Right-alignment: the SHORTER shape keeps its own axes, so whichever list
+  # runs out first hands the remainder back untouched. That is what makes
+  # (2,) broadcast with (2,2) to (2,2) rather than truncating to (2,).
   match a:
-    case Nil{}: Nil{}
+    case Nil{}: b
     case x <> xs:
       match b:
-        case Nil{}: [x]
+        case Nil{}: a
         case y <> ys: Shape.max_dim(x, y) <> zip_max(xs, ys)
 
 def dim_of(d: Sdim) -> Nat:
@@ -336,7 +339,6 @@ def dims_prod(s: Maybe<&2, Shape>) -> Nat:
   match s:
     case Some{sh}: prod(Shape.to_dims(sh))
     case None{}: 0n
-
 
 def dims_zip_max(a: Maybe<&2, Shape>, b: Maybe<&2, Shape>) -> Maybe<&2, Shape>:
   match a:
@@ -428,6 +430,7 @@ type Sp is Data:
   # does not model. What the bound covers is tinyspec's own `Index(T, i_0, ...)`
   # as a source-level construct, and a rank-4 tensor is the common case.
   # Raising the bound is mechanical: one constructor, one arm, one `dims_append`.
+  SpIdx0{t: Sp}
   SpIdx1{t: Sp, a: Sp}
   SpIdx2{t: Sp, a: Sp, b: Sp}
   SpIdx3{t: Sp, a: Sp, b: Sp, c: Sp}
@@ -517,6 +520,11 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
     case SpShrink{t, off, size}: Some{Shape.of(size)}
     # Index: every index shape in order, then the base's trailing dims. Each
     # index is a distinct field, so each of these is its own descent.
+    case SpIdx0{t}:
+      # an index of no operands drops no dims and keeps the base shape whole.
+      # tinygrad builds these (77 per train step, from schedule/prepare.py:68),
+      # so the family starts at zero rather than assuming arity 1.
+      Sp.shape(t)
     case SpIdx1{t, a}:
       p = Sp.shape(a)
       bt = Sp.shape(t)
@@ -702,6 +710,7 @@ def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
     case SpExpand{t, pre, total}: Sp.dtype(t)
     case SpPad{t, off, size}: Sp.dtype(t)
     case SpShrink{t, off, size}: Sp.dtype(t)
+    case SpIdx0{t}: Sp.dtype(t)
     case SpIdx1{t, a}: Sp.dtype(t)
     case SpIdx2{t, a, b}: Sp.dtype(t)
     case SpIdx3{t, a, b, c}: Sp.dtype(t)

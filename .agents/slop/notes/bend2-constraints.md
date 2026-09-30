@@ -377,3 +377,49 @@ def shape(s: Sp) -> Maybe<&2, U32>:
 
 `ALL PROOFS CHECK`, no `@unsafe`, no fuel. Every descent is a distinct field.
 Verified on both the interpreted and compiled lanes.
+
+## Writing a Bend proof: the syntax that costs time
+
+Measured while proving `Shape.max_dim(x, x) == x`. Each of these was a compile
+error before it was a rule.
+
+1. **A def with no return type is a law proof.** `def helper(v):` is parsed as
+   "fill the law named `helper`". A plain helper must spell its type:
+   `def nat_max_idem(+v: Nat) -> {Nat.max(v, v) == v : Nat}:`. The return type is
+   an equation, so the helper is a proof of it.
+
+2. **Binders used twice need `+`.** `def nat_max_idem(v)` then using `v` in two
+   places is "consumed more than once". `+v` fixes it, at the cost of a refcount.
+
+3. **The `%proof : P` motive is written against the goal AFTER the match, not
+   before.** This is the one that cost the most. In
+
+   ```
+   case 1n+p:
+     %ih : {Nat.max(p, p) == p : Nat}
+   ```
+
+   the goal is `1n+Nat.max(p, p) == 1n+p`, so the motive must be
+   `{1n+Nat.max(p, p) == 1n+_ : Nat}`. Writing the pre-match equation is silently
+   accepted and does nothing.
+
+4. **Constructor names are module-qualified in motives.** Inside a motive you
+   write `S.SN{...}`, not `SN{...}` — "expected a declared constructor
+   (LAWS/spec.Sdim declares LAWS/spec.SN)".
+
+5. **`Equal.cong(A, B, f, a, b, e)` congrues a function of ONE argument.** A
+   two-argument `f` is refused. To lift a proof about a list tail into a proof
+   about the whole list, fix the head first:
+
+   ```
+   def cons_head(h: Sdim) -> (List<&2, Sdim> -> List<&2, Sdim>): t => h <> t
+   c = Equal.cong(List<&2, Sdim>, List<&2, Sdim), cons_head(Shape.max_dim(x, x)),
+                  zip_max(xs, xs), xs, ih)
+   ```
+
+   `c`'s type is `{Shape.max_dim(x, x) <> xs == Shape.max_dim(x, x) <> xs}`.
+   Getting from there to the goal needs a rewrite under a list constructor,
+   which is rule 3's hard case — see `zip_max_idempotent` in `PROOF.bend`.
+
+6. **A trailing comma at end of line breaks a call.** `Equal.cong(A, B,\n  f, ...)`
+   is a parse error; keep the call on one line.

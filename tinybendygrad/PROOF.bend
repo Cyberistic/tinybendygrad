@@ -2,105 +2,179 @@ import Base
 import ./LAWS.bend as L
 import ./LAWS/spec.bend as S
 
-# PROOF.bend -- the shape half of the proof set.
+# PROOF.bend -- the shape half of the proof set (LAWS.bend sections I, II, III,
+# VI and VII).
 #
-# Proves a law in ./LAWS.bend by a def of the same name whose parameters are
-# that law's `for` binders IN ORDER. So a law that now quantifies a depth budget
-# `for +depth: Nat` is proven by a def whose FIRST parameter is that budget, and
-# the budget leads every helper in LAWS.bend for the same reason.
+# A proof is a def of the law's name whose parameters are that law's `for`
+# binders IN ORDER. Seven of the thirteen are discharged here; six are left open
+# with the reason recorded, and the reason is always the same shape:
 #
-# WHY SO MANY ARE OPEN. Both folds in LAWS/spec.bend are fuelled, and
-# `Sp.shape(s, depth)` computes its fuel as `2*depth+1` before matching on it.
-# Two consequences, both measured against the pinned 2.0.34 compiler, and both
-# in LAWS/spec.bend rather than in this file:
+#   `Sp.shape` can only reduce a node whose arm READS ITS OWN FIELDS. An arm that
+#   has to case-split on ANOTHER node's shape -- Reduce's `Shape.drop`,
+#   Stack's `Shape.prepend`, the ALU arms' `dims_zip_max` -- sits behind
+#   `on_shape(Sp.shape(x), ...)` or `dims_zip_max(Sp.shape(a), Sp.shape(b))`,
+#   and `Sp.shape(x)` is a CALL. A `match` may not open a call (PORTING.md
+#   section 1.2), so those terms never reduce and the two sides of the law stay
+#   apart however deep the tree is.
 #
-#   1. A SYMBOLIC budget never reduces. The scrutinee `2*depth+1` is a computed
-#      value, and a match may not open one, so `Sp.shape.item` stays stuck and
-#      the two sides of a law sit on two different stuck terms. Case analysis on
-#      `depth` does not help: Nat is unary, so every split leaves a case with a
-#      free `p` in the fuel, and induction on the depth binder does not apply
-#      either -- the induction hypothesis is about fuel `2p+1` while the goal
-#      carries `2p+3`.
+#   Under the old fuel budget every law was stuck for a second reason as well:
+#   the fold computed `2*depth+1` and matched on it, so a symbolic depth never
+#   reduced, and `case 1n+p:` shadowed `case 2n+p:` so the fold was the constant
+#   None. Both defects are gone. See spec/depth.md.
 #
-#   2. The `case 2n+p:` arm of BOTH folds is DEAD. `case 1n+p:` is tried first
-#      and matches every successor, so the pair arm is never reached and the
-#      fuel only ever decrements to `0n`, which answers None. So
-#      `Sp.shape` and `Sp.dtype` are the CONSTANT None for every operand and
-#      every budget. A law proved against them is proved against a constant.
+# WHAT IS PROVED is still worth proving, and the proofs are trivial only because
+# the `Sp.shape` arm IS the right-hand side -- `SpPermute`'s arm is literally
+# `Sp.shape(t)`. They were mutation-tested: breaking each arm in turn fails the
+# law it belongs to. See spec/shape-laws.md.
+
+# tinyspec: "Reorder axes." The shape column is src[0].shape, and the arm is
+# `Sp.shape(t)`, so both sides are the same term.
+def L.permute_preserves_numel(t, order):
+  {==}
+
+# tinyspec: "Reverse along flagged axes." Same column, same arm.
+def L.flip_preserves_numel(t, flags):
+  {==}
+
+# tinyspec Reshape: "prod s_k = prod s'_k". The arm is `Some{Shape.of(dst)}`, so
+# the subject's count is `prod dst` -- which is the premise, verbatim. There is
+# no derivation to add: the spec's constraint IS the goal once the fold runs.
+def L.reshape_preserves_numel(t, dst, premise):
+  premise
+
+# The same fact from the other side, and it needs no premise.
+def L.reshape_numel_is_the_new_shape(t, dst):
+  {==}
+
+# tinyspec Pad: "Place T at offset o_k in an invalid-filled output of shape
+# s'_k", so the count is the output's.
+def L.pad_numel_is_the_new_shape(t, off, size):
+  {==}
+
+# tinyspec Shrink: "Keep s'_k elements starting at offset o_k per axis", so the
+# count is the narrowed shape's.
+def L.shrink_numel_is_the_new_shape(t, off, size):
+  {==}
+
+# tinyspec Shrink is the "Inverse of Pad", in extent. As with Reshape, the
+# subject's count is `prod size` and that is the premise.
+def L.pad_shrink_round_trip(t, off, size, premise):
+  premise
+
+# OPEN -- STUCK, and the law is TRUE. The fold is total, so the premise now has
+# a witness and the law is no longer vacuous; the conclusion is also not a
+# restatement of the premise. What blocks it is that Stack's arm must prepend to
+# the head's shape:
 #
-# Every def below that would have been `{==}` is therefore left OPEN, with the
-# reason recorded. A green gate over those would be a gate over a constant
-# function, which is worse than a red one.
+#     dims_prod(on_shape(Sp.shape(t), sh => Some{Shape.prepend(SN{n+1}, sh)}))
+#
+# `on_shape` has to case-split on `Sp.shape(t)`, which is a call, so the term
+# stays as it is printed. A premise cannot be used as a rewrite rule either:
+# a proof must have the GOAL's equation type, and this goal is
+# `dims_prod(on_shape(...)) == n * dims_prod(Sp.shape(t))`, which is not the
+# premise `shape_of(t) == Some{bs}`. Making it provable needs a law about
+# `on_shape` or about `Sp.shape` of a Stack, not a rewrite here.
+# law stack_numel_is_the_leading_axis_times_the_operands(t, rest, bs, premise)
 
-# --- Open: the fuel is computed from the budget, so nothing reduces. --------
-# See (1) above. The two sides are
-#   dims_prod(Sp.shape.item(2p+3, One{SpPermute{t, order}}))  and
-#   dims_prod(Sp.shape.item(2p+3, One{t}))
-# two different stuck terms.
-# law permute_preserves_numel(depth, t, order)
+# OPEN -- REFUTED, not merely stuck. The law says the reduced count EQUALS the
+# original, and Reduce's arm is `Shape.drop(shape(t), n)`, which is tinyspec's
+# "Reduce the first n axes of T": it removes elements, so the count divides
+# rather than survives. `t` of shape (4,5,6) with `n = 1n` gives 30 against
+# 120. The law's own NAME says "divides by", so the body was what is wrong.
+#
+# Both bodies are now corrected in LAWS.bend: this one asserts the division
+# rather than equality. It remains OPEN -- the subject is `Shape.drop` applied to
+# another fold's result, which a `match` cannot open. The law is TRUE.
+# law reduce_numel_divides_by_the_reduced_axes(t, n)
 
-# See (1). Same two stuck terms, with SpFlip in place of SpPermute.
-# law flip_preserves_numel(depth, t, flags)
+# The previous law claimed the broadcast took the LEFT operand's shape, which
+# tinyspec refutes: right-align and take the element-wise max, so (1,3) with
+# (2,3) is (2,3). Renamed to broadcast_is_elementwise_max and restated as the max
+# of the two counts, which is what the rule actually says.
+#
+# OPEN. The count is `dims_prod` of a `zip_max` of two symbolic shapes, and
+# `zip_max` cannot reduce without knowing them.
+# law broadcast_is_elementwise_max(a, b)
 
-# See (1). The premise is no help either: it too reduces to a stuck
-# `dims_prod(Sp.shape.item(2p+3, One{t}))`, which the subject does not contain.
-# law reshape_preserves_numel(depth, t, dst, premise)
-
-# See (1), and note the law is ALSO refuted, not merely stuck: at depth 0n the
-# fold answers None, so the claim is `0n == S.prod(dst)`, which is false for
-# any non-empty dst. The spec's own premise `prod dst = numel_of(t)` cannot be
-# satisfied under a fold that reports no element count at all.
-# law reshape_numel_is_the_new_shape(depth, t, dst)
-
-# See (1), and also refuted: Pad's shape column IS `size`, so the claim is
-# `S.prod(size) == 0n` at the only budget that reduces. False for size = [2].
-# law pad_numel_is_the_new_shape(depth, t, off, size)
-
-# See (1), and refuted for the same reason as Pad: Shrink's shape column is also
-# `size`, so the claim is `S.prod(size) == 0n`.
-# law shrink_numel_is_the_new_shape(depth, t, off, size)
-
-# See (1). The premise shares the budget, as the law requires, and still cannot
-# be used: it is stuck, and it is stuck in the same place the subject is.
-# law pad_shrink_round_trip(depth, t, off, size, premise)
-
-# UNPROVABLE, AND VACUOUS, AND THE PREMISE IS UNINHABITED. The premise asks the
-# fold for t's shape, and by (2) the fold answers None for every t, so
-# `shape_of(depth, t) == Some{bs}` has no witness: the law is true only because
-# its hypothesis is empty. Even with a working fold the conclusion would still
-# need (1). This is the law the brief flagged: it compares the fold against
-# itself, and the premise only ever buys the checker a rewrite it cannot use.
-# law stack_numel_is_the_leading_axis_times_the_operands(depth, t, rest, bs, premise)
-
-# See (1). Reduce's shape column drops the first k axes, so both sides sit on a
-# stuck `Sp.shape.item`, one on `One{SpReduce{...}}` and one on `One{t}`.
-# law reduce_numel_divides_by_the_reduced_axes(depth, t, ranges, op, n)
-
-# See (1). Broadcast is zip_max of the two operand shapes, so the left-hand
-# side is a stuck `Sp.shape.item` on `One{SpAdd{a, b}}` and the right is one on
-# `One{a}`. The law also over-claims: tinyspec's rule is right-align and take
-# the element-wise max, which is `a` only when the two agree.
-# law broadcast_takes_the_left_shape(depth, a, b)
-
-# See (1). Both sides are a stuck `Sp.dtype.item` at the same computed fuel,
-# one on `One{SpDetach{a}}` and one on `One{a}`.
-# law detach_preserves_dtype(depth, a)
-
-# See (1), with `dims_prod` around each stuck shape.
-# law detach_preserves_numel(depth, a)
-
-# See (1) for the subject; the premise is stuck in the same place, so it cannot
-# be used as a rewrite. Also note the law over-claims: the shape column says
-# "all inputs same shape", so the conclusion holds under the premise, but the
-# premise and conclusion are asked at the one shared budget the law fixes.
-# law add_is_elementwise(depth, a, b, premise)
-# law mul_is_elementwise(depth, a, b, premise)
-# law max_is_elementwise(depth, a, b, premise)
+# OPEN -- STUCK, and the laws are TRUE. Each says the broadcast of two operands
+# of equal shape is that shape, which is tinyspec's "all inputs same shape,
+# output same shape". The subject normalises to
+# `dims_zip_max(Sp.shape(a), Sp.shape(b))` against `Sp.shape(a)`, and the
+# premise `Sp.shape(a) == Sp.shape(b)` cannot be used: a proof must have the
+# goal's own equation type, and `zip_max` still cannot reduce on a symbolic
+# shape even with both sides equal. A shape-level law saying
+# `zip_max(s, s) == s` would settle all three at once.
+# law add_is_elementwise(a, b, premise)
+# law mul_is_elementwise(a, b, premise)
+# law max_is_elementwise(a, b, premise)
 
 # PROVEN, BUT VACUOUS BY CONSTRUCTION, and it was before the folds were fuelled:
 # the conclusion restates the premise verbatim, so the premise IS the proof and
 # the law cannot fail whatever the fold says. It is kept and proven because the
 # spec states the constraint, but it pins no behaviour. Making it bite would
 # need a law about the Store's own shape, not a restatement of its hypothesis.
-def L.store_matches_its_buffer(depth, buf, val, gate, premise):
+def L.store_matches_its_buffer(buf, val, gate, premise):
   premise
+
+# ===========================================================================
+# Section VIII -- the shape algebra's own laws.
+# ===========================================================================
+
+# Base proves `Nat.max_ge_l` and `Nat.max_ge_r` but NOT `Nat.max(v, v) == v`, and
+# `Shape.max_dim`'s SN arm is exactly `SN{Nat.max(v, v)}`, so the leaf fact has to
+# be proved here. Induction on the Nat.
+#
+# Two syntax rules cost time and are worth writing down:
+#   * a def with NO return type is a law proof, so a helper like this needs an
+#     explicit `-> {Nat.max(v, v) == v : Nat}`, and `+v` so the binder is
+#     reusable across the two occurrences;
+#   * the `%proof : P` motive is written against the goal AFTER the match. In
+#     the step case the goal is `1n+Nat.max(p, p) == 1n+p`, so P is
+#     `{1n+Nat.max(p, p) == 1n+_ : Nat}` -- NOT the pre-match goal.
+def nat_max_idem(+v: Nat) -> {Nat.max(v, v) == v : Nat}:
+  match v:
+    case 0n:
+      {==}
+    case 1n+p:
+      %nat_max_idem(p) : {1n+Nat.max(p, p) == 1n+_ : Nat}
+      {==}
+
+# `max_dim` is idempotent. SS is a case split in the source and returns the
+# first argument, so it is reflexive; SN reduces through `nat_max_idem`.
+def L.max_dim_idempotent(x):
+  match x:
+    case S.SN{v}:
+      %nat_max_idem(v) : {S.SN{Nat.max(v, v)} == S.SN{_} : S.Sdim}
+      {==}
+    case S.SS{p}:
+      {==}
+
+# OPEN -- and this one is worth being precise about, because it is the law the
+# three elementwise laws in section VI are waiting on.
+#
+# The claim is TRUE and the induction is one step: apply the IH to the tail,
+# then `max_dim_idem` to the head. What does not close is the REWRITER. Every
+# motive shape was tried and rejected by the compiler:
+#
+#   %ih  : {zip_max(xs, xs) == xs : ...}                       goal unchanged
+#   %ih  : {zip_max(xs, xs) == _ : ...}                        goal unchanged
+#   %ih  : {Shape.max_dim(x, x) <> zip_max(xs, xs) == x <> _ : ...}
+#                                                              goal unchanged
+#   %ih  : {_ == x <> xs : ...}                                wrong endpoint
+#
+# The two-element case DOES close, via `Equal.cong`, which lifts a proof about
+# the tail into a proof about the whole list once the head is fixed:
+#
+#   def cons_head(h: Sdim) -> (List<&2, Sdim> -> List<&2, Sdim>): t => h <> t
+#   c = Equal.cong(List<&2, Sdim>, List<&2, Sdim), cons_head(Shape.max_dim(x, x)),
+#                  zip_max(xs, xs), xs, ih)
+#
+# and `c`'s type is `{Shape.max_dim(x, x) <> xs == Shape.max_dim(x, x) <> xs}`,
+# which is one rewrite away from the goal -- but the motive that final rewrite
+# wants is the one direction every attempt above refused. So the obstruction is
+# `%`-motive selection under a list constructor, not the mathematics.
+#
+# NEXT: try `Equal.trans` to chain `c` with `max_dim_idempotent` instead of a
+# rewrite, or change `zip_max` to take a head and a tail as separate arguments so
+# no rewrite under a constructor is needed at all.
+# law zip_max_idempotent(ds)

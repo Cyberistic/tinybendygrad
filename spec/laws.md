@@ -52,10 +52,28 @@ added to the port but not to `spec.bend` fails to typecheck until the fold grows
 a case for it. In Python that was a `KeyError` on a shape that only some shape
 reaches.
 
-**Termination is explicit.** Both folds take a fuel budget and spend one per
-level. Too little fuel returns `None` — "past this depth I don't know" — instead
-of a wrong shape. There is no `@unsafe` anywhere in the file, so nothing escapes
-the check.
+**Termination is structural, with no escape hatch.** One recursive def per
+property, no mutual recursion, every descent passing a field of its own
+parameter. No `@unsafe` and no fuel budget anywhere in the file.
+
+Getting there cost a detour worth recording, because the first design *typechecked
+and was wrong*. The folds were parameterised with an explicit `Nat` fuel on the
+reading that `case 2n+p:` was an "at least two" case. It is not: numeric patterns
+in Bend are first-match prefix matches, so `case 1n+p:` claims every successor and
+the pair arm was dead code. Both folds answered `None` for every operand while
+reporting clean.
+
+Two measured rules replaced it: a recursive call must pass a **field of its own
+parameter**, and re-wrapping a **list tail** in any constructor is rejected
+outright (a list *head* binder is fine). Together those mean a fold that maps a
+recursive function over a list cannot be written — the head is legal, the tail is
+not, and making the tail a field needs a second mutually-recursive def, which is
+also rejected. Hence bounded arity for `Index`. All of it is in
+`.agents/slop/notes/bend2-constraints.md`, which is what an agent reads first.
+
+**The lesson generalises past this file: a compiler that accepts your code does
+not mean the code does what you meant.** Six laws were refuted or found vacuous
+during this work, and two of those were bugs in code a type checker had approved.
 
 ## What we do not gain, and why
 
@@ -97,6 +115,9 @@ Red while any law is open. It names the law, not a line number.
 | `tinybendygrad/LAWS.bend` | the laws |
 | `tinybendygrad/PROOF.bend` | shape half |
 | `tinybendygrad/PROOF2.bend` | ALU/dtype half |
-| `spec/depth.md` | what the fuel budget bought, and what it costs |
 | `spec/shape-laws.md` | what pinning the element count bought |
 | `.agents/slop/notes/bend2-constraints.md` | the Bend rules that shaped all of it |
+
+`spec/depth.md` used to live here. It described a fuel budget that turned out to
+be a misreading of the compiler, so it is deleted rather than corrected — the
+current folds have no fuel.

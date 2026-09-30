@@ -16,7 +16,6 @@ adjectives.
 | --- | --- |
 | [laws.md](laws.md) | tinyspec's prose tables, as Bend types and machine-checked laws |
 | [shape-laws.md](shape-laws.md) | pinning the element count across views; a vacuous law we caught |
-| [depth.md](depth.md) | replacing `@unsafe` with an explicit fuel budget, and what it cost |
 
 The next units of the port add their own file here: `dtype.md`, `ops.md`,
 `schedule.md`, `codegen.md`, `renderer.md`.

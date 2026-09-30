@@ -4,16 +4,11 @@
 # this file holds the elementwise-decomposition half (IV) and the dtype half
 # (V). LAWS/PROOF-ALL.bend imports both and is the aggregate gate.
 #
-# Section IV is unaffected by the fuelled folds: those laws are DEFINED in
-# terms of the op constructors, so a law names a def that IS that constructor
-# tree, both sides normalise to one term, and `{==}` decides them. What the
-# proof buys is that alu.bend and spec.bend cannot drift from the tinyspec.tex
-# table unnoticed. All nine still check.
-#
-# Section V is the dtype fold, and it is fuelled, so it inherits PROOF.bend's
-# two obstacles in full: a symbolic budget never reduces, and the `case 2n+p:`
-# arm of `Sp.dtype.item` is dead behind `case 1n+p:`, making the fold the
-# constant None. Those laws are left open with the reason recorded.
+# ALL SIXTEEN ARE PROVEN, and the reason the dtype half went green is that the
+# dtype fold is total. `Sp.dtype` reads at most one operand per arm, so no arm
+# has to case-split on another node's result -- the shape half's one remaining
+# obstacle does not arise here. See PROOF.bend for the full statement of that
+# obstacle and of the two fuel defects it replaced.
 
 import Base
 import ./LAWS.bend as L
@@ -21,7 +16,8 @@ import ./LAWS.bend as L
 # ---------------------------------------------------------------------------
 # IV. tinyspec.tex "Decomposed elementwise ops" (lines 188-208): each op is
 # DEFINED in terms of the primitives above it, so each is reflexive. No depth
-# binder: none of these laws mentions shape_of, dtype_of or numel_of.
+# binder, then or now: none of these laws mentions shape_of, dtype_of or
+# numel_of.
 # ---------------------------------------------------------------------------
 
 # tinyspec.tex:192  Neg = Mul(A, -1)
@@ -64,42 +60,44 @@ def L.mulacc_is_add_of_mul(a, b, c):
 # V. tinyspec.tex "Derived Properties" dtype column: the arms of Sp.dtype that
 # do not simply read src[0].
 #
-# All eight are OPEN. Each quantifies a depth budget, and each is blocked twice
-# over -- see PROOF.bend for the two obstacles in full, both of which live in
-# LAWS/spec.bend rather than here.
+# All eight were OPEN and all eight are REFLEXIVE now. Before, the fold matched
+# on a fuel it had computed as `2*depth+1` and its `case 2n+p:` arm was dead
+# behind `case 1n+p:`, so every one of these compared None with Some{bool} or
+# with None. The fold now reaches its own arm on the first call.
 # ---------------------------------------------------------------------------
 
-# REFUTED, not merely stuck. CmpLt's dtype column is bool, so at the one budget
-# that reduces (depth 0n, fuel 1n) the fold answers None and the claim becomes
-# None == Some{bool}. A fold that never reaches its own constructor arm cannot
-# state a dtype law at all.
-# law comparison_is_bool(depth, a, b)
+# tinyspec.tex:269  CmpLt, CmpNe: bool
+def L.comparison_is_bool(a, b):
+  {==}
 
-# Refuted for the same reason as CmpLt: None == Some{bool}.
-# law comparison_ne_is_bool(depth, a, b)
+def L.comparison_ne_is_bool(a, b):
+  {==}
 
-# STUCK, and over-claiming. Both sides are a stuck `Sp.dtype.item` at the same
-# computed fuel, one on `One{SpWhere{p, a, b}}` and one on `One{b}`, so nothing
-# reduces. Separately, tinyspec says Where's dtype is src[1]'s, and a fold that
-# had to consult BOTH operands for shape would not have a single dtype to
-# report; the two columns do not have to agree.
-# law where_takes_the_second_operand_dtype(depth, p, a, b)
+# tinyspec.tex:271  Where: src[1].dtype. The arm is `Sp.dtype(b)`, so both
+# sides are literally the same term.
+def L.where_takes_the_second_operand_dtype(p, a, b):
+  {==}
 
-# STUCK. The claim is a stuck `Sp.dtype.item` on `One{SpStore{...}}` against
-# None{}. It is true at depth 0n -- the fold answers None there for the wrong
-# reason, having never matched the Store arm -- and undecidable for every
-# symbolic budget.
-# law store_is_void(depth, buf, val, gate)
+# tinyspec.tex:274  Store: void. "Output is void" is the arm `None{}`.
+def L.store_is_void(buf, val, gate):
+  {==}
 
-# STUCK, and true for the wrong reason, exactly as Store is: the Call arm is
-# below the dead `case 2n+p:`, so the fold answers None by decrementing, not by
-# reading the arm that says "a value Call is void".
-# law call_is_void(depth, body, args)
+# tinyspec.tex "A value Call is void" -- the arm is `None{}` again.
+def L.call_is_void(body, args):
+  {==}
 
-# REFUTED. Range's dtype column is index, so at the budget that reduces the
-# claim is None == Some{index}.
-# law range_is_index(depth, bound)
+# tinyspec.tex:275  Range: index
+def L.range_is_index(bound):
+  {==}
 
-# REFUTED. Binary "has dtype uint8", so at the budget that reduces the claim is
-# None == Some{uint8}.
-# law binary_is_uint8(depth, size)
+# tinyspec.tex "Binary: has dtype uint8"
+def L.binary_is_uint8(size):
+  {==}
+
+# The marker ops are "identity on data": the arm is a tail call on the operand,
+# so the subject and the premise normalise to one term.
+def L.detach_preserves_dtype(a):
+  {==}
+
+def L.detach_preserves_numel(a):
+  {==}
