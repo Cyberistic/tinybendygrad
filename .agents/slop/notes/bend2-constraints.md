@@ -586,9 +586,14 @@ That is the entire structural cost to `uop/spec.py`, and it is one call site.
 ## Writing a Kahn worklist, which is how the folds get expressed
 
 Measured on `tinybendygrad/uop/fold.bend`: the derived properties of
-`tinygrad/uop/ops.py` as ONE topological fold, 2205 lines, `ALL PROOFS CHECK`
+`tinygrad/uop/ops.py` as ONE topological fold, `ALL PROOFS CHECK` on both lanes
 with no `@unsafe`. This is the shape every recursive property in the port wants,
 so the rules it forced are the rules that decide the port.
+
+**THE HEADLINE, and §8 is the evidence: a fold that TERMINATES is not a fold that
+is CORRECT.** All five bugs below were `ALL PROOFS CHECK` and four printed
+plausible output. Termination is the easy half and it is not the half that is
+tested.
 
 ### 1. No forward references, and the error lies about the cause
 
@@ -695,7 +700,7 @@ walk. One walk per src of a popped node, plus one per consumer released. Slow an
 checkable beats fast and unprovable — the alternative was an `Array` whose
 `set` silently writes the wrong cell.
 
-### 8. FIVE bugs that all typechecked, and the test that catches none of them
+### 8. FIVE bugs that all typechecked, and what caught them
 
 A `List` fold is where a port stops being a transliteration, and the failures are
 silent, so they are worth writing down. Every one of these five was `ALL PROOFS
@@ -716,11 +721,19 @@ CHECK` and four of them printed plausible output:
 4. **Index order is not resolution order.** `List.get(out, i)` on a table built
    by appending as the fold answers nodes reads the wrong entry; the table is in
    *resolution* order, so the read is a search.
-5. **Returning the tail instead of the input** (rule 2), twice.
+5. **Returning the tail instead of the input** (§2), twice.
 
-**The lesson, and it is the one I would hand the next agent: in a Bend port,
-"the fold terminates and prints" is not a test.** Four of these five reached a
-green run. The test has to be a *value* Python specifies — `dtype(CONST(3)) is
-weakint`, `shape(ADD) == (4,)`, `ended_ranges(BACKEDGE) == src[1:2]` — and the
-mutation has to be run: flip `src[1:2]` to `src[0:1]` and the row that owns that
-arm must go `False` and no other.
+**The lesson: in a Bend port, "the fold terminates and prints" is not a test.**
+Four of these five reached a green run. What caught them was a row whose value
+Python specifies — `dtype(CONST(3)) is weakint`, `shape(ADD) == (4,)`,
+`ended_ranges(BACKEDGE) == src[1:2]` — and then **running the mutation both
+ways**, which is the half that is easy to skip and the half that is the test:
+
+| mutation | rows that moved |
+| --- | --- |
+| `ended_ranges`' BACKEDGE arm `src[1:2]` → `src[0:1]` | `cycle_safe` only |
+| `src_count` back to a `Bool` (one edge, not one per occurrence) | `cycle_safe` only |
+
+Two mutations, two different bugs, one row each. A mutation that turns a *second*
+row `False` means the rows are not independent and the suite is weaker than it
+looks — which is worth knowing before, not after.

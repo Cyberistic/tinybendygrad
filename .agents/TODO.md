@@ -101,9 +101,14 @@ day rediscovering that `2n+p` is not an even-case test.
       back into the fold. Recorded in `spec/ops.md` and in the
       `# THE INVENTORY` block of the file. **P3 decides it.**
 
-- [ ] `uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
-      Ported inside `uop/ops.bend` because the gate needed `match op` to work;
-      split out here.
+- [x] `uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
+      Ported inside `uop/ops.bend` because the gate needed `match op` to work.
+- [ ] `uop/fold.bend` — the derived properties of `ops.py` as ONE Kahn worklist.
+      **DONE.** `dt`+`shape` as a pair (they read each other), `device`,
+      `addrspace`, `base`, `ended_ranges`, and `axis_id`/`axis_type` (not fold
+      properties — the arena already split `ARange{ids, at}`). Both lanes green, no
+      `@unsafe`, five rows all True, mutations run both ways. The rest of `ops.py`
+      is a `TODO(p3)` line per property with the wall it waits for.
 - [ ] `uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
 - [ ] `uop/symbolic.bend` — `python_alu`, `exec_alu`, `const_factor`, `divides`,
       `gcd`, `divide_exact`, `_min_max`, `_sym_fxn`/`sym_infer`.
@@ -114,7 +119,7 @@ day rediscovering that `2n+p` is not an even-case test.
 
 | phase | directory | files | status |
 | --- | --- | --- | --- |
-| P3 | `uop/` | 10 | [#.........] 1/10 |
+| P3 | `uop/` | 10 | [##........] 2/10 |
 | P4 | `schedule/` `engine/` | 10 | [..........] 0/10 |
 | P5 | `codegen/` `renderer/` | 30 | [..........] 0/30 |
 | P6 | `runtime/` | 36 | [..........] 0/36 |
@@ -160,6 +165,30 @@ excluded by tinygrad's own hardware markers, not by us.
       Accepted cost: reads are O(n) folds, so the fold is O(n^2) in arena size and
       the resolved table is a threaded `List`, not an array. Correct and slow
       rather than fast and uncheckable.
+
+      **BUILT: `uop/fold.bend`.** The decision above, executed. ONE Kahn worklist
+      over the arena answers `dt`+`shape` together (they read each other), plus
+      `device`, `addrspace`, `base` and `ended_ranges`; `axis_id`/`axis_type` are
+      ported and are NOT fold properties, because the arena already split
+      `Arg = ARange{ids, at}`. Both lanes green, no `@unsafe`, five printed rows
+      (`dtype_key`, `shape_ok`, `device_ok`, `cycle_safe`, `gap_ok`), all True.
+
+      Two of the accepted costs turned out to be the interesting part, and both
+      are now in `.agents/slop/notes/bend2-constraints.md` §"Writing a Kahn
+      worklist": `Array.set` computes `i & (n-1)` and cannot grow a table, so the
+      resolved store is a `List` and every read is a walk; and a `List` is SPENT
+      when read, so a fold step that must carry a list and something derived from
+      it needs a `Data` record. Five real bugs lived in this file, all silent —
+      including a `Bool` edge test where a duplicate src needs a *count*, which
+      is what the `cycle_safe` row is for. Mutations run both ways; each moves
+      exactly one row.
+
+      P3's remaining walls are unchanged: `simplify`/`ssimplify` (`graph_rewrite`,
+      which also gates six movement shapes, `marg` and `as_shape`), the set
+      algebra for `_ranges`/`bool_slice`/`variables`, `key` (needs rotate and
+      popcount for SHA-256), and `_min_max` (needs four I64 helpers and
+      dtype.bend's limits). `fold.bend` has a `TODO(p3)` line per property naming
+      its Python line and its wall, and that list is the queue.
 - [ ] Whether `Sp` (the spec IR) stays a pure tree with the compilation arena
       separate, or the two are unified. Currently separate, because the
       compilation graph has back-edges and the test suite depends on identity.
