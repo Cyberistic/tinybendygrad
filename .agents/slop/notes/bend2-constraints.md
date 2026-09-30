@@ -1185,3 +1185,115 @@ oracle is strong evidence about the cases the rows cover and NO evidence about
 the rest. The cheapest possible extension — six more patterns through the same
 oracle — turned an "unverified deviation" into a "verified ordering plus a
 concrete bug". Neither was findable by reading the code.
+
+## SIX MORE RULES, MEASURED 2026-09-30 WHILE PORTING `uop/spec.py`
+
+Appended, not edited. All six are Bend 2.0.34 and all six were found by porting
+84 rules; each one cost at least one compile cycle.
+
+### 1. A `Data` RECORD PARAMETER NEEDS `+` FOR TWO READS. IT IS NOT IMPLICITLY COPYABLE
+
+    type CRules is Data:
+      CRules{rs: List<&2, U32>}
+    def CRules.rs(rs: CRules) -> List<&2, U32>:
+      match rs:
+        case CRules{rs}: rs
+    def cr_rewrite(rs: CRules, ar: U32, i: U32) -> U32:
+      cr_scan.rs(rs, ar, i, CRules.rs(rs), 0)
+    #| - expected : rs
+    #| - observed : rs (consumed more than once)
+
+`+rs` fixes it and nothing else does. This CORRECTS the claim in
+`compiled-matcher-shape.bend`'s header -- "the table is `Data`, so `rs` is COPYABLE
+and readable twice" -- and the model's `cr_rewrite` is a live instance of the
+error, unreachable only because nothing calls it yet. `Data` makes a record
+shareable ACROSS functions; it does not make the PARAMETER readable twice inside
+one body. Same for `F.Folded` and for `O.Arena`.
+
+### 2. AN UNUSED `+` PARAMETER IS ACCEPTED
+
+    def q1(+fx: F.Folded, self: U32) -> Verdict: VSkip{}
+    #| ALL PROOFS CHECK
+
+So `+` can be applied UNIFORMLY to a parameter without a dead-parameter error, and
+a driver can pass an argument a rule does not need. Worth knowing because the
+alternative -- annotating only where the compiler complains -- is exactly the
+manual loop `share.py` automates.
+
+### 3. `+` CANNOT BE SPELLED ON A `Maybe` PARAMETER
+
+    def facts(+m: Maybe<&1, ParamArg>) -> Bool: ...
+    #| - expected : Data
+    #| - observed : Type
+
+`Maybe` is a `Type`, and the `+`-notes section above already says `+` is refused
+for `Type`-kinded values. The consequence is the one that cost the most here: a
+`Maybe` can be read ONCE, so every answer it carries has to travel together, and a
+`Data` record CANNOT HOLD A `Maybe` FIELD. So a `Maybe<ParamArg>` becomes a
+`Data` record of `Bool`s (and a third `Data` type for the device's three states),
+not a record of `Maybe`s:
+
+    type DevOpt is Data:
+      DNo{}
+      DOne{tag: U32}
+      DMany{tags: List<&2, U32>}
+    type Pa is Data:
+      Pa{ok: Bool, size: Bool, dev: DevOpt, buf: Bool, vrange: Bool}
+
+This is a recurring shape and it is not a workaround: Bend has no `Data` field
+that can hold a `Maybe`, so ANY record that would naturally hold a list of
+optional answers has to be flattened to a tree of `Data`.
+
+### 4. A ONE-FIELD RECORD'S PATTERN MUST NAME ITS FIELD
+
+    match a:
+      case ADt{}: True{}
+    #| - message : a ADt pattern with 1 field
+
+    match a:
+      case ADt{dt}: True{}      # checks, and the unused binder is fine
+
+A zero-field constructor takes `{}` and a one-field constructor takes `{name}` --
+`{}` is never "ignore the fields". And an UNUSED pattern binder is accepted, which
+is what makes `case ADt{dt}: True{}` a one-line `isinstance(x.arg, DType)`.
+
+### 5. A TWO-SCRUTINEE `match` NEEDS ONE PATTERN PER SCRUTINEE, AND `_ _` IS THE COVER
+
+    match a b:
+      case Some{x} Some{y}: ...
+      case _: False{}
+    #| - expected : 2 patterns (one per scrutinee)
+    #| - observed : '_'
+
+The fix is `case _ _: False{}`. This is the rule-4 note above with the spelling:
+a wildcard is a cover, and it is a cover PER POSITION.
+
+### 6. A THREE-SCRUTINEE `match` WITH A `Nat` COUNTDOWN HAS NO `0n` ARM
+
+    match xs want n:
+      case Nil{} Nil{} 0n: True{}
+      case _ _ 1n+p: ...
+    #| - expected : a constructor of U32 (missing, or already matched)
+
+The note above already says a `Nat`'s `0n` is a first-match PREFIX that claims its
+successors, and it already says to use `List.get`. What is new here is that this
+bites in a THREE-scrutinee match too -- `case _ _ 1n+p:` after a `0n` arm is dead
+for the same reason, and the `0n` arm swallows the whole countdown. For two lists
+compared for equality there is no countdown at all: `ops.bend`'s `eq_op_list` is
+the right tool and the countdown was 20 lines of nothing.
+
+### 7. A SELF-CALL DRIVEN BY A `Nat` COUNTDOWN MUST PASS THE SHRINKING ARGUMENT FIRST
+
+    def go(xs: List<&2, U32>, k: Nat, acc: U32) -> U32:
+      match xs k:
+        case Nil{} _: acc
+        case h <> t 0n: ...
+        case h <> t 1n+p: go(p, t, ...)     # REFUSED
+    #| - expected : a decreasing self-call
+    #|   (arguments are read left to right: each passed unchanged until one shrinks)
+
+`go(t, p, ...)` is the only spelling. The two-scrutinee `match` reads its
+scrutinees in declaration order, and the decrease check reads the arguments in
+declaration order, so the countdown has to be the SECOND parameter for both to
+line up. `fold.bend`'s `Arena.at.go` and `Kahn.dec.go` already have it in that
+shape; the reason they do is this.

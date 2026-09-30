@@ -75,9 +75,19 @@ def main():
     # turned a 1500-line file into 4.4 million lines. Normalise instead.
     units_out = ['\n'.join([l for l in (h + d) if l.strip() != '']) + '\n' for h, d in out]
     text = '\n'.join(prologue + units_out)
-    # safety: the def names and the bodies must be the same multiset
+    # SAFETY, and it is not optional. An earlier version of this tool put a
+    # trailing comment block -- one with no def after it, so no unit to ride on --
+    # at the end of the file and DROPPED IT on the next pass. Three checks:
+    #   * the same multiset of DEF NAMES
+    #   * the same multiset of def BODIES, comments included
+    #   * the same multiset of EVERY non-blank LINE, so a comment block that
+    #     belongs to no def cannot go missing
     assert sorted(name_of(u[1]) for u in units) == sorted(name_of(u[1]) for u in out)
     assert sorted('\n'.join(u[1]) for u in units) == sorted('\n'.join(u[1]) for u in out)
+    before = sorted(l for l in lines if l.strip() != '')
+    after = sorted(l for l in text.split('\n') if l.strip() != '')
+    missing = [l for l in before if before.count(l) > after.count(l)]
+    assert not missing, 'order.py would DROP %d line(s), first: %r' % (len(missing), missing[:1])
     if text != src:
         open(path, 'w').write(text)
         print(f'reordered {len(units)} defs, {sum(1 for a, b in zip(units, out) if a is not b)} moved')

@@ -2928,13 +2928,25 @@ def pm_early.go(+have: List<&2, Op>, rej: List<&2, Op>) -> Bool:
 # `Arena.src` and `Arena.op` are ops.bend's OWN readers and return bare values,
 # not `Maybe` -- so `ler` is a two-element list built directly, with no
 # unwrapping. The model carried its own `Maybe` readers; this reuses the file's.
+# `ler` is ops.py:1607's `{u.op for u in uop.src}`, so it is a FOLD OVER THE SRC
+# COUNT and not a fixed pair. Reading only src[0] and src[1] was a real bug, found
+# by the spec.bend port: spec.py:201's reject set is FOUR ops, so under the pair
+# version a four-src PROGRAM could never pass its own necessary condition and its
+# rule could never fire. It typechecked, it ran, and every gate row stayed green.
+#
+# Order does not matter: Python builds a SET and `op_in` scans, so the subset test
+# is order-free.
 def pm_ler.put(x: List<&2, Op>) -> List<&2, Op>:
   x
+def pm_ler.fold(ns: List<&2, Nat>, +ar: Arena, +self: U32, acc: List<&2, Op>) -> List<&2, Op>:
+  match ns:
+    case Nil{}: acc
+    case n <> t: pm_ler.fold(t, ar, self,
+      List.append(&2, Op, acc, [Arena.op(ar, Arena.src(ar, self, U32.from_nat(n)))]))
+
 
 def pm_ler(+ar: Arena, +self: U32) -> List<&2, Op>:
-  pm_ler.put(List.append(&2, Op, [Arena.op(ar, Arena.src(ar, self, 0))],
-                              [Arena.op(ar, Arena.src(ar, self, 1))]))
-
+  pm_ler.put(pm_ler.fold(List.range(U32.to_nat(Arena.nsrc(ar, self))), ar, self, Nil{}))
 
 
 def pm_early(ts: PMEntrys, ar: Arena, self: U32, rej: List<&2, Op>) -> Bool:
@@ -3681,6 +3693,32 @@ def t_early_reject() -> Bool:
 
 
 
+
+# THE REGRESSION ROW for the `pm_ler` bug. `ler` is `{u.op for u in uop.src}`, so
+# its LENGTH must equal the node's src count -- and FOUR srcs is the case that
+# matters, because spec.py:201's reject set is four ops and the broken version
+# read only src[0] and src[1], so that rule could never fire. Every other row
+# stayed green throughout, which is the reason this row exists.
+def g_ler.put(+leaf: Arena, four: Arena) -> Found:
+  Found{four, 1}
+
+def g_ler() -> Found:
+  g_ler.put(UOp.make(Arena.empty(), OpsCONST{}, Nil{}, ANone{}, TNone{}),
+            UOp.make(UOp.make(Arena.empty(), OpsCONST{}, Nil{}, ANone{}, TNone{}),
+              OpsADD{}, [0, 0, 0, 0], ANone{}, TNone{}))
+def t_ler_len.go(have: List<&2, Op>, want: U32) -> Bool:
+  U32.is_eq(U32.from_nat(List.length(&2, Op, have)), want)
+
+def t_ler_len.of(+f: Found) -> Bool:
+  t_ler_len.go(pm_ler(Found.ar(f), Found.i(f)), Arena.nsrc(Found.ar(f), Found.i(f)))
+
+
+
+def t_ler_len() -> Bool:
+  t_ler_len.of(g_ler())
+
+
+
 # Bend has no assertion form, so `main` PRINTS each answer and the gate is that
 # both lanes print the same lines. A `False{}` anywhere is the failure.
 def row(nm: String, b: Bool) -> IO(Unit):
@@ -3699,6 +3737,7 @@ def main() -> IO(Unit):
     i : Unit <- row("required_len", t_required_len())
     j : Unit <- row("alu_permutes", t_alu_permutes())
     row("early_reject", t_early_reject())
+    row("ler_len", t_ler_len())
 
 # ===========================================================================
 # NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape

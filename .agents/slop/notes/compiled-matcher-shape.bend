@@ -164,7 +164,7 @@ def when.of(b: Bool, v: Verdict) -> Verdict:
 # linear scan is both the faithful order and the honest structure.
 # ===========================================================================
 
-def cr_rewrite(rs: CRules, ar: Arena, i: U32) -> Verdict:
+def cr_rewrite(+rs: CRules, ar: Arena, i: U32) -> Verdict:
   cr_scan(rs, ar, i, CRules.rs(rs), VSkip{})
 
 def cr_scan(rs: CRules, ar: Arena, i: U32, todo: List<&2, CRule>, acc: Verdict) -> Verdict:
