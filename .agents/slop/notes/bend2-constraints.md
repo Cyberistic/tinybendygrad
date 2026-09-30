@@ -1001,3 +1001,110 @@ the identity check the rule would match strictly more nodes than intended, and i
 would typecheck and run. So a compiled rule that binds a name twice must emit the
 `is` check, and that is a rule to enforce while porting `gradient.py` and
 `schedule/`, not a footnote.
+
+## ELEVEN MORE RULES, MEASURED IN `uop/upat.bend`
+
+Every one of these cost a wrong answer or a refused file, so they are measured
+and not inferred. The first three change the SHAPE of a recursive port; the rest
+are sharp edges.
+
+**1. THERE IS NO MUTUAL RECURSION.** `A` may not call `B` when `B` calls `A`, in
+either order, and the error is the actively misleading `expected : a filled
+definition (an unfilled law is a dead claim: live code cannot use it)` pointing
+at the LATER call. Reproduced in three lines:
+
+```python
+def even(n: Nat) -> Bool:
+  match n:
+    case 0n: True{}
+    case 1n+p: odd(p)          # "expected : a filled definition ... observed : odd"
+def odd(n: Nat) -> Bool: ...
+```
+
+Consequence for a port: **each recursive descent must be ONE self-recursive
+def**, and everything it needs on the way down must be a leaf. Python's
+`_get_clause` is a mutual recursion with its own `src` arms and it took three
+self-recursive defs here (`get_clause.go`, `rend.go`, `proc`) plus flags to keep
+the arms apart. A visitor that dispatches through a table wants a cycle; it has
+to be flattened into one match first.
+
+**2. A SELF-CALL MUST BE DECREASING, READ LEFT TO RIGHT.** `expected : a
+decreasing self-call (arguments are read left to right: each passed unchanged
+until one shrinks)`. So in `def f(fuel, +tree)`, the recursive call must be
+`f(fuel', smaller)` -- the arguments BEFORE the one that shrinks are passed
+unchanged, and the fuel is what shrinks, so **the fuel is the first parameter of
+every self-recursive def**, which is why `proc_fix(f: Nat, +t: C)` reads
+backwards from the Python. A subterm counts as shrinking: `f(fuel, t)` on a list
+tail is fine.
+
+**3. THE SAME FUEL MAY NOT BE PASSED TO TWO SELF-CALLS IN ONE ARM.** The error is
+`expected : p -- observed : p (consumed more than once)`, reported at the
+`case 1n+p:` PATTERN, which sends you looking at the pattern instead of the body.
+`flatands.go` gets out of it with `+q = p` and passes `q` to both; that is the
+fix, and it is a `let` precisely because a `let` is a shared reference and a
+pattern binder is not.
+
+**4. A SELF-CALL MAY NOT FORWARD-REFERENCE.** Every callee of a self-call must
+already be defined, so a self-recursive def sits at the BOTTOM of its own
+dependency chain -- which is what a topological sort gives you for free, and what
+hand-ordering gets wrong. Same error as rule 1, so check the order first.
+
+**5. A `match` KILLS EVERY NAME BOUND EARLIER IN THE SAME BODY** -- parameters
+AND pattern binders. `match br:` then `match op:` (where `op` came from
+`case C{op, lit, k} <> t:`) gives `a match on a parameter or field (this name is
+a def or a consumed binder)`. A def that dispatches on two flags must read them
+in ONE `match` per arm, never as two nested ones: `rend.go` repeats `br` inside
+all four op arms for exactly this reason, and it costs four lines to save a
+refused file.
+
+**6. `case p <> t:` ON A `String` GIVES YOU THE FIRST CHARACTER.** `String` is
+`List<&2, Char>`, so the head/tail pattern that reads a `List<&2, String>`'s
+first element also matches inside the `String` itself. The symptom is a value
+that is one character long where a whole piece was expected -- and the piece that
+is lost is always the one AFTER it, because `head_or` then answers the empty
+tail. There is no `List.split` in `base.bend`; the fix is to take the element as
+a whole and let a helper def destructure it.
+
+**7. `List.append(a, -A, xs, ys)` IS `xs ++ ys`.** Prepending is
+`List.append(a, A, [x], xs)`. A recursive `map`/`filter` that writes
+`append(fold(t), [head])` compiles, typechecks, runs, and returns every list in
+REVERSE -- and the reversed list is still a list of the right type, so nothing
+downstream complains. Six separate folds in `upat.bend` had it; the only reason
+it was caught is that the port is gated on CPython's exact output.
+
+**8. `String.concat` IS NOT A NO-OP ON EMPTY PIECES.** It is `SNil{}` for `Nil{}`
+and `h + concat(t)` otherwise, so a format substitution built from pieces
+concatenates to the right string even when a piece is `""`. That is how a
+dropped literal stays invisible: `"{0}.op is {1}"` rendered as `"uopa0"` with no
+error anywhere. Compare against a known-good string, never against a type.
+
+**9. `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE.** Obvious, and worth
+writing down because the natural reading of the call site
+`Bool.pick(List<&2, C>, is_empty(xs), [x], xs)` is the other way round; getting
+it backwards silently swaps two arms of every dispatch that uses it.
+
+**10. A `do` BLOCK MUST BE THE LAST EXPRESSION OF A DEF BODY.** A bare
+statement or a `do` block followed by another expression is
+`expected : a term -- observed : '.'`, and a `do` block whose type is `IO(Unit)`
+followed by the function's value is `expected : a term -- observed : end of
+input`. A pure function cannot print mid-body: put the effect in a wrapper that
+RETURNS the value (`String.concat([IO.print(x), ...])`) or in `main`.
+
+**11. `proc(t)` SPELLED TWICE IS TWO WALKS, NOT A SHARED BINDING.** A `let` is
+affine, so `n = proc(t)` followed by two uses of `n` is
+`expected : n -- observed : n (consumed more than once)`; `+n = proc(t)` is the
+shared form, and `Bool.pick(C, eq_c(t, proc(t)), proc(t), recheck(proc(t)))` with
+`proc` pure is a legitimate way to say "call it three times" when a fixpoint test
+needs both the old and the new value. Purity makes the repetition free of state
+and only expensive in time.
+
+## WHAT THE UPAT PORT COST, IN ORDER
+
+The three recursive rules above are why `upat.bend` is 2.3k lines for 186 lines
+of Python, and the count is not padding: the alternative is a self-recursive def
+with seven `Bool` parameters and a `match` per arm, which is what `rend.go` and
+`get_clause.go` are. The other half of the cost is `do_process_and`, whose
+`found` is read in five places and is therefore threaded through four
+`Maybe`-returning helpers (`of0` .. `of6`) that exist only to keep the flag out of
+a record. Both are the direct consequence of rules 1-3, and both would be one
+line each in a language with mutual recursion and a mutable local.

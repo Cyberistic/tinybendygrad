@@ -3,8 +3,8 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [#.........] 1/96  (1 file, 31 defs outstanding)
-proofs          [########.] 28/34    oracle-green     [..........] 0/1
+spec-as-laws    [#########] 9/9      python-to-bend  [##........] 2/96  (0 defs outstanding)
+proofs          [########.] 28/34    oracle-green     [##........] 2/2
 walkthroughs    [####....] 4/7
 ```
 
@@ -103,6 +103,26 @@ day rediscovering that `2n+p` is not an even-case test.
 
 - [x] `uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
       Ported inside `uop/ops.bend` because the gate needed `match op` to work.
+- [x] `uop/upat.bend` — the COMPILER, `tinygrad/uop/upat.py`'s 186 lines.
+      `--check-only` is `ALL PROOFS CHECK`; both lanes print the SAME nine rows
+      and all nine are `True`: `var add add_dyn repeat repeat_dyn any noctx
+      argint too_big`. Each `want_*` in `main` is CPython's own `_get_code`
+      output, read out of a live `uv run` of `tinygrad/uop/upat.py`, so the gate
+      is the interpreter and not a transcription of my own expectation. The
+      `too_big` row is `UPat(Ops.BINARY, src=(q,q,q,q))` with `q` a four-way
+      `UPat.any`, and it only reaches `None` because `pm_proc` is a FIXPOINT --
+      `do_process_and` splices one AND level per round, and the second round is
+      what puts four OR children where `len(or_clause) >= 4` can see them. A
+      seventeen-entry mutation table is at the foot of the file, and M2 in it
+      moves nothing, which is reported rather than hidden.
+
+      **THE WALL is `exec` and it is the LAST step.** `upat_compile` returns the
+      `Code` — the rendered Python source plus the `dyn_lookup` names — because
+      Bend cannot build a function value, so the compiled rule cannot become a
+      closure over that source. `_get_code`'s `(str, dict)` is a `Code` record
+      and `dyn_lookup` is a `List<&2, Bind>` threaded beside the tree, never a
+      field of it. `TODO(p3) ops.py:1590 upat_interpret` and `TODO(p3) ops.py:1459
+      get_location` are the other two omissions, both Python reflection.
 - [ ] `uop/fold.bend` — the derived properties of `ops.py` as ONE Kahn worklist.
       **DONE.** `dt`+`shape` as a pair (they read each other), `device`,
       `addrspace`, `base`, `ended_ranges`, and `axis_id`/`axis_type` (not fold
@@ -119,7 +139,7 @@ day rediscovering that `2n+p` is not an even-case test.
 
 | phase | directory | files | status |
 | --- | --- | --- | --- |
-| P3 | `uop/` | 10 | [##........] 2/10 |
+| P3 | `uop/` | 10 | [###.......] 3/10 |
 | P4 | `schedule/` `engine/` | 10 | [..........] 0/10 |
 | P5 | `codegen/` `renderer/` | 30 | [..........] 0/30 |
 | P6 | `runtime/` | 36 | [..........] 0/36 |
