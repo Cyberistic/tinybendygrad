@@ -752,3 +752,43 @@ MEASURED, and re-measured when the mutation is re-targeted, or it becomes a
 claim about a mutation nobody ran.
 row `False` means the rows are not independent and the suite is weaker than it
 looks — which is worth knowing before, not after.
+
+## A CLOSURE IN A DATATYPE FIELD MUST TAKE ALL-AFFINE ARGUMENTS
+
+The rule that decides how `uop/spec.py` has to be written. Minimal case in
+`.agents/slop/notes/closure-shared-arg-wall.bend`:
+
+```bend
+def needs_twice(+ar: A, i: U32) -> V: ...
+type R is Type: Shared{test: (A -> U32 -> V)}
+def r() -> R: Shared{needs_twice}
+```
+
+is rejected with `expected : @_:A -> @_:U32 -> V` / `observed : @+ar:A ->
+@i:U32 -> V`. The `+` is part of the function's TYPE, and a field cannot spell
+it: `+A`, `A&2`, `&2 A`, `A<2>`, `((A&2) -> U32 -> V)` and `(A&2) -> (U32 -> V)`
+were each tried and each is a parse or type error.
+
+**So a rule table cannot hand a rule a shared value.** `spec.py`'s rules need
+several nodes -- `x.src[0]`, `x.base`, `x.arg` -- and the arena is `Type`, so it
+cannot be shared into a closure at all.
+
+The resolution, and the working model is
+`.agents/slop/notes/spec-classifier-shape.bend`:
+
+**the engine hands each rule a SNAPSHOT, not the arena.** One node, flattened,
+`Data`. The rule DESTRUCTURES it once, and the binders are then separate values
+each usable once and each readable field by field -- so a rule can reach every
+node it needs, provided they arrive in one record.
+
+Two more measured rules from the same model:
+
+- **The classifier's accumulator is the VERDICT, not the arena.** The rewrite
+  engine's rule rewrites the arena; a spec rule only judges a node, so the pass
+  threads `True`/`False`/`Skip` and `keep` is a leaf. The naive port of the
+  rewrite shape has the wrong accumulator and its `keep` has to call the pass
+  back, which is the same mutual-recursion wall one layer up.
+- **`when(cond, v)` is `if cond: v else None` and `when_bad(cond, v)` is
+  `if not cond: v else None`.** Both are leaves, and they are what keep a rule
+  ONE def instead of three, because a `match` may not scrutinise a call. Almost
+  every rule body in `spec.py` is one of those two shapes.
