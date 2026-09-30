@@ -5,7 +5,7 @@ The port's state. Progress bars are `[###.....] n/m`.
 ```
 spec-as-laws    [#########] 9/9      python-to-bend  [##........] 2/96  (0 defs outstanding)
 proofs          [########.] 28/34    oracle-green     [##........] 2/2
-walkthroughs    [####....] 4/7
+walkthroughs    [#####...] 5/7
 ```
 
 ---
@@ -18,6 +18,11 @@ walkthroughs    [####....] 4/7
 - [x] `.agents/TOOLS.md` tool ledger
 - [x] Fork `Cyberistic/tinybendygrad`, master only, remotes set
 - [x] `tools/sz` — Bend's answer to `sz.py` (token line count per file)
+- [x] `tinybendygrad/sz.bend` — `sz.py` ported: a CPython tokenizer in Bend, its
+      two filesystem effects, and a hand-rolled `tabulate`. **Verified against
+      `sz.py` on 222/222 counted files** (tokens and lines) and byte-identical
+      output in all three modes save tinygrad's `ops:`/`flags:` reflection.
+      `spec/sz.md`, `.agents/slop/notes/compare/sz.md`
 - [ ] `test/` harness that runs the ORIGINAL pytest suite against the Bend build
 - [ ] `tools/check` — one command that runs every `bend --check-only`
 

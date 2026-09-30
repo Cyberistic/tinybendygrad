@@ -22,6 +22,10 @@ shipped code; the port has none.
 | `./bin/bend FILE -o OUT && ./OUT` | the native lane. The interpreted lane is for laws and small programs; anything with real work is compiled. |
 | pytest + xdist | **the oracle, not our test suite.** The Python `tinygrad/` tree and its tests are untouched and run unchanged against the Bend build. `python -m pytest test/null/test_dtype.py -x -q -n12`. |
 | uv, ty | Python package management and type checking, per the Python rules. The Bend port itself has no Python dependencies. |
+| `.venv/bin/python sz.py` | the **differential** for `tinybendygrad/sz.bend`. It needs `tabulate`, which is why the venv exists (see *No dependencies*); the system `python3` has no `tabulate` and cannot run it. |
+| `.agents/slop/notes/sz-lexer-proto.py` | a Python model of `sz.bend`'s lexer, `bend_stats(bytes) -> (tokens, lines)`, so one file's counts can be compared with CPython `tokenize` in a loop. The four lexer bugs in `spec/sz.md` were each found here, not by reading the Bend. |
+| `.agents/slop/notes/sz-mktrees.py` | builds the two trees the diff-mode differential walks: the edge cases `sz.py` has to survive, then a second that changes, adds and deletes files. |
+| `.agents/slop/notes/sz-snips.py` `+` `sz-snips.txt` | 28 f-string and string snippets, each diffed one file against `sz.py`. The nesting-in-a-format-spec corner is here. |
 
 ## Reference material
 

@@ -17,6 +17,7 @@ adjectives.
 | [laws.md](laws.md) | tinyspec's prose tables, as Bend types and machine-checked laws |
 | [shape-laws.md](shape-laws.md) | pinning the element count across views; a vacuous law we caught |
 | [ops.md](ops.md) | the UOp arena: a cyclic graph as a `U32` index, and the wall the property folds hit |
+| [sz.md](sz.md) | CPython's tokenizer in Bend, and the three Bend rules that shaped it |
 
 The next units of the port add their own file here: `dtype.md`, `schedule.md`,
 `codegen.md`, `renderer.md`.
