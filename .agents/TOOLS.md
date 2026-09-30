@@ -28,7 +28,7 @@ shipped code; the port has none.
 | what | where | why |
 | --- | --- | --- |
 | `tinygrad/` | this repo, tracked, **read-only** | the thing being ported, and the oracle. Never edited by a port agent. |
-| `spec/tinyspec.tex` | this repo, tracked | the specification. `bendgrad/LAWS.bend` is its machine-checked form. |
+| `spec/tinyspec.tex` | this repo, tracked | the specification. `tinybendygrad/LAWS.bend` is its machine-checked form. |
 | `references/bend` | gitignored | the language itself: `guide/GUIDE.md`, `guide/EFFECTS.md`, `guide/SHADERS.md`, `bend2/base.bend` (the prelude), `bend2/effs/*.c` (the effect ABI), `tests/` (the test convention). |
 
 The distilled, hard-won facts about all of the above — the affinity rules, the

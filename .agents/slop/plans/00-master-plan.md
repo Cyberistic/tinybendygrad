@@ -29,10 +29,10 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 **A reader who knows tinygrad must be able to read the Bend tree the same way
 they read the Python tree.** This is not a style preference; it is the whole
 reason the rewrite is reviewable. Concretely, for every `tinygrad/**/*.py`
-there is a `bendgrad/tinygrad/**/*.bend` with:
+there is a `tinybendygrad/**/*.bend` with:
 
 * **the same file split and the same directory layout** — `tinygrad/uop/ops.py`
-  becomes `bendgrad/tinygrad/uop/ops.bend`, not something regrouped;
+  becomes `tinybendygrad/uop/ops.bend`, not something regrouped;
 * **the same definitions in the same order**, with the same names where Bend
   allows it (`dt_max_signed`, `Sp.add` → `SpAdd`, `ShapeTracker` → …);
 * **the same comments, adapted not rewritten.** Keep the original's `#` comment
@@ -58,7 +58,7 @@ Exceptions, and only these:
 | a Python `RuntimeError` | comment the exact message text; the Bend def is an `IO.die` with that text |
 | a Python `None` | comment the sentinel; the Bend type is `Maybe` |
 | a Python metaclass / `__getattr__` / operator overload | comment the Python mechanism verbatim, then the Bend encoding. The mechanism note is the most valuable part. |
-| the file needs a helper Bend does not have (`List.sum`, `Deque`, `rotl`) | put it in `bendgrad/tinygrad/runtime/` with a comment naming exactly which Python/Bend file needed it |
+| the file needs a helper Bend does not have (`List.sum`, `Deque`, `rotl`) | put it in `tinybendygrad/runtime/` with a comment naming exactly which Python/Bend file needed it |
 
 **A reviewer must reject a diff that is hard to line up against the Python.**
 If finding the counterpart of a Python def in the Bend tree takes more than a
@@ -83,22 +83,21 @@ minute, the port is off-ratio.
 ## 2. Target architecture (mirrors tinygrad's own layering)
 
 ```
-bendgrad/
+tinybendygrad/
   LAWS.bend            <- spec/tinyspec.tex as Bend laws. Read-only to agents.
   PROOF.bend           <- the gate. bend PROOF.bend must print ALL PROOFS CHECK.
   PORTING.md           <- Python→Bend pattern map. The port contract.
   AFFINITY.tsv         <- per-def ownership decisions: affine / +reusable / arena.
   sz.bend / tools/sz   <- Bend's answer to tinygrad's sz.py (token line count).
-  tinygrad/
-    dtype.bend  shape.bend  helpers.bend
-    uop/        ops.bend spec.bend symbolic.bend metadata.bend
-    schedule/   prepare.bend rangeify.bind indexing.bend multi.bend
-    engine/     realize.bend
-    codegen/    index.bend decomp/ opt/ late/ gpudims.bend
-    renderer/   cstyle.bend llvmir.bend ...
-    runtime/    device.bend  <- C effects: memory, process, compile
-    nn/         ...
-    mixin/      ...
+  dtype.bend  shape.bend  helpers.bend   <- mirror the oracle's tree directly:
+  uop/        ops.bend spec.bend symbolic.bend metadata.bend   tinygrad/foo.py
+  schedule/   prepare.bend rangeify.bind indexing.bend multi.bend  <-> tinybendygrad/foo.bend
+  engine/     realize.bend
+  codegen/    index.bend decomp/ opt/ late/ gpudims.bend
+  renderer/   cstyle.bend llvmir.bend ...
+  runtime/    device.bend  <- C effects: memory, process, compile
+  nn/         ...
+  mixin/      ...
   test/               <- thin harnesses that run the ORIGINAL pytest suite
 ```
 

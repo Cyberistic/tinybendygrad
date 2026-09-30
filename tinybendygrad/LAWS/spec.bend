@@ -39,13 +39,30 @@ import Base
 # DType -- tinygrad/dtype.py
 #
 # tinygrad's DType is (priority, bitsize, name, fmt). Here it is
-# (priority, bits, signed, float, name): `fmt` is derivable from the other two
-# and lives in a table in dtype.bend, while signedness has to be explicit
-# because Bend's only integer is U32.
+# (priority, bits, cls, name): `fmt` is derivable from cls and lives in a table
+# in dtype.bend, and the class is an explicit tag because Bend's only integer
+# is U32 so signedness cannot be read off a width.
+#
+# ONE DATATYPE, NOT TWO. dtype.py's port reuses this `Dt`; it does not declare a
+# competing dtype of its own. The tag is `Cls` rather than a signed/float pair of
+# Bools because dtype.py has seven classes, not two: `void` is neither and
+# `bool` is neither an integer nor a float, and with two Bools both would have
+# to be spelled wrong. tinygrad asks the same three questions
+# (is_int/is_float/is_unsigned) and each has a different answer per class, so the
+# tag names the seven answers instead of the two that fit U32.
 # ===========================================================================
 
+type Cls is Data:
+  CVoid{}
+  CWeakInt{}
+  CBool{}
+  CUint{}
+  CSint{}
+  CFloat{}
+  CWeakFloat{}
+
 type Dt is Data:
-  Dt{pri: U32, bits: U32, sgn: Bool, fl: Bool, nm: String}
+  Dt{pri: U32, bits: U32, cls: Cls, nm: String}
 
 type Addr is Data:      # tinygrad/dtype.py: AddrSpace.IntEnum
   AGlobal{}
@@ -95,48 +112,104 @@ def dt_umax_of(bits: U32) -> U32:
 # A `match` inspects a parameter, never a projection, so every helper that
 # branches on a field destructures its parameter first. That is the whole
 # idiom for "if on a struct field" in Bend.
-def Dt.is_int(d: Dt) -> Bool:
+def Cls.is_int(c: Cls) -> Bool:
+  match c:
+    case CWeakInt{}: True{}
+    case CUint{}: True{}
+    case CSint{}: True{}
+    case _: False{}
+
+def Cls.is_float(c: Cls) -> Bool:
+  match c:
+    case CFloat{}: True{}
+    case CWeakFloat{}: True{}
+    case _: False{}
+
+# tinygrad: is_unsigned is `x in dtypes.uints`, which is the four CUint widths.
+# bool and void are NOT unsigned despite holding no sign bit.
+def Cls.is_unsigned(c: Cls) -> Bool:
+  match c:
+    case CUint{}: True{}
+    case _: False{}
+
+def Cls.is_bool(c: Cls) -> Bool:
+  match c:
+    case CBool{}: True{}
+    case _: False{}
+
+def Dt.cls(d: Dt) -> Cls:
   match d:
-    case Dt{pri, bits, sgn, fl, nm}:
-      Bool.not(fl)
+    case Dt{pri, bits, cls, nm}: cls
+
+def Dt.bits(d: Dt) -> U32:
+  match d:
+    case Dt{pri, bits, cls, nm}: bits
+
+def Dt.pri(d: Dt) -> U32:
+  match d:
+    case Dt{pri, bits, cls, nm}: pri
+
+def Dt.is_int(d: Dt) -> Bool:
+  Cls.is_int(Dt.cls(d))
 
 def Dt.is_float(d: Dt) -> Bool:
-  match d:
-    case Dt{pri, bits, sgn, fl, nm}:
-      fl
+  Cls.is_float(Dt.cls(d))
 
 def Dt.is_unsigned(d: Dt) -> Bool:
-  match d:
-    case Dt{pri, bits, sgn, fl, nm}:
-      Bool.not(sgn)
+  Cls.is_unsigned(Dt.cls(d))
+
+def Dt.is_bool(d: Dt) -> Bool:
+  Cls.is_bool(Dt.cls(d))
 
 def Dt.itemsize(d: Dt) -> U32:
   # tinygrad: (bitsize + 7) // 8
   match d:
-    case Dt{pri, bits, sgn, fl, nm}:
+    case Dt{pri, bits, cls, nm}:
       U32.div(U32.add(bits, 7), 8)
 
-# tinygrad dtype.py DType.min / DType.max. None stands for "the float limit",
-# which is -max or +inf: Bend cannot name an infinity, so the float case is
-# carried by the Dt rather than by a value. The scruts follow BINDER ORDER --
-# sgn is field 3 and fl is field 4, so they are matched in that order.
+# tinygrad dtype.py DType.min / DType.max. None stands for "no U32 limit":
+# every float (the bound is -inf or +inf), `void` and `bool` (False/True are
+# not numbers here), and any width past 32 (2^64-1 does not fit). dtype.bend
+# carries the 64-bit limits as an I64 pair.
+#
+# ONE FOLD FOR BOTH LIMITS. `top` picks max over min; the four answers per class
+# collapse to two per class, and a def per case arm would be eight defs saying
+# the same thing.
+def Cls.sgn(c: Cls) -> Maybe<&1, Bool>:
+  match c:
+    case CSint{}: Some{True{}}
+    case CUint{}: Some{False{}}
+    case _: None{}
+
+def Dt.range.smag(top: Bool, bits: U32) -> U32:
+  match top:
+    case True{}: dt_max_signed(bits)
+    case False{}: dt_min_signed(bits)
+
+def Dt.range.lim(sgn: Bool, top: Bool, bits: U32) -> Maybe<&2, U32>:
+  match sgn:
+    case True{}: Some{Dt.range.smag(top, bits)}
+    case False{}: Some{dt_umax_of(bits)}
+
+def Dt.range.wide(sgn: Bool, top: Bool, wide: Bool, bits: U32) -> Maybe<&2, U32>:
+  match wide:
+    case True{}: None{}
+    case False{}: Dt.range.lim(sgn, top, bits)
+
+def Dt.range(sgn: Maybe<&1, Bool>, top: Bool, wide: Bool, bits: U32) -> Maybe<&2, U32>:
+  match sgn:
+    case None{}: None{}
+    case Some{t}: Dt.range.wide(t, top, wide, bits)
+
 def Dt.min(d: Dt) -> Maybe<&2, U32>:
   match d:
-    case Dt{pri, bits, sgn, fl, nm}:
-      match sgn fl:
-        case True{} True{}: None{}
-        case True{} False{}: Some{dt_min_signed(bits)}
-        case False{} True{}: None{}
-        case False{} False{}: Some{0}
+    case Dt{pri, +bits, cls, nm}:
+      Dt.range(Cls.sgn(cls), False{}, U32.is_gt(bits, 32), bits)
 
 def Dt.max(d: Dt) -> Maybe<&2, U32>:
   match d:
-    case Dt{pri, bits, sgn, fl, nm}:
-      match sgn fl:
-        case True{} True{}: None{}
-        case True{} False{}: Some{dt_max_signed(bits)}
-        case False{} True{}: None{}
-        case False{} False{}: Some{dt_umax_of(bits)}
+    case Dt{pri, +bits, cls, nm}:
+      Dt.range(Cls.sgn(cls), True{}, U32.is_gt(bits, 32), bits)
 
 # ===========================================================================
 # Shape -- tinyspec's shape is a tuple of ints; a dimension may be symbolic,
@@ -493,24 +566,38 @@ def Sp.shape(s: Sp, depth: Nat) -> Maybe<&2, Shape>:
   Sp.shape.item(Nat.add(Nat.mul(depth, 2n), 1n), One{s})
 
 # ===========================================================================
-# The named dtypes. tinygrad's `priority` column: a larger number upcasts
-# later, so priority is a partial order and least_upper_dtype is its meet.
+# The named dtypes -- every one of tinygrad's twenty, in dtype.py's own order.
+#
+# tinygrad's `priority` column: a larger number upcasts later, so priority is a
+# partial order and least_upper_dtype is its meet. The names are dtype.py's
+# `name` field, which is what `repr` prints; dtype.bend aliases them to the
+# attribute names tinygrad code uses (float32 for "float" and so on).
 # ===========================================================================
 
-def boolean() -> Dt: Dt{0, 1, False{}, False{}, "bool"}
-def index() -> Dt: Dt{0, 800, True{}, False{}, "weakint"}
-def int8() -> Dt: Dt{1, 8, True{}, False{}, "signed char"}
-def uint8() -> Dt: Dt{2, 8, False{}, False{}, "unsigned char"}
-def int16() -> Dt: Dt{3, 16, True{}, False{}, "short"}
-def uint16() -> Dt: Dt{4, 16, False{}, False{}, "unsigned short"}
-def int32() -> Dt: Dt{5, 32, True{}, False{}, "int"}
-def uint32() -> Dt: Dt{6, 32, False{}, False{}, "unsigned int"}
-def int64() -> Dt: Dt{7, 64, True{}, False{}, "long"}
-def uint64() -> Dt: Dt{8, 64, False{}, False{}, "unsigned long"}
-def half() -> Dt: Dt{12, 16, True{}, True{}, "half"}
-def bfloat16() -> Dt: Dt{13, 16, True{}, True{}, "__bf16"}
-def single() -> Dt: Dt{14, 32, True{}, True{}, "float"}
-def double() -> Dt: Dt{15, 64, True{}, True{}, "double"}
+def void() -> Dt: Dt{0, 0, CVoid{}, "void"}
+def weakint() -> Dt: Dt{0, 800, CWeakInt{}, "weakint"}
+
+# tinyspec's IR name for weakint: the dtype an index is carried in. Same value,
+# the spec's word for it.
+def index() -> Dt: weakint()
+def boolean() -> Dt: Dt{0, 1, CBool{}, "bool"}
+def int8() -> Dt: Dt{1, 8, CSint{}, "signed char"}
+def uint8() -> Dt: Dt{2, 8, CUint{}, "unsigned char"}
+def int16() -> Dt: Dt{3, 16, CSint{}, "short"}
+def uint16() -> Dt: Dt{4, 16, CUint{}, "unsigned short"}
+def int32() -> Dt: Dt{5, 32, CSint{}, "int"}
+def uint32() -> Dt: Dt{6, 32, CUint{}, "unsigned int"}
+def int64() -> Dt: Dt{7, 64, CSint{}, "long"}
+def uint64() -> Dt: Dt{8, 64, CUint{}, "unsigned long"}
+def weakfloat() -> Dt: Dt{9, 800, CWeakFloat{}, "weakfloat"}
+def fp8e4m3() -> Dt: Dt{10, 8, CFloat{}, "float8_e4m3"}
+def fp8e4m3fnuz() -> Dt: Dt{10, 8, CFloat{}, "float8_e4m3fnuz"}
+def fp8e5m2() -> Dt: Dt{11, 8, CFloat{}, "float8_e5m2"}
+def fp8e5m2fnuz() -> Dt: Dt{11, 8, CFloat{}, "float8_e5m2fnuz"}
+def half() -> Dt: Dt{12, 16, CFloat{}, "half"}
+def bfloat16() -> Dt: Dt{13, 16, CFloat{}, "__bf16"}
+def single() -> Dt: Dt{14, 32, CFloat{}, "float"}
+def double() -> Dt: Dt{15, 64, CFloat{}, "double"}
 
 # ===========================================================================
 # Derived property: dtype -- tinyspec's dtype column, op by op. Same fuel

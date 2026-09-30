@@ -88,49 +88,104 @@ def defs(text):
     i = k
 
 
+def tree(body):
+  """Group a def body into a nesting tree keyed by indentation.
+
+  bend scopes each `case` row independently -- `match a: case X: match b:` and
+  `case Y: match b:` are separate worlds -- so a flat scan of the lines cannot
+  tell a legal sibling from a use-after-consume. The tree can.
+  """
+  root = {"kind": "def", "line": 0, "kids": []}
+  stack = [(-1, root)]
+  for lineno, raw in body:
+    stripped = raw.strip()
+    if not stripped:
+      continue
+    indent = len(raw) - len(raw.lstrip())
+    while stack and stack[-1][0] >= indent:
+      stack.pop()
+    parent = stack[-1][1]
+    m = re.match(r"match\s+(.+?):\s*$", stripped)
+    kind = "match" if m else "case" if re.match(r"case\s", stripped) else "leaf"
+    node = {"kind": kind, "line": lineno, "text": stripped, "kids": []}
+    parent["kids"].append(node)
+    stack.append((indent, node))
+  return root
+
+
+def binders(pat):
+  pat = re.sub(r"[A-Z][A-Za-z0-9_]*(\{|,|\s|\(|$)", " ", pat)
+  return {t for t in re.split(r"[{}\[\]<>,\s]+", pat)
+          if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", t)}
+
+
+def walk(name, node, pend, bound, lets, bad):
+  """`pend` is the ordered window of open PARAMETERS; `bound` the case
+  binders, which are matchable whatever else is pending; `lets` the locals,
+  which take the head and so block everything.
+
+  `lets` accumulates across the SIBLINGS of one body, because a body is a
+  sequence: `case Sb{p}: t = Zb{}; match p:` is exactly the shape bend bans.
+  """
+  for kid in node["kids"]:
+    # a let is a sibling of the match it blocks, so it is handled HERE rather
+    # than inside a recursive call that would scope it away
+    lm = re.match(r"([A-Za-z_][A-Za-z0-9_]*)\s*=\s", kid["text"])
+    if lm:
+      lets = lets + [lm.group(1)]
+      continue
+    if kid["kind"] == "match":
+      sus = kid["text"][6:-1].split()
+      first = sus[0]
+      if first not in pend and first not in bound:
+        bad.append((kid["line"], name, kid["text"], "NOT-BOUND"))
+        continue
+      if first in lets:
+        bad.append((kid["line"], name, kid["text"],
+                    f"let {first} (a match cannot scrutinize a local binder)"))
+        continue
+      if lets:
+        bad.append((kid["line"], name, kid["text"],
+                    "let " + lets[0] + " (a local bound above the match)"))
+        continue
+      # a case binder is substituted in and matchable whatever else is pending.
+      # For a PARAMETER match, every pending parameter ahead of the scrutinee
+      # must be dead -- being USED is fine, being MATCHED later is not, which is
+      # what the recursion below would discover.
+      ahead = pend[:pend.index(first)] if first in pend else []
+      for w in ahead:
+        if matched_later(kid, w):
+          bad.append((kid["line"], name, kid["text"], w))
+          break
+      nxt = [p for p in pend if p not in sus]
+      for kid2 in kid["kids"]:
+        if kid2["kind"] == "case":
+          walk(name, kid2, nxt, bound | binders(kid2["text"][5:-1]), lets, bad)
+        else:
+          walk(name, kid2, nxt, bound, lets, bad)
+      continue
+    if kid["kind"] == "case":
+      walk(name, kid, pend, bound | binders(kid["text"][5:-1]), lets, bad)
+      continue
+    walk(name, kid, pend, bound, lets, bad)
+
+
+
+
+def matched_later(node, name):
+  for kid in node["kids"]:
+    if kid["kind"] == "match" and kid["text"][6:-1].split()[0] == name:
+      return True
+    if matched_later(kid, name):
+      return True
+  return False
+
+
 def lint(path):
   text = strip_comments(open(path).read())
   bad = []
   for name, params, body in defs(text):
-    # pending PARAMETERS, in signature order. bend's match_flatten keeps an
-    # ordered window of these (plus any `x = ...` locals, which take the head);
-    # a match may only scrutinise the head. Case binders do NOT block: a var
-    # column is a substitution, so `case h <> t: match h:` is legal.
-    pend = list(params)
-    lets = []
-    bound = set()
-    for idx, (lineno, raw) in enumerate(body):
-      stripped = raw.strip()
-      if not stripped:
-        continue
-      m = re.match(r"case\s+(.+?):\s*$", stripped)
-      if m:
-        pat = re.sub(r"[A-Z][A-Za-z0-9_]*(\{|,|\s|\(|$)", " ", m.group(1))
-        bound |= {t for t in re.split(r"[{}\[\]<>,\s]+", pat)
-                  if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", t)}
-        continue
-      m = re.match(r"match\s+(.+?):\s*$", stripped)
-      if m:
-        sus = m.group(1).split()
-        rest = "\n".join(l for _, l in body[idx:])
-        ok = sus[0] in pend or sus[0] in bound
-        if not ok:
-          bad.append((lineno, name, stripped, "NOT-BOUND"))
-        elif sus[0] in pend:
-          # a case binder is substituted in and matchable whatever else is
-          # pending; only a PARAMETER match obeys the pending-parameter order
-          blockers = [w for w in pend[:pend.index(sus[0])]
-                      if re.search(r"(?<![\w.])" + re.escape(w) + r"(?![\w])", rest)]
-          blockers += [w for w in lets if w in rest.split()]
-          if blockers:
-            bad.append((lineno, name, stripped, " ".join(blockers)))
-        for s in sus:
-          if s in pend:
-            pend.remove(s)
-        continue
-      m = re.match(r"([A-Za-z_][A-Za-z0-9_]*)\s*=\s", stripped)
-      if m and m.group(1) not in lets:
-        lets.append(m.group(1))
+    walk(name, tree(body), list(params), set(), [], bad)
   for lineno, name, line, win in bad:
     print(f"{path}:{lineno}: [{name}] `match` blocked by {win}\n    {line}")
   print(f"{len(bad)} violation(s) in {path}")

@@ -1,4 +1,9 @@
-An experimental port of tinygrad to [bend](https://github.com/bendlang/bend)
+TinyBendyGrad: An experimental slopfork (slop-port?) of tinygrad from Python to [bend](https://github.com/bendlang/bend), where spec is written as proofs and laws, because why can't a DSP-style turing-incomplete IR be lean-complete and formally verifiable? :)
+
+If you're not familiar, tinygrad is expertly written by humans over the last ~5 years, with strict rules against AI code usage. An ironical consequence of it being _tiny_ and _beautiful_ is that a clanker can _bend_ (haha) it into shape in any language within a few hours. The entirity of tinygrad can _almost_ fit into the context window! The antimatter of the tinygrad no-AI philosophy: a _bendygrad_ that is _tiny_, _inhumane_, and _provably correct_.
+
+
+For fun, experimentation, and skills. Most code is slop, spec is not. The logic behind verifiable proofs of spec live in `spec/` written by a mere human. The interpertation of said spec by the robots lives in `.agemts/slop/`. Use tinygrad instead. tinygrad good. I like tinygrad. Tinygrad readme below.
 
 
 ---
