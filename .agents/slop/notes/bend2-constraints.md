@@ -251,11 +251,21 @@ Consequences, and they are expensive:
   functions of the node. That is exactly what `spec/tinyspec.tex` states,
   so nothing is lost — but it is why `LAWS.bend` is a separate artefact
   from the arena.
-* A rewrite rule needs the arena, so it cannot be a closure (a closure is
+* ~~A rewrite rule needs the arena, so it cannot be a closure (a closure is
   single-use and cannot capture an affine value). Rules become **top-level
-  `def`s taking and returning `ctx`**, dispatched by an explicit tag. This
-  is the biggest single structural change in the port and the reason
-  `uop/ops.py`'s `PatternMatcher` is not a mechanical transliteration.
+  `def`s taking and returning `ctx`**, dispatched by an explicit tag.~~
+
+  **RETRACTED — the capture half is false.** A closure captures an affine `Nat`
+  fine; see "Closures: capturing is fine, STORING is the constraint" at the end
+  of this file. Rules stay lambdas.
+
+  What survives is narrower: a **function value in a datatype field forces
+  `Type`, not `Data`**, so the rule TABLE is linear and one walk consumes it.
+  `graph_rewrite` is called many times, so it cannot take the table as a
+  parameter — it builds one per call, or takes a thunk that makes a fresh one.
+  That is one function signature, not a restructuring of the rule language, and
+  `PatternMatcher` is closer to a mechanical transliteration than this note
+  claimed.
 
 ## 7. Reviewer checklist for the port
 
