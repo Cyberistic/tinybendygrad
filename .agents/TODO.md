@@ -29,7 +29,9 @@ proofs          [###.....] 3/32     oracle-green     [..........] 0/1
 - [x] `LAWS/alu.bend` — tinyspec's decomposed-elementwise-ops table
 - [x] `LAWS.bend` — 32 laws
 - [ ] **Audit against tinyspec**: coverage gaps, vacuous laws, stubs
-- [ ] `PROOF.bend` — shape half
+- [x] `PROOF.bend` — shape half: reshape/permute/flip/pad/shrink/stack/detach
+      (10/10 proven; 8 shape-column mutations each killed by their own law.
+      Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
 - [ ] `PROOF-ALL.bend` green
 

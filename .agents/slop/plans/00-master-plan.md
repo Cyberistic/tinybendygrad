@@ -200,6 +200,20 @@ lines). For each unit, in order:
    can leak or double-free, a `@unsafe` that hides a real non-termination.
 5. **Fixer** applies the union of findings, re-runs the checker and the
    comparison pass, commits.
+6. **Implementer writes the walkthrough.** A short markdown file under `spec/`
+   named after the unit — `spec/laws.md`, `spec/dtype.md`, `spec/ops.md`. Same
+   shape every time:
+
+   - what the Python file claims or does,
+   - what the Bend file says or does instead,
+   - **what we gain** — concrete, one line per gain, no adjectives,
+   - what we deliberately do *not* claim, and why.
+
+   Rules: no AI prose, no "robust/seamless/powerful/leverage", no restating the
+   file's own comments. If a gain cannot be named in one line, it is not a gain.
+   Keep it under ~60 lines. The goal is a newcomer skimming six files to
+   understand why any of this exists; it gets rewritten by a human afterwards, so
+   rough is fine and length is not.
 
 
 Adjudication: if the two reviewers disagree, the finding with a concrete failing
