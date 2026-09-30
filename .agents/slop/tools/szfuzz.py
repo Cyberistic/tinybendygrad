@@ -95,6 +95,14 @@ def build_tree(rng, tree, nfiles, max_lines):
         path = os.path.join(tree, "tinygrad", sub, f"f{k}.{exts}")
         with open(path, "w", encoding="utf-8") as f:
             f.write(rand_source(rng, exts, max_lines))
+    # A symlink cycle: os.walk(followlinks=False) never descends it, so sz.py is
+    # unaffected. sz.bend's Sz.is_dir uses stat() which FOLLOWS the link, so it
+    # descends forever and only the 2^24 fuel stops it -- silently truncating.
+    # Divergence recorded 2026-10-01; the port fix is stat -> lstat in sz.c, and
+    # these cases pin it. Until the fix lands, a tree with a cycle MISmatches.
+    if rng.random() < 0.5:
+        os.symlink(".", os.path.join(tree, "tinygrad", "loop"))
+        os.symlink("sub", os.path.join(tree, "tinygrad", "link_to_sub"))
 
 
 def oracle(tree):
@@ -160,6 +168,8 @@ def main():
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--binary", help="use a prebuilt sz binary instead of compiling "
                    "(compile once with: ./bin/bend tinybendygrad/sz.bend -o /tmp/sz)")
+    ap.add_argument("--collect", action="store_true", help="report EVERY mismatching "
+                    "seed instead of stopping at the first, with a distinct-file count")
     args = ap.parse_args()
 
     workdir = tempfile.mkdtemp(prefix="szfuzz-")
@@ -172,19 +182,28 @@ def main():
         if c.returncode != 0:
             print(f"sz.bend does not compile:\n{c.stderr[:500]}", file=sys.stderr)
             return 1
-    bad = 0
+    errs = []
     for seed in range(args.seeds):
         if args.verbose:
             print(f"seed {seed}: building + diffing ...", file=sys.stderr, flush=True)
         err = run_seed(seed, binary, args, workdir)
         if err:
-            print(err, file=sys.stderr)
-            bad += 1
-            break  # one counterexample is the finding; fix it, then re-run
-        if args.verbose:
+            errs.append(err)
+            if not args.collect:
+                break  # one counterexample is the finding; fix it, then re-run
+        elif args.verbose:
             print(f"seed {seed}: ok", file=sys.stderr)
     shutil.rmtree(workdir, ignore_errors=True)
-    if bad:
+    if errs:
+        for e in errs:
+            print(e, file=sys.stderr)
+        if args.collect:
+            import re as _re
+            files = set()
+            for e in errs:
+                files.update(_re.findall(r"tinygrad/\S+", e))
+            print(f"MISMATCHES: {len(errs)} seeds, {len(files)} distinct files",
+                  file=sys.stderr)
         print("FAIL", file=sys.stderr)
         return 1
     print(f"OK: {args.seeds} seeds x {args.files} files agreed with sz.py")
