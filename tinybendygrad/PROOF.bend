@@ -149,32 +149,46 @@ def L.max_dim_idempotent(x):
     case S.SS{p}:
       {==}
 
-# OPEN -- and this one is worth being precise about, because it is the law the
-# three elementwise laws in section VI are waiting on.
+# `zip_max` is idempotent. This is the law the three elementwise laws in
+# section VI were waiting on.
 #
-# The claim is TRUE and the induction is one step: apply the IH to the tail,
-# then `max_dim_idem` to the head. What does not close is the REWRITER. Every
-# motive shape was tried and rejected by the compiler:
+# The proof does NOT use `%` rewrites under the list constructor -- every motive
+# shape for that was tried and silently accepted without firing. It uses
+# congruence and transitivity instead, which is the way Bend wants it done.
 #
-#   %ih  : {zip_max(xs, xs) == xs : ...}                       goal unchanged
-#   %ih  : {zip_max(xs, xs) == _ : ...}                        goal unchanged
-#   %ih  : {Shape.max_dim(x, x) <> zip_max(xs, xs) == x <> _ : ...}
-#                                                              goal unchanged
-#   %ih  : {_ == x <> xs : ...}                                wrong endpoint
+# `Equal.cong(A, B, f, a, b, e)` congrues a UNARY function, so the cons is split
+# in two: `cons_head` has the head fixed and lifts a proof about the TAIL,
+# `cons_tail` has the tail fixed and lifts max_dim's proof. The two results share
+# the middle term `md <> xs`, and `Equal.trans` does the substitution.
 #
-# The two-element case DOES close, via `Equal.cong`, which lifts a proof about
-# the tail into a proof about the whole list once the head is fixed:
-#
-#   def cons_head(h: Sdim) -> (List<&2, Sdim> -> List<&2, Sdim>): t => h <> t
-#   c = Equal.cong(List<&2, Sdim>, List<&2, Sdim), cons_head(Shape.max_dim(x, x)),
-#                  zip_max(xs, xs), xs, ih)
-#
-# and `c`'s type is `{Shape.max_dim(x, x) <> xs == Shape.max_dim(x, x) <> xs}`,
-# which is one rewrite away from the goal -- but the motive that final rewrite
-# wants is the one direction every attempt above refused. So the obstruction is
-# `%`-motive selection under a list constructor, not the mathematics.
-#
-# NEXT: try `Equal.trans` to chain `c` with `max_dim_idempotent` instead of a
-# rewrite, or change `zip_max` to take a head and a tail as separate arguments so
-# no rewrite under a constructor is needed at all.
-# law zip_max_idempotent(ds)
+# `snoc` exists only because a bare `h <> t` in a call argument or a local's
+# right-hand side is "cannot infer" -- the operator needs its type spelled out,
+# and routing it through a typed def is less noise than annotating each use.
+def snoc(h: S.Sdim, t: List<&2, S.Sdim>) -> List<&2, S.Sdim>:
+  h <> t
+
+# Cons with a FIXED head, so the function Equal.cong sees is unary in the tail.
+def cons_head(h: S.Sdim) -> (List<&2, S.Sdim> -> List<&2, S.Sdim>):
+  t => h <> t
+
+# Cons with a FIXED tail, for the other direction.
+def cons_tail(t: List<&2, S.Sdim>) -> (S.Sdim -> List<&2, S.Sdim>):
+  h => h <> t
+
+def L.zip_max_idempotent(s):
+  match s:
+    case Nil{}:
+      {==}
+    case x <> xs:
+      ih = L.zip_max_idempotent(xs)
+      +md = S.Shape.max_dim(x, x)
+      +mh = L.max_dim_idempotent(x)
+      f1 = cons_head(md)
+      f2 = cons_tail(xs)
+      +zmx = S.zip_max(xs, xs)
+      left = snoc(md, zmx)
+      mid = snoc(md, xs)
+      end = snoc(x, xs)
+      c1 = Equal.cong(List<&2, S.Sdim>, List<&2, S.Sdim>, f1, zmx, xs, ih)
+      c2 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f2, md, x, mh)
+      Equal.trans(List<&2, S.Sdim>, left, mid, end, c1, c2)

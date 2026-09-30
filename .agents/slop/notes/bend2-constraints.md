@@ -423,3 +423,51 @@ error before it was a rule.
 
 6. **A trailing comma at end of line breaks a call.** `Equal.cong(A, B,\n  f, ...)`
    is a parse error; keep the call on one line.
+
+## Under a list constructor, congr and trans -- not `%` rewrites
+
+Rule 3 above says a `%proof : P` motive is written against the goal after the
+match. It does not say what to do when the rewrite target sits **under a list
+constructor**. Measured on `zip_max(s, s) == s`:
+
+Every `%ih : P` shape was **accepted and did nothing**:
+
+- `{zip_max(xs, xs) == xs}` — goal unchanged
+- `{zip_max(xs, xs) == _}` — goal unchanged
+- `{md <> zip_max(xs, xs) == md <> _}` — goal unchanged
+- `{_ <> xs == md <> xs}` — goal unchanged
+- `{_ == x <> xs}` — lands on the wrong endpoint
+
+What works is congruence plus transitivity. `Equal.cong(A, B, f, a, b, e)` is
+the workhorse, and it has one hard requirement: **`f` must be unary**. A cons
+has two arguments, so it is split by fixing one side:
+
+```bend
+def cons_head(h: Sdim) -> (List<&2, Sdim> -> List<&2, Sdim>): t => h <> t
+def cons_tail(t: List<&2, Sdim>) -> (Sdim -> List<&2, Sdim>):  h => h <> t
+
+c1 = Equal.cong(List<&2, Sdim>, List<&2, Sdim>, cons_head(md), zip_max(xs, xs), xs, ih)
+c2 = Equal.cong(Sdim,            List<&2, Sdim>, cons_tail(xs), md, x, mh)
+Equal.trans(List<&2, Sdim>, left, mid, end, c1, c2)
+```
+
+`c1` lifts the tail proof, `c2` lifts `max_dim`'s, they share the middle term
+`md <> xs`, and `Equal.trans` does the substitution that `%` refused to.
+
+Four more measured details, all of which cost an iteration:
+
+7. **A bare `h <> t` as a local's right-hand side is "cannot infer"**, and so is
+   one in a call argument. Route it through a typed `snoc(h, t)` def rather than
+   annotating every use — `h <> t` also breaks the parser inside a `#` comment.
+8. **`md`, `mh`, `zmx` all need `+`.** Each is used twice: once to build the
+   congruence function and once in the `Equal.trans` endpoints.
+9. **A nested call in an argument breaks the parser.** `cons_head(md)` written
+   inline as `Equal.cong`'s third argument gives "expected a term, observed
+   `)`". Bind it to a local first: `f1 = cons_head(md)`.
+10. **A `def` with no return type is a law proof**, so a helper that shares a
+    name with a law in scope must spell its type. `max_dim_idem` needed
+    `-> {Shape.max_dim(x, x) == x : Sdim}` before it would parse as a helper.
+
+The general lesson: **if a rewrite under a constructor is refused, reach for
+`Equal.cong` and `Equal.trans` rather than more motive shapes.** The motive
+grammar is for equalities that line up; congruence is for the ones that do not.
