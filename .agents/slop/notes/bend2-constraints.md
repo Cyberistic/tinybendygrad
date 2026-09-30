@@ -471,3 +471,60 @@ Four more measured details, all of which cost an iteration:
 The general lesson: **if a rewrite under a constructor is refused, reach for
 `Equal.cong` and `Equal.trans` rather than more motive shapes.** The motive
 grammar is for equalities that line up; congruence is for the ones that do not.
+
+## Closures: capturing is fine, STORING is the constraint
+
+An earlier draft of the master plan said closures "cannot capture affine values"
+and prescribed restructuring every rewrite rule into a top-level def threading an
+explicit ctx. **That was wrong**, and cost an afternoon to disprove. Measured:
+
+```bend
+# CAPTURING AN AFFINE VALUE: fine.
+def maker(n: Nat) -> Rule:
+  R{x => (x + U32.from_nat(n) : U32)}
+```
+`ALL PROOFS CHECK`, evaluates to 8. So tinygrad's `lambda x: ...` rules port as
+lambdas. Do not restructure them.
+
+What is actually true, and it is a real constraint, just a different one:
+
+1. **A function value in a datatype field forces `Type`, not `Data`.**
+   ```bend
+   type Rule is Data:
+     R{pat: Pat, f: (U32 -> U32)}     # REJECTED: expected Data, observed Type
+   type Rule is Type:
+     R{pat: Pat, f: (U32 -> U32)}     # ALL PROOFS CHECK
+   ```
+   Function types are linear, so a record holding one is linear.
+
+2. **Therefore a table of rules is linear, and one walk consumes it.**
+   ```bend
+   def twice() -> U32:
+     t = table()
+     a = walk(t, 5)
+     walk(t, a)      # REJECTED: t (consumed more than once)
+   ```
+
+3. **Pattern dispatch on a separate `Data` field is fine**, and the pattern can
+   be matched by a helper that also calls the function:
+   ```bend
+   def apply(p: Pat, f: U32 -> U32, n: U32) -> U32:
+     match p:
+       case PSink{}: f(n)
+       case PAdd{}:  f(n)
+   ```
+
+Two syntax rules that cost iterations and are not recorded anywhere:
+- a `match` pattern with a **function-typed field** destructures as
+  `case R{pat, f} <> rest:` — inline `case r:` then `match r:` is
+  `a R pattern with 2 fields`;
+- the same, an `apply`/`walk` pair must be ordered `apply` before `walk`, since
+  a def may only call defs declared above it. The mutual shape (walk calls
+  apply, apply mentions the type) is fine as long as it is not mutual.
+
+WHAT THIS COSTS `uop/spec.py`, which is the reason it was worth measuring: the
+rule list is walked once per `graph_rewrite` call, and `graph_rewrite` is called
+many times over a graph. So `graph_rewrite` cannot take the table as a
+parameter. It either constructs the table itself, or takes a thunk that makes a
+fresh one each call. That is a question about ONE function signature -- not about
+restructuring the rule language.
