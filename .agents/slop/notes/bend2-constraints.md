@@ -792,3 +792,61 @@ Two more measured rules from the same model:
   `if not cond: v else None`.** Both are leaves, and they are what keep a rule
   ONE def instead of three, because a `match` may not scrutinise a call. Almost
   every rule body in `spec.py` is one of those two shapes.
+
+## `UPat.match` AND `upat_interpret`: THE SHAPE, AND WHY IT IS NOT THE REWRITER
+
+`ops.py:1537` and `ops.py:1566`. These drive `spec.py`, so they are the unblocker
+for the critical path, and they are NOT the same problem as the rewrite engine
+above. Measured by analysis against the ported `UPat`; the model is not written
+yet, so treat this as a design with its risks stated, not as a result.
+
+Python threads a mutable `dict[str, UOp]` and returns
+`list[dict[str, UOp]]` -- a CARTESIAN PRODUCT over the bindings -- and then calls
+the rule as `real_fxn(**match)`. Three things change.
+
+**1. THE STORE MUST BE A COPYABLE `Data` RECORD, not a bare list.** `is_any` is
+`flatten([x.match(uop, store.copy()) for x in self.src[0]])` -- one COPY of the
+store per alternative -- and a bare `List` is spent when read, so this is already
+a type error. Same reason `fold.bend`'s `Table` wraps its list and
+`spec-classifier-shape.bend`'s `Snap` is a record. This is the recurring Bend
+shape: anything a fold reads twice, or branches over, gets a `Data` wrapper.
+
+**2. `store.setdefault(name, uop) is not uop` BECOMES AN INDEX IDENTITY TEST,
+and it is strictly MORE precise than Python's.** Python compares object identity;
+UPats and UOps are both arena indices, so the test is "the bound index differs
+from this one". This is not a weakening: two structurally equal UOps ARE the
+same object in the arena, so the index test is the identity test. Worth stating
+because the port is easy to read as a loosening.
+
+**3. A RULE IS `(Store -> Verdict)`, NOT A KEYWORD CALL.** `real_fxn(**match)`
+names its arguments, and a Bend closure cannot be called with keyword arguments.
+So every rule reads its own captures out of the store. The upside is real: ONE
+rule type instead of one per arity, and `is_any` and the commutative
+permutations need no special case because the product already multiplies.
+
+THE STORE, in full. `Bind{name: U32, uop: U32}` -- a name is a pattern-arena
+concept, the node is a UOp arena index, and the two must not be confused.
+`setdefault` is the only place `UPat.match` can reject on a name alone, and it
+answers `Maybe<Store>`: `None` is "this name is already bound elsewhere".
+
+THE WALK. `is_any` recurses over the PATTERN's `src`; every other arm recurses
+over the NODE's `src`. Then the six rejection tests (op, name, dtype, arg, tag,
+length) and either `[store]` for the leaf or the zip:
+
+    for uu, vv in zip(uop.src, vp):
+      for s in stores: new_stores.extend(vv.match(uu, s))
+
+That zip is the whole reason `match` returns a list, and it is the part most
+likely to hit a wall: it is a fold that MULTIPLIES a list, and every step reads
+the pattern arena and the UOp arena.
+
+RISKS, stated before writing it rather than after:
+
+- Two arenas and a store means three things read per step. If any of them needs
+  to be read twice, the `+` wall from the section above applies -- and a `+`
+  cannot be spelled in a closure TYPE, though these are plain defs so it can.
+- The `Data`-wrapper rule from (1) has to hold for the store at EVERY point in
+  the zip, or the multiply will not type.
+- A rule that reads a node other than the one it matched is a SECOND arena read
+  and the `+` annotation, which is legal in a def but makes the rule's signature
+  part of the table's type. Same trap as `spec.py`'s `Snap`.
