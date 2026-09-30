@@ -2059,3 +2059,315 @@ over a `dispatch` def: argv is an effect, the choice on it is a match, and the
 two cannot be one body. The `dispatch` def is the whole of the pattern -- it is
 what `sz.bend` does with `sz.one`/`sz.two` and what every argument-reading
 `main` in the port has to look like.
+
+## SEVEN MORE RULES, MEASURED 2026-10-01 WHILE PORTING `uop/render.py`
+
+### 1. `Map.put` IS NOT `Map.set`, AND `Map.put` LOSES KEYS
+`Map.put` on a one-entry `MLeaf` is `MLeaf{k, x}` -- it REPLACES the leaf and drops
+the old key. Three sequential puts gave `d[1]=three d[2]= d[3]=`. `Map.set` is the
+inserting one and gives `d[1]=one d[2]=two d[3]=three`. If you are building a dict,
+use `Map.set`.
+
+### 2. `Map.get` ANSWERS A `Sigma`, NOT A `Maybe`
+    def get.of(r: Sigma<&1, &1, Map<&2, String>, _ => String>) -> String:
+      match r:
+        case Tuple{m, v}: v
+    def get(a: Acc, k: String) -> String: get.of(Map.get(String, "", Acc.mm(a), k))
+The `Sigma` type annotation IS the parameter type; `Maybe.default(.., Map.get(..))`
+is `expected : Data -- observed : Quant`. `Map.has` is the same shape with `Bool`.
+
+### 3. A RECORD PATTERN MUST NAME EVERY FIELD, IMPORTED RECORD OR NOT
+`case O.ParamArg{slot}` is `a ops.ParamArg pattern with 13 fields`. This CORRECTS
+the "may name fewer fields" note above: that was measured on a SEVEN-field record
+and does not generalise -- and it does not generalise to locally-declared records
+either (a three-field `Loc` with `case Loc{a}` is refused the same way). ops.bend
+already carries all thirteen ParamArg accessors, which is why the repr reads
+through `O.ParamArg.size(pa)` rather than destructuring.
+
+### 4. `case +h <> t:` -- `+` ON A PATTERN BINDER RESOLVES "TWO READS IN ONE EXPRESSION"
+Two answers out of one comparison that both feed one expression is the shape
+    Bool.or(U32.is_lt(h, g), Bool.and(U32.is_eq(h, g), lt_u32(t, u)))
+and neither `h` nor `g` can be a `let` (affine). `case +h <> t:` is the spelling
+and it works because `U32` is `Data`. A helper def does NOT rescue it: it calls
+back into the walk and that is the mutual recursion Bend refuses.
+
+### 5. A SELF-CALL WITH A COMPUTED ARGUMENT IN FRONT OF THE TAIL IS NOT DECREASING
+    def tr_all(+ss, +ar, +tr): match ss: case s <> t: tr_all(ar, tr_set(tr, s), t)
+is refused; `tr_all(t, ar, tr_set(tr, s))` -- list FIRST -- is accepted. So the
+shrinking argument has to be the FIRST parameter whenever another argument is a
+computed value.
+
+### 6. A `Nat` COUNTDOWN IS THE ONLY COUNTDOWN A U32 LOOP GETS
+`tuple(range(n))` for a `U32` n cannot be a `U32` self-call (`expected : a
+decreasing self-call`); it has to be `range_tuple.go(n: Nat, +p: Nat, acc)` with
+`case 1n+p:` consing `U32.from_nat(p)`. The consed value and the fuel are the same
+`p`, which is why `p` is `+`.
+
+### 7. `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE -- AND GETTING IT
+###    BACKWARDS EMITS A PLAUSIBLE STRING
+`CallInfo(None, None, False, False)` for every dtype is what a flipped `Bool.pick`
+looks like: it typechecks, it runs, and it is a string, not a crash. Three gate
+rows over void / int32 / weakint caught it. `acall_void` also had to stop testing
+`pri == 0` -- `S.void()` and `S.weakint()` BOTH have priority 0, so the void test
+is `cls == CVoid`.
+
+## THE UPAT DEDUP DIVERGENCE, ROOT-CAUSE CHAIN (2026-10-01, depth-8 fuzz case)
+
+Symptom: same tag-filter node reachable via two clause branches gets ONE `a{n}`
+in CPython (`tag in a2` everywhere) but a FRESH number per path in the port
+(`tag in a7`), so the compiled text and the dyn_lookup arity differ. Gate rows
+stay green; only the fuzzer at --max-depth 8 sees it.
+
+Chain, each link verified by reading the code:
+
+1. `wrap` is ONE walk over the WHOLE processed clause tree, threading a Bind
+   list `d` and a counter `n` (upat.bend wrap.go / wrap.found). The dedup env
+   IS global -- the bug is NOT a per-clause reset.
+2. The dedup KEY is `eq_lit(Bind.lit(b), lit)` -- Lit VALUE equality.
+3. `eq_lit` covers every Lit constructor, including LTag via O.eq_tag_list.
+4. `O.eq_tag_list` compares lists ELEMENT-WISE IN ORDER. Python's tag filter
+   is a FROZENSET. Order-sensitive list equality vs set semantics -- the same
+   defect family as eq_cls (missing CWeakFloat arm) and eq_addr (Aalu answered
+   as AReg): an equality predicate that does not match Python's semantics.
+5. Python's `wrap` dedups by CLAUSE-NODE IDENTITY (each clause graph node is
+   wrapped once), not by literal value. The port's value-keyed dedup and
+   Python's node-keyed dedup agree on TREE-shaped patterns and diverge on
+   DAG-shaped ones, where get_clause materialises one arena node into several
+   clause positions.
+
+The fix must make the port's dedup agree with CPython's on the harness case
+(upatfuzz --seeds 51 --max-depth 8). Candidate directions, in order of
+fidelity: (a) key the dedup by clause-node identity as Python does; (b) make
+the list equalities set-semantics where Python's are sets; measure which one
+CPython's _get_clause actually exhibits BEFORE choosing -- read upat.py.
+
+## FIVE MORE RULES, MEASURED 2026-10-01 WRITING THE `uop/divandmod.bend` FUZZ DRIVER
+
+### 1. A `match` MAY NOT SCRUTINISE A COMPUTED VALUE -- THE `.go` SPLIT IS NOT OPTIONAL
+
+    def dmc.num(s: String) -> U32:
+      match String.starts_with(s, "-"):        #| - message : a parameter or field scrutinee
+        case True{}: ...                       #| - observed: (a match cannot scrutinize a computed value)
+
+The rule is already known for a PROJECTION (`n.f` parses as a name lookup); this
+is the same rule for a CALL. Every `def f(x) -> T: match g(x): ...` must become
+`def f.go(gx: T, x: T) -> R: match gx: ...` + `def f(x) -> R: f.go(g(x), x)`.
+The error names the scrutinee expression, which is the useful half: it points at
+the CALL, not at the `match`.
+
+### 2. THE `+` PROPAGATES ONE READER DOWN, AND `List<&2, T>` IS NOT `List<&1, T>`
+
+    def dmc.den.mul(ar: O.Arena, m: U32) -> U32:
+      U32.mul(dmc.den.c(ar, O.Arena.src0(ar, m)), dmc.den.c(ar, O.Arena.src(ar, m, 1)))
+      #| - expected : m     - observed : m (consumed more than once)
+      #| Context: - ar : O.Arena
+    def dmc.den.mul(ar: O.Arena, +m: U32) -> U32: ...   #| - expected : ar  - observed : ar (consumed more than once)
+    def dmc.den.mul(+ar: O.Arena, +m: U32) -> U32: ...  # ok
+
+The compiler does NOT tell you the whole chain: it stops at the first parameter
+it can blame, names THAT one, and prints the rest as `Context:`. Fixing the named
+one exposes the next, so the arithmetic above took four compiles to green. The
+lesson is that `+` is transitive UP the call chain, not just local to one def --
+budget an edit per error rather than assuming one error is one fix.
+
+### 3. A `Maybe` FROM `List.get` NEEDS THE SPLIT EVEN INSIDE A `match` HEAD POSITION
+
+    def dmc.two() -> List<&2, O.Op>:
+      match List.get(&2, O.PMEntry, O.PMEntrys.es(dm_table()), 2n):
+        case Some{e}: O.PMEntry.ops(e)      #| - message : a parameter or field scrutinee
+        case None{}: Nil{}
+
+Rule 1 again, and it is the one that bites a PARSER hardest because a parser is
+mostly `match` over `Maybe`s read out of a list. The split is mechanical and
+`upat.bend`'s `drv.one` / `drv.nth` are the precedent: one total reader per
+element type, and the `match` reads a PARAMETER.
+
+### 4. AN ARENA IS A `Data`, AND `Found.ar` / `Found.i` ARE NON-CONSUMING READERS
+
+    def dmc.of.put(+f: O.Found) -> String:
+      dmc.of.put.go(dm_zero(O.Found.ar(f), O.Found.i(f)),
+                    div_and_mod_symbolic(F.folded(O.Found.ar(f)), O.Found.i(f)))   # ok
+
+Three reads of one `+Found` check, because `Found.ar`/`Found.i` are
+`def Found.ar(f: Found) -> Arena` -- no `+`. So a LINEAR record's readers need
+no `+` themselves and a `+` value can be read any number of times THROUGH them.
+This is the opposite of `String.take`/`String.drop` (rule 2 of the `upat.bend`
+set above, which DO consume), and the two being opposite is the whole trap:
+whether a reader consumes depends on whether the type is a linked list or a
+record.
+
+### 5. AN UNFILLED LAW IS A HARD ERROR, SO A DEF MUST BE DEFINED BEFORE IT IS CALLED
+
+    def dmc.of.put(+f: O.Found) -> String:
+      dmc.of.put.go(...)                       #| - expected : a filled definition
+                                               #| - observed : dmc.of.put.go   (an unfilled law is a dead claim)
+
+Bend is order-sensitive top-to-bottom. The `go`-before-caller convention that
+makes rule 1's split work is ALSO what makes this necessary, and the two rules
+pull in the same direction: **define the leaf `match` first, call it second**.
+Reading order top-to-bottom is the one habit that satisfies both.
+
+## SYMBOLIC.BEND — TWO FINDINGS FROM THE FUZZ ATTEMPT (file restored to green)
+
+The symbolic fuzz agent broke the file mid-driver and was rescued by restoring
+its last verified copy (`_sym_dbg.bend`). Its driver work was discarded; these
+two READING findings survive and are ungated:
+
+1. sym_10 (symbolic.py:463, `UPat.var("x") * UPat.var("x")`) is a REAL DIVERGENCE
+   the port's own header half-documents: Python's UPat cache INTERNS BY NAME, so
+   the second `var("x")` is the same STORE that the first overwrites -- the
+   compiled form matches 1/(x*y) too. The port's `p_same` check is STRicter, so
+   it matches strictly FEWER nodes than Python. The gate's `sym_rebind` pair
+   covers only sym_7 and sym_8. Decide: match Python (drop the check) or record
+   the divergence as deliberate; either way it needs a row.
+
+2. symbolic.py:124 `((x%y)%y -> x%y)` is DEFERRED but invisible: absent from
+   sym_table AND from the TODO block, so `skip=114`'s arithmetic does not count
+   it. A rule absent from both is a bookkeeping hole, whatever the reason.
+
+Driver lessons (its design notes are in the file history): the s-expr tokenizer,
+Frm/St arena builder, and IO.args() convention were sound; the fz_jobs fuel must
+be ONE Nat split across branches -- a rebuilt `[a] <> rest` is rejected by the
+checker ("expected a decreasing self-call"), and List.range(4096n) is not in
+Base's surface the way it was used.
+
+## FOUR MORE RULES, MEASURED 2026-10-01 WHILE FIXING THE UPAT WAITLIST
+
+### 1. A FOLD THAT ALSO CARRIES A CHANGED-BIT MUST `or` THE WHOLE LIST, NOT THE HEAD
+`proc.go` returns `Pg{cs, ch}` per LIST, and the list's `ch` has to be
+`Bool.or(head's ch, tail's ch)`. Returning the head's bit alone type-checks,
+`--check-only` is green, and the gate is green, and the fold is wrong: a parent
+reading `b.ch` sees only its FIRST child, so it runs while a LATER sibling is
+still moving. Caught by `store_ord` and `deep` below, and by `upatfuzz` seed 40.
+`proc.join` is one line and it is the whole difference between the two builds.
+
+### 2. `+` ON A `Data` FIELD BINDER IS A COPY AND IS NEEDED TO USE IT TWICE
+`case Pg{+cs, ch}:` then `C{op, lit, cs}` and `do_process_and(op, lit, cs)` in one
+expression. Without the `+`: `cs (consumed more than once)`. The same on a
+parameter (`def f(+a: Pg, +r: Pg)`) and on a list binder (`case +c <> t`).
+
+### 3. A `match` CANNOT SCRUTINISE A COMPUTED VALUE -- GIVE IT ITS OWN DEF
+    match Pg.ch(b):                     #| - expected : a term
+                                        #| - observed : 'match'
+`match b: case Pg{cs, ch}:` then `match ch:` nests, and the record binder is the
+scrutinisee. This is why `proc.node` is a separate def from `proc.step` rather
+than one `Bool.pick`.
+
+### 4. A DEF MUST BE DEFINED BEFORE IT IS CALLED, AND THAT IS NOT DEF ORDER
+`proc.node` calling `proc.go` is fine in either order, but a def calling a LATER
+def is `a filled definition (an unfilled law is a dead claim)` -- a message that
+names the callee and not the caller, so it reads like a `LAWS.bend` problem. And
+`dbg.go` calling `dbg.node` calling `dbg.go` is refused outright: MUTUAL RECURSION
+IS OUT, so a recursive printer has to carry its own fuel AND its own name
+(`dbg.op` for the leaf case) instead of splitting into two mutually recursive
+defs. Same answer as rule 5 of the SEVEN MORE RULES, reached from the other side.
+
+### 5. A `Nat` FUEL BOUND IS A BOUND, AND A WAITLIST MAKES IT MUCH LOOSER
+`proc_fix` used to be a fixpoint on a DEPTH (splice one AND level per round) and
+`8 * len(upats)` was ample. It is now the `unified_rewrite` WAITLIST -- a node
+runs its rule only when its children are final -- and the deepest shape the
+fuzzer reaches needs 33 to 48 ROUNDS for FIVE arena UPats, i.e. 9 to 12 rounds
+per UPat. `8n` was short by four rounds and the port answered `NONE` where
+CPython answered five lines of clause. `12n` is the smallest multiplier that
+reaches the fixpoint; the file uses `32n`. A BOUND may be over-provisioned and
+costs nothing -- an under-provisioned one is a silent wrong answer, and it is
+the WORST failure mode in the file because every other row still passes.
+
+## FOUR MORE GENERAL RULES, MOVED OUT OF movement.bend AND weak.bend 2026-10-01
+
+A pass over `uop/movement.bend` and `uop/weak.bend` cut their comments back to tinygrad's
+shape. These four were general Bend rules living in those files' headers; they are recorded
+here so the next agent does not re-derive them from a file that no longer states them.
+
+1. **A PAIR IS A `Type`, SO A TWO-FIELD `Data` RECORD IS THE SPELLING OF `(A, B)` -- AND A
+   `Type` CANNOT BE A LIST ELEMENT.** Already recorded for `Found` ("an `Arena & U32` pair
+   is a `Type` and cannot carry a `+`", this file's THE ENGINE SHAPE) and for `Seen.parts`;
+   what the files were also carrying locally is the LIST half: refused with
+   `expected : Data / observed : Type`. That is why movement.bend's `Marg` -- Python's
+   `(o, n)` margin pair -- is a two-field `Data` record and not the tuple
+   `(H.I64 & H.I64)`: `List<&2, H.I64 & H.I64>` does not compile.
+
+2. **A `Maybe` CANNOT BE A FOLD'S ACCUMULATOR.** `Maybe<a, A>` is affine and has no `+`
+   spelling, so it cannot be threaded through a recursive walk. Two consequences seen in the
+   port: a fold whose accumulator would be a `Maybe` is written as TWO folds over the same
+   list (movement.bend's `as_shape.allc` + `as_shape.vals`, splitting
+   `tuple(s.val if s.op is CONST else ssimplify(s) ...)`), and an answer that must be read
+   twice is hoisted into a `Data` record carrying a `Bool` plus the value (weak.bend's
+   `Dts` for `derived_dtypes`, `ODt` for `commit_weak_consts`'s `dt:DType|None`).
+
+3. **THE FOLD-VERDICT SHAPE: ONE DEF, THE ELEMENT'S VERDICT AS A PARAMETER.** A fold over a
+   list whose accumulator is a `Bool` and whose step needs to READ the accumulator cannot be
+   written `.go` + wrapper: the wrapper would call the fold and then need the fold to call
+   it back, which is mutual recursion. The port's shape is a single def taking the
+   accumulator as a PARAMETER and matching on the ELEMENT in the head -- movement.bend's
+   `mp_ident.at` and `mp_5.each.at`, whose comments both name the reason. Same family as "a
+   `match` may not scrutinise a computed value" above; this is the fold-shaped escape from
+   it.
+
+4. **A LIST BINDER, LIKE A PARAMETER, IS READ-AT-MOST-ONCE.** `case m <> t:` with `m` of
+   record type gives an affine binder, so `Marg.o(m)` and `Marg.n(m)` in one expression is
+   refused exactly as a parameter used twice would be. `+` on the pattern binder fixes it
+   (the render.bend entry "`case +h <> t:` -- `+` ON A PATTERN BINDER RESOLVES TWO READS IN
+   ONE EXPRESSION"), or hoist the pair into a def taking the record whole, which is what
+   movement.bend's `marg_pair.of` does.
+
+## FOUR MORE RULES, MEASURED 2026-10-01 WHILE PORTING `uop/divandmod.bend` and
+## `uop/symbolic.py`
+
+Appended, not edited. All four are Bend 2.0.34 / substrate facts, so they were
+cut out of the two `.bend` headers where they had drifted into file-local prose.
+
+### 1. A 64-BIT PRODUCT IS A WALL, NOT A TODO: `base.bend` DOES NOT EXPORT `Word`
+
+`Word.mul` is the only widening multiply in Bend 2, and `base.bend` does not
+export `Word`'s constructors -- `match Word.mul(64n, ...)` from outside the file
+is refused with "a declared constructor (unknown: Word.Nil)". So a magic multiplier
+(anything needing a 64-bit product) cannot be written from a `.bend` file at all,
+and that is a wall of ONE export: either `Word` and `WCon` become public, or the
+port writes the product as four `U32` multiplies and a carry chain (`U32.mul`
+already truncates mod 2^32, so it composes).
+
+The same wall one level up: `H.I64{hi,lo}` exists in `helpers.bend` with
+`i64_add` / `i64_sub` / `i64_cmp` and NOT `i64_mul` / `i64_div` / `i64_mod`. So
+`UOp._min_max` and `const_factor` are blocked on arithmetic, not just on shape.
+`_min_max` is the unlock for five of `divandmod.bend`'s TODOs and nine of
+`symbolic.bend`'s, which is why it is the first item in both "WHAT NEXT" lists.
+
+### 2. TWO FIXTURE BUILDERS THAT RETURN AN INDEX ARE THE SAME TRAP AS ONE
+
+The `divandmod.bend` version (`Arena` is affine, so a fixture builder that returns
+`-> U32` throws the grown arena away) is recorded above as "A FIXTURE BUILDER THAT
+RETURNS AN INDEX THROWS THE GROWN ARENA AWAY". The `symbolic.bend` variant is
+slightly different and worth separating: there the rule table itself returns
+`Maybe<&1, U32>`, so a gate row cannot read the rewritten node back at all, because
+`Arena.node` answers `Arena.bottom` for an index past the end. The rows that work
+around it are "did the rule fire" (a `Bool`) plus "what is the value" (computed by
+calling `exec_alu` directly). **`Maybe<&1, O.Found>` is the shape a growing rule
+should have** -- `Found` is `Data`, so it is expressible -- and it is the first
+change to make when a rule table passes a dozen entries.
+
+### 3. A GATE ROW THAT SAYS WHAT A BOOLEAN CANNOT IS NOT OPTIONAL
+
+`x // x -> 1` needs TWO rows: one where the two srcs are the SAME node and one where
+they are two DIFFERENT nodes. Drop `U32.is_eq` from the pattern and the positive row
+still passes -- so the pair is the only thing that can see the identity check
+disappear. Two instances in this port (`sym_7`/`rebind`+`rebind0` and
+`sym_8`/`xorb`+`xorb0`), both measured.
+
+The negative side must ask for ABSENCE, not for an index: written as `eq_u(m, 0)`
+the row is satisfied by any wrong-but-present answer. Ask `Maybe.is_none`.
+
+And the same shape for first-wins: a fixture where the two claiming rules AGREE
+cannot distinguish first-wins from last-wins at all.
+
+### 4. A `list`-TAIL FOLD THAT MUST HAND SOMETHING BACK CARRIES IT IN A RECORD
+
+`upat.bend` records "A `Data` RECORD IS HOW A LIST TRAVERS WITH SOMETHING DERIVED
+FROM IT" for `Shapes{ds, m}`. The `symbolic.bend` form is the same fact one level
+up: an s-expr builder pushes a frame on `(`, pops it on `)`, and the finished node
+has to get OUT to the frame above -- which a list tail cannot carry, because the
+tail is the only thing that survives the recursion. So the answer rides in the
+STATE (`St{ar, stk, root}`) rather than in a return value, and the walk is one
+def. The same shape is `exec_alu`'s `Opr{fit, bits, f}` and `rm_0.ok`'s
+`(hit: Bool, ok: Bool, ..., z: U32)`: whenever a fold must answer both a thing and
+a fact about it, both travel together.
