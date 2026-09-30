@@ -275,3 +275,45 @@ Reject a change that:
    no-opinion / reject) and its tests assert exact kernel counts and exact
    `repr` strings. Both are behaviour and both are covered by tests that
    must keep passing.
+
+## Explicit fuel instead of @unsafe (measured on 2.0.34)
+
+The project rule is that any Turing completeness must be approved first, and the
+answer was no `@unsafe`: thread a `Nat` fuel argument instead. Four facts, each
+established by bisection against the pinned compiler, not by reading the guide.
+
+1. **Fuel is the FIRST parameter.** The decrease check reads a recursive call's
+   arguments left to right, stopping at the first that is a strict subterm of its
+   corresponding parameter. Put the shrinking argument first. Everything after it
+   is free.
+
+2. **`case 2n+p:` yields TWO independent strict subterms.** That is how one arm
+   makes two decreasing calls: one takes `n`, the other `p`. Marking either `+`
+   *breaks* the check -- a reusable binder stops counting as a subterm. Two
+   calls, two ordinary binders.
+
+3. **The checker only honours `2n+p` when a `1n+p` sibling is present.** A def
+   whose only fuel arm is `2n+p:` is rejected; add `case 1n+p: f(p, i)` and it
+   passes. The sibling need not be reachable in practice. bendgrad/LAWS/spec.bend
+   makes it meaningful: odd fuel burns one unit and re-enters, so fuel is counted
+   in pairs and a caller with an odd budget is rounded down rather than lied to.
+
+4. **A recursive call must be a tail expression, or bound to a local first.**
+   `pair(go(..), go(..))` fails; `hd = go(..)` then `tl = go(..)` then
+   `pair(hd, tl)` also fails when the def returns a `Maybe`; the reliable form is
+   one self-call per arm with a single binder, or the `2n+p` pair above.
+
+What all of this rules out: mutual recursion. Two functions that call each other
+cannot both be checked, so the shape and dtype folds are ONE def each over a
+type that covers both cases:
+
+    type Item is Data:
+      One{s: Sp}          # a node
+      Many{xs: List<&2, Sp>}   # a list, for Index's index list and Stack's operands
+
+The guide says exactly this -- "two mutually recursive functions become one def
+with an extra argument selecting which to run" -- and `Item` is that argument.
+
+Cost: every call site now passes a depth. A caller that under-counts gets
+`None`, which is the honest answer for "past this depth the property is
+unknown", never a wrong shape.

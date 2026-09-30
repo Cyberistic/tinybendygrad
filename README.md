@@ -1,3 +1,8 @@
+An experimental port of tinygrad to [bend](https://github.com/bendlang/bend)
+
+
+---
+
 <div align="center">
 
 <picture>

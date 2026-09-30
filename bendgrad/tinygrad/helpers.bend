@@ -604,7 +604,7 @@ def f32_frac.go(n: Nat, fr: Frac) -> String:
       match fr:
         case Frac{f, acc}: f32_frac.go(p, f32_frac.step(f, acc))
 
-def f32_fixed.put(s: String, neg: Bool) -> String:
+def f32_fixed.put(neg: Bool, s: String) -> String:
   match neg:
     case True{}: String.append("-", s)
     case False{}: s
@@ -612,8 +612,8 @@ def f32_fixed.put(s: String, neg: Bool) -> String:
 # `f"{x:.2f}"` on a value that came out of an f32: the integer part, a point,
 # and `dp` digits walked off the remainder.
 def f32_fixed.text3(neg: Bool, ip: U32, dp: Nat, frac: Frac) -> String:
-  f32_fixed.put(String.append(String.append(U32.show(ip), "."),
-    f32_frac.go(dp, frac)), neg)
+  f32_fixed.put(neg, String.append(String.append(U32.show(ip), "."),
+    f32_frac.go(dp, frac)))
 
 def f32_fixed.text2(neg: Bool, dp: Nat, m: F32, +ip: U32) -> String:
   f32_fixed.text3(neg, ip, dp, Frac{F32.sub(m, U32.to_f32(ip)), ""})
@@ -642,13 +642,13 @@ def f32_fixed.special(nan: Bool, fin: Bool, neg: Bool) -> Maybe<&1, String>:
     case True{}: Some{"nan"}
     case False{}: f32_fixed.special.fin(fin, neg)
 
-def f32_fixed.go(x: F32, dp: Nat, special: Maybe<&1, String>) -> String:
+def f32_fixed.go(special: Maybe<&1, String>, x: F32, dp: Nat) -> String:
   match special:
     case Some{s}: s
     case None{}: f32_fixed.body(x, dp)
 
 def f32_fixed(+x: F32, dp: Nat) -> String:
-  f32_fixed.go(x, dp, f32_fixed.special(f32_is_nan(x), f32_is_finite(x), f32_is_neg(x)))
+  f32_fixed.go(f32_fixed.special(f32_is_nan(x), f32_is_finite(x), f32_is_neg(x)), x, dp)
 
 def f32_is_int_valued(fin: Bool, +x: F32) -> Bool:
   match fin:
@@ -660,7 +660,7 @@ def f32_is_int_valued(fin: Bool, +x: F32) -> Bool:
 # boundary and no f64 port of this formatter can do better in a U32.
 def f32_show.put2(iv: Bool, x: F32, neg: Bool) -> String:
   match iv:
-    case True{}: f32_fixed.put(U32.show(F32.to_u32(F32.abs(x))), neg)
+    case True{}: f32_fixed.put(neg, U32.show(F32.to_u32(F32.abs(x))))
     case False{}: f32_fixed.body(x, 6n)
 
 def f32_show.put(+iv: Bool, +x: F32) -> String:
@@ -733,7 +733,7 @@ def color_of(s: String) -> Maybe<&1, U32>:
     case "white": Some{7}
     case _: None{}
 
-def colored.put(st: String, color: Maybe<&1, U32>, background: Bool) -> String:
+def colored.put(color: Maybe<&1, U32>, st: String, background: Bool) -> String:
   match color:
     case None{}: st
     case Some{ci}: String.append(String.append(esc(color_code(ci, background)), st), "\u{1b}[0m")
@@ -741,7 +741,7 @@ def colored.put(st: String, color: Maybe<&1, U32>, background: Bool) -> String:
 def colored.flag(nc: Bool, st: String, color: Maybe<&1, U32>, background: Bool) -> String:
   match nc:
     case True{}: st
-    case False{}: colored.put(st, color, background)
+    case False{}: colored.put(color, st, background)
 
 def colored.go(f: Flags, st: String, color: Maybe<&1, U32>, background: Bool) -> String:
   match f:
@@ -832,7 +832,7 @@ type Ast is Data:
 def ansistrip.done4(pend: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
   List.append(&2, Char, List.append(&2, Char, [Char.from_u32(27)], [Char.from_u32(91)]), List.append(&2, Char, pend, acc))
 
-def ansistrip.done3(acc: List<&2, Char>, m: Nat, pend: List<&2, Char>) -> List<&2, Char>:
+def ansistrip.done3(m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
   match m:
     case 0n: acc
     case Succ{q}: List.append(&2, Char, [Char.from_u32(27)], acc)
@@ -841,8 +841,8 @@ def ansistrip.done3(acc: List<&2, Char>, m: Nat, pend: List<&2, Char>) -> List<&
 def ansistrip.done2(c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
   match m:
     case 0n: List.reverse(&2, Char, acc)
-    case Succ{q}: ansistrip.done3(List.reverse(&2, Char, acc), 1n, List.reverse(&2, Char, pend))
-    case Succ{Succ{p}}: ansistrip.done3(List.reverse(&2, Char, acc), 2n, List.reverse(&2, Char, pend))
+    case Succ{q}: ansistrip.done3(1n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
+    case Succ{Succ{p}}: ansistrip.done3(2n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
 
 def ansistrip.done(st: Ast) -> List<&2, Char>:
   match st:
@@ -890,13 +890,13 @@ def ansipad(+s: String, w: U32) -> String:
 # defs: the int arm repeats, the sequence arm is the identity.
 # ===========================================================================
 
-def make_tuple_rep.go(+x: U32, n: Nat) -> List<&2, U32>:
+def make_tuple_rep.go(n: Nat, +x: U32) -> List<&2, U32>:
   match n:
     case 0n: Nil{}
-    case Succ{p}: x <> make_tuple_rep.go(x, p)
+    case Succ{p}: x <> make_tuple_rep.go(p, x)
 
 def make_tuple_rep(x: U32, cnt: U32) -> List<&2, U32>:
-  make_tuple_rep.go(x, U32.to_nat(cnt))
+  make_tuple_rep.go(U32.to_nat(cnt), x)
 
 def make_tuple_of(x: U32) -> List<&2, U32>:
   [x]
@@ -927,16 +927,16 @@ def fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
         case Nil{}: Nil{}
     case Nil{}: Nil{}
 
-def fg_skip(p: List<&2, U32>, n: Nat) -> List<&2, U32>:
+def fg_skip(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
   match n:
-    case 0n: p
+    case 0n: xs
     case Succ{p}:
-      match p:
+      match xs:
         case Nil{}: Nil{}
-        case _ <> t: fg_skip(t, p)
+        case _ <> t: fg_skip(p, t)
 
-def flat_to_grouped(padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
-  List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(padding, List.length(&2, U32, padding))))
+def flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(List.length(&2, U32, padding), padding)))
 
 # ===========================================================================
 # resolve_pool_pads -- int -> [p] * 2*dims; a sequence of 2*dims -> as is; a
@@ -944,23 +944,25 @@ def flat_to_grouped(padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
 # raises ValueError on any other length; that is the Maybe.
 # ===========================================================================
 
-def resolve_pool_pads_int.go(p: U32, n: Nat) -> List<&2, U32>:
+def resolve_pool_pads_int.go(n: Nat, +p: U32) -> List<&2, U32>:
   match n:
     case 0n: Nil{}
-    case Succ{q}: p <> resolve_pool_pads_int.go(p, q)
+    case Succ{q}: p <> resolve_pool_pads_int.go(q, p)
 
 def resolve_pool_pads_int(p: U32, dims: U32) -> List<&2, U32>:
-  resolve_pool_pads_int.go(p, U32.to_nat(U32.mul(2, dims)))
+  resolve_pool_pads_int.go(U32.to_nat(U32.mul(2, dims)), p)
 
-def pool_pads_one(p: U32) -> List<&2, U32>:
-  [p, p]
+def pool_pads_dup.go(ps: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ps:
+    case Nil{}: List.reverse(&2, U32, acc)
+    case +h <> t: pool_pads_dup.go(t, List.append(&2, U32, acc, [h, h]))
 
 def pool_pads_dup(p: List<&2, U32>) -> List<&2, U32>:
-  List.concat(&2, U32, List.map(U32, List<&2, U32>, pool_pads_one, p))
+  pool_pads_dup.go(p, Nil{})
 
 def resolve_pool_pads.pick(isdims: Bool, p: List<&2, U32>) -> Maybe<&1, List<&2, U32>>:
   match isdims:
-    case True{}: Some{List.reverse(&2, U32, pool_pads_dup(p))}
+    case True{}: Some{pool_pads_dup(p)}
     case False{}: None{}
 
 def resolve_pool_pads.step(istwodims: Bool, isdims: Bool, p: List<&2, U32>, dims: U32) ->
@@ -969,8 +971,12 @@ def resolve_pool_pads.step(istwodims: Bool, isdims: Bool, p: List<&2, U32>, dims
     case True{}: Some{p}
     case False{}: resolve_pool_pads.pick(isdims, p)
 
-def resolve_pool_pads(p: List<&2, U32>, dims: U32) -> Maybe<&1, List<&2, U32>>:
-  resolve_pool_pads.step(U32.is_eq(U32.from_nat(List.length(&2, U32, p)), U32.mul(2, dims)),
+def resolve_pool_pads.n(two: Bool, dims: Bool, p: List<&2, U32>, dims2: U32) ->
+  Maybe<&1, List<&2, U32>>:
+  resolve_pool_pads.step(two, dims, p, dims2)
+
+def resolve_pool_pads(+p: List<&2, U32>, +dims: U32) -> Maybe<&1, List<&2, U32>>:
+  resolve_pool_pads.n(U32.is_eq(U32.from_nat(List.length(&2, U32, p)), U32.mul(2, dims)),
     U32.is_eq(U32.from_nat(List.length(&2, U32, p)), dims), p, dims)
 
 # ===========================================================================
@@ -993,23 +999,44 @@ def bal.next(h: Char, d: U32) -> U32:
 def bal.under(nd: U32) -> Bool:
   U32.is_ge(nd, 2147483648)
 
-def bal.go(under: Bool, nd: U32, cs: List<&2, Char>) -> Bool:
-  match under:
-    case True{}: False{}
-    case False{}: bal.walk(cs, nd)
+# the walk carries its depth as a record rather than as two parameters: the
+# depth has to be matched (for the end test) while the char list is matched for
+# the walk, and bend wants one binder order per def
+type Depth is Data:
+  Depth{d: U32, under: Bool}
 
-def bal.walk(cs: List<&2, Char>, d: U32) -> Bool:
+def bal.depth(st: Depth) -> U32:
+  match st:
+    case Depth{d, under}: d
+
+def bal.spilled(st: Depth) -> Bool:
+  match st:
+    case Depth{d, under}: bal.under(d)
+
+def bal.step(spilled: Bool, +nd: U32) -> Depth:
+  match spilled:
+    case True{}: Depth{nd, True{}}
+    case False{}: Depth{nd, bal.under(nd)}
+
+def bal.end(st: Depth) -> Bool:
+  match st:
+    case Depth{d, under}:
+      match under:
+        case True{}: False{}
+        case False{}: U32.is_zero(d)
+
+def bal.walk(cs: List<&2, Char>, +st: Depth) -> Bool:
   match cs:
-    case Nil{}: U32.is_zero(d)
-    case h <> t: bal.go(bal.under(bal.next(h, d)), bal.next(h, d), t)
+    case Nil{}: bal.end(st)
+    case +h <> t: bal.walk(t, bal.step(bal.spilled(st), bal.next(h, bal.depth(st))))
 
 def is_balanced(s: String) -> Bool:
-  bal.walk(String.to_list(s), 0)
+  bal.walk(String.to_list(s), Depth{0, False{}})
 
-def strip_parens.inner(fst: String) -> String:
-  String.take(String.drop(fst, 1), Nat.sub(String.length(fst), 2n))
+def strip_parens.inner(+fst: String) -> String:
+  String.take(String.drop(fst, 1n), Nat.sub(String.length(fst), 2n))
 
-def is_wrapped.both(starts: Bool, ends: Bool, fst: String) -> Bool:
+def is_wrapped.both(starts: Bool, ends: Bool, +fst: String) -> Bool:
   match starts:
     case True{}:
       match ends:
@@ -1017,15 +1044,15 @@ def is_wrapped.both(starts: Bool, ends: Bool, fst: String) -> Bool:
         case False{}: False{}
     case False{}: False{}
 
-def is_wrapped(fst: String) -> Bool:
+def is_wrapped(+fst: String) -> Bool:
   is_wrapped.both(String.starts_with(fst, "("), String.ends_with(fst, ")"), fst)
 
-def strip_parens.go(wrapped: Bool, fst: String) -> String:
+def strip_parens.go(wrapped: Bool, +fst: String) -> String:
   match wrapped:
     case True{}: strip_parens.inner(fst)
     case False{}: fst
 
-def strip_parens(fst: String) -> String:
+def strip_parens(+fst: String) -> String:
   strip_parens.go(is_wrapped(fst), fst)
 
 # ===========================================================================
@@ -1036,7 +1063,7 @@ def strip_parens(fst: String) -> String:
 # constraints note asks for: Bend's own shifts are both logical.
 # ===========================================================================
 
-def asr(v: U32, n: Nat) -> U32:
+def asr(+v: U32, +n: Nat) -> U32:
   U32.or(U32.shrn(v, n), U32.shrn(U32.shrn(v, 31n), n))
 
 def i32_is_neg(x: U32) -> Bool:
@@ -1050,21 +1077,27 @@ def i32_abs(neg: Bool, x: U32) -> U32:
     case True{}: i32_neg(x)
     case False{}: x
 
-# floordiv -- `x//y if y != 0 else 0`, Python's floor division: truncate toward
-# zero and step down one more when the division was inexact and the signs
-# differ.
+# cdiv and floordiv both need "the two signs differ", so it is defined here
+# rather than down in the cdiv block. Python gets it from `x*y<0`; multiplying
+# first would overflow in 32 bits and could flip the answer, so the XOR of the
+# two sign bits is used. Same predicate on exact integers.
+def cdiv_sign(x: U32, y: U32) -> Bool:
+  Bool.xor(i32_is_neg(x), i32_is_neg(y))
+
+# floordiv -- `x//y if y != 0 else 0`: truncate toward zero and step down one
+# more when the division was inexact and the signs differ.
 def floordiv_i32.exact(ax: U32, ay: U32) -> Bool:
   U32.is_zero(U32.mod(ax, ay))
 
-def floordiv_i32.trunc.put(q: U32, neg: Bool) -> U32:
+def floordiv_i32.trunc.put(neg: Bool, q: U32) -> U32:
   match neg:
     case True{}: i32_neg(q)
     case False{}: q
 
 def floordiv_i32.trunc.exact(exact: Bool, neg: Bool, q: U32) -> U32:
   match exact:
-    case True{}: floordiv_i32.trunc.put(q, neg)
-    case False{}: floordiv_i32.trunc.put(U32.add(q, 1), neg)
+    case True{}: floordiv_i32.trunc.put(neg, q)
+    case False{}: floordiv_i32.trunc.put(neg, U32.add(q, 1))
 
 def floordiv_i32.trunc(neg: Bool, exact: Bool, q: U32) -> U32:
   floordiv_i32.trunc.exact(exact, neg, q)
@@ -1075,19 +1108,13 @@ def floordiv_i32.pick(zero: Bool, neg: Bool, exact: Bool, ax: U32, ay: U32) -> U
     case True{}: 0
     case False{}: floordiv_i32.trunc(neg, exact, U32.div(ax, ay))
 
-def floordiv_i32(x: U32, y: U32) -> U32:
+def floordiv_i32(+x: U32, +y: U32) -> U32:
   floordiv_i32.pick(U32.is_zero(y), cdiv_sign(x, y),
     floordiv_i32.exact(i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y)),
     i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y))
 
-# cdiv -- `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`. Python gets the sign
-# from the product; multiplying first would overflow in 32 bits and could flip
-# the answer, so the XOR of the two sign bits is used. It is the same predicate
-# on exact integers, which is what `x*y<0` is a statement about.
-def cdiv_sign(x: U32, y: U32) -> Bool:
-  Bool.xor(i32_is_neg(x), i32_is_neg(y))
-
-def cdiv_i32.put(q: U32, neg: Bool) -> U32:
+# cdiv -- `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`, using cdiv_sign above.
+def cdiv_i32.put(neg: Bool, q: U32) -> U32:
   match neg:
     case True{}: i32_neg(q)
     case False{}: q
@@ -1095,16 +1122,16 @@ def cdiv_i32.put(q: U32, neg: Bool) -> U32:
 def cdiv_i32(zero: Bool, neg: Bool, q: U32) -> U32:
   match zero:
     case True{}: 0
-    case False{}: cdiv_i32.put(q, neg)
+    case False{}: cdiv_i32.put(neg, q)
 
-def cdiv_i32_go(x: U32, y: U32) -> U32:
+def cdiv_i32_go(+x: U32, +y: U32) -> U32:
   cdiv_i32(U32.is_zero(y), cdiv_sign(x, y),
     U32.div(i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y)))
 
-def cmod_i32(x: U32, y: U32) -> U32:
+def cmod_i32(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(cdiv_i32_go(x, y), y))
 
-def floormod_i32(x: U32, y: U32) -> U32:
+def floormod_i32(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(floordiv_i32(x, y), y))
 
 # The unsigned readings of the same four. Python's // and % on a non-negative
@@ -1113,13 +1140,13 @@ def floormod_i32(x: U32, y: U32) -> U32:
 def floordiv_u32(x: U32, y: U32) -> U32:
   U32.div(x, y)
 
-def floormod_u32(x: U32, y: U32) -> U32:
+def floormod_u32(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(U32.div(x, y), y))
 
 def cdiv_u32(x: U32, y: U32) -> U32:
   U32.div(x, y)
 
-def cmod_u32(x: U32, y: U32) -> U32:
+def cmod_u32(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(cdiv_u32(x, y), y))
 
 # ===========================================================================
@@ -1148,16 +1175,16 @@ def div0(zero: Bool, v: U32) -> U32:
     case True{}: 0
     case False{}: v
 
-def ceildiv_u32(num: U32, amt: U32) -> U32:
+def ceildiv_u32(num: U32, +amt: U32) -> U32:
   div0(U32.is_zero(amt), U32.div(U32.add(U32.add(num, amt), 4294967295), amt))
 
-def round_up_i32(num: U32, amt: U32) -> U32:
+def round_up_i32(num: U32, +amt: U32) -> U32:
   U32.mul(floordiv_i32(U32.add(U32.add(num, amt), 4294967295), amt), amt)
 
 def round_down_i32(num: U32, amt: U32) -> U32:
   i32_neg(round_up_i32(i32_neg(num), amt))
 
-def round_up_u32(num: U32, amt: U32) -> U32:
+def round_up_u32(num: U32, +amt: U32) -> U32:
   U32.mul(ceildiv_u32(num, amt), amt)
 
 def round_down_u32(num: U32, amt: U32) -> U32:
@@ -1167,18 +1194,16 @@ def round_down_u32(num: U32, amt: U32) -> U32:
 # is >= x, with 0 answering 1. The fold needs a fuel because p grows rather
 # than shrinks; 33 steps cover every x a U32 holds. x > 2^31 has no
 # representable answer (Python answers 2^32) and is documented as such.
-def next_power2.step(lt: Bool, x: U32, p: U32, q: Nat) -> U32:
-  match lt:
-    case True{}: next_power2.go(x, U32.add(p, p), q)
-    case False{}: p
-
-def next_power2.go(x: U32, p: U32, k: Nat) -> U32:
+def next_power2.go(k: Nat, lt: Bool, +x: U32, +p: U32) -> U32:
   match k:
     case 0n: p
-    case Succ{q}: next_power2.step(U32.is_lt(p, x), x, p, q)
+    case Succ{q}:
+      match lt:
+        case True{}: next_power2.go(q, U32.is_lt(U32.add(p, p), x), x, U32.add(p, p))
+        case False{}: p
 
-def next_power2(x: U32) -> U32:
-  next_power2.go(x, 1, 33n)
+def next_power2(+x: U32) -> U32:
+  next_power2.go(33n, U32.is_lt(1, x), x, 1)
 
 # ===========================================================================
 # 64-bit words
@@ -1198,7 +1223,7 @@ def match_hi(neg: Bool) -> U32:
     case True{}: 4294967295
     case False{}: 0
 
-def i64_of_i32(x: U32) -> I64:
+def i64_of_i32(+x: U32) -> I64:
   I64{match_hi(i32_is_neg(x)), x}
 
 def i64_of_hi_lo(hi: U32, lo: U32) -> I64:
@@ -1215,23 +1240,23 @@ def hi32(x: I64) -> U32:
 # data64 -- `(data >> 32, data & 0xFFFFFFFF)`. Python's >> is arithmetic, and
 # the high half of a two's complement 64-bit word IS the arithmetic shift, so
 # the pair already comes out in that order. data64_le swaps it.
-def data64_hi(r: I64 & U32) -> U32:
-  (a, b) = r
-  a
+def data64_hi(r: U32 & U32) -> U32:
+  (hi, lo) = r
+  hi
 
-def data64_lo(r: I64 & U32) -> U32:
-  (a, b) = r
-  b
+def data64_lo(r: U32 & U32) -> U32:
+  (hi, lo) = r
+  lo
 
-def data64(x: I64) -> I64 & U32:
+def data64(x: I64) -> U32 & U32:
   match x:
-    case I64{hi, lo}: (x, lo)
+    case I64{hi, lo}: (hi, lo)
 
-def data64_le(x: I64) -> I64 & U32:
+def data64_le(x: I64) -> U32 & U32:
   match x:
-    case I64{hi, lo}: (x, hi)
+    case I64{hi, lo}: (lo, hi)
 
-def to_be32(val: U32) -> U32:
+def to_be32(+val: U32) -> U32:
   U32.or(U32.or(U32.shln(U32.and(val, 255), 24n), U32.shln(U32.and(U32.shrn(val, 8n), 255), 16n)),
     U32.or(U32.shln(U32.and(U32.shrn(val, 16n), 255), 8n), U32.and(U32.shrn(val, 24n), 255)))
 
@@ -1247,7 +1272,7 @@ def to_be64(val: I64) -> I64:
 def bit_mask(w: Nat) -> U32:
   U32.sub(U32.shln(1, w), 1)
 
-def getbits(value: U32, start: Nat, end: Nat) -> U32:
+def getbits(value: U32, +start: Nat, end: Nat) -> U32:
   U32.and(U32.shrn(value, start), bit_mask(Nat.add(Nat.sub(end, start), 1n)))
 
 # i2u -- `value if value >= 0 else (1 << bits) + value`
@@ -1278,36 +1303,77 @@ def kv_val(kv: KV) -> U32:
   match kv:
     case KV{k, v}: v
 
-def kv_find.step(same: Bool, kv: KV, k: String, t: List<&2, KV>) -> Maybe<&1, U32>:
+def kv_find.hit(same: Bool, kv: KV) -> Maybe<&1, U32>:
   match same:
     case True{}: Some{kv_val(kv)}
-    case False{}: kv_find(k, t)
+    case False{}: None{}
 
-def kv_find(k: String, l: List<&2, KV>) -> Maybe<&1, U32>:
+def kv_find.pick(found: Maybe<&1, U32>, same: Bool, kv: KV) -> Maybe<&1, U32>:
+  match found:
+    case Some{v}: Some{v}
+    case None{}: kv_find.hit(same, kv)
+
+# the scan folds rather than returning early: first match wins because `pick`
+# keeps whatever `found` already holds, and a fold is the shape bend's
+# decreasing-self-call rule wants (the list is the first argument).
+def kv_find.go(l: List<&2, KV>, +k: String, found: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match l:
-    case Nil{}: None{}
-    case kv <> t: kv_find.step(String.eq(kv_key(kv), k), kv, k, t)
+    case Nil{}: found
+    case +kv <> t: kv_find.go(t, k, kv_find.pick(found, String.eq(kv_key(kv), k), kv))
 
-def kv_conflict.step(found: Maybe<&1, U32>, kv: KV) -> Bool:
+def kv_find(l: List<&2, KV>, k: String) -> Maybe<&1, U32>:
+  kv_find.go(l, k, None{})
+
+def kv_conflict.pick(found: Maybe<&1, U32>, kv: KV) -> Bool:
   match found:
     case None{}: False{}
     case Some{v}: U32.is_ne(v, kv_val(kv))
 
-def kv_conflict(seen: List<&2, KV>, kv: KV) -> Bool:
-  kv_conflict.step(kv_find(kv_key(kv), seen), kv)
+# a repeat of the SAME value is not a conflict; Python dedups the pair set
+# first, so only a different value under an existing key raises.
+def kv_conflict(seen: List<&2, KV>, +kv: KV) -> Bool:
+  kv_conflict.pick(kv_find(seen, kv_key(kv)), kv)
 
-def merge_dicts.go(bad: Bool, +seen: List<&2, KV>, l: List<&2, KV>) -> Maybe<&1, List<&2, KV>>:
-  match bad:
-    case True{}: Some{seen}
-    case False{}:
-      match l:
-        case Nil{}: None{}
-        case kv <> t: merge_dicts.go(kv_conflict(seen, kv), List.append(&2, KV, seen, [kv]), t)
+# The flag rides in the accumulator, not beside the list: bend matches
+# parameters in signature order and shrinks the list first, so a flag
+# parameter ahead of the list could not be both matched and rewritten.
+type Merged is Data:
+  Merged{bad: Bool, seen: List<&2, KV>}
+
+def merged_seen(m: Merged) -> List<&2, KV>:
+  match m:
+    case Merged{bad, seen}: seen
+
+def merged_bad(m: Merged) -> Bool:
+  match m:
+    case Merged{bad, seen}: bad
+
+def merged_of(bad: Bool, seen: List<&2, KV>) -> Merged:
+  Merged{bad, seen}
+
+def merge_dicts.add(conflict: Bool, kv: KV, +m: Merged) -> Merged:
+  match conflict:
+    case True{}: merged_of(True{}, merged_seen(m))
+    case False{}: merged_of(merged_bad(m), List.append(&2, KV, merged_seen(m), [kv]))
+
+def merge_dicts.go(l: List<&2, KV>, +m: Merged) -> Merged:
+  match l:
+    case Nil{}: m
+    case +kv <> t:
+      merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))
+
+# None is Python's RuntimeError: a key carried two different values
+def merge_dicts.pick(m: Merged) -> Maybe<&1, List<&2, KV>>:
+  match m:
+    case Merged{bad, seen}:
+      match bad:
+        case True{}: None{}
+        case False{}: Some{seen}
 
 def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
   match ds:
     case Nil{}: Some{Nil{}}
-    case d0 <> r: merge_dicts.go(False{}, d0, List.concat(&2, KV, r))
+    case d0 <> r: merge_dicts.pick(merge_dicts.go(List.concat(&2, KV, r), merged_of(False{}, d0)))
 
 # ===========================================================================
 # partition -- `for s in itr: (ret[0] if fxn(s) else ret[1]).append(s)`.
@@ -1332,16 +1398,16 @@ def part_put(p: Parted, keep: Bool, h: U32) -> Parted:
 
 def part_test(sel: U32, x: U32) -> Bool:
   match sel:
-    case 0n: U32.is_gt(x, 0)
-    case Succ{q}: U32.is_lt(x, 0)
-    case 2n: U32.is_zero(x)
-    case 3n: U32.is_even(x)
+    case 0: U32.is_gt(x, 0)
+    case 1: U32.is_lt(x, 0)
+    case 2: U32.is_zero(x)
+    case 3: U32.is_even(x)
     case _: True{}
 
-def part_go(sel: U32, xs: List<&2, U32>, p: Parted) -> List<&2, U32> & List<&2, U32>:
+def part_go(xs: List<&2, U32>, +sel: U32, p: Parted) -> Parted:
   match xs:
-    case Nil{}: part_out(p)
-    case h <> t: part_go(sel, t, part_put(p, part_test(sel, h), h))
+    case Nil{}: p
+    case +h <> t: part_go(t, sel, part_put(p, part_test(sel, h), h))
 
 def part_out(p: Parted) -> List<&2, U32> & List<&2, U32>:
   match p:
@@ -1356,7 +1422,7 @@ def part_no(r: List<&2, U32> & List<&2, U32>) -> List<&2, U32>:
   b
 
 def partition(sel: U32, itr: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
-  part_go(sel, itr, Parted{Nil{}, Nil{}})
+  part_out(part_go(itr, sel, Parted{Nil{}, Nil{}}))
 
 # ===========================================================================
 # unwrap / get_single_element
@@ -1417,29 +1483,32 @@ def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
 # helpers close it.
 # ===========================================================================
 
+def lines.done(f: File, value: String) -> IO(List<&2, String>):
+  IO.bind(Unit, List<&2, String>, File.close(f),
+    u => IO.pure(List<&2, String>, String.lines(value)))
+
+def lines.close(f: File) -> IO(List<&2, String>):
+  IO.bind(Unit, List<&2, String>, File.close(f), u => IO.pure(List<&2, String>, Nil{}))
+
 def lines.split(r: File & Result<&1, &1, U32 & String, String>) -> IO(List<&2, String>):
   match r:
     case (f, Done{value}): lines.done(f, value)
     case (f, Fail{error}): lines.close(f)
 
-def lines.done(f: File, value: String) -> IO(List<&2, String>):
-  IO.bind(File, List<&2, String>, File.close(f), u => IO.pure(&2, String, String.lines(value)))
-
-def lines.close(f: File) -> IO(List<&2, String>):
-  IO.bind(File, List<&2, String>, File.close(f), u => IO.pure(&2, String, Nil{}))
+def lines.read(f: File, max: U32) -> IO(List<&2, String>):
+  IO.bind(File & Result<&1, &1, U32 & String, String>, List<&2, String>,
+    File.read(f, max), r => lines.split(r))
 
 def lines.go(r: Result<&1, &1, U32 & String, File>) -> IO(List<&2, String>):
   match r:
     case Done{value}: lines.read(value, 33554432)
-    case Fail{error}: IO.pure(&2, String, Nil{})
-
-def lines.read(f: File, max: U32) -> IO(List<&2, String>):
-  lines.split(File.read(f, max))
+    case Fail{error}: IO.pure(List<&2, String>, Nil{})
 
 def lines(path: String) -> IO(List<&2, String>):
-  lines.go(File.open(path, "r"))
+  IO.bind(Result<&1, &1, U32 & String, File>, List<&2, String>,
+    File.open(path, "r"), r => lines.go(r))
 
-def printable.go(got: Maybe<&1, String>) -> String:
+def printable.go(got: Maybe<&2, String>) -> String:
   match got:
     case Some{s}: String.trim(s)
     case None{}: "<missing>"
@@ -1447,7 +1516,7 @@ def printable.go(got: Maybe<&1, String>) -> String:
 def printable.pick(line: U32, ls: IO(List<&2, String>)) -> IO(String):
   do IO<String>:
     got : List<&2, String> <- ls
-    return printable.go(List.get(&1, String, got, Nat.sub(U32.to_nat(line), 1n)))
+    return printable.go(List.get(&2, String, got, Nat.sub(U32.to_nat(line), 1n)))
 
 def printable(path: String, line: U32) -> IO(String):
   printable.pick(line, lines(path))

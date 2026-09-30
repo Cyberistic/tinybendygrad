@@ -1,20 +1,15 @@
-# --- tinybendygrad additions -------------------------------------------
-# The pinned Bend 2 compiler. It is a toolchain dependency, not part of the
-# port, so it stays out of history (clone it with tools/get-bend.sh).
-/vendor/
+# Reference checkouts: fetched, pinned by the ledger in .agents/TOOLS.md, never edited.
+references/
 
-# bin/ is tiny launcher scripts for the vendored toolchain.
+# The Bend launcher: a two-line shim over references/bend.
 /bin/bend
 
-# The Bend port's build output: compiled kernels, the JIT cache, and the
-# native binaries `bend x.bend -o x` produces.
-bendgrad/**/*.bin
-bendgrad/**/*.gpu
-bendgrad/**/.build/
-bendgrad/**/kernel_cache/
+# Native output from `bend x.bend -o x`, and the GPU program beside it.
+*.bin
+*.gpu
 
-# Python scratch from the oracle harness. The Python tinygrad/ tree itself is
-# tracked and must stay pristine: it is what the port is measured against.
+# Python scratch from the oracle harness. The tinygrad/ tree itself is tracked
+# and must stay pristine: it is what the port is measured against.
 __pycache__/
 *.py[cod]
 *.egg-info/

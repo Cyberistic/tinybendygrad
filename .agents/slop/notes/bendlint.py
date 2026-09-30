@@ -92,46 +92,45 @@ def lint(path):
   text = strip_comments(open(path).read())
   bad = []
   for name, params, body in defs(text):
-    window = list(params)
-    stack = []  # (indent, kind)
-    tail = "\n".join(l for _, l in body)
+    # pending PARAMETERS, in signature order. bend's match_flatten keeps an
+    # ordered window of these (plus any `x = ...` locals, which take the head);
+    # a match may only scrutinise the head. Case binders do NOT block: a var
+    # column is a substitution, so `case h <> t: match h:` is legal.
+    pend = list(params)
+    lets = []
+    bound = set()
     for idx, (lineno, raw) in enumerate(body):
       stripped = raw.strip()
       if not stripped:
         continue
-      indent = len(raw) - len(raw.lstrip())
-      while stack and stack[-1][0] >= indent:
-        stack.pop()
+      m = re.match(r"case\s+(.+?):\s*$", stripped)
+      if m:
+        pat = re.sub(r"[A-Z][A-Za-z0-9_]*(\{|,|\s|\(|$)", " ", m.group(1))
+        bound |= {t for t in re.split(r"[{}\[\]<>,\s]+", pat)
+                  if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", t)}
+        continue
       m = re.match(r"match\s+(.+?):\s*$", stripped)
       if m:
         sus = m.group(1).split()
         rest = "\n".join(l for _, l in body[idx:])
-        ahead = window[:window.index(sus[0])] if sus[0] in window else window
-        blockers = [w for w in ahead
-                    if re.search(r"(?<![\w.])" + re.escape(w) + r"(?![\w])", rest)]
-        if sus[0] not in window or blockers:
-          bad.append((lineno, name, stripped, " ".join(blockers) or "NOT-IN-WINDOW"))
+        ok = sus[0] in pend or sus[0] in bound
+        if not ok:
+          bad.append((lineno, name, stripped, "NOT-BOUND"))
+        elif sus[0] in pend:
+          # a case binder is substituted in and matchable whatever else is
+          # pending; only a PARAMETER match obeys the pending-parameter order
+          blockers = [w for w in pend[:pend.index(sus[0])]
+                      if re.search(r"(?<![\w.])" + re.escape(w) + r"(?![\w])", rest)]
+          blockers += [w for w in lets if w in rest.split()]
+          if blockers:
+            bad.append((lineno, name, stripped, " ".join(blockers)))
         for s in sus:
-          if s in window:
-            window.remove(s)
-        stack.append((indent, "match"))
-        continue
-      m = re.match(r"case\s+(.+?):\s*$", stripped)
-      if m and stack:
-        # every lowercase-initial identifier in a case pattern is a binder and
-        # joins the window at this point, in the order written
-        body_ = re.sub(r"[A-Z][A-Za-z0-9_]*(\{|,|\s|\(|$)", " ", m.group(1))
-        for tok in reversed(re.split(r"[{}\[\]<>,\s]+", body_)):
-          if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", tok) and tok not in window:
-            window.insert(0, tok)
-        stack.append((indent, "case"))
+          if s in pend:
+            pend.remove(s)
         continue
       m = re.match(r"([A-Za-z_][A-Za-z0-9_]*)\s*=\s", stripped)
-      if m:
-        if m.group(1) not in window:
-          window.insert(0, m.group(1))
-        stack.append((indent, "let"))
-        continue
+      if m and m.group(1) not in lets:
+        lets.append(m.group(1))
   for lineno, name, line, win in bad:
     print(f"{path}:{lineno}: [{name}] `match` blocked by {win}\n    {line}")
   print(f"{len(bad)} violation(s) in {path}")

@@ -112,12 +112,20 @@ law pad_shrink_round_trip:
   for +premise: {prod_of(size) == numel_of(t) : Nat}
   {numel_of(S.SpShrink{S.SpPad{t, off, size}, off, size}) == numel_of(t) : Nat}
 
-# Stack adds a LEADING axis: "Join along a newly created leading axis". The
-# new count is the old one times the number of operands, and an empty Stack has
-# no shape at all.
+# Stack adds a LEADING axis: "Join along a newly created leading axis", and an
+# empty Stack has no shape at all -- so this is stated for a non-empty Stack,
+# whose leading axis is 1 + the number of the rest.
+#
+# The premise names the operand's shape because the checker cannot: without it
+# both sides sit on the opaque `Sp.shape(t)` behind different closures, and no
+# `match` opens a call's result (PORTING.md section 1.2). Nothing is lost: a
+# shapeless operand counts 0, and so does a Stack of shapeless operands.
 law stack_numel_is_the_leading_axis_times_the_operands:
-  for +ts: List<&2, S.Sp>
-  {prod_of(stack_dims(ts)) == stack_numel(ts) : Nat}
+  for +t: S.Sp
+  for +rest: List<&2, S.Sp>
+  for +bs: S.Shape
+  for +premise: {shape_of(t) == Some{bs} : Maybe<&2, S.Shape>}
+  {numel_of(S.SpStack{t <> rest}) == (Nat.mul(Nat.add(List.length(&2, S.Sp, rest), 1n), numel_of(t)) : Nat) : Nat}
 
 # Reduce "remove axes": the count divides by the product of the reduced axes.
 law reduce_numel_divides_by_the_reduced_axes:
@@ -317,27 +325,6 @@ def drop_n(ds: List<&2, S.Sdim>, n: Nat) -> List<&2, S.Sdim>:
 
 def prod_of(ds: List<&2, S.Sdim>) -> Nat:
   S.prod(ds)
-
-def stack_dims.fin(m: Maybe<&2, S.Shape>, n: Nat) -> List<&2, S.Sdim>:
-  match m:
-    case Some{sh}: S.SN{n} <> S.Shape.to_dims(sh)
-    case None{}: Nil{}
-
-def stack_dims.mid(t: S.Sp, n: Nat, rest: List<&2, S.Sp>) -> List<&2, S.Sdim>:
-  stack_dims.fin(shape_of(t), n)
-
-def stack_dims.go(ts: List<&2, S.Sp>, n: Nat) -> List<&2, S.Sdim>:
-  match ts:
-    case Nil{}: Nil{}
-    case t <> rest:
-      stack_dims.mid(t, n, rest)
-
-# a Stack's shape is the operand shape with a leading axis of the count
-def stack_dims(+ts: List<&2, S.Sp>) -> List<&2, S.Sdim>:
-  stack_dims.go(ts, List.length(&2, S.Sp, ts))
-
-def stack_numel(+ts: List<&2, S.Sp>) -> Nat:
-  prod_of(stack_dims(ts))
 
 def reduced_numel(t: S.Sp, n: Nat) -> Nat:
   numel_of(S.SpReduce{t, Nil{}, S.SpInvalid{}, n})
