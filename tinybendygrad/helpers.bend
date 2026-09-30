@@ -1094,10 +1094,26 @@ def floordiv_i32.trunc.put(neg: Bool, q: U32) -> U32:
     case True{}: i32_neg(q)
     case False{}: q
 
+# floordiv -- `x//y if y != 0 else 0`: truncate toward zero, and step DOWN one
+# more only when the division was inexact AND the two signs DIFFER.
+#
+# THE TWO FLAGS ARE NOT INTERCHANGEABLE, which is the whole of this def and the
+# whole of the bug that was here. For a same-sign division the truncation
+# already IS the floor (`-7 // -4 == 1`, `6 // 4 == 1`), so the step belongs to
+# the opposite-sign case alone (`-7 // 4 == -2`). The previous version applied
+# `U32.add(q, 1)` on the inexact arm unconditionally, so EVERY same-sign inexact
+# division was one too big -- and it is `put(neg, ...)` on top of that, so the
+# answer was `q + 1` for a positive dividend and `-(q + 1)` for a negative one.
+# Measured against helpers.py:76 (`floordiv`): `6 // 4` gave 2, `10 // 3` gave 4,
+# `1000 // 7` gave 143, `-7 // -4` gave 2. The negative-dividend rows and the
+# exact rows were right, which is why nothing saw it.
 def floordiv_i32.trunc.exact(exact: Bool, neg: Bool, q: U32) -> U32:
   match exact:
     case True{}: floordiv_i32.trunc.put(neg, q)
-    case False{}: floordiv_i32.trunc.put(neg, U32.add(q, 1))
+    case False{}:
+      match neg:
+        case True{}: floordiv_i32.trunc.put(neg, U32.add(q, 1))
+        case False{}: q
 
 def floordiv_i32.trunc(neg: Bool, exact: Bool, q: U32) -> U32:
   floordiv_i32.trunc.exact(exact, neg, q)
@@ -1112,6 +1128,32 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
   floordiv_i32.pick(U32.is_zero(y), cdiv_sign(x, y),
     floordiv_i32.exact(i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y)),
     i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y))
+
+# ===========================================================================
+# WHICH OF THE TWO PAIRS IS WHICH. `cdiv_i32_go`/`cmod_i32` and
+# `floordiv_i32`/`floormod_i32` are BOTH correct and both exported, and they are
+# NOT duplicates -- they are the two different divisions tinygrad asks for, so
+# picking the wrong one is a wrong answer rather than a slower right one.
+#
+#   helpers.py:73-74  cdiv/cmod     TRUNCATE toward zero. C semantics. `-7 // 4`
+#                     is `-1` here, not `-2`. `cdiv_i32_go`, `cmod_i32`.
+#   helpers.py:76-77  floordiv/mod  FLOOR, which is Python's `//` and `%`.
+#                     `-7 // 4` is `-2`. `floordiv_i32`, `floormod_i32`.
+#
+# So `uop/symbolic.bend`'s `exec_alu` reaching for `cdiv_i32_go` is right, and
+# `ceildiv_i32` and `round_up_i32` below reaching for `floordiv_i32` is right
+# too: `ceildiv` is `-(num // -amt)` and `round_up` is `(num+amt-1)//amt*amt`,
+# and BOTH of those are floors, so neither can be spelled with a truncating
+# division. Measured, because it is the reason `floordiv_i32` is not deletable:
+# `ceildiv(10,4)` is 3, and no `cdiv` reading gives it (`-cdiv(10,-4)` is 2,
+# `-cdiv(-10,-4)` is -2); `round_up(-10,4)` is -8 and `cdiv(-7,4)*4` is -4.
+#
+# `floordiv_i32` was WRONG until the `neg` test was fixed, and the three
+# callers below inherited it -- `ceildiv_i32` answered -3 for `ceildiv(10,4)`
+# and `round_up_i32` answered 16 for `round_up(10,4)`. Any file that ports
+# around them (see `uop/symbolic.bend`'s `i32_fdiv`, which recomputes the floor
+# out of `cdiv`) should now be able to use `floordiv_i32` directly.
+# ===========================================================================
 
 # cdiv -- `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`, using cdiv_sign above.
 def cdiv_i32.put(neg: Bool, q: U32) -> U32:
