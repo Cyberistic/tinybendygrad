@@ -12,23 +12,23 @@ two inputs. `Reshape` may not change the element count. `CmpLt` produces `bool`.
 
 ## What we wrote
 
-`bendgrad/LAWS/spec.bend` — the ops as one datatype, and the five properties as
+`tinybendygrad/LAWS/spec.bend` — the ops as one datatype, and the five properties as
 functions over it. Total, so a missing case is a type error rather than a crash
 at 3am on a GPU.
 
-`bendgrad/LAWS/alu.bend` — the table of ops that are *defined* in terms of
+`tinybendygrad/LAWS/alu.bend` — the table of ops that are *defined* in terms of
 others. `Sub(a,b) = Add(a, Neg(b))`. `Div(a,b) = Mul(a, Recip(b))`. `CmpGt(a,b)
 = CmpLt(b,a)`. `CmpEq(a,b) = CmpNe(CmpNe(a,b), 1)`. `Sqrt(a) = Exp2(0.5 *
 Log2(a))`. Sixteen rows, written as defs, so each row is a definitional equality
 the compiler can discharge.
 
-`bendgrad/LAWS.bend` — the laws themselves. Each names the paragraph of
+`tinybendygrad/LAWS.bend` — the laws themselves. Each names the paragraph of
 `tinyspec.tex` it comes from.
 
 ## What we gain
 
 **The decomposition table stops being a comment someone might typo.** If the port
-ever changes how `CmpEq` is built, `bendgrad/LAWS.bend --check` fails and names
+ever changes how `CmpEq` is built, `tinybendygrad/LAWS.bend --check` fails and names
 the op. It was previously only true because someone read the table carefully
 once.
 
@@ -82,7 +82,7 @@ they pin is the semantics every IR must agree on, which is exactly what
 ## The gate
 
 ```
-$ ./bin/bend bendgrad/PROOF.bend
+$ ./bin/bend tinybendygrad/PROOF.bend
 ALL PROOFS CHECK
 ```
 
@@ -92,9 +92,11 @@ Red while any law is open. It names the law, not a line number.
 
 | file | what |
 | --- | --- |
-| `bendgrad/LAWS/spec.bend` | ops as a datatype; dtype/shape as functions |
-| `bendgrad/LAWS/alu.bend` | the decomposition table, as defs |
-| `bendgrad/LAWS.bend` | the laws |
-| `bendgrad/PROOF.bend` | shape half |
-| `bendgrad/PROOF2.bend` | ALU/dtype half |
+| `tinybendygrad/LAWS/spec.bend` | ops as a datatype; dtype/shape as functions |
+| `tinybendygrad/LAWS/alu.bend` | the decomposition table, as defs |
+| `tinybendygrad/LAWS.bend` | the laws |
+| `tinybendygrad/PROOF.bend` | shape half |
+| `tinybendygrad/PROOF2.bend` | ALU/dtype half |
+| `spec/depth.md` | what the fuel budget bought, and what it costs |
+| `spec/shape-laws.md` | what pinning the element count bought |
 | `.agents/slop/notes/bend2-constraints.md` | the Bend rules that shaped all of it |

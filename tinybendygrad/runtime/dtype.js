@@ -83,10 +83,8 @@ function fp8_decode(x, kind) {
   return bits32(sgn ? -v : v);
 }
 
-function f32_to_f16_bits(x) {
-  // The host's own f32->f16 rounding, asked for as bits. DataView has no f16 in
-  // every runtime, so this is the IEEE binary16 boundary written out: the f32
-  // pattern's own fields, round-half-to-even, saturating to infinity.
+function f16_bits(x) {
+  // IEEE binary16 from an f32 pattern, round-half-to-even, saturating to inf.
   const xb = bits32(x);
   const s = (xb >>> 16) & 0x8000;
   const e = (xb >>> 23) & 0xff;
@@ -96,14 +94,25 @@ function f32_to_f16_bits(x) {
   if (ue >= 0x1f) return s | 0x7c00;
   if (ue <= 0) {
     if (ue < -10) return s;
-    const hm = (m | 0x800000) >>> (14 - ue);
-    return s | (hm >>> 13);
+    return s | ((m | 0x800000) >>> (27 - ue));
   }
   const keep = m >>> 13, rest = m & 0x1fff;
   let hm = keep;
   if (rest > 0x1000 || (rest === 0x1000 && (keep & 1))) hm += 1;
-  if (hm === 0x400) return s | ((ue + 1) << 10);
-  return s | (ue << 10) | hm;
+  return s | (hm === 0x400 ? ((ue + 1) << 10) : ((ue << 10) | hm));
+}
+
+function half_to_f32(h) {
+  // NOT a zero extension: the two formats have different exponent widths and
+  // biases (f32 8/127, half 5/15), so the exponent is rebased by 112 and the
+  // fraction gains 13 leading bits. A half subnormal is m * 2^-24, which is
+  // inside the f32 normal range, so the low exponents all share one encoding.
+  const s = (h & 0x8000) << 16;
+  const e = (h >>> 10) & 0x1f;
+  const m = h & 0x3ff;
+  if (e === 0) return m === 0 ? (s >>> 0) : ((s | (103 << 23) | (m << 14)) >>> 0);
+  if (e === 0x1f) return ((s | 0x7f800000 | (m << 13)) >>> 0);
+  return ((s | ((e + 112) << 23) | (m << 13)) >>> 0);
 }
 
 function dtype_bf16(u) {
@@ -111,7 +120,7 @@ function dtype_bf16(u) {
 }
 
 function dtype_fp16(x) {
-  return of32(f32_to_f16_bits(of32(x)));
+  return of32(half_to_f32(f16_bits(of32(x))));
 }
 
 function dtype_fp8_from(xb, kind) {
