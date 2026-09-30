@@ -1297,3 +1297,55 @@ scrutinees in declaration order, and the decrease check reads the arguments in
 declaration order, so the countdown has to be the SECOND parameter for both to
 line up. `fold.bend`'s `Arena.at.go` and `Kahn.dec.go` already have it in that
 shape; the reason they do is this.
+
+## RUNTIME "MEMORY FAULT" / MACHINE STACK OVERFLOW, IN THIS CODEBASE'S TERMS
+
+Bend 2 runs on HVM2, so a stack overflow is not a CPU stack overflow — it is the
+runtime exhausting its memory NODES, because recursion builds interaction-net
+graph rather than moving an instruction pointer. The symptom is a hang or a
+memory fault, and it looks identical to an infinite loop. Three causes, ordered by
+how often they have actually bitten here.
+
+**1. A FOLD WHOSE FUEL NEVER REACHES ZERO.** This is the common one, and it has
+bitten twice in this repo. Both times the cause was a bound derived from
+something that is NOT what the fold is walking:
+
+- The Kahn fold in \`fold.bend\` seeds its worklist from \`Arena.next(ar) + edges\`
+  — one push per zero-src node PLUS one per edge. The arena is a DAG by
+  construction (\`UOp.make\` only names src indices already appended, so every src
+  index is strictly less than its consumer's), so the arithmetic terminates. If
+  the bound is derived from anything else, the worklist never drains.
+- \`UPat.repeat\` is Python's \`itertools.repeat\`: an UNBOUNDED alternative. It is
+  a VARIANT (\`UpRepeat\`), not an infinite list, precisely so nothing enumerates
+  it — \`required_len\` and \`strict_length\` are what bound the read. A fold that
+  walks \`UpRepeat\` without that bound never terminates.
+
+**2. A BOUND THAT DOES NOT DECREASE.** Measured while porting the pattern
+compiler: a self-call must be DECREASING and read LEFT TO RIGHT, and the same
+fuel may not feed two self-calls in one arm. A self-call that passes the fuel on
+unchanged, or passes it after a value that already consumed it, is an infinite
+net. \`upat.bend\` makes fuel the FIRST parameter of every self-recursive def for
+exactly this reason.
+
+**3. AN AFFINITY VIOLATION THAT EXPONENTIATES NODES.** \`Data\` makes a record
+shareable ACROSS functions but does NOT make the PARAMETER readable twice — the
+parameter still needs \`+\`. Getting that wrong typechecks, and the net it builds
+duplicates subtrees instead of sharing them, so node count grows with depth rather
+than with width. The \`+Arena -> ...\` closure wall is the same fact seen from the
+other side, which is why the port has no closures.
+
+**HOW TO LOCALISE, in the order that has worked:**
+
+- Run the INTERPRETED lane first. If the native lane hangs and the interpreter
+  does not, it is a compilation/backend issue, not your logic. If BOTH hang, it is
+  a non-terminating walk.
+- \`--check-only\` passing tells you nothing here. Both a terminating and a
+  non-terminating fold check.
+- Bisect by making a fold's accumulator a COUNT and printing it, so you can see
+  which node it stalls on. \`fold.bend\`'s \`Table\` is a \`Data\` record precisely so
+  it can be read while a walk is in flight.
+- Compile to a local target and inspect, as a last resort — but in this repo the
+  interpreted-lane split plus a count has been enough every time.
+
+**WHAT DOES NOT HELP:** raising a timeout. Every occurrence here was a genuine
+non-termination, and each one cost 120s of waiting to learn nothing.
