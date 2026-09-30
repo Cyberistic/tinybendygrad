@@ -34,38 +34,43 @@ type Arena is Data:
 def Arena.nodes(ar: Arena) -> List<&2, Node>:
   match ar:
     case Arena{nodes}: nodes
+def Arena.at.of(hit: Maybe<&2, Node>) -> Maybe<&2, Node>:
+  hit
+
 
 def Arena.at(ar: Arena, i: U32) -> Maybe<&2, Node>:
   Arena.at.of(List.get(&2, Node, Arena.nodes(ar), U32.to_nat(i)))
 
-def Arena.at.of(hit: Maybe<&2, Node>) -> Maybe<&2, Node>:
-  hit
 
 # the three reads a compiled rule can make. Each is two defs because a `match`
 # may not scrutinise a call.
-def Arena.op(+ar: Arena, i: U32) -> Maybe<&2, O.Op>:
-  Arena.op.of(Arena.at(ar, i))
+def Arena.op.node(nd: Node) -> Maybe<&2, O.Op>:
+  match nd:
+    case Node{op, dt, arg}: Some{op}
 
 def Arena.op.of(hit: Maybe<&2, Node>) -> Maybe<&2, O.Op>:
   match hit:
     case Some{nd}: Arena.op.node(nd)
     case None{}: None{}
 
-def Arena.op.node(nd: Node) -> Maybe<&2, O.Op>:
+def Arena.op(+ar: Arena, i: U32) -> Maybe<&2, O.Op>:
+  Arena.op.of(Arena.at(ar, i))
+def Arena.dt.node(nd: Node) -> Maybe<&2, S.Dt>:
   match nd:
-    case Node{op, dt, arg}: Some{op}
-
-def Arena.dt(+ar: Arena, i: U32) -> Maybe<&2, S.Dt>:
-  Arena.dt.of(Arena.at(ar, i))
+    case Node{op, dt, arg}: Some{dt}
 
 def Arena.dt.of(hit: Maybe<&2, Node>) -> Maybe<&2, S.Dt>:
   match hit:
     case Some{nd}: Arena.dt.node(nd)
     case None{}: None{}
 
-def Arena.dt.node(nd: Node) -> Maybe<&2, S.Dt>:
-  match nd:
-    case Node{op, dt, arg}: Some{dt}
+
+
+
+def Arena.dt(+ar: Arena, i: U32) -> Maybe<&2, S.Dt>:
+  Arena.dt.of(Arena.at(ar, i))
+
+
 
 # every node here has two srcs, which is also true in ops.py where `src` is a
 # tuple on the node
@@ -73,25 +78,29 @@ def Arena.nsrc(ar: Arena, i: U32) -> U32:
   2
 
 # `uop.src[n]`, a NODE INDEX -- the thing a capture reads
-def Arena.src(ar: Arena, i: U32, n: U32) -> Maybe<&2, U32>:
-  Arena.src.of(srcs_of(i), n)
-
-def Arena.src.of(ss: List<&2, U32>, n: U32) -> Maybe<&2, U32>:
-  Arena.src.of.get(List.get(&2, U32, ss, U32.to_nat(n)))
-
 def Arena.src.of.get(hit: Maybe<&2, U32>) -> Maybe<&2, U32>:
   hit
 
-# the first five nodes have srcs (CONST, BITCAST), so `ler` CONTAINS BITCAST and
-# the fourth rule fires; the last has (CONST, CONST), so `ler` does NOT contain
-# it and the rule is skipped. That is the whole of what the subset test decides.
-def srcs_of(i: U32) -> List<&2, U32>:
-  srcs_of.of(List.get(&2, List<&2, U32>, SRC_PAIRS(), U32.to_nat(i)))
-
+def Arena.src.of(ss: List<&2, U32>, n: U32) -> Maybe<&2, U32>:
+  Arena.src.of.get(List.get(&2, U32, ss, U32.to_nat(n)))
 def srcs_of.of(hit: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
   match hit:
     case Some{ss}: ss
     case None{}: Nil{}
+
+def srcs_of(i: U32) -> List<&2, U32>:
+  srcs_of.of(List.get(&2, List<&2, U32>, SRC_PAIRS(), U32.to_nat(i)))
+
+
+def Arena.src(ar: Arena, i: U32, n: U32) -> Maybe<&2, U32>:
+  Arena.src.of(srcs_of(i), n)
+
+
+
+# the first five nodes have srcs (CONST, BITCAST), so `ler` CONTAINS BITCAST and
+# the fourth rule fires; the last has (CONST, CONST), so `ler` does NOT contain
+# it and the rule is skipped. That is the whole of what the subset test decides.
+
 
 # ===========================================================================
 # THE TABLE -- the thing being demonstrated. `CRules` is `Data`, so `rs` is
@@ -139,67 +148,32 @@ def keep.take(v: Verdict) -> Verdict:
     case VSkip{}: VSkip{}
     case VTrue{}: VTrue{}
     case VFalse{}: VFalse{}
-
-def keep(acc: Verdict, v: Verdict) -> Verdict:
-  keep.go(acc, v)
-
 def keep.go(acc: Verdict, v: Verdict) -> Verdict:
   match acc:
     case VSkip{}: keep.take(v)
     case VTrue{}: VTrue{}
     case VFalse{}: VFalse{}
 
-# `if cond: v else None` -- the shape of most of spec.py's rule bodies
-def when(b: Bool, v: Verdict) -> Verdict:
-  when.of(b, v)
 
+def keep(acc: Verdict, v: Verdict) -> Verdict:
+  keep.go(acc, v)
+
+
+# `if cond: v else None` -- the shape of most of spec.py's rule bodies
 def when.of(b: Bool, v: Verdict) -> Verdict:
   match b:
     case True{}: v
     case False{}: VSkip{}
+
+def when(b: Bool, v: Verdict) -> Verdict:
+  when.of(b, v)
+
 
 # ===========================================================================
 # THE PASS. `pdict.get(uop.op, [])` as a scan: a flat list in insertion order,
 # filtered by op set. `Ops.value` gives a number and `Map` is string-keyed, so a
 # linear scan is both the faithful order and the honest structure.
 # ===========================================================================
-
-def cr_rewrite(+rs: CRules, ar: Arena, i: U32) -> Verdict:
-  cr_scan(rs, ar, i, CRules.rs(rs), VSkip{})
-
-def cr_scan(rs: CRules, ar: Arena, i: U32, todo: List<&2, CRule>, acc: Verdict) -> Verdict:
-  match todo:
-    case Nil{}: acc
-    case r <> t: cr_scan(rs, ar, i, t, keep(acc, cr_try(rs, ar, i, r)))
-
-# one rule: does it claim this op, and does `early_reject` pass?
-def cr_try(rs: CRules, ar: Arena, i: U32, r: CRule) -> Verdict:
-  cr_try.of(op_claimed(CRule.ops(r), ar, i), cr_reject(rs, ar, i, CRule.rej(r)), CRule.tag(r), ar, i)
-
-def cr_try.of(claimed: Bool, passed: Bool, tag: U32, ar: Arena, i: U32) -> Verdict:
-  cr_try.go(Bool.and(claimed, passed), tag, ar, i)
-
-def cr_try.go(ok: Bool, tag: U32, ar: Arena, i: U32) -> Verdict:
-  match ok:
-    case True{}: dispatch(tag, ar, i)
-    case False{}: VSkip{}
-
-# --- the op-set membership tests -------------------------------------------
-
-# `uop.op in self.op`
-def op_claimed(ops: List<&2, O.Op>, ar: Arena, i: U32) -> Bool:
-  op_claimed.of(ops, Arena.op(ar, i))
-
-def op_claimed.of(ops: List<&2, O.Op>, got: Maybe<&2, O.Op>) -> Bool:
-  match got:
-    case Some{o}: op_in(ops, o)
-    case None{}: False{}
-
-def op_in(ops: List<&2, O.Op>, want: O.Op) -> Bool:
-  match ops:
-    case Nil{}: False{}
-    case x <> t: Bool.or(O.eq_op(x, want), op_in(t, want))
-
 def op_eq.of(got: Maybe<&2, O.Op>, want: O.Op) -> Bool:
   match got:
     case Some{o}: O.eq_op(o, want)
@@ -208,14 +182,121 @@ def op_eq.of(got: Maybe<&2, O.Op>, want: O.Op) -> Bool:
 def op_eq(ar: Arena, i: U32, want: O.Op) -> Bool:
   op_eq.of(Arena.op(ar, i), want)
 
-# `uop.op is not None and uop.op in [other]`
-def src_op(ar: Arena, i: U32, n: U32, want: O.Op) -> Bool:
-  src_op.of(Arena.src(ar, i, n), ar, want)
-
+def r_const(ar: Arena, i: U32) -> Verdict:
+  when(op_eq(ar, i, O.OpsCONST{}), VTrue{})
+def r_cast(+ar: Arena, +i: U32) -> Verdict:
+  when(Bool.or(op_eq(ar, i, O.OpsCAST{}), op_eq(ar, i, O.OpsBITCAST{})), VTrue{})
+def r_stack.go(ok: Bool, ar: Arena, i: U32) -> Verdict:
+  when(ok, VTrue{})
 def src_op.of(m: Maybe<&2, U32>, ar: Arena, want: O.Op) -> Bool:
   match m:
     case Some{j}: op_eq(ar, j, want)
     case None{}: False{}
+
+def src_op(+ar: Arena, i: U32, n: U32, want: O.Op) -> Bool:
+  src_op.of(Arena.src(ar, i, n), ar, want)
+
+
+def r_stack(+ar: Arena, +i: U32) -> Verdict:
+  r_stack.go(src_op(ar, i, 0, O.OpsCONST{}), ar, i)
+def r_add(ar: Arena, i: U32) -> Verdict:
+  when(op_eq(ar, i, O.OpsADD{}), VTrue{})
+
+
+
+
+def dispatch.go(tag: U32, ar: Arena, i: U32) -> Verdict:
+  match tag:
+    case 0: r_const(ar, i)
+    case 1: r_stack(ar, i)
+    case 2: r_cast(ar, i)
+    case 3: r_add(ar, i)
+    case _: VSkip{}
+
+def dispatch(tag: U32, ar: Arena, i: U32) -> Verdict:
+  dispatch.go(tag, ar, i)
+
+def cr_try.go(ok: Bool, tag: U32, ar: Arena, i: U32) -> Verdict:
+  match ok:
+    case True{}: dispatch(tag, ar, i)
+    case False{}: VSkip{}
+
+def cr_try.of(claimed: Bool, passed: Bool, tag: U32, ar: Arena, i: U32) -> Verdict:
+  cr_try.go(Bool.and(claimed, passed), tag, ar, i)
+def op_in(ops: List<&2, O.Op>, +want: O.Op) -> Bool:
+  match ops:
+    case Nil{}: False{}
+    case x <> t: Bool.or(O.eq_op(x, want), op_in(t, want))
+
+def op_claimed.of(ops: List<&2, O.Op>, got: Maybe<&2, O.Op>) -> Bool:
+  match got:
+    case Some{o}: op_in(ops, o)
+    case None{}: False{}
+
+def op_claimed(ops: List<&2, O.Op>, ar: Arena, i: U32) -> Bool:
+  op_claimed.of(ops, Arena.op(ar, i))
+def cr_reject.go(+have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
+  match rej:
+    case Nil{}: True{}
+    case o <> t: Bool.and(op_in(have, o), cr_reject.go(have, t))
+def ler.put(x: List<&2, O.Op>) -> List<&2, O.Op>:
+  x
+
+def ler.go(a: List<&2, O.Op>, b: List<&2, O.Op>) -> List<&2, O.Op>:
+  ler.put(List.append(&2, O.Op, a, b))
+def op_list.of(m: Maybe<&2, O.Op>) -> List<&2, O.Op>:
+  match m:
+    case Some{o}: [o]
+    case None{}: Nil{}
+
+def op_list(m: Maybe<&2, O.Op>) -> List<&2, O.Op>:
+  op_list.of(m)
+
+def ops_of.of(m: Maybe<&2, U32>, ar: Arena) -> List<&2, O.Op>:
+  match m:
+    case Some{j}: op_list(Arena.op(ar, j))
+    case None{}: Nil{}
+
+def ops_of(m: Maybe<&2, U32>, ar: Arena) -> List<&2, O.Op>:
+  ops_of.of(m, ar)
+
+
+def ler(+ar: Arena, +i: U32) -> List<&2, O.Op>:
+  ler.go(ops_of(Arena.src(ar, i, 0), ar), ops_of(Arena.src(ar, i, 1), ar))
+
+
+def cr_reject(rs: CRules, ar: Arena, i: U32, rej: List<&2, O.Op>) -> Bool:
+  cr_reject.go(ler(ar, i), rej)
+
+
+
+def cr_try(rs: CRules, +ar: Arena, +i: U32, +r: CRule) -> Verdict:
+  cr_try.of(op_claimed(CRule.ops(r), ar, i), cr_reject(rs, ar, i, CRule.rej(r)), CRule.tag(r), ar, i)
+
+def cr_scan(+rs: CRules, +ar: Arena, +i: U32, todo: List<&2, CRule>, acc: Verdict) -> Verdict:
+  match todo:
+    case Nil{}: acc
+    case r <> t: cr_scan(rs, ar, i, t, keep(acc, cr_try(rs, ar, i, r)))
+
+
+def cr_rewrite(+rs: CRules, ar: Arena, i: U32) -> Verdict:
+  cr_scan(rs, ar, i, CRules.rs(rs), VSkip{})
+
+
+# one rule: does it claim this op, and does `early_reject` pass?
+
+
+
+# --- the op-set membership tests -------------------------------------------
+
+# `uop.op in self.op`
+
+
+
+
+
+# `uop.op is not None and uop.op in [other]`
+
 
 # ===========================================================================
 # `early_reject`, and THE NAME IS A MISLEADER. Python is
@@ -235,39 +316,15 @@ def src_op.of(m: Maybe<&2, U32>, ar: Arena, want: O.Op) -> Bool:
 # this port is slower than the thing it ports.
 # ===========================================================================
 
-def cr_reject(rs: CRules, ar: Arena, i: U32, rej: List<&2, O.Op>) -> Bool:
-  cr_reject.go(ler(ar, i), rej)
 
-def cr_reject.go(have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
-  match rej:
-    case Nil{}: True{}
-    case o <> t: Bool.and(op_in(have, o), cr_reject.go(have, t))
 
 # `ler`: the ops among the node's srcs, as a flat list
-def ler(ar: Arena, i: U32) -> List<&2, O.Op>:
-  ler.go(ops_of(Arena.src(ar, i, 0), ar), ops_of(Arena.src(ar, i, 1), ar))
 
-def ler.go(a: List<&2, O.Op>, b: List<&2, O.Op>) -> List<&2, O.Op>:
-  ler.put(List.append(&2, O.Op, a, b))
 
-def ler.put(x: List<&2, O.Op>) -> List<&2, O.Op>:
-  x
 
-def ops_of(m: Maybe<&2, U32>, ar: Arena) -> List<&2, O.Op>:
-  ops_of.of(m, ar)
 
-def ops_of.of(m: Maybe<&2, U32>, ar: Arena) -> List<&2, O.Op>:
-  match m:
-    case Some{j}: op_list(Arena.op(ar, j))
-    case None{}: Nil{}
 
-def op_list(m: Maybe<&2, O.Op>) -> List<&2, O.Op>:
-  op_list.of(m)
 
-def op_list.of(m: Maybe<&2, O.Op>) -> List<&2, O.Op>:
-  match m:
-    case Some{o}: [o]
-    case None{}: Nil{}
 
 # ===========================================================================
 # THE DISPATCH. `upat.py` emits a closure; Bend has no first-class functions, so
@@ -275,45 +332,26 @@ def op_list.of(m: Maybe<&2, O.Op>) -> List<&2, O.Op>:
 # table is `Data` rather than a list of closures.
 # ===========================================================================
 
-def dispatch(tag: U32, ar: Arena, i: U32) -> Verdict:
-  dispatch.go(tag, ar, i)
 
-def dispatch.go(tag: U32, ar: Arena, i: U32) -> Verdict:
-  match tag:
-    case 0: r_const(ar, i)
-    case 1: r_stack(ar, i)
-    case 2: r_cast(ar, i)
-    case 3: r_add(ar, i)
-    case _: VSkip{}
 
 # --- the rules, in spec.py's order -----------------------------------------
 
 # `UPat(Ops.CONST, src=(), name="x")` -- a leaf, no captures
-def r_const(ar: Arena, i: U32) -> Verdict:
-  when(op_eq(ar, i, O.OpsCONST{}), VTrue{})
 
 # `UPat(Ops.STACK, src=(UPat(),), allow_any_len=True{}, name="s")` -- one capture.
 # In the interpreter that capture went into the store; here it is a direct arena
 # read, and the rule may read `ar` as many times as it wants because it is a def
 # and can take `+ar`.
-def r_stack(ar: Arena, i: U32) -> Verdict:
-  r_stack.go(src_op(ar, i, 0, O.OpsCONST{}), ar, i)
 
-def r_stack.go(ok: Bool, ar: Arena, i: U32) -> Verdict:
-  when(ok, VTrue{})
 
 # `is_any`: a DISJUNCTION, which is what `upat.py:18` compiles it to. The
 # interpreter FLATTENED the alternatives and recursed over the pattern's own src;
 # here it is straight-line code, so that recursion -- the entire wall -- is not
 # there at all.
-def r_cast(ar: Arena, i: U32) -> Verdict:
-  when(Bool.or(op_eq(ar, i, O.OpsCAST{}), op_eq(ar, i, O.OpsBITCAST{})), VTrue{})
 
 # a fourth rule that CLAIMS the op but carries an `early_reject`, so the subset
 # test decides it. It fires when a BITCAST IS among the node's srcs, because the
 # set being a SUBSET of `ler` is what lets the rule through.
-def r_add(ar: Arena, i: U32) -> Verdict:
-  when(op_eq(ar, i, O.OpsADD{}), VTrue{})
 
 # ===========================================================================
 # THE GATE. Both lanes must print these rows. A `9` is a Skip, which is a real
@@ -325,6 +363,9 @@ def r_add(ar: Arena, i: U32) -> Verdict:
 
 # 0 CONST  1 STACK  2 BITCAST  3 ADD(ler has BITCAST)  4 ADD(ler does not)
 # 5 MUL, which no rule claims
+def arena.of(ar: Arena) -> Arena:
+  ar
+
 def arena() -> Arena:
   arena.of(Arena{[
     Node{O.OpsCONST{}, S.void(), O.ANone{}},
@@ -334,28 +375,28 @@ def arena() -> Arena:
     Node{O.OpsADD{}, S.void(), O.ANone{}},
     Node{O.OpsMUL{}, S.void(), O.ANone{}}]})
 
-def arena.of(ar: Arena) -> Arena:
-  ar
 
 # rule 0 claims CONST, rule 1 claims STACK, rule 2 is the is_any disjunction
+def rules.of(rs: CRules) -> CRules:
+  rs
+
 def rules() -> CRules:
   rules.of(CRules{[
     CRule{0, [O.OpsCONST{}], Nil{}},
     CRule{1, [O.OpsSTACK{}], Nil{}},
     CRule{2, [O.OpsCAST{}, O.OpsBITCAST{}], Nil{}},
     CRule{3, [O.OpsADD{}], [O.OpsBITCAST{}]}]})
-
-def rules.of(rs: CRules) -> CRules:
-  rs
-
-def show(v: Verdict) -> U32:
-  show.of(v)
-
 def show.of(v: Verdict) -> U32:
   match v:
     case VTrue{}: 1
     case VFalse{}: 0
     case VSkip{}: 9
+
+
+
+def show(v: Verdict) -> U32:
+  show.of(v)
+
 
 def t_const() -> U32: show(cr_rewrite(rules(), arena(), 0))
 def t_stack() -> U32: show(cr_rewrite(rules(), arena(), 1))
