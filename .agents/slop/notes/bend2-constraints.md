@@ -729,11 +729,26 @@ Python specifies — `dtype(CONST(3)) is weakint`, `shape(ADD) == (4,)`,
 `ended_ranges(BACKEDGE) == src[1:2]` — and then **running the mutation both
 ways**, which is the half that is easy to skip and the half that is the test:
 
-| mutation | rows that moved |
-| --- | --- |
-| `ended_ranges`' BACKEDGE arm `src[1:2]` → `src[0:1]` | `cycle_safe` only |
-| `src_count` back to a `Bool` (one edge, not one per occurrence) | `cycle_safe` only |
+| mutation | rows that moved | measured by |
+| --- | --- | --- |
+| `ended_of.one` (the BACKEDGE arm) `src[1:2]` → `src[0:1]` | `cycle_safe` only | re-run, 2026-09-30 |
+| `Kahn.degree` from an occurrence count to a `Bool` membership | `shape_ok` **and** `device_ok`; `cycle_safe` stays `True` | re-run, 2026-09-30 |
 
-Two mutations, two different bugs, one row each. A mutation that turns a *second*
+The FIRST row is the clean case and the SECOND is the correction. An earlier
+version of this table claimed "one row each", measured on a mutation of
+`Kahn.src_count` rather than of `Kahn.degree`. Re-running it as a mutation of
+`Kahn.degree` — the occurrence count itself, made a membership test — moves TWO
+rows, and notably leaves `cycle_safe` `True`.
+
+Which is the more interesting fact, and worth stating plainly: the two rows are
+NOT independent, and the suite is weaker than five green rows suggest. A
+membership test under-counts the in-edges of any node an operator lists twice, so
+it perturbs the *derived values* (`shape`, `device`) and not the *termination*
+claim. `cycle_safe` is the row that was supposed to be about the worklist, and
+it is the one that does not notice.
+
+The lesson is not "one row each" — it is that a mutation table has to be
+MEASURED, and re-measured when the mutation is re-targeted, or it becomes a
+claim about a mutation nobody ran.
 row `False` means the rows are not independent and the suite is weaker than it
 looks — which is worth knowing before, not after.
