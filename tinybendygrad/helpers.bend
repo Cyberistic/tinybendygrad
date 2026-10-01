@@ -866,7 +866,7 @@ def fg_skip(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
         case _ <> t: fg_skip(p, t)
 
 def flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
-  List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(List.length(&2, U32, padding), padding)))
+  List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(Nat.mod(List.length(&2, U32, padding), 2n), padding)))
 
 # ===========================================================================
 # resolve_pool_pads -- int -> [p] * 2*dims; a sequence of 2*dims -> as is; a
@@ -1122,8 +1122,11 @@ def div0(zero: Bool, v: U32) -> U32:
     case True{}: 0
     case False{}: v
 
+# overflow-free: (num+amt-1)/amt wraps at num+amt-1 > 2^32-1 (measured: 2**32-1
+# with amt 2**20 answered 0 where CPython says 4096); num/amt + (num%amt != 0)
+# is exact on the whole U32 domain.
 def ceildiv_u32(num: U32, +amt: U32) -> U32:
-  div0(U32.is_zero(amt), U32.div(U32.add(U32.add(num, amt), 4294967295), amt))
+  div0(U32.is_zero(amt), U32.add(U32.div(num, amt), Bool.to_u32(U32.is_ne(U32.mod(num, amt), 0))))
 
 def round_up_i32(num: U32, +amt: U32) -> U32:
   U32.mul(floordiv_i32(U32.add(U32.add(num, amt), 4294967295), amt), amt)
