@@ -3495,3 +3495,20 @@ five compile cycles and would cost the next agent the same:
    prints the template verbatim, braces and all, with NO error -- a probe that looks
    like it ran and produced data. Use the tree's idiom: `String.concat([...])` with
    `Bool.show` / `U32.show` / `F32.show`.
+
+### 10. FOUR MORE, ALL MEASURED BY THE `codegen/opt` UNIT (2026-10-02)
+1. **A NEWLINE AFTER `Bool.and(` LEAVES IT UNAPPLIED.** The next line parses as the
+   first argument and the whole nest collapses into one function value:
+   "expected : Bool, observed : @b:Bool -> Bool". Same family as `case 0n:` quietly
+   claiming every successor -- one construct, two unrelated-looking errors.
+2. **`match rs hit:` WITH `hit` AS AN ACCUMULATOR IS WRONG FOR A FILTER.** The arms
+   consume `h` and hand the NEXT call the CURRENT `hit`. Write a `_put(helper)` that
+   takes the element and the accumulator and returns the next accumulator.
+3. **`+` IS REFUSED ON A `U32`, AND A `U32` CANNOT BE READ TWICE IN ONE EXPRESSION.**
+   So `a == 0 or a > 1` and `0 < a <= 2` are both unwritable as written. The exact
+   rewrites are `a != 1` and `a - 1 <= 1` (using `U32`'s wrap), or thread the value
+   through a `Data` record. Both rewrites are gated, not asserted.
+4. **`def X.of(...)` MUST BE DECLARATED IMMEDIATELY BEFORE `def X(...)`, and the whole
+   call chain must be in declaration order.** `X.of` before `X` fails with the
+   misleading "a filled definition" -- which reads like a proof obligation, not an
+   ordering rule.
