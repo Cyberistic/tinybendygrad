@@ -52,7 +52,9 @@
 #         `helpers.bend` has `i64_add`, `i64_sub`, `i64_cmp` and NOT `i64_mul`,
 #         `i64_div` or `i64_mod`, so a weakint result outside the int32 range
 #         cannot be computed here. `exec_alu` answers `None{}` for it, which is
-#         Python's "the fold does not apply" -- the node is left alone.
+#         Python's "the fold does not apply" -- the node is left alone. A NEGATIVE
+#         const is refused by the same lane for a second reason, and it is named
+#         with its measurement at `exec_alu.pick`.
 #      b. `truncate` (dtype.py:297) is a C-effect table for int8/16/64,
 #         uint8/16/64, float16, bfloat16, the four fp8s and float64. Those
 #         widths answer `None{}`.
@@ -828,7 +830,17 @@ def exec_alu_f32(+op: O.Op, +n: U32, +a: F32, +b: F32, c: F32) -> Maybe<&1, O.Co
 def i64_big(+i: H.I64) -> Bool:
   Bool.or(H.i64_is_neg(i), Cmp.is_ge(H.i64_cmp(i, H.i64_of_i32(2147483647))))
 
-def i64_fits_i32(i: H.I64) -> Bool: i64_big(i)
+# THE INVERTED END, AND IT IS THIS ONE. `i64_big` answers "does NOT fit" and
+# `exec_alu.of2` reads `ci_fits` as "fits", which is what ops.py:1432's lane choice
+# means -- so the CONSUMER is right and the PREDICATE was lying. MEASURED BEFORE
+# THIS LINE CHANGED: `exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` answered
+# `None{}` where CPython's `exec_alu(Ops.MUL, dtypes.int, [6, 7])` answers `42`,
+# so the INTEGER lane was skipped for every value that fits and
+# `fold_const_alu` folded `6 * 7` to `CONST(0)` through `sy_maybe_c`'s default --
+# a WRONG FOLD, not merely a missing one. Negated HERE and not at the consumer, so
+# `cf_of_i.go` keeps asking its own "is there an F32 spelling" question, and the
+# two lanes still dead in `executor.bend` are named at `exec_alu.pick`.
+def i64_fits_i32(i: H.I64) -> Bool: Bool.not(i64_big(i))
 
 # The U32 BIT PATTERN of a const the INTEGER lane can hold, and whether it can.
 def ci_bits(v: O.Const) -> U32:
@@ -915,6 +927,21 @@ def opr_f(v: O.Const) -> Bool: Opr.fits(opr(v))
 # THE LANE CHOICE, and it is Python's `if ... else` in the order ops.py:1432-1435
 # writes it: the Invalid poison, then the INTEGER lane if every operand fits a
 # U32, then the FLOAT lane if every operand has an F32 spelling, then `None{}`.
+#
+# TWO LANES ARE STILL DEAD, BOTH MEASURED, AND NEITHER MOVES A ROW.
+#   * `opr_f` reads `Opr.fits`, which is the INTEGER test, so the FLOAT
+#     lane needs "every operand fits" where the INTEGER lane has already claimed
+#     exactly those, and `exec_alu2(MUL, single, [CFloat(1.5), CFloat(2.0)])`
+#     answers `None{}` where CPython answers `3.0`. `Opr.f` cannot carry the
+#     guard because `Maybe<&1, F32>` is affine and the value is needed twice.
+#   * `i64_fits_i32` is `not i64_big`, and `i64_big` is TRUE for every negative,
+#     so `exec_alu2(ADD, int32, [CInt(-7), CInt(2)])` answers `None{}` where
+#     CPython answers `-5`, although the lane itself is bit-pattern and `NEG(6)`
+#     already produces a negative `CInt`. The two questions -- "is there an F32
+#     spelling" and "is it an int32" -- agree on the high end and NOT on the low,
+#     so one test cannot answer both. `render.bend`'s `i64_fits_i32` is the
+#     second one. Until both are answered, `executor.bend` must keep calling the
+#     two lanes directly, which is what its header says it is doing.
 def exec_alu.pick(poison: Bool, ints: Bool, mi: Maybe<&1, O.Const>, fs: Bool, mf: Maybe<&1, O.Const>) -> Maybe<&1, O.Const>:
   Bool.pick(Maybe<&1, O.Const>, poison, Some{O.CInvalid{}},
     Bool.pick(Maybe<&1, O.Const>, ints, mi,
@@ -1733,14 +1760,16 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #   alu_rule=1    `fold_const_alu` at a CLOSED ALU tree -- `5 + 6` -- produces a
 #                rewrite. It is a `Maybe<&1, U32>`, which is an INDEX into an
 #                arena the caller cannot see, so this row can only ask WHETHER
-#                and not WHAT; `alu` is the value read back and it is RED.
-#   alu_i32=1    the same addition at int32, where `const_like` cannot emit a bare
-#                CONST and has to emit the CAST-on-top pair `UOp.const`'s own
-#                header defers. So this row is `const_like`'s concrete-dtype
-#                spelling and not the arithmetic.
-#   alu=0        RED and NOT DIAGNOSED. `exec_alu(ADD, weakint, [5,6])` compared
-#                against 11 through `i32_is`, whose positive sibling `cdiv_i=1`
-#                uses the same three defs and passes. See the TODO block.
+#                and not WHAT; `alu` is the value read back.
+#   alu_i32=1    `fx_i32`'s node 4, and `fx_i32` BUILDS its nodes -- it calls no
+#                `sym`, no `fold_const_alu` and so no `exec_alu`. The row
+#                therefore CANNOT move with the lane selector and did not; what
+#                it pins is `const_like`'s concrete-dtype spelling, the
+#                CAST-on-top pair `UOp.const`'s own header defers.
+#   alu=1        `exec_alu(ADD, weakint, [5,6])` is 11, and CPython's
+#                `exec_alu(Ops.ADD, dtypes.weakint, [5, 6])` is 11. It was `0`
+#                and labelled RED-and-undiagnosed; it was the inverted
+#                `i64_fits_i32` (see its own comment) and M12 moves it.
 #   fdiv_i=1     `7 // 2` is 3 on the INTEGER lane -- computed HERE from
 #                `H.cdiv_i32_go`, because `H.floordiv_i32` is wrong for a
 #                non-negative dividend. See the comment at `i32_fdiv`.
@@ -1803,11 +1832,15 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #                diagnosed. The pattern reads `p_index_bad_or_cast` on src[0] and
 #                the reject set `{CONST}` is a subset of the STORE's `ler`, so the
 #                intended reasoning says it fires.
-#   alu=0        `exec_alu(ADD, weakint, [5,6])` read back through `sy_val`. RED
-#                and NOT DIAGNOSED, and the neighbouring `alu_rule=1` says the
-#                RULE fires and the arithmetic is right -- so the defect is in the
-#                read-back, which is the affine-arena wall documented above
-#                `alu_rule`.
+#   alu=1        the row that WAS WRONG IN ITS DIAGNOSIS. It read 0, and this
+#                block blamed the affine arena and the read-back -- both of which
+#                were fine: `i32_is` compares `exec_alu`'s own answer, and
+#                `exec_alu(ADD, weakint, [5,6])` returned `None{}` because
+#                `i64_fits_i32` was `i64_big`, i.e. "does NOT fit". So the lane
+#                selector skipped every constant that fits, `fold_const_alu`
+#                folded `5 + 6` to `CONST(0)` through `sy_maybe_c`'s default, and
+#                a RED row was filed as a WALL. M12 moves it and CPython's
+#                `exec_alu(Ops.ADD, dtypes.weakint, [5, 6])` is 11.
 #   cdiv_neg=0   `cdiv(-7,2)` is -3. RED and NOT DIAGNOSED; `cdiv_i=1` is the
 #                positive half and passes.
 def eq_u(m: Maybe<&1, U32>, want: U32) -> Bool:
@@ -2100,7 +2133,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   5. `UOp.simplify` / `substitute` / `graph_rewrite` unblocks
 #      `fold_where_closure` and `uop_given_valid`, and is P3 for `fold.bend` too.
 #
-# THE MUTATION TABLE, MEASURED. All eleven were applied, run, and reverted, with a
+# THE MUTATION TABLE, MEASURED. All twelve were applied, run, and reverted, with a
 # before/after diff of every row.
 # | mutation | rows that moved | how many |
 # | --- | --- | --- |
@@ -2115,8 +2148,9 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # | M9 `sym_table` tag 3's reject set -> `Nil{}` | `rej` | 1 |
 # | M10 `sym_dispatch.go` tag 0 -> tag 1 (a MIS-SPELLED tag) | `bcast` | 1 |
 # | M11 `sym_8.inner` drops the `(x^y)^y` REBIND identity check | `xorb0` | 1 |
+# | M12 `i64_fits_i32`'s `Bool.not(i64_big(i))` -> `i64_big(i)` | `alu` | 1 |
 #
-# WHAT THE TABLE SAYS, in four lines.
+# WHAT THE TABLE SAYS, in five lines.
 #   * M2 AND M5 MOVED NOTHING, and both are honest negatives. No rule in this
 #     table returns its matched node, so `sy_novel` has no witness yet; and
 #     `rm_table`'s two reject sets are violated by no fixture, so M5 is
@@ -2128,6 +2162,11 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #     because `sym_6.pat`'s `UPat.const(0)` and `sym_8`'s shape share `const_i64`.
 #   * M9 AND M10 ARE THE TWO ROWS THAT EXIST ONLY FOR A MIS-SPELLING: a COUNT is
 #     the only witness for a reject set, and only tag 0's fixture witnesses a tag.
+#   * M12 IS THE ONLY MUTATION THAT WAS A LIVE BUG rather than a probe: it took
+#     `alu` from 1 to 0 and it took the DEVICE with it -- `exec_alu2(MUL, int32,
+#     [CInt(6), CInt(7)])` answers `CInt(42)` with the fix and `None{}` without it.
+#     One row is the whole sensitivity, so `alu` is the only witness the lane
+#     selector has; the two divergences listed at `exec_alu.pick` move NO row.
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
