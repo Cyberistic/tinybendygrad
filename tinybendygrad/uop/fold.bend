@@ -660,10 +660,21 @@ def Srcs.n(x: Srcs) -> Nat:
 def Srcs.tail(x: Srcs) -> List<&2, Derived>:
   List.drop(&2, Derived, Srcs.ss(x), 1n)
 
-def srcs.go(ss: List<&2, Derived>, n: Nat, rev: List<&2, Derived>) -> Srcs:
+# `self.src`, IN ARENA ORDER -- `Arena.src(ar, i, k)` at position k -- because that
+# is the order every positional reader in this file (`src_dt(0, ss)`,
+# `src_shape(0, ss)`, `Srcs.tail`'s `src[1:]`) reads, and it is the order Python
+# reads. `List.append` is `xs ++ ys`, so the accumulator is ALREADY in input order
+# and the walk ends with no `List.reverse`: the reverse that used to be here turned
+# a list already in arena order into its own mirror, which every whole-list walk
+# (`dts_of.go`, `mstack_dev.go`, `ended_of.flat`, `first_dev`) survived by accident
+# and every positional read did not. MEASURED, and the measurement is
+# `.agents/slop/notes/probe-srcorder.bend`: over `g_resh22`'s RESHAPE
+# (`Kahn.gather` is order-correct), `src_dt(0, ...)` reads the int32 BUFFER at pri 5
+# before this change and the STACK at pri 0 after it -- src[0] the whole way.
+def srcs.go(ss: List<&2, Derived>, n: Nat, acc: List<&2, Derived>) -> Srcs:
   match ss:
-    case Nil{}: Srcs{List.reverse(&2, Derived, rev), n}
-    case d <> t: srcs.go(t, 1n+n, List.append(&2, Derived, rev, [d]))
+    case Nil{}: Srcs{acc, n}
+    case d <> t: srcs.go(t, 1n+n, List.append(&2, Derived, acc, [d]))
 
 def srcs(ss: List<&2, Derived>) -> Srcs:
   srcs.go(ss, 0n, Nil{})
@@ -1176,20 +1187,14 @@ def reshape_ok(a: Maybe<&1, U32>, b: Maybe<&1, U32>) -> Bool:
 
 # `self.src[0]._shape` -- the `ps` of `resolve(prod(ps) != prod(self.marg), False)`.
 #
-# KNOWN WRONG, AND THE GATE SAYS SO. `ss` here is `Srcs.ss(srcs(ss))` from
-# `derived`, and `srcs.go` finishes with a `List.reverse` over a list
-# `List.append` already built in input order, so the list arrives BACKWARDS and
-# `ss[0]` is `self.src[1]`. MEASURED, and the measurement is in the gate: read
-# straight out of the fold (`Kahn.gather` on a finished table) every input of
-# `reshape_ds` is right -- `marg` is `(2, 2)`, `prod(ps)` is 4, `prod(marg)` is 4,
-# `reshape_ok` is True -- and `reshape_ds` still returns None for a node whose
-# srcs are resolved. The positional read of a src is the one thing that differs
-# between the two, and BOTH the first element and the last element of the
-# reversed list fail the gate, so the order `Kahn.gather` hands `srcs` is not the
-# arena's src order either. `ops.py:406` reads `self.src[0]` POSITIONALLY, so
-# this needs the arena's own `Arena.src0` index rather than a position in a list
-# some fold rebuilt. Until then the five `resh_*` rows print False, which is the
-# honest state: the arm is written, and the ps read is the one line that is not.
+# `ss` here is `Srcs.ss(srcs(ss))` from `derived`, and it is in ARENA ORDER: `srcs.go`
+# used to finish its accumulator with a `List.reverse` over a list `List.append`
+# (which is `xs ++ ys`, order preserving) had already built in input order, so the
+# list arrived BACKWARDS and `ss[0]` was `self.src[1]`. `srcs.go` no longer reverses,
+# so this positional read is `src[0]` as `ops.py:406` spells it. The whole-list walks
+# were indifferent to the mirror -- `dts_of.go`, `mstack_dev.go`, `ended_of.flat`,
+# `first_dev` -- which is exactly why the gate rows over them stayed green and the
+# positional ones did not: their fixtures are order-insensitive.
 def reshape_ps(+ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
   src_shape(0, ss)
 
@@ -2487,3 +2492,34 @@ def main() -> IO(Unit):
 # The fold's own history, the five bugs it took to get right and the mutation table
 # that measures them, is in .agents/slop/notes/bend2-constraints.md under
 # "Writing a Kahn worklist".
+#
+# ===========================================================================
+# THE MUTATION TABLE for the src ORDER fix, MEASURED, run both ways.
+#
+# | mutation | rows that MOVED | what it is testing |
+# | --- | --- | --- |
+# | M1 `srcs.go`: `Srcs{acc, n}` -> `Srcs{List.reverse(&2, Derived, acc), n}` (the pre-fix state) | `resh_2d` `resh_1d` `resh_noop` `resh_settle` | `self.src` reaches `dt_shape` in ARENA order, so `ss[0]` is `src[0]`. All four print False under M1 and True without it, and `--check-only` STILL PASSES under M1 -- the defect is total, not partial. |
+#
+# THE REVERT DOWNSTREAM, same edit over the importing gates, and this is the part
+# that was not known when the fix landed: `tensor.bend`'s `tn_rop_gap` and
+# `movement.bend`'s `reshape_noop` were BUILT to encode this hole as a designed
+# disagreement, and both now AGREE with CPython (see the WALL 5 note in `tensor.bend`
+# and the "two DIVERGES" note in `.agents/slop/notes/mop-truth3.py`). They read
+# `False`/`0` under M1 and `True`/`6` without it. Both files are owned elsewhere and
+# NEITHER has been edited: the rows are REPORTED, and the retirement of
+# `tn_rop_gap` (which should be DELETED rather than re-asserted, as its own header
+# says) and of `movement.bend`'s `reshape_noop` divergence note is their owners' call.
+#
+# WHAT M1 DOES NOT CATCH, and the row that would: `sized.go` (line 227) has the
+# IDENTICAL anti-pattern -- an accumulator built by `List.append` and then finished
+# with a `List.reverse` -- and it is a real defect, MEASURED by
+# `.agents/slop/notes/probe-sized2.bend`: `sized([2,3])` answers `head=3 last=2`, and
+# `pad_to([2,3],3)` answers `2 1` where Python's `(1,)*(max_dim-len(s))+s` is
+# `(1,2,3)`. M1-of-`sized` moves NOTHING in this file, in `tensor.bend` or in
+# `movement.bend` -- every consumer of it (`is_image_shape`'s `List.last`,
+# `reduce_dims`' `drop_n`, `bitcast_dims`' last) is reached only by order-insensitive
+# fixtures, which is the same latent hazard this fix just removed one layer of. It is
+# left ALONE and REPORTED rather than fixed blind: a fix that moves no row is a claim
+# with no measurement behind it, and `sized` is a SHAPE list where the reversal might
+# be compensating for a second one. FIXING IT NEEDS A GATE ROW FIRST.
+# ===========================================================================
