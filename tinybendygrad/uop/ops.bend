@@ -211,8 +211,14 @@ type Op is Data:
   # PYLITERAL carries a Python literal as an arg for CUSTOM predicates
   OpsPYLITERAL{}
 
-# FastEnum.__str__ and FastEnum.__repr__ are both `str(self)`, so one table.
-def Ops.name(op: Op) -> String:
+# FastEnum.__str__ and FastEnum.__repr__ are both `str(self)`, so one table --
+# but `str(self)` is `Enum.__str__`, which is `"ClassName.MEMBER"`, and
+# `Enum.name` is the BARE member name. CPython therefore has TWO strings per
+# member and this file used to have one, which is the bug: `Ops.name` returned
+# the bare one where its oracle is the prefixed one. So the bare table is
+# `Ops.name.of` (this is `AxisType.name` too, which was always bare) and
+# `Ops.name` is that plus the class name.
+def Ops.name.of(op: Op) -> String:
   match op:
     case OpsSPECIAL{}: "SPECIAL"
     case OpsBUFFER{}: "BUFFER"
@@ -291,6 +297,9 @@ def Ops.name(op: Op) -> String:
     case OpsREDUCE{}: "REDUCE"
     case OpsALLREDUCE{}: "ALLREDUCE"
     case OpsPYLITERAL{}: "PYLITERAL"
+
+def Ops.name(op: Op) -> String:
+  String.concat(["Ops.", Ops.name.of(op)])
 
 # `self.op.value` -- the IntEnum number, which `UOp.tuplize` puts in the sort
 # key. `_generate_next_value_` makes it 1 + the max over every FastEnum, and
@@ -984,7 +993,7 @@ def Arena.src_from.go(xs: List<&2, U32>, k: Nat) -> List<&2, U32>:
     case Nil{} 0n: Nil{}
     case Nil{} 1n+p: Nil{}
     case h <> t 0n: t
-    case h <> t 1n+p: h <> Arena.src_from.go(t, p)
+    case h <> t 1n+p: Arena.src_from.go(t, p)
 
 def Arena.src_from(ar: Arena, i: U32, k: U32) -> List<&2, U32>:
   Arena.src_from.go(Node.src(Arena.node(ar, i)), U32.to_nat(k))
@@ -1339,6 +1348,18 @@ def eq_cls.sel(x: S.Cls, y: S.Cls) -> Bool:
 def eq_cls(x: S.Cls, y: S.Cls) -> Bool:
   eq_cls.sel(x, y)
 
+# `S.Addr` has FOUR constructors (spec.bend:78-82) and this ladder had THREE, so
+# `Aalu` fell into `case _:` and was answered as `AReg`: `eq_addr(Aalu, Aalu)`
+# False and `eq_addr(Aalu, AReg)` True. dtype.py:51-54's `AddrSpace` is a plain
+# `IntEnum` -- four singletons, no `__eq__` override -- so both answers are
+# backwards, and since `intern.find` compares with `eq_node`, two PARAMs that
+# differ only in `addrspace` hash-consed to one node.
+#
+# THE POSITION IS LOAD-BEARING, and `case _` is why; see the measurement above
+# `eq_cls.sel`. Appending the `AReg` arm to the old ladder would have been dead
+# code. `AReg` therefore goes BEFORE the catch-all and the catch-all answers
+# `Aalu` -- the LAST constructor in the declaration, the same shape `eq_cls.sel`
+# and `eq_const.sel` above use.
 def eq_addr(x: S.Addr, y: S.Addr) -> Bool:
   match x:
     case S.AGlobal{}:
@@ -1349,9 +1370,13 @@ def eq_addr(x: S.Addr, y: S.Addr) -> Bool:
       match y:
         case S.ALocal{}: True{}
         case _: False{}
-    case _:
+    case S.AReg{}:
       match y:
         case S.AReg{}: True{}
+        case _: False{}
+    case _:
+      match y:
+        case S.Aalu{}: True{}
         case _: False{}
 
 def eq_dt(x: S.Dt, y: S.Dt) -> Bool:
@@ -2189,16 +2214,20 @@ def Topo.cache_add(n: U32, t: Topo) -> Topo:
 def Arena.push_srcs.go(srcs: List<&2, U32>, st: List<&2, Frame>) -> List<&2, Frame>:
   match srcs:
     case Nil{}: st
-    case s <> t: Arena.push_srcs.go(t, List.append(&2, Frame, st, [Frame{s, False{}}]))
+    case s <> t: Arena.push_srcs.go(t, Frame{s, False{}} <> st)
 
-# one turn of the while loop
+# one turn of the while loop. The srcs go on REVERSED, consed, so the pop-head
+# below visits src[0] first -- CPython's `for s in reversed(node.src):
+# stack.append((s, False))` then `stack.pop()` is LIFO, and a tail-append here
+# would make this a queue (consumers before srcs). Verified by render.bend's
+# `tsort` row against CPython's toposort.
 
 def Arena.push_srcs(ar: Arena, n: U32, st: List<&2, Frame>) -> List<&2, Frame>:
-  Arena.push_srcs.go(Arena.src_without_body(ar, n), st)
+  Arena.push_srcs.go(List.reverse(&2, U32, Arena.src_without_body(ar, n)), st)
 
 def Topo.push(ar: Arena, +n: U32, t: Topo) -> Topo:
   match t:
-    case Topo{cache, stack}: Topo{cache, Arena.push_srcs(ar, n, List.append(&2, Frame, stack, [Frame{n, True{}}]))}
+    case Topo{cache, stack}: Topo{cache, Arena.push_srcs(ar, n, Frame{n, True{}} <> stack)}
 
 # `for s in reversed(node.src): stack.append((s, False))`
 
@@ -3656,6 +3685,46 @@ def g_cast_twice(+dt: S.Dt) -> U32:
 def t_weakfloat_interns() -> Bool:
   Bool.and(U32.is_eq(g_cast_twice(S.weakfloat()), 3), U32.is_eq(g_cast_twice(S.half()), 3))
 
+# --- eq_addr, and the hash-consing that DEPENDS on it -------------------------
+# The whole 4x4, in declaration order, against an oracle that is an IDENTITY:
+# dtype.py:51-54's `AddrSpace` is an `IntEnum` with four members and no
+# `__eq__` override, so `(a == b) == (a is b)` and the matrix `tinygrad` answers
+# is `[[T,F,F,F],[F,T,F,F],[F,F,T,F],[F,F,F,T]]`. Each row below is one `x` of
+# `eq_addr`, read left to right against AGlobal, ALocal, AReg, Aalu.
+def t_eq_addr() -> Bool:
+  Bool.and(Bool.and(Bool.and(Bool.and(eq_addr(S.AGlobal{}, S.AGlobal{}), Bool.not(eq_addr(S.AGlobal{}, S.ALocal{}))), Bool.and(Bool.not(eq_addr(S.AGlobal{}, S.AReg{})), Bool.not(eq_addr(S.AGlobal{}, S.Aalu{})))), Bool.and(Bool.and(Bool.not(eq_addr(S.ALocal{}, S.AGlobal{})), eq_addr(S.ALocal{}, S.ALocal{})), Bool.and(Bool.not(eq_addr(S.ALocal{}, S.AReg{})), Bool.not(eq_addr(S.ALocal{}, S.Aalu{}))))),
+    Bool.and(Bool.and(Bool.and(Bool.not(eq_addr(S.AReg{}, S.AGlobal{})), Bool.not(eq_addr(S.AReg{}, S.ALocal{}))), Bool.and(eq_addr(S.AReg{}, S.AReg{}), Bool.not(eq_addr(S.AReg{}, S.Aalu{})))), Bool.and(Bool.and(Bool.not(eq_addr(S.Aalu{}, S.AGlobal{})), Bool.not(eq_addr(S.Aalu{}, S.ALocal{}))), Bool.and(Bool.not(eq_addr(S.Aalu{}, S.AReg{})), eq_addr(S.Aalu{}, S.Aalu{})))))
+
+# THE DAMAGE, not just the predicate -- the shape of `weakfloat_interns` above,
+# because `eq_addr` is reached from `intern.find` the same way `eq_dt` is.
+# `ParamArg.addrspace` is the seventh field and is a BARE `S.Addr` (ops.py:23-36
+# defaults it to `AddrSpace.GLOBAL`), so a PARAM is the smallest node whose arg
+# carries one. Two PARAMs differing ONLY in addrspace are one node when `eq_addr`
+# conflates Aalu with AReg and two when it does not.
+def g_param_addr(slot: U32, as: S.Addr) -> ParamArg:
+  ParamArg{slot, S.uint32(), None{}, None{}, None{}, None{}, as, None{}, False{}, None{}, None{}, False{}, None{}}
+
+def g_param_twice(+p1: ParamArg, +p2: ParamArg) -> U32:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +ar = Found.ar(c)
+  +a = UOp.new(ar, OpsPARAM{}, [Found.i(c)], AParam{p1}, TNone{})
+  +b = UOp.new(Found.ar(a), OpsPARAM{}, [Found.i(c)], AParam{p2}, TNone{})
+  Arena.next(Found.ar(b))
+
+def t_addr_interns() -> Bool:
+  Bool.and(U32.is_eq(g_param_twice(g_param_addr(0, S.Aalu{}), g_param_addr(0, S.Aalu{})), 3),
+    U32.is_eq(g_param_twice(g_param_addr(0, S.Aalu{}), g_param_addr(0, S.AReg{})), 4))
+
+# --- Ops.name, which is `FastEnum.__str__` ----------------------------------
+# `Ops.name` has NO reader inside this file, so nothing above could see it: the
+# first bug this port found in it was found in `render.bend`, from a
+# `REDUCE.arg`. Both halves of the answer are pinned, because CPython has TWO
+# string forms of an enum member and this file used to have one.
+def t_ops_name() -> Bool:
+  Bool.and(Bool.and(String.eq(Ops.name(OpsSPECIAL{}), "Ops.SPECIAL"), String.eq(Ops.name(OpsADD{}), "Ops.ADD")),
+    Bool.and(Bool.and(String.eq(Ops.name(OpsREDUCE{}), "Ops.REDUCE"), String.eq(Ops.name(OpsPYLITERAL{}), "Ops.PYLITERAL")),
+      Bool.and(String.eq(Ops.name.of(OpsADD{}), "ADD"), String.eq(Ops.name.of(OpsCUSTOM_FUNCTION{}), "CUSTOM_FUNCTION"))))
+
 # --- the UPat arena ---------------------------------------------------------
 # Four claims, each a decision rather than a transliteration, so each is checked.
 # `pat_base` is the fixture: a pattern arena holding ONE named var at index 0, so
@@ -3805,10 +3874,13 @@ def main() -> IO(Unit):
     g : Unit <- row("eq_dt", t_eq_dt())
     h : Unit <- row("eq_dt_disjoint", t_eq_dt_disjoint())
     i : Unit <- row("weakfloat_interns", t_weakfloat_interns())
-    j : Unit <- row("var_interns", t_var_interns())
-    k : Unit <- row("broadcast_repeats", t_broadcast_repeats())
-    l : Unit <- row("required_len", t_required_len())
-    m : Unit <- row("alu_permutes", t_alu_permutes())
+    j : Unit <- row("eq_addr", t_eq_addr())
+    k : Unit <- row("addr_interns", t_addr_interns())
+    l : Unit <- row("ops_name", t_ops_name())
+    m : Unit <- row("var_interns", t_var_interns())
+    n : Unit <- row("broadcast_repeats", t_broadcast_repeats())
+    o : Unit <- row("required_len", t_required_len())
+    p : Unit <- row("alu_permutes", t_alu_permutes())
     row("early_reject", t_early_reject())
     row("ler_len", t_ler_len())
 
