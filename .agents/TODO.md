@@ -838,3 +838,47 @@ wall, so it cannot pass quietly over a missing lane.
       kernel), and a nested pattern must be exhaustive at every level it names.
 - [ ] **`wasm/core.wasm`** — blocked on the corpus reservation above. The glue,
       the C shim and the WASI host are written and typed; the module is missing.
+
+## OPEN — `H.dedup_u32` reverses, and `nn/optim`'s filter reverses, and they may be CANCELLING
+
+- [ ] **SUSPECTED DOUBLE CANCELLATION. NOT CONFIRMED, NOT FIXED, NOTHING COMMITTED.**
+      Found while converting accumulator folds to `List.foldl`; reverting rather than
+      committing a change that flips two committed rows.
+
+**The claim, and it is CPython-measured.** `helpers.py:23` is
+`list(dict.fromkeys(x))` and the comment says "retains list order". CPython agrees:
+`dedup([1,7,1])` is `[1, 7]` and `dedup([3,1,3,2,1])` is `[3, 1, 2]`. The port's
+`dedup_u32.put` is `case False{}: h <> r` — a PREPEND — while `dedup_u32(xs)`
+recurses on the tail, so the head is processed LAST. On its own that reverses.
+(`function.bend` reported this independently and carries a local append-based dedup
+with the reason written down; its `call_uops` order IS the slot numbering.)
+
+**The measurement that made it suspicious rather than merely wrong.** With
+`dedup_u32` changed to `List.append` (order-retaining, CPython-correct):
+  - `nn/optim`'s `op_params` and `op_nop` both went **True -> False**.
+So the pre-existing green was produced by a reversing dedup downstream of a
+reversing filter, i.e. two errors that cancel. `nn/optim`'s `op_filter.tgo` recurses
+on the tail and APPENDS, which reverses too.
+
+**Where it stops, honestly.** Fixing BOTH (foldl left-to-right + appending dedup)
+still reads `op_params=False`, and a debug print shows `params=2,1,` where the row
+wants `"1,2,"`. That CONTRADICTS the standalone probe that proved `List.foldl` is
+left-to-right (`[1,2,3]` -> `"1,2,3,"`), so one of these is true and I could not
+determine which within this session:
+  (a) `g_all`'s fixture list is not in the order its own `g_all.pick` reads as
+      (three `List.append` calls that may not compose the way they look), or
+  (b) the `~A`/`~B` slots on a `Data` element type do not mean what they mean on a
+      scalar, and the fold is visiting right-to-left for `T.Tensor` elements.
+`nn/optim` is a COMMITTED file with 11 green rows, so this is not something to
+resolve by inspection at midnight.
+
+**The next person should do exactly this, in this order** (~15 minutes):
+  1. print the RAW fixture list before filtering — `us()` of `g_all(...)`'s uops —
+     and settle (a) vs (b) with one number;
+  2. if the fixture is in order, the fold direction is the bug and it is worth
+     understanding, because ~97 hand-rolled folds in the tree would be affected;
+  3. if the FIXTURE is reversed, fix the fixture and both rows go green with the
+     CPython-correct dedup, and `function.bend`'s local dedup can be deleted;
+  4. only then delete the workaround in `function.bend:868`.
+Reverted state verified: `nn/optim.bend` output is byte-identical to the committed
+baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via jj.
