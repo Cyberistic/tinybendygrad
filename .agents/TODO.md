@@ -219,7 +219,7 @@ day rediscovering that `2n+p` is not an even-case test.
 | P5 | `codegen/` `renderer/` | 30 | [##.......] 5/30 |
 | P6 | `runtime/` | 36 | [..........] 2/36 |
 | P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
-| P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [..........] 0/15 |
+| P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [##.......] 1/15 |
 
 ### P4 — `schedule/`
 
@@ -324,6 +324,74 @@ excluded by tinygrad's own hardware markers, not by us.
 - [ ] Translate the test suite into Bend. **Not started, and must not start
       until the original pytest suite passes.** This is the task brief's rule and
       the plan's phase P10.
+
+## DEFERRED — the LOC-reduction plan (2026-10-02, owner: revisit AFTER the port works)
+
+**The owner's instruction: get the full port working first, then optimise LOCs.**
+This section is the plan, written down so it is not re-derived later. Nothing here
+is started. The measurements are from tonight and are reproducible with the two
+commands in the preamble.
+
+Measured shape: **36 matched files, 19,931 py code lines vs 45,434 bend code lines
+= 2.28x**, but bimodal. Files that are logic port at **1.2-1.8x** (`uop/ops.py`
+1.2, `tensor.py` 1.3, `device.py` 1.4, `helpers.py` 1.6, `renderer/cstyle.py` 1.8).
+Files that are pattern DSL or lambda-built tables port at **8-32x**
+(`uop/movement.py` 32x on 17 py lines, `schedule/memory.py` 16x, `uop/weak.py`
+11x, `uop/spec.py` 9.2x, `uop/upat.py` 8.5x) because Python derives them at
+runtime. And one file reads 0.3x (`mixin/op.py`) only because it is UNFINISHED,
+not efficient — do not cite it as a win.
+
+Four measured causes, with the tool that fixes each:
+
+| # | cause | measured size | fix | risk |
+|---|---|---|---|---|
+| 1 | one hand-written reader per record field (rule 27: no auto-projections) | **3,499 defs** | a generator reads the `type X is Data:` decls and emits the readers into a committed `.bend` — the same `sz.py` -> `sz.bend` pattern already in the repo | low; a generated reader disagreeing with a hand-written one is a CAUGHT bug, not silent drift |
+| 2 | duplicated dispatch scan (Python has one `graph_rewrite` loop) | 81 table-scan defs, ~15 lines each ≈ **1,200** | hoist one generic dispatcher keyed on stage id; the pattern is ALREADY proven by `postrange.bend`'s `opt_ok.at` and by the kernel agent's `List<&2, O.PMEntry>` note | med; touches rule dispatch everywhere |
+| 3 | two-arm `Maybe` reads (`read` then `.of`) where Python writes `x.base or x` | **1,316** `.of` sites | one `map_or`/`or_else` pair; NOTE the house style currently FORBIDS this ("skip Maybe combinators") and that instruction is what makes it expensive | low, but it reverses a standing rule |
+| 4 | comment density — 28,703 comment lines, and `mixin/movement.bend` is **62% comments** | up to ~10,000 | move the per-unit measured-rule prose into the `spec/*.md` walkthrough the project already wants, and leave a pointer in each header | low; knowledge preserved, duplication removed |
+
+Two things NOT on the list, with reasons:
+
+- **The 216,933 lines of `runtime/autogen/*` + `support/*` + `renderer/{amd,isa}`**
+  are not a LOC problem, they are a SCOPE problem. 43,464 of those lines are hex
+  register tables (pure data, mechanically translatable by a SCRIPT — the same
+  argument as lever 1, applied to 12x more lines), 8,258 class defs are ctypes FFI
+  that in Bend can only be `@extern` seams exactly like `dtype.bend`'s fourteen.
+  Zero lines are reachable from WebGPU or the Bend executor. If a device-capable
+  port is ever wanted, port the 289-line GENERATOR (`runtime/support/autogen.py`),
+  not its 187k-line output — and note that this CONFLICTS with the 1:1-file-parity
+  rule, so it is an owner decision, not something to do quietly.
+- **Hand-writing a UPat transpiler** to fix the 8-32x pattern files. Bad payoff
+  against 8 files; it is a research project, not a trim.
+
+**Projected outcome if all four run:** ~13,000-17,000 lines recovered, landing the
+port near **20,000 code lines** — under upstream's 25,702 — while covering MORE of
+the tree than upstream's own counter measures today. That is the version of the
+claim worth making, and it is only true after the port is complete.
+
+**Preamble for whoever picks this up:**
+```sh
+# per-file ratio, matched files
+find tinygrad -name '*.py' | ... # see the session section for the exact python
+# the four sizes, re-measurable
+grep -rhoE '^def [A-Za-z_0-9]+\.[a-z_0-9]+\(' tinybendygrad --include='*.bend' | wc -l   # 3,499
+grep -rhcE '^def [a-z_]+\.(go|of|put|step|run)\(' tinybendygrad/uop/*.bend                  # dispatch
+grep -rcE '\.of\(' tinybendygrad --include='*.bend' | awk -F: '{s+=$2} END {print s}'        # 1,316
+grep -rh '^#' tinybendygrad --include='*.bend' | wc -l                                       # 28,703
+```
+
+### A retraction that belongs with this plan
+
+The agent brief has said for days that rule tables must be copyable `Data` "so
+there are no closures". **Bend has closures** (`x => e`) and a def passed as a
+function value may be called as many times as you like; there are **no list
+comprehensions** but `List.map`/`filter`/`foldl`/`any` are one call each, so a
+comprehension is NOT where the lines go. The rule tables should STAY plain
+`Data` — copyable, gateable, mutation-testable — but the reason is the gate, not a
+language limitation. Consequence for this plan: a share of lever 3 and of the
+`.put`/`.go` proliferation is self-inflicted, because `List.foldl` with a top-level
+2-ary def would often do. Measured and recorded as rule 31 of
+`bend2-constraints.md`.
 
 ## Open decisions
 
@@ -648,3 +716,125 @@ entries below and commit `d685f998`.)
       `mixin/op.bend`'s `mo_permute` builds in `Tensor.ar(t)` then wraps in that same
       arena, landing the PERMUTE one node short of the `AOrder` tuple. Both are filed
       under the fold wall rather than worked around silently.
+
+- [x] `nn/state.bend` 834 and `nn/__init__.bend` 828 — LANDED, 38 gate rows all green on
+      three lanes (CPython oracle == interpreted == native, byte-identical diffs), and
+      **27 mutations measured, 25 of which move rows and 2 of which are proper controls
+      or documented no-ops**. The brief's priority order was right: `state.bend` first,
+      and its `get_state_dict` walk turned out to be the piece the example's optimizer
+      cannot start without. `nn/__init__.bend`'s confirmed layer list for
+      `beautiful_mnist.py` is **Conv2d x4, BatchNorm x2, Linear x1** (example lines
+      10-16) and every one of those is fully gated on shapes and `__dict__` order.
+      Two findings that changed the design and are worth more than the code:
+      (1) **there is no `nn.Module`** — `nn/__init__.py` is eleven plain classes and
+      `get_state_dict` reaches a layer by reflecting over `__dict__`, so a Bend port
+      cannot have reflection and each layer's state list has to be an explicit
+      `*_st` def. That is why `nn/__init__.bend` imports `state.bend` (Python's own
+      direction, `__init__.py:6`) and not the reverse.
+      (2) **`BatchNorm` puts five tensors in its `state_dict`, not two** — measured,
+      `['weight','bias','num_batches_tracked','running_mean','running_var']` — and the
+      three scalars Python assigns first are absent only because `get_state_dict` drops
+      every non-tensor leaf (`state.py:107`). `Optimizer` then filters on `is_param`, so
+      `nn/state.bend`'s WALK and not an `is_param` filter is what the example needs;
+      getting `is_param_(False)` wrong on `num_batches_tracked` is mutation M5 and moves
+      exactly one row.
+      Four bugs the gates caught in this unit's own code, all recorded in the files:
+      a `case '.':` strip that dropped INTERIOR dots (`a..b..` -> `ab`); a `U32` clamp in
+      `TensorIO.seek` that answered `4294967295` for `seek(-1)`; a `List.reverse` on two
+      accumulators that APPEND rather than cons (`bn_mask` gave `[1,1,-1,1]`); and an
+      `is_param_(False)` that was simply missing. Two orthogonally-similar substrate
+      findings for `bend2-constraints.md`: a **`Char` LITERAL is a valid match pattern**
+      (`case '.':`), which is the only spelling of a choice-plus-descent walk that needs
+      neither `Bool.pick`'s double-consumption nor a mutually-recursive second def; and
+      **`case 0n:` does not match a `U32` at all** ("expected : a constructor of U32"), so
+      a countdown and the index it counts must have different types.
+- [ ] `nn/state.bend`'s remaining walls, all named at their Python lines and none of them
+      a surprise: `TensorIO.readinto` (`.data()` = realization + a bytearray mutation),
+      `accept_filename` (a decorator), and the six file readers — `safe_load_metadata`,
+      `safe_load`, `safe_save`, `load_state_dict`, `zip_extract`, `tar_extract`,
+      `torch_load`. The last is a pickle VM. `safe_dtypes` is gated as a TABLE and not as
+      a load, so a wrong `data_offsets` computation would not move a row.
+- [ ] `nn/__init__.bend`'s eleven `__call__`s — every one is a single mixin method and
+      mixin/op.bend SIDE B is not built. `x.mean`/`x.sum` are the exception: `mo_mean`
+      and `mo_sum` EXIST and are callable, so BatchNorm's and RMSNorm's forwards are the
+      first two that could land without a new unit.
+
+## Session 2026-10-02 — `device.bend`
+
+- [x] `device.bend` — `tinygrad/device.py`, 564 lines → 1546 (207 defs, 9 `# TODO(p3)`
+      walls, 107 gate rows). **Both lanes byte-identical and all 107 rows match the
+      Python oracle** (`Device['PYTHON']` plus a `get_class` stub for the availability
+      rows), and a 30-entry mutation table is at the foot of the file with every entry
+      moving at least one row. The port: the device registry as a table plus a
+      first-wins scan; `Buffer` as `(nbytes, content-address)` parameters in a `Bar`
+      arena, so the view arithmetic is checkable; the `Allocator` LRU policy as the
+      four-conjunct predicate it is; `Compiler`/`TinyELF.iter_sig`; and
+      `Compiled`'s `device_id`/`host`/`_renderer_name`/`_select_iface`. WALLS: the
+      whole FFI seam (`mmap`, `cudaMalloc`, `MTLBuffer`, `pickle`), `importlib`
+      (the class table IS the resolved lookup), the `runtime/` directory walk (the
+      sixteen stems are spelled out), and `BufferStorage.maps`.
+- [x] Two registry and two rule-table first-wins claims, all with a row: the
+      `:0` strip collapsing `cpu:0`/`CPU`/`cpu` to one opened device; the
+      `ALL_DEVICES` ORDER (AMD is row 2 and CPU is row 7); and `pm_bufferize`, whose
+      rules 2 and 3 carry the IDENTICAL pattern so rule 3 is unreachable — the
+      "two rules claim one node" fixture, with three negative fixtures added after
+      three mutations moved nothing.
+- [x] Seven new Bend rules appended to `bend2-constraints.md`, of which three are
+      generalisable and were each measured: **a list of `Bool` is not a usable
+      type**; **a pattern binder must not shadow a def name** (the error names the
+      constructor); **`+` on a pattern binder is the spelling for "two reads in one
+      expression"**, which is the cheap general fix for an affine `U32` read twice.
+
+## Session 2026-10-02 — `langs/` the four-lane export matrix
+
+One pure f32 Bend program, exported four ways, with the cross-language property
+gated rather than assumed. The gate is `./langs/verify.sh`; it exits 0 when every
+lane agrees, 1 when a lane moved, 2 when the only problem is the documented wasm
+wall, so it cannot pass quietly over a missing lane.
+
+- [x] **Does Bend emit C source? YES.** Checked before anything was designed,
+      because lane 1's shape depends on it: `-o core.c` is C source (7597 lines for
+      `core.bend`), not a binary. `bend2/main.ts:363` is the three lines.
+- [x] **`langs/core.bend`** — `core_step(images: Array<F32>, labels: Array<U32>,
+      weights: Array<F32>) -> F32`, a fixed-shape two-layer step (IN=4, HID=3,
+      CLS=3, BATCH=2) finishing in softmax + cross-entropy, with each weight row's
+      LAST column being that row's bias so a bias costs no separate arithmetic.
+      `ALL PROOFS CHECK`, no `@unsafe`. Its loss is within 1 ulp of a numpy f32
+      reference; the intermediate `h` is bit-exact and `z` differs by 1-2 ulp on
+      two of three values, which is the accumulation order, not an error.
+- [x] **SIX LANES BYTE IDENTICAL**: bend interpreted, bend native, the emitted
+      `core.c` under clang, the same `core.c` linked against a separate 5-line C
+      harness (`-Dmain=bend_main`), the emitted `core.js` under node, and the SDK
+      on its JS backend over the emitted `core.mjs`.
+- [x] **The payload is u32 BIT PATTERNS, not decimals** — 42 fields, one wire
+      format for every lane. This is the decision that makes the gate mean
+      something: with decimals on the wire, C's `strtof` and JS's
+      `parseFloat`+`Math.fround` could round one value differently and every lane
+      would be a plausible near-miss instead of an exact answer.
+- [x] **`langs/sdk/bend_sdk.ts`** — `BendLibrarySDK.init({forceJS?})` doing
+      detect-WebAssembly -> try-wasm -> catch -> fallback-to-js, `executeTask`
+      dispatching on the backend, `langs/sdk/bend_wasm.ts` in the emscripten
+      `_malloc`/`ccall`/`_free` shape. `langs/sdk/bench.ts` runs both backends,
+      min of 5, and prints the machine load beside the numbers.
+- [x] **The wasm lane is a MEASURED wall, not a missing toolchain.** emcc absent,
+      Apple clang has no wasm target, no wasi-sdk — but zig 0.15.2's
+      `wasm32-wasi-musl` got the build all the way to LINKED after four separate
+      fixes (documented in `langs/wasm/WALL.md`), and it then traps, because
+      `corpus_setup` reserves `1ull << 33` = 8 GiB and wasm32 caps linear memory
+      at 4 GiB with a 32-bit `size_t`. wasm64 is the only architecture that could
+      hold it and neither zig nor node 26 has it. **The honest recommendation is a
+      one-line upstream change**: honour the `bytes` argument for the CPU path, as
+      `--gpu NGB` already does for the GPU path.
+- [x] **`langs/NOTES.md`** — eleven measured Bend 2.0.34 behaviours, each with a
+      reproducer. Four are checker defects, and **one contradicts this project's
+      recorded loop answer**: `bend2-constraints.md` says Nat fuel is the escape
+      for loops that will not satisfy the termination check, but a `case 1n+pn:`
+      arm **cannot hold a def call at all** on 2.0.34 — the error blames the
+      pattern binder `pn`. Every walk in `core.bend` is therefore list-fueled.
+      That entry needs revisiting by whoever owns it. The other three: a def may
+      not destructure a call's tuple result (the whole repo destructures
+      parameters only, which is why it survived), `Array.get` and `Array.size`
+      cannot be called on a def parameter (so the array becomes a list inside the
+      kernel), and a nested pattern must be exhaustive at every level it names.
+- [ ] **`wasm/core.wasm`** — blocked on the corpus reservation above. The glue,
+      the C shim and the WASI host are written and typed; the module is missing.

@@ -3512,3 +3512,872 @@ five compile cycles and would cost the next agent the same:
    call chain must be in declaration order.** `X.of` before `X` fails with the
    misleading "a filled definition" -- which reads like a proof obligation, not an
    ordering rule.
+
+### 11. FIVE MORE, ALL MEASURED BY THE `nn/state` + `nn/__init__` UNIT (2026-10-02)
+1. **A `Char` LITERAL IS A VALID MATCH PATTERN, AND IT IS THE ONLY WAY TO SPELL A
+   CHOICE-PLUS-DESCENT WALK.** `case '.':` scrutinees a BINDER and consumes `c` once
+   per arm, so a walk like `drop(cs, acc)` needs no `Bool` at all:
+
+   ```bend
+   def drop(cs: List<&2, Char>, +acc: List<&2, Char>) -> List<&2, Char>:
+     match cs:
+       case Nil{}: List.reverse(&2, Char, acc)
+       case c <> t:
+         match c:
+           case '.': drop(t, acc)
+           case _: drop(t, List.append(&2, Char, acc, [c]))
+   ```
+
+   This is the FOURTH shape found for that problem and the cheapest. `Char.is_eq(c,
+   ...)` is a CALL and a `match` may not scrutinise one (rule 2); `Bool.pick` evaluates
+   both arms and consumes `c` twice; and hoisting the `Bool` into a second def makes
+   the two defs MUTUALLY recursive, which Bend refuses. A literal dodges all three.
+   **The trap: a bare `case '.':` is not `lstrip`.** Dropping every dot gives
+   `a..b..` -> `ab` where Python's `str.strip('.')` gives `a..b`; a head-run strip needs
+   a "seen a non-dot yet" flag, and a `Data` sum type carrying it is the answer.
+2. **`case 0n:` DOES NOT MATCH A `U32` AT ALL.** "expected : a constructor of U32
+   (missing, or already matched)". So a countdown and the INDEX IT COUNTS must have
+   different types: `def f(n: Nat, +i: U32, ...)` with `U32.to_nat(ndim)` at the entry.
+   And there is **no `Nat.to_u32`** in base (only `U32.to_nat`), so a value that has to
+   come OUT of a `Nat` countdown needs a second `U32` parameter rather than a
+   conversion. For a negative axis, `-1-m` is built as
+   `H.i64_of_hi_lo(0xFFFFFFFF, 0xFFFFFFFF - m)` -- the two's complement pair -- and not
+   by subtraction.
+3. **`List.append` AT THE TAIL AND `h <> acc` AT THE HEAD ARE DIFFERENT ORDERS, AND
+   ONLY THE SECOND ONE NEEDS A `List.reverse`.** An accumulator built with
+   `List.append(&2, T, acc, [x])` is ALREADY in order; a final `List.reverse` undoes the
+   walk. This cost two gate rows (`bn_mask`, `bn_axes` both came out reversed) and it is
+   the exact inverse of `state.bend`'s walk, which conses onto the head and so does
+   reverse. **Read the accumulator's construction before you add a reversal.**
+4. **`Bool.pick` IS THE ONLY WAY TO PUT A SELF-CALL IN A CHOICE-POSITION WITHOUT
+   MUTUAL RECURSION, and it costs a `+` on every value both arms touch.** Rule 3's
+   `_put(helper)` shape works when the two arms are VALUES; when one arm is the
+   recursive call, `Bool.pick(T, cond, a, self_call(t, e))` is the shape, and `f`/`e`
+   need `+` because `pick` evaluates both. The LIST must still be the first parameter:
+   rule 5 reads left to right and stops at the first argument that shrinks, so a
+   parameter that GROWS in the self call (`seen`) has to come second.
+5. **BARE `False`/`True` IS A PARSE ERROR IN A CALL ARGUMENT BUT `False{}` IS NOT
+   OPTIONAL EITHER WAY.** `T.flag(x, False)` gives "expected : a defined name, observed
+   : False" while `Bool.show(...)` and a `match` scrutinee are the only places a bare
+   `False` ever worked. **Write `False{}`/`True{}` in every value position** (rule 8 is
+   about patterns; this is the value case it does not cover).
+
+## SEVEN MORE RULES, MEASURED 2026-10-02 WRITING `device.bend`
+
+The gate is 107 printed rows checked against the `tinygrad.device` oracle, both
+lanes byte-identical, plus a 30-entry mutation table at the foot of the file.
+Every rule below cost a compile cycle; the reproducer for each is a three-line
+`.bend` file.
+
+### 1. A LIST OF `Bool` IS NOT A USABLE TYPE
+
+`List<&2, Bool>` is ACCEPTED as a parameter annotation and then refused by
+every reader of one:
+
+    def f(oks: List<&2, Bool>) -> Bool:
+      match oks:
+        case Nil{}: False{}
+        case h <> t: h
+    #| - message : a match on a parameter or field
+    #|             (this name is a def or a consumed binder: give the value its own def)
+
+which is the message you get for a PROJECTION and not for a list, so it sends
+you looking for a `Data` field access. `List.get(&2, Bool, xs, 0n)` and
+`List.length(&2, Bool, xs)` both report "expected a defined name": `Bool` does
+not resolve in a `Kind` position. A `Bool` FIELD of a `Data` record is fine, and
+so is `List<&2, Rec>` where `Rec` wraps the flag.
+
+The fix that also removed a zip fold: availability/deprecation/mock-ness are a
+U32 BITMASK read with `U32.shrn`/`U32.and` against the row's own index.
+
+### 2. A PATTERN BINDER MUST NOT SHADOW A DEF NAME, and the error names the CONSTRUCTOR
+
+    type Telf is Data: Telf{nm: String, sigs: List<&2, U32>}
+    def Telf.name(x: Telf) -> String:
+      match x:
+        case Telf{name, sig}: name
+    #| - message : a declared constructor (unknown: Telf)
+
+The binder `name` shadows the def `Telf.name`, and the error points at
+`Telf` -- the thing that is perfectly well declared. `case Bn{... spec}: spec`
+fails the same way when the file also has `def spec()`. This is the same defect
+the existing "A `Data` RECORD PATTERN ... " family has, one level up, and it is
+worth grepping for: a binder named after any def in the file is a landmine whose
+error message names something innocent.
+
+### 3. `+` ON A PATTERN BINDER IS THE SPELLING FOR "TWO READS IN ONE EXPRESSION"
+
+`+` is documented for parameters and for list heads, and the binder case is the
+one that unblocks arithmetic. A `U32` is affine and cannot take a `+` as a
+PARAMETER, so `(n+a-1)//a*a` -- `a` three times -- is a `Data` record of the two
+operands with the `+` on the binder:
+
+    type Amt is Data: Amt{n: U32, a: U32}
+    def round_up.go(x: Amt) -> U32:
+      match x:
+        case Amt{n, +a}: U32.mul(round_up2(a, U32.add(n, U32.sub(a, 1))), a)
+
+`Flags`, `Cap`, `Step` and `Run` in `device.bend` are the same trick for the same
+reason, and the generalisation is the useful part: **when a `U32`/`Nat` is read
+more than once in one expression, put the operands in a `Data` record and `+` the
+binders.** That is cheaper than a `.go` split per read and it composes.
+
+### 4. A NESTED `match` ARM MAY NOT CALL A `Type.def`
+
+    def bnew.go(ns: List<&2, Bn>, b: Bn, ix: U32) -> BFound:
+      match b:
+        case Bn{...}:
+          BFound{List.append(&2, Bn, Bar.nodes(ar), [...]), ix}
+    #| - expected : Bar
+    #| - observed : List<&2, Bn>
+
+Inside a `Data` record arm, `Type.def(x)` is read as the TYPE applied to the
+arm's binder, and the error is about the argument. Hoist the call above the
+`match` and pass the value in. The same shape also bit `too_big`, where
+`Bool.and(a, Bool.and(b, c))` with a shared `U32` produced the identical message.
+
+### 5. A DEF MAY NOT CALL A NAMESPACE THAT A PARAMETER SHADOWS
+
+    def isig.go(sig: List<&2, U32>, ...) -> ...:
+      ...
+        case Nil{}: acc
+        case _ <> t: sig.go(t, ...)      # sig is the PARAMETER
+    #| - expected : a term
+    #| - observed : '.'
+
+A parameter named `sig` makes `sig.go` a name lookup on the parameter. Every
+`case k <> t:` fold in a file that also has a namespace called `t` has this
+landmine -- and the error points at the fold, not at the binder.
+
+### 6. `case True{} True{}:` IS A FINE ARM AND `case _ _:` AFTER IT IS FINE, BUT A `+` PARAMETER AND A `+` FIELD ARE NOT THE SAME THING
+
+`def recycled(glru: Bool, lru: Bool, sp: Bspec)` reads `glru` and `lru` once each
+and works. What does NOT work is `match glru lru Bspec.nolru(sp) ...` -- a
+`Data` field is not a legal scrutinee even when the record is the parameter, so
+the two flags have to travel as a two-field record (`Flags`) and be destructured
+by the binder. This is `spec.bend`'s `DevOpt` shape and it is the ONLY reason
+that shape exists; the `Maybe`-field prohibition and the non-scrutinee-field
+prohibition are the same rule seen from two sides.
+
+### 7. A `U32` THAT IS BOTH A LOOKUP KEY AND A FALLBACK VALUE BELONGS IN THE NODE
+
+`base_of` needs the buffer's own index as an ANSWER (Python's `self._base if
+self._base is not None else self`) AND the node to read `has_base` out of, and
+`U32` is affine so the index cannot be passed twice. A `Slot{b: Bn, i: U32}`
+record does NOT fix it -- `slot(ar, i) = Slot{bar_at(ar, i), i}` reads `i` twice,
+and the fix-up `bar_at.make(ns, n) = Slot{..., n}` then reads `n` twice, one
+level down. The fix that works is to put the index IN the node (`Bn.self_ix`),
+stamp it at append time, and read it back off the record the append returned
+(`BFound{ar, bar_next(ar) - 1}`). Three attempts failed before that one; the
+tell in every case is the same error, "expected : i, observed : i (consumed more
+than once)", and the generalisation is: **a value that is both a key and a
+result belongs in the record you looked it up in, not beside it.**
+
+## A GATE LESSON, AND IT IS THE SAME ONE THREE TIMES
+
+`device.bend`'s first mutation table had three rows that moved NOTHING, and
+none of them was a bad mutation:
+
+* dropping `is_param` from `pm_bufferize` rules 0, 1 and 2 -- every fixture was
+  a PARAM, so the conjunct was vacuously true. The fix was three NEGATIVE
+  fixtures: a node that is not a PARAM, one named `b` that is not a PARAM, and
+  one tagged `timeline` that is not a PARAM.
+* lower-casing the `ALLOW_DEVICE_USAGE` list -- every fixture passed a
+  lower-case spelling, so again the conjunct was vacuous. The fix was
+  `allow_lower`, the spelling that must NOT be allowed.
+* and then, WITH that fixture in place, the mutation STILL moved nothing,
+  because the mutation touched the `DISK` branch and the rows exercise the
+  `PYTHON` one.
+
+So: **a mutation that moves nothing is information about the GATE, and the
+response is to build the fixture it is asking for -- twice, if the first fixture
+was for the wrong conjunct.** The third case is the one worth remembering: after
+adding a fixture, RE-RUN the mutation, because "I added a fixture" and "the
+fixture sees this mutation" are different claims.
+
+## SEVEN MORE RULES, MEASURED 2026-10-02 WRITING `mixin/movement.bend`
+
+Appended, not edited. All seven are Bend 2.0.34 and each one cost a compile cycle or a
+wrong answer. The first is the one that cost the most and it generalises further than
+it looks.
+
+### 1. `case 1n+p:` DESTROYS THE SCRUTINEE — THE ARM CANNOT READ THE CURRENT COUNT
+
+This is distinct from the recorded "`1n+p` is a first-match prefix" rule, and it is the
+single most expensive fact in this port. `match k: case 1n+p:` binds `p` as a strict
+subterm of `k` for the decrease check AND SPENDS `k`: the arm can no longer mention the
+name `k` at all. Every walk that needs the current INDEX — not the tail — must thread
+that index as its own parameter. Measured, three refusals and one working spelling:
+
+```python
+# REFUSED: expected p / observed p (consumed more than once) -- reported AT THE `1n+p:`
+# PATTERN, so it reads like a pattern-syntax bug and is not one
+List.append(&2, U32, [ix], go(p, nn, U32.add(ix, 1)))              # ix as a param: WORKS
+List.append(&2, U32, [U32.from_nat(k)], go(p, nn))                 # reads k: REFUSED
+List.append(&2, U32, [U32.add(nn, 2*U32.from_nat(p))], go(p, nn))  # reads p: REFUSED
+```
+
+The error text names `p` in all three cases and the CAUSE is `k`. Diagnosing this costs
+a cycle every time because the compiler is pointing at the one binder that is fine.
+
+### 2. SPLITTING A SELF-RECURSIVE STEP TO AVOID A DOUBLE READ CREATES MUTUAL RECURSION
+
+Rule 3's remedy is "split the step into a `.go` and a `.put`". That works when the split
+is between a WALK and its DECISION, and it is REFUSED when the split is between a
+self-recursive walk and its own STEP — because the step calls back into the walk, and
+the walk calls the step, and that is mutual recursion in either declaration order:
+
+```
+def w.go(k: Nat, ...) -> R:
+  match k:
+    case 1n+p: w.put(p, ...)          # w.put needs w.go  -> MUTUAL, refused
+```
+
+The working shape is ONE def whose arm both recurses and does the work, with the
+element's contribution computed by a LEAF. The cost is that the leaf's own arguments
+must not include the fuel.
+
+### 3. `Bool` HAS NO `U32.show`, AND THE CONVERSION IS `Bool.pick` — THERE IS NO `Bool.match`
+
+`base.bend` has `Bool.pick(-A, c, a, b)` and no `Bool.match`, so a gate row that computes
+a `Bool` pays a two-arm conversion at every call site. Hoist it:
+
+```bend
+def b2u(b: Bool) -> U32: Bool.pick(U32, b, 1, 0)
+```
+
+`U32.show` and `Nat.show` exist; `String.show` and `String.to_u32` do not.
+
+### 4. `String.join(xs, sep)` TAKES THE LIST FIRST, AND `String.concat(xs)` TOO
+
+Both take a LIST of pieces, so `String.concat("a", b)` is `expected : List<&2, String> /
+observed : String`. And `String.join(",", xs)` — the natural Python reading — is the same
+error. `String.join(xs, sep)` is right. The failure is silent in neither direction: it is
+a type error at the first call, which is the good case.
+
+### 5. `IO.print` TAKES A `String`, AND A `do IO<Unit>` BLOCK CAN ONLY BIND AN `IO`
+
+The first is one line. The second is recorded for `uop/weak.bend` and it recurred here:
+`m : MxMarg <- pure(...)` is `expected : a defined name / observed : pure`, so a PURE
+fixture value is a `let` in the caller and a PARAMETER of the printing def. The cost is
+one extra parameter per row def; the alternative is recomputing the pure value per row.
+
+### 6. `List.take(xs, 0n)` IS THE EMPTY LIST AND `List.append(a, A, xs, ys)` IS `xs ++ ys`
+
+The second is recorded. The first is new and it is a TRAP rather than a rule: a fixture
+that takes a prefix of length 0 gets `Nil{}` and a fold over it produces an EMPTY answer
+that reads as a correct empty shape. It cost one cycle here — a four-dim shape came out
+with its two leading dims missing, and the `List.take` of length 0 in the debugger was
+the whole diagnosis.
+
+### 7. A FIXTURE MUST INTERN ITS SHAPE ARGS THROUGH ONE BUILDER, AND A LIST OF RAW INTS IS NOT A LIST OF ARENA INDICES
+
+`shape_to_shape_arg` (ops.py:106) turns python ints into CONST nodes. A fixture that
+writes `UOp.new(ar, OpsSTACK{}, [0, 1, 2, 3], ...)` builds a STACK whose "srcs" are the
+raw VALUES 0..3 read as arena indices — index 0 is the arena's BOTTOM, so the reader
+answers the bottom's `ANone` arg and the value comes out 0. It typechecks, the node count
+is right, the `nsrc` is right, and every marg element reads 0. The one row that sees it
+is the one that prints the marg's VALUES, and it is the reason this file has a separate
+`*_marg` row next to every `*_shape` row.
+
+## SEVEN MORE RULES, MEASURED 2026-10-02 WRITING THE WRITE HALF OF `mixin/movement.bend`
+
+Appended, not edited, continuing the count from 11. All seven are Bend 2.0.34 and each one
+cost a compile cycle or a wrong answer. The first is the most dangerous silent failure in
+this port so far.
+
+### 11. AN ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES, SO AN INTERNING INSIDE AN ARGUMENT BUILDS A SELF-EDGE
+
+`O.UOp.new(ar, op, [u, O.Found.i(G.c1(ar, v))], ...)` is the obvious spelling and it
+produces a node whose SECOND SRC IS ITSELF:
+
+```python
+add=n=8 op=Ops.ADD nsrc=2 srcops=Ops.RESHAPE|Ops.CONST   # correct
+# add=n=6 op=Ops.ADD nsrc=2 srcops=Ops.RESHAPE|Ops.ADD   # what the obvious spelling gives
+```
+
+`G.c1(T.Tensor.ar(t), v)` interned into a COPY of the arena, and the index it returned is
+the slot the ADD was about to occupy. The fix is to intern into a `let` FIRST and build
+in the resulting arena -- which is the notes' existing "BEND IS STRICT" rule, reached from
+a new direction. **The tell is a src-op sequence that names the root's own op.**
+
+### 12. A `list` SELF-CALL MAY PASS A LIST TAIL FIRST AND A `U32` ARENA SECOND, AND THAT IS THE ONLY ORDER
+
+`mxw_stk` walks a list of dims and grows an arena per dim. The decrease check wants the
+list first, and the arena second:
+
+```bend
+def mxw_stk(+vs: List<&2, U32>, +ar: O.Arena, +acc: List<&2, U32>) -> O.Found:
+  match vs:
+    case Nil{}: G.mstack(ar, acc)
+    case v <> t: mxw_stk(t, O.Found.ar(G.c1(ar, v)), ...)     # list FIRST
+```
+
+Walking a LIST rather than a `Nat` countdown is the reason this is one def with no fuel:
+the tail `t` is a strict subterm of `vs`, so the check is satisfied by the first argument
+and there is nothing to thread.
+
+### 13. THE "INTERN ONCE, READ TWICE" FIX IS MUTUAL RECURSION IN A WALK
+
+`+f = G.c1(ar, v)` then reading `Found.ar(f)` and `Found.i(f)` is obviously right and it
+needs a def boundary, and in a self-recursive walk the def calls back into the walk. The
+workable forms, all measured in this file:
+
+- a straight-line fixture (`stk4` for a fixed arity);
+- a `Data` record carrying the accumulator;
+- **call the pure function twice.** `O.UOp.new` and `O.UOp.const` are pure given an
+  arena -- the arena carries the intern table, so the second call finds the node the first
+  one added -- so `Found.ar(g(ar,v))` beside `Found.i(g(ar,v))` is CORRECT, not lucky.
+
+That last one cost a cycle to convince me of and is the reason it is written down.
+
+### 14. A GATE ROW THAT PRINTS A `srcops` SEQUENCE MUST PUT ALL FOUR FACTS IN ONE STRING
+
+Four separate rows let a fixture drop one. The mutation that made this concrete: SWAPPING
+A PAD'S TWO SHAPE ARGS (`self|a|b` to `self|b|a`) leaves the root op, the src count and
+almost the node count alone, and it moved exactly TWO of seventy rows -- the two where an
+identity test happened to fire. A gate carrying `op` and `nsrc` but not the sequence is
+completely blind to it. `mxw_sig` prints `n= op= nsrc= srcops=` as one string for exactly
+this reason, and the cost is that a mutation in the PRINTER then invalidates a quarter of
+the suite (measured: 25 of 70 rows).
+
+### 15. A SHAPE ARG BUILT BY A WALK MUST APPEND, AND THE BUG IS INVISIBLE IN THE COUNT
+
+The second time in this file (the first was the printer). `mxw_stk` walks the dim list
+DOWN and accumulates UP, and `List.append(&2, U32, [i], acc)` puts the new index at the
+FRONT, so a STACK for `[1, 4, 8, 8]` came out `STACK(8, 8, 4, 1)`. The node count was
+right, the root op was right, the `nsrc` was right. The symptom was an EMPTY shape,
+because `mxm_as_shape` read a first element of 8 where the base had 1 and the identity
+test could not match. **The general rule: an accumulator fold over DIMENSIONS has to say
+which end it adds to, in a comment, because the type and the count cannot see it.**
+
+### 16. `Arena.node` ANSWERS THE BOTTOM FOR AN INDEX PAST THE END, SO A STALE ARENA GIVES AN EMPTY ANSWER NOT A WRONG ONE
+
+`mxw_reshape`'s identity test reading `T.Tensor.ar(t)` (the base's arena) with
+`T.Tensor.u(made)` (the made node's index) returned `False` for a no-op reshape, so
+`reshape` to the shape it already had BUILT a RESHAPE where CPython returns `self`. The
+usual symptom of the aliasing rule is a wrong node; this one is a MISSING node, because
+the bottom's shape is the empty list and the empty list does not equal anything.
+
+### 17. A GATE MUST HAVE A NON-MOVEMENT FIXTURE OR A `match`'s CATCH-ALL ARM IS DEAD CODE
+
+`mxw_shape_of`'s `case _ False{}` arm -- the one that answers a NON-movement op from the
+fold -- had no fixture, so mutating it to `Nil{}` moved NOTHING. The reason every movement
+row missed it: the one non-movement node they reached (the BUFFER under a RESHAPE) is a
+node `fold.bend` does not answer, so its answer is the empty list EITHER WAY. The fix is a
+non-movement node the fold DOES answer -- `ADD` inherits its shape from its src -- and the
+row is `add_shape`.
+
+This is the mirror image of the recorded "an arm after a `case _:` is dead code" rule: a
+catch-all with no fixture is equally invisible, and a `case _` that is only reached by
+nodes nothing else reaches is the same defect wearing a different hat.
+
+## SIX MORE RULES, MEASURED 2026-10-02 WRITING `mixin/creation.bend`
+## (items continue the count from 17)
+
+Appended, not edited. Four of these six are substrate facts about `uop/fold.bend` and
+`uop/ops.bend` that a caller must know and cannot read off either file's header; the
+other two are Bend syntax. Each one cost a compile cycle or a wrong answer, and the
+reproducers are named.
+
+### 18. AN UNANSWERABLE NODE POISONS ITS CONSUMERS, SO "CAN THE FOLD ANSWER X" IS A
+###     PROPERTY OF THE WHOLE SUBGRAPH, NOT OF X
+
+This is the most expensive thing in this section and it is not in `fold.bend`'s header.
+
+`fold.bend` answers `Ops.EXPAND` with `None{}` for the SHAPE (fold.bend:1629,
+"`marg` -> `as_shape` -> `ssimplify`"). `Ops.STORE` and `Ops.AFTER` are `store_ds` and
+`thru0` (fold.bend:730, :726), and BOTH read `src[0]`'s `Derived` -- so they are answered
+when their `src[0]` is answered. But a Kahn worklist does not resolve a node until all
+of its own srcs are resolved, so:
+
+    MEASURED over `Tensor.full((2,3),42)`, nine nodes, one arena:
+      1 ALLOC     dt=yes shape=yes
+      2 CONST 2   dt=yes shape=yes
+      3 CONST 3   dt=yes shape=yes
+      4 STACK     dt=yes shape=yes
+      5 RESHAPE   dt=yes shape=yes
+      6 CONST 42  dt=yes shape=yes
+      7 EXPAND    dt=NO  shape=NO      <- fold.bend:1629
+      8 STORE     dt=NO  shape=NO      <- its src[1] is the EXPAND
+      9 AFTER     dt=NO  shape=NO      <- src[1] is the STORE
+
+So one unanswerable node three levels down makes the ROOT unanswerable, and a gate row
+that asks the fold about the root of ANY graph containing an EXPAND gets `void` and `()`
+for reasons that have nothing to do with its own code.
+
+**THE CONSEQUENCE FOR EVERY CALLER, and it is a design decision rather than a workaround:
+decide WHICH node to fold, not whether to fold.** The AFTER's own answer is `thru0`, i.e.
+literally `AFTER.src[0]`'s, so folding `AFTER.src[0]` is not a weakening -- it is the
+same answer obtained from the node the fold can reach. `mixin/creation.bend`'s `cr_d_root`
+does exactly that, names the measurement, and its `_d` rows are still gated. The
+alternative -- computing the shape from the construction -- is a row that restates the
+code, which is the thing the gate exists to prevent.
+
+This also retires a reading of `fold.bend`'s header: "the fold reports the absence and
+the caller decides" is true PER NODE and misleading PER GRAPH, because the absence
+propagates upward along every edge.
+
+### 19. A FOLD THAT NEEDS AN INDEX MUST USE `Arena.srcs`, NOT A COUNT AND A RE-DERIVED
+###     INDEX
+
+    def srcops.go(+ar: O.Arena, +c: CU, n: Nat) -> String:      # the WRONG shape
+      match n:
+        case 0n:   ""
+        case 1n+p: ... O.Arena.op(ar, O.Arena.src(ar, CU.u(c), 0)) ... cr_srcops.go(ar, c, p)
+
+Every row printed `ALLOC|ALLOC|` for a two-src root. It checked, ran, and printed a
+plausible string; the only reason it was caught is that the row carried `nsrc=2` beside
+it. The fix is one call:
+
+    O.Arena.srcs(ar, u)   # -> List<&2, U32>, and the walk needs no index at all
+
+This is the same class as the recorded `mxm_as_shape.go` slip (an accumulator read
+backwards) and it generalises the pair "walk a list" / "index into a structure": if the
+walk needs `xs[k]`, take `xs` and walk it. `Arena.srcs` is already the substrate's own
+answer for `x.src`, and `Tensor`'s `Tensors.ts` is the same idea for a record.
+
+### 20. A LIST-OF-STRINGS FOLD MUST END IN `String.join`, NOT IN A BAKED-IN SEPARATOR
+
+There are now four recorded spellings of "join a list of strings" in this port and the
+first three each cost a row. The one that costs nothing is:
+
+    List.append(&2, String, acc, [piece])   # APPEND, in walk order
+    String.join(xs, " ")                    # HEAD-FIRST, and no trailing separator
+
+`String.concat([acc, piece, " "])` needs a head test to avoid a trailing separator;
+`String.concat([acc, cr_topo.go(List.tail(xs), ...), " "])` DROPS THE HEAD (and leaves a
+trailing space). Both were written, both compiled, and both were caught only by the
+CPython byte diff -- because the shape row reads `(2,3)` and the buggy one reads `(3,2)`,
+which is a REAL wrong answer rather than a formatting one.
+
+The general form, and it is the same for `U32` lists rendered with `U32.show`: **build a
+`List<&2, String>` with `List.append` and hand it to `String.join` once, at the end.**
+`List.append` is already the "which end does this list go next" decision from the wgsl
+entry; `String.join` removes the other half of it.
+
+### 21. `+r = R{a, b}` NEEDS AN ANNOTATION; `+r = f(...)` DOES NOT
+
+    def f() -> U32:
+      +r = R{1, 2}      #| - expected : an annotated term (cannot infer)
+                        #| - observed : R{1, 2}
+      R.a(r)
+
+    def f() -> U32:
+      +r: R = R{1, 2}   # ok
+      R.a(r)
+
+Three lines, no imports, both lanes. A `let`-bound RECORD LITERAL needs its type spelled;
+a `let`-bound def call does not, because a def's return type is already known (upat.bend
+rule "a computed value is not a valid scrutinee" has the same shape). It bites the
+FIRST time in a file, which is usually a `CU{u: index}` or a `Fixed{n: U32}` helper
+record, and it costs a cycle each time because the message names the record rather than
+the `+`.
+
+### 22. A BYTE-DIFFED GATE MUST NOT INHERIT A PRINTER WHOSE OUTPUT HAS TRAILING WHITESPACE
+
+`mixin/op.bend`'s shared signature printer `mo_sig.go` emits `" "` after every node, so
+every row built from it ends in a space. `mixin/creation.bend` needs the same toposort
+string, reused it, and then the CPython oracle needed `.rstrip()` to match -- a
+formatting asymmetry in the one comparison that is supposed to be exact. Four local lines
+(`cr_topo.go` + `String.join`, rule 20) removed the asymmetry and made the rows readable
+in a diff.
+
+The general form: **a shared printer that another file's gate already diffs is a shared
+FORMAT CONTRACT, and inheriting it means inheriting its whitespace.** When a new gate
+reuses one, check `tail -c 1` on a row before the oracle is written, not after.
+
+### 23. THE `int_*_new` SHAPE -- "HOW MANY DID THE SECOND CALL MINT" -- IS A ROW CLASS OF
+###     ITS OWN, AND IT IS THE ONLY ONE THAT SEES `UOpMetaClass.ucache`
+
+tinygrad hash-conses every UOp, so a second `Tensor.full((2,3), 42)` re-uses the CONST,
+the STACK and the EXPAND and mints only the ALLOC/RESHAPE/STORE/AFTER. **Both graphs
+have a nine-node toposort**, so `n=`, `op=`, `nsrc=` and the toposort are all identical
+and every one of them is blind to the whole question.
+
+The row that answers it is
+
+    <n>_new = |{u in b.toposort() : u is not any(v in a.toposort())}|
+
+with `is` in CPython and `U32.is_eq` on arena indices in Bend -- which is the same test,
+because `ops.bend:940` says the index IS the identity. Two things about it worth keeping:
+
+* the COUNT is not enough, and a second Bool row asking directly ("is the node that must
+  be shared, shared?") is what localises the failure. In `creation.bend` the count row
+  `int_full_new` moved 3 mutations and the Bool row `int_full_expand` moved exactly ONE
+  that nothing else saw: reversing the STORE's two srcs. Same count, same op, same nsrc,
+  same toposort, same src op sequence.
+* the CPython oracle must count the same way. A `len(UOp.ucache)`-shaped row will not do:
+  the cache holds WEAKREFS and entries not in the delta get collected, so the same
+  program answers a different number on a second run.
+
+This is the "it is not only rules that collide, it is any check whose oracle is a COUNT
+rather than a STRUCTURE" note from `mixin/gradient.bend`, stated for the specific case
+where the two structures are EQUAL in count by construction.
+
+## NINE MORE RULES, MEASURED 2026-10-02 WRITING `mixin/rand.bend` (items continue from 23)
+
+Appended, not edited. All nine are Bend 2.0.34 or substrate facts, and each one cost a
+compile cycle or a wrong answer. Rules 1, 2 and 3 are the ones that cost the most and the
+first two are the reason that file's gate is red rather than green.
+
+### 1. AN ARENA IS AFFINE, SO A DEF THAT BUILDS **GROWS A COPY** -- AND THE FIX IS TO THREAD `+ar`
+###    THROUGH EVERY BUILDING DEF, NOT TO "BUILD IN THE LAST ARENA"
+
+The recorded rule (`codegen/transcendental.py` rule 1) is "every step threads
+`O.Found.ar(<previous binding>)`". Measured while porting `mixin/rand.py`, the part that is
+easy to believe and easy to get wrong is that **taking the arena off a tensor you were
+HANDED is not the same thing as threading it**, because every def that builds along the way
+has already grown a copy that you do not have a handle on:
+
+    rd_tfb -> rd_p64 -> rd_c64 -> MO.mo_cast_t -> MO.mo_cast_in -> F.folded(T.Tensor.ar(t))
+
+`mo_cast_in` re-folds the arena off its own argument and hands back a tensor whose arena is
+that fold's, which is a copy. Two operands built through two such chains are in two
+SIBLING arenas, and a node built in one of them names an index the other does not have.
+
+**THE SYMPTOM IS A TOPOSORT OF ONE NODE, WHICH LOOKS LIKE A BUG IN THE PRINTER.**
+
+    bits6_g=1 op=RESHAPE nsrc=2 srcops=STACK|STACK topo=CONST/0     <- the port
+    bits6_g=81 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 CAST/1 ...  <- CPython
+
+and `st_six_g=2` against CPython's `st_six_g=20`. The root's data src is not in the arena
+being walked, so the "graph" is one node. **It also HANGS** when a `mxw_dims_of` fold runs
+over it: `mixin/rand.bend`'s `randn_like23_g` dies with
+`bend: memory fault (machine stack overflow?)`, which the notes' RUNAWAY-EXPANSION section
+sends you looking for a non-terminating fold in your own code. There is none; the arena is
+inconsistent and the fold over it does not terminate.
+
+The generalisation, and it is the shape of every multi-file port in this repo: **a def that
+may mint takes the arena as an ARGUMENT and rebases its operands with
+`T.tn_new(ar, T.Tensor.u(t))` before building.** A node index is valid in every EXTENSION
+of the arena it was interned into, so rebasing into a longer arena is always sound; what is
+unsound is a def that picks its own arena off an operand it was handed.
+
+### 2. A `U32` LITERAL PATTERN IS A PREFIX MATCH **FOR THE SUCCESSOR RELATION ONLY**, SO `case 8:`
+###    DOES NOT SWALLOW `case 32:` -- AND THAT IS THE GOOD NEWS AND THE BAD NEWS
+
+The recorded rule is "`case 1:` claims every successor", and
+`codegen/opt` unit rule 10.3 restates it as "a `U32` literal pattern is a prefix match".
+MEASURED here, the generalisation is FALSE and the narrow form is true: `case 8:` does NOT
+claim 16, 32 or anything above it. `rd_one_bits`' arms `case 16: 15360 / case 32: 1065353216`
+both fire on their own value (measured: `ref_one_bits_h=15360`, `ref_one_bits_f32=1065353216`).
+
+**THE BAD NEWS IS WHAT ELSE IT DOES NOT CATCH, and the cost is a whole gate row.** The same
+def spelled `case 8: 23 / case 16: 10 / case _: 0` -- arms on the EXPONENT where the switch
+is on the BIT WIDTH -- compiles, checks, runs and answers `0` for float32. The
+`case _:` is a real cover, so exhaustiveness is satisfied and nothing is dead. Two rows
+(`ref_nmant_f32`, `ref_shift_f32`) caught it, and the mutation that drops the `case 32:`
+arm moves EXACTLY those two and nothing else.
+
+So the useful statement is: **a numeric arm ladder is only as good as the number it switches
+on, and the compiler cannot see that number.** The recorded "prefix match" rule bites on the
+ONE literal that generates all successors; the general hazard is that a `case _:` cover makes
+a WRONG-NUMBERED ladder indistinguishable from a right one.
+
+### 3. `mxw_reshape` / `mxw_shrink` / `mxw_pad` BUILD A `STACK` FOR A ONE-ELEMENT SHAPE ARG AND
+###    CPYTHON BUILDS A BARE `CONST` -- SO A FILE THAT NEEDS CPYTHON'S ANSWER MUST CALL
+###    `T.tn_mop` WITH `T.ADims`/`T.APairs` INSTEAD
+
+`shape_to_shape_arg` (ops.py:106-110) is `return src[0] if len(src) == 1 else UOp(Ops.STACK,
+src=src)`. MEASURED in CPython: `Tensor.empty(5).pad(((2, 0),))` is
+`ALLOC/0 CONST/0(2) CONST/0(7) PAD/3` -- FOUR nodes, and the two shape args are BARE CONSTs.
+`movement.bend`'s `mxw_stk` is `G.mstack`, which is UNCONDITIONALLY a STACK, and
+`movement.bend`'s OWN header says so ("THE BARE-CONST CASE IS A DIFFERENT NODE and that is
+the row `mxm_reshape1`").
+
+**SO `T.tn_shape_arg.k`'s `one` arm is the ONLY spelling of CPython's rule, and it is
+reachable only through `T.tn_mop`/`T.ADims`/`T.APairs` -- not through any `mxw_*` wrapper.**
+`creation.bend` gets it right for free because `cr_mop` calls `T.tn_mop`; a file that
+reaches for `mxw_reshape` gets a different graph for a one-element shape. `_cumalu`'s pad
+is `((shape-1, 0),)` (op.py:754) and `_pool`'s first shrink is `(0, k*(i*f+1))`
+(movement.py:610), so on the `arange` path BOTH of `_pool`'s first two shape args are
+one-element and every `mxw_*` call adds a STACK.
+
+The identity test is affected too, and the notes' `mxm_reshape1` row is the same fact from
+the other side: `mxm_as_shape` reads `Arena.srcs` and a bare CONST has none, so a one-element
+RESHAPE is un-answered for a SECOND and independent reason. `mixin/rand.bend` carries local
+`op_pad`/`op_shr` for this and names the owner file, because `movement.bend` is read-only
+there. **A file that needs CPython's graph has to own the one-element case itself until
+`mxw_stk` grows `tn_shape_arg`'s fold.**
+
+### 4. `+p: F32` IS ACCEPTED, SO THE `U32` "TWO READS NEED A RECORD" RULE IS NOT A `U32` RULE
+
+`rd_p_ok(+p: F32) -> Bool: Bool.and(rd_p_ok.put(p), F32.is_le(p, 1.0))` checks, so a
+two-read `F32` is a `+` parameter and a two-read `U32` is NOT (`+` is refused on a `U32`,
+`nn/optim` unit rule 1). The `U32` answer is the `Data` record and the reader def
+(`mixin/rand.bend`'s `U1`/`U1.v`), which is `device.bend`'s rule 3. Having both answers in
+one file is what made the distinction visible: the rule is about the KIND, not about
+"numbers".
+
+### 5. `+dev: S.Dev` ON A `Data` PARAM IS FREE AND A GLOBAL `+` SWEEP IS THE FASTEST FIX FOR A
+###    WHOLE FILE OF `Device` PASSED ONWARD
+
+Twenty-five `S.Dev` parameters in `mixin/rand.bend` needed `+`, because `device` is threaded
+from the fixture through six layers and read once per layer. `creation.bend` has the same
+parameter. A blanket `dev: S.Dev)` -> `+dev: S.Dev)` sweep compiled first try. An UNUSED `+`
+parameter is accepted (`uop/spec.bend` rule 2), so the sweep cannot break a def that does
+not read it -- which is exactly why a uniform annotation is safe here and a uniform
+annotation on a `U32` is not.
+
+### 6. A `def X.of` CHAIN MUST BE DECLARED LEAF-FIRST **AND** `X.of` MUST IMMEDIATELY PRECEDE
+###    `X` -- SO THE THREE-LINK CHAIN READS BOTTOM-UP
+
+`codegen/opt` unit rule 10.4 records the one-def version. The three-link version, and it is
+what "a `match` may not scrutinise a call" forces whenever a choice needs a call's result:
+
+    def op_mop.of(same: Bool, +t, +made) -> T.Tensor: ...   # the LEAF
+    def op_mop.of2(+t, +f) -> T.Tensor: op_mop.of(MX.mxw_same(...), t, T.tn_alu.put(f))
+    def op_mop.put2(op, +t, lo, hi) -> T.Tensor: op_mop.of2(t, T.tn_mop(...))
+    def op_mop(op, +t, lo, hi) -> T.Tensor: op_mop.put2(op, t, CR.cr_cdims(lo), CR.cr_cdims(hi))
+
+Written in the order the reader wants (outer first) every one of the three is a forward
+reference, and the error is "a filled definition (an unfilled law is a dead claim)". So the
+chain is declared leaf-first and READ bottom-up, and the naming is what makes it legible:
+`.of` is the leaf, `.of2` the next, `.put2` the next, and the bare name the wrapper.
+
+### 7. `def f.g` and `def F.g` ON A LOCALLY-DECLARED `Data` RECORD NEED A READER DEF, A FIELD
+###    PROJECTION IS NOT ONE, AND A ONE-FIELD READER IS REFUSED
+
+`def PK.i(q: PK) -> U32: match q: case PK{i}: i` is refused with
+`a PK pattern with 2 fields` -- the two-field rule from `renderer/cstyle.bend` rule 5, reached
+from a record whose fields are all `U32`. And `PK.i(q)` as a BARE projection is
+"a defined name, observed : PK.i", so a locally-declared record has no projection syntax at
+all: a reader def is the only way, and it is the shape `ops.bend`'s `CU.u`,
+`movement.bend`'s `MxMarg.ds` and `tensor.bend`'s `Tensors.ts` already use.
+
+### 8. THE ORACLE'S `print("k=", v)` HAS A TRAILING SPACE AND IT IS HALF THE DIFF
+
+`creation.bend` rule 22, re-measured. `print("ref_x=", True)` prints `ref_x= True` and the
+Bend row prints `ref_x=True`, so a byte diff reports 31/49 mismatches on a file where 31/49
+match. `print("k=" + str(v))` is the fix, and the generalisation is: **write the oracle's
+row strings the same way the port's are, before the first diff, not after the first
+confusing one.** The same row of this table and the `fold_np`/`fold5_np` BEND-ONLY rows are
+the other half: a row with no oracle is a `BEND-ONLY` row and it belongs in a named list, not
+in a silent filter.
+
+### 9. A `.bend` FILE CAN `ALL PROOFS CHECK` IN BOTH LANES, PRINT LANE-IDENTICAL OUTPUT, AND
+###    STILL BE WRONG AGAINST CPYTHON -- SO "THE GATE IS GREEN" IS NOT A PROPERTY OF THE FILE
+
+`mixin/rand.bend` measured 2026-10-02: `ALL PROOFS CHECK`, interpreted and native lanes
+byte-identical, 49 printed rows, 31 shared with CPython and GREEN, 18 RED. All 31 green rows
+are NON-GRAPH rows (refusals, dtype arithmetic, counts) and all 18 red rows are GRAPH rows.
+The two lanes agreeing with each other says the port is DETERMINISTIC; it says nothing about
+whether the port is RIGHT, and the only thing that says that is the third lane.
+
+**THE SHARP FORM OF IT, and it is the cheapest diagnostic in this section:** a row that is
+RED can be a *printer* problem (rule 8 above) and a row that is GREEN can be a
+*reachability* problem (a `ref_*` predicate that nothing in the file calls). Measure the
+green count BY ROW CLASS, not in aggregate. "31/49" is uninformative; "31/31 non-graph rows
+and 0/18 graph rows" names the defect in one sentence.
+
+### 24. `Emit` AND `Halt` BELONG TO BASE's `IO.OP` — A LOCAL `type Emit` IS A DUPLICATE
+MEASURED (2026-10-02, cost the renderer/cstyle unit its whole run: the agent died
+mid-rename and left a file that would not check). Bend's Base declares
+`type IO.OP<-R: Type> is Type:` with constructors `Emit{value: R}` and
+`Halt{code, message}`, so the names `Emit` and `Halt` are TAKEN in the flat
+constructor namespace. Declaring your own `type Emit is Data:` fails with
+    expected : a fresh constructor name (duplicate declaration: Emit)
+which reads like a duplicate in YOUR file and is not: `grep -rn "type Emit is Data"`
+returns exactly one hit, and `Emit` appears nowhere else in the port. It is not
+shadowing either -- an aliased import (`import ./__init__.bend as R`) does not help,
+because Base itself is imported unqualified.
+
+THE FIX IS TO ESCAPE THE NAME, not to invent a different concept for it: `Emit_`,
+with a comment naming the wall and Base's owner. Same precedent as `@function_` in
+`examples/beautiful_mnist.ts`. `bend base 2>/dev/null | grep -n Emit` is the check,
+and it costs one second -- do it BEFORE naming a record, not after the file is 2000
+lines deep.
+
+### 25. `volatile` IS A RESERVED WORD AND CANNOT BE A FIELD NAME
+MEASURED (2026-10-02, three-line probe, ~30 seconds versus a 90-second compile of
+the file that hit it). A record field named `volatile` does not even parse:
+
+    type T is Data:
+      T{volatile: Bool}
+    def rd(t: T) -> Bool: t.volatile
+    -- expected : a defined name / observed : t.volatile
+
+There is nothing wrong with the declaration and nothing in Base defines `volatile`
+(`bend base --names | grep volatile` is empty), so unlike rule 24 this is the LEXER
+holding the name, not a namespace collision. CONFIRMED with the correct spelling
+(rule 26) so the two are not confused: `T.mutable(t)` compiles and `T.volatile(t)`
+fails with the same message. tinygrad's `ParamArg` has a `volatile` field, so every
+port that mirrors that record hits this. ESCAPE IT: `volatile_`, with a comment
+naming the reserved word -- same precedent as `Emit_` in rule 24 and `@function_`
+in the TS example.
+
+CAUTION, and this cost an hour: this rule was FIRST observed as `t.volatile`
+failing, which is really rule 26 wearing a disguise. `volatile_` did not fix that
+error, because the syntax was wrong, not the name. When a probe disagrees with a
+rule, suspect the rule you have not yet measured.
+
+THE LESSON, which is the real content of both rules: before naming a record after
+the Python, check the name is AVAILABLE. Two commands, both about a second:
+`bend base --names | tr ',' '\n' | grep -i <name>` for a Base collision (rule 24)
+and a three-line probe for a reserved word (this rule). Both were found by an agent
+dying mid-file and the coordinator re-deriving the cause from a parse error.
+
+### 26. A FIELD IS READ `Type.field(value)` -- THERE IS NO `value.field` SUGAR
+MEASURED (2026-10-02, three-line probes). `def rd(t: T) -> Bool: t.mutable` does
+NOT parse:
+
+    expected : a defined name / observed : t.mutable
+
+and it fails identically whether `t` is `+`-affine or plain, so this is not rule 5.
+The working spelling is the namespace-qualified projection, which is what the rest
+of this port already does everywhere: `T.mutable(t)`, `T.Tensor.u(t)`,
+`O.Arena.op(ar, u)`, `S.Dt.cls(d)`. A `match` arm must still name EVERY field
+(`case T{mutable, image}: ...`), or it reports "a T pattern with 2 fields".
+
+This is why the tree reads the way it does. `value.field` is the Python/C reflex
+and it is silently unavailable; the projection-def idiom is not a style choice, it
+is the only spelling. A 1960-line file written in the Python reflex does not merely
+have a few errors -- it has one per field read, and each costs a compile cycle to
+discover because the checker reports only the FIRST. When a dead agent leaves a
+large file that does not check, COUNT the errors in the file's idiom before you
+start patching: if it is this mistake, it is a mechanical rewrite (one sed-shaped
+pass plus a hand pass for nested ones), not a debugging session.
+
+### 27. THERE IS NO AUTO-GENERATED FIELD PROJECTION AT ALL -- AND RULE 26's `T.mutable(t)`
+###     EXAMPLE IS WRONG, THOUGH ITS VERDICT ABOUT `t.mutable` IS RIGHT
+
+MEASURED (2026-10-02, cost `renderer/cstyle.bend` a compile cycle and, more
+importantly, would have sent the next agent looking for a Bend feature that does not
+exist). Rule 26 says the working spelling is the namespace-qualified projection and
+gives `T.mutable(t)` as compiling. **For a LOCALLY-DECLARED record it does not
+compile.** The three-line probe, run one line at a time because the checker reports
+only the first:
+
+```bend
+import Base
+type T is Data:
+  T{mutable: Bool}
+def rd(t: T) -> Bool: t.mutable
+#| - expected : a defined name
+#| - observed : t.mutable
+def rd2(t: T) -> Bool: T.mutable(t)
+#| - expected : a defined name
+#| - observed : T.mutable          <-- rule 26 says this COMPILES
+```
+
+And the rule-25 escape does not help either: `T2{volatile_: Bool}` with
+`T2.volatile_(t)` is refused the same way. So rule 26's VERDICT (`t.mutable` is
+unavailable) is right and its SPELLING is not, and the reason the tree looks like
+rule 26 says is that **every `Type.field` reader in the port is a hand-written
+`def`**. `ops.bend` declares `Arena.op` / `Arena.src` / `Found.ar` / `Node.tag`;
+`spec.bend` declares `Dt.bits` / `Dt.cls` / `Sp.shape`; `cstyle.bend` declares
+twenty-two of them for its own four records. There is no record in the tree whose
+reader is generated, and there cannot be one: the reader needs a `match` that names
+EVERY field, and the compiler does not know the field list at the point a reader
+would be needed.
+
+THE CORRECT RULE, THEN: a field is read `Type.field(value)` **and `def
+Type.field(x: Type) -> T: match x: case Type{f1, f2, ..., fn}: fi` is written out
+by hand for every field.** Cost: two lines per field, and renaming a field is one
+edit per reader. What it buys back: the reader is a real def, so it is nameable in a
+comment, mutable in a mutation, and identical in shape whether the record is local or
+imported.
+
+THE PART THAT HAD BEEN MISREAD FOR TWO RULES: "the only spelling is
+`Type.field(value)`" is true of the CALL and false of the DEFINITION. Rule 24
+(`Emit` is Base's), rule 25 (`volatile` is reserved) and rule 26 (`value.field`) all
+described the call site. This one describes the declaration, and it is the reason
+the same three escapes (`Emit_`, `volatile_`, and twenty-two `Type.field` readers)
+appear together at the top of a file that touches four local records.
+
+### 28. A `Bool` PARAMETER DOES NOT MAKE A TWO-DEF SPLIT OF ONE RECURSION LEGAL -- IT IS
+###     STILL MUTUAL RECURSION, AND THE COUNTDOWN MUST BE THE REMAINING COUNT
+
+MEASURED (2026-10-02) building HIP's and CUDA's prefix clauses, which are "emit
+clause 0, then 1, then 2, ... up to a per-device count". The natural shape is a
+pair, because a `match` may not scrutinise a computed value:
+
+```
+def go(..., k, acc): at(U32.is_eq(k, count), ..., k, acc)     # compute the Bool
+def at(same, ..., k, acc): match same: ... go(..., k+1, ...)    # consume the Bool
+```
+
+That is mutual recursion and it is refused -- but the FIRST error is the misleading
+one, `expected : a filled definition ... observed : go`, because `go` is declared
+below `at`. Fix the order and the mutual-recursion refusal arrives. Convention 9 in
+`renderer/__init__.bend` already says the self-call must live inside the def that
+owns the `match`; this is the measured consequence, and it forces ONE def:
+
+```
+def dev_prefix.go(rem: Nat, ..., k: U32, acc: ...) -> ...:
+  match rem:
+    case 0n: acc
+    case 1n+m: dev_prefix.go(m, ..., U32.add(k, 1), add(acc, clause(..., k)))
+```
+
+**THE COUNTDOWN IS THE REMAINING CLAUSE COUNT AND NOT THE LOOP INDEX**, and that is
+the whole shape rather than a style choice: `k` only GROWS, the decrease checker
+reads the first argument that shrinks, and so a `k`-first signature fails with
+`expected : a decreasing self-call`. Passing `count - k` in first and incrementing
+`k` inside is what makes one def enough. It also happens to read better: `rem` is the
+question ("is there anything left?") and `k` is bookkeeping.
+
+### 29. `+` ON A LATER PARAMETER DOES NOT DISTURB THE DECREASE CHECK ON THE FIRST ONE
+
+MEASURED (2026-10-02), same def. The self-call above passes `rem` (shrinks, first),
+then `dev`, `u`, `vecs`, `ockl`, `ocml`, `cdna4`, `k` and `acc`. Three of those are
+read twice in the one arm and need `+`: `cdna4` (once in `prefix_clause`, once in the
+self-call) and `k` (once in the self-call's arithmetic, once in `prefix_clause`).
+`+` on them is accepted and `ALL PROOFS CHECK` holds.
+
+This is worth one line because the fuel sections above say twice that "marking either
+`+` breaks the check -- a reusable binder stops counting as a subterm". That is true
+**only for the binder that does the shrinking**. A `+` on the SEVENTH argument of a
+nine-argument self-call cannot affect the decrease, and refusing to add it (on the
+theory that it might) makes the arm impossible.
+
+### 30. `+` ON A `U32` IS FREE, AND A `Nat` `match` WITH `case 0n:` THEN `case 1n+m:` IS
+###     THE WHOLE COUNTDOWN
+
+MEASURED (2026-10-02), same def, and both halves of it are things the sections above
+state only in fragments. `+k: U32` is accepted: `U32` is `Data`, so a `+` costs a
+reference count and nothing else (`rand.bend`'s rule 4 already said this for `F32`).
+And `match rem: case 0n: acc; case 1n+m: ...` is exhaustive and correct -- `1n+p` IS
+a first-match prefix (the correction section's point), and it is correct HERE
+precisely because the `0n` arm is listed first, so the prefix pattern never sees a
+zero. The prefix semantics are not a hazard in a countdown; they are a hazard in a
+`match` whose arms are *intended* to be disjoint, which is the only place the
+correction actually applies.
+
+### 31. NO LIST COMPREHENSIONS -- BUT CLOSURES EXIST AND `List` IS FULLY ERGONOMIC
+MEASURED (2026-10-02, five probes). Three facts, and the third one retracts a
+standing instruction in the agent brief.
+
+1. **THERE IS NO COMPREHENSION SYNTAX.** `[U32.add(x, 1) for x in xs]` fails with
+       expected : a term (the keyword 'for' cannot head one)
+   and `[x for x in xs() if p(x)]` likewise. The guide never mentions the word.
+   CONSEQUENCE: a Python comprehension is NOT a source of our line-count excess,
+   because the Bend equivalent is also one call -- `List.map(~A, ~B, f, xs)` is the
+   same length as `[f(x) for x in xs]`. Anyone blaming comprehensions for the 2.28x
+   is looking in the wrong place.
+2. **CLOSURES AND DEF REFERENCES BOTH WORK.** `x => U32.add(x, 1)` is a closure;
+   a plain def may be passed as a function value and called as many times as you
+   like (the guide is explicit: "unlike a closure, may be called as many times as").
+   Multi-arg function types are curried: `U32 -> U32 -> U32`.
+3. **THE ARITY QUANTIFIER IS HOW YOU CALL THE `List` FOLDS.** A `List` is
+   `List<a, A>` where `a` is the arity, so a cons list is `List<&2, U32>` and you
+   pass the arity to the fold:
+       List.filter(~U32, big, xs)                     -- f is 1-ary, the ELEMENT
+       List.foldl(~&2, ~U32, ~U32, addn, xs, 0)       -- f is 2-ary, (acc, elem)
+       List.any(~&2, ~U32, big, xs)
+   All three compile. Note `List.map` takes `List<A>` (whole-list element type) and
+   so infers `&1` unless you pass the arity explicitly -- that inference is what
+   makes a map over a cons list look like it "lost" a level.
+
+**WHAT THIS RETRACTS.** The agent brief has said for days that rule tables must be
+copyable `Data` "so there are no closures". That was my assumption, not a
+measurement, and it is wrong: closures and def references both work. The rule
+tables are still plain `Data` -- copyable, gateable, mutation-testable, and a
+closure per rule would make a table unprintable -- but the REASON is now the gate
+and the table, not a language limitation. Do not tell the next agent that Bend
+lacks closures; it has them. The real cost of our line count is elsewhere: one
+hand-written reader per record field (3,499 of them), ~81 duplicated dispatch
+scans, ~1,316 two-arm `Maybe` reads, and comment density -- and a share of the
+`.put`/`.go` helper proliferation is self-inflicted when `List.foldl` with a
+top-level 2-ary def would do.
