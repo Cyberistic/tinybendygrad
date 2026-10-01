@@ -487,22 +487,17 @@ def awmma_repr(dims: List<&2, U32>, dt: S.Dt, th: U32, tc: List<&2, U32>) -> Str
 def aink_repr(ins: String, dt: S.Dt) -> String:
   String.concat(["('", ins, "', ", dt_repr(dt), ")"])
 
-# MEASURED, and it corrects ops.bend's `Ops.name`: Python's `str(Ops.ADD)` is
-# `"Ops.ADD"`, not `"ADD"`, because `FastEnum.__str__` falls through to
-# `Enum.__str__` which is `"ClassName.MEMBER"`. So `repr(Ops.ADD)` -- which
-# `REDUCE.arg` and `ALLREDUCE.arg` both print -- is `"Ops.ADD"`.
-#
-# THIS AFFECTS ops.bend AND NOTHING ELSE THERE, which is why it is not fixed
-# there: `Ops.name` has no reader outside this file. `Ops.value` (the IntEnum
-# number, which `tuplize` uses) is a different function and is right.
-def ops_repr(op: O.Op) -> String:
-  String.concat(["Ops.", O.Ops.name(op)])
+# `repr(Ops.ADD)` is `"Ops.ADD"`, because `FastEnum.__repr__` is `str(self)` and
+# `Enum.__str__` is `"ClassName.MEMBER"`. ops.bend's `Ops.name` now answers
+# exactly that, so this def is GONE and its call sites read `Ops.name` directly.
+# It was the local correction this file used to carry while ops.bend returned the
+# bare member name.
 
 def aallred_repr(rop: O.Op, dev: S.Dev) -> String:
-  String.concat(["(", ops_repr(rop), ", ", dev_repr(dev), ")"])
+  String.concat(["(", O.Ops.name(rop), ", ", dev_repr(dev), ")"])
 
 def areduce_repr(rop: O.Op, num_axes: U32) -> String:
-  String.concat(["(", ops_repr(rop), ", ", U32.show(num_axes), ")"])
+  String.concat(["(", O.Ops.name(rop), ", ", U32.show(num_axes), ")"])
 
 def acall_name(m: Maybe<&2, String>) -> String:
   match m:
@@ -973,8 +968,9 @@ def srcs(+c: Ctx, +srcs: List<&2, U32>) -> String:
 #     why the arm list below omits it, and the gate pins it.
 # ===========================================================================
 
-# `x.op.name.lower()` -- in five rules, one measurement.
-def op_lower(op: O.Op) -> String: String.to_lower(O.Ops.name(op))
+# `x.op.name.lower()` -- in five rules, one measurement. `name` is the BARE
+# member and `Ops.name` is the `ClassName.MEMBER` form, so this reads `.name.of`.
+def op_lower(op: O.Op) -> String: String.to_lower(O.Ops.name.of(op))
 
 def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
   match m:
@@ -1006,7 +1002,7 @@ def pmp.fb.args(a: O.Arg, ismeta: Bool) -> String:
   pmp.fb.args.of(ismeta, arg_repr(a))
 
 def pmp.fb.of(ismeta: Bool, +ar: O.Arena, ctx: Ctx, +u: U32) -> String:
-  String.concat(["UOp(", ops_repr(O.Arena.op(ar, u)), ", ", srcs(ctx, O.Arena.srcs(ar, u)), pmp.fb.args(O.Arena.arg(ar, u), ismeta)])
+  String.concat(["UOp(", O.Ops.name(O.Arena.op(ar, u)), ", ", srcs(ctx, O.Arena.srcs(ar, u)), pmp.fb.args(O.Arena.arg(ar, u), ismeta)])
 
 def pmp.fb(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.fb.of(ismeta_of(O.Arena.arg(ar, u)), ar, ctx, u)
@@ -1125,7 +1121,7 @@ def pmp.cfn(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 
 def reduce_op.of(a: O.Arg) -> String:
   match a:
-    case O.AReduce{rop, num_axes}: ops_repr(rop)
+    case O.AReduce{rop, num_axes}: O.Ops.name(rop)
     case _: "?"
 
 def reduce_op(ar: O.Arena, u: U32) -> String: reduce_op.of(O.Arena.arg(ar, u))
@@ -1145,10 +1141,27 @@ def reduce_axes(ar: O.Arena, u: U32) -> U32: reduce_axes.of(O.Arena.arg(ar, u))
 def range_tuple.go(n: Nat, +p: Nat, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
-    case 1n+q: range_tuple.go(q, p, List.append(&2, U32, acc, [U32.from_nat(p)]))
+    case 1n+q: range_tuple.go(q, Nat.add(p, 1n), List.append(&2, U32, acc, [U32.from_nat(p)]))
 
 def range_tuple(n: U32) -> String:
   String.concat(["(", String.join(u32_list_repr.go(range_tuple.go(U32.to_nat(n), 0n, Nil{})), ", "), ")"])
+
+# `x.src[1:]` -- the ONE slice both sugar rules and rule 8's tail need. Rebuilt
+# here for the same reason as `tsort`: `Arena.src_from.go`'s `h <> t 1n+p` arm
+# CONSES the head it was supposed to drop, so `src_from(ar, u, 1)` answers
+# `[src[0]]` instead of `[src[1], ..]`. That turned `UOp.const(9).index(c2)` into
+# `UOp.const(9).index(UOp.const(9))` and put the range's own bound in its
+# `src=(..)` tail. DELETE WHEN ops.bend's IS FIXED.
+# `srcs.go(ar, [1,3])` must answer `[3]`: the FIRST arm matches the head and
+# returns the TAIL, and it does NOT recurse. Recursing on the tail and returning
+# the tail drops one element per step, so a two-src node lost both.
+def src_tail.go(+ar: O.Arena, +ss: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: Nil{}
+    case _ <> t: t
+
+def src_tail(+ar: O.Arena, u: U32) -> List<&2, U32>:
+  src_tail.go(ar, O.Arena.srcs(ar, u))
 
 # RULE 8: `UPat(Ops.RANGE, src=(UPat(Ops.CONST, name="c"),), allow_any_len=True)` ->
 #   "UOp.range("+', '.join([str(c.val)] + [repr(y) for y in x.arg])
@@ -1176,7 +1189,7 @@ def pmp.range.of(any: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> 
   Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
     Bool.pick(String, Bool.not(isconst), pmp.fb(ar, ctx, u),
       String.concat(["UOp.range(", String.join(range_pieces(ar, ctx, u), ", "),
-        range_tail.of(Nat.is_le(2n, List.length(&2, U32, O.Arena.srcs(ar, u))), O.Arena.src_from(ar, u, 1), ctx), ")"])))
+        range_tail.of(Nat.is_le(2n, List.length(&2, U32, O.Arena.srcs(ar, u))), src_tail(ar, u), ctx), ")"])))
 
 def pmp.range(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.range.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
@@ -1186,10 +1199,10 @@ def pmp.range(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 # and CMOD cannot be written infix, `.where` re-promotes its operands, and the
 # binary operators re-promote too.
 def pmp.alu.where(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
-  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", ops_repr(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 2)), ")"])
+  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", O.Ops.name(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 2)), ")"])
 
 def pmp.alu.bin(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
-  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", ops_repr(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ")"])
+  String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", O.Ops.name(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ")"])
 
 # RULE 12: `UPat(set(syms.keys())-{Ops.SUB, Ops.CDIV, Ops.CMOD})` ->
 #   strip_binary_parens(x, ctx[src0], ctx[src1], ..) if `x.src[0]._broadcasted(x.src[1]) == x.src`
@@ -1382,9 +1395,16 @@ def rws_trn(+tr: Map<&2, U32>, u: U32, d: U32, intr: Bool) -> Map<&2, U32>:
 def rws_key(last: U32, i: U32, u: U32) -> String:
   Bool.pick(String, U32.is_eq(u, last), "ast", String.concat(["c", U32.show(i)]))
 
+# `if u not in to_render: r[u] = ren` / `else: r[u] = key; ret[key] = ren`.
+# `intr` IS `u in to_render`, so the INLINE case is the NOT branch: `Bool.pick`
+# answers its THIRD argument when the test is false, which is why the `else` of
+# Python reads here as the FALSE arm. Getting this backwards puts every rendered
+# node in `ret` and every split node inline, and `ret` comes back EMPTY for a tree
+# whose only split node is the ast -- which is most of them.
 def rws_ren.pick(intr: Bool, +ren: String, +last: U32, +i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
-  Bool.pick(RWS, intr, RWS{ctx_put(ctx, u, ren), ret, dep, trn},
-    RWS{ctx_put(ctx, u, rws_key(last, i, u)), List.append(&2, Bind, ret, [Bind{rws_key(last, i, u), ren}]), dep, trn})
+  Bool.pick(RWS, intr,
+    RWS{ctx_put(ctx, u, rws_key(last, i, u)), List.append(&2, Bind, ret, [Bind{rws_key(last, i, u), ren}]), dep, trn},
+    RWS{ctx_put(ctx, u, ren), ret, dep, trn})
 
 def rws_ren.of(intr: Bool, +ren: String, last: U32, i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
   rws_ren.pick(intr, ren, last, i, u, ctx, ret, dep, trn)
@@ -1460,13 +1480,15 @@ def pmp.cast(+ar: O.Arena, +tb: F.Table, ctx: Ctx, +u: U32) -> String:
 def arg_clause(+a: O.Arg) -> String:
   arg_clause.of(ismeta_of(a), a)
 
-# the arg clause is APPENDED after the srcs, so it rides in as the accumulator's
-# tail seed and the walk above only ever conses a src
-def sugar_args(+ar: O.Arena, ctx: Ctx, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
-  sugar_args.go(ar, ctx, u, O.Arena.src_from(ar, u, 1), Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(O.Arena.arg(ar, u))]), acc))
+# `[ctx[y] for y in x.src[1:]] + [f'arg={repr(x.arg)}'] if x.arg is not None else []`
+# -- the SRCS FIRST and the arg clause LAST, so the clause rides in as the
+# accumulator's TAIL SEED and the walk only ever appends a src. Seeding it as the
+# HEAD put `arg=(0, AxisType.LOOP)` before the index it belongs after.
+def sugar_tail(+ar: O.Arena, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
+  Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(O.Arena.arg(ar, u))]), acc)
 
-# `[f'arg={repr(x.arg)}'] if x.arg is not None else []` -- a list of zero or one
-# element, and the join is over that list, so a missing arg leaves NO comma.
+def sugar_args(+ar: O.Arena, ctx: Ctx, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
+  sugar_args.go(ar, ctx, u, src_tail(ar, u), sugar_tail(ar, u, acc))
 def pmp.sugar.of(zero: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   Bool.pick(String, zero,
     String.concat(["UOp.", op_lower(O.Arena.op(ar, u)), "(", String.join(sugar_args(ar, ctx, u, Nil{}), ", "), ")"]),
@@ -1537,11 +1559,14 @@ def pmp.go.of(op: O.Op, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
 def pmp(+ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
   pmp.go.of(O.Arena.op(ar, u), ar, tb, ctx, u)
 
-# `ren += f".rtag({repr(u.tag)})"`
+# `ren += f".rtag({repr(u.tag)})"`. This is a SUFFIX, so an untagged node
+# contributes NOTHING -- the same shape as `tagstr` above, and NOT the whole
+# rendered string. Seeding the no-tag arm with `tag_repr(t)` (which is the
+# literal "None") appended "None" to every untagged node.
 def rtag.of(+t: O.Tag, +s: String) -> String:
   Bool.pick(String, tag_is_none(t), s, String.concat([".rtag(", tag_repr(t), ")"]))
 
-def rtag(+t: O.Tag) -> String: rtag.of(t, tag_repr(t))
+def rtag(+t: O.Tag) -> String: rtag.of(t, "")
 
 def ren_str(+ar: O.Arena, tb: F.Table, ctx: Ctx, +u: U32) -> String:
   String.concat([pmp(ar, tb, ctx, u), rtag(O.Arena.tag(ar, u))])
@@ -1565,12 +1590,37 @@ def render_with_splits(+ar: O.Arena, +tb: F.Table, +lst: List<&2, U32>, +trn: Ma
   rws_ret(rws.go(lst, ar, tb, last_of(lst), 0, RWS{ctx_new(), Nil{}, Map.new(&2, U32), trn}))
 
 
-def ret_row.of(k: String, +v: String) -> String: String.concat([k, " = ", v])
+# THE BALANCE GUARD IS LOCAL, and it is the third rebuild of this kind in this
+# file. helpers.bend's `is_balanced` reads `bal.spilled`, which RE-DERIVES the
+# underflow flag from the DEPTH rather than reading the flag its own `Depth`
+# record carries -- and the depth wraps back to 0 on the next `(`, so the flag is
+# gone one character later. `is_balanced("(a))(b")` answers True where CPython's
+# answers False, so `strip_parens` ate the `(` off `(A+B).rtag('mytag')`.
+# DELETE THIS WHEN helpers.bend READS THE FLAG.
+def bal.next(c: U32, d: U32) -> U32:
+  match c:
+    case 40: U32.add(d, 1)
+    case 41: U32.sub(d, 1)
+    case _: d
+
+def bal.ch(h: Char, d: U32) -> U32: bal.next(Char.to_u32(h), d)
+
+def bal.walk(+cs: List<&2, Char>, +d: U32, +under: Bool) -> Bool:
+  match cs:
+    case Nil{}: Bool.and(Bool.not(under), U32.is_zero(d))
+    case h <> t: bal.walk(t, bal.ch(h, d), Bool.or(under, U32.is_ge(bal.ch(h, d), 2147483648)))
+
+def is_wrapped(+v: String) -> Bool:
+  Bool.and(Bool.and(String.starts_with(v, "("), String.ends_with(v, ")")),
+    bal.walk(String.to_list(H.strip_parens.inner(v)), 0, False{}))
 
 # `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
+def ret_row.of(k: String, +v: String) -> String:
+  String.concat([k, " = ", Bool.pick(String, is_wrapped(v), H.strip_parens(v), v)])
+
 def ret_row(p: Bind) -> String:
   match p:
-    case Bind{k, v}: ret_row.of(k, H.strip_parens(v))
+    case Bind{k, v}: ret_row.of(k, v)
 
 # `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
 def ret_rows.go(ps: List<&2, Bind>) -> List<&2, String>:
@@ -1673,10 +1723,13 @@ def consumers.new(+ar: O.Arena, lst: List<&2, U32>) -> Cons:
 def uses(+ar: O.Arena, v: U32, u: U32) -> U32: uses.go(O.Arena.srcs(ar, v), u, 0)
 
 # `if u.op in not_rendered: continue` comes FIRST and short-circuits the rest.
+# `if u.op in not_rendered: continue` and the consumer test are TWO `continue`s,
+# so this is an OR of them -- not a `Bool.pick` that DROPS the test for every
+# node that is not a CONST. Reading it as a pick gave `False` for every non-CONST,
+# so nothing ever continued and every node split onto its own `cN` line.
 def tr_continue.of(+op: O.Op, +ar: O.Arena, +u: U32, +c: Cons) -> Bool:
-  Bool.pick(Bool, not_rendered(op),
-    Bool.and(U32.is_eq(cu32(Cons.cnt(c), u), 1), Bool.and(U32.is_eq(uses(ar, cu32(Cons.who(c), u), u), 1), Bool.not(always_rendered(op)))),
-    False{})
+  Bool.or(not_rendered(op),
+    Bool.and(U32.is_eq(cu32(Cons.cnt(c), u), 1), Bool.and(U32.is_eq(uses(ar, cu32(Cons.who(c), u), u), 1), Bool.not(always_rendered(op)))))
 
 def tr_continue(op: O.Op, +ar: O.Arena, u: U32, +c: Cons) -> Bool:
   tr_continue.of(op, ar, u, c)
@@ -1735,8 +1788,76 @@ def to_render(+ar: O.Arena, +lst: List<&2, U32>, ast: U32) -> Map<&2, U32>:
 def pyrender.of(+ar: O.Arena, +tb: F.Table, +ast: U32, +lst: List<&2, U32>) -> String:
   String.join(ret_rows(render_with_splits(ar, tb, lst, to_render(ar, lst, ast))), "\n")
 
+# `list(ast.toposort())` is NOT `O.UOp.toposort`'s list, and this is the third
+# bug these fixtures found. ops.bend's `Topo.step` pops the HEAD of the worklist
+# and `Arena.push_srcs` CONSES onto it, so the walk is a QUEUE: it visits a
+# node's srcs AFTER the node itself, and `pyrender` then renders consumers before
+# their srcs. `ctx_get` answers "" for an unwritten src, so the output is not a
+# wrong string but a SHAPE-WRONG one -- `UOp.const(9).index(UOp.const(9))`, with
+# the receiver substituted by the argument. CPython's `stack.pop()` is LIFO, so
+# `toposort` DELETES ITSELF FROM THE MIDDLE.
+#
+# `toposort` HERE is the post-order DFS CPython's stack computes, and it is
+# LOCAL for exactly one reason: the fix belongs in ops.bend, which this file does
+# not own. It is the same "rebuilt here" trade `consumer_map_from_toposort` and
+# `range_str` already make at the top of this file. DELETE IT WHEN ops.bend's
+# `UOp.toposort` IS FIXED.
+# `tsort` IS CPython'S WORKLIST, with `Fr{n, done}` for the `(node, visited_flag)`
+# frame: `done=False` is the first visit (expand), `done=True` the second (append).
+# `acc` is `cache`, so the membership test terminates a cyclic graph exactly where
+# CPython's `if node in cache: continue` does.
+type Fr is Data:
+  Fr{n: U32, done: Bool}
+
+# `for s in reversed(node.src): stack.append((s, False))` followed by a LIFO pop
+# means src[0] is expanded FIRST. The stack is built head-first, so src[0] has to
+# land on top: `rev` reverses, `frames` conses the reversed list back on.
+def tsort.rev(+ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: tsort.rev(t, s <> acc)
+
+def tsort.frames(+ss: List<&2, U32>, +acc: List<&2, Fr>) -> List<&2, Fr>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: tsort.frames(t, Fr{s, False{}} <> acc)
+
+# `stack.append((node, True))` and THEN the srcs, so the node sits BELOW them and
+# is popped only once every src has been -- which is what makes the order
+# post-order, and what puts a node's rendering after its srcs'.
+# `if node in cache: continue` is the FIRST line of CPython's loop, so an
+# already-visited node is never re-EXPANDED -- and that is what makes the fuel
+# `N + E` sufficient, since a node is then pushed once per incoming edge and once
+# as `done=True`. Testing only in the `done=True` arm re-expanded every shared
+# subexpr, and the walk ran out of fuel half way through `shared`.
+def tsort.push(+ar: O.Arena, +u: U32, +rest: List<&2, Fr>, +acc: List<&2, U32>) -> List<&2, Fr>:
+  Bool.pick(List<&2, Fr>, List.contains(U32, U32.is_eq, acc, u), rest,
+    tsort.frames(tsort.rev(O.Arena.srcs(ar, u), Nil{}), Fr{u, True{}} <> rest))
+
+def tsort.put(+ar: O.Arena, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, List.contains(U32, U32.is_eq, acc, u), acc, List.append(&2, U32, acc, [u]))
+
+# ONE def, so there is no mutual recursion: the two arms differ only in the stack
+# they hand on. THE FUEL IS `Kahn.budget` -- nodes PLUS edges -- and not the
+# `2 * len(arena)` ops.bend's `Topo` uses: a node with two consumers is pushed
+# TWICE as `done=False` (once per incoming edge) and once as `done=True`, so the
+# bound is `N + E` and not `2N`. `2 * len(arena)` ran out on `nest`, which has two
+# shared CONSTs, and silently returned a toposort missing the outer ADD.
+def tsort(fuel: Nat, +st: List<&2, Fr>, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U32>:
+  match fuel:
+    case 0n: acc
+    case 1n+p:
+      match st:
+        case Nil{}: acc
+        case Fr{n, done} <> rest:
+          match done:
+            case True{}: tsort(p, rest, ar, tsort.put(ar, n, acc))
+            case False{}: tsort(p, tsort.push(ar, n, rest, acc), ar, acc)
+
+def tsort.go_all(fuel: Nat, +st: List<&2, Fr>, +ar: O.Arena, acc: List<&2, U32>) -> List<&2, U32>: tsort(fuel, st, ar, acc)
+
 def pyrender(+ar: O.Arena, +tb: F.Table, +ast: U32) -> String:
-  pyrender.of(ar, tb, ast, O.UOp.toposort(F.Kahn.budget(ar), ar, ast))
+  pyrender.of(ar, tb, ast, tsort(F.Kahn.budget(ar), [Fr{ast, False{}}], ar, Nil{}))
 
 
 
@@ -1772,10 +1893,22 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # * `renderer` / `renderer_infer` (:45, :74) -- 21 UPat rules whose payloads are
 #   mostly `ctx[src]`; only the sugar/renderer INFER arms need anything that is
 #   not already here. They are needed by `UOp.render()`, not by `pyrender`.
-# * THE PYRENDER GATE ROWS. `pyrender` and `_render_with_splits` are ported and
-#   the file CHECKS, but no arena fixture drives them yet, so `pyrender` itself
-#   is UNGATED. That is the single most important thing left and it is a gate
-#   problem, not a port problem.
+# * THE PYRENDER GATE ROWS ARE LANDED -- twenty-four of them, at the foot of this
+#   file, one per pm_pyrender rule plus the three `to_render` arms -- so this is
+#   no longer on the list. Adding them found SIX bugs in the port this file owns,
+#   which is the argument for the rows existing at all rather than the other way
+#   round: `rws_ren.pick` had its two arms swapped (so `ret` came back empty and
+#   `pyrender` returned `""` for EVERY tree), `rtag` seeded its no-tag arm with
+#   the tag's own repr (so every untagged node printed a trailing `None`),
+#   `sugar_args` put the arg clause BEFORE the srcs, `tr_continue` read two
+#   `continue`s as a `Bool.pick` (so nothing ever continued and every node split),
+#   and `range_tuple` passed its countdown through unchanged, printing `(0, 0)`.
+#   THREE MORE are one-line bugs in files this file does not own, and each is
+#   rebuilt here with the fix named at the point of use: ops.bend's `UOp.toposort`
+#   walks a QUEUE where CPython's is a LIFO stack (`tsort`), its
+#   `Arena.src_from.go` conses the head it was told to drop (`src_tail`), and
+#   helpers.bend's `is_balanced` re-derives the underflow flag from the depth
+#   instead of reading the one its own record carries (`bal.walk`).
 #
 # TODO(p3) render.py:6   def pretty_print
 # TODO(p3) render.py:18  def print_uops
@@ -1791,6 +1924,13 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # boolean. That matters more here than in any other unit: `String.concat` will
 # happily drop a ", " and yield a plausible wrong string, so the gate is the
 # string and never `arg_repr(..) == "..."`.
+#
+# THE `g_*` FIXTURES ARE ARENA TREES, not values. `pyrender` takes a UOp and walks
+# its toposort, so pinning it needs a graph, and each fixture below rebuilds one
+# CPython `UOp` tree node for node -- same op, same arg, same tag, same src order
+# -- because a `cN` label IS a toposort index and the whole gate is a diff of
+# those labels. `py_row` folds the arena, renders, and prints the result beside
+# the CPython string for the same tree.
 #
 # THE THREE `pa` FIXTURES are the three shapes tinygrad's own repr test
 # exercises, and together they cover the three ORDERINGS of the nine keyword
@@ -1815,8 +1955,278 @@ def pa3() -> O.ParamArg:
   O.ParamArg{3, S.single(), Some{4}, None{}, None{}, None{}, S.ALocal{}, None{},
     True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
 
+# ===========================================================================
+# THE ARENA FIXTURES THAT DRIVE `pyrender`. render.py:143 is the whole REPR
+# port's reason to exist and until these rows landed NOTHING called it, so the
+# three `pa` fixtures above -- which pin `arg_repr` -- were pinning a formatter
+# whose caller was untested.
+#
+# EVERY FIXTURE IS A CPython `UOp` TREE REBUILT NODE FOR NODE, and the `py=` text
+# is what `pyrender` prints for THAT tree on this `tinygrad/`. Nothing here is a
+# transcription: each row's oracle was measured, and the numbering matters -- a
+# `cN` label is the toposort INDEX, so the Bend arena has to reach the same
+# toposort ORDER CPython does, not merely hold the same nodes.
+#
+# THE `cN` NUMBERS ALSO PIN THE `to_render` PASS, which is where a lot of
+# render.py's behaviour lives: `shared` forces one node onto its own line
+# because it has two consumers, `sink`/`store`/`reduce2` force one because the
+# SINK/STORE/REDUCE arms add srcs unconditionally, and `buffer`/`copy`/`index`
+# show the inverse (BUFFER/RANGE/SPECIAL are `always_rendered`, so they get a
+# line even with exactly one consumer).
+# ===========================================================================
+
+# `UOp.const(n)` -- CONST(3) is a weakint CONST here and in CPython, so `dt_of`
+# agrees and no CAST is involved.
+def f_const(+ar: O.Arena, n: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
+
+# `UOp(Ops.RANGE, src=(CONST(end),), arg=(axis_id, at))` -- ops.py:644.
+def f_range(+ar: O.Arena, end: U32, id: U32, at: O.AxisType) -> O.Found:
+  O.UOp.new(ar, O.OpsRANGE{}, [end], O.ARange{[id], at}, O.TNone{})
+
+# `UOp.range(n, id)` -- the CONST end and the RANGE in one step. The RANGE is
+# built in the arena the CONST returned, for the same reason `f_buf` is: passing
+# `ar` on to `f_range` would hand it the arena from BEFORE the CONST.
+def f_rng_at(+c: O.Found, id: U32) -> O.Found:
+  f_range(O.Found.ar(c), O.Found.i(c), id, O.AXIS_WEAK{})
+
+def f_rng(ar: O.Arena, n: U32, id: U32) -> O.Found:
+  f_rng_at(f_const(ar, n), id)
+
+# `UOp(Ops.BUFFER, src=(UOp.range(size,0),), arg=ParamArg(0, int32, size, dev))`.
+# The arena comes from the RANGE's own `Found`, not from the argument `ar`:
+# arguments are read left to right and each is passed UNCHANGED until one shrinks,
+# so passing `ar` here would hand `f_buf_r` the arena from BEFORE the RANGE and the
+# CONST -- and the BUFFER would land at index 1 over a RANGE index that is not
+# there yet. The device is a PARAMETER so `copy` can pass the TUPLE form the COPY
+# rule prints; a fixed device would make that row unreachable.
+def f_buf_r(+r: O.Found, dev: S.Dev, size: U32) -> O.Found:
+  O.UOp.new(O.Found.ar(r), O.OpsBUFFER{}, [O.Found.i(r)],
+    O.AParam{O.ParamArg{0, S.int32(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
+      False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
+  f_buf_r(f_rng(ar, size, 0), dev, size)
+
+# THE GATE ROW. A `do IO<Unit>` body cannot bind with `+`, so the fixture is a
+# `def` per rule and this one folds, renders and prints. `py=` is the CPython
+# string for the same tree, so a dropped literal or a moved `cN` is a DIFF.
+def py_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f)), "]   py=[", py, "]"]))
+
+# RULE 1. `UOp.const(3)` -- a CONST with `src=()`, the only shape rule 1 matches.
+def g_const() -> O.Found: f_const(O.Arena.empty(), 3)
+
+# RULE 2. The CAST's dtype (`float`) DIFFERS from its src's (`weakint`), which is
+# the guard. Equal dtypes fall through to rule 15 and `copy`'s BUFFER is the row
+# that shows a GLOBAL ParamArg printing at all.
+def g_cast() -> O.Found:
+  +c = f_const(O.Arena.empty(), 3)
+  O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{S.single()}, O.TNone{})
+
+# RULE 3. SPECIAL with exactly ONE src, and that src a CONST -- both halves of
+# the guard. `UOp.special(4, 'gidx')`.
+def g_special() -> O.Found:
+  +c = f_const(O.Arena.empty(), 4)
+  O.UOp.special(O.Found.ar(c), O.Found.i(c), "gidx")
+
+# RULE 4. `UOp.new_buffer('CPU', 4, dtypes.int, 0)` -- the addrspace test is the
+# load-bearing half (a LOCAL buffer falls through to rule 15) and `max_numel()`
+# is the size. The RANGE gets its OWN line: BUFFER and RANGE are both
+# `always_rendered`, so they split even with one consumer each.
+def g_buffer() -> O.Found: f_buf(O.Arena.empty(), S.D1{0}, 4)
+
+# RULE 5. `c2.copy_to_device('METAL')`. The COPY rule reads only src[0], so the
+# `('CPU', 'METAL')` TUPLE device in the buffer is what makes this row different
+# from `buffer` -- it is `dev_repr`'s Dn arm inside a rendered node.
+def g_copy() -> O.Found:
+  +b = f_buf(O.Arena.empty(), S.Dn{[0, 2]}, 4)
+  O.UOp.new(O.Found.ar(b), O.OpsCOPY{}, [O.Found.i(b)], O.AStr{"METAL"}, O.TNone{})
+
+# RULE 6. `UOp(Ops.CUSTOM_FUNCTION, src=(...), arg='myfn')` -- the arg is a
+# quoted string, so this row also pins `arg_repr`'s AStr arm.
+def g_cfn() -> O.Found:
+  +a = f_const(O.Arena.empty(), 3)
+  +b = f_const(O.Found.ar(a), 4)
+  O.UOp.new(O.Found.ar(b), O.OpsCUSTOM_FUNCTION{}, [O.Found.i(a), O.Found.i(b)], O.AStr{"myfn"}, O.TNone{})
+
+# RULE 7. `c2._rop(Ops.ADD, (0, 1))` -- `tuple(range(2))` and `Ops.ADD` inside
+# the REDUCE's arg, so this row pins `range_tuple` and `reduce_op` together.
+def g_reduce() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  +s = O.UOp.alu(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)])
+  O.UOp.new(O.Found.ar(s), O.OpsREDUCE{}, [O.Found.i(s)], O.AReduce{O.OpsADD{}, 2}, O.TNone{})
+
+# RULE 8a. `UOp.range(4, 0, AxisType.WEAK)` -- the CONST's value then the WHOLE
+# arg, so the axis id and the AxisType both ride in as `repr`.
+def g_range() -> O.Found: f_rng(O.Arena.empty(), 4, 0)
+
+# RULE 8b. A RANGE with a SECOND src, which is the `, src=(...)` tail. This is
+# the only fixture that reaches that branch of rule 8 -- render.py's own comment
+# says "range has srcs sometimes after control flow".
+def g_range2() -> O.Found:
+  +a = f_const(O.Arena.empty(), 4)
+  +b = f_const(O.Found.ar(a), 0)
+  O.UOp.new(O.Found.ar(b), O.OpsRANGE{}, [O.Found.i(a), O.Found.i(b)], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{})
+
+# RULE 9. `UOp.const(7).alu(Ops.CDIV, UOp.const(2))` -- CDIV is excluded from
+# rule 12 because `//` parses as FLOORDIV, so it can only be written `.alu`.
+def g_cdiv() -> O.Found:
+  +a = f_const(O.Arena.empty(), 7)
+  +b = f_const(O.Found.ar(a), 2)
+  O.UOp.alu(O.Found.ar(b), O.OpsCDIV{}, [O.Found.i(a), O.Found.i(b)])
+
+# RULE 10. CMOD, the `%` sibling of rule 9 -- same arm, different op.
+def g_cmod() -> O.Found:
+  +a = f_const(O.Arena.empty(), 7)
+  +b = f_const(O.Found.ar(a), 2)
+  O.UOp.alu(O.Found.ar(b), O.OpsCMOD{}, [O.Found.i(a), O.Found.i(b)])
+
+# RULE 11. `.alu(Ops.WHERE, ...)` with THREE srcs, because `.where` re-promotes
+# its operands and so cannot be written infix.
+def g_where() -> O.Found:
+  +a = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
+  +b = f_const(O.Found.ar(a), 2)
+  +c = f_const(O.Found.ar(b), 3)
+  O.UOp.alu(O.Found.ar(c), O.OpsWHERE{}, [O.Found.i(a), O.Found.i(b), O.Found.i(c)])
+
+# RULE 12a, the infix arm, through `strip_binary_parens` and `precedence`: the
+# inner `*` keeps its parens under the `+` and the outer `+` strips its own.
+def g_nest() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  +ab = O.UOp.alu(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)])
+  +m1 = f_const(O.Found.ar(ab), 4294967295)
+  +mb = O.UOp.alu(O.Found.ar(m1), O.OpsMUL{}, [O.Found.i(b), O.Found.i(m1)])
+  +am = O.UOp.alu(O.Found.ar(mb), O.OpsADD{}, [O.Found.i(a), O.Found.i(mb)])
+  +p = O.UOp.alu(O.Found.ar(am), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(am)])
+  +c = f_const(O.Found.ar(p), 3)
+  O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(p), O.Found.i(c)])
+
+# RULE 12b, the `.alu(...)` else arm: a THREE-src syms node. `_broadcasted`
+# returns a PAIR, so `== x.src` is an ARITY test and three srcs miss it.
+def g_mul3() -> O.Found:
+  +c16 = f_const(O.Arena.empty(), 16)
+  +r0 = f_range(O.Found.ar(c16), O.Found.i(c16), 0, O.AXIS_WEAK{})
+  +c4 = f_const(O.Found.ar(r0), 4)
+  +r1 = f_range(O.Found.ar(c4), O.Found.i(c4), 1, O.AXIS_WEAK{})
+  +c3 = f_const(O.Found.ar(r1), 3)
+  O.UOp.alu(O.Found.ar(c3), O.OpsMUL{}, [O.Found.i(r0), O.Found.i(r1), O.Found.i(c3)])
+
+# RULE 12b on a different op: `.alu(Ops.XOR, ..)`. XOR is in `syms` so the
+# OTHER arm of rule 12 would print `^`, and this row proves the op table and
+# the arity test are independent.
+def g_xor3() -> O.Found:
+  +c8 = f_const(O.Arena.empty(), 8)
+  +r0 = f_range(O.Found.ar(c8), O.Found.i(c8), 0, O.AXIS_WEAK{})
+  +c4 = f_const(O.Found.ar(r0), 4)
+  +r1 = f_range(O.Found.ar(c4), O.Found.i(c4), 1, O.AXIS_WEAK{})
+  +c5 = f_const(O.Found.ar(r1), 5)
+  O.UOp.alu(O.Found.ar(c5), O.OpsXOR{}, [O.Found.i(r0), O.Found.i(r1), O.Found.i(c5)])
+
+# RULE 13. `UOp.sqrt()` -- the `src=()` arm of the sugar rules. It is the only
+# fixture whose toposort is a SINGLE node, so it also pins "ast is the last
+# element" in `_render_with_splits`.
+def g_sqrt() -> O.Found: O.UOp.new(O.Arena.empty(), O.OpsSQRT{}, Nil{}, O.ANone{}, O.TNone{})
+
+# RULE 14 with srcs and NO arg: `UOp.const(9).index(c2)`. The RANGE splits onto
+# its own line because RANGE is `always_rendered`. The arg clause is covered by
+# `reduce0` below, whose arg is a shape ops.bend's `ARange` does not model.
+def g_index() -> O.Found:
+  +a = f_const(O.Arena.empty(), 9)
+  +c = f_const(O.Found.ar(a), 4)
+  +r = f_range(O.Found.ar(c), O.Found.i(c), 0, O.AXIS_WEAK{})
+  O.UOp.new(O.Found.ar(r), O.OpsINDEX{}, [O.Found.i(a), O.Found.i(r)], O.ANone{}, O.TNone{})
+
+# RULE 7's GUARD, the other way: `arg[1]` is 0, so rule 7 returns None and the
+# node falls through to rule 13/14. That is the ONLY way to see `arg=(...)` on a
+# sugar node, and it puts the clause after the srcs -- `c1.reduce(arg=(Ops.ADD, 0))`.
+def g_reduce0() -> O.Found:
+  +c16 = f_const(O.Arena.empty(), 16)
+  +r0 = f_range(O.Found.ar(c16), O.Found.i(c16), 0, O.AXIS_WEAK{})
+  O.UOp.new(O.Found.ar(r0), O.OpsREDUCE{}, [O.Found.i(r0)], O.AReduce{O.OpsADD{}, 0}, O.TNone{})
+
+# RULE 15, the fallback, and the only way to see it: SUB is in `syms` but is
+# SUBTRACTED from rule 12's set, so it renders as a constructor call.
+def g_sub() -> O.Found:
+  +a = f_const(O.Arena.empty(), 9)
+  +b = f_const(O.Found.ar(a), 4)
+  O.UOp.alu(O.Found.ar(b), O.OpsSUB{}, [O.Found.i(a), O.Found.i(b)])
+
+# `.rtag('mytag')` -- `if u.tag is not None: ren += ...`, appended to the
+# rendered node and NOT part of `pmp`. An untagged node must contribute NOTHING
+# here, which is what every other row checks by ABSENCE.
+def g_tagged() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  O.UOp.new(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)], O.ANone{}, O.TStr{"mytag"})
+
+# THE CONSUMER TEST. `c2` has TWO consumers, so it gets its own line -- the
+# `len(cmap[u]) == 1` half of `to_render`. The outer MUL has one consumer (the
+# ast) and stays inline.
+def g_shared() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  +ab = O.UOp.alu(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)])
+  +c = f_const(O.Found.ar(ab), 3)
+  +d = O.UOp.alu(O.Found.ar(c), O.OpsSUB{}, [O.Found.i(ab), O.Found.i(c)])
+  O.UOp.alu(O.Found.ar(d), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(d)])
+
+# THE SINK ARM of `to_render`: a SINK adds ALL of its srcs before the
+# `continue`, so BOTH children split. The SQRT is rule 14 and the MUL rule 12.
+def g_sink() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  +ab = O.UOp.alu(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)])
+  +c = f_const(O.Found.ar(ab), 5)
+  +m = O.UOp.alu(O.Found.ar(c), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c)])
+  +s = O.UOp.new(O.Found.ar(m), O.OpsSQRT{}, [O.Found.i(ab)], O.ANone{}, O.TNone{})
+  O.UOp.sink(O.Found.ar(s), [O.Found.i(m), O.Found.i(s)])
+
+# THE STORE ARM: a STORE adds src[1] -- the BUFFER -- which then splits even
+# though it has one consumer, because STORE is not in `always_rendered` but the
+# add happens BEFORE the `continue`.
+def g_store() -> O.Found:
+  +a = f_const(O.Arena.empty(), 0)
+  +b = f_buf(O.Found.ar(a), S.D1{0}, 4)
+  O.UOp.new(O.Found.ar(b), O.OpsSTORE{}, [O.Found.i(a), O.Found.i(b)], O.ANone{}, O.TNone{})
+
+# THE REDUCE ARM: a REDUCE adds src[0], and src[1] splits too because the REDUCE
+# has TWO consumers for it -- the rule-7 `._rop` reads src[0] only, so src[1] is
+# otherwise unused and would stay inline.
+def g_reduce2() -> O.Found:
+  +c16 = f_const(O.Arena.empty(), 16)
+  +r0 = f_range(O.Found.ar(c16), O.Found.i(c16), 0, O.AXIS_WEAK{})
+  +c4 = f_const(O.Found.ar(r0), 4)
+  +r1 = f_range(O.Found.ar(c4), O.Found.i(c4), 0, O.AXIS_WEAK{})
+  O.UOp.new(O.Found.ar(r1), O.OpsREDUCE{}, [O.Found.i(r0), O.Found.i(r1)], O.AReduce{O.OpsMAX{}, 2}, O.TNone{})
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
+    py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.float)", g_cast())
+    py_row("pyrender special ", "ast = UOp.special(4, 'gidx')", g_special())
+    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.new_buffer('CPU', 4, dtypes.int, 0)", g_buffer())
+    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp.new_buffer(('CPU', 'METAL'), 4, dtypes.int, 0)\nast = c2.copy_to_device('METAL')", g_copy())
+    py_row("pyrender cfn     ", "ast = UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg='myfn')", g_cfn())
+    py_row("pyrender reduce  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2._rop(Ops.ADD, (0, 1))", g_reduce())
+    py_row("pyrender range   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_range())
+    py_row("pyrender range2  ", "ast = UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))", g_range2())
+    py_row("pyrender cdiv    ", "ast = UOp.const(7).alu(Ops.CDIV, UOp.const(2))", g_cdiv())
+    py_row("pyrender cmod    ", "ast = UOp.const(7).alu(Ops.CMOD, UOp.const(2))", g_cmod())
+    py_row("pyrender where   ", "ast = UOp.const(True).alu(Ops.WHERE, UOp.const(2), UOp.const(3))", g_where())
+    py_row("pyrender nest    ", "ast = (UOp.const(1)+UOp.const(2))*(UOp.const(1)+UOp.const(2)*UOp.const(-1))+UOp.const(3)", g_nest())
+    py_row("pyrender mul3    ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.MUL, c3)", g_mul3())
+    py_row("pyrender xor3    ", "c1 = UOp.range(8, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.XOR, c3)", g_xor3())
+    py_row("pyrender sqrt    ", "ast = UOp.sqrt()", g_sqrt())
+    py_row("pyrender index   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.const(9).index(c2)", g_index())
+    py_row("pyrender reduce0 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nast = c1.reduce(arg=(Ops.ADD, 0))", g_reduce0())
+    py_row("pyrender sub     ", "ast = UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))", g_sub())
+    py_row("pyrender tagged  ", "ast = (UOp.const(1)+UOp.const(2)).rtag('mytag')", g_tagged())
+    py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
+    py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
+    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp.new_buffer('CPU', 4, dtypes.int, 0)\nast = UOp.const(0).store(c3)", g_store())
+    py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())
     IO.print("sint_show 0      = [" ++ sint_show(0) ++ "]   py=0")
     IO.print("sint_show 7      = [" ++ sint_show(7) ++ "]   py=7")
     IO.print("sint_show 2**31-1= [" ++ sint_show(2147483647) ++ "] py=2147483647")
@@ -1853,7 +2263,7 @@ def main() -> IO(Unit):
     IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
     IO.print("arg_repr AProgr  = [" ++ arg_repr(O.AProgram{O.ProgramInfo.of()}) ++ "]")
     IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
-    IO.print("ops_repr ADD     = [" ++ ops_repr(O.OpsADD{}) ++ "]   py=Ops.ADD")
+    IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
     IO.print("arg_repr AParam1 = [" ++ arg_repr(O.AParam{pa1()}) ++ "]")
     IO.print("                     py=ParamArg(1, dtypes.float, 4, device='METAL')")
     IO.print("arg_repr AParam2 = [" ++ arg_repr(O.AParam{pa2()}) ++ "]")
