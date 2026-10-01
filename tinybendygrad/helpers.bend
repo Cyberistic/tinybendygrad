@@ -939,7 +939,7 @@ def bal.depth(st: Depth) -> U32:
 
 def bal.spilled(st: Depth) -> Bool:
   match st:
-    case Depth{d, under}: bal.under(d)
+    case Depth{d, under}: under
 
 def bal.step(spilled: Bool, +nd: U32) -> Depth:
   match spilled:
