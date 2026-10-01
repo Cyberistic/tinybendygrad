@@ -38,7 +38,7 @@ difference of two ratios is not the difference of their rounded forms.
 **A `match` cannot scrutinise a computed value, and it is the rule that shaped
 the file.** Every test a `match` reads must arrive as a parameter, so the lexer
 has `eq(c, q)`, `cls3(c)`, `brm(c)`, `isdig(r, c)` and the `pfx` ladders: small
-defs whose only job is to make a value a scrutinee. That is ~20 of the 212 defs,
+defs whose only job is to make a value a scrutinee. That is ~20 of the 220 defs,
 and it is not incidental — it is the price of the rule.
 
 **A def body is one term, so state is threaded instead of returned.** Two
@@ -65,7 +65,7 @@ says so where a reader will look.
 
 ## The wall worth naming
 
-The **interpreted** lane dies on a `.py` file over about 32 KB with a machine
+The **interpreted** lane dies on a single file of 28988 bytes or more (28987 passes), per-file and content-independent, with a machine
 stack overflow; the compiled lane reads this tree's largest file, 110 KB, and a
 20000-line file, without complaint. It is a host limit, not this code: the `.js`
 lane, which never runs the lexer, dies at the same size. So the compiled lane is

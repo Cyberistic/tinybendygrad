@@ -22,10 +22,10 @@ gets its own def whose *parameter* is the scrutinee).
 | **MISSING** | 0 |
 | **dropped** (named here, deliberately not ported) | 2 |
 | **divergences** (stated, verified, in the table) | 9 |
-| Bend defs / types in the file | 212 defs, 9 types, 1528 lines |
+| Bend defs / types in the file | 220 defs, 9 types, 1675 lines |
 | the two effects | `runtime/sz.c` 88 lines, `runtime/sz.js` 32 lines |
 | `@unsafe` | 0 |
-| `--check-only` | 10 defs rely on unsafe or foreign code, exit 1 |
+| `--check-only` | 7 defs rely on unsafe or foreign code, exit 1: the two effects, three walk defs, two dispatch |
 | files whose token and line counts match CPython | **222 / 222** |
 
 The `--check-only` count is 10, not 2, and the compiler is right: the notice is
@@ -127,7 +127,7 @@ Each is measured, not assumed.
 | a non-printable character in a source file | raises | counts it | as above |
 | NFKC | `tokenize` NFKC-normalises an identifier before the NAME test | no normalisation | it can only change whether a name is a name, and the count of names is the same either way for every file here |
 | the walk's bound | `os.walk` has no bound | a `Nat` fuel of 16777216 names | a Bend recursion must be structurally decreasing and a worklist tail cannot carry what a tail call would have to add, so the count of names left is what decreases. 16777216 is ten times this tree's name count |
-| a `.py` file over ~32 KB | — | the **interpreted** lane dies with `bend: memory fault (machine stack overflow?)`; the compiled lane is fine | the bun/JS host stack, not this code: the `.js` lane, which never runs the lexer, dies at the same size, and the compiled lane reads this tree's largest file (`uop/ops.py`, 110 KB) and a 20000-line file without complaint. **This is the one wall that stops the interpreted lane from running this tree**, and it is a host limit |
+| a single file of 28988+ bytes (28987 passes), per-file and content-independent | — | the **interpreted** lane dies with `bend: memory fault (machine stack overflow?)`; the compiled lane is fine | the bun/JS host stack, not this code: the `.js` lane, which never runs the lexer, dies at the same size, and the compiled lane reads this tree's largest file (`uop/ops.py`, 110 KB) and a 20000-line file without complaint. **This is the one wall that stops the interpreted lane from running this tree**, and it is a host limit |
 
 ## Edge cases checked
 
