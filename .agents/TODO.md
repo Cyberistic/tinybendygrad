@@ -738,7 +738,7 @@ entries below and commit `d685f998`.)
       field away from carrying an `O.Arena`, and the header says exactly that.
 
 - [x] `examples/beautiful_mnist.bend` 831 — LANDED (`d685f998`), and I re-ran its
-      three-lane gate here: **25 shared rows, CPython == interpreted == native**. Four
+      three-lane gate here: **30 shared rows (36 total `=` rows; the 14 dtype.bend law failures are PERMANENT and expected), CPython == interpreted == native**. Four
       walls named at their Python lines, and two substrate defects ROUTED AROUND
       rather than fixed: `fold.bend:1621` defers a PERMUTEs dtype (so the 2-D dot
       prints 11 nodes against CPythons 15, recorded as `unverified_lin2`), and
@@ -1275,3 +1275,94 @@ this queue — in that order, so the queue is never stalled behind a verificatio
 **An agent with no file AND no `.agents/slop/` artifact ~20 min after dispatch is
 dead.** Check both the target file and `.agents/slop/` before concluding. A dead agent
 that DID stub leaves a stub, so a stub is a resumable claim and an absent file is not.
+
+## Session 2026-10-02 — `runtime/ops_rdma.bend`, `runtime/ops_npy.bend`, `nn/torch.bend`
+
+The last three core files, and the two smallest in the tree. **All three are green
+in both lanes and against a CPython oracle.** 45 + 83 + 389 = 517 rows, zero
+mismatches, zero `False` rows that are not a deliberate negative claim.
+
+- [x] `tinybendygrad/nn/torch.bend` (45 rows) — `nn/torch.py` is FOUR LINES and the
+      honest answer is neither "a fake row" nor "pure wall". It is a GATE:
+      `sys.path.append(Path(__file__).parent.parent.as_posix())` then a guarded
+      `import extra.torch_backend.backend` then `raise ImportError(msg) from e`.
+      **`extra/torch_backend/backend.py` EXISTS in this checkout** and the import
+      fails on `No module named 'torch'` — MEASURED by importing it, with
+      `__cause__` inspected. So it IS upstream-backed and the backend is present;
+      what is ported is the guard, and the gate checks the guard. `pathlib`'s
+      NORMALISATION is the wall, with three measured counterexamples in the header.
+- [x] `tinybendygrad/runtime/ops_npy.bend` (83 rows) — four lines overriding one
+      method. The headline is `renderers or [Renderer]`: the `[]` is FALSY so NPY is
+      NOT the renderer-less device its source line suggests. Its refusal is
+      `Allocator.alloc`'s `assert size > 0`, and `_free` is a NO-OP (no `remote`,
+      so no `munmap`).
+- [x] `tinybendygrad/runtime/ops_rdma.bend` (389 rows) — the buffer-registration
+      trace, the address-translation table in BOTH directions, and the doorbell /
+      completion-queue order rules. Three refusals (:44 peer group, :48 empty
+      `max()`, :120 ring cap) and a FOURTH that no Python guard writes down — a
+      work queue element whose buffer has no registered key must not be posted.
+
+### THREE REAL FINDINGS, and two of them are PORT BUGS THE ORACLE CAUGHT
+
+1. **`BNXT_VENDOR` was 5356 (`0x14EC`), not 5348 (`0x14e4`).** `ops_rdma.py:18`.
+   A hand-typed constant. The oracle printed the real one and the diff named it.
+2. **The page-size guard was OUTSIDE the `register_mem` call.** Python raises at
+   :48 BEFORE it reaches :50, so a buffer with no usable page size is NEVER
+   REGISTERED. The port recorded `REGISTER(0), REFUSE(log_page)` — the
+   registration happened and THEN the refusal, which is the opposite of the source.
+   `map.run` now nests the guards INSIDE the call. A trace is only a truncation if
+   the refusal comes first, and the nesting IS the claim.
+3. **`peer_group` is `"PCIDevice"`, not the device head.** device.py:398's
+   `getattr(getattr(self, 'iface', None), 'peer_group', device.split(":")[0])`
+   finds an iface on RDMA, and `PCIIfaceBase.peer_group`
+   (support/system.py:297) is `getattr(self.pci_dev, 'peer_group',
+   type(self.pci_dev).__name__)`. MEASURED. So :44's guard passes for ANY TWO PLAIN
+   PCIe devices and only catches a USB or remote one — the port had it as the head,
+   which would have refused every cross-device mapping and made the guard's two
+   conjuncts LOOK like node selection when they are not.
+
+### REPORTED, NOT FIXED — for the owner of `ops_rdma.py`
+
+- **THE DOORBELL'S HIGH WORD NEVER LEAVES THE HOST.** :148/:152 OR in
+  `db_value(qpn, SQ|RQ, 0, 0)` / `db_value(scq_id|rcq_id, CQ, 0, 0)`, and :109
+  casts every int to `UOp.const(s, dtypes.uint32)`. `db_value`'s low half is
+  `index | epoch << 24` with BOTH 0, so its low 32 bits are 0, the OR is a no-op,
+  and the cast drops the high half — the only part naming WHICH QUEUE. MEASURED:
+  `db_value(5, DBC_DBC_TYPE_SQ, 0, 0) == 288230397626548224` and
+  `288230397626548224 & 0xffffffff == 0`. `ops_rdma.bend` is faithful; the rows
+  `rdma_db_hi_dropped` / `rdma_db_lo_zero` / `rdma_db_or_noop` make it visible.
+- **`queue_of` compares a string against `wire.tag`, and `wire.tag` is `None` on a
+  bufferized PARAM** (`UOp.tag` defaults to `None`, ops.py:244; `UOp.from_buffer`
+  does not set it, ops.py:862), so on a graph that reached `lower_call` with the
+  wire already bufferized `min(gpu, None)` raises `TypeError`. COULD NOT BE
+  EXERCISED — no RDMA hardware here — so the port keeps the SORT as the source
+  writes it and the header says so rather than "fixing" it.
+- **`extra/torch_backend/backend.py` imports `torch`, which is not installed**, so
+  `tinygrad.nn.torch` cannot be imported in this checkout at all. That is the guard
+  working, not a defect, and it is why `nn/torch.bend`'s gate pins the derivation
+  and the message rather than a successful import.
+
+### IS `ops_npy` THE PROJECT'S FIRST END-TOEND-PORTABLE DEVICE? YES, WITH A CORRECTION
+
+The brief's premise needs one amendment: `ops_npy.py` does not touch numpy. Its
+surface is `HostAllocator`'s — `mmap` plus a memoryview plus the default
+renderer. The CONCLUSION is right and stronger for it: it is the only device in
+tinygrad whose entire contract is host memory, with no driver, no FFI, no queue, no
+shader and no PCIe, so it is the one where the contract can be checked by RUNNING
+it. The CPython oracle allocated 12 bytes on a real `NpyDevice('NPY')`, wrote
+0..11, read them back, compared, and freed; `_map`'s `BufferStorage(buf.host.addr)`
+was confirmed to carry `meta=None` and `host=None`, which is the claim
+`npy_map_st_args = 1` rests on. And `npy_roundtrip=True` is printed by the ORACLE
+and deliberately NOT by the .bend file — simulating `mmap` in Bend and then
+checking my own simulation would be theatre. The two claims are separate on
+purpose: this file gates the TRACE, the oracle gates the BYTES.
+
+### SIX MEASURED BEND RULES APPENDED
+
+`bend2-constraints.md`, "MEASURED BY THE `runtime/ops_rdma` + `ops_npy` +
+`nn/torch` UNIT". The two that cost the most: **`List.append` is `xs ++ ys`, so a
+fold that appends must NOT reverse at the end** (measured twice in one session,
+and both times every SYMMETRIC fixture agreed either way — an appending fold needs
+a two-element unequal fixture before it can be checked at all), and **a port of a
+load-after-a-store takes the POST-store value as its parameter** (reading the
+pre-bump value computes `0 - 2` and a `U32` wraps silently to 4294967294).

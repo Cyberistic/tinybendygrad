@@ -23,28 +23,101 @@
 #
 # ---------------------------------------------------------------------------
 # THE FOUR WALLS, each named at its Python line and at the substrate def that owns
-# it. None of them is new information: an example that hid a wall behind a
+# it. NONE OF THEM IS NEW INFORMATION: an example that hid a wall behind a
 # plausible-looking graph would be worse than one that names it.
 #
-#   W1  conv2d -- `tinygrad/mixin/op.py:1562`. The body is `_pad_constant` +
-#        `._pool(HW, stride, dilation)` + a broadcast-mul + a reduce. `_pool` is
-#        `mixin/movement.py:598` and `mixin/op.bend`'s W4: TWELVE lines of shape
-#        arithmetic whose output shape needs `ssimplify`, which `uop/symbolic.bend`
-#        does not answer, so `fold.bend`'s `dt_shape` leaves PAD/SHRINK/EXPAND/FLIP
-#        un-answered (fold.bend:1620-1626). BUILDABLE, NOT CHECKABLE.
-#   W2  max_pool2d -- `tinygrad/mixin/op.py:1333`, the same `_pool` with a `MAX`
-#        reduce. One fewer layer than W1 and the same wall.
-#   W3  ONE_HOT -- `tinygrad/mixin/op.py:1005 _one_hot_along_dim` is
-#        `self.eq(arange(num_classes).reshape(...))`, and `arange` (op.py:166) is
-#        `mixin/op.bend`'s W4 by inheritance: `_pool` again. So the loss's one-hot
-#        and its `Y.const_like(True, dtypes.bool)` mask (op.py:1742, `creation.py:71`
-#        = `expand`, which is one of the five ops `fold.bend` defers) are both walls,
-#        and both are PARAMETERS of `mn_loss` -- the same boundary rule the MNIST
-#        fetch obeys below.
+# **AND TWO OF THE FOUR ARE NOW CLOSED IN HALF.** The previous draft of this header
+# recorded all four as open on the strength of `fold.bend:1620-1626`, which leaves
+# PERMUTE, EXPAND, PAD, SHRINK and FLIP un-answered with the reason "`marg` -> `as_shape`
+# -> `ssimplify`". FIVE units have landed since, and the reason that reason gave is no
+# longer the binding constraint: `mixin/movement.bend` now PORTS the `ssimplify` arms
+# themselves for a CONCRETE shape, because for an integer shape `ssimplify` IS the
+# identity (ops.py:94 on an `int`, ops.py:513 on a `CONST`, and `shape_to_shape_arg`
+# builds every dim from a python `int`). So each wall below now says WHICH HALF moved,
+# what the measurement is, and which half is still open. A wall that is re-confirmed is
+# re-confirmed with the LINE it rests on and whether that line moved, never restated.
+#
+#   W1  conv2d -- `tinygrad/mixin/op.py:1562`. CLOSED: THE SHAPE. `x.pad(padding_pos)`
+#        at op.py:1546 is `_pad_constant`, which RETURNS ITS SOURCE when the value is
+#        the additive identity (op.py:288), and `nn/__init__.py:96`'s default
+#        `padding` is `0`, so the pad contributes no dim. What is left is
+#        `x._pool((H,W), stride, dilation)` at op.py:1546, and op.py:1547 READS THE
+#        RESULT BACK as `oy`/`ox` -- so the conv's spatial output is `_pool`'s `o_`
+#        (movement.py:604) and nothing else. This file now computes it with
+#        `MX.mx_pool_shape` (movement.bend:1064) and the gate rows `mdl_pool_k5`,
+#        `mdl_pool_k2s2`, `mdl_walk` and `mdl_lin_in` compare that against CPython's
+#        OWN `nn.Conv2d(...)(x).shape`. MEASURED, all four, three lanes identical.
+#        OPEN: THE NODE. The seven `repeat`/`shrink_to`/`reshape`/`permute` calls of
+#        movement.py:608-616 are still not built, so `conv2d` is still not a graph.
+#        `mixin/op.bend`'s W4 (op.bend:59-65, `_cumalu` -> `_pool`) called this
+#        "BUILDABLE, not CHECKABLE" and cited `fold.bend:1622-1625` for the five deferrals;
+#        that citation still holds -- those lines are now 1624-1628 and still defer all
+#        five -- but the VERDICT is stale, because `mxm_shape` answers those five for a
+#        concrete shape and the walk now uses it. The accurate split today is SHAPE
+#        CHECKED, NODE UNBUILT.
+#   W2  max_pool2d -- `tinygrad/mixin/op.py:1333`. CLOSED: THE SHAPE, on the same
+#        `MX.mx_pool_shape` and for the same reason: `pooled = self._pad_constant(...
+#        )._pool(k_, s_, dilation)` at op.py:1370 and `return pooled.max(axis)` at
+#        op.py:1371, where `axis = (-2,-1)` is op.py:1366 -- so the output is `_pool`'s
+#        `noop ++ o_` with the kernel dims eaten. `s_ = stride if stride is not None
+#        else k_` at op.py:1367 is the whole of `i // 2`, and `mn_pool_out` now SPELLS
+#        `[2, 2]` for the stride because that is what :1367 says.
+#        OPEN: THE NODE, same as W1 and one layer fewer.
+#   W3  THE LOSS'S ONE-HOT AND ITS MASK. This wall was ONE wall and it is now TWO
+#        halves at different states, which is why the old header's single paragraph is
+#        gone. `sparse_categorical_crossentropy` (op.py:1741) builds two things from `Y`.
+#        * W3a THE ONE-HOT, `Y.unsqueeze(-1)._one_hot_along_dim(C, dim=-1)`
+#          (op.py:1005) -- STILL OPEN, AND THE REASON HAS MOVED AND IS NOW SHARPER.
+#          The old reason was "`arange` (op.py:166) is `_pool` again", and that is no
+#          longer the binding constraint: `mixin/rand.bend:539 op_arange` EXISTS and is
+#          gated (`arange3`, `arange5`). What still blocks it is TWO things, both
+#          MEASURED, and neither is the third:
+#            - THE SHAPE IS STILL `None{}`. `mxw_dims_of` (movement.bend:1504) answers
+#              the shape of any node whose dims are CONSTs, but `op_arange` builds its
+#              `_pad_constant` arg as `PK{U1.v(q), U1.v(q)}` (rand.bend:538) -- a `U1`
+#              QUANTISER, which is not a CONST -- and `mxm_as_shape` (movement.bend:670)
+#              returns `Nil{}` the moment any element is not a CONST (its `bad` arm is
+#              movement.bend:654). MEASURED on a fresh
+#              `op_arange(O.Arena.empty(), 10, S.D1{0})`, and PRINTED as the
+#              `unverified_arange_dims` row: the answer is the EMPTY list. `rand.bend`'s
+#              header predicted exactly this ("`arange3_d` says so in its name",
+#              rand.bend:113-115) and it is RE-CONFIRMED, not restated.
+#            - THE GRAPH IS STILL RED. `rand.bend`'s own R2 measurement: `op_arange` is
+#              THREE NODES SHORT and its ROOT is a `CAST`, against CPython's 31-node
+#              `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`. So even a readable shape would
+#              leave the signature wrong, and a wrong graph is worse than a parameter.
+#          SO `y` REMAINS A PARAMETER of `mn_loss`, and `examples/beautiful_mnist.py:26`
+#          keeps its `TODO(p3)`.
+#          FOR THE RECORD: `fold.bend` ITSELF still defers all five at its OWN CURRENT
+#          positions -- 1624 PERMUTE, 1625 EXPAND, 1626 PAD, 1627 SHRINK, 1628 FLIP --
+#          each with the same "`marg` -> `as_shape` -> `ssimplify`" comment. That block
+#          is READ-ONLY to this file and it has not moved; `mxm_shape` is a CONSUMER of
+#          the same missing arms and not a fix to them.
+#        * W3b THE MASK, `Y.const_like(True, dtypes.bool)` (op.py:1740) -- **CLOSED**.
+#          The old reason for the parameter was "`const_like` is `expand`, one of the
+#          five ops `fold.bend` defers, so a port that materialised it would be building
+#          a node whose shape nothing can check". `fold.bend` still defers EXPAND and
+#          that line has NOT moved -- but it stopped being the constraint, because
+#          `mxm_shape` (movement.bend:991, arms from :864) ports EXPAND's `ssimplify` arm
+#          and `mxw_dims_of` (movement.bend:1504) is the merge point, and
+#          `mixin/creation.bend:332 cr_const_like` is `ops.py:603-605` and is GREEN
+#          there. `mn_mask` below builds the node and `w3_mask` gates its GRAPH against
+#          CPython's: `3 CONST/0 CONST/0 EXPAND/2` on both sides, node for node.
+#          WHAT REMAINS IS NOT A WALL BUT A SEAM: `mn_step` takes the batch size,
+#          because `examples/beautiful_mnist.py:25` is `Tensor.randint(getenv("BS", 512),
+#          high=X_train.shape[0])` and `mixin/rand.py` is not ported. One INTEGER cannot
+#          be obtained; the graph it sizes is now built inside the step and gated.
 #   W4  backward -- `tinygrad/mixin/gradient.py:20 call_gradient`, which
 #        `mixin/gradient.bend:896` already records as `TODO(p3)` ITSELF ("needs
-#        `CallArg.grad_fxn`, a callback"). Five subsystems, one of which is
-#        `compute_gradient` (`mixin/op.bend`'s W3, `TODO(p3)` at gradient.bend:881).
+#        `CallArg.grad_fxn`, a callback"). STILL OPEN, AND THE DEPENDENCY HAS NOT
+#        WHICH IS NOT A WALL BUT A SEAM, AND IT IS THE OLDEST LINE IN THIS HEADER:
+#        STILL OPEN, AND THE DEPENDENCY HAS NOT MOVED. gradient.bend is at 1773 lines
+#        and its own header still carries BOTH TODOs -- `:879 compute_gradient` and
+#        `:894 call_gradient` ("needs `CallArg.grad_fxn`, a callback"). Five subsystems,
+#        one of which is `compute_gradient` (`mixin/op.bend`'s W3). `MnStep.w` returns
+#        the same weights BY DESIGN and says so AT THE DEF, because a plausible-looking
+#        weight update is the failure mode this file exists to avoid. Nothing about W4
+#        was faked, softened or restated.
 #
 # A FIFTH ITEM IS NOT A WALL BUT A DIVERGENCE, and it is the one that cost this file
 # the most rows. `fold.bend` DEFERS PERMUTE (fold.bend:1621,
@@ -120,14 +193,39 @@
 # (`mdl_walk`), which no signature can print -- `RESHAPE(REDUCE, CONST(4))` and
 # `RESHAPE(REDUCE, CONST(1))` are the SAME signature.
 #
-# THE GATE HAS TWENTY-FIVE SHARED ROWS and four BEND-ONLY ones, and every one of the four
-# is named so that nobody can read it as a claim. `.agents/slop/beautiful-mnist-gate.sh`
+# AND THE SHAPE SIDE IS NO LONGER A RESTATEMENT EITHER, WHICH WAS THE LAST TAUTOLOGY IN
+# THIS GATE. `mdl_walk` and `mdl_lin_in` used to compare `mx_pool_shape` against an
+# oracle that reduced `_pool`'s formula the same way the port did, so the row was green
+# against a `_pool` that was wrong for any stride but this model's. The oracle now CALLS
+# `nn.Conv2d(...)(x)`, `Tensor.max_pool2d()`, `Tensor.flatten(1)` and `nn.Linear(...)(x)`
+# on a lazy `Tensor.empty`, so both lanes are independent derivations and a wrong `o_` on
+# either turns the row RED. Three rows carry what `mdl_walk` cannot show: `mdl_pool_k5`
+# and `mdl_pool_k2s2` print `_pool`'s UNREDUCED `noop ++ o_ ++ k_` (the trailing kernel
+# dims are what conv2d's reduce at op.py:1553 and max_pool2d's at op.py:1371 eat), and
+# `mdl_pool_ns` is a NON-SQUARE control the model itself cannot supply.
+#
+# THE GATE HAS THIRTY SHARED ROWS and six BEND-ONLY ones, and every one of the six is
+# named so that nobody can read it as a claim. `.agents/slop/beautiful-mnist-gate.sh`
 # filters them BY NAME, not by position, so a row that MOVES is never silently dropped:
 #
-#   row_round_2.3456   `H.f32_fixed(2.3456, 2n) == "2.35"` -- prints FALSE
-#   row_round_2.30     `H.f32_fixed(2.3, 2n) == "2.30"`   -- prints FALSE
-#   unverified_lin2    the 2-D `dot` graph, 11 nodes against CPython's 15
-#   unverified_adam    `nn.optim.Adam` == `LAMB(adam=True)` (optim.py:139), 1 node
+#   row_round_2.3456       `H.f32_fixed(2.3456, 2n) == "2.35"` -- prints FALSE
+#   row_round_2.30         `H.f32_fixed(2.3, 2n) == "2.30"`   -- prints FALSE
+#   unverified_lin2        the 2-D `dot` graph, 11 nodes against CPython's 15
+#   unverified_adam        `nn.optim.Adam` == `LAMB(adam=True)` (optim.py:139), 1 node
+#   unverified_arange_dims  an `arange`-rooted node's SHAPE -- prints EMPTY, on purpose.
+#                           This is W3a's RE-CONFIRMATION and it is a ROW so the claim is
+#                           repeatable rather than a sentence in a comment: if `rand.bend`
+#                           ever grows a CONST-arg `arange`, this row prints `10`.
+#   unverified_step        `mn_step` ITSELF -- CPython cannot answer it because the port
+#                           takes `y` as a parameter, and it exists because `mn_step` was
+#                           the file's LARGEST blind spot: nothing called it, so the whole
+#                           W3b closure and a LIVE BUG in the loss's denominator were both
+#                           invisible. It caught both (M13, M14).
+#
+# `w3_mask` and `w3_mask2d` are the two halves of W3b and BOTH are shared: the first is
+# the GRAPH (a one-dim mask's shape is unreadable on this substrate) and the second is the
+# SHAPE at two dims, because a signature is `3 CONST/0 CONST/0 EXPAND/2` for EVERY dim and
+# so could not see the mask's size at all before `w3_mask2d` existed (M12).
 #
 # The two `row_round_*` rows are the most useful thing in this file: `helpers.bend`'s
 # `f32_fixed` is a TRUNCATING `%.2f` and CPython's f-string is not, so this example's
@@ -141,6 +239,9 @@ import ../tinybendygrad/LAWS/spec.bend as S
 import ../tinybendygrad/uop/ops.bend as O
 import ../tinybendygrad/mixin/op.bend as MO
 import ../tinybendygrad/mixin/elementwise.bend as E
+import ../tinybendygrad/mixin/movement.bend as MX
+import ../tinybendygrad/mixin/creation.bend as CR
+import ../tinybendygrad/mixin/rand.bend as RD
 import ../tinybendygrad/nn/optim.bend as OP
 
 # `String.concat` takes a `List<&2, String>`, and every column below is a list, so
@@ -190,9 +291,9 @@ def mn_pad_hi(+k: U32) -> U32: U32.sub(U32.sub(k, 1), mn_pad_lo(k))
 # make_tuple(dilation, 2)[::-1], self.kernel_size[::-1])]` -- nn/__init__.py:102-104,
 # reached only when `padding` is the string `'same'`. This example passes NO
 # padding (nn/__init__.py:96's default is `0`), so the `'same'` arm does NOT FIRE for
-# any layer here and the shape walk uses `i - k + 1`. It is ported anyway because it
-# is the arithmetic a reader of `Conv2d` looks for first, and `mdl_pad*` pins that
-# the model does not take it.
+# any layer here and `mx_pool_shape` never sees a padded input. It is ported anyway
+# because it is the arithmetic a reader of `Conv2d` looks for first, and `mdl_pad*` pins
+# that the model does not take it.
 def mn_pad_same(+k: U32) -> List<&2, U32>:
   [mn_pad_lo(k), mn_pad_hi(k), mn_pad_lo(k), mn_pad_hi(k)]
 
@@ -370,21 +471,93 @@ type MnShape is Data:
 
 def mn_in() -> MnShape: MnShape{1, 1, 28, 28}
 
-# A convolution's output for kernel `k`, stride 1, dilation 1, padding 0 is `i - k +
-# 1`. `_apply_ceil_mode`'s `o_` at op.py:1644 is `ceildiv(i+pB+pA - (d*(k-1)+1), s) +
-# 1`, and with every pad zero, `d == 1` and `s == 1` that reduces to `i - k + 1`, so
-# the `ceildiv` is gone and only the arithmetic survives. That is the honest shape of
-# W1: the FORMULA ports, the graph does not.
-def mn_conv_out(s: MnShape, cout: U32, +k: U32) -> MnShape:
-  match s:
-    case MnShape{n, c, h, w}: MnShape{n, cout, U32.add(U32.sub(h, k), 1), U32.add(U32.sub(w, k), 1)}
+# ---------------------------------------------------------------------------
+# THE SHAPE HALF OF W1 AND W2 IS CLOSED, AND IT IS `_pool`'s OWN ARITHMETIC.
+#
+# The previous draft of this file spelled the conv and the pool as `i - k + 1` and
+# `i // 2` -- the ARITHMETIC REDUCED for `padding == 0`, `dilation == 1` and this
+# model's two (kernel, stride) pairs -- and gated the result against a CPython oracle
+# that reduced the formula the same way. Two same-reductions agreeing is a tautology,
+# so those rows could not have seen `_pool` being wrong, and `_pool` IS wrong for
+# stride != kernel in a way `i // 2` cannot express.
+#
+# `MX.mx_pool_shape` (movement.bend:1064) is `movement.py:598 _pool`'s OUTPUT shape:
+# `noop ++ o_ ++ k_` with `o_` the `ceildiv(i - d*(k-1), s)` of movement.py:604 and `k_`
+# the kernel. `mixin/movement.bend`'s header gives the measurement that this is safe on
+# a CONCRETE shape -- `ssimplify` is the identity on an `int` and on a `CONST` (ops.py:94
+# and ops.py:513), and `shape_to_shape_arg` (ops.py:106) builds every dim from python
+# ints -- and CPython confirms it here: `Tensor.empty((1,1,28,28))._pool((5,5), 1, 1)
+# .shape` is `(1,1,24,24,5,5)` and `Tensor.empty((1,32,20,20))._pool((2,2), 2, 1).shape`
+# is `(1,32,10,10,2,2)`. Those are the `mdl_pool_*` rows.
+#
+# WHAT IS STILL NOT CLOSED IS THE NODE, and it is a different statement: the seven
+# `repeat`/`shrink_to`/`reshape`/`permute` calls of movement.py:608-616 are still not
+# built here, so `conv2d` and `max_pool2d` are still not GRAPHS. W1 and W2 are now
+# "SHAPE CLOSED, NODE OPEN", and the two halves are named apart on purpose.
+# ---------------------------------------------------------------------------
 
-# `Tensor.max_pool2d` with its defaults `kernel_size=(2,2)`, `stride=None` -- which
-# op.py:1334 reads as `stride == kernel_size` -- `padding=0`: `i // 2`. `_pool`
-# computes it as `ceildiv(i - (k-1) - 1, s) + 1` with `s == k == 2`, which is `i//2`.
-def mn_pool_out(s: MnShape) -> MnShape:
+# `_pool`'s OUTPUT SHAPE, `noop ++ o_ ++ k_`, which is `(nd - ni) + ni + ni` dims and is
+# NOT TRUNCATED HERE. Both of those are MEASUREMENTS and not shortcuts:
+#
+#   * NOT `nd - ni`. `mx_pool_shape` (movement.bend:1064) returns `noop ++ o_ ++ k_` and
+#     `mx_pool_shape.of` (movement.bend:1061) builds it by joining the two halves the
+#     FINAL PERMUTE interleaves (movement.py:616) -- so `o_` and `k_` are BOTH there and
+#     the reduce at op.py:1553 and op.py:1371 is what eats `k_`.
+#   * NOT truncated to `nd` EITHER. A first draft took the first `nd` of it, and the
+#     mutation that took `nd + ni` instead MOVED NOTHING -- because both lists agree at
+#     every index the walk reads (0, 1, 2 and 3 are `n`, `c`, `o_h`, `o_w` either way)
+#     and the take's only other effect is two trailing dims nobody reads. So the take was
+#     DEAD CODE and it is gone. The four reads are in `mn_conv_out`/`mn_pool_out`, and
+#     `mdl_pool_*` is the row that keeps the `k_` half visible.
+def mn_pool_full(s: MnShape, k: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
   match s:
-    case MnShape{n, c, h, w}: MnShape{n, c, U32.div(h, 2), U32.div(w, 2)}
+    case MnShape{n, c, h, w}: MX.mx_pool_shape([n, c, h, w], k, st, [1, 1])
+
+# `mx_pool_shape`'s LAST TWO ELEMENTS are what conv2d's reduce at op.py:1553 and
+# max_pool2d's at op.py:1371 consume, and the REDUCED walk shape cannot show them. The
+# `mdl_pool_*` rows print this whole list, which is the only place they are visible.
+def mn_pool_show(ds: List<&2, U32>) -> String: MX.mx_show(ds)
+
+# `Maybe.default` is `List.get`'s unwrapper; the index is always in range because
+# `mx_pool_shape` always answers `nd + ni >= 4` dims, so the default is unreachable. That
+# IS A BLIND SPOT and it is in the mutation table: changing `0` to `1` moves nothing,
+# which is what an unreachable fallback should do, and the row that makes the INDEX reads
+# observable anyway is `mdl_pool_ns`.
+def mn_at(ds: List<&2, U32>, i: Nat) -> U32: Maybe.default(&2, U32, List.get(&2, U32, ds, i), 0)
+
+# THE NON-SQUARE CONTROL, and it exists for a MEASURED reason. Every shape in this model
+# is square -- `mdl_in` is `(1,1,28,28)` and every kernel is `k x k` -- so `o_h` and `o_w`
+# are EQUAL at every step, and the mutation that made `mn_conv_out` read its WIDTH from
+# index `2` instead of index `3` MOVED NOTHING across the whole walk. Fourteen square
+# layers structurally cannot tell the height read from the width read, and no mutation of
+# `mdl_walk` will ever see it. So one fixture is NOT square, and this row supplies what
+# the model itself cannot: CPython answers it with `nn.Conv2d(1, 32, 5)` on a `(1,1,
+# 28,30)` tensor and the port answers it with `mn_conv_out` -- the same def the walk uses,
+# index for index. It is NOT a change-detector against `mixin/movement.bend`: that file's
+# rows gate `_pool`'s arithmetic and cannot see WHICH INDEX this file reads out of it.
+def mn_ns() -> MnShape: MnShape{1, 1, 28, 30}
+
+# `nn.Conv2d(1, 32, 5)` with `padding == 0` (nn/__init__.py:96's default) and
+# `stride == dilation == 1` (op.py:1562's defaults). `x.pad(padding_pos)` at
+# op.py:1546 is `_pad_constant`, which RETURNS ITS SOURCE UNCHANGED when the pad value
+# is the additive identity (op.py:288), so the pad contributes no dim. What is left is
+# `x._pool((H,W), stride, dilation)` at op.py:1546, and `x.shape[4]`/`x.shape[5]` at
+# op.py:1547 are NAMED `oy`/`ox` -- so the conv's spatial output IS `_pool`'s `o_`, read
+# off the node rather than derived from a formula. `cout` is not in `_pool` at all: it
+# arrives at op.py:1559 (`groups * (rcout - added_output_channels)` out of `weight`),
+# which is why it is the one field `mn_pool_full` does not carry.
+def mn_conv_out(s: MnShape, cout: U32, +k: U32) -> MnShape:
+  +ds = mn_pool_full(s, [k, k], [1, 1])
+  MnShape{mn_at(ds, 0n), cout, mn_at(ds, 2n), mn_at(ds, 3n)}
+
+# `Tensor.max_pool2d` with its defaults `kernel_size=(2,2)`, `stride=None`,
+# `dilation=1`, `padding=0` (op.py:1333). `s_ = stride if stride is not None else k_`
+# at op.py:1367 is the whole of the `i // 2` reduction, and it is the reason the stride
+# list is `[2,2]` and NOT `[1,1]`: passing `[1,1]` would build a DIFFERENT graph, and
+# `mn_pool_k2s2` is the row that sees it.
+def mn_pool_out(s: MnShape) -> MnShape:
+  +ds = mn_pool_full(s, [2, 2], [2, 2])
+  MnShape{mn_at(ds, 0n), mn_at(ds, 1n), mn_at(ds, 2n), mn_at(ds, 3n)}
 
 # `x.flatten(1)` -- movement.py:345, `start_dim=1`, so dims `1..ndim-1` collapse into
 # one and the result is `(n, c*h*w)`. THIS FILE CARRIES IT AS A 4-FIELD RECORD WITH
@@ -471,6 +644,20 @@ def mn_head13.go(+ls: List<&2, MnLayer>, +acc: List<&2, MnLayer>) -> List<&2, Mn
     case l <> +t: mn_head13.go(t, List.append(&2, MnLayer, acc, [l]))
 
 def mn_lin_in() -> MnShape: mn_walk.go(mn_head13.go(mn_layers(), Nil{}), mn_in())
+
+# The shape ENTERING the first `Tensor.max_pool2d` (examples/beautiful_mnist.py:12), which
+# is the sixth layer's input and the argument `mdl_pool_k2s2` pools. It is its own walk
+# because `mdl_walk` prints shapes AFTER each step and this row needs one BEFORE. The
+# stop is the LAYER and not a `Bool` parameter, because a `Bool` parameter would make the
+# arms `mn_pool_in.at`/`mn_pool_in.go` and those two call each other, which is mutual
+# recursion and is refused; matching `MnPool{}` as the head keeps the recursion in one def.
+def mn_pool_in.go(+ls: List<&2, MnLayer>, +s: MnShape) -> MnShape:
+  match ls:
+    case Nil{}: s
+    case MnPool{} <> +t: s
+    case l <> +t: mn_pool_in.go(t, mn_step_shape.of(l, s))
+
+def mn_pool_in() -> MnShape: mn_pool_in.go(mn_layers(), mn_in())
 
 # ===========================================================================
 # 3. THE FORWARD GRAPH, for the layers whose mixin method BUILDS on the substrate
@@ -580,8 +767,14 @@ def mn_lsm(+x: T.Tensor) -> T.Tensor: MO.mo_log_softmax(x, MO.mo_ax_all(x))
 #     unreduced = ((1 - label_smoothing) * (log_probs * y).sum(-1) + smoothing)
 #     return -unreduced.sum() / loss_mask.sum() if reduction == "mean" else ...
 #
-# `log_probs` is PORTED and CALLED. `y` and `loss_mask` are W3 (`_one_hot_along_dim` is
-# `arange`, and `arange` is `_pool`; `const_like` is `expand`) so they are PARAMETERS.
+# `log_probs` is PORTED and CALLED, and `loss_mask` is NOW PORTED AND CALLED (`mn_mask`,
+# W3b CLOSED -- the graph is `3 CONST/0 CONST/0 EXPAND/2`, gated by `w3_mask`). ONLY `y`
+# IS STILL A PARAMETER, and it is W3a alone: `_one_hot_along_dim` is `arange`, whose
+# shape is still `Nil{}` and whose graph is still three nodes short. `mn_loss` keeps its
+# `mask` PARAMETER because the loss USES IT TWICE -- as `smoothing`'s operand at
+# op.py:1745 and as the denominator at op.py:1744 -- and `mn_step` is where it is now
+# BUILT rather than received.
+#
 # `label_smoothing` is 0.0 at every call site in this example (op.py:1721's default, and
 # examples/beautiful_mnist.py:26 passes nothing), so `(1 - label_smoothing)` is a
 # Python `float` 1.0 and `1.0 * Tensor` is a broadcast MUL with a CONST -- which this
@@ -593,12 +786,53 @@ def mn_lsm(+x: T.Tensor) -> T.Tensor: MO.mo_log_softmax(x, MO.mo_ax_all(x))
 # `4294967295` and `mn_last_axis` is where that spelling lives.
 # ===========================================================================
 
+# `loss_mask` -- op.py:1740's `Y.const_like(True, dtypes.bool)`, taken because
+# `ignore_index` is `-1` at every call site in this example (op.py:1721's default).
+#
+# THIS IS THE CLOSED HALF OF W3, AND THE PREVIOUS DRAFT'S REASON FOR MAKING IT A
+# PARAMETER IS NOW FALSE. It said: "`const_like` is `expand`, one of the five ops
+# `fold.bend` defers, so a port that materialised it would be building a node whose shape
+# nothing can check." `fold.bend` still defers EXPAND, but `mixin/movement.bend:876-991`
+# ports `mxm_shape` for exactly those six ops and `mxw_dims_of` (movement.bend:1504) is
+# the merge point that answers the shape of ANY node. `CR.cr_const_like`
+# (creation.bend:332) is `ops.py:603-605`'s `UOp.const(b, dtype)` and its `_mop(EXPAND,
+# arg=self._shape)`, and it is GREEN in that file's own gate.
+#
+# SO `loss_mask` IS A NODE HERE, and `w3_mask` gates its GRAPH against CPython's:
+# `Tensor.empty((4,), dtype=dtypes.long).const_like(True, dtypes.bool).toposort()` is
+# `3 CONST/0 CONST/0 EXPAND/2` and so is the port, to the node and in the order.
+#
+# WHAT THE PARAMETER IS NOW: the batch size `N`, and it is a DIFFERENT seam from the one
+# it replaced. `mask` was a parameter because no node could be built; `N` is a parameter
+# because `examples/beautiful_mnist.py:25` is `Tensor.randint(getenv("BS", 512), high=
+# X_train.shape[0])`, which is `mixin/rand.py` and is this file's own recorded `TODO(p3)`.
+# One integer cannot be obtained; a graph can now be built, and is.
+#
+# THE ARENA IS `y`'s, and passing a fresh `O.Arena.empty()` would be the SAME defect
+# `mn_lin1`'s comment records for a bias interned before its MUL: `mn_loss` multiplies
+# `log_probs` by `mask`, and a node from another arena has an index that means nothing
+# here. It is interned in the arena it is about to be consumed in.
+def mn_mask(+ar: O.Arena, ds: List<&2, U32>) -> T.Tensor:
+  CR.cr_const_like(True{}, ar, O.CBool{True{}}, S.boolean(), ds)
+
 def mn_last_axis(+x: T.Tensor) -> List<&2, U32>: MO.mo_ax(True{}, x, 4294967295)
 
+# THE DENOMINATOR AND THE OUTER SUM BOTH SPELL `[0]` AND NOT `Nil{}`, and that is A BUG
+# THIS ROW CAUGHT IN THIS FILE. `reduce.py:15` reduces `axis=None` to `tuple(range(self.
+# ndim))`, which for a one-dimensional `loss_mask` is `(0,)`. `Nil{}` is not "all axes" --
+# it is NO axes, and `mo_sum(False{}, mask, Nil{})` returns the mask with its CAST and
+# nothing else. MEASURED, both spellings, on this mask:
+#     mo_sum(False{}, m, Nil{}) -> 4 CONST/0 CONST/0 EXPAND/2 CAST/1                    NO REDUCE
+#     mo_sum(False{}, m, [0])   -> 5 CONST/0 CONST/0 EXPAND/2 CAST/1 REDUCE/1           CPython
+# and the 2-D mask agrees with CPython on `[0]` too (`7 ... CAST/1 REDUCE/1`). So the loss
+# used to divide by a mask rather than by its sum, and NO ROW IN THIS FILE NOTICED for the
+# simple reason that NOTHING IN THIS FILE CALLED `mn_loss` -- `mn_step` had no gate row
+# until `unverified_step` was added. `mn_last_axis` already spells `-1` for the same
+# reason at the two reduces that DO have an axis, and `[0]` is the same idea one dim over.
 def mn_loss(+logits: T.Tensor, +y: T.Tensor, +mask: T.Tensor) -> T.Tensor:
   +lp = mn_lsm(logits)
   +sm = MO.mo_mul(MO.mo_mean(False{}, lp, mn_last_axis(lp)), mask)
-  MO.mo_neg(MO.mo_div(MO.mo_sum(False{}, MO.mo_add(MO.mo_bin_c(MO.mo_sum(False{}, MO.mo_mul(lp, y), mn_last_axis(lp)), O.OpsMUL{}, O.CFloat{1.0}), MO.mo_bin_c(sm, O.OpsMUL{}, O.CFloat{0.0})), Nil{}), MO.mo_sum(False{}, mask, Nil{})))
+  MO.mo_neg(MO.mo_div(MO.mo_sum(False{}, MO.mo_add(MO.mo_bin_c(MO.mo_sum(False{}, MO.mo_mul(lp, y), mn_last_axis(lp)), O.OpsMUL{}, O.CFloat{1.0}), MO.mo_bin_c(sm, O.OpsMUL{}, O.CFloat{0.0})), [0]), MO.mo_sum(False{}, mask, [0])))
 
 # ===========================================================================
 # 5. THE OPTIMIZER. `nn.optim.Adam` (optim.py:139) is `LAMB(params, lr, b1, b2, eps,
@@ -613,7 +847,7 @@ def unverified_adam() -> IO(Unit): MO.mo_sig_t("unverified_adam", OP.op_lamb(OP.
 # 6. THE CORE FUNCTION SURFACE. THIS IS THE DEF THE `langs/` EXPORT AGENTS PORT, and
 # it is the point of the file.
 #
-#     mn_step(logits, y, mask, w) -> MnStep
+#     mn_step(logits, y, bs, w) -> MnStep
 #
 # It is `train_step` (examples/beautiful_mnist.py:23-27) with its three foreign seams
 # taken as parameters, and it is TOTAL over the substrate's capabilities: every hop that
@@ -629,14 +863,15 @@ def unverified_adam() -> IO(Unit): MO.mo_sig_t("unverified_adam", OP.op_lamb(OP.
 #              max_pool2d), so the step takes the FORWARD'S OUTPUT. W1 and W2 are
 #              named at their Python lines above.
 #   labels  -> y.       `Y_train[samples]` (:26) fed to `sparse_categorical_crossentropy`,
-#              whose one-hot `y` is W3.
+#              whose ONE-HOT is W3a and is the LAST of the loss's inputs to stay outside.
+#              The mask that used to be the FOURTH parameter is built below.
 #   weights -> w.       `nn.state.get_parameters(model)` (:36), a `Data` record here
 #              because a list of twenty Tensors is a list and Python's `state.py` is
 #              a different unit.
-#   (new)   -> mask.    op.py:1742's `Y.const_like(True, dtypes.bool)`, W3 again. It is
-#              a FOURTH argument rather than a CONST because `const_like` is
-#              `expand`, one of the five ops `fold.bend` defers, so a port that
-#              materialised it would be building a node whose shape nothing can check.
+# (new)   -> bs.       `Tensor.randint(getenv("BS", 512), ...)` -- examples/
+#              beautiful_mnist.py:25 -- which is `mixin/rand.py` and is this file's own
+#              `TODO(p3)`. ONE INTEGER cannot be obtained; the mask GRAPH it sizes is
+#              built inside the step and gated by `w3_mask` and `w3_mask2d`.
 #
 # `new_weights` is `MnStep.w` and it is the SAME `w` today, which is W4:
 # `.backward()` (mixin/gradient.py:20) is a `TODO(p3)` in gradient.bend itself, so no
@@ -667,8 +902,8 @@ def MnStep.w(s: MnStep) -> MnWeights:
   match s:
     case MnStep{loss, w}: w
 
-def mn_step(+logits: T.Tensor, +y: T.Tensor, +mask: T.Tensor, w: MnWeights) -> MnStep:
-  MnStep{mn_loss(logits, y, mask), w}
+def mn_step(+logits: T.Tensor, +y: T.Tensor, bs: U32, w: MnWeights) -> MnStep:
+  MnStep{mn_loss(logits, y, mn_mask(T.Tensor.ar(y), [bs])), w}
 
 # ===========================================================================
 # 7. THE PRETTY OUTPUT. `t.set_description(f"loss: {loss.item():6.2f} test_accuracy:
@@ -722,6 +957,9 @@ def t_mdl() -> IO(Unit):
 def t_shapes() -> IO(Unit):
   do IO<Unit>:
     IO.print(mn_cat(["mdl_in=", mn_shape_str(mn_in())]))
+    IO.print(mn_cat(["mdl_pool_k5=", mn_pool_show(mn_pool_full(mn_in(), [5, 5], [1, 1]))]))
+    IO.print(mn_cat(["mdl_pool_k2s2=", mn_pool_show(mn_pool_full(mn_pool_in(), [2, 2], [2, 2]))]))
+    IO.print(mn_cat(["mdl_pool_ns=", mn_shape_str(mn_conv_out(mn_ns(), 32, 5))]))
     IO.print(mn_cat(["mdl_walk=", mn_walk_row()]))
     IO.print(mn_cat(["mdl_out=", mn_shape_str(mn_out())]))
     IO.print(mn_cat(["mdl_lin_in=", mn_shape_str(mn_lin_in())]))
@@ -796,6 +1034,58 @@ def t_unverified() -> IO(Unit):
     MO.mo_sig_t("unverified_lin2", mn_dot2())
     unverified_adam()
 
+# `w3_mask` -- THE CLOSED HALF OF W3, as a GRAPH. `loss_mask` is op.py:1740's
+# `Y.const_like(True, dtypes.bool)` and CPython answers it with a real `Tensor.empty((4,),
+# dtype=dtypes.long)`, so the row is a signature and not a shape: see `mn_mask`'s comment
+# for why the shape of a ONE-DIM mask is not readable on this substrate.
+def t_w3() -> IO(Unit): MO.mo_sig_t("w3_mask", mn_mask(O.Arena.empty(), [4]))
+
+# `w3_mask2d` -- THE SHAPE HALF OF W3b, AND THE ROW THAT FIXES A MEASURED BLIND SPOT.
+# `w3_mask` alone is a WEAK row and the mutation table says so: `mn_mask`'s dims went
+# from `[4]` to `[5]` and NOTHING moved, because a one-element shape arg is a BARE CONST
+# and `mo_sig_t` prints the node count, the root op, `nsrc` and the SRC OP SEQUENCE -- and
+# all four are `3 CONST/0 CONST/0 EXPAND/2` for every dim. So the row that can see the
+# dim has to be a shape row, and a shape row needs a shape arg of length != 1, because
+# THAT is the only case `mxm_as_shape` can read (see `mn_mask`). CPython: `Tensor.empty(
+# (4,10), dtype=dtypes.long).const_like(True, dtypes.bool).shape` is `(4, 10)`.
+def t_w3b() -> IO(Unit):
+  +m = mn_mask(O.Arena.empty(), [4, 10])
+  IO.print(mn_cat(["w3_mask2d=", mn_pool_show(MX.mxw_dims_of(T.Tensor.ar(m), T.Tensor.u(m)))]))
+
+# `unverified_step` -- `mn_step` ITSELF, which was the file's largest blind spot until this
+# row existed: `mn_step` is the DEF the `langs/` export agents port, and NOTHING in the
+# gate called it, so the whole W3b closure -- the mask built inside, and the arena it is
+# interned in -- was invisible. `unverified_` because CPython cannot answer it: `y` is a
+# parameter here and CPython builds it from `arange` (W3a), so the two graphs differ from
+# the first node on. What the row DOES pin is the local structure: the mask must be
+# interned in `y`'s arena (M13), and the loss's denominator must be a REDUCE and not the
+# mask handed back (M14) -- and M14 is a bug this row FOUND, so it is worth being blunt
+# that the row was not written as a test and became one.
+#
+# THE FIXTURE IS `(4, 10)` ON BOTH SIDES -- the model's own last layer is `nn.Linear(576,
+# 10)` (examples/beautiful_mnist.py:16), so 10 is the class count and 4 is a batch of 4
+# instead of `getenv("BS", 512)`. Two SEPARATE buffers, because one arena and one buffer
+# would make the logits and `y` the same node and `log_probs * y` a square of a leaf. Both
+# are reshaped from a 40-element BUFFER rather than allocated, so no device is involved.
+def unverified_step() -> IO(Unit):
+  +ar = O.Arena.empty()
+  +lg = MX.mxw_reshape(mn_buf1(ar, 0, 40), [4, 10])
+  +y = MX.mxw_reshape(mn_buf1(T.Tensor.ar(lg), 1, 40), [4, 10])
+  MO.mo_sig_t("unverified_step", MnStep.loss(mn_step(lg, y, 4, MnWeights{Nil{}})))
+
+# `unverified_arange_dims` -- THE RE-CONFIRMATION OF W3a, PRINTED. It is BEND-ONLY
+# because CPython cannot be asked the question in this file's terms: `mxw_dims_of` on an
+# `arange`-rooted node answers the EMPTY LIST, and that is the whole of W3a's remaining
+# blocker. `mixin/rand.bend` builds `op_arange` and gates it (`arange3`, `arange5`), but
+# it builds `_pad_constant`'s shape arg from a `U1` QUANTISER (rand.bend:538) rather than
+# from CONSTs, and `mxm_as_shape` refuses the moment one element is not a CONST
+# (movement.bend:654-662). The row is HERE so the claim is REPEATABLE: if `rand.bend`
+# grows a CONST-arg `arange`, this row prints `10` and the header's W3a is out of date.
+# An empty value is a MEASUREMENT and not a gap in the gate.
+def unverified_arange() -> IO(Unit):
+  +a: T.Tensor = RD.op_arange(O.Arena.empty(), 10, S.D1{0})
+  IO.print(mn_cat(["unverified_arange_dims=", mn_pool_show(MX.mxw_dims_of(T.Tensor.ar(a), T.Tensor.u(a)))]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     t_mdl()
@@ -804,38 +1094,73 @@ def main() -> IO(Unit):
     t_params()
     t_fwd()
     t_out()
+    t_w3()
+    t_w3b()
     row_round_1()
     row_round_2()
     t_unverified()
+    unverified_arange()
+    unverified_step()
 
 # ===========================================================================
-# THE MUTATION TABLE -- MEASURED. Each edit is applied, both lanes are re-run and
-# diffed against the unmutated output, and the file is reverted from a byte snapshot:
+# THE MUTATION TABLE -- MEASURED, ON THE GATE AS IT NOW STANDS (30 shared rows, six
+# bend-only). Each edit is applied with a driver that REFUSES an ambiguous site (an
+# edit that matches zero or more than one place aborts rather than guessing), the
+# interpreted lane is re-run and diffed against the unmutated output, and the file is
+# reverted from a byte snapshot:
 #
-#     cp examples/beautiful_mnist.bend /tmp/bmn.bak
+#     cp examples/beautiful_mnist.bend $T/bmn.bak
 #     <edit one token>                                   # as named below
-#     ./bin/bend examples/beautiful_mnist.bend > /tmp/mut.txt
-#     diff /tmp/bd.txt /tmp/mut.txt
-#     cp /tmp/bmn.bak examples/beautiful_mnist.bend
+#     ./bin/bend examples/beautiful_mnist.bend > $T/mut.txt
+#     diff $T/bd.txt $T/mut.txt
+#     cp $T/bmn.bak examples/beautiful_mnist.bend
 #
-# | mutation | the edit | rows that MOVED | what it was testing |
-# | --- | --- | --- | --- |
-# | mutation | the edit | rows that MOVED | what it was testing |
-# | --- | --- | --- | --- |
-# | M1 | `mn_conv_out`: `U32.add(U32.sub(h, k), 1)` -> `U32.sub(h, k)` | `mdl_walk` `mdl_lin_in` | `_apply_ceil_mode`'s `+ 1` (op.py:1644). Every conv in the model is unpadded, so the chain shifts a pixel per conv and `mdl_lin_in` reads `(1, 400)` instead of `(1, 576)` -- which is the number `nn.Linear(576, 10)` asserts, so the row catches the model's own consistency. |
-# | M2 | `mn_layers`: `MnConv{32, 32, 5}` -> `MnConv{32, 32, 3}` | `mdl_table` `mdl_walk` `mdl_scale` | A transposed layer. `mdl_table` moves because the ARGUMENT column moves, `mdl_walk` because the second conv's output moves, `mdl_scale` because `1/sqrt(32*9) != 1/sqrt(32*25)`. The NAME column does not move, and that is the measurement that says the argument column is not redundant. |
-# | M3 | `mn_pool_out`: `U32.div(h, 2)` -> `U32.div(h, 4)` | `mdl_walk` `mdl_lin_in` | `max_pool2d`'s `stride=None` meaning `stride == kernel_size` (op.py:1334). Stride 4 collapses the map to 1x1 and `mdl_lin_in` reads `(1, 64)`. |
-# | M4 | `mn_flat_out`: `U32.mul(U32.mul(c, h), w)` -> `U32.mul(c, h)` | `mdl_walk` `mdl_lin_in` | `flatten(1)`'s product over ALL trailing dims (movement.py:345). Reads `(1, 192)` instead of `(1, 576)`. |
-# | M5 | `mn_row_out`: `H.pad_left(..., 5)` -> `H.pad_left(..., 6)` | `out_a` `out_b` `out_c` `out_d` | The `:5.2f` width on `test_acc` (examples/beautiful_mnist.py:43). The WIDTH is invisible to the number and to the `%`, so only the printed row sees it -- this is the row that says the pretty output is gated at all. |
-# | M6 | `mn_row_out`: the `"loss: "` literal -> `"loss="` | `out_a` `out_b` `out_c` `out_d` | The f-string's LITERAL half, which is the half a `%.2f` printer cannot check. |
-# | M7 | `mn_nan`: the `0.0 * 0.0` NUMERATOR -> `1.0 * 1.0` | `out_c` | `test_acc = float('nan')` before `i % 10 == 9` (examples/beautiful_mnist.py:38). `out_c` goes from `  nan` to `1.00`. `out_d` does NOT move, because it uses `mn_inf` and not `mn_nan` -- which is the measurement that says the two specials are separate rows. |
-# | M8 | `MnRelu{}` -> `MnPool{}` at index 1 | `mdl_table` `mdl_walk` | relu is SHAPE-IDENTITY and max_pool2d is not, so `mdl_walk` moves even though both print one name in the name column -- the row that separates the two columns. `mdl_lin_in` does not move here, because a pool at index 1 and its stride cancel out of the final product for this particular table; that is luck, not design, and it is why the row is listed as moving `mdl_walk` only. |
-# | M9 | `mn_relu`: `E.ew_where(E.ew_gt(...))` -> `MO.mo_maxc(x, 0.0)` | `relu1` `relu2` | elementwise.py:674's NOTE ("if you write this as self.maximum(0) the gradient is wrong"). `maximum` is a MAX and the port is a CMPLT and a WHERE, so both the op names and the count move. This is the row that pins the NOTE. |
-# | M10 | `mn_bn`'s `nbt=(1,)` -> `nbt=(0,)` | `mdl_bn` | `nn/__init__.py:39`'s `num_batches_tracked = Tensor.zeros(dtype='long')`. `mdl_bn` prints a LITERAL and not a folded shape, so it moves for the wrong reason -- which makes it a WEAK row, and the honest fix is the one the row's own comment names: the no-argument arm of `Tensor.zeros` (creation.py:108) is `tensor.bend`'s WALL 2, so the row cannot yet print a shape. It is listed here as moving rather than as a negative because it DOES move, and the weakness is recorded rather than hidden. |
-# | M11 | a whitespace-only edit (`def main` -> `def  main`) | **NOTHING** | a control. A table with no row that CANNOT move is a table of coincidences. |
+# FIVE OF THESE ENTRIES ARE THE POINT OF THE WHOLE PASS, and FOUR OF THEM MOVED NOTHING
+# when they were first run. Each is written up where it is used -- `mn_pool_ns` beside the
+# non-square control, `w3_mask2d` beside the mask, `unverified_step` beside `mn_step` --
+# and together they are the reason a mutation table is MEASURED rather than reasoned about:
+# the square model hid a wrong index read, a signature cannot see a shape arg's value,
+# an uncalled def hides everything, and the denominator's reduce was silently absent.
 #
-# THE `unverified_*` ROWS WERE NOT MUTATED, for the reason `nn/optim.bend` gives for
-# its seven: a mutation's only meaning is the set of rows it moves, and a row that is
-# already wrong measures nothing. They are reported as wrong instead, which is the
-# honest form of the same information.
+# | # | the edit | rows that MOVED | what it was testing |
+# | --- | --- | --- | --- |
+# | M1 | `mn_conv_out`: the conv's stride `[1, 1]` -> `[2, 2]` | `mdl_walk` `mdl_lin_in` `mdl_pool_k2s2` `mdl_pool_ns` | `_pool`'s `o_` for a conv at stride != 1 (movement.py:604). A port that reduced `_pool` to `i - k + 1` could not express this at all, which is why the walk now CALLS `mx_pool_shape`. |
+# | M2 | `mn_layers`: `MnConv{32, 32, 5}` -> `MnConv{32, 32, 3}` | `mdl_table` `mdl_walk` `mdl_pool_k2s2` | A transposed layer. `mdl_table` moves because the ARGUMENT column moves, `mdl_walk` because the second conv's output moves, and `mdl_pool_k2s2` because the pool's INPUT is walked rather than spelled. The NAME column does not move, and that is the measurement that says the argument column is not redundant. |
+# | M3 | `mdl_pool_k2s2`'s own call: the stride `[2, 2]` -> `[1, 1]` | `mdl_pool_k2s2` | `max_pool2d`'s `s_ = stride if stride is not None else k_` (op.py:1367). A LOCALISED row: it moves itself and nothing else, because the WALK has its own `[2, 2]` in `mn_pool_out`. Two rows that ought to agree and do not is a hole, and this is why the row's fixture is written out in full rather than shared. |
+# | M4 | `mdl_pool_k5`'s own call: the kernel `[5, 5]` -> `[3, 3]` | `mdl_pool_k5` | The kernel half of `_pool`'s `k_`, which is the half the conv's reduce at op.py:1553 eats. LOCALISED, same reason as M3. |
+# | M5 | **`mn_conv_out`: the STRIDE and the DILATION swapped** -- `[k, k], [1, 1]` -> `[1, 1], [k, k]` | `mdl_walk` `mdl_lin_in` `mdl_pool_k2s2` `mdl_pool_ns` | **THE BLIND-SPOT CLASS `mixin/movement.bend` NAMES.** Both lists are `List<&2, U32>` of length 2, so the swap typechecks; the root op, the nsrc and the SRC OP SEQUENCE are all unchanged, and only a row whose VALUE differs between stride-1 and dilation-2 can see it. Four rows can, and the two that would be most at risk from it (`mdl_pool_k2s2`, `mdl_pool_ns`) both do. CAUGHT. |
+# | M6 | **`mdl_pool_k5`: the STRIDE and the DILATION swapped** | `mdl_pool_k5` | The same class on the second (kernel, stride) fixture. LOCALISED -- one row moves it -- and it is reported as such rather than as a pass, because a one-row mutation is a one-row row. |
+# | M7 | **`mn_conv_out`: the WIDTH read from index `2` instead of `3`** | `mdl_pool_ns` | **MOVED NOTHING BEFORE `mdl_pool_ns` EXISTED.** Every shape in this model is square, so `o_h == o_w` at every one of the fourteen steps and all four walk rows agreed either way. The non-square control `(1,1,28,30)` is the only thing in the file that can see it, and it does. This is the row that proves the model cannot be its own control. |
+# | M8 | `mn_pool_in.go`: the stop `case MnPool{} <> +t` -> `case MnRelu{} <> +t` | `mdl_pool_k2s2` | `mn_pool_in`'s stop condition. Without it the row would pool a LATER shape and agree with nothing; the row existing at all depends on the walk finding the SIXTH layer and not another. |
+# | M9 | `mn_step_shape.of`: `case MnRelu{}: s` -> `MnShape{1, 1, 1, 1}` | `mdl_walk` `mdl_lin_in` `mdl_pool_k2s2` | relu is SHAPE-IDENTITY and the mutation is not, so the walk moves even though both print one name in the name column. |
+# | M10 | `mn_flat_out`: `U32.mul(U32.mul(c, h), w)` -> `U32.mul(c, h)` | `mdl_walk` `mdl_lin_in` | `flatten(1)`'s product over ALL trailing dims (movement.py:345). Reads `(1, 192)` instead of `(1, 576)`. |
+# | M11 | `mn_at`: `Maybe.default(..., 0)` -> `..., 1)` | **NOTHING** | THE ONE ROW THAT STILL MOVES NOTHING, and it is CORRECT: the default is unreachable, because `mx_pool_shape` always answers at least `nd + ni >= 4` dims and the four reads are 0..3. An unreachable fallback cannot move a row and is not supposed to. It is listed because a table with no such entry is a table of coincidences -- and because the RISK it seemed to carry (reading the wrong index) is carried instead by M7, which does move. |
+# | M12 | `mn_mask`'s shape arg `ds` -> `List.append(ds, [1])` | `unverified_step` `w3_mask` `w3_mask2d` | THE MASK'S SIZE. It moved NOTHING while `w3_mask` was the only mask row, because `mo_sig_t` prints the node count, the root op, `nsrc` and the src op SEQUENCE -- and `3 CONST/0 CONST/0 EXPAND/2` is the answer for EVERY dim. `w3_mask2d` is the row that fixed it, and it was added because of this mutation, not before it. |
+# | M13 | `mn_step`: the mask interned in `O.Arena.empty()` instead of `y`'s arena | `unverified_step` | **THE W3b ARENA BUG, AND IT MOVED NOTHING BEFORE `unverified_step` EXISTED.** Nothing in the gate called `mn_step`, so the whole of the closure -- a mask built in the wrong arena, multiplied by a `log_probs` from another one -- was invisible. This is the mutation that says the closure had to come with a row. |
+# | M14 | `mn_loss`: the denominator's `[0]` -> `Nil{}` | `unverified_step` | **A LIVE BUG IN THIS FILE, NOW FIXED.** `reduce.py:15` reduces `axis=None` to `range(ndim)`, which for a one-dim `loss_mask` is `(0,)`; `Nil{}` is NO axes, and `mo_sum` then returns the mask with its CAST and no REDUCE. It sat in `mn_loss` undetected because `mn_loss` had no row either. |
+# | M15 | `mn_mask`: the const `O.CBool{True{}}` -> `O.CFloat{1.0}` | `unverified_step` `w3_mask` | `const_like`'s `UOp.const(b, dtype)` plus its `dtype` cast (ops.py:635). A `CBool` into `S.boolean()` needs no cast and a `CFloat` needs one, so the node count moves -- which is the only reason `w3_mask` is a graph row at all. |
+# | M16 | `mn_row_out`: `H.pad_left(..., 5)` -> `H.pad_left(..., 6)` | `out_a` `out_b` `out_c` `out_d` | The `:5.2f` width on `test_acc` (examples/beautiful_mnist.py:43). The WIDTH is invisible to the number and to the `%`, so only the printed row sees it. |
+# | M17 | `mn_row_out`: the `"loss: "` literal -> `"loss="` | `out_a` `out_b` `out_c` `out_d` | The f-string's LITERAL half, which is the half a `%.2f` printer cannot check. |
+# | M18 | `mn_nan`: the `0.0 * 0.0` NUMERATOR -> `1.0 * 1.0` | `out_c` | `test_acc = float('nan')` before `i % 10 == 9` (examples/beautiful_mnist.py:38). `out_d` does NOT move, because it uses `mn_inf` and not `mn_nan` -- which is the measurement that says the two specials are separate rows. |
+# | M19 | `mn_bn`'s `nbt=(1,)` -> `nbt=(0,)` | `mdl_bn` | `nn/__init__.py:39`'s `num_batches_tracked = Tensor.zeros(dtype='long')`. STILL A WEAK ROW and the weakness is unchanged: it prints a LITERAL and not a folded shape, so it moves for the wrong reason. The no-argument arm of `Tensor.zeros` (creation.py:108) is `tensor.bend`'s WALL 2. |
+# | M20 | `mn_relu`: `E.ew_where(E.ew_gt(...))` -> `MO.mo_maxc(x, 0.0)` | `relu1` `relu2` | elementwise.py:674's NOTE ("if you write this as self.maximum(0) the gradient is wrong"). `maximum` is a MAX and the port is a CMPLT and a WHERE, so both the op names and the count move. |
+# | M21 | the `w3_mask` row's fixture `[4]` -> `[4, 10]` | `w3_mask` | A one-dim shape arg is a BARE CONST (`tensor.bend:587`, CPython's ops.py:110) and a two-dim one is a STACK, so the same def answers two different graphs. `w3_mask2d` covers the STACK spelling and this says the BARE-CONST spelling is the one `mn_step` uses. |
+# | M22 | a whitespace-only edit on this table's own header | **NOTHING** | a control. A table with no row that CANNOT move is a table of coincidences. |
+#
+# THE FOUR FACTS PLUS THE SRC OP SEQUENCE, NEVER A COUNT. `mo_sig_t` prints
+# `n=<count> op=<root> nsrc=<n> srcops=<seq>` (`mixin/movement.bend`'s `mxw_sig`, at
+# 1549-1553) precisely because four separate rows let a fixture drop one of them: a PAD
+# built with ONE STACK instead of two has the right root op and the right node count, so
+# a gate carrying only those two is green on a wrong graph. M15 is the row that shows the
+# difference in practice -- a graph can have the same op SEQUENCE and a different count,
+# and only the count separates them.
+#
+# `unverified_lin2` AND `unverified_adam` WERE NOT MUTATED, for the reason
+# `nn/optim.bend` gives for its seven: a mutation's only meaning is the set of rows it
+# moves, and a row that is ALREADY wrong measures nothing. They are reported as wrong
+# instead, which is the honest form of the same information. `unverified_arange_dims`
+# AND `unverified_step` WERE NOT MUTATED EITHER, and for the second reason that applies
+# to them and not to those two: there is no shared row for either, so there is nothing
+# to diff against. Both are in the gate because they RECORD a fact -- an empty shape and
+# a node count -- and the facts are stated in the header rather than guessed at.
 # ===========================================================================
