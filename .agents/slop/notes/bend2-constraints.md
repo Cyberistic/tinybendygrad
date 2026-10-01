@@ -4381,3 +4381,50 @@ hand-written reader per record field (3,499 of them), ~81 duplicated dispatch
 scans, ~1,316 two-arm `Maybe` reads, and comment density -- and a share of the
 `.put`/`.go` helper proliferation is self-inflicted when `List.foldl` with a
 top-level 2-ary def would do.
+
+### 32. `List.foldl` REPLACES THE HAND-ROLLED `.go` ACCUMULATOR PAIR — WITH ONE TRAP
+MEASURED (2026-10-02), converting four folds in `nn/state.bend` and four in
+`nn/__init__.bend`. Both gates came back BYTE-IDENTICAL to the pre-rewrite output
+(14 and 24 rows, zero `False`), so this is behaviour-preserving and not a hope.
+
+    # BEFORE -- four lines and a .go name per fold
+    def sd_keys.go(es: List<&2, Ent>, acc: String) -> String:
+      match es:
+        case Nil{}: acc
+        case e <> t: sd_keys.go(t, String.concat([acc, Ent.k(e), ","]))
+    def sd_keys(es: List<&2, Ent>) -> String: sd_keys.go(es, "")
+
+    # AFTER -- one line, CLOSED step inlined as a lambda
+    def sd_keys(es: List<&2, Ent>) -> String:
+      List.foldl(~&2, ~Ent, ~String,
+        (acc: String) => (e: Ent) => String.concat([acc, Ent.k(e), ","]), es, "")
+
+THE TRAP, and it cost two cycles: **the third `~` argument is the ACCUMULATOR's type,
+not the element's.** `List.foldl(~a, ~A, ~B, f, xs, acc)` has `f: B -> A -> B`, so
+for a `List<&2, Ent>` folded into a `List<&2, Ent>` you write `~List<&2, Ent>` as
+`~B`, not `~Ent`. The error is precise and points at the `f`:
+    expected : @_:Ent -> @_:Ent -> Ent
+    observed : @acc:List<&2, Ent> -> @e:Ent -> List<&2, Ent>
+Note how it names the types it wanted -- `Ent -> Ent -> Ent`, i.e. it inferred `~B`
+from the step's RETURN type and then wanted the parameter to match.
+
+THE OTHER TRAP: **a `~` template position must be CLOSED.** A lambda that captures a
+runtime value is refused:
+    expected : a template applied to closed ~ arguments
+    (sep is a variable here, not comptime: pass it at run time)
+So a step that needs a runtime parameter must be a TOP-LEVEL def taking it as an
+ordinary argument, and the fold is called with that def. That is the shape to reach
+for when a fold is parameterised, and `nn/state.bend`'s `sd_update.step` is the
+worked example. A top-level def at a `~` position is called freely (rule 31), so
+there is no reason to prefer a closure when you need a parameter.
+
+WHAT DOES NOT CONVERT: a fold whose accumulator is PREPENDED and then reversed. The
+reverse has to stay outside the fold (`get_parameters`), because moving it into the
+step reverses once per element -- which is exactly the `List.append`/`List.reverse`
+pairing rule from the wgsl unit, in a new costume. And a fold over an ARENA cannot
+use `List.foldl` at all: the arena is affine and threaded with `+`, which no `List`
+combinator threads.
+
+FILE SIZE, for the record: `nn/state.bend` 834 -> 832 and `nn/__init__.bend` 845 ->
+834, i.e. 13 lines from 8 folds, and it scales: the tree has ~97 hand-rolled `.go`/
+`.step` folds of this shape and 3,499 one-line field readers.
