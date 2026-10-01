@@ -1032,9 +1032,7 @@ def mx_pool_ni(k: List<&2, U32>) -> U32: mxm_len_u32(k)
 # precisely the "right count, wrong graph" hole. A gate row cannot see it, which is
 # why the pool rows below ALSO print the LENGTH.
 def mx_shows.go(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: mx_shows.go(t, List.append(&2, String, acc, [U32.show(x)]))
+  List.foldl(~&2, ~U32, ~List<&2, String>, (a: List<&2, String>) => (x: U32) => List.append(&2, String, a, [U32.show(x)]), xs, acc)
 
 def mx_show(xs: List<&2, U32>) -> String: String.join(mx_shows.go(xs, Nil{}), ",")
 

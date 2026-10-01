@@ -1505,9 +1505,7 @@ def ex_axes(sh: List<&2, Sh>, shift: U32) -> List<&2, U32>:
   ex_axes.go(sh, shift, Nil{})
 
 def ex_rngs.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
-  match sh:
-    case Nil{}: acc
-    case s <> t: ex_rngs.go(t, List.append(&2, U32, acc, [Sh.n(s)]))
+  List.foldl(~&2, ~Sh, ~List<&2, U32>, (a: List<&2, U32>) => (s: Sh) => List.append(&2, U32, a, [Sh.n(s)]), sh, acc)
 
 def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
   ex_rngs.go(sh, Nil{})
@@ -2005,9 +2003,7 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 # because the shift is the only arithmetic in both.
 # ===========================================================================
 def st_shift.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
-  match sh:
-    case Nil{}: acc
-    case +s <> +t: st_shift.go(t, List.append(&2, U32, acc, [U32.add(Sh.ax(s), 1)]))
+  List.foldl(~&2, ~Sh, ~List<&2, U32>, (a: List<&2, U32>) => (s: Sh) => List.append(&2, U32, a, [U32.add(Sh.ax(s), 1)]), sh, acc)
 
 def st_shift(sh: List<&2, Sh>) -> List<&2, U32>:
   st_shift.go(sh, Nil{})
@@ -2141,9 +2137,7 @@ def sx_idx(has_dev: Bool, dev_idx: U32) -> U32:
 # above it. THE LIST IS FIRST for the decreasing self-call, as everywhere else in
 # this file, so the counter `j` rides last.
 def cx_put.go(xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
-  match xs:
-    case Nil{}: acc
-    case +x <> +t: cx_put.go(t, List.append(&2, U32, acc, [x]))
+  List.foldl(~&2, ~U32, ~List<&2, U32>, (a: List<&2, U32>) => (x: U32) => List.append(&2, U32, a, [x]), xs, acc)
 
 def cx_put(acc: List<&2, U32>, xs: List<&2, U32>) -> List<&2, U32>:
   cx_put.go(xs, acc)

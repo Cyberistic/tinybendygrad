@@ -973,9 +973,7 @@ def fn_imp_dim(d: O.Sint) -> U32:
   fn_imp_dim.of(d)
 
 def fn_imp_sz.go(ds: List<&2, O.Sint>, acc: U32) -> U32:
-  match ds:
-    case Nil{}: acc
-    case d <> t: fn_imp_sz.go(t, U32.mul(acc, fn_imp_dim(d)))
+  List.foldl(~&2, ~O.Sint, ~U32, (a: U32) => (d: O.Sint) => U32.mul(a, fn_imp_dim(d)), ds, acc)
 
 def fn_imp_sz.of2(ds: List<&2, O.Sint>) -> U32:
   fn_imp_sz.go(ds, 1)
