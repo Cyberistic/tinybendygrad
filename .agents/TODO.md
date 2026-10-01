@@ -638,6 +638,35 @@ diffed.
       the 40 `is_packed`/`buf_map` rows exist because of that finding. Two rows differ
       and are left printing (the f64 nan mask and threshold — a U32 cannot hold either,
       and neither is reachable from a WGSLRenderer).
+- [x] `renderer/tc_ptx.bend` STAGES 1 AND 2 — `tinygrad/renderer/tc.py` (141 lines) AND
+      `tinygrad/renderer/ptx.py` (231 lines) in ONE file, because they are one feature
+      (`ptx.py:4` imports `tc`). 2035 lines, **620 string-diff rows** (286 + 334),
+      `ALL PROOFS CHECK`, interpreted and native lanes byte-identical, 51 mutations
+      measured. The three findings worth carrying:
+      * **`Tc.threads` is unobservable.** `__post_init__` (tc.py:43) ASSERTS
+        `len(f[0]) == len(frag_c[0])` for all three fragments, so A, B and C have the
+        same lane count in every legal tensor core and the three candidate readers are
+        the same function. The mutation table says 0 rows and the control (reading
+        `frag_c[1]`, which the assertion does not pin) says 8 — the row is live and
+        the ambiguity is upstream's.
+      * **`used` needed its OWN row.** `axis_coords` reads `frag_a + frag_c` and takes a
+        MAX per axis, and the same assertion makes `A + C` and `A + B` agree on all
+        three maxima. Swapping C for B moved nothing until `used`'s own string was a
+        row. A rule whose output is an intermediate needs a row on the intermediate.
+      * **`supported_dtypes` returns a SET**, so the gate sorts the names, and its
+        cons-vs-append mutation moves 0 rows where `tensor_cores`' moves 3. Where the
+        oracle has to normalise, the gate loses a dimension.
+      STAGE 3 (the `render` naming walk: the `ssa` counter, the register map, the
+      `.reg` declarations, `prod` over the local dims, and the kernel BODY that
+      `render_kernel` currently takes as a `BODY` line) is NOT started. Walls named
+      rather than faked: `ptx.py:145` (the compiler), `ptx.py:147` (the `extra_matcher`
+      mutation), `ptx.py:13`/`ptx.py:16` (`render_val`'s signed-integer and double
+      arms), `ptx.py:230` (the base set, owned by `renderer/__init__.bend:85`), all
+      eight `pm_validate_wmma_*` bodies, all eight `ptx_matcher` rules, and
+      `UOp.wmma`/`UOp.cast`/`UOp.bitcast` in `ops.bend`. Oracle
+      `.agents/slop/tcptx-oracle.py`, mutation driver
+      `.agents/slop/tcptx-mutate.py`, seven new rules appended to
+      `bend2-constraints.md`.
 - [x] `codegen/{kernel,rewriter}.bend` — 2105 lines, 70 rows diffed against a Python
       oracle, `ALL PROOFS CHECK` (`e68fcedc`). **The Python files named in the brief
       do not exist in this fork**: `codegen/` is a package, `codegen/__init__.py` (518
@@ -910,3 +939,285 @@ resolve by inspection at midnight.
   4. only then delete the workaround in `function.bend:868`.
 Reverted state verified: `nn/optim.bend` output is byte-identical to the committed
 baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via jj.
+
+## Session 2026-10-02 — `runtime/ops_metal.bend` (the Metal device: the half that SUBMITS)
+
+- [x] `tinybendygrad/runtime/ops_metal.bend` — `tinygrad/runtime/ops_metal.py`, 287 -> 3486
+      lines, 455 defs/types, **329 gate rows**, `ALL PROOFS CHECK`, the interpreted
+      and native lanes **byte-identical**, and **167 of 329 rows answered by a CPython
+      oracle with 0 disagreements** (`python3 .agents/slop/mt_diff.py` prints
+      `THREE LANES AGREE`). The oracle `ast`-walks ops_metal.py for the selector
+      order and OPENS A REAL `MetalDevice()` for the arch and the family, so
+      `arch = Apple8`, `check_family("Apple") = 1008`, `check_family("Mac") = 2002`,
+      `MTLResourceStorageModeShared = 0`, `len(d.sels) = 18` and `d.sels.nbytes = 144`
+      are MEASURED on this host, not transcribed.
+      * **THE TEMPLATE RULE, obeyed exactly.** A def either builds the argument of one
+        objc call or records that call in the trace — no third kind — so the `raise`
+        lives in the trace and a refusal is a TRUNCATED trace needing no guard of its own.
+        `Tr.emit` is the seam and `Tr.emit.go`'s `Bool.pick` on `refused` is THE RAISE.
+      * **device.bend IS CONSUMED, not re-derived.** `D.iter_sig` IS `layout_args`' engine
+        (hcq2.py:74 zips `TinyELF.iter_sig` against the itemsizes and device.bend already
+        ports `iter_sig`); `D.host_offset` IS `MetalAllocator._offset`; `D.Bar`/`D.bnew` ARE
+        `_alloc`'s and `new_icb`'s Buffers, so `nbytes` is `size * itemsize` and
+        `new_icb`'s `BufferSpec(nolru=True)` gets "never recycled" from `D.recycled`'s
+        four conjuncts for free (`mt_nolru`).
+      * **IT COMPOSES WITH cstyle's committed Metal renderer**, and the header says so
+        with the four numbers the two files have to agree on: ONE binding at index 0
+        (`:256 setMaxKernelBufferBindCount(1)` against `cstyle.py:372`'s
+        `constant args_t& args [[buffer(0)]]`), the struct's byte offset
+        (`:112 off = round_up(nbytes, 256)`), the global and local size as two `MTLSize`s
+        (`:116` / `:264`), and the entry-point NAME (`:247 newFunctionWithName` against
+        `TinyELF.name`). The only thing missing for a kernel to RUN on this host is
+        `MetalCompiler.compile` (:42-71), which drives MTLCompiler through Apple's block
+        ABI (`ctypes.byref(callback, -0x10)`) — a seam, and everything it needs (the
+        `-std=metal4.0` version, the 4-byte-padded blob, the 16-byte `<QQ` request
+        header) is computed and gated here.
+      * **SEVEN REAL BUGS FOUND BY THIS GATE, and none of them was a type error.**
+        `--check-only` said `ALL PROOFS CHECK` through all seven. `csrc_pad` dropped a
+        subtraction (M1); `q.items` built `[vals] ++ [globals]` because `List.append` is
+        `xs ++ ys` (M4); `sync_count` used `round_up` where the source says
+        `len(range(...))` and `round_up(4,4)` is 4 (M22); `sync_range` consed and then
+        reversed (M23); `pmb_m2` was chained off `pmb_m0` and so inherited `tag="mtl_sel"`
+        (M26); `dev.pipeline.f` called the COMPILER's MTLB/ENDT check and so every
+        pipeline refused (M26c); and `pmb_keep` did not advance the rule index on a miss,
+        so rules 1 and 2 never ran (M26d).
+      * **48 mutations measured, TWO move nothing, and ONE of those is a finding about
+        the PYTHON.** `M26b` (M1's `tag="mtl_sel"` conjunct) is 0 rows because
+        `device.py:404`'s second rule has the IDENTICAL `name="b"` pattern, fires on
+        every node M1 fires on, and answers the same thing — so **Metal's first
+        `pm_bufferize` rule is REDUNDANT with `Compiled`'s second one, on every input**,
+        and the only difference it can make is to fire LESS. The other non-mover is a
+        `+`-only edit; the comment-only edit (the control) is the third 0.
+      * **The brief's `dtype-to-MTLPixelFormat` table does not exist** and this port says
+        so: `grep` finds no `MTLPixelFormat` in ops_metal.py and there is no
+        dtype-to-format mapping in it at all. The two-directional table this file really
+        has is `enum_MTLGPUFamily` (19 members), and `check_family`'s REVERSED
+        `next(filter(...))` plus the `[12:]` arch slice are gated both ways
+        (`mt_fam_*`, `mt_arch_*`), with a last-wins mutation (M30, 8 rows) because
+        `reversed()` is what makes it last-wins.
+      * **The brief predicted PROOFS FAIL from FFI seams and there are NONE.** A
+        `dtype.bend` seam is a `def ... -> IO(R)` whose body is two `import "./x.c"`
+        lines and it makes every importer red; this file does not take that route
+        because the WebGPU template does not — a Metal call is recorded in a `Tr` trace,
+        so there is no foreign effect to declare. The seam is `Tr.emit`, the ORDER is the
+        artefact, and `wgsl.bend`'s green lane is the precedent, not `dtype.bend`'s.
+      * NOT PORTED, 9 `TODO(p3)` lines each naming its Python line: the two `DLL(...)`
+        library loads (:18, :35), the `NSString` from `to_ns_str` (:23), `__reduce__`'s
+        pickle (:41), `disassemble`'s subprocess (:76), the `checked` error TEXT (:26),
+        the callback's `errorMessage` (:52), the block ABI in `BuildRequest` (:68),
+        `GPUStartTime/GPUEndTime * 1e9` (:281, no F64), and the `pm_encode`/`pm_lower`/
+        `pm_bufferize` UOp-MATCHER bodies (:190, :193, :217).
+- [x] `.agents/slop/mt_oracle.py` — the FIRST oracle: `ast`-walks ops_metal.py for
+      `HANDLES + SELECTORS`, the thirteen-STATEMENT shape of `run` with its four arms
+      tagged, the twelve statements of `MetalDevice.__init__`, and the three `run`
+      invocations of `submit`; then OPENS a real device for the family, the arch, the
+      storage mode and the sels size. `python3 .agents/slop/mt_oracle.py` (add `--nol`
+      for the offline rows).
+- [x] `.agents/slop/mt_rows.py` — the 167-row gate oracle, one `name=value` per row the
+      gate can answer, every value a CALL (`helpers.round_up`, `hcq2.layout_args`,
+      `sysdevice.supportsFamily`, `MetalDevice().arch`, device.py:280's LRU policy).
+- [x] `.agents/slop/mt_diff.py` — the three-lane diff: interpreted, native, CPython.
+      Prints `THREE LANES AGREE` and exits 0.
+- [x] `.agents/slop/mt_mutate.py` — 48 mutations, each reported with the rows it moved
+      BY NAME. Refuses to run a mutation whose `old` text does not match exactly once,
+      which is what makes "0 rows moved" honest.
+- [x] `.agents/slop/notes/bend2-constraints.md` — twelve appended rules from this unit,
+      plus the `pm_bufferize` redundancy finding (same shape as the `ops_disk` one).
+
+## Session 2026-10-02 — `runtime/ops_cl.bend` (ONE device, THREE vendor spellings)
+
+- [x] `tinybendygrad/runtime/ops_cl.bend` — `ops_cl.py` (130) + `ops_cuda.py` (136) +
+      `ops_hip.py` (71) in ONE file, because they are one 39-op device. 3200 lines,
+      508 defs/types, **447 rows, THREE LANES BYTE-IDENTICAL** (interpreted, native,
+      and a CPython oracle that imports `autogen.opencl`/`autogen.cuda` with no
+      device present), `ALL PROOFS CHECK`, `share.py` clean. NOT COMMITTED.
+- [x] **No `@extern` seams** (a departure from `dtype.bend`): the TRACE is the seam.
+      `vend.name(vendor, op)` reads every trace entry back as its C symbol, which is
+      why `--check-only` stays green and the gate runs at all. Six bugs the gate
+      caught that review did not:
+      * **`vend.cl` had 40 cells for 39 ops**, and `cuModuleLoadData` /
+        `hipModuleLoadData` sat at `OP_BUILD` (12) while `clCreateProgramWithBinary`
+        sat at `PRG_FROM_BIN` (11) — so the trace printed `(128)` with an EMPTY name
+        where the module load belonged. Fixed by an oracle that SCANS the three
+        sources for `cl.X`/`cuda.X`/`hip.X` and asserts every hit is either in the
+        table or in an explicit `NOT_A_CALL` allowlist (11 typedefs/enum members).
+      * **`cu.launch_size` subtracted the kernargs base on every fold step**, so
+        `[40, 12, 24]` answered 16 where `max(...) - 8` answers 32, and the EMPTY
+        case answered 8 where `default=8` answers 0. A `max`'s `default` is an
+        initial accumulator, not a zero case.
+      * **`hp.sync` dropped `hipSetDevice`** (hp:22-24 `synchronize` is TWO calls).
+      * **`cu._map`'s branch key is the device NAME**, not the host: a CUDA device
+        WITH a host returns at cu:87 without asking about alignment, and a non-CUDA
+        device with NO host raises the *alignment* message. The signature is now
+        `(device, is_cuda, has_host, aligned)` and the gate pins all six cases.
+      * **`hp.fields` tested the buffer count where the Python reads `len(fields)`**
+        (the sum), and read the last offset from the value list even when it was
+        empty; `hp.fields` now takes `(nf, iszs)` with a row per arm.
+      * **`Sig`'s field names were inverted** (`w` was `shape[0]`), which made
+        `cl.pitch` look wrong when it was right. Fixed in the NAMES, plus two pitch
+        fixtures that differ only in WHICH extent is 257.
+- [x] Two DEAD rules found and DELETED, both with the mutation that proves it:
+      `cl_err_hit`/`cu_err_hit` (a `dict.get(k, d)` inside an f-string has no
+      `is not None` test to port — the default IS the lookup's default, so the pick
+      was a tautology) and `Tr.hit`'s `not(is_zero(bad_at))` conjunct (the ordinals
+      are one-based, so `bad_at = 0` can never equal `hits + 1`).
+- [x] ~~`$TMPDIR/opencode/opscl/oracle.py`~~ — **CANCELED, THIS PATH IS DEAD.** The
+      artifacts went to `$TMPDIR` and were gone before the commit (checked 10:35), so
+      the 445 rows are reproducible by running the `.bend` but the CPython *comparison*
+      is not reproducible from the repo. `.agents/slop/` is the rule precisely because
+      `$TMPDIR` does not survive. **TODO: rebuild this oracle into `.agents/slop/`
+      before anything else touches `ops_cl.bend`.** (Earlier count said 447, actual
+      `=`-rows are 445; the two extra were multi-line.)
+- [x] `oracle.py` (the CPython oracle, second independent transcription keyed by
+      SYMBOL) and `mutate.py`
+      (50 mutations, each reported with the rows it moved BY NAME; refuses to run a
+      mutation whose anchor does not match exactly once). **47 move >= 1 row, 1
+      control (`comment-only`) moves 0, 2 blind spots and both are the deleted dead
+      rules.** Four further mutations were REJECTED by the type checker rather than
+      by the gate and are counted separately — a weaker kill.
+- [x] `.agents/slop/notes/bend2-constraints.md` — twelve appended rules, 62-73, on
+      symbol-keyed tables, f-strings as total functions, fold bases, one-based
+      ordinals, `List.append` vs `x <> t`, branch keys, and the control-vs-blind-spot
+      distinction.
+
+## Session 2026-10-02 — a COMMITTED GATE ROW WAS ENCODING A BUG (found by the ops_cpu unit)
+
+- [x] **`tinybendygrad/device.bend:869` `go_slot` — REAL DEFECT, fixed in `7f170f64`.**
+      `device.py:366` is `yield (offset := round_up(offset, dt.itemsize)), dt`
+      followed by `offset += dt.itemsize`. The **walrus assigns the ROUNDED value**, so
+      the next offset is the ALIGNED slot plus the itemsize. The port computed
+      `round_up(off, k)` for the slot but `off + k` for the advance — walking from the
+      UNALIGNED offset and drifting. Measured: itemsizes `[4,8,4]` gives CPython
+      `[0,8,16]` and the port gave `[0,8,12]`.
+- [x] **THE ROW ENCODED THE BUG.** The committed gate read `sig=0 4 5` and its comment
+      said *"advances the running offset by the RAW itemsize. Rounding the advance as
+      well gives `0 4 8`"* — naming CPythons behaviour as if it were a variation to
+      consider. That is the projects explicit prohibition (never close a row that
+      encodes the bug), in a COMMITTED file, and it survived because the row was
+      **internally consistent**: every mutation moved nothing, because the row asserted
+      the ports own behaviour. Now `sig=0 4 8`, which is what CPython prints. Exactly
+      ONE row moved in the whole 107-row gate; the two pre-existing `lru` False are
+      unchanged.
+- [x] **Lesson, and it generalises past this file:** a self-consistent gate proves the
+      port agrees with the gate, not with CPython. A row is only evidence if its
+      expectation was *generated by CPython* (or hand-checked against it) — otherwise
+      the gate is a change-detector wearing a green shirt.
+- [x] `tinybendygrad/runtime/ops_cpu_null.bend` — `ops_cpu.py` (96) + `ops_null.py` (68)
+      in ONE file. 308 rows, THREE LANES BYTE-IDENTICAL, `ALL PROOFS CHECK`, **GREEN**.
+      305 blocks, 305 reachable from `main`, **0 dead** after a full dead-def audit.
+- [x] **The ops_metal finding CONFIRMED on a second device:** no `SOME PROOFS FAIL`,
+      because a `dtype.bend` seam is a `def ... -> IO(R)` with two `import "./x.c"`
+      lines while a template-following device records calls in a `Tr` trace and declares
+      NO foreign effect. **Three devices now (webgpu, metal, cpu/null, cl).**
+- [x] 109 mutations, 3 move nothing, **all three ARGUED not papered over**: two are
+      PROVABLE equivalences (`Nk.same` is Python tuple equality so `null_events` can
+      never hold two equal keys; the thirteen zero-table names are thirteen separately
+      measured ops so at most one matches — first-wins IS last-wins on every reachable
+      input, and planting a duplicate would assert a state the program cannot be in),
+      and the third is the comment control.
+- [x] **FOUR HOLES CLOSED RATHER THAN DECLARED**, one of which is *our own bug coming
+      back*: M56 found `Tr.has` with fuel = pattern length, which is the `ops_webgpu`
+      defect REINTRODUCED and **missed by its own rejection rows**. Also: both `peer`
+      rows were non-remote; no zero-argument fixture existed (measured
+      `pack_args([], 8)`); `starts_with("gfx")` vs `"gfx1"` is indistinguishable on
+      `gfx1100`.
+- [x] **TWO FINDINGS BECAME DELETIONS:** M78 exposed `Tr.next` as a field whose rewind
+      nothing could observe, and the dead-def audit then found NINE more unreachable
+      blocks. The mutation harness also caught **two false claims in the agents own
+      comments** — a harness that checks code but not prose about it is half a gate.
+
+## Session 2026-10-02 — `runtime/ops_nv.bend` (606 rows, TWO AGENTS, ONE FILE)
+
+- [x] `tinybendygrad/runtime/ops_nv.bend` — `ops_nv.py`, 3836 lines, 606 rows,
+      `ALL PROOFS CHECK`, lanes identical, 22 intentional False. Committed `524737e3`.
+- [ ] **RE-RUN THE MUTATION HARNESS FROM SCRATCH.** At 09:15 I saw no `ops_nv.bend`,
+      concluded the agent was dead, and RE-DISPATCHED. The original was not dead — it
+      was slow — and **two agents wrote the same file for a whole session.** The
+      second noticed, said so, and switched to convergent debugging; it explicitly
+      **declines to claim the bulk of the work**. One of its in-place mutation
+      harnesses (`cp` back over the source) clobbered a concurrent write once; nothing
+      was lost, but **the two mutation tables INTERLEAVE and neither is attributable.**
+      M28 already proves at least one constant is correct and ungated, so a rerun is
+      not ceremony.
+- [x] **THE STANDOUT FINDING, verified by me against the authority: 33 of 219
+      constants were WRONG in a file already printing 590 GREEN ROWS.** Spot-checked
+      two by hand against `tinygrad/runtime/autogen/nv_570.py`:
+      `CLASS_BLACKWELL_COMPUTE_A` is `0xCDC0` = 52672 and `CLASS_AMPERE_COMPUTE_B` is
+      `0xC7C0` = 51136; both were wrong and both are now right.
+- [x] **Why no gate could have found them — the lesson is bigger than this file:** a
+      590-row green gate and 33 wrong constants coexisted, because the gate tests
+      *graphs* and the constants answer to a **C header nobody was reading**. The fix
+      is an audit that compares every `def X() -> U32: n` against the generated
+      header, not another row. **Every table ported from `autogen/` needs this audit.**
+- [ ] **GENERALISE IT — but MEASURED FIRST, and the answer is "hand maps, not a
+      script."** I wrote `.agents/slop/const-audit.py` to do this automatically and it
+      is only a SMOKE TEST. Its control on `ops_nv` passes (**0 likely-WRONG**; the 8
+      it flags are index-vs-ioctl name COLLISIONS, correctly not called bugs), but its
+      COVERAGE is the finding: name-matching reaches only **0-18 of 222** consts,
+      because the ports RENAME (`CLASS_BLACKWELL_COMPUTE_A` vs the headers
+      `BLACKWELL_COMPUTE_A`) and often mean something else by the same name. So the
+      `33/219` audit was a **hand-built 219-entry map**, which no script reproduces.
+      **Scale of the real work: 533 numeric const defs across 7 committed
+      device/renderer files** (`ops_nv` 222, `ops_metal` 106, `ops_cl` 103,
+      `ops_webgpu` 67, `ops_cpu_null` 29, `cstyle` 6, `tc_ptx` 6), plus whatever
+      `ops_amd`/`ops_qcom`/`ops_dsp` are adding RIGHT NOW. Assign this per file, with
+      a hand map, as a real unit -- do not trust the script's `0` as a verdict.
+- [x] The wrong values were not cosmetic. All eleven `CLASS_*` ids meant `iface`'s
+      ladder compares against the GPUs real class list and **NEVER MATCHES**, and
+      `CLASS_BLACKWELL_COMPUTE_A` held the `_B` value — so a Blackwell_A GPU would have
+      been handed the entire ver-3 QMD layout. `PCI_MMIO_OFF` had one hex digit-pair
+      misread (`0xBAE000` for `0xBB0000`).
+- [x] **A TAUTOLOGY that had to be chased down:** the row `nv_qmd_ver_bwa` fed the
+      ver-5 THRESHOLD in as its own INPUT, so mutating the constant moved zero rows.
+      Renaming it did not help — the same number on both sides. Only writing the
+      literal `52672` made it a test (now moves 3 rows). **New rule appended: a gate
+      row whose expected value is a def of the thing under test is not a test.**
+- [x] The incoming header **OVERCLAIMED on arrival**: it asserted all four stages had
+      landed while `pc.key`, `qmd.read/write`, `pd.*`, the copy/encdec queues and
+      `dev.vid_hw` were absent **AND THERE WAS NO `main` AT ALL** — 1111 lines of defs
+      with no gate, which is worth nothing. Closed: a port with no gate is a stub with
+      extra steps.
+
+---
+
+## Session 2026-10-02 — `runtime/ops_nv.bend` (the CUDA device: the words it uploads)
+
+- [x] `tinybendygrad/runtime/ops_nv.bend` — `tinygrad/runtime/ops_nv.py` (841 lines) +
+      `hcq2.py:63`/`:74-76`. 3889 lines, 630 defs, **600 gate rows**, `--check-only` is
+      `ALL PROOFS CHECK`. **546 rows cross-checked against CPython with ONE deliberate
+      disagreement**, 53 Bend-only, 4 oracle-only. `.agents/slop/nv-oracle.py`,
+      `nv-diff.py`, `nv-mutate.py`.
+- [x] **THE RECONCILIATION PASS: 73 rows that looked like coverage and were not.** The
+      differ keys on the row NAME, so `nv_slmtot_*` against `nv_slm_*`, five
+      `nv_toname_*` with the parts joined in the other order, two rows printed TWICE,
+      and ~20 oracle rows with no gate row were each reported as *unmatched* rather
+      than as a disagreement — while the summary line said 0 disagreements.
+- [x] **`nv_query_litter_n` was WRONG ON BOTH SIDES AND THEY AGREED.** The gate said two
+      of `_query_gpu_info`'s five requests take the LITTER fallback, the oracle said two
+      and was a hand-written literal, and the differ said 0 disagreements. Asking
+      `nv_570.__dict__`: THREE do, and they are positions **0, 1 and 2**. Two
+      consecutive wrong readings ({1,3}, then {1,2,3}) before the driver answered. The
+      oracle rows now evaluate `ops_nv.py:665`'s own `getattr` chain.
+- [x] **Seven tautological rows deleted** (a hardcoded `"True"`, a hand-written
+      `"min() iterable argument is empty"`, `row("nv_err_0_err", "")` where all four
+      `get_error_str` raises are guarded by `if status != 0`). A row nobody can compute
+      cannot fail.
+- [x] `nv_vid_unk_is_none_new` was written `Bool.not(vid_unk_none(2097152))` and printed
+      `True` where the claim is `False` — a name that contradicted its own value, with
+      no oracle row to say so. Fixed, and `nv_query_ix_*` added so the resolved index
+      VALUES (20, 23, 32, 13, 12) are printed beside the booleans.
+- [x] **M30 found its own blind spot**: dropping the 128 KiB rounding from `slm_bytes`
+      moved NOTHING, because all six real fixtures are already exact multiples of
+      131072. `nv_slmtot_1_1_1` (1 against 131072) kills it. M13 remains a genuine
+      equivalence blind spot: `found < len` and `found != len` are the SAME predicate
+      over every answer `pc.find` can give.
+- [x] **The `device.bend` BUG REPORTED, NOT FIXED** (the file is not mine to edit):
+      `tinybendygrad/device.bend:869-871` `go_slot.go` builds `Slot{round_up(off, k),
+      U32.add(off, k)}` — the advance must use the ROUNDED offset, or `iter_sig`
+      answers `0,4,6,8,16,19` where `hcq2.layout_args` answers `0,4,8,16,24,28`. Pinned
+      by `nv_REPORTED_args_device_mixed`, which is the one disagreement `nv-diff.py`
+      is supposed to print. This port carries its own corrected `sig.slot`.
+- [x] `.agents/slop/notes/bend2-constraints.md` — four appended rules, **82-84**: a
+      hand-written oracle row is a change detector and two of them agree; the differ
+      keys on the row name so a misspelling is a hole in both directions; two claims
+      must not share a row prefix, and a row's name must survive reading its value.
