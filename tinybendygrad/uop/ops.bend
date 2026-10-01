@@ -1404,8 +1404,11 @@ def eq_const.CInt(y: Const, +i: H.I64) -> Bool:
     case _: False{}
 
 def eq_const.CFloat(y: Const, +f: F32) -> Bool:
+  # BITS, NOT IEEE. `UOp.key` is a hash over the packed arg, so CONST identity is
+  # the bit pattern; `F32.is_eq` is IEEE and disagrees in both directions (see
+  # `t_float_zeros_differ` / `t_float_nan_interns`, which are CPython-measured).
   match y:
-    case CFloat{g}: F32.is_eq(f, g)
+    case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))
     case _: False{}
 
 def eq_const.CInvalid(y: Const) -> Bool:
@@ -3636,6 +3639,29 @@ def t_dtype_key() -> Bool:
   +b = UOp.const(Found.ar(f), CBool{True{}})
   Bool.not(U32.is_eq(Found.i(f), Found.i(b)))
 
+# CONST IDENTITY IS BITWISE, AND IEEE EQUALITY IS WRONG IN BOTH DIRECTIONS.
+# `UOp.key` in CPython is a hash over the packed arg, so identity is the bit
+# pattern -- but `eq_bool`, `eq_op` and `eq_i64` are all bitwise too, and
+# `F32.is_eq` is IEEE, which disagrees with a bit pattern in exactly two cells,
+# one each way. Measured, live:
+#     Tensor(0.0)._uop is Tensor(-0.0)._uop   -> False   0x00000000 vs 0x80000000
+#     Tensor(nan)._uop is Tensor(nan)._uop   -> True    0x7fc00000 both
+# So `F32.is_eq` answers True for a pair CPython keeps APART and False for a pair
+# CPython JOINS: it would collapse two distinct CONSTs in the first cell and
+# re-mint one identical node in the second. `F32.bits` is the comparison the key
+# performs. NOTE `decomp.bend:126` keeps `F32.is_eq` -- there it tests a value
+# against a literal (is this 1.0?), which is IEEE equality asked to do its own job.
+def t_float_zeros_differ() -> Bool:
+  +f = UOp.const(Arena.empty(), CFloat{0.0})
+  +g = UOp.const(Found.ar(f), CFloat{F32.neg(0.0)})
+  Bool.not(U32.is_eq(Found.i(f), Found.i(g)))
+
+def t_float_nan_interns() -> Bool:
+  +nan: F32 = F32.div(0.0, 0.0)
+  +f = UOp.const(Arena.empty(), CFloat{nan})
+  +g = UOp.const(Found.ar(f), CFloat{nan})
+  U32.is_eq(Found.i(f), Found.i(g))
+
 # the BACKEDGE reads back as itself: src[0] is the SPECIAL and src[1] the RANGE
 # whose arg names the axis it closes over. Python's IndexError on a short src is
 # the 0 that `Arena.src` answers.
@@ -3905,6 +3931,8 @@ def row(nm: String, b: Bool) -> IO(Unit):
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("hashcons", t_hashcons())
+    a2 : Unit <- row("float_zeros_differ", t_float_zeros_differ())
+    a3 : Unit <- row("float_nan_interns", t_float_nan_interns())
     b : Unit <- row("dtype_key", t_dtype_key())
     c : Unit <- row("cycle", t_cycle())
     d : Unit <- row("toposort", t_toposort())
