@@ -1393,9 +1393,7 @@ def t_softmax3() -> IO(Unit):
 # and printing it means reading the CONST list; these rows therefore print the folded
 # shape and the folded dtype of a result, which is what a caller actually consumes.
 def mo_shape.go(ds: List<&2, O.Sint>, acc: String) -> String:
-  match ds:
-    case Nil{}: acc
-    case d <> t: mo_shape.go(t, String.concat([acc, "(", U32.show(mo_dim_u32(d)), ")"]))
+  List.foldl(~&2, ~O.Sint, ~String, (a: String) => (d: O.Sint) => String.concat([a, "(", U32.show(mo_dim_u32(d)), ")"]), ds, acc)
 
 def mo_shape.put(nm: String, sh: String, dt: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", sh, " ", dt]))

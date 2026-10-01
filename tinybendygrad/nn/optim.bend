@@ -984,9 +984,7 @@ def sig.t(nm: String, +t: T.Tensor) -> IO(Unit):
   sig(nm, op_ar(t), T.Tensor.u(t))
 
 def us.go(xs: List<&2, U32>, acc: String) -> String:
-  match xs:
-    case Nil{}: acc
-    case x <> t: us.go(t, String.concat([acc, U32.show(x), ","]))
+  List.foldl(~&2, ~U32, ~String, (a: String) => (x: U32) => String.concat([a, U32.show(x), ","]), xs, acc)
 
 def us(xs: List<&2, U32>) -> String:
   us.go(xs, "")

@@ -949,9 +949,7 @@ def marg_pair.of(+m: Marg) -> U32:
   marg_pair(Marg.o(m), Marg.n(m))
 
 def marg_enc.go(ms: List<&2, Marg>, acc: U32) -> U32:
-  match ms:
-    case Nil{}: acc
-    case m <> t: marg_enc.go(t, U32.add(U32.mul(acc, 100), marg_pair.of(m)))
+  List.foldl(~&2, ~Marg, ~U32, (a: U32) => (m: Marg) => U32.add(U32.mul(a, 100), marg_pair.of(m)), ms, acc)
 
 def t_mop_len() -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, mop_table()))

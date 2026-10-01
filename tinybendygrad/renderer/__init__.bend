@@ -496,9 +496,7 @@ def sd_name(d: S.Dt) -> String:
     case S.Dt{pri, bits, cls, s}: s
 
 def sd_names.go(ds: List<&2, S.Dt>, acc: List<&2, String>) -> List<&2, String>:
-  match ds:
-    case Nil{}: acc
-    case h <> t: sd_names.go(t, List.append(&2, String, acc, [sd_name(h)]))
+  List.foldl(~&2, ~S.Dt, ~List<&2, String>, (a: List<&2, String>) => (h: S.Dt) => List.append(&2, String, a, [sd_name(h)]), ds, acc)
 
 def sd_names_of(ds: List<&2, S.Dt>) -> List<&2, String>: sd_names.go(ds, Nil{})
 

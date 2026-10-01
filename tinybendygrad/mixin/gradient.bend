@@ -114,9 +114,7 @@ def gs_solid.one(b: Bool) -> U32:
     case False{}: 1
 
 def gs_solid.go(gs: List<&2, U32>, acc: U32) -> U32:
-  match gs:
-    case Nil{}: acc
-    case g <> t: gs_solid.go(t, U32.add(acc, gs_solid.one(U32.is_zero(g))))
+  List.foldl(~&2, ~U32, ~U32, (a: U32) => (g: U32) => U32.add(a, gs_solid.one(U32.is_zero(g))), gs, acc)
 
 def gs_solid(r: GRes) -> U32:
   match r:
