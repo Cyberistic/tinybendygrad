@@ -1647,6 +1647,7 @@ def main() -> IO(Unit):
 #   join: dirs before files                      9     5   same      9
 #   join: the rest of the walk is dropped         9     9   same      9
 #   item: a directory is a file                   9     9     8   exit 21
+#   counted: the skip test is gone                9     9   same      9
 #   rows: no line_count > 0 test                  9     8   same   same
 #   rows: printed with the full path, not rel     9     9     9      9
 #   root: the walk starts at base, not base/...   9     9     4      9
@@ -1655,14 +1656,17 @@ def main() -> IO(Unit):
 #
 # What the table says, which is why it is here and not just a habit:
 #
-#   - `diff` moves on 3 of 7 mutations and is `same` on the other 4, so the
-#     two-argument mode is the WEAKEST of the four fixtures, not the strongest: it
-#     is 11 lines, and a permutation of rows that keeps the line counts apart sorts
-#     back to the same table. `order` exists because of that row.
+#   - `diff` is `same` on 4 of the 9 and is the WEAKEST of the four fixtures, not
+#     the strongest: it is 11 lines, and a permutation of rows whose line counts
+#     stay apart sorts back to the same table. `order` exists because of that row.
 #   - `rows: no line_count > 0 test` is the one mutation `order` cannot see, because
 #     every file in that fixture has lines. A LOCALISED row: only `edge` (which has an
 #     empty and a comments-only file) and `tree` (which has files with no counted
 #     line) see it.
+#   - `counted: the skip test is gone` adds exactly two rows, `runtime/autogen/
+#     skipped.py` and `viz/assets/skipped.js`, and moves 9 because the name column
+#     widens under them. Two rows out of nine is the reason the two skipped
+#     directories are a FIXTURE and not a comment.
 #   - `fuel -> 400` is invisible EVERYWHERE, and that is the point of the two fuel
 #     rows. The fuel is one step per item of the todo -- a counted file or a
 #     directory, not a readdir name -- and this tree's todo is 289 items, so 400 does
