@@ -6,6 +6,214 @@ disagree, the compiler wins. Every claim has a reproducer.
 
 Reproduce anything here with:
 
+
+## INDEX (added 2026-10-02 -- THE NUMBERING IS BROKEN, READ THIS FIRST)
+
+**Two agents each appended their own numbered series, so rule NUMBERS REPEAT.**
+`rg '^### ' ` finds the list below in FILE ORDER; the number column is what the
+prose says, and it is not unique. A reference to "rule 32" is ambiguous between the
+`List.foldl` rule and the `Bool.pick` rule, for example. Positions (line numbers) are
+unique and stable -- cite those until this is renumbered. Renumbering was rejected
+because dozens of files and comments cite rules BY NUMBER, and a renumber would
+silently invalidate every one of them.
+
+| # | line | title |
+|---|---|---|
+| 1 | 598 | No forward references, and the error lies about the cause |
+| 2 | 612 | A self-call SPENDS the list it walks, so a walk cannot return it |
+| 3 | 630 | A `Data` record is how a list travels with something derived from it |
+| 4 | 640 | A two-scrutinee `match` must cover the cross product, and `_` counts |
+| 5 | 658 | `Nat` and `U32` are different types, and only `Nat` hands out a tail |
+| 6 | 681 | A `do` block has no statement limit, and bare calls are statements |
+| 7 | 695 | A `List` table is O(n²) and `Array` cannot fix it |
+| 8 | 703 | FIVE bugs that all typechecked, and what caught them |
+| 1 (DUP) | 1194 | A `Data` RECORD PARAMETER NEEDS `+` FOR TWO READS. IT IS NOT IMPLICITLY COPYABLE |
+| 2 (DUP) | 1213 | AN UNUSED `+` PARAMETER IS ACCEPTED |
+| 3 (DUP) | 1223 | `+` CANNOT BE SPELLED ON A `Maybe` PARAMETER |
+| 4 (DUP) | 1247 | A ONE-FIELD RECORD'S PATTERN MUST NAME ITS FIELD |
+| 5 (DUP) | 1260 | A TWO-SCRUTINEE `match` NEEDS ONE PATTERN PER SCRUTINEE, AND `_ _` IS THE COVER |
+| 6 (DUP) | 1271 | A THREE-SCRUTINEE `match` WITH A `Nat` COUNTDOWN HAS NO `0n` ARM |
+| 7 (DUP) | 1285 | A SELF-CALL DRIVEN BY A `Nat` COUNTDOWN MUST PASS THE SHRINKING ARGUMENT FIRST |
+| 1 (DUP) | 1355 | `def f.b(...)` MUST BE DECLARED BEFORE `def f.a(...)` THAT CALLS IT |
+| 2 (DUP) | 1365 | A `Some{g}` BINDER OVER A `Data` RECORD IS AFFINE: TWO READS NEED `Some{+g}` |
+| 3 (DUP) | 1373 | `Nat` LITERALS ONLY BIND IN A `Nat` CONTEXT, AND `Bool.to_u32` IS NOT ONE |
+| 4 (DUP) | 1381 | A RECORD PATTERN MAY NAME FEWER FIELDS THAN THE RECORD HAS -- SILENTLY |
+| 5 (DUP) | 1389 | BEND IS STRICT: AN ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES |
+| 6 (DUP) | 1404 | A GROWING ACCUMULATOR CANNOT BE THE FIRST PARAMETER OF A SELF-CALL |
+| 7 (DUP) | 1412 | A `Data` RECORD CAN CARRY THE `Maybe` A PARAMETER CANNOT |
+| 8 (DUP) | 1419 | AN `IO<Unit>` `do` BLOCK CAN ONLY BIND AN `IO` |
+| 1 (DUP) | 1430 | A `Maybe` PATTERN BINDER CANNOT BE READ TWICE |
+| 2 (DUP) | 1453 | A COMMUTATIVE `alu` BUILDS AN `is_any`, SO A `+` PATTERN IS A DISJUNCTION |
+| 3 (DUP) | 1463 | `dm_which`-STYLE DISJUNCTIONS ARE NOT DISTINGUISHABLE BY ONE FIXTURE FAMILY |
+| 4 (DUP) | 1471 | AN INDEX IS ONLY MEANINGFUL IN THE ARENA THAT PRODUCED IT, AND `+` DOES NOT ENFORCE IT |
+| 5 (DUP) | 1484 | `floor` IS NOT AVAILABLE AND MUST NOT BE ASSUMED FROM A HELPER NAMED `floordiv` |
+| 6 (DUP) | 1502 | A NESTED-FORWARD TREE PRINTER IS A MUTUAL RECURSION, AND BEND REFUSES IT |
+| 1 (DUP) | 1517 | A `Maybe` IS READ ONCE AND CANNOT BE `+`, SO "TEST IT AND USE IT" IS TWO DEFS |
+| 2 (DUP) | 1543 | `Maybe<a, A>` IS INVARIANT IN ITS USAGE COUNT |
+| 3 (DUP) | 1553 | A `find`-STYLE RECORDER IS USUALLY A FOLD WITH AN INVERTED `Bool`, AND THAT IS THE BUG |
+| 4 (DUP) | 1563 | `ops.bend`'s `Arena.empty()` SPENDS INDEX 0, SO EVERY FIXTURE IS OFF BY ONE |
+| 5 (DUP) | 1574 | A FIXTURE BUILDER THAT RETURNS AN INDEX THROWS THE GROWN ARENA AWAY |
+| 6 (DUP) | 1590 | `List.append(a, A, xs, ys)` IS `xs ++ ys`, AND A FOLD THAT USES IT ACCUMULATES IN REVERSE |
+| 7 (DUP) | 1600 | TWO RULES THAT CLAIM ONE NODE AND **AGREE** CANNOT SEE FIRST-WINS |
+| 1 (DUP) | 1620 | AN ARM AFTER A `case _:` IS **DEAD CODE**, AND BEND DOES NOT SAY SO |
+| 2 (DUP) | 1648 | A GATE THAT NEVER CALLS THE FUNCTION UNDER REPAIR IS BLIND, AND IT IS NOT AN ACCIDENT |
+| 3 (DUP) | 1664 | `+` IS NEEDED ON A `Data` PARAMETER USED **TWICE IN ONE EXPRESSION**, NOT TWICE IN A BODY |
+| 4 (DUP) | 1675 | `U32.show` ON A NEGATIVE `i32` IS THE BIT PATTERN, SO A GATE MUST SAY SO |
+| 5 (DUP) | 1684 | A `(Bool, Bool)` FLAG PAIR IS NOT INTERCHANGEABLE, AND WHICH HALF IS CONSULTED IS THE WHOLE DEFI |
+| 6 (DUP) | 1703 | FLOOR AND TRUNCATION ARE TWO FUNCTIONS AND BOTH GET PORTED, SO "DELETE THE DUPLICATE" IS USUALLY |
+| 7 (DUP) | 1721 | A COMPILED ARENA MAKES A `Dt` A KEY, SO A `Cls` COMPARISON IS NOT A COSMETIC BUG EVEN WHEN EVERY |
+| 8 (DUP) | 1733 | `.venv/bin/python`, NOT `python3`, FOR A GATE THAT IMPORTS THE ORACLE |
+| 1 (DUP) | 1868 | `--check-only`'s FOREIGN NOTICE IS A "WHO NAMES WHOM" CLOSURE, AND `@unsafe` DOES NOT SHRINK IT |
+| 2 (DUP) | 1885 | A `U32` LITERAL PATTERN IS A PREFIX MATCH, AND THE ERROR SAYS NOTHING USEFUL |
+| 3 (DUP) | 1897 | `Data` TYPES ARE NOMINAL, so two records with the same fields are TWO TYPES |
+| 4 (DUP) | 1908 | TWO SELF-CALLS IN ONE ARM IS REFUSED EVEN WITH TWO DIFFERENT `Nat` FUELS |
+| 5 (DUP) | 1922 | A LIST SELF-CALL MUST SHRINK ITS FIRST ARGUMENT, SO A GROWING ACCUMULATOR GOES SECOND |
+| 6 (DUP) | 1933 | AN `IO` EFFECT IS NOT A VALUE: `f(walk(...))` IS A TYPE ERROR, `f`'s arg must be pure |
+| 7 (DUP) | 1944 | A `match` CANNOT FOLLOW A `<-` BIND INSIDE A `do` BLOCK |
+| 8 (DUP) | 1955 | THE INTERPRETER'S PER-FILE BYTE CLIFF IS 28987/28988, NOT 32768 |
+| 9 | 1969 | THE INTERPRETED LANE RE-CHECKS THE WHOLE FILE ON EVERY RUN, SO BISECTING A CLIFF IS DOMINATED BY |
+| 1 (DUP) | 1979 | A `match` ON A `String` NEEDS A `case _:`, AND WITHOUT ONE THE ERROR IS A PARSE ERROR |
+| 2 (DUP) | 2000 | `String.take`, `String.drop` and `String.split` CONSUME THE STRING |
+| 3 (DUP) | 2014 | `IO.args()` ANSWERS `List<&1, String>`, NOT `List<&2, String>` |
+| 4 (DUP) | 2026 | `List.get` ANSWERS A `Maybe`, AND `String.get` ANSWERS A `Maybe<Char>` |
+| 5 (DUP) | 2038 | `String.to_u32` DOES NOT EXIST; `Char.to_u32` DOES, AND IT RETURNS A CODEPOINT |
+| 6 (DUP) | 2049 | A `match` INSIDE A `do` BLOCK IS REFUSED, SO DISPATCH GETS ITS OWN DEF |
+| 1 (DUP) | 2065 | `Map.put` IS NOT `Map.set`, AND `Map.put` LOSES KEYS |
+| 2 (DUP) | 2071 | `Map.get` ANSWERS A `Sigma`, NOT A `Maybe` |
+| 3 (DUP) | 2079 | A RECORD PATTERN MUST NAME EVERY FIELD, IMPORTED RECORD OR NOT |
+| 4 (DUP) | 2087 | `case +h <> t:` -- `+` ON A PATTERN BINDER RESOLVES "TWO READS IN ONE EXPRESSION" |
+| 5 (DUP) | 2094 | A SELF-CALL WITH A COMPUTED ARGUMENT IN FRONT OF THE TAIL IS NOT DECREASING |
+| 6 (DUP) | 2100 | A `Nat` COUNTDOWN IS THE ONLY COUNTDOWN A U32 LOOP GETS |
+| 7 (DUP) | 2106 | `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE -- AND GETTING IT BACKWARDS EMITS A PLAUSI |
+| 1 (DUP) | 2146 | A `match` MAY NOT SCRUTINISE A COMPUTED VALUE -- THE `.go` SPLIT IS NOT OPTIONAL |
+| 2 (DUP) | 2158 | THE `+` PROPAGATES ONE READER DOWN, AND `List<&2, T>` IS NOT `List<&1, T>` |
+| 3 (DUP) | 2173 | A `Maybe` FROM `List.get` NEEDS THE SPLIT EVEN INSIDE A `match` HEAD POSITION |
+| 4 (DUP) | 2185 | AN ARENA IS A `Data`, AND `Found.ar` / `Found.i` ARE NON-CONSUMING READERS |
+| 5 (DUP) | 2199 | AN UNFILLED LAW IS A HARD ERROR, SO A DEF MUST BE DEFINED BEFORE IT IS CALLED |
+| 1 (DUP) | 2236 | A FOLD THAT ALSO CARRIES A CHANGED-BIT MUST `or` THE WHOLE LIST, NOT THE HEAD |
+| 2 (DUP) | 2244 | `+` ON A `Data` FIELD BINDER IS A COPY AND IS NEEDED TO USE IT TWICE |
+| 3 (DUP) | 2249 | A `match` CANNOT SCRUTINISE A COMPUTED VALUE -- GIVE IT ITS OWN DEF |
+| 4 (DUP) | 2256 | A DEF MUST BE DEFINED BEFORE IT IS CALLED, AND THAT IS NOT DEF ORDER |
+| 5 (DUP) | 2265 | A `Nat` FUEL BOUND IS A BOUND, AND A WAITLIST MAKES IT MUCH LOOSER |
+| 1 (DUP) | 2320 | A 64-BIT PRODUCT IS A WALL, NOT A TODO: `base.bend` DOES NOT EXPORT `Word` |
+| 2 (DUP) | 2336 | TWO FIXTURE BUILDERS THAT RETURN AN INDEX ARE THE SAME TRAP AS ONE |
+| 3 (DUP) | 2349 | A GATE ROW THAT SAYS WHAT A BOOLEAN CANNOT IS NOT OPTIONAL |
+| 4 (DUP) | 2363 | A `list`-TAIL FOLD THAT MUST HAND SOMETHING BACK CARRIES IT IN A RECORD |
+| 1 (DUP) | 2825 | A `Data` RECORD PATTERN IS CAPPED AT 28 FIELDS, AND THE ERROR IS A BARELY PARSEABLE "a `Fix` pat |
+| 2 (DUP) | 2834 | A `match` ON A `Nat` COUNTDOWN AND A LIST IN ONE ARM NEEDS THE COUNTDOWN FIRST, AND `p` MAY NOT  |
+| 3 (DUP) | 2853 | A NODE-COUNT FOLD MUST ADD ITS `+1` TO THE ACCUMULATOR, NOT TO THE HEAD |
+| 4 (DUP) | 2863 | A `Data` RECORD FIELD READ TWICE THROUGH A FIELD ACCESSOR NEEDS `+`, AND `+` ON THE RECORD IS NO |
+| 5 (DUP) | 2876 | A RULE THAT GROWS THE ARENA RETURNS `(Arena, answer)` AND THE ANSWER MUST BE A `Data` RECORD, NO |
+| 6 (DUP) | 2885 | THE GATE NEEDS A ROW THAT READS AN INDEX OR AN OP, NOT A LENGTH -- MEASURED TWICE IN ONE FILE |
+| 1 (DUP) | 2906 | `case 1n+p:` IS A PREFIX MATCH TOO, AND IT IS WORSE THAN `case 0n:` |
+| 2 (DUP) | 2917 | A `.go`/`.step` PAIR IS MUTUAL RECURSION, SO THE SELF-CALL MUST BE AN ARGUMENT |
+| 3 (DUP) | 2926 | A `match` ON A LIST SPENDS IT, AND `[head] ++ tail-of-tail` LOSES AN ELEMENT |
+| 4 (DUP) | 2935 | AN ARENA IS THE ONE A BUILD RETURNED, NOT THE ONE THAT WENT IN |
+| 1 (DUP) | 3097 | A def that returns a BARE INDEX DISCARDS ITS ARENA |
+| 2 (DUP) | 3132 | AN ELISION MUST HAND BACK THE ARENA IT WAS GIVEN |
+| 3 (DUP) | 3148 | A DTYPE PROJECTION IS NOT IDEMPOTENT |
+| 4 (DUP) | 3166 | `F32.to_u32` IS A TRUNCATION IN THE NATIVE LANE AND UNFOLDED IN THE INTERPRETER |
+| 5 (DUP) | 3191 | A SELF-CALL NEEDS `Nat` FUEL FIRST, AND THE FUEL IS NOT THE COUNTER |
+| 6 (DUP) | 3220 | TWO dtype GUARDS ON THE SAME VALUE ARE NOT NEGATIONS OF EACH OTHER |
+| 7 (DUP) | 3231 | A `match` MAY NOT SCRUTINISE A CALL, SO A dtype TEST IS A PARAMETER |
+| 8 (DUP) | 3242 | WRITE FLOAT COEFFICIENTS AS FULL DECIMALS, AND NEGATIVES AS `F32.neg` |
+| 1 (DUP) | 3298 | A `do IO<Unit>:` BODY MUST END WITH A BARE TERM, NOT A `<-` BINDING |
+| 2 (DUP) | 3307 | A SELF-CALL MUST BE LEXICALLY INSIDE THE DEF THAT OWNS THE FUEL MATCH |
+| 3 (DUP) | 3316 | A RECURSIVE ARENA REBUILD MUST BE BUILT ON THE INNER NODE'S ARENA |
+| 4 (DUP) | 3324 | `Maybe.map(&2, T, ...)` NEEDS A `Data` RESULT, AND `.bind` READS DIFFERENTLY |
+| 5 (DUP) | 3330 | `O.ParamArg`'s FIELD ORDER IS NOT THE PROSE ORDER |
+| 6 (DUP) | 3340 | A `Data` UNION'S CONSTRUCTORS ARE CONSTRUCTORS, NOT NAMES -- AND `O.OpsCMPLT{}` IS ONE |
+| 7 (DUP) | 3350 | A RECURSION WITH A BOUND AND NO COUNTDOWN STOPS ON THE EMPTY TAIL |
+| 8 (DUP) | 3358 | `dtype.bend`'s FOURTEEN SEAMS MAKE EVERY IMPORTER RED, AND `@unsafe` IS NOT THE FIX |
+| 9 (DUP) | 3467 | `F32` HAS NO SOURCE-LEVEL OPS, NO NEGATIVE LITERALS, AND IEEE `is_eq` |
+| 10 | 3499 | FOUR MORE, ALL MEASURED BY THE `codegen/opt` UNIT (2026-10-02) |
+| 11 | 3516 | FIVE MORE, ALL MEASURED BY THE `nn/state` + `nn/__init__` UNIT (2026-10-02) |
+| 1 (DUP) | 3572 | A LIST OF `Bool` IS NOT A USABLE TYPE |
+| 2 (DUP) | 3593 | A PATTERN BINDER MUST NOT SHADOW A DEF NAME, and the error names the CONSTRUCTOR |
+| 3 (DUP) | 3608 | `+` ON A PATTERN BINDER IS THE SPELLING FOR "TWO READS IN ONE EXPRESSION" |
+| 4 (DUP) | 3625 | A NESTED `match` ARM MAY NOT CALL A `Type.def` |
+| 5 (DUP) | 3639 | A DEF MAY NOT CALL A NAMESPACE THAT A PARAMETER SHADOWS |
+| 6 (DUP) | 3652 | `case True{} True{}:` IS A FINE ARM AND `case _ _:` AFTER IT IS FINE, BUT A `+` PARAMETER AND A  |
+| 7 (DUP) | 3662 | A `U32` THAT IS BOTH A LOOKUP KEY AND A FALLBACK VALUE BELONGS IN THE NODE |
+| 1 (DUP) | 3704 | `case 1n+p:` DESTROYS THE SCRUTINEE — THE ARM CANNOT READ THE CURRENT COUNT |
+| 2 (DUP) | 3723 | SPLITTING A SELF-RECURSIVE STEP TO AVOID A DOUBLE READ CREATES MUTUAL RECURSION |
+| 3 (DUP) | 3740 | `Bool` HAS NO `U32.show`, AND THE CONVERSION IS `Bool.pick` — THERE IS NO `Bool.match` |
+| 4 (DUP) | 3751 | `String.join(xs, sep)` TAKES THE LIST FIRST, AND `String.concat(xs)` TOO |
+| 5 (DUP) | 3758 | `IO.print` TAKES A `String`, AND A `do IO<Unit>` BLOCK CAN ONLY BIND AN `IO` |
+| 6 (DUP) | 3765 | `List.take(xs, 0n)` IS THE EMPTY LIST AND `List.append(a, A, xs, ys)` IS `xs ++ ys` |
+| 7 (DUP) | 3773 | A FIXTURE MUST INTERN ITS SHAPE ARGS THROUGH ONE BUILDER, AND A LIST OF RAW INTS IS NOT A LIST O |
+| 11 (DUP) | 3789 | AN ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES, SO AN INTERNING INSIDE AN ARGUMENT BUILDS A |
+| 12 | 3804 | A `list` SELF-CALL MAY PASS A LIST TAIL FIRST AND A `U32` ARENA SECOND, AND THAT IS THE ONLY ORD |
+| 13 | 3820 | THE "INTERN ONCE, READ TWICE" FIX IS MUTUAL RECURSION IN A WALK |
+| 14 | 3834 | A GATE ROW THAT PRINTS A `srcops` SEQUENCE MUST PUT ALL FOUR FACTS IN ONE STRING |
+| 15 | 3844 | A SHAPE ARG BUILT BY A WALK MUST APPEND, AND THE BUG IS INVISIBLE IN THE COUNT |
+| 16 | 3854 | `Arena.node` ANSWERS THE BOTTOM FOR AN INDEX PAST THE END, SO A STALE ARENA GIVES AN EMPTY ANSWE |
+| 17 | 3862 | A GATE MUST HAVE A NON-MOVEMENT FIXTURE OR A `match`'s CATCH-ALL ARM IS DEAD CODE |
+| 18 | 3883 | AN UNANSWERABLE NODE POISONS ITS CONSUMERS, SO "CAN THE FOLD ANSWER X" IS A PROPERTY OF THE WHOL |
+| 19 | 3921 | A FOLD THAT NEEDS AN INDEX MUST USE `Arena.srcs`, NOT A COUNT AND A RE-DERIVED INDEX |
+| 20 | 3940 | A LIST-OF-STRINGS FOLD MUST END IN `String.join`, NOT IN A BAKED-IN SEPARATOR |
+| 21 | 3959 | `+r = R{a, b}` NEEDS AN ANNOTATION; `+r = f(...)` DOES NOT |
+| 22 | 3977 | A BYTE-DIFFED GATE MUST NOT INHERIT A PRINTER WHOSE OUTPUT HAS TRAILING WHITESPACE |
+| 23 | 3990 | THE `int_*_new` SHAPE -- "HOW MANY DID THE SECOND CALL MINT" -- IS A ROW CLASS OF ITS OWN, AND I |
+| 1 (DUP) | 4024 | AN ARENA IS AFFINE, SO A DEF THAT BUILDS **GROWS A COPY** -- AND THE FIX IS TO THREAD `+ar` THRO |
+| 2 (DUP) | 4057 | A `U32` LITERAL PATTERN IS A PREFIX MATCH **FOR THE SUCCESSOR RELATION ONLY**, SO `case 8:` DOES |
+| 3 (DUP) | 4078 | `mxw_reshape` / `mxw_shrink` / `mxw_pad` BUILD A `STACK` FOR A ONE-ELEMENT SHAPE ARG AND CPYTHON |
+| 4 (DUP) | 4104 | `+p: F32` IS ACCEPTED, SO THE `U32` "TWO READS NEED A RECORD" RULE IS NOT A `U32` RULE |
+| 5 (DUP) | 4113 | `+dev: S.Dev` ON A `Data` PARAM IS FREE AND A GLOBAL `+` SWEEP IS THE FASTEST FIX FOR A WHOLE FI |
+| 6 (DUP) | 4123 | A `def X.of` CHAIN MUST BE DECLARED LEAF-FIRST **AND** `X.of` MUST IMMEDIATELY PRECEDE `X` -- SO |
+| 7 (DUP) | 4139 | `def f.g` and `def F.g` ON A LOCALLY-DECLARED `Data` RECORD NEED A READER DEF, A FIELD PROJECTIO |
+| 8 (DUP) | 4149 | THE ORACLE'S `print("k=", v)` HAS A TRAILING SPACE AND IT IS HALF THE DIFF |
+| 9 (DUP) | 4159 | A `.bend` FILE CAN `ALL PROOFS CHECK` IN BOTH LANES, PRINT LANE-IDENTICAL OUTPUT, AND STILL BE W |
+| 24 | 4174 | `Emit` AND `Halt` BELONG TO BASE's `IO.OP` — A LOCAL `type Emit` IS A DUPLICATE |
+| 25 | 4192 | `volatile` IS A RESERVED WORD AND CANNOT BE A FIELD NAME |
+| 26 | 4221 | A FIELD IS READ `Type.field(value)` -- THERE IS NO `value.field` SUGAR |
+| 27 | 4242 | THERE IS NO AUTO-GENERATED FIELD PROJECTION AT ALL -- AND RULE 26's `T.mutable(t)` EXAMPLE IS WR |
+| 28 | 4289 | A `Bool` PARAMETER DOES NOT MAKE A TWO-DEF SPLIT OF ONE RECURSION LEGAL -- IT IS STILL MUTUAL RE |
+| 29 | 4321 | `+` ON A LATER PARAMETER DOES NOT DISTURB THE DECREASE CHECK ON THE FIRST ONE |
+| 30 | 4335 | `+` ON A `U32` IS FREE, AND A `Nat` `match` WITH `case 0n:` THEN `case 1n+m:` IS THE WHOLE COUNT |
+| 31 | 4348 | NO LIST COMPREHENSIONS -- BUT CLOSURES EXIST AND `List` IS FULLY ERGONOMIC |
+| 32 | 4385 | `List.foldl` REPLACES THE HAND-ROLLED `.go` ACCUMULATOR PAIR — WITH ONE TRAP |
+| 1 (DUP) | 4440 | A `Bool` PARAMETER IS AFFINE TOO -- `+hit: Bool` is ACCEPTED AND IS OFTEN WHAT YOU WANT |
+| 2 (DUP) | 4449 | `go`/`put` IS NOT A `.of` SPLIT: IT IS MUTUAL RECURSION, AND A LIST-TAIL FOLD WITH A HEAD THAT I |
+| 3 (DUP) | 4467 | `T.tn_len` IS `shape[0]`, NOT `numel` -- AND IT ANSWERS A `Sint`'s ARENA INDEX, NOT ITS VALUE |
+| 4 (DUP) | 4477 | `H.dedup_u32` BUILDS ITS ANSWER IN REVERSE, AND NO ROW IN THE TREE NOTICES |
+| 5 (DUP) | 4490 | `T.tn_dims` ANSWERS A SHAPE AND `List.is_empty` ON IT ANSWERS `_shape == ()`, WHICH IS THE LAST  |
+| 6 (DUP) | 4503 | `List.drop(&2, U32, xs, U32.to_nat(n))` IS A POSITIONAL SLICE, AND A HAND- WRITTEN FILTER THAT C |
+| 7 (DUP) | 4515 | A `.of` LEAF THAT IS ONLY EVER CALLED FROM ONE PLACE STILL COSTS A ROW, AND THE HONEST MOVE IS T |
+| 8 (DUP) | 4525 | THE `Data` RECORD FOR "A FOLD THAT ANSWERS A LIST AND A FACT ABOUT IT" IS NOW FIVE INSTANCES IN  |
+| 1 (DUP) | 4541 | THE `.of` SPLIT IS REQUIRED AT **EVERY** SCRUTINEE POSITION, NOT ONLY AT THE TOP OF A BODY |
+| 2 (DUP) | 4559 | A PATTERN BINDER THAT SHADOWS A **FIELD NAME** IS REPORTED AS AN ARITY ERROR |
+| 3 (DUP) | 4580 | `+` ON A `U32` THAT IS THE **FIRST** ARGUMENT OF A LIST-TAIL SELF-CALL CHECKS |
+| 4 (DUP) | 4600 | A GATE **COLUMN** THAT IS CONSTANT OVER THE WHOLE SUITE IS A COLUMN NO MUTATION CAN MOVE |
+| 5 (DUP) | 4617 | A CHAINED REDUCE SEPARATES FIRST-WINS FROM LAST-WINS **ONLY IF THE TWO OPS DIFFER** |
+| 6 (DUP) | 4633 | A MUTATION DESCRIBED AS "DROP THE GUARD" MAY BE SOMETHING ELSE ENTIRELY, AND ONLY THE VALUE SAYS |
+| 1 (DUP) | 4655 | A COUNTDOWN ARM MAY NOT SO MUCH AS READ ITS OWN FUEL -- AND THE ESCAPE IS A `+U32` THAT GROWS |
+| 2 (DUP) | 4680 | `List.append(A, R, rec(t), [x])` IS `reverse`, NOT A BUG -- IT IS `rec(t) ++ [x]` |
+| 3 (DUP) | 4702 | `U32.shln(a, n)` IS `a << n` -- BUT `U32.shl(a)` IS `a << 1`, SO `shln(a, 0n) = a` |
+| 4 (DUP) | 4712 | A U32 SENTINEL FOR A PYTHON `default=-1` MUST NOT BE `0xffffffff` WHEN THE FOLD IS `max` |
+| 5 (DUP) | 4732 | `sub(b) <= sub(a)` IS `sub(a, b)` WITH THE ARGUMENTS BACKWARDS, AND `<=` READS THE OTHER WAY |
+| 6 (DUP) | 4741 | A `match` ON A `String` NEEDS THE ARM ORDER OF THE LITERAL, AND A MISSING `"gfx942"` ARM IS DEAD |
+| 7 (DUP) | 4750 | A GATE'S ORACLE MUST REPRODUCE `IO.print`'s OWN NEWLINE, OR THE LAST ROW NEVER MATCHES |
+| 8 (DUP) | 4760 | TWO SELF-CALLS IN ONE ARM ARE LEGAL WHEN EVERY SHARED ARGUMENT IS `+` |
+| 9 (DUP) | 4768 | `do` IS A RESERVED WORD AND CANNOT BE A RECORD FIELD |
+| 1 (DUP) | 4789 | `Pair` IS A BASE CONSTRUCTOR, SO A TWO-FIELD `Data` RECORD NEEDS A NEW NAME |
+| 2 (DUP) | 4799 | A UNION CONSTRUCTOR IS NOT A TYPE, SO A READER FOR ONE ARM CANNOT BE WRITTEN |
+| 3 (DUP) | 4818 | A FOLD OVER A FUNCTION PARAMETER IS IMPOSSIBLE, SO A TABLE ROW IS AN EXPLICIT LITERAL |
+| 4 (DUP) | 4835 | A `U32` LITERAL ARM LADDER MUST BE IN DESCENDING ORDER |
+| 5 (DUP) | 4845 | `H.I64` HAS NO `Word`, SO `floor(x/2)` IS HAND-WRITTEN -- AND THE LOW WORD'S FILL COMES FROM THE |
+| 6 (DUP) | 4864 | `helpers.bend`'s `i64_add` AND `i64_sub` NEITHER CARRY NOR BORROW -- REPORTED, NOT FIXED |
+| 7 (DUP) | 4885 | A FIRST-WINS `Any` GUARD INSIDE AN ELIGIBILITY FOLD IS A BUG THE FIX MAKES WORSE |
+| 8 (DUP) | 4901 | A COUNT ROW AND THE TABLE IT COUNTS ARE TWO INDEPENDENT TRANSCRIPTIONS |
+| 9 (DUP) | 4914 | AN UNUSED `+` PARAMETER IS ACCEPTED, SO A MUTATION CAN FIND A PARAMETER THAT IS NOT LOAD-BEARING |
+| 32 (DUP) | 4930 | **`Bool.pick` IS STRICT *AND* IT IS AFFINE-TOO, SO A BRANCH THAT BUILDS A STRUCTURE MUST BIND IT |
+| 33 | 4958 | **A `.go`/`.step` SPLIT OF ONE SELF-RECURSIVE FOLD IS MUTUAL RECURSION AND IS REFUSED; THE `If`  |
+| 34 | 4974 | **A `U32` HAS NO CONSTRUCTORS, SO `case 0: ... case 1: ... case _:` ON A `U32` IS "a declared co |
+| 35 | 4986 | **`Wv{Bool, U32}` IS THE ANSWER TO "A `Maybe` BOTH ARMS OF A `Bool.pick` NEED", AND IT IS NOT A  |
+| 36 | 5008 | **A `String` IS NOT `List<&2, Char>` -- `List.length(&2, Char, s)` IS A TYPE ERROR, AND `String. |
+| 37 | 5021 | **A PARAMETER MAY NOT SHADOW A DEF NAME, AND THE ERROR NAMES THE CONSTRUCTOR** (an extension of  |
+
+**11 numbers repeat: 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 32.**
+
     ./bin/bend FILE.bend              # check, then run main (interpreted)
     ./bin/bend FILE.bend -o FILE      # compile to a native binary, run it
     ./bin/bend FILE.bend --check-only # check only
@@ -4428,3 +4636,606 @@ combinator threads.
 FILE SIZE, for the record: `nn/state.bend` 834 -> 832 and `nn/__init__.bend` 845 ->
 834, i.e. 13 lines from 8 folds, and it scales: the tree has ~97 hand-rolled `.go`/
 `.step` folds of this shape and 3,499 one-line field readers.
+
+## EIGHT MORE RULES, MEASURED 2026-10-02 PORTING `tinygrad/function.py`
+
+Appended, not edited. All eight are Bend 2.0.34 or substrate facts, each one found
+while writing a 1946-line port of a 113-line Python file -- which is itself the
+headline: **the ratio in this tree is 17:1 for a file that is four predicates and a
+rule table**, and the reason is that every one of these rules turns a two-line Python
+statement into a three-def chain. Each rule below cost at least one compile cycle.
+
+### 1. A `Bool` PARAMETER IS AFFINE TOO -- `+hit: Bool` is ACCEPTED AND IS OFTEN
+###    WHAT YOU WANT
+
+`Fired.of(hit, Bool.pick(FnCtx, hit, ...))` is `expected : hit / observed : hit
+(consumed more than once)`. `+hit: Bool` fixes it. Every rule in this file says
+"`+` is refused on a `U32`", and this is the half that is easy to forget: a `Bool` is
+`Data`, so it takes `+`, and a flag that is read once to decide and once to report
+(the "did this rule fire" flag) is the commonest two-read in a rule table.
+
+### 2. `go`/`put` IS NOT A `.of` SPLIT: IT IS MUTUAL RECURSION, AND A LIST-TAIL FOLD
+###    WITH A HEAD THAT IS ALSO THE ACCUMULATOR NEEDS THE RECORD FORM
+
+Writing a fold whose STEP takes the head and whose walk takes the tail gives
+`go -> put -> go`, which is refused as mutual recursion (`expected : a filled
+definition (an unfilled law is a dead claim)`, reported at the LATER def). The
+working shape is ONE recursive def whose arm calls a leaf:
+
+    def of(xs: List<&2, U32>, +d: Dedup) -> Dedup:
+      match xs:
+        case Nil{}: d
+        case x <> t: of(t, put(x, d))          # x read ONCE, in the call
+    def put(x: U32, +d: Dedup) -> Dedup: ...    # x read once more, here
+
+so the head binder is read once per def rather than twice in one def. Measured on a
+dedup fold; the same shape is `sz.rows`'s `.step`, and the `.of`/`.put` naming that
+suggests otherwise costs a cycle.
+
+### 3. `T.tn_len` IS `shape[0]`, NOT `numel` -- AND IT ANSWERS A `Sint`'s ARENA
+###    INDEX, NOT ITS VALUE
+
+`tensor.bend`'s `tn_len.first` is `Some{O.Sint.u(d)}`. So `tn_len` answers the
+ARENA INDEX of a `SInt` node, which is `0` for every concrete `SI{4}` and therefore
+prints as a zero size for every one-dimensional fixture. `max_numel` is a PRODUCT of
+the shape and has to be folded by the caller. This bit a gate that printed
+`size=0` on a buffer whose shape is `(4,)` -- and the row that would have caught it
+was the one printing the SHAPE, not the one printing the size.
+
+### 4. `H.dedup_u32` BUILDS ITS ANSWER IN REVERSE, AND NO ROW IN THE TREE NOTICES
+
+`H.dedup_u32.put` is `case False{}: h <> r` -- a PREPEND -- and `dedup_u32(xs)` is
+`case h <> t: dedup_u32.go(h, dedup_u32(t))`, so the head is processed LAST. Measured:
+`H.dedup_u32([1, 7, 1])` answers `[7, 1]`. For a membership SET that is
+indistinguishable from correct and no existing row could see it. For an ORDERED
+dedup -- `call_uops` in `function.py`, whose ORDER IS THE SLOT NUMBERING because
+`subs = {x: x.param_like(i) for i,x in enumerate(call_uops)}` -- it is a silent
+answer-value inversion. **The general form: `dedup` as a SET is order-blind and
+`dedup` as a LIST is not, so a caller that needs the order must check which one the
+helper is.** Reported, not fixed (`helpers.bend` was read-only to that unit); the
+caller carries a local append-based dedup with the reason in its header.
+
+### 5. `T.tn_dims` ANSWERS A SHAPE AND `List.is_empty` ON IT ANSWERS `_shape == ()`,
+###    WHICH IS THE LAST CONJUNCT OF `UOp.is_variable` -- so THE FOLD CAN BE A
+###    GATED CONJUNCT AND NOT JUST A READER
+
+`is_implicit_storage`'s `x.is_variable` is `op is PARAM and arg is ParamArg and
+vmin_vmax is not None and addrspace is ALU and _shape == ()`. Four of the five are
+`match` arms on `Op` and `Arg`; the fifth needs the fold. Ported as
+`fn_scalar(f) = List.is_empty(&2, O.Sint, tn_dims(tn_new(ar, u)))` with the
+`Maybe`'s `None` arm answering `False{}` -- and that is worth saying: **an UNANSWERED
+node is not a scalar**, so the total wrapper needs no sentinel and the row that
+separates the shape conjunct from the other three (`iis_var_1d`: same node, `size=4`)
+is the only one that can see it.
+
+### 6. `List.drop(&2, U32, xs, U32.to_nat(n))` IS A POSITIONAL SLICE, AND A HAND-
+###    WRITTEN FILTER THAT COMPARES THE COUNT AGAINST THE NODE INDEX IS WRONG IN A
+###    DIRECTION NO COUNT ROW SEES
+
+`function.py:84` is `[x for x in call_uops[num_explicit:] if ...]` where
+`num_explicit` is a LENGTH. The first port wrote `U32.is_ge(u, num_explicit)` -- a
+count against a POSITION -- which on a one-element list answers `1/1` where the
+slice answers `1/0`, and on a two-element list answers `2/2`. Two of the three rows
+moved and one did not, which is the signature. **A slice is `List.drop`, and the row
+that pins it prints BOTH ends of the range** (`imp_tail=1/0`), because the two ends
+disagree exactly when the slice is a count.
+
+### 7. A `.of` LEAF THAT IS ONLY EVER CALLED FROM ONE PLACE STILL COSTS A ROW, AND
+###    THE HONEST MOVE IS TO DELETE IT WHEN THE MERGE IS CHEAP
+
+Half of this file's LOC is `.of`/`.of2`/`.of3` chains that exist only because a
+`U32` cannot be read twice in one expression. Two of them (`fn_imp_row.of2`,
+`pctx_table.put`) were written, found to be a single extra call, and folded back
+into their caller. **A driver that adds a layer should ask whether the layer is
+load-bearing before it is commented**, because a commented no-op layer is worse than
+no layer: it reads as a decision and is not one.
+
+### 8. THE `Data` RECORD FOR "A FOLD THAT ANSWERS A LIST AND A FACT ABOUT IT" IS
+###    NOW FIVE INSTANCES IN ONE FILE, AND THAT IS NOT A COINCIDENCE
+
+`Dedup{r}`, `Ren{n, inv, acc}`, `Imp{n, rows}`, `BsSt{h, self, acc}`,
+`Ix{i, acc}`, `FnSt{ar, start}`, `FnCtx{us, inv, start, added, slot}`. Each one
+exists because a counter or a flag had to travel beside a list and a `U32` cannot
+carry it twice. **The record count of a Bend port is a direct count of its
+"two things at once" sites, and it is the number to look at when a file feels
+expensive** -- this file is 113 Python lines and 1946 Bend lines and roughly a third
+of the second number is these records plus the readers that carry them.
+
+## SIX MORE RULES, MEASURED 2026-10-02 WRITING `mixin/reduce.bend` (items continue from 31)
+
+Appended, not edited. All six are Bend 2.0.34 or gate facts. Four of them cost a
+compile cycle and the last two are the kind that cost a whole table.
+
+### 1. THE `.of` SPLIT IS REQUIRED AT **EVERY** SCRUTINEE POSITION, NOT ONLY AT THE TOP OF A BODY
+Rule 2 (and its four restatements) is always written as "a `def f(x)` whose body
+is `match g(x):`". Here the scrutinee is a `case` ARM's `match`, and it is still
+refused:
+
+    def rc_arg.put(got: Bool, +r: RcRed, +ar: O.Arena, u: U32) -> RcRed:
+      match got:                              # a PARAMETER -- legal
+        case True{}: r
+        case _: match O.Arena.arg(ar, u):      #| - message : a parameter or field scrutinee
+          case O.AReduce{rop, num_axes}: ...
+
+`got` is a parameter and the outer match is legal, so the error reads as if it were
+about the *nesting*. It is not: it is about the inner scrutinee, and the fix is the
+same two-def `rc_arg.of(got, a, r)` / `rc_arg.put(got, r, ar, u)` every other `.of`
+split in the port uses. **A `match` in the catch-all arm of another `match` is a
+scrutinee position like any other; the `.of` leaf has to be a named def, and that
+def must be declared immediately above.**
+
+### 2. A PATTERN BINDER THAT SHADOWS A **FIELD NAME** IS REPORTED AS AN ARITY ERROR
+The recorded "a pattern binder must not shadow a def name" rule names the wrong
+thing in the message. Here the shadow is a FIELD of the record being CONSTRUCTED,
+no def of that name exists, and the error is the arity message:
+
+    def rc_arg.of(got: Bool, +a: O.Arg, +r: RcRed) -> RcRed:
+      match got:
+        case True{}: r
+        case _: match a:
+          case O.AReduce{rop, num_axes}: RcRed{found, True{}, rop, num_axes}
+                                          #| - expected : RcRed with 3 fields
+                                          #| - observed : RcRed{found, True{}, rop, num_axes}
+
+`found` was bound by an enclosing `case RcRed{...}` and used as the first FIELD of a
+four-argument literal of the same record; the checker counts the literal's
+arguments as three because the binder is not in scope after the `match`. Renaming
+the field (`ok`) fixes it in one edit, and the `Data` union is what makes the
+collision possible at all. **The tell is a `X pattern with N fields` error on a
+literal whose arity is visibly correct: look for a binder of the same name in an
+enclosing arm before counting arguments.**
+
+### 3. `+` ON A `U32` THAT IS THE **FIRST** ARGUMENT OF A LIST-TAIL SELF-CALL CHECKS
+The fuel sections say "marking either `+` breaks the check -- a reusable binder stops
+counting as a subterm". That is exactly and only true of **the binder that does the
+shrinking**, and rule 29 already showed `+` on the SEVENTH of nine. This is the
+other end of the same rule, measured on a fold whose first parameter is a `U32` and
+whose shrink is in the SECOND:
+
+    def rc_axs.go(+td: U32, xs: List<&2, Ax>, +acc: List<&2, U32>) -> List<&2, U32>:
+      match xs:
+        case Nil{}: acc
+        case +a <> t: rc_axs.go(td, t, List.append(&2, U32, acc,
+          [M.mo_resolve(Ax.neg(a), Ax.dim(a), td)]))
+
+`ALL PROOFS CHECK`, with `td` read twice in one arm (once in `mo_resolve`, once in
+the self-call) and `+a` on the binder. Without `+td` it is
+`expected : td / observed : td (consumed more than once)`. So the rule to carry is
+one clause, not a position: **the shrinking argument may not be `+`; nothing else
+may not.** (`+td: U32` also confirms rand.bend's rule 30 from the other side -- a
+`U32` parameter takes `+` freely.)
+
+### 4. A GATE **COLUMN** THAT IS CONSTANT OVER THE WHOLE SUITE IS A COLUMN NO MUTATION CAN MOVE
+`uop/weak.bend` recorded "a gate that never calls the function under repair is
+blind"; the test for that is one grep. The same blindness has a COLUMN-shaped form
+and it is cheaper to miss, because the column is present, non-empty and plausible on
+every row:
+
+    red=<ROP>/<num_axes>
+
+Every row of `reduce.bend` printed `red=.../1` or `red=.../0` until one fixture was
+added with a DIFFERENT value in it (`axis=(0,1)`, giving `red=ADD/2`), so the
+`num_axes` half of the column was a constant for the whole first mutation run and
+no mutation in the file could move it -- `num_axes` is built in `tensor.bend`. **The
+test is one line: does any row's expectation DIFFER from every other row's, in this
+column?** If not, the column is decoration and should either be dropped or given a
+fixture. (Same family as the `nd=` count row in `mixin/render.py`'s `switch_over`,
+which is why that file needed two rows reading the same slot.)
+
+### 5. A CHAINED REDUCE SEPARATES FIRST-WINS FROM LAST-WINS **ONLY IF THE TWO OPS DIFFER**
+The brief's standing trap is "if your table has no node that TWO rules both claim,
+a first-wins-vs-conjunction bug moves NOTHING". Here the collision is in a SEARCH,
+not a rule table, and the fixture that resolves it is narrower than it looks:
+
+    f.any(axis=0).all(axis=0)     -> reduce ends MAX/1 and MUL/1   SEPARATES
+    f.sum(axis=0).sum(axis=0)     -> reduce ends ADD/1 and ADD/1   INVISIBLE
+
+Both graphs hold two REDUCEs, and in both the search walks the toposort in the same
+order, but the two `red=` answers are identical in the second case, so the policy is
+unobservable. MEASURED: inverting the walk's "already found" guard moved 22 rows for
+`any().all()` and the same mutation on `sum().sum()` would have moved none. **Pick
+the chained fixture so the two reduces have different OPS, not merely the same
+count** -- and note that this is the same reason `log_softmax`'s `e`/`m` choice is
+unfalsifiable in `mixin/op.bend`'s M8: graph-isomorphic programs, not wrong ones.
+
+### 6. A MUTATION DESCRIBED AS "DROP THE GUARD" MAY BE SOMETHING ELSE ENTIRELY, AND ONLY THE VALUE SAYS WHICH
+The harness reports the rows a mutation moved, by name. Two mutations reported the
+same twenty-two rows and were assumed to be testing the same thing:
+
+    M10  read `AAllred` instead of `AReduce`   -> 22 rows, every one to `red=none`
+    M18  INVERT the `ok` guard (True->False)   -> 22 rows, every one to `red=none`
+
+M18 was described as "drop the guard so the LAST reduce wins", and the description
+was wrong: inverting the guard makes the accumulator never record anything at all,
+so it is a second copy of M10 rather than a first-wins test. The real
+first-wins-vs-last-wins mutation is to delete the `match got:` line entirely, and
+that one moves exactly ONE row (`chain_any`, rule 5). **Print the moved row's
+VALUE, not just its name, before writing the mutation's description** -- the two
+questions "which rows" and "what they became" have different answers, and only the
+second one distinguishes three mutations that share the first.
+
+## NINE MORE RULES, MEASURED 2026-10-02 WRITING `renderer/tc_ptx.bend`
+
+Appended, not edited. Bend 2.0.34. Each one cost a wrong answer that typechecked
+and ran; every reproducer is in `.agents/slop/probe-cc.bend`,
+`.agents/slop/probe-ur.bend` or `.agents/slop/probe-tcptx.bend`.
+
+### 1. A COUNTDOWN ARM MAY NOT SO MUCH AS READ ITS OWN FUEL -- AND THE ESCAPE IS A `+U32` THAT GROWS
+
+`List.append(&2, U32, ur(m), [U32.sub(U32.from_nat(k), 1)])` is REFUSED with
+`expected : m / observed : m (consumed more than once)`, reported at the
+`case 1n+m:` PATTERN so it reads like a duplicated binder. It is not: `m` is
+read exactly once. The arm may not READ `k` at all -- `List.append(&2, U32,
+ur(m), [U32.from_nat(k)])` fails the same way, and so does binding `k` to a
+local FIRST. The working shape threads the element as a `+U32` that GROWS from
+zero and CONSES it:
+
+```
+def ur(k: Nat, +i: U32) -> List<&2, U32>:
+  match k:
+    case 0n : Nil{}
+    case 1n+m:
+      xs = ur(m, U32.add(i, 1))
+      List.append(&2, U32, [i], xs)
+```
+
+`+` on `i` is required (it is read in the recursive arm and in the body), and
+that does NOT break the decrease check -- rule 29 already says so, and this is
+the second instance. NOTE THE DIRECTION: appending `[i]` instead of consing it
+gives `2,1,0`, because the recursion builds the tail first. `ur(3n, 0)` is the
+reproducer and prints `0,1,2` when correct.
+
+### 2. `List.append(A, R, rec(t), [x])` IS `reverse`, NOT A BUG -- IT IS `rec(t) ++ [x]`
+
+The ledger has this ("a recursive map/filter that writes `append(fold(t),
+[head])` returns every list in REVERSE"), and it was still walked into, so the
+reproducer is now three lines and the shape is pinned:
+
+```
+def fa(+xs: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}   : Nil{}
+    case c <> +t : List.append(&2, U32, fa(t), [c])
+
+fa([2,1,6])   ==> 6,1,2      # reverse, BOTH lanes
+[c] ++ fa(t)  ==> 2,1,6      # correct
+```
+
+Two measurements that stop the misdiagnosis. It is **NOT** the double self-call
+(`Bool.pick(..., fa(t) wrapped, fa(t))` fails the same way with one call), and it
+is **NOT** a lazy-argument ordering bug (binding the self-call to a local first
+changes nothing). And `--check-only` is clean throughout. The only tell is that
+the list is the right length with the right elements.
+
+### 3. `U32.shln(a, n)` IS `a << n` -- BUT `U32.shl(a)` IS `a << 1`, SO `shln(a, 0n) = a`
+
+Already stated in section 2 ("`U32.shl`/`shr` shift by one"), and the trap is
+that `shln` and `shl` are different by one, so a `(bit << 2)` written as
+`U32.shln(bit, U32.to_nat(bit))` -- "shift by the bit" -- silently becomes
+`bit << bit`. Measured: a packed-coordinate constructor of that shape printed
+`k0` for what should be `k1`, and 26 distinct gate rows moved. There is no
+arithmetic error to look for; the encoding was just wrong at one place and
+right everywhere else.
+
+### 4. A U32 SENTINEL FOR A PYTHON `default=-1` MUST NOT BE `0xffffffff` WHEN THE FOLD IS `max`
+
+`1 + max([...], default=-1)` ported as `U32.add(fold(cs, 0xffffffff), 1)` where
+`fold` starts at the sentinel and takes `U32.max(bit, best)`, is a silent
+zero: `0xffffffff` is the largest `U32`, so it WINS every comparison and the
+maximum is never updated. Measured: `axis_coords()` came back EMPTY and
+`dims` printed `1,1,1` for all sixteen tables, with every table-length row
+still green. The fix needs no sentinel and no wrap -- carry `bit + 1` as the
+contribution, so "nothing on this axis" is 0 and the maximum IS the count:
+
+```
+def cd_cnt1(+cs, +ax, best) -> U32:  # best starts at 0
+  ... U32.max(U32.add(cd_bit(c), 1), best) ...
+def cd_cnt(+cs, ax) -> U32: cd_cnt1(cs, ax, 0)
+```
+
+GENERALISE IT: **a Python sentinel of `-1`/`0`/`None` becomes a U32 whose
+`max`/`min`/`or` behaviour under the sentinel's fold has to be re-derived, not
+translated.** A count that should be positive and prints `0` is the symptom.
+
+### 5. `sub(b) <= sub(a)` IS `sub(a, b)` WITH THE ARGUMENTS BACKWARDS, AND `<=` READS THE OTHER WAY
+
+Writing a subset helper as `sub(a, b) -> every element of b is in a` and then
+translating `own <= all` as `sub(own, all)` inverts the assertion. Measured:
+rdna3's `__post_init__` `cover.mk` printed `False` with every other row green,
+because rdna3's A fragment carries the FOREIGN bit `n0`, which is in `all` and
+in the mn-coords but not in `own(mk)` -- precisely the case the assertion exists
+for. The `f(1) <= f(2)` reading is `sub(f(2), f(1))`.
+
+### 6. A `match` ON A `String` NEEDS THE ARM ORDER OF THE LITERAL, AND A MISSING `"gfx942"` ARM IS DEAD CODE
+
+A `match nm: case "gfx950": ... case "gfx1200": ... case "gfx1201": ... case _:
+...` where `nm` is `"gfx942"` answers the CATCH-ALL, not a missing arm -- and
+the checker's exhaustiveness is happy because the element type is not closed.
+So a dict with four keys and a default ports to FOUR literal arms plus the
+catch-all, and dropping one key silently reroutes that key to the default. The
+row that finds it is the one whose value differs from the default's.
+
+### 7. A GATE'S ORACLE MUST REPRODUCE `IO.print`'s OWN NEWLINE, OR THE LAST ROW NEVER MATCHES
+
+The Bend side builds the whole table as one `String` and prints it once, so
+`IO.print` appends a newline AFTER the last row's own. An oracle that
+`sys.stdout.write("".join(rows))` is one byte short and every diff ends with a
+spurious `279d278`. `wgsl-oracle.py` gets this right for free because it
+`print`s one row at a time. Either `sys.stdout.write(rows() + "\n")` on the
+oracle side or `String.trim_end` on the Bend side; do not leave it to a
+reviewer's `diff | head`.
+
+### 8. TWO SELF-CALLS IN ONE ARM ARE LEGAL WHEN EVERY SHARED ARGUMENT IS `+`
+
+`Bool.pick(List<&2, U32>, is_eq, List.append(&2, U32, f(ax, t), [c]), f(ax, t))`
+compiles and runs once `ax` is `+`. Measured; the failure when it does not is
+`expected : ax / observed : ax (consumed more than once)`, which names the
+SHARED argument and not the duplication. This is the shape a filter needs, and
+rule 3's "a `Maybe` binder is the same restriction" does not extend to it.
+
+### 9. `do` IS A RESERVED WORD AND CANNOT BE A RECORD FIELD
+
+`Tc{di: S.Dt, do: S.Dt, ...}` is `expected : a name (got the keyword 'do')`,
+which points at the record declaration and reads like a duplicate field. Same
+family as rules 24 and 25 (`Emit`, `volatile`): the name is TAKEN, the fix is
+to escape it (`dou`), and the check is `bend base --names | tr ',' '\n' |
+grep <name>` before naming a record after a Python attribute. tinygrad's
+`TensorCore` has `dtype_out`; the port spells it `dou` because the whole file
+elsewhere says `di`/`dou` and the asymmetry is worth the escape.
+
+---
+
+## NINE MORE RULES, MEASURED 2026-10-02 WRITING `nn/onnx.bend`
+
+Appended, not edited, continuing the count from 31. All nine are Bend 2.0.34 or
+substrate facts; the file is `tinybendygrad/nn/onnx.bend`, its gate is 123 rows
+diffed byte-for-byte against a CPython oracle that calls tinygrad's own tables
+AND its own nested helpers, and its mutation table is 21 entries of which ONE
+moves nothing (and that one is the control) and one more is a documented BLIND
+SPOT.
+
+### 1. `Pair` IS A BASE CONSTRUCTOR, SO A TWO-FIELD `Data` RECORD NEEDS A NEW NAME
+
+Rule 24 (`Emit`/`Halt` are Base's) is not the only reserved name in this port.
+`type Pair is Data:` is `expected : a fresh name (duplicate declaration: Pair)`,
+and `grep` over `base.bend` finds no `Pair` because it is a CONSTRUCTOR, not a
+def. The escape is the same shape as `Emit_` and `volatile_`: `Hal` (halves),
+with the owner named at the declaration. **The lesson generalises: before naming
+a record after the Python, the check is a three-line probe that declares AND
+constructs it -- a name can be free in `bend base --names` and taken anyway.**
+
+### 2. A UNION CONSTRUCTOR IS NOT A TYPE, SO A READER FOR ONE ARM CANNOT BE WRITTEN
+
+Rule 27 says a field is read `Type.field(value)` with a hand-written reader. It
+does not say what happens when the type is a multi-constructor `Data` UNION:
+
+```
+type A is Data:  Aa{v: U32}  Ab{nm: String}
+def Aa.v(a: Aa) -> U32: ...     #| - expected : a defined name / observed : Aa
+def Aa.v(a: A) -> U32: ...       #| - expected : cases for Aa, Ab, ...
+```
+
+The namespace `Aa.v` is fine; the PARAMETER TYPE `Aa` is not a name. So a
+payload reader for one arm must take the WHOLE union and match all the arms to
+stay exhaustive, and a nested `match` on the binder is refused on top of that
+(rule `divandmod` 1). Forty lines of ladder for five payloads with no caller is
+padding, and the honest answer is the TAG reader plus a comment recording the
+measurement. **`AVal` in `nn/onnx.bend` is the worked example: eight constructors,
+one tag reader, no payload readers.**
+
+### 3. A FOLD OVER A FUNCTION PARAMETER IS IMPOSSIBLE, SO A TABLE ROW IS AN EXPLICIT LITERAL
+
+```
+def m.go(cs, f: U32 -> String, acc): m.go(t, f, List.append(.., [f(c)]))
+#| - expected : f / observed : f (consumed more than once)
+def m.go(cs, +f: U32 -> String, acc): ...
+#| - expected : Data / observed : Type    (a function value is `Type`)
+```
+
+`+` is refused on a function value because a function in a datatype field forces
+`Type` -- the same fact as the `List.sort` comparator note. **So "project every
+cell of this table" cannot be one generic fold; it is a LITERAL LIST of the
+projections, joined once.** The cost is that the code appears twice (once in the
+driving list, once in the row) and the mutation table needs an entry for exactly
+that. `List.foldl(~&2, ~U32, ~U32, f, xs, acc)` is unaffected -- only folds that
+TAKE the function as a parameter are.
+
+### 4. A `U32` LITERAL ARM LADDER MUST BE IN DESCENDING ORDER
+
+The recorded form ("`case 1:` claims every successor") is true and the trap is
+avoidable by ordering: listed high-to-low, `case 16:` claims 16..max and every
+lower arm below it still fires on its own value. Listed low-to-high, the second
+arm is dead. Measured on a thirteen-entry `OnnxDataType` table, codes `1,2,3,4,5,
+6,7,9,10,11,12,13,16`, all with `Some{...}` payloads. **Every numeric ladder in
+this port should be written descending; it costs nothing and it removes the only
+silent failure the recorded rule describes.**
+
+### 5. `H.I64` HAS NO `Word`, SO `floor(x/2)` IS HAND-WRITTEN -- AND THE LOW WORD'S FILL COMES FROM THE HIGH WORD
+
+`U32.shrn` is LOGICAL, so `floor(x/2)` on a 64-bit word is not two shifts. The
+correct identities, from "bit i of the result is bit i+1 of x":
+
+```
+lo' = (lo >>> 1) | ((hi & 1) << 31)      # UNCONDITIONAL -- a bit SHUFFLE
+hi' = (hi >>> 1) | (sign ? 1<<31 : 0)    # the ONLY sign extension
+```
+
+**THREE bugs, all `ALL PROOFS CHECK`, and `-5` answers correctly under all three**
+(its `lo & 1` is 1) so only an EVEN negative exposes them: the fill not
+conditional on the sign (`floor(3/2)` -> `-2147483647`); the low word's fill
+taken from its own bit 0; the high word's fill taken from the low word's bit 0.
+The general lesson is the existing "an even fixture hides an odd defect" family in
+a new place: **when a word is split across two cells, the cell you did not think
+about is the one that is wrong, and a fixture at the value where both cells agree
+is not a fixture.**
+
+### 6. `helpers.bend`'s `i64_add` AND `i64_sub` NEITHER CARRY NOR BORROW -- REPORTED, NOT FIXED
+
+`H.i64_sub(a, b) = i64_of_hi_lo(sub(hi32(a), hi32(b)), sub(lo32(a), lo32(b)))`
+subtracts the two words INDEPENDENTLY. MEASURED against CPython:
+
+| case | CPython | `H.i64_sub` / `H.i64_add` |
+| --- | --- | --- |
+| `5 - 7` | `4294967295:4294967294` | `0:4294967294` -- no borrow |
+| `1 - (-1)` | `0:2` | `1:2` -- no borrow |
+| `(-1) + (-1)` | `4294967295:4294967294` | `4294967294:4294967294` -- no carry |
+| `(-1) + 1` | `0:0` | `4294967295:0` -- no carry |
+
+`H.i64_cmp` / `i64_le` ARE correct -- they compare the signs first -- so only the
+arithmetic is affected, and the defect is invisible on every pair whose low words
+do not borrow. `helpers.bend:1238-1243`. `nn/onnx.bend` carries a local
+`onx_isub` with the owner lines named; **`i64_add` has the same defect and NO
+caller in this port yet**, so the two are one report and one of them is currently
+latent. Anything downstream that adds or subtracts `H.I64` values across a word
+boundary is affected, and the file's own `_min_max` consumers are the obvious
+next ones.
+
+### 7. A FIRST-WINS `Any` GUARD INSIDE AN ELIGIBILITY FOLD IS A BUG THE FIX MAKES WORSE
+
+`_select_op`'s `{impl_opset.version: impl_fxn for impl_opset, impl_fxn in
+impl.items() if domain == required.domain and version <= required.version}` then
+`eligible_ops[max(...)]` is a fold that must KEEP every eligible row. Two
+plausible ports, both wrong, both `ALL PROOFS CHECK`:
+- `eligible and not found_yet` -- FIRST-WINS. `Softmax` at opset 13 answers
+  `softmax_1` instead of `softmax_13`.
+- `eligible and found_yet` -- ANSWER `None` for every versioned op, because
+  eligibility now requires a hit to already exist.
+
+The correct shape has NO accumulator term in the eligibility test at all: it is
+a property of ONE candidate against the required opset. **The tell is an
+accumulator `Bool` that appears in the PREDICATE rather than in the result --
+`found_yet` belongs in `hit`, never in `eligible`.**
+
+### 8. A COUNT ROW AND THE TABLE IT COUNTS ARE TWO INDEPENDENT TRANSCRIPTIONS
+
+Measured in `nn/onnx.bend`: `onnx_ops_n` counts `onnx_ops()`'s own literal, so
+DELETING an arm from a DIFFERENT table (`onx_odt_name`'s `BOOL`) moves
+`onnx_odt_rt`, `onnx_odt_all` and `onnx_odt_tbl` and leaves the count green. Same
+for a same-length MISSPELL: `onnx_ops_n` stays `True` and only the table string
+moves. This is the `mixin/creation` rule 23 / `mixin/gradient` rule 6 family
+("it is not only rules that collide, it is any check whose oracle is a COUNT
+rather than a STRUCTURE") stated as a limitation of MY OWN gate rather than
+someone else's. **The mitigation that works: the count row names what it counts
+("the count of `onnx_ops`'s own literal"), and the mutation table has a
+DELETED-ARM entry and a MISSPELL entry as separate mutations.**
+
+### 9. AN UNUSED `+` PARAMETER IS ACCEPTED, SO A MUTATION CAN FIND A PARAMETER THAT IS NOT LOAD-BEARING
+
+`onx_sel_max` threads `hit`, `bv` and `bi` through its fold. Mutating `bv`'s
+update (`U32.max(bv, …)` -> `bv`) moves NOTHING, because `bv` feeds only the max
+COMPARISON and the answer is the `bi` string. Mutating `bi`'s pick moves ELEVEN
+rows. **Both mutations are the same rule and only one is localised**, which is the
+"two rules over one row, so neither is localised" note from `movement.bend` --
+found here by the mutation table rather than by reading, and it is the cheapest
+use of a mutation table there is: it names the parameter that is decoration.
+
+## SIX MORE RULES, MEASURED 2026-10-02 WRITING `uop/validate.bend`
+
+Appended, not edited, continuing the count from 31. All six are Bend 2.0.34 and
+each one cost at least one compile cycle. The first two are the expensive ones
+and the fourth is the one that silently emptied a whole gate.
+
+### 32. **`Bool.pick` IS STRICT *AND* IT IS AFFINE-TOO, SO A BRANCH THAT BUILDS A
+###     STRUCTURE MUST BIND IT WITH `+` FIRST -- AND THE STRUCTURE IS THE PARAMETER**
+
+`Bool.pick(TYPE, cond, a, self_call(...))` evaluates BOTH arms, which is the
+recording everyone has. What is NOT recorded is the consequence when the two arms
+build a GROWING value:
+
+    def uops_to_z3.of(ar: O.Arena, ms: List<&2, MRng>, snk: O.Found) -> Vz:
+      vz_walk(vz_drop_sink(vz_topo(O.Arena.budget(ar), ar, F.folded(ar), ...)), ...)
+
+That checks, it runs, and the toposort comes back EMPTY on every row -- so a
+sixteen-row gate prints `[] |  |  | 0` sixteen times with no error anywhere. The
+cause is the same shape as `mixin/rand.bend`'s rule 1: `O.UOp.sink` GROWS the
+arena, so the `ar` passed as the FIRST argument is the PRE-SINK store and the
+SINK index is not in it.
+
+**THE FIX IS ONE `let`, and it is the same fix as everywhere else:**
+
+    +snk = O.UOp.sink(ar, [idx, gate])
+    uops_to_z3.of(O.Found.ar(snk), ms, snk)
+
+Two data points from the same file, both measured: the FIXTURE version
+(`dv2(nm, fx_var(ar, ...), fx_const_bool(ar, ...), ms)`) builds the PARAM in one
+COPY of `ar` and the mask in ANOTHER, and the PORT version above builds the SINK
+in a copy and hands `.of` the original. **A `Bool.pick`-shaped argument list
+whose arguments each GROW is the most expensive spelling mistake in this port,
+and the symptom is an EMPTY ANSWER rather than an error.**
+
+### 33. **A `.go`/`.step` SPLIT OF ONE SELF-RECURSIVE FOLD IS MUTUAL RECURSION AND
+###     IS REFUSED; THE `If` GOES IN THE `1n+p:` ARM INLINE**
+
+    def z3_shift.go(k, ...) = match k: case 1n+p: z3_shift.step(p, ...)
+    def z3_shift.step(k, ...) = z3_shift.go(k, ...)      # <-- MUTUAL, refused
+
+The working shape is one def whose arm both recurses and builds:
+
+    case 1n+p: z3_shift.go(p, is_shr, z3_shift.armed(is_shr, a, b, lo, i), b, lo, U32.add(i, 1))
+
+where `armed` is a LEAF. This is the notes' movement.bend rule 2 again, now with a
+`Nat` fuel and a growing term accumulator: the accumulator goes AFTER the
+shrinking list/fuel and the leaf holds the `If`. A scripted topological sort
+FINDS the cycle and refuses, which is a cheap way to notice it before the
+compiler does.
+
+### 34. **A `U32` HAS NO CONSTRUCTORS, SO `case 0: ... case 1: ... case _:` ON A `U32`
+###     IS "a declared constructor (unknown: U32)"**
+
+The brief's rule 9 and rand.bend's rule 2 both talk about numeric ladders, and
+every file in the tree writes `case 0:` .. `case 25:` on a `U32` tag and it works
+-- because those ladders are CONSECUTIVE from zero and the checker accepts them.
+A THREE-WAY choice over `U32` literals that are NOT 0/1/n (`case 0 / case 1 /
+case _:` for a bit-op tag 0/1/2) is refused outright with a message that names a
+CONSTRUCTOR you never wrote. **Write a three-way `U32` choice as two
+`Bool.pick`s**, which is what `bv_op`, `ren_9.b2.mk` and `ren_10.mk` do. Three
+instances in one file; all three cost a cycle each.
+
+### 35. **`Wv{Bool, U32}` IS THE ANSWER TO "A `Maybe` BOTH ARMS OF A `Bool.pick`
+###     NEED", AND IT IS NOT A `+`**
+
+    def z3_and.pw(nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
+      Bool.pick(Maybe<&1, Z>, nb, z3_and.pw2(Z.num(b), m, a), z3_and.bv(m, a, b))
+      #| - expected : m
+      #| - observed : m (consumed more than once)
+
+Three fixes were tried and only one works: a second def that re-reads `m` (still
+two reads in the CALLER), a `+bv = ...` let (`+bv can be used many times, so its
+type must be Data` -- a `Maybe` is a `Type`), and the pair. The pair is three
+lines and it composes:
+
+    def wv(m: Maybe<&1, U32>) -> Wv: match m: case Some{w}: Wv{True{}, w}
+                                            case None{}: Wv{False{}, 0}
+
+`Maybe.default` does NOT work because it needs a default VALUE and there is no
+correct zero for a bit-vector width. **This generalises the notes' "a `Data`
+record cannot hold a `Maybe`" into the FOLD case: whenever a `Maybe` crosses a
+`Bool.pick`, decompose it into a `Bool` plus the value at the point where it is
+produced, not at each use.**
+
+### 36. **A `String` IS NOT `List<&2, Char>` -- `List.length(&2, Char, s)` IS A TYPE
+###     ERROR, AND `String.is_empty` DOES NOT EXIST**
+
+    def empty_str(acc: String) -> Bool: List.length(&2, Char, acc)   #| expected List<&2, Char>
+    def empty_str(acc: String) -> Bool: String.to_list(acc)         #| the match works on THIS
+
+`String` is its own datatype with `SCon{head, tail}`; it is not definitionally a
+`Char` list even though the guide says it is one, so a quantified `List` fold
+needs `String.to_list` first. There is no `String.is_empty` in base (recorded
+earlier) and `List.is_empty` does not take a `String`, so **"is this string
+empty" is a two-def thing**: `to_list` then `case Nil{}`. Three occurrences in
+`validate.bend` and each one cost a cycle.
+
+### 37. **A PARAMETER MAY NOT SHADOW A DEF NAME, AND THE ERROR NAMES THE
+###     CONSTRUCTOR** (an extension of device.bend rule 2, to `List` binders)
+
+    def Sol.find.go(+es: List<&2, Bind>, k: U32) -> Maybe<&1, Z>:
+      match es:
+        case Bind{u: v, t} <> rest: ...
+    #| - expected : a term
+    #| - observed : ':'
+
+`case Bind{u: v, ...}` is not the rename syntax -- Bend has none. And renaming the
+BINDER to a parameter's name is refused with "a declared constructor (unknown:
+Bind)" naming the TYPE, which is perfectly well declared. **Rename the
+PARAMETER** (`k`, not `u`), which is what `Sol.find.go` and `Sol.mm.go` do.
