@@ -3,9 +3,9 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [##........] 2/96  (0 defs outstanding)
-proofs          [########.] 28/34    oracle-green     [##........] 2/2
-walkthroughs    [#####...] 5/7
+spec-as-laws    [#########] 9/9      python-to-bend  [##........] 3/96  (0 defs outstanding)
+proofs          [########.] 28/34    oracle-green     [###.......] 3/3
+walkthroughs    [######...] 6/7
 ```
 
 ---
@@ -215,11 +215,102 @@ day rediscovering that `2n+p` is not an even-case test.
 | phase | directory | files | status |
 | --- | --- | --- | --- |
 | P3 | `uop/` | 10 | [####......] 4/10 |
-| P4 | `schedule/` `engine/` | 10 | [..........] 0/10 |
+| P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
 | P5 | `codegen/` `renderer/` | 30 | [..........] 0/30 |
 | P6 | `runtime/` | 36 | [..........] 0/36 |
-| P7 | `tensor` `mixin/` `nn/` | 15 | [..........] 0/15 |
+| P7 | `tensor` `mixin/` `nn/` | 15 | [#.........] 1/15 |
 | P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [..........] 0/15 |
+
+### P4 — `schedule/`
+
+- [~] `engine/realize.bend` — `tinygrad/engine/realize.py`, 296 lines. Both lanes
+      green and IDENTICAL, `--check-only` is `ALL PROOFS CHECK`, 50 printed gate
+      rows plus a `gate_count` COUNT row, 2036 lines, no `@unsafe`.
+      **THE ONE DEFECT IS `bl_u`, AND IT IS WORTH READING.** A `match` with ONE
+      `case _:` arm returns that arm for BOTH values of the scrutinee, and
+      `bl_u.go` / `bl_t.go` are written that way — so every Bool selector built on
+      them is a CONSTANT. 20 of the 50 rows therefore read `0`/`9` where CPython
+      answers otherwise. It is a one-line fix and it is LEFT UNFIXED because about
+      a dozen entry points were written against the broken `bl_u` and each needs an
+      entry-point `match` at the same time; fixing `bl_u` alone makes the gate
+      memory-fault partway through `main`. **The two entry points already converted
+      are the pattern** (`oi_cf`, `get_call_name`) and their rows moved to CPython's
+      answers — `oi_in_e` 0→2, `name_p` `None`→`k1`. Converting the rest is
+      mechanical and is the highest-value next step in the file.
+
+      **30 of the 50 rows are CPython-VERIFIED**, and the expectations are the
+      interpreter rather than a transcription: `.agents/slop/notes/rz-oracle.py` is
+      run against a live `tinygrad` and prints every `want_*`. Two oracle rows are
+      worth keeping because they contradict a reading of the Python:
+      `unwrap(None)` **ASSERTS** (helpers.py:95), so `buf.expr` on a nameless buffer
+      RAISES rather than answering `None`; and `get_call_outs_ins`'s `encdec` arm
+      reads the length of the FILTERED `get_call_arg_uops`, not of `call.src[1:]`.
+
+      **THE MSTACK ARM OF `_resolve` IS A NAMED, GATED WALL, not a guess.** Two
+      shapes were measured and both refused — a sibling walk is mutual recursion,
+      and one def carrying `(fuel, pending, acc, arena, inputs)` fails the descent
+      check because the pending list is REBUILT rather than passed. The shape that
+      would work is `ops.bend`'s `toposort` worklist (a list TAIL is a genuine
+      subterm). So an MSTACK resolves to itself, and `res_ms_same` asserts the
+      omission rather than hiding it.
+
+- [x] `schedule/__init__.bend` — `tinygrad/schedule/__init__.py:14-80`, the
+      schedule linearizer: `_unwrap_src`, `_states`, `_split_after` and
+      `create_schedule` in full. 1515 lines, 286 defs, 9 `Data` records, no
+      `@unsafe`, zero fuel in any self-call that cannot revisit a node. Both lanes
+      print the SAME 81 rows and `--check-only` is `ALL PROOFS CHECK`.
+      **78 of the 81 rows are checked against Python** — `sched-truth.py`'s
+      printed output for fx1/fx2/fx3 and the helper rows, and a live
+      `create_schedule` for fx5 — with zero mismatches; the other three are the
+      arenas' own node counts, whose difference from the gated `topo` count is
+      exactly the unreachable `Vu` and `BAD`.
+
+      **It is the engine's first real consumer**, so the file pays for three
+      things ops.bend cannot give it: a second copy of `Topo.step` with
+      `gate_kernel_sink` inlined (ops.bend's toposort has no gate parameter and
+      cannot call into this file), `UOp.is_bound_var` (ops.py:1023, whose last
+      conjunct is `param_shape` and NOT the fold table, so nothing here threads a
+      `Folded`), and `UOp.buf_uop` (ops.py:925) as a fuel fold rather than a
+      recursive property.
+
+      **FIVE BUGS THE GATE CAUGHT, all named at the def they live in.** Three
+      rebuild scans put the updated assoc-list entry at the TAIL instead of in
+      front of the rebuilt tail (`List.append` is `xs ++ ys`, so the same builtin
+      is right in an accumulator and wrong in a rebuild); their `Nil{}` arm
+      inserted a SECOND entry for a key already present; the Kahn queue pushed at
+      the wrong end; the Kahn loop tested `in_degree` BEFORE the decrement; and
+      **pass one's RAW loop never incremented `in_degree` at all** — which fx5
+      caught and fx1/fx2/fx3 CANNOT, because none of them has a RAW edge. That
+      last one is why fx5 exists: it is the fixture that puts an AFTER in a read
+      state, so it is the only row-set where a non-zero `in_degree` out of pass
+      one is visible.
+
+      **Fifteen mutations measured**, the table at the foot of the file. Twelve
+      move rows and two are reported VACUOUS (`is_bound_var`'s addrspace test
+      needs a GLOBAL PARAM no fixture has; `_states`' MSTACK expansion needs a
+      multi-device state no fixture has).
+
+      **FIVE NEW GENERAL BEND RULES** are appended to
+      `.agents/slop/notes/bend2-constraints.md`, all of them refusals: a `match`
+      nested in a `case h <> t:` LIST arm is refused (Bool, U32 and List alike);
+      a `match` nested in a `Data`-RECORD arm is refused for a Bool scrutinee and
+      accepted for a Nat or a List one, so a two-Bool decision becomes one
+      two-scrutinee match; a self-call may not pass a COMPUTED argument before the
+      shrinking one; a `Bool` match IS legal in a numeric arm, which makes the
+      `.step` helper shape — the one ops.bend's `Topo.step` uses — a MUTUAL
+      RECURSION that declaration order then forbids; and `List.append` is
+      `xs ++ ys`, so a rebuild scan must cons and an accumulator must append.
+
+      NOT PORTED, 9 `TODO(p3)` lines each naming its Python line: three raises
+      (`_states`' assert, `_split_after`'s AssertionError, the cycle RuntimeError
+      — the last one's observable, `COUNT_fx*_cyc`, IS in the gate), and
+      `buf_uop`'s two CONSTRUCTING arms (MSELECT's `.mselect` and MSTACK's
+      rebuild), whose wall is that a rule which interns must hand back the ARENA
+      and threading it through a walk that descends its own srcs makes every
+      caller carry it. The ported walk is exact for four of `buf_uop`'s five arms
+      and the file says which four and why. `__init__.py:82-301` is deferred whole:
+      every rule in it is a `graph_rewrite` with a PYTHON `ctx` DICT, and
+      `graph_rewrite`'s engine pass needs the rule table linear.
 
 ### Out of scope — needs hardware we do not have
 
@@ -301,3 +392,28 @@ excluded by tinygrad's own hardware markers, not by us.
 - [ ] render.bend local copies (tsort/src_tail) deletion gated on Topo N+E fuel fix — agent dispatched.
 - [ ] Gate widenings: promote bad_ceil_* -> ok_ceil_* in dm gate; add SHR row to symbolic gate (asr revert currently moves nothing).
 - [ ] sym_10 divergence decision: Python's name-interning makes var("x")*var("x") match 1/(x*y); port is stricter. Needs a row either way.
+## Session 2026-10-01 — `mixin/gradient.py`
+- [x] `tinybendygrad/mixin/gradient.bend` — `pm_gradient`'s 33-entry compiled rule
+      table, the duplicated dispatch scan, and 22 of the 33 rule bodies. The
+      **name-rebind at `gradient.py:101` is ported as a real identity check**
+      (`gr_29_same`, `U32.is_eq` on two arena indices) and the gate is
+      two-sided. 72 rows, both lanes identical, `--check-only` ALL PROOFS CHECK,
+      **17 mutations and every one moves at least one row**. 14 of 17 node-tree
+      sizes match Python's `pm_gradient.rewrite` exactly.
+- [ ] `compute_gradient`'s shaped-edge reduce (gradient.py:132) — needs
+      `broadcast_axes` + `sum_acc_dtype`. TODO(p3) in the file.
+- [ ] `call_gradient` (gradient.py:20) — five subsystems. TODO(p3) in the file.
+- [ ] `reduce_gradient` (gradient.py:8), `_min_max` on tag 25, `has_buffer_identity`
+      on tag 15, `as_shape`/`Sint` add on tags 19/20, `ctx[i]` on tag 23.
+      All TODO(p3) in the file with the specific wall and the Python line.
+
+## Session 2026-10-01 round 2 (schedule/mixin/engine/tensor/decomp wave)
+- [x] tensor.bend (lazy-graph half, 29 CPython-identical rows), mixin/dtype+gradient, schedule __init__/memory/allreduce/multi/rangeify, engine/realize, codegen/decomp — all committed with gates.
+- [x] movement.bend: hop_self inversion + 4 more bugs fixed; gate defect (G.ix bottom) root-caused; 26/26 rows == CPython.
+- [x] dtype.bend: three i64 limit constants fixed (found by mixin/dtype hoist).
+- [x] fold.bend: RESHAPE _shape arm landed; ONE line short (reshape_ps must read Arena.src0, not ss[0] — the srcs.go double-reversal bug).
+- [ ] fold.bend reshape_ps one-liner, then retire: tensor tn_rop_gap (delete), tensor M4, movement mp_2 + movement.py:185 identity test, duplicated as_shape.
+- [ ] engine/realize: ~20 rows rest on single-arm-case-_ Bool constants (bl_u); fix documented at top of file, mechanical; two converted as the pattern.
+- [ ] sz rounding (exact vs double) and sym_10 divergence — still the owner's two calls.
+- [ ] decomp: 3 rules do not fire (9 rows, undiagnosed); magicgu/fast_idiv at the i64 wall.
+- [ ] mixin/op.py (1980 lines) + elementwise.py + decomp/transcendental.py + nn/ unported.
