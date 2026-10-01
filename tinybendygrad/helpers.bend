@@ -1125,7 +1125,7 @@ def div0(zero: Bool, v: U32) -> U32:
 # overflow-free: (num+amt-1)/amt wraps at num+amt-1 > 2^32-1 (measured: 2**32-1
 # with amt 2**20 answered 0 where CPython says 4096); num/amt + (num%amt != 0)
 # is exact on the whole U32 domain.
-def ceildiv_u32(num: U32, +amt: U32) -> U32:
+def ceildiv_u32(+num: U32, +amt: U32) -> U32:
   div0(U32.is_zero(amt), U32.add(U32.div(num, amt), Bool.to_u32(U32.is_ne(U32.mod(num, amt), 0))))
 
 def round_up_i32(num: U32, +amt: U32) -> U32:
