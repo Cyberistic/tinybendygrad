@@ -596,6 +596,22 @@ diffed.
       CONST identity must be bitwise; and `{expr}` inside an `IO.print` string does NOT
       fire — it prints the template verbatim with no error.
 
+- [ ] **`f32_fixed` TRUNCATES WHERE `%.Nf` ROUNDS — one decision, two call sites, not a
+      one-line fix.** `helpers.bend:526` takes each digit as `F32.to_u32(F32.mul(f, 10.0))`,
+      which truncates, so `f32_fixed(2.3456, 2n)` prints `2.34` where CPython prints
+      `2.35` (measured by the example agent over six fixtures, four agreeing). CPython
+      formats `f"{x:.2f}"` by rounding the EXACT dyadic value of the f32, half-to-even;
+      the walk above rounds nothing and also multiplies the remainder in f32, so it is
+      inexact twice over. A correct version needs the exact decimal digits of the
+      mantissa in integer arithmetic, which the substrate can do but only carefully.
+      **This is the SAME decision as the open `sz.bend` rounding item above, and it
+      should be made once for both** — `sz.bend`'s patch sits measured and unapplied at
+      `/tmp/opencode/szbench/OPTION-string-fuel.patch`, and picking one rule for both
+      call sites is cheaper than two divergent ones. Callers that would change:
+      `size_to_str` (`:729`, `:732`, `:736`), the timing printers (`:700`, `:710`,
+      `:713`, `:717`), and `sz.bend:1461`. `sz`'s own 222/222 byte-diff is unaffected
+      today, so nothing in the committed gates encodes the wrong answer.
+
 ### In flight when the machine went quiet (uncommitted, agents still writing)
 
 `nn/state.bend` 834 and `nn/__init__.bend` 502 (the layers the example names, which is
