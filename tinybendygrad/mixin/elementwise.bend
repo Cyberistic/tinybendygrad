@@ -378,9 +378,15 @@ def ew_promote.at(inv: Bool, wc: Bool, same: Bool, +ar: O.Arena, +t: T.Tensor, +
 def ew_promote(+ar: O.Arena, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
   +wd = W.weak_dtype(od)
   +fx = F.folded(ar)
-  b = ew_base(fx, T.Tensor.u(t))
+  +b = ew_base(fx, T.Tensor.u(t))
   +dt = W.wk_dt(fx, T.Tensor.u(t))
-  ew_promote.at(ew_is_invalid(fx, b), W.dt_weak(dt), O.eq_dt(dt, wd), ar, t, od, wd)
+  # `t.dtype in dtypes.weaks AND t._uop.base.op is Ops.CONST`. The second conjunct is
+  # what keeps the weak arm off a weak ALGEBRAIC result: `weak_dtype(out_dtype)` is
+  # weak whenever `out_dtype` is strong, so without it a weakint ADD against int32
+  # stays weakint and the root then adds weakint to int32. `ew_dt_promo_nc` /
+  # `ew_op_promo_nc` are the gate; `g_promo_nonconst`'s header has the CPython rows.
+  ew_promote.at(ew_is_invalid(fx, b), Bool.and(W.dt_weak(dt), ew_is_const(fx, b)),
+    O.eq_dt(dt, wd), ar, t, od, wd)
 
 # ===========================================================================
 # `_broadcasted` -- elementwise.py:24-34, and `_binop` -- elementwise.py:36.
@@ -1239,6 +1245,29 @@ def t_dt_weak() -> IO(Unit): ew_dtsrc("ew_dt_weak", g_promo_weak_keep(), 1)
 def t_dt_cast() -> IO(Unit): ew_dtsrc("ew_dt_cast", g_promo_cast(), 1)
 def t_dt_bool_cast() -> IO(Unit): ew_dtsrc("ew_dt_bool_cast", g_promo_bool_cast(), 1)
 
+# THE SECOND CONJUNCT. `t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST`
+# (elementwise.py:31) is a CONJUNCTION, and every other fixture in this file holds a
+# weak CONST -- so `base.op is CONST` was true in all of them and the second conjunct
+# was never load-bearing. This fixture is the cell where it is: `w + w` is weak
+# (`least_upper(weakint, weakint)`), so the ADD has a weak dtype and a base op of ADD,
+# and promoting THAT against an int32 must CAST. CPython, elementwise.py:31-33:
+#
+#     Tensor(3) + Tensor(5)                        -> weakint, base op ADD
+#     ... + Tensor(7, dtype=dtypes.int32)          -> src0 int, src0 op CAST
+#
+# because `weak_dtype(int32)` is weakint, so the weak arm would KEEP it -- and the
+# weak arm is only for CONSTs. Dropping the conjunct keeps it weakint and the root
+# ADD then adds a weakint to an int32, which is the promotion the lattice forbids.
+def g_promo_nonconst() -> T.Tensor:
+  +w = ew_buf(O.Arena.empty(), S.weakint())
+  +s = ew_add(ew_ct(w), ETen{ew_ct(w)}, False{})
+  +b = ew_i32(T.Tensor.ar(s))
+  ew_add(s, ETen{ew_ct(b)}, False{})
+
+def t_promo_nc() -> IO(Unit): ew_sig("ew_promo_nc", g_promo_nonconst())
+def t_dt_promo_nc() -> IO(Unit): ew_dtsrc("ew_dt_promo_nc", g_promo_nonconst(), 0)
+def t_op_promo_nc() -> IO(Unit): ew_opname_src("ew_op_promo_nc", g_promo_nonconst(), 0)
+
 # --- 6: THE LATTICE ITSELF, straight from dtype.py --------------------------------
 def t_lattice() -> IO(Unit):
   do IO<Unit>:
@@ -1309,6 +1338,9 @@ def main() -> IO(Unit):
     bb : Unit <- t_dt_weak()
     bc : Unit <- t_dt_cast()
     bd : Unit <- t_dt_bool_cast()
+    be : Unit <- t_dt_promo_nc()
+    bf : Unit <- t_op_promo_nc()
+    bg : Unit <- t_promo_nc()
     t_lattice()
 
 # ===========================================================================
@@ -1334,6 +1366,7 @@ def main() -> IO(Unit):
 # | M10 | `ew_logical_not`: drop the `cast(bool)` | 1 (`ew_lnot_i`) | `self.cast(dtypes.bool).ne(True)`'s CAST. |
 # | M11 | `ew_sub.of`: `O.OpsADD{}` -> `O.OpsSUB{}` | 3 | `sub` is an ADD over a negated rhs and NOT an `Ops.SUB`. |
 # | M12 | a comment-only edit | 0 -- THE CONTROL | a mutation table with no row that CANNOT move is a table of coincidences. |
+# | M13 | `ew_promote`: `Bool.and(W.dt_weak(dt), ew_is_const(fx, b))` -> `W.dt_weak(dt)` | 2 (`ew_dt_promo_nc`, `ew_op_promo_nc`) + the `ew_promo_nc` count 5->4 | `elementwise.py:31`'s SECOND conjunct, `t._uop.base.op is Ops.CONST`. This one was a REAL DEFECT, not a coverage hole: the port tested `t.dtype in dtypes.weaks` alone, and every other fixture in this file holds a weak CONST, so the conjunct was true wherever it was read and the gate could not see it. `weak_dtype(out_dtype)` is weak whenever `out_dtype` is strong, so the missing conjunct keeps a weakint ADD weakint against int32, and the root then adds weakint to int32 -- a promotion the lattice forbids. CPython: `Tensor(3)+Tensor(5)` is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.int32)` its src0 is `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture in this file whose weak tensor is NOT a CONST. |
 #
 # M9 is the one to read twice. It moves exactly the two rows whose graph crosses a
 # promotion that MINTS, and nothing else -- which is the point: a sibling-arena bug is
