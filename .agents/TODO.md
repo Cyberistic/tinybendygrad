@@ -615,13 +615,36 @@ diffed.
 ### In flight when the machine went quiet (uncommitted, agents still writing)
 
 `nn/state.bend` 834 and `nn/__init__.bend` 502 (the layers the example names, which is
-the whole point of that unit) · `codegen/opt/search.bend` 402 and `postrange.bend` 1065
-(heuristic still a stub — **BEAM is NOT done**; search.py is the beam search itself and
-its `BEAM=1` gate has not run yet) · `renderer/__init__.bend` 553 and `cstyle.bend` 1240
+the whole point of that unit) · `renderer/__init__.bend` 553 and `cstyle.bend` 1524
 (the conventions header wgsl reads was written first, which is why wgsl could land) ·
-`device.bend` 1190 · `langs/core.bend` 334 · `runtime/executor.bend` 2244 ·
-`examples/beautiful_mnist.bend` 831 (agent reports 25 shared rows green across three
-lanes, 4 walls named, and TWO substrate defects routed around rather than fixed:
-`fold.bend:1621` deferring PERMUTEs dtype, and `helpers.bend`'s `f32_fixed` TRUNCATING
-instead of rounding — `f32_fixed(2.3456, 2n)` prints `2.34` where CPython prints `2.35`,
-so this example's pretty output is wrong for roughly half of all values).
+`device.bend` 1239 · `langs/core.bend` 345 · `runtime/executor.bend` 2245.
+(`codegen/opt/` and `examples/beautiful_mnist.bend` have since landed — see the two
+entries below and commit `d685f998`.)
+
+- [x] `codegen/opt/` — the BEAM unit, LANDED (`b78672e4`): `postrange.bend` 1066,
+      `search.bend` 405, `heuristic.bend` 196, all `ALL PROOFS CHECK`, lanes identical,
+      20/20 and 14/14 mutations localised. **BEAM=1 IS PARTIAL, and the split matters:**
+      the ACTION SET is ported and gated — the candidate enumeration (CPython-measured
+      counts 4 / 18 / 32), the dedup ladder, two of five drop rules, `min(least, this)`,
+      the SCORE record, and every `check` in `apply_opt`'s SPLIT/PADTO/SWAP arms. The
+      SEARCH LOOP IS NOT: `search.py:128-166`'s `while not exiting:`, the 1000x compute
+      filter (unspellable — it reads `this` twice and a `U32` cannot be `+`), the 269
+      `OPT`s, `get_test_global_size`, `_time_program`, the worker pool, and all of
+      `heuristic.py` but block #5. Round 2 onward also needs the winners rngs, which
+      needs `apply_opt`'s AST substitution — so the loop is blocked on a wall, not merely
+      unwritten. You can ask this port "which opts are candidates for this kernel, and
+      how many, after dedup" and it answers like CPython. You cannot ask which one won.
+- [x] BEAM=1 round counts, measured from CPython and pinned as COUNT rows:
+      `(a+1)` on 4 elements -> round1 **4**, round2 **2**, exit, 2 opts applied;
+      `(a*b).sum(1)` on 16x32 -> **18**, **13**, **2**, 3 opts applied.
+- [ ] The BEAM loop itself, once `apply_opt` grows an AST. `Sched{ren,rngs,opts}` is one
+      field away from carrying an `O.Arena`, and the header says exactly that.
+
+- [x] `examples/beautiful_mnist.bend` 831 — LANDED (`d685f998`), and I re-ran its
+      three-lane gate here: **25 shared rows, CPython == interpreted == native**. Four
+      walls named at their Python lines, and two substrate defects ROUTED AROUND
+      rather than fixed: `fold.bend:1621` defers a PERMUTEs dtype (so the 2-D dot
+      prints 11 nodes against CPythons 15, recorded as `unverified_lin2`), and
+      `mixin/op.bend`'s `mo_permute` builds in `Tensor.ar(t)` then wraps in that same
+      arena, landing the PERMUTE one node short of the `AOrder` tuple. Both are filed
+      under the fold wall rather than worked around silently.
