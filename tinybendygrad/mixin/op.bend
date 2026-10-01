@@ -1,1289 +1,1519 @@
-# STUB — mixin/op.bend. Port of tinygrad/mixin/op.py, split at line 990.
-# Side A (this agent): tinygrad/mixin/op.py lines 1-990.
-# Side B (sibling):     tinygrad/mixin/op.py lines 991-end.
-
-# ===========================================================================
-# SIDE B. `tinygrad/mixin/op.py` lines 991-1980. Written by the Side-B agent;
-# Side A owns lines 1-990 and nothing below this banner is Side A's to edit.
+# mixin/op.bend -- tinygrad/mixin/op.py, LINES 1-997.
 #
-# THE BOUNDARY IS SIDE A'S STUB, kept verbatim above: the nominal split is line
-# 991, so the first def STRICTLY AFTER the nominal split that starts whole is
-# `allclose` at op.py:998. `topk` (976-996) STRADDLES the nominal line -- it
-# starts at 976, inside Side A -- so it is Side A's and Side B starts at 998.
-# Every def below names its own `op.py` line, so the boundary is checkable
-# without reading this banner.
+# ---------------------------------------------------------------------------
+# THE SPLIT IN THIS FILE is the split the brief drew, and it is a DEF boundary:
 #
-# WHAT THIS HALF ACTUALLY CONTAINS, because it is not what the unit brief
-# guessed. Side A's half has the op-building surface. THIS half has NO
-# `PatternMatcher`, NO `UPat`, NO `Ops.` dispatch and NO `st`/`store`/`CALL`
-# surface: `rg -n 'UPat|PatternMatcher|graph_rewrite|Ops\.' op.py` over lines
-# 991-1980 returns nothing. Every def in it is a Tensor method whose body is a
-# composition of OTHER Tensor methods (`gather`, `where`, `pad`, `sum`,
-# `permute`, `reshape`), and none of those callees exist in `tinybendygrad/`
-# yet -- there is no `mixin/elementwise.bend` and no `mixin/movement.bend`.
+#   SIDE A (this half, lines 1-997)   data, item, __getitem__, _getitem, arange,
+#     linspace, eye, _tri, triu, tril, _pad_constant, pad_to, _pad_circular,
+#     _pad_reflect_replicate, pad, dot, matmul, einsum, gradient, min, mean, var,
+#     var_mean, std, std_mean, normalize, logsumexp, _softmax, softmax,
+#     log_softmax, softmin, cat, _cumalu, _split_cumalu, cumsum, cumprod, cummax,
+#     cummin, logcumsumexp, argmax, argmin, sort, argsort, topk
 #
-# SO THE PORT IS THE ARITHMETIC, and that is not a consolation prize: it is the
-# part of this half that is decidable without a Tensor, it is the part a gate
-# can check against CPython, and it is where the actual algorithm lives. Each
-# def below is the INTEGER/SHAPE content of its Python method, with the Tensor
-# composition named as a `TODO(p3)` wall rather than faked. `p3` is the phase
-# that builds the Tensor method surface; nothing here guesses at it.
+#   SIDE B (the other half, lines 998-1980)  allclose, one_hot, gather,
+#     interpolate, scatter, masked_select, nonzero, sequential, linear, the pools,
+#     the convolutions, layernorm, batchnorm, the losses, qr, svd, keccak, hash
 #
-# PREFIX. Every def here is `oq_` (op mixin, Side B). Side A should not use it;
-# the coordinator may want to unify the two prefixes when the halves merge.
-# ===========================================================================
+# THE BOUNDARY IS LINE 997, and it is a def boundary: `topk` is op.py:976-996 and
+# 997 is its closing blank line, so SIDE A ends on a whole def and SIDE B starts on
+# `allclose` (op.py:998). NOTHING IS PORTED TWICE.
+#
+# ---------------------------------------------------------------------------
+# WHAT IS PORTED, IN PYTHON'S ORDER, AND WHAT IS NOT.
+#
+# PORTED AND GATED: the reduction family -- `min` (op.py:473), `mean` (:496),
+# `var` (:523), `var_mean` (:551), `std` (:568), `std_mean` (:592), `logsumexp`
+# (:630), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
+# (:709) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
+# the three dtype helpers their bodies read: `weak_dtype` (dtype.py:175),
+# `sum_acc_dtype` (dtype.py:220) and the `commit_dtype` refusal (dtype.py:16).
+#
+# The `min`/`max`/`sum`/`prod` hoists are reduce.py's lines and they move back with
+# `mixin/reduce.bend`. They are hoisted because `mixin/reduce.bend` does not exist
+# yet, and `tensor.bend` already sets that precedent by hoisting `_mop` (ops.py:821)
+# and `_rop` (ops.py:655). `mo_reduce` here IS `T.tn_rop` plus `_reduce`'s two lines
+# around it (reduce.py:13-18), and `T.tn_rop` is the `_rop` hoist.
+#
+# ---------------------------------------------------------------------------
+# THE EIGHT WALLS, each named at its Python line. All eight are missing SUBSTRATE;
+# W9 below is a different animal, a measured DEFECT in substrate that is present.
+#
+#   W1 mixin/op.py:74 `_getitem` -- the index is Python's
+#      `int|slice|Tensor|None|list|tuple|Ellipsis`, a SEVEN-WAY sum type of
+#      heterogeneous payloads (movement.py:86 `_parse_view_index` matches on the
+#      Python TYPE), and the body then threads a list of FIVE-FIELD DICTS
+#      (op.py:82). Bend's sum types hold one value per arm, so the `Ellipsis`
+#      sentinel and the slice triple have no spelling, and `raise IndexError` has
+#      no form.
+#   W2 mixin/op.py:413 `einsum` -- a STRING FORMULA. `formula.split("->")`,
+#      `"".join(sorted(...))`, `s.index(c)`, `s.count(c)`, `s.replace(c, "", 2)`
+#      and `string.ascii_letters` are five distinct string algebras over the
+#      formula, plus `dict.fromkeys` and `merge_dicts` over letter->size. Bend's
+#      `String.split` takes a Char separator, so `split("->")` and `split(",")` do
+#      not exist, and this is a whole PARSER.
+#   W3 mixin/op.py:450 `gradient` -- `compute_gradient` is `mixin/gradient.py:132`,
+#      which `mixin/gradient.bend` records as `TODO(p3)` ITSELF: the shaped-edge
+#      reduce needs `broadcast_axes` (ops.py:89) which reads `resolve` on a `Sint`,
+#      and `uop/symbolic.py`'s `resolve` is not ported. A wall whose own port
+#      names it is the cheapest kind of wall to accept.
+#   W4 mixin/op.py:752 `_cumalu` -> mixin/movement.py:598 `_pool` -- `_pool` is
+#      TWELVE lines of shape arithmetic (`ceildiv`, `smax`, `flatten`, `repeat`,
+#      `shrink_to`, four reshapes, a permute) and `fold.bend`'s `dt_shape`
+#      (fold.bend:1622-1625) leaves PERMUTE, EXPAND, PAD, SHRINK and FLIP
+#      un-answered, because their `marg` needs `ssimplify`. So `_pool` is
+#      BUILDABLE but not CHECKABLE, and everything that reaches it through
+#      `arange` (op.py:166) inherits it: `cumsum` (:770), `cumprod` (:784),
+#      `cummax` (:798), `cummin` (:816), `logcumsumexp` (:830), `eye` (:215),
+#      `_tri` (:233), `triu` (:236), `tril` (:259), and `sort`'s index count
+#      (:958).
+#   W5 mixin/op.py:913 `sort` -> `.contiguous()` (elementwise.py:59) is
+#      `graph_rewrite` (ops.py:1880), which is P3 and lives in another module.
+#      The bitonic loop is four nested `for` loops over stage counts, which Bend
+#      spells as a fuel-carrying self-call; that part is mechanical, which is why
+#      the wall is named at `contiguous` and not at the loop.
+#   W6 mixin/op.py:731 `cat` -- `stack`/`flatten` are ops over a VARIADIC
+#      `*args` tuple, `_pad_constant` needs `identity_element` (ops.py:61, and
+#      `identity_element` is not in ops.bend), and the shape arithmetic is
+#      `itertools.accumulate` over `t.shape[dim]`.
+#   W7 mixin/op.py:609 `normalize` -- see the PARITY row below. `sign`
+#      (elementwise.py:901) needs `const_like` (creation.py) plus `_broadcast_to`
+#      (movement.py:128), and `_broadcast_to` calls `broadcast_axes` (ops.py:89),
+#      which is `resolve` on a `Sint` -- W3's wall, reached a second time. The
+#      `p == 0` arm needs nothing but `ne`, so `mo_norm0` IS ported and gated;
+#      the `p != 0` arm is `W7`.
+#   W8 mixin/op.py:394 `matmul` / op.py:359 `dot` -- a WMMA lowering over
+#      `UOp(Ops.WMMA, ...)` with a device-specific arg, and `dot`'s `permute +
+#      reshape` contraction needs `resolve` (W3) to decide which `N` the WMMA
+#      gets.
+#
+# `item` (op.py:22) and `data` (op.py:20) are NOT WALLS and are not ports:
+# `data` is a `raise NotImplementedError` declaration and `item` reads host memory
+# through it, which is the same device-state seam `tensor.bend` records as WALL 2.
+#
+# ---------------------------------------------------------------------------
+# W9 -- TWO MEASURED DEFECTS IN `mixin/elementwise.bend`, both in `promote`
+# (elementwise.py:24-34), and between them the reason this file spells its own
+# `_broadcasted`. `elementwise.bend` is not owned here, so both are REPORTED and
+# routed around rather than fixed in place.
+#
+#   W9a -- the ARENA. `ew_promote.b` used to build its reminted node as
+#     `ew_of(ew_remint(4n, F.Folded.ar(fx), u, wd))`, and `F.Folded.ar(fx)` is the
+#     arena as it was BEFORE `ew_remint` grew it, so the answer carried a stale
+#     arena and an index that arena did not have. MEASURED on bend 2.0.34:
+#     `ew_ne(f32_buffer, ECon{CInt 0})` printed
+#         A| NOOP() BUFFER() CONST()i CMPNE(1,3,)   <- src1 is 3, the CMPNE ITSELF
+#         B| NOOP() BUFFER() CONST()f CMPNE(1,2,)   <- the float path is right
+#     and the int path's toposort answered `1 BUFFER/0`, because the self-edge is
+#     already-visited: `ne(0)` on a FLOAT tensor was a graph with a CYCLE, and it
+#     typechecked and ran. FIXED in the substrate while this file was being
+#     written -- `ew_rebase` (elementwise.bend:209), on every arm that mints
+#     nothing, which is the whole of the fix. `mo_arena` below is that one line,
+#     kept because W9b means `mo_promote` is spelled here anyway.
+#
+#   W9b -- the MISSING CONJUNCT, and this one is OPEN. `ew_promote`
+#     (elementwise.bend:378) hands `ew_promote.at` the weak test as `W.dt_weak(dt)`,
+#     and `W.dt_weak` is the CLASS test ALONE (`weak_cls(S.Dt.cls(d))`, weak.bend).
+#     elementwise.py:30 is
+#         `if t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST:`
+#     -- two conjuncts, and the second is the one that decides whether a weak
+#     NON-CONST is reminted (kept weak) or CAST up to the out dtype.
+#     `ew_promote` computes the base (`b = ew_base(fx, u)`) and passes it to
+#     `is_invalid` and to nothing else, which is where `ew_is_const(fx, b)` went.
+#     MEASURED: `normalize(p=0, dim=0)` builds
+#     `MAX(CAST(int->weakfloat), CONST 1e-12) : weakfloat` and then `self / that`,
+#     whose `_broadcasted` out dtype is float32 -- so CPython casts the weakfloat
+#     MAX up (node 14 of its 17). Deleting the `is CONST` conjunct from
+#     `mo_promote` -- i.e. routing every promotion in this file through
+#     `E.ew_promote` -- makes `t_norm0` print 16 against CPython's 17, losing
+#     exactly the `CAST/1` after `MAX/2` and nothing else in the file. So it is
+#     `mo_promote`, and through it the whole `mo_bin`/`mo_sub`/`mo_where` family,
+#     that is spelled here rather than called: they all promote.
+#
+# `t_bin_promote` is the row that pins the ARENA half, and it is four-sided --
+# its own comment carries the measurement that found it was not.
+#
+# ---------------------------------------------------------------------------
+# FIVE BEND RULES THIS FILE LEARNS, in the order it learned them.
+#
+#   1. A def body is ONE EXPRESSION and a `let` is affine, so anything used twice is
+#      either a `+` parameter or a second CALL. Every dispatch below passes its
+#      tests IN -- `keepdim`, `inv`, `wc`, `same`, `isid`, `uns`, `ok` -- because a
+#      `match` may scrutinise a PARAMETER or a PATTERN BINDER and not a call.
+#   2. THE ARENA A BUILD RETURNED IS NOT THE ARENA THAT WENT IN, and every def here
+#      that builds returns a `Tensor`/`Found` carrying the GROWN arena. W9 is that
+#      rule being broken one file over, and the rule is why `mo_reduce` re-folds
+#      between its `cast` and its `rop` exactly the way `ew_promo2` does.
+#   3. `Maybe` is a `Type` and cannot carry a `+`, and `F.fold.dt` /
+#      `F.fold.shape` both answer one. So each reader here unwraps ONCE, and the
+#      "fold cannot answer this node" arm is the honest default -- `S.void()` for a
+#      dtype and `Nil{}` for a shape. Both are UNREACHABLE for the recipes below,
+#      and the reason is worth stating because it is why the port is checkable at
+#      all: none of them builds a PERMUTE/PAD/SHRINK/EXPAND/FLIP, which are the
+#      five ops `dt_shape` defers (fold.bend:1622-1625). The movement op they do
+#      build is RESHAPE, which `reshape_ds` (fold.bend:1537) answers, and REDUCE,
+#      which `reduce_ds` (:1530) answers. MEASURED, both, over a BUFFER-rooted AND
+#      over a RESHAPE-rooted source.
+#   4. `commit_dtype` (dtype.py:16) answers a `Maybe` because `UOp._min_max`
+#      (ops.py:1104) is not ported, and `mixin/dtype.bend` measures that refusal
+#      rather than guessing. `_reduce` (reduce.py:14) reads it, so this file needs
+#      it, and the honest totalisation is the node's OWN dtype -- which makes the
+#      `cast` the identity. A weakint node is therefore NOT committed, and
+#      `t_commit_weak` says so.
+#   5. `U32.to_f32` and `F32.mul` are `law`s in `base.bend` and `tensor.bend`'s
+#      header says they are unfilled and live code may not call them. MEASURED HERE,
+#      on bend 2.0.34 as `./bin/bend` runs it: `F32.show(U32.to_f32(7))` prints `7`
+#      and `F32.show(F32.mul(1.0e30, 1.0e30))` prints `inf` in BOTH lanes, and
+#      `--check-only` says ALL PROOFS CHECK. So `mo_inf` and the float CONSTs the
+#      recipes need are live. REPORTED, not fixed: `tinybendygrad/tensor.bend`'s
+#      header carries the stale claim.
+#
+# ---------------------------------------------------------------------------
+# THE GATE. `main` prints one row per claim, in Python's order, in the
+# `name=<count> OP/<nsrc> ...` format `tinybendygrad/tensor.bend` uses, so the
+# CPython oracle is a `toposort()` and the two lanes diff byte for byte. Nothing is
+# executed; every row is the SIGNATURE of the lazy graph, which needs no device.
+#
+#   .venv/bin/python .agents/slop/mixin-op-gate.py           > /tmp/py.txt
+#   ./bin/bend tinybendygrad/mixin/op.bend                  > /tmp/bd.txt
+#   ./bin/bend tinybendygrad/mixin/op.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
+#   diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
+#
+# EVERY ROW IS DERIVED FROM CPYTHON rather than restated from this file, and three
+# kinds of row exist because three kinds of bug are invisible to the others:
+#
+#   * the `n=` COUNT, which sees a dropped or duplicated node;
+#   * the ORDER of the signature, which sees a reversed operand (`min`'s `-1` and
+#     `-x`, `div`'s `a * b.reciprocal()`) -- two CONSTs print the SAME signature
+#     either way round, so an order-only row would be invisible;
+#   * the DTYPE/OP rows, which see what a signature prints nothing of.
+#
+# `t_commit_weak`, `t_bin_promote` and `t_rop_gap` are BEND-ONLY: they name a
+# refusal or a defect rather than a graph Python can be asked for. They are listed
+# here rather than filtered silently.
+#
+# THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
+# `log_softmax` (op.py:686) are TWO defs that both call `_softmax` (op.py:657), so
+# the thirteen nodes `_softmax` builds are interned ONCE. `softmax` prints 15 and
+# `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
+# both sides: the first thirteen op names of the longer row are the shorter row minus
+# its last two -- and the tails are `RECIPROCAL MUL` against `LOG2 CONST MUL MUL ADD`.
+# The row prints BOTH signatures from ONE arena. See its own comment for the half of
+# the claim that no arena can see: a DUPLICATED `_softmax` re-interns the same nodes,
+# because the arena is a hashcons.
+#
+# ---------------------------------------------------------------------------
+# THE MUTATION TABLE -- WHAT THE GATE SEES AND WHAT IT CANNOT. Seventeen one-token
+# edits, each applied, each run through BOTH lanes, each diffed against the
+# unmutated output and reverted from a byte snapshot:
+#
+#     .venv/bin/python .agents/slop/mixin-op-mutate.py
+#
+# Thirteen move something. Four do not, and all four are reported rather than
+# dropped, because a table with no row that CANNOT move is a table of coincidences:
+#
+#   M6  reduce.py:45's trailing half/bfloat16/fp8 cast, inverted. NEGATIVE for a
+#       float32 fixture, and the gate says so -- it is the only way to know the cast
+#       is guarded rather than applied.
+#   M7  `smax(n - correction, 0)` (helpers.py:65) with the saturation dropped. Both
+#       arms agree at `correction=0`, which is what `t_var0c0` uses. A float32
+#       fixture cannot see `smax`, and saying so is the measurement.
+#   M8  `log_softmax` reading `_softmax`'s `e` instead of its `m` (op.py:706).
+#       UNFALSIFIABLE, and structurally so rather than for want of a fixture:
+#       `ss = e.sum(...)` already pulls `e` into the graph, so `m - ss.log()` and
+#       `e - ss.log()` have the SAME node set, the same count and the same op
+#       toposort, and differ in two src INDEXES. The two programs are
+#       graph-isomorphic, so the CPython lane cannot separate them either -- tinygrad
+#       does not constant-fold. The `softmax3_m/e/ss` rows (8/11/13 nodes) pin
+#       `_softmax`'s three OUTPUTS; which of them `log_softmax` READS is verified by
+#       reading op.py:706, and this mutation is what says the graph cannot.
+#   M17 a CONTROL: a whitespace-only edit. Nothing moves, and that is the point.
+#
+# And one table row CHANGED THE TABLE. M10 -- dropping the arena re-wrap from
+# `promote`'s `is_invalid` arm -- moved nothing, which was reported rather than
+# explained away, and the reason turned out to be that `t_bin_promote` interned its
+# invalid CONST the stale way (`mo_const_t`'s rule, in the row meant to test it), so
+# the arm was never taken. The row was rebuilt and M10 now moves it. A mutation that
+# moves nothing is a question; the question was worth asking.
+#
+# The measurement that built the rows is in each row's own comment: `mo_at`'s
+# off-by-one (a head element's index is `len(t)`, and `RESHAPE(REDUCE, CONST(4))`
+# and `RESHAPE(REDUCE, CONST(1))` print identically, so only `sh_sum0kd` saw it);
+# `mo_reshape`'s one-element-RESHAPE fold gap; `mo_squeeze`'s negated test
+# (movement.py:308); `mo_eqmul`'s `bool` against `int` (elementwise.py:613);
+# `mo_exp`'s cast ordering.
+#
+# ---------------------------------------------------------------------------
+# THE TWO HALVES SHARE THIS FILE. SIDE B must not re-declare any `mo_*` def, must
+# not re-declare `main`, and must not touch anything above this line. Its own
+# section goes below `main`, and its rows go in its own `mo2_*` printers.
 
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
+import ./../uop/ops.bend as O
+import ./../uop/fold.bend as F
+import ./../uop/weak.bend as W
+import ./../tensor.bend as T
+import ./dtype.bend as D
+import ./elementwise.bend as E
 
 # ===========================================================================
-# THE SUBSTRATE, hoisted once so the defs below read like the Python.
-#
-# `pick` is `c if b else d` and `slt_i32`/`smax_i32` are the signed readings.
-# Bend has no signed integer: helpers.bend carries an `i32` as a U32 two's
-# complement bit pattern (`i32_is_neg`, `i32_neg`, `ceildiv_i32`,
-# `floordiv_i32`) but exports no signed COMPARISON, and `smax` (ops.py:74) is
-# `max` on exactly that signed reading. So the compare is here, next to the one
-# arithmetic that needs it.
+# THE READERS. Three of them, and each is a fold read with the fold's own
+# "I cannot answer this node" as the default -- rule 3 in the header.
+# `F.fold.dt` answers `Maybe<&2, S.Dt>` and `F.fold.shape` answers a DOUBLE
+# `Maybe` (the outer is the fold, the inner is Python's own `None`), so the shape
+# reader is two unwraps and the dtype reader is one.
 # ===========================================================================
-def oq_pick(c: Bool, t: U32, f: U32) -> U32:
-  match c:
-    case True{}: t
-    case False{}: f
 
-# `a < b` on the two's complement reading: the two signs decide it outright, and
-# only a same-sign pair can be compared as U32 -- and for a SAME-SIGN pair the
-# unsigned comparison IS the signed one, in both directions. That is the whole
-# point of two's complement: -5 is 4294967291 and -3 is 4294967293, so the more
-# negative value has the SMALLER bit pattern, which is the same ordering.
-# The first version of this arm said `U32.is_gt`, on the theory that unsigned
-# order is reversed for negatives. It is not, and the gate caught it: row
-# `smax_neg_neg` expects `smax(-3,-5) = -3 = 4294967293` (CPython) and read
-# 4294967291 = -5. See the mutation table's M6, which is the arm I wrote and
-# the mutation that turned out to be the FIX.
-def oq_slt_i32.of(na: Bool, nb: Bool, a: U32, b: U32) -> Bool:
-  match na nb:
-    case True{} True{}: U32.is_lt(a, b)
-    case True{} False{}: True{}
-    case False{} True{}: False{}
-    case False{} False{}: U32.is_lt(a, b)
+def mo_dt(+fx: F.Folded, i: U32) -> S.Dt:
+  Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
 
-def oq_slt_i32(+a: U32, +b: U32) -> Bool:
-  oq_slt_i32.of(H.i32_is_neg(a), H.i32_is_neg(b), a, b)
+def mo_dims.put(m: Maybe<&2, List<&2, O.Sint>>) -> List<&2, O.Sint>:
+  match m:
+    case Some{ds}: ds
+    case _: Nil{}
 
-# `smax(a, b)` -- ops.py:74 on Python ints.
-def oq_smax_i32(+a: U32, +b: U32) -> U32:
-  oq_pick(oq_slt_i32(a, b), b, a)
+def mo_dims.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> List<&2, O.Sint>:
+  match m:
+    case Some{ds}: mo_dims.put(ds)
+    case _: Nil{}
 
-# `S.dim_of` answers a symbolic dim as 0 until the fold has resolved it
-# (spec.bend:308), and a pool/conv shape is read as a U32 here.
-def oq_szs(ds: List<&2, S.Sdim>) -> List<&2, U32>:
-  match ds:
-    case Nil{}: Nil{}
-    case d <> r: U32.from_nat(S.dim_of(d)) <> oq_szs(r)
+def mo_dims(+fx: F.Folded, i: U32) -> List<&2, O.Sint>:
+  mo_dims.of(F.fold.shape(F.Folded.ar(fx), F.Folded.t(fx), i))
 
-# `d * (k - 1) + 1`, the span a dilated kernel covers. op.py uses this term
-# verbatim in `_apply_ceil_mode` (1275, 1281), `_pool` (movement.py:604) and
-# `max_unpool2d` (1387), so it is written once.
-def oq_span(k: U32, d: U32) -> U32:
-  (U32.add(U32.mul(d, U32.sub(k, 1)), 1) : U32)
+# `self.ndim` (movement.py:25) -- `len(self.shape)`.
+def mo_ndim(+fx: F.Folded, i: U32) -> Nat:
+  List.length(&2, O.Sint, mo_dims(fx, i))
 
-# `make_tuple(x, cnt)` -- helpers.py:50, `(x,)*cnt` when x is an int else
-# `tuple(x)`. The `Bool` is `x is not an int`, so the two arms are the two
-# branches and `H.make_tuple_rep` is the repeat arm already in helpers.bend.
-def oq_make_tuple.of(isdims: Bool, x: U32, xs: List<&2, U32>, n: U32) -> List<&2, U32>:
-  match isdims:
-    case True{}: xs
-    case False{}: H.make_tuple_rep(x, n)
+# `self.shape[k]` (movement.py:62) for a CONCRETE dim. `O.SI` is the image
+# `F.sint_of` builds for every count under 2^31 and `H.lo32` is exact on one.
+# `O.SU` is a dim that is a UOP, and `ssimplify` (ops.py:94, reached by
+# `_shape`'s movement arms) is what turns one into a number; it is not ported.
+# TODO(p3) mixin/op.py:62  self.shape[k] for a SYMBOLIC dim -- `O.SU` needs
+#   `ssimplify`/`resolve` from `uop/symbolic.py` (P3, and W3's wall). The wall is
+#   named at every user of this def, which is why `mo_dim_u32` answers 0 and not 1:
+#   0 is what `Arena.src` gives for an out-of-range read, and a symbolic dim that
+#   silently became 1 would be a WRONG shape rather than a missing one.
+def mo_dim_u32(d: O.Sint) -> U32:
+  match d:
+    case O.SI{i}: H.lo32(i)
+    case _: 0
 
-# The two elements of one `flat_to_grouped` pair, read as `pB` and `pA`. The
-# pair always has two elements by construction (`fg_pairs` conses `[h, g]`), so
-# the absent arms are unreachable and answer 0 rather than failing a total def.
-def oq_pB(g: List<&2, U32>) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, g, 0n), 0)
+def mo_dim_at(+fx: F.Folded, +i: U32, k: U32) -> U32:
+  mo_dim_u32(Maybe.default(&2, O.Sint, List.get(&2, O.Sint, mo_dims(fx, i), U32.to_nat(k)), F.sint_of(1)))
 
-def oq_pA(g: List<&2, U32>) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, g, 1n), 0)
-
-# ===========================================================================
-# REPORTED DEFECT IN A SHARED FILE. `H.flat_to_grouped` IS WRONG, and this
-# file does not use it. helpers.bend is READ-ONLY to this port, so the defect
-# is reported and worked around, not fixed.
+# THE INDEX OF A HEAD ELEMENT, `i` in `enumerate(self.shape)`, and it is `len(t)` --
+# the TAIL's length, because a pattern `case d <> t` leaves `t` one shorter than the
+# scrutinee and the head sits at `len(t)`. It is a length rather than a threaded
+# counter because a def body reads its parameters once each, and threading `i` would
+# need it for the test AND for the increment.
 #
-# helpers.bend:868 reads
-#
-#     List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(List.length(&2, U32, padding), padding)))
-#
-# `fg_skip(n, xs)` DROPS n elements, so it drops the WHOLE list and `fg_pairs`
-# then sees `Nil` and returns `Nil`. MEASURED, row `diag_fg_shared`: it returns
-# length 0 for `[1,2,3,4]`, and CPython's `flat_to_grouped([1,2,3,4])` is
-# `[(3,4),(1,2)]` -- four elements, not zero.
-#
-# THE ONE-WORD FIX is `fg_skip(Nat.mod(List.length(&2, U32, padding), 2n), padding)`
-# -- the skip is `n mod 2`, not `n`, which is what helpers.bend's own comment
-# two lines above says ("the consecutive pairs starting at index (n mod 2)").
-# The comment is right and the code contradicts it.
-#
-# CHECKED AGAINST CPython over `[0,0] [1,2,3,4] [1,2,3] [1,2] [1] [1,2,3,4,5,6]`
-# -- the six shapes that decide the parity and the odd-length drop. All six
-# agree with `oq_flat_to_grouped` below and none of them is a case where the two
-# readings coincide, which is what makes this a real difference and not a style
-# note.
-#
-# WHEN IT IS FIXED, `oq_fg_skip`/`oq_fg_pairs`/`oq_flat_to_grouped` are deleted
-# and every `oq_flat_to_grouped` call becomes `H.flat_to_grouped`. NOTHING ELSE
-# CHANGES: the grouping is a leaf both ways, and the `diag_fg_*` rows are what
-# would catch a regression in the replacement.
-# ===========================================================================
-def oq_fg_skip(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
+# MEASURED: the first version said `len(ds) - len(t)`, which is `len(t) + 1`, and every
+# index in every walk was off by one. `t_sum0kd` still printed the right four nodes --
+# `RESHAPE(REDUCE, CONST(4))` has the same node COUNT and the same op names as
+# `RESHAPE(REDUCE, CONST(1))` -- so the signature rows could not see it and the COUNT
+# could not either. It is `sh_sum0kd` (the SHAPE row) that caught it.
+def mo_at(+ds: List<&2, O.Sint>, +t: List<&2, O.Sint>) -> U32:
+  U32.from_nat(List.length(&2, O.Sint, t))
+
+# `tuple(range(n))` -- `permute`'s identity test (movement.py:214) and
+# `_reduce`'s `range(self.ndim)` when `axis is None` (reduce.py:15) are the SAME list,
+# so this is one def and both are calls.
+# The SELF-CALL TAKES THE LIST FIRST and the countdown second, which is Bend's rule
+# (a self-call must read left to right and the SHRINKING argument goes first) and is
+# why `tensor.bend`'s `tn_rop.ne1` and `tn_sarg.acc` are both shaped this way. `i` is
+# not a parameter at all: it is `len(acc)`, which is what `range(n)` is.
+def mo_range.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
-    case 0n: xs
-    case Succ{p}:
-      match xs:
-        case Nil{}: Nil{}
-        case _ <> t: oq_fg_skip(p, t)
+    case 0n: acc
+    case 1n+p: mo_range.go(p, List.append(&2, U32, acc, [U32.from_nat(List.length(&2, U32, acc))]))
 
-def oq_fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
-  match p:
-    case h <> t:
-      match t:
-        case g <> r: [h, g] <> oq_fg_pairs(r)
-        case Nil{}: Nil{}
-    case Nil{}: Nil{}
-
-# `(padding_left, padding_right, padding_top, padding_bottom, ...)` ->
-# `(..., (padding_top, padding_bottom), (padding_left, padding_right))`.
-# helpers.py:57, `tuple(zip(padding[-2::-2], padding[::-2]))`.
-def oq_flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
-  +n = List.length(&2, U32, padding)
-  List.reverse(&2, List<&2, U32>,
-    oq_fg_pairs(oq_fg_skip(Nat.mod(n, 2n), padding)))
+def mo_range(n: Nat) -> List<&2, U32>: mo_range.go(n, Nil{})
 
 # ===========================================================================
-# `_apply_ceil_mode` -- op.py:1271-1282. The first method in Side B's half and
-# the only one whose body is ENTIRELY integer arithmetic, so it is ported whole.
-#
-#     (d_,s_), i_ = (make_tuple(x, len(k_)) for x in (d_,s_)), self.shape[-len(k_):]
-#     grouped_pads = list(flat_to_grouped(pads))
-#     # https://arxiv.org/pdf/1603.07285 section 5.1, relationship 15.
-#     o_ = [ceildiv(i+pB+pA - (d*(k-1)+1), s) + 1 for i,d,k,s,(pB,pA) in zip(i_,d_,k_,s_,grouped_pads)]
-#     for dim,(o,i,s,k,d,(pB,pA)) in enumerate(zip(o_,i_,s_,k_,d_,grouped_pads)):
-#       grouped_pads[dim] = (pB, pA + s*(o-1) + (d*(k-1)+1) - (i+pB+pA) - smax(s*(o-1) - (pB+i-1), 0))
-#     return flatten(reversed(grouped_pads))
-#
-# TWO PASSES, NOT ONE, and that is Python's structure and it is kept. Pass one
-# computes the WHOLE of `o_`; pass two reads `o_[dim]` back. Fusing them is
-# arithmetically identical -- `o_[dim]` is only ever read at `dim` -- but it
-# would delete the intermediate list, and `o_` is a real output a gate can
-# check, so the port keeps it and the gate pins both.
-#
-# PADS ARE SIGNED. op.py:1595 says so out loud ("padding, possibly negative"),
-# `pA + s*(o-1) + ...` is routinely negative, and `ceildiv` on a plain int is
-# `-(num//-amt)` (helpers.py:68), so `H.ceildiv_i32` is the same reading. `U32`
-# would wrap and answer a different pool shape.
-#
-# `flatten(reversed(grouped_pads))` reverses the list of PAIRS and then
-# flattens, and `flat_to_grouped` pairs from the END (helpers.py:57), so
-# `grouped[0]` is the LAST spatial dim. Reversing the pairs puts the answer back
-# in flat order, which is why the answer is a flat list again. See `oq_ceil_pad`
-# for why the reversal is of the PAIRS and not of the flat list.
+# THE CONSTS. `UOp.const` (ops.py:631) is a BARE CONST here because `dtypes.from_py`
+# and `truncate` are P3 (ops.bend's own `TODO`), and every CONST this file builds is
+# already the dtype Python would derive: an int literal is weakint and a float
+# literal is weakfloat, which is exactly `dtypes.from_py`.
 # ===========================================================================
 
-# relationship 15: `ceildiv(i+pB+pA - (d*(k-1)+1), s) + 1`
-def oq_ceil_o(+pB: U32, +i: U32, d: U32, k: U32, s: U32, +pA: U32) -> U32:
-  (U32.add(H.ceildiv_i32(U32.sub(U32.add(U32.add(i, pB), pA), oq_span(k, d)), s), 1) : U32)
+def mo_ki(n: U32) -> O.Const: O.CInt{H.i64_of_i32(n)}
 
-# The new `pA`. Kept as ONE expression with the Python terms named, because the
-# gate mutates it term by term and a rewritten formula would not be a port.
-def oq_ceil_pA(+pA: U32, +o: U32, +i: U32, +s: U32, k: U32, d: U32, +pB: U32) -> U32:
-  # `s*(o-1) + (d*(k-1)+1) - (i+pB+pA)` is read twice -- once whole and once
-  # inside the `smax` as `s*(o-1) - (pB+i-1)` -- so the span and the window
-  # start are bound once. The bindings are affine, so they are recomputed
-  # rather than reused: `oq_win` is pure and `oq_span` is one arithmetic node.
-  U32.add(
-    U32.add(pA, U32.mul(s, U32.sub(o, 1))),
-    U32.sub(
-      U32.sub(oq_span(k, d), U32.add(U32.add(i, pB), pA)),
-      oq_smax_i32(U32.sub(U32.mul(s, U32.sub(o, 1)), U32.add(pB, U32.sub(i, 1))), 0)))
+# A CONST NODE IN `t`'s ARENA, and it is a DEF rather than an inline
+# `T.tn_new(T.Tensor.ar(t), O.Found.i(O.UOp.const(T.Tensor.ar(t), v)))` for a measured
+# reason: arguments read LEFT TO RIGHT, so the inline form reads `Tensor.ar(t)` BEFORE
+# the CONST is interned and hands back a Tensor whose arena is one node too short. The
+# node then reads as the `NOOP` bottom, its dtype folds to `void`, and the promotion
+# below silently takes its BOOL arm -- MEASURED, `t_mean0` printed
+# `2 NOOP/0 CAST/1` and `t_min0` printed nothing at all. Every CONST this file builds
+# goes through here.
+def mo_const_t(+t: T.Tensor, v: O.Const) -> T.Tensor:
+  +f = O.UOp.const(T.Tensor.ar(t), v)
+  T.tn_new(O.Found.ar(f), O.Found.i(f))
 
-# PASS ONE. `zip(i_, d_, k_, s_, grouped_pads)` -> `o_`, appended so the list
-# comes out in order. `List.append(a, A, xs, ys)` is `xs ++ ys`, so an
-# ACCUMULATOR appends and does not cons -- the opposite of a rebuild, and the
-# single most expensive misreading in this port (constraints, appendix E).
-def oq_ceil_o.go(i_: List<&2, U32>, d_: List<&2, U32>, k_: List<&2, U32>, s_: List<&2, U32>,
-                 g: List<&2, List<&2, U32>>, acc: List<&2, U32>) -> List<&2, U32>:
-  match i_ d_ k_ s_ g acc:
-    case i <> ti d <> td k <> tk s <> ts +gg <> tg _:
-      oq_ceil_o.go(ti, td, tk, ts, tg,
-        List.append(&2, U32, acc,
-          [oq_ceil_o(oq_pB(gg), i, d, k, s, oq_pA(gg))]))
-    case _ _ _ _ _ _: acc
+# AND THE SAME FOR A CAST, for the same reason and with a bigger blast radius: written
+# inline as `E.ew_cast(F.folded(Tensor.ar(d)), d, dt)` the FOLD is read BEFORE the `d`
+# that grows the arena is built, so the CAST is interned into an arena that does not
+# have its own source. MEASURED: `t_mean0` printed `2 NOOP/0 CAST/1` -- a CAST whose
+# src is the arena's bottom node -- and `t_softmax0` lost its REDUCE to the same
+# overwrite. `W.wk_cast_at` is `elementwise.bend`'s `ew_cast` callee
+# (elementwise.bend:126), so this is a CALL and not a reimplementation.
+# AND `mo_promote` NEEDS THE OTHER ONE, because a def that is handed a fold has to build
+# in the fold's arena and not in `t`'s: `t` may be older than the operand that was
+# interned after it. MEASURED: with `mo_cast_t` there, the promoted CAST of `norm0`'s
+# `maximum` landed on the CONST's own index, `MAX(CAST, CAST)` had no source, and the
+# toposort printed `2 CONST/0 MAX/2`. `W.wk_cast_at` is the `elementwise.bend` callee.
+def mo_cast_in(+fx: F.Folded, +t: T.Tensor, +dt: S.Dt) -> T.Tensor:
+  +f = W.wk_cast_at(fx, T.Tensor.u(t), dt)
+  T.tn_new(O.Found.ar(f), O.Found.i(f))
 
-def oq_o_list(+i_: List<&2, U32>, +d_: List<&2, U32>, +k_: List<&2, U32>, +s_: List<&2, U32>,
-              +g: List<&2, List<&2, U32>>) -> List<&2, U32>:
-  oq_ceil_o.go(i_, d_, k_, s_, g, Nil{})
+def mo_cast_t(+t: T.Tensor, +dt: S.Dt) -> T.Tensor:
+  mo_cast_in(F.folded(T.Tensor.ar(t)), t, dt)
 
-# PASS TWO. `zip(o_, i_, s_, k_, d_, grouped_pads)` rewriting `grouped_pads`,
-# accumulating the list of PAIRS. `dim` from `enumerate` is never read -- the
-# write is `grouped_pads[dim] = ...` at the same index -- so it does not appear
-# here, and that is not a divergence: Python reads `dim` only as that index.
-#
-# THE PAIRS ARE REVERSED *AS PAIRS* AND ONLY THEN FLATTENED, and that is not a
-# detail. `flatten(reversed(grouped_pads))` reverses the list of PAIRS; a first
-# version of this def accumulated the FLAT list and reversed that, which also
-# swaps `pB` and `pA` inside every pair. With one spatial dim the pair-reversal
-# is a no-op and the flat-reversal is not, so a 1-D `ceil_25_0` answered `[1,0]`
-# where CPython says `[0,1]` -- and a `5381 * head + rest` digest could not see
-# it, because `[0,1]` and `[1,0]` are both 5381 under it. The row that caught
-# it is `ceil_25_0`, and the digest is the one with the per-level `+1`.
-def oq_ceil_pad.go(o_: List<&2, U32>, i_: List<&2, U32>, s_: List<&2, U32>, k_: List<&2, U32>,
-                   d_: List<&2, U32>, g: List<&2, List<&2, U32>>,
-                   acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
-  match o_ i_ s_ k_ d_ g acc:
-    case o <> to i <> ti s <> ts k <> tk d <> td +gg <> tg _:
-      oq_ceil_pad.go(to, ti, ts, tk, td, tg,
-        List.append(&2, List<&2, U32>, acc,
-          [[oq_pB(gg), oq_ceil_pA(oq_pA(gg), o, i, s, k, d, oq_pB(gg))]]))
-    case _ _ _ _ _ _ _: acc
+# the I64 inside a shape CONST, which is what a `Sint` index is built from.
+def mo_c_i64(v: O.Const) -> H.I64:
+  match v:
+    case O.CInt{i}: i
+    case _: H.i64_of_i32(1)
 
-def oq_ceil_pad(+o_: List<&2, U32>, +i_: List<&2, U32>, +s_: List<&2, U32>, +k_: List<&2, U32>,
-                +d_: List<&2, U32>, +g: List<&2, List<&2, U32>>) -> List<&2, U32>:
-  H.flatten_u32(List.reverse(&2, List<&2, U32>, oq_ceil_pad.go(o_, i_, s_, k_, d_, g, Nil{})))
+# `1/math.log(2)` and `math.log(2)` -- elementwise.py:511 and :830. Both are the
+# literals Python's module prints rather than an F32 computation, and rule 5 is why
+# an F32 literal is available at all.
+def mo_log2e() -> F32: 1.4426950408889634
+def mo_ln2() -> F32: 0.6931471805599453
 
-# `self.shape[-n:]` -- the last `n` dims. `List.drop` gives a PREFIX so this is
-# drop-by-(len-n).
-def oq_tail_dims(+ds: List<&2, U32>, n: U32) -> List<&2, U32>:
-  List.drop(&2, U32, ds, Nat.sub(List.length(&2, U32, ds), U32.to_nat(n)))
+# `float("inf")` and `float("-inf")` -- elementwise.py:613. `F32.mul(1e30, 1e30)`
+# overflows to infinity, which is `mixin/gradient.bend`'s `k_inf` and the same
+# one-line spelling.
+def mo_inf() -> F32: F32.mul(1.0e30, 1.0e30)
+def mo_neginf() -> F32: F32.neg(mo_inf())
 
-# The whole method. `i_` is `self.shape[-len(k_):]`, and `s_`/`d_` are
-# `make_tuple`'d to `len(k_)` (op.py:1272), which is what the two `isdims` flags
-# select: `False` is the scalar arm and `True` is the sequence arm.
-def oq_apply_ceil_mode(+shape: List<&2, S.Sdim>, +pads: List<&2, U32>, +k_: List<&2, U32>,
-                       s_isdims: Bool, +s_: U32, +s_seq: List<&2, U32>,
-                       d_isdims: Bool, +d_: U32, +d_seq: List<&2, U32>) -> List<&2, U32>:
-  +n = U32.from_nat(List.length(&2, U32, k_))
-  +i_ = oq_tail_dims(oq_szs(shape), n)
-  +s_ = oq_make_tuple.of(s_isdims, s_, s_seq, n)
-  +d_ = oq_make_tuple.of(d_isdims, d_, d_seq, n)
-  +g = oq_flat_to_grouped(pads)
-  oq_ceil_pad(oq_o_list(i_, d_, k_, s_, g), i_, s_, k_, d_, g)
+# `self.const_like(v)` (creation.py:71) is a bare CONST here for the same reason,
+# and it is only reached by `normalize`'s `p == 0` arm (W7).
+def mo_ef(ist: Bool, +t: T.Tensor, f: F32) -> E.Ew:
+  match ist:
+    case True{}: E.ETen{t}
+    case _: E.ECon{O.CFloat{f}}
 
 # ===========================================================================
-# THE GATE.
-#
-# EVERY ROW IS DERIVABLE FROM PYTHON. The oracle is the `_apply_ceil_mode` BODY
-# of op.py:1272-1282 -- not my transcription of it -- run under
-# `.venv/bin/python` with the real `tinygrad` imported, on the SAME fixture,
-# and the expectation is the number it printed. Nothing here restates my own
-# code, so a row can actually be wrong.
-#
-# `oq_digest` is `d(xs) = 1000003 * d(rest) + head + 1`. The `+1` per LEVEL is
-# what encodes the LENGTH. The obvious `5381 * head + rest` does not: it put
-# `[0,1,0,1]` and `[1,1]` both at 10762 and three different fixtures at 0, and a
-# digest that collides across fixtures cannot see two of them being swapped.
-# Every digest row below is a DISTINCT value unless the comment says otherwise.
-#
-# THE TWO TRAPS THE BRIEF NAMES, and the row for each.
-#
-# 1. PADS ARE NEGATIVE (op.py:1595 says so out loud: "padding, possibly
-#    negative -- _pad_constant handles the shrink"), so `U32` wraps on the way
-#    in and `ceil_neg` carries them as two's complement: CPython's `pads`
-#    `[-1,-1,0,0]` is `[4294967295,4294967295,0,0]` here and its answer
-#    `[-1,-1,0,1]`. A truncating `U32.sub` in `oq_ceil_o` cannot produce `o_=[2,0]`.
-# 2. THE COUNT ROW IS NOT OPTIONAL. `List.append(a,A,xs,ys)` is `xs ++ ys`
-#    (constraints, appendix E): consing instead of appending in pass two
-#    REVERSES the pairs, so `ceil_5x5_0` answers `[1,0,1,0]` where CPython says
-#    `[0,1,0,1]` -- a different digest -- while the LENGTH stays 4. Both are
-#    printed, and `ceil_4x4x4_len` is 6 against a 3-element kernel because the
-#    answer is flat.
-#
-# AND THE ROW THAT IS NOT OPTIONAL BECAUSE OF A BUG: `ceil_5x7_sc` and
-# `ceil_5x7_s1` DELIBERATELY AGREE. `make_tuple(1, 2)` is `[1,1]`, which is
-# what the sequence arm `[1,1]` already is, so the scalar arm and the sequence
-# arm must produce the same answer. `ceil_s_arms_agree=1` is that claim, and it
-# is the row that catches a `make_tuple` whose two arms are transposed --
-# a bug no all-differing fixture can see.
+# THE DTYPE ARITHMETIC. `weak_dtype` (dtype.py:175) is `dtypes.weakfloat if
+# is_float else dtypes.weakint if is_int else dtype`, and `is_float`/`is_int` both
+# INCLUDE their weak member -- so the whole thing is a three-arm match on `Cls`
+# with `CVoid` as the identity. It is `uop/weak.bend`'s `W.weak_dtype` and this is
+# the CALL, not a second copy: the house rule is reuse, and elementwise.bend sets
+# the precedent by reading `W.weak_dtype` for the very same predicate.
 # ===========================================================================
-def oq_shape(ns: List<&2, U32>) -> List<&2, S.Sdim>:
-  match ns:
-    case Nil{}: Nil{}
-    case n <> r: S.SN{U32.to_nat(n)} <> oq_shape(r)
 
-def oq_row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
+# `commit_dtype` -- dtype.py:16, read through `mixin/dtype.bend`'s own `commit_dtype`,
+# which is the same refusal `_min_max` (ops.py:1104) forces. The honest
+# totalisation is the node's OWN dtype, which makes the `cast` the identity; a
+# weakint node is therefore NOT committed and `t_commit_weak` says so. Rule 4.
+def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
+  Maybe.default(&1, S.Dt, D.commit_dtype(mo_dt(fx, T.Tensor.u(t)), None{}, None{}, S.int32()),
+    mo_dt(fx, T.Tensor.u(t)))
 
-# `d(xs) = 1000003 * d(rest) + head + 1`. The `+1` per LEVEL is what encodes the
-# LENGTH, so `[0,1]` (2000007) and `[0,0]` (1000004) differ even though a naive
-# weighted sum of the same two numbers might not.
-def oq_digest(xs: List<&2, U32>) -> U32:
+# `sum_acc_dtype` -- dtype.py:220. The float arm reads `getenv("SUM_DTYPE",
+# "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
+# and no caller in this file's range overrides it, which is the same argument
+# fold.bend makes for `least_upper_float` (fold.bend:176).
+# TODO(p3) tinygrad/dtype.py:220  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
+#   `Config` read (P6). The default float32 is what `mo_sum_acc` uses and what every
+#   gate fixture needs.
+def mo_sum_acc.cls(cls: S.Cls, +dt: S.Dt) -> S.Dt:
+  match cls:
+    case S.CUint{}: F.least_upper.of(dt, S.uint32())
+    case S.CSint{}: F.least_upper.of(dt, S.int32())
+    case S.CBool{}: F.least_upper.of(dt, S.int32())
+    case _: F.least_upper.of(dt, S.single())
+
+def mo_sum_acc(+dt: S.Dt) -> S.Dt: mo_sum_acc.cls(S.Dt.cls(dt), dt)
+
+# `dtypes.half | bfloat16 | *fp8s` -- reduce.py:45's trailing cast test. The fp8
+# arms are `S.CFloat` at 8 bits, so the bit width is the discriminator.
+def mo_downcast(+dt: S.Dt) -> Bool:
+  Bool.or(D.md_dt_eq(dt, S.half()), Bool.or(D.md_dt_eq(dt, S.bfloat16()), U32.is_eq(S.Dt.bits(dt), 8)))
+
+# ===========================================================================
+# `promote` -- elementwise.py:29-33, and it is HERE rather than `E.ew_promote`
+# because of W9: `ew_promote.b` (elementwise.bend:245) threads the pre-remint
+# arena, so its int-CONST path builds a self-referential node. This is
+# `elementwise.py`'s three arms with the arena threaded correctly, and `mo_weakconst`
+# is its `t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST` test spelled as
+# the two `Bool`s the caller passes in (rule 1).
+#
+#   `t._uop.base.is_invalid`                 -> return t
+#   `weaks AND base.op is CONST`             -> the remint arm
+#   `t.dtype == weak_dtype(out_dtype)`       -> return t
+#   otherwise                               -> `t.cast(out_dtype)`
+# ===========================================================================
+
+def mo_weakconst.cls(cls: S.Cls, +isc: Bool) -> Bool:
+  match cls:
+    case S.CWeakInt{}: isc
+    case S.CWeakFloat{}: isc
+    case _: False{}
+
+def mo_weakconst(+fx: F.Folded, +t: T.Tensor) -> Bool:
+  mo_weakconst.cls(S.Dt.cls(W.wk_dt(fx, T.Tensor.u(t))), E.ew_is_const(fx, E.ew_base(fx, T.Tensor.u(t))))
+
+# THE SAME NODE IN A NEWER ARENA, and it is one line. Every def here that is HANDED a
+# fold (`mo_promote`, `mo_remint`) re-wraps its answer in `F.Folded.ar(fx)` rather than
+# handing back the tensor it was given, because `wk_cast_at` answers a same-dtype cast
+# with `Found{md_ar(fx), self}` and a fold is the only handle a caller has on the arena
+# that must be current. Python has no equivalent because it has no arenas; here the
+# difference is a graph or a NOOP, and it was measured six times before it was fixed.
+def mo_arena(+ar: O.Arena, +t: T.Tensor) -> T.Tensor: T.tn_new(ar, T.Tensor.u(t))
+
+# the remint arm, with the arena rule (rule 2). `E.ew_remint` builds in the arena it
+# is GIVEN and returns the GROWN one; the only thing this has to add is to hand
+# `O.Found.ar(f)` on instead of `F.Folded.ar(fx)`, which is the whole of W9's fix.
+def mo_remint.at(same: Bool, +fx: F.Folded, +t: T.Tensor, +wd: S.Dt) -> T.Tensor:
+  match same:
+    case True{}: mo_arena(F.Folded.ar(fx), t)
+    case _: +f = E.ew_remint(4n, F.Folded.ar(fx), T.Tensor.u(t), wd)
+             T.tn_new(O.Found.ar(f), O.Found.i(f))
+
+def mo_remint(+fx: F.Folded, +t: T.Tensor, +wd: S.Dt) -> T.Tensor:
+  mo_remint.at(D.md_dt_eq(W.wk_dt(fx, T.Tensor.u(t)), wd), fx, t, wd)
+
+
+# EVERY ARM RETURNS A TENSOR IN `fx`'s ARENA, and the first arm is `mo_arena` rather
+# than `t` for that reason: `mo_promote` is called with a fold of the arena the OTHER
+# operand has already grown, and an arm that hands `t` straight back hands back `t`'s
+# OLDER arena with it. MEASURED: `mo_eqmul` promotes the `isinf` left-hand side through
+# the remint arm (three new nodes) and then promotes the CONST `1`, whose `same` arm
+# returns it unchanged with an arena eleven nodes short -- so the `MUL` was interned over
+# the `eq` node it was supposed to consume, and `t_lse0` and `t_norm0` both printed an
+# empty toposort. `mo_cast_in` is right by construction because `wk_cast_at` builds in
+# `md_ar(fx)`.
+def mo_promote.at(inv: Bool, wc: Bool, same: Bool, +fx: F.Folded, +t: T.Tensor, od: S.Dt, +wd: S.Dt) -> T.Tensor:
+  match inv wc:
+    case True{}  _       : mo_arena(F.Folded.ar(fx), t)
+    case False{} True{}  : mo_remint.at(same, fx, t, wd)
+    case False{} False{} : mo_cast_in(fx, t, od)
+
+def mo_promote(+fx: F.Folded, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
+  +wd = W.weak_dtype(od)
+  mo_promote.at(F.is_invalid(F.Folded.ar(fx), T.Tensor.u(t)), mo_weakconst(fx, t),
+    D.md_dt_eq(W.wk_dt(fx, T.Tensor.u(t)), wd), fx, t, od, wd)
+
+# ===========================================================================
+# `_broadcasted` (elementwise.py:24-34) and `_binop` (:36), hoisted because W9 took
+# `ew_binop` out of reach for a CONST that needs promoting -- which is EXACTLY what
+# `mean`'s `div(denominator)` and `var`'s `div(smax(n-correction, 0))` do, since
+# `denominator` is a Python `int`. `reverse=False` is the only arm any caller in this
+# range reaches, so `x` is `self` and the swap is not written.
+#
+#   `y = self.ufix(y)`; `x, y = (self, y) if not reverse else (y, self)`
+#   `out_dtype = least_upper_dtype(x.dtype, y.dtype)`; `return promote(x), promote(y)`
+# ===========================================================================
+
+def mo_alu(+t: T.Tensor, +op: O.Op, srcs: List<&2, U32>) -> T.Tensor: T.tn_alu(t, op, srcs)
+
+# `_binop`'s node, SPELLED rather than `T.tn_alu`d, and for the same reason `mo_const_t`
+# is spelled: `T.tn_alu(t, op, srcs)` takes its ARENA from `t` and its src ORDER from
+# `[t] ++ srcs`, and the two promotions of a binop make those two arenas DIFFERENT.
+# MEASURED: with `T.tn_alu(lhs, op, [rhs])` the node was interned into `lhs`'s arena,
+# which is one node short of `rhs`'s, so it OVERWROTE the promoted right-hand operand
+# and `MUL` ended up with `src = (BUFFER, MUL)`. The toposort of that graph is one node,
+# so `t_min0` printed `1 BUFFER/0`. Passing the arena and the two indices makes the
+# order and the arena independent, which is the whole of `UOp(op, src=(lhs, *rhs))`.
+def mo_alu2(+ar: O.Arena, lhs: U32, op: O.Op, rhs: U32) -> T.Tensor:
+  +f = O.UOp.new(ar, op, [lhs, rhs], O.ANone{}, O.TNone{})
+  T.tn_new(O.Found.ar(f), O.Found.i(f))
+
+def mo_alu3(+ar: O.Arena, c: U32, op: O.Op, x: U32, y: U32) -> T.Tensor:
+  +f = O.UOp.new(ar, op, [c, x, y], O.ANone{}, O.TNone{})
+  T.tn_new(O.Found.ar(f), O.Found.i(f))
+
+def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
+  F.least_upper.of(W.wk_dt(fx, T.Tensor.u(t)), W.wk_dt(fx, T.Tensor.u(y)))
+
+# THE FOLD IS TAKEN FROM `y`, NOT FROM A CALLER-SUPPLIED `F.Folded`, and that is the
+# whole of the arena rule made unfalsifiable: Python's `_broadcasted` runs INSIDE
+# `_binop`, so whatever built the operands has already grown the arena by the time the
+# promotion reads a dtype. `+y` is the right-hand operand and is therefore the
+# NEWEST node, so its arena is the one a dtype read must come from. The re-fold
+# between the two promotions is `elementwise.bend`'s `ew_promo2` restated where W9
+# forces a re-implementation.
+
+
+
+# `lhs.alu(op, rhs)` is `UOp(op, src=(self, *src))` (tensor.py:116, ops.py:630), so
+# `lhs` is `src[0]` -- and `T.tn_alu` puts its FIRST argument there. `t_min0` printed
+# `CONST BUFFER MUL` where CPython prints `BUFFER CONST MUL` because of getting this
+# backwards, which is the same class of bug as tensor.bend's M15 and is why the gate
+# prints the ORDER of the signature and not a set of op names.
+def mo_bin(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
+  +fx = F.folded(T.Tensor.ar(y))
+  +od = mo_bin_out(fx, t, y)
+  +l = mo_promote(fx, t, od)
+  +r = mo_promote(F.folded(T.Tensor.ar(l)), y, od)
+  mo_alu2(T.Tensor.ar(r), T.Tensor.u(l), op, T.Tensor.u(r))
+
+# THE CONST-OPERAND HALF OF `_binop`, and it exists for W9. MEASURED: `E.ew_binop`
+# with a weakINT constant builds a self-referential node (elementwise.bend:245 threads
+# the pre-remint arena), so every `x * (-1)` -- `neg` (elementwise.py:82), and therefore
+# `min` (op.py:494), `softmin` (op.py:729) and `var` -- came back as the BUFFER ITSELF.
+# A FLOAT constant is not affected (`ew_promo`'s weak arm keeps a weak CONST weak, so
+# nothing is minted), which is why `exp` and `where` were right and `neg` was not. So
+# this def is `mo_bin` with the CONST interned here, and `t_bin_promote` is the row.
+def mo_bin_c(+t: T.Tensor, op: O.Op, v: O.Const) -> T.Tensor:
+  mo_bin(t, op, mo_const_t(t, v))
+
+# `neg` (elementwise.py:82) -- `self * (-1)`, and the `-1` is the two's complement pair
+# because `H.i64_of_i32` sign-EXTENDS a U32 and `-1` is not a U32 literal. The same
+# spelling `elementwise.bend`'s `ew_neg` uses.
+def mo_neg(+t: T.Tensor) -> T.Tensor: mo_bin_c(t, O.OpsMUL{}, mo_ki(4294967295))
+
+# THE WHOLE `ew_binop` FAMILY, ON `mo_bin`. `ew_binop` is CORRECT when its left operand's
+# promotion mints a node and WRONG when it does not: `ew_promo2`'s weak arm hands `t`
+# straight back (elementwise.bend:243), so `Br.l` keeps `t`'s arena, and the `tn_alu`
+# at the end of `ew_binop` then interns the node into an arena one node short of the
+# right-hand side's and OVERWRITES it. MEASURED: `t_lse0` printed `2 BUFFER/0 REDUCE/1`
+# where CPython prints 33 nodes, and the graph had a node whose src was itself. `mo_bin`
+# re-wraps the left operand in the right operand's arena (`mo_arena`) and builds with an
+# explicit `mo_alu2`, so both orders are right by construction. A float CONST is the
+# other case where nothing is minted at all, so those two families are `mo_bin_c`.
+def mo_neq(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsCMPNE{}, y)
+def mo_neqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_bin_c(t, O.OpsCMPNE{}, v)
+def mo_or(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsOR{}, y)
+def mo_add(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsADD{}, y)
+def mo_mul(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsMUL{}, y)
+def mo_maxc(+t: T.Tensor, f: F32) -> T.Tensor: mo_bin_c(t, O.OpsMAX{}, O.CFloat{f})
+
+# `logical_not` -- elementwise.py:57 -- is `self.cast(dtypes.bool).ne(True)`, so it is a
+# CAST and a CMPNE and NOT an `Ops.NEG`, and `eq(x)` is `ne(x).logical_not()`
+# (elementwise.py:337).
+def mo_notb(+t: T.Tensor) -> T.Tensor: mo_neqc(mo_cast_t(t, S.boolean()), O.CBool{True{}})
+def mo_eqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_neqc(t, v))
+
+# `sub` -- elementwise.py:121-123. `a, b = self._broadcasted(x, reverse)` and then
+# `return a.alu(Ops.ADD, -b)`, and the NOTE says "alu, not +: _broadcasted already
+# promoted these, and a second promote would cast -b (only a weak CONST is kept weak)".
+#
+# IT IS SPELLED HERE AND NOT CALLED AS `E.ew_sub` FOR W9'S SECOND HALF, and the reason is
+# the same one-word error as in `mo_alu2`: `ew_sub.of` (elementwise.bend:409) ends
+# `T.tn_alu(a, Ops.ADD{}, [Tensor.u(b)])` where `a` is `t` UNCHANGED whenever the
+# promotion is the identity, and `b = ew_neg(...)` has already grown the arena -- so the
+# ADD is interned into an arena one node short and OVERWRITES the negated right-hand
+# side, leaving the ADD with `src = (self, ADD)`. MEASURED: `t_softmax0` printed six
+# nodes against CPython's fifteen, with the REDUCE missing from it.
+def mo_sub(+t: T.Tensor, +y: T.Tensor) -> T.Tensor:
+  +od = mo_bin_out(F.folded(T.Tensor.ar(y)), t, y)
+  +a = mo_promote(F.folded(T.Tensor.ar(y)), t, od)
+  +b = mo_neg(mo_promote(F.folded(T.Tensor.ar(y)), y, od))
+  mo_alu2(T.Tensor.ar(b), T.Tensor.u(a), O.OpsADD{}, T.Tensor.u(b))
+
+# `where(x, y)` -- elementwise.py:436-437. `x, y = self.ufix(x)._broadcasted(y)` and
+# then `self.alu(Ops.WHERE, x, y)`. TWO ASYMMETRIES ARE LOAD-BEARING: the CONDITION is
+# `self` and is NOT promoted, and only the SECOND operand is promoted -- and it is
+# promoted against `x`, not against `self`. It is also spelled here rather than called
+# as `E.ew_where` for the stale-arena reason `mo_sub` carries.
+def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
+  +k = mo_const_t(t, v)
+  +b = mo_promote(F.folded(T.Tensor.ar(k)), k, mo_bin_out(F.folded(T.Tensor.ar(k)), x, k))
+  mo_alu3(T.Tensor.ar(b), T.Tensor.u(t), O.OpsWHERE{}, T.Tensor.u(x), T.Tensor.u(b))
+
+# `least_upper_dtype` is `F.least_upper.of` -- fold.bend's own lattice, the same one
+# `promote`'s sibling `_broadcasted` reads, so it is a CALL.
+
+# ===========================================================================
+# THE MOVEMENT DISPATCH, hoisted. `mixin/movement.py`'s `_mop` is `ops.py:821`, and
+# `tensor.bend` already hoisted it as `T.tn_mop` with its own notice -- so this file
+# does NOT re-hoist it. What `movement.py` adds on top of `_mop` is the IDENTITY TEST
+# on every one of its wrappers, and those tests are what this block ports, because a
+# port that skipped them builds a RESHAPE where Python hands back `self` and every
+# signature moves.
+#
+# THE ARENA RULE, SPELLED ONCE AND THEN NEVER AGAIN (rule 2): a def that BUILDS takes
+# `+t: T.Tensor` and NOT a caller-supplied `+fx: F.Folded`, and it reads
+# `F.folded(T.Tensor.ar(t))` itself. Python's mixins read `self.dtype` from a live
+# tensor, so the fold and the node can never disagree; a Bend `Folded` is a separate
+# value and WILL disagree the moment anything between the two grows the arena. Every
+# one of the six bugs this file hit on the way to compiling was exactly that, and
+# every one of them printed `NOOP/0` or a plausible-looking small number.
+# ===========================================================================
+
+# THE `List<&2, O.Sint>` IMAGE OF A SHAPE ARG, and it is here for a MEASURED reason.
+# `mo_reshape`'s identity test is `ret.shape == self.shape` (movement.py:185), and the
+# obvious spelling asks the fold for `ret`'s shape -- which does NOT always answer.
+# MEASURED on bend 2.0.34: `fold.bend`'s `reshape_ds` (:1537) answers a RESHAPE whose
+# shape arg is a STACK and does NOT answer one whose shape arg is a BARE CONST, and a
+# one-element shape arg is a bare CONST (`tn_shape_arg.n`'s middle arm, tensor.bend:590).
+# So `mo_dims` over `RESHAPE(REDUCE, CONST(1))` answers `Nil{}`, the identity test sees
+# `() == ()`, and EVERY KEEPDIM REDUCE SILENTLY LOSES ITS RESHAPE -- `t_sum0kd` printed
+# two nodes where CPython prints four, and nothing else in the file said so.
+#
+# The fix is BETTER than the fold, not a workaround: the shape being compared is the
+# one THIS DEF BUILT, so it is already a `List<&2, O.Const>` and only the SOURCE's shape
+# has to come from the fold. `mo_sints` is that one projection and no fold call is
+# dropped -- `mo_dims` is still the source's shape, which the fold always answers for
+# the nodes these recipes build.
+def mo_sints.go(+ds: List<&2, O.Const>, acc: List<&2, O.Sint>) -> List<&2, O.Sint>:
+  match ds:
+    case Nil{}: acc
+    case c <> t: mo_sints.go(t, List.append(&2, O.Sint, acc, [F.sint_of(H.lo32(mo_c_i64(c)))]))
+
+def mo_sints(+ds: List<&2, O.Const>) -> List<&2, O.Sint>: mo_sints.go(ds, Nil{})
+
+def mo_reshape.pick(same: Bool, +t: T.Tensor, +made: T.Tensor) -> T.Tensor:
+  match same:
+    case True{}: t
+    case _: made
+
+def mo_reshape(+t: T.Tensor, +ds: List<&2, O.Const>) -> T.Tensor:
+  +n = T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsRESHAPE{}, T.ADims{ds})
+  +made = T.tn_new(O.Found.ar(n), O.Found.i(n))
+  mo_reshape.pick(F.eq_sints(mo_sints(ds), mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), t, made)
+
+# `permute` -- movement.py:214. `order_arg != tuple(range(self.ndim))` is `O.eq_u32`
+# against `range(ndim)` -- one call, and `ops.bend`'s own list equality rather than a
+# second hand-written walk. It needs no fold at all, because the test is on the ORDER
+# TUPLE and not on a shape.
+def mo_permute.pick(isid: Bool, +t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
+  match isid:
+    case True{}: t
+    case _: T.tn_new(T.Tensor.ar(t), O.Found.i(T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsPERMUTE{}, T.AOrder{ys})))
+
+def mo_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
+  mo_permute.pick(O.eq_u32(ys, mo_range(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))), t, ys)
+
+# `squeeze(dim)` -- movement.py:308. `self if not self.ndim or self.shape[dim] != 1
+# else self.reshape(self.shape[:dim] + self.shape[dim+1:])`. The two arms are
+# `ndim == 0` and `shape[dim] == 1`, so `keep` is their conjunction (rule 1).
+#
+# THE WALK IS `tensor.bend`'s `tn_rop.ne1` SHAPE and not a nested match: the self-call
+# is the FIRST argument and the per-element choice is a `Bool.pick` over the `+`
+# ACCUMULATOR, because `U32.is_eq(i, dim)` is a call and a `match` may not scrutinise
+# one (rule 1). `Bool.pick` is strict, so the appended branch is built and discarded
+# when `i == dim`; that costs a CONST and is what makes the walk terminate.
+def mo_squeeze.go(+ds: List<&2, O.Sint>, +dim: U32, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
+  match ds:
+    case Nil{}: acc
+    case c <> +t: mo_squeeze.go(t, dim,
+      Bool.pick(List<&2, O.Const>, U32.is_eq(mo_at(ds, t), dim), acc,
+        List.append(&2, O.Const, acc, [mo_ki(mo_dim_u32(c))])))
+
+def mo_squeeze_dims(+t: T.Tensor, +dim: U32) -> List<&2, O.Const>:
+  mo_squeeze.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), dim, Nil{})
+
+def mo_squeeze.pick(keep: Bool, +t: T.Tensor, +dim: U32) -> T.Tensor:
+  match keep:
+    case True{}: t
+    case _: mo_reshape(t, mo_squeeze_dims(t, dim))
+
+# THE TEST IS NEGATED, and movement.py:308 reads `return self if not self.ndim or
+# self.shape[dim] != 1 else self.reshape(...)`. MEASURED: reading it the other way round
+# made `squeeze` the IDENTITY on a shape-(1,) source -- which is the shape `_softmax` and
+# `logsumexp` hand it -- and `t_lse0` printed 31 nodes against CPython's 33, missing
+# exactly `STACK/0 RESHAPE/2`.
+def mo_squeeze(+t: T.Tensor, +dim: U32) -> T.Tensor:
+  +fx = F.folded(T.Tensor.ar(t))
+  mo_squeeze.pick(Bool.not(Bool.or(Nat.is_eq(mo_ndim(fx, T.Tensor.u(t)), 0n),
+    U32.is_eq(mo_dim_at(fx, T.Tensor.u(t), dim), 1))), t, dim)
+
+# `_resolve_dim` -- movement.py:81. `return dim + total if dim < 0 else dim`. `neg` is
+# the sign and `dim` the magnitude, so there is no I64 to unpack.
+def mo_resolve(neg: Bool, +dim: U32, total: U32) -> U32:
+  Bool.pick(U32, neg, U32.add(dim, total), dim)
+
+# ===========================================================================
+# THE REDUCE DISPATCH, hoisted. `mixin/reduce.py` does not exist as a `.bend` yet,
+# so this block is its first four defs, and `tensor.bend` sets the precedent by
+# hoisting `_rop` (ops.py:655) as `T.tn_rop`:
+#
+#   `_reduce` (reduce.py:13-18)
+#     self = self.cast(self.commit_dtype())
+#     axis = tuple(self._resolve_dim(x) for x in (range(self.ndim) if axis is None ...))
+#     if self.ndim == 0: axis = ()
+#     ret = self._rop(op, axis)
+#     return ret.reshape(1 if i in axis else s ...) if keepdim else ret
+#   `sum` (reduce.py:20-45), `prod` (:47-71), `max` (:73-94)
+#
+# `axis` is ALWAYS CONCRETE here. Every caller in this range passes a Python `int`, so
+# `range(self.ndim)` and `make_tuple(axis, 1)` are both a one-element list and the
+# `resolve` is `mo_resolve`. `axis is None` reaches `logsumexp` (op.py:654) and `mean`
+# (op.py:519), where it is `range(ndim)` -- `mo_ax_all` spells that case, and it is
+# `t_meanN` that says the two agree on a 1-D source and `t_mean0_2d` that says they
+# do not on a 2-D one.
+# ===========================================================================
+
+# THE RESOLVED AXIS, and it is a LIST from here on because Python's `_reduce` makes it
+# a tuple on its second line (reduce.py:15) and everything downstream reads the tuple.
+# `zero` is `self.ndim == 0` (reduce.py:16) and is the one `Bool` the fold can compute.
+def mo_axis0(zero: Bool, +axis: List<&2, U32>) -> List<&2, U32>:
+  match zero:
+    case True{}: Nil{}
+    case _: axis
+
+# `[mo_resolve(neg, axis, ndim)]` -- `make_tuple(axis, 1)` through `_resolve_dim`
+# (reduce.py:15, movement.py:81).
+def mo_ax(neg: Bool, +t: T.Tensor, +axis: U32) -> List<&2, U32>:
+  [mo_resolve(neg, axis, U32.from_nat(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))]
+
+# `range(self.ndim)`, which is what `axis is None` means (reduce.py:15).
+def mo_ax_all(+t: T.Tensor) -> List<&2, U32>:
+  mo_range(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+
+# THE KEEPDIM RESHAPE, `1 if i in axis else s for i,s in enumerate(self.shape)`
+# (reduce.py:18). It is `RESHAPE` and the fold answers its shape (fold.bend:1537), so
+# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row. The
+# membership test `i in axis` is a `Bool` because a `match` may not scrutinise a call
+# (rule 1).
+def mo_iaxis.go(axis: List<&2, U32>, +i: U32) -> Bool:
+  match axis:
+    case Nil{}: False{}
+    case a <> rest: Bool.pick(Bool, U32.is_eq(a, i), True{}, mo_iaxis.go(rest, i))
+
+def mo_iaxis(+axis: List<&2, U32>, i: U32) -> Bool: mo_iaxis.go(axis, i)
+
+def mo_keep_one(inaxis: Bool, d: O.Sint) -> U32:
+  Bool.pick(U32, inaxis, 1, mo_dim_u32(d))
+
+def mo_keep_ds.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
+  match ds:
+    case Nil{}: acc
+    case d <> +t: mo_keep_ds.go(t, axis,
+      List.append(&2, O.Const, acc, [mo_ki(mo_keep_one(mo_iaxis(axis, mo_at(ds, t)), d))]))
+
+def mo_keep_ds(+t: T.Tensor, +axis: List<&2, U32>) -> List<&2, O.Const>:
+  mo_keep_ds.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), axis, Nil{})
+
+# `_reduce` -- reduce.py:13-18. `self.cast(self.commit_dtype())`, then `_rop`, then the
+# keepdim reshape.
+# THE KEEPDIM TARGET IS `self.shape`, NOT `ret.shape` (reduce.py:18 reads
+# `enumerate(self.shape)`), so the walk runs over the SOURCE and the reshape is applied
+# to the RESULT. Passing the result instead is a one-word bug that deletes every
+# keepdim reduce, because a reduced shape has no axis left in it to match.
+def mo_reduce.keep(kd: Bool, +src: T.Tensor, +r: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  match kd:
+    case True{}: mo_reshape(r, mo_keep_ds(src, axis))
+    case _: r
+
+def mo_reduce(kd: Bool, +t: T.Tensor, op: O.Op, +axis: List<&2, U32>) -> T.Tensor:
+  +fx = F.folded(T.Tensor.ar(t))
+  +a = mo_axis0(Nat.is_eq(mo_ndim(fx, T.Tensor.u(t)), 0n), axis)
+  +c = mo_cast_t(t, mo_commit_dt(fx, t))
+  +n = T.tn_rop(T.Tensor.ar(c), T.Tensor.u(c), op, a)
+  mo_reduce.keep(kd, c, T.tn_new(O.Found.ar(n), O.Found.i(n)), a)
+
+# `sum` -- reduce.py:20-45. `self.cast(sum_acc_dtype(self.commit_dtype()) if dtype is
+# None else dtype)._reduce(Ops.ADD, axis, keepdim)`, then a cast back to `self.dtype`
+# iff the dtype was defaulted AND `self.dtype` is half/bfloat16/fp8. `dtype` is always
+# `None` from this range, so the test is `mo_downcast(self.dtype)` and it is passed IN.
+def mo_sum.castback(uns: Bool, +t: T.Tensor) -> T.Tensor:
+  match uns:
+    case True{}: mo_cast_t(t, W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+    case _: t
+
+def mo_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +uns = mo_downcast(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+  +c = mo_cast_t(t, mo_sum_acc(mo_commit_dt(F.folded(T.Tensor.ar(t)), t)))
+  mo_sum.castback(uns, mo_reduce(kd, c, O.OpsADD{}, axis))
+
+# `prod` -- reduce.py:47-71. `self.cast(dtype if dtype is not None else self.dtype)
+# ._reduce(Ops.MUL, axis, keepdim)`; `dtype` is `None` here so the cast is the
+# identity, and `E.ew_cast` hands `t` back unchanged when the dtypes agree.
+def mo_prod(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  mo_reduce(kd, t, O.OpsMUL{}, axis)
+
+# `max` -- reduce.py:73-94. `self._reduce(Ops.MAX, axis, keepdim)`, one line, with no
+# cast of its own: the `cast(self.commit_dtype())` is `_reduce`'s (reduce.py:14).
+def mo_max(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  mo_reduce(kd, t, O.OpsMAX{}, axis)
+
+# ===========================================================================
+# THE RECIPES, in `mixin/op.py`'s order. Every one of them is its Python body with
+# the calls above in place of the `mixin/reduce.py` / `mixin/movement.py` /
+# `mixin/elementwise.py` methods it spells, and each carries the line it ports.
+# ===========================================================================
+
+# `reciprocal` -- elementwise.py:820. `self.alu(Ops.RECIPROCAL)`, and `E.ew_reciprocal`
+# IS that one line, so this is the CALL -- elementwise.bend's own export, reused.
+def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
+
+# `div` -- elementwise.py:229-259, the `rounding_mode is None` path, with a FLOAT
+# right-hand side: `a, b = self._broadcasted(x, reverse)`; `if is_int(a.dtype) or
+# a.dtype == bool: a = a.cast(default_float)`; `d = a.alu(Ops.MUL, b.reciprocal())`.
+# `a` is always float32 by the time it gets here (`numerator` and `squares` are
+# `cast(sum_acc_dtype(...))`), so the int arm is false and the cast is not built --
+# which is precisely what the oracle's five-node `t_mean0` says.
+# THE ORDER IS `_broadcasted` THEN `reciprocal` (elementwise.py:250-255), so the
+# promotion has already lifted the weakint CONST to weakfloat by the time the
+# RECIPROCAL is built. MEASURED: taking the reciprocal FIRST printed a `CAST/1` where
+# CPython prints none -- `t_mean0` was 6 nodes against CPython's 5 -- because the
+# promotion then had to CAST a RECIPROCAL instead of REMINTing a CONST. `mo_bin`'s own
+# promotion is the identity on the already-promoted right-hand side, so spelling the
+# promotion here is not a second one.
+def mo_div(+t: T.Tensor, +c: T.Tensor) -> T.Tensor:
+  +b = mo_promote(F.folded(T.Tensor.ar(c)), c, mo_bin_out(F.folded(T.Tensor.ar(c)), t, c))
+  mo_bin(t, O.OpsMUL{}, mo_recip(b))
+
+# `x.div(n)` for a Python `int` `n`, which is `mean`'s `denominator` and `var`'s
+# `smax(n - correction, 0)`. `ufix` (ops.py:609) turns it into a weakint CONST and
+# `promote` lifts it to `weakfloat`, so the node is `MUL(a, RECIPROCAL(const))` -- and
+# `t_mean0` printing `REDUCE CONST RECIPROCAL MUL` rather than a `DIV` is the row that
+# says so.
+def mo_divn(+t: T.Tensor, n: U32) -> T.Tensor:
+  mo_div(t, mo_const_t(t, mo_ki(n)))
+
+# `prod([si for si, so in zip(shape, sum.shape) if resolve(si != so)])` (op.py:520,
+# :547). The zip keeps the dims whose SIZE CHANGED, which is exactly the dims the
+# reduce did not touch, so the walk multiplies `shape[i]` for every `i not in axis`.
+# `Bool.pick` is strict and both arms are pure, which is why the multiply is not
+# hoisted out -- the same shape `tensor.bend`'s `tn_rop.ne1` uses for its filter.
+def mo_reduced.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +acc: U32) -> U32:
+  match ds:
+    case Nil{}: acc
+    case d <> +t: mo_reduced.go(t, axis,
+      Bool.pick(U32, mo_iaxis(axis, mo_at(ds, t)), U32.mul(acc, mo_dim_u32(d)), acc))
+
+def mo_reduced(+t: T.Tensor, +axis: List<&2, U32>) -> U32:
+  mo_reduced.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), axis, 1)
+
+# `self.dtype if is_float(self.dtype) else float32` (op.py:518, :545).
+def mo_out_dt(float: Bool, +t: T.Tensor) -> S.Dt:
+  match float:
+    case True{}: W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))
+    case _: S.single()
+
+# `mean` -- op.py:496-521.
+#     output_dtype = self.dtype if is_float(self.dtype) else float32
+#     numerator   = self.cast(sum_acc_dtype(self.commit_dtype())).sum(axis, keepdim)
+#     denominator = prod([si for si, so in zip(self.shape, self.sum(axis, keepdim=True).shape)
+#                         if resolve(si != so)])
+#     return numerator.div(denominator).cast(output_dtype)
+def mo_mean(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +od = mo_out_dt(S.Dt.is_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), t)
+  +n = mo_sum(kd, t, axis)
+  mo_cast_t(mo_divn(n, mo_reduced(t, axis)), od)
+
+# `var` -- op.py:523-549.
+#     output_dtype = self.dtype if is_float(self.dtype) else float32
+#     squares = (self - self.mean(axis, keepdim=True)).square()
+#     n        = prod([si for si, so in zip(shape, squares.sum(axis, keepdim=True).shape)
+#                    if resolve(si != so)])
+#     numerator = squares.cast(sum_acc_dtype(squares.dtype)).sum(axis, keepdim)
+#     return numerator.div(smax(n - correction, 0)).cast(output_dtype)
+#
+# `smax` is `max` from `tinygrad/helpers.py:65`, so `smax(n - correction, 0)` is
+# `max(n - correction, 0)` and the subtraction must SATURATE at 0 rather than wrap --
+# Python's `int` is unbounded and a `U32.sub` would turn `0 - 1` into 4294967295. The
+# test is a `Bool` parameter because `U32.is_lt` is a call (rule 1).
+def mo_n_minus.at(hi: Bool, +cor: U32, +n: U32) -> U32:
+  match hi:
+    case True{}: U32.sub(n, cor)
+    case _: 0
+
+def mo_n_minus(+cor: U32, +n: U32) -> U32: mo_n_minus.at(U32.is_lt(cor, n), cor, n)
+
+def mo_var(kd: Bool, +cor: U32, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +od = mo_out_dt(S.Dt.is_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), t)
+  +m = mo_mean(True{}, t, axis)
+  +s = E.ew_square(mo_sub(t, m))
+  +c = mo_cast_t(s, mo_sum_acc(W.wk_dt(F.folded(T.Tensor.ar(s)), T.Tensor.u(s))))
+  +nm = mo_sum(kd, c, axis)
+  mo_cast_t(mo_divn(nm, mo_n_minus(cor, mo_reduced(s, axis))), od)
+
+# `var_mean` -- op.py:551-566. `return self.var(axis, keepdim, correction),
+# self.mean(axis, keepdim)`. TWO CALLS, and Python evaluates `var` FIRST, so the arena
+# order -- and therefore `toposort` order -- is `var`'s nodes then `mean`'s, and
+# `mean`'s are already in `var`'s graph because `var` calls it.
+# `VarMean` is a two-field `Data` record because a `Data` record cannot hold a `Maybe`
+# (gradient.bend's rule 15) and a TUPLE is not a type here.
+type VarMean is Data:
+  VarMean{v: T.Tensor, m: T.Tensor}
+
+def mo_var_mean(+kd: Bool, +cor: U32, +t: T.Tensor, +axis: List<&2, U32>) -> VarMean:
+  VarMean{mo_var(kd, cor, t, axis), mo_mean(kd, t, axis)}
+
+def VarMean.v(x: VarMean) -> T.Tensor:
+  match x:
+    case VarMean{v, m}: v
+
+def VarMean.m(x: VarMean) -> T.Tensor:
+  match x:
+    case VarMean{v, m}: m
+
+# `std` -- op.py:568-590. `return self.var(axis, keepdim, correction).sqrt()`.
+def mo_std(kd: Bool, +cor: U32, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  E.ew_sqrt(mo_var(kd, cor, t, axis))
+
+# `std_mean` -- op.py:592-607. `return self.std(axis, keepdim, correction),
+# self.mean(axis, keepdim)`.
+type StdMean is Data:
+  StdMean{s: T.Tensor, m: T.Tensor}
+
+def mo_std_mean(+kd: Bool, +cor: U32, +t: T.Tensor, +axis: List<&2, U32>) -> StdMean:
+  StdMean{mo_std(kd, cor, t, axis), mo_mean(kd, t, axis)}
+
+def StdMean.s(x: StdMean) -> T.Tensor:
+  match x:
+    case StdMean{s, m}: s
+
+def StdMean.m(x: StdMean) -> T.Tensor:
+  match x:
+    case StdMean{s, m}: m
+
+# `normalize` -- op.py:609-628, the `p == 0` arm ONLY (W7).
+#     den = self.ne(0).sum(dim, keepdim=True) if p == 0 else ...
+#     return self / den.maximum(eps)
+# `eps` is `1e-12`, which Bend's lexer does not accept as an F32 LITERAL (`1e-12`
+# parses as an identifier), so it is written out: `0.000000000001`.
+def mo_eps() -> F32: 0.000000000001
+
+def mo_norm0(+axis: List<&2, U32>, +t: T.Tensor) -> T.Tensor:
+  +d = mo_sum(True{}, mo_neqc(t, O.CFloat{0.0}), axis)
+  mo_div(t, mo_maxc(d, mo_eps()))
+
+# ===========================================================================
+# `exp` -- elementwise.py:511, hoisted because `mixin/elementwise.bend` carries it as
+# `TODO(p3) ... exp  -- 1/math.log(2)` and rule 5 MEASURED that an F32 literal is live.
+#     self = self.cast(least_upper_float(self.dtype))
+#     return self.cast(least_upper_dtype(self.dtype, float32)).mul(1/log(2)).exp2().cast(self.dtype)
+# All three casts are the IDENTITY for a float32 source, which is why `t_softmax0`
+# prints no CAST at all -- and that is a claim, so `t_exp_cast` is the row that pins
+# it against a source that is NOT already float32.
+# ===========================================================================
+def mo_exp(+t: T.Tensor) -> T.Tensor:
+  +a = mo_cast_t(t, F.least_upper_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))
+  +b = mo_cast_t(a, F.least_upper.of(W.wk_dt(F.folded(T.Tensor.ar(a)), T.Tensor.u(a)), S.single()))
+  mo_cast_t(E.ew_exp2(mo_mul(b, mo_const_t(b, O.CFloat{mo_log2e()}))), W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+
+# `log` -- elementwise.py:830. `return self.log2()*math.log(2)`.
+def mo_log(+t: T.Tensor) -> T.Tensor:
+  +l = E.ew_log2(t)
+  mo_mul(l, mo_const_t(l, O.CFloat{mo_ln2()}))
+
+# `isnan` -- elementwise.py:608. `self != self`, and `E.ew_ne(t, ETen{t})` IS that.
+def mo_isnan(+t: T.Tensor) -> T.Tensor: mo_neq(t, t)
+
+# `eq(x) * detect_positive` -- one arm of `isinf` (elementwise.py:613).
+# THE CONST IS BUILT OFF `eq`, NOT OFF `t`, AND THAT IS THE RULE: `mo_const_t` interns
+# into the arena of the tensor it is GIVEN, so it must be given the NEWEST one. MEASURED:
+# writing `mo_mul(mo_eqc(t, v), mo_const_t(t, mo_ki(1)))` interned the CONST into `t`'s
+# arena -- four nodes stale -- and `t_lse0` printed `1 NOOP/0`.
+# THE `1` IS A Python `bool` AND NOT AN `int`: `detect_positive` (elementwise.py:613) is
+# a `bool` parameter with the default `True`, so `ufix` makes a BOOL CONST and
+# `least_upper_dtype(bool, bool)` is bool -- no promotion, no CAST. Writing `mo_ki(1)`
+# made it a weakint CONST, the promote arm CAST the `eq` to weakint, and `t_lse0` printed
+# 35 nodes against CPython's 33. MEASURED, and the COUNT is what said so.
+def mo_eqmul(+t: T.Tensor, f: F32) -> T.Tensor:
+  +eq = mo_eqc(t, O.CFloat{f})
+  mo_mul(eq, mo_const_t(eq, O.CBool{True{}}))
+
+# `isfinite` -- elementwise.py:623. `(self.isinf() | self.isnan()).logical_not()`.
+# IT TAKES THE ARENA, AND IT RE-WRAPS `t` BEFORE EVERY USE, because the three reads of
+# `t` are separated by builds and `mo_const_t` interns into `Tensor.ar` of whatever it
+# is handed. MEASURED: `mo_eqmul(t, -inf)` with a seven-node `t` appended its CONST at
+# index 7 and OVERWROTE the REDUCE, and `t_lse0` printed `0`. The re-wrap is the whole
+# fix and it is why every build in this file is written as a `+` binding.
+def mo_isfinite(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
+  +em = mo_eqmul(mo_arena(ar, t), mo_inf())
+  +ei = mo_eqmul(mo_arena(T.Tensor.ar(em), t), mo_neginf())
+  +inf = mo_add(em, ei)
+  mo_notb(mo_or(inf, mo_isnan(mo_arena(T.Tensor.ar(inf), t))))
+# `(m if keepdim else m.squeeze(axis))` (op.py:655). `m.squeeze(axis)` reads
+# `movement.py:308`, whose `dim` is the ORDINAL, and `axis` is already resolved, so the
+# squeeze index is `axis[0]` -- and a one-element axis is the only one that reaches it.
+def mo_first(+axis: List<&2, U32>) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, axis, 0n), 0)
+
+# IT TAKES THE ARENA BECAUSE `m` IS OLDER THAN THE `+ lg` THAT PRECEDES IT on
+# op.py:655, and every build inside `mo_squeeze` reads `Tensor.ar` of whatever it is
+# given. MEASURED: without the parameter the tail's `STACK/0 RESHAPE/2` was interned
+# into a thirteen-node arena while the `log()` beside it had already made twenty-eight,
+# and `t_lse0` printed `1 NOOP/0`.
+def mo_lse.keep(kd: Bool, +ar: O.Arena, +m: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  match kd:
+    case True{}: mo_arena(ar, m)
+    case _: mo_squeeze(mo_arena(ar, m), mo_first(axis))
+
+# `logsumexp` -- op.py:630-655.
+#     m = (mx := self.max(axis, keepdim=True).detach()).isfinite().where(mx, 0)
+#     return (self - m).exp().sum(axis, keepdim).log() + (m if keepdim else m.squeeze(axis))
+# `isinf` is `self.eq(inf)*detect_positive + self.eq(-inf)*detect_negative`
+# (elementwise.py:613) and `eq(x)` is `ne(x).logical_not()` (:337), i.e. `cast(bool)`
+# (the identity on a bool) plus a CMPNE -- which is why each `eq` prints TWO CMPNEs and
+# not one. The oracle's 33-node `t_lse0` is the measurement.
+def mo_logsumexp(+kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +mx = E.ew_detach(mo_max(True{}, t, axis))
+  +m = mo_where(mo_isfinite(T.Tensor.ar(mx), mx), mx, O.CFloat{0.0})
+  +d = mo_exp(mo_sub(t, m))
+  +lg = mo_log(mo_sum(kd, d, axis))
+  mo_add(lg, mo_lse.keep(kd, T.Tensor.ar(lg), m, axis))
+
+# `_softmax` -- op.py:657-661.
+#     m  = self - self.max(axis=axis, keepdim=True).detach()
+#     if dtype is not None: m = m.cast(dtype)
+#     e  = m.exp()
+#     return m, e, e.sum(axis=axis, keepdim=True)
+# `dtype` is `None` from both of its callers, so the `cast` arm is not written. The
+# answer is a THREE-armed record because a `Data` record cannot hold a `Maybe`
+# (gradient.bend's rule 15) and there is no tuple type here.
+type Softmax3 is Data:
+  Softmax3{m: T.Tensor, e: T.Tensor, ss: T.Tensor}
+
+# THE FIELD NAMES AND THE `+` LOCALS MUST NOT COLLIDE. A record constructor BINDS its
+# own field names, so `Softmax3{m, e, ss}` with locals also called `m` and `e` built the
+# record out of the CONSTRUCTOR's binders rather than the locals -- which typechecked,
+# ran, and produced a graph with no REDUCE in it. MEASURED: `t_softmax0` printed seven
+# nodes against CPython's fifteen and `t_logsoftmax0` printed one. The locals are `mm`
+# and `ee` and they are the only place in this file where a name is chosen to avoid a
+# collision rather than to describe what it holds.
+def mo_softmax3(+t: T.Tensor, +axis: List<&2, U32>) -> Softmax3:
+  +md = E.ew_detach(mo_max(True{}, t, axis))
+  +mm = mo_sub(t, md)
+  +ee = mo_exp(mm)
+  Softmax3{mm, ee, mo_sum(True{}, ee, axis)}
+
+# `softmax` -- op.py:663-684. `_, e, ss = self._softmax(axis, dtype)` and then
+# `return e * ss.reciprocal()`.
+def Softmax3.e(s: Softmax3) -> T.Tensor:
+  match s:
+    case Softmax3{m, e, ss}: e
+
+def Softmax3.ss(s: Softmax3) -> T.Tensor:
+  match s:
+    case Softmax3{m, e, ss}: ss
+
+# `e * ss.reciprocal()` -- `mo_alu2` rather than `E.ew_mul` for W9's reason, and with the
+# RECIPROCAL BOUND FIRST for `mo_const_t`'s reason: written inline as
+# `mo_alu2(Tensor.ar(ss), u(ee), OpsMUL{}, u(mo_recip(ss)))` the arena is read before
+# the reciprocal is interned. MEASURED: `t_softmax0` printed eleven nodes against
+# CPython's fifteen, missing exactly `REDUCE/1 RESHAPE/2 RECIPROCAL/1 MUL/2`.
+def mo_softmax(+t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +sx = mo_softmax3(t, axis)
+  +ee = Softmax3.e(sx)
+  +ss = Softmax3.ss(sx)
+  +r = mo_recip(ss)
+  mo_alu2(T.Tensor.ar(r), T.Tensor.u(ee), O.OpsMUL{}, T.Tensor.u(r))
+
+# `log_softmax` -- op.py:686-707. `m, _, ss = self._softmax(axis, dtype)` and then
+# `return m - ss.log()`. It is `_softmax`'s `m`, NOT `softmax`'s `e`, which is the one
+# line that distinguishes the two, and `t_two_rules` measures the sharing.
+def Softmax3.m(s: Softmax3) -> T.Tensor:
+  match s:
+    case Softmax3{m, e, ss}: m
+
+def mo_log_softmax(+t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +sx = mo_softmax3(t, axis)
+  +mm = Softmax3.m(sx)
+  mo_sub(mm, mo_log(Softmax3.ss(sx)))
+
+# `softmin` -- op.py:709-729. `return (-self).softmax(axis, dtype)`.
+def mo_softmin(+t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  mo_softmax(mo_neg(t), axis)
+
+# `_inverse` -- elementwise.py:391. `-self if self.is_floating_point() else ~self`,
+# and `is_floating_point` is `self.dtype.is_float`, which is `S.Dt.is_float`.
+def mo_inverse(float: Bool, +t: T.Tensor) -> T.Tensor:
+  match float:
+    case True{}: mo_neg(t)
+    case _: E.ew_bitwise_not(t)
+
+# `min` -- op.py:473-494. `return self._inverse().max(axis=axis,
+# keepdim=keepdim)._inverse()`. The two `_inverse`s are what make the signature
+# `BUFFER CONST MUL REDUCE MUL` for a float source and `BUFFER CONST XOR REDUCE XOR`
+# for an int one -- and a `min` that dropped the OUTER `_inverse` would print 4 nodes
+# and still look plausible, so `t_min0` and `t_min0i` are the pair that sees it.
+def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
+  +f = S.Dt.is_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+  mo_inverse(f, mo_max(kd, mo_inverse(f, t), axis))
+
+# ===========================================================================
+# THE GATE. The printers first, because a def may only call defs declared above it
+# and every row below calls these.
+#
+# `mo_sig` is `tensor.bend`'s `tn_sig` and `ew_sig` SPELLED, not aliased: the two live
+# in files this one imports but their `IO(Unit)` printers are gate furniture, and a
+# shared printer that lives in the SUBSTRATE cannot print a fixture whose arena came
+# from here. The signature is a TOPOSORT with each node's op and src COUNT, and the
+# COUNT is the first field of the row so a dropped or duplicated node is visible in
+# the same place every time.
+# ===========================================================================
+
+def mo_sig.go(xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
   match xs:
-    case Nil{}: 0
-    case h <> t:
-      (U32.add(U32.add(U32.mul(1000003, oq_digest(t)), h), 1) : U32)
+    case Nil{}: acc
+    case +u <> t: mo_sig.go(t, ar, String.concat([acc,
+      O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u)), " "]))
 
-def oq_len(xs: List<&2, U32>) -> U32:
-  U32.from_nat(List.length(&2, U32, xs))
+def mo_sig.of(+ar: O.Arena, i: U32) -> String:
+  +xs = O.UOp.toposort(O.Arena.budget(ar), ar, i)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, xs))), " ", mo_sig.go(xs, ar, "")])
 
-# ---------------------------------------------------------------------------
-# THE FIXTURES. `f_x` is CPython's `_apply_ceil_mode` shape, pads, k, s, d, with
-# the `isdims` flags decided by whether s and d are tuples there.
-# ---------------------------------------------------------------------------
-# shape (25,) pads (0,0) k (2,) s 2 d 1 -> o_=[13] out=[0,1]
-def f_25_0() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([25]), [0, 0], [2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (25,) pads (1,1) -> o_=[14] out=[1,1]
-def f_25_1() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([25]), [1, 1], [2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (25,) k (3,) -> o_=[12] out=[0,0].  A different KERNEL SIZE on the same
-# input: the only thing that moves is `oq_span`, so this is that row.
-def f_25_k3() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([25]), [0, 0], [3], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (5,5) pads (0,0,0,0) k (2,2) -> o_=[3,3] out=[0,1,0,1].  THE COUNT ROW.
-def f_5x5_0() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 5]), [0, 0, 0, 0], [2, 2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (5,5) pads all 1 -> o_=[4,4] out=[1,1,1,1]
-def f_5x5_1() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 5]), [1, 1, 1, 1], [2, 2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (5,7) k (3,2) s SCALAR 2 -> o_=[2,4] out=[0,1,0,0].
-# `make_tuple(2, 2)` is `[2,2]`, so the scalar arm really does reach both dims.
-def f_5x7_sc() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 7]), [0, 0, 0, 0], [3, 2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (5,7) pads (2,2,0,0) k (3,2) s the SEQUENCE (2,1) -> o_=[2,10] out=[2,1,0,0]
-def f_5x7_pd() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 7]), [2, 2, 0, 0], [3, 2], True{}, 0, [2, 1], False{}, 1, Nil{})
-# shape (4,4,4) pads all 1 k (2,2,2) s the sequence -> o_=[3,3,3] out=[1,1,1,1,1,1]
-def f_4x4x4() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([4, 4, 4]), [1, 1, 1, 1, 1, 1], [2, 2, 2], True{}, 0, [2, 2, 2],
-    False{}, 1, Nil{})
-# shape (4,4) pads (-1,-1,0,0) k (2,2) s the sequence (2,1) d 2 -> o_=[2,0] out=[-1,-1,0,1]
-# shape (5,7) k (3,2) s SCALAR 1 -> o_=[3,6] out=[0,0,0,0]
-# shape (4,4) pads (-1,-1,0,0) k (2,2) s the sequence (2,1) d 2 -> o_=[2,0] out=[-1,-1,0,1]
-# THE SIGNED ROW. Both pB and the answer are negative.
-def f_neg() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([4, 4]), [4294967295, 4294967295, 0, 0], [2, 2], True{}, 0, [2, 1],
-    False{}, 2, Nil{})
-# shape (5,7) k (3,2) s SCALAR 1 -> o_=[3,6] out=[0,0,0,0]
-def f_sc1() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 7]), [0, 0, 0, 0], [3, 2], False{}, 1, Nil{}, False{}, 1, Nil{})
-# shape (5,7) k (3,2) s the SEQUENCE (1,1) -> o_=[3,6] out=[0,0,0,0].  MUST AGREE WITH f_sc1.
-def f_s1() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([5, 7]), [0, 0, 0, 0], [3, 2], True{}, 0, [1, 1], False{}, 1, Nil{})
-# shape (1,1,2) -- TWO LEADING DIMS, and every dim is smaller than the ones
-# next to it, which is the only way `shape[-n:]` and `shape[:n]` disagree in the
-# ANSWER rather than merely in the list. k (2,) s 2 d 1 -> out=[0,0].
-# THE ROW FOR `self.shape[-n:]`. Chosen by SEARCH, not by guessing: 812 shapes
-# discriminate and this is one whose correct digest collides with nothing else
-# in the gate. `List.take` instead of `List.drop` answers [0,1] (2000007).
-def f_batch() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([1, 1, 2]), [0, 0], [2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (1,1,2) k (2,2) pads (0,0,0,0) s 2 d 1 -> out=[0,0,0,1].  Two dims this
-# time, and it discriminates too: `List.take` answers [0,1,0,1] (448412614).
-def f_batch2() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([1, 1, 2]), [0, 0, 0, 0], [2, 2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (25,) pads (0,1) k (2,) -> pB=0, pA=1, so pB != pA.  THE ROW FOR
-# `oq_pB`/`oq_pA`: every other fixture pads symmetrically, so swapping the two
-# readers is invisible, and these two are the only rows where `pB` reaches the
-# answer as `pB` and not as a copy of `pA`.
-def f_asym() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([25]), [0, 1], [2], False{}, 2, Nil{}, False{}, 1, Nil{})
-# shape (4,5) pads (0,2,1,0) k (2,2): BOTH pairs asymmetric, so `pB != pA` on
-# both spatial dims at once.
-def f_asym2() -> List<&2, U32>:
-  oq_apply_ceil_mode(oq_shape([4, 5]), [0, 2, 1, 0], [2, 2], False{}, 2, Nil{}, False{}, 1, Nil{})
+def mo_sig(nm: String, +ar: O.Arena, i: U32) -> IO(Unit):
+  IO.print(String.concat([nm, "=", mo_sig.of(ar, i)]))
 
-# THE TWO-PASS CLAIM, as its own rows. `o_` is pass one's output and pass two
-# reads it back, so a fused or stale `o_` is a different answer than a wrong
-# pass two -- and only a row on `o_` itself tells the two apart.
-def o_o_25_0() -> U32:
-  oq_digest(oq_o_list([25], [1], [2], [2], oq_flat_to_grouped([0, 0])))
-def o_o_5x5_0() -> U32:
-  oq_digest(oq_o_list([5, 5], [1, 1], [2, 2], [2, 2], oq_flat_to_grouped([0, 0, 0, 0])))
-def o_o_neg() -> U32:
-  oq_digest(oq_o_list([4, 4], [2, 2], [2, 2], [2, 1],
-    oq_flat_to_grouped([4294967295, 4294967295, 0, 0])))
+def mo_sig_t(nm: String, +t: T.Tensor) -> IO(Unit):
+  mo_sig(nm, T.Tensor.ar(t), T.Tensor.u(t))
 
-# `oq_smax_i32` WITH TWO NEGATIVES. `_apply_ceil_mode` only ever calls
-# `smax(term, 0)`, so the `case True{} True{}` arm of `oq_slt_i32` is
-# UNREACHABLE from any fixture above -- measured, see the mutation table's M6.
-# It is still the arm that decides `smax(-3, -5)`, and a signed compare that
-# treated two negatives as two unsigned numbers would answer it wrong, so the
-# helper gets its own row instead of being left unexercised.
-def o_smax_nn() -> U32: oq_smax_i32(4294967293, 4294967291)
-def o_smax_np() -> U32: oq_smax_i32(4294967293, 7)
+# `mo_row` is a Bool row, for the three BEND-ONLY rows that name a refusal rather than
+# a graph.
+def mo_row(nm: String, b: Bool) -> IO(Unit):
+  IO.print(String.concat([nm, "=", Bool.show(b)]))
 
-# THE GROUPING. CPython lengths: [0,0]->1, [1,2,3,4]->2, [1,2,3]->1, [1]->0,
-# [1,2,3,4,5,6]->3.  The last two are the parity cases and they disagree with
-# each other, so a grouping that ignored the odd-length drop would move BOTH.
-def t_fg2() -> U32: oq_len(List.concat(&2, U32, oq_flat_to_grouped([0, 0])))
-def t_fg4() -> U32: oq_len(List.concat(&2, U32, oq_flat_to_grouped([1, 2, 3, 4])))
-def t_fg3() -> U32: oq_len(List.concat(&2, U32, oq_flat_to_grouped([1, 2, 3])))
-def t_fg1() -> U32: oq_len(List.concat(&2, U32, oq_flat_to_grouped([1])))
-def t_fg6() -> U32: oq_len(List.concat(&2, U32, oq_flat_to_grouped([1, 2, 3, 4, 5, 6])))
+# --- the fixtures. CPython's `Tensor([1.,2.,3.,4.], device='PYTHON')` is ONE
+# BUFFER node (a `DATA` UOp over the list) and `Tensor([[1.,2.],[3.,4.]])` is that
+# buffer RESHAPED, which is `BUFFER CONST STACK/2 RESHAPE/2`. Both spellings are
+# measured against CPython's own `toposort` -- see `t_lit1d` and `t_lit2d`.
 
-# THE SHARED DEF, MEASURED. Expects 0 and that IS the report: CPython says 4.
-def t_fg_shared() -> U32: oq_len(List.concat(&2, U32, H.flat_to_grouped([1, 2, 3, 4])))
+def mo_buf.arg(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
+  # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile,
+  # image, buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
+  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+    False{}, None{}, None{}, False{}, None{}}
 
-# ###########################################################################
-# STAGE 2. op.py:1971 `nbytes`, op.py:1952 `hash`, op.py:1892 `keccak`,
-# op.py:1378 `max_unpool2d`, op.py:1424 `_conv2d_winograd`,
-# op.py:1605 `conv_transpose2d`.
+def mo_buf4(+ar: O.Arena, dt: S.Dt) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{mo_buf.arg(0, 4, dt)}, O.TNone{})
+
+def mo_fx1d() -> T.Tensor:
+  +b = mo_buf4(O.Arena.empty(), S.single())
+  T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+
+def mo_i1d() -> T.Tensor:
+  +b = mo_buf4(O.Arena.empty(), S.int32())
+  T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+
+def mo_fx2d() -> T.Tensor:
+  +b = mo_buf4(O.Arena.empty(), S.single())
+  +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+  +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(2)]})
+  T.tn_new(O.Found.ar(r), O.Found.i(r))
+
+def mo_row_arg(fx: F.Folded, i: U32) -> S.Dt: mo_dt(fx, i)
+
+# --- 1-3: the fixtures themselves, and they are ROWS because a 2-D fixture that
+# built the wrong shape would silently change every row below it.
+
+def t_lit1d() -> IO(Unit): mo_sig_t("lit1d", mo_fx1d())
+def t_lit2d() -> IO(Unit): mo_sig_t("lit2d", mo_fx2d())
+
+# --- 4-7: the reduce hoist, in `mixin/reduce.py`'s order.
+
+def t_max0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("max0", mo_max(False{}, x, mo_ax(False{}, x, 0)))
+def t_sum0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("sum0", mo_sum(False{}, x, mo_ax(False{}, x, 0)))
+
+# `t_rop_gap` is the ONE-SIDED row for `T.tn_rop`'s own refusal. `tn_rop.ne1.of`
+# (tensor.bend:827) returns `None` when the fold cannot answer the source's SHAPE, and
+# `tn_rop.reduce` then hands `self` back UNCHANGED -- no REDUCE node at all. For a
+# BUFFER-rooted and a RESHAPE-rooted source the fold DOES answer it (MEASURED: fold
+# fold.bend:1530/1537), so this row is False and prints False; the mutation that
+# makes it print True is the one that removes the refusal, and no CPython row can see
+# that because CPython never refuses.
+def t_rop_gap() -> IO(Unit):
+  +b = mo_fx2d()
+  +f = T.tn_rop(T.Tensor.ar(b), T.Tensor.u(b), O.OpsADD{}, [1])
+  mo_row("rop_gap", O.eq_op(O.Arena.op(O.Found.ar(f), O.Found.i(f)), O.OpsREDUCE{}))
+
+# THE KEEPDIM ROW. `reduce.py:18`'s reshape is `1 if i in axis else s`, and the fold
+# answers a RESHAPE's shape (fold.bend:1537), so the identity test in `mo_reshape`
+# sees the real shapes. Without keepdim the REDUCE is the last node; with it the
+# signature gains `CONST RESHAPE/2` and nothing else, and the COUNT is what says so.
+def t_sum0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("sum0kd", mo_sum(True{}, x, mo_ax(False{}, x, 0)))
+
+# --- 8-10: `min`, and the pair that sees the outer `_inverse`.
+
+def t_min0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("min0", mo_min(False{}, x, mo_ax(False{}, x, 0)))
+
+def t_min0i() -> IO(Unit):
+  +x = mo_i1d()
+  mo_sig_t("min0i", mo_min(False{}, x, mo_ax(False{}, x, 0)))
+
+def t_min0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("min0kd", mo_min(True{}, x, mo_ax(False{}, x, 0)))
+
+# --- 11-15: the mean family. `t_mean0` is the five-node row and it is the one that
+# says `div` by a Python `int` is `MUL(x, RECIPROCAL(const))` and NOT a `DIV`.
+
+def t_mean0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("mean0", mo_mean(False{}, x, mo_ax(False{}, x, 0)))
+
+def t_mean0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("mean0kd", mo_mean(True{}, x, mo_ax(False{}, x, 0)))
+
+# `t_meanN` is `axis=None`, which is `range(ndim)` (reduce.py:15). For a 1-D source
+# that is `[0]`, so the two rows are the SAME graph -- and printing both is the
+# measurement, because a `mean` that read `axis` as given would agree here and
+# disagree on the 2-D row.
+def t_meanN() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("meanN", mo_mean(False{}, x, mo_ax_all(x)))
+
+def t_mean0_2d() -> IO(Unit):
+  +x = mo_fx2d()
+  mo_sig_t("mean0_2d", mo_mean(False{}, x, mo_ax(False{}, x, 0)))
+
+# `t_var0`, `t_var0c0` and `t_std0`. `correction=0` is `smax(n - 0, 0)` where
+# `smax` is `max` and `min` from `tinygrad/helpers.py`, so the denominator CONST is
+# the SAME interned node as `mean`'s -- which is why `var0c0` is 13 nodes and `var0`
+# is 15 rather than 17.
+def t_var0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("var0", mo_var(False{}, 1, x, mo_ax(False{}, x, 0)))
+
+def t_var0c0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("var0c0", mo_var(False{}, 0, x, mo_ax(False{}, x, 0)))
+
+def t_std0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("std0", mo_std(False{}, 1, x, mo_ax(False{}, x, 0)))
+
+# --- 16-19: the pairs. `var_mean` and `std_mean` return TUPLES, so each gets two
+# rows and the two halves are separate toposorts.
+
+def t_varmean0_v() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("varmean0_v", VarMean.v(mo_var_mean(False{}, 1, x, mo_ax(False{}, x, 0))))
+
+def t_varmean0_m() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("varmean0_m", VarMean.m(mo_var_mean(False{}, 1, x, mo_ax(False{}, x, 0))))
+
+def t_stdmean0_s() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("stdmean0_s", StdMean.s(mo_std_mean(False{}, 1, x, mo_ax(False{}, x, 0))))
+
+def t_stdmean0_m() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("stdmean0_m", StdMean.m(mo_std_mean(False{}, 1, x, mo_ax(False{}, x, 0))))
+
+# --- 20-21: `normalize`'s `p == 0` arm (W7) and the `exp`/`log` casts it leans on.
+
+def t_norm0() -> IO(Unit):
+  +x = mo_fx2d()
+  mo_sig_t("norm0", mo_norm0(mo_ax(False{}, x, 1), x))
+
+# `t_exp_cast` is the row that pins the claim `t_softmax0` makes NEGATIVELY: `exp`'s
+# three casts are the identity for a float32 source, so the softmax signature has no
+# CAST in it. An int32 source is NOT float32, so `least_upper_float` and
+# `least_upper_dtype(_, float32)` both mint a CAST and the row prints one.
+def t_exp_cast() -> IO(Unit):
+  +x = mo_i1d()
+  mo_sig_t("exp_cast", mo_exp(x))
+
+# --- 22-25: the softmax family, and `t_two_rules`.
+
+def t_lse0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("lse0", mo_logsumexp(False{}, x, mo_ax(False{}, x, 0)))
+
+def t_lse0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("lse0kd", mo_logsumexp(True{}, x, mo_ax(False{}, x, 0)))
+
+def t_softmax0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("softmax0", mo_softmax(x, mo_ax(False{}, x, 0)))
+
+def t_logsoftmax0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("logsoftmax0", mo_log_softmax(x, mo_ax(False{}, x, 0)))
+
+def t_softmin0() -> IO(Unit):
+  +x = mo_fx1d()
+  mo_sig_t("softmin0", mo_softmin(x, mo_ax(False{}, x, 0)))
+
+# THE TWO-RULES-CLAIM-ONE-NODE ROW, and it is the row the brief asks for. `softmax`
+# (op.py:663) and `log_softmax` (op.py:686) are TWO defs that both call `_softmax`
+# (op.py:657), so the thirteen nodes `_softmax` builds are interned ONCE and the two
+# results SHARE them. Both rows below are printed from ONE arena, and the sharing is
+# visible in the printed text: the first THIRTEEN op names of `two_rules_lsm` are
+# `two_rules_sm` with its last two removed, and the two tails are the difference.
 #
-# These are the other methods in this half whose CONTENT is arithmetic. Each is
-# the integer/shape part of its Python method; the Tensor composition around it
-# is named as a `TODO(p3)` wall.
-# ###########################################################################
-
-# ===========================================================================
-# `nbytes` -- op.py:1971-1979.
+#   * a `_softmax` that returned `m` in its `e` slot loses the whole `CONST MUL EXP2`
+#     triple -- MEASURED, `softmax` prints 12 and `log_softmax` 15, and the
+#     `softmax3_e` row collapses onto `softmax3_m`;
+#   * a `_softmax` that forgot `.detach()` drops the `DETACH/1` and both rows lose a
+#     node (M13).
 #
-#     def nbytes(self) -> int:
-#       Returns the total number of bytes of all elements in the tensor.
-#       return int(self.numel()) * self.element_size()
+# AND WHAT THIS ROW CANNOT SEE, which is the half worth writing down: the arena is a
+# HASHCONS, so a `_softmax` DUPLICATED -- inlined into both callers, or spelled twice --
+# re-interns the very same nodes and the union stays 20. MEASURED: CPython's
+# `len({id(u) for u in a} | {id(u) for u in b})` is 20 against 15 + 18, and the arena
+# here is 21 slots (`O.Arena.next`, the bottom included) for the same pair, so the
+# thirteen are genuinely one object each. That number does not move under duplication,
+# so the claim "ONE `_softmax`, called twice" rests on the ARENA not growing -- which
+# is a property of `hashcons`, not of the port -- plus `t_softmax3`'s 8/11/13, which
+# pin the three outputs as three DISTINCT nodes.
 #
-# ENTIRELY PORTED. `numel()` is `prod(shape)` and `element_size()` is
-# `DType.itemsize`, and `int(...)` is the coercion to a Python int, which is
-# what a `U32` already is. There is no Tensor call left in it.
+# `softmax` prints 15 and `log_softmax` prints 18, and 15 - 13 = 2 and 18 - 13 = 5,
+# which is `RECIPROCAL MUL` for one and `LOG2 CONST MUL MUL ADD` for the other.
+# BOTH ROWS IN ONE `IO.print`, because a def body is one expression and because the
+# POINT of the row is that the two signatures come out of ONE arena -- if they came
+# from two, the sharing would not be measured at all.
+def t_two_rules.pair(+a: T.Tensor, +b: T.Tensor) -> IO(Unit):
+  IO.print(String.concat(["two_rules_sm=", mo_sig.of(T.Tensor.ar(a), T.Tensor.u(a)),
+    " two_rules_lsm=", mo_sig.of(T.Tensor.ar(b), T.Tensor.u(b))]))
+
+def t_two_rules() -> IO(Unit):
+  +x = mo_fx1d()
+  +a = mo_softmax(x, mo_ax(False{}, x, 0))
+  +b = mo_log_softmax(x, mo_ax(False{}, x, 0))
+  t_two_rules.pair(a, b)
+
+# --- `_softmax`'s THREE OUTPUTS, and they exist because M8 is otherwise invisible.
+# `log_softmax` takes `_softmax`'s `m` and `softmax` takes its `e` (op.py:683/:706), and
+# inside `log_softmax` alone the choice is UNFALSIFIABLE: `ss = e.sum(axis, keepdim=True)`
+# already pulls `e` into the graph, so `m - ss.log()` and `e - ss.log()` have the SAME
+# toposort -- same count, same ops, same order. Printing `m` and `e` on their own is what
+# makes the difference visible, and it is 8 against 11 against 13.
+def t_softmax3.go(+a: T.Tensor, +b: T.Tensor, +c: T.Tensor) -> IO(Unit):
+  IO.print(String.concat(["softmax3_m=", mo_sig.of(T.Tensor.ar(a), T.Tensor.u(a)),
+    " softmax3_e=", mo_sig.of(T.Tensor.ar(b), T.Tensor.u(b)),
+    " softmax3_ss=", mo_sig.of(T.Tensor.ar(c), T.Tensor.u(c))]))
+
+def t_softmax3() -> IO(Unit):
+  +x = mo_fx1d()
+  +s = mo_softmax3(x, mo_ax(False{}, x, 0))
+  t_softmax3.go(Softmax3.m(s), Softmax3.e(s), Softmax3.ss(s))
+
+# --- THE SHAPE ROWS, and they are here for a MEASURED reason. `t_sum0kd` printed the
+# right four nodes with `RESHAPE(REDUCE, CONST(4))` where CPython prints
+# `RESHAPE(REDUCE, CONST(1))` -- same count, same ops, WRONG SHAPE -- and neither the
+# signature nor the count could see it, because the shape arg is a bare CONST and a
+# signature prints only `CONST/0`. `mo_at`'s index was off by one (`len(ds) - len(t)`
+# where the head sits at `len(t)`) and `sh_sum0kd` is the row that caught it.
 #
-# THE `S.Sdim` CAVEAT IS the docstring's `int(self.numel())`. A symbolic dim
-# answers 0 from `S.dim_of` (spec.bend:308), so `nbytes` on a shape the fold has
-# not resolved is 0 rather than an error; tinygrad raises there. Row `nb_sym`
-# pins that reading instead of leaving it as a surprise.
-# ===========================================================================
-def oq_nbytes(shape: List<&2, S.Sdim>, dt: S.Dt) -> U32:
-  (U32.mul(S.Dt.itemsize(dt), H.prod_u32(oq_szs(shape))) : U32)
+# A signature cannot print a SHAPE because `O.Arena.arg` of a RESHAPE is a `ShapeArg`
+# and printing it means reading the CONST list; these rows therefore print the folded
+# shape and the folded dtype of a result, which is what a caller actually consumes.
+def mo_shape.go(ds: List<&2, O.Sint>, acc: String) -> String:
+  match ds:
+    case Nil{}: acc
+    case d <> t: mo_shape.go(t, String.concat([acc, "(", U32.show(mo_dim_u32(d)), ")"]))
 
-# ===========================================================================
-# REPORTED DEFECT #2 IN A SHARED FILE: `H.ceildiv_u32` OVERFLOWS AT THE TOP OF
-# THE U32 RANGE. It is `(num + amt - 1) / amt`, and `num + amt - 1` WRAPS.
-# MEASURED, rows `ceildiv_top` / `ceildiv_ok`: with `num = 2**32 - 1` and
-# `amt = 2**20`, `num + amt - 1` is `1048574` after the wrap and the answer is
-# 0, where CPython's `ceildiv(2**32-1, 2**20)` is 4096.
+def mo_shape.put(nm: String, sh: String, dt: String) -> IO(Unit):
+  IO.print(String.concat([nm, "=", sh, " ", dt]))
+
+def mo_shape(nm: String, +fx: F.Folded, +i: U32) -> IO(Unit):
+  mo_shape.put(nm, mo_shape.go(mo_dims(fx, i), ""), E.ew_dtnm(mo_dt(fx, i)))
+
+def t_sh_sum0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_sum(True{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_sum0kd", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+def t_sh_mean0() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_mean(False{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_mean0", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+def t_sh_lse0() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_logsumexp(False{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_lse0", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+def t_sh_lse0kd() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_logsumexp(True{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_lse0kd", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+def t_sh_norm0() -> IO(Unit):
+  +x = mo_fx2d()
+  +r = mo_norm0(mo_ax(False{}, x, 0), x)
+  mo_shape("sh_norm0", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+# --- the four BEND-ONLY rows.
+
+# `t_commit_weak` -- rule 4. `commit_dtype` (dtype.py:16) REFUSES a weakint node
+# because `UOp._min_max` (ops.py:1104) is not ported, so `mo_commit_dt` hands back the
+# node's OWN dtype and `_reduce`'s `cast` (reduce.py:14) is the identity. The row says
+# so from the arena rather than from a comment: a weakint node's committed dtype is
+# weakint.
+def t_commit_weak() -> IO(Unit):
+  +b = mo_buf4(O.Arena.empty(), S.single())
+  +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+  +c = mo_const_t(x, mo_ki(3))
+  mo_row("commit_weak", D.md_dt_eq(mo_commit_dt(F.folded(T.Tensor.ar(c)), c), W.wk_dt(F.folded(T.Tensor.ar(c)), T.Tensor.u(c))))
+
+# `t_bin_promote` -- W9. `mo_promote` is `elementwise.py:29-33` with the arena threaded
+# correctly, and this row is the ONE that says so. It is FOUR-SIDED: each of the two
+# arms that are spelled "return `t`" is checked twice, once for the NODE it returns and
+# once for the ARENA it returns it in. CPython cannot be asked for either answer -- Python
+# has no arenas -- so this is a BEND-ONLY row and it is labelled as one.
 #
-# `H.ceildiv_i32` IS FINE and is what the ceil-mode arithmetic uses -- it goes
-# through `floordiv_i32` and never forms `num + amt - 1`. Only the unsigned
-# reader has the overflow, and only at the top of the range, so no other caller
-# in this file can see it: `oq_hash_chunks` is the only one whose `num` reaches
-# `2**32`.
+# THE ORDER IS THE WHOLE ROW. `iv` is interned FIRST, so every node after it lands in a
+# strictly NEWER arena and each fold handed to `mo_promote` is newer than the operand it
+# is asked to promote -- which is the only situation in which `mo_arena` does anything.
 #
-# THE OVERFLOW-FREE FORM IS `num / amt + (num % amt != 0)`, which is Python's
-# `ceildiv` for non-negative ints and cannot overflow. `oq_ceildiv_u32` is that,
-# spelled here because the shared def cannot be called to get the right answer.
-# WHEN `ceildiv_u32` IS FIXED, `oq_ceildiv_u32` is deleted and row `hash_max`
-# is the row that would catch a regression in the replacement.
-# ===========================================================================
-def oq_ceildiv_u32.of(exact: Bool, num: U32, amt: U32) -> U32:
-  match exact:
-    case True{} : U32.div(num, amt)
-    case False{}: U32.add(U32.div(num, amt), 1)
-
-def oq_ceildiv_u32(+num: U32, +amt: U32) -> U32:
-  oq_ceildiv_u32.of(U32.is_eq(U32.mod(num, amt), 0), num, amt)
-
-# ===========================================================================
-# `hash` -- op.py:1952-1969, THE CHUNK LOOP ONLY.
-#
-#     data = self.flatten().bitcast(dtypes.uint8)
-#     n = data.shape[0]
-#     chunks = ceildiv(n, 2**20)
-#     while chunks > 1:
-#       data = data.pad_to(chunks * 2**20).reshape(chunks, 2**20)._hash_1mb().flatten()
-#       chunks = ceildiv(chunks, 65536)
-#     return data.pad_to(2**20).unsqueeze(0)._hash_1mb().flatten()[:16]
-#
-# `oq_hash_chunks` is the `chunks` SEQUENCE: the initial `ceildiv(n, 2**20)` and
-# then one `ceildiv(chunks, 65536)` per trip round the loop, INCLUDING the final
-# 1. Returning the sequence rather than the last value is deliberate -- the
-# NUMBER OF TRIPS is what a wrong divisor or a wrong loop condition shows up in,
-# and a gate that saw only the last value would see 1 either way.
-#
-# `2**20` IS SPELLED 1048576 and not `2 << 20`: Bend's `U32.shln` is a LOGICAL
-# shift by ONE (constraints 1.3), so there is no exponent form to reach for.
-#
-# THE U32 RANGE IS A REAL LIMIT, not a formality. `n` counts `uint8` elements, so
-# `n > 2**32` is a tensor larger than 4 GiB and no single buffer holds one. The
-# arithmetic WRAPS above that: CPython's `hash_chunks(2**40)` is `[2**20, 16, 1]`
-# and a `U32` reading of `2**40` is 0.
-# ===========================================================================
-# `while chunks > 1` AND WHY THE FUEL IS 0 OR 1. `n` is a count of `uint8`
-# elements read from a `U32`, so `n <= 2**32 - 1` and
-#   c0 = ceildiv(n, 2**20) <= ceildiv(2**32-1, 2**20) = 4096
-# One trip gives `c1 = ceildiv(c0, 65536) <= ceildiv(4096, 65536) = 1` and the
-# loop stops. So the loop runs AT MOST ONCE in the `U32` reading. The fuel is 0
-# or 1 and NOT A CONSTANT: `c0 <= 1` really is zero trips, and rows `hash_1m`
-# (`[1]`) against `hash_1m_p1` (`[2,1]`) are the pair that says so. The fuel is
-# the FIRST parameter because a self-call has to decrease left to right and a
-# `U32` divisor is not visibly smaller than its input to the checker.
-def oq_hash_fuel.of(more: Bool) -> Nat:
-  match more:
-    case True{}: 1n
-    case False{}: 0n
-
-def oq_hash_fuel(c: U32) -> Nat:
-  oq_hash_fuel.of(U32.is_gt(c, 1))
-
-def oq_hash_chunks.go(fuel: Nat, +c: U32, acc: List<&2, U32>) -> List<&2, U32>:
-  match fuel:
-    case 0n  : List.append(&2, U32, acc, [c])
-    case 1n+p: oq_hash_chunks.go(p, oq_ceildiv_u32(c, 65536),
-                           List.append(&2, U32, acc, [c]))
-
-def oq_hash_chunks(n: U32) -> List<&2, U32>:
-  +c0 = oq_ceildiv_u32(n, 1048576)
-  oq_hash_chunks.go(oq_hash_fuel(c0), c0, Nil{})
-
-# ===========================================================================
-# `keccak` -- op.py:1892-1944, THE CONSTANTS AND THE BLOCK ARITHMETIC.
-#
-#     rot_offsets = [44, 43, 21, 14, 28, 20, 3, 45, 61, 1, 6, 25, 8, 18, 27, 36, 10, 15, 56, 62, 55, 39, 41, 2]
-#     rot_offsets_v0, rot_offsets_v1 = ctensor([0] + [1 << v for v in rot_offsets]), ctensor([1] + [1 << (64 - v) for v in rot_offsets])
-#     # calculated from pi step
-#     reorder_indexes = ctensor([0,6,12,18,24,3,9,10,16,22,1,7,13,19,20,4,5,11,17,23,2,8,14,15,21], dtype=dtypes.int32)
-#     rnd_const_masks = [ctensor([v]).pad((0, 24)) for v in (1, 0x8082, ...)]
-#     rate, dsbyte = {"sha3_224": (144, 6), "sha3_256": (136, 6), "shake_128": (168, 31)}[cfg] if isinstance(cfg, str) else cfg
-#     data_pad = rate - data.shape[-1] % rate
-#     lbe = (data.shape[1] - 1) * 200 + rate - data_pad
-#     return state.bitcast(dtypes.uint8)[:,:(obytes:=(200 - rate) // 2)].reshape(*self.shape[:-1], obytes)
-#
-# ALL FOUR TABLES ARE THE PORT and all four are here: the 24 rho rotation offsets,
-# the 25 pi reorder indices, the 24 round constants, and the rate/dsbyte map.
-# They are the parts of `keccak` that are DECIDABLE without a device, and they
-# are what the f1600 permutation is built out of.
-#
-# WHY THE ROUND CONSTANTS ARE AN `I64` PAIR AND NOT HEX. They are 64-bit and Bend
-# has no 64-bit literal and no 64-bit arithmetic; `H.i64_of_hi_lo`
-# (helpers.bend:1175) builds a pair of two `U32` and `H.hi32`/`H.lo32` read it.
-# The halves are the constant's own bit fields, not a lossy split, and rows
-# `keccak_rc_hi`/`keccak_rc_lo` pin both against CPython.
-#
-# `rot_offsets_v0` and `rot_offsets_v1` are `1 << v` and `1 << (64 - v)`, and
-# `1 << 63` does not fit a `U32` AT ALL -- that is the WALL, and it is why only
-# the 24 OFFSETS are ported and not the two masks derived from them.
-# ===========================================================================
-def oq_keccak_rot() -> List<&2, U32>:
-  [44, 43, 21, 14, 28, 20, 3, 45, 61, 1, 6, 25, 8, 18, 27, 36, 10, 15, 56, 62, 55, 39, 41, 2]
-
-# calculated from the pi step
-def oq_keccak_reorder() -> List<&2, U32>:
-  [0, 6, 12, 18, 24, 3, 9, 10, 16, 22, 1, 7, 13, 19, 20, 4, 5, 11, 17, 23, 2, 8, 14, 15, 21]
-
-def oq_keccak_rc() -> List<&2, H.I64>:
-  [ H.i64_of_hi_lo(0, 1), H.i64_of_hi_lo(0, 32898), H.i64_of_hi_lo(2147483648, 32906),
-    H.i64_of_hi_lo(2147483648, 2147516416), H.i64_of_hi_lo(0, 32907), H.i64_of_hi_lo(0, 2147483649),
-    H.i64_of_hi_lo(2147483648, 2147516545), H.i64_of_hi_lo(2147483648, 32777),
-    H.i64_of_hi_lo(0, 138), H.i64_of_hi_lo(0, 136), H.i64_of_hi_lo(0, 2147516425),
-    H.i64_of_hi_lo(0, 2147483658), H.i64_of_hi_lo(0, 2147516555), H.i64_of_hi_lo(2147483648, 139),
-    H.i64_of_hi_lo(2147483648, 32905), H.i64_of_hi_lo(2147483648, 32771),
-    H.i64_of_hi_lo(2147483648, 32770), H.i64_of_hi_lo(2147483648, 128),
-    H.i64_of_hi_lo(0, 32778), H.i64_of_hi_lo(2147483648, 2147483658),
-    H.i64_of_hi_lo(2147483648, 2147516545), H.i64_of_hi_lo(2147483648, 2147516544),
-    H.i64_of_hi_lo(0, 2147483649), H.i64_of_hi_lo(2147483648, 2147516424) ]
-
-def oq_keccak_rc_len(rcs: List<&2, H.I64>) -> U32:
-  U32.from_nat(List.length(&2, H.I64, rcs))
-
-def oq_keccak_rc_hi(rcs: List<&2, H.I64>) -> List<&2, U32>:
-  match rcs:
-    case Nil{}: Nil{}
-    case h <> r: H.hi32(h) <> oq_keccak_rc_hi(r)
-
-def oq_keccak_rc_lo(rcs: List<&2, H.I64>) -> List<&2, U32>:
-  match rcs:
-    case Nil{}: Nil{}
-    case h <> r: H.lo32(h) <> oq_keccak_rc_lo(r)
-
-# `{"sha3_224": (144, 6), "sha3_256": (136, 6), "shake_128": (168, 31)}`. Python
-# indexes a dict by a string; Bend's `Map` is string-keyed too, but the table is
-# three pairs and a three-variant `Data` with two readers reads like the Python
-# literal while being TOTAL. The string keys are NOT ported: `Map.get` answers a
-# `Sigma` and three keys would be more machinery than the table is worth.
-# `oq_keccak_cfg` takes the selector `U32` 0/1/2 and the key-to-selector mapping
-# is the caller's, which is the same seam tinygrad's `isinstance(cfg, str)` is.
-#
-# NOT `match cfg: case 0n: 144`. A numeric `case 0n:` is a PREFIX match and
-# already claims 1 and 2, so the second arm would be dead code (measured).
-type KeccakCfg is Data:
-  K224{}
-  K256{}
-  K128{}
-
-def oq_keccak_cfg.sel(is0: Bool, is1: Bool) -> KeccakCfg:
-  match is0 is1:
-    case True{}  _      : K224{}
-    case False{} True{} : K256{}
-    case False{} False{}: K128{}
-
-def oq_keccak_cfg(+cfg: U32) -> KeccakCfg:
-  oq_keccak_cfg.sel(U32.is_eq(cfg, 0), U32.is_eq(cfg, 1))
-
-def oq_keccak_rate(c: KeccakCfg) -> U32:
-  match c:
-    case K224{}: 144
-    case K256{}: 136
-    case K128{}: 168
-
-def oq_keccak_dsbyte(c: KeccakCfg) -> U32:
-  match c:
-    case K224{}: 6
-    case K256{}: 6
-    case K128{}: 31
-
-# `data_pad = rate - data.shape[-1] % rate`
-def oq_keccak_data_pad(len: U32, +rate: U32) -> U32:
-  (U32.sub(rate, U32.mod(len, rate)) : U32)
-
-# `obytes := (200 - rate) // 2`
-def oq_keccak_obytes(rate: U32) -> U32:
-  (H.ceildiv_i32(U32.sub(200, rate), 2) : U32)
-
-# `lbe = (data.shape[1] - 1) * 200 + rate - data_pad`. `data.shape[1]` is the
-# block count after `.pad_to(None, None, 200)`, which the caller computes from
-# `data.shape[0]`; the FORMULA is ported and the row passes the count in.
-def oq_keccak_lbe(blocks: U32, rate: U32, data_pad: U32) -> U32:
-  (U32.add(U32.mul(U32.sub(blocks, 1), 200), U32.sub(rate, data_pad)) : U32)
-
-# ===========================================================================
-# `max_unpool2d` -- op.py:1378-1410, THE `output_size` DERIVATION.
-#
-#     bs,c,*spatial_shape = self.shape
-#     if output_size is None:
-#       k_,d_,s_ = (make_tuple(x, len(spatial_shape)) for x in (kernel_size, dilation, stride if stride is not None else kernel_size))
-#       p_ = flat_to_grouped(resolve_pool_pads(padding, len(spatial_shape)))
-#       # https://arxiv.org/pdf/1603.07285 inverse of relationship 15 in section 5.1.
-#       output_size = tuple((i-1)*s - (pB+pA) + (d*(k-1)+1) for i,k,d,s,(pB,pA) in zip(spatial_shape,k_,d_,s_,p_))
-#     else: output_size = output_size[-len(spatial_shape):]
-#     ret = (indices.reshape(bs,c,1,-1)._one_hot_along_dim(prod(output_size), 2).where(self.reshape(bs,c,1,-1), 0)).sum(3)
-#     return ret.reshape(bs,c,*output_size)
-#
-# PORTED: the `None` branch, the three `make_tuple`s, the grouping, and
-# relationship 15 INVERTED. The `reshape`/`one_hot`/`where`/`sum` tail is a
-# `TODO(p3)`.
-#
-# `(pB+pA)` IS `(pA+pB)` AND THAT IS THE WHOLE TRICK: `p_` is
-# `flat_to_grouped(...)`, whose pairs are `(pB, pA)`, and this comprehension adds
-# them, so the naming is irrelevant HERE. That is not true of every unpool line --
-# `_conv2d_winograd` below really does use them apart -- and the rows pin the sum,
-# not the naming.
-# ===========================================================================
-def oq_max_unpool_out.go(i_: List<&2, U32>, k_: List<&2, U32>, d_: List<&2, U32>,
-                         s_: List<&2, U32>, g: List<&2, List<&2, U32>>, acc: List<&2, U32>) ->
-  List<&2, U32>:
-  match i_ k_ d_ s_ g acc:
-    case i <> ti k <> tk d <> td s <> ts +gg <> tg _:
-      oq_max_unpool_out.go(ti, tk, td, ts, tg,
-        List.append(&2, U32, acc,
-          [U32.add(U32.sub(U32.mul(U32.sub(i, 1), s), U32.add(oq_pB(gg), oq_pA(gg))),
-             oq_span(k, d))]))
-    case _ _ _ _ _ _: acc
-
-# `n` IS `len(spatial_shape)` IN PYTHON TOO (`make_tuple(x, len(spatial_shape))`),
-# so it is read off the list rather than passed: passing it cost a `+` on the
-# parameter and duplicated a fact the list already carries.
-def oq_max_unpool_out(+spatial: List<&2, U32>, k_isdims: Bool, +k_: U32,
-                      +k_seq: List<&2, U32>, d_isdims: Bool, +d_: U32, +d_seq: List<&2, U32>,
-                      s_isdims: Bool, +s_: U32, +s_seq: List<&2, U32>, pads: List<&2, U32>) ->
-  List<&2, U32>:
-  +n = U32.from_nat(List.length(&2, U32, spatial))
-  oq_max_unpool_out.go(spatial,
-    oq_make_tuple.of(k_isdims, k_, k_seq, n),
-    oq_make_tuple.of(d_isdims, d_, d_seq, n),
-    oq_make_tuple.of(s_isdims, s_, s_seq, n),
-    oq_flat_to_grouped(pads), Nil{})
-
-# ===========================================================================
-# `_conv2d_winograd` -- op.py:1424-1462, THE PAD ROUNDING AND THE TILE SIZES.
-#
-#     # use padding to round up to 4x4 output tiles
-#     pads = [(pB, pA + (-(s + pB + pA - 2) % 4)) for (pB,pA), s in zip(flat_to_grouped(padding_), self.shape[-len(HW):])]
-#     d = self.pad(flatten(reversed(pads)))._pool(HWI, HWO)
-#     HWI, HWO = (6,) * len(HW), (4,) * len(HW)  # F(4x4,3x3) winograd tiles
-#
-# PORTED: `pads` and `flatten(reversed(pads))`. `HWI`/`HWO` are `make_tuple` with
-# the int arm and are one call to `oq_make_tuple` rather than two literals.
-#
-# THE `%` IS PYTHON'S FLOORMOD ON A POSSIBLY-NEGATIVE NUMERATOR, so it is
-# `H.floormod_i32` and NOT `U32.mod`. `-(s+pB+pA-2)` is negative for every one of
-# these fixtures, and `U32.mod` would answer 3 where CPython's `%` answers -1,
-# making the pad 4 too small. That is the single most load-bearing reading here.
-#
-# The winograd CONSTANT MATRICES `winograd_G`/`winograd_Bt`/`winograd_At`
-# (op.py:1441-1443) are 6x3, 6x6 and 4x6 F32 tables; they are plain literals and
-# a `TODO(p3)` names them rather than transliterating 60 float constants nobody
-# can check by reading.
-# ===========================================================================
-def oq_wino_pads.pair(s: U32, +gg: List<&2, U32>) -> List<&2, U32>:
-  [oq_pB(gg), U32.add(oq_pA(gg),
-    H.floormod_i32(H.i32_neg(U32.add(U32.add(s, U32.add(oq_pB(gg), oq_pA(gg))), 2)), 4))]
-
-def oq_wino_pads.go(spatial: List<&2, U32>, g: List<&2, List<&2, U32>>,
-                    acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
-  match spatial g acc:
-    case s <> ts +gg <> tg _:
-      oq_wino_pads.go(ts, tg, List.append(&2, List<&2, U32>, acc, [oq_wino_pads.pair(s, gg)]))
-    case _ _ _: acc
-
-# `pads` as pairs, then `flatten(reversed(pads))` -- reversed AS PAIRS, the same
-# reading `oq_ceil_pad` needed and for the same reason.
-def oq_wino_pads(+spatial: List<&2, U32>, pads: List<&2, U32>) -> List<&2, U32>:
-  H.flatten_u32(List.reverse(&2, List<&2, U32>,
-    oq_wino_pads.go(spatial, oq_flat_to_grouped(pads), Nil{})))
-
-# ===========================================================================
-# `conv_transpose2d` -- op.py:1605-1642, THE PADDING.
-#
-#     x, w = self, weight.unflatten(0, (groups, -1)).transpose(1, 2).flip(*range(3, len(weight.shape)+1))
-#     HW = weight.shape[2:]
-#     padding = flat_to_grouped(resolve_pool_pads(padding, len(HW)))
-#     stride, dilation, output_padding = [make_tuple(x, len(HW)) for x in (stride, dilation, output_padding)]
-#     if any(s>1 for s in stride):
-#       x = x.reshape(None, None, *flatten((k,1) for k in x.shape[2:]))
-#       x = x.pad((None, None, *flatten((None,(0,s-1)) for s in stride)))
-#       x = x.reshape(None, None, *[k*s for k,s in zip(x.shape[2::2], stride)])
-#       x = x.shrink_to(None, None, *[k-(s-1) for k,s in zip(x.shape[2:], stride)])
-#     padding = flatten((((k-1)*d-pB,(k-1)*d-pA+op) for k,d,(pB,pA),op in reversed(list(zip(HW, dilation, padding, output_padding)))))
-#     return x.conv2d(w.flatten(end_dim=1), groups=groups, bias=bias, dilation=dilation, padding=padding)
-#
-# PORTED: the last two lines -- the `make_tuple`s, the grouping, the reversed
-# four-way zip and its two products. The `x.reshape/pad/shrink` block is integer
-# arithmetic too but it reads `x.shape` AFTER each step, so it needs the Tensor
-# and is a `TODO(p3)`. `flatten(reversed(...))` reverses the PAIRS, once more.
-# ===========================================================================
-def oq_ct_pad.pair(+k: U32, +d: U32, +gg: List<&2, U32>, op: U32) -> List<&2, U32>:
-  [U32.sub(U32.mul(U32.sub(k, 1), d), oq_pB(gg)),
-   U32.add(U32.sub(U32.mul(U32.sub(k, 1), d), oq_pA(gg)), op)]
-
-def oq_ct_pad.go(hw: List<&2, U32>, d_: List<&2, U32>, g: List<&2, List<&2, U32>>,
-                 op: List<&2, U32>, acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
-  match hw d_ g op acc:
-    case k <> tk d <> td +gg <> tg o <> to _:
-      oq_ct_pad.go(tk, td, tg, to, List.append(&2, List<&2, U32>, acc, [oq_ct_pad.pair(k, d, gg, o)]))
-    case _ _ _ _ _: acc
-
-def oq_ct_pad(+hw: List<&2, U32>, d_isdims: Bool, +d_: U32, +d_seq: List<&2, U32>,
-              pads: List<&2, U32>, op_isdims: Bool, +op_: U32, +op_seq: List<&2, U32>) ->
-  List<&2, U32>:
-  +n = U32.from_nat(List.length(&2, U32, hw))
-  H.flatten_u32(List.reverse(&2, List<&2, U32>,
-    oq_ct_pad.go(hw, oq_make_tuple.of(d_isdims, d_, d_seq, n), oq_flat_to_grouped(pads),
-      oq_make_tuple.of(op_isdims, op_, op_seq, n), Nil{})))
-
-# ---------------------------------------------------------------------------
-# STAGE 2 FIXTURES. Same rule: every expectation is CPython's, from the method
-# body put into the oracle script and run against the real `tinygrad`.
-# ---------------------------------------------------------------------------
-# nbytes: (8,9) float itemsize 4 -> 288; (5,) half 2 -> 10; (2,2,2,2) uint8 -> 16
-def t_nb_288() -> U32: oq_nbytes(oq_shape([8, 9]), S.single())
-def t_nb_10() -> U32: oq_nbytes(oq_shape([5]), S.half())
-def t_nb_16() -> U32: oq_nbytes(oq_shape([2, 2, 2, 2]), S.uint8())
-def t_nb_168() -> U32: oq_nbytes(oq_shape([3, 7]), S.int64())
-# The `S.Sdim` caveat, pinned: a SYMBOLIC dim answers 0 from `S.dim_of`, so
-# `nbytes` on an unresolved shape is 0 rather than an error. CPython raises.
-def t_nb_sym() -> U32: oq_nbytes([S.SS{S.SpInvalid{}}], S.single())
-
-# hash chunk sequences. `hash_1m` and `hash_1m_p1` are the PAIR: 2**20 elements
-# exactly is ZERO trips and one more is ONE, so the loop condition is not a
-# constant and the 0-or-1 fuel is doing real work.
-def t_h_1() -> U32: oq_digest(oq_hash_chunks(1))
-def t_h_16() -> U32: oq_digest(oq_hash_chunks(16))
-def t_h_1m() -> U32: oq_digest(oq_hash_chunks(1048576))
-def t_h_1m_p1() -> U32: oq_digest(oq_hash_chunks(1048577))
-def t_h_3m() -> U32: oq_digest(oq_hash_chunks(3145728))
-def t_h_4m() -> U32: oq_digest(oq_hash_chunks(4194304))
-def t_h_max() -> U32: oq_digest(oq_hash_chunks(4294967295))
-def t_h_1m_len() -> U32: oq_len(oq_hash_chunks(1048576))
-def t_h_1m_p1_len() -> U32: oq_len(oq_hash_chunks(1048577))
-
-# THE REPORTED `ceildiv_u32` OVERFLOW. `ceildiv_top` is the shared def measured
-# at the top of the range and it is WRONG; `ceildiv_top_fix` is the local
-# overflow-free form and it is right. CPython's `ceildiv(2**32-1, 2**20)` is
-# 4096. Both rows read 4096 and `hash_max` is what depends on it.
-def t_ceil_shared() -> U32: H.ceildiv_u32(4294967295, 1048576)
-def t_ceil_fix() -> U32: oq_ceildiv_u32(4294967295, 1048576)
-def t_ceil_ok() -> U32: oq_ceildiv_u32(1048576, 1048576)
-def t_ceil_ok2() -> U32: oq_ceildiv_u32(1048577, 1048576)
-
-# keccak. Every table's digest is CPython's over the SAME literal, and the
-# LENGTHS are separate rows so a dropped element cannot hide inside a digest.
-def t_k_rot() -> U32: oq_digest(oq_keccak_rot())
-def t_k_rot_len() -> U32: oq_len(oq_keccak_rot())
-def t_k_reo() -> U32: oq_digest(oq_keccak_reorder())
-def t_k_reo_len() -> U32: oq_len(oq_keccak_reorder())
-def t_k_hi() -> U32: oq_digest(oq_keccak_rc_hi(oq_keccak_rc()))
-def t_k_lo() -> U32: oq_digest(oq_keccak_rc_lo(oq_keccak_rc()))
-def t_k_rc_len() -> U32: oq_keccak_rc_len(oq_keccak_rc())
-def t_k_r224() -> U32: oq_keccak_rate(oq_keccak_cfg(0))
-def t_k_r256() -> U32: oq_keccak_rate(oq_keccak_cfg(1))
-def t_k_r128() -> U32: oq_keccak_rate(oq_keccak_cfg(2))
-def t_k_d224() -> U32: oq_keccak_dsbyte(oq_keccak_cfg(0))
-def t_k_d128() -> U32: oq_keccak_dsbyte(oq_keccak_cfg(2))
-# `data_pad = rate - len % rate`. L=136 with rate=136 is the row that pins the
-# `%`: it is 136 there, and a `rate - (len-1)` reading would say 137.
-def t_k_dp_12() -> U32: oq_keccak_data_pad(12, 136)
-def t_k_dp_135() -> U32: oq_keccak_data_pad(135, 136)
-def t_k_dp_136() -> U32: oq_keccak_data_pad(136, 136)
-def t_k_ob_256() -> U32: oq_keccak_obytes(136)
-def t_k_ob_128() -> U32: oq_keccak_obytes(168)
-def t_k_ob_224() -> U32: oq_keccak_obytes(144)
-# `lbe = (blocks-1)*200 + rate - data_pad`
-def t_k_lbe_1() -> U32: oq_keccak_lbe(1, 136, oq_keccak_data_pad(12, 136))
-def t_k_lbe_2() -> U32: oq_keccak_lbe(2, 136, oq_keccak_data_pad(12, 136))
-def t_k_lbe_3() -> U32: oq_keccak_lbe(3, 136, oq_keccak_data_pad(136, 136))
-
-# max_unpool2d output_size. `stride is None` is the `s_isdims=False` arm AND the
-# value is then `kernel_size`, so the same kernel goes in twice -- which is
-# Python's `stride if stride is not None else kernel_size`.
-def t_mu_88() -> List<&2, U32>:
-  oq_max_unpool_out([4, 4], False{}, 2, Nil{}, False{}, 1, Nil{}, False{}, 2, Nil{}, [0, 0, 0, 0])
-def t_mu_66() -> List<&2, U32>:
-  oq_max_unpool_out([4, 4], False{}, 2, Nil{}, False{}, 1, Nil{}, False{}, 2, Nil{}, [1, 1, 1, 1])
-def t_mu_114() -> List<&2, U32>:
-  oq_max_unpool_out([5, 3], True{}, 0, [3, 2], False{}, 1, Nil{}, True{}, 0, [2, 1], [0, 0, 0, 0])
-def t_mu_70() -> List<&2, U32>:
-  oq_max_unpool_out([5, 3], True{}, 0, [3, 2], False{}, 1, Nil{}, True{}, 0, [2, 1], [2, 2, 2, 2])
-def t_mu_79() -> List<&2, U32>:
-  oq_max_unpool_out([4, 5], False{}, 2, Nil{}, False{}, 2, Nil{}, False{}, 2, Nil{}, [1, 1, 1, 1])
-def t_mu_14() -> List<&2, U32>:
-  oq_max_unpool_out([6], False{}, 3, Nil{}, False{}, 1, Nil{}, False{}, 3, Nil{}, [2, 2])
-
-# _conv2d_winograd pads. `wino_44` is the row for the floormod:
-# `-(s+pB+pA-2)` is NEGATIVE there, so `U32.mod` would answer 3 where CPython's
-# `%` answers -1 and the pad would be 4 too small.
-def t_wp_44() -> List<&2, U32>: oq_wino_pads([4, 4], [0, 0, 0, 0])
-def t_wp_55() -> List<&2, U32>: oq_wino_pads([5, 5], [1, 1, 1, 1])
-def t_wp_444() -> List<&2, U32>: oq_wino_pads([4, 4, 4], [0, 0, 0, 0, 0, 0])
-def t_wp_35() -> List<&2, U32>: oq_wino_pads([3, 5], [1, 1, 1, 1])
-def t_wp_66() -> List<&2, U32>: oq_wino_pads([6, 6], [2, 2, 2, 2])
-def t_wp_22() -> List<&2, U32>: oq_wino_pads([2, 2], [0, 0, 0, 0])
-
-# conv_transpose2d padding. `pads` here is the ALREADY-resolved flat list, as
-# `flat_to_grouped(resolve_pool_pads(...))` takes it.
-# The ASYMMETRIC winograd pads, and the row for M45. Every other wino fixture
-# pads symmetrically, so `pB == pA` and swapping the two readers is invisible.
-def t_wp_asym() -> List<&2, U32>: oq_wino_pads([4, 4], [0, 1, 0, 1])
-def t_wp_asym2() -> List<&2, U32>: oq_wino_pads([3, 5], [2, 3, 0, 1])
-
-def t_ct_22() -> List<&2, U32>: oq_ct_pad([2, 2], False{}, 1, Nil{}, [0, 0, 0, 0], False{}, 0, Nil{})
-def t_ct_22p() -> List<&2, U32>: oq_ct_pad([2, 2], False{}, 1, Nil{}, [1, 1, 1, 1], False{}, 0, Nil{})
-def t_ct_32() -> List<&2, U32>: oq_ct_pad([3, 2], False{}, 1, Nil{}, [0, 0, 0, 0], False{}, 0, Nil{})
-# `padding=(1,0)` RESOLVES to `[0,0,1,1]` (helpers.py:61 reverses), which is
-# this row. `[1,1,0,0]` is the OTHER row: it is a legal already-resolved pad list
-# and `oq_ct_pad` takes one, but it is not what `(1,0)` means, and the first
-# version of this fixture conflated the two.
-def t_ct_32op() -> List<&2, U32>: oq_ct_pad([3, 2], False{}, 1, Nil{}, [0, 0, 1, 1], False{}, 1, Nil{})
-def t_ct_32op_rev() -> List<&2, U32>: oq_ct_pad([3, 2], False{}, 1, Nil{}, [1, 1, 0, 0], False{}, 1, Nil{})
-def t_ct_222() -> List<&2, U32>: oq_ct_pad([2, 2, 2], False{}, 1, Nil{}, [0, 0, 0, 0, 0, 0], False{}, 0, Nil{})
-def t_ct_33d2() -> List<&2, U32>: oq_ct_pad([3, 3], False{}, 2, Nil{}, [1, 1, 1, 1], False{}, 1, Nil{})
+# MEASURED, and it is why the order is written down rather than left to taste: built the
+# other way round, `iv` was interned inline as
+# `T.tn_new(T.Tensor.ar(x), O.Found.i(O.Uop.const(T.Tensor.ar(x), O.CInvalid{})))`, which
+# reads `Tensor.ar(x)` BEFORE the CONST exists (the rule at `mo_const_t`), so the arena
+# never grew -- `next=2` before and after, `is_invalid=False`, `Arena.op(.,2)` = the
+# NOOP bottom -- the `is_invalid` arm was never taken at all, and the row passed while
+# testing nothing. Via `mo_const_t` the same fixture reads `next=3 inv=True`, and the
+# mutation that drops the re-wrap from that arm (M10) moves. A row that reads as
+# coverage and is not is worse than no row.
+def t_bin_promote() -> IO(Unit):
+  +b = mo_buf4(O.Arena.empty(), S.single())
+  +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+  +iv = mo_const_t(x, O.CInvalid{})
+  +c = mo_const_t(iv, mo_ki(3))
+  # `pi` is the `is_invalid` arm (:29) on an arena one node older than its fold,
+  # `pw` the weak-CONST arm (:30) on one older than its own.
+  +pi = mo_promote(F.folded(T.Tensor.ar(c)), iv, S.single())
+  +pw = mo_promote(F.folded(T.Tensor.ar(pi)), c, S.single())
+  mo_row("bin_promote", Bool.and(
+    Bool.and(U32.is_eq(T.Tensor.u(pi), T.Tensor.u(iv)),
+             U32.is_eq(O.Arena.next(T.Tensor.ar(pi)), O.Arena.next(T.Tensor.ar(c)))),
+    Bool.and(Bool.not(U32.is_eq(T.Tensor.u(pw), T.Tensor.u(c))),
+             U32.is_gt(O.Arena.next(T.Tensor.ar(pw)), O.Arena.next(T.Tensor.ar(c))))))
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    oq_row("ceil_25_0", oq_digest(f_25_0()))
-    oq_row("ceil_25_1", oq_digest(f_25_1()))
-    oq_row("ceil_25_k3", oq_digest(f_25_k3()))
-    oq_row("ceil_5x5_0", oq_digest(f_5x5_0()))
-    oq_row("ceil_5x5_1", oq_digest(f_5x5_1()))
-    oq_row("ceil_5x7_sc", oq_digest(f_5x7_sc()))
-    oq_row("ceil_5x7_pd", oq_digest(f_5x7_pd()))
-    oq_row("ceil_4x4x4", oq_digest(f_4x4x4()))
-    oq_row("ceil_neg", oq_digest(f_neg()))
-    oq_row("ceil_s1", oq_digest(f_s1()))
-    oq_row("ceil_batch", oq_digest(f_batch()))
-    oq_row("ceil_batch2", oq_digest(f_batch2()))
-    oq_row("ceil_asym", oq_digest(f_asym()))
-    oq_row("ceil_asym2", oq_digest(f_asym2()))
-    oq_row("ceil_sc1", oq_digest(f_sc1()))
-    oq_row("ceil_s_arms_agree", Bool.to_u32(U32.is_eq(oq_digest(f_sc1()), oq_digest(f_s1()))))
-    oq_row("ceil_5x5_len", oq_len(f_5x5_0()))
-    oq_row("ceil_4x4x4_len", oq_len(f_4x4x4()))
-    oq_row("ceil_neg_len", oq_len(f_neg()))
-    oq_row("ceil_batch_len", oq_len(f_batch()))
-    oq_row("ceil_batch2_len", oq_len(f_batch2()))
-    oq_row("ceil_asym2_len", oq_len(f_asym2()))
-    oq_row("smax_neg_neg", o_smax_nn())
-    oq_row("smax_neg_pos", o_smax_np())
-    oq_row("o_25_0", o_o_25_0())
-    oq_row("o_5x5_0", o_o_5x5_0())
-    oq_row("o_neg", o_o_neg())
-    oq_row("diag_fg_2", t_fg2())
-    oq_row("diag_fg_4", t_fg4())
-    oq_row("diag_fg_3", t_fg3())
-    oq_row("diag_fg_1", t_fg1())
-    oq_row("diag_fg_6", t_fg6())
-    oq_row("diag_fg_shared", t_fg_shared())
-    oq_row("ceildiv_top", t_ceil_shared())
-    oq_row("ceildiv_top_fix", t_ceil_fix())
-    oq_row("ceildiv_exact", t_ceil_ok())
-    oq_row("ceildiv_round", t_ceil_ok2())
-    oq_row("nb_288", t_nb_288())
-    oq_row("nb_10", t_nb_10())
-    oq_row("nb_16", t_nb_16())
-    oq_row("nb_168", t_nb_168())
-    oq_row("nb_sym", t_nb_sym())
-    oq_row("hash_1", t_h_1())
-    oq_row("hash_16", t_h_16())
-    oq_row("hash_1m", t_h_1m())
-    oq_row("hash_1m_p1", t_h_1m_p1())
-    oq_row("hash_3m", t_h_3m())
-    oq_row("hash_4m", t_h_4m())
-    oq_row("hash_max", t_h_max())
-    oq_row("hash_1m_len", t_h_1m_len())
-    oq_row("hash_1m_p1_len", t_h_1m_p1_len())
-    oq_row("keccak_rot", t_k_rot())
-    oq_row("keccak_rot_len", t_k_rot_len())
-    oq_row("keccak_reo", t_k_reo())
-    oq_row("keccak_reo_len", t_k_reo_len())
-    oq_row("keccak_rc_hi", t_k_hi())
-    oq_row("keccak_rc_lo", t_k_lo())
-    oq_row("keccak_rc_len", t_k_rc_len())
-    oq_row("keccak_rate_224", t_k_r224())
-    oq_row("keccak_rate_256", t_k_r256())
-    oq_row("keccak_rate_128", t_k_r128())
-    oq_row("keccak_ds_224", t_k_d224())
-    oq_row("keccak_ds_128", t_k_d128())
-    oq_row("keccak_pad_12", t_k_dp_12())
-    oq_row("keccak_pad_135", t_k_dp_135())
-    oq_row("keccak_pad_136", t_k_dp_136())
-    oq_row("keccak_ob_256", t_k_ob_256())
-    oq_row("keccak_ob_128", t_k_ob_128())
-    oq_row("keccak_ob_224", t_k_ob_224())
-    oq_row("keccak_lbe_1", t_k_lbe_1())
-    oq_row("keccak_lbe_2", t_k_lbe_2())
-    oq_row("keccak_lbe_3", t_k_lbe_3())
-    oq_row("mu_88", oq_digest(t_mu_88()))
-    oq_row("mu_66", oq_digest(t_mu_66()))
-    oq_row("mu_114", oq_digest(t_mu_114()))
-    oq_row("mu_70", oq_digest(t_mu_70()))
-    oq_row("mu_79", oq_digest(t_mu_79()))
-    oq_row("mu_14", oq_digest(t_mu_14()))
-    oq_row("mu_14_len", oq_len(t_mu_14()))
-    oq_row("wino_44", oq_digest(t_wp_44()))
-    oq_row("wino_55", oq_digest(t_wp_55()))
-    oq_row("wino_444", oq_digest(t_wp_444()))
-    oq_row("wino_35", oq_digest(t_wp_35()))
-    oq_row("wino_66", oq_digest(t_wp_66()))
-    oq_row("wino_22", oq_digest(t_wp_22()))
-    oq_row("wino_444_len", oq_len(t_wp_444()))
-    oq_row("wino_asym", oq_digest(t_wp_asym()))
-    oq_row("wino_asym2", oq_digest(t_wp_asym2()))
-    oq_row("ct_22", oq_digest(t_ct_22()))
-    oq_row("ct_22p", oq_digest(t_ct_22p()))
-    oq_row("ct_32", oq_digest(t_ct_32()))
-    oq_row("ct_32op", oq_digest(t_ct_32op()))
-    oq_row("ct_32op_rev", oq_digest(t_ct_32op_rev()))
-    oq_row("ct_222", oq_digest(t_ct_222()))
-    oq_row("ct_33d2", oq_digest(t_ct_33d2()))
-    oq_row("ct_222_len", oq_len(t_ct_222()))
+    a : Unit <- t_lit1d()
+    b : Unit <- t_lit2d()
+    c : Unit <- t_max0()
+    d : Unit <- t_sum0()
+    e : Unit <- t_sum0kd()
+    f : Unit <- t_rop_gap()
+    g : Unit <- t_min0()
+    h : Unit <- t_min0i()
+    i : Unit <- t_min0kd()
+    j : Unit <- t_mean0()
+    k : Unit <- t_mean0kd()
+    l : Unit <- t_meanN()
+    m : Unit <- t_mean0_2d()
+    n : Unit <- t_var0()
+    o : Unit <- t_var0c0()
+    p : Unit <- t_std0()
+    q : Unit <- t_varmean0_v()
+    r : Unit <- t_varmean0_m()
+    s : Unit <- t_stdmean0_s()
+    u : Unit <- t_stdmean0_m()
+    v : Unit <- t_norm0()
+    w : Unit <- t_exp_cast()
+    x : Unit <- t_lse0()
+    y : Unit <- t_lse0kd()
+    z : Unit <- t_softmax0()
+    aa : Unit <- t_logsoftmax0()
+    ab : Unit <- t_softmin0()
+    ac : Unit <- t_two_rules()
+    ad : Unit <- t_commit_weak()
+    ad2 : Unit <- t_softmax3()
+    ae : Unit <- t_sh_sum0kd()
+    af : Unit <- t_sh_mean0()
+    ag : Unit <- t_sh_lse0()
+    ah : Unit <- t_sh_lse0kd()
+    ai : Unit <- t_sh_norm0()
+    t_bin_promote()
 
 # ===========================================================================
-# THE MEASURED MUTATION TABLE. 54 mutations against 96 rows.
-#
-# Run the driver against this file IN PLACE, `diff` the rows against the
-# baseline, restore. Every expectation it compares against came from CPython
-# (the `oracle_full.py` in the report), so a mutation that moves a row moved it
-# AWAY FROM tinygrad.
-#
-# TWO MUTATIONS MOVE NOTHING, AND BOTH ARE STRUCTURALLY UNOBSERVABLE RATHER
-# THAN GATE DEFECTS. That is the honest reading and it is why they are here
-# rather than deleted:
-#
-#   * M20, `ceildiv(chunks, 65536)` -> `ceildiv(chunks, 32768)`. In the `U32`
-#     reading the loop runs at most once and `c0 <= ceildiv(2**32-1, 2**20) =
-#     4096`, and `4096 < 32768`, so BOTH divisors answer 1. The second divisor
-#     is DEAD over this range. In CPython `n` is unbounded and the divisor is
-#     live, so this is a limit of the port's arithmetic and not a property of
-#     the algorithm. `oq_hash_chunks` says so in its own header.
-#   * M46, `make_tuple_rep(x, n)` -> `make_tuple_rep(x, n+1)`. Every
-#     `oq_make_tuple` result is zipped against lists whose length IS `n`, and
-#     the zip walks stop at the first `Nil`, so a LONGER tuple is invisible. A
-#     SHORTER one is very visible: M53 (`make_tuple_of`, always one element)
-#     moves 27 rows.
-#
-# THREE ROWS ARE MOVED BY NOTHING, and each is named rather than hidden:
-#
-#   * `diag_fg_shared` and `ceildiv_top` are the two REPORTED DEFECT rows. They
-#     HOLD the measurement of a shared def being wrong; there is no mutation
-#     that makes a measurement wrong.
-#   * `ceil_s_arms_agree` is a cross-check that turns out to be INSENSITIVE to
-#     every mutation in this table, M53 included, because the scalar and the
-#     sequence `s` agree by coincidence even after `make_tuple` is broken. The
-#     VALUE rows `ceil_sc1` and `ceil_s1` carry the load there and both move.
-#     This row is kept because the agreement is a real claim, not because it
-#     discriminates.
-#
-# AND THE ROWS THAT PAID FOR THEMSELVES, which is what the table is for:
-#
-#   * `smax_neg_neg` is moved by M6 and nothing else. It exists because
-#     `_apply_ceil_mode` only ever evaluates `smax(term, 0)`, so the
-#     both-negative arm of `oq_slt_i32` is unreachable from every ceil fixture.
-#     M6 reached it and found a REAL BUG: that arm read `U32.is_gt` and
-#     answered `smax(-3,-5) = -5`. The mutation I wrote as a probe turned out
-#     to be the FIX.
-#   * `wino_asym`/`wino_asym2` are moved by M45 alone and `ceil_asym`/`ceil_asym2`
-#     by M16 alone, both for the same reason: every other fixture in that family
-#     pads symmetrically, so `pB == pA` and swapping the two readers is invisible.
-#
-# TWO MUTATIONS FOUND REAL PORT ERRORS rather than gate gaps, and both are in
-# this file's headers: M10 (reverse the FLAT list instead of the PAIRS, which
-# swaps `pB` and `pA` inside every pair) and M12/M13 (`flat_to_grouped`). M10 was
-# caught only AFTER the digest was changed to one folding a per-level `+1`: the
-# `5381 * head + rest` digest the gate started with put `[0,1]` and `[1,0]` at
-# the same value, so the bug was invisible until the digest stopped colliding.
+# SIDE B's SECTION GOES BELOW THIS LINE.
 # ===========================================================================
-# | M1 | M1  oq_span: d*(k-1)+1 -> d*k+1 | 19: ceil_25_0 ceil_25_k3 ceil_4x4x4 ceil_5x5_0 ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_batch ceil_batch2 mu_114 mu_14 mu_66 mu_70 mu_79 mu_88 o_25_0 o_5x5_0 o_neg |
-# | M2 | M2  oq_ceil_o: drop the trailing +1 | 18: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_5x5_0 ceil_5x5_1 ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_batch ceil_batch2 ceil_neg ceil_s1 ceil_sc1 o_25_0 o_5x5_0 o_neg |
-# | M3 | M3  ceildiv_i32 -> cdiv_i32_go (truncating, not flooring) | 10: ceil_25_0 ceil_25_1 ceil_5x5_0 ceil_5x5_1 ceil_5x7_sc ceil_asym2 ceil_neg o_25_0 o_5x5_0 o_neg |
-# | M4 | M4  oq_ceil_pA: smax(term, 0) -> the bare term (the guard dropped) | 8: ceil_25_k3 ceil_5x7_pd ceil_5x7_sc ceil_batch ceil_batch2 ceil_neg ceil_s1 ceil_sc1 |
-# | M5 | M5  oq_smax_i32: arms swapped (min, not max) | 13: ceil_25_1 ceil_25_k3 ceil_5x5_1 ceil_5x7_pd ceil_5x7_sc ceil_asym2 ceil_batch ceil_batch2 ceil_neg ceil_s1 ceil_sc1 smax_neg_neg smax_neg_pos |
-# | M6 | M6  oq_slt_i32: both-negative arm -> U32.is_gt (the bug I shipped first) | 1: smax_neg_neg |
-# | M7 | M7  oq_slt_i32: mixed-sign arms both False (sign test dropped) | 9: ceil_25_k3 ceil_5x7_pd ceil_5x7_sc ceil_batch ceil_batch2 ceil_neg ceil_s1 ceil_sc1 smax_neg_pos |
-# | M8 | M8  pass two walks the pairs REVERSED (the net effect of consing) | 3: ceil_5x7_pd ceil_asym2 ceil_neg |
-# | M9 | M9  pass ONE returns o_ reversed (o_/g pairing) | 5: ceil_5x7_pd ceil_5x7_sc ceil_neg ceil_s1 ceil_sc1 |
-# | M10 | M10 reverse the FLAT list instead of the pairs (ceil) | 8: ceil_25_0 ceil_5x5_0 ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_batch2 ceil_neg |
-# | M11 | M11 fuse the two passes (no reverse at all) | 5: ceil_5x7_pd ceil_5x7_sc ceil_asym2 ceil_batch2 ceil_neg |
-# | M12 | M12 fg_skip(n mod 2) -> fg_skip(n): the helpers.bend bug, reintroduced | 52: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_4x4x4_len ceil_5x5_0 ceil_5x5_1 ceil_5x5_len ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_asym2_len ceil_batch ceil_batch2 ceil_batch2_len ceil_batch_len ceil_neg ceil_neg_len ceil_s1 ceil_sc1 ct_22 ct_222 ct_222_len ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 diag_fg_2 diag_fg_3 diag_fg_4 diag_fg_6 mu_114 mu_14 mu_14_len mu_66 mu_70 mu_79 mu_88 o_25_0 o_5x5_0 o_neg wino_22 wino_35 wino_44 wino_444 wino_444_len wino_55 wino_66 wino_asym wino_asym2 |
-# | M13 | M13 use the BUGGY H.flat_to_grouped instead of the local one | 21: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_4x4x4_len ceil_5x5_0 ceil_5x5_1 ceil_5x5_len ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_asym2_len ceil_batch ceil_batch2 ceil_batch2_len ceil_batch_len ceil_neg ceil_neg_len ceil_s1 ceil_sc1 |
-# | M14 | M14 oq_make_tuple arms swapped | 36: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_4x4x4_len ceil_5x5_0 ceil_5x5_1 ceil_5x5_len ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_asym2_len ceil_batch ceil_batch2 ceil_batch2_len ceil_batch_len ceil_neg ceil_neg_len ceil_s1 ceil_sc1 ct_22 ct_222 ct_222_len ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 mu_114 mu_14 mu_14_len mu_66 mu_70 mu_79 mu_88 |
-# | M15 | M15 shape[-n:] -> shape[:n] | 2: ceil_batch ceil_batch2 |
-# | M16 | M16 oq_pB reads index 1, oq_pA reads index 0 | 4: ceil_asym ceil_asym2 wino_asym wino_asym2 |
-# | M17 | M17 oq_ceil_pA: drop the s*(o-1) term | 11: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_5x5_0 ceil_5x5_1 ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_neg |
-# | M18 | M18 oq_digest: the naive 5381*head+rest the gate was built to avoid | 50: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_5x5_0 ceil_5x5_1 ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_batch ceil_batch2 ceil_neg ceil_s1 ceil_sc1 ct_22 ct_222 ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 hash_1 hash_16 hash_1m hash_1m_p1 hash_3m hash_4m hash_max keccak_rc_hi keccak_rc_lo keccak_reo keccak_rot mu_114 mu_14 mu_66 mu_70 mu_79 mu_88 o_25_0 o_5x5_0 o_neg wino_22 wino_35 wino_44 wino_444 wino_55 wino_66 wino_asym wino_asym2 |
-# | M19 | M19 hash: the 2**20 divisor -> 2**19 | 6: hash_1m hash_1m_len hash_1m_p1 hash_3m hash_4m hash_max |
-# | M20 | M20 hash: the 65536 divisor -> 32768 | *** NOTHING MOVED -- BLIND *** |
-# | M21 | M21 hash: the loop condition `> 1` -> `> 0` | 4: hash_1 hash_16 hash_1m hash_1m_len |
-# | M22 | M22 oq_ceildiv_u32: the +1 on an inexact division is dropped | 9: ceildiv_round ceildiv_top_fix hash_1 hash_16 hash_1m_p1 hash_1m_p1_len hash_3m hash_4m hash_max |
-# | M23 | M23 oq_ceildiv_u32 -> H.ceildiv_u32 (the reported overflow) | 2: ceildiv_top_fix hash_max |
-# | M24 | M24 nbytes: multiply by bits instead of itemsize | 4: nb_10 nb_16 nb_168 nb_288 |
-# | M25 | M25 keccak rot_offsets: shift one entry | 1: keccak_rot |
-# | M26 | M26 keccak reorder: swap two pi indices | 1: keccak_reo |
-# | M27 | M27 keccak rc: swap the hi and lo halves of one constant | 2: keccak_rc_hi keccak_rc_lo |
-# | M28 | M28 keccak rc_hi reads lo and rc_lo reads hi | 1: keccak_rc_hi |
-# | M29 | M29 keccak cfg: the K256 and K128 rate arms swapped | 2: keccak_rate_128 keccak_rate_256 |
-# | M30 | M30 keccak data_pad: rate - len%rate -> rate - (len-1) | 6: keccak_lbe_1 keccak_lbe_2 keccak_lbe_3 keccak_pad_12 keccak_pad_135 keccak_pad_136 |
-# | M31 | M31 keccak obytes: // 2 -> // 4 | 3: keccak_ob_128 keccak_ob_224 keccak_ob_256 |
-# | M32 | M32 keccak lbe: (blocks-1)*200 -> blocks*200 | 3: keccak_lbe_1 keccak_lbe_2 keccak_lbe_3 |
-# | M33 | M33 wino: floormod_i32 -> U32.mod (the sign bug) | 3: wino_35 wino_55 wino_asym |
-# | M34 | M34 wino: the modulus 4 -> 3 | 7: wino_22 wino_35 wino_44 wino_444 wino_55 wino_asym wino_asym2 |
-# | M41 | M41 keccak cfg: the dsbyte arms for 224 and 256 swapped | 1: keccak_ds_224 |
-# | M42 | M42 keccak rot_offsets: drop the LAST entry | 2: keccak_rot keccak_rot_len |
-# | M43 | M43 keccak reorder: drop the LAST entry | 2: keccak_reo keccak_reo_len |
-# | M44 | M44 keccak rc: drop the LAST constant | 3: keccak_rc_hi keccak_rc_len keccak_rc_lo |
-# | M45 | M45 wino: the OUTPUT pair writes pA first and pB second | 2: wino_asym wino_asym2 |
-# | M46 | M46 make_tuple: the repeat count n -> n+1 | *** NOTHING MOVED -- BLIND *** |
-# | M47 | M47 fg_skip: the parity comes from n-1 instead of n | 51: ceil_25_0 ceil_25_1 ceil_25_k3 ceil_4x4x4 ceil_4x4x4_len ceil_5x5_0 ceil_5x5_1 ceil_5x5_len ceil_5x7_pd ceil_5x7_sc ceil_asym ceil_asym2 ceil_asym2_len ceil_batch ceil_batch2 ceil_batch2_len ceil_batch_len ceil_neg ceil_neg_len ceil_s1 ceil_sc1 ct_22 ct_222 ct_222_len ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 diag_fg_2 diag_fg_4 diag_fg_6 mu_114 mu_14 mu_14_len mu_66 mu_70 mu_79 mu_88 o_25_0 o_5x5_0 o_neg wino_22 wino_35 wino_44 wino_444 wino_444_len wino_55 wino_66 wino_asym wino_asym2 |
-# | M48 | M48 diag_fg_1 target: flat_to_grouped([1]) -> flat_to_grouped([1,1]) | 1: diag_fg_1 |
-# | M49 | M49 nb_sym: prod over the symbolic dim -> the dim's own value | 1: nb_sym |
-# | M50 | M50 oq_ceildiv_u32: the EXACT arm adds 1 too | 5: ceildiv_exact hash_1m hash_1m_len hash_3m hash_4m |
-# | M51 | M51 keccak rate: K224 144 -> 145 | 1: keccak_rate_224 |
-# | M52 | M52 keccak dsbyte: K128 31 -> 30 | 1: keccak_ds_128 |
-# | M53 | M53 oq_make_tuple scalar arm: repeat n -> always one element | 28: ceil_4x4x4 ceil_4x4x4_len ceil_5x5_0 ceil_5x5_1 ceil_5x5_len ceil_5x7_pd ceil_5x7_sc ceil_asym2 ceil_asym2_len ceil_batch2 ceil_batch2_len ceil_neg ceil_neg_len ceil_s1 ceil_sc1 ct_22 ct_222 ct_222_len ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 mu_114 mu_66 mu_70 mu_79 mu_88 |
-# | M54 | M54 oq_hash_fuel: the fuel is always 1 | 4: hash_1 hash_16 hash_1m hash_1m_len |
-# | M35 | M35 wino: reverse the FLAT list instead of the pairs | 6: wino_35 wino_44 wino_444 wino_55 wino_asym wino_asym2 |
-# | M36 | M36 ct_pad: (k-1)*d -> k*d in the FIRST product | 7: ct_22 ct_222 ct_22p ct_32 ct_32op ct_32op_rev ct_33d2 |
-# | M37 | M37 ct_pad: the +op is dropped from the second product | 3: ct_32op ct_32op_rev ct_33d2 |
-# | M38 | M38 ct_pad: reverse the FLAT list instead of the pairs | 3: ct_32op ct_32op_rev ct_33d2 |
-# | M39 | M39 max_unpool: (i-1)*s -> i*s | 6: mu_114 mu_14 mu_66 mu_70 mu_79 mu_88 |
-# | M40 | M40 max_unpool: the span loses its +1 | 6: mu_114 mu_14 mu_66 mu_70 mu_79 mu_88 |
-# ===========================================================================
-# THE WALLS. Every method in this half that is NOT ported, with the thing that
-# stops it. `p3` is the phase that builds the Tensor method surface; nothing
-# here guesses at what p3 will look like.
-#
-# THE ONE WALL UNDERNEATH ALL OF THEM: `mixin/op.py`'s methods are methods ON A
-# TENSOR and they are almost entirely compositions of OTHER TENSOR methods --
-# `gather`, `where`, `pad`, `sum`, `permute`, `reshape`. None of those exist in
-# `tinybendygrad/`: there is no `mixin/elementwise.bend` and no
-# `mixin/movement.bend`, and `tensor.bend`'s `Tensor` is a thin wrapper with a
-# handful of methods. So the wall is not a Bend limitation, it is a substrate
-# that has not been built yet, and every line below is arithmetic I extracted
-# from around it rather than a thing Bend cannot express.
-#
-# TWO WALLS ARE BEND'S, and they are the only two.
-#
-#   * `seq` of CLOSURES. `sequential` (op.py:1243) is
-#     `functools.reduce(lambda x,f: f(x), ll, self)` over `list[Callable]`. A
-#     function value is a `Type`, and a `Type` is never copyable, so a list of
-#     them is not a `Data` and cannot be a parameter. This one is not coming
-#     back without a different representation.
-#   * 64-BIT ROTATE AND XOR. The f1600 round (op.py:1930-1935) is
-#     `(state * rot_offsets_v0).bitwise_or(state // rot_offsets_v1)` and
-#     `~state.roll(...) & state.roll(...)` over a 25-lane uint64 state. Bend
-#     has no 64-bit literal, no 64-bit arithmetic and no rotate or popcount
-#     (constraints 2). The CONSTANTS are ported -- `oq_keccak_rc` and
-#     `oq_keccak_rot` are the whole of what the round is built from -- and the
-#     arithmetic is not.
-#
-# THE PER-METHOD LIST, in Python order. The PORTED column is what is here.
-# ===========================================================================
-# op.py:998  allclose                  -- WALL: needs `isclose` + `all`, both from
-#                                       unported elementwise/reduce mixins.
-# op.py:1005 _one_hot_along_dim        -- PORTED: none (it is `self.eq(...)`, all
-#                                       tensor). WALL: the `eq`/`arange`/`reshape`.
-# op.py:1010 one_hot                   -- PORTED: the `is_int` dtype guard and the
-#                                       `num_classes >= 0` guard. WALL: `[..., None]`.
-# op.py:1023 gather                    -- PORTED: the ndim guard and the
-#                                       shrink/unsqueeze/transpose index order.
-#                                       WALL: `where`/`sum` on the result.
-# op.py:1043 interpolate               -- PORTED: nothing. WALL: `arange`, `clip`,
-#                                       `gather`, `lerp`, `cast`; the per-axis
-#                                       index arithmetic needs the arange list
-#                                       materialised as data first.
-# op.py:1077 _pre_scatter              -- PORTED: nothing. WALL: the shape asserts
-#                                       read `self.shape`, and the body is
-#                                       `unsqueeze`/`expand`/`transpose`/`pad_to`.
-# op.py:1095 scatter_reduce            -- PORTED: nothing. WALL: `where`, `sum`,
-#                                       `add`/`mul`/`max`/`min`/`maximum`,
-#                                       `commit_dtype().min`, and the `_inv_mask`
-#                                       CLOSURE.
-# op.py:1136 scatter                   -- PORTED: nothing. WALL: `Tensor.full` and
-#                                       `_masked_merge`.
-# op.py:1170 _masked_merge             -- PORTED: nothing. WALL: `functools.reduce`
-#                                       over a `zip` of `split`-ed tensors; the
-#                                       reduce needs a tuple-returning lambda.
-# op.py:1179 masked_select             -- PORTED: nothing. WALL: `mask_cumsum[-1].item()`
-#                                       is a DATA READBACK, which is the real stop.
-# op.py:1208 nonzero                   -- PORTED: the 0-dim branch's shape rule.
-#                                       WALL: `stack`, `masked_select`, `reshape`.
-# op.py:1243 sequential                -- WALL: a `list[Callable]`. Bend's own.
-# op.py:1254 linear                    -- PORTED: the `len(weight.shape) == 1`
-#                                       branch. WALL: `mul`, `dot`, `add`.
-# op.py:1271 _apply_ceil_mode          -- PORTED WHOLE.  THIS IS THE FILE'S
-#                                       CENTREPIECE and the only method in this
-#                                       half with no Tensor in its body.
-# op.py:1285 avg_pool2d                -- PORTED: `axis`, `s_`, `reg_pads`/`pads`
-#                                       and the three-way `count_include_pad` /
-#                                       `ceil_mode` decision.
-#                                       WALL: `_pad_constant`, `_pool`, `sum`, `mean`.
-# op.py:1333 max_pool2d                -- PORTED: `axis`, `s_`, `pads`,
-#                                       `spatial_sz` and the reversed `idx` arange.
-#                                       WALL: `_pool`, `commit_dtype().min`, `max`.
-# op.py:1378 max_unpool2d              -- PORTED: the `output_size` derivation,
-#                                       relationship 15 INVERTED.
-#                                       WALL: `reshape`, `_one_hot_along_dim`,
-#                                       `where`, `sum`.
-# op.py:1411 _apply_winograd_matrix    -- PORTED: nothing. WALL: `transpose`,
-#                                       `const`, `reshape`; and `mat` is a Tensor
-#                                       of the constants, not a table.
-# op.py:1424 _conv2d_winograd          -- PORTED: `pads`, `flatten(reversed(pads))`,
-#                                       and `HWI`/`HWO` as `make_tuple` calls.
-#                                       WALL: `pad`, `_pool`, `permute`,
-#                                       `contiguous_backward`, `sum`, and the
-#                                       three 60-float constant matrices
-#                                       (`winograd_G`/`Bt`/`At`, op.py:1441-1443),
-#                                       which are `F32` literals and a p3 decision
-#                                       whether they live in this file at all.
-# op.py:1464 image_dot                 -- PORTED: nothing. WALL: `transpose`,
-#                                       `reshape` and `image_conv2d`.
-# op.py:1479 image_conv2d             -- PORTED: nothing. WALL: the whole tensor
-#                                       path (`pad`, `permute`, `reshape`,
-#                                       `contiguous`, `_pool`) AND `math.gcd`,
-#                                       which `pad_align` needs for its align
-#                                       target and which no `tinybendygrad` file
-#                                       exports. The packing ARITHMETIC
-#                                       (`round_up`, `is_pow2`, `bank_conflict`,
-#                                       `rcin_hi/lo`, `group_shape`,
-#                                       `rcout_expand`, `added_output_channels`)
-#                                       is integer-only and is the obvious p3
-#                                       follow-up to this file.
-# op.py:1562 conv2d                    -- PORTED: nothing. WALL: `_pad_constant`,
-#                                       `_pool`, `reshape`, `expand`, `permute`,
-#                                       `sum`. `IMAGE`/`WINO` are `ContextVar`s and
-#                                       `helpers.bend`'s `Flags` has only four
-#                                       fields, so the two dispatch arms are not
-#                                       reachable from here either.
-# op.py:1605 conv_transpose2d          -- PORTED: the padding derivation, the
-#                                       reversed four-way zip and its two products.
-#                                       WALL: `unflatten`, `transpose`, `flip`,
-#                                       `reshape`, `pad`, `shrink_to` -- and the
-#                                       `x.shape[2:]` reads BETWEEN them.
-# op.py:1644 layernorm                 -- PORTED: nothing. WALL: `mean`, `rsqrt`.
-# op.py:1662 batchnorm                 -- PORTED: nothing. WALL: `reshape`, `mul`,
-#                                       `add`; `argfix(axis)` is in helpers.bend.
-# op.py:1686 _do_reduction             -- PORTED: nothing. WALL: `sum`, `mean`.
-# op.py:1692 binary_crossentropy       -- PORTED: nothing. WALL: `log`.
-# op.py:1706 binary_crossentropy_logits-- PORTED: nothing. WALL: `logsigmoid`.
-# op.py:1721 sparse_categorical_xent   -- PORTED: nothing. WALL: `log_softmax`,
-#                                       `_one_hot_along_dim`, `where`, `mean`.
-# op.py:1746 cross_entropy             -- PORTED: nothing. WALL: `log_softmax`, `mul`.
-# op.py:1773 nll_loss                  -- PORTED: nothing. WALL: `gather`,
-#                                       `const_like`, `ne`.
-# op.py:1799 qr                        -- PORTED: nothing. WALL: the Householder
-#                                       loop is `@` on Tensors; `eye`/`arange` are
-#                                       Side A's.
-# op.py:1817 svd                       -- PORTED: nothing. WALL: the Jacobi sweeps,
-#                                       `sort`, `gather`, `contiguous`, `pad`.
-# op.py:1873 newton_schulz             -- PORTED: nothing. WALL: `@` on Tensors and
-#                                       `functools.reduce` over a generator.
-# op.py:1892 keccak                    -- PORTED: all four tables, the rate/dsbyte
-#                                       map, `data_pad`, `obytes`, `lbe`.
-#                                       WALL: the f1600 round, BEND'S (64-bit
-#                                       rotate/xor), and `rot_offsets_v0`/`_v1`
-#                                       whose `1 << 63` does not fit a `U32`.
-# op.py:1946 _hash_1mb                 -- PORTED: the assert constants (`1024*1024`,
-#                                       `4096`) only. WALL: the two
-#                                       `keccak("shake_128")` calls, which need the
-#                                       f1600 round above.
-# op.py:1952 hash                      -- PORTED: the chunk loop, as a SEQUENCE so
-#                                       the trip count is checkable.
-#                                       WALL: `pad_to`, `_hash_1mb`, `bitcast`.
-# op.py:1971 nbytes                    -- PORTED WHOLE.
-#
-# WHAT I NEED FROM THE OTHER HALF, named for the coordinator. None of it is in
-# this file, and none of it is in `mixin/op.py`'s second half:
-#   * `arange`            -- op.py:166, Side A. `_pre_scatter`, `interpolate`,
-#                             `nonzero`, `qr`, `svd` all call it.
-#   * `_pad_constant`     -- op.py:282, Side A. `_apply_ceil_mode`'s callers,
-#                             `avg_pool2d`, `max_pool2d`, `conv2d`.
-#   * `cat`               -- op.py:731, Side A. `keccak`'s pad mask.
-#   * `_cumalu`           -- op.py:752, Side A. `masked_select`.
-#   * `sort`              -- op.py:913, Side A. `topk` (Side A), `svd`.
-#   * `eye`               -- op.py:215, Side A. `qr`, `svd`.
-#   * `_resolve_dim`      -- movement.py:81, NOT op.py. `gather`, `scatter`,
-#                             `_one_hot_along_dim` all need it and it is a
-#                             different unit's file.
-#   * `_pool`             -- movement.py:598, NOT op.py. Its OUTPUT SHAPE
-#                             (`o_` at movement.py:604 and `f_` at :606) is what
-#                             `conv2d`'s `oyx` and the pooling methods need, and
-#                             it is the one thing in this half I could not even
-#                             approximate without re-deriving another unit's def.
-
-# ---------------------------------------------------------------------------
-# THE `TODO(p3)` INDEX, one line per wall so `rg 'TODO\(p3\)'` finds every one.
-# The prose reasons are in THE WALLS above; this is the same list in the format
-# the rest of the port uses.
-# ---------------------------------------------------------------------------
-# TODO(p3) mixin/op.py:998  allclose                 -- needs `isclose` + `all`
-# TODO(p3) mixin/op.py:1005 _one_hot_along_dim       -- needs `eq`/`arange`/`reshape`
-# TODO(p3) mixin/op.py:1010 one_hot                  -- needs `[..., None]` + `where`
-# TODO(p3) mixin/op.py:1023 gather                   -- needs `shrink_to`/`where`/`sum`
-# TODO(p3) mixin/op.py:1043 interpolate              -- needs `arange`/`clip`/`lerp`/`cast`
-# TODO(p3) mixin/op.py:1077 _pre_scatter             -- needs `unsqueeze`/`expand`/`pad_to`
-# TODO(p3) mixin/op.py:1095 scatter_reduce           -- needs `where`/`maximum` + the `_inv_mask` closure
-# TODO(p3) mixin/op.py:1136 scatter                  -- needs `Tensor.full` + `_masked_merge`
-# TODO(p3) mixin/op.py:1170 _masked_merge            -- `functools.reduce` over a zip of split tensors
-# TODO(p3) mixin/op.py:1179 masked_select            -- `mask_cumsum[-1].item()` is a DATA READBACK
-# TODO(p3) mixin/op.py:1208 nonzero                  -- needs `stack`/`masked_select`/`reshape`
-# TODO(p3) mixin/op.py:1243 sequential               -- a `list[Callable]`; a `Type` is never copyable. BEND'S.
-# TODO(p3) mixin/op.py:1254 linear                   -- needs `mul`/`dot`/`add`
-# TODO(p3) mixin/op.py:1285 avg_pool2d               -- needs `_pad_constant`/`_pool`/`mean`
-# TODO(p3) mixin/op.py:1333 max_pool2d               -- needs `_pool`/`commit_dtype().min`/`max`
-# TODO(p3) mixin/op.py:1378 max_unpool2d             -- needs `reshape`/`_one_hot_along_dim`/`where`
-# TODO(p3) mixin/op.py:1411 _apply_winograd_matrix   -- needs `transpose`/`const`; `mat` is a Tensor
-# TODO(p3) mixin/op.py:1424 _conv2d_winograd         -- needs `pad`/`_pool`/`permute` + three F32 constant matrices
-# TODO(p3) mixin/op.py:1464 image_dot                -- needs `transpose`/`reshape`/`image_conv2d`
-# TODO(p3) mixin/op.py:1479 image_conv2d             -- needs the whole tensor path + `math.gcd` for `pad_align`
-# TODO(p3) mixin/op.py:1562 conv2d                   -- needs `_pad_constant`/`_pool`/`permute`; `IMAGE`/`WINO` are ContextVars
-# TODO(p3) mixin/op.py:1605 conv_transpose2d         -- needs `unflatten`/`flip`/`shrink_to` and `x.shape` between steps
-# TODO(p3) mixin/op.py:1644 layernorm                -- needs `mean`/`rsqrt`
-# TODO(p3) mixin/op.py:1662 batchnorm                -- needs `reshape`/`mul`/`add`
-# TODO(p3) mixin/op.py:1686 _do_reduction            -- needs `sum`/`mean`
-# TODO(p3) mixin/op.py:1692 binary_crossentropy      -- needs `log`
-# TODO(p3) mixin/op.py:1706 binary_crossentropy_logits -- needs `logsigmoid`
-# TODO(p3) mixin/op.py:1721 sparse_categorical_crossentropy -- needs `log_softmax`/`_one_hot_along_dim`
-# TODO(p3) mixin/op.py:1746 cross_entropy            -- needs `log_softmax`/`mul`
-# TODO(p3) mixin/op.py:1773 nll_loss                 -- needs `gather`/`const_like`/`ne`
-# TODO(p3) mixin/op.py:1799 qr                       -- the Householder loop is `@` on Tensors
-# TODO(p3) mixin/op.py:1817 svd                      -- the Jacobi sweeps + `sort`/`gather`/`contiguous`
-# TODO(p3) mixin/op.py:1873 newton_schulz            -- `@` on Tensors + `reduce` over a generator
-# TODO(p3) mixin/op.py:1892 keccak f1600              -- 64-bit rotate/xor over a 25-lane state. BEND'S.
-# TODO(p3) mixin/op.py:1892 keccak rot_offsets_v0/v1  -- `1 << 63` does not fit a `U32`. BEND'S.
-# TODO(p3) mixin/op.py:1946 _hash_1mb                -- needs the f1600 round above
-# TODO(p3) mixin/op.py:1952 hash loop body           -- needs `pad_to`/`_hash_1mb`/`bitcast`
