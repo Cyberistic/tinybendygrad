@@ -1183,9 +1183,9 @@ baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via 
 ## Session 2026-10-02 — `runtime/ops_nv.bend` (the CUDA device: the words it uploads)
 
 - [x] `tinybendygrad/runtime/ops_nv.bend` — `tinygrad/runtime/ops_nv.py` (841 lines) +
-      `hcq2.py:63`/`:74-76`. 3889 lines, 630 defs, **600 gate rows**, `--check-only` is
-      `ALL PROOFS CHECK`. **546 rows cross-checked against CPython with ONE deliberate
-      disagreement**, 53 Bend-only, 4 oracle-only. `.agents/slop/nv-oracle.py`,
+      `hcq2.py:63`/`:74-76`. 3897 lines, 630 defs, **600 gate rows**, `--check-only` is
+      `ALL PROOFS CHECK`. **543 rows cross-checked against CPython with ZERO
+      disagreements**, 56 Bend-only, 4 oracle-only. `.agents/slop/nv-oracle.py`,
       `nv-diff.py`, `nv-mutate.py`.
 - [x] **THE RECONCILIATION PASS: 73 rows that looked like coverage and were not.** The
       differ keys on the row NAME, so `nv_slmtot_*` against `nv_slm_*`, five
@@ -1211,13 +1211,67 @@ baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via 
       131072. `nv_slmtot_1_1_1` (1 against 131072) kills it. M13 remains a genuine
       equivalence blind spot: `found < len` and `found != len` are the SAME predicate
       over every answer `pc.find` can give.
-- [x] **The `device.bend` BUG REPORTED, NOT FIXED** (the file is not mine to edit):
-      `tinybendygrad/device.bend:869-871` `go_slot.go` builds `Slot{round_up(off, k),
-      U32.add(off, k)}` — the advance must use the ROUNDED offset, or `iter_sig`
-      answers `0,4,6,8,16,19` where `hcq2.layout_args` answers `0,4,8,16,24,28`. Pinned
-      by `nv_REPORTED_args_device_mixed`, which is the one disagreement `nv-diff.py`
-      is supposed to print. This port carries its own corrected `sig.slot`.
+- [x] **The `device.bend` `iter_sig` BUG — REPORTED, THEN FIXED UPSTREAM, AND THE
+      STALE TRANSCRIPTION REMOVED HERE.** `device.bend:869-871` computed
+      `Slot{round_up(off, k), U32.add(off, k)}`; `7f170f644` fixed it to
+      `U32.add(round_up(off, k), k)` because `device.py:366`'s `:=` rebinds the
+      ROUNDED offset. So `nv_REPORTED_args_device_mixed` no longer disagrees,
+      `dev_bend_iter_sig` in `nv-oracle.py` was a transcription of a bug that no
+      longer exists, and the three `nv_REPORTED_*` rows are now `nv_device_args_*`:
+      `device.bend`'s answer beside this port's own `sig.slot`, with
+      `nv_cpython_args_device_*` carrying `hcq2.layout_args`. **A permanent
+      disagreement in `nv-diff.py` teaches every later reader to skip the section
+      that matters, so an expected difference belongs in a comment.**
+      `nv-diff.py` is now 0 disagreements.
 - [x] `.agents/slop/notes/bend2-constraints.md` — four appended rules, **82-84**: a
       hand-written oracle row is a change detector and two of them agree; the differ
       keys on the row name so a misspelling is a hole in both directions; two claims
       must not share a row prefix, and a row's name must survive reading its value.
+
+## STANDING INSTRUCTION (owner, 2026-10-02) — the agent pipeline does not idle
+
+**When any agent lands, dispatch the next unit immediately. Do not wait to be asked.**
+Agreed with the owner after the 10:56 wave. The coordinator's job on a completion is:
+verify what landed, commit it with an honest message, THEN dispatch the next unit in
+this queue — in that order, so the queue is never stalled behind a verification.
+
+### The queue, in priority order. All are non-overlapping with everything in flight.
+
+1. **`runtime/support/am/ip.py` (755)** — the am ioctl protocol. `ops_amd.bend` is
+   being written against it RIGHT NOW and cites it; same "committed code leans on an
+   unported file" shape as `hcq2`. Do NOT read `ops_amd.bend` as read-only truth while
+   its agent is live — grep it for `am/ip` citations and AGREE, report contradictions.
+2. **`runtime/support/nv/ip.py` (661)** — the nv ioctl protocol. Same shape;
+   `ops_nv.bend` is committed and cites `hcq2`, so check whether it also cites this.
+3. **`runtime/support/am/amdev.py` (421)** — the `/dev/kfd` surface. Most of it is FFI,
+   so the gateable part is the **request struct layouts and the field order** (packed
+   field order is the same lesson as `ops_cl`'s inverted `Sig` names, and a wrong order
+   is a silently wrong register write).
+4. **`runtime/support/system.py` (454)** — support/system. Likely mostly FFI; find the
+   pure tables. If it is genuinely all FFI, the honest answer is a seam with named
+   Python lines, and that is a legitimate result — say so rather than inventing rows.
+5. **`renderer/nir.py` (321)** — real code, and `renderer/nir_llvmir.bend` stage 1 is
+   already committed and names stages 2-4 in its header. Either do `nir.py` or continue
+   those stages; check the header first for which is the bigger gap.
+6. **const audit of `ops_webgpu.bend` (67) + `ops_cl.bend` (89 uncovered)** — the
+   hand-map work, now that `ops_nv` (33/219) and `ops_metal` have had it. Cheap because
+   the method is now written down, and the two devices are committed and unowned.
+7. **`runtime/support/usb.py` (473)** — the USB transport. `ops_rdma.bend` and
+   `ops_cl`'s `dev_might_open`/remote path both lean on the USB transport concept.
+8. **`runtime/support/autogen.py` (289)** — PORT THE GENERATOR, not its 216,933 lines
+   of output. This is the deferred scope question and an agent should ARGUe it with
+   measurements rather than leave it parked. Note the tension honestly: the projects
+   hard rule is 1:1 with upstream, and upstream ships the *output*; but 216,933 lines
+   is 43,464 lines of hex register tables (script-translatable) plus 8,258 ctypes FFI
+   class defs. An agent that measures this and reports BOTH numbers is worth more than
+   one that picks a side.
+9. **`nn/onnx` runners + op bodies** — `nn/onnx.bend` (2013) is committed with four
+   node types unportable. Needs the fold keystone first, so dispatch this LAST.
+10. **`schedule/prepare.bend`** — still an 8-line stub from 06:13. If the schedule agent
+    lands `indexing` and `prepare` is still 8 lines, that agent is dead: re-dispatch
+    against the stub. Same for any other file whose last write predates its dispatch.
+
+### Health rule, learned three times today
+**An agent with no file AND no `.agents/slop/` artifact ~20 min after dispatch is
+dead.** Check both the target file and `.agents/slop/` before concluding. A dead agent
+that DID stub leaves a stub, so a stub is a resumable claim and an absent file is not.
