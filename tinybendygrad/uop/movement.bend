@@ -63,11 +63,20 @@ def hop_next(h: Hop, r: Hop) -> Hop:
     case Hop{ha, hn} Hop{ra, rn}: Hop{ra, hop_first(hn, rn)}
 
 # `ret is not uop` -- ops.py:1611. The arena KEEPS whatever the rule built and only the
-# ANSWER is dropped, which is Python's `return None` after a construction.
-def hop_self.of(b: Bool, +r: Hop) -> Hop:
-  match b:
-    case True{}: r
-    case False{}: Hop{hop_ar(r), 0}
+# ANSWER is dropped, which is Python's `return None` after a construction. So `drop` is
+# "the answer IS self, OR the answer IS none", and `True` must answer NOTHING.
+#
+# WHICH SIDE PYTHON IS ON, since this def was INVERTED and its own comment was right:
+# ops.py:1610 reads `if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret`,
+# so the KEEP condition is `ret is not None AND ret is not uop` and the DROP condition is
+# its negation. `drop` here is exactly that negation, so `False` keeps and `True` drops.
+# The pre-fix arms had them the other way round -- keeping `self` and dropping a
+# genuinely new node -- which is the inverse of ops.py:1610 AND of the comment above it.
+# `t_ret_new` is the row that pins it, and it read 1 while the bug was in place.
+def hop_self.of(drop: Bool, +r: Hop) -> Hop:
+  match drop:
+    case True{}: Hop{hop_ar(r), 0}
+    case False{}: r
 
 def hop_self(+r: Hop, self: U32) -> Hop:
   hop_self.of(Bool.or(U32.is_eq(hop_ix(r), self), O.UOp.is_none(hop_ix(r))), r)
@@ -104,8 +113,12 @@ def mp_is(ar: O.Arena, i: U32, want: O.Op) -> Bool:
 def mp_nsrc_is(ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_eq(mp_nsrc(ar, i), n)
 
+# `len(x.src) >= n` -- `allow_any_len=True`'s "at least n srcs". `U32.is_ge`, NOT
+# `U32.is_lt(n, nsrc)`: the name is the whole contract, and one arity is the entire
+# content of a rule's arity test. A `len(x.src) == n` test is `mp_nsrc_is` -- this is
+# `>=` and nothing else, so `mp_5.one`'s STRICT two-tuple is `mp_nsrc_is`, not this.
 def mp_nsrc_ge(ar: O.Arena, i: U32, n: U32) -> Bool:
-  U32.is_lt(n, mp_nsrc(ar, i))
+  U32.is_ge(mp_nsrc(ar, i), n)
 
 def mp_nat(ss: List<&2, U32>) -> Nat:
   List.length(&2, U32, ss)
@@ -210,7 +223,10 @@ def i64_u32(+x: H.I64) -> U32:
 def list_at(xs: List<&2, U32>, n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, U32.to_nat(n)), 0)
 
-def const_is.go(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
+# `x.src[1].val == k`, the `list(range(len(stk.src))) == [x.src[1].val ...]` half. A
+# CONST's VALUE against a position, never a node against a position: the elements of
+# `x.arg` are Python ints (see `mp_ident.at`), and here the CONST is a real arena node.
+def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
   match m:
     case Some{v}: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(U32.from_nat(n))))
     case None{}: False{}
@@ -224,19 +240,26 @@ def const_is.go(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
 #       return UOp(Ops.INDEX, src=(self,)+tuple(new_srcs), **kwargs)
 #
 # THE SPECIAL CASE IS WHY A REWRITE CAN RETURN A NODE IT DID NOT BUILD, and `idx_pick` is
-# the row for it: `INDEX(INDEX(STACK, C1))` has no offsets, so the outer `index()` hands
-# back `STACK.src[1]`. Every `extra` is already a UOp index and never a Python int, so
-# the `UOp.const(x)` half and the `is not None` filter are vacuous here.
+# the row for it: `INDEX(INDEX(STACK, C1))` has no offsets of its own, so the outer
+# `index()` hands back `STACK.src[C1.val]`. Every `extra` is already a UOp index and never
+# a Python int, so the `UOp.const(x)` half and the `is not None` filter are vacuous here.
 # `(self,)+tuple(new_srcs)` is a HEAD, not a tail, so `mp_index.new` prepends.
-def mp_index.pick(sel: Maybe<&1, U32>) -> U32:
-  Maybe.default(&1, U32, sel, 0)
+#
+# `new_srcs[0].val` is the VALUE, and Python's answer is that value used as an INDEX into
+# the STACK's srcs -- so the resolution is `Arena.src` here, the IndexError included
+# (`Arena.src` answers 0). Returning the value itself answers 1 where Python answers
+# `STACK.src[1]`, which is a CONST and a different node.
+def mp_index.pick(sel: Maybe<&1, U32>, ar: O.Arena, self: U32) -> U32:
+  match sel:
+    case Some{v}: mp_src(ar, self, v)
+    case None{}  : 0
 
 def mp_index.new(+ar: O.Arena, self: U32, extra: List<&2, U32>) -> Hop:
   mp_hit(O.UOp.new(ar, O.OpsINDEX{}, List.append(&2, U32, [self], extra), O.ANone{}, O.TNone{}))
 
 def mp_index.of(sel: Maybe<&1, U32>, one: Bool, stack: Bool, +ar: O.Arena, self: U32, extra: List<&2, U32>) -> Hop:
   match one stack:
-    case True{} True{}: Hop{ar, mp_index.pick(sel)}
+    case True{} True{}: Hop{ar, mp_index.pick(sel, ar, self)}
     case _ _: mp_index.new(ar, self, extra)
 
 def mp_const_val.of(m: Maybe<&2, H.I64>) -> H.I64:
@@ -247,7 +270,8 @@ def mp_const_val.of(m: Maybe<&2, H.I64>) -> H.I64:
 def mp_const_val(ar: O.Arena, i: U32) -> H.I64:
   mp_const_val.of(const_i64(mp_arg(ar, i)))
 
-# `self.src[new_srcs[0].val]`, the IndexError included: `Arena.src` answers 0.
+# `new_srcs[0].val` -- the CONST's VALUE, not a node. `mp_index.pick` is what uses it as
+# an index; a float CONST where an int is wanted answers nothing (the header's DEFERRED).
 def mp_stack_val(ar: O.Arena, self: U32, extra: List<&2, U32>) -> Maybe<&1, U32>:
   match extra:
     case e <> Nil{}: Some{i64_u32(mp_const_val(ar, e))}
@@ -262,16 +286,16 @@ def mp_index(+ar: O.Arena, +self: U32, +extra: List<&2, U32>) -> Hop:
 def mp_const(ar: O.Arena, i: U32) -> Maybe<&2, H.I64>:
   const_i64(mp_arg(ar, i))
 
-# `x.src[1].val == k` and `i.val == k`: the two places a CONST's value is
-# compared with a position in a list.
-def const_is(ar: O.Arena, i: U32, n: Nat) -> Bool:
-  const_is.go(mp_const(ar, i), n)
-
-# `UOp.replace` -- ops.py:252. `if (self.op, self.src, self.arg, self.tag) == new_args:
-# return self` needs no code here: the arena hash-conses and hands back the same index, and
-# `hop_self` turns "the answer is the node itself" into no answer.
-def mp_replace(op: O.Op, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Hop:
-  mp_hit(O.UOp.new(ar, op, src, mp_arg(ar, self), mp_tag(ar, self)))
+# `UOp.replace` -- ops.py:252. `new_args = (kwargs.pop("op", self.op), kwargs.pop("src",
+# self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))`, so `arg` is a
+# PARAMETER and not something read off `self`: rule 1 replaces only `src` and passes
+# `self`'s own arg, rule 3 replaces only `arg` and keeps `x2`'s src and tag. Reading the
+# arg off `self` answers `x2` for rule 3, which is the node the rule was folding away.
+# `if (self.op, self.src, self.arg, self.tag) == new_args: return self` needs no code
+# here: the arena hash-conses and hands back the same index, and `hop_self` turns "the
+# answer is the node itself" into no answer.
+def mp_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Hop:
+  mp_hit(O.UOp.new(ar, op, src, arg, mp_tag(ar, self)))
 
 # `as_shape` -- ops.py:807 -- and `marg` -- ops.py:813, SHRINK's arm.
 #
@@ -342,7 +366,13 @@ def Marg.n(x: Marg) -> H.I64:
 
 # `(o + p, n)` -- the whole of `movement.py:8`'s generator. `n` is `s.marg`'s, so the SIZE
 # of the inner shrink survives and the offset is the sum.
-def marg.step(acc: List<&2, Marg>, x: Marg, y: Marg) -> List<&2, Marg>:
+#
+# `List.append(&2, A, r, [x])` puts `x` at the END of `r` (MEASURED, and the reproducer is
+# `.agents/slop/notes/probe-append.bend`), so the accumulator must grow on the way DOWN, as
+# `marg_zip.go` and `as_shape.vals.go` do. Appending on the way UP -- `step(go(..), ..)` --
+# REVERSES the margin, and a reversed margin of two entries still has length two, so
+# `marg_n1`/`marg_n2` and `shrink2_marg`'s length all read correct.
+def marg.step(x: Marg, y: Marg, acc: List<&2, Marg>) -> List<&2, Marg>:
   match x y:
     case Marg{xo, xn} Marg{yo, yn}: List.append(&2, Marg, acc, [Marg{H.i64_add(xo, yo), yn}])
 
@@ -352,7 +382,7 @@ def marg.go(ys: List<&2, Marg>, xs: List<&2, Marg>, acc: List<&2, Marg>) -> List
   match ys xs:
     case Nil{} _        : acc
     case _ <> _ Nil{}   : acc
-    case y <> yt x <> xt: marg.step(marg.go(yt, xt, acc), x, y)
+    case y <> yt x <> xt: marg.go(yt, xt, marg.step(x, y, acc))
 
 def marg(ys: List<&2, Marg>, xs: List<&2, Marg>) -> List<&2, Marg>:
   marg.go(ys, xs, Nil{})
@@ -368,12 +398,22 @@ def marg_zip(ys: List<&2, H.I64>, xs: List<&2, H.I64>) -> List<&2, Marg>:
   marg_zip.go(ys, xs, Nil{})
 
 # `tuple((o+p, n) for (o,_),(p,n) in zip(x.marg, s.marg))`, with the four `None`s folded
-# into one: a margin is a margin only if BOTH `as_shape`s of BOTH shrinks are. `x` is the
-# OUTER shrink, which is why the fold's second argument is `s.marg`.
+# into one: a margin is a margin only if BOTH `as_shape`s of BOTH shrinks are. `self` is
+# the OUTER shrink and `mp_src0(ar, self)` the INNER.
+#
+# THE ARGUMENT ORDER IS THE WHOLE OF `(o + p, n)`, and it is a naming trap:
+# `UPat.f` (ops.py:1504) is `UPat(op, src=(self,))`, so in
+# `UPat(SHRINK, name="x").f(SHRINK, name="s")` the OUTER node is `s` and the INNER is `x`
+# -- the reverse of what the letters suggest -- and `(o,_),(p,n) in zip(x.marg, s.marg)`
+# reads `n` off `s.marg`, the OUTER's. `marg` takes `n` from its FIRST list, so the
+# outer's margin goes first. Only the order is load-bearing: `o` is SUMMED, so the two
+# `marg_zip` arguments commute and swapping them changes `n` alone. `M8` in the mutation
+# table is that swap, and it moves `shrink1_marg` from 31 to 32 -- CPython's `SHRINK(b4,
+# CONST(3), CONST(1))` has the OUTER's `n = 1`, and the swap would give the inner's `2`.
 def marg_add.of(ox: Maybe<&1, List<&2, H.I64>>, nx: Maybe<&1, List<&2, H.I64>>,
                 os: Maybe<&1, List<&2, H.I64>>, ns: Maybe<&1, List<&2, H.I64>>) -> Maybe<&1, List<&2, Marg>>:
   match ox nx os ns:
-    case Some{a} Some{b} Some{c} Some{d}: Some{marg(marg_zip(d, c), marg_zip(b, a))}
+    case Some{a} Some{b} Some{c} Some{d}: Some{marg(marg_zip(b, a), marg_zip(d, c))}
     case _ _ _ _                         : None{}
 
 def marg_add(+ar: O.Arena, +x: U32, +s: U32) -> Maybe<&1, List<&2, Marg>>:
@@ -403,19 +443,21 @@ def mp_0.shrink(+ar: O.Arena, +self: U32, +m: Marg) -> Hop:
 # THE RANK TEST, and it is the whole of the `_mop` deferral. `_mop`'s node is
 # buildable exactly when `UOp.sink(*usrcs).simplify()` is ops.py:515's EARLY
 # RETURN, which needs both `shape_to_shape_arg` results to be CONSTs -- that is,
-# one axis per side. A merged margin of length 0 is `_mop`'s `len(arg) == 0` early
-# NOOP, which returns `_mop`'s own `self`; that case is not reachable from
-# `movement.py:8` on a legal arena (both `zip`ped shapes are the same length), so
-# it answers nothing rather than claiming a half-ported `_mop`.
-def mp_0.rank.build(+ar: O.Arena, +self: U32, ms: List<&2, Marg>) -> Hop:
-  match ms:
-    case m <> Nil{}: mp_0.shrink(ar, self, m)
-    case _           : Hop{ar, 0}
-
+# ONE axis per side, because `shape_to_shape_arg` of a ONE element shape is a bare
+# CONST (ops.py:106). A merged margin of length 2 is the `simplify()` that reaches
+# `graph_rewrite(self, symbolic)`: Python builds STACKs there and this port does not,
+# so it answers nothing rather than dropping an axis and claiming a half-ported `_mop`.
+# A merged margin of length 0 is `_mop`'s `len(arg) == 0` early NOOP, which returns
+# `_mop`'s own `self`. `shrink2` is the row for the length-2 refusal: Python fires and
+# answers `SHRINK(S3, STACK(C1,CONST(2)), STACK(C1,C1))`, and this port answers none.
 def mp_0.of(pat: Bool, m: Maybe<&1, List<&2, Marg>>, +ar: O.Arena, +self: U32) -> Hop:
   match pat m:
-    case True{} Some{ms}: mp_0.rank.build(ar, self, ms)
-    case _ _             : Hop{ar, 0}
+    case True{} Some{m <> Nil{}}   : mp_0.shrink(ar, self, m)
+    # TWO Margs, or none: a merged margin of length 1 is the ONE axis per side that
+    # `shape_to_shape_arg` turns into a bare CONST. The pattern is EXACTLY ONE element
+    # because `<>` on the scrutinee gives the head, and the `Nil{}` is the TAIL -- a
+    # three-scrutinee read of the same list would test the WHOLE list against `Nil{}`.
+    case _ _                        : Hop{ar, 0}
 
 def mp_0(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_0.of(mp_is(ar, mp_src0(ar, self), O.OpsSHRINK{}), marg_add(ar, self, mp_src0(ar, self)), ar, self)
@@ -426,7 +468,7 @@ def mp_0(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 # A two-tuple src with no `allow_any_len` sets `strict_length`, so the arity test is `== 2`.
 def mp_1.of(pat: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match pat:
-    case True{}: mp_replace(O.OpsRESHAPE{}, ar, self, [mp_src0(ar, mp_src0(ar, self)), mp_src(ar, self, 1)])
+    case True{}: mp_replace(O.OpsRESHAPE{}, mp_arg(ar, self), ar, self, [mp_src0(ar, mp_src0(ar, self)), mp_src(ar, self, 1)])
     case False{}: Hop{ar, 0}
 
 def mp_1(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
@@ -451,8 +493,12 @@ def mp_2(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 #   UPat(Ops.PERMUTE, src=(UPat(Ops.PERMUTE, name="x2"),), name="x")
 #   lambda x,x2: x2.replace(arg=tuple(x2.arg[i] for i in x.arg))
 # `replace` with a new `arg` and nothing else changed, so the op, src, tag and dtype are
-# `x2`'s. The one-element tuple src is strict, so the arity test is `== 1`.
-# `tuple(x2.arg[i] for i in x.arg)` -- the IndexError is 0.
+# `x2`'s -- and the `arg` is the COMPOSED one. The one-element tuple src is strict, so the
+# arity test is `== 1`. `tuple(x2.arg[i] for i in x.arg)` -- iterate `x.arg`, index `x2.arg`,
+# and the IndexError is 0. Both tuples are `ATuple`, so the third scrutinee is `x2`'s own
+# arg and NOT another `Maybe` that has to be unwrapped: composing out of `x2`'s SRCS (which
+# is a list of node indices, not a permutation) answers `[B24[1], B24[0]]` and a node no
+# rule can name.
 def mp_perm.go(todo: List<&2, U32>, +p2: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match todo:
     case Nil{}  : acc
@@ -461,15 +507,17 @@ def mp_perm.go(todo: List<&2, U32>, +p2: List<&2, U32>, acc: List<&2, U32>) -> L
 def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
   mp_perm.go(xa, p2, Nil{})
 
-def mp_3.of(pat: Bool, arg: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +self: U32) -> Hop:
-  match pat arg:
-    case True{} Some{xa}: mp_replace(O.OpsPERMUTE{}, ar, mp_src0(ar, self),
-                                     mp_perm(mp_srcs(ar, mp_src0(ar, self)), xa))
-    case _ _             : Hop{ar, 0}
+def mp_3.of(pat: Bool, xa: Maybe<&2, List<&2, U32>>, x2a: Maybe<&2, List<&2, U32>>,
+            +ar: O.Arena, +self: U32) -> Hop:
+  match pat xa x2a:
+    case True{} Some{perm} Some{p2}:
+      +x2 = mp_src0(ar, self)
+      mp_replace(O.OpsPERMUTE{}, O.ATuple{mp_perm(p2, perm)}, ar, x2, mp_srcs(ar, x2))
+    case _ _ _ : Hop{ar, 0}
 
 def mp_3(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_3.of(Bool.and(mp_nsrc_is(ar, self, 1), mp_is(ar, mp_src0(ar, self), O.OpsPERMUTE{})),
-          arg_tuple(mp_arg(ar, self)), ar, self)
+          arg_tuple(mp_arg(ar, self)), arg_tuple(mp_arg(ar, mp_src0(ar, self))), ar, self)
 
 # remove noop PERMUTEs (movement.py:16)
 #   UPat(Ops.PERMUTE, name="x")
@@ -482,16 +530,21 @@ def mp_4.of(ok: Bool, +ar: O.Arena, +self: U32) -> Hop:
 
 # `list(x.arg) == list(range(len(x.arg)))`, as `arg[k] == k` for every k. ONE DEF, with
 # the element's verdict as a PARAMETER: a match may not scrutinise a call, so splitting it
-# into `.go` and `.at` would be the mutual recursion Bend refuses.
-def mp_ident.at(todo: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +k: Nat, ok: Bool) -> Bool:
+# into `.go` and `.at` would be the mutual recursion Bend refuses. The elements of `x.arg`
+# are Python INTS, not nodes, so the comparison is `U32.is_eq` on the element and the
+# position -- there is no arena here to read, and `const_is` on an element would be a read
+# of whatever node that INDEX happens to name.
+def mp_ident.at(todo: Maybe<&2, List<&2, U32>>, k: Nat, ok: Bool) -> Bool:
   match todo ok:
     case _ False{}        : False{}
     case None{} True{}    : False{}
     case Some{Nil{}} True{}: True{}
-    case Some{i <> t} True{}: mp_ident.at(Some{t}, ar, 1n+k, const_is(ar, i, k))
+    case Some{i <> t} True{}:
+      +kk = k
+      mp_ident.at(Some{t}, 1n+kk, U32.is_eq(i, U32.from_nat(kk)))
 
 def mp_4(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
-  mp_4.of(mp_ident.at(arg_tuple(mp_arg(ar, self)), ar, 0n, True{}), ar, self)
+  mp_4.of(mp_ident.at(arg_tuple(mp_arg(ar, self)), 0n, True{}), ar, self)
 
 # STACK on INDEX CONST (movement.py:18-19)
 #   UPat(Ops.STACK, src=UPat(Ops.INDEX, src=(UPat.var("src"), UPat(Ops.CONST))), name="stk")
@@ -507,10 +560,11 @@ def mp_5.of(pat: Bool, ok: Bool, elems: Bool, +tb: F.Table, +ar: O.Arena, +self:
     case _ _ _                : Hop{ar, 0}
 
 # `[x.src[1].val for x in stk.src] == list(range(len(stk.src)))`, as
-# `stk.src[k].src[1].val == k` for every k.
+# `stk.src[k].src[1].val == k` for every k. The arity is `== 2` and not `>= 2`: the inner
+# pattern is a two-TUPLE, so `strict_length` is on and a three-src element does not match.
 def mp_5.one(+ar: O.Arena, +x: U32, k: Nat) -> Bool:
   Bool.and(mp_is(ar, x, O.OpsINDEX{}),
-           Bool.and(mp_nsrc_ge(ar, x, 2), const_is(ar, mp_src(ar, x, 1), k)))
+           Bool.and(mp_nsrc_is(ar, x, 2), const_is(mp_const(ar, mp_src(ar, x, 1)), k)))
 
 # ONE DEF for the fold, for the reason `mp_ident.at` says.
 def mp_5.each.at(ss: List<&2, U32>, +ar: O.Arena, +k: Nat, ok: Bool) -> Bool:
@@ -630,6 +684,95 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
   mp_try.go(Bool.and(O.pm_claimed(O.PMEntry.ops(e), ar, self), mp_early(ar, self, O.PMEntry.rej(e))),
            O.PMEntry.tag(e), tb, ar, self)
 
+# ===========================================================================
+# THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
+# and re-run against the clean 26-row gate, by `.agents/slop/mop-mut.py`. This is the
+# only evidence in the file that a row can FAIL: a row that cannot fail is a restatement,
+# and most of these rows exist precisely because a mutation first showed them moving
+# nothing. Every mutation but M12, M14 and M15 is a REVERT of one of this file's own
+# fixes, so the set it moves is the set of rows that fix was load-bearing for.
+#
+# `rows moved` is the set difference of the two gates, so it names rows by the property
+# they test rather than by the def that computes them.
+#
+#   mutation                                                        rows moved
+#   -------------------------------------------------------------- -------------------------------------------------------------
+#   M1  `hop_self.of`'s two arms swapped (the reported inversion)     14  ret_new, and every row that reads a
+#                                                                       FIRED rule's answer: shrink1_ns
+#                                                                       shrink1_marg reshape_pick permute_merge
+#                                                                       permute_noop stack_idx const_idx2
+#                                                                       const_idx3 const_idx5 rej_pair idx_idx
+#                                                                       idx_pick idx_shaped
+#   M2  `mp_nsrc_ge` back to `n < nsrc` (the off-by-one)                2  const_idx2 idx_pick
+#   M3  `mp_index.pick` returns the VALUE, not `Arena.src(self, val)`  1  idx_pick
+#   M4  `mp_replace` reads the arg off `self`                           1  permute_merge
+#   M5  `mp_3` composes from `x2`'s SRCS, not its `arg`                 1  permute_merge
+#   M6  `mp_ident.at` reads an arg ELEMENT as an arena index           1  permute_noop
+#   M7  `marg.go` appends on the way UP (reverses the margin)           1  shrink2_marg
+#                                                                       (see (0))
+#   M8  `marg_add` takes `n` from the INNER shrink                       1  shrink1_marg
+#   M9  `mp_5.one`'s strict two-tuple relaxed to `>= 2`                 0  -- see (2)
+#   M10 `mp_0`'s one-axis rank guard dropped                             1  shrink2
+#   M11 `G.ix` without the bottom's 0                                   17  see (3)
+#   M12 `mp_early`'s subset test `and` -> `or`                           0  -- see (4)
+#   M13 rule 6's reject set {STACK, CONST} misspelled as {STACK, NOOP}  4  const_idx2 const_idx3 const_idx5 rej_pair
+#   M14 `hop_first`'s first-wins test flipped (last-wins)               13  M1's set MINUS ret_new
+#   M15 rule 8 DELETED from the table                                    2  idx_shaped mop_len
+#
+# (0) M7'S ROW IS `shrink2_marg` AND NOT `shrink1_marg`, which reads 31 either way, and the
+#     asymmetry is the ROW. Reversing the margin reorders its entries: `((1,1),(2,1))`
+#     encodes 1121 and `((2,1),(1,1))` encodes 2111, so the two-entry row sees it and the
+#     one-entry row cannot. A one-element fold is order-blind, which is why the bug survived
+#     in `marg` while every single-margin row stayed correct. `List.append(r, [x])` putting
+#     `x` at the END of `r` is MEASURED, reproducer `.agents/slop/notes/probe-append.bend`.
+#
+# (1) M8 IS THE ROW FOR `UPat.f`'s NAMING, and it is the only row that reads `n` rather
+#     than `o`. `UPat.f` is `UPat(op, src=(self,))`, so `x` is the INNER shrink and `s` the
+#     OUTER -- and `n` is `s.marg`'s, the outer's. The swap gives 32 where CPython gives
+#     31: `SHRINK(b4, CONST(3), CONST(1))` carries the outer's `n = 1`, and the inner's is
+#     2. `o` is unaffected because it is SUMMED, which is why one row and not two move.
+#     `shrink2_marg` does NOT move: `S3` and `S4` are `((0,1),(1,1))` and `((1,1),(1,1))`,
+#     so both `n`s are 1 and both orders agree. That asymmetry is the row's whole value.
+#
+# (2) M9 IS A PROOF, NOT A GAP. `mp_5.one`'s arity test is `== 2` because the inner pattern
+#     is a two-TUPLE (`strict_length` is on). Relaxing it to `>= 2` can only ADMIT more
+#     nodes, and every stacked element in the fixture is a two-src INDEX, so the set of
+#     nodes rule 5 fires on is unchanged. The `>= 2` reading is exactly the defect M2 was,
+#     and M2 DOES move two rows -- so the arity test is load-bearing, just not here.
+#
+# (3) M11 IS THE BIGGEST MUTATION IN THE TABLE and it is a GATE defect, not a rule defect.
+#     `G.ix` is the arena's index list, and the bottom's `0` was missing, so `G.at(g, n)`
+#     was one node PAST the one every row's comment names. That is why half this file's
+#     rows read 0 before the fix and why the reported `hop_self` evidence ("four rows moved,
+#     seven did not") understated the damage: `const_idx2` and `const_idx3` were reading
+#     IX3 and IX5, not IX2 and IX3. Seventeen rows, including all three `grow_*`/`marg_*`
+#     readers, depend on the addressing being right.
+#
+# (4) M12 IS ALSO A PROOF. `mp_early.go` folds its reject set with `and`, and `or` is the
+#     only other reading of `issubset`. Those are DIFFERENT functions in general and the
+#     SAME function on a set of one -- and rule 6's `{STACK, CONST}` is the only reject set
+#     in this table with two members, so `and`/`or` differ on exactly one rule. M13 is that
+#     rule's row: a misspelled set moves four rows where the fold's connective moves none,
+#     because the difference is in WHICH ops are in the set, not in how they combine.
+#
+# (5) M14 IS `M1` AGAIN, AND THAT IS THE FINDING. Last-wins moves M1's THIRTEEN rows and
+#     not `ret_new` -- so `hop_self` and the first-wins fold are the same defect seen from
+#     two sides: both are "the answer survives when it should not". They are separate defs
+#     with separate bugs, and one mutation does not substitute for the other: M1 leaves the
+#     fold's ORDER intact (so `reshape_pick`, where `mp_1` and `mp_2` both claim R2, still
+#     picks the earlier rule) while M14 leaves `ret is not uop` intact. A first pass at M14
+#     flipped the test WITHOUT threading `+` through `r`, and the mutation was REFUSED --
+#     `expected : r / observed : r (consumed more than once)`. That refusal is why the row
+#     has a `+` in it now, and it is worth stating: a mutant that does not compile has
+#     measured nothing, and a table entry reading "0 rows moved" because the edit was
+#     refused is a lie. `mop-mut.py` reports "DOES NOT CHECK" for exactly this.
+#
+# M15 IS THE ROW THE COUNT ROWS EXIST FOR. It DELETES a `PMEntry` rather than editing it,
+# and it deletes the LAST one, so no tag after it renumbers and no rule can fire
+# differently: `mop_len` and `idx_shaped` are the only rows in the 26 that can move. Delete
+# the COUNT rows and this mutation is invisible. (M13 is the same table with a wrong op set,
+# which is a different job and is a separate row.)
+# ===========================================================================
 # THE ONE RECURSIVE DEF. The fuel is the first parameter and every self-call passes a
 # list tail, so the decrease check reads left to right and stops at the first argument that
 # shrinks. `h` is read twice -- once for its arena, which the next rule builds in, and once
@@ -661,11 +804,16 @@ def mop_cleanup(+fx: F.Folded, +self: U32) -> Hop:
 
 # ===========================================================================
 # THE GATE. Every row is DERIVED FROM PYTHON, via
-# `.agents/slop/notes/mop-truth.py`, so a row here can be WRONG rather than merely restate
-# this file.
+# `.agents/slop/notes/mop-truth3.py`, which prints its rows in THIS ORDER and with THIS
+# SPELLING, so `diff <(python3 mop-truth3.py | grep '=') <(./bin/bend movement.bend)` is the
+# acceptance test and neither side can be nudged to match the other. A row here can be
+# WRONG rather than merely restate this file. `mop-truth.py` is the earlier, partial
+# oracle; `mop-truth3.py` is the one that covers the rows.
 #
-# THE FIXTURE, and the node indices it fixes. Not load-bearing -- no row compares an index
-# across lanes -- but naming them makes the result-index rows readable, since "the rewrite
+# THE FIXTURE, and the node indices it fixes. `G.ix` is `[0]` then the interning order
+# MINUS `ki`, which `g()` builds and never lists -- so `G.at(g, n)` is a LIST POSITION and
+# the last two positions are one below the arena index they hold. `mop-truth3.py` prints
+# the whole map. Naming the nodes makes the result-index rows readable, since "the rewrite
 # of P2 IS P3" is a Python fact.
 #
 #   0 bottom  1 C0   2 C1   3 C2   4 C4    5 SPECIAL   6 b4(size 4)
@@ -755,7 +903,8 @@ def g() -> G:
   +k3 = O.UOp.new(O.Found.ar(ki), O.OpsINDEX{}, [O.Found.i(ki), O.Found.i(o2)], O.ANone{}, O.TNone{})
   +add = O.UOp.alu(O.Found.ar(k3), O.OpsADD{}, [O.Found.i(c0), O.Found.i(c1)])
   G{F.folded(O.Found.ar(add)),
-    [O.Found.i(c0), O.Found.i(c1), O.Found.i(c2), O.Found.i(c4), O.Found.i(sp),
+    [0,
+     O.Found.i(c0), O.Found.i(c1), O.Found.i(c2), O.Found.i(c4), O.Found.i(sp),
      O.Found.i(b4), O.Found.i(b0), O.Found.i(b24), O.Found.i(big), O.Found.i(o1), O.Found.i(o2),
      O.Found.i(s1), O.Found.i(s2), O.Found.i(t2), O.Found.i(t11), O.Found.i(s3), O.Found.i(s4),
      O.Found.i(t4), O.Found.i(r1), O.Found.i(r2), O.Found.i(r3), O.Found.i(p1), O.Found.i(p2), O.Found.i(p3),
@@ -790,7 +939,7 @@ def marg_un.go(m: Maybe<&1, List<&2, Marg>>) -> List<&2, Marg>:
     case None{}   : Nil{}
 
 # `enc` packs a margin as `(((o0*10+n0)*100 + o1*10+n1) ...)`, so the Python `((3,1),)` is
-# 31 and `((1,1),(2,1))` is 1121. Both are printed by mop-truth.py.
+# 31 and `((1,1),(2,1))` is 1121. Both are printed by mop-truth3.py.
 def marg_pair(+o: H.I64, n: H.I64) -> U32:
   U32.add(U32.mul(i64_u32(o), 10), i64_u32(n))
 
@@ -808,7 +957,7 @@ def t_mop_len() -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, mop_table()))
 
 # SHRINK over SHRINK at rank 1. Python answers `SHRINK(b4, CONST(3), CONST(1))`: three
-# srcs, offsets 2+1 and size 1.
+# srcs, offsets 2+1 and size 1. `mop-truth3.py`: `at(13) = S2 -> FRESH nsrc=3`.
 def t_shrink1_ns() -> U32:
   +h = rw(g(), 13n)
   mp_nsrc(hop_ar(h), hop_ix(h))
@@ -823,11 +972,16 @@ def t_shrink1_marg() -> U32:
   +h = rw(g(), 13n)
   marg_pair(shr_o(hop_ar(h), hop_ix(h)), shr_n(hop_ar(h), hop_ix(h)))
 
+# THE FIRST OF THE TWO DEFERRED WALLS, and the row that says so. CPython answers a 3-src
+# SHRINK for S4; the port answers none, because rank 2's `_mop` needs
+# `UOp.sink(*usrcs).simplify()` and that is `graph_rewrite(self, symbolic)`. So this reads
+# 1 where CPython says 0 -- and that is the row's job: it FAILS the day the wall is ported.
 def t_shrink2() -> U32:
   b2u(O.UOp.is_none(hop_ix(rw(g(), 17n))))
 
-# The rank-2 merged margin, `((1,1),(2,1))`. Python's rule FIRES here and `simplify()`
-# supplies the STACKs; this port's does not, and that is the row.
+# The rank-2 merged margin, `((1,1),(2,1))` == 1121. The GENERATOR is ported even though
+# the node it feeds is not, so this row and `marg_n2` are about `marg_add` and not about
+# rule 0 firing.
 def t_shrink2_marg() -> U32:
   marg_enc.go(marg_un.go(g_marg(17n)), 0)
 
@@ -839,16 +993,19 @@ def t_marg_n2() -> U32:
 
 # FIRST WINS, and the fixture is built so `mp_1` and `mp_2` BOTH claim R2 and DISAGREE.
 # Python: `mp_1` gives `RESHAPE(b4, st4)` and `mp_2` gives `RESHAPE(b4, CONST(4))`, and
-# `rewrite` returns the first.
+# `rewrite` returns the first. `mop-truth3.py`: `at(20) = R2 -> R3 nsrc=2`.
 def t_reshape_pick() -> U32:
   +h = rw(g(), 20n)
   b2u(mp_is(hop_ar(h), mp_src(hop_ar(h), hop_ix(h), 1), O.OpsSTACK{}))
 
-# `mp_2` alone, on a RESHAPE whose src[0] is a BUFFER -- the only shape it can be
-# evaluated for while fold.bend defers a movement op's shape. Python: b4.
+# THE SECOND DEFERRED WALL. CPython answers `b4` (index 6) for R3; the port answers none,
+# because rule 2 asks `x.shape` for a RESHAPE and fold.bend does not answer a movement op's
+# shape. So this reads 0 where CPython says 6, and the comment above it is the reason.
 def t_reshape_noop() -> U32:
   hop_ix(rw(g(), 21n))
 
+# `P2 -> P3`, i.e. the permutes COMPOSE and the answer is a different arg node. Reading
+# 24 rather than 22 is what distinguishes the composed arg from `x2`'s own.
 def t_permute_merge() -> U32:
   hop_ix(rw(g(), 23n))
 
@@ -858,6 +1015,8 @@ def t_permute_noop() -> U32:
 def t_stack_idx() -> U32:
   hop_ix(rw(g(), 28n))
 
+# `IX2 -> C1` (index 2). Rule 6's answer is a node the fixture ALREADY HOLDS, which is
+# `a.src[i.val]` with no `index()` call: two srcs, so `mp_6` takes the `True True` arm.
 def t_const_idx2() -> U32:
   hop_ix(rw(g(), 29n))
 
@@ -873,7 +1032,10 @@ def t_idx_idx() -> U32:
   +h = rw(g(), 33n)
   mp_nsrc(hop_ar(h), hop_ix(h))
 
-# `UOp.index`'s STACK special case: rule 7's answer is a node it did NOT build.
+# `UOp.index`'s STACK special case: rule 7's answer is a node it did NOT build. `J3` has one
+# src, so the `zip` of `idx1.src[1:]` and `idx2.src[1:]` is empty and the offset list is just
+# `C1` -- one src, a CONST, on a STACK buffer, which is ops.py:223's early return. Reading 2
+# (`C1`) and not 1 (the VALUE) is what `mp_index.pick` resolving through `Arena.src` buys.
 def t_idx_pick() -> U32:
   hop_ix(rw(g(), 34n))
 
@@ -887,10 +1049,15 @@ def t_idx_shaped_bad() -> U32:
 def t_unclaimed() -> U32:
   b2u(O.UOp.is_none(hop_ix(rw(g(), 38n))))
 
+# Rule 6's TWO-element reject set, over a THREE-src INDEX (IX3): `ler` folds over every
+# src, and reading only `src[0]` would leave `{STACK}` -- which does not contain `CONST`,
+# so rule 6 would not fire and this row would read 0. It is the ANSWER's index, and
+# `const_idx3` is the answer's arity, so the two are independent readings of one rewrite.
 def t_rej_pair() -> U32:
-  hop_ix(rw(g(), 29n))
+  hop_ix(rw(g(), 30n))
 
-# A rule that interns a node GROWS the arena, and a rule that does not does not.
+# A rule that interns a node GROWS the arena, and a rule that does not does not. These two
+# are the `Hop`'s ARENA half: `J2 -> INDEX(b4, C0, C1)` is a new node, `IX2 -> C1` is not.
 def t_grow_new() -> U32:
   +gx = g()
   +h = mop_cleanup(G.fx(gx), G.at(gx, 33n))
@@ -913,10 +1080,16 @@ def t_twice() -> U32:
   +b = mp_scan(ts, tb, ler, G.at(gx, 23n), Hop{ar, 0})
   b2u(U32.is_eq(hop_ix(a), hop_ix(b)))
 
-# `ret is not uop`, ops.py:1611, which no rule in this file can trigger.
+# `ret is not uop`, ops.py:1611. The answer IS `self` -> `rewrite` returns None -> 1. This
+# row CANNOT see the arms of `hop_self` (both readings answer index 0), which is why
+# `t_ret_new` exists: it is the row for the def.
 def t_ret_self() -> U32:
   b2u(O.UOp.is_none(hop_ix(hop_self(Hop{O.Arena.empty(), 0}, 0))))
 
+# A NEW index against a DIFFERENT self: `ret is not None and ret is not uop` holds, so the
+# answer SURVIVES and this reads 0. This row is what the inverted arms made read 1, i.e. the
+# gate asserted the bug. There is no fixture node whose rewrite is itself, so the whole of
+# `hop_self` rests on these two rows being derived and not restated.
 def t_ret_new() -> U32:
   b2u(O.UOp.is_none(hop_ix(hop_self(Hop{O.Arena.empty(), 3}, 2))))
 
