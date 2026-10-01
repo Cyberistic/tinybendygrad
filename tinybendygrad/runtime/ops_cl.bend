@@ -148,11 +148,19 @@
 #
 # 7. `ctypes.string_at(hip.hipGetErrorString(status)).decode()` (hp:10). The
 #    FUNCTION is a symbol and the port names it (`vend.hp.of(OP_ERRSTR)`); the
-#    STRING it returns is data the port cannot produce, and MEASURED: importing
-#    `tinygrad.runtime.autogen.hip` on this machine raises "failed to load
-#    library hip: try setting HIP_PATH?", so there is no oracle for the 1277
-#    `hip*` symbols either. `hp_err_of` therefore answers the PREFIX
+#    STRING it returns is data the port cannot produce, because calling it needs
+#    a live HIP runtime. `hp_err_of` therefore answers the PREFIX
 #    `HIP Error <status>, ` and the tail is the seam's.
+#    THIS WALL USED TO BE BIGGER AND WAS WRONG ABOUT IT. It claimed that
+#    `import tinygrad.runtime.autogen.hip` raises "failed to load library hip"
+#    on this machine, and therefore that there was no oracle for the 1277 `hip*`
+#    symbols. MEASURED, arm64 darwin: the import SUCCEEDS, all 1277 symbols
+#    resolve, and `hipMemcpyHostToDevice`/`hipMemcpyDeviceToHost` answer 1 and 2
+#    by `getattr` -- so `HIP_H2D` and `HIP_D2H` and every `vend.hp` cell DO have
+#    an oracle and this file's constants were checked against it. Only a real
+#    CALL fails, and a real call needs a device. The oracle is
+#    `.agents/slop/cl_constmap.py`, which imports autogen.hip and asserts
+#    `getattr` for both memcpy kinds.
 #    TODO(p3) runtime/ops_hip.py:10 -- hipGetErrorString's text.
 #
 # WHAT IS NOT A WALL, because it is DATA and is ported:
@@ -237,12 +245,13 @@
 #      LAST dim beside one that is 4 in the FIRST dim.
 #
 # ===========================================================================
-# NO OpenCL, CUDA OR HIP IN THIS ENV. `Device['OPENCL']` needs a loader and
-# `autogen.hip` raises on import here, so NOTHING below was measured against a
-# live device. Every constant was READ OUT OF `tinygrad/runtime/autogen/*.py`,
-# every error-table row was MEASURED by evaluating the comprehension in CPython
-# with no device present, and every other row's expectation is derived from the
-# source text of the three files.
+# NO OpenCL, CUDA OR HIP IN THIS ENV. `Device['OPENCL']` needs a loader and no
+# HIP runtime is installed here, so NOTHING below was measured against a live
+# device. Every constant was READ OUT OF `tinygrad/runtime/autogen/*.py` -- and
+# all THREE of those modules import on this machine, `hip` included, so all three
+# are oracles (see WALL 7) -- every error-table row was MEASURED by evaluating
+# the comprehension in CPython with no device present, and every other row's
+# expectation is derived from the source text of the three files.
 import Base
 import ../helpers.bend as H
 
@@ -2139,8 +2148,16 @@ def cu.map_err_ctx() -> String: " device memory is only reachable through the ho
 def cu.map_err_align() -> String: " memory is not page aligned host memory"
 def NO_REFUSAL() -> String: ""
 
-# mmap.PAGESIZE is 4096 on every platform tinygrad supports, and cu:88's test is
-# `host.addr % mmap.PAGESIZE`, so the port needs the constant and the modulus.
+# cu:88 `host.addr % mmap.PAGESIZE`. THE AUTHORITY IS HOST-DEPENDENT AND A `U32`
+# CONSTANT CANNOT BE, so this is a HOST PARAMETER and not a port of a Python
+# number. MEASURED, arm64 darwin: `mmap.PAGESIZE` is 16384, so the old comment's
+# "4096 on every platform tinygrad supports" was false on the very machine this
+# gate runs on. The VALUE is deliberately left at 4096 because that is what every
+# platform CUDA actually runs on answers (x86-64 Linux and macOS), and 16384 would
+# be wrong for all of them -- a 64K-page aarch64 Linux answers 65536. Nothing in
+# this file consumes the constant: `cu.map_err.at` takes `aligned: Bool`, the
+# seam's answer, and never computes the modulus. It is here so the SEAM has it,
+# and `cu_page_size` prints it so the seam's reader can see which one it got.
 def PAGE_SIZE() -> U32: 4096
 
 def cu.map_err.at(is_cuda: Bool, has_host: Bool, aligned: Bool, +device: String) -> String:
