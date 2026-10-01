@@ -223,9 +223,7 @@ def cr_const_of(+ar: O.Arena, +v: O.Const, +dt: S.Dt) -> T.Tensor:
 # then builds the node in -- so the order is CONST-then-node, which is what CPython's
 # own toposort prints.
 def cr_cdims.go(ds: List<&2, U32>, acc: List<&2, O.Const>) -> List<&2, O.Const>:
-  match ds:
-    case Nil{}: acc
-    case d <> t: cr_cdims.go(t, List.append(&2, O.Const, acc, [MO.mo_ki(d)]))
+  List.foldl(~&2, ~U32, ~List<&2, O.Const>, (a: List<&2, O.Const>) => (d: U32) => List.append(&2, O.Const, a, [MO.mo_ki(d)]), ds, acc)
 
 def cr_cdims(ds: List<&2, U32>) -> List<&2, O.Const>: cr_cdims.go(ds, Nil{})
 
@@ -473,9 +471,7 @@ def cr_srcops(+ar: O.Arena, u: U32) -> String: cr_srcops.of(ar, u)
 # A `None` shape is fold.bend's "this fold cannot answer this node" and prints `()`,
 # which is a 0-dim shape's own answer too.
 def cr_dims.go(ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>:
-  match ds:
-    case Nil{}:  acc
-    case d <> t: cr_dims.go(t, List.append(&2, String, acc, [U32.show(MO.mo_dim_u32(d))]))
+  List.foldl(~&2, ~O.Sint, ~List<&2, String>, (a: List<&2, String>) => (d: O.Sint) => List.append(&2, String, a, [U32.show(MO.mo_dim_u32(d))]), ds, acc)
 
 def cr_dims(ds: List<&2, O.Sint>) -> String: String.concat(["(", String.join(cr_dims.go(ds, Nil{}), ","), ")"])
 
