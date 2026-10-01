@@ -368,12 +368,17 @@ def i64_max_u(bits: U32) -> H.I64:
     case 8: H.i64_of_hi_lo(0, 255)
     case 16: H.i64_of_hi_lo(0, 65535)
     case 32: H.i64_of_hi_lo(0, 4294967295)
-    case _: H.i64_of_hi_lo(4294967295, 4294967295)
+    # uint64's max is 2^64-1 and an I64 is a SIGNED pair, so it has no image:
+    # (0xFFFFFFFF, 0xFFFFFFFF) is -1. The bound is only read as `hi <= max` and
+    # every I64 hi is <= int64's max, so int64's max answers that test correctly
+    # on the whole domain. Found by mixin/dtype.bend's gate (u64_at_* rows),
+    # fixed here 2026-10-01; the old value made the uint64 rung unhittable.
+    case _: H.i64_of_hi_lo(2147483647, 4294967295)
 
 def i64_min_s(bits: U32) -> H.I64:
   match bits:
-    case 8: H.i64_of_hi_lo(4294967295, 4294952968)
-    case 16: H.i64_of_hi_lo(4294967295, 4294901760)
+    case 8: H.i64_of_hi_lo(4294967295, 4294967168)
+    case 16: H.i64_of_hi_lo(4294967295, 4294934528)
     case 32: H.i64_of_hi_lo(4294967295, 2147483648)
     case _: H.i64_of_hi_lo(2147483648, 0)
 
