@@ -65,7 +65,7 @@ def check(rel):
 def main():
   stage()
   base_code, base = gate()
-  assert base_code == 0 and len(base) == 10, f'unclean baseline: {base}'
+  assert base_code == 0 and len(base) == 11, f'unclean baseline: {base}'
   print(f'baseline fold.bend: {len(base)} rows, check={check("uop/fold.bend")}')
   for k in sorted(base):
     print(f'  {k}={base[k]}')

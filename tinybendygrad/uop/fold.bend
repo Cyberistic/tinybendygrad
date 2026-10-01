@@ -222,12 +222,15 @@ def Sized.s(x: Sized) -> List<&2, O.Sint>:
   match x:
     case Sized{n, s}: s
 
-# A self-call that returns the list it consumed has to rebuild it -- and Bend
-# spends a list -- so the list comes back REVERSED and `List.reverse` puts it right.
-def sized.go(s: List<&2, O.Sint>, n: Nat, rev: List<&2, O.Sint>) -> Sized:
+# `List.append` is `xs ++ ys` (base.bend:822), so this accumulator is ALREADY in
+# input order and the walk ends with no `List.reverse`: the reverse that used to be
+# here turned a list already in ops.py's order into its own mirror, which every
+# COUNT survived -- `Sized.n` is unaffected -- and every positional read did not.
+# Same anti-pattern, same defect, one layer down from `srcs.go`.
+def sized.go(s: List<&2, O.Sint>, n: Nat, acc: List<&2, O.Sint>) -> Sized:
   match s:
-    case Nil{}: Sized{n, List.reverse(&2, O.Sint, rev)}
-    case h <> t: sized.go(t, 1n+n, List.append(&2, O.Sint, rev, [h]))
+    case Nil{}: Sized{n, acc}
+    case h <> t: sized.go(t, 1n+n, List.append(&2, O.Sint, acc, [h]))
 
 def sized(s: List<&2, O.Sint>) -> Sized:
   sized.go(s, 0n, Nil{})
@@ -304,6 +307,12 @@ def eq_sint(+x: O.Sint, y: O.Sint) -> Bool:
 
 # is_image_shape -- helpers.py:37, `shape is not None and len(shape) == 3 and
 # shape[-1] == 4`, over the resolved dims rather than helpers.bend's `Nest`.
+# TODO(p3) helpers.py:37 def is_image_shape -- `four` compares against `sint_one()`,
+#   so it tests `shape[-1] == 1` and answers False for `(32,32,4)`, which Python says
+#   True. MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`; see the mutation
+#   table at the bottom of this file. `helpers.bend`'s own `is_image_shape.tail` gets
+#   it right (`U32.is_eq(x, 4)`). Wants its own gate row, so this file's `sized` fix
+#   keeps moving exactly one row.
 def is_image_shape.four(last: Maybe<&2, O.Sint>) -> Bool:
   match last:
     case Some{d}: eq_sint(d, sint_one())
@@ -2351,6 +2360,18 @@ def t_resh_settle() -> Bool:
   +x = folded(O.Found.ar(g_resh22()))
   Kahn.settled(Folded.ar(x), Folded.t(x))
 
+# sized/pad_to walk a shape in ops.py's order, and `pad_to` PREPENDS the ones,
+# because `(1,)*(max_dim-len(s))+s` left-aligns to the widest shape. Every
+# positional reader below names a dim by index -- `is_image_shape`'s `List.last`,
+# `drop_last`'s `take_n`, `bitcast_dims`' last -- so a mirrored `sized` moves the
+# answer without moving any count, which is why an order-insensitive fixture
+# cannot see it. CPython, measured by `.agents/slop/notes/sized-oracle.py`:
+# `sized((2,3))` is `(2,3)` and `pad_to((2,3),3)` is `(1,2,3)`.
+def t_sized_order() -> Bool:
+  Bool.and(eq_sints(Sized.s(sized([sint_of(2), sint_of(3)])), [sint_of(2), sint_of(3)]),
+    eq_sints(Sized.s(pad_to(sized([sint_of(2), sint_of(3)]), 3n)),
+      [sint_one(), sint_of(2), sint_of(3)]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
@@ -2362,7 +2383,8 @@ def main() -> IO(Unit):
     g : Unit <- row("resh_1d", t_resh_1d())
     h : Unit <- row("resh_noop", t_resh_noop())
     i : Unit <- row("resh_reject", t_resh_reject())
-    row("resh_settle", t_resh_settle())
+    j : Unit <- row("resh_settle", t_resh_settle())
+    row("sized_order", t_sized_order())
 
 # ===========================================================================
 # NOT PORTED, one line each, and the wall each one is behind. The Python line
@@ -2522,4 +2544,30 @@ def main() -> IO(Unit):
 # left ALONE and REPORTED rather than fixed blind: a fix that moves no row is a claim
 # with no measurement behind it, and `sized` is a SHAPE list where the reversal might
 # be compensating for a second one. FIXING IT NEEDS A GATE ROW FIRST.
+#
+# ===========================================================================
+# THE MUTATION TABLE for the `sized` ORDER fix, MEASURED, run both ways.
+#
+# | mutation | rows that MOVED | what it is testing |
+# | --- | --- | --- |
+# | M2 `sized.go`: `Sized{n, acc}` -> `Sized{n, List.reverse(&2, O.Sint, acc)}` (the pre-fix state) | `sized_order` | a SHAPE list is walked in ops.py's order, so `Sized.s` is the input list and not its mirror, and `pad_to` PREPENDS the ones. `sized_order` prints False under M2 and True without it; the other ten rows and `--check-only` are UNAFFECTED, so the defect is invisible to every fixture the fold gate happens to reach -- that is exactly why it needed its own row. |
+#
+# THE DOWNSTREAM REVERT, same edit over the importing gates: `tensor.bend` (33 rows),
+# `movement.bend` (26) and `spec.bend` (21) move ZERO rows and `--check-only` passes on
+# all three, before and after. That is the SAME blind spot M1 had, one layer down, and
+# it is a fact about the FIXTURES rather than about the fix: nothing those gates build
+# has a shape whose dims are distinguishable in order.
+#
+# WHAT M2 DID NOT CATCH, because M2 tests ORDER and this is a CONSTANT: `is_image_shape`
+# answers False for `(32,32,4)`, and helpers.py:37 says True. `is_image_shape.four` is
+# named for the 4 and its body tests `sint_one()`, so it compares the last dim against
+# ONE. This is a SEPARATE defect from the one M2 removes -- `List.last` now reads the
+# right dim and the comparison is still the wrong one -- and the two masked each other
+# on the `(4,32,32)` fixture `probe-sized2` used: mirrored, `List.last` answered 4, and
+# 4 against 1 is False, which agrees with CPython's False for the wrong reason.
+# MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`. REPORTED NOT FIXED: it is
+# out of this fix's scope and it wants its own row, so that M2 keeps moving exactly one.
+# `bitcast_dims`, the other order-sensitive consumer, does agree with CPython now --
+# `[2,6]` with itemsize 4 into 8 is `[2,3]`, and `[3]` into 8 is the `RuntimeError` the
+# fold reports by not answering.
 # ===========================================================================
