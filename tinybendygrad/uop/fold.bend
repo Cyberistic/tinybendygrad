@@ -348,9 +348,7 @@ def drop_last(+x: Sized) -> Sized:
   sized(take_n(Sized.s(x), Nat.sub(Sized.n(x), 1n)))
 
 def wmma_shapes.go(ws: List<&2, Sized>, acc: List<&2, Sized>) -> List<&2, Sized>:
-  match ws:
-    case Nil{}: acc
-    case w <> t: wmma_shapes.go(t, List.append(&2, Sized, acc, [drop_last(w)]))
+  List.foldl(~&2, ~Sized, ~List<&2, Sized>, (a: List<&2, Sized>) => (w: Sized) => List.append(&2, Sized, a, [drop_last(w)]), ws, acc)
 
 def drop_n(xs: List<&2, O.Sint>, +n: Nat) -> List<&2, O.Sint>:
   List.drop(&2, O.Sint, xs, n)
@@ -633,9 +631,7 @@ def rlike(ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 
 # `[x.dtype for x in src]`
 def dts_of.go(ss: List<&2, Derived>, acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
-  match ss:
-    case Nil{}: acc
-    case d <> t: dts_of.go(t, List.append(&2, S.Dt, acc, [Derived.dt(d)]))
+  List.foldl(~&2, ~Derived, ~List<&2, S.Dt>, (a: List<&2, S.Dt>) => (d: Derived) => List.append(&2, S.Dt, a, [Derived.dt(d)]), ss, acc)
 
 def fold.dt.of(m: Maybe<&2, Derived>) -> Maybe<&2, S.Dt>:
   match m:
@@ -769,10 +765,11 @@ def shapes_of.acc(m: Maybe<&2, List<&2, O.Sint>>, acc: Maybe<&2, Shapes>) -> May
 # `shapes_of.go` are two reads of the same list and Bend spends a list when it reads
 # it. The accumulator is a Maybe and the step is a def, so it is two scrutinees and
 # the three cases a Maybe-squared walk can be in.
+def shapes_of.acc2(acc: Maybe<&2, Shapes>, d: Derived) -> Maybe<&2, Shapes>:
+  shapes_of.acc(Derived.shape(d), acc)
+
 def shapes_of.go(ss: List<&2, Derived>, acc: Maybe<&2, Shapes>) -> Maybe<&2, Shapes>:
-  match ss:
-    case Nil{}: acc
-    case d <> t: shapes_of.go(t, shapes_of.acc(Derived.shape(d), acc))
+  List.foldl(~&2, ~Derived, ~Maybe<&2, Shapes>, shapes_of.acc2, ss, acc)
 
 def all_shapes(ss: List<&2, Derived>) -> Maybe<&2, Shapes>:
   shapes_of.go(ss, Some{Shapes{Nil{}, 0n}})
@@ -797,9 +794,7 @@ def alu_ds(dt: S.Dt, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 
 # `shp.extend(list(s.shape))`, one index at a time
 def dims_of.go(ss: List<&2, Derived>, acc: List<&2, O.Sint>) -> List<&2, O.Sint>:
-  match ss:
-    case Nil{}: acc
-    case d <> t: dims_of.go(t, List.append(&2, O.Sint, acc, shape_of(d)))
+  List.foldl(~&2, ~Derived, ~List<&2, O.Sint>, (a: List<&2, O.Sint>) => (d: Derived) => List.append(&2, O.Sint, a, shape_of(d)), ss, acc)
 
 def dims_of(ss: List<&2, Derived>) -> List<&2, O.Sint>:
   dims_of.go(ss, Nil{})
@@ -826,10 +821,11 @@ def src_dev(k: U32, ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   Derived.dev(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
 
 # the `for x in self.src` loop, first non-None wins and src order is the order
+def first_dev.acc2(acc: Maybe<&2, S.Dev>, d: Derived) -> Maybe<&2, S.Dev>:
+  Maybe.or(&2, S.Dev, acc, Derived.dev(d))
+
 def first_dev.go(ss: List<&2, Derived>, acc: Maybe<&2, S.Dev>) -> Maybe<&2, S.Dev>:
-  match ss:
-    case Nil{}: acc
-    case d <> t: first_dev.go(t, Maybe.or(&2, S.Dev, acc, Derived.dev(d)))
+  List.foldl(~&2, ~Derived, ~Maybe<&2, S.Dev>, first_dev.acc2, ss, acc)
 
 def first_dev(ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   first_dev.go(ss, None{})
