@@ -89,20 +89,28 @@
 # is duplicated. That is the price of not having first-class functions, and
 # `uop/spec.bend` pays it too.
 #
+# THE ESCAPE IS AN ARGUMENT, and this file now uses it. A body cannot live in the
+# TABLE, but it can be BUILT BY THE CALLER and handed to the scan as a `Verdict`
+# value -- `rz_fire(claim, body)`. So the table keeps what is data (the op set and
+# the reject set), `rz_claim` reads the claim off it with `ops.bend`'s own already
+# correct `pm_claimed`/`pm_early`, and the one scan is shared. `O.pm_rewrite`
+# cannot be that scan, because its `pm_dispatch` is `ops.bend`'s own tag-to-body
+# table; see the paragraph at `rz_claim`.
+#
 # `early_reject` IS A VETO HERE, and that is a DIFFERENCE FROM `spec.bend`, so it
 # gets a paragraph. `spec.bend`'s six tables carry four non-empty reject sets and
 # all four are implied by their own src-op test, so there the subset test decides
 # nothing. Here `pm_flatten_linear` carries `custom_early_reject={Ops.LINEAR}`
 # (realize.py:205) and that set is the WHOLE of the rule's claim beyond the op: a
 # LINEAR with no LINEAR child is REJECTED and `rewrite` answers `None`, while a
-# LINEAR with one fires. `lin_none` and `lin2_len` below are the two rows that
-# pin it, and the mutation table has a row for turning the test around.
+# LINEAR with one fires. `lin_none` and `lin_fired` below are the two rows that
+# pin it, and `lin_none` is `9` rather than `1` because `show_v` spells Python's
+# `None` as `VSkip`.
 #
-# `rz_ler` FOLDS OVER EVERY SRC rather than borrowing `ops.bend`'s `pm_ler`,
-# which reads only `src[0]` and `src[1]`. `spec.bend` reported that as a real bug
-# there (`te_22`'s four-op reject set could never fire). Every reject set in THIS
-# file is one op long so `pm_ler` would do, and the four lines that make it right
-# are cheaper than the argument.
+# THE REJECT SET IS READ OFF `ops.bend`'s `pm_ler`, which folds over EVERY src.
+# `spec.bend` reported the two-src version as a real bug there (`te_22`'s four-op
+# reject set could never fire); that is fixed upstream of here, so this file has no
+# `rz_ler` of its own and nothing to keep in step.
 #
 # DEF ORDER IS THE OTHER COST, and it is the one Bend imposes that Python does
 # not: `def f.b(...)` must be declared BEFORE `def f.a(...)` that calls it, so
@@ -111,29 +119,37 @@
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# *** READ THIS BEFORE TRUSTING A ROW: `bl_u` IS A CONSTANT. ***
+# *** READ THIS BEFORE WRITING A `Bool` SELECTOR IN THIS FILE. ***
 #
-# A `match` with ONE `case _:` arm returns that arm for BOTH values of the
-# scrutinee, and `bl_u.go` / `bl_t.go` are written exactly that way -- they return
-# `f` and never look at `b`. So every Bool selector built on them is a constant,
-# and that is why 20 of the 50 rows below still read `0` or `9` where CPython
-# answers otherwise. It is a ONE-LINE fix (`case _: t` / `case _: f`), and it is
-# LEFT UNFIXED on purpose: applying it turns the whole ladder scheme inside out --
-# about a dozen entry points (`gcc_pick`, `gk_is_v`, `rz_wbuf.hit`, `rz_prod.go`,
-# `rz_find.got`, `oi_prog`, ...) were written against the broken `bl_u` and each
-# needs its own entry-point `match` at the same time. Fixing `bl_u` alone makes the
-# gate memory-fault partway through `main`.
+# `case _:` IS A WILDCARD AND IT DOES NOT DISCRIMINATE. One arm answers for BOTH
+# values of the scrutinee, and so -- this is the part that surprised us -- does a
+# PAIR of them: `case _:` / `case _:` answers its FIRST arm for both values. A
+# `Bool` choice therefore needs its tags named, `case True{}:` and `case False{}:`,
+# and so does any other scrutinee that has a tag worth testing (`Some{n}` and not
+# `Some{_}`, `Nil{}` and not `_`). A `case _:` is a correct LAST arm, and that is
+# the only place one belongs.
 #
-# THE TWO ENTRY POINTS THAT WERE FIXED ARE THE PATTERN TO FOLLOW, and both are
-# correct today: `oi_cf` and `get_call_name` now choose in a real two-armed `match`
-# and their rows moved (`oi_in_e` 0 -> 2, `name_p` None -> `k1`, both matching
-# CPython). Converting the remaining dozen is mechanical and is the single highest
-# value next step in this file.
+# This file HAD THAT DEFECT EVERYWHERE: `bl_u.go` and `bl_t.go` were one-armed and
+# so returned `f` for both values, and about a dozen entry points (`oi_cf.go2`,
+# `gcc_pick.of`, `gk_is_v.g`, `rz_wbuf.take`, `rz_prod.go`, `rz_find.got.hit`,
+# `ExecContext.has_timeout.of`, `oi_store.go`, `rz_expr_s.some`, the five `has_*`
+# predicates) were ladders written AROUND it -- a chain of one-armed selectors,
+# each of which is itself a constant, which is why fixing only `bl_u` turned the
+# cascade inside out and made the gate memory-fault partway through `main`.
 #
-# SO: 30 of the 50 rows are CPython-verified today, and the other 20 are known to
-# be wrong in a way with ONE root cause and a KNOWN fix. `gate_count` is the row
-# that keeps this honest -- it is the number of rows printed, so a row that stops
-# printing cannot pass unnoticed.
+# The wave is converted and the ladder is gone: 21 of the 50 rows moved onto
+# CPython's own answers and `--check-only` is green with both lanes identical. Two
+# of those 21 were NOT the `Bool` cascade and are recorded at their own defs --
+# `pa_bound.of` (a dispatch that answered `None{}` for every `Arg`, so the bound
+# map was always empty) and `rz_beam_sink` (a bare index returned from an arena it
+# had grown, so the index pointed into an arena its caller did not hold).
+#
+# What is left as a constant is a constant ON PURPOSE: `rz_isdt.go`,
+# `rz_nbytes.mul`, `rz_shape.go` and `rz_nbytes_of0` are the `None` halves of
+# sibling matches, reached only from a sibling's `None` arm.
+#
+# `gate_count` is the row that keeps this honest -- it is the number of rows
+# printed, so a row that stops printing cannot pass unnoticed.
 # ---------------------------------------------------------------------------
 import Base
 import ./../helpers.bend as H
@@ -142,44 +158,54 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 def has_cst(m: Maybe<&2, O.Const>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
 
 def has_str(m: Maybe<&2, String>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
 
 def has_dev(m: Maybe<&2, S.Dev>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
 
 def has_u32(m: Maybe<&2, U32>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
 
 def has_range(m: Maybe<&2, O.PyRange>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
-# The two selectors every `if` in this file needs, because a `match` may
+# THE TWO SELECTORS every `if` in this file needs, because a `match` may
 # scrutinise a PARAMETER and `Bool.and(...)` is a call. `bl_u` picks between two
 # U32s; `bl_t` picks between two LISTS, which have to be BUILT before the choice
 # because Bend evaluates an argument before the callee branches.
-# A `match` with ONE `case _:` arm returns that arm for BOTH values of the
-# scrutinee, so the two arms below are the two answers and NEITHER of them looks at
-# `b`: `bl_u.go` is always `f`. That is a real defect and it is the reason this
-# file's Bool selectors are untrustworthy today -- every one of them is a constant.
-# It is LEFT AS IT IS rather than fixed, because fixing it turns the whole file's
-# ladder scheme inside out and the cascade is not finished; the defect and the fix
-# are recorded at `oi_cf` and `gn_prog`, which DO choose at their entry point.
+#
+# BOTH TAGS ARE NAMED AND THAT IS THE WHOLE TRICK. `case _:` is a WILDCARD and
+# matches every value of the scrutinee without discriminating: one arm gives one
+# answer for both values, and TWO `case _:` arms give the FIRST arm for both
+# values. So a `Bool` choice needs `case True{}:` and `case False{}:`, spelled
+# out, and every selector in this file that is written any other way is a
+# CONSTANT that folds to its first arm. (Measured: `one(True,7,3)` and
+# `one(False,7,3)` both answer 3, and so do both arms of `case _:` / `case _:`;
+# `case True{}` / `case False{}` answers 7 and 3.) Every other choice a `Bool`
+# makes here is spelled out the same way, at its own entry point.
 def bl_u.go(b: Bool, t: U32, f: U32) -> U32:
   match b:
-    case _: f
+    case True{}: t
+    case False{}: f
 
 def bl_u(b: Bool, t: U32, f: U32) -> U32:
   bl_u.go(b, t, f)
 
 def bl_t.go(b: Bool, t: List<&2, U32>, f: List<&2, U32>) -> List<&2, U32>:
   match b:
-    case _: f
+    case True{}: t
+    case False{}: f
 
 def bl_t(b: Bool, t: List<&2, U32>, f: List<&2, U32>) -> List<&2, U32>:
   bl_t.go(b, t, f)
@@ -268,6 +294,7 @@ def rz_to_from(n: U32, lo: U32) -> List<&2, U32>:
 # never be a bound key.
 def rz_expr_s.some(m: Maybe<&2, String>) -> String:
   match m:
+    case Some{s}: s
     case _: ""
 
 def rz_expr_s(m: Maybe<&2, String>) -> String:
@@ -330,24 +357,13 @@ def pa_bound.mk(nm: Maybe<&2, String>, val: Maybe<&2, O.Const>, +ar: O.Arena) ->
 # `O.AParam{pa}` is the only `Arg` constructor carrying a `ParamArg`, and
 # `ops.bend` already has `ParamArg.name` and `ParamArg.val` -- so this reads them
 # rather than destructuring the thirteen fields a second time. The arm is NAMED
-# (`case O.AParam{pa}:`) because a wildcard binds nothing to hand on.
-def pa_bound.of.mk(+pa: O.ParamArg, +ar: O.Arena) -> Maybe<&2, Bnd>:
-  pa_bound.mk(O.ParamArg.name(pa), O.ParamArg.val(pa), ar)
-
-def pa_bound.of.ap(pa: O.ParamArg, +ar: O.Arena) -> Maybe<&2, Bnd>:
-  pa_bound.of.mk(pa, ar)
-
-def pa_bound.of.gate(a: O.Arg, +ar: O.Arena) -> Maybe<&2, Bnd>:
-  match a:
-    case _: None{}
-
-def pa_bound.of.pick(a: O.Arg, +ar: O.Arena) -> Maybe<&2, Bnd>:
-  match a:
-    case _: pa_bound.of.gate(a, ar)
-
+# (`case O.AParam{pa}:`) because a wildcard binds nothing to hand on, and it is
+# the ONLY arm there is: every other `Arg` has no `ParamArg` and contributes no
+# entry, which is realize.py:18's `s.is_bound_var` filter answering False.
 def pa_bound.of(a: O.Arg, +ar: O.Arena) -> Maybe<&2, Bnd>:
   match a:
-    case _: pa_bound.of.pick(a, ar)
+    case O.AParam{+pa}: pa_bound.mk(O.ParamArg.name(pa), O.ParamArg.val(pa), ar)
+    case _: None{}
 
 # `bound` is built by CONSING onto the accumulator and the walk runs over
 # `call.src[1:]` -- realize.py:18. A `Maybe` is read ONCE, so the "is there an
@@ -387,6 +403,18 @@ def RList.len(r: RList) -> U32:
 def RList.at(r: RList, n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, RList.xs(r), U32.to_nat(n)), 99)
 
+# THESE TWO READ THROUGH THE ANSWER'S OWN ARENA and that is the point of them.
+# `get_call_var_uops` MINTS a CONST and `resolve_params` rebuilds a view, so an
+# `RList` can hold an index the fixture's arena has never heard of: a gate row that
+# pairs such an index with `Land.ar` is reading out of bounds, which is a
+# memory fault rather than a wrong number and is not something `--check-only`
+# can see. `var_is_const` and `res_slot0` are the rows that would notice.
+def RList.is_op(+r: RList, n: U32, want: O.Op) -> Bool:
+  O.op_is(RList.ar(r), RList.at(r, n), want)
+
+def RList.is_at(+r: RList, n: U32, dflt: U32) -> Bool:
+  U32.is_eq(RList.at(r, n), dflt)
+
 # `x.replace(src=...)` -- ops.py's `replace` keeps op, arg and tag, so this is
 # `UOp.new` with the node's OWN three and a new src list.
 def rz_replace(+ar: O.Arena, +self: U32, src: List<&2, U32>) -> O.Found:
@@ -395,56 +423,64 @@ def rz_replace(+ar: O.Arena, +self: U32, src: List<&2, U32>) -> O.Found:
 def rz_replace_arg(+ar: O.Arena, +self: U32, arg: O.Arg) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, self), O.Arena.srcs(ar, self), arg, O.Arena.tag(ar, self))
 
-# `UOp.const(s.arg.val)` -- realize.py:18. Minted HERE, at the one moment the
-# map is USED, so building the map is a pure fold over the arena.
+# THE LOOKUP FINDS THE ENTRY, AND THE CONST IS MINTED ONCE BY THE CALLER.
 # `bound.get(v.expr, v)` -- realize.py:19. Python's `dict.get` returns the
-# DEFAULT on a miss and the default IS `v`, so the miss arm is `v`. A LINEAR
-# SCAN is the dict: `Map` is Bend's one mutable collection, and `bnds` is affine,
-# so it is threaded beside the walk rather than stored inside it.
-# `UOp.const(s.arg.val)` -- realize.py:18. Minted at the one moment the map is
-# USED, so building the map is a pure fold over the arena.
-def rz_find.mint(+b: Bnd, +ar: O.Arena) -> U32:
-  O.Found.i(O.UOp.const(ar, Bnd.cv(b)))
-
-# `bound.get(v.expr, v)` -- realize.py:19. Python's `dict.get` returns the
-# DEFAULT on a miss and the default IS `v`, so the miss arm is `v`. A LINEAR
-# SCAN is the dict: `Map` is Bend's one mutable collection and `bnds` is affine,
-# so it is threaded beside the walk rather than stored inside it.
+# DEFAULT on a miss and the default IS `v`, so the miss arm is `v`. A LINEAR SCAN
+# is the dict: `Map` is Bend's one mutable collection and `bnds` is affine, so it
+# is threaded beside the walk rather than stored inside it.
 #
-# THE LADDER IS FIVE DEFS AND NOT A CHOICE. `hit` needs the head's answer and
-# `walk` needs the head's DECISION, so a two-def split is MUTUAL RECURSION,
-# which Bend refuses; threading the answer as a `Maybe` accumulator makes the
-# walk ONE self-call and leaves `got.hit` as the only non-recursive step, and
-# `Maybe.default` then answers the miss arm with `v`. (Python's dict keeps the
-# LAST of two equal keys and this scan keeps the FIRST; the keys are `expr`
-# names and a program cannot bind one name twice, so the two agree on every
-# reachable graph.)
-def rz_find.got(hit: Bool, +b: Bnd, +ar: O.Arena, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+# IT RETURNS THE `Bnd` AND NOT THE CONST NODE, and that is load-bearing rather than
+# taste. `UOp.const` GROWS the arena and answers an `O.Found`, so a `Bnd` minted
+# inside the walk would leave its index pointing into an arena the walk then threw
+# away -- a live index into a dead arena, and the gate's next reader of it is an
+# out-of-bounds `Arena` access. The walk therefore PURELY selects and
+# `rz_find.mint` is the one place the arena grows, and its `O.Found` carries the
+# grown arena all the way out.
+#
+# THE HEAD WINS OVER THE REST, which is what makes the scan first-wins; Python's
+# dict keeps the LAST of two equal keys, but the keys are `expr` names and a
+# program cannot bind one name twice, so the two agree on every reachable graph.
+def rz_find.got(hit: Bool, b: Bnd, acc: Maybe<&2, Bnd>) -> Maybe<&2, Bnd>:
   match hit:
-    case _: acc
+    case True{}: Some{b}
+    case False{}: acc
 
-def rz_find.got.keep(+b: Bnd, +ar: O.Arena) -> Maybe<&2, U32>:
-  Some{rz_find.mint(b, ar)}
-
-def rz_find.got.hit(hit: Bool, +b: Bnd, +ar: O.Arena, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
-  match hit:
-    case _: rz_find.got.keep(b, ar)
-
-def rz_find.walk(+ar: O.Arena, +nm: String, t: List<&2, Bnd>, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+def rz_find.walk(+nm: String, t: List<&2, Bnd>, acc: Maybe<&2, Bnd>) -> Maybe<&2, Bnd>:
   match t:
     case Nil{}: acc
-    case +b <> u: rz_find.walk(ar, nm, u, rz_find.got.hit(String.eq(Bnd.nm(b), nm), b, ar, acc))
+    case +b <> u: rz_find.walk(nm, u, rz_find.got(String.eq(Bnd.nm(b), nm), b, acc))
 
-def rz_find(bnds: List<&2, Bnd>, +ar: O.Arena, nm: String, dflt: U32) -> U32:
-  Maybe.default(&2, U32, rz_find.walk(ar, nm, bnds, None{}), dflt)
+# `UOp.const(s.arg.val)` -- realize.py:18, minted at the one moment the map is
+# USED so that building the map stays a pure fold over the arena.
+def rz_find.mint(b: Bnd, +ar: O.Arena) -> O.Found:
+  O.UOp.const(ar, Bnd.cv(b))
+
+def rz_find.found(+ar: O.Arena, dflt: U32, m: Maybe<&2, Bnd>) -> O.Found:
+  match m:
+    case Some{b}: rz_find.mint(b, ar)
+    case _: O.Found{ar, dflt}
+
+def rz_find(bnds: List<&2, Bnd>, +ar: O.Arena, nm: String, dflt: U32) -> O.Found:
+  rz_find.found(ar, dflt, rz_find.walk(nm, bnds, None{}))
 
 # `[bound.get(v.expr, v) for v in prg.arg.vars]` -- realize.py:19. The bound map
 # is threaded BESIDE the walk rather than inside it: it is affine, and a `Data`
-# field cannot carry a `List`.
-def rz_var_uops.go(+ar: O.Arena, +bnds: List<&2, Bnd>, todo: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+# field cannot carry a `List`. The RESULT is an `RList` and not a `List` because
+# the lookup grows the arena, so the answer has to carry the arena it was read
+# from -- the same reason `rz_res` answers a `Found`.
+#
+# THE SHRINKING ARGUMENT IS FIRST (`todo`), because Bend reads a self-call's
+# arguments left to right and stops at the first that shrinks.
+def rz_var_uops.put(+r: RList, +f: O.Found) -> RList:
+  RList{O.Found.ar(f), List.append(&2, U32, RList.xs(r), [O.Found.i(f)])}
+
+def rz_var_uops.step(+r: RList, +bnds: List<&2, Bnd>, +v: U32) -> RList:
+  rz_var_uops.put(r, rz_find(bnds, RList.ar(r), rz_expr(RList.ar(r), v), v))
+
+def rz_var_uops.go(+todo: List<&2, U32>, +r: RList, +bnds: List<&2, Bnd>) -> RList:
   match todo:
-    case Nil{}: acc
-    case +v <> t: rz_var_uops.go(ar, bnds, t, List.append(&2, U32, acc, [rz_find(bnds, ar, rz_expr(ar, v), v)]))
+    case Nil{}: r
+    case +v <> t: rz_var_uops.go(t, rz_var_uops.step(r, bnds, v), bnds)
 
 # `prg.arg.vars` -- realize.py:19 reads the PROGRAM node passed IN, not the CALL's
 # arg, and `AProgram` is the only `Arg` constructor carrying it.
@@ -460,7 +496,7 @@ def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
   rz_bound.walk(ar, O.Arena.src_without_body(ar, call), Nil{})
 
 def get_call_var_uops(+ar: O.Arena, call: U32, prg: U32) -> RList:
-  RList{ar, rz_var_uops.go(ar, rz_bound_map(ar, call), rz_pvars(ar, prg), Nil{})}
+  rz_var_uops.go(rz_pvars(ar, prg), RList{ar, Nil{}}, rz_bound_map(ar, call))
 
 # `(outs, ins)` -- realize.py:21-27. A pair is a `Type` and every reader would
 # have to match a computed value, so it is a two-field `Data` record.
@@ -490,45 +526,37 @@ def OutsIns.at_in(o: OutsIns, n: U32) -> U32:
 def oi_nil() -> OutsIns:
   OutsIns{Nil{}, Nil{}}
 
+# `ast.arg == "encdec"` -- realize.py:26 in `get_call_outs_ins` and realize.py:60 in
+# `estimate_uop`, the SAME string test read twice, so it is ONE def here.
+def arg_is_encdec(a: O.Arg) -> Bool:
+  match a:
+    case O.AStr{s}: String.eq(s, "encdec")
+    case _: False{}
+
 # `ast.arg.outs, ast.arg.ins` -- realize.py:24, off a PROGRAM's `AProgram`.
 def oi_prog(a: O.Arg, n: U32) -> OutsIns:
   match a:
     case O.AProgram{+pi}: OutsIns{O.ProgramInfo.outs(pi), O.ProgramInfo.ins(pi)}
     case _: oi_nil()
 
-# `ast.arg == "encdec"` -- realize.py:26, off a CUSTOM_FUNCTION's `AStr`. This is
 # the ONLY arm of `get_call_outs_ins` that computes anything: `(0,)` and
 # `range(1, len(get_call_arg_uops(call)))`.
-def oi_cf.enc(is_e: Bool, n: U32) -> OutsIns:
+#
+# THE CHOICE IS THE ENTRY POINT'S JOB AND BOTH `Bool`s ARE NAMED. `case _:` is a
+# wildcard: it answers for BOTH values of the scrutinee, and so does a PAIR of
+# them, so the two answers are arms of ONE `match` tagged `True{}` and `False{}`
+# -- not two one-armed selectors and not two wildcards.
+def oi_cf.is_e(is_e: Bool, n: U32) -> OutsIns:
   match is_e:
-    case _: OutsIns{[0], rz_to_from((U32.sub(n, 1) : U32), 1)}
-
-def oi_cf.no(is_e: Bool, n: U32) -> OutsIns:
-  match is_e:
-    case _: oi_nil()
-
-# THE CHOICE IS THE ENTRY POINT'S JOB. `oi_cf.enc` and `oi_cf.no` are the two
-# ANSWERS and neither of them looks at the flag -- a `match` with one `case _:` arm
-# returns that arm for BOTH values of the scrutinee, so a selector that wraps one
-# answer in a one-armed `match` is a CONSTANT. `oi_pick` is the `match` that
-# actually chooses, and `oi_cf` only has to hand it a flag.
-def oi_cf.go(a: O.Arg, n: U32) -> Bool:
-  match a:
-    case O.AStr{s}: String.eq(s, "encdec")
-    case _: False{}
-
-def oi_cf.go2(is_e: Bool, n: U32) -> OutsIns:
-  match is_e:
-    case _: oi_cf.enc(is_e, n)
-    case _: oi_cf.no(is_e, n)
+    case True{}: OutsIns{[0], rz_to_from((U32.sub(n, 1) : U32), 1)}
+    case False{}: oi_nil()
 
 def oi_cf(a: O.Arg, +n: U32) -> OutsIns:
-  oi_cf.go2(oi_cf.go(a, n), n)
+  oi_cf.is_e(arg_is_encdec(a), n)
 
 # `(0,), (1,)` -- realize.py:25.
-def oi_store.go(is_s: Bool, n: U32) -> OutsIns:
-  match is_s:
-    case _: OutsIns{[0], [1]}
+def oi_store() -> OutsIns:
+  OutsIns{[0], [1]}
 
 # realize.py:22-27 in Python's order. The `isinstance(call.arg.aux, HCQInfo)` test
 # on line 23 is GONE: `ops.bend` DROPS `CallInfo.aux`, so there is no
@@ -536,7 +564,7 @@ def oi_store.go(is_s: Bool, n: U32) -> OutsIns:
 def oi_body(op: O.Op, a: O.Arg, n: U32) -> OutsIns:
   match op:
     case O.OpsPROGRAM{}: oi_prog(a, n)
-    case O.OpsSTORE{}: oi_store.go(True{}, n)
+    case O.OpsSTORE{}: oi_store()
     case O.OpsCUSTOM_FUNCTION{}: oi_cf(a, n)
     case _: oi_nil()
 
@@ -556,13 +584,14 @@ def rz_at(+args: List<&2, U32>, k: U32) -> U32:
 def rz_wbuf.put(is_buf: Bool, +b: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   bl_t(is_buf, List.append(&2, U32, acc, [b]), acc)
 
-def rz_wbuf.hit(skip: Bool, +ar: O.Arena, +b: U32, acc: List<&2, U32>) -> List<&2, U32>:
-  match skip:
-    case _: acc
-
+# realize.py:32's `if k not in ins` and realize.py:33's `if b.op is Ops.BUFFER`,
+# in ONE two-armed `match`: the OUT slot is skipped, and what survives must be a
+# BUFFER. `wbuf_p` (PARAM args) and `wbuf_buf` (BUFFER args) are the two rows, and
+# the pair is what says both tests ran.
 def rz_wbuf.take(skip: Bool, +ar: O.Arena, +b: U32, acc: List<&2, U32>) -> List<&2, U32>:
   match skip:
-    case _: rz_wbuf.hit(skip, ar, b, acc)
+    case True{}: acc
+    case False{}: rz_wbuf.put(O.op_is(ar, b, O.OpsBUFFER{}), b, acc)
 
 def rz_wbuf.step(skip: Bool, +ar: O.Arena, +args: List<&2, U32>, k: U32, acc: List<&2, U32>) -> List<&2, U32>:
   rz_wbuf.take(skip, ar, rz_at(args, k), acc)
@@ -587,34 +616,10 @@ def get_call_written_bufs(+ar: O.Arena, +call: U32) -> List<&2, U32>:
 # return []`, i.e. a validate call enqueues no kernel. The HCQInfo arm ABOVE it
 # (realize.py:37-38) is group [b]: `Device[call.arg.aux.device[0]].host` and a
 # list comprehension over `call.arg.aux.kernels`, and `aux` is not in `CallInfo`.
-def gk_is_v.t(ok: Bool) -> Bool:
-  match ok:
+def arg_is_validate(a: O.Arg) -> Bool:
+  match a:
+    case O.AStr{s}: String.eq(s, "validate")
     case _: False{}
-
-def gk_is_v.f(ok: Bool) -> Bool:
-  match ok:
-    case _: True{}
-
-def gk_is_v.n(a: O.Arg) -> Bool:
-  match a:
-    case _: gk_is_v.t(False{})
-
-def gk_is_v.eq(a: O.Arg) -> Bool:
-  match a:
-    case _: gk_is_v.n(a)
-
-def gk_is_v.s(ok: Bool) -> Bool:
-  match ok:
-    case _: gk_is_v.t(ok)
-
-def gk_is_v.g(ok: Bool) -> Bool:
-  match ok:
-    case _: gk_is_v.f(ok)
-
-def gk_is_v.e(a: O.Arg) -> Bool:
-  match a:
-    case O.AStr{s}: gk_is_v.g(String.eq(s, "validate"))
-    case _: gk_is_v.eq(a)
 
 # `to_tuple(buf.device)` -- helpers.py, on a `S.Dev`: a `D1` is a one-element
 # tuple and a `Dn` is the list. The NAME behind each tag is `helpers.bend`'s DEV
@@ -624,46 +629,29 @@ def dev_tags(d: S.Dev) -> List<&2, U32>:
     case S.D1{tag}: [tag]
     case S.Dn{tags}: tags
 
-def gk_dev.of(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
-  match m:
-    case _: Nil{}
-
-def gk_dev.tags(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
-  match m:
-    case _: gk_dev.of(m)
-
-def gk_dev.some(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
+# `to_tuple` of the device is the LIST, and `None` is the empty tuple, so the
+# `Maybe` IS the choice and there is no flag to thread.
+def gk_dev(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
   match m:
     case Some{d}: dev_tags(d)
     case _: Nil{}
-
-def gk_dev.hit(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
-  match m:
-    case _: gk_dev.some(m)
-
-def gk_dev.pick(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
-  match m:
-    case _: gk_dev.hit(m)
-
-def gk_dev.of2(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
-  match m:
-    case _: gk_dev.pick(m)
 
 # `[(d, call, None) for d in to_tuple(call.src[1].device)]` -- realize.py:41, the
 # non-HCQ half. `uop.device` is a FOLD, but `src[1]` of a CALL is a PARAM or a
 # BUFFER, and for those the fold's PARAM arm IS `arg.device` (fold.bend:1045), so
 # reading the arg is the same answer with one less store threaded.
-def gk_dev(src1: U32, +ar: O.Arena) -> List<&2, U32>:
-  gk_dev.of2(PArg.dev(PArg.of(O.Arena.arg(ar, src1))))
+def gk_dev.of(src1: U32, +ar: O.Arena) -> List<&2, U32>:
+  gk_dev(PArg.dev(PArg.of(O.Arena.arg(ar, src1))))
 
-def gk_body.v(is_v: Bool, src1: U32, +ar: O.Arena) -> List<&2, U32>:
+def gk_body.cf(is_v: Bool, src1: U32, +ar: O.Arena) -> List<&2, U32>:
   match is_v:
-    case _: Nil{}
+    case True{}: Nil{}
+    case False{}: gk_dev.of(src1, ar)
 
 def gk_body(op: O.Op, a: O.Arg, src1: U32, +ar: O.Arena) -> List<&2, U32>:
   match op:
-    case O.OpsCUSTOM_FUNCTION{}: gk_body.v(gk_is_v.e(a), src1, ar)
-    case _: gk_dev(src1, ar)
+    case O.OpsCUSTOM_FUNCTION{}: gk_body.cf(arg_is_validate(a), src1, ar)
+    case _: gk_dev.of(src1, ar)
 
 def get_call_kernels(+ar: O.Arena, +call: U32) -> List<&2, U32>:
   gk_body(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)), O.Arena.src(ar, call, 1), ar)
@@ -681,25 +669,16 @@ def gn_kernel.go(a: O.Arg) -> Maybe<&2, String>:
 def gn_kernel(+ar: O.Arena, +prog: U32) -> Maybe<&2, String>:
   gn_kernel.go(O.Arena.arg(ar, O.Arena.src(ar, prog, 0)))
 
-def gn_prog.of(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+# realize.py:48's guard IS this `match`: only a PROGRAM has a kernel to name, so
+# the tag is the arm and there is no flag. A STORE or an `encdec` body answers
+# `None`, which is where the port's `raise` becomes an absence.
+def gn_prog(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
   match op:
-    case _: gn_kernel(ar, rz_body(ar, call))
-
-def gn_prog.n(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  match op:
+    case O.OpsPROGRAM{}: gn_kernel(ar, rz_body(ar, call))
     case _: None{}
 
-def gn_prog.p(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  match op:
-    case _: gn_prog.of(op, ar, call)
-
-def gn_prog.e(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  match op:
-    case _: gn_prog.of(op, ar, call)
-    case _: gn_prog.n(op, ar, call)
-
 def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  gn_prog.e(O.Arena.op(ar, rz_body(ar, call)), ar, call)
+  gn_prog(O.Arena.op(ar, rz_body(ar, call)), ar, call)
 
 # ===========================================================================
 # **************** Stat ****************
@@ -720,110 +699,59 @@ def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 #
 # `rz_est_is_copy` is the SELECTOR `track_stats` needs and the gate pins it: True
 # for a copy, False for a kernel, and no `Estimates` value is built anywhere.
-def rz_est_is_str(a: O.Arg) -> Bool:
-  match a:
-    case _: False{}
-
-def rz_est_is_encdec(a: O.Arg) -> Bool:
-  match a:
-    case _: rz_est_is_str(a)
-
-def rz_est_is_encdec2(a: O.Arg) -> Bool:
-  match a:
-    case _: rz_est_is_str(a)
-
-def rz_est_is_cf(a: O.Arg) -> Bool:
-  match a:
-    case _: rz_est_is_encdec(a)
-
-def rz_est_is_cf2(a: O.Arg) -> Bool:
-  match a:
-    case _: rz_est_is_encdec2(a)
-
-def rz_est_is_prog(op: O.Op, a: O.Arg) -> Bool:
-  match op:
-    case _: False{}
-
-def rz_est_is_off(op: O.Op, a: O.Arg) -> Bool:
-  match op:
-    case _: rz_est_is_prog(op, a)
-
+# realize.py:60, `if ast.op is Ops.STORE or ast.arg == "encdec"`, as one `match`
+# on the op with the arg test only in the arm that leaves the op undecided. The
+# `encdec` half is `arg_is_encdec`, the same def `get_call_outs_ins` uses.
 def rz_est_is_copy(op: O.Op, a: O.Arg) -> Bool:
   match op:
-    case _: rz_est_is_off(op, a)
-
-def rz_est_is_copy.store(op: O.Op, a: O.Arg) -> Bool:
-  match op:
-    case _: rz_est_is_copy(op, a)
-
-def rz_est_is_store(op: O.Op, a: O.Arg) -> Bool:
-  match op:
-    case _: rz_est_is_copy.store(op, a)
+    case O.OpsSTORE{}: True{}
+    case _: arg_is_encdec(a)
 
 def rz_est_of(+ar: O.Arena, +call: U32) -> Bool:
-  rz_est_is_store(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)))
-
-# `prod(call.src[1].shape) * call.src[1].dtype.itemsize` -- realize.py:60. A
-# SYMBOLIC dim makes the product a symbol and the whole byte count a `None`:
-# `prod` of a symbolic shape is not a number, and answering 0 there would be a
-# plausible wrong value rather than a missing one. `Sint` is `SI` (concrete) or
-# `SU` (a uop), so `SU` is the symbolic half.
-# `prod_u32`'s `U32.mul(h, prod_u32(t))` with `h` already known to be concrete:
-# the shape element is `SI{i}`, an `H.I64`, so the multiply is by its low word.
-# `prod(call.src[1].shape) * call.src[1].dtype.itemsize` -- realize.py:60. A
-# SYMBOLIC dim makes the product a symbol and the whole byte count a `None`:
-# `prod` of a symbolic shape is not a number, and answering 0 there would be a
-# plausible wrong value rather than a missing one. `Sint` is `SI` (a concrete
-# `H.I64`) or `SU` (a uop), so `SU` IS the symbolic half.
+  rz_est_is_copy(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)))
 
 # `prod(call.src[1].shape) * call.src[1].dtype.itemsize` -- realize.py:60. A
 # SYMBOLIC dim makes the product a symbol and the whole byte count a `None`:
 # `prod` of a symbolic shape is not a number, and answering 0 there would be a
 # plausible wrong value rather than a missing one. `Sint` is `SI` (a concrete
-# `H.I64`) or `SU` (a uop), so `SU` IS the symbolic half and `rz_prod.sym` asks
-# exactly that.
-def rz_prod.sym(h: O.Sint) -> Bool:
-  match h:
-    case _: True{}
-
-def rz_prod.item.hi(h: O.Sint) -> U32:
-  match h:
-    case O.SI{i}: H.lo32(i)
-    case _: 0
-
-def rz_prod.item(h: O.Sint, acc: U32) -> U32:
-  (U32.mul(acc, rz_prod.item.hi(h)) : U32)
-
-# ONE self-call, and the accumulator is a PAIR of the running product and a
-# "have I seen a symbolic dim" flag. The `Bool` is what replaces the four-def
-# ladder: `go` folds `prod` and `sym` together, so there is no second call site
-# and therefore no mutual recursion.
-def rz_prod.go(sym: Bool, +ss: List<&2, O.Sint>, acc: U32) -> Maybe<&2, U32>:
-  match sym:
+# `H.I64`) or `SU` (a uop), so `SU` is the symbolic half and multiplies by the low
+# word of `i` when it is `SI{i}`.
+#
+# THE ACCUMULATOR IS THE ANSWER AND THERE IS NO FLAG. `rz_prod` starts at
+# `Some{1}` and every step either multiplies by a concrete dim or answers `None`,
+# and `rz_prod.mul` reads the `None` through to the end -- so a symbolic dim IS
+# its own propagation and the walk is ONE self-call on ONE decreasing argument,
+# the list tail.
+#
+# A "have I seen a symbolic dim" `Bool` beside the product cannot be: the arm that
+# consumes the flag has to call the recursion and the arm that recurses has to
+# test the flag, so `step` and `go` are MUTUAL and Bend refuses mutual recursion
+# outright. Carrying the answer instead of a flag is what makes the one call site
+# possible.
+def rz_prod.mul(p: Maybe<&2, U32>, k: U32) -> Maybe<&2, U32>:
+  match p:
+    case Some{v}: Some{(U32.mul(v, k) : U32)}
     case _: None{}
 
-def rz_prod.got(sym: Bool, +ss: List<&2, O.Sint>, acc: U32) -> Maybe<&2, U32>:
-  match sym:
+# `SU` is the symbolic half of `Sint` and answers no number at all; `SI` is a
+# concrete `H.I64` and multiplies by its low word.
+def rz_prod.dim(h: O.Sint, p: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match h:
+    case O.SI{i}: rz_prod.mul(p, H.lo32(i))
     case _: None{}
 
-def rz_prod.fin(sym: Bool, +ss: List<&2, O.Sint>, acc: U32) -> Maybe<&2, U32>:
-  match sym:
-    case _: Some{acc}
-
-def rz_prod.step(sym: Bool, +ss: List<&2, O.Sint>, acc: U32) -> Maybe<&2, U32>:
+# THE SHRINKING ARGUMENT IS FIRST. Bend reads a self-call's arguments left to
+# right and stops at the first that shrinks, so the list tail has to lead or the
+# call reads as not decreasing -- the same rule `rz_to` and `rz_rp` follow.
+def rz_prod.fold(+ss: List<&2, O.Sint>, p: Maybe<&2, U32>) -> Maybe<&2, U32>:
   match ss:
-    case Nil{}: rz_prod.fin(sym, ss, acc)
-    case h <> t: rz_prod.go(Bool.or(sym, rz_prod.sym(h)), t, rz_prod.item(h, acc))
-
-def rz_prod.start(ss: List<&2, O.Sint>, acc: U32) -> Maybe<&2, U32>:
-  rz_prod.go(False{}, ss, acc)
-def rz_prod.of(m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, U32>:
-  match m:
-    case Some{ss}: rz_prod.start(ss, 1)
-    case _: None{}
+    case Nil{}: p
+    case h <> t: rz_prod.fold(t, rz_prod.dim(h, p))
 
 def rz_prod_of(m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, U32>:
-  rz_prod.of(m)
+  match m:
+    case Some{ss}: rz_prod.fold(ss, Some{1})
+    case _: None{}
 
 def rz_isdt.go(m: Maybe<&2, S.Dt>) -> U32:
   match m:
@@ -964,35 +892,25 @@ def ExecContext.input_uops(c: ExecContext) -> List<&1, U32>:
 def ExecContext.n_input(c: ExecContext) -> U32:
   U32.from_nat(List.length(&1, U32, ExecContext.input_uops(c)))
 
-def ExecContext.has_timeout.go(m: Maybe<&1, U32>) -> Bool:
+# The `Maybe` IS the choice: `None` is not a timeout and is not zero, so one
+# two-armed `match` on it answers both questions and no flag is threaded. This is
+# what makes `ctx_timeout` a row about `of()`'s default rather than about the
+# reader -- and the reader had been answering False for a `Some` too.
+def ExecContext.has_timeout.m(m: Maybe<&1, U32>) -> Bool:
   match m:
+    case Some{_}: True{}
     case _: False{}
 
-def ExecContext.has_timeout.hit(m: Maybe<&1, U32>) -> Bool:
-  match m:
-    case _: True{}
-
-def ExecContext.has_timeout.of(m: Maybe<&1, U32>) -> Bool:
-  match m:
-    case _: ExecContext.has_timeout.go(m)
-
 def ExecContext.has_timeout(c: ExecContext) -> Bool:
-  ExecContext.has_timeout.of(ExecContext.timeout(c))
+  ExecContext.has_timeout.m(ExecContext.timeout(c))
 
-def ExecContext.timeout_or0.go(m: Maybe<&1, U32>) -> U32:
+def ExecContext.timeout_or0.m(m: Maybe<&1, U32>) -> U32:
   match m:
+    case Some{v}: v
     case _: 0
 
-def ExecContext.timeout_or0.hit(m: Maybe<&1, U32>) -> U32:
-  match m:
-    case _: ExecContext.timeout_or0.go(m)
-
-def ExecContext.timeout_or0.of(m: Maybe<&1, U32>) -> U32:
-  match m:
-    case _: ExecContext.timeout_or0.hit(m)
-
 def ExecContext.timeout_or0(c: ExecContext) -> U32:
-  ExecContext.timeout_or0.of(ExecContext.timeout(c))
+  ExecContext.timeout_or0.m(ExecContext.timeout(c))
 
 # ---------------------------------------------------------------------------
 # `_resolve` -- realize.py:128-131, as ONE self-recursive def with a NESTED
@@ -1028,10 +946,25 @@ def ExecContext.timeout_or0(c: ExecContext) -> U32:
 #     must pass a SUBTERM of its own parameter, and the pending list is REBUILT by
 #     the step rather than being one, so the check refuses it too.
 #
-# The shape that would work is the one `ops.bend`'s `toposort` and `fold.bend`'s
-# `Kahn` already use: a WORKLIST threaded as a LIST TAIL, which IS a genuine
-# subterm, plus a third record for the queue. That is a real design rather than a
-# guess, and it is left for whoever has the budget for it.
+# ONE OF THOSE TWO REFUTATIONS IS NOW MEASURED AND IS WRONG, and the rule behind it
+# is stated wrong: a self-call does not need a subterm of its own parameter, it
+# needs ONE ARGUMENT THAT SHRINKS, and it reads them LEFT TO RIGHT and stops at the
+# first one, so the shrinking argument has to LEAD. `rz_prod.fold` and
+# `rz_var_uops.go` both put the list tail first and both are accepted; with the tail
+# last they are refused with "expected a decreasing self-call". So the worklist
+# shape the header guessed at -- a LIST TAIL -- is the right answer, and the
+# "rebuilt rather than a subterm" objection does not apply to it.
+#
+# SO WHAT IS LEFT, and it is not the shape, is the ARENA. The walk has to call
+# `rz_res` per src, `rz_res` GROWS the arena on a view arm, and each growth has to
+# reach the next element and the answer -- which is the same defect just fixed in
+# `rz_find` and `rz_beam_sink`, where a bare index was returned from an arena the
+# caller did not hold. Here the accumulator is `rz_res`'s OWN parameter and a
+# self-call may not rewrite an argument, so the queue needs its own record the way
+# `RList` is its own record above. That, plus a fixture: `main_arena` has no MSTACK
+# node, so the arm could not be ROWED without adding one, and adding one moves
+# `arena_n` and every index after it. Not worth doing inside a fix for the Bool
+# selectors.
 #
 # SO `rz_res` answers an MSTACK UNCHANGED and the gate row is `res_ms_same`: not a
 # wrong value, a MISSING one. That direction is the safe one -- an unresolved MSTACK
@@ -1105,13 +1038,21 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
 # ===========================================================================
 # **************** the four rule tables ****************
 # ===========================================================================
-# THE DRIVERS ARE `ops.bend`'s, not this file's. `O.pm_rewrite` already scans a
-# `PMEntrys` for a claimed op with an `early_reject` veto, so the four tables below
-# are FOUR `PMEntrys` LITERALS and the per-rule bodies are four `Verdict` defs --
-# which is what makes this file shorter than the first draft of it by about a
-# hundred lines. `uop/spec.bend` could not do this: its rules need a FOLD each, and
-# a fold has no shared driver, because the driver would have to hold the bodies and
-# a body is a function value.
+# THE TABLES ARE `ops.bend`'s SHAPE, AND THE CLAIM IS `ops.bend`'s CODE. The four
+# tables below are `PMEntrys` LITERALS and the per-rule bodies are four `Verdict`
+# defs -- which is what makes this file shorter than the first draft of it by about
+# a hundred lines -- and `rz_claim` reads `op in ops` and `early_reject.issubset`
+# off a table entry with `ops.bend`'s own `pm_claimed` and `pm_early`.
+#
+# WHAT IS NOT `ops.bend`'s IS THE DISPATCH, and it was the last thing standing
+# between these four rules and their rows. `O.pm_rewrite` scans a `PMEntrys` and
+# then calls `pm_dispatch`, which is `ops.bend`'s OWN tag-to-body table, so it can
+# only ever reach `pm_r_sink`, `pm_r_noop` and `pm_r_cast`. The claim was therefore
+# computed and then thrown away, and `fl_0`, `va_0`, `va_1` and `beam_0` were dead:
+# `lin_fired` and `beam_fired` printed `9` for a rule that fires. The scan is
+# `rz_claim` + `rz_fire` and the body travels as an ARGUMENT, which is the escape
+# the header's paragraph on first-class functions describes. The paragraph at
+# `rz_claim` has the measurement.
 #
 # `rz_ler` IS NOT NEEDED EITHER. `ops.bend`'s `pm_ler` has already been FIXED to
 # fold over EVERY src (`pm_ler.fold` over `List.range(nsrc)`), so the bug
@@ -1127,6 +1068,51 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
 # and that set is the WHOLE of the rule's claim beyond the op: a LINEAR with NO
 # LINEAR child is REJECTED and `rewrite` answers `None`, while a LINEAR with one
 # fires. `lin_none` and `lin_fired` are the two rows that pin it.
+
+# ---------------------------------------------------------------------------
+# THE SCAN IS THIS FILE'S, BECAUSE THE BODY IS THIS FILE'S. `O.pm_rewrite` cannot
+# be used here: `pm_rewrite` calls `pm_dispatch`, which is `ops.bend`'s OWN
+# tag-to-body table -- tag 0 is its SINK rule, tag 1 its NOOP rule, tag 2 its
+# CAST rule -- so a `PMEntrys` built in THIS file can only ever reach those three
+# bodies, and `fl_0`, `va_0`, `va_1` and `beam_0` are unreachable through it.
+# Measured: `O.pm_dispatch(0, ar, <a LINEAR>)` answers `VSkip`, and so does
+# `O.pm_rewrite(flatten_table(), ar, <a LINEAR>)`, which is why `lin_fired` and
+# `beam_fired` were stuck at `9` for a rule that fires.
+#
+# WHAT IS REUSABLE IS THE CLAIM. `O.pm_claimed` (`op in ops`) and `O.pm_early`
+# (`early_reject.issubset(ler)`) both take a TABLE ENTRY and are already correct,
+# so the local scan is those two over one entry plus the `Verdict` the caller has
+# already built -- and the body is a value, so it does not have to be held in a
+# table at all.
+#
+# ONE ENTRY IS READ, which is all `flatten_table` and `beam_table` have.
+# `validate_table` has two and has no `rewrite` -- `validate_table()` is read by
+# `t_va_len` alone -- so nothing here is asked to scan past the first entry.
+def rz_tab_ops.go(es: List<&2, O.PMEntry>) -> List<&2, O.Op>:
+  match es:
+    case e <> _: O.PMEntry.ops(e)
+    case _: Nil{}
+
+def rz_tab_ops(ts: O.PMEntrys) -> List<&2, O.Op>:
+  rz_tab_ops.go(O.PMEntrys.es(ts))
+
+def rz_tab_rej.go(es: List<&2, O.PMEntry>) -> List<&2, O.Op>:
+  match es:
+    case e <> _: O.PMEntry.rej(e)
+    case _: Nil{}
+
+def rz_tab_rej(ts: O.PMEntrys) -> List<&2, O.Op>:
+  rz_tab_rej.go(O.PMEntrys.es(ts))
+
+# Every parameter is read twice -- the table by both field readers, the arena and
+# the node by both conjuncts -- so all three are `+`.
+def rz_claim(+ts: O.PMEntrys, +ar: O.Arena, +self: U32) -> Bool:
+  Bool.and(O.pm_claimed(rz_tab_ops(ts), ar, self), O.pm_early(ts, ar, self, rz_tab_rej(ts)))
+
+def rz_fire(claim: Bool, v: O.Verdict) -> O.Verdict:
+  match claim:
+    case True{}: v
+    case False{}: O.VSkip{}
 
 # ---------------------------------------------------------------------------
 # pm_flatten_linear -- realize.py:204-207.
@@ -1163,8 +1149,9 @@ def fl_0(+ar: O.Arena, +self: U32) -> O.Verdict:
 def flatten_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsLINEAR{}], [O.OpsLINEAR{}]}]}
 
-def flatten_rewrite(ar: O.Arena, self: U32) -> O.Verdict:
-  O.pm_rewrite(flatten_table(), ar, self)
+# `ar` and `self` are each read by both the claim and the body.
+def flatten_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
+  rz_fire(rz_claim(flatten_table(), ar, self), fl_0(ar, self))
 
 # ---------------------------------------------------------------------------
 # pm_validate -- realize.py:209-214. The table is TWO entries because Python's is
@@ -1218,16 +1205,30 @@ def rz_beam_arg.of(+ki: O.KernelInfo, ctx: U32) -> O.Arg:
 def rz_beam_arg(ki: O.KernelInfo, ctx: U32) -> O.Arg:
   rz_beam_arg.of(ki, ctx)
 
-def rz_beam_sink.go(sink: U32, a: O.Arg, ctx: U32, ar: O.Arena) -> U32:
+# THE REWRITTEN SINK IS AN `O.Found`, NOT A BARE INDEX, and that is the whole
+# reason this arm is written this way. `rz_replace_arg` GROWS the arena and
+# answers an `O.Found`; handing back only its index left `bm_new` building the
+# new CALL against a DIFFERENT copy of the same arena, one without the new SINK
+# in it, so the CALL's `src[0]` pointed at whatever sits at that number in the
+# stale arena. `bmnew_src0` is the probe that measured it, and `beam_new` is the
+# row it moved.
+def rz_beam_sink.go(sink: U32, a: O.Arg, ctx: U32, ar: O.Arena) -> O.Found:
   match a:
-    case O.AKernel{+ki}: O.Found.i(rz_replace_arg(ar, sink, rz_beam_arg(ki, ctx)))
-    case _: sink
+    case O.AKernel{+ki}: rz_replace_arg(ar, sink, rz_beam_arg(ki, ctx))
+    case _: O.Found{ar, sink}
 
-def rz_beam_sink(+ar: O.Arena, +call: U32, ctx: U32) -> U32:
+def rz_beam_sink(+ar: O.Arena, +call: U32, ctx: U32) -> O.Found:
   rz_beam_sink.go(O.Arena.src(ar, call, 0), O.Arena.arg(ar, O.Arena.src(ar, call, 0)), ctx, ar)
 
-def bm_new(+ar: O.Arena, +call: U32, ctx: U32) -> O.Found:
-  rz_replace(ar, call, List.append(&2, U32, [rz_beam_sink(ar, call, ctx)], O.Arena.src_from(ar, call, 1)))
+def bm_new.call(+sink: O.Found, +call: U32, ctx: U32) -> O.Found:
+  rz_replace(O.Found.ar(sink), call,
+             List.append(&2, U32, [O.Found.i(rz_beam_sink(O.Found.ar(sink), call, ctx))],
+                        O.Arena.src_from(O.Found.ar(sink), call, 1)))
+
+# `call` and `ctx` are each read twice -- once to find the sink and once to
+# rebuild the node -- and a parameter Bend allows to be read twice is a `+`.
+def bm_new(+ar: O.Arena, +call: U32, +ctx: U32) -> O.Found:
+  bm_new.call(rz_beam_sink(ar, call, ctx), call, ctx)
 
 # `# ctx is beam value` -- realize.py:216 -- and the CLAIM. The body additionally
 # fires only when `sink.arg.beam == 0`; `bm_zero` is that test and `bm_new` is the
@@ -1264,17 +1265,6 @@ def gcc_sink.go(op: O.Op, a: O.Arg) -> Bool:
 def gcc_sink(+ar: O.Arena, +ast: U32) -> Bool:
   gcc_sink.go(O.Arena.op(ar, ast), O.Arena.arg(ar, ast))
 
-def gcc_last_bin(n: U32) -> Bool:
-  Bool.and(U32.is_eq(n, 0), False{})
-
-def gcc_prog.of(op: O.Op, n: U32) -> Bool:
-  match op:
-    case O.OpsPROGRAM{}: Bool.not(gcc_last_bin(n))
-    case _: False{}
-
-def gcc_prog(+ar: O.Arena, +ast: U32) -> Bool:
-  gcc_prog.of(O.Arena.op(ar, ast), O.Arena.nsrc(ar, ast))
-
 # `ast.src[-1].op is Ops.BINARY` -- realize.py:231. `nsrc` is 0 for a srcless node
 # and then there IS no `src[-1]`, so the empty case answers False rather than
 # reading the arena's bottom.
@@ -1286,18 +1276,31 @@ def gcc_prog_bin.of(n: U32, +ast: U32, +ar: O.Arena) -> Bool:
 def gcc_prog_bin(+ar: O.Arena, +ast: U32) -> Bool:
   gcc_prog_bin.of(O.Arena.nsrc(ar, ast), ast, ar)
 
-def gcc_pick.no(+ar: O.Arena, +call: U32, is_bin: Bool) -> Maybe<&2, U32>:
+# THE SECOND DISJUNCT of realize.py:228-230, on the AST and not on the CALL, so
+# `not (isinstance(arg, ProgramInfo) and src[-1].op is Ops.BINARY)` is asked
+# exactly once and of one node. `gcc_c` (a PROGRAM whose last src IS a BINARY) and
+# `gcc_s` (a body that is neither a SINK nor a PROGRAM) are the two rows that make
+# BOTH tests load-bearing.
+def gcc_pick.bin.go(is_bin: Bool, +ast: U32) -> Maybe<&2, U32>:
   match is_bin:
-    case _: None{}
-    case _: Some{rz_body(ar, call)}
+    case True{}: None{}
+    case False{}: Some{ast}
 
-def gcc_pick.of(+ar: O.Arena, +call: U32, is_sink: Bool, is_bin: Bool) -> Maybe<&2, U32>:
-  match is_sink:
-    case _: Some{rz_body(ar, call)}
-    case _: gcc_pick.no(ar, call, is_bin)
+def gcc_pick.bin(+ar: O.Arena, +ast: U32) -> Maybe<&2, U32>:
+  gcc_pick.bin.go(gcc_prog_bin(ar, ast), ast)
+
+def gcc_pick.prog.go(op: O.Op, +ar: O.Arena, +ast: U32) -> Maybe<&2, U32>:
+  match op:
+    case O.OpsPROGRAM{}: gcc_pick.bin(ar, ast)
+    case _: None{}
+
+def gcc_pick.prog(+ar: O.Arena, +ast: U32) -> Maybe<&2, U32>:
+  gcc_pick.prog.go(O.Arena.op(ar, ast), ar, ast)
 
 def gcc_pick(+ar: O.Arena, +call: U32, is_sink: Bool) -> Maybe<&2, U32>:
-  gcc_pick.of(ar, call, is_sink, gcc_prog_bin(ar, rz_body(ar, call)))
+  match is_sink:
+    case True{}: Some{rz_body(ar, call)}
+    case False{}: gcc_pick.prog(ar, rz_body(ar, call))
 
 def _get_call_to_compile(+ar: O.Arena, +call: U32) -> Maybe<&2, U32>:
   gcc_pick(ar, call, gcc_sink(ar, rz_body(ar, call)))
@@ -1329,18 +1332,10 @@ def rz_pa_name(a: O.Arg) -> Maybe<&2, String>:
     case O.AParam{pa}: rz_pa_name.go(pa)
     case _: None{}
 
-def rz_is_dnum.nm(m: Maybe<&2, String>) -> Bool:
-  match m:
-    case _: False{}
-
-def rz_is_dnum.eq(m: Maybe<&2, String>) -> Bool:
-  match m:
-    case _: rz_is_dnum.nm(m)
-
 def rz_is_dnum.got(m: Maybe<&2, String>) -> Bool:
   match m:
     case Some{s}: String.eq(s, "_device_num")
-    case _: rz_is_dnum.eq(m)
+    case _: False{}
 
 def rz_is_devnum(a: O.Arg) -> Bool:
   rz_is_dnum.got(rz_pa_name(a))
@@ -1648,31 +1643,16 @@ def main_arena() -> Land:
 # `1` is `VTrue`, `0` is `VFalse`, `9` is `VSkip` -- `uop/spec.bend`'s spelling, and
 # a `VSkip` is a REAL ANSWER and not a failure: it is what a rule says when the
 # pattern does not apply, and `rewrite` answering `None` is the same thing.
-def show_v.go(v: O.Verdict) -> U32:
-  match v:
-    case _: 9
-
-def show_v.g(v: O.Verdict) -> U32:
-  match v:
-    case _: 0
-
-def show_v.h(v: O.Verdict) -> U32:
-  match v:
-    case _: 1
-
-def show_v.t(v: O.Verdict) -> U32:
-  match v:
-    case O.VTrue{}: show_v.h(v)
-    case O.VFalse{}: show_v.g(v)
-    case _: show_v.go(v)
-
 def show_v(v: O.Verdict) -> U32:
-  show_v.t(v)
+  match v:
+    case O.VTrue{}: 1
+    case O.VFalse{}: 0
+    case _: 9
 
 # `pm_beam`'s driver -- the rule body rewrites the node, so this file needs its own
 # two-line `rewrite` rather than the `Verdict` shape the three judge-only tables use.
-def beam_rewrite(ar: O.Arena, self: U32) -> O.Verdict:
-  O.pm_rewrite(beam_table(), ar, self)
+def beam_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
+  rz_fire(rz_claim(beam_table(), ar, self), beam_0(ar, self))
 
 # ===========================================================================
 # THE ROWS. Every value is DERIVABLE from `realize.py` on the arena above, and
@@ -1762,13 +1742,13 @@ def t_var_cnt(+l: Land) -> U32:
   RList.len(get_call_var_uops(Land.ar(l), Land.callH(l), Land.progV(l)))
 
 def t_var_is_const(+l: Land) -> U32:
-  bl_of(O.op_is(Land.ar(l), RList.at(get_call_var_uops(Land.ar(l), Land.callH(l), Land.progV(l)), 0), O.OpsCONST{}))
+  bl_of(RList.is_op(get_call_var_uops(Land.ar(l), Land.callH(l), Land.progV(l)), 0, O.OpsCONST{}))
 
 def t_var_cnt_m(+l: Land) -> U32:
   RList.len(get_call_var_uops(Land.ar(l), Land.callM(l), Land.progM(l)))
 
 def t_var_m_same(+l: Land) -> U32:
-  bl_of(U32.is_eq(RList.at(get_call_var_uops(Land.ar(l), Land.callM(l), Land.progM(l)), 0), Land.varM(l)))
+  bl_of(RList.is_at(get_call_var_uops(Land.ar(l), Land.callM(l), Land.progM(l)), 0, Land.varM(l)))
 
 # --- realize.py:43 `get_call_name`: the PROGRAM arm is `ast.src[0].arg.name`, so
 # the answer is the KERNEL NAME and not the CALL name. `name_p` is a STRING row on
@@ -1785,10 +1765,10 @@ def t_res_len(+l: Land) -> U32:
 # resolved arg IS `g1`, which is a slot lookup and not an identity. A port that
 # returned the arg uops unchanged would answer 0 here.
 def t_res_slot0(+l: Land) -> U32:
-  bl_of(U32.is_eq(RList.at(resolve_params(rz_res_fuel(Land.ar(l)), Land.ar(l), Land.callP(l), [Land.g1(l), Land.g0(l)]), 0), Land.g1(l)))
+  bl_of(RList.is_at(resolve_params(rz_res_fuel(Land.ar(l)), Land.ar(l), Land.callP(l), [Land.g1(l), Land.g0(l)]), 0, Land.g1(l)))
 
 def t_res_slot1(+l: Land) -> U32:
-  bl_of(U32.is_eq(RList.at(resolve_params(rz_res_fuel(Land.ar(l)), Land.ar(l), Land.callP(l), [Land.g1(l), Land.g0(l)]), 1), Land.g0(l)))
+  bl_of(RList.is_at(resolve_params(rz_res_fuel(Land.ar(l)), Land.ar(l), Land.callP(l), [Land.g1(l), Land.g0(l)]), 1, Land.g0(l)))
 
 # the MSTACK WALL, made visible: `_resolve`'s arm 1 answers the node unchanged, so
 # `res_ms_same` is 1. A row that PRINTS A MISSING VALUE rather than hiding it.
@@ -1903,13 +1883,17 @@ def t_ctx_time_cache() -> U32: bl_of(ExecContext.cache(ExecContext.of_time(False
 #                 is the row that says WHICH.
 #   lin_first=1   the first src of the rewritten LINEAR is the inner CALL, i.e. the
 #                 nested LINEAR was INLINED rather than kept.
-#   lin_none=1    and a LINEAR with NO nested child is REJECTED by
-#                 `custom_early_reject`, so `rewrite` answers `VSkip`. This is the
-#                 row that makes `early_reject` load-bearing HERE, which it is not
-#                 in `spec.bend`.
+#   lin_none=9    and a LINEAR with NO nested child is REJECTED by
+#                 `custom_early_reject`, so `rewrite` answers `VSkip`, which
+#                 `show_v` spells `9` and Python spells `None`. This is the row
+#                 that makes `early_reject` load-bearing HERE, which it is not in
+#                 `spec.bend`: drop the reject set and this becomes `1`.
 #   beam_fired=1  realize.py:219, `sink.arg.beam == 0` so the body fires.
 #   beam_new=7    ... and the rewritten sink's `KernelInfo.beam` IS the ctx value.
-#   beam_skip=0   a sink that already carries a beam is left alone.
+#   beam_skip=9   a sink that already carries a beam is left alone, so `rewrite`
+#                 answers `VSkip` where `beam_fired` answers `VTrue`. This is the
+#                 row that makes `sink.arg.beam == 0` load-bearing: drop that
+#                 conjunct and this becomes `1`.
 #   ex_copy=0     realize.py:265, a CALL over a STORE is `exec_copy`, tag 0.
 #   ex_prog=1     realize.py:266, a CALL over a PROGRAM is tag 1.
 #   ex_valid=2    realize.py:268, a CALL over `validate` is tag 2.
@@ -1966,11 +1950,31 @@ def t_beam_new(+l: Land) -> U32:
 #   * `res_ms_same`                     -- the MSTACK WALL: this file answers an
 #                                         MSTACK unchanged, so the row asserts the
 #                                         omission rather than hiding it.
-#   * `lin_len`, `lin_first`            -- the REWRITE's shape, which CPython's
-#                                         `pm_flatten_linear.rewrite(...).src`
-#                                         gives as `want_lin_nsrc = 3`.
-#   * `beam_new`                        -- `want_beam_val = 3`, the rewritten
-#                                         sink's `KernelInfo.beam`.
+#   * `lin_len`, `lin_first`            -- the REWRITE's shape. CPython's fixture
+#                                         inner LINEAR has TWO srcs, so flattening
+#                                         gives `want_lin_nsrc = 3`; this fixture's
+#                                         has one, so 2 is right HERE.
+#   * `arg_len`                         -- `want_args_len = 1`, because the
+#                                         oracle's call passes a BOUND variable.
+#                                         This fixture's `callP` passes two UNBOUND
+#                                         PARAMs, so 2 is right here; `arg_len_b` is
+#                                         the row shaped like the oracle's and is 1.
+#   * `oi_in_e`                         -- `want_oi_enc` is `((0,), ())`, because
+#                                         the oracle's `encdec` call also carries a
+#                                         bound variable and drops to one arg uop.
+#                                         This fixture's does not.
+#   * `beam_new`                        -- `want_beam_val = 3`; the port passes
+#                                         `ctx = 7`, and the row is that the
+#                                         rewritten sink's `KernelInfo.beam` IS the
+#                                         ctx value.
+#   * `lin_none`, `beam_skip`           -- spelled `9`, not `0`. Both are
+#                                         `rewrite` answering `None`, which is
+#                                         `VSkip`, which `show_v` spells `9`; the
+#                                         oracle prints `want_lin_none = True` and
+#                                         `want_beam_skip = True` for "is None".
+#                                         The two rows were documented as `1` and
+#                                         `0` here, which was a MISPELLING of the
+#                                         same answer and is corrected above.
 # ===========================================================================
 # `get_call_name` answers a `Maybe<String>`, so its gate row prints the string
 # itself and answers `"None"` for the miss -- which is `str(None)` in Python, so
