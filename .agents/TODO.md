@@ -839,6 +839,34 @@ wall, so it cannot pass quietly over a missing lane.
 - [ ] **`wasm/core.wasm`** — blocked on the corpus reservation above. The glue,
       the C shim and the WASI host are written and typed; the module is missing.
 
+## TWO SUBSTRATE DEFECTS found by mixin/reduce.bend (committed f3b4c9cf) -- MINE, NOT FIXED
+
+- [ ] **`mo_resolve` (mixin/op.bend:718) COMPUTES THE WRONG THING FOR EVERY NEGATIVE
+      DIM.** Its own comment says `dim` is a MAGNITUDE; it evaluates `|dim| + total`
+      where Python evaluates `total - |dim|`. Wrong for every negative `dim`, and
+      **op.bend's entire gate passes `False{}`** as the dim argument, so nothing in
+      that file can see it. This is `reduce.py:45`'s `mo_downcast` neighbourhood and is
+      the SAME cast as op.bend's M6 non-moving mutation.
+      FIX: `U32.sub(total, dim)` instead of the add. VERIFY: op.bend's gate must stay
+      green (it passes `False{}` everywhere, so it cannot detect the change — say so in
+      the row) AND reduce.bend's `M17` mutation must start FAILING, because correct `0`
+      and mutated `2` are currently both what the buggy resolve produces. M17 is
+      blocked on this and nothing else.
+- [ ] **`T.tn_rop` (tensor.bend:867) ROUTES ON THE UNFILTERED AXIS LENGTH.**
+      `ops.py:657` filters size-one axes OUT of `reduce_axis` and then returns
+      `self.reshape(kept)` with NO REDUCE at all; the port routes on the raw
+      `len(axis)`, so it builds `AReduce{op, 0}` and never the reshape.
+      **This is the sharpest case in the repo of why a node COUNT is not a gate:**
+      both sides print 6 nodes with the same src-op sequence, and the shape and the
+      root op are both wrong. Three rows in reduce.bend's gate are red because of it.
+      FIX: route on the filtered length. VERIFY: those three rows go green against
+      CPython, and a count-only row would NOT move -- which is the point worth keeping
+      in the mutation table.
+
+Both are one-line fixes in files no agent currently owns. They are recorded rather
+than done because each needs two full gates to verify and the session's compile
+budget was better spent on the seven in-flight units.
+
 ## OPEN — `H.dedup_u32` reverses, and `nn/optim`'s filter reverses, and they may be CANCELLING
 
 - [ ] **SUSPECTED DOUBLE CANCELLATION. NOT CONFIRMED, NOT FIXED, NOTHING COMMITTED.**
