@@ -29,13 +29,34 @@
 #      which is `TinyELF.name`, the same string cstyle's `function_name`.
 #
 # The one thing still missing for a RUN on this host is `MetalCompiler.compile`
-# (:42-71), which drives MTLCompiler through an Apple block ABI
-# (`ctypes.byref(callback, -0x10)`, a non-portable negative offset into a block
-# struct). That is a WALL below, and it is a SEAM rather than a gap in the
-# logic: the parameters it needs -- the `-std=metal4.0` version string, the
-# 4-byte-padded source blob, the 16-byte `<QQ` request header -- are all
-# computed and gated here. Hand the seam an already-compiled MTLB and the
-# submission path is complete.
+# (:42-71). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`.
+#
+# `compile` is FFI at EXACTLY TWO points: `MTLCodeGenServiceCreate` (:39) and
+# `MTLCodeGenServiceBuildRequest` (:68). Both are already in the trace. Everything
+# else in :42-71 is a Python closure and a `struct`, and it is all ported and gated:
+# the four-way `-std=` ladder, the `params` f-string, the 4-byte-padded source blob,
+# the NUL, the 16-byte `<QQ` request header, the two blob lengths, the callback's
+# `error == 0` arm AND its other arm, the header sum, the slice, and both refusals.
+#
+# What the gate could not say before this session was ANYTHING about a real reply,
+# and the three numbers that turned out to matter were all un-gated:
+#
+#   * `reply[8:16]` is `(104, 0)` HERE, so `:50`'s slice starts at byte 104 of a
+#     4580-byte reply and the MTLB is 4476 bytes. `mt_liboff42` and `mt_liboff00`
+#     were the only fixtures and both are synthetic.
+#   * THE TWO BLOBS ARE DIFFERENT. The UNSLICED reply starts with a little-endian
+#     3 and only the SLICED `ret` carries `MTLB`. Reading the magic off the wrong
+#     one is off by 1112298570 and still LOOKS like a magic -- which is
+#     `nv_query_litter` exactly: a port and an oracle agreeing on a number neither
+#     of them read off the thing. `REPLY_LEAD` and `mt_reply_is_mtlb` exist so
+#     that cannot happen quietly again.
+#   * `error` is 0 for a kernel that compiled and 2 for one that did not, so
+#     `:47`'s `if error == 0` is a comparison against two values this host produced.
+#
+# **THE SEAM THAT REMAINS IS ONE POINTER.** `ctypes.byref(callback, -0x10)` is the
+# address of the `invoke` field of an Apple BLOCK, and Bend can neither allocate a
+# block descriptor nor name its sixteenth byte. Hand the seam an already-compiled
+# MTLB and the submission path is complete; hand it a block and `compile` runs.
 #
 # ---------------------------------------------------------------------------
 # THERE IS NO dtype-to-MTLPixelFormat TABLE IN ops_metal.py, and the brief asked
@@ -115,6 +136,27 @@
 #   :270 _wait_signal               PORTED  and refusal 7
 #   :275 synchronize                PARTIAL the index arithmetic, not the times
 #   :284-285 the autorelease pool   PORTED  pop-then-push, in that order
+#   :267 the ICB weak-dict         PORTED  `icb_keep`, and it WAS NOT CALLED
+#   :276-281 the profile scan      PORTED  `dev.sync_scan`, and it WAS NOT CALLED
+#   :23   to_ns_str                PORTED  `cns_string`, and it WAS NOT WIRED
+#   :42-71 compile                 CLOSED  all of it but the block pointer
+#   --    THE CONSTANTS            PORTED  65 with a CPython authority, all gated
+#
+# ---------------------------------------------------------------------------
+# THREE DEFS WERE WRITTEN AND NOTHING REACHED THEM, and that is the finding this
+# session started from. `icb_keep` (:267), `dev.sync_scan`'s list (`sync_starts`,
+# :276-281) and `cns_string` (:23) each carried a comment saying a row checked it,
+# and each was DEAD: correct, unread, and unreachable from `main`. A file whose
+# gate prints 332 rows had a `Dev.nics` that was always 0, a profile scan that was
+# a no-op, and a `newFunctionWithName:` with no name in it.
+#
+# `.agents/slop/dead-defs.py` is the tool -- name-based, and it blanks a def's own
+# NAME in place rather than dropping the whole line, because most defs here are ONE
+# LINE and dropping the line hides every constant they read. It found 17 dead defs
+# on top of `main`. Fifteen are now live (four rows) and TWO are gone: the `Fq`
+# record and its `fq()` constructor, a vestige of a shape the family fold no longer
+# has -- `check_family` takes `f` as a PARAMETER, so a record bought nothing a
+# string does not already do.
 #
 # ===========================================================================
 # THE FIVE WALLS.
@@ -127,10 +169,15 @@
 #    TODO(p3) runtime/ops_metal.py:18  -- `DLL("CoreGraphics", "CoreGraphics")`.
 #    TODO(p3) runtime/ops_metal.py:35  -- `DLL("MTLCompiler", "MTLCompiler")`.
 #
-# 2. AN NSString (:22, :23, :247). `to_ns_str` is
+# 2. AN NSString (:23, :247). `to_ns_str` is
 #    `objc.msg("stringWithUTF8String:")(NSString, s.encode()).own()`. A `String`
-#    is a `String` here and the *selector* is in the table, which is the part
-#    that decides anything; the object is the seam's.
+#    is a `String` here and the SELECTOR is in the table, which is the part that
+#    decides anything; the OBJECT is the seam's. `cns_string` records the selector
+#    and `dev.pipeline.fun` calls it, so the trace reads
+#    `stringWithUTF8String:` -> `newFunctionWithName` -> `setComputeFunction:` --
+#    the order Python's argument evaluation produces, and NOT the order a name that
+#    "is a literal" would produce. That was a dead def until this session and
+#    `mt_pipe_order` is the row that had been lying.
 #    TODO(p3) runtime/ops_metal.py:23  -- `stringWithUTF8String:` -> NSString.
 #
 # 3. PICKLE (:41). `__reduce__` exists only so a forked multiprocessing worker
@@ -211,7 +258,34 @@ import ../LAWS/spec.bend as S
 # THE CONSTANTS. Every one of these is READ OUT OF tinygrad or out of
 # `autogen/metal.py`, and the gate's expectation is generated by calling
 # CPython -- see `.agents/slop/mt_oracle.py`, which `ast`-walks this same file
-# for the selector order and opens a real `MetalDevice` for the arch.
+# for the selector order and opens a real `MetalDevice` for the arch, AND
+# `.agents/slop/mt_constmap.py`, which is the HAND MAP.
+#
+# ---------------------------------------------------------------------------
+# WHY THE HAND MAP EXISTS, since `ops_nv.bend` shipped 606 green rows with 33 of
+# 219 constants WRONG. The gate tests GRAPHS; a constant answers to a generated
+# header, so no number of rows finds a wrong one. `const-audit.py` was written to
+# automate the diff and reaches **0 of these 106** by name -- the port RENAMES
+# (`CMDTYPE_CONCURRENT` vs `MTLIndirectCommandTypeConcurrentDispatch`), abbreviates
+# (`SEL_WAITFENCE` for `waitForFence:`) and sometimes means something else by the
+# same name (`ADDR_SIZE` is `Ops.GETADDR`'s dtype, not a header field). Its
+# `0 likely-WRONG` is NOT a verdict and is never quoted as one.
+#
+# `mt_constmap.py` is a 106-entry map from each name to the authority that
+# answers for it, and EVERY value on the right is produced by running Python:
+# `getattr(autogen/metal.py, NAME)` for the enums, CPython's `ast` on a NAMED line
+# of `ops_metal.py` for the literals, a real `MetalDevice` for the family and the
+# `sels` Buffer, `struct.calcsize` and `int.from_bytes` for the two struct facts,
+# and -- for `DIM_WORDS` and `ALL_SYMS` -- a REAL KERNEL LAUNCHED through the real
+# `MetalQueue.exec` on this host. The result: **65 compared, 0 wrong.** Two of the
+# oracle's own authorities were wrong while it was being written (`HDR_ICB` and
+# `ICB_OPTIONS` both picked the wrong int off a line carrying two), which is the
+# `nv_query_litter` trap caught by insisting the AST say which int it is.
+#
+# THE 38 `CALL_*` NUMBERS ARE NOT CONSTANTS and are not audited as if they were:
+# they are a port-internal tag space, and what can be wrong is the NAME -> meaning
+# map, so the audit checks that map -- every tag against the `ops_metal.py` line
+# that carries the selector the port claims, and the tag set for density.
 # ===========================================================================
 
 # ops_metal.py:15. "there aren't any docs or symbols" -- the port says so too.
@@ -808,6 +882,41 @@ def creq_len(nsrc: U32, nparams: U32) -> U32:
 def MTLB_MAGIC() -> U32: 1112298573
 def ENDT_MAGIC() -> U32: 1413762629
 
+# :50, THE NUMBER NOBODY MEASURED, now measured. `reply[8:16]` is two u32s -- a
+# HEADER size and a WARNING size -- and `ret = reply[sum(...):]`. MEASURED by
+# running `MTLCodeGenServiceBuildRequest` on this host and reading the blob the
+# callback was handed: `(104, 0)`, so the MTLB starts at byte 104 of a 4580-byte
+# reply and is 4476 bytes. `mt_liboff_host` is the row and `mt_liboff42` /
+# `mt_liboff00` are the synthetic ones it is now checked against.
+def REPLY_HDR() -> U32: 104
+def REPLY_WARN() -> U32: 0
+
+# THE ROW THAT KILLS THE `nv_query_litter` TRAP FOR THIS FILE. The UNSLICED reply
+# does NOT start with `MTLB` -- it starts with `b'\x03\x00\x00\x00'`, a little-endian
+# 3, and it is the SLICED `ret` that carries the magic. So a gate row that reads
+# `MTLB_MAGIC` off the wrong one of the two blobs is wrong by 1112298570 and still
+# LOOKS like a magic. MEASURED, not reasoned: `mt_reply_lead` prints the reply's
+# own first word next to `mt_mtlb`, so the two can never be confused again.
+def REPLY_LEAD() -> U32: 3
+
+# :47, `if error == 0`. `error` is a `ctypes.c_int32` out-parameter, and this host
+# answers 0 for a kernel that compiled and 2 for one that did not. MEASURED both
+# arms by compiling a good and a bad kernel through the real call: `mt_err_ok0` and
+# `mt_err_bad2` are the pair, and `mt_err_bad2` is the row that says the port's
+# `cerr: Bool` is a `!= 0` and not a `== 2`.
+def CB_ERR_OK() -> U32: 0
+def CB_ERR_COMPILE() -> U32: 2
+
+def cc_error_ok(err: U32) -> Bool: U32.is_zero(err)
+
+# :55, `macos_major = int(platform.mac_ver()[0].split('.')[0])`. The host's macOS
+# MAJOR version, injected rather than read -- the port cannot ask the kernel what
+# it is running on, and the AGENTS.md rule is the same one that governs `now`: the
+# value a production function needs arrives as an argument. It is a CONSTANT here
+# so the gate can diff it against `platform.mac_ver()`, and `mt_ver_host` is the
+# `-std=` string the REAL host compiles with.
+def MACOS_MAJOR() -> U32: 26
+
 # :50, `ret = reply[sum(struct.unpack('<LL', reply[8:16])):]` -- the data starts
 # at header size + warning size, both u32s read out of bytes 8..16. The SLICE
 # is the seam's; the SUM is the port's, and `mt_liboff` is its row. A reply
@@ -838,6 +947,26 @@ def cgs_build(ibytes: U32, t: Tr) -> Tr:
 def ccompile.err(cerr: Bool, magic: Bool, t: Tr) -> Tr: Tr.refuse(t, cerr)
 def ccompile.ok(head: U32, tail: U32, t: Tr) -> Tr:
   Tr.refuse(t, Bool.and(U32.is_eq(head, MTLB_MAGIC()), U32.is_eq(tail, ENDT_MAGIC())))
+
+# :45-52, THE CALLBACK, as two arms over the `error` word. The port's `ccompile`
+# takes `cerr: Bool` because a trace records that a refusal happened and not its
+# code; `ccompile.of` keeps the CODE, so `:47`'s `if error == 0` is a comparison
+# against a MEASURED value and not a Bool somebody chose. `err == 0` slices the
+# header off and keeps the MTLB; anything else refuses.
+#
+# TWO `.at`s and not a `Bool.pick` with both arms inline: Bend is STRICT, so both
+# would be BUILT and one discarded -- harmless here (`Tr.emit` is pure) and a trap
+# the moment an arm is not.
+def ccompile.slice(lead: U32, tail: U32, t: Tr) -> Tr:
+  ccompile.ok(lead, tail, t)
+
+def ccompile.slice.at(ok: Bool, lead: U32, tail: U32, t: Tr) -> Tr:
+  match ok:
+    case True{}: ccompile.slice(lead, tail, t)
+    case False{}: Tr.refuse(t, False{})
+
+def ccompile.of(err: U32, head: U32, tail: U32, ibytes: U32, t: Tr) -> Tr:
+  ccompile.slice.at(cc_error_ok(err), head, tail, cgs_build(ibytes, cgs_create(t)))
 
 def ccompile(cerr: Bool, head: U32, tail: U32, ibytes: U32, t: Tr) -> Tr:
   ccompile.ok(head, tail, cgs_build(ibytes, cgs_create(t)))
@@ -1188,16 +1317,11 @@ def families() -> List<&2, D.AEnt>:
    D.AEnt{4001, "MTLGPUFamilyMacCatalyst1"}, D.AEnt{4002, "MTLGPUFamilyMacCatalyst2"},
    D.AEnt{5001, "MTLGPUFamilyMetal3"}, D.AEnt{5002, "MTLGPUFamilyMetal4"}]
 
-# the two `f in nm` tests of :213 and :215, as a `Data` record so the fold can
-# take them as one argument and the two call sites cannot spell them differently.
-type Fq is Data:
-  Fq{apple: String, mac: String}
-
-def fq() -> Fq: Fq{"Apple", "Mac"}
-
 # LAST-wins over the supported members whose name contains `f`, with 0 as
-# Python's `next(..., 0)` default. `+sup` because the fold reads it once per row
-# and the `Nat` fuel may not feed a second self-call.
+# Python's `next(..., 0)` default. `f` is a PARAMETER, not a field of a record:
+# :213 and :215 pass "Apple" and "Mac" and :213 is called from two places, so a
+# record would buy nothing a string cannot already do. `+sup` because the fold
+# reads it once per row and the `Nat` fuel may not feed a second self-call.
 def fam_scan.go(n: Nat, +sup: List<&2, U32>, +f: String, es: List<&2, D.AEnt>, got: U32) -> U32:
   match n:
     case 0n: got
@@ -1437,7 +1561,13 @@ def dev.init(+apple: U32, +mac: U32, q_ok: Bool, +has_res: Bool) -> Dev:
 
 
 def CALL_SELREG() -> U32: 37
-def CALL_NKIND() -> U32: 38
+
+# `CALL_NKIND = 38` WAS HERE, and it is gone because it was DEAD and UNCHECKABLE.
+# It claimed to be the number of call kinds, nothing read it, and there is no table
+# of kinds in this file to check it against -- the tags are inline literals in
+# thirty-eight `Tr.emit` calls. A count that no table can contradict is a comment
+# wearing a number's clothes. `mt_constmap.py` prints the tag set's density instead
+# (`0..37 n=38 DENSE=True`), which is the same claim and IS checkable.
 
 # ===========================================================================
 # :222-237 -- `sels` and `mark_resident`, the two halves of the selector
@@ -2104,10 +2234,18 @@ def dev.pipeline.lib(+lib_ok: Bool, t: Tr) -> Tr:
 # :246, `descriptor = metal.MTLComputePipelineDescriptor.new()`
 def dev.pipeline.desc(t: Tr) -> Tr: cnew(t)
 
-# :247's two calls, in the order Python evaluates them.
+# :247's THREE calls, in the order Python evaluates them:
+#   `descriptor.setComputeFunction(library.newFunctionWithName(to_ns_str(name)))`
+# Python evaluates the ARGUMENT before the call, so `to_ns_str` -- and with it the
+# NSString WALL at :23 -- happens BEFORE `newFunctionWithName:`, and
+# `setComputeFunction:` before that. THE ORDER IS THE CLAIM and `mt_pipe_calls` is
+# the row: dropping the NSString moves nothing else, and a trace that starts at
+# `newFunctionWithName:` reads as though the name were a literal, which is exactly
+# the question the seam turns on.
 def dev.pipeline.fun(t: Tr) -> Tr:
   Tr.emit(CALL_SETCOMPFUNC, sel_ix("setComputeFunction"), 0,
-          Tr.emit(CALL_NEWFUNC, sel_ix("newFunctionWithName"), 0, t))
+          Tr.emit(CALL_NEWFUNC, sel_ix("newFunctionWithName"), 0,
+                  cns_string(t)))
 
 # :248, `descriptor.setSupportIndirectCommandBuffers(True)` -- the flag that says
 # this pipeline is going to be driven from an ICB, and it is why `new_icb` can
@@ -2439,6 +2577,7 @@ def sync_starts(size: U32) -> List<&2, U32>:
 # indices, not the times.
 def sync_end_slot(+start: U32) -> U32: U32.add(start, SYNC_END_OFFSET())
 
+
 def sync_wait(+t: Tr) -> Tr: Tr.emit(CALL_WAITCOMP, sel_ix("waitUntilCompleted"), 0, t)
 def sync_times(+start: U32, +t: Tr) -> Tr:
   Tr.emit(CALL_MSGSEND, sel_ix("GPUEndTime"), sync_end_slot(start),
@@ -2448,6 +2587,31 @@ def sync_times(+start: U32, +t: Tr) -> Tr:
 # which is a Bool the device owns. `mt_sync_guard` is the pair.
 def sync.one(start: U32, filled: Bool, +t: Tr) -> Tr:
   Bool.pick(Tr, filled, t, sync_times(start, sync_wait(t)))
+
+# THE SCAN, :276-281, and this is what `sync_starts` exists for. It was written and
+# never CALLED, so `dev.sync` was a no-op and the whole profile path -- the scan, the
+# guard, `waitUntilCompleted`, the two timestamps -- was reachable only from the
+# gate's own `sync.one` fixtures. THREE calls per GUARDED entry and zero for an
+# unguarded one, which is what makes the guard worth a row: an unguarded scan of a
+# 13-word buffer and a guarded one are the same trace unless the guard is there.
+#
+# `Nat` fuel first and it SHRINKS: `xs` shrinks by one cons per arm and `t` grows,
+# so neither can lead (constraint "a growing accumulator cannot be the first
+# parameter of a self-call").
+def dev.sync.go(nat: Nat, xs: List<&2, U32>, +filled: Bool, +t: Tr) -> Tr:
+  match nat:
+    case 0n: t
+    case 1n+m:
+      match xs:
+        case Nil{}: t
+        case x <> t2: dev.sync.go(m, t2, filled, sync.one(x, filled, t))
+
+# :276-281 over a slots buffer of `size` u64 words. The guard is PER ENTRY in Python
+# (`slots[start] and not slots[start + 2]`) and the port carries ONE Bool, because a
+# `Bool` LIST is not a usable type here -- device.bend's measured constraint, and the
+# same reason `exec`'s symbolic test is a six-bit MASK.
+def dev.sync_scan(+size: U32, filled: Bool, t: Tr) -> Tr:
+  dev.sync.go(U32.to_nat(sync_count(size)), sync_starts(size), filled, t)
 
 # :283-285,
 #   super().synchronize(timeout)
@@ -2703,7 +2867,6 @@ def pm_bufferize(+ar: D.Bar, +n: PmbNode, ne: U32) -> PmbRun:
 
 def METAL_APPLE() -> U32: 1008
 def METAL_MAC() -> U32: 2002
-def APPLE8() -> String: "Apple8"
 
 def fx_dev() -> Dev: dev.init(METAL_APPLE(), METAL_MAC(), True{}, True{})
 def fx_dev0() -> Dev: dev.init(METAL_APPLE(), METAL_MAC(), True{}, False{})
@@ -2864,6 +3027,131 @@ def t_compiler() -> IO(Unit):
     row("mt_compile_bad", Tr.refused(c))
     urow("mt_compile_bad_calls", seen(c))
     row("mt_nsstring_sel", U32.is_eq(sel_ix("stringWithUTF8String:"), 50))
+
+# --- 2b: THE SEAM, :42-71, MEASURED ------------------------------------------
+# Every number below came out of running the REAL `MTLCodeGenServiceBuildRequest`
+# on this host with an INSTRUMENTED callback (`.agents/slop/mt_compile_probe.py`),
+# not out of reading `compile`. That is the difference between this section and a
+# transcription: `reply[8:16] == (104, 0)` and `error == 2` are answers, and the
+# two blobs' different first words are the reason `REPLY_LEAD` exists.
+#
+# WHAT IS STILL THE SEAM, and it is ONE call. `compile` is FFI at exactly two
+# points: `MTLCodeGenServiceCreate` (:39) and `MTLCodeGenServiceBuildRequest` (:68).
+# The SECOND of those takes `ctypes.byref(callback, -0x10)` -- a pointer to the
+# `invoke` slot of an Apple BLOCK, and Bend cannot allocate a block descriptor, let
+# alone name its 16th byte. Everything else in :42-71 is now ported and gated:
+# the four-way `-std=` ladder, the f-string, the 4-byte source pad, the NUL, the
+# 16-byte `<QQ` header, the two request lengths, the callback's `error == 0` arm
+# and its other arm, the header sum, the slice, and both refusals.
+def t_seam() -> IO(Unit):
+  do IO<Unit>:
+    # :55-56 -- the version THIS host compiles with, diffed against `platform.mac_ver()`.
+    urow("mt_macos_major", MACOS_MAJOR())
+    srow("mt_ver_host", metal_version(MACOS_MAJOR()))
+    # :62-63 -- a REAL kernel's two blob lengths and the request they make.
+    urow("mt_psrc238", csrc_padded(238))
+    urow("mt_ppar145", cparams_padded(145))
+    urow("mt_req238", creq_len(238, 145))
+    # :50 -- the header the REAL reply carried, and the MTLB it therefore starts at.
+    urow("mt_liboff_host", mtl_lib.off(REPLY_HDR(), REPLY_WARN()))
+    urow("mt_reply_hdr", REPLY_HDR())
+    urow("mt_reply_warn", REPLY_WARN())
+    # THE TWO BLOBS. `mt_reply_lead` is the UNSLICED reply's first word and
+    # `mt_mtlb` is the SLICED one's; `mt_lead_is_mtlb` says they are NOT the same,
+    # which is the only reason the distinction can survive an edit.
+    urow("mt_reply_lead", REPLY_LEAD())
+    row("mt_reply_is_mtlb", U32.is_eq(REPLY_LEAD(), MTLB_MAGIC()))
+    # :47 -- the callback's own test, against the codes this host really returned.
+    urow("mt_err_ok", CB_ERR_OK())
+    urow("mt_err_compile", CB_ERR_COMPILE())
+    row("mt_cb_ok0", cc_error_ok(CB_ERR_OK()))
+    row("mt_cb_bad2", cc_error_ok(CB_ERR_COMPILE()))
+    # THE TWO ARMS AS TRACES. One compiles and keeps both calls; the other calls and
+    # then refuses, and the call COUNT is the row that says the refusal is a
+    # TRUNCATION and not a skip -- which is the whole template of this file.
+    +g : Tr <- IO.pure(Tr, ccompile.of(CB_ERR_OK(), MTLB_MAGIC(), ENDT_MAGIC(), 402, Tr.of()))
+    urow("mt_cb_ok_calls", seen(g))
+    row("mt_cb_ok_live", Bool.not(Tr.refused(g)))
+    +h : Tr <- IO.pure(Tr, ccompile.of(CB_ERR_COMPILE(), MTLB_MAGIC(), ENDT_MAGIC(), 402, Tr.of()))
+    urow("mt_cb_bad_calls", seen(h))
+    row("mt_cb_bad_refused", Tr.refused(h))
+    # M49's FIXTURE. Dropping the ENDT conjunct of :70 moved NOTHING, because every
+    # other fixture feeds `ok` a good pair -- and `MTLB_MAGIC` and `ENDT_MAGIC` are
+    # constants, so the check was only ever asked a question it had already been
+    # told the answer to. `mt_cb_badtail` is the negative half and without it the
+    # check is untested. (A `0` is a request for a fixture, not a coverage claim.)
+    +i : Tr <- IO.pure(Tr, ccompile.of(CB_ERR_OK(), MTLB_MAGIC(), 0, 402, Tr.of()))
+    row("mt_cb_badtail", Tr.refused(i))
+    +j : Tr <- IO.pure(Tr, ccompile.of(CB_ERR_OK(), 0, ENDT_MAGIC(), 402, Tr.of()))
+    row("mt_cb_badhead", Tr.refused(j))
+
+# --- 2c: THE THREE DEFS THAT WERE WRITTEN AND NEVER CALLED --------------------
+# `str_list_eq`, `icb_keep` and `sync_starts` were all live in the file's own words
+# -- one of them carries a comment saying a row checks it -- and NOTHING reached
+# them, which is what `.agents/slop/dead-defs.py` found. Wiring them costs three
+# rows and buys three things no other row has: the WHOLE selector table in one
+# comparison, `:267`'s weak-dict count, and the profile SCAN rather than a single
+# scan step.
+def t_wired() -> IO(Unit):
+  do IO<Unit>:
+    # :85-86, both tables, element for element -- the rows `.index` cannot see,
+    # because a reordered pair of selectors with the same COUNT keeps every index.
+    row("mt_tbl_handles", str_list_eq(handles(), ["queue", "event", "fence", "resources", "count"]))
+    row("mt_tbl_sels", str_list_eq(selectors(), ["commandBuffer", "computeCommandEncoder", "waitForFence:",
+                                                 "updateFence:", "encodeSignalEvent:value:", "endEncoding",
+                                                 "commit", "useResources:count:usage:",
+                                                 "executeCommandsInBuffer:withRange:",
+                                                 "concurrentDispatchThreadgroups:threadsPerThreadgroup:",
+                                                 "setComputePipelineState:",
+                                                 "dispatchThreadgroups:threadsPerThreadgroup:",
+                                                 "signaledValue"]))
+    # M54's FIXTURE, and it is the one that matters: the two rows above compare the
+    # table against a COPY OF THE TABLE INSIDE THIS FILE, so their lengths always
+    # agree and the ELEMENT comparison was never exercised -- deleting `str_eq.go`
+    # from `str_list_eq` moved nothing. `mt_tbl_reorder` and `mt_tbl_wrong` are the
+    # two negative halves: one swaps two names and one changes one, and a length
+    # check alone sees NEITHER.
+    row("mt_tbl_reorder", Bool.not(str_list_eq(selectors(), ["computeCommandEncoder", "commandBuffer", "waitForFence:",
+                                                            "updateFence:", "encodeSignalEvent:value:", "endEncoding",
+                                                            "commit", "useResources:count:usage:",
+                                                            "executeCommandsInBuffer:withRange:",
+                                                            "concurrentDispatchThreadgroups:threadsPerThreadgroup:",
+                                                            "setComputePipelineState:",
+                                                            "dispatchThreadgroups:threadsPerThreadgroup:",
+                                                            "signaledValue"])))
+    row("mt_tbl_wrong", Bool.not(str_list_eq(handles(), ["queue", "event", "fence", "count", "resources"])))
+    # :267, `self.icbs[buf] = (icb, commands)` -- a WeakKeyDictionary, so its only
+    # observable is how many entries are alive. Zero, then one.
+    urow("mt_nics0", Dev.nics(fx_dev()))
+    urow("mt_nics1", Dev.nics(icb_keep(fx_dev())))
+    # :276-281, THE SCAN. `filled` is the END SLOT, so `True` means "already
+    # collected" and does NOTHING, and `False` is the arm that waits and reads the
+    # two timestamps. Three calls per entry, so 13 words = two entries of
+    # `range(5, 13, 4)` = six calls. The polarity is worth a comment because the
+    # obvious reading of "filled" is the opposite one and it silently halves the
+    # count from 6 to 0.
+    lrow("mt_sync_scan_idx", sync_starts(13))
+    # M51's FIXTURE. `mt_sync_scan_idx` reads `sync_starts` DIRECTLY, so a scan that
+    # walked one entry too few moved nothing -- the row never went through the def
+    # under repair, and `sync_starts` is unchanged by such a bug.
+    # The scan's COUNT through `dev.sync_scan` itself, at two sizes, because
+    # `sync_starts` returns the same list for 13 and for 17 -- `sync_count` decides
+    # the length and `sync_starts` only walks it -- so a scan that lost its last
+    # entry is a COUNT bug and needs two sizes to be visible at all.
+    urow("mt_sync_scan_calls21", seen(dev.sync_scan(21, False{}, Tr.of())))
+    lrow("mt_sync_scan_idx21", sync_starts(21))
+    +u : Tr <- IO.pure(Tr, dev.sync_scan(13, False{}, Tr.of()))
+    urow("mt_sync_scan_calls", seen(u))
+    row("mt_sync_scan_refused", Tr.refused(u))
+    +w : Tr <- IO.pure(Tr, dev.sync_scan(13, True{}, Tr.of()))
+    urow("mt_sync_noscan_calls", seen(w))
+    # `size` below SYNC_START is an EMPTY range in Python, not a negative count.
+    lrow("mt_sync_scan_small", sync_starts(4))
+    urow("mt_sync_scan_small_calls", seen(dev.sync_scan(4, False{}, Tr.of())))
+
+    # :247, the NSString, wired in -- `mt_pipe_order` and `mt_pipe_sels` are the
+    # rows that see it and they are in `t_icb`; nothing is repeated here.
+
 
 # --- 3: the init ORDER and the family table, :196-215 ------------------------
 # `mt_init_order` pins the ORDER AND THE IDENTITY of all eight calls, and the
@@ -3219,10 +3507,15 @@ def t_alloc() -> IO(Unit):
 
 # --- 7: the pipeline and the ICB, :243-268 -----------------------------------
 # :247 is the ORDER row: Python evaluates `setComputeFunction`'s ARGUMENT, so
-# `newFunctionWithName` happens BEFORE `setComputeFunction`.
+# `to_ns_str` happens FIRST of all, then `newFunctionWithName`, and only then
+# `setComputeFunction`. The NSString is the THIRD call and it was missing from this
+# pattern until `cns_string` was wired -- which is why `mt_pipe_order` is the row
+# that would have caught it: `seq` compares the WHOLE list, so a missing call in
+# the middle is a length mismatch and not a mismatch somebody has to notice.
 def pipe_pat() -> List<&2, Call>:
   [Call{CALL_NEWLIB, sel_ix("newLibraryWithData_error"), 0},
    Call{CALL_MSGSEND, sel_ix("new"), 0},
+   Call{CALL_MSGSEND, sel_ix("stringWithUTF8String:"), 0},
    Call{CALL_NEWFUNC, sel_ix("newFunctionWithName"), 0},
    Call{CALL_SETCOMPFUNC, sel_ix("setComputeFunction"), 0},
    Call{CALL_SETICB, sel_ix("setSupportIndirectCommandBuffers"), 0},
@@ -3393,6 +3686,96 @@ def t_pmb() -> IO(Unit):
     +g : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, False{}, False{}, True{}, False{}, False{}), 8))
     urow("mt_pmb_cfunc", PmbRun.got(g))
 
+# ===========================================================================
+# --- 9: THE CONSTANTS THEMSELVES -------------------------------------------
+# WHY THIS SECTION EXISTS, and it is the answer to ops_nv.bend, which shipped 606
+# green rows with 33 of 219 constants WRONG. Every other section in this file tests
+# a GRAPH. A wrong constant in a graph is visible; a wrong constant in a dead
+# corner is not, and no amount of rows finds it -- the numbers answer to
+# `autogen/metal.py` and to `ops_metal.py`'s literals, and neither was being read.
+#
+# So every numeric constant def that has a numeric authority gets a row HERE, and
+# `.agents/slop/mt_constmap.py --rows` emits the same row names from CPython: the
+# authority for `MTLB_MAGIC` is `int.from_bytes(b"MTLB", "little")`, for
+# `CMDTYPE_CONCURRENT` it is `getattr(autogen.metal, ...)` , for `HDR_CMD` it is the
+# int CPython's `ast` pulls out of `ops_metal.py:136`, and for `DIM_WORDS` it is
+# `len(dims)` recorded off a REAL kernel launch through the REAL `MetalQueue.exec`.
+# `mt_diff.py` then compares the two. A hand map is the map; CPython is the answer.
+#
+# ELEVEN of these were DEAD before this section -- declared, correct as far as I can
+# tell, and read by NOTHING, so mutating any of them moved zero rows and no
+# mutation in the table below could have found them. `mt_c_*` is what makes a
+# constant with no reader into a constant that is checked.
+# ===========================================================================
+def t_const() -> IO(Unit):
+  do IO<Unit>:
+    urow("mt_c_request_type", REQUEST_TYPE_COMPILE())
+    urow("mt_c_queue_max", QUEUE_MAX_CMDS())
+    urow("mt_c_usage_rw", USAGE_READ_WRITE())
+    urow("mt_c_storagemode", STORAGE_MODE_SHARED())
+    urow("mt_c_cmdtype", CMDTYPE_CONCURRENT())
+    urow("mt_c_binds", KERNEL_BUF_BINDS())
+    urow("mt_c_icbopt", ICB_OPTIONS())
+    urow("mt_c_pipeopt", MTL_PIPELINE_OPTION_NONE())
+    urow("mt_c_run_count_all", RUN_COUNT_ALL())
+    urow("mt_c_sync_start", SYNC_START())
+    urow("mt_c_sync_step", SYNC_STEP())
+    urow("mt_c_sync_end", SYNC_END_OFFSET())
+    urow("mt_c_zero_align", ZERO_ALIGN())
+    urow("mt_c_zero_rows", ZERO_ROWS())
+    urow("mt_c_icb_pad", ICB_HEADER_PAD())
+    urow("mt_c_arg_align", ARG_ALIGN())
+    urow("mt_c_sym_bytes", SYM_BYTES())
+    urow("mt_c_dim_words", DIM_WORDS())
+    urow("mt_c_hdr_skip", HDR_SKIP())
+    urow("mt_c_hdr_icb", HDR_ICB())
+    urow("mt_c_hdr_cmd", HDR_CMD())
+    urow("mt_c_hdr_pipe", HDR_PIPE())
+    urow("mt_c_addr_size", ADDR_SIZE())
+    urow("mt_c_sel_queue", SEL_QUEUE())
+    urow("mt_c_sel_event", SEL_EVENT())
+    urow("mt_c_sel_fence", SEL_FENCE())
+    urow("mt_c_sel_resources", SEL_RESOURCES())
+    urow("mt_c_sel_count", SEL_COUNT())
+    urow("mt_c_sel_cmdbuf", SEL_COMMANDBUFFER())
+    urow("mt_c_sel_encoder", SEL_COMPUTEENCODER())
+    urow("mt_c_sel_waitfence", SEL_WAITFENCE())
+    urow("mt_c_sel_updatefence", SEL_UPDATEFENCE())
+    urow("mt_c_sel_signalev", SEL_SIGNALEVENT())
+    urow("mt_c_sel_endenc", SEL_ENDENCODING())
+    urow("mt_c_sel_commit", SEL_COMMIT())
+    urow("mt_c_sel_useres", SEL_USERESOURCES())
+    urow("mt_c_sel_exec", SEL_EXECUTECMDS())
+    urow("mt_c_sel_conc", SEL_CONCDISPATCH())
+    urow("mt_c_sel_setpipe", SEL_SETPIPESTATE())
+    urow("mt_c_sel_dispatch", SEL_DISPATCH())
+    urow("mt_c_sel_sigval", SEL_SIGNALEDVALUE())
+    urow("mt_c_msgsend_n", MSGSEND_N())
+    urow("mt_c_ret_none", RET_NONE())
+    urow("mt_c_ret_voidp", RET_VOIDP())
+    urow("mt_c_placeholder", PLACEHOLDER_IX())
+    urow("mt_c_cstruct_qq", cstruct_qq())
+    urow("mt_c_mtlb", MTLB_MAGIC())
+    urow("mt_c_endt", ENDT_MAGIC())
+    urow("mt_c_table_min", TABLE_MIN())
+    urow("mt_c_sels_len", sels_len())
+    urow("mt_c_sels_res", SELS_RES())
+    urow("mt_c_sels_cnt", SELS_CNT())
+    urow("mt_c_slots_stride", SLOTS_STRIDE())
+    urow("mt_c_slots_min", SLOTS_MIN())
+    urow("mt_c_apple9", APPLE9())
+    urow("mt_c_slot_pending", SLOT_PENDING())
+    urow("mt_c_slot_cbuf", SLOT_CBUF())
+    urow("mt_c_slot_stride4", SLOT_STRIDE4())
+    urow("mt_c_kbuf_ix", KERNEL_BUF_IX())
+    urow("mt_c_pmb_none", PMB_NONE())
+    urow("mt_c_pmb_sels", PMB_SELS())
+    urow("mt_c_pmb_slots", PMB_SLOTS())
+    urow("mt_c_pmb_icb", PMB_ICB())
+    urow("mt_c_metal_apple", METAL_APPLE())
+    urow("mt_c_metal_mac", METAL_MAC())
+    urow("mt_c_all_syms", ALL_SYMS())
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- t_sel()
@@ -3404,73 +3787,151 @@ def main() -> IO(Unit):
     g : Unit <- t_icb()
     h : Unit <- t_sync()
     i : Unit <- t_pmb()
+    j : Unit <- t_const()
+    k : Unit <- t_seam()
+    l : Unit <- t_wired()
     IO.print("mt-done=1")
 
 # ===========================================================================
-# THE MUTATION TABLE. Forty-eight entries over a 332-row gate, and every number
-# below is the HARNESS'S OUTPUT, not an estimate: `python3 .agents/slop/mt_mutate.py`
-# applies one edit to a scratch copy BESIDE THIS FILE, runs the INTERPRETED
-# lane, and diffs the row NAMES. It REFUSES a mutation whose `old` text does not
-# match exactly once and prints `PATTERN MATCHES Nx -- NOT RUN`, because a table
-# entry whose target line was hand-edited would otherwise read as "0 rows moved"
-# and that is exactly the reading a blind spot must not be confused with.
+# THE MUTATION TABLE. Seventy-two entries over a 432-row gate, and every number
+# below is the HARNESS'S OUTPUT, not an estimate:
+# `.venv/bin/python .agents/slop/mt_mutate.py <this file>` applies one edit to a
+# scratch copy BESIDE THIS FILE, runs the INTERPRETED lane, and diffs the row
+# NAMES. It REFUSES a mutation whose `old` text does not match exactly once and
+# prints `PATTERN MATCHES Nx -- NOT RUN`, because a table entry whose target line
+# was hand-edited would otherwise read as "0 rows moved" and that is exactly the
+# reading a blind spot must not be confused with. `.agents/slop/mt-table.py`
+# rewrites the table below from the harness's output and REFUSES an id with no
+# prose, so a row with an empty last column cannot happen.
 #
 # The useful column is "rows MOVED", because a mutation that moves nothing
-# measures what this gate does NOT see -- and FOUR of them do not see anything,
-# one of which is a finding about the SOURCE rather than about the gate.
+# measures what this gate does NOT see.
+#
+# ---------------------------------------------------------------------------
+# FOUR MOVE NOTHING, and only ONE of them is a control.
+#
+#  * M14 and M14c add a `+` to a parameter and nothing else. They cannot change
+#    behaviour and are run BECAUSE "the edit that adds only a `+`" is the one an
+#    LLM would most plausibly make by accident. M14b and M14e are the same two
+#    edits made real, and they move 9 and 11 rows.
+#  * M41 is the comment-only CONTROL. A table with no row that CANNOT move is a
+#    table of coincidences.
+#  * M26b is a FINDING ABOUT THE SOURCE. `device.py:404`'s second `pm_bufferize`
+#    rule carries the IDENTICAL `name="b"` pattern, fires on every node Metal's
+#    first rule fires on, and answers the same thing -- so Metal's rule is
+#    REDUNDANT with `Compiled`'s on every input, and the only difference it can
+#    make is to fire LESS. No fixture will ever change that.
+#
+# ---------------------------------------------------------------------------
+# THREE MOVED NOTHING ON THE FIRST RUN AND WERE FIXED WITH A FIXTURE, which is
+# the whole point of running the harness rather than reading the code:
+#
+#  * M49 dropped :70's ENDT conjunct and nothing moved, because every fixture fed
+#    `ccompile.ok` a good pair and both magics are CONSTANTS -- the check was
+#    asked a question it had been told the answer to. `mt_cb_badtail` and
+#    `mt_cb_badhead` are the negative halves it needed.
+#  * M51 dropped the scan's last entry and nothing moved, because `mt_sync_scan_idx`
+#    read `sync_starts` DIRECTLY and `sync_starts` is unchanged by a wrong count.
+#    The row has to go through `dev.sync_scan`, at two sizes.
+#  * M54 deleted `str_list_eq`'s ELEMENT walk and nothing moved, because the two
+#    table rows compare `handles()`/`selectors()` against a COPY OF THE SAME TABLE
+#    INSIDE THIS FILE -- the lengths always agree. `mt_tbl_reorder` (two names
+#    swapped) and `mt_tbl_wrong` (one name changed) are the negatives a length
+#    check cannot see, and they are also the rows that make the positive pair worth
+#    anything.
+#
+# ---------------------------------------------------------------------------
+# AND THE CONSTANT SWEEP, which is the table's most important row and is not a
+# single edit: `mt_mutate.py` adds 1 to EVERY numeric constant def, one at a time.
+# **111 defs, 30 whose +1 moves nothing** -- and all 30 are the `CALL_*` tag
+# space (29) plus `MTL_DEV` (a fixture device index). Every other constant in the
+# file is now seen by at least one row, which was NOT true of eleven of them
+# before this session because they had no reader at all.
+#
+# THE THIRTY ARE A GENUINE BLIND SPOT and must not be closed with rows that encode
+# the bug. The `CALL_*` NUMBERS are a port-internal tag space: Python has no
+# counterpart for "this call kind is 12", so a row printing the tag would only ever
+# restate the assignment. What protects them runs the OTHER way -- `mt_constmap.py`
+# checks each tag NAME against the `ops_metal.py` line that carries the selector
+# the port claims (the `CLASS_BLACKWELL_COMPUTE_A`-holding-`_B` failure mode) and
+# checks the tag set for density (`0..37 n=38 DENSE=True`). `MTL_DEV` is a fixture:
+# it must be the device index `device.bend`'s `Bn.dev` compares against, and the
+# right test is a row about `mem_used`, which is `device.bend`'s to write.
 #
 # | # | the edit | rows moved | what it is testing |
 # | --- | --- | --- | --- |
-# | M1 | `csrc_pad` drops the `- n` | 10 | :62's `round_up(len+1,4) - len`. **A REAL PORT BUG THIS GATE FOUND**: the first version printed 4 where CPython says 3, and `mt_psrc7`/`mt_req7` moved with it. |
-# | M2 | `metal_version`'s `>= 13` becomes `>= 14` | 3 | :56's four-arm ladder, and the 13/14 boundary. |
-# | M3 | `sel_ix` cannot say `no name matched` | 34 | the reverse lookup at all. Thirty-four rows, because every selector is looked up by name. |
-# | M4 | `q.items` appends the vars BEFORE the globals | 6 | :111's `[globals] + [vals]`. **A REAL PORT BUG**: `List.append` is `xs ++ ys`, so the first version built `[4,8,8]`. |
-# | M5 | `q.end`'s `default` is `at`, not `at + 8` | 2 | :113's `default=off + 8`, and ONLY the two empty-rows fixtures reach it. |
-# | M5b | the same, `at + 16` | 2 | the same two rows, so M5 is not a one-value accident. |
-# | M6 | `q.exec.off` aligns to 64, not 256 | 20 | :112's 256-byte argument alignment. |
-# | M7 | `run.encoder` before `run.cmdbuf` | 4 | :139 before :140 -- the FIRST TWO calls of every `run`. |
-# | M8 | `run.pipeline.at` is inverted | 16 | :146's arm, and the call count behind it. |
-# | M9 | `run.execute` dispatches `first`, not `count` | 7 | :151's `withRange:` length. Seven rows, and `mt_run_order` is one of them -- the pattern spells the argument. |
-# | M10 | `run.slot0` and `run.slot1` swapped | 4 | :159 before :160. Four rows and not one, because the two stores differ in BOTH their slot and their value. |
-# | M11 | `dev.apple9`'s `or` becomes an `and` | 17 | :146's DISJUNCTION. Only `mt_apple9_apple8` of the seventeen is ABOUT the disjunction; the other sixteen are the trace, because the arm gates two of `run`'s thirteen calls. |
-# | M12 | `runs2`'s FIRST run is `last` | 3 | :167's `last=False`, and the fact that `encodeSignalEvent:value:` then appears once. |
-# | M13 | `runs2` does NOT thread the trace | 5 | `h` is the ACCUMULATOR through both `run` calls. A port that gave each `run` a fresh trace loses the first run's thirteen calls, and five rows say so. |
-# | M14 | `q.submit.at`'s `nostamps` parameter gains a `+` | 0 -- A `+`-ONLY EDIT, the structural twin of the control | a mutation that cannot change behaviour, run because "the edit that adds only a `+`" is the one an LLM would most plausibly make by accident. It moves nothing, and the table is honest about that. |
-# | M14b | the no-stamps arm builds the STAMPS path | 9 | :166's `if not self.stamps`. |
-# | M14c | `q.submit.at`'s `many` parameter gains a `+` | 0 -- ANOTHER `+`-ONLY EDIT | see M14. |
-# | M14d | `runs2` drops its SECOND run | 7 | :168. Seven rows, and `mt_has_late2` is one of them -- a pattern that only occurs in the SECOND run. |
-# | M14e | the `many` arm is selected when NOT many | 11 | the three-way tail, and `mt_run_one_*` is in the eleven because the one-run fixture takes the `else` arm. |
-# | M15 | `Tr.emit.go` drops the `raise` guard | 6 | THE RAISE. Every refusal TRUNCATION row, and only those. |
-# | M16 | `Tr.has.go`'s fuel is the PATTERN length | 6 | THE MATCHER. `mt_has_late`/`mt_has_late2` exist for this and are the two rows the WebGPU template's M23 had to add. |
-# | M17 | the pipeline emits `setComputeFunction` BEFORE `newFunctionWithName` | 1 | :247's argument-before-callee order. One row, and it is LOCALISED. |
-# | M18 | `mark_resident` runs BOTH paths | 1 | :229-237's mutual exclusion. One row, and it is the commit COUNT. |
-# | M19 | `setMaxKernelBufferBindCount` is 2 | 2 | :256's ONE bind, which is the number cstyle's `[[buffer(0)]]` and this file have to agree on. |
-# | M20 | `icb_max` drops the `max(..., 1)` | 1 | :257's `max(len(cmds), 1)`. |
-# | M21 | `local_ok`'s `>` becomes `>=` | 1 | :262's STRICT comparison; `mt_local_eq` is the only fixture at the boundary. |
-# | M22 | `sync_count` uses `round_up`, not `ceildiv` | 4 | `range(5, size, 4)`. **A REAL PORT BUG**: `round_up(4, 4)` is 4 and `range(5,9,4)` has one element. |
-# | M23 | `sync_range` CONSES and reverses | 2 | the append-vs-cons order. `mt_sync_idx5` is the one-element fixture that is BLIND to it, which is why `mt_sync_idx17` exists. |
-# | M24 | `sync.one`'s guard is inverted | 4 | :279's `slots[start] and not slots[start + 2]`. |
-# | M25 | the autorelease pool PUSHES before it POPS | 1 | :284-285's pop-then-push. |
-# | M26 | `pmb_m2` requires the `mtl_sel` tag as well | 1 | **A REAL PORT BUG**: M2's pattern is `UPat(Ops.PARAM, name="b")` with NO tag, and the first version chained it off M0. `mt_pmb_icb` printed 2 where the source answers 3. |
-# | M26b | `pmb_m1` requires the `mtl_sel` tag as well | **0 -- A REAL BLIND SPOT** | see below. |
-# | M26c | `dev.pipeline.f` keeps the COMPILER's magic check | 17 | **A REAL PORT BUG**: `ccompile.ok(0, 0, ...)` compares a library's head against MTLB/ENDT and so EVERY pipeline refused. |
-# | M26d | `pmb_keep` does not advance the rule index on a miss | 1 | **A REAL PORT BUG**: the miss arm returned the accumulator unchanged, so rule 0 ran three times and rules 1 and 2 never ran. |
-# | M26e | every command is set up BEFORE the next handle is taken | 2 | :259 and :260 are TWO SEPARATE LOOPS. |
-# | M27 | `pmb_keep` is LAST-wins | 7 | device.py:1611's `rewrite` is first-wins. |
-# | M28 | `icb_hdr_word` divides by 4, not 8 | 2 | :266's `view(fmt='Q')[header // 8]`. Found as a blind spot -- the row was missing and `mt_icb_storeslots` is the fix. |
-# | M29 | `icb_size` drops the `+ 24` header | 3 | :129 and :253 must spell the SAME number. |
-# | M30 | `fam_scan` is FIRST-wins, not LAST-wins | 8 | :213's `next(filter(..., reversed(...)))` is a LAST-wins over the dict. |
-# | M31 | `arch_of` drops 5 characters, not 12 | 3 | :215's `[12:]`. |
-# | M32 | `dev.arch.apple`'s `or` becomes an `and` | 5 | :215's `or` is a FALLBACK, not a union. |
-# | M33 | `csrc_padded` is off by one | 4 | `len(src_padded)`. |
-# | M34 | `hdr_pipe` is `n + 2`, not `n + 1` | 3 | :148's `header.index(1 + n + r)`. |
-# | M35 | `selreg` starts at word 0, not word 5 | 1 | :224's five handles before the thirteen selectors. |
-# | M36 | `q.dims` reads bit i+1, not bit i | 2 | :121's `tuple(1 if isinstance(d, UOp) else int(d) for d in dims)` and the mask's bit order. |
-# | M37 | `alloc.of` asks for `contents` BEFORE `gpuAddress` | 1 | :179's three arguments, evaluated left to right. |
-# | M38 | `icb_cmds` retains BEFORE it indexes | 2 | :259's `indirectComputeCommandAtIndex(i).own()`. Found as a blind spot -- the two COUNT rows cannot see a swap and `mt_icb_cmd_order` is the fix. |
-# | M39 | `q.exec.sizes.at` is unconditional | 28 | :117's `if any(isinstance(d, UOp) for d in dims)`. |
-# | M40 | `QUEUE_MAX_CMDS` is 512 | 2 | :200's 1024. |
+# | M1 | csrc_pad drops the `- n` | 12  mt_pad1,mt_pad2,mt_pad3,mt_pad4,mt_pad5,mt_pad7 |  mt_pad1,mt_pad2,mt_pad3,mt_pad4,mt_pad5,mt_pad7 | | :62's `round_up(len+1,4) - len`. **A REAL PORT BUG THIS GATE FOUND**: the first version printed 4 where CPython says 3, and `mt_psrc7`/`mt_req7` moved with it. |
+# | M2 | metal_version's `>= 13` becomes `>= 14` | 3  mt_params2,mt_ver12,mt_ver13 |  mt_params2,mt_ver12,mt_ver13 | | :56's four-arm ladder, and the 13/14 boundary. |
+# | M3 | sel_ix cannot say `no name matched` | 34  mt_init_sels_only,mt_nsstring_sel,mt_pipe_sels,mt_poll_sels,mt_resid_add_sels,mt_resid_del_sels |  mt_init_sels_only,mt_nsstring_sel,mt_pipe_sels,mt_poll_sels,mt_resid_add_sels,mt_resid_del_sels | | the reverse lookup at all. Thirty-four rows, because every selector is looked up by name. |
+# | M4 | q.items appends the vars BEFORE the globals | 6  mt_end_2buf1var,mt_exec_nbytes_c,mt_items_2_1,mt_items_3_2,mt_layout_2buf1var,mt_layout_at256 |  mt_end_2buf1var,mt_exec_nbytes_c,mt_items_2_1,mt_items_3_2,mt_layout_2buf1var,mt_layout_at256 | | :111's `[globals] + [vals]`. **A REAL PORT BUG**: `List.append` is `xs ++ ys`, so the first version built `[4,8,8]`. |
+# | M5 | q.end's `default` is `at`, not `at + 8` | 2  mt_end_empty,mt_end_empty0 |  mt_end_empty,mt_end_empty0 | | :113's `default=off + 8`, and ONLY the two empty-rows fixtures reach it. |
+# | M5b | q.end's `default` is `at + 16` | 2  mt_end_empty,mt_end_empty0 |  mt_end_empty,mt_end_empty0 | | the same two rows, so M5 is not a one-value accident. |
+# | M6 | q.exec.off aligns to 64, not 256 | 20  mt_exec_nbytes,mt_exec_nbytes_c,mt_hdr_word,mt_header,mt_header_agree,mt_icb_cmd_order |  mt_exec_nbytes,mt_exec_nbytes_c,mt_hdr_word,mt_header,mt_header_agree,mt_icb_cmd_order | | :112's 256-byte argument alignment. |
+# | M7 | run.encoder before run.cmdbuf | 4  mt_run_one_storevals,mt_run_order,mt_run_sels,mt_run_two_storevals |  mt_run_one_storevals,mt_run_order,mt_run_sels,mt_run_two_storevals | | :139 before :140 -- the FIRST TWO calls of every `run`. |
+# | M8 | run.pipeline.at is inverted | 16  mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_msgsend_n,mt_run_one_exec |  mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_msgsend_n,mt_run_one_exec | | :146's arm, and the call count behind it. |
+# | M9 | run.execute dispatches `first`, not `count` | 7  mt_run_disp_args,mt_run_exec_args,mt_run_one_exec,mt_run_order,mt_run_setpipe_args,mt_run_sym_args |  mt_run_disp_args,mt_run_exec_args,mt_run_one_exec,mt_run_order,mt_run_setpipe_args,mt_run_sym_args | | :151's `withRange:` length. Seven rows, and `mt_run_order` is one of them -- the pattern spells the argument. |
+# | M10 | run.slot0 and run.slot1 swapped | 4  mt_run_one_storeslots,mt_run_one_storevals,mt_run_two_storeslots,mt_run_two_storevals |  mt_run_one_storeslots,mt_run_one_storevals,mt_run_two_storeslots,mt_run_two_storevals | | :159 before :160. Four rows and not one, because the two stores differ in BOTH their slot and their value. |
+# | M11 | dev.apple9's `or` becomes an `and` | 17  mt_apple9_apple8,mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_msgsend_n |  mt_apple9_apple8,mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_msgsend_n | | :146's DISJUNCTION. Only `mt_apple9_apple8` of the seventeen is ABOUT the disjunction; the other sixteen are the trace, because the arm gates two of `run`'s thirteen calls. |
+# | M12 | runs2's FIRST run is `last` | 3  mt_run_two_calls,mt_run_two_signal,mt_run_two_storevals |  mt_run_two_calls,mt_run_two_signal,mt_run_two_storevals | | :167's `last=False`, and the fact that `encodeSignalEvent:value:` then appears once. |
+# | M13 | runs2 does NOT thread the trace | 5  mt_run_two_calls,mt_run_two_commit,mt_run_two_stores,mt_run_two_storeslots,mt_run_two_storevals |  mt_run_two_calls,mt_run_two_commit,mt_run_two_stores,mt_run_two_storeslots,mt_run_two_storevals | | `h` is the ACCUMULATOR through both `run` calls. A port that gave each `run` a fresh trace loses the first run's thirteen calls, and five rows say so. |
+# | M14 | q.submit.at's no-stamps arm builds the STAMPS path | 0 | a mutation that cannot change behaviour, run because "the edit that adds only a `+`" is the one an LLM would most plausibly make by accident. It moves nothing, and the table is honest about that. |
+# | M14b | q.submit.at's no-stamps arm builds the STAMPS path (real) | 9  mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_order,mt_run_res_calls |  mt_run_a10_calls,mt_run_calls,mt_run_disp_args,mt_run_exec_args,mt_run_order,mt_run_res_calls | | :166's `if not self.stamps`. |
+# | M14c | q.submit.at's many arm is selected when NOT many | 0 | see M14. |
+# | M14e | q.submit.at's many arm is selected when NOT many (real) | 11  mt_has_late2,mt_run_one_commit,mt_run_one_exec,mt_run_one_storeslots,mt_run_one_storevals,mt_run_two_calls |  mt_has_late2,mt_run_one_commit,mt_run_one_exec,mt_run_one_storeslots,mt_run_one_storevals,mt_run_two_calls | | the three-way tail, and `mt_run_one_*` is in the eleven because the one-run fixture takes the `else` arm. |
+# | M14d | q.submit.runs2 drops its SECOND run | 7  mt_has_late2,mt_run_two_calls,mt_run_two_commit,mt_run_two_signal,mt_run_two_stores,mt_run_two_storeslots |  mt_has_late2,mt_run_two_calls,mt_run_two_commit,mt_run_two_signal,mt_run_two_stores,mt_run_two_storeslots | | :168. Seven rows, and `mt_has_late2` is one of them -- a pattern that only occurs in the SECOND run. |
+# | M15 | Tr.emit.go drops the `raise` guard | 6  mt_alloc_refused_calls,mt_icb_local_bad_calls,mt_icb_local_bound,mt_icb_refuse_calls,mt_init_refused_calls,mt_pipe_librefuse_calls |  mt_alloc_refused_calls,mt_icb_local_bad_calls,mt_icb_local_bound,mt_icb_refuse_calls,mt_init_refused_calls,mt_pipe_librefuse_calls | | THE RAISE. Every refusal TRUNCATION row, and only those. |
+# | M16 | Tr.has.go's fuel is the PATTERN length | 6  mt_alloc_order,mt_has_late,mt_has_late2,mt_icb_cmd_order,mt_icb_local_pipeline,mt_icb_order |  mt_alloc_order,mt_has_late,mt_has_late2,mt_icb_cmd_order,mt_icb_local_pipeline,mt_icb_order | | THE MATCHER. `mt_has_late`/`mt_has_late2` exist for this and are the two rows the WebGPU template's M23 had to add. |
+# | M17 | pipeline emits setComputeFunction BEFORE newFunctionWithName | 1  mt_pipe_order |  mt_pipe_order | | :247's argument-before-callee order. One row, and it is LOCALISED. |
+# | M17b | pipeline drops the NSString as well | 8  mt_icb_calls,mt_icb_librefuse_calls,mt_icb_local_bad_calls,mt_icb_local_ok_calls,mt_icb_typerefuse_calls,mt_pipe_calls |  mt_icb_calls,mt_icb_librefuse_calls,mt_icb_local_bad_calls,mt_icb_local_ok_calls,mt_icb_typerefuse_calls,mt_pipe_calls | | :247's NSString. `pipe_pat` compares the WHOLE list, so a missing call in the MIDDLE is a length mismatch, and eight rows move because every ICB builds a pipeline per command. |
+# | M18 | mark_resident runs BOTH paths | 1  mt_resid_excl_commits |  mt_resid_excl_commits | | :229-237's mutual exclusion. One row, and it is the commit COUNT. |
+# | M19 | setMaxKernelBufferBindCount is 2 | 2  mt_icb_binds,mt_icb_order |  mt_icb_binds,mt_icb_order | | :256's ONE bind, which is the number cstyle's `[[buffer(0)]]` and this file have to agree on. |
+# | M20 | icb_max drops the `max(..., 1)` | 1  mt_icb_max0 |  mt_icb_max0 | | :257's `max(len(cmds), 1)`. |
+# | M21 | local_ok's `>` becomes `>=` | 1  mt_local_eq |  mt_local_eq | | :262's STRICT comparison; `mt_local_eq` is the only fixture at the boundary. |
+# | M22 | sync_count uses round_up, not ceildiv | 8  mt_sync_n13,mt_sync_n17,mt_sync_n21,mt_sync_n9,mt_sync_scan_calls,mt_sync_scan_calls21 |  mt_sync_n13,mt_sync_n17,mt_sync_n21,mt_sync_n9,mt_sync_scan_calls,mt_sync_scan_calls21 | | `range(5, size, 4)`. **A REAL PORT BUG**: `round_up(4, 4)` is 4 and `range(5,9,4)` has one element. |
+# | M23 | sync_range CONSES and reverses | 4  mt_sync_idx17,mt_sync_idx21,mt_sync_scan_idx,mt_sync_scan_idx21 |  mt_sync_idx17,mt_sync_idx21,mt_sync_scan_idx,mt_sync_scan_idx21 | | the append-vs-cons order. `mt_sync_idx5` is the one-element fixture that is BLIND to it, which is why `mt_sync_idx17` exists. |
+# | M24 | sync.one's guard is inverted | 7  mt_sync_guard_args,mt_sync_guard_hits,mt_sync_guard_miss,mt_sync_guard_sels,mt_sync_noscan_calls,mt_sync_scan_calls |  mt_sync_guard_args,mt_sync_guard_hits,mt_sync_guard_miss,mt_sync_guard_sels,mt_sync_noscan_calls,mt_sync_scan_calls | | :279's `slots[start] and not slots[start + 2]`. |
+# | M25 | the autorelease pool PUSHES before it POPS | 1  mt_pool_order |  mt_pool_order | | :284-285's pop-then-push. |
+# | M26 | pmb_m2 requires the mtl_sel tag as well | 1  mt_pmb_icb |  mt_pmb_icb | | **A REAL PORT BUG**: M2's pattern is `UPat(Ops.PARAM, name="b")` with NO tag, and the first version chained it off M0. `mt_pmb_icb` printed 2 where the source answers 3. |
+# | M26b | pmb_m1 requires the mtl_sel tag as well | 0 | see below. |
+# | M26c | dev.pipeline.f keeps the COMPILER's magic check | 17  mt_icb_bar,mt_icb_bind,mt_icb_calls,mt_icb_cmd_order,mt_icb_conc,mt_icb_kbuf_args |  mt_icb_bar,mt_icb_bind,mt_icb_calls,mt_icb_cmd_order,mt_icb_conc,mt_icb_kbuf_args | | **A REAL PORT BUG**: `ccompile.ok(0, 0, ...)` compares a library's head against MTLB/ENDT and so EVERY pipeline refused. |
+# | M26d | pmb_keep does not advance the rule index on a miss | 1  mt_pmb_icb |  mt_pmb_icb | | **A REAL PORT BUG**: the miss arm returned the accumulator unchanged, so rule 0 ran three times and rules 1 and 2 never ran. |
+# | M26e | icb: every command is set up BEFORE the next handle is taken | 2  mt_icb_cmd_order,mt_icb_order |  mt_icb_cmd_order,mt_icb_order | | :259 and :260 are TWO SEPARATE LOOPS. |
+# | M27 | pmb_keep is LAST-wins | 7  mt_pmb_both,mt_pmb_both_n,mt_pmb_cfunc,mt_pmb_sels,mt_pmb_slots,mt_pmb_slots4 |  mt_pmb_both,mt_pmb_both_n,mt_pmb_cfunc,mt_pmb_sels,mt_pmb_slots,mt_pmb_slots4 | | device.py:1611's `rewrite` is first-wins. |
+# | M28 | icb_hdr_word divides by 4, not 8 | 2  mt_icb_order,mt_icb_storeslots |  mt_icb_order,mt_icb_storeslots | | :266's `view(fmt='Q')[header // 8]`. Found as a blind spot -- the row was missing and `mt_icb_storeslots` is the fix. |
+# | M29 | icb_size drops the `+ 24` header | 3  mt_icb_nbytes,mt_icb_size,mt_icb_sizes_agree |  mt_icb_nbytes,mt_icb_size,mt_icb_sizes_agree | | :129 and :253 must spell the SAME number. |
+# | M30 | fam_scan is FIRST-wins, not LAST-wins | 8  mt_fam_apple8,mt_fam_apple8_9,mt_fam_apple9,mt_fam_apple9_family,mt_fam_apple_first,mt_fam_mac |  mt_fam_apple8,mt_fam_apple8_9,mt_fam_apple9,mt_fam_apple9_family,mt_fam_apple_first,mt_fam_mac | | :213's `next(filter(..., reversed(...)))` is a LAST-wins over the dict. |
+# | M31 | arch_of drops 5 characters, not 12 | 3  mt_arch_slice,mt_arch_slice_mac,mt_init_arch |  mt_arch_slice,mt_arch_slice_mac,mt_init_arch | | :215's `[12:]`. |
+# | M32 | dev.arch.apple's `or` becomes an `and` | 5  mt_arch_or_apple,mt_arch_or_fallback,mt_init_arch,mt_init_fam,mt_init_order |  mt_arch_or_apple,mt_arch_or_fallback,mt_init_arch,mt_init_fam,mt_init_order | | :215's `or` is a FALLBACK, not a union. |
+# | M33 | csrc_padded is off by one | 6  mt_psrc238,mt_psrc4,mt_psrc7,mt_req1,mt_req238,mt_req7 |  mt_psrc238,mt_psrc4,mt_psrc7,mt_req1,mt_req238,mt_req7 | | `len(src_padded)`. |
+# | M34 | hdr_pipe is `n + 2`, not `n + 1` | 3  mt_hdr_pipe0,mt_hdr_pipe1,mt_run_order |  mt_hdr_pipe0,mt_hdr_pipe1,mt_run_order | | :148's `header.index(1 + n + r)`. |
+# | M35 | selreg starts at word 0, not word 5 | 1  mt_sels_sel_args |  mt_sels_sel_args | | :224's five handles before the thirteen selectors. |
+# | M36 | q.dims reads bit i+1, not bit i | 2  mt_dims_mixed,mt_dims_one |  mt_dims_mixed,mt_dims_one | | :121's `tuple(1 if isinstance(d, UOp) else int(d) for d in dims)` and the mask's bit order. |
+# | M37 | alloc.of asks for contents BEFORE gpuAddress | 1  mt_alloc_order |  mt_alloc_order | | :179's three arguments, evaluated left to right. |
+# | M38 | icb_cmds retains BEFORE it indexes | 2  mt_icb_cmd_order,mt_icb_order |  mt_icb_cmd_order,mt_icb_order | | :259's `indirectComputeCommandAtIndex(i).own()`. Found as a blind spot -- the two COUNT rows cannot see a swap and `mt_icb_cmd_order` is the fix. |
+# | M39 | q.exec.sizes.at is unconditional | 28  mt_exec_nbytes_c,mt_exec_nrows,mt_exec_nrows_s,mt_hdr_word,mt_header,mt_header_agree |  mt_exec_nbytes_c,mt_exec_nrows,mt_exec_nrows_s,mt_hdr_word,mt_header,mt_header_agree | | :117's `if any(isinstance(d, UOp) for d in dims)`. |
+# | M40 | dev.queue_max is 512 | 3  mt_c_queue_max,mt_init_queueargs,mt_queue_max |  mt_c_queue_max,mt_init_queueargs,mt_queue_max | | :200's 1024. |
 # | M41 | a comment-only edit -- THE CONTROL | 0 | a table with no row that CANNOT move is a table of coincidences. |
+# | M42 | the seam: `cc_error_ok` tests `err == 2` instead of `err == 0` | 4  mt_cb_bad2,mt_cb_bad_refused,mt_cb_ok0,mt_cb_ok_live |  mt_cb_bad2,mt_cb_bad_refused,mt_cb_ok0,mt_cb_ok_live | | :47's `if error == 0`. Four rows and not one, because inverting it also inverts `mt_cb_ok_live` -- which is what makes this a test of the arm rather than of the constant. |
+# | M43 | the seam: the error arm does NOT refuse | 1  mt_cb_bad_refused |  mt_cb_bad_refused | | the error arm's RAISE. One row, and one is right: a refusal that still made both calls is exactly what `mt_cb_bad_calls` exists to distinguish from skipping them. |
+# | M44 | the seam: the error arm refuses WITHOUT calling | 2  mt_cb_bad_calls,mt_cb_ok_calls |  mt_cb_bad_calls,mt_cb_ok_calls | | the error arm's ORDER -- refuse before the call rather than after. Two rows, and they are the two COUNT rows, so the table records that the port calls first and refuses second. |
+# | M45 | the seam: `REPLY_HDR` is 100, the header the SYNTHETIC fixtures guessed | 2  mt_liboff_host,mt_reply_hdr |  mt_liboff_host,mt_reply_hdr | | :50's header sum, on the value a REAL reply carried. This is the row that did not exist before this session: `mt_liboff42` and `mt_liboff00` were synthetic and 104 was unreachable. |
+# | M46 | the seam: `REPLY_LEAD` is MTLB -- the two blobs confused | 2  mt_reply_is_mtlb,mt_reply_lead |  mt_reply_is_mtlb,mt_reply_lead | | THE TWO BLOBS. Printing MTLB as the reply's leading word moves `mt_reply_is_mtlb` to True and the row then says the un-sliced reply carries the magic, which it does not. `nv_query_litter` in two rows. |
+# | M47 | the seam: `CB_ERR_COMPILE` is 1 | 1  mt_err_compile |  mt_err_compile | | the compiler's error code. One row, because `CB_ERR_COMPILE` is also `cc_error_ok`'s input and M42 covers the consumer. |
+# | M48 | the seam: `MACOS_MAJOR` is 15, so the host compiles with metal3.1 | 2  mt_macos_major,mt_ver_host |  mt_macos_major,mt_ver_host | | :55-56's ladder at the HOST's version, so the four-way ladder is checked at the value it will actually be asked about. |
+# | M49 | the seam: the magic check drops the ENDT half | 1  mt_cb_badtail |  mt_cb_badtail | | :70's ENDT conjunct. **THIS MOVED 0 ROWS BEFORE THE FIXTURE.** Every fixture fed `ccompile.ok` a good pair, and both magics are CONSTANTS, so the check was only ever asked a question it had been told the answer to. `mt_cb_badtail` and `mt_cb_badhead` are the negative halves. |
+# | M50 | the wiring: `dev.sync.go` drops the call and keeps walking | 2  mt_sync_scan_calls,mt_sync_scan_calls21 |  mt_sync_scan_calls,mt_sync_scan_calls21 | | :276-281's walk: drop the per-entry work and keep walking. Two rows and both are COUNT rows at two sizes, which is the fixture M51 needed. |
+# | M51 | the wiring: `dev.sync_scan` misses the LAST entry | 2  mt_sync_scan_calls,mt_sync_scan_calls21 |  mt_sync_scan_calls,mt_sync_scan_calls21 | | the scan losing its LAST entry. **ALSO 0 BEFORE THE FIXTURE**: `mt_sync_scan_idx` read `sync_starts` DIRECTLY, so the row never went through the def under repair, and `sync_starts` is unchanged by such a bug. `mt_sync_scan_calls21` is the second size. |
+# | M52 | the wiring: `dev.sync_scan` ignores the guard | 1  mt_sync_noscan_calls |  mt_sync_noscan_calls | | the guard, through the scan rather than through `sync.one`. One row, the guarded arm's count. |
+# | M53 | the wiring: `icb_keep` adds ZERO -- :267 is entered and not counted | 1  mt_nics1 |  mt_nics1 | | :267's weak-dictionary count. One row, and adding ZERO is the mutation that matters: the entry is created and the count does not move, which is a bug an `nics`-reading gate would miss. |
+# | M54 | the wiring: `str_list_eq` compares lengths only | 2  mt_tbl_reorder,mt_tbl_wrong |  mt_tbl_reorder,mt_tbl_wrong | | `str_list_eq`'s ELEMENT comparison. **ALSO 0 BEFORE THE FIXTURE**, and for a worse reason than M49: `mt_tbl_handles` and `mt_tbl_sels` compare the table against a copy of the table INSIDE THIS FILE, so the lengths always agree and deleting the element walk changed nothing. `mt_tbl_reorder` (same length, two names swapped) and `mt_tbl_wrong` (same length, one name changed) are the two negatives a length check cannot see. |
+# | M54b | the wiring: `str_list_eq` returns True unconditionally | 2  mt_tbl_reorder,mt_tbl_wrong |  mt_tbl_reorder,mt_tbl_wrong | | the same walk made unconditional. Two rows and not four, because the two POSITIVE rows cannot tell. |
+# | M55 | the constants: `ARG_ALIGN` is 128 | 21  mt_c_arg_align,mt_exec_nbytes,mt_exec_nbytes_c,mt_hdr_word,mt_header,mt_header_agree |  mt_c_arg_align,mt_exec_nbytes,mt_exec_nbytes_c,mt_hdr_word,mt_header,mt_header_agree | | :112's 256. Twenty-one rows and one of them is `mt_c_arg_align`; the other twenty are the layout, the header word and the ICB's byte offset, which is the composability claim. |
+# | M56 | the constants: `SYNC_START` is 4 | 14  mt_c_sync_start,mt_sync_idx17,mt_sync_idx21,mt_sync_idx5,mt_sync_n13,mt_sync_n17 |  mt_c_sync_start,mt_sync_idx17,mt_sync_idx21,mt_sync_idx5,mt_sync_n13,mt_sync_n17 | | :278's scan start. Fourteen rows: the profile scan's count, its index list at three lengths, AND the new `mt_sync_scan_*` pair. |
+# | M57 | the constants: `MTLB_MAGIC` is byte-swapped | 2  mt_c_mtlb,mt_mtlb |  mt_c_mtlb,mt_mtlb | | the magic's ENDIANNESS. Two rows and both would read as plausible -- this is the failure mode the seam's two-blob rows exist to make visible. |
+# | M58 | the constants: `DIM_WORDS` is 3 | 1  mt_c_dim_words |  mt_c_dim_words | | `:116`'s `len(dims)`. One row, and one is a FINDING: `DIM_WORDS` feeds nothing but the fixture's symbolic mask, so before `mt_c_dim_words` existed it was invisible. `mt_c_all_syms` catches the mask. |
+# | M59 | the constants: `ALL_SYMS` is 32, a NON-ALL symbolic mask | 2  mt_c_all_syms,mt_dims_all |  mt_c_all_syms,mt_dims_all | | (1 << len(dims)) - 1, on a NON-ALL mask. Two rows, and `mt_dims_all` is the one that would have caught a fixture that stopped being all-symbolic. |
+# | M60 | the constants: `SEL_SIGNALEDVALUE` is 16 | 2  mt_c_sel_sigval,mt_poll_sels |  mt_c_sel_sigval,mt_poll_sels | | one of the eighteen selector indices. Two rows, and it is the LAST one, so a table that dropped its tail would still agree on the other seventeen -- which is why `mt_sel_n` counts. |
+# | M61 | the constants: `HDR_ICB` is 1 -- the ICB word is 0 | 2  mt_c_hdr_icb,mt_hdr_icb |  mt_c_hdr_icb,mt_hdr_icb | | the ICB's word index. Two rows, and the `mt_hdr_icb` half is the one that is about the header layout rather than the trace. |
 #
 # SEVEN OF THESE MUTATIONS FOUND A REAL BUG IN THIS PORT, and every one of them
 # was a DIFFERENT KIND of mistake --
@@ -3532,3 +3993,32 @@ def main() -> IO(Unit):
 #     bodies build graphs, and the port carries neither. `pm_bufferize` IS gated
 #     because its answers are Buffers and Buffers are the port's subject.
 # ===========================================================================
+
+
+# ===========================================================================
+# THE LANES. `mt_diff.py` runs FIVE and compares them, and the number that
+# matters is not "green" -- it is how many rows each oracle ANSWERS.
+#
+#   interpreted  the file, `bin/bend <file>`
+#   native       `bin/bend <file> -o x && x`, and it must be BYTE IDENTICAL
+#   graph        `.agents/slop/mt_rows.py`, the original 169-row graph oracle
+#   const        `.agents/slop/mt_constmap.py --rows`, 72 rows, ONE PER CONSTANT
+#                with a numeric authority -- `autogen/metal.py` by getattr,
+#                `ops_metal.py` by CPython's `ast`, a real `MetalDevice` for the
+#                family and the `sels` Buffer, and a REAL KERNEL LAUNCH for
+#                `DIM_WORDS` and `ALL_SYMS`
+#   seam         `.agents/slop/mt_seam_rows.py`, the REAL
+#                `MTLCodeGenServiceBuildRequest` fired through Apple's block ABI
+#                with an instrumented callback, for `:42-71`
+#
+# 432 rows, `ALL PROOFS CHECK`, interpreted == native, 253 oracle rows answered,
+# **0 disagreements**, 6 oracle-only and 173 Bend-only. The oracle-only six are
+# facts about a real MTLB that the port has no way to HOLD because it never sees
+# the bytes (`mt_mtlb_ret`, `mt_endt_ret`, `mt_ret_bytes`, `mt_ret_is_mtlb`) and two
+# pre-existing `*_and` fixtures.
+#
+# The `const` lane is the answer to `ops_nv.bend`'s 33 of 219. That file's gate
+# tested graphs and its constants answered to a C header nobody read, so no number
+# of rows could have found them; here the constants are ROWS, diffed against
+# authorities produced by a different program from a different source. A wrong
+# constant is now a `DIFFER`, not a coincidence.
