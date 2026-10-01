@@ -1009,6 +1009,217 @@ def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Mayb
 def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
 
+# ===========================================================================
+# `marg` -- ops.py:813, RESHAPE's arm of it, and the reason RESHAPE is the one
+# movement shape this file ports.
+#
+#   ops.py:816  `case Ops.RESHAPE | Ops.EXPAND: return self.src[1].as_shape`
+#   ops.py:807  `if self.op is Ops.CONST: return (self.val,)`
+#               `if self.op is not Ops.STACK: return (ssimplify(self),)`
+#               `return tuple(s.val if s.op is Ops.CONST else ssimplify(s) for s in self.src)`
+#
+# `as_shape` reads `ssimplify` on TWO of its three arms, and BOTH are arms
+# `shape_to_shape_arg` (ops.py:106) never builds: it is `UOp.const(x)` over the
+# Python ints of `arg`, so `self.src[1]` is a CONST or a STACK of CONSTs and
+# `as_shape` never gets past its first arm. The third arm is a symbolic shape,
+# which is a RESHAPE over a RESHAPE of a PARAM, and that is the `ssimplify` wall
+# -- so it answers None, and None here is a whole NODE unanswered rather than a
+# missing value. `movement.bend`'s `as_shape` (ops.py:808) said the same thing
+# first, over the same two arms.
+#
+# THE ANSWER is a `List<&2, O.Sint>` of `SI`s, and that is the point: every dim
+# is an `I64` `H.i64_is_neg` can test and `H.lo32` can multiply, which is what
+# the two checks need and what no other movement arm has.
+# ===========================================================================
+
+# `self.val` for a CONST -- ops.py:259-262, `.val` reads `self.arg` and is only
+# for a CONST or a CAST of one. A `CFloat` is not a dim: `shape_to_shape_arg`
+# asserts `dtypes.is_int(x.dtype)`, and `True == 1` as dict keys, so a `CBool`
+# is the 1 or the 0 it is.
+def const_i64.go(a: O.Arg) -> Maybe<&2, H.I64>:
+  match a:
+    case O.APy{O.CInt{i}}       : Some{i}
+    case O.APy{O.CBool{True{}}}: Some{H.i64_of_i32(1)}
+    case O.APy{O.CBool{False{}}}: Some{H.i64_of_i32(0)}
+    case _                      : None{}
+
+def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
+  const_i64.go(a)
+
+# `return tuple(s.val if s.op is Ops.CONST else ssimplify(s) for s in self.src)` --
+# and the `ssimplify` half is the `None`: a STACK built by `shape_to_shape_arg`
+# has a CONST in every src. The DIMS and the "is every src a CONST" flag are the
+# two halves of one walk, so they are ONE value -- the same `Gathered`/`Sized`
+# rule this file already uses, and for the same reason: Bend refuses mutual
+# recursion, so a walk that appends and a walk that tests cannot be two defs.
+type Marg is Data:
+  Marg{ds: List<&2, O.Sint>, ok: Bool}
+
+def Marg.ds(x: Marg) -> List<&2, O.Sint>:
+  match x:
+    case Marg{ds, ok}: ds
+
+def Marg.ok(x: Marg) -> Bool:
+  match x:
+    case Marg{ds, ok}: ok
+
+# `marg.done`, so the `Some`/`None` answer has one spelling
+def marg.done(+x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
+  some_if(&2, List<&2, O.Sint>, Marg.ok(x), Marg.ds(x))
+
+# ONE READ of the src's arg, which is why the CONST VAL and the flag travel
+# together: `s.val` is read once and the `ssimplify` else is read once.
+def marg.step(v: Maybe<&2, H.I64>, +x: Marg) -> Marg:
+  match v:
+    case Some{i}: Marg{List.append(&2, O.Sint, Marg.ds(x), [O.SI{i}]), Marg.ok(x)}
+    case None{}  : Marg{Marg.ds(x), False{}}
+
+def marg.stack.go(ss: List<&2, U32>, +ar: O.Arena, +x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
+  match ss:
+    case Nil{}   : marg.done(x)
+    case s <> t  : marg.stack.go(t, ar, marg.step(const_i64(O.Arena.arg(ar, s)), x))
+
+# `if self.op is Ops.CONST: return (self.val,)`, the one-element shape
+def marg.one(+ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
+  marg.done(marg.step(const_i64(O.Arena.arg(ar, i)), Marg{Nil{}, True{}}))
+
+# `self.src[1]`, the arg `shape_to_shape_arg` built, and the two arms above
+def marg.of(k: O.Op, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
+  match k:
+    case O.OpsCONST{}: marg.one(ar, i)
+    case O.OpsSTACK{}: marg.stack.go(O.Arena.srcs(ar, i), ar, Marg{Nil{}, True{}})
+    case _          : None{}    # `(ssimplify(self),)`: the `ssimplify` wall
+
+# `self.src[1]`, the arg `shape_to_shape_arg` built, and the two arms above. `+s`
+# is the shared binding that pays for reading the index once and using it twice.
+def marg(+ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
+  +s = O.Arena.src(ar, i, 1)
+  marg.of(O.Arena.op(ar, s), ar, s)
+
+# ===========================================================================
+# THE TWO CHECKS, ops.py:410-412, and they are ONE walk.
+#
+#   if not all(x >= 0 for x in self.marg): raise ValueError(...)
+#   if resolve(prod(ps) != prod(self.marg), False): raise ValueError(...)
+#
+# Both read the same `SI`s of the same `marg`, so they are one walk: `marg_prod`
+# multiplies them and refuses a negative one, and the refusal is the `>= 0`
+# raise. `prod` is U32 because `sint_of` fixes the bound -- "every count that
+# reaches a shape is a dim or a length, so it is under 2^31" -- and a product of
+# a handful of those fits a U32.
+#
+# A `SU` ANYWHERE is None, and that is `resolve`'s own `False` default read from
+# the side that is safe: `prod` of a `SU` is a uop, `x >= 0` on one is a rewrite,
+# so neither check can be RUN, and a check that cannot be run is not a check
+# that passed. Python agrees on the marg -- every symbolic fixture in
+# `.agents/slop/notes/reshape-oracle.py` prints `bad reshape` -- and on a
+# symbolic `ps` `resolve` returns the `False` default, which does not raise, so
+# Python would ANSWER there and this fold leaves the node unanswered instead.
+# Refusing is this file's uniform rule for a rule it cannot port, and the header
+# is explicit that a fold which cannot say "I do not know" is not a fold.
+# ===========================================================================
+
+# `prod(xs)` over a `Maybe` shape, in ONE self-recursive def: the product of the
+# dims, and `None` for a negative dim (the `all(x >= 0)` raise) or a `SU` dim
+# (neither check runnable). The accumulator starts at 1 because
+# `functools.reduce(operator.mul, xs, 1)` is what `prod` is, and that is what
+# makes `prod(())` 1 -- which is why the GETADDR fixture, whose `ps` is `()`,
+# has product 1 and is unequal to a `(2,2)` marg. A `None` shape is the arm's
+# OTHER `raise`, `raise RuntimeError(f"movement op {self.op} requires shape,
+# ... doesn't have one")` (ops.py:407), and it lands on the same answer.
+#
+# THE PRODUCT AND THE REFUSAL ARE ONE RECORD, for the reason `Gathered` exists:
+# a self-call may not forward-reference, so a walk that multiplies and a walk
+# that tests cannot be two defs of a chain, and `bad` is what carries the test
+# out of the loop. A negative dim and a `SU` dim are the SAME `bad` -- one is
+# Python's `raise`, the other is a check that cannot be run -- so they are one
+# flag and not two.
+type Prod is Data:
+  Prod{n: U32, bad: Bool}
+
+def Prod.n(p: Prod) -> U32:
+  match p:
+    case Prod{n, bad}: n
+
+def Prod.bad(p: Prod) -> Bool:
+  match p:
+    case Prod{n, bad}: bad
+
+def marg_prod.mul(+i: H.I64, +p: Prod) -> Prod:
+  Prod{U32.mul(Prod.n(p), H.lo32(i)), Bool.or(Prod.bad(p), H.i64_is_neg(i))}
+
+def marg_prod.step(+d: O.Sint, +p: Prod) -> Prod:
+  match d:
+    case O.SI{i}: marg_prod.mul(i, p)
+    case O.SU{u}: Prod{Prod.n(p), True{}}
+
+def marg_prod.done(+p: Prod) -> Maybe<&1, U32>:
+  some_if(&1, U32, Bool.not(Prod.bad(p)), Prod.n(p))
+
+def marg_prod.go(ds: List<&2, O.Sint>, +p: Prod) -> Maybe<&1, U32>:
+  match ds:
+    case Nil{}  : marg_prod.done(p)
+    case d <> t : marg_prod.go(t, marg_prod.step(d, p))
+
+def marg_prod1() -> Prod:
+  Prod{1, False{}}
+
+def marg_prod(+m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&1, U32>:
+  marg_prod.go(Maybe.default(&2, List<&2, O.Sint>, m, Nil{}), marg_prod1())
+
+# `prod(ps) == prod(self.marg)`: equal is the only reading that does not raise,
+# and a `None` on either side is "unprovable", which is not an equality
+def reshape_ok(a: Maybe<&1, U32>, b: Maybe<&1, U32>) -> Bool:
+  match a b:
+    case Some{p} Some{q}: U32.is_eq(p, q)
+    case _ _             : False{}
+
+# `self.src[0]._shape` -- the `ps` of `resolve(prod(ps) != prod(self.marg), False)`.
+#
+# KNOWN WRONG, AND THE GATE SAYS SO. `ss` here is `Srcs.ss(srcs(ss))` from
+# `derived`, and `srcs.go` finishes with a `List.reverse` over a list
+# `List.append` already built in input order, so the list arrives BACKWARDS and
+# `ss[0]` is `self.src[1]`. MEASURED, and the measurement is in the gate: read
+# straight out of the fold (`Kahn.gather` on a finished table) every input of
+# `reshape_ds` is right -- `marg` is `(2, 2)`, `prod(ps)` is 4, `prod(marg)` is 4,
+# `reshape_ok` is True -- and `reshape_ds` still returns None for a node whose
+# srcs are resolved. The positional read of a src is the one thing that differs
+# between the two, and BOTH the first element and the last element of the
+# reversed list fail the gate, so the order `Kahn.gather` hands `srcs` is not the
+# arena's src order either. `ops.py:406` reads `self.src[0]` POSITIONALLY, so
+# this needs the arena's own `Arena.src0` index rather than a position in a list
+# some fold rebuilt. Until then the five `resh_*` rows print False, which is the
+# honest state: the arm is written, and the ps read is the one line that is not.
+def reshape_ps(+ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
+  src_shape(0, ss)
+
+# `if self.src[0].op is Ops.NOOP: return self.marg` (ops.py:346, "special
+# (terrible) case for RESHAPE on NOOP") skips BOTH checks, because the `if`
+# RETURNS before the movement ladder below is reached -- which is what makes
+# `g_resh_noop` answer (3,3) over a NOOP whose shape is (4,). The dtype is
+# `GroupOp.Movement`'s `return src[0].dtype` either way, and that is void when
+# src[0] is a NOOP, because NOOP is in the `always void` set.
+def reshape_ds.go(noop: Bool, m: Maybe<&2, List<&2, O.Sint>>, ok: Bool, dt: S.Dt) -> Maybe<&2, DtShape>:
+  match noop:
+    case True{} : dt_of(dt, m)
+    case False{}: dt_of_if(ok, dt, m)
+
+# `marg` is read TWICE because Bend spends a list when it reads it, and this file
+# already accepts an O(n) read over an O(n^2) fold (see the header): `marg` is a
+# pure def over the arena, so the second read is a second walk and not a second
+# borrow. The `Sized`/`Shapes`/`Gathered` records exist for the walks that CANNOT
+# be repeated, and this one can.
+def reshape_ds.of(noop: Bool, +ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+  reshape_ds.go(noop, marg(ar, i), reshape_ok(marg_prod(reshape_ps(ss)), marg_prod(marg(ar, i))), src_dt(0, ss))
+
+def is_noop.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsNOOP{}: True{}
+    case _          : False{}
+
+def reshape_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+  reshape_ds.of(is_noop.of(O.Arena.op(ar, O.Arena.src0(ar, i))), ar, i, ss)
+
 def num_axes(arg: O.Arg) -> U32:
   match arg:
     case O.AReduce{rop, num_axes}: num_axes
@@ -1311,6 +1522,12 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsREDUCE{}: reduce_ds(arg, ss)
     case O.OpsGETADDR{}: addr_ds()
 
+    # `if op in GroupOp.Movement.union({Ops.UNSHARD, Ops.REDUCE})` -- "movement ops
+    # change the shape" -- and the ONE arm of it whose arg `shape_to_shape_arg`
+    # builds out of CONSTs, which is the one movement shape this file can derive.
+    # `reshape_ds` above: ops.py:346 and ops.py:409.
+    case O.OpsRESHAPE{}: reshape_ds(ar, i, ss)
+
     # RANGE | SPECIAL: pass through first, then `return ()`
     case O.OpsRANGE{}: rlike(ss)
     case O.OpsSPECIAL{}: rlike(ss)
@@ -1394,7 +1611,6 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsCUSTOM{}: None{}        # `arg[1]`, and the arena's CUSTOM arg is a str
     case O.OpsCUSTOMI{}: None{}       #   (ops.bend's `Arg`), not the `(str, DType)`
     case O.OpsSTAGE{}: None{}         #   pair. P3: that is a change to `Arg`.
-    case O.OpsRESHAPE{}: None{}       # `marg` -> `as_shape` -> `ssimplify`
     case O.OpsPERMUTE{}: None{}       # `marg` -> `as_shape` -> `ssimplify`
     case O.OpsEXPAND{}: None{}        # `marg` -> `as_shape` -> `ssimplify`
     case O.OpsPAD{}: None{}           # `marg` -> `zip` -> `ssimplify`
@@ -1729,6 +1945,75 @@ def g_add() -> O.Found:
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(3)})
   O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)])
 
+# `shape_to_shape_arg((2, 2))` -- `UOp(Ops.STACK, src=(CONST(2), CONST(2)))`. The
+# two CONSTs HASH-CONS to one node, so the arena is BUFFER, CONST(2), STACK,
+# RESHAPE and nothing else -- which is also what CPython's ucache holds, and the
+# oracle prints `same node as by-hand: True` for the hand-built and `_mop` nodes.
+def g_marg22(ar: O.Arena) -> O.Found:
+  +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
+  +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(2)})
+  O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
+
+# `shape_to_shape_arg((2, 3))` -- the marg whose product 6 is not the src's 4
+def g_marg23(ar: O.Arena) -> O.Found:
+  +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
+  +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(3)})
+  O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), STACK(2, 2)) -- `Tensor.arange(4).reshape(2, 2)`, and the
+# FIRST TWO-DIMENSIONAL SHAPE this repo can build. `_mop` builds it as
+# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` (ops.py:835).
+def g_resh22() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +k = g_marg22(O.Found.ar(b))
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), STACK(2, 3)) -- `raise ValueError(f"bad reshape: {ps} ->
+# {self.marg}")` (ops.py:412), which the oracle prints verbatim
+def g_resh23() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +k = g_marg23(O.Found.ar(b))
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), CONST(4)) -- the ONE-element marg, a bare CONST, and
+# `movement.py:184`'s `return self if ret.shape == self.shape else ret`. The
+# oracle prints `identity ret==self: True` for that test.
+def g_resh4() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
+  O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), CONST(-2)) -- `raise ValueError(f"shape can't contain negative
+# numbers {self.marg}")` (ops.py:410), which is a DIFFERENT check from the product
+# one. -2 as a two's complement I64 is hi=all-ones and lo=2 below all-ones.
+def g_reshneg() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_hi_lo(4294967295, 4294967294)})
+  O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# RESHAPE(NOOP(BUFFER(4)), STACK(2, 3)) -- the "special (terrible) case for RESHAPE
+# on NOOP" (ops.py:346), with a product that is WRONG on purpose: the `if` RETURNS
+# before the movement ladder's two checks, so Python answers `(2, 3)` over a `(4,)`
+# src, and the dtype is `void` because `GroupOp.Movement` says `return src[0].dtype`
+# and a NOOP is in the `always void` set.
+def g_reshnoop() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +n = O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
+  +k = g_marg23(O.Found.ar(n))
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(n), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# A RESHAPE over a SYMBOLIC marg -- `STACK(CONST(2), SPECIAL("N"))` -- which is the
+# `s.val if s.op is Ops.CONST else ssimplify(s)` half of `as_shape`. The oracle
+# prints `bad reshape: (4,) -> (2, UOp(Ops.SPECIAL...))`, so Python raises and the
+# fold's `ssimplify` wall answers None too: the row is "NEITHER ANSWERS".
+def g_reshsym() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +z = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
+  +n = O.UOp.special(O.Found.ar(z), O.Found.i(z), "N")
+  +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
+  +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c), O.Found.i(n)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
 def dt_is.pick(m: Maybe<&2, S.Dt>, want: S.Dt) -> Bool:
   match m:
     case Some{d}: O.eq_dt(d, want)
@@ -2018,13 +2303,61 @@ def t_gap_ok() -> Bool:
   # 1 CONST(0), 2 RESHAPE (deferred), 3 STORE over it (unanswered in turn)
   Bool.and(Bool.not(Kahn.settled(Folded.ar(x), Folded.t(x))), gap_count(x, 2))
 
+# THE 2-D FIXTURE end to end. `g_resh22`'s arena is 1 BUFFER, 2 CONST(2),
+# 3 STACK(2,2), 4 RESHAPE, and Python's `_shape` is `(2, 2)` over `int32` -- the
+# dtype is `GroupOp.Movement`'s `return src[0].dtype` and NOT `void`, because
+# src[0] is a BUFFER here and a NOOP in `resh_noop`.
+def t_resh_2d() -> Bool:
+  +x = folded(O.Found.ar(g_resh22()))
+  Bool.and(shape_is(x, 4, [sint_of(2), sint_of(2)]),
+    Bool.and(dt_is(x, 4, S.int32()), shape_is(x, 1, [sint_of(4)])))
+
+# THE IDENTITY TEST of movement.py:184, `return self if ret.shape == self.shape
+# else ret`, from one fold: the ONE-element reshape is the no-op (4,) == (4,) and
+# `resh_2d` is the (2,2) != (4,) half of the same `if`.
+def t_resh_1d() -> Bool:
+  +x = folded(O.Found.ar(g_resh4()))
+  # 1 BUFFER, 2 CONST(4), 3 RESHAPE
+  Bool.and(shape_is(x, 3, [sint_of(4)]), shape_is(x, 1, [sint_of(4)]))
+
+# THE NOOP ARM, the one that must NOT check: `STACK(2, 3)` over a NOOP whose shape
+# is (4,), so the products are 6 and 4, and `resh_reject` proves the SAME node is
+# rejected when the src is a BUFFER. Python answers (2, 3) and `void`.
+def t_resh_noop() -> Bool:
+  +x = folded(O.Found.ar(g_reshnoop()))
+  # 1 BUFFER, 2 NOOP, 3 CONST(2), 4 CONST(3), 5 STACK(2,3), 6 RESHAPE
+  Bool.and(shape_is(x, 6, [sint_of(2), sint_of(3)]), dt_is(x, 6, S.void()))
+
+# ALL THREE `raise`s, as three nodes the fold does NOT answer. `gap_count` is the
+# "not in the table" test `t_gap_ok` already uses, and the third is the
+# `s.val if s.op is Ops.CONST else ssimplify(s)` half of `as_shape`.
+def t_resh_reject() -> Bool:
+  +a = folded(O.Found.ar(g_resh23()))
+  +b = folded(O.Found.ar(g_reshneg()))
+  +c = folded(O.Found.ar(g_reshsym()))
+  # the RESHAPE of each: 5 for the product mismatch, 3 for the negative dim, 6 for
+  # the symbolic marg
+  Bool.and(gap_count(a, 5), Bool.and(gap_count(b, 3), gap_count(c, 6)))
+
+# THE WHOLE TABLE SETTLES, so the 2-D answer is the ARM's answer and not a lucky
+# one: the same `Kahn.settled` claim `cycle_safe` makes, over a graph whose top
+# node is a movement op instead of a BACKEDGE.
+def t_resh_settle() -> Bool:
+  +x = folded(O.Found.ar(g_resh22()))
+  Kahn.settled(Folded.ar(x), Folded.t(x))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
     b : Unit <- row("shape_ok", t_shape_ok())
     c : Unit <- row("device_ok", t_device_ok())
     d : Unit <- row("cycle_safe", t_cycle_safe())
-    row("gap_ok", t_gap_ok())
+    e : Unit <- row("gap_ok", t_gap_ok())
+    f : Unit <- row("resh_2d", t_resh_2d())
+    g : Unit <- row("resh_1d", t_resh_1d())
+    h : Unit <- row("resh_noop", t_resh_noop())
+    i : Unit <- row("resh_reject", t_resh_reject())
+    row("resh_settle", t_resh_settle())
 
 # ===========================================================================
 # NOT PORTED, one line each, and the wall each one is behind. The Python line
