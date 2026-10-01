@@ -1146,23 +1146,6 @@ def range_tuple.go(n: Nat, +p: Nat, acc: List<&2, U32>) -> List<&2, U32>:
 def range_tuple(n: U32) -> String:
   String.concat(["(", String.join(u32_list_repr.go(range_tuple.go(U32.to_nat(n), 0n, Nil{})), ", "), ")"])
 
-# `x.src[1:]` -- the ONE slice both sugar rules and rule 8's tail need. Rebuilt
-# here for the same reason as `tsort`: `Arena.src_from.go`'s `h <> t 1n+p` arm
-# CONSES the head it was supposed to drop, so `src_from(ar, u, 1)` answers
-# `[src[0]]` instead of `[src[1], ..]`. That turned `UOp.const(9).index(c2)` into
-# `UOp.const(9).index(UOp.const(9))` and put the range's own bound in its
-# `src=(..)` tail. DELETE WHEN ops.bend's IS FIXED.
-# `srcs.go(ar, [1,3])` must answer `[3]`: the FIRST arm matches the head and
-# returns the TAIL, and it does NOT recurse. Recursing on the tail and returning
-# the tail drops one element per step, so a two-src node lost both.
-def src_tail.go(+ar: O.Arena, +ss: List<&2, U32>) -> List<&2, U32>:
-  match ss:
-    case Nil{}: Nil{}
-    case _ <> t: t
-
-def src_tail(+ar: O.Arena, u: U32) -> List<&2, U32>:
-  src_tail.go(ar, O.Arena.srcs(ar, u))
-
 # RULE 8: `UPat(Ops.RANGE, src=(UPat(Ops.CONST, name="c"),), allow_any_len=True)` ->
 #   "UOp.range("+', '.join([str(c.val)] + [repr(y) for y in x.arg])
 #     +(f', src={srcs(ctx, x.src[1:])}' if len(x.src) > 1 else '')+")".
@@ -1189,7 +1172,7 @@ def pmp.range.of(any: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> 
   Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
     Bool.pick(String, Bool.not(isconst), pmp.fb(ar, ctx, u),
       String.concat(["UOp.range(", String.join(range_pieces(ar, ctx, u), ", "),
-        range_tail.of(Nat.is_le(2n, List.length(&2, U32, O.Arena.srcs(ar, u))), src_tail(ar, u), ctx), ")"])))
+        range_tail.of(Nat.is_le(2n, List.length(&2, U32, O.Arena.srcs(ar, u))), O.Arena.src_from(ar, u, 1), ctx), ")"])))
 
 def pmp.range(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.range.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
@@ -1488,7 +1471,7 @@ def sugar_tail(+ar: O.Arena, +u: U32, +acc: List<&2, String>) -> List<&2, String
   Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(O.Arena.arg(ar, u))]), acc)
 
 def sugar_args(+ar: O.Arena, ctx: Ctx, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
-  sugar_args.go(ar, ctx, u, src_tail(ar, u), sugar_tail(ar, u, acc))
+  sugar_args.go(ar, ctx, u, O.Arena.src_from(ar, u, 1), sugar_tail(ar, u, acc))
 def pmp.sugar.of(zero: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   Bool.pick(String, zero,
     String.concat(["UOp.", op_lower(O.Arena.op(ar, u)), "(", String.join(sugar_args(ar, ctx, u, Nil{}), ", "), ")"]),
@@ -1590,33 +1573,9 @@ def render_with_splits(+ar: O.Arena, +tb: F.Table, +lst: List<&2, U32>, +trn: Ma
   rws_ret(rws.go(lst, ar, tb, last_of(lst), 0, RWS{ctx_new(), Nil{}, Map.new(&2, U32), trn}))
 
 
-# THE BALANCE GUARD IS LOCAL, and it is the third rebuild of this kind in this
-# file. helpers.bend's `is_balanced` reads `bal.spilled`, which RE-DERIVES the
-# underflow flag from the DEPTH rather than reading the flag its own `Depth`
-# record carries -- and the depth wraps back to 0 on the next `(`, so the flag is
-# gone one character later. `is_balanced("(a))(b")` answers True where CPython's
-# answers False, so `strip_parens` ate the `(` off `(A+B).rtag('mytag')`.
-# DELETE THIS WHEN helpers.bend READS THE FLAG.
-def bal.next(c: U32, d: U32) -> U32:
-  match c:
-    case 40: U32.add(d, 1)
-    case 41: U32.sub(d, 1)
-    case _: d
-
-def bal.ch(h: Char, d: U32) -> U32: bal.next(Char.to_u32(h), d)
-
-def bal.walk(+cs: List<&2, Char>, +d: U32, +under: Bool) -> Bool:
-  match cs:
-    case Nil{}: Bool.and(Bool.not(under), U32.is_zero(d))
-    case h <> t: bal.walk(t, bal.ch(h, d), Bool.or(under, U32.is_ge(bal.ch(h, d), 2147483648)))
-
-def is_wrapped(+v: String) -> Bool:
-  Bool.and(Bool.and(String.starts_with(v, "("), String.ends_with(v, ")")),
-    bal.walk(String.to_list(H.strip_parens.inner(v)), 0, False{}))
-
 # `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
 def ret_row.of(k: String, +v: String) -> String:
-  String.concat([k, " = ", Bool.pick(String, is_wrapped(v), H.strip_parens(v), v)])
+  String.concat([k, " = ", Bool.pick(String, H.is_wrapped(v), H.strip_parens(v), v)])
 
 def ret_row(p: Bind) -> String:
   match p:
@@ -1788,76 +1747,13 @@ def to_render(+ar: O.Arena, +lst: List<&2, U32>, ast: U32) -> Map<&2, U32>:
 def pyrender.of(+ar: O.Arena, +tb: F.Table, +ast: U32, +lst: List<&2, U32>) -> String:
   String.join(ret_rows(render_with_splits(ar, tb, lst, to_render(ar, lst, ast))), "\n")
 
-# `list(ast.toposort())` is NOT `O.UOp.toposort`'s list, and this is the third
-# bug these fixtures found. ops.bend's `Topo.step` pops the HEAD of the worklist
-# and `Arena.push_srcs` CONSES onto it, so the walk is a QUEUE: it visits a
-# node's srcs AFTER the node itself, and `pyrender` then renders consumers before
-# their srcs. `ctx_get` answers "" for an unwritten src, so the output is not a
-# wrong string but a SHAPE-WRONG one -- `UOp.const(9).index(UOp.const(9))`, with
-# the receiver substituted by the argument. CPython's `stack.pop()` is LIFO, so
-# `toposort` DELETES ITSELF FROM THE MIDDLE.
-#
-# `toposort` HERE is the post-order DFS CPython's stack computes, and it is
-# LOCAL for exactly one reason: the fix belongs in ops.bend, which this file does
-# not own. It is the same "rebuilt here" trade `consumer_map_from_toposort` and
-# `range_str` already make at the top of this file. DELETE IT WHEN ops.bend's
-# `UOp.toposort` IS FIXED.
-# `tsort` IS CPython'S WORKLIST, with `Fr{n, done}` for the `(node, visited_flag)`
-# frame: `done=False` is the first visit (expand), `done=True` the second (append).
-# `acc` is `cache`, so the membership test terminates a cyclic graph exactly where
-# CPython's `if node in cache: continue` does.
-type Fr is Data:
-  Fr{n: U32, done: Bool}
-
-# `for s in reversed(node.src): stack.append((s, False))` followed by a LIFO pop
-# means src[0] is expanded FIRST. The stack is built head-first, so src[0] has to
-# land on top: `rev` reverses, `frames` conses the reversed list back on.
-def tsort.rev(+ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
-  match ss:
-    case Nil{}: acc
-    case s <> t: tsort.rev(t, s <> acc)
-
-def tsort.frames(+ss: List<&2, U32>, +acc: List<&2, Fr>) -> List<&2, Fr>:
-  match ss:
-    case Nil{}: acc
-    case s <> t: tsort.frames(t, Fr{s, False{}} <> acc)
-
-# `stack.append((node, True))` and THEN the srcs, so the node sits BELOW them and
-# is popped only once every src has been -- which is what makes the order
-# post-order, and what puts a node's rendering after its srcs'.
-# `if node in cache: continue` is the FIRST line of CPython's loop, so an
-# already-visited node is never re-EXPANDED -- and that is what makes the fuel
-# `N + E` sufficient, since a node is then pushed once per incoming edge and once
-# as `done=True`. Testing only in the `done=True` arm re-expanded every shared
-# subexpr, and the walk ran out of fuel half way through `shared`.
-def tsort.push(+ar: O.Arena, +u: U32, +rest: List<&2, Fr>, +acc: List<&2, U32>) -> List<&2, Fr>:
-  Bool.pick(List<&2, Fr>, List.contains(U32, U32.is_eq, acc, u), rest,
-    tsort.frames(tsort.rev(O.Arena.srcs(ar, u), Nil{}), Fr{u, True{}} <> rest))
-
-def tsort.put(+ar: O.Arena, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, List.contains(U32, U32.is_eq, acc, u), acc, List.append(&2, U32, acc, [u]))
-
-# ONE def, so there is no mutual recursion: the two arms differ only in the stack
-# they hand on. THE FUEL IS `Kahn.budget` -- nodes PLUS edges -- and not the
-# `2 * len(arena)` ops.bend's `Topo` uses: a node with two consumers is pushed
-# TWICE as `done=False` (once per incoming edge) and once as `done=True`, so the
-# bound is `N + E` and not `2N`. `2 * len(arena)` ran out on `nest`, which has two
-# shared CONSTs, and silently returned a toposort missing the outer ADD.
-def tsort(fuel: Nat, +st: List<&2, Fr>, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U32>:
-  match fuel:
-    case 0n: acc
-    case 1n+p:
-      match st:
-        case Nil{}: acc
-        case Fr{n, done} <> rest:
-          match done:
-            case True{}: tsort(p, rest, ar, tsort.put(ar, n, acc))
-            case False{}: tsort(p, tsort.push(ar, n, rest, acc), ar, acc)
-
-def tsort.go_all(fuel: Nat, +st: List<&2, Fr>, +ar: O.Arena, acc: List<&2, U32>) -> List<&2, U32>: tsort(fuel, st, ar, acc)
-
+# `list(ast.toposort())` is `O.UOp.toposort` with `Arena.budget`'s fuel. The
+# `cN` LABEL is a toposort index, so the 25 rows below are what pins the walk's
+# LIFO order (a queue renders consumers before their srcs, and `ctx_get` answers
+# "" for an unwritten src, so the output was SHAPE-wrong rather than merely
+# different), its `src[1:]` tail and its N + E fuel.
 def pyrender(+ar: O.Arena, +tb: F.Table, +ast: U32) -> String:
-  pyrender.of(ar, tb, ast, tsort(F.Kahn.budget(ar), [Fr{ast, False{}}], ar, Nil{}))
+  pyrender.of(ar, tb, ast, O.UOp.toposort(O.Arena.budget(ar), ar, ast))
 
 
 
@@ -1893,9 +1789,10 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # * `renderer` / `renderer_infer` (:45, :74) -- 21 UPat rules whose payloads are
 #   mostly `ctx[src]`; only the sugar/renderer INFER arms need anything that is
 #   not already here. They are needed by `UOp.render()`, not by `pyrender`.
-# * THE PYRENDER GATE ROWS ARE LANDED -- twenty-four of them, at the foot of this
-#   file, one per pm_pyrender rule plus the three `to_render` arms -- so this is
-#   no longer on the list. Adding them found SIX bugs in the port this file owns,
+# * THE PYRENDER GATE ROWS ARE LANDED -- twenty-five of them, at the foot of this
+#   file, one per pm_pyrender rule plus the three `to_render` arms and the fuel
+#   -- so this is no longer on the list. Adding them found SIX bugs in the port
+#   this file owns,
 #   which is the argument for the rows existing at all rather than the other way
 #   round: `rws_ren.pick` had its two arms swapped (so `ret` came back empty and
 #   `pyrender` returned `""` for EVERY tree), `rtag` seeded its no-tag arm with
@@ -1903,12 +1800,15 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 #   `sugar_args` put the arg clause BEFORE the srcs, `tr_continue` read two
 #   `continue`s as a `Bool.pick` (so nothing ever continued and every node split),
 #   and `range_tuple` passed its countdown through unchanged, printing `(0, 0)`.
-#   THREE MORE are one-line bugs in files this file does not own, and each is
-#   rebuilt here with the fix named at the point of use: ops.bend's `UOp.toposort`
-#   walks a QUEUE where CPython's is a LIFO stack (`tsort`), its
-#   `Arena.src_from.go` conses the head it was told to drop (`src_tail`), and
-#   helpers.bend's `is_balanced` re-derives the underflow flag from the depth
-#   instead of reading the one its own record carries (`bal.walk`).
+#   THREE MORE were bugs in files this file does not own, and all three rebuilds
+#   are GONE: `UOp.toposort` walked a QUEUE where CPython's is a LIFO stack and
+#   was fuelled with `2 * len(arena)` where the bound is NODES + EDGES,
+#   `Arena.src_from.go` dropped one element too many, and helpers.bend's
+#   `is_balanced` re-derived the underflow flag from the depth instead of
+#   reading the one its own record carries. `pyrender` now calls
+#   `O.UOp.toposort(O.Arena.budget(ar), ar, ast)`, slices with
+#   `O.Arena.src_from` and asks `H.is_wrapped`, and the 25 rows below are what
+#   pins all three.
 #
 # TODO(p3) render.py:6   def pretty_print
 # TODO(p3) render.py:18  def print_uops
@@ -2172,6 +2072,36 @@ def g_shared() -> O.Found:
   +d = O.UOp.alu(O.Found.ar(c), O.OpsSUB{}, [O.Found.i(ab), O.Found.i(c)])
   O.UOp.alu(O.Found.ar(d), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(d)])
 
+# THE FUEL ROW, and the one fixture built for a walk rather than for a rule.
+# `ab` has SIX consumers, so the arena carries five in-edges more than a tree
+# would: E is 24, N is 21, and the walk needs 44 pops where `2 * len(arena)` is
+# 42. The two it loses are the LAST two, and the ast's own `Frame{n, True}` is
+# the very last, so the fuel `2N` drops the `ast =` line and answers a toposort
+# missing its sink. `Arena.budget` is nodes PLUS edges.
+# `nest` was the witness for this until the fixtures moved: its two shared
+# CONSTs put N + E at exactly 2N, so it could not tell the two bounds apart.
+def g_fan() -> O.Found:
+  +a = f_const(O.Arena.empty(), 1)
+  +b = f_const(O.Found.ar(a), 2)
+  +ab = O.UOp.alu(O.Found.ar(b), O.OpsADD{}, [O.Found.i(a), O.Found.i(b)])
+  +c3 = f_const(O.Found.ar(ab), 3)
+  +m1 = O.UOp.alu(O.Found.ar(c3), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c3)])
+  +c4 = f_const(O.Found.ar(m1), 4)
+  +m2 = O.UOp.alu(O.Found.ar(c4), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c4)])
+  +c5 = f_const(O.Found.ar(m2), 5)
+  +m3 = O.UOp.alu(O.Found.ar(c5), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c5)])
+  +c6 = f_const(O.Found.ar(m3), 6)
+  +m4 = O.UOp.alu(O.Found.ar(c6), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c6)])
+  +c7 = f_const(O.Found.ar(m4), 7)
+  +m5 = O.UOp.alu(O.Found.ar(c7), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c7)])
+  +c8 = f_const(O.Found.ar(m5), 8)
+  +m6 = O.UOp.alu(O.Found.ar(c8), O.OpsMUL{}, [O.Found.i(ab), O.Found.i(c8)])
+  +s1 = O.UOp.alu(O.Found.ar(m6), O.OpsADD{}, [O.Found.i(m1), O.Found.i(m2)])
+  +s2 = O.UOp.alu(O.Found.ar(s1), O.OpsADD{}, [O.Found.i(s1), O.Found.i(m3)])
+  +s3 = O.UOp.alu(O.Found.ar(s2), O.OpsADD{}, [O.Found.i(s2), O.Found.i(m4)])
+  +s4 = O.UOp.alu(O.Found.ar(s3), O.OpsADD{}, [O.Found.i(s3), O.Found.i(m5)])
+  O.UOp.alu(O.Found.ar(s4), O.OpsADD{}, [O.Found.i(s4), O.Found.i(m6)])
+
 # THE SINK ARM of `to_render`: a SINK adds ALL of its srcs before the
 # `continue`, so BOTH children split. The SQRT is rule 14 and the MUL rule 12.
 def g_sink() -> O.Found:
@@ -2224,6 +2154,7 @@ def main() -> IO(Unit):
     py_row("pyrender sub     ", "ast = UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))", g_sub())
     py_row("pyrender tagged  ", "ast = (UOp.const(1)+UOp.const(2)).rtag('mytag')", g_tagged())
     py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
+    py_row("pyrender fan     ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)", g_fan())
     py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
     py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp.new_buffer('CPU', 4, dtypes.int, 0)\nast = UOp.const(0).store(c3)", g_store())
     py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())

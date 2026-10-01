@@ -987,12 +987,14 @@ def Arena.nsrc(ar: Arena, i: U32) -> U32:
 
 # `self.src[k:]` and `self.src[:k]` -- `range_start`, `ended_ranges` and
 # `src_without_body` all slice, so the slice is a def rather than a fold at
-# each site.
+# each site. The `0n` arm KEEPS the head: `src_from.go` is "drop k", and a `t`
+# there is "drop k + 1" -- which is how `src_from(ar, u, 1)` came to answer
+# `src[2:]` and `src_without_body` answered `src[2:]` for every CALL.
 def Arena.src_from.go(xs: List<&2, U32>, k: Nat) -> List<&2, U32>:
   match xs k:
     case Nil{} 0n: Nil{}
     case Nil{} 1n+p: Nil{}
-    case h <> t 0n: t
+    case h <> t 0n: h <> t
     case h <> t 1n+p: Arena.src_from.go(t, p)
 
 def Arena.src_from(ar: Arena, i: U32, k: U32) -> List<&2, U32>:
@@ -2178,9 +2180,14 @@ def UOp.special(ar: Arena, +end: U32, nm: String) -> Found:
 # PARAMETER after the fuel, the "already seen" set is the second, and the whole
 # `while` is a self-call on the worklist -- a list TAIL, which is a legal
 # descent. `case 0n:` answers the set Python would have had if the loop ran out
-# of budget, which for a DAG it never does: every node is pushed at most twice,
-# so `2 * len(arena)` steps always suffice. The caller is given the arena
-# length, and the number is exact rather than a guess.
+# of budget, which for a DAG it never does: the fuel is `Arena.budget(ar)`.
+#
+# The budget is NODES PLUS EDGES and NOT `2 * len(arena)`. A node is pushed once
+# per INCOMING EDGE -- every consumer pushes it -- and once more as
+# `Frame{n, True}`, so a node with two consumers is popped three times and
+# `2 * len(arena)` is the tighter of the two bounds. It was, and it truncated:
+# render.bend's `g_fan` fixture (one node with six consumers, E=24 against N=21)
+# needs 44 pops and answers a toposort missing its sink on 42.
 #
 # The gate (`gate=Callable|None`) and the visitor (`visitor: Callable`) are
 # Python callables. A closure in Bend is single-use and cannot be stored in a
@@ -2196,17 +2203,19 @@ type Frame is Data:
   Frame{n: U32, visited: Bool}
 
 type Topo is Data:
-  Topo{cache: List<&2, U32>, stack: List<&2, Frame>}
+  # `calls` is Python's `enter_calls`, and it rides on the RECORD rather than on
+  # the walk because `Topo.step` has to read it on every pop.
+  Topo{cache: List<&2, U32>, stack: List<&2, Frame>, calls: Bool}
 
 def Topo.empty() -> Topo:
-  Topo{Nil{}, Nil{}}
+  Topo{Nil{}, Nil{}, True{}}
 
 # `cache[node] = None` -- an append, because a Dict preserves insertion order and
 # the toposort IS its iteration order.
 
 def Topo.cache_add(n: U32, t: Topo) -> Topo:
   match t:
-    case Topo{cache, stack}: Topo{List.append(&2, U32, cache, [n]), stack}
+    case Topo{cache, stack, calls}: Topo{List.append(&2, U32, cache, [n]), stack, calls}
 
 # `if n in cache: continue`
 # `stack.append((n, True))` then the srcs, reversed.
@@ -2216,55 +2225,80 @@ def Arena.push_srcs.go(srcs: List<&2, U32>, st: List<&2, Frame>) -> List<&2, Fra
     case Nil{}: st
     case s <> t: Arena.push_srcs.go(t, Frame{s, False{}} <> st)
 
-# one turn of the while loop. The srcs go on REVERSED, consed, so the pop-head
-# below visits src[0] first -- CPython's `for s in reversed(node.src):
-# stack.append((s, False))` then `stack.pop()` is LIFO, and a tail-append here
-# would make this a queue (consumers before srcs). Verified by render.bend's
-# `tsort` row against CPython's toposort.
+# THE STACK IS LIFO: reversed and consed, so the pop-head visits src[0] first.
+# A tail-append here is a QUEUE, and `pyrender` then renders consumers before
+# their srcs -- verified by render.bend's 25 `pyrender` rows.
 
-def Arena.push_srcs(ar: Arena, n: U32, st: List<&2, Frame>) -> List<&2, Frame>:
-  Arena.push_srcs.go(List.reverse(&2, U32, Arena.src_without_body(ar, n)), st)
+def Arena.push_srcs(+srcs: List<&2, U32>, st: List<&2, Frame>) -> List<&2, Frame>:
+  Arena.push_srcs.go(List.reverse(&2, U32, srcs), st)
 
-def Topo.push(ar: Arena, +n: U32, t: Topo) -> Topo:
+# `node.src if enter_calls else node.src_without_body`
+
+def Topo.srcs_of(ar: Arena, +n: U32, calls: Bool) -> List<&2, U32>:
+  match calls:
+    case True{}: Arena.srcs(ar, n)
+    case False{}: Arena.src_without_body(ar, n)
+
+def Topo.push.srcs(ar: Arena, +n: U32, t: Topo) -> List<&2, U32>:
   match t:
-    case Topo{cache, stack}: Topo{cache, Arena.push_srcs(ar, n, Frame{n, True{}} <> stack)}
+    case Topo{cache, stack, calls}: Topo.srcs_of(ar, n, calls)
+
+def Topo.push(ar: Arena, +n: U32, +t: Topo) -> Topo:
+  match t:
+    case Topo{cache, stack, calls}: Topo{cache, Arena.push_srcs(Topo.push.srcs(ar, n, t), Frame{n, True{}} <> stack), calls}
 
 # `for s in reversed(node.src): stack.append((s, False))`
+# the membership test is the FIRST line of Python's loop, so an already-visited
+# node is never re-EXPANDED -- and that is what makes `Arena.budget` sufficient.
 
-def Topo.step.hit(ar: Arena, +n: U32, rest: List<&2, Frame>, seen: Bool, +cache: List<&2, U32>) -> Topo:
+def Topo.step.hit(ar: Arena, +n: U32, rest: List<&2, Frame>, seen: Bool, +cache: List<&2, U32>, calls: Bool) -> Topo:
   match seen:
-    case True{}: Topo{cache, rest}
-    case False{}: Topo.push(ar, n, Topo{cache, rest})
+    case True{}: Topo{cache, rest, calls}
+    case False{}: Topo.push(ar, n, Topo{cache, rest, calls})
 
 # the while loop, as a self-call on the worklist
 
-def Topo.step.fresh(ar: Arena, +n: U32, rest: List<&2, Frame>, +cache: List<&2, U32>) -> Topo:
-  Topo.step.hit(ar, n, rest, List.contains(U32, U32.is_eq, cache, n), cache)
+def Topo.step.fresh(ar: Arena, +n: U32, rest: List<&2, Frame>, +cache: List<&2, U32>, calls: Bool) -> Topo:
+  Topo.step.hit(ar, n, rest, List.contains(U32, U32.is_eq, cache, n), cache, calls)
 
-def Topo.step.vis(ar: Arena, +n: U32, visited: Bool, rest: List<&2, Frame>, cache: List<&2, U32>) -> Topo:
+def Topo.step.vis(ar: Arena, +n: U32, visited: Bool, rest: List<&2, Frame>, cache: List<&2, U32>, calls: Bool) -> Topo:
   match visited:
-    case True{}: Topo.cache_add(n, Topo{cache, rest})
-    case False{}: Topo.step.fresh(ar, n, rest, cache)
+    case True{}: Topo.cache_add(n, Topo{cache, rest, calls})
+    case False{}: Topo.step.fresh(ar, n, rest, cache, calls)
 
 def Topo.step(ar: Arena, t: Topo) -> Topo:
   match t:
-    case Topo{cache, stack}:
+    case Topo{cache, stack, calls}:
       match stack:
         case Nil{}: t
         case Frame{n, visited} <> rest:
-          Topo.step.vis(ar, n, visited, rest, cache)
+          Topo.step.vis(ar, n, visited, rest, cache, calls)
 
 def Topo.cache_of(t: Topo) -> List<&2, U32>:
   match t:
-    case Topo{cache, stack}: cache
+    case Topo{cache, stack, calls}: cache
+
+# `Arena.next(ar) + edges`: one pop per pushed frame, and a frame is pushed once
+# per edge into a node plus once per node as `Frame{n, True}`. EXACT, so the
+# fuel can never cut a DAG short. TODO(p3): fold.bend's `Kahn.budget` and
+# spec.bend's `topo_budget` compute this same number and should call it.
+
+def Arena.edges.f(e: U32, nd: Node) -> U32:
+  U32.add(e, U32.from_nat(List.length(&2, U32, Node.src(nd))))
+
+def Arena.edges(ar: Arena) -> U32:
+  List.foldl(&2, Node, U32, Arena.edges.f, Arena.nodes(ar), 0)
+
+def Arena.budget(+ar: Arena) -> Nat:
+  U32.to_nat(U32.add(Arena.next(ar), Arena.edges(ar)))
 
 def toposort(fuel: Nat, +ar: Arena, t: Topo) -> List<&2, U32>:
   match fuel:
     case 0n: Topo.cache_of(t)
     case 1n+p: toposort(p, ar, Topo.step(ar, t))
 
-# `UOp.toposort(self, gate=None, enter_calls=True)`. The fuel is the arena
-# length times two, and the comment above says why that is exact.
+# `UOp.toposort(self, gate=None, enter_calls=True)`. The fuel is the caller's and
+# the only correct one is `Arena.budget(ar)`: the header says why.
 
 def UOp.toposort(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   toposort(fuel, ar, Topo.push(ar, self, Topo.empty()))
@@ -2278,7 +2312,7 @@ def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 
 
 def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
-  toposort(fuel, ar, Topo{Nil{}, List.append(&2, Frame, Nil{}, [Frame{self, False{}}])})
+  toposort(fuel, ar, Topo{Nil{}, List.append(&2, Frame, Nil{}, [Frame{self, False{}}]), False{}})
 
 # topovisit -- ops.py:309. "NOTE: this shares a lot of code with toposort". It
 # has no caller in ops.py, and its visitor is a Python callable, so the def is
@@ -3614,12 +3648,17 @@ def t_cycle() -> Bool:
   Bool.and(Bool.and(Bool.and(U32.is_eq(Arena.src0(ar, be), s), U32.is_eq(Arena.src(ar, be, 1), Found.i(g_rng()))),
     eq_op(Arena.op(ar, s), OpsSPECIAL{})), eq_op(Arena.op(ar, Arena.src(ar, be, 1)), OpsRANGE{}))
 
+# FOUR, not five: `Arena.empty()` parks a BOTTOM sentinel at index 0 that is not
+# a UOp, so a four-node graph has `Arena.next(ar) == 5` and a four-element
+# toposort. CPython agrees, on the tree `g_chain` rebuilds --
+#   c0 = UOp.const(0); r0 = UOp.range(c0, (0,), AxisType.LOOP)
+#   list(UOp.range(r0 + c0, (0,), AxisType.GLOBAL).toposort()) has four entries,
+#   'Ops.CONST', 'Ops.RANGE', 'Ops.ADD', 'Ops.RANGE'.
 def t_toposort() -> Bool:
   +f = g_chain()
   +ar = Found.ar(f)
-  # every node is pushed at most twice, so 2 * len(arena) steps always suffice
-  o = UOp.toposort(U32.to_nat(U32.mul(Arena.next(ar), 2)), ar, Found.i(f))
-  Nat.is_eq(List.length(&2, U32, o), 5n)
+  o = UOp.toposort(Arena.budget(ar), ar, Found.i(f))
+  Nat.is_eq(List.length(&2, U32, o), 4n)
 
 # the same walk over a cycle must terminate. The fuel is what makes that true,
 # and it answers the partial set rather than looping: `case 0n:` in `toposort`.
