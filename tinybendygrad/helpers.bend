@@ -1235,11 +1235,25 @@ def i64_text(+x: I64) -> String:
 # 64-bit add and subtract, so a boundary generator can step either side of a
 # limit without an effect. Carrying into the high word is all either has to get
 # right, and U32's wrap does that for free.
+# THE BORROW AND THE CARRY ARE NOT OPTIONAL. Computing the low word with U32s wrap
+# and then subtracting the high words is arithmetically WRONG for every borrow:
+# `5 - 7` answered hi=0 lo=4294967294, where Python answers hi=4294967295 lo=4294967294
+# (that is -2). The low word was right and the high word was wrong, which is the worst
+# shape for a bug: `i64_cmp` and `i64_le` were already correct, so any comparison built
+# on the sum or difference read a value that disagreed with itself. Found by the onnx
+# units i64 halving (nn/onnx.bend, which carries a local repair with these lines named).
+#
+# Borrow is `lo_a < lo_b`; carry is `lo_a + lo_b < lo_a`, which is U32s wrap detecting
+# its own overflow. Both are exact because the low-word arithmetic cannot fail.
 def i64_add(+a: I64, +b: I64) -> I64:
-  i64_of_hi_lo(U32.add(hi32(a), hi32(b)), U32.add(lo32(a), lo32(b)))
+  +lo = U32.add(lo32(a), lo32(b))
+  +carry = Bool.pick(U32, U32.is_lt(lo, lo32(a)), 1, 0)
+  i64_of_hi_lo(U32.add(U32.add(hi32(a), hi32(b)), carry), lo)
 
 def i64_sub(+a: I64, +b: I64) -> I64:
-  i64_of_hi_lo(U32.sub(hi32(a), hi32(b)), U32.sub(lo32(a), lo32(b)))
+  +lo = U32.sub(lo32(a), lo32(b))
+  +borrow = Bool.pick(U32, U32.is_lt(lo32(a), lo32(b)), 1, 0)
+  i64_of_hi_lo(U32.sub(U32.sub(hi32(a), hi32(b)), borrow), lo)
 
 # data64 -- `(data >> 32, data & 0xFFFFFFFF)`; data64_le swaps it. Python's >> is
 # arithmetic and the high half of a two's complement 64-bit word IS the
