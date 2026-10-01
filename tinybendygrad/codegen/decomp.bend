@@ -426,18 +426,24 @@ def dc_is_lt(+ar: O.Arena,+s: U32) -> Bool:
 
 # ---- rule 0 -- op.py:85-86. `!x & !y -> !(x|y)`.
 # The pattern is `UPat.var("x", dtypes.bool).logical_not() & ...`, so the AND's
-# two srcs are each a `logical_not` -- a CMPNE whose scrutinee is a
-# `CAST(x, bool)` -- and the `dtypes.bool` conjunct is on `x`, INSIDE the CAST.
-# The `x` under the CAST, which is the CAST's src0.
+# two srcs are each a `logical_not` -- a CMPNE against the bool CONST -- and the
+# `dtypes.bool` conjunct is on `x`, the CMPNE's src0. THERE IS NO CAST AND THE
+# READERS MAY NOT LOOK FOR ONE, on both sides and for one reason each: the
+# PATTERN has none because `UPat.cast` (ops.py:1512) returns `self` when
+# `self.match_dtype == (dtype,)`, which is what `UPat.var("x", dtypes.bool)`
+# states, and the TREE has none because `mixin/dtype.py:19` is `self if
+# self.dtype == dt else UOp(Ops.CAST, ...)` and `x` is a bool. A reader that
+# steps through a CAST here reads `src0` of a PARAM -- the arena's bottom NOOP,
+# index 0 -- and every fixture silently misses the rule.
 def dc_l0.x(+ar: O.Arena,+u: U32) -> U32:
-  O.Arena.src0(ar, O.Arena.src0(ar, O.Arena.src0(ar, u)))
+  O.Arena.src0(ar, O.Arena.src0(ar, u))
 
 def dc_l0.y(+ar: O.Arena,+u: U32) -> U32:
-  O.Arena.src0(ar, O.Arena.src0(ar, O.Arena.src(ar, u, 1)))
+  O.Arena.src0(ar, O.Arena.src(ar, u, 1))
 
-# The scrutinee of the CAST.
+# The scrutinee of the `logical_not`, which is `x` itself.
 def dc_l0.x2(+ar: O.Arena,+s: U32) -> U32:
-  O.Arena.src0(ar, O.Arena.src0(ar, s))
+  O.Arena.src0(ar, s)
 
 # ---- rule 1 -- op.py:88. `x * 2**y -> x << y`. MUL is an `is_any`, so the
 # CONST may be EITHER src; `l1` and `l25` are the two sides. The lambda is
@@ -460,8 +466,13 @@ def dc_negside(+ar: O.Arena,+u: U32) -> U32:
 def dc_l7.x(+ar: O.Arena,+self: U32) -> U32:
   dc_other(ar, self, dc_negside(ar, self))
 
+# `c1` and `c2` are the two CMPLTs' CONSTs and BOTH ARE TWO STEPS DEEP: the AND
+# and the CMPLT. A third `src0` reads `src0` of a CONST, which is the arena's
+# bottom NOOP (index 0), and `dc_val` of that is `None` -- so `dc_l12.val`
+# compares `0 + 1 == c2.val - 1`, which is false for `l16` and the rule never
+# answers. `c2` is the shape `c1` must have; the asymmetry was the whole bug.
 def dc_l12.c1(+ar: O.Arena,+self: U32) -> U32:
-  O.Arena.src0(ar, O.Arena.src0(ar, O.Arena.src0(ar, self)))
+  O.Arena.src0(ar, O.Arena.src0(ar, self))
 
 def dc_l12.c2(+ar: O.Arena,+self: U32) -> U32:
   O.Arena.src(ar, O.Arena.src(ar, self, 1), 1)
@@ -1631,7 +1642,11 @@ def dc_hit_l(+ar: O.Arena,+lt: U32) -> Bool:
 def dc_l10.x(+ar: O.Arena,+self: U32) -> U32:
   dc_other(ar, O.Arena.src0(ar, self), dc_cside(ar, O.Arena.src0(ar, self)))
 
-# The `c` side of a `MUL(_, c)` -- `dc_hit` reads `src1` of the MUL itself.
+# The `cvar` side of a pattern whose cvar is `src1` -- `dc_hit` reads `src1` of
+# the node itself, and so does this. ONLY FOR A NON-COMMUTATIVE OP: rule 15's
+# `x.alu(SHL, cvar('n'))` has a fixed order, and rule 10's `y*c` does not, so a
+# rule on a commutative op must use `dc_hit_s`. Getting that wrong is what kept
+# `l26` from firing; see the mutation table.
 def dc_hit_m(+ar: O.Arena,+m: U32) -> Bool:
   dc_has(dc_val(ar, O.Arena.src(ar, m, 1)))
 
@@ -1721,10 +1736,17 @@ def dc_l10.body(+ar: O.Arena,+self: U32) -> O.Found:
   +p = dc_alu2(O.Found.ar(m), O.OpsMUL{}, dc_other(ar, O.Arena.src(ar, self, 1), dc_cside(ar, O.Arena.src(ar, self, 1))), O.Found.i(m))
   dc_alu2(O.Found.ar(p), O.OpsCMPLT{}, O.Found.i(p), dc_l10.x(ar, self))
 
+# The `c` of the MUL. `UPat.cvar("c")` is on `UPat.var("y", ...)*UPat.cvar("c")`,
+# so which SIDE holds it is the `is_any` question of header note 2 and the reader
+# has to be `dc_hit_s` -- the two are `y * c` and `c * y`. `dc_hit_m` reads
+# `src1` only, which is right for rule 15's `x.alu(SHL, cvar('n'))` (SHL is not
+# commutative) and wrong here: `l26` is `(C(-1) * i) < (C(3) * j)` with BOTH
+# CONSTs on src0, so the fixed read sees the PARAM, says "no cvar", and the
+# rule that Python answers `CMPLT(MUL(Pj,MUL),Pi)` for does not fire.
 def dc_l10.val(+ar: O.Arena,+m: U32,+neg: Bool) -> Bool:
   match neg:
     case True{}: dc_is_m1(ar, m)
-    case False{}: dc_hit_m(ar, m)
+    case False{}: dc_hit_s(ar, m)
 
 # ---- rule 11 -- op.py:113. `-x < c -> -c < x`. Same first MUL as rule 10 but the
 # CMPLT's src1 is a bare CONST, which is what its reject set says
@@ -1783,7 +1805,9 @@ def dc_s0.go(+ar: O.Arena,+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 def dc_s0(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_s0.go(F.Folded.ar(fx), fx, self)
 
-# One `logical_not` whose scrutinee is a one-src `CAST(_, bool)` on a bool.
+# One `logical_not` whose scrutinee IS the bool, with no CAST in between -- see
+# the `dc_l0.x2` comment. The dtype conjunct and `dc_is_not` are the whole
+# pattern; the `dtypes.bool` read is one `src0` from the CMPNE.
 def dc_l0.one(+ar: O.Arena, +fx: F.Folded, +s: U32) -> Bool:
   Bool.and(dc_is_not(ar, s), dc_dt(fx, dc_l0.x2(ar, s), 2))
 
@@ -2323,6 +2347,10 @@ def main() -> IO(Unit):
 # | `dc_l15.c` -> `dc_l14.c` | `out_l21` | rule 15's addend is the non-SHL side and `dc_l14.c` keys on a MUL |
 # | `dc_l12.same` -> `True{}` | `on_l16`, `out_l16` | THE IDENTITY CHECK. `l16` binds `x` once and `l17` binds it to two nodes; without the check the rule matches `l17` too and answers `y.eq(c1+1)` |
 # | `dc_l12.val` -> `True{}` | `on_l16`, `out_l16` | `c1.val+1 == c2.val-1`; `l24` is the negative |
+# | `dc_l0.x2` -> the second `src0` (re-read the `CAST`) | `on_l0`, `tag_l0`, `out_l0` | THE CAST-SKIP: `UPat.cast` (ops.py:1512) drops the node when the pattern already says `dtypes.bool` and `mixin/dtype.py:19` elides it on a bool, so the scrutinee of `logical_not` is ONE hop out. Two hops reads `src0` of a PARAM -- the bottom NOOP -- and `dc_dt` of that is not bool |
+# | `dc_l0.x`/`dc_l0.y` -> the third `src0` | `out_l0` only | the same walk-off-the-end, and this is the row that SHOWS it: `out_l0` becomes `CMPNE(OR(NOOP,Pb),C(1))` while `on_l0` and `tag_l0` stay put, because the wrong node is only visible in the ANSWER |
+# | `dc_l12.c1` -> the third `src0` | `on_l16`, `tag_l16`, `out_l16` | `c2` is two hops from the AND and `c1` is the same distance; the third `src0` read `src0` of a CONST, `dc_val` answered `None`, and `dc_ival` of that is 0 -- so the claim check compared `0 + 1 == c2.val - 1` |
+# | `dc_l10.val` -> `dc_hit_m` on the `y*c` side | `on_l26`, `tag_l26`, `out_l26` | `UPat.var("y", ...)*UPat.cvar("c")` is an `is_any` over BOTH orders, so the `cvar` is not always `src1`; `dc_hit_s` reads `dc_const_side` and `l14` is the negative row (`out_l26` prints `CMPLT(MUL(Pj,MUL),Pi)`, both MULs in Python's own order) |
 # | `dc_cval`/`dc_cminus1`: the log where the value is wanted | `out_s3` | `x & (c.val-1)` is `c.val - 1` and not `log2(c) - 1` |
 # | `dc_sfx1.put`/`dc_sfx2.put`: two arms instead of three | `out_l3`, `out_l19`, `out_l20`, `out_l21` | a ONE-src node's `src1` is the arena's BOTTOM NOOP and printing it puts `NOOP` in every unary rewrite |
 # | `dc_arity1`: `min(nsrc,3)` without the `- 1` | `out_l3`, `out_l19`, `out_l20`, `out_l21`, `out_s9` | the arity test itself |
@@ -2333,9 +2361,9 @@ def main() -> IO(Unit):
 # | `dc_tfg.step`: `i` instead of `i + 1` in the `ks` read | `grown_s9` | `ks[i%3]` and `ks[(i+1)%3]` are the two different entries |
 # | `threefry2x32`: swap the two `dc_tf_half` calls | `tf_split`, `grown_s9` | `x.cast(u32)` is the LOW word and `x >> 32` the HIGH one |
 #
-# SIXTEEN ROWS DIFFER FROM PYTHON. Grouped by cause, and the causes are three:
+# SEVEN ROWS DIFFER FROM PYTHON. Grouped by cause, and the causes are two:
 #
-# A. SEVEN ROWS ARE THE `magicgu` WALL, and they are SUPPOSED to differ:
+# A. SIX ROWS ARE THE `magicgu` WALL, and they are SUPPOSED to differ:
 #      on_l9 tag_l9 out_l9   Python: SHR(MUL(Pz,C(43)),C(7))
 #      on_l10 tag_l10 out_l10 Python: ADD(Pz,MUL(MUL,C(-1)))
 #    The port prints `none` because op.py:23 is P3. `dc_idiv` answers the three
@@ -2351,23 +2379,45 @@ def main() -> IO(Unit):
 #    NOT a promotion. The oracle's erasure rule is too coarse; the port's tree
 #    is Python's tree. FIXING IT IS AN ORACLE FIX, not a port fix.
 #
-# C. NINE ROWS ARE THREE RULES THAT DO NOT FIRE, and I DID NOT FIND WHY:
-#      on_l0  tag_l0  out_l0    rule 0,  `!x & !y -> !(x|y)`
-#      on_l16 tag_l16 out_l16    rule 12, `(c1<x)&(x<c2) -> x.eq(c1+1)`
-#      on_l26 tag_l26 out_l26    rule 10, `-x < y*c -> y*(-c) < x`
-#    The predicates read right on paper -- `dc_l0.pat` is
-#    `AND(_, _)` with each src a `CMPNE(_, C(1))` on a bool; `dc_l12.pat` is the
-#    same shape with `dc_l12.same` and `dc_l12.val` on top; `dc_l10.pat` is
-#    `CMPLT(MUL(-1, sint), MUL(c, sint))` and the only difference from the
-#    WORKING `l14` is which side each CONST is on. `l14` fires and `l26` does
-#    not, and the two differ only in the CONST side, so the bug is in
-#    `dc_cside`/`dc_const_side`/`dc_pick_side` for a CONST on src0 -- and
-#    `dc_cval_s` (which uses `dc_const_side`) DOES work for `l25`. That
-#    contradiction is what makes this a real finding and not a typo, and it is
-#    NOT DIAGNOSED. The other fifteen rules and the whole of both tables are
-#    correct against the oracle, and the rows say so.
-#    `l25` (`MUL(C(4), i)`, rule 1) and `l1` (`MUL(i, C(4))`) BOTH fire, so the
-#    commutative read is right there; `l26` is the one that does not.
+# ---------------------------------------------------------------------------
+# THE THREE RULES THAT DID NOT FIRE, NOW DIAGNOSED. Nine rows, THREE readers,
+# and ONE shape of mistake: a reader that steps one hop further than the tree is
+# deep, or a predicate that reads a FIXED side where the op is commutative. Both
+# land on the arena's bottom NOOP -- index 0, a node with no srcs and no dtype
+# -- and both are invisible until a reader has to NAME a node, because every
+# predicate before them still says TRUE. Each was bisected with a scratch probe
+# printing the rule's own conjuncts one at a time; the decisive reading is
+# named in each paragraph and the rows each fix moves are in the mutation table.
+# Two of the three fixes are a `src0` DELETED and one is a reader swapped for the
+# commutative one -- which is why the "which side is the CONST" machinery that
+# the contradiction pointed at (`dc_cside`, `dc_const_side`, `dc_pick_side`) was
+# right all along and had exactly one caller that did not use it.
+#
+#   rule 0  (op.py:85-86)  `dc_l0.x2` read a `CAST` that is in NEITHER the
+#     pattern nor the tree. `UPat.cast` (ops.py:1512) returns `self` when the
+#     pattern already says `dtypes.bool`, and `mixin/dtype.py:19` elides it on a
+#     bool `x`, so `!x` is `CMPNE(x, C(True))` and the scrutinee is ONE hop.
+#     Reading two hops gave `src0` of a PARAM -- the bottom NOOP -- so
+#     `dc_dt(fx, noop, 2)` was False and `dc_l0.pat` was False. The same extra
+#     hop was in `dc_l0.x`/`dc_l0.y`, and it is visible on its own: restoring it
+#     leaves `on_l0` at 1 and prints `CMPNE(OR(NOOP,Pb),C(1))`. A reader that
+#     walks off the end of a tree is the whole failure mode.
+#   rule 12 (op.py:114-115)  `dc_l12.c1` had a THIRD `src0` where its sibling
+#     `dc_l12.c2` has two. Both CONSTs are two steps from the AND, so the third
+#     `src0` read `src0` of a CONST -- again the bottom NOOP -- `dc_val` of it
+#     is `None`, `dc_ival` of `None` is 0, and `dc_l12.val` compared
+#     `0 + 1 == c2.val - 1`, which is false. `dc_l12.pat` was TRUE throughout:
+#     the rule was refused by its CLAIM CHECK, not its shape, which is why the
+#     shape was never the suspect.
+#   rule 10 (op.py:112)  `dc_l10.val`'s `y*c` conjunct was `dc_hit_m`, which
+#     reads `src1`. `UPat.var("y", ...)*UPat.cvar("c")` is an `is_any` over both
+#     orders, so `l26` (`C(3) * y`, CONST on src0) has no CONST on src1 and the
+#     rule was refused. `dc_hit_s` reads `dc_const_side` and answers both sides.
+#     THE CONTRADICTION THAT PINNED IT was `l1`/`l25` (rule 1, CONST either
+#     side) firing through `dc_cval_s` and `l14`/`l26` (rule 10, CONST either
+#     side) not: `dc_cside` and `dc_pick_side` were never wrong, only the one
+#     rule that did not USE them. `l25` and `l26` are still the commutativity
+#     rows from header note 2, and both now answer.
 #
 # WHAT NEXT, in the order the walls fall.
 #   1. `i64_mul` / `i64_div` / `i64_mod` / `i64_shl` and an UNSIGNED 64-bit
@@ -2377,4 +2427,11 @@ def main() -> IO(Unit):
 #      finding that out was worth the three lines it took.
 #   3. `Renderer.supported_dtypes()` (renderer/__init__.py:85) -- op.py:32, and
 #      there is no `renderer` in the port at all.
-#   4. THE THREE UNFIRED RULES. One `./bin/bend` run per hypothesis.
+#
+# CLOSED. Item 4 was the three unfired rules; they are diagnosed and fixed above,
+# and `nroots`-addressed rows `l0`/`l16`/`l26` now answer what Python answers.
+# The lesson worth carrying to the next unit: a predicate chain that ends on a
+# NODE READ is only as deep as the tree, and reading one hop too far lands on
+# the bottom NOOP rather than on an error -- so the conjunct that refuses a
+# fixture is the LAST one, not the first, and `out_*` printing a NOOP is the
+# only honest witness.
