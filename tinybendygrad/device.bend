@@ -866,9 +866,16 @@ def Sig.next(x: Sig) -> U32:
 type Ent is Data:
   Ent{off: U32, k: U32}
 
+# Python's walrus makes the running offset the ALIGNED slot: `iter_sig` does
+#   yield (offset := round_up(offset, dt.itemsize)), dt
+#   offset += dt.itemsize
+# so the NEXT offset is the aligned one PLUS the itemsize. Reading it as `off + k`
+# walks from the UNALIGNED offset and drifts: itemsizes [4,8,4] gives CPython
+# [0,8,16] and this used to give [0,8,12]. Found by the runtime/ops_cpu unit, which
+# carried a local repair and a mutation to prove its own rows were load-bearing.
 def go_slot.go(e: Ent) -> Sig:
   match e:
-    case Ent{+off, +k}: Sig{round_up(off, k), U32.add(off, k)}
+    case Ent{+off, +k}: Sig{round_up(off, k), U32.add(round_up(off, k), k)}
 
 def go_slot(off: U32, k: U32) -> Sig:
   go_slot.go(Ent{off, k})
@@ -1450,9 +1457,12 @@ def main() -> IO(Unit):
 #                   alone is a row that cannot see the case fold.
 #                   `allow_metal=0` and `allow_on=1` are the other two corners.
 #   disk_two=1      `is_disk_device` UPPER-cases, so `disk:0` in a tuple counts.
-#   sig=0 4 5       `iter_sig` yields the ROUNDED slot and advances the running
-#                   offset by the RAW itemsize. Rounding the advance as well
-#                   gives `0 4 8`.
+#   sig=0 4 8       `iter_sig` yields the ROUNDED slot and advances the running
+#                   offset FROM THAT SLOT, because device.py:366s walrus assigns the
+#                   rounded value. This row used to read `0 4 5` and its comment
+#                   claimed the advance was by the RAW itemsize, with `0 4 8` named as
+#                   if it were a variation -- a gate built to ENCODE THE BUG. Found by
+#                   the runtime/ops_cpu unit, which carried a local repair for it.
 #   multi=CPU,CPU,CPU:1  `canonicalize_device` is a REBUILD and CONS. Appending
 #                   reverses the tuple.
 #   lru_* / ext_ptr  `Allocator.free`'s FOUR conjuncts, one row each. The global
