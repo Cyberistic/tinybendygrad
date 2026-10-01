@@ -464,7 +464,7 @@ def rf_remove_noop_afters.of(one: Bool, shrank: Bool, +ar: O.Arena, +self: U32) 
   match one:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
     case False{}: match shrank:
-                  case True{} : M.mp_replace(M.mp_op(ar, self), ar, self, raf.keep_srcs(ar, self))
+                  case True{} : M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self, raf.keep_srcs(ar, self))
                   case False{}: M.Hop{ar, 0}
 
 def rf_remove_noop_afters(+ar: O.Arena, +self: U32) -> M.Hop:
@@ -653,7 +653,7 @@ def rf_no_indexing_calls_of(fuel: Nat, +ar: O.Arena, self: U32) -> Bld:
 
 # the rule: the fold, then the rebuild in the arena the fold ended with.
 def rf_no_indexing_calls.fin(+self: U32, +b: Bld) -> M.Hop:
-  M.mp_replace(M.mp_op(Bld.ar(b), self), Bld.ar(b), self, Bld.ys(b))
+  M.mp_replace(M.mp_op(Bld.ar(b), self), M.mp_arg(Bld.ar(b), self), Bld.ar(b), self, Bld.ys(b))
 
 def rf_no_indexing_calls(+ar: O.Arena, +self: U32) -> M.Hop:
   rf_no_indexing_calls.fin(self, rf_no_indexing_calls_of(O.Arena.budget(ar), ar, self))
@@ -1296,7 +1296,7 @@ def ct_7(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 # -- and the answer is a rebuild plus a `.replace`. `ct_8_ans` is the row.
 def ct_8.of(devless: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match devless:
-    case True{} : M.mp_replace(M.mp_op(ar, self), ar, self,
+    case True{} : M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self,
                                List.append(&2, U32, [M.mp_src(ar, M.mp_src0(ar, self), 0)], O.Arena.src_from(ar, self, 1)))
     case False{}: M.Hop{ar, 0}
 
@@ -1793,7 +1793,7 @@ def ab_7_srcs(+ar: O.Arena, self: U32) -> List<&2, U32>:
   ab_7_srcs.go(ar, M.mp_srcs(ar, self), Nil{})
 
 def ab_7(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
-  M.mp_replace(M.mp_op(ar, self), ar, self, ab_7_srcs(ar, self))
+  M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self, ab_7_srcs(ar, self))
 
 # ab_8: `lambda: UOp(Ops.NOOP)` for a STORE whose src[1] is a CONST of `Invalid`.
 # FULLY PORTED, and `UPat(Ops.CONST, arg=Invalid)` compiles to
@@ -2051,7 +2051,22 @@ def g() -> G:
   # RSAF: a RESHAPE over an AFTER, so `rf_is_bufid5`'s SIX-op set is tested on a
   # member other than BUFFER -- `rs` and `rsi` only ever test BUFFER.
   +rsaf = O.UOp.new(O.Found.ar(stc0), O.OpsRESHAPE{}, [O.Found.i(af), O.Found.i(c4)], O.ANone{}, O.TNone{})
-  G{F.folded(O.Found.ar(rsaf)),
+  # CLIK and CLIK0: the CALLI shape (CALL(IXSTG,RS)) carrying a REAL `Kernel` arg,
+  # and its `ANone` twin. THEY ARE THE ONLY TWO NODES THAT MAKE AN ARG VISIBLE.
+  # Every other node the four `mp_replace` rules can reach -- an AFTER, an MSTACK,
+  # a CALL -- is given `ANone` by this fixture, and an AFTER's and an MSTACK's arg
+  # is `None` in CPython too (measured: `raf_after_arg_is_none = 1`,
+  # `mstack_arg_is_none = 1`). So a row of the shape `eq_arg(rebuilt_arg,
+  # original_arg)` on any of them degenerates to `eq_arg(ANone, ANone)` -- TRUE
+  # whether the port preserves the arg or hardcodes `ANone`, which is exactly the
+  # mistake that satisfied the type checker when `mp_replace` gained its `arg`
+  # parameter. A CALL's arg is a Kernel, so CLIK is the node that separates the
+  # two, and CLIK0 is the negative one row from it at the same shape.
+  +clik = O.UOp.new(O.Found.ar(rsaf), O.OpsCALL{}, [O.Found.i(ixs), O.Found.i(rs)],
+                   O.AKernel{O.KernelInfo.of()}, O.TNone{})
+  +clik0 = O.UOp.new(O.Found.ar(clik), O.OpsCALL{}, [O.Found.i(ixs), O.Found.i(rs)],
+                    O.ANone{}, O.TNone{})
+  G{F.folded(O.Found.ar(clik0)),
     [O.Found.i(c0), O.Found.i(c1), O.Found.i(c2), O.Found.i(c4), O.Found.i(sp),
      O.Found.i(b4), O.Found.i(bx), O.Found.i(r0), O.Found.i(r1), O.Found.i(n0),
      O.Found.i(nx), O.Found.i(e0), O.Found.i(e1), O.Found.i(ek), O.Found.i(af1),
@@ -2061,7 +2076,7 @@ def g() -> G:
      O.Found.i(msr), O.Found.i(sti), O.Found.i(sts), O.Found.i(std), O.Found.i(pg),
      O.Found.i(pa), O.Found.i(ipg), O.Found.i(ipa), O.Found.i(r0t), O.Found.i(pgt),
      O.Found.i(pat), O.Found.i(aftn), O.Found.i(aftk), O.Found.i(stc0),
-     O.Found.i(rsaf)]}
+     O.Found.i(rsaf), O.Found.i(clik), O.Found.i(clik0)]}
 
 # THE NODE NAMES, so a row reads as a claim about a thing and not an index.
 #   0 C0  1 C1  2 C2  3 C4  4 SPECIAL  5 B4  6 BX  7 R0  8 R1
@@ -2113,6 +2128,9 @@ def g_aftn(g: G) -> U32: G.n(g, 41n)
 def g_aftk(g: G) -> U32: G.n(g, 42n)
 def g_stc0(g: G) -> U32: G.n(g, 43n)
 def g_rsaf(g: G) -> U32: G.n(g, 44n)
+#  45 CLIK=CALL(IXSTG,RS) with a REAL Kernel arg  46 CLIK0, the same with ANone
+def g_clik(g: G) -> U32: G.n(g, 45n)
+def g_clik0(g: G) -> U32: G.n(g, 46n)
 def g_b4(g: G) -> U32: G.n(g, 5n)
 def g_bx(g: G) -> U32: G.n(g, 6n)
 
@@ -2383,6 +2401,58 @@ def t_ab8_std_none() -> U32:
 def t_ab7_cli_nsrc() -> U32:
   M.mp_nsrc(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_cli(g()))),
             M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_cli(g()))))
+
+# ===========================================================================
+# THE ARG ROWS, and why they had to be written at all. `mp_replace` was widened
+# from `(op, ar, self, src)` to `(op, arg, ar, self, src)` by e959ece3798f
+# ("fix movement.bend: the port (not Python) had the inversion") because
+# `UOp.replace` (ops.py:252) takes `arg` as a KWARG --
+# `kwargs.pop("arg", self.arg)` -- so a rule that replaces only `src` passes the
+# node's OWN arg. Four call sites here were left on the 4-arg form and the file
+# stopped compiling.
+#
+# THE COMPILED FILE IS NOT EVIDENCE, and neither is any row that already existed.
+# `cli`, `af` and `mst` are all given `ANone` by this fixture, and an AFTER's and
+# an MSTACK's arg is `None` in CPython TOO (measured: `raf_after_arg_is_none = 1`,
+# `mstack_arg_is_none = 1`), so `eq_arg(rebuilt_arg, original_arg)` on any of them
+# is `eq_arg(ANone, ANone)` -- TRUE for a port that preserves the arg AND for one
+# that hardcodes `ANone`, which is the mistake that silences this type error. A
+# CALL's arg is a `Kernel`, so `clik` is the node that separates the two, and
+# `clik0` is the negative one row from it at the same shape.
+#
+# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:1559), so the
+# expected arg goes first. `py=` from `.agents/slop/rf-arg-oracle.py`, which
+# reports `arg_is_own_kernel=1` and `arg_is_none=0` for the rebuild.
+# ===========================================================================
+def t_ab7_clik_nsrc() -> U32:
+  M.mp_nsrc(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))),
+            M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))))
+
+# the rebuild kept the node's OWN Kernel arg -- py: `arg_is_own_kernel=1`
+def t_ab7_clik_arg() -> U32:
+  b2u(O.eq_arg(O.AKernel{O.KernelInfo.of()},
+               M.mp_arg(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))),
+                        M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))))))
+
+# THE NEGATIVE, the twin with no arg, ONE ROW FROM the positive at the SAME shape:
+# py: `arg_is_own_kernel=0 arg_is_none=1`. So `ab7_clik_arg` is not passing because
+# every CALL rebuilds to a Kernel.
+def t_ab7_clik0_arg() -> U32:
+  b2u(O.eq_arg(O.AKernel{O.KernelInfo.of()},
+               M.mp_arg(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_clik0(g()))),
+                        M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_clik0(g()))))))
+
+# the OTHER repaired site a CALL reaches, `no_indexing_calls` (rangeify.py:158).
+# py: `nic_clik` nsrc=2, `arg_is_own_kernel=1`, `nic_claim_clik=1` (first-wins:
+# exactly one pattern claims it, so this is not another rule's answer).
+def t_nic_clik_nsrc() -> U32:
+  M.mp_nsrc(M.hop_ar(nic_rewrite(g_ar(g()), g_clik(g()))),
+            M.hop_ix(nic_rewrite(g_ar(g()), g_clik(g()))))
+
+def t_nic_clik_arg() -> U32:
+  b2u(O.eq_arg(O.AKernel{O.KernelInfo.of()},
+               M.mp_arg(M.hop_ar(nic_rewrite(g_ar(g()), g_clik(g()))),
+                        M.hop_ix(nic_rewrite(g_ar(g()), g_clik(g()))))))
 
 # the two reject sets, spelled: `ct_4` is `{INDEX}` and `dg_3` is `{PARAM}`, and a
 # MISSPELLING of either turns a necessary condition into a false one.
@@ -2739,5 +2809,10 @@ def main() -> IO(Unit):
     bx : Unit <- row("nv_rsaf_ans", t_nv_rsaf_ans())
     by : Unit <- row("dg_r0t_ans", t_dg_r0t_ans())
     bz : Unit <- row("ren_axis_out", t_ren_axis_out())
+    ca : Unit <- row("ab7_clik_nsrc", t_ab7_clik_nsrc())
+    cb : Unit <- row("ab7_clik_arg", t_ab7_clik_arg())
+    cc : Unit <- row("ab7_clik0_arg", t_ab7_clik0_arg())
+    cd : Unit <- row("nic_clik_nsrc", t_nic_clik_nsrc())
+    ce : Unit <- row("nic_clik_arg", t_nic_clik_arg())
     row("spec", t_spec())
 
