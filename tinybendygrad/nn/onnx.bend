@@ -781,9 +781,7 @@ def onx_row(nm: String, b: Bool) -> IO(Unit):
 # separator. The alternative -- `String.concat([acc, x, ","])` inside the fold --
 # is the same order and is spelled below where the pieces are not `String`s.
 def onx_join.go(xs: List<&2, String>, acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: onx_join.go(t, List.append(&2, String, acc, [x]))
+  List.foldl(~&2, ~String, ~List<&2, String>, (a: List<&2, String>) => (x: String) => List.append(&2, String, a, [x]), xs, acc)
 
 def onx_join(xs: List<&2, String>) -> String: String.join(onx_join.go(xs, Nil{}), ",")
 
@@ -791,9 +789,7 @@ def onx_join(xs: List<&2, String>) -> String: String.join(onx_join.go(xs, Nil{})
 # "any check whose oracle is a COUNT rather than a STRUCTURE" is blind), so every
 # table row here prints the cells and not just their number.
 def onx_u32s.go(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: onx_u32s.go(t, List.append(&2, String, acc, [U32.show(x)]))
+  List.foldl(~&2, ~U32, ~List<&2, String>, (a: List<&2, String>) => (x: U32) => List.append(&2, String, a, [U32.show(x)]), xs, acc)
 
 def onx_u32s(xs: List<&2, U32>) -> String: String.join(onx_u32s.go(xs, Nil{}), ",")
 
@@ -968,9 +964,7 @@ def onx_odt_inv_real.go(cs: List<&2, U32>, acc: Bool) -> Bool:
 def onx_odt_inv() -> Bool: onx_odt_inv_real.go(onx_odt_codes(), True{})
 
 def onx_odt_inv_tbl.go(cs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
-  match cs:
-    case Nil{}: acc
-    case c <> t: onx_odt_inv_tbl.go(t, List.append(&2, String, acc, [U32.show(onx_odt_inv_one(c))]))
+  List.foldl(~&2, ~U32, ~List<&2, String>, (a: List<&2, String>) => (c: U32) => List.append(&2, String, a, [U32.show(onx_odt_inv_one(c))]), cs, acc)
 
 def onx_odt_inv_tbl() -> String: String.join(onx_odt_inv_tbl.go(onx_odt_codes(), Nil{}), ",")
 
@@ -1475,9 +1469,7 @@ def onx_isub(+a: H.I64, +b: H.I64) -> H.I64:
 # `H.I64` throughout and the `U32` callers widen first. One function rather than
 # two spellings of the same walk.
 def onx_i64s.go(xs: List<&2, U32>, acc: List<&2, H.I64>) -> List<&2, H.I64>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: onx_i64s.go(t, List.append(&2, H.I64, acc, [H.i64_of_i32(x)]))
+  List.foldl(~&2, ~U32, ~List<&2, H.I64>, (a: List<&2, H.I64>) => (x: U32) => List.append(&2, H.I64, a, [H.i64_of_i32(x)]), xs, acc)
 
 def onx_i64s(xs: List<&2, U32>) -> List<&2, H.I64>: onx_i64s.go(xs, Nil{})
 
@@ -1698,9 +1690,7 @@ def onx_axes(+xs: List<&2, U32>, noop: Bool) -> Axes:
 # ===========================================================================
 
 def onx_i64s_str.go(xs: List<&2, H.I64>, acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: onx_i64s_str.go(t, List.append(&2, String, acc, [H.i64_text(x)]))
+  List.foldl(~&2, ~H.I64, ~List<&2, String>, (a: List<&2, String>) => (x: H.I64) => List.append(&2, String, a, [H.i64_text(x)]), xs, acc)
 
 # `H.i64_text` is `hi:lo`, which is a DIFFERENT spelling from Python's decimal and
 # is what makes a negative pad legible: Python says `-5` and Bend says
