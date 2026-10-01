@@ -464,13 +464,8 @@ def mu_len(xs: List<&2, U32>) -> Nat:
 # declaration-order problem `red_factor`/`red_factor_of` and
 # `noopf_go`/`rf_is_noop_after_dep` solve, and the recursion is on the list TAIL
 # so no fuel is needed -- the tail IS the subterm.
-def mu_prod.go(xs: List<&2, U32>, acc: U32) -> U32:
-  match xs:
-    case Nil{}: acc
-    case x <> t: mu_prod.go(t, U32.mul(acc, x))
-
 def mu_prod(xs: List<&2, U32>) -> U32:
-  mu_prod.go(xs, 1)
+  List.foldl(~&2, ~U32, ~U32, (acc: U32) => (x: U32) => U32.mul(acc, x), xs, 1)
 
 def mu_take.go(n: Nat, xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match n xs:
@@ -990,13 +985,8 @@ def sv_expand(full_op: O.Op, inner_sc: Bool) -> Bool:
 def sv_nshard(sh: List<&2, Sh>) -> Nat:
   mu_nshard(sh)
 
-def sv_axes.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
-  match sh:
-    case Nil{}: acc
-    case s <> t: sv_axes.go(t, List.append(&2, U32, acc, [Sh.ax(s)]))
-
 def sv_axes(sh: List<&2, Sh>) -> List<&2, U32>:
-  sv_axes.go(sh, Nil{})
+  List.foldl(~&2, ~Sh, ~List<&2, U32>, (acc: List<&2, U32>) => (s: Sh) => List.append(&2, U32, acc, [Sh.ax(s)]), sh, Nil{})
 
 # `_shard` (ops.py:751-756):
 #
