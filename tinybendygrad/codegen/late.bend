@@ -1,9 +1,14 @@
 # late.bend -- tinygrad/codegen/late/{linearizer,regalloc,gater}.py. ALL THREE are
 # IN SCOPE and in Python's order: linearizer (96 lines), regalloc (118), gater (29)
-# = 243. TWO AND A HALF ARE PORTED AND GATED; regalloc's main loop is a NAMED STUB.
+# = 243. 242 OF THE 243 LINES ARE PORTED AND GATED, and the one that is not is
+# `regalloc.py:69`'s `assert` -- bend has no assert form and no row can see an assert
+# fire. TWO VALUES ARE ALSO NOT CARRIED and both are named below: `Register.size`
+# (W5, unobservable because `Register.__repr__` is the name) and the three renderer
+# hooks' own bodies (`assign_spill_slot`, `fill`, `spill`), which are
+# `NotImplementedError` in tinygrad's own base class and which the ORACLE supplies.
 #
 #   tinygrad/codegen/late/linearizer.py    96 lines   -> lt_*, lt_cfg_*, se_*   96/96
-#   tinygrad/codegen/late/regalloc.py     118 lines   -> ra_*                    3/118
+#   tinygrad/codegen/late/regalloc.py     118 lines   -> ra_*, rw_*          117/118
 #   tinygrad/codegen/late/gater.py         29 lines   -> gt_*                    29/29
 #
 # THE DEF-BY-DEF MAP, and every row names the Python line it is a row for:
@@ -28,9 +33,25 @@
 #   linearizer.py:93-96   pm_split_ends        se_tbl, se_fired         se_tbl_*, se_fired,
 #                                                                        se_miss
 #   regalloc.py:8         PSEUDO_OPS           ra_is_pseudo, ra_pseudo_n rw_pseudo_n
+#   regalloc.py:10-12     vdef                 ra_at, ra_rdef            (via ra<t>_lr)
+#   regalloc.py:13-21     the ctor             ra_st0, RaSt.*            --
+#   regalloc.py:22-29     live_range + loops   ra_lr.*, ra_hi, ra_lastuse ra<t>_lr
+#   regalloc.py:32-37     the five dicts       RaSt (7 tables + in)      ra<t>_spills,
+#                                                                        ra<t>_before
+#   regalloc.py:39-45     alloc                ra_dist, ra_linv,         ra<t>_a<i>,
+#                         (first-wins max)     ra_alloc.*, ra_del        ra1_a7 v ra0_a7
+#   regalloc.py:48-53     fill                 ra_fill.*, ra_slot        ra<t>_spills,
+#                                                                        ra<t>_before
+#   regalloc.py:55-63     the uses             ra_use.*, ra_uses.*       ra<t>_a<i>
+#   regalloc.py:64-77     the defs             ra_def.*, ra_k, ra_tw     ra<t>_a<i>,
+#                                                                        ra1_a7
+#   regalloc.py:80-90     the RANGE prologue   ra_pro.*, Su, su_le,      ra2_*
+#                                                ra_blk, ra_w.*
+#   regalloc.py:93-97     the END epilogue     ra_epi.*, ra_head, ra_pop ra2_spills,
+#                                                                        ra2_before
+#   regalloc.py:99-114    regalloc_rewrite     rw_*                      rw_none
 #   regalloc.py:116-118   pm_regalloc_rewrite  ra_tbl, ra_tbl_len,      rw_tbl_len,
 #                         (the TABLE)          ra_tbl_ops               rw_tbl_ops
-#   regalloc.py:10-114   the context, the loop and the rewrite            STUB, see below
 #   gater.py:5-7          move_where_load      gt_w.*, gt_mwl.*         gt_mwl_* x4
 #   gater.py:6-7          the dtype predicates W4                       --
 #   gater.py:9-29         pm_move_gates_       gt_tbl, gt_ops           gt_tbl_len,
@@ -109,9 +130,8 @@
 #     itself is W4.
 #
 # ---------------------------------------------------------------------------
-# THE ONE PLACE A REGISTER IS A REGISTER -- AND IT IS A STUB, SO READ THE regalloc
-# SECTION BEFORE THIS. `regalloc.py` runs on `u.tag` tuples of `Register`, and
-# `tinygrad/renderer/isa/__init__.py:9-16` is a frozen
+# THE ONE PLACE A REGISTER IS A REGISTER. `regalloc.py` runs on `u.tag` tuples of
+# `Register`, and `tinygrad/renderer/isa/__init__.py:9-16` is a frozen
 # `@dataclass(name, index, _cons, size)` -- a VALUE compared by all four fields, not
 # an identity. `tinybendygrad/renderer/isa/` is EMPTY, and `O.Tag`'s tuple arm is
 # `TTuple{xs: List<&2, U32>}` carrying UOP INDICES (ops.bend:780-785), which cannot
@@ -121,6 +141,14 @@
 # port compare the same thing. The two `NotImplementedError` renderer hooks
 # (`assign_spill_slot`, `fill`, `spill`, `is_two_address`) are the ORACLE's problem
 # and it supplies them; the port derives the slot from the register's name instead.
+#
+# W5b IS THE ONE PLACE THAT INTERNING BITES, and it is named here because it is a
+# TRAP rather than a wall: `tb_get` answers 0 for a missing key, which is this
+# file's `None` convention and is right for an arena whose index 0 is the bottom
+# node -- and WRONG for a register universe whose index 0 is rax. Asking "is the
+# value non-zero" instead of "is the key there" makes every vreg holding rax look
+# unloaded, so every use refills it. The row that sees it is `ra0_a5`, and the
+# mutation is in the table below.
 #
 # ---------------------------------------------------------------------------
 # THE GATE. Every row is DERIVED FROM PYTHON by the oracle named at the foot; the
@@ -133,12 +161,15 @@
 # LINEARIZED order carrying that node's op, its run_count, its priority and its nkey
 # -- nineteen rows, and a reordering bug has the right node COUNT and the wrong list,
 # so the per-uop tuple is the only thing that can see it. The same shape is built for
-# regalloc: `ra<t>_a<i>` would be one row per uop carrying every virtual register it
+# regalloc: `ra<t>_a<i>` IS one row per uop carrying every virtual register it
 # defines or uses and the REAL register each landed on, and `ra0_a7` and `ra1_a7`
 # DIFFER (`v4>10->rcx>1` against `v4>10->rdx>2`) because `is_two_address` only
 # reorders `cons` and a TIE is what a reordering decides -- that pair is the whole
-# reason `ra0` and `ra1` are two rows and not one row printed twice. Those rows are
-# in the ORACLE and NOT in this file; the regalloc section says so at its own head.
+# reason `ra0` and `ra1` are two rows and not one row printed twice. The rows are
+# in the ORACLE and in this file, and `ra2` is the second fixture that reaches the
+# code `ra0` cannot: it is the only one with a RANGE and an END, so `loops`, the
+# loop-interval append, `used_in_loop`, `sorted_uses`, `live_ins` and the
+# epilogue's `fill` are DEAD CODE on `ra0` and `ra1`.
 #
 # THE IDENTITY ROWS. `linc_*` is a second sink, `SINK(CALL(STORE, ADD))`, whose
 # toposort carries six nodes all with rc=1 and a sort already in nkey order, so
@@ -281,8 +312,24 @@ def tb_pput(vs: List<&2, U32>, k: U32, r: U32) -> List<&2, U32>:
   tb_pput.go(k, r, vs)
 
 # `reals.setdefault(i, {})[v] = live[v]`: append-or-replace inside one bucket.
+# `dict[b] = vs` -- REPLACE a bucket's list. `tb_put` is the APPEND primitive and
+# this table needs BOTH: `insert_before.setdefault(i, []).append(...)` (:35, :52)
+# appends and `reals.setdefault(i, {})[v] = live[v]` (:34, :63, :77) REPLACES.
+# Written with `tb_put` the second one answers `old ++ new`, so a bucket written
+# three times carries five pairs and `ra<t>_a<i>` prints the same virtual three
+# times -- a row with the right LENGTH and the wrong GRAPH.
+def tb_vput.go(+t: RaTb, +b: U32, +vs: List<&2, U32>, rest: List<&2, RaEn>) -> List<&2, RaEn>:
+  match rest:
+    case Nil{}   : List.append(&2, RaEn, [RaEn{b, 0, vs}], rest)
+    case +e <> +r : Bool.pick(List<&2, RaEn>, U32.is_eq(RaEn.k(e), b),
+                   List.append(&2, RaEn, [RaEn{b, 0, vs}], r),
+                   List.append(&2, RaEn, [e], tb_vput.go(t, b, vs, r)))
+
+def tb_vput(+t: RaTb, b: U32, vs: List<&2, U32>) -> RaTb:
+  RaTb{tb_vput.go(t, b, vs, RaTb.es(t))}
+
 def tb_pset.put(t: RaTb, +b: U32, vs: List<&2, U32>, k: U32, r: U32) -> RaTb:
-  tb_put(t, b, 0, tb_pput(vs, k, r))
+  tb_vput(t, b, tb_pput(vs, k, r))
 
 def tb_pset(+t: RaTb, +b: U32, k: U32, r: U32) -> RaTb:
   tb_pset.put(t, b, tb_vs(t, b), k, r)
@@ -1792,68 +1839,88 @@ def se_ar() -> O.Arena:
 
 
 # ===========================================================================
-# `regalloc.py` -- 118 lines. THE STUB, AND THE STUB IS THE HONEST PART.
+# `regalloc.py` -- 118 lines, AND 117 OF THEM ARE HERE. The one that is not is :69's
+# `assert isinstance(v, Register) and lr[v][0] == i`: bend has no assert form, the
+# invariant it checks is a property of the fixture rather than of the pass, and no row
+# can see an assert fire. TWO VALUES ARE ALSO NOT CARRIED: `Register.size` (W5) and the
+# three renderer hooks' own bodies, which are `NotImplementedError` in tinygrad's own
+# base class (isa:47-52) and which the ORACLE supplies. Both are named again below.
 #
 #   regalloc.py:8      PSEUDO_OPS                 PORTED, see `ra_pseudo_n` below
-#   regalloc.py:10-21   the context and its ctor   NOT PORTED
-#   regalloc.py:22-29   live_range and loops       NOT PORTED
-#   regalloc.py:32-37   spills/reals/              NOT PORTED
+#   regalloc.py:10-21   the context and its ctor   PORTED, RaSt + ra_st0 + RaSt.*
+#   regalloc.py:22-29   live_range and loops       PORTED, ra_lr.* + ra_hi + ra_lastuse
+#   regalloc.py:32-37   spills/reals/              PORTED, seven fields of RaSt
 #                      insert_before/live/live_ins
-#   regalloc.py:39-45   alloc                      NOT PORTED
-#   regalloc.py:48-53   fill                       NOT PORTED
-#   regalloc.py:55-97   the main loop              NOT PORTED
-#   regalloc.py:99-114  regalloc_rewrite           TABLE PORTED, body NOT
-#   regalloc.py:116-118 pm_regalloc_rewrite       TABLE PORTED, body NOT
+#   regalloc.py:39-45   alloc                      PORTED, ra_alloc.* + ra_dist + ra_del
+#   regalloc.py:48-53   fill                       PORTED, ra_fill.* + ra_slot
+#   regalloc.py:55-97   the main loop              PORTED, ra_step + ra_uses/ra_defs/
+#                                                  ra_pro/ra_epi
+#   regalloc.py:69      the assert                 NOT PORTED -- no assert form, and
+#                                                  no row can see one fire
+#   regalloc.py:99-114  regalloc_rewrite           PORTED, rw_* (and see W5c)
+#   regalloc.py:116-118 pm_regalloc_rewrite       PORTED
 #
-# TWO OF THE THINGS ABOVE ARE PORTED AND GATED, so this is not an empty section:
-# `PSEUDO_OPS` is the eight-op set and `pm_regalloc_rewrite`'s op set is the seven
-# renderer ops `| PSEUDO_OPS`, and `rw_pseudo_n` / `rw_tbl_len` / `rw_tbl_ops` are
-# the rows. The other 115 lines are a STUB.
-#
-# WHY, AND IT IS NOT A LANGUAGE WALL. Every part of this pass is portable and the
-# design was worked out and partly coded before it was cut:
+# THE DESIGN WAS WORKED OUT BEFORE IT WAS CODED, and it was RIGHT except where it is
+# corrected below. What held:
 #   * A REGISTER IS A `U32`. `Register` (isa/__init__.py:9) is a frozen dataclass, so
 #     `isinstance` / `in` / `!=` / `max` over registers are all EQUALITY, and an
 #     intern table turns them into `U32` equality. `cons` is `self._cons or (self,)`
-#     (isa:16). This file's `RaTb` is the intern table and needs no new type.
+#     (isa:16). The universe is a plain `List<&2, Ru>` -- and NOT an `RaTb`, because
+#     a register's own intern index is its key, which is what `Regs.rs` is.
 #   * THE STATE IS ONE RECORD. `spills`, `reals`, `insert_before`, `live` and
 #     `live_ins` are five dicts Python mutates in place; there is no mutable store,
 #     so they are five fields of a `Data` record and every step threads it. The
 #     drafted `RaSt` also carried `in` -- the RANGE prologue's `live_in` -- because
 #     that step mutates `live` through `fill` AND accumulates `live_in`, and two
-#     calls would pop twice.
+#     calls would pop twice. IT ALSO CARRIES `lr`, `lp` and the three constants
+#     `ops`/`un`/`ta`, so the record is `self` and not a bag of scratch; ten fields
+#     and ten accessors is the price of no mutable store.
 #   * `lr[v][-1]` IS A MAX FOLD, because the backward walk's `insert(0, idx)` leaves
 #     the live range ASCENDING -- so `s <= lr[v][-1] < e` needs no "last element"
 #     reader, and `H.dedup_u32` (a PREPEND, so reversed) could not be reused for
-#     `dedup(u.src)` without reversing `lr`.
-#   * `alloc`'s key is a U32 DISTANCE and `max` is FIRST-WINS, so the fold uses `>`
-#     and not `>=` -- the notes' rule that a chained reduce separates first-wins from
-#     last-wins only if the two ops differ. `ra0_a7` against `ra1_a7` is the pair of
-#     rows that pins the tie-break.
+#     `dedup(u.src)` without reversing `lr`. The walk DIRECTION is also the row:
+#     `ra_lr.go` walks `rest` head-first, so the list is `List.reverse`d first, or
+#     uop 0 is labelled 11.
+#   * `alloc`'s key is a U32 DISTANCE and `max` is FIRST-WINS, so the fold keeps the
+#     INCUMBENT on a tie -- `ra0_a7` against `ra1_a7` is the pair of rows that pins
+#     the tie-break. WHAT THE DESIGN MISSED is the seed: `max` starts from the first
+#     candidate, a distance seed cannot both lose to the first candidate and win a
+#     tie, so `RaBd` carries a `f` BIT for "this is the seed".
 #   * `live.pop` is the only deletion in the pass and an assoc list has none, so it
 #     is a FILTER; the RANGE prologue then walks `live.keys() | spills.keys()`, whose
-#     Python order is ADDRESS-DEPENDENT and is removed by the sort at :83.
-#   * `sorted_uses`' four-component key packs into ONE U32 for the same reason
-#     `lt_key` does: a `List.sort` comparator is `@a -> @b -> Bool` with BARE
-#     parameters, so it can read each of its two arguments once.
-# THE THREE THINGS THAT COST THE MOST, and all three are real:
-#   1. A `continue` that must SKIP a state-mutating call cannot be a `Bool.pick`
-#      arm, because `Bool.pick` evaluates BOTH arms and `fill` calls `alloc`, which
-#      POPS out of `live`. And `match` may not scrutinise a call, so the verdict has
-#      to be carried in a one-field record and the `match` has to destructure a
-#      BINDER. That is a two-restriction interaction.
+#     Python order is ADDRESS-DEPENDENT and is removed by the sort at :83 -- so the
+#     union is a CONCATENATION and the duplicate is dropped AFTER the sort.
+# WHAT THE DESIGN GOT WRONG, and all four are the reason the mutation table is long:
+#   * `sorted_uses`' four-component key does NOT pack into one `U32` the way `lt_key`
+#     does: the third slot is a `String`. It is a FOUR-LEVEL comparator (`su_le`) in
+#     `helpers.bend`'s `ix_le` shape, each level reading each of its two arguments
+#     once, which is all `List.sort`'s bare-parameter comparator allows.
+#   * A `continue` that must SKIP a state-mutating call is a `match` on a BOOL
+#     PARAMETER, and `Bool.pick` is NOT the tool: `Bool.pick` CHOOSES an arm and does
+#     not sequence one, so three drafted folds that used it as an `if` around a
+#     recursive call silently DROPPED the rest of the list. The one place `Bool.pick`
+#     IS right is `ra_w`, whose discarded arm does not recurse.
+#   * `tb_put` APPENDS its `vs` to an existing bucket, so `lr[v].append(n)` is
+#     `tb_put(t, v, 0, [n])` and NOT `tb_put` of `old ++ [n]`, and `reals[i][v] = r`
+#     needs the REPLACE primitive `tb_vput`. Both answer `old ++ old ++ ...` when
+#     written the obvious way, and both are rows.
+#   * `live` must be asked WHETHER A KEY IS THERE. See W5b at the file's head.
+# THE THINGS THAT COST THE MOST, and all three are real:
+#   1. `match` may not scrutinise a CALL, so every `continue` needs a Bool parameter
+#      threaded down to a `match` -- and the one skip whose arms BOTH recurse
+#      (`ra_w`'s dedup-after-sort) cannot be a guard def at all, because that is the
+#      mutual recursion bend refuses.
 #   2. A `List`-based accumulator walk whose step reads the head needs the shrinking
 #      argument BEFORE any computed one -- bend's "a decreasing self-call" check reads
 #      arguments left to right and wants every argument before the first shrink to be
-#      unchanged. Five drafted folds had to be re-ordered for it.
+#      unchanged. Every walk here is `(rest, ...)` for that reason.
 #   3. The drafted epilogue walk over `insert_before`'s pair list would not elaborate:
 #      bend reported "expected cases for Nil" for a `case Nil{}` arm that is
-#      textually first, and the drafted 3-element cover (`+v <> +r <> +q`) was the
-#      only thing that could be wrong. That is where the budget ran out.
-# SO: the `ra0_*`, `ra1_*`, `ra2_*` and `rw_none` rows are ABSENT from this file's
-# `main` and PRESENT in the oracle, and the diff shows them as missing lines. That is
-# the wall, and it is reported as a wall rather than closed with a row that agrees
-# with nothing.
+#      textually first. The cause is `tb_pput`'s own cover: a pair list is EVEN by
+#      construction, so `case +k <> r <> +q` never sees the last pair and a 2-element
+#      arm is needed before the 1-element `case _ <> _` cover.
+# `ra0_*`, `ra1_*`, `ra2_*` and `rw_none` ARE in `main`, between `se_miss` and
+# `rw_tbl_len`, in the oracle's order.
 # ===========================================================================
 
 # `PSEUDO_OPS` AS A TABLE, so `ra_pseudo_n` COUNTS it. A literal `8` is a row that no
@@ -1919,6 +1986,1170 @@ def sle(a: String, b: String) -> Bool:
 
 def ra_tbl_ops() -> String:
   String.join(List.sort(String, sle, ra_ops_name(O.PMEntry.ops(cfg_entry(ra_tbl(), 0n)), Nil{})), " ")
+
+# `regalloc.py:10-97` -- THE CONTEXT, THE MAIN LOOP, THE REWRITE. PORTED.
+#
+# ---------------------------------------------------------------------------
+# W5 A REGISTER IS A `U32`, and it is not a shape dodge.
+#
+# `Register` (renderer/isa/__init__.py:9-18) is a FROZEN DATACLASS of
+# `(name, index, _cons, size)`, so every `isinstance` / `in` / `!=` / `max` over
+# registers in this pass is EQUALITY over four fields and not identity. `cons` is
+# `self._cons or (self,)` (:16) and `__repr__` is `self.name` (:18). An intern
+# table turns that equality into `U32` equality, which is what `frozen=True`
+# already means, and it is why the ORACLE and the PORT compare the same thing: the
+# oracle's `Regs.ix(r)` is a list index and `Ra.nm(ra_uni(un, v))` reads that
+# list, so `ra<t>_vregs` prints positions both sides.
+#
+# `Register.size` is NOT CARRIED, and that is a measured omission rather than a
+# convenience: the only two places Python reads it are `replace(reg, size=v.size)`
+# in the rewrite (:106, :108, :111), and `str(Register)` is `self.name`, so a
+# changed size CANNOT move a printed row. A field nothing reads is a field that
+# silently always carries its fixture value.
+#
+# `u.tag` IS NOT THE ARENA'S TAG TUPLE. `ops.bend:780-785` types `TTuple` as a
+# list of UOP INDICES, because `ops.py:547` says a tag tuple holds UOps, and a
+# register is not a UOp -- putting register ids in `TTuple` would make `eq_tag`
+# compare registers as uop indices. So the pass reads a `RaUop` (`op`, `srcs`,
+# `defs`), which are the ONLY three of `u`'s attributes regalloc.py ever reads,
+# and `defs` being empty is `isinstance(u.tag, tuple)` being False on this
+# fixture: `rdef` returns `u.tag[0]` when the tag is a tuple and the tag itself
+# otherwise (isa:31), and every tag here is either None or a tuple of Registers.
+# The rest of this file uses `ops.bend`'s readers; THIS pass does not, and that
+# is the exception the header above names.
+#
+# ---------------------------------------------------------------------------
+# THE FIVE-FIELD STATE. `spills`, `reals`, `insert_before`, `live` and `live_ins`
+# are five dicts Python mutates in place; there is no mutable store, so they are
+# fields of one `Data` record and every step threads it. `RaSt` also carries the
+# three CONSTANTS Python hangs off `self` -- `uops`, `ren` (`two_addr`) and the
+# live-range table -- so the record is `self` and not a bag of scratch.
+#
+#   lr  `live_range`      reals' vreg -> live range (:19)      BUILT by `ra_lr`
+#   lp  `loops`           range uop index -> last user         (:21)  BUILT by `ra_lr`
+#   sp  `spills`          vreg -> stack slot                   (:33)
+#   re  `reals`           uop index -> [v,r,v,r,...]           (:34)
+#   ib  `insert_before`   uop index -> [v,r,v,r,...]           (:35)
+#   lv  `live`            vreg -> real                         (:36)
+#   ns  `live_ins`        THE STACK of live-in maps            (:37)
+#   in  the prologue's `live_in`, one at a time               (:84)
+#
+# `live_ins` is a STACK (`append` at :90, `pop` at :96) and `List.append` is a
+# PREPEND, so the head is the most recent entry and `pop` is dropping the head.
+# Nesting therefore needs no reversal, which is why it is a list and not a table.
+#
+# `spills[v]` is a STACK SLOT and tinygrad's own `LinearContext.assign_spill_slot`
+# is `NotImplementedError` (isa:48), so there is no slot to store: the port keeps
+# a presence bit and derives the slot from the register's name, which is exactly
+# what the oracle's `FakeCtx` does (`"slot:" + r.name`) and what the header above
+# says it does.
+#
+# ---------------------------------------------------------------------------
+# `lr[v][-1]` IS A MAX FOLD, NOT A LAST-ELEMENT READ. The live-range walk is
+# BACKWARD (`reversed(list(enumerate(uops)))`, :22) and each index goes in with
+# `insert(0, idx)` (:26), so `lr[v]` comes out ASCENDING and `lr[v][-1]` is the
+# largest index seen so far -- which is what `s <= lr[v][-1] < e` (:28) needs.
+# That also makes the loop-interval APPEND (:28) the one step that leaves `lr`
+# unsorted-if-you-look, and it appends a value LARGER than every element before
+# it (`s <= lr[v][-1] < e` with `e > lr[v][-1]`), so the list stays ascending and
+# `ra_dist`'s "next use at or after i" is a MIN over the tail, not a scan for the
+# first match. The `H.dedup_u32` in this file is a PREPEND and could not be
+# reused for `dedup(u.src)` without reversing `lr`.
+#
+# `alloc`'s KEY IS A U32 DISTANCE and `max` is FIRST-WINS (:43-44), so the fold
+# keeps the incumbent on a tie -- `U32.is_lt(incumbent, challenger)`. The first
+# candidate is kept by seeding the incumbent's distance with `len(uops) + 1`,
+# which is above every real key; seeding it with 0 would drop the first candidate
+# whenever its distance is 0, and a distance of 0 is a use at exactly `i`.
+# `ra0_a7` against `ra1_a7` is the row pair that pins the tie-break: they differ
+# (`v4>10->rcx>1` against `v4>10->rdx>2`) only because `is_two_address` reorders
+# `cons` (:72-74) and a reordering is invisible without a tie.
+#
+# `live.pop` (:45) is the ONLY deletion in the pass and an assoc list has none, so
+# it is a FILTER (`ra_del`). The RANGE prologue then walks `live.keys() |
+# spills.keys()` (:82), whose Python order is ADDRESS-DEPENDENT -- and is removed
+# by the sort at :83, whose key `(next use, lr[k][0], k.name, k.index)` is a TOTAL
+# order on this fixture because a name and an index together name a register
+# uniquely. So the union is built as a CONCATENATION and deduplicated AFTER the
+# sort (`ra_w.go`'s `pv`), which is where a set union's order-independence is
+# actually spent.
+#
+# THE FOUR-COMPONENT SORT KEY IS NOT PACKED. `lt_key` packs `(rc, po)` into one
+# `U32` because both halves are small and bounded by a gated row; `sorted_uses`'s
+# key has a `String` in the third slot, so it is a FOUR-LEVEL comparator
+# (`su_le`) in the `helpers.bend` `ix_le` shape instead, and each level reads each
+# of its two arguments ONCE, which is all `List.sort`'s bare-parameter comparator
+# allows.
+#
+# ---------------------------------------------------------------------------
+# `continue` AND `match`. A stage that must SKIP work that mutates the threaded
+# state cannot be a `Bool.pick` arm in the ARM position: `Bool.pick` evaluates
+# both arms, and a discarded `fill` is harmless only because this port is pure --
+# which is a style, not a guarantee. Every such guard here is a `match` on a BOOL
+# PARAMETER (`ra_lr.ps`, `ra_uses.ex`, `ra_w.step`, `ra_epi.ex`, `ra_use.hit`,
+# `ra_w.get`, `ra_alloc.done`, `ra_fill.slot`), which bend allows and which
+# evaluates one arm. Five drafted folds also had to be re-ordered so the SHRINKING
+# argument comes first in every self-call.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# THE INTERN TABLE. `Regs` in the oracle is a growable LIST of `(name, index,
+# cons)` and an index into it, so it is a list here and not an assoc table: a
+# register's own intern index is its key. `Ru.nm` is `ra<t>_vregs`' name column
+# and `Ra.ix`/`Ra.cs` are `Register.index` and `Register.cons` -- the two fields
+# the sort key at :83 reads.
+# ---------------------------------------------------------------------------
+type Ru is Data:
+  Ru{nm: String, ix: U32, cs: List<&2, U32>}
+
+def Ru.nm(r: Ru) -> String:
+  match r:
+    case Ru{nm, ix, cs}: nm
+
+def Ru.ix(r: Ru) -> U32:
+  match r:
+    case Ru{nm, ix, cs}: ix
+
+def Ra.cs(r: Ru) -> List<&2, U32>:
+  match r:
+    case Ru{nm, ix, cs}: cs
+
+def ra_rnil() -> Ru:
+  Ru{"", 0, Nil{}}
+
+def ra_uni(+rs: List<&2, Ru>, k: U32) -> Ru:
+  Maybe.default(&2, Ru, List.get(&2, Ru, rs, U32.to_nat(k)), ra_rnil())
+
+# ---------------------------------------------------------------------------
+# ONE UOP. `op` is `u.op`, `ss` is `u.src` and `ds` is `u.tag` for a tag TUPLE.
+# `ds` empty is Python's `isinstance(u.tag, tuple)` being False, which `rdef`
+# reads as "not a Register".
+# ---------------------------------------------------------------------------
+type RaUop is Data:
+  RaUop{op: O.Op, ss: List<&2, U32>, ds: List<&2, U32>}
+
+def RaUop.op(u: RaUop) -> O.Op:
+  match u:
+    case RaUop{op, ss, ds}: op
+
+def RaUop.ss(u: RaUop) -> List<&2, U32>:
+  match u:
+    case RaUop{op, ss, ds}: ss
+
+def RaUop.ds(u: RaUop) -> List<&2, U32>:
+  match u:
+    case RaUop{op, ss, ds}: ds
+
+def ra_unil() -> RaUop:
+  RaUop{O.OpsCONST{}, Nil{}, Nil{}}
+
+def ra_at(+xs: List<&2, RaUop>, i: U32) -> RaUop:
+  Maybe.default(&2, RaUop, List.get(&2, RaUop, xs, U32.to_nat(i)), ra_unil())
+
+# `rdef` -- isa:29-31. `u.tag[0]` for a tag tuple and the tag itself otherwise,
+# and the `NOOP/AFTER/BITCAST` hop is unreachable here because those three ops
+# carry no defs in either fixture.
+def ra_rdef(ds: List<&2, U32>) -> U32:
+  match ds:
+    case Nil{}    : u32_none()
+    case d <> +t : d
+
+# THE HEAD, OR NONE. `uses[0]` at :73 is `None` when the uop has no srcs and
+# `None in cons` is False, so the None and the register case cannot share an arm.
+def hd0(xs: List<&2, U32>) -> U32:
+  match xs:
+    case Nil{}    : u32_none()
+    case x <> +t  : x
+
+def u32_in.go(+xs: List<&2, U32>, +k: U32) -> Bool:
+  match xs:
+    case Nil{}    : False{}
+    case x <> +t  : Bool.pick(Bool, U32.is_eq(x, k), True{}, u32_in.go(t, k))
+
+def u32_in(xs: List<&2, U32>, k: U32) -> Bool:
+  u32_in.go(xs, k)
+
+# ---------------------------------------------------------------------------
+# THE STATE. Ten fields, and `RaSt.ops` / `RaSt.un` / `RaSt.ta` are `self.uops`,
+# `self.ren` and `ren.is_two_address` -- constants Python hangs off the context.
+# ---------------------------------------------------------------------------
+type RaSt is Data:
+  RaSt{lr: RaTb, lp: RaTb, sp: RaTb, re: RaTb, ib: RaTb, lv: RaTb,
+       ns: List<&2, RaTb>, in: RaTb, ops: List<&2, RaUop>, un: List<&2, Ru>, ta: Bool}
+
+def RaSt.lr(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: lr
+
+def RaSt.lp(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: lp
+
+def RaSt.sp(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: sp
+
+def RaSt.re(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: re
+
+def RaSt.ib(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: ib
+
+def RaSt.lv(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: lv
+
+def RaSt.ns(s: RaSt) -> List<&2, RaTb>:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: ns
+
+def RaSt.in(s: RaSt) -> RaTb:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: in
+
+def RaSt.ops(s: RaSt) -> List<&2, RaUop>:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: ops
+
+def RaSt.un(s: RaSt) -> List<&2, Ru>:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: un
+
+def RaSt.ta(s: RaSt) -> Bool:
+  match s:
+    case RaSt{lr, lp, sp, re, ib, lv, ns, in, ops, un, ta}: ta
+
+# THE SEVEN WRITERS, ONE PER FIELD. There is no record-update syntax, so a
+# write spells all eleven fields; that is the price of no mutable store and it is
+# paid once per table instead of once per write site.
+def ra_st.lr(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{t, RaSt.lp(s), RaSt.sp(s), RaSt.re(s), RaSt.ib(s), RaSt.lv(s), RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.lp(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), t, RaSt.sp(s), RaSt.re(s), RaSt.ib(s), RaSt.lv(s), RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.sp(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), t, RaSt.re(s), RaSt.ib(s), RaSt.lv(s), RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.re(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), RaSt.sp(s), t, RaSt.ib(s), RaSt.lv(s), RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.ib(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), RaSt.sp(s), RaSt.re(s), t, RaSt.lv(s), RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.lv(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), RaSt.sp(s), RaSt.re(s), RaSt.ib(s), t, RaSt.ns(s),
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.ns(+s: RaSt, t: List<&2, RaTb>) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), RaSt.sp(s), RaSt.re(s), RaSt.ib(s), RaSt.lv(s), t,
+       RaSt.in(s), RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st.in(+s: RaSt, t: RaTb) -> RaSt:
+  RaSt{RaSt.lr(s), RaSt.lp(s), RaSt.sp(s), RaSt.re(s), RaSt.ib(s), RaSt.lv(s),
+       RaSt.ns(s), t, RaSt.ops(s), RaSt.un(s), RaSt.ta(s)}
+
+def ra_st0(ops: List<&2, RaUop>, un: List<&2, Ru>, ta: Bool) -> RaSt:
+  RaSt{tb_new(), tb_new(), tb_new(), tb_new(), tb_new(), tb_new(), Nil{}, tb_new(),
+       ops, un, ta}
+
+# `len(uops)` -- the `default` in `alloc`'s key (:44) AND `ra_alloc`'s incumbent
+# seed. A list length, so never `U32`'s maximum.
+def ra_nm(+s: RaSt) -> U32:
+  U32.from_nat(List.length(&2, RaUop, RaSt.ops(s)))
+
+# THE ANSWER OF `alloc` AND `fill`: the register, and the state with `live`
+# popped. Two values out of one call, so one `Data` record.
+type Al is Data:
+  Al{r: U32, st: RaSt}
+
+def Al.r(+a: Al) -> U32:
+  match a:
+    case Al{r, st}: r
+
+def Al.st(+a: Al) -> RaSt:
+  match a:
+    case Al{r, st}: st
+
+# ===========================================================================
+# THE LIVE-RANGE PASS -- regalloc.py:22-29. BACKWARD, and the fuel is the
+# countdown so it is the first parameter of the self-call.
+# ===========================================================================
+
+# STEP 1, regalloc.py:26 -- `lr.setdefault(v, []).insert(0, idx)`. The prepend is
+# `tb_ins`' `pre` arm, and `u32_none()` is the "not a Register" filter: `rdef`
+# answered None for a CONST.
+# `Bool.pick` CHOOSES AN ARM and does not sequence one, so the filter is on the
+# TABLE and the walk is the call AROUND it. Written the other way round -- the
+# pick as the arm -- the arm that inserts also DISCARDS the rest of the list, and
+# the live range comes out with one index per uop and no more. That is what
+# `ra0_lr=v0>6:1 5 9` looked like before: v0 was the only src of uop 5.
+def ra_lr.d1.go(rest: List<&2, U32>, +i: U32, +t: RaTb) -> RaTb:
+  match rest:
+    case Nil{}   : t
+    case +v <> +r : ra_lr.d1.go(r, i, Bool.pick(RaTb, U32.is_ne(v, u32_none()),
+                                               tb_ins(True{}, t, v, 0, [i]), t))
+
+# STEP 2, regalloc.py:28 -- `lr[v].append(n)` where `n` is the max loop end over
+# the intervals CONTAINING `lr[v][-1]`. 0 is "no interval", which is Python's
+# `default=None` plus the truthiness of `n`; a loop end is never 0 because a
+# RANGE cannot be a src of uop 0.
+# `max((e for s,e in loops.items() if s <= lr[v][-1] < e), default=None)`. The
+# fold's own bound is `lo` and NOT the uop index: with `hi` where `lo` belongs the
+# test is `k <= lo < v` on the wrong pair and every loop whose end is above the
+# current uop index matches, so an interval end is appended to a live range that
+# does not contain it.
+def ra_hi.go(+es: List<&2, RaEn>, +lo: U32, +best: U32) -> U32:
+  match es:
+    case Nil{}   : best
+    case e <> +r : ra_hi.go(r, lo,
+                     Bool.pick(U32, Bool.and(U32.is_le(RaEn.k(e), lo), U32.is_lt(lo, RaEn.v(e))),
+                               U32.max(best, RaEn.v(e)), best))
+
+def ra_hi(+t: RaTb, lo: U32) -> U32:
+  ra_hi.go(RaTb.es(t), lo, 0)
+
+def tb_last(+t: RaTb, k: U32) -> U32:
+  Maybe.default(&2, U32, List.last(&2, U32, tb_vs(t, k)), 0)
+
+# `tb_put` APPENDS its `vs` -- it is the pair-list primitive (regalloc.py:34-35
+# are `dict[int, dict[Register, Register]]`, one flat list per bucket) -- so
+# `lr[v].append(n)` is `tb_put(t, v, 0, [n])` and NOT `tb_put` of `old ++ [n]`,
+# which answers `old ++ old ++ [n]`.
+def ra_lr.d2.put(+t: RaTb, +v: U32, n: U32) -> RaTb:
+  tb_put(t, v, 0, [n])
+
+def ra_lr.d2.ok(+lp: RaTb, +t: RaTb, +v: U32) -> Bool:
+  Bool.and(tb_has(t, v), U32.is_ne(ra_hi(lp, tb_last(t, v)), 0))
+
+def ra_lr.d2.go(+ds: List<&2, U32>, +i: U32, +t: RaTb, +lp: RaTb) -> RaTb:
+  match ds:
+    case Nil{}    : t
+    case v <> +r  : ra_lr.d2.go(r, i,
+                     Bool.pick(RaTb, ra_lr.d2.ok(lp, t, v),
+                               ra_lr.d2.put(t, v, ra_hi(lp, tb_last(t, v))), t),
+                     lp)
+
+def ra_lr.d2(+s: RaSt, +i: U32, +u: RaUop) -> RaSt:
+  ra_st.lr(s, ra_lr.d2.go(RaUop.ds(u), i, RaSt.lr(s), RaSt.lp(s)))
+
+# `dedup(u.src)` (:25) DEDUPS THE UOPS and `rdef` runs afterwards, so two distinct
+# srcs carrying the same tag would still double-insert. Deduping the src list is
+# the faithful reading and the fixture's srcs are distinct, so the row cannot
+# tell the two apart.
+def ra_rdefs.go(rest: List<&2, U32>, +ops: List<&2, RaUop>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match rest:
+    case Nil{}    : acc
+    case +s <> +r  : Bool.pick(List<&2, U32>, u32_in(r, s), acc,
+                              ra_rdefs.go(r, ops, List.append(&2, U32, acc, [ra_rdef(RaUop.ds(ra_at(ops, s)))])))
+
+def ra_rdefs(+ops: List<&2, RaUop>, ss: List<&2, U32>) -> List<&2, U32>:
+  ra_rdefs.go(ss, ops, Nil{})
+
+# regalloc.py:29 -- `loops[idx] = max(j for j,x in enumerate(uops) if u in x.src)`.
+# A RANGE'S OWN SOURCES ARE NOT CONSULTED, and `max` is over the WHOLE list, so
+# the walk is ascending from 0 and the answer is the last hit.
+def ra_lastuse.go(+ops: List<&2, RaUop>, +i: U32, +k: U32, +best: U32) -> U32:
+  match ops:
+    case Nil{}    : best
+    case u <> +r  : ra_lastuse.go(r, U32.add(i, 1), k,
+                        Bool.pick(U32, u32_in(RaUop.ss(u), k), i, best))
+
+def ra_lastuse(ops: List<&2, RaUop>, k: U32) -> U32:
+  ra_lastuse.go(ops, 0, k, 0)
+
+def ra_lr.d1(+s: RaSt, +i: U32, +u: RaUop) -> RaSt:
+  ra_st.lr(s, ra_lr.d1.go(List.append(&2, U32, RaUop.ds(u), ra_rdefs(RaSt.ops(s), RaUop.ss(u))),
+                          i, RaSt.lr(s)))
+
+# THE THREE STEPS, IN PYTHON'S ORDER, each behind its own guard. `ra_lr.ps` is
+# `regalloc.py:23`'s `continue`, and `ra_lr.lp` is :29.
+def ra_lr.ps(ps: Bool, s: RaSt, +i: U32, +u: RaUop) -> RaSt:
+  match ps:
+    case True{} : s
+    case False{}: ra_lr.d2(ra_lr.d1(s, i, u), i, u)
+
+def ra_lr.lp(rng: Bool, +s: RaSt, +i: U32, +ops: List<&2, RaUop>) -> RaSt:
+  match rng:
+    case True{} : ra_st.lp(s, tb_put(RaSt.lp(s), i, ra_lastuse(ops, i), Nil{}))
+    case False{}: s
+
+def ra_lr.st(+s: RaSt, +i: U32, +u: RaUop) -> RaSt:
+  ra_lr.lp(lt_is_range(RaUop.op(u)), ra_lr.ps(ra_is_pseudo(RaUop.op(u)), s, i, u), i,
+           RaSt.ops(s))
+
+def ra_lr.go(rest: List<&2, RaUop>, +i: U32, s: RaSt) -> RaSt:
+  match rest:
+    case Nil{}  : s
+    case u <> +r : ra_lr.go(r, U32.sub(i, 1), ra_lr.st(s, i, u))
+
+# ===========================================================================
+# `alloc` -- regalloc.py:39-45. PICK THE REGISTER WITH THE FURTHEST NEXT USE,
+# FREE FIRST, `cons` ORDER BREAKING TIES.
+# ===========================================================================
+
+# `next((j-i for j in ([] if vreg is None else lr[vreg]) if j >= i), len(uops))`
+# -- the `[]` arm is `lr[None]` answering empty, which `tb_vs` does for free
+# because `u32_none()` is not a key.
+def ra_dist.min(+dj: U32, +d: U32) -> U32:
+  Bool.pick(U32, U32.is_lt(dj, d), dj, d)
+
+def ra_dist.keep(ge: Bool, +j: U32, +i: U32, +d: U32) -> U32:
+  match ge:
+    case True{} : ra_dist.min(U32.sub(j, i), d)
+    case False{}: d
+
+def ra_dist.go(+ls: List<&2, U32>, +i: U32, +d: U32) -> U32:
+  match ls:
+    case Nil{}   : d
+    case j <> +r : ra_dist.go(r, i, ra_dist.keep(U32.is_le(i, j), j, i, d))
+
+def ra_dist(ls: List<&2, U32>, i: U32, d: U32) -> U32:
+  ra_dist.go(ls, i, d)
+
+# `live_inv = {v:k for k,v in live.items()}` -- the INVERSE, so a walk of `live`
+# answering `None` off the end.
+def ra_linv.go(+es: List<&2, RaEn>, +r: U32) -> U32:
+  match es:
+    case Nil{}   : u32_none()
+    case e <> +t : Bool.pick(U32, U32.is_eq(RaEn.v(e), r), RaEn.k(e), ra_linv.go(t, r))
+
+def ra_linv(+es: List<&2, RaEn>, r: U32) -> U32:
+  ra_linv.go(es, r)
+
+# THE `max(...)` FOLD'S INCUMBENT. `RaBd{d, r, v}` is the `(r, live_inv.get(r))`
+# pair of :43 with its key, and `ra_alloc.keep` is first-wins on a tie.
+type RaBd is Data:
+  RaBd{d: U32, r: U32, v: U32, f: Bool}
+
+def RaBd.d(b: RaBd) -> U32:
+  match b:
+    case RaBd{d, r, v, f}: d
+
+def RaBd.r(b: RaBd) -> U32:
+  match b:
+    case RaBd{d, r, v, f}: r
+
+def RaBd.v(b: RaBd) -> U32:
+  match b:
+    case RaBd{d, r, v, f}: v
+
+# `f` IS "this is the seed". It is a FIELD and not `d`'s value because a real
+# candidate whose register is FREE also has `v == none`, and `alloc`'s first
+# candidate has to win outright -- `max` starts from the first element -- while
+# every later tie must LOSE. A distance seed cannot express that: the keys are
+# 0..len(uops) and the seed must be beaten by the first candidate AND lose a tie,
+# so the first candidate needs a flag of its own.
+def RaBd.f(b: RaBd) -> Bool:
+  match b:
+    case RaBd{d, r, v, f}: f
+
+def ra_key(+lv: RaTb, +lr: RaTb, +r: U32, i: U32, +nmx: U32) -> RaBd:
+  RaBd{ra_dist(tb_vs(lr, ra_linv(RaTb.es(lv), r)), i, nmx), r, ra_linv(RaTb.es(lv), r), False{}}
+
+# FIRST-WINS. `Bool.pick` answers `b` when the challenger is STRICTLY further out,
+# and `f` makes the first candidate take the empty fold.
+def ra_alloc.keep(better: Bool, a: RaBd, b: RaBd) -> RaBd:
+  Bool.pick(RaBd, better, b, a)
+
+def ra_alloc.go(+cs: List<&2, U32>, +lv: RaTb, +lr: RaTb, +i: U32, +nmx: U32, +a: RaBd) -> RaBd:
+  match cs:
+    case Nil{}   : a
+    case r <> +t : ra_alloc.go(t, lv, lr, i, nmx,
+                    ra_alloc.keep(Bool.or(RaBd.f(a), U32.is_lt(RaBd.d(a), RaBd.d(ra_key(lv, lr, r, i, nmx)))),
+                                  a, ra_key(lv, lr, r, i, nmx)))
+
+def ra_alloc.go2(+cs: List<&2, U32>, +s: RaSt, +i: U32, a: RaBd) -> RaBd:
+  ra_alloc.go(cs, RaSt.lv(s), RaSt.lr(s), i, ra_nm(s), a)
+
+# `live.pop(vreg)` -- the ONLY deletion in the pass, and a FILTER.
+def ra_del.go(+es: List<&2, RaEn>, +k: U32) -> List<&2, RaEn>:
+  match es:
+    case Nil{}   : Nil{}
+    case e <> +r : Bool.pick(List<&2, RaEn>, U32.is_eq(RaEn.k(e), k), ra_del.go(r, k),
+                             List.append(&2, RaEn, [e], ra_del.go(r, k)))
+
+def ra_del(+t: RaTb, k: U32) -> RaTb:
+  RaTb{ra_del.go(RaTb.es(t), k)}
+
+def ra_alloc.done(hit: Bool, +b: RaBd, +s: RaSt) -> Al:
+  match hit:
+    case True{} : Al{RaBd.r(b), ra_st.lv(s, ra_del(RaSt.lv(s), RaBd.v(b)))}
+    case False{}: Al{RaBd.r(b), s}
+
+def ra_alloc.of(+cs: List<&2, U32>, +s: RaSt, +i: U32, +b: RaBd) -> Al:
+  ra_alloc.done(U32.is_ne(RaBd.v(b), u32_none()), b, s)
+
+def ra_alloc(+cs: List<&2, U32>, +s: RaSt, +i: U32) -> Al:
+  ra_alloc.of(cs, s, i, ra_alloc.go2(cs, s, i, RaBd{0, 0, u32_none(), True{}}))
+
+# ===========================================================================
+# `fill` -- regalloc.py:48-53. ASSIGN A SPILL SLOT, ALLOCATE, RECORD THE FILL.
+# `cons=None` IS THE CALLER PASSING `v.cons`, which is what the two call sites
+# do (:62 and :88 versus :97's `(r,)`).
+# ===========================================================================
+def ra_fill.slot(hit: Bool, +s: RaSt, +v: U32) -> RaSt:
+  Bool.pick(RaSt, hit, s, ra_st.sp(s, tb_put(RaSt.sp(s), v, 1, Nil{})))
+
+def ra_fill.put(+a: Al, +i: U32, +v: U32) -> Al:
+  Al{Al.r(a), ra_st.ib(Al.st(a), tb_put(RaSt.ib(Al.st(a)), i, 0,
+                                        tb_pput(tb_vs(RaSt.ib(Al.st(a)), i), v, Al.r(a))))}
+
+def ra_fill.of(+cs: List<&2, U32>, +s: RaSt, +i: U32, v: U32) -> Al:
+  ra_fill.put(ra_alloc(cs, s, i), i, v)
+
+# W5b: `live` MUST BE ASKED WHETHER A KEY IS THERE and not whether its value is
+# non-zero. `tb_get` answers 0 for a missing key -- the file's `None` convention,
+# which is right for an arena whose index 0 is the bottom node and WRONG here,
+# because rax is interned at 0. Asking "is 0 the answer" makes every vreg that
+# holds rax look unloaded, so every use refills it: `ra0_a5` answers rbx against
+# the oracle's rax and `ra0_a7` refills both of its uses.
+def ra_fill(cs: List<&2, U32>, +s: RaSt, i: U32, +v: U32) -> Al:
+  ra_fill.of(cs, ra_fill.slot(U32.is_ne(tb_get(RaSt.sp(s), v), 0), s, v), i, v)
+
+# THE STACK SLOT. `assign_spill_slot` is the oracle's `"slot:" + r.name` and the
+# port derives the same string, so `ra<t>_spills` prints a value neither side
+# stores.
+def ra_slot(+un: List<&2, Ru>, v: U32) -> String:
+  String.concat(["slot:", Ru.nm(ra_uni(un, v))])
+
+def ra_cons(+un: List<&2, Ru>, v: U32) -> List<&2, U32>:
+  Ra.cs(ra_uni(un, v))
+
+# ===========================================================================
+# THE MAIN LOOP -- regalloc.py:55-97.
+# ===========================================================================
+
+# `self.reals.setdefault(i, {})[v] = live[v]` -- :63 and :77, ONE def.
+def ra_set(+s: RaSt, i: U32, v: U32, r: U32) -> RaSt:
+  ra_st.re(s, tb_pset(RaSt.re(s), i, v, r))
+
+# `live[v] = r` -- :62, :76, :88, :97, the ASSIGNMENT alone.
+def ra_lv(+s: RaSt, +v: U32, +r: U32) -> RaSt:
+  ra_st.lv(s, tb_put(RaSt.lv(s), v, r, Nil{}))
+
+# :76-77 IN ONE DEF: `live[v] = alloc(...)` AND `reals[i][v] = live[v]`. :62-63 is
+# the same pair after a `fill`, so both sites call this.
+def ra_put(+a: Al, i: U32, +v: U32) -> RaSt:
+  ra_set(ra_lv(Al.st(a), v, Al.r(a)), i, v, Al.r(a))
+
+# THE USES -- :58-63. `live.get(rdef(s))` (:73) is None when the src is not a
+# Register OR the vreg is not live, and both collapse into "the table says 0".
+def ra_lg(+lv: RaTb, +v: U32) -> U32:
+  Bool.pick(U32, Bool.not(tb_has(lv, v)), u32_none(), tb_get(lv, v))
+
+def ra_use.put(+a: Al, i: U32, v: U32) -> RaSt:
+  ra_put(a, i, v)
+
+def ra_use.hit(hit: Bool, +s: RaSt, +i: U32, +v: U32) -> RaSt:
+  match hit:
+    case True{} : ra_use.put(ra_fill(ra_cons(RaSt.un(s), v), s, i, v), i, v)
+    case False{}: ra_set(s, i, v, tb_get(RaSt.lv(s), v))
+
+# `if not isinstance(v := rdef(s), Register): continue` -- :61. A src with no
+# defs is NOT a vreg and the whole use is skipped; without this guard `live` is
+# handed a `u32_none()` KEY, every program point grows a spill, and `ra_slot`
+# prints the empty register's name.
+def ra_use.got(isreg: Bool, hit: Bool, +s: RaSt, +i: U32, +v: U32) -> RaSt:
+  match isreg:
+    case True{} : ra_use.hit(hit, s, i, v)
+    case False{}: s
+
+def ra_use(+s: RaSt, i: U32, +v: U32) -> RaSt:
+  ra_use.got(U32.is_ne(v, u32_none()), Bool.not(tb_has(RaSt.lv(s), v)), s, i, v)
+
+def ra_uses.go(rest: List<&2, U32>, +i: U32, +s: RaSt, +ops: List<&2, RaUop>) -> RaSt:
+  match rest:
+    case Nil{}    : s
+    case j <> +r  : ra_uses.go(r, i, ra_use(s, i, ra_rdef(RaUop.ds(ra_at(ops, j)))), ops)
+
+# `if u.op in (Ops.END, Ops.BACKEDGE): continue` -- :60. It skips the whole uses
+# stage, which is why it is a guard on the stage and not on one src.
+def ra_uses.ex(ex: Bool, +s: RaSt, +i: U32, ss: List<&2, U32>, +ops: List<&2, RaUop>) -> RaSt:
+  match ex:
+    case True{} : s
+    case False{}: ra_uses.go(ss, i, s, ops)
+
+# THE DEFS -- :66-77. `alloc(cons, i+1 if u.op is not Ops.RANGE else i)` (:76)
+# is `ra_k`, and it is the ONE place the two differ.
+def ra_k(op: O.Op, +i: U32) -> U32:
+  Bool.pick(U32, lt_is_range(op), i, U32.add(i, 1))
+
+def ra_def.put(+a: Al, i: U32, v: U32) -> RaSt:
+  ra_put(a, i, v)
+
+def ra_def(cs: List<&2, U32>, +s: RaSt, +i: U32, +op: O.Op, v: U32) -> RaSt:
+  ra_def.put(ra_alloc(cs, s, ra_k(op, i)), i, v)
+
+# THE TWO-ADDRESS REORDER -- :72-74. `uses[0]` goes first so it wins a tie, and
+# the rest of `cons` follows with every register `uses` holds removed -- so a
+# register reused from TWO srcs is not offered twice.
+def ra_tw.go(+us: List<&2, U32>, cs: List<&2, U32>, +pre: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case Nil{}    : pre
+    case +r <> +t  : ra_tw.go(us, t, Bool.pick(List<&2, U32>, u32_in(us, r), pre,
+                                              List.append(&2, U32, pre, [r])))
+
+def ra_tw.pre(+hd: U32, cs: List<&2, U32>) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, Bool.and(U32.is_ne(hd, u32_none()), u32_in(cs, hd)), [hd], Nil{})
+
+def ra_tw(+us: List<&2, U32>, +cs: List<&2, U32>) -> List<&2, U32>:
+  ra_tw.go(us, cs, ra_tw.pre(hd0(us), cs))
+
+def ra_uses_tw.go(rest: List<&2, U32>, +lv: RaTb, +ops: List<&2, RaUop>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match rest:
+    case Nil{}    : acc
+    case s <> +r  : ra_uses_tw.go(r, lv, ops, List.append(&2, U32, acc, [ra_lg(lv, ra_rdef(RaUop.ds(ra_at(ops, s))))]))
+
+def ra_uses_tw(+lv: RaTb, +ops: List<&2, RaUop>, ss: List<&2, U32>) -> List<&2, U32>:
+  ra_uses_tw.go(ss, lv, ops, Nil{})
+
+# `cons` for one def, and it is the ONLY place `is_two_address` is consulted:
+# `j == 0` is `ra_defs.hd`'s head arm and the tail is plain `v.cons`.
+def ra_cons2(+s: RaSt, +ss: List<&2, U32>, +v: U32) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, RaSt.ta(s),
+            ra_tw(ra_uses_tw(RaSt.lv(s), RaSt.ops(s), ss), ra_cons(RaSt.un(s), v)),
+            ra_cons(RaSt.un(s), v))
+
+def ra_defs.go(rest: List<&2, U32>, +s: RaSt, +i: U32, +op: O.Op, +ss: List<&2, U32>, +un: List<&2, Ru>) -> RaSt:
+  match rest:
+    case Nil{}    : s
+    case +v <> +r  : ra_defs.go(r, ra_def(ra_cons(un, v), s, i, op, v), i, op, ss, un)
+
+def ra_defs.hd(rest: List<&2, U32>, +s: RaSt, +i: U32, +op: O.Op, +ss: List<&2, U32>, +un: List<&2, Ru>) -> RaSt:
+  match rest:
+    case Nil{}    : s
+    case +v <> +r  : ra_defs.go(r, ra_def(ra_cons2(s, ss, v), s, i, op, v), i, op, ss, un)
+
+def ra_defs(+s: RaSt, +i: U32, +op: O.Op, +ss: List<&2, U32>, ds: List<&2, U32>) -> RaSt:
+  ra_defs.hd(ds, s, i, op, ss, RaSt.un(s))
+
+# THE LOOP PROLOGUE -- :80-90. Move into registers the vars used in the loop,
+# sorted by next use, skipping any var whose constraints are already spoken for.
+def ra_inloop.go(+ls: List<&2, U32>, +i: U32, +e: U32, +acc: Bool) -> Bool:
+  match ls:
+    case Nil{}    : acc
+    case l <> +r  : Bool.pick(Bool, acc, True{},
+                              ra_inloop.go(r, i, e, Bool.and(U32.is_le(i, l), U32.is_lt(l, e))))
+
+def ra_inloop(ls: List<&2, U32>, i: U32, e: U32) -> Bool:
+  ra_inloop.go(ls, i, e, False{})
+
+def ra_used.go(es: List<&2, RaEn>, +i: U32, +e: U32, +lr: RaTb, +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
+    case Nil{}    : acc
+    case +en <> +r : ra_used.go(r, i, e, lr,
+                     Bool.pick(List<&2, U32>, ra_inloop(tb_vs(lr, RaEn.k(en)), i, e),
+                               List.append(&2, U32, acc, [RaEn.k(en)]), acc))
+
+# `live.keys() | spills.keys()` -- a SET UNION whose order is address-dependent
+# and which the sort at :83 then makes irrelevant, so it is a CONCATENATION and
+# the duplicate is dropped after the sort instead.
+def ra_used(+lv: RaTb, +sp: RaTb, +i: U32, +lr: RaTb, +e: U32) -> List<&2, U32>:
+  ra_used.go(List.append(&2, RaEn, RaTb.es(lv), RaTb.es(sp)), i, e, lr, Nil{})
+
+# THE SORT ELEMENT, the four components of :83 and the virtual they are about.
+# `d` is the next-use distance, `f` is `lr[k][0]`, `n` is `k.name`, `x` is
+# `k.index`.
+type Su is Data:
+  Su{d: U32, f: U32, n: String, x: U32, v: U32}
+
+def Su.d(s: Su) -> U32:
+  match s:
+    case Su{d, f, n, x, v}: d
+
+def Su.f(s: Su) -> U32:
+  match s:
+    case Su{d, f, n, x, v}: f
+
+def Su.n(s: Su) -> String:
+  match s:
+    case Su{d, f, n, x, v}: n
+
+def Su.x(s: Su) -> U32:
+  match s:
+    case Su{d, f, n, x, v}: x
+
+def Su.v(s: Su) -> U32:
+  match s:
+    case Su{d, f, n, x, v}: v
+
+# THE FOUR-LEVEL COMPARATOR, `helpers.bend`'s `ix_le` shape: `List.sort`'s
+# comparator has BARE parameters, so each level may read each of its two
+# arguments once, and `+` on a binder is exactly that permission. Python's `next`
+# has NO default at :83 and this passes 0; it never fires because `lr[k][0]` is
+# the definition index and a def's own index is `<= i`.
+def su_le.n1(eq: Bool, rest: Bool) -> Bool:
+  match eq:
+    case True{} : rest
+    case False{}: True{}
+
+def su_le.n0(le: Bool, eq: Bool, rest: Bool) -> Bool:
+  match le:
+    case True{} : su_le.n1(eq, rest)
+    case False{}: False{}
+
+def su_le(a: Su, b: Su) -> Bool:
+  match a b:
+    case Su{+d, +f, +n, +x, v} Su{+e, +g, +m, +y, w}:
+      su_le.n0(U32.is_le(d, e), U32.is_eq(d, e),
+        su_le.n0(U32.is_le(f, g), U32.is_eq(f, g),
+          su_le.n0(String.is_le(n, m), String.eq(n, m),
+            U32.is_le(x, y))))
+
+def ra_srt.go(vs: List<&2, U32>, +i: U32, +lr: RaTb, +un: List<&2, Ru>, +acc: List<&2, Su>) -> List<&2, Su>:
+  match vs:
+    case Nil{}    : acc
+    case +v <> +r  : ra_srt.go(r, i, lr, un,
+                     List.append(&2, Su, acc, [Su{ra_dist(tb_vs(lr, v), i, 0), at(tb_vs(lr, v), 0n),
+                                               Ru.nm(ra_uni(un, v)), Ru.ix(ra_uni(un, v)), v}]))
+
+def ra_srt(+vs: List<&2, U32>, +i: U32, +lr: RaTb, +un: List<&2, Ru>) -> List<&2, Su>:
+  List.sort(Su, su_le, ra_srt.go(vs, i, lr, un, Nil{}))
+
+# `set(v.cons).issubset(live_in.values())` -- :87. Every CONSTRAINT is already
+# taken, so there is no space for this var and it is skipped.
+def ra_invals(+es: List<&2, RaEn>, +r: U32) -> Bool:
+  match es:
+    case Nil{}   : False{}
+    case e <> +t : Bool.pick(Bool, U32.is_eq(RaEn.v(e), r), True{}, ra_invals(t, r))
+
+# `set(v.cons).issubset(live_in.values())` -- :87. EVERY constraint must be
+# spoken for, so this is an AND and not "absorb once true": `Bool.pick(acc,
+# True{}, ...)` answers True for the rest of the list after the first constraint
+# matches, an EMPTY `live_in` then blocks the FIRST var, and `live_ins` comes out
+# empty for the epilogue to pop -- which is `ra2_before=` with no entry at all.
+def ra_blk.go(cs: List<&2, U32>, +es: List<&2, RaEn>, acc: Bool) -> Bool:
+  match cs:
+    case Nil{}    : acc
+    case r <> +t  : ra_blk.go(t, es, Bool.and(acc, ra_invals(es, r)))
+
+def ra_blk(+li: RaTb, cs: List<&2, U32>) -> Bool:
+  ra_blk.go(cs, RaTb.es(li), True{})
+
+# :88-89 IS TWO WRITES TO TWO TABLES -- `live[v] = fill(v, i)` and then
+# `live_in[v] = live[v]` -- which is why `in` is a field of the state and not a local:
+# one step, two tables, and a def per write.
+def ra_in(+s: RaSt, +v: U32, +r: U32) -> RaSt:
+  ra_st.in(s, tb_put(RaSt.in(s), v, r, Nil{}))
+
+def ra_w.put(+s: RaSt, +v: U32, +r: U32) -> RaSt:
+  ra_in(ra_lv(s, v, r), v, r)
+
+def ra_w.put2(+a: Al, +v: U32) -> RaSt:
+  ra_w.put(Al.st(a), v, Al.r(a))
+
+def ra_w.get(hit: Bool, +s: RaSt, +i: U32, +v: U32) -> RaSt:
+  match hit:
+    case True{} : ra_w.put2(ra_fill(ra_cons(RaSt.un(s), v), s, i, v), v)
+    case False{}: ra_w.put(s, v, tb_get(RaSt.lv(s), v))
+
+def ra_w.step(skip: Bool, +e: Su, +s: RaSt, +i: U32) -> RaSt:
+  match skip:
+    case True{} : s
+    case False{}: ra_w.get(U32.is_ne(tb_get(RaSt.lv(s), Su.v(e)), u32_none()), s, i, Su.v(e))
+
+# THE DEDUP-AFTER-SORT, and WHY IT IS A `Bool.pick` AND NOT A GUARD. `pv` is the
+# previous element's virtual and starts at `u32_none()`, which no interned register
+# is, so the first element is never dropped and the union's duplicates -- and only
+# its duplicates -- are. The skip needs BOTH `dup` and `ra_blk` and it must skip a
+# `fill`, so it wants a `match` on a Bool parameter like every other guard here --
+# but both arms RECURSE, and bend refuses the mutual recursion a guard def plus one
+# walk would be. So the two arms are one `Bool.pick`, which is sound HERE and only
+# here: `Bool.pick` evaluates both arms, but the discarded arm (`ra_w.do`) does NOT
+# recurse, so the wasted work is a constant per element and the walk stays linear.
+# A discarded arm that recursed would be exponential in the list length.
+def ra_w.do(+e: Su, +s: RaSt, +i: U32) -> RaSt:
+  ra_w.get(Bool.not(tb_has(RaSt.lv(s), Su.v(e))), s, i, Su.v(e))
+
+def ra_w.block(dup: Bool, blk: Bool, +e: Su, +s: RaSt, +i: U32) -> RaSt:
+  Bool.pick(RaSt, Bool.or(dup, blk), s, ra_w.do(e, s, i))
+
+def ra_w.go(rest: List<&2, Su>, +s: RaSt, +i: U32, +pv: U32) -> RaSt:
+  match rest:
+    case Nil{}    : s
+    case +e <> +r  : ra_w.go(r, ra_w.block(U32.is_eq(Su.v(e), pv),
+                                          ra_blk(RaSt.in(s), ra_cons(RaSt.un(s), Su.v(e))),
+                                          e, s, i),
+                           i, Su.v(e))
+
+def ra_pro.us(+s: RaSt, +i: U32) -> List<&2, U32>:
+  ra_used(RaSt.lv(s), RaSt.sp(s), i, RaSt.lr(s), tb_get(RaSt.lp(s), i))
+
+def ra_pro.of(+s: RaSt, +i: U32) -> RaSt:
+  ra_st.ns(s, List.append(&2, RaTb, RaSt.ns(s),
+    [RaSt.in(ra_w.go(ra_srt(ra_pro.us(s, i), i, RaSt.lr(s), RaSt.un(s)),
+                     ra_st.in(s, tb_new()), i, u32_none()))]))
+
+def ra_pro.rn(rng: Bool, +s: RaSt, +i: U32) -> RaSt:
+  match rng:
+    case True{} : ra_pro.of(s, i)
+    case False{}: s
+
+# THE LOOP EPILOGUE -- :93-97. Reload what was live at loop entry, into the
+# register it was in, and only where it is not already there. `live_ins.pop()`
+# is the head, because the stack was pushed with a prepend.
+def ra_head(+ns: List<&2, RaTb>) -> RaTb:
+  Maybe.default(&2, RaTb, List.head(&2, RaTb, ns), tb_new())
+
+def ra_pop(+ns: List<&2, RaTb>) -> List<&2, RaTb>:
+  match ns:
+    case Nil{}   : Nil{}
+    case t <> +r : r
+
+def ra_epi.ok(+s: RaSt, +v: U32, r: U32) -> Bool:
+  Bool.and(tb_has(RaSt.lv(s), v), U32.is_eq(tb_get(RaSt.lv(s), v), r))
+
+def ra_epi.put(+a: Al, +v: U32) -> RaSt:
+  ra_lv(Al.st(a), v, Al.r(a))
+
+def ra_epi.ent(hit: Bool, +s: RaSt, +i: U32, +v: U32, +r: U32) -> RaSt:
+  match hit:
+    case True{} : s
+    case False{}: ra_epi.put(ra_fill([r], s, i, v), v)
+
+def ra_epi.go(rest: List<&2, RaEn>, +s: RaSt, +i: U32) -> RaSt:
+  match rest:
+    case Nil{}   : s
+    case +e <> +r : ra_epi.go(r, ra_epi.ent(ra_epi.ok(s, RaEn.k(e), RaEn.v(e)), s, i, RaEn.k(e), RaEn.v(e)), i)
+
+def ra_epi.of(+s: RaSt, +i: U32) -> RaSt:
+  ra_epi.go(RaTb.es(ra_head(RaSt.ns(s))), ra_st.ns(s, ra_pop(RaSt.ns(s))), i)
+
+def ra_epi.ex(ex: Bool, +s: RaSt, +i: U32) -> RaSt:
+  match ex:
+    case True{} : ra_epi.of(s, i)
+    case False{}: s
+
+# THE STEP, and the nesting ORDER IS PYTHON'S: uses, defs, prologue, epilogue.
+# Bend evaluates arguments before the callee branches, so the FIRST stage is the
+# innermost call.
+# THE FOUR STAGES, and bend evaluates arguments before the callee branches, so
+# PYTHON'S FIRST STAGE IS THE INNERMOST CALL: uses, then defs, then the prologue,
+# then the epilogue.
+def ra_step(+s: RaSt, +i: U32, +u: RaUop) -> RaSt:
+  ra_epi.ex(lt_is_exit(RaUop.op(u)),
+           ra_pro.rn(lt_is_range(RaUop.op(u)),
+                     ra_defs(ra_uses.ex(lt_is_exit(RaUop.op(u)), s, i, RaUop.ss(u), RaSt.ops(s)),
+                             i, RaUop.op(u), RaUop.ss(u), RaUop.ds(u)), i),
+           i)
+
+def ra_run.go(rest: List<&2, RaUop>, +s: RaSt, +i: U32) -> RaSt:
+  match rest:
+    case Nil{}  : s
+    case u <> +r : ra_run.go(r, ra_step(s, i, u), U32.add(i, 1))
+
+# regalloc.py:13-97 -- THE WHOLE CONSTRUCTOR. The live ranges are built first,
+# because `alloc`'s key and the prologue's sort both read them.
+def ra_run.of(+s: RaSt, +ops: List<&2, RaUop>) -> RaSt:
+  ra_run.go(ops, ra_lr.go(List.reverse(&2, RaUop, ops), U32.sub(ra_nm(s), 1), s), 0)
+
+def ra_run(+ops: List<&2, RaUop>, un: List<&2, Ru>, ta: Bool) -> RaSt:
+  ra_run.of(ra_st0(ops, un, ta), ops)
+
+# ===========================================================================
+
+
+
+
+# ===========================================================================
+
+# ===========================================================================
+
+
+# ===========================================================================
+
+
+
+
+
+
+
+# THE FIXTURES. `Regs` and the two `plan`s of the oracle, one entry per register
+# and one per uop, in the order the oracle interns them -- so `ra<t>_vregs` is a
+# row about the INTERN TABLE and not about the algorithm, and the register ids a
+# uop's `defs` carry are checked by `ra<t>_lr` and `ra<t>_a<i>` instead.
+#
+# `ra0` AND `ra1` ARE THE SAME UOP LIST with `is_two_address` False and True, and
+# that pair is the whole reason `is_two_address` is worth porting: it only
+# REORDERS `cons` (:72-74), which is invisible without a tie, and `ra0_a7`
+# (`v4>10->rcx>1`) against `ra1_a7` (`v4>10->rdx>2`) is the tie.
+# `ra2` is the second fixture: it is the only one with a RANGE and an END, so
+# `loops`, the interval append, `used_in_loop`, `sorted_uses`, `live_ins` and the
+# epilogue's `fill` are DEAD CODE on `ra0`.
+# ===========================================================================
+def ra_un0() -> List<&2, Ru>:
+  [Ru{"rax", 0, [0]}, Ru{"rcx", 1, [1]}, Ru{"rdx", 2, [2]}, Ru{"rsi", 3, [3]},
+   Ru{"rbx", 4, [4]}, Ru{"rbp", 5, [5]}, Ru{"v0", 6, [0, 4]}, Ru{"v1", 7, [1, 5]},
+   Ru{"v2", 8, [2, 3]}, Ru{"v3", 9, [4, 0]}, Ru{"v4", 10, [1, 2]}]
+
+def ra_ops0() -> List<&2, RaUop>:
+  [RaUop{O.OpsCONST{}, Nil{}, Nil{}},
+   RaUop{O.OpsINS{}, [0], [6]}, RaUop{O.OpsINS{}, [0], [7]}, RaUop{O.OpsINS{}, [0], [8]},
+   RaUop{O.OpsINS{}, [0], [9]}, RaUop{O.OpsINS{}, [1], Nil{}}, RaUop{O.OpsINS{}, [2], Nil{}},
+   RaUop{O.OpsINS{}, [3, 4], [10]}, RaUop{O.OpsCONST{}, Nil{}, Nil{}},
+   RaUop{O.OpsINS{}, [1], Nil{}}, RaUop{O.OpsINS{}, [2, 3], Nil{}}, RaUop{O.OpsINS{}, [4], Nil{}}]
+
+def ra_un2() -> List<&2, Ru>:
+  [Ru{"rax", 0, [0]}, Ru{"rcx", 1, [1]}, Ru{"rbx", 3, [2]},
+   Ru{"v0", 3, [0]}, Ru{"v5", 4, [1]}, Ru{"v2", 5, [0]}]
+
+def ra_ops2() -> List<&2, RaUop>:
+  [RaUop{O.OpsCONST{}, Nil{}, Nil{}},
+   RaUop{O.OpsINS{}, [0], [3]}, RaUop{O.OpsINS{}, [0], [4]},
+   RaUop{O.OpsRANGE{}, [0], Nil{}},
+   RaUop{O.OpsINS{}, [1, 2], [5]},
+   RaUop{O.OpsEND{}, [4, 3], Nil{}}]
+
+# ===========================================================================
+# `regalloc_rewrite` -- regalloc.py:99-114, AND WHAT THE ROWS CAN SEE.
+#
+# The oracle prints `r[1]` and NOT `r[0]`: `r = (nx, before + [nx] + after)`. So
+# the row is `before ++ [nx] ++ after` and `nsrc` -- the whole first half of the
+# function, the `:105-107` fill-per-spilled-src half -- IS INVISIBLE, because
+# `nx`'s srcs live in `r[0]`. `rw_src` is ported anyway and this is its wall: a
+# bug in the src rewrite cannot move a row, and the rows that CAN move are the
+# `insert_before` fills and the tag spills. The tag rewrite (:108) is invisible
+# for the same reason -- a register NAME survives `replace(reg, size=v.size)`
+# unchanged -- and so is `vdef` (:106, :111), which the oracle's renderer reads and
+# discards. Three of the rewrite's four halves are ungated and that is a
+# measurement, not an omission.
+# ===========================================================================
+type Em is Data:
+  Em{op: O.Op, ag: String}
+
+def Em.op(+e: Em) -> O.Op:
+  match e:
+    case Em{op, ag}: op
+
+def Em.ag(+e: Em) -> String:
+  match e:
+    case Em{op, ag}: ag
+
+def rw_item(cus: Bool, +e: Em) -> String:
+  Bool.pick(String, cus, String.concat([O.Ops.name.of(Em.op(e)), "/", Em.ag(e)]),
+            O.Ops.name.of(Em.op(e)))
+
+def rw_fillarg(slot: String, r: String) -> String:
+  String.concat(["('fill', '", slot, "', '", r, "')"])
+
+def rw_spillarg(slot: String) -> String:
+  String.concat(["('spill', '", slot, "')"])
+
+def ra_reg(+un: List<&2, Ru>, r: U32) -> String:
+  Ru.nm(ra_uni(un, r))
+
+# THE REWRITTEN SOURCES. `i in reals and (v:=rdef(uops[i].src[j])) in spills`
+# (:105) -- `reals` is keyed by uop index, so a uop with no `reals` entry has no
+# rewritten src at all.
+def rw_vreg(+s: RaSt, i: U32, +u: RaUop, j: U32) -> U32:
+  ra_rdef(RaUop.ds(ra_at(RaSt.ops(s), j)))
+
+def rw_ispill(+s: RaSt, i: U32, +v: U32) -> Bool:
+  Bool.and(tb_has(RaSt.re(s), i), U32.is_ne(tb_get(RaSt.sp(s), v), 0))
+
+def rw_real(+s: RaSt, +i: U32, +v: U32) -> U32:
+  tb_pget(tb_vs(RaSt.re(s), i), v)
+
+def rw_src(+s: RaSt, +i: U32, +u: RaUop, +j: U32) -> Em:
+  Bool.pick(Em, rw_ispill(s, i, rw_vreg(s, i, u, j)),
+            Em{O.OpsCUSTOM{}, rw_fillarg(ra_slot(RaSt.un(s), rw_vreg(s, i, u, j)),
+                                        ra_reg(RaSt.un(s), rw_real(s, i, rw_vreg(s, i, u, j))))},
+            Em{RaUop.op(ra_at(RaSt.ops(s), j)), ""})
+
+def rw_nsrc(+s: RaSt, +i: U32, +u: RaUop, rest: List<&2, U32>) -> List<&2, Em>:
+  match rest:
+    case Nil{}   : Nil{}
+    case j <> +r : List.append(&2, Em, rw_nsrc(s, i, u, r), [rw_src(s, i, u, j)])
+
+# THE FILLS TO INSERT BEFORE -- :111, over `insert_before[i]`'s pair list.
+def rw_bef.go(+s: RaSt, +i: U32, rest: List<&2, U32>, +acc: List<&2, Em>) -> List<&2, Em>:
+  match rest:
+    case Nil{}         : acc
+    case +k <> r <> +q : rw_bef.go(s, i, q, List.append(&2, Em, acc,
+                              [Em{O.OpsCUSTOM{}, rw_fillarg(ra_slot(RaSt.un(s), k),
+                                                           ra_reg(RaSt.un(s), r))}]))
+    case _ <> _        : acc
+
+def rw_before(+s: RaSt, +i: U32) -> List<&2, Em>:
+  rw_bef.go(s, i, tb_vs(RaSt.ib(s), i), Nil{})
+
+# THE SPILLS TO APPEND AFTER -- :112, `for v in x.tag if v in spills`.
+def rw_aft.go(+s: RaSt, rest: List<&2, U32>, +acc: List<&2, Em>) -> List<&2, Em>:
+  match rest:
+    case Nil{}    : acc
+    case +v <> +r  : rw_aft.go(s, r,
+                     Bool.pick(List<&2, Em>, U32.is_ne(tb_get(RaSt.sp(s), v), 0),
+                               List.append(&2, Em, acc,
+                                           [Em{O.OpsCUSTOM{}, rw_spillarg(ra_slot(RaSt.un(s), v))}]),
+                               acc))
+
+def rw_after(+s: RaSt, +u: RaUop) -> List<&2, Em>:
+  rw_aft.go(s, RaUop.ds(u), Nil{})
+
+def rw_strs(+es: List<&2, Em>, +acc: List<&2, String>) -> List<&2, String>:
+  match es:
+    case Nil{}   : acc
+    case e <> +r : rw_strs(r, List.append(&2, String, acc,
+                      [rw_item(lt_op_is(Em.op(e), O.OpsCUSTOM{}), e)]))
+
+# `before + [nx] + after`, in THAT order: the oracle's `r[1]`.
+def rw_items(+s: RaSt, +i: U32, +u: RaUop) -> List<&2, Em>:
+  List.append(&2, Em, List.append(&2, Em, rw_before(s, i), [Em{RaUop.op(u), ""}]),
+              rw_after(s, u))
+
+# `if x.op in PSEUDO_OPS: return None` -- :101, and `-` is the row's spelling of
+# None. It is the SAME `ra_is_pseudo` the main loop's `continue` reads.
+def rw_one(ps: Bool, +s: RaSt, +i: U32, +u: RaUop) -> String:
+  Bool.pick(String, ps, "-",
+            String.concat([O.Ops.name.of(RaUop.op(u)), "->",
+                           String.join(rw_strs(rw_items(s, i, u), Nil{}), ",")]))
+
+def rw_none.go(rest: List<&2, RaUop>, +i: U32, +s: RaSt, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}    : acc
+    case +u <> +r  : rw_none.go(r, U32.add(i, 1), s,
+                     List.append(&2, String, acc, [rw_one(ra_is_pseudo(RaUop.op(u)), s, i, u)]))
+
+def rw_none(+s: RaSt) -> String:
+  String.join(rw_none.go(RaSt.ops(s), 0, s, Nil{}), " ")
+
+# ===========================================================================
+# THE ROWS. PER-UOP AND ORDERED: `ra<t>_a<i>` is one row per program point
+# carrying every virtual register live there and the REAL register each landed
+# on, so a wrong assignment has the right COUNT and the wrong GRAPH and only an
+# index or a name can see it.
+# ===========================================================================
+def ule(a: U32, b: U32) -> Bool:
+  U32.is_le(a, b)
+
+def ra_keys(+t: RaTb) -> List<&2, U32>:
+  List.sort(U32, ule, tb_keys(t))
+
+def ra_u32s.go(xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}   : acc
+    case v <> +r : ra_u32s.go(r, List.append(&2, String, acc, [U32.show(v)]))
+
+def ra_u32s(xs: List<&2, U32>) -> String:
+  String.join(ra_u32s.go(xs, Nil{}), " ")
+
+# `ra<t>_uops` -- the op NAME per program point, which is also what makes the two
+# CONST rows' absence from `ra<t>_a<i>` visible (the pseudo ops are skipped, so
+# they get no `reals` entry and no row).
+def ra_ops_names(+ops: List<&2, RaUop>, +acc: List<&2, String>) -> List<&2, String>:
+  match ops:
+    case Nil{}   : acc
+    case u <> +r : ra_ops_names(r, List.append(&2, String, acc, [O.Ops.name.of(RaUop.op(u))]))
+
+def ra_vregs.go(rs: List<&2, Ru>, +i: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match rs:
+    case Nil{}    : acc
+    case r <> +t  : ra_vregs.go(t, U32.add(i, 1),
+                       List.append(&2, String, acc,
+                                   [String.concat([Ru.nm(r), ">", U32.show(i)])]))
+
+# THE LIVE RANGES, one `name>intern:idx,idx,...` per virtual, in intern order --
+# which is the oracle's `sorted(..., key=lambda kv: R.ix(kv[0]))`.
+def ra_lr_one(+t: RaTb, +un: List<&2, Ru>, +v: U32) -> String:
+  String.concat([ra_reg(un, v), ">", U32.show(v), ":",
+                 String.join(ra_u32s.go(tb_vs(t, v), Nil{}), ",")])
+
+def ra_lr_row.go(+t: RaTb, +un: List<&2, Ru>, rest: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}    : acc
+    case v <> +r  : ra_lr_row.go(t, un, r, List.append(&2, String, acc, [ra_lr_one(t, un, v)]))
+
+# ONE PAIR, `v>intern->r>intern`. The oracle SORTS THE PRINTED STRINGS, not the
+# vregs -- and the two orders differ on `ra2_a4` (`v0>3 v2>5 v5>4` sorted as text
+# against `v0 v5 v2` by intern position), so the port sorts the same strings.
+def ra_pair(+vs: List<&2, U32>, +un: List<&2, Ru>, +k: U32) -> String:
+  String.concat([ra_reg(un, k), ">", U32.show(k), "->",
+                 ra_reg(un, tb_pget(vs, k)), ">", U32.show(tb_pget(vs, k))])
+
+def ra_pairs.go(+vs: List<&2, U32>, +un: List<&2, Ru>, rest: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}          : acc
+    case +k <> r <> +q  : ra_pairs.go(vs, un, q, List.append(&2, String, acc, [ra_pair(vs, un, k)]))
+    case +k <> r        : List.append(&2, String, acc, [ra_pair(vs, un, k)])
+    case _ <> _         : acc
+
+def ra_a_row(+t: RaTb, +i: U32, +un: List<&2, Ru>) -> String:
+  String.join(List.sort(String, sle, ra_pairs.go(tb_vs(t, i), un, tb_vs(t, i), Nil{})), " ")
+
+# `ra<t>_spills` -- sorted `v>intern:slot`.
+def ra_spills.go(+t: RaTb, +un: List<&2, Ru>, rest: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}    : acc
+    case +v <> +r  : ra_spills.go(t, un, r, List.append(&2, String, acc,
+                       [String.concat([ra_reg(un, v), ">", U32.show(v), ":", ra_slot(un, v)])]))
+
+def ra_spills_row(+t: RaTb, +un: List<&2, Ru>) -> String:
+  String.join(List.sort(String, sle, ra_spills.go(t, un, ra_keys(t), Nil{})), " ")
+
+# `ra<t>_before` -- one `i:pair pair` per program point, points in sorted order.
+def ra_before_row(+t: RaTb, +un: List<&2, Ru>, rest: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}    : acc
+    case +i <> +r  : ra_before_row(t, un, r, List.append(&2, String, acc,
+                       [String.concat([U32.show(i), ":", ra_a_row(t, i, un)])]))
+
+def ra_loop_n(+ops: List<&2, RaUop>, +n: U32) -> U32:
+  match ops:
+    case Nil{}    : n
+    case u <> +r  : ra_loop_n(r, U32.add(n, b2u(lt_is_range(RaUop.op(u)))))
+
+def ra_lead(+pre: String, +s: RaSt) -> List<&2, String>:
+  [String.concat([pre, "_n=", U32.show(ra_nm(s))]),
+   String.concat([pre, "_uops=", String.join(ra_ops_names(RaSt.ops(s), Nil{}), " ")]),
+   String.concat([pre, "_vregs=", String.join(ra_vregs.go(RaSt.un(s), 0, Nil{}), " ")]),
+   String.concat([pre, "_lr=", String.join(ra_lr_row.go(RaSt.lr(s), RaSt.un(s), ra_keys(RaSt.lr(s)), Nil{}), " ")])]
+
+def ra_a_lines.g(+pre: String, +s: RaSt, rest: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rest:
+    case Nil{}    : acc
+    case +i <> +r  : ra_a_lines.g(pre, s, r, List.append(&2, String, acc,
+                       [String.concat([pre, "_a", U32.show(i), "=", ra_a_row(RaSt.re(s), i, RaSt.un(s))])]))
+
+def ra_tail(+pre: String, +s: RaSt) -> List<&2, String>:
+  [String.concat([pre, "_spills=", ra_spills_row(RaSt.sp(s), RaSt.un(s))]),
+   String.concat([pre, "_before=",
+                  String.join(ra_before_row(RaSt.ib(s), RaSt.un(s), ra_keys(RaSt.ib(s)), Nil{}), " ")]),
+   String.concat([pre, "_loop=", U32.show(ra_loop_n(RaSt.ops(s), 0))])]
+
+def ra_lines(+pre: String, +s: RaSt) -> List<&2, String>:
+  List.append(&2, String, ra_lead(pre, s),
+              List.append(&2, String, ra_a_lines.g(pre, s, ra_keys(RaSt.re(s)), Nil{}),
+                         ra_tail(pre, s)))
+
+def ra_rows(pre: String, +s: RaSt) -> String:
+  lt_lines(ra_lines(pre, s))
+
+def ra0() -> RaSt:
+  ra_run(ra_ops0(), ra_un0(), False{})
+
+def ra1() -> RaSt:
+  ra_run(ra_ops0(), ra_un0(), True{})
+
+def ra2() -> RaSt:
+  ra_run(ra_ops2(), ra_un2(), False{})
+
+
+
+
+
+
+
+
+
+
 
 # ===========================================================================
 # `gater.py` -- 1-29, WHOLE FILE. TWO TABLES: a six-rule `pm_move_gates_from_index`
@@ -2132,6 +3363,14 @@ def main() -> IO(Unit):
     r6 : Unit <- srow("se_tbl_ops", se_tbl_ops())
     r7 : Unit <- row("se_fired", se_fired(se_ar(), se_e(se_fix())))
     r8 : Unit <- row("se_miss", se_fired(se_ar(), 7))
+    # THE REGALLOC BLOCKS, ONE `IO.print` PER FIXTURE, in the ORACLE'S ORDER:
+    # `ra0`/`ra1`/`ra2` sit between `se_miss` and `rw_none` because the oracle
+    # prints them there, and each block is its seventeen rows joined by "\n" so a
+    # moved program point is a CHANGED LINE rather than a shifted count.
+    s1 : Unit <- IO.print(ra_rows("ra0", ra0()))
+    s2 : Unit <- IO.print(ra_rows("ra1", ra1()))
+    s3 : Unit <- IO.print(ra_rows("ra2", ra2()))
+    s4 : Unit <- srow("rw_none", rw_none(ra0()))
     r9 : Unit <- row("rw_tbl_len", ra_tbl_len())
     ra1 : Unit <- srow("rw_tbl_ops", ra_tbl_ops())
     ra2 : Unit <- row("rw_pseudo_n", ra_pseudo_n())
@@ -2150,3 +3389,119 @@ def main() -> IO(Unit):
     # newline -- exactly what the oracle's `print("\n".join(out))` does. A trailing
     # empty line is a one-line diff that a reader has to notice.
     srow("gt_mwl_cast_diff", gt_row(gt_a3(), 3))
+
+# ===========================================================================
+# THE MUTATION TABLE, MEASURED. One entry per ported rule: the rule is broken on
+# purpose, the interpreted lane is re-run, and the rows that MOVE are listed. A row
+# that only one mutation moves is a LOCALISED row and is said to be. A mutation
+# that moves NOTHING is a BLIND SPOT and is reported with the reason -- it is not
+# closed with a row that agrees with the bug.
+#
+# Reproduce with `.agents/slop/ra-mutate.py` then `.agents/slop/ra-mutate2.py`,
+# which restore this file after every entry; the base is 128 rows and the
+# acceptance test is `diff .agents/slop/late-cpython.txt <(./bin/bend ...)`.
+#
+#   MOVES SOMETHING
+#   PSEUDO_OPS: drop BARRIER ........................... rw_tbl_ops, rw_pseudo_n
+#   live range: the backward walk becomes forward ..... ra0_lr ra1_lr ra1_a7
+#                                                  ra1_spills ra1_before ra2_lr
+#                                                  ra2_spills ra2_before
+#   live range: the loop-interval append dropped ..... ra2_lr
+#   loops: the interval bound flipped ................. ra2_lr
+#   loops: max user becomes first user ................ NOTHING (blind spot)
+#   dedup(u.src) becomes identity ..................... NOTHING (blind spot)
+#   live[v] = alloc(...) dropped ...................... ra0_spills ra0_before
+#                                                  ra1_a7 ra1_spills ra1_before
+#                                                  ra2_spills ra2_before rw_none
+#   alloc: first-wins becomes last-wins .............. ra0_a4 ra0_a7 ra0_spills
+#                                                  ra0_before ra1_a4 ra1_a7
+#                                                  ra1_spills ra1_before rw_none
+#   alloc: the seed no longer yields .................. ra2_spills ra2_before
+#   alloc: free has no priority ....................... NOTHING (blind spot)
+#   the END/BACKEDGE use-skip dropped ................ ra2_a5 -- a row APPEARS,
+#                                                  which is the shape of the gate
+#   a non-Register src is no longer skipped ........... ra0_a1..a4 ra0_spills
+#                                                  ra0_before ra1_a1..a4 ra1_a7
+#                                                  ra1_a11 ra1_spills ra1_before
+#                                                  ra2_a1 a2 a3 ra2_spills
+#                                                  ra2_before rw_none
+#   live.get is a zero test again (W5b) .............. ra0_a5 ra0_a6 ra0_a7
+#                                                  ra0_spills ra0_before ra1_a5
+#                                                  ra1_a6 ra1_a7 ra1_spills
+#                                                  ra1_before ra2_spills
+#                                                  ra2_before rw_none
+#   the i+1 for a non-RANGE def becomes i ............. ra1_a7 ra1_spills
+#                                                  ra1_before  -- LOCALISED: only
+#                                                  ra1, because only the two-address
+#                                                  run reaches that distance
+#   two-address: the cons reorder dropped ............ ra1_a7 ra1_spills ra1_before
+#                                                  -- LOCALISED, and it is the whole
+#                                                  reason ra0 and ra1 are two rows
+#   two-address: uses[0] goes last, not first ........ ra1_a2 a3 a4 a6 a7 a10 a11
+#                                                  ra1_spills ra1_before
+#   two-address: only the head def is reordered ....... ra1_a7 ra1_spills ra1_before
+#   prologue: the constraint subset test becomes an OR  ra2_spills ra2_before
+#   prologue: live_in[v] is not written ............... ra2_spills ra2_before
+#   prologue: live_in is written and live is not ...... ra2_spills ra2_before
+#   prologue: the live_ins push is dropped ............. ra2_spills ra2_before
+#   prologue: used_in_loop is never filtered .......... NOTHING (blind spot)
+#   prologue: the union loses its spill half .......... NOTHING (blind spot)
+#   epilogue: the reload condition dropped ............ ra2_spills ra2_before
+#   epilogue: it reloads everything ................... ra2_spills ra2_before
+#   epilogue: the live_ins pop is dropped ............. NOTHING (blind spot)
+#   fill: the spill slot is never recorded ............ ra0_spills ra1_spills
+#                                                  ra2_spills rw_none
+#   fill: the fill is never recorded .................. ra0_before ra1_before
+#                                                  ra2_before rw_none
+#   fill: the state is the pre-alloc state again ...... DOES NOT COMPILE (the port
+#                                                  dropped `s`, so it is a shape
+#                                                  error and not a wrong answer)
+#   live.pop becomes a no-op .......................... ra0_spills ra0_before
+#                                                  ra1_spills ra1_before
+#                                                  ra2_spills ra2_before rw_none
+#   reals[i][v] replaces with a whole-list append ..... ra0_a7 ra0_a10 ra1_a7
+#                                                  ra1_a10 ra2_a4
+#   the pseudo-op `continue` in the live-range walk .. NOTHING (blind spot)
+#   the main loop starts at 1 ......................... every ra<t>_a<i>, both
+#                                                  ra<t>_before, rw_none
+#   rewrite: the pseudo-op answer is not None ......... rw_none
+#   rewrite: the tag rewrite is not threaded ......... rw_none
+#   rewrite: the spilled-src fills are dropped ........ NOTHING (blind spot)
+#   the row order: per-uop rows before the four ...... ORDER ONLY -- every row is
+#                                                  still present and correct, which
+#                                                  is why the harness compares
+#                                                  sequences as well as sets
+#   the row sorts by intern index, not by text ....... ra2_a4 -- the ONE row where
+#                                                  the two orders differ
+#   the register NAME is replaced by its index ........ every ra<t> row, rw_none
+#   the row reads an index where a name is due ....... every ra<t>_a<i>
+#   the intern table loses v4's `index` field ......... NOTHING (blind spot)
+#
+# THE BLIND SPOTS, and why each one moves nothing. Nine of them, and every one is a
+# FIXTURE LIMIT rather than a row that agrees with a bug:
+#   * `dedup(u.src)` -- the fixture's src lists are distinct, so identity and dedup
+#     are the same list. A fixture with one src twice would tell them apart.
+#   * `max user becomes first user` -- the fixture's only RANGE has exactly ONE user,
+#     so `max` and `first` agree.
+#   * `free has no priority` -- with the distances stubbed to 0 every candidate ties
+#     and `alloc` returns `cons[0]`, and on BOTH fixtures `cons[0]` is also what the
+#     real rule answers. The rule is gated by the two first-wins mutations above
+#     instead, which is the honest split.
+#   * the three `sorted_uses` tiebreaks -- the fixture's two prologue candidates tie
+#     on the next-use distance (`lr[k][0]` is 1 and 2, which DISAGREES), and the
+#     names `v0`/`v5` agree with that order, so dropping either tiebreak is invisible.
+#     A third candidate whose name sorted before its `lr[k][0]` would separate them.
+#   * `used_in_loop` is never filtered -- both live vregs at the RANGE are used inside
+#     it and `spills` is empty, so the filter removes nothing.
+#   * the union loses its spill half -- `spills` is empty at the RANGE, so
+#     `live.keys() | spills.keys()` and `live.keys()` are the same list.
+#   * the `live_ins` pop -- the stack's depth is 1, so dropping the head and keeping
+#     it are the same list.
+#   * the pseudo-op `continue` in the live-range walk -- the two pseudo ops carry no
+#     defs and their only src is a CONST, so both steps are no-ops on them.
+#   * v4's `index` field -- `Register.index` is read only by `sorted_uses`' fourth
+#     key component, and fixture `ra0` has no RANGE at all.
+#   * `regalloc_rewrite`'s `nsrc` -- the oracle prints `r[1]` and not `r[0]`, and the
+#     rewritten srcs live in `r[0]`. This is W5c and it is a WALL, not a fixture
+#     limit: no row can see that half of the function, and the header says so.
+# ===========================================================================
