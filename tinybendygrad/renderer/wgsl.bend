@@ -205,12 +205,8 @@ def nm_one(s: O.Sint) -> U32:
     case O.SI{i}: H.lo32(i)
     case O.SU{u}: 0
 
-def nm_prod.go(ds: List<&2, O.Sint>, acc: U32) -> U32:
-  match ds:
-    case Nil{}: acc
-    case h <> t: nm_prod.go(t, U32.mul(acc, nm_one(h)))
-
-def w_numel(+ar: O.Arena, +tb: F.Table, +u: U32) -> U32: nm_prod.go(nm_sh(F.fold.shape(ar, tb, u)), 1)
+def w_numel(+ar: O.Arena, +tb: F.Table, +u: U32) -> U32:
+  List.foldl(~&2, ~O.Sint, ~U32, (acc: U32) => (h: O.Sint) => U32.mul(acc, nm_one(h)), nm_sh(F.fold.shape(ar, tb, u)), 1)
 
 # `dt` and `addr` of a node, the two reads `is_packed_of` needs.
 def w_dt(+ar: O.Arena, +tb: F.Table, +u: U32) -> S.Dt:
@@ -582,12 +578,8 @@ def ls_ins(+x: Ls, +acc: List<&2, Ls>) -> List<&2, Ls>:
     case Nil{}: [x]
     case h <> t: Bool.pick(List<&2, Ls>, String.is_lt(Ls.nm(x), Ls.nm(h)), x <> acc, h <> ls_ins(x, t))
 
-def ls_sort.go(xs: List<&2, Ls>, +acc: List<&2, Ls>) -> List<&2, Ls>:
-  match xs:
-    case Nil{}: acc
-    case h <> t: ls_sort.go(t, ls_ins(h, acc))
-
-def ls_sort(xs: List<&2, Ls>) -> List<&2, Ls>: ls_sort.go(xs, Nil{})
+def ls_sort(xs: List<&2, Ls>) -> List<&2, Ls>:
+  List.foldl(~&2, ~Ls, ~List<&2, Ls>, (acc: List<&2, Ls>) => (h: Ls) => ls_ins(h, acc), xs, Nil{})
 
 # the two lists, so `sorted` and the `if` are separate rows from the join.
 def ls_put.of(isl: Bool, +acc: List<&2, Ls>, e: Ls) -> List<&2, Ls>:
@@ -654,12 +646,8 @@ def pt_line.of(isw: Bool, +h: String, +acc: Part) -> Part:
 
 def pt_line(+h: String, acc: Part) -> Part: pt_line.of(String.contains(h, "var<workgroup>"), h, acc)
 
-def pt.go(ls: List<&2, String>, acc: Part) -> Part:
-  match ls:
-    case Nil{}: acc
-    case h <> t: pt.go(t, pt_line(h, acc))
-
-def rk_partition(+kernel: List<&2, String>) -> Part: pt.go(kernel, Part{Nil{}, Nil{}})
+def rk_partition(+kernel: List<&2, String>) -> Part:
+  List.foldl(~&2, ~String, ~Part, (acc: Part) => (h: String) => pt_line(h, acc), kernel, Part{Nil{}, Nil{}})
 
 def Buf.dt(b: Buf) -> S.Dt:
   match b:
@@ -792,12 +780,8 @@ def st_ins(+x: String, +acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: [x]
     case h <> t: Bool.pick(List<&2, String>, String.is_lt(x, h), x <> acc, h <> st_ins(x, t))
 
-def dt_sort.go(xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: acc
-    case h <> t: dt_sort.go(t, st_ins(h, acc))
-
-def dt_sort(xs: List<&2, String>) -> List<&2, String>: dt_sort.go(xs, Nil{})
+def dt_sort(xs: List<&2, String>) -> List<&2, String>:
+  List.foldl(~&2, ~String, ~List<&2, String>, (acc: List<&2, String>) => (h: String) => st_ins(h, acc), xs, Nil{})
 
 def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, Nil{})), ",")
 
