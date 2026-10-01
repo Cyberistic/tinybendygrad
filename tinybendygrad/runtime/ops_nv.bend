@@ -23,11 +23,37 @@
 #            profiler register addresses (:793-816), the error-string tables
 #            (:35, :37-38) and the GPA-info index fallback (:664-665).
 #
-# 3602 lines, 631 `def`/`type`, 585 gate rows. `./bin/bend --check-only` prints
-# ALL PROOFS CHECK; both lanes print byte-identical output; and
-# `.agents/slop/nv-diff.py` reports 0 disagreements against CPython over the 540
-# rows the oracle can answer. The mutation table is at the FOOT of this file and
+# 3897 lines, 630 `def`/`type`, 600 gate rows. `./bin/bend --check-only` prints
+# ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` prints 600 Bend rows against 547
+# CPython rows with **0 disagreements**. The mutation table is at the FOOT and
 # every "rows moved" in it is measured, not estimated.
+#
+# THE 600 ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
+# many rows were ever compared to anything:
+#
+#   543  CROSS-CHECKED. The gate prints a row and the oracle prints the SAME row
+#        name computed by CALLING `ops_nv.py` (or `hcq2.py`, or `nv_570.__dict__`)
+#        with no GPU, and the differ compares the two STRINGS.
+#   56   BEND-ONLY, and the reason is in the name: 19 are the modelled ioctl INIT
+#        SEQUENCE (`nv_init_*`) which needs /dev/nvidiactl to run; 12 are this
+#        port's own matcher vocabulary (`nv_find_*`, `nv_has_*`) which Python has
+#        no equivalent of; 5 are the `device.bend` side of the kernel-argument
+#        cross-check (`nv_device_args_*`) -- CPython's side of the same claim is
+#        the mirrored `nv_cpython_args_device_*`; 1 is `nv_shift_32`, where the
+#        claim is that a Bend `U32` SATURATES and Python's `1 << 32` is
+#        4294967296; the rest are trace projections, loop fuel and constants that
+#        live in `device.bend`. Every one of them is named for what it ANSWERS
+#        rather than for the function that answers it.
+#   4    ORACLE-ONLY AND DELIBERATE: `nv_qmd_wide_v3/_v5` and
+#        `nv_qmd_straddle_v3/_v5` measure the two GENERATED field tables, which
+#        this port does not carry. A Bend row for them would be a constant
+#        printing itself.
+#
+# THE RECONCILIATION COST 73 ROWS THAT LOOKED LIKE COVERAGE AND WERE NOT. Named
+# differently on the two sides -- `nv_slmtot_*` against `nv_slm_*`, `nv_toname_*`
+# with the parts in the other order -- or printed twice, or present on one side
+# only. `nv_query_litter_n` was worse than unmatched: gate and oracle agreed on
+# the WRONG ANSWER, because both were hand-written. Only `nv_570.__dict__` knows.
 #
 # NOT PORTED, AND THE WALL FOR EACH -- all of it is `nv_gpu` driver ioctl
 # surface, which in Bend is FFI exactly like `dtype.bend`'s fourteen and which
@@ -173,11 +199,12 @@
 # NOT `off + k`. The two agree on every uniform list -- which is every list a
 # CUDA kernel's buffers produce, all uint64 -- and disagree the moment a
 # narrow type follows a narrow type: the uint16 at slot 8 ends at 10, and the
-# ulong after it is padded to 16. REPORTED, NOT FIXED: `device.bend:871`
-# computes `Sig{round_up(off, k), U32.add(off, k)}` -- the advance off the
-# UNROUNDED offset -- and answers `0, 4, 6, 8, 16, 19` for that same list. The
-# row `nv_args_mixed` prints the right answer and `nv_args_device_diverges`
-# pins the size of the disagreement, so this file does not depend on it.
+# ulong after it is padded to 16. THE BUG WAS IN `device.bend:871` AND IS FIXED
+# (`7f170f644`): it computed `Sig{round_up(off, k), U32.add(off, k)}` -- the
+# advance off the UNROUNDED offset -- and answered `0, 4, 6, 8, 16, 19` for this
+# same list where `hcq2.layout_args` answers `0, 4, 8, 16, 24, 28`. This port
+# carries its own `sig.slot` and the `nv_device_args_*` rows beside the
+# `nv_cpython_args_device_*` rows are the cross-implementation check.
 #
 # ===========================================================================
 # ELEVEN NUMBERS WERE HAND-TYPED WRONG THE FIRST TIME. The `CLASS_*` class ids
@@ -1861,19 +1888,26 @@ def t_args() -> IO(Unit):
     row("nv_args_buf3_n", U32.from_nat(List.length(&2, U32, args.layout(args.buf3(), 0))))
     row("nv_args_buf0_n", U32.from_nat(List.length(&2, U32, args.layout(Nil{}, 0))))
     row("nv_args_mixed_n", U32.from_nat(List.length(&2, U32, args.layout(args.mixed(), 0))))
-    # device.bend:871's `iter_sig` advances off the UNROUNDED offset and so
-    # disagrees on the mixed list. REPORTED, NOT FIXED, and these two rows pin
-    # both answers so the divergence cannot silently change.
-    lrow("nv_REPORTED_args_device_mixed", D.iter_sig(args.mixed()))
-    lrow("nv_REPORTED_args_device_buf3", D.iter_sig(args.buf3()))
-    lrow("nv_REPORTED_args_device_five", D.iter_sig([W32(), W32(), W32(), W32(), W32()]))
+    # device.bend:871's `iter_sig` USED TO advance off the UNROUNDED offset and to
+    # disagree with `hcq2.layout_args` on the mixed list; `7f170f644` fixed it to
+    # `U32.add(round_up(off, k), k)` and the two implementations now AGREE. THE ROWS
+    # ARE KEPT BECAUSE THE PAIR IS THE CLAIM -- `nv_device_args_*` is
+    # `device.bend`'s answer and `nv_cpython_args_device_*` is this file's own
+    # `sig.slot`, and two independent implementations of the same walrus are worth
+    # one row each. They were named `nv_REPORTED_*` while the bug was live and a
+    # `nv_REPORTED_args_device_differs_on_mixed` row asserted the DIVERGENCE; that
+    # row is now `nv_device_args_agree_on_mixed`, because the name has to survive
+    # reading the value.
+    lrow("nv_device_args_mixed", D.iter_sig(args.mixed()))
+    lrow("nv_device_args_buf3", D.iter_sig(args.buf3()))
+    lrow("nv_device_args_five", D.iter_sig([W32(), W32(), W32(), W32(), W32()]))
     lrow("nv_cpython_args_device_mixed", args.layout(args.mixed(), 0))
     lrow("nv_cpython_args_device_buf3", args.layout(args.buf3(), 0))
     lrow("nv_cpython_args_device_five", args.layout([W32(), W32(), W32(), W32(), W32()], 0))
-    brow("nv_REPORTED_args_device_same_on_bufs",
+    brow("nv_device_args_same_on_bufs",
       u32_list_eq(args.layout(args.buf3(), 0), D.iter_sig(args.buf3())))
-    brow("nv_REPORTED_args_device_differs_on_mixed",
-      Bool.not(u32_list_eq(args.layout(args.mixed(), 0), D.iter_sig(args.mixed()))))
+    brow("nv_device_args_agree_on_mixed",
+      u32_list_eq(args.layout(args.mixed(), 0), D.iter_sig(args.mixed())))
     # THE ALIGNMENT IS THE CLAIM. `round_up(off, k)` at every step, so the
     # offset of the ulong in the mixed list is 16 and not 10.
     row("nv_args_mixed_ulong_slot", wnth(args.layout(args.mixed(), 0), 3n, 0))
@@ -3232,6 +3266,12 @@ def t_pdata() -> IO(Unit):
     row("nv_smemcfg_102400", pd.smem_cfg(102400))
     brow("nv_smemcfg_too_big", Bool.not(smemcfg.ok(131071)))
     brow("nv_smemcfg_ok_max", smemcfg.ok(102400))
+    # THE REFUSAL'S OWN TWO ROWS, because `nv_smemcfg_too_big` only says THAT it
+    # refuses and CPython's answer is a STRING: `min() iterable argument is empty`
+    # is what Python 3's `min()` says, and a port that wrote "smem too large"
+    # would satisfy the boolean and fail the diff.
+    srow("nv_smemcfg_msg_131071", pd.smem_cfg.msg(131071))
+    srow("nv_smemcfg_msg_102400", pd.smem_cfg.msg(102400))
     srow("nv_smemcfg_msg_0", pd.smem_cfg.msg(0))
     srow("nv_smemcfg_msg_big", pd.smem_cfg.msg(131072))
     # :277 the image padding, and the +4KB is the NOTE.
@@ -3508,6 +3548,12 @@ def t_pool() -> IO(Unit):
     row("nv_slmtot_4096_64828", dev.slm_bytes(67108864, 2, 8))
     row("nv_slmtot_1024_644214", dev.slm_bytes(8388608, 2, 14))
     row("nv_slmtot_1_48428", dev.slm_bytes(196608, 2, 8))
+    # AND ONE THAT IS NOT ALREADY A 128 KiB MULTIPLE. Every other fixture is --
+    # 196608 x 16, 6291456 x 16, 67108864 x 16 and 8388608 x 28 are all exact
+    # multiples of 131072 -- so a port that DROPPED the rounding answered the same
+    # six numbers and mutation M30 moved NOTHING. The `1,1,1` fixture is the one
+    # that makes the rounding visible: 1 against 131072.
+    row("nv_slmtot_1_1_1", dev.slm_bytes(1, 1, 1))
     srow("nv_slmtot_0_48428_hi", hilo.str32(dev.slm_bytes(0, 2, 8)))
     srow("nv_slmtot_32_48428_hi", hilo.str32(dev.slm_bytes(196608, 2, 8)))
     srow("nv_slmtot_1024_48428_hi", hilo.str32(dev.slm_bytes(6291456, 2, 8)))
@@ -3519,6 +3565,11 @@ def t_pool() -> IO(Unit):
     # answers 537010660 and not the 536945124 the arithmetic gives.
     lrow("nv_slm_lmem_cmd", wstream(cq.slma(Tr.of())))
     lrow("nv_slm_nthr_cmd", wstream(cq.slmb(Tr.of())))
+    # :696-697 `self._submit_cmds("COMPUTE:0", *nvm(...), *nvm(...))` -- SEVEN WORDS
+    # IN ONE SUBMIT, the local-memory-window pair FIRST, and
+    # `dev.slm_cmd(bpt, addr_hi, addr_lo, t)` is the call with the address and the
+    # per-TPC count filled in: SLMA carries the ADDRESS and NTHR carries the COUNT.
+    lrow("nv_slm_cmd", wstream(dev.slm_cmd(196608, 0, 187, Tr.of())))
     brow("nv_slm_early_0_48428", dev.slm_early(0, 0))
     brow("nv_slm_early_1_48428", dev.slm_early(1, 0))
     brow("nv_slm_early_32_48428", dev.slm_early(32, 0))
@@ -3592,7 +3643,12 @@ def t_vid() -> IO(Unit):
     row("nv_vid_unkoff_new", dev.vid_unk_off(5855232, 2097152))
     row("nv_vid_unkoff_old", dev.vid_unk_off(5855232, 0))
     brow("nv_vid_unk_is_none_old", dev.vid_unk_none(0))
-    brow("nv_vid_unk_is_none_new", Bool.not(dev.vid_unk_none(2097152)))
+    # THE NEW ROW WAS WRONG SIDE UP. It read
+    # `Bool.not(dev.vid_unk_none(2097152))` under the name `..._is_none_new`, so it
+    # printed True where the claim is False -- and no oracle row existed to say so.
+    # `intra_unk_off is None` is EXACTLY `intra_unk_size == 0` (:705), so a new
+    # card is the NOT-None arm and this row now says False, which is the truth.
+    brow("nv_vid_unk_is_none_new", dev.vid_unk_none(2097152))
     row("nv_vid_filter_new", dev.vid_filter(5855232, 2097152))
     row("nv_vid_filter_old", dev.vid_filter(5855232, 0))
     # THE 256-BYTE UNIT of :206 -- `round_up(w,64)*round_up(h,64) >> 8` -- and it
@@ -3772,34 +3828,38 @@ def main() -> IO(Unit):
 #
 # | # | the edit | rows moved | what it is testing |
 # | --- | --- | --- | --- |
-# | M1 | `qmd.ver.of`: `>=` becomes `>` | 7 | :54 the ONE comparison that picks the QMD generation. It reaches `nv_qmd_ver_bwa`, `nv_pd_ver_bw`, `nv_pd_min_cbuf0_bw`, `nv_prof_shares_predicate` and three more -- which is the ROW COUNT of "three places spell the same predicate". |
+# | M1 | `qmd.ver.of`: `>=` becomes `>` | 6 | :54 the ONE comparison that picks the QMD generation, and it reaches `nv_qmd_ver_bwa`, `nv_pd_ver_bw`, `nv_pd_min_cbuf0_bw`, `nv_pd_kernargs_bw`, `nv_pd_cbuf0_len_bw` and `nv_prof_shares_predicate` -- which is the ROW COUNT of "three places spell the same predicate". |
 # | M2 | `pd.reloc.off`: drop the `+ 4` | 3 | :263 the two 32-bit arms land four bytes later. `nv_reloc_ok_off1` is the only forward row; the two per-arm rows make the shape readable. |
-# | M3 | `nvm.word`: `typ << 28` becomes `<< 29` | 23 | :48 the command header's four fields. Almost every queue row moves, which is the point: the header is in EVERY word stream. |
-# | M4 | `nvm.emit`: `nvals` for `NVQueue.sem` is 6 | 4 | :48 the UOp WEIGHTING -- a uint64 argument counts two words, so the header says 5. MEASURED, and this was the mutation that would have shipped a silently-wrong header. |
+# | M3 | `nvm.word`: `typ << 28` becomes `<< 29` | 25 | :48 the command header's four fields. Almost every queue row moves, which is the point: the header is in EVERY word stream. |
+# | M4 | `nvm.emit`: one word more for `NVQueue.sem` | 4 | :48 the UOp WEIGHTING -- a uint64 argument counts two words, so the header says 5. It moves `nv_sem_wait`, `nv_sem_signal`, `nv_sem_timestamp` and `nv_sig_value_kept`. |
 # | M5 | `qmd.slot.ok`: `not (a and b)` becomes `not (a or b)` | 1 | :86 `set_release` refuses only when BOTH release slots are busy. One row, and it is the case that differs. |
 # | M6 | `smemcfg.cand`: the candidates are walked largest-first | 2 | :293 the `min()` over {32768, 65536, 102400}. `nv_smemcfg_0` and `nv_smemcfg_1024` do NOT move, which is the trap: a `min` and a `max` agree on a zero shmem. |
-# | M7 | `to_name.join.parts`: the separator is appended to the head too | 14 | hcq2.py:63 `String.split` DROPS the separator, so it has to be put back. This is a `dev.bend` `rest_of` shape. |
-# | M8 | `flags.term`: `<< lo` becomes `<< (lo - 1)` | 21 | :40 the `[1]` of a bitfield tuple is the SHIFT. It moves every flag row and every word row that carries one. |
-# | M9 | `nvm.emit.go`: `Bool.pick` picks the new words instead of appending | 12 | THE `Bool.pick` SELECTOR TRAP: `Bool.pick(A, c, a, b)` answers `a`, so an "append unless refused" written as "the new list unless refused" DROPS the head. This is a real bug this file shipped and the diff found. |
-# | M10 | `copy.nsteps`: `ceildiv(sz, 2^31)` becomes "1 unless zero" | 4 | :191 the step loop's length. `nv_copy_nsteps_1` and `nv_copy_nsteps_768` do NOT move -- only the ones past 2^31. |
-# | M11 | `cq.exec.at`: the `prev` guard is dropped | 1 | :180 a CHAINED launch emits no words. One row, and it is the word COUNT. |
-# | M12 | `exec.ok.prod`: the disjunction becomes a conjunction | 4 | :164 `prod > 1024 OR max_threads < prod`. A conjunction would accept a launch the driver refuses, and the two refusal rows move together. |
-# | M13 | `pc.put.at`: `found < len` becomes `found != len` | **0 -- A REAL BLIND SPOT** | :315. `pc.find` answers `len(keys)` on a miss and an index below it on a hit, so the two predicates are THE SAME over its image: this is an equivalence on this port and the rows cannot tell. See THE BLIND SPOT below. |
-# | M14 | `arch_low`: `>> 4` becomes `>> 1` | 8 | :601 `val >> 4` where the test is `val > 0xf`. `nv_arch_100` and `nv_arch_101` do NOT move -- their `val` is below 0x10. |
-# | M15 | `sass_of`: `(sm & 0xf00) >> 4` becomes `>> 1` | 7 | :602. |
-# | M16 | `iowr.cmd`: drop the `& 0x1FFF` | 3 | :44 `sizeof(args) & 0x1FFF` truncates an 8 KiB struct to nothing. `nv_iowr_size_is_same` is the row that says the wrong answer is "same as an empty struct". |
-# | M17 | `pd.max2`: `is_gt` becomes `is_lt` | 7 | a max that is a min. `nv_pd_kernargs_*` and `nv_pd_cbuf0_len_*` all move, which is the count of places a MAX is load-bearing. |
-# | M18 | `dev.reg_nchunks`: the chunk is 128 | 10 | :819 `range(0, len(ops), 124)`. `nv_regops_chunks_124` does NOT move and `nv_regops_chunks_125` does. |
-# | M19 | `dev.slm`: the early return is dropped | **1, AND 0 BEFORE THE FIXTURE WAS ADDED** | :689 the NEGATIVE CASE for the whole pool. This is the row the brief asks for and it is the one that was invisible: every original fixture had `have` already equal to `round_up(required, 32)`, so the guard and its absence agreed. `nv_slm_33_have48` is the fixture that fixed it and the mutation's move count went 0 -> 1. |
-# | M20 | `iface.want`: the ladders read oldest-generation-first | 7 | :408-412. `nv_pick_amp_*` does NOT move -- the AMP fixture holds only old-generation classes -- and `nv_pick_new_*` does. The ladder rows and the pick rows are the two halves. |
-# | M21 | `prof.sm_reg.pre`: `* 0x200` becomes `+ 0x200` | 3 | :805 the pre-Blackwell TPC term MULTIPLIES. A first version of this def had the SM base multiplied instead of added, which is M21's sibling and is named in the def's comment. |
-# | M22 | a COMMENT-ONLY edit | **0 -- THE CONTROL** | a table with no row that CANNOT move is a table of coincidences. |
-# | M23 | `to_name.join.go`: cons instead of append | REFUSED | not a number: the cons puts the shrinking list SECOND in the self-call and the decrease check fails (bend2-constraints.md rule 5). The ORDER claim is therefore covered by M7 and by the four `nv_toname_*` value rows instead. |
-# | M24 | `pd.max_threads`: the register granularity is 128 | 2 | :305 `round_up(regs * 32, 256)`. Only the two small-register fixtures move, because a bigger granularity saturates the same quotient. |
-# | M25 | `nvm.words`: the payload word drops the header tag | REFUSED | a TYPE change -- `List<&2, Call>` where `List<&2, U32>` is expected -- so the compiler refuses it and the measurement is that `Tr.args(CALL_WORD(), t)` genuinely cannot be answered another way. |
-# | M26 | `Tr.has.go`: the fuel arm answers `True{}` | 2 | THE MATCHER WITH ITS FUEL SET TO NOTHING -- the blind spot that cost `ops_webgpu.bend` eight order rows. `nv_has_rejects_reverse` and `nv_has_rejects_absent` are the rows that die, and they are the FIRST rows of the matcher section so nothing else can be read past them. |
-# | M27 | `cq.stride`: drop the `qmd_sz` term | 1 | :137 `stride = qmd_sz + max(kernargs)`. |
-# | M28 | `pd.image_len`: drop the `+ 0x1000` | 6 | :277 "Ensure at least 4KB of space after the program" -- the NOTE is load-bearing. |
+# | M7 | `to_name.join.parts`: the separator is appended to the head too | 11 | hcq2.py:63 `String.split` DROPS the separator, so it has to be put back. This is a `dev.bend` `rest_of` shape. |
+# | M8 | `flags.term`: the shift is `lo - 1` | 21 | :40 `getattr(nv_gpu, f"{reg}_{k}")[1]` is the bitfield tuple's SECOND element, which is the SHIFT and not the low bit. |
+# | M9 | `Tr.emit`: the append is built OUTSIDE the `Bool.pick` | 12 | the emit REPLACES the head instead of appending -- the `Bool.pick` selector trap. It reaches the semaphores, the copy command and the launch. |
+# | M10 | `copy.nsteps`: `ceildiv` becomes "1 unless zero" | 5 | :191 `len(range(0, sz, 1 << 31))` is 0 for an empty copy and 2 at the top of the `U32` range; `nv_copy_nsteps_half` and the two top-of-range rows are what move. |
+# | M11 | `cq.exec.at`: the chained arm drops the `Bool.pick` | 1 | :180 a CHAINED launch emits no words at all -- `nv_launch_chain_words` is 0 and every other launch row is untouched. |
+# | M12 | `exec.ok.prod`: the disjunction loses one conjunct | 6 | :164 `prod > 1024 OR max_threads < prod`. The two conjuncts are separate rows (`nv_launch_ok_1024_512` and `nv_launch_ok_2048_8192`) BECAUSE a mutation that keeps one conjunct still moves the other's row. |
+# | M13 | `pc.find`: the miss sentinel becomes `!=` instead of `<` | **0** | :315 A REAL BLIND SPOT. It moves nothing because `pc.find` answers `len` on a miss and an index below it on a hit, which makes `found < len` and `found != len` THE SAME PREDICATE over every possible answer. A test that cannot fail is not a test. |
+# | M14 | `arch_of`: `>> 4` becomes `>> 1` | 8 | :601 `val >> 4` where the test is `val > 0xf`. |
+# | M15 | `sass_of`: `(sm & 0xf00) >> 4` becomes `(sm & 0xf)` | 7 | :602, and it is the only place in the file where the two masks are confused with each other. |
+# | M16 | `iowr.cmd`: the size mask is dropped | 3 | :44 `ctypes.sizeof(args) & 0x1FFF` -- an 8 KiB struct encodes as if it were empty. |
+# | M17 | `pd.min_cbuf0`: a `max` becomes a `min` | 7 | `device.bend:584`'s own rule, one layer down: `max(cbuf0 // 4, min_cbuf0)`. |
+# | M18 | `reg_ops`: the chunk is 128 instead of 124 | 10 | :819 `range(0, len(ops), 124)` and the last chunk is short, so 125 ops are TWO ioctls. |
+# | M19 | `dev.slm`: the early-return guard is dropped | 1 | :689 the NEGATIVE CASE for the whole pool. It moved NOTHING until `nv_slmp_33_have48` was added, because every other fixture had `have` already equal to `round_up(required, 32)`. |
+# | M20 | `NV_PICK`: the ladders are walked oldest-first | 7 | :408-412 the ladders are NEWEST GENERATION FIRST, and `nv_ladder_*` print the whole chosen row. |
+# | M21 | `sm_reg.pre`: `* 0x200` becomes `+ 0x200` | 3 | :805 `(ntpg - cnt + tpc) * 0x200` MULTIPLIES. |
+# | M22 | THE CONTROL: a comment-only edit | **0** | a table with no row that CANNOT move is a table of coincidences. This is the row that says the other zeroes mean something. |
+# | M23 | `to_name.join.go`: cons instead of append | REFUSED | not a number: the cons puts the shrinking list SECOND in the self-call and the decrease check fails. The ORDER claim is covered by M7 and by the nine `nv_toname_*` value rows. |
+# | M24 | `pd.max_threads`: the register granularity is 128 | 2 | :305 `round_up(regs * 32, 256)`, and it only shows at `regs` 0 and 1 where the two roundings part company. |
+# | M25 | `nvm.words`: the payload drops its tag | REFUSED | a TYPE change -- a bare `U32` where a `Call` belongs -- so it is refused rather than measured. |
+# | M26 | `Tr.has.go`: the fuel is set to nothing | 2 | THE MATCHER WITH NO FUEL: it moves the two NEGATIVE rows and no positive one, which is `ops_webgpu.bend`'s real blind spot. |
+# | M27 | `cq.stride`: the `qmd_sz` is dropped | 2 | :137 stride is `qmd_sz` PLUS the largest kernargs. `nv_launch_stride256` is the row that can tell the two apart; at 0 kernargs they agree. |
+# | M28 | `pd.image_len`: the trailing 4 KiB is dropped | 6 | :277 the NOTE is 4 KiB of slack AFTER the page-aligned image. |
+# | M29 | `query_litter.at`: the set becomes {1,2,3} | 4 | :665 THE LITTER SET IS {0,1,2}. This mutation is the SECOND wrong reading of that set -- the first said {1,3} -- and it is kept in the table so both readings stay on the record. Only `nv_570.__dict__` settles it. |
+# | M30 | `dev.slm_bytes`: the 128 KiB rounding is dropped | 1 | :693 the ONLY 128 KiB rounding in the file. It moved NOTHING until `nv_slmtot_1_1_1` was added, because all six real fixtures are already exact multiples of 131072. |
+# | M31 | `qmd.fields_v3`: 181 becomes 180 | 1 | :58-59 the count IS the reason a word list is exact. The count had a COMMENT naming a row the file did not have. |
+# | M32 | `iowr.cmd.at`: the sentinel arm is swapped | 3 | :44 `cmd or (...)` -- a zero explicit word falls THROUGH to the derived one, and `cmd=0` is what every `uvm()` call passes. |
 #
 # THE BLIND SPOT (M13), because it is the honest half of the table.
 # `pc.find`'s CONTRACT is "the index of the match, or the list length if there is
