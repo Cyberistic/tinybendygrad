@@ -216,9 +216,9 @@ day rediscovering that `2n+p` is not an even-case test.
 | --- | --- | --- | --- |
 | P3 | `uop/` | 10 | [####......] 4/10 |
 | P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
-| P5 | `codegen/` `renderer/` | 30 | [..........] 0/30 |
-| P6 | `runtime/` | 36 | [..........] 0/36 |
-| P7 | `tensor` `mixin/` `nn/` | 15 | [#.........] 1/15 |
+| P5 | `codegen/` `renderer/` | 30 | [##.......] 5/30 |
+| P6 | `runtime/` | 36 | [..........] 2/36 |
+| P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
 | P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [..........] 0/15 |
 
 ### P4 — `schedule/`
@@ -416,4 +416,196 @@ excluded by tinygrad's own hardware markers, not by us.
 - [ ] engine/realize: ~20 rows rest on single-arm-case-_ Bool constants (bl_u); fix documented at top of file, mechanical; two converted as the pattern.
 - [ ] sz rounding (exact vs double) and sym_10 divergence — still the owner's two calls.
 - [ ] decomp: 3 rules do not fire (9 rows, undiagnosed); magicgu/fast_idiv at the i64 wall.
-- [ ] mixin/op.py (1980 lines) + elementwise.py + decomp/transcendental.py + nn/ unported.
+- [x] `mixin/op.py` lines **1-997** — `tinybendygrad/mixin/op.bend`. 32 CPython rows
+      byte-identical on both lanes, `--check-only` = `ALL PROOFS CHECK`, 17 mutations
+      measured. Lines 998-1980 are a second agent's half in the same file. See the
+      round-5 section below.
+
+## Session 2026-10-01 round 3 — `mixin/elementwise.py`
+- [x] `tinybendygrad/mixin/elementwise.bend` — `_broadcasted`/`_binop`/`promote`/
+      `remint`/`ufix` + the method surface. 69 gate rows, byte-identical to CPython on
+      BOTH lanes (interpreted and `-o` native), `--check-only` = `ALL PROOFS CHECK`.
+      Oracle `.agents/slop/ew-gate.py`, mutation harness `.agents/slop/ew-mutate.py`.
+- [x] THE ARENA RULE HAS A SECOND HALF, and it cost the whole session. Rule 6 of
+      bend2-constraints ("a node belongs in the arena as it stood after the last node
+      built before it") is about a node built in the WRONG arena; the second half is
+      two builds from the SAME base producing SIBLING arenas, where "take the longer"
+      finds a store containing neither's loser. `sub`'s int arm printed 4 nodes where
+      CPython prints 6. Fixed by threading `+O.Arena` (never `Tensor.ar(t)`), rebasing
+      on the arms that mint NOTHING, and running the two promotions sequentially.
+- [x] `+fx: F.Folded` as a parameter is a trap on any def that builds — it goes stale
+      the moment the callee mints and fails SILENTLY (`void` dtype -> `void` is not
+      weak -> the CAST arm). Removed from 14 defs; `ew_fx` folds at the point of use.
+- [x] Two more `Found`-arena bugs, both silent: `ew_promote.b` paired a build's index
+      with the fold's stale arena, and `ew_remint.put` built in the arena its OWN
+      recursion grew past. Both are `ew_of`'s rule one level down.
+- [x] `O.Arena.src_to` KEEPS the first k; `O.Arena.src_from` DROPS the first k. `remint`
+      wanted `src[1:]` and wrote `src_to`, which on a one-src node is the whole list.
+- [x] ORACLE BUG FOUND AND FIXED: `ew-gate.py`'s `opat` used `k` as BOTH a toposort
+      depth and a src slot. Identical at k=0, silently wrong at k=1 — it read
+      `MUL.src[1]` where the row means `root.src[1]`, so `ew_op_sub1` asserted
+      `CONST` about a graph whose `sub` is an ADD over a MUL.
+- [x] 14 mutations measured. M3 and M5 measured ZERO and both were REAL GAPS, not
+      equivalences: `promote`'s `base.is_invalid` arm and `remint`'s recursion had no
+      fixture. Closed with `ew_promo_invalid` (a `dtypes.bool.const(Invalid)` CONST)
+      and `ew_remint_recurse` (a `DETACH`, which ops.py:787 descends in `base`).
+      M5's remaining zero is an EQUIVALENCE and is reported as one.
+- [ ] `remint`'s `+u.src[1:]` ORDER is still ungated (needs a Movement node with a
+      shape arg; CPython takes the weak arm there and this port takes the CAST arm, so
+      it is a `fold.bend` dtype question, not an `elementwise.bend` one).
+
+## Session 2026-10-01 round 4 — `codegen/decomp/transcendental.py`
+- [x] `tinybendygrad/codegen/transcendental.bend` — all 26 Python defs. 891 STRING gate
+      rows, byte-identical to `python3 .agents/slop/tx-arena.py` on BOTH lanes,
+      `--check-only` = `ALL PROOFS CHECK`. Oracle `.agents/slop/tx-arena.py`, mutation
+      harness `.agents/slop/tools/tx-mut.py`. 13 mutations, all still `checks`, all move
+      rows; four move exactly one.
+- [x] NO 64-BIT ARITHMETIC IS NEEDED. transcendental.py BUILDS GRAPHS; only 64-bit
+      CONSTANTS appear, and `H.i64_of_hi_lo` mints both halves. `shr`/`shl`'s UOp arm
+      is DEAD at all 11 sites (every call site passes a Python int), so `tx_shr`/`tx_shl`
+      are a `FLOORDIV`/`MUL` by a CONST and `helpers.bend` needs no `i64_*`.
+- [x] THREE MEASURED ERASURES IN THE ORACLE, all of which a naive port gets wrong:
+      (a) promotion CASTs, (b) `UOp.const`'s own fold, (c) a CONST's key is its VALUE and
+      not `repr(arg)` — `UOp.const(x)` is `ConstFloat(x)` while `UOp.const(x, float32)` is
+      `dtypes.float`, so the same float is TWO Python nodes and ONE port node. The key is
+      also STRUCTURAL, not `id()`.
+- [x] `cody_waite_reduction`'s float16 and float64 arms are WRITTEN (not stubbed):
+      `cw_quadrant.d64` subtracts `qdh`, `reduce` takes `d64` AND `f16` as two separate
+      Bools, `tx_cw16.chain` recurses into the float32 chain and casts back. `tx_d64` was
+      referenced and never defined; it is now `pri == 15`.
+- [x] `tx_rintk`'s `dt` IS `d`'s OWN FLOAT DTYPE. A caller that pre-converts
+      double-converts — `tx_int_dt(S.int32())` is `S.int64()`, not `S.int32()` — and the
+      rintk CAST came out `long` where the oracle says `int`. THREE rows, and every
+      count row was still correct: `a_cw 23`, `a_xsinf 39`, `a_xsin 143`.
+- [x] `tx_cf_neg0`'s WORKAROUND is now UNNECESSARY. The defect it routed around is
+      FIXED (commit `65b585e1`): `ops.bend:1406` `eq_const.CFloat` asked `F32.is_eq`,
+      which IEEE says is TRUE of `+0.0`/`-0.0`, while tinygrad's `UOp.key` is a hash
+      over the packed arg and keeps them apart. It was wrong in BOTH directions --
+      identical NaNs must intern, and IEEE says NaN != NaN -- so the fix is
+      `U32.is_eq(F32.bits(f), F32.bits(g))` and the gate is two rows, one per
+      direction (`t_float_zeros_differ`, `t_float_nan_interns`), both CPython-measured.
+      `decomp.bend:126` KEEPS `F32.is_eq`: there the question is a value question.
+- [ ] `tx_cf_neg0` itself: with `eq_const.CFloat` bitwise, re-check whether the
+      workaround still changes any row, and delete it if not. Not done — `decomp.bend`
+      is not mine to churn for a cosmetic reason.
+- [ ] NOT GATED, and stated in the file: the float16 and float64 windows, because the
+      oracle's fixture is float32. The float64 coefficient literals are written as full
+      decimals and are NOT independently verified. TODO(p3) tags in the file name each
+      Python line.
+- [ ] `decomp.bend`'s table should IMPORT, not re-derive: `tx_tab`, `tx_t_apply`, and
+      the four expansions `xexp2`, `xlog2`, `xsin`, `xpow`. Reported only, not changed.
+
+## Session 2026-10-01 round 5 — `mixin/op.py` lines 1-997
+- [x] `tinybendygrad/mixin/op.bend`, SIDE A. Boundary is **line 997**, a def boundary:
+      `topk` is op.py:976-996 and 997 is its blank, so SIDE A ends on a whole def and
+      SIDE B (998-1980, another agent) starts on `allclose`. **32 shared rows,
+      CPython == interpreted == native, byte for byte**; `--check-only` = `ALL PROOFS
+      CHECK`. Oracles `.agents/slop/mixin-op-gate.py` (CPython) and
+      `.agents/slop/mixin-op-gate.sh` (three lanes), mutator
+      `.agents/slop/mixin-op-mutate.py`.
+- [x] PORTED AND GATED: `min` (op.py:473), `mean` (:496), `var` (:523), `var_mean`
+      (:551), `std` (:568), `std_mean` (:592), `normalize(p=0)` (:609), `logsumexp`
+      (:630), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
+      (:709), plus `max`/`sum`/`prod` (reduce.py) which they call, and
+      `exp`/`log`/`isfinite`/`isnan`/`isinf` (elementwise.py). EIGHT WALLS W1-W8, each
+      named at its Python line in the header; `item`/`data` are neither walls nor ports.
+- [x] **THE ARENA RULE, MEASURED SIX TIMES.** Arguments read LEFT TO RIGHT, so
+      `T.tn_new(T.Tensor.ar(x), ...Uop.const(T.Tensor.ar(x), ...)...)` reads the arena
+      BEFORE the const exists. Symptoms are never wrong numbers: a `NOOP/0` bottom, a
+      node whose src is itself, an empty toposort, or a node silently OVERWRITING the
+      one it was meant to consume. Hence `mo_const_t` and `mo_cast_t` exist as defs.
+- [x] **W9 IS TWO DEFECTS, NOT ONE, and BOTH ARE NOW FIXED** (W9a in `elementwise.bend`
+      mid-session via `ew_rebase`; W9b in commit `95197de9`). W9b was the MISSING
+      CONJUNCT: `ew_promote` (elementwise.bend:378) passed `W.dt_weak(dt)` -- the CLASS
+      test alone -- where elementwise.py:30 is `t.dtype in dtypes.weaks AND t._uop.base.op
+      is Ops.CONST`. It was invisible because EVERY fixture in `elementwise.bend` holds a
+      weak CONST, so the conjunct was true wherever it was read; M13 (delete it) moved
+      nothing before the new rows. It is not cosmetic: `weak_dtype(out_dtype)` is weak
+      whenever `out_dtype` is strong, so a weakint ADD against int32 stayed weakint and
+      the root then added weakint to int32. CPython, measured live: `Tensor(3)+Tensor(5)`
+      is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.int32)` its src0 is
+      `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture whose weak tensor is NOT a
+      CONST; three rows, and the full-gate diff showed only those moving.
+- [ ] **`mo_promote` IS NOW A DUPLICATE AND SHOULD BE DELETED.** It was spelled out here
+      rather than delegated to `E.ew_promote` because of W9 -- both halves. With W9a and
+      W9b fixed, the reason is gone, and `promote` exists twice (op.bend:437 and
+      elementwise.bend:378) which is the copy-paste the rules forbid. Before deleting:
+      re-run `op.bend`'s gate and confirm `t_norm0` still prints 17 (it does today, and
+      it is the row that proves the cast survives).
+- [x] **17 MUTATIONS MEASURED, 13 MOVE.** The four that do not are reported, not
+      dropped: M6 (reduce.py:45's cast, negative for float32), M7 (`smax` at
+      `correction=0`), M8 (**`log_softmax` reading `_softmax`'s `e` instead of its `m`
+      is UNFALSIFIABLE by any graph oracle** -- `ss = e.sum(...)` already pulls `e` into
+      the graph, so the two programs are graph-isomorphic), M17 (the whitespace
+      CONTROL).
+- [x] **M10 CHANGED THE TABLE.** Dropping the arena re-wrap from `promote`'s
+      `is_invalid` arm moved nothing, and the reason was that `t_bin_promote` interned
+      its invalid CONST the stale way -- `mo_const_t`'s own rule, in the row meant to
+      test it -- so the arm was never taken. The row was rebuilt FOUR-SIDED (each
+      "return `t`" arm checked for the NODE and for the ARENA, with the operands
+      ordered so each fold is newer than what it promotes) and M10 now moves it.
+- [x] **THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`**: `softmax` (15) and
+      `log_softmax` (18) printed from ONE arena over a 13-node shared prefix.
+      `softmax3_m/e/ss` (8/11/13) pin `_softmax`'s three outputs.
+- [ ] `mixin/op.py` lines **998-1980** — second agent, same file, `mo2_*` / `mo_b_gate`,
+      and it must not re-declare `main`.
+
+## Session 2026-10-02 — the device wave (renderer, codegen/opt, nn, langs) + two shared defects
+
+Five units landed while ten agents ran in parallel. Everything below is verified by
+me, not by the agent that wrote it: `--check-only` re-run, or the gate re-run and
+diffed.
+
+- [x] `runtime/ops_webgpu.bend` — `tinygrad/runtime/ops_webgpu.py`. 1738 -> 1811
+      lines, 267 defs, 147 rows, both lanes byte-identical, `ALL PROOFS CHECK`
+      (`564916f6`). The rule it is built on: a def either builds the argument of one
+      wgpu call or records that call — no third kind — so the `raise` lives in the
+      TRACE and a refusal is a truncated trace needing no guard of its own. Two bugs
+      its own gate caught: `Tr.has` returned True to everything (fuel was the pattern
+      length, so eight order rows were decorative), and `slots` consed then reversed
+      (which would have silently broken the wgsl binding correspondence).
+- [x] `renderer/wgsl.bend` — `tinygrad/renderer/wgsl.py`. 1062 lines, 168 string-diff
+      rows, `ALL PROOFS CHECK` (`eb020720`). `is_packed` shipped with its third clause
+      INVERTED, so the entire packed path was dead code while 100+ rows stayed green;
+      the 40 `is_packed`/`buf_map` rows exist because of that finding. Two rows differ
+      and are left printing (the f64 nan mask and threshold — a U32 cannot hold either,
+      and neither is reachable from a WGSLRenderer).
+- [x] `codegen/{kernel,rewriter}.bend` — 2105 lines, 70 rows diffed against a Python
+      oracle, `ALL PROOFS CHECK` (`e68fcedc`). **The Python files named in the brief
+      do not exist in this fork**: `codegen/` is a package, `codegen/__init__.py` (518
+      lines) IS the kernel, and the lowerer is split across `simplify.py`,
+      `late/coalesce.py` and `gpudims.py`. The oracle found three real bugs (a `ctx[0]-1`
+      off-by-one, the INS dispatch, `ab_miss` reading a count instead of a bool), and
+      the one real finding in the PYTHON: `pm_to_program` rule 3 is unreachable because
+      rule 2's unconstrained `LINEAR` arm shadows it.
+- [x] `examples/beautiful_mnist.ts` — 611 lines, mirrors the 48-line .py section by
+      section, decorators carrying the tinygrad NAMES (`@TinyJit`, `@Context({TRAINING:
+      1})`, `@function_` because `function` is a TS reserved word — verified, TS1146).
+      Gated on `tsc --strict` in both module modes plus a real descending curve.
+- [x] `mixin/elementwise.bend` — **`promote` was missing its second conjunct** (`95197de9`).
+      Details in the W9 entry above. A real defect, not a coverage hole: M13 moved
+      nothing before the new rows existed.
+- [x] `uop/ops.bend` — **`eq_const.CFloat` was IEEE where CPython is bitwise** (`65b585e1`).
+      Wrong in both directions, so the gate is two rows, one per direction.
+- [x] `bend2-constraints.md` rule 8: `dtype.bend`'s fourteen seams make every importer
+      print `SOME PROOFS FAIL` and that redness is NOT evidence about your work.
+      `@unsafe` is not the fix (the guide says so), and Bend 2.0.34 has no F16/I64/F64.
+- [x] `bend2-constraints.md` rule 9: `bend base F32` prints nine defs and none of them
+      are arithmetic (the rest are laws only — compiler builtins with no body); a
+      NEGATIVE FLOAT LITERAL does not parse (`F32.neg(0.0)`); `F32.is_eq` is IEEE while
+      CONST identity must be bitwise; and `{expr}` inside an `IO.print` string does NOT
+      fire — it prints the template verbatim with no error.
+
+### In flight when the machine went quiet (uncommitted, agents still writing)
+
+`nn/state.bend` 834 and `nn/__init__.bend` 502 (the layers the example names, which is
+the whole point of that unit) · `codegen/opt/search.bend` 402 and `postrange.bend` 1065
+(heuristic still a stub — **BEAM is NOT done**; search.py is the beam search itself and
+its `BEAM=1` gate has not run yet) · `renderer/__init__.bend` 553 and `cstyle.bend` 1240
+(the conventions header wgsl reads was written first, which is why wgsl could land) ·
+`device.bend` 1190 · `langs/core.bend` 334 · `runtime/executor.bend` 2244 ·
+`examples/beautiful_mnist.bend` 831 (agent reports 25 shared rows green across three
+lanes, 4 walls named, and TWO substrate defects routed around rather than fixed:
+`fold.bend:1621` deferring PERMUTEs dtype, and `helpers.bend`'s `f32_fixed` TRUNCATING
+instead of rounding — `f32_fixed(2.3456, 2n)` prints `2.34` where CPython prints `2.35`,
+so this example's pretty output is wrong for roughly half of all values).
