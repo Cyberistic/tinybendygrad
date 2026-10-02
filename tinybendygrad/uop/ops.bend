@@ -2082,8 +2082,14 @@ def UOp.after.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Foun
     case Nil{}: Found{ar, self}
     case _ <> _: made
 
+# `src=(self,)+srcs` puts SELF FIRST. This used to read
+# `List.append(&2, U32, srcs, [self])`, which is `srcs ++ [self]` -- so the node landed
+# LAST, the exact inverse of the comment right above it. Nothing caught it because an AFTER
+# built this way has the same op, the same nsrc, the same shape and the same dtype as the
+# correct one: only the SRC OP SEQUENCE differs, and no row printed that. Found by the
+# schedule/prepare unit, which built its own AFTER in the right order to route around it.
 def UOp.after(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
-  UOp.after.go(srcs, ar, self, UOp.new(ar, OpsAFTER{}, List.append(&2, U32, srcs, [self]), ANone{}, TNone{}))
+  UOp.after.go(srcs, ar, self, UOp.new(ar, OpsAFTER{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
 # end -- ops.py:619. `UOp(Ops.END, src=(self,)+src) if len(src) else self`
 def UOp.end.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Found:
@@ -2091,8 +2097,9 @@ def UOp.end.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Found:
     case Nil{}: Found{ar, self}
     case _ <> _: made
 
+# `src=(self,)+src` puts SELF FIRST -- see UOp.after above, which had this inverted.
 def UOp.end(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
-  UOp.end.go(srcs, ar, self, UOp.new(ar, OpsEND{}, List.append(&2, U32, srcs, [self]), ANone{}, TNone{}))
+  UOp.end.go(srcs, ar, self, UOp.new(ar, OpsEND{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
 # mstack -- ops.py:773. `UOp(Ops.MSTACK, src=(self,)+srcs) if len(srcs) else self`
 def UOp.mstack.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Found:
@@ -2100,8 +2107,9 @@ def UOp.mstack.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Fou
     case Nil{}: Found{ar, self}
     case _ <> _: made
 
+# `src=(self,)+srcs` puts SELF FIRST -- see UOp.after above, which had this inverted.
 def UOp.mstack(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
-  UOp.mstack.go(srcs, ar, self, UOp.new(ar, OpsMSTACK{}, List.append(&2, U32, srcs, [self]), ANone{}, TNone{}))
+  UOp.mstack.go(srcs, ar, self, UOp.new(ar, OpsMSTACK{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
 # `(self,)*count` from `UOp.broadcast` below, written out. It is helpers.py's
 # `list(x) * n`, and it is why `UOp.broadcast` needs no variadic.
@@ -3680,6 +3688,35 @@ def t_cycle() -> Bool:
 #   c0 = UOp.const(0); r0 = UOp.range(c0, (0,), AxisType.LOOP)
 #   list(UOp.range(r0 + c0, (0,), AxisType.GLOBAL).toposort()) has four entries,
 #   'Ops.CONST', 'Ops.RANGE', 'Ops.ADD', 'Ops.RANGE'.
+# ops.py:621 `UOp.after` builds `src=(self,)+src`, so SELF IS src[0]. This row exists
+# because `UOp.after`, `UOp.end` and `UOp.mstack` all had the inverse -- SELF LAST -- and
+# NOTHING IN THIS FILE COULD SEE IT. An AFTER built either way has the same op, the same
+# nsrc, the same shape and the same dtype; only the SRC OP SEQUENCE differs, and no row
+# printed that. Found by the schedule/prepare unit, which built its own AFTER in the right
+# order to route around the bug instead of editing this file.
+#
+# So this row asserts the SEQUENCE, not the count. The self is a RANGE (UOp.range_end
+# builds OpsRANGE, ops.py:660) and the supplied node is a CONST, so self-first means
+# src[0]=RANGE and src[1]=CONST. The bug answers exactly the reverse.
+def t_after_puts_self_first() -> Bool:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +e = UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_GLOBAL{})
+  +a = UOp.after(Found.ar(e), Found.i(e), [Found.i(c)])
+  +ar = Found.ar(a)
+  Bool.and(op_is(ar, Found.i(a), OpsAFTER{}),
+  Bool.and(op_is(ar, Arena.src(ar, Found.i(a), 0), OpsRANGE{}),
+           op_is(ar, Arena.src(ar, Found.i(a), 1), OpsCONST{})))
+
+# the same for `UOp.end` (ops.py:619): self first, supplied node second.
+def t_end_puts_self_first() -> Bool:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +e = UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_GLOBAL{})
+  +e2 = UOp.end(Found.ar(e), Found.i(e), [Found.i(c)])
+  +ar = Found.ar(e2)
+  Bool.and(op_is(ar, Found.i(e2), OpsEND{}),
+  Bool.and(op_is(ar, Arena.src(ar, Found.i(e2), 0), OpsRANGE{}),
+           op_is(ar, Arena.src(ar, Found.i(e2), 1), OpsCONST{})))
+
 def t_toposort() -> Bool:
   +f = g_chain()
   +ar = Found.ar(f)
@@ -3935,6 +3972,8 @@ def main() -> IO(Unit):
     a3 : Unit <- row("float_nan_interns", t_float_nan_interns())
     b : Unit <- row("dtype_key", t_dtype_key())
     c : Unit <- row("cycle", t_cycle())
+    row("after_puts_self_first", t_after_puts_self_first())
+    row("end_puts_self_first", t_end_puts_self_first())
     d : Unit <- row("toposort", t_toposort())
     e : Unit <- row("cycle_terminates", t_cycle_terminates())
     f : Unit <- row("key_eq", t_key_eq())
