@@ -1,0 +1,50 @@
+### what the 150,174-line output needs, and whether bend 2.0.34 has it
+
+  [NO     ] a runtime type for `ctypes.Struct` subclasses
+      the output has it because: 70,056 ffi_class lines are `class X(c.Struct)` with a SIZE and register_fields
+      bend: `type` exists but a bend `Data` has no SIZE, no field OFFSET and no register_fields; `references/bend/bend2/base.bend` has no pointer or layout facility at all
+
+  [NO     ] `c.POINTER[T]` (a pointer to a generated record)
+      the output has it because: every by-reference ctypes binding; `c.POINTER` appears in tens of thousands of rows
+      bend: no pointer type, no address-of, no `T*`; bend's only heap is `List` and `Array`, neither of which is addressable
+
+  [NO     ] `T.in_dll(lib, 'name')` (a symbol resolved at dlopen time)
+      the output has it because: the external VarDecl arm, autogen.py:263-265
+      bend: no `dlopen`, no `dlsym`, no `extern` symbol; `base.bend`'s only FFI is `File`/`TCP`/`Chan`, none of which is a user-loadable symbol
+
+  [PARTIAL] a LARGE integer literal (0x1fffffb000000, `(1 << 48) - 1`)
+      the output has it because: the register windows and VA sizes; meas2 counted 39,147 hex lines
+      bend: `U32` saturates above 2^32-1 and a `U32` literal cannot be written at all; `helpers.bend` builds an `I64` as a PAIR of U32 halves and prints it `hi:lo`, which is not the output's decimal form
+
+  [PARTIAL] `lambda` in a generated module (the function-like macros)
+      the output has it because: autogen.py:250, and 4 such rows survive in the whole output
+      bend: `Bool.pick`/`List.foldl` take closures but `+` cannot be spelled in a closure TYPE, and a generated LAMBDA would have to be data
+
+  [NO     ] `dict[int, str]` and `Literal[N]` annotations
+      the output has it because: 39,940 table rows: the enum dicts and the array element counts
+      bend: bend has no annotation syntax and no `dict`; the nearest is a `Data` record or a `List`, and `Literal[N]` has no spelling
+
+  [NO     ] `@c.record` / `@dll.bind` DECORATORS
+      the output has it because: every generated struct and every bound function
+      bend: no decorator syntax in bend 2.0.34
+
+  [NO     ] a `try/except` around `in_dll`
+      the output has it because: autogen.py:264-265, one row per external variable
+      bend: no exception handling at all; bend's `IO.try` is a combinator on an `IO`, and it is not an `except` clause
+
+  [NO     ] a Python MODULE that other Python imports
+      the output has it because: the entire point: `tinygrad/runtime/autogen/*.py` is an importable package
+      bend: bend has no module system of this kind; `import ./x.bend` is a compile-time sibling include, not a runtime-loadable binding table
+
+### THE MEASURED VERDICT
+
+Nine constructs, and bend 2.0.34 has NONE of them in a usable form and TWO only
+partially. So the honest answer to "does the generator's OUTPUT need anything
+bend cannot express" is YES, and it is not marginal: the output's central data
+structure (a layout-carrying ctypes record) has no bend counterpart AT ALL, and
+the reason is not syntax -- it is that a bend `Data` carries no SIZE, no field
+OFFSET and no address.
+
+That is the strongest single argument for the GENERATOR port, and it is the
+opposite of what the tension in the brief suggested: the OUTPUT is the part
+bend cannot hold, not the part it can.

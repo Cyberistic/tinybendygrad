@@ -1,0 +1,32 @@
+### autogen-sourced constants that caused a REAL port bug, per this repo's records
+
+   33  from tinygrad/runtime/autogen/nv_570.py (+ nv_580/nv_610, nv.py)
+        ops_nv.bend: 33 of 219 hand-typed constants WRONG behind 590 green rows; all eleven CLASS_* ids among them, so the class ladder never matched a real GPU
+        recorded at .agents/TODO.md:1195-1201
+
+    1  from tinygrad/runtime/autogen/bnxt.py
+        BNXT_VENDOR shipped as 5356 where the header says 5348
+        recorded at .agents/TODO.md:1745
+
+    2  from tinygrad/runtime/autogen/libusb.py
+        SENTINEL_MAGIC 1363148800 vs 0x51000000 = 1358954496; FAST_P1_MASK 215 vs 0b11011111 = 223
+        recorded at .agents/TODO.md:1757-1758
+
+    1  from tinygrad/runtime/autogen/libusb.py
+        E_SYNTH / enum_libusb_class_code had the wrong entry count (the real table has 19)
+        recorded at .agents/TODO.md:1786-1791
+
+    1  from tinygrad/runtime/autogen/libusb.py
+        struct_libusb_transfer field ORDER transposed relative to the header, invisible to a count-based gate
+        recorded at .agents/TODO.md:1745-1749 (the usb.py:350-351 by-NAME access)
+
+TOTAL ATTRIBUTABLE TO autogen/: 38
+
+For contrast, the POPULATION the repo records: 533 numeric constant defs
+across ops_nv 222, ops_metal 106, ops_cl 103, ops_webgpu 67,
+ops_cpu_null 29, cstyle 6, tc_ptx 6 (.agents/TODO.md:1213-1216).
+
+NOTE WHAT IS NOT IN THE COUNT: the two nv/ip `nv_query_litter` and the
+renderer/cstyle 17-of-215 are NOT autogen constants (nv/ip is a hand
+oracle over ops_nv.py; cstyle is not an autogen binding), so they are
+the WRONG-KIND evidence and are excluded deliberately.

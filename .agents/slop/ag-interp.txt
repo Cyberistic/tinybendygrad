@@ -1,0 +1,149 @@
+tmap 2 = None
+tmap 3 = ctypes.c_bool
+tmap 4 = ctypes.c_ubyte
+tmap 5 = ctypes.c_ubyte
+tmap 8 = ctypes.c_uint16
+tmap 9 = ctypes.c_uint32
+tmap 10 = ctypes.c_uint64
+tmap 11 = ctypes.c_uint64
+tmap 13 = ctypes.c_char
+tmap 14 = ctypes.c_byte
+tmap 15 = ctypes.c_wchar
+tmap 16 = ctypes.c_int16
+tmap 17 = ctypes.c_int32
+tmap 18 = ctypes.c_int64
+tmap 19 = ctypes.c_int64
+tmap 21 = ctypes.c_float
+tmap 22 = ctypes.c_double
+tmap 23 = ctypes.c_longdouble
+uints 4 5 8 9 10 11
+ints 4 5 8 9 10 11 13 14 16 17 18 19
+fps 111 110
+specs 40
+arc alloc copy mutableCopy new
+rule 0 : \s*\\\n\s* =>  
+rule 1 : \s*\n\s* =>  
+rule 2 : //.* => 
+rule 3 : /\*.*?\*/ => 
+rule 4 : \b(0[xX][0-9a-fA-F]+|\d+)[uUlL]+\b => \1
+rule 5 : \b0+(?=\d) => 
+rule 6 : \s*&&\s* =>  and 
+rule 7 : \s*\|\|\s* =>  or 
+rule 8 : \s*!\s* =>  not 
+rule 9 : (struct|union|enum)\s*([a-zA-Z_][a-zA-Z0-9_]*\b) => \1_\2
+rule 10 : \((unsigned )?(char|uint64_t)\) => 
+rule 11 : ^.*\d+:\d+.*$ => 
+rule 12 : ^.*\w##\w.*$ => 
+trev None <- 2
+trev ctypes.c_bool <- 3
+trev ctypes.c_ubyte <- 4
+trev ctypes.c_ubyte <- 5
+trev ctypes.c_uint16 <- 8
+trev ctypes.c_uint32 <- 9
+trev ctypes.c_uint64 <- 10
+trev ctypes.c_uint64 <- 11
+trev ctypes.c_char <- 13
+trev ctypes.c_byte <- 14
+trev ctypes.c_wchar <- 15
+trev ctypes.c_int16 <- 16
+trev ctypes.c_int32 <- 17
+trev ctypes.c_int64 <- 18
+trev ctypes.c_int64 <- 19
+trev ctypes.c_float <- 21
+trev ctypes.c_double <- 22
+trev ctypes.c_longdouble <- 23
+hint 4 = int
+hint 5 = int
+hint 8 = int
+hint 9 = int
+hint 10 = int
+hint 11 = int
+hint 13 = int
+hint 14 = int
+hint 16 = int
+hint 17 = int
+hint 18 = int
+hint 19 = int
+hint 21 = float
+hint 22 = float
+hint 23 = float
+hint 106 = int
+hint 15 = str
+hint 14 = int
+hint 13 = bytes
+hint 3 = bool
+kwcount 35
+abi 0=CXType_Invalid 1=CXType_Unexposed 2=CXType_Void 3=CXType_Bool 4=CXType_Char_U 5=CXType_UChar 6=CXType_Char16 7=CXType_Char32 8=CXType_UShort 9=CXType_UInt 10=CXType_ULong 11=CXType_ULongLong 12=CXType_UInt128 13=CXType_Char_S 14=CXType_SChar 15=CXType_WChar 16=CXType_Short 17=CXType_Int 18=CXType_Long 19=CXType_LongLong 20=CXType_Int128 21=CXType_Float 22=CXType_Double 23=CXType_LongDouble 24=CXType_NullPtr 25=CXType_Overload 26=CXType_Dependent 27=CXType_ObjCId 28=CXType_ObjCClass 29=CXType_ObjCSel 100=CXType_Complex 101=CXType_Pointer 102=CXType_BlockPointer 105=CXType_Record 106=CXType_Enum 107=CXType_Typedef 108=CXType_ObjCInterface 109=CXType_ObjCObjectPointer 110=CXType_FunctionNoProto 111=CXType_FunctionProto 112=CXType_ConstantArray 113=CXType_Vector 114=CXType_IncompleteArray 115=CXType_VariableArray 116=CXType_DependentSizedArray 117=CXType_MemberPointer 118=CXType_Auto 119=CXType_Elaborated 161=CXType_ObjCObject 163=CXType_Attributed 176=CXType_ExtVector 2=CXCursor_StructDecl 3=CXCursor_UnionDecl 5=CXCursor_EnumDecl 7=CXCursor_EnumConstantDecl 8=CXCursor_FunctionDecl 9=CXCursor_VarDecl 10=CXCursor_ParmDecl 11=CXCursor_ObjCInterfaceDecl 13=CXCursor_ObjCProtocolDecl 16=CXCursor_ObjCInstanceMethodDecl 17=CXCursor_ObjCClassMethodDecl 20=CXCursor_TypedefDecl 22=CXCursor_Namespace 23=CXCursor_LinkageSpec 40=CXCursor_ObjCSuperClassRef 41=CXCursor_ObjCProtocolRef 400=CXCursor_FirstAttr 420=CXCursor_NSReturnsRetained 441=CXCursor_LastAttr 350=CXCursor_TranslationUnit 119=CXCursor_InitListExpr 501=CXCursor_MacroDefinition 0=CXLinkage_Invalid 1=CXLinkage_NoLinkage 2=CXLinkage_Internal 4=CXLinkage_External 2=CXToken_Identifier
+gt.nm struct_Pair
+gt.defd True
+gt.ln 12
+gt.defd0 True
+gt.tnm0 _anonstruct0
+gt.miss ?
+gt.reserved True
+gt.reserved0 False
+gt.set _anonstruct0,PairAlias
+gt.g0 False
+gt.g0n 0
+normalize.class _class
+normalize.while _while
+normalize.match match
+normalize.a a
+attrs.420 True
+attrs.400 True
+attrs.441 False
+attrs.501 False
+attrs.350 False
+hint.void False
+hint.record False
+hint.pointer False
+hint.chars int
+tmap.chars ctypes.c_char
+tmap.uchar ctypes.c_ubyte
+tmap.charu ctypes.c_ubyte
+tmap.miss16 False
+tmap.miss32 False
+emit.pass class struct_Pair(c.Struct): pass
+emit.head @c.record | class struct_Pair(c.Struct): |   SIZE = 8
+emit.field   a: int
+emit.cell ('b', u32, 4)
+emit.cellbf ('hi', ctypes.c_uint32, 0, 5, 3)
+emit.regf struct_Pair.register_fields([('a', u32, 0), ('b', u32, 4)])
+emit.enumcell (BLUE:=7): 'BLUE'
+emit.enumdict enum_Col: dict[int, str] = {(RED:=1): 'RED', (BLUE:=7): 'BLUE'}
+emit.enumneg (N1:=-1): 'N1'
+emit.alias PairAlias: TypeAlias = struct_Pair
+emit.bind @dll.bind(ctypes.c_int32, ctypes.c_int32, ctypes.c_uint32)
+emit.def def addfn(a:int, b:int) -> int: ...
+emit.def0 def vfn() -> None: ...
+emit.retained MTLCreateSystemDefaultDevice = objc.returns_retained(MTLCreateSystemDefaultDevice)
+emit.ptr c.POINTER[struct_Pair]
+emit.cfn0 c.CFUNCTYPE[None, [ctypes.c_int32, ctypes.c_uint32]]
+emit.cfn1 c.CFUNCTYPE[ctypes.c_int32, []]
+emit.arr c.Array[u32, Literal[4]]
+emit.macro ONE = 1
+emit.macrof ADDER = lambda a,b: ((a)+(b))
+emit.macrof0 BODY = lambda: 1 + 2
+emit.indll try: stdin = c.POINTER[struct__IO_FILE].in_dll('c', 'stdin') # type: ignore
+except (ValueError,AttributeError): pass
+prolog.head # mypy: disable-error-code="empty-body" | from __future__ import annotations | import ctypes | from typing import Literal, TypeAlias | from tinygrad.runtime.support.c import _IO, _IOW, _IOR, _IOWR | from tinygrad.runtime.support import c
+prolog.objc from tinygrad.runtime.support import objc
+prolog.objc0 
+emit.dll dll = c.DLL('agtest', 'c')
+emit.dllerr dll = c.DLL('libc', 'c', ['/usr/lib/x86_64-linux-gnu'], use_errno=True)
+anon0 _anonstruct0
+anon1 _anonenum1
+emit.block @c.record
+class struct_Pair(c.Struct):
+  SIZE = 8
+  a: int
+  b: int
+nm.pair0 struct_foo_bar
+nm.pair1 ns_foo
+nm.pair2 a_b_c_d
+nm.cpp0 a_b c_d
+nm.cpp1 _x
+nm.cpp2 x_
+nm.cpp3 x:y
+nm.cpp4 x:
+nm.cpp5 :
