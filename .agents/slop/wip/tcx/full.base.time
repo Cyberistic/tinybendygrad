@@ -1,0 +1,1 @@
+./bin/bend tinybendygrad/codegen/decomp/transcendental.bend >  2>   1232.35s user 5.32s system 98% cpu 20:59.46 total

@@ -72,10 +72,10 @@
 # `H.f32_show`, which spells `1.0` as `1`. The oracle says both out loud.
 
 import Base
-import ./../helpers.bend as H
-import ./../LAWS/spec.bend as S
-import ./../uop/ops.bend as O
-import ./../uop/fold.bend as F
+import ./../../helpers.bend as H
+import ./../../LAWS/spec.bend as S
+import ./../../uop/ops.bend as O
+import ./../../uop/fold.bend as F
 
 # ===========================================================================
 # THE RESULT. A rule RETURNS THE ARENA, not a pair -- the shape `divandmod.bend`
