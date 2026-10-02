@@ -18,22 +18,34 @@ from the source, so the sequence is derived, not guessed.
 WHAT IT COMPUTES, in order:
   1. top-level defs/classes/assignments per file, at the PIN and at HEAD   (the module API)
   2. `from tinygrad.x.y import a, b` edges, at the PIN and at HEAD         (the import edges)
-  3. COUPLING, at THREE LEVELS. A is coupled to B iff, at either revision of A, A
+  3. COUPLING, at FOUR LEVELS. A is coupled to B iff, at either revision of A, A
      REFERENCES something of B's that moved in the window:
-       (a) NAME level   -- `from tinygrad.x import n`, n added/removed/rebound in B
+       (a) NAME level   -- `from tinygrad.x import n`, n added/removed/rebound in B.
+                           Measured failure: ops.py alone -> ImportError: axis_to_pos.
        (b) ATTR level   -- `Cls.member` where member was added to / removed from a class
-                           B defines. This is what the name-level pass MISSES and what
-                           actually killed the cstyle gate: HEAD cstyle.py uses
-                           `dtypes.i8`, and PIN dtype.py has no `i8` (793abbb16 renamed
-                           int8 -> i8 while keeping int8 as a legacy alias, so BOTH
-                           directions exist at once).
+                           B defines, INCLUDING methods and including exported singletons
+                           (`dtypes = DTypes()`, so `dtypes.i8` is an attribute of the
+                           instance and callers never see the class). Measured failure:
+                           cstyle.py alone -> AttributeError: 'DTypes' has no i8.
        (c) SIG level    -- a def/method's parameter list changed. A call site with the old
-                           arity is a TypeError, which no name diff will show.
-     Levels (a) and (b) are UNDIRECTIONAL SYMMETRIC: both revisions of the importer are
-     checked, because re-vendoring produces a MIXED tree and either half can be the stale
-     one. Level (c) is reported as a warning on the batch, not an edge, because a
-     signature change is only a coupling if the caller is also in the batch.
+                           arity is a TypeError, which no name diff will show. Reported as
+                           a per-batch warning, not an edge: a signature change only couples
+                           the caller if the caller is also in the batch.
+       (d) TUPLE level  -- a positional payload's field order changed: `arg=(axis_id,
+                           axis_type)` -> `arg=(axis_type, axis_id)`. Nothing is renamed and
+                           no signature changed; every `X.arg[0]` reader now reads the other
+                           field. Measured failure: rangeify.py -> `'AxisType' + 'int'`.
+                           Narrowed to ENUM MEMBERS CHANGING POSITION, because the
+                           unrestricted rule fuses 30 files into one batch, which is
+                           "vendor it all" wearing a lab coat.
+     Levels (a), (b) and (d) are checked SYMMETRICALLY: both revisions of the importer,
+     because re-vendoring produces a MIXED tree and either half can be the stale one.
      A file that references nothing that moved is INDEPENDENT and can move alone.
+
+     Every batch this file reports is an UPPER BOUND. The authority is
+     `.agents/slop/rebase-try.sh --shrink <id>`, which builds the batch in a temp tree and
+     drops one file at a time. Measured: batch 1 came out of this pass at 21 files and
+     shrinks to 17 required, 4 droppable.
   4. connected components of the coupling graph, restricted to files upstream changed.
      Each component is one batch. Batches are independent of each other.
   5. inside a component, a topological order by module depth (imports first) so the batch
@@ -118,6 +130,24 @@ def imports(src):
   return out
 
 
+CONTAINERS = {"Dict", "Set", "List", "Tuple", "call:dict", "call:set", "call:frozenset",
+              "call:list", "call:tuple", "call:bytearray"}
+
+
+def rebound_breaks(a, b):
+  """Did this attribute go from one CONTAINER to a DIFFERENT one?
+
+  The only rebinding an importer can observe without a name change. Two representations
+  count, because upstream writes both: `_loaded_ = set()` and `_loaded_ = {}` are the same
+  type and AST-different literals, and the head of this window uses the second form.
+  Scoped to containers on purpose: the unrestricted "the binding's syntax changed" rule
+  fires 25 times on `dtypes.*`, because 793abbb16 rewrites `int8 = DType.new(...)` as the
+  legacy alias `int8 = i8` -- the same DType object under a second name, not a retyped
+  attribute -- and coupling all 25 of those readers fused a 32-file batch out of two.
+  """
+  return a in CONTAINERS and b in CONTAINERS and a != b
+
+
 def classes(src):
   """{name: {dotted-name-reachable members}} for anything a file exposes by name.
 
@@ -144,17 +174,42 @@ def classes(src):
   except SyntaxError:
     return out
 
+  def kind(v):
+    """What KIND of thing a binding is: its constructor's name, or its node type.
+
+    Comparing the whole `ast.dump` instead would fire on every cosmetic edit to a default
+    and fuse 37 files into one batch -- which is "vendor it all" again, in a lab coat.
+    Comparing the KIND catches the change that actually breaks a caller: `DLL._loaded_`
+    going from `set()` to `dict()` leaves the name resolving at both ends while every
+    `.values()` call on it starts raising `AttributeError`.
+    """
+    if v is None:
+      return "<none>"
+    if isinstance(v, ast.Call):
+      f = v.func
+      return f"call:{ast.unparse(f)}" if isinstance(f, (ast.Name, ast.Attribute)) else "call:*"
+    return type(v).__name__
+
   def members(body):
-    m = set()
+    # name -> KIND of binding. Presence alone misses a real coupling (elf.py rebinds
+    # `DLL._loaded_` from a set to a dict); full-dump comparison creates hundreds of false
+    # ones. The kind is the only granularity that is both sound and quiet.
+    m = {}
     for s in body:
       if isinstance(s, ast.Assign):
-        m.update(t.id for t in s.targets if isinstance(t, ast.Name))
+        for t in s.targets:
+          if isinstance(t, ast.Name):
+            m[t.id] = kind(s.value)
       elif isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name):
-        m.add(s.target.id)
+        # The VALUE decides the type, never the annotation. `_loaded_: set[str] = set()`
+        # versus `_loaded_: dict[str, CDLL] = {}` annotates a different type and binds a
+        # different one, and reading `kind()` off `s.annotation` would report "Name" twice
+        # and miss the only rebinding in the window that a caller can actually observe.
+        m[s.target.id] = kind(s.value) if s.value else "<none>"
       elif isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        m.add(s.name)
+        m[s.name] = "<method>"
       elif isinstance(s, ast.ClassDef):
-        m.add(s.name)
+        m[s.name] = "<class>"
     return m
 
   for n in tree.body:
@@ -326,6 +381,19 @@ def main():
         elif attr not in ma and attr in mb:
           couple[f].add(bp)
           why[f"{f} -> {bp}"].add(f"{rev}-side use of NEW `{cls}.{attr}`")
+        elif attr in ma and attr in mb and rebound_breaks(ma[attr], mb[attr]):
+          # Present at both ends, bound to a DIFFERENT CONTAINER, which is the one rebinding
+          # a caller can observe: `DLL._loaded_` going from `set()` to `dict()` leaves the
+          # name resolving everywhere while every `.values()` call on it starts raising
+          # AttributeError. Scoped to builtins because the general rule produced 25 false
+          # couplings on `dtypes.*`: 793abbb16 rewrites `int8 = DType.new(...)` as
+          # `int8 = i8`, and a Name-vs-Call difference there is a legacy ALIAS pointing at
+          # the same object, not a retyped attribute. The `attr in ma` guard matters
+          # separately -- `Ops` is an Enum whose members resolve dynamically, and indexing
+          # its table for a name it never declared raises KeyError, not "not a member".
+          couple[f].add(bp)
+          why[f"{f} -> {bp}"].add(
+            f"{rev}-side use of REBOUND `{cls}.{attr}`: {ma[attr]} -> {mb[attr]}")
 
   # ---- level (d): POSITIONAL TUPLE-PAYLOAD coupling ---------------------------
   # B writes `f(arg=(a, b))`; B' writes `f(arg=(b, a))`. Nothing is renamed and no
@@ -462,8 +530,8 @@ def main():
   solo = [b for b in batches if b["size"] == 1]
   print(f"  batches: {len(batches)}  ({len(multi)} coupled, {len(solo)} independent "
         f"singletons)")
-  print(f"  coupling is computed at NAME, ATTRIBUTE and SIGNATURE level; see the module "
-        f"docstring for why the name level alone is not enough.\n")
+  print(f"  coupling is computed at NAME, ATTRIBUTE, SIGNATURE and TUPLE-PAYLOAD level; the "
+        f"module docstring says which measured failure each level is responsible for.\n")
   for b in multi:
     print(f"  BATCH {b['id']}  ({b['size']} files, MUST move together)")
     for e in b["edges"]:

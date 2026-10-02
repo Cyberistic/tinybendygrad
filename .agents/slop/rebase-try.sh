@@ -56,9 +56,26 @@ a = Tensor.arange(24).reshape(4, 6)
 for m in ("ops_amd", "ops_cuda", "ops_metal", "ops_nv", "ops_null", "ops_qcom", "ops_rdma"):
   importlib.import_module(f"tinygrad.runtime.{m}")
   assert f"tinygrad.runtime.{m}" in sys.modules, f"{m} did not stay imported"
-import tinygrad.runtime.support.hcq2 as H
-for n in ("encode_cmdbuf", "encode_submit", "bufferize_cmdbuf", "cfunc_buf"):
-  assert hasattr(H, n) or n in ("encode_submit", "bufferize_cmdbuf", "cfunc_buf"), n
+import tinygrad.runtime.support.hcq2 as H   # noqa: F401  -- force the hcq2 module to load
+from tinygrad.dtype import dtypes
+# Batch-INDEPENDENT invariants only, spelled so they hold at BOTH ends of the window.
+#
+# Three earlier versions of this block were each wrong in a way worth recording, because
+# each one reported coupling that did not exist:
+#   1. asserting `hasattr(hcq2, "encode_cmdbuf")` -- a name only HEAD has -- made batch 2
+#      (dtype+cstyle, which never touches hcq2) fail for a reason belonging to batch 1.
+#   2. asserting `dtypes.i8` -- also HEAD-only -- made the PIN tree fail its own probe.
+#   3. asserting `dtypes.is_signed` and `dtypes.float32.min == -3.4e38` -- neither exists
+#      at BOTH ends: DType has no is_signed, and 793abbb16 changed `DType.min` to -inf for
+#      f32. An assertion that is not stable across the window asserts nothing.
+# The rule that survives all three: every name must resolve at the pin AND at head, and
+# every assertion must be about a structural fact no rename can change.
+assert len(dtypes.fp8s) == 4, f"fp8 table has {len(dtypes.fp8s)} members, expected 4"
+assert len(dtypes.ints) == 8, f"int ladder has {len(dtypes.ints)} rungs, expected 8"
+assert len(dtypes.uints) == 4, f"uint ladder has {len(dtypes.uints)} rungs, expected 4"
+assert all(dtypes.is_float(d) for d in dtypes.floats), "floats contains a non-float"
+assert dtypes.int8.bitsize == 8 and dtypes.uint8.bitsize == 8
+assert dtypes.default_float.bitsize == 32, "default float is not 32-bit"
 print("EXERCISE-OK")
 PY
   )
@@ -130,8 +147,20 @@ for b in json.load(open('$WORK/plan.json'))['batches']:
     [ $skip -eq 0 ] && keep+=("$f")
   done
   printf 'MINIMAL batch %s -- %d files: %s\n' "$2" "${#keep[@]}" "$(short "${keep[@]}")"
-  echo "REQUIRED -- the batch fails without each of these:"
-  printf '  %s\n' "${drop[@]}"
+  echo "REQUIRED -- the batch fails without each of these (${#keep[@]} of ${#FILES[@]}):"
+  printf '  %s\n' "${keep[@]}"
+  ;;
+
+--solo)
+  # --solo is the NEGATIVE CONTROL and it is the most load-bearing mode here. It vendors
+  # ONE file and nothing else, which is exactly what UPSTREAM-PIN.md used to advise. Every
+  # file it reports BROKEN is a live refutation of that advice, produced on demand rather
+  # than remembered.
+  shift
+  for f in "$@"; do
+    probe="tinygrad.$(probe_of "$f")"
+    try_batch "$(short "$f")" "$f"
+  done
   ;;
 
 *)
