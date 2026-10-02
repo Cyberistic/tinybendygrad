@@ -30,9 +30,9 @@
 #
 # The `min`/`max`/`sum`/`prod` hoists are reduce.py's lines and they move back with
 # `mixin/reduce.bend`. They are hoisted because `mixin/reduce.bend` does not exist
-# yet, and `tensor.bend` already sets that precedent by hoisting `_mop` (ops.py:821)
-# and `_rop` (ops.py:655). `mo_reduce` here IS `T.tn_rop` plus `_reduce`'s two lines
-# around it (reduce.py:13-18), and `T.tn_rop` is the `_rop` hoist.
+# yet, and `tensor.bend` already sets that precedent by hoisting `_mop` (ops.py:818)
+# and `_rop` (ops.py:652). `mo_reduce` here IS `T.tn_rop` plus `_reduce`'s two lines
+# around it (mixin/reduce.py:13-18), and `T.tn_rop` is the `_rop` hoist.
 #
 # ---------------------------------------------------------------------------
 # THE EIGHT WALLS, each named at its Python line. All eight are missing SUBSTRATE;
@@ -67,7 +67,7 @@
 #      `_tri` (:233), `triu` (:236), `tril` (:259), and `sort`'s index count
 #      (:958).
 #   W5 mixin/op.py:913 `sort` -> `.contiguous()` (elementwise.py:59) is
-#      `graph_rewrite` (ops.py:1880), which is P3 and lives in another module.
+#      `graph_rewrite` (ops.py:1888), which is P3 and lives in another module.
 #      The bitonic loop is four nested `for` loops over stage counts, which Bend
 #      spells as a fuel-carrying self-call; that part is mechanical, which is why
 #      the wall is named at `contiguous` and not at the loop.
@@ -81,7 +81,7 @@
 #      which is `resolve` on a `Sint` -- W3's wall, reached a second time. The
 #      `p == 0` arm needs nothing but `ne`, so `mo_norm0` IS ported and gated;
 #      the `p != 0` arm is `W7`.
-#   W8 mixin/op.py:394 `matmul` / op.py:359 `dot` -- a WMMA lowering over
+#   W8 mixin/op.py:394 `matmul` / mixin/op.py:367 `dot` -- a WMMA lowering over
 #      `UOp(Ops.WMMA, ...)` with a device-specific arg, and `dot`'s `permute +
 #      reshape` contraction needs `resolve` (W3) to decide which `N` the WMMA
 #      gets.
@@ -214,7 +214,7 @@
 #   M6  reduce.py:45's trailing half/bfloat16/fp8 cast, inverted. NEGATIVE for a
 #       float32 fixture, and the gate says so -- it is the only way to know the cast
 #       is guarded rather than applied.
-#   M7  `smax(n - correction, 0)` (helpers.py:65) with the saturation dropped. Both
+#   M7  `smax(n - correction, 0)` (uop/ops.py:72) with the saturation dropped. Both
 #       arms agree at `correction=0`, which is what `t_var0c0` uses. A float32
 #       fixture cannot see `smax`, and saying so is the measurement.
 #   M8  `log_softmax` reading `_softmax`'s `e` instead of its `m` (op.py:706).
@@ -239,7 +239,7 @@
 # off-by-one (a head element's index is `len(t)`, and `RESHAPE(REDUCE, CONST(4))`
 # and `RESHAPE(REDUCE, CONST(1))` print identically, so only `sh_sum0kd` saw it);
 # `mo_reshape`'s one-element-RESHAPE fold gap; `mo_squeeze`'s negated test
-# (movement.py:308); `mo_eqmul`'s `bool` against `int` (elementwise.py:613);
+# (mixin/movement.py:287); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:612);
 # `mo_exp`'s cast ordering.
 #
 # ---------------------------------------------------------------------------
@@ -281,11 +281,11 @@ def mo_dims.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> List<&2, O.Sint>:
 def mo_dims(+fx: F.Folded, i: U32) -> List<&2, O.Sint>:
   mo_dims.of(F.fold.shape(F.Folded.ar(fx), F.Folded.t(fx), i))
 
-# `self.ndim` (movement.py:25) -- `len(self.shape)`.
+# `self.ndim` (mixin/movement.py:27) -- `len(self.shape)`.
 def mo_ndim(+fx: F.Folded, i: U32) -> Nat:
   List.length(&2, O.Sint, mo_dims(fx, i))
 
-# `self.shape[k]` (movement.py:62) for a CONCRETE dim. `O.SI` is the image
+# `self.shape[k]` (mixin/movement.py:18) for a CONCRETE dim. `O.SI` is the image
 # `F.sint_of` builds for every count under 2^31 and `H.lo32` is exact on one.
 # `O.SU` is a dim that is a UOP, and `ssimplify` (ops.py:94, reached by
 # `_shape`'s movement arms) is what turns one into a number; it is not ported.
@@ -331,7 +331,7 @@ def mo_range.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
 def mo_range(n: Nat) -> List<&2, U32>: mo_range.go(n, Nil{})
 
 # ===========================================================================
-# THE CONSTS. `UOp.const` (ops.py:631) is a BARE CONST here because `dtypes.from_py`
+# THE CONSTS. `UOp.const` (ops.py:629) is a BARE CONST here because `dtypes.from_py`
 # and `truncate` are P3 (ops.bend's own `TODO`), and every CONST this file builds is
 # already the dtype Python would derive: an int literal is weakint and a float
 # literal is weakfloat, which is exactly `dtypes.from_py`.
@@ -388,7 +388,7 @@ def mo_ln2() -> F32: 0.6931471805599453
 def mo_inf() -> F32: F32.mul(1.0e30, 1.0e30)
 def mo_neginf() -> F32: F32.neg(mo_inf())
 
-# `self.const_like(v)` (creation.py:71) is a bare CONST here for the same reason,
+# `self.const_like(v)` (mixin/creation.py:14) is a bare CONST here for the same reason,
 # and it is only reached by `normalize`'s `p == 0` arm (W7).
 # ===========================================================================
 # THE DTYPE ARITHMETIC. `weak_dtype` (tinygrad/dtype.py:175) is `dtypes.weakfloat if
@@ -532,7 +532,7 @@ def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
 
 
 
-# `lhs.alu(op, rhs)` is `UOp(op, src=(self, *src))` (tensor.py:116, ops.py:630), so
+# `lhs.alu(op, rhs)` is `UOp(op, src=(self, *src))` (tensor.py:116, ops.py:627), so
 # `lhs` is `src[0]` -- and `T.tn_alu` puts its FIRST argument there. `t_min0` printed
 # `CONST BUFFER MUL` where CPython prints `BUFFER CONST MUL` because of getting this
 # backwards, which is the same class of bug as tensor.bend's M15 and is why the gate
@@ -847,7 +847,7 @@ def mo_div(+t: T.Tensor, +c: T.Tensor) -> T.Tensor:
   mo_bin(t, O.OpsMUL{}, mo_recip(b))
 
 # `x.div(n)` for a Python `int` `n`, which is `mean`'s `denominator` and `var`'s
-# `smax(n - correction, 0)`. `ufix` (ops.py:609) turns it into a weakint CONST and
+# `smax(n - correction, 0)`. `ufix` (ops.py:606) turns it into a weakint CONST and
 # `promote` lifts it to `weakfloat`, so the node is `MUL(a, RECIPROCAL(const))` -- and
 # `t_mean0` printing `REDUCE CONST RECIPROCAL MUL` rather than a `DIV` is the row that
 # says so.
@@ -982,10 +982,10 @@ def mo_log(+t: T.Tensor) -> T.Tensor:
   +l = E.ew_log2(t)
   mo_mul(l, mo_const_t(l, O.CFloat{mo_ln2()}))
 
-# `isnan` -- elementwise.py:608. `self != self`, and `E.ew_ne(t, ETen{t})` IS that.
+# `isnan` -- mixin/elementwise.py:610. `self != self`, and `E.ew_ne(t, ETen{t})` IS that.
 def mo_isnan(+t: T.Tensor) -> T.Tensor: mo_neq(t, t)
 
-# `eq(x) * detect_positive` -- one arm of `isinf` (elementwise.py:613).
+# `eq(x) * detect_positive` -- one arm of `isinf` (mixin/elementwise.py:612).
 # THE CONST IS BUILT OFF `eq`, NOT OFF `t`, AND THAT IS THE RULE: `mo_const_t` interns
 # into the arena of the tensor it is GIVEN, so it must be given the NEWEST one. MEASURED:
 # writing `mo_mul(mo_eqc(t, v), mo_const_t(t, mo_ki(1)))` interned the CONST into `t`'s

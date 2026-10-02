@@ -833,7 +833,8 @@ def tn_rop.red2.of(src: U32, +ar: O.Arena, op: O.Op, +rn: List<&2, U32>) -> O.Fo
   O.UOp.new(ar, O.OpsREDUCE{}, [src], O.AReduce{op, U32.from_nat(tn_rop.len(rn))}, O.TNone{})
 
 # `self.permute(perm)` where `perm = reduce_axis + the axes not in reduce_axis`, and
-# movement.py:214's identity test `order_arg != tuple(range(ndim))` hoisted. It is the
+# mixin/movement.py:229's identity test `sorted(order_arg) != list(range(self.ndim))`
+# hoisted. It is the
 # test that decides whether a PERMUTE node exists at all, so both arms answer `self`:
 # the hoist is the TEST, and building the PERMUTE is `tn_mop.order` above.
 def tn_rop.perm.of(is_id: Bool, +self: U32) -> U32:
@@ -970,7 +971,7 @@ def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
 #   tensor.py:544  __ixor__        -> elementwise.py:200  bitwise_xor  Ops.XOR
 #   tensor.py:545  __ilshift__     -> elementwise.py:353  lshift       Ops.SHL
 #   tensor.py:546  __irshift__     -> elementwise.py:364  rshift       Ops.SHR
-#   tensor.py:547  __imatmul__     -> op.py:394            matmul       -- a WMMA, not an alu
+#   tensor.py:547  __imatmul__     -> mixin/op.py:394      matmul       -- a WMMA, not an alu
 #   tensor.py:549  __eq__          -> elementwise.py     eq           Ops.CMPEQ
 #
 # The `Ops` each names is the whole of the port that is tensor.py's, and it is here as
@@ -991,7 +992,7 @@ def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
 # TODO(p3) tensor.py:544  __ixor__        assign + elementwise.py:200 (Ops.XOR)
 # TODO(p3) tensor.py:545  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
 # TODO(p3) tensor.py:546  __irshift__     assign + elementwise.py:364 (Ops.SHR)
-# TODO(p3) tensor.py:547  __imatmul__     assign + op.py:394 -- a WMMA, not an alu
+# TODO(p3) tensor.py:547  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
 # TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
 # ===========================================================================
 

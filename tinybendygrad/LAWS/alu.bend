@@ -1,8 +1,9 @@
 # alu.bend -- tinyspec.tex's "Decomposed elementwise ops" table, as Bend.
 #
-# tinyspec lists sixteen ops that are DEFINED in terms of the primitives above
-# it: Neg, Sub, Div, CmpGt, CmpGe, CmpLe, CmpEq, Not, Sqrt, Pow, Mulacc,
-# Threefry (and Exp2/Log2/Sin are described rather than decomposed). This
+# The tinyspec.tex table at :192-206 has FIFTEEN rows, of which TWELVE are
+# decomposed in terms of the primitives above them -- Neg, Sub, Div, CmpGt,
+# CmpGe, CmpLe, CmpEq, Not, Sqrt, Pow, Mulacc and Threefry -- and THREE
+# (Exp2, Log2, Sin) are only DESCRIBED, by polynomial approximation. This
 # file writes those definitions as Bend functions over the primitive
 # constructors of spec.bend, and LAWS.bend then states each decomposition as a
 # law the checker proves by reflexivity.

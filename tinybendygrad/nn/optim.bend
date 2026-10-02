@@ -39,8 +39,8 @@ import ./../dtype.bend as DT
 #      `unwrap(t.grad)` (optim.py:52, :55) -- which RAISES on None -- is a
 #      `Maybe<U32>`, and `zero_grad` (optim.py:33) is `Tensor.grad_set(t, 0)`.
 #   4. `Tensor.cat`, `.contiguous`, `.flatten`, `.reshape` on the fused path
-#      (optim.py:51-53) are mixin: `cat` is op.py:731 and the reshape is
-#      movement.py. NOT MINE. The fused arm's SLICE BOUNDS are optim.py's, so
+#      (optim.py:51-53) are mixin: `cat` is mixin/op.py:731 and the reshape is
+#      mixin/movement.py. NOT MINE. The fused arm's SLICE BOUNDS are optim.py's, so
 #      they are ported and gated; the mixin calls are named at the def.
 #
 # A FIFTH ITEM IS A DIVERGENCE, NOT A WALL, and it is the one that matters for
@@ -59,10 +59,10 @@ import ./../dtype.bend as DT
 #   * `sqrt` -- elementwise.py:480 (`Ops.SQRT`), optim.py:113, :114, :173, :174.
 #   * `square` -- elementwise.py:575, and it is `self * self` i.e. `Ops.MUL`.
 #   * `where` -- elementwise.py:426 (`Ops.WHERE` ternary), optim.py:115, :175.
-#   * `sum` -- reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
+#   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
 #   * `detach` -- elementwise.py:43 (`Ops.DETACH`), optim.py:60, :113, :117, :171.
-#   * `newton_schulz` -- op.py:1873, optim.py:123. P3 and BIG.
-#   * `reshape` -- movement.py, optim.py:123.
+#   * `newton_schulz` -- mixin/op.py:1873, optim.py:123. P3 and BIG.
+#   * `reshape` -- mixin/movement.py, optim.py:123.
 # My gate needs NONE of them: a layer's graph is a graph whether or not the mixin
 # method that builds it has landed, and every row below is a graph SHAPE over the
 # ops I CAN build. `detach` in particular IS an `alu` with no srcs (elementwise.py:43
@@ -93,13 +93,13 @@ def pbuf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
   O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{barg(slot, size, dt)}, O.TNone{})
 
 # ===========================================================================
-# `numel` -- movement.py:38, `prod(self.shape)`.
+# `numel` -- mixin/movement.py:38, `prod(self.shape)`.
 #
 # It is HERE and not taken from a movement module because (a) movement.py is a
 # MIXIN file that is not mine, and (b) this is the only reader in this file:
 # `pos_params` at optim.py:22 and nothing else. `H.prod_u32` over the fold's shape.
 #
-# `sint_u` IS THE INTERESTING LINE. `O.Sint` is ops.py:1925's `int|UOp`, and a
+# `sint_u` IS THE INTERESTING LINE. `O.Sint` is ops.py:1917's `int|UOp`, and a
 # concrete dim is `SI{i: I64}` while a symbolic one is `SU{u: U32}`. A symbolic
 # dim has NO numeric value, and Python's `prod` over a symbolic shape is a SYMBOLIC
 # UOp (`UOp.REDUCE(Ops.MUL, ...)`), not an int. So the `SU` arm returns the uop's

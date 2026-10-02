@@ -12,7 +12,7 @@ import Base
 #
 # Two measured things about the host, both in `spec/sz.md`:
 #
-#   - 7 of the 211 defs reach a foreign or @unsafe def, and all 7 are the walk:
+#   - 7 of the 220 defs reach a foreign or @unsafe def, and all 7 are the walk:
 #     Sz.read_dir, Sz.is_dir, walk.item, walk.scan, walk, and the two defs of the
 #     mode dispatch that call it. The lexer, both tables, gen_diff and the printed
 #     form reach no effect at all, which is why the file is split where it is.
@@ -30,7 +30,7 @@ import Base
 #   - ~/Documents/tinyquery/sz.odin -- the reference implementation. The same
 #     program in a systems language: its os.walker owns termination AND symlink
 #     policy, the two things this port reimplements by hand. It is a word-counter,
-#     not a tokenizer; that is most of why it is 247 lines and this is 1671.
+#     not a tokenizer; that is most of why it is 247 lines and this is 1675.
 #   - .agents/slop/notes/bend2-constraints.md -- the measured Bend rules this file
 #     depends on (fuel must decrease and be the first parameter; a Data param
 #     needs + for a second read; the memory-fault entry; the benchmark lessons

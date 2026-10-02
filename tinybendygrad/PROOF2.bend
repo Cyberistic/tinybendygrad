@@ -4,11 +4,17 @@
 # this file holds the elementwise-decomposition half (IV) and the dtype half
 # (V). LAWS/PROOF-ALL.bend imports both and is the aggregate gate.
 #
-# ALL SIXTEEN ARE PROVEN, and the reason the dtype half went green is that the
-# dtype fold is total. `Sp.dtype` reads at most one operand per arm, so no arm
+# ALL EIGHTEEN ARE PROVEN -- nine in section IV and nine in section V, every one
+# `{==}` -- and the reason the dtype half went green is that the dtype fold is
+# total. `Sp.dtype` reads at most one operand per arm, so no arm
 # has to case-split on another node's result -- the shape half's one remaining
 # obstacle does not arise here. See PROOF.bend for the full statement of that
 # obstacle and of the two fuel defects it replaced.
+#
+# THE BOOK IS NOT YET GREEN AND THIS FILE IS NOT THE REASON: `./bin/bend
+# tinybendygrad/LAWS/PROOF-ALL.bend --check-only` reports SIX TODOs, so the other
+# half of `LAWS.bend`'s 34 laws still has none. `TODO.md` says "PROOF2.bend --
+# ALU/dtype half (16/16 proven)"; the count there is this file's OLD count too.
 
 import Base
 import ./LAWS.bend as L

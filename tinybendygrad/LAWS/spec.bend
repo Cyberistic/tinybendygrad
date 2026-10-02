@@ -9,7 +9,8 @@
 # The compilation IR (tinygrad/uop/ops.py) is a cyclic hash-consed graph in an
 # arena, because the range graph has back-edges and the test suite depends on
 # node identity. That IR cannot be a pure tree, so the laws cannot reach it; see
-# PORTING.md section 6.
+# `.agents/slop/notes/bend2-constraints.md` section 6 (line 454). The
+# `PORTING.md` cited here before DOES NOT EXIST in this repo.
 #
 # TERMINATION IS STRUCTURAL: one def per property, no mutual recursion, and
 # every descent passes a FIELD of its own parameter. No @unsafe, and no fuel

@@ -127,7 +127,7 @@ def ew_base.pick(m: Maybe<&1, U32>, i: U32) -> U32:
 def ew_base(+fx: F.Folded, +i: U32) -> U32:
   ew_base.pick(F.UOp.base(F.Folded.ar(fx), F.Folded.t(fx), i), i)
 
-# `UOp.is_invalid` -- ops.py:265, `self.op is Ops.CONST and self.val is Invalid`.
+# `UOp.is_invalid` -- ops.py:267, `self.op is Ops.CONST and self.val is Invalid`.
 # A two-scrutinee match over the op and the arg, and `CInvalid` is a CONSTRUCTOR
 # pattern inside a field pattern, so the whole predicate is one arm.
 def ew_is_invalid.go(op: O.Op, arg: O.Arg) -> Bool:
@@ -316,7 +316,7 @@ def ew_ccast.go(bare: Bool, +dt: S.Dt, +made: O.Found) -> O.Found:
     case True{}: made
     case False{}: O.UOp.new(O.Found.ar(made), O.OpsCAST{}, [O.Found.i(made)], O.ADt{dt}, O.TNone{})
 
-# `UOp.const(val, dt)` -- ops.py:632-638. `uop/weak.bend`'s `wk_const_at` is these
+# `UOp.const(val, dt)` -- ops.py:629-635. `uop/weak.bend`'s `wk_const_at` is these
 # same two nodes, but it builds in `F.Folded.ar(fx)`, and this walk has GROWN the
 # arena, so the CAST would name an index the caller's arena does not have. The
 # value truncation is `W.wk_dt_const` and `wk_const_of` is weak.bend's own dead
@@ -536,7 +536,7 @@ def ew_bitwise_not(+t: T.Tensor) -> T.Tensor:
 # ===========================================================================
 # THE ARITHMETIC AND COMPARISON FAMILY. One def per Python method, in Python's
 # order, and no abstraction: `_binop` IS the abstraction and the methods below are
-# its twelve call sites. `elementwise.py:104` and `:122` spell out that `sub` is
+# its twelve call sites. `elementwise.py:103` and `:123` spell out that `sub` is
 # `_binop(Ops.ADD, -b)` and NOT `Ops.SUB`, and `ew_op_sub0` is the row that pins it.
 # ===========================================================================
 
@@ -906,7 +906,8 @@ def ew_i32(ar: O.Arena) -> O.Found: ew_buf(ar, S.int32())
 def ew_ci(ar: O.Arena, v: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(v)})
 def ew_cbool(ar: O.Arena, b: Bool) -> O.Found: O.UOp.const(ar, O.CBool{b})
 
-# `Invalid` -- dtype.py:36, the singleton an OPTIONAL dtype's absent value is. It is
+# `Invalid` -- tinygrad/dtype.py:36, the singleton an OPTIONAL dtype's absent
+# value is. It is
 # the one thing `promote`'s FIRST arm exists for ("invalid bool is weak const"), and
 # without a fixture holding one that arm is dead code that no row can see -- which is
 # what mutation M3 measured, at zero. CPython mints it as

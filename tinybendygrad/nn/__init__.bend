@@ -143,8 +143,9 @@ def nn_i64_app(xs: List<&2, H.I64>, v: H.I64) -> List<&2, H.I64>:
   List.append(&2, H.I64, xs, [v])
 
 # ---------------------------------------------------------------------------
-# `make_tuple` -- helpers.py:1326, `(x,)*cnt` when x is an int and `tuple(x)`
-# otherwise. `H.make_tuple_rep` and `H.to_tuple_seq` are that pair already, so
+# `make_tuple` -- tinygrad/helpers.py:50, `(x,)*cnt` when x is an int and
+# `tuple(x)` otherwise. `H.make_tuple_rep` (helpers.bend:828) and
+# `H.to_tuple_seq` (helpers.bend:839) are that pair already, so
 # they are CALLED and not re-spelled; the two arms are the two call sites
 # `Conv2d.__init__` (:98, :102) needs, because `kernel_size` is `int|tuple`.
 def nn_mt(x: U32, cnt: U32) -> List<&2, U32>: H.make_tuple_rep(x, cnt)
@@ -251,7 +252,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   .unsqueeze(-1).where(weight, 0).sum(-2, dtype=weight.dtype)`: four mixin methods
 #   and an `arange`, of which the `arange` is W4. The output SHAPE is gated below
 #   and the graph is not built.
-# TODO(p3) nn/__init__.py:373 _embedding_fwd_fxn -- `functools.cache`d on
+# TODO(p3) tinygrad/nn/__init__.py:374 _embedding_fwd_fxn -- `functools.cache`d on
 #   `(wp, ip, device)`, i.e. memoised over UOp IDENTITY. A `Data` record has no
 #   identity to key on and no globals to hold a cache in.
 # TODO(p3) nn/datasets.py:1  mnist -- a download, an unzip and an `open`.
@@ -280,7 +281,7 @@ def bn_nbt() -> List<&2, U32>: Nil{}
 # `__dict__` in ASSIGNMENT order -- :33-39. `eps`, `track_running_stats` and
 # `momentum` are assigned first and are NOT TENSORS, so they contribute no key
 # (state.py:107); the five that do appear are the four below plus the scalar.
-# `is_param_` is `tensor.py:141` and is a REAL ported line: it is the flag
+# `is_param_` is tinygrad/tensor.py:124 and is a REAL ported line: it is the flag
 # `Optimizer` (:13) filters on, and getting it wrong would put
 # `num_batches_tracked` and both running stats into the optimizer's `params`.
 def bn_st.trk(track: Bool, +acc: List<&2, ST.Ent>, rm: T.Tensor, rv: T.Tensor) -> List<&2, ST.Ent>:

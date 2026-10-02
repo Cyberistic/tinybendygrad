@@ -9,8 +9,12 @@
 # from, in its comment. A law is a claim about the pure spec IR in LAWS/spec.bend
 # -- the tree of ops, with the spec's five derived properties as total functions
 # over it. The compilation IR (uop/ops.py) is a cyclic hash-consed graph in an
-# arena and cannot be a pure tree, so it is not covered here; see PORTING.md
-# section 6. What these laws pin is the semantics every IR must agree on, which
+# arena and cannot be a pure tree, so it is not covered here; see
+# `.agents/slop/notes/bend2-constraints.md` section 6 (line 454), which is where
+# that decision is actually written down. `PORTING.md`, cited here before, DOES
+# NOT EXIST in this repo -- it is prep-work item 3 of
+# `.agents/slop/plans/00-master-plan.md` and was never written. What these laws
+# pin is the semantics every IR must agree on, which
 # is precisely what the spec states.
 #
 # WHAT IS DELIBERATELY NOT HERE, and why:
@@ -131,7 +135,8 @@ law pad_shrink_round_trip:
 #
 # The premise names the operand's shape because the checker cannot: without it
 # both sides sit on `Sp.shape(t)` behind different closures, and no `match`
-# opens a call's result (PORTING.md section 1.2). Nothing is lost: a shapeless
+# opens a call's result (`.agents/slop/notes/bend2-constraints.md` rule 1.2 and
+# its worked example near line 4352). Nothing is lost: a shapeless
 # operand counts 0, and so does a Stack of shapeless operands.
 law stack_numel_is_the_leading_axis_times_the_operands:
   for +t: S.Sp

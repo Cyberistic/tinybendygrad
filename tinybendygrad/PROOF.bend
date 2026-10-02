@@ -6,16 +6,20 @@ import ./LAWS/spec.bend as S
 # VI and VII).
 #
 # A proof is a def of the law's name whose parameters are that law's `for`
-# binders IN ORDER. Seven of the thirteen are discharged here; six are left open
-# with the reason recorded, and the reason is always the same shape:
+# binders IN ORDER. ALL TEN of this half's laws are discharged (`{==}` in every
+# one); there are none left open. What the obstacle below USED to block is
+# recorded because it is why the proofs are one-liners and not exercises:
 #
 #   `Sp.shape` can only reduce a node whose arm READS ITS OWN FIELDS. An arm that
 #   has to case-split on ANOTHER node's shape -- Reduce's `Shape.drop`,
 #   Stack's `Shape.prepend`, the ALU arms' `dims_zip_max` -- sits behind
 #   `on_shape(Sp.shape(x), ...)` or `dims_zip_max(Sp.shape(a), Sp.shape(b))`,
-#   and `Sp.shape(x)` is a CALL. A `match` may not open a call (PORTING.md
-#   section 1.2), so those terms never reduce and the two sides of the law stay
-#   apart however deep the tree is.
+#   and `Sp.shape(x)` is a CALL. A `match` may not scrutinise a call (see
+#   `.agents/slop/notes/bend2-constraints.md` around line 4352, and rule 1.2's
+#   note on scrutinees), so those terms never reduce and the two sides of the law
+#   stay apart however deep the tree is. `PORTING.md`, cited here before, DOES NOT
+#   EXIST in this repo: it is prep-work item 3 of `.agents/slop/plans/
+#   00-master-plan.md` and was never written. Four other files cite it too.
 #
 #   Under the old fuel budget every law was stuck for a second reason as well:
 #   the fold computed `2*depth+1` and matched on it, so a symbolic depth never

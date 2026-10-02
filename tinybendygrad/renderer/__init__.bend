@@ -67,7 +67,8 @@
 #     own; `cstyle.bend` records it where it bites.
 #
 # 11. `u.max_numel()` IS `prod(to_max_shape(shape))` AND `to_max_shape` IS A
-#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1886` in the port). The shape
+#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1886` in the port, at
+#     ops.bend:3815). The shape
 #     the port CAN answer is the CONCRETE one, whose every dim is an `SInt` `SI`
 #     rather than a symbolic `SU`, so `max_numel` here is the product of the
 #     concrete dims and a shape carrying an `SU` is the case this file does not

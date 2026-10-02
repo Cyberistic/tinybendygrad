@@ -5,13 +5,13 @@
 # tinygrad; `codegen/` is a package and `find tinygrad -name kernel.py` finds only
 # `extra/thunder/tiny/tk/kernel.py`, a Thunder TK harness. The lowerer is here:
 #
-#   tinygrad/codegen/__init__.py   518 lines   THIS FILE
+#   tinygrad/codegen/__init__.py   519 lines   THIS FILE
 #   tinygrad/codegen/simplify.py   156 lines   -> rewriter.bend
 #   tinygrad/codegen/late/coalesce.py  168     -> rewriter.bend
-#   tinygrad/codegen/gpudims.py     97 lines   -> rewriter.bend
+#   tinygrad/codegen/gpudims.py    106 lines   -> rewriter.bend
 #   tinygrad/codegen/decomp/{op,transcendental}.py -> decomp.bend / transcendental.bend
 #   tinygrad/codegen/late/{linearizer,regalloc,gater}.py  NOT CLAIMED
-#   tinygrad/codegen/opt/*        482 lines    NOT CLAIMED
+#   tinygrad/codegen/opt/*        636 lines    NOT CLAIMED
 #
 # `renderer/{cstyle,wgsl}.bend` are the siblings and they consume THIS file's
 # `to_program` output shape, named at the foot.
@@ -28,7 +28,7 @@
 # `renderer/wgsl.bend` both need in order to know how deep the pipeline is.
 #
 # ---------------------------------------------------------------------------
-# THE INVENTORY, def by def, against __init__.py's 518 lines.
+# THE INVENTORY, def by def, against __init__.py's 519 lines.
 #
 #   #  PY         KIND    STATE
 #   1  33-36   fold   do_number_param          PORTED IN FULL
@@ -75,8 +75,11 @@
 #  42  474-506 fold   do_to_program            PORTED IN SHAPE
 #  43  509-518 data   to_program_config        11 of 11, PORTED
 #
-# 43 defs. 13 are PORTED (1, 2, 3, 22, 23, 24, 26, 27, 30, 33, 34, 41, 43), six are
-# PORTED IN SHAPE (8, 11, 14, 15, 20, 21, 32, 42) and the rest hit a wall.
+# 43 defs. 13 are PORTED (1, 2, 3, 22, 23, 24, 26, 27, 30, 33, 34, 41, 43), EIGHT are
+# PORTED IN SHAPE (8, 11, 14, 15, 20, 21, 32, 42) and the rest hit a wall. The prose
+# said `six` over an EIGHT-element list, and four of the eight rows whose own STATE
+# line reads `walls in ...` (8, 15, 21, 32) are listed as ported in shape, which is
+# the weaker claim and is the one the list means.
 #
 # ---------------------------------------------------------------------------
 # THE WALL THAT DOMINATES, and it is ONE wall: **`itertools.product` over a shape
@@ -85,8 +88,10 @@
 # DE-INDEXES a node by enumerating every element of its shape and rebuilding the
 # node per element. That is a cartesian product whose size is the node's numel,
 # and this architecture has no product and no way to name "the i-th element of a
-# STACK". `movement.bend` owns `UOp.index` (`mp_index`, ops.py:581 is a `TODO(p3)`
-# there) and even it answers one index, not a product.
+# STACK". `movement.bend` owns `UOp.index` as `mp_index`, and movement.bend:235
+# carries the `# TODO(p3) ops.py:581 def index` marker (581 is the `return`
+# inside `ops.py:578`'s `def index`) -- and even it answers one index, not a
+# product.
 #
 # The second wall is `UOp.replace`-with-a-NEW-OP: `pm_add_loads` and
 # `pm_cast_float_alu` both build `x.replace(src=...)` with the SAME op, which is

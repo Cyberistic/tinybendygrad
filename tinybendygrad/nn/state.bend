@@ -427,7 +427,7 @@ def sd_inv(es: List<&2, Sd>, +dt: S.Dt) -> Maybe<&1, String>:
 def sd_name(dt: S.Dt) -> Maybe<&1, String>:
   sd_inv(safe_dtypes(), dt)
 
-# `dtypes.weaks` is `(weakint, weakfloat)` -- dtype.py:160 -- and `safe_save`
+# `dtypes.weaks` is `(weakint, weakfloat)` -- tinygrad/dtype.py:160 -- and `safe_save`
 # refuses them (state.py:73). `weakint` and `weakfloat` are not in `safe_dtypes`
 # (measured: 15 entries, neither present), so the refusal is a table membership
 # test and this is it.

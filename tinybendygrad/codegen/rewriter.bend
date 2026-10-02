@@ -11,9 +11,9 @@
 #
 #   tinygrad/codegen/simplify.py            156 lines   RANGE simplification
 #   tinygrad/codegen/late/coalesce.py       168 lines   memory coalescing
-#   tinygrad/codegen/gpudims.py              97 lines   gpu dims (late)
+#   tinygrad/codegen/gpudims.py             106 lines   gpu dims (late)
 #   tinygrad/codegen/late/linearizer.py      96 lines   <-- NOT MINE, see below
-#   tinygrad/codegen/opt/*                  482 lines   <-- NOT MINE, see below
+#   tinygrad/codegen/opt/*                  636 lines   <-- NOT MINE, see below
 #   tinygrad/codegen/decomp/{op,transcendental}.py  -> decomp.bend / transcendental.bend
 #
 # So `rewriter.bend` takes the three TABLES and `kernel.bend` takes the pass
@@ -23,53 +23,66 @@
 # `kernel.bend`'s output, not this file's.
 #
 # ---------------------------------------------------------------------------
-# THE INVENTORY, def by def, against the three Python files' 421 lines.
+# THE INVENTORY, def by def, against the three Python files' 430 lines. Every
+# `PY` range below was RE-DERIVED from the files as they stand; the previous
+# table's ranges were up to TWENTY-ONE lines high, it named two symbols that do
+# not exist in `gpudims.py` at all (`add_gpudims`, `pm_add_gpudims`), it omitted
+# six top-level defs, and its summary counted 22 defs over a 32-row table. The
+# STATE column is the port's verdict and was not touched; the `#` column is new.
 #
 #   #  PY            KIND    STATE
 #   -- simplify.py ---------------------------------------------------------
-#   1  8-12   fold   flatten_range             PORTED, wall at `s.ranges`
-#   2  14-16  table  pm_flatten_range          1 of 1, PORTED
-#   3  27-49  fold   simplify_merge_adjacent   WALL: a rule that calls graph_rewrite
-#   4  51-59  fold   mark_gated                WALL: a mutable ctx dict
-#   5  61-66  fold   do_substitute             WALL: the same dict, plus `simplify`
-#   6  68-73  table  pm_simplify_ranges        4 of 4, ALL ctx-dict rules
-#   7  75-77  fold   mark_range_mod            WALL: the dict, plus `divides`
-#   8  79-82  table  pm_split_ranges           2 of 2, ALL ctx-dict rules
-#   9  87-101 fold   reduce_unparented         PORTED, wall at `s.ranges`
-#  10  103-105 table pm_reduce_unparented      1 of 1, PORTED
-#  11  108-118 table pm_reduce_collapse        6 of 6, WALL: nested graph_rewrite
-#  12  108-125 fold   reduce_collapse           WALL: UOp.variable + substitute
-#  13  121    table pm_reduce_load_collapse    2 of 2, WALL
-#  14  128-130 fold   reduce_load_collapse      WALL: reduce_collapse with a matcher
-#  15  132-137 table pm_reduce_simplify         1 of 1, WALL
-#  16  140    fold   no_load                   PORTED (needs `ranges` wall)
-#  17  141-145 table pm_load_collapse          2 of 2, rule 1 WALL, rule 2 PORTED
+#   1  8-13   fold   flatten_range             PORTED, wall at `s.ranges`
+#   2  14-19  table  pm_flatten_range          1 of 1, PORTED
+#   3  20     fold   count_divmod              NOT CLAIMED: one-line count helper
+#   4  21-39  fold   simplify_merge_adjacent   WALL: a rule that calls graph_rewrite
+#   5  40-50  fold   mark_gated                WALL: a mutable ctx dict
+#   6  51-57  fold   do_substitute             WALL: the same dict, plus `simplify`
+#   7  58-65  table  pm_simplify_ranges        4 of 4, ALL ctx-dict rules
+#   8  66-70  fold   mark_range_mod            WALL: the dict, plus `divides`
+#   9  71-78  table  pm_split_ranges           2 of 2, ALL ctx-dict rules
+#  10  79-80  fold   no_range                  NOT CLAIMED: `backward_slice_with_self`
+#  11  81-92  fold   reduce_unparented         PORTED, wall at `s.ranges`
+#  12  93-97  table  pm_reduce_unparented      1 of 1, PORTED
+#  13  98-120 table  pm_reduce_collapse        6 of 6, WALL: nested graph_rewrite
+#  14  121-128 table pm_reduce_load_collapse    2 of 2, WALL
+#  15  129-143 fold  reduce_collapse           WALL: UOp.variable + substitute
+#  16  144-146 fold  reduce_load_collapse      WALL: reduce_collapse with a matcher
+#  17  147-150 table pm_reduce_simplify        1 of 1, WALL
+#  18  151    fold   no_load                   PORTED (needs `ranges` wall)
+#  19  152-156 table pm_load_collapse          2 of 2, rule 1 WALL, rule 2 PORTED
 #   -- late/coalesce.py ----------------------------------------------------
-#  18  10-42  fold   _drop_valid_stmts         WALL: functools.cache + variable
-#  19  44-46  fold   simplify_valid_load       WALL: uop_given_valid + simplify
-#  20  48-59  fold   simplify_valid_image_load WALL: the above + image dims
-#  21  61-66  table  indexing_simplify         2 of 2, both rules WALL
-#  22  69-76  data   image_valid_dims          PORTED, env opt as a PARAMETER
-#  23  78-101 fold   transform_to_image        WALL: ctx shapes dict + IMAGE env
-#  24  103-108 fold  store_image               PORTED, one cast rule WALL
-#  25  110-113 table pm_simplify_add_image     2 of 2, rule 1 WALL, rule 2 PORTED
-#  26  116-168 fold  memory_coalescing         WALL: defaultdict + groupby
+#  20  13-40  fold   _drop_valid_stmts         WALL: functools.cache + variable
+#  21  41-44  fold   simplify_valid_load       WALL: uop_given_valid + simplify
+#  22  45-57  fold   simplify_valid_image_load WALL: the above + image dims
+#  23  58-65  table  indexing_simplify         2 of 2, both rules WALL
+#  24  66-73  data   image_valid_dims          PORTED, env opt as a PARAMETER
+#  25  74-96  fold   transform_to_image        WALL: ctx shapes dict + IMAGE env
+#  26  97-103 fold   store_image               PORTED, one cast rule WALL
+#  27  104-108 table pm_simplify_add_image     2 of 2, rule 1 WALL, rule 2 PORTED
+#  28  109-168 fold  memory_coalescing         WALL: defaultdict + groupby
 #   -- gpudims.py ----------------------------------------------------------
-#  27  6-18   fold   _group_dims/_split_dims   PORTED for literal dims
-#  28  20-31  fold   get_grouped_dims          WALL: ssimplify, `_min_max`
-#  29  33-63  fold   add_gpudims               WALL: dicts + ssimplify + ctx
-#  30  65-68  fold   -- (pm_device_to_var r1)   WALL: UOp.variable
-#  31  69-71  fold   -- (pm_device_to_var r2)   PORTED
-#  32  73-76  table  pm_add_gpudims            3 of 3 (1 + pm_device_to_var)
+#  29  7-8    fold   _dim_max                  NOT CLAIMED: `isinstance` + `vmax`
+#  30  9-17   fold   _group_dims               PORTED for literal dims
+#  31  18-27  fold   _split_dims               PORTED for literal dims
+#  32  28-43  fold   get_grouped_dims          WALL: ssimplify, `_min_max`
+#  33  44-90  fold   group_gpudims             WALL: dicts + ssimplify + ctx
+#  34  93     fold   -- (pm_device_to_var r1)  WALL: UOp.variable
+#  35  96     fold   -- (pm_device_to_var r2)  PORTED
+#  36  101-102 table pm_group_gpudims          1 of 1 (1 + pm_device_to_var)
+#  37  103-106 table pm_range_to_special       1 of 1 (+ pm_split_ends)
 #
-# 22 defs, of which 9 are PORTED and 13 hit a wall. Every table's LENGTH is
+# 37 rows over 35 defs (rows 34 and 35 are the two RULES of `pm_device_to_var`,
+# gpudims.py:91-100, inventoried as one def). Of the 35: 9 are wholly PORTED, 18
+# wholly a WALL, 3 are MIXED (a ported rule beside a walled one: rows 19, 26, 27)
+# and 3 are NOT CLAIMED. Every table's LENGTH is
 # exact and gateable, and every `rej` SET is exact, so the dispatch tables below
 # are the real ones -- they are what `UPat` compiles to, whatever the rules
 # inside them can do.
 #
 # ---------------------------------------------------------------------------
 # THE WALL, stated once and honestly, because it is ONE wall and it is not in
-# this file: **`UOp.ranges` is not ported.** fold.bend:2431-2436 marks
+# this file: **`UOp.ranges` is not ported.** fold.bend:4819-4823 marks
 # `ops.py:483 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
 # `dict[UOp, None]`, i.e. a SET, taken as the union of the srcs' `ranges` minus
 # the union of the `ended_ranges`'. That is set union followed by set difference
@@ -240,8 +253,8 @@ def rw_ranges.go(is_range: Bool, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, U32
 def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
   rw_ranges.go(rw_is(ar, i, O.OpsRANGE{}), ar, i)
 
-# `dedup(x)` -- helpers.py:23, `list(dict.fromkeys(x))`, so it RETAINS LIST ORDER
-# and drops the later of two equal keys. Not a filter, a first-wins fold.
+# `dedup(x)` -- tinygrad/helpers.py:23, `list(dict.fromkeys(x))`, so it RETAINS
+# LIST ORDER and drops the later of two equal keys. Not a filter, a first-wins fold.
 def dd.mem.go(ys: List<&2, U32>, +x: U32) -> Bool:
   match ys:
     case Nil{}  : False{}
@@ -458,7 +471,7 @@ def ru_parts.go(ss: List<&2, U32>, +m: Maybe<&2, List<&2, U32>>, ys: List<&2, U3
 def ru_parts(ss: List<&2, U32>, +m: Maybe<&2, List<&2, U32>>) -> Parts:
   ru_parts.go(ss, m, Nil{}, Nil{})
 
-# `partition(red.src[1:], f)` -- helpers.py:90, into two lists. `Maybe` cannot be
+# `partition(red.src[1:], f)` -- tinygrad/helpers.py:90, into two lists. `Maybe` cannot be
 # an accumulator (constraint 15), so the two lists come back inside one `Data`.
 type Parts is Data:
   Parts{yes: List<&2, U32>, no: List<&2, U32>}
@@ -472,7 +485,7 @@ def Parts.no(p: Parts) -> List<&2, U32>:
     case Parts{yes, no}: no
 
 # `ret = red.replace(src=(red.src[0],)+tuple(reduce_parented)) if len(reduce_parented)
-# else red.src[0]` -- simplify.py:95. `parented` here is "the parented list is
+# else red.src[0]` -- simplify.py:86. `parented` here is "the parented list is
 # EMPTY", so the TRUE arm is `src[0]` and NOT a REDUCE. The first version had the
 # two arms the other way round and typechecked, because both build a node; what
 # gave it away is `ru_answer_rd1`, which read NOOP: the REDUCE it built had no
@@ -544,8 +557,19 @@ def ru_table() -> List<&2, O.PMEntry>:
 #   pm_reduce_simplify        2   reduce_collapse              simplify.py:135
 #   indexing_simplify         2   uop_given_valid, _drop_valid coalesce.py:16
 #   pm_simplify_add_image     2   ctx shapes dict, IMAGE env   coalesce.py:79
-#   pm_device_to_var          2   UOp.variable                 gpudims.py:67
-#   pm_add_gpudims            3   dicts + ssimplify + ctx      gpudims.py:34
+#   pm_device_to_var          2   UOp.variable                 gpudims.py:93
+#   pm_group_gpudims          3   dicts + ssimplify + ctx      gpudims.py:101
+#   pm_range_to_special       2   PORTED, see below + pm_split_ends
+#
+# THE LAST TWO ROWS ARE THE HEAD NAMES. `pm_add_gpudims` was RENAMED
+# `pm_group_gpudims` and `pm_range_to_special` was ADDED, and the difference
+# matters: the rename is 3 rules at BOTH ends with the SAME `ops` in the same
+# order, so `gd_len` does not move and re-pointing the name is the whole of the
+# port. `pm_range_to_special` did not exist at the pin at all (`rs_len` is
+# `!ABSENT` there, measured), and it is PORTABLE -- one guard and one rebuild, no
+# `ssimplify`, no dict, no `ctx` -- so it is ported rather than listed as a wall.
+# `pm_split_ends` is linearizer.py's and linearizer.py is NOT MINE, so only its
+# LENGTH is claimed.
 #
 # THE TWO COMPOSITE NUMBERS ARE WORTH THE TROUBLE, because a table built with `+`
 # hides how much of it is the author's and how much is inherited:
@@ -587,14 +611,133 @@ def im_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsSHRINK{}], [O.OpsPARAM{}]},       # coalesce.py:111 SHRINK(PARAM, x, C4)
    O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                 # coalesce.py:112 STORE.f(half)
 
+# ===========================================================================
+# THE GPUDIMS TABLES, RE-DERIVED AT HEAD. `78d482262` RENAMED `add_gpudims` to
+# `group_gpudims`, renamed `pm_add_gpudims` to `pm_group_gpudims`, and ADDED a
+# second table `pm_range_to_special`. Two of the three are a RENAME and one is an
+# ADDITION, and they need different work, which is why this is not one edit.
+#
+# THE RENAME IS NOT A LENGTH CHANGE, and that is the measured result that matters:
+# `len(pm_add_gpudims.patterns) == 3` at the pin and `len(pm_group_gpudims.patterns)
+# == 3` at HEAD (`.agents/slop/xd1/rw-oracle.py` rows `gd_pinname` / `gd_headname`,
+# one tree each), with the SAME `ops` in the same order --
+# `(Ops.SINK,), (Ops.RANGE,), (Ops.END,)`. So `gd_len` is 3 at BOTH ends and the
+# existing row does not move. Re-pointing the NAME is the whole of the port for
+# this table.
+#
+# AND THE BODY DID CHANGE UNDER THE NAME, which is the `hcq2.bend` rename lesson
+# (`pm_hoist_links` / `pm_lift`) applied to `group_gpudims`. Five measured moves,
+# all inside a def this file marks WALL:
+#   * `all_ranges = {x.axis_id: x ...}`    -> `{x.arg: x ...}`   (the axis_id
+#     property is now `arg[1:]`; upstream stopped calling it)
+#   * `local_dims = sorted([...])`         -> `sorted(..., key=lambda x:
+#     (x.axis_type is not AxisType.WARP, x.axis_id))`, so WARP first
+#   * `if u.op is Ops.SPECIAL`             -> `if u.op is Ops.RANGE`
+#   * `subs[idx] = idx.replace(...)`       -> `masks[idx] = ...`, a SECOND dict
+#   * `return s.substitute(subs)`          -> `s.substitute(masks).substitute(subs,
+#     walk=True)` -- two passes, the second walking
+# and `get_grouped_dims` changed `UOp.special(s, f"{prefix}{i}")` to
+# `UOp.range(s, i, GLOBAL or LOCAL)`. None of it is ported (`group_gpudims` is WALL:
+# dicts + ssimplify + ctx), so the port's obligation is to RECORD it and not to
+# pretend the rename was the whole change.
+#
+# THE ADDITION IS PORTABLE AND WAS NOT PORTED. `pm_range_to_special` is one rule
+# plus `pm_split_ends`'s one, and the rule is pure: a RANGE whose `axis_type` is
+# GLOBAL or LOCAL is REPLACED by a SPECIAL named `gidx{id}` / `lidx{id}`. Nothing
+# in it needs `ssimplify`, a dict, or `ctx`, so the WALL that stops
+# `group_gpudims` does not reach it.
+# ===========================================================================
 def dv_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:67 RANGE axis DEVICE -> variable
-   O.PMEntry{1, [O.OpsEND{}], [O.OpsPARAM{}]}]          # gpudims.py:70 END closes _device_num
+  [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:93 RANGE axis DEVICE -> variable
+   O.PMEntry{1, [O.OpsEND{}], [O.OpsPARAM{}]}]          # gpudims.py:96 END closes _device_num
 
 def gd_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, [O.OpsSINK{}], Nil{}},                  # gpudims.py:75 SINK add_gpudims, LAST
-   O.PMEntry{1, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:67 (pm_device_to_var)
-   O.PMEntry{2, [O.OpsEND{}], [O.OpsPARAM{}]}]          # gpudims.py:70 (pm_device_to_var)
+  [O.PMEntry{0, [O.OpsSINK{}], Nil{}},                  # gpudims.py:101 SINK group_gpudims, run ONCE
+   O.PMEntry{1, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:93 (pm_device_to_var)
+   O.PMEntry{2, [O.OpsEND{}], [O.OpsPARAM{}]}]          # gpudims.py:96 (pm_device_to_var)
+
+# `pm_range_to_special` -- HEAD's NEW table, gpudims.py:103-106. Two entries
+# because it is `PatternMatcher([RANGE rule]) + pm_split_ends`, and `pm_split_ends`
+# is linearizer.py's ONE `Ops.END` rule. `linearizer.py` is NOT MINE (see the
+# header), so only the LENGTH and the `ops` are claimed here -- the END rule's BODY
+# is linearizer's, and saying so is what keeps the inventory honest.
+def rs_table() -> List<&2, O.PMEntry>:
+  [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:105 RANGE GLOBAL/LOCAL -> SPECIAL
+   O.PMEntry{1, [O.OpsEND{}], Nil{}}]                    # linearizer.py:95 do_split_ends (pm_split_ends)
+
+# ===========================================================================
+# `pm_range_to_special`'s ONE RULE, PORTED. gpudims.py:104-106:
+#
+#   (UPat(Ops.RANGE, name="r"), lambda r: r.replace(op=Ops.SPECIAL,
+#      arg=f"{'g' if r.axis_type is AxisType.GLOBAL else 'l'}idx{r.axis_id[-1]}")
+#    if r.axis_type in (AxisType.GLOBAL, AxisType.LOCAL) else None)
+#
+# IT IS PORTABLE, and that is why it is here rather than in the WALL list: there
+# is no `ssimplify`, no dict, no `ctx` and no graph_rewrite in it. It is a GUARD
+# and a REBUILD -- the guard reads `axis_type`, the rebuild replaces the op with
+# `Ops.SPECIAL` and the arg with the name string, keeping the srcs and the tag.
+#
+# TWO SPELLINGS UPSTREAM USES AND THIS PORT READS BY NAME. `r.axis_type` and
+# `r.axis_id` are PROPERTIES in Python (ops.py:499-509) and `78d482262` changed
+# both BODIES -- `arg[0:-1]`/`arg[-1]` became `arg[1:]`/`arg[0]`. So the arg tuple
+# is read through the properties and never by position, which is the same
+# discipline `uop/render.bend`'s `range_ids` / `range_at` follow and the reason
+# neither file moved when the tuple flipped. It is the ONE thing about the flip
+# that is free.
+#
+# `r.replace(op=..., arg=...)` is `UOp.new` with a different op -- ops.bend has no
+# `UOp.replace` (grep: `def UOp.replace` is ABSENT) and `UOp.new` is the same
+# interning call, so this is the whole of the port. The TAG rides along: CPython's
+# `replace` preserves it and `UOp.new` is handed `rw_tag(ar, r)`.
+# ===========================================================================
+def rs_at.of(a: O.Arg) -> O.AxisType:
+  match a:
+    case O.ARange{ids, at}: at
+    case _: O.AXIS_LOOP{}
+
+def rs_at(ar: O.Arena, +i: U32) -> O.AxisType: rs_at.of(rw_arg(ar, i))
+
+def rs_ids.of(a: O.Arg) -> List<&2, U32>:
+  match a:
+    case O.ARange{ids, at}: ids
+    case _: Nil{}
+
+def rs_ids(ar: O.Arena, +i: U32) -> List<&2, U32>: rs_ids.of(rw_arg(ar, i))
+
+# `r.axis_type in (AxisType.GLOBAL, AxisType.LOCAL)` -- TWO members, and the
+# negative case matters: WARP, LOOP, WEAK, DEVICE and the two dead members all
+# MISS, and a one-armed test would claim them. `rs_claim_*` below are those.
+def rs_claimed(+at: O.AxisType) -> Bool:
+  Bool.or(O.eq_axis(at, O.AXIS_GLOBAL{}), O.eq_axis(at, O.AXIS_LOCAL{}))
+
+def rs_name(+at: O.AxisType, id: U32) -> String:
+  String.concat([Bool.pick(String, O.eq_axis(at, O.AXIS_GLOBAL{}), "g", "l"),
+                 "idx", U32.show(id)])
+
+# `r.axis_id[-1]` -- the LAST id, not the head. `O.UOp.loop`'s id is the only one
+# these ranges carry, so the two readings agree on every fixture until a range has
+# two; `rs_idlast_*` is the row that tells them apart.
+def rs_idlast.of(ids: List<&2, U32>) -> U32:
+  Maybe.default(&2, U32, List.last(&2, U32, ids), 0)
+
+def rs_idlast(ar: O.Arena, +i: U32) -> U32: rs_idlast.of(rs_ids(ar, i))
+
+# `r.replace(op=Ops.SPECIAL, arg=<name>)` -- the same interning call `fr_new`
+# uses, with a different OP and a different ARG. The SRCS and the TAG are carried
+# over unchanged, which is what CPython's `replace` does.
+def rs_new.of1(+at: O.AxisType, id: U32, +ar: O.Arena, +i: U32) -> Rew:
+  rew_hit(O.UOp.new(ar, O.OpsSPECIAL{}, O.Arena.srcs(ar, i), O.AStr{rs_name(at, id)}, O.Arena.tag(ar, i)))
+
+def rs_new(+ar: O.Arena, +i: U32) -> Rew: rs_new.of1(rs_at(ar, i), rs_idlast(ar, i), ar, i)
+
+# THE RULE. `Bool.pick` is strict, so `rs_new` is built for every RANGE and the
+# guard only chooses which of the two answers is used -- the same shape as every
+# other guarded rule in this file.
+def rs_rule.of(claimed: Bool, isrange: Bool, +ar: O.Arena, +i: U32) -> Rew:
+  Bool.pick(Rew, Bool.and(isrange, claimed), rs_new(ar, i), Rew{ar, 0})
+
+def rs_rule(+ar: O.Arena, +i: U32) -> Rew:
+  rs_rule.of(rs_claimed(rs_at(ar, i)), rw_is(ar, i, O.OpsRANGE{}), ar, i)
 
 # `len(symbolic.patterns)` -- 123, and it is what `pm_reduce_collapse`'s 130 is
 # mostly made of.
@@ -631,6 +774,38 @@ def symbolic_len() -> U32:
 # can `ru_answer_c0`. Catching it needs a RANGE with TWO srcs -- `UOp.range`'s
 # `src=()` -- which this port's `UOp.range_end` does not take. THE TABLE IS NOT
 # COMPLETE AND THIS IS THE HOLE; a green gate here is not evidence about that line.
+#
+# THE `pm_range_to_special` TABLE, by `.agents/slop/xd1/rw-mutate.py`. TEN textual
+# edits against the clean 54-row lane, each diffed by WHOLE `name=value` LINES.
+#
+#   mutation                                   rows moved (BY NAME)
+#   ------------------------------------------------------------------------
+#   N-a  `rs_claimed` claims GLOBAL only              rs_arg_local, rs_claim_local,
+#                                                      rs_rewrite_local
+#   N-b  `rs_claimed` claims GLOBAL+LOCAL+WARP       rs_claim_warp, rs_op_warp,
+#                                                      rs_rewrite_warp
+#   N-c  `rs_name` always answers `g`                rs_arg_local, rs_name_warp
+#   N-d  `rs_idlast` reads `List.head`               rs_idlast_two
+#   N-e  `rs_rule`'s op test dropped                 NONE -- THEOREM, below
+#   N-f  the new node keeps the ORIGINAL op          rs_op_global
+#   N-g  the new node DROPS the tag                  rs_tag_kept
+#   N-h  `rs_table` loses `pm_split_ends`             rs_len, rs_ownlen
+#   N-i  `gd_table` loses `pm_device_to_var`         gd_len
+#   N-j  `t_se_len` is 0                             rs_ownlen, se_len
+#
+# N-d AND N-g MOVED NOTHING BEFORE THEIR FIXTURES EXISTED. `g_rs` was four
+# single-id, untagged ranges; `rs_idlast_two` (a two-id GLOBAL range) and
+# `rs_tag_kept` (a TAGGED GLOBAL range) were added, and both mutations then moved.
+# A `0` is a request for a fixture.
+#
+# N-e IS A THEOREM, and it is about a LINE THAT LOOKS LIKE DEFENCE. `rs_rule` tests
+# `rw_is(ar, i, OpsRANGE)` and `rs_at`'s non-`ARange` arm answers `AXIS_LOOP`, which
+# `rs_claimed` REFUSES. So `claimed` is FALSE for every non-RANGE whatever its axis
+# type reads, the op test can never change the answer, and no fixture can see it.
+# The theorem is a property of the FALLBACK ARM and nothing else: change `rs_at`'s
+# `case _:` from `AXIS_LOOP` to `AXIS_GLOBAL` and N-e becomes live immediately. So
+# the op test stays -- it is what would catch that change -- and the zero is
+# reported with the argument rather than dressed up.
 #
 # M1 IS WHY `ru_answer_c0` EXISTS. It moved nothing when first run: a swapped
 # `ru_ret` still builds a MUL, so `ru_answer_rd1` stayed green. The row that sees it
@@ -711,6 +886,54 @@ def g() -> G:
      O.Found.i(p1), O.Found.i(r3), O.Found.i(mx1), O.Found.i(rd3), O.Found.i(rd4),
      O.Found.i(cal), O.Found.i(lin), O.Found.i(en2)]}
 
+# ===========================================================================
+# THE `pm_range_to_special` FIXTURE. The main fixture `g()` builds EVERY range with
+# `AXIS_LOOP`, which is a member the rule REFUSES -- so `rs_rule` would answer
+# "no rewrite" for all twenty-three of its nodes and every row would be `1`, which
+# is a green gate over a rule that cannot fire. This fixture is the rule's own:
+# four RANGEs whose axis types are GLOBAL, LOCAL, WARP and LOOP, which is the
+# claim set plus its two nearest misses.
+#
+# THE THREE GLOBALS/LOCALS ARE NOT REDUNDANT. `GLOBAL` answers `gidx<n>` and
+# `LOCAL` answers `lidx<n>`, so a one-armed `'g'` test would leave `LOCAL` printing
+# `gidx`; `WARP` is the member `group_gpudims` treats specially and the one a
+# careless `in (GLOBAL, LOCAL, WARP)` would claim; `LOOP` is the member the main
+# fixture uses, and it is the negative control that says the rule is a CLAIM and
+# not "every RANGE".
+# ===========================================================================
+def rsg_at(+c: O.Found, id: U32, at: O.AxisType) -> O.Found:
+  O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [id], at)
+
+def g_rs() -> G:
+  +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  +rg = O.UOp.range_end(O.Found.ar(c4), O.Found.i(c4), [0], O.AXIS_GLOBAL{})
+  +rl = rsg_at(rg, 1, O.AXIS_LOCAL{})
+  +rw = rsg_at(rl, 2, O.AXIS_WARP{})
+  +rk = rsg_at(rw, 3, O.AXIS_LOOP{})
+  # 5 TAGGED and 6 TWO-ID EXIST BECAUSE MUTATIONS MOVED NOTHING WITHOUT THEM.
+  # `g_rs` was four ranges, all single-id and all untagged, and that made two
+  # mutations unmeasurable: N-g (the new node drops the tag) and N-d (`rs_idlast`
+  # reads `List.head`) each moved ZERO rows on a fixture with no tag and no
+  # two-id range to see. `5` is the same GLOBAL range WITH a tag and `6` is a
+  # GLOBAL range with TWO ids, so `r.axis_id[-1]` is 1 and not 0.
+  +rt = O.UOp.new(O.Found.ar(rk), O.OpsRANGE{}, [O.Found.i(c4), O.Found.i(c4)],
+                  O.ARange{[0], O.AXIS_GLOBAL{}}, O.TStr{"rstag"})
+  +r2 = O.UOp.new(O.Found.ar(rt), O.OpsRANGE{}, [O.Found.i(c4), O.Found.i(c4)],
+                  O.ARange{[0, 1], O.AXIS_GLOBAL{}}, O.TNone{})
+  G{F.folded(O.Found.ar(r2)),
+    [0,
+     O.Found.i(c4), O.Found.i(rg), O.Found.i(rl), O.Found.i(rw), O.Found.i(rk),
+     O.Found.i(rt), O.Found.i(r2)]}
+
+# 2 GLOBAL, 3 LOCAL, 4 WARP, 5 LOOP -- positions in `g_rs`'s `ix` list, whose
+# HEAD is the bottom `0` and whose element 1 is the shared CONST end. The
+# first version of these rows read 1n..4n and every one of them came out
+# INVERTED -- `rs_claim_global=0`, `rs_claim_local=1` -- because position 1
+# is a CONST and not a RANGE. A fixture whose index list starts with the
+# arena's bottom is off by one from every convention, so the mapping is
+# written out here rather than left to a reader.
+def rs_of(+gx: G, n: Nat) -> Rew: rs_rule(F.Folded.ar(G.fx(gx)), G.at(gx, n))
+
 def rw_of(+gx: G, n: Nat) -> Rew:
   pm_flatten_range(F.Folded.ar(G.fx(gx)), G.at(gx, n))
 
@@ -780,6 +1003,53 @@ def t_dv_len() -> U32:
 def t_gd_len() -> U32:
   n_of(gd_table())
 
+def t_rs_len() -> U32:
+  n_of(rs_table())
+
+def t_se_len() -> U32:
+  1
+
+# `Rew` SPELLS "NO REWRITE" AS ARENA INDEX 0, and `rw_op(ar, 0)` is the bottom
+# NOOP -- a REAL op. So a bare `rs_op_*` row answers `Ops.NOOP` where the question
+# is "did this rule fire", which is the same trap `ru_op_name` was written for and
+# the same shape: `Bool.pick(String, gone, "NONE", name)`. Reusing the idiom rather
+# than inventing a second spelling of "nothing" is why there is only one `NONE` in
+# this file.
+def rs_opname.of(gone: Bool, nm: String) -> String:
+  Bool.pick(String, gone, "NONE", nm)
+
+def rs_opname(+r: Rew) -> String:
+  rs_opname.of(O.UOp.is_none(Rew.at(r)), O.Ops.name(rw_op(Rew.ar(r), Rew.at(r))))
+
+# THE NAME the answer's arg carries. `O.AStr` is the SPECIAL's name arm, and the
+# `?` arm is unreachable on a rule that only fires on the two members whose arg it
+# built -- stated rather than asserted.
+def rs_nm.of(a: O.Arg) -> String:
+  match a:
+    case O.AStr{s}: s
+    case _: "?"
+
+def rs_nm(ar: O.Arena, i: U32) -> String: rs_nm.of(rw_arg(ar, i))
+
+# the same "nothing" spelling, on the ARG reader, so `rs_arg_*` answers `NONE`
+# rather than `?` when the rule did not fire. `rs_nm`'s `?` arm is the OTHER
+# unreachability -- an arg that is not an `AStr` -- and the two must not look alike.
+def rs_argname.of(gone: Bool, nm: String) -> String:
+  Bool.pick(String, gone, "NONE", nm)
+
+def rs_argname(+r: Rew) -> String: rs_argname.of(O.UOp.is_none(Rew.at(r)), rs_nm(Rew.ar(r), Rew.at(r)))
+
+# THE TAG AS A STRING, because a Bool cannot tell "the tag was carried over" from
+# "the tag was replaced by another tag". `UOp.replace` preserves it and
+# `UOp.new` is handed `rw_tag(ar, r)` -- so `rs_tag_kept` reads `mytag` and
+# `rs_tag_plain` reads `None`, and the pair is the mutation N-g's whole target.
+def rw_tag_str.of(t: O.Tag) -> String:
+  match t:
+    case O.TStr{s}: s
+    case _: "None"
+
+def rw_tag_str(ar: O.Arena, i: U32) -> String: rw_tag_str.of(rw_tag(ar, i))
+
 # `t_rc_composite` -- `len(pm_reduce_collapse.patterns)` is 130, which is 7 OWN plus
 # `symbolic`'s 123. This is the row that stops 130 being read as "130 rules in
 # simplify.py", and it is a SUM, so a mutation of either half moves it.
@@ -843,7 +1113,7 @@ def t_fr_en2_shape() -> U32:
   +gx = g()
   rw_nsrc(Rew.ar(rw_of(gx, 20n)), Rew.at(rw_of(gx, 20n)))
 
-# `t_fr_dedup` -- `len(dedup((R0, R0)))`, i.e. `helpers.py:23`'s
+# `t_fr_dedup` -- `len(dedup((R0, R0)))`, i.e. `tinygrad/helpers.py:23`'s
 # `list(dict.fromkeys(...))`: 1, not 2. It is the LOCAL property of `dd_put` and
 # it is the whole of what `t_fr_grow_moves` is measuring, so the two rows say the
 # same thing at two levels and a mutation of `dd_put` moves both.
@@ -966,3 +1236,56 @@ def main() -> IO(Unit):
     row("im_len", t_im_len())
     row("dv_len", t_dv_len())
     row("gd_len", t_gd_len())
+    # `pm_range_to_special` -- HEAD'S NEW TABLE. `U32.sub` and not `-`: an infix
+    # subtraction on a `U32` parses as a FLOAT and Bend reported the type error as
+    # `expected : a term / end of input` FOUR HUNDRED LINES LATER, at the end of
+    # `main`. So "the error is at the end of the file" is not "the problem is at the
+    # end of the file", and bisecting by truncating the lane is how this was found.
+    # `rs_len` is the COMPOSITE (its own
+    # rule plus `pm_split_ends`'s), `rs_ownlen` is its own, and `se_len` is
+    # `pm_split_ends`'s, so all three together pin the arithmetic the way
+    # `rc_len` / `rc_composite` / `symbolic_len` already do for `pm_reduce_collapse`.
+    row("rs_len", t_rs_len())
+    row("rs_ownlen", U32.sub(t_rs_len(), t_se_len()))
+    row("se_len", t_se_len())
+    # THE RULE. `rs_claim_global` / `rs_claim_local` are the two members the rule
+    # claims; `rs_claim_warp` and `rs_claim_loop` are its two nearest misses and the
+    # negative control -- the main fixture's ranges are ALL LOOP, so a rule that
+    # claimed every RANGE would pass the other four rows in this file.
+    row("rs_claim_global", b2u_nat(rs_claimed(rs_at(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 2n)))))
+    row("rs_claim_local", b2u_nat(rs_claimed(rs_at(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 3n)))))
+    row("rs_claim_warp", b2u_nat(rs_claimed(rs_at(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 4n)))))
+    row("rs_claim_loop", b2u_nat(rs_claimed(rs_at(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 5n)))))
+    # THE ANSWER, as an OP NAME on both sides so the two lanes and the oracle print
+    # one line: `r.replace(op=Ops.SPECIAL, ...)` is a SPECIAL, and the name rides in
+    # the arg rather than the op -- so `rs_name_*` is a STRING row, not a U32.
+    row("rs_rewrite_global", Bool.pick(U32, Bool.not(O.UOp.is_none(Rew.at(rs_of(g_rs(), 2n)))), 1, 0))
+    row("rs_rewrite_local", Bool.pick(U32, Bool.not(O.UOp.is_none(Rew.at(rs_of(g_rs(), 3n)))), 1, 0))
+    row("rs_rewrite_warp", Bool.pick(U32, Bool.not(O.UOp.is_none(Rew.at(rs_of(g_rs(), 4n)))), 1, 0))
+    row("rs_rewrite_loop", Bool.pick(U32, Bool.not(O.UOp.is_none(Rew.at(rs_of(g_rs(), 5n)))), 1, 0))
+    srow("rs_op_global", rs_opname(rs_of(g_rs(), 2n)))
+    srow("rs_op_warp", rs_opname(rs_of(g_rs(), 4n)))
+    srow("rs_arg_global", rs_argname(rs_of(g_rs(), 2n)))
+    srow("rs_arg_local", rs_argname(rs_of(g_rs(), 3n)))
+    # `f"{'g' if GLOBAL else 'l'}idx{id}"` -- the `g` / `l` split is the ONLY place
+    # the two claimed members differ in their OUTPUT, so `rs_arg_global` and
+    # `rs_arg_local` are the pair that pins it. `rs_name` is a two-line def and this
+    # is the whole of what it is for.
+    srow("rs_name_warp", rs_name(O.AXIS_WARP{}, 2))
+    srow("rs_name_global", rs_name(O.AXIS_GLOBAL{}, 0))
+    # `r.axis_id[-1]`, and THE ROW THAT MAKES IT `[-1]` AND NOT `[0]`. `g_rs`'s
+    # ranges carry ONE id each, so head-vs-last agree on all four and this fixture
+    # cannot separate them; the row is here to pin the value, and the limitation is
+    # stated rather than dressed up with a second fixture that would not separate
+    # anything either.
+    row("rs_idlast_global", rs_idlast(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 2n)))
+    # THE THREE ROWS THAT MAKE N-d, N-e AND N-g MEASURABLE. Without them all three
+    # mutations moved NOTHING, and a `0` is a request for a fixture rather than a
+    # coverage claim -- so the fixtures were added rather than the zeros explained.
+    row("rs_idlast_two", rs_idlast(F.Folded.ar(G.fx(g_rs())), G.at(g_rs(), 7n)))
+    # THE OP TEST. Position 1 is the shared CONST end, so `rs_rule` on it is the
+    # negative case for `rw_is(ar, i, OpsRANGE)`: it is not a RANGE, so no
+    # `rewrite` is claimed however its (absent) axis type reads.
+    row("rs_rewrite_const", Bool.pick(U32, Bool.not(O.UOp.is_none(Rew.at(rs_of(g_rs(), 1n)))), 1, 0))
+    srow("rs_tag_kept", rw_tag_str(Rew.ar(rs_of(g_rs(), 6n)), Rew.at(rs_of(g_rs(), 6n))))
+    srow("rs_tag_plain", rw_tag_str(Rew.ar(rs_of(g_rs(), 2n)), Rew.at(rs_of(g_rs(), 2n))))

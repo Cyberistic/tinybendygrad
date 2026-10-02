@@ -1,6 +1,7 @@
 # dtype_oracle.bend -- print every table dtype.bend claims, in a form the Python
 # oracle can diff line for line. Not the test itself: the diff IS the test, and
-# it lives in .agents/slop/notes/dtype_oracle.py because the oracle is
+# it lives in .agents/slop/oracle/dtype_oracle.py (NOT under notes/, which is
+# where the FIRST draft of this header sent a reader) because the oracle is
 # tinygrad's own Python, and that is the only implementation whose answers count.
 #
 # Both lanes must print the same bytes, so the oracle script runs this twice.
