@@ -41,8 +41,8 @@
 # THE FFI, by Python line, so "what is not here" is checkable rather than
 # asserted. None of these is a `raise`; all of them are trace tags:
 #   `to_mv` / `.cast(fmt)`          :7, :12    TO_MV, TO_MV_CAST
-#   `self.mv[k]`, `.tolist()`       :9, :10    MMIO_INDEX
-#   `pt.valid(i)`                   :136,148,171,215  PT_VALID
+#   `self.mv[k]` / `.tolist()`        :9, :10    MMIO_INDEX
+#   `pt.valid(i)`                   :136,148,171,215,233  PT_VALID
 #   `pt.is_page(i)`                 :140,171   PT_IS_PAGE
 #   `pt.entry(i)`                   :140,215,233 PT_ENTRY
 #   `pt.address(i)`                 :141       PT_ADDRESS
@@ -50,11 +50,20 @@
 #   `pt.set_entry(i, p, ...)`       :138,151,221,234  PT_SET_ENTRY
 #   `pt_t(dev, addr, lv=)`          :141,193   PT_T
 #   `self.dev.mm.palloc(...)`       :138,149,193  MM_PALLOC
-#   `self.dev.mm.pfree(...)`        :149,288   MM_PFREE
+#   `self.dev.mm.pfree(...)`        :149,267,288   MM_PFREE
 #   `self.dev.vram[p:p+size] = ...` :285       VRAM_ZERO
 #   `getenv("MM_DEBUG", 0)` prints  :209,228   MM_DEBUG_PRINT
 #   `getenv("GMMU", 1)`             :248,275   a Bool PARAMETER, not a seam
 #   `self.on_range_mapped()`        :224,236   ON_RANGE_MAPPED (a `pass` hook)
+#   `palloc_ranges[nxt][0]`         :260,262,266,268,270  a plain U32 walk (see
+#                                                     `ladder_pick`), no seam
+# EIGHT OF THE FIFTEEN TAGS ARE EMITTED BY SOMETHING IN THIS FILE AND SEVEN ARE
+# NOT, and the seven are the honest list of seams this port does not gate:
+# `PT_IS_PAGE`, `PT_ADDRESS`, `PT_SUPPORTS_HUGE`, `PT_T`, `MM_PALLOC`,
+# `MM_PFREE`, `VRAM_ZERO`, `MM_DEBUG_PRINT`. They are real methods on
+# `PageTable` / `MemoryManager` and on the device, so they belong to the
+# vocabulary; a declared tag that nothing emits cannot be gated, and mutation
+# M64 is exactly that fact made visible.
 # EVERY CONSTANT, EVERY FIELD LIST AND EVERY `py=` EXPECTATION BELOW WAS READ
 # OUT OF CPYTHON by CALLING it, never typed. The oracle is
 # `.agents/slop/memory_oracle.py`. The field lists came out of
@@ -87,9 +96,6 @@ def Tr.fail_at(t: Tr, n: U32) -> Tr:
     case Tr{calls, next, refused, nth, at}: Tr{calls, next, refused, nth, n}
 # an EMPTY trace that keeps `at` and `nth`, so one fixture numbering covers a
 # whole manager lifetime.
-def Tr.reset(t: Tr) -> Tr:
-  match t:
-    case Tr{calls, next, refused, nth, at}: Tr{Nil{}, 0, False{}, nth, at}
 # the id the NEXT emit mints. Read BEFORE the emit, so ids are monotone.
 def Tr.here(t: Tr) -> U32: Tr.next(t)
 # `Bool.pick` evaluates BOTH arms, so the recorded call is a value built here
@@ -216,7 +222,6 @@ def PAGE_4K() -> U32: 4096
 # 4KB, so fragment 0 is 4KB and fragment n is 4KB << n.
 def FRAG_UNIT_SHIFT() -> U32: 12
 # memory.py:7 -- `__init__(self, addr, nbytes, fmt='B')`, the DEFAULT cast.
-def MMIO_DEF_FMT_ID() -> U32: 1
 # memory.py:201 -- `va_pwr2_div = va & -va if va > 0 else (1 << 63)`. The
 # sentinel is `1 << 63`, which SATURATES to 0 in a `U32`, so the honest 64-bit
 # constant is an `H.I64` and the arithmetic carries a `U32` stand-in.
@@ -424,7 +429,6 @@ def mmio_def_fmt() -> U32: fmt_ix_name("B")
 def calcsize_i(i: U32) -> U32: sz_ix(List.get(&2, U32, calcsizes_sizes(), U32.to_nat(i)))
 # every `struct.calcsize` below is >= 1, so a `0` size IS the out-of-range
 # answer and needs no second condition.
-def mmio_fmt_absent(m: Mv) -> Bool: U32.is_eq(calcsize_i(Mv.fmt(m)), fmt_absent())
 # :8 -- `__len__` is `self.nbytes // struct.calcsize(self.fmt)`. BOTH READS are
 # off the SAME record, so `+m` is required -- and it is a copy, so the row can
 # be recomputed without a second `Mv`.
@@ -449,8 +453,6 @@ def mmio_view_off(root: Mv, off: U32) -> U32: U32.add(Mv.addr(root), off)
 # `mv_nbytes_root` -- the byte WINDOW a view sees is bounded by the ROOT's
 # bytes, and the answer is the root's `nbytes` for a root. Written as a def so
 # a nested view is one call away instead of a re-read of the parent.
-def mv_nbytes_root(m: Mv) -> U32: Mv.nbytes(m)
-def mv_addr_root(m: Mv) -> U32: Mv.addr(m)
 # :9 -- `(self.mv[k] if self.fmt == 'B' else self.mv[k].tolist()) if
 # isinstance(k, slice) else self.mv[k]`. THE `.tolist()` ARM IS EXACTLY THE
 # NON-'B' TEST, so `mmio_is_byte_fmt` gates it: for a slice index, 'B' returns
@@ -510,7 +512,6 @@ def bump_overflow(+b: Bump, size: U32, align: U32) -> Bool:
 # file, and the trace is EMPTY at that point because nothing was emitted: the
 # `alloc` has no device call at all. So `mem_bump_refuse_*` reads
 # `Tr.refused` and `Tr.seen`, and the pair IS the refusal.
-def BUMP_REFUSAL_ORD() -> U32: 1
 # :19 -- `self.ptr = 0`, the WRAP arm. Zero and NOT the aligned value, so the
 # next allocation's padding is measured from 0.
 def bump_wrap_ptr() -> U32: 0
@@ -603,9 +604,6 @@ def Space.nm(s: Space) -> String:
     case Space{ix, val, nm}: nm
 def aspaces() -> List<&2, Space>:
   [space_of(0, 1, "PHYS"), space_of(1, 2, "SYS"), space_of(2, 3, "PEER")]
-# the INDEX is what a `U32`-keyed table carries, so `space_at` is the lookup.
-def space_at(s: Space) -> U32: Space.ix(s)
-def space_of_ix(ix: U32) -> Maybe<&2, Space>: List.get(&2, Space, aspaces(), U32.to_nat(ix))
 # the enum VALUE, `AddrSpace.SYS.value`, which is 1 + the index. Kept as its own
 # column so the two cannot be read as one field.
 def ASPACE_PHYS_VAL() -> U32: 1
@@ -1011,17 +1009,12 @@ def fmt_name_of(i: U32) -> String: fmt_name_of.go(List.get(&2, String, calcsizes
 # hold and > 1 for every multi-character one. That is the `.cast()` refusal's
 # ACTUAL predicate, measured by CPython, and the row is here rather than a Bool
 # so the length itself is the claim.
-def fmt_str_len(i: U32) -> U32: U32.from_nat(String.length(fmt_name_of(i)))
 def fmt_b() -> U32: fmt_ix_name("B")
 def fmt_b1() -> U32: fmt_ix_name("b")
 def fmt_h() -> U32: fmt_ix_name("H")
 def fmt_i() -> U32: fmt_ix_name("I")
 def fmt_q() -> U32: fmt_ix_name("Q")
 def fmt_d() -> U32: fmt_ix_name("d")
-def fmt_2I() -> U32: fmt_ix_name("2I")
-def fmt_4B() -> U32: fmt_ix_name("4B")
-def fmt_I2B() -> U32: fmt_ix_name("I2B")
-def fmt_16B() -> U32: fmt_ix_name("16B")
 # `nbytes % calcsize(fmt) != 0` -- the second measured refusal, and the rows
 # come in PAIRS: a refused length and an accepted one at the same item size.
 def odd_not_mult(nb: U32, isz: U32) -> Bool: Bool.not(U32.is_eq(U32.mod(nb, isz), 0))
@@ -1048,7 +1041,7 @@ def Ba.al(b: Ba) -> U32:
   match b:
     case Ba{sz, al}: al
 def ba_list() -> List<&2, Ba>:
-  [Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}, Ba{4096, 4096}, Ba{4095, 1}, Ba{4096, 1}]
+  [Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}, Ba{4096, 4096}, Ba{4095, 1}, Ba{4096, 1}, Ba{1, 4096}]
 # THE FOUR STATES. They differ from one another in the SIZE, the BASE or the
 # `wrap` FLAG and in nothing else, which is what makes `plain`/`wrap` a pair.
 def b_plain() -> Bump: bump_of(4096, 0, False{})
@@ -1066,6 +1059,7 @@ def b_adv4(+b: Bump, +a1: Ba, +a2: Ba, +a3: Ba, a4: Ba) -> Bump: b_adv(b_adv3(b,
 def b_adv5(+b: Bump, +a1: Ba, +a2: Ba, +a3: Ba, +a4: Ba, a5: Ba) -> Bump: b_adv(b_adv4(b, a1, a2, a3, a4), a5)
 def b_adv6(+b: Bump, +a1: Ba, +a2: Ba, +a3: Ba, +a4: Ba, +a5: Ba, a6: Ba) -> Bump: b_adv(b_adv5(b, a1, a2, a3, a4, a5), a6)
 def b_adv7(+b: Bump, +a1: Ba, +a2: Ba, +a3: Ba, +a4: Ba, +a5: Ba, +a6: Ba, a7: Ba) -> Bump: b_adv(b_adv6(b, a1, a2, a3, a4, a5, a6), a7)
+def b_adv8(+b: Bump, +a1: Ba, +a2: Ba, +a3: Ba, +a4: Ba, +a5: Ba, +a6: Ba, +a7: Ba, a8: Ba) -> Bump: b_adv(b_adv7(b, a1, a2, a3, a4, a5, a6, a7), a8)
 # THE SEQUENCE FOLD: the state is a `Bump` and the answers are the RETURNED
 # ADDRESSES in order. A REFUSAL STOPS THE FOLD, because in Python the `raise`
 # replaces the rest -- so the result is a LIST whose length is itself a claim.
@@ -1156,6 +1150,12 @@ def b_over.all(+tag: String, +b: Bump) -> IO(Unit):
     f : Unit <- b_over.row(String.append(tag, "_5"), b_adv5(b, Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}), Ba{4096, 4096})
     g : Unit <- b_over.row(String.append(tag, "_6"), b_adv6(b, Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}, Ba{4096, 4096}), Ba{4095, 1})
     h : Unit <- b_over.row(String.append(tag, "_7"), b_adv7(b, Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}, Ba{4096, 4096}, Ba{4095, 1}), Ba{4096, 1})
+    # AND THE ONE THAT MAKES `bump_over_*` AND `bump_over_noround_*` SEPARABLE: a
+    # ONE-BYTE request at alignment 4096 from a pointer at 161. The padded test
+    # rounds 161 up to 4096 and overflows the 4096-byte window; the unpadded one
+    # compares 162 against 4096 and does not. Every other fixture has an aligned
+    # pointer or an alignment of 1, so padding is 0 and the two rows agree.
+    i : Unit <- b_over.row(String.append(tag, "_8"), b_adv8(b, Ba{16, 1}, Ba{16, 1}, Ba{64, 1}, Ba{64, 16}, Ba{1, 16}, Ba{4096, 4096}, Ba{4095, 1}, Ba{4096, 1}), Ba{1, 4096})
     IO.pure(Unit, Unit{})
 def b_full(b: Bump) -> Bump: b_adv2(b, Ba{2048, 256}, Ba{2048, 256})
 # `b_plain5` / `b_wrap5` are the states after the first FIVE requests of
@@ -1664,7 +1664,6 @@ def VA_BITS_AMD() -> U32: 48
 def VA_BITS_NV() -> U32: 52
 def sh_amd() -> List<&2, U32>: [12, 21, 30, 39, 48]
 def sh_nv() -> List<&2, U32>: [16, 25, 34, 43, 52]
-def t_pte1b(nm: String, shifts: List<&2, U32>, va_bits: U32) -> IO(Unit): t_pte1(nm, shifts, va_bits)
 # THE `t_pte1n` VARIANT, and it is a SEPARATE def rather than a flag: a
 # `Bool.pick` between two row blocks would PRINT BOTH, so each width needs its
 # own `IO` block and not a branch. `cnts` IS emitted here -- every entry is at
@@ -1772,7 +1771,6 @@ def t_pte() -> IO(Unit):
 # `frag_va_div` substitutes `LOWBIT_ZERO` = `2^31`. `frag_va_div_b` and
 # `frag_va_div_bnocover` are the rows that make the substitution VISIBLE, and
 # `mem_lowbit_zero_exact` is the `H.I64` the sentinel really is.
-def frag_lowbit_row(x: U32) -> U32: frag_lowbit(x)
 # THE LOWBIT IN ISOLATION, which is what a port that dropped the `va == 0`
 # sentinel would compute: `frag_lowbit_0` is 0 while CPython's `va & -va` for
 # `va == 0` is ALSO 0 -- and `frag_va_div_0` is the row that shows the sentinel
@@ -2069,8 +2067,6 @@ def VS_4K() -> U32: 4096
 def VS_4K1() -> U32: 4097
 def VS_8K() -> U32: 8192
 def VS_16K() -> U32: 16384
-def VS_64K() -> U32: 65536
-def VS_64K1() -> U32: 65537
 def VS_1M() -> U32: 1048576
 def VS_1M1() -> U32: 1048577
 # `1 << (size.bit_length() - 1)` -- the biggest power of two `<= sz`.
@@ -2527,12 +2523,6 @@ type Pte is Data:
 def Pte.valid(p: Pte) -> U32:
   match p:
     case Pte{valid, entry}: valid
-
-def Pte.entry_unused(p: Pte) -> U32:
-  match p:
-    case Pte{valid, entry}: entry
-
-def Pte.of(valid: U32, entry: U32) -> Pte: Pte{valid, entry}
 
 # THE THREE PAGE-TABLE TAGS AS CALLS, and each one is the FFI plus the emit.
 # `arg` is the PTE INDEX, which is what :215's and :233's loop variable is.

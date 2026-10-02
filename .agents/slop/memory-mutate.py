@@ -212,6 +212,20 @@ MUTS = [
  ("M68", "odd_not_mult: the modulo test becomes equality-to-1",
   'def odd_not_mult(nb: U32, isz: U32) -> Bool: Bool.not(U32.is_eq(U32.mod(nb, isz), 0))',
   'def odd_not_mult(nb: U32, isz: U32) -> Bool: U32.is_eq(U32.mod(nb, isz), 1)'),
+ # M64 RETAGS `PT_SET_ENTRY` ONTO `PT_SUPPORTS_HUGE`, WHICH NOTHING EMITS, and a
+ # tag collision with an UNUSED tag is invisible: both lanes count the same
+ # number of calls under the shared value. This one retags onto `PT_VALID`, which
+ # IS emitted, so it moves -- and the pair is what shows the difference between
+ # "the tag space is wrong" and "the tag is wrong".
+ ("M69", "PT_SET_ENTRY tag 9 -> 4 (collides with PT_VALID, WHICH IS EMITTED)",
+  'def PT_SET_ENTRY() -> U32: 9', 'def PT_SET_ENTRY() -> U32: 4'),
+ # THE `:260-262` LADDER WALK. A LAST-match walk keeps the SMALLEST segment at
+ # or below the remainder instead of the largest, which is the same class of bug
+ # as advancing the list past the pick -- the one this port HAD, and which the
+ # CPython diff caught as eight 2 MiB picks for an 8 MiB request.
+ ("M70", "ladder_pick: the FIRST match at or below the remainder becomes the LAST",
+  'case s <> t: Bool.pick(U32, U32.is_le(s, rem), s, ladder_pick.go(t, rem, dflt))',
+  'case s <> t: Bool.pick(U32, U32.is_le(s, rem), ladder_pick.go(t, rem, s), dflt)'),
 ]
 
 def run(path):

@@ -86,7 +86,7 @@ BUMP = [
 BUMP_ALLOCS = [
   ("a16", 16, 1), ("a16b", 16, 1), ("a64", 64, 1),
   ("a64a16", 64, 16), ("a1a16", 1, 16), ("a4096", 4096, 4096),
-  ("a4095", 4095, 1), ("a4096b", 4096, 1),
+  ("a4095", 4095, 1), ("a4096b", 4096, 1), ("a1a4096", 1, 4096),
 ]
 
 # A NON-MONOTONE `va_shifts` IS REFUSED BY CPYTHON, and that is a finding rather
