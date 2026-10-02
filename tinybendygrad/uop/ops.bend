@@ -44,8 +44,8 @@
 #      over it answered None for every operand. This one is a plain
 #      `case 1n+p:` countdown, which is exact.
 #   4. `arg: Any` AND `tag: Any` BECAME DATATYPES. `Any` is what Python spells
-#      when one field holds eighteen unrelated things. `Arg` and `Tag` below
-#      name all eighteen. Nothing is lost and the arms are compiler-checked.
+#      when one field holds nineteen unrelated things. `Arg` and `Tag` below
+#      name all nineteen. Nothing is lost and the arms are compiler-checked.
 #   5. THE `recursive_property` MEMO IS DROPPED. Python memoises dtype, shape,
 #      device, _ranges, key, _min_max and the rest on `node.__dict__`, which is
 #      both a cache and a cycle guard: without it a diamond DAG is walked
@@ -149,8 +149,13 @@
 #     arg=CustomFunction(name, dtype))`, and `CallInfo` LOST its `dtype` field
 #     because the return dtype moved into the CUSTOM_FUNCTION's arg. The rebase
 #     therefore also needs a `CustomFunction` datatype here and `CallInfo` re-cut.
-#     Both are P3/P6 in this port, neither is in the gate, and both are in the
-#     NOT PORTED block at the foot of this file.
+#     HALF DONE 2026-10-03: the `CustomFunction` datatype landed, at ops.py's own
+#     position, with `Arg`'s `ACustom` arm, `eq_customfunction` and
+#     `UOp.custom_function` -- none of which needed the P6 hcq2 caller, since
+#     `uop/spec.py:110`'s `isinstance(x.arg, CustomFunction)` needs the TYPE and
+#     `uop/spec.bend`'s `sh_22` is stale without it. `CallInfo` re-cut is STILL
+#     OPEN and is NOT a field delete: `spec.bend`'s `sh_23` reads `CallInfo.dtype`.
+#     Both are in the NOT PORTED block at the foot of this file.
 #
 # THE REVERSE LIST -- who needs THIS file -- is the one that is not obvious, and
 # it is the one that makes this a two-file change at minimum. `ARange`'s FIELD
@@ -883,14 +888,16 @@ type ParamArg is Data:
 # ===========================================================================
 # Arg -- the `arg: Any` field -- and Tag -- the `tag: Any` field.
 #
-# `Any` is Python's way of saying "this field holds eighteen unrelated things
-# and the reader has to know which". The eighteen, with the ops.py line each
+# `Any` is Python's way of saying "this field holds nineteen unrelated things
+# and the reader has to know which". The nineteen, with the ops.py line each
 # comes from:
 #
 #   None                    ANone      the default; SINK/STAGE arg is None
 #   DType                   ADt        CAST/BITCAST arg; INS arg[1]
 #   PyConst|InvalidType     APy        CONST arg
 #   ParamArg                AParam     BUFFER/ALLOC/PARAM arg
+#   CustomFunction          ACustom    CUSTOM_FUNCTION arg (ops.py:1394 upstream;
+#                                     a `str` at the pin -- see the datatype)
 #   CallInfo                ACall      CALL arg
 #   KernelInfo              AKernel    SINK arg
 #   ProgramInfo             AProgram   PROGRAM arg
@@ -899,8 +906,7 @@ type ParamArg is Data:
 #   (dims, DType, threads, tc_upcast_axes)   AWmma   WMMA arg
 #   tuple[int, ...]         ATuple     PERMUTE/FLIP arg, UNSHARD arg,
 #                                     MSELECT arg, PYLITERAL arg
-#   str                     AStr       SPECIAL name, SOURCE text, CUSTOM text,
-#                                     CUSTOM_FUNCTION name
+#   str                     AStr       SPECIAL name, SOURCE text, CUSTOM text
 #   (str, DType)            AInk       INS arg
 #   (Ops, str|tuple)        AAllred    ALLREDUCE arg
 #   str|tuple               ADev       COPY arg
@@ -922,6 +928,7 @@ type Arg is Data:
   ADt{dt: S.Dt}
   APy{v: Const}
   AParam{pa: ParamArg}
+  ACustom{cf: CustomFunction}
   ACall{ci: CallInfo}
   AKernel{ki: KernelInfo}
   AProgram{pi: ProgramInfo}
@@ -1007,6 +1014,37 @@ def GroupOp.opaque_call_bodies(op: Op) -> Bool:
     case OpsSTORE{}: True{}
     case OpsCUSTOM_FUNCTION{}: True{}
     case _: False{}
+
+# CustomFunction -- ops.py:1394-1397 upstream. NOT AT THE PIN: `git show
+# 6c3d401cf324:tinygrad/uop/ops.py | grep CustomFunction` returns NOTHING, so at the
+# pin a CUSTOM_FUNCTION's arg was a bare `str` (ops.py:1256,
+# `UOp(Ops.CUSTOM_FUNCTION, src=src, arg=name)`) and this class did not exist. It is
+# here because `uop/spec.py:110` now reads `isinstance(x.arg, CustomFunction)` and
+# `uop/spec.bend`'s `sh_22` is stale against that until this lands.
+#
+# TWO FIELDS, and both are load-bearing, which is why this is a record and not the
+# `str` it replaced:
+#   name: str                    the external function's SYMBOL. `hcq2.py:84` writes
+#                                it from `fn.__name__`, so `ccall(SELNAME, sel)`
+#                                becomes `custom_function("sel_registerName")`.
+#   dtype: DType = dtypes.void   the dtype of the VALUE THE FUNCTION RETURNS. This
+#                                field is the whole reason the class exists:
+#                                `dtype_from_uop`'s CUSTOM_FUNCTION arm (ops.py:133)
+#                                is `return arg.dtype`, and upstream MOVED
+#                                `CallInfo.dtype` here to make it so.
+# The dataclass is `frozen=True` with no `__eq__` of its own, so structural equality
+# over BOTH fields -- measured, not assumed: `CustomFunction("f") ==
+# CustomFunction("f", dtypes.uint64)` is False and so is a name change, which is what
+# the ucache key needs (`UOp.custom_function("f") is not UOp.custom_function("f",
+# dtypes.uint64)` is True: the return dtype SPLITS the cache, as `type(arg)` split
+# the `AStr` and `ACustom` constructors did for `eq_arg`).
+type CustomFunction is Data:
+  CustomFunction{name: String, dtype: S.Dt}
+
+# the default arm, upstream's `CustomFunction(name)`. `UPat.custom_function`
+# (ops.py:1509) builds exactly this value -- `arg=CustomFunction(fn)`, dtype void.
+def CustomFunction.of(name: String) -> CustomFunction:
+  CustomFunction{name, S.void()}
 
 # CallInfo -- ops.py:1391. TWO FIELDS DROPPED, and both for the same reason:
 #   * `grad_fxn: Callable|None` is a Python function object. Bend has no
@@ -1347,6 +1385,14 @@ def CallInfo.precompile_backward(x: CallInfo) -> Bool:
 def CallInfo.dtype(x: CallInfo) -> S.Dt:
   match x:
     case CallInfo{name, precompile, precompile_backward, dtype}: dtype
+
+def CustomFunction.name(x: CustomFunction) -> String:
+  match x:
+    case CustomFunction{name, dtype}: name
+
+def CustomFunction.dtype(x: CustomFunction) -> S.Dt:
+  match x:
+    case CustomFunction{name, dtype}: dtype
 # ===========================================================================
 # Equality. Bend has no `==` on Data, so the ucache key needs one comparison per
 # component. `UOpMetaClass.__call__` keys on
@@ -1357,11 +1403,11 @@ def CallInfo.dtype(x: CallInfo) -> S.Dt:
 # U32 tag would not.
 #
 # A `match` may take two scrutinees, which is what makes a two-constructor type
-# (Maybe, List) a four-arm ladder. Arg has eighteen constructors, so its 18x18 is
+# (Maybe, List) a four-arm ladder. Arg has nineteen constructors, so its 19x19 is
 # a nested match: first on `x`, then a two-arm ladder on `y` inside each arm, with
 # `x`'s own fields passed in as parameters because an arm may not see them.
 # That is the same shape spec.bend uses in `Shape.max_dim`, and it is why
-# `eq_arg` is nineteen defs and not three hundred and sixty-one arms.
+# `eq_arg` is twenty defs and not three hundred and sixty-one arms.
 # ===========================================================================
 
 def eq_bool(x: Bool, y: Bool) -> Bool:
@@ -1635,6 +1681,10 @@ def eq_callinfo(x: CallInfo, y: CallInfo) -> Bool:
       Bool.and(eq_opt_str(name, n2), Bool.and(eq_bool(precompile, p2),
         Bool.and(eq_bool(precompile_backward, b2), eq_dt(dtype, d2))))
 
+def eq_customfunction(x: CustomFunction, y: CustomFunction) -> Bool:
+  match x y:
+    case CustomFunction{name, dtype} CustomFunction{n2, d2}: Bool.and(String.eq(name, n2), eq_dt(dtype, d2))
+
 def eq_arg.ANone(y: Arg) -> Bool:
   match y:
     case ANone{}: True{}
@@ -1653,6 +1703,11 @@ def eq_arg.APy(y: Arg, +v: Const) -> Bool:
 def eq_arg.AParam(y: Arg, +pa: ParamArg) -> Bool:
   match y:
     case AParam{y1}: eq_paramarg(pa, y1)
+    case _: False{}
+
+def eq_arg.ACustom(y: Arg, +cf: CustomFunction) -> Bool:
+  match y:
+    case ACustom{y1}: eq_customfunction(cf, y1)
     case _: False{}
 
 def eq_arg.ACall(y: Arg, +ci: CallInfo) -> Bool:
@@ -1731,6 +1786,7 @@ def eq_arg.sel(x: Arg, y: Arg) -> Bool:
     case ADt{dt}: eq_arg.ADt(y, dt)
     case APy{v}: eq_arg.APy(y, v)
     case AParam{pa}: eq_arg.AParam(y, pa)
+    case ACustom{cf}: eq_arg.ACustom(y, cf)
     case ACall{ci}: eq_arg.ACall(y, ci)
     case AKernel{ki}: eq_arg.AKernel(y, ki)
     case AProgram{pi}: eq_arg.AProgram(y, pi)
@@ -3664,7 +3720,15 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 
 # TODO(p3) ops.py:1248  def view_as
 
-# TODO(p3) ops.py:1256  def custom_function
+# custom_function -- ops.py:1258 upstream. `UOp(Ops.CUSTOM_FUNCTION, src=src,
+# arg=CustomFunction(name, dtype))`. The pin's spelling was ops.py:1256 and took no
+# dtype, because there was no `CustomFunction` to hold one.
+# `dtype=dtypes.void` is upstream's DEFAULT and Bend has no default argument, so `dt`
+# is required here and `CustomFunction.of(name)` builds the void-dtype value.
+# `UOp.call` below is NOT PORTED, so nothing in this file consumes the dtype yet:
+# `dtype_from_uop` is not ported either (the folds do not fit, see the header).
+def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt) -> Found:
+  UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
 # TODO(p3) ops.py:1258  def call
 
@@ -4246,6 +4310,75 @@ def srow(nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
 # ---------------------------------------------------------------------------
+# CustomFunction -- ops.py:1394 / :1258. THE ROWS THIS TYPE WAS MISSING, and the
+# measurement that asked for them.
+#
+# `eq_customfunction` and `CustomFunction.of` landed with NO row at all, and three of
+# their mutations each moved 0 of the other 104: drop the dtype half of the
+# comparison, drop the name half, and make the `eq_arg.ACustom` arm unconditionally
+# true. None of those is a THEOREM -- there is nothing undecidable about a two-field
+# structural comparison. They were a 0 because nothing the gate could see ever called
+# them, which is the `0` that means REQUEST FOR A FIXTURE rather than coverage.
+#
+# THE FIXTURES ARE THREE CPython ANSWERS, read live and not transcribed:
+#     CustomFunction("f")                 == CustomFunction("f")                 -> True
+#     CustomFunction("f")                 == CustomFunction("f", dtypes.uint64) -> False
+#     CustomFunction("f", dtypes.uint64)  == CustomFunction("g", dtypes.uint64) -> False
+# BOTH fields are therefore in the key, and the return dtype SPLITS the ucache. The
+# third answer is the one that matters downstream: `dtype_from_uop`'s CUSTOM_FUNCTION
+# arm is `return arg.dtype`, so the dtype is the node's TYPE, not a field nobody
+# reads. The `hcq2.py:84` caller spells it `custom_function(fn.__name__, dtype=ret)`
+# for exactly that reason.
+def g_cfun_pair(nm1: String, dt1: S.Dt, nm2: String, dt2: S.Dt) -> Bool:
+  # the DIAGONAL CELL IS `True` -- intern's linear scan finds the existing key -- and
+  # the two OFF-DIAGONAL cells are the ones a row has to earn.
+  +a = UOp.custom_function(Arena.empty(), nm1, Nil{}, dt1)
+  +b = UOp.custom_function(Found.ar(a), nm2, Nil{}, dt2)
+  U32.is_eq(Found.i(a), Found.i(b))
+
+def t_cfun_interns() -> Bool:
+  g_cfun_pair("sel_registerName", S.void(), "sel_registerName", S.void())
+
+def t_cfun_dtype_splits() -> Bool:
+  Bool.not(g_cfun_pair("sel_registerName", S.void(), "sel_registerName", S.uint64()))
+
+def t_cfun_name_splits() -> Bool:
+  Bool.not(g_cfun_pair("submit_null", S.void(), "submit_cl", S.void()))
+
+# THE ARG, read back through the `ACustom` ARM rather than compared with `eq_arg` --
+# deliberately. A row whose expected value is a def of the thing under test is not a
+# test, so this does not ask "is this arg equal to a hand-built ACustom"; it asks
+# "which Arg constructor did `UOp.custom_function` actually build, and what are its
+# two fields in order". The pin's `UOp.custom_function` built an `AStr`, so the
+# `case _:` cell answers `!ACustom` and the row moves.
+def dt_name(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: nm
+
+def cfun_fields_str(cf: CustomFunction) -> String:
+  match cf:
+    case CustomFunction{name, dtype}: String.concat([name, "|", dt_name(dtype)])
+
+def cfun_arg_str.go(a: Arg) -> String:
+  match a:
+    case ACustom{cf}: cfun_fields_str(cf)
+    case _: "!ACustom"
+    case _: "!ACustom"
+
+def cfun_arg_str(+ar: Arena, i: U32) -> String:
+  cfun_arg_str.go(Arena.arg(ar, i))
+
+# THE DEFAULT, ops.py:1397's `dtype: DType = dtypes.void`. This is the row for
+# `CustomFunction.of`, and it is a STRING row for the same reason `cfun_arg_str` is:
+# the answer is a PAIR, and a Bool row cannot say which pair.
+def cfun_of_str() -> String:
+  String.concat([CustomFunction.name(CustomFunction.of("sel_registerName")), "|", dt_name(CustomFunction.dtype(CustomFunction.of("sel_registerName")))])
+
+def t_cfun_arg() -> String:
+  +a = UOp.custom_function(Arena.empty(), "sel_registerName", Nil{}, S.uint64())
+  cfun_arg_str(Found.ar(a), Found.i(a))
+
+# ---------------------------------------------------------------------------
 # MSTACK -- ops.py:770, `UOp(Ops.MSTACK, src=(self,)+srcs) if len(srcs) else self`.
 #
 # THE ROW THIS FILE WAS MISSING, and it is a KNOWN LOOSE END rather than a new finding.
@@ -4627,6 +4760,13 @@ def main() -> IO(Unit):
     p : Unit <- row("alu_permutes", t_alu_permutes())
     row("early_reject", t_early_reject())
     row("ler_len", t_ler_len())
+    # --- THE CustomFunction LANE. ops.py:1394/1258. `eq_customfunction` and
+    # --- `CustomFunction.of` had no row, so three mutations of them moved nothing.
+    row("cfun_interns", t_cfun_interns())
+    row("cfun_dtype_splits", t_cfun_dtype_splits())
+    row("cfun_name_splits", t_cfun_name_splits())
+    srow("cfun_arg", t_cfun_arg())
+    srow("cfun_of", cfun_of_str())
     # --- THE AXIS CPYTHON LANE. `#bend_only_mstack_puts_self_first` first, because it is
     # --- the row this file was MISSING: `UOp.after` and `UOp.end` had rows and
     # --- `UOp.mstack` had the same inverse bug fixed in the same commit with none, so a
@@ -4702,16 +4842,23 @@ def main() -> IO(Unit):
 #     `canonicalize_device` -- the device memory layer. P6, and `ParamArg.buffer`
 #     is the slot they all read.
 #   `Estimates` in `KernelInfo` -- the renderer's cost model, P5.
-#   `CustomFunction` -- ops.py:1394 upstream, ADDED by `78d482262`. It is the arg of
-#     an `Ops.CUSTOM_FUNCTION`: a function name and the dtype the external function
-#     RETURNS. Two dataclass fields, and it is PORTABLE -- but only reachable from
-#     `UOp.custom_function`, which is P6 (`runtime/support/hcq2.py` is the only caller
-#     and it is out of scope), so it lands with that. It is NOT optional: upstream
-#     MOVED `CallInfo.dtype` into it, so a CALL's return dtype now lives on its
-#     CUSTOM_FUNCTION body. The rebase must add this datatype AND re-cut `CallInfo`
-#     without its `dtype` field, and those are ONE change, not two.
-#   `UOp.custom_function(name, *src, dtype=dtypes.void)` and
-#     `UPat.custom_function(fn, **kwargs)` -- the same P6/P3 pair. `UPat`'s is a
+#   `CustomFunction` -- PORTED 2026-10-03, at ops.py's own position (between
+#     `OPAQUE_CALL_BODIES` and `CallInfo`), together with `Arg`'s `ACustom` arm,
+#     `eq_customfunction` and `UOp.custom_function`. The old text here said it was
+#     PORTABLE but unreachable and so would "land with" the P6 hcq2 work; it landed
+#     without it, because `uop/spec.py:110`'s `isinstance(x.arg, CustomFunction)`
+#     needs the datatype and `spec.bend`'s `sh_22` is stale until it has one. Being
+#     P6 only ever described the CALLERS, never the type.
+#     WHAT IS STILL OPEN IS THE OTHER HALF, and it is NOT optional: upstream MOVED
+#     `CallInfo.dtype` into `CustomFunction.dtype`, so a CALL's return dtype now
+#     lives on its CUSTOM_FUNCTION body (`dtype_from_uop`'s CALL arm is
+#     `return src[0].dtype`). `CallInfo` here STILL HAS `dtype`, and it is still
+#     read by `eq_callinfo` and by `uop/spec.bend`'s `arg_call`/`sh_23`. So the
+#     re-cut is a SEPARATE change with its own blast radius, not a field delete:
+#     `sh_23` compares a DECLARED dtype against the node's own, and under HEAD
+#     there is no declared dtype to compare -- the CALL's dtype IS its body's. P3,
+#     with `dtype_from_uop`.
+#   `UPat.custom_function(fn, **kwargs)` -- ops.py:1509 upstream, still NOT PORTED. A
 #     `PatternMatcher` rule constructor, so it lands with `uop/upat.py`.
 #   `UOp.param_like(slot, name=None)` -- ops.py:1241 upstream. `name` was added so a
 #     scalar argument can be bound by NAME while its slot and value stay out of the

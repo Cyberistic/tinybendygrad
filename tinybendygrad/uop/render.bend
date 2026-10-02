@@ -714,10 +714,18 @@ def aprogram_vars(xs: List<&2, U32>) -> String:
 def aprogram_repr(+pi: O.ProgramInfo) -> String:
   String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.vars(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
 
+# CustomFunction is a NEW Arg constructor (ops.bend, uop/ops.py:1394-1397). Upstream it is a
+# frozen dataclass with two fields, so its repr is the pair. `cf` is bound `+` because this
+# reads it twice, and `case O.ACustom{name, dtype}` is refused -- "a pattern with 1 field" --
+# so the fields are read positionally through the accessors instead.
+def customfunction_repr(+cf: O.CustomFunction) -> String:
+  String.concat(["CustomFunction(", O.CustomFunction.name(cf), ", ", dt_repr(O.CustomFunction.dtype(cf)), ")"])
+
 def arg_repr(a: O.Arg) -> String:
   match a:
     case O.ANone{}: "None"
     case O.ADt{dt}: dt_repr(dt)
+    case O.ACustom{+cf}: customfunction_repr(cf)
     case O.APy{v}: const_repr(v)
     case O.AParam{pa}: paramarg_repr(pa)
     case O.ACall{ci}: acall_repr(ci)

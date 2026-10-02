@@ -401,6 +401,9 @@ def arg_int(a: O.Arg) -> Maybe<&2, U32>:
     case O.APy{_}: None{}
     case O.AParam{_}: None{}
     case O.ACall{_}: None{}
+    # CustomFunction is a new Arg constructor. `isinstance(CustomFunction("f"), int)` is
+    # False upstream (measured), so this arm is what the constructor forces -- not a tidy-up.
+    case O.ACustom{_}: None{}
     case O.AKernel{_}: None{}
     case O.AProgram{_}: None{}
     case O.ARange{_, _}: None{}

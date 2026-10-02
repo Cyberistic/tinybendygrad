@@ -311,9 +311,26 @@ def arg_str.go(a: O.Arg) -> Bool:
     case O.AStr{s}: True{}
     case _: False{}
 
-# `isinstance(x.arg, str)` -- spec.py:110, :161, :164, :227, :239.
+# `isinstance(x.arg, str)` -- spec.py:161, :224, :236. At THE PIN this list was five
+# long and started at :110; at HEAD :110 reads `isinstance(x.arg, CustomFunction)`
+# and the CUSTOM_FUNCTION rule that was at :161 in `spec_tensor` is deleted, so
+# `arg_str` is a SPECIAL and REWRITE_ERROR question and nothing else. The pin's
+# numbers are kept because this file is a pin port everywhere `sh_22` is not.
 def arg_str(a: O.Arg) -> Bool:
   arg_str.go(a)
+
+def arg_customfunction.go(a: O.Arg) -> Bool:
+  match a:
+    case O.ACustom{cf}: True{}
+    case _: False{}
+
+# `isinstance(x.arg, CustomFunction)` -- spec.py:110. `ACustom` IS that class and it
+# is the only constructor that is, so the whole body is one arm. `cf` is bound and
+# not read because the question is the TYPE, not the value -- CPython measured
+# `CustomFunction("f") == CustomFunction("g", dtypes.uint64)` as False, so the value
+# distinguishes but the rule does not ask about it.
+def arg_customfunction(a: O.Arg) -> Bool:
+  arg_customfunction.go(a)
 
 def arg_blob.go(a: O.Arg) -> Bool:
   match a:
@@ -1029,29 +1046,27 @@ def sh_20(+fx: F.Folded, +self: U32) -> O.Verdict:
 def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, [O.OpsCUSTOMI{}, O.OpsCUSTOM{}]), sp_vb(arg_ink(sp_arg(fx, self))))
 
-# A WALL, REPORTED NOT QUIETLY CARRIED: this conjunct is STALE AGAINST HEAD. At the pin
-# `spec.py:110` read `lambda x: isinstance(x.arg, str)` and `arg_str` below is that,
-# correctly. At HEAD it reads `lambda x: isinstance(x.arg, CustomFunction)` -- upstream
-# changed a CUSTOM_FUNCTION's arg from a `str` to a `CustomFunction` object stating the
-# return dtype, and that is the SAME change that made upstream delete `spec_tensor`'s
-# CUSTOM_FUNCTION rule (see THE TWENTY-THIRD TENSOR RULE above). So `sh_22` now answers
-# about the wrong thing.
+# THE WALL IS CLOSED, and it closed the only way it could: by the `Arg` datatype
+# growing a constructor. `uop/ops.bend` carries `CustomFunction` (ops.py:1394
+# upstream) with `Arg`'s `ACustom` arm, so `isinstance(x.arg, CustomFunction)` is
+# one compiler-checked arm here instead of a `str` test standing in for it.
 #
-# NO GATE ROW CAN SEE IT, and that is the part worth stating: `sh_len` is 33 at the pin
-# and 33 at HEAD, so the rule count is unchanged and the table-size rows cannot notice that
-# a rule's BODY moved. This is the same class as a dtype rename in `uop/fold.bend` --
-# a value a pattern matches on changing underneath a green gate -- except here the gate has
-# no row that could ever have read the arg's type.
+# THE STALENESS WAS INVISIBLE TO EVERY COUNT, which is the part worth keeping. At the
+# pin `spec.py:110` read `lambda x: isinstance(x.arg, str)`; at HEAD it reads
+# `isinstance(x.arg, CustomFunction)`. `sh_len` is 33 at the pin and 33 at HEAD, so
+# the table-size rows could not notice, and NO OTHER ROW READ THE ARG'S TYPE. Same
+# class as the dtype rename in `uop/fold.bend` -- a value a pattern matches on moving
+# under a green gate -- except here not even the arm was wrong-looking: it compiled,
+# it ran, it answered a different question. A count cannot see a body change.
 #
-# NOT FIXED HERE, AND THE BLOCKER IS NAMED: `arg_str` is right for the pin and there is
-# nothing to replace it with until `uop/ops.bend` HAS a `CustomFunction` datatype, which
-# that file records as outstanding on its own lines 148-151 ("The rebase therefore also
-# needs a `CustomFunction` datatype here and `CallInfo` re-cut"). `ops.bend` is not this
-# file's. OWNER: the `uop/ops.bend` unit. Until it lands, `sh_22` is the pin's rule and
-# this comment is the only place that says so.
+# AND IT WAS NOT ONE LINE. Upstream deleted `spec_tensor`'s fourth rule with it (see
+# THE TWENTY-THIRD TENSOR RULE), which moved `te_len` and `fu_len`; the rule that
+# SURVIVED had to change its own predicate. Both rows below move, in OPPOSITE
+# directions, which is what makes the pair worth having: under the pin's body
+# `cf_arg_ok` was 0 and `cf_arg_str` was 1, and under HEAD's they are 1 and 0.
 # spec.py:110 (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True), lambda x: isinstance(x.arg, CustomFunction))
 def sh_22(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_str(sp_arg(fx, self))))
+  O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_customfunction(sp_arg(fx, self))))
 
 def sh_23.body_op.go(op: O.Op) -> Bool:
   O.GroupOp.opaque_call_bodies(op)
@@ -2984,6 +2999,49 @@ def t_shl_wins() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_f
 # rules are not both being tried.
 def t_shl_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_i(main_arena())))
 
+# spec.py:110 -- `sh_22`, and the row that COULD NOT BE WRITTEN while `sh_22` was the
+# pin's `isinstance(x.arg, str)`. THE FIXTURE IS A LOCAL ARENA rather than two more
+# `main_arena` fields: `Land` is a thirteen-field record read POSITIONALLY by thirteen
+# `case Land{...}` accessors, so two fixtures there are twenty-six positional edits --
+# the same class of edit this file's own `te_dispatch.go` note is about.
+def t_cf_arg_ok() -> U32:
+  +n = O.UOp.custom_function(O.Arena.empty(), "sel_registerName", Nil{}, S.void())
+  show_v(shared_rewrite(F.folded(O.Found.ar(n)), O.Found.i(n)))
+
+# THE NEGATIVE, and it is not a hypothetical node: upstream's constructor takes
+# `arg: Any`, so `UOp(Ops.CUSTOM_FUNCTION, arg="sel_registerName")` is constructible,
+# and CPython measured `spec_shared.rewrite` on it as False.
+# `dtype_from_uop` would RAISE on that node -- `'str' object has no attribute 'dtype'`,
+# measured -- so this row can never become a dtype row; it is the arg-TYPE row, and
+# `fold.bend`'s unconditional `(void, None)` for CUSTOM_FUNCTION is what lets the port
+# answer it where CPython cannot.
+#
+# THE TWO ROWS MOVE IN OPPOSITE DIRECTIONS and that is the whole reason there are two.
+# Under the pin's body `cf_arg_ok` was 0 (a `CustomFunction` is not a `str`) and
+# `cf_arg_str` was 1; at HEAD they are 1 and 0. ONE row could not tell "the arm was
+# swapped for the right one" from "the arm was swapped for one that accepts anything".
+def t_cf_arg_str() -> U32:
+  +n = O.UOp.new(O.Arena.empty(), O.OpsCUSTOM_FUNCTION{}, Nil{}, O.AStr{"sel_registerName"}, O.TNone{})
+  show_v(shared_rewrite(F.folded(O.Found.ar(n)), O.Found.i(n)))
+
+# `sh_22`'s OP GATE, and the row for it, which the pair above cannot be: both fixtures
+# ARE CUSTOM_FUNCTIONs, so deleting `sp_op(fx, self, O.OpsCUSTOM_FUNCTION{})` from
+# `sh_22` leaves both answers untouched. This node is the one that separates them --
+# an AFTER (no src) carrying a `CustomFunction` arg, which upstream cannot build and
+# which is therefore purely adversarial. `sh_20` needs `len(src) >= 1`, so no rule
+# claims it and the honest answer is `VSkip` = 9.
+# CPython AGREES, and that is what makes this a row and not an artifact of the port:
+# `spec_shared.rewrite(UOp(Ops.AFTER, src=(), arg=CustomFunction("f")))` is None.
+# MEASURED, not assumed: a NOOP with the same arg is CLAIMED (1) by an earlier rule,
+# which is why this row has a control -- same arg, different op, opposite answer.
+def t_cf_arg_after() -> U32:
+  +n = O.UOp.new(O.Arena.empty(), O.OpsAFTER{}, Nil{}, O.ACustom{O.CustomFunction.of("f")}, O.TNone{})
+  show_v(shared_rewrite(F.folded(O.Found.ar(n)), O.Found.i(n)))
+
+def t_cf_arg_noop() -> U32:
+  +n = O.UOp.new(O.Arena.empty(), O.OpsNOOP{}, Nil{}, O.ACustom{O.CustomFunction.of("f")}, O.TNone{})
+  show_v(shared_rewrite(F.folded(O.Found.ar(n)), O.Found.i(n)))
+
 # spec.py:88 -- the BACKEDGE, and the only rule here whose `rej` is non-empty AND
 # whose verdict depends on it being spelled right.
 def t_backedge_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.backedge(main_arena())))
@@ -3246,9 +3304,13 @@ def main() -> IO(Unit):
     m : Unit <- row("stack_dt", t_stack_dt())
     n : Unit <- row("shl_wins", t_shl_wins())
     o : Unit <- row("shl_ok", t_shl_ok())
-    p : Unit <- row("backedge_ok", t_backedge_ok())
-    q : Unit <- row("prog4_ok", t_prog4_ok())
-    r : Unit <- row("hcq_plain", t_hcq_plain())
-    s : Unit <- row("hcq_after", t_hcq_after())
+    p : Unit <- row("cf_arg_ok", t_cf_arg_ok())
+    q : Unit <- row("cf_arg_str", t_cf_arg_str())
+    r : Unit <- row("cf_arg_after", t_cf_arg_after())
+    r2 : Unit <- row("cf_arg_noop", t_cf_arg_noop())
+    r3 : Unit <- row("backedge_ok", t_backedge_ok())
+    s : Unit <- row("prog4_ok", t_prog4_ok())
+    t : Unit <- row("hcq_plain", t_hcq_plain())
+    u : Unit <- row("hcq_after", t_hcq_after())
     row("multidev_ok", t_multidev_ok())
     row("multidev_bad", t_multidev_bad())
