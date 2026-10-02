@@ -9,7 +9,8 @@
 # tables, `supported_dtypes`, `tensor_cores`, `fmt` and `render_kernel`'s HEADER
 # -- because tc.py and ptx.py are one feature. This file redefines NONE of it.
 # It IMPORTS `tc_ptx.bend` as `P` and calls `P.types_of` (the three dtype
-# tables), `P.fmt` (the line formatter), `P.esc` and `P.r` (the row builder).
+# tables), `P.fmt` (the line formatter) and `P.esc`; the row builder is `T.r`,
+# which the 1:1 split moved out of `tc_ptx.bend` into `tc.bend`.
 # ONE definition per shared name: the second copy is the drift bug, and a dtype
 # rename in `LAWS/spec.bend` moves BOTH copies or neither.
 #
@@ -63,6 +64,7 @@
 
 import Base
 import ./tc_ptx.bend as P
+import ./tc.bend as T
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 
@@ -550,7 +552,7 @@ def reg_block(+w: Wal) -> List<&2, String>:
 # A ROW IS (its suffix, the answer, the LITERAL). `Wt.want` is generated from
 # the oracle's rows by `.agents/slop/ptx-s3-gen.py` and is NEVER typed -- five
 # incidents in this repo where a typed oracle agreed with a swapped argument.
-# `P.r` and `P.esc` are tc_ptx.bend's, CONSUMED: the row format and the TAB
+# `T.r` and `P.esc` are CONSUMED: the row builder (in `tc.bend`) and the TAB
 # escape are one definition each, and a second copy would let the two files
 # drift on the format.
 # ===========================================================================
@@ -618,12 +620,12 @@ def gots(+nm: String, +ss: List<&2, Wk>) -> List<&2, String>:
 
 
 def zip1(+g: String, +nm: String, +w: Wt) -> String:
-  P.r(String.concat([nm, Wt.nm(w)]), g, Wt.want(w))
+  T.r(String.concat([nm, Wt.nm(w)]), g, Wt.want(w))
 
 def zip.over(+gs: List<&2, String>, +nm: String, +i: U32) -> String:
   match gs:
     case Nil{}   : ""
-    case g <> +r : String.concat([P.r(String.concat([nm, ".EXTRA[", U32.show(i), "]"]), g, "<no row>"),
+    case g <> +r : String.concat([T.r(String.concat([nm, ".EXTRA[", U32.show(i), "]"]), g, "<no row>"),
                                  zip.over(r, nm, U32.add(i, 1))])
 
 # THE WANTS DRIVE AND THE COMPUTED VALUES ARE READ BY INDEX. A `Wt` with no
@@ -652,7 +654,7 @@ def r_fix(+nm: String, +ss: List<&2, Wk>, +ws: List<&2, Wt>) -> String:
   zip.of(nm, ws, gots(nm, ss), 0)
 
 # ==== BEGIN GENERATED FIXTURES
-def r_fns() -> String: String.concat([P.r(String.concat(["to_function_name ", "'test'"]), fn_name("test"), "test"), P.r(String.concat(["to_function_name ", "'my kernel'"]), fn_name("my kernel"), "my20kernel"), P.r(String.concat(["to_function_name ", "'MyKernel'"]), fn_name("MyKernel"), "MyKernel"), P.r(String.concat(["to_function_name ", "'a-b'"]), fn_name("a-b"), "a2Db"), P.r(String.concat(["to_function_name ", "'x$y.z'"]), fn_name("x$y.z"), "x24y2Ez"), P.r(String.concat(["to_function_name ", "'  lead'"]), fn_name("  lead"), "2020lead"), P.r(String.concat(["to_function_name ", "'trail  '"]), fn_name("trail  "), "trail2020"), P.r(String.concat(["to_function_name ", "'a b c'"]), fn_name("a b c"), "a20b20c"), P.r(String.concat(["to_function_name ", "'a~b'"]), fn_name("a~b"), "a7Eb"), P.r(String.concat(["to_function_name ", "'a/b'"]), fn_name("a/b"), "a2Fb"), P.r(String.concat(["to_function_name ", "'a:b'"]), fn_name("a:b"), "a3Ab"), P.r(String.concat(["to_function_name ", "'a0b'"]), fn_name("a0b"), "a0b"), P.r(String.concat(["to_function_name ", "'a_b'"]), fn_name("a_b"), "a_b")])
+def r_fns() -> String: String.concat([T.r(String.concat(["to_function_name ", "'test'"]), fn_name("test"), "test"), T.r(String.concat(["to_function_name ", "'my kernel'"]), fn_name("my kernel"), "my20kernel"), T.r(String.concat(["to_function_name ", "'MyKernel'"]), fn_name("MyKernel"), "MyKernel"), T.r(String.concat(["to_function_name ", "'a-b'"]), fn_name("a-b"), "a2Db"), T.r(String.concat(["to_function_name ", "'x$y.z'"]), fn_name("x$y.z"), "x24y2Ez"), T.r(String.concat(["to_function_name ", "'  lead'"]), fn_name("  lead"), "2020lead"), T.r(String.concat(["to_function_name ", "'trail  '"]), fn_name("trail  "), "trail2020"), T.r(String.concat(["to_function_name ", "'a b c'"]), fn_name("a b c"), "a20b20c"), T.r(String.concat(["to_function_name ", "'a~b'"]), fn_name("a~b"), "a7Eb"), T.r(String.concat(["to_function_name ", "'a/b'"]), fn_name("a/b"), "a2Fb"), T.r(String.concat(["to_function_name ", "'a:b'"]), fn_name("a:b"), "a3Ab"), T.r(String.concat(["to_function_name ", "'a0b'"]), fn_name("a0b"), "a0b"), T.r(String.concat(["to_function_name ", "'a_b'"]), fn_name("a_b"), "a_b")])
 
 def f1_alu_ss() -> List<&2, Wk>:
    [Wk{O.OpsBUFFER{}, S.single(), S.AGlobal{}, 1, "", Nil{}, 0, True{}},
@@ -1181,7 +1183,7 @@ def r_all() -> String:
     f21_name(), f22_name2(), f23_load1(), f24_range(), f25_rangevoid()])
 
 
-# `P.r` ENDS EVERY ROW WITH A NEWLINE and `IO.print` appends one more, so the last
+# `T.r` ENDS EVERY ROW WITH A NEWLINE and `IO.print` appends one more, so the last
 # one is DROPPED here: the oracle's `sys.stdout.write(rows() + "\n")` supplies
 # exactly one frame and this is that frame. Without the drop the two lanes differ
 # by one blank line, which is a real byte diff and not a formatting quibble.
@@ -1193,132 +1195,76 @@ def main() -> IO(Unit):
     IO.print(r_body())
 
 # ===========================================================================
-# THE MUTATION TABLE. Measured 2026-10-02 with
-# `.agents/slop/ptx-s3-mutate.py`: one textual edit at a time, each row diffed
-# against the unmutated 281 by WHOLE `name=value` LINE and never by row NAME --
-# a name-comparing harness reported 0 for every mutation in two other units. The
-# mutated copy is written BESIDE this file (`_ptxmut.bend`), because ptx.bend
+# THE MUTATION TABLE. Measured 2026-10-02 with `.agents/slop/ptx-s3-mutate.py`:
+# 30 mutations, one textual edit at a time, each row diffed against the
+# unmutated 281 by WHOLE `name=value` LINE and never by row NAME -- a
+# name-comparing harness reported 0 for every mutation in two other units. The
+# mutated copy is written BESIDE this file (`_ptxmut.bend`) because ptx.bend
 # IMPORTS ./tc_ptx.bend by a relative path and a copy in a scratch dir cannot
-# resolve it.
+# resolve it. Full table with every row count: `.agents/slop/notes/bend2-constraints.md`,
+# search `MUT-PTX-S3`.
 #   python3 .agents/slop/ptx-s3-mutate.py > .agents/slop/ptxown/mut.txt
-#
-#   M01  the counter KEY loses a separator                        171
-#   M02  the register loses its `%`                                99
-#   M03  the bump is 1 per key, not k per `ssa` call                2
-#   M05  `to_function_name`'s digit range is or(not and)            7
-#   M06  `%02X` prints the LOW nibble first                         7
-#   M07  END's table dtype is the dtype, not the literal `pred`     6
-#   M08  BUFFER's table dtype is the dtype, not `u64`              66
-#   M09  INDEX/SHRINK's table dtype is the dtype, not `u64`         8
-#   M10  PARAM is never `u64`, GLOBAL or not                        9
-#   M11  a REG buffer is a LIST even with one element               4
-#   M12  a LOAD is a LIST even with one element                     1
-#   M13  a void RANGE still allocates a register                   12
-#   M14  a RANGE allocates TWO registers                            1
-#   M15  the SPECIAL `.reg .u32` line is APPENDED, not PREPENDED     8
-#   M16  the `.reg` block is `kern ++ decls`                        34
-#   M17  a register LIST joins with `,` not `, `                    8
-#   M18  a scalar register renders its SECOND part                102
-#   M19  on a REG src0 a LOAD PICKS instead of copying               1
-#   M20  the dynamic-register-indexing REFUSAL is gone              10
-#   M21  `Wal.rput` PREPENDS instead of appending                  102
-#   M23  an INDEX's subscript is off by one                          1
-#   M24  (CONTROL: whitespace-only edit)                             0
-#   M25  the `.reg` line puts the KEY where the DTYPE goes          72
-#   M26  the row count forgets to count ITSELF                      24
-#   M27  the counter's hit and miss arms are SWAPPED               153
-#   M28  a REG buffer takes the SPECIAL arm                         14
-#   M29  CONST is no longer a skip                                  0  <-- BLIND
-#   M30  a SINK no longer renames the entry point                    2
 #
 # WHAT THE TABLE SAYS
 # ---------------------------------------------------------------------------
-# M29 IS A THEOREM FOR THIS FILE, NOT A FIXTURE GAP. Dropping CONST from the
-# skip list routes it to `A_ALLOC`, and `pf.of` has no CONST arm -- so it takes
-# `no_pf()` and `wk_alloc.go` writes the SAME `none_rg()` the skip arm writes.
-# A CONST allocates nothing under every arm, so no graph can separate the two.
-# It matters upstream only because `string_rewrite` gives a CONST a `mov` LINE
-# (ptx.py:83), and this file does not port `string_rewrite`. The honest record:
-# `arm.of`'s skip LIST is not gated by this file, and its CONST member is dead
-# here.
+# M29 IS A THEOREM FOR THIS FILE, NOT A FIXTURE GAP. Dropping CONST from the skip
+# list routes it to `A_ALLOC`, and `pf.of` has no CONST arm -- so it takes
+# `no_pf()` and `wk_alloc.go` writes the SAME `none_rg()` the skip arm writes. A
+# CONST allocates nothing under every arm, so no graph can separate the two. It
+# matters upstream only because `string_rewrite` gives a CONST a `mov` LINE
+# (ptx.py:83), which this file does not port. The honest record: `arm.of`'s skip
+# LIST is not gated by this file, and its CONST member is dead here.
 #
-# M12, M13 AND M14 WERE BLINDS UNTIL THREE FIXTURES EXISTED, and they are the
-# clearest argument in this file for the discipline. There was no fixture with a
-# LOAD of `max_numel == 1` and no fixture with an `Ops.RANGE` AT ALL, so:
-#   * M12 (a LOAD is always a list) moved nothing -- every LOAD fixture had a
-#     width of 4 or 8. `f23_load1` is the fix, and it is the ONLY thing that
-#     separates ptx.py:208's `if max_numel > 1` from ptx.py:198's comprehension.
-#   * M13 (the void clause at ptx.py:219) and M14 (a RANGE's register count)
-#     moved nothing -- no fixture contained a RANGE. `f24_range` and
-#     `f25_rangevoid` are the fix. `f25` had to be built with `UOp.loop`, NOT
-#     `UOp.range(..., dtype=void)`: the latter's bound is `CAST(CONST 3) -> void`
-#     and a CAST to void asks `types[void]` for a key ptx.py's table does not
-#     have, so CPython raised KeyError at ptx.py:181 before the walk ever reached
-#     the RANGE. MEASURED, and it is why `f25` has a NOOP at index 0.
-#   * M10 (PARAM's GLOBAL-only `u64`) was a blind for a different reason: my
-#     first edit pattern for it did not match the source, so the "mutation" was
-#     a no-op. A mutation that does not apply is a zero that means nothing.
+# M12, M13 AND M14 WERE BLINDS UNTIL THREE FIXTURES EXISTED -- the clearest
+# argument in this file for the discipline. There was no fixture with a LOAD of
+# `max_numel == 1` and none with an `Ops.RANGE` AT ALL. `f23_load1` is the fix for
+# M12 and is the ONLY thing separating ptx.py:208's `if max_numel > 1` from
+# ptx.py:198's comprehension. `f24_range`/`f25_rangevoid` fix M13/M14; `f25` had
+# to be built with `UOp.loop`, NOT `UOp.range(..., dtype=void)`, because the
+# latter's bound is `CAST(CONST 3) -> void` and a CAST to void asks `types[void]`
+# for a key ptx.py's table does not have, so CPython raised KeyError at ptx.py:181
+# before the walk reached the RANGE. MEASURED, and it is why `f25` has a NOOP at
+# index 0. M10 was a blind for a different reason: the first edit pattern did not
+# match the source, so the "mutation" was a no-op -- a mutation that does not
+# apply is a zero that means nothing.
 #
 # M03 MOVES ONLY TWO ROWS AND THAT IS THE POINT. `c[prefix] += 1` runs inside
-# `ssa`, once per ELEMENT, so a four-element REG buffer leaves the counter at
-# four. Bumping by one printed `<1>` on `f5_regbuf`/`f7_reuse` and restarted the
-# second vector LOAD of `f10_loads` at 1 instead of 8 -- two rows, and they are
-# exactly the two that say so.
+# `ssa`, once per ELEMENT, so a four-element REG buffer leaves the counter at four.
+# M15 AND M16 ARE BOTH ORDER BUGS IN OPPOSITE DIRECTIONS: ptx.py:227 PREPENDS each
+# SPECIAL's `.reg .u32` line and `render_kernel` puts the declarations BEFORE the
+# body, so the block is `decls ++ kern` and the specials come out in REVERSE
+# toposort order (`f10_loads` prints `%g2, %g1, %g0`). A gate that compared the
+# block as a SET would notice neither. M26 IS WHAT MAKES A PERMUTATION VISIBLE --
+# `f1_alu.rows` is that fixture's own row count, so a right-length wrong-ORDER
+# list is a moved row rather than a green gate.
 #
-# M15 AND M16 ARE BOTH ORDER BUGS IN OPPOSITE DIRECTIONS. ptx.py:227 PREPENDS
-# each SPECIAL's `.reg .u32` line and `render_kernel` puts the declarations
-# BEFORE the body, so the block is `decls ++ kern` and the specials come out in
-# REVERSE toposort order (`f10_loads` prints `%g2, %g1, %g0`). Appending
-# (M15) or swapping the concatenation (M16) both move rows, and a gate that
-# compared the block as a SET would notice neither.
+# THE CONSTANTS SWEEP (`+1` on every numeric literal in the non-generated,
+# comment-stripped code -- SEVENTEEN sites) went 5, then 10, then 13, then 15 over
+# four rounds, and each round was a missing FIXTURE, not a weak harness: round 1
+# added `a~b` (126, one above 122), `a/b` (47, one below 48), `a:b` (58, one below
+# 65) because no `to_function_name` input sat just OUTSIDE a range; round 2 added
+# `a0b` and `a_b` because no input contained a DIGIT (`48` is the digit range's LOW
+# bound) or an UNDERSCORE (`95` is `_`). THE TWO THAT REMAIN ARE PROVEN INERT, not
+# unexplained: `A_ALLOC`'s value 7 is absorbed by `case _:`, so `wk1.go`'s
+# catch-all makes the LAST tag unobservable -- the tag's MEANING is pinned instead
+# by M28 (14 rows), which reaches it through `arm.of` rather than through its
+# number; and `P.px_pline(3)`'s index has exactly one consumer (the `.entry` row)
+# and is CONSUMED from tc_ptx.bend, so a second copy could not be wrong here
+# either. "PROVEN INERT" is the difference between a blind list and an excuse:
+# `case _` and a single consumer are readable facts about the code.
 #
-# M26 IS WHAT MAKES A PERMUTATION VISIBLE. `f1_alu.rows` is the count of that
-# fixture's own rows, so a computed list that is the right LENGTH in the wrong
-# ORDER is a moved row rather than a green gate. Without it, M27 -- which
-# effectively permutes the counter -- would have been partly invisible.
-#
-# THE CONSTANTS SWEEP, and how its blind list SHRANK. `+1` on every numeric
-# literal in the non-generated, comment-stripped code: SEVENTEEN sites. It moved
-# rows on FIVE at first, then TEN, then THIRTEEN, then FIFTEEN, and TWO are left
-# -- and the four rounds are the point, because each round is a FIXTURE that was
-# missing, not a harness that was weak:
-#
-#   round 1, 5 of 17: no `to_function_name` input sat just OUTSIDE a range.
-#     Added `a~b` (126, one above 122), `a/b` (47, one below 48), `a:b` (58, one
-#     below 65). `a-b` and `x$y.z` sit INSIDE the ranges and could never have
-#     found a bound.
-#   round 2, 13 of 17: `48` and `95` still had no witness. `48` is the digit
-#     range's LOW bound and no input contained a DIGIT; `95` is `_` and no input
-#     contained an UNDERSCORE. Added `a0b` and `a_b`.
-#   round 3, 15 of 17. THE TWO THAT REMAIN ARE NOT FIXTURE GAPS:
-#     * `A_ALLOC`'s value 7. Bumping it to 8 collides with no arm and `case _:`
-#       absorbs it, so the tag is INERT -- `wk1.go`'s catch-all makes the last
-#       tag unobservable. The tag's MEANING is pinned by M28 (14 rows), which
-#       reaches it through `arm.of` rather than through its number.
-#     * `P.px_pline(3)`'s index. The `.entry` row is the only consumer and it
-#       always wants line 3, so no other index is reachable from the gate. It is
-#       CONSUMED from tc_ptx.bend, so a second copy could not be wrong here
-#       either; the honest record is that this file does not gate the index.
-#
-# BOTH SURVIVORS ARE PROVEN INERT RATHER THAN UNPROVEN, and that is the
-# difference between a blind list and an excuse: `case _` and a single consumer
-# are readable facts about the code, and no fixture can change them.
-#
-# AND THE SWEEP ITSELF HAD THREE BUGS BEFORE IT MEASURED ANYTHING, all three
-# worth recording because each reported a confident 0:
-#   1. it rewrote byte 0 of the file for every site (the offset was into the
-#      LINE, not into the source), so all 119 sites -- every one of them a
-#      comment -- reported 0;
-#   2. after the offset fix it still reported 0, because it spliced the
-#      GENERATED region out and ran the result, so `r_all()` called defs that
-#      no longer existed and every site was a COMPILE ERROR;
-#   3. after that it still reported 0, because `BASE_OFF` was advanced after the
-#      `continue` that skips 0/1/2, so the offsets drifted on exactly the lines
-#      that had a skipped literal.
-# The hand check that caught (1) -- bump `A_STACK` to 9 and see seven rows move
-# -- is the only reason the sweep is worth believing. `x86`'s measured finding
-# that a constants sweep finds NONE of the logic defects and a rules sweep finds
-# all of them is REPRODUCED here: the ten moving sites are all `to_function_name`
-# and the tag constants, and every one of the twenty-eight port-defect classes in
-# this file was found by a RULE mutation or by the string diff, not by `+1`.
+# AND THE SWEEP ITSELF HAD THREE BUGS BEFORE IT MEASURED ANYTHING, all three worth
+# recording because each reported a confident 0: (1) it rewrote byte 0 of the file
+# for every site (the offset was into the LINE, not into the source), so all 119
+# sites -- every one of them a comment -- reported 0; (2) after the offset fix it
+# still reported 0, because it spliced the GENERATED region out and ran the result,
+# so `r_all()` called defs that no longer existed and every site was a COMPILE
+# ERROR; (3) after that it still reported 0, because `BASE_OFF` was advanced after
+# the `continue` that skips 0/1/2, so the offsets drifted on exactly the lines that
+# had a skipped literal. The hand check that caught (1) -- bump `A_STACK` to 9 and
+# see seven rows move -- is the only reason the sweep is worth believing. It also
+# REPRODUCES x86's measured finding that a constants sweep finds NONE of the logic
+# defects: the moving sites are all `to_function_name` and the tag constants, and
+# every port-defect class in this file was found by a RULE mutation or by the
+# string diff, not by `+1`.
 # ===========================================================================
