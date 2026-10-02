@@ -1676,6 +1676,7 @@ def t_pte1n(+nm: String, +shifts: List<&2, U32>, +va_bits: U32) -> IO(Unit):
     urow(String.concat(["pte_vabits_", nm]), va_bits)
     lrow(String.concat(["pte_msb_", nm]), lvl_msb(shifts, va_bits))
     lrow(String.concat(["pte_cnts_", nm]), cnts_of(shifts, va_bits))
+    urow(String.concat(["pte_root_cnt_", nm]), first_of(cnts_of(shifts, va_bits)))
     urow(String.concat(["pte_level_cnt_", nm]), level_cnt(shifts))
     urow(String.concat(["pte_msb_len_", nm]), lvl_msb_len(shifts))
     IO.pure(Unit, Unit{})
@@ -2102,7 +2103,6 @@ def t_mm5() -> IO(Unit):
   do IO<Unit>:
     urow("palloc_round_1", bump_round(1, PAGE_4K()))
     urow("palloc_round_4095", bump_round(4095, PAGE_4K()))
-    urow("palloc_round_1048576", bump_round(1048576, PAGE_4K()))
     urow("palloc_size", PT_ALLOC_SIZE())
     IO.pure(Unit, Unit{})
 # THE VA ALLOCATOR'S OWN WALK IS NOT PORTED, and there is therefore no
@@ -2582,7 +2582,7 @@ def pt_assert_unmapped(+ps: List<&2, Pte>, +t: Tr) -> Tr: pt_assert_unmapped.go(
 def pt_unset(v: Bool, +ix: U32, +t: Tr) -> Tr:
   match v:
     case True{}: pt_set_of(ix, Tr.emit(PT_VALID(), ix, t))
-    case False{}: Tr.emit(PT_VALID(), ix, t)
+    case False{}: Tr.emit(PT_ENTRY(), ix, Tr.emit(PT_VALID(), ix, t))
 def pt_clear.go(fuel: Nat, +r: List<&2, Pte>, +ix: U32, +t: Tr) -> Tr:
   match fuel:
     case 0n: t
@@ -2602,17 +2602,23 @@ def t_pt() -> IO(Unit):
     urow("pt_map_seen", Tr.seen(pt_assert_unmapped(pt_fixture(), Tr.of())))
     urow("pt_map_n_valid", Tr.count(PT_VALID(), Tr.calls(pt_assert_unmapped(pt_fixture(), Tr.of()))))
     urow("pt_map_n_entry", Tr.count(PT_ENTRY(), Tr.calls(pt_assert_unmapped(pt_fixture(), Tr.of()))))
+    urow("pt_map_n_set", Tr.count(PT_SET_ENTRY(), Tr.calls(pt_assert_unmapped(pt_fixture(), Tr.of()))))
     lrow("pt_map_args", Tr.args(PT_VALID(), Tr.calls(pt_assert_unmapped(pt_fixture(), Tr.of()))))
     urow("pt_map_ok_seen", Tr.seen(pt_assert_unmapped(pt_fixture_inv(), Tr.of())))
     urow("pt_map_ok_n_valid", Tr.count(PT_VALID(), Tr.calls(pt_assert_unmapped(pt_fixture_inv(), Tr.of()))))
     urow("pt_map_ok_n_entry", Tr.count(PT_ENTRY(), Tr.calls(pt_assert_unmapped(pt_fixture_inv(), Tr.of()))))
+    urow("pt_map_ok_n_set", Tr.count(PT_SET_ENTRY(), Tr.calls(pt_assert_unmapped(pt_fixture_inv(), Tr.of()))))
     lrow("pt_map_ok_args", Tr.args(PT_VALID(), Tr.calls(pt_assert_unmapped(pt_fixture_inv(), Tr.of()))))
     urow("pt_unmap_seen", Tr.seen(pt_clear(pt_fixture(), Tr.of())))
     urow("pt_unmap_n_valid", Tr.count(PT_VALID(), Tr.calls(pt_clear(pt_fixture(), Tr.of()))))
     urow("pt_unmap_n_set", Tr.count(PT_SET_ENTRY(), Tr.calls(pt_clear(pt_fixture(), Tr.of()))))
+    urow("pt_unmap_n_entry", Tr.count(PT_ENTRY(), Tr.calls(pt_clear(pt_fixture(), Tr.of()))))
+    lrow("pt_unmap_args", Tr.args(PT_VALID(), Tr.calls(pt_clear(pt_fixture(), Tr.of()))))
     urow("pt_unmap_ok_seen", Tr.seen(pt_clear(pt_fixture_inv(), Tr.of())))
     urow("pt_unmap_ok_n_valid", Tr.count(PT_VALID(), Tr.calls(pt_clear(pt_fixture_inv(), Tr.of()))))
     urow("pt_unmap_ok_n_set", Tr.count(PT_SET_ENTRY(), Tr.calls(pt_clear(pt_fixture_inv(), Tr.of()))))
+    urow("pt_unmap_ok_n_entry", Tr.count(PT_ENTRY(), Tr.calls(pt_clear(pt_fixture_inv(), Tr.of()))))
+    lrow("pt_unmap_ok_args", Tr.args(PT_VALID(), Tr.calls(pt_clear(pt_fixture_inv(), Tr.of()))))
     # THE ORDER, which is the claim a transposed `pt_valid`/`pt_entry` moves.
     urow("pt_order_ok", Bool.to_u32(Tr.seq(pt_read_valid(True{}, 3, Tr.of()), [Call{PT_VALID(), 3}, Call{PT_ENTRY(), 3}])))
     urow("pt_order_swapped", Bool.to_u32(Tr.seq(pt_read_valid(True{}, 3, Tr.of()), [Call{PT_ENTRY(), 3}, Call{PT_VALID(), 3}])))

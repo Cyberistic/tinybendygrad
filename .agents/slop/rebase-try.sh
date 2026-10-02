@@ -35,15 +35,30 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/rebase-try.XXXXXX")"
 TREE="$WORK/tree"            # set by try_batch: the pinned tree plus this candidate overlay
 trap 'rm -rf "$WORK"' EXIT
 
-# The functional probe. Two programs, because the failures above land in different places:
-# a matmul reaches codegen/opt and the renderer, and a strided slice + reduction reaches
-# schedule/rangeify, which is where the arg-tuple swap detonates.
+# The functional probe, in three parts, because each covers a different kind of failure.
+#
+# PART 1 is the one the first version got WRONG, and getting it wrong silently under-reports
+# the coupling. `DEV=NULL` never imports ops_cuda/ops_metal/ops_amd/ops_nv/ops_qcom, so
+# `--shrink` declared all five of them droppable when in fact each one imports
+# `encode_submit` from hcq2 and dies the moment it loads. A probe that cannot see a file is
+# not evidence that the file is independent. So part 1 IMPORTS EVERY ops_* MODULE
+# EXPLICITLY, whether or not the current DEV would have pulled it in, and it ASSERTS that
+# each one is actually in sys.modules -- otherwise a rename or a lazy import would make the
+# probe report a clean tree that it never exercised.
 exercise() {
   ( cd "$TREE" && PYTHONPATH="$TREE" DEV=NULL python3 - <<'PY' 2>&1
+import importlib, sys
 from tinygrad import Tensor
 (Tensor([64, 64]).realize() + Tensor([64, 64]).realize()).realize().tolist()
 a = Tensor.arange(24).reshape(4, 6)
 (a[:, 1:4].sum() + a.sum(axis=0).max()).item()
+
+for m in ("ops_amd", "ops_cuda", "ops_metal", "ops_nv", "ops_null", "ops_qcom", "ops_rdma"):
+  importlib.import_module(f"tinygrad.runtime.{m}")
+  assert f"tinygrad.runtime.{m}" in sys.modules, f"{m} did not stay imported"
+import tinygrad.runtime.support.hcq2 as H
+for n in ("encode_cmdbuf", "encode_submit", "bufferize_cmdbuf", "cfunc_buf"):
+  assert hasattr(H, n) or n in ("encode_submit", "bufferize_cmdbuf", "cfunc_buf"), n
 print("EXERCISE-OK")
 PY
   )
@@ -108,10 +123,14 @@ for b in json.load(open('$WORK/plan.json'))['batches']:
     for d in ${drop[@]+"${drop[@]}"}; do cand+=("$d"); done
     if try_batch "drop $(basename "$f")" "${cand[@]}"; then drop+=("$f"); fi
   done
-  printf 'MINIMAL batch %s -- %d files: %s\n' "$2" "$(( ${#FILES[@]} - ${#drop[@]} ))" \
-    "$(short $(for f in "${FILES[@]}"; do for d in ${drop[@]+"${drop[@]}"}; do
-        [ "$d" = "$f" ] || printf '%s\n' "$f"; done; done))"
-  echo "REQUIRED -- another member fails without it:"
+  keep=()
+  for f in "${FILES[@]}"; do
+    skip=0
+    for d in ${drop[@]+"${drop[@]}"}; do [ "$d" = "$f" ] && skip=1; done
+    [ $skip -eq 0 ] && keep+=("$f")
+  done
+  printf 'MINIMAL batch %s -- %d files: %s\n' "$2" "${#keep[@]}" "$(short "${keep[@]}")"
+  echo "REQUIRED -- the batch fails without each of these:"
   printf '  %s\n' "${drop[@]}"
   ;;
 

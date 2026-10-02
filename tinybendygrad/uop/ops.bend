@@ -4141,10 +4141,14 @@ def Rng.srcops.go(+ar: Arena, xs: List<&2, U32>, +acc: String, +first: Bool) -> 
 # string drop-last, and a leading separator on the first element would need a second
 # pass; a fold that knows which element is first needs neither. `+h` and `+ar` are the
 # duplication Bend asks for when a value is used twice.
+#
+# `+first` starts FALSE and not TRUE, because `seeded` has ALREADY put the head's name
+# in `acc` and passes the TAIL. Measured: seeding TRUE printed `Ops.RANGEOps.CONST` --
+# the second element took the no-space arm.
 def Rng.srcops.seeded(+ar: Arena, xs: List<&2, U32>) -> String:
   match xs:
     case Nil{}: "-"
-    case +h <> t: Rng.srcops.go(ar, t, Ops.name(Arena.op(ar, h)), True{})
+    case +h <> t: Rng.srcops.go(ar, t, Ops.name(Arena.op(ar, h)), False{})
 
 def Rng.srcops(+ar: Arena, self: U32) -> String:
   Rng.srcops.seeded(ar, Arena.srcs(ar, self))
@@ -4197,18 +4201,20 @@ def g_mstack(n: U32) -> Found:
   # `self` is a RANGE and the supplied srcs are CONSTs, so self-first prints
   # `RANGE CONST CONST` and the bug prints `CONST CONST RANGE`.
   #
-  # EVERY `Found` IS SPLIT ONCE, IMMEDIATELY. A `Found` is affine, so `Found.ar(r)`
-  # CONSUMES it and a later `Found.i(r)` in the next statement reads a consumed value --
-  # measured: it answered the MSTACK's own index, so `mstack1`'s srcs came out
-  # `RANGE MSTACK` and the node count came out 2. Reading `.ar` and `.i` in the SAME
-  # argument list is fine; reading them in two statements is not.
+  # THE ARENA IS THREADED THROUGH EVERY NODE, and this is the rule that costs the most
+  # when it is forgotten. `UOp.const(ar, v)` takes an arena and returns a `Found` over a
+  # GROWTH arena; the local `ar` is not advanced. Binding `+b = UOp.const(ar, ...)` and
+  # then passing `ar` onwards builds the MSTACK in a THREE-node arena while `Found.i(b)`
+  # is an index into a FOUR-node one -- MEASURED: the src ops printed
+  # `RANGE MSTACK MSTACK` and the node count printed 2, and `mstack_puts_self_first`
+  # answered False. `Found.ar` of the previous node is the only way to carry the growth.
   +c0 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(4)})
   +r = UOp.range_end(Found.ar(c0), Found.i(c0), [0], AXIS_WEAK{})
-  +ar = Found.ar(r)
   +ri = Found.i(r)
-  +b = UOp.const(ar, CInt{H.i64_of_i32(1)})
-  +c = UOp.const(ar, CInt{H.i64_of_i32(2)})
-  g_mstack.go(n, ar, ri, Found.i(b), Found.i(c))
+  +b = UOp.const(Found.ar(r), CInt{H.i64_of_i32(1)})
+  +bi = Found.i(b)
+  +c = UOp.const(Found.ar(b), CInt{H.i64_of_i32(2)})
+  g_mstack.go(n, Found.ar(c), ri, bi, Found.i(c))
 
 def t_mstack_puts_self_first() -> Bool:
   +f = g_mstack(2)

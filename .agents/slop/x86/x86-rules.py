@@ -155,8 +155,8 @@ RULES = [
   ("R47 Enc.has_reg_s prints the reg when none was passed",
    '    case False{}: "-"', '    case False{}: U32.show(r)'),
   ("R48 Enc.missing counts the DIRECT entries too",
-   'Bool.and(String.eq(Enc.name(enc_find(h)), "-"), Bool.not(Enc.is_direct(h)))',
-   'String.eq(Enc.name(enc_find(h)), "-")'),
+   'Bool.not(Enc.is_direct(h)))',
+   'True{})'),
 ]
 
 

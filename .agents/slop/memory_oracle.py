@@ -586,7 +586,7 @@ for sz in LV1_SZ:
   # the REVERSE direction: the smallest size in the same bucket.
   row(f"tlsf_lv2_shift_{sz}", 1 << max(0, sz.bit_length()-5))
 # storage length: `size.bit_length() + 1`.
-for sz in [0, 1, 2, 0x1000, 0x100000, 1 << 20]:
+for sz in [0, 1, 2, 0x1000, 0x100000]:
   row(f"tlsf_storage_len_{sz}", sz.bit_length() + 1)
 
 # the alloc size pipeline, which has THREE distinct numbers:
@@ -749,10 +749,10 @@ trace_rows("unmap_ok", pt_unmap(PT_INV))
 _m = Rec([(0, 0), (0, 0), (0, 0), (1, 0)])
 try: assert not _m.valid(3), f"PTE already mapped: {_m.entry(3):#x}"
 except AssertionError: pass
-row("pt_order_ok", [c[0] for c in _m.calls] == ["V", "E"])
-row("pt_order_swapped", [c[0] for c in _m.calls] == ["E", "V"])
+row("pt_order_ok", int([c[0] for c in _m.calls] == ["V", "E"]))
+row("pt_order_swapped", int([c[0] for c in _m.calls] == ["E", "V"]))
 _p = Rec([(0, 0), (0, 0), (0, 0), (0, 0)])
 assert not _p.valid(3), f"PTE already mapped: {_p.entry(3):#x}"
-row("pt_order_pending", [c[0] for c in _p.calls] == ["V"])
+row("pt_order_pending", int([c[0] for c in _p.calls] == ["V"]))
 
 print("\n".join(rows))

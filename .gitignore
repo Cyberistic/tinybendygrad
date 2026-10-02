@@ -15,3 +15,5 @@ __pycache__/
 *.egg-info/
 .hypothesis/
 .venv/
+# frozen upstream snapshot kept only for diffing; never committed
+.agents/slop/opstree/

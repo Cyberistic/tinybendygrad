@@ -1,16 +1,20 @@
-=== RULES: 48 mutations over 761 rows; 30 moved rows; 18 BLIND
+=== RULES: 48 mutations over 761 rows; 36 moved rows; 12 BLIND
   R01 Reg.gpr size 8 -> 4:   17 rows  reg
         Reg.of(Reg.rname(i), i, 8, Reg.s4n(i), Reg.s2n(i), Reg.s1n  ->  Reg.of(Reg.rname(i), i, 4, Reg.s4n(i),
   R02 Reg.wgpr_drop drops the WRONG register (4 -> 3):    1 rows  reg
         def Reg.wgpr_drop(idx: U32) -> U32: Bool.pick(U32, U32.is_  ->  def Reg.wgpr_drop(idx: U32) -> U32: Bo
-  R03 Reg.is_callee forgets r12:    0 rows  SKIPPED, the site occurs 0x: Bool.or(Bool.or(Bool.or(U32.is_eq(i, 3), U32.is_eq(i, 5)), U
+  R03 Reg.is_callee forgets r12:    2 rows  reg
+        Bool.or(U32.is_eq(ix, 12), U32.is_eq(ix, 13)),  ->  Bool.or(U32.is_eq(ix, 11), U32.is_eq(i
   R04 Reg.strs_lookup never finds the sub-register:    1 rows  <FILE
         Reg.strs_lookup.of(Reg.gpr_find_by_name(nm), nm, sz)  ->  Reg.strs_lookup.of(None, nm, sz)
   R05 Op.base off by one (78 -> 79):  178 rows  op, oprev
         def Op.base() -> U32: 78  ->  def Op.base() -> U32: 79
-  R06 Op.rm1st_lit is always False:    0 rows  SKIPPED, the site occurs 0x: def Op.rm1st_lit(+nm: String) -> Bool: Bool.pick(U32, 1, 1, 
-  R07 Op.xmm_ops (GPR_DEST_OPS) inverted:    0 rows  SKIPPED, the site occurs 0x: def Op.xmm_ops(+nm: String) -> Bool: Op.xmm_ops.of(Op.xmm_op
-  R08 Op.sz_arm threshold 16 -> 8:    0 rows  SKIPPED, the site occurs 0x: def Op.sz_arm(+bits: U32) -> U32: Bool.pick(U32, U32.is_lt(b
+  R06 Op.rm1st_lit is always False:    2 rows  grp, grpn
+        Op.has(nm, ["MOV", "VMOVSS", "VMOVSD", "VMOVUPS", "MOVZX",  ->  Op.has(nm, ["MOVXX", "VMOVSS", "VMOVSD
+  R07 Op.xmm_ops (GPR_DEST_OPS) inverted:    2 rows  grp, grpn
+        Bool.and(Op.is_x(nm), Bool.not(Op.in_(nm, 6)))  ->  Bool.or(Op.is_x(nm), Bool.not(Op.in_(n
+  R08 Op.sz_arm threshold 16 -> 8:   20 rows  isz, iszm, iszthr, iszthrm
+        Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.  ->  Bool.pick(U32, U32.is_ge(bits, 8), 2, 
   R09 Op.to_int float16 -> i32:    1 rows  toint
             case "float16": "i16"  ->      case "float16": "i32"
   R10 Op.to_int answers for a missing dtype:    4 rows  toint
@@ -65,7 +69,8 @@
         String.reverse(String.drop(String.reverse(s), 1n))  ->  String.drop(s, 1n)
   R35 Asm.mnem.of drops SEVEN AND ONE (the old `drop(n, 8)`):    1 rows  <FILE
         Asm.droplast(String.drop(n, 7n)), String.drop(n, 7n))  ->  String.drop(n, 8n)), String.drop(n, 7n
-  R36 Asm.pad pads to min(7, len) AGAIN:    0 rows  SKIPPED, the site occurs 0x: String.repeat(" ", U32.to_nat(U32.sub(7, w)))
+  R36 Asm.pad pads to min(7, len) AGAIN:    9 rows  asm
+        String.repeat(" ", U32.to_nat(Bool.pick(U32, U32.is_ge(w,   ->  String.repeat(" ", U32.to_nat(Bool.pic
   R37 Asm.mnem forgets the lowercasing:    1 rows  <FILE
         String.to_lower(Bool.pick(String, trim,  ->  Bool.pick(String, trim,
   R38 AsmMem.idx_part drops the scale:    5 rows  asm
@@ -82,9 +87,10 @@
             case 1: AsmOp.head(o)  ->      case 1: String.concat([AsmOp.head(
   R44 asm_str drops the `.name:` header:   14 rows  asm
         List.append(&2, String, [String.concat([".", fn, ":"])], A  ->  AsmLines(os)
-  R45 Cls.dropped forgets bf16:    0 rows  SKIPPED, the site occurs 0x: Bool.or(Bool.or(Bool.or(String.eq(nm, "bf16"), String.eq(nm,
+  R45 Cls.dropped forgets bf16:    4 rows  cls
+        ["bf16", "fp8e4m3", "fp8e4m3fnuz", "fp8e5m2", "fp8e5m2fnuz  ->  ["bf16X", "fp8e4m3", "fp8e4m3fnuz", "f
   R46 Cls.keep.go keeps everything:    2 rows  cls
         Bool.pick(List<&2, String>, Cls.dropped(h), acc, List.appe  ->  List.append(&2, String, acc, [h])
   R47 Enc.has_reg_s prints the reg when none was passed:   57 rows  enc
             case False{}: "-"  ->      case False{}: U32.show(r)
-  R48 Enc.missing counts the DIRECT entries too:    0 rows  SKIPPED, the site occurs 0x: Bool.pick(U32, Bool.and(String.eq(Enc.name(enc_find(h)), "-"
+  R48 Enc.missing counts the DIRECT entries too:    0 rows  SKIPPED, the site occurs 0x: Bool.and(String.eq(Enc.name(enc_find(h)), "-"), Bool.not(Enc

@@ -645,6 +645,14 @@ ASM_PROG = [
   # Bend spelling. MEASURED wall, not a fixture choice -- `U32` has no signed type.
   ("rm1stnoidx", lambda: UOp(Ops.INS, (MEMBASE, nreg(RBX), cast(const(3), dtypes.int8)),
                              (X86Ops.MOVSX, dtypes.int32), (RDX,))),
+  # A ZERO displacement on the WriteMem arm, so `_mem_adress`'s `(f" + {d}" if d else
+  # "")` takes its FALSE branch. The mutation `AsmMem.disp_part` -> always-append moves
+  # 0 rows without it, which is how it was found; and the fixture that LOOKED like it
+  # covered this -- three srcs, `MOVi` -- does NOT, because `MOVi` with `len(x.src) == 3`
+  # misses the `len(x.src) > 3` guard on the WriteMem arm and falls through to
+  # `_format((x,) + x.src)`, which has no memory operand at all.
+  ("writemem0", lambda: UOp(Ops.INS, (MEMBASE, nreg(RCX), cast(const(0), dtypes.int32), nreg(RDX)),
+                            (X86Ops.MOVm, dtypes.void), (RDX,))),
   # Rm2nd: `_format((x, x.src[0])) + _mem_adress(*x.src[1:4]) + _format(x.src[4:])`.
   # `VADDSS` and NOT `ADD`: `Rm1st` is `{...} | (Rm2nd & TwoAddress)` (x86.py:86), so
   # every Rm2nd arithmetic op is ALSO Rm1st and would be caught by the arm above --
