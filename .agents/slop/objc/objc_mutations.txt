@@ -1,0 +1,22 @@
+baseline rows: 123
+| M1 | THE HEADLINE: `:36`'s `if argtypes else []`. Unconditionally | 1 | msg_argtypes_none  |
+| M2 | `:70`'s rtrim. Returning `cs` keeps the UNTRIMMED tail -- th | 12 | inh_order_classlast , inh_two , mangle_1 , mangle_2 , mangle_3 , mangle_4 , mangle_5 , mangle_leading_and_trailing_stripped  ... |
+| M3 | `:70`'s ltrim. Unconditional stripping eats the whole string | 23 | inh_dup , inh_dup_len , inh_order_classlast , inh_two , mangle_0 , mangle_1 , mangle_2 , mangle_3  ... |
+| M4 | THE ORDER of `strip().replace()`. Swapped, a leading colon b | 17 | inh_order_classlast , inh_two , mangle_1 , mangle_2 , mangle_3 , mangle_4 , mangle_5 , mangle_6  ... |
+| M5 | The MISS arm of `getsel_ix`. Dropped, an absent name answers | 1 | sel_ix_absent_is_0  |
+| M6 | The `d <> r` TAIL of the pattern. This is the OTHER real bug | 3 | meth_args_inst_len_is_5 , msg_argc_one , msg_argc_two  |
+| M7 | `:37`'s ORDER. `getsel(sel.encode())` is an ARGUMENT of the  | 18 | del_both_true_sends_sel_then_msg , del_both_true_sends_two , own_c_call_names , own_c_calls_is_2 , own_release_c_call_names , own_release_c_calls , shape_order , shape_order_reverse  ... |
+| M8 | :20 `own()` IS `msg("retain")`, so it sends the selector loo | 2 | own_c_call_names , own_c_calls_is_2  |
+| M9 | :13-14's FIRST conjunct. Dropped, an unowned id_ releases on | 1 | del_flag_false_sends_none  |
+| M10 | :13-14's SECOND conjunct. Dropped, finalization releases eve | 2 | del_finalizing_sends_none , del_finalizing_sends_nothing  |
+| M11 | :38/:23 the WRAPPER. Dropped, `returns_retained` never flags | 1 | own_wrapper_on  |
+| M12 | :71's `cls if m[1] == 'instancetype' else m[1]`. Dropped, th | 5 | meth_args_inst_becomes_class , meth_args_inst_both_ends , meth_args_inst_is_not_8 , meth_args_inst_third , meth_ret_inst_becomes_class  |
+| M13 | :72's PER-ARGUMENT substitution. Truncating drops every argu | 2 | meth_args_inst_both_ends , meth_args_inst_len_is_5  |
+| M14 | :37's `ptr._objc_class_ if clsmeth else ptr`. Always the ins | 2 | shape_recv_class , shape_recv_differs  |
+| M15 | :67's re-inherit dedup. Dropped, a re-inherited method is ad | 2 | inh_dup , inh_dup_len  |
+| M16 | :27's memo. A HIT that appends: the registry grows without b | 10 | sel_count_frozen_at_5 , sel_hit_after_repeat_is_1 , sel_hit_after_repeat_is_2 , sel_hit_after_repeat_is_3 , sel_hit_is_0 , sel_miss_frozen_at_5_1 , sel_miss_frozen_at_5_2 , sel_miss_frozen_at_5_3  ... |
+| M17 | THE CONTROL. A comment-only edit must move NOTHING, or the t | 0 |  |
+| M18 | `:70`'s `.replace(':','_')`. Identity, so the mangle is a st | 6 | mangle_3 , mangle_4 , mangle_interior_a_b , mangle_interior_reversed , mangle_order_swap , mangle_reversed_0  |
+
+moved-total: 108   refused-to-compile: []
+CONTROL M17 must be 0 -- see the table above
