@@ -1,0 +1,52 @@
+# rewriter.bend -- the SHARED REWRITE SUBSTRATE for codegen's three rewrite
+# modules: the answer a rule returns, the node readers, the fixture's index map
+# and the two row printers.
+#
+# ---------------------------------------------------------------------------
+# IT HAS NO UPSTREAM `.py` AT THIS PATH, and that is not an omission: every def in
+# it is PORT-LOCAL TOOLKIT and none of it is from `simplify.py`,
+# `late/coalesce.py` or `gpudims.py`. `find tinygrad -name rewriter.py` returns
+# nothing -- the lowerer is split three ways -- and what this file was is all
+# three of them at once.
+#
+# WHAT IT WAS. One file for three, and the 1:1 ruling (one `.bend` per upstream
+# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory)
+# made it three:
+#
+#   tinygrad/codegen/simplify.py            156 lines   -> codegen/simplify.bend
+#   tinygrad/codegen/late/coalesce.py       168 lines   -> codegen/late/coalesce.bend
+#   tinygrad/codegen/gpudims.py             106 lines   -> codegen/gpudims.bend
+#
+# and THIS file is the residue. The criterion is MECHANICAL: a def is here iff at
+# least TWO of the three used it, and every def exactly one of them used moved to
+# that file. So `Rew` (the answer), `rew_hit`/`rew_self`/`rew_next` (the two
+# spellings of "no rewrite" and the first-wins fold over them), the eleven `rw_*`
+# node readers, `rw_ranges`, the `Nat` coercions `rw_nat`/`rw_nat_zero`, `b2u`/
+# `b2u.of`/`b2u_nat`, `type G` with its three readers, `n_of` and `row`/`srow` are
+# the residue.
+#
+# WHY NOT IN ONE OF THE THREE. None of them imports either of the other two --
+# upstream `coalesce.py` does not import `simplify.py` -- so a substrate two of
+# them need cannot live in one of them without asserting a dependency that does not
+# exist. The precedent is `codegen/kernel.bend`, which is `codegen/__init__.py` and
+# hosts the twin `Ker` answer and the `kn_*` readers for exactly this reason:
+# `codegen/late/*.bend` imports it as `KER`. `codegen/late/regalloc.bend`'s header
+# calls the arrangement "THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED" and this
+# file is the same shape one level up.
+#
+# IT IS IMPORTED, NOT COPIED. Every use in the three files is `RW.<name>`, and a
+# TYPE MENTION needs the alias as well as a call -- an unqualified imported `type`
+# name is not in scope -- so it is `RW.Rew` and `RW.Rew.ar`, never `Rew.ar`.
+#
+# ---------------------------------------------------------------------------
+# IT PRINTS NO ROWS AND HAS NO `main`. Running it is not a gate. The 54 rows the
+# merged file printed are `.agents/slop/codegen3-gate.sh`'s, from the three files,
+# CONCATENATED IN PYTHON'S ORDER, and diffed against
+# `.agents/slop/runs/base_codegen_rewriter.bend.txt` -- the snapshot taken before
+# anything moved.
+#
+# THE CUT. `.agents/slop/split-codegen3.py` holds every moved body as a LINE RANGE
+# in the pre-split text and `--check` re-derives that text from the four files and
+# diffs it against the original, so "moved verbatim" is a checkable claim and not a
+# promise. The only edits it applies are call-site QUALIFIERS and thirteen
+# single-pass RENAMES to upstream names, and it prints both.

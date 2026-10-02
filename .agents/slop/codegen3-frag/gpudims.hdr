@@ -1,0 +1,27 @@
+# gpudims.bend -- tinygrad/codegen/gpudims.py: the GPU-dimension rules -- a DEVICE
+# axis lowered to `_device_num`, one SINK-wide grouping pass, and HEAD's NEW
+# `pm_range_to_special`.
+#
+# ---------------------------------------------------------------------------
+# ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
+# `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
+# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
+# -- made it three, and this is `gpudims.py`'s. The 54 rows the merged file printed
+# CONCATENATE IN PYTHON'S ORDER (`simplify.bend`, `late/coalesce.bend`, then this)
+# to exactly those 54, and `.agents/slop/codegen3-gate.sh` is that invariant
+# against the pre-split snapshot. The cut itself is
+# `.agents/slop/split-codegen3.py`, which moved every body by LINE RANGE.
+#
+# THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED. `Rew` (the rule's answer), the
+# `rw_*` node readers and `G` (the fixture's index map) live in
+# `codegen/rewriter.bend` and every use here is `RW.<name>`. A TYPE MENTION needs
+# the alias as well as a call -- an unqualified imported `type` name is not in
+# scope -- so it is `RW.Rew` and `RW.Rew.ar`, never `Rew.ar`. A def is in the
+# substrate iff at least TWO of the three files used it; every def only this file
+# used came here.
+#
+# ---------------------------------------------------------------------------
+# THE INVENTORY, def by def, against gpudims.py's 106 lines. Every `PY` range is
+# re-derived from the file as it stands.
+#
+#   #  PY            KIND    STATE

@@ -6,12 +6,19 @@
 # `extra/thunder/tiny/tk/kernel.py`, a Thunder TK harness. The lowerer is here:
 #
 #   tinygrad/codegen/__init__.py   519 lines   THIS FILE
-#   tinygrad/codegen/simplify.py   156 lines   -> rewriter.bend
-#   tinygrad/codegen/late/coalesce.py  168     -> rewriter.bend
-#   tinygrad/codegen/gpudims.py    106 lines   -> rewriter.bend
+#   tinygrad/codegen/simplify.py   156 lines   -> codegen/simplify.bend
+#   tinygrad/codegen/late/coalesce.py  168     -> codegen/late/coalesce.bend
+#   tinygrad/codegen/gpudims.py    106 lines   -> codegen/gpudims.bend
 #   tinygrad/codegen/decomp/{op,transcendental}.py -> decomp.bend / transcendental.bend
 #   tinygrad/codegen/late/{linearizer,regalloc,gater}.py  NOT CLAIMED
 #   tinygrad/codegen/opt/*        636 lines    NOT CLAIMED
+#
+# NOTHING FROM ANY OTHER `.py` IS IN THIS FILE. It used to name three -- the three
+# above, all of them claimed by `rewriter.bend` -- and the 1:1 ruling (one `.bend`
+# per upstream `.py`, AT THE SAME PATH) moved them to their own paths, which took
+# this file's last merged-in `.py` with it. `.agents/slop/split-codegen3.py` is the
+# cut and `.agents/slop/codegen3-gate.sh` is the invariant: this file's 38 rows are
+# unchanged and its 38 rows were never involved.
 #
 # `renderer/{cstyle,wgsl}.bend` are the siblings and they consume THIS file's
 # `to_program` output shape, named at the foot.
@@ -109,7 +116,10 @@ import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
-import ./rewriter.bend as RW
+# `import ./rewriter.bend as RW` WAS HERE and was DEAD: `rg 'RW\.'` over this file
+# finds ZERO uses, so the 38 rows below were transitively checking a file that
+# answered nothing for them. It is gone, which is what makes this file's 38 rows a
+# gate over THIS file's code alone instead of a gate over a merged neighbour's.
 
 # ===========================================================================
 # THE ANSWER. A rule RETURNS THE ARENA, `movement.bend`'s shape, called `Ker` so

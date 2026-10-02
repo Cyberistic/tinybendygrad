@@ -1,0 +1,27 @@
+# simplify.bend -- tinygrad/codegen/simplify.py: RANGE simplification, the
+# pattern tables the lowerer runs over a SINK's ranges.
+#
+# ---------------------------------------------------------------------------
+# ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
+# `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
+# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
+# -- made it three, and this is `simplify.py`'s. The 54 rows the merged file
+# printed CONCATENATE IN PYTHON'S ORDER (this file, then `late/coalesce.bend`,
+# then `gpudims.bend`) to exactly those 54, and
+# `.agents/slop/codegen3-gate.sh` is that invariant against the pre-split
+# snapshot. The cut itself is `.agents/slop/split-codegen3.py`, which moved every
+# body by LINE RANGE, so "moved verbatim" is a checkable claim and not a promise.
+#
+# THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED. `Rew` (the rule's answer), the
+# `rw_*` node readers, `rw_ranges`, `G` (the fixture's index map), `n_of` and the
+# two row printers live in `codegen/rewriter.bend` and every use here is `RW.<name>`.
+# A TYPE MENTION needs the alias as well as a call -- an unqualified imported
+# `type` name is not in scope -- so it is `RW.Rew` and `RW.Rew.ar`, never `Rew.ar`.
+# A def is in the substrate iff at least TWO of the three files used it; every
+# def only this file used came here.
+#
+# ---------------------------------------------------------------------------
+# THE INVENTORY, def by def, against simplify.py's 156 lines. Every `PY` range is
+# re-derived from the file as it stands.
+#
+#   #  PY            KIND    STATE

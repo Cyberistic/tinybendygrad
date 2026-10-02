@@ -1,0 +1,24 @@
+CLEAN UNION: 54 rows;  snapshot: 54 rows;  BYTE-IDENTICAL
+
+X1  `rs_claimed` claims GLOBAL only  (N-a, replayed from the NEW file) moved: rs_arg_local, rs_claim_local, rs_rewrite_local
+                                                                         check-only first line: ALL PROOFS CHECK
+
+X2  `fr_off` also claims LINEAR  (M3, replayed from the NEW file)      moved: fr_off_linear
+                                                                         check-only first line: ALL PROOFS CHECK
+
+X3  `symbolic_len` 123 -> 122  (M7, replayed from the NEW file)        moved: rc_composite
+                                                                         check-only first line: ALL PROOFS CHECK
+
+X4  `indexing_simplify` loses its second rule  (only coalesce can catch this) moved: is_len
+                                                                         check-only first line: ALL PROOFS CHECK
+
+X5  rename reverted: `pm_simplify_ranges` -> `sr_table`   (THEOREM: alpha) moved: NOTHING
+                                                                         check-only first line: ALL PROOFS CHECK
+
+X6  the rename SWAP reverted: rule/table back to `pm_flatten_range`/`fr_table`  (THEOREM) moved: NOTHING
+                                                                         check-only first line: ALL PROOFS CHECK
+
+restored: all four files byte-identical to the backup
+clean again: BYTE-IDENTICAL to the snapshot
+union order python order (simplify, coalesce, gpudims) MATCHES the snapshot
+union order reversed                                 DIFFERS FROM the snapshot
