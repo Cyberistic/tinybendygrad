@@ -372,15 +372,27 @@ def mx_pool_out(i: List<&2, U32>, d: List<&2, U32>, k: List<&2, U32>, s: List<&2
   mx_pool_out.go(i, d, k, s, Nil{})
 
 # `f_ = [smax(1, ceildiv(o*s - d, i)) for o,s,i,d in zip(o_,s_,i_,d_)]`
-# (movement.py:606), with the SIGN of `o*s - d` walked as a fifth list. The
-# ceiling is `mx_isneg_ofd` per element and the clamp is `mx_smax1`.
-# `f_ = [smax(1, ceildiv(o*s - d, i)) for o,s,i,d in zip(o_,s_,i_,d_)]`
-# (movement.py:606). The sign of `o*s - d` is folded into the accumulator rather
-# than walked as a fifth list: `mx_ofd` is a `Data` arithmetic helper, not a
+# (movement.py:605), with the SIGN of `o*s - d` folded into the walk rather than
+# carried as a fifth parallel list: `mx_ofd` is a `Data` arithmetic helper, not a
 # closure, so it is a CALL and a call cannot be a `match` scrutinee -- which is
-# why the two reads of `e` are resolved by `mx_fs` below rather than by keeping
-# a fifth parallel list. `mx_pool_f` walks DOWN and accumulates UP, so it PREPENDS
-# (`List.append(a, A, [x], acc)`) to build forward order.
+# why the two reads of `e` are resolved by `mx_fs` below.
+#
+# THE ACCUMULATOR IS APPENDED TO AT THE TAIL: `List.append(a, A, acc, [x])`.
+# This def used to PREPEND (`List.append(a, A, [x], acc)`) on the reasoning that
+# a walk which descends and accumulates on the way back up must cons at the head
+# "to build forward order".  That is the head/tail swap `agent-core.md` records:
+# `List.append` is `xs ++ ys`, so prepending builds the list BACKWARDS, and the
+# comment was the rationalisation rather than the defence.  `mx_pool_out.go` and
+# `mx_pool_kid.go`, twelve lines away, both write `acc, [x]` -- the working
+# example, in the same file.
+#
+# `f_` is not cosmetic: it is an input to `mx_pool_kid` and `mx_pool_rep` ZIPPED
+# against `i_`, so a reversed `f_` makes every per-axis repeat count wrong rather
+# than merely reordered.  MEASURED: `mx_pool_f([3,5],[1,2],[2,3],[1,1])` answered
+# `3,1` where CPython answers `1,3`, and `mx_pool_f([9,2,7],[1,3,1],[4,5,2],
+# [1,1,1])` answered `3,1,2` where CPython answers `2,1,3`.  ALL SIX `f_*` GATE
+# ROWS ARE BLIND: every one of them feeds an ALL-EQUAL shape list, and reversing
+# a constant list is the identity, so the fix left all 70 rows byte-identical.
 # TWO READS OF `d`, resolved by a PARAMETER rather than by `+`, and the split is
 # the general form of "a match may not scrutinise a call": the sign is computed
 # once and handed down, which is also the `def X.of`-immediately-before-`def X`
@@ -408,7 +420,7 @@ def mx_fs(+o: U32, +s: U32, i: U32, +d: U32) -> U32:
 def mx_pool_f.go(o: List<&2, U32>, s: List<&2, U32>, i: List<&2, U32>, d: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match o s i d:
     case Nil{} Nil{} Nil{} Nil{}: acc
-    case a <> t b <> u c <> v e <> r: mx_pool_f.go(t, u, v, r, List.append(&2, U32, [mx_fs(a, b, c, e)], acc))
+    case a <> t b <> u c <> v e <> r: mx_pool_f.go(t, u, v, r, List.append(&2, U32, acc, [mx_fs(a, b, c, e)]))
     case Nil{} _ _ _ : Nil{}
     case _ Nil{} _ _ : Nil{}
     case _ _ Nil{} _ : Nil{}
@@ -1866,6 +1878,14 @@ def main() -> IO(Unit):
     IO.print(String.concat(["f_k3s1=", mx_show(mx_pool_f(mx_pool_out([8,8],[1,1],[3,3],[1,1]), [1,1], [8,8], [1,1]))]))
     IO.print(String.concat(["f_k2s3=", mx_show(mx_pool_f(mx_pool_out([8,8],[1,1],[2,2],[3,3]), [3,3], [8,8], [1,1]))]))
     IO.print(String.concat(["f_d2=", mx_show(mx_pool_f(mx_pool_out([8,8],[2,2],[3,3],[2,2]), [2,2], [8,8], [2,2]))]))
+    # THE NON-UNIFORM ROWS, and they are the only ones of these seven that can
+    # see a DIRECTION.  Every other `f_*` fixture is an all-equal shape list, so
+    # every element of `f_` is identical and reversing the list is the identity
+    # -- which is how `mx_pool_f` answered `f_` backwards through all 70 green
+    # rows.  CPython: `[smax(1,ceildiv(o*s-d,i)) for o,s,i,d in
+    # zip([3,5],[1,2],[2,3],[1,1])]` is `1,3` and the prepended build says `3,1`.
+    IO.print(String.concat(["f_nu2=", mx_show(mx_pool_f([3,5], [1,2], [2,3], [1,1]))]))
+    IO.print(String.concat(["f_nu3=", mx_show(mx_pool_f([9,2,7], [1,3,1], [4,5,2], [1,1,1]))]))
     IO.print(String.concat(["kid_1=", mx_show(mx_pool_kid([3,3],[8,8],[1,1],[1,1]))]))
     IO.print(String.concat(["kid_2=", mx_show(mx_pool_kid([3,3],[8,8],[2,2],[2,2]))]))
     IO.print(String.concat(["drop=", mx_show(mx_i_(4n, 2n, [1,4,8,8])), " nn=", Nat.show(mx_nnoop(4n, 2n))]))
