@@ -32,11 +32,14 @@ MUTATIONS = [
    "   table. It is in the table because the failure mode is the whole argument\n"
    "   for a string diff against a generated oracle."),
   ("M2",
-   '    case "half"           : "half"',
-   '    case "half"           : "bfloat"',
-   "`__bf16` is the ONLY dtype the map calls `bfloat`. Swapping it onto `half`\n"
-   "   moves the half rows and the ptr-half row but leaves the bf16 rows, so it\n"
-   "   is caught only because both are in the table."),
+   "             case 12: \"half\"",
+   "             case 12: \"bfloat\"",
+   "`bf16` is the ONLY dtype the map calls `bfloat`. Swapping it onto `f16`\n"
+   "   moves the f16 rows and the ptr-f16 row but leaves the bf16 rows, so it\n"
+   "   is caught only because both are in the table. The arm is `pri == 12`,\n"
+   "   which is the STRUCTURAL key: before the re-arm this mutation read\n"
+   "   `case \"half\": \"half\"`, an arm on the dtype NAME, which `spec.bend`'s\n"
+   "   rename silently retired. M40 is that exact regression, measured."),
   ("M3",
    "def ldt.v(+d: S.Dt, +count: U32) -> String:\n"
    '  Bool.pick(String, U32.is_gt(count, 1), String.concat(["<", U32.show(count), " x ", ldt.of(d), ">"]), ldt.of(d))',
@@ -296,6 +299,114 @@ MUTATIONS = [
    '  Bool.pick(List<&2, S.Dt>, lop.has(op, d), List.append(&2, S.Dt, [d], rest), rest)  # CONTROL\n\ndef lop.dts_of',
    "CONTROL 3: a trailing comment on the `lop.dts.go` arm, which must move\n"
    "   NOTHING. Together with M4 and M29 that is three controls."),
+  # ------------------------------------------- the `ldt.fp` re-arm (Cls/bits/pri)
+  ("M40",
+   "def ldt.fp(bits: U32, pri: U32) -> String:\n"
+   "  match bits:\n"
+   "    case 8: \"i8\"\n"
+   "    case _: match pri:\n"
+   "             case 12: \"half\"\n"
+   "             case 13: \"bfloat\"\n"
+   "             case 14: \"float\"\n"
+   "             case _: \"double\"",
+   "def ldt.fp(nm: String) -> String:\n"
+   "  match nm:\n"
+   "    case \"float8_e4m3\"    : \"i8\"\n"
+   "    case \"float8_e5m2\"    : \"i8\"\n"
+   "    case \"float8_e4m3fnuz\": \"i8\"\n"
+   "    case \"float8_e5m2fnuz\": \"i8\"\n"
+   "    case \"half\"           : \"half\"\n"
+   "    case \"__bf16\"         : \"bfloat\"\n"
+   "    case \"float\"          : \"float\"\n"
+   "    case \"double\"         : \"double\"\n"
+   "    case _: \"KeyError\"",
+   "THE REGRESSION, RESTORED VERBATIM -- HALF OF IT. This puts back the ladder\n"
+   "   as COMMITTED, armed on dtype NAMES, and leaves `ldt.of` calling\n"
+   "   `ldt.fp(bits, pri)`. It does NOT COMPILE (`expected : String`), which is\n"
+   "   the honest first half of the story: the type checker is the only thing\n"
+   "   standing between a rename and this ladder.\n"
+   "   M40b is the other half -- the call site re-pointed at `nm` -- and THAT\n"
+   "   one compiles, says ALL PROOFS CHECK, and answers `KeyError` everywhere.\n"
+   "   Run M40b on its own to see the 79."),
+  ("M41",
+   "    case 8: \"i8\"",
+   "    case 8: \"i16\"",
+   "the WIDTH arm. `bits == 8` is the fp8 QUADRUPLE and all four spell `i8`,\n"
+   "   so this moves the four fp8 rows and their ptr/count uses. It is the row\n"
+   "   that shows the fp8 collapse is the MAP's own property -- `ldt(fp8e4m3)`\n"
+   "   and `ldt(i8)` are both `\"i8\"` in CPython -- rather than a shortcut."),
+  ("M42",
+   "             case 13: \"bfloat\"",
+   "             case 13: \"half\"",
+   "the `pri == 13` arm is `bf16` and ONLY `bf16`. `pri` is what separates\n"
+   "   f16 (12) from bf16 (13) from f32 (14) from f64 (15), and it is a NUMERIC\n"
+   "   field the dtype rename does not touch."),
+  ("M43",
+   "             case _: \"double\"",
+   "             case _: \"float\"",
+   "the CATCH-ALL is live: it is `f64`'s arm, so it is reached, and `pri == 15`\n"
+   "   never needs a literal arm because nothing else in `CFloat` falls past\n"
+   "   14. A reader that added `case 15: \"double\"` and kept the catch-all\n"
+   "   unchanged would move nothing -- the two spellings are the same function,\n"
+   "   which is a THEOREM and not a coverage gap."),
+  ("M40b",
+   "def ldt.fp(bits: U32, pri: U32) -> String:\n"
+   "  match bits:\n"
+   "    case 8: \"i8\"\n"
+   "    case _: match pri:\n"
+   "             case 12: \"half\"\n"
+   "             case 13: \"bfloat\"\n"
+   "             case 14: \"float\"\n"
+   "             case _: \"double\"\n"
+   "\n"
+   "# the dict itself. `Cls` is a seven-constructor `Data` union and `match` on it is\n"
+   "# a match on a PARAMETER here, so this ladder is legal; the catch-all covers\n"
+   "# `CWeakInt` and `CWeakFloat`, the two members with no key, and `ldt weakint` /\n"
+   "# `ldt weakfloat` are the rows that make the catch-all LIVE rather than dead.\n"
+   "def ldt.of(+d: S.Dt) -> String:\n"
+   "  match d:\n"
+   "    case S.Dt{pri, bits, cls, nm}:\n"
+   "      match cls:\n"
+   "        case S.CVoid{}  : \"void\"\n"
+   "        case S.CBool{}  : \"i1\"\n"
+   "        case S.CUint{}  : ldt.ints(bits)\n"
+   "        case S.CSint{}  : ldt.ints(bits)\n"
+   "        case S.CFloat{} : ldt.fp(bits, pri)",
+   "def ldt.fp(nm: String) -> String:\n"
+   "  match nm:\n"
+   "    case \"float8_e4m3\"    : \"i8\"\n"
+   "    case \"float8_e5m2\"    : \"i8\"\n"
+   "    case \"float8_e4m3fnuz\": \"i8\"\n"
+   "    case \"float8_e5m2fnuz\": \"i8\"\n"
+   "    case \"half\"           : \"half\"\n"
+   "    case \"__bf16\"         : \"bfloat\"\n"
+   "    case \"float\"          : \"float\"\n"
+   "    case \"double\"         : \"double\"\n"
+   "    case _: \"KeyError\"\n"
+   "\n"
+   "# the dict itself. `Cls` is a seven-constructor `Data` union and `match` on it is\n"
+   "# a match on a PARAMETER here, so this ladder is legal; the catch-all covers\n"
+   "# `CWeakInt` and `CWeakFloat`, the two members with no key, and `ldt weakint` /\n"
+   "# `ldt weakfloat` are the rows that make the catch-all LIVE rather than dead.\n"
+   "def ldt.of(+d: S.Dt) -> String:\n"
+   "  match d:\n"
+   "    case S.Dt{pri, bits, cls, nm}:\n"
+   "      match cls:\n"
+   "        case S.CVoid{}  : \"void\"\n"
+   "        case S.CBool{}  : \"i1\"\n"
+   "        case S.CUint{}  : ldt.ints(bits)\n"
+   "        case S.CSint{}  : ldt.ints(bits)\n"
+   "        case S.CFloat{} : ldt.fp(nm)",
+   "M40 WITH ITS CALL SITE RE-POINTED AT `nm` -- the EXACT committed defect, and\n"
+   "   this is the one that COMPILES. `bend --check-only` reports\n"
+   "   `ALL PROOFS CHECK` on this scratch file, which is the whole lesson: a\n"
+   "   green checker is not evidence. It answers `KeyError` for all eight\n"
+   "   `CFloat` members and moves the rows below -- the 79 that were red when\n"
+   "   `spec.bend` renamed the dtypes, reproduced on demand.\n"
+   "   M40 and M40b are one experiment split in two because the harness applies\n"
+   "   ONE textual edit each: alone, the name ladder does not typecheck. Together\n"
+   "   they show that the type checker is the only thing that caught this, and\n"
+   "   that it caught it only because the PARAMETER types changed."),
 ]
 
 
