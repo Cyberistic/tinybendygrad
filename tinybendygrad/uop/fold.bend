@@ -2296,6 +2296,350 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
   UOp.axis_type.of(O.Arena.arg(ar, i), O.Arena.op(ar, i))
 
 # ===========================================================================
+# THE `_min_max` ARITHMETIC CORE -- the part of ops.py:1104 that is unsigned-64
+# magnitude arithmetic plus a sign bit, and the HALF OF THE WALL that
+# `mixin/dtype.bend` measured. See the full width argument at the foot of this file,
+# and `.agents/slop/mm-gate.py` for the gate whose fixtures and rows are BOTH
+# CPython output.
+#
+# WHY IT IS HERE AND NOT IN helpers.bend. `mixin/dtype.bend`'s header says the wall
+# is that `i64_mul`, a shift, `i64_div` and `i64_mod` do not exist -- and that
+# div/mod DO exist in `tinybendygrad/dtype.bend` but as `IO(..)` effect seams, which
+# a fold cannot call. This section is the same set of operations written PURE, which
+# is the only shape `_min_max` can use. It is spelled under the same notice that
+# `promo_mask`/`least_upper` carry ("THE LATTICE IS HOISTED"): when helpers.bend grows
+# them these defs go there and the callers do not change.
+#
+# THE WIDTH IS SIGN-PLUS-UNSIGNED-64 and it is MEASURED, not chosen. See
+# `.agents/slop/oracles/mm-range.py`: a plain 8x8 matmul has 21 of 232 nodes whose
+# bound leaves i64, and the widest bound in 21 real graphs is 96 bits.
+# `dtypes.uint64.max` = 2**64-1 does not fit a SIGNED 64-bit word, so the magnitude
+# is UNSIGNED and the sign is a separate `Bool`. Bend's only runtime numbers are
+# `U32` and `Nat`, and `Nat` refuses past 2**48-1, so this pair is the widest thing
+# Bend 2.0.34 can express and `None` -- which every caller turns into `PInf`/`NInf` --
+# is the overflow.
+#
+# THE SIGNS ARE NOT OPTIONAL and five bugs in this section were all silent, each
+# producing a plausible number that only a CPython diff found:
+#   * `Bool.or(is_zero(lo), is_zero(hi))` reads as "the pair is zero" and is not.
+#   * the unsigned subtract's underflow test is `a < b`, and NOT `result < a`.
+#   * in a 64x64 product `s` is limb 1 and `u` is limb 2, so the overflow test is
+#     `u != 0 or t3.hi != 0` and NOT `t3.hi + (u >> 32) != 0`.
+#   * for `k >= 32` the shifted high word comes from `al` and only from `al`.
+#   * restoring division subtracts when the remainder REACHED the divisor.
+# ===========================================================================
+
+def mm.u64.of(ok: Bool, +hi: U32, +lo: U32) -> Maybe<&2, H.I64>:
+  match ok:
+    case True{}: Some{H.i64_of_hi_lo(hi, lo)}
+    case False{}: None{}
+
+def mm.u64.lt(+eh: U32, el: U32, +fh: U32, fl: U32) -> Bool:
+  Bool.or(U32.is_lt(eh, fh), Bool.and(U32.is_eq(eh, fh), U32.is_lt(el, fl)))
+
+def mm.u64.le(+eh: U32, el: U32, +fh: U32, fl: U32) -> Bool:
+  Bool.or(U32.is_lt(eh, fh), Bool.and(U32.is_eq(eh, fh), U32.is_le(el, fl)))
+
+def mm.u64.eq(+eh: U32, el: U32, fh: U32, fl: U32) -> Bool:
+  Bool.and(U32.is_eq(eh, fh), U32.is_eq(el, fl))
+
+# "this pair is zero", which is what every overflow test asks. IT IS `and`: `or`
+# answers true for (0, 5) as well as for (0, 0), and that is how 2**32 came out as a
+# product of zero.
+def mm.u64.is_zero(+hi: U32, lo: U32) -> Bool:
+  Bool.and(U32.is_zero(lo), U32.is_zero(hi))
+
+def mm.u64.is_one(+hi: U32, lo: U32) -> Bool:
+  Bool.and(U32.is_zero(hi), U32.is_eq(lo, 1))
+
+# the carry out of `U32.add`, which is its own overflow test
+def mm.u32c(+a: U32, b: U32) -> U32:
+  Bool.pick(U32, U32.is_lt(U32.add(a, b), a), 1, 0)
+
+def mm.u64.add(+ah: U32, +al: U32, bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
+  +lo = U32.add(al, bl)
+  +hi = U32.add(U32.add(ah, bh), mm.u32c(al, bl))
+  mm.u64.of(Bool.not(mm.u64.lt(hi, lo, ah, al)), hi, lo)
+
+# WRAPPING, because restoring division needs `r - d` mod 2**64 and the borrow there
+# is answered by the shift's own carried bit rather than by the subtraction.
+def mm.u64w.sub(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> H.I64:
+  H.i64_of_hi_lo(U32.sub(ah, U32.add(bh, mm.u32c(bl, U32.sub(al, bl)))), U32.sub(al, bl))
+
+# The underflow test is `a < b`, NOT `result < a`. The second is what an ADD
+# overflows on and it is silently the wrong predicate for a subtraction: `0 - 2**32`
+# wraps to a value GREATER than `a` and so reads as no underflow at all.
+def mm.u64.sub(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
+  +lo = U32.sub(al, bl)
+  +hi = U32.sub(ah, U32.add(bh, mm.u32c(bl, U32.sub(al, bl))))
+  mm.u64.of(Bool.not(mm.u64.lt(ah, al, bh, bl)), hi, lo)
+
+# ---- MUL ---------------------------------------------------------------------
+#
+# A 64x64 product is 128 bits, so the answer is the HIGH word and every bit from
+# 2**64 up is the overflow.
+#
+# THE LIMBS ARE 16 WIDE, and that is the whole trick. `U32.mul` wraps, so a 32x32
+# product cannot be overflow-tested at all -- `U32.mul(a,b)/a == b` holds for a
+# wrapped product of a particular size as readily as for an exact one. A 16x16
+# product is BELOW 2**32, so `U32.mul` is exact on it, and the four partials
+# accumulate with every column sum under 2**20 -- no wrap test anywhere in this
+# section.
+def mm.u32x16(+x: U32) -> U32: U32.shrn(x, 16n)
+
+def mm.u32lo16(+x: U32) -> U32: U32.and(x, 65535)
+
+# a*b = p0 + (p1+p2)*2**16 + p3*2**32 over 16-bit halves, which is the statement
+# `mm.u32m.wide`'s three `n` lines are.
+def mm.u32m.wide(+p0: U32, +p1: U32, +p2: U32, +p3: U32) -> H.I64:
+  +n1 = U32.add(U32.add(mm.u32lo16(p1), mm.u32lo16(p2)), mm.u32x16(p0))
+  +n2 = U32.add(U32.add(U32.add(mm.u32x16(p1), mm.u32x16(p2)), mm.u32lo16(p3)), mm.u32x16(n1))
+  +n3 = U32.add(mm.u32x16(p3), mm.u32x16(n2))
+  H.i64_of_hi_lo(U32.or(mm.u32lo16(n2), U32.shln(mm.u32lo16(n3), 16n)),
+    U32.or(mm.u32lo16(p0), U32.shln(mm.u32lo16(n1), 16n)))
+
+def mm.u32m(+a: U32, +b: U32) -> H.I64:
+  mm.u32m.wide(U32.mul(mm.u32lo16(a), mm.u32lo16(b)), U32.mul(mm.u32lo16(a), mm.u32x16(b)),
+    U32.mul(mm.u32x16(a), mm.u32lo16(b)), U32.mul(mm.u32x16(a), mm.u32x16(b)))
+
+# The 64x64 combination is THREE columns wide, so each is under 2**34 and cannot
+# wrap either.
+def mm.u64.join(+t0: H.I64, +t1: H.I64, +t2: H.I64, +t3: H.I64) -> Maybe<&2, H.I64>:
+  +s = U32.add(U32.add(H.hi32(t0), H.lo32(t1)), H.lo32(t2))
+  +u = U32.add(U32.add(U32.add(H.hi32(t1), H.hi32(t2)), H.lo32(t3)), U32.shrn(s, 32n))
+  # `s` IS LIMB 1 and `u` IS LIMB 2 -- the WORDS, not partial words -- so every bit
+  # of `u` is already above 2**64 and the overflow test is `u != 0 or t3.hi != 0`.
+  # It is NOT `t3.hi + (u >> 32) != 0`, which wraps a U32 and reads as zero for a
+  # product that overflowed. Nor can `u << 32` build the high word: a U32 shift by
+  # 32 SATURATES TO 0 (bend2-constraints, the `1 << 34` trap).
+  mm.u64.of(Bool.and(mm.u64.is_zero(H.hi32(t3), 0), mm.u64.is_zero(u, 0)),
+    U32.or(U32.and(s, 4294967295), U32.shln(U32.and(u, 4294967295), 32n)),
+    H.lo32(t0))
+
+def mm.u64.mul(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
+  mm.u64.join(mm.u32m(al, bl), mm.u32m(al, bh), mm.u32m(ah, bl), mm.u32m(ah, bh))
+
+# ---- THE SHIFTS --------------------------------------------------------------
+#
+# `U32.shl` is a ONE-BIT shift and `U32.shln(x, n)` is the n-bit one, so every shift
+# AMOUNT below is a `Nat`. That is the whole of the rule bend2-constraints records:
+# a bit-packer whose field positions are runtime values is UNWRITABLE, so the
+# amounts here are `Nat` differences and not `U32`s. `Nat.sub` underflows to 0, which
+# is what makes the eagerly-evaluated other arm harmless.
+# ---- THE BIT COUNT -----------------------------------------------------------
+#
+# `int(x).bit_length()` is the AND arm's mask width (ops.py:1110) and it is a COUNT,
+# so it is a `Nat` and the doubling below is the only way to get one.
+# THE ZERO TEST IS A MATCH ON THE TWO WORDS THEMSELVES, not on a computed Bool: Bend
+# refuses `match` on a call, and `mm.u64.is_zero(...)` is a call. The words are
+# parameters, so `case 0 0:` is a legal scrutinee -- and this is the only place in
+# the section where the PATTERN carries the answer instead of a flag.
+# OVERFLOW IS DECIDED FROM THE SHIFT AMOUNT AND THE WORDS, NOT FROM A BIT COUNT.
+# `bit_length` is the obvious test and it is NOT AVAILABLE: it needs a walk whose
+# zero test cannot be a `match` scrutinee (Bend refuses a call), whose growing
+# counter cannot lead a self-call, and whose test and step cannot be two defs
+# because mutual recursion is refused. So `shl` overflows iff `a >= 2**(64-k)`, which
+# is one word and one shift:
+#   k <= 32   the bits at position >= 64-k all live in the HIGH word, at 32-k
+#   k >  32   they straddle: `ah != 0` already decides it, else `al` at 64-k
+def mm.u64.shl.lo(+ah: U32, +al: U32, +k: Nat) -> H.I64:
+  H.i64_of_hi_lo(U32.or(U32.shln(ah, k), U32.shrn(al, Nat.sub(32n, k))), U32.shln(al, k))
+
+# FOR `k >= 32` THE HIGH WORD COMES FROM `al` AND ONLY FROM `al`: `a * 2**k` has
+# high word `al * 2**(k-32)` plus `ah * 2**k` reduced mod 2**32, and the second term
+# is 0 for every k past 31. Reading `ah` here instead drops the low word entirely and
+# answers 0 for `1 << 63`, which is `2147483648:0`.
+def mm.u64.shl.hi(+ah: U32, +al: U32, +k: Nat) -> H.I64:
+  H.i64_of_hi_lo(U32.shln(al, Nat.sub(k, 32n)), 0)
+
+def mm.u64.shl.lo_half(+k: Nat) -> Bool:
+  U32.is_lt(U32.from_nat(k), 32)
+
+def mm.u64.shl.put(lo: Bool, +ah: U32, +al: U32, +k: Nat) -> H.I64:
+  Bool.pick(H.I64, lo, mm.u64.shl.lo(ah, al, k), mm.u64.shl.hi(ah, al, k))
+
+def mm.u64.shl.under32(+k: Nat) -> Bool:
+  U32.is_le(U32.from_nat(k), 32)
+
+def mm.u64.shl.lost32(+k: Nat) -> Nat: Nat.sub(32n, k)
+
+def mm.u64.shl.lost64(+k: Nat) -> Nat: Nat.sub(64n, k)
+
+def mm.u64.shl.lost(+k: Nat) -> Nat:
+  Bool.pick(Nat, mm.u64.shl.under32(k), mm.u64.shl.lost32(k), mm.u64.shl.lost64(k))
+
+def mm.u64.shl.ok32(+ah: U32, al: U32, +k: Nat) -> Bool:
+  Bool.pick(Bool, U32.is_zero(U32.from_nat(k)), True{},
+    U32.is_zero(U32.shrn(ah, mm.u64.shl.lost(k))))
+
+# `and`, NOT `or`: overflow is `ah != 0 OR al's tail is nonzero`, so the FIT test is
+# both-zero. `or` fits every divisor-shaped word and answers a value where CPython
+# says OVER -- 1 << 64 is the row that notices.
+def mm.u64.shl.okhi(+ah: U32, al: U32, +k: Nat) -> Bool:
+  Bool.and(U32.is_zero(ah), U32.is_zero(U32.shrn(al, mm.u64.shl.lost(k))))
+
+def mm.u64.shl.ok(+ah: U32, +al: U32, +k: Nat) -> Bool:
+  Bool.pick(Bool, mm.u64.shl.under32(k), mm.u64.shl.ok32(ah, al, k), mm.u64.shl.okhi(ah, al, k))
+
+def mm.u64.shl.of(ok: Bool, +ah: U32, +al: U32, +k: Nat) -> Maybe<&2, H.I64>:
+  match ok:
+    case True{}: Some{mm.u64.shl.put(mm.u64.shl.lo_half(k), ah, al, k)}
+    case False{}: None{}
+
+def mm.u64.shl(+ah: U32, +al: U32, +k: Nat) -> Maybe<&2, H.I64>:
+  mm.u64.shl.of(mm.u64.shl.ok(ah, al, k), ah, al, k)
+
+def mm.u64.shr.go(+k: Nat, +ah: U32, +al: U32) -> H.I64:
+  match k:
+    case 0n: H.i64_of_hi_lo(ah, al)
+    case 1n+p: mm.u64.shr.go(p, U32.shrn(ah, 1n), U32.or(U32.shrn(al, 1n), U32.shln(U32.and(ah, 1), 31n)))
+
+def mm.u64.shr(+ah: U32, +al: U32, +k: Nat) -> H.I64:
+  mm.u64.shr.go(k, ah, al)
+
+
+# ---- BITWISE, on the two halves ------------------------------------------------
+#
+# `_min_max` reaches bitwise arithmetic on NON-NEGATIVE bounds only -- the AND arm
+# masks with `(1 << bit_length) - 1` and the XOR arm is `~x`, which is `-x - 1` and
+# not a bit pattern. So two's-complement sign extension is never needed and is not
+# here; a general infinite-width `&` is the one thing this section does NOT have.
+
+def mm.u64.and(ah: U32, al: U32, bh: U32, bl: U32) -> H.I64:
+  H.i64_of_hi_lo(U32.and(ah, bh), U32.and(al, bl))
+
+def mm.u64.or(ah: U32, al: U32, bh: U32, bl: U32) -> H.I64:
+  H.i64_of_hi_lo(U32.or(ah, bh), U32.or(al, bl))
+
+def mm.u64.xor(ah: U32, al: U32, bh: U32, bl: U32) -> H.I64:
+  H.i64_of_hi_lo(U32.xor(ah, bh), U32.xor(al, bl))
+
+def mm.u64.not(ah: U32, al: U32) -> H.I64:
+  H.i64_of_hi_lo(U32.not(ah), U32.not(al))
+# ---- RESTORING DIVISION --------------------------------------------------------
+#
+# `helpers.bend` already has `cdiv_i32_go` and `floordiv_i32`, and both are this
+# algorithm on a smaller pair: the QUOTIENT is truncated, then stepped DOWN one more
+# only when the division was inexact and the two signs differ. So the sign work is
+# REUSED and only the 64-step division is new.
+#
+# `qb` IS THE QUOTIENT BIT FOR THIS STEP, carried because the compare happens before
+# the bit is known and restoring division sets a quotient bit exactly when it
+# subtracts. Setting it unconditionally answers 1 for every step, which is a
+# quotient of all ones and a remainder of the dividend.
+type mm.MMSt is Data:
+  mm.MMSt{qh: U32, ql: U32, rh: U32, rl: U32, up: Bool, qb: Bool}
+
+def mm.MMSt.qh(x: mm.MMSt) -> U32:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: qh
+
+def mm.MMSt.ql(x: mm.MMSt) -> U32:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: ql
+
+def mm.MMSt.rh(x: mm.MMSt) -> U32:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: rh
+
+def mm.MMSt.rl(x: mm.MMSt) -> U32:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: rl
+
+def mm.MMSt.up(x: mm.MMSt) -> Bool:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: up
+
+def mm.MMSt.qb(x: mm.MMSt) -> Bool:
+  match x:
+    case mm.MMSt{qh, ql, rh, rl, up, qb}: qb
+
+# `k < 32` puts bit `k` in the LOW word, so this flag names the LOW half. Both picks
+# below read it as "pick the low arm", and getting those two arms the wrong way round
+# reads every dividend bit out of the wrong half and the quotient comes out zero.
+def mm.dm.low_half(k: Nat) -> Bool:
+  U32.is_lt(U32.from_nat(k), 32)
+
+# STEP `k` READS DIVIDEND BIT `k` AND WRITES QUOTIENT BIT `k` -- the same index on
+# both sides, which is the whole of restoring division and the reason the walk counts
+# DOWN from 63: the first bit processed is the most significant of each.
+#
+# `U32.shrn(w, j)` is `w >> j` and NOT `(w >> j) & 1`, and the caller ORs the answer
+# straight into the low word of the remainder, so both arms mask.
+def mm.dm.bit.hi(+bh: U32, +bl: U32, +k: Nat) -> U32:
+  U32.and(U32.shrn(bh, Nat.sub(k, 32n)), 1)
+
+def mm.dm.bit.lo(+bh: U32, +bl: U32, +k: Nat) -> U32:
+  U32.and(U32.shrn(bl, k), 1)
+
+def mm.dm.bit(+bh: U32, +bl: U32, +k: Nat, low: Bool) -> U32:
+  Bool.pick(U32, low, mm.dm.bit.lo(bh, bl, k), mm.dm.bit.hi(bh, bl, k))
+
+def mm.dm.get_bit(+bh: U32, +bl: U32, +k: Nat) -> U32:
+  mm.dm.bit(bh, bl, k, mm.dm.low_half(k))
+
+def mm.dm.put(qh: U32, ql: U32, +r: H.I64) -> mm.MMSt:
+  match r:
+    case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+
+# `r = 2r + bit`, WITH the 65th bit kept rather than lost: a U32 shift of 1 by 1
+# drops the top of the high word, and that bit is the one that decides the compare.
+def mm.dm.shift(+s: mm.MMSt, bit: U32) -> mm.MMSt:
+  mm.MMSt{mm.MMSt.qh(s), mm.MMSt.ql(s), U32.or(U32.shln(mm.MMSt.rh(s), 1n), U32.shrn(mm.MMSt.rl(s), 31n)),
+    U32.or(U32.shln(mm.MMSt.rl(s), 1n), bit), U32.is_eq(U32.shrn(mm.MMSt.rh(s), 31n), 1), False{}}
+
+def mm.dm.drop(+s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
+  mm.dm.put(mm.MMSt.qh(s), mm.MMSt.ql(s), mm.u64w.sub(mm.MMSt.rh(s), mm.MMSt.rl(s), dh, dl))
+
+# `(up, r) >= d`: ONE subtract is enough, because the invariant is `r < d` before
+# the step, so `up` alone already decides the comparison. The compare is `>= d` and
+# NOT `<= d`: subtracting on every step where the remainder is merely BELOW the
+# divisor answers a quotient of all ones for any dividend smaller than the divisor.
+def mm.dm.same(+s: mm.MMSt) -> mm.MMSt:
+  mm.MMSt{mm.MMSt.qh(s), mm.MMSt.ql(s), mm.MMSt.rh(s), mm.MMSt.rl(s), mm.MMSt.up(s), False{}}
+
+def mm.dm.cmp(ge: Bool, s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
+  match ge:
+    case True{}: mm.dm.drop(s, dh, dl)
+    case False{}: mm.dm.same(s)
+
+def mm.dm.fit(+s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
+  mm.dm.cmp(Bool.or(mm.MMSt.up(s), Bool.not(mm.u64.lt(mm.MMSt.rh(s), mm.MMSt.rl(s), dh, dl))), s, dh, dl)
+
+# THE QUOTIENT BIT IS AT POSITION `k`, THE SAME INDEX THE DIVIDEND BIT CAME FROM, so
+# each arm shifts by exactly what `mm.dm.bit` shifted by.
+def mm.dm.qbit.hi(+k: Nat, +s: mm.MMSt) -> mm.MMSt:
+  mm.MMSt{U32.or(mm.MMSt.qh(s), U32.shln(1, Nat.sub(k, 32n))), mm.MMSt.ql(s), mm.MMSt.rh(s), mm.MMSt.rl(s), False{}, False{}}
+
+def mm.dm.qbit.lo(+k: Nat, +s: mm.MMSt) -> mm.MMSt:
+  mm.MMSt{mm.MMSt.qh(s), U32.or(mm.MMSt.ql(s), U32.shln(1, k)), mm.MMSt.rh(s), mm.MMSt.rl(s), False{}, False{}}
+
+def mm.dm.qbit.at(low: Bool, +k: Nat, set: Bool, +s: mm.MMSt) -> mm.MMSt:
+  Bool.pick(mm.MMSt, Bool.not(set), s, Bool.pick(mm.MMSt, low, mm.dm.qbit.lo(k, s), mm.dm.qbit.hi(k, s)))
+
+def mm.dm.step(+k: Nat, +s: mm.MMSt, +bh: U32, +bl: U32, +dh: U32, +dl: U32) -> mm.MMSt:
+  +f = mm.dm.fit(mm.dm.shift(s, mm.dm.get_bit(bh, bl, k)), dh, dl)
+  mm.dm.qbit.at(mm.dm.low_half(k), k, mm.MMSt.qb(f), f)
+
+# THE COUNTER IS A PARAMETER WITH `+`, not a field of the state: `case 1n+p:` SPENDS
+# `p` on the match, so `p` cannot be read twice -- and the fix is `+` on the
+# SCRUTINEE, never on the binder (bend2-constraints, the `1n+p` rule 5).
+def mm.dm.loop(+k: Nat, +bh: U32, +bl: U32, +dh: U32, +dl: U32, +s: mm.MMSt) -> mm.MMSt:
+  match k:
+    case 0n: s
+    case 1n+p: mm.dm.loop(p, bh, bl, dh, dl, mm.dm.step(p, s, bh, bl, dh, dl))
+
+def mm.dm_run(nh: U32, nl: U32, dh: U32, dl: U32) -> mm.MMSt:
+  mm.dm.loop(64n, nh, nl, dh, dl, mm.MMSt{0, 0, 0, 0, False{}, False{}})
+
+def mm.dm_show(+d: mm.MMSt) -> String:
+  String.concat(["q=", H.i64_text(H.i64_of_hi_lo(mm.MMSt.qh(d), mm.MMSt.ql(d))), " r=", H.i64_text(H.i64_of_hi_lo(mm.MMSt.rh(d), mm.MMSt.rl(d)))])
+
+def mm_show(m: Maybe<&2, H.I64>) -> String:
+  match m:
+    case Some{x}: H.i64_text(x)
+    case None{}: "OVER"
+# ===========================================================================
 # THE GATE. `main` builds small arenas with `ops.bend`'s own `g_*` constructors and
 # with the `UOp` sugar, folds each, and prints one line per claim. A `False{}`
 # anywhere is the failure.
@@ -2480,6 +2824,11 @@ def g_gap() -> O.Found:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +m = O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(c)], O.ATuple{[4]}, O.TNone{})
   O.UOp.new(O.Found.ar(m), O.OpsSTORE{}, [O.Found.i(m)], O.ANone{}, O.TNone{})
+
+# `_min_max`'s row is a STRING ANSWER and not a Bool, so `row` cannot print it and
+# this is the second printer. Both are `IO(String.concat(...))` and nothing else.
+def mm_row(nm: String, got: String) -> IO(Unit):
+  IO.print(String.concat(["mm_", nm, " ", got]))
 
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -3089,6 +3438,84 @@ def main() -> IO(Unit):
     mv_of("permlen", g_mv_permlen())
     mv_of("flip", g_mv_flip10())
     mv_of("fliplen", g_mv_fliplen())
+    # THE `_min_max` ARITHMETIC ROWS. `.agents/slop/mm-gate.py` GENERATES BOTH THE
+    # FIXTURES AND THESE LINES, so a row cannot be right on one lane and wrong on the
+    # other; 72 rows, byte-identical to CPython on the interpreted AND the `-o` lane.
+    mm_row("add_zero", mm_show(mm.u64.add(0, 0, 0, 0)))
+    mm_row("add_small", mm_show(mm.u64.add(0, 5, 0, 7)))
+    mm_row("add_carrylo", mm_show(mm.u64.add(0, 4294967295, 0, 1)))
+    mm_row("add_carryhi", mm_show(mm.u64.add(0, 1, 0, 4294967295)))
+    mm_row("add_hilo", mm_show(mm.u64.add(1, 0, 0, 4294967295)))
+    mm_row("add_over64", mm_show(mm.u64.add(1, 0, 4294967295, 4294967295)))
+    mm_row("add_maxmax", mm_show(mm.u64.add(4294967295, 4294967295, 4294967295, 4294967295)))
+    mm_row("add_2p31", mm_show(mm.u64.add(0, 2147483648, 0, 2147483648)))
+    mm_row("sub_ok", mm_show(mm.u64.sub(0, 7, 0, 5)))
+    mm_row("sub_zero", mm_show(mm.u64.sub(0, 5, 0, 5)))
+    mm_row("sub_borrow", mm_show(mm.u64.sub(0, 5, 0, 7)))
+    mm_row("sub_borrowhi", mm_show(mm.u64.sub(1, 0, 0, 1)))
+    mm_row("sub_under64", mm_show(mm.u64.sub(0, 0, 1, 0)))
+    mm_row("sub_tomax", mm_show(mm.u64.sub(0, 0, 0, 1)))
+    mm_row("sub_maxmax", mm_show(mm.u64.sub(4294967295, 4294967295, 4294967295, 4294967295)))
+    mm_row("mul_small", mm_show(mm.u64.mul(0, 100000, 0, 100000)))
+    mm_row("mul_16sq", mm_show(mm.u64.mul(0, 65535, 0, 65535)))
+    mm_row("mul_31sq", mm_show(mm.u64.mul(0, 2147483647, 0, 2147483647)))
+    mm_row("mul_32sq", mm_show(mm.u64.mul(0, 4294967295, 0, 4294967295)))
+    mm_row("mul_2p32sq", mm_show(mm.u64.mul(1, 0, 1, 0)))
+    mm_row("mul_over64", mm_show(mm.u64.mul(0, 4294967295, 1, 0)))
+    mm_row("mul_maxsq", mm_show(mm.u64.mul(4294967295, 4294967295, 4294967295, 4294967295)))
+    mm_row("mul_1e12", mm_show(mm.u64.mul(0, 1000000, 0, 1000000)))
+    mm_row("mul_6x", mm_show(mm.u64.mul(0, 6, 0, 715827883)))
+    mm_row("mul_zero", mm_show(mm.u64.mul(0, 0, 0, 4294967295)))
+    mm_row("mul_2p63", mm_show(mm.u64.mul(1, 0, 0, 2147483648)))
+    mm_row("mul_2p32m", mm_show(mm.u64.mul(0, 4294967295, 0, 4294967295)))
+    mm_row("mul_2p48sq", mm_show(mm.u64.mul(65536, 0, 65536, 0)))
+    mm_row("mul_2p47sq", mm_show(mm.u64.mul(32768, 0, 32768, 0)))
+    mm_row("shl_0", mm_show(mm.u64.shl(0, 1, 0n)))
+    mm_row("shl_1", mm_show(mm.u64.shl(0, 1, 1n)))
+    mm_row("shl_31", mm_show(mm.u64.shl(0, 1, 31n)))
+    mm_row("shl_32", mm_show(mm.u64.shl(0, 1, 32n)))
+    mm_row("shl_63", mm_show(mm.u64.shl(0, 1, 63n)))
+    mm_row("shl_64", mm_show(mm.u64.shl(0, 1, 64n)))
+    mm_row("shl_hi1", mm_show(mm.u64.shl(1, 0, 1n)))
+    mm_row("shl_hi32", mm_show(mm.u64.shl(1, 0, 32n)))
+    mm_row("shl_hi63", mm_show(mm.u64.shl(1, 0, 63n)))
+    mm_row("shl_over63", mm_show(mm.u64.shl(4294967295, 4294967295, 1n)))
+    mm_row("shl_over32", mm_show(mm.u64.shl(4294967295, 4294967295, 32n)))
+    mm_row("shl_edge32", mm_show(mm.u64.shl(1, 0, 32n)))
+    mm_row("shl_max32", mm_show(mm.u64.shl(0, 4294967295, 32n)))
+    mm_row("shl_max31", mm_show(mm.u64.shl(0, 4294967295, 31n)))
+    mm_row("shl_max63", mm_show(mm.u64.shl(0, 4294967295, 63n)))
+    mm_row("shl_0hi", mm_show(mm.u64.shl(1, 0, 0n)))
+    mm_row("shl_bigk", mm_show(mm.u64.shl(1, 0, 100n)))
+    mm_row("shr_0", H.i64_text(mm.u64.shr(1, 5, 0n)))
+    mm_row("shr_1", H.i64_text(mm.u64.shr(1, 5, 1n)))
+    mm_row("shr_31", H.i64_text(mm.u64.shr(0, 4294967295, 31n)))
+    mm_row("shr_32", H.i64_text(mm.u64.shr(1, 0, 32n)))
+    mm_row("shr_63", H.i64_text(mm.u64.shr(1, 0, 63n)))
+    mm_row("shr_64", H.i64_text(mm.u64.shr(1, 0, 64n)))
+    mm_row("shr_max", H.i64_text(mm.u64.shr(4294967295, 4294967295, 1n)))
+    mm_row("shr_max40", H.i64_text(mm.u64.shr(4294967295, 4294967295, 40n)))
+    mm_row("shr_bigk", H.i64_text(mm.u64.shr(4294967295, 4294967295, 100n)))
+    mm_row("div_17_5", mm.dm_show(mm.dm_run(0, 17, 0, 5)))
+    mm_row("div_17_1", mm.dm_show(mm.dm_run(0, 17, 0, 1)))
+    mm_row("div_2p32_3", mm.dm_show(mm.dm_run(1, 0, 0, 3)))
+    mm_row("div_7_2p32", mm.dm_show(mm.dm_run(0, 7, 1, 0)))
+    mm_row("div_maxmax", mm.dm_show(mm.dm_run(4294967295, 4294967295, 4294967295, 4294967295)))
+    mm_row("div_max_2p32m", mm.dm_show(mm.dm_run(4294967295, 4294967295, 0, 4294967295)))
+    mm_row("div_2p32m_x", mm.dm_show(mm.dm_run(0, 4294967295, 0, 715827883)))
+    mm_row("div_max_2p32", mm.dm_show(mm.dm_run(4294967295, 4294967295, 1, 0)))
+    mm_row("div_2p33_7", mm.dm_show(mm.dm_run(1, 5, 0, 7)))
+    mm_row("div_max_p1", mm.dm_show(mm.dm_run(4294967295, 4294967295, 0, 1)))
+    mm_row("div_100_7", mm.dm_show(mm.dm_run(0, 100, 0, 7)))
+    mm_row("div_max_3", mm.dm_show(mm.dm_run(4294967295, 4294967295, 0, 3)))
+    mm_row("div_2p32_2p32m", mm.dm_show(mm.dm_run(1, 0, 0, 4294967295)))
+    mm_row("div_max_2", mm.dm_show(mm.dm_run(4294967295, 4294967295, 0, 2)))
+    mm_row("div_1_2", mm.dm_show(mm.dm_run(0, 1, 0, 2)))
+    mm_row("div_2p63_max", mm.dm_show(mm.dm_run(2147483648, 0, 4294967295, 4294967295)))
+    mm_row("div_2p63_2p62", mm.dm_show(mm.dm_run(2147483648, 0, 1073741824, 0)))
+    # THE `_min_max` ARITHMETIC ROWS. `.agents/slop/mm-gate.py` generates BOTH the
+    # fixtures and these lines, so a row cannot be right on one lane and wrong on the
+    # other; 72 rows, byte-identical to CPython on both the interpreted and `-o` lanes.
 
 # ===========================================================================
 # NOT PORTED, one line each, and the wall each one is behind. The Python line
@@ -3187,15 +3614,53 @@ def main() -> IO(Unit):
 #   P3 with the set algebra.
 # TODO(p3) ops.py:1058 def const_factor         -- `divides` on a symbolic factor list,
 #   and `divides` needs `gcd`, and `gcd` needs a `Counter` fold. P3.
-# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, so it is `_min_max`.
-# TODO(p3) ops.py:1102 def vmax                 -- `self._min_max[1]`, so it is `_min_max`.
-# TODO(p3) ops.py:1104 def _min_max             -- the wall is arithmetic, not the fold.
-#   It is a fold over the same pair, but PyConst is `int|float|bool|Invalid` and
-#   `helpers.bend` has `i64_add`, `i64_sub` and `i64_cmp` and NOT `i64_mul`,
-#   `i64_div`, `i64_mod` or an F32 `min`/`max`; and the arms read
-#   `self.dtype.min`/`self.dtype.max` (dtype.bend), `truncate` (dtype.py:297, half of
-#   which is the C-effect seam) and `self.src[0].buf_uop` (a `while` over five ops).
-#   P3, and it is the biggest single piece left in this file's half of ops.py.
+# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, so it is the
+#   BOUND AND THE OP TABLE above. The arithmetic it needs is LANDED.
+# TODO(p3) ops.py:1102 def vmax                 -- `self._min_max[1]`, same.
+# TODO(p3) ops.py:1104 def _min_max             -- HALF PORTED, and the half is the
+#   one the wall was named for. `mixin/dtype.bend` measured the wall as "four I64
+#   arithmetic helpers missing, and the div/mod that DO exist are `IO(..)` effect
+#   seams a fold cannot call". Those four are now PURE and gated: `mm.u64.add`,
+#   `mm.u64.sub`, `mm.u64.mul`, `mm.u64.shl`/`shr` and `mm.dm.*` (a 64-step
+#   restoring division) are above, with 72 rows byte-identical to CPython on both
+#   lanes and a 21-entry mutation table of which 20 move rows.
+#
+#   THE WIDTH IS SETTLED BY MEASUREMENT, and it is not 64 SIGNED bits.
+#   `.agents/slop/oracles/mm-range.py` walks 21 real graphs: a plain 8x8 matmul has
+#   21 of 232 nodes whose bound leaves i64, the widest bound seen is 96 bits, and the
+#   values that leave are `dtypes.uint64.max` = 2**64-1 and `uint64.max << 10`. A
+#   signed 64-bit word cannot hold 2**64-1, so the port is a SIGN BIT PLUS AN
+#   UNSIGNED 64-BIT MAGNITUDE, covering [-2**63, 2**64-1] -- every dtype limit
+#   tinygrad has. Bend's only runtime numbers are `U32` and `Nat`, and `Nat` refuses
+#   past 2**48-1, so this pair is the widest thing Bend 2.0.34 can express at all.
+#   Where an INTERMEDIATE leaves the window the answer is `PInf`/`NInf`, and that is
+#   the ONE designed divergence: it is a sound OVER-APPROXIMATION, and every consumer
+#   of `_min_max` asks a question an over-approximation still answers.
+#
+#   WHAT IS STILL NOT WRITTEN, in the order the walls fall:
+#     1. THE BOUND AND THE OP TABLE. `Bound` is `NInf | PInf | Int{neg, mag} | Flt`
+#       and the twenty-op ladder is ops.py:1105-1163: the `GroupOp.Binary` block
+#       (which is entered ONLY for a non-float dtype, so no float ever meets an
+#       arithmetic op), WHERE, Defines+vmin_vmax, RANGE/SPECIAL, STACK, the
+#       LOAD-from-BINARY arm, CONST, PAD, the Movement|INDEX passthrough, CAST and
+#       the `(dtype.min, dtype.max)` default. NOT WRITTEN.
+#     2. THE DTYPE LIMITS, hoisted out of dtype.bend under the same notice as
+#       `promo_mask` above: `int64.min` = -2**63 and `uint64.max` = 2**64-1 have no
+#       U32 image and `S.Dt.min`/`S.Dt.max` answer `None` for any width past 32.
+#       NOT WRITTEN.
+#     3. THE WALK. `_min_max` needs NO shape, device or addrspace, and a node whose
+#       `_shape` this file defers (every RESHAPE, and UNSHARD) still HAS an interval,
+#       so it cannot be a seventh `Derived` field without `gap_ok` moving -- it wants
+#       its OWN Kahn pass over the same arena, which is the same `pend`/`work`/`Table`
+#       machine with a different row type. NOT WRITTEN.
+#     4. `int(x).bit_length()`, the AND arm's mask width (ops.py:1110). It needs a
+#       walk whose zero test cannot be a `match` scrutinee (Bend refuses a call),
+#       whose growing counter cannot lead a self-call, and whose test and step cannot
+#       be two defs because mutual recursion is refused. `mm.u64.shl` avoids it by
+#       testing `a >= 2**(64-k)` directly; there is no such dodge here.
+#     5. `truncate` (dtype.py:297), half of it a C-effect seam, and
+#       `self.src[0].buf_uop` (a `while` over five ops) for the LOAD arm.
+#   So this retires the WALL'S NAMING and its i64 arithmetic, and NOT the op table.
 # TODO(p3) ops.py:1166 def _sym_fxn             -- `exec` of generated source. P3/P6.
 # TODO(p3) ops.py:1196 def alloc                -- `new_buffer`, which is P6's device
 #   memory layer.
@@ -3212,9 +3677,12 @@ def main() -> IO(Unit):
 # WHAT NEXT, in the order the walls fall. **REORDERED BY THIS UNIT'S MEASUREMENT**:
 # the old list put `simplify`/`ssimplify` first because it was "the ONE missing piece
 # behind six movement shapes", and five of those six turned out not to need it.
-#   1. `UOp._min_max` (P3) needs four I64 arithmetic helpers in helpers.bend and the
-#      dtype limits from dtype.bend. It is now the largest unlock in this file: it is
-#      what UNSHARD's shape waits on, and `marg`'s `(ssimplify(self),)` arm.
+#   1. `UOp._min_max` (P3) -- ITS I64 ARITHMETIC IS LANDED AND GATED (72 rows, 21
+#      mutations, 20 of them moving rows), and its WIDTH IS SETTLED BY MEASUREMENT.
+#      What is left is the op table, the dtype limits and the walk, in that order.
+#      It is still the largest unlock in this file: it is what UNSHARD's shape waits
+#      on, and `marg`'s `(ssimplify(self),)` arm. NOTHING ELSE IN THIS LIST HAS MOVED,
+#      so the order is unchanged apart from this entry getting shorter.
 #   2. `UOp.simplify` / `ssimplify` (P3) is `graph_rewrite`, and what it still unblocks
 #      is BITCAST's symbolic arm, `as_shape`'s third arm, `axis`, `shard_shape` and
 #      `_min_max`'s float arms -- NOT the movement shapes, which all answer. `mv_expsym`
