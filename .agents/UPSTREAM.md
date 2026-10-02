@@ -112,6 +112,15 @@ The local fix and the removal condition are in `divandmod.bend` / `helpers.bend`
 
 ---
 
+## Where upstream defects get integrated
+
+`.agents/UPSTREAM.md` records what upstream got WRONG. `.agents/UPSTREAM-PIN.md` records how
+far the port has drifted from upstream and the workflow for closing that gap. They are
+different questions and both are needed: a defect is a bug to report, a drift is work to do.
+
+If an upstream change looks like a bug, do NOT bend the port to match it -- put it here, and
+say plainly in `.agents/TODO.md` that the port diverges from upstream on that line and why.
+
 ## Template for a new entry
 
 ```
