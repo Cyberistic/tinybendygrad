@@ -17,3 +17,8 @@ __pycache__/
 .venv/
 # frozen upstream snapshot kept only for diffing; never committed
 .agents/slop/opstree/
+# pin/head/work/cur checkouts an agent makes to diff both ends of a rebase.
+# 191MB, and its autogen/nv_*.py are >1MiB each, so jj refuses to snapshot
+# them and warns on EVERY push. Untracked is not enough: one careless
+# `jj split` would sweep 191MB of another agent's scratch into a commit.
+.agents/slop/xd1/
