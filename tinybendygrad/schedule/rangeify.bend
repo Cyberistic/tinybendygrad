@@ -9,8 +9,8 @@
 #
 # ---------------------------------------------------------------------------
 # STATUS. THE PORT IS COMPLETE AND CHECKING. `--check-only` passes, and
-# `main`'s EIGHTY-ONE rows are derived from Python by `.agents/slop/rf-rows.py`
-# rather than restated from this file.
+# `main`'s 125 rows are derived from Python by `.agents/slop/rf-rows.py` and
+# `.agents/slop/rf-ct-oracle.py` rather than restated from this file.
 #
 #   STAGE 1  inventory ................ done. 11 tables, 36 rules, 9 reject
 #            slots, the tag space of the two compositions, the `ler` fold.
@@ -21,24 +21,38 @@
 #            node: `is_noop_after_dep`, `remove_noop_afters`,
 #            `strip_zero_offset_shrink`, `no_indexing_calls`, `pm_no_views`,
 #            `renumber_range`, `pm_add_param_range_tags`, `rb_1`/`rb_2`,
-#            `dg_3`, `ab_7`, `ab_8`, `ct_6`, `ct_4`, and `flatten_bufferize`'s
-#            two `len(x.src) == 2` and `any(...)` tests. The REST of the bodies
+#            `dg_3`, `ab_7`, `ab_8`, `ct_6`, `ct_4`'s CLAIM, `ct_5`'s CLAIM,
+#            `ct_7`'s CLAIM, `ct_8` in full, and `flatten_bufferize`'s
+#            `len(x.src) == 2` and `any(...)` tests. The REST of the bodies
 #            read Python state this bend has no shape for -- `x.arg.removable`,
-#            `x.ranges`, a `ctx` counter -- and each one is a `# TODO(p3)` line
-#            at the foot with the Python line it stands in for.
-#   STAGE 4  the gate ............... done. 81 rows: the eleven table lengths,
+#            `x.ranges`, a `ctx` counter, `DType.const`, `_min_max` -- and each
+#            one is a `# TODO(p3)` line at the foot with the Python line it
+#            stands in for.
+#   STAGE 4  the gate ............... done. 125 rows: the eleven table lengths,
 #            the stage order, one row per claimable rule body, four rows for the
-#            reject sets, two-sided rows for every "keep" test, and the
-#            FIRST-WINS fixture the brief asks for (`stg2`, claimed by `ab`
-#            tags 3 and 4, with the op-set count and the full claim count on
-#            either side of it).
-#   STAGE 5  measured mutations ..... done. TWENTY mutations, re-measured by
-#            `.agents/slop/rf-mut.py`; the table is at the foot. EIGHTEEN move
-#            a row. TWO move nothing, and both are PROOFS rather than gaps:
-#            M3 because `rf_early`'s `and` and `or` are the same function on a
-#            reject set of one, and every reject set here is empty or a
-#            singleton; M8 because `rf_strip`'s `zero` is passed in already
-#            conjoined with the SHRINK test, so the outer match is implied.
+#            reject sets, two-sided rows for every "keep" test, the FIRST-WINS
+#            fixture the brief asks for (`stg2`, claimed by `ab` tags 3 and 4,
+#            with the op-set count and the full claim count on either side of
+#            it), the SRC OP SEQUENCE of every rewrite the new fixtures reach,
+#            and the OUTER-VS-INNER pair for each of the three `.f()` rules.
+#   STAGE 5  measured mutations ..... done. FORTY-ONE mutations, re-measured by
+#            `.agents/slop/rf2-mutate.py`; the table is at the foot. THIRTY-SEVEN
+#            move a row. THREE move nothing and all three are PROOFS whose
+#            reason is stated, not guesses -- and ONE of the three is a PROOF
+#            this revision REPLACED, because the old proof was refuted by
+#            measurement (see (1)).
+#
+# WHAT CHANGED IN THIS REVISION, and it is a real defect rather than a
+# completion: THE `ct` TABLE'S OP SETS WERE THE CHILD'S WHERE THEY MUST BE THE
+# ROOT'S, for tags 0, 1, 2, 5 and 8. `pdict` is keyed on `p.op` and `.f()`
+# puts the op handed to `f` at the ROOT, so five of the nine entries keyed the
+# engine on an op it would never see. `ct_4`'s body read the OUTER node's op and
+# its entry keyed the INNER one, so `ct_4` COULD NOT FIRE. Building the
+# outer-vs-inner fixtures that this needs then exposed THREE MORE real defects,
+# each of which a mutation now measures: `ct_6` answered on a pattern it does not
+# match, `ct_8`'s `s.device is None` test was inverted, and `ct_8` had no pattern
+# re-check of its own. The "THE ROOT, NOT THE CHILD" section below is the whole
+# argument and every number in it is measured.
 #
 # WHAT IS DELIBERATELY ABSENT is listed once, at the foot, as `# TODO(p3)`
 # lines carrying the Python file and line number of every wall.
@@ -96,6 +110,43 @@
 # facts the gate checks, and each foreign tag dispatches to `rf_foreign`, which
 # answers "no node" with the wall named. Counting them out instead would make
 # every tag after the prefix wrong.
+#
+# ---------------------------------------------------------------------------
+# THE ROOT, NOT THE CHILD -- the defect this revision fixes, and the gate for it.
+#
+# A `.f()` chain is `def f(self, op, **kwargs): return UPat(op, src=(self,),
+# **kwargs)` (ops.py:1449). It REBUILDS the pattern with the op passed to `f` at
+# the ROOT and the receiver as the CHILD. `PatternMatcher.__init__` keys `pdict`
+# on `p.op` -- the ROOT -- and `rewrite` looks the node up with
+# `self.pdict.get(uop.op)` (ops.py:1607). So for a `.f()` entry the op set the
+# port must carry is the one handed to `f`, and the RECEIVER's op belongs in the
+# rule's BODY test. The two are different ops on the same two-node shape, and
+# putting the wrong one in the table makes the rule unfireable rather than wrong:
+# the engine never even looks the node up.
+#
+# MEASURED, by reading `p.op` off all nine patterns and `pdict` off the matcher
+# (`.agents/slop/rf-ct-oracle.py` section 0, transcript in `rf-ct-oracle.txt`):
+#
+#   tag  0     1     2     3      4      5      6     7     8
+#   root INDEX AFTER  END  STAGE  STAGE  STAGE INDEX INDEX INDEX
+#   rej   -     -     -     -    INDEX    -     -  AFTER MSTACK
+#
+# ALL NINE ROOTS ARE SINGLE-OPS, and the three reject sets are the CHILDREN's
+# ops, read off `UPat.early_reject` (ops.py:1477) -- which is why the reject sets
+# were RIGHT in the port while the op sets were not, and why the previous
+# revision's `mops_ops = 6` row was measuring a set that the engine never uses.
+# `mops_root0/1/2` are the `Ops` NUMBERS (17, 13, 55) and `mops_child_fb` is 6,
+# and both being rows is the point.
+#
+# WHAT THIS COST, and it is the reason the old 81-row gate saw NONE of it:
+# `eq_arg(rebuilt, original)` on any node the four `mp_replace` rules can reach
+# degenerated to `eq_arg(ANone, ANone)` -- true for a correct port AND for one
+# that hardcodes `ANone` -- and every node the `.f()` rules could reach was an
+# AFTER, an MSTACK or a CALL, so no fixture had both shapes to compare. The
+# outer-vs-inner pairs below are the nodes that were missing, and building them
+# moved NOTHING in the old gate, which is the measurement that the old gate was
+# blind rather than merely thin.
+# ---------------------------------------------------------------------------
 #
 # ---------------------------------------------------------------------------
 # TWO FACTS THAT ARE EASY TO INVERT, both MEASURED against rangeify.py with
@@ -1162,6 +1213,42 @@ def gs_table() -> List<&2, O.PMEntry>:
 # ===========================================================================
 def rf_foreign(src: String, +ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
+# THE ROOT/SUB SPLIT, and it is the whole reason the table is written out longhand.
+# A `.f()` chain is `def f(self, op, **kwargs): return UPat(op, src=(self,),
+# **kwargs)` (ops.py:1449): the chain REBUILDS the pattern with the op passed to
+# `f` as the ROOT and the receiver as the CHILD. `PatternMatcher.__init__` keys
+# `pdict` on `p.op` -- the ROOT -- and `rewrite` looks the node up with
+# `self.pdict.get(uop.op)` (ops.py:1607). So for every `.f()` entry the pdict key
+# is the op handed to `f`, and the op set the port must carry is that one; the
+# RECEIVER's op is the CHILD's and belongs in the rule's own body test.
+#
+# MEASURED, by reading `p.op` off all nine patterns and `pdict` off the matcher
+# (`.agents/slop/rf-ct-oracle.py`, section 0; output in `rf-ct-oracle.txt`):
+#   tag 0 INDEX   1 AFTER   2 END   3 STAGE   4 STAGE   5 STAGE   6 INDEX
+#       7 INDEX   8 INDEX
+# so ALL NINE roots are single-op sets, and the three reject sets (4 {INDEX},
+# 7 {AFTER}, 8 {MSTACK}) are the CHILDREN's ops, read off `UPat.early_reject`
+# (ops.py:1477) -- which is why they were RIGHT in the port while the op sets
+# were not. The table carried the child's op set for tags 0, 1, 2, 5 and 8, so
+# `ct_4`'s body read the OUTER node's op while its entry keyed the INNER one and
+# the rule could never fire. M21 in the mutation table is that defect, restored.
+def MOPS_ROOT_FB() -> List<&2, O.Op>: [O.OpsINDEX{}]   # prepare.py:78  root of the .f chain
+def MOPS_ROOT_AF() -> List<&2, O.Op>: [O.OpsAFTER{}]   # prepare.py:80  root of .after
+def MOPS_ROOT_EN() -> List<&2, O.Op>: [O.OpsEND{}]     # prepare.py:82  root of .end
+
+# THE CHILD SETS, `GroupOp.Movement` and `GroupOp.Movement|{Ops.INDEX}`, which
+# are the ops of the `.f`/`after`/`end` RECEIVERS. They are a real fact about the
+# PATTERN -- `schedule/prepare.bend`'s `pm_mops` bodies test them -- and they are
+# NOT the pdict key, which is what the port confused them for. `mops_child_fb` is
+# 6 and `mops_root0` is the INDEX op NUMBER, and both are rows because the two
+# numbers being different is the finding.
+def MOPS_FB() -> List<&2, O.Op>: [O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
+
+def MOPS_AFTER() -> List<&2, O.Op>:
+  List.append(&2, O.Op, MOPS_FB(), [O.OpsINDEX{}])
+
+def MOPS_END() -> List<&2, O.Op>: MOPS_FB()
+
 # `pm_mops` -- schedule/prepare.py:76-83, THREE rules, and this file needs all
 # three for `ct_len` and `ab_len` to be right. Its bodies are `_mop_index` and
 # two `Movement .after` / `.end` rewrites, all of which need
@@ -1209,10 +1296,19 @@ def rf_mops_en(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:82", ar, 0)
 # `or_casted` is an `is_any` of two alternatives, so there are TWO arms and
 # `c` is bound in each; they never meet, so no identity check is emitted (the
 # header's fact 2, measured).
+#
+# THE PATTERN IS THE CLAIM, and giving the body an ELSE arm makes the rule a
+# catch-all. The port had `ct_6.of(alt, ...)` with `False -> src[0]`, so it
+# answered "the INDEX is its base" for EVERY INDEX -- including
+# `INDEX(MSTACK(c4,c1))`, which CPython's tag 6 does not match and where CPython's
+# tag 8 is the rule that answers. MEASURED: with the else arm the answer's src op
+# sequence was ".58.58" (the MSTACK) and `ct8d_srcops` was 0; with the claim in
+# place it is ".58" and `ct8d_srcops` is 1. This is the same mistake `nv_0` does
+# NOT make -- see table 3 -- so `ct_6` was the odd one out in the file.
 def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match alt:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
-    case False{}: M.Hop{ar, M.mp_src(ar, self, 0)}
+    case False{}: M.Hop{ar, 0}
 
 def ct_6(+ar: O.Arena, +self: U32) -> M.Hop:
   ct_6.of(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}), ar, self)
@@ -1230,23 +1326,36 @@ def ct_6_pat(+ar: O.Arena, +self: U32) -> Bool:
            Bool.or(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}),
                    ct_6_casted(ar, M.mp_src0(ar, self))))
 
-# ct_4: `remove_noop_bufferize` -- rangeify.py:104-106. The CLAIM and BOTH
-# conditions are ported; the ANSWER is the wall.
+# ct_4: `remove_noop_bufferize` -- rangeify.py:104-106. The CLAIM is ported and
+# CORRECTED; the ANSWER is the wall.
 #
 #     if idx.src[1:] != b2.src[1:]: return None
 #     return idx.src[0].shrink(tuple((0, s) for s in b2.shape)) if b2.shape else idx.src[0]
 #
-# `UPat(Ops.INDEX, name="idx").f(Ops.STAGE, allow_any_len=True, name="b2")` means
-# `b2` is the INDEX's src[0] and the STAGE allows any length, so the first line is
-# `eq_u32` on two `src_from(1)` lists -- ONE of them on the STAGE and one on the
-# INDEX. The second line needs `UOp.shrink` over `b2.shape`, whose elements are
-# `sint` and may be uops, so it is the wall; `ct_4_ans` is the row and it prints
-# 0, which is information and not a failure.
+# `UPat(Ops.INDEX, name="idx").f(Ops.STAGE, allow_any_len=True, name="b2")`
+# REBUILDS the pattern with the STAGE at the ROOT and the INDEX as its src[0]
+# (`.f()` is `UPat(op, src=(self,))`), so the node under examination IS `b2`,
+# `idx` is `self.src[0]`, and the first line is `eq_u32` on two `src_from(1)`
+# lists -- one on the STAGE and one on the INDEX.
+#
+# MEASURED, LIVE, and this is the rule the table used to make unfireable:
+# `STAGE(INDEX(b4,r0), r0)` has `claim_n = 2` (tags 3 and 4) and answers the
+# BUFFER, because `idx.src[0].shrink(((0,4),))` folds back to `idx.src[0]`. The
+# MIRROR `INDEX(STAGE(b4,r0), r0)` has `claim_n = 0` and answers `None`, and the
+# same STAGE with the tails differing answers `None` too. All three are rows.
+#
+# THE ANSWER IS A MOVEMENT OP -- `UOp.shrink` (ops.py:192) is
+# `apply_movement_op`, the `W3` wall. `ct4a_ans` is therefore the WALL row: the
+# port refuses where CPython rebuilds, and BOTH answers are recorded rather than
+# the port's absence being dressed up as agreement.
 def rf_stage_tail(+ar: O.Arena, b2: U32, idx: U32) -> Bool:
   O.eq_u32(O.Arena.src_from(ar, b2, 1), O.Arena.src_from(ar, idx, 1))
 
+# `idx` is `b2.src[0]`, so the INNER op test reads the SRC and the `!=` compares
+# the STAGE's tail against the INDEX's. The port had `b2` and `idx` the other way
+# round, which is the same defect one level down.
 def rf_same_tail(+ar: O.Arena, +self: U32) -> Bool:
-  Bool.and(M.mp_is(ar, self, O.OpsINDEX{}), rf_stage_tail(ar, M.mp_src0(ar, self), self))
+  Bool.and(M.mp_is(ar, M.mp_src0(ar, self), O.OpsINDEX{}), rf_stage_tail(ar, self, M.mp_src0(ar, self)))
 
 # `b2.shape` -- the `if b2.shape` of the second line. A STAGE's `_shape` is the
 # fold's shape, and "empty" is the scalar case `()`.
@@ -1270,13 +1379,25 @@ def ct_4(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
 # FIRST TWO LINES: `b.arg.removable` is a field of `BufferizeOpts`
 # (indexing.py:60) which `ops.bend`'s `Arg` does not carry at all, and line 36
 # tests `rng not in b.src[0].ranges`. The body also needs `b.reshape` and
-# `b.expand`, which are movement ops over `b.shape`.
+# `b.expand`, which are movement ops over `b.shape`. MEASURED: it DOES fire on a
+# STAGE with a removable `BufferizeOpts`, so this is a wall and not a liveness
+# question -- see the note in `.agents/slop/rf-ct-oracle.txt` section 1.
 def ct_3(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
-# ct_5: `b.const_like(c.val)` -- rangeify.py:120. NOT PORTED: `const_like`
-# (ops.py:603) is `self.dtype.const(val)` and `DType.const` (dtype.py:79) needs
-# `dtype.bend`, which is not importable from `uop/` and is P3. The `or_casted`
-# pattern and the CONST value read ARE ported.
+# ct_5: `b.const_like(c.val)` -- rangeify.py:120. The CLAIM is ported here (it was
+# absent, so the rule was ungated in the body as well as in the table); the ANSWER
+# is walled. `const_like` (ops.py:603) is
+# `UOp.const(self.dtype.const(val))` and then an `EXPAND` when `self._shape`
+# disagrees with the const's, so it needs `DType.const` (dtype.py:79) AND
+# `_mop`/`apply_movement_op` -- two of the three walls at once.
+# MEASURED, LIVE, on BOTH arms: `STAGE(c4, r0)` and `STAGE(CAST(c4,half), r0)` each
+# answer an `EXPAND` of two CONSTs, and `STAGE(b4, r0)` binds `c` zero times.
+def ct_5_claim(+ar: O.Arena, +self: U32) -> Bool:
+  Bool.and(M.mp_is(ar, self, O.OpsSTAGE{}),
+           Bool.and(M.mp_nsrc_ge(ar, self, 1),
+                    Bool.or(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}),
+                            ct_6_casted(ar, M.mp_src0(ar, self)))))
+
 def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ct_7: the `after_all_invalid` arm -- rangeify.py:124-125. NOT PORTED:
@@ -1286,22 +1407,64 @@ def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 # `max_shape`, which is `to_max_shape`, ops.py:1886). `ended_ranges` and
 # `is_invalid` ARE ported, which is why `rf_ended` and `rf_invalid` are readers
 # with no caller yet rather than omitted.
+#
+# MEASURED DEFECT, REPORTED AND NOT FIXED, because it is a fact about CPython and
+# this file does not own it. With an END that ends no RANGE, `ended_ranges` is
+# empty, `prod()` over it is the PYTHON INT 1, and `1..eq(...)` raises
+# `AttributeError: 'int' object has no attribute 'eq'`. So `after_all_invalid`
+# CRASHES on an all-invalid AFTER with no ranges instead of answering, and the
+# `cast(UOp, ...)` on line 113 is doing nothing. `.agents/slop/rf-ct-oracle.py`
+# section 4 prints both shapes: `ct7_ix_after` RAISES, `ct7_ix_after_rng`
+# answers `False`.
 def ct_7(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
-# ct_8: the deviceless-MSTACK arm -- rangeify.py:127-128. NOT PORTED, and
-# surprisingly: it is `idx.replace(src=(s,)+idx.src[1:]) if s.device is None else
-# None`, and `s.device is None` needs `UOp.device` (ops.py:890), which `fold.bend`
-# HAS. What it lacks is the `s.device is None` test itself, because a device is
-# `S.Dev` here and "no device" is the fold's OUTER `Maybe` -- `rf_dev` answers it
-# -- and the answer is a rebuild plus a `.replace`. `ct_8_ans` is the row.
+# ct_7's CLAIM, which is the one `ct_claim_n` needs: an INDEX whose src[0] is an
+# AFTER. `early_reject` is `{AFTER}` -- the CHILD's op -- so the reject set ALREADY
+# implies src[0] is an AFTER whenever there is exactly one src, and with two srcs
+# it only implies one of them is. The claim is therefore not redundant with the
+# reject set, which is the exception `M3`'s proof does not cover.
+def ct_7_claim(+ar: O.Arena, +self: U32) -> Bool:
+  Bool.and(M.mp_is(ar, self, O.OpsINDEX{}),
+           Bool.and(M.mp_nsrc_ge(ar, self, 1),
+                    M.mp_is(ar, M.mp_src0(ar, self), O.OpsAFTER{})))
+
+# ct_8: the deviceless-MSTACK arm -- rangeify.py:127-128. THE CLAIM AND THE
+# REBUILD are ported, and MEASURED LIVE.
+#
+#     UPat(Ops.MSTACK, src=(UPat.var("s"),), allow_any_len=True)
+#         .f(Ops.INDEX, allow_any_len=True, name="idx")
+#     -> lambda s,idx: idx.replace(src=(s,)+idx.src[1:]) if s.device is None else None
+#
+# THE ROOT IS THE INDEX, so this is the ONE `.f()` entry whose body read the outer
+# node correctly in the port as it stood, and `s` is the MSTACK's src[0]. It is
+# gated now, which is the point. MEASURED:
+#   INDEX(MSTACK(c4,c1))       claim_n 1  ->  INDEX, srcops=[CONST]
+#   INDEX(MSTACK(c4,c1), r0)   claim_n 1  ->  INDEX, srcops=[CONST,RANGE]
+#   MSTACK(c4,c1)              claim_n 0  ->  None     <- the mirror, outer/inner
+#   INDEX(MSTACK(bufdev))      claim_n 1  ->  None     <- the device refusal
+# and the rebuild keeps the INDEX's OWN arg, which is the `ct8r_arg` / `ct8r0_arg`
+# row pair and is the arg gate the old fixture could not express.
+def ct_8_claim(+ar: O.Arena, +self: U32) -> Bool:
+  Bool.and(M.mp_is(ar, self, O.OpsINDEX{}),
+           Bool.and(M.mp_nsrc_ge(ar, self, 1),
+                    M.mp_is(ar, M.mp_src0(ar, self), O.OpsMSTACK{})))
+
 def ct_8.of(devless: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match devless:
     case True{} : M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self,
                                List.append(&2, U32, [M.mp_src(ar, M.mp_src0(ar, self), 0)], O.Arena.src_from(ar, self, 1)))
     case False{}: M.Hop{ar, 0}
 
-# `s.device is None` -- the fold's OUTER Maybe, which is "no device" exactly.
-def dev_none_shape(d: S.Dev) -> Bool: False{}
+# `s.device is None` -- the fold's OUTER `Maybe`, and a `Some` device is NOT
+# "no device". `dev_none_shape` used to answer `False{}` for every `S.Dev` and
+# the `Bool.not` made every device-bearing node read as DEVICELESS, so `ct_8`
+# fired on `INDEX(MSTACK(b4d, c1))` where CPython refuses. `ct8b_devnone` and
+# `ct8b_none` are the two rows that see it, and the ONLY reason they exist is the
+# outer-vs-inner fixture: every node the old fixture could reach had a deviceless
+# `s`, so `rf_dev_is_none` was `True` on all of them and the inversion was
+# invisible. A `S.Dev` in this port is a device NAME or a tuple of names, so a
+# present device is always a present device and the answer is unconditional.
+def dev_none_shape(d: S.Dev) -> Bool: True{}
 
 def rf_dev_none(m: Maybe<&2, S.Dev>) -> Bool:
   match m:
@@ -1311,14 +1474,21 @@ def rf_dev_none(m: Maybe<&2, S.Dev>) -> Bool:
 def rf_dev_is_none(+fx: F.Folded, +s: U32) -> Bool:
   rf_dev_none(rf_dev(fx, s))
 
-
-# `s.device is None` is `None`, and `S.Dev` has no `None`, so this is
-# unreachable -- it exists so `rf_dev_none` is total and the reader above says
-# what the real answer is. REPORTED: the OUTER `Maybe` IS the answer, so this
-# def should be deleted when a device can be present-but-deviceless.
-
+# `ct_8` RE-CHECKS ITS OWN PATTERN, and that is not redundancy -- it is what
+# Python's compiled matcher does and it is MEASURED to matter. `ct_8` was the one
+# rule in this table whose body carried NO pattern test, so its claim lived
+# entirely in the table's op set and reject set. Mutation M3 (`rf_early`'s subset
+# test `and` -> `or`, which makes the reject test VACUOUS because
+# `Bool.or(x, True{})` is `True{}` while `Bool.and(x, True{})` is `x`) then let
+# tag 8 stop rejecting `ct7b` -- an INDEX whose AFTER is in src[1], not src[0] --
+# and `ct_8` rebuilt it. M36 removes the self-check and moves `ct7b_none` and
+# `ct8b_none`; with the self-check in place M3 and M20b move nothing, and THAT is
+# the real reason the reject sets are redundant, not "a singleton set makes `and`
+# and `or` the same function" -- which is false, and which the previous revision
+# of this table asserted as a proof.
 def ct_8(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
-  ct_8.of(rf_dev_is_none(fx, M.mp_src(ar, M.mp_src0(ar, self), 0)), ar, self)
+  ct_8.of(Bool.and(ct_8_claim(ar, self),
+                   rf_dev_is_none(fx, M.mp_src(ar, M.mp_src0(ar, self), 0))), ar, self)
 
 def ct_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   match tag:
@@ -1352,26 +1522,19 @@ def ct_scan(rs: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32, +h: M.Hop) -> M.
 # THE TABLE. NINE entries, and the first THREE are `pm_mops`'s -- so tag 3 is
 # rangeify.py:116 and every own tag is (line, tag - 3).
 #
-# `pm_mops`'s three pdict keys, measured by `.agents/slop/rf-table.py`:
-# `UPat(GroupOp.Movement, ...).f(Ops.INDEX, ...)` keys on the MOVEMENT op, and
-# the two `.after`/`.end` patterns key on `Movement|INDEX` and `Movement`.
-def MOPS_FB() -> List<&2, O.Op>: [O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
-
-def MOPS_AFTER() -> List<&2, O.Op>:
-  List.append(&2, O.Op, MOPS_FB(), [O.OpsINDEX{}])
-
-def MOPS_END() -> List<&2, O.Op>: MOPS_FB()
-
+# EVERY `ops` SET BELOW IS THE ROOT'S, measured off `p.op`; every `rej` set is the
+# CHILD's, measured off `p.early_reject`. That is the whole shape of the table and
+# it is what the ROOT/SUB comment above the `MOPS_ROOT_*` defs is about.
 def ct_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, MOPS_FB(),          Nil{}},                   # prepare.py:78  FOREIGN
-   O.PMEntry{1, MOPS_AFTER(),       Nil{}},                   # prepare.py:80  FOREIGN
-   O.PMEntry{2, MOPS_END(),         Nil{}},                   # prepare.py:82  FOREIGN
-   O.PMEntry{3, [O.OpsSTAGE{}],     Nil{}},                   # 116  b -> cleanup_dead_axes
-   O.PMEntry{4, [O.OpsSTAGE{}],     [O.OpsINDEX{}]},          # 118  idx.f(STAGE)
-   O.PMEntry{5, [O.OpsCONST{}, O.OpsCAST{}], Nil{}},           # 120  c.f(STAGE) -> const_like
-   O.PMEntry{6, [O.OpsINDEX{}],     Nil{}},                   # 122  INDEX(const) -> const
-   O.PMEntry{7, [O.OpsINDEX{}],     [O.OpsAFTER{}]},          # 124  INDEX(AFTER)
-   O.PMEntry{8, [O.OpsMSTACK{}],    [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)
+  [O.PMEntry{0, MOPS_ROOT_FB(),  Nil{}},                   # prepare.py:78  FOREIGN
+   O.PMEntry{1, MOPS_ROOT_AF(),  Nil{}},                   # prepare.py:80  FOREIGN
+   O.PMEntry{2, MOPS_ROOT_EN(),  Nil{}},                   # prepare.py:82  FOREIGN
+   O.PMEntry{3, [O.OpsSTAGE{}],   Nil{}},                   # 116  b -> cleanup_dead_axes
+   O.PMEntry{4, [O.OpsSTAGE{}],   [O.OpsINDEX{}]},          # 118  INDEX.f(STAGE) -- root STAGE
+   O.PMEntry{5, [O.OpsSTAGE{}],   Nil{}},                   # 120  CONST.f(STAGE) -- root STAGE
+   O.PMEntry{6, [O.OpsINDEX{}],   Nil{}},                   # 122  INDEX(const) -> const
+   O.PMEntry{7, [O.OpsINDEX{}],   [O.OpsAFTER{}]},          # 124  AFTER.f(INDEX) -- root INDEX
+   O.PMEntry{8, [O.OpsINDEX{}],   [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX) -- root INDEX
 
 def ct_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   ct_scan(ct_table(), fx, self, M.Hop{ar, 0})
@@ -1903,9 +2066,9 @@ def ab_scan(rs: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32, +h: M.Hop) -> M.
 # THE TABLE. TEN entries: three foreign, then `pm_flatten_bufferize` (this file's
 # table 8, and the ONLY foreign-prefix entry with a ported body), then six own.
 def ab_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, MOPS_FB(),    Nil{}},                        # prepare.py:78  FOREIGN
-   O.PMEntry{1, MOPS_AFTER(), Nil{}},                        # prepare.py:80  FOREIGN
-   O.PMEntry{2, MOPS_END(),   Nil{}},                        # prepare.py:82  FOREIGN
+  [O.PMEntry{0, MOPS_ROOT_FB(), Nil{}},                        # prepare.py:78  FOREIGN
+   O.PMEntry{1, MOPS_ROOT_AF(), Nil{}},                        # prepare.py:80  FOREIGN
+   O.PMEntry{2, MOPS_ROOT_EN(), Nil{}},                        # prepare.py:82  FOREIGN
    O.PMEntry{3, [O.OpsSTAGE{}], Nil{}},                      # 244  pm_flatten_bufferize
    O.PMEntry{4, [O.OpsSTAGE{}], Nil{}},                      # 255  x -> bufferize_to_store
    O.PMEntry{5, [O.OpsINDEX{}], [O.OpsCAST{}]},              # 259  INDEX(weak CAST)
@@ -1972,6 +2135,13 @@ def g_tb(g: G) -> F.Table: F.Folded.t(G.fx(g))
 def g_psize(slot: U32, n: U32, a: S.Addr) -> O.ParamArg:
   O.ParamArg{slot, S.int32(), Some{n}, None{}, None{}, None{}, a, None{}, False{},
              None{}, None{}, False{}, None{}}
+
+# A `ParamArg` WITH A DEVICE, which is the only thing `s.device is None` reads.
+# `fold.bend`'s `device_of.param` is how a BUFFER's device is answered, and this
+# is the one fixture node that gives it a `Some` to read.
+def g_pdev(slot: U32, n: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), Some{n}, None{}, None{}, None{}, S.AGlobal{},
+             Some{S.D1{1}}, False{}, None{}, None{}, False{}, None{}}
 def g_buf.slot(slot: U32, n: U32, a: S.Addr, s: U32) -> O.Arena: O.Arena.empty()
 
 
@@ -2066,7 +2236,69 @@ def g() -> G:
                    O.AKernel{O.KernelInfo.of()}, O.TNone{})
   +clik0 = O.UOp.new(O.Found.ar(clik), O.OpsCALL{}, [O.Found.i(ixs), O.Found.i(rs)],
                     O.ANone{}, O.TNone{})
-  G{F.folded(O.Found.ar(clik0)),
+  # ------------------------------------------------------------------------
+  # THE OUTER-VS-INNER FIXTURES, and why the old fixture could not ask the
+  # question. Every node below exists to make ONE thing askable: WHICH OP IS AT
+  # THE INNER VS THE OUTER POSITION. A `.f()` chain puts the op handed to `f` at
+  # the ROOT, so a table that carries the CHILD's op keys the mirror of the node
+  # the body reads -- and a fixture of AFTERs, MSTACKs and CALLs with `ANone`
+  # args cannot see it, because no node in it has both shapes.
+  # `UOp` does NOT type-check `arg` against `op` (measured), so the
+  # discriminating shapes build without complaint and an INDEX can carry a
+  # `Range` arg that survives the rebuild.
+  #
+  #  B4D   BUFFER with a `ParamArg.device`     what `s.device is None` reads
+  #  IXB4  INDEX(B4, R0)                        the CHILD ct_4 needs
+  #  CT4A  STAGE(IXB4, R0)       CLAIMED: root STAGE, child INDEX, tails EQUAL
+  #  CT4D  STAGE(IXB4, R1)       the same with the tails DIFFERENT: the `!=`
+  #  CT4B  INDEX(STG2, R0)       THE MIRROR: root INDEX, child STAGE. Same two
+  #                             ops, same two nodes, opposite order. py: claim 0.
+  #  CT5C  STAGE(C4, R0)         ct_5 arm one: the child is a CONST
+  #  CT5K  STAGE(CAST(C4), R0)   ct_5 arm two: the child is a CAST of a CONST
+  #  CT5B  STAGE(B4, R0)         the negative: the child is neither
+  #  MSTC  MSTACK(C4, C1)        ct_8's `s`, DEVICELESS
+  #  MSTB  MSTACK(B4D, C1)       ct_8's `s`, carrying a DEVICE: the refusal
+  #  CT8D  INDEX(MSTC)           ct_8 CLAIMED: root INDEX, child MSTACK
+  #  CT8B  INDEX(MSTB)           the `s.device is None` refusal, one node from it
+  #  CT8R  INDEX(MSTC, R0) with an `ARange` arg   the rebuild, with the ARG
+  #                             visible: `UOp` accepts it and `replace` keeps it
+  #  CT8R0 the SAME node with `ANone`             the negative one row from it
+  #  CT7A  INDEX(AFTER)          ct_7's claim: root INDEX, child AFTER
+  # ------------------------------------------------------------------------
+  +bd = O.UOp.new(O.Found.ar(clik0), O.OpsBUFFER{}, [O.Found.i(sp)],
+                  O.AParam{g_pdev(4, 9)}, O.TNone{})
+  +ixb4 = O.UOp.new(O.Found.ar(bd), O.OpsINDEX{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +ct4a = O.UOp.new(O.Found.ar(ixb4), O.OpsSTAGE{}, [O.Found.i(ixb4), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +ct4d = O.UOp.new(O.Found.ar(ct4a), O.OpsSTAGE{}, [O.Found.i(ixb4), O.Found.i(r1)], O.ANone{}, O.TNone{})
+  +ct4b = O.UOp.new(O.Found.ar(ct4d), O.OpsINDEX{}, [O.Found.i(st2), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +ct5k0 = O.UOp.new(O.Found.ar(ct4b), O.OpsCAST{}, [O.Found.i(c4)], O.ADt{S.half()}, O.TNone{})
+  +ct5c = O.UOp.new(O.Found.ar(ct5k0), O.OpsSTAGE{}, [O.Found.i(c4), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +ct5k = O.UOp.new(O.Found.ar(ct5c), O.OpsSTAGE{}, [O.Found.i(ct5k0), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +ct5b = O.UOp.new(O.Found.ar(ct5k), O.OpsSTAGE{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  +mstc = O.UOp.new(O.Found.ar(ct5b), O.OpsMSTACK{}, [O.Found.i(c4), O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +mstb = O.UOp.new(O.Found.ar(mstc), O.OpsMSTACK{}, [O.Found.i(bd), O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +ct8d = O.UOp.new(O.Found.ar(mstb), O.OpsINDEX{}, [O.Found.i(mstc)], O.ANone{}, O.TNone{})
+  +ct8b = O.UOp.new(O.Found.ar(ct8d), O.OpsINDEX{}, [O.Found.i(mstb)], O.ANone{}, O.TNone{})
+  +ct8r = O.UOp.new(O.Found.ar(ct8b), O.OpsINDEX{}, [O.Found.i(mstc), O.Found.i(r0)],
+                    O.ARange{[7], O.AXIS_LOOP{}}, O.TNone{})
+  +ct8r0 = O.UOp.new(O.Found.ar(ct8r), O.OpsINDEX{}, [O.Found.i(mstc), O.Found.i(r0)],
+                     O.ANone{}, O.TNone{})
+  +ct7a = O.UOp.new(O.Found.ar(ct8r0), O.OpsINDEX{}, [O.Found.i(af)], O.ANone{}, O.TNone{})
+  #  RGD / RGT -- a RANGE whose AxisType is NOT `AXIS_WEAK`, plus its `rtag(())`.
+  #  EVERY RANGE in the fixture up to here is AXIS_WEAK, so `rf_renumber`'s
+  #  "rebuild the AxisType" and "read it off the node" are the SAME FUNCTION over
+  #  the rest of the fixture and mutation M12 moved nothing. One node with a
+  #  different axis type separates them, which is what `ren_axis_out_dev` is for.
+  #  CT7B -- an INDEX whose src[0] is a RANGE and whose src[1] IS an AFTER. The
+  #  `early_reject` of tag 7 is `{AFTER}` and `ler` is `{RANGE, AFTER}`, so the
+  #  SET TEST is satisfied by an AFTER ANYWHERE, while the PATTERN needs it at
+  #  src[0]. This is the only node in the fixture where `ct_7`'s own body test is
+  #  not implied by its reject set, so it is what makes mutation M30 sharp: with
+  #  `ct_src.of`'s `case 7: True{}` the count reads 2 and with the test it reads 1.
+  +ct7b = O.UOp.new(O.Found.ar(ct7a), O.OpsINDEX{}, [O.Found.i(r0), O.Found.i(af)], O.ANone{}, O.TNone{})
+  +rgd = O.UOp.range_end(O.Found.ar(ct7b), O.Found.i(c4), [2], O.AXIS_DEVICE{})
+  +rgt = rf_rtag.found(O.Found.ar(rgd), O.Found.i(rgd), rf_empty_tag())
+  G{F.folded(O.Found.ar(rgt)),
     [O.Found.i(c0), O.Found.i(c1), O.Found.i(c2), O.Found.i(c4), O.Found.i(sp),
      O.Found.i(b4), O.Found.i(bx), O.Found.i(r0), O.Found.i(r1), O.Found.i(n0),
      O.Found.i(nx), O.Found.i(e0), O.Found.i(e1), O.Found.i(ek), O.Found.i(af1),
@@ -2076,7 +2308,12 @@ def g() -> G:
      O.Found.i(msr), O.Found.i(sti), O.Found.i(sts), O.Found.i(std), O.Found.i(pg),
      O.Found.i(pa), O.Found.i(ipg), O.Found.i(ipa), O.Found.i(r0t), O.Found.i(pgt),
      O.Found.i(pat), O.Found.i(aftn), O.Found.i(aftk), O.Found.i(stc0),
-     O.Found.i(rsaf), O.Found.i(clik), O.Found.i(clik0)]}
+     O.Found.i(rsaf), O.Found.i(clik), O.Found.i(clik0),
+     O.Found.i(bd), O.Found.i(ixb4), O.Found.i(ct4a), O.Found.i(ct4d),
+     O.Found.i(ct4b), O.Found.i(ct5k0), O.Found.i(ct5c), O.Found.i(ct5k),
+     O.Found.i(ct5b), O.Found.i(mstc), O.Found.i(mstb), O.Found.i(ct8d),
+     O.Found.i(ct8b), O.Found.i(ct8r), O.Found.i(ct8r0), O.Found.i(ct7a),
+     O.Found.i(ct7b), O.Found.i(rgd), O.Found.i(rgt)]}
 
 # THE NODE NAMES, so a row reads as a claim about a thing and not an index.
 #   0 C0  1 C1  2 C2  3 C4  4 SPECIAL  5 B4  6 BX  7 R0  8 R1
@@ -2133,6 +2370,34 @@ def g_clik(g: G) -> U32: G.n(g, 45n)
 def g_clik0(g: G) -> U32: G.n(g, 46n)
 def g_b4(g: G) -> U32: G.n(g, 5n)
 def g_bx(g: G) -> U32: G.n(g, 6n)
+#  47 B4D=BUFFER with a DEVICE   48 IXB4=INDEX(B4,R0)
+#  49 CT4A=STAGE(IXB4,R0)  50 CT4D=STAGE(IXB4,R1)  51 CT4B=INDEX(STG2,R0)
+#  52 CT5K0=CAST(C4,half) 53 CT5C=STAGE(C4,R0)  54 CT5K=STAGE(CAST(C4),R0)
+#  55 CT5B=STAGE(B4,R0)    56 MSTC=MSTACK(C4,C1)  57 MSTB=MSTACK(B4D,C1)
+#  58 CT8D=INDEX(MSTC)     59 CT8B=INDEX(MSTB)
+#  60 CT8R=INDEX(MSTC,R0) with an ARange arg   61 CT8R0, the same with ANone
+#  62 CT7A=INDEX(AFTER)
+def g_b4d(g: G) -> U32: G.n(g, 47n)
+def g_ixb4(g: G) -> U32: G.n(g, 48n)
+def g_ct4a(g: G) -> U32: G.n(g, 49n)
+def g_ct4d(g: G) -> U32: G.n(g, 50n)
+def g_ct4b(g: G) -> U32: G.n(g, 51n)
+def g_ct5k0(g: G) -> U32: G.n(g, 52n)
+def g_ct5c(g: G) -> U32: G.n(g, 53n)
+def g_ct5k(g: G) -> U32: G.n(g, 54n)
+def g_ct5b(g: G) -> U32: G.n(g, 55n)
+def g_mstc(g: G) -> U32: G.n(g, 56n)
+def g_mstb(g: G) -> U32: G.n(g, 57n)
+def g_ct8d(g: G) -> U32: G.n(g, 58n)
+def g_ct8b(g: G) -> U32: G.n(g, 59n)
+def g_ct8r(g: G) -> U32: G.n(g, 60n)
+def g_ct8r0(g: G) -> U32: G.n(g, 61n)
+def g_ct7a(g: G) -> U32: G.n(g, 62n)
+#  63 CT7B=INDEX(R0, AFTER)  64 RGD=RANGE(_, AXIS_DEVICE)  65 RGT=its rtag(())
+def g_ct7b(g: G) -> U32: G.n(g, 63n)
+#  64 RGD=RANGE(_, AXIS_DEVICE)  65 RGT=its rtag(())
+def g_rgd(g: G) -> U32: G.n(g, 64n)
+def g_rgt(g: G) -> U32: G.n(g, 65n)
 
 # ===========================================================================
 # THE ROWS.
@@ -2181,6 +2446,47 @@ def g_bx(g: G) -> U32: G.n(g, 6n)
 # ===========================================================================
 def t_lay() -> U32: U32.from_nat(List.length(&2, U32, G.ix(g())))
 
+# THE TABLE READERS, hoisted above every row that uses them: the n-th entry of a
+# table, so a reject-set row and a root-set row are both reads of the TABLE
+# rather than restatements of it. `Maybe.default` answers a missing index with a
+# `0`-tagged entry, so an out-of-range read is a `0` and not a crash.
+def ct_entry(n: Nat) -> O.PMEntry:
+  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, ct_table(), n), O.PMEntry{0, Nil{}, Nil{}})
+
+def dg_entry(n: Nat) -> O.PMEntry:
+  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, dg_table(), n), O.PMEntry{0, Nil{}, Nil{}})
+
+def ab_entry(n: Nat) -> O.PMEntry:
+  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, ab_table(), n), O.PMEntry{0, Nil{}, Nil{}})
+
+# THE ROOT OP OF AN ENTRY, AS ITS `Ops` NUMBER. The number is the declaration
+# order (ops.bend:301 says so, and CPython agrees: INDEX 17, AFTER 13, END 55,
+# STAGE 64, CONST 58, RANGE 53), and it is the key `pdict` is built from, so a
+# row printing it is a claim about which op the ENGINE looks a node up under.
+# `t_root_op.go` returns `max U32` for an EMPTY set, which no real entry has.
+# `t_root_op.go` returns `max U32` for an EMPTY set, which no real entry has.
+def t_root_op.go(m: Maybe<&2, O.Op>) -> U32:
+  match m:
+    case Some{o}: O.Ops.value(o)
+    case None{}  : 4294967295
+
+def t_root_n(e: O.PMEntry) -> U32: t_root_op.go(List.get(&2, O.Op, O.PMEntry.ops(e), 0n))
+
+# THE CLAIM AS A BOOL, restricted to one entry: "tag 4's rule claims a STAGE".
+# This is the row that M21 moves, and it is the row the table's op sets had wrong
+# for tags 0, 1, 2, 5 and 8. `ct_root4` and `ct_root5` are 1; the five INDEX/AFTER/
+# END entries are 0.
+def t_ct_root(e: O.PMEntry) -> U32: b2u(O.op_in(O.PMEntry.ops(e), O.OpsSTAGE{}))
+
+# THE ROOT/SUB ROWS. `mops_root0/1/2` are the pdict KEYS of the three `pm_mops`
+# rules (17, 13, 55) and `mops_child_fb` is the PATTERN's child set (6 ops). They
+# are DIFFERENT facts and the port had them as one, which is the whole defect.
+def t_mops_rules() -> U32: 3
+def t_mops_root0() -> U32: t_root_n(ct_entry(0n))
+def t_mops_root1() -> U32: t_root_n(ct_entry(1n))
+def t_mops_root2() -> U32: t_root_n(ct_entry(2n))
+def t_mops_child_fb() -> U32: U32.from_nat(List.length(&2, O.Op, MOPS_FB()))
+
 def t_ct_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, ct_table()))
 def t_rb_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, rb_table()))
 def t_nic_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, nic_table()))
@@ -2193,12 +2499,8 @@ def t_aprt_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, aprt_table()))
 def t_sk_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, sk_table()))
 def t_gs_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, gs_table()))
 
-# the foreign prefix, in the two units it actually has. `mops_rules = 3` is how
-# many `pm_mops` RULES the composition shifts every own tag by, and `mops_ops` is
-# the size of `GroupOp.Movement`, the pdict key of two of those three. They are
-# different numbers and a row that conflated them would be a restatement.
-def t_mops_rules() -> U32: 3
-def t_mops_ops() -> U32: U32.from_nat(List.length(&2, O.Op, MOPS_FB()))
+# the foreign prefix. `mops_rules` is how many `pm_mops` RULES the composition
+# shifts every own tag by, and the ROOT/SUB rows above are its three pdict keys.
 
 def t_noopf_n0() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_n0(g())))
 def t_noopf_nx() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_nx(g())))
@@ -2456,22 +2758,15 @@ def t_nic_clik_arg() -> U32:
 
 # the two reject sets, spelled: `ct_4` is `{INDEX}` and `dg_3` is `{PARAM}`, and a
 # MISSPELLING of either turns a necessary condition into a false one.
-def ct_entry(n: Nat) -> O.PMEntry:
-  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, ct_table(), n), O.PMEntry{0, Nil{}, Nil{}})
-
 def t_rej_ct4() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ct_entry(4n))))
-def dg_entry(n: Nat) -> O.PMEntry:
-  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, dg_table(), n), O.PMEntry{0, Nil{}, Nil{}})
 
 def t_rej_dg3() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(dg_entry(3n))))
 def t_rej_ct7() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ct_entry(7n))))
-def ab_entry(n: Nat) -> O.PMEntry:
-  Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, ab_table(), n), O.PMEntry{0, Nil{}, Nil{}})
-
 def t_rej_ab8() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ab_entry(8n))))
 
-# `ct_entry(n)` / `dg_entry(n)` / `ab_entry(n)`: the n-th entry of a table, so a
-# reject-set row is a read of the TABLE rather than a restatement of it.
+# `ct_entry(n)` / `dg_entry(n)` / `ab_entry(n)` are declared ABOVE, beside the
+# `mops_root*` rows that need them, so a reject-set row and a root-set row read
+# the TABLE through one reader.
 
 
 
@@ -2513,7 +2808,240 @@ def t_dg_r0t_ans() -> U32:
 def t_ren_axis_out() -> U32:
   b2u(O.eq_axis(rf_axis(M.hop_ar(rf_renumber(g_ar(g()), g_r0t(g()), 3)), M.hop_ix(rf_renumber(g_ar(g()), g_r0t(g()), 3))), O.AXIS_WEAK{}))
 
+# ... AND THE ROW THAT MAKES M12 SHARP. Every other RANGE in the fixture is
+# AXIS_WEAK, so "rebuild the AxisType" and "read it off the node" are the same
+# function over the rest of the fixture and M12 moved nothing. RGT's input axis is
+# `AXIS_DEVICE`, so the two spellings differ here and nowhere else.
+def t_ren_axis_out_dev() -> U32:
+  b2u(O.eq_axis(rf_axis(M.hop_ar(rf_renumber(g_ar(g()), g_rgt(g()), 3)), M.hop_ix(rf_renumber(g_ar(g()), g_rgt(g()), 3))), O.AXIS_DEVICE{}))
+
+def t_ren_axis_in_dev() -> U32: b2u(O.eq_axis(rf_axis(g_ar(g()), g_rgd(g())), O.AXIS_DEVICE{}))
+
 def t_bool(x: Bool) -> U32: b2u(x)
+
+
+
+# ===========================================================================
+# THE SRC OP SEQUENCE, because A COUNT IS NOT A GATE.
+#
+# For a rewrite engine the identity of an answer is the SEQUENCE of its srcs'
+# ops, in order, plus its arg. The file's own header says so -- "Swapping a
+# movement's two shape args leaves op, nsrc, the src sequence and the toposort
+# ALL identical", and a wrong field ORDER is a silently wrong write -- and
+# `mp_nsrc` is a count, so two wrong answers can share one.
+#
+# `srcops` maps each src index to its `Ops` NUMBER and folds the list to a
+# `String` of the form ".58.53" for `[CONST, RANGE]`. A NUMBER and not
+# `Ops.name`, because a name is not comparable across two ports and the number is
+# what Python's `UOp.tuplize` sorts on anyway. The `py=` expectations are the
+# same strings, printed from CPython's own `ops[i].op.value`.
+#
+# `t_srcops_eq` answers a Bool AGAINST A LITERAL, so a reorder, a dropped src and
+# a wrong op are three different failures rather than one shared count.
+def srcops.go(+ar: O.Arena, ss: List<&2, U32>, acc: String) -> String:
+  match ss:
+    case Nil{}     : acc
+    case +x <> t  : srcops.go(ar, t, String.concat([acc, ".", U32.show(O.Ops.value(M.mp_op(ar, x)))]))
+
+def srcops_n(+ar: O.Arena, self: U32) -> String: srcops.go(ar, M.mp_srcs(ar, self), "")
+
+# `hop_srcops` is the same read on a RULE'S ANSWER, and it is the row form every
+# rewrite row below uses.
+def hop_srcops(+r: M.Hop) -> String: srcops_n(M.hop_ar(r), M.hop_ix(r))
+
+def t_srcops_eq(got: String, want: String) -> U32: b2u(String.eq(got, want))
+
+# `ar_of` is `g_ar(g())` under a short name: the `ct` rows below read the arena
+# three or four times each and the long form buried the claim in the noise.
+def ar_of(i: U32) -> O.Arena: g_ar(g())
+
+# ===========================================================================
+# THE CT ROWS, and the answer to "which of `ct_4`, `ct_5`, `ct_8` are live".
+#
+# ALL THREE ARE LIVE, and the previous agent's recorded Python-side result --
+# "for `UPat(Ops.MSTACK).f(Ops.INDEX, name='idx')` the replace is an IDENTITY on
+# the INDEX and `pm_const_buffer_folding.rewrite(mst) is None`" -- is TRUE of
+# `MSTACK(c4, c1)` and FALSE of `INDEX(MSTACK(c4, c1))`. `MSTACK(c4, c1)` is the
+# MIRROR: it is the CHILD, so `pdict` (keyed on the root INDEX) never reaches it,
+# and no pattern binds `s` or `idx` on it. The shape the pattern is written for
+# -- the INDEX at the root -- answers `INDEX, srcops=[CONST]`, which is a real
+# rewrite. So the finding was sound and it was measured on the wrong node.
+#
+# Every `py=` below is printed by `.agents/slop/rf-ct-oracle.py`; the whole
+# transcript is in `.agents/slop/rf-ct-oracle.txt`. The table:
+#
+#   rule  shape                                    claim_n  answer
+#   ct_4  STAGE(INDEX(b4,r0), r0)                      2     BUFFER
+#   ct_4  STAGE(INDEX(b5,r0), r0)                      2     SHRINK(b5,0,4)
+#   ct_4  STAGE(INDEX(b4,r0), r1)                      2     None    <- tails differ
+#   ct_4  INDEX(STAGE(b4,r0), r0)   THE MIRROR        0     None
+#   ct_5  STAGE(c4, r0)                                2     EXPAND(ns2)
+#   ct_5  STAGE(CAST(c4,half), r0)                     2     EXPAND(ns2)
+#   ct_5  STAGE(b4, r0)             inner is neither   1     None
+#   ct_8  INDEX(MSTACK(c4,c1))                         1     INDEX([CONST])
+#   ct_8  INDEX(MSTACK(c4,c1), r0)                     1     INDEX([CONST,RANGE])
+#   ct_8  INDEX(MSTACK(bufdev))      s has a device    1     None
+#   ct_8  MSTACK(c4,c1)              THE MIRROR        0     None
+#
+# `ct_claim_n` is `claim_full` specialised to the `ct` table: the op-set claim PLUS
+# each `.f()` rule's own body test, which is what makes tags 3 and 4 both claim a
+# STAGE and nothing claim a BUFFER.
+# EVERY TAG IN `ct_table` NEEDS ITS OWN BODY TEST HERE, and tags 0, 6 and 7 are
+# the three the first version of this fold left at `True{}`. A claim count built
+# on the op set alone counts an INDEX as claimed by four rules when CPython binds
+# it in one, so `ct4b_claim` and `ct8d_claim` were both wrong until they were
+# added: `ct_src.of`'s `True{}` arm is the claim "the pattern is op-only", and
+# only tags 1, 2 and 3 (and `rb_0`-style entries) really are.
+def ct_src.of(tag: U32, mop: Bool, tail: Bool, cvar: Bool, cvar2: Bool, after: Bool, mstk: Bool) -> Bool:
+  match tag:
+    case 0: mop
+    case 4: tail
+    case 5: cvar
+    case 6: cvar2
+    case 7: after
+    case 8: mstk
+    case _: True{}
+
+def ct_src_n(tag: U32, +ar: O.Arena, +ix: U32) -> Bool:
+  ct_src.of(tag,
+            O.GroupOp.movement(M.mp_op(ar, M.mp_src0(ar, ix))),
+            rf_same_tail(ar, ix),
+            ct_5_claim(ar, ix),
+            ct_6_pat(ar, ix),
+            ct_7_claim(ar, ix),
+            ct_8_claim(ar, ix))
+
+def claim_ct.one(ok: Bool, acc: U32) -> U32:
+  match ok:
+    case True{} : U32.add(acc, 1)
+    case False{}: acc
+
+def claim_ct.go(rs: List<&2, O.PMEntry>, +ar: O.Arena, +ix: U32, acc: U32) -> U32:
+  match rs:
+    case Nil{}: acc
+    case +e <> t: claim_ct.go(t, ar, ix,
+                              claim_ct.one(Bool.and(rf_claimed(ar, ix, O.PMEntry.ops(e), O.PMEntry.rej(e)),
+                                                    ct_src_n(O.PMEntry.tag(e), ar, ix)), acc))
+
+def ct_claim_n(ts: List<&2, O.PMEntry>, ar: O.Arena, ix: U32) -> U32: claim_ct.go(ts, ar, ix, 0)
+
+# -- ct_4: the claim on the discriminating shape, and on its mirror ------------
+# py: `ct4A_claim = 2` (tags 3 and 4) and `ct4B_claim = 0`.
+def t_ct4a_claim() -> U32: ct_claim_n(ct_table(), g_ar(g()), g_ct4a(g()))
+def t_ct4b_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_ct4b(g())), g_ct4b(g()))
+
+# py: `ct4A_out = BUFFER/nsrc0/srcops=[]` -- CPython answers a node. The port's
+# answer is the `UOp.shrink` wall, so this row is the PORT'S absence and the
+# divergence is recorded rather than smoothed into an agreeing row.
+def t_ct4a_ans() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct4a(g())))))
+
+# THE REFUSAL, which is the `!=` on the two tails: CT4D's STAGE tail is R1 and its
+# INDEX's is R0. Two rows, the comparison itself and the absent answer, so a rule
+# that ignored the comparison would move the second and not the first.
+# py: `ct4A_fn tails_eq=1` / `ct4D_fn tails_eq=0 out=None`.
+def t_ct4a_tail() -> U32: b2u(rf_stage_tail(g_ar(g()), g_ct4a(g()), g_ixb4(g())))
+def t_ct4d_tail() -> U32: b2u(rf_stage_tail(g_ar(g()), g_ct4d(g()), g_ixb4(g())))
+def t_ct4d_none() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct4d(g())))))
+
+# -- ct_5: the claim on all three arms, and the claim PREDICATE alone ----------
+# py: `ct5_const_claim = 2`, `ct5_cast_claim = 2`, `ct5_buf_claim = 1` -- the
+# BUFFER child is claimed by tag 3 ALONE and the CONST/CAST children by 3 and 5.
+def t_ct5c_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_ct5c(g())), g_ct5c(g()))
+def t_ct5k_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_ct5k(g())), g_ct5k(g()))
+def t_ct5b_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_ct5b(g())), g_ct5b(g()))
+
+# the PREDICATE on its own, so a table entry with the right op set and a body that
+# lost its child test is visible, and the reverse.
+def t_ct5c_pat() -> U32: b2u(ct_5_claim(g_ar(g()), g_ct5c(g())))
+def t_ct5k_pat() -> U32: b2u(ct_5_claim(g_ar(g()), g_ct5k(g())))
+def t_ct5b_pat() -> U32: b2u(ct_5_claim(g_ar(g()), g_ct5b(g())))
+
+# the ANSWER, and it is the `DType.const` + `_mop` wall. py:
+# `ct5_stg_of_const out=EXPAND/nsrc2/srcops=[CONST,CONST]`, so the CPython answer's
+# src op SEQUENCE is ".58.58" -- recorded here and in the oracle, NOT restated as a
+# Bend row, because a row comparing a literal with itself cannot fail.
+def t_ct5c_ans() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct5c(g())))))
+
+# -- ct_8: the claim, the device gate, the rebuild and THE ARG -----------------
+# py: `ct8_devless_claim = 1` and `ct8_bare_mstack claim_n = 0`.
+def t_ct8d_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_ct8d(g())), g_ct8d(g()))
+def t_mstc_claim() -> U32: ct_claim_n(ct_table(), ar_of(g_mstc(g())), g_mstc(g()))
+
+# `s.device is None` -- the fold's OUTER `Maybe`, and the two rows are the
+# refusal pair: CT8D's `s` is a CONST and CT8B's is a device-carrying BUFFER.
+# py: `ct8_devless_s device_is_none=1`, `ct8_dev_s device_is_none=0`.
+def t_ct8d_devnone() -> U32: b2u(rf_dev_is_none(G.fx(g()), M.mp_src(ar_of(g_mstc(g())), g_mstc(g()), 0)))
+def t_ct8b_devnone() -> U32: b2u(rf_dev_is_none(G.fx(g()), M.mp_src(ar_of(g_mstb(g())), g_mstb(g()), 0)))
+
+# THE REBUILD, as the src op SEQUENCE. py: `ct8_ix_ms_devless out=INDEX/nsrc1/
+# srcops=[CONST]` and `ct8_ix_ms_rng out=INDEX/nsrc2/srcops=[CONST,RANGE]`, and
+# `Ops.CONST.value` is 58 while `Ops.RANGE.value` is 53 -- both asked of CPython.
+# The two rows are ".58" and ".58.53", and the difference IS the `src[1:]` half,
+# which a count could not see.
+def t_ct8d_srcops() -> U32:
+  t_srcops_eq(hop_srcops(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8d(g()))), ".58")
+
+def t_ct8r_srcops() -> U32:
+  t_srcops_eq(hop_srcops(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8r(g()))), ".58.53")
+
+# and the answer is a NEW node rather than the input: py `ct8_ix_ms_devless
+# is_self=0`. A rule that rebuilt nothing would answer `self` and this would be 0.
+def t_ct8d_new() -> U32:
+  b2u(Bool.not(U32.is_eq(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8d(g()))), g_ct8d(g()))))
+
+# THE ARG GATE, and it is the one the old fixture could not express. `UOp` does
+# not type-check `arg` against `op` -- measured -- so an INDEX carries an
+# `ARange`, which is Python's `(axis_id, AxisType)` pair and the `Range` arg the
+# brief names, and `idx.replace(src=...)` (ops.py:252) passes `self.arg` through
+# unchanged. py: `ct8R_ix_arg_range arg_is_own_range=1 arg_is_none=0`, and the
+# ANONE TWIN one row from it: `ct8N_ix_arg_none arg_is_own_range=0 arg_is_none=1`.
+def ct8_arg(+r: M.Hop) -> O.Arg: M.mp_arg(M.hop_ar(r), M.hop_ix(r))
+
+def t_ct8r_arg() -> U32:
+  b2u(O.eq_arg(O.ARange{[7], O.AXIS_LOOP{}},
+               ct8_arg(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8r(g())))))
+
+def t_ct8r0_arg() -> U32:
+  b2u(O.eq_arg(O.ARange{[7], O.AXIS_LOOP{}},
+               ct8_arg(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8r0(g())))))
+
+# the axis type is read back OUT of the REBUILT node, and the fallback arm is
+# `AXIS_WEAK` so that a rule which rebuilt the arg from scratch -- or answered
+# `None`, whose arg is `ANone` -- FAILS this row instead of passing it.
+def ct8_axis.go(a: O.Arg) -> O.AxisType:
+  match a:
+    case O.ARange{ids, at}: at
+    case _: O.AXIS_WEAK{}
+
+def ct8_axis_n(r: M.Hop) -> O.AxisType: ct8_axis.go(ct8_arg(r))
+
+def t_ct8r_axis() -> U32: b2u(O.eq_axis(ct8_axis_n(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8r(g()))), O.AXIS_LOOP{}))
+def t_ct8r0_axis() -> U32: b2u(O.eq_axis(ct8_axis_n(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8r0(g()))), O.AXIS_LOOP{}))
+
+# the device REFUSAL as a truncated trace: the answer is absent, and the reason is
+# the one conjunct. py: `ct8_ix_dev out=None`.
+def t_ct8b_none() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct8b(g())))))
+
+# -- ct_7: the CLAIM only; the body is the `_min_max` wall ---------------------
+# py: `ct7_ix_after tag7_nbind=1 first_tag=7`. The body CRASHES on that shape
+# rather than answering -- see the `ct_7` comment above, `ct7_empty_ended_ranges_
+# prod = 1 int` -- so there is no CPython answer to gate and the rows are the
+# claim and the claim COUNT. The count is what makes mutation M30 (dropping
+# `ct_src.of`'s tag-7 body test) sharp: with only `ct7a_claim` present, M30 moved
+# NOTHING, because the predicate is written out longhand and no fold reads it.
+def t_ct7a_claim() -> U32:
+  b2u(Bool.and(M.mp_is(ar_of(g_ct7a(g())), g_ct7a(g()), O.OpsINDEX{}),
+               M.mp_is(ar_of(g_ct7a(g())), M.mp_src0(ar_of(g_ct7a(g())), g_ct7a(g())), O.OpsAFTER{})))
+
+def t_ct7a_cnt() -> U32: ct_claim_n(ct_table(), ar_of(g_ct7a(g())), g_ct7a(g()))
+
+# THE ONE NODE WHERE TAG 7's REJECT SET IS NOT ITS CLAIM. `early_reject` is
+# `{AFTER}` and it is satisfied by an AFTER in ANY src, so CT7B is claimed by the
+# set test and NOT by the pattern. py: `ct7_ix_after tag7_nbind=1`; and for CT7B
+# CPython's `rewrite` returns `None` because tag 6, tag 0 and tag 8 all miss and
+# tag 7's pattern fails. Measured in `rf-ct-oracle.py` section 1's shape list.
+def t_ct7b_cnt() -> U32: ct_claim_n(ct_table(), ar_of(g_ct7b(g())), g_ct7b(g()))
+def t_ct7b_none() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(g()), g_ct7b(g())))))
 
 # THE CLAIM COUNT. `claim(h, acc)` asks "did this rule CLAIM the node", which is
 # the `rf_claimed` half of the `try` WITHOUT the dispatch -- so it is a count of
@@ -2586,51 +3114,80 @@ def t_spec() -> U32: b2u(rf_spec())
 def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 
 # ===========================================================================
-# THE MEASURED MUTATION TABLE. Twenty textual edits, one at a time, each
-# re-checked and re-run against the clean 81-row gate, by
-# `.agents/slop/rf-mut.py`. This is the only evidence in the file that a row can
-# FAIL: a row that cannot fail is a restatement, and most of these rows exist
-# precisely because a mutation first showed them moving nothing.
+# THE MEASURED MUTATION TABLE. FORTY-ONE textual edits, one at a time, each
+# re-checked and re-run against the clean 126-row gate, by
+# `.agents/slop/rf2-mutate.py`. The harness DIFFS WHOLE `name=value` LINES, not
+# row names: a name-comparing harness reported 0 for all 30 mutations in one unit
+# and 0 for all 68 in another, because renaming a row hides every mutation of the
+# def it reads. This is the only evidence in the file that a row can FAIL: a row
+# that cannot fail is a restatement, and most of these rows exist precisely
+# because a mutation first showed them moving nothing.
 #
 # `rows moved` is the set difference of the two gates, so it names rows by the
-# property they test rather than by the def that computes them.
+# property they test rather than by the def that computes them. The raw table is
+# `.agents/slop/rf2-mutations.txt`.
 #
-#   mutation                                                      rows moved                                                    n
-#   -------------------------------------------------------------- ------------------------------------------------------------- --
-#   M1  `rf_self` KEEPS `self` (the `ret is not uop` inverted)     aprt_none aprt_pgloT_none aprt_pglob aprt_r0t_none             10
-#                                                                 nic_calli_ans nic_calli_nsrc nic_callm_ans
-#                                                                 nic_callm_src0_nsrc nic_calls_ans rb_e_n0
-#   M2  `rb_ident` always True (upat.py:100-105 gone)              rb_diff_none                                                  1
-#   M3  `rf_early`'s subset test `and` -> `or`                     NONE -- see (1) below                                         0
-#   M4  `dg_3`'s reject set {PARAM} misspelled {RANGE}             dg_ixpa_ans                                                   1
-#   M5  `noopf.at`'s `len(x.src) == 0` conjunct removed            noopf_e_nx noopf_nx raf_after_nsrc                            3
-#   M6  `raf.keep_srcs` filters `src[0]` as well                   raf_aftn_is_src0                                              1
-#   M7  `raf_one`'s one-src arm removed (always rebuilds)          raf_after1_is_src0 raf_after_nsrc raf_afterk_none               4
-#                                                                 raf_aftn_is_src0
-#   M8  `rf_strip`'s `x.op is Ops.SHRINK` test dropped              NONE -- see (2) below                                         0
-#   M9  `nic.of`'s INDEX arm turned into pass-through              nic_calli_ans nic_calli_nsrc                                  2
-#   M10 `rf_alu_param`'s `op is Ops.PARAM` conjunct removed        aprt_none                                                     1
-#   M11 `rf_renumber`'s `r.tag != ()` guard inverted               dg_r0t_ans ren7_arg0 ren_axis_out ren_untagged_none           4
-#   M12 `rf_renumber` rebuilds the AxisType instead of reading     ren_axis_out                                                  1
-#   M13 `ab_4_claim`'s `len(x.src) == 2` relaxed to `>= 2`         ab4_stg3 claim_ab_stg3                                        2
-#   M14 `rf_fb_two`'s `len(x.src) == 2` test inverted              fb_two_stg2 fb_two_stg3                                       2
-#   M15 `ab_8.pat`'s `arg == Invalid` weakened to `op is CONST`     ab8_stc0_none                                                 1
-#   M16 `rf_is_bufid5`'s op set reduced to {BUFFER} only           nv_rsaf_ans                                                   1
-#   M17 `dg_3`'s `addrspace is ALU` test flipped                   dg_ixpa_ans dg_ixpg_none                                      2
-#   M18 `claim_full` replaced by `claim_n` (the src half gone)      claim_ab_stg3                                                 1
-#   M19 `dg_6`'s RANGE rule given the WRONG op set                 dg_r0t_ans                                                    1
-#   M20 `ct_8`'s rule DELETED from the table                       ct_len                                                        1
+#   mutation                                                     rows moved                                                   n
+#   ------------------------------------------------------------ ------------------------------------------------------------ -- --
+#   M1  `rf_self` KEEPS `self` (the `ret is not uop` inverted)   aprt_* (4) nic_* (6) rb_e_n0                                 12
+#   M2  `rb_ident` always True (upat.py:100-105 gone)            rb_diff_none                                                  1
+#   M3  `rf_early`'s subset test `and` -> `or`                   NONE -- see (1)                                               0
+#   M4  `dg_3`'s reject set {PARAM} misspelled {RANGE}            dg_ixpa_ans                                                   1
+#   M5  `noopf.at`'s `len(x.src) == 0` conjunct removed          noopf_e_nx noopf_nx raf_after_nsrc                             3
+#   M6  `raf.keep_srcs` filters `src[0]` as well                 raf_aftn_is_src0                                              1
+#   M7  `raf_one` never True (always rebuilds)                   raf_after1_is_src0 raf_aftn_is_src0                           2
+#   M8  `rf_strip`'s `x.op is Ops.SHRINK` test dropped            NONE -- see (2)                                               0
+#   M9  `nic.of`'s INDEX arm turned into pass-through            nic_calli_* nic_clik_*                                         4
+#   M10 `rf_alu_param`'s `op is Ops.PARAM` conjunct removed      aprt_none                                                     1
+#   M11 `rf_renumber`'s `r.tag != ()` guard inverted             dg_r0t_ans ren*_arg0 ren_axis_out* ren_untagged_none            5
+#   M12 `rf_renumber` rebuilds the AxisType as AXIS_WEAK          ren_axis_out_dev                                              1
+#   M13 `ab_4_claim`'s `len(x.src) == 2` relaxed to `>= 2`       ab4_stg3 claim_ab_stg3                                         2
+#   M14 `rf_fb_two`'s `len(x.src) == 2` test inverted            fb_two_stg2 fb_two_stg3                                       2
+#   M15 `ab_8.pat`'s `arg == Invalid` weakened to `op is CONST`   ab8_stc0_none                                                  1
+#   M16 `rf_is_bufid5`'s op set reduced to {BUFFER} only         nv_rsaf_ans                                                   1
+#   M17 `dg_3`'s `addrspace` test changed ALU -> LOCAL            dg_ixpa_ans                                                   1
+#   M18 `claim_full` replaced by `claim_n` (the src half gone)    claim_ab_stg3                                                 1
+#   M19 `dg_6`'s RANGE rule given the WRONG op set                dg_r0t_ans                                                    1
+#   M20 `ct_8`'s rule DELETED from the table                      ct8* ct7b_none ct_len                                          6
+#   M20b `ct_8`'s REJECT SET dropped                              NONE -- see (3)                                               0
+#   M21 `ct_4`'s op set back to the CHILD's   ** THE DEFECT **    ct4a_claim ct_root4                                           2
+#   M22 `ct_8`'s op set back to the CHILD's   ** THE DEFECT **    ct8d_claim ct8d_srcops ct8r_arg ct8r_axis ct8r_srcops         5
+#   M23 `ct_5`'s op set back to the CHILD's   ** THE DEFECT **    ct5c_claim ct5k_claim ct_root5                                3
+#   M24 `pm_mops` tag 0 back to the CHILD's  ** THE DEFECT **    mops_root0                                                    1
+#   M24b `pm_mops` tag 1 back to the CHILD's  ** THE DEFECT **    ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim mops_root1             5
+#   M24c `pm_mops` tag 2 back to the CHILD's  ** THE DEFECT **    mops_root2                                                    1
+#   M25 `rf_same_tail` back to the OUTER node's op                 ct4a_claim                                                    1
+#   M26 `ct_6` given the ELSE arm back      ** THE DEFECT **      ct7b_none ct8b_none ct8*_srcops ct8r_arg ct8r_axis           6
+#   M27 `dev_none_shape` back to False      ** THE DEFECT **      ct8b_devnone ct8b_none                                       2
+#   M28 `ct_src.of`'s tag-0 body test dropped                      ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim                       4
+#   M29 `ct_src.of`'s tag-6 body test dropped                      ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim                       4
+#   M30 `ct_src.of`'s tag-7 body test dropped                      ct7b_cnt                                                      1
+#   M31 `ct_8`'s rebuild drops `idx.src[1:]`                       ct8r_srcops                                                   1
+#   M32 `ct_8` hardcodes ANone   ** THE ARG DEFECT **             ct8r_arg ct8r_axis                                            2
+#   M32b `ab_7` hardcodes ANone  ** THE ARG DEFECT **             ab7_clik_arg                                                  1
+#   M33 `ct_5_claim`'s child-op test replaced by True              ct4a_claim ct5b_claim ct5b_pat                                3
+#   M34 `hop_srcops` answers "" for everything                      ct8d_srcops ct8r_srcops                                       2
+#   M35 `srcops.go` drops the element                               ct8d_srcops ct8r_srcops                                       2
+#   M36 `ct_8` loses its OWN pattern re-check                       NONE -- see (4)                                               0
+#   M37 `ct_6`'s claim INVERTED                                      ct7b_none ct8b_none ct8*_srcops ct8r_arg ct8r_axis            6
+#   M38 M3 AND M36 TOGETHER                                          NONE -- see (4)                                               0
+#   --------------------------------------------------------------------------------------------------------
+#   37 of 41 sharp. M3, M8, M20b, M36 and M38 move nothing, all five are
+#   PROOFS, and (1) is a proof the previous revision of this table got WRONG.
 #
-# (1) M3 IS A PROOF, NOT A GAP. `rf_early.go` folds its reject set with
-#     `and`, and `or` is the only other reading of `issubset`. Those two are
-#     DIFFERENT functions in general and the SAME function on a set of one --
-#     and every `early_reject` in these eleven tables is empty or a singleton:
-#     36 rules, nine reject slots, `max(len) == 1`, read off `UPat.early_reject`
-#     (ops.py:1477). So the mutation cannot move a row, and a mutant that
-#     cannot move a row is the strongest possible statement that the fold is
-#     shaped correctly. The reject sets are still load-bearing in the OTHER
-#     direction, which M4 and the four `rej_*` rows measure.
-#
+# (1) M3 IS A PROOF, AND THE PREVIOUS REVISION'S PROOF OF IT WAS WRONG. The old
+#     note read "for a ONE-element set the two tests are the same function". That
+#     is FALSE. `rf_early.go` folds with `and` and its base case is `True{}`, so
+#     `and(op_in(ler, o), True{})` is `op_in(ler, o)` while `or(op_in(ler, o),
+#     True{})` is `True{}`: `or` makes the reject test VACUOUS, on a one-element
+#     set exactly as on any other. MEASURED, before `ct_8` grew its own pattern
+#     re-check -- M3 moved `ct7b_none` from 1 to 0, because the vacuous reject
+#     set let tag 8 stop rejecting an INDEX whose AFTER is in src[1] rather than
+#     src[0] (the fixture `ct7b`), and `ct_8` -- then the one rule in the table
+#     whose body carried no pattern test at all -- rebuilt it. So the old "proof"
+#     was an unexamined claim resting on a rule with a real hole in it, and the
+#     hole is now closed. M3 is a zero NOW because every `.f()` rule re-checks its
+#     own pattern, which is the correct reason, and M36/M38 measure that reason.
 # (2) M8 IS ALSO A PROOF. `rf_strip.of` takes `shrink` and `zero` as two
 #     parameters, and its one caller passes
 #     `zero = Bool.and(M.mp_is(ar, self, O.OpsSHRINK{}), ...)` -- the SHRINK test
@@ -2638,13 +3195,26 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #     unreachable. Kept anyway: it is Python's own conjunction order
 #     (rangeify.py:141 reads `x.op is Ops.SHRINK and all(...)`) and collapsing
 #     the two would make the port UNREADABLE against the source.
+# (3) M20b IS A PROOF, and the SAME SHAPE as the corrected (1). `ct_8`'s reject
+#     set is `{MSTACK}`, which is the op of the pattern's FIRST src, and `ct_8`
+#     now re-checks exactly that with `ct_8_claim`. The reject set is therefore
+#     implied by the rule's own test, which is what ops.py:1477 says it is for.
+# (4) M36 AND M38 ARE A BLIND SPOT AND ITS NEGATIVE, REPORTED NOT CLOSED. Removing
+#     `ct_8`'s self-re-check alone moves nothing, and removing it TOGETHER with
+#     the vacuous reject set moves nothing either. So in the port as it stands no
+#     fixture can see the self-check: the two defects it defends against are one
+#     defect seen from two ends, and each alone is invisible. The pre-self-check
+#     measurement in (1) is the evidence that the self-check is load-bearing, and
+#     it cannot be reproduced by the gate as it now stands. That is a real limit
+#     of a single-arena gate and it is NOT closed with a row that encodes either
+#     behaviour.
 #
-# M20 IS THE ROW THE COUNT ROWS EXIST FOR. It DELETES a `PMEntry` rather than
-# editing it, and it deletes the LAST one, so no tag after it renumbers and no
-# rule can fire differently: `ct_len` is the only row in the 81 that can move.
-# Delete the COUNT rows and this mutation is invisible. (An earlier version of
-# M20 gave an entry a wrong op set, which is M19 and which `dg_r0t_ans` already
-# covers -- the same reason the two are now separate rows with different jobs.)
+# M20 IS THE ROW THE COUNT ROWS EXIST FOR, and M21-M24 ARE THE ROWS THE ROOT/SUB
+# SECTION EXISTS FOR. M20 DELETES a `PMEntry` rather than editing it, and it
+# deletes the LAST one, so no tag after it renumbers and no rule can fire
+# differently: `ct_len` is one of only six rows it can move. Delete the COUNT
+# rows and this mutation is invisible.
+# ===========================================================================
 # ===========================================================================
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
 # `# TODO(p3)` line, so `rg 'TODO\(p3\)'` is the whole outstanding list. The
@@ -2672,13 +3242,17 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #      and NONE of the three is written.
 # ===========================================================================
 # --- the bodies that are NOT PORTED, one line each ----------------------------
-# TODO(p3) rangeify.py:24   cleanup_dead_axes     ranges, arg.removable, reshape
-# TODO(p3) rangeify.py:50   remove_bufferize      a substitute(..., extra_pm=)
-# TODO(p3) rangeify.py:120  const_like            DType.const on a CONST value
-# TODO(p3) rangeify.py:124  after_all_invalid     ranges, ended_ranges, prod
-# TODO(p3) rangeify.py:127  deviceless MSTACK src UOp.device
-# TODO(p3) rangeify.py:208  bufferize_to_store    BufferizeOpts, ctx counter
-# TODO(p3) rangeify.py:259  weak-CAST INDEX       the cast it must re-add
+# EACH LINE NAMES THE WALL THAT WAS FOUND BY ASKING CPython, not by reading the
+# body, and the two columns that matter are "is the rule LIVE" and "what is the
+# wall". A rule that is dead in CPython is a cheaper port than a live one, and a
+# live one behind a wall is a WALL ROW rather than a missing row.
+# TODO(p3) rangeify.py:24   cleanup_dead_axes     LIVE (measured); arg.removable, ranges, reshape, expand
+# TODO(p3) rangeify.py:50   remove_bufferize      LIVE; a substitute(..., extra_pm=) over a ctx dict
+# TODO(p3) rangeify.py:120  const_like            LIVE on BOTH arms; DType.const + _mop(EXPAND)
+# TODO(p3) rangeify.py:124  after_all_invalid     LIVE and CRASHES on a rangeless END; _min_max, numel
+# TODO(p3) rangeify.py:127  deviceless MSTACK src PORTED -- the UOp.device wall is `rf_dev` and it reads
+# TODO(p3) rangeify.py:208  bufferize_to_store    LIVE; commit_dtype, sorted(ranges), ParamArg, next(ctx)
+# TODO(p3) rangeify.py:259  weak-CAST INDEX       the claim is ported; the cast it must re-add is not
 # TODO(p3) rangeify.py:263  RESHAPE through       UOp.base, apply_movement_op
 # TODO(p3) rangeify.py:283  debuf                 LocalAddBufferContext.map
 # TODO(p3) rangeify.py:292  handle_after          LocalAddBufferContext, ranges
@@ -2706,6 +3280,19 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # TODO(p3) indexing.py:171  apply_movement_op     the movement-op dispatch
 # TODO(p3) indexing.py:190  run_rangeify          stage 1 of the nine
 # TODO(p3) prepare.py:76    pm_mops               3 foreign rules, tags 0-2
+#   ... and their three pdict KEYS are PORTED here (they are a Python fact and the
+#   engine's lookup is a Python fact), while their BODIES are BLOCKED on
+#   `schedule/prepare.bend`, which as of this revision names `pm_mops` in its
+#   header and declares no def for it. `rf_foreign` answers "no node" and says so;
+#   inventing a local copy of `_mop_index` would be a lie about where the code
+#   lives. MEASURED roots: 17 (INDEX), 13 (AFTER), 55 (END).
+# TODO(p3) ops.py:1339      KernelInfo.estimates  a 4-field record against Python's 5
+#   `ops.bend`'s `KernelInfo` is `KernelInfo{name, applied_opts, opts_to_apply,
+#   beam}` and Python's `KernelInfo` also carries `estimates: Estimates|None`, so
+#   no Bend value can be EQUAL to a Python one. `ab7_clik_arg` compares against
+#   `O.KernelInfo.of()` on both sides, which is why that row passes while the two
+#   representations are not interchangeable -- REPORTED, and the row's comment
+#   says so rather than the row pretending the two agree.
 # ===========================================================================
 # `movement.bend`'s OWN GATE IS FAILING, and `hop_self` is one of the reasons.
 # `movement.bend:67-73` has its two arms swapped: `b` is "the answer IS self, OR
@@ -2742,7 +3329,16 @@ def main() -> IO(Unit):
     l : Unit <- row("sk_len", t_sk_len())
     m : Unit <- row("gs_len", t_gs_len())
     n : Unit <- row("mops_rules", t_mops_rules())
-    n2 : Unit <- row("mops_ops", t_mops_ops())
+    n0 : Unit <- row("mops_root0", t_mops_root0())
+    n1 : Unit <- row("mops_root1", t_mops_root1())
+    n2 : Unit <- row("mops_root2", t_mops_root2())
+    n3 : Unit <- row("mops_child_fb", t_mops_child_fb())
+    n4 : Unit <- row("ct_root3", t_ct_root(ct_entry(3n)))
+    n5 : Unit <- row("ct_root4", t_ct_root(ct_entry(4n)))
+    n6 : Unit <- row("ct_root5", t_ct_root(ct_entry(5n)))
+    n7 : Unit <- row("ct_root6", t_ct_root(ct_entry(6n)))
+    n8 : Unit <- row("ct_root7", t_ct_root(ct_entry(7n)))
+    n9 : Unit <- row("ct_root8", t_ct_root(ct_entry(8n)))
     o : Unit <- row("stages", t_stages())
     p : Unit <- row("ranges_miss", t_ranges_miss())
     q : Unit <- row("noopf_n0", t_noopf_n0())
@@ -2814,5 +3410,36 @@ def main() -> IO(Unit):
     cc : Unit <- row("ab7_clik0_arg", t_ab7_clik0_arg())
     cd : Unit <- row("nic_clik_nsrc", t_nic_clik_nsrc())
     ce : Unit <- row("nic_clik_arg", t_nic_clik_arg())
+    cf : Unit <- row("ct4a_claim", t_ct4a_claim())
+    cg : Unit <- row("ct4b_claim", t_ct4b_claim())
+    ch : Unit <- row("ct4a_ans", t_ct4a_ans())
+    ci : Unit <- row("ct4a_tail", t_ct4a_tail())
+    cj : Unit <- row("ct4d_tail", t_ct4d_tail())
+    ck : Unit <- row("ct4d_none", t_ct4d_none())
+    cl : Unit <- row("ct5c_claim", t_ct5c_claim())
+    cm : Unit <- row("ct5k_claim", t_ct5k_claim())
+    cn : Unit <- row("ct5b_claim", t_ct5b_claim())
+    co : Unit <- row("ct5c_pat", t_ct5c_pat())
+    cp : Unit <- row("ct5k_pat", t_ct5k_pat())
+    cq : Unit <- row("ct5b_pat", t_ct5b_pat())
+    cr : Unit <- row("ct5c_ans", t_ct5c_ans())
+    cs : Unit <- row("ct8d_claim", t_ct8d_claim())
+    ct : Unit <- row("mstc_claim", t_mstc_claim())
+    cu : Unit <- row("ct8d_devnone", t_ct8d_devnone())
+    cv : Unit <- row("ct8b_devnone", t_ct8b_devnone())
+    cw : Unit <- row("ct8d_srcops", t_ct8d_srcops())
+    cx : Unit <- row("ct8r_srcops", t_ct8r_srcops())
+    cy : Unit <- row("ct8d_new", t_ct8d_new())
+    cz : Unit <- row("ct8r_arg", t_ct8r_arg())
+    da : Unit <- row("ct8r0_arg", t_ct8r0_arg())
+    db : Unit <- row("ct8r_axis", t_ct8r_axis())
+    dc : Unit <- row("ct8r0_axis", t_ct8r0_axis())
+    dd : Unit <- row("ct8b_none", t_ct8b_none())
+    de : Unit <- row("ct7a_claim", t_ct7a_claim())
+    df : Unit <- row("ct7a_cnt", t_ct7a_cnt())
+    dj : Unit <- row("ct7b_cnt", t_ct7b_cnt())
+    dk : Unit <- row("ct7b_none", t_ct7b_none())
+    dh : Unit <- row("ren_axis_out_dev", t_ren_axis_out_dev())
+    dg : Unit <- row("ren_axis_in_dev", t_ren_axis_in_dev())
     row("spec", t_spec())
 
