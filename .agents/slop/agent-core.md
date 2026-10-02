@@ -159,3 +159,29 @@ than reconciling — that is how two ports catch each other's bugs. `amdev`'s ag
 - Report honestly. A measured "this architecture does not work and here is why" is worth
   more than a partial implementation. If most of a file is genuinely FFI, say so with Python
   lines rather than inventing rows. **Never fake a row.**
+
+## A dtype rename is a SILENT semantic change wherever a pattern matches a dtype NAME
+
+Measured today, and it is the most dangerous thing in this file.
+
+`LAWS/spec.bend` was renamed mid-session (`"int"` -> `"i32"`, `"float8_e4m3"` -> `"fp8e4m3"`)
+and that **silently broke two name-based `match` patterns in `uop/fold.bend`**:
+`promo_mask`'s four fp8 masks and `bnd_lim`'s four fp8 maxima.
+
+**A pattern that stops matching does not fail. It falls through** — and in both cases the
+next arm was `bnd_flt`, so **all three fp8 maxima became `NInf`/`PInf` with no error
+anywhere.** Green gate, 195 rows, zero `False`, wrong answers.
+
+The underlying reason is not accidental: `S.Dt`'s first three fields **cannot distinguish
+`fp8e4m3` from `fp8e4m3fnuz`** (both are priority 10), so the *name* is load-bearing.
+
+**So, whenever a dtype name changes:**
+- every `match`/`case` on a dtype NAME is a silent fall-through, not a compile error;
+- a fall-through lands on whatever arm is next, which is usually a *different* answer rather
+  than an obvious one;
+- **grep for the old name in `case` position specifically** — a grep for the name anywhere
+  will find comments and prose and drown the real hits;
+- if a file has a table of dtype names, the table is the fix and the use sites follow.
+
+Do not trust a green gate here. A gate that passed before the rename and passes after it has
+told you nothing about whether the arms still match.
