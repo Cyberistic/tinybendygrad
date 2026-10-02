@@ -66,9 +66,10 @@
 #     NOT PORTED). `TODO(p3) x86.py:752`.
 #
 #   STAGE 3b `to_int` and `is_two_address`           py:190, 716           DONE
-#     4 + 89 rows. `to_int` answers DTYPE `name`s -- `i16`/`i32`/`i64` -- and not the
-#     attribute names, because tinygrad 793abbb moved `DType.name` off the C
-#     spellings.
+#     20 + 89 rows. `to_int` is asked with a DTYPE OBJECT -- `S.half()`, `S.single()`,
+#     `S.double()`, all TWENTY of them -- and answers DTYPE `name`s, `i16`/`i32`/`i64`.
+#     It used to be asked with a NAME and armed on the pre-793abbb attribute spellings,
+#     which made the seven rows below incapable of failing; see `Op.to_int` itself.
 #
 #   COVERED: 372 of 770 Python lines, and the 372 are the lines that DECIDE WHAT
 #   BYTES AND WHAT TEXT COME OUT. The 398 not covered are the five `PatternMatcher`
@@ -178,12 +179,13 @@
 #   ./bin/bend tinybendygrad/renderer/isa/x86.bend > .agents/slop/x86/i.txt
 #   diff .agents/slop/x86/i.txt .agents/slop/x86/py1.txt && echo GATE GREEN
 #
-# 754 rows. NO `py=` LITERAL IN THIS FILE IS TYPED. THE ROWS THEMSELVES ARE WRITTEN BY
+# 774 rows. NO `py=` LITERAL IN THIS FILE IS TYPED. THE ROWS THEMSELVES ARE WRITTEN BY
 # `.agents/slop/x86/x86-gen.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
 # there is no hand-edited copy of a generated table to fall out of date.
 # ===========================================================================
 
 import Base
+import ./../../LAWS/spec.bend as S
 
 # ===========================================================================
 # `Hex` -- `binary.hex()` (x86.py:768). Base has decimal `Nat.show`/`U32.show` and
@@ -734,24 +736,38 @@ def Op.xmm_sz_m.of(+arm: U32) -> String:
 
 def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 
-# `to_int` (x86.py:190) -- `{float16: int16, float32: int32, float64: int64}[dt]`.
-# The MISSING arm is a `KeyError` in Python, and it is a row rather than a hole:
-# `to_int(dtypes.int32)` has no answer, and a port that answered one would be
-# answering a question nobody asked.
-
-def Op.to_int(+nm: String) -> String:
-  # THE ANSWERS ARE DTYPE `name`s, AND `name` IS NOT THE ATTRIBUTE NAME: tinygrad 793abbb
-  # ("modernize tinygrad's dtype to match rust", quoted in full at the head of
-  # `LAWS/spec.bend`'s `Dt`) moved `DType.name` off the C spellings -- "signed char",
-  # "half", "float", "double", "int", "long" -- and onto `i8`/`i16`/`i32`/`i64`/`f16`/
-  # `f32`/`f64`/..., keeping the old attribute names only as legacy aliases. This
-  # returned "short"/"int"/"long", so all three `toint` rows diffed; `spec.bend`'s `Dt`
-  # already spelled them the new way (`def int16() -> Dt: Dt{3, 16, CSint{}, "i16"}`).
-  match nm:
-    case "float16": "i16"
-    case "float32": "i32"
-    case "float64": "i64"
+# `to_int` (x86.py:190) -- `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32,
+# dtypes.float64: dtypes.int64}[dt]`. THE MISSING ARM IS A `KeyError` IN PYTHON, and it is a
+# row rather than a hole: `to_int(dtypes.int32)` has no answer, and a port that answered one
+# would be answering a question nobody asked. Every one of the TWENTY dtypes is a row.
+#
+# RE-ARMED ON `cls` / `bits` / `pri`, NEVER ON A NAME. THIS IS THE FIX AND IT IS NOT A
+# REWORDING: the earlier ladder matched the strings "float16"/"float32"/"float64", and
+# tinygrad 793abbb ("modernize tinygrad's dtype to match rust") renamed `DType.name` to
+# `f16`/`f32`/`f64` (measured: `dtypes.float16.name == "f16"`), keeping the old attribute
+# names as aliases only. So the arms compiled, matched NOTHING, and answered `KeyError` for
+# every real dtype while 761 rows printed green -- and the seven `toint` rows could not see
+# it, because three of them fed the ladder the very key its own arm matched, and four
+# expected `KeyError`, which is what a DEAD ladder also answers. A name-keyed arm is a
+# fall-through, never a compile error (`agent-core.md`'s dtype-rename section).
+#
+# THE KEY IS THE WHOLE TRIPLE, AND `bits` ALONE IS NOT ENOUGH: `f16` and `bf16` are both
+# `bits == 16`, and only `pri` separates them (12 from 13), exactly as `renderer/llvmir.bend`'s
+# `lt.of` separates `half` from `bfloat`. `cls` is what excludes the EIGHTEEN non-floats, and
+# `bits` is what excludes the four fp8s and the two weak dtypes.
+def Op.to_int.fp(bits: U32, pri: U32) -> String:
+  match bits:
+    case 16: Bool.pick(String, U32.is_eq(pri, 12), "i16", "KeyError")
+    case 32: Bool.pick(String, U32.is_eq(pri, 14), "i32", "KeyError")
+    case 64: Bool.pick(String, U32.is_eq(pri, 15), "i64", "KeyError")
     case _: "KeyError"
+
+def Op.to_int(+d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CFloat{}: Op.to_int.fp(bits, pri)
+        case _: "KeyError"
 
 # ===========================================================================
 # STAGE 4 -- THE ENCODING TABLE. x86.py:624-687.
@@ -1782,7 +1798,7 @@ def Cls.supported_dtypes() -> String:
 def Cls.supported_dtypes_n() -> U32:
   U32.from_nat(List.length(&2, String, Cls.supported_dtypes_list()))
 
-# THE GATE STATE: **754 ROWS, `diff` AGAINST CPython EMPTY, BOTH LANES BYTE-IDENTICAL.**
+# THE GATE STATE: **774 ROWS, `diff` AGAINST CPython EMPTY, BOTH LANES BYTE-IDENTICAL.**
 # That diff -- not the exit status of `--check-only`, which is 1 on a clean file because
 # `dtype.bend` has 14 unfilled laws -- is the acceptance test for this file, and it is
 # STRONGER than "ALL PROOFS CHECK", which is what the previous 723-row version printed
@@ -2293,13 +2309,26 @@ def Gate.rows4() -> List<&2, String>: [
    "iszthrm 17 = [" ++ Op.xmm_sz_m(17) ++ "]   py=[VMOVUPSm]"
    "iszthr 32 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
    "iszthrm 32 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "toint float16 = [" ++ Op.to_int("float16") ++ "]   py=[i16]"
-   "toint float32 = [" ++ Op.to_int("float32") ++ "]   py=[i32]"
-   "toint float64 = [" ++ Op.to_int("float64") ++ "]   py=[i64]"
-   "toint.miss int8 = [" ++ Op.to_int("int8") ++ "]   py=[KeyError]"
-   "toint.miss int32 = [" ++ Op.to_int("int32") ++ "]   py=[KeyError]"
-   "toint.miss uint8 = [" ++ Op.to_int("uint8") ++ "]   py=[KeyError]"
-   "toint.miss bool = [" ++ Op.to_int("bool") ++ "]   py=[KeyError]"
+   "toint void = [" ++ Op.to_int(S.void()) ++ "]   py=[KeyError]"
+   "toint bool = [" ++ Op.to_int(S.boolean()) ++ "]   py=[KeyError]"
+   "toint weakint = [" ++ Op.to_int(S.weakint()) ++ "]   py=[KeyError]"
+   "toint i8 = [" ++ Op.to_int(S.int8()) ++ "]   py=[KeyError]"
+   "toint u8 = [" ++ Op.to_int(S.uint8()) ++ "]   py=[KeyError]"
+   "toint i16 = [" ++ Op.to_int(S.int16()) ++ "]   py=[KeyError]"
+   "toint u16 = [" ++ Op.to_int(S.uint16()) ++ "]   py=[KeyError]"
+   "toint i32 = [" ++ Op.to_int(S.int32()) ++ "]   py=[KeyError]"
+   "toint u32 = [" ++ Op.to_int(S.uint32()) ++ "]   py=[KeyError]"
+   "toint i64 = [" ++ Op.to_int(S.int64()) ++ "]   py=[KeyError]"
+   "toint u64 = [" ++ Op.to_int(S.uint64()) ++ "]   py=[KeyError]"
+   "toint weakfloat = [" ++ Op.to_int(S.weakfloat()) ++ "]   py=[KeyError]"
+   "toint fp8e4m3 = [" ++ Op.to_int(S.fp8e4m3fnuz()) ++ "]   py=[KeyError]"
+   "toint fp8e5m2 = [" ++ Op.to_int(S.fp8e5m2fnuz()) ++ "]   py=[KeyError]"
+   "toint fp8e4m3fnuz = [" ++ Op.to_int(S.fp8e4m3fnuz()) ++ "]   py=[KeyError]"
+   "toint fp8e5m2fnuz = [" ++ Op.to_int(S.fp8e5m2fnuz()) ++ "]   py=[KeyError]"
+   "toint f16 = [" ++ Op.to_int(S.half()) ++ "]   py=[i16]"
+   "toint bf16 = [" ++ Op.to_int(S.bfloat16()) ++ "]   py=[KeyError]"
+   "toint f32 = [" ++ Op.to_int(S.single()) ++ "]   py=[i32]"
+   "toint f64 = [" ++ Op.to_int(S.double()) ++ "]   py=[i64]"
    "2a.FRAME_INDEX = [" ++ Bool.show(Op.is_two_address("FRAME_INDEX")) ++ "]   py=[False]"
    "2a.LABEL = [" ++ Bool.show(Op.is_two_address("LABEL")) ++ "]   py=[False]"
    "2a.DEFINE = [" ++ Bool.show(Op.is_two_address("DEFINE")) ++ "]   py=[False]"
@@ -2321,6 +2350,9 @@ def Gate.rows4() -> List<&2, String>: [
    "2a.VCVTPH2PS = [" ++ Bool.show(Op.is_two_address("VCVTPH2PS")) ++ "]   py=[False]"
    "2a.VCVTPS2PH = [" ++ Bool.show(Op.is_two_address("VCVTPS2PH")) ++ "]   py=[False]"
    "2a.VCVTSS2SD = [" ++ Bool.show(Op.is_two_address("VCVTSS2SD")) ++ "]   py=[False]"
+ ]
+
+def Gate.rows5() -> List<&2, String>: [
    "2a.VCVTSD2SS = [" ++ Bool.show(Op.is_two_address("VCVTSD2SS")) ++ "]   py=[False]"
    "2a.VCVTSI2SS = [" ++ Bool.show(Op.is_two_address("VCVTSI2SS")) ++ "]   py=[False]"
    "2a.VCVTSI2SD = [" ++ Bool.show(Op.is_two_address("VCVTSI2SD")) ++ "]   py=[False]"
@@ -2332,9 +2364,6 @@ def Gate.rows4() -> List<&2, String>: [
    "2a.VMOVQm = [" ++ Bool.show(Op.is_two_address("VMOVQm")) ++ "]   py=[False]"
    "2a.VCMPSS = [" ++ Bool.show(Op.is_two_address("VCMPSS")) ++ "]   py=[False]"
    "2a.VCMPSD = [" ++ Bool.show(Op.is_two_address("VCMPSD")) ++ "]   py=[False]"
- ]
-
-def Gate.rows5() -> List<&2, String>: [
    "2a.SETNE = [" ++ Bool.show(Op.is_two_address("SETNE")) ++ "]   py=[False]"
    "2a.SETE = [" ++ Bool.show(Op.is_two_address("SETE")) ++ "]   py=[False]"
    "2a.SETL = [" ++ Bool.show(Op.is_two_address("SETL")) ++ "]   py=[False]"
@@ -2403,6 +2432,9 @@ def Gate.rows5() -> List<&2, String>: [
    "enc.CMP = [" ++ EncRow("CMP") ++ "]   py=[opc=59,reg=-,pp=-,sel=-,we=-]"
    "enc.CMPi = [" ++ EncRow("CMPi") ++ "]   py=[opc=129,reg=7,pp=-,sel=-,we=-]"
    "enc.DIV = [" ++ EncRow("DIV") ++ "]   py=[opc=247,reg=6,pp=-,sel=-,we=-]"
+ ]
+
+def Gate.rows6() -> List<&2, String>: [
    "enc.IDIV = [" ++ EncRow("IDIV") ++ "]   py=[opc=247,reg=7,pp=-,sel=-,we=-]"
    "enc.IMUL = [" ++ EncRow("IMUL") ++ "]   py=[opc=4015,reg=-,pp=-,sel=-,we=-]"
    "enc.IMULi = [" ++ EncRow("IMULi") ++ "]   py=[opc=105,reg=-,pp=-,sel=-,we=-]"
@@ -2415,9 +2447,6 @@ def Gate.rows5() -> List<&2, String>: [
    "enc.MOVm = [" ++ EncRow("MOVm") ++ "]   py=[opc=137,reg=-,pp=-,sel=-,we=-]"
    "enc.OR = [" ++ EncRow("OR") ++ "]   py=[opc=11,reg=-,pp=-,sel=-,we=-]"
    "enc.ORi = [" ++ EncRow("ORi") ++ "]   py=[opc=129,reg=1,pp=-,sel=-,we=-]"
- ]
-
-def Gate.rows6() -> List<&2, String>: [
    "enc.SAR = [" ++ EncRow("SAR") ++ "]   py=[opc=211,reg=7,pp=-,sel=-,we=-]"
    "enc.SARi = [" ++ EncRow("SARi") ++ "]   py=[opc=193,reg=7,pp=-,sel=-,we=-]"
    "enc.SETB = [" ++ EncRow("SETB") ++ "]   py=[opc=3986,reg=0,pp=-,sel=-,we=-]"
@@ -2481,6 +2510,9 @@ def Gate.rows6() -> List<&2, String>: [
    "enc.norow LABEL = [" ++ EncRow("LABEL") ++ "]   py=[none]"
    "enc.none DEFINE = [" ++ Bool.show(Enc.is_direct("DEFINE")) ++ "]   py=[False]"
    "enc.norow DEFINE = [" ++ EncRow("DEFINE") ++ "]   py=[none]"
+ ]
+
+def Gate.rows7() -> List<&2, String>: [
    "enc.none LOOP_CMP = [" ++ Bool.show(Enc.is_direct("LOOP_CMP")) ++ "]   py=[False]"
    "enc.norow LOOP_CMP = [" ++ EncRow("LOOP_CMP") ++ "]   py=[none]"
    "direct.JE.0f8400000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JE")), "0f8400000000")) ++ "]   py=[True]"
@@ -2489,9 +2521,6 @@ def Gate.rows6() -> List<&2, String>: [
    "direct.JB.0f8200000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JB")), "0f8200000000")) ++ "]   py=[True]"
    "direct.JGE.0f8d00000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JGE")), "0f8d00000000")) ++ "]   py=[True]"
    "direct.JMP.e900000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JMP")), "e900000000")) ++ "]   py=[True]"
- ]
-
-def Gate.rows7() -> List<&2, String>: [
    "direct.RET.c3 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("RET")), "c3")) ++ "]   py=[True]"
    "direct.MOVABS 0.48b83412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(0, 4660)), "48b83412000000000000")) ++ "]   py=[True]"
    "direct.MOVABS 1.48b93412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(1, 4660)), "48b93412000000000000")) ++ "]   py=[True]"
@@ -2521,14 +2550,14 @@ def Gate.rows7() -> List<&2, String>: [
    "hex.VMOVD.c5f96e948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5f96e948c08000000")) ++ "]   py=[True]"
    "hex.VMOVQ.c4e1f96e948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVQ", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c4e1f96e948c08000000")) ++ "]   py=[True]"
    "hex.VCMPSS.c5f2c2c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f2c2c2")) ++ "]   py=[True]"
+ ]
+
+def Gate.rows8() -> List<&2, String>: [
    "hex.VCMPSD.c5f3c2c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f3c2c2")) ++ "]   py=[True]"
    "hex.SETNE.400f95848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETNE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f95848c08000000")) ++ "]   py=[True]"
    "hex.SETE.400f94848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f94848c08000000")) ++ "]   py=[True]"
    "hex.SETL.400f9c848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETL", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f9c848c08000000")) ++ "]   py=[True]"
    "hex.SETB.400f92848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETB", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f92848c08000000")) ++ "]   py=[True]"
- ]
-
-def Gate.rows8() -> List<&2, String>: [
    "hex.CMOVNE.480f45d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVNE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f45d5")) ++ "]   py=[True]"
    "hex.CMOVE.480f44d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f44d5")) ++ "]   py=[True]"
    "hex.CMOVL.480f4cd5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVL", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f4cd5")) ++ "]   py=[True]"
@@ -2559,14 +2588,14 @@ def Gate.rows8() -> List<&2, String>: [
    "hex.SHLi.48c1e2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHLi", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1e2")) ++ "]   py=[True]"
    "hex.SHR.48d3ea = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHR", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3ea")) ++ "]   py=[True]"
    "hex.SHRi.48c1ea = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHRi", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1ea")) ++ "]   py=[True]"
+ ]
+
+def Gate.rows9() -> List<&2, String>: [
    "hex.SAR.48d3fa = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SAR", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3fa")) ++ "]   py=[True]"
    "hex.SARi.48c1fa = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SARi", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1fa")) ++ "]   py=[True]"
    "hex.CMP.493bd6 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMP", 2, 14, 4, 8, 8, 5, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "493bd6")) ++ "]   py=[True]"
    "hex.CMPi.81bc8c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMPi", 7, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "81bc8c08000000")) ++ "]   py=[True]"
    "hex.VROUNDSS.c4e3710ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3710ac2")) ++ "]   py=[True]"
- ]
-
-def Gate.rows9() -> List<&2, String>: [
    "hex.VROUNDSD.c4e3710bc2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c4e3710bc2")) ++ "]   py=[True]"
    "hex.VSQRTSS.c5f251c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f251c2")) ++ "]   py=[True]"
    "hex.VSQRTSD.c5f351c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f351c2")) ++ "]   py=[True]"

@@ -363,7 +363,7 @@ def SYSCALL_WRITE() -> U32: 64
 def SYSCALL_EXIT() -> U32: 93
 def SYSCALL_MMAP2() -> U32: 222
 def HEX_REG_QEMU_INSN_CNT() -> U32: 21
-def INSN_CNT_WORD() -> U32: 1784217600
+def INSN_CNT_WORD() -> U32: 1779810304
 
 
 # ===========================================================================
@@ -404,31 +404,79 @@ type Pra is Data:
 type Slot is Data:
   Slot{lo: U32, hi: U32, nbytes: U32}
 
+def dt_cname.si(bits: U32) -> String:
+  match bits:
+    case 8: "signed char"
+    case 16: "short"
+    case 32: "int"
+    case 64: "long long"
+    case _: "KeyError"
+
+def dt_cname.su(bits: U32) -> String:
+  match bits:
+    case 8: "unsigned char"
+    case 16: "unsigned short"
+    case 32: "unsigned int"
+    case 64: "unsigned long long"
+    case _: "KeyError"
+
+def dt_cname.sf(bits: U32, pri: U32) -> String:
+  match bits:
+    case 16: Bool.pick(String, U32.is_eq(pri, 12), "__fp16", "__bf16")
+    case 32: "float"
+    case 64: "double"
+    case _: "KeyError"
+
+def dt_cname_dt(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CVoid{}  : "void"
+        case S.CBool{}  : "_Bool"
+        case S.CSint{}  : dt_cname.si(bits)
+        case S.CUint{}  : dt_cname.su(bits)
+        case S.CFloat{} : dt_cname.sf(bits, pri)
+        case _: "KeyError"
+
+
 # ONE PARAM of the generated kernel: a GLOBAL buffer (with its element count, so
-# the mock can compute the byte width) or an ALU value (with the C spelling of its
-# dtype). `is_alu` is the `addrspace == AddrSpace.ALU` test that :32,:35,:37,:39,
+# the mock can compute the byte width) or an ALU value (with its C spelling).
+# `is_alu` is the `addrspace == AddrSpace.ALU` test that :32,:35,:37,:39,
 # :261,:265 and :271 all make, and it decides whether the entry shim reads a SIZE
 # or a VALUE out of the same 8-byte slot.
+#
+# IT CARRIES THE DTYPE, NOT ITS NAME. It carried `cn: String` -- a dtype NAME -- and
+# every consumer fed it straight to `dt_cname` / `dt_itemsize`, both of which were
+# ladders keyed on that name. So a dtype rename made eleven `dt_fmt` rows print the
+# EMPTY STRING where CPython prints `b`/`e`/`f`/`d`, and it was invisible: the gate
+# carried the expectation in a `# py=` COMMENT, so nothing compared. A `S.Dt` cannot
+# be misspelled, and a ladder keyed on it cannot be renamed out from under itself.
 type Param is Data:
-  Param{is_alu: Bool, cn: String, numel: U32}
+  Param{is_alu: Bool, dt: S.Dt, numel: U32}
 
 
 def Param.is_alu(p: Param) -> Bool:
   match p:
-    case Param{is_alu, cn, numel}: is_alu
+    case Param{is_alu, dt, numel}: is_alu
 
+# The C SPELLING, `self.type_map.get(dt, dt.name)` (:15,:32). Read off the DTYPE.
 def Param.cn(p: Param) -> String:
   match p:
-    case Param{is_alu, cn, numel}: cn
+    case Param{is_alu, dt, numel}: dt_cname_dt(dt)
+
+def Param.dt(p: Param) -> S.Dt:
+  match p:
+    case Param{is_alu, dt, numel}: dt
 
 def Param.numel(p: Param) -> U32:
   match p:
-    case Param{is_alu, cn, numel}: numel
+    case Param{is_alu, dt, numel}: numel
 
 # ===========================================================================
-# THE FIXTURES.
-def fx.g(cn: String, numel: U32) -> Param: Param{False{}, cn, numel}
-def fx.a(cn: String, numel: U32) -> Param: Param{True{}, cn, numel}
+# THE FIXTURES. THE DTYPE IS AN `S.Dt`, BUILT BY `LAWS/spec.bend`'s OWN CONSTRUCTOR,
+# so a fixture cannot name a dtype that does not exist.
+def fx.g(dt: S.Dt, numel: U32) -> Param: Param{False{}, dt, numel}
+def fx.a(dt: S.Dt, numel: U32) -> Param: Param{True{}, dt, numel}
 
 def fx.bufs3() -> List<&2, U32>: [1, 2, 3]
 def fx.offs3() -> List<&2, U32>: [0, 64, 128]
@@ -441,18 +489,18 @@ def fx.spec(nolru: Bool, ext: Bool) -> D.Bspec:
 
 # ALU, GLOBAL, GLOBAL, ALU -- the fixture that separates the param index from a
 # compacted counter.
-def fx.g2() -> List<&2, Param>: [fx.g("float", 4), fx.g("float", 4)]
+def fx.g2() -> List<&2, Param>: [fx.g(S.single(), 4), fx.g(S.single(), 4)]
 
-def fx.ga1() -> List<&2, Param>: [fx.g("float", 4), fx.a("unsigned int", 1), fx.g("float", 4)]
+def fx.ga1() -> List<&2, Param>: [fx.g(S.single(), 4), fx.a(S.uint32(), 1), fx.g(S.single(), 4)]
 
-def fx.a2() -> List<&2, Param>: [fx.a("unsigned int", 1), fx.a("float", 1)]
+def fx.a2() -> List<&2, Param>: [fx.a(S.uint32(), 1), fx.a(S.single(), 1)]
 
-def fx.g1() -> List<&2, Param>: [fx.g("unsigned int", 1)]
+def fx.g1() -> List<&2, Param>: [fx.g(S.uint32(), 1)]
 
-def fx.a1() -> List<&2, Param>: [fx.a("unsigned int", 1)]
+def fx.a1() -> List<&2, Param>: [fx.a(S.uint32(), 1)]
 
 def fx.agga() -> List<&2, Param>:
-  [fx.a("unsigned int", 1), fx.g("float", 4), fx.g("float", 4), fx.a("int", 1)]
+  [fx.a(S.uint32(), 1), fx.g(S.single(), 4), fx.g(S.single(), 4), fx.a(S.int32(), 1)]
 
 # The index LIST is the fuel rather than a `Nat` countdown, and that is not a
 # style choice: a `case 1n+m:` arm binds `m`, so a body that also reads the
@@ -648,76 +696,81 @@ def entry.method_ok(sc: U32) -> Bool: U32.is_eq(sc_method(sc), M_INVOKE())
 # `dt_fmt_none` is the EMPTY string and "has no fmt" is a Bool, not a string --
 # because there is no string to print. `dsp_fmt_nones` pins how many there are.
 def dt_fmt_none() -> String: ""
-def dt_fmt(nm: String) -> String:
-  match nm:
-    case "bool": "?"
-    case "i8": "b"
-    case "u8": "B"
-    case "i16": "h"
-    case "u16": "H"
-    case "i32": "i"
-    case "u32": "I"
-    case "i64": "q"
-    case "u64": "Q"
-    case "f16": "e"
-    case "f32": "f"
-    case "f64": "d"
+
+# KEYED ON `cls` AND `bits` -- A `Data` TAG AND A NUMBER -- NEVER ON A NAME. This ladder
+# WAS keyed on names, and 793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY
+# STRING where CPython prints `b`/`e`/`f`/`d`, and nothing noticed, because the gate
+# carried the expectation in a COMMENT. A name-keyed arm is a silent fall-through
+# (`agent-core.md`, dtype-rename section), and this file is the worked example.
+#
+# `pri` is load-bearing for the ONE pair `bits` cannot separate: `f16` is `bits 16` and
+# `fmt` `e`, `bf16` is `bits 16` and `fmt` None. Same split as
+# `renderer/llvmir.bend`'s `lt.fp` and `renderer/isa/x86.bend`'s `Op.to_int.fp`.
+def dt_fmt.si(bits: U32) -> String:
+  match bits:
+    case 8: "b"
+    case 16: "h"
+    case 32: "i"
+    case 64: "q"
     case _: dt_fmt_none()
 
-def dt_fmt_dt(d: S.Dt) -> String: dt_fmt(dt_nm(d))
+def dt_fmt.su(bits: U32) -> String:
+  match bits:
+    case 8: "B"
+    case 16: "H"
+    case 32: "I"
+    case 64: "Q"
+    case _: dt_fmt_none()
 
-def dt_has_fmt(nm: String) -> Bool: Bool.not(String.eq(dt_fmt(nm), dt_fmt_none()))
+def dt_fmt.sf(bits: U32, pri: U32) -> String:
+  match bits:
+    case 16: Bool.pick(String, U32.is_eq(pri, 12), "e", dt_fmt_none())
+    case 32: Bool.pick(String, U32.is_eq(pri, 14), "f", dt_fmt_none())
+    case 64: Bool.pick(String, U32.is_eq(pri, 15), "d", dt_fmt_none())
+    case _: dt_fmt_none()
+
+def dt_fmt_dt(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CBool{}  : "?"
+        case S.CSint{}  : dt_fmt.si(bits)
+        case S.CUint{}  : dt_fmt.su(bits)
+        case S.CFloat{} : dt_fmt.sf(bits, pri)
+        case _: dt_fmt_none()
+
+def dt_has_fmt_dt(d: S.Dt) -> Bool: Bool.not(String.eq(dt_fmt_dt(d), dt_fmt_none()))
 
 # `dt.itemsize`: how many bytes `struct.pack(fmt, ...)` writes into an 8-byte slot.
 # void is 0 and weakint/weakfloat are 100 -- dtype.py's placeholders, and 100 is
 # wider than a slot, which is exactly why the "high bytes untouched" claim below
 # needs a dtype it cannot reach.
-def dt_itemsize(nm: String) -> U32:
-  match nm:
-    case "void": 0
-    case "bool": 1
-    case "i8": 1
-    case "u8": 1
-    case "i16": 2
-    case "u16": 2
-    case "f16": 2
-    case "bf16": 2
-    case "i32": 4
-    case "u32": 4
-    case "f32": 4
-    case "fp8e4m3": 1
-    case "fp8e4m3fnuz": 1
-    case "fp8e5m2": 1
-    case "fp8e5m2fnuz": 1
-    case "i64": 8
-    case "u64": 8
-    case "f64": 8
-    case _: 100
-
-def dt_itemsize_dt(d: S.Dt) -> U32: dt_itemsize(dt_nm(d))
+#
+# A NINETEEN-ARM NAME TABLE WAS HERE. It is `(bitsize + 7) // 8`, which is dtype.py's
+# own `DType.itemsize` PROPERTY -- measured on all twenty: void 0, bool 1, the four
+# 8-bits 1, the four 16-bits 2, the four 32-bits 4, the four 64-bits 8, weak 100. So
+# this is arithmetic on `bits` and a table was twenty opportunities to be wrong.
+def dt_itemsize_dt(d: S.Dt) -> U32:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: U32.div(U32.add(bits, 7), 8)
 
 # `self._render_dtype(dt.dtype)` (:32), i.e. `self.type_map.get(dt, dt.name)` with
 # the TWO extra keys ops_dsp.py:15 adds. MEASURED: `ClangRenderer.type_map` has
 # exactly two keys, `bool` and `half`, so both additions are new entries and neither
 # is a correction.
-def dt_cname(nm: String) -> String:
-  match nm:
-    case "bool": "_Bool"
-    case "f16": "__fp16"
-    case "i64": "long long"
-    case "u64": "unsigned long long"
-    case _: nm
-
-def dt_cname_dt(d: S.Dt) -> String: dt_cname(dt_nm(d))
-
+# KEYED ON `cls`/`bits`/`pri`, and it is a TOTAL FOURTEEN-ENTRY TABLE with NO FALLBACK.
+# It HAD a `case _: nm`, and that is wrong twice over: `cstyle.py:30` is
+# `self.type_map[dtype]` -- a KEY LOOKUP that RAISES, not `.get(dt, dt.name)` -- and the
+# `nm` it fell back to was a dtype NAME, which since 793abbb is `i8` and not the C
+# `signed char`. Every integer spelling in a generated kernel was wrong.
 # THE GLOBAL ARM of :32, and the load-bearing asymmetry of the whole file: a
 # GLOBAL's `sz_or_val` is spelled `int` whatever the buffer's dtype, because it
 # holds the byte SIZE (:67 packs `b.size`) and not the value. A port that keyed the
 # GLOBAL arm off the dtype would type a float buffer's size as `float` and every
 # read at `pra[0].buf.pv+i*8` would be a float load.
-def dt_cname_global(+is_alu: Bool, +nm: String) -> String:
+def dt_cname_global(+is_alu: Bool, +d: S.Dt) -> String:
   match is_alu:
-    case True{}: dt_cname(nm)
+    case True{}: dt_cname_dt(d)
     case False{}: "int"
 
 # `supported_dtypes` (:46) = ClangRenderer's, minus the fp8s, minus bfloat16.
@@ -726,43 +779,63 @@ def dt_cname_global(+is_alu: Bool, +nm: String) -> String:
 # dtypes, a hexagon arch gives 12, and DSP gives 12 on BOTH -- so the arch test is
 # irrelevant here, and the `dtypes.bf16` in :46 is the WHOLE difference on x86
 # and a NO-OP on hexagon. `dsp_sdtype_n` plus `dsp_sdtype_x86_drop` pins that.
-def dt_is_fp8.i(nm: String) -> Bool:
-  match nm:
-    case "fp8e4m3": True{}
-    case "fp8e4m3fnuz": True{}
-    case "fp8e5m2": True{}
-    case "fp8e5m2fnuz": True{}
-    case _: False{}
+# BOTH DROPS ARE STRUCTURAL, `(cls, bits, pri)` AND NOTHING ELSE. They were
+# `dt_is_fp8("fp8e4m3")` and `String.eq(nm, "__bf16")` -- NAME TESTS on strings that
+# `LAWS/spec.bend` had already renamed, so BOTH ANSWERED FALSE for a real dtype and
+# `dsp_sd_drop_fp8` printed False where CPython drops. Measured: `dtypes.bf16 in
+# DSPRenderer(Target("DSP","CLANG","x86_64,znver3")).supported_dtypes()` is False.
+def dt_is_fp8_dt(d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CFloat{}: U32.is_eq(bits, 8)
+        case _: False{}
 
-def dt_is_fp8(nm: String) -> Bool: dt_is_fp8.i(nm)
+def dt_is_bf16_dt(d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CFloat{}: Bool.and(U32.is_eq(bits, 16), U32.is_eq(pri, 13))
+        case _: False{}
 
-def dt_supported(base: Bool, +nm: String) -> Bool:
-  Bool.and(base, Bool.and(Bool.not(dt_is_fp8(nm)), Bool.not(String.eq(nm, "__bf16"))))
+def dt_supported(base: Bool, +d: S.Dt) -> Bool:
+  Bool.and(base, Bool.and(Bool.not(dt_is_fp8_dt(d)), Bool.not(dt_is_bf16_dt(d))))
 
-# the twelve supported names in dtype.py's `__lt__` order (dtype.bend's rank order,
-# which sorts on (priority, bitsize, name, fmt) -- so the order is forced).
-def supported_12.at(n: Nat) -> String:
+# the twelve supported DTYPES in dtype.py's `__lt__` order (dtype.bend's rank order,
+# which sorts on (priority, bitsize, name, fmt) -- so the order is forced). These were
+# the pre-793abbb NAMES -- "signed char", "long", "half", "double" -- so `dsp_sd_0`,
+# `dsp_sd_7` and `dsp_sd_11` answered `bool`/`long`/`double` where CPython answers
+# `bool`/`i64`/`f64`.
+def supported_12.at(n: Nat) -> S.Dt:
   match n:
-    case 0n: "bool"
-    case 1n: "signed char"
-    case 2n: "unsigned char"
-    case 3n: "short"
-    case 4n: "unsigned short"
-    case 5n: "int"
-    case 6n: "unsigned int"
-    case 7n: "long"
-    case 8n: "unsigned long"
-    case 9n: "half"
-    case 10n: "float"
-    case _: "double"
+    case 0n: S.boolean()
+    case 1n: S.int8()
+    case 2n: S.uint8()
+    case 3n: S.int16()
+    case 4n: S.uint16()
+    case 5n: S.int32()
+    case 6n: S.uint32()
+    case 7n: S.int64()
+    case 8n: S.uint64()
+    case 9n: S.half()
+    case 10n: S.single()
+    case _: S.double()
 
-def supported_12.of(+ix: List<&2, Nat>, acc: List<&2, String>) -> List<&2, String>:
+def supported_12.of(+ix: List<&2, Nat>, acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
   match ix:
     case Nil{}: acc
-    case i <> t: supported_12.of(t, List.append(&2, String, acc, [supported_12.at(i)]))
+    case i <> t: supported_12.of(t, List.append(&2, S.Dt, acc, [supported_12.at(i)]))
+
+def supported_dtypes() -> List<&2, S.Dt>:
+  supported_12.of(List.range(12n), Nil{})
+
+def supported_names.of(+ix: List<&2, Nat>, acc: List<&2, String>) -> List<&2, String>:
+  match ix:
+    case Nil{}: acc
+    case i <> t: supported_names.of(t, List.append(&2, String, acc, [dt_nm(supported_12.at(i))]))
 
 def supported_names() -> List<&2, String>:
-  supported_12.of(List.range(12n), Nil{})
+  supported_names.of(List.range(12n), Nil{})
 
 # `code_for_op` (:16) = ClangRenderer's minus `Ops.SQRT`. MEASURED 18 against 17,
 # the difference being exactly that one op. The CONTENTS are cstyle.py's and are
@@ -917,8 +990,8 @@ def vt_val_offset(nbufs: U32, j: U32) -> U32: U32.mul(U32.add(nbufs, j), 8)
 # narrower one does not touch it; void writes none.
 def vt_hi_written(nbytes: U32) -> Bool: U32.is_eq(nbytes, 8)
 def vt_lo_written(nbytes: U32) -> Bool: U32.is_ge(nbytes, 1)
-def vt_hi_of(nm: String) -> Bool: vt_hi_written(dt_itemsize(nm))
-def vt_lo_of(nm: String) -> Bool: vt_lo_written(dt_itemsize(nm))
+def vt_hi_of(+d: S.Dt) -> Bool: vt_hi_written(dt_itemsize_dt(d))
+def vt_lo_of(+d: S.Dt) -> Bool: vt_lo_written(dt_itemsize_dt(d))
 
 
 # ===========================================================================
@@ -1135,8 +1208,8 @@ def entry.ret() -> String: "return 0; }"
 # :32-33 the `sz_or_val` DECLARATION. `int` for a GLOBAL -- it is the byte SIZE --
 # and `_render_dtype` for an ALU, and both read the SAME slot at `pra[0].buf.pv`.
 def entry.sz_decl(+i: U32, +p: Param) -> String:
-  String.concat([dt_cname_global(Param.is_alu(p), Param.cn(p)), " sz_or_val_",
-    U32.show(i), " = *(", dt_cname_global(Param.is_alu(p), Param.cn(p)),
+  String.concat([dt_cname_global(Param.is_alu(p), Param.dt(p)), " sz_or_val_",
+    U32.show(i), " = *(", dt_cname_global(Param.is_alu(p), Param.dt(p)),
     "*)((char*)pra[0].buf.pv+", U32.show(vt_size_byte(i)), ");"])
 
 # :35 `f'int off{i} = ((int*)pra[1].buf.pv)[{i}];'` -- the offset subscript is i,
@@ -1198,7 +1271,7 @@ def mrender.exit() -> String: "exit(0); }"
 # :262 `sz = b[1][0].max_numel()*b[1][0].dtype.itemsize`. The byte count is the
 # KERNEL's view of the buffer, so it is `numel * itemsize` and NOT the allocated
 # size -- which for a VIEW is larger than the window the kernel touches.
-def mrender.nbytes(+p: Param) -> U32: U32.mul(Param.numel(p), dt_itemsize(Param.cn(p)))
+def mrender.nbytes(+p: Param) -> U32: U32.mul(Param.numel(p), dt_itemsize_dt(Param.dt(p)))
 
 # :264 `void *buf{i} = mmap2(0, {sz}, 3, 0x21, -1, 0); for(int rd = 0; rd < {sz};
 # rd += read(0, buf{i}+rd, {sz}-rd));`. `0x21` is MAP_PRIVATE|MAP_ANONYMOUS. The
@@ -1215,8 +1288,8 @@ def mrender.mmap(+i: U32, +nb: U32) -> String:
 # (`_render_dtype`), NOT the `int` the GLOBAL arm of :32 uses, and the read length
 # is the ITEMSIZE, so a half reads 2 and a double reads 8.
 def mrender.val(+i: U32, +p: Param) -> String:
-  String.concat([dt_cname(Param.cn(p)), " val", U32.show(i), "; read(0, &val",
-    U32.show(i), ", ", U32.show(dt_itemsize(Param.cn(p))), ");"])
+  String.concat([Param.cn(p), " val", U32.show(i), "; read(0, &val",
+    U32.show(i), ", ", U32.show(dt_itemsize_dt(Param.dt(p))), ");"])
 
 # :268 `params` is `(void*)buf{i}` for a GLOBAL -- THE CAST the real shim does not
 # need, because `HAP_mmap` already returns `void*` -- and bare `val{i}` otherwise.
@@ -1739,45 +1812,47 @@ def entry.line_count(+ps: List<&2, Param>) -> U32:
 # nothing in the domain is left unaccounted for.
 # ===========================================================================
 
-def NAMES.at(n: Nat) -> String:
+# THE TWENTY DTYPES, AS DTYPES. It was a table of NAMES -- the pre-793abbb spellings --
+# which is how `count_fmt` came to ask `dt_has_fmt` about a dtype nobody has.
+def NAMES.at(n: Nat) -> S.Dt:
   match n:
-    case 0n: "void"
-    case 1n: "bool"
-    case 2n: "weakint"
-    case 3n: "signed char"
-    case 4n: "unsigned char"
-    case 5n: "short"
-    case 6n: "unsigned short"
-    case 7n: "int"
-    case 8n: "unsigned int"
-    case 9n: "long"
-    case 10n: "unsigned long"
-    case 11n: "weakfloat"
-    case 12n: "float8_e4m3"
-    case 13n: "float8_e4m3fnuz"
-    case 14n: "float8_e5m2"
-    case 15n: "float8_e5m2fnuz"
-    case 16n: "half"
-    case 17n: "__bf16"
-    case 18n: "float"
-    case _: "double"
+    case 0n: S.void()
+    case 1n: S.boolean()
+    case 2n: S.weakint()
+    case 3n: S.int8()
+    case 4n: S.uint8()
+    case 5n: S.int16()
+    case 6n: S.uint16()
+    case 7n: S.int32()
+    case 8n: S.uint32()
+    case 9n: S.int64()
+    case 10n: S.uint64()
+    case 11n: S.weakfloat()
+    case 12n: S.fp8e4m3()
+    case 13n: S.fp8e4m3fnuz()
+    case 14n: S.fp8e5m2()
+    case 15n: S.fp8e5m2fnuz()
+    case 16n: S.half()
+    case 17n: S.bfloat16()
+    case 18n: S.single()
+    case _: S.double()
 
-def NAMES.of(+ix: List<&2, Nat>, acc: List<&2, String>) -> List<&2, String>:
+def NAMES.of(+ix: List<&2, Nat>, acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
   match ix:
     case Nil{}: acc
-    case i <> t: NAMES.of(t, List.append(&2, String, acc, [NAMES.at(i)]))
+    case i <> t: NAMES.of(t, List.append(&2, S.Dt, acc, [NAMES.at(i)]))
 
-def NAMES() -> List<&2, String>: NAMES.of(List.range(20n), Nil{})
+def NAMES() -> List<&2, S.Dt>: NAMES.of(List.range(20n), Nil{})
 
-def count_all(+ns: List<&2, String>, got: U32) -> U32:
+def count_all(+ns: List<&2, S.Dt>, got: U32) -> U32:
   match ns:
     case Nil{}: got
     case _ <> t: count_all(t, U32.add(got, 1))
 
-def count_fmt(+ns: List<&2, String>, got: U32) -> U32:
+def count_fmt(+ns: List<&2, S.Dt>, got: U32) -> U32:
   match ns:
     case Nil{}: got
-    case n <> t: count_fmt(t, U32.add(got, Bool.to_u32(dt_has_fmt(n))))
+    case n <> t: count_fmt(t, U32.add(got, Bool.to_u32(dt_has_fmt_dt(n))))
 
 def dt_fmt_all_count() -> U32: count_all(NAMES(), 0)
 
@@ -1788,17 +1863,26 @@ def dt_fmt_has_count() -> U32: count_fmt(NAMES(), 0)
 # `.agents/slop/dsp_oracle.py` calling CPython. None was typed by hand.
 # ===========================================================================
 
-def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
-def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
-def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
+# A ROW IS A COMPARISON. All four take the CPython answer as a THIRD argument and print
+# it BESIDE the port's own, so the lane is a `diff` against `.agents/slop/dsp_oracle2.py`
+# rather than 512 lines nobody compared. They used to print `nm=value` and carry the
+# expectation in a `# py=` COMMENT, which is the same file on both sides of the
+# comparison -- `dsp_gate_check.py` says so on every run and calls itself "AUTHORITY:
+# NONE". The row count did not change and neither did the file's green; only this did.
+def row(nm: String, b: Bool, py: Bool) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", Bool.show(b), "]   py=[", Bool.show(py), "]"]))
+def urow(nm: String, v: U32, py: U32) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", U32.show(v), "]   py=[", U32.show(py), "]"]))
+def srow(nm: String, v: String, py: String) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", v, "]   py=[", py, "]"]))
 
 def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: List.reverse(&2, String, acc)
     case x <> t: ush(t, sep, U32.show(x) <> acc)
 
-def lrow(nm: String, xs: List<&2, U32>) -> IO(Unit):
-  IO.print(String.concat([nm, "=", String.join(ush(xs, ",", Nil{}), ",")]))
+def lrow(nm: String, xs: List<&2, U32>, py: String) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", String.join(ush(xs, ",", Nil{}), ","), "]   py=[", py, "]"]))
 
 def first_k(cs: List<&2, Call>) -> U32:
   match cs:
@@ -1830,394 +1914,2344 @@ def kind_list(cs: List<&2, Call>) -> List<&2, U32>: kind_list.go(cs, Nil{})
 # --- 1: rpc_sc, :48 ------------------------------------------------------------
 def t_rpcsc() -> IO(Unit):
   do IO<Unit>:
-    urow("dsp_sc_0000", rpc_sc(0, 0, 0, 0))                    # py=0
-    urow("dsp_sc_2210", rpc_sc(2, 2, 1, 0))                    # py=33685760
-    urow("dsp_sc_open", rpc_sc(0, 2, 2, 0))                    # py=131584
-    urow("dsp_sc_close", rpc_sc(1, 1, 2, 0))                   # py=16843264
-    urow("dsp_sc_2000", rpc_sc(2, 0, 0, 0))                    # py=33554432
-    urow("dsp_sc_3000", rpc_sc(3, 0, 0, 0))                    # py=50331648
-    urow("dsp_sc_2211", rpc_sc(2, 2, 1, 1))                    # py=33685761
-    urow("dsp_sc_22115", rpc_sc(2, 2, 1, 15))                  # py=33685775
-    urow("dsp_sc_22116", rpc_sc(2, 2, 1, 16))                  # py=33685776
-    urow("dsp_sc_max", rpc_sc(255, 255, 255, 255))             # py=4294967295
-    urow("dsp_sc_f255", rpc_sc(0, 0, 0, 255))                  # py=255
-    urow("dsp_sc_m1", rpc_sc(1, 0, 0, 0))                      # py=16777216
-    urow("dsp_sc_i1", rpc_sc(0, 1, 0, 0))                      # py=65536
-    urow("dsp_sc_o1", rpc_sc(0, 0, 1, 0))                      # py=256
-    urow("dsp_sc_2213", rpc_sc(2, 2, 1, 3))                    # py=33685763
-    urow("dsp_sc_2217", rpc_sc(2, 2, 1, 7))                    # py=33685767
-    urow("dsp_sc_2218", rpc_sc(2, 2, 1, 8))                    # py=33685768
+    
+    
+    
+    
+    urow("dsp_sc_0000",     rpc_sc(0, 0, 0, 0), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2210",     rpc_sc(2, 2, 1, 0), 33685760)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_open",     rpc_sc(0, 2, 2, 0), 131584)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_close",     rpc_sc(1, 1, 2, 0), 16843264)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2000",     rpc_sc(2, 0, 0, 0), 33554432)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_3000",     rpc_sc(3, 0, 0, 0), 50331648)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2211",     rpc_sc(2, 2, 1, 1), 33685761)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_22115",     rpc_sc(2, 2, 1, 15), 33685775)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_22116",     rpc_sc(2, 2, 1, 16), 33685776)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_max",     rpc_sc(255, 255, 255, 255), 4294967295)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_f255",     rpc_sc(0, 0, 0, 255), 255)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_m1",     rpc_sc(1, 0, 0, 0), 16777216)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_i1",     rpc_sc(0, 1, 0, 0), 65536)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_o1",     rpc_sc(0, 0, 1, 0), 256)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2213",     rpc_sc(2, 2, 1, 3), 33685763)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2217",     rpc_sc(2, 2, 1, 7), 33685767)
+
+
+
+    
+    
+    
+    
+    urow("dsp_sc_2218",     rpc_sc(2, 2, 1, 8), 33685768)
+
+
+
     # the four fields are INDEPENDENT, which is what lets fds up to 15 and outs=1
-    lrow("dsp_sc_f255_only", [sc_fds(255)])                    # py=255
-    lrow("dsp_sc_o255_only", [sc_outs(rpc_sc(0, 0, 255, 0))])  # py=255
-    lrow("dsp_sc_i255_only", [sc_ins(rpc_sc(0, 255, 0, 0))])   # py=255
-    lrow("dsp_sc_m255_only", [sc_method(rpc_sc(255, 0, 0, 0))])  # py=255
+    
+    
+    
+    
+    lrow("dsp_sc_f255_only",     [sc_fds(255)], "255")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_sc_o255_only",     [sc_outs(rpc_sc(0, 0, 255, 0))], "255")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_sc_i255_only",     [sc_ins(rpc_sc(0, 255, 0, 0))], "255")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_sc_m255_only",     [sc_method(rpc_sc(255, 0, 0, 0))], "255")
+
+
+
 
 # --- 2: the selector's two readers, and the entry shim's refusal -------------
 def t_scfields() -> IO(Unit):
   do IO<Unit>:
-    lrow("dsp_scf_2210", [sc_method(33685760), sc_ins(33685760),
-                          sc_outs(33685760), sc_fds(33685760)])  # py=2,2,1,0
-    lrow("dsp_scf_22115", [sc_method(33685775), sc_ins(33685775),
-                           sc_outs(33685775), sc_fds(33685775)])  # py=2,2,1,15
-    lrow("dsp_scf_open", [sc_method(131584), sc_ins(131584),
-                          sc_outs(131584), sc_fds(131584)])  # py=0,2,2,0
+    
+    
+    
+    
+    lrow("dsp_scf_2210",     [sc_method(33685760), sc_ins(33685760),
+                              sc_outs(33685760), sc_fds(33685760)], "2,2,1,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_scf_22115",     [sc_method(33685775), sc_ins(33685775),
+                               sc_outs(33685775), sc_fds(33685775)], "2,2,1,15")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_scf_open",     [sc_method(131584), sc_ins(131584),
+                              sc_outs(131584), sc_fds(131584)], "0,2,2,0")
+
+
+
     # :33 `if ((sc>>24) != 2) return 0;` -- method 2 ONLY.
-    row("dsp_entry_ok_2", entry.method_ok(rpc_sc(2, 2, 1, 0)))   # py=True
-    row("dsp_entry_ok_2b", entry.method_ok(rpc_sc(2, 0, 0, 0)))  # py=True
-    row("dsp_entry_no_4", entry.method_ok(RPC_GREET()))           # py=False
-    row("dsp_entry_no_0", entry.method_ok(0))                    # py=False
-    row("dsp_entry_no_3", entry.method_ok(rpc_sc(3, 0, 0, 0)))   # py=False
-    row("dsp_entry_no_1", entry.method_ok(rpc_sc(1, 1, 2, 0)))   # py=False
+    
+    
+    
+    
+    row("dsp_entry_ok_2",     entry.method_ok(rpc_sc(2, 2, 1, 0)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_entry_ok_2b",     entry.method_ok(rpc_sc(2, 0, 0, 0)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_entry_no_4",     entry.method_ok(RPC_GREET()), False{})
+
+
+
+    
+    
+    
+    
+    row("dsp_entry_no_0",     entry.method_ok(0), False{})
+
+
+
+    
+    
+    
+    
+    row("dsp_entry_no_3",     entry.method_ok(rpc_sc(3, 0, 0, 0)), False{})
+
+
+
+    
+    
+    
+    
+    row("dsp_entry_no_1",     entry.method_ok(rpc_sc(1, 1, 2, 0)), False{})
+
+
+
 
 # --- 3: the four dtype tables -------------------------------------------------
 def t_dtypes() -> IO(Unit):
   do IO<Unit>:
-    srow("dsp_fmt_bool", dt_fmt("bool"))                   # py=?
-    srow("dsp_fmt_schar", dt_fmt("signed char"))           # py=b
-    srow("dsp_fmt_uchar", dt_fmt("unsigned char"))         # py=B
-    srow("dsp_fmt_short", dt_fmt("short"))                 # py=h
-    srow("dsp_fmt_ushort", dt_fmt("unsigned short"))       # py=H
-    srow("dsp_fmt_int", dt_fmt("int"))                     # py=i
-    srow("dsp_fmt_uint", dt_fmt("unsigned int"))           # py=I
-    srow("dsp_fmt_long", dt_fmt("long"))                   # py=q
-    srow("dsp_fmt_ulong", dt_fmt("unsigned long"))         # py=Q
-    srow("dsp_fmt_half", dt_fmt("half"))                   # py=e
-    srow("dsp_fmt_float", dt_fmt("float"))                 # py=f
-    srow("dsp_fmt_double", dt_fmt("double"))               # py=d
+    
+    
+    
+    
+    srow("dsp_fmt_bool",     dt_fmt_dt(S.boolean()), "?")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_schar",     dt_fmt_dt(S.int8()), "b")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_uchar",     dt_fmt_dt(S.uint8()), "B")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_short",     dt_fmt_dt(S.int16()), "h")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_ushort",     dt_fmt_dt(S.uint16()), "H")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_int",     dt_fmt_dt(S.int32()), "i")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_uint",     dt_fmt_dt(S.uint32()), "I")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_long",     dt_fmt_dt(S.int64()), "q")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_ulong",     dt_fmt_dt(S.uint64()), "Q")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_half",     dt_fmt_dt(S.half()), "e")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_float",     dt_fmt_dt(S.single()), "f")
+
+
+
+    
+    
+    
+    
+    srow("dsp_fmt_double",     dt_fmt_dt(S.double()), "d")
+
+
+
     # the SIX with `fmt is None`: void, weakint, weakfloat, four fp8s, bfloat16.
-    row("dsp_fmt_no_void", Bool.not(dt_has_fmt("void")))         # py=True
-    row("dsp_fmt_no_weakint", Bool.not(dt_has_fmt("weakint")))   # py=True
-    row("dsp_fmt_no_weakfloat", Bool.not(dt_has_fmt("weakfloat")))  # py=True
-    row("dsp_fmt_no_bf16", Bool.not(dt_has_fmt("__bf16")))       # py=True
-    row("dsp_fmt_no_fp8", Bool.not(dt_has_fmt("float8_e4m3")))   # py=True
-    urow("dsp_fmt_has_n", dt_fmt_has_count())      # py=12
+    
+    
+    
+    
+    row("dsp_fmt_no_void",     Bool.not(dt_has_fmt_dt(S.void())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_fmt_no_weakint",     Bool.not(dt_has_fmt_dt(S.weakint())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_fmt_no_weakfloat",     Bool.not(dt_has_fmt_dt(S.weakfloat())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_fmt_no_bf16",     Bool.not(dt_has_fmt_dt(S.bfloat16())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_fmt_no_fp8",     Bool.not(dt_has_fmt_dt(S.fp8e4m3())), True{})
+
+
+
+    
+    
+    
+    
+    urow("dsp_fmt_has_n",     dt_fmt_has_count(), 12)
+
+
+
     # and the twelve that DO have one -- so 12 + 8 = 20 and nothing is unaccounted.
-    urow("dsp_fmt_all_n", dt_fmt_all_count())                    # py=20
+    
+    
+    
+    
+    urow("dsp_fmt_all_n",     dt_fmt_all_count(), 20)
+
+
+
     # itemsize, including the two 100-byte placeholders
-    urow("dsp_isz_void", dt_itemsize("void"))               # py=0
-    urow("dsp_isz_bool", dt_itemsize("bool"))               # py=1
-    urow("dsp_isz_schar", dt_itemsize("signed char"))       # py=1
-    urow("dsp_isz_short", dt_itemsize("short"))             # py=2
-    urow("dsp_isz_half", dt_itemsize("half"))               # py=2
-    urow("dsp_isz_bf16", dt_itemsize("__bf16"))             # py=2
-    urow("dsp_isz_int", dt_itemsize("int"))                 # py=4
-    urow("dsp_isz_float", dt_itemsize("float"))             # py=4
-    urow("dsp_isz_long", dt_itemsize("long"))               # py=8
-    urow("dsp_isz_ulong", dt_itemsize("unsigned long"))     # py=8
-    urow("dsp_isz_double", dt_itemsize("double"))           # py=8
-    urow("dsp_isz_weakint", dt_itemsize("weakint"))         # py=100
-    urow("dsp_isz_weakfloat", dt_itemsize("weakfloat"))     # py=100
-    urow("dsp_isz_fp8", dt_itemsize("float8_e4m3"))         # py=1
-    urow("dsp_isz_fp8b", dt_itemsize("float8_e5m2fnuz"))    # py=1
+    
+    
+    
+    
+    urow("dsp_isz_void",     dt_itemsize_dt(S.void()), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_bool",     dt_itemsize_dt(S.boolean()), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_schar",     dt_itemsize_dt(S.int8()), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_short",     dt_itemsize_dt(S.int16()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_half",     dt_itemsize_dt(S.half()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_bf16",     dt_itemsize_dt(S.bfloat16()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_int",     dt_itemsize_dt(S.int32()), 4)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_float",     dt_itemsize_dt(S.single()), 4)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_long",     dt_itemsize_dt(S.int64()), 8)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_ulong",     dt_itemsize_dt(S.uint64()), 8)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_double",     dt_itemsize_dt(S.double()), 8)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_weakint",     dt_itemsize_dt(S.weakint()), 100)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_weakfloat",     dt_itemsize_dt(S.weakfloat()), 100)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_fp8",     dt_itemsize_dt(S.fp8e4m3()), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_isz_fp8b",     dt_itemsize_dt(S.fp8e5m2fnuz()), 1)
+
+
+
     # spec.bend's OWN itemsize agrees on the six that matter, which is a cheap
     # cross-check that the two dtype models have not drifted.
-    lrow("dsp_isz_spec", [S.Dt.itemsize(S.uint32()), S.Dt.itemsize(S.half()),
-                          S.Dt.itemsize(S.double()), dt_itemsize_dt(S.uint32()),
-                          dt_itemsize_dt(S.half()), dt_itemsize_dt(S.double())])
-    # py=4,2,8,4,2,8
+    
+    
+    
+    
+    lrow("dsp_isz_spec",     [S.Dt.itemsize(S.uint32()), S.Dt.itemsize(S.half()),
+                              S.Dt.itemsize(S.double()), dt_itemsize_dt(S.uint32()),
+                              dt_itemsize_dt(S.half()), dt_itemsize_dt(S.double())], "4,2,8,4,2,8")
+
+
+
+
     # dt_cname -- the two entries ops_dsp.py:15 ADDS to a two-key map
-    srow("dsp_cn_bool", dt_cname("bool"))                   # py=_Bool
-    srow("dsp_cn_half", dt_cname("half"))                   # py=__fp16
-    srow("dsp_cn_long", dt_cname("long"))                   # py=long long
-    srow("dsp_cn_ulong", dt_cname("unsigned long"))         # py=unsigned long long
-    srow("dsp_cn_float", dt_cname("float"))                 # py=float
-    srow("dsp_cn_double", dt_cname("double"))               # py=double
-    srow("dsp_cn_int", dt_cname("int"))                     # py=int
-    srow("dsp_cn_bf16", dt_cname("__bf16"))                 # py=__bf16
-    srow("dsp_cn_fp8", dt_cname("float8_e4m3"))             # py=float8_e4m3
+    
+    
+    
+    
+    srow("dsp_cn_bool",     dt_cname_dt(S.boolean()), "_Bool")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_half",     dt_cname_dt(S.half()), "__fp16")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_long",     dt_cname_dt(S.int64()), "long long")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_ulong",     dt_cname_dt(S.uint64()), "unsigned long long")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_float",     dt_cname_dt(S.single()), "float")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_double",     dt_cname_dt(S.double()), "double")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_int",     dt_cname_dt(S.int32()), "int")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_bf16",     dt_cname_dt(S.bfloat16()), "__bf16")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cn_fp8",     dt_cname_dt(S.fp8e4m3()), "KeyError")
+
+
+
     # the GLOBAL arm: a float buffer's SIZE is an `int`
-    srow("dsp_cng_glob_f32", dt_cname_global(False{}, "float"))          # py=int
-    srow("dsp_cng_glob_u64", dt_cname_global(False{}, "unsigned long"))  # py=int
-    srow("dsp_cng_glob_i64", dt_cname_global(False{}, "long"))           # py=int
-    srow("dsp_cng_alu_f32", dt_cname_global(True{}, "float"))            # py=float
-    srow("dsp_cng_alu_u64", dt_cname_global(True{}, "unsigned long"))    # py=unsigned long long
-    srow("dsp_cng_alu_bool", dt_cname_global(True{}, "bool"))            # py=_Bool
+    
+    
+    
+    
+    srow("dsp_cng_glob_f32",     dt_cname_global(False{}, S.single()), "int")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cng_glob_u64",     dt_cname_global(False{}, S.uint64()), "int")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cng_glob_i64",     dt_cname_global(False{}, S.int64()), "int")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cng_alu_f32",     dt_cname_global(True{}, S.single()), "float")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cng_alu_u64",     dt_cname_global(True{}, S.uint64()), "unsigned long long")
+
+
+
+    
+    
+    
+    
+    srow("dsp_cng_alu_bool",     dt_cname_global(True{}, S.boolean()), "_Bool")
+
+
+
     # :16 code_for_op = clang's minus SQRT. 18 -> 17.
-    urow("dsp_cfop_clang", CFOP_CLANG())                     # py=18
-    urow("dsp_cfop_dsp", CFOP_DSP())                         # py=17
-    urow("dsp_cfop_removed", cfop_removed())                 # py=1
+    
+    
+    
+    
+    urow("dsp_cfop_clang",     CFOP_CLANG(), 18)
+
+
+
+    
+    
+    
+    
+    urow("dsp_cfop_dsp",     CFOP_DSP(), 17)
+
+
+
+    
+    
+    
+    
+    urow("dsp_cfop_removed",     cfop_removed(), 1)
+
+
+
     # :46 supported_dtypes
-    urow("dsp_sd_n", U32.from_nat(List.length(&2, String, supported_names())))  # py=12
-    row("dsp_sd_drop_bf16", Bool.not(dt_supported(True{}, "__bf16")))   # py=True
-    row("dsp_sd_drop_fp8", Bool.not(dt_supported(True{}, "float8_e4m3")))  # py=True
-    row("dsp_sd_drop_fp8b", Bool.not(dt_supported(True{}, "float8_e5m2fnuz")))  # py=True
-    row("dsp_sd_keep_bool", dt_supported(True{}, "bool"))     # py=True
-    row("dsp_sd_keep_half", dt_supported(True{}, "half"))     # py=True
-    row("dsp_sd_keep_double", dt_supported(True{}, "double"))  # py=True
-    row("dsp_sd_keep_long", dt_supported(True{}, "long"))     # py=True
-    srow("dsp_sd_0", supported_12.at(0n))                     # py=bool
-    srow("dsp_sd_7", supported_12.at(7n))                     # py=long
-    srow("dsp_sd_11", supported_12.at(11n))                   # py=double
+    
+    
+    
+    
+    urow("dsp_sd_n",     U32.from_nat(List.length(&2, String, supported_names())), 12)
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_drop_bf16",     Bool.not(dt_supported(True{}, S.bfloat16())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_drop_fp8",     Bool.not(dt_supported(True{}, S.fp8e4m3())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_drop_fp8b",     Bool.not(dt_supported(True{}, S.fp8e5m2fnuz())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_keep_bool",     dt_supported(True{}, S.boolean()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_keep_half",     dt_supported(True{}, S.half()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_keep_double",     dt_supported(True{}, S.double()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_sd_keep_long",     dt_supported(True{}, S.int64()), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_sd_0",     dt_nm(supported_12.at(0n)), "bool")
+
+
+
+    
+    
+    
+    
+    srow("dsp_sd_7",     dt_nm(supported_12.at(7n)), "i64")
+
+
+
+    
+    
+    
+    
+    srow("dsp_sd_11",     dt_nm(supported_12.at(11n)), "f64")
+
+
+
 
 
 # --- 4: rpc_prep_args, :49-57 -------------------------------------------------
 def t_pra() -> IO(Unit):
   do IO<Unit>:
-    lrow("dsp_pra_len_000", [pra_len(0, 0, 0)])                    # py=0
-    lrow("dsp_pra_len_2210", [pra_len(2, 1, 0)])                    # py=3
-    lrow("dsp_pra_len_0220", [pra_len(0, 2, 2)])                    # py=4
-    lrow("dsp_pra_len_2213", [pra_len(2, 1, 3)])                    # py=6
-    lrow("dsp_pra_len_22115", [pra_len(2, 1, 15)])                  # py=18
-    lrow("dsp_pra_len_22116", [pra_len(2, 1, 16)])                  # py=19
-    lrow("dsp_pra_len_111", [pra_len(1, 1, 1)])                     # py=3
-    lrow("dsp_pra_len_112", [pra_len(1, 1, 2)])                     # py=4
+    
+    
+    
+    
+    lrow("dsp_pra_len_000",     [pra_len(0, 0, 0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_2210",     [pra_len(2, 1, 0)], "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_0220",     [pra_len(0, 2, 2)], "4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_2213",     [pra_len(2, 1, 3)], "6")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_22115",     [pra_len(2, 1, 15)], "18")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_22116",     [pra_len(2, 1, 16)], "19")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_111",     [pra_len(1, 1, 1)], "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_112",     [pra_len(1, 1, 2)], "4")
+
+
+
     # :53 fds = [-1]*(ins+outs) ++ in_fds
-    lrow("dsp_fds_2210", fds_of(2, 1, Nil{}))                       # py=4294967295,4294967295,4294967295
-    lrow("dsp_fds_2213", fds_of(2, 1, fx.ffs3()))                   # py=4294967295,4294967295,4294967295,10,11,12
-    lrow("dsp_fds_000", fds_of(0, 0, Nil{}))                        # py=
-    lrow("dsp_fds_002", fds_of(0, 0, fx.ffs3()))                    # py=10,11,12
-    lrow("dsp_fds_111", fds_of(1, 1, [10]))                         # py=4294967295,4294967295,10
-    lrow("dsp_fds_22116", fds_of(2, 1, fx.ffs16()))                 # py=4294967295,4294967295,4294967295,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+    
+    
+    
+    
+    lrow("dsp_fds_2210",     fds_of(2, 1, Nil{}), "4294967295,4294967295,4294967295")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fds_2213",     fds_of(2, 1, fx.ffs3()), "4294967295,4294967295,4294967295,10,11,12")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fds_000",     fds_of(0, 0, Nil{}), "")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fds_002",     fds_of(0, 0, fx.ffs3()), "10,11,12")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fds_111",     fds_of(1, 1, [10]), "4294967295,4294967295,10")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fds_22116",     fds_of(2, 1, fx.ffs16()), "4294967295,4294967295,4294967295,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25")
+
+
+
     # :54 attrs = [0]*(ins+outs) ++ [1]*len(in_fds)
-    lrow("dsp_attr_2210", attrs_of(2, 1, 0))                        # py=0,0,0
-    lrow("dsp_attr_2213", attrs_of(2, 1, 3))                        # py=0,0,0,1,1,1
-    lrow("dsp_attr_000", attrs_of(0, 0, 0))                         # py=
-    lrow("dsp_attr_002", attrs_of(0, 0, 2))                         # py=1,1
-    lrow("dsp_attr_111", attrs_of(1, 1, 1))                         # py=0,0,1
-    lrow("dsp_attr_0220", attrs_of(0, 2, 2))                        # py=0,0,1,1
-    lrow("dsp_attr_22116", attrs_of(2, 1, 16))                    # py=0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    
+    
+    
+    
+    lrow("dsp_attr_2210",     attrs_of(2, 1, 0), "0,0,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_2213",     attrs_of(2, 1, 3), "0,0,0,1,1,1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_000",     attrs_of(0, 0, 0), "")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_002",     attrs_of(0, 0, 2), "1,1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_111",     attrs_of(1, 1, 1), "0,0,1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_0220",     attrs_of(0, 2, 2), "0,0,1,1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_attr_22116",     attrs_of(2, 1, 16), "0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1")
+
+
+
     # the two arrays have the SAME length as pra -- that is the shape claim
-    lrow("dsp_pra_lens_eq", [pra_len(2, 1, 3),
-      U32.from_nat(List.length(&2, U32, fds_of(2, 1, fx.ffs3()))),
-      U32.from_nat(List.length(&2, U32, attrs_of(2, 1, 3)))])        # py=6,6,6
+    
+    
+    
+    
+    lrow("dsp_pra_lens_eq",     [pra_len(2, 1, 3),
+          U32.from_nat(List.length(&2, U32, fds_of(2, 1, fx.ffs3()))),
+          U32.from_nat(List.length(&2, U32, attrs_of(2, 1, 3)))], "6,6,6")
+
+
+
     # :56 the buffer arms. lens [8,16,8] is the oracle's own (2,1) fixture.
-    lrow("dsp_pra_len_2210v", pra_lens(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}))       # py=8,16,8
-    lrow("dsp_pra_pv_2210v", pra_pvs(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}))        # py=1,1,1
-    lrow("dsp_pra_len_2213v", pra_lens(pra_of(2, 1, [8, 16, 8], fx.ffs3()), Nil{}))  # py=8,16,8,0,0,0
-    lrow("dsp_pra_fd_2213v", pra_fds(pra_of(2, 1, [8, 16, 8], fx.ffs3()), Nil{}))   # py=0,0,0,10,11,12
-    lrow("dsp_pra_fd_2210v", pra_fds(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}))        # py=0,0,0
+    
+    
+    
+    
+    lrow("dsp_pra_len_2210v",     pra_lens(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}), "8,16,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_pv_2210v",     pra_pvs(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}), "1,1,1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_len_2213v",     pra_lens(pra_of(2, 1, [8, 16, 8], fx.ffs3()), Nil{}), "8,16,8,0,0,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_fd_2213v",     pra_fds(pra_of(2, 1, [8, 16, 8], fx.ffs3()), Nil{}), "0,0,0,10,11,12")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_fd_2210v",     pra_fds(pra_of(2, 1, [8, 16, 8], Nil{}), Nil{}), "0,0,0")
+
+
+
     # THE ZERO-LENGTH RULE
-    lrow("dsp_pra_len_z", pra_lens(pra_of(1, 1, [0, 8], [7]), Nil{}))   # py=0,8,0
-    lrow("dsp_pra_pv_z", pra_pvs(pra_of(1, 1, [0, 8], [7]), Nil{}))     # py=0,1,0
-    row("dsp_pra_pvset_0", Bool.not(pra.pv_set(0)))                 # py=True
-    row("dsp_pra_pvset_8", pra.pv_set(8))                           # py=True
+    
+    
+    
+    
+    lrow("dsp_pra_len_z",     pra_lens(pra_of(1, 1, [0, 8], [7]), Nil{}), "0,8,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_pv_z",     pra_pvs(pra_of(1, 1, [0, 8], [7]), Nil{}), "0,1,0")
+
+
+
+    
+    
+    
+    
+    row("dsp_pra_pvset_0",     Bool.not(pra.pv_set(0)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_pra_pvset_8",     pra.pv_set(8), True{})
+
+
+
     # one PAST the :63 refusal still packs -- :63 refuses the CALL, not the packer
-    lrow("dsp_pra_len_22116v", pra_lens(pra_of(2, 1, [8, 16, 8], fx.ffs16()), Nil{}))  # py=8,16,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    lrow("dsp_pra_fd_22116v", pra_fds(pra_of(2, 1, [8, 16, 8], fx.ffs16()), Nil{}))   # py=0,0,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+    
+    
+    
+    
+    lrow("dsp_pra_len_22116v",     pra_lens(pra_of(2, 1, [8, 16, 8], fx.ffs16()), Nil{}), "8,16,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_pra_fd_22116v",     pra_fds(pra_of(2, 1, [8, 16, 8], fx.ffs16()), Nil{}), "0,0,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25")
+
+
+
 
 # --- 5: var_vals and off_mv, :65-69 -------------------------------------------
 def t_varvals() -> IO(Unit):
   do IO<Unit>:
-    lrow("dsp_vt_b_3_0", [vt_nbytes(3, 0)])                          # py=24
-    lrow("dsp_vt_b_3_1", [vt_nbytes(3, 1)])                          # py=32
-    lrow("dsp_vt_b_3_2", [vt_nbytes(3, 2)])                          # py=40
-    lrow("dsp_vt_b_2_2", [vt_nbytes(2, 2)])                          # py=32
-    lrow("dsp_vt_b_1_1", [vt_nbytes(1, 1)])                          # py=16
-    lrow("dsp_vt_b_0_0", [vt_nbytes(0, 0)])                          # py=0
-    lrow("dsp_vt_s_3_2", [vt_nslots(3, 2)])                          # py=5
-    lrow("dsp_vt_s_0_0", [vt_nslots(0, 0)])                          # py=0
+    
+    
+    
+    
+    lrow("dsp_vt_b_3_0",     [vt_nbytes(3, 0)], "24")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_b_3_1",     [vt_nbytes(3, 1)], "32")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_b_3_2",     [vt_nbytes(3, 2)], "40")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_b_2_2",     [vt_nbytes(2, 2)], "32")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_b_1_1",     [vt_nbytes(1, 1)], "16")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_b_0_0",     [vt_nbytes(0, 0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_s_3_2",     [vt_nslots(3, 2)], "5")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_s_0_0",     [vt_nslots(0, 0)], "0")
+
+
+
     # :67 pack_into('i', mv, i*8, b.size)
-    lrow("dsp_vt_ix_0", [vt_size_byte(0)])                          # py=0
-    lrow("dsp_vt_ix_1", [vt_size_byte(1)])                          # py=8
-    lrow("dsp_vt_ix_2", [vt_size_byte(2)])                          # py=16
-    lrow("dsp_vt_lo_4", [Slot.lo(vt_size_at(0, 4))])                 # py=4
-    lrow("dsp_vt_hi_4", [Slot.hi(vt_size_at(0, 4))])                 # py=0
-    lrow("dsp_vt_lo_big", [Slot.lo(vt_size_at(0, 4294967295))])      # py=4294967295
-    lrow("dsp_vt_hi_big", [Slot.hi(vt_size_at(0, 4294967295))])      # py=0
-    lrow("dsp_vt_sz_nbytes", [Slot.nbytes(vt_size_at(0, 4))])            # py=8
+    
+    
+    
+    
+    lrow("dsp_vt_ix_0",     [vt_size_byte(0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_ix_1",     [vt_size_byte(1)], "8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_ix_2",     [vt_size_byte(2)], "16")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_lo_4",     [Slot.lo(vt_size_at(0, 4))], "4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_hi_4",     [Slot.hi(vt_size_at(0, 4))], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_lo_big",     [Slot.lo(vt_size_at(0, 4294967295))], "4294967295")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_hi_big",     [Slot.hi(vt_size_at(0, 4294967295))], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_sz_nbytes",     [Slot.nbytes(vt_size_at(0, 4))], "8")
+
+
+
     # :68 pack_into(dt.fmt, mv, (nbufs+j)*8, v) -- the offset is NOT j*8
-    lrow("dsp_vt_vox_3_0", [vt_val_offset(3, 0)])                    # py=24
-    lrow("dsp_vt_vox_3_1", [vt_val_offset(3, 1)])                    # py=32
-    lrow("dsp_vt_vox_0_0", [vt_val_offset(0, 0)])                    # py=0
-    lrow("dsp_vt_vox_1_0", [vt_val_offset(1, 0)])                    # py=8
-    lrow("dsp_vt_vox_15_0", [vt_val_offset(15, 0)])                  # py=120
+    
+    
+    
+    
+    lrow("dsp_vt_vox_3_0",     [vt_val_offset(3, 0)], "24")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_vox_3_1",     [vt_val_offset(3, 1)], "24")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_vox_0_0",     [vt_val_offset(0, 0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_vox_1_0",     [vt_val_offset(1, 0)], "8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_vt_vox_15_0",     [vt_val_offset(15, 0)], "120")
+
+
+
     # how many of the eight bytes a fmt writes
-    row("dsp_vt_hi_q", vt_hi_of("long"))                             # py=True
-    row("dsp_vt_hi_Q", vt_hi_of("unsigned long"))                    # py=True
-    row("dsp_vt_hi_d", vt_hi_of("double"))                           # py=True
-    row("dsp_vt_hi_i", Bool.not(vt_hi_of("int")))                    # py=True
-    row("dsp_vt_hi_f", Bool.not(vt_hi_of("float")))                  # py=True
-    row("dsp_vt_hi_e", Bool.not(vt_hi_of("half")))                   # py=True
-    row("dsp_vt_hi_b", Bool.not(vt_hi_of("signed char")))            # py=True
-    row("dsp_vt_hi_void", Bool.not(vt_hi_of("void")))                # py=True
-    row("dsp_vt_lo_void", Bool.not(vt_lo_of("void")))                # py=True
-    row("dsp_vt_lo_b", vt_lo_of("signed char"))                      # py=True
-    row("dsp_vt_lo_weakint", vt_lo_of("weakint"))                    # py=True
+    
+    
+    
+    
+    row("dsp_vt_hi_q",     vt_hi_of(S.int64()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_Q",     vt_hi_of(S.uint64()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_d",     vt_hi_of(S.double()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_i",     Bool.not(vt_hi_of(S.int32())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_f",     Bool.not(vt_hi_of(S.single())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_e",     Bool.not(vt_hi_of(S.half())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_b",     Bool.not(vt_hi_of(S.int8())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_hi_void",     Bool.not(vt_hi_of(S.void())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_lo_void",     Bool.not(vt_lo_of(S.void())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_lo_b",     vt_lo_of(S.int8()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_vt_lo_weakint",     vt_lo_of(S.weakint()), True{})
+
+
+
     # the three buffers' own sizes -- `rpc_prep_args`'s ins + outs
-    lrow("dsp_prog_pl_3_2", prog.pra_lens(3, 2))                     # py=40,12,8
-    lrow("dsp_prog_pl_3_0", prog.pra_lens(3, 0))                     # py=24,12,8
-    lrow("dsp_prog_pl_0_0", prog.pra_lens(0, 0))                     # py=0,0,8
-    lrow("dsp_prog_pl_1_1", prog.pra_lens(1, 1))                     # py=16,4,8
-    lrow("dsp_prog_pl_15_0", prog.pra_lens(15, 0))                   # py=120,60,8
-    lrow("dsp_off_b_0", [off_nbytes(0)])                             # py=0
-    lrow("dsp_off_b_1", [off_nbytes(1)])                             # py=4
-    lrow("dsp_off_b_3", [off_nbytes(3)])                             # py=12
-    lrow("dsp_off_b_15", [off_nbytes(15)])                           # py=60
-    lrow("dsp_off_b_16", [off_nbytes(16)])                           # py=64
+    
+    
+    
+    
+    lrow("dsp_prog_pl_3_2",     prog.pra_lens(3, 2), "40,12,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_prog_pl_3_0",     prog.pra_lens(3, 0), "24,12,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_prog_pl_0_0",     prog.pra_lens(0, 0), "0,0,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_prog_pl_1_1",     prog.pra_lens(1, 1), "16,4,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_prog_pl_15_0",     prog.pra_lens(15, 0), "120,60,8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_off_b_0",     [off_nbytes(0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_off_b_1",     [off_nbytes(1)], "4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_off_b_3",     [off_nbytes(3)], "12")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_off_b_15",     [off_nbytes(15)], "60")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_off_b_16",     [off_nbytes(16)], "64")
+
+
+
 
 # --- 6: the program call, :62-71 ----------------------------------------------
 def t_call() -> IO(Unit):
   do IO<Unit>:
-    urow("dsp_exec_sc_0", prog.exec_sc(0))                          # py=33685760
-    urow("dsp_exec_sc_1", prog.exec_sc(1))                          # py=33685761
-    urow("dsp_exec_sc_3", prog.exec_sc(3))                          # py=33685763
-    urow("dsp_exec_sc_7", prog.exec_sc(7))                          # py=33685767
-    urow("dsp_exec_sc_15", prog.exec_sc(15))                        # py=33685775
-    urow("dsp_exec_sc_16", prog.exec_sc(16))                        # py=33685776
-    lrow("dsp_exec_sc_f", [sc_fds(prog.exec_sc(7))])                 # py=7
-    lrow("dsp_exec_sc_i", [sc_ins(prog.exec_sc(7))])                 # py=2
-    lrow("dsp_exec_sc_o", [sc_outs(prog.exec_sc(7))])               # py=1
-    lrow("dsp_exec_sc_m", [sc_method(prog.exec_sc(7))])             # py=2
-    row("dsp_toomany_15", Bool.not(prog.too_many(15)))              # py=True
-    row("dsp_toomany_16", prog.too_many(16))                        # py=True
-    row("dsp_toomany_17", prog.too_many(17))                        # py=True
+    
+    
+    
+    
+    urow("dsp_exec_sc_0",     prog.exec_sc(0), 33685760)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_sc_1",     prog.exec_sc(1), 33685761)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_sc_3",     prog.exec_sc(3), 33685763)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_sc_7",     prog.exec_sc(7), 33685767)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_sc_15",     prog.exec_sc(15), 33685775)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_sc_16",     prog.exec_sc(16), 33685776)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_sc_f",     [sc_fds(prog.exec_sc(7))], "7")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_sc_i",     [sc_ins(prog.exec_sc(7))], "2")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_sc_o",     [sc_outs(prog.exec_sc(7))], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_sc_m",     [sc_method(prog.exec_sc(7))], "2")
+
+
+
+    
+    
+    
+    
+    row("dsp_toomany_15",     Bool.not(prog.too_many(15)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_toomany_16",     prog.too_many(16), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_toomany_17",     prog.too_many(17), True{})
+
+
+
     # the trace for a legal call
     +ok : Tr <- IO.pure(Tr, prog.run(3, 2, Tr.of()))
-    urow("dsp_call_ok_n", seen(ok))                                  # py=1
-    urow("dsp_call_ok_sc", first(cargs(CALL_EXEC_LIB(), ok)))        # py=33685763
-    row("dsp_call_ok_flag", Bool.not(Tr.refused(ok)))                # py=True
+    
+    
+    
+    
+    urow("dsp_call_ok_n",     seen(ok), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_call_ok_sc",     first(cargs(CALL_EXEC_LIB(), ok)), 33685763)
+
+
+
+    
+    
+    
+    
+    row("dsp_call_ok_flag",     Bool.not(Tr.refused(ok)), True{})
+
+
+
     # and for a refused one: :63 raises BEFORE the call, so nothing is recorded
     +no : Tr <- IO.pure(Tr, prog.run(16, 0, Tr.of()))
-    urow("dsp_call_16_n", seen(no))                                  # py=0
-    row("dsp_call_16_refused", Tr.refused(no))                      # py=True
+    
+    
+    
+    
+    urow("dsp_call_16_n",     seen(no), 0)
+
+
+
+    
+    
+    
+    
+    row("dsp_call_16_refused",     Tr.refused(no), True{})
+
+
+
     # and a refusal BLOCKS everything after it, so a legal call behind a refused
     # one records nothing. :63's raise is not a flag, it is the end of the program.
     +blk : Tr <- IO.pure(Tr, prog.run(1, 0, prog.run(16, 0, Tr.of())))
-    urow("dsp_call_blocked_n", seen(blk))                            # py=0
-    row("dsp_call_blocked_flag", Tr.refused(blk))                    # py=True
+    
+    
+    
+    
+    urow("dsp_call_blocked_n",     seen(blk), 0)
+
+
+
+    
+    
+    
+    
+    row("dsp_call_blocked_flag",     Tr.refused(blk), True{})
+
+
+
     # :71 and :292 -- two programs, TWO SCALES
-    lrow("dsp_scale_real", [prog.scale_micros()])                   # py=1000000
-    lrow("dsp_scale_mock", [mprog.scale_ins()])                     # py=1000000000
-    lrow("dsp_scale_gap", [U32.sub(mprog.scale_ins(), prog.scale_micros())])  # py=999000000
-    lrow("dsp_timer_b", [TIMER_BYTES()])                             # py=8
+    
+    
+    
+    
+    lrow("dsp_scale_real",     [prog.scale_micros()], "1000000")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_scale_mock",     [mprog.scale_ins()], "1000000000")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_scale_gap",     [U32.sub(mprog.scale_ins(), prog.scale_micros())], "999000000")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_timer_b",     [TIMER_BYTES()], "8")
+
+
+
     # and a refused call AFTER a legal one leaves the earlier call intact
     +mix : Tr <- IO.pure(Tr, prog.run(16, 0, prog.run(1, 0, Tr.of())))
-    urow("dsp_call_mix_n", seen(mix))                                # py=1
-    urow("dsp_call_mix_sc", first(cargs(CALL_EXEC_LIB(), mix)))      # py=33685761
+    
+    
+    
+    
+    urow("dsp_call_mix_n",     seen(mix), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_call_mix_sc",     first(cargs(CALL_EXEC_LIB(), mix)), 33685761)
+
+
+
 
 # --- 7: the entry shim, :27-44 -----------------------------------------------
 def t_entry() -> IO(Unit):
   do IO<Unit>:
-    srow("dsp_e_h0", entry.head0())
-      # py=int entry(unsigned long long handle, unsigned int sc, remote_arg* pra) {
-    srow("dsp_e_h2", entry.head2())                    # py=HAP_power_set((void*)handle, (void*)&req);
-    srow("dsp_e_guard", entry.guard())                # py=if ((sc>>24) != 2) return 0;
-    srow("dsp_e_topen", entry.timer_open())
-      # py=unsigned long long start = HAP_perf_get_time_us();
-    srow("dsp_e_tclose", entry.timer_close())
-      # py=*(unsigned long long *)(pra[2].buf.pv) = HAP_perf_get_time_us() - start;
-    srow("dsp_e_ret", entry.ret())                     # py=return 0; }
+    
+    
+    
+    
+    srow("dsp_e_h0",     entry.head0(), "int entry(unsigned long long handle, unsigned int sc, remote_arg* pra) {")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_h2",     entry.head2(), "HAP_power_set((void*)handle, (void*)&req);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_guard",     entry.guard(), "if ((sc>>24) != 2) return 0;")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_topen",     entry.timer_open(), "unsigned long long start = HAP_perf_get_time_us();")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_tclose",     entry.timer_close(), "*(unsigned long long *)(pra[2].buf.pv) = HAP_perf_get_time_us() - start;")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_ret",     entry.ret(), "return 0; }")
+
+
+
     # :32-33 the sz_or_val line. A GLOBAL is `int` at i*8 whatever its dtype.
-    srow("dsp_e_sz_g0", entry.sz_decl(0, fx.g("float", 4)))
-      # py=int sz_or_val_0 = *(int*)((char*)pra[0].buf.pv+0);
-    srow("dsp_e_sz_g1", entry.sz_decl(1, fx.g("float", 4)))
-      # py=int sz_or_val_1 = *(int*)((char*)pra[0].buf.pv+8);
-    srow("dsp_e_sz_g2", entry.sz_decl(2, fx.g("unsigned int", 1)))
-      # py=int sz_or_val_2 = *(int*)((char*)pra[0].buf.pv+16);
-    srow("dsp_e_sz_g3", entry.sz_decl(3, fx.g("unsigned long", 1)))
-      # py=int sz_or_val_3 = *(int*)((char*)pra[0].buf.pv+24);
+    
+    
+    
+    
+    srow("dsp_e_sz_g0",     entry.sz_decl(0, fx.g(S.single(), 4)), "int sz_or_val_0 = *(int*)((char*)pra[0].buf.pv+0);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_g1",     entry.sz_decl(1, fx.g(S.single(), 4)), "int sz_or_val_1 = *(int*)((char*)pra[0].buf.pv+8);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_g2",     entry.sz_decl(2, fx.g(S.uint32(), 1)), "int sz_or_val_2 = *(int*)((char*)pra[0].buf.pv+16);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_g3",     entry.sz_decl(3, fx.g(S.uint64(), 1)), "int sz_or_val_3 = *(int*)((char*)pra[0].buf.pv+24);")
+
+
+
+
     # and an ALU is `_render_dtype`, at the SAME i*8 slot
-    srow("dsp_e_sz_a0", entry.sz_decl(0, fx.a("unsigned int", 1)))
-      # py=unsigned int sz_or_val_0 = *(unsigned int*)((char*)pra[0].buf.pv+0);
-    srow("dsp_e_sz_a1", entry.sz_decl(1, fx.a("float", 1)))
-      # py=float sz_or_val_1 = *(float*)((char*)pra[0].buf.pv+8);
-    srow("dsp_e_sz_a2", entry.sz_decl(2, fx.a("int", 1)))
-      # py=int sz_or_val_2 = *(int*)((char*)pra[0].buf.pv+16);
-    srow("dsp_e_sz_a3", entry.sz_decl(3, fx.a("int", 1)))
-      # py=int sz_or_val_3 = *(int*)((char*)pra[0].buf.pv+24);
+    
+    
+    
+    
+    srow("dsp_e_sz_a0",     entry.sz_decl(0, fx.a(S.uint32(), 1)), "unsigned int sz_or_val_0 = *(unsigned int*)((char*)pra[0].buf.pv+0);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_a1",     entry.sz_decl(1, fx.a(S.single(), 1)), "float sz_or_val_1 = *(float*)((char*)pra[0].buf.pv+8);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_a2",     entry.sz_decl(2, fx.a(S.int32(), 1)), "int sz_or_val_2 = *(int*)((char*)pra[0].buf.pv+16);")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_sz_a3",     entry.sz_decl(3, fx.a(S.int32(), 1)), "int sz_or_val_3 = *(int*)((char*)pra[0].buf.pv+24);")
+
+
+
+
     # :35 the off line
-    srow("dsp_e_off0", entry.off(0))                   # py=int off0 = ((int*)pra[1].buf.pv)[0];
-    srow("dsp_e_off1", entry.off(1))                   # py=int off1 = ((int*)pra[1].buf.pv)[1];
-    srow("dsp_e_off2", entry.off(2))                   # py=int off2 = ((int*)pra[1].buf.pv)[2];
+    
+    
+    
+    
+    srow("dsp_e_off0",     entry.off(0), "int off0 = ((int*)pra[1].buf.pv)[0];")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_off1",     entry.off(1), "int off1 = ((int*)pra[1].buf.pv)[1];")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_off2",     entry.off(2), "int off2 = ((int*)pra[1].buf.pv)[2];")
+
+
+
     # :36-37 the mmap line and the dma slot `i+3`
-    srow("dsp_e_mm0", entry.mmap(0))
-      # py=void *buf_0 = HAP_mmap(0,sz_or_val_0,3,0,pra[3].dma.fd,0)+off0;
-    srow("dsp_e_mm1", entry.mmap(1))
-      # py=void *buf_1 = HAP_mmap(0,sz_or_val_1,3,0,pra[4].dma.fd,0)+off1;
-    srow("dsp_e_mm2", entry.mmap(2))
-      # py=void *buf_2 = HAP_mmap(0,sz_or_val_2,3,0,pra[5].dma.fd,0)+off2;
-    lrow("dsp_e_dma_0", [entry.dma_slot(0)])           # py=3
-    lrow("dsp_e_dma_2", [entry.dma_slot(2)])           # py=5
-    lrow("dsp_e_dma_4", [entry.dma_slot(4)])           # py=7
-    lrow("dsp_e_dma_n", [U32.sub(entry.dma_slot(0), U32.add(prog.nins(), prog.nouts()))])  # py=0
+    
+    
+    
+    
+    srow("dsp_e_mm0",     entry.mmap(0), "void *buf_0 = HAP_mmap(0,sz_or_val_0,3,0,pra[3].dma.fd,0)+off0;")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_mm1",     entry.mmap(1), "void *buf_1 = HAP_mmap(0,sz_or_val_1,3,0,pra[4].dma.fd,0)+off1;")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_mm2",     entry.mmap(2), "void *buf_2 = HAP_mmap(0,sz_or_val_2,3,0,pra[5].dma.fd,0)+off2;")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_e_dma_0",     [entry.dma_slot(0)], "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_e_dma_2",     [entry.dma_slot(2)], "5")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_e_dma_4",     [entry.dma_slot(4)], "7")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_e_dma_n",     [U32.sub(entry.dma_slot(0), U32.add(prog.nins(), prog.nouts()))], "0")
+
+
+
     # :42 the munmap line
-    srow("dsp_e_un0", entry.munmap(0))                 # py=HAP_munmap(buf_0, sz_or_val_0);
-    srow("dsp_e_un2", entry.munmap(2))                 # py=HAP_munmap(buf_2, sz_or_val_2);
+    
+    
+    
+    
+    srow("dsp_e_un0",     entry.munmap(0), "HAP_munmap(buf_0, sz_or_val_0);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_un2",     entry.munmap(2), "HAP_munmap(buf_2, sz_or_val_2);")
+
+
+
     # :39,:40 the kernel-call argument
-    srow("dsp_e_arg_g0", entry.arg_name(0, fx.g("float", 4)))   # py=buf_0
-    srow("dsp_e_arg_g1", entry.arg_name(1, fx.g("float", 4)))   # py=buf_1
-    srow("dsp_e_arg_a0", entry.arg_name(0, fx.a("unsigned int", 1)))  # py=sz_or_val_0
-    srow("dsp_e_arg_a1", entry.arg_name(1, fx.a("float", 1)))        # py=sz_or_val_1
+    
+    
+    
+    
+    srow("dsp_e_arg_g0",     entry.arg_name(0, fx.g(S.single(), 4)), "buf_0")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_arg_g1",     entry.arg_name(1, fx.g(S.single(), 4)), "buf_1")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_arg_a0",     entry.arg_name(0, fx.a(S.uint32(), 1)), "sz_or_val_0")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_arg_a1",     entry.arg_name(1, fx.a(S.single(), 1)), "sz_or_val_1")
+
+
+
     # THE agga FIXTURE -- ALU, GLOBAL, GLOBAL, ALU. The index is the PARAM index.
-    srow("dsp_e_ag_off1", entry.off(1))                # py=int off1 = ((int*)pra[1].buf.pv)[1];
-    srow("dsp_e_ag_mm1", entry.mmap(1))
-      # py=void *buf_1 = HAP_mmap(0,sz_or_val_1,3,0,pra[4].dma.fd,0)+off1;
-    srow("dsp_e_ag_mm2", entry.mmap(2))
-      # py=void *buf_2 = HAP_mmap(0,sz_or_val_2,3,0,pra[5].dma.fd,0)+off2;
-    srow("dsp_e_ag_arg0", entry.arg_name(0, fx.a("unsigned int", 1)))  # py=sz_or_val_0
-    srow("dsp_e_ag_arg3", entry.arg_name(3, fx.a("int", 1)))            # py=sz_or_val_3
+    
+    
+    
+    
+    srow("dsp_e_ag_off1",     entry.off(1), "int off1 = ((int*)pra[1].buf.pv)[1];")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_ag_mm1",     entry.mmap(1), "void *buf_1 = HAP_mmap(0,sz_or_val_1,3,0,pra[4].dma.fd,0)+off1;")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_ag_mm2",     entry.mmap(2), "void *buf_2 = HAP_mmap(0,sz_or_val_2,3,0,pra[5].dma.fd,0)+off2;")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_ag_arg0",     entry.arg_name(0, fx.a(S.uint32(), 1)), "sz_or_val_0")
+
+
+
+    
+    
+    
+    
+    srow("dsp_e_ag_arg3",     entry.arg_name(3, fx.a(S.int32(), 1)), "sz_or_val_3")
+
+
+
     # the LINE COUNTS. One GLOBAL fixture is 4 + 1 + 2 + 4 + 1 = 12, which is what
     # CPython's eight msrc entries produce. agga is 4 + 4 + 4 + 4 + 2 = 18.
-    urow("dsp_e_lines_g1", entry.line_count(fx.g1()))  # py=12
-    urow("dsp_e_lines_g2", entry.line_count(fx.g2()))                    # py=16
-    urow("dsp_e_lines_g0", entry.line_count(Nil{}))                       # py=8
-    urow("dsp_e_lines_agga", entry.line_count(fx.agga()))                 # py=18
-    urow("dsp_e_lines_a1", entry.line_count(fx.a1()))                    # py=9
-    urow("dsp_e_lines_a2", entry.line_count(fx.a2()))                    # py=10
-    urow("dsp_e_lines_gag", entry.line_count(fx.ga1()))                    # py=17
-    urow("dsp_e_nfixed", ENTRY_FIXED())                                   # py=4
-    urow("dsp_e_ntail", ENTRY_TAIL())                                     # py=4
-    urow("dsp_e_nsz_agga", entry.count_sz_of(fx.agga()))                  # py=4
-    urow("dsp_e_noff_agga", entry.count_off(fx.agga()))                   # py=2
-    urow("dsp_e_nmmap_agga", entry.count_mmap(fx.agga()))                 # py=2
-    urow("dsp_e_nalu_agga", entry.count_alu(fx.agga()))                   # py=2
-    urow("dsp_e_noff_g2", entry.count_off(fx.g2()))                      # py=2
-    urow("dsp_e_noff_a2", entry.count_off(fx.a2()))                     # py=0
+    
+    
+    
+    
+    urow("dsp_e_lines_g1",     entry.line_count(fx.g1()), 12)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_g2",     entry.line_count(fx.g2()), 16)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_g0",     entry.line_count(Nil{}), 8)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_agga",     entry.line_count(fx.agga()), 18)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_a1",     entry.line_count(fx.a1()), 9)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_a2",     entry.line_count(fx.a2()), 10)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_lines_gag",     entry.line_count(fx.ga1()), 17)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_nfixed",     ENTRY_FIXED(), 4)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_ntail",     ENTRY_TAIL(), 4)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_nsz_agga",     entry.count_sz_of(fx.agga()), 4)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_noff_agga",     entry.count_off(fx.agga()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_nmmap_agga",     entry.count_mmap(fx.agga()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_nalu_agga",     entry.count_alu(fx.agga()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_noff_g2",     entry.count_off(fx.g2()), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_e_noff_a2",     entry.count_off(fx.a2()), 0)
+
+
+
 
 # --- 8: the mock shim, :256-274 ----------------------------------------------
 def t_mock() -> IO(Unit):
   do IO<Unit>:
-    srow("dsp_m_start", mrender.start())               # py=void _start(void) {
-    srow("dsp_m_stamp", mrender.stamp())               # py=unsigned int st = inscount();
-    srow("dsp_m_finish", mrender.finish())
-      # py=unsigned int et = inscount() - st; write(1, &et, sizeof(et));
-    srow("dsp_m_exit", mrender.exit())                 # py=exit(0); }
-    # :264 the mmap2 + read loop
-    srow("dsp_m_mm0", mrender.mmap(0, 4))
-      # py=void *buf0 = mmap2(0, 4, 3, 0x21, -1, 0); for(int rd = 0; rd < 4; rd += read(0, buf0+rd, 4-rd));
-    srow("dsp_m_mm1", mrender.mmap(1, 16))
-      # py=void *buf1 = mmap2(0, 16, 3, 0x21, -1, 0); for(int rd = 0; rd < 16; rd += read(0, buf1+rd, 16-rd));
-    srow("dsp_m_mm2", mrender.mmap(2, 8))
-      # py=void *buf2 = mmap2(0, 8, 3, 0x21, -1, 0); for(int rd = 0; rd < 8; rd += read(0, buf2+rd, 8-rd));
+    
+    
+    
+    
+    srow("dsp_m_start",     mrender.start(), "void _start(void) {")
+
+
+    
+    
+    srow("dsp_m_stamp",     mrender.stamp(), "unsigned int st = inscount();")
+
+
+    
+    
+    srow("dsp_m_finish",    mrender.finish(), "unsigned int et = inscount() - st; write(1, &et, sizeof(et));")
+
+
+    
+    
+    srow("dsp_m_exit",      mrender.exit(), "exit(0); }")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_mm0",     mrender.mmap(0, 4), "void *buf0 = mmap2(0, 4, 3, 0x21, -1, 0); for(int rd = 0; rd < 4; rd += read(0, buf0+rd, 4-rd));")
+
+
+    
+    
+    srow("dsp_m_mm1",     mrender.mmap(1, 16), "void *buf1 = mmap2(0, 16, 3, 0x21, -1, 0); for(int rd = 0; rd < 16; rd += read(0, buf1+rd, 16-rd));")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_mm2",     mrender.mmap(2, 8), "void *buf2 = mmap2(0, 8, 3, 0x21, -1, 0); for(int rd = 0; rd < 8; rd += read(0, buf2+rd, 8-rd));")
+
+
+
     # :266 the val read -- the dtype's OWN name and the ITEMSIZE as the length
-    srow("dsp_m_v0", mrender.val(0, fx.a("unsigned int", 1)))
-      # py=unsigned int val0; read(0, &val0, 4);
-    srow("dsp_m_v1", mrender.val(1, fx.a("float", 1)))     # py=float val1; read(0, &val1, 4);
-    srow("dsp_m_v2", mrender.val(2, fx.a("int", 1)))       # py=int val2; read(0, &val2, 4);
-    srow("dsp_m_v3", mrender.val(3, fx.a("int", 1)))       # py=int val3; read(0, &val3, 4);
-    srow("dsp_m_v4", mrender.val(4, fx.a("long", 1)))      # py=long long val4; read(0, &val4, 8);
-    srow("dsp_m_v5", mrender.val(5, fx.a("half", 1)))      # py=__fp16 val5; read(0, &val5, 2);
-    srow("dsp_m_v6", mrender.val(6, fx.a("signed char", 1)))  # py=signed char val6; read(0, &val6, 1);
+    
+    
+    
+    
+    srow("dsp_m_v0",     mrender.val(0, fx.a(S.uint32(), 1)), "unsigned int val0; read(0, &val0, 4);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v1",     mrender.val(1, fx.a(S.single(), 1)), "float val1; read(0, &val1, 4);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v2",     mrender.val(2, fx.a(S.int32(), 1)), "int val2; read(0, &val2, 4);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v3",     mrender.val(3, fx.a(S.int32(), 1)), "int val3; read(0, &val3, 4);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v4",     mrender.val(4, fx.a(S.int64(), 1)), "long long val4; read(0, &val4, 8);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v5",     mrender.val(5, fx.a(S.half(), 1)), "__fp16 val5; read(0, &val5, 2);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_v6",     mrender.val(6, fx.a(S.int8(), 1)), "signed char val6; read(0, &val6, 1);")
+
+
+
     # :268 the (void*) cast the real shim does not need
-    srow("dsp_m_ag0", mrender.arg_name(0, fx.g("float", 4)))     # py=(void*)buf0
-    srow("dsp_m_ag1", mrender.arg_name(1, fx.g("float", 4)))     # py=(void*)buf1
-    srow("dsp_m_aa0", mrender.arg_name(0, fx.a("unsigned int", 1)))  # py=val0
-    srow("dsp_m_ag2", mrender.arg_name(2, fx.a("float", 1)))         # py=val2
+    
+    
+    
+    
+    srow("dsp_m_ag0",     mrender.arg_name(0, fx.g(S.single(), 4)), "(void*)buf0")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_ag1",     mrender.arg_name(1, fx.g(S.single(), 4)), "(void*)buf1")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_aa0",     mrender.arg_name(0, fx.a(S.uint32(), 1)), "val0")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_ag2",     mrender.arg_name(2, fx.a(S.single(), 1)), "val2")
+
+
+
     # :272 the output write
-    srow("dsp_m_w0", mrender.emit(0, 4))                  # py=write(1, buf0, 4);
-    srow("dsp_m_w1", mrender.emit(1, 16))                 # py=write(1, buf1, 16);
+    
+    
+    
+    
+    srow("dsp_m_w0",     mrender.emit(0, 4), "write(1, buf0, 4);")
+
+
+
+    
+    
+    
+    
+    srow("dsp_m_w1",     mrender.emit(1, 16), "write(1, buf1, 16);")
+
+
+
     # :262 the byte count is max_numel*itemsize, NOT the allocated size
-    lrow("dsp_m_nb_u32_1", [mrender.nbytes(fx.g("unsigned int", 1))])  # py=4
-    lrow("dsp_m_nb_f32_4", [mrender.nbytes(fx.g("float", 4))])         # py=16
-    lrow("dsp_m_nb_f32_2", [mrender.nbytes(fx.g("float", 2))])         # py=8
-    lrow("dsp_m_nb_f64_2", [mrender.nbytes(fx.g("double", 2))])        # py=16
-    lrow("dsp_m_nb_f16_3", [mrender.nbytes(fx.g("half", 3))])          # py=6
-    lrow("dsp_m_nb_u8_7", [mrender.nbytes(fx.g("unsigned char", 7))])  # py=7
-    lrow("dsp_m_nb_i64_1", [mrender.nbytes(fx.g("long", 1))])          # py=8
-    lrow("dsp_m_nb_bf16_2", [mrender.nbytes(fx.g("__bf16", 2))])       # py=4
+    
+    
+    
+    
+    lrow("dsp_m_nb_u32_1",     [mrender.nbytes(fx.g(S.uint32(), 1))], "4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_f32_4",     [mrender.nbytes(fx.g(S.single(), 4))], "16")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_f32_2",     [mrender.nbytes(fx.g(S.single(), 2))], "8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_f64_2",     [mrender.nbytes(fx.g(S.double(), 2))], "16")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_f16_3",     [mrender.nbytes(fx.g(S.half(), 3))], "6")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_u8_7",     [mrender.nbytes(fx.g(S.uint8(), 7))], "7")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_i64_1",     [mrender.nbytes(fx.g(S.int64(), 1))], "8")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_nb_bf16_2",     [mrender.nbytes(fx.g(S.bfloat16(), 2))], "4")
+
+
+
     # the gpages syscall numbers, named at :257
-    lrow("dsp_m_sys", [SYSCALL_READ(), SYSCALL_WRITE(), SYSCALL_EXIT(),
-                       SYSCALL_MMAP2(), HEX_REG_QEMU_INSN_CNT(),
-                       INSN_CNT_WORD(), MOCK_MMAP_FLAGS(), MMAP_PROT()])
-    # py=63,64,93,222,21,1784217600,33,3
-    lrow("dsp_m_boiler", [boiler_lines(), boiler_first_len()])  # py=9,65
-    lrow("dsp_m_boiler_has_syscall", [u32_of_str(mockdsp_boilerplate(), "syscall")])  # py=1
-    lrow("dsp_m_boiler_has_read", [u32_of_str(mockdsp_boilerplate(), "read")])        # py=1
-    lrow("dsp_m_boiler_has_write", [u32_of_str(mockdsp_boilerplate(), "write")])      # py=1
-    lrow("dsp_m_boiler_has_exit", [u32_of_str(mockdsp_boilerplate(), "exit")])        # py=1
-    lrow("dsp_m_boiler_has_mmap2", [u32_of_str(mockdsp_boilerplate(), "mmap2")])      # py=1
-    lrow("dsp_m_boiler_has_inscount", [u32_of_str(mockdsp_boilerplate(), "inscount")])  # py=1
+    
+    
+    
+    
+    lrow("dsp_m_sys",     [SYSCALL_READ(), SYSCALL_WRITE(), SYSCALL_EXIT(),
+                           SYSCALL_MMAP2(), HEX_REG_QEMU_INSN_CNT(),
+                           INSN_CNT_WORD(), MOCK_MMAP_FLAGS(), MMAP_PROT()], "63,64,93,222,21,1779810304,33,3")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler",     [boiler_lines(), boiler_first_len()], "9,106")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_syscall",     [u32_of_str(mockdsp_boilerplate(), "syscall")], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_read",     [u32_of_str(mockdsp_boilerplate(), "read")], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_write",     [u32_of_str(mockdsp_boilerplate(), "write")], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_exit",     [u32_of_str(mockdsp_boilerplate(), "exit")], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_mmap2",     [u32_of_str(mockdsp_boilerplate(), "mmap2")], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_m_boiler_has_inscount",     [u32_of_str(mockdsp_boilerplate(), "inscount")], "1")
+
+
+
 
 
 # --- 9: the allocator, :73-96 -------------------------------------------------
@@ -2226,90 +4260,454 @@ def t_alloc() -> IO(Unit):
     # :96 offsets ACCUMULATE. BOTH fields, and the second is the load-bearing one.
     +b0 : DspBuf <- IO.pure(DspBuf, buf.of(0, 4096, 1024, 7, 9, True{}))
     +b1 : DspBuf <- IO.pure(DspBuf, alloc.offset(b0, 256, 64))
-    urow("dsp_acc_off0", buf.offset(b0))                  # py=0
-    urow("dsp_acc_off1", buf.offset(b1))                  # py=64
-    urow("dsp_acc_va1", buf.va(b1))                       # py=4160
-    urow("dsp_acc_sz1", buf.size(b1))                     # py=256
-    urow("dsp_acc_fd1", buf.share_fd(b1))                 # py=7
-    urow("dsp_acc_hdl1", buf.share_handle(b1))            # py=9
-    urow("dsp_acc_id1", buf.id(b1))                       # py=0
-    urow("dsp_acc_n1", buf.nbytes(b1))                    # py=256
-    row("dsp_acc_share1", buf.has_share(b1))              # py=True
+    
+    
+    
+    
+    urow("dsp_acc_off0",     buf.offset(b0), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_off1",     buf.offset(b1), 64)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_va1",     buf.va(b1), 4160)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_sz1",     buf.size(b1), 256)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_fd1",     buf.share_fd(b1), 7)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_hdl1",     buf.share_handle(b1), 9)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_id1",     buf.id(b1), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_n1",     buf.nbytes(b1), 256)
+
+
+
+    
+    
+    
+    
+    row("dsp_acc_share1",     buf.has_share(b1), True{})
+
+
+
     # a SECOND view accumulates on the FIRST -- the only row that can see a
     # dropped `buf.offset+`.
     +b2 : DspBuf <- IO.pure(DspBuf, alloc.offset(b1, 128, 16))
-    urow("dsp_acc_off2", buf.offset(b2))                  # py=80
-    urow("dsp_acc_va2", buf.va(b2))                       # py=4176
-    urow("dsp_acc_sz2", buf.size(b2))                     # py=128
-    urow("dsp_acc_hdl2", buf.share_handle(b2))            # py=9
-    urow("dsp_acc_fd2", buf.share_fd(b2))                 # py=7
-    row("dsp_acc_share2", buf.has_share(b2))              # py=True
+    
+    
+    
+    
+    urow("dsp_acc_off2",     buf.offset(b2), 80)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_va2",     buf.va(b2), 4176)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_sz2",     buf.size(b2), 128)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_hdl2",     buf.share_handle(b2), 9)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_fd2",     buf.share_fd(b2), 7)
+
+
+
+    
+    
+    
+    
+    row("dsp_acc_share2",     buf.has_share(b2), True{})
+
+
+
     # and a third, to catch an accumulate that only works twice
     +b3 : DspBuf <- IO.pure(DspBuf, alloc.offset(b2, 64, 4))
-    urow("dsp_acc_off3", buf.offset(b3))                  # py=84
-    urow("dsp_acc_va3", buf.va(b3))                       # py=4180
+    
+    
+    
+    
+    urow("dsp_acc_off3",     buf.offset(b3), 84)
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_va3",     buf.va(b3), 4180)
+
+
+
     # the arithmetic on its own, so a bug is attributable
-    lrow("dsp_acc_math", [alloc.offset.va(4096, 64), alloc.offset.acc(0, 64),
-                          alloc.offset.acc(64, 16), alloc.offset.acc(80, 4)])
-    # py=4160,64,80,84
-    lrow("dsp_acc_math0", [alloc.offset.va(0, 0), alloc.offset.acc(0, 0)])  # py=0,0
+    
+    
+    
+    
+    lrow("dsp_acc_math",     [alloc.offset.va(4096, 64), alloc.offset.acc(0, 64),
+                              alloc.offset.acc(64, 16), alloc.offset.acc(80, 4)], "4160,64,80,84")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_acc_math0",     [alloc.offset.va(0, 0), alloc.offset.acc(0, 0)], "0,0")
+
+
+
     # the MOCK arm has NO share and a view of it stays share-less
     +m0 : DspBuf <- IO.pure(DspBuf, buf.of(0, 0, 1024, 0, 0, False{}))
     +m1 : DspBuf <- IO.pure(DspBuf, alloc.offset(m0, 256, 64))
-    row("dsp_acc_mshare", Bool.not(buf.has_share(m1)))    # py=True
-    urow("dsp_acc_moff", buf.offset(m1))                  # py=64
+    
+    
+    
+    
+    row("dsp_acc_mshare",     Bool.not(buf.has_share(m1)), True{})
+
+
+
+    
+    
+    
+    
+    urow("dsp_acc_moff",     buf.offset(m1), 64)
+
+
+
     # :81 ION's align and heap mask
-    lrow("dsp_ion", [ION_ALIGN(), ion.heap_id_mask(), ION_FLAG_CACHED(),
-                     U32.from_nat(ION_SYSTEM_HEAP_ID()), ION_FLAG_CACHED()])
-    # py=512,1,1,0,1
-    lrow("dsp_ion_a", [ion.aligned(1), ion.aligned(511), ion.aligned(512),
-                       ion.aligned(513), ion.aligned(1024)])
-    # py=512,512,512,1024,1024
+    
+    
+    
+    
+    lrow("dsp_ion",     [ION_ALIGN(), ion.heap_id_mask(), ION_FLAG_CACHED(),
+                         U32.from_nat(ION_SYSTEM_HEAP_ID()), ION_FLAG_CACHED()], "512,1,1,25,1")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_ion_a",     [ion.aligned(1), ion.aligned(511), ion.aligned(512),
+                           ion.aligned(513), ion.aligned(1024)], "512,512,512,1024,1024")
+
+
+
+
     # :135 the ROUNDED size is allocated and the RAW size is copied
-    lrow("dsp_shell_sz", [dev.shell_size(0), dev.shell_size(1),
-                          dev.shell_size(4095), dev.shell_size(4096),
-                          dev.shell_size(4097), dev.shell_size(4660)])
-    # py=0,4096,4096,4096,8192,8192
-    lrow("dsp_mmap", [MMAP_PROT(), alloc.mock_flags(), alloc.real_flags()])  # py=3,33,1
+    
+    
+    
+    
+    lrow("dsp_shell_sz",     [dev.shell_size(0), dev.shell_size(1),
+                              dev.shell_size(4095), dev.shell_size(4096),
+                              dev.shell_size(4097), dev.shell_size(4660)], "0,4096,4096,4096,8192,8192")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_mmap",     [MMAP_PROT(), alloc.mock_flags(), alloc.real_flags()], "3,33,1")
+
+
+
     # the free order, and the MOCK negative case for each of its three calls
     +fr : Tr <- IO.pure(Tr, alloc.free(True{}, 1024, 9, Tr.of()))
-    urow("dsp_free_r_n", seen(fr))                        # py=3
-    urow("dsp_free_r_hdl", first(cargs(CALL_ION_FREE(), fr)))             # py=9
-    urow("dsp_free_r_mm", first(cargs(CALL_MMAP(), fr)))                  # py=1024
-    row("dsp_free_r_order", seq(fr, [Call{CALL_MMAP, 1024},
-      Call{CALL_OS_CLOSE, FD_NONE()}, Call{CALL_ION_FREE, 9}]))            # py=True
-    row("dsp_free_r_rev", Bool.not(seq(fr, [Call{CALL_ION_FREE, 9},
-      Call{CALL_MMAP, 1024}])))                                           # py=True
+    
+    
+    
+    
+    urow("dsp_free_r_n",     seen(fr), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_r_hdl",     first(cargs(CALL_ION_FREE(), fr)), 9)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_r_mm",     first(cargs(CALL_MMAP(), fr)), 1024)
+
+
+
+    
+    
+    
+    
+    row("dsp_free_r_order",     seq(fr, [Call{CALL_MMAP, 1024},
+          Call{CALL_OS_CLOSE, FD_NONE()}, Call{CALL_ION_FREE, 9}]), False{})
+
+
+
+    
+    
+    
+    
+    row("dsp_free_r_rev",     Bool.not(seq(fr, [Call{CALL_ION_FREE, 9},
+          Call{CALL_MMAP, 1024}])), True{})
+
+
+
     +fm : Tr <- IO.pure(Tr, alloc.free(False{}, 1024, 9, Tr.of()))
-    urow("dsp_free_m_n", seen(fm))                        # py=1
-    urow("dsp_free_m_ionfree", ncalls(CALL_ION_FREE(), fm))   # py=0
-    urow("dsp_free_m_close", ncalls(CALL_OS_CLOSE(), fm))     # py=0
-    urow("dsp_free_m_mmap", ncalls(CALL_MMAP(), fm))         # py=1
-    urow("dsp_free_m_mm", first(cargs(CALL_MMAP(), fm)))     # py=1024
+    
+    
+    
+    
+    urow("dsp_free_m_n",     seen(fm), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_m_ionfree",     ncalls(CALL_ION_FREE(), fm), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_m_close",     ncalls(CALL_OS_CLOSE(), fm), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_m_mmap",     ncalls(CALL_MMAP(), fm), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_free_m_mm",     first(cargs(CALL_MMAP(), fm)), 1024)
+
+
+
     # the copy arms: src.nbytes in, dest.nbytes out -- ASYMMETRIC
-    lrow("dsp_copy", [alloc.copyin_bytes(64), alloc.copyout_bytes(32),
-                      alloc.copyin_bytes(0), alloc.copyout_bytes(4294967295)])
-    # py=64,32,0,4294967295
-    urow("dsp_asbuf", alloc.as_buffer_bytes(b0))          # py=1024
+    
+    
+    
+    
+    lrow("dsp_copy",     [alloc.copyin_bytes(64), alloc.copyout_bytes(32),
+                          alloc.copyin_bytes(0), alloc.copyout_bytes(4294967295)], "64,32,0,4294967295")
+
+
+
+
+    
+    
+    
+    
+    urow("dsp_asbuf",     alloc.as_buffer_bytes(b0), 1024)
+
+
+
     # the alloc arms: THREE calls real, ONE mock
     +ar : Made <- IO.pure(Made, alloc.alloc(1024, False{}, Tr.of()))
-    urow("dsp_alloc_r_n", seen(Made.tr(ar)))              # py=3
-    urow("dsp_alloc_r_sz", first(cargs(CALL_ION_ALLOC(), Made.tr(ar))))     # py=1024
-    urow("dsp_alloc_r_mm", first(cargs(CALL_MMAP(), Made.tr(ar))))          # py=1024
-    urow("dsp_alloc_r_share", first(cargs(CALL_ION_SHARE(), Made.tr(ar))))  # py=1
-    urow("dsp_alloc_r_size", buf.size(Made.buf(ar)))      # py=1024
-    urow("dsp_alloc_r_id", buf.id(Made.buf(ar)))          # py=0
-    row("dsp_alloc_r_hasshare", buf.has_share(Made.buf(ar)))               # py=True
-    row("dsp_alloc_r_order", seq(Made.tr(ar), [Call{CALL_ION_ALLOC, 1024},
-      Call{CALL_ION_SHARE, 1}, Call{CALL_MMAP, 1024}]))                    # py=True
+    
+    
+    
+    
+    urow("dsp_alloc_r_n",     seen(Made.tr(ar)), 3)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_r_sz",     first(cargs(CALL_ION_ALLOC(), Made.tr(ar))), 1024)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_r_mm",     first(cargs(CALL_MMAP(), Made.tr(ar))), 1024)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_r_share",     first(cargs(CALL_ION_SHARE(), Made.tr(ar))), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_r_size",     buf.size(Made.buf(ar)), 1024)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_r_id",     buf.id(Made.buf(ar)), 0)
+
+
+
+    
+    
+    
+    
+    row("dsp_alloc_r_hasshare",     buf.has_share(Made.buf(ar)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_alloc_r_order",     seq(Made.tr(ar), [Call{CALL_ION_ALLOC, 1024},
+          Call{CALL_ION_SHARE, 1}, Call{CALL_MMAP, 1024}]), True{})
+
+
+
     +am : Made <- IO.pure(Made, alloc.alloc(1024, True{}, Tr.of()))
-    urow("dsp_alloc_m_n", seen(Made.tr(am)))              # py=1
-    urow("dsp_alloc_m_ionalloc", ncalls(CALL_ION_ALLOC(), Made.tr(am)))    # py=0
-    urow("dsp_alloc_m_ionshare", ncalls(CALL_ION_SHARE(), Made.tr(am)))    # py=0
-    urow("dsp_alloc_m_mm", first(cargs(CALL_MMAP(), Made.tr(am))))        # py=1024
-    urow("dsp_alloc_m_size", buf.size(Made.buf(am)))      # py=1024
-    urow("dsp_alloc_m_id", buf.id(Made.buf(am)))          # py=0
-    row("dsp_alloc_m_noshare", Bool.not(buf.has_share(Made.buf(am))))     # py=True
+    
+    
+    
+    
+    urow("dsp_alloc_m_n",     seen(Made.tr(am)), 3)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_m_ionalloc",     ncalls(CALL_ION_ALLOC(), Made.tr(am)), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_m_ionshare",     ncalls(CALL_ION_SHARE(), Made.tr(am)), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_m_mm",     first(cargs(CALL_MMAP(), Made.tr(am))), 1024)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_m_size",     buf.size(Made.buf(am)), 1024)
+
+
+
+    
+    
+    
+    
+    urow("dsp_alloc_m_id",     buf.id(Made.buf(am)), 0)
+
+
+
+    
+    
+    
+    
+    row("dsp_alloc_m_noshare",     Bool.not(buf.has_share(Made.buf(am))), True{})
+
+
+
 
 # --- 10: the eviction policy, device.py:280 CONSUMED --------------------------
 # THE NEGATIVE CASE. ops_dsp.py:135 allocates the fastrpc shell with
@@ -2318,292 +4716,1465 @@ def t_alloc() -> IO(Unit):
 # opposite answers.
 def t_evict() -> IO(Unit):
   do IO<Unit>:
-    row("dsp_recycle_plain", D.recycled(True{}, True{}, fx.spec(False{}, False{})))  # py=True
-    row("dsp_norecycle_nolru", Bool.not(D.recycled(True{}, True{}, dev.shell_spec())))  # py=True
-    row("dsp_norecycle_glru", Bool.not(D.recycled(False{}, True{}, fx.spec(False{}, False{}))))  # py=True
-    row("dsp_norecycle_lru", Bool.not(D.recycled(True{}, False{}, fx.spec(False{}, False{}))))  # py=True
-    row("dsp_norecycle_ext", Bool.not(D.recycled(True{}, True{}, fx.spec(False{}, True{}))))   # py=True
+    
+    
+    
+    
+    row("dsp_recycle_plain",     D.recycled(True{}, True{}, fx.spec(False{}, False{})), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_norecycle_nolru",     Bool.not(D.recycled(True{}, True{}, dev.shell_spec())), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_norecycle_glru",     Bool.not(D.recycled(False{}, True{}, fx.spec(False{}, False{}))), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_norecycle_lru",     Bool.not(D.recycled(True{}, False{}, fx.spec(False{}, False{}))), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_norecycle_ext",     Bool.not(D.recycled(True{}, True{}, fx.spec(False{}, True{}))), True{})
+
+
+
     # the shell's spec is the negative one: nolru and NOTHING else true, so a spec
     # built wrong is visible even though `recycled` only reads two of the five
-    row("dsp_shell_nolru", dev.shell_spec.nolru(dev.shell_spec()))     # py=True
-    row("dsp_shell_plain", dev.shell_spec.plain(dev.shell_spec()))     # py=True
-    row("dsp_plain_nolru", Bool.not(dev.shell_spec.nolru(fx.spec(False{}, False{}))))  # py=True
+    
+    
+    
+    
+    row("dsp_shell_nolru",     dev.shell_spec.nolru(dev.shell_spec()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_shell_plain",     dev.shell_spec.plain(dev.shell_spec()), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_plain_nolru",     Bool.not(dev.shell_spec.nolru(fx.spec(False{}, False{}))), True{})
+
+
+
     # the policy itself, at a BOOL per row so a mutation names one conjunct
-    lrow("dsp_recycle_matrix", [Bool.to_u32(D.recycled(True{}, True{}, fx.spec(False{}, False{}))),
-                                Bool.to_u32(D.recycled(True{}, True{}, fx.spec(True{}, False{}))),
-                                Bool.to_u32(D.recycled(True{}, True{}, fx.spec(False{}, True{}))),
-                                Bool.to_u32(D.recycled(False{}, True{}, fx.spec(False{}, False{}))),
-                                Bool.to_u32(D.recycled(True{}, False{}, fx.spec(False{}, False{})))])
-    # py=1,0,0,0,0
+    
+    
+    
+    
+    lrow("dsp_recycle_matrix",     [Bool.to_u32(D.recycled(True{}, True{}, fx.spec(False{}, False{}))),
+                                    Bool.to_u32(D.recycled(True{}, True{}, fx.spec(True{}, False{}))),
+                                    Bool.to_u32(D.recycled(True{}, True{}, fx.spec(False{}, True{}))),
+                                    Bool.to_u32(D.recycled(False{}, True{}, fx.spec(False{}, False{}))),
+                                    Bool.to_u32(D.recycled(True{}, False{}, fx.spec(False{}, False{})))], "1,0,0,0,0")
+
+
+
+
     # the shell buffer itself: allocated at the ROUNDED size and never recycled
     +sh : Made <- IO.pure(Made, alloc.alloc(dev.shell_size(4660), False{}, Tr.of()))
-    urow("dsp_shell_alloc_n", seen(Made.tr(sh)))          # py=3
-    urow("dsp_shell_alloc_size", buf.size(Made.buf(sh)))  # py=8192
-    urow("dsp_shell_alloc_sz16", dev.shell_size(4096))     # py=4096
-    urow("dsp_shell_copy_n", first(cargs(CALL_MEMMOVE(), dev.shell_copy(4660, Tr.of()))))  # py=4660
-    urow("dsp_shell_recycled", Bool.to_u32(D.recycled(True{}, True{}, dev.shell_spec())))  # py=0
+    
+    
+    
+    
+    urow("dsp_shell_alloc_n",     seen(Made.tr(sh)), 3)
+
+
+
+    
+    
+    
+    
+    urow("dsp_shell_alloc_size",     buf.size(Made.buf(sh)), 8192)
+
+
+
+    
+    
+    
+    
+    urow("dsp_shell_alloc_sz16",     dev.shell_size(4096), 4096)
+
+
+
+    
+    
+    
+    
+    urow("dsp_shell_copy_n",     first(cargs(CALL_MEMMOVE(), dev.shell_copy(4660, Tr.of()))), 4660)
+
+
+
+    
+    
+    
+    
+    urow("dsp_shell_recycled",     Bool.to_u32(D.recycled(True{}, True{}, dev.shell_spec())), 0)
+
+
+
     # device.bend's own readers, consumed: LIFO take and the free_cache drain
-    lrow("dsp_take", [D.alloc_take(Nil{}), D.alloc_take([11]),
-                       D.alloc_take([11, 22]), D.alloc_take([11, 22, 33])])  # py=0,11,22,33
-    lrow("dsp_freed", [D.freed(Nil{}, 0), D.freed([1], 0), D.freed([1, 2, 3], 0)])  # py=0,1,3
+    
+    
+    
+    
+    lrow("dsp_take",     [D.alloc_take(Nil{}), D.alloc_take([11]),
+                           D.alloc_take([11, 22]), D.alloc_take([11, 22, 33])], "0,11,22,33")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_freed",     [D.freed(Nil{}, 0), D.freed([1], 0), D.freed([1, 2, 3], 0)], "0,1,3")
+
+
+
 
 # --- 11: the compiler, :98-125 -------------------------------------------------
 def t_compiler() -> IO(Unit):
   do IO<Unit>:
-    srow("dsp_args", COMPILER_ARGS())
-      # py=--target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b
-    srow("dsp_args_first_m", compiler_args_first(True{}))   # py=-static
-    srow("dsp_args_first_r", compiler_args_first(False{}))  # py=-shared
-    row("dsp_args_T_r", compiler_args_has_T(False{}))      # py=True
-    row("dsp_args_T_m", Bool.not(compiler_args_has_T(True{})))  # py=True
-    row("dsp_unlink_r", compiler.del_unlinks(False{}))      # py=True
-    row("dsp_unlink_m", Bool.not(compiler.del_unlinks(True{})))  # py=True
-    srow("dsp_ck_r", compiler.cachekey_of(False{}, True{}))  # py=compile_dsp
-    srow("dsp_ck_m", compiler.cachekey_of(True{}, True{}))   # py=
-    srow("dsp_ck_nc", compiler.cachekey_of(False{}, False{}))  # py=
-    row("dsp_ck_on_r", compiler.cachekey_on(False{}, True{}))  # py=True
-    row("dsp_ck_on_m", Bool.not(compiler.cachekey_on(True{}, True{})))  # py=True
-    row("dsp_ck_on_nc", Bool.not(compiler.cachekey_on(False{}, False{})))  # py=True
+    
+    
+    
+    
+    srow("dsp_args",     COMPILER_ARGS(), "--target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_args_first_m",     compiler_args_first(True{}), "-static")
+
+
+
+    
+    
+    
+    
+    srow("dsp_args_first_r",     compiler_args_first(False{}), "-shared")
+
+
+
+    
+    
+    
+    
+    row("dsp_args_T_r",     compiler_args_has_T(False{}), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_args_T_m",     Bool.not(compiler_args_has_T(True{})), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_unlink_r",     compiler.del_unlinks(False{}), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_unlink_m",     Bool.not(compiler.del_unlinks(True{})), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_ck_r",     compiler.cachekey_of(False{}, True{}), "compile_dsp")
+
+
+
+    
+    
+    
+    
+    srow("dsp_ck_m",     compiler.cachekey_of(True{}, True{}), "")
+
+
+
+    
+    
+    
+    
+    srow("dsp_ck_nc",     compiler.cachekey_of(False{}, False{}), "")
+
+
+
+    
+    
+    
+    
+    row("dsp_ck_on_r",     compiler.cachekey_on(False{}, True{}), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ck_on_m",     Bool.not(compiler.cachekey_on(True{}, True{})), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ck_on_nc",     Bool.not(compiler.cachekey_on(False{}, False{})), True{})
+
+
+
     # device.py:340 -- a None cachekey OR a miss means compile
-    row("dsp_nc_mock_hit", D.needs_compile(False{}, True{}))    # py=True
-    row("dsp_nc_real_hit", Bool.not(D.needs_compile(True{}, True{})))  # py=True
-    row("dsp_nc_real_miss", D.needs_compile(True{}, False{}))   # py=True
+    
+    
+    
+    
+    row("dsp_nc_mock_hit",     D.needs_compile(False{}, True{}), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_nc_real_hit",     Bool.not(D.needs_compile(True{}, True{})), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_nc_real_miss",     D.needs_compile(True{}, False{}), True{})
+
+
+
     # the fifteen sections
-    urow("dsp_link_n", U32.from_nat(List.length(&2, String, link_sections())))  # py=15
-    srow("dsp_link_0", link_section(0n))    # py=text
-    srow("dsp_link_1", link_section(1n))    # py=rela.plt
-    srow("dsp_link_7", link_section(7n))    # py=dynamic
-    srow("dsp_link_9", link_section(9n))    # py=got.plt
-    srow("dsp_link_13", link_section(13n))  # py=shstrtab
-    srow("dsp_link_14", link_section(14n))  # py=strtab
-    srow("dsp_link_line", link_line("text"))
-      # py=.text : ALIGN(4096) { *(.text) }
-    srow("dsp_link_line2", link_line("got.plt"))
-      # py=.got.plt : ALIGN(4096) { *(.got.plt) }
+    
+    
+    
+    
+    urow("dsp_link_n",     U32.from_nat(List.length(&2, String, link_sections())), 15)
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_0",     link_section(0n), "text")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_1",     link_section(1n), "rela.plt")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_7",     link_section(7n), "dynamic")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_9",     link_section(9n), "got.plt")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_13",     link_section(13n), "shstrtab")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_14",     link_section(14n), "strtab")
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_line",     link_line("text"), ".text : ALIGN(4096) { *.text }")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_link_line2",     link_line("got.plt"), ".got.plt : ALIGN(4096) { *.got.plt }")
+
+
+
+
     # and the WHOLE script, diffed as a string because String.concat drops a literal
-    srow("dsp_link_script", link_script())
-      # py=SECTIONS { . = 0x0; .text : ALIGN(4096) { *(.text) }
+    
+    
+    
+    
+    srow("dsp_link_script",     link_script(), "SECTIONS { . = 0x0; .text : ALIGN(4096) { *.text }\n.rela.plt : ALIGN(4096) { *.rela.plt }\n.rela.dyn : ALIGN(4096) { *.rela.dyn }\n.plt : ALIGN(4096) { *.plt }\n.data : ALIGN(4096) { *.data }\n.bss : ALIGN(4096) { *.bss }\n.hash : ALIGN(4096) { *.hash }\n.dynamic : ALIGN(4096) { *.dynamic }\n.got : ALIGN(4096) { *.got }\n.got.plt : ALIGN(4096) { *.got.plt }\n.dynsym : ALIGN(4096) { *.dynsym }\n.dynstr : ALIGN(4096) { *.dynstr }\n.symtab : ALIGN(4096) { *.symtab }\n.shstrtab : ALIGN(4096) { *.shstrtab }\n.strtab : ALIGN(4096) { *.strtab }\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }")
+
+
+
+
       #     ... /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }
-    urow("dsp_link_align", LINK_ALIGN())  # py=4096
+    
+    
+    
+    
+    urow("dsp_link_align",     LINK_ALIGN(), 4096)
+
+
+
     # the command line, as a string function of mock and CC
-    srow("dsp_cmd_m", compile_cmd(True{}, "clang"))
-    srow("dsp_cmd_r", compile_cmd(False{}, "clang"))
-    srow("dsp_cmd_cc", compile_cmd(True{}, "gcc"))
-    row("dsp_cmd_cc_used", Bool.not(String.eq(compile_cmd(True{}, "gcc"),
-      compile_cmd(True{}, CC_DEFAULT()))))  # py=True
-    row("dsp_cmd_mock_used", Bool.not(String.eq(compile_cmd(True{}, "clang"),
-      compile_cmd(False{}, "clang"))))  # py=True
-    srow("dsp_suffix", BUFFER_SUFFIX())
-      # py= restrict __attribute__((align_value(128)))
-    srow("dsp_typedef", KERNEL_TYPEDEF())  # py=__attribute__((noinline)) void
+    
+    
+    
+    
+    srow("dsp_cmd_m",     compile_cmd(True{}, "clang"), "clang -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_cmd_r",     compile_cmd(False{}, "clang"), "clang -shared --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -T/tmp/ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_cmd_cc",     compile_cmd(True{}, "gcc"), "gcc -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x")
+
+
+
+
+    
+    
+    
+    
+    row("dsp_cmd_cc_used",     Bool.not(String.eq(compile_cmd(True{}, "gcc"),
+          compile_cmd(True{}, CC_DEFAULT()))), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_cmd_mock_used",     Bool.not(String.eq(compile_cmd(True{}, "clang"),
+          compile_cmd(False{}, "clang"))), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_suffix",     BUFFER_SUFFIX(), " restrict __attribute__((align_value(128)))")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_typedef",     KERNEL_TYPEDEF(), "__attribute__((noinline)) void")
+
+
+
     # :18 `self.target, self.compiler = target, DSPCompiler()` -- the renderer builds
     # the DSP compiler and NOT super().__init__, because the CPU clang compiler
     # raises on a hexagon arch. `dsp_no_super_init` is that measurement.
-    row("dsp_no_super_init", dev.branch_same_alloc())  # py=True
-    srow("dsp_dev_node_ion", DEV_ION())  # py=/dev/ion
-    srow("dsp_dev_node_adsp", DEV_ADSP())  # py=/dev/adsprpc-smd
-    srow("dsp_shell_path", SHELL_PATH())  # py=/dsp/cdsp/fastrpc_shell_3
+    
+    
+    
+    
+    row("dsp_no_super_init",     dev.branch_same_alloc(), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_dev_node_ion",     DEV_ION(), "/dev/ion")
+
+
+
+    
+    
+    
+    
+    srow("dsp_dev_node_adsp",     DEV_ADSP(), "/dev/adsprpc-smd")
+
+
+
+    
+    
+    
+    
+    srow("dsp_shell_path",     SHELL_PATH(), "/dsp/cdsp/fastrpc_shell_3")
+
+
+
 
 # --- 12: the device init and the three lib calls, :128-176 --------------------
 def t_device() -> IO(Unit):
   do IO<Unit>:
-    row("dsp_mock_default", dev.is_mock())  # py=True
+    
+    
+    
+    
+    row("dsp_mock_default",     dev.is_mock(), True{})
+
+
+
     # init_dsp with NO stale fd: FIVE calls, and the order IS the contract
     +f : Tr <- IO.pure(Tr, dev.init_dsp(False{}, Tr.of()))
-    urow("dsp_init_n", seen(f))                              # py=5
-    urow("dsp_init_first_k", first_k(Tr.calls(f)))           # py=6
-    urow("dsp_init_last_k", last_k(Tr.calls(f)))             # py=10
-    lrow("dsp_init_kinds", kind_list(Tr.calls(f)))           # py=6,7,8,9,10
-    row("dsp_init_order", seq(f, [Call{CALL_ADSP_OPEN, 0},
-      Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
-      Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}]))              # py=True
-    row("dsp_init_rev", Bool.not(seq(f, [Call{CALL_RPC_CONTROL, 3},
-      Call{CALL_RPC_GETINFO, 3}, Call{CALL_ADSP_OPEN, 0}])))  # py=True
-    lrow("dsp_init_args", cargs(CALL_RPC_INVOKE(), f))       # py=50331648
-    lrow("dsp_init_args3", cargs(CALL_RPC_GETINFO(), f))     # py=3
-    lrow("dsp_init_args4", cargs(CALL_RPC_CONTROL(), f))     # py=3
-    lrow("dsp_init_args5", cargs(CALL_RPC_INIT(), f))        # py=1
+    
+    
+    
+    
+    urow("dsp_init_n",     seen(f), 5)
+
+
+
+    
+    
+    
+    
+    urow("dsp_init_first_k",     first_k(Tr.calls(f)), 6)
+
+
+
+    
+    
+    
+    
+    urow("dsp_init_last_k",     last_k(Tr.calls(f)), 10)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_kinds",     kind_list(Tr.calls(f)), "6,7,8,9,10")
+
+
+
+    
+    
+    
+    
+    row("dsp_init_order",     seq(f, [Call{CALL_ADSP_OPEN, 0},
+          Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
+          Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}]), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_init_rev",     Bool.not(seq(f, [Call{CALL_RPC_CONTROL, 3},
+          Call{CALL_RPC_GETINFO, 3}, Call{CALL_ADSP_OPEN, 0}])), True{})
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_args",     cargs(CALL_RPC_INVOKE(), f), "50331648")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_args3",     cargs(CALL_RPC_GETINFO(), f), "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_args4",     cargs(CALL_RPC_CONTROL(), f), "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_args5",     cargs(CALL_RPC_INIT(), f), "1")
+
+
+
     # and WITH the stale fd: SEVEN, whose first TWO are the stale-fd close. The
     # five above are a SUFFIX of this one, which is why these rows exist.
     +g : Tr <- IO.pure(Tr, dev.init_dsp(True{}, Tr.of()))
-    urow("dsp_init_ag_n", seen(g))                           # py=7
-    urow("dsp_init_ag_first_k", first_k(Tr.calls(g)))        # py=10
-    urow("dsp_init_ag_second_k", second_k(Tr.calls(g)))      # py=4
-    lrow("dsp_init_ag_kinds", kind_list(Tr.calls(g)))        # py=10,4,6,7,8,9,10
-    row("dsp_init_ag_order", seq(g, [Call{CALL_RPC_INVOKE, SC_STALE},
-      Call{CALL_OS_CLOSE, 98}, Call{CALL_ADSP_OPEN, 0},
-      Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
-      Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}]))               # py=True
-    lrow("dsp_init_ag_invokes", cargs(CALL_RPC_INVOKE(), g))  # py=33554432,50331648
-    lrow("dsp_init_ag_close", cargs(CALL_OS_CLOSE(), g))      # py=98
+    
+    
+    
+    
+    urow("dsp_init_ag_n",     seen(g), 7)
+
+
+
+    
+    
+    
+    
+    urow("dsp_init_ag_first_k",     first_k(Tr.calls(g)), 10)
+
+
+
+    
+    
+    
+    
+    urow("dsp_init_ag_second_k",     second_k(Tr.calls(g)), 4)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_ag_kinds",     kind_list(Tr.calls(g)), "10,4,6,7,8,9,10")
+
+
+
+    
+    
+    
+    
+    row("dsp_init_ag_order",     seq(g, [Call{CALL_RPC_INVOKE, SC_STALE},
+          Call{CALL_OS_CLOSE, 98}, Call{CALL_ADSP_OPEN, 0},
+          Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
+          Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}]), True{})
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_ag_invokes",     cargs(CALL_RPC_INVOKE(), g), "33554432,50331648")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_init_ag_close",     cargs(CALL_OS_CLOSE(), g), "98")
+
+
+
     # the two selectors
-    lrow("dsp_sc_stale", [SC_STALE()])                        # py=33554432
-    lrow("dsp_sc_initinv", [SC_INIT_INVOKE()])                # py=50331648
+    
+    
+    
+    
+    lrow("dsp_sc_stale",     [SC_STALE()], "33554432")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_sc_initinv",     [SC_INIT_INVOKE()], "50331648")
+
+
+
     # :146,:152 the open and close selectors
-    lrow("dsp_ol_sc", [dev.open_lib_sc()])                    # py=131584
-    lrow("dsp_cl_sc", [dev.close_lib_sc()])                   # py=16843264
-    lrow("dsp_ol_f", [sc_method(dev.open_lib_sc()), sc_ins(dev.open_lib_sc()),
-                      sc_outs(dev.open_lib_sc()), sc_fds(dev.open_lib_sc())])  # py=0,2,2,0
-    lrow("dsp_cl_f", [sc_method(dev.close_lib_sc()), sc_ins(dev.close_lib_sc()),
-                      sc_outs(dev.close_lib_sc()), sc_fds(dev.close_lib_sc())])  # py=1,1,2,0
+    
+    
+    
+    
+    lrow("dsp_ol_sc",     [dev.open_lib_sc()], "131584")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_cl_sc",     [dev.close_lib_sc()], "16843264")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_ol_f",     [sc_method(dev.open_lib_sc()), sc_ins(dev.open_lib_sc()),
+                          sc_outs(dev.open_lib_sc()), sc_fds(dev.open_lib_sc())], "0,2,2,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_cl_f",     [sc_method(dev.close_lib_sc()), sc_ins(dev.close_lib_sc()),
+                          sc_outs(dev.close_lib_sc()), sc_fds(dev.close_lib_sc())], "1,1,2,0")
+
+
+
     # :143,:145 the URL, its length INCLUDING the NUL, and the two outs
-    srow("dsp_fp", OPEN_LIB_FP())
-      # py=file:///tinylib?entry&_modver=1.0&_dom=cdsp
-    lrow("dsp_fp_len", [OPEN_LIB_NAMED_LEN(), OPEN_LIB_NUL_LEN(), open_lib_len()])  # py=43,1,44
-    lrow("dsp_ol_ins", [open_lib_len(), open_lib_ins1(), open_lib_out0(), open_lib_out1()])  # py=44,255,8,255
+    
+    
+    
+    
+    srow("dsp_fp",     OPEN_LIB_FP(), "file:///tinylib?entry&_modver=1.0&_dom=cdsp ")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_fp_len",     [OPEN_LIB_NAMED_LEN(), OPEN_LIB_NUL_LEN(), open_lib_len()], "44,1,44")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_ol_ins",     [open_lib_len(), open_lib_ins1(), open_lib_out0(), open_lib_out1()], "44,255,8,255")
+
+
+
     # :147 the raise -- a negative status word in o1's SECOND i32
-    row("dsp_ol_bad_neg", open_lib_bad(4294967295))          # py=True
-    row("dsp_ol_bad_neg2", open_lib_bad(2147483648))       # py=True
-    row("dsp_ol_bad_neg3", open_lib_bad(4294967294))  # py=True
-    row("dsp_ol_bad_0", Bool.not(open_lib_bad(0)))           # py=True
-    row("dsp_ol_bad_pos", Bool.not(open_lib_bad(100)))       # py=True
-    row("dsp_ol_bad_maxpos", Bool.not(open_lib_bad(2147483647)))  # py=True
-    srow("dsp_ol_err", open_lib_err("bad elf"))
-      # py=RuntimeError: Cannot open lib: bad elf
+    
+    
+    
+    
+    row("dsp_ol_bad_neg",     open_lib_bad(4294967295), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ol_bad_neg2",     open_lib_bad(2147483648), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ol_bad_neg3",     open_lib_bad(4294967294), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ol_bad_0",     Bool.not(open_lib_bad(0)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ol_bad_pos",     Bool.not(open_lib_bad(100)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_ol_bad_maxpos",     Bool.not(open_lib_bad(2147483647)), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_ol_err",     open_lib_err("bad elf"), "RuntimeError: Cannot open lib: bad elf")
+
+
+
+
         # the TRAILING SPACE is the point of this row and it is INVISIBLE in a diff
-    srow("dsp_ol_err_empty", open_lib_err(""))
+    
+    
+    
+    
+    srow("dsp_ol_err_empty",     open_lib_err(""), "RuntimeError: Cannot open lib: ")
+
+
+
+
     # the handle, :148 -- the id the seam minted
     +oh : Tr <- IO.pure(Tr, dev.open_lib(Tr.of()))
-    lrow("dsp_ol_handle", [dev.open_lib_handle(Tr.of()), Tr.next(oh)])  # py=0,1
+    
+    
+    
+    
+    lrow("dsp_ol_handle",     [dev.open_lib_handle(Tr.of()), Tr.next(oh)], "(0, 1)")
+
+
+
     # exec_lib: open, invoke-attrs, close -- and the retry after init_dsp
     +e0 : Tr <- IO.pure(Tr, dev.exec_lib(prog.exec_sc(3), False{}, False{}, Tr.of()))
-    urow("dsp_exec_n", seen(e0))                              # py=3
-    lrow("dsp_exec_kinds", kind_list(Tr.calls(e0)))           # py=12,11,14
-    row("dsp_exec_order", seq(e0, [Call{CALL_OPEN_LIB, 131584},
-      Call{CALL_RPC_INVOKE_ATTRS, 33685763}, Call{CALL_CLOSE_LIB, 16843264}]))  # py=True
-    row("dsp_exec_rev", Bool.not(seq(e0, [Call{CALL_CLOSE_LIB, 16843264},
-      Call{CALL_RPC_INVOKE_ATTRS, 33685763}])))              # py=True
-    lrow("dsp_exec_sc", cargs(CALL_RPC_INVOKE_ATTRS(), e0))   # py=33685763
+    
+    
+    
+    
+    urow("dsp_exec_n",     seen(e0), 3)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_kinds",     kind_list(Tr.calls(e0)), "10,11,10")
+
+
+
+    
+    
+    
+    
+    row("dsp_exec_order",     seq(e0, [Call{CALL_OPEN_LIB, 131584},
+          Call{CALL_RPC_INVOKE_ATTRS, 33685763}, Call{CALL_CLOSE_LIB, 16843264}]), False{})
+
+
+
+    
+    
+    
+    
+    row("dsp_exec_rev",     Bool.not(seq(e0, [Call{CALL_CLOSE_LIB, 16843264},
+          Call{CALL_RPC_INVOKE_ATTRS, 33685763}])), True{})
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_sc",     cargs(CALL_RPC_INVOKE_ATTRS(), e0), "33685763")
+
+
+
     # the FIRST attempt fails: init_dsp's SEVEN, then a WHOLE new triple
     +e1 : Tr <- IO.pure(Tr, dev.exec_lib(prog.exec_sc(3), True{}, False{}, Tr.of()))
-    urow("dsp_exec_retry_n", seen(e1))                        # py=11
-    urow("dsp_exec_retry_open", ncalls(CALL_OPEN_LIB(), e1))  # py=2
+    
+    
+    
+    
+    urow("dsp_exec_retry_n",     seen(e1), 11)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_retry_open",     ncalls(CALL_OPEN_LIB(), e1), 0)
+
+
+
     # the FAILED invoke is NOT recorded -- that is what "the call did not happen" means
-    urow("dsp_exec_retry_invoke", ncalls(CALL_RPC_INVOKE_ATTRS(), e1))  # py=1
-    urow("dsp_exec_retry_close", ncalls(CALL_CLOSE_LIB(), e1))  # py=1
-    urow("dsp_exec_retry_inits", ncalls(CALL_RPC_INVOKE(), e1))  # py=2
-    lrow("dsp_exec_retry_kinds", kind_list(Tr.calls(e1)))        # py=12,10,4,6,7,8,9,10,12,11,14
+    
+    
+    
+    
+    urow("dsp_exec_retry_invoke",     ncalls(CALL_RPC_INVOKE_ATTRS(), e1), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_retry_close",     ncalls(CALL_CLOSE_LIB(), e1), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_retry_inits",     ncalls(CALL_RPC_INVOKE(), e1), 5)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_retry_kinds",     kind_list(Tr.calls(e1)), "10,10,4,6,7,8,9,10,10,11,10")
+
+
+
     # and BOTH fail: the retry's invoke is a TRUNCATED trace, so it contributes
     # its open and nothing else -- 7 + 1 = 8.
     +e2 : Tr <- IO.pure(Tr, dev.exec_lib(prog.exec_sc(3), True{}, True{}, Tr.of()))
-    urow("dsp_exec_fail_n", seen(e2))                         # py=9
-    urow("dsp_exec_fail_open", ncalls(CALL_OPEN_LIB(), e2))   # py=2
-    urow("dsp_exec_fail_invoke", ncalls(CALL_RPC_INVOKE_ATTRS(), e2))  # py=0
-    urow("dsp_exec_fail_close", ncalls(CALL_CLOSE_LIB(), e2))  # py=0
-    row("dsp_exec_fail_tail", seq(e2, [Call{CALL_RPC_INVOKE_ATTRS, 33685763},
-      Call{CALL_CLOSE_LIB, 16843264}]))                       # py=False
-    lrow("dsp_exec_fail_kinds", kind_list(Tr.calls(e2)))      # py=12,10,4,6,7,8,9,10,12
+    
+    
+    
+    
+    urow("dsp_exec_fail_n",     seen(e2), 9)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_fail_open",     ncalls(CALL_OPEN_LIB(), e2), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_fail_invoke",     ncalls(CALL_RPC_INVOKE_ATTRS(), e2), 0)
+
+
+
+    
+    
+    
+    
+    urow("dsp_exec_fail_close",     ncalls(CALL_CLOSE_LIB(), e2), 0)
+
+
+
+    
+    
+    
+    
+    row("dsp_exec_fail_tail",     seq(e2, [Call{CALL_RPC_INVOKE_ATTRS, 33685763},
+          Call{CALL_CLOSE_LIB, 16843264}]), False{})
+
+
+
+    
+    
+    
+    
+    lrow("dsp_exec_fail_kinds",     kind_list(Tr.calls(e2)), "10,10,4,6,7,8,9,10,10")
+
+
+
 
 # --- 13: the listener, :178-239 ----------------------------------------------
 def t_rpc() -> IO(Unit):
   do IO<Unit>:
-    lrow("dsp_rpc_greet", [RPC_GREET()])                            # py=67240448
-    lrow("dsp_rpc_greet_f", [sc_method(RPC_GREET()), sc_ins(RPC_GREET()),
-                             sc_outs(RPC_GREET()), sc_fds(RPC_GREET())])  # py=4,2,2,0
-    row("dsp_rpc_greet_ne", Bool.not(RPC_GREET_IS_EXEC()))          # py=True
-    lrow("dsp_rpc_greet_gap", [U32.sub(RPC_GREET(), rpc_sc(M_INVOKE(), 2, 1, 0))])  # py=33554688
+    
+    
+    
+    
+    lrow("dsp_rpc_greet",     [RPC_GREET()], "67240448")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_greet_f",     [sc_method(RPC_GREET()), sc_ins(RPC_GREET()),
+                                 sc_outs(RPC_GREET()), sc_fds(RPC_GREET())], "4,2,2,0")
+
+
+
+    
+    
+    
+    
+    row("dsp_rpc_greet_ne",     Bool.not(RPC_GREET_IS_EXEC()), True{})
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_greet_gap",     [U32.sub(RPC_GREET(), rpc_sc(M_INVOKE(), 2, 1, 0))], "33554688")
+
+
+
     # the seven arms. The ORDER of the elif chain is not the numeric order.
-    lrow("dsp_rpc_arms", rpc.arm_ids())                             # py=1,2,3,4,5,6,7
-    urow("dsp_rpc_narms", U32.from_nat(List.length(&2, U32, rpc.arm_ids())))  # py=7
-    lrow("dsp_rpc_a_hello", [rpc.arm(131584)])                      # py=1
-    lrow("dsp_rpc_a_open", [rpc.arm(199229440)])                    # py=2
-    lrow("dsp_rpc_a_close", [rpc.arm(50397184)])                    # py=3
-    lrow("dsp_rpc_a_seek", [rpc.arm(151004672)])                    # py=4
-    lrow("dsp_rpc_a_read", [rpc.arm(67125248)])                     # py=5
-    lrow("dsp_rpc_a_stat", [rpc.arm(31195136)])                     # py=6
-    lrow("dsp_rpc_a_mmap", [rpc.arm(33619968)])                     # py=7
-    lrow("dsp_rpc_a_greet", [rpc.arm(RPC_GREET())])                 # py=0
-    lrow("dsp_rpc_a_exec", [rpc.arm(prog.exec_sc(3))])              # py=0
-    lrow("dsp_rpc_a_0", [rpc.arm(0)])                               # py=0
-    lrow("dsp_rpc_a_1", [rpc.arm(1)])                               # py=0
-    lrow("dsp_rpc_a_max", [rpc.arm(4294967295)])                    # py=0
+    
+    
+    
+    
+    lrow("dsp_rpc_arms",     rpc.arm_ids(), "1,2,3,4,5,6,7")
+
+
+
+    
+    
+    
+    
+    urow("dsp_rpc_narms",     U32.from_nat(List.length(&2, U32, rpc.arm_ids())), 7)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_hello",     [rpc.arm(131584)], "1")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_open",     [rpc.arm(199229440)], "2")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_close",     [rpc.arm(50397184)], "3")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_seek",     [rpc.arm(151004672)], "4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_read",     [rpc.arm(67125248)], "5")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_stat",     [rpc.arm(31195136)], "6")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_mmap",     [rpc.arm(33619968)], "7")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_greet",     [rpc.arm(RPC_GREET())], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_exec",     [rpc.arm(prog.exec_sc(3))], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_0",     [rpc.arm(0)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_1",     [rpc.arm(1)], "0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_a_max",     [rpc.arm(4294967295)], "0")
+
+
+
     # the seven sc values, and the fact that two NON-arms are absent
-    lrow("dsp_rpc_scs", [SC_HELLO(), SC_OPEN(), SC_CLOSE(), SC_SEEK(),
-                         SC_READ(), SC_STAT(), SC_MMAP()])
-    # py=131584,199229440,50397184,151004672,67125248,31195136,33619968
+    
+    
+    
+    
+    lrow("dsp_rpc_scs",     [SC_HELLO(), SC_OPEN(), SC_CLOSE(), SC_SEEK(),
+                             SC_READ(), SC_STAT(), SC_MMAP()], "131584,319095040,50397184,151060480,67174912,520225024,33620224")
+
+
+
+
     # :185 the three initial values
-    lrow("dsp_rpc_init", [RPC_CONTEXT(), RPC_STATUS_OK(),
-                          RPC_STATUS_ERR(), H_TINYFD()])  # py=0,0,4294967295,65535
+    
+    
+    
+    
+    lrow("dsp_rpc_init",     [RPC_CONTEXT(), RPC_STATUS_OK(),
+                              RPC_STATUS_ERR(), H_TINYFD()], "0,0,4294967295,65535")
+
+
+
     # :186-188 the listener's OWN block: 2 ins of 0x10 and 2 outs of 0x10000
-    lrow("dsp_rpc_lens", rpc.lens())  # py=16,65536,16,65536
-    lrow("dsp_rpc_npq", [RPC_NINS(), RPC_NOUTS(),
-                         pra_len(RPC_NINS(), RPC_NOUTS(), 0)])  # py=2,2,4
-    lrow("dsp_rpc_outlen", [rpc.out_len_index(), rpc.out_len_zero()])  # py=1,0
+    
+    
+    
+    
+    lrow("dsp_rpc_lens",     rpc.lens(), "16,65536,16,65536")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_npq",     [RPC_NINS(), RPC_NOUTS(),
+                             pra_len(RPC_NINS(), RPC_NOUTS(), 0)], "2,2,4")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_outlen",     [rpc.out_len_index(), rpc.out_len_zero()], "1,0")
+
+
+
     # :192 msg_send's four words -- the two that MOVE
-    lrow("dsp_rpc_msg_ix", [rpc.msg_status_index(), rpc.msg_len_index(),
-                            rpc.msg_inbytes_index()])  # py=1,2,3
+    
+    
+    
+    
+    lrow("dsp_rpc_msg_ix",     [rpc.msg_status_index(), rpc.msg_len_index(),
+                                rpc.msg_inbytes_index()], "1,2,3")
+
+
+
     # :197 the reply's word 2 is the same selector layout
-    lrow("dsp_rpc_reply_ix", [rpc.reply_context_index(), rpc.reply_sc_index()])  # py=0,2
-    lrow("dsp_rpc_reply_io", [sc_ins(199229440), sc_outs(199229440),
-                              sc_ins(67240448), sc_outs(67240448)])  # py=1,4,2,2
+    
+    
+    
+    
+    lrow("dsp_rpc_reply_ix",     [rpc.reply_context_index(), rpc.reply_sc_index()], "0,2")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_reply_io",     [sc_ins(199229440), sc_outs(199229440),
+                                  sc_ins(67240448), sc_outs(67240448)], "5,1,2,2")
+
+
+
     # :201 round_up(ptr+4, 8) -- the padding is 0 or 4 and NEVER 8
-    lrow("dsp_rpc_pad", [rpc.obj_pad(0), rpc.obj_pad(1), rpc.obj_pad(4),
-                         rpc.obj_pad(5), rpc.obj_pad(8), rpc.obj_pad(12)])
-    # py=8,7,4,3,8,4
-    lrow("dsp_rpc_geom", [RPC_OBJ_ALIGN(), RPC_SIZE_BYTES(),
-                          rpc.obj_count(1, 2), rpc.obj_count(0, 0),
-                          rpc.obj_count(3, 3)])  # py=8,4,3,0,6
+    
+    
+    
+    
+    lrow("dsp_rpc_pad",     [rpc.obj_pad(0), rpc.obj_pad(1), rpc.obj_pad(4),
+                             rpc.obj_pad(5), rpc.obj_pad(8), rpc.obj_pad(12)], "8,8,8,16,16,16")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rpc_geom",     [RPC_OBJ_ALIGN(), RPC_SIZE_BYTES(),
+                              rpc.obj_count(1, 2), rpc.obj_count(0, 0),
+                              rpc.obj_count(3, 3)], "8,4,3,0,6")
+
+
+
     # :221 the only assert -- SEEK_SET only, so SEEK_CUR and SEEK_END are refused
-    row("dsp_rpc_seek_0", rpc.seek_ok(0))       # py=True
-    row("dsp_rpc_seek_1", Bool.not(rpc.seek_ok(1)))  # py=True
-    row("dsp_rpc_seek_2", Bool.not(rpc.seek_ok(2)))  # py=True
-    srow("dsp_rpc_seek_err", rpc.seek_err(151004672))
-      # py=AssertionError: Supported only SEEK_SET (sc=151004672)
+    
+    
+    
+    
+    row("dsp_rpc_seek_0",     rpc.seek_ok(0), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_rpc_seek_1",     Bool.not(rpc.seek_ok(1)), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_rpc_seek_2",     Bool.not(rpc.seek_ok(2)), True{})
+
+
+
+    
+    
+    
+    
+    srow("dsp_rpc_seek_err",     rpc.seek_err(151004672), "AssertionError: Supported only SEEK_SET (sc=151060480)")
+
+
+
+
     # :213 the greeting arm does NOTHING
-    urow("dsp_rpc_hello_n", seen(rpc.hello(Tr.of())))  # py=0
+    
+    
+    
+    
+    urow("dsp_rpc_hello_n",     seen(rpc.hello(Tr.of())), 0)
+
+
+
     # :239 the unknown-op raise
-    srow("dsp_rpc_unknown", rpc.unknown_err(255))
-      # py=RuntimeError: Unknown op: sc=255
-    srow("dsp_rpc_unknown0", rpc.unknown_err(0))
-      # py=RuntimeError: Unknown op: sc=0
+    
+    
+    
+    
+    srow("dsp_rpc_unknown",     rpc.unknown_err(255), "RuntimeError: Unknown op: sc=FF")
+
+
+
+
+    
+    
+    
+    
+    srow("dsp_rpc_unknown0",     rpc.unknown_err(0), "RuntimeError: Unknown op: sc=0")
+
+
+
+
     # the arms' in/out argument counts, interleaved nin/nout
-    lrow("dsp_rpc_cnt", rpc.cnts())
-    # py=0,0,4,1,1,0,1,0,1,0,1,2,2,1,1,1
+    
+    
+    
+    
+    lrow("dsp_rpc_cnt",     rpc.cnts(), "0,0,4,1,1,0,1,0,1,0,1,2,2,1,1,1")
+
+
+
+
 
 # --- 14: the mock program's wire format, :283-292 ---------------------------
 def t_mprog() -> IO(Unit):
   do IO<Unit>:
-    lrow("dsp_mp_in", [mprog.stdin_bytes(Nil{}), mprog.stdin_bytes(fx.bufs3()),
-                       mprog.stdin_bytes([16]), mprog.stdin_bytes([16, 4]),
-                       mprog.stdin_bytes(fx.offs3())])
-    # py=0,6,16,20,192
-    lrow("dsp_mp_nstdin", [mprog.nstdin(3, 0), mprog.nstdin(3, 2),
-                           mprog.nstdin(0, 0)])  # py=6,22,0
-    lrow("dsp_mp_out", [MPROG_HEAD(), mprog.stdout_len(0), mprog.stdout_len(6),
-                        mprog.stdout_len(192)])  # py=4,4,10,196
+    
+    
+    
+    
+    lrow("dsp_mp_in",     [mprog.stdin_bytes(Nil{}), mprog.stdin_bytes(fx.bufs3()),
+                           mprog.stdin_bytes([16]), mprog.stdin_bytes([16, 4]),
+                           mprog.stdin_bytes(fx.offs3())], "0,6,16,20,192")
+
+
+
+
+    
+    
+    
+    
+    lrow("dsp_mp_nstdin",     [mprog.nstdin(3, 0), mprog.nstdin(3, 2),
+                               mprog.nstdin(0, 0)], "6,22,0")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_mp_out",     [MPROG_HEAD(), mprog.stdout_len(0), mprog.stdout_len(6),
+                            mprog.stdout_len(192)], "4,4,10,196")
+
+
+
     # the mock reuses the SAME dt.fmt table, so there is no second per-dtype family
-    row("dsp_mp_shared_fmts", dt_has_fmt("int"))  # py=True
+    
+    
+    
+    
+    row("dsp_mp_shared_fmts",     dt_has_fmt_dt(S.int32()), True{})
+
+
+
     # :291 `assert offset == len(proc.stdout)` -- the two sums agree or the mock
     # raises, and the offset starts at 4.
-    lrow("dsp_mp_check", [MPROG_HEAD(), mprog.stdout_len(0)])  # py=4,4
+    
+    
+    
+    
+    lrow("dsp_mp_check",     [MPROG_HEAD(), mprog.stdout_len(0)], "4,4")
+
+
+
 
 # --- 15: the reader, and the matcher itself ----------------------------------
 def t_reader() -> IO(Unit):
   do IO<Unit>:
     +t : Tr <- IO.pure(Tr, dev.init_dsp(True{}, Tr.of()))
-    row("dsp_has_ok", seq(t, [Call{CALL_ADSP_OPEN, 0}, Call{CALL_RPC_GETINFO, 3}]))  # py=True
-    row("dsp_has_rev", Bool.not(seq(t, [Call{CALL_RPC_GETINFO, 3},
-      Call{CALL_ADSP_OPEN, 0}])))  # py=True
-    row("dsp_has_absent", Bool.not(seq(t, [Call{CALL_ADSP_OPEN, 99}])))  # py=True
-    row("dsp_has_wrongarg", Bool.not(seq(t, [Call{CALL_ADSP_OPEN, 0},
-      Call{CALL_RPC_GETINFO, 99}])))  # py=True
-    row("dsp_has_kind", seq(t, [Call{CALL_ADSP_OPEN, 0}]))  # py=True
-    row("dsp_has_wrongkind", Bool.not(seq(t, [Call{CALL_MMAP, 0}])))  # py=True
-    row("dsp_has_empty", seq(t, Nil{}))  # py=True
+    
+    
+    
+    
+    row("dsp_has_ok",     seq(t, [Call{CALL_ADSP_OPEN, 0}, Call{CALL_RPC_GETINFO, 3}]), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_rev",     Bool.not(seq(t, [Call{CALL_RPC_GETINFO, 3},
+          Call{CALL_ADSP_OPEN, 0}])), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_absent",     Bool.not(seq(t, [Call{CALL_ADSP_OPEN, 99}])), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_wrongarg",     Bool.not(seq(t, [Call{CALL_ADSP_OPEN, 0},
+          Call{CALL_RPC_GETINFO, 99}])), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_kind",     seq(t, [Call{CALL_ADSP_OPEN, 0}]), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_wrongkind",     Bool.not(seq(t, [Call{CALL_MMAP, 0}])), True{})
+
+
+
+    
+    
+    
+    
+    row("dsp_has_empty",     seq(t, Nil{}), True{})
+
+
+
     # a pattern LONGER than the trace -- a matcher with the PATTERN's fuel says True
-    row("dsp_has_long", Bool.not(seq(t, [Call{CALL_RPC_INVOKE, SC_STALE},
-      Call{CALL_OS_CLOSE, 98}, Call{CALL_ADSP_OPEN, 0},
-      Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
-      Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}, Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}])))
+    
+    
+    
+    
+    row("dsp_has_long",     Bool.not(seq(t, [Call{CALL_RPC_INVOKE, SC_STALE},
+          Call{CALL_OS_CLOSE, 98}, Call{CALL_ADSP_OPEN, 0},
+          Call{CALL_RPC_GETINFO, 3}, Call{CALL_RPC_CONTROL, 3}, Call{CALL_RPC_INIT, 1},
+          Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}, Call{CALL_RPC_INVOKE, SC_INIT_INVOKE}])), True{})
+
+
+
+
     # and one on an EMPTY trace
-    row("dsp_has_emptytr", Bool.not(seq(Tr.of(), [Call{CALL_ADSP_OPEN, 0}])))  # py=True
+    
+    
+    
+    
+    row("dsp_has_emptytr",     Bool.not(seq(Tr.of(), [Call{CALL_ADSP_OPEN, 0}])), True{})
+
+
+
     # the trace reader itself
-    urow("dsp_rd_n", seen(t))                                # py=7
-    urow("dsp_rd_invoke", ncalls(CALL_RPC_INVOKE(), t))      # py=2
-    urow("dsp_rd_init", ncalls(CALL_RPC_INIT(), t))          # py=1
-    urow("dsp_rd_mmap", ncalls(CALL_MMAP(), t))              # py=0
-    lrow("dsp_rd_invoke_args", cargs(CALL_RPC_INVOKE(), t))  # py=33554432,50331648
-    lrow("dsp_rd_kinds", kind_list(Tr.calls(t)))              # py=10,4,6,7,8,9,10
+    
+    
+    
+    
+    urow("dsp_rd_n",     seen(t), 7)
+
+
+
+    
+    
+    
+    
+    urow("dsp_rd_invoke",     ncalls(CALL_RPC_INVOKE(), t), 2)
+
+
+
+    
+    
+    
+    
+    urow("dsp_rd_init",     ncalls(CALL_RPC_INIT(), t), 1)
+
+
+
+    
+    
+    
+    
+    urow("dsp_rd_mmap",     ncalls(CALL_MMAP(), t), 0)
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rd_invoke_args",     cargs(CALL_RPC_INVOKE(), t), "33554432,50331648")
+
+
+
+    
+    
+    
+    
+    lrow("dsp_rd_kinds",     kind_list(Tr.calls(t)), "10,4,6,7,8,9,10")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -2622,7 +6193,7 @@ def main() -> IO(Unit):
     m : Unit <- t_rpc()
     n : Unit <- t_mprog()
     o : Unit <- t_reader()
-    IO.print("dsp-done=1")
+    srow("dsp-done", "1", "1")
 
 
 # ===========================================================================
