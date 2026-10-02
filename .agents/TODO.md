@@ -3,8 +3,8 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 4/96  (0 defs outstanding)
-proofs          [########.] 28/34    oracle-green     [####......] 4/4
+spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
+proofs          [########.] 28/34    oracle-green     [#####.....] 5/5
 walkthroughs    [######...] 6/7
 ```
 
@@ -1215,6 +1215,15 @@ baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via 
       `ops_webgpu` 67, `ops_cpu_null` 29, `cstyle` 6, `tc_ptx` 6), plus whatever
       `ops_amd`/`ops_qcom`/`ops_dsp` are adding RIGHT NOW. Assign this per file, with
       a hand map, as a real unit -- do not trust the script's `0` as a verdict.
+      **SUPERSEDED SCOPE, measured by me after that entry was written: it is 1,884
+      constants across 25 files, not 533 across 7.** Counting every `def X() -> U32: <digits>`
+      in the tree: `system.bend` 168, `ops_nv` 219, `ops_qcom` 147, `bnxtdev` 136,
+      `am/ip` 122, `amdev` 115, `usb` 111, `ops_metal` 109, `ops_cl` 91, `ops_rdma` 84,
+      `ops_dsp` 80, `ops_amd` 78, `ops_webgpu` 65, `memory` 48, `ops_disk` 40, `hcq2` 31,
+      `ops_cpu_null` 29, `ops_npy` 18, `dsl` 155, `ptx` 8, `nv/ip` 11 and 5 small files.
+      The three files this entry called "adding RIGHT NOW" have landed and added 305.
+      At `ops_nv`'s measured **15%** that is ~280 wrong constants in files whose gates are
+      green. **`ops_metal` is dispatched.** Each remaining file is its own unit.
 - [x] The wrong values were not cosmetic. All eleven `CLASS_*` ids meant `iface`'s
       ladder compares against the GPUs real class list and **NEVER MATCHES**, and
       `CLASS_BLACKWELL_COMPUTE_A` held the `_B` value — so a Blackwell_A GPU would have
@@ -1318,15 +1327,38 @@ this queue — in that order, so the queue is never stalled behind a verificatio
 6. **const audit of `ops_webgpu.bend` (67) + `ops_cl.bend` (89 uncovered)** — the
    hand-map work, now that `ops_nv` (33/219) and `ops_metal` have had it. Cheap because
    the method is now written down, and the two devices are committed and unowned.
-7. **`runtime/support/usb.py` (473)** — the USB transport. `ops_rdma.bend` and
-   `ops_cl`'s `dev_might_open`/remote path both lean on the USB transport concept.
-8. **`runtime/support/autogen.py` (289)** — PORT THE GENERATOR, not its 216,933 lines
-   of output. This is the deferred scope question and an agent should ARGUe it with
-   measurements rather than leave it parked. Note the tension honestly: the projects
-   hard rule is 1:1 with upstream, and upstream ships the *output*; but 216,933 lines
-   is 43,464 lines of hex register tables (script-translatable) plus 8,258 ctypes FFI
-   class defs. An agent that measures this and reports BOTH numbers is worth more than
-   one that picks a side.
+7. ~~**`runtime/support/usb.py` (473)**~~ **DONE** — see the `- [x]` entry for
+   `tinybendygrad/runtime/support/usb.bend` below. On the instruction to grep for
+   citing files: the answer is **EMPTY**, so unlike every other unit in this wave it
+   was not scoped by a citation and the scope was chosen from the source. It closes
+   ops_amd's USB3 wall (parts 1 and 3) and carries a CORRECTION back: ops_amd's 4096
+   is `USB3`'s own control buffer (:42), not `usb_cq`'s offset 0x100c.
+8. **[x] `runtime/support/autogen.py` (289) — ANSWERED, PORTED AS THE GENERATOR (`cbc8a37c`)**
+   The scope question is settled and the owner ruled. **The premise was wrong: the output is
+   150,174 lines over 35 files, NOT 216,933.** The 216,933 figure was stale twice over — the
+   rebase moved the tree to 208,917, and 54 files / ~59k lines under `runtime/autogen/` come
+   from `extra/` scripts and ISA databases that `autogen.py` does not generate. Verified
+   independently: 32 static `load()` names = 72,736 lines, plus the three dynamic arms are
+   `nv_610/580/570.py` at 26,568 + 26,001 + 24,866 = 77,435, reconciling to 150,171.
+   **A generator port loses nothing: 99.996% of the output is derivable — SIX hand-maintained
+   lines (0.004%), all emitted verbatim by `autogen.py:242/250/251`.**
+   **But the honest cost, which is what makes this not "easy": the generator is 96% LOGIC.**
+   LOGIC:EMISSION = 153:7 = 21.9:1. It is a port of 153 decisions, not 7 string joins. 160 of
+   289 lines port and gate today; `tname`'s dispatch, `all_fields` and the ObjC half do not.
+   **OWNER DECLINED the escape hatch for `tname`'s record arm:** it needs regex (Turing-
+   completeness, forbidden without approval and not approved here) or mutual recursion (bend
+   refuses: "a decreasing self-call (arguments are read left to right: each passed unchanged
+   until one shrinks)"). It would buy 30,979 rows of *emission* and nothing else — the tables
+   are the value, and 79,087 of 150,174 lines are tables/hex the generator already computes.
+   The output is also what bend **cannot hold**: 7 of 9 required constructs are ABSENT, and the
+   decisive one is not syntax — a bend `Data` carries no SIZE, no OFFSET, no address, so the
+   output's central structure (70,056 `class X(c.Struct)` lines) has no counterpart at all.
+   Landed: 1219 lines, 525 code, **0 dead defs**, 149 rows both lanes byte-identical, 3 oracles
+   all from calling the real generator, 44 mutations with 42 moving. The 2 non-moving are
+   proven (one a dead def orphaned by the wall, one a commutativity theorem no fixture in any
+   language can separate). **The 38 bugs cited as motivation are RETROSPECTIVE — that is the
+   already-completed `ops_nv` audit (entry below, marked [x]); both hand-checked values are
+   already right in the port.** Treat 38 as a RATE (15%), never as a backlog.
 9. **`nn/onnx` runners + op bodies** — `nn/onnx.bend` (2013) is committed with four
    node types unportable. Needs the fold keystone first, so dispatch this LAST.
 10. **`schedule/prepare.bend`** — still an 8-line stub from 06:13. If the schedule agent
@@ -1727,6 +1759,71 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       which replaced 40+ hand patches that had corrupted it.
       NOT COMMITTED, per the task's instruction.
 
+- [x] **`tinybendygrad/runtime/support/usb.bend`** — `tinygrad/runtime/support/usb.py`
+      (473 lines). 2596 lines, 339 defs, **939 gate rows**, `ALL PROOFS CHECK`,
+      **0 disagreements** against CPython on 939 of 939 row names.
+      **THE CITATION PREMISE IS FALSE AND IT IS REPORTED IN THE HEADER**:
+      `grep -rl "support/usb" tinybendygrad --include="*.bend"` is EMPTY, so unlike
+      every other unit in this wave the scope was chosen from the source.
+      **WHAT IS WORTH PORTING, AND WHY.** `usb.py` is the only file in tinygrad that
+      talks to a device through a GENERATED ctypes binding, and
+      `tinygrad/runtime/autogen/libusb.py` is that binding: **21 `enum_libusb_*` dicts
+      and 22 `@c.record` structs**. That is a descriptor table in the exact sense this
+      project gets burned on — `ops_nv`'s audit found 33 of 219 constants wrong in a
+      file already printing 590 green rows, and `ops_rdma` shipped `BNXT_VENDOR` as
+      5356 where the header says 5348. `struct_libusb_transfer`'s thirteen field
+      names, IN ORDER, are what `usb_chunk` (:350-351) addresses three times BY NAME,
+      so a transposed pair is a silently wrong transfer.
+      **THE WALLS CLOSED**: `ops_amd.bend`'s WALL 3 part 1 (`USB3.list_devices`, :30-37)
+      and part 3 (the WINDOW — `usb_fence` 0x800/0x804, `usb_cq` **0x100c/0x1010**,
+      `usb_sram` 0x5000/0x5000+2*HALF), plus `ops_disk.bend`'s `_might_open` ladder
+      shape. `dma_view` (ops_amd.py:824) is NOT closed and says so.
+      **A CORRECTION TO CARRY BACK**: ops_amd's 4096 is `0x1000`, which is `USB3`'s
+      own CONTROL buffer (:42, `alloc_cbuffer(0x1000)`) and NOT `usb_cq`'s offset.
+      Both are real, they are different numbers, and `usb_sram_win_fits_asm24` is the
+      row that says the SRAM pair exactly fills `usb_asm24` (544768, ops_amd's number).
+      **THE CONSTANTS THAT WERE WRONG**: two hand-typed, both caught by the differ —
+      `SENTINEL_MAGIC` was 1363148800 where 0x51000000 is 1358954496, and
+      `FAST_P1_MASK` was 215 where 0b11011111 is 223. **123 U32 defs swept, 123
+      CONFIRMED, 0 WRONG, 1 PORT-INTERNAL** (`NOT_FOUND`, reported not counted).
+      **FIVE DEFECTS THE GATE FOUND THAT PROSE DID NOT**:
+        (1) `copyout_second` was `U32.max(U32.sub(size, CHUNK()), 0)`, which WRAPS —
+            `U32.max(4294967295, 0)` is 4294967295 where Python's `max(-1, 0)` is 0, so
+            a copyout that fits one half carried a phantom 512-byte sentinel block.
+        (2) `sym_at` was off by one, so every order row named the symbol AFTER the one
+            it meant and every COUNT stayed right. `M31` is the mutation: 73 rows.
+        (3) `usb_chunk` had `usb_drained` (:347) AFTER `usb_ctrl` (:348). The CPython
+            order row is built from the call SITES, which is what caught it.
+        (4) `usb_enum.device` read the descriptor AFTER the ref/bus/address triple.
+        (5) The SEEN-SET version of `enum_rows` handed each `+` slot to
+            `List.contains`, which MOVES it: zero `_n_` rows, every seen set already
+            full. And once fixed, walking the REVERSED table still built the
+            accumulator BACKWARDS — a cons fold over a reversed walk is a backwards
+            fold — which put all 478 enum rows in the opposite of the header's order.
+      **MUTATION TABLE**: `usb-mutate.py --md` writes the table the file quotes.
+      **45 mutations, 44 move rows, 1 THEOREM, 0 blind spots.** The zero is `M6`,
+      which swaps the two operands of `nranges`' two-term SUM; no fixture in any file
+      could separate those. The narrowest rows are 1-wide by construction and say so:
+      `M10` (the two PCIe fast paths becoming one), `M13` (one of four `cfg_addr_ok`
+      bounds), `M24` (the slice extent, where the `slice0_4` fixture is the boundary
+      that separates it from the integer arm), `M27`/`M28` (one fixture each).
+      **`E_SYNTH`, A TABLE BUILT FOR A RULE**: correcting `enum_libusb_class_code` to
+      nineteen entries removed the only repeated value in twenty-one tables, so
+      LAST-wins became unobservable and `M36` fell to 0 rows. A zero is a REQUEST FOR
+      A FIXTURE, not a coverage claim; the fixture is a five-entry table that repeats a
+      value and a name, and `M36`/`M37` are 1-row mutations against it.
+      **NOT PORTED, and every one with its Python line**: 111 lines, generated by
+      `usb-seam.py`, which PRINTS THE SOURCE TEXT out of `usb.py` so a line that moves
+      cannot keep its old description.
+      **REPRODUCIBLE END TO END**:
+        python3 .agents/slop/usb-gen.py && python3 .agents/slop/usb-gen-strings.py &&
+        python3 .agents/slop/usb-build.py && ./bin/bend tinybendygrad/runtime/support/usb.bend
+        then `usb-diff.py`, `usb-constsweep.py`, `usb-handmap.py`, `usb-symmap.py`,
+        `usb-dead.py`, `usb-mutate.py --md`.
+      The file is GENERATED by `usb-build.py` from pieces that are themselves generated
+      from `usb.py` and the live `autogen.libusb`; in-place edits destroyed it twice.
+      NOT COMMITTED, per the task's instruction.
+
 ## Session 2026-10-02 — schedule/rangeify.bend: THE `ct` TABLE'S OP SETS WERE THE CHILD'S
 
 - [x] **THE PROVEN BUG, CONFIRMED AND FIXED, AND IT WAS BIGGER THAN REPORTED.** A `.f()`
@@ -1888,3 +1985,125 @@ rows are three named walls and one blind spot, all stated in the file's footer.
 - [ ] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
       are done; its rows print `dt_name`, so they move with the rename and its
       oracle must be re-run)
+
+## Session 2026-10-02 — `runtime/support/memory.bend`: the allocator PORT, and the gate that was
+## green on 570 of 995 rows
+
+- [x] **`tinybendygrad/runtime/support/memory.bend`** — `tinygrad/runtime/support/memory.py`
+      (288 lines). 2,634 lines, no foreign effect, the seam is a `Tr` trace (the
+      `support/am/ip.bend` lane). Report: `.agents/slop/memory-report.md`.
+      `bend --check-only` → `ALL PROOFS CHECK`; gate → `rows: bend=889 oracle=889 compared=889
+      disagreements=0`; interpreted lane == compiled lane byte for byte; **70 mutations, 6 blind
+      spots.** NOT COMMITTED, per the task's instruction.
+- [x] **THE GATE WAS NOT GREEN AND THE SUMMARY SAID IT WAS.** The two lanes agreed on **every
+      row they shared** — 570 compared, **0 value disagreements** — and **547 rows existed on
+      exactly one side**: 425 oracle-only and 122 Bend-only. `disagreements=0` was arithmetically
+      impossible with 684 Bend rows and 570 compared, so the "green" reading was wrong, and the
+      file had drifted a long way from the oracle. Reconciled family by family: the bump sequence
+      became joined `bump_seq_*`/`bump_ptr_seq_*` rows, the frag rows one naming convention
+      (`frag_<f>_<sub>`, fixture last), the MMIO field columns four LIST rows instead of
+      thirty-six per-field rows, the multichar claim two list rows instead of forty-six
+      per-format rows, and the PTE table gained `amd`/`nv`/`tall`/`root1` in three widths.
+      **A gate that diffs only the intersection measures nothing; one that diffs only the values
+      hides a whole family. Both directions, whole lines, count printed.**
+- [x] **ELEVEN REAL DEFECTS, all found by the diff and none by reading.** `va_allocator` hi words;
+      `U32.shln/add/sub` WRAP rather than saturate; `frag_lowbit` is `x & (~x+1)` not `x-2x`;
+      `frag_sz_max` is `1 << (bl-1)`; `lvl_msb_len` is `len+1`; `VRAM_ODD` is `0x40000001`;
+      `valloc_align` is `max` not `min`; `lv2_shift` needs a `max(0,..)` clamp;
+      `List.append(a,A,xs,ys)` is `xs ++ ys` so a "reverse" on it is the IDENTITY; `first_of`
+      needed a `seen` flag; **and `valloc`'s range walk advanced the segment list past the pick**,
+      making it a last-match walk that cannot take the same segment twice — 8 MiB came out as
+      `2 MiB × 8`, sum `16777216`, remainder `-8388608 mod 2^32`, where CPython says `2 MiB × 4`,
+      sum `8388608`, remainder 0. **Nothing in `memory.py` hints at that one.**
+- [x] **THE PAGE-TABLE ASSERT LOOPS, and the order is the claim.** `map_range:214-215` reads
+      `valid` first and `entry` only on failure (an `assert` message is lazy), so a mapped entry
+      is `[PT_VALID, PT_ENTRY]` and a pending one `[PT_VALID]`; `unmap_range:232-234` is the
+      mirror with the OPPOSITE stop polarity. The oracle runs both loops **as Python against a
+      recorder**. Two Bend traps cost most of the detour: a `U32` stop sentinel WRAPS (`0xFFFFFFFF`
+      + 1 = 0, so the walk never stopped), and `Bool.pick` EVALUATES BOTH ARMS, so two exclusive
+      emitters are a `match` over `Bool` and never a `pick`.
+- [x] **CITING FILES.** `schedule/memory.bend` CONFIRMED: no local TLSF reader, the offsets are
+      the `mem_offs` parameter, nothing here makes it redundant. `ops_rdma.bend` CONFIRMED at its
+      line 262 (`ASPACE_SYS() = 1` measured) and its `va_allocator` WALL now has a measured
+      answer to cite. **`am/ip.bend` wall #6 CONTRADICTS `ip.py:278`**: the recorded
+      `mm.palloc(0x1000 * xccs, 2 + is_vf)` has `2 + is_vf` as the **comprehension's repeat
+      count**, not `align`; the real `align` is `palloc`'s default `0x1000`. Both answers are
+      gated (`sig_palloc` pins the default; `palloc_round_4096`/`palloc_size` pin the arithmetic).
+- [x] **SIX BLIND SPOTS, none closed with a row that encodes the bug.** M09/M12/M13 are
+      *structural*: every reader is a positional destructure, so swapping the declaration and all
+      readers is one consistent relabelling — the declaration order IS gated, the readers are
+      not. M38/M62 are **theorems**: a non-monotone `va_shifts` makes CPython raise `ValueError`,
+      and `pte_barefused_12_21_4=1 / _0_9_4=1 / _12_21=0` are the rows that make the theorem's
+      boundary checkable. M64 is a tag retagged onto an **unemitted** tag, which a trace that
+      counts by value cannot see; M69 (retag onto `PT_VALID`, which IS emitted) moves 6 rows and
+      is the pair that shows the difference.
+- [x] **THE TLSF FREE-LIST WALK IS NOT PORTED, AND THAT IS THE ONE PLACE THIS STOPS SHORT.**
+      `lv1`, `lv2`, the bucket key, `lv2_shift`, the three-step size pipeline and the storage
+      length are all ported and gated; `TLSFAllocator.alloc`/`free` are not, so `va_alloc_off_*`
+      was **deleted from both sides** rather than kept as a literal on the Bend side. A literal
+      row is a change-detector; an absent row is a fact.
+- [x] **M14 CLOSED WITH ONE FIXTURE.** The dropped `round_up` moved nothing because every
+      `bump_over_*` fixture had an aligned pointer or an alignment of 1. A ninth request —
+      **one byte at alignment 4096 from a pointer at 161** — makes the padded test round to 4096
+      and overflow while the unpadded one compares 162 and does not. 0 → 5 rows.
+- [x] **`.agents/slop/notes/bend2-constraints.md`** — 12 measured rules appended after line 9704,
+      cited by position (the file's rule NUMBERS are ambiguous and it says so at its top).
+      Notables: an unfilled law names the CALLER; a fold needs a `Nat` fuel as its FIRST argument;
+      a `U32` stop sentinel wraps; an `assert` message is lazy; `Bool.pick` is right for a value
+      and wrong for an effect; a ladder walk re-walks its head; a literal fuel is a truncation; a
+      declared tag nothing emits cannot be gated.
+
+## Session 2026-10-02 — REBASE BATCH B2 (`dtype.py` + `renderer/cstyle.py`, 2 files, atomic)
+
+- [x] **THE BREAK IS CLOSED.** `DEV=NULL` compiles a kernel again. `dtype.py` was already at
+      HEAD from `d2cde2f2c` and `cstyle.py` was still at the pin, so every C type rendered as
+      the dtype's RUST name (`u64`, `u8`) and clang rejected it. The brief said the first error
+      was `unknown type name 'i32'`; the first error is actually `u64` — same cause, and worth
+      recording because `i32` is the name the pin's `cstyle.py` spelled `dtypes.uint32`/`int32`.
+- [x] **STAGED EXACTLY ONE FILE** (`tinygrad/renderer/cstyle.py`); `dtype.py` needed nothing.
+      Pin match **211/230 → 210/230**, local edits **19 → 20** — one file, one step, as expected.
+- [x] **GATE: cstyle.bend RE-PORTED, and the 9 pre-existing disagreements are BYTE-IDENTICAL
+      before and after** (5 `buf2 * LOC`, 4 `wmma`). None of them is B2's: a bare `UOp(BUFFER)`
+      is `AddrSpace.GLOBAL` and a bare `UOp(WMMA)`'s dtype is the `u32` const at BOTH ends of
+      the window, so those rows disagreed before B2 started.
+- [x] **TWO REAL FINDINGS, both silent-wrong-answer shaped rather than loud.**
+      1. `ocml_extern` read `dt_name(d)` where HEAD reads `self.render_dtype(dt)`. At the pin
+         `DType.name` WAS the C spelling, so the two were the same string and the reader could
+         not tell them apart; 793abbb split them and the port emitted `f16` inside
+         `extern "C" ... __ocml_sqrt_f16(f16)` where HIP needs `half`. **Only `kern2 HIP ockl`
+         can see it** — HIP is the only device that emits `ocml`. This is the `uop/fold.bend`
+         failure mode exactly: green gate, wrong kernel.
+      2. **The port's `type_map` was DEAD CODE for the string layer.** `tm_get` called
+         `Map.get(String, nm, m, nm)`, and `Map.get`'s SECOND argument is the ZERO of the
+         value type, not the key — the key is the FOURTH. With the key in the zero slot the
+         lookup missed every time and returned the zero, so all six `type_map`s agreed with
+         `dtype.name` for all 17 dtypes. Invisible while the base was `{}`; the moment HEAD
+         gave the base a real 14-entry table, 62 rows moved. `cu32` in `uop/render.bend` passes
+         `0` there and the key last — the working example was in the tree the whole time.
+- [x] **`type_map` IS NOW OBSERVABLE, and the baked-literal count fell 94 → 13.** That number is
+      the measure of the dead-lookup defect: with `type_map` inert the port's `[bend]` half
+      printed rust names and 94 of its baked `py=` literals were stale text.
+- [x] **THE HEAD `KeyError` IS NOT AN UPSTREAM BUG, AND IT IS UNREACHABLE — measured, not
+      assumed.** HEAD replaced `type_map.get(dtype, dtype.name)` with a bare `type_map[dtype]`,
+      so an unmapped dtype now raises where the pin answered with `dtype.name` — which at the
+      pin was `"float8_e4m3"`, not a C type at all, so the pin's answer was garbage. No fp8
+      dtype reaches `_render_dtype` on a device without it: **tinygrad emulates fp8 as f32**.
+      `DEV=CPU` + `.cast(dtypes.fp8e4m3)` compiles, realises, and emits
+      `void E_3(unsigned char* restrict, float* restrict)`. Loud failure on an unreachable
+      path is upstream's intent, so no `UPSTREAM.md` entry.
+- [x] **NO `case`-ON-DTYPE-NAME SITE WAS SILENTLY BROKEN, and that is a measurement.**
+      * Every legacy alias (`float`/`half`/`bfloat16`/`double`/`uint`/`int`/`long`/`ulong`/
+        `char`/`uchar`/`short`/`ushort`) still resolves, so the `case dtypes.X:` arms in
+        `dtype.py:207-210` and `codegen/decomp/dtype.py:28-81` are matched by object identity
+        and are unaffected.
+      * `DTYPES_DICT` is built from `DTypes.__dict__`, so its KEY SET only ever GREW
+        (28 → 40 keys; a strict superset), so no `[...]` lookup can start missing.
+      * ONNX's `DTYPES_DICT[self.name.lower()]` dispatches on ONNX strings (`FLOAT`,
+        `BFLOAT16`, …) which resolve at both ends.
+      * The one site that WAS split is HIP's `ocml`, and it is not a `case` — it is a
+        `dt.name` read, fixed above. **A `case`/lookup is not the only shape; a bare `.name`
+        read next to a `render_dtype` is the same trap and this window had one.**
+- [x] **`DTYPES_DICT` KEY-SPECIFIC FINDING.** `float8_e4m3` and friends are NOT keys at either
+      end (the ATTRIBUTE is `fp8e4m3`; `"float8_e4m3"` was only ever the *name* field, and the
+      rename moved it to `fp8e4m3`, which IS now a key). Nothing reads those four strings, so
+      this closed itself — recorded because it looked like the break and was not.
