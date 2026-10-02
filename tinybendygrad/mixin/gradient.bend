@@ -1,53 +1,41 @@
-# mixin/gradient.bend -- tinygrad/mixin/gradient.py. `pm_gradient` (the reverse-mode
-# rule table) and `compute_gradient` (the walk that drives it).
+# mixin/gradient.bend -- tinygrad/mixin/gradient.py. `pm_gradient` (the reverse-mode rule
+# table) and `compute_gradient` (the walk that drives it).
 #
 # WHAT IS IN HERE. `gradient.py` is 145 lines: three helpers (`reduce_gradient`,
-# `call_gradient`, `partial_store_gradient`), the `pm_gradient` table, `_deepwalk`,
-# and `compute_gradient`. The table is 33 entries and it is the centre of this file:
-# every entry is a top-level def `gr_N`, the table is copyable `Data`, and dispatch
-# is the ~15-line duplicated scan `spec.bend` writes six times. See the header of
-# `uop/spec.bend` for why there is no generic dispatcher: a rule is a def, not a
-# value, so `ops.bend` cannot call into this file and each table owns its driver.
+# `call_gradient`, `partial_store_gradient`), the `pm_gradient` table, `_deepwalk`, and
+# `compute_gradient`. The table is 33 entries and it is the centre of this file: every entry
+# is a top-level def `gr_N`, the table is copyable `Data`, and dispatch is the ~15-line
+# duplicated scan `spec.bend` writes six times. See the header of `uop/spec.bend` for why
+# there is no generic dispatcher: a rule is a def, not a value, so `ops.bend` cannot call
+# into this file and each table owns its driver.
 #
-# THE ONE MEASURED FACT IN THIS HEADER, and it is the reason the file exists in this
-# shape: `mixin/gradient.py:101` binds the name `dest` TWICE.
-#
+# THE ONE MEASURED FACT IN THIS HEADER, and it is the reason the file exists in this shape:
+# `mixin/gradient.py:101` binds the name `dest` TWICE.
 #     (UPat(Ops.AFTER, src=(UPat(name="dest"), UPat(Ops.STORE, src=(UPat(name="dest"), UPat())))),
 #      lambda ctx,dest: (None, ctx)),
+# `dest` is `AFTER.src[0]` AND `AFTER.src[1].src[0]`, two different positions, so the rule
+# matches only when they are the SAME node. `upat.py:100-105` emits the identity compare as
+# an ordinary clause (`"{0} is {1}"`), and the interpreter states the same constraint as a
+# store rejection. Without the check the rule matches strictly more nodes than Python does,
+# and it still typechecks and still runs -- so it is LOAD-BEARING, not decorative. `gr_29`
+# emits it; the `rebind`/`rebind_off` gate rows are the two-sided check, and `gr_29_nocheck`
+# is the mutation that proves it. THE TAG SPACE is Python's own: 0..32 in `pm_gradient.pdict`
+# insertion order, which is the compiled form (`UPAT_COMPILE=1` is the default, ops.py:1588).
+# Tag 29 is the rebind, tags 27/28/30 are its AFTER siblings, and `t_claims` pins the COUNT.
 #
-# `dest` is `AFTER.src[0]` AND `AFTER.src[1].src[0]`, two different positions, so the
-# rule matches only when they are the SAME node. `upat.py:100-105` emits the identity
-# compare as an ordinary clause (`"{0} is {1}"`), and the interpreter states the same
-# constraint as a store rejection. Without the check the rule matches strictly more
-# nodes than Python does, and it still typechecks and still runs -- so it is
-# LOAD-BEARING, not decorative. `gr_29` emits it; the `rebind`/`rebind_off` gate rows
-# are the two-sided check, and `gr_29_nocheck` is the mutation that proves it.
-#
-# THE TAG SPACE is Python's own: 0..32 in `pm_gradient.pdict` insertion order, which
-# is the compiled form (`UPAT_COMPILE=1` is the default, `ops.py:1588`). Tag 29 is
-# the rebind, tags 27/28/30 are its AFTER siblings. `t_claims` pins the COUNT.
-#
-# ---------------------------------------------------------------------------
-# THE SHAPE OF A RULE'S ANSWER, which is the one design decision here.
-#
-# Python's rule bodies return `tuple[UOp|None, ...]` and `rewrite` returns the FIRST
-# non-`None`. Two facts follow, and both shape the type:
-#
-#   * a rule that does not match returns `None`, and the scan CONTINUES. That is
-#     `O.Verdict`'s `VSkip`, and it is a first-wins fold exactly as in `spec.bend`.
-#   * a rule that matches returns a list with `None` HOLES -- `CMPLT` is `(None,None)`,
-#     `STORE` is `(None, ctx)`, `BITCAST` is `(None,)`. A hole is not a skip.
-#
-# So the answer is a `Data` record with a `List` field, not a `Maybe` of a list (a
-# `Data` record cannot hold a `Maybe` -- see the notes, rule 15). `GFired{gs, ar}`
-# is "matched, here are the per-src gradients"; `GSkip{}` is "no opinion, keep
-# scanning". The `ar` field is the arena AFTER the rule grew it, because a gradient
-# rule BUILDS nodes: `RECIPROCAL` is `(-ctx * ret * ret)`, three new nodes.
-#
-# `gs` uses index 0 for a hole. Index 0 is the arena's bottom node (`Arena.empty`
-# spends it, ops.bend:935) and `UOp.is_none(u) = U32.is_zero(u)`, so 0 IS tinygrad's
-# own "no uop" and the encoding is not an invention.
-# ---------------------------------------------------------------------------
+# THE SHAPE OF A RULE'S ANSWER, the one design decision here. Python's rule bodies return
+# `tuple[UOp|None, ...]` and `rewrite` returns the FIRST non-`None`. Two facts follow, and
+# both shape the type: a rule that does not match returns `None` and the scan CONTINUES --
+# that is `O.Verdict`'s `VSkip`, a first-wins fold exactly as in `spec.bend`; and a rule that
+# matches returns a list with `None` HOLES (`CMPLT` is `(None,None)`, `STORE` is `(None, ctx)`,
+# `BITCAST` is `(None,)`), and a hole is not a skip. So the answer is a `Data` record with a
+# `List` field, not a `Maybe` of a list (a `Data` record cannot hold a `Maybe` -- see the
+# notes, rule 15). `GFired{gs, ar}` is "matched, here are the per-src gradients" and `GSkip{}`
+# is "no opinion, keep scanning". The `ar` field is the arena AFTER the rule grew it, because
+# a gradient rule BUILDS nodes: `RECIPROCAL` is `(-ctx * ret * ret)`, three new nodes. `gs`
+# uses index 0 for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it,
+# ops.bend:935) and `UOp.is_none(u) = U32.is_zero(u)`, so 0 IS tinygrad's own "no uop" and
+# the encoding is not an invention.
 
 import Base
 import ./../LAWS/spec.bend as S

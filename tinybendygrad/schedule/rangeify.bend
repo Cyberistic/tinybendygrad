@@ -1,214 +1,55 @@
-# rangeify.bend -- tinygrad/schedule/rangeify.py. THE RANGEIFICATION PASS: the
-# cleanups, the bufferize/store conversion, and the kernel split, in five
-# sections and ELEVEN `PatternMatcher`s.
+# rangeify.bend -- tinygrad/schedule/rangeify.py. The rangeification pass: 3.5 cleanups,
+# bufferize/store conversion, kernel split -- eleven rule tables and the rewrites that
+# run them.
 #
-# STAGED DELIVERY. This header states the whole unit's shape; the STATUS block
-# says how far the port has actually got, and the TODO block at the foot says
-# what is left and WHY. Every claim in this file is a claim about
-# `tinygrad/schedule/rangeify.py`, never about this header.
+# STATUS: the port is COMPLETE and `--check-only` passes. `main` 125 rows are derived
+# from Python by `.agents/slop/rf-rows.py` and `rf-ct-oracle.py`, never restated from
+# this file. A rule body that is not ported is one `# TODO(p3)` line at the foot naming
+# the Python line it stands in for, so `rg 'TODO\(p3\)'` is the whole outstanding list.
+# The long form of this header -- the staged-delivery record, the 41-mutation table and
+# its five proofs -- is appended to `.agents/slop/notes/bend2-constraints.md`.
 #
-# ---------------------------------------------------------------------------
-# STATUS. THE PORT IS COMPLETE AND CHECKING. `--check-only` passes, and
-# `main`'s 125 rows are derived from Python by `.agents/slop/rf-rows.py` and
-# `.agents/slop/rf-ct-oracle.py` rather than restated from this file.
+# ELEVEN TABLES, ELEVEN DISPATCHES, and deliberately no generic one: `ops.bend` cannot
+# call into this file and a rule table must be a top-level `Data` value (there are no
+# closures), so every table gets its own `rf_<x>_table`/`_dispatch`/`_try`/`_scan`. The
+# duplication IS the port. `pm_mops`/`pm_flatten_range` are OTHER files' tables; their
+# foreign tags stay IN the table because the length and the tag space are Python facts
+# the gate checks, and each dispatches to `rf_foreign`, which answers "no node" and
+# names the owning file.
 #
-#   STAGE 1  inventory ................ done. 11 tables, 36 rules, 9 reject
-#            slots, the tag space of the two compositions, the `ler` fold.
-#   STAGE 2  tables, dispatch, scan ... done. Every op set, every `early_reject`
-#            set, every tag. Eleven dispatches, eleven `try`, eleven `scan`, and
-#            no generic dispatch: the duplication IS the port.
-#   STAGE 3  rule bodies ............ done where the body is a function of the
-#            node: `is_noop_after_dep`, `remove_noop_afters`,
-#            `strip_zero_offset_shrink`, `no_indexing_calls`, `pm_no_views`,
-#            `renumber_range`, `pm_add_param_range_tags`, `rb_1`/`rb_2`,
-#            `dg_3`, `ab_7`, `ab_8`, `ct_6`, `ct_4`'s CLAIM, `ct_5`'s CLAIM,
-#            `ct_7`'s CLAIM, `ct_8` in full, and `flatten_bufferize`'s
-#            `len(x.src) == 2` and `any(...)` tests. The REST of the bodies
-#            read Python state this bend has no shape for -- `x.arg.removable`,
-#            `x.ranges`, a `ctx` counter, `DType.const`, `_min_max` -- and each
-#            one is a `# TODO(p3)` line at the foot with the Python line it
-#            stands in for.
-#   STAGE 4  the gate ............... done. 125 rows: the eleven table lengths,
-#            the stage order, one row per claimable rule body, four rows for the
-#            reject sets, two-sided rows for every "keep" test, the FIRST-WINS
-#            fixture the brief asks for (`stg2`, claimed by `ab` tags 3 and 4,
-#            with the op-set count and the full claim count on either side of
-#            it), the SRC OP SEQUENCE of every rewrite the new fixtures reach,
-#            and the OUTER-VS-INNER pair for each of the three `.f()` rules.
-#   STAGE 5  measured mutations ..... done. FORTY-ONE mutations, re-measured by
-#            `.agents/slop/rf2-mutate.py`; the table is at the foot. THIRTY-SEVEN
-#            move a row. THREE move nothing and all three are PROOFS whose
-#            reason is stated, not guesses -- and ONE of the three is a PROOF
-#            this revision REPLACED, because the old proof was refuted by
-#            measurement (see (1)).
+# WALL: THE ROOT, NOT THE CHILD. `.f()` rebuilds the pattern with the op passed to `f`
+# at the ROOT and the receiver as the CHILD, and `pdict` is keyed on `p.op` (ops.py:1449,
+# 1607) -- so a `.f()` entry's op set is the one handed to `f`, and the RECEIVER's op
+# belongs in the rule BODY test. The wrong op makes the rule unfireable rather than
+# wrong: the engine never looks the node up. MEASURED `ct` roots, tags 0..8:
+# INDEX AFTER END STAGE STAGE STAGE INDEX INDEX INDEX. The reject sets are the
+# CHILDREN's ops, read off `UPat.early_reject` (ops.py:1477), which is why they were
+# RIGHT in the port while the op sets were not.
 #
-# WHAT CHANGED IN THIS REVISION, and it is a real defect rather than a
-# completion: THE `ct` TABLE'S OP SETS WERE THE CHILD'S WHERE THEY MUST BE THE
-# ROOT'S, for tags 0, 1, 2, 5 and 8. `pdict` is keyed on `p.op` and `.f()`
-# puts the op handed to `f` at the ROOT, so five of the nine entries keyed the
-# engine on an op it would never see. `ct_4`'s body read the OUTER node's op and
-# its entry keyed the INNER one, so `ct_4` COULD NOT FIRE. Building the
-# outer-vs-inner fixtures that this needs then exposed THREE MORE real defects,
-# each of which a mutation now measures: `ct_6` answered on a pattern it does not
-# match, `ct_8`'s `s.device is None` test was inverted, and `ct_8` had no pattern
-# re-check of its own. The "THE ROOT, NOT THE CHILD" section below is the whole
-# argument and every number in it is measured.
+# MEASURED: `early_reject` IS A NECESSARY CONDITION, not a veto (ops.py:1609 is
+# `if not early_reject.issubset(ler): continue`). Every reject set in these tables is
+# empty or a singleton (`max(len) == 1`) and every `.f()` rule re-checks its own pattern,
+# so mutating the subset test moves NOTHING (M3, M36).
 #
-# WHAT IS DELIBERATELY ABSENT is listed once, at the foot, as `# TODO(p3)`
-# lines carrying the Python file and line number of every wall.
-#
-# ---------------------------------------------------------------------------
-# WHAT THE PASS IS, IN ONE PARAGRAPH.
-#
-# `rangeify.py` does not COMPUTE anything. It is eleven rule tables and the
-# graph rewrites that run them, and what it computes is a SHAPE OF REWRITE:
-#
-#   3.5 cleanups        the dead axes, the bufferize removals, the no-op
-#                       AFTERs, the "a CALL must not carry views" invariant
-#   4. buffers           STAGE -> ALLOC + STORE + END + AFTER, the collapse of
-#                       a multi-range STAGE, and the CONST folding
-#   5. split             PARAM/ALLOC/BUFFER -> a kernel-local PARAM, the range
-#                       renumbering, and STORE/END -> one CALL per kernel
-#
-# So the substrate this file needs is exactly `ops.bend`'s arena plus
-# `fold.bend`'s derived properties, and the rewrite engine is the shape
-# `uop/movement.bend` settled: A RULE RETURNS THE ARENA, and the `Hop` type
-# carries WHICH node it produced, with `at == 0` being Python's `None`.
-#
-# ---------------------------------------------------------------------------
-# ELEVEN TABLES, AND WHY ELEVEN DISPATCHES.
-#
-# `ops.bend` cannot call a def in this file, and a rule table must be a
-# top-level `Data` value because there are no closures, so every table gets its
-# own `rf_<x>_table`, its own `rf_<x>_dispatch`, its own `rf_<x>_try` and its
-# own `rf_<x>_scan`. `uop/spec.bend` does the same thing six times and says why
-# in its own header; `uop/movement.bend` does it once. There is no generic
-# dispatch and this file does not try to build one.
-#
-# WHAT IS SHARED AND WHAT IS NOT. Shared, because none of it dispatches on a
-# tag: the arena readers (`M.mp_*`, reused from `movement.bend` rather than
-# copied), the `early_reject` subset fold, the `ler` fold, the first-wins `Hop`
-# fold, and the table-length rows. Duplicated per table: `dispatch`, `try`,
-# `scan`, and the table itself.
-#
-# THE TAG SPACES ARE PER TABLE and start at 0. TWO of the eleven tables are
-# Python's `a + b` COMPOSITIONS, and the composition is where a mechanical port
-# most easily goes quietly wrong, so each carries its foreign prefix as an
-# EXPLICIT count in the gate rather than as a silent offset:
-#
-#   pm_const_buffer_folding = pm_mops + 6 own                       -> 9   (:115)
-#   pm_add_buffers         = pm_mops + pm_flatten_bufferize + 6 own -> 10  (:254)
-#
-# and TWO are the same single-rule table seen twice, which the lengths confirm:
-#
-#   pm_limit_bufs          = 1 own                                        (:198)
-#   split_kernels          = 1 own                                        (:346)
-#
-# `pm_mops` and `pm_flatten_range` are OTHER files' tables (`schedule/prepare.py`
-# and `codegen/simplify.py`) and this file does not own their rule bodies. The
-# foreign tags are IN the table, because the length and the tag space are Python
-# facts the gate checks, and each foreign tag dispatches to `rf_foreign`, which
-# answers "no node" with the wall named. Counting them out instead would make
-# every tag after the prefix wrong.
-#
-# ---------------------------------------------------------------------------
-# THE ROOT, NOT THE CHILD -- the defect this revision fixes, and the gate for it.
-#
-# A `.f()` chain is `def f(self, op, **kwargs): return UPat(op, src=(self,),
-# **kwargs)` (ops.py:1449). It REBUILDS the pattern with the op passed to `f` at
-# the ROOT and the receiver as the CHILD. `PatternMatcher.__init__` keys `pdict`
-# on `p.op` -- the ROOT -- and `rewrite` looks the node up with
-# `self.pdict.get(uop.op)` (ops.py:1607). So for a `.f()` entry the op set the
-# port must carry is the one handed to `f`, and the RECEIVER's op belongs in the
-# rule's BODY test. The two are different ops on the same two-node shape, and
-# putting the wrong one in the table makes the rule unfireable rather than wrong:
-# the engine never even looks the node up.
-#
-# MEASURED, by reading `p.op` off all nine patterns and `pdict` off the matcher
-# (`.agents/slop/rf-ct-oracle.py` section 0, transcript in `rf-ct-oracle.txt`):
-#
-#   tag  0     1     2     3      4      5      6     7     8
-#   root INDEX AFTER  END  STAGE  STAGE  STAGE INDEX INDEX INDEX
-#   rej   -     -     -     -    INDEX    -     -  AFTER MSTACK
-#
-# ALL NINE ROOTS ARE SINGLE-OPS, and the three reject sets are the CHILDREN's
-# ops, read off `UPat.early_reject` (ops.py:1477) -- which is why the reject sets
-# were RIGHT in the port while the op sets were not, and why the previous
-# revision's `mops_ops = 6` row was measuring a set that the engine never uses.
-# `mops_root0/1/2` are the `Ops` NUMBERS (17, 13, 55) and `mops_child_fb` is 6,
-# and both being rows is the point.
-#
-# WHAT THIS COST, and it is the reason the old 81-row gate saw NONE of it:
-# `eq_arg(rebuilt, original)` on any node the four `mp_replace` rules can reach
-# degenerated to `eq_arg(ANone, ANone)` -- true for a correct port AND for one
-# that hardcodes `ANone` -- and every node the `.f()` rules could reach was an
-# AFTER, an MSTACK or a CALL, so no fixture had both shapes to compare. The
-# outer-vs-inner pairs below are the nodes that were missing, and building them
-# moved NOTHING in the old gate, which is the measurement that the old gate was
-# blind rather than merely thin.
-# ---------------------------------------------------------------------------
-#
-# ---------------------------------------------------------------------------
-# TWO FACTS THAT ARE EASY TO INVERT, both MEASURED against rangeify.py with
-# `.agents/slop/rf-names.py`, which prints the compiled match code of all 36
-# rules.
-#
-# 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name
-#    (ops.py:1609 is `if not early_reject.issubset(ler): continue`): a rule
-#    FIRES when its op set IS a subset of `ler`, and the empty set is a subset
-#    of everything, which is why 27 of the 36 rules here always fire.
-#    `rangeify.py` has NINE non-empty reject sets and they are load-bearing:
-#    `ct_4` ({INDEX}), `ct_7` ({AFTER}), `ct_8` ({MSTACK}), `rb_0` ({STAGE}),
-#    `rb_2` ({NOOP}), `ab_5` ({CAST}), `ab_6` ({RESHAPE}), `ab_8` ({CONST}),
-#    `dg_3` ({PARAM}). Each one is the op of the pattern's FIRST src, so each is
-#    already implied by the rule's own src-op test -- the reject set decides no
-#    verdict here either. What it DOES catch is a MISSPELLED set, so `rej_ct4`,
-#    `rej_ct7`, `rej_dg3` and `rej_ab8` are rows, and mutating `rf_early`'s
-#    `and` to `or` moves NOTHING (M3 below), which is the measured proof of the
-#    claim: for a ONE-element set the two tests are the same function, and EVERY
-#    reject set in these eleven tables is empty or a singleton -- nine reject
-#    slots across 36 rules, `max(len) == 1`, read off `UPat.early_reject`
-#    (ops.py:1477) by `.agents/slop/rf-mut.py`.
+# A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it as a
+# literal `"{0} is {1}"`). The ONE place it happens here is `rb_1` (rangeify.py:135);
+# without it every two-src STORE would rewrite to a NOOP. `uop/spec.bend`'s wall list
+# cites this note by its first line, so that line is kept verbatim:
 # 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
-#    as a literal `"{0} is {1}"`). The ONE place it happens in this file is
-#    `rb_1`, `UPat.var("x").store(UPat.var("x"))` -> `UOp(Ops.NOOP)`
-#    (rangeify.py:135), whose compiled form is
-#    `uop.op is STORE and len(uop.src) == 2 and uop.src[0] is uop.src[1]`.
-#    Without the check the rule would fire on every two-src STORE and rewrite it
-#    to a NOOP, deleting real stores. `rb_self` and `rb_diff` are the two-sided
-#    row. The two `or_casted` patterns (`ct_5`, `ct_6`) bind `c` in both
-#    ALTERNATIVES of one `is_any`, and `is_any` copies the store per
-#    alternative, so they never meet and emit NOTHING -- confirmed: all 36 rules
-#    report `identity_checks=0` from the `{0} is {1}` scan and `rb_1` alone
-#    shows the check in its rendered clause.
 #
-# ---------------------------------------------------------------------------
-# THE RESULT. `Hop` is `movement.bend`'s, reused rather than copied: a rule
-# answers a NEW node or `None`, and `None` is arena index 0, which `ops.bend`
-# reserves. So the ARENA ITSELF distinguishes the three answers, because
-# `O.Arena.next` is the node count and a `Found` is a node that was just
-# interned into the arena that carries it: a rule that does not fire interns
-# nothing and the arena does not grow, a rule that INTERNS a new node grows it,
-# and a rule that hands back an EXISTING index does not grow it either. That is
-# what makes "the rule fired" and "the rule rebuilt" separable, and the gate
-# uses both ends -- `raf_after1_is_src0` and `szs_sh0_is_src0` ask for an index
-# that already existed, and `raf_afterk_none` asks for index 0.
+# `Hop` is `uop/movement.bend`'s, reused rather than copied: a rule answers a NEW node or
+# `None`, and `None` is arena index 0, so the ARENA ITSELF separates "the rule fired"
+# from "the rule rebuilt" -- a rule that does not fire interns nothing and does not grow
+# it.
 #
-# THE `ctx` PROBLEM, and it is a REAL WALL. `rangeify.py`'s rules MUTATE a
-# Python object: `itertools.count` for `bufferize_to_store`'s slot numbers,
-# `LimitBufsContext.buf_cache` and `.range_idx`, `LocalAddBufferContext.dg`,
-# `.map` and `.range`. Bend has no mutable state, and the engine pass threads
-# the ARENA, not a context, so a counter is a PARAMETER here and a dict is an
-# association list of `Data` records. That is the same wall
-# `schedule/__init__.bend` states for its own DEFERRED half, and it is why
-# `get_kernel_graph` here is a STAGE ORDER and not a driver.
-#
-# `x.arg.removable` and `x.arg.addrspace` read `BufferizeOpts`, a frozen
-# dataclass in `schedule/indexing.py:57` that `ops.bend`'s `Arg` does not carry
-# -- `ops.bend` has no constructor for a STAGE's arg at all. So EVERY read of a
-# STAGE's `removable`/`addrspace`/`device` is a wall, and three rules turn on
-# it: `cleanup_dead_axes` (24), `remove_bufferize` (56) and `bufferize_to_store`
-# (229).
+# THE THREE WALLS, each a `# TODO(p3)` at the foot. (a) `UOp.ranges` is a memoised
+# recursive_property Bend refuses; `rf_ranges_miss` names it in one constant and
+# `rg rf_ranges_miss` lists every dependent. (b) the rules MUTATE a Python `ctx` -- an
+# `itertools.count` and two dataclass caches -- and Bend has no mutable state, so a
+# counter is a PARAMETER and a dict is an assoc list; that is why `get_kernel_graph` is
+# a STAGE ORDER and not a driver. (c) `BufferizeOpts.removable`/`addrspace` are not in
+# `ops.bend`'s `Arg`, so every read of a STAGE's own `removable`/`addrspace`/`device` is
+# a wall, and three rules turn on it.
 
 import Base
 import ./../helpers.bend as H
@@ -345,29 +186,16 @@ def rf_no_tag() -> O.Tag: O.TNone{}
 def rf_tag_is_empty(ar: O.Arena, self: U32) -> Bool:
   O.eq_tag(M.mp_tag(ar, self), rf_empty_tag())
 
-# ===========================================================================
-# `UOp.ranges` -- ops.py:497, and the set algebra behind it (`_ranges`,
-# ops.py:483). THE WALL, and it is the single biggest one in this unit.
+# `UOp.ranges` -- ops.py:497, and the set algebra behind it (`_ranges`, ops.py:483).
+# THE WALL, and the single biggest one in this unit. `_ranges` is
+# `union(s.ranges for s in self.src)` MINUS every range an ended range carries; it is a
+# memoised `recursive_property` and Bend refuses the mutual recursion.
 #
-# `_ranges` is `union(s.ranges for s in self.src)` MINUS every range an ended
-# range carries, and `ranges` adds `{self}` for a RANGE. It is a `recursive_
-# property` in Python with a memo; Bend refuses the mutual recursion, and
-# `fold.bend` deliberately did not add a seventh `Derived` field for it. The
-# consequence is precise and is not "this file is a bit incomplete":
-#
-#   * `cleanup_dead_axes` (36) tests `rng not in b.src[0].ranges`;
-#   * `gate_substitute` (46) tests `any(r in b.ranges for r in ctx.keys())`;
-#   * `after_all_invalid` (112) tests `all(r in st.src[0].ranges for r in
-#     s.ended_ranges)`;
-#   * `bufferize_to_store` (211) SORTS `idx.ranges` by `x.arg`;
-#   * `split_store` (337) tests `any(r.axis_type is not DEVICE for r in
-#     x.ranges)`;
-#   * `_limit_bufs` (194) substitutes `orig_ranges = s.ranges`.
-#
-# `rf_ranges_miss` is the honest spelling: the port cannot compute the set, so
-# the rules that read it answer the SAFE branch and the gate says so. It is
-# `False` for "I have the set" and is a single named constant rather than six
-# silent omissions, so `rg "rf_ranges_miss" rangeify.bend` lists every dependent.
+# Six rules read it -- `cleanup_dead_axes` (36), `gate_substitute` (46),
+# `after_all_invalid` (112), `bufferize_to_store` (211), `split_store` (337) and
+# `_limit_bufs` (194) -- and `rf_ranges_miss` is the honest spelling: the port cannot
+# compute the set, so each answers the SAFE branch. It is `False` for "I have the set"
+# and is a single named constant rather than six silent omissions.
 def rf_ranges_miss() -> Bool: True{}
 
 # `x.ranges` as a MEMBERSHIP test, spelled as the wall: `x.ranges` is not
@@ -376,23 +204,13 @@ def rf_ranges_miss() -> Bool: True{}
 # rule, which turns the whole rule into "no answer".
 def rf_in_ranges(ar: O.Arena, r: U32) -> Bool: False{}
 
-# ===========================================================================
-# `is_noop_after_dep` -- rangeify.py:246-247. FULLY PORTED, and it is the
-# smallest complete thing in the file.
-#
-#     def is_noop_after_dep(x:UOp) -> bool:
-#       return (x.op is Ops.NOOP and len(x.src) == 0) or (x.op is Ops.END and is_noop_after_dep(x.src[0]))
-#
-# It is a `while` in Python only in the sense that a `while` is what one writes
-# for a bounded descent; in Bend it is a FUEL FOLD whose fuel is
-# `Arena.budget(ar)`, the same bound `UOp.toposort` takes, and the fuel is the
-# FIRST parameter because the self-call must be decreasing left to right. The
-# step is a separate def because a def may only call defs declared ABOVE it, and
-# a step that recursed would be MUTUAL recursion, which is refused.
-#
-# `resolve` is NOT needed here: both arms are `op` tests, so no arithmetic and
-# no `_min_max`.
-# ===========================================================================
+# `is_noop_after_dep` -- rangeify.py:246-247. FULLY PORTED, and the smallest complete
+# thing in the file. In Python it is a bounded descent; in Bend it is a FUEL FOLD whose
+# fuel is `Arena.budget(ar)`, the same bound `UOp.toposort` takes, and the fuel is the
+# FIRST parameter because the self-call must be decreasing left to right. The step is a
+# separate def because a def may only call defs declared ABOVE it, and a step that
+# recursed would be MUTUAL recursion, which is refused. `resolve` is not needed: both
+# arms are `op` tests.
 def noopf.at(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsNOOP{}), M.mp_nsrc_is(ar, self, 0))
 
@@ -406,25 +224,21 @@ def rf_has_src(+ar: O.Arena, +self: U32) -> Bool:
 def noopf.cont(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsEND{}), rf_has_src(ar, self))
 
-# THE ONLY RECURSIVE DEF IS `noopf_go`, AND IT IS DECLARED LAST. That is
-# `ops.bend`'s `Topo.step` shape and it is forced, not stylistic: the ladder
-# `go -> desc -> go` is MUTUAL RECURSION, which Bend refuses, and the declaration
-# rule (a def may only call defs ABOVE it) means the ladder helpers can only ever
-# call back into the LAST def. So `done`, `desc` and `fresh` are non-recursive
-# and `go` is the bottom. MEASURED: every other arrangement of these four bodies
-# is either a forward reference or a mutual-recursion refusal.
+# THE ONLY RECURSIVE DEF IS `noopf_go`, AND IT IS DECLARED LAST. That is `ops.bend`'s
+# `Topo.step` shape and it is forced, not stylistic: the ladder `go -> desc -> go` is
+# MUTUAL RECURSION, which Bend refuses, and the declaration rule means the ladder helpers
+# can only ever call back into the LAST def. MEASURED: every other arrangement of these
+# four bodies is either a forward reference or a mutual-recursion refusal.
 #
-# The recursion CONDITION travels as a `Bool` FIELD of `Nd` because a `match`
-# may not scrutinise a call: `noopf.cont(ar, node)` cannot be a scrutinee, and a
-# `Data` record's field binder can. `Nd` holds the node under examination and
-# whether to keep descending, and nothing else -- the answer needs no
-# accumulator, because the chain is all ENDs and the answer is decided by the
-# node the chain LANDS ON.
+# The recursion CONDITION travels as a `Bool` FIELD of `Nd` because a `match` may not
+# scrutinise a call (`noopf.cont(ar, node)` cannot be a scrutinee, a `Data` field binder
+# can) and because the answer needs no accumulator: the chain is all ENDs, so it is
+# decided by the node the chain LANDS ON.
 #
-# `noopf.cont` also carries the `len(x.src) >= 1` half. Python's `x.src[0]` on a
-# zero-src END is an `IndexError`; the port answers "not a dead dep", which is
-# the safe direction, and it is unreachable in practice because `UOp.end`
-# (ops.py:619) returns `self` when there are no srcs, so a real END has one.
+# `noopf.cont` also carries the `len(x.src) >= 1` half. Python's `x.src[0]` on a zero-src
+# END is an `IndexError`; the port answers "not a dead dep", which is the safe direction,
+# and it is unreachable in practice because `UOp.end` (ops.py:619) returns `self` when
+# there are no srcs.
 type Nd is Data:
   Nd{node: U32, down: Bool}
 
@@ -443,17 +257,11 @@ def noopf_done(ar: O.Arena, node: U32) -> Bool:
 def noopf_next(+ar: O.Arena, +node: U32) -> Nd:
   Nd{M.mp_src0(ar, node), noopf.cont(ar, M.mp_src0(ar, node))}
 
-# THE ONE RECURSIVE DEF. The fuel is the FIRST parameter and the self-call is
-# IN ITS OWN BODY, passing `p` first -- that is what makes the decrease check
-# read left to right. The ladder is on BINDERS (`fuel` is a parameter, `node`
-# and `down` come off a field pattern), because a `match` may not scrutinise a
-# call and every test here is a call.
-#
-# The self-call is not behind a helper: `noopf_go -> noopf_step -> noopf_go` is
-# MUTUAL RECURSION and is refused, and the declaration rule means a helper above
-# could only call back into the def BELOW it, which is this one. MEASURED: four
-# other arrangements of these bodies were each either a forward reference or a
-# mutual-recursion refusal.
+# THE ONE RECURSIVE DEF. The fuel is the FIRST parameter and the self-call is IN THIS
+# BODY, passing `p` first, because `noopf_go -> noopf_step -> noopf_go` would be mutual
+# recursion and is refused. The ladder is on BINDERS (`fuel` is a parameter, `node` and
+# `down` come off a field pattern) because a `match` may not scrutinise a call and every
+# test here is a call.
 def noopf_go(fuel: Nat, +ar: O.Arena, n: Nd) -> Bool:
   match fuel:
     case 0n   : False{}
@@ -466,33 +274,24 @@ def noopf_go(fuel: Nat, +ar: O.Arena, n: Nd) -> Bool:
 def rf_is_noop_after_dep(+ar: O.Arena, +self: U32) -> Bool:
   noopf_go(O.Arena.budget(ar), ar, Nd{self, noopf.cont(ar, self)})
 
-# ===========================================================================
 # `remove_noop_afters` -- rangeify.py:249-252. FULLY PORTED, and the shape is
-# `rangeify.py`'s own idiom, which appears three more times in this file.
+# `rangeify.py`'s own idiom, which appears three more times in this file. THREE things
+# are load-bearing and all three are easy to get wrong:
 #
-#     src = (x.src[0],) + tuple(s for s in x.src[1:] if not is_noop_after_dep(s))
-#     if len(src) != len(x.src): return src[0] if len(src) == 1 else x.replace(src=src)
-#     return None
+#   * `src[0]` is KEPT UNCONDITIONALLY. The filter is over `src[1:]` only, so an AFTER
+#     whose BODY is a no-op END is not reduced to nothing.
+#   * the answer is `len(src) == 1` and not "the filter emptied it": the one-src case
+#     returns `src[0]`, a node ALREADY IN THE ARENA, so the arena does not grow.
+#     `raf_after1_is_src0` is the row, and it is why a caller must not assume a rewrite
+#     interns a node.
+#   * `if len(src) != len(x.src)` is the WHOLE test. When nothing was removed the rule
+#     answers `None` and the scan continues -- `raf_afterk` is that row, and asking "is
+#     the answer absent" rather than "is the answer this index" is what makes the
+#     negative side a witness.
 #
-# THREE THINGS are load-bearing and all three are easy to get wrong:
-#
-#   * `src[0]` is KEPT UNCONDITIONALLY. The filter is over `src[1:]` only, so an
-#     AFTER whose BODY is a no-op END is not reduced to nothing.
-#   * the answer is `len(src) == 1` and not "the filter emptied it": the
-#     one-src case returns `src[0]`, a node ALREADY IN THE ARENA, so the arena
-#     does not grow. `raf_after1_is_src0` is the row, and it is the reason a
-#     caller must not assume a rewrite interns a node.
-#   * `if len(src) != len(x.src)` is the WHOLE test. When nothing was removed
-#     the rule answers `None` and the scan continues -- `raf_afterk` is that
-#     row, and asking "is the answer absent" rather than "is the answer this
-#     index" is what makes the negative side a witness.
-#
-# `x.src[0]` is an `IndexError` in Python for a zero-src node, and the gate
-# never asks: the rule's pattern is `UPat(Ops.AFTER, name="x")` and
-# `UOp.after` (ops.py:621) returns `self` when there are no srcs, so an AFTER
-# that reaches this body always has one.
-# ===========================================================================
-# the kept srcs, `x.src[0]` followed by the filtered `x.src[1:]`
+# `x.src[0]` is an `IndexError` in Python for a zero-src node and the gate never asks:
+# the pattern is `UPat(Ops.AFTER, name="x")` and `UOp.after` (ops.py:621) returns `self`
+# when there are no srcs.
 def raf.keep(x: U32, keep: Bool) -> List<&2, U32>:
   match keep:
     case True{} : List.append(&2, U32, [x], Nil{})
@@ -524,39 +323,20 @@ def rf_remove_noop_afters(+ar: O.Arena, +self: U32) -> M.Hop:
                                               U32.from_nat(List.length(&2, U32, raf.keep_srcs(ar, self))))),
                            ar, self)
 
-# ===========================================================================
-# `strip_zero_offset_shrink` -- rangeify.py:140-141. PORTED, with the symbolic
-# half of `resolve` named.
-#
-#     def strip_zero_offset_shrink(x:UOp) -> UOp:
-#       return x.src[0] if x.op is Ops.SHRINK and all(resolve(start == 0, False) for start,_ in x.marg) else x
-#
-# TWO readers, and only one of them is free:
+# `strip_zero_offset_shrink` -- rangeify.py:140-141. PORTED, with the symbolic half of
+# `resolve` named. Two readers, and only one of them is free:
 #
 #   * `x.marg` for a SHRINK is `tuple(zip(self.src[1].as_shape, self.src[2].as_shape))`
-#     (ops.py:816). `movement.bend` has `as_shape` and `marg_zip` already, and
-#     `as_shape` is deliberately the CONST/STACK-of-CONST arms only (its header
-#     says why: the third arm is `ssimplify`). So this file reads the OFFSETS
-#     only, and a SHRINK whose offset arg is a STACK of CONSTs -- which is what
-#     `shape_to_shape_arg` builds for a multi-dimensional margin -- is
-#     answered.
-#   * `resolve(start == 0, False)`: when `start` is a Python `int` this is
-#     `resolve(True, False)`, i.e. the identity, because `resolve` returns a
-#     `bool` unchanged (ops.py:65). That is the CONST case and it is EXACT. When
-#     `start` is a UOp the test is symbolic and needs `_min_max` (ops.py:1104),
-#     the wall `fold.bend` defers, and `as_shape` does not answer it anyway.
-#     So the port is exact on every node whose offsets are literal and answers
-#     "do not strip" on the rest, which is the `False` `resolve` was told to
-#     return. `szs_*` are the rows.
-#
-# `x.marg`'s offsets are `H.I64` rather than `O.Sint` for the reason
-# `movement.bend`'s `marg` header gives: an `O.Sint` that is a uop would make
-# the sum symbolic, and here there is no sum to make.
-# ===========================================================================
-# the offsets of a SHRINK: `src[1].as_shape`
-# the offsets of a SHRINK: `src[1].as_shape`. `movement.bend`'s `as_shape`
-# answers `Maybe<&1, _>` and that count is INVARIANT (bend2-constraints.md, the
-# symbolic notes §2), so `rf_offsets` is the read and nothing converts it.
+#     (ops.py:816). `movement.bend` has `as_shape` and `marg_zip` already, and `as_shape`
+#     is deliberately the CONST/STACK-of-CONST arms only. So this file reads the OFFSETS
+#     only, and a SHRINK whose offset arg is a STACK of CONSTs -- what
+#     `shape_to_shape_arg` builds for a multi-dimensional margin -- is answered.
+#   * `resolve(start == 0, False)`: on a Python `int` this is the identity, because
+#     `resolve` returns a `bool` unchanged (ops.py:65), so the CONST case is EXACT. On a
+#     UOp the test is symbolic and needs `_min_max` (ops.py:1104), the wall `fold.bend`
+#     defers, and `as_shape` does not answer it either. So the port is exact on every
+#     node whose offsets are literal and answers "do not strip" on the rest -- which is
+#     the `False` `resolve` was told to return. `szs_*` are the rows.
 def rf_offsets(+ar: O.Arena, self: U32) -> Maybe<&1, List<&2, H.I64>>:
   M.as_shape(ar, M.mp_src(ar, self, 1))
 
@@ -596,36 +376,22 @@ def rf_strip_zero_offset_shrink(+ar: O.Arena, +self: U32) -> M.Hop:
 def rf_strip_ix(ar: O.Arena, self: U32) -> U32:
   M.hop_ix(rf_strip_zero_offset_shrink(ar, self))
 
-# ===========================================================================
-# `no_indexing_calls` -- rangeify.py:143-158. FULLY PORTED.
-#
-#     for x in u.src:
-#       if x.op is Ops.INDEX: new_srcs.append(x.src[0])
-#       elif x.op is Ops.SHRINK: new_srcs.append(strip_zero_offset_shrink(x))
-#       elif x.op is Ops.MSTACK: new_srcs.append(x.replace(src=tuple(strip_zero_offset_shrink(s) for s in x.src)))
-#       else: new_srcs.append(x)
-#     return u.replace(src=tuple(new_srcs))
-#
-# THE MSTACK ARM BUILDS A NODE, so this fold CARRIES THE ARENA and cannot be a
-# pure `List` fold: the record `Bld` is the arena plus the accumulator, and it
-# is `Data` so it is copyable, which is what lets a later arm build in the arena
-# an earlier arm grew. That is `movement.bend`'s `Hop` for the same reason, one
-# field wider.
+# `no_indexing_calls` -- rangeify.py:143-158. FULLY PORTED. THE MSTACK ARM BUILDS A
+# NODE, so this fold CARRIES THE ARENA and cannot be a pure `List` fold: the record `Bld`
+# is the arena plus the accumulator, and it is `Data` so it is copyable, which is what
+# lets a later arm build in the arena an earlier arm grew -- `movement.bend`'s `Hop` for
+# the same reason, one field wider.
 #
 # The three src comments are upstream's and are kept:
 #   "sometimes if call srcs have children the call will get an INDEX" (147)
 #   "SHRINK with offset 0 is fine" (151)
 #   "everything else we pass through" (156)
 #
-# THE WALL, named once: `MSTACK`'s `replace(src=...)` is a rebuild, and
-# `mp_replace` reads the node's OWN arg, which is `ANone` for a MSTACK -- so
-# this port rebuilds the MSTACK with `ANone` and that is exact. The INDEX arm
-# returns `x.src[0]`, a node already in the arena, so the arena does not grow
-# for it; `nic_calli_nsrc` pins the arity and `nic_callm_src0_nsrc` pins the
-# MSTACK arm's own arity.
-# ===========================================================================
-# the arena as it stands plus the new srcs so far. ONE record because the fold's
-# step needs both and Bend has no tuple.
+# THE WALL, named once: `MSTACK`'s `replace(src=...)` is a rebuild and `mp_replace` reads
+# the node's OWN arg, which is `ANone` for a MSTACK -- so this port rebuilds the MSTACK
+# with `ANone` and that is exact. The INDEX arm returns `x.src[0]`, a node already in the
+# arena, so the arena does not grow for it; `nic_calli_nsrc` pins the arity and
+# `nic_callm_src0_nsrc` pins the MSTACK arm's own arity.
 type Bld is Data:
   Bld{ar: O.Arena, ys: List<&2, U32>}
 
@@ -679,17 +445,13 @@ def nic.two(+ar: O.Arena, +x: U32, acc: List<&2, U32>, ms: Bool) -> Bld:
 def nic.one(+ar: O.Arena, +x: U32, acc: List<&2, U32>) -> Bld:
   nic.two(ar, x, acc, ar_is_mstack(ar, x))
 
-# THE FOLD. The fuel is the first parameter and the SELF-CALL IS IN THIS BODY,
-# passing `p` first, because `nic.go -> nic.step -> nic.go` would be mutual
-# recursion and is refused. The per-src work is `nic.one`, which cannot recurse.
-#
-# The worklist pop and the accumulate are BOTH in the arm, and that is forced
-# rather than chosen: a `List` is consumed as it is walked, so the fold has to
-# destructure it and use the head, and a separate step def holding that
-# `match` would have to be called back into -- which is the mutual recursion.
-# The head binder is `+` because the MSTACK arm reads the node's own op and its
-# srcs. `b` is threaded whole because `Bld` IS the arena the step reads, so
-# there is no separate arena parameter to keep in step.
+# THE FOLD. The fuel is the first parameter and the SELF-CALL IS IN THIS BODY, passing `p`
+# first, because `nic.go -> nic.step -> nic.go` would be mutual recursion and is refused.
+# The worklist pop and the accumulate are BOTH in the arm, and that is forced rather than
+# chosen: a `List` is consumed as it is walked, and a separate step def holding that
+# `match` would have to be called back into. The head binder is `+` because the MSTACK arm
+# reads the node's own op and its srcs; `b` is threaded whole because `Bld` IS the arena
+# the step reads.
 def nic.go(fuel: Nat, +b: Bld, todo: List<&2, U32>) -> Bld:
   match fuel:
     case 0n   : b
@@ -709,35 +471,23 @@ def rf_no_indexing_calls.fin(+self: U32, +b: Bld) -> M.Hop:
 def rf_no_indexing_calls(+ar: O.Arena, +self: U32) -> M.Hop:
   rf_no_indexing_calls.fin(self, rf_no_indexing_calls_of(O.Arena.budget(ar), ar, self))
 
-# ===========================================================================
-# `renumber_range` -- rangeify.py:299-303. FULLY PORTED, and the FIRST place
-# this file has to be honest about a Python `ctx`.
+# `renumber_range` -- rangeify.py:299-303. FULLY PORTED, and the FIRST place this file has
+# to be honest about a Python `ctx`: `ctx.range += 1` happens AFTER the node is built and
+# `ctx.range` is a mutable dataclass field, so the counter is a PARAMETER here and the
+# increment is the CALLER's. `rf_renumber` takes `n` and answers the node,
+# `rf_renumber_next` is the successor, and that pair is the shape every one of
+# rangeify.py's four ctx-carrying rules needs.
 #
-#     def renumber_range(ctx:LocalAddBufferContext, r:UOp):
-#       if r.tag != (): return None
-#       ret = r.replace(arg=(ctx.range,)+r.arg[1:], tag=None)
-#       ctx.range += 1
-#       return ret
+# The guard is NEGATIVE: `if r.tag != (): return None`, so the rule FIRES WHEN THE TAG IS
+# `()`. MEASURED: with the arms the other way round, `ren_none` printed 0 and
+# `ren_arg0`/`ren7_arg0` both printed 0 -- the rule fired on an untagged RANGE and the
+# two-sided counter row could not see the difference.
 #
-# `ctx.range` is a MUTABLE field of a mutable dataclass, and `ctx.range += 1`
-# happens AFTER the node is built. Bend has no mutable state, so the counter is
-# a PARAMETER of the rule and the increment is the CALLER's: `rf_renumber`
-# takes `n` and answers the node, and `rf_renumber_next` is the successor. The
-# pair is the honest shape and it is the same shape every one of rangeify.py's
-# four ctx-carrying rules needs.
-#
-# `r.arg[1:]` on a RANGE's arg: the arg is `(axis_id, axis_type)` (ops.py:504,
-# `self.arg[0:-1]` is the id and `self.arg[-1]` the type), so `arg[1:]` is
-# `(axis_type,)` and `(ctx.range,)+r.arg[1:]` is `(ctx.range, axis_type)`. In
-# `ops.bend` that is the pair `ARange{[n], at}`, so the rewrite is
-# `ARange{[n], <the old AxisType>}` and the AxisType is read off the node, not
-# rebuilt. `ren_arg0` and `ren7_arg0` are the two-sided row: with `n = 0` and
-# with `n = 7` the id is 0 and 7 and the successor is 1 and 8.
-# ===========================================================================
-# `if r.tag != (): return None` -- so the rule FIRES WHEN THE TAG IS `()` and the
-# guard is the NEGATIVE. MEASURED: with the arms the other way round, `ren_none`
-# printed 0 and `ren_arg0`/`ren7_arg0` both printed 0, i.e. the rule fired on an
-# untagged RANGE and the two-sided counter row could not see the difference.
+# `r.arg[1:]` on a RANGE's arg: the arg is `(axis_id, axis_type)` (ops.py:504), so
+# `(ctx.range,)+r.arg[1:]` is `(ctx.range, axis_type)`, which in `ops.bend` is
+# `ARange{[n], at}`. The AxisType is read off the node, not rebuilt, and `ren_arg0` /
+# `ren7_arg0` are the two-sided row: with `n = 0` and `n = 7` the id is 0 and 7 and the
+# successor is 1 and 8.
 def rf_renumber.of(tagged: Bool, +ar: O.Arena, +self: U32, n: U32) -> M.Hop:
   match tagged:
     case True{} : M.mp_hit(O.UOp.new(ar, O.OpsRANGE{}, M.mp_srcs(ar, self),
@@ -797,17 +547,13 @@ def rf_alu_param(+fx: F.Folded, +ar: O.Arena, +self: U32) -> Bool:
 def rf_param_rtag(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   rf_param_rtag.of(rf_alu_param(fx, ar, self), ar, self)
 
-# ===========================================================================
-# THE FIRST-WINS FOLD, and the CLAIM TEST, both shared.
-#
-# `pm_keep`-style first-wins over a `Hop` is `movement.bend`'s `hop_next` and
-# `hop_first`, reused rather than copied, and `O.pm_try`'s claim test is
-# `O.pm_claimed(ops, ar, self)` plus this file's own `early_reject` fold -- a
-# second copy of `movement.bend`'s `mp_early`, because the two files' tables
-# have DIFFERENT reject sets and neither may call the other.
-#
-# `early_reject` IS A NECESSARY CONDITION: the rule FIRES when its op set is a
-# subset of `ler` (ops.py:1609), and the empty set is a subset of everything.
+# THE FIRST-WINS FOLD, and the CLAIM TEST, both shared. First-wins over a `Hop` is
+# `movement.bend`'s `hop_next`/`hop_first`, reused rather than copied, and the claim test
+# is `O.pm_claimed(ops, ar, self)` plus this file's own `early_reject` fold -- a second
+# copy of `movement.bend`'s `mp_early`, because the two files' tables have DIFFERENT
+# reject sets and neither may call the other. `early_reject` IS A NECESSARY CONDITION: the
+# rule FIRES when its op set is a subset of `ler` (ops.py:1609), and the empty set is a
+# subset of everything.
 def rf_early.go(+have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
   match rej:
     case Nil{}: True{}
@@ -821,30 +567,20 @@ def rf_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 def rf_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
   Bool.and(O.pm_claimed(ops, ar, self), rf_early(ar, self, rej))
 
-# `ret is not uop` -- ops.py:1610. IT IS NOT `M.hop_self`, and the reason is a
-# MEASURED BUG in `movement.bend`, reported here and not fixed there.
+# `ret is not uop` -- ops.py:1610. IT IS NOT `M.hop_self`, and the reason is a MEASURED BUG
+# in `movement.bend`, reported here and not fixed there. `movement.bend:67`'s
+# `hop_self.of` has its arms swapped: `b` is "the answer is `self`, or the answer is
+# none", `True` KEEPS the answer and `False` -- a genuinely NEW node -- DROPS it, which is
+# the inverse of `ret is not uop` and of the docstring above it.
 #
-# `movement.bend:67` reads
-#     def hop_self.of(b: Bool, +r: Hop) -> Hop:
-#       match b:
-#         case True{}: r
-#         case False{}: Hop{hop_ar(r), 0}
-#     def hop_self(+r, self) -> Hop:
-#       hop_self.of(Bool.or(U32.is_eq(hop_ix(r), self), O.UOp.is_none(hop_ix(r))), r)
+# The proof is `movement.bend`'s OWN gate, failing on exactly the rows that need a new
+# node: `shrink1_ns=0` where it must be 3, and `reshape_pick`, `permute_merge`,
+# `stack_idx`, `const_idx2`, `idx_idx`, `idx_pick`, `idx_shaped` all 0 where each must be
+# non-zero. `t_ret_new` (movement.bend:920) asks `is_none(hop_self(Hop{ar, 3}, 2))` and
+# prints 1, i.e. it ASSERTS the inverted behaviour.
 #
-# and `b` is "the answer is `self`, or the answer is none", so `True` KEEPS the
-# answer and `False` -- a genuinely NEW node -- DROPS it. That is the INVERSE of
-# `ret is not uop` and of the comment three lines above it. The proof is
-# `movement.bend`'s OWN gate, which is failing right now on exactly the rows that
-# need a new node: `shrink1_ns=0` where it must be 3, and `reshape_pick`,
-# `permute_merge`, `stack_idx`, `const_idx2`, `idx_idx`, `idx_pick`,
-# `idx_shaped` all 0 where each must be non-zero. `t_ret_new` (movement.bend:920)
-# asks `is_none(hop_self(Hop{ar, 3}, 2))` and prints 1, i.e. it ASSERTS the
-# inverted behaviour.
-#
-# So this file implements `ret is not uop` itself, in the direction Python has it,
-# and uses `M.hop_next`/`M.hop_first` (which ARE correct -- `hop_first` takes `r`
-# exactly when the accumulator is none, which is first-wins) but not
+# So this file implements `ret is not uop` itself, uses `M.hop_next`/`M.hop_first` (which
+# ARE correct -- `hop_first` takes `r` exactly when the accumulator is none), and not
 # `M.hop_self`. REPORTED, NOT FIXED: `movement.bend` is not this file's.
 def rf_self.of(same: Bool, +r: M.Hop) -> M.Hop:
   match same:
@@ -854,10 +590,9 @@ def rf_self.of(same: Bool, +r: M.Hop) -> M.Hop:
 def rf_self(+r: M.Hop, self: U32) -> M.Hop:
   rf_self.of(U32.is_eq(M.hop_ix(r), self), r)
 
-# ===========================================================================
-# TABLE 1: `pm_remove_bufferize` -- rangeify.py:131-138. THREE RULES, ALL THREE
-# BODIES PORTED except `remove_bufferize` itself, which is the biggest wall in
-# the file and is discussed at the foot.
+# TABLE 1: `pm_remove_bufferize` -- rangeify.py:131-138. THREE RULES, all three bodies
+# PORTED except `remove_bufferize` itself, which is the biggest wall in the file and is
+# discussed at the foot.
 #
 #   0  UPat.var("src").f(Ops.STAGE, allow_any_len=True, name="buf")
 #                            .f(Ops.INDEX, allow_any_len=True, name="idx")  -> remove_bufferize
@@ -865,17 +600,11 @@ def rf_self(+r: M.Hop, self: U32) -> M.Hop:
 #   2  UPat(Ops.END, src=(UPat(Ops.NOOP, name="x"),), allow_any_len=True) -> x
 #
 # `rb_1` IS THE IDENTITY-CHECK RULE of the header: `x` is bound twice, so
-# `upat.py:100-105` emits `uop.src[0] is uop.src[1]`, and without it every
-# two-src STORE would become a NOOP. Its compiled form, measured by
-# `rf-names.py`, is exactly
-#   `uop.op is STORE and len(uop.src) == 2 and uop.src[0] is uop.src[1]`.
-#
-# `rb_0`'s reject set is `{STAGE}` and `rb_2`'s is `{NOOP}` -- the op of the
-# pattern's FIRST src, which is what `early_reject` (ops.py:1477) is.
-# ===========================================================================
-# `uop.src[0] is uop.src[1]` -- THE IDENTITY CHECK, as a `U32.is_eq` on two arena
-# indices. It is a separate def so the check is a NAMED thing and
-# `rg rb_ident` lists every place the file relies on it.
+# `upat.py:100-105` emits `uop.src[0] is uop.src[1]`, and without it every two-src STORE
+# would become a NOOP. MEASURED compiled form (`rf-names.py`):
+# `uop.op is STORE and len(uop.src) == 2 and uop.src[0] is uop.src[1]`. `rb_0`'s reject
+# set is `{STAGE}` and `rb_2`'s is `{NOOP}` -- the op of the pattern's FIRST src, which is
+# what `early_reject` (ops.py:1477) is.
 def rb_ident(+ar: O.Arena, +self: U32) -> Bool:
   U32.is_eq(M.mp_src(ar, self, 0), M.mp_src(ar, self, 1))
 
@@ -950,17 +679,11 @@ def rb_table() -> List<&2, O.PMEntry>:
 def rb_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   rb_scan(rb_table(), self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 2: `pm_no_indexing_calls` -- rangeify.py:160-162. ONE RULE, and its
-# body `no_indexing_calls` is the fold above, fully ported.
-#
-#   0  UPat(Ops.CALL, name="u")  ->  no_indexing_calls
-#
-# `pm_no_indexing_calls` is a LATE table in `get_kernel_graph` (line 368), after
-# `split_kernels`, and it is the last rewrite that can still see a CALL carrying
-# views -- which is why the upstream comment at 164 is the invariant this whole
-# rule exists to establish.
-# ===========================================================================
+# TABLE 2: `pm_no_indexing_calls` -- rangeify.py:160-162. ONE RULE, and its body
+# `no_indexing_calls` is the fold above, fully ported. It is a LATE table in
+# `get_kernel_graph` (line 368), after `split_kernels`, and it is the last rewrite that
+# can still see a CALL carrying views -- which is why the upstream comment at 164 is the
+# invariant this whole rule exists to establish.
 def nic_dispatch.go(tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match tag:
     case 0: rf_self(rf_no_indexing_calls(ar, self), self)
@@ -988,23 +711,15 @@ def nic_table() -> List<&2, O.PMEntry>:
 def nic_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   nic_scan(nic_table(), self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 3: `pm_no_views` -- rangeify.py:165-168. ONE RULE, body FULLY PORTED,
-# and it is the smallest table in the file.
+# TABLE 3: `pm_no_views` -- rangeify.py:165-168. ONE RULE, body FULLY PORTED, and it is the
+# smallest table in the file. The comment above it is upstream's and is the whole reason
+# the rule exists: "the kernel graph is what gets executed: no shape views left in it, the
+# storage of a value is just the storage".
 #
-#   0  UPat((Ops.RESHAPE, Ops.SHRINK), name="v",
-#           src=(UPat((Ops.AFTER, Ops.PARAM, Ops.UNSHARD, Ops.MSTACK, Ops.BUFFER,
-#                      Ops.ALLOC)),), allow_any_len=True)  ->  lambda v: v.src[0]
-#
-# The comment above it is upstream's and is the whole reason the rule exists:
-# "the kernel graph is what gets executed: no shape views left in it, the storage
-# of a value is just the storage".
-#
-# The answer is `v.src[0]`, a node ALREADY IN THE ARENA, so the arena does not
-# grow -- and `nv_rsi` is the row that says so: a RESHAPE over an INDEX is
-# REJECTED by the pattern (an INDEX is not in the op set) even though the rule
-# body would happily return it. The pattern is the test; the body is the answer.
-# ===========================================================================
+# The answer is `v.src[0]`, a node ALREADY IN THE ARENA, so the arena does not grow --
+# and `nv_rsi` is the row that says so: a RESHAPE over an INDEX is REJECTED by the pattern
+# (an INDEX is not in the op set) even though the rule body would happily return it. The
+# pattern is the test; the body is the answer.
 def nv_0.of(pat: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match pat:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
@@ -1061,22 +776,12 @@ def nv_table() -> List<&2, O.PMEntry>:
 def nv_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   nv_scan(nv_table(), self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 4: `pm_add_param_range_tags` -- rangeify.py:330-333. ONE RULE, body
-# FULLY PORTED, and the table is the smallest COMPOSITION-free one.
-#
-#   0  UPat((Ops.PARAM, Ops.RANGE), name="x")
-#        ->  lambda x: None if x.op is Ops.PARAM and x.addrspace is AddrSpace.ALU
-#                      else x.rtag(())
-#
-# The upstream comment is kept: "Scalar parameters keep their identity across the
-# call boundary." That is what the `()` tag is FOR -- an untagged PARAM and a
-# tagged one are different nodes in the ucache (ops.py:200), and dropping the
-# tag would merge them.
-#
-# `aprt_paluT` is the row that pins the ALU half: an ALU PARAM that ALREADY
-# carries a `()` tag is still left alone, so the rule is not "retag everything".
-# ===========================================================================
+# TABLE 4: `pm_add_param_range_tags` -- rangeify.py:330-333. ONE RULE, body FULLY PORTED,
+# and the smallest COMPOSITION-free table. The upstream comment is kept: "Scalar parameters
+# keep their identity across the call boundary." That is what the `()` tag is FOR -- an
+# untagged PARAM and a tagged one are different nodes in the ucache (ops.py:200), and
+# dropping the tag would merge them. `aprt_paluT` pins the ALU half: an ALU PARAM that
+# ALREADY carries a `()` tag is still left alone, so the rule is not "retag everything".
 def aprt_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop:
   match tag:
     case 0: rf_self(rf_param_rtag(fx, ar, self), self)
@@ -1108,19 +813,13 @@ def aprt_table() -> List<&2, O.PMEntry>:
 def aprt_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   aprt_scan(aprt_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 5: `split_kernels` -- rangeify.py:346-348. ONE RULE, and its body
-# `split_store` (rangeify.py:335) is NOT PORTED: the wall is `graph_rewrite`
-# INSIDE a rule, which is the engine calling itself, and it is the same wall
-# `movement.bend` records for `mp_0`.
-#
-#   0  UPat((Ops.STORE, Ops.END), name="x")  ->  split_store
-#
-# `split_store` also reads `x.ranges` (line 337), which is the `UOp.ranges` wall,
-# and it calls `graph_rewrite(x, to_define_global+pm_flatten_range, ctx=lctx,
-# name="kernel split", bottom_up=True)` -- a MUTABLE `lctx` threaded through a
-# nested pass, which no-`ctx` is the other half of the same wall.
-# ===========================================================================
+# TABLE 5: `split_kernels` -- rangeify.py:346-348. ONE RULE, and its body `split_store`
+# (rangeify.py:335) is NOT PORTED: the wall is `graph_rewrite` INSIDE a rule, which is the
+# engine calling itself, and it is the same wall `movement.bend` records for `mp_0`.
+# `split_store` also reads `x.ranges` (line 337), which is the `UOp.ranges` wall, and it
+# calls `graph_rewrite(x, to_define_global+pm_flatten_range, ctx=lctx, name="kernel split",
+# bottom_up=True)` -- a MUTABLE `lctx` threaded through a nested pass, which the no-`ctx`
+# wall is the other half of.
 def sk_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 def sk_dispatch.go(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
@@ -1150,30 +849,20 @@ def sk_table() -> List<&2, O.PMEntry>:
 def sk_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   sk_scan(sk_table(), self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 6: `pm_gate_substitute` -- rangeify.py:45-47. ONE RULE, and it is the
-# ODD ONE OUT IN THIS ENTIRE FILE, so it is worth saying why before the table.
+# TABLE 6: `pm_gate_substitute` -- rangeify.py:45-47. ONE RULE, and it is the ODD ONE OUT IN
+# THIS ENTIRE FILE. IT DOES NOT RETURN A NODE. It RAISES `BottomUpGate` (ops.py:1764),
+# which the graph engine's own loop catches (ops.py:1827) and reads as "stop descending
+# here", and a raise is not a value, so it is not a `Hop` and there is no dispatch for it.
+# From the engine's point of view the rule answers "no rewrite" -- which IS the `Hop` at
+# index 0. So the port is exact: `gs_0` answers `M.Hop{ar, 0}` and the `raise` is
+# documented as what became the `0`. It is `compiled=False` because a raise cannot appear
+# in a compiled predicate, and `GroupOp.All` is every op, so the pattern's own tests are
+# vacuous.
 #
-#     def gate_substitute(ctx, b:UOp) -> None:
-#       if not any(r in b.ranges for r in ctx.keys()): raise BottomUpGate()
-#     pm_gate_substitute = PatternMatcher([(UPat(GroupOp.All, name="b"), gate_substitute)],
-#                                         compiled=False)
-#
-# IT DOES NOT RETURN A NODE. It RAISES `BottomUpGate` (ops.py:1764), which the
-# graph engine's own loop catches (ops.py:1827) and reads as "stop descending
-# here", and a raise is not a value, so it is not a `Hop` and there is no
-# dispatch for it. From the engine's point of view the rule answers "no
-# rewrite" -- which IS the `Hop` at index 0. So the port is exact: `gs_0`
-# answers `M.Hop{ar, 0}` and the `raise` is documented as what became the `0`.
-#
-# It is `compiled=False` because a raise cannot appear in a compiled predicate,
-# and `GroupOp.All` is every op, so the pattern's own tests are vacuous.
-# `b.ranges` is the `UOp.ranges` wall, and it does not matter: the rule's answer
-# is "no rewrite" either way, and a node whose `ranges` DOES meet the ctx keys
-# must also fall through here (Python does not rewrite it, it just does not
-# raise). So the wall costs this rule NOTHING, and that is worth saying because
-# it is the only `ranges` reader in the file for which that is true.
-# ===========================================================================
+# `b.ranges` is the `UOp.ranges` wall and it costs this rule NOTHING: the answer is "no
+# rewrite" either way, and a node whose `ranges` DOES meet the ctx keys must also fall
+# through here. That is worth saying because it is the only `ranges` reader in the file for
+# which that is true.
 def gs_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # `GroupOp.All` is the whole enum and `Arena.op` answers `Op`, so the claim is
@@ -1198,40 +887,32 @@ def gs_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, GS_ALL(), Nil{}}]   # 47  b -> raise BottomUpGate (a no-answer here)
 
 
-# ===========================================================================
-# THE FOREIGN TAGS. Four of rangeify.py's tables are `a + b` compositions with
-# a table this file does not own, and the foreign rules come FIRST in the
-# concatenation, so their tags are 0..n-1 and every own tag is shifted. Keeping
-# them in the table is the honest choice for three reasons: the length is a
-# Python fact the gate checks, the tag space is a Python fact the dispatch
-# depends on, and counting them out would make `ct_4` mean a different rule.
-#
-# `rf_foreign` answers "no node" and says which file owns the tag. It is ONE def
-# for all four compositions rather than four, because a tag from a foreign table
-# is not merely unported -- it is not THIS FILE's rule to port, and pretending
-# otherwise by writing a body would be a lie about where the code lives.
-# ===========================================================================
+# THE FOREIGN TAGS. Four of rangeify.py's tables are `a + b` compositions with a table this
+# file does not own, and the foreign rules come FIRST, so their tags are 0..n-1 and every
+# own tag is shifted. Keeping them in the table is the honest choice for three reasons: the
+# length is a Python fact the gate checks, the tag space is a Python fact the dispatch
+# depends on, and counting them out would make `ct_4` mean a different rule. `rf_foreign`
+# answers "no node" and says which file owns the tag. It is ONE def for all four
+# compositions rather than four, because a tag from a foreign table is not merely unported
+# -- it is not THIS FILE's rule to port, and inventing a body would be a lie about where
+# the code lives.
 def rf_foreign(src: String, +ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
-# THE ROOT/SUB SPLIT, and it is the whole reason the table is written out longhand.
-# A `.f()` chain is `def f(self, op, **kwargs): return UPat(op, src=(self,),
-# **kwargs)` (ops.py:1449): the chain REBUILDS the pattern with the op passed to
-# `f` as the ROOT and the receiver as the CHILD. `PatternMatcher.__init__` keys
-# `pdict` on `p.op` -- the ROOT -- and `rewrite` looks the node up with
-# `self.pdict.get(uop.op)` (ops.py:1607). So for every `.f()` entry the pdict key
-# is the op handed to `f`, and the op set the port must carry is that one; the
-# RECEIVER's op is the CHILD's and belongs in the rule's own body test.
+# THE ROOT/SUB SPLIT, and it is the whole reason the table is written out longhand. `.f()`
+# is `def f(self, op, **kwargs): return UPat(op, src=(self,), **kwargs)` (ops.py:1449):
+# the chain REBUILDS the pattern with the op passed to `f` as the ROOT and the receiver as
+# the CHILD. `PatternMatcher.__init__` keys `pdict` on `p.op` and `rewrite` looks the node
+# up with `self.pdict.get(uop.op)` (ops.py:1607). So for every `.f()` entry the pdict key is
+# the op handed to `f`, and the RECEIVER's op is the CHILD's and belongs in the rule's own
+# body test.
 #
 # MEASURED, by reading `p.op` off all nine patterns and `pdict` off the matcher
-# (`.agents/slop/rf-ct-oracle.py`, section 0; output in `rf-ct-oracle.txt`):
-#   tag 0 INDEX   1 AFTER   2 END   3 STAGE   4 STAGE   5 STAGE   6 INDEX
-#       7 INDEX   8 INDEX
-# so ALL NINE roots are single-op sets, and the three reject sets (4 {INDEX},
-# 7 {AFTER}, 8 {MSTACK}) are the CHILDREN's ops, read off `UPat.early_reject`
-# (ops.py:1477) -- which is why they were RIGHT in the port while the op sets
-# were not. The table carried the child's op set for tags 0, 1, 2, 5 and 8, so
-# `ct_4`'s body read the OUTER node's op while its entry keyed the INNER one and
-# the rule could never fire. M21 in the mutation table is that defect, restored.
+# (`.agents/slop/rf-ct-oracle.py` section 0; output in `rf-ct-oracle.txt`): all nine roots
+# are single-op sets, and the three reject sets (4 {INDEX}, 7 {AFTER}, 8 {MSTACK}) are the
+# CHILDREN's ops, read off `UPat.early_reject` (ops.py:1477). The table carried the child's
+# op set for tags 0, 1, 2, 5 and 8, so `ct_4`'s body read the OUTER node's op while its
+# entry keyed the INNER one and the rule could never fire. M21 in the mutation table is
+# that defect, restored.
 def MOPS_ROOT_FB() -> List<&2, O.Op>: [O.OpsINDEX{}]   # prepare.py:78  root of the .f chain
 def MOPS_ROOT_AF() -> List<&2, O.Op>: [O.OpsAFTER{}]   # prepare.py:80  root of .after
 def MOPS_ROOT_EN() -> List<&2, O.Op>: [O.OpsEND{}]     # prepare.py:82  root of .end
@@ -1257,54 +938,29 @@ def rf_mops_fb(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:78", ar, 0)
 def rf_mops_af(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:80", ar, 0)
 def rf_mops_en(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:82", ar, 0)
 
-# ===========================================================================
-# TABLE 7: `pm_const_buffer_folding` -- rangeify.py:115-129. NINE RULES: the
-# three `pm_mops` rules (foreign, tags 0-2) and SIX OWN, and the six own are
-# `cleanup_dead_axes`, `remove_noop_bufferize`, `const_like`, `index-a-const`,
-# `after_all_invalid`, and the deviceless-MSTACK unwrap.
+# TABLE 7: `pm_const_buffer_folding` -- rangeify.py:115-129. NINE RULES: the three `pm_mops`
+# rules (foreign, tags 0-2) and SIX OWN -- `cleanup_dead_axes`, `remove_noop_bufferize`,
+# `const_like`, `index-a-const`, `after_all_invalid`, and the deviceless-MSTACK unwrap.
 #
-#   0-2  pm_mops                                        FOREIGN
-#   3  UPat(Ops.STAGE, name="b")                        -> cleanup_dead_axes
-#   4  UPat(Ops.INDEX, name="idx").f(Ops.STAGE, allow_any_len=True, name="b2")
-#                                                       -> remove_noop_bufferize
-#   5  UPat.cvar('c').or_casted().f(Ops.STAGE, allow_any_len=True, name="b")
-#                                                       -> lambda c,b: b.const_like(c.val)
-#   6  UPat(Ops.INDEX, src=(UPat.cvar().or_casted("c"),),)
-#                                                       -> lambda c: c
-#   7  UPat(Ops.INDEX, src=(UPat(Ops.AFTER, name="after"),), allow_any_len=True,
-#           name="idx")  -> lambda idx,after: idx.const_like(Invalid) if
-#                                        after_all_invalid(after) else None
-#   8  UPat(Ops.MSTACK, src=(UPat.var("s"),), allow_any_len=True)
-#         .f(Ops.INDEX, allow_any_len=True, name="idx")  -> the MSTACK rule
+# THE REJECT SETS ARE THE INTERESTING PART and they are three of the file's six: `ct_4` is
+# `{INDEX}`, `ct_7` is `{AFTER}`, `ct_8` is `{MSTACK}`. Each is the op of the pattern's
+# FIRST src and each is already implied by the rule's own op test, so `early_reject` decides
+# no verdict here. `rej_ct4` is the row that catches a MISSPELLED set, which is the failure
+# mode that is real.
 #
-# THE REJECT SETS ARE THE INTERESTING PART and they are three of the file's six:
-# `ct_4` is `{INDEX}`, `ct_7` is `{AFTER}` and `ct_8` is `{MSTACK}`. Each is the
-# op of the pattern's FIRST src, and each is already implied by the rule's own
-# op test, so -- exactly as in `spec.bend` -- `early_reject` decides no verdict
-# here and a mutation on the subset test moves NOTHING. `rej_ct4` is the row
-# that would catch a MISSPELLED set, which is the failure mode that is real.
+# TWO OF THE SIX ARE FULLY PORTED and they are the two a reader checks first, because they
+# are the ones with no `ranges` and no `BufferizeOpts`: `ct_6` ("indexing a const is the
+# const") and `ct_4`'s `remove_noop_bufferize`. `ct_5` needs `const_like` (ops.py:603, a
+# `DType` method, P3) and `ct_7` needs `after_all_invalid`'s `resolve(...eq(...))`, which is
+# `_min_max`.
 #
-# TWO OF THE SIX ARE FULLY PORTED and they are the two the reader will check
-# first, because they are the ones with no `ranges` and no `BufferizeOpts`:
-# `ct_6` ("indexing a const is the const") and `ct_4`'s
-# `remove_noop_bufferize`. `ct_5` needs `const_like` (ops.py:603, which is
-# `self.dtype.const(val)` cast -- a `DType` method, P3) and `ct_7` needs
-# `after_all_invalid`'s `resolve(...eq(...))`, which is `_min_max`.
-# ===========================================================================
-# ct_6: `lambda c: c` -- an INDEX whose src[0] is a CONST, or a CAST of one,
-# answers that CONST. A node ALREADY IN THE ARENA, so nothing is interned.
-# `or_casted` is an `is_any` of two alternatives, so there are TWO arms and
-# `c` is bound in each; they never meet, so no identity check is emitted (the
-# header's fact 2, measured).
+# ct_6's answer is a node ALREADY IN THE ARENA, so nothing is interned. `or_casted` is an
+# `is_any` of two alternatives, so there are TWO arms and `c` is bound in each; they never
+# meet, so no identity check is emitted.
 #
-# THE PATTERN IS THE CLAIM, and giving the body an ELSE arm makes the rule a
-# catch-all. The port had `ct_6.of(alt, ...)` with `False -> src[0]`, so it
-# answered "the INDEX is its base" for EVERY INDEX -- including
-# `INDEX(MSTACK(c4,c1))`, which CPython's tag 6 does not match and where CPython's
-# tag 8 is the rule that answers. MEASURED: with the else arm the answer's src op
-# sequence was ".58.58" (the MSTACK) and `ct8d_srcops` was 0; with the claim in
-# place it is ".58" and `ct8d_srcops` is 1. This is the same mistake `nv_0` does
-# NOT make -- see table 3 -- so `ct_6` was the odd one out in the file.
+# THE PATTERN IS THE CLAIM, and giving the body an ELSE arm makes the rule a catch-all.
+# MEASURED: with an else arm the answer's src op sequence was ".58.58" (the MSTACK) and
+# `ct8d_srcops` was 0; with the claim in place it is ".58" and `ct8d_srcops` is 1.
 def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match alt:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
@@ -1326,28 +982,21 @@ def ct_6_pat(+ar: O.Arena, +self: U32) -> Bool:
            Bool.or(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}),
                    ct_6_casted(ar, M.mp_src0(ar, self))))
 
-# ct_4: `remove_noop_bufferize` -- rangeify.py:104-106. The CLAIM is ported and
-# CORRECTED; the ANSWER is the wall.
-#
-#     if idx.src[1:] != b2.src[1:]: return None
-#     return idx.src[0].shrink(tuple((0, s) for s in b2.shape)) if b2.shape else idx.src[0]
-#
-# `UPat(Ops.INDEX, name="idx").f(Ops.STAGE, allow_any_len=True, name="b2")`
-# REBUILDS the pattern with the STAGE at the ROOT and the INDEX as its src[0]
-# (`.f()` is `UPat(op, src=(self,))`), so the node under examination IS `b2`,
-# `idx` is `self.src[0]`, and the first line is `eq_u32` on two `src_from(1)`
-# lists -- one on the STAGE and one on the INDEX.
+# ct_4: `remove_noop_bufferize` -- rangeify.py:104-106. The CLAIM is ported and CORRECTED;
+# the ANSWER is the wall. `UPat(Ops.INDEX, name="idx").f(Ops.STAGE, ...)` REBUILDS the
+# pattern with the STAGE at the ROOT and the INDEX as its src[0], so the node under
+# examination IS `b2`, `idx` is `self.src[0]`, and the first line is `eq_u32` on two
+# `src_from(1)` lists -- one on the STAGE and one on the INDEX.
 #
 # MEASURED, LIVE, and this is the rule the table used to make unfireable:
-# `STAGE(INDEX(b4,r0), r0)` has `claim_n = 2` (tags 3 and 4) and answers the
-# BUFFER, because `idx.src[0].shrink(((0,4),))` folds back to `idx.src[0]`. The
-# MIRROR `INDEX(STAGE(b4,r0), r0)` has `claim_n = 0` and answers `None`, and the
-# same STAGE with the tails differing answers `None` too. All three are rows.
+# `STAGE(INDEX(b4,r0), r0)` has `claim_n = 2` (tags 3 and 4) and answers the BUFFER,
+# because `idx.src[0].shrink(((0,4),))` folds back to `idx.src[0]`. The MIRROR
+# `INDEX(STAGE(b4,r0), r0)` has `claim_n = 0` and answers `None`, and the same STAGE with
+# the tails differing answers `None` too. All three are rows.
 #
-# THE ANSWER IS A MOVEMENT OP -- `UOp.shrink` (ops.py:192) is
-# `apply_movement_op`, the `W3` wall. `ct4a_ans` is therefore the WALL row: the
-# port refuses where CPython rebuilds, and BOTH answers are recorded rather than
-# the port's absence being dressed up as agreement.
+# THE ANSWER IS A MOVEMENT OP -- `UOp.shrink` (ops.py:192) is `apply_movement_op`, the `W3`
+# wall. `ct4a_ans` is therefore the WALL row: the port refuses where CPython rebuilds, and
+# BOTH answers are recorded rather than the port's absence being dressed up as agreement.
 def rf_stage_tail(+ar: O.Arena, b2: U32, idx: U32) -> Bool:
   O.eq_u32(O.Arena.src_from(ar, b2, 1), O.Arena.src_from(ar, idx, 1))
 
@@ -1402,20 +1051,18 @@ def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ct_7: the `after_all_invalid` arm -- rangeify.py:124-125. NOT PORTED:
 # `after_all_invalid` (108-113) ends in
-# `resolve(cast(UOp, prod(r.src[0] for r in s.ended_ranges)).eq(buf.numel()), False)`
-# and that is `_min_max` (ops.py:1104) plus `UOp.numel` (a product over
-# `max_shape`, which is `to_max_shape`, ops.py:1886). `ended_ranges` and
-# `is_invalid` ARE ported, which is why `rf_ended` and `rf_invalid` are readers
-# with no caller yet rather than omitted.
+# `resolve(cast(UOp, prod(r.src[0] for r in s.ended_ranges)).eq(buf.numel()), False)` and
+# that is `_min_max` (ops.py:1104) plus `UOp.numel` (a product over `max_shape`, which is
+# `to_max_shape`, ops.py:1886). `ended_ranges` and `is_invalid` ARE ported, which is why
+# `rf_ended` and `rf_invalid` are readers with no caller yet rather than omitted.
 #
-# MEASURED DEFECT, REPORTED AND NOT FIXED, because it is a fact about CPython and
-# this file does not own it. With an END that ends no RANGE, `ended_ranges` is
+# MEASURED DEFECT IN CPYTHON, REPORTED AND NOT FIXED, because it is a fact about
+# rangeify.py and not about this file. With an END that ends no RANGE, `ended_ranges` is
 # empty, `prod()` over it is the PYTHON INT 1, and `1..eq(...)` raises
-# `AttributeError: 'int' object has no attribute 'eq'`. So `after_all_invalid`
-# CRASHES on an all-invalid AFTER with no ranges instead of answering, and the
-# `cast(UOp, ...)` on line 113 is doing nothing. `.agents/slop/rf-ct-oracle.py`
-# section 4 prints both shapes: `ct7_ix_after` RAISES, `ct7_ix_after_rng`
-# answers `False`.
+# `AttributeError: 'int' object has no attribute 'eq'`. So `after_all_invalid` CRASHES on
+# an all-invalid AFTER with no ranges instead of answering, and the `cast(UOp, ...)` on
+# line 113 is doing nothing. `.agents/slop/rf-ct-oracle.py` section 4 prints both shapes:
+# `ct7_ix_after` RAISES, `ct7_ix_after_rng` answers `False`.
 def ct_7(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ct_7's CLAIM, which is the one `ct_claim_n` needs: an INDEX whose src[0] is an
@@ -1428,22 +1075,16 @@ def ct_7_claim(+ar: O.Arena, +self: U32) -> Bool:
            Bool.and(M.mp_nsrc_ge(ar, self, 1),
                     M.mp_is(ar, M.mp_src0(ar, self), O.OpsAFTER{})))
 
-# ct_8: the deviceless-MSTACK arm -- rangeify.py:127-128. THE CLAIM AND THE
-# REBUILD are ported, and MEASURED LIVE.
-#
-#     UPat(Ops.MSTACK, src=(UPat.var("s"),), allow_any_len=True)
-#         .f(Ops.INDEX, allow_any_len=True, name="idx")
-#     -> lambda s,idx: idx.replace(src=(s,)+idx.src[1:]) if s.device is None else None
-#
-# THE ROOT IS THE INDEX, so this is the ONE `.f()` entry whose body read the outer
-# node correctly in the port as it stood, and `s` is the MSTACK's src[0]. It is
-# gated now, which is the point. MEASURED:
+# ct_8: the deviceless-MSTACK arm -- rangeify.py:127-128. THE CLAIM AND THE REBUILD are
+# ported, and MEASURED LIVE. THE ROOT IS THE INDEX, so this is the ONE `.f()` entry whose
+# body read the outer node correctly in the port as it stood, and `s` is the MSTACK's
+# src[0]. It is gated now, which is the point. MEASURED:
 #   INDEX(MSTACK(c4,c1))       claim_n 1  ->  INDEX, srcops=[CONST]
 #   INDEX(MSTACK(c4,c1), r0)   claim_n 1  ->  INDEX, srcops=[CONST,RANGE]
 #   MSTACK(c4,c1)              claim_n 0  ->  None     <- the mirror, outer/inner
 #   INDEX(MSTACK(bufdev))      claim_n 1  ->  None     <- the device refusal
-# and the rebuild keeps the INDEX's OWN arg, which is the `ct8r_arg` / `ct8r0_arg`
-# row pair and is the arg gate the old fixture could not express.
+# and the rebuild keeps the INDEX's OWN arg, which is the `ct8r_arg`/`ct8r0_arg` row pair
+# and is the arg gate the old fixture could not express.
 def ct_8_claim(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsINDEX{}),
            Bool.and(M.mp_nsrc_ge(ar, self, 1),
@@ -1474,18 +1115,14 @@ def rf_dev_none(m: Maybe<&2, S.Dev>) -> Bool:
 def rf_dev_is_none(+fx: F.Folded, +s: U32) -> Bool:
   rf_dev_none(rf_dev(fx, s))
 
-# `ct_8` RE-CHECKS ITS OWN PATTERN, and that is not redundancy -- it is what
-# Python's compiled matcher does and it is MEASURED to matter. `ct_8` was the one
-# rule in this table whose body carried NO pattern test, so its claim lived
-# entirely in the table's op set and reject set. Mutation M3 (`rf_early`'s subset
-# test `and` -> `or`, which makes the reject test VACUOUS because
-# `Bool.or(x, True{})` is `True{}` while `Bool.and(x, True{})` is `x`) then let
-# tag 8 stop rejecting `ct7b` -- an INDEX whose AFTER is in src[1], not src[0] --
-# and `ct_8` rebuilt it. M36 removes the self-check and moves `ct7b_none` and
-# `ct8b_none`; with the self-check in place M3 and M20b move nothing, and THAT is
-# the real reason the reject sets are redundant, not "a singleton set makes `and`
-# and `or` the same function" -- which is false, and which the previous revision
-# of this table asserted as a proof.
+# `ct_8` RE-CHECKS ITS OWN PATTERN, and that is not redundancy -- it is what Python's
+# compiled matcher does and it is MEASURED to matter. `ct_8` was the one rule in this
+# table whose body carried NO pattern test. M3 (`rf_early`'s subset test `and` -> `or`,
+# which makes the reject test VACUOUS because `Bool.or(x, True{})` is `True{}` while
+# `Bool.and(x, True{})` is `x`) then let tag 8 stop rejecting `ct7b` -- an INDEX whose
+# AFTER is in src[1], not src[0] -- and `ct_8` rebuilt it. M36 removes the self-check and
+# moves `ct7b_none` and `ct8b_none`; with the self-check in place M3 and M20b move nothing,
+# and THAT is the real reason the reject sets are redundant.
 def ct_8(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   ct_8.of(Bool.and(ct_8_claim(ar, self),
                    rf_dev_is_none(fx, M.mp_src(ar, M.mp_src0(ar, self), 0))), ar, self)
@@ -1539,35 +1176,21 @@ def ct_table() -> List<&2, O.PMEntry>:
 def ct_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   ct_scan(ct_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 8: `pm_flatten_bufferize` -- rangeify.py:235-244. ONE RULE, and it is
-# the SMALLEST table in the file AND the only one whose body is a cross-file
-# movement op.
+# TABLE 8: `pm_flatten_bufferize` -- rangeify.py:235-244. ONE RULE, the SMALLEST table in
+# the file AND the only one whose body is a cross-file movement op.
 #
-#     def flatten_bufferize(x:UOp):
-#       if len(x.src) == 2: return None
-#       ret = x.replace(src=(x.src[0], get_single_element(apply_movement_op(
-#             Ops.RESHAPE, (prod(x.shape),), x.shape, x.src[1:]))))
-#       rngs = x.src[1:]
-#       ret = ret.reshape(x.shape)
-#       if any(r.op is Ops.RANGE and r.src[0].op is not Ops.CONST for r in rngs):
-#         sym_shape = tuple([r.src[0] if r.op is not Ops.CONST else 1 for r in rngs])
-#         ret = ret.shrink(tuple([(0,x) for x in sym_shape]))
-#       return ret
-#     pm_flatten_bufferize = PatternMatcher([(UPat(Ops.STAGE, name="x"), flatten_bufferize)])
+# THE WALL IS `apply_movement_op` -- schedule/indexing.py:171, ANOTHER FILE -- and its
+# RESHAPE arm is the worst of it: `UOp.sink(*rngs).simplify()` then two `substitute`
+# calls. `simplify` is `graph_rewrite(self, symbolic)` (ops.py:513) and `substitute` is
+# ops.py:532, so this one line needs the engine AND a graph walk. `get_single_element`
+# (helpers.py:97) is free.
 #
-# THE WALL IS `apply_movement_op` -- schedule/indexing.py:171, ANOTHER FILE, and
-# its RESHAPE arm is the worst of it: `UOp.sink(*rngs).simplify()` then two
-# `substitute` calls. `simplify` is `graph_rewrite(self, symbolic)` (ops.py:513)
-# and `substitute` is ops.py:532, so this one line needs the engine AND a graph
-# walk. `get_single_element` (helpers.py:97) is free.
-#
-# WHAT IS PORTED is the FIRST LINE and the `any(...)` test, and the first line is
-# the one that matters: `fb_stg2` is the node TWO rules claim (see
-# `claim_ab_stg2`) and it is exactly this `len(x.src) == 2` that makes rule 3
-# SKIP there, so the first-wins discriminator in this file lives on it. The
-# `any(...)` is ported EXACTLY because it reads no derived property -- two ops --
-# and it is the only part of `flatten_bufferize` that does not.
+# WHAT IS PORTED is the FIRST LINE and the `any(...)` test, and the first line is the one
+# that matters: `fb_stg2` is the node TWO rules claim (see `claim_ab_stg2`) and it is
+# exactly this `len(x.src) == 2` that makes rule 3 SKIP there, so the first-wins
+# discriminator in this file lives on it. The `any(...)` is ported EXACTLY because it reads
+# no derived property -- two ops -- and it is the only part of `flatten_bufferize` that
+# does.
 def rf_fb_collapse(two: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match two:
     case True{} : M.Hop{ar, 0}
@@ -1625,40 +1248,27 @@ def fb_table() -> List<&2, O.PMEntry>:
 def fb_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   fb_scan(fb_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 9: `to_define_global` -- rangeify.py:311-328. SEVEN RULES, and it is the
-# one table where the port splits BY LINE, because the walls and the ported
-# halves do not fall on the same lines.
+# TABLE 9: `to_define_global` -- rangeify.py:311-328. SEVEN RULES, and it is the one table
+# where the port splits BY LINE, because the walls and the ported halves do not fall on the
+# same lines.
 #
-#   0  UPat(Ops.STORE, name="x")                     -> check_buf_states
-#   1  UPat((Ops.BUFFER, Ops.ALLOC, Ops.MSTACK, Ops.MSELECT), name="buf") -> debuf
-#   2  UPat(Ops.PARAM, name="buf")  -> None if buf.tag != () or addrspace is ALU
-#                                      or buf._shape is None else debuf(ctx, buf)
-#   3  UPat(Ops.INDEX, src=(UPat(Ops.PARAM, name="v"),))
-#                                       -> v if v.addrspace == AddrSpace.ALU else None
-#   4  UPat(Ops.AFTER, name="after")                -> handle_after
-#   5  UPat(Ops.STAGE, name="b") -> b.replace(arg=replace(b.arg, device=None))
-#   6  UPat(Ops.RANGE, name="r")                    -> renumber_range
-#
-# `dg_2`'s three-way CONDITION is fully ported -- `tag != ()` is
-# `rf_tag_is_empty`, `addrspace is ALU` is `rf_addr_eq`, and `buf._shape is None`
-# is the INNER `Maybe` of the fold's shape -- and only the `else debuf(...)` is
-# missing. `dg_3` is fully ported INCLUDING its answer, because it is
-# `lambda v: v`, a node already in the arena, gated on an `addrspace` the fold
-# has. `dg_6` is `renumber_range`, ported above with the counter as a parameter.
-# `dg_0` needs `UOp.buf_uop` (ops.py:925, a `while` with a MSELECT/MSTACK
+# `dg_2`'s three-way CONDITION is fully ported -- `tag != ()` is `rf_tag_is_empty`,
+# `addrspace is ALU` is `rf_addr_eq`, and `buf._shape is None` is the INNER `Maybe` of the
+# fold's shape -- and only the `else debuf(...)` is missing. `dg_3` is fully ported
+# INCLUDING its answer, because it is `lambda v: v`, a node already in the arena, gated on
+# an `addrspace` the fold has. `dg_6` is `renumber_range`, ported above with the counter as
+# a parameter. `dg_0` needs `UOp.buf_uop` (ops.py:925, a `while` with a MSELECT/MSTACK
 # special case) and RAISES; `dg_1` needs `UOp.to_max_shape` (ops.py:1886) plus
 # `buf.addrspace`/`buf.device`, which live in `BufferizeOpts`; `dg_4` needs
-# `after.buf_uop`; `dg_5` is the clearest single wall in the file.
+# `after.buf_uop`; `dg_5` is the clearest single wall in the file. `dg_3`'s reject set is
+# `{PARAM}` -- the FOURTH of the file's six, and again already implied by the rule's own
+# src-op test; `rej_dg3` is its row.
 #
-# `dg_3`'s reject set is `{PARAM}` -- the FOURTH of the file's six, and again
-# already implied by the rule's own src-op test. `rej_dg3` is its row.
-# ===========================================================================
-# dg_3: `lambda v: v if v.addrspace == AddrSpace.ALU else None` -- FULLY
-# PORTED, and the only rule in this file whose body is a CONDITIONAL over a
-# property the fold owns. The upstream comment is kept and it is the reason the
-# rule exists: "ALU params are scalar symbolic values, not buffers." A symbolic
-# scalar has no storage, so an INDEX of one IS the scalar.
+# dg_3's body is `lambda v: v if v.addrspace == AddrSpace.ALU else None` -- FULLY PORTED,
+# and the only rule here whose body is a CONDITIONAL over a property the fold owns. The
+# upstream comment is kept and it is the reason the rule exists: "ALU params are scalar
+# symbolic values, not buffers." A symbolic scalar has no storage, so an INDEX of one IS
+# the scalar.
 def dg_3.of(alu: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match alu:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
@@ -1778,58 +1388,28 @@ def dg_table() -> List<&2, O.PMEntry>:
 def dg_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   dg_scan(dg_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 10: `pm_limit_bufs` -- rangeify.py:170-198. ONE RULE, and it is the
-# rule in this file with the MOST wall behind it, because it is the one that
-# counts DISTINCT BUFFERS over a whole graph. It is rangeify.py:176-206 and
-# `_limit_bufs` is NOT PORTED.
+# TABLE 10: `pm_limit_bufs` -- rangeify.py:170-198. ONE RULE, and the rule with the MOST wall
+# behind it, because it counts DISTINCT BUFFERS over a whole graph. `_limit_bufs` is NOT
+# PORTED. THE WALLS, in the order the body hits them:
 #
-#     DEVICE_MAX_BUFS = {"WEBGPU": 8}
-#     @dataclass
-#     class LimitBufsContext:
-#       buf_cache: dict[UOp, frozenset[UOp]] = field(default_factory=dict)
-#       range_idx: itertools.count = field(default_factory=itertools.count)
-#     def _limit_bufs(ctx:LimitBufsContext, root:UOp):
-#       if (device:=root.device) is None: return None
-#       device = device if isinstance(device, str) else device[0].split(":")[0]
-#       if not (MAX_BUFS:=MAX_KERNEL_BUFFERS.value or DEVICE_MAX_BUFS.get(device, 0)): return None
-#       def visitor(u:UOp) -> frozenset[UOp]:
-#         if u.op in {Ops.STAGE, Ops.AFTER, Ops.PARAM, Ops.MSELECT, Ops.MSTACK}: return frozenset((u,))
-#         if len(u.src) == 1: return ctx.buf_cache[u.src[0]]
-#         return frozenset().union(*[ctx.buf_cache[s] for s in u.src])
-#       bufs = root.topovisit(visitor, ctx.buf_cache)
-#       if len(bufs) > MAX_BUFS - 1:  # NOTE: this -1 is for the output buffer
-#         ...bufferize every elementwise src...
-#         return root.replace(src=tuple(srcs))
+# 1. `MAX_KERNEL_BUFFERS.value` is an ENV FLAG (helpers.py), so `rf_max_bufs` is a
+#    PARAMETER and the gate feeds it CPython's value. `DEVICE_MAX_BUFS`'s `{"WEBGPU": 8}`
+#    is a DEVICE-NAME table and a device here is `S.Dev`, a `U32` tag per name interned by
+#    the runtime, so the same treatment applies and `rf_webgpu8` is the row that says the
+#    table is a parameter and not a literal.
+# 2. `visitor` is a PYTHON CLOSURE that both reads `ctx.buf_cache` and WRITES it --
+#    `topovisit(visitor, ctx.buf_cache)` passes the dict in as the memo. So the port would
+#    need a mutable dict threaded through a graph walk and returned, and Bend has neither.
+#    The `frozenset` union over the srcs is a SET (MSELECT/MSTACK can contribute the same
+#    buffer twice). `rf_bufset` is the empty answer: `lb_bufs` is 0, so
+#    `len(bufs) > MAX_BUFS - 1` is `False` and the rule does not fire -- which is the SAFE
+#    direction, because the alternative is bufferizing on a set it cannot compute.
+# 3. The rewrite itself needs `s.ranges` (the `UOp.ranges` wall, twice: line 192 and the
+#    `orig_ranges` on 194) and `s.substitute` (ops.py:532) and `BufferizeOpts`.
 #
-# THE WALLS, in the order the body hits them.
-#
-# 1. `MAX_KERNEL_BUFFERS.value` is an ENV FLAG (helpers.py). The brief's rule for
-#    an env flag is that it is a PARAMETER, and `rf_max_bufs` is that parameter:
-#    the gate feeds it CPython's value for the fixture. `DEVICE_MAX_BUFS`'s
-#    `{"WEBGPU": 8}` is a DEVICE-NAME table, and a device here is `S.Dev`, a
-#    `U32` tag per name interned by the runtime -- so the same treatment applies
-#    and `rf_webgpu8` is the row that says the table is a parameter and not a
-#    literal.
-# 2. `visitor` is a PYTHON CLOSURE that both reads `ctx.buf_cache` and WRITES it
-#    -- `topovisit(visitor, ctx.buf_cache)` passes the dict in as the memo. So
-#    the port would need a mutable dict threaded through a graph walk and
-#    returned. Bend has neither, and the `frozenset` union over the srcs is a
-#    SET (`Ops.MSELECT`/`Ops.MSTACK` can contribute the same buffer twice, which
-#    is why it is a set and not a list). `rf_bufset` is the empty answer and the
-#    count it feeds is the row: `lb_bufs` is 0, so `len(bufs) > MAX_BUFS - 1` is
-#    `False` and the rule does not fire -- which is the SAFE direction, because
-#    the alternative is a rule that bufferizes on a set it cannot compute.
-# 3. The rewrite itself needs `s.ranges` (the `UOp.ranges` wall, twice: line 192
-#    and the `orig_ranges` on 194) and `s.substitute` (ops.py:532) and
-#    `BufferizeOpts`.
-#
-# The pdict key is `set.union(GroupOp.Binary, GroupOp.Ternary)`, and Python's
-# `set.union` of two frozensets is a SET UNION -- so the key is 21 ops and
-# `rf_binary_ternary` writes them out. `WHERE` and `MULACC` are in it because
-# they are TERNARY ops (ops.py:171-172) even though nobody thinks of them as
-# arithmetic.
-# ===========================================================================
+# The pdict key is `set.union(GroupOp.Binary, GroupOp.Ternary)`, so the key is 21 ops and
+# `rf_binary_ternary` writes them out. `WHERE` and `MULACC` are in it because they are
+# TERNARY ops (ops.py:171-172) even though nobody thinks of them as arithmetic.
 def rf_webgpu8() -> U32: 8
 
 # `set.union(GroupOp.Binary, GroupOp.Ternary)` -- the pdict key, twenty-one ops.
@@ -1889,51 +1469,28 @@ def lb_table() -> List<&2, O.PMEntry>:
 def lb_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   lb_scan(lb_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# TABLE 11: `pm_add_buffers` -- rangeify.py:254-272. TEN RULES, and it is the
-# BIGGEST composition in the file: `pm_mops + pm_flatten_bufferize + 6 own`, so
-# three foreign rules, one of which (`pm_flatten_bufferize`) is THIS file's
-# table 8 and IS ported.
+# TABLE 11: `pm_add_buffers` -- rangeify.py:254-272. TEN RULES, the BIGGEST composition in
+# the file: `pm_mops + pm_flatten_bufferize + 6 own`, so three foreign rules, one of which
+# (`pm_flatten_bufferize`) is THIS file's table 8 and IS ported.
 #
-#   0-2  pm_mops                                            FOREIGN (prepare.py)
-#   3    pm_flatten_bufferize                               OWN, table 8 above
-#   4  UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")
-#                                                -> bufferize_to_store(ctx, x, idx)
-#   5  UPat(Ops.INDEX, src=(UPat(Ops.CAST, dtype=dtypes.weaks, src=(UPat.var("buf"),)),),
-#           allow_any_len=True, name="u")    -> u.replace(src=(buf,)+u.src[1:]).cast(u.dtype)
-#   6  UPat((Ops.MSELECT, Ops.MSTACK), src=UPat(Ops.RESHAPE), name="m")
-#                                    -> m.replace(src=tuple(x.src[0].base for x in m.src)).reshape(m.shape)
-#   7  UPat(Ops.CALL, name="k")   -> k.replace(src=tuple(x.src[0] if x.op is Ops.RESHAPE else x
-#                                                            for x in k.src))
-#   8  UPat(Ops.STORE, src=(UPat(), UPat(Ops.CONST, arg=Invalid)))  -> UOp(Ops.NOOP)
-#   9  UPat(Ops.AFTER, name="x")  -> remove_noop_afters
+# `ab_5` ({CAST}), `ab_6` ({RESHAPE}) and `ab_8` ({CONST}) are three of the file's six
+# non-empty reject sets. All three are the op of the pattern's FIRST src and so are already
+# implied by the rule's own op test; `rej_ab8` is the row for a MISSPELLED one.
 #
-# `ab_6` and `ab_8` are two of the file's six non-empty reject sets ({RESHAPE}
-# and {CONST}), and `ab_5` is a third ({CAST}). All three are the op of the
-# pattern's FIRST src, so all three are already implied by the rule's own op
-# test, and `rej_ab8` is the row for a MISSPELLED one.
+# THE TWO RULES CLAIMING ONE NODE ARE TAGS 3 AND 4, and this is the first-wins row. `stg2`
+# is a two-src `STAGE`; tag 3 (`UPat(Ops.STAGE, name="x")`) and tag 4
+# (`UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")`) BOTH match it and they
+# DISAGREE -- tag 3 returns `None` because `len(x.src) == 2` and tag 4 returns a node -- and
+# `stg3`, a three-src STAGE, is claimed by tag 3 only because tag 4's src is a STRICT
+# two-tuple. Measured by `.agents/slop/rf-claims.py`; the counts are `claim_ab_stg2` and
+# `claim_ab_stg3`.
 #
-# THE TWO RULES CLAIMING ONE NODE ARE TAGS 3 AND 4, and this is the row the brief
-# demands. `stg2` is a two-src `STAGE`; `UPat(Ops.STAGE, name="x")` (tag 3) and
-# `UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")` (tag 4) BOTH match
-# it, they DISAGREE -- tag 3's `flatten_bufferize` returns `None` because
-# `len(x.src) == 2` and tag 4's `bufferize_to_store` returns a node -- and
-# `stg3`, a three-src STAGE, is claimed by tag 3 only because tag 4's src is a
-# STRICT two-tuple. Measured by `.agents/slop/rf-claims.py`; the counts are
-# `claim_ab_stg2` and `claim_ab_stg3`.
-#
-# `ab_7` is FULLY PORTED, body and all: it is a src map with one arm and no
-# derived property. `ab_9` is `remove_noop_afters`, ported as table 1's
-# neighbour. `ab_8` is ported except for the `Invalid` arg test, which is
-# `arg == Invalid` and `O.eq_arg` answers it exactly -- so `ab_8` is FULLY
-# PORTED too. `ab_4` is the big one and is NOT PORTED: `bufferize_to_store`
-# (208-232) needs `x.commit_dtype()`, `sorted(idx.ranges, key=x.arg)` (the
-# `ranges` wall plus a sort), `UOp.device_range_src`, a fresh `ParamArg` from
-# `next(ctx)`, and a `buf.after(...)`/`store`/`end` chain.
-# ===========================================================================
-# ab_7: `lambda k: k.replace(src=tuple(x.src[0] if x.op is Ops.RESHAPE else x
-# for x in k.src))` -- rangeify.py:267. FULLY PORTED. The comment above it is
-# upstream's and is kept: "remove any RESHAPEs on KERNEL".
+# `ab_7` is FULLY PORTED, body and all: it is a src map with one arm and no derived
+# property. `ab_8` is FULLY PORTED too -- the `Invalid` arg test is `arg == Invalid` and
+# `O.eq_arg` answers it exactly. `ab_9` is `remove_noop_afters`. `ab_4` is the big one and is
+# NOT PORTED: `bufferize_to_store` (208-232) needs `x.commit_dtype()`,
+# `sorted(idx.ranges, key=x.arg)` (the `ranges` wall plus a sort), `UOp.device_range_src`,
+# a fresh `ParamArg` from `next(ctx)`, and a `buf.after(...)`/`store`/`end` chain.
 def ab_7_src.go(is_rs: Bool, ar: O.Arena, x: U32) -> U32:
   match is_rs:
     case True{} : M.mp_src0(ar, x)
@@ -1980,9 +1537,9 @@ def ab_8.of(pat: Bool, +ar: O.Arena) -> M.Hop:
 def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
   ab_8.of(ab_8.pat(ar, self), ar)
 
-# ab_4: `bufferize_to_store` -- rangeify.py:208-232. NOT PORTED, and the comment
-# block above it (200-206) is kept because it explains what the rule is FOR even
-# though the body is absent:
+# ab_4: `bufferize_to_store` -- rangeify.py:208-232. NOT PORTED, and the comment block above
+# it (200-206) is kept because it explains what the rule is FOR even though the body is
+# absent:
 #
 #   # TODO: should BUFFERIZE look a lot more like STORE
 #   # BUFFERIZE has device in arg
@@ -1990,11 +1547,11 @@ def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
 #   # BUFFERIZE returns the BUFFER ready for INDEXing
 #   # NOTE: this has been fixed up a bit
 #
-# `sorted(idx.ranges, key=lambda x: x.arg)` (211) is the `UOp.ranges` wall AND a
-# sort by a TUPLE arg; `x.commit_dtype()` (210) is ops.py's committed-dtype
-# walk; `UOp.device_range_src` (230) is P6; and `next(ctx)` is the mutable
-# `itertools.count`. Its CLAIM -- a two-src STAGE -- is ported and it is the
-# claim half of the two-rules-one-node fixture.
+# `sorted(idx.ranges, key=lambda x: x.arg)` (211) is the `UOp.ranges` wall AND a sort by a
+# TUPLE arg; `x.commit_dtype()` (210) is ops.py's committed-dtype walk;
+# `UOp.device_range_src` (230) is P6; and `next(ctx)` is the mutable `itertools.count`.
+# Its CLAIM -- a two-src STAGE -- is ported and it is the claim half of the
+# two-rules-one-node fixture.
 def ab_4(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ab_4's CLAIM: `UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")` is a
@@ -2080,24 +1637,20 @@ def ab_table() -> List<&2, O.PMEntry>:
 def ab_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   ab_scan(ab_table(), fx, self, M.Hop{ar, 0})
 
-# ===========================================================================
-# THE GATE. Every row is DERIVED FROM PYTHON by `.agents/slop/rf-rows.py`, so a
-# row here can be WRONG rather than merely restate this file. `1`/`0` is a
-# Bool, and a `0` that is a positive claim is a real answer (`ren_none` is a
-# `True` result meaning "no node"), not a failure.
+# THE GATE. Every row is DERIVED FROM PYTHON by `.agents/slop/rf-rows.py`, so a row here can
+# be WRONG rather than merely restate this file. `1`/`0` is a Bool, and a `0` that is a
+# positive claim is a real answer (`ren_none` is a `True` result meaning "no node"), not a
+# failure.
 #
-# THE FIXTURE, and what each node is FOR. `b4` and `bx` are TWO GLOBAL BUFFERs
-# of 4 int32 with different slots, so `STORE(b4, bx)` is a two-src STORE whose
-# srcs are DIFFERENT nodes -- which is the whole point of `rb_diff`, and is why
-# the fixture needs two buffers and not one. `stg2` is a two-src STAGE and `stg3`
-# a three-src one; they differ in exactly the property `flatten_bufferize` (236)
-# tests, and `stg2` is ALSO the node two `pm_add_buffers` rules claim.
-# `after1`/`after`/`afterk` are an AFTER with one removable dep, with two, and
-# with none, so `remove_noop_afters` has all three of its answers in one arena.
-#
-# `b2u` is `Bool -> U32` because `Bool` will not `U32.show`, and it is used by
-# every row, which is why it sits above the fixture rather than inside `main`.
-# ===========================================================================
+# THE FIXTURE, and what each node is FOR. `b4` and `bx` are TWO GLOBAL BUFFERs of 4 int32
+# with different slots, so `STORE(b4, bx)` is a two-src STORE whose srcs are DIFFERENT nodes
+# -- which is the whole point of `rb_diff`, and is why the fixture needs two buffers and not
+# one. `stg2` is a two-src STAGE and `stg3` a three-src one; they differ in exactly the
+# property `flatten_bufferize` (236) tests, and `stg2` is ALSO the node two `pm_add_buffers`
+# rules claim. `after1`/`after`/`afterk` are an AFTER with one removable dep, with two, and
+# with none, so `remove_noop_afters` has all three of its answers in one arena. `b2u` is
+# `Bool -> U32` because `Bool` will not `U32.show`, and it is used by every row, which is why
+# it sits above the fixture rather than inside `main`.
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
@@ -2221,50 +1774,46 @@ def g() -> G:
   # RSAF: a RESHAPE over an AFTER, so `rf_is_bufid5`'s SIX-op set is tested on a
   # member other than BUFFER -- `rs` and `rsi` only ever test BUFFER.
   +rsaf = O.UOp.new(O.Found.ar(stc0), O.OpsRESHAPE{}, [O.Found.i(af), O.Found.i(c4)], O.ANone{}, O.TNone{})
-  # CLIK and CLIK0: the CALLI shape (CALL(IXSTG,RS)) carrying a REAL `Kernel` arg,
-  # and its `ANone` twin. THEY ARE THE ONLY TWO NODES THAT MAKE AN ARG VISIBLE.
-  # Every other node the four `mp_replace` rules can reach -- an AFTER, an MSTACK,
-  # a CALL -- is given `ANone` by this fixture, and an AFTER's and an MSTACK's arg
-  # is `None` in CPython too (measured: `raf_after_arg_is_none = 1`,
-  # `mstack_arg_is_none = 1`). So a row of the shape `eq_arg(rebuilt_arg,
-  # original_arg)` on any of them degenerates to `eq_arg(ANone, ANone)` -- TRUE
-  # whether the port preserves the arg or hardcodes `ANone`, which is exactly the
-  # mistake that satisfied the type checker when `mp_replace` gained its `arg`
-  # parameter. A CALL's arg is a Kernel, so CLIK is the node that separates the
-  # two, and CLIK0 is the negative one row from it at the same shape.
+# CLIK and CLIK0: the CALLI shape (CALL(IXSTG,RS)) carrying a REAL `Kernel` arg, and
+# its `ANone` twin. THEY ARE THE ONLY TWO NODES THAT MAKE AN ARG VISIBLE. Every other
+# node the four `mp_replace` rules can reach -- an AFTER, an MSTACK, a CALL -- is given
+# `ANone` by this fixture, and an AFTER's and an MSTACK's arg is `None` in CPython too
+# (measured: `raf_after_arg_is_none = 1`, `mstack_arg_is_none = 1`). So a row of the
+# shape `eq_arg(rebuilt_arg, original_arg)` on any of them degenerates to
+# `eq_arg(ANone, ANone)` -- TRUE whether the port preserves the arg or hardcodes
+# `ANone`, which is exactly the mistake that satisfied the type checker when
+# `mp_replace` gained its `arg` parameter. A CALL's arg is a Kernel, so CLIK is the node
+# that separates the two, and CLIK0 is the negative one row from it at the same shape.
   +clik = O.UOp.new(O.Found.ar(rsaf), O.OpsCALL{}, [O.Found.i(ixs), O.Found.i(rs)],
                    O.AKernel{O.KernelInfo.of()}, O.TNone{})
   +clik0 = O.UOp.new(O.Found.ar(clik), O.OpsCALL{}, [O.Found.i(ixs), O.Found.i(rs)],
                     O.ANone{}, O.TNone{})
-  # ------------------------------------------------------------------------
-  # THE OUTER-VS-INNER FIXTURES, and why the old fixture could not ask the
-  # question. Every node below exists to make ONE thing askable: WHICH OP IS AT
-  # THE INNER VS THE OUTER POSITION. A `.f()` chain puts the op handed to `f` at
-  # the ROOT, so a table that carries the CHILD's op keys the mirror of the node
-  # the body reads -- and a fixture of AFTERs, MSTACKs and CALLs with `ANone`
-  # args cannot see it, because no node in it has both shapes.
-  # `UOp` does NOT type-check `arg` against `op` (measured), so the
-  # discriminating shapes build without complaint and an INDEX can carry a
-  # `Range` arg that survives the rebuild.
-  #
-  #  B4D   BUFFER with a `ParamArg.device`     what `s.device is None` reads
-  #  IXB4  INDEX(B4, R0)                        the CHILD ct_4 needs
-  #  CT4A  STAGE(IXB4, R0)       CLAIMED: root STAGE, child INDEX, tails EQUAL
-  #  CT4D  STAGE(IXB4, R1)       the same with the tails DIFFERENT: the `!=`
-  #  CT4B  INDEX(STG2, R0)       THE MIRROR: root INDEX, child STAGE. Same two
-  #                             ops, same two nodes, opposite order. py: claim 0.
-  #  CT5C  STAGE(C4, R0)         ct_5 arm one: the child is a CONST
-  #  CT5K  STAGE(CAST(C4), R0)   ct_5 arm two: the child is a CAST of a CONST
-  #  CT5B  STAGE(B4, R0)         the negative: the child is neither
-  #  MSTC  MSTACK(C4, C1)        ct_8's `s`, DEVICELESS
-  #  MSTB  MSTACK(B4D, C1)       ct_8's `s`, carrying a DEVICE: the refusal
-  #  CT8D  INDEX(MSTC)           ct_8 CLAIMED: root INDEX, child MSTACK
-  #  CT8B  INDEX(MSTB)           the `s.device is None` refusal, one node from it
-  #  CT8R  INDEX(MSTC, R0) with an `ARange` arg   the rebuild, with the ARG
-  #                             visible: `UOp` accepts it and `replace` keeps it
-  #  CT8R0 the SAME node with `ANone`             the negative one row from it
-  #  CT7A  INDEX(AFTER)          ct_7's claim: root INDEX, child AFTER
-  # ------------------------------------------------------------------------
+# THE OUTER-VS-INNER FIXTURES, and why the old fixture could not ask the question.
+# Every node below exists to make ONE thing askable: WHICH OP IS AT THE INNER VS THE
+# OUTER POSITION. A `.f()` chain puts the op handed to `f` at the ROOT, so a table that
+# carries the CHILD's op keys the mirror of the node the body reads -- and a fixture of
+# AFTERs, MSTACKs and CALLs with `ANone` args cannot see it, because no node in it has
+# both shapes. `UOp` does NOT type-check `arg` against `op` (measured), so the
+# discriminating shapes build without complaint and an INDEX can carry a `Range` arg
+# that survives the rebuild.
+#
+# B4D   BUFFER with a `ParamArg.device`     what `s.device is None` reads
+# IXB4  INDEX(B4, R0)                        the CHILD ct_4 needs
+# CT4A  STAGE(IXB4, R0)       CLAIMED: root STAGE, child INDEX, tails EQUAL
+# CT4D  STAGE(IXB4, R1)       the same with the tails DIFFERENT: the `!=`
+# CT4B  INDEX(STG2, R0)       THE MIRROR: root INDEX, child STAGE. Same two
+#                            ops, same two nodes, opposite order. py: claim 0.
+# CT5C  STAGE(C4, R0)         ct_5 arm one: the child is a CONST
+# CT5K  STAGE(CAST(C4), R0)   ct_5 arm two: the child is a CAST of a CONST
+# CT5B  STAGE(B4, R0)         the negative: the child is neither
+# MSTC  MSTACK(C4, C1)        ct_8's `s`, DEVICELESS
+# MSTB  MSTACK(B4D, C1)       ct_8's `s`, carrying a DEVICE: the refusal
+# CT8D  INDEX(MSTC)           ct_8 CLAIMED: root INDEX, child MSTACK
+# CT8B  INDEX(MSTB)           the `s.device is None` refusal, one node from it
+# CT8R  INDEX(MSTC, R0) with an `ARange` arg   the rebuild, with the ARG
+#                            visible: `UOp` accepts it and `replace` keeps it
+# CT8R0 the SAME node with `ANone`             the negative one row from it
+# CT7A  INDEX(AFTER)          ct_7's claim: root INDEX, child AFTER
   +bd = O.UOp.new(O.Found.ar(clik0), O.OpsBUFFER{}, [O.Found.i(sp)],
                   O.AParam{g_pdev(4, 9)}, O.TNone{})
   +ixb4 = O.UOp.new(O.Found.ar(bd), O.OpsINDEX{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
@@ -2284,17 +1833,17 @@ def g() -> G:
   +ct8r0 = O.UOp.new(O.Found.ar(ct8r), O.OpsINDEX{}, [O.Found.i(mstc), O.Found.i(r0)],
                      O.ANone{}, O.TNone{})
   +ct7a = O.UOp.new(O.Found.ar(ct8r0), O.OpsINDEX{}, [O.Found.i(af)], O.ANone{}, O.TNone{})
-  #  RGD / RGT -- a RANGE whose AxisType is NOT `AXIS_WEAK`, plus its `rtag(())`.
-  #  EVERY RANGE in the fixture up to here is AXIS_WEAK, so `rf_renumber`'s
-  #  "rebuild the AxisType" and "read it off the node" are the SAME FUNCTION over
-  #  the rest of the fixture and mutation M12 moved nothing. One node with a
-  #  different axis type separates them, which is what `ren_axis_out_dev` is for.
-  #  CT7B -- an INDEX whose src[0] is a RANGE and whose src[1] IS an AFTER. The
-  #  `early_reject` of tag 7 is `{AFTER}` and `ler` is `{RANGE, AFTER}`, so the
-  #  SET TEST is satisfied by an AFTER ANYWHERE, while the PATTERN needs it at
-  #  src[0]. This is the only node in the fixture where `ct_7`'s own body test is
-  #  not implied by its reject set, so it is what makes mutation M30 sharp: with
-  #  `ct_src.of`'s `case 7: True{}` the count reads 2 and with the test it reads 1.
+# RGD / RGT -- a RANGE whose AxisType is NOT `AXIS_WEAK`, plus its `rtag(())`.
+# EVERY RANGE in the fixture up to here is AXIS_WEAK, so `rf_renumber`'s "rebuild
+# the AxisType" and "read it off the node" are the SAME FUNCTION over the rest of the
+# fixture and mutation M12 moved nothing. One node with a different axis type
+# separates them, which is what `ren_axis_out_dev` is for.
+# CT7B -- an INDEX whose src[0] is a RANGE and whose src[1] IS an AFTER. The
+# `early_reject` of tag 7 is `{AFTER}` and `ler` is `{RANGE, AFTER}`, so the SET TEST
+# is satisfied by an AFTER ANYWHERE, while the PATTERN needs it at src[0]. This is
+# the only node in the fixture where `ct_7`'s own body test is not implied by its
+# reject set, so it is what makes mutation M30 sharp: with `ct_src.of`'s
+# `case 7: True{}` the count reads 2 and with the test it reads 1.
   +ct7b = O.UOp.new(O.Found.ar(ct7a), O.OpsINDEX{}, [O.Found.i(r0), O.Found.i(af)], O.ANone{}, O.TNone{})
   +rgd = O.UOp.range_end(O.Found.ar(ct7b), O.Found.i(c4), [2], O.AXIS_DEVICE{})
   +rgt = rf_rtag.found(O.Found.ar(rgd), O.Found.i(rgd), rf_empty_tag())
@@ -2316,18 +1865,18 @@ def g() -> G:
      O.Found.i(ct7b), O.Found.i(rgd), O.Found.i(rgt)]}
 
 # THE NODE NAMES, so a row reads as a claim about a thing and not an index.
-#   0 C0  1 C1  2 C2  3 C4  4 SPECIAL  5 B4  6 BX  7 R0  8 R1
-#   9 NOOP(0 srcs)  10 NOOP(C0)  11 END(NOOP0)  12 END(NOOPc0)  13 END(B4)
-#  14 AFTER1=AFTER(B4,END(NOOP0))  15 AFTER  16 AFTERK
-#  17 STG2=STAGE(B4,R0)  18 STG3=STAGE(B4,R0,R1)
-#  19 IXSTG=INDEX(STG2,R0)  20 IXC=INDEX(C4,R0)
-#  21 RS=RESHAPE(B4,C4)  22 RSI=RESHAPE(IXSTG,C4)
-#  23 SH0=SHRINK(B4,C0,C4)  24 SH1=SHRINK(B4,C1,C2)  25 INVALID
-#  26 MST=MSTACK(SH1,SH0)  27 CALLI=CALL(IXSTG,RS)  28 CALLS=CALL(SH1,C0)
-#  29 CALLM=CALL(MST,C0)  30 MSRS=MSTACK(RS,RS)  31 STINV=STORE(B4,Invalid)
-#  32 SELFSTORE=STORE(B4,B4)  33 DIFFSTORE=STORE(B4,BX)
-#  34 PG=PARAM(2,GLOBAL)  35 PA=PARAM(3,ALU)  36 IXPG  37 IXPA
-#  38 R0T=R0.rtag(())  39 PGT  40 PAT
+#  0 C0  1 C1  2 C2  3 C4  4 SPECIAL  5 B4  6 BX  7 R0  8 R1
+#  9 NOOP(0 srcs)  10 NOOP(C0)  11 END(NOOP0)  12 END(NOOPc0)  13 END(B4)
+# 14 AFTER1=AFTER(B4,END(NOOP0))  15 AFTER  16 AFTERK
+# 17 STG2=STAGE(B4,R0)  18 STG3=STAGE(B4,R0,R1)
+# 19 IXSTG=INDEX(STG2,R0)  20 IXC=INDEX(C4,R0)
+# 21 RS=RESHAPE(B4,C4)  22 RSI=RESHAPE(IXSTG,C4)
+# 23 SH0=SHRINK(B4,C0,C4)  24 SH1=SHRINK(B4,C1,C2)  25 INVALID
+# 26 MST=MSTACK(SH1,SH0)  27 CALLI=CALL(IXSTG,RS)  28 CALLS=CALL(SH1,C0)
+# 29 CALLM=CALL(MST,C0)  30 MSRS=MSTACK(RS,RS)  31 STINV=STORE(B4,Invalid)
+# 32 SELFSTORE=STORE(B4,B4)  33 DIFFSTORE=STORE(B4,BX)
+# 34 PG=PARAM(2,GLOBAL)  35 PA=PARAM(3,ALU)  36 IXPG  37 IXPA
+# 38 R0T=R0.rtag(())  39 PGT  40 PAT
 def g_c0(g: G) -> U32: G.n(g, 0n)
 def g_n0(g: G) -> U32: G.n(g, 9n)
 def g_nx(g: G) -> U32: G.n(g, 10n)
@@ -2399,51 +1948,42 @@ def g_ct7b(g: G) -> U32: G.n(g, 63n)
 def g_rgd(g: G) -> U32: G.n(g, 64n)
 def g_rgt(g: G) -> U32: G.n(g, 65n)
 
-# ===========================================================================
-# THE ROWS.
+# THE ROWS, one line per group; every `py=` is printed by CPython, never typed.
 #
-#   noopf_*  `is_noop_after_dep` (246). Five nodes because the rule is a
-#       TWO-OP recursion and one arm is not enough to see it: `noopf_e_n0 = 1`
-#       is the descent, and `noopf_nx = 0` is the arm that stops it.
-#   raf_*  `remove_noop_afters` (249). THREE rows for one rule because its three
-#       answers are three different SHAPES -- a rebuilt AFTER, an EXISTING node,
-#       and no answer at all -- and `raf_after1_is_src0` is the one that proves
-#       the second: it is `1` only because the index is COMPARED, which is also
-#       why a rewrite in this port need not intern anything.
-#   szs_*  `strip_zero_offset_shrink` (140). `szs_sh1_is_src0 = 0` is the NEGATIVE
-#       side, and it is asked as "is it the src0 index" rather than "is the
-#       answer absent" -- asking for the absence would be satisfied by any
-#       wrong-but-present answer, which the constraints file warns about.
-#   nic_*  `no_indexing_calls` (143), one row per arm. `nic_calls = 0` is the
-#       identity case and it is a REAL answer: a SHRINK with offset 1 strips to
-#       itself, so the rebuild IS the CALL and `hop_self` drops it.
-#   nv_*  `pm_no_views` (165). `nv_rsi = 0` is the pattern's rejection of a
-#       RESHAPE over an INDEX, and it is the row that says the pattern is the
-#       test and the body is only the answer.
-#   rb_*  `pm_remove_bufferize` (131-138). `rb_self_is_noop` and `rb_diff` are
-#       the two sides of the ONE identity check in this file, so between them
-#       they are the whole of `upat.py:100-105` as it applies here.
-#   aprt_*  `pm_add_param_range_tags` (330). `aprt_empty = 0` is the idempotence
-#       row and `aprt_paluT = 0` is the ALU row, and they are different: the
-#       first is `ret is not uop`, the second is the `addrspace` conjunct.
-#   ren_*  `renumber_range` (299). `ren_arg0`/`ren_next` and `ren7_*` are the
-#       two-sided counter rows, and the gate feeds CPython's `ctx.range`.
-#   dg_*  `to_define_global` (311-328). `dg_ixpa_ans` is the ONE row in this
-#       file that is a fully-ported rule BODY answering a node: an INDEX of an
-#       ALU PARAM answers the PARAM, and `dg_ixpg_ans` is its negative.
-#   *_len  the COUNT rows. One per table, so a MISSING rule shows. `ct_len = 9`
-#       and `ab_len = 10` are BECAUSE the foreign prefixes are counted in, and
-#       `mops_len = 3` and `fb_len = 1` are what make the composition
-#       arithmetic checkable rather than asserted.
-#   claim_*  the CLAIM COUNT of one fixture node per table. `claim_ab_stg2 = 2`
-#       IS the two-rules-claim-one-node row the brief demands, and it is measured
-#       rather than constructed: `.agents/slop/rf-claims.py` walks every
-#       `UPat.match` over the fixture and reports the only node two rules claim.
-#   rej_*  the reject sets that are NON-EMPTY and load-bearing. A mutation that
-#       MISSPELLS one of these turns a necessary condition into a false one and
-#       the rule then skips a node it should claim, and nothing else in the file
-#       would notice.
-# ===========================================================================
+#  noopf_*  `is_noop_after_dep` (246). Five nodes because the rule is a TWO-OP recursion
+#      and one arm is not enough to see it: `noopf_e_n0 = 1` is the descent and
+#      `noopf_nx = 0` is the arm that stops it.
+#  raf_*  `remove_noop_afters` (249). THREE rows for one rule because its three answers
+#      are three different SHAPES -- a rebuilt AFTER, an EXISTING node, and no answer at
+#      all -- and `raf_after1_is_src0` proves the second: it is `1` only because the
+#      index is COMPARED, which is also why a rewrite here need not intern anything.
+#  szs_*  `strip_zero_offset_shrink` (140). `szs_sh1_is_src0 = 0` is the NEGATIVE side,
+#      asked as "is it the src0 index" rather than "is the answer absent" -- asking for
+#      the absence would be satisfied by any wrong-but-present answer.
+#  nic_*  `no_indexing_calls` (143), one row per arm. `nic_calls = 0` is the identity
+#      case and it is a REAL answer: a SHRINK with offset 1 strips to itself, so the
+#      rebuild IS the CALL and `hop_self` drops it.
+#  nv_*  `pm_no_views` (165). `nv_rsi = 0` is the pattern's rejection of a RESHAPE over an
+#      INDEX: the pattern is the test and the body is only the answer.
+#  rb_*  `pm_remove_bufferize` (131-138). `rb_self_is_noop` and `rb_diff` are the two
+#      sides of the ONE identity check in this file, so between them they are all of
+#      `upat.py:100-105` as it applies here.
+#  aprt_*  `pm_add_param_range_tags` (330). `aprt_empty = 0` is the idempotence row and
+#      `aprt_paluT = 0` is the ALU row, and they are different: the first is
+#      `ret is not uop`, the second is the `addrspace` conjunct.
+#  ren_*  `renumber_range` (299). `ren_arg0`/`ren_next` and `ren7_*` are the two-sided
+#      counter rows, and the gate feeds CPython's `ctx.range`.
+#  dg_*  `to_define_global` (311-328). `dg_ixpa_ans` is the ONE row that is a
+#      fully-ported rule BODY answering a node; `dg_ixpg_ans` is its negative.
+#  *_len  the COUNT rows, one per table, so a MISSING rule shows. `ct_len = 9` and
+#      `ab_len = 10` are BECAUSE the foreign prefixes are counted in, and `mops_len = 3`
+#      and `fb_len = 1` are what make the composition arithmetic checkable.
+#  claim_*  the CLAIM COUNT of one fixture node per table. `claim_ab_stg2 = 2` IS the
+#      two-rules-claim-one-node row, measured by `.agents/slop/rf-claims.py`, which walks
+#      every `UPat.match` over the fixture and reports the only node two rules claim.
+#  rej_*  the reject sets that are NON-EMPTY and load-bearing. A MISSPELLED one turns a
+#      necessary condition into a false one and the rule then skips a node it should
+#      claim, and nothing else in the file would notice.
 def t_lay() -> U32: U32.from_nat(List.length(&2, U32, G.ix(g())))
 
 # THE TABLE READERS, hoisted above every row that uses them: the n-th entry of a
@@ -2615,21 +2155,20 @@ def t_dg2_pat() -> U32: b2u(rf_param_tagged(g_ar(g()), g_pgt(g())))
 def t_dg2_pg() -> U32: b2u(rf_param_tagged(g_ar(g()), g_pg(g())))
 def t_dg2_palu() -> U32: b2u(rf_param_alu(G.fx(g()), g_pa(g())))
 
-# `ab_4`'s CLAIM -- a STRICT two-src STAGE -- and `fb`'s `len(x.src) == 2`. These
-# two are the two halves of the two-rules-one-node node, and they are separate
-# rows because a mutation that drops EITHER one destroys the fixture.
-# THE CLAIM COUNT, and why it is a SEPARATE FOLD from the scan. `claim_n` counts
-# how many rules of a table CLAIM the node -- the `rf_claimed` half of the `try`
-# WITHOUT the dispatch -- so it counts patterns that MATCH rather than rewrites
-# that fired. A scan stops at the first answer; a count must not, and that
-# difference is the only reason a first-wins bug is visible to a gate at all.
+# `ab_4`'s CLAIM -- a STRICT two-src STAGE -- and `fb`'s `len(x.src) == 2`. These two are
+# the two halves of the two-rules-one-node node, and they are separate rows because a
+# mutation that drops EITHER one destroys the fixture.
+# THE CLAIM COUNT, and why it is a SEPARATE FOLD from the scan. `claim_n` counts how many
+# rules of a table CLAIM the node -- the `rf_claimed` half of the `try` WITHOUT the
+# dispatch -- so it counts patterns that MATCH rather than rewrites that fired. A scan
+# stops at the first answer; a count must not, and that difference is the only reason a
+# first-wins bug is visible to a gate at all.
 #
-# `claim_n` IS AN OP-SET COUNT, and the distinction is load-bearing rather than
-# pedantic: `PMEntry.ops` is `pdict`'s key, so it is the ROOT op and nothing else.
-# `ab_4`'s src test (a STRICT two-src STAGE) lives in its body, so `claim_n` alone
-# counts BOTH `stg2` and `stg3` as claimed by tags 3 and 4 -- MEASURED, and
-# `claim_ops_stg2`/`claim_ops_stg3` are the two rows that show it. `claim_full`
-# adds the src half back and is the row that separates them.
+# `claim_n` IS AN OP-SET COUNT, and the distinction is load-bearing: `PMEntry.ops` is
+# `pdict`'s key, so it is the ROOT op and nothing else. `ab_4`'s src test (a STRICT
+# two-src STAGE) lives in its body, so `claim_n` alone counts BOTH `stg2` and `stg3` as
+# claimed by tags 3 and 4 -- MEASURED, and `claim_ops_stg2`/`claim_ops_stg3` are the two
+# rows that show it. `claim_full` adds the src half back and separates them.
 def claim.one(ok: Bool, acc: U32) -> U32:
   match ok:
     case True{} : U32.add(acc, 1)
@@ -2704,28 +2243,24 @@ def t_ab7_cli_nsrc() -> U32:
   M.mp_nsrc(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_cli(g()))),
             M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_cli(g()))))
 
-# ===========================================================================
-# THE ARG ROWS, and why they had to be written at all. `mp_replace` was widened
-# from `(op, ar, self, src)` to `(op, arg, ar, self, src)` by e959ece3798f
-# ("fix movement.bend: the port (not Python) had the inversion") because
-# `UOp.replace` (ops.py:252) takes `arg` as a KWARG --
-# `kwargs.pop("arg", self.arg)` -- so a rule that replaces only `src` passes the
-# node's OWN arg. Four call sites here were left on the 4-arg form and the file
-# stopped compiling.
+# THE ARG ROWS, and why they had to be written at all. `mp_replace` was widened from
+# `(op, ar, self, src)` to `(op, arg, ar, self, src)` because `UOp.replace` (ops.py:252)
+# takes `arg` as a KWARG -- `kwargs.pop("arg", self.arg)` -- so a rule that replaces only
+# `src` passes the node's OWN arg. Four call sites here were left on the 4-arg form and
+# the file stopped compiling.
 #
-# THE COMPILED FILE IS NOT EVIDENCE, and neither is any row that already existed.
-# `cli`, `af` and `mst` are all given `ANone` by this fixture, and an AFTER's and
-# an MSTACK's arg is `None` in CPython TOO (measured: `raf_after_arg_is_none = 1`,
-# `mstack_arg_is_none = 1`), so `eq_arg(rebuilt_arg, original_arg)` on any of them
-# is `eq_arg(ANone, ANone)` -- TRUE for a port that preserves the arg AND for one
-# that hardcodes `ANone`, which is the mistake that silences this type error. A
-# CALL's arg is a `Kernel`, so `clik` is the node that separates the two, and
-# `clik0` is the negative one row from it at the same shape.
+# THE COMPILED FILE IS NOT EVIDENCE, and neither is any row that already existed. `cli`,
+# `af` and `mst` are all given `ANone` by this fixture, and an AFTER's and an MSTACK's
+# arg is `None` in CPython TOO (measured: `raf_after_arg_is_none = 1`,
+# `mstack_arg_is_none = 1`), so `eq_arg(rebuilt_arg, original_arg)` on any of them is
+# `eq_arg(ANone, ANone)` -- TRUE for a port that preserves the arg AND for one that
+# hardcodes `ANone`, which is the mistake that silences this type error. A CALL's arg is a
+# `Kernel`, so `clik` is the node that separates the two and `clik0` is the negative one
+# row from it at the same shape.
 #
-# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:1559), so the
-# expected arg goes first. `py=` from `.agents/slop/rf-arg-oracle.py`, which
-# reports `arg_is_own_kernel=1` and `arg_is_none=0` for the rebuild.
-# ===========================================================================
+# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:1559), so the expected arg
+# goes first. `py=` from `.agents/slop/rf-arg-oracle.py`, which reports
+# `arg_is_own_kernel=1` and `arg_is_none=0` for the rebuild.
 def t_ab7_clik_nsrc() -> U32:
   M.mp_nsrc(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))),
             M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))))
@@ -2821,23 +2356,20 @@ def t_bool(x: Bool) -> U32: b2u(x)
 
 
 
-# ===========================================================================
-# THE SRC OP SEQUENCE, because A COUNT IS NOT A GATE.
+# THE SRC OP SEQUENCE, because A COUNT IS NOT A GATE. For a rewrite engine the identity
+# of an answer is the SEQUENCE of its srcs' ops, in order, plus its arg: swapping a
+# movement's two shape args leaves op, nsrc, the src sequence and the toposort ALL
+# identical, and a wrong field ORDER is a silently wrong write -- while `mp_nsrc` is a
+# count, so two wrong answers can share one.
 #
-# For a rewrite engine the identity of an answer is the SEQUENCE of its srcs'
-# ops, in order, plus its arg. The file's own header says so -- "Swapping a
-# movement's two shape args leaves op, nsrc, the src sequence and the toposort
-# ALL identical", and a wrong field ORDER is a silently wrong write -- and
-# `mp_nsrc` is a count, so two wrong answers can share one.
+# `srcops` maps each src index to its `Ops` NUMBER and folds the list to a `String` of
+# the form ".58.53" for `[CONST, RANGE]`. A NUMBER and not `Ops.name`, because a name is
+# not comparable across two ports and the number is what Python's `UOp.tuplize` sorts on
+# anyway. The `py=` expectations are the same strings, printed from CPython's own
+# `ops[i].op.value`.
 #
-# `srcops` maps each src index to its `Ops` NUMBER and folds the list to a
-# `String` of the form ".58.53" for `[CONST, RANGE]`. A NUMBER and not
-# `Ops.name`, because a name is not comparable across two ports and the number is
-# what Python's `UOp.tuplize` sorts on anyway. The `py=` expectations are the
-# same strings, printed from CPython's own `ops[i].op.value`.
-#
-# `t_srcops_eq` answers a Bool AGAINST A LITERAL, so a reorder, a dropped src and
-# a wrong op are three different failures rather than one shared count.
+# `t_srcops_eq` answers a Bool AGAINST A LITERAL, so a reorder, a dropped src and a
+# wrong op are three different failures rather than one shared count.
 def srcops.go(+ar: O.Arena, ss: List<&2, U32>, acc: String) -> String:
   match ss:
     case Nil{}     : acc
@@ -2855,43 +2387,35 @@ def t_srcops_eq(got: String, want: String) -> U32: b2u(String.eq(got, want))
 # three or four times each and the long form buried the claim in the noise.
 def ar_of(i: U32) -> O.Arena: g_ar(g())
 
-# ===========================================================================
-# THE CT ROWS, and the answer to "which of `ct_4`, `ct_5`, `ct_8` are live".
+# THE CT ROWS, and the answer to "which of `ct_4`, `ct_5`, `ct_8` are live". ALL THREE ARE
+# LIVE. The previously recorded Python-side result -- "for
+# `UPat(Ops.MSTACK).f(Ops.INDEX, name='idx')` the replace is an IDENTITY on the INDEX and
+# `pm_const_buffer_folding.rewrite(mst) is None`" -- is TRUE of `MSTACK(c4, c1)` and FALSE
+# of `INDEX(MSTACK(c4, c1))`. `MSTACK(c4, c1)` is the MIRROR: it is the CHILD, so
+# `pdict` (keyed on the root INDEX) never reaches it. The shape the pattern is written
+# for answers `INDEX, srcops=[CONST]`, which is a real rewrite. The finding was sound and
+# was measured on the wrong node.
 #
-# ALL THREE ARE LIVE, and the previous agent's recorded Python-side result --
-# "for `UPat(Ops.MSTACK).f(Ops.INDEX, name='idx')` the replace is an IDENTITY on
-# the INDEX and `pm_const_buffer_folding.rewrite(mst) is None`" -- is TRUE of
-# `MSTACK(c4, c1)` and FALSE of `INDEX(MSTACK(c4, c1))`. `MSTACK(c4, c1)` is the
-# MIRROR: it is the CHILD, so `pdict` (keyed on the root INDEX) never reaches it,
-# and no pattern binds `s` or `idx` on it. The shape the pattern is written for
-# -- the INDEX at the root -- answers `INDEX, srcops=[CONST]`, which is a real
-# rewrite. So the finding was sound and it was measured on the wrong node.
+# Every `py=` below is printed by `.agents/slop/rf-ct-oracle.py`; the transcript is in
+# `.agents/slop/rf-ct-oracle.txt`:
+#  ct_4  STAGE(INDEX(b4,r0), r0)                      2     BUFFER
+#  ct_4  STAGE(INDEX(b5,r0), r0)                      2     SHRINK(b5,0,4)
+#  ct_4  STAGE(INDEX(b4,r0), r1)                      2     None    <- tails differ
+#  ct_4  INDEX(STAGE(b4,r0), r0)   THE MIRROR        0     None
+#  ct_5  STAGE(c4, r0)                                2     EXPAND(ns2)
+#  ct_5  STAGE(CAST(c4,half), r0)                     2     EXPAND(ns2)
+#  ct_5  STAGE(b4, r0)             inner is neither   1     None
+#  ct_8  INDEX(MSTACK(c4,c1))                         1     INDEX([CONST])
+#  ct_8  INDEX(MSTACK(c4,c1), r0)                     1     INDEX([CONST,RANGE])
+#  ct_8  INDEX(MSTACK(bufdev))      s has a device    1     None
+#  ct_8  MSTACK(c4,c1)              THE MIRROR        0     None
 #
-# Every `py=` below is printed by `.agents/slop/rf-ct-oracle.py`; the whole
-# transcript is in `.agents/slop/rf-ct-oracle.txt`. The table:
-#
-#   rule  shape                                    claim_n  answer
-#   ct_4  STAGE(INDEX(b4,r0), r0)                      2     BUFFER
-#   ct_4  STAGE(INDEX(b5,r0), r0)                      2     SHRINK(b5,0,4)
-#   ct_4  STAGE(INDEX(b4,r0), r1)                      2     None    <- tails differ
-#   ct_4  INDEX(STAGE(b4,r0), r0)   THE MIRROR        0     None
-#   ct_5  STAGE(c4, r0)                                2     EXPAND(ns2)
-#   ct_5  STAGE(CAST(c4,half), r0)                     2     EXPAND(ns2)
-#   ct_5  STAGE(b4, r0)             inner is neither   1     None
-#   ct_8  INDEX(MSTACK(c4,c1))                         1     INDEX([CONST])
-#   ct_8  INDEX(MSTACK(c4,c1), r0)                     1     INDEX([CONST,RANGE])
-#   ct_8  INDEX(MSTACK(bufdev))      s has a device    1     None
-#   ct_8  MSTACK(c4,c1)              THE MIRROR        0     None
-#
-# `ct_claim_n` is `claim_full` specialised to the `ct` table: the op-set claim PLUS
-# each `.f()` rule's own body test, which is what makes tags 3 and 4 both claim a
-# STAGE and nothing claim a BUFFER.
-# EVERY TAG IN `ct_table` NEEDS ITS OWN BODY TEST HERE, and tags 0, 6 and 7 are
-# the three the first version of this fold left at `True{}`. A claim count built
-# on the op set alone counts an INDEX as claimed by four rules when CPython binds
-# it in one, so `ct4b_claim` and `ct8d_claim` were both wrong until they were
-# added: `ct_src.of`'s `True{}` arm is the claim "the pattern is op-only", and
-# only tags 1, 2 and 3 (and `rb_0`-style entries) really are.
+# `ct_claim_n` is `claim_full` specialised to the `ct` table: the op-set claim PLUS each
+# `.f()` rule's own body test, which is what makes tags 3 and 4 both claim a STAGE and
+# nothing claim a BUFFER. EVERY TAG IN `ct_table` NEEDS ITS OWN BODY TEST HERE, and tags
+# 0, 6 and 7 are the three the first version of this fold left at `True{}`. A claim count
+# built on the op set alone counts an INDEX as claimed by four rules when CPython binds
+# it in one, so `ct4b_claim` and `ct8d_claim` were both wrong until they were added.
 def ct_src.of(tag: U32, mop: Bool, tail: Bool, cvar: Bool, cvar2: Bool, after: Bool, mstk: Bool) -> Bool:
   match tag:
     case 0: mop
@@ -3053,46 +2577,21 @@ def t_ct7b_none() -> U32: b2u(O.UOp.is_none(M.hop_ix(ct_rewrite(G.fx(g()), g_ar(
 
 def claim_ab(+fx: F.Folded, +ar: O.Arena, +self: U32) -> U32: claim_full(ab_table(), fx, ar, self)
 
-# ===========================================================================
-# `get_kernel_graph` -- rangeify.py:351-376. PORTED AS A STAGE ORDER, and the
-# reason is the `ctx` wall rather than a missing idea.
+# `get_kernel_graph` -- rangeify.py:351-376. PORTED AS A STAGE ORDER, and the reason is
+# the `ctx` wall rather than a missing idea. SEVEN `graph_rewrite` CALLS, in this order,
+# and the order is the port: the tables are all here, each applied to the arena the
+# previous stage left, and `rf_stages` is the row that pins the count. What is NOT here
+# is the engine that walks the arena applying them -- see the TODO block at the foot.
 #
-#     @rewrite_group(new_ctx=False)
-#     def get_kernel_graph(tsink:UOp) -> UOp:
-#       tsink = run_rangeify(tsink, bool(DEBUG_RANGEIFY))                    # 353
-#       tsink = graph_rewrite(tsink, symbolic+pm_reduce_simplify
-#                                      +pm_const_buffer_folding
-#                                      +pm_remove_bufferize, name=...)      # 356
-#       next_range = max((x.arg[0] for x in tsink.toposort() if x.op is Ops.RANGE), default=-1) + 1
-#       tsink = graph_rewrite(tsink, pm_limit_bufs,
-#                            ctx=LimitBufsContext(range_idx=itertools.count(next_range)),
-#                            name="limit buffers")                           # 360
-#       slots = [x.arg.slot for x in tsink.toposort() if x.op is Ops.ALLOC]
-#       paramarg_start = max([-1]+slots) + 1
-#       tsink = graph_rewrite(tsink, pm_add_buffers+pm_add_param_range_tags,
-#                            ctx=itertools.count(paramarg_start), bottom_up=True, ...)  # 366
-#       tsink = graph_rewrite(tsink, split_kernels, bottom_up=True, ...)     # 367
-#       tsink = graph_rewrite(tsink, pm_no_indexing_calls, ...)              # 368
-#       tsink = graph_rewrite(tsink, pm_no_views, ...)                       # 369
-#       if VIZ: graph_rewrite(tsink, PatternMatcher([]), name="View Rangeify")
-#       if SPEC: type_verify(tsink, spec_kernel_graph, enter_calls=False)
-#       return tsink
-#
-# SEVEN `graph_rewrite` CALLS, in this order, and the order is the port: the
-# tables are all here, each applied to the arena the previous stage left, and
-# `rf_stages` is the row that pins the count. What is NOT here is the engine
-# that walks the arena applying them -- see the TODO block at the foot.
-#
-# TWO OF THE STAGES ARE NOT IN THIS FILE'S TABLES and that is a Python fact, not
-# an omission: `run_rangeify` (353) is `schedule/indexing.py:190`, and
-# `symbolic` + `pm_reduce_simplify` (357) are `uop/symbolic.py` (123 rules) and
+# TWO OF THE STAGES ARE NOT IN THIS FILE'S TABLES and that is a Python fact, not an
+# omission: `run_rangeify` (353) is `schedule/indexing.py:190`, and `symbolic` +
+# `pm_reduce_simplify` (357) are `uop/symbolic.py` (123 rules) and
 # `codegen/simplify.py`. `type_verify` (375) is `uop/spec.py` and IS ported, as
 # `uop/spec.bend`.
 #
-# THE TWO `ctx` LINES ARE THE WALL and they are the only two: `itertools.count`
-# at 360 and 366, and `LimitBufsContext` at 360. Every one of them is a MUTABLE
-# object threaded through a pass, which is exactly the shape
-# `schedule/__init__.bend` refuses for the same reason.
+# THE TWO `ctx` LINES ARE THE WALL and they are the only two: `itertools.count` at 360 and
+# 366, and `LimitBufsContext` at 360. Every one is a MUTABLE object threaded through a
+# pass, which is exactly the shape `schedule/__init__.bend` refuses for the same reason.
 def rf_stage_count() -> U32: 9
 
 # the STAGE ORDER, as the tables in order. `rf_stages` is the row, and it is 9
@@ -3113,139 +2612,48 @@ def t_stages() -> U32: U32.from_nat(List.length(&2, U32, rf_stages()))
 def t_spec() -> U32: b2u(rf_spec())
 def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 
-# ===========================================================================
-# THE MEASURED MUTATION TABLE. FORTY-ONE textual edits, one at a time, each
-# re-checked and re-run against the clean 126-row gate, by
-# `.agents/slop/rf2-mutate.py`. The harness DIFFS WHOLE `name=value` LINES, not
-# row names: a name-comparing harness reported 0 for all 30 mutations in one unit
-# and 0 for all 68 in another, because renaming a row hides every mutation of the
-# def it reads. This is the only evidence in the file that a row can FAIL: a row
-# that cannot fail is a restatement, and most of these rows exist precisely
-# because a mutation first showed them moving nothing.
+# THE MEASURED MUTATION TABLE. FORTY-ONE textual edits, one at a time, by
+# `.agents/slop/rf2-mutate.py`, each diffed as WHOLE `name=value` LINES rather than row
+# names -- a name-comparing harness reported 0 for all 30 mutations in one unit and 0 for
+# all 68 in another. Raw table: `.agents/slop/rf2-mutations.txt`; the full 41-row table
+# with row sets is appended to `.agents/slop/notes/bend2-constraints.md`.
 #
-# `rows moved` is the set difference of the two gates, so it names rows by the
-# property they test rather than by the def that computes them. The raw table is
-# `.agents/slop/rf2-mutations.txt`.
-#
-#   mutation                                                     rows moved                                                   n
-#   ------------------------------------------------------------ ------------------------------------------------------------ -- --
-#   M1  `rf_self` KEEPS `self` (the `ret is not uop` inverted)   aprt_* (4) nic_* (6) rb_e_n0                                 12
-#   M2  `rb_ident` always True (upat.py:100-105 gone)            rb_diff_none                                                  1
-#   M3  `rf_early`'s subset test `and` -> `or`                   NONE -- see (1)                                               0
-#   M4  `dg_3`'s reject set {PARAM} misspelled {RANGE}            dg_ixpa_ans                                                   1
-#   M5  `noopf.at`'s `len(x.src) == 0` conjunct removed          noopf_e_nx noopf_nx raf_after_nsrc                             3
-#   M6  `raf.keep_srcs` filters `src[0]` as well                 raf_aftn_is_src0                                              1
-#   M7  `raf_one` never True (always rebuilds)                   raf_after1_is_src0 raf_aftn_is_src0                           2
-#   M8  `rf_strip`'s `x.op is Ops.SHRINK` test dropped            NONE -- see (2)                                               0
-#   M9  `nic.of`'s INDEX arm turned into pass-through            nic_calli_* nic_clik_*                                         4
-#   M10 `rf_alu_param`'s `op is Ops.PARAM` conjunct removed      aprt_none                                                     1
-#   M11 `rf_renumber`'s `r.tag != ()` guard inverted             dg_r0t_ans ren*_arg0 ren_axis_out* ren_untagged_none            5
-#   M12 `rf_renumber` rebuilds the AxisType as AXIS_WEAK          ren_axis_out_dev                                              1
-#   M13 `ab_4_claim`'s `len(x.src) == 2` relaxed to `>= 2`       ab4_stg3 claim_ab_stg3                                         2
-#   M14 `rf_fb_two`'s `len(x.src) == 2` test inverted            fb_two_stg2 fb_two_stg3                                       2
-#   M15 `ab_8.pat`'s `arg == Invalid` weakened to `op is CONST`   ab8_stc0_none                                                  1
-#   M16 `rf_is_bufid5`'s op set reduced to {BUFFER} only         nv_rsaf_ans                                                   1
-#   M17 `dg_3`'s `addrspace` test changed ALU -> LOCAL            dg_ixpa_ans                                                   1
-#   M18 `claim_full` replaced by `claim_n` (the src half gone)    claim_ab_stg3                                                 1
-#   M19 `dg_6`'s RANGE rule given the WRONG op set                dg_r0t_ans                                                    1
-#   M20 `ct_8`'s rule DELETED from the table                      ct8* ct7b_none ct_len                                          6
-#   M20b `ct_8`'s REJECT SET dropped                              NONE -- see (3)                                               0
-#   M21 `ct_4`'s op set back to the CHILD's   ** THE DEFECT **    ct4a_claim ct_root4                                           2
-#   M22 `ct_8`'s op set back to the CHILD's   ** THE DEFECT **    ct8d_claim ct8d_srcops ct8r_arg ct8r_axis ct8r_srcops         5
-#   M23 `ct_5`'s op set back to the CHILD's   ** THE DEFECT **    ct5c_claim ct5k_claim ct_root5                                3
-#   M24 `pm_mops` tag 0 back to the CHILD's  ** THE DEFECT **    mops_root0                                                    1
-#   M24b `pm_mops` tag 1 back to the CHILD's  ** THE DEFECT **    ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim mops_root1             5
-#   M24c `pm_mops` tag 2 back to the CHILD's  ** THE DEFECT **    mops_root2                                                    1
-#   M25 `rf_same_tail` back to the OUTER node's op                 ct4a_claim                                                    1
-#   M26 `ct_6` given the ELSE arm back      ** THE DEFECT **      ct7b_none ct8b_none ct8*_srcops ct8r_arg ct8r_axis           6
-#   M27 `dev_none_shape` back to False      ** THE DEFECT **      ct8b_devnone ct8b_none                                       2
-#   M28 `ct_src.of`'s tag-0 body test dropped                      ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim                       4
-#   M29 `ct_src.of`'s tag-6 body test dropped                      ct4b_claim ct7a_cnt ct7b_cnt ct8d_claim                       4
-#   M30 `ct_src.of`'s tag-7 body test dropped                      ct7b_cnt                                                      1
-#   M31 `ct_8`'s rebuild drops `idx.src[1:]`                       ct8r_srcops                                                   1
-#   M32 `ct_8` hardcodes ANone   ** THE ARG DEFECT **             ct8r_arg ct8r_axis                                            2
-#   M32b `ab_7` hardcodes ANone  ** THE ARG DEFECT **             ab7_clik_arg                                                  1
-#   M33 `ct_5_claim`'s child-op test replaced by True              ct4a_claim ct5b_claim ct5b_pat                                3
-#   M34 `hop_srcops` answers "" for everything                      ct8d_srcops ct8r_srcops                                       2
-#   M35 `srcops.go` drops the element                               ct8d_srcops ct8r_srcops                                       2
-#   M36 `ct_8` loses its OWN pattern re-check                       NONE -- see (4)                                               0
-#   M37 `ct_6`'s claim INVERTED                                      ct7b_none ct8b_none ct8*_srcops ct8r_arg ct8r_axis            6
-#   M38 M3 AND M36 TOGETHER                                          NONE -- see (4)                                               0
-#   --------------------------------------------------------------------------------------------------------
-#   37 of 41 sharp. M3, M8, M20b, M36 and M38 move nothing, all five are
-#   PROOFS, and (1) is a proof the previous revision of this table got WRONG.
-#
-# (1) M3 IS A PROOF, AND THE PREVIOUS REVISION'S PROOF OF IT WAS WRONG. The old
-#     note read "for a ONE-element set the two tests are the same function". That
-#     is FALSE. `rf_early.go` folds with `and` and its base case is `True{}`, so
-#     `and(op_in(ler, o), True{})` is `op_in(ler, o)` while `or(op_in(ler, o),
-#     True{})` is `True{}`: `or` makes the reject test VACUOUS, on a one-element
-#     set exactly as on any other. MEASURED, before `ct_8` grew its own pattern
-#     re-check -- M3 moved `ct7b_none` from 1 to 0, because the vacuous reject
-#     set let tag 8 stop rejecting an INDEX whose AFTER is in src[1] rather than
-#     src[0] (the fixture `ct7b`), and `ct_8` -- then the one rule in the table
-#     whose body carried no pattern test at all -- rebuilt it. So the old "proof"
-#     was an unexamined claim resting on a rule with a real hole in it, and the
-#     hole is now closed. M3 is a zero NOW because every `.f()` rule re-checks its
-#     own pattern, which is the correct reason, and M36/M38 measure that reason.
-# (2) M8 IS ALSO A PROOF. `rf_strip.of` takes `shrink` and `zero` as two
-#     parameters, and its one caller passes
-#     `zero = Bool.and(M.mp_is(ar, self, O.OpsSHRINK{}), ...)` -- the SHRINK test
-#     conjoined in AGAIN. So `zero -> shrink` and the dropped `match` arm is
-#     unreachable. Kept anyway: it is Python's own conjunction order
-#     (rangeify.py:141 reads `x.op is Ops.SHRINK and all(...)`) and collapsing
-#     the two would make the port UNREADABLE against the source.
-# (3) M20b IS A PROOF, and the SAME SHAPE as the corrected (1). `ct_8`'s reject
-#     set is `{MSTACK}`, which is the op of the pattern's FIRST src, and `ct_8`
-#     now re-checks exactly that with `ct_8_claim`. The reject set is therefore
-#     implied by the rule's own test, which is what ops.py:1477 says it is for.
-# (4) M36 AND M38 ARE A BLIND SPOT AND ITS NEGATIVE, REPORTED NOT CLOSED. Removing
-#     `ct_8`'s self-re-check alone moves nothing, and removing it TOGETHER with
-#     the vacuous reject set moves nothing either. So in the port as it stands no
-#     fixture can see the self-check: the two defects it defends against are one
-#     defect seen from two ends, and each alone is invisible. The pre-self-check
-#     measurement in (1) is the evidence that the self-check is load-bearing, and
-#     it cannot be reproduced by the gate as it now stands. That is a real limit
-#     of a single-arena gate and it is NOT closed with a row that encodes either
-#     behaviour.
-#
-# M20 IS THE ROW THE COUNT ROWS EXIST FOR, and M21-M24 ARE THE ROWS THE ROOT/SUB
-# SECTION EXISTS FOR. M20 DELETES a `PMEntry` rather than editing it, and it
-# deletes the LAST one, so no tag after it renumbers and no rule can fire
-# differently: `ct_len` is one of only six rows it can move. Delete the COUNT
-# rows and this mutation is invisible.
-# ===========================================================================
+# 37 of 41 move a row. M3, M8, M20b, M36 and M38 move nothing and all five are PROOFS:
+#  (1) M3 -- `rf_early`'s subset test `and`->`or` makes the reject test VACUOUS
+#      (`or(op_in, True{})` is `True{}` while `and(op_in, True{})` is `op_in`). The
+#      previous revision's proof of M3 -- "for a ONE-element set the two tests are the
+#      same function" -- is FALSE. M3 is a zero NOW because every `.f()` rule re-checks
+#      its own pattern, and M36/M38 measure that reason.
+#  (2) M8 -- `rf_strip.of` takes `shrink` and `zero` as parameters and its one caller
+#      conjoins the SHRINK test in AGAIN, so the dropped `match` arm is unreachable.
+#  (3) M20b -- `ct_8`'s reject set `{MSTACK}` is implied by `ct_8_claim`, the rule's own
+#      test, which is what ops.py:1477 says the reject set is for.
+#  (4) M36 AND M38 ARE A BLIND SPOT AND ITS NEGATIVE, REPORTED NOT CLOSED. Removing
+#      `ct_8`'s self-re-check moves nothing alone, and moves nothing together with the
+#      vacuous reject set either, so no fixture in the port as it stands can see the
+#      self-check: the two defects it defends against are one defect seen from two ends
+#      and each alone is invisible. The pre-self-check measurement in (1) is the
+#      evidence that the self-check is load-bearing and it cannot be reproduced by the
+#      gate as it now stands. NOT closed with a row that encodes either behaviour.
+# M20 IS THE ROW THE COUNT ROWS EXIST FOR: it DELETES the LAST `PMEntry`, so no tag
+# renumbers and `ct_len` is one of only six rows it can move.
 # ===========================================================================
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
-# `# TODO(p3)` line, so `rg 'TODO\(p3\)'` is the whole outstanding list. The
-# first group is ONE LINE PER UNPORTED BODY and the Python line is the one the
-# body's own comment names, so `rg 'NOT PORTED'` finds the site for each. (The
-# one place the two do not line up one-to-one is `ab_7`, which shares a comment
-# run with the `ab_4` paragraph above it -- `ab_7` is fully ported and says so.)
-# The second group is the three whose Python answer is reached anyway, wall and
-# all. The third is the walls read by more than one rule, so they have no site.
-#
-#   -- `x.arg` of a STAGE is a `BufferizeOpts`, and `ops.bend`'s `Arg` has no
-#      constructor for one, so `removable` / `addrspace` / `device` cannot be
-#      read at all. `ct_3`, `rb_0` and `ab_4` all turn on it.
-#   -- `UOp.ranges` is a DICT keyed by node, built by a RECURSIVE walk over `src`
-#      and `ended_ranges` (ops.py:483 and :497) that POPS as it goes. `ops.bend`
-#      already carries the walk (`UOp.toposort` over `Arena.budget`) and already
-#      carries the other two as its own walls (`ops.py:470` `ended_ranges`,
-#      `ops.py:483` `_ranges`); what is missing is the KEYED SET WITH REMOVAL,
-#      which is why these three are not bodies here. It is also why `gs_0` costs
-#      nothing: its answer is `0` either way.
-#   -- `UOp.base` (ops.py:784) and `UOp.device` (ops.py:890) are the SAME shape
-#      of wall as `ranges`, and each has its own call site.
-#   -- a `ctx` COUNTER is a `Nat` PARAMETER here and IS done, in
-#      `renumber_range`; a `ctx` DICT is an association list of `Data` records
-#      and NONE of the three is written.
-# ===========================================================================
+# `# TODO(p3)` line, so `rg 'TODO\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
+# finds the site for each. The first group is ONE LINE PER UNPORTED BODY, the second is
+# the three whose Python answer is reached anyway (wall and all), and the third is the
+# walls read by more than one rule, so they have no single site. The recurring shapes:
+# a STAGE's `x.arg` is a `BufferizeOpts` that `ops.bend`'s `Arg` cannot construct, so
+# `removable`/`addrspace`/`device` cannot be read at all; `UOp.ranges` is a DICT keyed
+# by node built by a RECURSIVE walk that POPS as it goes, and what is missing is the
+# KEYED SET WITH REMOVAL; `UOp.base` (ops.py:784) and `UOp.device` (ops.py:890) are the
+# same shape of wall; and a `ctx` COUNTER is a `Nat` PARAMETER (done, in
+# `renumber_range`) while a `ctx` DICT is an assoc list of `Data` records and NONE of the
+# three is written.
 # --- the bodies that are NOT PORTED, one line each ----------------------------
-# EACH LINE NAMES THE WALL THAT WAS FOUND BY ASKING CPython, not by reading the
-# body, and the two columns that matter are "is the rule LIVE" and "what is the
-# wall". A rule that is dead in CPython is a cheaper port than a live one, and a
-# live one behind a wall is a WALL ROW rather than a missing row.
+# EACH LINE NAMES THE WALL THAT WAS FOUND BY ASKING CPython, not by reading the body.
+# "LIVE" means CPython rewrites the node: a live rule behind a wall is a WALL ROW, not a
+# missing row.
 # TODO(p3) rangeify.py:24   cleanup_dead_axes     LIVE (measured); arg.removable, ranges, reshape, expand
 # TODO(p3) rangeify.py:50   remove_bufferize      LIVE; a substitute(..., extra_pm=) over a ctx dict
 # TODO(p3) rangeify.py:120  const_like            LIVE on BOTH arms; DType.const + _mop(EXPAND)
@@ -3263,9 +2671,8 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # TODO(p3) rangeify.py:176  _limit_bufs           the one line refuses to fire
 # TODO(p3) rangeify.py:351  get_kernel_graph      the order is here, the engine is not
 # --- the walls with no single site, and `ops.bend`'s OWN walls ---------------
-#   The first two are the same problem `ops.bend` already records at its foot
-#   (`rg 'TODO\(p3\)' tinybendygrad/uop/ops.bend`), so they are ONE wall counted
-#   from two files, not two.
+#  The first two are the same problem `ops.bend` already records at its foot, so they are
+#  ONE wall counted from two files, not two.
 # TODO(p3) ops.py:470       ended_ranges          ops.bend's own wall
 # TODO(p3) ops.py:483       UOp._ranges           recursive dict, pops as it goes
 # TODO(p3) ops.py:497       UOp.ranges            the property over the above
@@ -3280,39 +2687,35 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # TODO(p3) indexing.py:171  apply_movement_op     the movement-op dispatch
 # TODO(p3) indexing.py:190  run_rangeify          stage 1 of the nine
 # TODO(p3) prepare.py:76    pm_mops               3 foreign rules, tags 0-2
-#   ... and their three pdict KEYS are PORTED here (they are a Python fact and the
-#   engine's lookup is a Python fact), while their BODIES are BLOCKED on
-#   `schedule/prepare.bend`, which as of this revision names `pm_mops` in its
-#   header and declares no def for it. `rf_foreign` answers "no node" and says so;
-#   inventing a local copy of `_mop_index` would be a lie about where the code
-#   lives. MEASURED roots: 17 (INDEX), 13 (AFTER), 55 (END).
+#  ... and their three pdict KEYS are PORTED here (they are a Python fact and the
+#  engine's lookup is a Python fact), while their BODIES are BLOCKED on
+#  `schedule/prepare.bend`, which as of this revision names `pm_mops` in its header and
+#  declares no def for it. `rf_foreign` answers "no node" and says so; inventing a local
+#  copy of `_mop_index` would be a lie about where the code lives. MEASURED roots:
+#  17 (INDEX), 13 (AFTER), 55 (END).
 # TODO(p3) ops.py:1339      KernelInfo.estimates  a 4-field record against Python's 5
-#   `ops.bend`'s `KernelInfo` is `KernelInfo{name, applied_opts, opts_to_apply,
-#   beam}` and Python's `KernelInfo` also carries `estimates: Estimates|None`, so
-#   no Bend value can be EQUAL to a Python one. `ab7_clik_arg` compares against
-#   `O.KernelInfo.of()` on both sides, which is why that row passes while the two
-#   representations are not interchangeable -- REPORTED, and the row's comment
-#   says so rather than the row pretending the two agree.
+#  `ops.bend`'s `KernelInfo` is `KernelInfo{name, applied_opts, opts_to_apply, beam}`
+#  and Python's also carries `estimates: Estimates|None`, so no Bend value can be EQUAL
+#  to a Python one. `ab7_clik_arg` compares against `O.KernelInfo.of()` on both sides,
+#  which is why that row passes while the two representations are not interchangeable --
+#  REPORTED, and the row's comment says so rather than the row pretending they agree.
 # ===========================================================================
 # `movement.bend`'s OWN GATE IS FAILING, and `hop_self` is one of the reasons.
-# `movement.bend:67-73` has its two arms swapped: `b` is "the answer IS self, OR
-# the answer IS none", `True` answers `r`, and Python's condition to DROP is
-# `ret is uop` (ops.py:1610) -- so `True` must answer `Hop{ar, 0}`. It keeps
-# `self` and drops a genuinely new node, the inverse of ops.py:1610 and of its
-# own docstring.
+# `movement.bend:67-73` has its two arms swapped: `b` is "the answer IS self, OR the
+# answer IS none", `True` answers `r`, and Python's condition to DROP is `ret is uop`
+# (ops.py:1610) -- so `True` must answer `Hop{ar, 0}`. It keeps `self` and drops a
+# genuinely new node, the inverse of ops.py:1610 and of its own docstring.
 #
-# MEASURED, by swapping the arms on a scratch copy and re-running
-# `movement.bend`'s gate: `const_idx2` 0->40, `const_idx3` 0->3, `rej_pair`
-# 0->40, and `ret_new` 1->0. `t_ret_new` (movement.bend:920) therefore ASSERTS
-# THE BUG -- it feeds `hop_self` a new index against a different self and asks
-# for index 0, which is the inverted answer.
+# MEASURED, by swapping the arms on a scratch copy and re-running `movement.bend`'s gate:
+# `const_idx2` 0->40, `const_idx3` 0->3, `rej_pair` 0->40, and `ret_new` 1->0. `t_ret_new`
+# (movement.bend:920) therefore ASSERTS THE BUG -- it feeds `hop_self` a new index
+# against a different self and asks for index 0, which is the inverted answer.
 #
-# REPORTED, NOT WORKED AROUND. `rf_self` above implements `ret is not uop`
-# locally rather than calling `M.hop_self`, and M1 mutates the LOCAL copy, so
-# M1 is a measurement rather than a re-measurement of this bug. `M.hop_first` and
-# `M.hop_next` are correct and are reused. The other zeros in that gate
-# (`shrink1_ns`, `reshape_pick`, `idx_*`) read 0 under BOTH readings and are a
-# second, separate defect this unit does not own.
+# REPORTED, NOT WORKED AROUND. `rf_self` above implements `ret is not uop` locally
+# rather than calling `M.hop_self`, and M1 mutates the LOCAL copy, so M1 is a measurement
+# rather than a re-measurement of this bug. `M.hop_first` and `M.hop_next` are correct and
+# are reused. The other zeros in that gate (`shrink1_ns`, `reshape_pick`, `idx_*`) read 0
+# under BOTH readings and are a second, separate defect this unit does not own.
 # ===========================================================================
 def main() -> IO(Unit):
   do IO<Unit>:

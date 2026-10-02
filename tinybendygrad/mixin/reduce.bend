@@ -1,273 +1,62 @@
-# mixin/reduce.bend -- tinygrad/mixin/reduce.py, ALL 138 LINES.
+# mixin/reduce.bend -- tinygrad/mixin/reduce.py.
 #
-# ===========================================================================
-# THE DEF MAP. Every def in `mixin/reduce.py`, and WHERE IT LIVES. Six of the
-# seven are ALREADY PORTED and three of those six are IN OP.BEND, which is why
-# this file does not re-declare them: duplicating a def that exists is the one
-# failure mode that makes this unit a net negative.
+# WHAT IS HERE vs ALREADY PORTED. Do not re-declare a def that exists elsewhere;
+# duplicating one is the one failure mode that makes this file a net negative.
+#   HERE     `rc_rop` (the abstract `_rop`, reduce.py:10), `rc_sum_dt`/`rc_prod_dt`
+#            (the `dtype is not None` arm), `rc_any`/`rc_all`, `rc_axs` (reduce.py:15's
+#            `Sequence[int]` arm), the gate.
+#   op.bend  `_reduce` -> `M.mo_reduce`+helpers; `sum`/`prod`/`max` -> `M.mo_sum`/
+#            `mo_prod`/`mo_max`, all of them `dtype=None` only.
+#   tensor   `T.tn_rop`, the concrete `UOp._rop` (ops.py:655-665).
+# `rc_any` is TWO defs because `self.bool()` MINTS a CAST and the `max` after it
+# must build in the arena the CAST grew -- MEASURED `any0` is
+# `3 BUFFER/0 CAST/1 REDUCE/1` against CPython's identical signature.
 #
-#   reduce.py  def                     line    lives in
-#   ---------  -----------------------  ------  ------------------------------
-#   `_rop`     _rop                      10-11  HERE, `rc_rop`. The abstract
-#                                                  `raise NotImplementedError`;
-#                                                  the CONCRETE one is
-#                                                  `T.tn_rop` (tensor.bend),
-#                                                  which ports ops.py:655-665.
-#   `_reduce`  _reduce                   13-18  op.bend `M.mo_reduce` (:794)
-#                                                  + `mo_axis0`/`mo_ax`/`mo_ax_all`
-#                                                  /`mo_keep_ds`/`mo_reduce.keep`
-#   `sum`      sum (dtype=None arm)      20-45  op.bend `M.mo_sum` (:810)
-#   `sum`      sum (dtype GIVEN arm)     44-45  HERE, `rc_sum_dt`
-#   `prod`     prod (dtype=None arm)     47-71  op.bend `M.mo_prod` (:818)
-#   `prod`     prod (dtype GIVEN arm)     71     HERE, `rc_prod_dt`
-#   `max`      max                       73-94  op.bend `M.mo_max` (:823)
-#   `any`      any                       96-116 HERE, `rc_any`
-#   `all`      all                      118-138 HERE, `rc_all`
-#
-# AND THE ONE ARM OF `reduce.py:15` THAT op.bend DOES NOT HAVE: `axis` is
-# `int | Sequence[int] | None`. op.bend's `mo_ax` (:752) builds a ONE-element
-# list from a single `U32`, which is the `int` arm and the `None` arm
-# (`mo_ax_all`, :756); a `Sequence[int]` is a LIST of axes, each through
-# `_resolve_dim`, and that fold is HERE as `rc_axs`.
-#
-# ---------------------------------------------------------------------------
-# WHICH OF op.bend's DEFS ARE CANDIDATES TO MOVE HERE. In this order.
-#
-#   MOVE 1 (cleanest). `mo_reduce` (:794) and its seven helpers -- `mo_axis0`
-#     :745, `mo_ax` :752, `mo_ax_all` :756, `mo_iaxis.go` :764, `mo_iaxis` :769,
-#     `mo_keep_one` :771, `mo_keep_ds.go` :774, `mo_keep_ds` :780,
-#     `mo_reduce.keep` :789. Every one of those lines is a `reduce.py` line
-#     (:13-18, :15, :18). They are reduce.py's dispatch and they are HERE, and
-#     `mo_reduce` is the one def `rc_any`/`rc_all`/`rc_sum_dt`/`rc_prod_dt`
-#     reach THROUGH `M.mo_max`/`M.mo_prod`. Moving them costs op.bend four call
-#     sites (`mo_min` :1121, `mo_mean` :887, `mo_logsumexp` :1040, and `mo_sum`
-#     :810 itself) and gains nothing except that reduce.py's lines live in
-#     reduce.py's file. NOT DONE: it is a refactor of a green file for a
-#     cosmetic gain, and op.bend is read-only to this unit.
-#
-#   MOVE 2 (contested). `mo_sum` :810, `mo_prod` :818, `mo_max` :823. Same
-#     argument, but these three are load-BEARING inside op.bend -- `min` (:473)
-#     is `-self.reduce(MAX)` spelled through `mo_max` and `mo_min` is the outer
-#     `_inverse` pair -- so a move is a signature change on op.bend's hot path
-#     rather than a rename.
-#
-#   STAYS IN op.bend. `mo_sum_acc` (:429), `mo_commit_dt` (:411),
-#     `mo_downcast` (:433), `mo_cast_t` (:370), `mo_resolve` (:718). These are
-#     `tinygrad/dtype.py:220`/`tinygrad/dtype.py:16`/`reduce.py:45`/`tinygrad/dtype.py:36`/`movement.py:81`
-#     -- NOT reduce.py lines, so moving them here would be worse than leaving
-#     them, because a def belongs in the file of the Python it ports.
-#
-#   STAYS IN tensor.bend. `T.tn_rop` (:867) and its twelve helpers are
-#     `ops.py:655-665` (`UOp._rop`), which `tensor.bend` hoisted with the same
-#     precedent (`_mop`, ops.py:821). `reduce.py:10` is the ABSTRACT `_rop`.
-#
-# ---------------------------------------------------------------------------
-# THE FOUR THINGS THIS FILE ADDS, and each is a `reduce.py` line with no home.
-#
-#   1. `rc_any` / `rc_all` (reduce.py:116/:138). `self.bool().max(axis,
-#      keepdim)` and `self.bool().prod(axis, keepdim)`. Two lines each in Python
-#      and NOBODY had ported them: `mixin/op.py` never calls them, so no other
-#      unit reached them by accident. `bool()` is `tinygrad/dtype.py:124`, `cast(dtypes.bool)`
-#      -- one line, and `M.mo_cast_t` IS it (`wk_cast_at` under it).
-#   2. `rc_sum_dt` / `rc_prod_dt` (reduce.py:44/:71, the `dtype is not None`
-#      arm). `M.mo_sum`/`M.mo_prod` hard-code `dtype is None` -- op.bend's own
-#      header says so ("`dtype` is always `None` from this range") -- so the
-#      explicit-dtype arm of two of reduce.py's three numeric methods was
-#      unported. It is not the same def with a different argument: with `dtype`
-#      given, `sum` does NOT cast back to `self.dtype` (the `dtype is None and`
-#      conjunct on reduce.py:45 fails), and that is a graph difference, not a
-#      cosmetic one.
-#   3. `rc_axs` (reduce.py:15, the `Sequence[int]` arm).
-#   4. the gate.
-#
-# ---------------------------------------------------------------------------
-# THE ARENA, and it is the whole reason `rc_any` is TWO defs and not one.
-# `self.bool()` MINTS (a CAST) unless the dtype already agrees, and the `max`
-# after it must build in the arena the CAST grew. `M.mo_cast_t` returns the
-# GROWN pair and `M.mo_max` re-folds off the tensor it was handed, so the two
-# calls compose -- MEASURED: `any0` is `3 BUFFER/0 CAST/1 REDUCE/1` against
-# CPython's `3 BUFFER/0 CAST/1 REDUCE/1`, and the node COUNT is the check that
-# the CAST landed in the arena the REDUCE reads.
-#
-# ---------------------------------------------------------------------------
-# THE GATE. `main` prints one row per claim, in `reduce.py`'s order.
-#
-# ROW FORMAT, and it is `mo_shape`'s (op.bend:1395) with the REDUCE's own
-# identity added, because a reduce over the WRONG AXIS has the right node count
-# and the wrong answer:
-#
-#   <name>=<shape> <dtype> root=<OP>/<nsrc> red=<ROP>/<num_axes>| <n> <sig>
-#
-#   shape       `F.fold.shape` rendered `(2)(3)`, so `RESHAPE(REDUCE,CONST(4))`
-#               and `RESHAPE(REDUCE,CONST(1))` are distinguishable -- they are
-#               the SAME signature and a wrong keepdim shape is invisible to
-#               every other column.
-#   dtype       `F.fold.dt` rendered. The bool/int arm of `any`/`all` is where
-#               this bites: `any` on a bool source is 2 nodes and on an int
-#               source is 3, and the dtype column is what says which.
-#   root        the ROOT's op and src count. This is the "collapse to the input"
-#               detector: an identity reduce answers the SOURCE's op.
-#   red         the REDUCE node's `AReduce{rop, num_axes}` -- the reduce's OWN
-#               identity, read out of the arena, NOT out of this file. `num_axes`
-#               is the axis count, so `sum(axis=(0,1))` and `sum(axis=0)` are
-#               separated by a number no node count separates, and `red=none`
-#               means the graph holds no REDUCE AT ALL, which is the honest
-#               answer for the four collapse rows.
-#   sig         `mo_sig`'s toposort with each node's op and src COUNT.
-#
-# reduce.py has NO argmin/argmax -- those are `mixin/op.py:863`/`:890` and they
-# are not this file -- so the "does the result carry an index" column has no row
-# here. `red=` is the same claim for a VALUE reduce and it is strictly stronger
-# than a dtype test: it reads the op the REDUCE will actually run.
-#
-# NOTHING IS EXECUTED. Every row is the SIGNATURE of the lazy graph, so no
-# device is needed and CPython is the oracle. The oracle is at
-# $TMP/mixin-reduce-gate.py and it is DERIVED FROM CPython, never restated from
-# this file -- a row restated from the port agrees with a wrong port.
-#
+# THE GATE prints `<name>=<shape> <dtype> root=<OP>/<nsrc> red=<ROP>/<num_axes>|
+# <n> <sig>`. `red=` reads the REDUCE's OWN `AReduce{rop, num_axes}` out of the
+# arena, so `sum(axis=(0,1))` and `sum(axis=0)` separate on a number no node count
+# separates, and `red=none` means the graph holds no REDUCE at all. Nothing is
+# executed -- every row is the signature of the lazy graph, and the oracle is
+# DERIVED FROM CPYTHON, never restated from this file.
 #     .venv/bin/python $TMP/mixin-reduce-gate.py   > /tmp/py.txt
 #     ./bin/bend tinybendygrad/mixin/reduce.bend    > /tmp/bd.txt
 #     ./bin/bend tinybendygrad/mixin/reduce.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
 #     diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
 #
-# ---------------------------------------------------------------------------
-# TWO MEASURED DEFECTS IN THE SUBSTRATE, REPORTED NOT FIXED. FOUR of this file's
-# THIRTY-TWO rows are RED and every one of them is one of these two.
+# TWO MEASURED DEFECTS IN OTHER FILES, REPORTED NOT FIXED. Four of the 32 rows are
+# red and every one is one of these. The rows STAY red: they are the measurement,
+# and closing them with the port's own answer would encode the bug.
 #
-# --- DEFECT 1, `tensor.bend`'s `T.tn_rop`, THREE ROWS: `max_ax0_14`,
-# --- `any_ax0_14`, `all_ax0_14`.
+# DEFECT 1, `tensor.bend`'s `T.tn_rop`, 3 rows (`max_ax0_14`, `any_ax0_14`,
+# `all_ax0_14`). `tn_rop.ne1` drops a size-one axis correctly, but `tn_rop` routes
+# on `tn_rop.len(axis)` -- the length BEFORE the filter -- so the `case 0n:` arm
+# is unreachable and it builds `REDUCE` with `num_axes=0` where CPython builds no
+# REDUCE. On `Tensor([1.,2.,3.,4.]).reshape(1,4).max(axis=0)`:
+#   CPython  (4)    root=RESHAPE/2 red=none   6 BUFFER CONST CONST STACK/2 RESHAPE/2 RESHAPE/2
+#   the port (1)(4) root=REDUCE/1  red=MAX/0  6 BUFFER CONST CONST STACK/2 RESHAPE/2 REDUCE/1
+# SAME NODE COUNT (6), same srcop sequence, wrong shape AND wrong root op: the
+# sharpest instance in the port of "the gate is shape + op, not a count". Fix is in
+# tensor.bend, not here -- route on the FILTERED list's length.
 #
-#   `T.tn_rop` (tensor.bend:867) ports `UOp._rop` (ops.py:655-665), and
-#   ops.py:657-660 says:
+# DEFECT 2, `op.bend`'s `mo_resolve`, 1 row (`sum_axs_neg`). It computes
+# `Bool.pick(U32, neg, U32.add(dim, total), dim)` = `|dim| + total`, where Python
+# answers `total - |dim|`. MEASURED: on a rank-1 source `mo_resolve(True, 1, 1)`
+# answers `2` where `sum(axis=-1)` resolves `0`; op.bend's entire gate passes
+# `False{}`, so the negative arm was never exercised. Fix: `U32.sub(total, dim)`.
 #
-#     reduce_axis = tuple(x for x in axis if resolve(self.shape[x] != 1))
-#     if not len(reduce_axis):
-#       return self.reshape(tuple(s for i,s in enumerate(self.shape) if i not in axis))
-#
-#   So a reduce over a SIZE-ONE axis builds NO REDUCE and answers a RESHAPE to
-#   `kept`. `tn_rop.ne1` (:821) filters correctly -- it DROPS the size-one axis
-#   and hands `Nil{}` back -- but `tn_rop` (:867) routes on `tn_rop.len(axis)`,
-#   the length of the axis list BEFORE the filter, so the `case 0n:` arm (:863,
-#   which returns `self`) is unreachable on this shape. The REDUCE is therefore
-#   built with `num_axes = 0` and the `kept` reshape is never built at all.
-#
-#   MEASURED, on `Tensor([1.,2.,3.,4.]).reshape(1,4).max(axis=0)`:
-#
-#     CPython   (4)   float root=RESHAPE/2 red=none   6 BUFFER CONST CONST STACK/2 RESHAPE/2 RESHAPE/2
-#     the port  (1)(4) float root=REDUCE/1 red=MAX/0  6 BUFFER CONST CONST STACK/2 RESHAPE/2 REDUCE/1
-#
-#   **THE SAME NODE COUNT.** 6 against 6, the same srcop sequence, the same root
-#   arity, and a wrong shape AND a wrong root op. This is the sharpest instance of
-#   "the gate is shape + op, not a count" in the port so far: a count row prints
-#   6 on both sides and calls it green.
-#
-#   The fix is one `Bool` and it is NOT in this file: `tn_rop` should route on the
-#   FILTERED list's length rather than `tn_rop.len(axis)`, and then the existing
-#   `case 0n:` arm answers `self.reshape(kept)` instead of `self`. `kept` is
-#   `mo_keep_ds` (op.bend:780) with the axis EMPTY, which is the source's own dims.
-#
-# --- DEFECT 2, `op.bend`'s `mo_resolve`, ONE ROW: `sum_axs_neg`.
-#
-#   `mo_resolve` (op.bend:718) is `_resolve_dim` (movement.py:81),
-#   `return dim + total if dim < 0 else dim`, and its own comment says "`neg` is
-#   the sign and `dim` the magnitude, so there is no I64 to unpack". It then
-#   computes `Bool.pick(U32, neg, U32.add(dim, total), dim)` -- which is
-#   `|dim| + total`, and Python's answer is `dim_signed + total`, i.e.
-#   `total - |dim|`. It is wrong for EVERY negative dim, and `op.bend`'s entire
-#   gate passes `False{}`, so the negative arm has never been exercised. That is
-#   the recorded "a gate that never calls the function under repair is blind"
-#   note, re-measured on a function rather than a rule.
-#
-#   MEASURED: on a rank-1 source `mo_resolve(True, 1, 1)` answers `2` where
-#   CPython's `sum(axis=-1)` resolves `-1 + 1 = 0`. The out-of-range axis is then
-#   filtered as "shape is 1" by `tn_rop.ne1`, the reduce collapses, and the row
-#   prints `red=ADD/0`.
-#
-#   The fix is one operator: `U32.sub(total, dim)` on the negative arm. (Or the
-#   convention changes to two's complement, which the `+` already does -- but then
-#   `neg` is redundant with the sign bit and the comment is wrong, and the two
-#   cannot both be right. `U32.sub` is the reading the comment already claims.)
-#
-# THE ROWS STAY RED. They are the measurement, and closing them with the port's
-# own answer would be a row that encodes the bug.
-#
-# ---------------------------------------------------------------------------
-# THE MUTATION TABLE. SEVENTEEN one-token edits, each applied, each run through
-# BOTH lanes, each diffed against the unmutated output ROW BY ROW (by the `name=`
-# prefix, so a moved row is NAMED and not counted), and reverted from the
-# in-memory source:
-#
-#     .venv/bin/python $TMP/mixin-reduce-mutate.py
-#
-# THIRTEEN MOVE SOMETHING AND FOUR DO NOT. All four are reported, because a table
-# with no row that CANNOT move is a table of coincidences -- and three of the four
-# are structural rather than a missing fixture.
-#
-#   M9  NOTHING. `rc_axs` PREPEND instead of APPEND. **UNFALSIFIABLE, and
-#       structurally so, not for want of a fixture.** `sum_axs01` folds `rc_axs`
-#       over a LIST OF LENGTH TWO, so the reversal really does happen; and
-#       `UOp._rop` opens with `axis = tuple(sorted(axis))` (ops.py:656), which
-#       `T.tn_rop.sorted` (tensor.bend:784) implements, so the reversed list is
-#       sorted straight back and the two programs are the same function. A gate
-#       that could see it would have to read `rc_axs`'s accumulator directly, and
-#       that is a mutation of the GATE rather than of the code.
-#   M14 NOTHING. `rc_rop` returns `self` instead of calling `T.tn_rop`. This is
-#       the honest shape of reduce.py:10: `_rop` is `raise NotImplementedError`,
-#       an ABSTRACT DECLARATION, and nothing in reduce.py calls it either -- every
-#       caller goes through `_reduce`. So the def is unreachable here for the same
-#       reason it is unreachable in Python, and the row that would gate it does not
-#       exist in reduce.py to be written. Reported, not patched.
-#   M16 NOTHING. The CONTROL: a whitespace-only edit. Nothing moves, and that is
-#       the point.
-#   M17 NOTHING. `rc_axs` drops the NEGATIVE arm of the resolve. **Blocked by
-#       DEFECT 2, and the reason is worth stating exactly.** `sum_axs_neg` is
-#       `axis=(-2,)` on a rank-2 source. Correct resolves to `0`; dropping `neg`
-#       yields `2`. BOTH are what `mo_resolve` currently produces anyway -- `2` is
-#       the buggy answer and `2` is the mutated one -- so the row cannot separate
-#       them UNTIL `mo_resolve` is fixed. An earlier version of this row was
-#       `axis=(-1,)` on a rank-1 source and had the same defect for the same
-#       reason (`2` and `1` are both out of range); the rank-2 form is the one
-#       kept because after the fix `0` is in range and `2` is not, so the row
-#       becomes separating on the fix rather than needing to be rewritten.
-#
-# THE THREE SINGLE-ROW MUTATIONS, which is the strongest statement in the table:
-#
-#   M6  `rc_sum_dt`: ignore the given dtype            -> `sum_dt_i32`  alone
-#   M7  `rc_prod_dt`: ignore the given dtype           -> `prod_dt_i32` alone
-#   M11 `rc_arg.put`: FIRST-WINS -> LAST-WINS          -> `chain_any`   alone
-#
-# M11 is the one the table was BUILT for, and it is why `chain_any` exists. Every
-# other row in this file holds ONE REDUCE, so first-wins and last-wins are the same
-# function on all of them; `chain_any` is `any(axis=0).all(axis=0)` over a 2-D
-# source, so the graph holds TWO REDUCEs with DIFFERENT ops and the policy is
-# visible. MEASURED: `red=MAX/1` becomes `red=MUL/1` on that row and on no other.
-# `sum(axis=0).sum(axis=0)` would NOT have worked -- two ADDs of one axis are
-# `ADD/1` and `ADD/1`, and the policy is invisible.
-#
-# TWO MUTATIONS MOVE THE SAME ROW SET FOR DIFFERENT REASONS, which is the table
-# saying out loud that the suite is weaker than the counts suggest. M10 (read
-# `AAllred` instead of `AReduce`) and M18 (invert the `ok` guard) each move the
-# SAME twenty-two rows and every one of them moves to `red=none` -- M10 because
-# `AAllred` never matches a REDUCE's arg, M18 because the inverted guard never
-# records anything. Neither is a substitute for the other and neither is evidence
-# about `num_axes`; `num_axes` is set by `tensor.bend`, not here, and NO mutation
-# IN THIS FILE can move it. `sum_axs01` (`red=ADD/2`) is the only row that varies
-# that column, and it was added after the first table run for exactly this reason.
-#
-# M1 and M2 are the SAME edit applied to two symmetric defs, so they are not
-# independent evidence -- they are one mutation measured twice. They moved 6 and 5
-# rows, and the difference was a MISSING ROW (`all_ax0_14`) rather than a
-# difference in the code; that row was added and the table re-run.
-#
-# M12 (`shape` column dropped) moves thirteen and M13 (`root` column dropped) moves
-# all thirty-two, which is the shape/root split doing its job: `root` is the
-# collapse detector and every row carries one, `shape` is only visible where the
-# fold's answer differs from `()`.
-#
-# WHAT IS NOT HERE, and it is a gap in the FIXTURES rather than in the table:
-# nothing in this file ever calls `rc_rop`, so `rc_rop` itself is ungated (M14);
-# and `rc_axs` is only ever called with NON-NEGATIVE axes except for the one
-# `sum_axs_neg` row, so the `Ax.neg` FIELD has exactly one row over it (M17).
+# MUTATIONS: 17 one-token edits, each run through both lanes and diffed against
+# the unmutated output by `name=` prefix. 13 move something, 4 do not: M9 `rc_axs`
+# PREPEND instead of APPEND (UNFALSIFIABLE -- `_rop` opens
+# `axis = tuple(sorted(axis))`, so the reversed list is sorted straight back and
+# the two programs are the same function); M14 `rc_rop` returns `self` (nothing in
+# reduce.py calls the abstract `_rop` either, so there is no row to write); M16
+# whitespace-only CONTROL; M17 `rc_axs` drops the negative arm (BLOCKED BY DEFECT
+# 2 -- correct resolves to `0`, the mutation yields `2`, and `2` is what the buggy
+# `mo_resolve` produces anyway, so the row cannot separate them until it is fixed).
+# M6/M7/M11 each move exactly one row; M11 is why `chain_any` exists -- it is the
+# only graph here holding TWO REDUCEs of DIFFERENT ops, which is what makes
+# first-wins visible. Full table with row sets: `.agents/slop/notes/bend2-constraints.md`,
+# search `MUT-REDUCE`.
 
 import Base
 import ./../helpers.bend as H

@@ -1,43 +1,36 @@
 # memory.bend -- tinygrad/schedule/memory.py, the memory planner.
 #
-# WHAT THIS FILE IS. `memory.py` is 62 lines and one function. It takes a LINEAR
-# of kernels, works out how long each internal buffer is live, packs the
-# non-overlapping ones into one shared arena per (device, copy/compute) lane,
-# and returns the linear with every buffer replaced by a BITCAST into that
-# arena. There is no PatternMatcher here and no rule table: this is a straight
-# fold over the kernels, so it is a straight fold over the kernels.
+# WHAT THIS FILE IS. `memory.py` is 62 lines and one function. It takes a LINEAR of kernels,
+# works out how long each internal buffer is live, packs the non-overlapping ones into one
+# shared arena per (device, copy/compute) lane, and returns the linear with every buffer
+# replaced by a BITCAST into that arena. There is no PatternMatcher here and no rule table:
+# this is a straight fold over the kernels.
 #
-# DEPENDENCY ON A SIBLING. `schedule/__init__.py` is owned by another agent and
-# is the only caller of `memory_plan_rewrite`. Nothing here imports it, and the
-# gate fixtures are built standalone, so the two files meet only at the CALL
-# SITE -- see WHAT schedule/__init__.py NEEDS at the foot of this file.
+# DEPENDENCY ON A SIBLING. `schedule/__init__.py` is owned by another agent and is the only
+# caller of `memory_plan_rewrite`. Nothing here imports it and the gate fixtures are built
+# standalone, so the two files meet only at the CALL SITE -- see WHAT schedule/__init__.py
+# NEEDS at the foot of this file.
 #
-# ---------------------------------------------------------------------------
-# THE TWO WALLS, both stated where they bite.
-#
-# 1. THE ALLOCATOR. `offsets` come from `TLSFAllocator` (memory.py:48,50,51),
-#    which is `tinygrad/runtime/support/memory.py:23` -- a different file, not
-#    ported. It is also a MUTABLE Python object: `self.blocks` is a dict of
-#    linked-list tuples and `alloc` splits and coalesces in place. Bend has no
-#    mutable state and no first-class functions, so a TLSF allocator could only
-#    become a fold threading a `Data` state through every event -- and it would
-#    be a port of a file that is not this unit's, whose offsets this file does
-#    not compute. So the OFFSETS ARE A PARAMETER (`mem_offs`), which is the same
-#    treatment `RING`/`ALL2ALL` get in `allreduce.bend`, and everything the
-#    planner does with them -- the peak fold, the arena sizes, the lane count --
-#    is ported and gated. `mem_offs` carries the allocator's answers for the
-#    fixture, and the gate feeds it CPython's.
-# 2. `UOp.max_numel` is `prod(to_max_shape(shape))` and `to_max_shape`
-#    (ops.py:1886) is not ported. `_collect_bufs` returns BUFFERS and nothing
-#    else, and a BUFFER's max_numel IS `arg.size` -- the shape is `(size,)` and
-#    it is concrete by construction -- so `mem_numel` reads `ParamArg.size` and
-#    is exact for every node this file can see. `mem_raw` is the honest spelling
-#    of the product and is what the peak fold uses.
+# THE THREE WALLS, stated where they bite.
+# 1. THE ALLOCATOR. `offsets` come from `TLSFAllocator` (memory.py:48,50,51), which is
+#    `tinygrad/runtime/support/memory.py:23` -- a different file, not ported, and a MUTABLE
+#    Python object whose `self.blocks` is a dict of linked-list tuples that `alloc` splits
+#    and coalesces in place. Bend has no mutable state and no first-class functions, so a
+#    TLSF allocator could only become a fold threading a `Data` state through every event --
+#    a port of a file that is not this unit's, whose offsets this file does not compute. So
+#    the OFFSETS ARE A PARAMETER (`mem_offs`), the same treatment `RING`/`ALL2ALL` get in
+#    `allreduce.bend`, and everything the planner does with them -- the peak fold, the arena
+#    sizes, the lane count -- is ported and gated. `mem_offs` carries the allocator's answers
+#    for the fixture, and the gate feeds it CPython's.
+# 2. `UOp.max_numel` is `prod(to_max_shape(shape))` and `to_max_shape` (ops.py:1886) is not
+#    ported. `_collect_bufs` returns BUFFERS and nothing else, and a BUFFER's max_numel IS
+#    `arg.size` -- the shape is `(size,)` and it is concrete by construction -- so
+#    `mem_numel` reads `ParamArg.size` and is exact for every node this file can see.
+#    `mem_raw` is the honest spelling of the product and is what the peak fold uses.
 # 3. The return, `linear.substitute(replace_map, name="memory plan", walk=True)`
-#    (memory.py:62), needs `UOp.substitute` (ops.py:532) and `UOp.new_buffer`
-#    (ops.py:853, a P6 device). `mem_replace_map` builds the map and the count of
-#    arenas is gated; the substitute is the wall. See the TODO block at the foot.
-# ---------------------------------------------------------------------------
+#    (memory.py:62), needs `UOp.substitute` (ops.py:532) and `UOp.new_buffer` (ops.py:853,
+#    a P6 device). `mem_replace_map` builds the map and the count of arenas is gated; the
+#    substitute is the wall. See the TODO block at the foot.
 
 import Base
 import ./../helpers.bend as H

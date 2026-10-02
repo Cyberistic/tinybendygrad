@@ -1,90 +1,69 @@
-# worker.bend -- tinygrad/engine/worker.py:55. The worker PROCESS POOL: a generic
-# pool of worker processes for parallel compilation, shared by kernel lowering and the
-# BEAM search.
+# worker.bend -- tinygrad/engine/worker.py:55. The worker PROCESS POOL: a generic pool of
+# worker processes for parallel compilation, shared by kernel lowering and the BEAM search.
 #
-# ---------------------------------------------------------------------------
 # WHAT A WORKER IS HERE, said plainly, because it is the whole shape of this file.
-#
-# `multiprocessing.Pool` maps a CALLABLE over an iterable: `pool.map(fn, xs)` pickles
-# `fn` and each `x`, ships them to another OS process, runs `fn(x)` there, and
-# pickles the answers back. Two things about that do not survive the trip to Bend:
-#
-#   1. A `def` is an in-process value. There is no way to SEND one, so the thing a
-#      worker is handed cannot be the callable.
-#   2. A `Tag` is not callable. Bend 2.0.34 has no reflection -- no way to turn a
-#      `U32` into "the def with that name" -- so a NAME stored in a record cannot be
-#      INVOKED either.
-#
-# So a worker IS a `Data` record of a TAG plus its ARGUMENTS:
-#
+# `multiprocessing.Pool` maps a CALLABLE over an iterable: `pool.map(fn, xs)` pickles `fn`
+# and each `x`, ships them to another OS process, runs `fn(x)` there, and pickles the answers
+# back. Two things about that do not survive the trip to Bend: (1) a `def` is an in-process
+# value, so there is no way to SEND one and the thing a worker is handed cannot be the
+# callable; and (2) a `Tag` is not callable -- Bend 2.0.34 has no reflection, no way to turn
+# a `U32` into "the def with that name" -- so a NAME stored in a record cannot be INVOKED
+# either. So a worker IS a `Data` record of a TAG plus its ARGUMENTS:
 #     type Task is Data: Task{tag: U32, name: String, args: List<&2, Arg>}
-#
-# and the pool's `map` is a COMPILE-TIME FOLD that computes the SCHEDULE -- the tag
-# sequence, the per-task arity, the work count -- and NOT ONE of the tasks runs. That
-# is the wall, stated as a boundary rather than faked: **the schedule is data, the
-# execution is the seam.** Every row in Section 3 is about the schedule, because the
-# schedule is the only part derivable from the Python and therefore the only part a
-# row can be wrong about.
+# and the pool's `map` is a COMPILE-TIME FOLD that computes the SCHEDULE -- the tag sequence,
+# the per-task arity, the work count -- and NOT ONE of the tasks runs. That is the wall,
+# stated as a boundary rather than faked: **the schedule is data, the execution is the seam.**
+# Every row in Section 3 is about the schedule, because the schedule is the only part
+# derivable from the Python and therefore the only part a row can be wrong about.
 #
 # WHAT THAT BUYS, and it is not nothing: `_init_worker`'s three settings, the
-# `_without_main` save/clear/restore triple, `get_worker_pool`'s two guards and its
-# memo, and `terminate_worker_pool`'s two statements are all PURE and all PORTED and
-# all gated against CPython. The two lines that actually spawn anything --
-# `_WorkerProcess._Popen` and `_spawnv_passfds` -- are named at their call sites.
+# `_without_main` save/clear/restore triple, `get_worker_pool`'s two guards and its memo, and
+# `terminate_worker_pool`'s two statements are all PURE and all PORTED and all gated against
+# CPython. The two lines that actually spawn anything -- `_WorkerProcess._Popen` and
+# `_spawnv_passfds` -- are named at their call sites.
 #
-# ---------------------------------------------------------------------------
 # DEFS, PYTHON LINE BY PYTHON LINE.
-#
-#   worker.py:8-10    `_init_worker`           PORTED -- the three settings ARE values,
-#                                               and `Context(...).__enter__()` is
-#                                               "install these flags"
-#   worker.py:10      `signal.signal(signal.SIGINT, signal.SIG_IGN)`  PORTED as a
-#                                               `Bool`: whether ctrl-c is ignored is a
-#                                               FACT ABOUT THE WORKER, not a call
+#   worker.py:8-10    `_init_worker`     PORTED -- the three settings ARE values, and
+#                                        `Context(...).__enter__()` is "install these flags"
+#   worker.py:10      `signal.signal(signal.SIGINT, signal.SIG_IGN)`  PORTED as a `Bool`:
+#                                        whether ctrl-c is ignored is a FACT ABOUT THE
+#                                        WORKER, not a call
 #   worker.py:14      `_spawn_lock, _missing`  PORTED: `_missing` IS a `Maybe`, and
-#                                               `threading.Lock()` is the sequential
-#                                               port's absence
-#   worker.py:15-27   `_without_main`          PORTED IN FULL -- the `getattr` default,
-#                                               the two `setattr`s, and the
-#                                               `delattr if value is _missing else
-#                                               setattr` restore, whose TWO ARMS are the
-#                                               load-bearing part
-#   worker.py:30-33   `_spawnv_passfds`        the `env=getattr(os.environ,
-#                                               "_data").copy()` COPY is PORTED (it is
-#                                               the isolation); the Popen is the seam
-#   worker.py:35-40   `_WorkerProcess`/`_WorkerContext`  PORTED as the pair of TAGS the
-#                                               pool dispatches through; the
-#                                               `SpawnProcess._Popen` call is the seam
-#   worker.py:42-50   `worker_pool`, `get_worker_pool`  PORTED: both guards, the memo,
-#                                               the pool's four constructor arguments
-#   worker.py:52-55   `terminate_worker_pool`  PORTED: the test, the terminate, the
-#                                               `= None`
+#                                        `threading.Lock()` is the sequential port's absence
+#   worker.py:15-27   `_without_main`    PORTED IN FULL -- the `getattr` default, the two
+#                                        `setattr`s, and the `delattr if value is _missing
+#                                        else setattr` restore, whose TWO ARMS are the
+#                                        load-bearing part
+#   worker.py:30-33   `_spawnv_passfds`  the `env=getattr(os.environ, "_data").copy()` COPY
+#                                        is PORTED (it is the isolation); the Popen is the seam
+#   worker.py:35-40   `_WorkerProcess`/`_WorkerContext`  PORTED as the pair of TAGS the pool
+#                                        dispatches through; the `SpawnProcess._Popen` call
+#                                        is the seam
+#   worker.py:42-50   `worker_pool`, `get_worker_pool`  PORTED: both guards, the memo, the
+#                                        pool's four constructor arguments
+#   worker.py:52-55   `terminate_worker_pool`  PORTED: the test, the terminate, the `= None`
 #
-# ---------------------------------------------------------------------------
 # THE WALLS, with the owner and the Python line, at Section 4.
+#   * NO PROCESSES. `multiprocessing`, `SpawnContext`, `SpawnProcess`, `subprocess.Popen`,
+#     `os.fork` and `signal.signal` are all effects on an OS that Bend's `IO` does not expose.
+#     Each is named; none is faked.
+#   * NO MUTABLE GLOBAL. `worker_pool` is a module global in Python and a PARAMETER here, so
+#     `get_worker_pool`'s "create it once" is a RETURN rather than an assignment and the memo
+#     is a gate row rather than a runtime fact.
+#   * NO `atexit`. `pool.close()` is registered with `atexit` in Python; here it is a def the
+#     CALLER owns, and `close_pool`'s header says so.
+#   * `os.environ._data` is a private attribute of a private attribute. The COPY is what the
+#     port keeps -- it is the reason a worker's environment cannot be mutated under it -- and
+#     the reach-through is named as a CPython implementation detail rather than an API.
 #
-#   * NO PROCESSES. `multiprocessing`, `SpawnContext`, `SpawnProcess`,
-#     `subprocess.Popen`, `os.fork` and `signal.signal` are all effects on an OS that
-#     Bend's `IO` does not expose. Each is named; none is faked.
-#   * NO MUTABLE GLOBAL. `worker_pool` is a module global in Python and a PARAMETER
-#     here, so `get_worker_pool`'s "create it once" is a RETURN rather than an
-#     assignment and the memo is a gate row rather than a runtime fact.
-#   * NO `atexit`. `pool.close()` is registered with `atexit` in Python; here it is a
-#     def the CALLER owns, and `close_pool`'s header says so.
-#   * `os.environ._data` is a private attribute of a private attribute. The COPY is
-#     what the port keeps -- it is the reason a worker's environment cannot be
-#     mutated under it -- and the reach-through is named as a CPython implementation
-#     detail rather than an API.
-#
-# ---------------------------------------------------------------------------
-# ONE MEASURED FACT ABOUT `_init_worker` THAT IS WORTH A ROW, because it is a bug in
-# the Python rather than a wall in Bend: `Context(ALLOW_DEVICE_USAGE=0, VIZ=0,
+# ONE MEASURED FACT ABOUT `_init_worker` THAT IS WORTH A ROW, because it is a bug in the
+# Python rather than a wall in Bend: `Context(ALLOW_DEVICE_USAGE=0, VIZ=0,
 # TRACK_MATCH_STATS=0)` sets a ContextVar called `TRACK_MATCH_STATS`, and there is NO
-# `TRACK_MATCH_STATS` in `tinygrad/helpers.py` (`rg -n TRACK_MATCH_STATS tinygrad/`
-# returns no hit). So that third setting creates a context variable nobody reads, and
-# `TRACK_MATCH_STATS` does NOT become a ported field on `H.Flags` -- it is a
-# `U32` this file keeps so the CALL is complete, and `w_track_reads_nothing` is the row
-# that says the value is inert. Reported, not fixed: `helpers.py` is READ-ONLY here.
+# `TRACK_MATCH_STATS` in `tinygrad/helpers.py` (`rg -n TRACK_MATCH_STATS tinygrad/` returns
+# no hit). So that third setting creates a context variable nobody reads, and
+# `TRACK_MATCH_STATS` does NOT become a ported field on `H.Flags` -- it is a `U32` this file
+# keeps so the CALL is complete, and `w_track_reads_nothing` is the row that says the value is
+# inert. Reported, not fixed: `helpers.py` is READ-ONLY here.
 import Base
 
 # ===========================================================================

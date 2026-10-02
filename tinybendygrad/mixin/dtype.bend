@@ -2,84 +2,77 @@
 # UOp-carrying object answers, and ONE of them is the wall `uop/weak.bend` is waiting on.
 #
 # WHAT IS IN HERE. `mixin/dtype.py` is 142 lines of which 126 are docstrings, and the
-# docstrings are `exec="true"` doctests over a live Tensor -- there is no Tensor here to
-# exec against, so they are prose below and the defs are the port. Sixteen defs in
-# Python; fourteen are bodies here and two are the abstract properties Python raises
+# docstrings are `exec="true"` doctests over a live Tensor -- there is no Tensor here to exec
+# against, so they are prose below and the defs are the port. Sixteen defs in Python;
+# fourteen are bodies here and two are the abstract properties Python raises
 # `NotImplementedError` from, which are declarations and not ports.
 #
 # THE WALL IS ONE LINE: `commit_dtype` (tinygrad/dtype.py:17) reads `self._uop.vmin` and
 # `self._uop.vmax`, and THOSE ARE `UOp._min_max` (ops.py:1104-1163). This file ports
 # `commit_dtype` COMPLETELY -- the weakint branch, the `strong_dtype` branch, the
-# `default_int` default -- and takes `(lo, hi)` as parameters, because `_min_max` is
-# ops.py's def and ops.py is not this file. What that buys is the whole of
-# `commit_int` (tinygrad/dtype.py:171), which `tinybendygrad/dtype.bend` already had.
+# `default_int` default -- and takes `(lo, hi)` as parameters, because `_min_max` is ops.py's
+# def and ops.py is not this file. What that buys is the whole of `commit_int`
+# (tinygrad/dtype.py:171), which `tinybendygrad/dtype.bend` already had.
 #
-# `uop/weak.bend`'s header says `tinybendygrad/dtype.bend` "is unreachable to any
-# importer (it prints a foreign-code notice for `Dt.bf16`, `Dt.fp16`, the `fp8_*` and the
-# `i64_*`/`float_to_*` helpers)", and that is why weak.bend RECOPIES `strong_dtype` and
+# `uop/weak.bend`'s header says `tinybendygrad/dtype.bend` "is unreachable to any importer
+# (it prints a foreign-code notice for `Dt.bf16`, `Dt.fp16`, the `fp8_*` and the `i64_*` /
+# `float_to_*` helpers)", and that is why weak.bend RECOPIES `strong_dtype` and
 # `weak_dtype`. That claim is now TRUE for this file too, and this file is where it stops
-# being an excuse: `commit_int` and `strong_dtype` are RECOPIED below, in this file, under
-# the notice that names them, and the `import ./../dtype.bend` line is GONE. So
-# `--check-only` here is `ALL PROOFS CHECK` and this file is importable by anything.
+# being an excuse: `commit_int` and `strong_dtype` are RECOPIED below, in this file, under the
+# notice that names them, and the `import ./../dtype.bend` line is GONE, so `--check-only`
+# here is `ALL PROOFS CHECK` and this file is importable by anything. WHAT THE RE-COPY IS AND
+# IS NOT: it is the same contract `fold.bend` honoured for `least_upper_dtype` (a bitmask
+# lattice) and `weak.bend` for `strong_dtype`/`weak_dtype` -- the def is pure, it is spelled
+# here under a notice, and when `tinybendygrad/dtype.bend` stops printing the foreign-code
+# notice these defs go back there and the imports come with them. Nothing else in this file
+# changes, because `commit_int` has ONE caller (`commit_dtype.weak`) and `strong_dtype` has
+# one (`commit_dtype.of`).
 #
-# WHAT THE RE-COPY IS AND IS NOT. It is the same contract `fold.bend` honoured for
-# `least_upper_dtype` (a bitmask lattice) and `weak.bend` for `strong_dtype`/`weak_dtype`:
-# the def is pure, it is spelled here under a notice, and when `tinybendygrad/dtype.bend`
-# stops printing the foreign-code notice these defs go back there and the imports come
-# with them. Nothing else in this file changes, because `commit_int` has ONE caller
-# (`commit_dtype.weak`) and `strong_dtype` has one (`commit_dtype.of`).
-#
-# THREE CONSTANTS ARE CORRECTED AGAINST CPython, and `tinybendygrad/dtype.bend` is
-# read-only to this port so they are fixed HERE rather than there. Its `i64_min_s(8)`
-# and `i64_min_s(16)` low words are `0xffffc808` and `0xffff0000`, which are -14328 and
-# -65536, so -129 and -32769 were INSIDE int8's and int16's stated minimum and
-# `commit_int(-129, -129, dtypes.i8)` answered int8 where CPython answers int32. The
-# rows `i8_past_min` and `i16_past_min` are exactly those two cases and they are what
-# caught it. Its `i64_max_u(64)` is `0xFFFFFFFF_FFFFFFFF`, which as a SIGNED pair is -1,
-# so the uint64 rung's upper bound was `hi <= -1`, false for every real range, and
-# `commit_int(0, 0, dtypes.u64)` answered int64 where CPython answers uint64; the
-# three `u64_at_*` rows that move are those. All three are one hex constant each, in the
-# `md_i64_*` defs below. NONE of these rungs ran in `dtype.bend`, because every caller
-# passes `default_int` = int32 or int64 -- which is why hoisting the def is what exposed
-# them and why the ladder needed its own gate rather than being copied blind.
+# THREE CONSTANTS ARE CORRECTED AGAINST CPython, and `tinybendygrad/dtype.bend` is read-only
+# to this port so they are fixed HERE rather than there. Its `i64_min_s(8)` and
+# `i64_min_s(16)` low words are `0xffffc808` and `0xffff0000`, which are -14328 and -65536, so
+# -129 and -32769 were INSIDE int8's and int16's stated minimum and `commit_int(-129, -129,
+# dtypes.i8)` answered int8 where CPython answers int32 -- the rows `i8_past_min` and
+# `i16_past_min` are exactly those two cases. Its `i64_max_u(64)` is `0xFFFFFFFF_FFFFFFFF`,
+# which as a SIGNED pair is -1, so the uint64 rung's upper bound was `hi <= -1`, false for
+# every real range, and `commit_int(0, 0, dtypes.u64)` answered int64 where CPython answers
+# uint64 -- the three `u64_at_*` rows that move are those. All three are one hex constant
+# each, in the `md_i64_*` defs below. NONE of these rungs ran in `dtype.bend`, because every
+# caller passes `default_int` = int32 or int64 -- which is why hoisting the def is what
+# exposed them and why the ladder needed its own gate rather than being copied blind.
 #
 # WHAT THE WALL STILL COSTS, and this is the part `uop/weak.bend` is waiting on. Every
-# weak.bend TODO that reads `commit_dtype` also needs the BOUNDS, and the bounds are the
-# half that is missing. The brief said to VERIFY which `i64` helpers exist rather than
-# assume, so here is the measurement, per `_min_max` arm (ops.py:1104-1163):
-#
-#   arm                 needs                      where it stands, MEASURED
-#   ------------------  -------------------------  ---------------------------------
-#   ADD                 i64_add, i64_sub           PRESENT, pure -- helpers.bend:1235,1238
-#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR  i64_le/i64_cmp PRESENT, pure -- helpers.bend:1220,1213
-#   WHERE/PAD/STACK/MOVEMENT/CONST   (no arith)     PORTABLE, they are min/max over srcs
-#   CAST (truncation)   i64 trunc toward zero      `Dt.i64_trunc` -- dtype.bend:555, but
-#                                                 an `IO(F32)`-style EFFECT SEAM
-#   MUL                 i64_mul                    NOWHERE. Not helpers.bend, not
-#                                                 dtype.bend, not any tinygrad .py.
-#   CDIV/FLOORDIV       i64_div                    `Dt.i64_cdiv` / `Dt.i64_floor_div` --
-#                                                 dtype.bend:567,563, EFFECT SEAMS
-#   FLOORMOD/CMOD       i64_mod                    `Dt.i64_floor_mod` / `Dt.i64_cmod` --
-#                                                 dtype.bend:563,571, EFFECT SEAMS
-#   SHL/SHR             i64 shift                  NOWHERE.
-#
+# weak.bend TODO that reads `commit_dtype` also needs the BOUNDS, and the bounds are the half
+# that is missing. Per `_min_max` arm (ops.py:1104-1163), MEASURED:
+#   ADD                                 i64_add, i64_sub        PRESENT, pure -- helpers.bend:1235,1238
+#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR      i64_le/i64_cmp          PRESENT, pure -- helpers.bend:1220,1213
+#   WHERE/PAD/STACK/MOVEMENT/CONST       (no arith)              PORTABLE, they are min/max over srcs
+#   CAST (truncation)                   i64 trunc toward zero   `Dt.i64_trunc` -- dtype.bend:555, but
+#                                                                       an `IO(F32)`-style EFFECT SEAM
+#   MUL                                 i64_mul                 NOWHERE. Not helpers.bend, not
+#                                                                       dtype.bend, not any tinygrad .py.
+#   CDIV/FLOORDIV                       i64_div                 `Dt.i64_cdiv` / `Dt.i64_floor_div` --
+#                                                                       dtype.bend:567,563, EFFECT SEAMS
+#   FLOORMOD/CMOD                       i64_mod                 `Dt.i64_floor_mod` / `Dt.i64_cmod` --
+#                                                                       dtype.bend:563,571, EFFECT SEAMS
+#   SHL/SHR                             i64 shift               NOWHERE.
 # SO THE WALL IS NOT "three helpers are missing", which is what `uop/weak.bend` and
-# `uop/fold.bend` both record. The real wall has TWO parts and the second is the harder
-# one. `i64_mul` and a shift are missing outright. But div and mod EXIST -- in
-# `tinybendygrad/dtype.bend`, which grew them this week -- and they are `IO(..)` EFFECT
-# SEAMS (`import "./runtime/dtype.c"`), so they cannot be called from `UOp._min_max` at
-# all, because `_min_max` is a PURE fold that `fold.bend` computes in a Kahn worklist and
-# a fold cannot run an effect. Making `_min_max` total therefore needs PURE `i64_mul`,
-# `i64_div`, `i64_mod` and shifts in helpers.bend; the existing seams cannot be reused
-# without turning the whole fold into an IO fold, which is a different data type for
-# `fold.bend`'s `Table` and is fold.bend's call, not this file's.
+# `uop/fold.bend` both record. The real wall has TWO parts and the second is the harder one.
+# `i64_mul` and a shift are missing outright. But div and mod EXIST -- in
+# `tinybendygrad/dtype.bend`, which grew them this week -- and they are `IO(..)` EFFECT SEAMS
+# (`import "./runtime/dtype.c"`), so they cannot be called from `UOp._min_max` at all, because
+# `_min_max` is a PURE fold that `fold.bend` computes in a Kahn worklist and a fold cannot
+# run an effect. Making `_min_max` total therefore needs PURE `i64_mul`, `i64_div`, `i64_mod`
+# and shifts in helpers.bend; the existing seams cannot be reused without turning the whole
+# fold into an IO fold, which is a different data type for `fold.bend`'s `Table` and is
+# fold.bend's call, not this file's.
 #
-# `commit_dtype` refuses rather than guesses on an unmeasurable node: `None` in, `None`
-# out. That is `fold.bend`'s stated policy ("the fold reports the absence and the caller
-# decides") and it is what makes the refusal visible instead of silently returning a
-# dtype Python would not return. The `lo`/`hi` are `Maybe<I64>` because `_min_max`
-# returns `tuple[PyConst, PyConst]` and a CONST may be a float; only the integer arm has
-# a U32 image, and `commit_refuses_half` below is the row that says so.
+# `commit_dtype` refuses rather than guesses on an unmeasurable node: `None` in, `None` out.
+# That is `fold.bend`'s stated policy ("the fold reports the absence and the caller decides")
+# and it is what makes the refusal visible instead of silently returning a dtype Python would
+# not return. The `lo`/`hi` are `Maybe<I64>` because `_min_max` returns
+# `tuple[PyConst, PyConst]` and a CONST may be a float; only the integer arm has a U32 image,
+# and `commit_refuses_half` below is the row that says so.
 
 import Base
 import ./../helpers.bend as H

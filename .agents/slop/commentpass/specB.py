@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""Replacement specs, batch B: engine/jit.bend header."""
+import json, sys
+SPECS = []
+def S(f, start, end, expect_first, text):
+    new = [('# ' + l).rstrip() if l.strip() else '#' for l in text.strip('\n').split('\n')]
+    SPECS.append({'file': f, 'start': start, 'end': end,
+                  'expect_first': expect_first, 'new': new})
+
+S('tinybendygrad/engine/jit.bend', 1, 115,
+  "# jit.bend -- tinygrad/engine/jit.py:185. `TinyJit`: the input spec, the run",
+r"""
+jit.bend -- tinygrad/engine/jit.py:185. `TinyJit`: the input spec, the run counter, the
+`captured` record and the dispatch that decides, on every call, whether to EAGERLY RUN, to
+CAPTURE, or to REPLAY.
+
+THE SIBLING THAT OWNS MY TYPES. `tinybendygrad/function.bend` is porting
+`tinygrad/function.py`, which is where the OTHER decorator lives. NOTHING FROM THAT FILE IS
+RE-PORTED HERE, and the reason is a fact about the PYTHON rather than about taste:
+`engine/jit.py`'s `TinyJit` and `function.py`'s `_function` are two different wrappers on
+two different hooks. `_function` rewrites a traced graph into a `CALL`; `TinyJit` captures
+LINEARs produced by `capturing` and replays them. Measured:
+    rg -n "JitMatchError|input_spec|assigned_vars" tinygrad/   -> no hits
+    rg -n "class TinyJit"    tinygrad/                         -> engine/jit.py:104
+    rg -n "class _function"  tinygrad/                         -> function.py:39
+So the unit brief's "input spec / count / misc / vars / JitMatchError" are from an OLDER
+`engine/jit.py`. THIS checkout's match is
+`self.captured.expected_input_info != expected_input_info` (jit.py:173), the counter is
+`self.cnt` (jit.py:109), the error is `JitError` (jit.py:40), and the gate below is built
+against THIS file's messages, byte for byte, against CPython.
+`examples/beautiful_mnist.ts` (committed) reimplements the same idea in TypeScript with a
+SHAPE string and a DIFFERENT message -- `train_step was captured with 1568/2 and called with
+1568/3` -- and that difference is itself a measured finding: see `ref_shape_drift` in
+Section 11. WHAT I EXPECT `function.bend` TO EXPORT, so the merge is mechanical: NOTHING.
+`function.py` imports nothing from `engine/jit.py`; the dependency runs the other way. If
+`function.bend` ever wants the `@TinyJit` decorator it needs `tiny_jit.of3(f)` /
+`tiny_jit.of2(prune, f)` from Section 9, and those take a function VALUE, so the two files
+compose without a cycle.
+
+WHAT IS PORTED, AND THAT IS THE WHOLE LIST.
+  jit.py:14-22   prune_linear            the fold, `needed |= si_bufs`, both replaces
+  jit.py:24-27   _copy_input             the DISK refusal and `on_disk()`
+  jit.py:29-38   jit_lower               the five steps in order; 3 are seams
+  jit.py:40      JitError                the exception CLASS -> `Maybe<&2,String>`
+  jit.py:42-47   _check_no_non_tensor_return   the walk and its message
+  jit.py:51-60   CapturedJit fields, `linear`
+  jit.py:62-64   _written_uops           PORTED, via realize.bend's `get_call_written_bufs`
+  jit.py:66-68   _symbolic_ret           the comprehension; `get_parameters` is a seam
+  jit.py:70-75   CapturedJit.__call__    the `concrete` fold, the `jit execs` threshold,
+                                          the var rebind
+  jit.py:77-82   free_intermediates      the predicate chain; Buffer is a seam
+  jit.py:84-102  _prepare_jit_inputs     names, the shallow container sweep, the UNSHARD
+                                          unwrap, two refusals, and `expected_input_info`
+                                          IN FULL
+  jit.py:104-123 _TinyJit `__init__`/`add_linear`/`reset`/`__reduce__`/`__get__`
+  jit.py:125-178 _TinyJit.__call__       all four arms and both refusals
+  jit.py:180-185 TinyJit + 2 overloads   both decorator spellings
+
+THE THREE WALLS, WITH THE OWNER AND THE PYTHON LINE, at Section 10.
+  * NO EXCEPTIONS. A Python `raise JitError(...)` is a `Maybe<&2, String>` here and the
+    message is BUILT rather than raised. That is not a downgrade: a row that builds the
+    message and diffs it byte for byte also pins the ORDER of the two mismatch checks
+    (jit.py:172 before :174), and a row that raises pins nothing.
+  * NO `self.fxn(*args, **kwargs)`. The Python call invokes the traced body, which MUTATES
+    `self.captured`, `self._linears` and the `capturing` global. Here the traced body is a
+    PARAMETER of the driver and `captured` is a `Data` field, so
+    `CapturedJit(ret, linear, names, expected_input_info)` is the SAME constructor call and
+    `self.captured = ...` is a returned record.
+  * `u.base`, `u.dtype`, `u.device`, `u.is_realized`, `u.is_virtual`, `u.substitute`,
+    `u.unbind_all`, `u.new_buffer`, `u.store_call`, `run_linear`, `link_linear`,
+    `compile_linear`, `memory_plan_rewrite`, `Tensor.realize`, `get_parameters`,
+    `all_tensors`, `mop_cleanup`, `_collect_bufs`, `uop.render.pretty_print`,
+    `Variable.__repr__` and `ParamArg.__repr__` are NOT PORTED. Each is named at its call
+    site with `# TODO(p3)` and the Python line; Section 10 collects them with the phase that
+    owns each.
+
+ONE MEASURED FACT THAT CHANGES WHAT THIS FILE IS FOR, and it is why the gate prints a shape
+and a `True` next to each other. `expected_input_info` (jit.py:55) is `(view, variables,
+dtype, device)` per input, and jit.py:98 builds `view` as
+`u.substitute({u.base: UOp(Ops.NOOP)}, extra_pm=mop_cleanup)`. The base is REPLACED BY A
+NOOP, so the view carries no SHAPE, no size and no dtype beyond its own. Measured in CPython:
+    add = TinyJit(lambda x,y: (x+y).realize())
+    [add(Tensor.ones(3).realize(), Tensor.ones(3).realize()) for _ in range(4)]
+    add(Tensor.ones(4).realize(), Tensor.ones(4).realize()).shape   ->  (3,)
+    add(Tensor.ones(1).realize(), Tensor.ones(1).realize()).shape   ->  (3,)
+So a SHAPE MISMATCH IS NOT A MISMATCH in this tinygrad: a four-element call against a
+three-element capture is ACCEPTED and answers three elements, and a one-element call is
+accepted too. Only the DTYPE and the argument NAMES are checked. That is why
+`examples/beautiful_mnist.ts` compares `${images.length}/${labels.length}` and raises its
+own message: the TS twin ADDS the shape check this Python does not have, and its refusal
+names the SHAPE where CPython's names the DTYPE. The gate prints both, so the difference is
+a row and not a footnote.
+
+TWO MEASURED FACTS ABOUT THE RECORD RULES, because the notes disagree with the compiler and
+this file is built on the compiler's answer.
+  * A `Data` record CAN hold a `Maybe` field. `Slot{slot, nm: Maybe<&2, String>}` in
+    realize.bend:1432 checks. The standing "a `Data` record cannot hold a `Maybe` field"
+    note is not true of 2.0.34; what IS true is the narrower `device.bend` rule 6 -- a
+    `Data` FIELD may not be a `match` SCRUTINEE.
+  * A `Data` FIELD may not be scrutinised and `+` cannot be spelled on a `Maybe`, so every
+    `Maybe` decision in this file goes through a `Bool.pick` or a two-armed `match` on a
+    `Bool` (`nr_first`, `jt_refusal.at`, ...). Those two shapes are the only two the file
+    uses and both are named.
+""")
+
+if __name__ == '__main__':
+    json.dump(SPECS, open(sys.argv[1], 'w'), indent=1)
+    print(len(SPECS), 'specs')

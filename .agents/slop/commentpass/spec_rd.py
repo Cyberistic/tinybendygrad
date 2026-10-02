@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""Replacement specs for mixin/rand.bend (blocks >= 25 comment lines)."""
+import json, sys
+
+FILE = 'tinybendygrad/mixin/rand.bend'
+SPECS = []
+
+def S(start, end, expect_first, text):
+    new = [('# ' + l).rstrip() if l.strip() else '#' for l in text.strip('\n').split('\n')]
+    SPECS.append({'file': FILE, 'start': start, 'end': end,
+                  'expect_first': expect_first, 'new': new})
+
+S(1, 126, "# mixin/rand.bend -- tinygrad/mixin/rand.py. `RandMixin`, which is ALSO the `Tensor`",
+r"""
+mixin/rand.bend -- tinygrad/mixin/rand.py. `RandMixin`, which is ALSO the `Tensor`
+constructor for every random distribution in tinygrad. All TWENTY defs are here
+(`grep -c "^  def " tinygrad/mixin/rand.py` = 20), in Python's order.
+
+NOT IN rand.py, despite a brief that lists them: `arange` (op.py:166) and `linspace`
+(op.py:198) are W1 below; `permute` is `mixin/movement.bend`'s `mxw_permute`, CALLED not
+re-implemented; and `bernoulli` DOES NOT EXIST (`grep -rn "def bernoulli" tinygrad/` is
+empty -- tinygrad spells it `randn` + a threshold). The example reaches FOUR of its six
+symbols through here (`rand` :50, `randn` :106, `normal` :141, `uniform` :158, via
+`Tensor.randint` :122); its other two are `arange` and `linspace`, both W1 below.
+`examples/beautiful_mnist.bend:78` records `TODO(p3) examples/beautiful_mnist.py:25` for
+exactly that chain.
+
+THE GENERATOR STATE, the one design decision here. Python's is a mutable per-device
+process-wide dict plus a clock (tensor.py:438-440); the port makes all three explicit: the
+clock becomes a `U32` PARAMETER (a row that can print two answers is not a row), the seed
+key becomes a 2-element `uint32` TENSOR parameter, and the per-device counter becomes a
+counter TENSOR handed IN -- `_next_counter`'s five arithmetic lines are ported over it
+verbatim. `counter.assign(...)` (tensor.py:468) is NOT ported: it is nine nodes that exist
+only to write a counter back to a device, so `rd_next` returns the same `low.cat(high)` and
+drops the store. Full derivation: notes, search `RAND-STATE`.
+    new_low  = counter[0:1] + (num & 0xffffffff)                     tensor.py:466
+    new_high = counter[1:2] + (num >> 32) + (new_low < counter[0])   tensor.py:467
+    low      = counter[0:1] - (num & 0xffffffff)                     tensor.py:469
+    high     = counter[1:2] - (num >> 32) - (counter[0] < (num & 0xffffffff))
+    return seed, low.cat(high)                                       tensor.py:471
+Python reads the ALREADY-STORED counter here and the port's `st_*` rows read the INJECTED
+one, so the two agree only because the injected counter IS the stored one -- `st_after` is
+the row that exercises that rather than assuming it.
+
+THE WALLS. Four of the first five are OWNERSHIP walls (the def lives in a file this unit
+may not write); only W6 is a device-state wall. Each `TODO(pN)` below is the tracker.
+  W1 `arange`, reached from rand.py:26, is `full(...)._cumalu(0, Ops.ADD) + (start - step)`
+     and its chain (`_cumalu` op.py:752 -> `_pad_constant` op.py:282 -> `_pool`
+     movement.py:598 -> `repeat`/`expand`/`_broadcast_to`/`broadcast_axes`) is
+     `mixin/op.bend`'s W4. The BORROWED BLOCK in this file is those defs SPECIALISED to the
+     one case `arange`/`_cumalu` reach -- each step exact, not convenient, because
+     `_cumalu`'s pad entries are non-negative, `identity_element(ADD, dt)` is 0 so
+     `_pad_constant`'s `where` half is never built, and `_pool` is called with
+     `stride=1, dilation=1` on a 1-D source. Gated by `arange3`/`arange5`.
+     TODO(p3) mixin/op.py:166  `arange` -- delete the `op_` block and call `mixin/op.bend`'s
+       `mo_arange` when that file grows it. `arange` is also reached by `mixin/op.py:198
+       linspace`, `:215 eye`, `:233 _tri`, `:236 triu`, `:259 tril` and
+       `nn/__init__.py:370` (`_embedding_fwd`), so this block is worth more than this file.
+  W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
+     W6. PORTED: `op_cat1`, the two-operand all-equal `dim=0` case -- the only one
+     `_threefry_random_bits`, `random_bits` and `_next_counter` reach. `stack`
+     (movement.py:256) needs `dtype_from_uop` and `ccast` (ops.py:833-834), which is
+     `tensor.bend`'s own `TODO(p3)`, so that is why `cat` is W2 at all.
+     TODO(p3) mixin/op.py:731  `cat`'s unequal-shape arm (`itertools.accumulate` plus a
+       `pad` and a `usum` per tensor) and its `dim != 0` case.
+  W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:466-470, is
+     `mixin/op.bend`'s W1 (a seven-way index sum type). PORTED: `rd_take`/`rd_slice`/
+     `rd_scalar` -- the only arms this file reaches.
+     TODO(p3) mixin/op.py:74  `_getitem` for a negative int, a two-sided slice, an
+       `Ellipsis`, a `list`, a `Tensor` index or `None`.
+  W4 `cos`/`log`, reached from rand.py:103, are three lines of already-ported ops each, but
+     `mixin/elementwise.bend` has neither. PORTED: `rd_cos`/`rd_log`, each CALLING
+     `E.ew_sin`/`E.ew_log2` rather than re-deriving them.
+     TODO(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where
+       `least_upper_float` and `least_upper_dtype` are NOT the identity and the two folds
+       become CASTs.
+     TODO(p3) tinygrad/mixin/elementwise.py:830  `log`.
+  W5 `multinomial`'s two arms are `topk` (op.py:976, the bitonic sort -- `mixin/op.bend`'s
+     W5) and `cumsum` (op.py:770 -> `_cumalu` -> `identity_element`). PORTED: the
+     `unsqueeze` selection and both guards, and the trailing `.cast(dtypes.i32)`.
+     TODO(p3) mixin/rand.py:270  `multinomial`'s cdf arm -- `cumsum` -> `identity_element`.
+     TODO(p3) mixin/rand.py:275  `multinomial`'s Efraimidis-Spirakis arm -- `topk`.
+  W6 `dropout`'s `if not TRAINING` (rand.py:294) reads helpers.py's `TRAINING` ContextVar --
+     an environment seam, not a graph -- so it is a `Bool` PARAMETER; the three-way arm
+     selection is PORTED and gated.
+     TODO(p3) mixin/rand.py:296  `dropout`'s general arm -- `where` over a float mask.
+       (`.clone().where(self, 0) / (1.0 - p)` needs `where` over a float mask, and a
+       division by a Python float whose promotion is not the same rule as every other
+       binop here.)
+     TODO(p3) mixin/helpers.py  `TRAINING` -- the ContextVar read.
+     TODO(p3) mixin/rand.py:315  `scaled_dot_product_attention`'s GQA arm.
+     TODO(p3) mixin/rand.py:319  `scaled_dot_product_attention`'s matmul.
+     TODO(p3) mixin/rand.py:323  `scaled_dot_product_attention`'s causal mask.
+     TODO(p3) mixin/rand.py:327  `scaled_dot_product_attention`'s `attn_mask` arm.
+     TODO(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm.
+     TODO(p3) mixin/rand.py:249  `randperm` -- `argsort`.
+
+THE GATE. Nothing is executed; every graph row is the SIGNATURE of the lazy graph.
+  sh $ORACLE_DIR/rd-gate.sh
+  .venv/bin/python $ORACLE_DIR/rd-truth.py                  > /tmp/py.txt
+  ./bin/bend tinybendygrad/mixin/rand.bend                  > /tmp/bd.txt
+  ./bin/bend tinybendygrad/mixin/rand.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
+  diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
+Four row kinds, because four kinds of bug are invisible to the others. `<n>_g` puts node
+count, root op, root nsrc AND the root's src-op sequence in ONE string (a count row printed
+`ALLOC|ALLOC|` for a two-src root while every `nsrc=` stayed correct). `<n>_d` reads
+shape/dtype through the node the fold DOES answer, because "can the fold answer X" is a
+property of the whole subgraph. `st_*` runs CPython's own five `_next_counter` lines against
+`Tensor([lo, hi], dtype=dtypes.u32)`, so the expectations are CPython's answer and not this
+port's. `ref_*` asks the REFUSALS as CPython's own predicates, because a pure Bend def
+cannot raise.
+
+GATE STATUS, MEASURED 2026-10-02: **RED**. `ALL PROOFS CHECK` in both lanes and the two
+lanes print BYTE-IDENTICAL output; 31 of 49 shared rows match and 18 do not. It is here
+rather than in a report because a reader who runs the gate will otherwise think the file is
+broken. All 31 green rows are non-graph (17 `ref_*` refusals, 7 `ref_*` dtype arithmetic, 2
+`ref_*` counts, 3 `ref_drop_arm*`, 2 BEND-ONLY fold-can-answer rows); all 18 red rows are
+graph rows, which is the whole of the graph rows the file prints.
+  R1 THE ARENA, and it is not "build in the last arena". `bits6_g` prints
+     `n=1 op=RESHAPE nsrc=2 srcops=STACK|STACK topo=CONST/0` against CPython's `n=81`, and
+     `st_six_g` prints `n=2` against CPython's `n=20`. A toposort of ONE node means the
+     root's data src is not in the arena being walked, so the node is not a graph at all:
+     `O.Arena` is affine and a def that BUILDS grows a copy, so two operands built in
+     different copies name indices neither copy has. Fix is the whole-file thread -- every
+     building def takes `+ar: O.Arena` and rebases operands with `T.tn_new(ar,
+     Tensor.u(t))` before building. `randn_like`'s two `rd_take`s hang the interpreter
+     outright here, which is the notes' "an argument is evaluated before the callee branches"
+     reaching a self-edge.
+  R2 `arange` is THREE NODES SHORT and its root is a `CAST`: CPython's
+     `Tensor.arange(3, dtype=dtypes.u32)` is `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`, the
+     port's is `n=28 op=CAST nsrc=1 srcops=ADD`. Two of the three are ONE defect -- the
+     trailing `.cast(dtype)` (op.py:195) is a FOLD in CPython and `op_arange.cast` is not
+     folding, which is op.bend's W9b (`mo_promote` remints a weak CONST).
+  R3 `mxw_reshape`/`mxw_stk` build a `STACK` for a one-element shape arg where CPython builds
+     a bare `CONST` -- fixed for PAD and SHRINK, NOT for RESHAPE.
+  R4 `randn_like` HANGS (R1 again). The eleven rows that depend on it (`randn*`, `uniform*`,
+     `randint*`, `normal*`, `scaled_uniform*`, `glorot_*`, `kaiming_*`, `randperm_rand`,
+     `multi*`, `drop_arm*`) are therefore NOT IN `main` and are UNMEASURED. Stated here so
+     "31 green" is not read as "49 green".
+""")
+
+S(434, 463, "# ===========================================================================",
+r"""
+# ===========================================================================
+# rand.py:18 `random_bits`. The loop is `for i in range(0, num, dtypes.u32.max)`
+# (rand.py:21) and `dtypes.u32.max` is 4294967295, so for any `num` a real shape produces --
+# `num = ceildiv(prod(shape) * itemsize, 4)`, so 17 GiB of random bits to reach the second
+# iteration -- the loop has exactly ONE iteration with `i = 0`. That is the arm below and it
+# is the whole of the function for every gate row.
+#   c_low  = low + (i & 0xffffffff)                             rand.py:23
+#   c_high = high + (i >> 32) + (c_low < low)                   rand.py:24
+#   counts0 = arange(ceildiv(chunk_num, 2), uint32)             rand.py:26
+#   counts1 = counts0 + ceildiv(chunk_num, 2)                   rand.py:27
+#   bits.append(_threefry_random_bits(new_key, counts0, counts1)[:chunk_num])
+#   return bits[0].cat(*bits[1:]) if bits else counter[0:0]     rand.py:29
+# `i = 0`, so the two terms are CONSTANT ZERO ADDS and they ARE BUILT, not folded -- nodes 72
+# and 70 of `Tensor.rand(2,3)`. `bits[0].cat()` with an EMPTY `bits[1:]` is `cat()` with no
+# operands, and that is `self.stack(dim=0)` with `arg = ()` -- ops.py:832's `srcs = (self,) +
+# ()` -- so it is a ONE-SRC STACK followed by `flatten(0, 1)`, which for a 1-D source is a
+# real RESHAPE from `(1, n)` to `(n,)`. That is nodes 110/111: `STACK/1` and `RESHAPE/2`
+# with marg `(6,)`. `rd_bits.flat` is that product, and writing it as the SOURCE's length
+# would be a fold and would drop the node. The `[:chunk_num]` slice is a full slice of a
+# tensor of exactly that length and it builds NOTHING (node 108 is the `cat`'s STACK and node
+# 109 is `flatten`'s RESHAPE, with no SHRINK between them), which is a property of
+# `__getitem__` and not of this file, so it is folded here and `bits6`'s node count pins it.
+# TODO(p3) mixin/rand.py:21  `random_bits`'s SECOND AND LATER CHUNKS -- `i & 0xffffffff`
+#   and `i >> 32` on a counter past 2^32. `H.i64_of_i32` sign-EXTENDS, so `i` cannot be a
+#   `U32` past 2^31, and the multi-chunk arm needs `H.I64` arithmetic that
+#   `bend2-constraints`' "A 64-BIT PRODUCT IS A WALL" section says is absent (`i64_mul`,
+#   `i64_div`, `i64_mod` do not exist). 17 GiB of random bits to reach it.
+# ===========================================================================
+""")
+
+S(488, 521, "# ===========================================================================",
+r"""
+# ===========================================================================
+# rand.py:32 `_bits_to_rand`. `dtypes.finfo(dtype)` (dtype.py:113) is
+# `(exponent, mantissa)` and only the mantissa is read, so `rd_nmant` is HALF of a table
+# that is P3 in `mixin/dtype.bend`. `dtype.itemsize` selects the unsigned partner from
+# `{1: uint8, 2: uint16, 4: uint32, 8: uint64}` (rand.py:34) and `rd_one_bits` is
+# `bitcast(1.0, dtype, uint_dtype)` (dtype.py:302) -- a PYTHON-LEVEL `struct.pack`/`unpack`
+# of the SCALAR `1.0`, so the result is a weakint CONST and not a CAST and not a BITCAST.
+# Its two values this file reaches are 0x3f800000 (float32) and 0x3c00 (float16); float64 is
+# a 64-bit CONST and `bend2-constraints` says there is no 64-bit integer here, so it is a
+# refusal answered `0`. `uint_bits.rshift(bitsize - nmant)` is `mo_bin_c(_, SHR, mo_ki(9))`
+# for float32 and `rd_shift` is the `32 - 23`. `bits.bitcast(uint_dtype)` FOLDS when the two
+# dtypes agree, which they do for float32, and `ub` is that test as a PARAMETER because
+# `O.eq_dt` is a call. `.bitcast(dtype)` at the end is the ONE real BITCAST and
+# `ref_btr_bits` is the row that pins that the FIRST one folded. `[:prod(shape)]` is a FULL
+# slice at every call site and builds nothing, so it is folded. `.sub(1)` is
+# elementwise.py:121's `a.alu(Ops.ADD, -b)`, which is a `MUL` by `-1.0` and an `ADD` and NOT
+# a `SUB` -- nodes 117..120 of `Tensor.rand(2,3)`. `MO.mo_sub` is op.bend's spelling of that
+# and is CALLED, and it takes a `Tensor` operand, so the `1.0` is interned by `mo_const_t` in
+# the operand's own arena.
+# THE ARMS ARE ON `dtype.bitsize` AND NOT ON THE EXPONENT. `finfo` returns
+# `(exponent, mantissa)` -- `(5, 10)` for half and `(8, 23)` for float32 -- and only the
+# SECOND is read, so the switch is on the bit width and 32 is float32. The first version keyed
+# on the exponent and answered 0 for float32, which `ref_nmant_f32` and `ref_shift_f32`
+# caught and which is the recorded "`case 8:` claims 8, 16, 32" trap arriving through a
+# different door: the arms were not misordered, they were the WRONG NUMBER.
+# TODO(p3) tinygrad/dtype.py:113  `finfo` -- the eight-member table; `rd_nmant` answers
+#   half and refuses the rest.
+# TODO(p3) tinygrad/dtype.py:302  `bitcast(1.0, in_dtype, out_dtype)` for float64 /
+#   bfloat16 / the fp8 family: a 64-bit CONST is not expressible in this port.
+# ===========================================================================
+""")
+
+S(1152, 1210, "# ===========================================================================",
+r"""# ===========================================================================
+# THE MEASURED MUTATION TABLE. EIGHT one-token edits through the INTERPRETED lane,
+# each diffed row-by-row against the unmutated output and reverted from a byte snapshot.
+# Baseline: 49 printed rows, 31 shared with CPython and GREEN. Driver: `$ORACLE_DIR/
+# rd-mutate.py`. Full table with row sets: `.agents/slop/notes/bend2-constraints.md`.
+#
+#   M1 `rd_mask`'s mask dropped (`n` -> `n - 1`)                2  st_max_g, st_zero_g
+#   M2 `rd_p64`'s two args SWAPPED (reversed srcs)               1  tfb3_g
+#   M3 `op_arange`'s trailing `.cast(dtype)` dropped             4  the four TOPOSORT rows
+#   M4 `rd_bits_num`'s divisor 4 -> 2                            2  ref_bits_num23, ...223
+#   M5 `rd_nmant`'s `case 32` arm dropped                        2  ref_nmant_f32, ref_shift_f32
+#   M6 `rd_drop.arm`'s innermost arm 2 -> 1                      1  ref_drop_arm1
+#   M7 `rd_p_ok`'s `<= 1` relaxed to `< 1`   [MOVED 0, THEN 1]   1  ref_dropout_p1 (see below)
+#   M8 CONTROL: a comment                                       0  nothing, which is the point
+#
+# FIVE THINGS THIS TABLE SAYS THAT "31 GREEN ROWS" DOES NOT.
+#
+#   * M7 MOVED NOTHING THE FIRST TIME IT WAS RUN, and the fix was a FIXTURE and not a
+#     better row. `rd_p_ok` is `0 <= p <= 1` and its two fixtures were `p = 0.5` and
+#     `p = 1.5`, so `<= 1` and `< 1` are VACUOUS on both -- the mutation was on live code
+#     and no row could see it. `ref_dropout_p1` (`p = 1.0`, the value rand.py:295 branches
+#     on) and `ref_dropout_p1n` (`p = 0.9999999`) were added, M7 was re-run, and it moves
+#     exactly `ref_dropout_p1`. This is wgsl.bend's and device.bend's gate lesson as a table
+#     row: **`moved == 0` on live code is a MISSING ROW**, and the response is to build the
+#     fixture the mutation is asking for, then RE-RUN -- "I added a fixture" and "the
+#     fixture sees this mutation" are different claims.
+#   * M3 IS THE SHARPEST ROW IN THE FILE AND IT IS THE HEADER'S R2, MEASURED. Dropping a
+#     FOLD that CPython also folds moves FOUR rows and NOT ONE of the 31 green ones. The two
+#     `ref_*` rows that would say "the dtype is uint32" do not exist for this fixture,
+#     because `fold.bend` cannot answer an EXPAND-rooted graph (the header's
+#     `fold_np=False`), so a dropped fold in the last line of a constructor is invisible to
+#     every refusal row, every dtype row and every count row in the file. The four that move
+#     are the four that print a TOPOSORT.
+#   * M1 AND M5 ARE LOCALISED TO EXACTLY THEIR OWN DOMAIN, and that is the correct blast
+#     radius. `rd_mask` is read only by `_next_counter`'s two low terms and its two compare
+#     terms, so only `st_zero_g` (num = 0, where the mask is the WHOLE value) and `st_max_g`
+#     (num = 2**32-1, where `n - 1` is representable and the borrow is the only thing that
+#     changes) move, and `st_six_g`/`st_after_g` do NOT -- which is itself the measurement
+#     that `st_zero` and `st_max` are the two fixtures that pin `rd_mask`. `rd_nmant` is read
+#     only by `rd_shift`, which is read only by `rd_btr.rshift`, which is on the
+#     `_bits_to_rand` path that the fold cannot reach, so only the two `ref_*` rows that ask
+#     `rd_shift`/`rd_nmant` DIRECTLY move. A localised row is a claim that the predicate is
+#     reachable from exactly where it should be.
+#   * M2 IS THE REVERSED-SRCS MUTATION AND IT IS GRAPH-ISOMORPHIC ON A FIXTURE WITH ONE
+#     COUNT, WHICH IS WHY `tfb3_g` IS THE ROW THAT SEES IT AND `arange3_g` IS NOT. The
+#     counts `c0` and `c1` are `arange(3)` and `arange(3) + 3` -- DIFFERENT nodes -- so the
+#     swap is visible; on a fixture where both halves are the same interned index it would be
+#     invisible, and `tfb3_g` is the fixture that was built to prevent that.
+#   * NO MUTATION OF THIS TABLE MOVES A `ref_*` ROW THAT IT SHOULD NOT, AND NO MUTATION MOVES
+#     A `_d` ROW AT ALL -- the eight `_d` rows are all red already, so they are a PLACEHOLDER
+#     for the shape/dtype half rather than evidence, and the header's GATE STATUS says so.
+# ===========================================================================""")
+
+if __name__ == '__main__':
+    json.dump(SPECS, open(sys.argv[1], 'w'), indent=1)
+    print(len(SPECS), 'specs')
