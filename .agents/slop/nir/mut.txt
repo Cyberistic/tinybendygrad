@@ -1,0 +1,43 @@
+baseline: 102 rows
+
+ID    WHAT                                           ROWS MOVED (BY NAME)
+--------------------------------------------------------------------------------------------------------------
+M01   c: uint arm -> i                               c uint32 u=True, c uint8 u=True , ncast from uint8
+M02   c: i arm -> f                                  c int32 u=True , c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from weaki
+M03   c: f arm -> b (bool never reaches)             c bf16 u=True  , c double u=True, c fp8_e4m3 u=T , c half u=True  , ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
+M04   c: `and u` dropped                             c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from weaki
+M05   c: `ints` widened to `S.Dt.is_int` (weakint!)  c index u=True, c weakint u=T , ncast from weaki
+M06   u_aop: ADD -> uadd                             aop rev u      , aop u  table   
+M07   s_aop: MAX imax -> umax                        aop rev s      , aop s  table   
+M08   f_aop: FDIV -> rcp                             aop f  table   , aop rev f      
+M09   f_aop: CMPEQ feq -> fneu                       aop f  table   , aop rev f      
+M10   u_aop.rev: ishl swapped with ushr              aop rev u      
+M11   f_aop.rev: ftrunc dropped                      aop rev f      
+M12   aop_kind: bool no longer unsigned              aop kind bool  
+M13   aop_kind: float class becomes 1                aop kind half  
+M14   op_of: WHERE -> OpsCONST                       aop rev s      , aop rev u      , aop s  table   , aop u  table   
+M15   glsl_sym_int: `glsl_type_builtin_` head dropped glsl keys      
+M16   glsl_sym_int: `itemsize == 4` exception dropped glsl keys      
+M17   glsl_keyed: `bool` stops being a key           glsl keys      
+M18   ncast: two-way condition `and` -> `or`         ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
+M18b  ncast: second prefix taken from the DESTINATION's signedness only [THEOREM] *** NOTHING MOVED ***
+M19   ncast: destination bitsize -> source           ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
+M20   scope: ALU given its own case                  scope alu      
+M21   nstore: REG srcs no longer reversed            nstore mask    , nstore srcs R  
+M22   nstore: ALIGN_MUL becomes REG-only             nstore align A , nstore align L , nstore align R 
+M23   nstore: WRITE_MASK off by one                  nstore mask    
+M24   nload: ACCESS for every space                  nload hasACC A , nload hasACC L , nload hasACC R 
+M25   padded_idx: the extra `+ size` dropped         padded 0 4     , padded 17 32   , padded 3 8     , padded 8 8     , padded 9 16    , padded tbl     
+M26   round_up: multiply BEFORE dividing             padded 17 32   , padded 3 8     , padded 9 16    , padded tbl     
+M27   sd: NAK's arch test `>= 53` becomes `> 53`     sd nak sm_53   
+M28   sd: bfloat16 stops being dropped               sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir         
+M28b  sd: one fp8 stops being dropped                sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir         
+M29   cfo: EXP2 no longer dropped by LVP             cfo lvp        
+M30   Nir: LVP's global_max 1 -> 2147483647          rec LVP        
+M31   Nir: shared_max 49152 -> 32768 (the BASE value) rec NIR        
+M32   arch_off: the offset becomes 2                 arch_off sm_53 
+M33   build_alu: a fifth arity invented              alu arities    
+M34   aop_keys: insertion order float-first (`dtypes.all`'s, not `aop`'s) aop u  keys    
+M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir        
+
+37 mutations, 1 blind

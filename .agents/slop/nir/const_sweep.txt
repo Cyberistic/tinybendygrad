@@ -1,0 +1,107 @@
+baseline: 102 rows
+
+ID     LINE   ARM                                ROWS MOVED
+----------------------------------------------------------------------------------------------------
+K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu  
+K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu  
+K03    257    case "udiv": 427                   aop rev u      , aop u  table   
+K04    258    case "umod": 451                   aop rev u      , aop u  table   
+K05    259    case "ult": 441                    aop rev u      , aop u  table   
+K06    260    case "ilt": 326                    aop rev s      , aop s  table   , mesa alu  
+K07    261    case "ine": 344                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K08    262    case "ieq": 314                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K09    263    case "ior": 353                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K10    264    case "iand": 309                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K11    265    case "ixor": 361                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K12    266    case "bcsel": 115                  aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K13    267    case "umax": 447                   aop rev u      , aop u  table   
+K14    268    case "imax": 334                   aop rev s      , aop s  table   
+K15    269    case "ishl": 356                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
+K16    270    case "ushr": 479                   aop rev u      , aop u  table   
+K17    271    case "ishr": 357                   aop rev s      , aop s  table   
+K18    272    case "idiv": 313                   aop rev s      , aop s  table   
+K19    273    case "irem": 354                   aop rev s      , aop s  table   
+K20    274    case "fadd": 177                   aop f  table   , aop rev f      
+K21    275    case "fmul": 253                   aop f  table   , aop rev f      
+K22    276    case "flt": 240                    aop f  table   , aop rev f      
+K23    277    case "fneu": 260                   aop f  table   , aop rev f      
+K24    278    case "feq": 213                    aop f  table   , aop rev f      
+K25    279    case "fdiv": 198                   aop f  table   , aop rev f      
+K26    280    case "frcp": 270                   aop f  table   , aop rev f      
+K27    281    case "fmax": 248                   aop f  table   , aop rev f      
+K28    282    case "ftrunc": 288                 aop f  table   , aop rev f      
+K29    283    case "fsin": 279                   aop f  table   , aop rev f      
+K30    284    case "fexp2": 221                  aop f  table   , aop rev f      
+K31    285    case "flog2": 238                  aop f  table   , aop rev f      
+K32    286    case "mov": 365                    mesa alu  
+K33    287    case "vec2": 484                   mesa alu  
+K34    288    case "vec3": 485                   mesa alu  
+K35    289    case "vec4": 486                   mesa alu  
+K36    290    case "vec5": 487                   mesa alu  
+K37    291    case "vec8": 488                   mesa alu  
+K38    292    case "vec16": 483                  mesa alu  
+K39    293    case "b2b1": 28                    ncast from bool , ncast from weaki
+K40    294    case "b2f16": 32                   ncast from bool , ncast from weaki
+K41    295    case "b2f32": 33                   ncast from bool , ncast from weaki
+K42    296    case "b2f64": 34                   ncast from bool , ncast from weaki
+K43    297    case "b2i8": 39                    ncast from bool , ncast from weaki
+K44    298    case "b2i16": 36                   ncast from bool , ncast from weaki
+K45    299    case "b2i32": 37                   ncast from bool , ncast from weaki
+K46    300    case "b2i64": 38                   ncast from bool , ncast from weaki
+K47    301    case "f2f16": 156                  ncast from float
+K48    302    case "f2f32": 159                  ncast from float
+K49    303    case "f2f64": 160                  ncast from float
+K50    304    case "f2i8": 166                   ncast from float
+K51    305    case "f2i16": 163                  ncast from float
+K52    306    case "f2i32": 164                  ncast from float
+K53    307    case "f2i64": 165                  ncast from float
+K54    308    case "i2f16": 293                  ncast from int32, ncast from long 
+K55    309    case "i2f32": 294                  ncast from int32, ncast from long 
+K56    310    case "i2f64": 295                  ncast from int32, ncast from long 
+K57    311    case "i2i8": 301                   ncast from int32, ncast from long 
+K58    312    case "i2i16": 298                  ncast from int32, ncast from long 
+K59    313    case "i2i32": 299                  ncast from int32, ncast from long 
+K60    314    case "i2i64": 300                  ncast from int32, ncast from long 
+K61    315    case "u2f16": 411                  ncast from uint8
+K62    316    case "u2f32": 412                  ncast from uint8
+K63    317    case "u2f64": 413                  ncast from uint8
+K64    318    case "u2u8": 419                   ncast from uint8
+K65    319    case "u2u16": 416                  ncast from uint8
+K66    320    case "u2u32": 417                  ncast from uint8
+K67    321    case "u2u64": 418                  ncast from uint8
+K68    413    case "nir_intrinsic_store_global": mesa intr 
+K69    414    case "nir_intrinsic_store_shared": mesa intr 
+K70    415    case "nir_intrinsic_store_deref":  mesa intr 
+K71    416    case "nir_intrinsic_load_global":  mesa intr 
+K72    417    case "nir_intrinsic_load_shared":  mesa intr 
+K73    418    case "nir_intrinsic_load_deref": 2 mesa intr 
+K74    419    case "nir_intrinsic_load_workgroup mesa intr 
+K75    420    case "nir_intrinsic_load_local_inv mesa intr 
+K76    421    case "nir_intrinsic_barrier": 46   mesa intr 
+K77    422    case "nir_intrinsic_ldc_nv": 213   mesa intr 
+K78    423    case "nir_intrinsic_load_ubo": 552 mesa intr 
+K79    424    case "nir_intrinsic_image_store":  mesa intr 
+K80    425    case "nir_intrinsic_image_load": 1 mesa intr 
+K81    426    case "nir_type_float16": 144       mesa intr 
+K82    427    case "nir_type_float32": 160       mesa intr 
+K83    428    case "nir_deref_type_var": 0       mesa intr 
+K84    429    case "nir_deref_type_array": 1     mesa intr 
+K85    430    case "nir_jump_break": 2           mesa intr 
+K86    431    case "MESA_SHADER_COMPUTE": 5      mesa intr 
+K87    432    case "SCOPE_WORKGROUP": 4          mesa intr 
+K88    433    case "ACCESS_CAN_REORDER": 64      mesa intr 
+K89    434    case "GLSL_SAMPLER_DIM_2D": 1      mesa intr 
+K90    442    case "NIR_INTRINSIC_ALIGN_MUL": 20 mesa idx  
+K91    443    case "NIR_INTRINSIC_WRITE_MASK": 1 mesa idx  
+K92    444    case "NIR_INTRINSIC_ACCESS": 17    mesa idx  
+K93    445    case "NIR_INTRINSIC_EXECUTION_SCOP mesa idx  
+K94    446    case "NIR_INTRINSIC_IMAGE_DIM": 14 mesa idx  
+K95    447    case "NIR_INTRINSIC_SRC_TYPE": 23  mesa idx  
+K96    448    case "NIR_INTRINSIC_DEST_TYPE": 24 mesa idx  
+K97    449    case "NIR_INTRINSIC_RANGE": 5      mesa idx  
+K98    1100   case "sm_52": 52                   arch_int sm_52 
+K99    1101   case "sm_53": 53                   arch_int sm_53 
+K100   1102   case "sm_86": 86                   arch_int sm_86 
+K101   1103   case "sm_120": 120                 arch_int sm_120
+
+constant sweep: 101 arms, 0 blind, 0 did-not-compile

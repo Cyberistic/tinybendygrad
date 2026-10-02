@@ -75,7 +75,10 @@ MUTATIONS = [
  ("M14", "op_of: WHERE -> OpsCONST",         r'^    case "WHERE": O\.OpsWHERE\{\}$',  '    case "WHERE": O.OpsCONST{}',    "op_of"),
  ("M15", "glsl_sym_int: `glsl_type_builtin_` head dropped", r'String\.concat\(\["glsl_type_builtin_", Bool\.pick', 'String.concat([Bool.pick', "glsl_sym_int"),
  ("M16", "glsl_sym_int: `itemsize == 4` exception dropped", r'Bool\.pick\(String, U32\.is_eq\(S\.Dt\.bits\(d\), 32\), "", ', 'Bool.pick(String, False{}, "", ', "glsl_sym_int"),
- ("M17", "glsl_keyed: `bool` stops being a key", r'R\.is_named\(d, "half"\) \|\| R\.is_named\(d, "bool"\)', 'R.is_named(d, "half")', "glsl_keyed.of"),
+ ("M17", "glsl_keyed: `bool` stops being a key",
+  r'    case False\{\}: R\.is_named\(d, "f64"\) \|\| R\.is_named\(d, "f32"\) \|\| R\.is_named\(d, "f16"\) \|\| R\.is_named\(d, "bool"\)$',
+  '    case False{}: Bool.or(R.is_named(d, "f64") || R.is_named(d, "f32") || R.is_named(d, "f16"), False{})\n',
+  "glsl_keyed.of"),
  ("M18", "ncast: two-way condition `and` -> `or`", r'Bool\.and\(c\.in_ints\(it\), c\.in_ints\(ot\)\)\)', 'Bool.or(c.in_ints(it), c.in_ints(ot)))', "ncast_mid"),
  # A THEOREM, NOT A BLIND SPOT: `nir.py:28` writes `c(ot, ot == dtypes.bool)` and
  # `c`'s first arm is `t in dtypes.uints and u`. `bool` is NOT in `dtypes.uints`,
@@ -117,8 +120,14 @@ def sweep_consts(tmp):
       print("SUBSTRATE NEVER SETTLED before K%02d -- stopping" % (n + 1)); break
     txt = src.splitlines()
     txt[i-1] = "%s%d" % (m.group(1), int(m.group(2)) + 1)
-    got, err = gate("\n".join(txt) + "\n", "%sconst%d" % (tmp, n))
-    rows = moved_rows(BASE, got)
+    rows, err = None, ""
+    for attempt in range(4):
+      if not settled(BASE):
+        time.sleep(30); continue
+      got, err = gate("\n".join(txt) + "\n", "%sconst%d" % (tmp, n))
+      rows = moved_rows(BASE, got)
+      if rows is not None: break
+      time.sleep(30)     # the substrate broke mid-run; re-check and retry
     results.append(("K%02d" % (n+1), i, m.group(0).strip(), rows, err))
   return results
 
