@@ -11387,3 +11387,115 @@ which is a cache-collision, not a printing bug, and is invisible at default env.
 
 **Rule: a gate row that pins a COUNT of flags is not evidence that the flags are
 read. Check for a wall note OR a read, not for the count.**
+
+---
+
+## Hand-audit of hand-transcribed hardware constants (`runtime/ops_metal.bend`, 2026-10-02)
+
+Numbering below continues from section Z at the end of this file. **Cite these by the
+section letter and the position in this file, not by a number** -- the rule numbers in
+this document repeat across units and have collided.
+
+### AA. A LINE NUMBER IS A CLAIM ABOUT POSITION; A REGEX IS A CLAIM ABOUT CONTENT
+
+`.agents/slop/mt_constmap.py` cites `ops_metal.py:132`, `:255`, `:266`, `:278`. The
+tree was rebased (`ad117c928 rebase B1`) onto a newer `ops_metal.py`
+(`7b6766c2f`, "tiny hcq2 changes #18443") that removed two lines and rewrote the whole
+queue/messaging layer. **Every one of those anchors moved, and the oracle now aborts
+on the first one.** The failure is loud -- which is the one mercy -- but the verdict it
+was quoting ("0 wrong of 71") is not reproducible against today's tree, and a reader
+has no way to tell that from a script that simply printed a number.
+
+Anchor every constant by CONTENT (a regex over the whole file) and assert the regex
+matches **exactly once**. Position cannot drift silently; content can only change
+loudly. `.agents/slop/mt_audit2.py` is the re-derived map; its anchors are all regexes
+and its first run failed eight times on anchors that had matched twice or not at all.
+
+### AB. A CAPTURE GROUP'S POSITION IS THE WHOLE DIFFERENCE, AND NOTHING SAYS SO
+
+`index(5 + 4 * first).store(cbuf)`: with the group on the FIRST number the authority
+is `5` (the slot), on the SECOND it is `4` (the stride). Both regexes match once. The
+second reads the port's correct `SLOT_CBUF = 5` and reports it WRONG. Three anchors in
+`mt_audit2.py` had this shape and all three produced a **false positive**: `APPLE9`
+(`arch[5:]) < 9` has the `5` in the slice bound and the `9` in the gate),
+`SYNC_STEP` (`range(5, buf.size, 4)`), `SELS_CNT` (`view[3:5]` -- the authority for
+the last slot written is `hi - 1`, not `hi`).
+
+**An audit that reports a port bug must print the captured text, not just the number.**
+All three of these looked exactly like the `33/219` finding and were all wrong. The
+distinction is the whole difference between a finding and noise.
+
+### AC. A REFACTORED EXPRESSION IS NOT A CHANGED CONSTANT
+
+The rebase replaced `slots.index(7 + 4 * first).store(0)` and
+`slots.index(5 + 4 * first).store(cbuf)` with `slots.shrink(((4 + 4 * r, 8 + 4 * r),))`
+plus `stamp.index(3).store(0)` / `stamp.index(1).store(cb)`. Reading the tree's `4`
+and calling the port's `7` wrong would be a **false positive**: the shrink selects a
+4-word window starting at `4 + 4*r`, so the slots are base + offset = 7 and 5, exactly
+the port's pair. Same for `HDR_SKIP`: the tree writes `zero // 8 + 4 + ci` where the
+port writes `zero // 8 + 3` plus a `1`, and `3 == ICB_HEADER_PAD // 8 == 24 // 8`.
+
+So the authority has to be the **composition**, computed from the tree's own
+expressions, not the digit that happens to sit on the line. `mt_audit2.py:_slot()` and
+`_hdr_pad()` are that computation, and they CONFIRM `7` and `3` against the tree
+rather than excusing them. This is the `ops_nv` `CLASS_*` lesson inverted: there, a
+wrong value looked like a rename; here, a right value looks like a wrong one. Neither
+is decidable without reading the expression.
+
+### AD. A SHADOWED PARAMETER IS A SILENT FALL-THROUGH, IN ORACLES TOO
+
+```python
+def seam(k):
+  ...
+  for line in ...:
+    k, v = line.split("=", 1)     # rebinds the PARAMETER
+  return _SEAM[k]                 # answers with the LAST key parsed
+```
+
+Every seam row read `mt_ret_is_mtlb`. `CB_ERR_OK` reported `True` against a real `0`
+and nothing said so. agent-core already records this for Bend record binders; it is
+just as true in an oracle. **Never reuse a parameter's name as a loop variable in a
+file whose job is to produce right answers.**
+
+### AE. A `def NOTHING CALLS` IS A CONSTANT NO AUDIT CAN CHECK
+
+`CALL_MAXTPG` (`ops_metal.bend:549`) and `CALL_SETPIPELINE` (`:554`) are declared,
+documented in the `arg` table at `:511` and `:514` as if they were live kinds, and
+**never passed to `Tr.emit`** and never named by a gate row. The source's `new_icb`
+really does call `maxTotalThreadsPerThreadgroup()` and `setComputePipelineState`, so
+the port's ICB trace is missing two objc calls the real code makes. Dead tags are
+harmless; a doc table that lists them as kinds is not.
+
+### AF. A GATE WHOSE ORACLE EMITS 0 ROWS IS NOT A PASSING GATE
+
+`mt_diff.py` reports this correctly (`GATE DID NOT RUN`) and on this tree it is right
+for the wrong reason: `mt_rows.py` dies on `KeyError: 'SELECTORS'` and
+`mt_constmap.py --rows` emits **0 rows and exits 1**. Meanwhile `bin/bend` prints
+**432 rows** and `--check-only` prints `ALL PROOFS CHECK`. The `mt_c_*` rows were
+printing the port's own values with nothing on the other side to compare them.
+
+Re-point lane 4 at `.agents/slop/mt_audit2.py --rows` (same row names, IMPORTED from
+`mt_constmap.ROW` rather than retyped) and it emits **72 rows, 72 paired, 0
+disagreements, 0 orphans in either direction**. `--check-only` says `ALL PROOFS CHECK`
+and the gate did not run; both were true at once.
+
+### AG. A LIVE MEASUREMENT CAN DIE WITH THE TREE, AND THEN THE VERDICT DIES WITH IT
+
+`tinygrad/runtime/ops_metal.py:86` binds `metal.dll.sel_registerName`, and
+`sel_registerName` is a **libobjc** symbol the Metal framework does not export --
+`tinygrad/runtime/support/objc.py:26-27` binds it on `lib`, not on the Metal DLL.
+MEASURED consequence: with the tree as it stands,
+`(Tensor.empty(64,16,device='METAL') @ a.T).realize()` raises
+`RuntimeError: Attempting to relocate against an undefined symbol sel_registerName`
+(allocation succeeds; the launch does not). Any oracle that launches a kernel to
+measure `len(dims)` is therefore unrunnable, and the verdict it printed is not
+reproducible. **`ProgramInfo` is built before the launch and carries the same
+`dims`** (`ProgramInfo.from_sink`, hooked at `to_program`), so the measurement moves
+one step earlier and survives the device being broken.
+
+### AH. CHECK YOUR OWN ORACLE'S EXIT PATH BEFORE BELIEVING ITS OUTPUT
+
+`sys.argv[1]` is not the port when a flag is present. `mt_constmap.py` reads
+`sys.argv[1]` into `PORT` at module level and *then* filters flags inside `--rows`, so
+asking it for `--rows` points `PORT` at the literal string `"--rows"` and it dies with
+`FileNotFoundError`. Filter the flags once, at the top.
