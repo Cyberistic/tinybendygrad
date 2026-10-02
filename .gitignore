@@ -36,3 +36,13 @@ _mut_*.bend
 *mut.bend
 probe-*.bend
 probe-*.bend.mut
+
+# comment-realignment pass: the measurement + edit harness (spec*.py, apply.py,
+# final.py, cite.py, dist.py) and the four report artifacts. Never sources; the
+# 2.0 MB before/ snapshot it produced was deleted so this stays under 0.5 MB.
+# `.agents/slop/commentpass/README.md` says how to regenerate the snapshot.
+.agents/slop/commentpass/
+
+# browser/profile probes: an agent hunting for a WebGPU-capable browser drops a whole
+# Chrome profile here (35MB .tflite models, 22MB crx blobs). Never source, never a gate input.
+.agents/slop/probe/
