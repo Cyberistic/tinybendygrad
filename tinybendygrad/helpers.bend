@@ -820,68 +820,142 @@ def size_to_str(+s: U32) -> String:
   size_to_str.pick(U32.is_ge(s, 1073741824), U32.is_ge(s, 1048576), U32.is_ge(s, 1024), s)
 
 # ===========================================================================
-# ansistrip -- re.sub('\x1b\[(K|.*?m)', '', s). The regex is an ESC, '[', then
-# either the single letter K or the SHORTEST run of characters ending in 'm',
-# so the state is a mode plus the output so far and the escape body so far:
-#   0n -- normal: an ESC opens an escape, anything else is output
-#   1n -- just after an ESC: a '[' opens a sequence, anything else keeps the ESC
-#   2n -- inside a sequence: 'K' or 'm' closes it, anything else is body
-# An unterminated run does not match, so its ESC, '[' and body stay in the
-# output; that is what `done` does for modes 1n and 2n.
+# ansistrip -- `re.sub('\x1b\[(K|.*?m)', '', s)` (helpers.py:48).
+#
+# THE REGEX MATCHES A RUN OF ARBITRARY LENGTH, SO NOTHING MAY DECIDE BEFORE THE
+# RUN'S END IS SEEN. `.*?m` is non-greedy and unbounded: a walker that emits as it
+# goes has already emitted too much by the time it learns whether the sequence was
+# `K` or `31m`. Bend 2.0.34 offers no way to look ahead, and all three of these
+# are MEASURED:
+#
+#   * forward references are rejected outright -- "expected : a filled definition
+#     (an unfilled law is a dead claim: live code cannot use it)". So a state
+#     machine may NOT be split into a driver and a stepper: that is mutual
+#     recursion and it does not compile. ONE def, ONE recursion, ONE table.
+#   * a `case`-bound list TAIL IS LINEAR -- "expected : t, observed : t (consumed
+#     more than once)" -- so a look-ahead over the rest of the input and a walk
+#     over the rest of the input cannot both live in one arm.
+#   * a self-call argument must be a SYNTACTIC TAIL -- "expected : a decreasing
+#     self-call" -- so neither `String.drop(s, n)` nor `List.append(t, [h])` may
+#     step the cursor by more than one character.
+#
+# SO THE RUN IS EMITTED OPTIMISTICALLY AND UN-EMITTED ON A MATCH. `acc` is
+# REVERSED, so prepending is O(1) and a run's characters are already on TOP of
+# `acc` when its terminator arrives: dropping the run is `List.drop(acc, n)` for
+# the count `n` of characters put there. One pass, no look-ahead, no flush, no
+# re-scan, no rollback.
+#
+# The state is two def PARAMETERS and not a record, because `Nat` and `List` are
+# both linear and a `case`-bound name may be used ONCE: a record pattern that
+# binds `n` cannot also name `n` in the arm ("expected : n, observed : n (consumed
+# more than once)"). So `acc`, `n` and `q` are passed through and never matched:
+#
+#   q = 0n  normal
+#   q = 1n  an ESC is pending and has emitted nothing yet
+#   q = 2n  inside a run whose body is still empty
+#   q = 3n  inside a run with at least one body character
+#
+# `q` is a match position, and the char code is folded into the LIST pattern as
+# `Chr{27}`, because a Bend `match` may only scrutinise a def parameter or a
+# record FIELD -- never `Char.to_u32(h)` ("a match cannot scrutinize a computed
+# value") and never a `case`-bound binder ("this name is a def or a consumed
+# binder"). A `Nat` in a multi-scrutinee position is also checked for
+# exhaustiveness while a `Nat` inside a record pattern is not, which is the whole
+# of why the state is parameters.
+#
+# The three ways a run ends:
+#   * 'm'  -- `.*?` of length ZERO, so `ESC[m` is a whole run. Reachable from 2n
+#             and 3n.
+#   * 'K'  -- and ONLY with an empty body, because `(K|.*?m)` tries `K` first and
+#             alternation is ordered. Reachable only from 2n. Rows `ansi_10`
+#             ("ESC[Km" -> "m") and `ansi_11` ("ESC[K31m" -> "31m") pin that;
+#             `ansi_19` ("ESC[31mK" -> "K") pins the other side, that a 'K' after
+#             a body is ordinary text.
+#   * '\n' -- `.` does not cross a newline, so a newline before any 'm' fails the
+#             whole `.*?m` alternative and NOTHING matches. Every character of the
+#             run is then left in the output, which is `re.sub`'s "no match at i:
+#             emit s[i], retry at i+1" carried out one character at a time. Rows
+#             `ansi_24`, `ansi_25` and `ansi_26` pin that.
+#
+# MEASURED against CPython on a 43-fixture corpus (`.agents/slop/ansi_oracle.py`
+# vs `.agents/slop/ansi_probe.bend`, gate `.agents/slop/ansi_gate.py`): 28 of 43
+# rows were red before this rewrite.
+#
+# THE ONE RESIDUAL DIVERGENCE, and it is a wall rather than an oversight. A run
+# that FAILS (newline before the terminator, or end of input) must be re-read by
+# `re.sub` from its '[' -- and a body can itself contain a complete `ESC[K`,
+# which that re-read strips. This walk cannot re-read: the body has already been
+# emitted and would have to be read a second time, and a list tail is linear. So
+# the body is emitted verbatim. Row `ansi_29` ("\x1b[\x1b[K\n") is the witness:
+# CPython answers "\x1b[\n", this port answers "\x1b[\x1b[K\n". The differ NAMES
+# the row rather than hiding it. Closing it needs a nested three-state tracker for
+# `ESC` `[` `K` inside a body, which is 13 more table arms; that is a scoping
+# decision, not a proof that Bend cannot do it.
 # ===========================================================================
 
-type Ast is Data:
-  Ast{c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>}
+# prepending emits LAST, so this puts the pending ESC immediately before whatever
+# follows it, and `List.drop` on the FRONT of `acc` removes the run's most recent
+# characters.
+def ansistrip.esc(acc: List<&2, Char>) -> List<&2, Char>:
+  List.append(&2, Char, [Char.from_u32(27)], acc)
 
-# the unterminated prefix: an ESC alone, or an ESC '[' and the run's body
-def ansistrip.done4(pend: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
-  List.append(&2, Char, List.append(&2, Char, [Char.from_u32(27)], [Char.from_u32(91)]), List.append(&2, Char, pend, acc))
+# the '[' is put on TOP of the ESC-prepended `acc`, because prepending emits LAST
+# and '[' comes after ESC in the output. Getting this the other way round swaps
+# the two and turns every "\x1b[" into "[\x1b" -- rows `ansi_03` and `ansi_24`
+# caught it. `acc` is spent once, by `esc`, and never named again.
+def ansistrip.esc_brk(acc: List<&2, Char>) -> List<&2, Char>:
+  List.append(&2, Char, [Char.from_u32(91)], ansistrip.esc(acc))
 
-def ansistrip.done3(m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
-  match m:
-    case 0n: acc
-    case Succ{q}: List.append(&2, Char, [Char.from_u32(27)], acc)
-    case Succ{Succ{p}}: ansistrip.done4(pend, acc)
+# `acc` is spent by `List.reverse`, so it cannot also sit in the other arm of a
+# `Bool.pick`. The reverse happens first and the pending ESC is prepended to the
+# REVERSED list, which is the same string: reversing `[ESC] ++ rev` gives
+# `rev ++ [ESC]`.
+def ansistrip.done.at(acc: List<&2, Char>, esc: Bool) -> List<&2, Char>:
+  match esc:
+    case True{}: ansistrip.esc(acc)
+    case False{}: acc
 
-def ansistrip.done2(c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
-  match m:
-    case 0n: List.reverse(&2, Char, acc)
-    case Succ{q}: ansistrip.done3(1n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
-    case Succ{Succ{p}}: ansistrip.done3(2n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
+def ansistrip.done(esc: Bool, acc: List<&2, Char>) -> List<&2, Char>:
+  ansistrip.done.at(List.reverse(&2, Char, acc), esc)
 
-def ansistrip.done(st: Ast) -> List<&2, Char>:
-  match st:
-    case Ast{c, m, acc, pend}: ansistrip.done2(c, m, acc, pend)
+def ansistrip.go(cs: List<&2, Char>, acc: List<&2, Char>, n: Nat, q: Nat) -> List<&2, Char>:
+  match cs, q:
+    # AT END OF INPUT. A run in progress cannot match -- its terminator never came
+    # -- so it stays in the output, and a pending ESC is emitted because nothing
+    # ever followed it.
+    case Nil{}, 0n: ansistrip.done(False{}, acc)
+    case Nil{}, 1n: ansistrip.done(True{}, acc)
+    case Nil{}, 2n: ansistrip.done(False{}, acc)
+    case Nil{}, 3n: ansistrip.done(False{}, acc)
+    # `q` NEVER EXCEEDS 3n -- no arm below writes a larger one -- and this is here
+    # only because a `Nat` multi-scrutinee is checked for exhaustiveness.
+    case Nil{}, Succ{_p}: ansistrip.done(False{}, acc)
+    # NORMAL. An ESC emits nothing and opens a pending one.
+    case Chr{27} <> t, 0n: ansistrip.go(t, acc, 0n, 1n)
+    case Chr{c} <> t, 0n: ansistrip.go(t, Chr{c} <> acc, n, 0n)
+    # A PENDING ESC. '[' opens a run and both of its characters go on the count;
+    # an ESC emits the pending one and opens a fresh pending one; anything else
+    # emits the pending ESC and then the character.
+    case Chr{91} <> t, 1n: ansistrip.go(t, ansistrip.esc_brk(acc), 2n, 2n)
+    case Chr{27} <> t, 1n: ansistrip.go(t, ansistrip.esc(acc), n, 1n)
+    case Chr{c} <> t, 1n: ansistrip.go(t, Chr{c} <> ansistrip.esc(acc), n, 0n)
+    # A RUN WITH AN EMPTY BODY, where 'K' is the first alternative and matches.
+    # A MATCH DROPS THE RUN AND RESETS `n`, which is never read outside a run --
+    # and `n` is linear, so it may be spent by the drop and not also carried.
+    case Chr{75} <> t, 2n: ansistrip.go(t, List.drop(&2, Char, acc, n), 0n, 0n)
+    case Chr{109} <> t, 2n: ansistrip.go(t, List.drop(&2, Char, acc, n), 0n, 0n)
+    # A NEWLINE FAILS THE RUN and is then ordinary text itself, so it is emitted
+    # like any other character -- `re.sub` retries at i+1 and reaches it.
+    case Chr{10} <> t, 2n: ansistrip.go(t, Chr{10} <> acc, n, 0n)
+    case Chr{c} <> t, 2n: ansistrip.go(t, Chr{c} <> acc, Nat.add(n, 1n), 3n)
+    # A RUN WITH A BODY, where 'K' is ordinary text and only 'm' ends the run.
+    case Chr{109} <> t, 3n: ansistrip.go(t, List.drop(&2, Char, acc, n), 0n, 0n)
+    case Chr{10} <> t, 3n: ansistrip.go(t, Chr{10} <> acc, n, 0n)
+    case Chr{c} <> t, 3n: ansistrip.go(t, Chr{c} <> acc, Nat.add(n, 1n), 3n)
+    case Chr{c} <> t, Succ{_p}: ansistrip.go(t, Chr{c} <> acc, Nat.add(n, 1n), 3n)
 
-# the ESC that did not open a sequence stays in the output
-def ansistrip.go.esc(h: Char, acc: List<&2, Char>) -> List<&2, Char>:
-  List.append(&2, Char, [Char.from_u32(27)], List.append(&2, Char, [h], acc))
-
-# ONE def, ONE recursion: the char list shrinks on every call. The state carries
-# the previous char's code so the transition table is a two-scrutinee match on
-# two fields of the same record, in binder order.
-def ansistrip.go(cs: List<&2, Char>, st: Ast) -> List<&2, Char>:
-  match cs:
-    case Nil{}: ansistrip.done(st)
-    case +h <> t:
-      match st:
-        case Ast{c, m, acc, pend}:
-          match c m:
-            case 27 0n: ansistrip.go(t, Ast{Char.to_u32(h), 1n, acc, pend})
-            case 27 Succ{q}: ansistrip.go(t, Ast{Char.to_u32(h), Succ{q}, acc, h <> pend})
-            case 91 0n: ansistrip.go(t, Ast{Char.to_u32(h), 1n, acc, pend})
-            case 91 Succ{q}: ansistrip.go(t, Ast{Char.to_u32(h), Succ{q}, acc, Nil{}})
-            case 75 0n: ansistrip.go(t, Ast{Char.to_u32(h), 0n, acc, pend})
-            case 75 Succ{q}: ansistrip.go(t, Ast{Char.to_u32(h), 0n, acc, pend})
-            case 109 0n: ansistrip.go(t, Ast{Char.to_u32(h), 0n, acc, pend})
-            case 109 Succ{q}: ansistrip.go(t, Ast{Char.to_u32(h), 0n, acc, pend})
-            case _ 0n: ansistrip.go(t, Ast{Char.to_u32(h), 0n, h <> acc, pend})
-            case _ Succ{q}: ansistrip.go(t, Ast{Char.to_u32(h), 0n,
-              ansistrip.go.esc(h, acc), pend})
-
-# the ESC that did not open a sequence stays in the output
 def ansistrip(s: String) -> String:
-  String.from_list(ansistrip.go(String.to_list(s), Ast{0, 0n, Nil{}, Nil{}}))
+  String.from_list(ansistrip.go(String.to_list(s), Nil{}, 0n, 0n))
 
 def ansilen(s: String) -> Nat:
   String.length(ansistrip(s))
