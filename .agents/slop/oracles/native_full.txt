@@ -1,0 +1,15 @@
+dtype_key=True
+shape_ok=True
+device_ok=True
+cycle_safe=True
+gap_ok=True
+resh_2d=True
+resh_1d=True
+resh_noop=True
+resh_reject=True
+resh_settle=True
+sized_order=True
+mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=int
+mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=int
+mv_expnoop n=4 op=Ops.EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+mv_expsym n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=ABSENT dtype=ABSENT

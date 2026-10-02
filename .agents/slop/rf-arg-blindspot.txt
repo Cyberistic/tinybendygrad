@@ -1,0 +1,16 @@
+### can an MSTACK carry a non-None arg?
+  MSTACK arg=ANone        OK -> arg is None
+  MSTACK arg=ARange       OK -> arg is (0, AxisType.WEAK)
+  MSTACK arg=KernelInfo   OK -> arg is KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)
+### can an AFTER carry a non-None arg?
+  AFTER  arg=ANone        OK -> arg is None
+  AFTER  arg=KernelInfo   OK -> arg is KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)
+  AFTER  arg=ParamArg     OK -> arg is ParamArg(0, dtypes.int, 4)
+### the arg is None for EVERY node the two rules rebuild, over the fixture
+  mstack.arg is None = 1
+  after.arg  is None = 1
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-arg-blindspot.py", line 57, in <module>
+    print("  remove_noop_afters(after).arg is None =", int(_raf.arg is None),
+                                                           ^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'arg'

@@ -1,0 +1,482 @@
+138a139,140
+> bnxtdev-done=1
+> bs_absent_7=True
+145a148
+> bs_count_1_floor_wins=True
+147a151,152
+> bs_count_15_ignores_mne=True
+> bs_count_15_is_zero_count=True
+148a154
+> bs_count_2_sum_wins=False
+153a160,162
+> bs_extra_14=1024
+> bs_extra_15=0
+> bs_extra_absent_7=0
+156,169c165,171
+< bs_INIT_0_AT0=0
+< bs_INIT_0_HASH=0
+< bs_INIT_0_LAST=0
+< bs_INIT_0_LEN=4096
+< bs_INIT_0_NPOS=0
+< bs_INIT_1_AT0=0
+< bs_INIT_1_HASH=458976
+< bs_INIT_1_LAST=0
+< bs_INIT_1_LEN=4096
+< bs_INIT_1_NPOS=32
+< bs_INIT_2_AT0=0
+< bs_INIT_2_HASH=93034
+< bs_INIT_2_LAST=0
+< bs_INIT_2_LEN=1000
+---
+> bs_flags_same_type=True
+> bs_index_14=7
+> bs_INIT_0_LEN=64
+> bs_INIT_0_NPOS=64
+> bs_INIT_1_LEN=32
+> bs_INIT_1_NPOS=32
+> bs_INIT_2_LEN=16
+171,174c173
+< bs_INIT_3_AT0=1
+< bs_INIT_3_HASH=6148
+< bs_INIT_3_LAST=0
+< bs_INIT_3_LEN=4096
+---
+> bs_INIT_3_LEN=4
+181c180
+< bs_INST_2=2
+---
+> bs_INST_2=0
+183c182
+< bs_INST_3=0 1 2 3 4 5 6 7
+---
+> bs_INST_3=01 2 3 4 5 6 7 
+187a187,194
+> bs_inst_count_all=8
+> bs_inst_count_one=1
+> bs_inst_fwd_0=True
+> bs_inst_high_only=True
+> bs_inst_rev_0=True
+> bs_inst_zero_bitmap_count=True
+> bs_inst_zero_bitmap_is_0=True
+> bs_present_7_is_not_0=True
+193d199
+< c_BNXT_HWRM_NO_CMPL_RING=4294967295
+218c224
+< c_BS_TYPES_ASC=0 1 2 3 4 5 6 14 15
+---
+> c_BS_TYPES_ASC=01 2 3 4 5 6 14 15 
+254,256c260,262
+< c_MASK_ACCESS_NIBS=3 0 0 0 0 0 0 0
+< c_MASK_ACCESS_POP=2
+< c_MASK_INIT_MASK_NIBS=13 0 0 0 0 0 0 0
+---
+> c_MASK_ACCESS_NIBS=30 0 0 0 0 0 0 
+> c_MASK_ACCESS_POP=2
+> c_MASK_INIT_MASK_NIBS=130 0 0 0 0 0 0 
+258c264
+< c_MASK_RTR_MASK_NIBS=13 10 5 1 5 1 4 0
+---
+> c_MASK_RTR_MASK_NIBS=1310 5 1 5 1 4 0 
+260c266
+< c_MASK_RTS_MASK_NIBS=5 0 0 14 10 0 0 0
+---
+> c_MASK_RTS_MASK_NIBS=50 0 14 10 0 0 0 
+311a318,328
+> cqe_byte0_is_reserved=True
+> cqe_status_is_status=True
+> cqe_toggle_is_toggle=True
+> creq_nq_arm_epoch=1
+> creq_nq_arm_index_255=255
+> creq_nq_arm_index_256=0
+> creq_nq_arm_index=44
+> creq_ready_0=False
+> creq_ready_1=True
+> creq_ready_256=True
+> creq_ready_257=False
+317a335,338
+> db_2halves=False
+> db_2halves=False
+> db_2halves=False
+> db_2halves=False
+327a349,368
+> db_dropped_hi=True
+> db_dropped_hi=True
+> db_dropped_hi=True
+> db_dropped_hi=True
+> db_hi_nonzero=67108871
+> db_hi_nonzero=67108871
+> db_hi_nonzero=67108871
+> db_hi_nonzero=67108871
+> db_lo_zero=True
+> db_lo_zero=True
+> db_lo_zero=True
+> db_lo_zero=True
+> db_seq_rev_not=True
+> db_seq_rev_not=True
+> db_seq_rev_not=True
+> db_seq_rev_not=True
+> db_seq=True
+> db_seq=True
+> db_seq=True
+> db_seq=True
+338a380,383
+> dev_db_epoch_wrap=1
+> dev_db_epoch=1
+> dev_db_slot_wrap=0
+> dev_db_slot=1
+342a388,394
+> dev_first_flag_off=10
+> dev_first_flag_wrap=2147483658
+> dev_first_flag=2147483658
+> dev_gate_len0=False
+> dev_gate_ok=True
+> dev_gate_ok2=True
+> dev_gate_wrong_seq=False
+353a406
+> dev_prod_10=10
+355a409
+> dev_prod_wrap=10
+360a415
+> dev_SEQ_NEXT=11
+361a417,422
+> dev_size_cmdq_init=16
+> dev_size_cq_base=32
+> dev_slots_add_gid=3
+> dev_slots_create_qp=7
+> dev_slots_initialize_fw=7
+> dev_slots_modify_qp=9
+377c438
+< f_struct_cmdq_base_NAMES=opcode cmd_size flags cookie resp_size reserved8 resp_addr
+---
+> f_struct_cmdq_base_NAMES=opcodecmd_size flags cookie resp_size reserved8 resp_addr 
+392c453
+< f_struct_cmdq_init_NAMES=cmdq_pbl cmdq_size_cmdq_lvl creq_ring_id prod_idx
+---
+> f_struct_cmdq_init_NAMES=cmdq_pblcmdq_size_cmdq_lvl creq_ring_id prod_idx 
+397c458
+< f_struct_cq_base_NAMES=reserved64_1 reserved64_2 reserved64_3 cqe_type_toggle status reserved16 opaque
+---
+> f_struct_cq_base_NAMES=reserved64_1reserved64_2 reserved64_3 cqe_type_toggle status reserved16 opaque 
+412c473
+< f_struct_hwrm_resp_hdr_NAMES=error_code req_type seq_id resp_len
+---
+> f_struct_hwrm_resp_hdr_NAMES=error_codereq_type seq_id resp_len 
+419,420c480,481
+< gid_DGID=256 0 4294901760 571539466
+< gid_DMAC=4352 13090 21828
+---
+> gid_DGID=2560 4294901760 571539466 
+> gid_DMAC=051 3359829 
+424,430c485,503
+< gid_MAC_HI=4386
+< gid_MAC_LO=3359829
+< gid_SRCMAC_REV=17493 8755 17
+< gid_SRCMAC=17 8755 17493
+< gid_UNPACK=171131989 65535 0 0
+< hdr0_RECV_COMMENT_IS_RIGHT=0
+< hdr0_RECV_COMMENT_SAYS=8388611
+---
+> gid_MAC_HI=0
+> gid_MAC_LO=0
+> gid_SRCMAC_REV=335982951 0 
+> gid_SRCMAC=051 3359829 
+> gid_UNPACK=18057160565535 0 0 
+> has_arg_matters=True
+> has_arg_matters=True
+> has_arg_matters=True
+> has_arg_matters=True
+> has_fwd=True
+> has_fwd=True
+> has_fwd=True
+> has_fwd=True
+> has_rev=True
+> has_rev=True
+> has_rev=True
+> has_rev=True
+> hdr0_RECV_COMMENT_IS_RIGHT=False
+> hdr0_RECV_COMMENT_SAYS=8454144
+435,436c508,509
+< hdr0_SEND_COMMENT_IS_RIGHT=0
+< hdr0_SEND_COMMENT_SAYS=259
+---
+> hdr0_SEND_COMMENT_IS_RIGHT=False
+> hdr0_SEND_COMMENT_SAYS=65536
+441c514,523
+< l2_ADDR=0 17 34 51 68 85
+---
+> hwrm_all_calls=5
+> hwrm_all_calls=5
+> hwrm_all_calls=5
+> hwrm_all_calls=5
+> hwrm_all_seq=True
+> hwrm_all_seq=True
+> hwrm_all_seq=True
+> hwrm_all_seq=True
+> l2_ADDR=00 51 13124 85 13124 
+> l2_ENABLES_SPLIT=32771
+443c525,528
+< l2_MASK=255 255 255 255 255 255
+---
+> l2_MASK=255255 255 255 255 255 
+> mr_log_page_roundtrip=30
+> mr_lvl_roundtrip=False
+> mr_lvl_sft_is_zero=0
+465,467c550,552
+< msn_5_HI=524287
+< msn_5_LO=4060086256
+< msn_5_NEXT=16777201
+---
+> msn_5_HI=458752
+> msn_5_LO=754974764
+> msn_5_NEXT=45
+473a559,563
+> pbl_decode_addr_last=4097
+> pbl_decode_addr_ntl=4097
+> pbl_decode_last=True
+> pbl_decode_ntl=True
+> pbl_decode_valid=True
+475c565,571
+< pbl_deep_REFUSED=1
+---
+> pbl_deep_LEVEL=3
+> pbl_deep_not_refused=True
+> pbl_deep_REFUSED=True
+> pbl_flags_exclusive_neither=True
+> pbl_flags_exclusive_ntl=False
+> pbl_flags_exclusive=False
+> pbl_hi_untouched=True
+481c577
+< pbl_one_BASE_IS_INPUT=1
+---
+> pbl_one_BASE_IS_INPUT=True
+483,486c579,589
+< pbl_one_NOFLAGS=1
+< pbl_q_1_ALLOC0=0
+< pbl_q_1_ALLOCS=0
+< pbl_q_1_BASE_IS_FIRST=1
+---
+> pbl_one_NOFLAGS=True
+> pbl_q_1_ALLOC0=0
+> pbl_q_1_ALLOC1=0
+> pbl_q_1_ALLOCS=4294967295
+> pbl_q_1_BASE_IS_FIRST=True
+> pbl_q_1_ENTRY0_HI=31232
+> pbl_q_1_ENTRY0_LO=3
+> pbl_q_1_ENTRYLAST_HI=31232
+> pbl_q_1_ENTRYLAST_LO=3
+> pbl_q_1_ENTRYN1_HI=31232
+> pbl_q_1_ENTRYN1_LO=4294963205
+487a591
+> pbl_q_1_TOP_BYTES=4096
+490,491c594,601
+< pbl_q_1024_ALLOCS=2
+< pbl_q_1024_BASE_IS_FIRST=0
+---
+> pbl_q_1024_ALLOCS=1
+> pbl_q_1024_BASE_IS_FIRST=False
+> pbl_q_1024_ENTRY0_HI=31232
+> pbl_q_1024_ENTRY0_LO=1
+> pbl_q_1024_ENTRYLAST_HI=31232
+> pbl_q_1024_ENTRYLAST_LO=4190211
+> pbl_q_1024_ENTRYN1_HI=31232
+> pbl_q_1024_ENTRYN1_LO=4186117
+496,497c606,613
+< pbl_q_1025_ALLOCS=2
+< pbl_q_1025_BASE_IS_FIRST=0
+---
+> pbl_q_1025_ALLOCS=1
+> pbl_q_1025_BASE_IS_FIRST=False
+> pbl_q_1025_ENTRY0_HI=31232
+> pbl_q_1025_ENTRY0_LO=1
+> pbl_q_1025_ENTRYLAST_HI=31232
+> pbl_q_1025_ENTRYLAST_LO=4194307
+> pbl_q_1025_ENTRYN1_HI=31232
+> pbl_q_1025_ENTRYN1_LO=4190213
+501,502c617,619
+< pbl_q_2_ALLOCS=1
+< pbl_q_2_BASE_IS_FIRST=0
+---
+> pbl_q_2_ALLOC1=0
+> pbl_q_2_ALLOCS=0
+> pbl_q_2_BASE_IS_FIRST=False
+509a627
+> pbl_q_2_TOP_BYTES=4096
+511,512c629,631
+< pbl_q_511_ALLOCS=1
+< pbl_q_511_BASE_IS_FIRST=0
+---
+> pbl_q_511_ALLOC1=0
+> pbl_q_511_ALLOCS=0
+> pbl_q_511_BASE_IS_FIRST=False
+519a639
+> pbl_q_511_TOP_BYTES=4096
+521,522c641,643
+< pbl_q_512_ALLOCS=1
+< pbl_q_512_BASE_IS_FIRST=0
+---
+> pbl_q_512_ALLOC1=0
+> pbl_q_512_ALLOCS=0
+> pbl_q_512_BASE_IS_FIRST=False
+529a651
+> pbl_q_512_TOP_BYTES=4096
+532,533c654,661
+< pbl_q_513_ALLOCS=2
+< pbl_q_513_BASE_IS_FIRST=0
+---
+> pbl_q_513_ALLOCS=1
+> pbl_q_513_BASE_IS_FIRST=False
+> pbl_q_513_ENTRY0_HI=31232
+> pbl_q_513_ENTRY0_LO=1
+> pbl_q_513_ENTRYLAST_HI=31232
+> pbl_q_513_ENTRYLAST_LO=2097155
+> pbl_q_513_ENTRYN1_HI=31232
+> pbl_q_513_ENTRYN1_LO=2093061
+535a664,687
+> pbl_roundtrip_last=True
+> pbl_roundtrip_ntl=False
+> post_recv_no_msn=True
+> post_recv_no_msn=True
+> post_recv_no_msn=True
+> post_recv_no_msn=True
+> post_recv_ring_w=1
+> post_recv_ring_w=1
+> post_recv_ring_w=1
+> post_recv_ring_w=1
+> post_send_msn_2_calls=True
+> post_send_msn_2_calls=True
+> post_send_msn_2_calls=True
+> post_send_msn_2_calls=True
+> post_send_ring_w=2
+> post_send_ring_w=2
+> post_send_ring_w=2
+> post_send_ring_w=2
+> post_send_seq=False
+> post_send_seq=False
+> post_send_seq=False
+> post_send_seq=False
+> qp_access=3
+> qp_init_mask=13
+539c691,694
+< qwrap_READ_EQ0=1
+---
+> qp_newstate_differ=True
+> qp_rtr_mask=68490669
+> qp_rts_mask=712709
+> qwrap_READ_EQ0=True
+541a697,741
+> rcfw_skip_0=True
+> rcfw_skip_191=True
+> rcfw_skip_192=False
+> rcfw_skip_event_0=False
+> rcfw_skip_event_56=True
+> rcfw_skip_not_event=False
+> refuse_0_hwrm_ok=True
+> refuse_0_hwrm_refused=False
+> refuse_0_hwrm_seen=0
+> refuse_0_pbl_ok=True
+> refuse_0_pbl_refused=False
+> refuse_0_pbl_seen=0
+> refuse_0_poll_ok=True
+> refuse_0_poll_refused=False
+> refuse_0_poll_seen=0
+> refuse_1_hwrm_ok=True
+> refuse_1_hwrm_refused=True
+> refuse_1_hwrm_seen=0
+> refuse_1_pbl_ok=False
+> refuse_1_pbl_refused=False
+> refuse_1_pbl_seen=0
+> refuse_1_poll_ok=True
+> refuse_1_poll_refused=True
+> refuse_1_poll_seen=0
+> refuse_2_hwrm_ok=True
+> refuse_2_hwrm_refused=False
+> refuse_2_hwrm_seen=0
+> refuse_2_pbl_ok=True
+> refuse_2_pbl_refused=False
+> refuse_2_pbl_seen=0
+> refuse_2_poll_ok=True
+> refuse_2_poll_refused=False
+> refuse_2_poll_seen=0
+> refuse_3_hwrm_ok=True
+> refuse_3_hwrm_refused=False
+> refuse_3_hwrm_seen=0
+> refuse_3_pbl_ok=True
+> refuse_3_pbl_refused=False
+> refuse_3_pbl_seen=0
+> refuse_3_poll_ok=True
+> refuse_3_poll_refused=False
+> refuse_3_poll_seen=0
+> refuse_fires=False
+> refuse_idempotent=True
+> refuse_never=True
+544,551c744,745
+< wqe_0_R_VA_LO=0
+< wqe_0_R_W0=196736
+< wqe_0_R_W1=0
+< wqe_0_R_W2=0
+< wqe_0_R_W3=0
+< wqe_0_R_W4=0
+< wqe_0_R_W5=0
+< wqe_0_R_W6=0
+---
+> wqe_0_R_VA_LO=4096
+> wqe_0_R=1967360 0 0 0 0 0 
+554,562c748,749
+< wqe_0_S_VA_LO=64
+< wqe_0_S_W0=196864
+< wqe_0_S_W1=0
+< wqe_0_S_W2=64
+< wqe_0_S_W3=0
+< wqe_0_S_W4=0
+< wqe_0_S_W5=0
+< wqe_0_S_W6=0
+< wqe_0_S_W7=0
+---
+> wqe_0_S_VA_LO=4096
+> wqe_0_S=1968640 64 0 0 0 0 0 
+566,572c753
+< wqe_1_R_W0=196736
+< wqe_1_R_W1=0
+< wqe_1_R_W2=0
+< wqe_1_R_W3=0
+< wqe_1_R_W4=0
+< wqe_1_R_W5=0
+< wqe_1_R_W6=0
+---
+> wqe_1_R=1967360 0 0 0 0 0 
+576,583c757
+< wqe_1_S_W0=196864
+< wqe_1_S_W1=0
+< wqe_1_S_W2=0
+< wqe_1_S_W3=0
+< wqe_1_S_W4=0
+< wqe_1_S_W5=0
+< wqe_1_S_W6=0
+< wqe_1_S_W7=0
+---
+> wqe_1_S=1968640 0 0 0 0 0 0 
+586,593c760,761
+< wqe_2_R_VA_LO=0
+< wqe_2_R_W0=196736
+< wqe_2_R_W1=0
+< wqe_2_R_W2=0
+< wqe_2_R_W3=0
+< wqe_2_R_W4=0
+< wqe_2_R_W5=0
+< wqe_2_R_W6=0
+---
+> wqe_2_R_VA_LO=3735928559
+> wqe_2_R=1967360 0 0 0 0 0 
+596,604c764,765
+< wqe_2_S_VA_LO=4096
+< wqe_2_S_W0=196864
+< wqe_2_S_W1=0
+< wqe_2_S_W2=4096
+< wqe_2_S_W3=0
+< wqe_2_S_W4=0
+< wqe_2_S_W5=0
+< wqe_2_S_W6=0
+< wqe_2_S_W7=0
+---
+> wqe_2_S_VA_LO=3735928559
+> wqe_2_S=1968640 4096 0 0 0 0 0 

@@ -4,7 +4,7 @@
 #
 #   sh .agents/slop/beautiful-mnist-gate.sh
 #
-# THREE LANES and they must agree byte for byte on the twenty-four SHARED rows:
+# THREE LANES and they must agree byte for byte on the thirty SHARED rows:
 #
 #   py    CPython, python3 .agents/slop/beautiful-mnist-gate.py
 #   bend  the interpreted lane, ./bin/bend examples/beautiful_mnist.bend
@@ -15,7 +15,7 @@
 # code` and that is EXPECTED and is `tinybendygrad/dtype.bend`'s fourteen unfilled laws,
 # which `nn/optim.bend` also reports -- so this script does NOT gate on that line.
 #
-# FOUR ROWS ARE BEND-ONLY and they are filtered BY NAME, not by position, so that a row
+# SIX ROWS ARE BEND-ONLY and they are filtered BY NAME, not by position, so that a row
 # that MOVES is never silently dropped:
 #   row_round_2.3456, row_round_2.30   measure `H.f32_fixed`'s TRUNCATING `%.2f`, which
 #                                      is a defect in `tinybendygrad/helpers.bend` and a
@@ -26,11 +26,28 @@
 #   unverified_adam                    `nn.optim.Adam` == `LAMB(adam=True)` (optim.py:139)
 #                                      and `nn/optim.bend`'s own `unverified_lamb` row is
 #                                      RED: 1 node against CPython's 49.
+#   unverified_arange_dims             the RE-CONFIRMATION of the loss's W3a: an
+#                                      `arange`-rooted node's SHAPE, which
+#                                      `mxw_dims_of` answers with the EMPTY LIST because
+#                                      `op_arange` puts a `U1` quantiser in its pad's
+#                                      shape arg and `mxm_as_shape` refuses any non-CONST
+#                                      element. It prints EMPTY on purpose: an empty
+#                                      value is a MEASUREMENT, and if `mixin/rand.bend`
+#                                      ever grows a CONST-arg `arange` this row prints
+#                                      `10` and the header's W3a is out of date.
+#   unverified_step                    `mn_step` ITSELF. CPython cannot answer it,
+#                                      because the port takes `y` as a parameter and
+#                                      CPython builds it from `arange` (W3a), so the
+#                                      graphs differ from the first node on. The row
+#                                      exists because `mn_step` was the file's largest
+#                                      blind spot: NOTHING called it, so the whole W3b
+#                                      closure -- the mask built inside, and the arena
+#                                      it is interned in -- was invisible to the gate.
 set -e
 cd "$(dirname "$0")/../.."
 
 BMN=/tmp/bmn
-BEND_ONLY='row_round_2\.3456|row_round_2\.30|unverified_lin2|unverified_adam'
+BEND_ONLY='row_round_2\.3456|row_round_2\.30|unverified_lin2|unverified_adam|unverified_arange_dims|unverified_step'
 
 # `|| true` because `dtype.bend`'s fourteen unfilled laws make bend exit non-zero, and
 # the failure this lane exists to catch is a SYNTAX or a PROOF error, which the message

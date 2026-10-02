@@ -1,0 +1,50 @@
+34	self.adev.regXCC_DOORBELL_FENCE	write	
+37	self.adev.regBIFC_GFX_INT_MONITOR_MASK	write	
+38	self.adev.regBIFC_DOORBELL_ACCESS_EN_PF	write	
+39	self.adev.regRCC_DEV0_EPF2_STRAP2	update	strap_no_soft_reset_dev0_f2
+40	self.adev.regRCC_DEV0_EPF0_RCC_DOORBELL_APER_EN	write	
+42	self.adev.regHDP_MEM_POWER_CTRL	update	atomic_mem_power_ctrl_en atomic_mem_power_ds_en
+50	reg	write	
+123	self.adev.regMMVM_INVALIDATE_ENG17_SEM	write	inst
+125	self.adev.regMMVM_L2_BANK_SELECT_RESERVED_CID2	update	reserved_cache_private_invalidation inst
+265	self.adev.mmMP1_SMN_C2PMSG_90 if not debug else self.adev.mmMP1_SMN_C2PMSG_54	write	
+266	self.adev.mmMP1_SMN_C2PMSG_82 if not debug else self.adev.mmMP1_SMN_C2PMSG_53	write	
+267	self.adev.mmMP1_SMN_C2PMSG_66 if not debug else self.adev.mmMP1_SMN_C2PMSG_75	write	
+292	self.adev.regTCP_CNTL	write	inst
+294	self.adev.regRLC_CNTL	write	inst
+296	self.adev.regRLC_SRM_CNTL	update	srm_enable auto_incr_addr inst
+298	self.adev.regRLC_SPM_MC_CNTL	write	inst
+306	self.adev.regGB_ADDR_CONFIG	write	inst
+307	self.adev.regTCP_UTCL1_CNTL2	update	spare inst
+309	self.adev.regGRBM_CNTL	update	read_timeout inst
+312	self.adev.regSH_MEM_CONFIG	write	*{'initial_inst_prefetch': 3} if self.adev.ip_ver[am.GC_HWIP][0] >= 10 else {'retry_disable': 1} *{'f8_mode': 1} if self.adev.ip_ver[am.GC_HWIP][:2] == (9, 4) else {} address_mode alignment_mode inst
+319	self.adev.regSH_MEM_BASES	write	shared_base private_base inst
+323	self.adev.regCP_MEC_DOORBELL_RANGE_LOWER	write	inst
+324	self.adev.regCP_MEC_DOORBELL_RANGE_UPPER	write	inst
+345	self.adev.regGRBM_SOFT_RESET	write	soft_reset_cp soft_reset_cpc inst
+347	self.adev.regGRBM_SOFT_RESET	write	inst
+382	self.adev.regCP_HQD_ACTIVE	write	inst
+389	self.adev.regMM_ATC_L2_MISC_CG	write	enable mem_ls_enable
+392	self.adev.regRLC_SAFE_MODE	write	message cmd inst
+395	self.adev.regRLC_CGCG_CGLS_CTRL	update	cgcg_gfx_idle_threshold cgcg_en cgls_rep_compansat_delay cgls_en inst
+397	self.adev.regCP_RB_WPTR_POLL_CNTL	update	poll_frequency idle_poll_count inst
+398	self.adev.regCP_INT_CNTL	update	cntx_busy_int_enable cntx_empty_int_enable cmp_busy_int_enable inst
+400	self.adev.regSDMA0_RLC_CGCG_CTRL	update	cgcg_int_enable inst
+401	self.adev.regSDMA1_RLC_CGCG_CTRL	update	cgcg_int_enable inst
+405	self.adev.regRLC_CGTT_MGCG_OVERRIDE	update	*feats_gfx9 *feats_gfx11 gfxip_fgcg_override grbm_cgtt_sclk_override rlc_cgtt_sclk_override gfxip_mgcg_override gfxip_cgls_override gfxip_cgcg_override inst
+408	self.adev.regRLC_SAFE_MODE	write	message cmd inst
+411	self.adev.regGRBM_GFX_CNTL	write	meid pipeid vmid queueid inst
+415	self.adev.regCP_MEC_RS64_CNTL	update	mec_pipe0_reset mec_pipe0_active mec_halt inst
+416	self.adev.regCP_MEC_CNTL	write	inst
+421	self.adev.regCP_MEC_RS64_CNTL	update	mec_halt inst
+422	self.adev.regCP_MEC_CNTL	update	mec_me1_halt mec_me2_halt inst
+435	self.adev.regCP_MEC_CNTL	update	mec_invalidate_icache mec_me1_pipe0_reset mec_me2_pipe0_reset mec_me1_halt mec_me2_halt inst
+447	self.adev.regCP_HQD_DEQUEUE_REQUEST	write	inst
+448	self.adev.regSPI_COMPUTE_QUEUE_RESET	write	inst
+478	self.adev.regIH_STORM_CLIENT_LIST_CNTL	update	client18_is_storm_client
+479	self.adev.regIH_INT_FLOOD_CNTL	update	flood_cntl_enable
+480	self.adev.regIH_MSI_STORM_CTRL	update	delay
+489	self.adev.regIH_RB_RPTR	write	
+543	self.adev.regBIF_BX0_BIF_DOORBELL_INT_CNTL	write	ras_cntlr_interrupt_clear ras_athub_err_event_interrupt_clear
+583	self.adev.regGRBM_SOFT_RESET	write	soft_reset_sdma0
+585	self.adev.regGRBM_SOFT_RESET	write	

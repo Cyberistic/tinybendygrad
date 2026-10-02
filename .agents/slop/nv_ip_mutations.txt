@@ -1,0 +1,45 @@
+mutation                 moved  first rows to move
+--------------------------------------------------------------------------------------------
+const_name.last_wins         3  MOVED  ip_c_one_first,ip_c_n0,ip_c_n4
+const_name_n.no_count        6  MOVED  ip_c_one_n,ip_c_n0_k,ip_c_n4_k
+const_name.no_walk           6  MOVED  ip_c_one_first,ip_c_n0,ip_c_n4
+hex8.strip.ascending         1  MOVED  ip_seq_prog_ops
+hex8.strip.no_mask           3  MOVED  ip_d_lbl_miss,ip_d_lbl_miss2,ip_d_lbl_miss_hex
+ru.bit_trick                 1  MOVED  ip_ru_21_21
+rd.trunc                     0  EQUIV  
+rp.elem.no_header            4  MOVED  ip_rp_elem_4017,ip_rp_elem_4047,ip_rp_elem_4048
+rp.ring_len.is_size          7  MOVED  ip_rp_ring_len,ip_rp_w1_order,ip_rp_w1_first
+rp.wraps.ge                 28  MOVED  ip_tr_0_order,ip_tr_1_order,ip_tr_2_order
+rp.cont_more.ge              0  EQUIV  
+rp.pickw.swap                0  EQUIV  
+reg_len0.21                  3  MOVED  ip_reg_len0,ip_reg_off1,ip_reg_RMSecBusResetEnable_off
+seq_bad.ge8                  1  MOVED  ip_seq_ok_8
+am.page_ok.ge                3  MOVED  ip_rp_page_bad,ip_rp_pages_bad,ip_refuse_pages_bad
+door.gb2.always              4  MOVED  ip_door_ga10,ip_door_ga10_v,ip_rp_token_ga10
+ref.pages_go.or              1  MOVED  ip_refuse_pages_bad
+wpr.leg4.65535               3  MOVED  ip_wpr_1g_leg_gspFwOffset,ip_wpr_2g_leg_gspFwOffset,ip_w
+tr.hit.off_by_one           49  MOVED  ip_tr_0_order,ip_tr_0_n,ip_tr_1_order
+rp.put_wp.no_guard           3  MOVED  ip_refuse_at1_wp,ip_refuse_at2_wp,ip_refuse_at3_wp
+rp.put_wp.arms_swapped       8  MOVED  ip_refuse_at1_wp,ip_refuse_at2_wp,ip_refuse_at3_wp
+rp.bumped.no_guard           4  MOVED  ip_refuse_at1_seq,ip_refuse_at2_seq,ip_refuse_at3_seq
+rp.door.before_wp           29  MOVED  ip_tr_0_order,ip_tr_0_n,ip_tr_1_order
+rp.seq.after_door            1  MOVED  ip_refuse_at5_seq
+rp.barrier.dropped          34  MOVED  ip_tr_0_order,ip_tr_0_n,ip_tr_1_order
+rpc.wait.no_emit             6  MOVED  ip_rp_am_0_order,ip_rp_am_0_n,ip_rp_am_4_order
+ref.timeout.no_raise         3  MOVED  ip_refuse_timeout_order,ip_refuse_timeout_n,ip_refuse_ti
+rp.finish.sum_not_xor        7  MOVED  ip_rp_0_cksum,ip_rp_1_cksum,ip_rp_2_cksum
+rp.word2.function_zero      14  MOVED  ip_rp_0_cksum,ip_rp_0_w15,ip_rp_1_cksum
+rp.word2.elem_zero          14  MOVED  ip_rp_0_cksum,ip_rp_0_w10,ip_rp_1_cksum
+rp.which.last_word           0  EQUIV  
+rp.nwords.19                 7  MOVED  ip_rp_0_w19,ip_rp_1_w19,ip_rp_2_w19
+rpc.minted.no_advance        2  MOVED  ip_rp_am_0_next,ip_rp_am_4_next
+rpc.func_alloc.is_tag        2  MOVED  ip_rp_am_0_order,ip_rp_am_4_order
+am.plen.no_56                4  MOVED  ip_rp_am_payload_1,ip_rp_am_payload_4,ip_rp_am_0_plen
+rp.entry_off.zero            1  MOVED  ip_rp_entry_off
+rpc.am3.no_wait              4  MOVED  ip_rp_am_0_order,ip_rp_am_0_n,ip_rp_am_4_order
+--------------------------------------------------------------------------------------------
+37 mutations: 33 moved rows, 4 equivalent, 0 blind, 0 did not run
+  EQUIVALENT rd.trunc               x == (x/m)*m + x%m for every U32 x and m > 0, so x - x%m == (x/m)*m
+  EQUIVALENT rp.cont_more.ge        at plen == max_payload both guards give cdiv(0, m) == 0
+  EQUIVALENT rp.pickw.swap          rp.finish XORs the two accumulators, so permuting the words between them is the identity
+  EQUIVALENT rp.which.last_word     words 18 and 19 are both zero slots with no rp.word2 arm, so 19 and 18 answer the same 0

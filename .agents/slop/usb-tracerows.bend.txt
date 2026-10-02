@@ -1,0 +1,144 @@
+# ===========================================================================
+# THE TRACE ROWS. Three things are gateable about a trace and only three: the
+# IDENTITY of each call, the ORDER of the calls, and the TRUNCATION POINT of a
+# refusal. All three are whole-value rows here.
+# ===========================================================================
+
+def t_trace() -> IO(Unit):
+  IO.print(lines_of(
+    # :23-26 `USB3.ctx()` -- the option is conditional on `DEBUG >= 6` and there
+    # is no third call.
+    [s1("usb_ctx_order_debug6", Tr.sym(usb_ctx(True{}, Tr.of()))),
+     s1("usb_ctx_order_nodebug", Tr.sym(usb_ctx(False{}, Tr.of()))),
+     u1("usb_ctx_n_debug6", Tr.n(usb_ctx(True{}, Tr.of()))),
+     u1("usb_ctx_n_nodebug", Tr.n(usb_ctx(False{}, Tr.of()))),
+     # :32-36 the enumeration, on ONE device and on TWO, with and without a hit.
+     s1("usb_enum_order_0", Tr.sym(usb_enum(0n, False{}, 0, 0, Tr.of()))),
+     s1("usb_enum_order_1_miss", Tr.sym(usb_enum(1n, False{}, 0, 0, Tr.of()))),
+     s1("usb_enum_order_1_hit", Tr.sym(usb_enum(1n, True{}, 3, 7, Tr.of()))),
+     s1("usb_enum_order_2_hit", Tr.sym(usb_enum(2n, True{}, 3, 7, Tr.of()))),
+     u1("usb_enum_n_0", Tr.n(usb_enum(0n, False{}, 0, 0, Tr.of()))),
+     u1("usb_enum_n_1_miss", Tr.n(usb_enum(1n, False{}, 0, 0, Tr.of()))),
+     u1("usb_enum_n_1_hit", Tr.n(usb_enum(1n, True{}, 3, 7, Tr.of()))),
+     u1("usb_enum_n_2_hit", Tr.n(usb_enum(2n, True{}, 3, 7, Tr.of()))),
+     # :39-62 the open, on both kernel-driver branches.
+     s1("usb_open_order_nodetach", Tr.sym(usb_open(True{}, False{}, Tr.of()))),
+     s1("usb_open_order_detach", Tr.sym(usb_open(True{}, True{}, Tr.of()))),
+     u1("usb_open_n_nodetach", Tr.n(usb_open(True{}, False{}, Tr.of()))),
+     u1("usb_open_n_detach", Tr.n(usb_open(True{}, True{}, Tr.of()))),
+     # THE BUS/ADDRESS LABEL, which rides on the two enumeration calls.
+     s1("usb_list_label_b3_a7", list_label(3, 7)),
+     s1("usb_list_label_b0_a0", list_label(0, 0)),
+     s1("usb_list_label_b255_a127", list_label(255, 127))]))
+
+# THE SELECTION, with the NEGATIVE CASE one row from its positive. A descriptor
+# whose idVendor matches and whose idProduct does not is NOT selected, and a
+# descriptor whose product matches with the vendor swapped is NOT selected --
+# the comparison is a PAIR and not two independent halves.
+def t_select() -> IO(Unit):
+  IO.print(lines_of(
+    [b1("usb_list_match_exact", list_match(0x1d6b, 0x0104, 0x1d6b, 0x0104)),
+     b1("usb_list_match_vendor_only", list_match(0x1d6b, 0x0104, 0x1d6b, 0x0105)),
+     b1("usb_list_match_product_only", list_match(0x1d6b, 0x0104, 0x04b4, 0x0104)),
+     b1("usb_list_match_both_wrong", list_match(0x1d6b, 0x0104, 0x04b4, 0x0131)),
+     b1("usb_list_match_zero_zero", list_match(0, 0, 0, 0)),
+     b1("usb_list_match_ffff_ffff", list_match(65535, 65535, 65535, 65535)),
+     # the two descriptor field ORDINALS the comparison reads, by name
+     u1("usb_list_ix_idvendor", Fld.find("idVendor", F_DEVICE_DESCRIPTOR())),
+     u1("usb_list_ix_idproduct", Fld.find("idProduct", F_DEVICE_DESCRIPTOR()))]))
+
+# THE REFUSALS. Each one is a TRUNCATION and the row is the trace that survived,
+# so the ordinal of the failing emit is in the value and a refusal moved one step
+# late shows up as a different string rather than as a missing row.
+def t_refuse() -> IO(Unit):
+  IO.print(lines_of(
+    [s1("usb_open_refuse_product", Tr.sym(usb_open(False{}, False{}, Tr.fail_at(Tr.of(), 5n)))),
+     s1("usb_open_refuse_kdrv", Tr.sym(usb_open(True{}, True{}, Tr.fail_at(Tr.of(), 7n)))),
+     s1("usb_open_refuse_claim", Tr.sym(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 8n)))),
+     b1("usb_open_refused_product", Tr.refused(usb_open(False{}, False{}, Tr.fail_at(Tr.of(), 5n)))),
+     b1("usb_open_notrefused_ok", Tr.refused(usb_open(True{}, False{}, Tr.of()))),
+     b1("usb_open_refused_beyond", Tr.refused(usb_open(True{}, True{}, Tr.fail_at(Tr.of(), 99n)))),
+     # the negative case: one row from `usb_open_refuse_claim`
+     s1("usb_open_refuse_claim_m1", Tr.sym(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 7n)))),
+     b1("usb_enum_refused_freelist", Tr.refused(usb_enum(1n, True{}, 3, 7, Tr.fail_at(Tr.of(), 6n)))),
+     b1("usb_enum_notrefused", Tr.refused(usb_enum(1n, True{}, 3, 7, Tr.of())))]))
+
+# ===========================================================================
+# THE STRING ROWS AND THE PACKET ROWS.
+# ===========================================================================
+
+def t_strings() -> IO(Unit):
+  IO.print(lines_of(concat_str(
+    product_rows("usb_prod_custom_x", "custom asic")
+    <> product_rows("usb_prod_as2462_x", "AS2462 fw")
+    <> product_rows("usb_prod_lower_x", "Custom asic")
+    <> product_rows("usb_prod_none_x", "Acme Rocket")
+    <> product_rows("usb_prod_empty_x", "")
+    <> cpl_rows()
+    <> [s1("usb_msg_bulk_out", MSG_BULK_OUT()),
+        s1("usb_msg_bulk_in", MSG_BULK_IN()),
+        s1("usb_msg_short_write", MSG_SHORT_WRITE()),
+        s1("usb_msg_bytes", MSG_BYTES()),
+        s1("usb_msg_tlp_retries", MSG_TLP_RETRIES()),
+        s1("usb_msg_tlp_cpl", MSG_TLP_CPL()),
+        s1("usb_msg_cpl_unsup", MSG_CPL_UNSUP()),
+        s1("usb_msg_cpl_abort", MSG_CPL_ABORT()),
+        s1("usb_msg_cpl_retry", MSG_CPL_RETRY()),
+        s1("usb_msg_cpl_reserved", MSG_CPL_RESERVED()),
+        s1("usb_msg_ltssm", MSG_LTSSM()),
+        s1("usb_msg_ltssm_tail", MSG_LTSSM_TAIL()),
+        s1("usb_msg_invalid_size", MSG_INVALID_SIZE()),
+        s1("usb_msg_aligned_size_w", MSG_ALIGNED_SIZE_W()),
+        s1("usb_msg_aligned_size_r", MSG_ALIGNED_SIZE_R()),
+        s1("usb_msg_aligned_access_r", MSG_ALIGNED_ACCESS_R()),
+        s1("usb_msg_aligned_access_w", MSG_ALIGNED_ACCESS_W()),
+        s1("usb_msg_sz", MSG_SZ()),
+        s1("usb_msg_checked", MSG_CHECKED()),
+        s1("usb_product_ok", PRODUCT_OK()),
+        s1("usb_product_ok2", PRODUCT_OK2())])))
+
+def cpl_rows() -> List<&2, String>:
+  cpl_row("usb_cpl_0", 0) <> cpl_row("usb_cpl_1", 1) <> cpl_row("usb_cpl_2", 2)
+  <> cpl_row("usb_cpl_3", 3) <> cpl_row("usb_cpl_4", 4) <> cpl_row("usb_cpl_5", 5)
+  <> cpl_row("usb_cpl_6", 6) <> cpl_row("usb_cpl_7", 7)
+
+def cpl_row(+nm: String, +st: U32) -> List<&2, String>:
+  [u1(String.concat([nm, "_unsup"]), Bool.to_u32(U32.is_eq(st, CPL_UNSUP()))),
+   u1(String.concat([nm, "_retry"]), Bool.to_u32(U32.is_eq(st, CPL_RETRY()))),
+   u1(String.concat([nm, "_abort"]), Bool.to_u32(U32.is_eq(st, CPL_ABORT()))),
+   b1(String.concat([nm, "_named"]), cpl_named(st)),
+   s1(String.concat([nm, "_name"]), cpl_name(st))]
+
+def t_packets() -> IO(Unit):
+  IO.print(lines_of(
+    [s1("usb_cdb_fmt", CDB_FMT()),
+     s1("usb_cdb_fields", CDB_FIELDS()),
+     s1("usb_cdb_widths", CDB_WIDTHS()),
+     u1("usb_cdb_size", CDB_SIZE()),
+     s1("usb_reply_fmt", REPLY_FMT()),
+     s1("usb_reply_fields", REPLY_FIELDS()),
+     s1("usb_reply_widths", REPLY_WIDTHS()),
+     u1("usb_reply_size", REPLY_SIZE()),
+     # the reply's `bulk_read(13)` IS `calcsize("<IIIB")`, and :92's tuple is the
+     # three fields it does NOT discard.
+     u1("usb_reply_read_len", REPLY_READ_LEN()),
+     b1("usb_reply_ok_exact", reply_ok(MAGIC_USBS(), 7, 0, 7)),
+     b1("usb_reply_ok_wrong_tag", reply_ok(MAGIC_USBS(), 8, 0, 7)),
+     b1("usb_reply_ok_nonzero_status", reply_ok(MAGIC_USBS(), 7, 1, 7)),
+     b1("usb_reply_ok_wrong_sig", reply_ok(MAGIC_USBC(), 7, 0, 7)),
+     b1("usb_reply_ok_all_wrong", reply_ok(0, 0, 1, 9)),
+     u1("usb_magic_usbc", MAGIC_USBC()),
+     u1("usb_magic_usbs", MAGIC_USBS()),
+     # the control/bulk request types and endpoints
+     u1("usb_rtype_out", RTYPE_OUT()),
+     u1("usb_rtype_in", RTYPE_IN()),
+     u1("usb_ep_out", EP_OUT()),
+     u1("usb_ep_in", EP_IN()),
+     u1("usb_ep_out_dir", ep_dir(EP_OUT())),
+     u1("usb_ep_in_dir", ep_dir(EP_IN())),
+     # the string buffer and the USB3-level constants the trace names
+     u1("usb3_string_buf", USB3_STRING_BUF()),
+     u1("usb3_iface", USB3_IFACE()),
+     u1("usb3_alt", USB3_ALT()),
+     u1("usb3_config", USB3_CONFIG()),
+     u1("usb3_log_level_debug", USB3_LOG_LEVEL_DEBUG())]))

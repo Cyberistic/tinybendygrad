@@ -1,0 +1,111 @@
+# ===========================================================================
+# THE STRING TABLE. `usb.py` has nine user-visible strings and every one of them
+# is either a LITERAL or an f-string whose literal parts are load-bearing. They
+# are diffed AS STRINGS, not as a boolean about a string, because `String.concat`
+# drops a literal silently: a row that said "the message is not empty" would stay
+# green with the prefix removed.
+#
+# THREE of them cannot be rendered here at all and are named as the seam:
+# `{address:#x}` needs hex, `{ltssm:02X}` needs zero-padded hex, and
+# `libusb_strerror` is a C call. Bend 2.0.34 has `U32.show` and no radix.
+#     TODO(p3) tinygrad/runtime/support/usb.py:16   `libusb_strerror(rc)`.
+#     TODO(p3) tinygrad/runtime/support/usb.py:102  `0x{ltssm:02X}`.
+#     TODO(p3) tinygrad/runtime/support/usb.py:129  `address={address:#x}`.
+#     TODO(p3) tinygrad/runtime/support/usb.py:133  `f'Reserved (0b{cpl_status:03b})'`.
+# ===========================================================================
+
+def MSG_BULK_OUT() -> String: "bulk OUT 0x02 failed"
+def MSG_BULK_IN() -> String: "bulk IN 0x81 failed"
+def MSG_SHORT_WRITE() -> String: "bulk OUT short write: "
+def MSG_BYTES() -> String: " bytes"
+def MSG_TLP_RETRIES() -> String: "TLP error after retries: ret_status="
+def MSG_TLP_CPL() -> String: "TLP completion status: "
+def MSG_CPL_UNSUP() -> String: "Unsupported Request: "
+def MSG_CPL_ABORT() -> String: "Completer Abort"
+def MSG_CPL_RETRY() -> String: "Config Retry"
+def MSG_CPL_RESERVED() -> String: "Reserved (0b"
+def MSG_LTSSM() -> String: "PCIe link not up (LTSSM=0x"
+def MSG_LTSSM_TAIL() -> String: "), custom firmware not ready"
+def MSG_INVALID_SIZE() -> String: "Invalid size "
+def MSG_ALIGNED_SIZE_W() -> String: "pcie_mem_write requires 4-byte aligned size, got "
+def MSG_ALIGNED_SIZE_R() -> String: "pcie_mem_read requires 4-byte aligned size, got "
+def MSG_ALIGNED_ACCESS_R() -> String: "pcie_mem_read requires 4-byte aligned access, got off="
+def MSG_ALIGNED_ACCESS_W() -> String: "pcie_mem_write requires 4-byte aligned access, got off="
+def MSG_SZ() -> String: ", sz="
+def MSG_CHECKED() -> String: ": "
+def PRODUCT_OK() -> String: "custom"
+def PRODUCT_OK2() -> String: "AS2462"
+
+# :52 `assert self.product.startswith("custom") or self.product.startswith("AS2462")`
+def product_ok(+product: String) -> Bool:
+  Bool.or(String.starts_with(product, PRODUCT_OK()), String.starts_with(product, PRODUCT_OK2()))
+
+def product_rows(+nm: String, +product: String) -> List<&2, String>:
+  [b1(String.concat([nm, "_custom"]), String.starts_with(product, PRODUCT_OK())),
+   b1(String.concat([nm, "_as2462"]), String.starts_with(product, PRODUCT_OK2())),
+   b1(String.concat([nm, "_either"]), product_ok(product))]
+
+# :132 the status map. `status_map.get(cpl_status, f'Reserved (0b{cpl_status:03b})')`
+# -- so 0b001, 0b010 and 0b100 have names and EVERYTHING else is Reserved, and the
+# map is a DICT with three keys, so 0 and 5 are Reserved and not an error.
+def CPL_UNSUP() -> U32: 1     # 0b001
+def CPL_RETRY() -> U32: 2     # 0b010
+def CPL_ABORT() -> U32: 4     # 0b100
+
+def cpl_name(+cpl_status: U32) -> String:
+  match cpl_status:
+    case 1n: MSG_CPL_UNSUP()
+    case 2n: MSG_CPL_RETRY()
+    case 4n: MSG_CPL_ABORT()
+    case _: MSG_CPL_RESERVED()
+
+def cpl_named(+cpl_status: U32) -> Bool:
+  Bool.or(U32.is_eq(cpl_status, CPL_UNSUP()),
+          Bool.or(U32.is_eq(cpl_status, CPL_RETRY()), U32.is_eq(cpl_status, CPL_ABORT())))
+
+# ===========================================================================
+# THE PACKET FORMATS. `send_batch` (:87-92) is the only place `usb.py` packs a
+# wire structure, and both formats are `struct.calcsize` calls that this port must
+# not get wrong by eye: `"<IIIBBB16s"` is 31 bytes, and `"<IIIB"` is 13, which is
+# exactly the `bulk_read(13)` on the next line. A reader who counts `16s` as four
+# more uint32 gets 39 and the reply disagrees.
+#
+# THE FIELD LISTS ARE BY NAME AND IN ORDER, and the NAMES are the ROLES the
+# calling code gives them -- `struct.pack` has no field names, so this is a
+# reading of `"<IIIBBB16s"` against the seven arguments :89 hands it, and the
+# WIDTHS beside each name are `struct.calcsize` of the field's own format, which
+# is not.
+#   :89  0x43425355 "USBC", tag, len(data) or 0, 0, 0, len(cdb), cdb
+# ===========================================================================
+def CDB_FMT() -> String: "<IIIBBB16s"
+def CDB_FIELDS() -> String: "magic tag datalen zero0 zero1 cdblen cdb"
+def CDB_WIDTHS() -> String: "4 4 4 1 1 1 16"
+
+# :91 `"<IIIB"` unpacked as `sig, rtag, _, status`, and the `_` is a DISCARDED
+# field: it is read and never used, so its name here is the discard.
+def REPLY_FMT() -> String: "<IIIB"
+def REPLY_FIELDS() -> String: "sig rtag discard status"
+def REPLY_WIDTHS() -> String: "4 4 4 1"
+
+# :92 `assert (sig, rtag, status) == (0x53425355, tag, 0)` -- the two magics are
+# 'USBC' out and 'USBS' back, and the reply's STATUS must be zero.
+def MAGIC_USBC() -> U32: 1128420181  # 0x43425355
+def MAGIC_USBS() -> U32: 1396855637  # 0x53425355
+
+def reply_ok(+sig: U32, +rtag: U32, +status: U32, +tag: U32) -> Bool:
+  Bool.and(Bool.and(U32.is_eq(sig, MAGIC_USBS()), U32.is_eq(rtag, tag)),
+           U32.is_zero(status))
+
+# :67 / :71 the two request types, and they are the ONLY difference between
+# `control_write` and `control_read`: 0x40 is vendor|device|OUT and 0xC0 adds the
+# IN bit.
+def RTYPE_OUT() -> U32: 64     # 0x40
+def RTYPE_IN() -> U32: 192     # 0xC0
+def EP_OUT() -> U32: 2         # 0x02, bulk OUT
+def EP_IN() -> U32: 129        # 0x81, bulk IN 0x01 | 0x80
+
+def ep_dir(+ep: U32) -> U32: U32.and(ep, 128)
+
+def rtype_rows(+nm: String, +req: U32) -> List<&2, String>:
+  [u1(String.concat([nm, "_out_rtype"]), RTYPE_OUT()),
+   u1(String.concat([nm, "_in_rtype"]), RTYPE_IN())]

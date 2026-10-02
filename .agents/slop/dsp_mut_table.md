@@ -1,0 +1,135 @@
+| # | rows moved | what it is testing |
+| --- | --- | --- |
+| M1 | 10 | :33's `sc>>24` -- the entry shim reads the METHOD byte. Off by one field. |
+| | | moved: dsp_cl_f, dsp_entry_ok_2, dsp_entry_ok_2b, dsp_exec_sc_m, dsp_ol_f, dsp_rpc_greet_f, dsp_sc_m255_only, dsp_scf_2210, dsp_scf_22115, dsp_scf_open |
+| M2 | 30 | :48's four one-byte fields -- outs placed at method's shift. |
+| M3 | 4 | THE BUG the first run found: :54's head and tail swapped. |
+| | | moved: dsp_attr_0220, dsp_attr_111, dsp_attr_22116, dsp_attr_2213 |
+| M4 | 2 | :56's `mv.nbytes > 0 else 0` -- the ZERO-LENGTH rule. |
+| | | moved: dsp_pra_pv_z, dsp_pra_pvset_0 |
+| M5 | 3 | the same rule, the other way -- a NEGATIVE case for M4. |
+| | | moved: dsp_pra_pv_2210v, dsp_pra_pv_z, dsp_pra_pvset_8 |
+| M6 | 11 | :70's `fds=len(bufs)` -- the selector is a function of ONE number. |
+| | | moved: dsp_call_mix_sc, dsp_call_ok_sc, dsp_exec_order, dsp_exec_sc, dsp_exec_sc_0, dsp_exec_sc_1, dsp_exec_sc_15, dsp_exec_sc_16, dsp_exec_sc_3, dsp_exec_sc_7, dsp_exec_sc_f |
+| M7 | 6 | :63's `len(bufs) >= 16` -- the refusal boundary itself. |
+| | | moved: dsp_call_16_n, dsp_call_16_refused, dsp_call_blocked_flag, dsp_call_blocked_n, dsp_call_mix_n, dsp_toomany_16 |
+| M8 | 4 | :68's `i*8` with `i` starting at `len(bufs)` -- the vals' BASE offset. |
+| | | moved: dsp_vt_vox_15_0, dsp_vt_vox_1_0, dsp_vt_vox_3_0, dsp_vt_vox_3_1 |
+| M9 | 2 | :67's 4-byte `pack_into('i', ...)` leaves the HIGH word UNTOUCHED, not sign-extended. |
+| | | moved: dsp_vt_hi_4, dsp_vt_hi_big |
+| M10 | 1 | dt.fmt for double -- `d` against `f`. One character, a wrong kernel. |
+| | | moved: dsp_fmt_double |
+| M11 | 1 | dt.fmt for int -- SIGNED against unsigned. The classic silent one. |
+| | | moved: dsp_fmt_int |
+| M12 | 4 | dt.itemsize for int64 -- 8 against 4. |
+| | | moved: dsp_isz_long, dsp_m_nb_i64_1, dsp_m_v4, dsp_vt_hi_q |
+| M13 | 2 | the four fp8 itemsize arms -- 1 byte each, and the bug this gate found. |
+| | | moved: dsp_isz_fp8, dsp_isz_fp8b |
+| M14 | 2 | :15's ADDED int64 key -- `long long` against `long`. |
+| | | moved: dsp_cn_long, dsp_m_v4 |
+| M15 | 7 | THE GLOBAL ARM of :32 -- a float buffer's SIZE must be spelled `int`. |
+| | | moved: dsp_cng_glob_f32, dsp_cng_glob_i64, dsp_cng_glob_u64, dsp_e_sz_g0, dsp_e_sz_g1, dsp_e_sz_g2, dsp_e_sz_g3 |
+| M16 | 1 | :46's `not bfloat16` -- the reason supported_dtypes exists at all. |
+| | | moved: dsp_sd_drop_bf16 |
+| M17 | 1 | :46's `d not in dtypes.fp8s` -- three of the four fp8 arms. |
+| | | moved: dsp_sd_drop_fp8b |
+| M18 | 9 | :37's `pra[i+3]` -- the two ins and one out ahead of the dma slots. |
+| | | moved: dsp_e_ag_mm1, dsp_e_ag_mm2, dsp_e_dma_0, dsp_e_dma_2, dsp_e_dma_4, dsp_e_dma_n, dsp_e_mm0, dsp_e_mm1, dsp_e_mm2 |
+| M19 | 8 | :33's `(char*)pra[0].buf.pv + i*8` -- the 8-BYTE slot stride. |
+| | | moved: dsp_e_sz_a1, dsp_e_sz_a2, dsp_e_sz_a3, dsp_e_sz_g1, dsp_e_sz_g2, dsp_e_sz_g3, dsp_vt_ix_1, dsp_vt_ix_2 |
+| M20 | 6 | the slot INDEX inside the sz_or_val line -- every param reading slot 0. |
+| | | moved: dsp_e_sz_a1, dsp_e_sz_a2, dsp_e_sz_a3, dsp_e_sz_g1, dsp_e_sz_g2, dsp_e_sz_g3 |
+| M21 | 4 | :96's `buf.va_addr + offset` -- the ADDRESS does not advance. |
+| | | moved: dsp_acc_math, dsp_acc_va1, dsp_acc_va2, dsp_acc_va3 |
+| M22 | 3 | :96's `buf.offset + offset` -- offsets ACCUMULATE. The silent one. |
+| | | moved: dsp_acc_math, dsp_acc_off2, dsp_acc_off3 |
+| M23 | 4 | the same claim, at the record -- a view of a view loses its parent's offset. |
+| | | moved: dsp_acc_moff, dsp_acc_off1, dsp_acc_off2, dsp_acc_off3 |
+| M24 | 3 | the SECOND BUG the gate found: the pattern binder shadowing `size`. |
+| | | moved: dsp_acc_n1, dsp_acc_sz1, dsp_acc_sz2 |
+| M25 | 2 | :88-91's free ORDER -- munmap before munmap-of-the-handle. |
+| | | moved: dsp_free_r_order, dsp_free_r_rev |
+| M26 | 1 | :81-83's alloc ORDER -- ION_ALLOC, ION_SHARE, then the mmap. |
+| | | moved: dsp_alloc_r_order |
+| M27 | 5 | THE THIRD BUG the gate found: :100's `-static` / `-shared` arms swapped. |
+| | | moved: dsp_args_first_m, dsp_args_first_r, dsp_cmd_cc, dsp_cmd_m, dsp_cmd_r |
+| M28 | 2 | :113's `None if mock else "compile_dsp"` -- the MOCK arm. |
+| | | moved: dsp_ck_m, dsp_ck_on_m |
+| M29 | 2 | :104's first section name. A dropped dot in a section list is a link failure. |
+| | | moved: dsp_link_0, dsp_link_script |
+| M30 | 3 | :106's ALIGN(4096) -- the NOTE at :103 says 4k is the fix. |
+| | | moved: dsp_link_line, dsp_link_line2, dsp_link_script |
+| M31 | 1 | the prepend that REVERSES the section order. Caught twice by the same row. |
+| | | moved: dsp_link_script |
+| M32 | 1 | the leading separator `str.join` would not have. |
+| | | moved: dsp_link_script |
+| M33 | 7 | :169 BEFORE :170 -- the stale INVOKE precedes the close. |
+| | | moved: dsp_exec_fail_kinds, dsp_exec_retry_kinds, dsp_init_ag_first_k, dsp_init_ag_kinds, dsp_init_ag_order, dsp_init_ag_second_k, dsp_rd_kinds |
+| M34 | 16 | :167's `if hasattr(self, 'rpc_fd')` -- the stale-fd path skipped entirely. |
+| | | moved: dsp_exec_fail_kinds, dsp_exec_fail_n, dsp_exec_retry_inits, dsp_exec_retry_kinds, dsp_exec_retry_n, dsp_init_ag_close, dsp_init_ag_first_k, dsp_init_ag_invokes, dsp_init_ag_kinds, dsp_init_ag_n, dsp_init_ag_order, dsp_init_ag_second_k, dsp_rd_invoke, dsp_rd_invoke_args, dsp_rd_kinds, dsp_rd_n |
+| M35 | 7 | :173 before :174 -- GETINFO and CONTROL swapped. |
+| | | moved: dsp_exec_fail_kinds, dsp_exec_retry_kinds, dsp_init_ag_kinds, dsp_init_ag_order, dsp_init_kinds, dsp_init_order, dsp_rd_kinds |
+| M36 | 6 | :159-164's retry -- a port that SKIPS the first attempt records ten, not eleven. |
+| | | moved: dsp_exec_fail_kinds, dsp_exec_fail_n, dsp_exec_fail_open, dsp_exec_retry_kinds, dsp_exec_retry_n, dsp_exec_retry_open |
+| M37 | 9 | THE RAISE, at the device-error site: a failed ioctl records its open AND its close. |
+| | | moved: dsp_exec_fail_close, dsp_exec_fail_invoke, dsp_exec_fail_kinds, dsp_exec_fail_n, dsp_exec_fail_tail, dsp_exec_retry_close, dsp_exec_retry_invoke, dsp_exec_retry_kinds, dsp_exec_retry_n |
+| M38 | 3 | THE RAISE, at :63 -- the refusal flag itself. Dropping it lets everything after run. |
+| | | moved: dsp_call_16_refused, dsp_call_blocked_flag, dsp_call_blocked_n |
+| M38b | 1 | THE RAISE inside `Tr.emit` -- the guard for a DEVICE error. See BLIND SPOT 1: it is not reachable yet. |
+| | | moved: dsp_call_blocked_n |
+| M39 | 4 | :147's SIGNED 32-bit test -- the port that reached for an unsigned compare. |
+| | | moved: dsp_ol_bad_0, dsp_ol_bad_neg, dsp_ol_bad_neg2, dsp_ol_bad_neg3 |
+| M40 | 4 | THE greeting LITERAL. Rewriting it as an rpc_sc call sends method 2 and the DSP never greets. |
+| | | moved: dsp_entry_no_4, dsp_rpc_greet, dsp_rpc_greet_f, dsp_rpc_greet_gap |
+| M41 | 1 | the elif chain's sc table -- one digit off in the OPEN arm. |
+| | | moved: dsp_rpc_a_open |
+| M42 | 2 | the chain's ORDER -- greeting first, open second. |
+| | | moved: dsp_rpc_arms, dsp_rpc_cnt |
+| M43 | 1 | :215's `in_args[3]` -- the name is the FOURTH in-arg of the open arm. |
+| | | moved: dsp_rpc_cnt |
+| M44 | 1 | :201's `round_up(ptr+4, 8)` -- the alignment is 8, not 4. |
+| | | moved: dsp_rpc_pad |
+| M45 | 2 | :221's SEEK_SET assert -- the only assert in the file. |
+| | | moved: dsp_rpc_seek_1, dsp_rpc_seek_2 |
+| M46 | 7 | :262's `max_numel()*itemsize` -- multiply, not add. |
+| | | moved: dsp_m_nb_f16_3, dsp_m_nb_f32_2, dsp_m_nb_f32_4, dsp_m_nb_f64_2, dsp_m_nb_i64_1, dsp_m_nb_u32_1, dsp_m_nb_u8_7 |
+| M47 | 0 | :266's `_render_dtype` -- the ALU arm of the GLOBAL helper would be right by luck here and wrong for a GLOBAL. |
+| M48 | 2 | :268's `val{i}` for an ALU -- the mock's bare-value spelling. |
+| | | moved: dsp_m_aa0, dsp_m_ag2 |
+| M49 | 2 | :71's /1e6 against :292's /1e9 -- two programs, two scales. |
+| | | moved: dsp_scale_gap, dsp_scale_real |
+| M50 | 2 | the same pair, the other way. |
+| | | moved: dsp_scale_gap, dsp_scale_mock |
+| M51 | 1 | the gpages syscall table at :257 -- read is 63. |
+| | | moved: dsp_m_sys |
+| M52 | 10 | THE MATCHER, with the ops_webgpu M23 bug: the fuel is the TRACE length but the answer ignores `at`. |
+| | | moved: dsp_exec_fail_tail, dsp_exec_rev, dsp_free_r_rev, dsp_has_absent, dsp_has_emptytr, dsp_has_long, dsp_has_rev, dsp_has_wrongarg, dsp_has_wrongkind, dsp_init_rev |
+| M53 | 9 | the matcher with the PATTERN length as fuel -- the other half of M23. |
+| | | moved: dsp_exec_fail_tail, dsp_exec_rev, dsp_free_r_rev, dsp_has_absent, dsp_has_long, dsp_has_rev, dsp_has_wrongarg, dsp_has_wrongkind, dsp_init_rev |
+| M54 | 5 | :32 emits one sz_or_val PER PARAM, ALU or not -- not per ALU. |
+| | | moved: dsp_e_lines_agga, dsp_e_lines_g1, dsp_e_lines_g2, dsp_e_lines_gag, dsp_e_nsz_agga |
+| M55 | 7 | :35 and :37 filter on `!= AddrSpace.GLOBAL`, so the count is the GLOBAL one. |
+| | | moved: dsp_e_lines_a1, dsp_e_lines_a2, dsp_e_lines_g1, dsp_e_lines_g2, dsp_e_lines_gag, dsp_e_noff_a2, dsp_e_noff_g2 |
+| M56 | 8 | the tail's four lines -- the LINE COUNT is the only row that sees a dropped one. |
+| | | moved: dsp_e_lines_a1, dsp_e_lines_a2, dsp_e_lines_agga, dsp_e_lines_g0, dsp_e_lines_g1, dsp_e_lines_g2, dsp_e_lines_gag, dsp_e_ntail |
+| M57 | 7 | :52's one array of len(ins)+len(outs)+len(in_fds) -- the fd slots count too. |
+| | | moved: dsp_pra_len_0220, dsp_pra_len_111, dsp_pra_len_112, dsp_pra_len_22115, dsp_pra_len_22116, dsp_pra_len_2213, dsp_pra_lens_eq |
+| M58 | 4 | :53's `-1` marker. |
+| | | moved: dsp_fds_111, dsp_fds_2210, dsp_fds_22116, dsp_fds_2213 |
+| M59 | 3 | :135's `BufferSpec(nolru=True)` -- THE EVICTION NEGATIVE CASE. Dropping it makes the shell recyclable. |
+| | | moved: dsp_norecycle_nolru, dsp_shell_nolru, dsp_shell_recycled |
+| M60 | 2 | :135's `round_up(nbytes, 0x1000)` -- the shell buffer's alignment. |
+| | | moved: dsp_shell_alloc_size, dsp_shell_sz |
+| M61 | 1 | :94's `src.nbytes` going in -- a view's window, not its buffer. |
+| | | moved: dsp_copy |
+| M62 | 1 | :129's ONE branch, which selects four things at once. |
+| | | moved: dsp_mock_default |
+| M63 | 1 | :257's `.word 0x6a15c000` -- the inscount instruction word. |
+| | | moved: dsp_m_sys |
+| M64 | 2 | :16's `code_for_op = {k:v for ... if k != Ops.SQRT}` -- ONE entry removed. |
+| | | moved: dsp_cfop_dsp, dsp_cfop_removed |
+| M65 | 1 | :197's `sc = msg_recv[2]` -- the selector is the reply's THIRD word. |
+| | | moved: dsp_rpc_reply_ix |
+| M66 | 1 | :192's `[context, status, ...]` -- status is the SECOND word. |
+| | | moved: dsp_rpc_msg_ix |
+| M99 | 0 | THE CONTROL: a comment-only edit. A table with no row that CANNOT move is a table of coincidences. |

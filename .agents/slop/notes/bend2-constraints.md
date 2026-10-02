@@ -8321,3 +8321,213 @@ both agreed with nothing -- the port's `1` and `2` are right -- so the differ re
 POSITIONAL indices (`at=1`, `at=2`) because the line carries three ints, and refusing to write
 a regex where the line carries two. When a port and an oracle disagree, establish which of the
 two read the line wrong BEFORE concluding the port has a bug.
+
+## MEASURED BY THE `runtime/support/system` UNIT (2026-10-02) -- numbering continues from the
+## `1..9` series that ends at line 8320 (the `runtime/support/nv/ip` unit). Rule NUMBERS REPEAT
+## across every series in this file; cite LINE POSITIONS.
+
+**1. `Bool.pick` DOES SHORT-CIRCUIT ON A TERM IN BEND 2.0.34, SO A FOLD BUILT ON IT IS
+FIRST-HIT AND NOT LAST-HIT.** The rule at position 6038 and the one at 6021 both say `Bool.pick`
+"EVALUATES BOTH ARMS", and for the MUTATING cases that is right -- a `Bool.pick` cannot gate a
+`List.append`. But `Bool.pick(U32, guard, a, f(v, t, n+1))` where the recursive call is PURE does
+NOT force the recursion. MEASURED, one line: `f(1, [9,1,1,7], 0)` printed `1`, the FIRST hit, and
+`f(5, [9,1,1,7], 0)` printed `999`, so the walk does stop. The consequence is a REAL DIVERGENCE
+and not a style point: the direction a Python `{v: k for k, v in table}` mirrors is LAST-hit, so a
+`Bool.pick` table walk answers the other one. Where the table is INJECTIVE the two are THEOREMS
+and equal (`RemoteCmd`'s sixteen names, the nine `struct.calcsize` format codes); where it is not
+(`MAP_SHARED` and `PROT_READ` are both 1, `MAP_PRIVATE` and `PROT_WRITE` are both 2) they are not,
+and the file has to say which it is. Before writing a table walk, decide FIRST-hit or LAST-hit and
+put it in the comment -- an unqualified "the same as the dict comprehension" is wrong.
+
+**2. A `Do` BLOCK WHOSE LAST STATEMENT IS AN `IO` BIND, FOLLOWED BY A COMMENT AND THEN A `def`,
+IS A PARSE ERROR.** `bend` reports `expected : a term (the keyword 'def' cannot head one)` pointing
+at the `def`, which reads like a missing `end` and is not one: every def body before it is
+balanced. Bare calls ARE statements (the rule at position 695), so making the last child call a
+bare statement instead of `x : Unit <- f()` fixes it. This cost two rounds of a ten-minute loop
+before the pattern was visible.
+
+**3. A `Data` BINDER IN A `do` BLOCK IS AFFINE UNLESS IT IS `+`, AND A `Tr` NEEDS SIX READS.**
+`t : Tr <- IO.pure(Tr, ...)` followed by five `Tr.count(...)` rows gives
+`expected : t / observed : t (consumed more than once)`. The fix is `+t : Tr <- IO.pure(Tr, ...)`,
+which is what `ops_webgpu.bend` does for `+d : Dev`. It is NOT the same as the `+` on a `def`
+parameter (position 1194): a do-block binder and a parameter are separate. A `Meta` needs it too,
+and the error names whichever binder the checker reaches first, which is NOT necessarily the one
+you are reading about.
+
+**4. A THREE-SEGMENT DOTTED NAME AFTER A NULLARY DEF IS PARSED AS A CALL, NOT A NAME.**
+`def sib.fns() -> List<&2, U32>` followed by `def sib.fns.go(...)` gives
+`expected : a defined name / observed : sib.fns.go` -- `sib.fns` is nullary, so `.go` reads as a
+field access on its RESULT. `Tr.emit.go` works because `Tr.emit` takes arguments. The rule at
+position 6001 covers two segments; the nullary case is the three-segment one. Rename the nullary
+def or take an argument.
+
+**5. A `U32` SELF-CALL IS REFUSED, A `Nat` SELF-CALL CANNOT READ ITS OWN FUEL, AND SO `take n` /
+`drop n` OVER A LIST NEEDS A TWO-SCRUTINEE `match` ON THE CROSS PRODUCT.** `f(n: Nat, xs)` with
+`case 1n+m:` cannot also compute an index from `n`, and `f(n: U32, ...)` is refused outright
+(position 6847). The working shape is
+
+    match n xs:
+      case 0n _a: <the whole list>
+      case 1n+m Nil{}: <the empty base>
+      case 1n+m h <> t: <recurse on t>
+
+Three arms, not two, because two bounds is the honest shape -- and it is a case where the extra
+arm is genuinely reachable (`take 3` of a two-element list). A `Nat` countdown DOES work when the
+value rides a SECOND `+` that grows (`vis.count_at`, `sib.walk`, `hx.bitlen.go`): the countdown
+is argument one and the accumulator is argument two or three. What is impossible is reading the
+countdown itself after the arm spends it.
+
+**6. A MUTATED CONSTANT WITH NO ROW IS A ZERO, AND THE CONSTANT IS USUALLY ONE YOU JUST GOT
+WRONG.** `PAGEFRAME_MASK_HI` is `(1 << 55) - 1`'s high word. I wrote `0x7ffffff` for `0x7fffff`,
+the CPython oracle caught it BEFORE any row existed, and then mutation M4 -- perturb that constant
+-- moved **nothing**, because no row read it. Two rows later it moves 1. This is rule 8 of the
+`1..9` series ("an unread constant is not a port") arriving as a zero rather than as a sweep, and
+the two halves of a SPLIT 64-BIT CONSTANT are exactly the ones nobody writes a row for because
+each half "looks obviously right". Write the row for both halves, and write a third that says
+they DIFFER -- a mask whose halves are equal is a 32-bit mask wearing a 64-bit hat.
+
+**7. A MATCHER NEEDS A ROW THAT CAN FAIL, AND THE ONLY WAY TO KNOW IS TO HARD-WIRE IT.**
+`Tr.has` hard-wired to `True{}` moved **0** rows, because every order row in `system.bend` was
+`True` in the baseline. Asking for `sy_has_absent`, `sy_has_reversed`, `sy_has_wrong_arg` and
+`sy_has_wrong_str` immediately found a REAL BUG: `Tr.step.at` matched on the `at` COUNTER and
+returned `at + 1` for the `0n` arm WITHOUT COMPARING, so the matcher answered True for a pattern
+element that never occurred. `at` is a count of matched elements, not a fuel to split on -- there
+is no third meaning. This is `ops_webgpu`'s M23 for the third time in this repo, and it is the
+single highest-yield row set in the file: five rows, one real bug, and it took ten minutes.
+
+**8. A GATE ROW WHOSE NAME PROMISES A VALUE AND WHOSE VALUE IS SOMETHING ELSE IS A CHANGE-DETECTOR.**
+`elemsize` answered the INDEX into its table, so `sy_el_B` printed `0` next to a row named for
+`struct.calcsize("B")` -- a gate reading "the element size of B is 0". No mutation could detect it,
+because the mutation would change the index and the oracle was also reading the index. Split the
+two directions into two defs (`elemsize` the value, `elemsize.at` the index) and give the index its
+own row names. The general form: when a table is keyed, ASK WHICH of the key and the value your
+row prints, and if the answer is "the key", rename the row.
+
+**9. A `U32` SUM WRAPS, SO AN ORACLE THAT COMPUTES IT IN PYTHON INTEGERS ANSWERS THE OPPOSITE.**
+`u64.carried(0xfffffffc, 0x2000)` is True in `U32` -- the sum wraps to `0x1ffc` and
+`0x1ffc < 0xfffffffc` -- and the first differ said False, because `0xfffffffc + 0x2000` in Python is
+`0x10001ffc`. Every `U32` arithmetic expectation in a CPython oracle must be masked with
+`& 0xffffffff`, and the mask belongs in the ORACLE, not in a comment. The same trap took
+`(cap >> 4).bit_length() - 1` for a `cap < 0x10`, where Python's shift is negative and the port's
+is `0xFFFFFF00`-ish.
+
+**10. A HOST-DEPENDENT CONSTANT MUST BE A DEF OF THE PLATFORM FLAG, AND THE HOST IS NOT THE
+TARGET.** `mmap.MAP_ANONYMOUS` is `0x20` on Linux and `0x1000` on macOS, and `mmap.PAGESIZE` is
+`4096` and `16384`. Reading the host's value puts `0x1000` into `reserve_va`'s flag OR (off by
+3968 on every platform the port targets) and flips `alloc_sysmem`'s `size > PAGESIZE` test for every
+request below 16 KiB. The same `0`-vs-`4096` mistake killed `(1 << 55) - 1 >> 32`: `0x10000000000`
+is 2**40 so the answer is `0x100`, and `4096` came from reading it as 2**44. Rule: a constant whose
+source line mentions `OSX`, `sys.platform`, `getattr(mmap, ...)` or `PAGESIZE` is a def OF a flag
+in the port and takes the flag as an argument at every call site.
+
+# ===========================================================================
+# APPENDED BY `schedule/prepare.bend` (the unit that ports
+# `tinygrad/schedule/prepare.py`).  Numbering CONTINUES FROM the block above --
+# this file's rule numbers have now collided four times, so cite POSITIONS.  The
+# last rule of the block above is numbered 10 inside its own section and sits at
+# the end of the file, so these are 11..20 of THAT section, appended at the end.
+# Measured on Bend 2.0.34, `bin/bend`.
+# ===========================================================================
+
+**11. A BUILDER MUST BE HANDED THE ARENA, AND MUST USE THE ONE `UOp.new` RETURNS.** Two
+separate defects, both silent, both found by a gate that compares an arena INDEX.
+  * A builder that reads `O.Found.ar(x)` to get its arena builds into the arena as it stood
+    BEFORE `x` was interned. The new node's index is then relative to a stale arena and every
+    later index is wrong. Every fixture in `prepare.bend` was wrong until every builder took
+    `+ar: O.Arena` as its FIRST parameter and used THAT.
+  * `UOp.make` APPENDS, so the arena `O.UOp.new` returns is one node longer than the one it took
+    (`ops.bend:2031`, `Found{made, UOp.of(made, ...)}`). Reading the new index against the arena
+    you PASSED gives you `Arena.next`, and `Arena.op` on that index is the arena's BOTTOM -- so the
+    row prints `NOOP` with nsrc 0 and a shape of `ERR`. Symptom: every row that BUILDS reads
+    `1|NOOP|0||ERR|ERR` while every row that only rewrites is right. Fix: take the answer from
+    `O.Found.ar(f)` / `O.Found.i(f)`, never from the arena you passed in.
+  Together these are the reason a Bend fixture builder threads one arena top to bottom and never
+  calls `O.Arena.empty()` after the first node.
+
+**12. `Arena.src_to` IS `srcs[:k]` AND `Arena.src_from` IS `srcs[k:]` -- THE NAMES ARE FROM
+BOTH ENDS AND READ THE OPPOSITE WAY ROUND.** `ops.bend:1000` and `:1010`. `u.src[1:]` is
+`Arena.src_from(ar, i, 1)`. Writing `src_to(ar, i, 1)` gives `srcs[:1]`, i.e. `src[0]`, and the
+node it builds has a plausible op and a plausible nsrc -- only the src op SEQUENCE is wrong, which
+is exactly the kind of defect the four-facts gate exists to catch. Measured: it cost one full
+debug cycle in `prepare.bend` and it is the same shape as `ops_cl`'s inverted field names.
+
+**13. `ops.bend`'s `UOp.after`, `UOp.end` and `UOp.mstack` BUILD `srcs ++ [self]`; PYTHON BUILDS
+`(self,)+srcs`.** `ops.bend:2085`, `:2094`, `:2103` all do
+`UOp.new(ar, OpsAFTER{}, List.append(&2, U32, srcs, [self]), ...)`, and `List.append(x, A, xs, ys)`
+is `xs ++ ys`, so the node lands LAST where `ops.py:621` puts it FIRST. An AFTER built by
+`ops.bend` has srcs `[END, BUFFER]` where CPython has `[BUFFER, END]`: same op, same nsrc, same
+shape, and the four-facts gate's src op SEQUENCE is the only thing that sees it. REPORTED to
+`ops.bend`'s owner from `schedule/prepare.bend`; that file builds its own AFTER with
+`List.append(&2, U32, [self], O.Arena.src_from(ar, n, 1))` and does NOT use the helper.
+`UOp.after.go` and `UOp.end.go` also answer `Found{ar, self}` for an EMPTY `srcs`, which matches
+Python's `if len(src) else self`, so only the ORDER is wrong.
+
+**14. A SELF-RECURSIVE DEF WITH A TWO-LEVEL DISPATCH MUST BE SPLIT INTO A DESCENDING PASS AND A
+FOLD, AND THE SPINE IS THE FUEL.** `walk_mop` (prepare.py:40-43) is a loop condition plus a
+per-node rewrite, and Bend refuses every shape that looks natural:
+  * a `match` may only scrutinise a PARAMETER, so `if hop(u) ... elif is AFTER(u) ...` cannot be
+    two nested matches over computed `Bool`s;
+  * the only self-recursive def may have ONE decreasing argument in ONE arm, so the loop
+    condition and the node rewrite cannot both dispatch in the same def;
+  * mutual recursion is refused, so an entry def above the walk and a worker below it is out.
+  The shape that works is `Kahn`'s (`fold.bend:2641-2653`): ONE self-recursive def whose fuel is a
+  `List<&2, Nat>` (the tail shrinks, so it is the decreasing first argument), which collects a
+  SPINE, and a SEPARATE fold over the spine's TAIL. Two details are load-bearing:
+  * the spine is built by PREPENDING (`List.append(&2, U32, [me], acc)` is `[me] ++ acc`), so it
+    comes out deepest-first, which is the order Python unwinds the recursion in. Appending instead
+    (`acc ++ [me]`) is a 10-row mutation in `prepare.bend` and every `wm_after_*` row moves.
+  * the self-call may only pass the fuel's TAIL, so a def CANNOT empty the fuel. "Stop at the
+    terminal node" therefore needs a `done: Bool` in the state record, because a `match` on a
+    record's FIELD BINDER is legal where a `match` on a computed value is not -- and `done` is the
+    only difference between `fold.bend`'s drain and `prepare.bend`'s stop.
+
+**15. A RECORD BINDER IS READ-ONCE AND A `Data` MATCH MUST NAME EVERY CONSTRUCTOR, BUT A `let`
+WITH `+` IS A *SHAREABLE PARAMETER* AND ITS READS ARE NOT ORDERED.** `case WmSp{ar, me, acc}:
+WmSp{ar, me, pr_wm_pre(me, acc), ...}` fails with "`me` consumed more than once" even though
+`me` is a binder and not a parameter -- the fix is a reader def (`WmSp.me(st)`) plus `+st`, or a
+field named something other than the parameter. Separately, the node field of a state record is
+named `me` in `prepare.bend` purely because `self` SHADOWED the `self` parameter with nothing to
+say so (agent-core.md names this trap; here the symptom was a bare "consumed more than once" with
+no mention of shadowing).
+
+**16. `Bool.pick` IS THE ONLY WAY TO WRITE A CONDITIONAL THAT IS NOT A `match`, AND THAT IS EXACTLY
+WHAT MAKES AN IDENTITY TEST WRITABLE.** `Bool.pick(T, cond, a, b)` evaluates both arms and picks, so
+it needs no scrutinee and accepts a computed `Bool`. `walk_mop`'s whole AFTER rule is
+`(b := walk_mop(u.src[0])) is not u.src[0]`, which as a `match` would need the answer and the test
+in one scrutinee; as a `Bool.pick` it is one expression:
+`Bool.pick(U32, U32.is_eq(b, s0), n, <build>)`. Every rule body in `prepare.py` that reads
+"if a computed test then a value" wants `Bool.pick`, and every rule body that reads "if a computed
+test then a DIFFERENT SHAPE" does not -- `Bool.pick` also fails on a `Data` type with `&2`
+(`expected : Type, observed : Quant`), which is the trap for `match`-shaped answers.
+
+**17. A `Data` RECORD WITH AN `I64` FIELD HAS A NAME FOR IT AND IT IS THE FOURTH FIELD.**
+`LAWS/spec.bend:78`, `Dt{pri, bits, cls, nm}` -- so a dtype's CPython `name` is one binder
+(`case S.Dt{pri, bits, cls, nm}: nm`) and not a table. Corollary for shapes: `H.i64_text`
+(helpers.bend:1232) prints an I64 as `hi:lo` because "an I64 prints as its two words", which is
+right for a 64-bit pointer and WRONG for a shape dim, where CPython prints the plain integer. A
+gate that prints a shape through `H.i64_text` gets `0:4` where CPython has `4`, and no shape row
+can ever match until the rendering is `H.lo32` plus a sign from `H.i64_is_neg`.
+
+**18. A CPython `UOp.const` IS `CONST(CAST(CONST))` AND AN ORACLE THAT BUILDS A BARE `CONST`
+IS OFF BY ONE NODE ON EVERY TOPOSORT SIZE.** `ops.py:638` returns
+`UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)` and `.cast` on a CONST REBUILDS it at the
+dtype, so `UOp.const(n)` interns CONST, then CAST, then CONST again. A shape arg that must be a
+bare CONST (`as_shape` reads `s.val` off each element, ops.py:811, and a CAST has no `.val`) is
+`UOp(Ops.CONST, src=(), arg=I32.const(n))` -- ONE node. The symptom is a toposort size that is
+one or three too small against CPython for every fixture that contains a shape, with every op,
+nsrc and src op sequence correct: it is invisible to anything but a COUNT, and it is invisible in
+the opposite direction to a port bug, so the fix is to align the oracle's node shape with the
+port's before comparing anything.
+
+**19. `O.ATuple` IS `List<&2, U32>`, WHICH ERASES PERMUTE'S AND FLIP'S MARG TYPES.** `ops.bend:763`.
+`ops.py:430` refuses a FLIP whose arg is not all `bool`, so a FLIP's arg is a bool TUPLE and a
+PERMUTE's is an int tuple, and nothing in the compiled IR says which. A fixture that writes
+`ATuple{[1, 0]}` for a FLIP builds a node CPython would refuse. This is a WALL on the marg TYPE,
+not on the marg VALUE, and `schedule/indexing.bend`'s `argsort` rows are unaffected because they
+read values.
+
+**20. `S.float32()` DOES NOT EXIST; `LAWS/spec.bend` NAMES THE DTYPES.** `S.int32()` (spec.bend:678),
+`S.half()`, `S.single()` (689), `S.double()`, `S.uint32()`, `S.weakfloat()`, `S.bfloat16()` and the
+fp8 family are module-level defs, and `S.single()` is the 32-bit float -- there is no `float32`.
+Searching for a `Dt` CONSTRUCTOR rather than a reader is the wrong first move here: `Dt` is a
+four-field `Data` record and every dtype is a `Dt{...}` literal inside a named def.

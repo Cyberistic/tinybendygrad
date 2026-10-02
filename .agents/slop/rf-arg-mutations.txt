@@ -1,0 +1,27 @@
+baseline compile: ALL PROOFS CHECK
+baseline rows: 84
+
+ID   MUTATION                                             RESULT                             ROWS MOVED BY NAME
+------------------------------------------------------------------------------------------------------------------------------------------------------
+M1   rf_remove_noop_afters.of: own arg -> ANone           compiled; 0 rows moved             (NONE -- blind spot)
+     note: the repaired site, answered with the OTHER legal arg
+M2   ab_7: own arg -> ANone                               compiled; 1 rows moved             ab7_clik_arg
+     note: the repaired site, answered with the OTHER legal arg
+M3   rf_no_indexing_calls.fin: own arg -> ANone           compiled; 1 rows moved             nic_clik_arg
+     note: the repaired site, answered with the OTHER legal arg
+M4   ct_8.of: own arg -> ANone                            compiled; 0 rows moved             (NONE -- blind spot)
+     note: the repaired site, answered with the OTHER legal arg
+M5   ab_7: own arg -> ANOTHER node's arg (its src0's)     compiled; 1 rows moved             ab7_clik_arg
+     note: separates 'keeps its OWN arg' from 'passes some arg'
+M6   ab_7: own arg -> the arg of a DIFFERENT fixture node (clik0's twin, af) compiled; 1 rows moved             ab7_clik_arg
+     note: a non-Kernel arg, so the arg ROWS must go red too
+M7   nic: own arg -> ANone (the nic twin of M2)           compiled; 1 rows moved             nic_clik_arg
+     note: duplicate of M3, kept separate so a row moving one and not the other is visible
+M8   revert to the PRE-REPAIR arg order (the original defect shape) DID NOT COMPILE: SOME PROOFS FAIL  (NONE -- blind spot)
+     note: the 4-arg form that made the file stop compiling
+M9   ct_table[4]: accept set {STAGE} -> {INDEX} (the outer node CPython rewrites) compiled; 0 rows moved             (NONE -- blind spot)
+     note: does the gate see ct_4 being UNBLOCKED, or is the subset test inert?
+M10  ct_table[8]: accept set {MSTACK} -> {INDEX} (the outer node CPython rewrites) compiled; 0 rows moved             (NONE -- blind spot)
+     note: the same inversion on the deviceless-MSTACK rule
+M11  ct_4: force its CLAIM test True (would a row see it?) compiled; 0 rows moved             (NONE -- blind spot)
+     note: ct_4's comment promises a `ct_4_ans` row; does one exist in main?

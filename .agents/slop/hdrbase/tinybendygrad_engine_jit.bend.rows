@@ -1,0 +1,137 @@
+msg_names_pos=[0, 1]
+msg_names_kw=['a', 'b']
+msg_names_mismatch=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']
+msg_dtype_mismatch=args mismatch in JIT: self.captured.expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON')] != expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.int, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.int, 'PYTHON')]
+msg_disk=cannot make an independent copy of a written DISK input
+msg_virtual=JIT inputs must be real buffers; use .clone()
+msg_dup=duplicate inputs to JIT
+msg_nothing=didn't JIT anything!
+msg_nontensor=JIT return contains non-Tensor value of type int
+msg_nested=having TinyJit inside another TinyJit is not supported len(capturing)=1 capturing=[
+msg_execs10=jit execs 10 calls
+msg_captured=JIT captured 12 linears with 1 inputs
+msg_pruned=pruned from 12 -> 12 kernels
+msg_need_arg=need either a function or a CapturedJit
+msg_reset=can't reset without function
+msg_pickle=can't pickle an uncaptured JIT
+msg_group1=JIT 1 call
+msg_group2=JIT 2 calls
+info_repr_flat=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON')]
+info_reprs_view=[unprintable]
+info_one_view=unprintable
+info_repr_vars=unprintable
+dt_repr_f32=dtypes.float
+dt_repr_i32=dtypes.int
+dt_repr_h=dtypes.half
+flat_noop=True
+flat_view=False
+names_eq_pos=True
+names_eq_kw=True
+names_eq_len=False
+names_eq_cross=False
+names_eq_cross_rev=False
+names_eq_order=False
+info_eq_same=True
+info_eq_dt=False
+info_eq_dev=False
+info_eq_dev_only=False
+info_eq_len=False
+info_eq_vars=False
+info_eq_v=False
+replay_ok=unprintable
+replay_names_bad=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']
+replay_dtype_bad=args mismatch in JIT: self.captured.expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.float, 'PYTHON')] != expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.int, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.int, 'PYTHON')]
+order_names_first=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']
+replay_ok_cnt=1
+replay_refused_cnt=False
+replay_refused_nocap=True
+init_fxn=0
+init_captured=2
+modes_on=1 2 3 3 3 3 3 3 3 3
+modes_off=1 1 1 1 1 1 1 1 1 1
+trace_on=[(1, False), (2, True), (3, True), (4, True), (5, True)]
+trace_off=[(1, False), (2, False), (3, False), (4, False), (5, False)]
+reset_cnt=0
+reset_nocap=True
+reset_refusal=can't reset without function
+init_refusal=need either a function or a CapturedJit
+pickle_refusal=can't pickle an uncaptured JIT
+pickle_ok=unprintable
+nesting_1=having TinyJit inside another TinyJit is not supported len(capturing)=1 capturing=[
+nesting_0=unprintable
+capture_zero=didn't JIT anything!
+capture_nontensor=JIT return contains non-Tensor value of type int
+capture_ok=unprintable
+ret_none=unprintable
+ret_tensors=unprintable
+ret_int=JIT return contains non-Tensor value of type int
+ret_tuple=JIT return contains non-Tensor value of type int
+ret_dict=JIT return contains non-Tensor value of type int
+ret_deep=JIT return contains non-Tensor value of type float
+ret_first_wins=JIT return contains non-Tensor value of type int
+ret_siblings_first=JIT return contains non-Tensor value of type int
+ret_nested_first=JIT return contains non-Tensor value of type int
+written_n=1
+written_n10=1
+written_is_b0=True
+ondisk_METAL=False
+ondisk_DISK=True
+ondisk_tuple=False
+disk_refusal_yes=cannot make an independent copy of a written DISK input
+disk_refusal_dev=unprintable
+disk_refusal_unwritten=unprintable
+disk_refusal_tuple=unprintable
+execs9=unprintable
+execs10=jit execs 10 calls
+execs2=unprintable
+execs10_debug0=unprintable
+prune_hit=kept=1 once=1 need=2
+prune_miss=kept=0 once=2 need=1
+prune_all=kept=0 once=2 need=0
+prune_none=kept=0 once=2 need=0
+prune_sl=2
+prune_sl_buf=0
+prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP
+prune_sig_once=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP
+prep_unshard_ix=2
+prep_b0_ix=2
+prep_unshard_is_src0=True
+prep_plain_identity=True
+prep_any_none=True
+prep_any_some=True
+prep_virtual_none=unprintable
+prep_virtual_some=JIT inputs must be real buffers; use .clone()
+prep_dup_same=duplicate inputs to JIT
+prep_dup_diff=unprintable
+prep_unrealized=2
+sort_exprs=a,b,c
+sort_stable=a,b,b
+sort_empty=
+free_skip_buf=True
+free_skip_noop=True
+free_skip_base=False
+free_base_free=True
+free_base_live=False
+free_base_unalloc=False
+sig_call=n=3 op=Ops.CALL nsrc=3 srcops=Ops.PROGRAM|Ops.BUFFER|Ops.BUFFER
+sig_lin2=n=2 op=Ops.LINEAR nsrc=2 srcops=Ops.CALL|Ops.BUFFER
+sig_lin9=n=9 op=Ops.LINEAR nsrc=9 srcops=Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL
+sig_lin10=n=10 op=Ops.LINEAR nsrc=10 srcops=Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL|Ops.CALL
+sig_uns=n=1 op=Ops.UNSHARD nsrc=1 srcops=Ops.BUFFER
+srcops_call=Ops.PROGRAM|Ops.BUFFER|Ops.BUFFER
+ref_shape_is_invisible=True
+ref_view_is_bare=True
+ts_shape_msg=train_step was captured with 1568/2 and called with 1568/3
+cnt_after_1=1
+cnt_after_2=2
+cnt_after_5=5
+cnt_after_0=0
+linears_n=0
+sym_ret_n=0
+jl_viz_id=True
+prune_hit_t=True
+prune_hit_f=False
+ii_vars_eq_t=True
+ii_vars_eq_f=False
+ii_dt_eq_f=False
+ii_vars_empty=True
