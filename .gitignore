@@ -22,3 +22,9 @@ __pycache__/
 # them and warns on EVERY push. Untracked is not enough: one careless
 # `jj split` would sweep 191MB of another agent's scratch into a commit.
 .agents/slop/xd1/
+
+# agent scratch: in-place mutation backups and rejected merges. Committed twice
+# by accident today; a .bak is a copy of a file already in the tree.
+*.bak
+*.orig
+*.rej
