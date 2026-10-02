@@ -81,8 +81,7 @@ def rdma_qp(pair:tuple[str, str]) -> dict[str, BNXTQP]:
   for nic, q in zip(nics, qps.values()):
     bufs = {name: nic.iface.buffer(getattr(q, name).ring, getattr(q, name).paddrs) for name in ("sq", "rq", "scq", "rcq")}
     bufs |= {name: Buffer(nic.device, 1, dtypes.uint64, initial_value=bytes(8)) for name in ("sq_seq", "rq_seq", "psn")} | {"db": nic.iface.doorbell}
-    rules = [(UPat(Ops.PARAM, tag=to_name("rdma", *pair, n)), lambda ctx, b=b: b) for n, b in bufs.items()]
-    nic.pm_bufferize = PatternMatcher(rules) + nic.pm_bufferize
+    Compiled.pm_bufferize += PatternMatcher([(UPat(Ops.PARAM, tag=to_name("rdma", *pair, n)), lambda b=b: b) for n, b in bufs.items()])
   for a, b in (nics, nics[::-1]): qps[a.device].connect(qps[b.device].qpn, b.iface.dev_impl.local_gid, b.iface.dev_impl.mac)
   return qps
 
@@ -165,5 +164,5 @@ def rdma_submit(ctx, submit:UOp, lin:UOp) -> UOp|None:
   for q in dict.fromkeys(queues.values()):
     positions = [i for i in queues if queues[i] == q]
     for i, copy_ops in zip(positions, rdma_copies(lin.arg[0], [lin.src[i] for i in positions])): ops[i] = copy_ops
-  return submit.replace(src=(lin.replace(src=tuple(flatten(ops))),))
-pm_rdma_encode = PatternMatcher([(UPat(Ops.CUSTOM_FUNCTION, src=(UPat(Ops.LINEAR, name="lin"),), name="submit"), rdma_submit)])
+  return submit.replace(src=(submit.body, lin.replace(src=tuple(flatten(ops)))))
+pm_rdma_encode = PatternMatcher([(UPat(Ops.CALL, src=(UPat(Ops.CUSTOM_FUNCTION), UPat(Ops.LINEAR, name="lin")), name="submit"), rdma_submit)])

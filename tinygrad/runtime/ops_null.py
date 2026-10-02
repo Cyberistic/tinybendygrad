@@ -4,7 +4,7 @@ from tinygrad.renderer import Renderer, cstyle, nir, ptx, llvmir, wgsl
 from tinygrad.renderer.cstyle import CStyleLanguage
 from tinygrad.uop.ops import UOp, Ops, UPat, PatternMatcher, uopfunc
 from tinygrad.dtype import dtypes
-from tinygrad.helpers import getenv, dedup, prod, panic, cpu_events, perf_counter_us, NULL_ALLOW_COPYOUT, PROFILE
+from tinygrad.helpers import getenv, dedup, prod, panic, cpu_events, perf_counter_us, NULL_ALLOW_COPYOUT, PROFILE, to_tuple
 from tinygrad.engine.realize import get_call_arg_uops, get_call_var_uops
 from tinygrad.runtime.support.hcq2 import HWQueue, layout_args, pack_args
 
@@ -22,6 +22,9 @@ class NullRenderer(CStyleLanguage):
 EXEC, COPY, WAIT, STORE, TIMESTAMP = range(5)
 null_events:dict[tuple[str, str, bytes|None], int] = {}
 
+@uopfunc
+def null_submit(cmdbuf:UOp, doorbell:UOp) -> UOp: return doorbell.index(0).store(cmdbuf.index(0).load()).sink()
+
 class NullQueue(HWQueue):
   def cmd(self, op, *args): self.q(*[a.getaddr(self.devs) if isinstance(a, UOp) else UOp.const(a, dtypes.uint64) for a in (op, *args, 0, 0, 0)][:4])
   def event(self, device:str, name:str, key:bytes|None=None) -> int: return null_events.setdefault((device, name, key), len(null_events))
@@ -33,8 +36,7 @@ class NullQueue(HWQueue):
   def wait(self, signal:UOp, value:UOp, eq:bool=False): self.cmd(WAIT, signal, value, int(eq))
   def signal(self, signal:UOp, value:UOp): self.cmd(STORE, signal, value)
   def timestamp(self, signal:UOp): self.cmd(TIMESTAMP, signal.getaddr(self.devs) + UOp.const(8, dtypes.uint64))
-  @uopfunc
-  def submit(self, cmdbuf): return UOp.placeholder((1,), dtypes.uint8, device=self.devs, tag="doorbell").index(0).store(cmdbuf.index(0).load()).sink()
+  def submit(self, cmdbuf): return null_submit(cmdbuf, UOp.placeholder((1,), dtypes.uint8, device=self.devs, tag="doorbell"))
 
 class NullProgram(Program['NullDevice']):
   def __init__(self, dev, obj): self.streams = [(i, prod(s)) for i, (n, _, _, s) in enumerate(obj.signature) if (n or "").startswith("cmdbuf")]
@@ -65,6 +67,7 @@ class NullDevice(Compiled):
     renderers = [NullRenderer] + [r for m in [cstyle, nir, ptx, llvmir, wgsl] for r in m.__dict__.values()
                                   if inspect.isclass(r) and issubclass(r, Renderer)]
     super().__init__(device, NullAllocator(self), dedup(renderers), NullProgram)
-    self.pm_bufferize = PatternMatcher([(UPat(Ops.PARAM, name="b"), lambda ctx, b: ctx.link_buffer(b.max_numel(), b.dtype))])
+    Compiled.pm_bufferize += PatternMatcher([ # its memory is fake: every placeholder on it is a link buffer
+      (UPat(Ops.PARAM, name="b"), lambda b, d=self: d.link_buffer(b.max_numel(), b.dtype) if to_tuple(b.device)[0] == d.device else None)])
 
   def link_buffer(self, n, dt): return Buffer(self.device, n, dt, opaque=memoryview(bytearray(n * dt.itemsize)), options=BufferSpec(external_ptr=1))
