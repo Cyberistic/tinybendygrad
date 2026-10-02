@@ -1,0 +1,40 @@
+# nocolor-bend.txt as it stood BEFORE the no_color_of fix, captured from the run
+# that produced "DISAGREE 18 of 32".  `no_color_of` was
+# `no_color_of.go(String.is_empty(v))`, i.e. `not String.is_empty(v)`.
+# Kept so the delta is a measurement on disk and not a recollection.
+#
+#   line  probe      CPython   port(before)
+     0   <unset>     False     False
+     1   ""          REFUSED   False
+     2   0           False     True     <-- INVERSION
+     3   1           True      True
+     4   2           True      True
+     5   00          False     True     <-- INVERSION
+     6   -0          False     True     <-- INVERSION
+     7   "0 "        False     True     <-- INVERSION
+     8   " 0"        False     True     <-- INVERSION
+     9   +0          False     True     <-- INVERSION
+    10   +1          True      True
+    11   -1          True      True
+    12   -2          True      True
+    13   007         True      True
+    14   0x10        REFUSED   True     <-- INVENTED COLOUR
+    15   1_0         True      True
+    16   1.0         REFUSED   True     <-- INVENTED COLOUR
+    17   0.0         REFUSED   True     <-- INVENTED COLOUR
+    18   .5          REFUSED   True     <-- INVENTED COLOUR
+    19   abc         REFUSED   True     <-- INVENTED COLOUR
+    20   false       REFUSED   True     <-- INVENTED COLOUR
+    21   True        REFUSED   True     <-- INVENTED COLOUR
+    22   no          REFUSED   True     <-- INVENTED COLOUR
+    23   off         REFUSED   True     <-- INVENTED COLOUR
+    24   nan         REFUSED   True     <-- INVENTED COLOUR
+    25   inf         REFUSED   True     <-- INVENTED COLOUR
+    26   1e3         REFUSED   True     <-- INVENTED COLOUR
+    27   " 1 "       True      True
+    28   "\t2"       True      True
+    29   "2\n"       True      True
+    30   U+0663      True      False    <-- the named boundary, present before and after
+    31   "2 "        True      True
+#
+# exact 13  stated-divergence 13  DISAGREE 18  of 32 probes

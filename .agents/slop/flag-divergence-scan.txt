@@ -1,0 +1,532 @@
+# env-flag divergence scan
+# ContextVar/str/int defaults measured by spying on os.getenv (see
+# .agents/slop/env-coercion-table.py PART 1); non-ContextVar getenv
+# defaults measured out of the AST of the tinygrad tree.
+
+## summary
+  flags total                     142
+  with a ContextVar default       64
+  read only by non-ContextVar     78
+  whose consuming .py has a port  71
+
+## ALIGNED
+   ContextVar default: -
+   getenv ALIGNED,                   renderer/cstyle.py:305   default=1   bend=YES
+   PORT tinybendygrad/renderer/cstyle.bend
+## ALL2ALL
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## ALLOW_DEVICE_USAGE
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## ALLOW_HALF8
+   ContextVar default: -
+   getenv ALLOW_HALF8,               codegen/late/coalesce.py:145   default=0   bend=no
+## ALLOW_TF32
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## ALLREDUCE_CAST
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## ALLREDUCE_NODE_NDEVS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## AMD_AQL
+   ContextVar default: -
+   getenv AMD_AQL,                   runtime/ops_amd.py:882   default=<expr:Call(func=Name(id='int', ctx=Load()), args=[Compare(left=Att>   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## AMD_DISABLE_SDMA
+   ContextVar default: -
+   getenv AMD_DISABLE_SDMA,          runtime/ops_amd.py:970   default=0   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## AMD_KFD_QUEUE_PRIORITY
+   ContextVar default: -
+   getenv AMD_KFD_QUEUE_PRIORITY,    runtime/ops_amd.py:686   default=7   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## AM_DEBUG
+   ContextVar default: -
+   getenv AM_DEBUG,                  runtime/support/am/amdev.py:11   default=0   bend=YES
+   PORT tinybendygrad/runtime/support/am/amdev.bend
+## AM_POWER_LIMIT
+   ContextVar default: -
+   getenv AM_POWER_LIMIT,            runtime/support/am/amdev.py:216   default=0.0   bend=YES
+   PORT tinybendygrad/runtime/support/am/amdev.bend
+## AM_RESET
+   ContextVar default: -
+   getenv AM_RESET,                  runtime/support/am/amdev.py:183   default=0   bend=YES
+   PORT tinybendygrad/runtime/support/am/amdev.bend
+## ASSERT_COMPILE
+   ContextVar default: -
+   getenv ASSERT_COMPILE,            device.py:341   default=0   bend=YES
+   PORT tinybendygrad/device.bend
+## BEAM
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## BEAM_DEBUG
+   ContextVar default: -
+   getenv BEAM_DEBUG,                codegen/opt/search.py:105   default=0   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_DEV_TIMEOUT
+   ContextVar default: -
+   getenv BEAM_DEV_TIMEOUT,          codegen/opt/search.py:145   default=1   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_ESTIMATE
+   ContextVar default: -
+   getenv BEAM_ESTIMATE,             codegen/opt/postrange.py:250   default=1   bend=YES
+   PORT tinybendygrad/codegen/opt/postrange.bend
+## BEAM_LOCAL_MAX
+   ContextVar default: -
+   getenv BEAM_LOCAL_MAX,            codegen/opt/search.py:86   default=1024   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_LOG_SURPASS_MAX
+   ContextVar default: -
+   getenv BEAM_LOG_SURPASS_MAX,      codegen/opt/search.py:69   default=0   bend=YES
+   getenv BEAM_LOG_SURPASS_MAX,      codegen/opt/search.py:99   default=0   bend=YES
+   getenv BEAM_LOG_SURPASS_MAX,      codegen/opt/search.py:140   default=0   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_MAX_TASKS_PER_CHILD
+   ContextVar default: -
+   getenv BEAM_MAX_TASKS_PER_CHILD,  engine/worker.py:47   default=16   bend=YES
+   PORT tinybendygrad/engine/worker.bend
+## BEAM_MIN_PROGRESS
+   ContextVar default: -
+   getenv BEAM_MIN_PROGRESS,         codegen/opt/search.py:118   default=0.01   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_PADTO
+   ContextVar default: -
+   getenv BEAM_PADTO,                codegen/opt/search.py:18   default=0   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_STRICT_MODE
+   ContextVar default: -
+   getenv BEAM_STRICT_MODE,          codegen/opt/search.py:75   default=0   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_TIMEOUT_SEC
+   ContextVar default: -
+   getenv BEAM_TIMEOUT_SEC,          codegen/opt/search.py:59   default=10   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_UOPS_MAX
+   ContextVar default: -
+   getenv BEAM_UOPS_MAX,             codegen/opt/search.py:68   default=3000   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BEAM_UPCAST_MAX
+   ContextVar default: -
+   getenv BEAM_UPCAST_MAX,           codegen/opt/search.py:86   default=256   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## BENCHMARK_LOG
+   ContextVar default: -
+   getenv BENCHMARK_LOG,             llm/cli.py:192   default=''   bend=no
+## BNXT_DEBUG
+   ContextVar default: -
+   getenv BNXT_DEBUG,                runtime/support/rdma/bnxtdev.py:8   default=0   bend=YES
+   PORT tinybendygrad/runtime/support/rdma/bnxtdev.bend
+## CACHEDB
+   ContextVar default: '/Users/cyberistic/Library/Caches/tinygrad/cache.db'
+   getenv CACHEDB,                   helpers.py:401   default=<expr:Call(func=Attribute(value=Attribute(value=Name(id='os', ctx=>   bend=YES
+   PORT tinybendygrad/helpers.bend
+## CACHELEVEL
+   ContextVar default: 2
+   (no bare getenv call; consumers found below)
+## CAPTURE_PROCESS_REPLAY
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## CAPTURING
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## CC
+   ContextVar default: -
+   getenv CC,                        runtime/ops_dsp.py:121   default='clang'   bend=YES
+   getenv CC,                        runtime/support/compiler_cpu.py:21   default='clang'   bend=no
+   PORT tinybendygrad/runtime/ops_dsp.bend
+## CCACHE
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## CHECK_OOB
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## CONST_LR
+   ContextVar default: -
+   getenv CONST_LR,                  nn/optim.py:20   default=0   bend=YES
+   PORT tinybendygrad/nn/optim.bend
+## CUDA_PATH
+   ContextVar default: -
+   getenv CUDA_PATH,                 runtime/support/compiler_cuda.py:7   default=''   bend=no
+## DEBUG
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## DEBUGONNX
+   ContextVar default: -
+   getenv DEBUGONNX,                 nn/onnx.py:365   default='0'   bend=YES
+   PORT tinybendygrad/nn/onnx.bend
+## DEBUG_GC
+   ContextVar default: 0
+   getenv DEBUG_GC,                  helpers.py:389   default=0   bend=YES
+   PORT tinybendygrad/helpers.bend
+## DEBUG_LINEARIZE
+   ContextVar default: -
+   getenv DEBUG_LINEARIZE,           codegen/late/linearizer.py:48   default=0   bend=no
+## DEBUG_RANGEIFY
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## DEFAULT_FLOAT
+   ContextVar default: 'float32'
+   (no bare getenv call; consumers found below)
+## DEFAULT_INT
+   ContextVar default: 'int32'
+   (no bare getenv call; consumers found below)
+## DEV
+   ContextVar default: ''
+   (no bare getenv call; consumers found below)
+## DEVICE_IN_FUNCTION_BUG
+   ContextVar default: -
+   getenv DEVICE_IN_FUNCTION_BUG,    function.py:61   default=0   bend=YES
+   PORT tinybendygrad/function.bend
+## DISABLE_AMD_KERNELS
+   ContextVar default: -
+   getenv DISABLE_AMD_KERNELS,       llm/kernels/amd.py:29   default=0   bend=no
+## DISABLE_FAST_IDIV
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## DISABLE_HTTP_CACHE
+   ContextVar default: 0
+   getenv DISABLE_HTTP_CACHE,        helpers.py:469   default=0   bend=YES
+   PORT tinybendygrad/helpers.bend
+## DISALLOW_BROADCAST
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## DMC
+   ContextVar default: -
+   getenv DMC,                       codegen/late/coalesce.py:110   default=0   bend=no
+## EMULATE
+   ContextVar default: -
+   getenv EMULATE,                   runtime/ops_null.py:63   default=''   bend=no
+   getenv EMULATE,                   runtime/ops_python.py:167   default=''   bend=no
+## EMULATED_DTYPES
+   ContextVar default: ''
+   (no bare getenv call; consumers found below)
+## EXPAND_SSA
+   ContextVar default: -
+   getenv EXPAND_SSA,                renderer/cstyle.py:253   default=0   bend=YES
+   PORT tinybendygrad/renderer/cstyle.bend
+## FLOAT16
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## FUSE_OPTIM
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## GMMU
+   ContextVar default: -
+   getenv GMMU,                      runtime/support/memory.py:248   default=1   bend=YES
+   getenv GMMU,                      runtime/support/memory.py:275   default=1   bend=YES
+   PORT tinybendygrad/runtime/support/memory.bend
+## HALF
+   ContextVar default: -
+   getenv HALF,                      llm/model.py:432   default=1   bend=no
+## HCQ2
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## HCQ_CACHE_THRESH
+   ContextVar default: 64
+   (no bare getenv call; consumers found below)
+## HCQ_NUM_SDMA
+   ContextVar default: -
+   getenv HCQ_NUM_SDMA,              runtime/support/hcq2.py:309   default=<expr:IfExp(test=Compare(left=Name(id='ALL2ALL', ctx=Load()), ops=>   bend=YES
+   PORT tinybendygrad/runtime/support/hcq2.bend
+## HCQ_RUNTIME_DEV
+   ContextVar default: 'CPU'
+   (no bare getenv call; consumers found below)
+## HCQ_VISIBLE_DEVICES
+   ContextVar default: -
+   getenv HCQ_VISIBLE_DEVICES,       runtime/support/system.py:12   default=''   bend=YES
+   PORT tinybendygrad/runtime/support/system.bend
+## IGNORE_BEAM_CACHE
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## IGNORE_JIT_FIRST_BEAM
+   ContextVar default: -
+   getenv IGNORE_JIT_FIRST_BEAM,     engine/jit.py:131   default=0   bend=YES
+   PORT tinybendygrad/engine/jit.bend
+## IMAGE
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## IOCTL
+   ContextVar default: -
+   getenv IOCTL,                     runtime/ops_amd.py:26   default=0   bend=YES
+   getenv IOCTL,                     runtime/ops_cuda.py:14   default=0   bend=no
+   getenv IOCTL,                     runtime/ops_dsp.py:10   default=0   bend=YES
+   getenv IOCTL,                     runtime/ops_hip.py:7   default=0   bend=no
+   getenv IOCTL,                     runtime/ops_nv.py:23   default=0   bend=YES
+   getenv IOCTL,                     runtime/ops_qcom.py:18   default=0   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+   PORT tinybendygrad/runtime/ops_dsp.bend
+   PORT tinybendygrad/runtime/ops_nv.bend
+   PORT tinybendygrad/runtime/ops_qcom.bend
+## JIT
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## JITBEAM
+   ContextVar default: -
+   getenv JITBEAM,                   engine/jit.py:36   default=<expr:Attribute(value=Name(id='BEAM', ctx=Load()), attr='value', c>   bend=YES
+   PORT tinybendygrad/engine/jit.bend
+## LATE_ALLREDUCE
+   ContextVar default: 1
+   getenv LATE_ALLREDUCE,            schedule/multi.py:50   default=1   bend=YES
+   PORT tinybendygrad/schedule/multi.bend
+## LLVMOPT
+   ContextVar default: -
+   getenv LLVMOPT,                   runtime/support/compiler_llvm.py:24   default=1   bend=no
+## LRU
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## MAX_BUFFER_SIZE
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## MAX_KERNEL_BUFFERS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## MAX_SQTT_PKTS
+   ContextVar default: -
+   getenv MAX_SQTT_PKTS,             viz/serve.py:536   default=50000   bend=no
+   getenv MAX_SQTT_PKTS,             viz/serve.py:683   default=50000   bend=no
+## MM_DEBUG
+   ContextVar default: -
+   getenv MM_DEBUG,                  runtime/support/memory.py:209   default=0   bend=YES
+   getenv MM_DEBUG,                  runtime/support/memory.py:228   default=0   bend=YES
+   PORT tinybendygrad/runtime/support/memory.bend
+## MOCKDSP
+   ContextVar default: -
+   getenv MOCKDSP,                   runtime/ops_dsp.py:79   default=0   bend=YES
+   getenv MOCKDSP,                   runtime/ops_dsp.py:130   default=0   bend=YES
+   PORT tinybendygrad/runtime/ops_dsp.bend
+## MV
+   ContextVar default: -
+   getenv MV,                        codegen/opt/heuristic.py:62   default=1   bend=YES
+   PORT tinybendygrad/codegen/opt/heuristic.bend
+## MV_BLOCKSIZE
+   ContextVar default: -
+   getenv MV_BLOCKSIZE,              codegen/opt/heuristic.py:61   default=4   bend=YES
+   PORT tinybendygrad/codegen/opt/heuristic.bend
+## MV_ROWS_PER_THREAD
+   ContextVar default: -
+   getenv MV_ROWS_PER_THREAD,        codegen/opt/heuristic.py:61   default=4   bend=YES
+   PORT tinybendygrad/codegen/opt/heuristic.bend
+## MV_THREADS_PER_ROW
+   ContextVar default: -
+   getenv MV_THREADS_PER_ROW,        codegen/opt/heuristic.py:61   default=8   bend=YES
+   PORT tinybendygrad/codegen/opt/heuristic.bend
+## NOOPT
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## NOSKIP
+   ContextVar default: -
+   getenv NOSKIP,                    renderer/amd/sqtt.py:741   default=0   bend=YES
+   PORT tinybendygrad/renderer/amd/sqtt.bend
+## NO_COLOR
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## NO_HIPCC
+   ContextVar default: -
+   getenv NO_HIPCC,                  runtime/support/compiler_amd.py:92   default=0   bend=no
+## NO_MEMORY_PLANNER
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## NULL_ALLOW_COPYOUT
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## NV_DEBUG
+   ContextVar default: -
+   getenv NV_DEBUG,                  runtime/support/nv/nvdev.py:10   default=0   bend=no
+## OCCUPANCY_FLOOR
+   ContextVar default: -
+   getenv OCCUPANCY_FLOOR,           codegen/opt/heuristic.py:106   default=4096   bend=YES
+   PORT tinybendygrad/codegen/opt/heuristic.bend
+## ONNXLIMIT
+   ContextVar default: -
+   getenv ONNXLIMIT,                 nn/onnx.py:366   default='-1'   bend=YES
+   PORT tinybendygrad/nn/onnx.bend
+## OPENPILOT_HACKS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## OPTIM_DTYPE
+   ContextVar default: -
+   getenv OPTIM_DTYPE,               nn/optim.py:17   default='float32'   bend=YES
+   PORT tinybendygrad/nn/optim.bend
+## PARALLEL
+   ContextVar default: 12
+   (no bare getenv call; consumers found below)
+## PMA_BUFFER_SIZE
+   ContextVar default: -
+   getenv PMA_BUFFER_SIZE,           runtime/ops_nv.py:757   default=512   bend=YES
+   PORT tinybendygrad/runtime/ops_nv.bend
+## PMC_COUNTERS
+   ContextVar default: -
+   getenv PMC_COUNTERS,              runtime/ops_amd.py:915   default=<expr:Name(id='pmc_default', ctx=Load())>   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## PORT
+   ContextVar default: -
+   getenv PORT,                      viz/serve.py:752   default=8000   bend=no
+## PRINT_MATCH_STATS
+   ContextVar default: -
+   getenv PRINT_MATCH_STATS,         uop/ops.py:1746   default=<expr:Call(func=Name(id='int', ctx=Load()), args=[BoolOp(op=And(),>   bend=YES
+   PORT tinybendygrad/uop/ops.bend
+## PROFILE
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## PROFILE_DATA
+   ContextVar default: -
+   getenv PROFILE_DATA,              uop/ops.py:1762   default=''   bend=YES
+   getenv PROFILE_DATA,              uop/ops.py:1762   default=''   bend=YES
+   PORT tinybendygrad/uop/ops.bend
+## PROF_SLOTS
+   ContextVar default: -
+   getenv PROF_SLOTS,                runtime/ops_amd.py:905   default=32   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## PYTEST_XDIST_WORKER_COUNT
+   ContextVar default: 1
+   getenv PYTEST_XDIST_WORKER_COUNT, helpers.py:273   default=1   bend=YES
+   PORT tinybendygrad/helpers.bend
+## QCOM_PRIORITY
+   ContextVar default: -
+   getenv QCOM_PRIORITY,             runtime/ops_qcom.py:318   default=8   bend=YES
+   PORT tinybendygrad/runtime/ops_qcom.bend
+## REALIZE
+   ContextVar default: -
+   getenv REALIZE,                   llm/model.py:427   default=0   bend=no
+## REDUCEOP_SPLIT_SIZE
+   ContextVar default: -
+   getenv REDUCEOP_SPLIT_SIZE,       schedule/prepare.py:118   default=22   bend=YES
+   PORT tinybendygrad/schedule/prepare.bend
+## REDUCEOP_SPLIT_THRESHOLD
+   ContextVar default: -
+   getenv REDUCEOP_SPLIT_THRESHOLD,  schedule/prepare.py:105   default=32768   bend=YES
+   PORT tinybendygrad/schedule/prepare.bend
+## REGEN
+   ContextVar default: -
+   getenv REGEN,                     runtime/autogen/__init__.py:35   default=0   bend=no
+## REMOTE
+   ContextVar default: -
+   getenv REMOTE,                    runtime/support/system.py:130   default=''   bend=YES
+   getenv REMOTE,                    runtime/support/system.py:399   default=''   bend=YES
+   PORT tinybendygrad/runtime/support/system.bend
+## REMOTE_TIMEOUT
+   ContextVar default: -
+   getenv REMOTE_TIMEOUT,            runtime/support/system.py:391   default=60   bend=YES
+   PORT tinybendygrad/runtime/support/system.bend
+## REWRITE_DATA
+   ContextVar default: -
+   getenv REWRITE_DATA,              uop/ops.py:1761   default=''   bend=YES
+   getenv REWRITE_DATA,              uop/ops.py:1761   default=''   bend=YES
+   PORT tinybendygrad/uop/ops.bend
+## REWRITE_STACK_LIMIT
+   ContextVar default: 250000
+   (no bare getenv call; consumers found below)
+## RING
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## RING_ALLREDUCE_THRESHOLD
+   ContextVar default: -
+   getenv RING_ALLREDUCE_THRESHOLD,  schedule/allreduce.py:14   default=256000   bend=YES
+   getenv RING_ALLREDUCE_THRESHOLD,  schedule/allreduce.py:15   default=256000   bend=YES
+   PORT tinybendygrad/schedule/allreduce.bend
+## ROCM_PATH
+   ContextVar default: -
+   getenv ROCM_PATH,                 runtime/autogen/comgr.py:8   default='/opt/rocm'   bend=no
+   getenv ROCM_PATH,                 runtime/autogen/comgr_3.py:8   default='/opt/rocm'   bend=no
+   getenv ROCM_PATH,                 runtime/autogen/hip.py:8   default='/opt/rocm'   bend=no
+   getenv ROCM_PATH,                 runtime/support/compiler_amd.py:102   default='/opt/rocm'   bend=no
+## SCACHE
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## SPEC
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## SPLIT_REDUCEOP
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## SQTT_BUFFER_SIZE
+   ContextVar default: -
+   getenv SQTT_BUFFER_SIZE,          runtime/ops_amd.py:907   default=256   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## SQTT_EVENT
+   ContextVar default: -
+   getenv SQTT_EVENT,                renderer/amd/sqtt.py:752   default=-1   bend=YES
+   PORT tinybendygrad/renderer/amd/sqtt.bend
+## SUM_DTYPE
+   ContextVar default: -
+   getenv SUM_DTYPE,                 dtype.py:223   default='float32'   bend=YES
+   PORT tinybendygrad/dtype.bend
+## TC
+   ContextVar default: 1
+   getenv TC,                        codegen/opt/search.py:20   default=1   bend=YES
+   getenv TC,                        codegen/opt/search.py:22   default=1   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## TC_MIN_GLOBALS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## TC_OPT
+   ContextVar default: 0
+   getenv TC_OPT,                    codegen/opt/search.py:22   default=2   bend=YES
+   PORT tinybendygrad/codegen/opt/search.bend
+## TC_SELECT
+   ContextVar default: -1
+   (no bare getenv call; consumers found below)
+## TEST_PICKLE
+   ContextVar default: 0
+   getenv TEST_PICKLE,               uop/ops.py:1571   default=0   bend=YES
+   PORT tinybendygrad/uop/ops.bend
+## TRACE
+   ContextVar default: -
+   getenv TRACE,                     runtime/ops_python.py:66   default=0   bend=no
+## TRACEMETA
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## TRACK_MATCH_STATS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## TRAINING
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## TRANSCENDENTAL
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## TUPLE_ORDER
+   ContextVar default: 1
+   (no bare getenv call; consumers found below)
+## TYPED
+   ContextVar default: '0'
+   getenv TYPED,                     __init__.py:2   default='0'   bend=no
+## UNSAFE_ALLOW_JIT_BUFFER
+   ContextVar default: -
+   getenv UNSAFE_ALLOW_JIT_BUFFER,   tensor.py:278   default=0   bend=YES
+   PORT tinybendygrad/tensor.bend
+## UPAT_COMPILE
+   ContextVar default: 1
+   getenv UPAT_COMPILE,              uop/ops.py:1596   default=1   bend=YES
+   PORT tinybendygrad/uop/ops.bend
+## USE_ATOMICS
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## VALIDATE_WITH_CPU
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## VFIO
+   ContextVar default: -
+   getenv VFIO,                      runtime/support/system.py:222   default=0   bend=YES
+   PORT tinybendygrad/runtime/support/system.bend
+## VIZ
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## WAVES_PER_SH
+   ContextVar default: -
+   getenv WAVES_PER_SH,              runtime/ops_amd.py:395   default=0   bend=YES
+   PORT tinybendygrad/runtime/ops_amd.bend
+## WEBGPU_BACKEND
+   ContextVar default: -
+   getenv WEBGPU_BACKEND,            runtime/ops_webgpu.py:169   default=''   bend=YES
+   PORT tinybendygrad/runtime/ops_webgpu.bend
+## WINO
+   ContextVar default: 0
+   (no bare getenv call; consumers found below)
+## XDG_CACHE_HOME
+   ContextVar default: '/Users/cyberistic/Library/Caches'
+   getenv XDG_CACHE_HOME,            helpers.py:400   default=<expr:Call(func=Attribute(value=Attribute(value=Name(id='os', ctx=>   bend=YES
+   PORT tinybendygrad/helpers.bend

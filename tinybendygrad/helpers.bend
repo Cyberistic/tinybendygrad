@@ -27,9 +27,28 @@ import Base
 # `dtypes.default_float` calls `to_dtype` on it, so the dependency direction is
 # the same as Python's (dtype imports helpers).
 #
-# The variable list is the subset these two files read. The full list is ~40
-# ContextVars and belongs to phase P6, where one `Flags` record replaces this
-# one and every def that takes a `Flags` keeps its shape.
+# The variable list is the subset these two files read, and it is 4 flags out of
+# 146. COUNTED, not estimated: upstream declares 61 `ContextVar`s (helpers.py:236-290
+# plus device.py:18, uop/ops.py:1623-1624, hcq2.py:18, ops_nv.py:27, ops_amd.py:31-34)
+# and 85 more read through a bare `getenv("KEY", ...)`, and `Flags` implements THREE
+# of the 61 ContextVars -- NO_COLOR, DEFAULT_FLOAT, DEFAULT_INT -- plus SUM_DTYPE,
+# which is a bare getenv (dtype.py:223) and not a ContextVar at all. An earlier
+# version of this comment said "~40 ContextVars" and was wrong by 21; the count is
+# `.agents/slop/env-coercion-table.txt` PART 1, which is 56 int-default and 8
+# str-default getenv calls measured by spying on os.getenv before the import.
+# So P6 is not a garbage-collection job. Every one of the other 57 ContextVars is
+# CONSUMED: `DEBUG` has 119 reads and the lowest is `HCQ_CACHE_THRESH` with 1.
+#
+# P6 replaces this one record with the full list, and every def that takes a
+# `Flags` keeps its shape -- but the SEMANTICS have to be settled first, because
+# `getenv` is `type(default)(os.getenv(key, default))` (helpers.py:162), so the
+# coercion is `int` for 51 of the 61, `str` for the rest, and `bool` for exactly
+# three: PMA (ops_nv.py:27), SQTT and PMC (ops_amd.py:31,34), whose defaults are
+# `abs(VIZ.value) >= 2`. MEASURED: `.agents/slop/env-coercion-table.txt` PART 2 is
+# the coercion matrix and PART 7 walks NO_COLOR end to end. The `bool` case is the
+# one that reads as "any non-empty string is true"; the `int` case, which NO_COLOR
+# is, reads an int-zero string as False, and that is the bug the old comment below
+# was written on.
 # ===========================================================================
 
 type Flags is Data:
@@ -38,16 +57,71 @@ type Flags is Data:
 def Flags.defaults() -> Flags:
   Flags{False{}, "float32", "int32", "float32"}
 
-# ContextVar("NO_COLOR", 0): getenv coerces through `type(default)` and
-# `__bool__` is `bool(self.value)`, so any text at all is truthy -- NO_COLOR=0
-# does NOT switch colour off, and this reproduces that.
-def no_color_of.go(ise: Bool) -> Bool:
-  match ise:
-    case True{}: False{}
-    case False{}: True{}
+# `NO_COLOR` is `ContextVar("NO_COLOR", 0)` (helpers.py:239), so `type(default)`
+# is `int` and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)`
+# is then `bool(int(...))`. MEASURED, 31 probes, live CPython
+# (.agents/slop/nocolor-oracle.txt vs .agents/slop/nocolor-bend.txt):
+#   "0", "00", "-0", "+0", "0 " and " 0" all read as 0 and leave COLOUR ON, and
+#   "1", "2", "007", "+1", "-1", "1_0", " 1 ", "\t2" and "2\n" all read non-zero
+#   and switch it OFF. So the rule is not "any text is truthy": that INVERTS
+#   every one of those six zeros, and a default-environment gate cannot see an
+#   inversion because the default is the only environment it ever runs.
+# So: trim, drop one leading sign, and require what is left to be `[0-9_]` with
+# at least one character other than '0'.
+# `int()` REFUSES "", "0.0", "1e3", "false" and the rest -- tinygrad does not
+# import -- and a refusal is not a value in a total language, so every refused
+# string answers False. False is the DEFAULT reading (colour on), so the port
+# never invents colour CPython would not have printed. The one measured gap is
+# `Char.is_digit`, which is ASCII, so CPython's other decimal digits ("٣") read
+# False here and True there.
+def nc_sign(+s: String) -> Bool:
+  Bool.or(String.starts_with(s, "+"), String.starts_with(s, "-"))
+
+def nc_body(sgn: Bool, s: String) -> List<&2, Char>:
+  match sgn:
+    case True{}: String.to_list(String.drop(s, 1n))
+    case False{}: String.to_list(s)
+
+def nc_digits(+s: String) -> List<&2, Char>:
+  nc_body(nc_sign(s), String.trim(s))
+
+def nc_in(+h: Char) -> Bool:
+  Bool.or(Char.is_digit(h), U32.is_eq(Char.to_u32(h), 95))
+
+# `ok` is "every character so far was in `[0-9_]`" and `nz` is "a non-'0' has been
+# seen". A RECORD, not two parameters, because Bend has no projection: a fold that
+# carries two Bools beside its list needs a hand-written reader per field.
+type Nc is Data:
+  Nc{ok: Bool, nz: Bool}
+
+def nc_ok(+n: Nc) -> Bool:
+  match n:
+    case Nc{ok, nz}: ok
+
+def nc_nz(+n: Nc) -> Bool:
+  match n:
+    case Nc{ok, nz}: nz
+
+# a digit advances `nz` and keeps `ok`; an underscore keeps both (Python allows one
+# BETWEEN digits and the probe list has "1_0"); anything else clears `ok` for good.
+def nc_step(ok: Bool, isdig: Bool, inclass: Bool, nz: Bool, +h: Char) -> Nc:
+  match isdig:
+    case True{}: Nc{ok, Bool.or(nz, U32.is_ne(Char.to_u32(h), 48))}
+    case False{}:
+      match inclass:
+        case True{}: Nc{ok, nz}
+        case False{}: Nc{False{}, nz}
+
+def nc_walk(cs: List<&2, Char>, +n: Nc) -> Nc:
+  match cs:
+    case Nil{}: n
+    case +h <> t: nc_walk(t, nc_step(nc_ok(n), Char.is_digit(h), nc_in(h), nc_nz(n), h))
+
+def no_color_of.go(+n: Nc) -> Bool:
+  Bool.and(nc_ok(n), nc_nz(n))
 
 def no_color_of(v: String) -> Bool:
-  no_color_of.go(String.is_empty(v))
+  no_color_of.go(nc_walk(nc_digits(v), Nc{True{}, False{}}))
 
 def getenv_str.go(v: Result<&1, &1, U32 & String, String>, d: String) -> String:
   match v:

@@ -1,0 +1,467 @@
+# Hardcoded-default scan. For every flag whose default is distinctive
+# (not 0, not 1), the literals equal to it inside the Bend port of each
+# consuming file. A hit is a CANDIDATE, not a verdict.
+
+## AMD_KFD_QUEUE_PRIORITY  default=7 (int)   1 py reads
+     py runtime/ops_amd.py:686  queue_type=queue_type, queue_percentage=kfd.KFD_MAX_QUEUE_PERCENTAGE|(xcc_id<<8), queue_priority=get
+   >>> runtime/ops_amd.py:1262  Bool.pick(String, String.eq(q, "SDMA:7"), "sdma_7",
+   >>> runtime/ops_amd.py:1479  def CALL_ALLOC() -> U32: 7
+   >>> runtime/ops_amd.py:1860  row("amd_key_hit_miss_same", CKey.same(CKey{7, 1}, CKey{7, 1}))
+   >>> runtime/ops_amd.py:1861  row("amd_key_hit_miss_devs", CKey.same(CKey{7, 1}, CKey{7, 2}))
+   >>> runtime/ops_amd.py:1862  row("amd_key_hit_miss_lib", CKey.same(CKey{7, 1}, CKey{8, 1}))
+   >>> runtime/ops_amd.py:1881  urow("amd_lru_take_7", lru_take([7]))
+   >>> runtime/ops_amd.py:1882  urow("amd_lru_take_7_8", lru_take([7, 8]))
+   >>> runtime/ops_amd.py:1883  urow("amd_lru_take_7_8_9", lru_take([7, 8, 9]))
+   >>> runtime/ops_amd.py:1884  urow("amd_lru_take_9_8_7", lru_take([9, 8, 7]))
+   >>> runtime/ops_amd.py:2029  lrow("amd_sdma_clamp0_7_1_2", [sdma_clamp0(7)])
+   >>> runtime/ops_amd.py:2157  srow("amd_qb_name_ring_7", to_name(QF_RING(), "SDMA:7"))
+   >>> runtime/ops_amd.py:2164  srow("amd_qb_split_ring_7", "ring sdma 7")
+   >>> runtime/ops_amd.py:2167  row("amd_qb_ok_ring_7", qb_prefixed(to_name(QF_RING(), "SDMA:7")))
+   >>> runtime/ops_amd.py:2202  urow("amd_sq_hdr9_7", sq_hdr9(7))
+   >>> runtime/ops_amd.py:2213  row("amd_wgp_7_0_3_1f", wgp_active(7, 0, 3, 31))
+## AM_POWER_LIMIT  default=0.0 (float)  -- no literal hit in any Bend port
+## BEAM_LOCAL_MAX  default=1024 (int)   1 py reads
+     py codegen/opt/search.py:86  acted, max_up, max_lcl = {0:s} if include_0 else {}, getenv("BEAM_UPCAST_MAX", 256) if max_up is Non
+   >>> codegen/opt/search.py:171  CFG{False{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:174  CFG{True{}, 1, 2, 256, 1024, 10, True{}}
+## BEAM_MAX_TASKS_PER_CHILD  default=16 (int)   1 py reads
+     py engine/worker.py:47  worker_pool = _WorkerContext().Pool(PARALLEL.value, _init_worker, (), getenv("BEAM_MAX_TASKS_PER_CHI
+   >>> engine/worker.py:225  16
+## BEAM_MIN_PROGRESS  default=0.01 (float)  -- no literal hit in any Bend port
+## BEAM_TIMEOUT_SEC  default=10 (int)   1 py reads
+     py codegen/opt/search.py:59  signal.alarm(getenv("BEAM_TIMEOUT_SEC", 10))
+   >>> codegen/opt/search.py:171  CFG{False{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:174  CFG{True{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:263  acts_n.of(CFG.padto_on(c), 120, 64, 64, 1, 1, 9, 10)
+   >>> codegen/opt/search.py:268  U32.add(U32.add(10, 10), 8)
+   >>> codegen/opt/search.py:294  case O.AXIS_UPCAST{}: U32.is_lt(ax, 10)
+   >>> codegen/opt/search.py:295  case O.AXIS_UNROLL{}: U32.is_lt(ax, 10)
+   >>> codegen/opt/search.py:398  k : Unit <- row("zero_up10", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 10)))
+## BEAM_UOPS_MAX  default=3000 (int)  -- no literal hit in any Bend port
+## BEAM_UPCAST_MAX  default=256 (int)   1 py reads
+     py codegen/opt/search.py:86  acted, max_up, max_lcl = {0:s} if include_0 else {}, getenv("BEAM_UPCAST_MAX", 256) if max_up is Non
+   >>> codegen/opt/search.py:171  CFG{False{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:174  CFG{True{}, 1, 2, 256, 1024, 10, True{}}
+## CACHELEVEL  default=2 (int)   6 py reads
+     py codegen/opt/search.py:7  from tinygrad.helpers import prod, flatten, DEBUG, CACHELEVEL, diskcache_get, diskcache_put, getenv,
+     py codegen/opt/search.py:108  if not IGNORE_BEAM_CACHE and CACHELEVEL >= 1 and (val:=diskcache_get("beam_search", key)) is not Non
+     py codegen/opt/search.py:171  if CACHELEVEL >= 1: diskcache_put("beam_search", key, beam[0][0].applied_opts)
+     py device.py:551  with Context(CACHELEVEL=0, DEV=f"{device}:{d._renderer_name(r)}"): test = (Tensor([1,2,3], device=de
+     py helpers.py:422  if CACHELEVEL < 1: return None
+     py helpers.py:434  if CACHELEVEL < 1: return val
+   >>> codegen/opt/search.py:171  CFG{False{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:174  CFG{True{}, 1, 2, 256, 1024, 10, True{}}
+   >>> codegen/opt/search.py:339  def plus_scores() -> List<&2, SCORE>:
+   >>> codegen/opt/search.py:340  List.append(&2, SCORE, List.append(&2, SCORE, List.append(&2, SCORE,
+   >>> codegen/opt/search.py:350  U32.sub(4, U32.from_nat(List.length(&2, SCORE, plus_scores())))
+   >>> device.py:153  def part.at(m: Maybe<&2, String>) -> String:
+   >>> device.py:154  Maybe.default(&2, String, m, "")
+   >>> device.py:157  part.at(List.get(&2, String, String.split(ix, ':'), k))
+   >>> device.py:166  def rest_of(t: List<&2, String>) -> String:
+   >>> device.py:172  def canon.go(+s: String, xs: List<&2, String>) -> String:
+   >>> device.py:206  def canon_device.multi(ixs: List<&2, String>) -> List<&2, String>:
+   >>> device.py:209  case h <> t: List.append(&2, String, [canon(h)], canon_device.multi(t))
+   >>> device.py:213  def is_disk(ixs: List<&2, String>) -> Bool:
+   >>> device.py:223  def all_devices() -> List<&2, AEnt>:
+   >>> device.py:224  [AEnt{1, "METAL"}, AEnt{2, "AMD"}, AEnt{3, "NV"}, AEnt{4, "CUDA"},
+   >>> device.py:231  def avail(+m: Mk, es: List<&2, AEnt>) -> String:
+   >>> device.py:255  def registry() -> List<&2, DEnt>:
+   >>> device.py:256  [DEnt{1, "amd", "AMDDevice"}, DEnt{2, "bend", "BendDevice"},
+   >>> device.py:274  def claim_row(es: List<&2, DEnt>, +h: String) -> U32:
+   >>> device.py:295  Reg{open: List<&2, String>}
+   >>> device.py:304  def reg_has(es: List<&2, String>, +t: String) -> Bool:
+   >>> device.py:309  def reg_open.go(+es: List<&2, String>, +t: String) -> List<&2, String>:
+   >>> device.py:310  Bool.pick(List<&2, String>, reg_has(es, t), es, List.append(&2, String, es, [t]))
+   >>> device.py:315  def Reg.open(+r: Reg) -> List<&2, String>:
+   >>> device.py:323  U32.from_nat(List.length(&2, String, Reg.open(r)))
+   >>> device.py:397  def ifaces() -> List<&2, AEnt>:
+   >>> device.py:398  [AEnt{1, "HostIface"}, AEnt{2, "MockIface"}, AEnt{3, "RealIface"},
+   >>> device.py:404  def iface_filter(+m: Mk, es: List<&2, AEnt>, +want_mock: Bool, acc: U32) -> U32:
+   >>> device.py:427  def stems() -> List<&2, AEnt>:
+   >>> device.py:428  [AEnt{1, "AMD"}, AEnt{2, "BEND"}, AEnt{3, "CL"}, AEnt{4, "CPU"},
+   >>> device.py:443  def deprecated(+m: Mk, es: List<&2, AEnt>, acc: U32) -> U32:
+   >>> device.py:460  U32.mul(U32.sub(en, 1), 2)
+   >>> device.py:470  U32.mul(n, 2)
+   >>> device.py:487  def supports(disk: Bool, xfer: Bool) -> List<&2, U32>:
+   >>> device.py:490  def host_supports() -> List<&2, U32>:
+   >>> device.py:497  Multi{devs: List<&2, U32>, nbytes: U32, dt: S.Dt}
+   >>> device.py:514  Bar{ns: List<&2, Bn>}
+   >>> device.py:546  def Bar.nodes(+ar: Bar) -> List<&2, Bn>:
+   >>> device.py:550  def bar_at.go(ns: List<&2, Bn>, n: Nat) -> Maybe<&1, Bn>:
+   >>> device.py:568  U32.from_nat(List.length(&2, Bn, Bar.nodes(ar)))
+   >>> device.py:661  def bnew.grow(ns: List<&2, Bn>, b: Bn, ix: U32) -> Bar:
+   >>> device.py:662  Bar{List.append(&2, Bn, ns, [bnew.stamp(b, ix)])}
+   >>> device.py:705  case 2: "AMD"
+   >>> device.py:741  def mem_used(+ar: Bar, ixs: List<&2, U32>, +dev: U32, acc: U32) -> U32:
+   >>> device.py:792  def last.go(t: List<&2, U32>) -> U32:
+   >>> device.py:798  def alloc_take(free: List<&2, U32>) -> U32:
+   >>> device.py:803  def freed(xs: List<&2, U32>, acc: U32) -> U32:
+   >>> device.py:827  Bool.pick(U32, U32.is_eq(n, 2), 0, 1)
+   >>> device.py:912  def isig.step(s: Sig, acc: List<&2, U32>) -> List<&2, U32>:
+   >>> device.py:913  List.append(&2, U32, acc, [Sig.at(s)])
+   >>> device.py:920  def isig.go(sig: List<&2, U32>, +off: U32, acc: List<&2, U32>) -> List<&2, U32>:
+   >>> device.py:926  def iter_sig(sig: List<&2, U32>) -> List<&2, U32>:
+   >>> device.py:936  def gsize() -> List<&2, U32>:
+   >>> device.py:951  2
+   >>> device.py:966  def dev_id.go(m: Maybe<&2, Nat>) -> U32:
+   >>> device.py:1048  Pmb{BFound.ar(f), 2}
+   >>> device.py:1143  2
+   >>> device.py:1158  def show_list(xs: List<&2, String>) -> String:
+   >>> device.py:1161  def go_show(xs: List<&2, U32>, acc: String) -> String:
+   >>> device.py:1166  def show_bufs(xs: List<&2, U32>) -> String:
+   >>> device.py:1182  Telf{nm: String, sigs: List<&2, U32>}
+   >>> device.py:1218  bview(BFound.ar(v), BFound.i(v), 2, S.single(), 8)
+   >>> device.py:1270  def slots() -> List<&2, U32>:
+   >>> device.py:1271  [1, 2, 3]
+   >>> device.py:1293  a : Unit <- row("all_len", U32.from_nat(List.length(&2, AEnt, all_devices())))
+   >>> device.py:1294  b : Unit <- row("stem_len", U32.from_nat(List.length(&2, AEnt, stems())))
+   >>> device.py:1295  c : Unit <- row("reg_len", U32.from_nat(List.length(&2, DEnt, registry())))
+   >>> device.py:1298  f : Unit <- srow("canon_wg2", canon("WEBGPU:2"))
+   >>> device.py:1303  k : Unit <- row("dcls_wg", dcls("WEBGPU:2"))
+   >>> device.py:1322  C : Unit <- row("sig2", sig_len(2))
+   >>> device.py:1332  M : Unit <- row("try2", alloc_try(2))
+   >>> device.py:1339  T : Unit <- row("did_deep", dev_id("CPU:1:2"))
+   >>> device.py:1370  C4 : Unit <- row("copy_reshape", if_b(copy_ok(BFound.ar(chain()), 1, 2)))
+   >>> device.py:1376  C9 : Unit <- row("mem_amd", mem_used(BFound.ar(chain()), slots(), 2, 0))
+   >>> device.py:1381  D4 : Unit <- row("base_view", if_b(bvalid_base(BFound.ar(chain()), 1, 2)))
+   >>> device.py:1383  D6 : Unit <- row("lru_take", alloc_take([1, 2, 3]))
+   >>> device.py:1385  D8 : Unit <- row("freed", freed([1, 2, 3, 4], 0))
+   >>> device.py:1388  E1 : Unit <- row("multi_nb", multi_nb(Multi{[1, 2], 16, S.int32()}))
+   >>> helpers.py:79  def prod_u32(xs: List<&2, U32>) -> U32:
+   >>> helpers.py:86  def prod_nat(xs: List<&2, Nat>) -> Nat:
+   >>> helpers.py:98  def dedup_u32.put(seen: Bool, h: U32, r: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:103  def dedup_u32.go(+x: U32, +r: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:106  def dedup_u32(xs: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:111  def dedup_str.put(seen: Bool, h: String, r: List<&2, String>) -> List<&2, String>:
+   >>> helpers.py:116  def dedup_str.go(+x: String, +r: List<&2, String>) -> List<&2, String>:
+   >>> helpers.py:119  def dedup_str(xs: List<&2, String>) -> List<&2, String>:
+   >>> helpers.py:141  def argfix1(a: U32) -> List<&2, U32>:
+   >>> helpers.py:144  def argfix2(a: U32, b: U32) -> List<&2, U32>:
+   >>> helpers.py:147  def argfix_seq(xs: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:176  def ix_of.go(xs: List<&2, U32>, +i: U32) -> List<&2, Ix>:
+   >>> helpers.py:181  def ix_of(xs: List<&2, U32>) -> List<&2, Ix>:
+   >>> helpers.py:191  def ix_map(l: List<&2, Ix>) -> List<&2, U32>:
+   >>> helpers.py:196  def argsort_u32(xs: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:204  def all_same_u32.go(xs: List<&2, U32>, +head: U32) -> Bool:
+   >>> helpers.py:209  def all_same_u32(xs: List<&2, U32>) -> Bool:
+   >>> helpers.py:214  def all_same_str.go(xs: List<&2, String>, +head: String) -> Bool:
+   >>> helpers.py:219  def all_same_str(xs: List<&2, String>) -> Bool:
+   >>> helpers.py:242  SShape{dims: List<&2, U32>}     # Python: a tuple of ints, possibly ()
+   >>> helpers.py:245  def u32_list_eq(a: List<&2, U32>, b: List<&2, U32>) -> Bool:
+   >>> helpers.py:253  Nl{ss: List<&2, Nest>}
+   >>> helpers.py:268  def ShapeRes.dims.head(s0: ShapeRes) -> Maybe<&2, List<&2, U32>>:
+   >>> helpers.py:275  def ShapeRes.dims.same(ref: Maybe<&2, List<&2, U32>>, d2: List<&2, U32>) -> Bool:
+   >>> helpers.py:280  def ShapeRes.dims.ref.put(ref: Maybe<&2, List<&2, U32>>, d2: List<&2, U32>) ->
+   >>> helpers.py:281  Maybe<&2, List<&2, U32>>:
+   >>> helpers.py:286  def ShapeRes.dims.ans(ref: Maybe<&2, List<&2, U32>>, n: U32) -> ShapeRes:
+   >>> helpers.py:294  def ShapeRes.dims(r: List<&2, ShapeRes>, bad: Bool, +ref: Maybe<&2, List<&2, U32>>,
+   >>> helpers.py:307  def ShapeRes.of.walk(ss: List<&2, ShapeRes>, n: U32) -> ShapeRes:
+   >>> helpers.py:312  def ShapeRes.of(+ss: List<&2, ShapeRes>) -> ShapeRes:
+   >>> helpers.py:313  ShapeRes.of.walk(ss, U32.from_nat(List.length(&2, ShapeRes, ss)))
+   >>> helpers.py:321  Frame{v: List<&2, ShapeRes>}
+   >>> helpers.py:324  Stk{fs: List<&2, Frame>}
+   >>> helpers.py:330  def stk.grow(fv: List<&2, ShapeRes>, t: List<&2, Frame>, v: ShapeRes) -> List<&2, Frame>:
+   >>> helpers.py:331  g = {Frame{List.append(&2, ShapeRes, fv, [v])} : Frame}
+   >>> helpers.py:334  def stk.push(xs: List<&2, Frame>, v: ShapeRes) -> List<&2, Frame>:
+   >>> helpers.py:350  def stk.peek(s: Stk) -> List<&2, ShapeRes>:
+   >>> helpers.py:361  def stk.unpush(xs: List<&2, Frame>, v: ShapeRes) -> List<&2, Frame>:
+   >>> helpers.py:369  def st.splice(ss: List<&2, Nest>, t: List<&2, GIn>) -> List<&2, GIn>:
+   >>> helpers.py:375  def st.spread(ss: List<&2, Nest>, t: List<&2, Nest>) -> List<&2, Nest>:
+   >>> helpers.py:399  def get_shape.go(k: Nat, ws: List<&2, GIn>, st: Stk) -> ShapeRes:
+   >>> helpers.py:435  def is_image_shape.tail(last: Maybe<&2, U32>) -> Bool:
+   >>> helpers.py:440  def is_image_shape.dims(three: Bool, d: List<&2, U32>) -> Bool:
+   >>> helpers.py:442  case True{}: is_image_shape.tail(List.last(&2, U32, d))
+   >>> helpers.py:445  def is_image_shape.rank(r: ShapeRes) -> List<&2, U32>:
+   >>> helpers.py:451  def is_image_shape.go(+d: List<&2, U32>) -> Bool:
+   >>> helpers.py:454  case _: is_image_shape.dims(U32.is_eq(U32.from_nat(List.length(&2, U32, d)), 3), d)
+   >>> helpers.py:474  def fully_flatten.go(k: Nat, ws: List<&2, Nest>, acc: List<&2, Nest>) -> List<&2, Nest>:
+   >>> helpers.py:476  case 0n: List.reverse(&2, Nest, acc)
+   >>> helpers.py:479  case Nil{}: List.reverse(&2, Nest, acc)
+   >>> helpers.py:483  def fully_flatten_nest(n: Nest) -> List<&2, Nest>:
+   >>> helpers.py:489  def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
+   >>> helpers.py:490  List.concat(&2, U32, l)
+   >>> helpers.py:663  case "green": Some{2}
+   >>> helpers.py:696  case True{}: Some{2}
+   >>> helpers.py:760  Ast{c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>}
+   >>> helpers.py:763  def ansistrip.done4(pend: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
+   >>> helpers.py:764  List.append(&2, Char, List.append(&2, Char, [Char.from_u32(27)], [Char.from_u32(91)]), List.append(&2, Char, pend, acc))
+   >>> helpers.py:766  def ansistrip.done3(m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
+   >>> helpers.py:769  case Succ{q}: List.append(&2, Char, [Char.from_u32(27)], acc)
+   >>> helpers.py:772  def ansistrip.done2(c: U32, m: Nat, acc: List<&2, Char>, pend: List<&2, Char>) -> List<&2, Char>:
+   >>> helpers.py:774  case 0n: List.reverse(&2, Char, acc)
+   >>> helpers.py:775  case Succ{q}: ansistrip.done3(1n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
+   >>> helpers.py:776  case Succ{Succ{p}}: ansistrip.done3(2n, List.reverse(&2, Char, acc), List.reverse(&2, Char, pend))
+   >>> helpers.py:778  def ansistrip.done(st: Ast) -> List<&2, Char>:
+   >>> helpers.py:783  def ansistrip.go.esc(h: Char, acc: List<&2, Char>) -> List<&2, Char>:
+   >>> helpers.py:784  List.append(&2, Char, [Char.from_u32(27)], List.append(&2, Char, [h], acc))
+   >>> helpers.py:789  def ansistrip.go(cs: List<&2, Char>, st: Ast) -> List<&2, Char>:
+   >>> helpers.py:823  def make_tuple_rep.go(n: Nat, +x: U32) -> List<&2, U32>:
+   >>> helpers.py:828  def make_tuple_rep(x: U32, cnt: U32) -> List<&2, U32>:
+   >>> helpers.py:831  def make_tuple_of(x: U32) -> List<&2, U32>:
+   >>> helpers.py:836  def to_tuple_u32(x: U32) -> List<&2, U32>:
+   >>> helpers.py:839  def to_tuple_seq(xs: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:852  def fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
+   >>> helpers.py:860  def fg_skip(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:868  def flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
+   >>> helpers.py:869  List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(Nat.mod(List.length(&2, U32, padding), 2n), padding)))
+   >>> helpers.py:877  def resolve_pool_pads_int.go(n: Nat, +p: U32) -> List<&2, U32>:
+   >>> helpers.py:882  def resolve_pool_pads_int(p: U32, dims: U32) -> List<&2, U32>:
+   >>> helpers.py:883  resolve_pool_pads_int.go(U32.to_nat(U32.mul(2, dims)), p)
+   >>> helpers.py:885  def pool_pads_dup.go(ps: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:887  case Nil{}: List.reverse(&2, U32, acc)
+   >>> helpers.py:888  case +h <> t: pool_pads_dup.go(t, List.append(&2, U32, acc, [h, h]))
+   >>> helpers.py:890  def pool_pads_dup(p: List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:893  def resolve_pool_pads.pick(isdims: Bool, p: List<&2, U32>) -> Maybe<&1, List<&2, U32>>:
+   >>> helpers.py:898  def resolve_pool_pads.step(istwodims: Bool, isdims: Bool, p: List<&2, U32>, dims: U32) ->
+   >>> helpers.py:899  Maybe<&1, List<&2, U32>>:
+   >>> helpers.py:904  def resolve_pool_pads.n(two: Bool, dims: Bool, p: List<&2, U32>, dims2: U32) ->
+   >>> helpers.py:905  Maybe<&1, List<&2, U32>>:
+   >>> helpers.py:908  def resolve_pool_pads(+p: List<&2, U32>, +dims: U32) -> Maybe<&1, List<&2, U32>>:
+   >>> helpers.py:909  resolve_pool_pads.n(U32.is_eq(U32.from_nat(List.length(&2, U32, p)), U32.mul(2, dims)),
+   >>> helpers.py:910  U32.is_eq(U32.from_nat(List.length(&2, U32, p)), dims), p, dims)
+   >>> helpers.py:956  def bal.walk(cs: List<&2, Char>, +st: Depth) -> Bool:
+   >>> helpers.py:1335  def kv_find.go(l: List<&2, KV>, +k: String, found: Maybe<&1, U32>) -> Maybe<&1, U32>:
+   >>> helpers.py:1340  def kv_find(l: List<&2, KV>, k: String) -> Maybe<&1, U32>:
+   >>> helpers.py:1349  def kv_conflict(seen: List<&2, KV>, +kv: KV) -> Bool:
+   >>> helpers.py:1354  Merged{bad: Bool, seen: List<&2, KV>}
+   >>> helpers.py:1356  def merged_seen(m: Merged) -> List<&2, KV>:
+   >>> helpers.py:1364  def merged_of(bad: Bool, seen: List<&2, KV>) -> Merged:
+   >>> helpers.py:1370  case False{}: merged_of(merged_bad(m), List.append(&2, KV, merged_seen(m), [kv]))
+   >>> helpers.py:1372  def merge_dicts.go(l: List<&2, KV>, +m: Merged) -> Merged:
+   >>> helpers.py:1379  def merge_dicts.pick(m: Merged) -> Maybe<&1, List<&2, KV>>:
+   >>> helpers.py:1386  def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
+   >>> helpers.py:1389  case d0 <> r: merge_dicts.pick(merge_dicts.go(List.concat(&2, KV, r), merged_of(False{}, d0)))
+   >>> helpers.py:1401  Parted{yes: List<&2, U32>, no: List<&2, U32>}
+   >>> helpers.py:1415  case 2: U32.is_zero(x)
+   >>> helpers.py:1419  def part_go(xs: List<&2, U32>, +sel: U32, p: Parted) -> Parted:
+   >>> helpers.py:1424  def part_out(p: Parted) -> List<&2, U32> & List<&2, U32>:
+   >>> helpers.py:1428  def part_yes(r: List<&2, U32> & List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:1432  def part_no(r: List<&2, U32> & List<&2, U32>) -> List<&2, U32>:
+   >>> helpers.py:1436  def partition(sel: U32, itr: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
+   >>> helpers.py:1453  def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
+   >>> helpers.py:1494  def lines.done(f: File, value: String) -> IO(List<&2, String>):
+   >>> helpers.py:1495  IO.bind(Unit, List<&2, String>, File.close(f),
+   >>> helpers.py:1496  u => IO.pure(List<&2, String>, String.lines(value)))
+   >>> helpers.py:1498  def lines.close(f: File) -> IO(List<&2, String>):
+   >>> helpers.py:1499  IO.bind(Unit, List<&2, String>, File.close(f), u => IO.pure(List<&2, String>, Nil{}))
+   >>> helpers.py:1501  def lines.split(r: File & Result<&1, &1, U32 & String, String>) -> IO(List<&2, String>):
+   >>> helpers.py:1506  def lines.read(f: File, max: U32) -> IO(List<&2, String>):
+   >>> helpers.py:1507  IO.bind(File & Result<&1, &1, U32 & String, String>, List<&2, String>,
+   >>> helpers.py:1510  def lines.go(r: Result<&1, &1, U32 & String, File>) -> IO(List<&2, String>):
+   >>> helpers.py:1513  case Fail{error}: IO.pure(List<&2, String>, Nil{})
+   >>> helpers.py:1515  def lines(path: String) -> IO(List<&2, String>):
+   >>> helpers.py:1516  IO.bind(Result<&1, &1, U32 & String, File>, List<&2, String>,
+   >>> helpers.py:1519  def printable.go(got: Maybe<&2, String>) -> String:
+   >>> helpers.py:1524  def printable.pick(line: U32, ls: IO(List<&2, String>)) -> IO(String):
+   >>> helpers.py:1526  got : List<&2, String> <- ls
+   >>> helpers.py:1527  return printable.go(List.get(&2, String, got, Nat.sub(U32.to_nat(line), 1n)))
+## HCQ_CACHE_THRESH  default=64 (int)   1 py reads
+     py runtime/support/hcq2.py:535  use_rt = len(linear.src) < HCQ_CACHE_THRESH # small schedules use runtime address patches so linked 
+   >>> runtime/support/hcq2.py:282  def HCQ_CACHE_THRESH() -> U32: 64
+   >>> runtime/support/hcq2.py:1923  srow("hq2_pack_mixed_0_64", pk_str(pack.trail(layout(MIXED(), 0), 64)))
+## MAX_SQTT_PKTS  default=50000 (int)  -- no literal hit in any Bend port
+## MV_BLOCKSIZE  default=4 (int)   5 py reads
+     py codegen/opt/heuristic.py:61  MV_BLOCKSIZE, MV_THREADS_PER_ROW, MV_ROWS_PER_THREAD = getenv("MV_BLOCKSIZE", 4), getenv("MV_THREADS
+     py codegen/opt/heuristic.py:62  if k.ren.has_local and getenv("MV",1) != 0 and (MV_BLOCKSIZE > 1 or MV_THREADS_PER_ROW > 1 or MV_ROW
+     py codegen/opt/heuristic.py:70  if first_reduce_rng.src[0].divides(MV_THREADS_PER_ROW) is not None and k.full_shape[global_idx]%(MV_
+     py codegen/opt/heuristic.py:72  print(f"MATVEC: {k.full_shape=} {first_reduce_rng.render()} {MV_BLOCKSIZE=} {MV_THREADS_PER_ROW=} {M
+     py codegen/opt/heuristic.py:76  if MV_BLOCKSIZE > 1: k.apply_opt(Opt(OptOps.SPLIT, global_idx, (MV_BLOCKSIZE, AxisType.LOCAL)))
+   >>> codegen/opt/heuristic.py:154  PR.Sched.of(PR.REN.python(), [PR.RNG{0, O.AXIS_GLOBAL{}, 4}])
+## MV_ROWS_PER_THREAD  default=4 (int)   5 py reads
+     py codegen/opt/heuristic.py:61  MV_BLOCKSIZE, MV_THREADS_PER_ROW, MV_ROWS_PER_THREAD = getenv("MV_BLOCKSIZE", 4), getenv("MV_THREADS
+     py codegen/opt/heuristic.py:62  if k.ren.has_local and getenv("MV",1) != 0 and (MV_BLOCKSIZE > 1 or MV_THREADS_PER_ROW > 1 or MV_ROW
+     py codegen/opt/heuristic.py:70  if first_reduce_rng.src[0].divides(MV_THREADS_PER_ROW) is not None and k.full_shape[global_idx]%(MV_
+     py codegen/opt/heuristic.py:72  print(f"MATVEC: {k.full_shape=} {first_reduce_rng.render()} {MV_BLOCKSIZE=} {MV_THREADS_PER_ROW=} {M
+     py codegen/opt/heuristic.py:77  if MV_ROWS_PER_THREAD > 1: k.apply_opt(Opt(OptOps.SPLIT, global_idx, (MV_ROWS_PER_THREAD, AxisType.U
+   >>> codegen/opt/heuristic.py:154  PR.Sched.of(PR.REN.python(), [PR.RNG{0, O.AXIS_GLOBAL{}, 4}])
+## MV_THREADS_PER_ROW  default=8 (int)  -- no literal hit in any Bend port
+## OCCUPANCY_FLOOR  default=4096 (int)  -- no literal hit in any Bend port
+## PMA_BUFFER_SIZE  default=512 (int)   1 py reads
+     py runtime/ops_nv.py:757  self.pma_buf = Buffer(self.device, size:=getenv("PMA_BUFFER_SIZE", 512) << 20, dtypes.uint8,
+   >>> runtime/ops_nv.py:402  def M_SET_APPLICATION_ID() -> U32: 512
+   >>> runtime/ops_nv.py:1948  lrow("nv_args_at512", args.layout(args.buf3_var2(), 512))
+   >>> runtime/ops_nv.py:1950  lrow("nv_args_at512_mixed", args.layout(args.mixed(), 512))
+   >>> runtime/ops_nv.py:2788  def BPT_GRAN() -> U32: 512
+   >>> runtime/ops_nv.py:3088  def PROF_TPC_STRIDE_PRE() -> U32: 512
+   >>> runtime/ops_nv.py:3090  def PROF_SM_STRIDE() -> U32: 512
+   >>> runtime/ops_nv.py:3484  brow("nv_launch_small_refuses", Bool.not(exec.ok.prod(prod3(32, 32, 1), 512)))
+   >>> runtime/ops_nv.py:3490  brow("nv_launch_ok_1024_512", exec.ok.prod(prod3(32, 32, 1), 512))
+   >>> runtime/ops_nv.py:3492  srow("nv_launch_msg_small", exec.msg.too_many(1024, 512))
+   >>> runtime/ops_nv.py:3529  row("nv_launch_at", cq.arg_base(512, 12))
+   >>> runtime/ops_nv.py:3530  row("nv_launch_at_mixed", cq.arg_base(512, 224))
+   >>> runtime/ops_nv.py:3531  brow("nv_launch_at_equals", U32.is_eq(cq.arg_base(512, 0), 512))
+   >>> runtime/ops_nv.py:3535  row("nv_launch_stride0", cq.stride(512, 512))
+## PORT  default=8000 (int)  -- no literal hit in any Bend port
+## PROF_SLOTS  default=32 (int)   2 py reads
+     py runtime/ops_amd.py:905  self.prof_slots, self.prof_read, self.sqtt_next_cmd_id = getenv("PROF_SLOTS", 32), 0, itertools.coun
+     py runtime/ops_amd.py:1062  print(colored(f"{self.device}: Warning: {lost} kernel profiles were overwritten: synchronize more of
+   >>> runtime/ops_amd.py:1208  def q_dbg(wave_cnt: U32) -> U32: H.round_up_u32(U32.mul(wave_cnt, 32), 64)
+   >>> runtime/ops_amd.py:1223  def to_lower(+c: U32) -> U32: Bool.pick(U32, U32.is_ge(c, 65), U32.add(c, 32), c)
+   >>> runtime/ops_amd.py:1317  sq_shl5(U32.sub(sq_masked(raw), U32.and(U32.div(U32.add(base, off), 32), 536870911)))
+   >>> runtime/ops_amd.py:1329  U32.is_ge(wptr, U32.sub(win, 32))
+   >>> runtime/ops_amd.py:1356  case 1: [32, 1, 1, 1]
+   >>> runtime/ops_amd.py:1702  elrow("amd_pack_b3_32", pack_args(KS_B3(), 32))
+   >>> runtime/ops_amd.py:1705  elrow("amd_pack_b3v2_32_32", pack_args(KS_B3V2(), 32))
+   >>> runtime/ops_amd.py:1732  urow("amd_pack_bytes_b3_32", pack_bytes(KS_B3(), 32))
+   >>> runtime/ops_amd.py:1799  +q : Pd <- IO.pure(Pd, pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 11))
+   >>> runtime/ops_amd.py:1814  urow("amd_pd_rsrc1_plain_9", Pd.rsrc1(pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 9)))
+   >>> runtime/ops_amd.py:1815  urow("amd_pd_rsrc1_plain_12", Pd.rsrc1(pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 12)))
+   >>> runtime/ops_amd.py:1820  urow("amd_pd_edp_edp_9", Pd.edp(pd.of(256, 0, 0, 0, 0, 2, 1024, 128, 32, 9)))
+   >>> runtime/ops_amd.py:1823  row("amd_pd_wave32b_edp_9", Pd.wave32(pd.of(256, 0, 0, 0, 0, 1026, 1024, 128, 32, 9)))
+   >>> runtime/ops_amd.py:1838  urow("amd_lds_cap_32", pd.lds_cap(32))
+   >>> runtime/ops_amd.py:1892  urow("amd_prof_slot_0_0_32", prof_slot(0, 0, 32))
+   >>> runtime/ops_amd.py:1893  urow("amd_prof_slot_31_0_32", prof_slot(31, 0, 32))
+   >>> runtime/ops_amd.py:1894  urow("amd_prof_slot_31_1_32", prof_slot(31, 1, 32))
+   >>> runtime/ops_amd.py:1895  urow("amd_prof_slot_33_0_32", prof_slot(33, 0, 32))
+   >>> runtime/ops_amd.py:1896  urow("amd_prof_slot_0_5_32", prof_slot(0, 5, 32))
+   >>> runtime/ops_amd.py:1897  urow("amd_prof_slots_default", 32)
+   >>> runtime/ops_amd.py:1899  urow("amd_prof_log_32", U32.add(1, 32))
+   >>> runtime/ops_amd.py:1901  urow("amd_pmc_buf_32_128", U32.mul(128, 32))
+   >>> runtime/ops_amd.py:1903  urow("amd_sqtt_buf_32_8_4", U32.mul(U32.mul(8, 32), 4))
+   >>> runtime/ops_amd.py:1905  urow("amd_sqtt_wp_32_4", U32.mul(32, 4))
+   >>> runtime/ops_amd.py:2103  urow("amd_tmpu_base_127_32", tmp_ring(127, 127, 32))
+   >>> runtime/ops_amd.py:2180  urow("amd_sq_off_8_32_4_0_0", sq_off(0, 0, 32, 8))
+   >>> runtime/ops_amd.py:2181  urow("amd_sq_off_8_32_4_1_0", sq_off(0, 1, 32, 8))
+   >>> runtime/ops_amd.py:2182  urow("amd_sq_off_8_32_4_0_1", sq_off(1, 0, 32, 8))
+   >>> runtime/ops_amd.py:2183  urow("amd_sq_off_8_32_4_3_3", sq_off(3, 3, 32, 8))
+   >>> runtime/ops_amd.py:2197  row("amd_sq_full_32_64", sq_full(32, 64))
+   >>> runtime/ops_amd.py:2205  urow("amd_sq_win_256_32", sq_win(256, 32))
+   >>> runtime/ops_amd.py:2206  urow("amd_sq_win_32_32", sq_win(32, 32))
+   >>> runtime/ops_amd.py:2227  urow("amd_pmc_rec_2_32_1_1_1", pmc_rec_size(2, 32, 1, 1, 1))
+## QCOM_PRIORITY  default=8 (int)   1 py reads
+     py runtime/ops_qcom.py:318  | flag("KGSL_CONTEXT_PRIORITY", getenv("QCOM_PRIORITY", 8)) | flag("KGSL_CONTEXT_PREEMPT_STYLE", kgs
+   >>> runtime/ops_qcom.py:234  def RM6_COMPUTE() -> U32: 8
+   >>> runtime/ops_qcom.py:413  Qf{"a6xx_sp_cs_const_config_0", "WGSIZECONSTID", "A6XX_SP_CS_CONST_CONFIG_0_WGSIZECONSTID__SHIFT", 8, False{}},
+   >>> runtime/ops_qcom.py:439  Qf{"a6xx_tex_const_6", "PLANE_PITCH", "A6XX_TEX_CONST_6_PLANE_PITCH__SHIFT", 8, False{}},
+   >>> runtime/ops_qcom.py:441  Qf{"a6xx_tex_samp_0", "WRAP_T", "A6XX_TEX_SAMP_0_WRAP_T__SHIFT", 8, False{}},
+   >>> runtime/ops_qcom.py:710  def QW_U64() -> Qw: Qw{True{}, 8}
+   >>> runtime/ops_qcom.py:857  def SAMPLER_BYTES() -> U32: 8       # `8 * samp_cnt_in_file`, :262
+   >>> runtime/ops_qcom.py:1640  def CALL_SHAREDFREE() -> U32: 8  # IOCTL_KGSL_SHAREDMEM_FREE         :376
+   >>> runtime/ops_qcom.py:1839  def PRE_AT() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+   >>> runtime/ops_qcom.py:2119  def IOCTL_SHIFT_BASE() -> U32: 8
+   >>> runtime/ops_qcom.py:2294  srow("qc_reg_8", reg_line(8))
+   >>> runtime/ops_qcom.py:2339  row("qc_regfwd_8", String.eq(qreg_mesa_at(8), "REG_A6XX_SP_CS_PVT_MEM_PARAM"))
+   >>> runtime/ops_qcom.py:2340  row("qcregreg_8", String.eq(qreg_of("REG_A6XX_SP_CS_PVT_MEM_PARAM"), qreg_name_at(8)))
+   >>> runtime/ops_qcom.py:2419  srow("qc_fld_8", fld_line(8))
+   >>> runtime/ops_qcom.py:2487  urow("qc_fv_8", fv_at(8))
+   >>> runtime/ops_qcom.py:2628  0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   >>> runtime/ops_qcom.py:2667  0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64,
+   >>> runtime/ops_qcom.py:2706  0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   >>> runtime/ops_qcom.py:2735  0, 0, 0, 0, 8, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   >>> runtime/ops_qcom.py:2770  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0,
+   >>> runtime/ops_qcom.py:2784  0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   >>> runtime/ops_qcom.py:2797  +p0 : Pd <- IO.pure(Pd, pd.parse_full(LIB_0(), 8))
+   >>> runtime/ops_qcom.py:2829  +p1 : Pd <- IO.pure(Pd, pd.parse_full(LIB_1(), 8))
+   >>> runtime/ops_qcom.py:2958  lrow("qc_pl_5", [16,416,288,48,5,160,4097,0,0,2,0,2048,2048,2176,12,8,848])
+   >>> runtime/ops_qcom.py:3015  +a1 : Ce <- IO.pure(Ce, qcom.get(100, [1], 8, LIB_0(), 0, es0))
+   >>> runtime/ops_qcom.py:3017  +a2 : Ce <- IO.pure(Ce, qcom.get(100, [1], 8, LIB_0(), 1, es1))
+   >>> runtime/ops_qcom.py:3019  +a3 : Ce <- IO.pure(Ce, qcom.get(200, [1], 8, LIB_0(), 2, es2))
+   >>> runtime/ops_qcom.py:3022  +a4 : Ce <- IO.pure(Ce, qcom.get(100, [1], 8, LIB_0(), 3, es3))
+   >>> runtime/ops_qcom.py:3025  +a5 : Ce <- IO.pure(Ce, qcom.get(100, [2], 8, LIB_0(), 4, es4))
+   >>> runtime/ops_qcom.py:3027  +a6 : Ce <- IO.pure(Ce, qcom.get(100, [1, 2], 8, LIB_0(), 5, es5))
+   >>> runtime/ops_qcom.py:3101  urow("qc_desc_bdoff0", desc.bdoff(288, 8, 0))
+   >>> runtime/ops_qcom.py:3102  urow("qc_desc_bdoff1", desc.bdoff(288, 8, 1))
+   >>> runtime/ops_qcom.py:3186  +cl : Tr <- IO.pure(Tr, exec.of(256, [16, 1, 1], [8, 1, 1], 0, 0, 0, False{}, False{}))
+   >>> runtime/ops_qcom.py:3187  +full : Tr <- IO.pure(Tr, exec.of(256, [16, 1, 1], [8, 1, 1], 2, 1, 1, False{}, False{}))
+   >>> runtime/ops_qcom.py:3188  +nir : Tr <- IO.pure(Tr, exec.of(256, [16, 1, 1], [8, 1, 1], 2, 1, 1, True{}, False{}))
+   >>> runtime/ops_qcom.py:3246  +r3 : Tr <- IO.pure(Tr, exec.of(256, [1, 1, 1], [8, 1, 1], 0, 0, 0, False{}, False{}))
+   >>> runtime/ops_qcom.py:3254  row("qc_rf_res_ok", Bool.not(rf.resources(256, 8, 1, 1)))
+   >>> runtime/ops_qcom.py:3258  row("qc_rf_res_3d_ok", Bool.not(rf.resources(1024, 8, 8, 8)))
+   >>> runtime/ops_qcom.py:3272  row("qc_rf_gpu_a800", rf.gpu_ge73(8, 0))
+   >>> runtime/ops_qcom.py:3335  urow("qc_rv_texconst0", U32.or(qreg.pos(8), qreg.of("a6xx_tex_const_0", [Fv{"FMT", 130}, Fv{"SWIZ_X", 0}, Fv{"SWIZ_Y", 1
+   >>> runtime/ops_qcom.py:3383  urow("qc_parity_00008", parity(8))
+   >>> runtime/ops_qcom.py:3433  urow("qc_rl_8", read_lib(RL_LIB(), 8))
+   >>> runtime/ops_qcom.py:3436  lrow("qc_rl_tail", read_words(2n, RL_LIB(), 8))
+   >>> runtime/ops_qcom.py:3453  urow("qc_qw_is_u64", qwords.is(True{}, 8))
+   >>> runtime/ops_qcom.py:3471  urow("qc_flag_CONTEXT_PRIORITY_of_8", flag("KGSL_CONTEXT_PRIORITY", 8))
+## REDUCEOP_SPLIT_SIZE  default=22 (int)   1 py reads
+     py schedule/prepare.py:118  for d in range(min(256,2**getenv("REDUCEOP_SPLIT_SIZE",22)//prod(reduce.shape)),8-1,-1)
+   >>> schedule/prepare.py:365  O.PMEntry{22, [O.OpsAFTER{}], [O.OpsSTORE{}]},  # 22 AFTER rej=STORE slen=1 rlen=2 any=0 nalts=1 name=-
+## REDUCEOP_SPLIT_THRESHOLD  default=32768 (int)  -- no literal hit in any Bend port
+## REMOTE_TIMEOUT  default=60 (int)   1 py reads
+     py runtime/support/system.py:391  sock = socket.create_connection((host, port), timeout=getenv("REMOTE_TIMEOUT", 60))
+   >>> runtime/support/system.py:2221  def REMOTE_TIMEOUT() -> U32: 60
+## REWRITE_STACK_LIMIT  default=250000 (int)  -- no literal hit in any Bend port
+## RING_ALLREDUCE_THRESHOLD  default=256000 (int)   2 py reads
+     py schedule/allreduce.py:14  use_all2all = concrete and (ALL2ALL >= 2 or (ndev > 2 and numel > getenv("RING_ALLREDUCE_THRESHOLD",
+     py schedule/allreduce.py:15  use_ring = concrete and not use_all2all and (RING >= 2 or (ndev > 2 and numel > getenv("RING_ALLREDU
+   >>> schedule/allreduce.py:391  def red_c_on() -> Cfg: Cfg{1, 0, 256000, 0, True{}}
+   >>> schedule/allreduce.py:392  def red_c_off() -> Cfg: Cfg{0, 0, 256000, 0, True{}}
+   >>> schedule/allreduce.py:393  def red_c_a2() -> Cfg: Cfg{0, 1, 256000, 0, True{}}
+   >>> schedule/allreduce.py:394  def red_c_a2f() -> Cfg: Cfg{0, 2, 256000, 0, True{}}
+   >>> schedule/allreduce.py:395  def red_c_r2() -> Cfg: Cfg{2, 0, 256000, 0, True{}}
+   >>> schedule/allreduce.py:396  def red_c_both() -> Cfg: Cfg{2, 2, 256000, 0, True{}}
+   >>> schedule/allreduce.py:480  red_eq(red_mode(red_sel(red_sh1(256000), 4, red_c_on())), 0)
+## SQTT_BUFFER_SIZE  default=256 (int)   2 py reads
+     py runtime/ops_amd.py:907  self.sqtt_ses, self.sqtt_win = self.se_cnt * self.xccs, (getenv("SQTT_BUFFER_SIZE", 256) << 20) // s
+     py runtime/ops_amd.py:1049  print(colored(f"{self.device}: Warning: SQTT buffer is full (SE {se})! Increase SQTT buffer with SQT
+   >>> runtime/ops_amd.py:322  def MEM_ALIGN_NEW() -> U32: 256
+   >>> runtime/ops_amd.py:1217  def q_gart_size() -> U32: 256
+   >>> runtime/ops_amd.py:1787  +p : Pd <- IO.pure(Pd, pd.of(256, 128, 17, 33, 49, 1024, 512, 64, 24, 11))
+   >>> runtime/ops_amd.py:1799  +q : Pd <- IO.pure(Pd, pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 11))
+   >>> runtime/ops_amd.py:1814  urow("amd_pd_rsrc1_plain_9", Pd.rsrc1(pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 9)))
+   >>> runtime/ops_amd.py:1815  urow("amd_pd_rsrc1_plain_12", Pd.rsrc1(pd.of(256, 0, 16, 32, 48, 0, 0, 0, 0, 12)))
+   >>> runtime/ops_amd.py:1817  urow("amd_pd_rsrc1_wave32_9", Pd.rsrc1(pd.of(256, 128, 17, 33, 49, 1024, 512, 64, 24, 9)))
+   >>> runtime/ops_amd.py:1818  urow("amd_pd_rsrc1_wave32_12", Pd.rsrc1(pd.of(256, 128, 17, 33, 49, 1024, 512, 64, 24, 12)))
+   >>> runtime/ops_amd.py:1820  urow("amd_pd_edp_edp_9", Pd.edp(pd.of(256, 0, 0, 0, 0, 2, 1024, 128, 32, 9)))
+   >>> runtime/ops_amd.py:1821  urow("amd_pd_epsgpr_privsg_9", Pd.epsgpr(pd.of(256, 0, 0, 0, 0, 1, 1024, 0, 16, 9)))
+   >>> runtime/ops_amd.py:1822  row("amd_pd_wave32b_lds9_9", Pd.wave32(pd.of(256, 0, 0, 0, 0, 0, 4608, 0, 0, 9)))
+   >>> runtime/ops_amd.py:1823  row("amd_pd_wave32b_edp_9", Pd.wave32(pd.of(256, 0, 0, 0, 0, 1026, 1024, 128, 32, 9)))
+   >>> runtime/ops_amd.py:1851  urow("amd_pd_img_pad_256", pd.img_pad(256))
+   >>> runtime/ops_amd.py:1854  urow("amd_pd_img_len_256", pd.img_len(256))
+   >>> runtime/ops_amd.py:2083  urow("amd_scr_max_64_256", scr_high(64, 256))
+   >>> runtime/ops_amd.py:2090  urow("amd_tmp_11_256_20_8_4_1", tmpring_size(256, 11, 8, 20, 4, 1))
+   >>> runtime/ops_amd.py:2205  urow("amd_sq_win_256_32", sq_win(256, 32))
+   >>> runtime/ops_amd.py:2288  urow("amd_refuse_zero_seen", Tr.seen(dev.tail(dev.imports(dev.head(Tr.fail_at(Tr.of(), 0), IFACE_KFD())), 4194304, 256))
+   >>> runtime/ops_amd.py:2290  +d : Tr <- IO.pure(Tr, dev.init(IFACE_PCI(), 4194304, 256))
+   >>> runtime/ops_amd.py:2296  Call{CALL_ALLOC, 256}, Call{CALL_SETUP_RING, 0}]))
+   >>> runtime/ops_amd.py:2317  row("amd_init_kfd_select", Tr.seq(dev.init(IFACE_KFD(), 4194304, 256), [Call{CALL_SELECT, IFACE_KFD}]))
+   >>> runtime/ops_amd.py:2318  row("amd_init_usb_select", Tr.seq(dev.init(IFACE_USB(), 1048576, 256), [Call{CALL_SELECT, IFACE_USB}]))
+## SQTT_EVENT  default=-1 (int)  -- no literal hit in any Bend port
+## SQTT_ITRACE_SE_MASK  default=3 (int)   5 py reads
+     py runtime/ops_amd.py:32  SQTT_ITRACE_SE_MASK, SQTT_LIMIT_SE, SQTT_SIMD_SEL, SQTT_TOKEN_EXCLUDE = \
+     py runtime/ops_amd.py:256  if SQTT_LIMIT_SE > 1: mask = 1 if SQTT_ITRACE_SE_MASK.value & (1 << i) else 0 # only run unmasked sh
+     py runtime/ops_amd.py:273  if (SQTT_ITRACE_SE_MASK.value >> se) & 0b1: mask |= (__SQTTINST:=1<<10) | (__SQTT_INST_PC:=1<<11) | 
+     py runtime/ops_amd.py:313  if not (SQTT_ITRACE_SE_MASK.value >> se) & 0b1:
+     py runtime/ops_amd.py:1069  itrace = bool((SQTT_ITRACE_SE_MASK.value >> se) & 1)
+   >>> runtime/ops_amd.py:269  def WAIT_REG_MEM_FUNCTION_EQ() -> U32: 3
+   >>> runtime/ops_amd.py:293  def QPROP_PROFILING_BIT() -> U32: 3
+   >>> runtime/ops_amd.py:357  def QF_PUT_VALUE() -> U32: 3
+   >>> runtime/ops_amd.py:362  def IFACE_MOCKKFD() -> U32: 3
+   >>> runtime/ops_amd.py:370  def MOD_SDMA() -> U32: 3
+   >>> runtime/ops_amd.py:703  U32.shln(3, U32.to_nat(HSA_KERNEL_DISPATCH_PACKET_SETUP_DIMENSIONS()))
+   >>> runtime/ops_amd.py:1085  case _: 3
+   >>> runtime/ops_amd.py:1093  case _: 3
+   >>> runtime/ops_amd.py:1231  case 3: "put_value"
+   >>> runtime/ops_amd.py:1261  Bool.pick(String, String.eq(q, "SDMA:3"), "sdma_3",
+   >>> runtime/ops_amd.py:1368  U32.is_eq(U32.and(U32.shrn(cell, U32.to_nat(U32.mul(2, wgp))), 3), 3)
+   >>> runtime/ops_amd.py:1475  def CALL_ACQUIRE_VM() -> U32: 3
+   >>> runtime/ops_amd.py:1504  case 3: "MOCKIface"
+   >>> runtime/ops_amd.py:1529  case 3: "sdma_4_0_0/sdma_5_0_0/sdma_6_0_0"
+   >>> runtime/ops_amd.py:1743  U32.div(U32.add(U32.add(U32.add(U32.add(PKT_HEAD(), U32.mul(3, 4)), PKT_MID()),
+   >>> runtime/ops_amd.py:1775  srow("amd_pv_tag_sdma3", to_name(QF_PUT_VALUE(), "SDMA:3"))
+   >>> runtime/ops_amd.py:1920  srow("amd_arch_90403", arch_of(9, 4, 3))
+   >>> runtime/ops_amd.py:1934  row("amd_arch_ok_9_43", arch_ok(9, 4, 3))
+   >>> runtime/ops_amd.py:1964  urow("amd_maxcopy_4_4_3", dev_max_copy(4, 4, 3))
+   >>> runtime/ops_amd.py:1994  iface_name(2), " ", iface_name(3), " ", iface_name(4), " ",
+   >>> runtime/ops_amd.py:2020  srow("amd_sdma_mod_3_0_0", sdma_name(sdma_mod(3)))
+   >>> runtime/ops_amd.py:2030  srow("amd_sdma_mod_name_3", Bool.pick(String, U32.is_eq(sdma_mod(3), 3), "RAISE", "ok"))
+   >>> runtime/ops_amd.py:2031  srow("amd_sdma_mod_name_4", Bool.pick(String, U32.is_eq(sdma_mod(4), 3), "RAISE", "sdma_4_0_0"))
+   >>> runtime/ops_amd.py:2032  srow("amd_sdma_mod_name_5", Bool.pick(String, U32.is_eq(sdma_mod(5), 3), "RAISE", "sdma_5_0_0"))
+   >>> runtime/ops_amd.py:2033  srow("amd_sdma_mod_name_6", Bool.pick(String, U32.is_eq(sdma_mod(6), 3), "RAISE", "sdma_6_0_0"))
+   >>> runtime/ops_amd.py:2048  srow("amd_mod_name_3", mod_name(3))
+   >>> runtime/ops_amd.py:2149  urow("amd_ring_elems_3", q_ring_elems(3))
+   >>> runtime/ops_amd.py:2156  srow("amd_qb_name_put_value_3", to_name(QF_PUT_VALUE(), "SDMA:3"))
+   >>> runtime/ops_amd.py:2161  srow("amd_qb_field_3", qf_name(3))
+   >>> runtime/ops_amd.py:2165  srow("amd_qb_split_put_value_3", "put_value sdma 3")
+   >>> runtime/ops_amd.py:2183  urow("amd_sq_off_8_32_4_3_3", sq_off(3, 3, 32, 8))
+   >>> runtime/ops_amd.py:2208  row("amd_wgp_0_0_0_3", wgp_active(0, 0, 0, 3))
+   >>> runtime/ops_amd.py:2211  row("amd_wgp_1_2_0_3", wgp_active(1, 2, 0, 3))
+   >>> runtime/ops_amd.py:2212  row("amd_wgp_3_5_1_c0000", wgp_active(3, 5, 1, 786432))
+   >>> runtime/ops_amd.py:2213  row("amd_wgp_7_0_3_1f", wgp_active(7, 0, 3, 31))
+   >>> runtime/ops_amd.py:2244  urow("amd_grbm_inst_3_2", grbm_inst(3, 2, True{}))
+   >>> runtime/ops_amd.py:2280  +c0 : Tr <- IO.pure(Tr, dev.tail(Tr.refuse(dev.head(Tr.fail_at(Tr.of(), 3), IFACE_KFD())), 0, 0))
+   >>> runtime/ops_amd.py:2294  Call{CALL_IMPORT, 0}, Call{CALL_IMPORT, 1}, Call{CALL_IMPORT, 2}, Call{CALL_IMPORT, 3},
+## TC_SELECT  default=-1 (int)  -- no literal hit in any Bend port
+
+# candidate lines: 396

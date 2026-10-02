@@ -1,0 +1,10 @@
+# (1) a Bend def NAMED AFTER a flag that returns a constant
+# (2) gate rows (`row(`/`urow(`/`srow(`/`lrow(`/...) that NAME a flag
+# (3) `py=` expectations anywhere in .agents/slop/*.py that mention a flag
+
+1) runtime/support/hcq2.bend:282      def HCQ_CACHE_THRESH() -> U32: 64   [defaults [('int', 64)]]
+1) runtime/support/system.bend:2221   def REMOTE_TIMEOUT() -> U32: 60   [defaults [('int', 60)]]
+1) runtime/support/usb.bend:535       def HALF() -> U32: 262144   [defaults [('int', 1)]]
+1) runtime/support/rdma/bnxtdev.bend:222 def BNXT_DEBUG() -> U32: 0   [defaults [('int', 0)]]
+
+# (1) count 4   (2) count 0
