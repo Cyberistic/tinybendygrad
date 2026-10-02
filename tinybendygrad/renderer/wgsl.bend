@@ -93,7 +93,7 @@ import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 
 # ===========================================================================
-# :7  sign_extend -- `(val << (32-width)).bitcast(dtypes.int) >> (32-width)`.
+# :7  sign_extend -- `(val << (32-width)).bitcast(dtypes.i32) >> (32-width)`.
 #
 # The GRAPH is the wall above. The SHIFT is not, and it reaches the text: the
 # packed-char load renders as `bitcast<i32>((((val4>>alu7)&255u)<<24u))>>24u)`
@@ -124,7 +124,7 @@ def pf_mask(+dt: S.Dt) -> U32: U32.sub(U32.shln(1, U32.to_nat(pf_width(dt))), 1)
 def ps_wmask(mask: U32, shift: U32) -> U32: U32.xor(U32.shln(mask, U32.to_nat(shift)), 4294967295)
 
 # ===========================================================================
-# :30  is_packed -- `dt.itemsize < 4 and dt != dtypes.half and
+# :30  is_packed -- `dt.itemsize < 4 and dt != dtypes.f16 and
 # x.buf_uop.addrspace != AddrSpace.REG`.
 #
 # `dt` is src[1]'s for a STORE and `buf_uop.dtype` for everything else, so the
@@ -257,14 +257,14 @@ type Fi is Data:
 
 def finfo.of(nm: String) -> Maybe<&1, Fi>:
   match nm:
-    case "half"      : Some{Fi{5, 10}}
-    case "__bf16"    : Some{Fi{8, 7}}
-    case "float"     : Some{Fi{8, 23}}
-    case "double"    : Some{Fi{11, 52}}
-    case "float8_e4m3"     : Some{Fi{4, 3}}
-    case "float8_e5m2"     : Some{Fi{5, 2}}
-    case "float8_e4m3fnuz" : Some{Fi{4, 3}}
-    case "float8_e5m2fnuz" : Some{Fi{5, 2}}
+    case "f16"      : Some{Fi{5, 10}}
+    case "bf16"    : Some{Fi{8, 7}}
+    case "f32"     : Some{Fi{8, 23}}
+    case "f64"    : Some{Fi{11, 52}}
+    case "fp8e4m3"     : Some{Fi{4, 3}}
+    case "fp8e5m2"     : Some{Fi{5, 2}}
+    case "fp8e4m3fnuz" : Some{Fi{4, 3}}
+    case "fp8e5m2fnuz" : Some{Fi{5, 2}}
     case _: None{}
 
 def nan_fi.of(m: Maybe<&1, Fi>, isexp: Bool) -> U32:
@@ -395,15 +395,15 @@ def type_map(+dt: S.Dt) -> String:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
       match pri:
-        case 14: "f32"     # dtypes.float
-        case 2 : "u32"     # dtypes.uchar
-        case 4 : "u32"     # dtypes.ushort
-        case 3 : "i32"     # dtypes.short
-        case 1 : "i32"     # dtypes.char
-        case 5 : "i32"     # dtypes.int32
-        case 6 : "u32"     # dtypes.uint32
+        case 14: "f32"     # dtypes.f32
+        case 2 : "u32"     # dtypes.u8
+        case 4 : "u32"     # dtypes.u16
+        case 3 : "i32"     # dtypes.i16
+        case 1 : "i32"     # dtypes.i8
+        case 5 : "i32"     # dtypes.i32
+        case 6 : "u32"     # dtypes.u32
         case 0 : "bool"    # dtypes.bool
-        case 12: "f16"     # dtypes.half
+        case 12: "f16"     # dtypes.f16
         case _ : ""
 
 # :60 `code_for_op = {**CStyleLanguage.code_for_op, Ops.WHERE: lambda
@@ -458,8 +458,8 @@ def render_cast.cls(cls: S.Cls, +bits: U32, ret: String) -> String:
       ")-", U32.show(rc_half(bits)), ")"])
     case _         : ret
 
-# `u.dtype in (dtypes.uint8, dtypes.uint16)` and `in (dtypes.int8,
-# dtypes.int16)` are BOTH-WIDTH tests, and both narrow forms are the same
+# `u.dtype in (dtypes.u8, dtypes.u16)` and `in (dtypes.i8,
+# dtypes.i16)` are BOTH-WIDTH tests, and both narrow forms are the same
 # expression, so the test is `itemsize < 4 and not float` -- which is
 # `is_packed`'s first two clauses and NOT its third: a REG uint8 casts this way
 # too. Reusing the name would be a lie, so this is its own test.
@@ -513,7 +513,7 @@ type Buf is Data:
 
 # `local_size = [u.src[0].ssimplify() for u in sorted([u for u in uops if
 # u.op is Ops.SPECIAL and u.arg[0] == 'l'], key=lambda u: u.arg)]`, and
-# `prg = "enable f16;\n" if any(uop.dtype == dtypes.half for uop in uops)`.
+# `prg = "enable f16;\n" if any(uop.dtype == dtypes.f16 for uop in uops)`.
 #
 # Those two scans are `rk_scan`, and they are a PARAMETER of `render_kernel`
 # here for one reason: the `uops` of a real kernel is 138 nodes, so a gate

@@ -20,13 +20,13 @@ text = path.read_text()
 lines = text.split("\n")
 
 # ---- split into blocks ---------------------------------------------------------
-blocks, cur = [], []
+blocks, cur, have_def = [], [], False
 for l in lines:
-    if re.match(r"^(def|type|law)\s", l) and cur and not any(
-        re.match(r"^(def|type|law)\s", x) for x in cur):
-        blocks.append(cur); cur = [l]
-    else:
-        cur.append(l)
+    if re.match(r"^(def|type|law)\s", l):
+        if have_def:
+            blocks.append(cur); cur, have_def = [], False
+        have_def = True
+    cur.append(l)
 if cur: blocks.append(cur)
 blocks = [b for b in blocks if any(x.strip() for x in b)]
 
@@ -46,7 +46,10 @@ defined = {key_of(b) for b in body}
 CALL = re.compile(r"\b([A-Z][A-Za-z0-9_]*\.[a-z_][\w.]*|Enc\.[a-z_][\w.]*)\b")
 
 def deps(b):
-    txt = "\n".join(b)
+    # COMMENTS ARE NOT DEPENDENCIES. Every block in this file documents the next one
+    # and names it, so scanning comments turns the whole file into one cycle -- which
+    # is what the first run of this script reported.
+    txt = "\n".join(l for l in b if not l.strip().startswith("#"))
     out = set()
     for m in CALL.finditer(txt):
         nm = m.group(1)

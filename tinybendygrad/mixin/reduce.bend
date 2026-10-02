@@ -53,7 +53,7 @@
 #
 #   STAYS IN op.bend. `mo_sum_acc` (:429), `mo_commit_dt` (:411),
 #     `mo_downcast` (:433), `mo_cast_t` (:370), `mo_resolve` (:718). These are
-#     `dtype.py:220`/`dtype.py:16`/`reduce.py:45`/`dtype.py:36`/`movement.py:81`
+#     `tinygrad/dtype.py:220`/`tinygrad/dtype.py:16`/`reduce.py:45`/`tinygrad/dtype.py:36`/`movement.py:81`
 #     -- NOT reduce.py lines, so moving them here would be worse than leaving
 #     them, because a def belongs in the file of the Python it ports.
 #
@@ -67,7 +67,7 @@
 #   1. `rc_any` / `rc_all` (reduce.py:116/:138). `self.bool().max(axis,
 #      keepdim)` and `self.bool().prod(axis, keepdim)`. Two lines each in Python
 #      and NOBODY had ported them: `mixin/op.py` never calls them, so no other
-#      unit reached them by accident. `bool()` is `dtype.py:124`, `cast(dtypes.bool)`
+#      unit reached them by accident. `bool()` is `tinygrad/dtype.py:124`, `cast(dtypes.bool)`
 #      -- one line, and `M.mo_cast_t` IS it (`wk_cast_at` under it).
 #   2. `rc_sum_dt` / `rc_prod_dt` (reduce.py:44/:71, the `dtype is not None`
 #      arm). `M.mo_sum`/`M.mo_prod` hard-code `dtype is None` -- op.bend's own
@@ -347,7 +347,7 @@ def rc_prod_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tens
 # ===========================================================================
 # `rc_any` -- reduce.py:116. `return self.bool().max(axis, keepdim)`.
 #
-# `self.bool()` is `dtype.py:124`, `return self.cast(dtypes.bool)`, one line, and
+# `self.bool()` is `tinygrad/dtype.py:124`, `return self.cast(dtypes.bool)`, one line, and
 # `M.mo_cast_t(t, S.boolean())` IS it. `M.mo_max` is `reduce.py:73-94`. So this
 # is two substrate calls and nothing of its own -- which is the correct size for
 # a Python line that is two calls.
@@ -449,9 +449,6 @@ def rc_row(nm: String, +t: T.Tensor) -> IO(Unit):
     E.ew_dtnm(W.wk_dt(fx, i)), " root=",
     String.concat([O.Ops.name.of(O.Arena.op(ar, i)), "/", U32.show(O.Arena.nsrc(ar, i))]),
     " red=", rc_red_str(RcRed.ok(rd), rd), "| ", M.mo_sig.of(ar, i)]))
-
-def rc_row_b(nm: String, b: Bool) -> IO(Unit):
-  IO.print(String.concat([nm, "=", Bool.show(b)]))
 
 # --- the fixtures. `Tensor([1.,2.,3.,4.], device='PYTHON')` is ONE BUFFER, so
 # op.bend's `mo_fx1d`/`mo_i1d`/`mo_buf4` ARE the fixtures and are reused rather

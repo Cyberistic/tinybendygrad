@@ -661,7 +661,18 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 # tinygrad's `priority` column: a larger number upcasts later, so priority is a
 # partial order and least_upper_dtype is its meet. The names are dtype.py's
 # `name` field, which is what `repr` prints; dtype.bend aliases them to the
-# attribute names tinygrad code uses (float32 for "float" and so on).
+# attribute names tinygrad code uses (float32 for "f32" and so on).
+#
+# THE NAMES ARE THE RUST NAMES. tinygrad 793abbb ("modernize tinygrad's dtype to
+# match rust") moved `DType.name` off the C spellings -- "signed char", "half",
+# "__bf16", "float", "double", "float8_e4m3" -- and onto i8/u8/i16/u16/i32/u32/
+# i64/u64/f16/bf16/f32/f64/fp8e4m3/fp8e5m2/..., keeping the OLD ATTRIBUTE names
+# only as a block upstream labels `# legacy dtype aliases`. `DType.__repr__` was
+# `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"` and is now `f"dtypes.{self.name}"`,
+# so repr used to print the ALIAS ("dtypes.float") and now prints the name
+# ("dtypes.f32"), and INVERSE_DTYPES_DICT is gone. Only the `name` FIELD moved:
+# priority, bitsize and the char code are untouched, so every table keyed on
+# those is still right and only the name keys below are new.
 # ===========================================================================
 
 def void() -> Dt: Dt{0, 0, CVoid{}, "void"}
@@ -671,23 +682,23 @@ def weakint() -> Dt: Dt{0, 800, CWeakInt{}, "weakint"}
 # the spec's word for it.
 def index() -> Dt: weakint()
 def boolean() -> Dt: Dt{0, 1, CBool{}, "bool"}
-def int8() -> Dt: Dt{1, 8, CSint{}, "signed char"}
-def uint8() -> Dt: Dt{2, 8, CUint{}, "unsigned char"}
-def int16() -> Dt: Dt{3, 16, CSint{}, "short"}
-def uint16() -> Dt: Dt{4, 16, CUint{}, "unsigned short"}
-def int32() -> Dt: Dt{5, 32, CSint{}, "int"}
-def uint32() -> Dt: Dt{6, 32, CUint{}, "unsigned int"}
-def int64() -> Dt: Dt{7, 64, CSint{}, "long"}
-def uint64() -> Dt: Dt{8, 64, CUint{}, "unsigned long"}
+def int8() -> Dt: Dt{1, 8, CSint{}, "i8"}
+def uint8() -> Dt: Dt{2, 8, CUint{}, "u8"}
+def int16() -> Dt: Dt{3, 16, CSint{}, "i16"}
+def uint16() -> Dt: Dt{4, 16, CUint{}, "u16"}
+def int32() -> Dt: Dt{5, 32, CSint{}, "i32"}
+def uint32() -> Dt: Dt{6, 32, CUint{}, "u32"}
+def int64() -> Dt: Dt{7, 64, CSint{}, "i64"}
+def uint64() -> Dt: Dt{8, 64, CUint{}, "u64"}
 def weakfloat() -> Dt: Dt{9, 800, CWeakFloat{}, "weakfloat"}
-def fp8e4m3() -> Dt: Dt{10, 8, CFloat{}, "float8_e4m3"}
-def fp8e4m3fnuz() -> Dt: Dt{10, 8, CFloat{}, "float8_e4m3fnuz"}
-def fp8e5m2() -> Dt: Dt{11, 8, CFloat{}, "float8_e5m2"}
-def fp8e5m2fnuz() -> Dt: Dt{11, 8, CFloat{}, "float8_e5m2fnuz"}
-def half() -> Dt: Dt{12, 16, CFloat{}, "half"}
-def bfloat16() -> Dt: Dt{13, 16, CFloat{}, "__bf16"}
-def single() -> Dt: Dt{14, 32, CFloat{}, "float"}
-def double() -> Dt: Dt{15, 64, CFloat{}, "double"}
+def fp8e4m3() -> Dt: Dt{10, 8, CFloat{}, "fp8e4m3"}
+def fp8e4m3fnuz() -> Dt: Dt{10, 8, CFloat{}, "fp8e4m3fnuz"}
+def fp8e5m2() -> Dt: Dt{11, 8, CFloat{}, "fp8e5m2"}
+def fp8e5m2fnuz() -> Dt: Dt{11, 8, CFloat{}, "fp8e5m2fnuz"}
+def half() -> Dt: Dt{12, 16, CFloat{}, "f16"}
+def bfloat16() -> Dt: Dt{13, 16, CFloat{}, "bf16"}
+def single() -> Dt: Dt{14, 32, CFloat{}, "f32"}
+def double() -> Dt: Dt{15, 64, CFloat{}, "f64"}
 
 # ===========================================================================
 # Derived property: dtype -- tinyspec's dtype column, op by arm. Same

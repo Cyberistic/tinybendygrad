@@ -127,7 +127,7 @@ def claim_row(u, name):
   row(f"{name}_first", full(u)[0] if full(u) else "-")
 
 # --- fixtures ---------------------------------------------------------------
-def buf(dev="CPU", n=16): return UOp.new_buffer(dev, n, dtypes.int32)
+def buf(dev="CPU", n=16): return UOp.new_buffer(dev, n, dtypes.i32)
 def multi(axis, rng_end=2, val=None):
   v = val if val is not None else buf("CPU:1", 8)
   return v.unshard(axis, UOp.range(rng_end, -1, AxisType.DEVICE))
@@ -150,11 +150,11 @@ msel = UOp(Ops.MSELECT, src=(ms,), arg=1)
 claim_row(msel, "msel")
 # MSELECT of a MOVEMENT (RESHAPE of a CONST)
 shp = UOp(Ops.SPECIAL, (4,), "4")
-mv = UOp(Ops.RESHAPE, src=(UOp.const(0, dtypes.int32), shp), arg=(4,))
+mv = UOp(Ops.RESHAPE, src=(UOp.const(0, dtypes.i32), shp), arg=(4,))
 msel_mv = UOp(Ops.MSELECT, src=(mv,), arg=0)
 claim_row(msel_mv, "msel_mv")
 # MSELECT of an ALU
-alu = UOp.const(3, dtypes.int32) + UOp.const(4, dtypes.int32)
+alu = UOp.const(3, dtypes.i32) + UOp.const(4, dtypes.i32)
 msel_alu = UOp(Ops.MSELECT, src=(alu,), arg=0)
 claim_row(msel_alu, "msel_alu")
 
@@ -178,7 +178,7 @@ claim_row(st_both, "st_both")
 
 # CALL: tag 13 (any), tag 14 (CALL/AFTER of an UNSHARD), tag 15 (void)
 body = UOp(Ops.SINK, (UOp(Ops.STORE, (buf(CPU1), buf(CPU2)), None),), None)
-call_v = UOp(Ops.CALL, (body, buf(CPU1)), arg=O.CallInfo("f", False, False, dtypes.int32))
+call_v = UOp(Ops.CALL, (body, buf(CPU1)), arg=O.CallInfo("f", False, False, dtypes.i32))
 claim_row(call_v, "call_v")
 call_s = UOp(Ops.CALL, (body, buf(CPU1)), arg=O.CallInfo("f", False, False, dtypes.void))
 claim_row(call_s, "call_s")
@@ -364,15 +364,15 @@ can_handle("ah_a", m1, m1.shape, sharding(m1))
 can_handle("ah_b", m1, m1.shape, sharding(m1))
 can_handle("ah_c", buf("CPU:1", 8), m1.shape, sharding(m1))
 can_handle("ah_d", buf("CPU:1", 8), (4, 8), sharding(m1))
-can_handle("ah_e", UOp.const(1, dtypes.int32), m1.shape, sharding(m1))
+can_handle("ah_e", UOp.const(1, dtypes.i32), m1.shape, sharding(m1))
 
 # --- shard_subview's EXPAND-of-scalar guard ---------------------------------
 def ssv(name, full):
   row(name, int(full.op is Ops.EXPAND and tuple(full.src[0].shape) == ()))
-row("ssv_op_scalar", UOp.const(0, dtypes.int32).expand((4, 8)).src[0].op.name)
-row("ssv_op_vec", UOp.const(0, dtypes.int32).expand((4, 1)).expand((4, 8)).src[0].op.name)
-row("ssv_nd_scalar", len(UOp.const(0, dtypes.int32).expand((4, 8)).src[0].shape))
-row("ssv_nd_vec", len(UOp.const(0, dtypes.int32).expand((4, 1)).expand((4, 8)).src[0].shape))
+row("ssv_op_scalar", UOp.const(0, dtypes.i32).expand((4, 8)).src[0].op.name)
+row("ssv_op_vec", UOp.const(0, dtypes.i32).expand((4, 1)).expand((4, 8)).src[0].op.name)
+row("ssv_nd_scalar", len(UOp.const(0, dtypes.i32).expand((4, 8)).src[0].shape))
+row("ssv_nd_vec", len(UOp.const(0, dtypes.i32).expand((4, 1)).expand((4, 8)).src[0].shape))
 
 
 # --- is_inline_call ---------------------------------------------------------

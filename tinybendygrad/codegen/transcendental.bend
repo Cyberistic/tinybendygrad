@@ -259,8 +259,8 @@ def tx_finfo_m(dt: S.Dt) -> U32:
 # `pri` cannot separate `fp8e4m3` from `fp8e4m3fnuz`, so the NAME is the test.
 def tx_is_fnuz.nm(nm: String) -> Bool:
   match nm:
-    case "float8_e4m3fnuz": True{}
-    case "float8_e5m2fnuz": True{}
+    case "fp8e4m3fnuz": True{}
+    case "fp8e5m2fnuz": True{}
     case _: False{}
 
 def tx_is_fnuz(dt: S.Dt) -> Bool:
@@ -300,7 +300,7 @@ def tx_is_tt(dt: S.Dt) -> Bool:
   match dt:
     case S.Dt{pri, bits, cls, nm}: tx_is_tt.pri(pri)
 
-# `intermediate_dtype = dtypes.float32 if d.dtype == dtypes.float16 else
+# `intermediate_dtype = dtypes.f32 if d.dtype == dtypes.f16 else
 # d.dtype` -- payne_hanek line 79. float16 is the ONLY TRANSCENDENTAL dtype whose
 # intermediate differs from itself, so `same` -- "does `f.cast(intermediate)`
 # elide" -- is float16's negation. `a_ph25` is the float32 row: True.
@@ -312,7 +312,7 @@ def tx_f16(dt: S.Dt) -> Bool:
   match dt:
     case S.Dt{pri, bits, cls, nm}: U32.is_eq(pri, 12)
 
-# `d.dtype == dtypes.float64` (line 123, 146) and `x.dtype == dtypes.float16`
+# `d.dtype == dtypes.f64` (line 123, 146) and `x.dtype == dtypes.f16`
 # (line 133) are the TWO `cody_waite_reduction` guards and they are separate facts
 # about the same dtype, so two defs. They are also NOT negations of each other --
 # float32 is neither -- so no arm here reads `Bool.not`.
@@ -503,14 +503,14 @@ def tx_pintf(+ar: O.Arena, +v: U32) -> O.Found:
 
 # `mixin/dtype.py`'s `cast` ELIDES when the dtype already matches, and this file
 # has four places that depend on it: `payne_hanek`'s two `intermediate_dtype`
-# casts, `cody_waite_reduction`'s `quadrant.cast(dtypes.int32)`, and `xexp2`'s
+# casts, `cody_waite_reduction`'s `quadrant.cast(dtypes.i32)`, and `xexp2`'s
 # `s = x - q` reading the float `-1.0`. The port takes the answer as a `Bool`
 # because a CONST has no dtype to compare (divergence B).
 # IT RETURNS AN `O.Found` AND NOT AN INDEX because the ELIDED arm still has to
 # hand back the arena it was given, or the caller's next node lands in an arena
 # that does not contain this one. `O.Found{ar, x}` IS the elision: the same pair,
 # with no node added. `payne_hanek`'s two intermediate casts and
-# `cody_waite_reduction`'s `quadrant.cast(dtypes.int32)` are the three call sites.
+# `cody_waite_reduction`'s `quadrant.cast(dtypes.i32)` are the three call sites.
 def tx_cast_same.go(+ar: O.Arena, +x: U32, +dt: S.Dt, same: Bool) -> O.Found:
   match same:
     case True{}: O.Found{ar, x}
@@ -732,15 +732,15 @@ def shr_lazy(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
 # `_hp_mul` -- line 103. This is the ONE place a 64-bit product appears and it is
 # a `MUL` NODE on two uint64 operands: the host multiplies nothing. Header note.
 #
-# `x` IS `ia`, WHICH IS ALREADY uint64` (line 82 ends in `.cast(dtypes.uint64)`),
-# so `x.cast(dtypes.uint64)` ELIDES (mixin/dtype.py:19) and only `y` casts, and
+# `x` IS `ia`, WHICH IS ALREADY uint64` (line 82 ends in `.cast(dtypes.u64)`),
+# so `x.cast(dtypes.u64)` ELIDES (mixin/dtype.py:19) and only `y` casts, and
 # there is NO cast on the way out. Casting both ways adds two nodes the oracle
 # does not have and moves every `a_ph` row from 88 on.
 def hp_mul(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   +b = tx_cast(ar, y, S.uint64())
   tx_alu2(O.Found.ar(b), O.OpsMUL{}, x, O.Found.i(b))
 
-# `a = [_take(UOp.const(0, dtypes.uint32), k) for k in range(4)]` -- line 96.
+# `a = [_take(UOp.const(0, dtypes.u32), k) for k in range(4)]` -- line 96.
 # FOUR CALLS, NOT A FOLD: the comprehension's `k` is a Python int, so the four
 # fuel depths are 6, 5, 4 and 3 AT COMPILE TIME and a `range` is four literals.
 def tx_pa0(+ar: O.Arena, +i: U32, +an: O.Found) -> O.Found: ph_take(6n, 0, ar, i, an, 0)
@@ -859,7 +859,7 @@ def ph_qr(+ar: O.Arena, +p: U32, +f: U32, +inter: S.Dt, +same: Bool, +dt: S.Dt) 
   +w2 = tx_alu3(O.Found.ar(qa), O.OpsWHERE{}, O.Found.i(lt), pq, O.Found.i(qa))
   Red{O.Found.ar(w2), O.Found.i(w), O.Found.i(w2)}
 
-# `ia = (f.cast(intermediate_dtype) * 4.294967296e9).cast(dtypes.uint64)` -- line
+# `ia = (f.cast(intermediate_dtype) * 4.294967296e9).cast(dtypes.u64)` -- line
 # 82. The `f.cast(intermediate)` ELIDES for float32 and float64 (divergence A's
 # `mixin/dtype.py:19`), which is what `same` says. `a_ph25` is the row.
 def ph_ia(+ar: O.Arena, +f: U32, +inter: S.Dt, +same: Bool) -> O.Found:
@@ -868,14 +868,14 @@ def ph_ia(+ar: O.Arena, +f: U32, +inter: S.Dt, +same: Bool) -> O.Found:
   +m = tx_alu2(O.Found.ar(fc), O.OpsMUL{}, O.Found.i(fc), O.Found.i(c))
   tx_cast(O.Found.ar(m), O.Found.i(m), S.uint64())
 
-# `i = shr(e.cast(dtypes.uint64), 5)` -- line 84. `shr` by a Python int, so this is
+# `i = shr(e.cast(dtypes.u64), 5)` -- line 84. `shr` by a Python int, so this is
 # a FLOORDIV by `2**5` and NOT a `SHR`; header note 1.
 def ph_i(+ar: O.Arena, +e: U32) -> O.Found:
   +a = tx_cast(ar, e, S.uint64())
   +b = tx_ci(O.Found.ar(a), 32)
   tx_alu2(O.Found.ar(b), O.OpsFLOORDIV{}, O.Found.i(a), O.Found.i(b))
 
-# `e = e.cast(dtypes.int32) & 31` -- line 85. `e` is REBOUND, so the frexp exponent
+# `e = e.cast(dtypes.i32) & 31` -- line 85. `e` is REBOUND, so the frexp exponent
 # and the masked exponent are two different nodes and `a_ph30` vs `a_ph23` is the
 # row that says so.
 def ph_ec(+ar: O.Arena, +e: U32) -> O.Found:
@@ -946,7 +946,7 @@ def tx_cw32.chain(+ar: O.Arena, +x: U32, +q: U32) -> O.Found:
 
 
 
-# `qdh = (d * (m_1_pi / 2.0**24)).cast(dtypes.int64).cast(d.dtype) * (2.0**24)`
+# `qdh = (d * (m_1_pi / 2.0**24)).cast(dtypes.i64).cast(d.dtype) * (2.0**24)`
 # -- line 145. BUILT UNCONDITIONALLY AND DEAD FOR float32/float16; header note 4.
 def cw_qdh(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +c = tx_cf(ar, F32.div(0.318309886183790671537767526745028724, 16777216.0))
@@ -956,13 +956,13 @@ def cw_qdh(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +p = tx_cf(O.Found.ar(f), 16777216.0)
   tx_alu2(O.Found.ar(p), O.OpsMUL{}, O.Found.i(f), O.Found.i(p))
 
-# `quadrant = rintk(d * m_1_pi - qdh) if d.dtype == dtypes.float64 else rintk(d
+# `quadrant = rintk(d * m_1_pi - qdh) if d.dtype == dtypes.f64 else rintk(d
 # * m_1_pi)` -- line 146. The float64 arm SUBTRACTS `qdh`, so it is its OWN def
 # and not a Bool on one: `-` is `ADD(x, MUL(y, C(-1.0)))` and the `C(-1)` is
 # re-interned to the float half (divergence B), which is two nodes the float32
 # arm does not have. `rintk`'s OUTPUT dtype is the int width of the same name,
 # so both arms pass `tx_int_dt(dt)` and `float16` gets `short` -- which is what
-# makes the final `quadrant.cast(dtypes.int32)` a REAL CAST on the float16 path
+# makes the final `quadrant.cast(dtypes.i32)` a REAL CAST on the float16 path
 # and an ELISION on the other two. Header note 4 is why `qdh` is built even when
 # the float32 arm does not read it.
 def cw_quadrant.f32(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
@@ -983,7 +983,7 @@ def cw_quadrant(+ar: O.Arena, +d: U32, +dt: S.Dt, +qdh: U32, d64: Bool) -> O.Fou
 
 # `cody_waite_reduction` -- lines 144-147. The ORDER is Python's: `qdh` FIRST and
 # unconditionally (header note 4), then `quadrant`, then `_reduce_d`, and
-# `quadrant.cast(dtypes.int32)` LAST AND ELIDED because the quadrant is already
+# `quadrant.cast(dtypes.i32)` LAST AND ELIDED because the quadrant is already
 # int32 -- which is why the port's second return value needs no node.
 # The float64 arm of `_reduce_d` -- lines 123-132, sleefdp.c. Six MULs and six
 # ADDs and the LAST addend is `(qdh + q) * -PI_D`, so the quadrant sum is
@@ -1020,9 +1020,9 @@ def tx_cw64.chain(+ar: O.Arena, +x: U32, +q: U32, +qdh: U32) -> O.Found:
 
 
 
-# `x.dtype == dtypes.float16` -- line 126 -- is the ONLY ARM OF `_reduce_d` THAT
-# RECURSES: `d = _reduce_d(x.cast(dtypes.float32), q.cast(dtypes.float32)).cast(
-# dtypes.float16)`. It is reached from the TOP-LEVEL call and not from the float32
+# `x.dtype == dtypes.f16` -- line 126 -- is the ONLY ARM OF `_reduce_d` THAT
+# RECURSES: `d = _reduce_d(x.cast(dtypes.f32), q.cast(dtypes.f32)).cast(
+# dtypes.f16)`. It is reached from the TOP-LEVEL call and not from the float32
 # arm, which is why the unroll is `tx_cw32`/`tx_cw64` for the other two and a
 # THIRD def here. Header note 2 says the unroll is not a convenience; this arm is
 # why the unroll has a boundary at all. NOT GATED -- the oracle's fixture is
@@ -1050,7 +1050,7 @@ def cody_waite_reduction.reduce(+ar: O.Arena, +d: U32, +d64: Bool, +f16: Bool,
     case False{}: cody_waite_reduction.reduce2(ar, d, d64, qdh, quad)
 
 # THE RETURNED `q` IS THE INT32 QUADRANT AND `_reduce_d` READS THE FLOAT ONE.
-# Python returns `quadrant.cast(dtypes.int32)`, which ELIDES because the quadrant
+# Python returns `quadrant.cast(dtypes.i32)`, which ELIDES because the quadrant
 # is already int32 for float32 and float64 -- and does NOT for float16, whose
 # quadrant is `short` -- while `_reduce_d` is handed `quadrant.cast(d.dtype)`. One
 # node, two readers: passing the float quadrant as the result moves `a_xsinf69`
@@ -1065,7 +1065,7 @@ def cody_waite_reduction.tail(+qf: O.Found, +quad: O.Found, +d: U32,
 
 # `cody_waite_reduction` -- lines 145-147. THE ORDER IS PYTHON'S: `qdh` FIRST and
 # unconditionally (header note 4), then `quadrant`, then `_reduce_d`, and
-# `quadrant.cast(dtypes.int32)` LAST AND ELIDED because the quadrant is already
+# `quadrant.cast(dtypes.i32)` LAST AND ELIDED because the quadrant is already
 # int32 -- which is why the port's second return value needs no node. `qdh` is
 # THREADED IN AS AN INDEX rather than rebuilt by the float64 arm, because
 # rebuilding it would mint a second copy of its six nodes on a caller arena that
@@ -1722,9 +1722,12 @@ def w_xpow() -> O.Arena:
   O.Found.ar(xpow(t_fixtures(), t_d(), t_c2f()))
 
 # `dtypes.floats` -- dtype.py:22 -- IS A TABLE in this order, and BOTH `dtype=`
-# conjuncts of the table are read off it. The oracle prints the DType's own enum
-# name (`fp8e4m3`, `bfloat16`), which is NOT the spec's `float8_e4m3`/`__bf16`,
-# so the row says the enum name and `pri` is what selects it.
+# conjuncts of the table are read off it. The oracle prints the DType's ATTRIBUTE
+# name, which is `repr(dtype)` -- and `__repr__` CHANGED in tinygrad 793abbb: it
+# was `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"` and is now
+# `f"dtypes.{self.name}"`, so what this table prints moved from
+# half/float/double/bfloat16 to f16/f32/f64/bf16. The fp8 names are the one group
+# that did not move, because their `name` was already their attribute.
 def tx_dt_nm.fnuz.f(f: Bool, base: String) -> String:
   match f:
     case True{}: String.concat([base, "fnuz"])
@@ -1735,15 +1738,15 @@ def tx_dt_nm.fnuz(nm: String, base: String) -> String:
 
 def tx_dt_nm.wide(pri: U32) -> String:
   match pri:
-    case 14: "float"
-    case _: "double"
+    case 14: "f32"
+    case _: "f64"
 
 def tx_dt_nm.pri(+pri: U32, +nm: String) -> String:
   match pri:
     case 10: tx_dt_nm.fnuz(nm, "fp8e4m3")
     case 11: tx_dt_nm.fnuz(nm, "fp8e5m2")
-    case 12: "half"
-    case 13: "bfloat16"
+    case 12: "f16"
+    case 13: "bf16"
     case _: tx_dt_nm.wide(pri)
 
 def tx_dt_nm(dt: S.Dt) -> String:
@@ -1985,7 +1988,7 @@ def main() -> IO(Unit):
 #      - `cody_waite_reduction`'s float16 arm -- `_reduce_d` RECURSES into float32
 #        and casts back (header note 2), so `tx_cw16.chain` is a real second
 #        entry point into `tx_cw32`, and the quadrant is `short` so the final
-#        `quadrant.cast(dtypes.int32)` does NOT elide.
+#        `quadrant.cast(dtypes.i32)` does NOT elide.
 #        `# TODO(p3) transcendental.py:135  cody_waite_reduction f16 arm`
 #      - `payne_hanek_reduction`'s float16 arm, for the same reason plus the
 #        `intermediate_dtype` CAST that float16 is the only dtype to need.

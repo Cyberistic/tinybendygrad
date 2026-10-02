@@ -25,7 +25,7 @@ def alu(op, *xs):
   for y in xs[1:]: x = x.alu(op, y)
   return x
 
-def I(n): return UOp.const(n).cast(dtypes.int)
+def I(n): return UOp.const(n).cast(dtypes.i32)
 
 # ---------------------------------------------------------------- init.bend
 def rows_init():
@@ -49,8 +49,8 @@ def rows_init():
   R("est.add0", repr(Estimates(0, 0, 0) + Estimates(1, 2, 3)))
   R("est.simplify", repr(Estimates(2, 3, 4).simplify()))
   R("est.simplify.type", type(Estimates(2, 3, 4).simplify().ops).__name__)
-  R("ws.buffer", repr(with_storage(UOp.param(0, dtypes.float, 3), dtypes.half)))
-  R("ws.global", repr(with_storage(UOp.param(1, dtypes.char, 2, addrspace=AddrSpace.GLOBAL), dtypes.half)))
+  R("ws.buffer", repr(with_storage(UOp.param(0, dtypes.f32, 3), dtypes.f16)))
+  R("ws.global", repr(with_storage(UOp.param(1, dtypes.i8, 2, addrspace=AddrSpace.GLOBAL), dtypes.f16)))
 
 # --------------------------------------------------------------- cstyle.bend
 CS = CStyleLanguage(Target("NULL"))
@@ -70,16 +70,16 @@ CUD = _bare(CUDARenderer, "sm_89")
 def render(sinks, r=CS): return r.render(UOp.sink(*sinks, arg=KernelInfo()).toposort())
 
 def f_load_store():
-  p0 = UOp.param(0, dtypes.float, 4)
-  p1 = UOp.param(1, dtypes.float, 4)
+  p0 = UOp.param(0, dtypes.f32, 4)
+  p1 = UOp.param(1, dtypes.f32, 4)
   v = p0[I(0)].load()
-  return [UOp.store(p1[I(0)], v + UOp.const(2.0).cast(dtypes.float))]
+  return [UOp.store(p1[I(0)], v + UOp.const(2.0).cast(dtypes.f32))]
 
 def f_alu():
   # nested binaries, so the strip_parens clause has something to strip: the
   # inner (a+b) KEEPS its parens when it is a right operand of + and LOSES them
   # when it is an operand of a lower-precedence op.
-  p = UOp.param(0, dtypes.int, 2)
+  p = UOp.param(0, dtypes.i32, 2)
   a = p[I(0)].load()
   b = p[I(1)].load()
   t = alu(Ops.SUB, alu(Ops.ADD, a, b), alu(Ops.MUL, a, b))
@@ -90,46 +90,46 @@ def f_alu():
 
 def f_consts():
   # one cast per dtype in base_rewrite's const order; the default arm is int
-  p = UOp.param(0, dtypes.float, 1)
+  p = UOp.param(0, dtypes.f32, 1)
   acc = None
-  for dt in (dtypes.float, dtypes.half, dtypes.bfloat16, dtypes.double, dtypes.long, dtypes.ulong,
-             dtypes.uint, dtypes.uchar, dtypes.ushort, dtypes.char, dtypes.short, dtypes.int,
+  for dt in (dtypes.f32, dtypes.f16, dtypes.bf16, dtypes.f64, dtypes.i64, dtypes.u64,
+             dtypes.u32, dtypes.u8, dtypes.u16, dtypes.i8, dtypes.i16, dtypes.i32,
              dtypes.bool):
-    c = UOp.const(3, dt).cast(dtypes.float)
+    c = UOp.const(3, dt).cast(dtypes.f32)
     acc = c if acc is None else acc + c
   return [UOp.store(p[I(0)], acc)]
 
 def f_smem():
   # a LOCAL buffer: render_buffer declares it, render_index adds the offset
-  smem = UOp.placeholder((4,), dtypes.float, slot=2, addrspace=AddrSpace.LOCAL)
+  smem = UOp.placeholder((4,), dtypes.f32, slot=2, addrspace=AddrSpace.LOCAL)
   ix = smem[I(1)]
   return [UOp.store(ix, ix.load() + ix.load())]
 
 def f_special():
   # SPECIAL needs a device that supplies code_for_workitem
-  p = UOp.param(0, dtypes.float, 1)
-  g = UOp.special(UOp.const(3).cast(dtypes.int), "g0")
-  l = UOp.special(UOp.const(1).cast(dtypes.int), "l0")
+  p = UOp.param(0, dtypes.f32, 1)
+  g = UOp.special(UOp.const(3).cast(dtypes.i32), "g0")
+  l = UOp.special(UOp.const(1).cast(dtypes.i32), "l0")
   return [UOp.store(p[g], p[g].load() + p[l].load())]
 
 def f_range():
-  p = UOp.param(0, dtypes.float, 8)
+  p = UOp.param(0, dtypes.f32, 8)
   n = p[I(0)].load()
   rg = UOp.range(n, 0, AxisType.GLOBAL)
   return [UOp.store(p[rg], rg + rg)]
 
 def f_cast():
-  p = UOp.param(0, dtypes.int, 1)
+  p = UOp.param(0, dtypes.i32, 1)
   a = p[I(0)].load()
-  return [UOp.store(p[I(0)], a.cast(dtypes.half).bitcast(dtypes.ushort).cast(dtypes.uint).cast(dtypes.int))]
+  return [UOp.store(p[I(0)], a.cast(dtypes.f16).bitcast(dtypes.u16).cast(dtypes.u32).cast(dtypes.i32))]
 
 def f_stack():
-  p = UOp.param(0, dtypes.float, 2)
+  p = UOp.param(0, dtypes.f32, 2)
   return [UOp.store(p[I(0)], UOp.stack(p[I(0)].load(), p[I(1)].load()))]
 
 def f_stack4():
   # the float4_style branch: STACK of four, which Clang renders as a brace init
-  p = UOp.param(0, dtypes.float, 4)
+  p = UOp.param(0, dtypes.f32, 4)
   return [UOp.store(p[I(0)], UOp.stack(p[I(0)].load(), p[I(1)].load(), p[I(2)].load(), p[I(3)].load()))]
 
 def rows_cstyle():

@@ -81,7 +81,7 @@ MAP = {
     "usb_max_stream": (210, 17), "usb_host_size_lo32": (212, 16),
     # :214 `usb_host(dev)[:24]`; :215 `usb_host(dev)[32 : 32 + 2 * HALF]`
     "usb_link_bytes": (214, 48), "usb_stage_lo": (215, 48), "usb_stage_2half": (215, 56),
-    # :221 `(2,), dtypes.uint32`; :222 `[:1]`; :223 `[1:]`
+    # :221 `(2,), dtypes.u32`; :222 `[:1]`; :223 `[1:]`
     "usb_vram_words": (221, 50), "usb_go_word_stop": (222, 46), "usb_scratch_word": (223, 50),
     # :226 `(0x85000,)`; :227 `[0x800:0x804]`; :228 `[0x100c:0x1010]`;
     # :229 `[0x5000 : 0x5000 + 2 * HALF]`
@@ -113,7 +113,7 @@ MAP = {
     # :122 `(fmt_type & 0b11011111) == 0b01000000) or ((fmt_type & 0b10111000) == 0b00110000)`
     "usb_fast_p1_mask": (122, 20), "usb_fast_p1_val": (122, 35),
     "usb_fast_p2_mask": (122, 63), "usb_fast_p2_val": (122, 78),
-    # :334 `(((need - fence.cast(dtypes.uint64)) & 0xff) > 1)`
+    # :334 `(((need - fence.cast(dtypes.u64)) & 0xff) > 1)`
     "usb_drain_mod": (334, 82), "usb_drain_gt": (334, 90),
     # :375 `(size + (second > 0).where(UOp.const(512, ...), ...) + 511) // 512 * 512`
     "usb_copyout_sentinel": (375, 46), "usb_copyout_r1": (375, 92), "usb_copyout_r2": (375, 100),
@@ -135,6 +135,9 @@ MAP = {
     # 1, 4, 2, so the port's CPL_UNSUP < CPL_ABORT < CPL_RETRY is a DECLARATION
     # order and not a value order.
     "usb3_log_level_debug": (25, 90),
+    # :64 `timeout:int=1000` -- the control and bulk DEFAULT, which is not :91's
+    # `timeout=2000` on the reply read.
+    "usb3_timeout": (64, 93),
     "usb_cpl_unsup": (132, 20), "usb_cpl_abort": (132, 65), "usb_cpl_retry": (132, 91),
     # :91 the reply read length and timeout
     "usb_reply_len": (91, 67), "usb_reply_timeout": (91, 79),

@@ -30,7 +30,7 @@ def val(nm, node):
     return
   print(f"{nm:<9} VALUE in={node.simplify().render():<8} out={r.simplify().render()}")
 
-I, W = dtypes.int32, dtypes.weakint
+I, W = dtypes.i32, dtypes.weakint
 C = lambda v: UOp.const(v, W)
 xw = UOp.variable("x", 0, 100, dtype=W)
 xi = UOp.variable("i", 0, 100, dtype=I)

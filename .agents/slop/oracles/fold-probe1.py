@@ -4,7 +4,7 @@ from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad import dtypes
 
 
-def buf(size, dt=dtypes.int32):
+def buf(size, dt=dtypes.i32):
   return UOp(Ops.BUFFER, (), ParamArg(0, dt, size=size, device='CPU'))
 
 

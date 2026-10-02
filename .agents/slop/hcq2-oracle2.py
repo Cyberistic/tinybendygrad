@@ -13,11 +13,11 @@ from tinygrad.dtype import dtypes
 from tinygrad.uop.ops import UOp, Ops, KernelInfo, CallInfo, ProgramInfo
 
 def buf(nm):
-  return UOp.placeholder((8,), dtypes.uint64, 0, device=('NULL:0',), tag=nm)
+  return UOp.placeholder((8,), dtypes.u64, 0, device=('NULL:0',), tag=nm)
 
 B = {n: buf(n) for n in 'abcdef'}
 r = UOp.range(8, 0)
-sink = UOp(Ops.SINK, src=((r + r).cast(dtypes.uint64),), arg=KernelInfo("k"))
+sink = UOp(Ops.SINK, src=((r + r).cast(dtypes.u64),), arg=KernelInfo("k"))
 
 def mk(bufs):
   prg = UOp(Ops.PROGRAM, src=(sink,), arg=ProgramInfo(outs=(0,), ins=(1,)))

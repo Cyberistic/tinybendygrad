@@ -24,7 +24,7 @@ from tinygrad import dtypes                                           # noqa: E4
 
 
 def buf(size):
-  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.int32, size=size))
+  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=size))
 
 
 def st23(ar):

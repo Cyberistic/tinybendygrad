@@ -563,7 +563,7 @@ def dt_of_if(ok: Bool, dt: S.Dt, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, Dt
     case True{}: dt_of(dt, m)
     case False{}: None{}
 
-# GETADDR: `return dtypes.uint64` and `case Ops.GETADDR: return ()`
+# GETADDR: `return dtypes.u64` and `case Ops.GETADDR: return ()`
 def addr_ds() -> Maybe<&2, DtShape>:
   dt_of(S.uint64(), Some{Nil{}})
 
@@ -946,7 +946,7 @@ def binary_n.of(arg: O.Arg) -> U32:
 def binary_n(arg: O.Arg) -> U32:
   binary_n.of(arg)
 
-# BINARY: `return dtypes.uint8` and `return (len(self.arg),)`
+# BINARY: `return dtypes.u8` and `return (len(self.arg),)`
 def binary_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   dt_of(S.uint8(), Some{[sint_of(binary_n(arg))]})
 
@@ -1025,7 +1025,7 @@ def index_ds.of(+ar: O.Arena, +i: U32, +x: Srcs) -> Maybe<&2, DtShape>:
   dt_of(index_dt(ar, i, Srcs.ss(x)), index_shape.of(ar, i, x))
 
 # INDEX: `if (b:=src[0]).op is Ops.PARAM and is_image_shape(b.shape): return
-# dtypes.float` / `return b.dtype` -- "an image access is always float, no matter
+# dtypes.f32` / `return b.dtype` -- "an image access is always float, no matter
 # the storage dtype" (ops.py:144 asks whether there should be a CAST so
 # `src[0].dtype` just works) -- and `shp:list[sint] = []` / `for s in self.src[1:]:
 # shp.extend(list(s.shape))` / `return tuple(shp) + self.src[0].shape[len(self.src[1:]):]`
@@ -1981,7 +1981,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsCMPEQ{}: alu_ds(S.boolean(), ss)
     # `least_upper_float(promo_dtype(src))` then the Broadcastable shape arm
     case O.OpsFDIV{}: alu_ds(least_upper_float(promo_dtype(dts_of.go(ss, Nil{}))), ss)
-    # `return dtypes.uint64` then the Broadcastable shape arm
+    # `return dtypes.u64` then the Broadcastable shape arm
     case O.OpsTHREEFRY{}: alu_ds(S.uint64(), ss)
     # the shift int check, then `return src[0].dtype` and the Broadcastable shape
     case O.OpsSHL{}: shift_ds(ar, ss)
@@ -2313,7 +2313,7 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 # THE WIDTH IS SIGN-PLUS-UNSIGNED-64 and it is MEASURED, not chosen. See
 # `.agents/slop/oracles/mm-range.py`: a plain 8x8 matmul has 21 of 232 nodes whose
 # bound leaves i64, and the widest bound in 21 real graphs is 96 bits.
-# `dtypes.uint64.max` = 2**64-1 does not fit a SIGNED 64-bit word, so the magnitude
+# `dtypes.u64.max` = 2**64-1 does not fit a SIGNED 64-bit word, so the magnitude
 # is UNSIGNED and the sign is a separate `Bool`. Bend's only runtime numbers are
 # `U32` and `Nat`, and `Nat` refuses past 2**48-1, so this pair is the widest thing
 # Bend 2.0.34 can express and `None` -- which every caller turns into `PInf`/`NInf` --
@@ -3628,7 +3628,7 @@ def main() -> IO(Unit):
 #   THE WIDTH IS SETTLED BY MEASUREMENT, and it is not 64 SIGNED bits.
 #   `.agents/slop/oracles/mm-range.py` walks 21 real graphs: a plain 8x8 matmul has
 #   21 of 232 nodes whose bound leaves i64, the widest bound seen is 96 bits, and the
-#   values that leave are `dtypes.uint64.max` = 2**64-1 and `uint64.max << 10`. A
+#   values that leave are `dtypes.u64.max` = 2**64-1 and `uint64.max << 10`. A
 #   signed 64-bit word cannot hold 2**64-1, so the port is a SIGN BIT PLUS AN
 #   UNSIGNED 64-BIT MAGNITUDE, covering [-2**63, 2**64-1] -- every dtype limit
 #   tinygrad has. Bend's only runtime numbers are `U32` and `Nat`, and `Nat` refuses

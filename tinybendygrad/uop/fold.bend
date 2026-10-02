@@ -69,6 +69,38 @@
 #     Slow and checkable beats fast and unprovable.
 #   * `graph_rewrite` IS NOT HERE and nothing here may call it.
 #
+# `_min_max` HAS MOVED, AND IT MOVED IN THE ORDER THE TABLE DECIDES.
+# The i64 arithmetic landed first, then the WIDTH was settled by measurement (a sign bit
+# plus an UNSIGNED 64-bit magnitude, because `uint64.max` = 2**64-1 does not fit a signed
+# word and `Nat` refuses past 2**48-1), and that left three pieces. All three are now here,
+# in this order:
+#
+#   1. `int(x).bit_length()` (ops.py:1110) -- SOLVED, NOT ROUTED AROUND. The previous unit
+#      recorded it as a structural wall and the reasoning was sound: a zero test cannot be a
+#      `match` scrutinee (Bend refuses a call), a growing counter cannot lead a self-call
+#      (each argument must pass unchanged until one shrinks, and a `U32` that HALVES does
+#      not count), and the test and the step cannot be two defs (mutual recursion refused).
+#      Every one of those is a fact about a WALK. **This is not a walk: it is a five-stage
+#      binary-search ladder**, and the wall was ADDITIVE COUNTING rather than the language.
+#      `bit_length(x)` is the sum of `k` over the literal thresholds `2**16, 2**8, 2**4,
+#      2**2, 2**1` that `x` meets, plus one if the residue is nonzero -- so "am I done" is
+#      answered by five literal thresholds and NEVER by a test on the value at all. No
+#      recursion, no fuel, no accumulator, and the shift amounts are LITERALS, which is what
+#      bend2-constraints demands of a bit-packer.
+#   2. THE DTYPE LIMITS, hoisted under the same notice as the lattice below.
+#   3. THE OP TABLE, `mm.lift`, PURE over `(op, srcs, arg, dtype)` with the src intervals
+#      handed IN. That purity is the decision that made the table gateable at all: every
+#      fixture in this file's `lf_*` gate has `CONST` srcs, so the table is handed a
+#      `List<&2, Bnd2>` it did not have to compute, and CPython builds the same graph and is
+#      asked the same question. 127 rows, byte-identical.
+#
+# THE ORDER WAS RIGHT AND THE PAYOFF IS MEASURABLE: because the table is pure, its 127 rows
+# and its 35-entry mutation table came BEFORE any arena was touched, and the gate found
+# five defects that no amount of reading would have (the signed order collapsed to two cases;
+# SUB's halves uncrossed; the mask width and the masked value exchanged; the shift AMOUNT read
+# as a bit WIDTH; and `Ops.AND`'s second arm being unreachable). Two of the five are visible
+# in the mutation table at the foot of this file; the other three are in the section headers.
+#
 # THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs `least_upper_dtype`
 # (dtype.py:193), which `./../dtype.bend` already has in a form this file cannot
 # reach: that file's fp16/bf16/fp8/i64 conversions are C effects, so importing it
@@ -115,10 +147,18 @@ def promo_mask(d: S.Dt) -> U32:
     case S.Dt{7, 64, S.CSint{}, _}: 523520
     case S.Dt{8, 64, S.CUint{}, _}: 523776
     case S.Dt{9, 800, S.CWeakFloat{}, _}: 523264
-    case S.Dt{10, 8, S.CFloat{}, "float8_e4m3"}: 493568
-    case S.Dt{10, 8, S.CFloat{}, "float8_e4m3fnuz"}: 495616
-    case S.Dt{11, 8, S.CFloat{}, "float8_e5m2"}: 499712
-    case S.Dt{11, 8, S.CFloat{}, "float8_e5m2fnuz"}: 507904
+    # THE THREE FP8 NAMES ARE `Dt`'s FOURTH FIELD AND NOT ITS PRIORITY: `fp8e4m3` and
+    # `fp8e4m3fnuz` are BOTH pri 10, and `fp8e5m2` is pri 11 with `fp8e5m2fnuz`, so the
+    # name is the only discriminator and these three arms are the file's ONE dependency on
+    # a dtype's SPELLING. Measured: the `float8_e4m3` spelling answered `NInf`/`PInf` on
+    # every fp8 row the moment `LAWS/spec.bend` was renamed to `fp8e4m3`, with the whole
+    # file still `ALL PROOFS CHECK` -- a NAME match that stops matching is silent, and
+    # `case _:` (the `bnd_flt` fall-through) is what absorbed it. `promo_mask` above is
+    # the same exposure and it broke in the same commit.
+    case S.Dt{10, 8, S.CFloat{}, "fp8e4m3"}: 493568
+    case S.Dt{10, 8, S.CFloat{}, "fp8e4m3fnuz"}: 495616
+    case S.Dt{11, 8, S.CFloat{}, "fp8e5m2"}: 499712
+    case S.Dt{11, 8, S.CFloat{}, "fp8e5m2fnuz"}: 507904
     case S.Dt{12, 16, S.CFloat{}, _}: 425984
     case S.Dt{13, 16, S.CFloat{}, _}: 458752
     case S.Dt{14, 32, S.CFloat{}, _}: 393216
@@ -2640,6 +2680,961 @@ def mm_show(m: Maybe<&2, H.I64>) -> String:
     case Some{x}: H.i64_text(x)
     case None{}: "OVER"
 # ===========================================================================
+# `int(x).bit_length()` -- ops.py:1110's mask width. SOLVED, NOT ROUTED AROUND.
+#
+# THE PREVIOUS UNIT RECORDED THIS AS A STRUCTURAL WALL, and the reasoning was sound:
+#   * the zero test cannot be a `match` scrutinee, because Bend refuses a call there;
+#   * the growing counter cannot lead a self-call, because each argument must pass
+#     unchanged until one shrinks, and a `U32` that *halves* does not count as
+#     shrinking;
+#   * the test and the step cannot be two defs, because mutual recursion is refused;
+#   * and a `List` tail IS a shrink, which is why `toposort` and `dts_of` are walks,
+#     though a three-scrutinee `match` over `(List, U32, U32)` refuses repeated `_ _`.
+# Every one of those is a fact about a WALK. This is not a walk.
+#
+# IT IS A BINARY-SEARCH LADDER: FIVE `Bool.pick`s AND A TAIL TEST, all straight-line,
+# no recursion, no fuel, no accumulator that leads a call. `bit_length(x)` for a 32-bit
+# `x` is the sum of `k` over the thresholds `2**16, 2**8, 2**4, 2**2, 2**1` that `x`
+# meets, plus one if the residue is nonzero -- the standard MSD-first narrowing. The
+# residue after stage `k` is `x >> k`, so `U32.is_ge(x, 2**k)` IS the test "this bit
+# position is set", and the shift amounts are LITERALS, which is what bend2-constraints
+# demands ("a bit-packer whose field positions are runtime values is unwritable").
+#
+# SO WHAT MADE IT POSSIBLE, in one sentence: THE COUNT IS NOT A COUNT. A walk counts
+# UP one bit at a time and therefore needs a zero test; this NARROWS, so the "am I
+# done" question is answered by the FIVE LITERAL THRESHOLDS and never by an equality
+# test on the value at all. The wall was the arithmetic (additive counting), not the
+# language. `Nat` is not needed for the shift amounts, and the answer stays a `U32`,
+# which is what `mm.u64.shl` wants anyway.
+#
+# THE COUNT IS THE SAME ANSWER AND NOT A DIFFERENT ONE. `1 << k` needs `k` as a `Nat`
+# and the mask is `2**k - 1`, so a bit_length that is one too large gives a mask one
+# bit too wide and therefore a DIFFERENT INTEGER, not a different shape -- which is
+# why `mm-bl-gate.py` gates the masking rows (`mk_*`) alongside the counts and not
+# only the latter.
+# ===========================================================================
+
+# `x >= 2**16` picks `x >> 16` and adds 16; the two halves of each stage are separate
+# defs only so the ladder reads as a table. `Bool.pick` CHOOSES an arm and both are
+# evaluated, which is harmless here: every arm is a total shift or a literal.
+def mm.bl32.p16(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 65536), U32.shrn(x, 16n), x)
+def mm.bl32.b16(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 65536), 16, 0)
+def mm.bl32.p8(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 256), U32.shrn(x, 8n), x)
+def mm.bl32.b8(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 256), 8, 0)
+def mm.bl32.p4(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 16), U32.shrn(x, 4n), x)
+def mm.bl32.b4(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 16), 4, 0)
+def mm.bl32.p2(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 4), U32.shrn(x, 2n), x)
+def mm.bl32.b2(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 4), 2, 0)
+def mm.bl32.p1(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 2), U32.shrn(x, 1n), x)
+def mm.bl32.b1(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 2), 1, 0)
+
+# The tail is `e != 0`, i.e. ONE more bit. It is `Bool.pick` and NOT a `match`, which
+# is the whole reason this def exists: `U32.is_zero(e)` is a CALL, and a call cannot be
+# a `match` scrutinee. `pick` takes a computed `Bool`, so the zero test is legal here and
+# was the thing the previous unit's wall turned on.
+def mm.bl32.tail(+e: U32) -> U32: Bool.pick(U32, U32.is_zero(e), 0, 1)
+
+# `bit_length(0) == 0` AND `bit_length(1) == 1` fall out of the tail alone: for 0 every
+# stage fails and the residue stays 0, so the tail adds nothing; for 1 the tail adds the
+# one bit. That pair is `bl_0` and `bl_1` in the gate and it is the row a ladder ending
+# on "the residue is nonzero" WITHOUT the zero case gets wrong.
+def mm.bl32(+x: U32) -> U32:
+  +a = mm.bl32.p16(x)
+  +b = mm.bl32.p8(a)
+  +c = mm.bl32.p4(b)
+  +d = mm.bl32.p2(c)
+  +e = mm.bl32.p1(d)
+  +s0 = U32.add(mm.bl32.b16(x), mm.bl32.b8(a))
+  +s1 = U32.add(s0, mm.bl32.b4(b))
+  +s2 = U32.add(s1, mm.bl32.b2(c))
+  +s3 = U32.add(s2, mm.bl32.b1(d))
+  U32.add(s3, mm.bl32.tail(e))
+
+# THE 64-BIT PICK IS `hi == 0`, NOT `lo != 0`. These two disagree only when `hi == 0` and
+# `lo == 0` -- the value 0 -- where `hi == 0` answers `bit_length(0) == 0` and
+# `lo != 0` answers 32 + `bit_length(0) == 32`. `bl_max_0` in the gate is that row.
+def mm.bl64(+hi: U32, +lo: U32) -> U32:
+  Bool.pick(U32, U32.is_zero(hi), mm.bl32(lo), U32.add(32, mm.bl32(hi)))
+
+# The mask `(1 << k) - 1` for a `U32` count `k`, as the AND arm needs it. This is the
+# only caller, and it is why the count is a `U32` and not a `Nat`: the mask is a SHIFT of
+# all-ones, not a construction from `2**i - 1` blocks.
+#
+# `2**k - 1` IS ALL ONES SHIFTED DOWN BY (width - k), and that is total over the whole
+# range INCLUDING both ends: `k == 0` shifts all ones out of the word and `k == width`
+# shifts by nothing. The decomposition I wrote FIRST -- OR the blocks `2**(2**i) - 1` for
+# the set bits of `k` -- is WRONG and the CPython diff caught it on the first masked row:
+# it gives 3 for `k = 3` where the answer is 7, because those blocks are the ones for
+# `2**2**i` and not for `2**i`. `bl_mask_3` in the mutation table is that row.
+#
+# `Nat.sub` UNDERFLOWS TO 0, which is what makes the eagerly-evaluated other arm harmless
+# -- and here it is not even needed: the two words use different word widths, not
+# different picks, so each is one expression over its own width.
+def mm.mask.lo(+k: U32) -> U32:
+  U32.shrn(4294967295, Nat.sub(32n, U32.to_nat(k)))
+
+def mm.mask.hi(+k: U32) -> U32:
+  U32.shrn(4294967295, Nat.sub(64n, U32.to_nat(k)))
+
+def mm.mask64(+k: U32) -> H.I64:
+  H.i64_of_hi_lo(mm.mask.hi(k), mm.mask.lo(k))
+
+# `mm.u64.and` takes two pairs and returns one, so the AND arm's
+# `int(s1_vmax) & ((1 << int(s0_vmax).bit_length()) - 1)` is one call with the mask
+# built from the OTHER src's count. This is the row `mk_*` gates.
+#
+# THE `Maybe` IS WRAPPING AND NOT REAL: `&` of two in-window pairs is in-window, so this
+# arm of the AND can never overflow and `mm_show` is reused rather than a second printer
+# written. It answers `None` never, and that is a fact about `&` rather than a hope.
+def mm_mask64(+s0h: U32, +s0l: U32, s1h: U32, s1l: U32) -> Maybe<&2, H.I64>:
+  +mk = mm.mask64(mm.bl64(s0h, s0l))
+  Some{mm.u64.and(s1h, s1l, H.hi32(mk), H.lo32(mk))}
+# ===========================================================================
+# `Bound` -- a bound of `_min_max`, and the dtype limits that end every arm.
+#
+# FOUR ARMS, AND TWO OF THEM ARE THE OVER-APPROXIMATION. `Int{neg, mag}` is the width
+# argument's pair: a SIGN BIT plus an UNSIGNED 64-bit magnitude, covering
+# [-2**63, 2**64-1]. `Flt` is the `float` bound Python's `PyConst` allows, and it is
+# `F32` because Bend has no `F64` -- which is exact here because the only finite float
+# bounds tinygrad has are the fp8 maxima, and every one of them is a small integer
+# (-448, -240, -57344) that `F32` holds exactly. `NInf`/`PInf` are the two infinities
+# AND the OVER answer: where an intermediate leaves the window, the bound saturates, and
+# a saturated bound still answers every question a consumer asks of it (`resolve`'s
+# `vmin == vmax`, `shard_shape`'s `int(x)`, `variable`'s `vmin_vmax is not None`).
+#
+# **`weakint` IS THE ONE DTYPE WHOSE LIMITS LEAVE THE WINDOW, AND IT IS MEASURED.**
+# `dtypes.weakint.bitsize == 800`, so `min == -2**799` and `max == 2**799 - 1`, and
+# neither is a 64-bit magnitude. So the header's claim that the pair covers "every dtype
+# limit tinygrad has" is TRUE for the nine integer dtypes and FALSE for `weakint`, whose
+# two limits are `NInf`/`PInf` here. That is not a defect in the representation: CPython
+# ANSWERS those numbers and they are what `resolve` sees, but no consumer distinguishes
+# them from an unbounded value -- both say "no information" -- so saturating is sound.
+# The alternative is an arbitrary-precision integer, which Bend 2.0.34 cannot express
+# (`Nat` refuses past 2**48-1) and which no consumer needs.
+# ===========================================================================
+
+type Bnd is Data:
+  Bnd{inf: U32}
+  BndInt{neg: Bool, mag: H.I64}
+  BndFlt{v: F32}
+
+# `NInf` and `PInf` as ONE `inf` tag rather than two variants, because the only
+# operations on a bound that read the tag are the equality and the "is it finite"
+# tests, and neither wants a two-arm match. `0` is `-inf`, `1` is `+inf`.
+def bnd_ninf() -> Bnd: Bnd{0}
+
+def bnd_pinf() -> Bnd: Bnd{1}
+
+def bnd_i(neg: Bool, mag: H.I64) -> Bnd: BndInt{neg, mag}
+
+# THE ZERO IS SIGNED POSITIVE, and the constant rather than a computed 0: `+0` and `-0`
+# are the same Python int but they are not the same `Bound`, and an AND arm that answers
+# `0` for a zero-valued mask must say WHICH zero it is.
+def bnd_zero() -> Bnd: BndInt{False{}, H.i64_of_hi_lo(0, 0)}
+
+def bnd_f(v: F32) -> Bnd: BndFlt{v}
+
+# ---- THE DTYPE LIMITS, hoisted out of dtype.bend under the same notice as
+# `promo_mask` above. `S.Dt.min`/`S.Dt.max` answer `None` for every width past 32 --
+# `int64.min = -2**63` and `uint64.max = 2**64-1` have no U32 image -- and `None` for
+# every float and for `bool`/`void`. These twenty rows are the ones the last arm of
+# `_min_max` hands back, and they are spelled as ONE match over `S.Dt`'s own fields so
+# that a width and a class cannot be read off different arms.
+#
+# THE EIGHT INTEGER LIMITS ARE COMPUTED AND NOT WRITTEN DOWN, because `2**bits - 1` is
+# `mm.mask64(bits)` -- the SAME ladder the AND arm uses, one call, and it is already
+# gated. `int64`'s and `uint64`'s two-word answers are therefore consequences of the mask
+# rather than a second pair of hand-typed 32-bit hex halves, which is what a written-down
+# table would have been. `bl_dt_int64` and `bl_dt_uint64` are the rows that notice.
+# ---- THE READER, for the gate only. `show` is not part of the fold: a bound is compared,
+# never printed, and every consumer reads the two halves. It exists because the gate has
+# to see a sign and a pair to notice a transposition.
+def bnd_show(b: Bnd) -> String:
+  match b:
+    case Bnd{i}: Bool.pick(String, U32.is_zero(i), "NInf", "PInf")
+    case BndInt{neg, mag}: String.concat([Bool.pick(String, neg, "-", "+"), H.i64_text(mag)])
+    case BndFlt{v}: String.concat(["F", F32.show(v)])
+
+# THE SATURATING PAIR. Every float dtype's limits are `-inf`/`inf` except the three fp8s,
+# and every WIDTH PAST 64 integer's are here too, so `bnd_int` reuses it rather than
+# naming a second one.
+def bnd_flt(top: Bool) -> Bnd: Bool.pick(Bnd, top, bnd_pinf(), bnd_ninf())
+
+# ---- THE EIGHT INTEGER LIMITS, COMPUTED. `2**bits - 1` is `mm.mask64(bits)` -- the same
+# ladder the AND arm uses, one call, already gated -- and a signed width's minimum
+# magnitude is `2**(bits-1)`, which is `mm.u64.shl(0, 1, bits-1)`. So `int64`'s and
+# `uint64`'s two-word answers are CONSEQUENCES of the mask rather than a second pair of
+# hand-typed 32-bit hex halves, which is what a written-down table would have been and
+# where a transcription would have lived. `bl_dt_int64` and `bl_dt_uint64` are the rows
+# that notice.
+def bnd.umax(+bits: U32) -> Bnd: BndInt{False{}, mm.mask64(bits)}
+
+def bnd.pw2(+bits: U32) -> Maybe<&2, H.I64>: mm.u64.shl(0, 1, U32.to_nat(U32.sub(bits, 1)))
+
+# THE `Maybe` HAS TO BE A PARAMETER, not a computed value: a `match` cannot scrutinize a
+# call. `bnd.pw2.got` is not a helper, it is the only legal shape -- and it is the same
+# reason `mm.u64.of` takes its `ok` flag rather than testing one inline.
+def bnd.pw2.got(m: Maybe<&2, H.I64>) -> Bnd:
+  match m:
+    case Some{mag}: BndInt{True{}, mag}
+    case None{}: bnd_ninf()
+
+def bnd.smag(+bits: U32) -> Bnd: bnd.pw2.got(bnd.pw2(bits))
+
+def bnd.smax(+bits: U32) -> Bnd: BndInt{False{}, mm.mask64(U32.sub(bits, 1))}
+
+# THE WIDTH GUARD IS ON BOTH SIDES AND NOT JUST THE MINIMUM, and that is a real trap the
+# `weakint` row caught. `mm.mask64` does NOT saturate: `U32.shrn(0xFFFFFFFF, Nat.sub(32n,
+# 799n))` is `Nat.sub` UNDERFLOWING TO 0, so it answers ALL ONES -- `2**64 - 1` where
+# `weakint.max` is `2**799 - 1`. A guard on the signed minimum alone therefore answers
+# `NInf, +2**64-1` for `weakint`, which is neither CPython's answer nor a sound
+# over-approximation: it claims the maximum is small when it is not, and a consumer asking
+# `vmax <= 2**63` would be told yes. The guard is the WIDTH, tested once, on both arms.
+def bnd_int(+top: Bool, +sgn: Bool, +bits: U32) -> Bnd:
+  Bool.pick(Bnd, U32.is_gt(bits, 64), bnd_flt(top),
+    Bool.pick(Bnd, top, Bool.pick(Bnd, sgn, bnd.smax(bits), bnd.umax(bits)),
+      Bool.pick(Bnd, sgn, bnd.smag(bits), bnd_zero())))
+
+# THE THREE FP8 MAXIMA, and they are the ONLY finite float bounds in tinygrad: the other
+# six float dtypes answer `inf` for max and `-self.max` for min. These three are
+# `fp8_to_float(_fp8_cfg[self][5], self)`, and every one is an exact `F32` (448 = 1.75 *
+# 2**8, 240 = 1.875 * 2**7, 57344 = 1.75 * 2**15, all with short mantissas). The minimum
+# is `-self.max` and NOT `0`: `dtype.py` says `return -self.max`, and answering 0 for the
+# minimum of a signed float dtype would be the classic wrong-over-approximation -- a
+# bound that is too HIGH is not sound, because it excludes the values in between.
+def bnd_fmax(+top: Bool, +m: Nat) -> Bnd:
+  Bool.pick(Bnd, top, bnd_f(F32.from_nat(m)), bnd_f(F32.neg(F32.from_nat(m))))
+
+# `bool` AND `void` ANSWER PYTHON'S `False` AND `True`, not a 1-bit integer's limits --
+# `dtypes.is_int(bool)` is False, so `dtype.py`'s `if dtypes.is_int(self)` does not fire
+# and the last line returns the two bools. They are `+0` and `+1` to every COMPARISON
+# Python performs on them, which is why the oracle prints them numerically and why the arm
+# is a pair and not `bnd_int(top, ...)`: a 1-bit INTEGER would give 0..1 by the width
+# formula and `bnd_int`'s minimum would be `-2**0 = -1`, which is the wrong half.
+def bnd_bool(+top: Bool) -> Bnd:
+  bnd_i(False{}, Bool.pick(H.I64, top, H.i64_of_hi_lo(0, 1), H.i64_of_hi_lo(0, 0)))
+
+# THE HUNDRED-AND-EIGHTY-BIT WIDTH IS WHY `weakint` SATURATES, and nothing names
+# `weakint` here: `dt.bits` is 800, so `bnd_int`'s width guard answers for it, and it is
+# the same guard that would answer for any future 128-bit dtype. `weakfloat`'s limits were
+# already `inf` so it reaches `bnd_flt` on its own account.
+def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
+  match d:
+    case S.Dt{0, 1, S.CBool{}, _}: bnd_bool(top)
+    case S.Dt{0, 0, S.CVoid{}, _}: bnd_bool(top)
+    case S.Dt{0, 800, S.CWeakInt{}, _}: bnd_int(top, True{}, 800)
+    case S.Dt{1, 8, S.CSint{}, _}: bnd_int(top, True{}, 8)
+    case S.Dt{2, 8, S.CUint{}, _}: bnd_int(top, False{}, 8)
+    case S.Dt{3, 16, S.CSint{}, _}: bnd_int(top, True{}, 16)
+    case S.Dt{4, 16, S.CUint{}, _}: bnd_int(top, False{}, 16)
+    case S.Dt{5, 32, S.CSint{}, _}: bnd_int(top, True{}, 32)
+    case S.Dt{6, 32, S.CUint{}, _}: bnd_int(top, False{}, 32)
+    case S.Dt{7, 64, S.CSint{}, _}: bnd_int(top, True{}, 64)
+    case S.Dt{8, 64, S.CUint{}, _}: bnd_int(top, False{}, 64)
+    case S.Dt{9, 800, S.CWeakFloat{}, _}: bnd_flt(top)
+    # THE THREE FP8 NAMES ARE `Dt`'s FOURTH FIELD AND NOT ITS PRIORITY: `fp8e4m3` and
+    # `fp8e4m3fnuz` are BOTH pri 10, and `fp8e5m2` is pri 11 with `fp8e5m2fnuz`, so the
+    # name is the only discriminator and these three arms are the file's ONE dependency on
+    # a dtype's SPELLING. Measured: the `float8_e4m3` spelling answered `NInf`/`PInf` on
+    # every fp8 row the moment `LAWS/spec.bend` was renamed to `fp8e4m3`, with the whole
+    # file still `ALL PROOFS CHECK` -- a NAME match that stops matching is silent, and
+    # `case _:` (the `bnd_flt` fall-through) is what absorbed it. `promo_mask` above is
+    # the same exposure and it broke in the same commit.
+    case S.Dt{10, 8, S.CFloat{}, "fp8e4m3"}: bnd_fmax(top, 448n)
+    case S.Dt{10, 8, S.CFloat{}, "fp8e4m3fnuz"}: bnd_fmax(top, 240n)
+    case S.Dt{11, 8, S.CFloat{}, "fp8e5m2"}: bnd_flt(top)
+    case S.Dt{11, 8, S.CFloat{}, "fp8e5m2fnuz"}: bnd_fmax(top, 57344n)
+    case S.Dt{12, 16, S.CFloat{}, _}: bnd_flt(top)
+    case S.Dt{13, 16, S.CFloat{}, _}: bnd_flt(top)
+    case S.Dt{14, 32, S.CFloat{}, _}: bnd_flt(top)
+    case S.Dt{15, 64, S.CFloat{}, _}: bnd_flt(top)
+    case _: bnd_flt(top)
+# ===========================================================================
+# THE OP TABLE -- ops.py:1105-1163. What follows is `_min_max` with the arena taken
+# away: `mm.lift` is a PURE function of `(op, srcs, arg, dtype)` where `srcs` is the
+# srcs' `(vmin, vmax)` ALREADY ANSWERED, in src order. The walk that produces those is a
+# separate def for the reason the foot of this file gives, and splitting the two here is
+# what makes the TABLE gateable on its own: `.agents/slop/mm-lift-gate.py` builds a real
+# arena, reads CPython's `_min_max` for every node of it, and asks this table for the
+# same node from the same srcs -- so a row cannot be right on one side and wrong on the
+# other, which is the whole point of generating the expectation rather than typing it.
+#
+# FOUR RULES THE WHOLE TABLE FOLLOWS, and all four are soundness rather than style:
+#
+#   1. A `None` out of the binary block means "no arm fired", and Python FALLS THROUGH
+#      to WHERE / Defines / RANGE / ... rather than answering. That is `mm.MM2.get`, and
+#      it is why the binary block returns a `Maybe` and not a `Bnd2`. A `THREEFRY` on an
+#      integer dtype has no arm, so it leaves the block and lands on `(dtype.min,
+#      dtype.max)`, exactly as CPython does.
+#   2. The block is entered ONLY for `op in GroupOp.Binary and not is_float(dtype)`, so no
+#      float ever meets an arithmetic arm. A float-dtype ADD therefore never reaches
+#      rule 1 -- it skips the block and lands on the same default.
+#   3. ARITHMETIC SATURATES. `mm.u64.*` answers `None` when a result leaves
+#      [0, 2**64-1], and that becomes `SNsat{sign}` -> `NInf`/`PInf`: a sound
+#      OVER-APPROXIMATION, because a wider interval still answers `vmin == vmax`,
+#      `int(x)` and `vmin_vmax is not None`.
+#   4. `-0` IS `0`. A negation is `-(m + 1)` on the magnitude, so zero has to be caught
+#      BEFORE it or `x - 0` answers `-1` and SUB's lower bound is one too low. Same for
+#      `~x = -x - 1` and for the shift-right of a negative, which is a FLOOR and not a
+#      truncation.
+#
+# WHAT IS NOT HERE, one line each, and none of them is a TODO:
+#   * `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend` and
+#     a pure def cannot call it. The arm is not approximated; it is absent, so a CAST
+#     lands on `(dtype.min, dtype.max)`.
+#   * the `Ops.LOAD`-from-`Ops.BINARY` arm -- it needs `self.src[0].buf_uop`, a `while`
+#     over five ops (ops.py:1053-1071) that mints a node the arena never interned.
+#   * `CMOD`/`CDIV`/`FLOORDIV`/`FLOORMOD` need SIGNED division and `mm.dm.*` is an
+#     UNSIGNED restoring divider. `mm.sn.div` below is the signed core and it is gated;
+#     the four arms that call it are the next block, not this one.
+# ===========================================================================
+
+type Bnd2 is Data:
+  Bnd2{lo: Bnd, hi: Bnd}
+
+# THE TWO READERS, and they exist only because the gate has to print a bound pair as one
+# string: a transposed `min`/`max` and a dropped sign are both visible in that string and
+# neither is visible in a node count.
+def Bnd2.lo(b: Bnd2) -> Bnd:
+  match b:
+    case Bnd2{lo, hi}: lo
+
+def Bnd2.hi(b: Bnd2) -> Bnd:
+  match b:
+    case Bnd2{lo, hi}: hi
+
+def bnd2_show(+b: Bnd2) -> String:
+  String.concat(["lo=", bnd_show(Bnd2.lo(b)), " hi=", bnd_show(Bnd2.hi(b))])
+# `Maybe` OUT OF THE BINARY BLOCK, and the only place one is consumed for the fall-through.
+# It is not a `Maybe.default` because the fallback is a CALL that must be evaluated on the
+# answer path too, and `Maybe.default` would evaluate it either way -- which hides which
+# half of the ladder fired, and "no arm fired" is the answer for half of the binary ops.
+def mm.MM2.get(m: Maybe<&2, Bnd2>, fb: Bnd2) -> Bnd2:
+  match m:
+    case Some{x}: x
+    case None{}: fb
+
+# THE SIGNED INTEGER, as a record rather than a `(Bool, H.I64)` pair: Bend has no tuple,
+# and `SNsat` has to CARRY the sign it was heading for, which is exactly the one bit a
+# `Maybe` cannot also carry.
+type SInt2 is Data:
+  SNok{neg: Bool, mag: H.I64}
+  SNsat{neg: Bool}
+
+def bnd.sn.zero() -> SInt2: SNok{False{}, H.i64_of_hi_lo(0, 0)}
+
+# `Bool` HAS NO `is_eq` IN BEND 2.0.34, and equality of two `Bool`s is the negation of
+# their exclusive-or. Every sign comparison in this section goes through here rather than
+# through `==`, which does not exist either.
+def bnd.same(a: Bool, b: Bool) -> Bool: Bool.not(Bool.xor(a, b))
+
+# A FLOAT BOUND IS A SIGNED SATURATION, deliberately. `Int` against `Flt` has no exact
+# answer in this representation -- `F32` cannot hold a 64-bit magnitude -- and a bound
+# that is wrong in the unsound direction is worse than one that is wide. Every fixture
+# family in the gate is integer-only or float-only for exactly this reason, and
+# `bnd.pad` answers PAD's `0` in `F32` rather than leaning on this.
+def bnd.sn.of(b: Bnd) -> SInt2:
+  match b:
+    case Bnd{i}: SNsat{Bool.pick(Bool, U32.is_zero(i), False{}, True{})}
+    case BndInt{neg, +mag}: SNok{neg, mag}
+    case BndFlt{v}: SNsat{F32.is_lt(v, 0.0)}
+
+def bnd.sn.out(s: SInt2) -> Bnd:
+  match s:
+    case SNok{neg, +mag}: BndInt{neg, mag}
+    case SNsat{neg}: Bool.pick(Bnd, neg, bnd_ninf(), bnd_pinf())
+
+def bnd.sn.put.sign(neg: Bool, +g: H.I64) -> Bool:
+  Bool.pick(Bool, mm.u64.is_zero(H.hi32(g), H.lo32(g)), False{}, neg)
+
+# **THE SIGN IS FORCED TO POSITIVE ON A ZERO MAGNITUDE.** `Int{neg, mag}` has no canonical
+# zero without this rule, and `0 * -5` builds `SNok{True, 0}` -- which is `-0`, which is the
+# SAME Python int as `0` and a DIFFERENT `Bnd`, so the gate string differs. It is the same
+# reason the header calls the zero a constant rather than a computed 0: an interval's
+# endpoint is a value, and `-0` and `+0` are one value with two spellings here.
+def bnd.sn.put(neg: Bool, m: Maybe<&2, H.I64>) -> SInt2:
+  match m:
+    case Some{+g}: SNok{bnd.sn.put.sign(neg, g), g}
+    case None{}: SNsat{neg}
+
+# `x - y` over unsigned magnitudes. A difference never leaves the window, so this is the
+# one arithmetic operation with no saturation at all -- WHICH IS WHY IT IS ALSO THE
+# SIGN-DECIDER for a sum of opposite signs.
+def bnd.sn.diff(+xh: U32, +xl: U32, +yh: U32, +yl: U32) -> SInt2:
+  Bool.pick(SInt2, mm.u64.lt(xh, xl, yh, yl),
+    SNok{True{}, mm.u64w.sub(yh, yl, xh, xl)},
+    SNok{False{}, mm.u64w.sub(xh, xl, yh, yl)})
+
+# THE SUM. Same signs: the magnitudes add and the overflow becomes THAT sign's infinity,
+# so `NInf + NInf = NInf` and `PInf - ... ` cannot happen (a difference is `diff`).
+# Opposite signs: the answer is a difference, so the sign is whichever magnitude is
+# larger and there is no overflow to ask about. Rule 4's `-0` case lives in `bnd.sn.neg`.
+def bnd.sn.add.go(+na: Bool, +ma: H.I64, nb: Bool, +mb: H.I64) -> SInt2:
+  Bool.pick(SInt2, bnd.same(na, nb),
+    bnd.sn.put(na, mm.u64.add(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb))),
+    Bool.pick(SInt2, na,
+      bnd.sn.diff(H.hi32(mb), H.lo32(mb), H.hi32(ma), H.lo32(ma)),
+      bnd.sn.diff(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb))))
+
+def bnd.sn.add(+a: SInt2, +b: SInt2) -> SInt2:
+  match a b:
+    case SNsat{na} _: SNsat{na}
+    case _ SNsat{nb}: SNsat{nb}
+    case SNok{na, ma} SNok{nb, mb}: bnd.sn.add.go(na, ma, nb, mb)
+
+# A NEGATION IS THE SIGN AND NOTHING ELSE -- the magnitude is `|x|` already. The `- 1` that
+# `~x` needs belongs in `bnd.not` and NOT here, and measuring showed why: with the `+ 1` in
+# this def, `x - y` came out one too low on every SUB row (`3 - 4` answered `-2` and
+# `5 - 5` answered `-1`) because a subtraction IS a sum of a negation.
+def bnd.sn.neg(s: SInt2) -> SInt2:
+  match s:
+    case SNsat{neg}: SNsat{Bool.not(neg)}
+    case SNok{neg, +mag}: SNok{Bool.not(neg), mag}
+
+def bnd.sn.mul(+a: SInt2, +b: SInt2) -> SInt2:
+  match a b:
+    case SNsat{na} _: SNsat{na}
+    case _ SNsat{nb}: SNsat{nb}
+    case SNok{na, ma} SNok{nb, mb}:
+      bnd.sn.put(Bool.xor(na, nb), mm.u64.mul(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb)))
+
+def bnd.add(a: Bnd, b: Bnd) -> Bnd: bnd.sn.out(bnd.sn.add(bnd.sn.of(a), bnd.sn.of(b)))
+
+def bnd.sub(a: Bnd, b: Bnd) -> Bnd: bnd.sn.out(bnd.sn.add(bnd.sn.of(a), bnd.sn.neg(bnd.sn.of(b))))
+
+def bnd.mul(a: Bnd, b: Bnd) -> Bnd: bnd.sn.out(bnd.sn.mul(bnd.sn.of(a), bnd.sn.of(b)))
+
+# `~x` IS `-x - 1` AND NOT `-x`, and the row that notices is XOR's arm with `s1 == -1`,
+# where the two differ by one on every input.
+def bnd.not(a: Bnd) -> Bnd:
+  bnd.add(bnd.sn.out(bnd.sn.neg(bnd.sn.of(a))), bnd_i(True{}, H.i64_of_hi_lo(0, 1)))
+
+# A MAGNITUDE NARROWED TO A `U32`, for the two callers whose bound is already at most 64 (a
+# mask WIDTH and a shift AMOUNT). It is a def rather than an inline pair so that `U32.to_nat`
+# is reached exactly once and so the precondition lives in one comment.
+def mm.narrow(+mag: H.I64) -> U32: mm.bl64(H.hi32(mag), H.lo32(mag))
+
+# THE SHIFT AMOUNT IS THE LOW WORD, and that is only the amount because
+# `mm.shamt.big` has already refused anything past 64. `mm.narrow` next to it is the OTHER
+# narrowing -- a bit WIDTH, which is `bit_length` and not the value -- and the two are one
+# line apart on purpose: reading a shift amount as a bit width shifts by `bit_length(k)`,
+# which is `1 << 3` answering `4`.
+def mm.shamt.lo32(+mag: H.I64) -> U32: H.lo32(mag)
+
+# THE SHIFT AMOUNT, and the two reasons it is a `Maybe`. Python's `x << k` raises on a
+# negative `k` and this table answers "the node raises" by leaving the block, and Python's
+# `x << k` for `k > 64` is a value past every dtype limit, which is a saturation rather
+# than an answer. So the guard is on `k`, not on `x`, and `U32.to_nat` is never reached
+# with a value past 64 -- `Nat` refuses past 2**48 and a refusal is not a value.
+# THE SHIFT AMOUNT ITSELF, AND IT IS NOT A MASK WIDTH. `bnd.shl.k1` answered `bit_length`
+# because that is what the AND arm's mask needs, and the SHL/SHR arms need the VALUE:
+# `x << k` shifts by `k` and not by `bit_length(k)`. Measuring that difference: `1 << 3`
+# answered `4` on every SHL row, which is `1 << 2`, i.e. the bit length of 3.
+#
+# Python's `x << k` raises on a negative `k` and gives a value past every dtype limit for a
+# `k` past 64, so the guard is on `k` and the `Maybe` is "the node raises". `U32.to_nat` is
+# reached only with a value in [0, 64] and `Nat` refuses past 2**48, so a refusal is not.
+def bnd.shamt.put(bad: Bool, +mag: H.I64) -> Maybe<&2, Nat>:
+  match bad:
+    case True{}: None{}
+    case False{}: Some{U32.to_nat(mm.shamt.lo32(mag))}
+
+def mm.shamt.big(+mag: H.I64) -> Bool: U32.is_gt(mm.bl64(H.hi32(mag), H.lo32(mag)), 64)
+
+def bnd.shamt(b: Bnd) -> Maybe<&2, Nat>:
+  match b:
+    case BndInt{neg, +mag}: bnd.shamt.put(Bool.or(neg, mm.shamt.big(mag)), mag)
+    case _: None{}
+
+def bnd.sn.shl(s: SInt2, +k: Nat) -> SInt2:
+  match s:
+    case SNsat{neg}: SNsat{neg}
+    case SNok{neg, +mag}: bnd.sn.put(neg, mm.u64.shl(H.hi32(mag), H.lo32(mag), k))
+
+# `x >> k` IS A FLOOR AND NOT A TRUNCATION, and the identity that gets it right without
+# ever adding `2**k` is `floor(-m / 2**k) = -(m >> k) - [the low k bits are set]`. The
+# obvious spelling, `-(m + 2**k - 1) >> k`, overflows for every `m` above `2**64 - 2**k`
+# and would answer `NInf` where CPython answers a small number.
+# THE REMAINDER MASK, `2**k - 1`, AS A WORD PAIR. It is `mm.mask64(k)` in one expression
+# and this is the two-arm spelling of it, because the caller needs the LOW WORD on its own
+# -- and because `mm.mask.hi` is the only one of the two that is right for a `k` past 32:
+# `mm.mask.lo(64)` underflows `Nat.sub` to all ones, which is correct, while `mm.mask.hi(0)`
+# is all ones and is wrong. A `k` of 0 is not reachable (the gate needs `int` bounds and
+# `bnd.shl.k1` refuses a magnitude over 64), but the identity still holds for it.
+def mm.shremask(+k: U32) -> H.I64: H.i64_of_hi_lo(mm.mask.hi(k), mm.mask.lo(k))
+
+def bnd.sn.shr.rem(+k: Nat) -> H.I64:
+  Bool.pick(H.I64, U32.is_ge(U32.from_nat(k), 32), mm.shremask(U32.from_nat(k)),
+    H.i64_of_hi_lo(0, mm.mask.lo(U32.from_nat(k))))
+
+def bnd.sn.shr.neg(+mag: H.I64, +k: Nat) -> SInt2:
+  +q = mm.u64.shr(H.hi32(mag), H.lo32(mag), k)
+  +mk = bnd.sn.shr.rem(k)
+  +r = mm.u64.and(H.hi32(mag), H.lo32(mag), H.hi32(mk), H.lo32(mk))
+  bnd.sn.put(True{}, mm.u64.add(H.hi32(q), H.lo32(q), 0, Bool.pick(U32, mm.u64.is_zero(H.hi32(r), H.lo32(r)), 0, 1)))
+
+def bnd.sn.shr.go(neg: Bool, +mag: H.I64, +k: Nat) -> SInt2:
+  Bool.pick(SInt2, neg, bnd.sn.shr.neg(mag, k), SNok{False{}, mm.u64.shr(H.hi32(mag), H.lo32(mag), k)})
+
+def bnd.sn.shr(s: SInt2, +k: Nat) -> SInt2:
+  match s:
+    case SNsat{neg}: SNsat{neg}
+    case SNok{neg, +mag}: bnd.sn.shr.go(neg, mag, k)
+
+def bnd.shl(a: Bnd, +k: Nat) -> Bnd: bnd.sn.out(bnd.sn.shl(bnd.sn.of(a), k))
+
+def bnd.shr(a: Bnd, +k: Nat) -> Bnd: bnd.sn.out(bnd.sn.shr(bnd.sn.of(a), k))
+
+# THE COMPARISON, over the whole union, and the three classes ranked `NInf < Int/Flt <
+# PInf`. Int against Int is the signed order and Flt against Flt is IEEE, and the eight
+# mixed arms are the two infinities against the two finite classes. The ninth pair --
+# `Int` against `Flt` -- is the `case _:` and it answers False, which is WRONG in general
+# and is why no fixture in the gate mixes the two classes.
+# THE SIGNED ORDER IS FOUR CASES AND NOT TWO, and the two-case spelling -- "if `a` is
+# negative compare the magnitudes backwards" -- is WRONG for a negative `a` against a
+# non-negative `b`, where the answer is always `true` rather than a magnitude comparison.
+# Measured: that spelling made `max(-3, 4)` answer `-3` and `cmplt(-3, 4)` answer `False`,
+# on 53 of this gate's 123 rows.
+def bnd.lt.i(+na: Bool, +ma: H.I64, +nb: Bool, +mb: H.I64) -> Bool:
+  Bool.pick(Bool, na,
+    Bool.pick(Bool, nb, mm.u64.lt(H.hi32(mb), H.lo32(mb), H.hi32(ma), H.lo32(ma)), True{}),
+    Bool.pick(Bool, nb, False{}, mm.u64.lt(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb))))
+
+def bnd.lt(+a: Bnd, +b: Bnd) -> Bool:
+  match a b:
+    case BndInt{na, ma} BndInt{nb, mb}: bnd.lt.i(na, ma, nb, mb)
+    case BndFlt{fa} BndFlt{fb}: F32.is_lt(fa, fb)
+    case Bnd{i} BndInt{_, _}: U32.is_zero(i)
+    case BndInt{_, _} Bnd{i}: U32.is_zero(i)
+    case Bnd{i} BndFlt{_}: U32.is_zero(i)
+    case BndFlt{_} Bnd{i}: U32.is_zero(i)
+    case Bnd{i} Bnd{j}: Bool.pick(Bool, U32.is_zero(i), True{}, False{})
+    case _ _: False{}
+
+def bnd.eq(+a: Bnd, +b: Bnd) -> Bool:
+  match a b:
+    case Bnd{i} Bnd{j}: U32.is_eq(i, j)
+    case BndInt{na, ma} BndInt{nb, mb}:
+      Bool.and(bnd.same(na, nb), mm.u64.eq(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb)))
+    case BndFlt{fa} BndFlt{fb}: F32.is_eq(fa, fb)
+    case _ _: False{}
+
+def bnd.min(+a: Bnd, +b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.lt(a, b), a, b)
+
+def bnd.max(+a: Bnd, +b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.lt(a, b), b, a)
+
+# `bool(v)` AS A BOUND. Python's comparison arms answer `True`/`False`, which are the
+# integers 1 and 0 to every reader of a bound, and `bnd_bool`'s top arm is that same
+# spelling -- so the two agree by construction rather than by coincidence.
+def bnd_tf(c: Bool) -> Bnd: Bool.pick(Bnd, c, bnd_i(False{}, H.i64_of_hi_lo(0, 1)), bnd_i(False{}, H.i64_of_hi_lo(0, 0)))
+
+# ---- an `H.I64` as a `Bnd` ------------------------------------------------------
+#
+# `CInt` and `PyRange` hold `H.I64`, which is a SIGNED two's-complement pair, and `Bnd` is
+# a sign plus an unsigned magnitude. So reading one the other way is a sign test and a
+# `-(m+1)` on the negative side, and `H.i64_text` prints the signed value in the gate --
+# which is why a transposed `min`/`max` here shows up as a string difference rather than
+# as a plausible number.
+def mm.i64.is_neg(+i: H.I64) -> Bool: U32.is_eq(U32.shrn(H.hi32(i), 31n), 1)
+
+def mm.i64.mag(+i: H.I64) -> H.I64:
+  +c = mm.u64.not(H.hi32(i), H.lo32(i))
+  H.i64_of_hi_lo(U32.add(H.hi32(c), mm.u32c(H.lo32(c), 1)), U32.add(H.lo32(c), 1))
+
+def mm.i64.to_bnd(+i: H.I64) -> Bnd:
+  Bool.pick(Bnd, mm.i64.is_neg(i), bnd_i(True{}, mm.i64.mag(i)), bnd_i(False{}, i))
+
+# ---- the table's own inputs -----------------------------------------------------
+#
+# A MISSING SRC IS THE UNBOUNDED INTERVAL rather than a refusal. Python raises
+# `IndexError` there, and every consumer of `_min_max` reads a bound, so the answer that
+# keeps the fold total is the widest one: an arithmetic arm on it saturates and a
+# comparison arm on it is decided by the rank.
+def mm.unbound() -> Bnd2: Bnd2{bnd_ninf(), bnd_pinf()}
+
+def mm.src2(+xs: List<&2, Bnd2>, k: U32) -> Bnd2:
+  Maybe.default(&2, Bnd2, List.get(&2, Bnd2, xs, U32.to_nat(k)), mm.unbound())
+
+def mm.s0(+xs: List<&2, Bnd2>) -> Bnd2: mm.src2(xs, 0)
+
+def mm.s1(+xs: List<&2, Bnd2>) -> Bnd2: mm.src2(xs, 1)
+
+def mm.s2(+xs: List<&2, Bnd2>) -> Bnd2: mm.src2(xs, 2)
+
+def mm.default(+d: S.Dt) -> Bnd2: Bnd2{bnd_lim(d, False{}), bnd_lim(d, True{})}
+
+# ---- the sixteen binary arms ----------------------------------------------------
+#
+# IN PYTHON'S ORDER, because the order IS the semantics: `AND`'s integer arm is before
+# `MUL`'s, and the `bool`-dtype `OR`/`AND` arms are LAST so they cannot be taken by the
+# integer `AND` above them. Every arm reads `s0`/`s1` as `Bnd2` and hands back the pair,
+# so the fall-through is the `Maybe` and nothing else has to know about it.
+# THE FOUR `dtypes.is_*` PREDICATES, read off `Dt`'s OWN third field. They are defs and
+# not matches at the use site because `dtypes.is_float(self.dtype)` is a CALL and a `match`
+# may not scrutinise one -- the recorded rule, and the reason `dt_is` exists at all.
+def dt_is.not_float(+d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{_, _, S.CFloat{}, _}: False{}
+    case _: True{}
+
+def dt_is.is_int(+d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{_, _, S.CSint{}, _}: True{}
+    case S.Dt{_, _, S.CUint{}, _}: True{}
+    case _: False{}
+
+def dt_is.is_bool(+d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{_, _, S.CBool{}, _}: True{}
+    case _: False{}
+
+def dt_is.is_void(+d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{_, _, S.CVoid{}, _}: True{}
+    case _: False{}
+
+def mm.bin.enter(op: O.Op, +d: S.Dt) -> Bool:
+  Bool.and(O.GroupOp.binary(op), dt_is.not_float(d))
+
+# `is_int(dtype) and s1_vmin == s1_vmax >= 0`. The `>= 0` is `not s1_vmin.neg`, and the
+# `==` is the signed equality, so the gate is exact rather than "non-negative bound".
+def bnd_bin.nonneg(b: Bnd) -> Bool:
+  match b:
+    case BndInt{neg, mag}: Bool.not(neg)
+    case _: False{}
+
+def bnd_bin.and_gate(+s1: Bnd2, d: S.Dt) -> Bool:
+  Bool.and(dt_is.is_int(d), Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd_bin.nonneg(Bnd2.lo(s1))))
+
+# `&` OF TWO IN-WINDOW PAIRS IS IN-WINDOW, so this is `mm.u64.and` and NOT the
+# `Maybe`-returning `mm_mask64`: the `Maybe` on THAT def is about `bit_length`'s shift, and
+# reusing the reader here would make a table arm depend on a def that can answer `None`.
+def mm.and64(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> H.I64: mm.u64.and(ah, al, bh, bl)
+
+# THE MASK WIDTH COMES FROM `s0` AND THE MASKED VALUE IS `s1` -- they are DIFFERENT SRCS, and
+# `andint_int32_2147483648_7` is the row that says so: `7 & ((1 << 32) - 1)` is `7`, while
+# `2**31 & 7` is `0`. Reading it as one src answering `s0 & mask(s0)` is a plausible wrong
+# answer that a fixture with `s0` and `s1` both small cannot see, which is why the family
+# carries `2**31` and `2**40` against small masks.
+def mm.bin.and_int.mask.go(+ma: H.I64, nc: Bool, +mc: H.I64) -> Bnd:
+  +mk = mm.mask64(mm.narrow(ma))
+  bnd_i(nc, mm.and64(H.hi32(mk), H.lo32(mk), H.hi32(mc), H.lo32(mc)))
+
+# A `Bnd` HAS NO PROJECTION, so the pair is destructured here rather than read. The
+# fallback is `PInf` and it is a bound, not a guess: `bnd.lt(lo, 0)` false means `lo` is
+# not `NInf`, so an unbounded bound reaching this arm is a `hi` of `PInf`, and masking an
+# unbounded value by any width is unbounded.
+def mm.bin.and_int.mask(a: Bnd, c: Bnd) -> Bnd:
+  match a c:
+    case BndInt{_, +ma} BndInt{nc, +mc}: mm.bin.and_int.mask.go(ma, nc, mc)
+    case _ _: bnd_pinf()
+
+# `0, s1_vmax` when the src's minimum is negative, and `min(s0_vmax, s1_vmax & mask)`
+# otherwise. The mask is `mm_mask64`, which is the AND arm of `ops.py:1110` verbatim and
+# is already gated by the `mk_*` rows -- so this arm has NO arithmetic of its own and
+# cannot be one bit off in a direction the `mk_*` rows would not already have caught.
+def mm.bin.and_int.go(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bool.pick(Bnd2, bnd.lt(Bnd2.lo(s0), bnd_zero()), Bnd2{bnd_zero(), Bnd2.hi(s1)},
+    Bnd2{bnd_zero(), bnd.min(Bnd2.hi(s0), mm.bin.and_int.mask(Bnd2.hi(s0), Bnd2.hi(s1)))})
+
+# Python's `or`/`and` ON INTS, which is NOT `Bool.or`/`Bool.and` (neither of those
+# short-circuits) and not a pick between the two values either: `0 or 1` is `1` and
+# `1 and 0` is `0`, so each is "the first if it is nonzero, otherwise the second" and
+# "the first if it is ZERO, otherwise the second" -- the same test with the roles of the
+# arms swapped, which is the only reason these are two defs and not one.
+def bnd.nz(b: Bnd) -> Bool:
+  match b:
+    case BndInt{neg, +mag}: Bool.or(neg, Bool.not(mm.u64.is_zero(H.hi32(mag), H.lo32(mag))))
+    case _: True{}
+
+def bnd.and(+a: Bnd, b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.nz(a), b, a)
+def mm.bin.and_bool.go(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd.and(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.and(Bnd2.hi(s0), Bnd2.hi(s1))}
+
+# `Ops.AND` HAS TWO ARMS AND THE SECOND IS REACHED EXACTLY WHEN THE FIRST IS NOT: the
+# integer mask and the `bool` dtype's `and`. A `match` takes the FIRST arm that matches, so
+# two `case O.OpsAND{}` arms would make the second DEAD and a `case _:` after the first
+# would never be reached either -- which is what the gate measured: every `andb_*` row
+# answered `bool`'s own limits because the integer arm returned `None` and the block fell
+# through to `(dtype.min, dtype.max)`. ONE dispatch over the dtype's class is the fix.
+def mm.bin.and_int(gate: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
+  match gate:
+    case True{}: Some{mm.bin.and_int.go(s0, s1)}
+    case False{}: None{}
+
+def mm.bin.and(bl: Bool, d: S.Dt, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
+  match bl:
+    case True{}: Some{mm.bin.and_bool.go(s0, s1)}
+    case False{}: mm.bin.and_int(bnd_bin.and_gate(s1, d), s0, s1)
+
+def bnd.or(+a: Bnd, b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.nz(a), a, b)
+
+def mm.bin.or_bool(bl: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
+  match bl:
+    case True{}: Some{Bnd2{bnd.or(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.or(Bnd2.hi(s0), Bnd2.hi(s1))}}
+    case False{}: None{}
+
+# MUL: FOUR PRODUCTS, THE SMALLEST AND THE LARGEST. `min(vals)` over a keyword-argument
+# tuple is a fold, and the fold is over FOUR VALUES rather than a list -- which is why it
+# is `bnd.min`/`bnd.max` four times and not a `List.foldl`. The products must all be built,
+# so they are bound first; a `Bool.pick` chain would drop three of them.
+def mm.bin.mul(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  +p0 = bnd.mul(Bnd2.lo(s0), Bnd2.lo(s1))
+  +p1 = bnd.mul(Bnd2.lo(s0), Bnd2.hi(s1))
+  +p2 = bnd.mul(Bnd2.hi(s0), Bnd2.lo(s1))
+  +p3 = bnd.mul(Bnd2.hi(s0), Bnd2.hi(s1))
+  +a = bnd.min(p0, p1)
+  +b = bnd.min(p2, p3)
+  +c = bnd.max(p0, p1)
+  +d = bnd.max(p2, p3)
+  Bnd2{bnd.min(a, b), bnd.max(c, d)}
+
+# SHL/SHR ON CONSTS ONLY, and the gate is Python's `all_int(t := (s0_vmin, s0_vmax,
+# s1_vmin))` PLUS `s1_vmin == s1_vmax`. `s1_vmax` is NOT tested, so a shift amount that
+# is only known to be equal to itself is not enough -- both ends of BOTH source bounds
+# and the amount's minimum have to be integers. That is three separate gates and dropping
+# the third is the mistake the `shl_*`/`shr_*` rows are built to catch.
+def bnd.is_int(b: Bnd) -> Bool:
+  match b:
+    case BndInt{neg, mag}: True{}
+    case _: False{}
+
+def mm.bin.sh.go(+s0: Bnd2, lft: Bool, +k: Nat) -> Bnd2:
+  Bool.pick(Bnd2, lft, Bnd2{bnd.shl(Bnd2.lo(s0), k), bnd.shl(Bnd2.hi(s0), k)},
+    Bnd2{bnd.shr(Bnd2.lo(s0), k), bnd.shr(Bnd2.hi(s0), k)})
+
+def mm.bin.sh(k: Maybe<&2, Nat>, +s0: Bnd2, lft: Bool) -> Maybe<&2, Bnd2>:
+  match k:
+    case Some{n}: Some{mm.bin.sh.go(s0, lft, n)}
+    case None{}: None{}
+
+def mm.bin.sh.k(ok: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Nat>:
+  match ok:
+    case True{}: bnd.shamt(Bnd2.lo(s1))
+    case False{}: None{}
+
+def mm.bin.sh.ok(+s0: Bnd2, +s1: Bnd2) -> Bool:
+  Bool.and(Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd.is_int(Bnd2.lo(s0))),
+    Bool.and(bnd.is_int(Bnd2.hi(s0)), bnd.is_int(Bnd2.lo(s1))))
+
+# XOR BY AN ALL-ONES CONSTANT IS THE ONLY BITWISE ARM, and it is `~vmax, ~vmin` -- the
+# NEGATION OF MONOTONE, so the two halves swap. Reading it as `vmin, vmax` is the mistake
+# the `xor_*` row is for.
+def mm.bin.xor(gate: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
+  match gate:
+    case True{}: Some{Bnd2{bnd.not(Bnd2.hi(s0)), bnd.not(Bnd2.lo(s0))}}
+    case False{}: None{}
+
+def bnd_minus_one() -> Bnd: bnd_i(True{}, H.i64_of_hi_lo(0, 1))
+
+def mm.bin.xor.gate(+s1: Bnd2) -> Bool:
+  Bool.and(bnd.eq(Bnd2.lo(s1), bnd_minus_one()), bnd.eq(Bnd2.hi(s1), bnd_minus_one()))
+
+def mm.bin.max(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd.max(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.max(Bnd2.hi(s0), Bnd2.hi(s1))}
+
+# CMPLT AND CMPNE ANSWER BOOLEANS, and a boolean interval's two halves are computed by two
+# DIFFERENT predicates: `s0_vmax < s1_vmin` against `s0_vmin < s1_vmax`, where the operands
+# are not interchangeable and the direction of the first is the one that is easy to get
+# backwards. `bnd.lt` is the signed order over the whole union, so `False` here means
+# provably-not-less rather than unknown.
+def mm.bin.cmplt(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd_tf(bnd.lt(Bnd2.hi(s0), Bnd2.lo(s1))), bnd_tf(bnd.lt(Bnd2.lo(s0), Bnd2.hi(s1)))}
+
+def mm.bin.cmpne(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd_tf(Bool.or(bnd.lt(Bnd2.hi(s0), Bnd2.lo(s1)), bnd.lt(Bnd2.hi(s1), Bnd2.lo(s0)))),
+    bnd_tf(Bool.not(Bool.and(bnd.eq(Bnd2.lo(s0), Bnd2.hi(s0)),
+      Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd.eq(Bnd2.lo(s0), Bnd2.lo(s1))))))}
+
+
+def mm.bin.add(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd.add(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.add(Bnd2.hi(s0), Bnd2.hi(s1))}
+
+# SUB'S TWO HALVES CROSS: the LOWER bound subtracts the other's UPPER and the UPPER
+# subtracts the other's LOWER, because `x - y` is smallest when x is smallest and y is
+# largest. Subtracting `lo` from `lo` is the mistake `sub_*` is for, and it is a real
+# answer on every fixture where the bounds happen to agree.
+def mm.bin.sub(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
+  Bnd2{bnd.sub(Bnd2.lo(s0), Bnd2.hi(s1)), bnd.sub(Bnd2.hi(s0), Bnd2.lo(s1))}
+
+# ---- THE ARM DISPATCH, one match over the op, in Python's order ------------------
+def mm.bin.arm(+op: O.Op, +srcs: List<&2, Bnd2>, +d: S.Dt) -> Maybe<&2, Bnd2>:
+  match op:
+    case O.OpsADD{}: Some{mm.bin.add(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsSUB{}: Some{mm.bin.sub(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsAND{}: mm.bin.and(dt_is.is_bool(d), d, mm.s0(srcs), mm.s1(srcs))
+    case O.OpsMUL{}: Some{mm.bin.mul(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsSHL{}: mm.bin.sh(mm.bin.sh.k(mm.bin.sh.ok(mm.s0(srcs), mm.s1(srcs)), mm.s0(srcs), mm.s1(srcs)), mm.s0(srcs), True{})
+    case O.OpsSHR{}: mm.bin.sh(mm.bin.sh.k(mm.bin.sh.ok(mm.s0(srcs), mm.s1(srcs)), mm.s0(srcs), mm.s1(srcs)), mm.s0(srcs), False{})
+    case O.OpsXOR{}: mm.bin.xor(mm.bin.xor.gate(mm.s1(srcs)), mm.s0(srcs), mm.s1(srcs))
+    case O.OpsMAX{}: Some{mm.bin.max(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsCMPLT{}: Some{mm.bin.cmplt(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsCMPNE{}: Some{mm.bin.cmpne(mm.s0(srcs), mm.s1(srcs))}
+    case O.OpsOR{}: mm.bin.or_bool(dt_is.is_bool(d), mm.s0(srcs), mm.s1(srcs))
+    case _: None{}
+
+def mm.lift.bin(enter: Bool, +op: O.Op, +srcs: List<&2, Bnd2>, d: S.Dt) -> Maybe<&2, Bnd2>:
+  match enter:
+    case True{}: mm.bin.arm(op, srcs, d)
+    case False{}: None{}
+
+# ---- the arms OUTSIDE the binary block, in Python's order -----------------------
+#
+# WHERE is `min(s1, s2)` on the LOWER bounds and `max(s1, s2)` on the UPPER, which is not
+# `min(s0, s1)` for any reading of the indices: the CONDITION's bound is skipped and the
+# two arms are the operands.
+def mm.where(+srcs: List<&2, Bnd2>) -> Bnd2:
+  +a = mm.s1(srcs)
+  +b = mm.s2(srcs)
+  Bnd2{bnd.min(Bnd2.lo(a), Bnd2.lo(b)), bnd.max(Bnd2.hi(a), Bnd2.hi(b))}
+
+def mm.defines.got(pr: O.PyRange) -> Bnd2:
+  match pr:
+    case O.PyRange{lo, hi}: Bnd2{mm.i64.to_bnd(lo), mm.i64.to_bnd(hi)}
+
+def mm.defines.range(r: Maybe<&2, O.PyRange>, +d: S.Dt) -> Bnd2:
+  match r:
+    case Some{pr}: mm.defines.got(pr)
+    case None{}: mm.default(d)
+
+# `Defines and arg.vmin_vmax is not None`. A PARAM/BUFFER/ALLOC with no range falls
+# through every later arm -- none of them can match a Defines op -- and lands on the
+# dtype limits, so the fall-through is spelled here rather than as a second `Maybe`.
+def mm.defines.pa(pa: O.ParamArg, +d: S.Dt) -> Bnd2:
+  match pa:
+    case O.ParamArg{_, _, _, vmin_vmax, _, _, _, _, _, _, _, _, _}: mm.defines.range(vmin_vmax, d)
+
+def mm.defines(arg: O.Arg, +d: S.Dt) -> Bnd2:
+  match arg:
+    case O.AParam{pa}: mm.defines.pa(pa, d)
+    case _: mm.default(d)
+
+def bnd_one() -> Bnd: bnd_i(False{}, H.i64_of_hi_lo(0, 1))
+
+# `RANGE`/`SPECIAL` ANSWER `0, (src[0] - 1).vmax`, and the `(src[0] - 1)` is a REAL UOp:
+# a SUB node, whose upper bound is `src[0].vmax - 1`. Reading it as `src[0].vmax` is off
+# by one on every RANGE and every SPECIAL, and `range_*` is the row.
+def mm.range(vd: Bool, +srcs: List<&2, Bnd2>, +d: S.Dt) -> Bnd2:
+  match vd:
+    case True{}: mm.default(d)
+    case False{}: Bnd2{bnd_zero(), bnd.sub(Bnd2.hi(mm.s0(srcs)), bnd_one())}
+
+# STACK IS A FOLD OVER AN ARBITRARY NUMBER OF SRCS, and `min()`/`max()` over a generator
+# is that fold. The seed is the IDENTITY pair rather than a sentinel `0xFFFFFFFF`, which
+# is the recorded `max`/`min` sentinel trap: `U32` sentinels win every comparison.
+def mm.stack.step.go(+acc: Bnd2, +x: Bnd2) -> Bnd2:
+  Bnd2{bnd.min(Bnd2.lo(acc), Bnd2.lo(x)), bnd.max(Bnd2.hi(acc), Bnd2.hi(x))}
+
+# THE `+` S ARE NOT SPELLABLE IN THE CLOSURE'S TYPE, which is the recorded closure-shared-
+# arg wall, so the step is a DEF and `mm.stack` passes it as a top-level name rather than a
+# lambda. `List.foldl` calls it once per element with a fresh accumulator each time, so the
+# `+` is only needed for the two READS inside one step.
+def mm.stack.step(acc: Bnd2, x: Bnd2) -> Bnd2: mm.stack.step.go(acc, x)
+
+def mm.stack(+srcs: List<&2, Bnd2>) -> Bnd2:
+  List.foldl(~&2, ~Bnd2, ~Bnd2, mm.stack.step, srcs, Bnd2{bnd_pinf(), bnd_ninf()})
+
+def mm.const.f(nan: Bool, +f: F32) -> Maybe<&2, Bnd2>:
+  match nan:
+    case True{}: Some{Bnd2{bnd_f(f), bnd_f(f)}}
+    case False{}: None{}
+
+def mm.const.f.of(+f: F32) -> Maybe<&2, Bnd2>:
+  mm.const.f(F32.is_eq(f, f), f)
+
+def mm.i64.same(+i: H.I64) -> Bnd2:
+  +b = mm.i64.to_bnd(i)
+  Bnd2{b, b}
+
+# A CONST IS `(val, val)` UNLESS it is Invalid or a NaN. The NaN test is IEEE and needs
+# no `math.isnan`: `not isnan(v)` IS `v == v`, and `F32.is_eq` is IEEE, so the float arm
+# is `F32.is_eq(f, f)` -- a `f != f` spelling would have been the same test and one that
+# looks like a bug.
+# A `CBool`'s BOUND IS THE BOOL ITSELF, spelled numerically: `False`/`True` are the
+# integers 0/1 to every comparison Python performs on a bound, which is what `dt_row` for
+# `boolean` and `void` prints and what `bnd_bool`'s top arm already answers.
+def mm.const.b(b: Bool) -> Maybe<&2, Bnd2>:
+  Bool.pick(Maybe<&2, Bnd2>, b, Some{Bnd2{bnd_tf(True{}), bnd_tf(True{})}}, Some{Bnd2{bnd_tf(False{}), bnd_tf(False{})}})
+
+def mm.const.v(v: O.Const) -> Maybe<&2, Bnd2>:
+  match v:
+    case O.CBool{b}: mm.const.b(b)
+    case O.CInt{i}: Some{mm.i64.same(i)}
+    case O.CFloat{f}: mm.const.f.of(f)
+    case O.CInvalid{}: None{}
+
+def mm.const.got(v: O.Const, +d: S.Dt) -> Bnd2:
+  mm.MM2.get(mm.const.v(v), mm.default(d))
+
+def mm.const(arg: O.Arg, +d: S.Dt) -> Bnd2:
+  match arg:
+    case O.APy{v}: mm.const.got(v, d)
+    case _: mm.default(d)
+
+def bnd.is_flt(b: Bnd) -> Bool:
+  match b:
+    case BndFlt{v}: True{}
+    case _: False{}
+
+def mm.pad.flt.hi(+f: F32) -> Bnd:
+  Bool.pick(Bnd, F32.is_lt(0.0, f), bnd_f(f), bnd_zero())
+
+def mm.pad.flt.pick(+f: F32, +hi: Bnd) -> Bnd2:
+  Bool.pick(Bnd2, F32.is_lt(f, 0.0), Bnd2{bnd_f(f), bnd_zero()},
+    Bnd2{bnd_zero(), mm.pad.flt.hi(f)})
+
+# `PAD ADDS ZEROS` IN `F32`, because a float src bound against the INTEGER zero is the
+# one place Python mixes the two classes and it does so exactly: `min(1.5, 0)` is the
+# INTEGER `0`, so the answer is `bnd_zero()` and not `0.0`. `max(1.5, 0)` is `1.5`.
+def mm.pad.flt(lo: Bnd, hi: Bnd) -> Bnd2:
+  match lo:
+    case BndFlt{f}: mm.pad.flt.pick(f, hi)
+    case _: Bnd2{bnd.min(lo, bnd_zero()), bnd.max(hi, bnd_zero())}
+
+# `PAD ADDS ZEROS`. The zero is compared in `F32` when the source bound is a float,
+# because that is the ONE place Python mixes the two classes and it does so exactly:
+# `min(1.5, 0)` is the INTEGER `0`, so the answer is `Bnd` zero and not a float zero.
+def mm.pad(+srcs: List<&2, Bnd2>) -> Bnd2:
+  +s = mm.s0(srcs)
+  Bool.pick(Bnd2, bnd.is_flt(Bnd2.lo(s)), mm.pad.flt(Bnd2.lo(s), Bnd2.hi(s)),
+    Bnd2{bnd.min(Bnd2.lo(s), bnd_zero()), bnd.max(Bnd2.hi(s), bnd_zero())})
+
+# THE PASSTHROUGH. `GroupOp.Movement | {INDEX, STAGE, AFTER, DETACH, COPY,
+# CONTIGUOUS_BACKWARD}` is `self.src[0]._min_max` -- a NO-OP on the interval, which is why
+# a RESHAPE (which this file does not answer a SHAPE for) still has an interval. PAD is in
+# Movement and does NOT pass through, and Python gets that right by testing PAD first; the
+# order here is the same order.
+def mm.lift.mv(+srcs: List<&2, Bnd2>) -> Bnd2: mm.s0(srcs)
+
+# ---- THE TABLE -------------------------------------------------------------------
+def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
+  match op:
+    case O.OpsWHERE{}: mm.where(srcs)
+    case O.OpsPARAM{}: mm.defines(arg, d)
+    case O.OpsBUFFER{}: mm.defines(arg, d)
+    case O.OpsALLOC{}: mm.defines(arg, d)
+    case O.OpsRANGE{}: mm.range(dt_is.is_void(d), srcs, d)
+    case O.OpsSPECIAL{}: mm.range(dt_is.is_void(d), srcs, d)
+    case O.OpsSTACK{}: mm.stack(srcs)
+    case O.OpsCONST{}: mm.const(arg, d)
+    case O.OpsPAD{}: mm.pad(srcs)
+    case O.OpsRESHAPE{}: mm.lift.mv(srcs)
+    case O.OpsEXPAND{}: mm.lift.mv(srcs)
+    case O.OpsPERMUTE{}: mm.lift.mv(srcs)
+    case O.OpsSHRINK{}: mm.lift.mv(srcs)
+    case O.OpsFLIP{}: mm.lift.mv(srcs)
+    case O.OpsINDEX{}: mm.lift.mv(srcs)
+    case O.OpsSTAGE{}: mm.lift.mv(srcs)
+    case O.OpsAFTER{}: mm.lift.mv(srcs)
+    case O.OpsDETACH{}: mm.lift.mv(srcs)
+    case O.OpsCOPY{}: mm.lift.mv(srcs)
+    case O.OpsCONTIGUOUS_BACKWARD{}: mm.lift.mv(srcs)
+    case _: mm.default(d)
+
+def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
+  mm.MM2.get(mm.lift.bin(mm.bin.enter(op, d), op, srcs, d), mm.lift.rest(op, srcs, arg, d))
+
+# ===========================================================================
 # THE GATE. `main` builds small arenas with `ops.bend`'s own `g_*` constructors and
 # with the `UOp` sugar, folds each, and prints one line per claim. A `False{}`
 # anywhere is the failure.
@@ -2829,6 +3824,59 @@ def g_gap() -> O.Found:
 # this is the second printer. Both are `IO(String.concat(...))` and nothing else.
 def mm_row(nm: String, got: String) -> IO(Unit):
   IO.print(String.concat(["mm_", nm, " ", got]))
+
+# `bit_length`'s rows print under `bl_` rather than `mm_`, because the oracle's two
+# tables are two KINDS of answer -- a COUNT and a masked INTEGER -- and one prefix for
+# both would hide which of the two a mutation moved.
+def bl_row(nm: String, got: String) -> IO(Unit):
+  IO.print(String.concat(["bl_", nm, " ", got]))
+
+# The dtype limits print as a PAIR on one line, so a transposed `min`/`max` and a dropped
+# sign are both visible in the same string. Two separate rows would let a swap hide in
+# either; one row cannot.
+# ===========================================================================
+# THE `_min_max` OP-TABLE ROWS. `.agents/slop/mm-lift-gate.py` GENERATES BOTH THE
+# FIXTURES AND THESE 123 LINES -- and it generates them from a fixture LIST, so there is
+# one copy of the inputs and not a transcription anywhere. Every src in a fixture is a
+# `CONST`, so the table is handed a `List<&2, Bnd2>` it did not have to compute: that is
+# what makes the TABLE gateable before the WALK exists, which is why the two are separate
+# work in this order.
+#
+# `sat_*` IS A SECOND CLASS OF ROW. CPython's ints are unbounded, so `2**63 + 2**63` is
+# `2**64` there and `PInf` here; those four rows print CPython's real pair in brackets, so
+# the divergence is IN the row. Same treatment `mv_expsym` gets, and the point is that a
+# saturation is a designed answer rather than a wrong one.
+# ===========================================================================
+
+def lf_row(nm: String, b: Bnd2) -> IO(Unit):
+  IO.print(String.concat(["lf_", nm, " ", bnd2_show(b)]))
+
+# THE SRC LIST BUILDERS, and they exist because a `List<Bnd2>` is the table's input type
+# and a row cannot spell one. `lf_c2`/`lf_c3` take the already-`Bnd`-converted value, so
+# the integer-to-bound conversion is ONCE per fixture rather than once per read.
+def lf_c0() -> List<&2, Bnd2>: Nil{}
+
+def lf_c1(+a: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}]
+
+def lf_c2(+a: Bnd, +b: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}, Bnd2{b, b}]
+
+def lf_c3(+a: Bnd, +b: Bnd, +c: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}, Bnd2{b, b}, Bnd2{c, c}]
+
+# A STACK's SRCS ARE NOT ALL THE SAME VALUE, and it is the one family that needs more than
+# two, so `lf_c4` is a fourth arity rather than a fold: a fold would put a `Bnd2` builder
+# in a closure's TYPE, where the `+` cannot be spelled (the recorded closure-shared-arg
+# wall), for a list of at most four elements. Four arities is less code than the wall.
+def lf_c4(+a: Bnd, +b: Bnd, +c: Bnd, +d: Bnd) -> List<&2, Bnd2>:
+  [Bnd2{a, a}, Bnd2{b, b}, Bnd2{c, c}, Bnd2{d, d}]
+
+# A PARAM's `vmin_vmax`, and the field is a `Maybe<&2, PyRange>` of a SIGNED pair, which is
+# the only place `Bnd`'s sign/magnitude split is read back the other way.
+def lf_pa(lo: H.I64, hi: H.I64) -> O.Arg:
+  O.AParam{O.ParamArg{0, S.int32(), None{}, Some{O.PyRange{lo, hi}}, None{}, None{}, S.AGlobal{}, None{},
+    False{}, None{}, None{}, False{}, None{}}}
+
+def dt_row(nm: String, lo: Bnd, hi: Bnd) -> IO(Unit):
+  IO.print(String.concat(["bl_dt_", nm, " lo=", bnd_show(lo), " hi=", bnd_show(hi)]))
 
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -3406,6 +4454,16 @@ def t_sized_order() -> Bool:
     eq_sints(Sized.s(pad_to(sized([sint_of(2), sint_of(3)]), 3n)),
       [sint_one(), sint_of(2), sint_of(3)]))
 
+# THE WIDTH IS NOT HARD-CODED TO `weakint`. `bnd_int` is a general statement about the
+# representation -- "an integer width past 64 saturates" -- and the twenty dtype rows can
+# only reach it at 800, so the GUARD'S OWN boundary (64 vs 65) is exercised here directly.
+# Mutation DT1 changes `is_gt(bits, 64)` to `is_gt(bits, 65)` and moves NOTHING on the
+# twenty: no tinygrad dtype has a width in (64, 800], so the table cannot see it. These two
+# rows are that mutation's FIXTURE, and they are the honest form of it -- the expectation
+# is the design decision stated as a literal, not a def of the thing under test.
+def dt_w(nm: String, +bits: U32, top: Bool) -> IO(Unit):
+  dt_row(nm, bnd_int(False{}, True{}, bits), bnd_int(True{}, False{}, bits))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
@@ -3438,6 +4496,134 @@ def main() -> IO(Unit):
     mv_of("permlen", g_mv_permlen())
     mv_of("flip", g_mv_flip10())
     mv_of("fliplen", g_mv_fliplen())
+    lf_row("add_int32_3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_-3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_-3_-4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_0_-5", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{True{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_-5_0", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 5)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_2147483648_2147483647", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 2147483647)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_-2147483648_-2147483647", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{True{}, H.i64_of_hi_lo(0, 2147483647)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_0_0", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("add_int32_1099511627776_-1099511627776", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{True{}, H.i64_of_hi_lo(256, 0)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_3_4", mm.lift(O.OpsSUB{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_-3_4", mm.lift(O.OpsSUB{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_-3_-4", mm.lift(O.OpsSUB{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_3_-4", mm.lift(O.OpsSUB{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_-3_4", mm.lift(O.OpsSUB{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_0_0", mm.lift(O.OpsSUB{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_5_5", mm.lift(O.OpsSUB{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 5)}, BndInt{False{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("sub_int32_4_5", mm.lift(O.OpsSUB{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 4)}, BndInt{False{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_3_4", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_-3_4", mm.lift(O.OpsMUL{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_-3_-4", mm.lift(O.OpsMUL{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_0_-5", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{True{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_7_-8", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 7)}, BndInt{True{}, H.i64_of_hi_lo(0, 8)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_-2147483648_2", mm.lift(O.OpsMUL{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_2147483648_3", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mul_int32_1099511627776_1048576", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 1048576)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_3_4", mm.lift(O.OpsMAX{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_-3_4", mm.lift(O.OpsMAX{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_3_-4", mm.lift(O.OpsMAX{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_-3_-4", mm.lift(O.OpsMAX{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_0_0", mm.lift(O.OpsMAX{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("max_int32_1099511627776_-1099511627776", mm.lift(O.OpsMAX{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{True{}, H.i64_of_hi_lo(256, 0)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_3_4", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_-3_4", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_4_3", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 4)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_-4_-3", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 4)}, BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_3_3", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_-3_-3", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmplt_int32_1099511627776_-1099511627776", mm.lift(O.OpsCMPLT{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{True{}, H.i64_of_hi_lo(256, 0)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_3_4", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_-3_4", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_4_3", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 4)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_-4_-3", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 4)}, BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_3_3", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_-3_-3", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("cmpne_int32_5_5", mm.lift(O.OpsCMPNE{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 5)}, BndInt{False{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_5_255", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 5)}, BndInt{False{}, H.i64_of_hi_lo(0, 255)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_0_255", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 255)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_-1_255", mm.lift(O.OpsAND{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 255)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_5_0", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 5)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_2147483648_7", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 7)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_-2147483648_7", mm.lift(O.OpsAND{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 7)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_8_255", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 8)}, BndInt{False{}, H.i64_of_hi_lo(0, 255)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_255_8", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 255)}, BndInt{False{}, H.i64_of_hi_lo(0, 8)}), O.ANone{}, S.int32()))
+    lf_row("andint_int32_1099511627776_1073741824", mm.lift(O.OpsAND{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 1073741824)}), O.ANone{}, S.int32()))
+    lf_row("xor_int32_5_-1", mm.lift(O.OpsXOR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 5)}, BndInt{True{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.int32()))
+    lf_row("xor_int32_-5_-1", mm.lift(O.OpsXOR{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 5)}, BndInt{True{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.int32()))
+    lf_row("xor_int32_0_-1", mm.lift(O.OpsXOR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{True{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.int32()))
+    lf_row("xor_int32_2147483648_-1", mm.lift(O.OpsXOR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{True{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_1_3", mm.lift(O.OpsSHL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_-1_3", mm.lift(O.OpsSHL{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_255_4", mm.lift(O.OpsSHL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 255)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_-8_2", mm.lift(O.OpsSHL{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 8)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_1099511627776_8", mm.lift(O.OpsSHL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 8)}), O.ANone{}, S.int32()))
+    lf_row("shl_int32_7_0", mm.lift(O.OpsSHL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 7)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_1_3", mm.lift(O.OpsSHR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_-1_3", mm.lift(O.OpsSHR{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_255_4", mm.lift(O.OpsSHR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 255)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_-8_2", mm.lift(O.OpsSHR{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 8)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_-9_1", mm.lift(O.OpsSHR{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 9)}, BndInt{False{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_1099511627776_8", mm.lift(O.OpsSHR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(256, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 8)}), O.ANone{}, S.int32()))
+    lf_row("shr_int32_7_0", mm.lift(O.OpsSHR{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 7)}, BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("orb_True_False", mm.lift(O.OpsOR{}, lf_c2(bnd_tf(True{}), bnd_tf(False{})), O.ANone{}, S.boolean()))
+    lf_row("orb_False_True", mm.lift(O.OpsOR{}, lf_c2(bnd_tf(False{}), bnd_tf(True{})), O.ANone{}, S.boolean()))
+    lf_row("orb_True_True", mm.lift(O.OpsOR{}, lf_c2(bnd_tf(True{}), bnd_tf(True{})), O.ANone{}, S.boolean()))
+    lf_row("orb_False_False", mm.lift(O.OpsOR{}, lf_c2(bnd_tf(False{}), bnd_tf(False{})), O.ANone{}, S.boolean()))
+    lf_row("andb_True_False", mm.lift(O.OpsAND{}, lf_c2(bnd_tf(True{}), bnd_tf(False{})), O.ANone{}, S.boolean()))
+    lf_row("andb_False_True", mm.lift(O.OpsAND{}, lf_c2(bnd_tf(False{}), bnd_tf(True{})), O.ANone{}, S.boolean()))
+    lf_row("andb_True_True", mm.lift(O.OpsAND{}, lf_c2(bnd_tf(True{}), bnd_tf(True{})), O.ANone{}, S.boolean()))
+    lf_row("andb_False_False", mm.lift(O.OpsAND{}, lf_c2(bnd_tf(False{}), bnd_tf(False{})), O.ANone{}, S.boolean()))
+    lf_row("ft_cmpeq", mm.lift(O.OpsCMPEQ{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 2)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.boolean()))
+    lf_row("where1", mm.lift(O.OpsWHERE{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("where2", mm.lift(O.OpsWHERE{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("where3", mm.lift(O.OpsWHERE{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("padf", mm.lift(O.OpsPAD{}, lf_c3(bnd_f(F32.div(F32.from_nat(3n), F32.from_nat(2n))), BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.single()))
+    lf_row("padn", mm.lift(O.OpsPAD{}, lf_c3(bnd_f(F32.neg(F32.div(F32.from_nat(3n), F32.from_nat(2n)))), BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.single()))
+    lf_row("mv_reshape", mm.lift(O.OpsRESHAPE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_expand", mm.lift(O.OpsEXPAND{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_permute", mm.lift(O.OpsPERMUTE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_shrink", mm.lift(O.OpsSHRINK{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_flip", mm.lift(O.OpsFLIP{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_index", mm.lift(O.OpsINDEX{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_stage", mm.lift(O.OpsSTAGE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_after", mm.lift(O.OpsAFTER{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_detach", mm.lift(O.OpsDETACH{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_copy", mm.lift(O.OpsCOPY{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_contiguous_backward", mm.lift(O.OpsCONTIGUOUS_BACKWARD{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("mv_pad", mm.lift(O.OpsPAD{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("c0", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CInt{H.i64_of_hi_lo(0, 0)}}, S.int32()))
+    lf_row("c1", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CInt{H.i64_of_hi_lo(0, 1)}}, S.int32()))
+    lf_row("cm1", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CInt{H.i64_of_hi_lo(4294967295, 4294967295)}}, S.int32()))
+    lf_row("c31", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CInt{H.i64_of_hi_lo(0, 2147483648)}}, S.int32()))
+    lf_row("cf", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CFloat{F32.div(F32.from_nat(3n), F32.from_nat(2n))}}, S.int32()))
+    lf_row("cfn", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CFloat{F32.neg(F32.div(F32.from_nat(3n), F32.from_nat(2n)))}}, S.int32()))
+    lf_row("cb", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CBool{True{}}}, S.int32()))
+    lf_row("cbf", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CBool{False{}}}, S.int32()))
+    lf_row("cinv", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CInvalid{}}, S.boolean()))
+    lf_row("cnan", mm.lift(O.OpsCONST{}, lf_c0(), O.APy{O.CFloat{F32.div(F32.from_nat(0n), F32.from_nat(0n))}}, S.single()))
+    lf_row("range4", mm.lift(O.OpsRANGE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("spec4", mm.lift(O.OpsSPECIAL{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
+    lf_row("range0", mm.lift(O.OpsRANGE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("spec0", mm.lift(O.OpsSPECIAL{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 0)}), O.ANone{}, S.int32()))
+    lf_row("rangen3", mm.lift(O.OpsRANGE{}, lf_c1(BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("specn3", mm.lift(O.OpsSPECIAL{}, lf_c1(BndInt{True{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("stack1", mm.lift(O.OpsSTACK{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
+    lf_row("stack2", mm.lift(O.OpsSTACK{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{True{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
+    lf_row("stack3", mm.lift(O.OpsSTACK{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 1)}, BndInt{True{}, H.i64_of_hi_lo(0, 2)}, BndInt{False{}, H.i64_of_hi_lo(0, 5)}), O.ANone{}, S.int32()))
+    lf_row("stack4", mm.lift(O.OpsSTACK{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 2147483648)}, BndInt{False{}, H.i64_of_hi_lo(0, 2147483648)}), O.ANone{}, S.int32()))
+    lf_row("param0", mm.lift(O.OpsPARAM{}, lf_c0(), lf_pa(H.i64_of_hi_lo(0, 3), H.i64_of_hi_lo(0, 7)), S.int32()))
+    lf_row("param0_alloc", mm.lift(O.OpsALLOC{}, lf_c0(), lf_pa(H.i64_of_hi_lo(0, 3), H.i64_of_hi_lo(0, 7)), S.int32()))
+    lf_row("param1", mm.lift(O.OpsPARAM{}, lf_c0(), lf_pa(H.i64_of_hi_lo(4294967040, 0), H.i64_of_hi_lo(4294967295, 4294967295)), S.int32()))
+    lf_row("param1_alloc", mm.lift(O.OpsALLOC{}, lf_c0(), lf_pa(H.i64_of_hi_lo(4294967040, 0), H.i64_of_hi_lo(4294967295, 4294967295)), S.int32()))
+    lf_row("param2", mm.lift(O.OpsPARAM{}, lf_c0(), lf_pa(H.i64_of_hi_lo(0, 0), H.i64_of_hi_lo(0, 0)), S.int32()))
+    lf_row("param2_alloc", mm.lift(O.OpsALLOC{}, lf_c0(), lf_pa(H.i64_of_hi_lo(0, 0), H.i64_of_hi_lo(0, 0)), S.int32()))
+    lf_row("sat_add", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{False{}, H.i64_of_hi_lo(2147483648, 0)}), O.ANone{}, S.int32()))
+    lf_row("sat_sub", mm.lift(O.OpsSUB{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{False{}, H.i64_of_hi_lo(2147483648, 0)}), O.ANone{}, S.int32()))
+    lf_row("sat_mul", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
+    lf_row("sat_addneg", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{True{}, H.i64_of_hi_lo(2147483648, 0)}), O.ANone{}, S.int32()))
+
     # THE `_min_max` ARITHMETIC ROWS. `.agents/slop/mm-gate.py` GENERATES BOTH THE
     # FIXTURES AND THESE LINES, so a row cannot be right on one lane and wrong on the
     # other; 72 rows, byte-identical to CPython on the interpreted AND the `-o` lane.
@@ -3513,6 +4699,77 @@ def main() -> IO(Unit):
     mm_row("div_1_2", mm.dm_show(mm.dm_run(0, 1, 0, 2)))
     mm_row("div_2p63_max", mm.dm_show(mm.dm_run(2147483648, 0, 4294967295, 4294967295)))
     mm_row("div_2p63_2p62", mm.dm_show(mm.dm_run(2147483648, 0, 1073741824, 0)))
+    # THE `bit_length` ROWS. `.agents/slop/mm-bl-gate.py` GENERATES BOTH THE FIXTURES
+    # AND THESE LINES -- 26 counts and 12 masked integers -- so a row cannot be right on
+    # one lane and wrong on the other. The `mk_*` rows are the AND arm's answer rather
+    # than the counter's, and they are the ones that catch a count that is one too big.
+    bl_row("bl_0", U32.show(mm.bl64(0, 0)))
+    bl_row("bl_1", U32.show(mm.bl64(0, 1)))
+    bl_row("bl_2", U32.show(mm.bl64(0, 2)))
+    bl_row("bl_3", U32.show(mm.bl64(0, 3)))
+    bl_row("bl_4", U32.show(mm.bl64(0, 4)))
+    bl_row("bl_5", U32.show(mm.bl64(0, 5)))
+    bl_row("bl_15", U32.show(mm.bl64(0, 15)))
+    bl_row("bl_16", U32.show(mm.bl64(0, 16)))
+    bl_row("bl_255", U32.show(mm.bl64(0, 255)))
+    bl_row("bl_256", U32.show(mm.bl64(0, 256)))
+    bl_row("bl_65535", U32.show(mm.bl64(0, 65535)))
+    bl_row("bl_65536", U32.show(mm.bl64(0, 65536)))
+    bl_row("bl_2p24", U32.show(mm.bl64(0, 16777216)))
+    bl_row("bl_2p31", U32.show(mm.bl64(0, 2147483648)))
+    bl_row("bl_2p31m1", U32.show(mm.bl64(0, 2147483647)))
+    bl_row("bl_2p32", U32.show(mm.bl64(1, 0)))
+    bl_row("bl_2p32m1", U32.show(mm.bl64(0, 4294967295)))
+    bl_row("bl_2p32p1", U32.show(mm.bl64(1, 1)))
+    bl_row("bl_2p48", U32.show(mm.bl64(65536, 0)))
+    bl_row("bl_2p48m1", U32.show(mm.bl64(65535, 4294967295)))
+    bl_row("bl_2p63", U32.show(mm.bl64(2147483648, 0)))
+    bl_row("bl_2p63m1", U32.show(mm.bl64(2147483647, 4294967295)))
+    bl_row("bl_max", U32.show(mm.bl64(4294967295, 4294967295)))
+    bl_row("bl_maxm1", U32.show(mm.bl64(4294967295, 4294967294)))
+    bl_row("bl_1000000", U32.show(mm.bl64(0, 1000000)))
+    bl_row("bl_123456789", U32.show(mm.bl64(0, 123456789)))
+    bl_row("mk_0_0", mm_show(mm_mask64(0, 0, 0, 0)))
+    bl_row("mk_5_255", mm_show(mm_mask64(0, 5, 0, 255)))
+    bl_row("mk_255_5", mm_show(mm_mask64(0, 255, 0, 5)))
+    bl_row("mk_256_256", mm_show(mm_mask64(0, 256, 0, 256)))
+    bl_row("mk_256_m1", mm_show(mm_mask64(0, 256, 4294967295, 4294967295)))
+    bl_row("mk_65535_m1", mm_show(mm_mask64(0, 65535, 4294967295, 4294967295)))
+    bl_row("mk_65536_m1", mm_show(mm_mask64(0, 65536, 4294967295, 4294967295)))
+    bl_row("mk_2p31m1_m1", mm_show(mm_mask64(0, 2147483647, 4294967295, 4294967295)))
+    bl_row("mk_2p32_m1", mm_show(mm_mask64(1, 0, 4294967295, 4294967295)))
+    bl_row("mk_m1_m1", mm_show(mm_mask64(4294967295, 4294967295, 4294967295, 4294967295)))
+    bl_row("mk_m1_2p32", mm_show(mm_mask64(4294967295, 4294967295, 1, 0)))
+    bl_row("mk_7_2p63", mm_show(mm_mask64(0, 7, 2147483648, 0)))
+    # THE TWENTY DTYPE LIMITS. `.agents/slop/mm-dt-gate.py` reads CPython's own
+    # `dtypes.<name>.min`/`.max` for the expectations AND generates these lines, so a
+    # limit cannot be right on one lane and wrong on the other. `weakint` is the row that
+    # matters most: its width is 800 bits and its two limits are `NInf`/`PInf` here, which
+    # is the width argument's ONE designed divergence.
+    dt_row("boolean", bnd_lim(S.boolean(), False{}), bnd_lim(S.boolean(), True{}))
+    dt_row("weakint", bnd_lim(S.weakint(), False{}), bnd_lim(S.weakint(), True{}))
+    dt_row("int8", bnd_lim(S.int8(), False{}), bnd_lim(S.int8(), True{}))
+    dt_row("uint8", bnd_lim(S.uint8(), False{}), bnd_lim(S.uint8(), True{}))
+    dt_row("int16", bnd_lim(S.int16(), False{}), bnd_lim(S.int16(), True{}))
+    dt_row("uint16", bnd_lim(S.uint16(), False{}), bnd_lim(S.uint16(), True{}))
+    dt_row("int32", bnd_lim(S.int32(), False{}), bnd_lim(S.int32(), True{}))
+    dt_row("uint32", bnd_lim(S.uint32(), False{}), bnd_lim(S.uint32(), True{}))
+    dt_row("int64", bnd_lim(S.int64(), False{}), bnd_lim(S.int64(), True{}))
+    dt_row("uint64", bnd_lim(S.uint64(), False{}), bnd_lim(S.uint64(), True{}))
+    dt_row("weakfloat", bnd_lim(S.weakfloat(), False{}), bnd_lim(S.weakfloat(), True{}))
+    dt_row("float8_e4m3", bnd_lim(S.fp8e4m3(), False{}), bnd_lim(S.fp8e4m3(), True{}))
+    dt_row("float8_e4m3fnuz", bnd_lim(S.fp8e4m3fnuz(), False{}), bnd_lim(S.fp8e4m3fnuz(), True{}))
+    dt_row("float8_e5m2", bnd_lim(S.fp8e5m2(), False{}), bnd_lim(S.fp8e5m2(), True{}))
+    dt_row("float8_e5m2fnuz", bnd_lim(S.fp8e5m2fnuz(), False{}), bnd_lim(S.fp8e5m2fnuz(), True{}))
+    dt_row("float16", bnd_lim(S.half(), False{}), bnd_lim(S.half(), True{}))
+    dt_row("bfloat16", bnd_lim(S.bfloat16(), False{}), bnd_lim(S.bfloat16(), True{}))
+    dt_row("float32", bnd_lim(S.single(), False{}), bnd_lim(S.single(), True{}))
+    dt_row("float64", bnd_lim(S.double(), False{}), bnd_lim(S.double(), True{}))
+    dt_row("void", bnd_lim(S.void(), False{}), bnd_lim(S.void(), True{}))
+    dt_w("w65_signed", 65, False{})
+    dt_w("w65_unsigned", 65, False{})
+    dt_w("w127_signed", 127, False{})
+    dt_w("w800_signed", 800, False{})
     # THE `_min_max` ARITHMETIC ROWS. `.agents/slop/mm-gate.py` generates BOTH the
     # fixtures and these lines, so a row cannot be right on one lane and wrong on the
     # other; 72 rows, byte-identical to CPython on both the interpreted and `-o` lanes.
@@ -3614,11 +4871,13 @@ def main() -> IO(Unit):
 #   P3 with the set algebra.
 # TODO(p3) ops.py:1058 def const_factor         -- `divides` on a symbolic factor list,
 #   and `divides` needs `gcd`, and `gcd` needs a `Counter` fold. P3.
-# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, so it is the
-#   BOUND AND THE OP TABLE above. The arithmetic it needs is LANDED.
+# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, and the BOUND
+#   AND THE OP TABLE it reads are both LANDED and gated. What is left is the WALK.
 # TODO(p3) ops.py:1102 def vmax                 -- `self._min_max[1]`, same.
-# TODO(p3) ops.py:1104 def _min_max             -- HALF PORTED, and the half is the
-#   one the wall was named for. `mixin/dtype.bend` measured the wall as "four I64
+# TODO(p3) ops.py:1104 def _min_max             -- THE BOUND, THE OP TABLE AND
+#   `int(x).bit_length()` ARE LANDED AND GATED (54 + 127 rows byte-identical to CPython,
+#   and a 37-entry mutation table below). What is left is the WALK and four
+#   signed-division arms. The history of the wall this retires is worth keeping: `mixin/dtype.bend` measured the wall as "four I64
 #   arithmetic helpers missing, and the div/mod that DO exist are `IO(..)` effect
 #   seams a fold cannot call". Those four are now PURE and gated: `mm.u64.add`,
 #   `mm.u64.sub`, `mm.u64.mul`, `mm.u64.shl`/`shr` and `mm.dm.*` (a 64-step
@@ -3637,30 +4896,47 @@ def main() -> IO(Unit):
 #   the ONE designed divergence: it is a sound OVER-APPROXIMATION, and every consumer
 #   of `_min_max` asks a question an over-approximation still answers.
 #
+#   WHAT IS LANDED, and it is the arithmetic plus the TABLE plus `bit_length`:
+#     * `mm.bl32`/`mm.bl64`/`mm.mask64` -- `int(x).bit_length()` and `2**k - 1`. The
+#       previous unit recorded this as a STRUCTURAL WALL (a zero test that cannot be a
+#       `match` scrutinee, a growing counter that cannot lead a self-call, two defs
+#       refused as mutual recursion). It is SOLVED AND NOT ROUTED AROUND, by a
+#       FIVE-STAGE BINARY-SEARCH LADDER: `bit_length(x)` is the sum of `k` over the
+#       literal thresholds `2**16, 2**8, 2**4, 2**2, 2**1` that `x` meets, plus one if
+#       the residue is nonzero. The wall was ADDITIVE COUNTING and not the language: a
+#       walk counts UP and needs a zero test, and this NARROWS, so "am I done" is
+#       answered by five literal thresholds and never by a test on the value at all.
+#       See the section header above for the full argument.
+#     * `Bnd = NInf | PInf | Int{neg, mag} | Flt` and `bnd_lim`, the twenty DTYPE
+#       LIMITS, hoisted out of dtype.bend under the same notice as `promo_mask`.
+#     * `mm.lift`, the OP TABLE for ops.py:1105-1163 -- PURE over
+#       `(op, srcs, arg, dtype)` with the src intervals handed IN, which is what makes
+#       it gateable before there is a walk. Twelve of the sixteen binary arms plus
+#       WHERE, Defines+vmin_vmax, RANGE/SPECIAL, STACK, CONST, PAD, the
+#       Movement|INDEX passthrough and the `(dtype.min, dtype.max)` default.
+#
 #   WHAT IS STILL NOT WRITTEN, in the order the walls fall:
-#     1. THE BOUND AND THE OP TABLE. `Bound` is `NInf | PInf | Int{neg, mag} | Flt`
-#       and the twenty-op ladder is ops.py:1105-1163: the `GroupOp.Binary` block
-#       (which is entered ONLY for a non-float dtype, so no float ever meets an
-#       arithmetic op), WHERE, Defines+vmin_vmax, RANGE/SPECIAL, STACK, the
-#       LOAD-from-BINARY arm, CONST, PAD, the Movement|INDEX passthrough, CAST and
-#       the `(dtype.min, dtype.max)` default. NOT WRITTEN.
-#     2. THE DTYPE LIMITS, hoisted out of dtype.bend under the same notice as
-#       `promo_mask` above: `int64.min` = -2**63 and `uint64.max` = 2**64-1 have no
-#       U32 image and `S.Dt.min`/`S.Dt.max` answer `None` for any width past 32.
-#       NOT WRITTEN.
-#     3. THE WALK. `_min_max` needs NO shape, device or addrspace, and a node whose
-#       `_shape` this file defers (every RESHAPE, and UNSHARD) still HAS an interval,
-#       so it cannot be a seventh `Derived` field without `gap_ok` moving -- it wants
-#       its OWN Kahn pass over the same arena, which is the same `pend`/`work`/`Table`
-#       machine with a different row type. NOT WRITTEN.
-#     4. `int(x).bit_length()`, the AND arm's mask width (ops.py:1110). It needs a
-#       walk whose zero test cannot be a `match` scrutinee (Bend refuses a call),
-#       whose growing counter cannot lead a self-call, and whose test and step cannot
-#       be two defs because mutual recursion is refused. `mm.u64.shl` avoids it by
-#       testing `a >= 2**(64-k)` directly; there is no such dodge here.
-#     5. `truncate` (dtype.py:297), half of it a C-effect seam, and
-#       `self.src[0].buf_uop` (a `while` over five ops) for the LOAD arm.
-#   So this retires the WALL'S NAMING and its i64 arithmetic, and NOT the op table.
+#     1. THE WALK. `mm.lift` takes the srcs' intervals as an argument, so what is
+#       missing is the Kahn pass that PRODUCES them -- the same `pend`/`work`/`Table`
+#       machine the other six properties use with a `Bnd2` row type, and mechanical
+#       rather than subtle, which is WHY the table was built first.
+#       THE KAHN PASS IS DELIBERATELY NOT A SEVENTH `Derived` FIELD, and that is the one
+#       design decision here rather than a consequence. `_min_max` needs NO shape, no
+#       device and no addrspace, and a node whose `_shape` this file DEFERS -- every
+#       RESHAPE, and UNSHARD -- still HAS an interval. As a seventh field, every deferred
+#       RESHAPE would defer its interval too, and `gap_ok` is precisely the row that would
+#       have noticed: it is the claim "a node whose rules are deferred is NOT answered".
+#       Folding it in would have made that claim FALSE for a property that was never
+#       deferred, which is the exact failure mode the other six fields avoid.
+#     2. FOUR SIGNED-DIVISION ARMS: `CMOD`, `CDIV`, `FLOORDIV`, `FLOORMOD`. `mm.dm.*` is
+#       an UNSIGNED restoring divider, and all four need signed `//` -- a FLOOR and not a
+#       truncation -- plus the remainder. `divandmod.bend` is the consumer.
+#     3. `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend`
+#       and a pure def cannot call it. The arm is ABSENT rather than approximated, so a
+#       CAST lands on `(dtype.min, dtype.max)`; that is a sound widening and a divergence.
+#     4. `self.src[0].buf_uop` (a `while` over five ops) for the LOAD-from-BINARY arm.
+#   So this retires the WALL'S NAMING, its i64 arithmetic, `bit_length`, the dtype limits
+#   and the op table -- and leaves the walk, four div/mod arms, CAST and the LOAD arm.
 # TODO(p3) ops.py:1166 def _sym_fxn             -- `exec` of generated source. P3/P6.
 # TODO(p3) ops.py:1196 def alloc                -- `new_buffer`, which is P6's device
 #   memory layer.
@@ -3787,4 +5063,66 @@ def main() -> IO(Unit):
 # `ops.bend:763` spells that arg `List<&2, U32>`, which erases the distinction, and
 # `ops.bend` is not this unit's file. See `flip_ds`'s header: CPython's own
 # `isinstance(x, bool)` is measured to be unreachable as a rejection anyway.
+# ===========================================================================
+# ===========================================================================
+# THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.
+# `.agents/slop/fold-lift-mutate.py` applies each edit, re-runs, and diffs whole
+# `name=value` lines against a baseline captured from the SAME file in the SAME state; the
+# table is its output and nothing here is transcribed by hand.
+#
+# | # | mutation | rows MOVED | what it is testing |
+# |---|---|---|---|
+# | L1 | a no-op edit (whitespace) | **0** | **THE CONTROL.** A well-formed edit that changes nothing moves nothing, which is what makes the other 0s interpretable. An earlier version of this harness had four "neutral" mutations that were NOT no-ops -- they appended a line to a def body and took 276 rows with them -- and one that referenced an undefined name. All five were REMOVED rather than counted, because a "moved every row" line in a mutation table is a harness bug wearing a result's clothes. |
+# | L3 | another no-op edit | **0** | the control, twice, on the block gate itself |
+# | L41 | the movement passthrough rewritten as a `src2` spelling of itself | **0** | the control for L29: the same answer reached differently really does move nothing, so L29's 11 rows are the SWAP and not the spelling |
+# | L2 | `mm.MM2.get`: the fall-through inverted, so a binary op with no arm answers the dtype limits and one WITH an arm does too | 90 | **THE FALL-THROUGH IS THE WHOLE OF RULE 1.** `Ops.CMPEQ` is binary, is on a non-float dtype, and has NO arm -- so Python falls through to `(dtype.min, dtype.max)` and so must this. Getting it wrong is invisible on every op that HAS an arm, which is 12 of the 13 in the block. |
+# | L42 | `bnd.same`: `Bool` equality as exclusive-or rather than its negation | 51 | `Bool` HAS NO `is_eq` IN BEND 2.0.34 and equality is the negation of `xor`. Getting it backwards inverts every sign test in the section at once. |
+# | L6 | ADD answered as SUB | 9 | the nine in-window ADD rows; the saturation rows are excluded because saturation makes add and sub agree on them |
+# | L8 | the sign of a same-sign SUM negated | 14 | the sign is the ADDENDS' sign, and a sum of two negatives is the case that shows it |
+# | L9 | the sign of a DIFFERENCE decided by the wrong comparison | 14 | a difference's sign is decided by WHICH MAGNITUDE IS LARGER, and the pair is `(SNok{True,...}, SNok{False,...})` either way -- the ordering of the two arms is the whole test. `lf_range0`/`lf_range4` are in the list because RANGE subtracts one. |
+# | L10 | **the signed order collapsed to two cases** | 9 | **THE BIGGEST SINGLE FINDING IN THE GATE, AND IT WAS FOUND BY THE GATE.** "if `a` is negative compare the magnitudes backwards" is wrong for a negative `a` against a non-negative `b`, where the answer is always less and not a magnitude comparison. This spelling made `max(-3, 4)` answer `-3` and `cmplt(-3, 4)` answer `False` on 53 of the gate's 123 rows before it was found, and it typechecks and terminates throughout. |
+# | L11 | `bnd.min` and `bnd.max` exchanged | 14 | the AND arm is `min(s0_vmax, ...)` and STACK is a `min`/`max` fold, so the two are used by four arms and one swap reaches all of them |
+# | L12 | the canonical zero tests only the HIGH word | 15 | `0 * -5` builds `SNok{True, 0}` -- `-0`, the same Python int as `0` and a DIFFERENT `Bnd`, so the gate string differs. The `2**31` and `-2**31` addends are in the list because that is where a wide negative magnitude first appears. |
+# | L16 | the AND arm's mask WIDTH and masked VALUE exchanged | 3 | width from `s1` and mask on `s0`, which is the plausible reading and gives `2**31 & 7` where CPython gives 7. **Three rows and not one is the measurement that the family needs its `2**31` and `2**40` fixtures**: with both srcs small the two spellings are the same function. |
+# | L17 | the AND arm's `min(s0_vmax, ...)` answered as `max` | 6 | an UNSOUND upper bound, which is the direction that matters: a masked value can then exceed the source's own maximum |
+# | L20 | SHR's UPPER half answered as a shift LEFT | 6 | both are a shift of the same amount and only the PAIR differs, so a fixture whose two bounds are equal -- which every CONST fixture is -- catches only one of the two |
+# | L22 | the `+ 1` for a non-zero remainder lands in the HIGH word | 2 | off by `2**32` on every negative ODD right-shift, which is the recorded "an even fixture hides an odd defect" family: `-8 >> 2` and `255 >> 4` are unmoved and `-9 >> 1` and `-1 >> 3` are not |
+# | L24 | the shift AMOUNT read as a bit WIDTH | 6 | `1 << 3` becomes `1 << 2`. This is why `bnd.shamt` is a SEPARATE def from the AND arm's mask reader: they are one line apart and they are different functions. Found by this gate on 22 rows. |
+# | L25 | Python's `or` on ints exchanged with `and` | 2 | `0 or 1` is `1` and `1 and 0` is `0`, so the two are a pick each and differ on every pair -- but only two of the four `orb_*` rows move, because `or` is commutative and two of the four fixtures have equal srcs |
+# | L27 | the `bool`-dtype AND arm REMOVED | 13 | **THE REACHABILITY DEFECT THIS GATE FOUND.** `Ops.AND` has TWO arms -- the integer mask and the `bool` dtype's `and` -- and the second is reachable exactly when the first is not. Two `case O.OpsAND{}` arms make the second dead, and an integer arm returning `None` skips straight past a `case _:`. Every `andb_*` row answered `bool`'s own limits until the dispatch was moved into ONE def over the dtype's class. L27 is the pre-fix state, measured. |
+# | L29 | the movement passthrough reads `src[1]` | 11 | eleven of the twelve Movement/INDEX-family ops all pass `src[0]` through, and reading `src[1]` is a real answer on every one of them. A node count cannot see it and `srcops` cannot either: the src SEQUENCE is unchanged. |
+# | L30 | WHERE reads `src[0]`/`src[1]` | 3 | WHERE's operands are `src[1]` and `src[2]` -- the CONDITION is skipped -- so reading from zero puts the condition's own bound into the interval |
+# | L31 | RANGE/SPECIAL's `(src[0] - 1).vmax` read as `src[0].vmax` | 6 | the `1` is a REAL UOp -- a SUB node -- and dropping it is off by one on every RANGE and every SPECIAL |
+# | L33 | STACK's fold seed exchanged | 4 | `min`/`max` over a generator start from nothing, and the seed is the IDENTITY pair rather than a `U32` sentinel, which is the recorded `max`/`min` sentinel trap: `0xFFFFFFFF` wins every comparison |
+# | L34 | the `Invalid` CONST answered as `0` | 1 | `self.val is not Invalid` is the arm's gate and a CONST can hold it |
+# | L35 | the NaN test dropped | 1 | `not math.isnan(v)` IS `v == v` and `F32.is_eq` is IEEE, so `F32.is_eq(f, f)` IS the NaN test. The row is the only thing that can see it, because `F32.div(0, 0)` is the one NaN Bend can build and no other fixture contains one. |
+# | L36 | PAD over a float source saturates instead of comparing in `F32` | 2 | sound, and wrong for CPython, which is why the float bound is the ONE place the two classes meet: `min(1.5, 0)` is the INTEGER `0`. **These two rows are a FIXTURE THIS UNIT ADDED to close an earlier zero**, and they are the reason `bnd.lt`'s `case _:` -- the mixed Int/Flt arm, which answers `False` and is wrong in general -- is confined to one arm of PAD. |
+# | L38 | a dtype WIDTH off by one | 1 | `bl_dt_int32`: the twenty dtype rows see a `2**32 - 1` maximum, and only `int32` moves because the other widths are powers of two where the off-by-one is absorbed |
+# | L40 | the `Defines` arm narrowed to PARAM and BUFFER | 3 | `GroupOp.Defines` names PARAM, BUFFER and ALLOC, and the three `*_alloc` rows are a FIXTURE THIS UNIT ADDED to close an earlier zero |
+# | L4 | the binary block entered on a NON-BINARY op | **0** | **A THEOREM, with the proof in one sentence: `mm.bin.arm`'s dispatch is a TOTAL match over the op constructors, and every constructor it names is in `GroupOp.binary`.** Entering the block early therefore finds no case to fire and falls through to the same default, so the conjunct is redundant for every op that exists and is defence only against a future one. No fixture can separate it and none should be written. |
+# | L7 | SUB's two halves NOT crossed | **0** | **A FIXTURE REQUEST, and the request is not cheap: every fixture in this gate has `CONST` srcs, so `s0.lo == s0.hi` and `s1.lo == s1.hi` and the crossing is invisible.** This is the price of gating the TABLE without a WALK, and it is the same price as L13, L14, L15 and L19. All five need a src whose bounds DIFFER, which is a `WHERE` or an `ADD` node -- i.e. the walk. **This is the single strongest argument for building the walk next.** |
+# | L13 | MUL's `min(vals)`/`max(vals)` exchanged | **0** | the four products of two CONSTs are the SAME number, so min and max agree. Fixture request, same reason as L7. |
+# | L14 | CMPLT's first half reads `lo` instead of `hi` | **0** | same: `s0_vmax < s1_vmin` and `s0_vmin < s1_vmin` are the same predicate when the srcs are CONSTs. Fixture request. |
+# | L15 | CMPNE's second disjunct reads `lo` instead of `hi` | **0** | same, and worse: the intervals touch in the wrong direction only when the two bounds differ. Fixture request. |
+# | L19 | XOR's `~vmax, ~vmin` NOT swapped | **0** | same: the negation is monotone so the halves only trade when the src bounds differ. Fixture request. |
+# | L18 | the AND gate's `s1_vmax >= 0` dropped | **0** | **NOT A FIXTURE REQUEST -- IT IS UNREACHABLE, and that is the finding.** Measured: `UOp(Ops.AND, src=(CONST(5), CONST(-1)))` has dtype `weakint`, not `int32`, because `promo_dtype` promotes an `int` against a negative `int` past the signed lattice; and `weakint`'s limits are 800 bits, so the answer leaves the window before the gate is consulted. The conjunct is a dtype-promotion artefact: the state it refuses does not exist as an INTEGER, so no integer fixture can reach it and no fixture of any kind can separate it from its absence. |
+# | L23 | the shift amount's WIDTH GUARD off by one | **0** | **UNFIXABLE IN THIS REPRESENTATION.** The guard is `bit_length(k) > 64`, i.e. `k >= 2**64`, and a shift amount reaches Bend as a `Nat`, which REFUSES past 2**48-1. So the guard's boundary cannot be expressed as a fixture and never fires. Kept because it is one comparison and it is the honest place for the `Nat` cap to be recorded. |
+# | L26 | the `bool`-dtype AND's two srcs swapped | **0** | **A THEOREM: `and` is commutative, and so is the `bool` interval built from it, so the two spellings are the same function over every possible answer.** A test that cannot fail is not a test. (`or_bool`'s srcs are commutative too and that is why no `orb_*` src-swap mutation is even in the table.) |
+# | L39 | PAD and CONST arms exchanged | **0** | **A THEOREM: the two arms are keyed on DIFFERENT op constructors, and a `match` cannot reach the second by matching the first.** The ORDER of those two arms is therefore not load-bearing -- unlike PAD's position INSIDE the `GroupOp.Movement` arm, which is, because PAD is reachable by either pattern and Python tests it first. |
+#
+# **NINE OF THE THIRTY-FIVE MOVE NOTHING, AND EVERY ONE IS CLASSIFIED**: three are the
+# harness's own controls (L1, L3, L41), five are FIXTURE REQUESTS that all need a src whose
+# bounds differ and therefore the WALK (L7, L13, L14, L15, L19), three are THEOREMS about a
+# total dispatch, about commutativity, and about disjoint `match` patterns (L4, L26, L39),
+# one is UNREACHABLE by dtype promotion (L18), and one is UNFIXABLE because `Nat` caps a
+# shift amount below the guard's boundary (L23). **No zero is closed with a row that would
+# encode the equivalence as a check.**
+#
+# THE FIVE FIXTURE REQUESTS ARE THE HEADLINE FOR THE NEXT UNIT. They are all the same
+# request, they are all cheap ONCE A WALK EXISTS, and between them they cover the four
+# properties of an INTERVAL -- that a difference's halves cross, that a product's extremes
+# are taken over four values and not two, that a comparison reads the far end of one
+# interval against the near end of the other, and that a monotone map trades them. An
+# all-CONST gate cannot see any of it, because on a CONST interval every one of those
+# properties is an identity.
 # ===========================================================================

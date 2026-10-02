@@ -834,7 +834,7 @@ def i64_big(+i: H.I64) -> Bool:
 # `exec_alu.of2` reads `ci_fits` as "fits", which is what ops.py:1432's lane choice
 # means -- so the CONSUMER is right and the PREDICATE was lying. MEASURED BEFORE
 # THIS LINE CHANGED: `exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` answered
-# `None{}` where CPython's `exec_alu(Ops.MUL, dtypes.int, [6, 7])` answers `42`,
+# `None{}` where CPython's `exec_alu(Ops.MUL, dtypes.i32, [6, 7])` answers `42`,
 # so the INTEGER lane was skipped for every value that fits and
 # `fold_const_alu` folded `6 * 7` to `CONST(0)` through `sy_maybe_c`'s default --
 # a WRONG FOLD, not merely a missing one. Negated HERE and not at the consumer, so
@@ -2054,8 +2054,8 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   (dtype.py:141), which reads the dtype table in `./dtype.bend`, and that file is
 #   a C-effect module that cannot be imported (ops.bend's header says why). P3.
 # TODO(p3) symbolic.py:192-193 the two threefry unpack rules -- PORTED IN SHAPE.
-#   They need `UOp.var(None, dtypes.uint64)` (an ANY-DTYPE var) and a
-#   `cast(dtypes.uint64)`, both of which are `sy_var`-free here; the four dtype
+#   They need `UOp.var(None, dtypes.u64)` (an ANY-DTYPE var) and a
+#   `cast(dtypes.u64)`, both of which are `sy_var`-free here; the four dtype
 #   tests are `eq_dt`s. NOT DONE because the pattern needs an UNNAMED var in src
 #   position, which the compiled form spells as a plain `src[k]` test and the two
 #   rules disagree about WHICH src is unnamed -- a four-way disjunction per rule.
@@ -2306,11 +2306,11 @@ def fz_dt(nm: String) -> S.Dt:
   match nm:
     case "weakint": S.weakint()
     case "bool": S.boolean()
-    case "int": S.int32()
-    case "unsigned int": S.uint32()
-    case "long": S.int64()
-    case "unsigned long": S.uint64()
-    case "float": S.single()
+    case "i32": S.int32()
+    case "u32": S.uint32()
+    case "i64": S.int64()
+    case "u64": S.uint64()
+    case "f32": S.single()
     case "weakfloat": S.weakfloat()
     case _: S.void()
 

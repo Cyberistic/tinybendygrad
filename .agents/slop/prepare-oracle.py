@@ -20,8 +20,8 @@ from tinygrad.helpers import prod, argsort
 import tinygrad.schedule.prepare as P
 from tinygrad.uop.movement import mop_cleanup
 
-I32 = dtypes.int32
-I64 = dtypes.int64
+I32 = dtypes.i32
+I64 = dtypes.i64
 
 # ---------------------------------------------------------------------------
 # fixtures
@@ -170,8 +170,8 @@ PD = pad(A4, (0,), (4,))
 PE = expand(A4, (4,))
 R0 = rng(4, 0)
 IX = UOp(Ops.INDEX, (A4, R0))
-BC = bitcast(A4, dtypes.float32)
-CF = cast(A4, dtypes.float32)
+BC = bitcast(A4, dtypes.f32)
+CF = cast(A4, dtypes.f32)
 AL = UOp(Ops.ADD, (A4, A4))
 E4 = end(A4)
 AF = after(A4, E4)
@@ -356,7 +356,7 @@ fa_row("perm2", permute(FA_Q, (1, 0)), FA_AF2)
 fa_row("perm3", permute(reshape(FA_Q, (4, 4, 1)), (2, 0, 1)), after(reshape(FA_Q, (4, 4, 1)), end(FA_Q)))
 fa_row("rs", reshape(FA_B, (2, 2)), FA_AF)
 fa_row("rs3", reshape(FA_B8, (2, 2, 2)), FA_AF3)
-fa_row("cast_half", cast(FA_B, dtypes.half), FA_AF)
+fa_row("cast_half", cast(FA_B, dtypes.f16), FA_AF)
 fa_row("cast_int", cast(FA_B, I32), FA_AF)
 fa_row("plain", FA_B, FA_AF)
 # the WHERE arm needs `x.src[2].base.is_invalid` and `x.src[1].op is PAD`
@@ -465,7 +465,7 @@ rf_row("ok3", call(body(store(param(0, 4), C(1)), store(param(1, 4), C(2))), PA,
 rf_row("sizesmall", call(body(store(param(0, 3), C(1))), PA))
 rf_row("sizebig", call(body(store(param(0, 5), C(1))), PA))
 rf_row("scalargiven", call(body(store(param(0, None), C(1))), PA))
-rf_row("dtypemismatch", call(body(store(param(0, 4, dtypes.float32), C(1))), PA))
+rf_row("dtypemismatch", call(body(store(param(0, 4, dtypes.f32), C(1))), PA))
 rf_row("negslot", call(body(store(param(0, 4), C(1)), store(param(-1, 4), C(2))), PA, PB))
 rf_row("missingarg", call(body(store(param(0, 4), C(1)), store(param(1, 4), C(2))), PA))
 rf_row("precompiled", call(body(store(param(0, 4), C(1))), PA, precompile=True))
@@ -496,15 +496,15 @@ def bcast(x, dt): return UOp(Ops.BITCAST, (x,), arg=dt)
 def dbuf(n, dt, slot):
   return UOp(Ops.BUFFER, arg=ParamArg(slot=slot, dtype=dt, size=n*dt.itemsize, name=f"d{slot}", device="CPU"))
 eb_row("same", bcast(dbuf(4, I32, 0), I32))
-eb_row("same_f", bcast(dbuf(4, dtypes.float32, 1), dtypes.float32))
-eb_row("i32f16", bcast(dbuf(4, I32, 2), dtypes.float16))
-eb_row("f16i32", bcast(dbuf(4, dtypes.float16, 3), I32))
-eb_row("i8i32", bcast(dbuf(4, dtypes.int8, 4), I32))
-eb_row("i32i8", bcast(dbuf(4, I32, 5), dtypes.int8))
-eb_row("f32f16", bcast(dbuf(4, dtypes.float32, 6), dtypes.float16))
+eb_row("same_f", bcast(dbuf(4, dtypes.f32, 1), dtypes.f32))
+eb_row("i32f16", bcast(dbuf(4, I32, 2), dtypes.f16))
+eb_row("f16i32", bcast(dbuf(4, dtypes.f16, 3), I32))
+eb_row("i8i32", bcast(dbuf(4, dtypes.i8, 4), I32))
+eb_row("i32i8", bcast(dbuf(4, I32, 5), dtypes.i8))
+eb_row("f32f16", bcast(dbuf(4, dtypes.f32, 6), dtypes.f16))
 eb_row("i64i32", bcast(dbuf(4, I64, 7), I32))
 eb_row("i32i64", bcast(dbuf(4, I32, 8), I64))
-eb_row("i16i32", bcast(dbuf(4, dtypes.int16, 9), I32))
+eb_row("i16i32", bcast(dbuf(4, dtypes.i16, 9), I32))
 
 # ===========================================================================
 # J. `copy_to_anon_store` / `stage_to_anon_store` / `materialize_cross_device_src`
@@ -706,7 +706,7 @@ FIX["copystore"] = UOp(Ops.STORE, (P_A, UOp(Ops.COPY, (P_B,), arg=ParamArg(slot=
 FIX["rsstore"] = UOp(Ops.STORE, (reshape(P_A, (2, 2)), reshape(P_B, (2, 2))))
 FIX["hazard"] = storef(P_A, permute(P_A, (0,)))
 FIX["dedup"] = UOp(Ops.SINK, (after(P_A, endf(storef(P_A, P_B)), after(P_A, endf(storef(P_A, P_B)))),))
-FIX["bitcast"] = bcast(dbuf(4, I32, 0), dtypes.float16)
+FIX["bitcast"] = bcast(dbuf(4, I32, 0), dtypes.f16)
 FIX["zero"] = UOp(Ops.SINK, (buf((0,), 11, name="pz"),))
 FIX["red0"] = reduce(buf((0,), 12, name="pz2"), Ops.ADD, 1)
 FIX["detach"] = UOp(Ops.DETACH, (P_A,))
@@ -717,7 +717,7 @@ FIX["call"] = call(body(storef(param(0, 4), C(1))), P_A)
 FIX["after_sink"] = after(P_A, P_SNK)
 FIX["store_after"] = storef(P_A, after(P_B, endf(P_B)))
 FIX["store_copy_src"] = UOp(Ops.STORE, (P_A, UOp(Ops.COPY, (P_B,), arg=ParamArg(slot=0, dtype=I32, size=4, device="GPU"))))
-FIX["bitstore"] = UOp(Ops.STORE, (bcast(P_A, dtypes.float32), P_B))
+FIX["bitstore"] = UOp(Ops.STORE, (bcast(P_A, dtypes.f32), P_B))
 FIX["stage_disk_x"] = UOp(Ops.SINK, (UOp(Ops.STAGE, (UOp(Ops.COPY, (P_A,), arg=ParamArg(slot=0, dtype=I32, size=4, device="DISK:1"))), arg=type("B", (), {"device": "CPU"})()),))
 
 for _tn, _pm in TABLES:

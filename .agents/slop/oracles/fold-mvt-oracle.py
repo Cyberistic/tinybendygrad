@@ -28,7 +28,7 @@ DIV = {}
 
 
 def buf(size):
-  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.int32, size=size))
+  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=size))
 
 
 def st(*dims):
@@ -122,7 +122,7 @@ row("flipint", UOp(Ops.FLIP, (r43,), (1, 0)))
 # `src[0].dtype` on the wrong node would move this row. `buf(6)`, because
 # `prod((6,)) == prod((2,3))` is the RESHAPE's own product check.
 b6 = buf(6)
-half = UOp(Ops.CAST, (b6,), dtypes.float16)
+half = UOp(Ops.CAST, (b6,), dtypes.f16)
 print(f"mv_cast {sig(half)}")
 row("permhalf", UOp(Ops.PERMUTE, (UOp(Ops.RESHAPE, (half, st(2, 3))),), (1, 0)))
 

@@ -14,7 +14,7 @@ bug.
   .venv/bin/python .agents/slop/nir/nir_mutate.py 7          # one, by index
   .venv/bin/python .agents/slop/nir/nir_mutate.py --const   # the +1 sweep
 """
-import sys, os, re, subprocess, pathlib, tempfile, shutil
+import sys, os, re, subprocess, pathlib, tempfile, shutil, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SRC = ROOT / "tinybendygrad" / "renderer" / "nir.bend"
@@ -35,6 +35,21 @@ def gate(src_text, tmpdir):
   finally:
     work.unlink(missing_ok=True)
 
+def settled(want, tries=40, nap=20):
+  """WAIT FOR THE SUBSTRATE. Another agent was mid-edit through one whole run of
+  this table and twenty-two mutations came back "DID NOT COMPILE: expected :
+  'def', 'type'" -- a top-level parse error in a file that is not this unit's.
+  `agent-core.md` says to capture a baseline before a run AND wait for the
+  substrate to settle BETWEEN steps; this is the second half. The check is the
+  BASELINE reproducing, so a changed substrate is detected by the thing it
+  changes rather than by a guess about which file moved.
+  """
+  for i in range(tries):
+    got, _err = gate(SRC.read_text(), "settle")
+    if got == want: return True
+    time.sleep(nap)
+  return False
+
 def moved_rows(a, b):
   if a is None or b is None: return None
   am = {l.split(" = [", 1)[0]: l for l in a}
@@ -48,7 +63,7 @@ MUTATIONS = [
  ("M02", "c: i arm -> f",                    r'^    case True\{\}: "i"$',            '    case True{}: "f"',            "c.arm2"),
  ("M03", "c: f arm -> b (bool never reaches)", r'^    case True\{\}: "f"$',          '    case True{}: "b"',            "c.arm3"),
  ("M04", "c: `and u` dropped",               r'Bool\.and\(c\.in_uints\(d\), unsigned\)', 'c.in_uints(d)',                 "c"),
- ("M05", "c: `ints` widened to `S.Dt.is_int` (weakint!)", r'^def c\.in_ints\(\+d: S\.Dt\) -> Bool:\n  match d:\n    case S\.Dt\{pri, bits, cls, nm\}: c\.cls_int\(cls\)', 'def c.in_ints(+d: S.Dt) -> Bool: S.Dt.is_int(d)', "c.in_ints"),
+ ("M05", "c: `ints` widened to `S.Dt.is_int` (weakint!)", r'^def c\.in_ints\(d: S\.Dt\) -> Bool:\n  match d:\n    case S\.Dt\{pri, bits, cls, nm\}: c\.cls_int\(cls\)$', 'def c.in_ints(d: S.Dt) -> Bool: S.Dt.is_int(d)', "c.in_ints"),
  ("M06", "u_aop: ADD -> uadd",               r'^    case O\.OpsADD\{\}: "iadd"$',    '    case O.OpsADD{}: "uadd"',      "u_aop"),
  ("M07", "s_aop: MAX imax -> umax",          r'^    case O\.OpsMAX\{\}: "imax"$',    '    case O.OpsMAX{}: "umax"',      "s_aop"),
  ("M08", "f_aop: FDIV -> rcp",               r'^    case O\.OpsFDIV\{\}: "fdiv"$',   '    case O.OpsFDIV{}: "rcp"',       "f_aop"),
@@ -61,7 +76,13 @@ MUTATIONS = [
  ("M15", "glsl_sym_int: `glsl_type_builtin_` head dropped", r'String\.concat\(\["glsl_type_builtin_", Bool\.pick', 'String.concat([Bool.pick', "glsl_sym_int"),
  ("M16", "glsl_sym_int: `itemsize == 4` exception dropped", r'Bool\.pick\(String, U32\.is_eq\(S\.Dt\.bits\(d\), 32\), "", ', 'Bool.pick(String, False{}, "", ', "glsl_sym_int"),
  ("M17", "glsl_keyed: `bool` stops being a key", r'R\.is_named\(d, "half"\) \|\| R\.is_named\(d, "bool"\)', 'R.is_named(d, "half")', "glsl_keyed.of"),
- ("M18", "ncast: two-way condition inverted", r'Bool\.and\(c\.in_ints\(it\), c\.in_ints\(ot\)\)\)\)', 'Bool.or(c.in_ints(it), c.in_ints(ot)))', "ncast_mid"),
+ ("M18", "ncast: two-way condition `and` -> `or`", r'Bool\.and\(c\.in_ints\(it\), c\.in_ints\(ot\)\)\)', 'Bool.or(c.in_ints(it), c.in_ints(ot)))', "ncast_mid"),
+ # A THEOREM, NOT A BLIND SPOT: `nir.py:28` writes `c(ot, ot == dtypes.bool)` and
+ # `c`'s first arm is `t in dtypes.uints and u`. `bool` is NOT in `dtypes.uints`,
+ # so for the only `t` that can make `u` true, `u` cannot matter -- `c(bool, x)`
+ # is `"b"` for both `x`. `c bool u=True` and `c bool u=False` are the rows that
+ # PROVE it, and no fixture can separate the two spellings.
+ ("M18b", "ncast: second prefix taken from the DESTINATION's signedness only [THEOREM]", r'c\(ot, R\.is_named\(ot, "bool"\)\)', 'c(ot, False{})', "ncast_mid"),
  ("M19", "ncast: destination bitsize -> source", r'String\.concat\(\[c\(it, True\{\}\), "2", ncast_mid\(it, ot\), U32\.show\(S\.Dt\.bits\(ot\)\)\]\)', 'String.concat([c(it, True{}), "2", ncast_mid(it, ot), U32.show(S.Dt.bits(it))])', "ncast_name"),
  ("M20", "scope: ALU given its own case",    r'^    case S\.Aalu\{\}: "deref"$',     '    case S.Aalu{}: "local"',       "scope"),
  ("M21", "nstore: REG srcs no longer reversed", r'^    case True\{\}: \["addr","val"\]$', '    case True{}: ["val","addr"]', "nstore_srcs.of"),
@@ -69,15 +90,17 @@ MUTATIONS = [
  ("M23", "nstore: WRITE_MASK off by one",    r'def nstore_mask\(n: U32\) -> U32: U32\.sub\(U32\.shln\(1, U32\.to_nat\(n\)\), 1\)', 'def nstore_mask(n: U32) -> U32: U32.shln(1, U32.to_nat(n))', "nstore_mask"),
  ("M24", "nload: ACCESS for every space",    r'^def nload_has_access\(space: S\.Addr\) -> Bool: is_global\(space\)$', 'def nload_has_access(space: S.Addr) -> Bool: True{}', "nload_has_access"),
  ("M25", "padded_idx: the extra `+ size` dropped", r'def padded_idx\(\+p: U32, \+s: U32\) -> U32: U32\.add\(round_up\(p, s\), s\)', 'def padded_idx(+p: U32, +s: U32) -> U32: round_up(p, s)', "padded_idx"),
- ("M26", "round_up: `>=` becomes `>`",       r'U32\.div\(U32\.add\(x, U32\.sub\(y, 1\)\), y\)', 'U32.div(U32.add(x, U32.sub(y, 1)), y)', "round_up"),
+ ("M26", "round_up: multiply BEFORE dividing", r'U32\.mul\(U32\.div\(U32\.add\(x, U32\.sub\(y, 1\)\), y\), y\)', 'U32.div(U32.mul(x, y), y)', "round_up"),
  ("M27", "sd: NAK's arch test `>= 53` becomes `> 53`", r'U32\.is_lt\(arch, 53\)', 'U32.is_le(arch, 53)', "sd"),
- ("M28", "sd: bfloat16 stops being dropped", r'R\.is_named\(d, "float8_e5m2fnuz"\), R\.is_named\(d, "__bf16"\)\)', 'R.is_named(d, "float8_e5m2fnuz"))', "sd.drop_base"),
+ ("M28", "sd: bfloat16 stops being dropped", r'R\.is_named\(d, "fp8e5m2fnuz"\), R\.is_named\(d, "bf16"\)\)', 'R.is_named(d, "fp8e5m2fnuz"), False{})', "sd.drop_base"),
+ ("M28b", "sd: one fp8 stops being dropped", r'R\.is_named\(d, "fp8e4m3fnuz"\) \|\| R\.is_named\(d, "fp8e5m2fnuz"\)', 'R.is_named(d, "fp8e5m2fnuz")', "sd.drop_base"),
  ("M29", "cfo: EXP2 no longer dropped by LVP", r'Bool\.and\(cfo\.is\(nm\), Bool\.or\(Bool\.not\(Nir\.drops_exp2\(n\)\), Bool\.not\(String\.eq\(nm, "EXP2"\)\)\)\)', 'cfo.is(nm)', "cfo.has"),
  ("M30", "Nir: LVP's global_max 1 -> 2147483647", r'Nir\{"LVP", False\{\}, False\{\}, 1, 0, 0,', 'Nir{"LVP", False{}, False{}, 2147483647, 65535, 65535,', "Nir.lvp"),
  ("M31", "Nir: shared_max 49152 -> 32768 (the BASE value)", r', 49152, False\{\}, False\{\}, 0\}', ', 32768, False{}, False{}, 0}', "Nir.base"),
  ("M32", "arch_off: the offset becomes 2",   r'^    case "sm_53": "53"$',            '    case "sm_53": "3"',            "arch_off"),
  ("M33", "build_alu: a fifth arity invented", r'^    case 4: "nir_build_alu4"$',     '    case 4: "nir_build_alu4"\n    case 5: "nir_build_alu5"', "build_alu"),
- ("M34", "aop_keys: insertion order float-first", r'def aop_keys\(\) -> List<&2, S\.Dt\:\n  List\.append\(&2, S\.Dt, List\.append\(&2, S\.Dt, List\.append\(&2, S\.Dt, \[S\.boolean\(\)\], all_uint\(\)\), all_sint\(\)\), all_float\(\)\)', 'def aop_keys() -> List<&2, S.Dt:\n  all_of()', "aop_keys"),
+ ("M34", "aop_keys: insertion order float-first (`dtypes.all`'s, not `aop`'s)", r'def aop_keys\(\) -> List<&2, S\.Dt>:\n  List\.append\(&2, S\.Dt, List\.append\(&2, S\.Dt, List\.append\(&2, S\.Dt, \[S\.boolean\(\)\], all_uint\(\)\), all_sint\(\)\), all_float\(\)\)', 'def aop_keys() -> List<&2, S.Dt>:\n  all_of()', "aop_keys"),
+ ("M35", "cfo: WHERE dropped from the op set", r'^    case "WHERE": True\{\}$', '    case _: False{}', "cfo.is"),
 ]
 
 CONST_SWEEP = re.compile(r'^(\s*case "[^"]+": )(\d+)$')
@@ -90,6 +113,8 @@ def sweep_consts(tmp):
     m = CONST_SWEEP.match(line)
     if m: hits.append((i, m))
   for n, (i, m) in enumerate(hits):
+    if not settled(BASE):
+      print("SUBSTRATE NEVER SETTLED before K%02d -- stopping" % (n + 1)); break
     txt = src.splitlines()
     txt[i-1] = "%s%d" % (m.group(1), int(m.group(2)) + 1)
     got, err = gate("\n".join(txt) + "\n", "%sconst%d" % (tmp, n))
@@ -124,6 +149,10 @@ def main():
   nblind = 0
   for mid, what, pat, rep, target in MUTATIONS:
     if only and mid not in [("M%02d" % int(o)) for o in only]: continue
+    if not settled(BASE):
+      print("SUBSTRATE NEVER SETTLED before %s -- stopping rather than reporting "
+            "another agent's parse error as this file's blind spot" % mid)
+      break
     new, n = re.subn(pat, rep, src, count=1, flags=re.M)
     if n == 0:
       print("%-5s %-46s *** PATTERN DID NOT MATCH ***" % (mid, what)); nblind += 1; continue

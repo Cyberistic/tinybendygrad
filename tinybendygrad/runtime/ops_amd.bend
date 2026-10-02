@@ -1146,7 +1146,7 @@ def tmpring_size(+ps: U32, +t0: U32, +slots: U32, +cu: U32, se: U32, xccs: U32) 
            scr_wave_scratch(scr_per_thread(ps, t0), t0), t0, se),
     scr_max_waves(cu, slots, xccs), scr_wave_scratch(scr_per_thread(ps, t0), t0))
 
-# :996, `Buffer(self.device, size_per_xcc * self.xccs, dtypes.uint8, ...)`, and
+# :996, `Buffer(self.device, size_per_xcc * self.xccs, dtypes.u8, ...)`, and
 # :990's `max(private_segment_size, 128, AMDDevice.max_scratch_psize)` -- the
 # CLASS attribute, so the scratch buffer only ever GROWS. A request smaller
 # than the high-water mark does not shrink it, and that is a row.
@@ -1210,7 +1210,7 @@ def q_dbg(wave_cnt: U32) -> U32: H.round_up_u32(U32.mul(wave_cnt, 32), 64)
 # :956-957, the ring size and the eop buffer.
 def q_ring(is_usb: Bool) -> U32: Bool.pick(U32, is_usb, RING_USB(), RING_HOST())
 
-# :924, `Buffer(self.device, ring_size // 4, dtypes.uint32, ...)`. The ring is
+# :924, `Buffer(self.device, ring_size // 4, dtypes.u32, ...)`. The ring is
 # counted in BYTES here and in ELEMENTS there, and the /4 is the only place the
 # two meet. `amd_ring_elems_*` is the row.
 def q_ring_elems(ring_size: U32) -> U32: U32.div(ring_size, 4)

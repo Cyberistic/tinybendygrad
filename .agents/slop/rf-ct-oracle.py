@@ -28,7 +28,7 @@ from tinygrad.schedule import rangeify as R
 
 IDX = dtypes.weakint
 def C(n): return UOp.const(n, IDX)
-def B(n=4, a=AddrSpace.GLOBAL, s=0, dev=None): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.int32, n, addrspace=a, device=dev))
+def B(n=4, a=AddrSpace.GLOBAL, s=0, dev=None): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.i32, n, addrspace=a, device=dev))
 def Rg(n, i=0): return UOp.range(n, i)
 def NO(): return BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False)
 
@@ -114,7 +114,7 @@ print("=== 2. ct_5 -- UPat.cvar('c').or_casted().f(Ops.STAGE,name='b') ===")
 print("python source: lambda c,b: b.const_like(c.val)")
 print()
 stgCst   = UOp(Ops.STAGE, (c4, r0), arg=NO())
-cast_c4  = UOp(Ops.CAST, (c4,), arg=dtypes.half)
+cast_c4  = UOp(Ops.CAST, (c4,), arg=dtypes.f16)
 stgCast  = UOp(Ops.STAGE, (cast_c4, r0), arg=NO())
 stgBuf   = UOp(Ops.STAGE, (b4, r0), arg=NO())
 stgCstN  = UOp(Ops.STAGE, (c4,), arg=NO())

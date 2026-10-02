@@ -41,11 +41,11 @@ NAMES = ["void","bool","weakint","int8","uint8","int16","uint16","int32","uint32
          "int64","uint64","weakfloat","fp8e4m3","fp8e5m2","fp8e4m3fnuz","fp8e5m2fnuz",
          "float16","bfloat16","float32","float64"]
 DT = {"void": dtypes.void, "bool": dtypes.bool, "weakint": dtypes.weakint,
-      "int8": dtypes.int8, "uint8": dtypes.uint8, "int16": dtypes.int16, "uint16": dtypes.uint16,
-      "int32": dtypes.int32, "uint32": dtypes.uint32, "int64": dtypes.int64, "uint64": dtypes.uint64,
+      "int8": dtypes.i8, "uint8": dtypes.u8, "int16": dtypes.i16, "uint16": dtypes.u16,
+      "int32": dtypes.i32, "uint32": dtypes.u32, "int64": dtypes.i64, "uint64": dtypes.u64,
       "weakfloat": dtypes.weakfloat, "fp8e4m3": dtypes.fp8e4m3fnuz, "fp8e5m2": dtypes.fp8e5m2fnuz,
       "fp8e4m3fnuz": dtypes.fp8e4m3fnuz, "fp8e5m2fnuz": dtypes.fp8e5m2fnuz,
-      "float16": dtypes.half, "bfloat16": dtypes.bfloat16, "float32": dtypes.float32, "float64": dtypes.float64}
+      "float16": dtypes.f16, "bfloat16": dtypes.bf16, "float32": dtypes.f32, "float64": dtypes.f64}
 # NOTE: dtypes has no fp8e4m3; the four fp8 attributes are e4m3fnuz/e5m2/e4m3fnuz/e5m2fnuz.
 for n in NAMES:
   d = DT[n]
@@ -75,7 +75,7 @@ emit(f"dsp_count={len(dsp)} dsp={sorted(x.name for x in dsp)}")
 emit(f"removed_x86={sorted(x.name for x in (sup - dsp))}")
 emit(f"clang_hex_count={len(sup_h)} removed_hex={sorted(x.name for x in (sup_h - dsp_h))}")
 emit(f"dsp_x86_is_dsp_hex={sorted(x.name for x in dsp) == sorted(x.name for x in dsp_h)}")
-emit(f"dsp_has_bfloat16={int(dtypes.bfloat16 in dsp)} dsp_has_fp8s={sorted(x.name for x in (dsp & set(dtypes.fp8s)))}")
+emit(f"dsp_has_bfloat16={int(dtypes.bf16 in dsp)} dsp_has_fp8s={sorted(x.name for x in (dsp & set(dtypes.fp8s)))}")
 emit(f"dsp_ints={sorted(x.name for x in (dsp & set(dtypes.ints)))}")
 emit(f"dsp_floats={sorted(x.name for x in (dsp & set(dtypes.floats)))}")
 emit(f"dsp_nodtypes={sorted(x.name for x in set(dtypes.all) - dsp)}")
@@ -88,14 +88,14 @@ emit(f"buffer_suffix = {r.buffer_suffix!r}")
 emit(f"kernel_typedef = {r.kernel_typedef!r}")
 from tinygrad.uop.ops import Ops
 emit(f"type_map_bool   = {r.type_map[dtypes.bool]!r} clang={ClangRenderer.type_map[dtypes.bool]!r}")
-emit(f"type_map_half   = {r.type_map[dtypes.half]!r} clang={ClangRenderer.type_map[dtypes.half]!r}")
-emit(f"type_map_int64  = {r.type_map[dtypes.int64]!r} clang_has={int(dtypes.int64 in ClangRenderer.type_map)}")
-emit(f"type_map_uint64 = {r.type_map[dtypes.uint64]!r} clang_has={int(dtypes.uint64 in ClangRenderer.type_map)}")
+emit(f"type_map_half   = {r.type_map[dtypes.f16]!r} clang={ClangRenderer.type_map[dtypes.f16]!r}")
+emit(f"type_map_int64  = {r.type_map[dtypes.i64]!r} clang_has={int(dtypes.i64 in ClangRenderer.type_map)}")
+emit(f"type_map_uint64 = {r.type_map[dtypes.u64]!r} clang_has={int(dtypes.u64 in ClangRenderer.type_map)}")
 emit(f"type_map_nkeys_dsp={len(r.type_map)} type_map_nkeys_clang={len(ClangRenderer.type_map)}")
 emit(f"type_map_keys_dsp={sorted(x.name for x in r.type_map)}")
 emit(f"code_for_op_dsp={len(r.code_for_op)} clang={len(ClangRenderer.code_for_op)} "
      f"sqrt_dsp={int(Ops.SQRT in r.code_for_op)} sqrt_clang={int(Ops.SQRT in ClangRenderer.code_for_op)}")
-_rd = [r._render_dtype(d) for d in [dtypes.bool, dtypes.half, dtypes.int64, dtypes.uint64]]
+_rd = [r._render_dtype(d) for d in [dtypes.bool, dtypes.f16, dtypes.i64, dtypes.u64]]
 emit(f"render_dtype_bool_half_int64_uint64={_rd!r}")
 emit(f"render_dtype_all={[r._render_dtype(d) for d in dtypes.all]!r}")
 
@@ -134,21 +134,21 @@ class FakeUOp:
 G, A = AddrSpace.GLOBAL, AddrSpace.ALU
 FIXTURES = [
   ("g0", []),
-  ("g1", [(dtypes.uint32, G, 1)]),
-  ("g2", [(dtypes.float32, G, 4), (dtypes.float32, G, 4)]),
-  ("a1", [(dtypes.uint32, A, 1)]),
-  ("a2", [(dtypes.uint32, A, 1), (dtypes.float32, A, 1)]),
-  ("ga", [(dtypes.float32, G, 4), (dtypes.uint32, A, 1)]),
-  ("ag", [(dtypes.uint32, A, 1), (dtypes.float32, G, 4)]),
-  ("gag", [(dtypes.float32, G, 4), (dtypes.uint32, A, 1), (dtypes.float32, G, 4)]),
-  ("agga", [(dtypes.uint32, A, 1), (dtypes.float32, G, 4), (dtypes.float32, G, 4),
-            (dtypes.int32, A, 1)]),
-  ("g3i", [(dtypes.int32, G, 2), (dtypes.int64, G, 2), (dtypes.uint8, G, 2)]),
-  ("g3h", [(dtypes.float16, G, 2), (dtypes.float64, G, 2)]),
-  ("g1a1", [(dtypes.uint32, G, 3), (dtypes.uint64, A, 1)]),
-  ("gag", [(dtypes.float32, G, 4), (dtypes.uint32, A, 1), (dtypes.float32, G, 4)]),
+  ("g1", [(dtypes.u32, G, 1)]),
+  ("g2", [(dtypes.f32, G, 4), (dtypes.f32, G, 4)]),
+  ("a1", [(dtypes.u32, A, 1)]),
+  ("a2", [(dtypes.u32, A, 1), (dtypes.f32, A, 1)]),
+  ("ga", [(dtypes.f32, G, 4), (dtypes.u32, A, 1)]),
+  ("ag", [(dtypes.u32, A, 1), (dtypes.f32, G, 4)]),
+  ("gag", [(dtypes.f32, G, 4), (dtypes.u32, A, 1), (dtypes.f32, G, 4)]),
+  ("agga", [(dtypes.u32, A, 1), (dtypes.f32, G, 4), (dtypes.f32, G, 4),
+            (dtypes.i32, A, 1)]),
+  ("g3i", [(dtypes.i32, G, 2), (dtypes.i64, G, 2), (dtypes.u8, G, 2)]),
+  ("g3h", [(dtypes.f16, G, 2), (dtypes.f64, G, 2)]),
+  ("g1a1", [(dtypes.u32, G, 3), (dtypes.u64, A, 1)]),
+  ("gag", [(dtypes.f32, G, 4), (dtypes.u32, A, 1), (dtypes.f32, G, 4)]),
   ("g0b", []),
-  ("a1b", [(dtypes.uint32, A, 1)]),
+  ("a1b", [(dtypes.u32, A, 1)]),
 ]
 
 

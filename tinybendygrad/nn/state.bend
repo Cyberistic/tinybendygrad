@@ -506,7 +506,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 #   and `reshape` (mixin/movement.py), and `Tensor(pathlib.Path(fn))` is `load`.
 # TODO(p3) state.py:64  safe_save        -- `json.dumps` is a PARSER,
 #   `pathlib.Path(fn).unlink` is an unlink, `Tensor.empty(device=f"disk:{fn}")` is
-#   REALIZATION on a file device, and `t[0:8].bitcast(dtypes.int64).assign(...)` is
+#   REALIZATION on a file device, and `t[0:8].bitcast(dtypes.i64).assign(...)` is
 #   a store into a realized buffer. `round_up(len(j),8)` and the
 #   `data_offsets` accumulation are the only pure lines and they are not worth a
 #   file of their own.

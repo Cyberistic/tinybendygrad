@@ -673,7 +673,7 @@ def OnnxValue.seq(v: OnnxValue) -> Bool:
 # prints the eight tags so an empty `Ag{}` cannot hide behind a missing arm.
 #
 # `Ai{v: H.I64}` rather than `U32`: `read_int64` (:103) is
-# `truncate[dtypes.int64](decode_varint())` and ONNX `AttributeProto.i` is
+# `truncate[dtypes.i64](decode_varint())` and ONNX `AttributeProto.i` is
 # SIGNED, so an `i` attribute can be negative. The representation is right; the
 # DECODE is the wall named in the header.
 type AVal is Data:
@@ -813,9 +813,14 @@ def onx_odt_tbl() -> String:
 
 # THE DTYPE TABLE, which is the row this file exists for: CPython prints
 # `OnnxDataType(c).to_dtype().name` and Bend prints `DT.dt_name(DT.to_dtype_of(k))`.
-# `S.Dt.nm` IS `DType.name` -- dtype.bend's `promo_mask` spells "unsigned char"
-# and "__bf16" for exactly these -- so the two vocabularies are the same and a
-# byte diff is a real test rather than a spelling argument.
+# `S.Dt.nm` IS `DType.name` -- dtype.bend's `promo_mask` spells "u8" and "bf16"
+# for exactly these, and it used to spell "unsigned char" and "__bf16" until
+# tinygrad 793abbb moved `DType.name` onto the rust names -- so the two
+# vocabularies are the same and a byte diff is a real test rather than a spelling
+# argument. NOTE THAT THIS ROW IS INSENSITIVE TO THE RENAME: `onx_odt_dt_name`
+# walks the ONNX integer codes and prints `dt_name` of the result, so the rename
+# moves BOTH sides of the row together and the diff stays empty. The ONNX NAME
+# table above is a different vocabulary ("float", "int32", ...) and did not move.
 def onx_odt_dtbl() -> String:
   onx_join([onx_odt_dt_name(1), onx_odt_dt_name(2), onx_odt_dt_name(3), onx_odt_dt_name(4),
     onx_odt_dt_name(5), onx_odt_dt_name(6), onx_odt_dt_name(7), onx_odt_dt_name(9),

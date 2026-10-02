@@ -184,7 +184,7 @@ def gbool(+ar: O.Arena, x: U32) -> O.Found: gcast(ar, x, S.boolean())
 #
 # so a CONST at a CONCRETE dtype is the TWO nodes `CAST(CONST)`, and only the three
 # dtypes a CONST derives (bool/weakint/weakfloat) fold the cast away -- which is
-# ops.py's own comment on that line. Measured: `UOp.const(0.0, dtypes.float)` has
+# ops.py's own comment on that line. Measured: `UOp.const(0.0, dtypes.f32)` has
 # `op=CAST, nsrc=1` while `UOp.const(0.0, dtypes.weakfloat)` has `op=CONST, nsrc=0`.
 #
 # Every `const_like` in a rule body folds at `ctx.dtype`, which for the ALU rules is a

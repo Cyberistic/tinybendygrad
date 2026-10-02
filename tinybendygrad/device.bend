@@ -234,10 +234,6 @@ def DEnt.head(x: DEnt) -> String:
   match x:
     case DEnt{ix, hd, cls}: hd
 
-def DEnt.cls(x: DEnt) -> String:
-  match x:
-    case DEnt{ix, hd, cls}: cls
-
 # The first-wins scan, and 0 is Python's `ImportError` from an empty list.
 def claim_row(es: List<&2, DEnt>, +h: String) -> U32:
   match es:
@@ -566,10 +562,6 @@ def Bn.has_base(+x: Bn) -> Bool:
 def Bn.addr(+x: Bn) -> U32:
   match x:
     case Bn{self_ix, dev, size, dt, off, base, has_base, addr, sp}: addr
-
-def Bn.spec(+x: Bn) -> Bspec:
-  match x:
-    case Bn{self_ix, dev, size, dt, off, base, has_base, addr, sp}: sp
 
 # device.py:153, `self.size * self.dtype.itemsize`. The one line of Buffer
 # arithmetic that is not an offset, and the reason a dtype is carried at all.

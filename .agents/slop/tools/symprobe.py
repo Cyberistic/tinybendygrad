@@ -29,7 +29,7 @@ def sh(u):
     if isinstance(a, InvalidType): return "bad"
     if isinstance(a, bool): return "bt" if a else "bf"
     return ("c%d" % a) if a >= 0 else ("m%d" % -a)
-  if u.op is Ops.PARAM: return {dtypes.weakint:"x", dtypes.bool:"xb", dtypes.weakfloat:"xf", dtypes.int32:"xi"}[u.dtype]
+  if u.op is Ops.PARAM: return {dtypes.weakint:"x", dtypes.bool:"xb", dtypes.weakfloat:"xf", dtypes.i32:"xi"}[u.dtype]
   if u.op in (Ops.CAST, Ops.BITCAST): return "(%s:%s %s)" % (u.op.name.lower(), u.arg.name, " ".join(sh(s) for s in u.src))
   return "(%s%s)" % (u.op.name.lower(), "".join(" "+sh(s) for s in u.src))
 
@@ -37,7 +37,7 @@ C = lambda v: UOp.const(v, dtypes.weakint)
 x = UOp.variable("x", 0, 100)
 xb = UOp.variable("xb", 0, 1, dtype=dtypes.bool)
 print("dt of bare const:", C(7).dtype, " bad:", UOp.const(Invalid).dtype, " bt:", UOp.const(True).dtype)
-print("dt of x/xb:", x.dtype, xb.dtype, " int32 const:", sh(UOp.const(7, dtypes.int32)))
+print("dt of x/xb:", x.dtype, xb.dtype, " int32 const:", sh(UOp.const(7, dtypes.i32)))
 for nm, u in [
   ("add0", C(7) + C(0)),
   ("div1", C(7) // C(7)),

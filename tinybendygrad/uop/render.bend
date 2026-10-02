@@ -237,38 +237,22 @@ def const_repr(c: O.Const) -> String:
     case O.CFloat{f}: const_repr.cfloat(f)
     case O.CInvalid{}: "Invalid"
 
-# `DType.__repr__` -- `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"`. The map is
-# the twenty names below in `INVERSE_DTYPES_DICT`'s own spelling, which is
-# NOT `S.Dt.nm`: float32's `name` is "float" and its attribute is `float`,
-# float16's is "half" and its attribute is `half`. Both agree, and that is
-# exactly why `str(x.dtype)[7:]` at render.py:56 works.
-def dt_attr.nm(nm: String) -> String:
-  match nm:
-    case "void": "void"
-    case "weakint": "weakint"
-    case "weakfloat": "weakfloat"
-    case "bool": "bool"
-    case "signed char": "char"
-    case "unsigned char": "uchar"
-    case "short": "short"
-    case "unsigned short": "ushort"
-    case "int": "int"
-    case "unsigned int": "uint"
-    case "long": "long"
-    case "unsigned long": "ulong"
-    case "half": "half"
-    case "__bf16": "bfloat16"
-    case "float": "float"
-    case "double": "double"
-    case "float8_e4m3": "fp8e4m3"
-    case "float8_e4m3fnuz": "fp8e4m3fnuz"
-    case "float8_e5m2": "fp8e5m2"
-    case "float8_e5m2fnuz": "fp8e5m2fnuz"
-    case _: nm
-
+# `DType.__repr__` -- and it CHANGED. It was
+# `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"`, so it printed the ATTRIBUTE the
+# inverse dict happened to resolve to: `repr(dtypes.f32)` was `dtypes.f32`,
+# because "float" was a later key in DTYPES_DICT than "float32" and the dict
+# comprehension let the last one win. It is now `f"dtypes.{self.name}"`, and
+# upstream DELETED INVERSE_DTYPES_DICT entirely (tinygrad 793abbb), which is why
+# this twenty-arm table is gone rather than renamed: with `name` and attribute
+# spelled the same way there is nothing left for it to map.
+#
+# `repr(dtypes.f32)` printed `dtypes.f32` and now prints `dtypes.f32`. That
+# is a BEHAVIOUR CHANGE and every gate row that prints a dtype's repr moves, which
+# is the cheapest detector the rename has: the rows below `dt_repr` are the ones
+# to re-read after it.
 def dt_attr(d: S.Dt) -> String:
   match d:
-    case S.Dt{pri, bits, cls, nm}: dt_attr.nm(nm)
+    case S.Dt{pri, bits, cls, nm}: nm
 
 def dt_repr(d: S.Dt) -> String:
   String.append("dtypes.", dt_attr(d))
@@ -1038,7 +1022,7 @@ def dt_same.of(a: S.Dt, b: S.Dt) -> Bool: O.eq_dt(a, b)
 # RULE 2: `UPat((Ops.CAST, Ops.BITCAST))` ->
 #   `f"{ctx[x.src[0]]}.{x.op.name.lower()}({x.dtype})"` if `x.dtype != x.src[0].dtype`
 # else None, and a None return FALLS THROUGH to the next rule. This is the
-# measured reason `cast_same` above still renders `UOp.const(3.0).cast(dtypes.float)`
+# measured reason `cast_same` above still renders `UOp.const(3.0).cast(dtypes.f32)`
 # -- no: the fixture that shows the fall-through is a CAST whose dtype already
 # equals its src's.
 def pmp.cast.of(same: Bool, +ar: O.Arena, tb: F.Table, +ctx: Ctx, +u: U32) -> String:
@@ -1214,26 +1198,6 @@ def sugar_args.go(ar: O.Arena, +ctx: Ctx, u: U32, +ss: List<&2, U32>, +acc: List
 # `{ctx[src[0]]}.op(args, ...)`, and in BOTH the arg clause is
 # `', '.join([f'arg={repr(x.arg)}'] if x.arg is not None else [])` -- one element
 # or none, so the comma belongs to the clause and not to the join.
-def is_sugar.of(op: O.Op) -> Bool:
-  match op:
-    case O.OpsSINK{}: True{}
-    case O.OpsEND{}: True{}
-    case O.OpsBACKEDGE{}: True{}
-    case O.OpsSTORE{}: True{}
-    case O.OpsLOAD{}: True{}
-    case O.OpsSQRT{}: True{}
-    case O.OpsINDEX{}: True{}
-    case O.OpsREDUCE{}: True{}
-    case O.OpsAFTER{}: True{}
-    case O.OpsTHREEFRY{}: True{}
-    case O.OpsRECIPROCAL{}: True{}
-    case O.OpsEXP2{}: True{}
-    case O.OpsLOG2{}: True{}
-    case O.OpsSIN{}: True{}
-    case O.OpsBARRIER{}: True{}
-    case O.OpsDETACH{}: True{}
-    case _: False{}
-
 # ===========================================================================
 # `consumer_map_from_toposort` -- ops.py:112.
 #
@@ -1839,18 +1803,18 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # cannot pass all three.
 # ===========================================================================
 
-# ParamArg(1, dtypes.float, 4, device='METAL')
+# ParamArg(1, dtypes.f32, 4, device='METAL')
 def pa1() -> O.ParamArg:
   O.ParamArg{1, S.single(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
     False{}, None{}, None{}, False{}, None{}}
 
-# ParamArg(2, dtypes.int, name='g') -- no size, and size is the one POSITIONAL
+# ParamArg(2, dtypes.i32, name='g') -- no size, and size is the one POSITIONAL
 # optional, so a `size` that printed when it is None moves every later field.
 def pa2() -> O.ParamArg:
   O.ParamArg{2, S.int32(), None{}, None{}, None{}, Some{"g"}, S.AGlobal{}, None{},
     False{}, None{}, None{}, False{}, None{}}
 
-# ParamArg(3, dtypes.float, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))
+# ParamArg(3, dtypes.f32, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))
 def pa3() -> O.ParamArg:
   O.ParamArg{3, S.single(), Some{4}, None{}, None{}, None{}, S.ALocal{}, None{},
     True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
@@ -1929,7 +1893,7 @@ def g_special() -> O.Found:
   +c = f_const(O.Arena.empty(), 4)
   O.UOp.special(O.Found.ar(c), O.Found.i(c), "gidx")
 
-# RULE 4. `UOp.new_buffer('CPU', 4, dtypes.int, 0)` -- the addrspace test is the
+# RULE 4. `UOp.new_buffer('CPU', 4, dtypes.i32, 0)` -- the addrspace test is the
 # load-bearing half (a LOCAL buffer falls through to rule 15) and `max_numel()`
 # is the size. The RANGE gets its OWN line: BUFFER and RANGE are both
 # `always_rendered`, so they split even with one consumer each.
@@ -2134,10 +2098,10 @@ def g_reduce2() -> O.Found:
 def main() -> IO(Unit):
   do IO<Unit>:
     py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
-    py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.float)", g_cast())
+    py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())
     py_row("pyrender special ", "ast = UOp.special(4, 'gidx')", g_special())
-    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.new_buffer('CPU', 4, dtypes.int, 0)", g_buffer())
-    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp.new_buffer(('CPU', 'METAL'), 4, dtypes.int, 0)\nast = c2.copy_to_device('METAL')", g_copy())
+    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.new_buffer('CPU', 4, dtypes.i32, 0)", g_buffer())
+    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp.new_buffer(('CPU', 'METAL'), 4, dtypes.i32, 0)\nast = c2.copy_to_device('METAL')", g_copy())
     py_row("pyrender cfn     ", "ast = UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg='myfn')", g_cfn())
     py_row("pyrender reduce  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2._rop(Ops.ADD, (0, 1))", g_reduce())
     py_row("pyrender range   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_range())
@@ -2156,7 +2120,7 @@ def main() -> IO(Unit):
     py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
     py_row("pyrender fan     ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)", g_fan())
     py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
-    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp.new_buffer('CPU', 4, dtypes.int, 0)\nast = UOp.const(0).store(c3)", g_store())
+    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp.new_buffer('CPU', 4, dtypes.i32, 0)\nast = UOp.const(0).store(c3)", g_store())
     py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())
     IO.print("sint_show 0      = [" ++ sint_show(0) ++ "]   py=0")
     IO.print("sint_show 7      = [" ++ sint_show(7) ++ "]   py=7")
@@ -2170,8 +2134,8 @@ def main() -> IO(Unit):
     IO.print("const_repr CBool = [" ++ const_repr(O.CBool{True{}}) ++ "]   py=True")
     IO.print("const_repr CInv  = [" ++ const_repr(O.CInvalid{}) ++ "]   py=Invalid")
     IO.print("const_repr CFlt  = [" ++ const_repr(O.CFloat{2.5}) ++ "]   py=ConstFloat(2.5)")
-    IO.print("dt_repr float    = [" ++ dt_repr(S.single()) ++ "]   py=dtypes.float")
-    IO.print("dt_repr int32    = [" ++ dt_repr(S.int32()) ++ "]   py=dtypes.int")
+    IO.print("dt_repr float    = [" ++ dt_repr(S.single()) ++ "]   py=dtypes.f32")
+    IO.print("dt_repr int32    = [" ++ dt_repr(S.int32()) ++ "]   py=dtypes.i32")
     IO.print("addr_repr GLOBAL = [" ++ addr_repr(S.AGlobal{}) ++ "]   py=AddrSpace.GLOBAL")
     IO.print("dev_repr D1(2)   = [" ++ dev_repr(S.D1{2}) ++ "]   py='METAL'")
     IO.print("dev_repr Dn      = [" ++ dev_repr(S.Dn{[0, 2]}) ++ "]   py=('CPU', 'METAL')")
@@ -2179,16 +2143,16 @@ def main() -> IO(Unit):
     IO.print("prec_of MUL      = [" ++ U32.show(precedence_of(O.OpsMUL{})) ++ "]   py=1")
     IO.print("prec_of CDIV     = [" ++ U32.show(precedence_of(O.OpsCDIV{})) ++ "]   py=99")
     IO.print("arg_repr ANone   = [" ++ arg_repr(O.ANone{}) ++ "]   py=None")
-    IO.print("arg_repr ADt     = [" ++ arg_repr(O.ADt{S.int32()}) ++ "]   py=dtypes.int")
+    IO.print("arg_repr ADt     = [" ++ arg_repr(O.ADt{S.int32()}) ++ "]   py=dtypes.i32")
     IO.print("arg_repr AStr    = [" ++ arg_repr(O.AStr{"g"}) ++ "]   py='g'")
     IO.print("arg_repr ARng    = [" ++ arg_repr(O.ARange{[0], O.AXIS_GLOBAL{}}) ++ "]   py=((0,), AxisType.GLOBAL)")
     IO.print("arg_repr ARed    = [" ++ arg_repr(O.AReduce{O.OpsADD{}, 2}) ++ "]   py=(Ops.ADD, 2)")
     IO.print("arg_repr ATup    = [" ++ arg_repr(O.ATuple{[1, 2]}) ++ "]   py=(1, 2)")
-    IO.print("arg_repr AInk    = [" ++ arg_repr(O.AInk{"w", S.single()}) ++ "]   py=('w', dtypes.float)")
+    IO.print("arg_repr AInk    = [" ++ arg_repr(O.AInk{"w", S.single()}) ++ "]   py=('w', dtypes.f32)")
     IO.print("arg_repr AAllred = [" ++ arg_repr(O.AAllred{O.OpsADD{}, S.D1{2}}) ++ "]   py=(Ops.ADD, 'METAL')")
     IO.print("arg_repr ADev    = [" ++ arg_repr(O.ADev{S.D1{2}}) ++ "]   py='METAL'")
     IO.print("arg_repr ACALL   = [" ++ arg_repr(O.ACall{O.CallInfo.of()}) ++ "]   py=CallInfo(None, None, False, False)")
-    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False, dtype=dtypes.int)")
+    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False, dtype=dtypes.i32)")
     IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False, dtype=dtypes.weakint)")
     IO.print("arg_repr AKern   = [" ++ arg_repr(O.AKernel{O.KernelInfo.of()}) ++ "]")
     IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
@@ -2196,17 +2160,14 @@ def main() -> IO(Unit):
     IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
     IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
     IO.print("arg_repr AParam1 = [" ++ arg_repr(O.AParam{pa1()}) ++ "]")
-    IO.print("                     py=ParamArg(1, dtypes.float, 4, device='METAL')")
+    IO.print("                     py=ParamArg(1, dtypes.f32, 4, device='METAL')")
     IO.print("arg_repr AParam2 = [" ++ arg_repr(O.AParam{pa2()}) ++ "]")
-    IO.print("                     py=ParamArg(2, dtypes.int, name='g')")
+    IO.print("                     py=ParamArg(2, dtypes.i32, name='g')")
     IO.print("arg_repr AParam3 = [" ++ arg_repr(O.AParam{pa3()}) ++ "]")
-    IO.print("                     py=ParamArg(3, dtypes.float, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
+    IO.print("                     py=ParamArg(3, dtypes.f32, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
-
-def pmp.buffer.of(pa: Maybe<&2, O.ParamArg>, isglobal: Bool, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
-  pmp.buffer.put(pa, isglobal, ar, tb, ctx, u)
 
 
 

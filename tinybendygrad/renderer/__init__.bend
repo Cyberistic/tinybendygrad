@@ -292,7 +292,7 @@ def is_mem(op: O.Op) -> Bool:
 #
 # `supported_dtypes` is the ONE method with no table:
 #
-#     return set(dtypes.all) - ({dtypes.double} if dtypes.long in EMULATED_DTYPES.tolist(dtypes) else set())
+#     return set(dtypes.all) - ({dtypes.f64} if dtypes.i64 in EMULATED_DTYPES.tolist(dtypes) else set())
 #
 # `EMULATED_DTYPES` is `ContextVar("EMULATED_DTYPES", "")` and `tolist` of the
 # empty string is `[]`, so `long in []` is False and `double` is KEPT: the base
@@ -314,7 +314,7 @@ def emu_has.go(emu: List<&2, S.Dt>, +d: S.Dt, ok: Bool) -> Bool:
 
 def emu_has(emu: List<&2, S.Dt>, d: S.Dt) -> Bool: emu_has.go(emu, d, False{})
 
-# `dtypes.long in EMULATED_DTYPES.tolist(dtypes)`, separated so the gate pins
+# `dtypes.i64 in EMULATED_DTYPES.tolist(dtypes)`, separated so the gate pins
 # the ONE question the base asks on its own.
 def emulated_long(emu: List<&2, S.Dt>) -> Bool: emu_has(emu, S.int64())
 
@@ -354,13 +354,13 @@ def dtypes_float() -> List<&2, S.Dt>:
 def dtypes_all() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes_float(), dtypes_int()), [S.boolean()])
 
-# `{dtypes.double} if dtypes.long in EMULATED_DTYPES.tolist(dtypes) else set()` --
+# `{dtypes.f64} if dtypes.i64 in EMULATED_DTYPES.tolist(dtypes) else set()` --
 # the ONE conditional in the base `supported_dtypes`, and it is a conjunction of
 # TWO independent questions: is `long` emulated, and is this dtype `double`. A
 # reader that folded them into one test would drop a dtype other than `double`,
 # and `sd emu long` is the row that would show it.
 def emu_drop(emu: List<&2, S.Dt>, d: S.Dt) -> Bool:
-  Bool.and(emulated_long(emu), is_named(d, "double"))
+  Bool.and(emulated_long(emu), is_named(d, "f64"))
 
 def supported_dtypes.go(+emu: List<&2, S.Dt>, ds: List<&2, S.Dt>, +acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
   match ds:
@@ -527,18 +527,25 @@ def all_row(nm: String, py: String) -> IO(Unit):
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    _ : Unit <- sd_row("sd empty     ", "float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz,half,__bf16,float,double,unsigned char,unsigned short,unsigned int,unsigned long,signed char,short,int,long,bool", Nil{})
-    _ : Unit <- sd_row("sd emu long  ", "float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz,half,__bf16,float,unsigned char,unsigned short,unsigned int,unsigned long,signed char,short,int,long,bool", [S.int64()])
+    _ : Unit <- sd_row("sd empty     ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool", Nil{})
+    _ : Unit <- sd_row("sd emu long  ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,u8,u16,u32,u64,i8,i16,i32,i64,bool", [S.int64()])
     # `dtypes.all` ITSELF, joined in dtype.py's declaration order. This is the row
     # `dtypes_all` above is diffed against, and it is why that list is read from
     # `spec.bend` rather than from `dtype.bend`: the two are claimed to hold the
     # same seventeen dtypes in the same order, and a drop or a swap in either is
     # a visible string difference.
-    _ : Unit <- all_row("dtypes.all    ", "float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz,half,__bf16,float,double,unsigned char,unsigned short,unsigned int,unsigned long,signed char,short,int,long,bool")
+    #
+    # THE THREE `py=` STRINGS BELOW AND THE THREE `ws` ROWS MOVED, AND BOTH SIDES
+    # OF EACH MOVED WITH THE RENAME -- that is the point. They are CPython's own
+    # printed dtype names, and tinygrad 793abbb moved `DType.name` off the C
+    # spellings, so `half`/`__bf16`/`float`/`double`/`unsigned char`/... became
+    # `f16`/`bf16`/`f32`/`f64`/`u8`/... . Editing one side alone would be the bug;
+    # they move together because CPython genuinely prints the new names.
+    _ : Unit <- all_row("dtypes.all    ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool")
     _ : Unit <- IO.print("emu_long []      = [" ++ Bool.show(emulated_long(Nil{})) ++ "]   py=False")
     _ : Unit <- IO.print("emu_long [long]  = [" ++ Bool.show(emulated_long([S.int64()])) ++ "]   py=True")
-    _ : Unit <- IO.print("is_named double  = [" ++ Bool.show(is_named(S.double(), "double")) ++ "]   py=True")
-    _ : Unit <- IO.print("is_named long!=  = [" ++ Bool.show(is_named(S.int64(), "double")) ++ "]   py=False")
+    _ : Unit <- IO.print("is_named double  = [" ++ Bool.show(is_named(S.double(), "f64")) ++ "]   py=True")
+    _ : Unit <- IO.print("is_named long!=  = [" ++ Bool.show(is_named(S.int64(), "f64")) ++ "]   py=False")
     _ : Unit <- IO.print("is_alu ADD       = [" ++ Bool.show(is_alu(O.OpsADD{})) ++ "]   py=True")
     _ : Unit <- IO.print("is_alu SINK      = [" ++ Bool.show(is_alu(O.OpsSINK{})) ++ "]   py=False")
     _ : Unit <- IO.print("is_mem LOAD      = [" ++ Bool.show(is_mem(O.OpsLOAD{})) ++ "]   py=True")
@@ -546,8 +553,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print("is_mem ADD       = [" ++ Bool.show(is_mem(O.OpsADD{})) ++ "]   py=False")
     _ : Unit <- est_row("est add    ", "Estimates(ops=5, lds=7, mem=9)", Estimates.add(Estimates.of(1, 2, 3), Estimates.of(4, 5, 6)))
     _ : Unit <- est_row("est simplfy ", "Estimates(ops=3, lds=4, mem=5)", Estimates.simplify(Estimates.of(3, 4, 5)))
-    _ : Unit <- ws_row("ws buffer  ", "float", with_storage.at(g_buf(), S.single()))
+    _ : Unit <- ws_row("ws buffer  ", "f32", with_storage.at(g_buf(), S.single()))
     _ : Unit <- ws_row("ws index   ", "None", with_storage.at(g_idx(g_buf()), S.single()))
-    _ : Unit <- ws_src_row("ws idx.src0", "float", with_storage.at(g_idx(g_buf()), S.single()))
-    _ : Unit <- ws_row("ws alloc   ", "float", with_storage.at(g_alloc(), S.single()))
+    _ : Unit <- ws_src_row("ws idx.src0", "f32", with_storage.at(g_idx(g_buf()), S.single()))
+    _ : Unit <- ws_row("ws alloc   ", "f32", with_storage.at(g_alloc(), S.single()))
     IO.print("")

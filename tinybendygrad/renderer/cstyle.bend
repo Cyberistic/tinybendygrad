@@ -187,7 +187,7 @@ def BArg.image(b: BArg) -> Bool:
 # (cstyle.py:561) -- both are one `any` in Python and one `Bool` here.
 #
 # `half_any` IS A SECOND HALF FLAG AND NOT A TYPO. OpenCL tests
-# `any(uop.dtype == dtypes.half for uop in uops)` over EVERY uop (cstyle.py:349)
+# `any(uop.dtype == dtypes.f16 for uop in uops)` over EVERY uop (cstyle.py:349)
 # while CUDA and HIP test the ALU-FILTERED `used_dtypes` (cstyle.py:458, :558) --
 # and `uops_to_dtypes` drops anything that is not `AddrSpace.ALU`
 # (cstyle.py:113). MEASURED: a kernel whose only half is a half BUFFER gets
@@ -473,11 +473,16 @@ def gep_arr_threshold.of(+dev: U32) -> U32:
 # `uop/render.bend` makes for `ctx`'s `U32.show(u)` key.
 #
 # THE KEYS ARE `S.Dt`'s NAME FIELD AND NOT ITS ATTRIBUTE NAME, and that
-# distinction is the whole reason the CLANG row for bfloat16 is `__bf16` and the
-# OPENCL row for it is `ushort`: `dtypes.bfloat16.name` is `"__bf16"` and
+# distinction is what this table's five multi-word C VALUES depend on being keyed
+# correctly. It used to read "`dtypes.bfloat16.name` is `"__bf16"` and
 # `dtypes.int8.name` is `"signed char"`, so a table keyed by attribute name would
-# miss every one of the five multi-word C names. Read `dt_name`, not the
-# constructor.
+# miss every one of them" -- and after tinygrad 793abbb those two facts are
+# FALSE: the name field moved to the rust spellings, so `DType.name` is now
+# `bf16` and `i8` and it EQUALS the attribute again. The keys below moved with it,
+# and the reason to read `dt_name` rather than the constructor is now the fp8
+# group, whose names (`fp8e4m3`) are not C names at all.
+#
+# Read `dt_name`, not the constructor.
 #
 # THE `.get(dtype, dtype.name)` DEFAULT IS LOAD-BEARING. An unmapped dtype
 # renders as ITS OWN C NAME: `float8_e4m3` on CUDA maps to `__nv_fp8_e4m3` but
@@ -504,7 +509,7 @@ def tm_get(+m: Map<&2, String>, +nm: String) -> Sigma<&1, &1, Map<&2, String>, _
 
 # `self.type_map.get(dtype, dtype.name)` -- the DEFAULT IS THE NAME ITSELF, so an
 # unmapped dtype prints as itself. That is the row that keeps this honest: CUDA
-# maps `float8_e4m3` and does NOT map `float8_e4m3fnuz`, and CPython prints the
+# maps `fp8e4m3` and does NOT map `fp8e4m3fnuz`, and CPython prints the
 # latter as itself.
 def type_name(+m: Map<&2, String>, +d: S.Dt) -> String: tm_get.of(tm_get(m, dt_name(d)))
 
@@ -537,26 +542,32 @@ def tm(ks: Kv) -> Map<&2, String>: Kv.go(ks, Map.new(&2, String))
 
 # `type_map = {}` -- cstyle.py:139. The base CStyleLanguage maps NOTHING, which
 # is why every dtype row on the base device prints as the dtype's own C name.
+#
+# EVERY KEY BELOW IS A `DType.name`, NOT A `dtypes.*` ATTRIBUTE. tinygrad 793abbb
+# moved `DType.name` onto the rust spellings, so the keys moved with it and the
+# old C spellings ("signed char", "unsigned char", "__bf16", "half") are the
+# LEGACY ATTRIBUTE names, not the name field, and never were -- which is why the
+# comment this file used to carry at :477 is now wrong rather than merely stale.
 def type_map.base() -> Map<&2, String>: tm(KvEnd{})
 
-# `{dtypes.bool: "_Bool", dtypes.half: "__fp16"}` -- cstyle.py:287. TWO entries.
-def type_map.clang() -> Map<&2, String>: tm(Kv{"bool", "_Bool", Kv{"half", "__fp16", KvEnd{}}})
+# `{dtypes.bool: "_Bool", dtypes.f16: "__fp16"}` -- cstyle.py:287. TWO entries.
+def type_map.clang() -> Map<&2, String>: tm(Kv{"bool", "_Bool", Kv{"f16", "__fp16", KvEnd{}}})
 
 # cstyle.py:331. SIX entries, and the fp8 group is ABSENT -- so all four fp8
 # dtypes print as themselves on OpenCL, which is a gate row.
 def type_map.opencl() -> Map<&2, String>:
-  tm(Kv{"signed char", "char", Kv{"unsigned char", "uchar", Kv{"unsigned int", "uint",
-    Kv{"unsigned short", "ushort", Kv{"unsigned long", "ulong", Kv{"__bf16", "ushort", KvEnd{}}}}}}})
+  tm(Kv{"i8", "char", Kv{"u8", "uchar", Kv{"u32", "uint",
+    Kv{"u16", "ushort", Kv{"u64", "ulong", Kv{"bf16", "ushort", KvEnd{}}}}}}})
 
 # cstyle.py:373. TWO entries.
 def type_map.metal() -> Map<&2, String>:
-  tm(Kv{"unsigned int", "uint", Kv{"__bf16", "bfloat", KvEnd{}}})
+  tm(Kv{"u32", "uint", Kv{"bf16", "bfloat", KvEnd{}}})
 
 # cstyle.py:439. FOUR entries -- and the two FNUZ fp8 dtypes are NOT among them,
-# so on CUDA `float8_e4m3fnuz` prints as itself while `float8_e4m3` does not.
+# so on CUDA `fp8e4m3fnuz` prints as itself while `fp8e4m3` does not.
 def type_map.cuda() -> Map<&2, String>:
-  tm(Kv{"unsigned int", "uint", Kv{"__bf16", "nv_bfloat16",
-    Kv{"float8_e4m3", "__nv_fp8_e4m3", Kv{"float8_e5m2", "__nv_fp8_e5m2", KvEnd{}}}}})
+  tm(Kv{"u32", "uint", Kv{"bf16", "nv_bfloat16",
+    Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"fp8e5m2", "__nv_fp8_e5m2", KvEnd{}}}}})
 
 # cstyle.py:539. `{bfloat16: "hip_bfloat16", **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
 # -- and `fp8_index(d) = fp8s.index(d) % 2` with `fp8s` in dtype.py's order
@@ -565,8 +576,8 @@ def type_map.cuda() -> Map<&2, String>:
 # e5m2 variants to `hip_bf8`, and the duplication is upstream's rather than a
 # port artefact. FIVE entries, then.
 def type_map.hip() -> Map<&2, String>:
-  tm(Kv{"__bf16", "hip_bfloat16", Kv{"float8_e4m3", "hip_fp8", Kv{"float8_e5m2", "hip_bf8",
-    Kv{"float8_e4m3fnuz", "hip_fp8", Kv{"float8_e5m2fnuz", "hip_bf8", KvEnd{}}}}}})
+  tm(Kv{"bf16", "hip_bfloat16", Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
+    Kv{"fp8e4m3fnuz", "hip_fp8", Kv{"fp8e5m2fnuz", "hip_bf8", KvEnd{}}}}}})
 
 # THE MAP A DEVICE ANSWERS. Six arms and a `_`, and the `_` is the base rather
 # than a hole: every tag below 6 is a real device and the base is the right
@@ -1777,7 +1788,7 @@ def hipockl_row(nm: String, py: String) -> IO(Unit):
 
 # `ocml_ops`' ORDER is upstream's dict order (EXP2, LOG2, SQRT, SIN, TRUNC,
 # cstyle.py:565) and the widths are `half, float, double`, which is also upstream's
-# filter order (`dt in (dtypes.half, dtypes.float, dtypes.double)`).
+# filter order (`dt in (dtypes.f16, dtypes.f32, dtypes.f64)`).
 def hipocml_cells() -> List<&2, String>:
   [ocml_extern("EXP2", S.half()), ocml_extern("EXP2", S.single()), ocml_extern("EXP2", S.double()),
    ocml_extern("LOG2", S.half()), ocml_extern("LOG2", S.single()), ocml_extern("LOG2", S.double()),
@@ -1842,7 +1853,7 @@ def kern2_row(nm: String, py: String, +dev: U32, +lb: U32, +bs: List<&2, BArg>, 
 # indistinguishable from the `k=0` rows. A row that cannot see the difference
 # between two of the values it claims to pin is not pinning them.
 #
-# `UOp(Ops.CAST, (UOp.const(k),), dtypes.int)` is the node `render_index` is
+# `UOp(Ops.CAST, (UOp.const(k),), dtypes.i32)` is the node `render_index` is
 # documented to test for (`idx.op is CAST and idx.src[0].op is CONST`), so the
 # fixture is that node and the letter is the CONST's value.
 def g_cidx(+k: U32) -> O.Found:
@@ -1944,7 +1955,7 @@ def emit_caller(+pfx: List<&2, String>) -> Emit_: emit_of(uses_off(), Nil{}, Nil
 def emit_prefixed() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, True{})
 
 # OpenCL's `#pragma`, which is conditional on a HALF UOP over the whole list
-# (`any(uop.dtype == dtypes.half for uop in uops)`, cstyle.py:349) and PREPENDS
+# (`any(uop.dtype == dtypes.f16 for uop in uops)`, cstyle.py:349) and PREPENDS
 # onto the caller's list -- so `half_any` is a different Bool from CUDA's `half`
 # and it is the reason `Uses` has six fields.
 def emit_ocl_half(+pfx: List<&2, String>) -> Emit_:

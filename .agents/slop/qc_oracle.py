@@ -224,11 +224,11 @@ def readlib():
 def qwords():
     """ops_qcom.py:57,59 -- itemsize // 4 per UOp and 1 per bare value."""
     from tinygrad.dtype import dtypes
-    for nm, xs in (('u8_u32', [(dtypes.uint8, True), (dtypes.uint32, True)]),
-                   ('u16', [(dtypes.uint16, True)]),
-                   ('u64', [(dtypes.uint64, True)]),
+    for nm, xs in (('u8_u32', [(dtypes.u8, True), (dtypes.u32, True)]),
+                   ('u16', [(dtypes.u16, True)]),
+                   ('u64', [(dtypes.u64, True)]),
                    ('ints', [(None, False), (None, False)]),
-                   ('u32_int', [(dtypes.uint32, True), (None, False)]),
+                   ('u32_int', [(dtypes.u32, True), (None, False)]),
                    ('none', [])):
         p('qw_%s=%d' % (nm, sum(x.itemsize // 4 if u else 1 for x, u in xs)))
 

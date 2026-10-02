@@ -6,7 +6,7 @@ from tinygrad.uop.movement import mop_cleanup
 
 def buf(size=None, image=None):
   return UOp(Ops.BUFFER, src=(UOp(Ops.SPECIAL, arg="x", src=(UOp.const(1),)),),
-              arg=ParamArg(slot=0, dtype=dtypes.int32, size=size, image=image))
+              arg=ParamArg(slot=0, dtype=dtypes.i32, size=size, image=image))
 
 b4   = buf(size=4)
 b0   = buf()

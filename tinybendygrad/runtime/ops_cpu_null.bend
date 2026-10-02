@@ -187,7 +187,7 @@
 #   2. `D.dev_id` -- `Compiled.__init__`'s device-id parse (device.py:397),
 #      which `ops_cpu.py` and `ops_null.py` both inherit and neither overrides.
 #   3. `D.timeline_bytes` -- `ops_null.py:58`'s `timeline` is
-#      `link_buffer(2, dtypes.uint64)` and device.bend already ports the
+#      `link_buffer(2, dtypes.u64)` and device.bend already ports the
 #      timeline's 2 x 8 bytes, so `ndev.timeline_nbytes` IS that call.
 #   4. `H.round_up_u32`, `H.u32_list_eq`, `H.dedup_str` -- the same three every
 #      gate in this tree uses.
@@ -1214,7 +1214,7 @@ def nr.wait(sig: U32, val: U32, eq: Bool) -> List<&2, U32>:
 def nr.signal(sig: U32, val: U32) -> List<&2, U32>: nr.words(NSTORE(), sig, val, 0)
 
 # ops_null.py:34, `self.cmd(TIMESTAMP, signal.getaddr(self.devs) +
-# UOp.const(8, dtypes.uint64))` -- ONE arg, so TWO pads. The `+ 8` is the
+# UOp.const(8, dtypes.u64))` -- ONE arg, so TWO pads. The `+ 8` is the
 # timeline's VALUE slot (`timeline` is `Buffer(dev, 2, uint64)`) and it is the
 # only arithmetic in the file.
 def nr.timestamp(addr: U32) -> List<&2, U32>: nr.words(NTIMESTAMP(), U32.add(addr, 8), 0, 0)
@@ -1711,7 +1711,7 @@ def nr.asm_msg() -> String: "only amd supports assembly"
 #   :57    host = property(lambda self: self.device) -- the IDENTITY, and the
 #           opposite of `Compiled.host` (device.py:418) which answers
 #           `HCQ_RUNTIME_DEV`. So NULL's host IS its own name and CPU's is not.
-#   :58    timeline = link_buffer(2, dtypes.uint64)
+#   :58    timeline = link_buffer(2, dtypes.u64)
 #   :61-62 the EMULATE assert and its message
 #   :63-64 the renderers list, deduped
 #   :66    pm_bufferize -- ONE rule, `ctx.link_buffer(b.max_numel(), b.dtype)`
@@ -1737,7 +1737,7 @@ def ndev.compiled_bufferize_n() -> U32: 3
 # answers, and the difference is the row.
 def ndev.host(dev: String) -> String: dev
 
-# :58 -- `link_buffer(2, dtypes.uint64)`, and `device.bend` already ports the
+# :58 -- `link_buffer(2, dtypes.u64)`, and `device.bend` already ports the
 # timeline's two uint64 slots, so this IS that call.
 def ndev.timeline_n() -> U32: 2
 def ndev.timeline_nbytes() -> U32: D.timeline_bytes()

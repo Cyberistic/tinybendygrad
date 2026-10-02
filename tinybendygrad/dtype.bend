@@ -35,35 +35,45 @@ import ./LAWS/spec.bend as S
 import ./helpers.bend as H
 
 # ===========================================================================
-# The twenty dtypes, under tinygrad's attribute names.
+# The twenty dtypes, under tinygrad's ATTRIBUTE names.
 #
 # spec.bend already holds all twenty; these are the names dtype.py code writes
-# (`dtypes.float32`, `dtypes.half`, ...), which are not always the names the spec
-# IR uses (`single`, `half`). One value, twenty names, no second value.
+# (`dtypes.f32`, `dtypes.f16`, ...), which are not always the names the spec IR
+# uses (`single`, `half`). One value, twenty names, no second value.
+#
+# THE ATTRIBUTE NAMES ARE THE RUST NAMES. tinygrad 793abbb renamed them, keeping
+# the old ones only in a block it labels `# legacy dtype aliases` -- so this list
+# spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor.
+# `dtypes.f16()`, `dtypes.f32()` and their kin were removed from the port on
+# the same day for the same reason; a def nothing calls is invisible to every
+# check, so keeping them would be a name the port can still spell but nothing
+# gates.
+#
+# `spec.bend`'s own heads (`half`, `bfloat16`, `single`, `double`) are tinyspec's
+# IR words and stay: they are not dtype.py attribute names and never were.
 # ===========================================================================
 
 def dtypes.void() -> S.Dt: S.void()
 def dtypes.weakint() -> S.Dt: S.weakint()
 def dtypes.index() -> S.Dt: S.weakint()
 def dtypes.bool() -> S.Dt: S.boolean()
-def dtypes.int8() -> S.Dt: S.int8()
-def dtypes.uint8() -> S.Dt: S.uint8()
-def dtypes.int16() -> S.Dt: S.int16()
-def dtypes.uint16() -> S.Dt: S.uint16()
-def dtypes.int32() -> S.Dt: S.int32()
-def dtypes.uint32() -> S.Dt: S.uint32()
-def dtypes.int64() -> S.Dt: S.int64()
-def dtypes.uint64() -> S.Dt: S.uint64()
+def dtypes.i8() -> S.Dt: S.int8()
+def dtypes.u8() -> S.Dt: S.uint8()
+def dtypes.i16() -> S.Dt: S.int16()
+def dtypes.u16() -> S.Dt: S.uint16()
+def dtypes.i32() -> S.Dt: S.int32()
+def dtypes.u32() -> S.Dt: S.uint32()
+def dtypes.i64() -> S.Dt: S.int64()
+def dtypes.u64() -> S.Dt: S.uint64()
 def dtypes.weakfloat() -> S.Dt: S.weakfloat()
 def dtypes.fp8e4m3() -> S.Dt: S.fp8e4m3()
 def dtypes.fp8e4m3fnuz() -> S.Dt: S.fp8e4m3fnuz()
 def dtypes.fp8e5m2() -> S.Dt: S.fp8e5m2()
 def dtypes.fp8e5m2fnuz() -> S.Dt: S.fp8e5m2fnuz()
-def dtypes.float16() -> S.Dt: S.half()
-def dtypes.half() -> S.Dt: S.half()
-def dtypes.bfloat16() -> S.Dt: S.bfloat16()
-def dtypes.float32() -> S.Dt: S.single()
-def dtypes.float64() -> S.Dt: S.double()
+def dtypes.f16() -> S.Dt: S.half()
+def dtypes.bf16() -> S.Dt: S.bfloat16()
+def dtypes.f32() -> S.Dt: S.single()
+def dtypes.f64() -> S.Dt: S.double()
 
 # the fp8 group, as dtype.py's `dtypes.fp8s`
 def dtypes.fp8s() -> List<&2, S.Dt>:
@@ -91,7 +101,10 @@ def dtypes.all() -> List<&2, S.Dt>:
 #
 # The rank order is dtype.py's own `__lt__`, which sorts on
 # (priority, bitsize, name, fmt). Both fp8 ties at priority 10 and 11 are broken
-# by name, so the order below is forced and there is no choice to make.
+# by name, so the order below is forced and there is no choice to make -- and
+# THE RENAME DID NOT MOVE IT: "fp8e4m3" < "fp8e4m3fnuz" and "float8_e4m3" <
+# "float8_e4m3fnuz" are the same two comparisons, because the new names are the
+# old ones with "float8_" replaced by "fp8". So every mask below is unchanged.
 #
 #   0 bool       5 uint16    10 weakfloat  15 float16
 #   1 weakint    6 int32     11 fp8e4m3    16 bfloat16
@@ -112,23 +125,23 @@ def promo_mask(nm: String) -> U32:
   match nm:
     case "bool": 524287
     case "weakint": 524286
-    case "signed char": 523604
-    case "unsigned char": 524280
-    case "short": 523600
-    case "unsigned short": 524256
-    case "int": 523584
-    case "unsigned int": 524160
-    case "long": 523520
-    case "unsigned long": 523776
+    case "i8": 523604
+    case "u8": 524280
+    case "i16": 523600
+    case "u16": 524256
+    case "i32": 523584
+    case "u32": 524160
+    case "i64": 523520
+    case "u64": 523776
     case "weakfloat": 523264
-    case "float8_e4m3": 493568
-    case "float8_e4m3fnuz": 495616
-    case "float8_e5m2": 499712
-    case "float8_e5m2fnuz": 507904
-    case "half": 425984
-    case "__bf16": 458752
-    case "float": 393216
-    case "double": 262144
+    case "fp8e4m3": 493568
+    case "fp8e4m3fnuz": 495616
+    case "fp8e5m2": 499712
+    case "fp8e5m2fnuz": 507904
+    case "f16": 425984
+    case "bf16": 458752
+    case "f32": 393216
+    case "f64": 262144
     case _: 0
 
 def dt_name(d: S.Dt) -> String:
@@ -250,22 +263,22 @@ def weak_dtype(+d: S.Dt) -> S.Dt:
 def can_lossless_cast.row(nm: String) -> U32:
   match nm:
     case "bool": 524287
-    case "signed char": 426326
-    case "unsigned char": 427002
-    case "short": 393554
-    case "unsigned short": 394210
-    case "int": 262466
-    case "unsigned int": 263042
-    case "long": 258
-    case "unsigned long": 514
-    case "float8_e4m3": 428032
-    case "float8_e4m3fnuz": 430080
-    case "float8_e5m2": 434176
-    case "float8_e5m2fnuz": 442368
-    case "half": 425984
-    case "__bf16": 458752
-    case "float": 393216
-    case "double": 262144
+    case "i8": 426326
+    case "u8": 427002
+    case "i16": 393554
+    case "u16": 394210
+    case "i32": 262466
+    case "u32": 263042
+    case "i64": 258
+    case "u64": 514
+    case "fp8e4m3": 428032
+    case "fp8e4m3fnuz": 430080
+    case "fp8e5m2": 434176
+    case "fp8e5m2fnuz": 442368
+    case "f16": 425984
+    case "bf16": 458752
+    case "f32": 393216
+    case "f64": 262144
     # weakint and weakfloat are placeholders, not storages: they preserve
     # themselves and nothing else
     case "weakint": 2
@@ -276,22 +289,22 @@ def rank_of(nm: String) -> Nat:
   match nm:
     case "bool": 0n
     case "weakint": 1n
-    case "signed char": 2n
-    case "unsigned char": 3n
-    case "short": 4n
-    case "unsigned short": 5n
-    case "int": 6n
-    case "unsigned int": 7n
-    case "long": 8n
-    case "unsigned long": 9n
+    case "i8": 2n
+    case "u8": 3n
+    case "i16": 4n
+    case "u16": 5n
+    case "i32": 6n
+    case "u32": 7n
+    case "i64": 8n
+    case "u64": 9n
     case "weakfloat": 10n
-    case "float8_e4m3": 11n
-    case "float8_e4m3fnuz": 12n
-    case "float8_e5m2": 13n
-    case "float8_e5m2fnuz": 14n
-    case "half": 15n
-    case "__bf16": 16n
-    case "float": 17n
+    case "fp8e4m3": 11n
+    case "fp8e4m3fnuz": 12n
+    case "fp8e5m2": 13n
+    case "fp8e5m2fnuz": 14n
+    case "f16": 15n
+    case "bf16": 16n
+    case "f32": 17n
     case _: 18n
 
 def can_lossless_cast.hit(row: U32, +bit: U32) -> Bool:
@@ -334,14 +347,14 @@ type Finfo is Data:
 
 def finfo.of(nm: String) -> Maybe<&1, Finfo>:
   match nm:
-    case "half": Some{Finfo{5, 10}}
-    case "__bf16": Some{Finfo{8, 7}}
-    case "float": Some{Finfo{8, 23}}
-    case "double": Some{Finfo{11, 52}}
-    case "float8_e4m3": Some{Finfo{4, 3}}
-    case "float8_e5m2": Some{Finfo{5, 2}}
-    case "float8_e4m3fnuz": Some{Finfo{4, 3}}
-    case "float8_e5m2fnuz": Some{Finfo{5, 2}}
+    case "f16": Some{Finfo{5, 10}}
+    case "bf16": Some{Finfo{8, 7}}
+    case "f32": Some{Finfo{8, 23}}
+    case "f64": Some{Finfo{11, 52}}
+    case "fp8e4m3": Some{Finfo{4, 3}}
+    case "fp8e5m2": Some{Finfo{5, 2}}
+    case "fp8e4m3fnuz": Some{Finfo{4, 3}}
+    case "fp8e5m2fnuz": Some{Finfo{5, 2}}
     case _: None{}
 
 def finfo.cls(cls: S.Cls, nm: String) -> Maybe<&1, Finfo>:
@@ -428,9 +441,9 @@ def dt_max(d: S.Dt) -> Maybe<&1, H.I64>:
 
 def fmax.of(nm: String) -> Maybe<&1, F32>:
   match nm:
-    case "float8_e4m3": Some{448.0}
-    case "float8_e4m3fnuz": Some{240.0}
-    case "float8_e5m2fnuz": Some{57344.0}
+    case "fp8e4m3": Some{448.0}
+    case "fp8e4m3fnuz": Some{240.0}
+    case "fp8e5m2fnuz": Some{57344.0}
     case _: None{}
 
 def fmax.cls(cls: S.Cls, nm: String) -> Maybe<&1, F32>:
@@ -445,6 +458,12 @@ def fmax(+d: S.Dt) -> Maybe<&1, F32>:
 # to_dtype -- dtype.py's `getattr(dtypes, name.lower())`, so the keys are the
 # ATTRIBUTE names, not the `name` field. `void`, `weakint` and `weakfloat` are
 # reachable here too, even though DTYPES_DICT skips them.
+#
+# EVERY SPELLING IS HERE, CANONICAL FIRST. The canonical attribute names are the
+# RUST names (i8 .. u64, f16, bf16, f32, f64); upstream keeps the old ones in a
+# block it labels `# legacy dtype aliases`, so `to_dtype("half")` still answers
+# and this table must not drop it -- but the canonical arm comes first because
+# that is the spelling everything else in the port now uses.
 # ===========================================================================
 
 def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
@@ -453,33 +472,46 @@ def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
     case "weakint": Some{S.weakint()}
     case "weakfloat": Some{S.weakfloat()}
     case "bool": Some{S.boolean()}
-    case "half": Some{S.half()}
-    case "float16": Some{S.half()}
-    case "bfloat16": Some{S.bfloat16()}
-    case "float": Some{S.single()}
-    case "float32": Some{S.single()}
-    case "double": Some{S.double()}
-    case "float64": Some{S.double()}
+    case "i8": Some{S.int8()}
+    case "u8": Some{S.uint8()}
+    case "i16": Some{S.int16()}
+    case "u16": Some{S.uint16()}
+    case "i32": Some{S.int32()}
+    case "u32": Some{S.uint32()}
+    case "i64": Some{S.int64()}
+    case "u64": Some{S.uint64()}
+    case "f16": Some{S.half()}
+    case "bf16": Some{S.bfloat16()}
+    case "f32": Some{S.single()}
+    case "f64": Some{S.double()}
     case "fp8e4m3": Some{S.fp8e4m3()}
     case "fp8e4m3fnuz": Some{S.fp8e4m3fnuz()}
     case "fp8e5m2": Some{S.fp8e5m2()}
     case "fp8e5m2fnuz": Some{S.fp8e5m2fnuz()}
-    case "char": Some{S.int8()}
+    # the block upstream labels `# legacy dtype aliases`
+    case "float16": Some{S.half()}
+    case "half": Some{S.half()}
+    case "bfloat16": Some{S.bfloat16()}
+    case "float32": Some{S.single()}
+    case "float": Some{S.single()}
+    case "float64": Some{S.double()}
+    case "double": Some{S.double()}
     case "int8": Some{S.int8()}
-    case "uchar": Some{S.uint8()}
+    case "char": Some{S.int8()}
     case "uint8": Some{S.uint8()}
-    case "short": Some{S.int16()}
+    case "uchar": Some{S.uint8()}
     case "int16": Some{S.int16()}
-    case "ushort": Some{S.uint16()}
+    case "short": Some{S.int16()}
     case "uint16": Some{S.uint16()}
-    case "int": Some{S.int32()}
+    case "ushort": Some{S.uint16()}
     case "int32": Some{S.int32()}
-    case "uint": Some{S.uint32()}
+    case "int": Some{S.int32()}
     case "uint32": Some{S.uint32()}
-    case "long": Some{S.int64()}
+    case "uint": Some{S.uint32()}
     case "int64": Some{S.int64()}
-    case "ulong": Some{S.uint64()}
+    case "long": Some{S.int64()}
     case "uint64": Some{S.uint64()}
+    case "ulong": Some{S.uint64()}
     case _: None{}
 
 def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
@@ -584,9 +616,9 @@ def Dt.i64_ceildiv(a: H.I64, b: H.I64) -> IO(H.I64):
 # The fp8 id, as the C and the JS agree on it.
 def fp8_kind(nm: String) -> U32:
   match nm:
-    case "float8_e4m3": 0
-    case "float8_e5m2": 1
-    case "float8_e4m3fnuz": 2
+    case "fp8e4m3": 0
+    case "fp8e5m2": 1
+    case "fp8e4m3fnuz": 2
     case _: 3
 
 # dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because

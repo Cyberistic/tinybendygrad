@@ -683,7 +683,7 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
 # So a UOp argument counts `itemsize // 4` WORDS and a bare int counts ONE,
 # and the header's count is the sum. `qwords` is that sum over the two kinds,
 # and it is the second half of what makes a cmd header correct -- `qc_qwords_*`
-# is the row that says a `dtypes.uint32` buffer is ONE word and not zero.
+# is the row that says a `dtypes.u32` buffer is ONE word and not zero.
 # ===========================================================================
 
 def ITEMSIZE_TO_WORDS() -> U32: 4
@@ -1329,7 +1329,7 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 #       if (cached := _qcom_program_cache.get(key := (prg.src[3].arg, devs))) is None:
 #         data = QCOMProgramData(dev, prg.to_elf())
 #         image = bytes(data.image).ljust(round_up(len(data.image), 4), b"\x00")
-#         buf = UOp.placeholder((len(image),), dtypes.uint8, ..., tag="program")
+#         buf = UOp.placeholder((len(image),), dtypes.u8, ..., tag="program")
 #         cached = _qcom_program_cache[key] = (data, patch(buf, [], image))
 #       return cached
 #
@@ -1504,7 +1504,7 @@ def qcom.pad_len(+nbytes: U32) -> U32: H.round_up_u32(nbytes, 4)
 
 def qcom.npad(+nbytes: U32) -> U32: U32.sub(qcom.pad_len(nbytes), nbytes)
 
-# :290 `UOp.placeholder((len(image),), dtypes.uint8, next(UOp.unique_num), device=devs)`
+# :290 `UOp.placeholder((len(image),), dtypes.u8, next(UOp.unique_num), device=devs)`
 # -- the buffer is as long as the PADDED image and lands on `devs`.
 def qcom.mint(+nbytes: U32, ndevs: U32) -> Call: Call{CALL_MINT(), nbytes}
 
@@ -3437,7 +3437,7 @@ def t_readlib() -> IO(Unit):
     urow("qc_rl_past_end", read_lib(RL_LIB(), 16))
 
 # --- 9: the `cmd`/`reg` word count, :57 and :59 ---------------------------
-# `x.dtype.itemsize // 4 if isinstance(x, UOp) else 1`. A `dtypes.uint8`
+# `x.dtype.itemsize // 4 if isinstance(x, UOp) else 1`. A `dtypes.u8`
 # buffer is itemsize 1 and so counts ZERO words, not one -- `qc_qw_u8_u32`
 # is 1, not 2, and that is the row that says so. A bare int is one word
 # whatever its magnitude.

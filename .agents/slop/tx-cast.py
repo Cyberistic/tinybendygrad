@@ -67,14 +67,14 @@ def run(nm, f):
 
 
 def main():
-    d = UOp.variable("d", 0.0, 100.0, dtypes.float32)
-    x = UOp.variable("x", -1.0, 1.0, dtypes.float32)
-    i32 = dtypes.int32
+    d = UOp.variable("d", 0.0, 100.0, dtypes.f32)
+    x = UOp.variable("x", -1.0, 1.0, dtypes.f32)
+    i32 = dtypes.i32
     for nm, f in (
         ("rintk", lambda: T.rintk(d)),
-        ("pow2if", lambda: T.pow2if(UOp.const(3, i32), dtypes.float32)),
+        ("pow2if", lambda: T.pow2if(UOp.const(3, i32), dtypes.f32)),
         ("ilogb", lambda: T.ilogb2k(d)),
-        ("ldexp3", lambda: T.ldexp3k(d, UOp.const(-2, dtypes.float32))),
+        ("ldexp3", lambda: T.ldexp3k(d, UOp.const(-2, dtypes.f32))),
         ("ldexp2", lambda: T.ldexp2k(d, UOp.const(-2, i32))),
         ("frexp", lambda: T.frexp(d)),
         ("cwm", lambda: T.cody_waite_reduction(d)[0]),
@@ -85,7 +85,7 @@ def main():
         ("xsin", lambda: T.xsin(d)),
         ("xexp2", lambda: T.xexp2(d)),
         ("xlog2", lambda: T.xlog2(d)),
-        ("xpow", lambda: T.xpow(d, UOp.const(2, dtypes.float32))),
+        ("xpow", lambda: T.xpow(d, UOp.const(2, dtypes.f32))),
     ):
         run(nm, f)
 

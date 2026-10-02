@@ -1,0 +1,232 @@
+LEA = 488d948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 488d | 488d94 | 488d948c | 488d948c08000000 | 488d948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=141
+MOV = 488b948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 488b | 488b94 | 488b948c | 488b948c08000000 | 488b948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=139
+MOVm = 4889948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4889 | 488994 | 4889948c | 4889948c08000000 | 4889948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=137
+MOVi = 40c7848c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 40 | 40c7 | 40c784 | 40c7848c | 40c7848c08000000 | 40c7848c08000000
+   reg=0 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=199
+MOVABS = 48ba3412000000000000   DIRECT BYTES, no `encode` call
+VMOVSS = c5fa10948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fa | c5fa10 | c5fa1094 | c5fa10948c | c5fa10948c08000000 | c5fa10948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=16
+VMOVSD = c5fb10948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fb | c5fb10 | c5fb1094 | c5fb10948c | c5fb10948c08000000 | c5fb10948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=16
+VMOVUPS = c5f810948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f8 | c5f810 | c5f81094 | c5f810948c | c5f810948c08000000 | c5f810948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=16
+VMOVSSm = c5fa11948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fa | c5fa11 | c5fa1194 | c5fa11948c | c5fa11948c08000000 | c5fa11948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=17
+VMOVSDm = c5fb11948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fb | c5fb11 | c5fb1194 | c5fb11948c | c5fb11948c08000000 | c5fb11948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=17
+VMOVUPSm = c5f811948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f8 | c5f811 | c5f81194 | c5f811948c | c5f811948c08000000 | c5f811948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=17
+MOVZX = 480fb7948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480fb7 | 480fb794 | 480fb7948c | 480fb7948c08000000 | 480fb7948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=4023
+MOVSX = 480fbf948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480fbf | 480fbf94 | 480fbf948c | 480fbf948c08000000 | 480fbf948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=4031
+MOVSXD = 4863948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4863 | 486394 | 4863948c | 4863948c08000000 | 4863948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=99
+VCVTPH2PS = c4e27913948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e279 | c4e27913 | c4e2791394 | c4e27913948c | c4e27913948c08000000 | c4e27913948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=19
+VCVTPS2PH: RAISES AttributeError: 'NoneType' object has no attribute 'index'
+VCVTSS2SD = c5f25ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f25a | c5f25ac2 | c5f25ac2 | c5f25ac2 | c5f25ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=90
+VCVTSD2SS = c5f35ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f35a | c5f35ac2 | c5f35ac2 | c5f35ac2 | c5f35ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=90
+VCVTSI2SS = c5f22ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f22a | c5f22ac2 | c5f22ac2 | c5f22ac2 | c5f22ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=42
+VCVTSI2SD = c5f32ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f32a | c5f32ac2 | c5f32ac2 | c5f32ac2 | c5f32ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=42
+VCVTTSS2SI = c5fa2c948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fa | c5fa2c | c5fa2c94 | c5fa2c948c | c5fa2c948c08000000 | c5fa2c948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=44
+VCVTTSD2SI = c5fb2c948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5fb | c5fb2c | c5fb2c94 | c5fb2c948c | c5fb2c948c08000000 | c5fb2c948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=44
+VMOVD = c5f96e948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f9 | c5f96e | c5f96e94 | c5f96e948c | c5f96e948c08000000 | c5f96e948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=110
+VMOVQ = c4e1f96e948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e1f9 | c4e1f96e | c4e1f96e94 | c4e1f96e948c | c4e1f96e948c08000000 | c4e1f96e948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=110
+VMOVDm: RAISES TypeError: encode.<locals>._encode() takes from 2 to 6 positional arguments but 7 were given
+VMOVQm: RAISES TypeError: encode.<locals>._encode() takes from 2 to 6 positional arguments but 7 were given
+VCMPSS = c5f2c2c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f2c2 | c5f2c2c2 | c5f2c2c2 | c5f2c2c2 | c5f2c2c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=194
+VCMPSD = c5f3c2c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f3c2 | c5f3c2c2 | c5f3c2c2 | c5f3c2c2 | c5f3c2c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=194
+SETNE = 400f95848c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 40 | 400f95 | 400f9584 | 400f95848c | 400f95848c08000000 | 400f95848c08000000
+   reg=0 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=3989
+SETE = 400f94848c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 40 | 400f94 | 400f9484 | 400f94848c | 400f94848c08000000 | 400f94848c08000000
+   reg=0 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=3988
+SETL = 400f9c848c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 40 | 400f9c | 400f9c84 | 400f9c848c | 400f9c848c08000000 | 400f9c848c08000000
+   reg=0 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=3996
+SETB = 400f92848c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 40 | 400f92 | 400f9284 | 400f92848c | 400f92848c08000000 | 400f92848c08000000
+   reg=0 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=3986
+CMOVNE = 480f45d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480f45 | 480f45d5 | 480f45d5 | 480f45d5 | 480f45d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=3909
+CMOVE = 480f44d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480f44 | 480f44d5 | 480f44d5 | 480f44d5 | 480f44d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=3908
+CMOVL = 480f4cd5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480f4c | 480f4cd5 | 480f4cd5 | 480f4cd5 | 480f4cd5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=3916
+CMOVB = 480f42d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480f42 | 480f42d5 | 480f42d5 | 480f42d5 | 480f42d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=3906
+VBLENDVPS = c4e3714ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e3714a | c4e3714ac2 | c4e3714ac2 | c4e3714ac2 | c4e3714ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=74
+VBLENDVPD = c4e3714bc2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e3714b | c4e3714bc2 | c4e3714bc2 | c4e3714bc2 | c4e3714bc2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=75
+JNE = 0f8500000000   DIRECT BYTES, no `encode` call
+JE = 0f8400000000   DIRECT BYTES, no `encode` call
+JL = 0f8c00000000   DIRECT BYTES, no `encode` call
+JB = 0f8200000000   DIRECT BYTES, no `encode` call
+JGE = 0f8d00000000   DIRECT BYTES, no `encode` call
+JMP = e900000000   DIRECT BYTES, no `encode` call
+VINSERTPS = c4e37121c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e37121 | c4e37121c2 | c4e37121c2 | c4e37121c2 | c4e37121c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=33
+VPSRLDQ = c5e9739c8c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5e9 | c5e973 | c5e9739c | c5e9739c8c | c5e9739c8c08000000 | c5e9739c8c08000000
+   reg=3 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=115
+VPEXTRW = c4e37915948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e379 | c4e37915 | c4e3791594 | c4e37915948c | c4e37915948c08000000 | c4e37915948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=21
+VPEXTRD = c4e37916948c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e379 | c4e37916 | c4e3791694 | c4e37916948c | c4e37916948c08000000 | c4e37916948c08000000
+   reg=2 rm=4 idx=1 rm_sz=4 reg_sz=8 sz=8 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=22
+VPINSRW = c5f1c4c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f1 | c5f1c4 | c5f1c4c2 | c5f1c4c2 | c5f1c4c2 | c5f1c4c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=196
+VPINSRD = c4e37122c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e37122 | c4e37122c2 | c4e37122c2 | c4e37122c2 | c4e37122c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=34
+IDIV = 48f7fd   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48f7 | 48f7fd | 48f7fd | 48f7fd | 48f7fd
+   reg=7 rm=5 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=247
+DIV = 48f7f5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48f7 | 48f7f5 | 48f7f5 | 48f7f5 | 48f7f5
+   reg=6 rm=5 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=247
+ADD = 4803d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4803 | 4803d5 | 4803d5 | 4803d5 | 4803d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=3
+ADDi = 4881c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4881 | 4881c2 | 4881c2 | 4881c2 | 4881c2
+   reg=0 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=129
+SUB = 482bd5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 482b | 482bd5 | 482bd5 | 482bd5 | 482bd5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=43
+SUBi = 4881ea   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4881 | 4881ea | 4881ea | 4881ea | 4881ea
+   reg=5 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=129
+IMUL = 480fafd5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480faf | 480fafd5 | 480fafd5 | 480fafd5 | 480fafd5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=4015
+IMULi = 4869d103000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4869 | 4869d1 | 4869d1 | 4869d1 | 4869d103000000
+   reg=2 rm=1 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=1 demote=False opc=105
+AND = 4823d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4823 | 4823d5 | 4823d5 | 4823d5 | 4823d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=35
+ANDi = 4881e2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4881 | 4881e2 | 4881e2 | 4881e2 | 4881e2
+   reg=4 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=129
+XOR = 4833d5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4833 | 4833d5 | 4833d5 | 4833d5 | 4833d5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=51
+XORi = 4881f2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4881 | 4881f2 | 4881f2 | 4881f2 | 4881f2
+   reg=6 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=129
+OR = 480bd5   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 480b | 480bd5 | 480bd5 | 480bd5 | 480bd5
+   reg=2 rm=5 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=0 mod=3 _rm=5 demote=False opc=11
+ORi = 4881ca   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 4881 | 4881ca | 4881ca | 4881ca | 4881ca
+   reg=1 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=129
+SHL = 48d3e2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48d3 | 48d3e2 | 48d3e2 | 48d3e2 | 48d3e2
+   reg=4 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=211
+SHLi = 48c1e2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48c1 | 48c1e2 | 48c1e2 | 48c1e2 | 48c1e2
+   reg=4 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=193
+SHR = 48d3ea   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48d3 | 48d3ea | 48d3ea | 48d3ea | 48d3ea
+   reg=5 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=211
+SHRi = 48c1ea   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48c1 | 48c1ea | 48c1ea | 48c1ea | 48c1ea
+   reg=5 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=193
+SAR = 48d3fa   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48d3 | 48d3fa | 48d3fa | 48d3fa | 48d3fa
+   reg=7 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=211
+SARi = 48c1fa   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 48 | 48c1 | 48c1fa | 48c1fa | 48c1fa | 48c1fa
+   reg=7 rm=2 idx=4 rm_sz=8 reg_sz=0 sz=8 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=193
+CMP = 493bd6   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | 49 | 493b | 493bd6 | 493bd6 | 493bd6 | 493bd6
+   reg=2 rm=6 idx=4 rm_sz=8 reg_sz=8 sz=8 r=0 x=0 b=1 mod=3 _rm=6 demote=False opc=59
+CMPi = 81bc8c08000000   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    |  | 81 | 81bc | 81bc8c | 81bc8c08000000 | 81bc8c08000000
+   reg=7 rm=4 idx=1 rm_sz=4 reg_sz=0 sz=4 r=0 x=0 b=0 mod=2 _rm=4 demote=False opc=129
+VROUNDSS = c4e3710ac2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e3710a | c4e3710ac2 | c4e3710ac2 | c4e3710ac2 | c4e3710ac2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=10
+VROUNDSD = c4e3710bc2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c4e371 | c4e3710b | c4e3710bc2 | c4e3710bc2 | c4e3710bc2 | c4e3710bc2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=11
+VSQRTSS = c5f251c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f251 | c5f251c2 | c5f251c2 | c5f251c2 | c5f251c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=81
+VSQRTSD = c5f351c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f351 | c5f351c2 | c5f351c2 | c5f351c2 | c5f351c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=81
+VADDSS = c5f258c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f258 | c5f258c2 | c5f258c2 | c5f258c2 | c5f258c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=88
+VADDSD = c5f358c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f358 | c5f358c2 | c5f358c2 | c5f358c2 | c5f358c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=88
+VSUBSS = c5f25cc2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f25c | c5f25cc2 | c5f25cc2 | c5f25cc2 | c5f25cc2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=92
+VSUBSD = c5f35cc2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f35c | c5f35cc2 | c5f35cc2 | c5f35cc2 | c5f35cc2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=92
+VMULSS = c5f259c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f259 | c5f259c2 | c5f259c2 | c5f259c2 | c5f259c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=89
+VMULSD = c5f359c2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f359 | c5f359c2 | c5f359c2 | c5f359c2 | c5f359c2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=89
+VDIVSS = c5f25ec2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f2 | c5f25e | c5f25ec2 | c5f25ec2 | c5f25ec2 | c5f25ec2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=94
+VDIVSD = c5f35ec2   stages  | pfx/rex/vex | opcode | modrm | sib | disp | imm
+    | c5f3 | c5f35e | c5f35ec2 | c5f35ec2 | c5f35ec2 | c5f35ec2
+   reg=0 rm=2 idx=4 rm_sz=16 reg_sz=16 sz=16 r=0 x=0 b=0 mod=3 _rm=2 demote=False opc=94

@@ -126,9 +126,9 @@ def get_archs():
 # a pure function of (wmma dtype, x.max_numel, src0 dtype, src0.max_numel, arg0 K).
 def wmma_grid():
   """the fixture grid: (wmma dtype, C numel -> x.max_numel, src0 dtype, src0 numel, K)."""
-  wdts = [dtypes.int32, dtypes.half, dtypes.bfloat16, dtypes.float]
+  wdts = [dtypes.i32, dtypes.f16, dtypes.bf16, dtypes.f32]
   nums = [(4, 4), (4, 8), (8, 4), (8, 8), (8, 16), (16, 4), (16, 8), (16, 16)]
-  sdts = [dtypes.int8, dtypes.half, dtypes.bfloat16, dtypes.float, dtypes.fp8e4m3]
+  sdts = [dtypes.i8, dtypes.f16, dtypes.bf16, dtypes.f32, dtypes.fp8e4m3]
   return [(wdt, mn, sdt, smn, K) for wdt in wdts for (mn, smn) in nums for sdt in sdts for K in (16, 32, 128)]
 
 def wmma_guard_rows():
@@ -184,13 +184,13 @@ def ptx_guard_rows():
   return out
 
 # the twelve keys of `PTXRenderer.types`, in the dict's own order
-DTS12 = (dtypes.int8, dtypes.int16, dtypes.int32, dtypes.int64, dtypes.uint8, dtypes.uint16,
-         dtypes.uint32, dtypes.uint64, dtypes.half, dtypes.float, dtypes.double, dtypes.bool)
+DTS12 = (dtypes.i8, dtypes.i16, dtypes.i32, dtypes.i64, dtypes.u8, dtypes.u16,
+         dtypes.u32, dtypes.u64, dtypes.f16, dtypes.f32, dtypes.f64, dtypes.bool)
 
 def asm_rows():
   out = ""
   # a fixed (d,a,b,c,dt,name) tuple; the dtype only matters for the arms that read it.
-  for dt in (dtypes.float, dtypes.half, dtypes.bool, dtypes.uint32, dtypes.int32):
+  for dt in (dtypes.f32, dtypes.f16, dtypes.bool, dtypes.u32, dtypes.i32):
     for op in (Ops.RECIPROCAL, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.SQRT, Ops.TRUNC,
                Ops.SHR, Ops.SHL, Ops.ADD, Ops.MUL, Ops.XOR, Ops.AND, Ops.OR,
                Ops.CDIV, Ops.CMOD, Ops.MAX, Ops.CMPEQ, Ops.CMPLT, Ops.CMPNE, Ops.MULACC):
@@ -202,12 +202,12 @@ def asm_rows():
       if isinstance(s, list): s = " ;; ".join(s)
       out += row(f"asm {op.name} {dt.name}", s, s)
   # WHERE is the two-element arm for bool
-  for dt in (dtypes.float, dtypes.bool):
+  for dt in (dtypes.f32, dtypes.bool):
     s = ptxmod.asm_for_op[Ops.WHERE]("%d", "%a", "%b", "%c", dt, "f16")
     if isinstance(s, list): s = " ;; ".join(s)
     out += row(f"asm WHERE {dt.name}", s, s)
-  out += row("asm WHERE b16f32", ptxmod.asm_for_op[Ops.WHERE]("%d", "%a", "%b", "%c", dtypes.float, "f32"),
-             ptxmod.asm_for_op[Ops.WHERE]("%d", "%a", "%b", "%c", dtypes.float, "f32"))
+  out += row("asm WHERE b16f32", ptxmod.asm_for_op[Ops.WHERE]("%d", "%a", "%b", "%c", dtypes.f32, "f32"),
+             ptxmod.asm_for_op[Ops.WHERE]("%d", "%a", "%b", "%c", dtypes.f32, "f32"))
   # The rows above fix `name="s32"` so they isolate the DTYPE branch. These fix
   # the DTYPE and take `name = ctx.types[dt]`, so they isolate the NAME branch --
   # `shl.b{name[1:]}`, `xor.b{name[1:]}`, `selp.b16` -- which is a different
@@ -237,8 +237,8 @@ def half_rows():
 
 def modifier_rows():
   out = ""
-  for a in (dtypes.int8, dtypes.int16, dtypes.int32, dtypes.uint8, dtypes.uint32, dtypes.float, dtypes.half, dtypes.bool, dtypes.double):
-    for b in (dtypes.int8, dtypes.int32, dtypes.float, dtypes.half, dtypes.bool, dtypes.double):
+  for a in (dtypes.i8, dtypes.i16, dtypes.i32, dtypes.u8, dtypes.u32, dtypes.f32, dtypes.f16, dtypes.bool, dtypes.f64):
+    for b in (dtypes.i8, dtypes.i32, dtypes.f32, dtypes.f16, dtypes.bool, dtypes.f64):
       out += row(f"modifier {a.name},{b.name}", ptxmod.modifier(a, b), ptxmod.modifier(a, b))
   return out
 
@@ -249,8 +249,8 @@ def render_val_rows():
   # signed decimal Bend does not have, and `double` needs 64 bits; both are
   # `# TODO(p3) ptx.py:13` and `ptx.py:16` in the .bend, and a row that is RED for
   # a named wall is noise.
-  for dt, vals in ((dtypes.half, [0.0, 1.0, -2.5, 0.3330078125]), (dtypes.float, [0.0, 1.0, -2.5, 3.5]),
-                   (dtypes.uint32, [0, 7, 4294967295]), (dtypes.uint8, [255])):
+  for dt, vals in ((dtypes.f16, [0.0, 1.0, -2.5, 0.3330078125]), (dtypes.f32, [0.0, 1.0, -2.5, 3.5]),
+                   (dtypes.u32, [0, 7, 4294967295]), (dtypes.u8, [255])):
     for v in vals:
       out += row(f"render_val {dt.name} {v!r}", ptxmod.render_val(v, dt), ptxmod.render_val(v, dt))
   return out
@@ -262,7 +262,7 @@ def type_rows():
     out += row(f"types {k.name}", v, v)
   # THE KeyError ARM: `types` has no key for fp8 or bfloat16, and the port has no
   # exception, so the row records the exception CPython raises.
-  for k in (dtypes.fp8e4m3, dtypes.bfloat16):
+  for k in (dtypes.fp8e4m3, dtypes.bf16):
     try: R.types[k]; got = "no-raise"
     except KeyError: got = "KeyError"
     out += row(f"types {k.name}", got, got)
@@ -304,7 +304,7 @@ def supported_rows():
 def tensor_core_rows():
   out = ""
   for arch in ("sm_75", "sm_80", "sm_89"):
-    got = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.half, dtypes.float)]
+    got = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.f16, dtypes.f32)]
     out += row(f"PTX tensor_cores {arch}", ",".join(f"{t.dtype_in.name}->{t.dtype_out.name}" for t in got),
                ",".join(f"{t.dtype_in.name}->{t.dtype_out.name}" for t in got))
   return out
@@ -324,10 +324,10 @@ def wmma_render_rows():
   # nm, regs(A), regs(B), regs(C), regs(D), (N,M,K), dtype_in, dtype_out
   cases = [
     ("a4", ["%va0", "%va1", "%va2", "%va3"], ["%vb0", "%vb1", "%vb2", "%vb3"], ["%wc0", "%wc1"], ["%vo0", "%vo1"],
-     (16, 8, 16), dtypes.half, dtypes.float),
-    ("a1", ["%va0"], ["%vb0"], ["%wc0", "%wc1"], ["%vo0", "%vo1"], (16, 8, 16), dtypes.half, dtypes.float),
-    ("a2", ["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0"], ["%vo0", "%vo1"], (8, 8, 8), dtypes.half, dtypes.half),
-    ("a3", ["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0", "%wc1"], ["%vo0", "%vo1"], (8, 8, 8), dtypes.float, dtypes.float),
+     (16, 8, 16), dtypes.f16, dtypes.f32),
+    ("a1", ["%va0"], ["%vb0"], ["%wc0", "%wc1"], ["%vo0", "%vo1"], (16, 8, 16), dtypes.f16, dtypes.f32),
+    ("a2", ["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0"], ["%vo0", "%vo1"], (8, 8, 8), dtypes.f16, dtypes.f16),
+    ("a3", ["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0", "%wc1"], ["%vo0", "%vo1"], (8, 8, 8), dtypes.f32, dtypes.f32),
   ]
   for nm, ra, rb, rc, ro, (N, M, K), di, do in cases:
     srcs = [ra, rb, rc]
@@ -342,7 +342,7 @@ def wmma_render_rows():
       for i, reg in enumerate(ctx.wmma_r[si]):
         if elems_per_reg == 1: lines.append(f"mov.b32 {reg}, {regs[i]};")
         else: lines.append(f"mov.b32 {reg}, {{{', '.join(regs[i*elems_per_reg:(i+1)*elems_per_reg])}}};")
-    dt_map_in, dt_map_out = {dtypes.float: "tf32", dtypes.half: "f16"}, {dtypes.float: "f32", dtypes.half: "f16"}
+    dt_map_in, dt_map_out = {dtypes.f32: "tf32", dtypes.f16: "f16"}, {dtypes.f32: "f32", dtypes.f16: "f16"}
     lines.append(f'mma.sync.aligned.m{M}n{N}k{K}.row.col.{dt_map_out[do]}.{dt_map_in[di]}.{dt_map_in[di]}.{dt_map_out[do]}{" "*12}'
                  + f'{{{", ".join(ctx.wmma_r[2])}}}, {{{", ".join(ctx.wmma_r[0])}}}, {{{", ".join(ctx.wmma_r[1])}}}, {{{", ".join(ctx.wmma_r[2])}}};')
     elems_per_reg = 4 // do.itemsize
@@ -351,9 +351,9 @@ def wmma_render_rows():
         else: lines.append(f"mov.b32 {{{', '.join(ro[i*elems_per_reg:(i+1)*elems_per_reg])}}}, {reg};")
     out += row(f"render_wmma {nm}", " ;; ".join(lines), " ;; ".join(lines))
   # the dtype-name maps alone, for the 4 combos that reach them
-  dt_map_in, dt_map_out = {dtypes.float: "tf32", dtypes.half: "f16"}, {dtypes.float: "f32", dtypes.half: "f16"}
-  for di in (dtypes.half, dtypes.float):
-    for do in (dtypes.half, dtypes.float):
+  dt_map_in, dt_map_out = {dtypes.f32: "tf32", dtypes.f16: "f16"}, {dtypes.f32: "f32", dtypes.f16: "f16"}
+  for di in (dtypes.f16, dtypes.f32):
+    for do in (dtypes.f16, dtypes.f32):
       out += row(f"wmma dtmap {di.name},{do.name}", f"{dt_map_out[do]}.{dt_map_in[di]}.{dt_map_in[di]}.{dt_map_out[do]}",
                  f"{dt_map_out[do]}.{dt_map_in[di]}.{dt_map_in[di]}.{dt_map_out[do]}")
   return out
@@ -366,8 +366,8 @@ def render_kernel_rows():
     # data1 is a LOCAL float, not an int32: `types[int32]` and a hard-coded
     # `"s32"` agree, so an int32 fixture cannot tell `types[u.dtype]` from a
     # literal. A float gives `.param .f32` and only the dtype table can say so.
-    ("k1", 128, [("data0", AddrSpace.GLOBAL, dtypes.float), ("data1", AddrSpace.LOCAL, dtypes.float)]),
-    ("k2", 256, [("data0", AddrSpace.GLOBAL, dtypes.uint32)]),
+    ("k1", 128, [("data0", AddrSpace.GLOBAL, dtypes.f32), ("data1", AddrSpace.LOCAL, dtypes.f32)]),
+    ("k2", 256, [("data0", AddrSpace.GLOBAL, dtypes.u32)]),
   ]
   for (fn, lb, bufs) in cases:
     p = ",\n\t".join(f".param .{'u64' if a == AddrSpace.GLOBAL else R.types[d]} {n}" for n, a, d in bufs)

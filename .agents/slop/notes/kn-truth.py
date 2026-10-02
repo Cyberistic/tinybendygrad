@@ -39,7 +39,7 @@ def rows():
   unnum = UOp(Ops.PARAM, src=(UOp.const(0),), arg=CG.Ops.PARAM if False else UOp(Ops.PARAM, src=(UOp.const(0),)).arg)
   # build the arg explicitly so `slot` is settable
   from tinygrad.uop.ops import ParamArg
-  unnum = UOp(Ops.PARAM, src=(UOp.const(0),), arg=ParamArg(-1, dtypes.int, None, None, None, None,
+  unnum = UOp(Ops.PARAM, src=(UOp.const(0),), arg=ParamArg(-1, dtypes.i32, None, None, None, None,
                                                           AddrSpace.GLOBAL, None, False, None,
                                                           None, False, None))
   r.append(("np_fresh", int(unnum.arg.slot == -1)))
@@ -49,7 +49,7 @@ def rows():
   r.append(("np_slot", n - 1))
   r.append(("np_next", n))
   # a PARAM whose slot is already set: the guard fails, nothing is rewritten
-  numbered = UOp(Ops.PARAM, src=(UOp.const(0),), arg=ParamArg(3, dtypes.int, None, None, None, None,
+  numbered = UOp(Ops.PARAM, src=(UOp.const(0),), arg=ParamArg(3, dtypes.i32, None, None, None, None,
                                                              AddrSpace.GLOBAL, None, False, None,
                                                              None, False, None))
   ctx = [3]

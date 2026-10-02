@@ -2096,8 +2096,8 @@ def ra_tbl_ops() -> String:
 # THE INTERN TABLE. `Regs` in the oracle is a growable LIST of `(name, index,
 # cons)` and an index into it, so it is a list here and not an assoc table: a
 # register's own intern index is its key. `Ru.nm` is `ra<t>_vregs`' name column
-# and `Ra.ix`/`Ra.cs` are `Register.index` and `Register.cons` -- the two fields
-# the sort key at :83 reads.
+# and the `Ru` record's `ix`/`cs` FIELDS are `Register.index` and
+# `Register.cons` -- the two fields the sort key at :83 reads.
 # ---------------------------------------------------------------------------
 type Ru is Data:
   Ru{nm: String, ix: U32, cs: List<&2, U32>}

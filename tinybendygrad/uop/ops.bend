@@ -512,56 +512,139 @@ def GroupOp.elementwise(op: Op) -> Bool:
 # AxisType -- tinygrad/uop/ops.py:17
 #
 # `def __repr__(self): return str(self)` in the Python, which exists only so a
-# range's arg prints as a name. `Ops.RANGE`'s arg is `(axis_id, axis_type)`, so
+# range's arg prints as a name. `Ops.RANGE`'s arg is `(axis_type, axis_id)`, so
 # the type is a field of the arg and has to be a datatype here; `Ops.name` is
 # the same trick one level up.
+#
+# ===========================================================================
+#
+# REBASED ONTO `78d482262` ("range AxisType is first / delete REDUCE/UNROLL"),
+# which is 53 files and the pin's hard blocker. Four upstream facts moved and all
+# four are read by a CPython row now -- this block had NO CPython lane at all
+# (`cpython=0`), which is how a wrong `AxisType.value` survived:
+#
+#   * UPSTREAM'S ORDER IS `DEVICE, GLOBAL, LOCAL, WARP, WEAK, LOOP, UPCAST,
+#     PLACEHOLDER`. The pin was `DEVICE, GLOBAL, WARP, LOCAL, WEAK, REDUCE,
+#     UPCAST, UNROLL, PLACEHOLDER`, so FOUR of the eight surviving values moved
+#     and two members were deleted outright.
+#   * `AxisType.__lt__` was ADDED ("Nesting order: RANGE args sort by axis type,
+#     then axis id"). It is `AxisType.lt` below. `__le__`/`__ge__` were NOT
+#     added, and there is no row pretending otherwise -- see `axlt_le`/`axlt_ge`
+#     in the gate, which are BEND-ONLY and say why.
+#   * `axis_to_pos` is DELETED. The port's copy is deleted with it, and nothing
+#     in the repo called it -- a grep for `axis_to_pos` over every `.bend` returns
+#     this block and nothing else, so the deletion is complete and the `Pos`
+#     record goes with it.
+#   * `axis_colors` changed `WEAK`/`LOOP` from "WHITE" to "red" -- the colour of a
+#     range the renderer now folds into the enclosing one, so it renders as part
+#     of it rather than as its own bar.
+#
+# ---------------------------------------------------------------------------
+# THE ONE THING THIS BLOCK DOES NOT FIX, and it is a THEOREM rather than a choice.
+#
+# `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
+# by six committed files, so they cannot be deleted here:
+#     schedule/indexing.bend:1319          codegen/kernel.bend:366,:956
+#     codegen/late.bend:902                codegen/opt/heuristic.bend:157,:160
+#     codegen/opt/postrange.bend:214,:215,:292,:453,:457,:483,:675,:796,:799,:899,:933,:937,:959,:962
+#     codegen/opt/search.bend:295,:393,:399
+# and three of those six are under `codegen/opt/*`, which another unit owns and which
+# is mid-edit. So the enum here has TEN members where CPython has EIGHT.
+#
+# That makes `AxisType.value` A PROVABLE PARTIAL, and the argument is short. An
+# `auto()` Enum's value is its index in the member list, so a TEN-member enum
+# cannot carry upstream's eight values: the two retained members need two numbers,
+# and every number in 1..8 is already one of upstream's. Therefore EITHER two
+# survivors get the wrong number OR two survivors collide and `eq_axis` answers
+# True for two different axis types -- which silently merges two RANGE args in the
+# ucache. THIS FILE CHOSE THE FORMER: the eight survivors take upstream's exact
+# numbers, and the two dead ones take 9 and 10, slots upstream does not use at all.
+# They are therefore DISTINCT from every live value and from each other, which is
+# the only property `eq_axis` needs -- and the gate proves it, with
+# `eqax_distinct` over all pairs and one `axv_*` row per member.
+#
+# So `axv_LOCAL=3` and `axv_WARP=4` are FIXED here, and `axv_LOOP=6` /
+# `axv_PLACEHOLDER=8` are fixed for the same reason. What is left is the two DEAD
+# members' numbers, which are not an upstream fact at all because upstream has no
+# such member. When the six consuming files land, delete the last two constructors,
+# this paragraph, and nothing else -- no other value moves.
 # ===========================================================================
 
 type AxisType is Data:
   AXIS_DEVICE{}
   AXIS_GLOBAL{}
-  AXIS_WARP{}
   AXIS_LOCAL{}
+  AXIS_WARP{}
   AXIS_WEAK{}
-  AXIS_REDUCE{}
-  AXIS_UPCAST{}
-  AXIS_UNROLL{}
-  AXIS_PLACEHOLDER{}
   AXIS_LOOP{}
+  AXIS_UPCAST{}
+  AXIS_PLACEHOLDER{}
+  # DELETED UPSTREAM by 78d482262 and retained only because six committed files
+  # still construct them. See the theorem above. No CPython row can ask for these
+  # two: at the tree this gate reads they do not exist, so `axv_REDUCE` /
+  # `axv_UNROLL` are BEND-ONLY rows and say so.
+  AXIS_REDUCE{}
+  AXIS_UNROLL{}
+
+def AxisType.name.dead(a: AxisType) -> String:
+  match a:
+    case AXIS_REDUCE{}: "REDUCE"
+    case _: "UNROLL"
 
 def AxisType.name(a: AxisType) -> String:
   match a:
     case AXIS_DEVICE{}: "DEVICE"
     case AXIS_GLOBAL{}: "GLOBAL"
-    case AXIS_WARP{}: "WARP"
     case AXIS_LOCAL{}: "LOCAL"
+    case AXIS_WARP{}: "WARP"
     case AXIS_WEAK{}: "WEAK"
-    case AXIS_REDUCE{}: "REDUCE"
-    case AXIS_UPCAST{}: "UPCAST"
-    case AXIS_UNROLL{}: "UNROLL"
-    case AXIS_PLACEHOLDER{}: "PLACEHOLDER"
     case AXIS_LOOP{}: "LOOP"
+    case AXIS_UPCAST{}: "UPCAST"
+    case AXIS_PLACEHOLDER{}: "PLACEHOLDER"
+    case _: AxisType.name.dead(a)
 
-# `AxisType` is an `auto()` Enum, so its value is its declaration order, exactly
-# as `Ops.value` below. `range_str` does not read it, but the ucache key and
-# `eq_axis` do, and it is the same number Python has.
+# THE MEMBER LIST, in the order the `type` above declares it. This is what the
+# `#shared_axis_*` derivation rows are built from and what `eqax_distinct` walks, and
+# it is a `List` rather than ten open-coded rows because CPython's answer is
+# `list(AxisType)` -- ONE fact about the enum rather than ten facts about a ladder, so
+# a member added to the `type` without a row here shows as a LENGTH diff rather than as
+# a silent agreement about the wrong set.
+def AxisType.all() -> List<&2, AxisType>:
+  [AXIS_DEVICE{}, AXIS_GLOBAL{}, AXIS_LOCAL{}, AXIS_WARP{}, AXIS_WEAK{}, AXIS_LOOP{},
+   AXIS_UPCAST{}, AXIS_PLACEHOLDER{}, AXIS_REDUCE{}, AXIS_UNROLL{}]
+
+# `AxisType` is an `auto()` Enum, so its value is its position in the member list,
+# exactly as `Ops.value` below. The eight live members carry upstream's numbers and
+# the two dead ones take the two slots above them; see the theorem above.
 def AxisType.value(a: AxisType) -> U32:
   match a:
     case AXIS_DEVICE{}: 1
     case AXIS_GLOBAL{}: 2
-    case AXIS_WARP{}: 3
-    case AXIS_LOCAL{}: 4
+    case AXIS_LOCAL{}: 3
+    case AXIS_WARP{}: 4
     case AXIS_WEAK{}: 5
-    case AXIS_REDUCE{}: 6
+    case AXIS_LOOP{}: 6
     case AXIS_UPCAST{}: 7
-    case AXIS_UNROLL{}: 8
-    case AXIS_PLACEHOLDER{}: 9
-    case AXIS_LOOP{}: 10
+    case AXIS_PLACEHOLDER{}: 8
+    case AXIS_REDUCE{}: 9
+    case _: 10
 
-# axis_letters / axis_colors / axis_to_pos -- ops.py:49,51,55. Three
-# dictionaries keyed by an Enum; three `match` ladders here. PLACEHOLDER is in
-# the enum and in none of the three tables, which is why each ladder needs a
-# `_` arm: Python's would raise KeyError, and these answer "" / 0.
+# `AxisType.__lt__` -- ops.py:19 upstream, ADDED by 78d482262. `self.value <
+# other.value`, so it is `AxisType.value` order and nothing else. There was no
+# `__lt__` at the pin and `sorted(list(AxisType))` raised `TypeError` there, which is
+# why the oracle prints `axlt_sorted=!TypeError` on the pin tree and a name sequence on
+# the upstream one: the SORT is the addition, measured rather than asserted.
+def AxisType.lt(x: AxisType, y: AxisType) -> Bool:
+  U32.is_lt(AxisType.value(x), AxisType.value(y))
+
+# axis_letters / axis_colors -- ops.py:51,53. Two dictionaries keyed by an Enum, two
+# `match` ladders. UPSTREAM DROPS THE `REDUCE`/`UNROLL` ENTRIES and adds nothing, so
+# PLACEHOLDER -- in the enum and in neither dict -- and the two dead members are all
+# MISSES. A Bend def cannot raise, so the miss is ANSWERED rather than swallowed: both
+# ladders return `"!KeyError"`, the name of the exception Python raises, which is the
+# same treatment `ABad{}` gives `self.src[0]` on an empty src. Returning `""` would
+# have been a silent widening -- indistinguishable from a member whose letter really is
+# empty -- and there is no such member, so the marker is free of false agreement.
 def axis_letters(a: AxisType) -> String:
   match a:
     case AXIS_DEVICE{}: "d"
@@ -571,44 +654,44 @@ def axis_letters(a: AxisType) -> String:
     case AXIS_WEAK{}: "L"
     case AXIS_LOOP{}: "L"
     case AXIS_UPCAST{}: "u"
-    case AXIS_REDUCE{}: "R"
-    case AXIS_UNROLL{}: "r"
-    case _: ""
+    case _: "!KeyError"
 
+# `WEAK` and `LOOP` are "red" upstream, not the pin's "WHITE". A red range is one the
+# renderer folds into its parent, so it draws as part of the parent rather than as a
+# bar of its own; that is a rendering decision and `uop/render.bend` is where the
+# colour is consumed.
 def axis_colors(a: AxisType) -> String:
   match a:
     case AXIS_DEVICE{}: "green"
     case AXIS_GLOBAL{}: "blue"
     case AXIS_LOCAL{}: "cyan"
     case AXIS_WARP{}: "CYAN"
-    case AXIS_WEAK{}: "WHITE"
-    case AXIS_LOOP{}: "WHITE"
+    case AXIS_WEAK{}: "red"
+    case AXIS_LOOP{}: "red"
     case AXIS_UPCAST{}: "yellow"
-    case AXIS_REDUCE{}: "red"
-    case AXIS_UNROLL{}: "magenta"
-    case _: ""
+    case _: "!KeyError"
 
-# axis_to_pos: DEVICE is -2, WEAK and LOOP are -1, everything else counts up
-# from 0. The negative ranks put a DEVICE axis before a GLOBAL one in a sort.
-# Bend has no signed integer, so the value is a sign flag and a magnitude.
-type Pos is Data:
-  Pos{neg: Bool, mag: U32}
+# `axis_to_pos` IS GONE. ops.py:57 at the pin, deleted by 78d482262 and replaced by
+# the literal `0` at the four call sites that read it (`_shard`'s device range,
+# `device_range_src`, and `axis`'s default), because "RANGE args sort by axis type,
+# then axis id" makes the position redundant with the TYPE. The `Pos` record went with
+# it: it existed only because the dict's values were negative and Bend has no signed
+# integer, and the remaining values are all non-negative literals.
+#
+# The `xpos` gate rows are how this deletion is CHECKED rather than claimed: CPython's
+# `hasattr(ops, 'axis_to_pos')` is False, and `ops-gate.sh` additionally greps the Bend
+# source for the symbol and fails if it is still there -- because a def Bend cannot
+# print as "absent" is exactly the case where a claim in a comment is not a gate.
 
-def axis_to_pos(a: AxisType) -> Pos:
-  match a:
-    case AXIS_DEVICE{}: Pos{True{}, 2}
-    case AXIS_WEAK{}: Pos{True{}, 1}
-    case AXIS_LOOP{}: Pos{True{}, 1}
-    case AXIS_GLOBAL{}: Pos{False{}, 0}
-    case AXIS_WARP{}: Pos{False{}, 1}
-    case AXIS_LOCAL{}: Pos{False{}, 2}
-    case AXIS_UPCAST{}: Pos{False{}, 3}
-    case AXIS_REDUCE{}: Pos{False{}, 4}
-    case AXIS_UNROLL{}: Pos{False{}, 5}
-    case _: Pos{False{}, 0}
-
-# range_start -- ops.py:58. `range_start[self.op]` is a slice offset, so it is
-# a ladder and Python's KeyError is the `case _` arm.
+# range_start -- ops.py:56. `range_start[self.op]` is a slice offset, so it is a
+# ladder and Python's KeyError is the `case _` arm.
+#
+# UNCHANGED by 78d482262, and the gate now says so from CPython rather than from this
+# comment: `axs_*` is one row per op in the dict PLUS one for an op that is not in it
+# (`Ops.NOOP`), because `ended_ranges` asks `if self.op in range_start` and a miss is a
+# real answer there. `Ops.LINEAR`'s answer is 0 and the miss is also 0, so without the
+# marker row a dropped `LINEAR` entry and a dropped `NOOP` entry would be the same
+# string; `range_start_str` is what keeps them apart.
 def range_start(op: Op) -> U32:
   match op:
     case OpsSTAGE{}: 1
@@ -617,6 +700,20 @@ def range_start(op: Op) -> U32:
     case OpsCALL{}: 1
     case OpsLINEAR{}: 0
     case _: 0
+
+# `range_start` AS A ROW. `range_start` answers a `U32` and a miss is 0, which is also
+# `Ops.LINEAR`'s answer, so the U32 alone cannot say whether an op was NAMED. This is
+# the printer the `axs_*` rows use: `U32.show` for a hit and the exception's name for a
+# miss, which is what CPython's `range_start[op]` in a `try` prints. This is a GATE
+# PRINTER, not a ported def -- it has no counterpart in ops.py.
+def range_start_str(op: Op) -> String:
+  match op:
+    case OpsSTAGE{}: "1"
+    case OpsREDUCE{}: "1"
+    case OpsEND{}: "1"
+    case OpsCALL{}: "1"
+    case OpsLINEAR{}: "0"
+    case _: "!KeyError"
 
 # ===========================================================================
 # Const -- tinygrad/dtype.py: `PyConst = float|int|bool`, and `InvalidType` is
@@ -2153,13 +2250,71 @@ def UOp.broadcast(+ar: Arena, +self: U32, +count: U32) -> Found:
 def UOp.const(ar: Arena, +v: Const) -> Found:
   UOp.new(ar, OpsCONST{}, Nil{}, APy{v}, TNone{})
 
-# range -- ops.py:644. `UOp(Ops.RANGE, src=(sint_to_uop(end, dtype),)+src,
-# arg=(axis_id, axis_type), **kwargs)`. `end` is already a UOp index here,
+# range -- ops.py:642. `UOp(Ops.RANGE, src=(sint_to_uop(end, dtype),)+src,
+# arg=(axis_type, axis_id), **kwargs)`. `end` is already a UOp index here,
 # because `sint_to_uop` is `UOp.const(x, dtype)` and that is the CONST above.
+#
+# ---------------------------------------------------------------------------
+# THE ARG ORDER IS FLIPPED AND `ARange` IS NOT -- THE COUPLING, STATED EXACTLY.
+#
+# Upstream `arg=(axis_type, axis_id)` and the pin's was `arg=(axis_id, axis_type)`.
+# `ARange` is this file's SPLIT of that tuple, so faithful would be
+# `ARange{at, ids}`. It is `ARange{ids, at}` and that is a DELIBERATE wall, because
+# `ARange` is read and written POSITIONALLY by eleven committed files:
+#     schedule/rangeify.bend:744,2283,2581,3001,3005,3013   schedule/multi.bend:684
+#     schedule/indexing.bend:628,633     codegen/late.bend:910,1000,1573,1796-1798
+#     uop/render.bend:588,792,797,833,841,1848,1934          uop/spec.bend:348,360
+#     uop/fold.bend:2288,2300            uop/validate.bend:1601
+#     uop/fold2_work.bend:2280,2292      uop/fold_mm_work.bend:2280,2292
+#     uop/upat.bend:406                   engine/realize.bend:1345,1623
+# Flipping the field order here would break all twenty-nine of those sites and leave
+# six files I do not own red. It is a TWO-FILE change that has to be sequenced, not a
+# one-file rebase, and `.agents/UPSTREAM-PIN.md` outcome 2 ("re-verify, no change") is
+# the wrong label for it -- it is a coupling, recorded here and in the rebase list.
+#
+# WHAT IS NOT AFFECTED, and is fixed below: nothing in the ported surface reads the arg
+# POSITIONALLY. `axis_id` and `axis_type` are the only readers, they are properties in
+# Python, and `UOp.axis_id` / `UOp.axis_type` below return CPython's answers off the
+# split. So the observable semantics of `UOp.range`, `UOp.loop`, `axis_id` and
+# `axis_type` are upstream-exact and gated; the one thing still wrong is `repr(arg)`,
+# which is `range_str`'s job and is P3 (`uop/render.py`), plus `hcq2.py:498`'s
+# `arg=(u.axis_type, next(ctx))+u.axis_id[1:]`, which is P6 and unported. Both name the
+# field, not the position, which is why they survive the wall.
 def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Found:
   UOp.new(ar, OpsRANGE{}, [end], ARange{ids, at}, TNone{})
 
-# loop -- ops.py:647. `UOp(Ops.RANGE, src=(UOp(Ops.NOOP),), arg=(axis_id, AxisType.WEAK))`
+# axis_id / axis_type -- ops.py:499-505 upstream, 502-508 at the pin. Both assert
+# `self.op is Ops.RANGE` in Python; the port reads the arg's shape instead, because an
+# `Arg` that is not an `ARange` cannot be a RANGE's -- `UOp.new` puts the arg and the
+# op in the same node, so the op is the discriminator and there is nothing to assert.
+#
+# THESE ARE THE SWAPPED PAIR the rebase moved, and the gate asks CPython's PROPERTY
+# (`u.axis_id`, `u.axis_type`) rather than re-deriving either slice, so the row follows
+# the tree instead of encoding a reading of the diff. Measured: for an arg of length
+# TWO -- which is every `UOp.range` and every `UOp.loop` -- the pin's `arg[0:-1]` and
+# upstream's `arg[1:]` are the SAME slice, so those four fixtures answer identically on
+# both trees. Only a three-element arg separates them, and `rng_twoid` /
+# `axid_twoid` is that fixture.
+#
+# Note what the port CANNOT do here: upstream's `axis_id` is `self.arg[1:]`, a slice of
+# a Python TUPLE of arbitrary length, so a port whose `ARange` holds a `List` answers it
+# only while the list is the whole tail. That is the same shape as every other
+# tuple-to-`List` conversion in this file and it is stated, not hidden.
+def UOp.axis_id.of(at: AxisType, ids: List<&2, U32>) -> List<&2, U32>: ids
+def UOp.axis_id.dead(at: AxisType, ids: List<&2, U32>) -> List<&2, U32>: Nil{}
+def UOp.axis_id.at(a: Arg) -> Maybe<&2, List<&2, U32>>:
+  match a:
+    case ARange{ids, at}: Some{UOp.axis_id.of(at, ids)}
+    case _: None{}
+
+def UOp.axis_type.of(at: AxisType, ids: List<&2, U32>) -> AxisType: at
+def UOp.axis_type.dead(at: AxisType, ids: List<&2, U32>) -> AxisType: AXIS_REDUCE{}
+def UOp.axis_type.at(a: Arg) -> Maybe<&2, AxisType>:
+  match a:
+    case ARange{ids, at}: Some{UOp.axis_type.of(at, ids)}
+    case _: None{}
+
+# loop -- ops.py:644. `UOp(Ops.RANGE, src=(UOp(Ops.NOOP),), arg=(AxisType.WEAK, axis_id))`
 def UOp.loop.go(+made: Found, +axis_id: U32) -> Found:
   UOp.range_end(Found.ar(made), Found.i(made), [axis_id], AXIS_WEAK{})
 
@@ -3958,12 +4113,399 @@ def t_ler_len.of(+f: Found) -> Bool:
 def t_ler_len() -> Bool:
   t_ler_len.of(g_ler())
 
+# ---------------------------------------------------------------------------
+# THE SIGNATURE PRINTERS -- four facts plus the answer as ONE string. Every graph row
+# in this file's new lane goes through `Rng.sig`, and the four facts are FIXED here
+# rather than per row because a row that prints three of them and hand-builds the
+# fourth is a row whose formatting can drift from its siblings'.
+#
+#   node count      `toposort`'s length
+#   root op         `Ops.name` of the node
+#   root nsrc       the src COUNT
+#   SRC OP SEQUENCE the ops of the srcs, in order
+#
+# The src op SEQUENCE is the fifth fact and it is here for the same reason
+# `after_puts_self_first` exists -- `mixin/movement` measured a two-src swap that left
+# the count, the root op, the root nsrc and the toposort ALL identical. It is the ONLY
+# thing in a UOp row that sees a swap.
+# ---------------------------------------------------------------------------
+def Rng.srcops.go(+ar: Arena, xs: List<&2, U32>, +acc: String, +first: Bool) -> String:
+  match xs:
+    case Nil{}: acc
+    case +h <> t:
+      Rng.srcops.go(ar, t, Bool.pick(String, first, acc ++ Ops.name(Arena.op(ar, h)),
+        acc ++ " " ++ Ops.name(Arena.op(ar, h))), False{})
 
+# `-` for a node with no srcs, matching CPython's own `-` for an empty join. `+first`
+# is what carries "have I printed anything yet": a trailing separator would need a
+# string drop-last, and a leading separator on the first element would need a second
+# pass; a fold that knows which element is first needs neither. `+h` and `+ar` are the
+# duplication Bend asks for when a value is used twice.
+def Rng.srcops.seeded(+ar: Arena, xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: "-"
+    case +h <> t: Rng.srcops.go(ar, t, Ops.name(Arena.op(ar, h)), True{})
 
-# Bend has no assertion form, so `main` PRINTS each answer and the gate is that
-# both lanes print the same lines. A `False{}` anywhere is the failure.
+def Rng.srcops(+ar: Arena, self: U32) -> String:
+  Rng.srcops.seeded(ar, Arena.srcs(ar, self))
+
+def Rng.sig(+ar: Arena, +self: U32) -> String:
+  String.concat([
+    Nat.show(List.length(&2, U32, UOp.toposort(Arena.budget(ar), ar, self))), " ",
+    Ops.name(Arena.op(ar, self)), "/", U32.show(Arena.nsrc(ar, self)), " ",
+    Rng.srcops(ar, self)])
+
+# Bend has no assertion form, so `main` PRINTS each answer and the gate is that both
+# lanes print the same lines. A `False{}` anywhere is the failure.
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
+
+# A STRING row: the four facts plus the answer, as ONE line. `row` is for a Bool and
+# this is for everything else -- a table cell, a signature, a name sequence -- because a
+# Bool row cannot express "which of eight", and that is the whole of the AxisType gate.
+def srow(nm: String, v: String) -> IO(Unit):
+  IO.print(String.concat([nm, "=", v]))
+
+# ---------------------------------------------------------------------------
+# MSTACK -- ops.py:770, `UOp(Ops.MSTACK, src=(self,)+srcs) if len(srcs) else self`.
+#
+# THE ROW THIS FILE WAS MISSING, and it is a KNOWN LOOSE END rather than a new finding.
+# `UOp.after`, `UOp.end` and `UOp.mstack` all had `srcs ++ [self]` where CPython has
+# `(self,)+src`, so self landed LAST in all three; that was fixed in `847c5f5fb` and
+# `after_puts_self_first` / `end_puts_self_first` were added with it -- and `mstack` was
+# fixed in the same commit with NO row of its own. So a re-regression of mstack alone
+# would leave both of its siblings green and this file would not notice, which is the
+# same failure the AFTER fix was made for, one def over.
+#
+# The two rows are deliberately not the same row. `t_mstack_puts_self_first` is a Bool
+# naming the regression, beside its two siblings; `mstack0/1/2` are CPython-compared
+# STRINGS carrying the four facts plus the answer, and `mstack2`'s src op sequence
+# `RANGE CONST CONST` is the fact a swap moves. Count, root op, root nsrc and arg are
+# all identical either way.
+# ---------------------------------------------------------------------------
+def g_mstack.base(ar: Arena, r: U32, b: U32, c: U32) -> Found: UOp.mstack(ar, r, Nil{})
+
+def g_mstack.one(ar: Arena, r: U32, b: U32, c: U32) -> Found: UOp.mstack(ar, r, [b])
+
+def g_mstack.go(+n: U32, ar: Arena, r: U32, b: U32, c: U32) -> Found:
+  match n:
+    case 0: g_mstack.base(ar, r, b, c)
+    case 1: g_mstack.one(ar, r, b, c)
+    case _: UOp.mstack(ar, r, [b, c])
+
+def g_mstack(n: U32) -> Found:
+  # `self` is a RANGE and the supplied srcs are CONSTs, so self-first prints
+  # `RANGE CONST CONST` and the bug prints `CONST CONST RANGE`.
+  #
+  # EVERY `Found` IS SPLIT ONCE, IMMEDIATELY. A `Found` is affine, so `Found.ar(r)`
+  # CONSUMES it and a later `Found.i(r)` in the next statement reads a consumed value --
+  # measured: it answered the MSTACK's own index, so `mstack1`'s srcs came out
+  # `RANGE MSTACK` and the node count came out 2. Reading `.ar` and `.i` in the SAME
+  # argument list is fine; reading them in two statements is not.
+  +c0 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(4)})
+  +r = UOp.range_end(Found.ar(c0), Found.i(c0), [0], AXIS_WEAK{})
+  +ar = Found.ar(r)
+  +ri = Found.i(r)
+  +b = UOp.const(ar, CInt{H.i64_of_i32(1)})
+  +c = UOp.const(ar, CInt{H.i64_of_i32(2)})
+  g_mstack.go(n, ar, ri, Found.i(b), Found.i(c))
+
+def t_mstack_puts_self_first() -> Bool:
+  +f = g_mstack(2)
+  +ar = Found.ar(f)
+  Bool.and(op_is(ar, Found.i(f), OpsMSTACK{}),
+  Bool.and(op_is(ar, Arena.src(ar, Found.i(f), 0), OpsRANGE{}),
+           op_is(ar, Arena.src(ar, Found.i(f), 1), OpsCONST{})))
+
+# ONE BUILD PER ROW. `g_mstack` returns a `Found` over an affine arena, so calling it
+# twice to get `.ar` and `.i` would read TWO arenas and print a signature over one node
+# taken out of the other. Binding once with `+` is the only correct spelling.
+def MStack.sig(n: U32) -> String:
+  +f = g_mstack(n)
+  Rng.sig(Found.ar(f), Found.i(f))
+
+def t_mstack_rows() -> IO(Unit):
+  do IO<Unit>:
+    srow("mstack2", MStack.sig(2))
+    srow("mstack1", MStack.sig(1))
+    srow("mstack0", MStack.sig(0))
+
+
+
+# ===========================================================================
+# THE AXIS CPYTHON LANE. This block is new: the file had 22 rows and NO cpython
+# lane at all, and everything below is about `AxisType` -- the thing `78d482262`
+# changed and the thing nothing could see change.
+#
+# Every row here has its expectation GENERATED BY CALLING CPython; see
+# `.agents/slop/ops-oracle.py` and `.agents/slop/ops-gate.sh`. The rows come in two
+# kinds and they are not interchangeable:
+#
+#   * CPYTHON rows -- printed by both lanes and diffed. `axv_*` is the headline:
+#     one row per AxisType MEMBER, because a fixture-driven gate would only ask
+#     about the axis types a fixture happens to hold, and PLACEHOLDER is in no
+#     fixture tinygrad builds. That is precisely how the pin's wrong PLACEHOLDER
+#     value (9) survived.
+#   * BEND-ONLY rows -- printed by this file, filtered BY NAME by `ops-gate.sh`,
+#     each with a `#bend_only_*` reason in the oracle. They are the four
+#     cross-file walls (the `ARange` field order, the two retained dead members,
+#     `spec_shared`, and `hasattr`), and none of them is quietly dropped: the
+#     gate script lists every one.
+# ===========================================================================
+
+# `(0,)`, `(0,1)`, `(0,1,2)` -- the axis-id spelling, comma and no space, with
+# Python's TRAILING COMMA on a one-element tuple. The comma is load-bearing:
+# upstream's `axis_id` on a two-element arg is the 1-tuple `(0,)`, and `(0)` would
+# read as a parenthesised int. Two defs rather than `List.show` because `List.show`
+# brackets and spaces (`[0, 1]`), and reproducing `repr`'s spacing rules would put
+# the formatting into the comparison instead of the values.
+def IdsStr.rest(xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: ""
+    case h <> t: String.concat([",", U32.show(h), IdsStr.rest(t)])
+
+def IdsStr(xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: "()"
+    case h <> t:
+      # a one-element tuple gets its trailing comma, so the empty tail is not enough
+      match t:
+        case Nil{}: String.concat(["(", U32.show(h), ",)"])
+        case _: String.concat(["(", U32.show(h), IdsStr.rest(t), ")"])
+
+# `axis_id` WITH ITS LENGTH, which is what `axid_*` prints. The length is in the row
+# because upstream's `axis_id` is a SLICE of the arg and a slice's length is the fact
+# that says which slice: `arg[1:]` on a two-element arg and on a three-element arg both
+# begin at 1 and only the length tells them apart.
+def IdsStr.ids(+xs: List<&2, U32>) -> String:
+  String.concat([IdsStr(xs), "/len=", Nat.show(List.length(&2, U32, xs))])
+
+def ax_names_str.go(xs: List<&2, AxisType>) -> List<&2, String>:
+  match xs:
+    case Nil{}: Nil{}
+    case a <> t: List.append(&2, String, [AxisType.name(a)], ax_names_str.go(t))
+
+def ax_names_str(xs: List<&2, AxisType>) -> String:
+  String.join(ax_names_str.go(xs), ",")
+
+# THE EIGHT MEMBERS UPSTREAM KEEPS, as a list, in DECLARATION order. Not `AxisType.all`
+# -- that is the port's ten, and the two dead ones are the wall. This list IS the wall's
+# content and it is here because `eqax_distinct` and `#shared_axis_*` need a member set
+# to walk; the two dead constructors are visibly absent from it, which is the honest
+# shape while six other files still build them.
+def AxisType.live() -> List<&2, AxisType>:
+  [AXIS_DEVICE{}, AXIS_GLOBAL{}, AXIS_LOCAL{}, AXIS_WARP{}, AXIS_WEAK{}, AXIS_LOOP{},
+   AXIS_UPCAST{}, AXIS_PLACEHOLDER{}]
+
+# `eqax_collide` -- how many pairs of DIFFERENT members `eq_axis` calls equal. `eq_axis`
+# is `AxisType.value` equality, so two members sharing a number make it answer True for
+# two different axis types, which merges two RANGE args in the ucache and is invisible
+# everywhere else. CPython's answer is 0, and this walks the same pairs on the port's
+# member list.
+#
+# THE COUNT IS NOT THE SUM, and that is a measurement: summing every equal pair gives
+# 8 on the live set and 10 on the full one, because `eq_axis(a, a)` is True for all ten.
+# So the row is `pairs - diag`, the off-diagonal count -- which is 0 only when no two
+# DISTINCT members collide, and a collision makes it 1 or 2. Both sets are walked because
+# the port has TEN members where CPython has eight and the two retained dead ones are
+# exactly where a collision would hide.
+#
+# ONE row per member set and NOT the 8x8 = 64 table: 64 rows of `eqax_*` would be a
+# CHANGE DETECTOR, because a PERMUTED `value` table moves none of them (every value is
+# still distinct) and that permuted table is precisely the defect upstream shipped. The
+# off-diagonal COUNT moves on the permutation's twin (a collision) and `axv_*` moves on
+# the permutation itself; a 64-row table would cover only the first of those two facts
+# and 64 rows of `False` is a table that cannot fail.
+def EqAx.pairs(+a: AxisType, ys: List<&2, AxisType>) -> U32:
+  match ys:
+    case Nil{}: 0
+    case b <> t: U32.add(Bool.pick(U32, eq_axis(a, b), 1, 0), EqAx.pairs(a, t))
+
+def EqAx.disagree(xs: List<&2, AxisType>, +ys: List<&2, AxisType>) -> U32:
+  match xs:
+    case Nil{}: 0
+    case a <> t: U32.add(EqAx.pairs(a, ys), EqAx.disagree(t, ys))
+
+# `eq_axis(a, a)` for every member, counted. The off-diagonal row cannot see a
+# value-keyed equality that answers FALSE on the diagonal, which is what a saturated or
+# misnumbered U32 would do, so it is a separate count over the same set.
+def EqAx.diag(xs: List<&2, AxisType>) -> U32:
+  match xs:
+    case Nil{}: 0
+    case +a <> t: U32.add(Bool.pick(U32, eq_axis(a, a), 1, 0), EqAx.diag(t))
+
+def EqAx.collide(+xs: List<&2, AxisType>) -> U32:
+  U32.sub(EqAx.disagree(xs, xs), EqAx.diag(xs))
+
+def t_eqax() -> Bool:
+  Bool.and(Bool.and(U32.is_eq(EqAx.collide(AxisType.live()), 0),
+                    U32.is_eq(EqAx.collide(AxisType.all()), 0)),
+           Bool.and(U32.is_eq(EqAx.diag(AxisType.live()), 8),
+                    U32.is_eq(EqAx.diag(AxisType.all()), 10)))
+
+# ---------------------------------------------------------------------------
+# The RANGE fixtures. FIVE of them and each earns its place:
+#
+#   weak1    `UOp.range(1, 0)`                 the DEFAULT axis type is WEAK
+#   loop2    `UOp.range(2, (0, 1), LOOP)`      a NESTED axis id, which upstream's spec
+#                                            matcher REJECTS -- kept so the pin's
+#                                            `(ids, type)` packing stays representable
+#   dev3     `UOp.range(3, 0, DEVICE)`         the literal `0` that replaced
+#                                            `axis_to_pos[AxisType.DEVICE]`
+#   loopfn   `UOp.loop(7)`                    src is NOOP not CONST
+#   twoid    `UOp(Ops.RANGE, ..., (LOOP,0,1))` THE DISCRIMINATOR, built directly
+#
+# `twoid` is the one that earned its place by MEASUREMENT: for an arg of length TWO,
+# `arg[1:]` and `arg[0:-1]` are the same slice, so `axis_id`/`axis_type` answer
+# identically on the pin and on upstream for every `UOp.range` and every `UOp.loop`.
+# The `axid_*`/`axt_*` rows for `weak1`/`loop2`/`dev3`/`loopfn` are byte-identical
+# across the two trees; only a three-element arg separates them. Its `rng_` four
+# facts DO match, because the flip is in the arg and not in the graph.
+# ---------------------------------------------------------------------------
+def g_rng_weak1() -> Found:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(1)})
+  UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_WEAK{})
+
+def g_rng_loop1() -> Found:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(2)})
+  UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_LOOP{})
+
+def g_rng_dev3() -> Found:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(3)})
+  UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_DEVICE{})
+
+def g_rng_loopfn() -> Found:
+  UOp.loop(Arena.empty(), 7)
+
+def g_rng_twoid() -> Found:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(2)})
+  UOp.range_end(Found.ar(c), Found.i(c), [0, 1], AXIS_LOOP{})
+
+# --- THE AXIS CPYTHON LANE. Row order matches `.agents/slop/ops-oracle.py` EXACTLY and
+# --- the gate is a byte diff, so a row added on one side and not the other is a diff and
+# --- not a silent gap.
+
+# `List.reverse` of the member list, so `axlt_revsorted` can be a row. `sorted(reversed)`
+# must come back as the declaration order, which is the one direction a `__lt__` that
+# compares by NAME rather than by value gets right -- hence both rows.
+def RevAxis.go(xs: List<&2, AxisType>, +acc: List<&2, AxisType>) -> List<&2, AxisType>:
+  match xs:
+    case Nil{}: acc
+    case a <> t: RevAxis.go(t, List.append(&2, AxisType, [a], acc))
+
+# `axv_<NAME>` etc -- one row per MEMBER, in `AxisType.live()` order. CPython prints the
+# eight it has; the two the port retains for other files are BEND-ONLY and the gate script
+# filters them by name with the `#bend_only_*` reason in the oracle.
+def AxisVals.go(xs: List<&2, AxisType>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case a <> t: AxisVals.go(t, List.append(&2, String, [U32.show(AxisType.value(a))], acc))
+
+def AxisVals.str(xs: List<&2, AxisType>) -> String:
+  String.join(List.reverse(&2, String, AxisVals.go(xs, Nil{})), ",")
+
+def t_ax_derivation() -> IO(Unit):
+  do IO<Unit>:
+    srow("#shared_axis_members", ax_names_str(AxisType.live()))
+    srow("#shared_axis_values", AxisVals.str(AxisType.live()))
+    srow("#shared_axis_count", U32.show(U32.from_nat(List.length(&2, AxisType, AxisType.live()))))
+    srow("#shared_axis_sorted", ax_names_str(List.sort(AxisType, AxisType.lt, AxisType.live())))
+
+def t_ax_tables(l: List<&2, AxisType>) -> IO(Unit):
+  do IO<Unit>:
+    srow("axv_" ++ AxisType.name(AXIS_DEVICE{}), U32.show(AxisType.value(AXIS_DEVICE{})))
+    srow("axn_" ++ AxisType.name(AXIS_DEVICE{}), AxisType.name(AXIS_DEVICE{}))
+    srow("axl_" ++ AxisType.name(AXIS_DEVICE{}), axis_letters(AXIS_DEVICE{}))
+    srow("axc_" ++ AxisType.name(AXIS_DEVICE{}), axis_colors(AXIS_DEVICE{}))
+    srow("axv_" ++ AxisType.name(AXIS_GLOBAL{}), U32.show(AxisType.value(AXIS_GLOBAL{})))
+    srow("axn_" ++ AxisType.name(AXIS_GLOBAL{}), AxisType.name(AXIS_GLOBAL{}))
+    srow("axl_" ++ AxisType.name(AXIS_GLOBAL{}), axis_letters(AXIS_GLOBAL{}))
+    srow("axc_" ++ AxisType.name(AXIS_GLOBAL{}), axis_colors(AXIS_GLOBAL{}))
+    srow("axv_" ++ AxisType.name(AXIS_LOCAL{}), U32.show(AxisType.value(AXIS_LOCAL{})))
+    srow("axn_" ++ AxisType.name(AXIS_LOCAL{}), AxisType.name(AXIS_LOCAL{}))
+    srow("axl_" ++ AxisType.name(AXIS_LOCAL{}), axis_letters(AXIS_LOCAL{}))
+    srow("axc_" ++ AxisType.name(AXIS_LOCAL{}), axis_colors(AXIS_LOCAL{}))
+    srow("axv_" ++ AxisType.name(AXIS_WARP{}), U32.show(AxisType.value(AXIS_WARP{})))
+    srow("axn_" ++ AxisType.name(AXIS_WARP{}), AxisType.name(AXIS_WARP{}))
+    srow("axl_" ++ AxisType.name(AXIS_WARP{}), axis_letters(AXIS_WARP{}))
+    srow("axc_" ++ AxisType.name(AXIS_WARP{}), axis_colors(AXIS_WARP{}))
+    srow("axv_" ++ AxisType.name(AXIS_WEAK{}), U32.show(AxisType.value(AXIS_WEAK{})))
+    srow("axn_" ++ AxisType.name(AXIS_WEAK{}), AxisType.name(AXIS_WEAK{}))
+    srow("axl_" ++ AxisType.name(AXIS_WEAK{}), axis_letters(AXIS_WEAK{}))
+    srow("axc_" ++ AxisType.name(AXIS_WEAK{}), axis_colors(AXIS_WEAK{}))
+    srow("axv_" ++ AxisType.name(AXIS_LOOP{}), U32.show(AxisType.value(AXIS_LOOP{})))
+    srow("axn_" ++ AxisType.name(AXIS_LOOP{}), AxisType.name(AXIS_LOOP{}))
+    srow("axl_" ++ AxisType.name(AXIS_LOOP{}), axis_letters(AXIS_LOOP{}))
+    srow("axc_" ++ AxisType.name(AXIS_LOOP{}), axis_colors(AXIS_LOOP{}))
+    srow("axv_" ++ AxisType.name(AXIS_UPCAST{}), U32.show(AxisType.value(AXIS_UPCAST{})))
+    srow("axn_" ++ AxisType.name(AXIS_UPCAST{}), AxisType.name(AXIS_UPCAST{}))
+    srow("axl_" ++ AxisType.name(AXIS_UPCAST{}), axis_letters(AXIS_UPCAST{}))
+    srow("axc_" ++ AxisType.name(AXIS_UPCAST{}), axis_colors(AXIS_UPCAST{}))
+    srow("axv_" ++ AxisType.name(AXIS_PLACEHOLDER{}), U32.show(AxisType.value(AXIS_PLACEHOLDER{})))
+    srow("axn_" ++ AxisType.name(AXIS_PLACEHOLDER{}), AxisType.name(AXIS_PLACEHOLDER{}))
+    srow("axl_" ++ AxisType.name(AXIS_PLACEHOLDER{}), axis_letters(AXIS_PLACEHOLDER{}))
+    srow("axc_" ++ AxisType.name(AXIS_PLACEHOLDER{}), axis_colors(AXIS_PLACEHOLDER{}))
+    # --- THE TWO RETAINED DEAD MEMBERS. BEND-ONLY: upstream has no such member, so
+    # --- there is nothing to ask. They carry 9 and 10, slots upstream does not use, and
+    # --- `t_eqax` is what proves the ten values are still distinct.
+    srow("axv_REDUCE", U32.show(AxisType.value(AXIS_REDUCE{})))
+    srow("axn_REDUCE", AxisType.name(AXIS_REDUCE{}))
+    srow("axl_REDUCE", axis_letters(AXIS_REDUCE{}))
+    srow("axc_REDUCE", axis_colors(AXIS_REDUCE{}))
+    srow("axv_UNROLL", U32.show(AxisType.value(AXIS_UNROLL{})))
+    srow("axn_UNROLL", AxisType.name(AXIS_UNROLL{}))
+    srow("axl_UNROLL", axis_letters(AXIS_UNROLL{}))
+    srow("axc_UNROLL", axis_colors(AXIS_UNROLL{}))
+
+# `axs_<OP>` -- `range_start` as a row. Five ops CPython names, and `Ops.NOOP`, which it
+# does not: the port's `case _` arm answers 0 where Python raises, and `Ops.LINEAR`'s
+# answer is also 0, so without a MISS row a dropped `LINEAR` and a dropped `NOOP` arm
+# would print the same string.
+def t_ax_range_start() -> IO(Unit):
+  do IO<Unit>:
+    srow("axs_NOOP", range_start_str(OpsNOOP{}))
+    srow("axs_CALL", range_start_str(OpsCALL{}))
+    srow("axs_LINEAR", range_start_str(OpsLINEAR{}))
+    srow("axs_END", range_start_str(OpsEND{}))
+    srow("axs_STAGE", range_start_str(OpsSTAGE{}))
+    srow("axs_REDUCE", range_start_str(OpsREDUCE{}))
+
+# `rng_<tag>` (four facts) + `rngarg_<tag>` (the arg) + `axid_/axt_` (the properties).
+# `Rng.sig` is the four facts; the arg printer spells the port's OWN `ARange` encoding,
+# `(ids, at)`, which is the wall -- see the block above `UOp.range_end` -- and every
+# `rngarg_*` row is BEND-ONLY for that reason.
+def Rng.arg(at: AxisType, ids: List<&2, U32>) -> String:
+  String.concat(["(", IdsStr(ids), ",", AxisType.name(at), ")/len=2"])
+
+def t_rng_row(+nm: String, +ar: Arena, +self: U32, +at: AxisType, +ids: List<&2, U32>) -> IO(Unit):
+  do IO<Unit>:
+    srow("rng_" ++ nm, Rng.sig(ar, self))
+    srow("rngarg_" ++ nm, Rng.arg(at, ids))
+    srow("axid_" ++ nm, IdsStr.ids(ids))
+    srow("axt_" ++ nm, AxisType.name(at))
+
+# ONE BUILD PER ROW, one def per fixture. `g_rng_*` returns a `Found` over an affine
+# arena, so `main` cannot call it twice to get `.ar` and `.i`: the two calls build two
+# arenas and the signature would be over one node read from the other.
+def t_rng_weak1() -> IO(Unit):
+  +f = g_rng_weak1()
+  t_rng_row("weak1", Found.ar(f), Found.i(f), AXIS_WEAK{}, [0])
+
+def t_rng_loop1() -> IO(Unit):
+  +f = g_rng_loop1()
+  t_rng_row("loop1", Found.ar(f), Found.i(f), AXIS_LOOP{}, [0])
+
+def t_rng_dev3() -> IO(Unit):
+  +f = g_rng_dev3()
+  t_rng_row("dev3", Found.ar(f), Found.i(f), AXIS_DEVICE{}, [0])
+
+def t_rng_loopfn() -> IO(Unit):
+  +f = g_rng_loopfn()
+  t_rng_row("loopfn", Found.ar(f), Found.i(f), AXIS_WEAK{}, [7])
+
+def t_rng_twoid() -> IO(Unit):
+  +f = g_rng_twoid()
+  t_rng_row("twoid", Found.ar(f), Found.i(f), AXIS_LOOP{}, [0, 1])
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -3989,6 +4531,28 @@ def main() -> IO(Unit):
     p : Unit <- row("alu_permutes", t_alu_permutes())
     row("early_reject", t_early_reject())
     row("ler_len", t_ler_len())
+    # --- THE AXIS CPYTHON LANE. `#bend_only_mstack_puts_self_first` first, because it is
+    # --- the row this file was MISSING: `UOp.after` and `UOp.end` had rows and
+    # --- `UOp.mstack` had the same inverse bug fixed in the same commit with none, so a
+    # --- re-regression of mstack alone was invisible while the other two stayed green.
+    row("mstack_puts_self_first", t_mstack_puts_self_first())
+    t_ax_derivation()
+    t_ax_tables(AxisType.live())
+    t_ax_range_start()
+    t_rng_weak1()
+    t_rng_loop1()
+    t_rng_dev3()
+    t_rng_loopfn()
+    t_rng_twoid()
+    srow("axlt_sorted", ax_names_str(List.sort(AxisType, AxisType.lt, AxisType.live())))
+    srow("axlt_revsorted", ax_names_str(RevAxis.go(List.reverse(&2, AxisType, AxisType.live()), Nil{})))
+    srow("axlt_lt", Bool.show(AxisType.lt(AXIS_LOOP{}, AXIS_WEAK{})))
+    srow("axlt_gt", Bool.show(AxisType.lt(AXIS_WEAK{}, AXIS_LOOP{})))
+    srow("eqax_collide", U32.show(EqAx.collide(AxisType.live())))
+    srow("eqax_collide_all", U32.show(EqAx.collide(AxisType.all())))
+    srow("eqax_diag", U32.show(EqAx.diag(AxisType.live())))
+    srow("eqax_diag_all", U32.show(EqAx.diag(AxisType.all())))
+    t_mstack_rows()
 
 # ===========================================================================
 # NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape

@@ -11,12 +11,12 @@ from tinygrad.runtime.ops_qcom import kgsl
 from tinygrad.dtype import dtypes
 from tinygrad.uop.ops import UOp, Ops, KernelInfo, CallInfo, ProgramInfo
 
-def buf(nm): return UOp.placeholder((8,), dtypes.uint64, 0, device=('NULL:0',), tag=nm)
+def buf(nm): return UOp.placeholder((8,), dtypes.u64, 0, device=('NULL:0',), tag=nm)
 b0, b1, b2 = buf('a'), buf('b'), buf('c')
 r = UOp.range(8, 0)
 
 def mk(bufs, outs=(0,), ins=(1,)):
-  sink = UOp(Ops.SINK, src=((r+r).cast(dtypes.uint64),), arg=KernelInfo("k"))
+  sink = UOp(Ops.SINK, src=((r+r).cast(dtypes.u64),), arg=KernelInfo("k"))
   prg = UOp(Ops.PROGRAM, src=(sink,), arg=ProgramInfo(outs=outs, ins=ins))
   return UOp(Ops.CALL, src=(prg, *bufs), arg=CallInfo())
 
@@ -43,12 +43,12 @@ for d, c in ((('NV:0',), HCQ_DEVS), (('CUDA:1:2',), HCQ_DEVS), (('CPU',), HCQ_DE
 
 print('=== layout_args (hcq2.py:74-76)')
 buf3 = [buf('a'), buf('b'), buf('c')]
-mixed = [UOp.const(1, dtypes.uchar), UOp.const(2, dtypes.uint), UOp.const(3, dtypes.uint16),
-         UOp.const(4, dtypes.ulong), UOp.const(5, dtypes.uint32), UOp.const(6, dtypes.uint8)]
-five32 = [UOp.const(i, dtypes.uint32) for i in range(5)]
+mixed = [UOp.const(1, dtypes.u8), UOp.const(2, dtypes.u32), UOp.const(3, dtypes.u16),
+         UOp.const(4, dtypes.u64), UOp.const(5, dtypes.u32), UOp.const(6, dtypes.u8)]
+five32 = [UOp.const(i, dtypes.u32) for i in range(5)]
 ints = [7, 8, 9]
-one16 = [UOp.const(1, dtypes.uint16)]
-odd = [UOp.const(1, dtypes.uint32), UOp.const(2, dtypes.uint8), UOp.const(3, dtypes.uint64)]
+one16 = [UOp.const(1, dtypes.u16)]
+odd = [UOp.const(1, dtypes.u32), UOp.const(2, dtypes.u8), UOp.const(3, dtypes.u64)]
 for nm, a in (('buf3', buf3), ('mixed', mixed), ('five32', five32), ('ints', ints),
               ('one16', one16), ('odd', odd)):
   for off in (0, 256, 512):

@@ -1,0 +1,416 @@
+# ===========================================================================
+# THE TRACE. Every libusb / libc / ctypes binding in `usb.py` is ONE
+# `Call{k, a, b, c}` entry in `Tr` and nothing else, so no foreign effect is
+# declared and `--check-only` stays green in both lanes. `SYMS()` maps each `k`
+# back to the C symbol, which is what keeps the seam greppable: `grep -n
+# libusb_ this_file` finds the symbol as a LITERAL, not inside an opaque body.
+#
+# `a`, `b`, `c` are the call's arguments that are ARITHMETIC -- an endpoint, a
+# wValue, a byte count, a request type. A call whose arguments are all POINTERS
+# (`libusb_open(dev, handle)`, `libusb_alloc_transfer(0)`) records zeros, and that
+# is not a gap in the port: the pointer is the SEAM's.
+# ===========================================================================
+
+type Call is Data:
+  Call{k: U32, a: U32, b: U32, c: U32}
+
+def Call.k(x: Call) -> U32:
+  match x:
+    case Call{k, a, b, c}: k
+
+def Call.a(x: Call) -> U32:
+  match x:
+    case Call{k, a, b, c}: a
+
+def Call.b(x: Call) -> U32:
+  match x:
+    case Call{k, a, b, c}: b
+
+def Call.c(x: Call) -> U32:
+  match x:
+    case Call{k, a, b, c}: c
+
+# THE SEAM'S INVENTORY, AS A LIST. It is a list and not a `match` ladder because
+# Bend's `match` over a `Nat` needs a `case 1n+m:` arm to be total, and twenty-four
+# symbol names are twenty-four lines of noise where a list is one.
+def SYMS() -> List<&2, String>:
+  ["libusb_init", "libusb_set_option", "libusb_get_device_list",
+   "libusb_get_device_descriptor", "libusb_ref_device", "libusb_get_bus_number",
+   "libusb_get_device_address", "libusb_free_device_list", "libusb_open",
+   "libusb_get_device", "libusb_get_string_descriptor_ascii",
+   "libusb_kernel_driver_active", "libusb_detach_kernel_driver",
+   "libusb_reset_device", "libusb_set_configuration", "libusb_claim_interface",
+   "libusb_set_interface_alt_setting", "libusb_control_transfer",
+   "libusb_bulk_transfer", "libusb_alloc_transfer", "libusb_handle_events_timeout",
+   "libusb_submit_transfer", "memcpy", "libusb_strerror"]
+
+# The tail's head. It is here so `M31`'s off-by-one edit COMPILES -- answering
+# `head_name(t2, "")`, the NEXT symbol, instead of `h0` -- and it is NOT on the
+# live path. It is declared BEFORE `sym_at_head` because Bend refuses a def USED
+# before it is written ("an unfilled law is a dead claim"), which is also why
+# `sym_at_head` is declared before `sym_at.go`.
+def head_name(xs: List<&2, String>, dflt: String) -> String:
+  match xs:
+    case Nil{}: dflt
+    case h <> t: h
+
+# THE HEAD-AT-ZERO ARM IS ITS OWN DEF so `M31`'s off-by-one edit COMPILES, and the
+# arm answers `h0`: the head IS the zero-th entry.
+def sym_at_head(+h0: String, +t2: List<&2, String>) -> String: h0
+
+# THE KIND -> SYMBOL LOOKUP. `n` IS THE INDEX and the head is the ZERO-th entry.
+# The version that matched `1n+m` and returned the head when `m == 0n` was off by
+# one, and every order row in the file read as the symbol BELOW the truth --
+# exactly the error a count-only gate cannot see and a whole-value row can.
+def sym_at.go(n: Nat, ss: List<&2, String>) -> String:
+  match n:
+    case 0n:
+      match ss:
+        case Nil{}: "libusb_unknown"
+        case h0 <> t2: sym_at_head(h0, t2)
+    case 1n+m:
+      match ss:
+        case Nil{}: "libusb_unknown"
+        case h0 <> t2: sym_at.go(m, t2)
+
+def sym_at(+n: Nat, ss: List<&2, String>) -> String: sym_at.go(n, ss)
+
+def call_sym(+k: U32) -> String: sym_at(U32.to_nat(k), SYMS())
+
+def Call.sym(x: Call) -> String: call_sym(Call.k(x))
+
+# THE CALL KINDS. They are PORT-INVENTED -- no line of `usb.py` says "K_INIT is
+# 0" -- so what is checkable is the BIJECTION onto `SYMS()`, and `usb-symmap.py`
+# checks that plus that every name is a real `autogen.libusb` export.
+def K_INIT() -> U32: 0
+def K_SET_OPTION() -> U32: 1
+def K_GET_DEVLIST() -> U32: 2
+def K_GET_DESC() -> U32: 3
+def K_REF_DEVICE() -> U32: 4
+def K_BUS_NUMBER() -> U32: 5
+def K_DEV_ADDRESS() -> U32: 6
+def K_FREE_DEVLIST() -> U32: 7
+def K_OPEN() -> U32: 8
+def K_GET_DEVICE() -> U32: 9
+def K_STR_ASCII() -> U32: 10
+def K_KDRV_ACTIVE() -> U32: 11
+def K_DETACH_KDRV() -> U32: 12
+def K_RESET_DEVICE() -> U32: 13
+def K_SET_CONFIG() -> U32: 14
+def K_CLAIM_IFACE() -> U32: 15
+def K_SET_ALT() -> U32: 16
+def K_CTRL_XFER() -> U32: 17
+def K_BULK_XFER() -> U32: 18
+def K_ALLOC_XFER() -> U32: 19
+def K_EVENTS() -> U32: 20
+def K_SUBMIT_XFER() -> U32: 21
+def K_MEMCPY() -> U32: 22
+def K_STRERROR() -> U32: 23
+
+type Tr is Data:
+  Tr{calls: List<&2, Call>, next: U32, bad_at: U32, seen: U32, refused: Bool}
+
+def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, False{}}
+
+def Tr.calls(t: Tr) -> List<&2, Call>:
+  match t:
+    case Tr{calls, next, bad_at, seen, refused}: calls
+
+def Tr.refused(t: Tr) -> Bool:
+  match t:
+    case Tr{calls, next, bad_at, seen, refused}: refused
+
+# THE ORDINAL OF THE REFUSAL THAT SHOULD FIRE, so one fixture reaches each raise
+# site in turn. 0 = never, which is every successful fixture.
+def Tr.fail_at(t: Tr, n: U32) -> Tr:
+  match t:
+    case Tr{calls, next, bad_at, seen, refused}: Tr{calls, next, n, seen, refused}
+
+# THE RAISE IS IN THE TRACE, so a refusal is a TRUNCATION and no step needs a
+# guard of its own. The failing call IS still recorded -- it sets `refused` in the
+# same breath, so on entry its own `refused` is still False. Every step goes
+# through `Tr.emit.go`, so two steps cannot disagree about the guard.
+#
+# `Tr.emit` AND `Tr.raise` ARE THE SAME FUNCTION with a different GUARD, and which
+# one a step uses IS THE PORTED FACT: `usb.py`'s `checked` (:13-18) raises when the
+# return code is negative, so every call wrapped in `checked` is a `Tr.raise` site
+# and every RAW call is a `Tr.emit`. A `Tr.emit` CANNOT refuse at all, which is why
+# `usb_enum_refused_6_raw_no_fire` is False and the row above it is True.
+def Tr.emit.go(+refuse: Bool, +refused: Bool, +k: U32, a: U32, b: U32, c: U32,
+               +calls: List<&2, Call>, +next: U32, +bad_at: U32,
+               +seen: U32) -> Tr:
+  Tr{Bool.pick(List<&2, Call>, refused, calls,
+               List.append(&2, Call, calls, [Call{k, a, b, c}])),
+     Bool.pick(U32, refused, next, U32.add(next, 1)), bad_at,
+     Bool.pick(U32, refused, seen, U32.add(seen, 1)),
+     Bool.or(refused, refuse)}
+
+def Tr.emit(+k: U32, a: U32, b: U32, c: U32, t: Tr) -> Tr:
+  match t:
+    case Tr{calls, next, bad_at, seen, refused}:
+      Tr.emit.go(False{}, refused, k, a, b, c, calls, next, bad_at, seen)
+
+# the `bad_at`-th emit raises.
+def Tr.raise(+k: U32, a: U32, b: U32, c: U32, t: Tr) -> Tr:
+  match t:
+    case Tr{calls, next, +bad_at, +seen, +refused}:
+      Tr.emit.go(U32.is_eq(U32.add(seen, 1), bad_at), refused, k, a, b, c,
+                 calls, next, bad_at, seen)
+
+# THE ORDER, as ONE string of symbol names. A count is not a gate and a set is not
+# a gate: this is the call SEQUENCE, and every `usb_*_order_*` row is a
+# whole-value string, so a swapped pair of steps moves them and changes nothing
+# else.
+def Tr.sym.go(n: Nat, cs: List<&2, Call>, acc: String, +sep: String) -> String:
+  match n:
+    case 0n: acc
+    case 1n+m:
+      match cs:
+        case Nil{}: acc
+        case c <> t: Tr.sym.go(m, t, String.append(acc, String.append(Call.sym(c), sep)), sep)
+
+def Tr.sym(+t: Tr) -> String:
+  Tr.sym.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), "", ",")
+
+def Tr.n(+t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
+
+# `has` is a real SUBSEQUENCE test -- the fuel is the TRACE length and not the
+# pattern length, which is the bug ops_webgpu.bend's gate found in ITSELF.
+def Tr.has.step(+c: Call, +w: Call) -> Bool:
+  Bool.and(Bool.and(U32.is_eq(Call.k(c), Call.k(w)), U32.is_eq(Call.a(c), Call.a(w))),
+           Bool.and(U32.is_eq(Call.b(c), Call.b(w)), U32.is_eq(Call.c(c), Call.c(w))))
+
+def Tr.has.step.at(m: Maybe<&2, Call>, +c: Call, at: Nat) -> Nat:
+  match m:
+    case None{}: at
+    case Some{+w}: Nat.add(at, U32.to_nat(Bool.to_u32(Tr.has.step(c, w))))
+
+def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>,
+              +at: Nat) -> Bool:
+  match n:
+    case 0n: Nat.is_eq(at, patlen)
+    case 1n+m:
+      match cs:
+        case Nil{}: Nat.is_eq(at, patlen)
+        case c <> t: Tr.has.go(m, patlen, t, pat,
+                               Tr.has.step.at(List.get(&2, Call, pat, at), c, at))
+
+def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
+  Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
+
+# ===========================================================================
+# THE ENUMERATION. `USB3.list_devices` (:30-37) is ONE loop and it is the wall
+# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:812  USB3.list_devices`.
+#
+# THE SELECTION IS A PURE PREDICATE and the trace is the walk: the port compares
+# `(idVendor, idProduct) == (vendor, dev)` from the descriptor fields it has
+# already parsed BY NAME, and only appends REF_DEVICE + BUS_NUMBER +
+# DEV_ADDRESS on a match. `usb_list_match` is that predicate and `usb_enum_order_*`
+# is the walk, so the negative case -- a descriptor whose ids do not pair -- is one
+# row from its positive.
+# ===========================================================================
+
+def list_match(+idVendor: U32, +idProduct: U32, +vendor: U32, +dev: U32) -> Bool:
+  Bool.and(U32.is_eq(idVendor, vendor), U32.is_eq(idProduct, dev))
+
+# :35 the label, `f"usb:{bus}-{addr}"`. A STRING TABLE, so it is diffed as a
+# string: `String.concat` drops a literal silently and a boolean about a string
+# cannot see that happen.
+def list_label(+bus: U32, +addr: U32) -> String:
+  String.concat(["usb:", U32.show(bus), "-", U32.show(addr)])
+
+# THE DESCRIPTOR IS READ FIRST AND THE SELECTION IS SECOND (:33 then :34), and the
+# emit chain records the INNERMOST call first. A MISS STILL READS IT: the read is
+# unconditional and only the ref/bus/address triple is conditional, so a miss is
+# FOUR calls shorter than a hit and not three.
+#
+# And the `Tr.emit` vs `Tr.raise` split inside is the ported `checked` fact:
+# `libusb_ref_device` (:35) is RAW and cannot refuse; the descriptor read (:33) is
+# `checked` and can. `usb_enum_refused_5_fires` and `usb_enum_refused_6_raw_no_fire`
+# are one row apart and say so.
+def usb_enum.device(+hit: Bool, +bus: U32, +addr: U32, +t: Tr) -> Tr:
+  Bool.pick(Tr, hit,
+    Tr.raise(K_DEV_ADDRESS(), addr, 0, 0,
+      Tr.raise(K_BUS_NUMBER(), bus, 0, 0,
+        Tr.emit(K_REF_DEVICE(), 0, 0, 0, Tr.raise(K_GET_DESC(), 0, 0, 0, t)))),
+    Tr.raise(K_GET_DESC(), 0, 0, 0, t))
+
+# THE FUEL IS THE DEVICE COUNT and there is no device LIST, because
+# `libusb_get_device_list` hands back a POINTER to a C array: the seam's. The
+# first version destructured an always-empty list and so emitted ONE device
+# whatever `n` said.
+def usb_enum.walk(n: Nat, +hit: Bool, +bus: U32, +addr: U32, +t: Tr) -> Tr:
+  match n:
+    case 0n: t
+    case 1n+m: usb_enum.walk(m, hit, bus, addr, usb_enum.device(hit, bus, addr, t))
+
+# :32 GET_DEVICE_LIST, the walk, then :36 `libusb_free_device_list(devs, 1)`. THE
+# FREE IS LAST and it is NOT conditional, and it is a RAW call so it cannot
+# refuse -- which is why `usb_enum_refused_6_raw_no_fire` is False.
+def usb_enum(n: Nat, +hit: Bool, +bus: U32, +addr: U32, t: Tr) -> Tr:
+  Tr.emit(K_FREE_DEVLIST(), 1, 0, 0,
+    usb_enum.walk(n, hit, bus, addr, Tr.raise(K_GET_DEVLIST(), 0, 0, 0, t)))
+
+# ===========================================================================
+# THE OPEN. `USB3.__init__` (:39-62). `ops_disk.bend` records `_might_open` as a
+# WALK OF STATE THAT ENDS IN A CLAIM; this is the same shape, and it is the one
+# ops_amd.bend could not reach.
+#
+# `libusb_get_device` (:49) is RAW and the three calls around it are `checked`, so
+# the two kinds interleave. The product assert (:52) is NOT a raise site -- it is
+# an `assert` after a successful read -- so it is modelled by refusing AT the read
+# and letting `usb_open` take the `have_product` branch.
+def usb_open.after(have_product: Bool, +t: Tr) -> Tr:
+  Tr.raise(K_STR_ASCII(), USB3_STRING_BUF(), 0, 0,
+    Tr.raise(K_GET_DESC(), 0, 0, 0, Tr.emit(K_GET_DEVICE(), 0, 0, 0,
+      Tr.raise(K_OPEN(), 0, 0, 0, t))))
+
+# :55-57 the detach branch, and its THREE calls appear ONLY when
+# `libusb_kernel_driver_active` answered true. The ABSENCE of those three is what
+# the two open traces differ by.
+def usb_open.detach(kdrv_active: Bool, +t: Tr) -> Tr:
+  Bool.pick(Tr, kdrv_active,
+    Tr.raise(K_RESET_DEVICE(), 0, 0, 0,
+      Tr.raise(K_DETACH_KDRV(), USB3_IFACE(), 0, 0,
+        Tr.raise(K_KDRV_ACTIVE(), USB3_IFACE(), 0, 0, t))), t)
+
+def usb_open(have_product: Bool, kdrv_active: Bool, +t: Tr) -> Tr:
+  Tr.raise(K_SET_ALT(), USB3_IFACE(), USB3_ALT(), 0,
+    Tr.raise(K_CLAIM_IFACE(), USB3_IFACE(), 0, 0,
+      Tr.raise(K_SET_CONFIG(), USB3_CONFIG(), 0, 0,
+        usb_open.detach(kdrv_active, usb_open.after(have_product, t)))))
+
+# :20-27 `USB3.ctx()`: `libusb_init`, then `libusb_set_option(ctx,
+# LIBUSB_OPTION_LOG_LEVEL, 4)` ONLY when `DEBUG >= 6`. There is no third call.
+def usb_ctx(debug6: Bool, +t: Tr) -> Tr:
+  Bool.pick(Tr, debug6,
+    Tr.raise(K_SET_OPTION(), enum_val("LIBUSB_OPTION_LOG_LEVEL", E_OPTION()),
+             USB3_LOG_LEVEL_DEBUG(), 0, Tr.raise(K_INIT(), 0, 0, 0, t)),
+    Tr.raise(K_INIT(), 0, 0, 0, t))
+
+# ===========================================================================
+# THE TRANSFER CALLS. `usb_chunk` (:336-355), `usb_reap` (:324-328),
+# `usb_drained` (:330-334) and the control/bulk wrappers (:64-84) are where the
+# remaining trace kinds are emitted, and what matters is the SEQUENCE.
+#
+# ONE CALL PER DEF, and the composition IS the order. Nesting seven `Tr.emit`s
+# inside each other is a counting exercise with no compiler help, and a miscount is
+# a silent change to which call is recorded first; one def per call makes the
+# sequence read top-down and each def independently gateable.
+# ===========================================================================
+
+# :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits
+def usb_chunk.alloc(+t: Tr) -> Tr: Tr.emit(K_ALLOC_XFER(), 0, 0, 0, t)
+
+# :352 `libusb_submit_transfer(xfer.index(0))`
+def usb_chunk.submit(+t: Tr) -> Tr: Tr.emit(K_SUBMIT_XFER(), 0, 0, 0, t)
+
+# :348 `usb_ctrl(h, 0x40, 0xF2, wire // 512, ((end - wire) // SLOT) | (wire // SLOT << 8), ...)`
+def usb_chunk.f2(+half: U32, +wire: U32, +t: Tr) -> Tr:
+  Tr.emit(K_CTRL_XFER(), RTYPE_OUT(), REQ_F2(), chunk_wvalue(wire), t)
+
+# :347 `usb_drained(h, n)`, whose 0xE4 read carries the FENCE ADDRESS. Its length
+# is ONE -- the byte that makes the predicate mod 256 -- and that length is why
+# `drained_step` is a separate def and not a trace field.
+def usb_chunk.drained(+t: Tr) -> Tr:
+  Tr.emit(K_CTRL_XFER(), RTYPE_IN(), REQ_E4(), WIN_FENCE_LO(), t)
+
+# :342 `usb_reap(h, xfer)`, and :326's `libusb_handle_events_timeout` with a ZERO
+# timeout. The poll LOOP is the UOp graph and the seam's.
+def usb_chunk.reap(+t: Tr) -> Tr: Tr.emit(K_EVENTS(), 0, 0, 0, t)
+
+# :343 `memcpy(stage + end - wire, addr, size)`
+def usb_chunk.memcpy(+half: U32, +wire: U32, +t: Tr) -> Tr:
+  Tr.emit(K_MEMCPY(), chunk_off(half, wire), 0, 0, t)
+
+# :342..:352 IN EXECUTION ORDER, WHICH IS NOT LINE ORDER. The `h = h.after(...)`
+# chain runs bottom-up in the source, so :347's usb_drained happens BEFORE :348's
+# usb_ctrl -- the port had them the other way round and the CPython order row,
+# built from `usb_chunk`'s call SITES, is what caught it. A count is identical
+# either way.
+#
+# :350-351 `field("status").store(0xff)`, `field("length").store(wire)` and
+# `field("buffer").store(...)` MAKE NO DEVICE CALL: they are stores into the
+# transfer struct the port holds as a POINTER. So there is NO trace entry for them
+# and the earlier version's `K_BULK_XFER` there was a lie the order rows faithfully
+# reproduced. What IS ported is the ORDINALS those names resolve to --
+# `usb_xfer_status_ix`, `_length_ix`, `_buffer_ix` -- and `M38` (status and length
+# transposed) is the mutation that moves them.
+def usb_chunk.step(+half: U32, +wire: U32, +status_ok: Bool, +t: Tr) -> Tr:
+  usb_chunk.memcpy(half, wire, usb_chunk.reap(
+    usb_chunk.f2(half, wire, usb_chunk.drained(usb_chunk.submit(usb_chunk.alloc(t))))))
+
+# :326 `usb_handle_events_timeout(handle, usb_stack(uint64, 0, 0))`
+def usb_reap(pending: Bool, +t: Tr) -> Tr:
+  Bool.pick(Tr, pending, Tr.emit(K_EVENTS(), 0, 0, 0, t), t)
+
+# :332 `usb_ctrl(h, 0xC0, 0xE4, usb_fence(h.device).getaddr("CPU"), 0, slot, 1)`:
+# ONE byte, at the fence, IN. The predicate that decides whether it is made at
+# all is `drained_step`, and `usb_drained_order_need` / `_done` are the pair.
+def usb_drained_trace(+need: U32, +fence: U32, +t: Tr) -> Tr:
+  Bool.pick(Tr, drained_step(need, fence),
+            Tr.emit(K_CTRL_XFER(), RTYPE_IN(), REQ_E4(), WIN_FENCE_LO(), t), t)
+
+# :67/:71 the two control transfers. The ONLY difference is the request type --
+# 0x40 for OUT and 0xC0 for IN -- and `Tr.emit` carries THREE arguments, so the
+# trace holds the request type, the bRequest and the byte count; the buffer
+# pointer and the timeout are the seam's and are the `usb_ctrl_buf_in_trace` and
+# `usb_timeout` rows.
+def usb_ctrl_req(+is_out: Bool, +req: U32, +n: U32, +t: Tr) -> Tr:
+  Tr.emit(K_CTRL_XFER(), Bool.pick(U32, is_out, RTYPE_OUT(), RTYPE_IN()), req, n, t)
+
+# :78/:83 the two bulk transfers, and here the ENDPOINT differs and the request
+# type does not: 0x02 OUT and 0x81 IN, which is 0x01 | LIBUSB_ENDPOINT_IN.
+def usb_bulk_req(+is_out: Bool, +n: U32, +t: Tr) -> Tr:
+  Tr.emit(K_BULK_XFER(), Bool.pick(U32, is_out, EP_OUT(), EP_IN()), n, 0, t)
+
+# THE THREE `field("...")` STORES' ORDINALS. They are the rows that hold those
+# names in that order.
+def K_XFER_STATUS() -> U32: Fld.find("status", F_TRANSFER())
+def K_XFER_LENGTH() -> U32: Fld.find("length", F_TRANSFER())
+def K_XFER_BUFFER() -> U32: Fld.find("buffer", F_TRANSFER())
+
+# :107 `_f0_out`'s wValue and wIndex, which the trace records and the arithmetic
+# rows measure. `wValue = fmt_type | (byte_en << 8)`, `wIndex = mode & 0x03`.
+def t_f0() -> IO(Unit):
+  IO.print(lines_of(
+    [u1("usb_wvalue_0x40_0f", pcie_wvalue(64, 15)),
+     u1("usb_wvalue_0x60_0f", pcie_wvalue(96, 15)),
+     u1("usb_wvalue_0x20_0f", pcie_wvalue(32, 15)),
+     u1("usb_wvalue_0xf0_ff", pcie_wvalue(240, 255)),
+     u1("usb_wvalue_0x44_0f", pcie_wvalue(68, 15)),
+     u1("usb_windex_0", pcie_windex(0)),
+     u1("usb_windex_1", pcie_windex(1)),
+     u1("usb_windex_2", pcie_windex(2)),
+     u1("usb_windex_3", pcie_windex(3)),
+     u1("usb_windex_4", pcie_windex(4)),
+     u1("usb_timeout", USB3_TIMEOUT()),
+     u1("usb_ctrl_buf_in_trace", USB3_CTRL_BUF()),
+     u1("usb_xfer_status_ix", K_XFER_STATUS()),
+     u1("usb_xfer_length_ix", K_XFER_LENGTH()),
+     u1("usb_xfer_buffer_ix", K_XFER_BUFFER())]))
+
+# ===========================================================================
+# THE TRANSFER ROWS. Order and identity, one row per fixture. THE HALF PAIR is
+# the negative case: half 1's window is 2*HALF and not HALF, so every recorded
+# offset differs.
+# ===========================================================================
+def t_xfer() -> IO(Unit):
+  IO.print(lines_of(
+    [s1("usb_chunk_order_h0", Tr.sym(usb_chunk.step(0, usb_wire(512), True{}, Tr.of()))),
+     s1("usb_chunk_order_h1", Tr.sym(usb_chunk.step(1, usb_wire(512), True{}, Tr.of()))),
+     s1("usb_chunk_order_h1_2chunk",
+        Tr.sym(usb_chunk.step(1, usb_wire(U32.mul(2, CHUNK())), True{}, Tr.of()))),
+     # the negative case of the order above: the SAME order with and without a
+     # pending transfer, so a port that always polled would look right on `_h0`.
+     b1("usb_chunk_pending_same",
+        String.eq(Tr.sym(usb_chunk.step(0, usb_wire(512), True{}, Tr.of())),
+                  Tr.sym(usb_chunk.step(0, usb_wire(512), False{}, Tr.of())))),
+     s1("usb_reap_order_pending", Tr.sym(usb_reap(True{}, Tr.of()))),
+     s1("usb_reap_order_idle", Tr.sym(usb_reap(False{}, Tr.of()))),
+     s1("usb_drained_order_need", Tr.sym(usb_drained_trace(7, 7, Tr.of()))),
+     s1("usb_drained_order_done", Tr.sym(usb_drained_trace(7, 5, Tr.of()))),
+     s1("usb_ctrl_order_out", Tr.sym(usb_ctrl_req(True{}, REQ_F2(), 4, Tr.of()))),
+     s1("usb_ctrl_order_in", Tr.sym(usb_ctrl_req(False{}, REQ_E4(), 1, Tr.of()))),
+     s1("usb_bulk_order_out", Tr.sym(usb_bulk_req(True{}, 512, Tr.of()))),
+     s1("usb_bulk_order_in", Tr.sym(usb_bulk_req(False{}, 512, Tr.of())))]))

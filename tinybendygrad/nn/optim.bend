@@ -288,7 +288,7 @@ def op_param_dtype(nm: String) -> Maybe<&1, S.Dt>:
 
 # ===========================================================================
 # `self.lr = Tensor(lr if getenv("CONST_LR") else [lr], device=self.device,
-#    dtype=least_upper_dtype(dtypes.default_float, dtypes.float32))` (optim.py:20).
+#    dtype=least_upper_dtype(dtypes.default_float, dtypes.f32))` (optim.py:20).
 #
 # THE CONST_LR SPLIT IS A Bool PARAMETER because `getenv("CONST_LR")` is an IO
 # read, which cannot be a `match` scrutinee.

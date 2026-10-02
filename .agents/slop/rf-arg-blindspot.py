@@ -22,7 +22,7 @@ from tinygrad.schedule import rangeify as R
 
 IDX = dtypes.weakint
 def C(n): return UOp.const(n, IDX)
-def B(s=0, a=AddrSpace.GLOBAL): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.int32, 4, addrspace=a))
+def B(s=0, a=AddrSpace.GLOBAL): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.i32, 4, addrspace=a))
 def claims(pm, u): return len([1 for pat, f in pm.patterns if pat.match(u, {})])
 
 b4, c0, c1, c2, c4 = B(0), C(0), C(1), C(2), C(4)
@@ -41,7 +41,7 @@ for name, a in (("ANone", None), ("ARange", UOp.range(4,0).arg), ("KernelInfo", 
 print("### can an AFTER carry a non-None arg?")
 e0 = UOp(Ops.END, (UOp(Ops.NOOP, (c0,)),))
 for name, a in (("ANone", None), ("KernelInfo", KernelInfo()),
-                ("ParamArg", ParamArg(0, dtypes.int32, 4, addrspace=AddrSpace.GLOBAL))):
+                ("ParamArg", ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.GLOBAL))):
   try:
     x = UOp(Ops.AFTER, (b4, e0), arg=a)
     print(f"  AFTER  arg={name:12} OK -> arg is {x.arg!r}")

@@ -73,7 +73,7 @@
 
 import os, time, struct, hashlib, functools, subprocess, tempfile, pathlib
 from dataclasses import dataclass
-from tinygrad.dtype import DType, AddrSpace, dtypes, INVERSE_DTYPES_DICT
+from tinygrad.dtype import DType, AddrSpace, dtypes
 from tinygrad.helpers import cache_dir, is_image_shape, to_mv
 from tinygrad.device import HostAllocator, Compiled, Compiler, Program, TinyELF
 from tinygrad.uop.ops import Ops, UOp
@@ -90,9 +90,14 @@ BEND_BIN = BEND/"bin"/"bend"
 LANES: frozenset[DType] = frozenset({dtypes.int, dtypes.uint, dtypes.float, dtypes.bool})
 
 def wire_dtype(u:UOp) -> str:
-  # `to_dtype` is dtype.py's `getattr(dtypes, name.lower())`, so it wants the ATTRIBUTE name -- "uint",
-  # not DType.name, which for uint is "unsigned int" and would break the whitespace-delimited line.
-  if u.dtype in LANES or u.dtype in (dtypes.void, dtypes.weakint, dtypes.weakfloat): return INVERSE_DTYPES_DICT[u.dtype.name]
+  # `to_dtype` is dtype.py's `getattr(dtypes, name.lower())`, so it wants the ATTRIBUTE name.
+  # This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`, and that map is DELETED upstream as of
+  # 793abbb1 ("modernize tinygrad's dtype to match rust"), so `import tinygrad.dtype` raised
+  # ImportError and the whole BEND device was dead. `u.dtype.name` is now correct on its own:
+  # the rename made `DType.name` EQUAL the attribute -- uint32's name went from "unsigned int"
+  # (which needed the inverse map to become "uint") to "u32", which `getattr(dtypes, "u32")`
+  # resolves directly. The old comment below is what the rename invalidated.
+  if u.dtype in LANES or u.dtype in (dtypes.void, dtypes.weakint, dtypes.weakfloat): return u.dtype.name
   raise NotImplementedError(f"BEND v1 has no lane for {u.dtype} (on {u.op.name}); it has {sorted(LANES, key=str)}")
 
 def wire_width(u:UOp) -> int:

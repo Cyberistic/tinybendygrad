@@ -71,10 +71,10 @@
 #   :308 `BufferStorage(view.addr, meta, view)` PORTED  `npy.alloc` (THREE args)
 #   :310-312 `_free`'s remote branch    PORTED  `npy.free` -- and NPY never takes it
 #   :315 `_copyin`                      PORTED  `npy.copyin`  synchronize FIRST
-#   :316 the `_view(...)[:] = ...`      PORTED  `npy.mvwrite`  the SOURCE's length
+#   :316 the `_view(...)[:] = ...`      PORTED  `npy.copyin`  the SOURCE's length
 #   :317 `_copyout`                     PORTED  `npy.copyout`
 #   :328-329 `_map`'s host guard        PORTED  `npy.map.at`   the REFUSAL
-#   :329 `BufferStorage(buf.host.addr)` PORTED  `npy.map.n`    ONE argument
+#   :329 `BufferStorage(buf.host.addr)` PORTED  `npy.map`     ONE argument
 #   :330 `_offset`                      PORTED  `npy.offset`   `buf + offset`
 #
 # ===========================================================================
@@ -168,7 +168,7 @@ def FMT_B() -> U32: 1
 
 # ONE host call and the ONE number it is given. `arg` is the size for MMAP,
 # MVIEW and MVWRITE and 0 for SYNC, MUNMAP and REFUSE, where the refused
-# quantity rides on `Tr.refused_of` instead -- the same decision
+# quantity rides on `Tr.refused` instead -- the same decision
 # ops_webgpu.bend makes about its four argumentless calls.
 type Call is Data:
   Call{k: U32, arg: U32}

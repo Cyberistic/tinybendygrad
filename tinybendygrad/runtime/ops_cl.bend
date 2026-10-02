@@ -60,7 +60,9 @@
 #   :23     extern                 WALL 6  POINTERS
 #   :30-34  CUDAQueue.__init__     PORTED  `cu.q_init`
 #   :36-37  the stream property    PORTED  `cu.stream_slot`
-#   :38     extern                 PORTED  `cu.extern`
+#   :38     extern                 WALL 6  POINTERS (was PORTED as `cu.extern`;
+#                                              nothing read it, so the claim was
+#                                              what kept the def alive)
 #   :40-47  launch                 PORTED  `cu.launch`
 #   :49-52  exec                   PORTED  `cu.exec`
 #   :54-55  copy                   PORTED  `cu.copy`
@@ -765,10 +767,6 @@ def Sig.slot(+s: Sig) -> U32:
   match s:
     case Sig{slot, bits, isz, isimg, w, h}: slot
 
-def Sig.bits(+s: Sig) -> U32:
-  match s:
-    case Sig{slot, bits, isz, isimg, w, h}: bits
-
 def Sig.isz(+s: Sig) -> U32:
   match s:
     case Sig{slot, bits, isz, isimg, w, h}: isz
@@ -993,8 +991,6 @@ def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +a
 def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
-def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
-
 # ONE traced call as `symbol(arg)`, and `vend.trace` joins them with ONE space.
 # A `List<&2, String>` and one `String.join`, because a fold that conses onto the
 # head of a `case c <> t:` walk builds the string BACKWARDS and a fold that conses
@@ -1015,35 +1011,23 @@ def vend.trace.go(+v: U32, cs: List<&2, Call>, +acc: List<&2, String>) -> List<&
 def vend.trace(+v: U32, cs: List<&2, Call>) -> String:
   String.join(vend.trace.go(v, cs, Nil{}), " ")
 
-def str_eq.go(+a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
-  match a:
-    case Nil{}: Bool.not(bad)
-    case x <> t:
-      match b:
-        case Nil{}: False{}
-        case y <> u: str_eq.go(t, u, Bool.or(bad, Bool.not(String.eq(x, y))))
-
-def str_list_eq(+a: List<&2, String>, +b: List<&2, String>) -> Bool:
-  Bool.and(U32.is_eq(U32.from_nat(List.length(&2, String, a)),
-                     U32.from_nat(List.length(&2, String, b))), str_eq.go(a, b, False{}))
-
 # ===========================================================================
 # PART 1 -- OpenCL. `ops_cl.py`, all 130 lines.
 # ===========================================================================
 
 # `autogen/opencl.py`, read out. Every one of these is a value the three CL
-# functions pass and none of them is derived, so they are constants and the gate
-# prints all eighteen beside the module's own attributes.
-def CL_SUCCESS() -> U32: 0
+# functions pass and none of them is derived, so they are constants -- and every
+# one of the fourteen here is READ by the logic below, which is the only reason
+# it can be worth a line. The four that were not (`CL_SUCCESS` 0,
+# `CL_MEM_READ_WRITE` 1, `CL_RGBA` 4277, `CL_PROGRAM_BUILD_LOG` 4483) were four
+# numbers nobody could check, and they are gone: a constant no code reads and no
+# row pins is a claim nobody can contradict, which is how a wrong one survives.
 def CL_DEVICE_TYPE_GPU() -> U32: 4
 def CL_DEVICE_TYPE_DEFAULT() -> U32: 1
-def CL_MEM_READ_WRITE() -> U32: 1
 def CL_MEM_OBJECT_IMAGE2D() -> U32: 4337
-def CL_RGBA() -> U32: 4277
 def CL_HALF_FLOAT() -> U32: 4317
 def CL_FLOAT() -> U32: 4318
 def CL_QUEUE_PROFILING_ENABLE() -> U32: 2
-def CL_PROGRAM_BUILD_LOG() -> U32: 4483
 def CL_PROGRAM_BINARY_SIZES() -> U32: 4453
 def CL_PROGRAM_BINARIES() -> U32: 4454
 def CL_PROFILING_COMMAND_START() -> U32: 4738
@@ -1283,8 +1267,6 @@ type Dev is Data:
       exts: List<&2, String>, ipa: U32, has_ipa: Bool, ckey: String,
       arch: String, pending: U32, t: Tr}
 
-def Dev.of() -> Dev: Dev{0, 0, 0, 0, "", "", Nil{}, 0, False{}, "", "", 0, Tr.of()}
-
 def Dev.didx(d: Dev) -> U32:
   match d:
     case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: didx
@@ -1300,26 +1282,6 @@ def Dev.q0(d: Dev) -> U32:
 def Dev.qflags(d: Dev) -> U32:
   match d:
     case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: qflags
-
-def Dev.name(d: Dev) -> String:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: name
-
-def Dev.drv(d: Dev) -> String:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: drv
-
-def Dev.exts(d: Dev) -> List<&2, String>:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: exts
-
-def Dev.ipa(d: Dev) -> U32:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: ipa
-
-def Dev.has_ipa(d: Dev) -> Bool:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}: has_ipa
 
 def Dev.ckey(d: Dev) -> String:
   match d:
@@ -1427,10 +1389,6 @@ type Prog is Data:
 
 def Prog.of(v: U32, entry: String, +sig: List<&2, Sig>) -> Prog:
   Prog{v, 0, 0, 0, 0, entry, sig, Nil{}, 1, 1, 1, 1, 1, 1, False{}, Tr.of()}
-
-def Prog.vendor(+p: Prog) -> U32:
-  match p:
-    case Prog{vendor, unit, ctx, prg, kernel, entry, sig, args, gsx, gsy, gsz, lsx, lsy, lsz, want, t}: vendor
 
 def Prog.unit(+p: Prog) -> U32:
   match p:
@@ -1832,7 +1790,7 @@ def CU_STREAM_NON_BLOCKING() -> U32: 1
 def CU_STREAM_WAIT_VALUE_GEQ() -> U32: 0
 def CU_STREAM_WRITE_VALUE_DEFAULT() -> U32: 0
 
-# cu:32 `self.rt_vars = UOp.placeholder((4,), dtypes.uint64, 0, device=self.devs,
+# cu:32 `self.rt_vars = UOp.placeholder((4,), dtypes.u64, 0, device=self.devs,
 # tag="cuda")` with the comment "# [context, compute stream, copy stream, status]".
 # FOUR uint64 words and the comment names all four, which is the whole of the
 # layout: the port indexes them by position.
@@ -1842,14 +1800,10 @@ def CU_IDX_COMPUTE() -> U32: 1
 def CU_IDX_COPY() -> U32: 2
 def CU_IDX_STATUS() -> U32: 3
 
-# cu:33 `self.kernargs = UOp.placeholder((8,), dtypes.uint8, device=self.devs)` --
+# cu:33 `self.kernargs = UOp.placeholder((8,), dtypes.u8, device=self.devs)` --
 # EIGHT bytes, one word, and that is why cu:43's kernargs descriptor is five
 # uint64s and not five uint32s.
 def CU_KERNARGS_BYTES() -> U32: 8
-
-# cu:109 `range(2)` -- the two streams, and it is the only `range(n)` in the file.
-def cu_nstreams_() -> U32: 2
-
 # `HWQueue.q` (hcq2.py:366) appends each word to a blob and returns `len(blob)`.
 # A `uint64` CONST appends 8 bytes and a PATCHED word appends `w.dtype.itemsize`
 # and remembers its offset, so the five constants of cu:46 are FIVE WORDS and the
@@ -1867,31 +1821,9 @@ type CuDev is Data:
         ncaps: U32, cap0: U32, cap1: U32, cap2: U32, cap3: U32,
         arch: String, tag: U32, t: Tr}
 
-def CuDev.of() -> CuDev: CuDev{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, Tr.of()}
-
-def CuDev.didx(d: CuDev) -> U32:
-  match d:
-    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: didx
-
 def CuDev.ctx(d: CuDev) -> U32:
   match d:
     case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: ctx
-
-def CuDev.maj(d: CuDev) -> U32:
-  match d:
-    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: maj
-
-def CuDev.min(d: CuDev) -> U32:
-  match d:
-    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: min
-
-def CuDev.arch(d: CuDev) -> String:
-  match d:
-    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: arch
-
-def CuDev.tag(d: CuDev) -> U32:
-  match d:
-    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: tag
 
 def CuDev.t(d: CuDev) -> Tr:
   match d:
@@ -1953,8 +1885,6 @@ def cu.compute_cap(did: U32, +t: Tr) -> Tr: Tr.emit(OP_COMPUTE_CAP(), U32.show(d
 def cu.stream_create(i: U32, +t: Tr) -> Tr:
   Tr.emit(OP_QUEUE_CREATE(), U32.show(CU_STREAM_NON_BLOCKING()), t)
 
-def cu.nstreams_of(d: CuDev) -> U32: U32.add(Bool.to_u32(U32.is_zero(CU_IDX_COPY())), 1)
-
 # cu:110 `super().__init__(device, CUDAAllocator(self), [CUDARenderer,
 # PTXRenderer, NVCCRenderer], None, arch=f"sm_{major.value}{minor.value}")` -- the
 # ONLY arch string in the file, and it is a `f"sm_{a}{b}"` with NO separator, which
@@ -1996,12 +1926,6 @@ def cu.stream_slot.at(is_copy: Bool) -> U32: Bool.pick(U32, is_copy, CU_IDX_COPY
 
 def cu.stream_slot(queue: String) -> U32:
   cu.stream_slot.at(String.starts_with(queue, "COPY"))
-
-# cu:38 `def extern(self, tag) -> UOp: return UOp.placeholder((1,),
-# dtypes.uint64, 0, device=self.devs, tag=tag).getaddr(self.dev.host)` -- ONE
-# uint64 placeholder per extern, and the tag is what the trace records.
-def cu.extern(slot: U32, +t: Tr) -> Tr: Tr.emit(OP_HOST_FUNC(), U32.show(slot), t)
-
 # cu:34 `self.h = ccall(cuda.cuCtxSetCurrent, self.rt_vars.index(0).load())` --
 # the queue's FIRST call, and it reads rt_vars index 0, the CONTEXT.
 def cu.q_init(+t: Tr) -> Tr: Tr.emit(OP_CTX_SET(), U32.show(CU_IDX_CTX()), t)
@@ -2048,13 +1972,13 @@ def cu.kernarg_extra(blob_after: U32) -> U32: U32.sub(blob_after, CU_DESC_OFF())
 def cu.desc_words() -> List<&2, U32>: [1, 0, 2, 0, 0]
 
 # cu:47 -- `ccall(cuda.cuLaunchKernel, func, *global_size, *local_size, 0,
-# self.stream, UOp.const(0, dtypes.uint64), self.kernargs.index(extra))`. The `arg`
+# self.stream, UOp.const(0, dtypes.u64), self.kernargs.index(extra))`. The `arg`
 # is the kernargs OFFSET, and it is the only traced number that is a real memory
 # offset in the file.
 def cu.launch(extra: U32, +t: Tr) -> Tr: Tr.emit(OP_LAUNCH(), U32.show(extra), t)
 
 # cu:54-55 `copy` -- `ccall(cuda.cuMemcpyAsync, dst.getaddr(self.devs),
-# src.getaddr(self.devs), UOp.const(sz, dtypes.uint64), self.stream)`. The `arg`
+# src.getaddr(self.devs), UOp.const(sz, dtypes.u64), self.stream)`. The `arg`
 # is the BYTE COUNT and it is the only one of the six queue calls whose traced
 # argument is not a slot index.
 def cu.copy(sz: U32, +t: Tr) -> Tr: Tr.emit(OP_COPY_IN(), U32.show(sz), t)
@@ -2077,7 +2001,7 @@ def CU_SIGNAL_SLOT() -> U32: 1
 def cu.timestamp(+t: Tr) -> Tr: Tr.emit(OP_HOST_FUNC(), U32.show(CU_SIGNAL_SLOT()), t)
 
 # cu:66 `submit` -- `return self.rt_vars.after(self.h).index(3).store(
-# self.h.cast(dtypes.uint64)).substitute({self.kernargs: ka})`. The `arg` is the
+# self.h.cast(dtypes.u64)).substitute({self.kernargs: ka})`. The `arg` is the
 # STATUS slot, index 3, which is the only one of the four rt_vars indices that is
 # written rather than read.
 def cu.submit(+t: Tr) -> Tr: Tr.emit(OP_SIGNAL(), U32.show(CU_IDX_STATUS()), t)
@@ -2150,16 +2074,17 @@ def cu.map_err_align() -> String: " memory is not page aligned host memory"
 def NO_REFUSAL() -> String: ""
 
 # cu:88 `host.addr % mmap.PAGESIZE`. THE AUTHORITY IS HOST-DEPENDENT AND A `U32`
-# CONSTANT CANNOT BE, so this is a HOST PARAMETER and not a port of a Python
-# number. MEASURED, arm64 darwin: `mmap.PAGESIZE` is 16384, so the old comment's
-# "4096 on every platform tinygrad supports" was false on the very machine this
-# gate runs on. The VALUE is deliberately left at 4096 because that is what every
-# platform CUDA actually runs on answers (x86-64 Linux and macOS), and 16384 would
-# be wrong for all of them -- a 64K-page aarch64 Linux answers 65536. Nothing in
-# this file consumes the constant: `cu.map_err.at` takes `aligned: Bool`, the
-# seam's answer, and never computes the modulus. It is here so the SEAM has it,
-# and `cu_page_size` prints it so the seam's reader can see which one it got.
-def PAGE_SIZE() -> U32: 4096
+# CONSTANT CANNOT BE, so `cu.map_err.at` below takes `aligned: Bool` -- the SEAM's
+# answer -- and never computes the modulus. There is therefore NO page-size
+# constant here any more, and that is the fix rather than the loss: a `PAGE_SIZE`
+# def existed with exactly one reader, and that reader was the `cu_page_size` row
+# printing it, which is why the pruner called it dead and why the row asserted
+# nothing. MEASURED, arm64 darwin, this very gate: `mmap.PAGESIZE` is 16384, so
+# "4096 on every platform tinygrad supports" was false here. The literal the row
+# pins is 4096 because that is what every platform CUDA actually runs on answers
+# (x86-64 Linux and macOS); a 64K-page aarch64 Linux answers 65536 and the seam
+# is what must notice. NO ROW CAN CHECK THE MODULUS: it is host state, and this
+# gate has no host.
 
 def cu.map_err.at(is_cuda: Bool, has_host: Bool, aligned: Bool, +device: String) -> String:
   +no_host = Bool.not(has_host)
@@ -2203,12 +2128,6 @@ def cu.handles(d: CuDev) -> List<&2, U32>: [CuDev.ctx(d), 0, 0, 0]
 def cu.build.after(+t: Tr) -> Tr: Tr.emit(OP_KERNEL(), "0", t)
 
 def cu.function(libn: U32, +t: Tr) -> Tr: cu.build.after(Tr.emit(OP_PRG_FROM_BIN(), U32.show(libn), t))
-
-# cu:127-129 `check(cuCtxSetCurrent(self.context))`, then `cuModuleLoadData`,
-# then `cuModuleGetFunction`. THREE calls, and the context-set is the one CUDA
-# repeats on every entry point that touches memory.
-def cu.function.ctx(+t: Tr) -> Tr: Tr.emit(OP_CTX_SET(), U32.show(0), t)
-
 # cu:132 `def count(self) -> int: return init_c_var(ctypes.c_int, lambda x:
 # check(cuda.cuDeviceGetCount(ctypes.byref(x)))).value`
 def cu.count(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_COUNT(), "0", t)
@@ -2217,7 +2136,9 @@ def cu.count(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_COUNT(), "0", t)
 # `check(cuCtxSynchronize())`, with the comment "a fault raises here". TWO calls
 # and the SECOND is the one that raises, which is why the trace's truncation at
 # `cuCtxSynchronize` IS the fault.
-def cu.wait_signal(+t: Tr) -> Tr: cl.sync(Tr.emit(OP_CTX_SET(), "0", t))# ===========================================================================
+def cu.wait_signal(+t: Tr) -> Tr: cl.sync(Tr.emit(OP_CTX_SET(), "0", t))
+
+# ===========================================================================
 # PART 3 -- HIP. `ops_hip.py`, all 71 lines.
 #
 # THE MOST DIFFERENT OF THE THREE and the smallest. Where CL sets one kernel
@@ -2331,8 +2252,6 @@ def hp.fields(nf: Nat, +iszs: List<&2, U32>) -> U32:
 type HpDev is Data:
   HpDev{didx: U32, arch: String, ev0: U32, ev1: U32, nevents: U32, t: Tr}
 
-def HpDev.of() -> HpDev: HpDev{0, "", 0, 0, 2, Tr.of()}
-
 def HpDev.didx(d: HpDev) -> U32:
   match d:
     case HpDev{didx, arch, ev0, ev1, nevents, t}: didx
@@ -2340,14 +2259,6 @@ def HpDev.didx(d: HpDev) -> U32:
 def HpDev.arch(d: HpDev) -> String:
   match d:
     case HpDev{didx, arch, ev0, ev1, nevents, t}: arch
-
-def HpDev.ev0(d: HpDev) -> U32:
-  match d:
-    case HpDev{didx, arch, ev0, ev1, nevents, t}: ev0
-
-def HpDev.ev1(d: HpDev) -> U32:
-  match d:
-    case HpDev{didx, arch, ev0, ev1, nevents, t}: ev1
 
 def HpDev.t(d: HpDev) -> Tr:
   match d:
@@ -2949,7 +2860,6 @@ def t_refuse() -> IO(Unit):
 # PART 4 -- CUDA. cu:17-136.
 # ===========================================================================
 
-def CUNAME() -> String: "NVIDIA GeForce RTX 4090"
 def CUDEV0() -> String: ""
 def CUDEV1() -> String: "CUDA:1"
 
@@ -3056,7 +2966,14 @@ def t_cualloc() -> IO(Unit):
     brow("cu_map_ok_reg", cu.map_ok(True{}))
     srow("cu_unmap_ours", vend.trace(V_CUDA(), Tr.calls(cu.unmap.at(True{}, 7, Tr.of()))))
     srow("cu_unmap_theirs", vend.trace(V_CUDA(), Tr.calls(cu.unmap.at(False{}, 7, Tr.of()))))
-    urow("cu_page_size", PAGE_SIZE())
+    # THE LITERAL IS THE POINT. This row used to be `urow("cu_page_size",
+    # PAGE_SIZE())`, and that asserted nothing: the expected value was a def of
+    # the thing it was checking, so no edit to the constant could move the row --
+    # the shape `device.bend` shipped as `sig=0 4 5`. 4096 is a JUDGEMENT and not
+    # a port of a Python number (see cu:88 above: this very machine answers
+    # 16384), so it belongs in the row, where a diff shows it. See the comment
+    # there for why the def that used to hold it is gone.
+    urow("cu_page_size", 4096)
     srow("cu_map_err_other_nohost", cu.map_err(CUDEV1(), False{}, False{}, False{}))
     srow("cu_map_err_other_unaligned", cu.map_err(CUDEV1(), False{}, True{}, False{}))
     srow("cu_map_err_other_aligned", cu.map_err(CUDEV1(), False{}, True{}, True{}))

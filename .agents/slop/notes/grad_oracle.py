@@ -19,7 +19,7 @@ def show(name, root, tgts, rg):
     v = grads.get(k)
     print(f"   grad[{k.op.name} {k.arg}] = {g_of(v)}")
 
-F = dtypes.float
+F = dtypes.f32
 # 1 ADD
 a = C(1.0, F); b = C(2.0, F)
 show("add", UOp(Ops.ADD, src=(a,b)), [a,b], C(1.0,F))
@@ -39,8 +39,8 @@ e = C(2.0, F)
 show("pow", UOp(Ops.POW, src=(b,e)), [b,e], C(1.0,F))
 show("pow_e0", UOp(Ops.POW, src=(b,C(0.0,F))), [b,C(0.0,F)], C(1.0,F))
 # 7 CAST
-ai = C(1, dtypes.int32)
-show("cast", UOp(Ops.CAST, src=(ai,), arg=dtypes.float), [ai], C(1.0,F))
+ai = C(1, dtypes.i32)
+show("cast", UOp(Ops.CAST, src=(ai,), arg=dtypes.f32), [ai], C(1.0,F))
 # 8 TRUNC
 show("trunc", UOp(Ops.TRUNC, src=(C(1.7,F),)), [C(1.7,F)], C(1.0,F))
 # 9 CMPLT -> (None,None)
@@ -57,7 +57,7 @@ print("reshape: SKIPPED -- python asserts len(lgrads)==len(src); rule returns 2 
 # 13 EXPAND
 print("expand: SKIPPED -- same arity assert")
 # 14 BITCAST -> (None,)
-show("bitcast", UOp(Ops.BITCAST, src=(ai,), arg=dtypes.float), [ai], C(1.0,F))
+show("bitcast", UOp(Ops.BITCAST, src=(ai,), arg=dtypes.f32), [ai], C(1.0,F))
 # 15 STAGE / CONTIGUOUS_BACKWARD
 show("stage", UOp(Ops.STAGE, src=(a,)), [a], C(1.0,F))
 # 16 AFTER+STORE clone: AFTER(STORE(dest,val), dest) -> (None, ctx)

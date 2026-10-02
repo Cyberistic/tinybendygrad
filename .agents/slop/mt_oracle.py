@@ -169,11 +169,11 @@ def rows(live=True):
   from tinygrad.uop.ops import UOp
   from tinygrad.dtype import dtypes
   from tinygrad.runtime.support.hcq2 import layout_args
-  addr = UOp.new_buffer("METAL", 64, dtypes.float32, 16).getaddr(None)
+  addr = UOp.new_buffer("METAL", 64, dtypes.f32, 16).getaddr(None)
   A(f"live_getaddr_sz={addr.dtype.itemsize},{addr.dtype.name}")
-  for name, ws, at in (("2buf1var", [addr, addr, UOp.const(1, dtypes.int32)], 0),
+  for name, ws, at in (("2buf1var", [addr, addr, UOp.const(1, dtypes.i32)], 0),
                        ("3buf", [addr, addr, addr], 0),
-                       ("1buf2f16", [addr, UOp.const(1, dtypes.half), UOp.const(1, dtypes.half)], 256),
+                       ("1buf2f16", [addr, UOp.const(1, dtypes.f16), UOp.const(1, dtypes.f16)], 256),
                        ("1buf", [addr], 0)):
     rws = layout_args(ws, at)
     A(f"live_layout_{name}=" + "|".join(f"{o}:{w.dtype.itemsize}" for o, w in rws))

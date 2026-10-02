@@ -59,8 +59,8 @@ import os
 os.environ['DEV'] = 'NULL'
 print("device:", Device.DEFAULT)
 
-go("cast", Tensor([1, 2, 3]).cast(dtypes.float32))
-go("cast_half", Tensor([1, 2, 3]).cast(dtypes.half))
+go("cast", Tensor([1, 2, 3]).cast(dtypes.f32))
+go("cast_half", Tensor([1, 2, 3]).cast(dtypes.f16))
 go("matmul", Tensor.randn(4, 8).real.to(torch := None) if False else Tensor.randn(8, 8) @ Tensor.randn(8, 8))
 go("conv", Tensor.randn(1, 4, 8, 8).conv2d(Tensor.randn(4, 4, 3, 3)).relu())
 go("sum", Tensor.randn(4, 4).sum())

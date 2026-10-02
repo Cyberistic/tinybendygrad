@@ -32,21 +32,21 @@ DEVS = [("BASE", BASE), ("CLANG", CLANG), ("OPENCL", OPENCL), ("METAL", METAL), 
 ROWS = []   # (label, bend_call_prefix, oracle_value)
 def row(label, call, val): ROWS.append((label, call, val))
 
-def alu(dt): return UOp.const(1.0, dtypes.float).cast(dt)
-def sp(): return UOp(Ops.SPECIAL, (UOp.const(0, dtypes.uint32),), ("g", 0, "gidx0", "g"))
+def alu(dt): return UOp.const(1.0, dtypes.f32).cast(dt)
+def sp(): return UOp(Ops.SPECIAL, (UOp.const(0, dtypes.u32),), ("g", 0, "gidx0", "g"))
 IMG = (32, 32, 4)   # `is_image_shape` is `len(shape)==3 and shape[-1]==4`
 KERNEL = ["  float4 val0 = (*((float4*)((data1_4+0))));", "  *((float4*)((data0_4+0))) = (float4){(val0[0]+1.0f)};"]
 
 def kbuf(dt, nm, volatile=False):
     return (nm, (UOp(Ops.BUFFER, (), arg=ParamArg(0, dt, size=1, volatile=volatile)), True))
-BS = [kbuf(dtypes.float, "data0_4"), kbuf(dtypes.float, "data1_4")]
+BS = [kbuf(dtypes.f32, "data0_4"), kbuf(dtypes.f32, "data1_4")]
 # AN ALU-SPACE BUFFER ARGUMENT. `buftype` branches on `u.addrspace == ALU` to pick
 # `var_prefix`/`var_suffix` INSTEAD of `buffer_suffix`, and a kernel argument is
 # never ALU in practice -- so without this fixture the two `var_*` tables are
 # ungated, and the mutation table shows `var_prefix: Metal -> const` moving
 # NOTHING. The branch is upstream's and this row is what pins it.
 def kbuf_alu(nm):
-    return (nm, (UOp(Ops.BUFFER, (), arg=ParamArg(0, dtypes.float, size=1, addrspace=AddrSpace.ALU)), True))
+    return (nm, (UOp(Ops.BUFFER, (), arg=ParamArg(0, dtypes.f32, size=1, addrspace=AddrSpace.ALU)), True))
 ALU = [kbuf_alu("alu0_1"), kbuf_alu("alu1_1")]
 # TWO VECTOR-PREFIX LINES, which is what CUDA's and HIP's `render_vector_prefix`
 # produce for a half4. They are the LAST clause of both prefixes and no other row
@@ -57,10 +57,10 @@ ALU = [kbuf_alu("alu0_1"), kbuf_alu("alu1_1")]
 # `count > 1` (cstyle.py:579), so a scalar half turns on the `#include` line and
 # NOT the `vecs` line. `UOp.stack` of four halves is a half4 in ALU space with a
 # shape -- which is all `uops_to_dtypes` asks for.
-def half4(): return UOp.stack(*[alu(dtypes.half)] * 4)
-CUDA_VECS = [CUDA.render_vector_prefix(dtypes.half, 4)]
-HIP_VECS = [HIP.render_vector_prefix(dtypes.half, 4)]
-BSV = [kbuf(dtypes.float, "data0_4", True), kbuf(dtypes.float, "data1_4")]
+def half4(): return UOp.stack(*[alu(dtypes.f16)] * 4)
+CUDA_VECS = [CUDA.render_vector_prefix(dtypes.f16, 4)]
+HIP_VECS = [HIP.render_vector_prefix(dtypes.f16, 4)]
+BSV = [kbuf(dtypes.f32, "data0_4", True), kbuf(dtypes.f32, "data1_4")]
 
 def kern2(r, bufs, prefix=None, uops=()):
     r.r = {}
@@ -83,8 +83,8 @@ def rd_cells(r, dt):
                      r._render_dtype(dt, 1, AddrSpace.GLOBAL, mutable=False, shape=IMG)])
 DR = {"f32": "single()", "half": "half()", "bf16": "bfloat16()", "bool": "boolean()",
       "u8": "uint8()", "fp8": "fp8e4m3()", "int": "int32()"}
-RDR = {"f32": dtypes.float, "half": dtypes.half, "bf16": dtypes.bfloat16, "bool": dtypes.bool,
-       "u8": dtypes.uint8, "fp8": dtypes.fp8e4m3, "int": dtypes.int}
+RDR = {"f32": dtypes.f32, "half": dtypes.f16, "bf16": dtypes.bf16, "bool": dtypes.bool,
+       "u8": dtypes.u8, "fp8": dtypes.fp8e4m3, "int": dtypes.i32}
 RDMAP = dict(DEVS)
 for dtag in ["f32", "half", "bf16", "bool", "u8", "fp8", "int"]:
     for nm, r in DEVS:
@@ -106,8 +106,8 @@ def cfo(r, op, dt):
         if op in UNARY: return r.code_for_op[op]("X", dt)
         return r.code_for_op[op]("X", "Y", dt)
     except KeyError: return ""
-DTN = {"f32": (dtypes.float, "single()"), "f16": (dtypes.half, "half()"), "f64": (dtypes.float64, "double()"),
-       "bf16": (dtypes.bfloat16, "bfloat16()")}
+DTN = {"f32": (dtypes.f32, "single()"), "f16": (dtypes.f16, "half()"), "f64": (dtypes.f64, "double()"),
+       "bf16": (dtypes.bf16, "bfloat16()")}
 def cro(op, dtag): return f"cfo_row(\"cfo {0}\""
 
 CFO = [("BASE", BASE, "SQRT", "f32"), ("BASE", BASE, "SQRT", "f16"), ("BASE", BASE, "SQRT", "f64"),
@@ -141,7 +141,7 @@ for nm, r, op, dtag in CFO:
         f"cfo_row(\"cfo {nm:<5}\", dev_{nm.lower()}(), O.Ops{op}{{}}, \"{dtag}\", S.{call})", cfo(r, getattr(Ops, op), dt))
 for nm, r in [("BASE", BASE), ("CLANG", CLANG)]:
     row(f"cfo {nm:<5} {'WHERE':<10} f32", f"cfo_where_row(\"cfo {nm:<5}\", dev_{nm.lower()}())",
-        cfo(r, Ops.WHERE, dtypes.float))
+        cfo(r, Ops.WHERE, dtypes.f32))
 
 # ---------------------------------------------------------------- kern
 for nm, r, lb in [("BASE", BASE, 1), ("CLANG", CLANG, 4), ("OPENCL", OPENCL, 1), ("METAL", METAL, 1),
@@ -150,8 +150,8 @@ for nm, r, lb in [("BASE", BASE, 1), ("CLANG", CLANG, 4), ("OPENCL", OPENCL, 1),
         r.kernel_typedef.format(launch_bounds=lb))
 
 # ---------------------------------------------------------------- idx
-def const_uop(k): return UOp.const(k, dtypes.int32)
-def idx_uop(k): return const_uop(k).cast(dtypes.int)
+def const_uop(k): return UOp.const(k, dtypes.i32)
+def idx_uop(k): return const_uop(k).cast(dtypes.i32)
 def add_idx_uop(k):
     # NOTHING in tinygrad builds an INDEX whose `arg is Ops.ADD` (measured: no
     # `.index(..., arg=Ops.ADD)` call site exists), so `render_index`'s
@@ -191,28 +191,28 @@ for nm, dn, addr, bsz, iname, fx in IDX:
 
 # ---------------------------------------------------------------- type/ptr/cast/leg
 row("type BASE  stk4  ", "type_row(\"type BASE  stk4  \", dev_base(), S.single(), 4, S.Aalu{}, O.OpsSTACK{})",
-    BASE._render_dtype(dtypes.float, 4, AddrSpace.ALU, override_ptr=False))
+    BASE._render_dtype(dtypes.f32, 4, AddrSpace.ALU, override_ptr=False))
 row("type BASE  regidx", "type_row(\"type BASE  regidx\", dev_base(), S.single(), 1, S.AReg{}, O.OpsINDEX{})",
-    BASE._render_dtype(dtypes.float, 1, AddrSpace.REG, override_ptr=True))
+    BASE._render_dtype(dtypes.f32, 1, AddrSpace.REG, override_ptr=True))
 row("type BASE  scalar", "type_row(\"type BASE  scalar\", dev_base(), S.single(), 1, S.Aalu{}, O.OpsCAST{})",
-    BASE._render_dtype(dtypes.float, 1, AddrSpace.ALU))
+    BASE._render_dtype(dtypes.f32, 1, AddrSpace.ALU))
 row("type OPENCLglob ", "type_row(\"type OPENCLglob \", dev_opencl(), S.single(), 1, S.AGlobal{}, O.OpsINDEX{})",
-    OPENCL._render_dtype(dtypes.float, 1, AddrSpace.GLOBAL, override_ptr=False))
+    OPENCL._render_dtype(dtypes.f32, 1, AddrSpace.GLOBAL, override_ptr=False))
 row("type METAL glob ", "type_row(\"type METAL glob \", dev_metal(), S.single(), 1, S.AGlobal{}, O.OpsINDEX{})",
-    METAL._render_dtype(dtypes.float, 1, AddrSpace.GLOBAL, override_ptr=False))
+    METAL._render_dtype(dtypes.f32, 1, AddrSpace.GLOBAL, override_ptr=False))
 row("ptr  BASE  stk4  ", "ptr_row(\"ptr  BASE  stk4  \", dev_base(), S.single(), 4, S.single(), \"S\")",
-    f"(({BASE._render_dtype(dtypes.float, 4, AddrSpace.ALU, override_ptr=True)})(S))")
+    f"(({BASE._render_dtype(dtypes.f32, 4, AddrSpace.ALU, override_ptr=True)})(S))")
 row("ptr  BASE  bitcast", "ptr_row(\"ptr  BASE  bitcast\", dev_base(), S.int32(), 1, S.single(), \"V\")",
-    f"(({BASE._render_dtype(dtypes.int, 1, AddrSpace.ALU, override_ptr=True)})(V))")
+    f"(({BASE._render_dtype(dtypes.i32, 1, AddrSpace.ALU, override_ptr=True)})(V))")
 row("acc  BASE  stk4  ", "acc_row(\"acc  BASE  stk4  \", dev_base(), S.single(), 4, S.single(), \"S\")",
-    "*" + f"(({BASE._render_dtype(dtypes.float, 4, AddrSpace.ALU, override_ptr=True)})(S))")
+    "*" + f"(({BASE._render_dtype(dtypes.f32, 4, AddrSpace.ALU, override_ptr=True)})(S))")
 row("acc  BASE  plain ", "acc_row(\"acc  BASE  plain \", dev_base(), S.single(), 1, S.single(), \"V\")", "*V")
 row("cast BASE  half  ", "cast_row(\"cast BASE  half  \", dev_base(), S.half())",
-    f"({BASE._render_dtype(dtypes.half, 1, AddrSpace.REG)})(V)")
+    f"({BASE._render_dtype(dtypes.f16, 1, AddrSpace.REG)})(V)")
 row("cast CLANG half  ", "cast_row(\"cast CLANG half  \", dev_clang(), S.half())",
-    f"({CLANG._render_dtype(dtypes.half, 1, AddrSpace.REG)})(V)")
-row(f"leg  BASE  {dtypes.float.name}", "legacy_row(\"leg  BASE  \", dev_base(), S.single())", BASE.render_dtype(dtypes.float))
-row(f"leg  CLANG {dtypes.half.name}", "legacy_row(\"leg  CLANG \", dev_clang(), S.half())", CLANG.render_dtype(dtypes.half))
+    f"({CLANG._render_dtype(dtypes.f16, 1, AddrSpace.REG)})(V)")
+row(f"leg  BASE  {dtypes.f32.name}", "legacy_row(\"leg  BASE  \", dev_base(), S.single())", BASE.render_dtype(dtypes.f32))
+row(f"leg  CLANG {dtypes.f16.name}", "legacy_row(\"leg  CLANG \", dev_clang(), S.half())", CLANG.render_dtype(dtypes.f16))
 row(f"leg  CLANG {dtypes.bool.name}", "legacy_row(\"leg  CLANG \", dev_clang(), S.boolean())", CLANG.render_dtype(dtypes.bool))
 
 # ---------------------------------------------------------------- buf2
@@ -234,9 +234,9 @@ BUF = [("buf2 BASE  LOC   ", "BASE", "ALocal{}", '"L0"', BASE, AddrSpace.LOCAL, 
        ("buf2 CUDA  GLOB  ", "CUDA", "AGlobal{}", '"G"', CUDA, AddrSpace.GLOBAL, "G"),
        ("buf2 METAL GLOB  ", "METAL", "AGlobal{}", '"G"', METAL, AddrSpace.GLOBAL, "G")]
 for nm, dn, ac, bnm, r, addr, onm in BUF:
-    row(nm, f"buf_row(\"{nm}\", dev_{dn.lower()}(), S.{ac}, {bnm})", rb_row(r, dtypes.float, 1, onm, addr))
+    row(nm, f"buf_row(\"{nm}\", dev_{dn.lower()}(), S.{ac}, {bnm})", rb_row(r, dtypes.f32, 1, onm, addr))
 row("buf2 HIP   sz16  ", "buf_sz_row(\"buf2 HIP   sz16  \", dev_hip())",
-    rb_row(HIP, dtypes.half, 16, "L0", AddrSpace.LOCAL))
+    rb_row(HIP, dtypes.f16, 16, "L0", AddrSpace.LOCAL))
 
 # ---------------------------------------------------------------- wmma
 def wmma_arg(dims, din): return (tuple(dims), din, 32, ())
@@ -245,9 +245,9 @@ def wmma_name_of(dims, din, dout):
     # src made every row print `unsigned int` for the OUTPUT dtype.
     u = UOp(Ops.WMMA, (UOp.const(0, dout),) * 3, arg=(tuple(dims), din, 32, ()))
     return f"WMMA_{'_'.join(map(str, u.arg[0]))}_{u.arg[1].name}_{u.dtype.name}".replace(" ", "_")
-WM = [("wmma 16_16_16 half ", "half()", [16, 16, 16], dtypes.half, dtypes.half),
-      ("wmma 16_16_16 i8   ", "int8()", [16, 16, 16], dtypes.int8, dtypes.int8),
-      ("wmma 8_8_32   bf16 ", "bfloat16()", [8, 8, 32], dtypes.bfloat16, dtypes.bfloat16),
+WM = [("wmma 16_16_16 half ", "half()", [16, 16, 16], dtypes.f16, dtypes.f16),
+      ("wmma 16_16_16 i8   ", "int8()", [16, 16, 16], dtypes.i8, dtypes.i8),
+      ("wmma 8_8_32   bf16 ", "bfloat16()", [8, 8, 32], dtypes.bf16, dtypes.bf16),
       ("wmma 16_16_128 fp8 ", "fp8e4m3()", [16, 16, 128], dtypes.fp8e4m3, dtypes.fp8e4m3)]
 for nm, dt, dd, di, do in WM:
     row(nm, f"wmma_row(\"{nm}\", wmma_arg({dd}, S.{dt}), S.{dt})", wmma_name_of(dd, di, do))
@@ -259,11 +259,11 @@ for nm, s in [("under float       ", "float"), ("under signed char ", "signed ch
 
 # ---------------------------------------------------------------- img
 row("img BASE  write   ", "img_row(\"img BASE  write   \", True{})",
-    BASE._render_dtype(dtypes.float, 1, AddrSpace.GLOBAL, mutable=True, shape=IMG))
+    BASE._render_dtype(dtypes.f32, 1, AddrSpace.GLOBAL, mutable=True, shape=IMG))
 row("img BASE  read    ", "img_row(\"img BASE  read    \", False{})",
-    BASE._render_dtype(dtypes.float, 1, AddrSpace.GLOBAL, mutable=False, shape=IMG))
+    BASE._render_dtype(dtypes.f32, 1, AddrSpace.GLOBAL, mutable=False, shape=IMG))
 row("img OPENCLwrite   ", "img_row(\"img OPENCLwrite   \", True{})",
-    OPENCL._render_dtype(dtypes.float, 1, AddrSpace.GLOBAL, mutable=True, shape=IMG))
+    OPENCL._render_dtype(dtypes.f32, 1, AddrSpace.GLOBAL, mutable=True, shape=IMG))
 
 # ---------------------------------------------------------------- buft
 def buft_expr(r, dt, addr, nm, volatile=False, mutable=True):
@@ -274,11 +274,11 @@ def buft_expr(r, dt, addr, nm, volatile=False, mutable=True):
       (r.var_suffix if addr is AddrSpace.ALU else r.buffer_suffix) + " " + nm
 for nm, r in DEVS:
     row(f"buft {nm:<5}", f"buft_row(\"buft {nm:<5}\", dev_{nm.lower()}())",
-        "|".join([buft_expr(r, dtypes.float, AddrSpace.ALU, "v0"),
-                  buft_expr(r, dtypes.float, AddrSpace.ALU, "v0", True),
-                  buft_expr(r, dtypes.float, AddrSpace.GLOBAL, "v0"),
-                  buft_expr(r, dtypes.float, AddrSpace.GLOBAL, "v0", True),
-                  buft_expr(r, dtypes.float, AddrSpace.LOCAL, "v0")]))
+        "|".join([buft_expr(r, dtypes.f32, AddrSpace.ALU, "v0"),
+                  buft_expr(r, dtypes.f32, AddrSpace.ALU, "v0", True),
+                  buft_expr(r, dtypes.f32, AddrSpace.GLOBAL, "v0"),
+                  buft_expr(r, dtypes.f32, AddrSpace.GLOBAL, "v0", True),
+                  buft_expr(r, dtypes.f32, AddrSpace.LOCAL, "v0")]))
 
 # ---------------------------------------------------------------- opt tables
 row("opt devname", "opt_row(\"opt devname\", dev_names())", "|".join(n for n, _ in DEVS))
@@ -299,10 +299,10 @@ OCML_OPS = [("EXP2", "exp2", "pure"), ("LOG2", "log2", "pure"), ("SQRT", "sqrt",
             ("SIN", "sin", ""), ("TRUNC", "trunc", "")]
 row("hipocml", "hipocml_row(\"hipocml\")", "\n".join(
     'extern "C" __attribute__((device%s)) %s __ocml_%s_f%d(%s);' % ((", " + a) if a else "", dt.name, cn, dt.bitsize, dt.name)
-    for _, cn, a in OCML_OPS for dt in [dtypes.half, dtypes.float, dtypes.float64]))
+    for _, cn, a in OCML_OPS for dt in [dtypes.f16, dtypes.f32, dtypes.f64]))
 
 # ---------------------------------------------------------------- kern2
-SQRT_H, SQRT_F = alu(dtypes.half).alu(Ops.SQRT), alu(dtypes.float).alu(Ops.SQRT)
+SQRT_H, SQRT_F = alu(dtypes.f16).alu(Ops.SQRT), alu(dtypes.f32).alu(Ops.SQRT)
 KERN2 = [
   ("kern2 BASE       ", "kern2_row(\"kern2 BASE       \", dev_base(), 1, g_bs(S.single()), emit_min(), False{})", BASE, BS, (), None),
   ("kern2 CLANG      ", "kern2_row(\"kern2 CLANG      \", dev_clang(), 1, g_bs(S.single()), emit_min(), False{})", CLANG, BS, (), None),
@@ -320,28 +320,28 @@ KERN2 = [
   ("kern2 METAL pref2", "kern2_row(\"kern2 METAL pref2\", dev_metal(), 1, g_bs(S.single()), emit_caller(g_caller()), False{})", METAL, BS, (), ["// generated by tinybendygrad", "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"]),
   # OpenCL's `#pragma` PREPENDS onto the caller's list and is conditional on a half
   # uop -- so it is a third row and not a fourth spelling of the second.
-  ("kern2 OPENCL f16 ", "kern2_row(\"kern2 OPENCL f16 \", dev_opencl(), 1, g_bs(S.single()), emit_ocl_half(g_caller()), False{})", OPENCL, BS, (sp(), alu(dtypes.half)), ["// generated by tinybendygrad", "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"]),
+  ("kern2 OPENCL f16 ", "kern2_row(\"kern2 OPENCL f16 \", dev_opencl(), 1, g_bs(S.single()), emit_ocl_half(g_caller()), False{})", OPENCL, BS, (sp(), alu(dtypes.f16)), ["// generated by tinybendygrad", "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"]),
   # `buftype`'s `volatile` half.
   ("kern2 BASE  vol  ", "kern2_row(\"kern2 BASE  vol  \", dev_base(), 1, g_bs_vol(), emit_min(), False{})", BASE, BSV, (), None),
   ("kern2 CLANG vol  ", "kern2_row(\"kern2 CLANG vol  \", dev_clang(), 1, g_bs_vol(), emit_min(), False{})", CLANG, BSV, (), None),
   # HIP's prefix, clause by clause.
   ("kern2 HIP   spec ", "kern2_row(\"kern2 HIP   spec \", dev_hip(), 1, g_bs(S.single()), emit_hip_spec(), False{})", HIP, BS, (sp(),), None),
   ("kern2 HIP   ockl ", "kern2_row(\"kern2 HIP   ockl \", dev_hip(), 1, g_bs(S.single()), emit_hip_ocml(), False{})", HIP, BS, (sp(), SQRT_H, SQRT_F), None),
-  ("kern2 HIP   half ", "kern2_row(\"kern2 HIP   half \", dev_hip(), 1, g_bs(S.single()), emit_hip_half(), False{})", HIP, BS, (sp(), alu(dtypes.half)), None),
-  ("kern2 HIP   bf16 ", "kern2_row(\"kern2 HIP   bf16 \", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16(), False{})", HIP, BS, (sp(), alu(dtypes.bfloat16)), None),
-  ("kern2 HIP   bf16h ", "kern2_row(\"kern2 HIP   bf16h \", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16_half(), False{})", HIP, BS, (sp(), alu(dtypes.bfloat16), alu(dtypes.half)), None),
-  ("kern2 HIP   cdna4", "kern2_row(\"kern2 HIP   cdna4\", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16(), True{})", HIP4, BS, (sp(), alu(dtypes.bfloat16)), None),
-  ("kern2 HIP   inf  ", "kern2_row(\"kern2 HIP   inf  \", dev_hip(), 1, g_bs(S.single()), emit_hip_inf(), False{})", HIP, BS, (sp(), UOp.const(float("nan"), dtypes.float).cast(dtypes.float)), None),
+  ("kern2 HIP   half ", "kern2_row(\"kern2 HIP   half \", dev_hip(), 1, g_bs(S.single()), emit_hip_half(), False{})", HIP, BS, (sp(), alu(dtypes.f16)), None),
+  ("kern2 HIP   bf16 ", "kern2_row(\"kern2 HIP   bf16 \", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16(), False{})", HIP, BS, (sp(), alu(dtypes.bf16)), None),
+  ("kern2 HIP   bf16h ", "kern2_row(\"kern2 HIP   bf16h \", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16_half(), False{})", HIP, BS, (sp(), alu(dtypes.bf16), alu(dtypes.f16)), None),
+  ("kern2 HIP   cdna4", "kern2_row(\"kern2 HIP   cdna4\", dev_hip(), 1, g_bs(S.single()), emit_hip_bf16(), True{})", HIP4, BS, (sp(), alu(dtypes.bf16)), None),
+  ("kern2 HIP   inf  ", "kern2_row(\"kern2 HIP   inf  \", dev_hip(), 1, g_bs(S.single()), emit_hip_inf(), False{})", HIP, BS, (sp(), UOp.const(float("nan"), dtypes.f32).cast(dtypes.f32)), None),
   # CUDA's prefix: four static lines then one `#include` per used dtype.
-  ("kern2 CUDA  half ", "kern2_row(\"kern2 CUDA  half \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(True{}, False{}, False{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.half),), None),
-  ("kern2 CUDA  bf16 ", "kern2_row(\"kern2 CUDA  bf16 \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(False{}, True{}, False{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.bfloat16),), None),
+  ("kern2 CUDA  half ", "kern2_row(\"kern2 CUDA  half \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(True{}, False{}, False{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.f16),), None),
+  ("kern2 CUDA  bf16 ", "kern2_row(\"kern2 CUDA  bf16 \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(False{}, True{}, False{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.bf16),), None),
   ("kern2 CUDA  fp8  ", "kern2_row(\"kern2 CUDA  fp8  \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(False{}, False{}, True{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.fp8e4m3),), None),
   ("kern2 BASE  alu  ", "kern2_row(\"kern2 BASE  alu  \", dev_base(), 1, g_bs_alu(), emit_min(), False{})", BASE, ALU, (), None),
   ("kern2 CLANG alu  ", "kern2_row(\"kern2 CLANG alu  \", dev_clang(), 1, g_bs_alu(), emit_min(), False{})", CLANG, ALU, (), None),
   ("kern2 METAL alu  ", "kern2_row(\"kern2 METAL alu  \", dev_metal(), 1, g_bs_alu(), emit_min(), False{})", METAL, ALU, (), None),
   ("kern2 CUDA  vecs ", "kern2_row(\"kern2 CUDA  vecs \", dev_cuda(), 1, g_bs(S.single()), emit_vecs(g_cuda_vecs()), False{})", CUDA, BS, (half4(),), None),
   ("kern2 HIP   vecs ", "kern2_row(\"kern2 HIP   vecs \", dev_hip(), 1, g_bs(S.single()), emit_hip_vecs(g_hip_vecs()), False{})", HIP, BS, (sp(), half4()), None),
-  ("kern2 CUDA  all  ", "kern2_row(\"kern2 CUDA  all  \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(True{}, True{}, True{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.half), alu(dtypes.bfloat16), alu(dtypes.fp8e4m3)), None),
+  ("kern2 CUDA  all  ", "kern2_row(\"kern2 CUDA  all  \", dev_cuda(), 1, g_bs(S.single()), emit_cuda(uses_of(True{}, True{}, True{}, False{}, False{}, False{})), False{})", CUDA, BS, (alu(dtypes.f16), alu(dtypes.bf16), alu(dtypes.fp8e4m3)), None),
 ]
 for nm, call, r, bufs, uops, pref in KERN2:
     row(nm, call, kern2(r, bufs, prefix=pref, uops=uops))

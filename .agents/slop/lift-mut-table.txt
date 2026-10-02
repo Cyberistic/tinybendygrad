@@ -1,0 +1,62 @@
+# ===========================================================================
+# THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.
+# `.agents/slop/fold-lift-mutate.py` applies each edit, re-runs, and diffs whole
+# `name=value` lines against a baseline captured from the SAME file in the SAME state; the
+# table is its output and nothing here is transcribed by hand.
+#
+# | # | mutation | rows MOVED | what it is testing |
+# |---|---|---|---|
+# | L1 | a no-op edit (whitespace) | **0** | **THE CONTROL.** A well-formed edit that changes nothing moves nothing, which is what makes the other 0s interpretable. An earlier version of this harness had four "neutral" mutations that were NOT no-ops -- they appended a line to a def body and took 276 rows with them -- and one that referenced an undefined name. All five were REMOVED rather than counted, because a "moved every row" line in a mutation table is a harness bug wearing a result's clothes. |
+# | L3 | another no-op edit | **0** | the control, twice, on the block gate itself |
+# | L41 | the movement passthrough rewritten as a `src2` spelling of itself | **0** | the control for L29: the same answer reached differently really does move nothing, so L29's 11 rows are the SWAP and not the spelling |
+# | L2 | `mm.MM2.get`: the fall-through inverted, so a binary op with no arm answers the dtype limits and one WITH an arm does too | 90 | **THE FALL-THROUGH IS THE WHOLE OF RULE 1.** `Ops.CMPEQ` is binary, is on a non-float dtype, and has NO arm -- so Python falls through to `(dtype.min, dtype.max)` and so must this. Getting it wrong is invisible on every op that HAS an arm, which is 12 of the 13 in the block. |
+# | L42 | `bnd.same`: `Bool` equality as exclusive-or rather than its negation | 51 | `Bool` HAS NO `is_eq` IN BEND 2.0.34 and equality is the negation of `xor`. Getting it backwards inverts every sign test in the section at once. |
+# | L6 | ADD answered as SUB | 9 | the nine in-window ADD rows; the saturation rows are excluded because saturation makes add and sub agree on them |
+# | L8 | the sign of a same-sign SUM negated | 14 | the sign is the ADDENDS' sign, and a sum of two negatives is the case that shows it |
+# | L9 | the sign of a DIFFERENCE decided by the wrong comparison | 14 | a difference's sign is decided by WHICH MAGNITUDE IS LARGER, and the pair is `(SNok{True,...}, SNok{False,...})` either way -- the ordering of the two arms is the whole test. `lf_range0`/`lf_range4` are in the list because RANGE subtracts one. |
+# | L10 | **the signed order collapsed to two cases** | 9 | **THE BIGGEST SINGLE FINDING IN THE GATE, AND IT WAS FOUND BY THE GATE.** "if `a` is negative compare the magnitudes backwards" is wrong for a negative `a` against a non-negative `b`, where the answer is always less and not a magnitude comparison. This spelling made `max(-3, 4)` answer `-3` and `cmplt(-3, 4)` answer `False` on 53 of the gate's 123 rows before it was found, and it typechecks and terminates throughout. |
+# | L11 | `bnd.min` and `bnd.max` exchanged | 14 | the AND arm is `min(s0_vmax, ...)` and STACK is a `min`/`max` fold, so the two are used by four arms and one swap reaches all of them |
+# | L12 | the canonical zero tests only the HIGH word | 15 | `0 * -5` builds `SNok{True, 0}` -- `-0`, the same Python int as `0` and a DIFFERENT `Bnd`, so the gate string differs. The `2**31` and `-2**31` addends are in the list because that is where a wide negative magnitude first appears. |
+# | L16 | the AND arm's mask WIDTH and masked VALUE exchanged | 3 | width from `s1` and mask on `s0`, which is the plausible reading and gives `2**31 & 7` where CPython gives 7. **Three rows and not one is the measurement that the family needs its `2**31` and `2**40` fixtures**: with both srcs small the two spellings are the same function. |
+# | L17 | the AND arm's `min(s0_vmax, ...)` answered as `max` | 6 | an UNSOUND upper bound, which is the direction that matters: a masked value can then exceed the source's own maximum |
+# | L20 | SHR's UPPER half answered as a shift LEFT | 6 | both are a shift of the same amount and only the PAIR differs, so a fixture whose two bounds are equal -- which every CONST fixture is -- catches only one of the two |
+# | L22 | the `+ 1` for a non-zero remainder lands in the HIGH word | 2 | off by `2**32` on every negative ODD right-shift, which is the recorded "an even fixture hides an odd defect" family: `-8 >> 2` and `255 >> 4` are unmoved and `-9 >> 1` and `-1 >> 3` are not |
+# | L24 | the shift AMOUNT read as a bit WIDTH | 6 | `1 << 3` becomes `1 << 2`. This is why `bnd.shamt` is a SEPARATE def from the AND arm's mask reader: they are one line apart and they are different functions. Found by this gate on 22 rows. |
+# | L25 | Python's `or` on ints exchanged with `and` | 2 | `0 or 1` is `1` and `1 and 0` is `0`, so the two are a pick each and differ on every pair -- but only two of the four `orb_*` rows move, because `or` is commutative and two of the four fixtures have equal srcs |
+# | L27 | the `bool`-dtype AND arm REMOVED | 13 | **THE REACHABILITY DEFECT THIS GATE FOUND.** `Ops.AND` has TWO arms -- the integer mask and the `bool` dtype's `and` -- and the second is reachable exactly when the first is not. Two `case O.OpsAND{}` arms make the second dead, and an integer arm returning `None` skips straight past a `case _:`. Every `andb_*` row answered `bool`'s own limits until the dispatch was moved into ONE def over the dtype's class. L27 is the pre-fix state, measured. |
+# | L29 | the movement passthrough reads `src[1]` | 11 | eleven of the twelve Movement/INDEX-family ops all pass `src[0]` through, and reading `src[1]` is a real answer on every one of them. A node count cannot see it and `srcops` cannot either: the src SEQUENCE is unchanged. |
+# | L30 | WHERE reads `src[0]`/`src[1]` | 3 | WHERE's operands are `src[1]` and `src[2]` -- the CONDITION is skipped -- so reading from zero puts the condition's own bound into the interval |
+# | L31 | RANGE/SPECIAL's `(src[0] - 1).vmax` read as `src[0].vmax` | 6 | the `1` is a REAL UOp -- a SUB node -- and dropping it is off by one on every RANGE and every SPECIAL |
+# | L33 | STACK's fold seed exchanged | 4 | `min`/`max` over a generator start from nothing, and the seed is the IDENTITY pair rather than a `U32` sentinel, which is the recorded `max`/`min` sentinel trap: `0xFFFFFFFF` wins every comparison |
+# | L34 | the `Invalid` CONST answered as `0` | 1 | `self.val is not Invalid` is the arm's gate and a CONST can hold it |
+# | L35 | the NaN test dropped | 1 | `not math.isnan(v)` IS `v == v` and `F32.is_eq` is IEEE, so `F32.is_eq(f, f)` IS the NaN test. The row is the only thing that can see it, because `F32.div(0, 0)` is the one NaN Bend can build and no other fixture contains one. |
+# | L36 | PAD over a float source saturates instead of comparing in `F32` | 2 | sound, and wrong for CPython, which is why the float bound is the ONE place the two classes meet: `min(1.5, 0)` is the INTEGER `0`. **These two rows are a FIXTURE THIS UNIT ADDED to close an earlier zero**, and they are the reason `bnd.lt`'s `case _:` -- the mixed Int/Flt arm, which answers `False` and is wrong in general -- is confined to one arm of PAD. |
+# | L38 | a dtype WIDTH off by one | 1 | `bl_dt_int32`: the twenty dtype rows see a `2**32 - 1` maximum, and only `int32` moves because the other widths are powers of two where the off-by-one is absorbed |
+# | L40 | the `Defines` arm narrowed to PARAM and BUFFER | 3 | `GroupOp.Defines` names PARAM, BUFFER and ALLOC, and the three `*_alloc` rows are a FIXTURE THIS UNIT ADDED to close an earlier zero |
+# | L4 | the binary block entered on a NON-BINARY op | **0** | **A THEOREM, with the proof in one sentence: `mm.bin.arm`'s dispatch is a TOTAL match over the op constructors, and every constructor it names is in `GroupOp.binary`.** Entering the block early therefore finds no case to fire and falls through to the same default, so the conjunct is redundant for every op that exists and is defence only against a future one. No fixture can separate it and none should be written. |
+# | L7 | SUB's two halves NOT crossed | **0** | **A FIXTURE REQUEST, and the request is not cheap: every fixture in this gate has `CONST` srcs, so `s0.lo == s0.hi` and `s1.lo == s1.hi` and the crossing is invisible.** This is the price of gating the TABLE without a WALK, and it is the same price as L13, L14, L15 and L19. All five need a src whose bounds DIFFER, which is a `WHERE` or an `ADD` node -- i.e. the walk. **This is the single strongest argument for building the walk next.** |
+# | L13 | MUL's `min(vals)`/`max(vals)` exchanged | **0** | the four products of two CONSTs are the SAME number, so min and max agree. Fixture request, same reason as L7. |
+# | L14 | CMPLT's first half reads `lo` instead of `hi` | **0** | same: `s0_vmax < s1_vmin` and `s0_vmin < s1_vmin` are the same predicate when the srcs are CONSTs. Fixture request. |
+# | L15 | CMPNE's second disjunct reads `lo` instead of `hi` | **0** | same, and worse: the intervals touch in the wrong direction only when the two bounds differ. Fixture request. |
+# | L19 | XOR's `~vmax, ~vmin` NOT swapped | **0** | same: the negation is monotone so the halves only trade when the src bounds differ. Fixture request. |
+# | L18 | the AND gate's `s1_vmax >= 0` dropped | **0** | **NOT A FIXTURE REQUEST -- IT IS UNREACHABLE, and that is the finding.** Measured: `UOp(Ops.AND, src=(CONST(5), CONST(-1)))` has dtype `weakint`, not `int32`, because `promo_dtype` promotes an `int` against a negative `int` past the signed lattice; and `weakint`'s limits are 800 bits, so the answer leaves the window before the gate is consulted. The conjunct is a dtype-promotion artefact: the state it refuses does not exist as an INTEGER, so no integer fixture can reach it and no fixture of any kind can separate it from its absence. |
+# | L23 | the shift amount's WIDTH GUARD off by one | **0** | **UNFIXABLE IN THIS REPRESENTATION.** The guard is `bit_length(k) > 64`, i.e. `k >= 2**64`, and a shift amount reaches Bend as a `Nat`, which REFUSES past 2**48-1. So the guard's boundary cannot be expressed as a fixture and never fires. Kept because it is one comparison and it is the honest place for the `Nat` cap to be recorded. |
+# | L26 | the `bool`-dtype AND's two srcs swapped | **0** | **A THEOREM: `and` is commutative, and so is the `bool` interval built from it, so the two spellings are the same function over every possible answer.** A test that cannot fail is not a test. (`or_bool`'s srcs are commutative too and that is why no `orb_*` src-swap mutation is even in the table.) |
+# | L39 | PAD and CONST arms exchanged | **0** | **A THEOREM: the two arms are keyed on DIFFERENT op constructors, and a `match` cannot reach the second by matching the first.** The ORDER of those two arms is therefore not load-bearing -- unlike PAD's position INSIDE the `GroupOp.Movement` arm, which is, because PAD is reachable by either pattern and Python tests it first. |
+#
+# **NINE OF THE THIRTY-FIVE MOVE NOTHING, AND EVERY ONE IS CLASSIFIED**: three are the
+# harness's own controls (L1, L3, L41), five are FIXTURE REQUESTS that all need a src whose
+# bounds differ and therefore the WALK (L7, L13, L14, L15, L19), three are THEOREMS about a
+# total dispatch, about commutativity, and about disjoint `match` patterns (L4, L26, L39),
+# one is UNREACHABLE by dtype promotion (L18), and one is UNFIXABLE because `Nat` caps a
+# shift amount below the guard's boundary (L23). **No zero is closed with a row that would
+# encode the equivalence as a check.**
+#
+# THE FIVE FIXTURE REQUESTS ARE THE HEADLINE FOR THE NEXT UNIT. They are all the same
+# request, they are all cheap ONCE A WALK EXISTS, and between them they cover the four
+# properties of an INTERVAL -- that a difference's halves cross, that a product's extremes
+# are taken over four values and not two, that a comparison reads the far end of one
+# interval against the near end of the other, and that a monotone map trades them. An
+# all-CONST gate cannot see any of it, because on a CONST interval every one of those
+# properties is an identity.
+# ===========================================================================

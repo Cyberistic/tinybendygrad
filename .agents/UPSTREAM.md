@@ -110,6 +110,108 @@ is the sign BIT, so `shrn(shrn(v,31), n)` is 0 for every `n >= 1`. Both are UNUS
 UNTESTED in `helpers.bend`, which is why ten green rows in another unit never saw them.
 The local fix and the removal condition are in `divandmod.bend` / `helpers.bend`.
 
+**N8 — `runtime/support/hcq2.py`'s `encode_submit` → `encode_cmdbuf` rename, and
+`ops_metal.py`'s rewrite onto it, are NOT defects.** NOT upstream, and specifically not a
+regression: they are a deliberate restructure (the `HWQueue.encode` method, the
+`uopfunc`-based `hcq_fence`/`mtl_run`, and `encode_cmdbuf(hq, lin=None, name=..., device=None)`
+absorbing the old `bufferize_cmdbuf` + `encode_submit` pair). Our `hcq2.bend` and
+`ops_metal.bend` describe the OLD shape, and their header line tables (`:479-481` for
+`encode_submit`, `:455-477` for `bufferize_cmdbuf`) will need rewriting — that is drift
+work, not a bug report. What IS worth knowing is that this rename is what makes `hcq2.py`
+un-re-vendorable on its own; see `.agents/UPSTREAM-PIN.md`'s coupling note.
+
+---
+
+## D2 — `renderer/cstyle.py:191`: `_render_dtype` lost its `type_map` fallback and now raises `KeyError` for 18 of 102 dtype×renderer pairs
+
+**Status: CONFIRMED mechanism, exhaustively enumerated. NOT reproduced on a real end-to-end
+kernel** (see "Not verified" — and note that this cuts in upstream's favour: it may well be
+an unreachable tightening.)
+
+Found by the drift pass of 2026-10-02, while closing `UPSTREAM-PIN.md`'s work list. It is
+two upstream commits acting together, and neither is wrong alone.
+
+**Commit A — `dtype.py` changed every `DType.name` from the C spelling to the short form.**
+
+```python
+-  int8: Final[DType] = DType.new(1, 8, "signed char", 'b')
++  i8: Final[DType] = DType.new(1, 8, "i8", 'b')
+...
+-  float32: Final[DType] = DType.new(14, 32, "float", 'f')
++  f32: Final[DType] = DType.new(14, 32, "f32", 'f')
+```
+
+**Commit B — `cstyle.py` gave `CStyleLanguage` a fixed 14-entry `type_map` and dropped the
+`.get(dtype, dtype.name)` fallback in `_render_dtype`.**
+
+```python
+-      return prefix + self.type_map.get(dtype, dtype.name).replace(" ", "_") + str(sz) + suffix
+-    return prefix + self.type_map.get(dtype, dtype.name) + suffix
++      return prefix + self.type_map[dtype].replace(" ", "_") + str(sz) + suffix
++    return prefix + self.type_map[dtype] + suffix
+```
+
+The fallback was load-bearing for exactly the dtypes the new map omits. `type_map` covers
+`void, bool, i8, u8, i16, u16, i32, u32, i64, u64, f16, bf16, f32, f64` and nothing else —
+no `weakint`, no `weakfloat`, and **no fp8**. Before A, a missing entry answered
+`dtype.name`, which for fp8 was the usable C-ish name `float8_e4m3`; after A the fallback
+would answer the useless `fp8e4m3`, so B removed the fallback rather than carry a wrong
+answer — and in doing so turned a silent-wrong into a loud crash for the dtypes that have no
+entry at all.
+
+**Reachability, enumerated exhaustively** (both trees extracted whole with `git archive`, so
+this is upstream's code and not a partial re-vendor). Calling `_render_dtype(dt, 1, None)`
+for all 17 `dtypes.all` × 6 renderers, at `87a4311b3`:
+
+| renderer | dtypes that raise `KeyError` |
+|---|---|
+| `CStyleLanguage` (BASE) | `fp8e4m3`, `fp8e5m2`, `fp8e4m3fnuz`, `fp8e5m2fnuz` |
+| `ClangRenderer` | the same four |
+| `OpenCLRenderer` | the same four |
+| `MetalRenderer` | the same four |
+| `CUDARenderer` | `fp8e4m3fnuz`, `fp8e5m2fnuz` |
+| `HIPRenderer` | `fp8e4m3fnuz`, `fp8e5m2fnuz` |
+
+**18 of 102 combinations.** At the pin `6c3d401cf324`, all 102 return a string. `weakint`
+and `weakfloat` are absent from every `type_map` too, but they are unreachable through
+`_render_dtype` on a rangeified graph because the `UPat.cvar("c").cast()` rules consume
+CONSTs first — EXCEPT on an un-rangeified graph, where `renderer-oracle.py`'s `f_range`
+fixture has a `CAST(LOAD(f32) -> weakint)` node and dies with `KeyError: dtypes.weakint`.
+That fixture is a synthetic graph, so it is evidence of the shape, not of a real kernel.
+
+**Verified here, precisely:**
+- `cstyle_oracle.py` against the **pin** tree: **210 rows, rc 0.**
+- `cstyle_oracle.py` against **upstream** `87a4311b3`: **`KeyError: dtypes.fp8e4m3`, 0 rows,
+  rc 1** — the unit's own oracle cannot produce a single row any more.
+- The 18-cell table above, by direct `_render_dtype` calls.
+- The `tmap` rows change **value** even where nothing raises: `type_map.get(dt, dt.name)`
+  over `dtypes.all` answers `fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz` where the pin answers
+  `float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz`, on all six renderers, and the
+  two `fnuz` entries additionally change on CUDA and HIP. **That is 6 of our committed
+  `tmap` rows whose expected values are now stale for a reason that is upstream's rename
+  and not our bug** — they must be re-derived from the new oracle, not hand-edited.
+
+**Not verified:** whether a real end-to-end kernel reaches any of the 18. Five real kernels
+(`mul`, `sum`, `matmul`, `cast`, `stack`) render fine on upstream with `DEV=PYTHON`, and I
+could not run an fp8 kernel because `tinygrad/runtime/ops_clang.py` is absent from both
+trees in this checkout. So this is a **CONFIRMED defect in the function**, with reachability
+from a real kernel unestablished. Given commit B's shape — deliberately dropping a fallback
+whose answer had just become wrong — the charitable reading is "fp8 is not renderable on
+these backends and now says so", which makes this a **missing error message on an
+intentional restriction** rather than a crash bug. Either way it is upstream's to word.
+
+**Fix (upstream's to make, not ours):** either add the four fp8 names to the base map (they
+were the `.name` fallback values and some backend will need them), or make `_render_dtype`
+raise a `KeyError` that names the dtype and the renderer, which it half does already.
+
+**What the port does:** `renderer/cstyle.bend` does NOT bend. It keeps the pin's C spellings
+(`signed char`, `float`, `__bf16`, …) because those are what a C backend wants, and its
+`type_map` rows are the authority for the spelling rather than `dtype.name`. Its `tmap`
+rows are **recorded as needing re-derivation**, not edited — see the drift report. The port
+diverges from upstream on `dtype.name` deliberately: upstream's `DType.name` is now a dtype
+IDENTIFIER (`f32`), and a C type name is a renderer concern, so the port's split (dtype name
+vs renderer type_map) is the more defensible shape.
+
 ---
 
 ## Where upstream defects get integrated

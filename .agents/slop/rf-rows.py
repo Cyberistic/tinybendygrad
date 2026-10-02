@@ -15,15 +15,15 @@ import tinygrad.codegen.simplify as simp
 
 IDX = dtypes.weakint
 def C(n): return UOp.const(n, IDX)
-def B(n=4, a=AddrSpace.GLOBAL, s=0): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.int32, n, addrspace=a))
+def B(n=4, a=AddrSpace.GLOBAL, s=0): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.i32, n, addrspace=a))
 
 c0, c1, c2, c4 = C(0), C(1), C(2), C(4)
 r0, r1 = UOp.range(4, 0), UOp.range(4, 1)
 b4 = B(4, AddrSpace.GLOBAL, 0)
 bx = B(4, AddrSpace.GLOBAL, 1)
-a4 = UOp(Ops.ALLOC, arg=ParamArg(1, dtypes.int32, 4, addrspace=AddrSpace.GLOBAL))
-p_g = UOp(Ops.PARAM, arg=ParamArg(2, dtypes.int32, 4, addrspace=AddrSpace.GLOBAL))
-p_a = UOp(Ops.PARAM, arg=ParamArg(3, dtypes.int32, 4, addrspace=AddrSpace.ALU))
+a4 = UOp(Ops.ALLOC, arg=ParamArg(1, dtypes.i32, 4, addrspace=AddrSpace.GLOBAL))
+p_g = UOp(Ops.PARAM, arg=ParamArg(2, dtypes.i32, 4, addrspace=AddrSpace.GLOBAL))
+p_a = UOp(Ops.PARAM, arg=ParamArg(3, dtypes.i32, 4, addrspace=AddrSpace.ALU))
 n0 = UOp(Ops.NOOP); nx = UOp(Ops.NOOP, (c0,))
 e_n0 = UOp(Ops.END, (n0,)); e_nx = UOp(Ops.END, (nx,))
 after = UOp(Ops.AFTER, (b4, e_n0, e_nx, UOp(Ops.END, (b4,))))

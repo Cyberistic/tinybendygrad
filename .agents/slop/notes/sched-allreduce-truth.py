@@ -50,4 +50,4 @@ for ndev, numel, hdev in [(8, 1000, 4), (8, 1000, 2), (8, 1000, 3), (4, 100, 4)]
   print(f"  ndev={ndev} numel={numel} hdev={hdev} ->", hdev_branch(ndev, numel, hdev, None))
 
 print("== ALLREDUCE_CAST, allreduce.py:116 ==")
-print("  bfloat16, half in the cast set:", dtypes.bfloat16 in (dtypes.bfloat16, dtypes.half), dtypes.half in (dtypes.bfloat16, dtypes.half))
+print("  bfloat16, half in the cast set:", dtypes.bf16 in (dtypes.bf16, dtypes.f16), dtypes.f16 in (dtypes.bf16, dtypes.f16))

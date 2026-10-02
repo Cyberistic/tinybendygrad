@@ -19,11 +19,11 @@ for n in ["unsigned char","unsigned short","signed char","short","int","unsigned
   row(f"render_cast {n}", R.render_cast(UOp(Ops.CAST, (UOp.const(0),), dt_of(n)), "V"))
 
 # _render_dtype
-for dt in [dtypes.float, dtypes.half, dtypes.int, dtypes.uint, dtypes.bool]:
+for dt in [dtypes.f32, dtypes.f16, dtypes.i32, dtypes.u32, dtypes.bool]:
   row(f"_render_dtype {dt.name}", R._render_dtype(dt))
-row("_render_dtype float sz2", R._render_dtype(dtypes.float, sz=2))
-row("_render_dtype float global", R._render_dtype(dtypes.float, addrspace=AddrSpace.GLOBAL))
-row("render_dtype float", R.render_dtype(dtypes.float))
+row("_render_dtype float sz2", R._render_dtype(dtypes.f32, sz=2))
+row("_render_dtype float global", R._render_dtype(dtypes.f32, addrspace=AddrSpace.GLOBAL))
+row("render_dtype float", R.render_dtype(dtypes.f32))
 
 # packed_field
 for n in ["uchar","char","ushort","short","half","int"]:
@@ -45,7 +45,7 @@ for n in ["float","half","bfloat16","double"]:
 # code_for_op
 for op in ["SQRT","RECIPROCAL","NEG","EXP2","LOG2","SIN","TRUNC","AND","XOR","OR","ADD","SUB","MUL","CMOD","CDIV","CMPNE","SHR","SHL","CMPLT","WHERE","CMPEQ"]:
   f = R.code_for_op[getattr(Ops, op)]
-  row(f"code_for_op {op}", f("A","B","C",dtypes.float) if op=="WHERE" else (f("A", dtypes.float) if op in ("SQRT","RECIPROCAL","NEG","EXP2","LOG2","SIN","TRUNC") else f("A","B",dtypes.float)))
+  row(f"code_for_op {op}", f("A","B","C",dtypes.f32) if op=="WHERE" else (f("A", dtypes.f32) if op in ("SQRT","RECIPROCAL","NEG","EXP2","LOG2","SIN","TRUNC") else f("A","B",dtypes.f32)))
 
 # code_for_workitem
 for k in ["g","l"]:

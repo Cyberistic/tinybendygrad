@@ -918,10 +918,6 @@ def Lin.out(x: Lin) -> List<&2, U32>:
     case Lin{ar, c, out}: out
 
 # `linearized.append(...)` -- the arena moves on because `replace` interned.
-def Lin.put(+l: Lin, +f: O.Found) -> Lin:
-  match l:
-    case Lin{ar, c, out}: Lin{O.Found.ar(f), c, List.append(&2, U32, out, [O.Found.i(f)])}
-
 # `in_degree[x] -= n`, the one write the Kahn loop makes to the four dicts.
 def Lin.dec(+l: Lin, x: U32, n: U32) -> Lin:
   match l:

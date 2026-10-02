@@ -26,7 +26,7 @@ print('sl_dt=%s' % ','.join('%s:%s' % (k, v.dtype.name) for k, v in sd.items()))
 
 # --- TensorIO.seek --------------------------------------------------------
 from tinygrad.nn.state import TensorIO
-u = Tensor([1, 2, 3, 4], dtype=dtypes.uint8, device='PYTHON').contiguous()
+u = Tensor([1, 2, 3, 4], dtype=dtypes.u8, device='PYTHON').contiguous()
 io = TensorIO(u)
 print('tio_len=%d' % len(io._tensor))
 print('tio_chain=%s' % ','.join(str(io.seek(off)) for off in (1, 1, 3, -1, 10, -10, 2)))

@@ -764,10 +764,6 @@ def Peak.p(x: Peak) -> U32:
   match x:
     case Peak{ln, p}: p
 
-def Asz.ln(x: Asz) -> Lane:
-  match x:
-    case Asz{ln, sz}: ln
-
 def Asz.sz(x: Asz) -> U32:
   match x:
     case Asz{ln, sz}: sz
@@ -1142,10 +1138,6 @@ def mem_scan_bs(+p: Proj) -> List<&2, U32>:
 
 def mem_scan_tc(+p: Proj) -> List<&2, Bf>:
   Scan.tc(mem_scan_of(p))
-
-def Planned.tc(r: Planned) -> List<&2, Bf>:
-  match r:
-    case Planned{tc, bs, evs, tot, azs}: tc
 
 def Planned.bs(r: Planned) -> List<&2, U32>:
   match r:

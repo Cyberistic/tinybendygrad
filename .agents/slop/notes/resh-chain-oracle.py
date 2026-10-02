@@ -5,7 +5,7 @@ from tinygrad import dtypes                        # noqa: E402
 
 
 def buf(size, slot=0):
-  return UOp(Ops.BUFFER, (), ParamArg(slot, dtypes.int32, size=size, device='CPU'))
+  return UOp(Ops.BUFFER, (), ParamArg(slot, dtypes.i32, size=size, device='CPU'))
 
 
 # movement.py:184-185, the identity half the task names: `return self if

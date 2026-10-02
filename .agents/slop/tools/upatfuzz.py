@@ -172,7 +172,7 @@ def oracle(case):
     from tinygrad.dtype import dtypes
 
     op_of = {n: getattr(Ops, n) for n in OPS}
-    dt_of = {"f32": dtypes.float32, "i32": dtypes.int32, "h": dtypes.half}
+    dt_of = {"f32": dtypes.f32, "i32": dtypes.i32, "h": dtypes.f16}
     tg_of = {n: n for n in TAGS}
 
     ctx, _, rest = case.partition("|")

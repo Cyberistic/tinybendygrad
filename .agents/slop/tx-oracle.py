@@ -99,7 +99,7 @@ def rows(nm, v):
 
 
 def main():
-    for dt, dn in ((dtypes.float32, "f32"), (dtypes.float16, "f16"), (dtypes.float64, "f64")):
+    for dt, dn in ((dtypes.f32, "f32"), (dtypes.f16, "f16"), (dtypes.f64, "f64")):
         d = dfp(dt)
         x = fx(dt)
         print(f"== {dn} ==")
@@ -107,16 +107,16 @@ def main():
         print(f"eb_{dn}={T.exponent_bias(dt)}")
         print(f"em_{dn}={T.exponent_mask(dt)}")
         rows(f"rintk_{dn}", T.rintk(d))
-        rows(f"pow2if_{dn}", T.pow2if(UOp.const(3, dtypes.int32), dt))
+        rows(f"pow2if_{dn}", T.pow2if(UOp.const(3, dtypes.i32), dt))
         rows(f"ilogb_{dn}", T.ilogb2k(d))
         rows(f"ldexp3_{dn}", T.ldexp3k(d, UOp.const(-2, dt)))
-        rows(f"ldexp2_{dn}", T.ldexp2k(d, UOp.const(-2, dtypes.int32)))
+        rows(f"ldexp2_{dn}", T.ldexp2k(d, UOp.const(-2, dtypes.i32)))
         rows(f"frexp_{dn}", Pair(T.frexp(d)))
         rows(f"cw_{dn}", Pair(T.cody_waite_reduction(d)))
         rows(f"ph_{dn}", Pair(T.payne_hanek_reduction(d)))
         rows(f"sp_{dn}", T.sin_poly(d))
-        rows(f"sps_{dn}", T.sin_poly_small(x, UOp.const(1, dtypes.int32)))
-        rows(f"spl_{dn}", T.sin_poly_large(x, UOp.const(2, dtypes.int32)))
+        rows(f"sps_{dn}", T.sin_poly_small(x, UOp.const(1, dtypes.i32)))
+        rows(f"spl_{dn}", T.sin_poly_large(x, UOp.const(2, dtypes.i32)))
         rows(f"xsinf_{dn}", T.xsin(d, fast=True))
         rows(f"xsin_{dn}", T.xsin(d))
         rows(f"xexp2_{dn}", T.xexp2(d))
@@ -140,16 +140,16 @@ def main():
     for i, (pat, f) in enumerate(pf):
         print(f"rejf{i}={','.join(sorted(o.name for o in pat.early_reject)) or '-'}")
     # the four rewrites the NON table holds, on the real op nodes
-    d32 = dfp(dtypes.float32)
-    d16 = dfp(dtypes.float16, "h")
-    d64 = dfp(dtypes.float64, "g")
+    d32 = dfp(dtypes.f32)
+    d16 = dfp(dtypes.f16, "h")
+    d64 = dfp(dtypes.f64, "g")
     for nm, u in (("f32_exp2", UOp(Ops.EXP2, src=(d32,))), ("f32_log2", UOp(Ops.LOG2, src=(d32,))),
                   ("f32_sin", UOp(Ops.SIN, src=(d32,))), ("f32_sqrt", UOp(Ops.SQRT, src=(d32,)))):
         rows("rw_" + nm, p[0][0] and u and T.get_transcendental_patterns(NON, False).rewrite(u))
     for nm, u in (("h16_exp2", UOp(Ops.EXP2, src=(d16,))), ("h16_sin", UOp(Ops.SIN, src=(d16,)))):
         rows("rw_" + nm, T.get_transcendental_patterns(NON, False).rewrite(u))
     rows("rw_i32_sqrt", T.get_transcendental_patterns(NON, False).rewrite(
-        UOp(Ops.SQRT, src=(UOp.variable("q", 0, 100, dtypes.int32),))))
+        UOp(Ops.SQRT, src=(UOp.variable("q", 0, 100, dtypes.i32),))))
     # and the FORCE table on a float64 SIN, the widest one
     rows("rw_f64_sin", T.get_transcendental_patterns(ALL, True).rewrite(UOp(Ops.SIN, src=(d64,))))
 

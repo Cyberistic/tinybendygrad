@@ -154,7 +154,7 @@
 #      `db_value` (bnxtdev.py:13) is `(... << 32) | (index | epoch << 24)`, so
 #        `db_value.hi` and `db_value.lo` are both whole halves. AND the low half
 #        is 0 whenever `index` and `epoch` are, which is every `db_value` call
-#        RDMA makes (:130-131) -- so `ins`'s `UOp.const(s, dtypes.uint32)`
+#        RDMA makes (:130-131) -- so `ins`'s `UOp.const(s, dtypes.u32)`
 #        TRUNCATES the high half away and the doorbell the NIC receives carries
 #        only the slot and the epoch. MEASURED, and it is the sharpest thing in
 #        this file: `rdma_db_hi_dropped`. REPORTED, not fixed.
@@ -895,7 +895,7 @@ def dev.init(+dev_name: String, +db_off: U32) -> Tr:
 #            mapping = VirtMapping(va, size, [(p, 0x1000) for p in paddrs],
 #                                 AddrSpace.SYS, uncached=True, snooped=snooped)
 #            return BufferStorage(va, PCIAllocationMeta(mapping, True), mem)
-#   buffer:  Buffer(self.dev.device, mem.nbytes, dtypes.uint8, opaque=self.storage(…))
+#   buffer:  Buffer(self.dev.device, mem.nbytes, dtypes.u8, opaque=self.storage(…))
 #
 # The buffer's SIZE is `mem.nbytes` RAW and the virtual address covers
 # `round_up(mem.nbytes, 0x1000)`. So a 12-byte allocation maps 4096 bytes and the
@@ -1169,7 +1169,7 @@ def queue.hi(+a: String, +b: String) -> String: Bool.pick(String, String.is_lt(a
 
 # ===========================================================================
 # ops_rdma.py:108-109 -- `ins`, and the one fact about it that changes every
-# constant: `UOp.const(s, dtypes.uint32) if isinstance(s, int) else s`. EVERY
+# constant: `UOp.const(s, dtypes.u32) if isinstance(s, int) else s`. EVERY
 # integer that reaches the instruction stream is a uint32. The doorbell values are
 # not, which is WALL 5 and `rdma_db_hi_dropped`.
 # ===========================================================================
@@ -1328,7 +1328,7 @@ def ops.p_of(psn_after: U32, +packets: U32, +ps: List<&2, U32>, i: U32) -> U32:
 # `db_value(qp.rcq_id|qp.scq_id, CQ, 0, 0)`. BOTH PASS index 0 AND epoch 0, so
 # THE LOW HALF IS ZERO in both, and :148/:152 OR that zero into
 # `((n+1) % RING_ENTRIES | ((n+1) // RING_ENTRIES & 1) << 24)`. Then :109 casts
-# every integer to `UOp.const(s, dtypes.uint32)`, which TRUNCATES the 64-bit
+# every integer to `UOp.const(s, dtypes.u32)`, which TRUNCATES the 64-bit
 # result to its low 32 bits -- and so the high half, the only part that says which
 # queue the doorbell is for, IS NEVER TRANSMITTED.
 #
@@ -2271,7 +2271,7 @@ def main() -> IO(Unit):
 # | M11 | the receive header gets the size in word 2 as well | 4 | bnxtdev.py:19's 29-byte pad, which runs OVER the `I size` at byte 8. A receive's work queue element says nothing about its length in the header, and :141 supplies it as a separate word. `rdma_hdr_recv`, `rdma_hdr_recv_0`, `rdma_hdr_recv_size_zero` and `rdma_wqe_recv` move. |
 # | M12 | `psns` drops the `initial=0` -- one entry short | 3 | :125's `itertools.accumulate(chunks, initial=0)`. It moves `rdma_psns_send`, `rdma_psns_recv` and `rdma_psns_2` -- and NOT `rdma_psns_len_send`/`rdma_psns_len_recv`, because those read `psns_len(wqes)` and not the list. That is the two-rows-one-claim shape: the COUNT and the CONTENTS are transcribed independently and can disagree. |
 # | M13 | `chunks_of` reverses the chunk order | 2 | that `range(0, n, CHUNK)` walks ASCENDING. Only `rdma_chunks_1g1p` and `rdma_chunks_1g4p` move, because every other fixture is one chunk or two equal chunks: a buffer larger than `RDMA_CHUNK` is the ONLY thing that can see the order, and it takes two such rows to see both directions. |
-# | M14 | `alloc.buf_size` rounds the BUFFER's size to a page too | 3 | :31's `Buffer(self.dev.device, mem.nbytes, dtypes.uint8, …)` against :27's `round_up(mem.nbytes, 0x1000)`. The buffer's size is RAW and the virtual address is ROUNDED, and both are right. `rdma_buf_nb_raw` and `rdma_buf_diff` are the pair; a port that rounded both would under-report a 12-byte buffer as 4096 bytes of dtype. |
+# | M14 | `alloc.buf_size` rounds the BUFFER's size to a page too | 3 | :31's `Buffer(self.dev.device, mem.nbytes, dtypes.u8, …)` against :27's `round_up(mem.nbytes, 0x1000)`. The buffer's size is RAW and the virtual address is ROUNDED, and both are right. `rdma_buf_nb_raw` and `rdma_buf_diff` are the pair; a port that rounded both would under-report a 12-byte buffer as 4096 bytes of dtype. |
 # | M15 | `db.off_down` keeps the low twelve bits -- the doorbell pages UP | 5 | :35's `& ~0xfff`. The mapping must start ON a page, and :36 then adds the SAME `off` to the bar base. All three spellings of the address -- `db.off_down`, `db.off_up`, `db.addr` -- depend on the mask going both ways, and `rdma_db_off_masked` is the row that says the two halves sum back to `db_off`. |
 # | M16 | the page guard is OUTSIDE the register call -- a warning, not a refusal | 2 | **THE NESTING, and it is the whole claim that a refusal TRUNCATES.** Python raises at :48 before it reaches `register_mem` at :50, so an unusable page size means the region is NEVER REGISTERED. With the guard outside the call the trace reads `REGISTER(0), REFUSE(log_page)` -- the registration happened and then the refusal, which is the opposite of what the source does. `rdma_map_odd_n` and `rdma_map_odd_regs` move. **This was a real port bug and the CPython oracle found it, not the mutation table.** |
 # | M17 | `va_of` is the forward lookup too -- no reverse direction | 3 | :106's `min(gpu, wire.tag), max(gpu, wire.tag)` and :140's `getaddr(nic.device)`. The TRANSLATION TABLE has to answer in both directions and a table that answers only one is two tables. `rdma_va_of_9000`, `rdma_va_of_6000` and `rdma_pdt_roundtrip` move; the `key_of_*` rows do not, which is what makes the pair a pair. |

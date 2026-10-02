@@ -411,7 +411,7 @@ def cfo_rows():
 def nfloat_rows():
   import tinygrad.renderer.nir as N
   out = ""
-  for d in (dtypes.half, dtypes.bfloat16, dtypes.float, dtypes.double, dtypes.int32, dtypes.uint8):
+  for d in (dtypes.f16, dtypes.bf16, dtypes.f32, dtypes.f64, dtypes.i32, dtypes.u8):
     out += row(f"nfloat {d.name}", N.nfloat(d), N.nfloat(d))
   return out
 
@@ -467,9 +467,9 @@ def trace_rows():
     return (u.element_size() if alu else 8)
 
   for nm, sizes in (("flat", [8, 8, 8, 8, 8]),
-                    ("mixed", [para(dtypes.int32, True), para(dtypes.float16, True),
-                               para(dtypes.half, False), para(dtypes.int8, True),
-                               para(dtypes.double, False), para(dtypes.uint16, True)]),
+                    ("mixed", [para(dtypes.i32, True), para(dtypes.f16, True),
+                               para(dtypes.f16, False), para(dtypes.i8, True),
+                               para(dtypes.f64, False), para(dtypes.u16, True)]),
                     ("one", [8]), ("none", [])):
     tr = [0]
     for s in sizes:

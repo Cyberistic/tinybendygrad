@@ -30,7 +30,7 @@ out = []
 def row(k, v): out.append(f"{k}={v}")
 def srow(k, v): out.append(f"{k}={v}")
 
-F32, I32, BOOL = dtypes.float, dtypes.int32, dtypes.bool
+F32, I32, BOOL = dtypes.f32, dtypes.i32, dtypes.bool
 
 def parg(slot, dt, addr=AddrSpace.GLOBAL, name=""):
   return ParamArg(slot=slot, dtype=dt, name=name or None, addrspace=addr)

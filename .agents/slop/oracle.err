@@ -1,0 +1,63 @@
+<stdin>:2:14: error: unknown type name 'f32'
+    2 | void r_4_4_4(f32* restrict data0_16) {
+      |              ^
+<stdin>:3:8: error: use of undeclared identifier 'i32'
+    3 |   for (i32 Lidx1 = 0; Lidx1 < 4; Lidx1++) {
+      |        ^~~
+<stdin>:3:23: error: use of undeclared identifier 'Lidx1'
+    3 |   for (i32 Lidx1 = 0; Lidx1 < 4; Lidx1++) {
+      |                       ^~~~~
+<stdin>:3:34: error: use of undeclared identifier 'Lidx1'
+    3 |   for (i32 Lidx1 = 0; Lidx1 < 4; Lidx1++) {
+      |                                  ^~~~~
+<stdin>:4:5: error: use of undeclared identifier 'i32'
+    4 |     i32 alu0 = (Lidx1<<2);
+      |     ^~~
+<stdin>:5:10: error: use of undeclared identifier 'i32'
+    5 |     for (i32 Lidx2 = 0; Lidx2 < 4; Lidx2++) {
+      |          ^~~
+<stdin>:5:25: error: use of undeclared identifier 'Lidx2'
+    5 |     for (i32 Lidx2 = 0; Lidx2 < 4; Lidx2++) {
+      |                         ^~~~~
+<stdin>:5:36: error: use of undeclared identifier 'Lidx2'
+    5 |     for (i32 Lidx2 = 0; Lidx2 < 4; Lidx2++) {
+      |                                    ^~~~~
+<stdin>:6:19: error: use of undeclared identifier 'alu0'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                   ^~~~
+<stdin>:6:24: error: use of undeclared identifier 'Lidx2'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                        ^~~~~
+<stdin>:6:40: error: use of undeclared identifier 'f32'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                        ^~~
+<stdin>:6:46: error: use of undeclared identifier 'Lidx2'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                              ^~~~~
+<stdin>:6:66: error: use of undeclared identifier 'f32'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                  ^~~
+<stdin>:6:72: error: use of undeclared identifier 'alu0'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                        ^~~~
+<stdin>:6:87: error: use of undeclared identifier 'f32'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                                       ^~~
+<stdin>:6:93: error: use of undeclared identifier 'Lidx2'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                                             ^~~~~
+<stdin>:6:113: error: use of undeclared identifier 'f32'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                                                                 ^~~
+<stdin>:6:119: error: use of undeclared identifier 'alu0'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                                                                       ^~~~
+<stdin>:6:134: error: use of undeclared identifier 'f32'
+    6 |       *(data0_16+(alu0+Lidx2)) = ((((((f32)((Lidx2+1)))+-1.0f)*((f32)((alu0+1))))+((((f32)((Lidx2+5)))+-1.0f)*((f32)((alu0+2))))+((((f32)((Lidx2+9)))+-1.0f)*((f32)((alu0+3))))+((((f32)((Lidx2+13)))+-1.0f)*((f32)((alu0+4)))))*2.0f);
+      |                                                                                                                                      ^~~
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+<stdin>:2:11: error: unknown type name 'f32'
+    2 | void r_16(f32* restrict data0_1) {
+      |           ^
+1 error generated.

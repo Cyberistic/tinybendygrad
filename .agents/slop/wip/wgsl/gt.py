@@ -21,13 +21,13 @@ def k_alu():
 def k_where():
   a = Tensor([1.0,2.0,3.0,4.0], device=D).realize(); b = Tensor([5.0,6.0,7.0,8.0], device=D).realize(); return (a>b).where(a,b)
 def k_half():
-  a = Tensor([1.0,2.0,3.0,4.0], dtype=dtypes.half, device=D).realize(); b = Tensor([5.0,6.0,7.0,8.0], dtype=dtypes.half, device=D).realize(); return a+b
+  a = Tensor([1.0,2.0,3.0,4.0], dtype=dtypes.f16, device=D).realize(); b = Tensor([5.0,6.0,7.0,8.0], dtype=dtypes.f16, device=D).realize(); return a+b
 def k_packed():
-  a = Tensor(list(range(16)), device=D).cast(dtypes.uchar).realize(); b = Tensor(list(range(16)), device=D).cast(dtypes.uchar).realize(); return a+b
+  a = Tensor(list(range(16)), device=D).cast(dtypes.u8).realize(); b = Tensor(list(range(16)), device=D).cast(dtypes.u8).realize(); return a+b
 def k_pchar():
-  a = (Tensor(list(range(16)), device=D)-8).cast(dtypes.char).realize(); b = (Tensor(list(range(16)), device=D)-8).cast(dtypes.char).realize(); return a+b
+  a = (Tensor(list(range(16)), device=D)-8).cast(dtypes.i8).realize(); b = (Tensor(list(range(16)), device=D)-8).cast(dtypes.i8).realize(); return a+b
 def k_narrow():
-  a = Tensor([1,2,3,4], dtype=dtypes.int8, device=D).realize(); b = Tensor([5,6,7,8], dtype=dtypes.int16, device=D).realize(); return (a+b).cast(dtypes.int32)
+  a = Tensor([1,2,3,4], dtype=dtypes.i8, device=D).realize(); b = Tensor([5,6,7,8], dtype=dtypes.i16, device=D).realize(); return (a+b).cast(dtypes.i32)
 def k_nan():
   a = Tensor([1.0,2.0,3.0,4.0], device=D).realize(); return (a==a)+(a!=a)
 def k_sum():

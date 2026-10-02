@@ -25,8 +25,8 @@
 # `var` (:523), `var_mean` (:551), `std` (:568), `std_mean` (:592), `logsumexp`
 # (:630), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
 # (:709) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
-# the three dtype helpers their bodies read: `weak_dtype` (dtype.py:175),
-# `sum_acc_dtype` (dtype.py:220) and the `commit_dtype` refusal (dtype.py:16).
+# the three dtype helpers their bodies read: `weak_dtype` (tinygrad/dtype.py:175),
+# `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:16).
 #
 # The `min`/`max`/`sum`/`prod` hoists are reduce.py's lines and they move back with
 # `mixin/reduce.bend`. They are hoisted because `mixin/reduce.bend` does not exist
@@ -153,7 +153,7 @@
 #      build is RESHAPE, which `reshape_ds` (fold.bend:1537) answers, and REDUCE,
 #      which `reduce_ds` (:1530) answers. MEASURED, both, over a BUFFER-rooted AND
 #      over a RESHAPE-rooted source.
-#   4. `commit_dtype` (dtype.py:16) answers a `Maybe` because `UOp._min_max`
+#   4. `commit_dtype` (tinygrad/dtype.py:16) answers a `Maybe` because `UOp._min_max`
 #      (ops.py:1104) is not ported, and `mixin/dtype.bend` measures that refusal
 #      rather than guessing. `_reduce` (reduce.py:14) reads it, so this file needs
 #      it, and the honest totalisation is the node's OWN dtype -- which makes the
@@ -390,13 +390,8 @@ def mo_neginf() -> F32: F32.neg(mo_inf())
 
 # `self.const_like(v)` (creation.py:71) is a bare CONST here for the same reason,
 # and it is only reached by `normalize`'s `p == 0` arm (W7).
-def mo_ef(ist: Bool, +t: T.Tensor, f: F32) -> E.Ew:
-  match ist:
-    case True{}: E.ETen{t}
-    case _: E.ECon{O.CFloat{f}}
-
 # ===========================================================================
-# THE DTYPE ARITHMETIC. `weak_dtype` (dtype.py:175) is `dtypes.weakfloat if
+# THE DTYPE ARITHMETIC. `weak_dtype` (tinygrad/dtype.py:175) is `dtypes.weakfloat if
 # is_float else dtypes.weakint if is_int else dtype`, and `is_float`/`is_int` both
 # INCLUDE their weak member -- so the whole thing is a three-arm match on `Cls`
 # with `CVoid` as the identity. It is `uop/weak.bend`'s `W.weak_dtype` and this is
@@ -404,7 +399,7 @@ def mo_ef(ist: Bool, +t: T.Tensor, f: F32) -> E.Ew:
 # the precedent by reading `W.weak_dtype` for the very same predicate.
 # ===========================================================================
 
-# `commit_dtype` -- dtype.py:16, read through `mixin/dtype.bend`'s own `commit_dtype`,
+# `commit_dtype` -- tinygrad/dtype.py:16, read through `mixin/dtype.bend`'s own `commit_dtype`,
 # which is the same refusal `_min_max` (ops.py:1104) forces. The honest
 # totalisation is the node's OWN dtype, which makes the `cast` the identity; a
 # weakint node is therefore NOT committed and `t_commit_weak` says so. Rule 4.
@@ -412,7 +407,7 @@ def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
   Maybe.default(&1, S.Dt, D.commit_dtype(mo_dt(fx, T.Tensor.u(t)), None{}, None{}, S.int32()),
     mo_dt(fx, T.Tensor.u(t)))
 
-# `sum_acc_dtype` -- dtype.py:220. The float arm reads `getenv("SUM_DTYPE",
+# `sum_acc_dtype` -- tinygrad/dtype.py:220. The float arm reads `getenv("SUM_DTYPE",
 # "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
 # and no caller in this file's range overrides it, which is the same argument
 # fold.bend makes for `least_upper_float` (fold.bend:176).
@@ -428,7 +423,7 @@ def mo_sum_acc.cls(cls: S.Cls, +dt: S.Dt) -> S.Dt:
 
 def mo_sum_acc(+dt: S.Dt) -> S.Dt: mo_sum_acc.cls(S.Dt.cls(dt), dt)
 
-# `dtypes.half | bfloat16 | *fp8s` -- reduce.py:45's trailing cast test. The fp8
+# `dtypes.f16 | bfloat16 | *fp8s` -- reduce.py:45's trailing cast test. The fp8
 # arms are `S.CFloat` at 8 bits, so the bit width is the discriminator.
 def mo_downcast(+dt: S.Dt) -> Bool:
   Bool.or(D.md_dt_eq(dt, S.half()), Bool.or(D.md_dt_eq(dt, S.bfloat16()), U32.is_eq(S.Dt.bits(dt), 8)))
@@ -507,8 +502,6 @@ def mo_promote(+fx: F.Folded, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
 #   `y = self.ufix(y)`; `x, y = (self, y) if not reverse else (y, self)`
 #   `out_dtype = least_upper_dtype(x.dtype, y.dtype)`; `return promote(x), promote(y)`
 # ===========================================================================
-
-def mo_alu(+t: T.Tensor, +op: O.Op, srcs: List<&2, U32>) -> T.Tensor: T.tn_alu(t, op, srcs)
 
 # `_binop`'s node, SPELLED rather than `T.tn_alu`d, and for the same reason `mo_const_t`
 # is spelled: `T.tn_alu(t, op, srcs)` takes its ARENA from `t` and its src ORDER from
@@ -815,6 +808,9 @@ def mo_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # `prod` -- reduce.py:47-71. `self.cast(dtype if dtype is not None else self.dtype)
 # ._reduce(Ops.MUL, axis, keepdim)`; `dtype` is `None` here so the cast is the
 # identity, and `E.ew_cast` hands `t` back unchanged when the dtypes agree.
+# NOT DEAD, DESPITE READING THAT WAY IN ITS OWN FILE: `mixin/reduce.bend` calls
+# it as `M.mo_prod`. The per-file dead-def pruners cannot see that, because they
+# read one file; see xdead in the cross-cutting pass's notes.
 def mo_prod(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   mo_reduce(kd, t, O.OpsMUL{}, axis)
 
@@ -1183,8 +1179,6 @@ def mo_fx2d() -> T.Tensor:
   +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(2)]})
   T.tn_new(O.Found.ar(r), O.Found.i(r))
 
-def mo_row_arg(fx: F.Folded, i: U32) -> S.Dt: mo_dt(fx, i)
-
 # --- 1-3: the fixtures themselves, and they are ROWS because a 2-D fixture that
 # built the wrong shape would silently change every row below it.
 
@@ -1428,7 +1422,7 @@ def t_sh_norm0() -> IO(Unit):
 
 # --- the four BEND-ONLY rows.
 
-# `t_commit_weak` -- rule 4. `commit_dtype` (dtype.py:16) REFUSES a weakint node
+# `t_commit_weak` -- rule 4. `commit_dtype` (tinygrad/dtype.py:16) REFUSES a weakint node
 # because `UOp._min_max` (ops.py:1104) is not ported, so `mo_commit_dt` hands back the
 # node's OWN dtype and `_reduce`'s `cast` (reduce.py:14) is the identity. The row says
 # so from the arena rather than from a comment: a weakint node's committed dtype is

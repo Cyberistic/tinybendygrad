@@ -24,20 +24,26 @@
 #                                              three statics are the trace
 #   :50-51 the mmap constants     PORTED  `MAP_*` -- both directions, per PLATFORM
 #   :53    ipv4_to_gid            PORTED  `gid.*` -- 16 bytes of multicast group
-#   :56-59 write_sysfs            PORTED  `sysfs.*` + `sys.write` -- the `sudo` STRING
-#   :61-65 atomic_lib / libsys    PORTED  `cap.*` -- the `sys.platform` gate
+#   :56-59 write_sysfs            PORTED  `sysfs.*` + `sysfs.wrote` -- the `sudo`
+#                                               STRING
+#   :61-65 atomic_lib / libsys    PORTED  `cap.*` -- the PLATFORM gate, which is
+#                                               `cap.barrier_lib`'s `osx`
 #   :67-70 pagemap                PORTED  `sys.pagemap`
-#   :72-82 vfio                   PORTED  `sys.vfio` -- its `except OSError: None`
+#   :72-82 vfio                   PORTED  `pci.probe.vfio` -- its `except OSError:
+#                                               None`
 #   :84-87 reserve_va             PORTED  `sys.reserve_va` -- the CACHE negative case
-#   :89    memory_barrier         PORTED  `cap.barrier` -- which library is consulted
+#   :89    memory_barrier         PORTED  `cap.barrier_lib` -- which library is
+#                                               consulted
 #   :91-92 lock_memory            PORTED  `sys.lock_memory` -- the refusal
 #   :94-96 system_paddrs          PARTIAL `paddr.*` -- the mask; the u64 read is FFI
 #   :98-102 alloc_sysmem          PORTED  `sys.alloc_sysmem` -- the flag arithmetic
 #   :104-126 pci_scan_bus         PORTED  `scan.*` -- the mask filter + both id formats
-#   :128-136 list_devices/probe   PORTED  `sys.probe`
+#   :128-136 list_devices/probe   PORTED  `pci.probe.*`
 #   :138-186 pci_setup_usb_bars   PORTED  `bars.*` -- THE HEADLINE. 7 ordered writes,
 #                                               the REBAR control, the BAR sizing
-#   :188-200 flock_acquire        PORTED  `sys.flock` -- the two open-flag sets
+#   :188-200 flock_acquire        WALL   the `fcntl.flock` call itself is the
+#                                               seam; the two open-flag sets are
+#                                               constants
 #   :206-268 PCIDevice            PORTED  `pci.*` -- the sysfs path table, the open
 #                                               flags, bar_info, read/write_config,
 #                                               resize_bar, map_bar
@@ -75,7 +81,8 @@
 # 2. THE SYSCALL STRINGS, :58/:75/:198/:247. `os.system` takes ONE string and
 #    hands it to `/bin/sh`, so these four are the whole of what a shell sees. A
 #    dropped quote or a dropped path is a `sudo` that writes the wrong file, and
-#    it is silent. `sysfs.echo` and `pci.reset` build them, and the gate DIFFS
+#    it is silent. `sysfs.echo` and `pci.resize_path` build them, and the gate
+#    DIFFS
 #    THE STRING BESIDE CPYTHON'S -- a boolean about a string proves nothing,
 #    because `String.concat` will happily drop a literal and still make two
 #    strings that differ agree on a length.
@@ -133,7 +140,8 @@ import ../../helpers.bend as H
 # THE CONSTANTS. EVERY one of these was READ OUT OF A LIVE CPYTHON by
 # `.agents/slop/oracle-system.py`; none is transcribed. Where a value is
 # PLATFORM-DEPENDENT it is a def OF the platform flag, not a constant, and
-# `cap.both` runs the whole table twice.
+# `cap.barrier_lib` takes the platform as an argument and the fixture drives
+# both arms.
 #
 # BEND HAS NO HEX LITERALS (bend2-constraints.md, position 6835), so every
 # constant below is decimal. The comment gives the hex so a reader can check it
@@ -316,8 +324,8 @@ type Cfg is Data:
 # `PCIAllocationMeta(mapping, has_cpu_mapping=True, hMemory=paddrs[0])` and :325
 # `PCIAllocationMeta(mapping, cpu_access, hMemory=mapping.paddrs[0][0])`.
 # The two differ in a way that is easy to get wrong: :321's second field is the
-# LITERAL True and :325's is the `cpu_access` ARGUMENT. `meta.of` takes the
-# argument and `meta.alloc_sysmem` passes True, so the port is a def of the
+# LITERAL True and :325's is the `cpu_access` ARGUMENT. `Meta.of` takes the
+# argument and `Meta.has_cpu_mapping` passes True, so the port is a def of the
 # call site, not a def of the dataclass.
 type Meta is Data:
   Meta{has_cpu_mapping: Bool, hMemory: U32}
@@ -524,7 +532,7 @@ def sys.call_of(s: String) -> U32:
 # unique, so "the last hit" is "the only hit". The key is the INDEX, and the
 # index is a `U32` turned into a `String` for the comparison -- a `U32`-to-
 # `String` conversion that does not exist, so the walk compares the INDEXES and
-# `sys.call_name.pick` indexes the list with the index it found. The value
+# `sys.call_name` indexes the list with the index it found. The value
 # direction and the name direction therefore cannot disagree: both read
 # `sys.call_names()`.
 def sys.call_name.put(k: U32, +at: U32, got: U32) -> U32:
@@ -1970,7 +1978,8 @@ def Rcmd.name.of(+i: U32) -> String:
 def Rcmd.name(i: U32) -> String: Rcmd.name.of(i)
 
 # name -> value, and it is the REVERSE of the same list so the two cannot disagree.
-# `Rcmd.PROBE` is 0 and `Rcmd.UNMAP_SYSMEM` is 15, and a name that is not in the table
+# `Rcmd.of("PROBE")` is 0 and `Rcmd.of("UNMAP_SYSMEM")` is 15, and a name that
+# is not in the table
 # is `mapflag_missing()` rather than 0 -- which matters, because 0 IS a legal value
 # (PROBE) and a "not found" of 0 would be indistinguishable from it.
 def Rcmd.of.go(+s: String, ns: List<&2, String>, +at: U32) -> U32:
@@ -3032,8 +3041,8 @@ def t_11_remote() -> IO(Unit):
 # | M47 | **0** | CONTROL -- a comment-only edit. A table with no row that CANNOT move is a table of coincidences |
 # | M49 | **3** <br>`sy_pci_bound_nopen`, `sy_pci_nopen`, `sy_pci_opens` | :211's `enable` open -- the DEAD-CODE probe. A def nothing calls is invisible to every other check |
 # | M50 | **3** <br>`sy_gid_0a000001`, `sy_gid_7f000001`, `sy_gid_c0a801ff` | :53's tail ORDER -- four bytes the wrong way round, and every length and total still correct |#
-# M6 IS A COMPILE-FAIL AND THAT IS THE POINT: renaming `sysfs.echo` to
-# `sysfs.echo_renamed` breaks the build, which is the one edit that proves the rows
+# M6 IS A COMPILE-FAIL AND THAT IS THE POINT: renaming `sysfs.echo` breaks the
+# build, which is the one edit that proves the rows
 # really read the def instead of restating a literal somewhere else.
 #
 # THE ZEROS, and none of them is a coverage claim dressed up.

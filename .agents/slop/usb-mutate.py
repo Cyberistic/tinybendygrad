@@ -75,9 +75,10 @@ MUTATIONS = [
        "                Bool.to_u32(U32.is_ne(U32.mod(nbytes, win), 0)))",
        "U32.add(Bool.to_u32(U32.is_ne(U32.mod(nbytes, win), 0)),\n"
        "                Bool.to_u32(U32.is_ne(U32.div(nbytes, win), 0)))")],
-     "the two halves SWAPPED. A sum is commutative so this is a weak mutation; "
-     "only `_nranges` can see it and the value is the same -- a THEOREM, not a "
-     "coverage gap."),
+     "THE ZERO, AND IT IS A THEOREM. `nranges` is a two-term SUM, so swapping the "
+     "terms cannot change the value for ANY input: no fixture in any file could "
+     "separate them. The rule that matters -- that both terms are `!= 0` and not "
+     "`> 0` -- is held by `M25` and `M26`, which move 3 rows each."),
     ("M7", "`usb_window`: copyin and copyout share CHUNK",
      [("Bool.pick(U32, is_copyin, CHUNK(), U32.mul(2, CHUNK()))", "CHUNK()")],
      ":257's `CHUNK if host else 2*CHUNK`. The two window rows and the two "
@@ -195,12 +196,15 @@ MUTATIONS = [
        "Bool.and(U32.is_eq(sig, MAGIC_USBS()), U32.is_eq(rtag, tag))")],
      ":92's three-tuple compare. `usb_reply_ok_nonzero_status` is the fixture, "
      "one row from `usb_reply_ok_exact`."),
-    ("M31", "`sym_at.go`: the recursion advances by 1 instead of 0",
-     [('        case h0 <> t2: sym_at.go(m, t2)\n\ndef sym_at(', '        case h0 <> t2: sym_at.go(Nat.add(m, 1n), t2)\n\ndef sym_at(')],
+    ("M31", "`sym_at_head`: answer the NEXT symbol instead of this one",
+     [("def sym_at_head(+h0: String, +t2: List<&2, String>) -> String: h0",
+       "def sym_at_head(+h0: String, +t2: List<&2, String>) -> String: head_name(t2, \"\")")],
      "THE OFF-BY-ONE THIS FILE SHIPPED FOR AN HOUR: every order row named the "
      "symbol AFTER the one it meant, every COUNT stayed right, and only the "
      "whole-string order rows plus the CPython oracle could see it. Same class, "
-     "one index, same arity, same length."),
+     "one index, same arity, same length. The edit is the whole def body "
+      "because `sym_at_head` is the head-at-zero ARM lifted into its own def "
+      "exactly so this edit compiles."),
     ("M32", "`usb_enum.device`: the descriptor read AFTER the ref triple",
      [("Bool.pick(Tr, hit,\n    Tr.raise(K_DEV_ADDRESS(), addr, 0, 0,\n"
        "      Tr.raise(K_BUS_NUMBER(), bus, 0, 0,\n"
@@ -231,22 +235,25 @@ MUTATIONS = [
      "later ordinal shifts -- which is exactly what the four `usb_open_refuse_*` "
      "rows are for."),
     ("M35", "`Tr.sym`: the separator `,` -> `|`",
-     [('def Tr.sym(+t: Tr) -> String: Tr.sym.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), "", ",")',
-       'def Tr.sym(+t: Tr) -> String: Tr.sym.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), "", "|")')],
+     [('  Tr.sym.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), "", ",")',
+       '  Tr.sym.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), "", "|")')],
      "the ORDER rows' own encoding. Every order row is a whole value, so a "
      "separator that lost a call would still be a different string -- this is the "
      "check that the string is not accidentally insensitive to a dropped element."),
     ("M36", "`enum_nm`: LAST-wins -> FIRST-wins",
      [("case Ent{vv, nn} <> t: enum_nm.go(m, v, t, Bool.pick(String, U32.is_eq(vv, v), nn, hit))",
        "case Ent{vv, nn} <> t: Bool.pick(String, U32.is_eq(vv, v), nn, enum_nm.go(m, v, t, hit))")],
-     "the LAST-wins rule the generated dicts have. `usb_classcode_6_name` is the "
-     "ONLY row in the file that sees it, because 6 is the only repeated value in "
-     "twenty-one tables -- a one-row fixture for a real rule."),
+     "the LAST-wins rule the generated dicts have. The ONLY row in the file that "
+     "sees it is `usb_synth_n_10`, because 6 is the only value that ever repeats "
+     "in twenty-one tables and `LIBUSB_CLASS_IMAGE` is not a table entry at all "
+     "-- a one-row fixture for a real rule, BUILT for it."),
     ("M37", "`enum_val`: LAST-wins -> FIRST-wins",
      [("case Ent{vv, nn} <> t: enum_val.go(m, nm, t, Bool.pick(U32, String.eq(nn, nm), vv, hit))",
        "case Ent{vv, nn} <> t: Bool.pick(U32, String.eq(nn, nm), vv, enum_val.go(m, nm, t, hit))")],
-     "the same rule the other way. No name repeats in these tables, so this is a "
-     "BLIND SPOT BY CONSTRUCTION and the report says so."),
+     "the same rule the other way, and the ONLY row that sees it is "
+     "`usb_synth_v_beta`: no name repeats in the twenty-one live tables, so the "
+     "fixture had to be BUILT (`E_SYNTH` carries SYNTH_BETA at 11 and 12) for the "
+     "rule to be observable at all."),
     ("M38", "`F_TRANSFER`: swap `status` and `length`",
      [("fields(\"dev_handle flags endpoint type timeout status length actual_length",
        "fields(\"dev_handle flags endpoint type timeout length status actual_length")],
@@ -292,7 +299,16 @@ MUTATIONS = [
 
 
 def main():
-    want = set(sys.argv[1:])
+    argv = sys.argv[1:]
+    # `--md PATH` writes the table the port's own tail quotes, so the counts in
+    # the file are MEASURED BY THIS RUN rather than transcribed by a later hand.
+    md = None
+    argv = sys.argv[1:]
+    while "--md" in argv:
+        i = argv.index("--md")
+        argv.pop(i)
+        md = argv.pop(i)
+    want = set(argv)
     base = run(BEND)
     if base is None:
         print("BASELINE FAILED TO RUN")
@@ -300,6 +316,8 @@ def main():
     print(f"baseline rows={len(base)}")
     print("| # | rows moved | what it is testing |")
     print("| --- | --- | --- |")
+    out = ["| # | rows moved | the edit | what it is testing |",
+           "| --- | --- | --- | --- |"]
     for mid, desc, edits, why in MUTATIONS:
         if want and mid not in want:
             continue
@@ -323,12 +341,17 @@ def main():
             os.unlink(tmp)
         if got is None:
             print(f"| {mid} | BUILD-BROKEN | {desc} |")
+            out.append(f"| {mid} | BUILD-BROKEN | {desc} | {why} |")
             continue
         moved = sorted(nm for nm in set(base) | set(got)
                        if base.get(nm) != got.get(nm))
         print(f"| {mid} | {len(moved)} | {desc} |")
         print(f"|  |  | rows: {', '.join(moved[:14])}{' ...' if len(moved) > 14 else ''} |")
         print(f"|  |  | tests: {why} |")
+        out.append(f"| {mid} | {len(moved)} | {desc} | {why} |")
+    if md:
+        io.open(md, "w").write("\n".join(out) + "\n")
+        print(f"wrote {md}: {len(out) - 2} mutations")
 
 
 main()

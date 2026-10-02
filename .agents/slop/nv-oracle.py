@@ -146,11 +146,11 @@ row("nv_has_bwgpfifo_old", "True" if g.BLACKWELL_CHANNEL_GPFIFO_A in AMPSET_OLD 
 # :47-48 `nvm`: four fields in one word.  The UOp weights are the whole point --
 # a uint64 argument counts TWO words and an int counts ONE, so `NVQueue.sem`
 # counts 2+2+1 = 5 and NOT 3.
-addr = UOp.const(0x7fff0000, dtypes.uint64)
-val64 = UOp.const(5, dtypes.uint64)
-val32 = UOp.const(5, dtypes.uint32)
-hi = (addr >> 32).cast(dtypes.uint32)
-lo = addr.cast(dtypes.uint32)
+addr = UOp.const(0x7fff0000, dtypes.u64)
+val64 = UOp.const(5, dtypes.u64)
+val32 = UOp.const(5, dtypes.u32)
+hi = (addr >> 32).cast(dtypes.u32)
+lo = addr.cast(dtypes.u32)
 
 
 def words(ws):
@@ -201,8 +201,8 @@ row("nv_fld_ctrl_testrun", g.NVC9B0_SET_CONTROL_PARAMS_TESTRUN_ENV[1])
 row("nv_sem_wait", words(nvm(0, g.NVC56F_SEM_ADDR_LO, addr, val64, F_WAIT)))
 row("nv_sem_signal", words(nvm(0, g.NVC56F_SEM_ADDR_LO, addr, val64, F_SIG))
     + "," + words(nvm(0, g.NVC56F_NON_STALL_INTERRUPT, 0x0)))
-# :112 `release(signal, UOp.const(0, dtypes.uint64), timestamp=True)`
-row("nv_sem_timestamp", words(nvm(0, g.NVC56F_SEM_ADDR_LO, addr, UOp.const(0, dtypes.uint64), F_TS)))
+# :112 `release(signal, UOp.const(0, dtypes.u64), timestamp=True)`
+row("nv_sem_timestamp", words(nvm(0, g.NVC56F_SEM_ADDR_LO, addr, UOp.const(0, dtypes.u64), F_TS)))
 row("nv_membar", words(nvm(1, g.NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI,
                            nv_flags("NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI",
                                     instruction="true", global_data="true", constant="true"))))
@@ -230,7 +230,7 @@ row("nv_csema_3rd_is_value", int(_cs1[2]))
 row("nv_sig_value_kept", int(list(nvm(0, g.NVC56F_SEM_ADDR_LO, addr, val64, F_SIG))[0]))
 # :200 `timestamp` writes UOp.const(0, uint32) as the payload, so the word is
 # ZERO and not val32 -- the two semaphores differ in the flag word only.
-row("nv_csema_four", words(nvm(4, g.NVC6B5_SET_SEMAPHORE_A, hi, lo, UOp.const(0, dtypes.uint32)))
+row("nv_csema_four", words(nvm(4, g.NVC6B5_SET_SEMAPHORE_A, hi, lo, UOp.const(0, dtypes.u32)))
     + "," + words(nvm(4, g.NVC6B5_LAUNCH_DMA,
                       nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true",
                                semaphore_type="release_four_word_semaphore"))))
@@ -286,8 +286,8 @@ for sz, unc, host, mock in ((0x1000, 0, 0, 0), (8 << 20, 0, 0, 0), ((8 << 20) - 
 # hcq2.py:74-76 `layout_args`. The offsets are `iter_sig`'s plus the base, and
 # the base is `self.qmd_sz` -- the driver params' size.
 def lay(items, base=0):
-    w = [UOp.const(1, dtypes.ulong) if k == 8 else UOp.const(1, dtypes.uint)
-         if k == 4 else UOp.const(1, dtypes.ushort) if k == 2 else UOp.const(1, dtypes.uchar)
+    w = [UOp.const(1, dtypes.u64) if k == 8 else UOp.const(1, dtypes.u32)
+         if k == 4 else UOp.const(1, dtypes.u16) if k == 2 else UOp.const(1, dtypes.u8)
          for k in items]
     return ",".join(str(o) for o, _ in layout_args(w, base))
 
@@ -302,7 +302,7 @@ row("nv_args_at256", lay([8, 8, 8, 4, 4], 256))
 row("nv_args_at512_mixed", lay([1, 4, 2, 8, 4, 1], 0x200))
 # device.bend:871's `iter_sig` answers, computed by CALLING the real
 # `TinyELF.iter_sig` -- so these three rows are CPython's own, not a transcription.
-DT = {1: dtypes.uint8, 2: dtypes.uint16, 4: dtypes.uint32, 8: dtypes.uint64}
+DT = {1: dtypes.u8, 2: dtypes.u16, 4: dtypes.u32, 8: dtypes.u64}
 
 
 def dev_iter_sig(items):
@@ -512,13 +512,13 @@ row("nv_pd_var_isize_mock8", 8)
 row("nv_pd_var_isize_amp4", 4)
 
 # :261-265 the reloc table, both directions, and the refusal.
-DT = {2: dtypes.uint64, 0x38: dtypes.uint32, 0x39: dtypes.uint32}
+DT = {2: dtypes.u64, 0x38: dtypes.u32, 0x39: dtypes.u32}
 
 
 def reloc_of(a, sym, typ):
-    if typ == 2: return (a, sym, dtypes.uint64, 0)
-    elif typ == 0x38: return (a + 4, sym, dtypes.uint32, 0)
-    elif typ == 0x39: return (a + 4, sym, dtypes.uint32, 32)
+    if typ == 2: return (a, sym, dtypes.u64, 0)
+    elif typ == 0x38: return (a + 4, sym, dtypes.u32, 0)
+    elif typ == 0x39: return (a + 4, sym, dtypes.u32, 32)
     raise RuntimeError("unknown NV reloc %d" % typ)
 
 
@@ -741,8 +741,8 @@ row("nv_slm_nthr_cmd", ",".join(str(int(x)) for x in
 row("nv_slm_cmd", ",".join(str(int(x)) for x in
                            list(nvm(1, g.NVC6C0_SET_SHADER_LOCAL_MEMORY_A, 0, 0xbb)) +
                            list(nvm(1, g.NVC6C0_SET_SHADER_LOCAL_MEMORY_NON_THROTTLED_A, 0, 196608, 0xff))))
-row("nv_ring_itemsize", dtypes.uint64.itemsize)
-row("nv_gpput_itemsize", dtypes.uint32.itemsize)
+row("nv_ring_itemsize", dtypes.u64.itemsize)
+row("nv_gpput_itemsize", dtypes.u32.itemsize)
 row("nv_ring_n", 0x10000)
 row("nv_ring_nbytes", 0x10000 * 8)
 row("nv_ring_bytes", 0x10000 * 8)
@@ -932,17 +932,17 @@ row("nv_cbuf0_by_ver", "True" if (_min_cbuf0(g.AMPERE_COMPUTE_B) == 12 and
                                   _min_cbuf0(g.BLACKWELL_COMPUTE_A) == 224) else "False")
 
 # hcq2.py:74-76 the counts and the two slots the mixed fixture depends on.
-row("nv_args_buf3_n", len(layout_args([UOp.const(1, dtypes.ulong)] * 3, 0)))
+row("nv_args_buf3_n", len(layout_args([UOp.const(1, dtypes.u64)] * 3, 0)))
 row("nv_args_buf0_n", len(layout_args([], 0)))
-row("nv_args_mixed_n", len(layout_args([UOp.const(1, dtypes.uint8),
-                                         UOp.const(1, dtypes.uint),
-                                         UOp.const(1, dtypes.ushort),
-                                         UOp.const(1, dtypes.ulong),
-                                         UOp.const(1, dtypes.uint),
-                                         UOp.const(1, dtypes.uint8)], 0)))
-_mx = [o for o, _ in layout_args([UOp.const(1, dtypes.uint8), UOp.const(1, dtypes.uint),
-                                  UOp.const(1, dtypes.ushort), UOp.const(1, dtypes.ulong),
-                                  UOp.const(1, dtypes.uint), UOp.const(1, dtypes.uint8)], 0)]
+row("nv_args_mixed_n", len(layout_args([UOp.const(1, dtypes.u8),
+                                         UOp.const(1, dtypes.u32),
+                                         UOp.const(1, dtypes.u16),
+                                         UOp.const(1, dtypes.u64),
+                                         UOp.const(1, dtypes.u32),
+                                         UOp.const(1, dtypes.u8)], 0)))
+_mx = [o for o, _ in layout_args([UOp.const(1, dtypes.u8), UOp.const(1, dtypes.u32),
+                                  UOp.const(1, dtypes.u16), UOp.const(1, dtypes.u64),
+                                  UOp.const(1, dtypes.u32), UOp.const(1, dtypes.u8)], 0)]
 row("nv_args_mixed_ulong_slot", _mx[3])
 row("nv_args_mixed_uint16_slot", _mx[2])
 

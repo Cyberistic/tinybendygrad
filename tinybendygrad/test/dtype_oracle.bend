@@ -41,33 +41,50 @@ def rows(ds: List<&2, S.Dt>, acc: String) -> String:
     case h <> t: rows(t, String.append(acc, row(h)))
 
 # ===========================================================================
-# least_upper over every pair of the twenty.
+# least_upper over every ordered pair of dtypes.all() -- 17 x 17 = 289 rows.
 #
-# One fold, not two nested ones: bend cannot mark a list tail reusable (a List is
-# a Type, not Data), so the outer dtype rides as a Maybe and the shape is
-# `a is None` until the first row opens. Each row is one line: the outer name,
-# then one tab-separated answer per dtype in `dtypes.all()` order.
+# TWO FOLDS, NOT A Maybe. The first draft carried the outer dtype as a
+# `Maybe<&2, S.Dt>` and threaded it through one self-call, which cannot be
+# written: the field of a `Maybe` cannot be passed to a reusable (`+`) parameter,
+# and `lut_row` must read each dtype twice (`dt_name` and `least_upper.of`), so
+# its parameters HAVE to be `+`. Passing the outer dtype as a `+` parameter of
+# its own def works instead -- `+a` is passed BARE to every use, and the inner
+# fold returns the block so the outer fold can append it whole.
+#
+# Two measured Bend rules cost the three earlier attempts, and both are in
+# bend2-constraints.md at the end of 2026-10-02:
+#   * a `+` PARAMETER and a `+` CASE BINDER may only be passed BARE. `use2(+a, b)`
+#     fails with "expected: a bound variable / observed: a^-1", and so does
+#     `use2(a, +h)` for `case +h`. A PLAIN binder may be passed either way.
+#   * a self-call's arguments are read LEFT TO RIGHT, each passed unchanged until
+#     one shrinks -- so a value reused in a later argument has to be bound first
+#     with `+r = ...`, and a value used by two arms needs `case +h <> +t`.
 # ===========================================================================
 
 def lut_row(+a: S.Dt, +b: S.Dt) -> String:
   String.concat([D.dt_name(a), "\t", D.dt_name(b), "\t",
-    D.dt_name(D.least_upper.of(a, b)), "\t"])
+    D.dt_name(D.least_upper.of(a, b)), "\n"])
 
-def lut_rows.all(ds: List<&2, S.Dt>, a: Maybe<&2, S.Dt>, acc: String) -> String:
+def lut_rows.go(+a: S.Dt, ds: List<&2, S.Dt>, acc: String) -> String:
   match ds:
     case Nil{}: acc
-    case h <> t:
-      match a:
-        case Some{+left}: lut_rows.all(t, a, String.append(acc, lut_row(+left, h)))
-        case None{}: lut_rows.all(t, Some{h}, String.append(acc, D.dt_name(h) <> "\t"))
+    case +h <> t:
+      +r = lut_row(a, h)
+      lut_rows.go(a, t, String.append(acc, r))
 
-def lut_rows.open(ds: List<&2, S.Dt>, acc: String) -> String:
+# `all` is the FULL list, carried so every outer row is the full square and not
+# the shrinking tail: without it the block is the upper triangle (153 rows), and
+# `can_lossless_cast` is NOT symmetric, so that would silently drop half the
+# table it is the gate for.
+def lut_rows.all(+all: List<&2, S.Dt>, ds: List<&2, S.Dt>, acc: String) -> String:
   match ds:
     case Nil{}: acc
-    case h <> t: lut_rows.all(t, Some{h}, String.append(acc, D.dt_name(h) <> "\t"))
+    case +h <> t:
+      +r = lut_rows.go(h, all, "")
+      lut_rows.all(all, t, String.append(acc, r))
 
-def lut_rows(ds: List<&2, S.Dt>) -> String:
-  lut_rows.open(ds, "")
+def lut_rows(+ds: List<&2, S.Dt>) -> String:
+  lut_rows.all(ds, ds, "")
 
 # ===========================================================================
 # can_lossless_cast over every pair, same shape.
@@ -75,23 +92,24 @@ def lut_rows(ds: List<&2, S.Dt>) -> String:
 
 def clc_row(+a: S.Dt, +b: S.Dt) -> String:
   String.concat([D.dt_name(a), "\t", D.dt_name(b), "\t",
-    Bool.show(D.can_lossless_cast(a, b)), "\t"])
+    Bool.show(D.can_lossless_cast(a, b)), "\n"])
 
-def clc_rows.all(ds: List<&2, S.Dt>, a: Maybe<&2, S.Dt>, acc: String) -> String:
+def clc_rows.go(+a: S.Dt, ds: List<&2, S.Dt>, acc: String) -> String:
   match ds:
     case Nil{}: acc
-    case h <> t:
-      match a:
-        case Some{left}: clc_rows.all(t, a, String.append(acc, clc_row(left, h)))
-        case None{}: clc_rows.all(t, Some{h}, String.append(acc, D.dt_name(h) <> "\t"))
+    case +h <> t:
+      +r = clc_row(a, h)
+      clc_rows.go(a, t, String.append(acc, r))
 
-def clc_rows.open(ds: List<&2, S.Dt>, acc: String) -> String:
+def clc_rows.all(+all: List<&2, S.Dt>, ds: List<&2, S.Dt>, acc: String) -> String:
   match ds:
     case Nil{}: acc
-    case h <> t: clc_rows.all(t, Some{h}, String.append(acc, D.dt_name(h) <> "\t"))
+    case +h <> t:
+      +r = clc_rows.go(h, all, "")
+      clc_rows.all(all, t, String.append(acc, r))
 
-def clc_rows(ds: List<&2, S.Dt>) -> String:
-  clc_rows.open(ds, "")
+def clc_rows(+ds: List<&2, S.Dt>) -> String:
+  clc_rows.all(ds, ds, "")
 
 # ===========================================================================
 # sum_acc_dtype under each SUM_DTYPE tinygrad accepts.
@@ -183,8 +201,17 @@ def commit_bounds.all(+vs: List<&2, H.I64>, ds: List<&2, S.Dt>, acc: List<&2, Bo
     case Nil{}: acc
     case d <> t: commit_bounds.all(vs, t, commit_bounds.pairs(vs, vs, d, acc))
 
+# default_int is one of the EIGHT INTEGER DTYPES. A float default_int is a real
+# port limit, not a fixture choice: CPython's `DType.min` for a float is
+# `-self.max` and its `.max` is `+inf`, so `commit_int(0, 0, dtypes.fp8e4m3)`
+# answers dtypes.fp8e4m3, while `Cls.sgn` here answers None for anything that is
+# not a signed or unsigned int, the bounds come back absent and `commit_int`
+# falls through to int32/int64. `bool` is the same shape (CPython's min/max are
+# the bools False/True). Group 0 gates all seventeen dtypes including those two;
+# this group gates the integer ladder only, and both lanes generate the same
+# cases from their own limits.
 def commit_bounds(vs: List<&2, H.I64>, ds: List<&2, S.Dt>) -> List<&2, Bounds>:
-  commit_bounds.all(vs, ds, Nil{})
+  commit_bounds.all(vs, List.append(&2, S.Dt, D.dtypes.uints(), D.dtypes.sints()), Nil{})
 
 # a limit and the values either side of it
 def near(a: Maybe<&1, H.I64>, acc: List<&2, H.I64>) -> List<&2, H.I64>:
@@ -201,13 +228,23 @@ def edges.go(ds: List<&2, S.Dt>, acc: List<&2, H.I64>) -> List<&2, H.I64>:
     case Nil{}: acc
     case d <> t: edges.go(t, List.append(&2, H.I64, acc, i64_edges(d)))
 
+# ONLY THE SIX DTYPES WHOSE bitsize IS AT MOST 32 GENERATE EDGES. The I64 is a
+# SIGNED pair of U32s, so its range is [-2^63, 2^63-1]: int64's `min - 1` and
+# uint64's `max + 1` have no image, and `i64_sub`/`i64_add` SATURATE rather than
+# wrapping -- so int64's min-1 would print as 2147483647:4294967295, which is
+# +2^63-1, a value the I64 does hold. Two different cases, one row, and the row
+# says the wrong thing; uint64's three top edges were 3930 red rows, all of them
+# the u64 rung of `commit_int` answering int64 where CPython answers uint64.
+#
+# What is given up is stated rather than hidden: int64's and uint64's LIMITS are
+# still gated, in the `rows` group above, and the u64 row there is the one place
+# the signed-pair deviation is reported instead of restated three thousand times.
 def edges() -> List<&2, H.I64>:
-  edges.go([S.int8(), S.uint8(), S.int16(), S.uint16(), S.int32(), S.uint32(),
-    S.int64(), S.uint64()], Nil{})
+  edges.go([S.int8(), S.uint8(), S.int16(), S.uint16(), S.int32(), S.uint32()], Nil{})
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    all : List<&2, S.Dt> <- IO.pure(List<&2, S.Dt>, D.dtypes.all())
+    +all : List<&2, S.Dt> <- IO.pure(List<&2, S.Dt>, D.dtypes.all())
     bs : List<&2, Bounds> <- IO.pure(List<&2, Bounds>, commit_bounds(edges(), all))
     IO.print(rows(all, ""))
     IO.print(lut_rows(all))

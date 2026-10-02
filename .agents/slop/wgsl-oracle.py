@@ -50,31 +50,31 @@ def k_where():
 
 # R3 half arithmetic -- `enable f16`, the vec2<f16> bitcast helpers.
 def k_half():
-  a = Tensor([1.0, 2.0, 3.0, 4.0], dtype=dtypes.half, device=D).realize()
-  b = Tensor([5.0, 6.0, 7.0, 8.0], dtype=dtypes.half, device=D).realize()
+  a = Tensor([1.0, 2.0, 3.0, 4.0], dtype=dtypes.f16, device=D).realize()
+  b = Tensor([5.0, 6.0, 7.0, 8.0], dtype=dtypes.f16, device=D).realize()
   return (a + b)
 
 
 # R4 PACKED uchar -- `atomic<u32>` buffers, atomicAnd/atomicAdd read-modify-write.
 def k_packed():
-  a = Tensor(list(range(16)), device=D).cast(dtypes.uchar).realize()
-  b = Tensor(list(range(16)), device=D).cast(dtypes.uchar).realize()
+  a = Tensor(list(range(16)), device=D).cast(dtypes.u8).realize()
+  b = Tensor(list(range(16)), device=D).cast(dtypes.u8).realize()
   return (a + b)
 
 
 # R5 packed char, the OTHER packed width: sign_extend on load, the shift-amount
 # ladder on store, and `atomic<u32>` again.
 def k_packed_char():
-  a = (Tensor(list(range(16)), device=D) - 8).cast(dtypes.char).realize()
-  b = (Tensor(list(range(16)), device=D) - 8).cast(dtypes.char).realize()
+  a = (Tensor(list(range(16)), device=D) - 8).cast(dtypes.i8).realize()
+  b = (Tensor(list(range(16)), device=D) - 8).cast(dtypes.i8).realize()
   return (a + b)
 
 
 # R6 i8/i16 casts -- render_cast's truncate/sign-extend forms.
 def k_narrow():
-  a = Tensor([1, 2, 3, 4], dtype=dtypes.int8, device=D).realize()
-  b = Tensor([5, 6, 7, 8], dtype=dtypes.int16, device=D).realize()
-  return (a + b).cast(dtypes.int32)
+  a = Tensor([1, 2, 3, 4], dtype=dtypes.i8, device=D).realize()
+  b = Tensor([5, 6, 7, 8], dtype=dtypes.i16, device=D).realize()
+  return (a + b).cast(dtypes.i32)
 
 
 # R7 is_nan -- `nan()`, and the CMPEQ(a,a) -> `!is_nan` rewrite.

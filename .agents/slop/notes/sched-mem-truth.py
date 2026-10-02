@@ -7,7 +7,7 @@ from tinygrad.helpers import round_up
 from tinygrad.schedule.memory import _collect_bufs, _can_plan, memory_plan_rewrite
 from tinygrad.runtime.support.memory import TLSFAllocator
 
-def buf(slot, size, dev="CPU", name="b", dt=dtypes.int32):
+def buf(slot, size, dev="CPU", name="b", dt=dtypes.i32):
   return UOp(Ops.BUFFER, src=(UOp(Ops.SPECIAL, arg=name, src=(UOp.const(1),)),),
              arg=ParamArg(slot=slot, dtype=dt, size=size, name=name, device=dev))
 
@@ -113,7 +113,7 @@ def walk(u):
   for s in u.src: walk(s)
 walk(OUT)
 newbs = [u for u in seen if u.op is Ops.BITCAST]
-arens = [u for u in seen if u.op is Ops.BUFFER and len(u.src) == 0 and u.dtype is dtypes.int8]
+arens = [u for u in seen if u.op is Ops.BUFFER and len(u.src) == 0 and u.dtype is dtypes.i8]
 print("n_nodes", len(seen), "n_bitcast", len(newbs), "n_arena", len(arens))
 for u in sorted(newbs, key=lambda x: x.nbytes()):
   print(f"  bitcast nbytes={u.nbytes()} src0_nbytes={u.src[0].nbytes()} src0_shape={u.src[0].shape} src0_dtype={u.src[0].dtype}")

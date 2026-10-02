@@ -764,8 +764,8 @@ def fc_of.of(oi: U32, +t: Tc) -> String:
 def r_tcd0(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "half"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,k2,m0,m1,m2,k0,m3,k3"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "k1,k2,n0,n1,n2,k0,k3"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
@@ -802,8 +802,8 @@ def ts0() -> Tc: mma(16, S.half(), S.single())
 def r_tcd1(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "float8_e4m3"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "fp8e4m3"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "k2,k3,m0,m1,m2,k0,k1,m3,k4"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "k2,k3,n0,n1,n2,k0,k1,k4"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
@@ -834,8 +834,8 @@ def ts1() -> Tc: mma(32, S.fp8e4m3(), S.single())
 def r_tcd2(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "half"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,k2,m0,m1,m2,k0,m3"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "k1,k2,n0,n1,n2,k0"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
@@ -866,8 +866,8 @@ def ts2() -> Tc: mma(8, S.half(), S.single())
 def r_tcd3(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "float"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f32"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "k0,k1,m0,m1,m2,m3,k2"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "k0,k1,n0,n1,n2,k2"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
@@ -898,8 +898,8 @@ def ts3() -> Tc: mma(8, S.single(), S.single())
 def r_tcd4(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "half"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,n0,k0,k1,k2,k3"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,m0,k0,k1,k2,k3"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m0,m1,m2,m3"),
@@ -930,8 +930,8 @@ def ts4() -> Tc: rdna3_of(S.half(), S.single())
 def r_tcd5(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "half"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,k2,k0,k1,k3"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,k2,k0,k1,k3"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m3,m0,m1,m2"),
@@ -962,8 +962,8 @@ def ts5() -> Tc: rdna4_of(S.half(), S.single())
 def r_tcd6(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "float8_e5m2"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "fp8e5m2"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,k4,k5,k0,k1,k2,k3,k6"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,k4,k5,k0,k1,k2,k3,k6"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m2,m3,m0,m1"),
@@ -994,8 +994,8 @@ def ts6() -> Tc: mfma(128, S.fp8e5m2(), S.single())
 def r_tcd7(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "float"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "float"),
+    r1(nm, "di", dt_name(Tc.di(t)), "f32"),
+    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
     r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,m0,m1,k2,m2,k0"),
     r1(nm, "frag_b", cd_join(Tc.allb(t)), "n1,k0,k1,n2,k2,n0"),
     r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,m0,m1,n2,m2,n0"),
@@ -1191,8 +1191,8 @@ def mem_type(addr: S.Addr) -> String:
 # :11 `render_val(x, dtype)` --
 #
 #   if dtypes.is_float(dtype):
-#     if dtype == dtypes.double: return "0d%02X..." % tuple(struct.pack("d",x)[::-1])
-#     if dtype == dtypes.half:   return "0x%02X%02X" % tuple(struct.pack("e",x)[::-1])
+#     if dtype == dtypes.f64: return "0d%02X..." % tuple(struct.pack("d",x)[::-1])
+#     if dtype == dtypes.f16:   return "0x%02X%02X" % tuple(struct.pack("e",x)[::-1])
 #     return "0f%02X%02X%02X%02X" % tuple(struct.pack("f",x)[::-1])
 #   return str(int(x)) + ("U" if dtypes.is_unsigned(dtype) else "")
 #
@@ -1554,8 +1554,8 @@ def px_base_dtypes() -> List<&2, S.Dt>:
   [S.boolean(), S.int8(), S.int16(), S.int32(), S.int64(), S.uint8(), S.uint16(), S.uint32(),
    S.uint64(), S.half(), S.bfloat16(), S.single(), S.double()]
 
-# `(d != dtypes.half or int(self.target.arch[3:]) >= 53) and d not in
-# dtypes.fp8s+(dtypes.bfloat16,)`. bfloat16 IS in the projected base so that
+# `(d != dtypes.f16 or int(self.target.arch[3:]) >= 53) and d not in
+# dtypes.fp8s+(dtypes.bf16,)`. bfloat16 IS in the projected base so that
 # clause bites; the fp8 clause does not, because the projection has no fp8.
 def sd_keep(+ver: U32, +dt: S.Dt) -> Bool:
   Bool.and(Bool.or(Bool.not(O.eq_dt(dt, S.half())), U32.is_ge(ver, 53)), Bool.not(O.eq_dt(dt, S.bfloat16())))
@@ -1600,8 +1600,8 @@ def sorted_dt_names(+ds: List<&2, S.Dt>) -> String:
 def r_sd(+ver: U32, py: String) -> String:
   r("supported_dtypes sm_" ++ U32.show(ver), sorted_dt_names(supported_dtypes(ver)), py)
 
-# `self.tensor_cores = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.half,
-# dtypes.float)]` -- ptx.py:146. The filter is on `dtype_in`, NOT `dtype_out`, so
+# `self.tensor_cores = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.f16,
+# dtypes.f32)]` -- ptx.py:146. The filter is on `dtype_in`, NOT `dtype_out`, so
 # an fp8 table drops out entirely and a half->half table stays.
 def dsh_half.keep(+t: Tc) -> Bool: Bool.or(O.eq_dt(Tc.di(t), S.half()), O.eq_dt(Tc.di(t), S.single()))
 

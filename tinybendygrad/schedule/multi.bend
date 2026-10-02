@@ -1195,7 +1195,7 @@ def rd_fires(+r: Rd) -> Bool:
 
 # the ALLREDUCE_CAST arm (multi.py:116-118), and it is THREE conjuncts:
 #
-#     if ALLREDUCE_CAST and multi.src[0].op is Ops.CAST and multi.src[0].src[0].dtype in (dtypes.bfloat16, dtypes.half):
+#     if ALLREDUCE_CAST and multi.src[0].op is Ops.CAST and multi.src[0].src[0].dtype in (dtypes.bf16, dtypes.f16):
 #       orig_dtype = multi.src[0].src[0].dtype
 #       return local.cast(orig_dtype).allreduce(op, multi.device).cast(local.dtype)
 #

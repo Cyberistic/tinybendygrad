@@ -462,9 +462,9 @@ def j_dt_nm(d: S.Dt) -> String:
     case S.Dt{pri, bits, cls, nm}: nm
 
 # `repr(DType)` is `dtypes.{name}` (dtype.py:67), so it is the spec IR's own name
-# field with a `dtypes.` prefix -- NOT `str(dtypes.float32)`, which is `float32`.
-# Measured: `repr(dtypes.float32)` == "dtypes.float", `repr(dtypes.int32)` ==
-# "dtypes.int".
+# field with a `dtypes.` prefix -- NOT `str(dtypes.f32)`, which is `float32`.
+# Measured: `repr(dtypes.f32)` == "dtypes.f32", `repr(dtypes.i32)` ==
+# "dtypes.i32".
 def ii_dt_repr(dt: S.Dt) -> String:
   String.concat(["dtypes.", j_dt_nm(dt)])
 

@@ -1,0 +1,106 @@
+# ===========================================================================
+# THE TRANSFER CALLS. `usb_chunk` (:336-355), `usb_reap` (:324-328),
+# `usb_drained` (:330-334) and the control/bulk wrappers (:64-84) are where the
+# remaining six trace kinds are emitted, and they are the SEQUENCE that matters:
+# the reap BEFORE the memcpy, the drained BEFORE the control transfer, the three
+# `field("...")` stores between the control transfer and the submit, and the
+# status clear AFTER it.
+#
+# `usb_chunk`'s ARITHMETIC is in `chunk_end`/`chunk_off`/`chunk_sentinel_word`/
+# `chunk_wvalue`/`chunk_windex` above; this is the ORDER around it. `half` is 0
+# or 1 and the row pair is the negative case: half 1's window is 2*HALF and not
+# HALF, so every recorded offset differs.
+# ===========================================================================
+
+# :342 `h.after(usb_reap(h, xfer))`, :343 the staging memcpy, :344 the sentinel
+# store, :347 the drained wait, :348 the 0xF2 control transfer, :350-351 the three
+# `field()` stores, :352 the submit, :355 the pending clear.
+def usb_chunk.step(+half: U32, +wire: U32, +status_ok: Bool, +t: Tr) -> Tr:
+  Tr.emit(K_MEMCPY(), chunk_off(half, wire), 0, 0,
+    Tr.emit(K_EVENTS(), 0, 0, 0,
+      Tr.emit(K_STRERROR(), K_CTRL_XFER(), chunk_wvalue(wire),
+              chunk_windex(half, wire),
+        Tr.emit(K_STRERROR(), K_BULK_XFER(), chunk_sentinel_word(half), wire, 0,
+          Tr.emit(K_STRERROR(), K_SUBMIT_XFER(), K_XFER_LENGTH(), K_XFER_BUFFER(),
+                  K_XFER_STATUS(),
+            Tr.emit(K_STRERROR(), K_ALLOC_XFER(), 0, 0,
+              Tr.emit(K_CTRL_XFER(), REQ_F2(), RTYPE_OUT(), USB3_IFACE(), t)))))))
+
+# :326 `usb_handle_events_timeout(handle, usb_stack(uint64, 0, 0))` -- a ZERO
+# timeout, and the struct it reads is polled until it is not 0xff.
+def usb_reap(pending: Bool, +t: Tr) -> Tr:
+  Bool.pick(Tr, pending, Tr.emit(K_EVENTS(), 0, 0, 0, t), t)
+
+# :332 `usb_ctrl(h, 0xC0, 0xE4, usb_fence(h.device).getaddr("CPU"), 0, slot, 1)`:
+# ONE byte, at the fence, IN. The length of 1 is the whole reason the predicate is
+# mod 256 -- and it is the argument, so it is in the trace.
+def usb_drained_trace(+need: U32, +fence: U32, +t: Tr) -> Tr:
+  Bool.pick(Tr, drained_step(need, fence),
+            Tr.emit(K_CTRL_XFER(), RTYPE_IN(), REQ_E4(), WIN_FENCE_LO(), 1, t), t)
+
+# :67/:71 the two control transfers. The ONLY difference is the request type --
+# 0x40 for OUT and 0xC0 for IN -- and both carry `n` (the byte count) and the
+# timeout, so the two rows are one row apart in every field but the first.
+def usb_ctrl_req(+is_out: Bool, +req: U32, +n: U32, +t: Tr) -> Tr:
+  Tr.emit(K_CTRL_XFER(), Bool.pick(U32, is_out, RTYPE_OUT(), RTYPE_IN()), req,
+          USB3_CTRL_BUF(), U32.add(n, USB3_TIMEOUT()), t)
+
+# :78/:83 the two bulk transfers, and here the ENDPOINT differs and the request
+# type does not: 0x02 OUT and 0x81 IN, which is 0x01 | LIBUSB_ENDPOINT_IN.
+def usb_bulk_req(+is_out: Bool, +n: U32, +t: Tr) -> Tr:
+  Tr.emit(K_BULK_XFER(), Bool.pick(U32, is_out, EP_OUT(), EP_IN()), n, 0,
+          USB3_TIMEOUT(), t)
+
+# THE THREE `field("...")` STORES, and the ORDINALS are what make them the right
+# stores: `usb_fld_transfer_status_ix`, `_length_ix` and `_buffer_ix` are the rows
+# that hold those names in that order, and `M38` (status/length transposed) is
+# the mutation that moves them.
+def K_XFER_STATUS() -> U32: Fld.find("status", F_TRANSFER())
+def K_XFER_LENGTH() -> U32: Fld.find("length", F_TRANSFER())
+def K_XFER_BUFFER() -> U32: Fld.find("buffer", F_TRANSFER())
+
+def USB3_TIMEOUT() -> U32: 1000
+def USB3_CTRL_BUF() -> U32: CTRL_BUF()
+
+# :107 `_f0_out`'s wValue and wIndex, which the trace records and the arithmetic
+# rows measure. `wValue = fmt_type | (byte_en << 8)` and `wIndex = mode & 0x03`.
+def t_f0() -> IO(Unit):
+  IO.print(lines_of(
+    [u1("usb_wvalue_0x40_0f", pcie_wvalue(64, 15)),
+     u1("usb_wvalue_0x60_0f", pcie_wvalue(96, 15)),
+     u1("usb_wvalue_0x20_0f", pcie_wvalue(32, 15)),
+     u1("usb_wvalue_0xf0_ff", pcie_wvalue(240, 255)),
+     u1("usb_wvalue_0x44_0f", pcie_wvalue(68, 15)),
+     u1("usb_windex_0", pcie_windex(0)),
+     u1("usb_windex_1", pcie_windex(1)),
+     u1("usb_windex_2", pcie_windex(2)),
+     u1("usb_windex_3", pcie_windex(3)),
+     u1("usb_windex_4", pcie_windex(4)),
+     u1("usb_timeout", USB3_TIMEOUT()),
+     u1("usb_ctrl_buf_in_trace", USB3_CTRL_BUF()),
+     u1("usb_xfer_status_ix", K_XFER_STATUS()),
+     u1("usb_xfer_length_ix", K_XFER_LENGTH()),
+     u1("usb_xfer_buffer_ix", K_XFER_BUFFER())]))
+
+# ===========================================================================
+# THE TRANSFER ROWS. Order and identity, one row per fixture, and the HALF PAIR
+# is the negative case.
+# ===========================================================================
+def t_xfer() -> IO(Unit):
+  IO.print(lines_of(
+    [s1("usb_chunk_order_h0", Tr.sym(usb_chunk.step(0, usb_wire(512), True{}, Tr.of()))),
+     s1("usb_chunk_order_h1", Tr.sym(usb_chunk.step(1, usb_wire(512), True{}, Tr.of()))),
+     s1("usb_chunk_order_h1_2chunk",
+        Tr.sym(usb_chunk.step(1, usb_wire(U32.mul(2, CHUNK())), True{}, Tr.of()))),
+     b1("usb_chunk_pending_h0", usb_chunk.step(0, usb_wire(512), False{}, Tr.of()) == usb_chunk.step(0, usb_wire(512), True{}, Tr.of())),
+     b1("usb_reap_pending", Tr.refused(usb_reap(True{}, Tr.of()))),
+     s1("usb_reap_order_pending", Tr.sym(usb_reap(True{}, Tr.of()))),
+     s1("usb_reap_order_idle", Tr.sym(usb_reap(False{}, Tr.of()))),
+     # the drained predicate decides whether the 0xE4 read is even made
+     b1("usb_drained_need7_fence7", drained_step(7, 7)),
+     s1("usb_drained_order_need", Tr.sym(usb_drained_trace(7, 7, Tr.of()))),
+     s1("usb_drained_order_done", Tr.sym(usb_drained_trace(7, 5, Tr.of()))),
+     s1("usb_ctrl_order_out", Tr.sym(usb_ctrl_req(True{}, REQ_F2(), 4, Tr.of()))),
+     s1("usb_ctrl_order_in", Tr.sym(usb_ctrl_req(False{}, REQ_E4(), 1, Tr.of()))),
+     s1("usb_bulk_order_out", Tr.sym(usb_bulk_req(True{}, 512, Tr.of()))),
+     s1("usb_bulk_order_in", Tr.sym(usb_bulk_req(False{}, 512, Tr.of())))]))

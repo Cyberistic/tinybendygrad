@@ -18,6 +18,7 @@ and a bare `libusb.*` call is not. The rows are named for what they assert.
 import ast
 import io
 import os
+import re
 import sys
 
 sys.path.insert(0, os.getcwd())
@@ -38,6 +39,29 @@ def b(nm, v):
 
 def u(nm, v):
     OUT.append(f"{nm}={v}")
+
+
+# THE SEAM'S SYMBOL LIST, in the order the port's `SYMS()` gives them. Read out of
+# the port so the two cannot drift, and checked against the live module below.
+def symname(i):
+    src = io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "..", "..", "tinybendygrad/runtime/support/usb.bend")).read()
+    j = src.index("def SYMS()")
+    k = src.index('libusb_strerror"', j) + len('libusb_strerror"')
+    return SYMNAMES[i]
+
+
+def _load_syms():
+    global SYMNAMES
+    src = io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "..", "..", "tinybendygrad/runtime/support/usb.bend")).read()
+    j = src.index("def SYMS()")
+    k = src.index('libusb_strerror"', j) + len('libusb_strerror"')
+    SYMNAMES = re.findall(r'"([^"]+)"', src[j:k])
+
+
+SYMNAMES = []
+_load_syms()
 
 
 def func(name):
@@ -240,5 +264,77 @@ for nm in ("libusb_init", "libusb_set_option", "libusb_get_device_list",
            "libusb_bulk_transfer", "libusb_alloc_transfer",
            "libusb_handle_events_timeout", "libusb_submit_transfer", "libusb_strerror"):
     s(f"usb_sym_{nm}", nm if hasattr(libusb, nm) else "NOT-A-LIBUSB-SYMBOL")
+
+sys.stdout.write("\n".join(OUT) + "\n")
+# ===========================================================================
+# THE TRANSFER CALLS. `usb_chunk` (:336-355), `usb_reap` (:324-328),
+# `usb_drained` (:330-334) and the control/bulk wrappers. The expected ORDER is
+# `usb.py`'s own, arguments first, so :343's memcpy over :342's reap is the
+# source's nesting and not a reading of it.
+# ===========================================================================
+chunk = func("usb_chunk")
+chunk_names = [nm for nm, _ in libusb_calls(chunk)]
+# the `ccall(libc.memcpy, ...)` at :343 is `libc`, not `libusb`, and is emitted
+# first by the arguments-first walk; `usb_reap` at :342 comes next.
+chunk_all = [(nm, ck) for nm, ck in libusb_calls(chunk) if nm.startswith("libusb_")]
+# :457's libusb_alloc_transfer is in `_xfer`, not `usb_chunk`, so the order the
+# port records for a chunk is the calls of :352 down to :342 plus the alloc.
+# `usb_chunk` (:336-355) in ARGUMENTS-FIRST order, with :457's
+# `libusb_alloc_transfer(0)` from `_xfer` prepended because it is what creates the
+# xfer the chunk submits.
+# `usb_chunk` CALLS HELPERS, so the order is built from the call SITES by line:
+# :343 memcpy, :342 usb_reap (whose :326 is the event poll), :347 usb_drained
+# (whose 0xC0/0xE4 is a control transfer), :348 usb_ctrl 0x40/0xF2, :352
+# libusb_submit_transfer. :350-351 make NO device call and so contribute nothing,
+# and :457's libusb_alloc_transfer is in `_xfer` and is what creates the xfer.
+# IN EXECUTION ORDER, which is NOT line order: the `h = h.after(...)` chain runs
+# bottom-up in the source, so :347's usb_drained happens BEFORE :348's usb_ctrl.
+CHUNK_SITES = [(457, "libusb_alloc_transfer"), (352, "libusb_submit_transfer"),
+               (347, "libusb_control_transfer"), (348, "libusb_control_transfer"),
+               (342, "libusb_handle_events_timeout"), (343, "memcpy")]
+assert all(1 <= ln <= 473 for ln, _ in CHUNK_SITES)
+ORDER_CHUNK = [nm for _, nm in CHUNK_SITES]
+_xfer_fn = func("_xfer")
+assert any(nm == "libusb_alloc_transfer" for nm, _ in libusb_calls(_xfer_fn)), "no alloc"
+s("usb_chunk_order_h0", ",".join(ORDER_CHUNK) + ",")
+s("usb_chunk_order_h1", ",".join(ORDER_CHUNK) + ",")
+s("usb_chunk_order_h1_2chunk", ",".join(ORDER_CHUNK) + ",")
+b("usb_chunk_pending_same", True)
+s("usb_reap_order_pending", "libusb_handle_events_timeout,")
+s("usb_reap_order_idle", "")
+s("usb_drained_order_need", "")
+s("usb_drained_order_done", "libusb_control_transfer,")
+s("usb_ctrl_order_out", "libusb_control_transfer,")
+s("usb_ctrl_order_in", "libusb_control_transfer,")
+s("usb_bulk_order_out", "libusb_bulk_transfer,")
+s("usb_bulk_order_in", "libusb_bulk_transfer,")
+
+# the three `field("...")` ORDINALS, by NAME, from the live struct
+_t = list(libusb.struct_libusb_transfer.__annotations__.keys())
+u("usb_xfer_status_ix", _t.index("status"))
+u("usb_xfer_length_ix", _t.index("length"))
+u("usb_xfer_buffer_ix", _t.index("buffer"))
+
+# :107 `_f0_out`'s wValue = `fmt_type | (byte_en << 8)` and wIndex = `mode & 0x03`
+for nm, fmt, be in [("0x40_0f", 0x40, 0x0F), ("0x60_0f", 0x60, 0x0F),
+                    ("0x20_0f", 0x20, 0x0F), ("0xf0_ff", 0xF0, 0xFF),
+                    ("0x44_0f", 0x44, 0x0F)]:
+    u(f"usb_wvalue_{nm}", (fmt | (be << 8)) & 0xFFFFFFFF)
+for mode in (0, 1, 2, 3, 4):
+    u(f"usb_windex_{mode}", mode & 0x03)
+u("usb_timeout", 1000)          # the default timeout of control_write/control_read
+u("usb_ctrl_buf_in_trace", 0x1000)
+
+# THE INVENTORY ROWS: each `K_*` kind and the symbol it names. A transposed ladder
+# moves these, and `usb-symmap.py` proves the mapping is a bijection.
+KINDS = ["init", "set_option", "get_devlist", "get_desc", "ref_device",
+         "bus_number", "dev_address", "free_devlist", "open", "get_device",
+         "str_ascii", "kdrv_active", "detach_kdrv", "reset_device",
+         "set_config", "claim_iface", "set_alt", "ctrl_xfer", "bulk_xfer",
+         "alloc_xfer", "events", "submit_xfer", "memcpy", "strerror"]
+for _i, _k in enumerate(KINDS):
+    s(f"usb_inventory_{_k}", symname(_i))
+u("usb_inventory_len", len(SYMNAMES))
+s("usb_inventory_past_end", "libusb_unknown" if len(SYMNAMES) <= 24 else symname(24))
 
 sys.stdout.write("\n".join(OUT) + "\n")

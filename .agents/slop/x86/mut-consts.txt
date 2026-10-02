@@ -1,0 +1,1212 @@
+=== CONSTS: 707 mutations, 502 moved rows, 205 BLIND, over 755 rows
+--- MUTATED (moved rows named)
+  L199 0->1   62 rows (+56 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: case 0: "0"
+  L199 0->1   47 rows (+41 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: case 0: "0"
+  L200 1->2   56 rows (+50 more): direct.JB.0f8200000000, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000
+        in: case 1: "1"
+  L200 1->2   34 rows (+28 more): direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000, hex.VMOVSS.c5fa10948c08000000
+        in: case 1: "1"
+  L201 2->3   52 rows (+46 more): direct.JB.0f8200000000, direct.RET.c3, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000
+        in: case 2: "2"
+  L201 2->3   41 rows (+35 more): direct.JB.0f8200000000, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000
+        in: case 2: "2"
+  L202 3->4   72 rows (+66 more): direct.JE.0f8400000000, direct.RET.c3, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000
+        in: case 3: "3"
+  L202 3->4   33 rows (+27 more): direct.RET.c3, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000
+        in: case 3: "3"
+  L203 4->5   80 rows (+74 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000
+        in: case 4: "4"
+  L203 4->5   62 rows (+56 more): direct.JE.0f8400000000, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000
+        in: case 4: "4"
+  L204 5->6   46 rows (+40 more): direct.JNE.0f8500000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000
+        in: case 5: "5"
+  L204 5->6   41 rows (+35 more): direct.JNE.0f8500000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000
+        in: case 5: "5"
+  L205 6->7   19 rows (+13 more): hex.MOVi.40c7848c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSXD.4863948c08000000, hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVD.c5f96e948c08000000, hex.VMOVQ.c4e1f96e948c08000000
+        in: case 6: "6"
+  L205 6->7    6 rows: hex.MOVSXD.4863948c08000000, hex.VMOVD.c5f96e948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VPEXTRD.c4e37916948c08000000, hex.IMULi.4869d103000000, hex.CMP.493bd6
+        in: case 6: "6"
+  L206 7->8   67 rows (+61 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.MOVABS 0.48b83412000000000000
+        in: case 7: "7"
+  L206 7->8   14 rows (+8 more): hex.MOVi.40c7848c08000000, hex.MOVZX.480fb7948c08000000, hex.VCVTPH2PS.c4e27913948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2
+        in: case 7: "7"
+  L207 8->9   66 rows (+60 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: case 8: "8"
+  L207 8->9   61 rows (+55 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.MOVABS 0.48b83412000000000000
+        in: case 8: "8"
+  L208 9->10   45 rows (+39 more): direct.JMP.e900000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000, hex.LEA.488d948c08000000, hex.MOV.488b948c08000000
+        in: case 9: "9"
+  L208 9->10   32 rows (+26 more): direct.JMP.e900000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000, hex.LEA.488d948c08000000, hex.MOV.488b948c08000000
+        in: case 9: "9"
+  L209 10->11   33 rows (+27 more): direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000, hex.MOV.488b948c08000000
+        in: case 10: "a"
+  L210 11->12   65 rows (+59 more): direct.JL.0f8c00000000, direct.RET.c3, direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000
+        in: case 11: "b"
+  L211 12->13   73 rows (+67 more): direct.JL.0f8c00000000, direct.JGE.0f8d00000000, direct.RET.c3, hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000
+        in: case 12: "c"
+  L212 13->14   37 rows (+31 more): direct.JGE.0f8d00000000, direct.JMP.e900000000, hex.LEA.488d948c08000000, hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVD.c5f96e948c08000000, hex.VMOVQ.c4e1f96e948c08000000
+        in: case 13: "d"
+  L213 14->15   67 rows (+61 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: case 14: "e"
+  L214 15->16   50 rows (+44 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.MOVABS 7.48bf3412000000000000
+        in: case 15: "f"
+  L225 15->16   86 rows (+80 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: def Hex.nibble(+b: U32) -> U32: U32.and(b, 15)
+  L228 4n->5n   86 rows (+80 more): direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000, direct.JMP.e900000000
+        in: String.concat([Hex.digit(Hex.nibble(U32.shrn(b, 4n))), Hex.digit(Hex.n
+  L235 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Hex.bytes.go(bs: List<&2, U32>, +acc: String) -> String:
+  L240 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Hex.bytes(bs: List<&2, U32>) -> String: Hex.bytes.go(bs, "")
+  L305 0->1    9 rows (+3 more): reg.gpr rax, reg.gpr rcx, reg.gprrev 0, reg.gprrev 1, reg.GPR, reg.WGPR
+        in: case 0: "ax"
+  L306 1->2    8 rows (+2 more): reg.gpr rcx, reg.gpr rdx, reg.gprrev 1, reg.gprrev 2, reg.GPR, reg.WGPR
+        in: case 1: "cx"
+  L307 2->3    9 rows (+3 more): reg.gpr rdx, reg.gpr rbx, reg.gprrev 2, reg.gprrev 3, reg.GPR, reg.WGPR
+        in: case 2: "dx"
+  L308 3->4   13 rows (+7 more): reg.gpr rbx, reg.gpr rsp, reg.gprrev 3, reg.gprrev 4, reg.GPR, reg.WGPR
+        in: case 3: "bx"
+  L309 4->5   11 rows (+5 more): reg.gpr rsp, reg.gpr rbp, reg.gprrev 4, reg.gprrev 5, reg.GPR, reg.WGPR
+        in: case 4: "sp"
+  L310 5->6    9 rows (+3 more): reg.gpr rbp, reg.gpr rsi, reg.gprrev 5, reg.gprrev 6, reg.GPR, reg.WGPR
+        in: case 5: "bp"
+  L311 6->7    8 rows (+2 more): reg.gpr rsi, reg.gpr rdi, reg.gprrev 6, reg.gprrev 7, reg.GPR, reg.WGPR
+        in: case 6: "si"
+  L312 7->8    5 rows: reg.gpr rdi, reg.gprrev 7, reg.GPR, reg.WGPR, reg.strs.rdi
+        in: case 7: "di"
+  L329 8->9    4 rows: reg.gpr r8, reg.gprrev 8, reg.GPR, reg.WGPR
+        in: Bool.pick(String, U32.is_lt(i, 8), String.concat(["r", Reg.tail(i)]), 
+  L332 8->9    1 rows: reg.strs.r8
+        in: Bool.pick(String, U32.is_lt(i, 8), String.concat(["e", Reg.tail(i)]), 
+  L335 8->9    1 rows: reg.strs.r8
+        in: Bool.pick(String, U32.is_lt(i, 8), Reg.tail(i), String.concat(["r", U3
+  L342 0->1    3 rows: reg.strs.rax, reg.strs.rcx, reg.get rax 1
+        in: case 0: "al"
+  L343 1->2    2 rows: reg.strs.rcx, reg.strs.rdx
+        in: case 1: "cl"
+  L344 2->3    2 rows: reg.strs.rdx, reg.strs.rbx
+        in: case 2: "dl"
+  L345 3->4    3 rows: reg.strs.rbx, reg.strs.rsp, reg.get rsp 1
+        in: case 3: "bl"
+  L346 4->5    3 rows: reg.strs.rsp, reg.strs.rbp, reg.get rsp 1
+        in: case 4: "spl"
+  L347 5->6    2 rows: reg.strs.rbp, reg.strs.rsi
+        in: case 5: "bpl"
+  L348 6->7    2 rows: reg.strs.rsi, reg.strs.rdi
+        in: case 6: "sil"
+  L349 7->8    2 rows: reg.strs.rdi, reg.strs.r8
+        in: case 7: "dil"
+  L352 8->9   17 rows (+11 more): reg.gpr rax, reg.gpr rcx, reg.gpr rdx, reg.gpr rbx, reg.gpr rsp, reg.gpr rbp
+        in: def Reg.gpr(+i: U32) -> Reg: Reg.of(Reg.rname(i), i, 8, Reg.s4n(i), Re
+  L356 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L356 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L356 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L359 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: case h <> t: Reg.gpr_list.go(t, List.append(&2, Reg, acc, [Reg.gpr(U32
+  L361 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_list() -> List<&2, Reg>: Reg.gpr_list.go(List.range(16n), 
+  L361 16n->17n    1 rows: reg.GPR
+        in: def Reg.gpr_list() -> List<&2, Reg>: Reg.gpr_list.go(List.range(16n), 
+  L370 16->17   16 rows (+10 more): reg.xmm xmm0, reg.xmm xmm1, reg.xmm xmm2, reg.xmm xmm3, reg.xmm xmm4, reg.xmm xmm5
+        in: Reg.of(Reg.rname_xmm(i), i, 16, Reg.rname_xmm(i), Reg.rname_xmm(i), Re
+  L372 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.xmm_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L372 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.xmm_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L372 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.xmm_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<
+  L375 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: case h <> t: Reg.xmm_list.go(t, List.append(&2, Reg, acc, [Reg.xmm(U32
+  L377 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.xmm_list() -> List<&2, Reg>: Reg.xmm_list.go(List.range(16n), 
+  L377 16n->17n    1 rows: reg.XMM
+        in: def Reg.xmm_list() -> List<&2, Reg>: Reg.xmm_list.go(List.range(16n), 
+  L393 4->5    1 rows: reg.WGPR
+        in: def Reg.wgpr_drop(idx: U32) -> U32: Bool.pick(U32, U32.is_eq(idx, 4), 
+  L393 1->2    2 rows: reg.WGPR, reg.WGPRn
+        in: def Reg.wgpr_drop(idx: U32) -> U32: Bool.pick(U32, U32.is_eq(idx, 4), 
+  L393 0->1    2 rows: reg.WGPR, reg.WGPRn
+        in: def Reg.wgpr_drop(idx: U32) -> U32: Bool.pick(U32, U32.is_eq(idx, 4), 
+  L395 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_push.of(h: Nat, +acc: List<&2, Reg>, arm: U32) -> List<&2
+  L395 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_push.of(h: Nat, +acc: List<&2, Reg>, arm: U32) -> List<&2
+  L397 1->2    2 rows: reg.WGPR, reg.WGPRn
+        in: case 1: acc
+  L398 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: case _: List.append(&2, Reg, acc, [Reg.gpr(U32.from_nat(h))])
+  L400 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_push.go(ixs: List<&2, Nat>, +n: U32, +acc: List<&2, Reg>)
+  L400 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_push.go(ixs: List<&2, Nat>, +n: U32, +acc: List<&2, Reg>)
+  L400 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_push.go(ixs: List<&2, Nat>, +n: U32, +acc: List<&2, Reg>)
+  L405 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.wgpr_list() -> List<&2, Reg>: Reg.wgpr_push.go(List.range(16n)
+  L405 16n->17n    2 rows: reg.WGPR, reg.WGPRn
+        in: def Reg.wgpr_list() -> List<&2, Reg>: Reg.wgpr_push.go(List.range(16n)
+  L405 0->1    1 rows: reg.WGPR
+        in: def Reg.wgpr_list() -> List<&2, Reg>: Reg.wgpr_push.go(List.range(16n)
+  L407 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.callee_list() -> List<&2, Reg>:
+  L412 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, List.append(&2, Reg, List.ap
+  L412 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, List.append(&2, Reg, List.ap
+  L412 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, List.append(&2, Reg, List.ap
+  L412 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, List.append(&2, Reg, List.ap
+  L413 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, Nil{}, [Reg.gpr(3)]), [Reg.gpr(5)]), [Reg.gpr(12)
+  L413 3->4    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, Nil{}, [Reg.gpr(3)]), [Reg.gpr(5)]), [Reg.gpr(12)
+  L413 5->6    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, Nil{}, [Reg.gpr(3)]), [Reg.gpr(5)]), [Reg.gpr(12)
+  L413 12->13    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, Nil{}, [Reg.gpr(3)]), [Reg.gpr(5)]), [Reg.gpr(12)
+  L413 13->14    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, Nil{}, [Reg.gpr(3)]), [Reg.gpr(5)]), [Reg.gpr(12)
+  L414 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, Nil{}, [Reg.gpr(14)]), [Reg.
+  L414 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.append(&2, Reg, List.append(&2, Reg, Nil{}, [Reg.gpr(14)]), [Reg.
+  L414 14->15    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, List.append(&2, Reg, Nil{}, [Reg.gpr(14)]), [Reg.
+  L414 15->16    1 rows: reg.CALLEE
+        in: List.append(&2, Reg, List.append(&2, Reg, Nil{}, [Reg.gpr(14)]), [Reg.
+  L419 3->4    2 rows: reg.callee 3, reg.callee 4
+        in: Bool.or(Bool.or(U32.is_eq(ix, 3), U32.is_eq(ix, 5)),
+  L419 5->6    2 rows: reg.callee 5, reg.callee 6
+        in: Bool.or(Bool.or(U32.is_eq(ix, 3), U32.is_eq(ix, 5)),
+  L420 12->13    1 rows: reg.callee 12
+        in: Bool.or(Bool.or(U32.is_eq(ix, 12), U32.is_eq(ix, 13)),
+  L420 13->14    1 rows: reg.callee 13
+        in: Bool.or(Bool.or(U32.is_eq(ix, 12), U32.is_eq(ix, 13)),
+  L421 14->15    1 rows: reg.callee 14
+        in: Bool.or(U32.is_eq(ix, 14), U32.is_eq(ix, 15))))
+  L421 15->16    1 rows: reg.callee 15
+        in: Bool.or(U32.is_eq(ix, 14), U32.is_eq(ix, 15))))
+  L425 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_hit.of(+ok: Bool, r: Reg, rest: Maybe<&2, Reg>) -> Maybe<&
+  L425 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_hit.of(+ok: Bool, r: Reg, rest: Maybe<&2, Reg>) -> Maybe<&
+  L430 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_find_by_name.go(+rs: List<&2, Reg>, +nm: String) -> Maybe<
+  L430 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_find_by_name.go(+rs: List<&2, Reg>, +nm: String) -> Maybe<
+  L439 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_find_by_name(+nm: String) -> Maybe<&2, Reg>: Reg.gpr_find_
+  L441 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.gpr_at.go(+rs: List<&2, Reg>, +i: U32, +n: U32) -> Reg:
+  L446 0->1   17 rows (+11 more): reg.gprrev 0, reg.gprrev 1, reg.gprrev 2, reg.gprrev 3, reg.gprrev 4, reg.gprrev 5
+        in: def Reg.gpr_at(+i: U32) -> Reg: Reg.gpr_at.go(Reg.gpr_list(), i, 0)
+  L448 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.xmm_at.go(+rs: List<&2, Reg>, +i: U32, +n: U32) -> Reg:
+  L453 0->1   16 rows (+10 more): reg.xmmrev 0, reg.xmmrev 1, reg.xmmrev 2, reg.xmmrev 3, reg.xmmrev 4, reg.xmmrev 5
+        in: def Reg.xmm_at(+i: U32) -> Reg: Reg.xmm_at.go(Reg.xmm_list(), i, 0)
+  L455 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.maybe_name(m: Maybe<&2, Reg>) -> String:
+  L460 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.maybe_index(m: Maybe<&2, Reg>) -> U32:
+  L465 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.maybe_size(m: Maybe<&2, Reg>) -> U32:
+  L476 4->5    3 rows: reg.get rax 4, reg.get rsp 4, reg.get r12 4
+        in: case 4: Reg.s4(r)
+  L477 2->3    3 rows: reg.get rax 2, reg.get rsp 2, reg.get r12 2
+        in: case 2: Reg.s2(r)
+  L478 1->2    3 rows: reg.get rax 1, reg.get rsp 1, reg.get r12 1
+        in: case 1: Reg.s1(r)
+  L481 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Reg.strs_lookup.of(+m: Maybe<&2, Reg>, +nm: String, +sz: U32) -> S
+  L505 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def op_names() -> List<&2, String>: [
+  L518 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def op_len() -> U32: U32.from_nat(List.length(&2, String, op_names()))
+  L533 78->79  178 rows (+172 more): op.FRAME_INDEX, op.LABEL, op.DEFINE, op.LOOP_CMP, op.LEA, op.MOV
+        in: def Op.base() -> U32: 78
+  L535 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.fwd(+ns: List<&2, String>, +nm: String, +i: U32) -> String:
+  L540 0->1   89 rows (+83 more): op.FRAME_INDEX, op.LABEL, op.DEFINE, op.LOOP_CMP, op.LEA, op.MOV
+        in: def op_num(+nm: String) -> String: Op.fwd(op_names(), nm, 0)
+  L542 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.rev(+ns: List<&2, String>, +want: U32, +i: U32) -> String:
+  L547 0->1   89 rows (+83 more): oprev 78, oprev 79, oprev 80, oprev 81, oprev 82, oprev 83
+        in: def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
+  L614 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.has(+nm: String, +ns: List<&2, String>) -> Bool:
+  L621 0->1   26 rows (+20 more): grp.Copy, grpn.Copy, grp.TwoAddress, grpn.TwoAddress, grp.Rm1st, grpn.Rm1st
+        in: case 0: Op.has(nm, ["MOV", "CMOVB", "CMOVE", "CMOVNE", "CMOVL"])
+  L622 1->2   29 rows (+23 more): grp.TwoAddress, grpn.TwoAddress, grp.Rm2nd, grpn.Rm2nd, grp.Rm1st, grpn.Rm1st
+        in: case 1: Op.has(nm, ["ADD", "ADDi", "AND", "ANDi", "XOR", "XORi", "OR",
+  L625 2->3    6 rows: grp.Rm2nd, grpn.Rm2nd, grp.WriteMem, grpn.WriteMem, grp.Rm1st, grpn.Rm1st
+        in: case 2: Op.has(nm, ["ADD", "SUB", "AND", "OR", "XOR", "IMUL", "CMP", "
+  L630 3->4    4 rows: grp.WriteMem, grpn.WriteMem, grp.ReadFlags, grpn.ReadFlags
+        in: case 3: Op.has(nm, ["MOVm", "MOVi", "VMOVSSm", "VMOVSDm", "VMOVUPSm", 
+  L633 4->5    4 rows: grp.ReadFlags, grpn.ReadFlags, grp.WriteFlags, grpn.WriteFlags
+        in: case 4: Op.has(nm, ["CMOVB", "CMOVL", "CMOVE", "CMOVNE", "SETB", "SETL
+  L635 5->6    6 rows: grp.WriteFlags, grpn.WriteFlags, grp.GPR_DEST_OPS, grpn.GPR_DEST_OPS, grp.XMM_OPS, grpn.XMM_OPS
+        in: case 5: Op.has(nm, ["CMP", "CMPi", "ADD", "ADDi", "SUB", "SUBi", "IMUL
+  L638 6->7    4 rows: grp.GPR_DEST_OPS, grpn.GPR_DEST_OPS, grp.XMM_OPS, grpn.XMM_OPS
+        in: case 6: Op.has(nm, ["VPEXTRW", "VPEXTRD", "VCVTTSS2SI", "VCVTTSD2SI", 
+  L653 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.is_x.of(m: Maybe<&2, Char>) -> Bool:
+  L663 0n->1n    2 rows: grp.XMM_OPS, grpn.XMM_OPS
+        in: Op.is_x.of(String.get(nm, 0n))
+  L673 6->7    2 rows: grp.XMM_OPS, grpn.XMM_OPS
+        in: Bool.and(Op.is_x(nm), Bool.not(Op.in_(nm, 6)))
+  L676 2->3    2 rows: grp.Rm1st, grpn.Rm1st
+        in: Bool.or(Op.rm1st_lit(nm), Bool.and(Op.in_(nm, 2), Op.in_(nm, 1)))
+  L676 1->2    2 rows: grp.Rm1st, grpn.Rm1st
+        in: Bool.or(Op.rm1st_lit(nm), Bool.and(Op.in_(nm, 2), Op.in_(nm, 1)))
+  L684 7->8    4 rows: grp.Rm1st, grpn.Rm1st, grp.XMM_OPS, grpn.XMM_OPS
+        in: case 7: Op.rm1st(nm)
+  L685 8->9    2 rows: grp.XMM_OPS, grpn.XMM_OPS
+        in: case 8: Op.xmm_ops(nm)
+  L692 1->2   35 rows (+29 more): 2a.VCVTSS2SD, 2a.VCVTSD2SS, 2a.VCVTSI2SS, 2a.VCVTSI2SD, 2a.VCMPSS, 2a.VCMPSD
+        in: def Op.is_two_address(+nm: String) -> Bool: Op.member(nm, 1)
+  L696 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.set_names.go(+ns: List<&2, String>, +which: U32, +i: U32, +acc:
+  L696 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.set_names.go(+ns: List<&2, String>, +which: U32, +i: U32, +acc:
+  L696 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.set_names.go(+ns: List<&2, String>, +which: U32, +i: U32, +acc:
+  L701 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: Bool.pick(List<&2, String>, Op.member(h, which), List.append(&2, Strin
+  L701 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: Bool.pick(List<&2, String>, Op.member(h, which), List.append(&2, Strin
+  L703 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.set_names(+which: U32) -> List<&2, String>: Op.set_names.go(op_
+  L707 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Op.set_len(+which: U32) -> U32: U32.from_nat(List.length(&2, Strin
+  L731 16->17   12 rows (+6 more): isz int 4, iszm int 4, isz float 4, iszm float 4, isz int8 16, iszm int8 16
+        in: Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.is_ge(bits, 
+  L731 2->3   40 rows (+34 more): isz int 4, iszm int 4, isz int 6, iszm int 6, isz int 8, iszm int 8
+        in: Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.is_ge(bits, 
+  L731 8->9   12 rows (+6 more): isz int 2, iszm int 2, isz float 2, iszm float 2, isz int8 8, iszm int8 8
+        in: Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.is_ge(bits, 
+  L731 1->2   20 rows (+14 more): isz int 2, iszm int 2, isz int 3, iszm int 3, isz float 2, iszm float 2
+        in: Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.is_ge(bits, 
+  L731 0->1   26 rows (+20 more): isz int 1, iszm int 1, isz float 1, iszm float 1, isz int8 1, iszm int8 1
+        in: Bool.pick(U32, U32.is_ge(bits, 16), 2, Bool.pick(U32, U32.is_ge(bits, 
+  L735 2->3   20 rows (+14 more): isz int 4, isz int 6, isz int 8, isz int 16, isz float 4, isz float 6
+        in: case 2: "VMOVUPS"
+  L736 1->2   10 rows (+4 more): isz int 2, isz int 3, isz float 2, isz float 3, isz int8 8, isz double 1
+        in: case 1: "VMOVSD"
+  L743 2->3   20 rows (+14 more): iszm int 4, iszm int 6, iszm int 8, iszm int 16, iszm float 4, iszm float 6
+        in: case 2: "VMOVUPSm"
+  L744 1->2   10 rows (+4 more): iszm int 2, iszm int 3, iszm float 2, iszm float 3, iszm int8 8, iszm double 1
+        in: case 1: "VMOVSDm"
+  L785 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def enc_table() -> List<&2, Enc>: [
+  L794 3->4    2 rows: enc.ADD, hex.ADD.4803d5
+        in: Enc.of("ADD", 3, 0, False{}, 0, 0, 0),
+  L794 0->1    2 rows: enc.ADD, hex.ADD.4803d5
+        in: Enc.of("ADD", 3, 0, False{}, 0, 0, 0),
+  L795 129->130    2 rows: enc.ADDi, hex.ADDi.4881c2
+        in: Enc.of("ADDi", 129, 0, True{}, 0, 0, 0),
+  L795 0->1    1 rows: enc.ADDi
+        in: Enc.of("ADDi", 129, 0, True{}, 0, 0, 0),
+  L795 0->1    2 rows: enc.ADDi, hex.ADDi.4881c2
+        in: Enc.of("ADDi", 129, 0, True{}, 0, 0, 0),
+  L796 35->36    2 rows: enc.AND, hex.AND.4823d5
+        in: Enc.of("AND", 35, 0, False{}, 0, 0, 0),
+  L796 0->1    2 rows: enc.AND, hex.AND.4823d5
+        in: Enc.of("AND", 35, 0, False{}, 0, 0, 0),
+  L797 129->130    2 rows: enc.ANDi, hex.ANDi.4881e2
+        in: Enc.of("ANDi", 129, 4, True{}, 0, 0, 0),
+  L797 4->5    1 rows: enc.ANDi
+        in: Enc.of("ANDi", 129, 4, True{}, 0, 0, 0),
+  L797 0->1    2 rows: enc.ANDi, hex.ANDi.4881e2
+        in: Enc.of("ANDi", 129, 4, True{}, 0, 0, 0),
+  L798 3906->3907    2 rows: enc.CMOVB, hex.CMOVB.480f42d5
+        in: Enc.of("CMOVB", 3906, 0, False{}, 0, 0, 0),
+  L798 0->1    2 rows: enc.CMOVB, hex.CMOVB.480f42d5
+        in: Enc.of("CMOVB", 3906, 0, False{}, 0, 0, 0),
+  L799 3908->3909    2 rows: enc.CMOVE, hex.CMOVE.480f44d5
+        in: Enc.of("CMOVE", 3908, 0, False{}, 0, 0, 0),
+  L799 0->1    2 rows: enc.CMOVE, hex.CMOVE.480f44d5
+        in: Enc.of("CMOVE", 3908, 0, False{}, 0, 0, 0),
+  L800 3916->3917    2 rows: enc.CMOVL, hex.CMOVL.480f4cd5
+        in: Enc.of("CMOVL", 3916, 0, False{}, 0, 0, 0),
+  L800 0->1    2 rows: enc.CMOVL, hex.CMOVL.480f4cd5
+        in: Enc.of("CMOVL", 3916, 0, False{}, 0, 0, 0),
+  L801 3909->3910    2 rows: enc.CMOVNE, hex.CMOVNE.480f45d5
+        in: Enc.of("CMOVNE", 3909, 0, False{}, 0, 0, 0),
+  L801 0->1    2 rows: enc.CMOVNE, hex.CMOVNE.480f45d5
+        in: Enc.of("CMOVNE", 3909, 0, False{}, 0, 0, 0),
+  L802 59->60    2 rows: enc.CMP, hex.CMP.493bd6
+        in: Enc.of("CMP", 59, 0, False{}, 0, 0, 0),
+  L802 0->1    2 rows: enc.CMP, hex.CMP.493bd6
+        in: Enc.of("CMP", 59, 0, False{}, 0, 0, 0),
+  L803 129->130    2 rows: enc.CMPi, hex.CMPi.81bc8c08000000
+        in: Enc.of("CMPi", 129, 7, True{}, 0, 0, 0),
+  L803 7->8    1 rows: enc.CMPi
+        in: Enc.of("CMPi", 129, 7, True{}, 0, 0, 0),
+  L803 0->1    2 rows: enc.CMPi, hex.CMPi.81bc8c08000000
+        in: Enc.of("CMPi", 129, 7, True{}, 0, 0, 0),
+  L804 247->248    2 rows: enc.DIV, hex.DIV.48f7f5
+        in: Enc.of("DIV", 247, 6, True{}, 0, 0, 0),
+  L804 6->7    1 rows: enc.DIV
+        in: Enc.of("DIV", 247, 6, True{}, 0, 0, 0),
+  L804 0->1    2 rows: enc.DIV, hex.DIV.48f7f5
+        in: Enc.of("DIV", 247, 6, True{}, 0, 0, 0),
+  L805 247->248    2 rows: enc.IDIV, hex.IDIV.48f7fd
+        in: Enc.of("IDIV", 247, 7, True{}, 0, 0, 0),
+  L805 7->8    1 rows: enc.IDIV
+        in: Enc.of("IDIV", 247, 7, True{}, 0, 0, 0),
+  L805 0->1    2 rows: enc.IDIV, hex.IDIV.48f7fd
+        in: Enc.of("IDIV", 247, 7, True{}, 0, 0, 0),
+  L806 4015->4016    2 rows: enc.IMUL, hex.IMUL.480fafd5
+        in: Enc.of("IMUL", 4015, 0, False{}, 0, 0, 0),
+  L806 0->1    2 rows: enc.IMUL, hex.IMUL.480fafd5
+        in: Enc.of("IMUL", 4015, 0, False{}, 0, 0, 0),
+  L807 105->106    2 rows: enc.IMULi, hex.IMULi.4869d103000000
+        in: Enc.of("IMULi", 105, 0, False{}, 0, 0, 0),
+  L807 0->1    2 rows: enc.IMULi, hex.IMULi.4869d103000000
+        in: Enc.of("IMULi", 105, 0, False{}, 0, 0, 0),
+  L808 141->142    2 rows: enc.LEA, hex.LEA.488d948c08000000
+        in: Enc.of("LEA", 141, 0, False{}, 0, 0, 0),
+  L808 0->1    2 rows: enc.LEA, hex.LEA.488d948c08000000
+        in: Enc.of("LEA", 141, 0, False{}, 0, 0, 0),
+  L809 139->140    2 rows: enc.MOV, hex.MOV.488b948c08000000
+        in: Enc.of("MOV", 139, 0, False{}, 0, 0, 0),
+  L809 0->1    2 rows: enc.MOV, hex.MOV.488b948c08000000
+        in: Enc.of("MOV", 139, 0, False{}, 0, 0, 0),
+  L810 4031->4032    2 rows: enc.MOVSX, hex.MOVSX.480fbf948c08000000
+        in: Enc.of("MOVSX", 4031, 0, False{}, 0, 0, 0),
+  L810 0->1    2 rows: enc.MOVSX, hex.MOVSX.480fbf948c08000000
+        in: Enc.of("MOVSX", 4031, 0, False{}, 0, 0, 0),
+  L811 99->100    2 rows: enc.MOVSXD, hex.MOVSXD.4863948c08000000
+        in: Enc.of("MOVSXD", 99, 0, False{}, 0, 0, 0),
+  L811 0->1    2 rows: enc.MOVSXD, hex.MOVSXD.4863948c08000000
+        in: Enc.of("MOVSXD", 99, 0, False{}, 0, 0, 0),
+  L812 4023->4024    2 rows: enc.MOVZX, hex.MOVZX.480fb7948c08000000
+        in: Enc.of("MOVZX", 4023, 0, False{}, 0, 0, 0),
+  L812 0->1    2 rows: enc.MOVZX, hex.MOVZX.480fb7948c08000000
+        in: Enc.of("MOVZX", 4023, 0, False{}, 0, 0, 0),
+  L813 199->200    2 rows: enc.MOVi, hex.MOVi.40c7848c08000000
+        in: Enc.of("MOVi", 199, 0, True{}, 0, 0, 0),
+  L813 0->1    1 rows: enc.MOVi
+        in: Enc.of("MOVi", 199, 0, True{}, 0, 0, 0),
+  L813 0->1    2 rows: enc.MOVi, hex.MOVi.40c7848c08000000
+        in: Enc.of("MOVi", 199, 0, True{}, 0, 0, 0),
+  L814 137->138    2 rows: enc.MOVm, hex.MOVm.4889948c08000000
+        in: Enc.of("MOVm", 137, 0, False{}, 0, 0, 0),
+  L814 0->1    2 rows: enc.MOVm, hex.MOVm.4889948c08000000
+        in: Enc.of("MOVm", 137, 0, False{}, 0, 0, 0),
+  L815 11->12    2 rows: enc.OR, hex.OR.480bd5
+        in: Enc.of("OR", 11, 0, False{}, 0, 0, 0),
+  L815 0->1    2 rows: enc.OR, hex.OR.480bd5
+        in: Enc.of("OR", 11, 0, False{}, 0, 0, 0),
+  L816 129->130    2 rows: enc.ORi, hex.ORi.4881ca
+        in: Enc.of("ORi", 129, 1, True{}, 0, 0, 0),
+  L816 1->2    1 rows: enc.ORi
+        in: Enc.of("ORi", 129, 1, True{}, 0, 0, 0),
+  L816 0->1    2 rows: enc.ORi, hex.ORi.4881ca
+        in: Enc.of("ORi", 129, 1, True{}, 0, 0, 0),
+  L817 211->212    2 rows: enc.SAR, hex.SAR.48d3fa
+        in: Enc.of("SAR", 211, 7, True{}, 0, 0, 0),
+  L817 7->8    1 rows: enc.SAR
+        in: Enc.of("SAR", 211, 7, True{}, 0, 0, 0),
+  L817 0->1    2 rows: enc.SAR, hex.SAR.48d3fa
+        in: Enc.of("SAR", 211, 7, True{}, 0, 0, 0),
+  L818 193->194    2 rows: enc.SARi, hex.SARi.48c1fa
+        in: Enc.of("SARi", 193, 7, True{}, 0, 0, 0),
+  L818 7->8    1 rows: enc.SARi
+        in: Enc.of("SARi", 193, 7, True{}, 0, 0, 0),
+  L818 0->1    2 rows: enc.SARi, hex.SARi.48c1fa
+        in: Enc.of("SARi", 193, 7, True{}, 0, 0, 0),
+  L819 3986->3987    2 rows: enc.SETB, hex.SETB.400f92848c08000000
+        in: Enc.of("SETB", 3986, 0, True{}, 0, 0, 0),
+  L819 0->1    1 rows: enc.SETB
+        in: Enc.of("SETB", 3986, 0, True{}, 0, 0, 0),
+  L819 0->1    2 rows: enc.SETB, hex.SETB.400f92848c08000000
+        in: Enc.of("SETB", 3986, 0, True{}, 0, 0, 0),
+  L820 3988->3989    2 rows: enc.SETE, hex.SETE.400f94848c08000000
+        in: Enc.of("SETE", 3988, 0, True{}, 0, 0, 0),
+  L820 0->1    1 rows: enc.SETE
+        in: Enc.of("SETE", 3988, 0, True{}, 0, 0, 0),
+  L820 0->1    2 rows: enc.SETE, hex.SETE.400f94848c08000000
+        in: Enc.of("SETE", 3988, 0, True{}, 0, 0, 0),
+  L821 3996->3997    2 rows: enc.SETL, hex.SETL.400f9c848c08000000
+        in: Enc.of("SETL", 3996, 0, True{}, 0, 0, 0),
+  L821 0->1    1 rows: enc.SETL
+        in: Enc.of("SETL", 3996, 0, True{}, 0, 0, 0),
+  L821 0->1    2 rows: enc.SETL, hex.SETL.400f9c848c08000000
+        in: Enc.of("SETL", 3996, 0, True{}, 0, 0, 0),
+  L822 3989->3990    2 rows: enc.SETNE, hex.SETNE.400f95848c08000000
+        in: Enc.of("SETNE", 3989, 0, True{}, 0, 0, 0),
+  L822 0->1    1 rows: enc.SETNE
+        in: Enc.of("SETNE", 3989, 0, True{}, 0, 0, 0),
+  L822 0->1    2 rows: enc.SETNE, hex.SETNE.400f95848c08000000
+        in: Enc.of("SETNE", 3989, 0, True{}, 0, 0, 0),
+  L823 211->212    2 rows: enc.SHL, hex.SHL.48d3e2
+        in: Enc.of("SHL", 211, 4, True{}, 0, 0, 0),
+  L823 4->5    1 rows: enc.SHL
+        in: Enc.of("SHL", 211, 4, True{}, 0, 0, 0),
+  L823 0->1    2 rows: enc.SHL, hex.SHL.48d3e2
+        in: Enc.of("SHL", 211, 4, True{}, 0, 0, 0),
+  L824 193->194    2 rows: enc.SHLi, hex.SHLi.48c1e2
+        in: Enc.of("SHLi", 193, 4, True{}, 0, 0, 0),
+  L824 4->5    1 rows: enc.SHLi
+        in: Enc.of("SHLi", 193, 4, True{}, 0, 0, 0),
+  L824 0->1    2 rows: enc.SHLi, hex.SHLi.48c1e2
+        in: Enc.of("SHLi", 193, 4, True{}, 0, 0, 0),
+  L825 211->212    2 rows: enc.SHR, hex.SHR.48d3ea
+        in: Enc.of("SHR", 211, 5, True{}, 0, 0, 0),
+  L825 5->6    1 rows: enc.SHR
+        in: Enc.of("SHR", 211, 5, True{}, 0, 0, 0),
+  L825 0->1    2 rows: enc.SHR, hex.SHR.48d3ea
+        in: Enc.of("SHR", 211, 5, True{}, 0, 0, 0),
+  L826 193->194    2 rows: enc.SHRi, hex.SHRi.48c1ea
+        in: Enc.of("SHRi", 193, 5, True{}, 0, 0, 0),
+  L826 5->6    1 rows: enc.SHRi
+        in: Enc.of("SHRi", 193, 5, True{}, 0, 0, 0),
+  L826 0->1    2 rows: enc.SHRi, hex.SHRi.48c1ea
+        in: Enc.of("SHRi", 193, 5, True{}, 0, 0, 0),
+  L827 43->44    2 rows: enc.SUB, hex.SUB.482bd5
+        in: Enc.of("SUB", 43, 0, False{}, 0, 0, 0),
+  L827 0->1    2 rows: enc.SUB, hex.SUB.482bd5
+        in: Enc.of("SUB", 43, 0, False{}, 0, 0, 0),
+  L828 129->130    2 rows: enc.SUBi, hex.SUBi.4881ea
+        in: Enc.of("SUBi", 129, 5, True{}, 0, 0, 0),
+  L828 5->6    1 rows: enc.SUBi
+        in: Enc.of("SUBi", 129, 5, True{}, 0, 0, 0),
+  L828 0->1    2 rows: enc.SUBi, hex.SUBi.4881ea
+        in: Enc.of("SUBi", 129, 5, True{}, 0, 0, 0),
+  L829 88->89    2 rows: enc.VADDSD, hex.VADDSD.c5f358c2
+        in: Enc.of("VADDSD", 88, 0, False{}, 3, 1, 0),
+  L829 3->4    2 rows: enc.VADDSD, hex.VADDSD.c5f358c2
+        in: Enc.of("VADDSD", 88, 0, False{}, 3, 1, 0),
+  L829 1->2    2 rows: enc.VADDSD, hex.VADDSD.c5f358c2
+        in: Enc.of("VADDSD", 88, 0, False{}, 3, 1, 0),
+  L829 0->1    2 rows: enc.VADDSD, hex.VADDSD.c5f358c2
+        in: Enc.of("VADDSD", 88, 0, False{}, 3, 1, 0),
+  L830 88->89    2 rows: enc.VADDSS, hex.VADDSS.c5f258c2
+        in: Enc.of("VADDSS", 88, 0, False{}, 2, 1, 0),
+  L830 2->3    2 rows: enc.VADDSS, hex.VADDSS.c5f258c2
+        in: Enc.of("VADDSS", 88, 0, False{}, 2, 1, 0),
+  L830 1->2    2 rows: enc.VADDSS, hex.VADDSS.c5f258c2
+        in: Enc.of("VADDSS", 88, 0, False{}, 2, 1, 0),
+  L830 0->1    2 rows: enc.VADDSS, hex.VADDSS.c5f258c2
+        in: Enc.of("VADDSS", 88, 0, False{}, 2, 1, 0),
+  L831 75->76    2 rows: enc.VBLENDVPD, hex.VBLENDVPD.c4e3714bc2
+        in: Enc.of("VBLENDVPD", 75, 0, False{}, 1, 3, 0),
+  L831 1->2    2 rows: enc.VBLENDVPD, hex.VBLENDVPD.c4e3714bc2
+        in: Enc.of("VBLENDVPD", 75, 0, False{}, 1, 3, 0),
+  L831 3->4    2 rows: enc.VBLENDVPD, hex.VBLENDVPD.c4e3714bc2
+        in: Enc.of("VBLENDVPD", 75, 0, False{}, 1, 3, 0),
+  L831 0->1    2 rows: enc.VBLENDVPD, hex.VBLENDVPD.c4e3714bc2
+        in: Enc.of("VBLENDVPD", 75, 0, False{}, 1, 3, 0),
+  L832 74->75    2 rows: enc.VBLENDVPS, hex.VBLENDVPS.c4e3714ac2
+        in: Enc.of("VBLENDVPS", 74, 0, False{}, 1, 3, 0),
+  L832 1->2    2 rows: enc.VBLENDVPS, hex.VBLENDVPS.c4e3714ac2
+        in: Enc.of("VBLENDVPS", 74, 0, False{}, 1, 3, 0),
+  L832 3->4    2 rows: enc.VBLENDVPS, hex.VBLENDVPS.c4e3714ac2
+        in: Enc.of("VBLENDVPS", 74, 0, False{}, 1, 3, 0),
+  L832 0->1    2 rows: enc.VBLENDVPS, hex.VBLENDVPS.c4e3714ac2
+        in: Enc.of("VBLENDVPS", 74, 0, False{}, 1, 3, 0),
+  L833 194->195    2 rows: enc.VCMPSD, hex.VCMPSD.c5f3c2c2
+        in: Enc.of("VCMPSD", 194, 0, False{}, 3, 1, 0),
+  L833 3->4    2 rows: enc.VCMPSD, hex.VCMPSD.c5f3c2c2
+        in: Enc.of("VCMPSD", 194, 0, False{}, 3, 1, 0),
+  L833 1->2    2 rows: enc.VCMPSD, hex.VCMPSD.c5f3c2c2
+        in: Enc.of("VCMPSD", 194, 0, False{}, 3, 1, 0),
+  L833 0->1    2 rows: enc.VCMPSD, hex.VCMPSD.c5f3c2c2
+        in: Enc.of("VCMPSD", 194, 0, False{}, 3, 1, 0),
+  L834 194->195    2 rows: enc.VCMPSS, hex.VCMPSS.c5f2c2c2
+        in: Enc.of("VCMPSS", 194, 0, False{}, 2, 1, 0),
+  L834 2->3    2 rows: enc.VCMPSS, hex.VCMPSS.c5f2c2c2
+        in: Enc.of("VCMPSS", 194, 0, False{}, 2, 1, 0),
+  L834 1->2    2 rows: enc.VCMPSS, hex.VCMPSS.c5f2c2c2
+        in: Enc.of("VCMPSS", 194, 0, False{}, 2, 1, 0),
+  L834 0->1    2 rows: enc.VCMPSS, hex.VCMPSS.c5f2c2c2
+        in: Enc.of("VCMPSS", 194, 0, False{}, 2, 1, 0),
+  L835 19->20    2 rows: enc.VCVTPH2PS, hex.VCVTPH2PS.c4e27913948c08000000
+        in: Enc.of("VCVTPH2PS", 19, 0, False{}, 1, 2, 0),
+  L835 1->2    2 rows: enc.VCVTPH2PS, hex.VCVTPH2PS.c4e27913948c08000000
+        in: Enc.of("VCVTPH2PS", 19, 0, False{}, 1, 2, 0),
+  L835 2->3    2 rows: enc.VCVTPH2PS, hex.VCVTPH2PS.c4e27913948c08000000
+        in: Enc.of("VCVTPH2PS", 19, 0, False{}, 1, 2, 0),
+  L835 0->1    2 rows: enc.VCVTPH2PS, hex.VCVTPH2PS.c4e27913948c08000000
+        in: Enc.of("VCVTPH2PS", 19, 0, False{}, 1, 2, 0),
+  L836 29->30    1 rows: enc.VCVTPS2PH
+        in: Enc.of("VCVTPS2PH", 29, 0, False{}, 1, 3, 0),
+  L836 1->2    1 rows: enc.VCVTPS2PH
+        in: Enc.of("VCVTPS2PH", 29, 0, False{}, 1, 3, 0),
+  L836 3->4    1 rows: enc.VCVTPS2PH
+        in: Enc.of("VCVTPS2PH", 29, 0, False{}, 1, 3, 0),
+  L836 0->1    1 rows: enc.VCVTPS2PH
+        in: Enc.of("VCVTPS2PH", 29, 0, False{}, 1, 3, 0),
+  L837 90->91    2 rows: enc.VCVTSD2SS, hex.VCVTSD2SS.c5f35ac2
+        in: Enc.of("VCVTSD2SS", 90, 0, False{}, 3, 1, 0),
+  L837 3->4    2 rows: enc.VCVTSD2SS, hex.VCVTSD2SS.c5f35ac2
+        in: Enc.of("VCVTSD2SS", 90, 0, False{}, 3, 1, 0),
+  L837 1->2    2 rows: enc.VCVTSD2SS, hex.VCVTSD2SS.c5f35ac2
+        in: Enc.of("VCVTSD2SS", 90, 0, False{}, 3, 1, 0),
+  L837 0->1    2 rows: enc.VCVTSD2SS, hex.VCVTSD2SS.c5f35ac2
+        in: Enc.of("VCVTSD2SS", 90, 0, False{}, 3, 1, 0),
+  L838 42->43    2 rows: enc.VCVTSI2SD, hex.VCVTSI2SD.c5f32ac2
+        in: Enc.of("VCVTSI2SD", 42, 0, False{}, 3, 1, 2),
+  L838 3->4    2 rows: enc.VCVTSI2SD, hex.VCVTSI2SD.c5f32ac2
+        in: Enc.of("VCVTSI2SD", 42, 0, False{}, 3, 1, 2),
+  L838 1->2    2 rows: enc.VCVTSI2SD, hex.VCVTSI2SD.c5f32ac2
+        in: Enc.of("VCVTSI2SD", 42, 0, False{}, 3, 1, 2),
+  L838 2->3    2 rows: enc.VCVTSI2SD, hex.VCVTSI2SD.c5f32ac2
+        in: Enc.of("VCVTSI2SD", 42, 0, False{}, 3, 1, 2),
+  L839 42->43    2 rows: enc.VCVTSI2SS, hex.VCVTSI2SS.c5f22ac2
+        in: Enc.of("VCVTSI2SS", 42, 0, False{}, 2, 1, 2),
+  L839 2->3    2 rows: enc.VCVTSI2SS, hex.VCVTSI2SS.c5f22ac2
+        in: Enc.of("VCVTSI2SS", 42, 0, False{}, 2, 1, 2),
+  L839 1->2    2 rows: enc.VCVTSI2SS, hex.VCVTSI2SS.c5f22ac2
+        in: Enc.of("VCVTSI2SS", 42, 0, False{}, 2, 1, 2),
+  L839 2->3    1 rows: enc.VCVTSI2SS
+        in: Enc.of("VCVTSI2SS", 42, 0, False{}, 2, 1, 2),
+  L840 90->91    2 rows: enc.VCVTSS2SD, hex.VCVTSS2SD.c5f25ac2
+        in: Enc.of("VCVTSS2SD", 90, 0, False{}, 2, 1, 0),
+  L840 2->3    2 rows: enc.VCVTSS2SD, hex.VCVTSS2SD.c5f25ac2
+        in: Enc.of("VCVTSS2SD", 90, 0, False{}, 2, 1, 0),
+  L840 1->2    2 rows: enc.VCVTSS2SD, hex.VCVTSS2SD.c5f25ac2
+        in: Enc.of("VCVTSS2SD", 90, 0, False{}, 2, 1, 0),
+  L840 0->1    2 rows: enc.VCVTSS2SD, hex.VCVTSS2SD.c5f25ac2
+        in: Enc.of("VCVTSS2SD", 90, 0, False{}, 2, 1, 0),
+  L841 44->45    2 rows: enc.VCVTTSD2SI, hex.VCVTTSD2SI.c5fb2c948c08000000
+        in: Enc.of("VCVTTSD2SI", 44, 0, False{}, 3, 1, 3),
+  L841 3->4    2 rows: enc.VCVTTSD2SI, hex.VCVTTSD2SI.c5fb2c948c08000000
+        in: Enc.of("VCVTTSD2SI", 44, 0, False{}, 3, 1, 3),
+  L841 1->2    2 rows: enc.VCVTTSD2SI, hex.VCVTTSD2SI.c5fb2c948c08000000
+        in: Enc.of("VCVTTSD2SI", 44, 0, False{}, 3, 1, 3),
+  L841 3->4    1 rows: enc.VCVTTSD2SI
+        in: Enc.of("VCVTTSD2SI", 44, 0, False{}, 3, 1, 3),
+  L842 44->45    2 rows: enc.VCVTTSS2SI, hex.VCVTTSS2SI.c5fa2c948c08000000
+        in: Enc.of("VCVTTSS2SI", 44, 0, False{}, 2, 1, 3),
+  L842 2->3    2 rows: enc.VCVTTSS2SI, hex.VCVTTSS2SI.c5fa2c948c08000000
+        in: Enc.of("VCVTTSS2SI", 44, 0, False{}, 2, 1, 3),
+  L842 1->2    2 rows: enc.VCVTTSS2SI, hex.VCVTTSS2SI.c5fa2c948c08000000
+        in: Enc.of("VCVTTSS2SI", 44, 0, False{}, 2, 1, 3),
+  L842 3->4    1 rows: enc.VCVTTSS2SI
+        in: Enc.of("VCVTTSS2SI", 44, 0, False{}, 2, 1, 3),
+  L843 94->95    2 rows: enc.VDIVSD, hex.VDIVSD.c5f35ec2
+        in: Enc.of("VDIVSD", 94, 0, False{}, 3, 1, 0),
+  L843 3->4    2 rows: enc.VDIVSD, hex.VDIVSD.c5f35ec2
+        in: Enc.of("VDIVSD", 94, 0, False{}, 3, 1, 0),
+  L843 1->2    2 rows: enc.VDIVSD, hex.VDIVSD.c5f35ec2
+        in: Enc.of("VDIVSD", 94, 0, False{}, 3, 1, 0),
+  L843 0->1    2 rows: enc.VDIVSD, hex.VDIVSD.c5f35ec2
+        in: Enc.of("VDIVSD", 94, 0, False{}, 3, 1, 0),
+  L844 94->95    2 rows: enc.VDIVSS, hex.VDIVSS.c5f25ec2
+        in: Enc.of("VDIVSS", 94, 0, False{}, 2, 1, 0),
+  L844 2->3    2 rows: enc.VDIVSS, hex.VDIVSS.c5f25ec2
+        in: Enc.of("VDIVSS", 94, 0, False{}, 2, 1, 0),
+  L844 1->2    2 rows: enc.VDIVSS, hex.VDIVSS.c5f25ec2
+        in: Enc.of("VDIVSS", 94, 0, False{}, 2, 1, 0),
+  L844 0->1    2 rows: enc.VDIVSS, hex.VDIVSS.c5f25ec2
+        in: Enc.of("VDIVSS", 94, 0, False{}, 2, 1, 0),
+  L845 33->34    2 rows: enc.VINSERTPS, hex.VINSERTPS.c4e37121c2
+        in: Enc.of("VINSERTPS", 33, 0, False{}, 1, 3, 0),
+  L845 1->2    2 rows: enc.VINSERTPS, hex.VINSERTPS.c4e37121c2
+        in: Enc.of("VINSERTPS", 33, 0, False{}, 1, 3, 0),
+  L845 3->4    2 rows: enc.VINSERTPS, hex.VINSERTPS.c4e37121c2
+        in: Enc.of("VINSERTPS", 33, 0, False{}, 1, 3, 0),
+  L845 0->1    2 rows: enc.VINSERTPS, hex.VINSERTPS.c4e37121c2
+        in: Enc.of("VINSERTPS", 33, 0, False{}, 1, 3, 0),
+  L846 110->111    2 rows: enc.VMOVD, hex.VMOVD.c5f96e948c08000000
+        in: Enc.of("VMOVD", 110, 0, False{}, 1, 1, 0),
+  L846 1->2    2 rows: enc.VMOVD, hex.VMOVD.c5f96e948c08000000
+        in: Enc.of("VMOVD", 110, 0, False{}, 1, 1, 0),
+  L846 1->2    2 rows: enc.VMOVD, hex.VMOVD.c5f96e948c08000000
+        in: Enc.of("VMOVD", 110, 0, False{}, 1, 1, 0),
+  L846 0->1    2 rows: enc.VMOVD, hex.VMOVD.c5f96e948c08000000
+        in: Enc.of("VMOVD", 110, 0, False{}, 1, 1, 0),
+  L847 126->127    1 rows: enc.VMOVDm
+        in: Enc.of("VMOVDm", 126, 0, False{}, 1, 1, 0),
+  L847 1->2    1 rows: enc.VMOVDm
+        in: Enc.of("VMOVDm", 126, 0, False{}, 1, 1, 0),
+  L847 1->2    1 rows: enc.VMOVDm
+        in: Enc.of("VMOVDm", 126, 0, False{}, 1, 1, 0),
+  L847 0->1    1 rows: enc.VMOVDm
+        in: Enc.of("VMOVDm", 126, 0, False{}, 1, 1, 0),
+  L848 110->111    2 rows: enc.VMOVQ, hex.VMOVQ.c4e1f96e948c08000000
+        in: Enc.of("VMOVQ", 110, 0, False{}, 1, 1, 1),
+  L848 1->2    2 rows: enc.VMOVQ, hex.VMOVQ.c4e1f96e948c08000000
+        in: Enc.of("VMOVQ", 110, 0, False{}, 1, 1, 1),
+  L848 1->2    2 rows: enc.VMOVQ, hex.VMOVQ.c4e1f96e948c08000000
+        in: Enc.of("VMOVQ", 110, 0, False{}, 1, 1, 1),
+  L848 1->2    2 rows: enc.VMOVQ, hex.VMOVQ.c4e1f96e948c08000000
+        in: Enc.of("VMOVQ", 110, 0, False{}, 1, 1, 1),
+  L849 126->127    1 rows: enc.VMOVQm
+        in: Enc.of("VMOVQm", 126, 0, False{}, 1, 1, 1),
+  L849 1->2    1 rows: enc.VMOVQm
+        in: Enc.of("VMOVQm", 126, 0, False{}, 1, 1, 1),
+  L849 1->2    1 rows: enc.VMOVQm
+        in: Enc.of("VMOVQm", 126, 0, False{}, 1, 1, 1),
+  L849 1->2    1 rows: enc.VMOVQm
+        in: Enc.of("VMOVQm", 126, 0, False{}, 1, 1, 1),
+  L850 16->17    2 rows: enc.VMOVSD, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.of("VMOVSD", 16, 0, False{}, 3, 1, 0),
+  L850 3->4    2 rows: enc.VMOVSD, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.of("VMOVSD", 16, 0, False{}, 3, 1, 0),
+  L850 1->2    2 rows: enc.VMOVSD, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.of("VMOVSD", 16, 0, False{}, 3, 1, 0),
+  L850 0->1    2 rows: enc.VMOVSD, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.of("VMOVSD", 16, 0, False{}, 3, 1, 0),
+  L851 17->18    2 rows: enc.VMOVSDm, hex.VMOVSDm.c5fb11948c08000000
+        in: Enc.of("VMOVSDm", 17, 0, False{}, 3, 1, 0),
+  L851 3->4    2 rows: enc.VMOVSDm, hex.VMOVSDm.c5fb11948c08000000
+        in: Enc.of("VMOVSDm", 17, 0, False{}, 3, 1, 0),
+  L851 1->2    2 rows: enc.VMOVSDm, hex.VMOVSDm.c5fb11948c08000000
+        in: Enc.of("VMOVSDm", 17, 0, False{}, 3, 1, 0),
+  L851 0->1    2 rows: enc.VMOVSDm, hex.VMOVSDm.c5fb11948c08000000
+        in: Enc.of("VMOVSDm", 17, 0, False{}, 3, 1, 0),
+  L852 16->17    2 rows: enc.VMOVSS, hex.VMOVSS.c5fa10948c08000000
+        in: Enc.of("VMOVSS", 16, 0, False{}, 2, 1, 0),
+  L852 2->3    2 rows: enc.VMOVSS, hex.VMOVSS.c5fa10948c08000000
+        in: Enc.of("VMOVSS", 16, 0, False{}, 2, 1, 0),
+  L852 1->2    2 rows: enc.VMOVSS, hex.VMOVSS.c5fa10948c08000000
+        in: Enc.of("VMOVSS", 16, 0, False{}, 2, 1, 0),
+  L852 0->1    2 rows: enc.VMOVSS, hex.VMOVSS.c5fa10948c08000000
+        in: Enc.of("VMOVSS", 16, 0, False{}, 2, 1, 0),
+  L853 17->18    2 rows: enc.VMOVSSm, hex.VMOVSSm.c5fa11948c08000000
+        in: Enc.of("VMOVSSm", 17, 0, False{}, 2, 1, 0),
+  L853 2->3    2 rows: enc.VMOVSSm, hex.VMOVSSm.c5fa11948c08000000
+        in: Enc.of("VMOVSSm", 17, 0, False{}, 2, 1, 0),
+  L853 1->2    2 rows: enc.VMOVSSm, hex.VMOVSSm.c5fa11948c08000000
+        in: Enc.of("VMOVSSm", 17, 0, False{}, 2, 1, 0),
+  L853 0->1    2 rows: enc.VMOVSSm, hex.VMOVSSm.c5fa11948c08000000
+        in: Enc.of("VMOVSSm", 17, 0, False{}, 2, 1, 0),
+  L854 16->17    2 rows: enc.VMOVUPS, hex.VMOVUPS.c5f810948c08000000
+        in: Enc.of("VMOVUPS", 16, 0, False{}, 0, 1, 0),
+  L854 0->1    2 rows: enc.VMOVUPS, hex.VMOVUPS.c5f810948c08000000
+        in: Enc.of("VMOVUPS", 16, 0, False{}, 0, 1, 0),
+  L854 1->2    2 rows: enc.VMOVUPS, hex.VMOVUPS.c5f810948c08000000
+        in: Enc.of("VMOVUPS", 16, 0, False{}, 0, 1, 0),
+  L854 0->1    2 rows: enc.VMOVUPS, hex.VMOVUPS.c5f810948c08000000
+        in: Enc.of("VMOVUPS", 16, 0, False{}, 0, 1, 0),
+  L855 17->18    2 rows: enc.VMOVUPSm, hex.VMOVUPSm.c5f811948c08000000
+        in: Enc.of("VMOVUPSm", 17, 0, False{}, 0, 1, 0),
+  L855 0->1    2 rows: enc.VMOVUPSm, hex.VMOVUPSm.c5f811948c08000000
+        in: Enc.of("VMOVUPSm", 17, 0, False{}, 0, 1, 0),
+  L855 1->2    2 rows: enc.VMOVUPSm, hex.VMOVUPSm.c5f811948c08000000
+        in: Enc.of("VMOVUPSm", 17, 0, False{}, 0, 1, 0),
+  L855 0->1    2 rows: enc.VMOVUPSm, hex.VMOVUPSm.c5f811948c08000000
+        in: Enc.of("VMOVUPSm", 17, 0, False{}, 0, 1, 0),
+  L856 89->90    2 rows: enc.VMULSD, hex.VMULSD.c5f359c2
+        in: Enc.of("VMULSD", 89, 0, False{}, 3, 1, 0),
+  L856 3->4    2 rows: enc.VMULSD, hex.VMULSD.c5f359c2
+        in: Enc.of("VMULSD", 89, 0, False{}, 3, 1, 0),
+  L856 1->2    2 rows: enc.VMULSD, hex.VMULSD.c5f359c2
+        in: Enc.of("VMULSD", 89, 0, False{}, 3, 1, 0),
+  L856 0->1    2 rows: enc.VMULSD, hex.VMULSD.c5f359c2
+        in: Enc.of("VMULSD", 89, 0, False{}, 3, 1, 0),
+  L857 89->90    2 rows: enc.VMULSS, hex.VMULSS.c5f259c2
+        in: Enc.of("VMULSS", 89, 0, False{}, 2, 1, 0),
+  L857 2->3    2 rows: enc.VMULSS, hex.VMULSS.c5f259c2
+        in: Enc.of("VMULSS", 89, 0, False{}, 2, 1, 0),
+  L857 1->2    2 rows: enc.VMULSS, hex.VMULSS.c5f259c2
+        in: Enc.of("VMULSS", 89, 0, False{}, 2, 1, 0),
+  L857 0->1    2 rows: enc.VMULSS, hex.VMULSS.c5f259c2
+        in: Enc.of("VMULSS", 89, 0, False{}, 2, 1, 0),
+  L858 22->23    2 rows: enc.VPEXTRD, hex.VPEXTRD.c4e37916948c08000000
+        in: Enc.of("VPEXTRD", 22, 0, False{}, 1, 3, 0),
+  L858 1->2    2 rows: enc.VPEXTRD, hex.VPEXTRD.c4e37916948c08000000
+        in: Enc.of("VPEXTRD", 22, 0, False{}, 1, 3, 0),
+  L858 3->4    2 rows: enc.VPEXTRD, hex.VPEXTRD.c4e37916948c08000000
+        in: Enc.of("VPEXTRD", 22, 0, False{}, 1, 3, 0),
+  L858 0->1    2 rows: enc.VPEXTRD, hex.VPEXTRD.c4e37916948c08000000
+        in: Enc.of("VPEXTRD", 22, 0, False{}, 1, 3, 0),
+  L859 21->22    2 rows: enc.VPEXTRW, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.of("VPEXTRW", 21, 0, False{}, 1, 3, 0),
+  L859 1->2    2 rows: enc.VPEXTRW, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.of("VPEXTRW", 21, 0, False{}, 1, 3, 0),
+  L859 3->4    2 rows: enc.VPEXTRW, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.of("VPEXTRW", 21, 0, False{}, 1, 3, 0),
+  L859 0->1    2 rows: enc.VPEXTRW, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.of("VPEXTRW", 21, 0, False{}, 1, 3, 0),
+  L860 34->35    2 rows: enc.VPINSRD, hex.VPINSRD.c4e37122c2
+        in: Enc.of("VPINSRD", 34, 0, False{}, 1, 3, 0),
+  L860 1->2    2 rows: enc.VPINSRD, hex.VPINSRD.c4e37122c2
+        in: Enc.of("VPINSRD", 34, 0, False{}, 1, 3, 0),
+  L860 3->4    2 rows: enc.VPINSRD, hex.VPINSRD.c4e37122c2
+        in: Enc.of("VPINSRD", 34, 0, False{}, 1, 3, 0),
+  L860 0->1    2 rows: enc.VPINSRD, hex.VPINSRD.c4e37122c2
+        in: Enc.of("VPINSRD", 34, 0, False{}, 1, 3, 0),
+  L861 196->197    2 rows: enc.VPINSRW, hex.VPINSRW.c5f1c4c2
+        in: Enc.of("VPINSRW", 196, 0, False{}, 1, 1, 0),
+  L861 1->2    2 rows: enc.VPINSRW, hex.VPINSRW.c5f1c4c2
+        in: Enc.of("VPINSRW", 196, 0, False{}, 1, 1, 0),
+  L861 1->2    2 rows: enc.VPINSRW, hex.VPINSRW.c5f1c4c2
+        in: Enc.of("VPINSRW", 196, 0, False{}, 1, 1, 0),
+  L861 0->1    2 rows: enc.VPINSRW, hex.VPINSRW.c5f1c4c2
+        in: Enc.of("VPINSRW", 196, 0, False{}, 1, 1, 0),
+  L862 115->116    2 rows: enc.VPSRLDQ, hex.VPSRLDQ.c5e9739c8c08000000
+        in: Enc.of("VPSRLDQ", 115, 3, True{}, 1, 1, 0),
+  L862 3->4    1 rows: enc.VPSRLDQ
+        in: Enc.of("VPSRLDQ", 115, 3, True{}, 1, 1, 0),
+  L862 1->2    2 rows: enc.VPSRLDQ, hex.VPSRLDQ.c5e9739c8c08000000
+        in: Enc.of("VPSRLDQ", 115, 3, True{}, 1, 1, 0),
+  L862 1->2    2 rows: enc.VPSRLDQ, hex.VPSRLDQ.c5e9739c8c08000000
+        in: Enc.of("VPSRLDQ", 115, 3, True{}, 1, 1, 0),
+  L862 0->1    2 rows: enc.VPSRLDQ, hex.VPSRLDQ.c5e9739c8c08000000
+        in: Enc.of("VPSRLDQ", 115, 3, True{}, 1, 1, 0),
+  L863 11->12    2 rows: enc.VROUNDSD, hex.VROUNDSD.c4e3710bc2
+        in: Enc.of("VROUNDSD", 11, 0, False{}, 1, 3, 0),
+  L863 1->2    2 rows: enc.VROUNDSD, hex.VROUNDSD.c4e3710bc2
+        in: Enc.of("VROUNDSD", 11, 0, False{}, 1, 3, 0),
+  L863 3->4    2 rows: enc.VROUNDSD, hex.VROUNDSD.c4e3710bc2
+        in: Enc.of("VROUNDSD", 11, 0, False{}, 1, 3, 0),
+  L863 0->1    2 rows: enc.VROUNDSD, hex.VROUNDSD.c4e3710bc2
+        in: Enc.of("VROUNDSD", 11, 0, False{}, 1, 3, 0),
+  L864 10->11    2 rows: enc.VROUNDSS, hex.VROUNDSS.c4e3710ac2
+        in: Enc.of("VROUNDSS", 10, 0, False{}, 1, 3, 0),
+  L864 1->2    2 rows: enc.VROUNDSS, hex.VROUNDSS.c4e3710ac2
+        in: Enc.of("VROUNDSS", 10, 0, False{}, 1, 3, 0),
+  L864 3->4    2 rows: enc.VROUNDSS, hex.VROUNDSS.c4e3710ac2
+        in: Enc.of("VROUNDSS", 10, 0, False{}, 1, 3, 0),
+  L864 0->1    2 rows: enc.VROUNDSS, hex.VROUNDSS.c4e3710ac2
+        in: Enc.of("VROUNDSS", 10, 0, False{}, 1, 3, 0),
+  L865 81->82    2 rows: enc.VSQRTSD, hex.VSQRTSD.c5f351c2
+        in: Enc.of("VSQRTSD", 81, 0, False{}, 3, 1, 0),
+  L865 3->4    2 rows: enc.VSQRTSD, hex.VSQRTSD.c5f351c2
+        in: Enc.of("VSQRTSD", 81, 0, False{}, 3, 1, 0),
+  L865 1->2    2 rows: enc.VSQRTSD, hex.VSQRTSD.c5f351c2
+        in: Enc.of("VSQRTSD", 81, 0, False{}, 3, 1, 0),
+  L865 0->1    2 rows: enc.VSQRTSD, hex.VSQRTSD.c5f351c2
+        in: Enc.of("VSQRTSD", 81, 0, False{}, 3, 1, 0),
+  L866 81->82    2 rows: enc.VSQRTSS, hex.VSQRTSS.c5f251c2
+        in: Enc.of("VSQRTSS", 81, 0, False{}, 2, 1, 0),
+  L866 2->3    2 rows: enc.VSQRTSS, hex.VSQRTSS.c5f251c2
+        in: Enc.of("VSQRTSS", 81, 0, False{}, 2, 1, 0),
+  L866 1->2    2 rows: enc.VSQRTSS, hex.VSQRTSS.c5f251c2
+        in: Enc.of("VSQRTSS", 81, 0, False{}, 2, 1, 0),
+  L866 0->1    2 rows: enc.VSQRTSS, hex.VSQRTSS.c5f251c2
+        in: Enc.of("VSQRTSS", 81, 0, False{}, 2, 1, 0),
+  L867 92->93    2 rows: enc.VSUBSD, hex.VSUBSD.c5f35cc2
+        in: Enc.of("VSUBSD", 92, 0, False{}, 3, 1, 0),
+  L867 3->4    2 rows: enc.VSUBSD, hex.VSUBSD.c5f35cc2
+        in: Enc.of("VSUBSD", 92, 0, False{}, 3, 1, 0),
+  L867 1->2    2 rows: enc.VSUBSD, hex.VSUBSD.c5f35cc2
+        in: Enc.of("VSUBSD", 92, 0, False{}, 3, 1, 0),
+  L867 0->1    2 rows: enc.VSUBSD, hex.VSUBSD.c5f35cc2
+        in: Enc.of("VSUBSD", 92, 0, False{}, 3, 1, 0),
+  L868 92->93    2 rows: enc.VSUBSS, hex.VSUBSS.c5f25cc2
+        in: Enc.of("VSUBSS", 92, 0, False{}, 2, 1, 0),
+  L868 2->3    2 rows: enc.VSUBSS, hex.VSUBSS.c5f25cc2
+        in: Enc.of("VSUBSS", 92, 0, False{}, 2, 1, 0),
+  L868 1->2    2 rows: enc.VSUBSS, hex.VSUBSS.c5f25cc2
+        in: Enc.of("VSUBSS", 92, 0, False{}, 2, 1, 0),
+  L868 0->1    2 rows: enc.VSUBSS, hex.VSUBSS.c5f25cc2
+        in: Enc.of("VSUBSS", 92, 0, False{}, 2, 1, 0),
+  L869 51->52    2 rows: enc.XOR, hex.XOR.4833d5
+        in: Enc.of("XOR", 51, 0, False{}, 0, 0, 0),
+  L869 0->1    2 rows: enc.XOR, hex.XOR.4833d5
+        in: Enc.of("XOR", 51, 0, False{}, 0, 0, 0),
+  L870 129->130    2 rows: enc.XORi, hex.XORi.4881f2
+        in: Enc.of("XORi", 129, 6, True{}, 0, 0, 0),
+  L870 6->7    1 rows: enc.XORi
+        in: Enc.of("XORi", 129, 6, True{}, 0, 0, 0),
+  L870 0->1    2 rows: enc.XORi, hex.XORi.4881f2
+        in: Enc.of("XORi", 129, 6, True{}, 0, 0, 0),
+  L873 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def enc_find.go(+es: List<&2, Enc>, +nm: String) -> Enc:
+  L891 233->234    1 rows: direct.JMP.e900000000
+        in: case "JMP": 233
+  L892 15->16    5 rows: direct.JE.0f8400000000, direct.JNE.0f8500000000, direct.JL.0f8c00000000, direct.JB.0f8200000000, direct.JGE.0f8d00000000
+        in: case _: 15
+  L899 132->133    1 rows: direct.JE.0f8400000000
+        in: case "JE": 132
+  L900 133->134    1 rows: direct.JNE.0f8500000000
+        in: case "JNE": 133
+  L901 140->141    1 rows: direct.JL.0f8c00000000
+        in: case "JL": 140
+  L902 130->131    1 rows: direct.JB.0f8200000000
+        in: case "JB": 130
+  L903 141->142    1 rows: direct.JGE.0f8d00000000
+        in: case "JGE": 141
+  L906 0->1   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: def Enc.disp_arm(+disp_sz: U32) -> U32: Bool.pick(U32, U32.is_eq(disp_
+  L908 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.disp_bytes.of(+disp_val: U32, +arm: U32) -> List<&2, U32>:
+  L915 255->256   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: case _: [U32.and(disp_val, 255), U32.and(U32.shrn(disp_val, 8n), 255),
+  L918 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.disp_bytes(+disp_val: U32, +disp_sz: U32) -> List<&2, U32>: En
+  L926 8n->9n    5 rows: direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000
+        in: def Enc.imm_byte(+imm: U32, +i: Nat) -> U32: U32.and(U32.shrn(imm, Nat
+  L926 255->256    6 rows: direct.MOVABS 0.48b83412000000000000, direct.MOVABS 1.48b93412000000000000, direct.MOVABS 7.48bf3412000000000000, direct.MOVABS 8.49b83412000000000000, direct.MOVABS 15.49bf3412000000000000, hex.IMULi.4869d103000000
+        in: def Enc.imm_byte(+imm: U32, +i: Nat) -> U32: U32.and(U32.shrn(imm, Nat
+  L934 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.imm_int(+k: Nat, +n: Nat, +imm: U32) -> List<&2, U32>:
+  L944 0n->1n    1 rows: <FILE DID NOT COMPILE>
+        in: case 0n: Nil{}
+  L945 1n->2n    1 rows: <FILE DID NOT COMPILE>
+        in: case 1n+p: List.append(&2, U32, [Enc.imm_byte(imm, Nat.sub(n, k))], En
+  L945 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: case 1n+p: List.append(&2, U32, [Enc.imm_byte(imm, Nat.sub(n, k))], En
+  L953 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat(+a: List<&2, U32>, +b: List<&2, U32>) -> List<&2, U32>:
+  L953 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat(+a: List<&2, U32>, +b: List<&2, U32>) -> List<&2, U32>:
+  L953 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat(+a: List<&2, U32>, +b: List<&2, U32>) -> List<&2, U32>:
+  L954 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.concat(&2, U32, [a, b])
+  L956 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat3(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>) 
+  L956 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat3(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>) 
+  L956 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat3(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>) 
+  L956 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.cat3(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>) 
+  L957 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: List.concat(&2, U32, [a, b, c])
+  L965 0->1   35 rows (+29 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000
+        in: def Enc.pick3(+bit: Bool, +w: U32) -> U32: Bool.pick(U32, bit, w, 0)
+  L971 1->2   37 rows (+31 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: def Enc.b1(+v: U32) -> U32: Bool.pick(U32, U32.is_lt(v, 1), 1, 0)
+  L973 15->16   37 rows (+31 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: def Enc.b4(+v: U32) -> U32: U32.sub(15, v)
+  L975 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.vex_bytes(+small: Bool, +r: U32, +x: U32, +b: U32, +vvvv: U32,
+  L981 197->198   27 rows (+21 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: case True{}: [197, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b4(vvvv
+  L981 7n->8n   27 rows (+21 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: case True{}: [197, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b4(vvvv
+  L981 3n->4n   27 rows (+21 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: case True{}: [197, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b4(vvvv
+  L981 0->1   13 rows (+7 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVUPSm.c5f811948c08000000, hex.VCVTSS2SD.c5f25ac2, hex.VCVTSI2SS.c5f22ac2
+        in: case True{}: [197, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b4(vvvv
+  L982 196->197   10 rows (+4 more): hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2, hex.VPEXTRW.c4e37915948c08000000
+        in: case False{}: [196, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b1(x),
+  L982 7n->8n   10 rows (+4 more): hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2, hex.VPEXTRW.c4e37915948c08000000
+        in: case False{}: [196, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b1(x),
+  L982 6n->7n   10 rows (+4 more): hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2, hex.VPEXTRW.c4e37915948c08000000
+        in: case False{}: [196, Enc.or4(Enc.shl(Enc.b1(r), 7n), Enc.shl(Enc.b1(x),
+  L983 5n->6n   10 rows (+4 more): hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.shl(Enc.b1(b), 5n), sel),
+  L984 7n->8n    1 rows: hex.VMOVQ.c4e1f96e948c08000000
+        in: Enc.or4(Enc.shl(we, 7n), Enc.shl(Enc.b4(vvvv), 3n), pp, 0)]
+  L984 3n->4n   10 rows (+4 more): hex.VCVTPH2PS.c4e27913948c08000000, hex.VMOVQ.c4e1f96e948c08000000, hex.VBLENDVPS.c4e3714ac2, hex.VBLENDVPD.c4e3714bc2, hex.VINSERTPS.c4e37121c2, hex.VPEXTRW.c4e37915948c08000000
+        in: Enc.or4(Enc.shl(we, 7n), Enc.shl(Enc.b4(vvvv), 3n), pp, 0)]
+  L988 0->1   37 rows (+31 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000
+        in: def Enc.arm16(+sz: U32) -> U32: Bool.pick(U32, U32.is_eq(sz, 2), 1, 0)
+  L990 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.prefix_byte.of(+sz: U32, +arm: U32) -> List<&2, U32>:
+  L1003 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.prefix_byte(+sz: U32) -> List<&2, U32>: Enc.prefix_byte.of(sz,
+  L1032 2n->3n    1 rows: hex.CMPi.81bc8c08000000
+        in: U32.is_eq(sz, U32.and(U32.shrn(r, 2n), 1))
+  L1032 1->2    1 rows: hex.CMPi.81bc8c08000000
+        in: U32.is_eq(sz, U32.and(U32.shrn(r, 2n), 1))
+  L1044 1->2   11 rows (+5 more): hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.SETNE.400f95848c08000000, hex.SETE.400f94848c08000000, hex.SETL.400f9c848c08000000, hex.SETB.400f92848c08000000
+        in: def Enc.opc_arm(+opc: U32) -> U32: Bool.pick(U32, U32.is_gt(opc, 255),
+  L1044 0->1   63 rows (+57 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: def Enc.opc_arm(+opc: U32) -> U32: Bool.pick(U32, U32.is_gt(opc, 255),
+  L1046 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.opcode_bytes.of(+opc: U32, +arm: U32) -> List<&2, U32>:
+  L1052 1->2   11 rows (+5 more): hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.SETNE.400f95848c08000000, hex.SETE.400f94848c08000000, hex.SETL.400f9c848c08000000, hex.SETB.400f92848c08000000
+        in: case 1: [U32.shrn(opc, 8n), U32.and(opc, 255)]
+  L1052 8n->9n   11 rows (+5 more): hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.SETNE.400f95848c08000000, hex.SETE.400f94848c08000000, hex.SETL.400f9c848c08000000, hex.SETB.400f92848c08000000
+        in: case 1: [U32.shrn(opc, 8n), U32.and(opc, 255)]
+  L1052 255->256   11 rows (+5 more): hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.SETNE.400f95848c08000000, hex.SETE.400f94848c08000000, hex.SETL.400f9c848c08000000, hex.SETB.400f92848c08000000
+        in: case 1: [U32.shrn(opc, 8n), U32.and(opc, 255)]
+  L1055 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.opcode_bytes(+opc: U32) -> List<&2, U32>: Enc.opcode_bytes.of(
+  L1064 2->3   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Bool.pick(U32, U32.is_eq(disp_sz, 1), 1, 2), 0)
+  L1065 3->4   48 rows (+42 more): hex.VCVTSS2SD.c5f25ac2, hex.VCVTSD2SS.c5f35ac2, hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2, hex.VCMPSS.c5f2c2c2, hex.VCMPSD.c5f3c2c2
+        in: case False{}: 3
+  L1070 4->5   48 rows (+42 more): hex.VCVTSS2SD.c5f25ac2, hex.VCVTSD2SS.c5f35ac2, hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2, hex.VCMPSS.c5f2c2c2, hex.VCMPSD.c5f3c2c2
+        in: Bool.and(U32.is_eq(idx3, 4), U32.is_zero(x))
+  L1077 4->5   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: case False{}: 4
+  L1082 6n->7n   74 rows (+68 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.or4(Enc.shl(mod, 6n), Enc.shl(reg3, 3n), rm_field, 0)
+  L1082 3n->4n   45 rows (+39 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000
+        in: Enc.or4(Enc.shl(mod, 6n), Enc.shl(reg3, 3n), rm_field, 0)
+  L1082 0->1   61 rows (+55 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.or4(Enc.shl(mod, 6n), Enc.shl(reg3, 3n), rm_field, 0)
+  L1092 4->5   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: case 4: 2
+  L1092 2->3   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: case 4: 2
+  L1108 6n->7n   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.or4(Enc.shl(scale, 6n), Enc.shl(idx3, 3n), rm3, 0)
+  L1108 3n->4n   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.or4(Enc.shl(scale, 6n), Enc.shl(idx3, 3n), rm3, 0)
+  L1108 0->1   26 rows (+20 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Enc.or4(Enc.shl(scale, 6n), Enc.shl(idx3, 3n), rm3, 0)
+  L1112 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.legacy_head.of(+pfx: List<&2, U32>, +need: Bool, +rex: U32) ->
+  L1112 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.legacy_head.of(+pfx: List<&2, U32>, +need: Bool, +rex: U32) ->
+  L1129 64->65   35 rows (+29 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000
+        in: Enc.or4(64, Enc.pick3(w, 8), Enc.pick3(Enc.gt0(r), 4), Enc.or2(Enc.pic
+  L1129 8->9   30 rows (+24 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.MOVSXD.4863948c08000000
+        in: Enc.or4(64, Enc.pick3(w, 8), Enc.pick3(Enc.gt0(r), 4), Enc.or2(Enc.pic
+  L1133 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.legacy_head(+nm: String, +r: U32, +x: U32, +b: U32, +sz: U32, 
+  L1135 8->9   28 rows (+22 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.MOVSXD.4863948c08000000
+        in: Enc.needs_rex(U32.is_eq(sz, 8), r, x, b, reg_sz, reg, rm_sz, rm,
+  L1137 8->9   31 rows (+25 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVZX.480fb7948c08000000, hex.MOVSX.480fbf948c08000000, hex.MOVSXD.4863948c08000000
+        in: Enc.rex_byte(U32.is_eq(sz, 8), r, x, b))
+  L1158 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.emit.head.of(+sel: U32, +nm: String, +reg: U32, +rm: U32, +idx
+  L1165 0->1   65 rows (+59 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: case 0: Enc.legacy_head(nm, r, x, b, sz, rm, reg, rm_sz, reg_sz, has_d
+  L1166 1->2   28 rows (+22 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: case _: Enc.vex_bytes(Bool.pick(Bool, Bool.and(U32.is_eq(sel, 1), Bool
+  L1178 0->1   74 rows (+68 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.MOVi.40c7848c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000
+        in: Bool.pick(U32, Enc.demote_of(rm_sz, reg_sz, no_demote), 1, 0))
+  L1194 1->2    3 rows: hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2, hex.VMOVQ.c4e1f96e948c08000000
+        in: case 1: 1
+  L1194 1->2    1 rows: hex.VMOVQ.c4e1f96e948c08000000
+        in: case 1: 1
+  L1195 0->1    2 rows: hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2
+        in: case 2: Bool.pick(U32, U32.is_eq(src1sz, 8), 1, 0)
+  L1196 0->1    2 rows: hex.VCVTTSS2SI.c5fa2c948c08000000, hex.VCVTTSD2SI.c5fb2c948c08000000
+        in: case 3: Bool.pick(U32, U32.is_eq(xsz, 8), 1, 0)
+  L1197 0->1   32 rows (+26 more): hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000, hex.VMOVSSm.c5fa11948c08000000, hex.VMOVSDm.c5fb11948c08000000, hex.VMOVUPSm.c5f811948c08000000
+        in: case _: 0
+  L1202 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.emit.head(+nm: String, +reg: U32, +rm: U32, +idx: U32, +rm_sz:
+  L1204 3n->4n    1 rows: hex.CMP.493bd6
+        in: no_demote, U32.shrn(reg, 3n), U32.shrn(idx, 3n), U32.shrn(rm, 3n),
+  L1207 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.sib_field.of(+noidx: Bool, +idx3: U32, +rm3: U32, +rm_sz: U32,
+  L1216 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.sib_field(+has_disp: Bool, +mod: U32, +noidx: Bool, +idx3: U32
+  L1219 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.imm_bytes(+kind: U32, +n: Nat, +imm: U32) -> List<&2, U32>:
+  L1226 1->2    1 rows: hex.IMULi.4869d103000000
+        in: case 1: Enc.imm_int(n, n, imm)
+  L1235 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.tail_bytes.of(+want: Bool, +dsp: List<&2, U32>) -> List<&2, U3
+  L1235 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.tail_bytes.of(+want: Bool, +dsp: List<&2, U32>) -> List<&2, U3
+  L1240 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.tail_bytes(+mod: U32, +has_disp: Bool, +disp_val: U32, +disp_s
+  L1245 3->4   48 rows (+42 more): hex.VCVTSS2SD.c5f25ac2, hex.VCVTSD2SS.c5f35ac2, hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2, hex.VCMPSS.c5f2c2c2, hex.VCMPSD.c5f3c2c2
+        in: Enc.tail_bytes.of(U32.is_lt(mod, 3), Enc.disp_bytes(disp_val, disp_sz)
+  L1255 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.emit.tail.of(+head: List<&2, U32>, +opcs: List<&2, U32>, +reg:
+  L1255 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: def Enc.emit.tail.of(+head: List<&2, U32>, +opcs: List<&2, U32>, +reg:
+  L1257 2->3    1 rows: <FILE DID NOT COMPILE>
+        in: +imm: U32, +mod: U32) -> List<&2, U32>:
+  L1265 7->8   45 rows (+39 more): hex.LEA.488d948c08000000, hex.MOV.488b948c08000000, hex.MOVm.4889948c08000000, hex.VMOVSS.c5fa10948c08000000, hex.VMOVSD.c5fb10948c08000000, hex.VMOVUPS.c5f810948c08000000
+        in: [Enc.modrm_byte(mod, U32.and(reg, 7), Enc.rm3(U32.and(idx, 7), U32.shr
+  L1265 7->8   48 rows (+42 more): hex.VCVTSS2SD.c5f25ac2, hex.VCVTSD2SS.c5f35ac2, hex.VCVTSI2SS.c5f22ac2, hex.VCVTSI2SD.c5f32ac2, hex.VCMPSS.c5f2c2c2, hex.VCMPSD.c5f3c2c2
+        in: [Enc.modrm_byte(mod, U32.and(reg, 7), Enc.rm3(U32.and(idx, 7), U32.shr
+--- BLIND (no row moved)
+  L318 0->1  in: case 0: True{}
+  L319 1->2  in: case 1: True{}
+  L320 2->3  in: case 2: True{}
+  L321 3->4  in: case 3: True{}
+  L326 1n->2n  in: String.take(Reg.tail(i), 1n)
+  L443 99->100  in: case Nil{}: Reg.of("?", 99, 0, "?", "?", "?")
+  L443 0->1  in: case Nil{}: Reg.of("?", 99, 0, "?", "?", "?")
+  L450 99->100  in: case Nil{}: Reg.of("?", 99, 0, "?", "?", "?")
+  L450 0->1  in: case Nil{}: Reg.of("?", 99, 0, "?", "?", "?")
+  L463 99->100  in: case None{}: 99
+  L468 0->1  in: case None{}: 0
+  L610 0->1  in: def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
+  L610 0->1  in: def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
+  L610 0->1  in: def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
+  L610 0->1  in: def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
+  L610 0->1  in: def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
+  L645 0->1  in: def Op.in_(+nm: String, +which: U32) -> Bool: Op.in_.go(nm, which, 0)
+  L703 0->1  in: def Op.set_names(+which: U32) -> List<&2, String>: Op.set_names.go(op_
+  L794 0->1  in: Enc.of("ADD", 3, 0, False{}, 0, 0, 0),
+  L794 0->1  in: Enc.of("ADD", 3, 0, False{}, 0, 0, 0),
+  L794 0->1  in: Enc.of("ADD", 3, 0, False{}, 0, 0, 0),
+  L795 0->1  in: Enc.of("ADDi", 129, 0, True{}, 0, 0, 0),
+  L795 0->1  in: Enc.of("ADDi", 129, 0, True{}, 0, 0, 0),
+  L796 0->1  in: Enc.of("AND", 35, 0, False{}, 0, 0, 0),
+  L796 0->1  in: Enc.of("AND", 35, 0, False{}, 0, 0, 0),
+  L796 0->1  in: Enc.of("AND", 35, 0, False{}, 0, 0, 0),
+  L797 0->1  in: Enc.of("ANDi", 129, 4, True{}, 0, 0, 0),
+  L797 0->1  in: Enc.of("ANDi", 129, 4, True{}, 0, 0, 0),
+  L798 0->1  in: Enc.of("CMOVB", 3906, 0, False{}, 0, 0, 0),
+  L798 0->1  in: Enc.of("CMOVB", 3906, 0, False{}, 0, 0, 0),
+  L798 0->1  in: Enc.of("CMOVB", 3906, 0, False{}, 0, 0, 0),
+  L799 0->1  in: Enc.of("CMOVE", 3908, 0, False{}, 0, 0, 0),
+  L799 0->1  in: Enc.of("CMOVE", 3908, 0, False{}, 0, 0, 0),
+  L799 0->1  in: Enc.of("CMOVE", 3908, 0, False{}, 0, 0, 0),
+  L800 0->1  in: Enc.of("CMOVL", 3916, 0, False{}, 0, 0, 0),
+  L800 0->1  in: Enc.of("CMOVL", 3916, 0, False{}, 0, 0, 0),
+  L800 0->1  in: Enc.of("CMOVL", 3916, 0, False{}, 0, 0, 0),
+  L801 0->1  in: Enc.of("CMOVNE", 3909, 0, False{}, 0, 0, 0),
+  L801 0->1  in: Enc.of("CMOVNE", 3909, 0, False{}, 0, 0, 0),
+  L801 0->1  in: Enc.of("CMOVNE", 3909, 0, False{}, 0, 0, 0),
+  L802 0->1  in: Enc.of("CMP", 59, 0, False{}, 0, 0, 0),
+  L802 0->1  in: Enc.of("CMP", 59, 0, False{}, 0, 0, 0),
+  L802 0->1  in: Enc.of("CMP", 59, 0, False{}, 0, 0, 0),
+  L803 0->1  in: Enc.of("CMPi", 129, 7, True{}, 0, 0, 0),
+  L803 0->1  in: Enc.of("CMPi", 129, 7, True{}, 0, 0, 0),
+  L804 0->1  in: Enc.of("DIV", 247, 6, True{}, 0, 0, 0),
+  L804 0->1  in: Enc.of("DIV", 247, 6, True{}, 0, 0, 0),
+  L805 0->1  in: Enc.of("IDIV", 247, 7, True{}, 0, 0, 0),
+  L805 0->1  in: Enc.of("IDIV", 247, 7, True{}, 0, 0, 0),
+  L806 0->1  in: Enc.of("IMUL", 4015, 0, False{}, 0, 0, 0),
+  L806 0->1  in: Enc.of("IMUL", 4015, 0, False{}, 0, 0, 0),
+  L806 0->1  in: Enc.of("IMUL", 4015, 0, False{}, 0, 0, 0),
+  L807 0->1  in: Enc.of("IMULi", 105, 0, False{}, 0, 0, 0),
+  L807 0->1  in: Enc.of("IMULi", 105, 0, False{}, 0, 0, 0),
+  L807 0->1  in: Enc.of("IMULi", 105, 0, False{}, 0, 0, 0),
+  L808 0->1  in: Enc.of("LEA", 141, 0, False{}, 0, 0, 0),
+  L808 0->1  in: Enc.of("LEA", 141, 0, False{}, 0, 0, 0),
+  L808 0->1  in: Enc.of("LEA", 141, 0, False{}, 0, 0, 0),
+  L809 0->1  in: Enc.of("MOV", 139, 0, False{}, 0, 0, 0),
+  L809 0->1  in: Enc.of("MOV", 139, 0, False{}, 0, 0, 0),
+  L809 0->1  in: Enc.of("MOV", 139, 0, False{}, 0, 0, 0),
+  L810 0->1  in: Enc.of("MOVSX", 4031, 0, False{}, 0, 0, 0),
+  L810 0->1  in: Enc.of("MOVSX", 4031, 0, False{}, 0, 0, 0),
+  L810 0->1  in: Enc.of("MOVSX", 4031, 0, False{}, 0, 0, 0),
+  L811 0->1  in: Enc.of("MOVSXD", 99, 0, False{}, 0, 0, 0),
+  L811 0->1  in: Enc.of("MOVSXD", 99, 0, False{}, 0, 0, 0),
+  L811 0->1  in: Enc.of("MOVSXD", 99, 0, False{}, 0, 0, 0),
+  L812 0->1  in: Enc.of("MOVZX", 4023, 0, False{}, 0, 0, 0),
+  L812 0->1  in: Enc.of("MOVZX", 4023, 0, False{}, 0, 0, 0),
+  L812 0->1  in: Enc.of("MOVZX", 4023, 0, False{}, 0, 0, 0),
+  L813 0->1  in: Enc.of("MOVi", 199, 0, True{}, 0, 0, 0),
+  L813 0->1  in: Enc.of("MOVi", 199, 0, True{}, 0, 0, 0),
+  L814 0->1  in: Enc.of("MOVm", 137, 0, False{}, 0, 0, 0),
+  L814 0->1  in: Enc.of("MOVm", 137, 0, False{}, 0, 0, 0),
+  L814 0->1  in: Enc.of("MOVm", 137, 0, False{}, 0, 0, 0),
+  L815 0->1  in: Enc.of("OR", 11, 0, False{}, 0, 0, 0),
+  L815 0->1  in: Enc.of("OR", 11, 0, False{}, 0, 0, 0),
+  L815 0->1  in: Enc.of("OR", 11, 0, False{}, 0, 0, 0),
+  L816 0->1  in: Enc.of("ORi", 129, 1, True{}, 0, 0, 0),
+  L816 0->1  in: Enc.of("ORi", 129, 1, True{}, 0, 0, 0),
+  L817 0->1  in: Enc.of("SAR", 211, 7, True{}, 0, 0, 0),
+  L817 0->1  in: Enc.of("SAR", 211, 7, True{}, 0, 0, 0),
+  L818 0->1  in: Enc.of("SARi", 193, 7, True{}, 0, 0, 0),
+  L818 0->1  in: Enc.of("SARi", 193, 7, True{}, 0, 0, 0),
+  L819 0->1  in: Enc.of("SETB", 3986, 0, True{}, 0, 0, 0),
+  L819 0->1  in: Enc.of("SETB", 3986, 0, True{}, 0, 0, 0),
+  L820 0->1  in: Enc.of("SETE", 3988, 0, True{}, 0, 0, 0),
+  L820 0->1  in: Enc.of("SETE", 3988, 0, True{}, 0, 0, 0),
+  L821 0->1  in: Enc.of("SETL", 3996, 0, True{}, 0, 0, 0),
+  L821 0->1  in: Enc.of("SETL", 3996, 0, True{}, 0, 0, 0),
+  L822 0->1  in: Enc.of("SETNE", 3989, 0, True{}, 0, 0, 0),
+  L822 0->1  in: Enc.of("SETNE", 3989, 0, True{}, 0, 0, 0),
+  L823 0->1  in: Enc.of("SHL", 211, 4, True{}, 0, 0, 0),
+  L823 0->1  in: Enc.of("SHL", 211, 4, True{}, 0, 0, 0),
+  L824 0->1  in: Enc.of("SHLi", 193, 4, True{}, 0, 0, 0),
+  L824 0->1  in: Enc.of("SHLi", 193, 4, True{}, 0, 0, 0),
+  L825 0->1  in: Enc.of("SHR", 211, 5, True{}, 0, 0, 0),
+  L825 0->1  in: Enc.of("SHR", 211, 5, True{}, 0, 0, 0),
+  L826 0->1  in: Enc.of("SHRi", 193, 5, True{}, 0, 0, 0),
+  L826 0->1  in: Enc.of("SHRi", 193, 5, True{}, 0, 0, 0),
+  L827 0->1  in: Enc.of("SUB", 43, 0, False{}, 0, 0, 0),
+  L827 0->1  in: Enc.of("SUB", 43, 0, False{}, 0, 0, 0),
+  L827 0->1  in: Enc.of("SUB", 43, 0, False{}, 0, 0, 0),
+  L828 0->1  in: Enc.of("SUBi", 129, 5, True{}, 0, 0, 0),
+  L828 0->1  in: Enc.of("SUBi", 129, 5, True{}, 0, 0, 0),
+  L829 0->1  in: Enc.of("VADDSD", 88, 0, False{}, 3, 1, 0),
+  L830 0->1  in: Enc.of("VADDSS", 88, 0, False{}, 2, 1, 0),
+  L831 0->1  in: Enc.of("VBLENDVPD", 75, 0, False{}, 1, 3, 0),
+  L832 0->1  in: Enc.of("VBLENDVPS", 74, 0, False{}, 1, 3, 0),
+  L833 0->1  in: Enc.of("VCMPSD", 194, 0, False{}, 3, 1, 0),
+  L834 0->1  in: Enc.of("VCMPSS", 194, 0, False{}, 2, 1, 0),
+  L835 0->1  in: Enc.of("VCVTPH2PS", 19, 0, False{}, 1, 2, 0),
+  L836 0->1  in: Enc.of("VCVTPS2PH", 29, 0, False{}, 1, 3, 0),
+  L837 0->1  in: Enc.of("VCVTSD2SS", 90, 0, False{}, 3, 1, 0),
+  L838 0->1  in: Enc.of("VCVTSI2SD", 42, 0, False{}, 3, 1, 2),
+  L839 0->1  in: Enc.of("VCVTSI2SS", 42, 0, False{}, 2, 1, 2),
+  L840 0->1  in: Enc.of("VCVTSS2SD", 90, 0, False{}, 2, 1, 0),
+  L841 0->1  in: Enc.of("VCVTTSD2SI", 44, 0, False{}, 3, 1, 3),
+  L842 0->1  in: Enc.of("VCVTTSS2SI", 44, 0, False{}, 2, 1, 3),
+  L843 0->1  in: Enc.of("VDIVSD", 94, 0, False{}, 3, 1, 0),
+  L844 0->1  in: Enc.of("VDIVSS", 94, 0, False{}, 2, 1, 0),
+  L845 0->1  in: Enc.of("VINSERTPS", 33, 0, False{}, 1, 3, 0),
+  L846 0->1  in: Enc.of("VMOVD", 110, 0, False{}, 1, 1, 0),
+  L847 0->1  in: Enc.of("VMOVDm", 126, 0, False{}, 1, 1, 0),
+  L848 0->1  in: Enc.of("VMOVQ", 110, 0, False{}, 1, 1, 1),
+  L849 0->1  in: Enc.of("VMOVQm", 126, 0, False{}, 1, 1, 1),
+  L850 0->1  in: Enc.of("VMOVSD", 16, 0, False{}, 3, 1, 0),
+  L851 0->1  in: Enc.of("VMOVSDm", 17, 0, False{}, 3, 1, 0),
+  L852 0->1  in: Enc.of("VMOVSS", 16, 0, False{}, 2, 1, 0),
+  L853 0->1  in: Enc.of("VMOVSSm", 17, 0, False{}, 2, 1, 0),
+  L854 0->1  in: Enc.of("VMOVUPS", 16, 0, False{}, 0, 1, 0),
+  L855 0->1  in: Enc.of("VMOVUPSm", 17, 0, False{}, 0, 1, 0),
+  L856 0->1  in: Enc.of("VMULSD", 89, 0, False{}, 3, 1, 0),
+  L857 0->1  in: Enc.of("VMULSS", 89, 0, False{}, 2, 1, 0),
+  L858 0->1  in: Enc.of("VPEXTRD", 22, 0, False{}, 1, 3, 0),
+  L859 0->1  in: Enc.of("VPEXTRW", 21, 0, False{}, 1, 3, 0),
+  L860 0->1  in: Enc.of("VPINSRD", 34, 0, False{}, 1, 3, 0),
+  L861 0->1  in: Enc.of("VPINSRW", 196, 0, False{}, 1, 1, 0),
+  L863 0->1  in: Enc.of("VROUNDSD", 11, 0, False{}, 1, 3, 0),
+  L864 0->1  in: Enc.of("VROUNDSS", 10, 0, False{}, 1, 3, 0),
+  L865 0->1  in: Enc.of("VSQRTSD", 81, 0, False{}, 3, 1, 0),
+  L866 0->1  in: Enc.of("VSQRTSS", 81, 0, False{}, 2, 1, 0),
+  L867 0->1  in: Enc.of("VSUBSD", 92, 0, False{}, 3, 1, 0),
+  L868 0->1  in: Enc.of("VSUBSS", 92, 0, False{}, 2, 1, 0),
+  L869 0->1  in: Enc.of("XOR", 51, 0, False{}, 0, 0, 0),
+  L869 0->1  in: Enc.of("XOR", 51, 0, False{}, 0, 0, 0),
+  L869 0->1  in: Enc.of("XOR", 51, 0, False{}, 0, 0, 0),
+  L870 0->1  in: Enc.of("XORi", 129, 6, True{}, 0, 0, 0),
+  L870 0->1  in: Enc.of("XORi", 129, 6, True{}, 0, 0, 0),
+  L904 0->1  in: case _: 0
+  L906 1->2  in: def Enc.disp_arm(+disp_sz: U32) -> U32: Bool.pick(U32, U32.is_eq(disp_
+  L906 1->2  in: def Enc.disp_arm(+disp_sz: U32) -> U32: Bool.pick(U32, U32.is_eq(disp_
+  L914 1->2  in: case 1: [U32.and(disp_val, 255)]
+  L914 255->256  in: case 1: [U32.and(disp_val, 255)]
+  L915 8n->9n  in: case _: [U32.and(disp_val, 255), U32.and(U32.shrn(disp_val, 8n), 255),
+  L915 255->256  in: case _: [U32.and(disp_val, 255), U32.and(U32.shrn(disp_val, 8n), 255),
+  L916 16n->17n  in: U32.and(U32.shrn(disp_val, 16n), 255), U32.and(U32.shrn(disp_val, 24n)
+  L916 255->256  in: U32.and(U32.shrn(disp_val, 16n), 255), U32.and(U32.shrn(disp_val, 24n)
+  L916 24n->25n  in: U32.and(U32.shrn(disp_val, 16n), 255), U32.and(U32.shrn(disp_val, 24n)
+  L916 255->256  in: U32.and(U32.shrn(disp_val, 16n), 255), U32.and(U32.shrn(disp_val, 24n)
+  L971 1->2  in: def Enc.b1(+v: U32) -> U32: Bool.pick(U32, U32.is_lt(v, 1), 1, 0)
+  L971 0->1  in: def Enc.b1(+v: U32) -> U32: Bool.pick(U32, U32.is_lt(v, 1), 1, 0)
+  L984 0->1  in: Enc.or4(Enc.shl(we, 7n), Enc.shl(Enc.b4(vvvv), 3n), pp, 0)]
+  L988 2->3  in: def Enc.arm16(+sz: U32) -> U32: Bool.pick(U32, U32.is_eq(sz, 2), 1, 0)
+  L988 1->2  in: def Enc.arm16(+sz: U32) -> U32: Bool.pick(U32, U32.is_eq(sz, 2), 1, 0)
+  L994 1->2  in: case 1: [102]
+  L994 102->103  in: case 1: [102]
+  L1018 1->2  in: Bool.and(Bool.or(U32.is_eq(rm_sz, 1), U32.is_eq(reg_sz, 1)), Bool.not(
+  L1018 1->2  in: Bool.and(Bool.or(U32.is_eq(rm_sz, 1), U32.is_eq(reg_sz, 1)), Bool.not(
+  L1020 4->5  in: def Enc.ge4(+v: U32) -> Bool: U32.is_ge(v, 4)
+  L1022 0->1  in: def Enc.gt0(+v: U32) -> Bool: U32.is_gt(v, 0)
+  L1044 255->256  in: def Enc.opc_arm(+opc: U32) -> U32: Bool.pick(U32, U32.is_gt(opc, 255),
+  L1063 0->1  in: case True{}: Bool.pick(U32, Bool.or(U32.is_ne(disp_val, 0), U32.is_eq(
+  L1063 5->6  in: case True{}: Bool.pick(U32, Bool.or(U32.is_ne(disp_val, 0), U32.is_eq(
+  L1064 1->2  in: Bool.pick(U32, U32.is_eq(disp_sz, 1), 1, 2), 0)
+  L1064 1->2  in: Bool.pick(U32, U32.is_eq(disp_sz, 1), 1, 2), 0)
+  L1064 0->1  in: Bool.pick(U32, U32.is_eq(disp_sz, 1), 1, 2), 0)
+  L1090 1->2  in: case 1: 0
+  L1090 0->1  in: case 1: 0
+  L1091 2->3  in: case 2: 1
+  L1091 1->2  in: case 2: 1
+  L1093 8->9  in: case 8: 3
+  L1093 3->4  in: case 8: 3
+  L1094 0->1  in: case _: 0
+  L1101 0->1  in: case False{}: 0
+  L1110 3->4  in: def Enc.want_sib(+noidx: Bool, +mod: U32) -> Bool: Bool.and(Bool.not(n
+  L1129 4->5  in: Enc.or4(64, Enc.pick3(w, 8), Enc.pick3(Enc.gt0(r), 4), Enc.or2(Enc.pic
+  L1129 2->3  in: Enc.or4(64, Enc.pick3(w, 8), Enc.pick3(Enc.gt0(r), 4), Enc.or2(Enc.pic
+  L1151 7->8  in: Enc.modrm_of(disp_val, disp_sz, has_disp, U32.and(rm, 7))
+  L1171 1->2  in: case 1: U32.sub(opc, 1)
+  L1171 1->2  in: case 1: U32.sub(opc, 1)
+  L1178 1->2  in: Bool.pick(U32, Enc.demote_of(rm_sz, reg_sz, no_demote), 1, 0))
+  L1195 2->3  in: case 2: Bool.pick(U32, U32.is_eq(src1sz, 8), 1, 0)
+  L1195 8->9  in: case 2: Bool.pick(U32, U32.is_eq(src1sz, 8), 1, 0)
+  L1195 1->2  in: case 2: Bool.pick(U32, U32.is_eq(src1sz, 8), 1, 0)
+  L1196 3->4  in: case 3: Bool.pick(U32, U32.is_eq(xsz, 8), 1, 0)
+  L1196 8->9  in: case 3: Bool.pick(U32, U32.is_eq(xsz, 8), 1, 0)
+  L1196 1->2  in: case 3: Bool.pick(U32, U32.is_eq(xsz, 8), 1, 0)
+  L1204 3n->4n  in: no_demote, U32.shrn(reg, 3n), U32.shrn(idx, 3n), U32.shrn(rm, 3n),
+  L1204 3n->4n  in: no_demote, U32.shrn(reg, 3n), U32.shrn(idx, 3n), U32.shrn(rm, 3n),
+  L1227 2->3  in: case 2: [Enc.shl(U32.and(imm, 15), 4n)]
+  L1227 15->16  in: case 2: [Enc.shl(U32.and(imm, 15), 4n)]
+  L1227 4n->5n  in: case 2: [Enc.shl(U32.and(imm, 15), 4n)]
+  L1265 3n->4n  in: [Enc.modrm_byte(mod, U32.and(reg, 7), Enc.rm3(U32.and(idx, 7), U32.shr
+  L- -->-  in: BUDGET EXHAUSTED

@@ -28,9 +28,9 @@ ALL = list(dtypes.all)
 # the grid for `lcast` and for the `lop` keys. `void` is in `lcast`'s grid
 # because CPython's `lcast` answers NotImplementedError for it, and the port
 # has no exceptions, so the wall needs a row.
-CA = [dtypes.void, dtypes.half, dtypes.bfloat16, dtypes.float, dtypes.double, dtypes.bool,
-      dtypes.int8, dtypes.int16, dtypes.int32, dtypes.int64,
-      dtypes.uint8, dtypes.uint16, dtypes.uint32, dtypes.uint64]
+CA = [dtypes.void, dtypes.f16, dtypes.bf16, dtypes.f32, dtypes.f64, dtypes.bool,
+      dtypes.i8, dtypes.i16, dtypes.i32, dtypes.i64,
+      dtypes.u8, dtypes.u16, dtypes.u32, dtypes.u64]
 # The 13-op union of `unsigned_lop | signed_lop | float_lop`, in the dict's own
 # insertion order -- which is unsigned_lop's, since `signed_lop` and `float_lop`
 # only override VALUES.
@@ -66,13 +66,13 @@ def ldt_rows():
     out += row(f"ldt {d.name}", got, got)
   # `ptr` and `count`. `count > 1` nests `ldt(dt, 1, ptr)` with ptr=False, so
   # `ldt 4 ptr float` is `<4 x float>*` and NOT `<4 x float**>`.
-  for d in (dtypes.float, dtypes.int32, dtypes.void, dtypes.bool, dtypes.half, dtypes.bfloat16):
+  for d in (dtypes.f32, dtypes.i32, dtypes.void, dtypes.bool, dtypes.f16, dtypes.bf16):
     got = L.ldt(d, ptr=True)
     out += row(f"ldt ptr {d.name}", got, got)
-  for cnt, d, ptr in ((0, dtypes.float, False), (1, dtypes.float, False), (2, dtypes.float, False),
-                      (4, dtypes.float, False), (8, dtypes.double, False), (16, dtypes.half, False),
-                      (4, dtypes.float, True), (2, dtypes.int32, True), (1, dtypes.float, True),
-                      (4, dtypes.bfloat16, True)):
+  for cnt, d, ptr in ((0, dtypes.f32, False), (1, dtypes.f32, False), (2, dtypes.f32, False),
+                      (4, dtypes.f32, False), (8, dtypes.f64, False), (16, dtypes.f16, False),
+                      (4, dtypes.f32, True), (2, dtypes.i32, True), (1, dtypes.f32, True),
+                      (4, dtypes.bf16, True)):
     got = L.ldt(d, cnt, ptr)
     out += row(f"ldt {cnt} {'ptr' if ptr else '   '} {d.name}", got, got)
   return out
@@ -229,10 +229,10 @@ def name_rows():
 # llvmir.py:79-80. The x name, x dtype, x count, src0 name, src1 dtype, src1 name.
 GEP_FMT = "  {x} = getelementptr inbounds {t}, {tp} {s0}, {t1} {s1}"
 GEP = (
-       ("%v3", dtypes.float, 1, "%data0", dtypes.int32, "%v2"),
-       ("%v0", dtypes.float32, 4, "%reg_1", dtypes.int64, "%v1"),
-       ("%v7", dtypes.half, 1, "%local_2", dtypes.uint32, "%v6"),
-       ("%v9", dtypes.bfloat16, 8, "%data1", dtypes.uint64, "%v8"))
+       ("%v3", dtypes.f32, 1, "%data0", dtypes.i32, "%v2"),
+       ("%v0", dtypes.f32, 4, "%reg_1", dtypes.i64, "%v1"),
+       ("%v7", dtypes.f16, 1, "%local_2", dtypes.u32, "%v6"),
+       ("%v9", dtypes.bf16, 8, "%data1", dtypes.u64, "%v8"))
 
 
 def gep_rows():
@@ -303,13 +303,13 @@ def q(s):
 def bname(d):
   """The `S.Dt` constructor call for a real DType."""
   return {dtypes.void: "S.void()", dtypes.weakint: "S.weakint()", dtypes.weakfloat: "S.weakfloat()",
-          dtypes.bool: "S.boolean()", dtypes.int8: "S.int8()", dtypes.uint8: "S.uint8()",
-          dtypes.int16: "S.int16()", dtypes.uint16: "S.uint16()", dtypes.int32: "S.int32()",
-          dtypes.uint32: "S.uint32()", dtypes.int64: "S.int64()", dtypes.uint64: "S.uint64()",
+          dtypes.bool: "S.boolean()", dtypes.i8: "S.int8()", dtypes.u8: "S.uint8()",
+          dtypes.i16: "S.int16()", dtypes.u16: "S.uint16()", dtypes.i32: "S.int32()",
+          dtypes.u32: "S.uint32()", dtypes.i64: "S.int64()", dtypes.u64: "S.uint64()",
           dtypes.fp8e4m3: "S.fp8e4m3()", dtypes.fp8e5m2: "S.fp8e5m2()",
           dtypes.fp8e4m3fnuz: "S.fp8e4m3fnuz()", dtypes.fp8e5m2fnuz: "S.fp8e5m2fnuz()",
-          dtypes.half: "S.half()", dtypes.bfloat16: "S.bfloat16()",
-          dtypes.float32: "S.single()", dtypes.float64: "S.double()"}[d]
+          dtypes.f16: "S.half()", dtypes.bf16: "S.bfloat16()",
+          dtypes.f32: "S.single()", dtypes.f64: "S.double()"}[d]
 
 
 def bend_lcast():
@@ -358,12 +358,12 @@ def bend():
     try: v = L.ldt(d)
     except Exception as e: v = type(e).__name__
     parts.append(f'r_ldt({q(d.name)}, {bname(d)}, {q(v)})')
-  for d in (dtypes.float, dtypes.int32, dtypes.void, dtypes.bool, dtypes.half, dtypes.bfloat16):
+  for d in (dtypes.f32, dtypes.i32, dtypes.void, dtypes.bool, dtypes.f16, dtypes.bf16):
     parts.append(f'r_ldtp({q(d.name)}, {bname(d)}, {q(L.ldt(d, ptr=True))})')
-  for cnt, d, ptr in ((0, dtypes.float, False), (1, dtypes.float, False), (2, dtypes.float, False),
-                      (4, dtypes.float, False), (8, dtypes.double, False), (16, dtypes.half, False),
-                      (4, dtypes.float, True), (2, dtypes.int32, True), (1, dtypes.float, True),
-                      (4, dtypes.bfloat16, True)):
+  for cnt, d, ptr in ((0, dtypes.f32, False), (1, dtypes.f32, False), (2, dtypes.f32, False),
+                      (4, dtypes.f32, False), (8, dtypes.f64, False), (16, dtypes.f16, False),
+                      (4, dtypes.f32, True), (2, dtypes.i32, True), (1, dtypes.f32, True),
+                      (4, dtypes.bf16, True)):
     lbl = f"{cnt} {'ptr' if ptr else '   '} {d.name}"
     parts.append(f'r_ldtn({q(lbl)}, {bname(d)}, {cnt}, {"True{}" if ptr else "False{}"}, {q(L.ldt(d, cnt, ptr))})')
   out += "def r_ldts() -> String:\n  String.concat([" + ", ".join(parts) + "])\n\n"
@@ -373,8 +373,8 @@ def bend():
   out += "def r_lopf() -> String:\n  String.concat(["
   fl = [f'r({q("lop.flags")}, q1(ldt.flags()), {q(repr(L.flags))})']
   for nm, tbl, d, ln, ops in (("unsigned", L.unsigned_lop, bname(dtypes.bool), "oplen", "lops.uf()"),
-                              ("signed", L.signed_lop, bname(dtypes.int8), "oplen", "lops.uf()"),
-                              ("float", L.float_lop, bname(dtypes.float32), "oplen", "lops.sf()")):
+                              ("signed", L.signed_lop, bname(dtypes.i8), "oplen", "lops.uf()"),
+                              ("float", L.float_lop, bname(dtypes.f32), "oplen", "lops.sf()")):
     fl.append(f'r({q("lop." + nm)}, lop.row({d}), {q(j(f"{o.name}={v}" for o, v in tbl.items()))})')
     fl.append(f'r({q("lop." + nm + ".len")}, U32.show({ln}({ops})), {q(str(len(tbl)))})')
   out += ", ".join(fl) + "])\n\n"

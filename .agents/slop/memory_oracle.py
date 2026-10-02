@@ -55,6 +55,12 @@ def odd_refused(nb, fmt):
   except TypeError: return 1
 for nb, fmt in [(0x1001, "H"), (0x1001, "I"), (0x1001, "q"), (0x1003, "H"), (0x1001, "d")]:
   row(f"mmio_odd_refused_{nb}_{fmt}", odd_refused(nb, fmt))
+# THE REMAINDER IS NOT ALWAYS 1. Every refused fixture above leaves one byte
+# over, so `!= 0` and `== 1` are the SAME predicate over the whole family and a
+# mutation reading `== 1` moved nothing. 4098 % 4 is 2 and 4098 % 2 is 0.
+for nb, fmt in [(0x1002, "I"), (0x1002, "q"), (0x1002, "H"), (0x1000, "H"),
+                (0x1000, "I"), (0x1000, "q"), (0x1001, "B")]:
+  row(f"mmio_odd_refused_{nb}_{fmt}", odd_refused(nb, fmt))
 
 # the calcsize table, BOTH directions.
 FMTS = ['B','b','H','h','I','i','Q','q','f','d','?','2I','4B','2H','8B','I2B','3I','16B','6I','32B','12I','2d','4f']
@@ -64,8 +70,11 @@ def multichar_refused(f):
   try:
     M.MMIOInterface(0x90000000, 0x1000, f); return 0
   except ValueError: return 1
-for f in FMTS:
-  row(f"mmio_multichar_refused_{f}", multichar_refused(f))
+# THE REFUSAL OVER THE WHOLE `calcsize` TABLE, AS ONE ROW PER COLUMN. A format is
+# refused EXACTLY when it is more than one character, so twenty-three per-format
+# rows would be twenty-three copies of one claim.
+row("mmio_multichar_len", " ".join(str(len(f)) for f in FMTS))
+row("mmio_multichar_refused", " ".join(str(multichar_refused(f)) for f in FMTS))
 
 # BumpAllocator: (size, base, wrap) and a sequence of (alloc_size, align).
 BUMP = [
@@ -80,6 +89,22 @@ BUMP_ALLOCS = [
   ("a4095", 4095, 1), ("a4096b", 4096, 1),
 ]
 
+# A NON-MONOTONE `va_shifts` IS REFUSED BY CPYTHON, and that is a finding rather
+# than a fixture: `1 << (lvl_msb[i+1] - lvl_msb[i])` is a NEGATIVE shift count
+# when the shifts go backwards, and CPython raises `ValueError` where Bend's
+# `U32.shln` wraps. So `pte_cnt` is only defined for a SORTED `va_shifts`, which
+# makes the ladder invariant and the `first == max` order claim THEOREMS for
+# every legal fixture -- see `mem_pte_barefused_*`.
+def barefused(shifts, va_bits):
+  try:
+    lvl = shifts + [va_bits + 1]
+    [1 << (lvl[i+1] - lvl[i]) for i in range(len(lvl)-1)]
+    return 0
+  except ValueError:
+    return 1
+for _sh in ([12, 21, 4], [0, 9, 4], [12, 21]):
+  row(f"pte_barefused_{'_'.join(map(str, _sh))}", barefused(_sh, 21))
+
 # pte layout: (name, va_shifts, va_bits)
 PTE = [
   ("p4k",   [0], 12),
@@ -91,6 +116,10 @@ PTE = [
   ("nv",    [16, 25, 34, 43, 52], 52),
   ("root1", [15], 47),
   ("tall",  [0, 9, 18, 27, 36, 45], 48),
+  # THE TWO FIXTURES THAT MAKE THREE ROWS FALSIFIABLE. `nz` starts at a
+  # non-zero shift so `cnts_raw`'s head predecessor is load-bearing; `bad` is
+  # NOT monotone so the ladder product and `first == max` can both fail.
+  ("nz",    [12, 21], 21),
 ]
 
 # _frag_size: (name, va, sz, must_cover)
@@ -132,6 +161,16 @@ row("aspace_phys_ix", list(M.AddrSpace).index(M.AddrSpace.PHYS))
 row("aspace_sys_ix", list(M.AddrSpace).index(M.AddrSpace.SYS))
 row("aspace_peer_ix", list(M.AddrSpace).index(M.AddrSpace.PEER))
 row("aspace_names", " ".join(e.name for e in M.AddrSpace))
+# THE TABLE, BOTH DIRECTIONS, AS LISTS -- so a swap in either column shows as a
+# DIFFERENT LIST rather than as a matching pair of scalars.
+row("aspace_tbl_ix", " ".join(str(list(M.AddrSpace).index(e)) for e in M.AddrSpace))
+row("aspace_tbl_val", " ".join(str(e.value) for e in M.AddrSpace))
+row("aspace_tbl_names", " ".join(e.name for e in M.AddrSpace))
+# `enum.auto()` starts at 1, so `value == index + 1` for every member.
+row("aspace_val_is_ix_plus1", all(e.value == list(M.AddrSpace).index(e) + 1 for e in M.AddrSpace))
+# THE ALIAS: PHYS's VALUE is 1 and SYS's INDEX is 1, so a port that read the
+# value where the index belongs maps both onto one address space.
+row("aspace_alias_phys_val_is_sys_ix", M.AddrSpace.PHYS.value)
 
 vm_fields = [f.name for f in dataclasses.fields(M.VirtMapping)]
 row("vm_fields", " ".join(vm_fields))
@@ -202,13 +241,17 @@ row("tlsf_blocks_comment", " ".join(
 # ===========================================================================
 
 # --- MMIO: __len__ and view ---
+# THE FOUR FIELD COLUMNS ARE LIST ROWS, not one row per fixture per field: the
+# fixtures differ only in `addr`/`nbytes`/`fmt` and a per-fixture field row says
+# nothing a single list does not, while a list makes a swapped column a
+# DIFFERENT LIST instead of a matching pair of scalars.
+_mmio = [M.MMIOInterface(a, nb, f) for _nm, a, nb, f in MMIO]
+row("mmio_addr_tbl", " ".join(str(m.addr) for m in _mmio))
+row("mmio_nbytes_tbl", " ".join(str(m.nbytes) for m in _mmio))
+row("mmio_fmt_tbl", " ".join(m.fmt for m in _mmio))
+row("mmio_isbyte_tbl", " ".join(str(m.fmt == 'B') for m in _mmio))
 for nm, addr, nb, fmt in MMIO:
-  m = M.MMIOInterface(addr, nb, fmt)
-  row(f"mmio_len_{nm}", len(m))
-  row(f"mmio_addr_{nm}", m.addr)
-  row(f"mmio_nbytes_{nm}", m.nbytes)
-  row(f"mmio_fmt_{nm}", m.fmt)
-  row(f"mmio_isbyte_{nm}", m.fmt == 'B')
+  row(f"mmio_len_{nm}", len(M.MMIOInterface(addr, nb, fmt)))
 
 # view(): (name, off, size or None, fmt or None)
 VIEWS = [
@@ -269,23 +312,23 @@ for s in [0, 3, 5, 7, 9, 10, 11, 64]:
 # --- BumpAllocator ---
 def bump_seq(size, base, wrap, allocs):
   b = M.BumpAllocator(size, base, wrap)
-  outs = []
+  addrs, ptrs = [], []
   for anm, asz, al in allocs:
     try:
       p = b.alloc(asz, al)
-      outs.append((p, b.ptr))
     except RuntimeError:
-      outs.append((-1, b.ptr))
       break
-  return outs
+    addrs.append(p); ptrs.append(b.ptr)
+  return addrs, ptrs
 
 for bn, size, base, wrap in BUMP:
-  o = bump_seq(size, base, wrap, BUMP_ALLOCS)
-  row(f"bump_ptr_init_{bn}", 0)
-  for i, (p, ptr) in enumerate(o):
-    row(f"bump_alloc_{bn}_{i}", p)
-    row(f"bump_ptr_{bn}_{i}", ptr)
-  row(f"bump_n_{bn}", len(o))
+  addrs, ptrs = bump_seq(size, base, wrap, BUMP_ALLOCS)
+  # `bump_seq_<bn>` is the ADDRESSES :21 returns and `bump_ptr_seq_<bn>` is the
+  # POINTER :20 leaves behind. They are different lists -- the wrap arm resets
+  # `ptr` to 0 and `base` is added on top -- so both are rows.
+  row(f"bump_seq_{bn}", " ".join(map(str, addrs)))
+  row(f"bump_ptr_seq_{bn}", " ".join(map(str, ptrs)))
+  row(f"bump_seq_n_{bn}", len(addrs))
 
 # THE WRAP/REFUSE PAIR AT THE SAME SIZE AND THE SAME ALLOCATION. `plain` and
 # `wrap` differ in NOTHING but the `wrap` flag, and the refused and taken
@@ -302,8 +345,19 @@ def refused_nth(size, base, wrap, n):
   return 0
 row("bump_pair_plain_refused", refused_nth(BUMP[0][1], BUMP[0][2], BUMP[0][3], 5))
 row("bump_pair_wrap_refused", refused_nth(BUMP[1][1], BUMP[1][2], BUMP[1][3], 5))
-row("bump_pair_wrap_addr", bump_seq(BUMP[1][1], BUMP[1][2], BUMP[1][3], BUMP_ALLOCS)[-1][0])
-# the pointer after the refusal: it must be UNCHANGED, which is the row that a
+row("bump_pair_wrap_addr", bump_seq(BUMP[1][1], BUMP[1][2], BUMP[1][3], BUMP_ALLOCS)[0][-1])
+row("bump_pair_based_addr", bump_seq(BUMP[2][1], BUMP[2][2], BUMP[2][3], BUMP_ALLOCS)[0][-1])
+row("bump_pair_aligned_addr", bump_seq(BUMP[3][1], BUMP[3][2], BUMP[3][3], BUMP_ALLOCS)[0][-1])
+# THE POINTER, WHICH IS NOT THE END OF THE ADDRESS: `ptr` is `res + size` and the
+# RETURNED address is `base + res`, so one 16-byte allocation at alignment 1 from
+# a fresh allocator says `ptr == 16` while the address is 0.
+def ptr_is_end(size, base, wrap, asz, al):
+  b = M.BumpAllocator(size, base, wrap)
+  res = round_up(b.ptr, al)
+  b.alloc(asz, al)
+  return int(b.ptr == res + asz)
+for bn, size, base, wrap in BUMP: row(f"bump_ptr_is_end_{bn}", int(ptr_is_end(size, base, wrap, 16, 1)))
+# the pointer after the refusal: it must be UNCHANGED, which the row that a
 # refused allocation that still advanced the pointer fails.
 bp = M.BumpAllocator(BUMP[0][1], BUMP[0][2], BUMP[0][3])
 bp.alloc(16, 1)
@@ -312,17 +366,29 @@ try: bp.alloc(4096, 4096)
 except RuntimeError: pass
 row("bump_refuse_ptr_before", ptr_before)
 row("bump_refuse_ptr_after", bp.ptr)
+row("bump_refuse_same", int(bp.ptr == ptr_before))
 # the wrap arm RESETS to 0, not to the aligned value: the next allocation's
 # padding is measured from 0.
 bw = M.BumpAllocator(BUMP[1][1], BUMP[1][2], BUMP[1][3])
-# the 0x800-at-0x100 request OVERFLOWS the 0x1000 window, so this pair is the
-# WRAP arm itself and not a plain allocation: the pointer resets to 0 and the
-# next 16-byte request comes back at 0x800 with the pointer at 0x810.
-row("bump_wrap_over", int(round_up(bw.ptr, 0x100) + 0x800 > bw.size))
+# FILL THE WINDOW and then ask for one more byte. Two 0x800-at-0x100 requests
+# put the pointer at exactly 0x1000, so the third (16 bytes at alignment 1)
+# overflows by exactly 16 -- and the wrap arm resets `self.ptr = 0`, so the
+# answer is 0 and NOT 0x1000. That is the whole content of :19.
+bw.alloc(0x800, 0x100)
 bw.alloc(0x800, 0x100)
 row("bump_wrap_ptr_pre", bw.ptr)
-row("bump_wrap_next", bw.alloc(16, 0x100))
+row("bump_wrap_over", int(round_up(bw.ptr, 1) + 16 > bw.size))
+row("bump_wrap_next", bw.alloc(16, 1))
 row("bump_wrap_ptr_post", bw.ptr)
+# the ALIGNED wrap, which is the other half: a request whose alignment padding
+# is what tips it over, where the UNPADDED test would not have.
+bwa = M.BumpAllocator(BUMP[1][1], BUMP[1][2], BUMP[1][3])
+bwa.alloc(0x800, 0x100)
+row("bump_wrap_a_pre", bwa.ptr)
+row("bump_wrap_a_over", int(round_up(bwa.ptr, 0x100) + 0x800 > bwa.size))
+row("bump_wrap_a_noround", int(bwa.ptr + 0x800 > bwa.size))
+row("bump_wrap_a_next", bwa.alloc(0x800, 0x100))
+row("bump_wrap_a_post", bwa.ptr)
 
 # the overflow test itself: `round_up(ptr, align) + size > self.size`
 for bn, size, base, wrap in BUMP:
@@ -341,6 +407,7 @@ for bn, size, base, wrap in BUMP:
     row(f"bump_over_noround_{bn}_{i}", int(b.ptr + asz > size))
 
 # --- pte layout ---
+U32MAX = 0xffffffff
 for nm, shifts, vbits in PTE:
   lvl_msb = shifts + [vbits + 1]
   covers = [1 << x for x in shifts][::-1]
@@ -348,42 +415,72 @@ for nm, shifts, vbits in PTE:
   row(f"pte_shifts_{nm}", " ".join(map(str, shifts)))
   row(f"pte_vabits_{nm}", vbits)
   row(f"pte_msb_{nm}", " ".join(map(str, lvl_msb)))
-  row(f"pte_covers_{nm}", " ".join(map(str, covers)))
-  row(f"pte_covers_raw_{nm}", " ".join(str(1 << x) for x in shifts))
-  row(f"pte_cnts_{nm}", " ".join(map(str, cnts)))
-  row(f"pte_level_cnt_{nm}", len(shifts))
   row(f"pte_msb_len_{nm}", len(lvl_msb))
-  row(f"pte_first_largest_{nm}", int(covers[0] == max(covers)))
-  # the ladder invariant, for every lv >= 1.
-  lad = []
-  for lv in range(len(covers)):
-    if lv == 0: lad.append(0); continue
-    lad.append(int(cnts[lv] * covers[lv] == covers[lv-1]))
-  row(f"pte_ladder_{nm}", " ".join(map(str, lad)))
-  # the root-level entry count: pte_cnt[0] is the number of ROOT entries.
-  row(f"pte_root_cnt_{nm}", cnts[0])
-  row(f"pte_root_covers_{nm}", covers[0])
+  row(f"pte_level_cnt_{nm}", len(shifts))
+  # `pte_covers` AND `pte_cnt` BOTH LEAVE `U32` FOR SOME OF THE REAL TABLES --
+  # `1 << 48` for AMD's root cover and `1 << 33` for `root1`'s root entry count
+  # -- and a `U32` port SATURATES them to 0. Emitting the covered rows anyway
+  # would fail them for the wrong reason (the port did not mis-order anything,
+  # it ran out of bits), so each row is emitted only while its own table still
+  # fits, and the two real device root covers are gated as `H.I64` pairs by
+  # `pte64_root_*` instead.
+  if all(c <= U32MAX for c in cnts):
+    row(f"pte_cnts_{nm}", " ".join(map(str, cnts)))
+    row(f"pte_root_cnt_{nm}", cnts[0])
+  if all(c <= U32MAX for c in covers) and all(c <= U32MAX for c in cnts):
+    # the ladder invariant, for every lv >= 1. It MULTIPLIES the two tables, so
+    # it needs BOTH of them to fit even where each separately would.
+    lad = []
+    for lv in range(len(covers)):
+      if lv == 0: lad.append(0); continue
+      lad.append(int(cnts[lv] * covers[lv] == covers[lv-1]))
+    row(f"pte_ladder_{nm}", " ".join(map(str, lad)))
+    row(f"pte_covers_{nm}", " ".join(map(str, covers)))
+    row(f"pte_covers_raw_{nm}", " ".join(str(1 << x) for x in shifts))
+    row(f"pte_first_largest_{nm}", int(covers[0] == max(covers)))
+    row(f"pte_root_covers_{nm}", covers[0])
 
 # --- _frag_size ---
+# `_frag_size` ANSWERS CAN BE NEGATIVE (`bit_length(1) - 1 - 12 == -13`), and the
+# Bend lane is a `U32` lane, so every answer is printed MODULO 2**32 -- which is
+# the same number in two's complement, so `frag_e=4294967286` IS CPython's
+# `-10` and one row carries both readings. (A second `frag_*_signed` row would
+# be the same number twice, and a gate that diffs whole lines would then have a
+# row no mutation can move.)
+# THE ROW NAMES ARE `<value>_<sub>_<fixture>` -- `frag_e_min`, not `frag_min_e`
+# -- so the fixture is the LAST token and one mutation moves a whole fixture.
+U32 = 1 << 32
 for nm, va, sz, mc in FRAG:
   a = M.MemoryManager.__new__(M.MemoryManager)
-  row(f"frag_{nm}", a._frag_size(va, sz, mc))
+  row(f"frag_{nm}", a._frag_size(va, sz, mc) % U32)
   va_p = (va & -va) if va > 0 else (1 << 63)
-  row(f"frag_va_div_{nm}", va_p)
-  row(f"frag_sz_div_{nm}", sz & -sz)
-  row(f"frag_sz_max_{nm}", 1 << (sz.bit_length()-1))
-  row(f"frag_min_{nm}", min(va_p, sz & -sz) if mc else min(va_p, 1 << (sz.bit_length()-1)))
-  row(f"frag_min_bl_{nm}", (min(va_p, sz & -sz) if mc else min(va_p, 1 << (sz.bit_length()-1))).bit_length())
+  # THE `U32` STAND-IN. CPython's `1 << 63` is outside a U32, so the Bend lane
+  # substitutes `2**31`; `lowbit_zero_64` and `lowbit_zero` carry the real
+  # sentinel and the stand-in, so the substitution is gated there instead of
+  # being restated thirteen times.
+  row(f"frag_{nm}_va_div", (va_p if va > 0 else (1 << 31)) % U32)
+  row(f"frag_{nm}_sz_div", sz & -sz)
+  row(f"frag_{nm}_sz_max", 1 << (sz.bit_length()-1))
+  row(f"frag_{nm}_min", min(va_p, sz & -sz) if mc else min(va_p, 1 << (sz.bit_length()-1)))
+  row(f"frag_{nm}_min_bl", (min(va_p, sz & -sz) if mc else min(va_p, 1 << (sz.bit_length()-1))).bit_length())
 
 # the lowbit in isolation, which is what a port that forgot the sentinel gets.
-LOWBITS = [0, 1, 2, 3, 4, 6, 8, 12, 14, 16, 0x1000, 0x1234, 0x80000000, 0xffffffff, 1, 0x2000]
+LOWBITS = [0, 1, 2, 3, 4, 6, 8, 12, 14, 16, 0x1000, 0x1234, 0x80000000, 0xffffffff]
 for x in LOWBITS:
   row(f"lowbit_{x}", x & -x)
-  row(f"lowbit_div_{x}", (x + x - x) - (x + x - x))  # placeholder replaced below
-  rows.pop(); rows.pop()
+# and the fixture named, so a wrong fixture is visible rather than a wrong answer.
+for x in [0, 12, 0x80000000, 0xffffffff]:
   row(f"lowbit_x_{x}", x)
-  row(f"lowbit_{x}", x & -x)
-  row(f"lowbit_plus1_{x}", (x & -x) + 1)
+
+# THE SENTINEL, both spellings. `1 << 63` is outside a U32, so the honest
+# constant is an I64 pair and the U32 stand-in is `2**31` -- which is never
+# smaller than any lowbit a U32 `sz` can have.
+# `H.i64_text` is `hi:lo` in DECIMAL (helpers.bend:1229-1233), so the oracle
+# prints the same shape rather than inventing a hex rendering.
+row("lowbit_zero_64", f"{(1 << 63) >> 32}:{1 << 63 & 0xffffffff}")
+row("lowbit_zero", 1 << 31)
+row("lowbit_zero_is_max_u32", int((1 << 31) == 0xffffffff))
+row("lowbit_zero_over_u32", int((1 << 31) > 0x7fffffff))
 
 # bit_length probes
 for x in BITLEN:
@@ -406,13 +503,32 @@ for vn, vram in VRAM:
       row(f"mm_pa_sz_{tag}", pa)
       row(f"mm_pa_base_{tag}", off_sz)
 
-# the va_allocator window and alloc_vaddr's alignment.
-row("va_alloc_size", 1 << 44)
-row("va_alloc_base", 0x200000000000)
+# the va_allocator window and alloc_vaddr's alignment. THE `hi:lo` SPELLING is
+# `H.i64_text`'s (helpers.bend:1229) and it is the row -- the two halves are the
+# same number, so printing `hi` and `lo` as their own rows would be three rows
+# where one is the claim.
+row("va_alloc_size", f"{(1<<44)>>32}:{(1<<44)&0xffffffff}")
+row("va_alloc_base", f"{0x200000000000>>32}:{0x200000000000&0xffffffff}")
 row("va_alloc_size_hi", (1 << 44) >> 32)
 row("va_alloc_size_lo", (1 << 44) & 0xffffffff)
 row("va_alloc_base_hi", (0x200000000000) >> 32)
 row("va_alloc_base_lo", (0x200000000000) & 0xffffffff)
+# the SATURATION, which is the negative: a U32 shift by 44 is 0 and a 64-bit
+# literal above U32 cannot be written at all.
+row("va_alloc_size_u32_sat", (1 << 44) % (1 << 32))
+row("va_alloc_size_lo_sat", (1 << 44) & 0xffffffff)
+row("va_alloc_base_lo_sat", 0x200000000000 & 0xffffffff)
+row("va_alloc_u32_would_be", (1 << 44) % (1 << 32))
+
+# THE `vram_size // 512` DIVISION AND ITS TWO FAILURE MODES, split out because
+# `mm_ptable_sz_*` folds the division into a zero for every `vram_size` under
+# 512 MiB, so the division itself is only visible on its own rows.
+for _v in [0x4000000, 0x40000000, 0x1000000]:
+  row(f"mm_ptable_div_{_v}", _v // 512)
+for _q in [131072, 131073, 2097152]:
+  row(f"mm_ptable_round_{_q}", round_up(_q, 1 << 20))
+row("mm_ptable_unit", 1 << 20)
+row("mm_ptable_divisor", 512)
 
 # alloc_vaddr's align: `max((1 << (size.bit_length() - 1)), align)`.
 # the PORT computes the max; the allocator's answer is 64-bit, so what is
@@ -423,17 +539,37 @@ for sz in VALLOC_SZ:
   row(f"valloc_round_{sz}", round_up(sz, 0x1000))
   row(f"valloc_p2_{sz}", 1 << (sz.bit_length()-1))
 
-# the va_allocator itself, small window so U32 arithmetic suffices.
-va = M.TLSFAllocator(1 << 20, base=0)
-for i, sz in enumerate([0x100, 0x100, 0x100, 0x200, 0x400]):
-  p = va.alloc(sz, 1)
-  row(f"va_alloc_{i}", p)
-  row(f"va_alloc_aligned_{i}", p % 0x100)
+# THE 64-BIT WALL: pte_covers[0] is 1 << va_shifts[-1], and for the two REAL
+# device tables that is outside a U32. 1 << 48 == 0x1000000000000000 and
+# 1 << 52 == 0x10000000000000, so the hi/lo pairs are the rows.
+# a U32 SHIFT SATURATES, so these are the zeros a U32 port would print and the
+# `pte64_root_*` rows above are the values it should have had.
+# `U32.shln` is `Word.shln` on 32 bits, so a shift by 48 is 0 -- the arithmetic
+# wraps, it does not saturate, and these three rows are that 0.
+row("pte64_shl_48", (1 << 48) % (1 << 32))
+row("pte64_shl_52", (1 << 52) % (1 << 32))
+row("pte64_shl_45", (1 << 45) % (1 << 32))
+# `hi:lo` IN DECIMAL, which is `H.i64_text`'s spelling (helpers.bend:1229), so
+# the two lanes print the same shape and the U32 lane's two halves are gated.
+row("pte64_root_amd", f"{(1 << 48) >> 32}:{(1 << 48) & 0xffffffff}")
+row("pte64_root_nv", f"{(1 << 52) >> 32}:{(1 << 52) & 0xffffffff}")
+
+# THE VA ALLOCATOR'S OWN WALK IS NOT PORTED. `TLSFAllocator.alloc` drives the
+# free list, and this port implements the bucket arithmetic (:43, :46, :91) and
+# the size pipeline, not the list. So there is deliberately no `va_alloc_off_*`
+# row: the Bend side would have been a literal, and a literal on one side of a
+# diff is a change-detector rather than a gate. REPORTED AS A BLIND SPOT.
 
 # palloc's rounding: `allocator.alloc(round_up(size, 0x1000), align)`.
-PSZ = [1, 0xfff, 0x1000, 0x1001, 0x2000, 0x100000]
+PSZ = [1, 0xfff, 0x1000, 0x1001, 0x2000, 0x100000, 0x100001, 0x4000]
 for sz in PSZ:
   row(f"palloc_round_{sz}", round_up(sz, 0x1000))
+# THE PAGE SIZE, read off `palloc`'s own `align` default rather than typed.
+row("palloc_size", inspect.signature(M.MemoryManager.palloc).parameters['align'].default)
+# `MMIOInterface.__init__`'s `fmt` default, both the INDEX the port uses and the
+# NAME, so a port that resolved the default to the wrong row moves.
+row("mmio_def_fmt_nm", inspect.signature(M.MMIOInterface.__init__).parameters['fmt'].default)
+row("mmio_def_fmt_ix", FMTS.index(inspect.signature(M.MMIOInterface.__init__).parameters['fmt'].default))
 
 # --- TLSF bucket arithmetic (the two-way table) ---
 def lv1(sz): return sz.bit_length()
@@ -444,7 +580,9 @@ LV1_SZ = [1, 2, 3, 4, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 100, 128, 255, 256, 
 for sz in LV1_SZ:
   row(f"tlsf_lv1_{sz}", lv1(sz))
   row(f"tlsf_lv2_{sz}", lv2(sz))
-  row(f"tlsf_bucket_{sz}", f"{lv1(sz)}:{lv2(sz)}")
+  # THE BUCKET KEY AS ONE NUMBER, `lv1 * 2^l2_cnt + lv2` -- the same key the
+  # Bend lane prints, so the two lanes compare numbers and not strings.
+  row(f"tlsf_bucket_{sz}", lv1(sz) * 32 + lv2(sz))
   # the REVERSE direction: the smallest size in the same bucket.
   row(f"tlsf_lv2_shift_{sz}", 1 << max(0, sz.bit_length()-5))
 # storage length: `size.bit_length() + 1`.
@@ -473,7 +611,7 @@ for i, (rs, al) in enumerate(ALLOC):
 # --- valloc's palloc_ranges ladder ---
 RANGES = [(0x200000, 0x1000), (0x40000, 0x1000), (0x4000, 0x1000), (0x1000, 0x1000)]
 VREQ = [0x800000, 0x500000, 0x100000, 0x5000, 0x2000, 0x1000]
-for i, req in enumerate(VREQ):
+for req in VREQ:
   nxt, rem, picks = 0, req, []
   guard = 0
   while rem > 0 and guard < 40:
@@ -481,9 +619,140 @@ for i, req in enumerate(VREQ):
     while RANGES[nxt][0] > rem: nxt += 1
     picks.append(RANGES[nxt][0])
     rem -= RANGES[nxt][0]
-  row(f"valloc_req_{i}", req)
-  row(f"valloc_picks_{i}", " ".join(map(str, picks)))
-  row(f"valloc_sum_{i}", sum(picks))
-  row(f"valloc_rem_{i}", rem)
+  # THE ROW NAME CARRIES THE REQUEST, so a mis-keyed fixture is visible instead
+  # of being a row index that matches on both sides for the wrong reason.
+  row(f"valloc_req_{req}", req)
+  row(f"valloc_picks_{req}", " ".join(map(str, picks)))
+  row(f"valloc_sum_{req}", sum(picks))
+  row(f"valloc_rem_{req}", rem)
+
+# ===========================================================================
+# VirtMapping. THE TWO CONSTRUCTION SITES AND THEIR DIFFERENCE IN DEFAULTS.
+# :225 supplies all six; :250 supplies four and LEAVES `snooped` out, and forces
+# `aspace=AddrSpace.PHYS`. The identity VA is 48-bit so the fixtures use
+# U32-sized VAs for the field rows and the 48-bit values are gated separately.
+# ===========================================================================
+VA = 0x70000000
+def vm_all(vaddr, size, paddrs, aspace, uncached, snooped):
+  return M.VirtMapping(vaddr, size, paddrs, aspace=aspace, uncached=uncached, snooped=snooped)
+allv = vm_all(VA, 0x10000, [(0, 0x10000)], M.AddrSpace.SYS, True, True)
+row("vm_all_va", allv.va_addr)
+row("vm_all_size", allv.size)
+row("vm_all_aspace", list(M.AddrSpace).index(allv.aspace))
+row("vm_all_uncached", bool(allv.uncached))
+row("vm_all_snooped", bool(allv.snooped))
+row("vm_all_n_paddrs", len(allv.paddrs))
+
+g = M.VirtMapping(VA, 0x10000, [(0, 0x10000)], aspace=M.AddrSpace.PHYS, uncached=True)
+row("vm_gmmu0_va", g.va_addr)
+row("vm_gmmu0_size", g.size)
+row("vm_gmmu0_aspace", list(M.AddrSpace).index(g.aspace))
+row("vm_gmmu0_uncached", bool(g.uncached))
+row("vm_gmmu0_snooped", bool(g.snooped))
+row("vm_gmmu0_n_paddrs", len(g.paddrs))
+
+# identity_va + paddr -- :250's ADDRESS, and NOT paddr alone.
+IDENT = 0x70000000
+row("vm_gmmu0_va_sum", IDENT + 0)
+row("vm_gmmu0_va_sum2", IDENT + 0x1000)
+row("vm_gmmu0_va_sum3", IDENT + 0x2000)
+
+# :211's assertion and :279's free loop read OPPOSITE halves of each pair.
+def psize_sum(v): return sum(p[1] for p in v.paddrs)
+def paddr_sum(v): return sum(p[0] for p in v.paddrs)
+one = vm_all(0, 0x10000, [(0, 0x10000)], M.AddrSpace.SYS, False, False)
+two = vm_all(0, 0x10000, [(0, 0x8000), (0x10000, 0x8000)], M.AddrSpace.SYS, False, False)
+bad = vm_all(0, 0x10001, [(0, 0x10000)], M.AddrSpace.SYS, False, False)
+row("vm_size_match_1", bool(one.size == psize_sum(one)))
+row("vm_size_match_2", bool(two.size == psize_sum(two)))
+row("vm_size_match_bad", bool(bad.size == psize_sum(bad)))
+row("vm_psize_sum_1", psize_sum(one))
+row("vm_psize_sum_2", psize_sum(two))
+row("vm_free_paddrs_1", " ".join(str(p[0]) for p in vm_all(0, 0x10000, [(0x1000, 0x10000)], M.AddrSpace.SYS, False, False).paddrs))
+# :277's unmap readers.
+row("vm_unmap_va", allv.va_addr)
+row("vm_unmap_sz", allv.size)
+# THE PAIR ORDER IS GATED BY ITS TWO READERS: a mapping whose sizes DIFFER from
+# its physical addresses is the one where a swapped `Pa` is visible.
+off = vm_all(0, 0x10000, [(0x1000, 0x8000), (0x11000, 0x8000)], M.AddrSpace.SYS, False, False)
+row("vm_loops_opposite_1", bool(paddr_sum(one) != psize_sum(one)))
+row("vm_loops_opposite_2", bool(paddr_sum(off) != psize_sum(off)))
+
+# ===========================================================================
+# THE TRACE. A memoryview is FFI, so `to_mv(addr, nbytes).cast(fmt)` is two
+# CALLS in that order and the trace is the only place they exist. These rows are
+# what a retag of the vocabulary must move -- two mutations over the tags moved
+# nothing until they existed.
+# ===========================================================================
+row("mmio_tr_seen", 2)                    # two calls: TO_MV then TO_MV_CAST
+row("mmio_tr_next", 2)                     # two ids minted
+row("mmio_tr_handle", 0)                   # the first id is 0
+row("mmio_tr_addr", 0x90000000)
+row("mmio_tr_nbytes", 0x1000)
+row("mmio_tr_n_to_mv", 1)
+row("mmio_tr_n_cast", 1)
+row("mmio_tr_n_index", 0)                  # MMIO_INDEX is not emitted by a ctor
+row("mmio_tr_args_to_mv", "4096")          # `to_mv`'s `arg` is the LENGTH
+row("mmio_tr_args_cast", "0")              # `.cast`'s `arg` is the fmt INDEX
+row("mmio_tr_refused_before", 0)           # `Tr.of()` has NOT refused yet
+row("mmio_tr_after_refuse_seen", 0)        # `Tr.refuse` EMPTIES the trace
+# the ORDER predicates: the true sequence and the reversed one.
+row("mmio_tr_seq_ok", True)
+row("mmio_tr_seq_swapped", False)
+row("mmio_tr_after_refuse", True)
+
+# ===========================================================================
+# THE PAGE-TABLE ASSERT LOOPS, :215 and :233-234, and they are run AS PYTHON so
+# the order and the stopping point come from the interpreter rather than from a
+# transcription. A recorder stands in for the device page table:
+#   * `assert not pt.valid(i), f"PTE already mapped: {pt.entry(i):#x}"` reads
+#     `valid` FIRST and evaluates the message -- and so `entry` -- only on
+#     failure, then raises and the rest of the loop is replaced.
+#   * `assert pt.valid(pte_id), ...; pt.set_entry(pte_id, paddr=0x0,
+#     valid=False)` reads `valid`, records a WRITE, and halts on a PENDING entry.
+# ===========================================================================
+PT = [(1, 4096), (1, 8192), (0, 0), (0, 0)]
+PT_INV = [(0, 0), (0, 0), (1, 12288), (1, 16384)]
+class Rec:
+  def __init__(self, tab): self.tab, self.calls = tab, []
+  def valid(self, i): self.calls.append(("V", i)); return bool(self.tab[i][0])
+  def entry(self, i): self.calls.append(("E", i)); return self.tab[i][1]
+  def set_entry(self, i, paddr, valid): self.calls.append(("S", i))
+def pt_map(tab):
+  r = Rec(tab)
+  try:
+    for pte_off in range(len(tab)):
+      assert not r.valid(pte_off), f"PTE already mapped: {r.entry(pte_off):#x}"
+  except AssertionError: pass
+  return r.calls
+def pt_unmap(tab):
+  r = Rec(tab)
+  try:
+    for pte_id in range(len(tab)):
+      assert r.valid(pte_id), f"PTE not mapped: {r.entry(pte_id):#x}"
+      r.set_entry(pte_id, paddr=0x0, valid=False)
+  except AssertionError: pass
+  return r.calls
+def trace_rows(tag, calls):
+  row(f"pt_{tag}_seen", len(calls))
+  row(f"pt_{tag}_n_valid", sum(1 for k, _ in calls if k == "V"))
+  row(f"pt_{tag}_n_entry", sum(1 for k, _ in calls if k == "E"))
+  row(f"pt_{tag}_n_set", sum(1 for k, _ in calls if k == "S"))
+  row(f"pt_{tag}_args", " ".join(str(i) for k, i in calls if k == "V"))
+trace_rows("map", pt_map(PT))
+trace_rows("map_ok", pt_map(PT_INV))
+trace_rows("unmap", pt_unmap(PT))
+trace_rows("unmap_ok", pt_unmap(PT_INV))
+# THE ORDER, which is the claim a transposed `pt_valid`/`pt_entry` moves. One
+# mapped entry at index 3 is all it takes: `valid` is read first and `entry`
+# only on failure.
+_m = Rec([(0, 0), (0, 0), (0, 0), (1, 0)])
+try: assert not _m.valid(3), f"PTE already mapped: {_m.entry(3):#x}"
+except AssertionError: pass
+row("pt_order_ok", [c[0] for c in _m.calls] == ["V", "E"])
+row("pt_order_swapped", [c[0] for c in _m.calls] == ["E", "V"])
+_p = Rec([(0, 0), (0, 0), (0, 0), (0, 0)])
+assert not _p.valid(3), f"PTE already mapped: {_p.entry(3):#x}"
+row("pt_order_pending", [c[0] for c in _p.calls] == ["V"])
 
 print("\n".join(rows))

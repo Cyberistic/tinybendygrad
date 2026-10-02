@@ -1809,3 +1809,82 @@ rows are three named walls and one blind spot, all stated in the file's footer.
 - [ ] **NOT COMMITTED**, per the task's instruction. Seven general rules appended to
       `.agents/slop/notes/bend2-constraints.md` as `RF1`-`RF7` at line 8146, indexed in
       the table at the top of that file.
+
+## Session 2026-10-02 — upstream `793abbb` "modernize tinygrad's dtype to match rust"
+
+- [x] re-vendor `tinygrad/dtype.py` and `tinygrad/runtime/ops_null.py` at
+      `793abbb` (blob-verified: `f40089a12`, `8b28aef563`)
+- [x] `LAWS/spec.bend` — the `DType.name` layer, 16 `Dt` literals
+- [x] `dtype.bend` — `promo_mask` / `can_lossless_cast.row` / `rank_of` /
+      `finfo.of` / `fmax.of` / `fp8_kind` re-keyed (61 arms), `to_dtype_of`
+      canonical-first, legacy accessors dropped
+- [x] `uop/render.bend` — `dt_attr` was `INVERSE_DTYPES_DICT`, which upstream
+      DELETED. The twenty-arm table is deleted, not renamed.
+- [x] `renderer/__init__.bend`, `renderer/cstyle.bend` (type_map keys),
+      `renderer/wgsl.bend` (finfo), `renderer/tc_ptx.bend` (16 `want` literals),
+      `codegen/transcendental.bend`, `uop/symbolic.bend`,
+      `runtime/ops_dsp.bend` (4 functional tables), `nn/onnx.bend` (comment)
+- [x] `.agents/slop/**`: 1164 `dtypes.<legacy>` sites over 113 files, via
+      `.agents/slop/tools/migrate-dtype-names.py` (word-boundary, longest-first)
+- [x] `tinybendygrad/test/dtype_oracle.bend` — **was committed and did not
+      compile** (4 reversibility errors). Rebuilt; the CPython half
+      `.agents/slop/oracle/dtype_tables.py` and the runner
+      `.agents/slop/dtype-gate.py` are new.
+- [x] `dtype.bend` gate: 14 766 rows, both lanes byte-identical, **1 declared
+      pre-existing deviation** (`dtypes.uint64.max` has no image in a signed-pair
+      I64). Not one ANSWER moved; only the name column, in lockstep.
+
+- [ ] **OWNER DECISION — `tinygrad/runtime/ops_bend.py` imports the deleted
+      `INVERSE_DTYPES_DICT`** (`tinygrad/runtime/ops_bend.py:76`, used at :95).
+      The file is OURS (240 lines, no upstream counterpart — `git diff 6c3d401cf324`
+      shows it as `new file`), so "re-vendor" is not on the table. Right now
+      `import tinygrad.dtype` raises `ImportError` and the BEND device is dead.
+      Two options in the report; neither taken here.
+- [x] `renderer/isa/x86.bend` — `tinygrad/renderer/isa/x86.py`. **The root cause of the
+      80-row red blind spot is FIXED and the acceptance test is a `diff`, not the gate.**
+      760 rows, `diff .agents/slop/x86/{i,py1}.txt` **empty**, interpreted and native
+      lanes byte-identical, `ALL PROOFS CHECK`. `asm_str` (x86.py:728-749) landed as
+      well, so 372 of 770 Python lines are covered. Five findings worth carrying:
+      * **THE EIGHTY `hex.*`/`direct.*` ROWS WERE BARE STRING CONCATENATIONS** — no `Bool`
+        in them at all, so "0 False" never covered them and all eighty disagreed. Every
+        one is a `Bool` row against CPython's bytes now, with the bytes in the ROW NAME.
+        Same shape as rule 64 at the tail of `bend2-constraints.md`, one fix up.
+      * **THE ORACLE WAS WRONG, NOT ONLY THE PORT.** `enc_inputs()` re-transcribed
+        `encode`'s three address arms and was wrong three ways at once: the Rm2nd
+        `x.dtype is not void` test inverted, the `if reg is None` fork ignored on every
+        arm (so SHL/SUBi/CMPi/IDIV/VPSRLDQ were handed `reg = 0` where CPython keeps the
+        table's 4/5/7/7/3), and `vvvv` a hardcoded four-name list. It now READS THE LIVE
+        FRAME of `encode`/`_encode` through a `sys.settrace` line tracer, and the `py=`
+        halves were never touched.
+      * **`Enc.emit` had NINE defects and every one was LOGIC.** The duplicated opcode
+        (`legacy_head` ended in the opcode and `tail` appended it again), the
+        big-endian `imm_int`, the `mod == 0` displacement with an inverted flag, the
+        misread `reg_sz == 1 & reg >> 2` (`&` binds tighter than `==`, so `MOVi` and the
+        four `SET*` lost their null `0x40` REX), `disp_uop is None` in `demote`, two `we`
+        selectors reading the wrong sizes, the six-byte `JMP`, the undemoted opcode byte.
+        A constants sweep finds NONE of them; `.agents/slop/x86/x86-rules.py` (48 rules)
+        finds all nine.
+      * **`U32.sub` WRAPS**, so `f"{mnem:7s}"` written as `7 - len` asks `String.repeat`
+        for 4 billion spaces on any mnemonic over seven characters, and the fixtures had
+        none. Fixed with a saturating arm and a nine-character fixture.
+      * **THE BLIND LIST IS A FIXTURE LIST.** 205 of 707 constants move nothing, and the
+        actionable class is one hole: no fixture puts an operand in `r8`..`r15`, so
+        `Enc.gt0`, `Enc.b1`'s zero arm, the REX R/X bit weights, the `0x66` prefix
+        (`sz == 2`) and `Enc.modrm_of`'s `rm == 0b101` rbp/r13 clause are all
+        unobservable — the last of which the source comment called "a gate row of its own".
+      * The file also lost **7900 lines of blank** (9878 → 2649) with byte-identical
+        output, and its 760 row literals are now written by `x86-gen.py`.
+      Artifacts: `.agents/slop/x86/{py1,i,native,gate}.txt`, `mut-consts.txt`,
+      `mut-rules.txt`, `stage-bytes.txt`, `x86-probe.py`.
+- [ ] `tinygrad/renderer/cstyle.py` **not** re-vendored (kept at the pin
+      `a4acfa5c6e86`): it carries a local delta and its 2314-line port has its
+      own gate and a second agent editing it right now. `cstyle.bend`'s gate
+      ROWS (`wmma_row` / `under_row` expectations) still need a re-run by its
+      owner — `type_map`'s keys were migrated here because the rename breaks them
+      regardless of which cstyle.py we pin.
+- [ ] name-keyed tables left for their owners: `renderer/nir_llvmir.bend` (9),
+      `renderer/isa/x86.bend` (2), `uop/fold.bend` + `fold_mm_work.bend` +
+      `fold2_work.bend` (20)
+- [ ] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
+      are done; its rows print `dt_name`, so they move with the rename and its
+      oracle must be re-run)

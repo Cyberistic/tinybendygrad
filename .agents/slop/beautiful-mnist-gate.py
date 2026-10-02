@@ -152,7 +152,7 @@ def const_like_sig(shape):
   (`tinybendygrad/tensor.bend:587`, CPython's ops.py:110), which `mxm_as_shape` reads no
   srcs from and therefore answers `Nil{}` for. So the ONE-dim shape is un-gateable and
   the ONE-dim GRAPH is, which is the row `w3_mask`."""
-  return sig(Tensor.empty(shape, dtype=dtypes.long).const_like(True, dtypes.bool))
+  return sig(Tensor.empty(shape, dtype=dtypes.i64).const_like(True, dtypes.bool))
 
 
 def const_like_dims(shape):
@@ -161,7 +161,7 @@ def const_like_dims(shape):
   `3 CONST/0 CONST/0 EXPAND/2` for every dim, which is why `mn_mask`'s dim was a measured
   blind spot before this row existed. Both rows go through the port's `mn_mask`, so this
   is a shape control on the same def and not a second fixture."""
-  return tuple(Tensor.empty(shape, dtype=dtypes.long).const_like(True, dtypes.bool).shape)
+  return tuple(Tensor.empty(shape, dtype=dtypes.i64).const_like(True, dtypes.bool).shape)
 
 
 def conv_out_ns():

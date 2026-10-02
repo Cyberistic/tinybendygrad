@@ -659,9 +659,6 @@ def commit_weak_consts.go(ss: List<&2, U32>, w: Walk, +fx: F.Folded, +dt: S.Dt) 
     case Nil{}: w
     case s <> t: commit_weak_consts.go(t, commit_weak_consts.on(w, fx, s, dt), fx, dt)
 
-def commit_weak_consts.kept(some: Bool, ar: O.Arena) -> O.Arena:
-  ar
-
 
 # `u if dt is None else u.replace(src=...)`. The branch is on `dt is None` and the WALK
 # IS INSIDE THE TRUE ARM, because Bend is STRICT: passing the walk as an argument would
@@ -747,7 +744,7 @@ def wk_commit_table() -> O.PMEntrys:
     O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]}  # 38  the STORE lambda
 # TODO(p3) weak.py:40 (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
 #   name="u"),), name="c"), cast_weak_srcs) -- `cast_weak_srcs` reads
-#   `u.commit_dtype(dtypes.int)` and `s.commit_dtype(dtypes.int)`, which is
+#   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
 #   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
 
 # pm_lower_weak -- weak.py:67-78. FOUR rules in Python; NONE here. All four read
@@ -758,7 +755,7 @@ def wk_commit_table() -> O.PMEntrys:
 # TODO(p3) weak.py:69 INDEX/SHRINK gated long index -- `buf.max_numel()` is
 #   `prod(to_max_shape(shape))` and `to_max_shape` (ops.py:1886) is `int(x.vmax)`.
 # TODO(p3) weak.py:73 two stacked weak casts       -- `commit_dtype` twice.
-# TODO(p3) weak.py:75 PARAM/BUFFER/ALLOC weakint  -- `u.commit_dtype(dtypes.int)`.
+# TODO(p3) weak.py:75 PARAM/BUFFER/ALLOC weakint  -- `u.commit_dtype(dtypes.i32)`.
 # TODO(p3) weak.py:77 lower_weak_node             -- see the TODO on that def.
 def wk_lower_table() -> O.PMEntrys:
   O.PMEntrys{Nil{}}
@@ -768,7 +765,7 @@ def wk_uncast_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, OP_BC(), Nil{}}]}   # 89
 
 # pm_cast_const -- weak.py:98. ONE rule in Python; NONE here.
-# TODO(p3) weak.py:98 cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.int))`.
+# TODO(p3) weak.py:98 cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.i32))`.
 def wk_cast_table() -> O.PMEntrys:
   O.PMEntrys{Nil{}}
 
@@ -905,7 +902,7 @@ def sealed_count() -> Nat:
 # THE FIXTURES. ONE arena, built by ONE recipe, so no index is written down twice.
 #
 # Every node is one tinygrad would build. `CAST(CONST(weakfloat), half)` is exactly Python's
-# `UOp.const(v, dtypes.half)`: ops.py:638 is `UOp(Ops.CONST, arg=dtype.const(b), src=())
+# `UOp.const(v, dtypes.f16)`: ops.py:638 is `UOp(Ops.CONST, arg=dtype.const(b), src=())
 # .cast(dtype)`, and ops.bend spells the bare CONST and the CAST as two nodes. A raw `OpsADD`
 # over two bare weakint CONSTs is the weak NON-CONST node that makes `commit_weak_srcs`
 # actually rewrite; with weak CONST srcs on both sides the `bare and CONST` arm rebuilds each
@@ -954,7 +951,7 @@ def c_int(ar: O.Arena, k: U32) -> O.Found:
 def c_flt(ar: O.Arena, f: F32) -> O.Found:
   O.UOp.const(ar, O.CFloat{f})
 
-# `UOp.const(v, dtypes.half)`: the bare weakfloat CONST, then the CAST.
+# `UOp.const(v, dtypes.f16)`: the bare weakfloat CONST, then the CAST.
 def cast_half(ar: O.Arena, +f: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(f), O.OpsCAST{}, [O.Found.i(f)], O.ADt{S.half()}, O.TNone{})
 
@@ -1215,7 +1212,7 @@ def t_cwc_b_single(+f: Fix) -> Bool:
     O.Found.i(commit_weak_consts(Fix.fx(f), Fix.b(f), Some{S.single()})))
 
 # THE SEALED REFUSAL, which is a divergence and is therefore a row. The same STORE at
-# `half` is fixture B': Python's rule rewrites it (`UOp.const(4.0, dtypes.half)` ->
+# `half` is fixture B': Python's rule rewrites it (`UOp.const(4.0, dtypes.f16)` ->
 # `float_to_fp16`, dtype.bend's C-effect seam) and this file answers "no rewrite", because
 # `wk_store_cast.bad` refuses rather than committing an unrounded CONST.
 def t_store_sealed.go(m: Maybe<&2, O.Found>) -> Bool:
@@ -1390,19 +1387,19 @@ def main() -> IO(Unit):
 # ===========================================================================
 # TODO(p3) weak.py:27 def cast_weak_srcs -- `weak_dtype(c.dtype)` is ported, and the
 #   `least_upper_dtype` lattice is ported, but the `dt` it computes reads
-#   `u.commit_dtype(dtypes.int)` and `s.commit_dtype(dtypes.int)`. P3 with `_min_max`.
+#   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`. P3 with `_min_max`.
 #   It is `pm_commit_weak`'s THIRD rule (weak.py:40) and it is the one rule of that
 #   table whose body is not in this file.
 # TODO(p3) weak.py:45 _lower_weak_ops -- the `GroupOp.Binary|GroupOp.Unary|{WHERE,
 #   RANGE, STACK, SPECIAL}` set, a module constant, belongs with `lower_weak_node` and
 #   is only read there. 30 op literals; no value without the def.
-# TODO(p3) weak.py:48 def absorb_weak_src -- `s.commit_dtype(dtypes.int)` on the
+# TODO(p3) weak.py:48 def absorb_weak_src -- `s.commit_dtype(dtypes.i32)` on the
 #   weakint-over-a-bool-or-float arm. P3 with `_min_max`.
 # TODO(p3) weak.py:53 def lower_weak_node -- reads `commit_dtype` (line 57) and
 #   `strong_dtype` (line 62, PORTED) and `dtype_from_uop` (line 63, PORTED as
 #   `wk_dtype_at`). Only the `commit_dtype` is missing. It is `pm_lower_weak`'s FOURTH
 #   rule (weak.py:77).
-# TODO(p3) weak.py:92 def cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.int))`
+# TODO(p3) weak.py:92 def cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.i32))`
 #   and `s.is_invalid` (portable: `F.fold.base` + a `CInvalid` test). It is
 #   `pm_cast_const`'s only rule (weak.py:98), which is why that table is EMPTY here.
 # TODO(p3) weak.py:69 pm_lower_weak rule 0 -- `buf.max_numel()` is

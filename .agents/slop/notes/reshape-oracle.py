@@ -4,7 +4,7 @@ from tinygrad import dtypes                                      # noqa: E402
 
 
 def buf(size, name='4', slot=0):
-  return UOp(Ops.BUFFER, (), ParamArg(slot, dtypes.int32, size=size, device='CPU'))
+  return UOp(Ops.BUFFER, (), ParamArg(slot, dtypes.i32, size=size, device='CPU'))
 
 
 def st(*dims):

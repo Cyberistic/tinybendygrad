@@ -24,7 +24,7 @@
 #   sum          198            96                        13
 #   arange        31            32                         0
 #
-# and the values past i64 are `dtypes.uint64.max` = 2**64-1 and `uint64.max << 10`.
+# and the values past i64 are `dtypes.u64.max` = 2**64-1 and `uint64.max << 10`.
 # So the honest width is NOT 64 bits. Two facts decide what this port can do:
 #
 #   1. `U32.shrn`/`shln` and `Nat` are the runtime's only numbers, and `Nat` REFUSES

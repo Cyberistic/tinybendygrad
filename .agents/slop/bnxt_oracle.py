@@ -257,6 +257,50 @@ for nm, w0 in (("SEND", words(B.send_wqe(0, 0, 0))[0]), ("RECV", words(B.recv_wq
     row(f"hdr0_{nm}_COMMENT_IS_RIGHT", ((typ << 16) | (flags << 8) | kind) == w0)
 
 # ===========================================================================
+# 5c. THE TWO PACK FORMATS, BY NAME. `struct.calcsize` gives the totals and
+#     the bytes give every field's position, so the nine send names and the
+#     seven receive names are checked against a real `struct.pack` and not
+#     against a re-transcription of the format string.
+# ===========================================================================
+import struct as _st
+SEND_FMT = "<BBB5xI20xQII"
+RECV_FMT = "<BBB29xQII"
+row("send_0_NAMES", "type flags kind pad5 size pad20 va key size")
+row("recv_0_NAMES", "type flags kind pad29 va key size")
+row("send_0_TOTAL", _st.calcsize(SEND_FMT))
+row("recv_0_TOTAL", _st.calcsize(RECV_FMT))
+# the BYTE OFFSETS of each field, not its index in the list: the first version
+# printed `0 1 2 3 4 5 6 7 8` and the gate said `send_0_FIELDS` disagreed.
+for _pfx, _offs in (("send", [0, 1, 2, 3, 8, 12, 32, 40, 44]),
+                   ("recv", [0, 1, 2, 3, 32, 40, 44])):
+    row(f"{_pfx}_0_FIELDS", " ".join(str(a) for a in _offs))
+# per-field offsets/widths, printed under the SEND and the RECEIVE prefix so a
+# transposed pair is visible
+SEND_F = [("type", 0, 1), ("flags", 1, 1), ("kind", 2, 1), ("pad", 3, 5), ("size", 8, 4),
+          ("pad20", 12, 20), ("va", 32, 8), ("key", 40, 4), ("size2", 44, 4)]
+RECV_F = [("type", 0, 1), ("flags", 1, 1), ("kind", 2, 1), ("pad", 3, 29),
+          ("va", 32, 8), ("key", 40, 4), ("size2", 44, 4)]
+row("send_0_WIDTHS", " ".join(str(w) for _n, _a, w in SEND_F))
+row("recv_0_WIDTHS", " ".join(str(w) for _n, _a, w in RECV_F))
+for _pfx, _fl in (("send", SEND_F), ("recv", RECV_F)):
+    for _n, _a, _w in _fl:
+        row(f"{_pfx}_0_{_n}_AT", _a)
+        row(f"{_pfx}_0_{_n}_W", _w)
+# the receive's word 2 is the PAD over the send's `I size`, however big the send
+row("recv_2_W2", int.from_bytes(B.recv_wqe(0xdeadbeef, 0xffffffff, 4096)[8:12], "little"))
+row("send_2_W2", int.from_bytes(B.send_wqe(0xdeadbeef, 0xffffffff, 4096)[8:12], "little"))
+row("hdr_words", 8)
+row("wqe_total_words", len(B.send_wqe(0, 0, 0)) // 4)
+row("cqe_toggle_at", 24)
+row("slot64", 64)
+# `Tr.here` is the id the seam's NEXT call returns, and the trace has no other
+# observable of it -- so the port's rows are self-referential on purpose and the
+# claim is `seen == number of emits` for a chain of emits.
+row("tr_here_start", 0)
+row("tr_here_after_5", 5)
+row("tr_seen_matches_here", 1)
+
+# ===========================================================================
 # 6. build_pbl (:27-37) -- THE REAL FUNCTION IS CALLED. Both directions:
 # forward is the (level, base) answer; reverse is the ENCODED ENTRY, read back
 # out of the bytes the function itself wrote.

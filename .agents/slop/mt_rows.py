@@ -140,9 +140,9 @@ def main():
   A("mt_run_nosym_n=0")
 
   # --- 5: the argument layout, through tinygrad's OWN layout_args ------------
-  addr = UOp.new_buffer("METAL", 64, dtypes.float32, 16).getaddr(None)
-  i32 = UOp.const(1, dtypes.int32)
-  f16 = UOp.const(1, dtypes.half)
+  addr = UOp.new_buffer("METAL", 64, dtypes.f32, 16).getaddr(None)
+  i32 = UOp.const(1, dtypes.i32)
+  f16 = UOp.const(1, dtypes.f16)
   A("mt_items_2_1=8,8,4")
   A("mt_items_0_0=")
   A("mt_items_3_2=8,8,8,4,2")

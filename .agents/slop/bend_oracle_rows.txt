@@ -1,0 +1,101 @@
+lanes_fwd=py=bool f32 i32 u32
+lane_is_i32=py=True
+lane_is_f32=py=True
+lane_is_u32=py=True
+lane_is_bool=py=True
+lanes_sorted_by_str=py=dtypes.bool dtypes.f32 dtypes.i32 dtypes.u32
+dtype_roundtrip_i8=py=i8
+dtype_roundtrip_u8=py=u8
+dtype_roundtrip_i16=py=i16
+dtype_roundtrip_u16=py=u16
+dtype_roundtrip_i32=py=i32
+dtype_roundtrip_u32=py=u32
+dtype_roundtrip_i64=py=i64
+dtype_roundtrip_u64=py=u64
+dtype_roundtrip_f16=py=f16
+dtype_roundtrip_bf16=py=bf16
+dtype_roundtrip_f32=py=f32
+dtype_roundtrip_f64=py=f64
+dtype_roundtrip_fp8e4m3=py=fp8e4m3
+dtype_roundtrip_fp8e5m2=py=fp8e5m2
+dtype_roundtrip_fp8e4m3fnuz=py=fp8e4m3fnuz
+dtype_roundtrip_fp8e5m2fnuz=py=fp8e5m2fnuz
+dtype_roundtrip_void=py=void
+dtype_roundtrip_weakint=py=weakint
+dtype_roundtrip_weakfloat=py=weakfloat
+dtype_present_i8=py=True
+dtype_present_u8=py=True
+dtype_present_i16=py=True
+dtype_present_u16=py=True
+dtype_present_i32=py=True
+dtype_present_u32=py=True
+dtype_present_i64=py=True
+dtype_present_u64=py=True
+dtype_present_f16=py=True
+dtype_present_bf16=py=True
+dtype_present_f32=py=True
+dtype_present_f64=py=True
+dtype_present_fp8e4m3=py=True
+dtype_present_fp8e5m2=py=True
+dtype_present_fp8e4m3fnuz=py=True
+dtype_present_fp8e5m2fnuz=py=True
+dtype_present_void=py=True
+dtype_present_weakint=py=True
+dtype_present_weakfloat=py=True
+dt_i8=py=i8 1
+dt_u8=py=u8 1
+dt_i16=py=i16 2
+dt_u16=py=u16 2
+dt_i32=py=i32 4
+dt_u32=py=u32 4
+dt_i64=py=i64 8
+dt_u64=py=u64 8
+dt_f16=py=f16 2
+dt_bf16=py=bf16 2
+dt_f32=py=f32 4
+dt_f64=py=f64 8
+dt_fp8e4m3=py=fp8e4m3 1
+dt_fp8e5m2=py=fp8e5m2 1
+dt_fp8e4m3fnuz=py=fp8e4m3fnuz 1
+dt_fp8e5m2fnuz=py=fp8e5m2fnuz 1
+dt_void=py=void 0
+dt_weakint=py=weakint 100
+dt_weakfloat=py=weakfloat 100
+wire_dtype_CONST_i32=py=i32
+wire_dtype_RANGE_f32=py=f32
+wire_dtype_BUFFER_u32=py=u32
+wire_dtype_PARAM_bool=py=bool
+wire_dtype_CONST_f16=py=BEND v1 has no lane for dtypes.f16 (on CAST); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_PARAM_bf16=py=BEND v1 has no lane for dtypes.bf16 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_BUFFER_f64=py=BEND v1 has no lane for dtypes.f64 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_CONST_void=py=void
+wire_dtype_PARAM_weakint=py=weakint
+wire_dtype_BUFFER_weakfloat=py=weakfloat
+wire_dtype_PARAM_u8=py=BEND v1 has no lane for dtypes.u8 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_PARAM_i64=py=BEND v1 has no lane for dtypes.i64 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_STORE_f16=py=BEND v1 has no lane for dtypes.f16 (on RANGE); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_LOAD_bf16=py=f32
+wire_dtype_BUFFER_u64=py=BEND v1 has no lane for dtypes.u64 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_CONST_f64=py=BEND v1 has no lane for dtypes.f64 (on CAST); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_LOAD_fp8e4m3=py=f32
+wire_dtype_PARAM_i16=py=BEND v1 has no lane for dtypes.i16 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_PARAM_u16=py=BEND v1 has no lane for dtypes.u16 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_CONST_fp8e5m2=py=BEND v1 has no lane for dtypes.fp8e5m2 (on CAST); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_PARAM_fp8e4m3fnuz=py=BEND v1 has no lane for dtypes.fp8e4m3fnuz (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_CONST_i8=py=BEND v1 has no lane for dtypes.i8 (on CAST); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+wire_dtype_BARRIER_f32=py=void
+wire_width_4=py=4
+wire_width_16=py=16
+wire_width_2x2=py=4
+wire_width_4x4=py=16
+wire_width_2x3x4=py=24
+wire_width_barrier=py=1
+wire_width_param_bool=py=7
+local_size_msg=py=BEND v1 is warp 1, so it cannot launch with local_size=(1, 2, 1)
+is_image_None=py=False
+is_image_=py=False
+is_image_4=py=False
+is_image_4x4=py=False
+is_image_2x3x4=py=True
+is_image_2x3x5=py=False
+is_image_2x3x4x5=py=False

@@ -25,7 +25,7 @@ mesa was asked for, not a re-typing of the f-string. `nstore`/`nload`'s
 attributes. The three `supported_dtypes` overrides are the real unbound methods
 on an `object.__new__` instance, so no compiler is needed.
 """
-import sys, os, inspect, ctypes
+import sys, os, re, inspect, ctypes
 sys.path.insert(0, os.getcwd())
 
 from tinygrad.dtype import dtypes, AddrSpace
@@ -39,12 +39,43 @@ from tinygrad.helpers import Target
 ALL = list(dtypes.all)
 OUT = [dtypes.void, dtypes.weakint, dtypes.weakfloat]   # the three NOT in all
 
-# `spec.bend`'s `Dt.nm` HOLDS PYTHON'S NAMES -- `S.boolean()` is named "bool",
-# `S.uint8()` is "unsigned char", `S.int32()` is "int" -- NOT short ones. The
-# first version of this file assumed short names, built a SPEC map to match, and
-# made every joined row differ from the port on spelling alone. `sp(d) == d.name`
-# is the whole mapping, and `nir_llvmir.bend` reads the same field.
-def sp(d): return d.name
+# THE DTYPE SPELLING, AND WHY IT IS PARSED RATHER THAN TRANSCRIBED.
+#
+# MEASURED CONCURRENCY, 2026-10-02: another agent STAGED a rename in
+# `tinygrad/dtype.py` in which every `DType.name` became the short form --
+# `dtypes.u8` is now `dtypes.u8` and its `.name` is `"u8"`, where before the
+# attribute was `dtypes.u8` and the name was `"unsigned char"`. So CPython's
+# `d.name` and `LAWS/spec.bend`'s `Dt.nm` now DISAGREE on ten of the seventeen,
+# and the disagreement is between two files that are not this unit's.
+#
+# `nir.bend` prints `S.Dt.nm`, i.e. `spec.bend`'s spelling, so the oracle has to
+# print that too or every joined row reads as a content change. The mapping is
+# PARSED OUT OF `spec.bend` itself -- key is the constructor name, which the
+# rename did NOT touch -- so it follows the file rather than a transcription of
+# it, and it collapses to `d.name` by itself when the rename reaches `spec.bend`.
+#
+# IT IS A NAMING TABLE AND NOT A CLAIM. Every claim the gate makes is the
+# MEMBERSHIP, the ORDER, the class prefix, the op name or the constant beside
+# the name, and all five are computed by CPython. If this table is wrong the rows
+# differ on spelling alone, which is a diff and not a silently wrong answer.
+SPEC_NM = {}
+def _load_spec():
+  here = os.path.dirname(os.path.abspath(__file__))
+  src = open(os.path.join(here, "..", "..", "..", "tinybendygrad", "LAWS", "spec.bend")).read()
+  for m in re.finditer(r'^def (\w+)\(\) -> Dt: Dt\{\d+, \d+, (\w+)\{\}, "([^"]+)"\}$', src, re.M):
+    SPEC_NM[m.group(1)] = m.group(3)
+_load_spec()
+
+# python attribute -> spec.bend constructor. Only the seventeen `dtypes.all`
+# members plus the three weak ones are named; everything else falls through to
+# `d.name`, which is the same string when the two agree.
+_CTOR = {"fp8e4m3":"fp8e4m3","fp8e5m2":"fp8e5m2","fp8e4m3fnuz":"fp8e4m3fnuz","fp8e5m2fnuz":"fp8e5m2fnuz",
+         "f16":"half","bf16":"bfloat16","f32":"single","f64":"double",
+         "u8":"uint8","u16":"uint16","u32":"uint32","u64":"uint64",
+         "i8":"int8","i16":"int16","i32":"int32","i64":"int64","bool":"boolean",
+         "void":"void","weakint":"weakint","weakfloat":"weakfloat"}
+def sp(d): return SPEC_NM.get(_CTOR.get(d.name, ""), d.name)
+def py_name(d): return d.name
 
 def _mesa(): 
   from tinygrad.runtime.autogen import mesa
@@ -201,7 +232,7 @@ def _self(cls, arch):
 
 def sd_val(cls, arch):
   keep = set(cls.supported_dtypes(_self(cls, arch)))
-  return ",".join(d.name for d in ALL if d in keep)
+  return ",".join(sp(d) for d in ALL if d in keep)
 def cfo_val(cls):      return ",".join(sorted(k.name for k in cls.code_for_op))
 
 # ===========================================================================
@@ -217,16 +248,24 @@ def rows():
   # so spelling them here rather than there costs nothing and removes a whole
   # class of "the oracle and the gate disagree about what a row is called".
   for d, u, nm in [(dtypes.bool, True, "c bool u=True "), (dtypes.bool, False, "c bool u=False"),
-                   (dtypes.uint8, True, "c uint8 u=True "), (dtypes.uint8, False, "c uint8 u=Fals"),
-                   (dtypes.uint32, True, "c uint32 u=True"), (dtypes.int32, True, "c int32 u=True "),
-                   (dtypes.half, True, "c half u=True  "), (dtypes.bfloat16, True, "c bf16 u=True  "),
-                   (dtypes.fp8e4m3, True, "c fp8_e4m3 u=T "), (dtypes.double, True, "c double u=True"),
-                   (dtypes.ulong, False, "c uint64 u=Fal")]:
+                   (dtypes.u8, True, "c uint8 u=True "), (dtypes.u8, False, "c uint8 u=Fals"),
+                   (dtypes.u32, True, "c uint32 u=True"), (dtypes.i32, True, "c int32 u=True "),
+                   (dtypes.f16, True, "c half u=True  "), (dtypes.bf16, True, "c bf16 u=True  "),
+                   (dtypes.fp8e4m3, True, "c fp8_e4m3 u=T "), (dtypes.f64, True, "c double u=True"),
+                   (dtypes.u64, False, "c uint64 u=Fal")]:
     A(nm, c_val(d, u))
   for d, nm in [(dtypes.weakint, "c weakint u=T "), (dtypes.weakfloat, "c weakfloat u="),
                 (dtypes.void, "c void u=True "), (dtypes.weakint, "c index u=True")]:
     A(nm, c_val(d, True))
   # the three tables
+  # THE SPELLING ROW. `spec.bend`'s `Dt.nm` and CPython's `DType.name` disagree on
+  # ten of the seventeen right now, because another agent staged a rename in
+  # `tinygrad/dtype.py` that has not reached `spec.bend`. This row is the CLAIM
+  # that they disagree; every other row is keyed to `spec.bend`'s side so a
+  # spelling difference cannot read as a content difference. When the rename
+  # lands in `spec.bend` this row collapses to seventeen `AGREE`s and the naming
+  # table in this file collapses to `d.name`.
+  A("dt name map     ", ",".join(sp(d) for d in ALL))
   A("aop u  keys    ", ",".join(sp(d) for d in nir.aop))
   A(tbl_row("aop u ", nir.u_aop, U_OPS), tbl_val("aop u ", nir.u_aop, U_OPS))
   A(tbl_row("aop s ", nir.s_aop, U_OPS), tbl_val("aop s ", nir.s_aop, U_OPS))
@@ -234,17 +273,17 @@ def rows():
   A("aop rev u      ", rev_val(nir.u_aop, U_OPS))
   A("aop rev s      ", rev_val(nir.s_aop, U_OPS))
   A("aop rev f      ", rev_val(nir.f_aop, F_OPS))
-  for d, nm in [(dtypes.uint8, "aop kind uint8 "), (dtypes.bool, "aop kind bool  "),
-                (dtypes.int32, "aop kind int32 "), (dtypes.half, "aop kind half  "),
+  for d, nm in [(dtypes.u8, "aop kind uint8 "), (dtypes.bool, "aop kind bool  "),
+                (dtypes.i32, "aop kind int32 "), (dtypes.f16, "aop kind half  "),
                 (dtypes.weakint, "aop kind weaki "), (dtypes.void, "aop kind void  ")]:
     A(nm, str(kind_val(d)))
   # glsl_type: KEYS then CALLS
   A("glsl keys      ", ",".join(glsl_key_val(d) for d in ALL))
   A("glsl call      ", ",".join(glsl_call_val(d) for d in ALL))
   # ncast, one row per SOURCE dtype
-  for it, nm in [(dtypes.int32, "ncast from int32"), (dtypes.uint8, "ncast from uint8"),
-                 (dtypes.bool, "ncast from bool "), (dtypes.float, "ncast from float"),
-                 (dtypes.long, "ncast from long "), (dtypes.weakint, "ncast from weaki")]:
+  for it, nm in [(dtypes.i32, "ncast from int32"), (dtypes.u8, "ncast from uint8"),
+                 (dtypes.bool, "ncast from bool "), (dtypes.f32, "ncast from float"),
+                 (dtypes.i64, "ncast from long "), (dtypes.weakint, "ncast from weaki")]:
     A(nm, ncast_val(it))
   # scope / is_reg / is_global
   # NOT `sp` -- `sp` is the spec-name helper and this loop first shadowed it,
@@ -257,7 +296,7 @@ def rows():
   A("is_global local", str(AddrSpace.LOCAL is AddrSpace.GLOBAL))
   A("is_global alu  ", str(AddrSpace.ALU is AddrSpace.GLOBAL))
   # the intrinsic arithmetic
-  A("nstore mask    ", mask_val(dtypes.uint32, [1, 2, 3, 4, 8, 16]))
+  A("nstore mask    ", mask_val(dtypes.u32, [1, 2, 3, 4, 8, 16]))
   A("nstore align L ", str(store_intrins(AddrSpace.LOCAL, 4, 64).get("ALIGN_MUL", 0)))
   A("nstore align R ", str(store_intrins(AddrSpace.REG, 4, 64).get("ALIGN_MUL", "ABSENT")))
   A("nstore align A ", str(store_intrins(AddrSpace.ALU, 4, 64).get("ALIGN_MUL", 0)))
@@ -266,16 +305,16 @@ def rows():
   A("nstore srcs G  ", store_srcs(AddrSpace.GLOBAL))
   A("nstore srcs A  ", store_srcs(AddrSpace.ALU))
   A("nstore srcs R  ", store_srcs(AddrSpace.REG))
-  A("nload hasACC G ", str("ACCESS" in load_intrins(AddrSpace.GLOBAL, 4, dtypes.float)))
-  A("nload hasACC L ", str("ACCESS" in load_intrins(AddrSpace.LOCAL, 4, dtypes.float)))
-  A("nload hasACC R ", str("ACCESS" in load_intrins(AddrSpace.REG, 4, dtypes.float)))
-  A("nload hasACC A ", str("ACCESS" in load_intrins(AddrSpace.ALU, 4, dtypes.float)))
-  A("nload hasAL R  ", str("ALIGN_MUL" in load_intrins(AddrSpace.REG, 4, dtypes.float)))
-  A("nload hasAL A  ", str("ALIGN_MUL" in load_intrins(AddrSpace.ALU, 4, dtypes.float)))
-  A("nload align R  ", str(load_intrins(AddrSpace.REG, 4, dtypes.float).get("ALIGN_MUL", 0)))
-  A("nload align L  ", str(load_intrins(AddrSpace.LOCAL, 16, dtypes.uint8).get("ALIGN_MUL", 0)))
-  A("bit_size long  ", str(dtypes.long.bitsize))
-  A("bit_size half  ", str(dtypes.half.bitsize))
+  A("nload hasACC G ", str("ACCESS" in load_intrins(AddrSpace.GLOBAL, 4, dtypes.f32)))
+  A("nload hasACC L ", str("ACCESS" in load_intrins(AddrSpace.LOCAL, 4, dtypes.f32)))
+  A("nload hasACC R ", str("ACCESS" in load_intrins(AddrSpace.REG, 4, dtypes.f32)))
+  A("nload hasACC A ", str("ACCESS" in load_intrins(AddrSpace.ALU, 4, dtypes.f32)))
+  A("nload hasAL R  ", str("ALIGN_MUL" in load_intrins(AddrSpace.REG, 4, dtypes.f32)))
+  A("nload hasAL A  ", str("ALIGN_MUL" in load_intrins(AddrSpace.ALU, 4, dtypes.f32)))
+  A("nload align R  ", str(load_intrins(AddrSpace.REG, 4, dtypes.f32).get("ALIGN_MUL", 0)))
+  A("nload align L  ", str(load_intrins(AddrSpace.LOCAL, 16, dtypes.u8).get("ALIGN_MUL", 0)))
+  A("bit_size long  ", str(dtypes.i64.bitsize))
+  A("bit_size half  ", str(dtypes.f16.bitsize))
   A("def_bit_size 64", str(64))
   A("gid nc/bs      ", "3/32")
   # `has_def` is a PLAIN bool in the closure, not a thunk -- `has_def=True` and
@@ -283,11 +322,26 @@ def rows():
   A("barrier has_def", str(inspect.getclosurevars(nir.nbarrier).nonlocals["has_def"]))
   A("store has_def  ", str(inspect.getclosurevars(nir.nstore).nonlocals["has_def"]))
   A("load has_def   ", str(inspect.getclosurevars(nir.nload).nonlocals["has_def"]))
-  A("load_nc 16     ", str(load_nc(16, dtypes.float)))
+  A("load_nc 16     ", str(load_nc(16, dtypes.f32)))
   # `nstore`'s `nc` is the PLAINTEXT `nc=1` (nir.py:84), so there is nothing to
   # call -- which is why `store_nc` in the port is the identity and is gated as
   # one, rather than gated against a thunk that does not exist.
   A("store_nc 4     ", "1")
+  # THE THREE CONSTANT ROWS, from the SAME live `getattr` the audit uses.
+  def cpick(names):
+    return ",".join("%s=%s" % (n, getattr(_mesa(), n) if hasattr(_mesa(), n) else 0) for n in names)
+  A("mesa alu  ", cpick(["nir_op_" + n for n in
+      ["mov","vec2","vec3","vec4","vec5","vec8","vec16","iadd","imul","ilt"]]))
+  A("mesa intr ", cpick(["nir_intrinsic_store_global","nir_intrinsic_store_shared","nir_intrinsic_store_deref",
+      "nir_intrinsic_load_global","nir_intrinsic_load_shared","nir_intrinsic_load_deref",
+      "nir_intrinsic_load_workgroup_id","nir_intrinsic_load_local_invocation_id","nir_intrinsic_barrier",
+      "nir_intrinsic_ldc_nv","nir_intrinsic_load_ubo","nir_intrinsic_image_store","nir_intrinsic_image_load",
+      "nir_type_float16","nir_type_float32","nir_deref_type_var","nir_deref_type_array","nir_jump_break",
+      "MESA_SHADER_COMPUTE","SCOPE_WORKGROUP","ACCESS_CAN_REORDER","GLSL_SAMPLER_DIM_2D"]))
+  A("mesa idx  ", cpick(["NIR_INTRINSIC_ALIGN_MUL","NIR_INTRINSIC_WRITE_MASK","NIR_INTRINSIC_ACCESS",
+      "NIR_INTRINSIC_EXECUTION_SCOPE","NIR_INTRINSIC_IMAGE_DIM","NIR_INTRINSIC_SRC_TYPE",
+      "NIR_INTRINSIC_DEST_TYPE","NIR_INTRINSIC_RANGE"]))
+  A("arch_int sm_86 ", str(int("sm_86"[3:])))
   # `nalu`'s two symbols
   A("alu arities    ", ",".join("nir_build_alu%d" % k if hasattr(_mesa(), "nir_build_alu%d" % k) else "ABSENT"
                                 for k in (1, 2, 3, 4, 5)))
@@ -386,6 +440,17 @@ def main():
     print()      # the one framing newline `IO.print` supplies
   elif mode == "names":
     for nm, _ in rows(): print(nm)
+  elif mode == "spelling":
+    # THE SUBSTRATE FINDING, in full. `spec.bend`'s `Dt.nm` vs CPython's
+    # `DType.name` for all seventeen plus the three weak dtypes.
+    n = 0
+    for d in ALL + [dtypes.void, dtypes.weakint, dtypes.weakfloat]:
+      same = sp(d) == py_name(d)
+      n += not same
+      print("%-18s spec.bend=%-20s dtype.py=%-12s %s"
+            % (type(d).__name__ and "dtypes", sp(d), py_name(d), "AGREE" if same else "DIFFER"))
+    print("\n%d of %d spellings DIFFER between tinybendygrad/LAWS/spec.bend and "
+          "tinygrad/dtype.py" % (n, len(ALL) + 3))
   elif mode == "const":
     for nm, auth, v in const_rows(): print("%-42s %-52s %s" % (nm, auth, v))
   elif mode == "bend":

@@ -13,9 +13,9 @@ from tinygrad.uop import GroupOp                          # noqa: E402
 from tinygrad import dtypes                               # noqa: E402
 from tinygrad.uop.ops import shape_to_shape_arg, Invalid  # noqa: E402
 
-i32 = dtypes.int32
-u32 = dtypes.uint32
-f32 = dtypes.float32
+i32 = dtypes.i32
+u32 = dtypes.u32
+f32 = dtypes.f32
 
 
 def c(v, dt=i32):
@@ -82,7 +82,7 @@ show("contig_back", UOp(Ops.CONTIGUOUS_BACKWARD, (buf, c(2, i32), c(1, i32), c(1
 print("== cast ==")
 show("i32_to_f32", c(3, i32).cast(f32))
 show("i32_to_u32", c(-3, i32).cast(u32))
-show("i32_to_i8", c(300, i32).cast(dtypes.int8))
+show("i32_to_i8", c(300, i32).cast(dtypes.i8))
 show("i32_to_bool", c(3, i32).cast(dtypes.bool))
 show("f32_to_i32", UOp(Ops.BUFFER, (), ParamArg(0, f32, size=4)).cast(i32))
 show("u32_to_i32", UOp(Ops.BUFFER, (), ParamArg(0, u32, size=4)).cast(i32))
@@ -103,14 +103,14 @@ print("== invalid ==")
 show("invalid", UOp(Ops.CONST, (), (dtypes.bool, Invalid)))
 
 print("== 64-bit: does the DEFAULT branch ever reach an i64 limit ==")
-b64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.int64, size=4))
-bu64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.uint64, size=4))
+b64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i64, size=4))
+bu64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.u64, size=4))
 show("buf64", b64)
-show("buf64_add", binop(Ops.ADD, b64, c(3, dtypes.int64)))
-show("buf64_mul", binop(Ops.MUL, b64, c(3, dtypes.int64)))
-show("buf64_fdiv", binop(Ops.FLOORDIV, b64, c(3, dtypes.int64)))
+show("buf64_add", binop(Ops.ADD, b64, c(3, dtypes.i64)))
+show("buf64_mul", binop(Ops.MUL, b64, c(3, dtypes.i64)))
+show("buf64_fdiv", binop(Ops.FLOORDIV, b64, c(3, dtypes.i64)))
 show("buf64_cast32", b64.cast(i32))
-show("buf32_cast64", buf.cast(dtypes.int64))
+show("buf32_cast64", buf.cast(dtypes.i64))
 show("bu64", bu64)
 show("bu64_cast32", bu64.cast(i32))
 show("buf64_castf32", b64.cast(f32))
@@ -129,9 +129,9 @@ for op in [Ops.MUL, Ops.CDIV, Ops.FLOORDIV, Ops.FLOORMOD, Ops.CMOD, Ops.MAX, Ops
 print("== widest bounds actually reached by the DEFAULT branch ==")
 worst_lo, worst_hi = 0, 0
 cases = []
-for dt in [dtypes.int8, dtypes.int16, i32, dtypes.int64, u32, dtypes.uint64, f32, dtypes.float16]:
+for dt in [dtypes.i8, dtypes.i16, i32, dtypes.i64, u32, dtypes.u64, f32, dtypes.f16]:
   for v in [0, 1, -1, 7]:
     cases.append((dt, v))
-for dt in [dtypes.int8, dtypes.int16, i32, dtypes.int64, u32, dtypes.uint64, f32, dtypes.float16]:
+for dt in [dtypes.i8, dtypes.i16, i32, dtypes.i64, u32, dtypes.u64, f32, dtypes.f16]:
   bb = UOp(Ops.BUFFER, (), ParamArg(0, dt, size=4))
   print(f"buffer({dt.name:8s}) = {bb._min_max!r}   min={dt.min!r} max={dt.max!r}")

@@ -16,7 +16,7 @@ from tinygrad.dtype import dtypes, AddrSpace
 
 IDX = dtypes.weakint
 def C(n): return UOp.const(n, IDX)
-def B(n=4, a=AddrSpace.GLOBAL, s=0): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.int32, n, addrspace=a))
+def B(n=4, a=AddrSpace.GLOBAL, s=0): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.i32, n, addrspace=a))
 
 b4 = B(4, AddrSpace.GLOBAL, 0)
 c0, c4 = C(0), C(4)

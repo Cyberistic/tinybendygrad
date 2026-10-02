@@ -252,7 +252,7 @@ def pd.smem_cfg.msg(+shmem: U32) -> String:
 # memory faults". The +0x1000 is the NOTE and it is 4096 bytes of slack.
 def pd.image_len(img: U32) -> U32: U32.add(H.round_up_u32(img, 4096), 4096)
 
-# :273 `self.vars = [dtypes.uint64 if mock else dt for _,_,dt,_ in
+# :273 `self.vars = [dtypes.u64 if mock else dt for _,_,dt,_ in
 # signature[nbufs:]]` and :272 `nbufs = sum(name is None for name, *_ in
 # signature)`. A MOCKGPU program wants EVERY var 64 bit and counts the buffers
 # and the vars out of cbuf_0 at :274, which is why `nvars` is a field.
@@ -380,7 +380,7 @@ def cq.stride(qmd_sz: U32, max_kernargs: U32) -> U32: U32.add(qmd_sz, max_kernar
 def cq.qmd_buf_len(nprogs: U32, stride: U32) -> U32: U32.mul(nprogs, stride)
 
 # :170 `qmd_addr = self.qmd_buf.getaddr(self.devs) + UOp.const(len(self.qmds) *
-# self.stride, dtypes.uint64)` -- the n-th launch's QMD is at `n * stride` and
+# self.stride, dtypes.u64)` -- the n-th launch's QMD is at `n * stride` and
 # NOTHING else. `cq.qmd_off` is that and it is a row per launch index.
 def cq.qmd_off(n: U32, stride: U32) -> U32: U32.mul(n, stride)
 

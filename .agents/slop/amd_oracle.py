@@ -83,7 +83,7 @@ def t_layout():
         "w2":        ([], ['uint8', 'uint32', 'uint8', 'uint8']),
     }
     for nm, (globs, vards) in fixtures.items():
-        args = [UOp.placeholder((4,), dtypes.uint8, 0, device='AMD').getaddr('AMD') for _ in globs]
+        args = [UOp.placeholder((4,), dtypes.u8, 0, device='AMD').getaddr('AMD') for _ in globs]
         args += [UOp.placeholder((1,), getattr(dtypes, v), 0, device='AMD') for v in vards]
         ks = [a.dtype.itemsize for a in args]
         row(f"amd_arg_ks_{nm}", " ".join(map(str, ks)))
@@ -107,15 +107,15 @@ def t_layout():
     # the same widths the gate's KS_B3V2 fixture is, so `amd_kernargs_off` and
     # `amd_pack_b3v2_32_40` are the SAME claim seen twice
     globs, vards = [0, 1, 2], ['uint32', 'uint32']
-    args = [UOp.placeholder((4,), dtypes.uint8, 0, device='AMD').getaddr('AMD') for _ in globs]
+    args = [UOp.placeholder((4,), dtypes.u8, 0, device='AMD').getaddr('AMD') for _ in globs]
     args += [UOp.placeholder((1,), getattr(dtypes, v), 0, device='AMD') for v in vards]
     la = layout_args(args)
     row("amd_kernargs_off", shapes(pack_args(la, 40)))
     # the TOTAL the pack must add up to: kernargs_segment_size.
     for nm in ("b3", "b3v2_32", "b3v3_mix", "b0v4"):
         args = []
-        if nm.startswith("b3"): args += [UOp.placeholder((4,), dtypes.uint8, 0, device='AMD').getaddr('AMD')] * 3
-        elif nm == "b2v1_8": args += [UOp.placeholder((4,), dtypes.uint8, 0, device='AMD').getaddr('AMD')] * 2
+        if nm.startswith("b3"): args += [UOp.placeholder((4,), dtypes.u8, 0, device='AMD').getaddr('AMD')] * 3
+        elif nm == "b2v1_8": args += [UOp.placeholder((4,), dtypes.u8, 0, device='AMD').getaddr('AMD')] * 2
         args += [UOp.placeholder((1,), getattr(dtypes, k), 0, device='AMD') for k in
                  ({"b3": [], "b3v2_32": ['uint32','uint32'], "b3v3_mix": ['uint8','uint32','uint16'],
                    "b0v4": ['uint32','uint8','uint64','uint16'], "b2v1_8": ['uint8']}[nm])]

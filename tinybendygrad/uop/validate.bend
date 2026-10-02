@@ -1148,7 +1148,7 @@ def create_var(+s: Sol, m: Maybe<&1, MM>, is_bool: Bool, nm: String, miss: Strin
 
 # `x.arg.name` -- a `Maybe`, and CPython passes the `None` straight to
 # `z3.Int(None)`, which prints `null`. That is the MEASURED text for
-# `UOp.param(0, dtypes.int, 16)`, so the default is `"null"` and not `""`.
+# `UOp.param(0, dtypes.i32, 16)`, so the default is `"null"` and not `""`.
 def cv_arg_name(ar: O.Arena, i: U32) -> String:
   cv_arg_name.of(O.Arena.arg(ar, i))
 

@@ -109,8 +109,8 @@ def jit_rows():
     # MULTILINE and two-space-indented (see `ii_flat` in jit.bend).
     rows.append(("info_repr_view_oracle", str(_prepare_jit_inputs((b,), {})[3])))
     from tinygrad.dtype import dtypes
-    rows += [("dt_repr_f32", repr(Tensor.ones(3).dtype)), ("dt_repr_i32", "dtypes.int"),
-             ("dt_repr_h", repr(dtypes.half))]
+    rows += [("dt_repr_f32", repr(Tensor.ones(3).dtype)), ("dt_repr_i32", "dtypes.i32"),
+             ("dt_repr_h", repr(dtypes.f16))]
 
     # ---- 3. THE REFUSALS `_prepare_jit_inputs` raises itself.
     rows.append(("prep_dup_same", exc(lambda: _prepare_jit_inputs((a, a), {}))[len("JitError: "):]))

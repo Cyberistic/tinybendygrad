@@ -77,6 +77,20 @@ def SCRATCH_WORD() -> U32: 1
 def BULK_BUF() -> U32: 4194304
 def CTRL_BUF() -> U32: 4096
 
+# THE USB3-LEVEL ARGUMENT CONSTANTS: :25's 4, :50's 256, :60's 1, :61's 0,
+# :62's second 0, :64's default timeout. Each is a LITERAL at an `usb.py` AST
+# position and `usb-constsweep.py` reads it out of the source text, so a wrong
+# value is not expressible. They live HERE and not in the trace because both the
+# packet rows and the trace read them, and Bend refuses a def USED before it is
+# WRITTEN.
+def USB3_LOG_LEVEL_DEBUG() -> U32: 4
+def USB3_STRING_BUF() -> U32: 256
+def USB3_CONFIG() -> U32: 1
+def USB3_IFACE() -> U32: 0
+def USB3_ALT() -> U32: 0
+def USB3_TIMEOUT() -> U32: 1000
+def USB3_CTRL_BUF() -> U32: CTRL_BUF()
+
 # :321 the usb_table rows are 16 bytes apart -- two uint64 per chunk.
 def TABLE_ROW_BYTES() -> U32: 16
 def TABLE_ADDR_OFF() -> U32: 0
@@ -97,7 +111,7 @@ def usb_wire(+size: U32) -> U32:
 # :254 `usb_sentinel(g) = ((g & 0xFFFFFF) | 0x51000000).cast(uint32)`. 24 bits of
 # chunk id with 0x51 in the top byte, and the mask WRAPS: g = 0x1000000 answers
 # 0x51000000, so the sequence is only mod 2^24 and two ids 2^24 apart collide.
-def SENTINEL_MAGIC() -> U32: 1363148800  # 0x51000000
+def SENTINEL_MAGIC() -> U32: 1358954496  # 0x51000000
 def SENTINEL_MASK() -> U32: 16777215      # 0xFFFFFF
 
 def usb_sentinel(+g: U32) -> U32:
@@ -114,11 +128,10 @@ type Split is Data:
   Split{full: U32, tail: U32, ranged: U32, nranges: U32}
 
 def usb_split(+nbytes: U32, +win: U32) -> Split:
-  full = U32.div(nbytes, win)
-  tail = U32.mod(nbytes, win)
-  ranged = Bool.pick(U32, U32.is_gt(full, 1), full, 0)
-  nranges = U32.add(Bool.to_u32(U32.is_ne(full, 0)), Bool.to_u32(U32.is_ne(tail, 0)))
-  Split{full, tail, ranged, nranges}
+  Split{U32.div(nbytes, win), U32.mod(nbytes, win),
+        Bool.pick(U32, U32.is_gt(U32.div(nbytes, win), 1), U32.div(nbytes, win), 0),
+        U32.add(Bool.to_u32(U32.is_ne(U32.div(nbytes, win), 0)),
+                Bool.to_u32(U32.is_ne(U32.mod(nbytes, win), 0)))}
 
 def Split.full(x: Split) -> U32:
   match x:
@@ -135,12 +148,6 @@ def Split.ranged(x: Split) -> U32:
 def Split.nranges(x: Split) -> U32:
   match x:
     case Split{full, tail, ranged, nranges}: nranges
-
-def split_rows(+nm: String, +nb: U32, +win: U32) -> List<&2, String>:
-  [u1(String.concat([nm, "_full"]), Split.full(usb_split(nb, win))),
-   u1(String.concat([nm, "_tail"]), Split.tail(usb_split(nb, win))),
-   u1(String.concat([nm, "_ranged"]), Split.ranged(usb_split(nb, win))),
-   u1(String.concat([nm, "_nranges"]), Split.nranges(usb_split(nb, win)))]
 
 # :257 `usb_window(call)`: a COPYIN (the destination is host memory) moves CHUNK
 # per chunk and a COPYOUT moves `2 * CHUNK`. So the win is HALF-dependent, and the
@@ -181,7 +188,7 @@ def pcie_extract(+data: U32, +sz: Nat, +offset: U32) -> U32:
 
 # :122 the two fast paths, and they are MASKS not equality:
 # `(fmt_type & 0b11011111) == 0b01000000` is true for a RANGE of format types.
-def FAST_P1_MASK() -> U32: 215    # 0b11011111
+def FAST_P1_MASK() -> U32: 223    # 0b11011111
 def FAST_P1_VAL() -> U32: 64       # 0b01000000
 def FAST_P2_MASK() -> U32: 184    # 0b10111000
 def FAST_P2_VAL() -> U32: 48       # 0b00110000
@@ -245,10 +252,6 @@ def xdata_nchunks(+length: U32) -> U32: chunk_count(length, XDATA_CHUNK())
 # be short and it is short unless the length is a multiple.
 def xdata_chunk_at(+length: U32, +i: U32) -> U32:
   U32.min(XDATA_CHUNK(), U32.sub(length, U32.mul(i, XDATA_CHUNK())))
-
-def xdata_chunk_rows(+nm: String, +length: U32, +i: U32) -> List<&2, String>:
-  [u1(String.concat([nm, "_n"]), xdata_nchunks(length)),
-   u1(String.concat([nm, "_i"]), xdata_chunk_at(length, i))]
 
 # :172-173 `scsi_write`: `round_up(len(buf), 512)` pads to a 512 multiple, the
 # wValue is the padded length in 512s, and the wIndex packs `slot_start & 0xFF`
@@ -322,10 +325,6 @@ def table_addr_word(+k: U32, +r: U32) -> U32: U32.mul(TABLE_ROW_BYTES(), U32.add
 def table_size_word(+k: U32, +r: U32) -> U32:
   U32.add(table_addr_word(k, r), TABLE_SIZE_OFF())
 
-def table_row_rows(+nm: String, +k: U32, +r: U32) -> List<&2, String>:
-  [u1(String.concat([nm, "_addr"]), table_addr_word(k, r)),
-   u1(String.concat([nm, "_size"]), table_size_word(k, r))]
-
 # :180-182 `_off_from_index`: an integer index is `el_sz` bytes at `index * el_sz`
 # and a SLICE is `[start * el_sz, (stop - start) * el_sz)`. Two ARMS and not one
 # arithmetic, and `index.stop or len(self)` means a slice with no `stop` runs to
@@ -356,8 +355,3 @@ def remote_prefixes() -> String: "usb_host usb_xfer put_value cmdbuf_copy"
 
 def is_remote_prefix(+tag: String, +p: String) -> Bool: String.starts_with(tag, p)
 
-def remote_rows(+nm: String, +tag: String) -> List<&2, String>:
-  [b1(String.concat([nm, "_usb_host"]), is_remote_prefix(tag, "usb_host")),
-   b1(String.concat([nm, "_usb_xfer"]), is_remote_prefix(tag, "usb_xfer")),
-   b1(String.concat([nm, "_put_value"]), is_remote_prefix(tag, "put_value")),
-   b1(String.concat([nm, "_cmdbuf_copy"]), is_remote_prefix(tag, "cmdbuf_copy"))]

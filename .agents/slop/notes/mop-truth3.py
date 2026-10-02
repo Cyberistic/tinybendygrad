@@ -29,7 +29,7 @@ from tinygrad.uop.movement import mop_cleanup
 C0, C1, C2, C4 = (UOp.const(i) for i in (0, 1, 2, 4))
 SP = UOp(Ops.SPECIAL, arg="0", src=(C4,))
 def buf(size=None, image=None):
-  return UOp(Ops.BUFFER, src=(SP,), arg=ParamArg(slot=0, dtype=dtypes.int32, size=size, image=image))
+  return UOp(Ops.BUFFER, src=(SP,), arg=ParamArg(slot=0, dtype=dtypes.i32, size=size, image=image))
 
 b4, b0, B24, bimg, o1, o2 = buf(size=4), buf(), buf(image=(2, 4)), buf(image=(2, 7)), buf(size=2), buf(size=7)
 S1 = UOp(Ops.SHRINK, src=(b4, C2, C2))

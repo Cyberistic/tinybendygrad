@@ -14,7 +14,7 @@ def MUL(a, b): return UOp(Ops.MUL, src=(a, b))
 
 # ---- fixture A: a weak NON-const src beside a concrete half ---------------
 wl  = ADD(K(3), K(5))                            # ADD, dtype weakint, not a CONST
-h1  = UOp.const(1.0, dtypes.half)
+h1  = UOp.const(1.0, dtypes.f16)
 print("A wl      ", wl.dtype, [s.dtype for s in wl.src])
 u   = MUL(wl, h1)
 print("A u.dtype  ", u.dtype, "| src dts", [s.dtype for s in u.src])
@@ -30,8 +30,8 @@ rb = st.replace(src=(st.src[0], st.src[1].ccast(st.src[0].dtype), *st.src[2:]))
 print("B rewritten", [s.dtype for s in rb.src], "| same node?", rb is st)
 
 # ---- fixture C: uncast_const ---------------------------------------------
-hn   = MUL(UOp.const(1.0, dtypes.half), UOp.const(3.0, dtypes.half))  # half, not a CAST
-wc   = UOp.const(2.0, dtypes.half)               # CAST(CONST(weakfloat), half)
+hn   = MUL(UOp.const(1.0, dtypes.f16), UOp.const(3.0, dtypes.f16))  # half, not a CAST
+wc   = UOp.const(2.0, dtypes.f16)               # CAST(CONST(weakfloat), half)
 u2   = ADD(hn, wc)
 print("C src ops  ", [s.op for s in u2.src], [s.dtype for s in u2.src])
 print("C promo    ", W.promo_dtype(u2.src), "| u.dtype", u2.dtype)
@@ -48,8 +48,8 @@ print("E dts      ", W.derived_dtypes(s4, s4.src), "| meet weak?", W.promo_dtype
 
 # ---- the lattice rows the gate pins --------------------------------------
 for pair in [(dtypes.weakint, dtypes.weakint), (dtypes.weakint, dtypes.weakfloat),
-             (dtypes.weakfloat, dtypes.weakfloat), (dtypes.weakint, dtypes.int32),
-             (dtypes.weakint, dtypes.half), (dtypes.weakfloat, dtypes.half)]:
+             (dtypes.weakfloat, dtypes.weakfloat), (dtypes.weakint, dtypes.i32),
+             (dtypes.weakint, dtypes.f16), (dtypes.weakfloat, dtypes.f16)]:
   print("L", pair[0].name, "^", pair[1].name, "=", least_upper_dtype(*pair).name)
-for d in [dtypes.weakint, dtypes.weakfloat, dtypes.int32, dtypes.half, dtypes.bool]:
+for d in [dtypes.weakint, dtypes.weakfloat, dtypes.i32, dtypes.f16, dtypes.bool]:
   print("S", d.name, "strong=", strong_dtype(d).name, "weak=", weak_dtype(d).name)

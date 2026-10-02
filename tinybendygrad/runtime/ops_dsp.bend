@@ -651,17 +651,17 @@ def dt_fmt_none() -> String: ""
 def dt_fmt(nm: String) -> String:
   match nm:
     case "bool": "?"
-    case "signed char": "b"
-    case "unsigned char": "B"
-    case "short": "h"
-    case "unsigned short": "H"
-    case "int": "i"
-    case "unsigned int": "I"
-    case "long": "q"
-    case "unsigned long": "Q"
-    case "half": "e"
-    case "float": "f"
-    case "double": "d"
+    case "i8": "b"
+    case "u8": "B"
+    case "i16": "h"
+    case "u16": "H"
+    case "i32": "i"
+    case "u32": "I"
+    case "i64": "q"
+    case "u64": "Q"
+    case "f16": "e"
+    case "f32": "f"
+    case "f64": "d"
     case _: dt_fmt_none()
 
 def dt_fmt_dt(d: S.Dt) -> String: dt_fmt(dt_nm(d))
@@ -676,22 +676,22 @@ def dt_itemsize(nm: String) -> U32:
   match nm:
     case "void": 0
     case "bool": 1
-    case "signed char": 1
-    case "unsigned char": 1
-    case "short": 2
-    case "unsigned short": 2
-    case "half": 2
-    case "__bf16": 2
-    case "int": 4
-    case "unsigned int": 4
-    case "float": 4
-    case "float8_e4m3": 1
-    case "float8_e4m3fnuz": 1
-    case "float8_e5m2": 1
-    case "float8_e5m2fnuz": 1
-    case "long": 8
-    case "unsigned long": 8
-    case "double": 8
+    case "i8": 1
+    case "u8": 1
+    case "i16": 2
+    case "u16": 2
+    case "f16": 2
+    case "bf16": 2
+    case "i32": 4
+    case "u32": 4
+    case "f32": 4
+    case "fp8e4m3": 1
+    case "fp8e4m3fnuz": 1
+    case "fp8e5m2": 1
+    case "fp8e5m2fnuz": 1
+    case "i64": 8
+    case "u64": 8
+    case "f64": 8
     case _: 100
 
 def dt_itemsize_dt(d: S.Dt) -> U32: dt_itemsize(dt_nm(d))
@@ -703,9 +703,9 @@ def dt_itemsize_dt(d: S.Dt) -> U32: dt_itemsize(dt_nm(d))
 def dt_cname(nm: String) -> String:
   match nm:
     case "bool": "_Bool"
-    case "half": "__fp16"
-    case "long": "long long"
-    case "unsigned long": "unsigned long long"
+    case "f16": "__fp16"
+    case "i64": "long long"
+    case "u64": "unsigned long long"
     case _: nm
 
 def dt_cname_dt(d: S.Dt) -> String: dt_cname(dt_nm(d))
@@ -724,14 +724,14 @@ def dt_cname_global(+is_alu: Bool, +nm: String) -> String:
 # ClangRenderer's own filter (cstyle.py:315) drops the fp8s ALWAYS and drops
 # bfloat16 unless the arch starts with x86/arm. MEASURED: an x86 arch gives 13
 # dtypes, a hexagon arch gives 12, and DSP gives 12 on BOTH -- so the arch test is
-# irrelevant here, and the `dtypes.bfloat16` in :46 is the WHOLE difference on x86
+# irrelevant here, and the `dtypes.bf16` in :46 is the WHOLE difference on x86
 # and a NO-OP on hexagon. `dsp_sdtype_n` plus `dsp_sdtype_x86_drop` pins that.
 def dt_is_fp8.i(nm: String) -> Bool:
   match nm:
-    case "float8_e4m3": True{}
-    case "float8_e4m3fnuz": True{}
-    case "float8_e5m2": True{}
-    case "float8_e5m2fnuz": True{}
+    case "fp8e4m3": True{}
+    case "fp8e4m3fnuz": True{}
+    case "fp8e5m2": True{}
+    case "fp8e5m2fnuz": True{}
     case _: False{}
 
 def dt_is_fp8(nm: String) -> Bool: dt_is_fp8.i(nm)

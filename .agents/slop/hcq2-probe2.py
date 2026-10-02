@@ -10,7 +10,7 @@ from tinygrad.dtype import dtypes, DType
 from tinygrad.uop.ops import UOp, Ops, KernelInfo, CallInfo, ProgramInfo
 from tinygrad.helpers import round_up
 
-def buf(nm, n=1, dt=dtypes.uint64, dev=('NULL:0',)):
+def buf(nm, n=1, dt=dtypes.u64, dev=('NULL:0',)):
   return UOp.placeholder((n,), dt, 0, device=dev, tag=nm)
 
 print('=== to_name / make_submit name (hcq2.py:63, :68-70)')
@@ -37,12 +37,12 @@ show('q 0x41414141', lambda: hq.q(0x41414141))
 show('q c7,c8', lambda: hq.q(7, 8))
 show('q c7,buf', lambda: hq.q(7, buf('a')))
 show('q c7,buf,c9', lambda: hq.q(7, buf('a'), 9))
-show('q const', lambda: hq.q(UOp.const(0xdeadbeef, dtypes.uint32)))
-show('q const u64', lambda: hq.q(UOp.const(0xdeadbeefcafebabe, dtypes.ulong)))
+show('q const', lambda: hq.q(UOp.const(0xdeadbeef, dtypes.u32)))
+show('q const u64', lambda: hq.q(UOp.const(0xdeadbeefcafebabe, dtypes.u64)))
 show('q binary', lambda: hq.q(UOp(Ops.BINARY, arg=bytes([1, 2, 3, 4]))))
 show('q binary after word', lambda: hq.q(7, UOp(Ops.BINARY, arg=bytes([9, 9]))))
-show('q casted const', lambda: hq.q(UOp.const(1, dtypes.uint32).cast(dtypes.int)))
-show('q casted const x2', lambda: hq.q(UOp.const(1, dtypes.uint8).cast(dtypes.int).cast(dtypes.int)))
+show('q casted const', lambda: hq.q(UOp.const(1, dtypes.u32).cast(dtypes.i32)))
+show('q casted const x2', lambda: hq.q(UOp.const(1, dtypes.u8).cast(dtypes.i32).cast(dtypes.i32)))
 show('q nothing', lambda: hq.q())
 show('q 0', lambda: hq.q(0))
 show('q 0xffffffff', lambda: hq.q(0xffffffff))
@@ -72,14 +72,14 @@ for base in (0, 8, 512):
 
 print('=== _is_link_patch / _is_input_addr (hcq2.py:393-400)')
 cases = [
-  ('param untagged', UOp.param(0, dtypes.uint, 4, ('NULL:0',))),
-  ('param tagged', UOp.param(0, dtypes.uint, 4, ('NULL:0',)).replace(tag='lt_input')),
+  ('param untagged', UOp.param(0, dtypes.u32, 4, ('NULL:0',))),
+  ('param tagged', UOp.param(0, dtypes.u32, 4, ('NULL:0',)).replace(tag='lt_input')),
   ('buffer global', buf('a')),
   ('load', buf('a').index(0).load()),
   ('after', buf('a').index(0).after(UOp(Ops.NOOP))),
   ('getaddr', buf('a').getaddr('NULL:0')),
   ('range', UOp.range(4, 0)),
-  ('add of param', (UOp.param(1, dtypes.uint, 4, ('NULL:0',)) + UOp.param(0, dtypes.uint, 4, ('NULL:0',)))),
+  ('add of param', (UOp.param(1, dtypes.u32, 4, ('NULL:0',)) + UOp.param(0, dtypes.u32, 4, ('NULL:0',)))),
 ]
 for nm, w in cases:
   print('is_link', nm, w.op.name, '->', H._is_link_patch(w))
@@ -88,42 +88,42 @@ for nm, w in cases:
     print('is_input_addr', nm, '->', H._is_input_addr(w))
 
 print('=== patch group keys (hcq2.py:404-413)')
-rows = [(0, buf('a', 1, dtypes.uint64)), (4, buf('b', 1, dtypes.uint64)), (2, buf('c', 1, dtypes.uint32))]
+rows = [(0, buf('a', 1, dtypes.u64)), (4, buf('b', 1, dtypes.u64)), (2, buf('c', 1, dtypes.u32))]
 for o, w in rows:
   print('key', o, str(w.dtype), '->', (str(w.dtype), getattr(o, 'vmin', o) % w.dtype.itemsize,
                                        type(o) is int and H._is_link_patch(w), tuple(getattr(o, 'ranges', ()))))
-for o, dt in ((0, dtypes.uint32), (1, dtypes.uint32), (2, dtypes.uint32), (3, dtypes.uint32), (0, dtypes.uint64)):
+for o, dt in ((0, dtypes.u32), (1, dtypes.u32), (2, dtypes.u32), (3, dtypes.u32), (0, dtypes.u64)):
   print('phase', o, 'itemsize', dt.itemsize, '->', o % dt.itemsize, 'index', o // dt.itemsize,
         'viewlen', (128 - o) // dt.itemsize * dt.itemsize)
 
 print('=== lower_call 128-alignment accumulate (hcq2.py:530-532)')
-for u in ((1, dtypes.uint8), (7, dtypes.uint8), (128, dtypes.uint8), (1, dtypes.uint32), (3, dtypes.uint32),
-          (1, dtypes.uint64), (129, dtypes.uint8), (200, dtypes.uint64), (2, dtypes.uint16)):
+for u in ((1, dtypes.u8), (7, dtypes.u8), (128, dtypes.u8), (1, dtypes.u32), (3, dtypes.u32),
+          (1, dtypes.u64), (129, dtypes.u8), (200, dtypes.u64), (2, dtypes.u16)):
   n, dt = u
   print('roundup128', n, str(dt), '->', round_up(n, 128), 'elems', round_up(n, 128) // dt.itemsize)
 print('accumulate [3,1,2] uint64 ->', end=' ')
 import itertools
-print(list(itertools.accumulate([round_up(n, 128) // dtypes.uint64.itemsize for n in (3, 1, 2)], initial=0)))
-print('accumulate [5,4] uint32 ->', list(itertools.accumulate([round_up(n, 128) // dtypes.uint32.itemsize for n in (5, 4)], initial=0)))
+print(list(itertools.accumulate([round_up(n, 128) // dtypes.u64.itemsize for n in (3, 1, 2)], initial=0)))
+print('accumulate [5,4] uint32 ->', list(itertools.accumulate([round_up(n, 128) // dtypes.u32.itemsize for n in (5, 4)], initial=0)))
 print('min(numel,1)', [(n, min(n, 1)) for n in (0, 1, 5)])
 
 print('=== unwrap_view / unwrap_lane / select_lane (hcq2.py:50-61)')
-b = buf('a', 16, dtypes.uint32)
+b = buf('a', 16, dtypes.u32)
 sh = b[4:12]
-bc = sh.cast(dtypes.uint8)
+bc = sh.cast(dtypes.u8)
 af = bc.after(UOp(Ops.NOOP))
 af2 = af.after(UOp(Ops.NOOP))
 for nm, v in (('base', b), ('shrink', sh), ('bitcast', bc), ('after', af), ('after2', af2)):
   r, off = H.unwrap_view(v)
   print('unwrap_view', nm, v.op.name, '->', r.op.name, r.tag, off, 'nbytes', r.shape[0] * r.dtype.itemsize)
-ms = UOp(Ops.MSELECT, src=(sh, UOp.const(1, dtypes.int)), arg=3)
+ms = UOp(Ops.MSELECT, src=(sh, UOp.const(1, dtypes.i32)), arg=3)
 for nm, v in (('shrink', sh), ('mselect', ms)):
   r, lane, off = H.unwrap_lane(v)
   print('unwrap_lane', nm, v.op.name, '->', r.op.name, r.tag, 'lane', lane, 'off', off)
 
 print('=== hcq_fence (hcq2.py:415-434) THE ORDER')
 r = UOp.range(8, 0)
-sink = UOp(Ops.SINK, src=((r+r).cast(dtypes.uint64),), arg=KernelInfo("k"))
+sink = UOp(Ops.SINK, src=((r+r).cast(dtypes.u64),), arg=KernelInfo("k"))
 def mkcall(bufs, outs=(0,), ins=(1,)):
   prg = UOp(Ops.PROGRAM, src=(sink,), arg=ProgramInfo(outs=outs, ins=ins))
   return UOp(Ops.CALL, src=(prg, *bufs), arg=CallInfo())

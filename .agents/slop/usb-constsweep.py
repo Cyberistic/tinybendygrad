@@ -168,7 +168,11 @@ DERIVED = {"WIN_SRAM_HI": (0x5000, 2 * 0x40000, lambda a, b: a + b),
 # pattern of -1 because every `enum_libusb_*` value is a C enum and 0xFFFFFFFF is
 # not one of them except for LIBUSB_ERROR_IO, which is why the differ row
 # `usb_enumval_absent_not_found` exists.
-PORT_INTERNAL = {"NOT_FOUND"}
+#
+# `K_XFER_*` ARE NOT CONSTANTS. They are `Fld.find` ORDINALS over the field list,
+# so their value is a position in `struct_libusb_transfer` and the gate that holds
+# them is the `usb_fld_*_ix` / `usb_xfer_*_ix` rows and `M38`, which moves them.
+PORT_INTERNAL = {"NOT_FOUND", "K_XFER_STATUS", "K_XFER_LENGTH", "K_XFER_BUFFER"}
 
 # THE TRACE KINDS ARE PORT-INVENTED: `K_INIT` is this port's name for
 # `libusb_init`, and no line of `usb.py` says "0". What IS checkable is the
@@ -184,11 +188,22 @@ BEND.update({"USB3_STRING_BUF": "usb_string_buf", "USB3_IFACE": "usb_claim_iface
              "CPL_ABORT": "usb_cpl_abort", "RTYPE_OUT": "usb_ctrl_rtype_out",
              "RTYPE_IN": "usb_ctrl_rtype_in", "EP_OUT": "usb_ep_out",
              "EP_IN": "usb_ep_in", "MAGIC_USBC": "usb_cdb_magic_usbc", "MAGIC_USBS": "usb_reply_magic_usbs",
-             "USB3_LOG_LEVEL_DEBUG": "usb3_log_level_debug"})
+             "USB3_LOG_LEVEL_DEBUG": "usb3_log_level_debug",
+              "USB3_TIMEOUT": "usb3_timeout", "USB3_CTRL_BUF": "usb_ctrl_buf"})
 
 wrong, unverified, ok = [], [], 0
 for m in DEF.finditer(src):
     name, term, cmt = m.group(1), m.group(2).strip(), (m.group(3) or "")
+    # THE NAME IS CHECKED BEFORE THE VALUE, because two of these cannot be
+    # evaluated as CPython terms at all -- `K_*` are PORT-INVENTED ordinals and
+    # `K_XFER_*` are `Fld.find` positions -- and reporting them as an eval
+    # failure would be noise in place of the sentence that says why.
+    if name in TRACE_KINDS:
+        ok += 1   # injectivity is checked by usb-symmap.py, not by a value
+        continue
+    if name in PORT_INTERNAL:
+        unverified.append((name, term, "PORT-INTERNAL, not a constant in usb.py"))
+        continue
     if re.fullmatch(r"\d+", term):
         got = int(term)
     else:
@@ -200,9 +215,6 @@ for m in DEF.finditer(src):
         if unres:
             unverified.append((name, term, "calls " + ",".join(sorted(set(unres)))))
             continue
-    if name in TRACE_KINDS:
-        ok += 1   # injectivity is checked by usb-symmap.py, not by a value
-        continue
     if name in ("CDB_SIZE", "REPLY_SIZE", "REPLY_READ_LEN"):
         # `struct.calcsize`, called.
         if got != struct_calcsize(name):
@@ -217,9 +229,6 @@ for m in DEF.finditer(src):
     elif name in DERIVED:
         a, b, f = DERIVED[name]
         want = ("derived", f(a, b))
-    elif name in PORT_INTERNAL:
-        unverified.append((name, term, "PORT-INTERNAL, not in usb.py"))
-        continue
     else:
         unverified.append((name, term, "no independent source"))
         continue

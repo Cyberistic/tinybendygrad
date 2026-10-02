@@ -31,24 +31,24 @@ print("  renderer OK; code_for_op =", sorted(x.name for x in ren.code_for_op))
 def ins(op, dt, srcs=(), tag=None):
   return UOp(Ops.INS, arg=(op, dt), src=srcs, tag=tag)
 
-u1 = ins(X86Ops.MOV, dtypes.int32, (UOp(Ops.NOOP, tag=(RCX,)),), tag=(RDX,))
+u1 = ins(X86Ops.MOV, dtypes.i32, (UOp(Ops.NOOP, tag=(RCX,)),), tag=(RDX,))
 print("  MOV asm:", repr(ren.asm_str([u1], "f")))
 
-u2 = ins(X86Ops.ADD, dtypes.int32, (UOp(Ops.NOOP, tag=(RCX,)), UOp(Ops.NOOP, tag=(XMM[3],))), tag=(RDX,))
+u2 = ins(X86Ops.ADD, dtypes.i32, (UOp(Ops.NOOP, tag=(RCX,)), UOp(Ops.NOOP, tag=(XMM[3],))), tag=(RDX,))
 print("  ADD asm:", repr(ren.asm_str([u2], "f")))
 
 # memory operand: three srcs = (base, idx, disp)
 base = UOp(Ops.NOOP, tag=(RSP,))
 idx = UOp(Ops.NOOP, tag=(RCX,))
-disp = UOp(Ops.CAST, dtypes.int32, (UOp(Ops.CONST, dtypes.int32, arg=8),))
+disp = UOp(Ops.CAST, dtypes.i32, (UOp(Ops.CONST, dtypes.i32, arg=8),))
 mv = ins(X86Ops.MOVm, dtypes.void, (base, idx, disp, UOp(Ops.NOOP, tag=(RDX,))))
 print("  MOVm asm:", repr(ren.asm_str([mv], "f")))
 
 print("== 3 encode ==")
-print("  MOV  bytes:", encodings[X86Ops.MOV](ins(X86Ops.MOV, dtypes.int32, (UOp(Ops.NOOP, tag=(RCX,)),), tag=(RDX,))).hex())
-print("  ADD  bytes:", encodings[X86Ops.ADD](ins(X86Ops.ADD, dtypes.int32, (UOp(Ops.NOOP, tag=(RCX,)), UOp(Ops.NOOP, tag=(RDX,))), tag=(RCX,))).hex())
+print("  MOV  bytes:", encodings[X86Ops.MOV](ins(X86Ops.MOV, dtypes.i32, (UOp(Ops.NOOP, tag=(RCX,)),), tag=(RDX,))).hex())
+print("  ADD  bytes:", encodings[X86Ops.ADD](ins(X86Ops.ADD, dtypes.i32, (UOp(Ops.NOOP, tag=(RCX,)), UOp(Ops.NOOP, tag=(RDX,))), tag=(RCX,))).hex())
 print("  RET  bytes:", encodings[X86Ops.RET](ins(X86Ops.RET, dtypes.void)).hex())
-v = ins(X86Ops.VADDSS, dtypes.float32, (UOp(Ops.NOOP, tag=(XMM[1],)), UOp(Ops.NOOP, tag=(XMM[2],))), tag=(XMM[0],))
+v = ins(X86Ops.VADDSS, dtypes.f32, (UOp(Ops.NOOP, tag=(XMM[1],)), UOp(Ops.NOOP, tag=(XMM[2],))), tag=(XMM[0],))
 print("  VADDSS bytes:", encodings[X86Ops.VADDSS](v).hex())
 
 print("== 4 X86Ops numbers ==")
@@ -69,7 +69,7 @@ print("  _xmm_sz f32 x4: need a UOp")
 
 # a vector UOp: INDEX over a GPR-ish src, shape (4,)
 def vec(dt, n):
-  return UOp(Ops.INDEX, dt, (UOp(Ops.PARAM, dt, arg=0), UOp(Ops.CONST, dtypes.int32, arg=0)), arg=UOp(Ops.SPECIAL, arg=(0, dt, "s")))
+  return UOp(Ops.INDEX, dt, (UOp(Ops.PARAM, dt, arg=0), UOp(Ops.CONST, dtypes.i32, arg=0)), arg=UOp(Ops.SPECIAL, arg=(0, dt, "s")))
 
 print("== 7 sets ==")
 for nm in ("Copy", "TwoAddress", "Rm2nd", "WriteMem", "ReadFlags", "WriteFlags", "Rm1st"):

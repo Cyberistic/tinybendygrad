@@ -72,8 +72,8 @@ def allin():
     emit(f'hq2_all_in_{nm}', b(all_devices_in(d, HCQ_DEVS)))
 
 # ===========================================================================
-def buf(nm, n=1, dt=dtypes.uint64): return UOp.placeholder((n,), dt, 0, device=('NULL:0',), tag=nm)
-def ks_to_words(ks): return [UOp.const(i + 1, {1: dtypes.uint8, 2: dtypes.uint16, 4: dtypes.uint32, 8: dtypes.uint64}[k])
+def buf(nm, n=1, dt=dtypes.u64): return UOp.placeholder((n,), dt, 0, device=('NULL:0',), tag=nm)
+def ks_to_words(ks): return [UOp.const(i + 1, {1: dtypes.u8, 2: dtypes.u16, 4: dtypes.u32, 8: dtypes.u64}[k])
                              for i, k in enumerate(ks)]
 def offs(ks, base): return [o for o, _ in layout_args(ks_to_words(ks), base)]
 def show(xs): return ' '.join(str(x) for x in xs)

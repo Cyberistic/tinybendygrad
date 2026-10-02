@@ -39,13 +39,13 @@ ALL = tuple(Ops)
 def P(nm, dt, lo, hi): return UOp.variable(nm, lo, hi, dt)
 
 
-def pi(): return P("i", dtypes.int32, -20, 20)
-def pz(): return P("z", dtypes.int32, 0, 100)
-def pu(): return P("u", dtypes.uint32, 0, 40)
+def pi(): return P("i", dtypes.i32, -20, 20)
+def pz(): return P("z", dtypes.i32, 0, 100)
+def pu(): return P("u", dtypes.u32, 0, 40)
 def pb(): return P("b", dtypes.bool, 0, 1)
-def pf(): return P("f", dtypes.float32, 0.0, 1.0)
-def qf(): return P("g", dtypes.float32, 0.0, 1.0)
-def pj(): return P("j", dtypes.int32, -20, 20)
+def pf(): return P("f", dtypes.f32, 0.0, 1.0)
+def qf(): return P("g", dtypes.f32, 0.0, 1.0)
+def pj(): return P("j", dtypes.i32, -20, 20)
 
 
 def K(v): return UOp.const(v)

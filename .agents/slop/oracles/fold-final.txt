@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- expected : xs
+- observed : xs (consumed more than once)
+Location: IdsStr.ids
+4272 | # begin at 1 and only the length tells them apart.
+4273>| def IdsStr.ids(xs: List<&2, U32>) -> String:
+     |                ^^
+4274 |   String.concat([IdsStr(xs), "/len=", Nat.show(List.length(&2, U32, xs))])

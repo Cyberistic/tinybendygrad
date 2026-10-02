@@ -112,8 +112,8 @@ def key(v):
     #
     # A CONST's key is its VALUE, not `repr(v.arg)`, and this is a THIRD erasure
     # rather than a fourth claim. `UOp.const(x)` with no dtype gives
-    # `arg = ConstFloat(x)` while `UOp.const(x, dtypes.float32)` gives
-    # `arg = dtypes.float` -- the DTYPE object, whose repr is the dtype's name --
+    # `arg = ConstFloat(x)` while `UOp.const(x, dtypes.f32)` gives
+    # `arg = dtypes.f32` -- the DTYPE object, whose repr is the dtype's name --
     # so the same float read as a bare Python literal and as `d.const_like(x)`
     # are TWO nodes in Python's arena. The port's `CFloat` carries the value and
     # nothing else (divergence B), so it has one. Keying a CONST on its bits
@@ -165,14 +165,14 @@ def dump(tag):
 
 
 def main():
-    i32 = dtypes.int32
-    for dt, dn in ((dtypes.float16, "f16"), (dtypes.float32, "f32"), (dtypes.float64, "f64")):
+    i32 = dtypes.i32
+    for dt, dn in ((dtypes.f16, "f16"), (dtypes.f32, "f32"), (dtypes.f64, "f64")):
         print(f"mt_{dn}={T.mantissa_bits(dt)}")
         print(f"eb_{dn}={T.exponent_bias(dt)}")
         print(f"em_{dn}={T.exponent_mask(dt)}")
     items = [
         ("rintk", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.rintk(d)),
-        ("pow2if", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.pow2if(q3, dtypes.float32)),
+        ("pow2if", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.pow2if(q3, dtypes.f32)),
         ("ilogb", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.ilogb2k(d)),
         ("ldexp3", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.ldexp3k(d, qe2f)),
         ("ldexp2", lambda d, x, q3, qe2, qe2f, q1, q2, q2f: T.ldexp2k(d, qe2)),
@@ -191,10 +191,10 @@ def main():
 
     def fresh():
         UOp.ucache.clear(); ARENA.clear(); PROMOTED.clear(); FOLDED.clear()
-        return (UOp.variable("d", 0.0, 100.0, dtypes.float32),
-                UOp.variable("x", -1.0, 1.0, dtypes.float32),
-                UOp.const(3, i32), UOp.const(-2, i32), UOp.const(-2.0, dtypes.float32),
-                UOp.const(1, i32), UOp.const(2, i32), UOp.const(2.0, dtypes.float32))
+        return (UOp.variable("d", 0.0, 100.0, dtypes.f32),
+                UOp.variable("x", -1.0, 1.0, dtypes.f32),
+                UOp.const(3, i32), UOp.const(-2, i32), UOp.const(-2.0, dtypes.f32),
+                UOp.const(1, i32), UOp.const(2, i32), UOp.const(2.0, dtypes.f32))
 
     for tag, f in items:
         dd, xx, a3, a2, a2f, a1, a2i, a2ff = fresh()

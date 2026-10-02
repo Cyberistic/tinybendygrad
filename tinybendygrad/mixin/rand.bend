@@ -53,7 +53,7 @@
 #   * `hashlib.sha256(len(Tensor._device_seeds).to_bytes(4, "big"))` (tensor.py:462) builds
 #     the key's first word from the DEVICE COUNT, so the key is not a function of the seed
 #     alone. The port's key is a 1-D TWO-ELEMENT `uint32` TENSOR -- which is what Python's
-#     own `Tensor(seed, dtype=dtypes.uint32)` is -- and it is a PARAMETER.
+#     own `Tensor(seed, dtype=dtypes.u32)` is -- and it is a PARAMETER.
 #   * `Tensor._device_rng_counters[device]` is replaced by a COUNTER TENSOR that is handed
 #     IN, and `_next_counter`'s FIVE ARITHMETIC LINES are ported verbatim over it. That is
 #     the whole decision, and it is the same discipline the arena uses: one owner, threaded
@@ -155,7 +155,7 @@
 #      `identity_element`, ops.py:61) then a broadcast div, a `rand`, a `>=`, a `sum(2)`
 #      and a `permute`. PORTED: the `weight = self.unsqueeze(0) if self.ndim == 1 else
 #      self` selection (rand.py:267) as `rd_multi`, both guards (rand.py:266, :268) as
-#      `rd_multi_n`/`rd_multi_rep`, and the trailing `.cast(dtypes.int32)` (rand.py:276).
+#      `rd_multi_n`/`rd_multi_rep`, and the trailing `.cast(dtypes.i32)` (rand.py:276).
 #      TODO(p3) mixin/rand.py:270  `multinomial`'s cdf arm -- `cumsum` -> `identity_element`.
 #      TODO(p3) mixin/rand.py:275  `multinomial`'s Efraimidis-Spirakis arm -- `topk`.
 #   W6 rand.py:278 `dropout` and rand.py:298 `scaled_dot_product_attention`.
@@ -234,7 +234,7 @@
 #          because `fold.bend:1629` answers `None{}` for an EXPAND's own shape.
 #   st_*   THE GENERATOR STATE. Four rows over `_next_counter`'s five lines with the counter
 #          INJECTED, and the expectations are CPython's own five lines run against
-#          `Tensor([lo, hi], dtype=dtypes.uint32)` -- so they are CPython's answer and not
+#          `Tensor([lo, hi], dtype=dtypes.u32)` -- so they are CPython's answer and not
 #          this port's. `st_zero` (`num = 0`), `st_six` (`num = 6`, the value `rand(2,3)`
 #          uses), `st_after` (the counter `st_six` returned, fed back in, so the borrow is
 #          exercised) and `st_big` (`num = 1 << 33`, where `U32.shrn`'s saturation is the
@@ -304,7 +304,7 @@
 #     not had it applied yet. `op_pool1` threads its `i` and `k` and gets its arena right for
 #     the same reason, which is why `arange3_g` is 28 nodes and not 1.
 #   R2 -- `arange` IS THREE NODES SHORT AND ITS ROOT IS A `CAST`. CPython's
-#     `Tensor.arange(3, dtype=dtypes.uint32)` is `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`
+#     `Tensor.arange(3, dtype=dtypes.u32)` is `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`
 #     and the port's is `n=28 op=CAST nsrc=1 srcops=ADD`. Two of the three are ONE defect:
 #     (a) the trailing `.cast(dtype)` (op.py:195) is a FOLD in CPython -- the `_cumalu`
 #     result is already `uint32` -- and `op_arange.cast` is NOT FOLDING here, which is
@@ -453,7 +453,7 @@ def op_shr(+t: T.Tensor, lo: List<&2, U32>, hi: List<&2, U32>) -> T.Tensor:
 # zip(arg, self.shape))` and the SIZE half is `pA + s`, so the caller passes `pA + s` and
 # the node's marg is `(pB, pB + pA + s)`. `_cumalu`'s pad is `((shape-1, 0),)` (op.py:754)
 # so `pA = 0`, `pB = i - 1` and `s = i`, and the node's marg is `((i-1, 2i-1),)` -- CPython
-# prints `((2, 5),)` for `arange(3, dtype=dtypes.uint32)`, which `arange3`'s toposort pins.
+# prints `((2, 5),)` for `arange(3, dtype=dtypes.u32)`, which `arange3`'s toposort pins.
 # Both numbers come out of `PK` because the pad's offsets are `(k-1, 0)` and the axis is `i`.
 # TODO(p3) mixin/op.py:282  `_pad_constant`'s negative-pad arm (`has_neg`, op.py:284) and
 #   its `value != 0` arm, which is `MovementMixin.pad(X.const_like(True, bool), pads)
@@ -476,7 +476,7 @@ def op_padc(+t: T.Tensor, +q: PK) -> T.Tensor: op_pad(t, [U32.sub(PK.k(q), 1)], 
 # and the THIRD `shrink_to` is a NO-OP -- the axis already has size 1, and `shrink`
 # (movement.py:192) returns `self` when the arg equals the current boundary -- so it is a
 # bare `mxw_reshape`. That is visible in CPython's own toposort, which has FIVE RESHAPEs
-# and THREE SHRINKs for `arange(3, dtype=dtypes.uint32)` and not six and four, and M6 is
+# and THREE SHRINKs for `arange(3, dtype=dtypes.u32)` and not six and four, and M6 is
 # the mutation that adds the fourth SHRINK back.
 def op_pool1.o(+q: PK) -> U32: U32.add(U32.sub(PK.i(q), PK.k(q)), 1)
 def op_pool1.f(+q: PK) -> U32: U32.max(1, H.ceildiv_u32(U32.sub(op_pool1.o(q), 1), PK.i(q)))
@@ -513,7 +513,7 @@ def op_cumalu(+t: T.Tensor, +q: PK) -> T.Tensor: op_cumalu.red(op_pool1(op_padc(
 
 # `arange` (op.py:166-195) for `stop is None`, `step = 1`, `dtype` GIVEN and
 # `output_len > 0`, which is the shape of `random_bits`'s one call: `cls.arange(
-# ceildiv(chunk_num, 2), dtype=dtypes.uint32)` (rand.py:26). In that arm `lo, hi = (0,
+# ceildiv(chunk_num, 2), dtype=dtypes.u32)` (rand.py:26). In that arm `lo, hi = (0,
 # stop - 1)`, `output_len = ceildiv(stop - start, step) = stop`, `acc_dtype =
 # least_upper_dtype(dt, float32) if is_float(dt) else dt = dt`, and
 #
@@ -633,8 +633,8 @@ def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tens
   rd_tfb.cat(rd_tfb.three(rd_tfb.x(c0, c1), key))
 
 # ===========================================================================
-# rand.py:18 `random_bits`. The loop is `for i in range(0, num, dtypes.uint32.max)`
-# (rand.py:21) and `dtypes.uint32.max` is 4294967295, so for any `num` a real shape
+# rand.py:18 `random_bits`. The loop is `for i in range(0, num, dtypes.u32.max)`
+# (rand.py:21) and `dtypes.u32.max` is 4294967295, so for any `num` a real shape
 # produces -- `num = ceildiv(prod(shape) * itemsize, 4)`, so 17 GiB of random bits to reach
 # the second iteration -- the loop has exactly ONE iteration with `i = 0`. That is the arm
 # below and it is the whole of the function for every gate row.
@@ -883,7 +883,7 @@ def rd_rand_like(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +se
   rd_rand_cls(contig, ar, key, ctr, ds, self_dt, dev)
 
 # `cos` (elementwise.py:500) -- `self = self.cast(least_upper_float(self.dtype))` then
-# `((math.pi/2) - self.cast(least_upper_dtype(self.dtype, dtypes.float32))).sin().cast
+# `((math.pi/2) - self.cast(least_upper_dtype(self.dtype, dtypes.f32))).sin().cast
 # (self.dtype)`. For a `float32` input all three dtypes are `float32` and all three casts
 # FOLD, so the graph is `MUL(x, -1.0)`, `ADD(pi/2, that)`, `SIN` -- nodes 134/135/136 of
 # `Tensor.randn(2,3)` -- and `MO.mo_sub(const, x)` gives exactly that order, because
@@ -900,7 +900,7 @@ def rd_cos(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
 def rd_log(+t: T.Tensor) -> T.Tensor: MO.mo_bin_c(E.ew_log2(t), O.OpsMUL{}, O.CFloat{0.6931471805599453})
 
 # rand.py:88 `randn_like`. `src = self.stack(self).rand_like(**{**kwargs, "dtype":
-# dtypes.float32})` (rand.py:101) -- `self.stack(self)` is `stack(self, self, dim=0)`, so
+# dtypes.f32})` (rand.py:101) -- `self.stack(self)` is `stack(self, self, dim=0)`, so
 # `arg = (self,)` and `srcs = (self, self)`: a TWO-src STACK over `self`, and the receiver's
 # shape gains a LEADING 1. Then `src[0]` and `src[1]` are `rd_take` at `k = 0` and `k = 1`
 # on an `ndim + 1` dimensional source, which is why `rd_take` is general in `ndim` and
@@ -1008,7 +1008,7 @@ def rd_randperm(+ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, n: U32, +dev: S.De
 
 # rand.py:251 `multinomial`. PORTED: the `weight = self.unsqueeze(0) if self.ndim == 1 else
 # self` selection (rand.py:267) as `rd_multi`, both guards (rand.py:266, :268) as
-# `rd_multi_n`/`rd_multi_rep`, and the trailing `.cast(dtypes.int32)` (rand.py:276) as
+# `rd_multi_n`/`rd_multi_rep`, and the trailing `.cast(dtypes.i32)` (rand.py:276) as
 # `rd_cast_i32`. `unsqueeze(0)` (movement.py:308) is a `RESHAPE` to `[1] ++ shape`, which
 # `mxw_reshape` is, and the `self` arm is `self` -- so `rd_multi` is the pair.
 # TODO(p3) mixin/rand.py:270  `multinomial`'s cdf arm -- `cumsum` -> `identity_element`.
@@ -1042,7 +1042,7 @@ def rd_drop.pick.of(+q: U1, +t: T.Tensor) -> T.Tensor:
 def rd_drop.pick(arm: U32, +t: T.Tensor) -> T.Tensor: rd_drop.pick.of(U1{arm}, t)
 
 # rand.py:298 `scaled_dot_product_attention`. PORTED: the `least_upper_dtype(q.dtype,
-# key.dtype, dtypes.float32)` of rand.py:319, as a DTYPE and not a graph -- and
+# key.dtype, dtypes.f32)` of rand.py:319, as a DTYPE and not a graph -- and
 # `least_upper_dtype(*dtypes)` folds left, so it is `F.least_upper.of` CALLED twice, which
 # is fold.bend's own lattice. That makes `ref_sdpa_dt` a shared row.
 # TODO(p3) mixin/rand.py:315  the GQA arm -- `repeat_interleave` (movement.py:560).
@@ -1086,7 +1086,7 @@ def rd_nm(nm: String, s: String) -> IO(Unit): IO.print(String.concat([nm, "=", s
 # halves of it are the 1-D TWO-ELEMENT `uint32` tensors Python's own
 # `Tensor._device_seeds[device]` (tensor.py:463) and `Tensor._device_rng_counters[device]`
 # (tensor.py:464) are. `rd_state` is a 4-node graph -- `ALLOC/0 CONST/0 STACK/2 RESHAPE/2`
-# -- and CPython's `Tensor.empty(2, dtype=dtypes.uint32)` is the SAME four nodes, so the
+# -- and CPython's `Tensor.empty(2, dtype=dtypes.u32)` is the SAME four nodes, so the
 # oracle can use it and the diff is a diff rather than a comparison of two fixtures.
 # `rd_fx2d` is op.bend's `mo_fx2d` and is a RECEIVER ONLY: `rand_like` reads its shape
 # and dtype and nothing else, so no row over it contains it.

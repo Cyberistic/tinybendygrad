@@ -38,7 +38,7 @@ _SEQ = [0]
 
 def _fresh(dev):
     _SEQ[0] += 1
-    return UOp.placeholder((64 + 8 * _SEQ[0],), dtypes.uint32, 0, device=dev)
+    return UOp.placeholder((64 + 8 * _SEQ[0],), dtypes.u32, 0, device=dev)
 
 
 def bufs(dev, n):
@@ -52,7 +52,7 @@ def call(bs, wr):
     """wr is the WRITE INDEX LIST, or None for "reads all" (Python's None)."""
     _CSEQ[0] += 1
     # the trailing PARAM makes each CALL structurally distinct.
-    c = UOp(Ops.CALL, src=(UOp.param(_CSEQ[0], dtypes.uint32, _CSEQ[0], "NULL:0"),),
+    c = UOp(Ops.CALL, src=(UOp.param(_CSEQ[0], dtypes.u32, _CSEQ[0], "NULL:0"),),
             arg=KernelInfo("k%d" % _CSEQ[0]))
     ARGS[id(c)] = bs
     OUTS[id(c)] = wr
@@ -111,7 +111,7 @@ for nm, devs, q in [("compute", ("NV:0",), "COMPUTE:0"), ("copy", ("NV:0",), "CO
                     ("encdec", ("NV:0",), "ENCDEC:0"), ("raw", ("NV:0",), "RAW"),
                     ("cuda", ("CUDA:1",), "COMPUTE:2"), ("null", ("NULL:0",), "COMPUTE:0"),
                     ("amd", ("AMD:2",), "COPY:3")]:
-    m = H.make_submit(UOp.const(1, dtypes.uint), devs=devs, queue=q)
+    m = H.make_submit(UOp.const(1, dtypes.u32), devs=devs, queue=q)
     rows("hq_submit_%s" % nm, m.arg)
 
 # ==========================================================================
@@ -128,7 +128,7 @@ rows("hq_timeline_value_shape", ",".join(str(x) for x in _tv.shape))
 # ==========================================================================
 # :74-76 `layout_args` -- THE ONE ops_nv.bend CITES. Offsets = iter_sig + base.
 # ==========================================================================
-DT = {1: dtypes.uint8, 2: dtypes.uint16, 4: dtypes.uint32, 8: dtypes.uint64}
+DT = {1: dtypes.u8, 2: dtypes.u16, 4: dtypes.u32, 8: dtypes.u64}
 
 
 def lay(items, base=0):
@@ -211,13 +211,13 @@ from tinygrad.device import Buffer
 
 def dep_run():
     tr = H.DepsTracker()
-    b = Buffer("NULL", 256, dtypes.uint8, preallocate=True)
+    b = Buffer("NULL", 256, dtypes.u8, preallocate=True)
     out = []
     for (name, off, n, wr) in [("w0", 0, 64, True), ("v16", 0, 16, True),
                                ("r64", 0, 64, False), ("w64", 0, 64, True),
                                ("p8", 8, 8, True), ("far", 128, 16, True),
                                ("r8", 8, 8, False)]:
-        vb = b.view(n, dtypes.uint8, off)
+        vb = b.view(n, dtypes.u8, off)
         waits = tr.access_resources([vb], [0] if wr else [1], name)
         out.append((name, waits))
     return out, tr
@@ -263,7 +263,7 @@ rows("hq_cfield_gc_cmdsize", "%d-%d" % (GS.cmdsize.offset, GS.cmdsize.offset + G
 rows("hq_cfield_gc_timestamp", "%d-%d" % (GS.timestamp.offset, GS.timestamp.offset + GS.timestamp.size))
 rows("hq_cfield_co_gpuaddr", "%d-%d" % (CO.gpuaddr.offset, CO.gpuaddr.offset + CO.gpuaddr.size))
 # the GROUPING `patch` performs (:404) on three real cstruct rows.
-_cs = H.cstruct(GS, flags=UOp.const(1, dtypes.ulong), cmdsize=32, timestamp=99)
+_cs = H.cstruct(GS, flags=UOp.const(1, dtypes.u64), cmdsize=32, timestamp=99)
 rows("hq_cs_group_n", len(_cs.src) - 1)
 # src[1] is the whole-buffer BLOB store (`dep`), so the grouped stores are 2 and 3.
 rows("hq_cs_blob_dtype", _cs.src[1].src[1].dtype.name)
@@ -407,7 +407,7 @@ for np_ in (0, 1, 2, 7, 8, 9, 12):
 # :366-377 `HWQueue.q` -- the WORD PACKING. mask to itemsize, LITTLE endian,
 # and a non-const UOp becomes a PATCH at the current length.
 # ==========================================================================
-_sub = H.make_submit(UOp.const(1, dtypes.uint), devs=("NULL:0",), queue="COMPUTE:0")
+_sub = H.make_submit(UOp.const(1, dtypes.u32), devs=("NULL:0",), queue="COMPUTE:0")
 
 
 def hq():
@@ -427,14 +427,14 @@ for nm, v, n in [("u8_ab", 0xAB, 1), ("u16_45", 0x12345, 2), ("u32_deadbeef", 0x
     rows("hq_q_%s" % nm, "%d:%s" % (e, bytes(h.blob).hex()))
 # THE MASK: a value wider than the dtype is truncated, because `v & (1 << 8n -1)`.
 h = hq()
-h.q(UOp.const(0x1122334455667788, dtypes.uint32))
+h.q(UOp.const(0x1122334455667788, dtypes.u32))
 rows("hq_q_mask_u32_from64", bytes(h.blob).hex())
 h = hq()
-h.q(UOp.const(0x1122334455667788, dtypes.uint16))
+h.q(UOp.const(0x1122334455667788, dtypes.u16))
 rows("hq_q_mask_u16_from64", bytes(h.blob).hex())
 # the PATCH arm
 h = hq()
-e = h.q(UOp.placeholder((4,), dtypes.uint64, 0, device="NULL:0"))
+e = h.q(UOp.placeholder((4,), dtypes.u64, 0, device="NULL:0"))
 rows("hq_q_patch_len", e)
 rows("hq_q_patch_off", h.patches[0][0])
 rows("hq_q_patch_iz", h.patches[0][1].dtype.itemsize)
@@ -449,8 +449,8 @@ rows("hq_q_bin_blob", bytes(h.blob).hex())
 h = hq()
 h.q(1)
 h.q(2)
-h.q(UOp.const(0xDEADBEEF, dtypes.uint32))
-h.q(UOp.placeholder((4,), dtypes.uint64, 0, device="NULL:0"))
+h.q(UOp.const(0xDEADBEEF, dtypes.u32))
+h.q(UOp.placeholder((4,), dtypes.u64, 0, device="NULL:0"))
 h.q(UOp(Ops.BINARY, arg=bytes([9])))
 rows("hq_q_seq_len", len(h.blob))
 rows("hq_q_seq_blob", bytes(h.blob).hex())
@@ -461,9 +461,9 @@ rows("hq_q_seq_patches", ",".join(str(o) for o, _ in h.patches))
 # `o + 4*k + r*trip`, and `blob += blob[start:] * vmax`.
 # ==========================================================================
 h = hq()
-h.q(UOp.const(0xAA, dtypes.uint32))
+h.q(UOp.const(0xAA, dtypes.u32))
 _start, _first = len(h.blob), len(h.patches)
-_body = [UOp.const(7, dtypes.uint32), UOp.placeholder((4,), dtypes.uint64, 0, device="NULL:0")]
+_body = [UOp.const(7, dtypes.u32), UOp.placeholder((4,), dtypes.u64, 0, device="NULL:0")]
 for u in _body:
     h.q(u)
 _trip = len(h.blob) - _start
@@ -532,7 +532,7 @@ rows("hq_usert_thresh", H.HCQ_CACHE_THRESH.value)
 # ==========================================================================
 import inspect
 try:
-    H.HWQueue(_sub).submit(UOp.const(1, dtypes.uint))
+    H.HWQueue(_sub).submit(UOp.const(1, dtypes.u32))
 except NotImplementedError as ex:
     rows("hq_refuse_submit", str(ex))
 try:

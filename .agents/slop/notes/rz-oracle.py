@@ -11,7 +11,7 @@ from tinygrad.engine.realize import pm_flatten_linear
 # A program CALL over one ordinary global BUFFER and one BOUND PARAM (a
 # variable carrying a value), plus a STORE call and an encdec call.
 K = UOp(Ops.SINK, src=(UOp(Ops.NOOP),), arg=KernelInfo(name="k1"))
-buf = UOp.new_buffer("CPU", 16, dtypes.int32, None)
+buf = UOp.new_buffer("CPU", 16, dtypes.i32, None)
 print("=== buf facts")
 print("want_buf_is_bound =", buf.is_bound_var)
 print("want_buf_dev      =", buf.device)
@@ -27,7 +27,7 @@ from dataclasses import replace
 # `.bind` is what sets the `val` payload `is_bound_var` reads. Building the
 # ParamArg by hand gets it re-wrapped (PARAM drops `val` on the way in, ops.py
 # :1241), so both go through the API the module actually offers.
-VAR = UOp.variable("n", 0, 8, dtypes.int32).bind(7)
+VAR = UOp.variable("n", 0, 8, dtypes.i32).bind(7)
 print("=== VAR facts")
 print("want_var_is_variable =", VAR.is_variable)
 print("want_var_is_bound    =", VAR.is_bound_var)
@@ -39,7 +39,7 @@ print("want_var_has_val     =", VAR.arg.val is not None)
 print("want_var_val         =", VAR.arg.val)
 print("want_var_nsrc        =", len(VAR.src))
 NOOP = UOp(Ops.NOOP)
-ZERO = UOp.const(0, dtypes.int32)
+ZERO = UOp.const(0, dtypes.i32)
 LIN = UOp(Ops.LINEAR, src=(NOOP,))
 prog = UOp(Ops.PROGRAM, src=(K, LIN),
            arg=ProgramInfo(vars=(VAR,), globals=(0,), outs=(0,), ins=(1,)))
@@ -134,26 +134,26 @@ from tinygrad.engine.realize import resolve_params, _resolve
 print("want_rp_call   =", who(resolve_params(call, [buf, ZERO])))
 print("want_rp_store  =", who(resolve_params(store, [buf, ZERO])))
 # the view recursion: a BITCAST over a PARAM resolves its src[0]
-P0 = UOp(Ops.PARAM, dtypes.int32, arg=ParamArg(0, dtypes.int32, None, None, 1, "p0",
+P0 = UOp(Ops.PARAM, dtypes.i32, arg=ParamArg(0, dtypes.i32, None, None, 1, "p0",
                                                AddrSpace.GLOBAL, ("CPU",), False, None, None, False, None))
-P1 = UOp(Ops.PARAM, dtypes.int32, arg=ParamArg(1, dtypes.int32, None, None, 1, "p1",
+P1 = UOp(Ops.PARAM, dtypes.i32, arg=ParamArg(1, dtypes.i32, None, None, 1, "p1",
                                                AddrSpace.GLOBAL, ("CPU",), False, None, None, False, None))
 print("want_rs_param  =", who([_resolve(P0, [buf, ZERO])]))
 print("want_rs_p1     =", who([_resolve(P1, [buf, ZERO])]))
 # The view arms recurse over `b.src`, which is what makes them need a real src
-# list. `UOp(BITCAST, dtypes.float32, (P0,))` builds dtype as a SRC, so the arg
+# list. `UOp(BITCAST, dtypes.f32, (P0,))` builds dtype as a SRC, so the arg
 # keyword is used instead.
-bit = UOp(Ops.BITCAST, arg=dtypes.float32, src=(P0,))
+bit = UOp(Ops.BITCAST, arg=dtypes.f32, src=(P0,))
 rb = _resolve(bit, [buf, ZERO])
 print("want_rs_bit_op      =", rb.op)
 print("want_rs_bit_nsrc    =", len(rb.src))
 print("want_rs_bit_src0    =", NAMES.get(rb.src[0], "?"))   # buf -- the PARAM became it
-msel = UOp(Ops.MSELECT, arg=(0,), src=(bit, UOp.const(1, dtypes.int32)))
+msel = UOp(Ops.MSELECT, arg=(0,), src=(bit, UOp.const(1, dtypes.i32)))
 rm = _resolve(msel, [buf, ZERO])
 print("want_rs_msel_op     =", rm.op)
 print("want_rs_msel_nsrc   =", len(rm.src))
 print("want_rs_msel_deep   =", NAMES.get(rm.src[0].src[0], "?"))   # buf, two levels down
-ms2 = UOp(Ops.MSELECT, arg=(0,), src=(msel, UOp.const(1, dtypes.int32)))
+ms2 = UOp(Ops.MSELECT, arg=(0,), src=(msel, UOp.const(1, dtypes.i32)))
 print("want_rs_msel_x3     =", NAMES.get(_resolve(ms2, [buf, ZERO]).src[0].src[0].src[0], "?"))
 
 print("=== unwrap_multi has_dnum")
@@ -175,7 +175,7 @@ print("want_dnum_glob =", dnum(prog_g))
 prog_dn = UOp(Ops.PROGRAM, src=(K, UOp(Ops.CUSTOM, arg="_device_num", src=(NOOP,))),
               arg=ProgramInfo(vars=(), globals=(0,), outs=(0,), ins=(1,)))
 print("want_dnum_cust =", dnum(prog_dn))
-prog_pn = UOp(Ops.PROGRAM, src=(K, UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.int32, None,
+prog_pn = UOp(Ops.PROGRAM, src=(K, UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.i32, None,
               None, 1, "_device_num", AddrSpace.ALU))),
               arg=ProgramInfo(vars=(), globals=(0,), outs=(0,), ins=(1,)))
 print("want_dnum_parm =", dnum(prog_pn))

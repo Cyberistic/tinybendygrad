@@ -171,14 +171,17 @@ FLAT = [
     ("t_fastpath", [
         'u1("usb_fast_p1_mask", FAST_P1_MASK())', 'u1("usb_fast_p1_val", FAST_P1_VAL())',
         'u1("usb_fast_p2_mask", FAST_P2_MASK())', 'u1("usb_fast_p2_val", FAST_P2_VAL())',
-        'b1("usb_nocompletion_0x40", pcie_no_completion(0x40))',
-        'b1("usb_nocompletion_0x30", pcie_no_completion(0x30))',
-        'b1("usb_nocompletion_0x44", pcie_no_completion(0x44))',
-        'b1("usb_nocompletion_0x04", pcie_no_completion(0x04))',
-        'b1("usb_nocompletion_0x4c", pcie_no_completion(0x4c))',
-        'b1("usb_nocompletion_0x00", pcie_no_completion(0x00))',
-        'b1("usb_nocompletion_0x20", pcie_no_completion(0x20))',
-        'b1("usb_nocompletion_0x60", pcie_no_completion(0x60))',
+        # DECIMAL IN THE ROW NAME TOO. Bend has no `0x` literal, and the oracle
+        # names these rows with `str(hx)`, so a hex-spelled name would be a
+        # permanent disagreement rather than a visible one.
+        'b1("usb_nocompletion_64", pcie_no_completion(64))',
+        'b1("usb_nocompletion_48", pcie_no_completion(48))',
+        'b1("usb_nocompletion_68", pcie_no_completion(68))',
+        'b1("usb_nocompletion_4", pcie_no_completion(4))',
+        'b1("usb_nocompletion_76", pcie_no_completion(76))',
+        'b1("usb_nocompletion_0", pcie_no_completion(0))',
+        'b1("usb_nocompletion_32", pcie_no_completion(32))',
+        'b1("usb_nocompletion_96", pcie_no_completion(96))',
     ]),
     ("t_stream", [
         'u1("usb_pcie_mem_nchunks_max", pcie_mem_nchunks(USB_MAX_STREAM()))',

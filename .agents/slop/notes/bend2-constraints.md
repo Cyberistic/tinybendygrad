@@ -8616,3 +8616,1089 @@ plausible number.
    `(List, U32, U32)` refuses the repeated `_ _` placeholders. The dodge that WORKS for
    `shl` is to avoid the count: `shl` overflows iff `a >= 2**(64-k)`, one word and one
    shift. There is no such dodge for a bare bit count.
+
+## MEASURED BY THE `runtime/support/usb` UNIT (2026-10-02) -- numbering continues from the
+## `1..9` series that ends at line 8320 (the `runtime/support/nv/ip` unit). Rule NUMBERS REPEAT
+## across every series in this file; cite LINE POSITIONS, and this block starts after line 8618.
+
+1. **A `+` PARAMETER MAY BE READ MANY TIMES; A PLAIN ONE MAY BE READ ONCE.** `Tr.emit.go`
+   reads `refused` four times and `next` twice, and it works, because every one of them is
+   `+`. So `+` means "REBINDABLE", not "linear". The corollary is the trap: handing a `+`
+   slot to a function that takes it as a PLAIN parameter MOVES it, and every later read of
+   the slot sees whatever the callee left. A walk that tested a SEEN SET with
+   `List.contains(~A, ~eq, seen, x)` and then consed `x <> seen` emitted ZERO rows and every
+   seen set read as already-full, because `List.contains` takes `+x` and had taken `x`.
+
+2. **`+D<..>` IS NOT "MAKE THIS BINDING REBINDABLE".** A pattern binder cannot be read
+   twice, and prefixing the pattern with `+` fails to parse -- `+` on a datatype means
+   `+D<..>` sets `D`'s leading quantities to `&2`. The way out is to rebind AFTER the
+   pattern: `case Ent{v, nm} <> t:` then `+vv = v` / `+nn = nm`.
+
+3. **`<>` IS HEAD-THEN-TAIL, AND THE LEFT SIDE MUST BE THE HEAD.** `ix_index(i) <> ix_map(t)`
+   conses a SCALAR onto a list; `enum_both(...) <> enum_rows.go(...)` does not, because the
+   left side is a `List` and the head slot wants a `String`. To join two LISTS use
+   `List.append(&2, T, xs, ys)` or `List.concat`. A pattern `Ent{..} <> t` is the same
+   operator read backwards.
+
+4. **A `match` OVER A `Nat` IS NOT TOTAL WITHOUT A `case 1n+m:` ARM.** `case 0n:` ..
+   `case 99n:` .. `case _:` all fail with "expected: a constructor of U32 (missing, or
+   already matched)", including the wildcard. So a 24-arm symbol ladder has to be a walk
+   over a list, and a 3-arm match over a status byte has to be a `Bool.pick` nest.
+
+5. **A `do IO<Unit>:` BLOCK CANNOT BE FOLLOWED BY A `def`.** The block runs to the end of
+   the enclosing def, so a section of twenty-two `IO.print`s is one
+   `IO.print(lines_of(concat_str([...])))` and not twenty-two bindings. This is the sibling
+   of the "a bare expression arm and a `do` arm have different types" note: both come from
+   the same place, the block is a STATEMENT form.
+
+6. **THE PARITY OF A LIST LITERAL IS INFERRED FROM THE EXPECTED TYPE, EXCEPT FOR A
+   `List.concat`/`List.map` TEMPLATE ARGUMENT.** `[a, b, c]` adapts to `List<&2, String>`
+   when the callee says so (which is why a flat row list works), but `List.map(~A, ~B, ~f,
+   xs)` wants a template it cannot infer from and the error names the FIELD type rather
+   than the arity. A fold written as `h <> go(t)` avoids it entirely.
+
+7. **A DECREASING SELF-CALL'S SHRINKING ARGUMENT MUST COME FIRST.** "Arguments are read
+   left to right: each passed unchanged until one shrinks." `fields.go(ix, rest)` with
+   `rest` second is refused; `fields.go(rest, ix)` is accepted. The same rule refuses
+   `sym_at.go(Nat.add(m, 1n), t2)`: a GROWING first argument is not a shrink, so put the
+   list first and the counter second.
+
+8. **`List.length(&2, T, xs)` CONSUMES `xs`,** so `f(xs, List.length(&2, T, xs))` needs
+   `+xs`. And `Bool.to_u32` returns `U32`, so `Nat.add(at, Bool.to_u32(...))` is a type
+   error -- wrap it, `Nat.add(at, U32.to_nat(Bool.to_u32(...)))`.
+
+9. **MATCHING A LIST BY MATCHING THE FUEL ALONE LOSES THE LIST.** `usb_enum.walk` took a
+   device list the port did not have (`libusb_get_device_list` returns a POINTER) and
+   matched an always-empty one, so every fixture produced ONE device whatever `n` said. The
+   count IS the fuel when the container is the seam's.
+
+10. **A HAND-TYPED CONSTANT IS A COIN FLIP, AND TWO OF 119 WERE WRONG IN ONE FILE.**
+    `SENTINEL_MAGIC` was 1363148800 where `0x51000000` is 1358954496; `FAST_P1_MASK` was
+    215 where `0b11011111` is 223. Both were caught by generating the expectation from
+    CPython, and a hex spelling IN THE COMMENT is not enough -- the comment said `0x51000000`
+    and the value said `0x51400000`. The check that generalises is a map from the Bend def
+    to an AST POSITION in the Python file, so the VALUE comes from the source text and a
+    wrong value is not expressible; a wrong POSITION is, and it is loud.
+
+11. **WHEN A PORT'S TABLE LOSES AN ENTRY BECAUSE THE ORACLE WAS RIGHT, THE RULE IT WAS
+    TESTING LOSES ITS FIXTURE.** `enum_libusb_class_code` really does bind
+    `LIBUSB_CLASS_IMAGE:=6` and then `LIBUSB_CLASS_PTP:=6`, so IMAGE is a module global and
+    NOT a dict entry. Correcting the table to nineteen entries removed the only repeated
+    value in twenty-one tables and LAST-wins became unobservable -- mutation M36 fell to 0
+    rows. The fix is a SYNTHETIC table built to have the collision, not a comment.
+
+12. **A U32 SUBTRACTION WRAPS WHERE PYTHON'S DOES NOT, AND `U32.max` KEEPS THE WRAP.**
+    `(size - CHUNK).maximum(0)` is 0 for `size < CHUNK` in Python and 4294967295 in a U32,
+    and `U32.max(4294967295, 0)` is 4294967295. The clamp has to be an explicit
+    `Bool.pick(is_ge(size, CHUNK), U32.sub(...), 0)`. The boundary fixture is the one that
+    catches it: a size one below the threshold.
+
+13. **`U32.shln(1, 32n)` IS 0 AND `U32.sub(0, 1)` IS 4294967295,** so
+    `((1 << (8*size)) - 1)` at `size == 4` is right BY ACCIDENT. Measure it with a row
+    (`usb_pcie_mask_4`) or the next person will "fix" the saturating shift.
+
+14. **`String.split` THROWS THE SEPARATORS AWAY, SO A FIELD LIST IS A ROUND TRIP.** The
+    gate prints `String.join(map(names), " ")` and diffs THAT against the header's field
+    names, never the literal: a row that printed the literal would be a tautology, and a
+    field COUNT passes a transposed pair. `ops_cl`'s unit found `Sig`'s names INVERTED and
+    a USB descriptor with a transposed pair is a silently wrong transfer.
+
+15. **THE ORDER OF A NESTED `f(g(x))` IN C IS ARGUMENTS-FIRST, AND AN AST PRE-ORDER WALK
+    REPORTS THE OUTER CALL FIRST.** `checked(libusb.libusb_get_device_descriptor)(
+    libusb.libusb_get_device(handle), ...)` on one line calls GET_DEVICE first. An oracle
+    that walks the AST pre-order will disagree with any trace, and the disagreement looks
+    like a port bug. Visit `n.args` before `n.func`, and visit `n.func` at all when it is a
+    `Call` (`checked(X)(...)` has the symbol inside the callee).
+
+16. **`checked(...)` IS A REFUSAL SITE AND A BARE `libusb.*` CALL IS NOT, AND THAT SPLIT IS
+    THE WHOLE OF A TRACE'S `raise` BEHAVIOUR.** `checked` (:13-18) raises when the return
+    code is negative. If every step emits through one function, `bad_at` fires at exactly
+    one ordinal and every other "refusal" fixture prints the FULL trace -- a row that looks
+    like a gate and is not one. `libusb_free_device_list(devs, 1)` and `libusb_ref_device`
+    are raw; the descriptor read is checked; `usb_enum_refused_5_fires` and
+    `usb_enum_refused_6_raw_no_fire` are one row apart and say so.
+
+---
+
+## renderer/isa/x86.bend -- measured 2026-10-02. NUMBERING CONTINUES FROM THE LAST
+## APPENDED SERIES IN THIS FILE; rule numbers here are NEW and the file's INDEX AT ITS
+## TOP is already known to be ambiguous, so CITE THESE BY POSITION (grep for the title).
+
+### `Bool.pick` OVER A `List` WITH A SHARED ACCUMULATOR IS NOT SAFE TO REASON ABOUT
+
+`Bool.pick(-A, c, a, b)` returns `a` when `c` and `b` otherwise, and it EVALUATES BOTH
+ARMS. Over a list that means the accumulator is passed to both arms, and a fold whose
+two arms differ only in WHICH list they return printed two different plausible wrong
+answers in one sitting -- `Reg.wgpr_list.go` printed the class BACKWARDS with the
+arguments `(cond, acc, append)`, and printed ONLY `rsp` with the arguments
+`(cond, append, acc)`. Every element-wise reading of both versions was correct. The
+`grp.*` rows use the same `Bool.pick` over a `List<&2, String>` and are right, so the
+rule is not "Bool.pick is broken" -- it is that the arm that CONSUMES a shared list is
+the one to suspect.
+
+THE SHAPE THAT DOES NOT MISBEHAVE: make the decision an ARM INDEX and branch with
+`match` on it in a second def. See `Reg.wgpr_push.go` in `x86.bend`.
+
+### `String.concat` PREPENDS, AND `String.reverse` REVERSES THE WHOLE STRING
+
+So a string accumulator built by prepending and reversed at the end is correct ONLY
+when every element is a fixed-length token. With variable-length elements it reverses
+each one too: `RegNames.go` printed ",xar,xcr" for `[rax, rcx]`, and `Hex.bytes.go`
+printed the byte `0xc3` as `23` and dropped half of every instruction. Build a
+`List<&2, String>` and use `String.join` instead -- `List.append(xs, ys)` is `xs ++ ys`
+(base.bend:822) so a fold onto a list is ALREADY in order and needs no reversal. The
+four sites in `x86.bend` that got this wrong were `RegNames.go`, `Op.set_names.go`,
+`Enc.missing.go` and `Hex.bytes.go`, and each was caught by a JOINED-STRING row rather
+than a count -- a count row was green for all four.
+
+### A `match` ON AN ARM INDEX IS NOT COSMETIC, AND `Bool` MAKES A BAD ARM
+
+`match <computed Bool>:` is refused ("a parameter or field scrutinee"), so every
+threshold has to become `Bool.pick(U32, cond, 1, 0)` and then a `match` on that index in
+a second def. The `Bool.pick(U32, ...)` is the ONLY place the branch is written, so an
+arm index is what every threshold in a file goes through, and a def that needs three
+different threshold tests needs three indices or a nested `Bool.pick`.
+
+### BEND 2.0.34 HAS NO `0x` LITERAL
+
+`0x8B` is a parse error naming the `x` ("expected : a numeric literal"). A port of a
+table written in hex source literals must convert every one to decimal, and the
+conversion is where the mistakes land -- `x86.bend`'s `encodings` table is 77 decimal
+opcodes converted by hand and every one is checked against CPython's own `ast` reading
+of the source. `0b1111` IS supported.
+
+### `U32.shln` / `U32.shrn` TAKE A `Nat` AMOUNT, AND A `Nat` LITERAL ONLY BINDS IN A
+### `Nat` CONTEXT
+
+`U32.shln(a: U32, n: Nat)` and `U32.shrn(a: U32, n: Nat)` (base.bend:1399, :1406), so a
+byte offset in BITS is `Nat.mul(8n, i)` on the `Nat` side -- `U32.shln(U32.from_nat(i),
+3n)` is a type error, not a coercion. There is no `>>` on `U32`: `U32.shr` is a ONE-BIT
+shift and the n-bit one is `shrn`/`shln`.
+
+### A SELF-CALL DRIVEN BY A `Nat` COUNTDOWN MUST PUT THE COUNTDOWN FIRST, AND
+### `U32.inc(i)` IS NOT RECOGNISED AS ONE
+
+`Enc.imm_int` walks `n` bytes with a `Nat` countdown and Bend accepts
+`Enc.imm_int(U32.inc(i), n, imm, ...)`. With `U32.inc(i)` as the argument and a `U32`
+parameter it is refused as "a decreasing self-call" -- a `U32` countdown is not a
+decreasing argument to Bend and a `Nat` one is, so the countdown's TYPE is the thing
+that makes the recursion typecheck, not its position alone.
+
+### `FastEnum` CONTINUES THE BASE ENUM'S NUMBERING
+
+`x86.py`'s `X86Ops` is a `FastEnum` whose `auto()` continues from `tinygrad.uop.Ops`,
+so its eighty-nine members are numbered FROM 78, not from 0. A port that reads "an
+`auto()` enum is 0..n-1" produces eighty-nine plausible wrong numbers and a CORRECT
+`len()`, and no count row sees it. Gated in BOTH directions, which is the only reason
+the mistake was caught at all.
+
+### TWO THINGS WRONG WITH THE GATE HARNESS, BOTH MEASURED HERE
+
+  1. A REFERENCE FILE MUST CARRY THE ANSWER HALF TOO. The oracle's `rows` mode emits
+     `NAME = [CPYTHON]   py=[CPYTHON]` -- the answer half filled with CPython's own
+     answer, because the reference's claim is "this is what the answer must be". A
+     reference of only `py=[...]` halves diffs against every line.
+  2. REGENERATING GENERATED ROWS MUST REMOVE THEM BY NAME, NOT BY POSITION. A
+     topological sort of the file reorders the defs, so a splice at a banner leaves the
+     previous run's `Gate.rows0` above it; a dedup pass then keeps the STALE copy and
+     the gate shows rows from an oracle two fixes old. Cost three confusing diffs.
+
+## APPENDED FROM `runtime/support/rdma/bnxtdev.bend`
+
+Numbering continues from the position above (this file is append-only and its rule
+NUMBERS have already collided three times, so cite the `##` SECTION HEADING, not a
+number). Six measured rules; every one cost a compile cycle or a bisect on that file.
+
+### A `do` BLOCK'S LAST LINE MUST BE A BARE MONADIC ACTION
+
+    def f(x: U32) -> IO(Unit):
+      do IO<Unit>:
+        a : Unit <- g(x)          # a BINDING -- fine anywhere except last
+        g(x)                      # the last line: a bare action
+
+A block whose last line is a BINDING does not terminate, and the parse error is
+reported at the NEXT `def`, which reads like that def is malformed and is not. Three
+of these on `bnxtdev.bend` (`t_const`, `db_row`, `t_db`) each cost a bisect, and the
+symptom actively points at the wrong line. `.agents/slop/dobind.py` checks a whole
+file for it in one pass; the first version of that checker tested the opposite
+condition and found none of the three.
+
+### A `def` NAME MAY CONTAIN A DOT, AND A DEPENDENCY SCANNER MUST NOT SPLIT ON IT
+
+Bend names are `foo.bar` all over (`Tr.has.step`, `mask_nibs.go`, `pbl.build_top`).
+A tool that resolves an identifier by splitting on `.` and looking up the head turns
+`mask_nibs.go` into a SELF-dependency, so a real forward reference is reported as
+clean and the file does not compile with a message naming a callee. Check the WHOLE
+dotted token against the def table first, and only then fall back to the head as a
+namespace. `.agents/slop/depord.py` got this wrong first and hid one forward
+reference for several cycles.
+
+### A COUNTDOWN BINDER IS CONSUMED BY THE `match`, SO A POSITION RIDES BESIDE IT
+
+`case 1n+m:` spends `m`, so `f(nth_at(xs, m), m)` reads it twice and is refused. The
+fuel must also be the FIRST parameter (a self-call whose fuel is the fourth argument
+is refused outright, with no mention of fuel). The shape that works, and the one
+every fold in this tree uses:
+
+    def walk(n: Nat, ix: U32, +xs: List<&2, T>) -> T:
+      match n:
+        case 0n: base
+        case 1n+m: walk(m, U32.inc(ix), xs)
+
+`ix` is a plain `U32` and needs `+` if read twice; `xs` needs `+` if the match and
+the recursive call both use it.
+
+### A `do`-BLOCK `=` BINDING IS AFFINE LIKE A PARAMETER
+
+`nm : String = ...` read five times needs `+nm`. Only `<-` MONADIC binds and `match`
+pattern binders are exempt. Eleven of these on `bnxtdev.bend`, each one compile
+cycle. `.agents/slop/affine.py` finds them for a whole file at once -- and it must
+report the line the name is BOUND on, not the line of the `def`, or the fixer
+off-by-ones and re-applies forever.
+
+### `Bool.pick` EVALUATES BOTH ARMS, SO A `U32` OP INSIDE ONE NEEDS A `Nat`
+
+`Bool.pick(U32, c, a, b)` type-checks both arms, so `U32.and(x, U32.shrn(y, 8n))` in
+an arm demands a `Nat` shift inside a `U32` operation and is refused with
+`expected : Nat / observed : U32`. The two failure shapes look identical from the
+outside -- both report at the NEXT `def` -- and cost a bisect each here: a mask
+written as a shift (`U32.shrn(U32.and(x, 255n))`) and a mask written as a mask
+(`U32.and(U32.shrn(x, 8n), 255n)`, which is what it should be).
+
+### AN UNCLOSED PAREN IN A DEF BODY REPORTS AT THE NEXT TOP-LEVEL `def`
+
+Four of these on `bnxtdev.bend`: `wqe.words` (four nested `List.append`), `bs.extra_at`
+(eight nested `Bool.pick`), and two `urow` rows. `.agents/slop/paren.py` checks
+paren balance PER TOP-LEVEL DEF; its first version stopped scanning when the depth
+returned to zero, which for a one-expression-per-line body is the FIRST body line,
+so it checked one line and found none of them. An EXTRA paren is not detectable this
+way at all -- the depth balances at a higher level -- and a prefix bisect over the
+body is the only tool for that one.
+
+---
+
+## APPENDIX 2026-10-02 (drift pass) — six rules about GATES, not about Bend
+
+Numbering continues from the tail of the file above; these are unnumbered and cited by
+position like everything else here. None of these is a Bend constraint — they are all
+about a measurement that lies, and three of the six were found by being wrong here.
+
+### A PORT WHOSE GATE HAS NO CPYTHON LANE CANNOT SEE UPSTREAM DRIFT. AT ALL.
+
+The strongest rule here, and it is structural rather than accidental. A row's expected
+value is a literal inside the `.bend` file, so **re-vendoring the Python moves nothing** —
+not one row, not for any port. The row is compared against the port's *own* recorded
+expectation. So "I re-vendored `x.py` and no row moved" is **not** evidence of anything
+unless a CPython lane actually re-computes the expected value.
+
+Measured across this pass:
+
+| port | rows | CPython lane | can it see drift? |
+|---|---|---|---|
+| `runtime/support/hcq2.bend` | 360 | `hcq2-oracle.py` + `hq2-oracle2.py` | yes |
+| `runtime/ops_metal.bend` | 432 | `mt_rows.py` (167→169) | yes |
+| `renderer/cstyle.bend` | 227 | `wip/cstyle_oracle.py` (210) | yes |
+| `codegen/opt/postrange.bend` | 48 | **NONE** | **no** |
+| `codegen/opt/heuristic.bend` | 10 | **NONE** | **no** |
+| `uop/ops.bend` | 22 | **NONE** | **no** |
+
+`postrange` is the painful one: its 48 rows cover `upcastable_dims`, `unrollable_dims`,
+`upcast_size`, `upcasted`, `axes_of`, `split_targets`, `group_for_reduces` and the
+UNROLL `amt <= 32` check — and its mutation table asserts all three behaviours upstream
+has since **deleted**. It is well covered and blind at the same time, because coverage
+of the port's own model is not coverage of Python.
+
+### THE GATE ROW THAT COMPARES A `[bend]` HALF TO A `py=` HALF IN ITS OWN FILE IS A TAUTOLOGY
+
+`renderer/cstyle.bend` prints `nm = [<computed>]   py=[<literal>]`, and
+`.agents/slop/wip/gate.py` parses that pair and reports the count that matches as
+"matches CPython byte for byte". It never runs `cstyle_oracle.py`. The `py=` half is a
+**string typed into the port**, so the row asserts the port against itself — the exact
+shape `agent-core.md` records for `device.bend`'s `sig=0 4 5`. The wording makes it worse:
+a reader sees "GREEN 227 / 227 rows match CPython" and believes a Python was consulted.
+
+The honest form is the one `hcq2` uses: the CPython lane prints the same `name=value`
+lines and a *separate* script diffs them, so a stale Python shows up as a row that no
+longer appears at all rather than as a self-consistent green.
+
+Corollary, measured here: when the two halves DO disagree, the gate does catch it — it
+reported `GREEN 123 / 227` with the 104 red rows printed beside each other. The tautology
+is invisible only while they agree, which is exactly when it does no harm.
+
+### `renderer-oracle.py` IS NOT `cstyle_oracle.py`, AND NEITHER COVERS THE OTHER
+
+Two files, same directory, wildly different row sets. `tools/renderer-oracle.py cstyle`
+emits **15 whole-kernel `k*` rows**; `wip/cstyle_oracle.py` emits **210 component rows**.
+A flat `name=value` diff of the first against `cstyle.bend` shows **zero shared names** —
+which reads as "the gate compares nothing" and is in fact "these are different oracles for
+different files". Before reporting an empty intersection as a finding, check that both
+sides are the same oracle. (It cost this pass one wrong claim.)
+
+### A PINNED PYTHON TREE EXTRACTED WITH `git archive` IS THE ONLY HONEST ORACLE FOR A DIFF
+
+`git checkout upstream/master -- <one file>` leaves a tree that mixes two commits, and
+CPython will import it happily until an `ImportError` names the coupling — or, worse,
+will import it and compute something that is true of neither commit. `78d482262` alone
+is enough to make `tinygrad` unimportable, because `postrange.py` at the pin imports
+`axis_to_pos`, which that commit deletes.
+
+Both trees, whole, side by side, answers the question in one command and has no mixed state:
+
+```bash
+git archive 6c3d401cf324 tinygrad | tar -x -C /tmp/pin-tree
+git archive upstream/master tinygrad | tar -x -C /tmp/up-tree
+```
+
+The oracle scripts then need their hardcoded `sys.path.insert(ROOT)` rewritten — most of
+them point at the repo root, so they silently measure the *working tree* while you think
+you are measuring the archive. `sed` the `parents[3]` join to `os.getcwd()`.
+
+### `bend` 2.0.34 HAS NO `-r`, AND `-o -` WRITES NOTHING
+
+The "native lane" in `.agents/slop/hcq2-diff.py` is `bend <f> -o -` then `bend -r <bin>`.
+Both halves are dead: `-r` is not an option (`bend: unknown option -r`) and `-o -` writes
+**0 bytes** to a file named `-`, because `-o` selects the backend by *extension*. So the
+lane silently returned an empty string and `hcq2-diff.py` reported a clean run having
+compared nothing. The working form needs a real extension:
+
+```bash
+./bin/bend <f> -o /tmp/lane.bin && chmod +x /tmp/lane.bin && /tmp/lane.bin
+```
+
+An empty lane is not a failure, which is the whole danger: a harness that cannot run its
+own second lane is indistinguishable from one that passed it.
+
+### A FIRST GATE READING THAT DOES NOT REPRODUCE IS A FINDING, NOT A TYPO
+
+`wip/gate.py` printed `GREEN 227 / 227` once and `GREEN 123 / 227` on every one of three
+immediate re-runs, with the port byte-stable across three runs by `md5` and unmodified
+against `HEAD`. Both numbers are recorded here because the reproducible one is the only
+one that may be acted on, and because a harness that has two answers is a harness whose
+"green" means nothing until the second one is explained.
+
+---
+
+## HEADER-CLAIM AUDIT (cross-cutting unit, 2026-10-02)
+
+Appended after position 8876. Numbering does not continue -- these are findings
+about PROSE, not about the language. The index at the top of this file does not
+list them; find them by position.
+
+### PROSE IS NOT CHECKED BY ANYTHING IN THIS REPO, SO A FALSE CLAIM IS FREE
+
+Three committed files shipped a confident false header claim before this audit,
+and every check the repo has passed on all three:
+
+1. `runtime/ops_nv.bend` -- a `WHAT IS PORTED, DEF BY DEF` table naming **28 defs
+   that were never written**, under a `STAGES ... ALL FOUR LANDED AND CHECKED`
+   banner. `qmd.read`/`qmd.write`/`qmd.of`/`qmd.set_addr`/`qmd.set_release`,
+   `pc.key`, `iface.classes`, `iface.pc_root`, `iface.err_str`, `flags.of`,
+   `q.nvm`, `cq.init`, `cq.prev_reset`, `pd.kernargs_size`, `pd.cbuf0`, `pd.vars`,
+   `dev.ifaces`, `dev.arch_of`, `dev.sass_of`, `dev.fifos`, `dev.new_fifo`,
+   `dev.ensure_local`, `dev.vid_hw`, `dev.reg_chunk`, `GPFifo`, `alloc.alloc`,
+   `va.uvm_top`, `iface.cls`. The file also carried **11 rows printed TWICE**
+   under the same name (600 unique names from 611 lines) and a `543 + 56 + 4`
+   row split that sums to **603**, not to the 600 it claimed.
+
+2. `runtime/ops_rdma.bend` -- a 32-entry `WHAT IS PORTED` table naming 32 defs
+   that do not exist. Every one was a RENAME that happened after the table was
+   written; not one was a missing port. `iface.of` is `Iface.of`.
+
+3. `runtime/support/nv/ip.bend` -- a wall reading "`hcq2.bend` is still a 29-line
+   STUB", which was true when written and stayed true in the prose after
+   `hcq2.bend` grew to **2272 lines / 284 defs / 360 rows**. A stale wall is the
+   most expensive kind of false claim, because a reader who trusts it stops
+   looking for the second table that could contradict this one.
+
+**The rule: a header that says "stage 1 of 4, and here is exactly what stages
+2-4 are" is a good header. A header claiming four stages when one landed is not.
+Retract loudly, in the file, naming what was claimed and what is true.**
+
+### A COUNT CLAIM IS CHECKED AGAINST THE WRONG FILE IF YOU DO NOT NAME IT
+
+`"tc_ptx.py (141 lines)"` and `"the 287 lines of ops_metal.py"` are claims about
+PYTHON and are true. `"renderer/cstyle.bend (287 lines)"` is a claim about a
+`.bend` and is FALSE -- cstyle.bend is 2314. The three claims are
+indistinguishable to a reader and to a regex. Spell the extension every time.
+
+`"hcq2.bend ... 2272 lines with 284 defs"` -- 284 is `^(def|type)` count, 275 is
+`^def` only. Pick one and say which.
+
+### A BARE BASENAME IS AN AMBIGUOUS CITATION AND AN AMBIGUOUS WALL IS NOT A WALL
+
+`dtype.py` exists at `tinygrad/dtype.py`, `tinygrad/mixin/dtype.py` AND
+`tinygrad/codegen/decomp/dtype.py`. `op.py` at `tinygrad/mixin/op.py` and
+`tinygrad/codegen/decomp/op.py`. `movement.py` at `tinygrad/mixin/` and
+`tinygrad/uop/`. A wall writing `dtype.py:220` cannot be checked by anyone,
+including by the person who wrote it. Four `mixin/*.bend` files carried these;
+the line numbers were all CORRECT and the citation was still unverifiable.
+
+### THE TWO LANES CAN DIVERGE AND NOTHING NOTICES
+
+`mixin/elementwise.bend` claimed "both lanes are byte-identical to CPython" and
+carried a `cmp /tmp/py.txt /tmp/bd.txt &&` recipe. Measured:
+
+    bend = 72 rows, cpython (ew-gate.py) = 69 rows
+    ew_promo_nc, ew_dt_promo_nc, ew_op_promo_nc have NO oracle counterpart
+
+Those three were added when `g_promo_nonconst` closed the M13 conjunct defect.
+The oracle script predates the fixture, so their expectations are a PARAGRAPH.
+Three rows whose oracle is prose are the weakest rows in a file and the header
+now names them. **A `cmp` recipe in a header is a claim about two artifacts, and
+the artifacts are the only evidence; run it.**
+
+### A MUTATION NAME IS NOT A DEF NAME, AND A REJECTED DESIGN IS NOT A CLAIM
+
+`rp.seq.after_door`, `const_name.last_wins`, `dc_s2.pat`, `mn_pool_in.at` read
+exactly like `def` names in prose and are not defs -- they are entries in
+`.agents/slop/*_mutations.txt` or an explicitly DELETED first design. Both are
+honest claims and both were near-misses for an automated checker. Name the
+namespace: `the mutation rp.seq.after_door`, `a first design that was deleted`.
+
+### DEAD DEFS, MEASURED, ALL 93 FILES: **1112 of 21717** (19 files at zero)
+
+Worst: `runtime/support/am/amdev.bend` 122/470, `uop/ops.bend` 85/435,
+`runtime/ops_nv.bend` 69/630, `runtime/support/system.bend` 55/540,
+`helpers.bend` 46/254, `runtime/ops_qcom.bend` 45/497,
+`runtime/support/memory.bend` 40/382, `dtype.bend` 35/95,
+`runtime/ops_rdma.bend` 32/333. `runtime/support/nv/ip.bend` is 0/543 -- the file
+that was audited hardest is also the only one with no dead weight, which is the
+argument for the audit rather than against it.
+
+`.agents/slop/dead-defs2.py` measures this; `dead-defs.py` (base-name matching)
+undercounts by a factor of four on any namespaced file.
+
+### A CROSS-FILE SUBSTRATE PRUNE IS A HALF-SPACE EDIT AND NOTHING CATCHES IT
+
+Four `device.bend` readers (`DEnt.cls`, `Bn.self_ix`, `Bn.base`, `Bn.spec`)
+deleted as "provably unread" took down SIX importers in one step:
+`runtime/ops_nv.bend`, `schedule/multi.bend`, `mixin/rand.bend`,
+`engine/jit.bend`, `function.bend`, `uop/fold.bend`. The `Bn` RECORD still had
+the fields; only the readers were gone, so `grep 'self_ix' device.bend` still
+matched and the file still read as complete.
+
+**The pruner must prove unread ACROSS the import closure, not inside one file.**
+A def is unread if nothing calls it, and the callers are in other files.
+
+---
+
+## 2026-10-02 — the dtype rename unit (tinygrad `793abbb`, "modernize tinygrad's dtype to match rust")
+
+Numbering continues from the end of the file above; rule numbers collide across
+units, so cite POSITIONS.
+
+### A `+` PARAMETER AND A `+` CASE BINDER MAY ONLY BE PASSED **BARE**
+
+`case Some{+left}` and `use2(+a, h)` both fail with
+
+```
+- expected : a bound variable
+- observed : a^-1
+```
+
+and so does `use2(a, +h)`. A `+` binder is already in the `^-1` state, so
+passing it *as* `+` is a second reversal of a value that has none left. Only a
+**plain** binder (`case h <> t:`) may be passed either way.
+
+Corollary, and this is the one that costs an afternoon: **a `+` parameter may be
+read as many times as you like, but every read passes it BARE.** So
+`def lut_row(+a: S.Dt, +b: S.Dt)` reading `b` twice is fine, and
+`case Some{left}` (a plain field of a plain `Maybe` parameter) reading `left` and
+handing it to `lut_row` is not, because `lut_row`'s parameter is `+` and the call
+must then reverse it.
+
+### A SELF-CALL'S ARGUMENTS ARE READ LEFT TO RIGHT, AND THE FOLDS THAT SATISFY IT
+
+`lut_rows.go(+a, ds, acc)` cannot be written as
+`case +h <> t: lut_rows.go(+a, +t, String.append(acc, lut_row(+a, +h)))`:
+
+```
+- expected : a decreasing self-call (arguments are read left to right:
+  each passed unchanged until one shrinks)
+```
+
+and moving `+a` to the third position gives `observed : a^-1`, because the
+argument before it already consumed it. Three shapes that DO satisfy it, all
+measured in `tinybendygrad/test/dtype_oracle.bend`:
+
+| need | shape |
+|---|---|
+| a value used by two arms | `case +h <> +t:` |
+| a value reused after a self-call | bind it first: `+r = f(...)`, then the self-call |
+| a shrinking accumulator as the last argument | `case +h <> t:` plus `+r = ...` |
+
+### A `+` DO-BINDING, NOT A PLAIN ONE, FOR A LIST USED TWICE
+
+`main` reading the same `List<&2, S.Dt>` in seven `IO.print` calls needs
+`+all : List<&2, S.Dt> <- IO.pure(...)`. A plain `all : ...` gives
+`expected : all / observed : all (consumed more than once)`. A List is a `Type`
+and a `+` on a `List` parameter is fine — `lop.dts.go(+ds: List<&2, S.Dt>, ...)`
+already does it — so the restriction is on *how many times*, not on the type.
+
+### CARRYING AN OUTER KEY DOWN A FOLD: PASS THE FULL LIST, NOT THE TAIL
+
+The obvious `for h in dtypes.all(): for j in dtypes.all():` written as
+`lut_rows.go(h, ds, "")` inside a fold over `ds` iterates the **tail**, so the
+block is the upper triangle — 153 rows for 17 dtypes, not 289. `can_lossless_cast`
+is NOT symmetric, so that silently drops half the table it is the gate for. The
+full list has to ride as a `+` parameter alongside the shrinking one.
+
+### A NAME TABLE HAS THREE VOCABULARIES AND ONLY ONE OF THEM IS `DType.name`
+
+tinygrad has, for the same dtype: the **attribute** (`dtypes.bfloat16`), the
+**name field** (`"__bf16"` before `793abbb`, `"bf16"` after) and a third,
+unrelated table in **ONNX**'s vocabulary (`onnx_odt_key` answers `"float"`,
+`"int32"`, `"bfloat16"` for ONNX integer codes). A rename that sweeps all three
+corrupts the ONNX table; one that sweeps none leaves a lookup dead. `nn/onnx.bend`
+is the worked example of the third: its `dtbl` row is INSENSITIVE to the rename
+(it walks ONNX codes and prints `dt_name`, so both sides move together) while its
+name table did not move at all.
+
+### `repr` IS NOT `name`, AND UPSTREAM DELETED THE MAP THAT BRIDGED THEM
+
+`DType.__repr__` was `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"` and is now
+`f"dtypes.{self.name}"`, and `INVERSE_DTYPES_DICT` is GONE. It used to print the
+**alias**: `repr(dtypes.float32)` was `dtypes.float`, because `"float"` is a later
+key in `DTYPES_DICT` than `"float32"` and the inverse comprehension let the last
+one win. So `uop/render.bend`'s twenty-arm `dt_attr` table is not renamed, it is
+**deleted** — with name and attribute spelled the same there is nothing left to
+map — and every gate row printing a dtype's repr changes value.
+
+### THE CHEAPEST DETECTOR FOR A NAME-LAYER CHANGE IS A `repr`-PRINTING ROW
+
+For this rename: `dtype.bend`'s own gate printed every dtype's `name` 17 + 289 +
+289 + 51 + 8 + 14112 times and **not one answer moved** — only the name column,
+in lockstep on both lanes. 14 766 rows, 1 declared pre-existing deviation. If the
+arithmetic had moved, that gate would have said so in one run; had it not been
+built, the 300-odd downstream sites would have been found by grep instead, which
+finds the sites and not the damage.
+
+### A COMMITTED GATE CAN BE A FILE THAT DOES NOT COMPILE
+
+`tinybendygrad/test/dtype_oracle.bend` was committed, referenced by its own
+header, and had **four** reversibility errors — the first attempt at a nested
+fold over a dtype list. Nothing in the tree ran it. "The oracle is committed" and
+"the oracle was ever executed" are different facts, and only the second one makes
+a gate. It is worth an `ALL PROOFS CHECK` in CI, or a line in the TODO that says
+who ran it.
+
+### A SCRIPTED RENAME NEEDS ITS OWN ACCEPTANCE TEST, OR IT WILL BE WRONG TWICE
+
+Two silent-damage instances from one script, both caught only by reading the
+output rather than by the exit status:
+
+* the quoted literal was rebuilt as `line[:start] + q + NEW + q + line[end:]`,
+  which keeps the opening quote twice and drops the trailing one — and the
+  membership test was against the QUOTED key while the regex captured the
+  UNQUOTED one, so it reported "0 case keys renamed" on a file full of them.
+* the same script was pointed at `to_dtype_of`, which is keyed by the ATTRIBUTE
+  name, and "renamed" `"half"` to `"f16"` there — **deleting** an attribute
+  spelling while adding nothing.
+
+The rules that came out of it: compare against the barename, never the quoted
+one; rebuild as `line[:start] + line[start] + NEW + line[end_of_name:]`; scope a
+rename to a **named list of defs**, because "every `case "<str>":` in the file" is
+not a definition of the safe set; and after any scripted edit, `git diff` the
+whole file and read it.
+
+### A FROZEN UPSTREAM SNAPSHOT IS NOT OURS TO MIGRATE
+
+`.agents/slop/opstree/tinygrad/` is a verbatim copy of upstream, taken by another
+unit so its oracle can run against a fixed tree. It carries 875 `dtypes.<old>`
+spellings and every one of them must STAY, because its entire value is that it
+matches upstream byte for byte. A rename sweep run with `--include='*.py'` over
+`.agents/slop` will rewrite it, and the sweep's own report is the only place that
+says so. Exclude by path and say why in the tool.
+
+### CORRECTION TO THE SECTION ABOVE: only TWO of those four `device.bend` readers cost anything
+
+MEASURED 2026-10-02, cross-cutting dead-def pass, with an alias-resolving
+tree-wide checker. `runtime/ops_nv.bend:2729,2733,2734,2730` is the ONLY importer
+that reads them, and it reads only `Bn.base` and `Bn.self_ix`, as `D.Bn.base` and
+`D.Bn.self_ix`. `DEnt.cls` and `Bn.spec` have **zero** uses in the whole tree:
+
+    grep -rn --include='*.bend' 'DEnt.cls' tinybendygrad/   # nothing outside device.bend
+    grep -rn --include='*.bend' 'Bn.spec'  tinybendygrad/   # nothing outside device.bend
+
+Deleting `DEnt.cls` and `Bn.spec` and keeping `Bn.base`/`Bn.self_ix` leaves
+`device.bend` at `ALL PROOFS CHECK`, 107 rows byte-identical, both lanes
+identical, and all six named importers still `ALL PROOFS CHECK`. So the note
+above over-claims by two, and the over-claim matters: it makes the four look
+like a load-bearing substrate when two of them are four lines of nothing.
+
+### AN IMPORT ALIAS IS THE NAME, NOT THE MODULE, AND TWO PLACES GET THAT WRONG
+
+A cross-file dead-def checker resolves `import ./op.bend as M` and must then
+search for **`M.mo_prod`**, not `op.mo_prod` and not `mo_prod`. Both wrong forms
+were measured here and both report a LIVE def as dead:
+
+  * searching the MODULE name missed every `M.`-qualified call, and
+  * `import ./op.bend` already carries the extension, so appending another
+    `.bend` to the target resolved nothing at all -- also silently.
+
+And a third, in the same function: naming the generator variable `c` shadowed
+the file's stripped-lines list `c`, so `'\n'.join(c)` joined a STRING'S
+CHARACTERS and matched nothing. A checker that cannot fail is not a checker:
+after three bugs it still agreed with the broken per-file pruners on all 13
+files it was checked against, and the only reason it was caught is that the
+COMPILER caught the deletion first.
+
+### A HEADER ROW THAT SAYS `PORTED` IS A USE, AND DELETING THE DEF MAKES THE LIE BIGGER
+
+`runtime/ops_webgpu.bend`'s WHAT IS PORTED table named `dev.synchronize`,
+`copy.copyout` and `prog.del`. All three were written, all three were named
+PORTED, and all three were reachable from nothing -- the header claim was the
+only thing keeping them alive, and the table is why `SYNC_WORK_DONE` read as a
+covered enum member when no code ever emitted it. Deleting the defs and leaving
+the table would have turned a dead def into a documented lie. **Deleting a def
+means deleting its row in the header's ported-list, or rewriting it as DEAD with
+the reason**, and the rewrite is the part a reviewer can check.
+
+### PIN THE LITERAL, BUT `urow(nm, 140)` IS WORSE THAN WHAT IT REPLACED
+
+The self-asserting shape is `row("x", f(CONST()))` -- the expectation is a def of
+the thing it checks, so no edit to the constant can move the row. Two of the
+three fixes, and the two shapes:
+
+    WRONG  urow("wg_alloc_usage", alloc.usage())          # assertion? no. data row.
+    RIGHT  urow("wg_alloc_usage", 140)                   # WORSE: a number with no
+                                                          # link to the code at all.
+    RIGHT  row("wg_alloc_usage", U32.is_eq(alloc.usage(), 140))
+
+The middle form was written first, caught in review, and replaced. **Removing
+the call removes the test.** The literal belongs on one side of a comparison
+that still makes the call.
+
+### A CONSTANT IS ONLY WORTH A LITERAL IF IT REACHES A REAL CALL -- SPLIT THEM BY WHERE THEY COME FROM
+
+The ~45 self-asserting rows in `ops_webgpu.bend` are not one problem, they are
+three, and the split is a fact about `tinygrad/runtime/autogen/webgpu.py` (which
+IMPORTS: its enum dicts are readable by `importlib`, so every literal can be
+read out of it rather than typed):
+
+  a. REAL wgpu values. `WGPUBufferUsage_*`, `enum_WGPUFeatureName`,
+     `enum_WGPUBufferMapState`. All confirmed against the module. These are the
+     ones worth pinning, and nine now are.
+  b. PORT-INVENTED TAGS. There is **no `WGPUObjectType` in `autogen/webgpu.py`**,
+     so `OBJ_*` is the trace's own object-kind id, and `CALL_*` is the trace's
+     own opcode. A wrong one cannot be a wrong register write. Their rows still
+     check identity and order, which no fixture can separate from the numbering
+     -- so RECORD the blindness instead of pinning numbers that are not claims.
+  c. `SYNC_*` 1..6 is the port's INDEX into the six `synchronous`-wrapped calls,
+     not a wgpu value: all six real calls pass the same
+     `WGPUCallbackMode_WaitAnyOnly` (=1). Pinning 4 in a row about the fourth
+     call's status name would look like coverage and be none.
+
+### ROW COUNTS MUST COUNT NON-BLANK LINES, OR A FILE THAT PRINTS A BLANK SEPARATOR FAKES A LOSS
+
+`uop/weak.bend` and `schedule/allreduce.bend` print a blank line between rows.
+`wc -l` counted 104 and 50; `grep -c .` counts 52 and 48. Measuring with `wc -l`
+reported "104 -> 103 rows" and "50 -> 48 rows" for two files where NOTHING was
+deleted, and the first reading of that was "a deletion moved a row". No row
+moved. **Diff whole `name=value` lines and count the non-blank ones**, which is
+the same rule as the harness rule at the top of `agent-core.md` -- the counting
+has the same trap as the comparing.
+
+### WHEN THE LIVE SUBSTRATE IS MID-EDIT, `--check-only` THERE PROVES NOTHING
+
+`uop/fold.bend` was being edited while this pass ran, so `mixin/*`,
+`schedule/*` and `uop/*` all reported `SOME PROOFS FAIL` naming `bnd.sn.neg`,
+which is in `fold.bend` and not in the file under test. The committed versions
+of those files fail IDENTICALLY, which is the one-line way to tell "I broke it"
+from "someone else is": **put the committed copy beside the edited one and read
+the first line of both.**
+
+Two more traps in that workspace, both measured:
+
+  * bend 2.0.34 caches by PATH, so overwriting a file IN PLACE and re-running it
+    returns the PREVIOUS file's rows. Every variant needs its own path
+    (`_f1_x.bend`, `_f2_x.bend`), which is also how relative imports stay
+    resolvable -- a `$TMPDIR` copy cannot resolve `import ../helpers.bend`.
+  * `jj restore` run from INSIDE a `jj workspace` resolved to the MAIN working
+    copy and silently undid four deletions in `tinybendygrad/device.bend`. The
+    files came back byte-identical to `@-` with no error anywhere. Inside a
+    scratch workspace, only ever `cp`; never run `jj` there.
+
+---
+
+## FROM THE `uop/fold.bend` `_min_max` OP-TABLE UNIT (2026-10-02, the `bit_length` + dtype-limit + ladder unit)
+
+Numbering continues from the last series in this file. The integers below start at **45**;
+positions are what is unique, so cite these by the heading.
+
+### 45. **A `match` TAKES THE FIRST CASE THAT MATCHES, SO A SECOND ARM ON THE SAME CONSTRUCTOR IS DEAD CODE -- AND AN ARM THAT ANSWERS `None` SKIPS PAST IT**
+
+`Ops.AND` has TWO arms in `_min_max` (ops.py:1110 and :1128): the integer mask, and the
+`bool` dtype's `and`. The second is reachable exactly when the first is not -- the integer
+one is gated on `dtypes.is_int(self.dtype)`. Both natural spellings are wrong:
+
+* two `case O.OpsAND{}` arms: the second is dead, because a `match` takes the FIRST arm
+  whose pattern matches and both patterns are the same constructor;
+* `case O.OpsAND{}: <int arm>` then `case _: <bool arm>`: the integer arm RETURNS A
+  `Maybe`, so a `None` leaves `mm.bin.arm` as the arm's own answer and the `case _:` is
+  never consulted.
+
+Measured cost: every `andb_*` gate row answered `bool`'s own limits. The fix is ONE
+dispatch def over the dtype's class:
+
+```bend
+def mm.bin.and(bl: Bool, +d: S.Dt, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
+  match bl:
+    case True{}: Some{mm.bin.and_bool.go(s0, s1)}
+    case False{}: mm.bin.and_int(bnd_bin.and_gate(s1, d), s0, s1)
+```
+
+### 46. **AN ARM LIST AND A `Maybe`-RETURNING DISPATCH ARE THE SAME SHAPE, AND THE `Maybe` IS THE FALL-THROUGH**
+
+`_min_max`'s `GroupOp.Binary` block is entered for thirteen ops and only ELEVEN of them
+have an arm, and Python falls THROUGH to the arms below the block rather than answering.
+So the block's return type is `Maybe<&2, Bnd2>` and the fall-through is one def:
+
+```bend
+def mm.MM2.get(m: Maybe<&2, Bnd2>, fb: Bnd2) -> Bnd2:
+  match m:
+    case Some{x}: x
+    case None{}: fb
+```
+
+Inverting `get` moves 90 of a 127-row gate. `Maybe.default` is the WRONG shape here because
+the fallback is a call that must be built either way and `default` hides which half fired.
+
+### 47. **THE SIGNED ORDER OVER `(sign, unsigned magnitude)` IS FOUR CASES, NOT TWO -- AND THE TWO-CASE SPELLING IS `ALL PROOFS CHECK`**
+
+For `a < b` with `a`, `b` each a `Bool` sign plus an unsigned 64-bit magnitude:
+
+| `na` | `nb` | answer |
+|---|---|---|
+| `neg` | `neg` | `|a| > |b|` |
+| `neg` | non-neg | **always true** |
+| non-neg | `neg` | always false |
+| non-neg | non-neg | `|a| < |b|` |
+
+The collapsed spelling -- "if `a` is negative compare the magnitudes backwards" -- is wrong
+on the middle two rows, which is every comparison of a negative against a non-negative.
+Measured: `max(-3, 4)` answered `-3` and `cmplt(-3, 4)` answered `False`, on **53 of 123
+rows**. It terminates, typechecks and prints.
+
+### 48. **A NEGATION IS THE SIGN AND NOTHING ELSE; THE `- 1` BELONGS TO `~`, NOT TO `-`**
+
+`-x` is `SNok{Bool.not(neg), mag}` -- the magnitude is already `|x|`. `~x = -x - 1`, so the
+`+ 1` is `bnd.not`'s and NOT `bnd.sn.neg`'s, because a subtraction IS a sum of a negation
+and putting the `+ 1` there makes `x - y` one too low on every SUB row (`3 - 4` answered
+`-2`, `5 - 5` answered `-1`).
+
+### 49. **A SIGN-AND-MAGNITUDE REPRESENTATION NEEDS A CANONICAL ZERO, OR `-0` IS A SECOND VALUE**
+
+`0 * -5` builds `SNok{True, 0}`. That is the same Python int as `0` and a DIFFERENT `Bnd`,
+so a gate that prints the bound as a string sees the difference. Normalise at the one
+constructor every value passes through (`bnd.sn.put`), not at the twenty call sites.
+
+### 50. **A `Bool` HAS NO `is_eq` IN BEND 2.0.34, AND EQUALITY IS THE NEGATION OF `xor`**
+
+`Bool.and` / `Bool.or` / `Bool.xor` / `Bool.not` are the whole of it. `a == b` is
+`Bool.not(Bool.xor(a, b))`. Getting it backwards inverts every sign test in a section at
+once: one such mutation moved 51 of 127 rows. (`U32` has `is_eq`; `Bool` does not.)
+
+### 51. **`mm.u64.is_zero(+hi, lo)` TAKES TWO WORDS, AND PASSING ONLY THE HIGH WORD MAKES A NON-ZERO READ AS ZERO**
+
+The committed `mm.u64.join` uses `mm.u64.is_zero(H.hi32(t3), 0)` ON PURPOSE -- it is testing
+the high word alone. Three new call sites copied the shape and meant "is the whole pair
+zero", so `neg(4)` answered `0`, `shr` of a negative answered garbage, and `bnd.nz` called
+every non-zero bound zero. **`Nat` is the trap here and not `U32`:** `mm.u64.is_zero` takes
+two `U32`s and reads fine; `U32.is_gt(mm.bl64(...), 64)` needs `64` as a `U32` literal, and
+`32n` in the same position is a `Nat` and a type error.
+
+### 52. **`Bool.pick` BUILDS BOTH ARMS, SO A SHARED `Maybe`-SHAPED RESULT MUST BE A PARAMETER**
+
+`def Bool.pick(-A: Type, c: Bool, a: A, b: A) -> A` is a `match`, and an argument is built
+before the call. So the idiom for "a computed `Bool` cannot be a scrutinee" is to compute it
+at the CALL SITE and pass it: `mm.bin.sh(k, s0, lft)`, `mm.bin.and(bl, d, s0, s1)`,
+`mm.range(vd, srcs, d)`. Ten of this section's defs exist only because of that, and each is
+one parameter.
+
+### 53. **`List.get` OVER A `List<&2, T>` IS FINE, BUT A SRC LIST BUILDER MUST INTERNS ITS ELEMENTS THROUGH ONE CONSTRUCTOR**
+
+`lf_c2(a, b) -> [Bnd2{a, a}, Bnd2{b, b}]` is a two-element list literal and `List.get(&2,
+Bnd2, xs, 1)` reads the second one correctly. The trap is the OTHER direction: a `List<Bnd2>`
+built by a `List.foldl` over a `List<Bnd>` needs `List.append(&2, Bnd2, acc, [Bnd2{x, x}])` --
+accumulator FIRST -- and the fold's step cannot be a lambda with a `+`, because a `+` is
+part of a function value's TYPE and a field cannot spell it (the closure-shared-arg wall).
+**Four arities were less code than the wall** for a list of at most four elements.
+
+### 54. **`F32` HAS NO LITERAL AND NO NEGATIVE LITERAL, SO A PYTHON FLOAT FIXTURE IS AN ARITHMETIC EXPRESSION**
+
+`F32.from_nat(1n)` is `1`, not `1.5` -- the family this file keeps re-measuring. A fixture
+whose CPython value is `1.5` has to be written `F32.div(F32.from_nat(3n), F32.from_nat(2n))`,
+and a negative one `F32.neg(...)` of that. `F32.div(0, 0)` is the one NaN Bend can build,
+which is what makes a NaN-CONST row possible at all. (`F32` DOES have `is_eq` and it is
+IEEE, so `not isnan(v)` IS `v == v` -- there is no `is_nan` and none is needed.)
+
+### 55. **A `match` ON A TWO-SCRUTINEE `match` NEEDS `_ _`, NOT `_` -- AND A ONE-SCRUTINEE `match` NEEDS `_`**
+
+`case _: False{}` after two scrutinees is `expected : 2 patterns (one per scrutinee)`.
+Different arity, same rule, and the error names the place rather than the count. Worth one
+line because the fix is mechanical and the error is not.
+
+### 56. **A CONCURRENT AGENT'S IN-FLIGHT EDIT IN AN IMPORTED FILE LOOKS EXACTLY LIKE YOUR OWN REGRESSION, AND THE ERROR NAME TELLS THEM APART**
+
+`fold.bend` imports `ops.bend`. Mid-session `ops.bend` went red three times at three
+DIFFERENT defs (`EqAx.pairs`, then `Rng.srcops`), each with `--check-only` reporting
+`SOME PROOFS FAIL` and a `Location:` line that is NOT in the importing file's line numbering
+range. `grep -c EqAx fold.bend` is `0`, which is the proof. **The discriminator is: is the
+named def in your file?** If not, it is not yours, do not edit it, and say so in the report
+-- and capture your gate output BEFORE it goes red, because you will not get a green
+`--check-only` back until that agent finishes.
+
+---
+
+## APPENDED 2026-10-02 (gate-harness pass) -- rules 57-64. Numbering continues from
+## rule 56 at line 9442, which is the last rule before this block.
+## *** THESE NUMBERS ARE AMBIGUOUS AND THE FILE SAYS SO AT ITS TOP. 57-64 already
+## *** exist at lines 7060-7099 (a different unit's series). CITE THE POSITIONS:
+## *** the gate-harness rules are lines 9457-9549, and the file-order `rg '^### '`
+## *** list is the only unambiguous index.
+
+### 57. **`bend <file> -o -` WRITES ZERO BYTES AND `bend -r` DOES NOT EXIST, SO A
+### NATIVE LANE BUILT THAT WAY COMPARES NOTHING AND SAYS NOTHING**
+
+Bend 2.0.34 chooses the backend by the output file's EXTENSION (`bend --help`: "build a
+binary, or C, JS, .mjs or BendTT by extension"), so `-o -` is not "write to stdout", it is
+"write to a file with no extension". Measured: `bend tinybendygrad/runtime/support/hcq2.bend -o -`
+exits **0** and writes **0 bytes**. There is also no `-r` flag. `hcq2-diff.py` ran exactly
+that and then executed the resulting 0-byte file, so the lane had no rows to disagree with,
+and the summary line read `rows: interpreted=360 native=0 cpython=163` -- a lane with
+nothing to say, phrased like a lane that agreed. **The native lane is `bend <f> -o <f>.bin`
+then RUN `<f>.bin`, and the build must be size-checked**, because a cache that stored the
+0-byte artefact makes the lane dead again after the command is fixed.
+
+### 58. **`0` ROWS COMPARED AND `0` ROWS DISAGREED PRINT THE SAME `0`.**
+
+Measured on `drift-gate.py`, the generic three-lane driver: run with no `--oracle`, it wrote
+an empty `cpython.txt`, `rows()` returned `{}`, every disagreement set was empty, and it
+printed `== THREE LANES AGREE ==` with **exit 0**. A harness must therefore (a) refuse to
+report agreement unless `COMPARED > 0`, (b) print the count from EACH side, and (c) treat a
+lane with 0 rows as a lane that DID NOT RUN. `diff` does not save you either: `diff a b` over
+two EMPTY files is silent, and `bend`'s compiler error dump lands in the same file as the
+rows, so "the port disagrees with CPython on 71 rows" and "the port did not compile" are the
+same output unless `wc -l` is run first.
+
+### 59. **A `py=` LITERAL INSIDE THE PORT IS NOT AN ORACLE, AND A HARNESS THAT READS
+### ONE MUST NOT PRINT THE WORD "CPython".**
+
+`wip/gate.py` compared cstyle's `[bend]` half against the `py=` literal **in cstyle.bend**
+and printed `GREEN 133 / 227 rows match CPython byte for byte` without ever starting CPython.
+`cstyle_oracle.py` existed, ran, and was never called. This is `device.bend`'s `sig=0 4 5`
+defect with better branding. Run the oracle, name it on every summary line, and report the
+baked literal separately as a PORT ARTEFACT. Measured on the fixed gate: 94 of 227 baked
+literals disagree with the port's own output and **live CPython sides with the PORT in 54 of
+them and with the literal in 0** -- so those 94 rows are stale text in the port, not port bugs,
+and only a real oracle could have told the two apart.
+
+### 60. **A NAME-KEYED DICT SILENTLY DROPS EVERY ROW THAT REUSES A NAME. PUT THE
+### DISAMBIGUATOR IN THE ROW NAME, NOT ONLY IN THE ROW.**
+
+`agent-core.md` says a name-comparing harness reported 0 for all 30 mutations in one unit.
+The mechanism, measured: `cstyle_oracle.py` emitted `rd BASE ` **7 times** (once per dtype)
+and `cfo BASE ` **20 times** (once per op/dtype), so `{name: value}` kept one of each and
+discarded 99 rows -- and the row COUNT it printed (127) was the count of a dict that had
+already thrown the rest away. The port had no problem: `rd_row` appends the dtype name and
+`cfo_row` appends op and dtype. **The oracle's names must carry the same disambiguator, and
+a differ must treat a duplicate row name as an error rather than as a redefinition.**
+
+### 61. **AN AUTHORITY AND A FIXTURE MUST BE THE SAME QUESTION. A ROW WHOSE PORT FIXTURE
+### CPython CANNOT BUILD IS NOT A WEAKER ROW, IT IS AN UNFALSIFIABLE ONE.**
+
+`mixin/elementwise.bend`'s `ew_promo_nc` builds its graph from a BUFFER of a weak dtype.
+CPython cannot build that: `Tensor.empty(..., dtype=dtypes.weakint)` raises `cannot create
+storage for weak dtype` at `tinygrad/mixin/creation.py:37`. So that row has no CPython
+counterpart and never had. The CPython-reachable weak-not-const fixture is an ALGEBRAIC
+result (`Tensor(3)+Tensor(5)`), whose graph is `7 CONST/0 CONST/0 ADD/2 CAST/1 CONST/0
+CAST/1 ADD/2 ` against the port's `5 BUFFER/0 ADD/2 CAST/1 BUFFER/0 ADD/2 `. The two rows
+that READ A DERIVED VALUE of that graph (`ew_dt_promo_nc`, `ew_op_promo_nc`) agree with
+CPython and are real gates. **When a port's fixture is unreachable in CPython, say so in the
+port's header with the exception -- do not print the nearest CPython row and call it the
+same fixture.**
+
+### 62. **A LANE THAT DIED OF THE ENVIRONMENT MUST SAY WHICH LANE AND WHY, IN ONE LINE.**
+
+`mt_diff.py` on this host: lane 4, `mt_constmap.py`, launches a real `DEV=CPU` kernel and
+clang rejects it, so the oracle exits 1 and the old wrapper `sys.exit(f"FAILED {cmd}\n...")`
+printed 165 lines of C errors with no statement of what had not run. That reads like a gate
+result. Now every lane reports `LANE DID NOT RUN [<lane>]: <cmd> exited N` plus the last six
+stderr lines, and the run ends `GATE DID NOT RUN: at least one lane produced no output.
+Nothing was compared.` **Print the tail of the failure, never the trace.**
+
+### 63. **A HARNESS YOU HAVE NOT SEEN FAIL IS A HARNESS YOU HAVE NOT TESTED. PERTURB A
+### COPY BESIDE THE SOURCE.**
+
+The port under test usually belongs to a live agent, so the perturbation cannot be an edit.
+It can be a copy **in the port's own directory** -- a relative `import ./x.c` does not
+resolve from `$TMPDIR` (that is what produced 22 phantom blind spots in one unit), so the
+copy has to sit where the imports resolve. A dotted name (`.gateprobe_<unit>.bend`) keeps it
+out of a reader's eye; delete it the moment the red output is captured. Give the harness a
+port ARGUMENT for this, the way `drift-gate.py` and `mt_diff.py` already do. Measured, all
+four: cstyle `9 -> 10` disagreements naming `under signed char`;
+`hcq2_pack_empty_8: bend='P16' cpython='P8'`; `mt_ver13: oracle='metal3.0' bend='metal3.1'`;
+`ew_wd_bool=True -> False`. One changed token, one named row.
+
+### 64. **A SUMMARY THAT COUNTS "FALSE" OVER A FILE THAT ALSO PRINTS TEXT IS REPORTING A
+### NUMBER IT CANNOT BACK.**
+
+`renderer/isa/x86.bend` reports `0 False` across 722 rows, and ~80 of those rows are bare
+string concatenations with **no `Bool` in them at all**
+(`"direct.JMP = [" ++ Hex.bytes(...) ++ "]   py=[e900000000]"`), so the `False` count never
+covered them and a diff against the oracle found 160 differing lines. **A harness that
+summarises a file's health must separate assertions from printed text and print both counts**,
+or `0` is a number about a subset wearing a label about the whole file. Same shape as rule
+58, one level up: a count over an unnamed subset.
+
+---
+
+## FROM `renderer/isa/x86.bend` — the `Enc.emit` root-cause unit (2026-10-02)
+
+Numbering continues from the position above (this file is append-only and its rule
+NUMBERS have already collided three times, so CITE THE POSITIONS: this block starts
+immediately after the `renderer/isa/x86.bend` rule 64 that reports `0 False` over a file
+of which 80 rows contain no `Bool`). Nine rules; six of them are about a MEASUREMENT
+that lies, and three are about Bend.
+
+### `&` BINDS TIGHTER THAN `==` IN PYTHON, SO `x == 1 & y >> 2` IS NOT `x == 1 and y >= 4`
+
+`tinygrad/renderer/isa/x86.py:560` reads
+
+```python
+if w | r | _x | b | (reg_sz == 1 & reg >> 2) | (rm_sz == 1 & rm >> 2) | (demote and disp_uop is None and rm >= 4):
+```
+
+and `&` binds tighter than `==`, so the two clauses are `reg_sz == (1 & (reg >> 2))` and
+`rm_sz == (1 & (rm >> 2))` -- a test for `reg_sz` being **ZERO** for registers 0-3 and
+8-11 and **ONE** for 4-7 and 12-15. The port read it as `== 1 and >= 4`, which is false for
+every register below 4, so the null `0x40` REX byte that `MOVi` and all four `SET*`
+instructions carry disappeared and every byte after it shifted. **This is the one class of
+Python that a mechanical 1:1 port cannot read correctly by eye, and it is worth grepping
+for in every Python file this project ports:** `rg -n '== *\d+ *[&|^]' tinygrad/`.
+
+### AN ORACLE THAT RE-TRANSCRIBES ITS SUBJECT'S CONTROL FLOW IS A FOURTH ROUTE INTO THE RE-TRANSCRIPTION TRAP
+
+`agent-core.md` names three: a hand-typed literal, a re-typed `py=` half, and a row whose
+expected value is a def of the thing under test. The x86 oracle had a fourth, and it is the
+one that hides best because the oracle is *code*:
+
+`enc_inputs()` re-implemented `encode`'s three address arms (x86.py:600-616) to work out
+what numbers to hand `Enc.emit`. It was wrong in three places simultaneously --
+
+  * `reg_uop = rest[0] if x.dtype is not dtypes.void else None` where the source says
+    `_encode(x, ...) if x.dtype is not dtypes.void else _encode(rest[0], ...)`. **The
+    condition was inverted**, so `CMP`'s `reg` came out 5 where CPython has 2.
+  * **NEITHER arm honoured the `if reg is None` fork.** `reg` is a parameter of the
+    `encodings` entry (`SHL: encode(x, 0xD3, reg=4)`), and `_encode` only overwrites it when
+    `reg_uop is not None`. The port was handed 0 for `SHL`, `SUBi`, `CMPi`, `IDIV`,
+    `VPSRLDQ` -- every MODRM reg field of those five wrong.
+  * `vvvv` was a hardcoded list of four op names, so `VPSRLDQ` -- which x86.py:610 passes
+    `x` as `vvvv_uop` -- got 0 and emitted the VEX byte `f9` where CPython has `e9`.
+
+So the port was not wrong about the Python: it was faithfully implementing a description
+that was wrong about the Python. **The fix is to stop describing and start measuring:**
+
+```python
+inner = next(c for c in encode.__code__.co_consts
+             if hasattr(c, "co_name") and c.co_name == "_encode")
+sys.settrace(tracer)          # freeze the frame at the first line where all five
+                              # operands are bound -- x86.py:547, before the mask at :567
+```
+
+A closure's code object is in `co_consts` and is NOT reachable as an attribute, and the
+inner frame's `f_locals` carries its `nonlocal` REBOUND value (measured: `reg` shows 5 for
+`SUBi`, not the stale parameter copy from the outer frame). Two lessons: **an oracle must
+read its subject's state, not restate its subject's logic**; and **when the subject is a
+closure, `co_consts` is where the inner frame is.**
+
+### `U32.sub` WRAPS, SO A PYTHON FIELD WIDTH IS NOT A SUBTRACTION
+
+`f"{mnem:7s}"` is `7 - len(mnem)` spaces, with zero for a name of seven or more. `U32.sub`
+is `Word.sub(32n, x, y)` and WRAPS, so `7 - 9` is 4294967294 and `String.repeat(" ", ...)`
+of that is not a padding, it is a hang. The port first wrote `U32.min(7, w)` -- the other
+wrong answer, three spaces too few for every short mnemonic -- and **the fixture set had no
+mnemonic over seven characters**, so `VCVTSI2SS` (nine) would have been the first thing to
+hang rather than the first thing to be caught. Two rules: a saturating clamp is
+`Bool.pick(U32, U32.is_ge(w, k), 0, U32.sub(k, w))` and not `U32.min`; **and a bound's
+saturating behaviour is only tested by a fixture that crosses the bound.**
+
+### A COUNTDOWN THAT DECREMENTS WITH ITS INPUT DROPS NOTHING
+
+Porting `s[:-1]` as a countdown over the string:
+
+```bend
+case SCon{h, t} 1n+p: SCon{h, droplast.go(t, p)}   # WRONG: p = n - 1 and t is one shorter
+```
+
+keeps the invariant `n == length(s)`, so the base case is never reached and the function
+is the identity. `Asm.mnem("X86Ops.MOVm")` answered `movm`. The two-line total spelling is
+
+```bend
+String.reverse(String.drop(String.reverse(s), 1n))
+```
+
+`String.drop` is total at every length and needs no proof obligation, which is worth more
+than the walk. **A hand-written walk must be checked against a length that is NOT a
+function of the input's length.**
+
+### `List.concat(a, A, xss)` IS NOT AN APPEND, AND `List.append(a, A, xs, ys)` IS `xs ++ ys`
+
+`List.concat` takes ONE argument and flattens one level, so `dsts ++ srcs` is
+`List.concat(&2, String, [a, b])` and NOT `List.concat(&2, String, a, b)` (which type-errors
+with `expected : List<&2, List<&2, String>>`, because the four-argument call parses as a
+list of two lists and then tries to use the first as a quantifier).
+
+The second half is the third measured instance in this file of `List.append` reordering: a
+per-element text walk written `List.append(tail, [head])` reverses the operand list, and
+`asm.L3` printed `rcx, rsp, rdx` where CPython prints `rdx, rsp, rcx`. **The head must be the
+FIRST argument**, and the accumulator the second. Note the asymmetry that makes this survive
+review: appending to an accumulator (`List.append(acc, [x])`) is correct and is what almost
+every fold in the tree does, so the reversed form is the *unusual* one and looks like a
+typo rather than an inversion.
+
+### A ROW NAME MAY NOT CONTAIN THE DELIMITER THE REFERENCE PARSER USES
+
+The oracle's `rows` mode extracts the answer half as `ref[ref.index("[") + 1:ref.rindex("]")]`.
+That is correct while every row name is free of `[`, and it silently produced
+`py=[rsp + rcx*4 + 8], rdx = [True]` for a row whose name is an assembly line. **A parser
+that finds a delimiter with `index` is one row name away from reading the wrong span**, and
+the fix is `rindex` on the *separator* (`ref.rindex(" = [")`), not a wider regular
+expression. The rows themselves were fine and the REFERENCE was wrong, which is the
+inversion that costs the most time to see.
+
+### A GATE FILE GENERATED BY HAND IS A GENERATED FILE, AND A GENERATED FILE NEEDS A GENERATOR
+
+`x86.bend` shipped 9878 lines of which **7900 were blank** -- the previous agent's tooling
+wrote each def on a 50-line pitch. Collapsing the runs (`re.sub(r"\n{3,}", "\n\n", s)`)
+took it to 2228 with the output byte-identical, and blank lines are not significant to the
+parser. Separately, the 760 row literals were being hand-edited against a generator; they
+are now written by `x86-gen.py`, which replaces the `Gate.rowsN()` blocks wholesale and
+exits 1 on `--check` when they are stale. **A generated artefact that is edited by hand has
+two authors and no merge rule**, and the row count is the only cheap detector.
+
+### A CONSTANTS SWEEP FINDS CONSTANTS. EVERY DEFECT IN THIS ENCODER WAS LOGIC.
+
+The `+1`-on-every-literal sweep over 707 literals moved 502 and left **205 blind**, and not
+one of the nine defects `Enc.emit` had was among them: the duplicated opcode, the
+big-endian immediate, the inverted `mod == 0` displacement, the misread `&`/`==`
+precedence, the `disp_uop is None` clause in the wrong predicate, the two `we` selectors
+reading the wrong sizes, the six-byte `JMP`, and the undemoted opcode byte were **all**
+predicates and joins. The rules sweep (`.agents/slop/x86/x86-rules.py`, 48 entries, one
+per ported rule) moves rows on every one of them. **Run both: the constants sweep's value
+is its BLIND LIST, which is a list of fixtures to add, and the rules sweep's value is its
+own coverage.**
+
+### THE BLIND LIST IS A FIXTURE LIST, AND MOST OF IT IS ONE MISSING FIXTURE
+
+Of the 205 blind constants, the largest class -- 45 legacy `Enc.of` entries x 3 of their 4
+numeric fields -- is a THEOREM: `pp` and `we` are read only on the VEX path and `reg` only
+when `has_reg` is `True`, so for an entry with `sel == 0` they are unobservable, and the
+`enc.*` rows are what check them for the entries where they matter. The genuinely
+actionable class is narrower and is one hole: **every fixture puts the destination in
+`reg`/`idx`/`base` 0-7**, so `Enc.gt0`, `Enc.b1`'s zero arm and the REX R/X bit weights are
+never exercised, `Enc.arm16`'s `sz == 2` never fires (so the `0x66` prefix has no row at
+all), and `Enc.modrm_of`'s `rm == 0b101` clause -- which the source comment called "a gate row
+of its own" -- has no rbp/r13 base fixture and is unobservable. **A comment claiming a clause
+is gated is not evidence that it is.**

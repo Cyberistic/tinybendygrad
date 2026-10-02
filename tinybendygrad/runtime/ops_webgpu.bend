@@ -28,9 +28,13 @@
 #   :47  DeviceCreateComputePipeline PORTED  a WAIT, in `pass.pipeline`
 #   :48  InstanceRequestAdapter      PORTED  a WAIT, in `dev.request_adapter`
 #   :49  AdapterRequestDevice        PORTED  a WAIT, in `dev.request_device`
-#   :50  QueueOnSubmittedWorkDone    PORTED  a WAIT, in `dev.synchronize`
+#   :50  QueueOnSubmittedWorkDone    DEAD   the only caller was `dev.synchronize`,
+#                                             which nothing called. The status
+#                                             enum is still in `sync_name`.
 #   :53  WebGPUProgram.__init__      PORTED  `prog.init`
-#   :67  __del__                     PORTED  `prog.del`
+#   :67  __del__                     DEAD   `prog.del` reached nothing. This row
+#                                             WAS what kept it alive: a PORTED
+#                                             claim in this table is a use.
 #   :71  wait                        PORTED  `prog.wants_wait`
 #   :74  bgl_entry                   PORTED  `bgl.entry`
 #   :77  bind_entries                PORTED  `bgl.of`  <- the layout derivation
@@ -51,10 +55,12 @@
 #   :141 the timestamp arithmetic    WALL 2  THE 64-BIT WALL
 #   :150 _alloc                      PORTED  `alloc.of`
 #   :154 _copyin                     PORTED  `copy.copyin`
-#   :159 _copyout                    PORTED  `copy.copyout`
-#   :163 _free                       PORTED  `alloc.free`
+#   :159 _copyout                    DEAD   `copy.copyout` reached nothing
+#   :163 _free                       DEAD   `alloc.free` died with its only
+#                                             caller. `dev.free` below is the
+#                                             same Python branch and IS ported.
 #   :166-190 WebGpuDevice.__init__   PORTED  `dev.init`
-#   :192 synchronize                 PORTED  `dev.synchronize`
+#   :192 synchronize                 DEAD   `dev.synchronize` reached nothing
 #   :195-198 free                    PORTED  `dev.free`
 #   :200 pop_error                   PORTED  `Tr.pop` (see THE PAYLOAD)
 #   :201-205 create_uniform           PARTIAL `dev.create_uniform`, int arm only
@@ -212,7 +218,6 @@ import ../helpers.bend as H
 
 def OBJ_INSTANCE() -> U32: 0
 def OBJ_ADAPTER() -> U32: 1
-def OBJ_DEVICE() -> U32: 2
 def OBJ_QUEUE() -> U32: 3
 def OBJ_SHADER_MODULE() -> U32: 4
 def OBJ_BIND_GROUP_LAYOUT() -> U32: 5
@@ -275,7 +280,6 @@ def BIND_UNIFORM() -> U32: 1
 def BIND_STORAGE() -> U32: 2
 def FILTER_VALIDATION() -> U32: 1
 def MAP_UNMAPPED() -> U32: 1
-def MAP_PENDING() -> U32: 2
 def MAP_MAPPED() -> U32: 3
 def FEATURE_TIMESTAMP_QUERY() -> U32: 3
 def FEATURE_SHADER_F16() -> U32: 8
@@ -554,10 +558,6 @@ def str_eq.go(a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
         case Nil{}: False{}
         case y <> u: str_eq.go(t, u, Bool.or(bad, Bool.not(String.eq(x, y))))
 
-def str_list_eq(+a: List<&2, String>, +b: List<&2, String>) -> Bool:
-  Bool.and(U32.is_eq(U32.from_nat(List.length(&2, String, a)),
-                     U32.from_nat(List.length(&2, String, b))), str_eq.go(a, b, False{}))
-
 # ===========================================================================
 # ops_webgpu.py:10 -- `backend_types = {v: k for k, v in
 # webgpu.enum_WGPUBackendType.items()}`, whose ONE reader is
@@ -720,8 +720,6 @@ def sync_error(+which: U32, +status: U32, emsg: String) -> String:
 # device, queue, release the adapter. Each step is one line of Python, so each
 # step is one def here.
 # ===========================================================================
-
-def Dev.of() -> Dev: Dev{0, 0, 0, 0, Nil{}, 0, 0, "", Tr.of()}
 
 def Dev.at(d: Dev, t: Tr) -> Dev:
   match d:
@@ -887,16 +885,6 @@ def dev.init(backend_name: String, feats: List<&2, U32>) -> Dev:
   d6 = dev.request_device(d5)
   d7 = dev.get_queue(d6)
   dev.adapter_release(d7)
-
-# :192 `synchronize` is QueueOnSubmittedWorkDone(self.queue), one of the six, and
-# it is the ONLY synchronisation the device does on the queue: every other wait
-# in this file belongs to a call that returns an object.
-def dev.synchronize(d: Dev) -> Dev:
-  match d:
-    case Dev{instance, adapter, device_res, queue, features, backend, nrequired, arch, +t}:
-      Dev{instance, adapter, device_res, queue, features, backend, nrequired, arch,
-          Tr.emit(CALL_WAIT, SYNC_WORK_DONE, t)}
-
 # :195-198 -- unmap ONLY if the map state is Mapped, then destroy, then release.
 # All three in that order, always. Two defs because a `match` scrutinee must be a
 # PARAMETER: the state arrives as a U32 and the comparison is a leaf.
@@ -924,10 +912,6 @@ def dev.uniform_bytes.go(n: Nat, +v: U32, acc: List<&2, U32>) -> List<&2, U32>:
     case 1n+m: dev.uniform_bytes.go(m, U32.shrn(v, 1n), U32.and(v, 255) <> acc)
 
 def dev.uniform_bytes(v: U32) -> List<&2, U32>: dev.uniform_bytes.go(4n, v, Nil{})
-
-def Buf.id(b: Buf) -> U32:
-  match b:
-    case Buf{id, size}: id
 
 def Buf.size(b: Buf) -> U32:
   match b:
@@ -972,8 +956,6 @@ def alloc.of(size: U32, +t: Tr) -> Made:
   Made{Buf{Tr.here(t), alloc.size(size)}, Tr.emit(CALL_CREATE, OBJ_BUFFER, t)}
 
 # :163 `self.dev.free(storage.buf)`
-def alloc.free(m: Made) -> Tr: dev.free(MAP_UNMAPPED(), OBJ_BUFFER, Made.tr(m))
-
 # :154-158 -- pad to a multiple of 4 with ZEROS when the length is not already
 # one, then write. What falls out of that, and what the gate pins: `write_buffer`
 # receives the PADDED length ALWAYS, because when nbytes % 4 == 0
@@ -1019,11 +1001,6 @@ def copy.read(usage: U32, +size: U32, t: Tr) -> Tr:
 def copy.read_made(usage: U32, size: U32, +m: Made) -> Made:
   Made{Made.buf(m), copy.read(usage, size, Made.tr(m))}
 
-def copy.free_made(m: Made) -> Tr: alloc.free(m)
-
-def copy.copyout(+nbytes: U32, +t: Tr) -> Tr:
-  copy.free_made(copy.read_made(copy.readable_usage(), nbytes, copy.readable(nbytes, t)))
-
 # ===========================================================================
 # ops_webgpu.py:52-67 -- WebGPUProgram.__init__ / __del__, and the four `wait`
 # arms of :112, :126 and :140 that the call steps read off `Pass.wait`.
@@ -1035,14 +1012,6 @@ def Pass.of(entry: String, feats: List<&2, U32>) -> Pass:
 def Pass.tr(p: Pass) -> Tr:
   match p:
     case Pass{module, entry, feats, ls, nentries, sizes, gx, gy, gz, wait, t}: t
-
-def Pass.entry(p: Pass) -> String:
-  match p:
-    case Pass{module, entry, feats, ls, nentries, sizes, gx, gy, gz, wait, t}: entry
-
-def Pass.feats(p: Pass) -> List<&2, U32>:
-  match p:
-    case Pass{module, entry, feats, ls, nentries, sizes, gx, gy, gz, wait, t}: feats
 
 def Pass.ls(p: Pass) -> U32:
   match p:
@@ -1089,15 +1058,6 @@ def prog.init(entry: String, d: Dev) -> Pass:
     case Dev{instance, adapter, device_res, queue, +features, backend, nrequired, arch, +t}:
       Pass{Tr.here(t), entry, features, 0, 0, Nil{}, 1, 1, 1, False{},
            Tr.pop(Tr.emit(CALL_CREATE, OBJ_SHADER_MODULE, Tr.push(t)))}
-
-# :67 `webgpu.wgpuShaderModuleRelease(self.prg)` -- the one release that is not
-# part of a program call, and the only one with no destroy before it.
-def prog.del(d: Dev) -> Dev:
-  match d:
-    case Dev{instance, adapter, device_res, queue, features, backend, nrequired, arch, +t}:
-      Dev{instance, adapter, device_res, queue, features, backend, nrequired, arch,
-          Tr.emit(CALL_RELEASE, OBJ_SHADER_MODULE, t)}
-
 # ===========================================================================
 # ops_webgpu.py:74-78 -- THE LAYOUT DERIVATION. See THE LAYOUT DERIVATION in the
 # header: binding 0 Uniform, bindings 1..len(bufs) Storage, the rest Uniform, and
@@ -1400,8 +1360,6 @@ def prog.call(+bs: List<&2, Buf>, +nvals: U32, gx: U32, gy: U32, gz: U32, ls: U3
               want: Bool, p: Pass) -> Pass:
   prog.call.at(bs, nvals, gx, gy, gz, ls, want, p)
 
-def nbufs_of(bs: List<&2, Buf>) -> U32: U32.from_nat(List.length(&2, Buf, bs))
-
 # ===========================================================================
 # THE GATE. Every row is a claim about `ops_webgpu.py`'s TEXT or about a constant
 # read out of `autogen/webgpu.py`, and the row name says which Python line it is
@@ -1493,10 +1451,10 @@ def t_backend() -> IO(Unit):
 # --- 2: the feature filter and the two derived values, :172-177 and :190 ------
 def t_features() -> IO(Unit):
   do IO<Unit>:
-    row("wg_feat_order_forward", u32_list_eq(features_of(BOTH()), BOTH()))
+    row("wg_feat_order_forward", u32_list_eq(features_of(BOTH()), [3, 8]))
     row("wg_feat_order_reverse", u32_list_eq(features_of(REVERSED()), [8, 3]))
-    row("wg_feat_only_ts", u32_list_eq(features_of(TS()), TS()))
-    row("wg_feat_only_f16", u32_list_eq(features_of(F16()), F16()))
+    row("wg_feat_only_ts", u32_list_eq(features_of(TS()), [3]))
+    row("wg_feat_only_f16", u32_list_eq(features_of(F16()), [8]))
     row("wg_feat_none", u32_list_eq(features_of(NEITHER()), Nil{}))
     row("wg_feat_drops_others", u32_list_eq(features_of([1, 2, 8, 9, 3]), [8, 3]))
     row("wg_arch_f16", String.eq(Dev.arch(dev.init(METAL(), F16())), "shader-f16"))
@@ -1657,10 +1615,10 @@ def t_alloc() -> IO(Unit):
     urow("wg_alloc_size_4", alloc.size(4))
     urow("wg_alloc_size_5", alloc.size(5))
     urow("wg_alloc_size_9", alloc.size(9))
-    urow("wg_alloc_usage", alloc.usage())
-    urow("wg_uniform_usage", dev.uniform_usage())
-    urow("wg_readable_usage", copy.readable_usage())
-    urow("wg_query_usage", U32.or(USAGE_QUERY_RESOLVE(), USAGE_COPY_SRC()))
+    row("wg_alloc_usage", U32.is_eq(alloc.usage(), 140))
+    row("wg_uniform_usage", U32.is_eq(dev.uniform_usage(), 72))
+    row("wg_readable_usage", U32.is_eq(copy.readable_usage(), 9))
+    row("wg_query_usage", U32.is_eq(U32.or(USAGE_QUERY_RESOLVE(), USAGE_COPY_SRC()), 516))
     +a : Made <- IO.pure(Made, alloc.of(5, Tr.of()))
     urow("wg_alloc_buf_size", Buf.size(Made.buf(a)))
     urow("wg_alloc_created", ncalls(CALL_CREATE(), Made.tr(a)))
@@ -1675,10 +1633,10 @@ def t_alloc() -> IO(Unit):
     row("wg_readable_released", u32_list_eq(released(Made.tr(r)),
       [OBJ_COMMAND_BUFFER, OBJ_COMMAND_ENCODER]))
     urow("wg_readable_size", Buf.size(Made.buf(r)))
-    +fm : Tr <- IO.pure(Tr, dev.free(MAP_MAPPED(), OBJ_BUFFER, Tr.of()))
+    +fm : Tr <- IO.pure(Tr, dev.free(3, OBJ_BUFFER, Tr.of()))
     row("wg_free_mapped", seq(fm, [Call{CALL_UNMAP, OBJ_BUFFER},
       Call{CALL_DESTROY, OBJ_BUFFER}, Call{CALL_RELEASE, OBJ_BUFFER}]))
-    +fu : Tr <- IO.pure(Tr, dev.free(MAP_UNMAPPED(), OBJ_BUFFER, Tr.of()))
+    +fu : Tr <- IO.pure(Tr, dev.free(1, OBJ_BUFFER, Tr.of()))
     row("wg_free_unmapped", seq(fu, [Call{CALL_DESTROY, OBJ_BUFFER},
       Call{CALL_RELEASE, OBJ_BUFFER}]))
     urow("wg_free_unmapped_unmaps", ncalls(CALL_UNMAP(), fu))
@@ -1793,8 +1751,10 @@ def main() -> IO(Unit):
 #     `bindGroupLayouts=(...)` (:87), `entryCount` (:82) and `WGPUComputeState(
 #     module, entryPoint)` (:106) are all fields of objects the trace does not
 #     carry. In particular NOTHING checks that `pass.pipeline`'s `entryPoint` is
-#     `Pass.entry` -- the port stores the entry point and never reads it, because
-#     the only reader would be the FFI seam.
+#     the entry point `Pass.of` was given: the only reader would be the FFI seam,
+#     so the reader `Pass.entry` was deleted rather than left as a def nothing
+#     called. The entry point is still in the `Pass` record, and the gate has no
+#     row that reads it -- that is the gap, stated rather than papered over.
 #   3. THE u64 AND f32 ARITHMETIC. Walls 2 and 3. `wg_free_bytes_*` covers the int
 #     path; the timestamp delta and `struct.pack('<f', val)` are not computed at
 #     all, by construction.
@@ -1808,4 +1768,43 @@ def main() -> IO(Unit):
 #   6. THE WGSL TEXT. :57-59 hands `obj.lib` to the shader module. The port takes
 #     `entry` from `TinyELF.name` and nothing else, because the WGSL source is
 #     wgsl.bend's artefact. That half of the interface is checked on neither side.
+#   7. THE CONSTANTS THAT ARE THE PORT'S OWN TAGS, MEASURED, NOT GUESSED. This is
+#     the `device.bend` `sig=0 4 5` shape at full size and it had ~45 rows in it.
+#     Splitting the constants by WHERE THEY COME FROM is what made it fixable,
+#     and the split is a fact about `autogen/webgpu.py`, not a preference:
+#
+#       a. REAL wgpu values, reachable by a wrong value reaching a wrong call.
+#          Nine of them -- the `WGPUBufferUsage_*` bit flags, the two
+#          `WGPUFeatureName` ids, and the three `WGPUBufferMapState` members --
+#          and all NINE now have a LITERAL on one side of the row that uses them:
+#          `wg_alloc_usage` 140, `wg_uniform_usage` 72, `wg_readable_usage` 9,
+#          `wg_query_usage` 516, `wg_feat_order_forward` [3, 8],
+#          `wg_feat_only_ts` [3], `wg_feat_only_f16` [8], and `wg_free_mapped` /
+#          `wg_free_unmapped` which now pass 3 and 1 to `dev.free` instead of
+#          naming `MAP_MAPPED` / `MAP_UNMAPPED`. Every literal was READ OUT of
+#          `tinygrad/runtime/autogen/webgpu.py` by importing that module and
+#          reading its enum dicts; none was typed. Before this, `wg_feat_only_ts`
+#          read `u32_list_eq(features_of(TS()), TS())` -- the fixture and the
+#          expectation were the SAME def, so no edit to the feature id could move
+#          the row.
+#
+#       b. PORT-INVENTED TAGS that never reach wgpu, so a wrong value is not a
+#          wrong call. `OBJ_*` (there is NO `WGPUObjectType` in
+#          `autogen/webgpu.py`; these are the trace's own object-kind ids) and
+#          `CALL_*` (the trace's own opcodes). Their rows are still worth having
+#          -- `u32_list_eq(created(t), [OBJ_INSTANCE, OBJ_QUEUE])` checks WHICH
+#          objects are created and IN WHAT ORDER, and no fixture can separate that
+#          claim from the port's own tag numbering -- but they are recorded here
+#          as value-blind so nobody reads them as checking the number.
+#          NOT PINNED, DELIBERATELY: `OBJ_INSTANCE`(0) `OBJ_ADAPTER`(1)
+#          `OBJ_QUEUE`(3) `OBJ_SHADER_MODULE`(4) `OBJ_BIND_GROUP_LAYOUT`(5)
+#          `OBJ_PIPELINE_LAYOUT`(6) `OBJ_BIND_GROUP`(7) `OBJ_COMPUTE_PIPELINE`(8)
+#          `OBJ_COMMAND_ENCODER`(9) `OBJ_COMPUTE_PASS`(10) `OBJ_COMMAND_BUFFER`(11)
+#          `OBJ_QUERY_SET`(12) `OBJ_BUFFER`(13), and all 23 `CALL_*`.
+#
+#       c. `SYNC_*` 1..6 -- the port's INDEX into the six `synchronous`-wrapped
+#          calls, not a wgpu value: all six real calls pass the SAME
+#          `WGPUCallbackMode_WaitAnyOnly` (=1). So the `wg_sync_name_*` rows are
+#          blind to these numbers and check the six status-name strings instead,
+#          which are literals in this file. NOT PINNED, DELIBERATELY.
 # ===========================================================================

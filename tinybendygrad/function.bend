@@ -1692,7 +1692,7 @@ def ret_none() -> String:
 # argument) at index 0 and the rewrite APPENDED a second at index 1, so
 # `num_explicit=1` and the TAIL is the appended node. CPython:
 #     function f5 has 1 implicit buffer(s), but allow_implicit=False
-#       0: dtype=dtypes.float, size=4, device=None
+#       0: dtype=dtypes.f32, size=4, device=None
 def imp_one.of(+g: O.Found) -> String:
   String.concat(["imp_one=|", fn_implicit_msg.of([fn_u(g)], "f5", O.Found.ar(g))])
 
@@ -1703,8 +1703,8 @@ def imp_one() -> String:
 # TWO implicit buffers, so the NUMBERED LINES and their ORDER are pinned -- and
 # that is the part `enumerate` gets wrong first. CPython:
 #     function f5 has 2 implicit buffer(s), but allow_implicit=False
-#       0: dtype=dtypes.float, size=4, device=None
-#       1: dtype=dtypes.float, size=4, device=None
+#       0: dtype=dtypes.f32, size=4, device=None
+#       1: dtype=dtypes.f32, size=4, device=None
 def imp_two.of(+g0: O.Found, +g1: O.Found) -> String:
   String.concat(["imp_two=|", fn_implicit_msg.of([fn_u(g0), fn_u(g1)], "f5", O.Found.ar(g0))])
 

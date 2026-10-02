@@ -38,15 +38,207 @@ from tinygrad.renderer.isa.x86 import (
 REN = X86Renderer(Target(arch="x86_64"))
 
 
+
+
+def enc_inputs(x, op):
+  """THE FIFTEEN NUMBERS `Enc.emit` TAKES, READ OUT OF THE LIVE `encode` FRAME.
+
+  THE FIRST VERSION OF THIS FUNCTION RE-TRANSCRIBED `x86.py:600-616`, and it was
+  wrong in three places at once, which is why every byte row disagreed with CPython
+  while the FILE reported ALL PROOFS CHECK:
+
+    * the Rm2nd arm read `reg_uop = rest[0] if x.dtype is not dtypes.void else None`
+      where x86.py:616 says `_encode(x, ...) if x.dtype is not dtypes.void else
+      _encode(rest[0], ...)` -- inverted, so CMP's `reg` came out 5 instead of 2;
+    * NEITHER arm honoured the `if reg is None` fork, so an op whose table supplies
+      `reg=` (SHL 4, SUBi 5, CMPi 7, IDIV 7, VPSRLDQ 3) was handed the FIXTURE's
+      register where CPython keeps the TABLE's -- and `reg = 0` where CPython keeps
+      4, 5, 7.  Every MODRM reg field of those ops was wrong;
+    * `vvvv` was a hardcoded list of four op names, so VPSRLDQ -- which x86.py:610
+      passes `x` as `vvvv_uop` -- got 0 and emitted the C5 byte `f9` instead of `e9`.
+
+  That is `agent-core.md`'s THIRD FORM of the trap (a row that re-transcribes agrees
+  with a port that misread it) reached by a fourth route: a transcription of
+  `encode`'s CONTROL FLOW rather than of its arithmetic.  So this no longer
+  re-transcribes anything.  `capture` installs a line tracer on `encode`'s own code
+  object, reads the frame's locals at the FIRST line of `_encode` -- before
+  x86.py:567 masks reg/rm/idx to three bits -- and the numbers are whatever
+  CPython's encoder actually used.
+
+  It is still a description rather than the answer: what the gate compares is the
+  BYTES, which no wrong opcode and no wrong REX/VEX/MODRM/SIB bit can reproduce."""
+  return CAPTURE[0] and CAPTURE[0](x, op)
+
+
+def _capture(x, op):
+  """runs `encodings[op](x)` with a tracer and returns the fifteen numbers, or None
+  when `encode` was never entered (the ops in no group, x86.py:618).
+
+  `_encode` binds its operands ONE LINE AT A TIME and MASKS THEM at x86.py:567, so
+  the frame is frozen at the first line event on which all five are bound -- which is
+  x86.py:547, `r, _x, b = reg >> 3, idx >> 3, rm >> 3`, the last line before the
+  mask.  Nothing here names a line number, so an edit above 547 does not silently
+  change the answer; an edit below it cannot be seen at all, which is the point."""
+  if x is None:
+    return None
+  outer, inner, frozen = {}, {}, [None]
+  # `encode`'s own frame holds `x` and the five encoding parameters. `_encode`'s is a
+  # CLOSURE -- not reachable as an attribute -- and is taken from `co_consts`, where
+  # CPython keeps every code object a function defines. `_encode`'s frame also carries
+  # `reg` as a FREE VARIABLE (it is `nonlocal` there) and it shows the REBOUND value, so
+  # `reg` is read from the inner frame and not from the outer's stale parameter copy.
+  code_outer, code_inner = encode.__code__, _INNER_CODE
+  operands = ('reg', 'rm', 'idx', 'rm_sz', 'reg_sz')
+
+  def tracer(frame, event, arg):
+    if frame.f_code is code_outer:
+      if event == 'line':
+        for k, v in frame.f_locals.items():
+          outer.setdefault(k, v)
+      return tracer
+    if frame.f_code is code_inner:
+      if event == 'line' and frozen[0] is None:
+        l = frame.f_locals
+        if all(k in l for k in operands):
+          frozen[0] = {k: l[k] for k in operands}
+        for k in ('disp_uop', 'vvvv_uop', 'imm_uop'):
+          if k in l:
+            inner.setdefault(k, l[k])
+      return tracer
+    return None
+
+  sys.settrace(tracer)
+  try:
+    # A fixture CPython cannot encode (VCVTPS2PH, VMOVDm, VMOVQm) RAISES, and the
+    # caller has already recorded that as `HexBad`; there are no numbers to hand over.
+    encodings[op](x)
+  except Exception:
+    return None
+  finally:
+    sys.settrace(None)
+  if frozen[0] is None:
+    return None
+  l = dict(outer)
+  l.update(inner)
+  l.update(frozen[0])
+  reg, rm, idx, rm_sz, reg_sz = l['reg'], l['rm'], l['idx'], l['rm_sz'], l['reg_sz']
+  disp_uop, vvvv_uop, imm_uop, node = l['disp_uop'], l['vvvv_uop'], l['imm_uop'], l['x']
+  vd = rdef(vvvv_uop) if vvvv_uop is not None else None
+  vvvv = (vd.index if isinstance(vd, Register) else reg) if vvvv_uop is not None else 0
+  if disp_uop is not None:
+    has_disp, dv, dsz = "True{}", str(disp_uop.src[0].val), str(disp_uop.dtype.itemsize)
+  else:
+    has_disp, dv, dsz = "False{}", "0", "4"
+  if imm_uop is not None and imm_uop.op is Ops.CAST:
+    ikind, inum, ival = "1", str(imm_uop.dtype.itemsize), str(imm_uop.src[0].val)
+  elif imm_uop is not None:
+    ikind, inum, ival = "2", "1", str(rdef(imm_uop).index)
+  else:
+    ikind, inum, ival = "0", "0", "0"
+  # `x86.py:558` spells this `x.arg[0] not in X86GroupOp.ReadFlags | {LEA}`, and a
+  # Python bool is not a Bend Bool -- `True{}` IS one.
+  no_demote = "True{}" if (op in X86GroupOp.ReadFlags or op.name == "LEA") else "False{}"
+  # `x.dtype.itemsize` and `x.src[1].dtype.itemsize` are what the two computed `we=`
+  # expressions read (x86.py:641-644) and NEITHER is reg_sz or rm_sz: `x.src[1]` is the
+  # rm operand for an Rm2nd op, whose `rm_sz` is the REGISTER's 16, while the expression
+  # reads its DTYPE's 4.  So both are numbers of their own.
+  xsz = node.dtype.itemsize
+  src1sz = node.src[1].dtype.itemsize if len(node.src) > 1 else 0
+  return (f'{reg}, {rm}, {idx}, {rm_sz}, {reg_sz}, {vvvv}, '
+          f'{has_disp}, {dv}, {dsz}, {ikind}, {inum}n, {ival}, {no_demote}, {xsz}, {src1sz}')
+
+
+CAPTURE = [_capture]
+_INNER_CODE = next(c for c in encode.__code__.co_consts
+                   if hasattr(c, "co_name") and c.co_name == "_encode")
+
+
+# ---------------------------------------------------------------- THE FIXTURES
+# ONE fixture per op, chosen so every ENCODING SHAPE is covered: a register operand, a
+# memory operand (base, index, displacement), an immediate, and the ops that write to
+# memory. The SAME fixture is handed to CPython's `encode` and its inputs are extracted
+# from it (`enc_inputs`), so the two sides cannot describe two different instructions.
+def nreg(r):
+  return UOp(Ops.NOOP, tag=(r,))
+
+
+def ins(op, dt, srcs=(), tag=None):
+  return UOp(Ops.INS, srcs, (op, dt), tag)
+
+
+def membase(r, dt=dtypes.u32):
+  """an INDEX node tagged `r` whose dtype is `dt` -- what `fold_address` and `asm_str`
+  call a base. An INDEX over a 1-D ALLOC reports `max_numel() == 1` for every size, so
+  the vector-width fixtures use a BUFFER instead (MEASURED)."""
+  al = UOp(Ops.ALLOC, (), ParamArg(0, dt, 4))
+  return UOp(Ops.INDEX, (UOp(Ops.CONST, (), 0, dtypes.i32),), tag=(r,)).replace(src=(al, UOp(Ops.CONST, (), 0, dtypes.i32)))
+
+
+def const(v, dt=dtypes.i32):
+  return UOp(Ops.CONST, (), v, dt)
+
+
+def cast(c, dt):
+  return UOp(Ops.CAST, (c,), dt)
+
+
+MEMBASE = membase(RSP)
+
+
+def fixture_op(n):
+  """A STABLE register pattern: the reg operand is GPR[2] = RDX = index 2 and the rm
+  srcs step through GPR by five, so `xmm` and `r8..r15` (indices 8..15, which need the
+  REX extension bit) appear without being named."""
+  op = X86Ops[n]
+  dt = dtypes.f64 if n.endswith("SD") else dtypes.f32 if n.endswith("SS") else dtypes.i32
+  mem = (MEMBASE, nreg(RCX), cast(const(8), dtypes.i32), nreg(RDX))
+  if n in ("RET", "DEFINE", "LABEL", "FRAME_INDEX", "LOOP_CMP"):
+    return None
+  if n in ("JMP", "JE", "JNE", "JL", "JB", "JGE"):
+    return ins(op, dtypes.void, ())
+  if n in ("MOVm", "MOVi", "VMOVSSm", "VMOVSDm", "VMOVUPSm", "SETNE", "SETE", "SETL", "SETB",
+           "VPEXTRW", "VPEXTRD"):
+    # A WriteMem op resolves its rm through `rdef(x)`, the OP NODE's own tag
+    # (x86.py:534), so these need a tag or CPython raises for an unrelated reason.
+    return ins(op, dtypes.void if n.endswith("m") or n.endswith("i") else dtypes.i8, mem, RDX)
+  if n in ("LEA", "MOV", "MOVZX", "MOVSX", "MOVSXD", "VMOVD", "VMOVQ", "VMOVDm", "VMOVQm",
+           "VMOVSS", "VMOVSD", "VMOVUPS", "VPSRLDQ", "VCVTTSS2SI", "VCVTTSD2SI", "VCVTPH2PS"):
+    return ins(op, dt, mem[:3], RDX)
+  if n == "MOVABS":
+    return ins(op, dtypes.i64, (cast(const(0x1234), dtypes.i64),), RDX)
+  if n in ("ADDi", "SUBi", "ANDi", "ORi", "XORi", "SHLi", "SHRi", "SARi", "IMULi"):
+    return ins(op, dt, (nreg(RCX), cast(const(3), dtypes.i32)), RDX)
+  if n == "CMPi":
+    # CMPi is Rm1st; the arm reads `x.src[1:3]` as the memory triple.
+    return ins(op, dt, mem[:3], RDX)
+  if n == "VCVTPS2PH":
+    # the isel rule builds `src=x.src + (imm(uint8,4),)`, so the imm IS a src.
+    return ins(op, dt, mem[:3] + (cast(const(4), dtypes.u8),), RDX)
+  if op in X86Ops and n.startswith("V"):
+    # the VECTOR ops: xmm0 is the destination and the srcs are xmm registers, which is
+    # the only way the `sel`/`pp`/`vvvv` bytes are exercised at all.
+    return ins(op, dt, (nreg(XMM[1]), nreg(XMM[2])), XMM[0])
+  regs = [GPR[(i * 5) % 16] for i in range(16)]
+  return ins(op, dt, (nreg(regs[1]), nreg(regs[6])), RDX)
+
+
+def reg_strs_get(o, size):
+  return reg_strs[o].get(size, o) if o in reg_strs else o
+
+
 def _missing_encodings():
   return [o.name for o in X86Ops if o not in encodings]
 
 
 # =========================================================== helpers the port must mirror
+def _callee(ix):
+  return ix in (GPR[3].index, GPR[5].index, 12, 13, 14, 15)
+
+
 def _ita(o):
   global is_two_address
   is_two_address = REN.is_two_address
-  x = ins(o, dtypes.int32, ())
+  x = ins(o, dtypes.i32, ())
   return is_two_address(x)
 
 
@@ -97,11 +289,11 @@ def row(expr, ref):
 
 
 # --------------------------------------------------------------------------- fixtures
-K0 = UOp(Ops.CONST, (), 0, dtypes.int32)
-ALLOC_U32 = UOp(Ops.ALLOC, (), ParamArg(0, dtypes.uint32, 4))
+K0 = UOp(Ops.CONST, (), 0, dtypes.i32)
+ALLOC_U32 = UOp(Ops.ALLOC, (), ParamArg(0, dtypes.u32, 4))
 
 
-def const(v, dt=dtypes.int32):
+def const(v, dt=dtypes.i32):
   return UOp(Ops.CONST, (), v, dt)
 
 
@@ -117,109 +309,149 @@ def ins(op, dt, srcs=(), tag=None):
   return UOp(Ops.INS, srcs, (op, dt), tag)
 
 
-def membase(r, dt=dtypes.uint32):
+def membase(r, dt=dtypes.u32):
   """an INDEX node tagged `r` whose dtype is `dt` -- what fold_address/asm_str call a base."""
   al = UOp(Ops.ALLOC, (), ParamArg(0, dt, 4))
   return UOp(Ops.INDEX, (al, K0), tag=(r,))
 
 
-# =========================================================== STAGE 1: the register table
-# name -> number, read from CPython's own Register objects.
-for r in GPR:
-  row(f'"reg.gpr.{r.name} = [" ++ String.concat([Str(r.name, r.index, r.size), "]"]) ++ "]   py=[{r.name} {r.index} {r.size}]"',
-      f"reg.gpr.{r.name} = [{r.name} {r.index} {r.size}]")
-for r in XMM:
-  row(f'"reg.xmm.{r.name} = [" ++ String.concat([Str(r.name, r.index, r.size), "]"]) ++ "]   py=[{r.name} {r.index} {r.size}]"',
-      f"reg.xmm.{r.name} = [{r.name} {r.index} {r.size}]")
+# =========================================================== the ROWS
+# Every row is `(bend_expr, reference_text)`. The reference text is what CPython
+# answered ON THIS TREE; the Bend expression is the ONLY thing the port is asked for.
+# Both come from this one list, so `rows` and `bend` cannot disagree.
 
-# number -> name, PER CLASS: indices 0..15 name BOTH a GPR and an XMM, so one global
-# reverse map does not exist and pretending it does is the first thing a wrong
-# number would hide behind.
+
+def row(expr, ref):
+  ROWS.append((expr, ref))
+
+
+def names(ls):
+  return ",".join(str(x) for x in ls)
+
+
+# ---------------------------------------------------------------- STAGE 1: registers
 for i, r in enumerate(GPR):
-  row(f'"reg.gprrev {i} = [" ++ String.concat([Str(Gpr_by_num({i})), "]"]) ++ "]   py=[{r.name}]"',
-      f"reg.gprrev {i} = [{r.name}]")
+  row(f'"reg.gpr {r.name} = [" ++ RegTriple(Reg.gpr({i})) ++ "]   py=[{r.name} {r.index} {r.size}]"',
+      f"reg.gpr {r.name} = [{r.name} {r.index} {r.size}]")
 for i, r in enumerate(XMM):
-  row(f'"reg.xmmrev {i} = [" ++ String.concat([Str(Xmm_by_num({i})), "]"]) ++ "]   py=[{r.name}]"',
-      f"reg.xmmrev {i} = [{r.name}]")
+  row(f'"reg.xmm {r.name} = [" ++ RegTriple(Reg.xmm({i})) ++ "]   py=[{r.name} {r.index} {r.size}]"',
+      f"reg.xmm {r.name} = [{r.name} {r.index} {r.size}]")
+# number -> name, PER CLASS: indices 0..15 name BOTH a GPR and an XMM, so there is no
+# global reverse map and pretending otherwise is the first thing a wrong number hides
+# behind.
+for i in range(16):
+  row(f'"reg.gprrev {i} = [" ++ RegName(Reg.gpr_at({i})) ++ "]   py=[{GPR[i].name}]"',
+      f"reg.gprrev {i} = [{GPR[i].name}]")
+for i in range(16):
+  row(f'"reg.xmmrev {i} = [" ++ RegName(Reg.xmm_at({i})) ++ "]   py=[{XMM[i].name}]"',
+      f"reg.xmmrev {i} = [{XMM[i].name}]")
+for key, expr, py in [
+    ("GPR", "RegNames(Reg.gpr_list())", [r.name for r in GPR]),
+    ("WGPR", "RegNames(Reg.wgpr_list())", [r.name for r in WGPR]),
+    ("XMM", "RegNames(Reg.xmm_list())", [r.name for r in XMM]),
+    ("CALLEE", "RegNames(Reg.callee_list())", [r.name for r in CALLEE_SAVED]),
+    ("strs.rax", "RegStrRow(Reg.gpr(0))", [reg_strs["rax"][k] for k in (1, 2, 4)]),
+    ("strs.rcx", "RegStrRow(Reg.gpr(1))", [reg_strs["rcx"][k] for k in (1, 2, 4)]),
+    ("strs.rdx", "RegStrRow(Reg.gpr(2))", [reg_strs["rdx"][k] for k in (1, 2, 4)]),
+    ("strs.rbx", "RegStrRow(Reg.gpr(3))", [reg_strs["rbx"][k] for k in (1, 2, 4)]),
+    ("strs.rsp", "RegStrRow(Reg.gpr(4))", [reg_strs["rsp"][k] for k in (1, 2, 4)]),
+    ("strs.rbp", "RegStrRow(Reg.gpr(5))", [reg_strs["rbp"][k] for k in (1, 2, 4)]),
+    ("strs.rsi", "RegStrRow(Reg.gpr(6))", [reg_strs["rsi"][k] for k in (1, 2, 4)]),
+    ("strs.rdi", "RegStrRow(Reg.gpr(7))", [reg_strs["rdi"][k] for k in (1, 2, 4)]),
+    ("strs.r8", "RegStrRow(Reg.gpr(8))", [reg_strs["r8"][k] for k in (1, 2, 4)]),
+    ("strs.r12", "RegStrRow(Reg.gpr(12))", [reg_strs["r12"][k] for k in (1, 2, 4)]),
+    ("strs.r15", "RegStrRow(Reg.gpr(15))", [reg_strs["r15"][k] for k in (1, 2, 4)]),
+    ("strs.xmm0", "RegStrRow(Reg.xmm(0))", [reg_strs_get("xmm0", 4), reg_strs_get("xmm0", 8),
+                                             reg_strs_get("xmm0", 16)]),
+    ("stackptr", "RegTriple(Reg.gpr_at(4))",
+     " ".join(str(x) for x in (rdef(stack_pointer).name, rdef(stack_pointer).index, 8))),
+]:
+  pv = py if isinstance(py, str) else names(py)
+  row(f'"reg.{key} = [" ++ {expr} ++ "]   py=[{pv}]"', f"reg.{key} = [{pv}]")
+row(f'"reg.WGPRn = [" ++ U32.show(RegLen(Reg.wgpr_list())) ++ "]   py=[{len(WGPR)}]"',
+    f"reg.WGPRn = [{len(WGPR)}]")
+for o, sz in [(o, sz) for o in ("rax", "rsp", "r12", "xmm0", "nope") for sz in (1, 2, 4, 8, 16)]:
+  v = reg_strs_get(o, sz)
+  row(f'"reg.get {o} {sz} = [" ++ Reg.strs_lookup("{o}", {sz}) ++ "]   py=[{v}]"',
+      f"reg.get {o} {sz} = [{v}]")
+for ix in range(16):
+  v = str(_callee(ix))
+  row(f'"reg.callee {ix} = [" ++ Bool.show(Reg.is_callee({ix})) ++ "]   py=[{v}]"',
+      f"reg.callee {ix} = [{v}]")
 
 
-def Str(*parts):
-  return " ++ ".join(f'"{p}"' for p in parts)
-
-
-def Gpr_by_num(i):
-  return next(r for r in GPR if r.index == i).name
-
-
-def Xmm_by_num(i):
-  return next(r for r in XMM if r.index == i).name
-
-
-# class membership, as the JOINED list each Python object actually holds.
-row(f'"reg.GPR  = [" ++ String.join(gpr_names, ",") ++ "]   py=[{",".join(r.name for r in GPR)}]"',
-    "reg.GPR  = [" + ",".join(r.name for r in GPR) + "]")
-row(f'"reg.WGPR = [" ++ String.join(wgpr_names, ",") ++ "]   py=[{",".join(r.name for r in WGPR)}]"',
-    "reg.WGPR = [" + ",".join(r.name for r in WGPR) + "]")
-row(f'"reg.XMM  = [" ++ String.join(xmm_names, ",") ++ "]   py=[{",".join(r.name for r in XMM)}]"',
-    "reg.XMM  = [" + ",".join(r.name for r in XMM) + "]")
-row(f'"reg.CALLEE = [" ++ String.join(callee_names, ",") ++ "]   py=[{",".join(r.name for r in CALLEE_SAVED)}]"',
-    "reg.CALLEE = [" + ",".join(r.name for r in CALLEE_SAVED) + "]")
-row(f'"reg.WGPR n = [" ++ U32.show(wgpr_len) ++ "]   py=[{len(WGPR)}]"', f"reg.WGPR n = [{len(WGPR)}]")
-row(f'"reg.stackptr = [" ++ Str(rdef(stack_pointer).name, rdef(stack_pointer).index) ++ "]   py=[{rdef(stack_pointer).name} {rdef(stack_pointer).index}]"',
-    f"reg.stackptr = [{rdef(stack_pointer).name} {rdef(stack_pointer).index}]")
-
-# `reg_strs`: the sub-register names, keyed by (base register, size).
-for k in sorted(reg_strs.keys()):
-  d = reg_strs[k]
-  py = ",".join(d[s] for s in sorted(d))
-  row(f'"reg.strs {k} = [" ++ String.join(RegStrs({k}), ",") ++ "]   py=[{py}]"',
-      f"reg.strs {k} = [{py}]")
-
-# the LOOKUP direction, which is what `asm_str` actually uses:
-# `reg_strs[o].get(rdef(s).size, o)` -- a miss falls back to the base name.
-def reg_strs_get(o, size):
-  return reg_strs[o].get(size, o) if o in reg_strs else o
-
-
-LOOKUPS = [(o, s) for o in ("rax", "rcx", "r8", "r15", "xmm0", "xmm15", "nope")
-           for s in (1, 2, 4, 8, 16)]
-for o, s in LOOKUPS:
-  row(f'"reg.get {o} {s} = [" ++ RegStrGet("{o}", {s}) ++ "]   py=[{reg_strs_get(o, s)}]"',
-      f"reg.get {o} {s} = [{reg_strs_get(o, s)}]")
-
-
-# =========================================================== STAGE 2: the op enum
+# ---------------------------------------------------------------- STAGE 2: the ops
 for o in X86Ops:
-  row(f'"op.{o.name} = [" ++ U32.show(op_num({o.name})) ++ "]   py=[{o.value}]"', f"op.{o.name} = [{o.value}]")
+  row(f'"op.{o.name} = [" ++ op_num("{o.name}") ++ "]   py=[{o.value}]"', f"op.{o.name} = [{o.value}]")
 for o in X86Ops:
-  row(f'"oprev {o.value} = [" ++ Str(op_name({o.value})) ++ "]   py=[{o.name}]"', f"oprev {o.value} = [{o.name}]")
-row(f'"op.count = [" ++ U32.show(op_count()) ++ "]   py=[{len(list(X86Ops))}]"', f"op.count = [{len(list(X86Ops))}]")
+  row(f'"oprev {o.value} = [" ++ op_name_of({o.value}) ++ "]   py=[{o.name}]"',
+      f"oprev {o.value} = [{o.name}]")
+row(f'"op.count = [" ++ U32.show(op_len()) ++ "]   py=[{len(list(X86Ops))}]"',
+    f"op.count = [{len(list(X86Ops))}]")
+row(f'"op.unknown = [" ++ op_num("NOSUCH") ++ "]   py=[KeyError]"', "op.unknown = [KeyError]")
+row(f'"op.revbad = [" ++ op_name_of(200) ++ "]   py=[ValueError]"', "op.revbad = [ValueError]")
 
-for nm in ("Copy", "TwoAddress", "Rm2nd", "WriteMem", "ReadFlags", "WriteFlags", "Rm1st"):
-  s = getattr(X86GroupOp, nm)
-  py = ",".join(o.name for o in sorted(s, key=lambda z: z.value))
-  row(f'"grp.{nm} = [" ++ String.join(Grp("{nm}"), ",") ++ "]   py=[{py}]"', f"grp.{nm} = [{py}]")
-  row(f'"grpn.{nm} = [" ++ U32.show(grp_n("{nm}")) ++ "]   py=[{len(s)}]"', f"grpn.{nm} = [{len(s)}]")
+SETS = [("Copy", X86GroupOp.Copy, 0), ("TwoAddress", X86GroupOp.TwoAddress, 1),
+        ("Rm2nd", X86GroupOp.Rm2nd, 2), ("WriteMem", X86GroupOp.WriteMem, 3),
+        ("ReadFlags", X86GroupOp.ReadFlags, 4), ("WriteFlags", X86GroupOp.WriteFlags, 5),
+        ("GPR_DEST_OPS", GPR_DEST_OPS, 6), ("Rm1st", X86GroupOp.Rm1st, 7), ("XMM_OPS", XMM_OPS, 8)]
+for nm, st, which in SETS:
+  py = names([o.name for o in sorted(st, key=lambda z: z.value)])
+  row(f'"grp.{nm} = [" ++ Op.set_name({which}) ++ "]   py=[{py}]"', f"grp.{nm} = [{py}]")
+  row(f'"grpn.{nm} = [" ++ U32.show(Op.set_len({which})) ++ "]   py=[{len(st)}]"',
+      f"grpn.{nm} = [{len(st)}]")
 
-row(f'"grp.GPR_DEST_OPS = [" ++ String.join(Grp("GPR_DEST_OPS"), ",") ++ "]   py=[{",".join(o.name for o in sorted(GPR_DEST_OPS, key=lambda z: z.value))}]"',
-    "grp.GPR_DEST_OPS = [" + ",".join(o.name for o in sorted(GPR_DEST_OPS, key=lambda z: z.value)) + "]")
-row(f'"grp.XMM_OPS = [" ++ String.join(Grp("XMM_OPS"), ",") ++ "]   py=[{",".join(o.name for o in sorted(XMM_OPS, key=lambda z: z.value))}]"',
-    "grp.XMM_OPS = [" + ",".join(o.name for o in sorted(XMM_OPS, key=lambda z: z.value)) + "]")
+
+# ---------------------------------------------------------------- STAGE 3: xmm_sz
+SZ_DTS = [("int", dtypes.i32), ("float", dtypes.f32), ("int8", dtypes.i8),
+          ("double", dtypes.f64), ("half", dtypes.f16)]
+SZ_NS = (1, 2, 3, 4, 6, 8, 16)
+SZ_ITEMSIZE = {"int": 4, "float": 4, "int8": 1, "double": 8, "half": 2}
+for dn, _ in SZ_DTS:
+  for n in SZ_NS:
+    b = UOp(Ops.BUFFER, (), ParamArg(0, _, n))
+    bits = b.max_numel() * b.dtype.itemsize
+    row(f'"isz {dn} {n} = [" ++ Op.xmm_sz({bits}) ++ "]   py=[{_xmm_sz(b).name}]"',
+        f"isz {dn} {n} = [{_xmm_sz(b).name}]")
+    row(f'"iszm {dn} {n} = [" ++ Op.xmm_sz_m({bits}) ++ "]   py=[{_xmm_sz_m(b).name}]"',
+        f"iszm {dn} {n} = [{_xmm_sz_m(b).name}]")
+    row(f'"iszbits {dn} {n} = [" ++ U32.show({bits}) ++ "]   py=[{bits}]"',
+        f"iszbits {dn} {n} = [{bits}]")
+# the three thresholds, straddled: 7/8/15/16/17
+for bits in (0, 1, 7, 8, 15, 16, 17, 32):
+  row(f'"iszthr {bits} = [" ++ Op.xmm_sz({bits}) ++ "]   py=[{"VMOVUPS" if bits >= 16 else ("VMOVSD" if bits >= 8 else "VMOVSS")}]"',
+      f'iszthr {bits} = [{"VMOVUPS" if bits >= 16 else ("VMOVSD" if bits >= 8 else "VMOVSS")}]')
+  row(f'"iszthrm {bits} = [" ++ Op.xmm_sz_m({bits}) ++ "]   py=[{"VMOVUPSm" if bits >= 16 else ("VMOVSDm" if bits >= 8 else "VMOVSSm")}]"',
+      f'iszthrm {bits} = [{"VMOVUPSm" if bits >= 16 else ("VMOVSDm" if bits >= 8 else "VMOVSSm")}]')
+
+for nm, d in [("float16", dtypes.f16), ("float32", dtypes.f32), ("float64", dtypes.f64)]:
+  row(f'"toint {nm} = [" ++ Op.to_int("{nm}") ++ "]   py=[{to_int(d).name}]"',
+      f"toint {nm} = [{to_int(d).name}]")
+for nm in ("int8", "int32", "uint8", "bool"):
+  try:
+    v = to_int(getattr(dtypes, nm)).name
+  except KeyError:
+    v = "KeyError"
+  row(f'"toint.miss {nm} = [" ++ Op.to_int("{nm}") ++ "]   py=[{v}]"',
+      f"toint.miss {nm} = [{v}]")
 
 
-# =========================================================== STAGE 4/5: encodings
-# The ENCODING PARAMETERS are lifted out of `encodings`' lambdas by asking CPython to
-# run them and recovering the parameters from the bytes is not possible, so instead
-# every op's REAL EMITTED BYTES are the row -- for a fixed register fixture. That is
-# a stronger row than the parameter table: a wrong pp/sel/we/opc cannot produce the
-# same bytes. The parameter table is ALSO emitted, read off the lambdas' source by
-# CPython's own `ast` at a named line, and it is the thing a mutation of one
-# parameter moves.
+# ---------------------------------------------------------------- STAGE 2b: two-address
+for o in X86Ops:
+  v = str(REN.is_two_address(ins(o, dtypes.i32, ())))
+  row(f'"2a.{o.name} = [" ++ Bool.show(Op.is_two_address("{o.name}")) ++ "]   py=[{v}]"',
+      f"2a.{o.name} = [{v}]")
+
+
+# ---------------------------------------------------------------- STAGE 4: encodings
+# The ENCODING PARAMETERS, read out of `encodings`' lambdas with CPython's own `ast`
+# -- NOT transcribed, and not re-derived from the lambdas' text by hand. A lambda that
+# does not call `encode` (the six jumps, `JMP` and `RET`) is in no table here, which
+# is what `enc.paramcount` and `enc.count` disagree about and both rows are asked.
 import ast
 SRC = (ROOT / "tinygrad/renderer/isa/x86.py").read_text().splitlines()
 TREE = ast.parse("\n".join(SRC))
-
-# the opcode-map-select / prefix / reg parameters, per op, as CALL arguments.
+PARAM_ORDER = ("opc", "reg", "pp", "sel", "we")
 PARAMS = {}
 for node in ast.walk(TREE):
   if isinstance(node, ast.Dict):
@@ -233,233 +465,278 @@ for node in ast.walk(TREE):
       if not calls:
         continue
       c = calls[0]
-      p = {}
+      pv = {}
       for i, a in enumerate(c.args[1:]):
-        p[("opc", "reg", "pp", "sel", "we")[i]] = ast.unparse(a)
+        pv[PARAM_ORDER[i]] = a.value if isinstance(a, ast.Constant) else "?"
       for kw in c.keywords:
-        p[kw.arg] = ast.unparse(kw.value)
-      PARAMS[k.attr] = p
+        # `we=1` is a Constant and `we=x.src[1].dtype.itemsize == 8` is a Compare, and
+        # collapsing both to "EXPR" loses the ONE distinction the `enc.*` row exists
+        # to check -- MEASURED, `param_line` then printed `x.dtype.itemsize == 8` for
+        # both VCVTSI2 entries. `ast.unparse` keeps the source text.
+        pv[kw.arg] = (kw.value.value if isinstance(kw.value, ast.Constant)
+                      else ast.unparse(kw.value))
+      PARAMS[k.attr] = pv
 
 
-def param_line(op, p):
-  """the encode() parameters as one stable string, with computed expressions ASKED of CPython."""
-  parts = []
-  for k in ("opc", "reg", "pp", "sel", "we"):
-    if k not in p:
-      parts.append(f"{k}=-")
-    elif k in ("pp", "sel") and p[k].isdigit():
-      parts.append(f"{k}={p[k]}")
-    elif k in ("pp", "sel") and p[k] in ("0", "1", "2", "3"):
-      parts.append(f"{k}={p[k]}")
+def param_line(name, pv):
+  """one stable string per entry, with the two COMPUTED `we`s left as the expression
+  CPython's `ast` found -- so the row shows the source's own text and the port's
+  SELECTOR (0/1/2) is checked against it by the `enc.*` row."""
+  out = []
+  for k in PARAM_ORDER:
+    if k not in pv:
+      out.append(f"{k}=-")
+    elif k == "we" and isinstance(pv[k], str):
+      out.append(f"{k}=x.src[1].dtype.itemsize == 8" if "src[1]" in pv[k] else f"{k}=x.dtype.itemsize == 8")
     else:
-      parts.append(f"{k}={p[k]}")
-  return ",".join(parts)
+      out.append(f"{k}={pv[k]}")
+  return ",".join(out)
 
 
 for name in sorted(PARAMS):
-  p = PARAMS[name]
-  s = param_line(name, p)
-  row(f'"enc.{name} = [" ++ Enc("{name}") ++ "]   py=[{s}]"', f"enc.{name} = [{s}]")
-row(f'"enc.count = [" ++ U32.show(enc_count()) ++ "]   py=[{len(encodings)}]"', f"enc.count = [{len(encodings)}]")
-row(f'"enc.paramcount = [" ++ U32.show(enc_paramcount()) ++ "]   py=[{len(PARAMS)}]"', f"enc.paramcount = [{len(PARAMS)}]")
-row(f'"enc.missing = [" ++ String.join(EncMissing(), ",") ++ "]   py=[{",".join(_missing_encodings())}]"',
-    "enc.missing = [" + ",".join(_missing_encodings()) + "]")
+  sv = param_line(name, PARAMS[name])
+  row(f'"enc.{name} = [" ++ EncRow("{name}") ++ "]   py=[{sv}]"', f"enc.{name} = [{sv}]")
+row(f'"enc.count = [" ++ U32.show(enc_count()) ++ "]   py=[{len(encodings)}]"',
+    f"enc.count = [{len(encodings)}]")
+row(f'"enc.paramcount = [" ++ U32.show(enc_paramcount()) ++ "]   py=[{len(PARAMS)}]"',
+    f"enc.paramcount = [{len(PARAMS)}]")
+row(f'"enc.missing = [" ++ enc_missing_names() ++ "]   py=[{names(_missing_encodings())}]"',
+    f"enc.missing = [{names(_missing_encodings())}]")
+# the `no entry` answer, for all four non-instructions
+for nm in _missing_encodings():
+  row(f'"enc.none {nm} = [" ++ Bool.show(Enc.is_direct("{nm}")) ++ "]   py=[False]"',
+      f"enc.none {nm} = [False]")
+  row(f'"enc.norow {nm} = [" ++ EncRow("{nm}") ++ "]   py=[none]"', f"enc.norow {nm} = [none]")
+# THE DIRECT-BYTE ENTRIES ARE `Bool` ROWS AGAINST CPython'S OWN BYTES. They were
+# BARE STRING CONCATENATIONS ("direct.JMP = [e90000000000]   py=[e900000000]"), which
+# is a row that CANNOT FAIL: nothing in the file asserted anything, and `Enc.emit`'s
+# six-byte JMP and every wrong opcode survived an ALL PROOFS CHECK. The expected bytes
+# are already written on the right-hand side of each row; a `Bool` row against them
+# turns the whole class into something the gate sees.
+for nm in ("JE", "JNE", "JL", "JB", "JGE", "JMP", "RET"):
+  f = fixture_op(nm)
+  b = bytes([0xC3]) if nm == "RET" else encodings[X86Ops[nm]](f)
+  row(f'"direct.{nm}.{b.hex()} = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("{nm}")), '
+      f'"{b.hex()}")) ++ "]   py=[True]"', f"direct.{nm}.{b.hex()} = [True]")
+for reg in (0, 1, 7, 8, 15):
+  b = encodings[X86Ops.MOVABS](UOp(Ops.INS, (UOp(Ops.CAST, (UOp(Ops.CONST, (), 0x1234, dtypes.i64),),
+                                               dtypes.i64),), (X86Ops.MOVABS, dtypes.i64), (GPR[reg],)))
+  row(f'"direct.MOVABS {reg}.{b.hex()} = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs({reg}, 4660)), '
+      f'"{b.hex()}")) ++ "]   py=[True]"', f"direct.MOVABS {reg}.{b.hex()} = [True]")
 
 
-
-# =========================================================== EMITTED BYTES + ASM TEXT
-def ins_reg(op, dt, nsrc=2, tag=RDX):
-  """a fixed-register INS fixture: nsrc NOOP srcs tagged by a stable pattern."""
-  regs = [GPR[(i * 5) % 16] for i in range(16)]
-  srcs = tuple(nreg(regs[(i + 1) % 16]) for i in range(nsrc))
-  return ins(op, dt, srcs, tag)
-
-
-# one fixture per op, chosen so every encoding SHAPE is covered:
-#   r=register, m=memory(base,index,disp), reg3=three regs, i=immediate
-def fixture(op):
-  n = op.name
-  if n in ("RET", "DEFINE", "LABEL", "FRAME_INDEX", "LOOP_CMP"):
-    return None
-  dt = dtypes.float64 if n.endswith("SD") else dtypes.float32 if n.endswith("SS") else dtypes.int32
-  if n in ("JMP", "JE", "JNE", "JL", "JB", "JGE"):
-    return ins(op, dtypes.void, ())
-  if n in ("MOVm", "MOVi", "VMOVSSm", "VMOVSDm", "VMOVUPSm", "SETNE", "SETE", "SETL", "SETB", "VPEXTRW", "VPEXTRD"):
-    mem = (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32), nreg(RDX))
-    # A WriteMem op resolves its rm through `rdef(x)` -- the op node's OWN tag --
-    # (x86.py:534), so an untagged fixture raises AttributeError and would report
-    # REFUSED for the wrong reason.
-    return ins(op, dtypes.void if n in ("MOVm", "MOVi", "VMOVSSm", "VMOVSDm", "VMOVUPSm") else dtypes.int8, mem, RDX)
-  if n in ("LEA", "MOV", "MOVZX", "MOVSX", "MOVSXD", "VMOVD", "VMOVQ", "VMOVDm", "VMOVQm",
-           "VMOVSS", "VMOVSD", "VMOVUPS", "VPSRLDQ", "VCVTTSS2SI", "VCVTTSD2SI", "VCVTPH2PS", "VCVTPS2PH"):
-    return ins(op, dt, (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32)), RDX)
-  if n == "MOVABS":
-    return ins(op, dtypes.int64, (cast(const(0x1234), dtypes.int64),), RDX)
-  if n in ("ADDi", "SUBi", "ANDi", "ORi", "XORi", "SHLi", "SHRi", "SARi", "IMULi"):
-    # `encode`'s WriteMem arm with `reg=` set resolves the rm through `rdef(x)`, the
-    # OP NODE's own tag (x86.py:534), so these need a tag or CPython raises
-    # AttributeError for a reason that has nothing to do with the opcode.
-    return ins(op, dt, (nreg(RCX), cast(const(3), dtypes.int32)), RDX)
-  if n == "CMPi":
-    # CMPi is Rm1st; the arm reads `x.src[1:3]` as the memory triple, so it needs the
-    # same triple MOV/LEA get -- one src raises IndexError, not the opcode.
-    return ins(op, dt, (nreg(RCX), membase(RSP), cast(const(8), dtypes.int32)), RDX)
-  if n == "VCVTPS2PH":
-    # the isel rule builds `src=x.src + (imm(uint8,4),)`, so the imm IS a src.
-    return ins(op, dt, (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32),
-                        cast(const(4), dtypes.uint8)), RDX)
-  return ins_reg(op, dt, 2, RDX)
-
-
-EMIT = []
-for op in X86Ops:
-  if op.name not in PARAMS and not any(
-      isinstance(k, ast.Attribute) and getattr(k.value, "id", "") == "X86Ops" and getattr(k, "attr", "") == op.name
-      for d in [n for n in ast.walk(TREE) if isinstance(n, ast.Dict)] for k in d.keys):
-    continue
-  f = fixture(op)
-  if f is None:
-    continue
+# ---------------------------------------------------------------- STAGE 5: the BYTES
+# The four non-instructions have no `encodings` entry and `x86.py:761` raises on one, so
+# they get no byte row -- `enc.missing` and `enc.none <NAME>` are their rows.
+#
+# THREE MORE GET NO ROW, and the reason is CPython's and not the port's: `VMOVDm`,
+# `VMOVQm` and `VCVTPS2PH` make `encode` RAISE on these fixtures (the first two exhaust
+# `_encode`'s arity in the four-src WriteMem shape, the third reaches `rdef(reg_uop).index`
+# on a None). There is no byte string to assert and no numbers to hand the port, so
+# `_capture` answers None and the row is skipped. Their ENCODING PARAMETERS are gated
+# anyway, as the `enc.*` rows for those three names. The previous cut gave them a row
+# reading `NOT-ENCODABLE` -- a string concatenation that asserted nothing, three more of
+# the eighty.
+#
+# `hex.*` IS A `Bool` ROW, and the EXPECTED BYTES GO IN THE ROW NAME so the mutation
+# harness still names the row it moved and a reader can see what the answer must be
+# without running CPython.
+for op in [o for o in X86Ops if o in encodings]:
+  f = fixture_op(op.name)
   try:
-    b = encodings[op](f)
-    h = b.hex() if b is not None else "NONE"
+    h = encodings[op](f).hex()
   except Exception as e:
     h = f"RAISES {type(e).__name__}"
-  if h in ("NONE",) or h.startswith("RAISES"):
-    EMIT.append((op.name, h))
-    row(f'"hex.{op.name} = [" ++ Hex("{op.name}") ++ "]   py=[{h}]"', f"hex.{op.name} = [{h}]")
+  args = enc_inputs(f, op)
+  if args is None:
     continue
-  EMIT.append((op.name, h))
-  row(f'"hex.{op.name} = [" ++ Hex("{op.name}") ++ "]   py=[{h}]"', f"hex.{op.name} = [{h}]")
-
-for name, h in EMIT:
-  row(f'"hexall {name} = [" ++ HexAny("{name}") ++ "]   py=[{h}]"', f"hexall {name} = [{h}]")
+  assert not h.startswith("RAISES"), f"{op.name} raised but handed the port numbers"
+  row('"hex.%s.%s = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("%s", %s)), "%s")) ++ "]   py=[True]"'
+      % (op.name, h, op.name, args, h), f"hex.{op.name}.{h} = [True]")
 
 
-# =========================================================== asm_str
-def asm_of(uops):
-  """CPython's own answer, or the exception it raises.
+# ---------------------------------------------------------------- STAGE 6: the renderer
+# `supported_dtypes` is a SET DIFFERENCE, `{d for d in super().supported_dtypes() if d
+# not in dtypes.fp8s+(dtypes.bf16,)}` (x86.py:770), so it gets THREE rows: the base
+# set it walks, the names the filter drops, and the answer. The port's version of the
+# first was a hardcoded literal of the ANSWER, which asserted nothing about the filter --
+# and it spelled the names "short"/"int"/"long"/"double", the C spellings tinygrad
+# moved OFF in 793abbb (spec.bend's header, at the top of `Dt`).
+BASE_DTYPES = sorted(d.name for d in {d for d in super(X86Renderer, REN).supported_dtypes()})
+DROP_DTYPES = sorted(d.name for d in (dtypes.fp8s + (dtypes.bf16,)))
+G = {  # the renderer constants, ASKED not transcribed
+  "device": X86Renderer.device,
+  "has_local": str(X86Renderer.has_local),
+  "global_max": " ".join(str(x) for x in X86Renderer.global_max),
+  "code_for_op": names(sorted(o.name for o in REN.code_for_op)),
+  "base_dtypes": names(BASE_DTYPES),
+  "drop_dtypes": names(DROP_DTYPES),
+  "supported_dtypes": names(sorted(d.name for d in REN.supported_dtypes())),
+}
+for k, expr, py in [("device", "Cls.device()", G["device"]), ("has_local", "Bool.show(Cls.has_local())", G["has_local"]),
+                    ("global_max", "ClsGmax()", G["global_max"]),
+                    ("code_for_op", "Cls.code_for_op()", G["code_for_op"]),
+                    ("code_for_op_n", "U32.show(Cls.code_for_op_n())", str(len(REN.code_for_op))),
+                    ("base_dtypes", "Cls.base_dtypes()", G["base_dtypes"]),
+                    ("base_dtypes_n", "U32.show(Cls.base_dtypes_n())", str(len(BASE_DTYPES))),
+                    ("drop_dtypes", "Cls.drop_dtypes()", G["drop_dtypes"]),
+                    ("supported_dtypes", "Cls.supported_dtypes()", G["supported_dtypes"]),
+                    ("supported_dtypes_n", "U32.show(Cls.supported_dtypes_n())",
+                     str(len(REN.supported_dtypes())))]:
+  row(f'"cls.{k} = [" ++ {expr} ++ "]   py=[{py}]"', f"cls.{k} = [{py}]")
+# the filter itself, one row per DROPPED name sitting next to one row per KEPT name, so
+# a filter that drops nothing and a filter that drops everything both move a row.
+for nm in BASE_DTYPES:
+  v = str(nm in DROP_DTYPES)
+  row(f'"cls.drop {nm} = [" ++ Bool.show(Cls.dropped("{nm}")) ++ "]   py=[{v}]"',
+      f"cls.drop {nm} = [{v}]")
 
-  MEASURED and therefore a ROW rather than a hole: `asm_str`'s Rm1st branch fires
-  before its Rm2nd branch for every op in `Rm2nd & TwoAddress` (ADD, CMOVL, ...),
-  and it reads `x.src[:3]` as (base, index, displacement). A REGISTER-form
-  TwoAddress op carries only (src0, src1, flags-cmp), so CPython reads the flags
-  CMP as the displacement and then reads `.src[0]` off a NOOP. `cmovl_reg` below
-  is that fixture and it RAISES. The port must answer the same marker, because a
-  row whose two sides can never be equal teaches nothing and a row that silently
-  drops the case teaches worse.
-  """
-  try:
-    return REN.asm_str(uops, "f").replace("\n", " ~ ")
-  except Exception as e:
-    return f"RAISES {type(e).__name__}"
+
+# ---------------------------------------------------------------- STAGE 7: `asm_str`
+# x86.py:728-749. CPython's `asm_str` takes a `list[UOp]` and a UOp graph is not this
+# file's type, so the oracle hands the port ONE `AsmOp` per uop carrying only the facts
+# the FORMATTER reads, and the port does every part of the formatting. The facts are read
+# off the SAME uops CPython formats, so a wrong mnemonic, a wrong padding, a wrong
+# operand arm or a missing comma is a diff.
+#
+# THE FOUR OPERAND ARMS AND THE THREE KINDS ARE CHOSEN HERE, because `u.op is not
+# Ops.INS`, `arg[0] is X86Ops.LABEL/RET/DEFINE` and `len(x.src) > 3` / `> 2` are
+# properties of the GRAPH. Everything after that -- `o[7:-1] if o[-1] in 'im'`,
+# `.lower()`, `:7s`, `_format`, `_mem_adress`, `", ".join`, the `"\n".join` -- is the
+# port's, and `Asm.line` is the whole of it.
+def _arg(u):
+  """`_format`'s per-src expression (x86.py:732-733): a CAST prints its CONST's value and
+  anything else prints `reg_strs[rdef(s)].get(rdef(s).size, rdef(s))`. Returns None for
+  a src whose `rdef` is None, which `_format` SKIPS."""
+  if rdef(u) is None:
+    return None
+  if u.op is Ops.CAST:
+    return f'Asm.imm({u.src[0].val})'
+  return f'Asm.reg("{rdef(u)}", {rdef(u).size})'
 
 
-ASM = [
-    ("mov", [ins(X86Ops.MOV, dtypes.int32, (nreg(RCX),), RDX)]),
-    ("movabs", [ins(X86Ops.MOVABS, dtypes.int64, (cast(const(0x1234), dtypes.int64),), RDX)]),
-    ("add", [ins(X86Ops.ADD, dtypes.int32, (nreg(RCX), nreg(RSI)), RDX)]),
-    ("addi", [ins(X86Ops.ADDi, dtypes.int32, (nreg(RCX), cast(const(3), dtypes.int32)))]),
-    ("cmp", [ins(X86Ops.CMP, dtypes.void, (nreg(RCX),))]),
-    ("ret", [ins(X86Ops.RET, dtypes.void, ())]),
-    ("movm", [ins(X86Ops.MOVm, dtypes.void, (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32), nreg(RDX)))]),
-    ("movm0", [ins(X86Ops.MOVm, dtypes.void, (membase(RSP), UOp(Ops.NOOP, tag=None), cast(const(0), dtypes.int32), nreg(RDX)))]),
-    ("lea", [ins(X86Ops.LEA, dtypes.int64, (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32)), RDX)]),
-    ("vaddss", [ins(X86Ops.VADDSS, dtypes.float32, (nreg(XMM[1]), nreg(XMM[2])), XMM[0])]),
-    ("vaddsd", [ins(X86Ops.VADDSD, dtypes.float64, (nreg(XMM[1]), nreg(XMM[2])), XMM[0])]),
-    # MEASURED: `asm_str`'s Rm2nd branch needs FIVE srcs -- `x.src[1:4]` is the
-    # memory triple and `x.src[0]` the reg operand. A THREE-src Rm2nd op falls
-    # through to the Rm1st branch (Rm1st = ... | (Rm2nd & TwoAddress), and CMOVL is
-    # in both) and CPython then reads `disp.src[0].val` off a NOOP and raises
-    # `AssertionError: val is only for consts`. That is a real property of the
-    # source, not a broken fixture, and it is why this fixture has five srcs.
-    ("cmovl", [ins(X86Ops.CMOVL, dtypes.int32, (nreg(RCX), membase(RSP), nreg(RDI), cast(const(8), dtypes.int32),
-                                                ins(X86Ops.CMP, dtypes.void, (nreg(RCX),))), RDX)]),
-    ("cmovl_reg", [ins(X86Ops.CMOVL, dtypes.int32, (nreg(RCX), nreg(RSI),
-                                                  ins(X86Ops.CMP, dtypes.void, (nreg(RCX),))), RDX)]),
-    ("setb", [ins(X86Ops.SETB, dtypes.int8, (membase(RSP), nreg(RCX), cast(const(8), dtypes.int32)))]),
-    ("lab", [ins(X86Ops.LABEL, dtypes.void, (), None)]),
-    ("multi", [ins(X86Ops.LABEL, dtypes.void, (), ".LOOP_0"), ins(X86Ops.ADDi, dtypes.int32, (nreg(RCX), cast(const(1), dtypes.int32))),
-               ins(X86Ops.RET, dtypes.void, ())]),
-    ("define_skipped", [UOp(Ops.INS, (), (X86Ops.DEFINE, dtypes.void), tag=(RAX,)), ins(X86Ops.RET, dtypes.void, ())]),
+def _args(us):
+  return "[" + ", ".join(a for a in (_arg(u) for u in us) if a is not None) + "]"
+
+
+def _mem(base, idx, disp):
+  """`_mem_adress` (x86.py:734-735). `rdef(idx)` falsy is the EMPTY index string and a
+  zero displacement prints as nothing, which is how `idx: String` / `disp: U32` say it."""
+  return (f'AsmMem.of("{rdef(base)}", "{"" if rdef(idx) is None else rdef(idx)}", '
+          f'{base.dtype.itemsize}, {0 if disp.src[0].val == 0 else disp.src[0].val})')
+
+
+ASM_PROG = [
+  ("skip", lambda: UOp(Ops.NOOP)),                                     # `u.op is not Ops.INS`
+  ("define", lambda: UOp(Ops.INS, (), (X86Ops.DEFINE, dtypes.void), (RDX,))),  # DEFINE
+  ("label", lambda: UOp(Ops.INS, (), (X86Ops.LABEL, dtypes.void), "L1")),
+  # WriteMem: `_mem_adress(*x.src[:3]) + _format(x.src[3:])` -- memory FIRST, and the
+  # four-src shape, which is the only one `_mem_adress(*x.src[:3])` can take.
+  ("writemem", lambda: UOp(Ops.INS, (MEMBASE, nreg(RCX), cast(const(8), dtypes.int32), nreg(RDX)),
+                           (X86Ops.MOVm, dtypes.void), (RDX,))),
+  # WriteMem with THREE srcs and an immediate: `_format(x.src[3:])` is empty.
+  ("writememimm", lambda: UOp(Ops.INS, (MEMBASE, nreg(RCX), cast(const(0), dtypes.int32)),
+                              (X86Ops.MOVi, dtypes.void), (RDX,))),
+  # Rm1st: `_format((x,)) + _mem_adress(*x.src[:3]) + _format(x.src[3:])`
+  ("rm1st", lambda: UOp(Ops.INS, (MEMBASE, nreg(RCX), cast(const(16), dtypes.int32)),
+                        (X86Ops.MOV, dtypes.float32), (RDX,))),
+  # Rm1st with NO index and a ONE-BYTE displacement. The displacement is POSITIVE:
+  # `AsmMem.disp` is a `U32` and CPython's is a signed `int`, so `f" + {-3}"` has no
+  # Bend spelling. MEASURED wall, not a fixture choice -- `U32` has no signed type.
+  ("rm1stnoidx", lambda: UOp(Ops.INS, (MEMBASE, nreg(RBX), cast(const(3), dtypes.int8)),
+                             (X86Ops.MOVSX, dtypes.int32), (RDX,))),
+  # Rm2nd: `_format((x, x.src[0])) + _mem_adress(*x.src[1:4]) + _format(x.src[4:])`.
+  # `VADDSS` and NOT `ADD`: `Rm1st` is `{...} | (Rm2nd & TwoAddress)` (x86.py:86), so
+  # every Rm2nd arithmetic op is ALSO Rm1st and would be caught by the arm above --
+  # MEASURED, `ADD` with five srcs raises IndexError inside CPython's own `asm_str`
+  # because the Rm1st arm reads `x.src[:3]` and the third of those is a register.
+  ("rm2nd", lambda: UOp(Ops.INS, (nreg(XMM[1]), MEMBASE, nreg(XMM[2]), cast(const(4), dtypes.int32),
+                                  nreg(XMM[0])), (X86Ops.VADDSS, dtypes.float32), (XMM[0],))),
+  # WriteMem AND Rm1st, four srcs: the WriteMem arm wins on ORDER (x86.py:737 before :738),
+  # and the mnemonic is `ADDi`, whose trailing `i` is trimmed to `add`.
+  ("writememoverlap", lambda: UOp(Ops.INS, (MEMBASE, nreg(RCX), cast(const(8), dtypes.int32),
+                                             imm(dtypes.int32, 3)),
+                                  (X86Ops.ADDi, dtypes.void), (RDX,))),
+  # plain: `_format((x,) + x.src)` -- an XMM destination (not a `reg_strs` key, so it
+  # prints its own name) and an XMM source.
+  ("plain", lambda: UOp(Ops.INS, (nreg(XMM[3]), nreg(RDI)), (X86Ops.VADDSS, dtypes.float32), (XMM[0],))),
+  # An immediate operand and a register, which is the `else ret = _format((x,) + x.src)`
+  # arm: NEITHER `len(x.src) > 3` NOR `len(x.src) > 2` holds, and `ADDi` is in WriteMem
+  # and Rm1st both -- so this row is what proves the arm ORDER (WriteMem, then Rm1st,
+  # then Rm2nd) and that two memberships do not make a memory operand.
+  #
+  # THE IMMEDIATE IS `imm(dtypes.int32, 5)` AND NOT `cast(const(5), dtypes.int32)`, and
+  # the difference is not cosmetic. MEASURED: `rdef` of a bare CAST is None
+  # (`isa/__init__.py:29` returns `u.tag`, and a CAST carries no tag), so `_format`'s
+  # `for s in src if rdef(s) is not None` DROPS IT and `s.op is Ops.CAST` never fires.
+  # `imm` is `UOp.cconst(...).rtag()` (x86.py:191), which tags it `True`, and `rdef`
+  # then answers True -- not None -- so the CAST arm is reachable and prints the value.
+  # The two fixtures differ ONLY in the tag and print `5` and nothing respectively.
+  ("byte", lambda: UOp(Ops.INS, (imm(dtypes.int32, 5), nreg(RSI)), (X86Ops.ADDi, dtypes.int32), (RDX,))),
+  ("ret", lambda: UOp(Ops.INS, (), (X86Ops.RET, dtypes.void))),
+  # A NINE-CHARACTER MNEMONIC. `VCVTSI2SS` ends in neither `i` nor `m`, so `:7s` leaves
+  # it at nine and pads ZERO -- and `U32.sub` WRAPS, so `7 - 9` is 4294967294 and a port
+  # that wrote the field width as a plain subtraction asks `String.repeat` for four
+  # billion spaces. Every other mnemonic in this program is four to seven characters.
+  ("long", lambda: UOp(Ops.INS, (nreg(XMM[2]), nreg(XMM[1])), (X86Ops.VCVTSI2SS, dtypes.float32), (XMM[0],))),
 ]
-for nm, uops in ASM:
-  a = asm_of(uops)
-  row(f'"asm.{nm} = [" ++ Asm("{nm}") ++ "]   py=[{a}]"', f"asm.{nm} = [{a}]")
+ASM_UOPS = [f() for _, f in ASM_PROG]
+ASM_TEXT = REN.asm_str(ASM_UOPS, "kern")
 
 
-# =========================================================== render
-lbl = ins(X86Ops.LABEL, dtypes.void, (), ".LOOP_0")
-jmp = ins(X86Ops.JMP, dtypes.void, (lbl,), ".LOOP_0")
-bod = ins(X86Ops.RET, dtypes.void, ())
-for nm, uops in [("label_only", [lbl]), ("body", [bod]), ("jmp", [lbl, bod, jmp]),
-                 ("two_jmp", [lbl, bod, jmp, jmp]), ("loopcmp", [ins(X86Ops.LOOP_CMP, dtypes.void, (lbl,), None), bod])]:
-  try:
-    h = REN.render(uops)
-  except Exception as e:
-    h = f"ERR {type(e).__name__}"
-  row(f'"render.{nm} = [" ++ Render("{nm}") ++ "]   py=[{h}]"', f"render.{nm} = [{h}]")
+def _asm_op(where, u):
+  mn = str(u.arg[0]) if u.op is Ops.INS else ""
+  if u.op is not Ops.INS or u.arg[0] is X86Ops.DEFINE:
+    return "Asm.skip()"
+  if u.arg[0] is X86Ops.LABEL:
+    return f'Asm.label("{u.tag}")'
+  if u.arg[0] is X86Ops.RET:
+    return f'Asm.ret("{mn}")'
+  if len(u.src) > 3 and u.arg[0] in X86GroupOp.WriteMem:
+    return f'Asm.ins("{mn}", [], True{{}}, {_mem(*u.src[:3])}, {_args(u.src[3:])})'
+  if len(u.src) > 2 and u.arg[0] in X86GroupOp.Rm1st:
+    return f'Asm.ins("{mn}", {_args((u,))}, True{{}}, {_mem(*u.src[:3])}, {_args(u.src[3:])})'
+  if len(u.src) > 3 and u.arg[0] in X86GroupOp.Rm2nd:
+    return f'Asm.ins("{mn}", {_args((u, u.src[0]))}, True{{}}, {_mem(*u.src[1:4])}, {_args(u.src[4:])})'
+  return f'Asm.ins("{mn}", {_args((u,) + tuple(u.src))}, False{{}}, Asm.none(), Nil{{}})'
 
 
-# =========================================================== the small pure decisions
-# `_xmm_sz` / `_xmm_sz_m` decide the MOV SPELLING from `max_numel * itemsize`, and
-# every threshold arm is a boundary, so the fixture grid is ASKED over a real BUFFER
-# (an INDEX over an ALLOC reports `max_numel() == 1` for every size, which would make
-# all thirty rows answer the same arm -- MEASURED). The grid is chosen so both
-# boundaries are straddled: bits 12/16 crosses the >=16 arm and bits 8 crosses >=8.
-SZ_DTS = ("int", "float", "int8", "double", "half")
-SZ_NS = (1, 2, 3, 4, 6, 8, 16)
+ASM_OPS = ", ".join(_asm_op(w, u) for w, u in zip(ASM_PROG, ASM_UOPS))
+ASM_LINES = ASM_TEXT.split("\n")
+row(f'"asm.lines = [" ++ U32.show(AsmLines_n([{ASM_OPS}])) ++ "]   py=[{len(ASM_LINES) - 1}]"',
+    f"asm.lines = [{len(ASM_LINES) - 1}]")
+row(f'"asm.total = [" ++ U32.show(AsmN(asm_str("kern", [{ASM_OPS}]))) ++ "]   py=[{len(ASM_LINES)}]"',
+    f"asm.total = [{len(ASM_LINES)}]")
+# ONE ROW PER LINE, AND THE LINE TEXT GOES IN THE ROW NAME. `asm.L7.<text> = [True]` can
+# FAIL, where the old bare `asmtext.L7 = [<text>]` could not -- the eighty `hex.*` rows
+# were that shape and all eighty of them disagreed with CPython while the gate was green.
+for i, line in enumerate(ASM_LINES):
+  row(f'"asm.L{i}.{line} = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [{ASM_OPS}]), '
+      f'{i}n), "{line}")) ++ "]   py=[True]"', f"asm.L{i}.{line} = [True]")
+# AND THE HEADER, as a row of its own rather than as line zero: `f".{function_name}:"` is
+# the one line that is not an instruction, and a mutation that dropped it would move every
+# other row too, which makes them unnameable.
+row(f'"asm.fn = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("mykern", [{ASM_OPS}]), 0n), '
+    f'".mykern:")) ++ "]   py=[True]"', "asm.fn = [True]")
+
+# ---------------------------------------------------------------- STAGE 8: the patch
+# `(targets[u.tag] - t).to_bytes(4, 'little', signed=True)` (x86.py:767). The delta is
+# SIGNED and a backward jump makes it negative, so the pair that matters is (target < t)
+# and the pair that matters MORE is the sign bit: `U32.sub` WRAPS (`Word.sub(32n, x, y)`
+# on `Base`), so if it saturated instead, both of these would print `00000000` and a
+# backpatching jump would become a jump to address zero. The four bytes are CPython's
+# own `to_bytes`, and the row is a `Bool` against them.
+for target, t in [(0, 0), (12, 12), (0, 16), (40, 12), (0, 2 ** 20)]:
+  b = (target - t).to_bytes(4, "little", signed=True).hex()
+  row(f'"render.{target}-{t}.{b} = [" ++ Bool.show(String.eq(Render.le4(Render.delta({target}, {t})), '
+      f'"{b}")) ++ "]   py=[True]"', f"render.{target}-{t}.{b} = [True]")
+# `targets[u.tag]` and `t` are both BYTE POSITIONS, so the delta fits in a signed 32-bit
+# word for any program under two gigabytes and the ONLY way the sign bit is set is a
+# NEGATIVE delta -- a backward jump. So the fixtures that matter are the two with
+# `target < t`, and `2**31` is not reachable at all: `to_bytes(4, signed=True)` raises
+# `OverflowError` on it, which is why it is not in this list.
 
 
-def buf(dt_name, n):
-  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes_from_name(dt_name), n))
-
-
-# the Python attribute name is not the dtype NAME -- `dtypes.signedchar.name` is
-# "signed char" -- so the port's gate string comes from `.name`, not the attribute.
-def dtypes_from_name(nm):
-  return getattr(dtypes, nm)
-
-
-for dn in SZ_DTS:
-  for n in SZ_NS:
-    b = buf(dn, n)
-    bits = b.max_numel() * b.dtype.itemsize
-    row(f'"isz {dn} {n} = [" ++ XmmSz("{dn}", {n}) ++ "]   py=[{_xmm_sz(b).name}]"',
-        f"isz {dn} {n} = [{_xmm_sz(b).name}]")
-    row(f'"iszm {dn} {n} = [" ++ XmmSzm("{dn}", {n}) ++ "]   py=[{_xmm_sz_m(b).name}]"',
-        f"iszm {dn} {n} = [{_xmm_sz_m(b).name}]")
-    row(f'"iszbits {dn} {n} = [" ++ U32.show(SzBits("{dn}", {n})) ++ "]   py=[{bits}]"',
-        f"iszbits {dn} {n} = [{bits}]")
-
-for d in ("float16", "float32", "float64"):
-  row(f'"toint {d} = [" ++ ToInt("{d}") ++ "]   py=[{to_int(getattr(dtypes, d)).name}]"',
-      f"toint {d} = [{to_int(getattr(dtypes, d)).name}]")
-for d in ("int8", "int32", "uint8", "bool"):
-  row(f'"toint.miss {d} = [" ++ ToIntMiss("{d}") ++ "]   py=[{_to_int_miss(getattr(dtypes, d))}]"',
-      f"toint.miss {d} = [{_to_int_miss(getattr(dtypes, d))}]")
-
-# `is_two_address` -- one row per op, so an op missing from the set is a DIFF.
-for o in X86Ops:
-  row(f'"2a.{o.name} = [" ++ TwoAddr("{o.name}") ++ "]   py=[{is_two_address(ins(o, dtypes.int32, ())) if False else _ita(o)}]"',
-      f"2a.{o.name} = [{_ita(o)}]")
-
-# the renderer class constants
-row(f'"cls.device = [" ++ Str(cls_device()) ++ "]   py=[{X86Renderer.device}]"', f"cls.device = [{X86Renderer.device}]")
-row(f'"cls.has_local = [" ++ Bool.show(cls_has_local()) ++ "]   py=[{X86Renderer.has_local}]"',
-    f"cls.has_local = [{X86Renderer.has_local}]")
-row(f'"cls.global_max = [" ++ ClsGmax() ++ "]   py=[{" ".join(str(x) for x in X86Renderer.global_max)}]"',
-    f"cls.global_max = [{' '.join(str(x) for x in X86Renderer.global_max)}]")
-cfo = sorted(o.name for o in REN.code_for_op)
-row(f'"cls.code_for_op = [" ++ String.join(CodeForOp(), ",") ++ "]   py=[{",".join(cfo)}]"',
-    f"cls.code_for_op = [{','.join(cfo)}]")
-row(f'"cls.cfo_count = [" ++ U32.show(cfo_len()) ++ "]   py=[{len(cfo)}]"', f"cls.cfo_count = [{len(cfo)}]")
-
-row(f'"cls.supported_dtypes = [" ++ String.join(SupDtypes(), ",") ++ "]   py=[{_sup_dtypes()}]"',
-    f"cls.supported_dtypes = [{_sup_dtypes()}]")
-
-
-# =========================================================== emit
 # =========================================================== `tables` mode
 # Emits BEND TABLE SOURCE for the two tables that are too long to hand-write
 # without a transcription error -- the 89 `X86Ops` NAMES IN DECLARATION ORDER, and
@@ -493,15 +770,62 @@ def bend_tables():
   return "\n".join(out)
 
 
+def bend_gate(limit=6000):
+  """The `Gate.rowsN()` CHUNKS, replaced wholesale in `x86.bend`.
+
+  `String.concat` is ONE `IO.print` over its arguments and the parser refuses a call with
+  this many, and a fold over a list of row-strings costs a step per row, so the gate is
+  N list literals joined by `List.concat`. The chunk SIZE is measured in characters and
+  not in rows so that one long row cannot unbalance the split."""
+  chunks, cur, n = [], [], 0
+  for expr, _ in ROWS:
+    if cur and sum(len(c) for c in cur) + len(expr) > limit:
+      chunks.append(cur)
+      cur = []
+    cur.append(expr)
+  if cur:
+    chunks.append(cur)
+  out = []
+  for i, c in enumerate(chunks):
+    out.append(f"def Gate.rows{i}() -> List<&2, String>: [")
+    out.extend("   " + e for e in c)
+    out.append(" ]")
+    out.append("")
+  return "\n".join(out), len(chunks)
+
+
 if __name__ == "__main__":
   mode = sys.argv[1] if len(sys.argv) > 1 else "rows"
   if mode == "tables":
     print(bend_tables())
     raise SystemExit(0)
+  if mode == "gate":
+    src, nchunks = bend_gate()
+    sys.stdout.write(src)
+    sys.stderr.write(f"{len(ROWS)} rows in {nchunks} chunks\n")
+    raise SystemExit(0)
   if mode not in ("rows", "bend"):
-    sys.stderr.write("usage: x86-oracle.py rows|bend|tables\n")
+    sys.stderr.write("usage: x86-oracle.py rows|bend|gate|tables\n")
     raise SystemExit(2)
-  print("\n".join(ref if mode == "rows" else expr for expr, ref in ROWS))
+  if mode == "rows":
+    # THE REFERENCE IS `NAME = [CPYTHON]   py=[CPYTHON]` -- the ANSWER half is filled
+    # with CPython's own answer, because the reference's claim is "this is what the
+    # answer must be". So a diff line is a disagreement about the ANSWER and not about
+    # the oracle, and the port's half is never consulted to build the reference.
+    out = []
+    for expr, ref in ROWS:
+      # THE REFERENCE IS `NAME = [ANSWER]`, and a NAME MAY NOW CONTAIN `[` AND `]` --
+      # every `asm.L*` row carries the assembly line it asserts, and an assembly line is
+      # full of `[rsp + rcx*4]`. `ref.index("[")` found the bracket INSIDE the name and
+      # produced `py=[rsp + rcx*4 + 8], rdx = [True]` for a row that must read
+      # `py=[True]`. The separator is `rindex`d instead, so only the LAST one counts.
+      inner = ref[ref.rindex(" = [") + 4:ref.rindex("]")]
+      out.append(ref + "   py=[" + inner + "]")
+    print("\n".join(out))
+  else:
+    print("\n".join(expr for expr, _ in ROWS))
   sys.stderr.write(f"{len(ROWS)} rows\n")
+
+
 
 

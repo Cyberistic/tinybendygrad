@@ -3,7 +3,7 @@ sys.path.insert(0, '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad')
 from tinygrad import dtypes
 from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad.mixin.gradient import pm_gradient, compute_gradient
-F = dtypes.float
+F = dtypes.f32
 
 def buf(slot): return UOp(Ops.BUFFER, src=(), arg=ParamArg(slot, F, 4, device='PYTHON'))
 def gate(): return UOp(Ops.CALL, src=(), arg=None)
@@ -58,7 +58,7 @@ a = UOp.const(1.0, F); b2 = UOp.const(2.0, F)
 print("a>b ->", (UOp(Ops.CMPLT, src=(a,b2))).op.name, "(MAX rule builds this)")
 print("a.eq(b) ->", UOp(Ops.CMPNE, src=(a,b2)).op.name)
 print("where ->", UOp(Ops.WHERE, src=(UOp.const(True,dtypes.bool), a, b2)).op.name)
-print("CAST const_like: ret.src[0].dtype for a CAST ->", UOp(Ops.CAST, src=(UOp.const(1,dtypes.int32),), arg=F).src[0].dtype)
+print("CAST const_like: ret.src[0].dtype for a CAST ->", UOp(Ops.CAST, src=(UOp.const(1,dtypes.i32),), arg=F).src[0].dtype)
 print("POW grads:", [str(x)[:40] for x in pm_gradient.rewrite(UOp(Ops.POW, src=(b2,a)), ctx=a)])
 print("MAX grads:", [str(x)[:40] for x in pm_gradient.rewrite(UOp(Ops.MAX, src=(a,b2)), ctx=a)])
 print("RECIP grads:", [str(x)[:60] for x in pm_gradient.rewrite(UOp(Ops.RECIPROCAL, src=(a,)), ctx=a)])

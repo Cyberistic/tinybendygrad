@@ -603,8 +603,6 @@ def cr_new(+ar: O.Arena, +b: T.Tensor, +a: T.Tensor) -> U32:
 # count.
 def cr_store_val.of(+ar: O.Arena, c: CU) -> U32: O.Arena.src(ar, O.Arena.src(ar, CU.u(c), 1), 1)
 
-def cr_b2u(b: Bool) -> U32: Bool.pick(U32, b, 1, 0)
-
 # ===========================================================================
 # THE FIXTURES. Every one is CPython's OWN call, listed beside it.
 #
@@ -734,7 +732,7 @@ def cr_alloc_rows(+ar: O.Arena, +c: CU) -> IO(Unit):
 #                          raise), so the row is the guard and CPython's is the raise.
 #   ref_commit_float       a weakfloat node's `commit_dtype` needs NO bounds, because it
 #                          takes `strong_dtype`'s arm -- dtype.py:16. CPython agrees, and
-#                          the row is `Tensor.full((2,3),42.0).dtype == dtypes.float`.
+#                          the row is `Tensor.full((2,3),42.0).dtype == dtypes.f32`.
 #   ref_commit_i32         a weakint node's DOES, and (42,42) walks dtype.py:173's ladder
 #                          to int32.
 #

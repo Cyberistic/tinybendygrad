@@ -22,11 +22,15 @@ echo "== native lane =="
 ./bin/bend "$F" -o "$S/bnxtdev_native" >/dev/null 2>&1
 "$S/bnxtdev_native" > "$S/bnxt_native.txt"
 
-for a in oracle interp native; do
-  for b in oracle interp native; do
-    [ "$a" = "$b" ] && continue
-    echo
-    echo "== $a  vs  $b =="
-    python3 .agents/slop/bnxt_cmp.py "$S/bnxt_$a.txt" "$S/bnxt_$b.txt" | sed "s/^/   /"
-  done
-done
+# THREE PAIRS, always with the ORACLE FIRST. The comparator names its buckets
+# by position, so comparing interp-first would report the port's own extra rows
+# as missing oracle rows and every pair would read DISAGREE.
+echo
+echo "== oracle  vs  interp  (the CPython comparison) =="
+python3 .agents/slop/bnxt_cmp.py "$S/bnxt_oracle.txt" "$S/bnxt_interp.txt" | sed 's/^/   /'
+echo
+echo "== oracle  vs  native  (the CPython comparison, compiled lane) =="
+python3 .agents/slop/bnxt_cmp.py "$S/bnxt_oracle.txt" "$S/bnxt_native.txt" | sed 's/^/   /'
+echo
+echo "== interp  vs  native  (the two Bend lanes must be identical) =="
+python3 .agents/slop/bnxt_cmp.py "$S/bnxt_interp.txt" "$S/bnxt_native.txt" | sed 's/^/   /' | grep -vE "^   +\+"

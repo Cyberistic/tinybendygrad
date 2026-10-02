@@ -5,7 +5,7 @@ from tinygrad.uop.ops import UOp, Ops
 from tinygrad.mixin.gradient import compute_gradient, pm_gradient
 
 def C(v, dt=None): return UOp.const(v, dt)
-F = dtypes.float
+F = dtypes.f32
 
 def g_of(g):
   if g is None: return "None"
@@ -27,11 +27,11 @@ show("two_contrib", UOp(Ops.ADD, src=(UOp(Ops.MUL,src=(x1,x2)), UOp(Ops.MUL,src=
 print()
 for nm, u in [("ADD", UOp(Ops.ADD, src=(x1,x2))),
               ("MUL", UOp(Ops.MUL, src=(x1,x2))),
-              ("CAST", UOp(Ops.CAST, src=(C(1,dtypes.int32),), arg=F)),
+              ("CAST", UOp(Ops.CAST, src=(C(1,dtypes.i32),), arg=F)),
               ("TRUNC", UOp(Ops.TRUNC, src=(x1,))),
               ("CMPLT", UOp(Ops.CMPLT, src=(x1,x2))),
               ("STORE", UOp(Ops.STORE, src=(x1,x2))),
-              ("BITCAST", UOp(Ops.BITCAST, src=(C(1,dtypes.int32),), arg=F)),
+              ("BITCAST", UOp(Ops.BITCAST, src=(C(1,dtypes.i32),), arg=F)),
               ("SINK", UOp(Ops.SINK, src=(x1,x2))),
               ("STAGE", UOp(Ops.STAGE, src=(x1,))),
               ("RESHAPE", UOp(Ops.RESHAPE, src=(x1,), arg=(1,))),

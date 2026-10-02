@@ -7,12 +7,12 @@
 # Python; fourteen are bodies here and two are the abstract properties Python raises
 # `NotImplementedError` from, which are declarations and not ports.
 #
-# THE WALL IS ONE LINE: `commit_dtype` (dtype.py:17) reads `self._uop.vmin` and
+# THE WALL IS ONE LINE: `commit_dtype` (tinygrad/dtype.py:17) reads `self._uop.vmin` and
 # `self._uop.vmax`, and THOSE ARE `UOp._min_max` (ops.py:1104-1163). This file ports
 # `commit_dtype` COMPLETELY -- the weakint branch, the `strong_dtype` branch, the
 # `default_int` default -- and takes `(lo, hi)` as parameters, because `_min_max` is
 # ops.py's def and ops.py is not this file. What that buys is the whole of
-# `commit_int` (dtype.py:171), which `tinybendygrad/dtype.bend` already had.
+# `commit_int` (tinygrad/dtype.py:171), which `tinybendygrad/dtype.bend` already had.
 #
 # `uop/weak.bend`'s header says `tinybendygrad/dtype.bend` "is unreachable to any
 # importer (it prints a foreign-code notice for `Dt.bf16`, `Dt.fp16`, the `fp8_*` and the
@@ -33,11 +33,11 @@
 # read-only to this port so they are fixed HERE rather than there. Its `i64_min_s(8)`
 # and `i64_min_s(16)` low words are `0xffffc808` and `0xffff0000`, which are -14328 and
 # -65536, so -129 and -32769 were INSIDE int8's and int16's stated minimum and
-# `commit_int(-129, -129, dtypes.int8)` answered int8 where CPython answers int32. The
+# `commit_int(-129, -129, dtypes.i8)` answered int8 where CPython answers int32. The
 # rows `i8_past_min` and `i16_past_min` are exactly those two cases and they are what
 # caught it. Its `i64_max_u(64)` is `0xFFFFFFFF_FFFFFFFF`, which as a SIGNED pair is -1,
 # so the uint64 rung's upper bound was `hi <= -1`, false for every real range, and
-# `commit_int(0, 0, dtypes.uint64)` answered int64 where CPython answers uint64; the
+# `commit_int(0, 0, dtypes.u64)` answered int64 where CPython answers uint64; the
 # three `u64_at_*` rows that move are those. All three are one hex constant each, in the
 # `md_i64_*` defs below. NONE of these rungs ran in `dtype.bend`, because every caller
 # passes `default_int` = int32 or int64 -- which is why hoisting the def is what exposed
@@ -88,7 +88,7 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
 # ===========================================================================
-# THE READERS. `dtype` is `DTypeMixin.dtype` (dtype.py:10), a property every carrier
+# THE READERS. `dtype` is `DTypeMixin.dtype` (tinygrad/dtype.py:10), a property every carrier
 # answers with the node's own dtype, and Bend refuses the mutual recursion Python breaks
 # with a property, so it is a read of the FOLD -- the same reason `uop/weak.bend`'s
 # `wk_dt` is one. `void` is the dead default and it is a LATTICE BOTTOM, so it poisons
@@ -108,13 +108,13 @@ def md_dt_eq(x: S.Dt, y: S.Dt) -> Bool: O.eq_dt(x, y)
 # TWO WEAKNESS TESTS, AND THEY ARE NOT THE SAME QUESTION. This is the one real bug the
 # gate caught in this port, so it is recorded where it was made.
 #
-#   `dtypes.weaks` (dtype.py:160) is `(weakint, weakfloat)`, and `bitcast` (dtype.py:52)
-#   and `element_size` (dtype.py:64) both ask THAT one: `x in dtypes.weaks`.
-#   `commit_dtype` (dtype.py:17) asks a NARROWER one: `self.dtype is dtypes.weakint`.
+#   `dtypes.weaks` (tinygrad/dtype.py:160) is `(weakint, weakfloat)`, and `bitcast` (tinygrad/dtype.py:52)
+#   and `element_size` (tinygrad/dtype.py:64) both ask THAT one: `x in dtypes.weaks`.
+#   `commit_dtype` (tinygrad/dtype.py:17) asks a NARROWER one: `self.dtype is dtypes.weakint`.
 #
 # Using the `weaks` test inside `commit_dtype` routes every weakfloat node down the
 # `commit_int` ladder, where it has no `vmin`/`vmax` to commit and so answers None. That
-# made `commit_weakfloat` answer nothing instead of `dtypes.float`, and it typechecked:
+# made `commit_weakfloat` answer nothing instead of `dtypes.f32`, and it typechecked:
 # both tests are `Bool` and nothing about the signature says which one was meant. The
 # row `commit_weakfloat` is the thing that noticed; `commit_weakfloat_at_weaks` below is
 # the regression row, and it reads the WEAKS test on purpose so a future merge of the two
@@ -127,7 +127,7 @@ def md_weak.cls(cls: S.Cls) -> Bool:
 
 def md_weak(d: S.Dt) -> Bool: md_weak.cls(S.Dt.cls(d))
 
-# `dtypes.weakint` alone -- dtype.py:17's test and ONLY dtype.py:17's test.
+# `dtypes.weakint` alone -- tinygrad/dtype.py:17's test and ONLY tinygrad/dtype.py:17's test.
 def md_weakint.cls(cls: S.Cls) -> Bool:
   match cls:
     case S.CWeakInt{}: True{}
@@ -135,8 +135,8 @@ def md_weakint.cls(cls: S.Cls) -> Bool:
 
 def md_weakint(d: S.Dt) -> Bool: md_weakint.cls(S.Dt.cls(d))
 
-# `dtypes.default_int` is `dtypes.int` (dtype.py:139), which is what `default_int=None`
-# resolves to inside `commit_int` (dtype.py:173).
+# `dtypes.default_int` is `dtypes.i32` (tinygrad/dtype.py:139), which is what `default_int=None`
+# resolves to inside `commit_int` (tinygrad/dtype.py:173).
 def md_default_int() -> S.Dt: S.int32()
 
 # ===========================================================================
@@ -239,13 +239,13 @@ def commit_int.bounds(mn: Maybe<&1, H.I64>, mx: Maybe<&1, H.I64>, lo: H.I64,
         case None{}: None{}
     case None{}: None{}
 
-# commit_int -- dtype.py:171-174, hoisted. `next((dt for dt in ladder if dt.min <= lo
-# and hi <= dt.max), dtypes.long)` over `(default_int, int, long, ulong)`.
+# commit_int -- tinygrad/dtype.py:171-174, hoisted. `next((dt for dt in ladder if dt.min <= lo
+# and hi <= dt.max), dtypes.i64)` over `(default_int, int, long, ulong)`.
 def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
   commit_int.pick(commit_int.bounds(md_dt_min(di), md_dt_max(di), lo, hi), di,
     commit_int.i32fit(lo, hi))
 
-# strong_dtype -- dtype.py:169-170, hoisted. `{weakint: default_int, weakfloat:
+# strong_dtype -- tinygrad/dtype.py:169-170, hoisted. `{weakint: default_int, weakfloat:
 # default_float}.get(dtype, dtype)`, which is a LOOKUP on `Cls`, so it is two weak
 # arms and the identity otherwise. dtype.py takes no defaults, so `di`/`df` are
 # parameters here and `commit_dtype.of` supplies `S.int32()`/`S.single()`.
@@ -259,7 +259,7 @@ def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
   strong_dtype.cls(S.Dt.cls(d), di, df, d)
 
 # ===========================================================================
-# commit_dtype -- dtype.py:16-17.
+# commit_dtype -- tinygrad/dtype.py:16-17.
 #
 #   return commit_int(self._uop.vmin, self._uop.vmax, default_int) \
 #     if self.dtype is dtypes.weakint else strong_dtype(self.dtype)
@@ -291,7 +291,7 @@ def commit_dtype(+dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt)
   commit_dtype.of(md_weakint(dt), dt, m, m2, di)
 
 # ===========================================================================
-# cast -- dtype.py:36.
+# cast -- tinygrad/dtype.py:36.
 #
 #   return self if self.dtype == (dt:=to_dtype(dtype)) else self._uop.alu(Ops.CAST, arg=dt)
 #
@@ -312,7 +312,7 @@ def cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   cast_at.of(md_dt_eq(md_dt(fx, self), dt), fx, self, dt)
 
 # ===========================================================================
-# bitcast -- dtype.py:51-53.
+# bitcast -- tinygrad/dtype.py:51-53.
 #
 #   dt = to_dtype(dtype)
 #   if self.dtype in dtypes.weaks or dt in dtypes.weaks: raise RuntimeError(...)
@@ -344,8 +344,8 @@ def bitcast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   bitcast_at.of(bitcast_at.blocked(md_dt(fx, self), dt), md_dt_eq(md_dt(fx, self), dt), fx, self, dt)
 
 # ===========================================================================
-# element_size -- dtype.py:64-65. `raise` on a weak dtype, else `self.dtype.itemsize`.
-# `itemsize` is `(bitsize + 7) // 8` (dtype.py:57) and `S.Dt.itemsize` is that, so the
+# element_size -- tinygrad/dtype.py:64-65. `raise` on a weak dtype, else `self.dtype.itemsize`.
+# `itemsize` is `(bitsize + 7) // 8` (tinygrad/dtype.py:57) and `S.Dt.itemsize` is that, so the
 # arithmetic is not repeated here. `weakint` is 800 bits and `weakfloat` is 800, and
 # Python refuses both, so refusing both is the difference.
 # ===========================================================================
@@ -355,13 +355,13 @@ def element_size(blocked: Bool, dt: S.Dt) -> Maybe<&1, U32>:
     case False{}: Some{S.Dt.itemsize(dt)}
 
 # ===========================================================================
-# is_floating_point -- dtype.py:77. `dtypes.is_float(self.dtype)` is `x in dtypes.floats
+# is_floating_point -- tinygrad/dtype.py:77. `dtypes.is_float(self.dtype)` is `x in dtypes.floats
 # + (dtypes.weakfloat,)`, so it is `Cls.is_float` and it DOES include weakfloat.
 # ===========================================================================
 def is_floating_point(dt: S.Dt) -> Bool: S.Dt.is_float(dt)
 
 # ===========================================================================
-# THE EIGHT NAMED CASTS -- dtype.py:79-142. Python spells each as `return self.cast(dtypes.X)`
+# THE EIGHT NAMED CASTS -- tinygrad/dtype.py:79-142. Python spells each as `return self.cast(dtypes.X)`
 # and a docstring, so each is one line here and there is no rule table: a table plus a
 # dispatch would be 40 lines to say what eight one-liners say, and there is no `UPat` in
 # `mixin/dtype.py` to be a tag for. The eight targets are `S.single`, `S.half`,
@@ -377,9 +377,9 @@ def cast_double(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.doubl
 def cast_long(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.int64())
 def cast_short(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.int16())
 
-# `dtypes.float32` and `dtypes.float64` are `S.single` / `S.double`, and
-# `dtypes.float16` / `dtypes.bfloat16` are `S.half` / `S.bfloat16`; `dtypes.long` is
-# `int64` and `dtypes.short` is `int16`. The names are the IR's, per spec.bend's header.
+# `dtypes.f32` and `dtypes.f64` are `S.single` / `S.double`, and
+# `dtypes.f16` / `dtypes.bf16` are `S.half` / `S.bfloat16`; `dtypes.i64` is
+# `int64` and `dtypes.i16` is `int16`. The names are the IR's, per spec.bend's header.
 def named_cast_count() -> U32: 8
 
 # ===========================================================================
@@ -509,19 +509,19 @@ def t_sd_df_moves() -> Bool: md_dt_eq(strong_dtype(S.weakfloat(), S.int32(), S.d
 def t_sd_identity() -> Bool: md_dt_eq(strong_dtype(S.bfloat16(), S.int32(), S.single()), S.bfloat16())
 
 # --- commit_dtype, both branches -----------------------------------------
-# The ladder walk. Python: commit_int(-7, 9, dtypes.int32) == dtypes.int.
+# The ladder walk. Python: commit_int(-7, 9, dtypes.i32) == dtypes.i32.
 def t_commit_int32() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.weakint(), Some{H.i64_of_hi_lo(4294967295, 3221225473)}, Some{H.i64_of_i32(9)}, S.int32())), S.int32())
-# Python: commit_int(2**32, 2**33, dtypes.int32) == dtypes.long.
+# Python: commit_int(2**32, 2**33, dtypes.i32) == dtypes.i64.
 def t_commit_long() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.weakint(), Some{H.i64_of_hi_lo(1, 0)}, Some{H.i64_of_hi_lo(2, 0)}, S.int32())), S.int64())
 # `default_int` is a LADDER START, not a floor: with long as the start rung the int32
 # rung never runs and a small range still answers long. Python agrees.
 def t_commit_start_matters() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.weakint(), Some{H.i64_of_hi_lo(4294967295, 3221225473)}, Some{H.i64_of_i32(9)}, S.int64())), S.int64())
-# weakfloat never reads the ladder: `strong_dtype(weakfloat)` is `dtypes.float`.
+# weakfloat never reads the ladder: `strong_dtype(weakfloat)` is `dtypes.f32`.
 def t_commit_weakfloat() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.weakfloat(), None{}, None{}, S.int32())), S.single())
-# `strong_dtype(weakfloat)` is `dtypes.float` = `S.single`, and it is the DEFAULT_FLOAT
+# `strong_dtype(weakfloat)` is `dtypes.f32` = `S.single`, and it is the DEFAULT_FLOAT
 # argument, not `default_int`. Passing a non-default `di` here must not move it.
 def t_commit_weakfloat_ignores_di() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.weakfloat(), None{}, None{}, S.int16())), S.single())
-# `strong_dtype` on a CONCRETE dtype is the identity -- that is dtype.py:169-170's
+# `strong_dtype` on a CONCRETE dtype is the identity -- that is tinygrad/dtype.py:169-170's
 # `{weakint: ..., weakfloat: ...}.get(dtype, dtype)`.
 def t_commit_concrete() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.int16(), None{}, None{}, S.int32())), S.int16())
 def t_commit_bool() -> Bool: md_dt_eq(dtnm_b(commit_dtype(S.boolean(), None{}, None{}, S.int32())), S.boolean())
@@ -548,7 +548,7 @@ def t_commit_refuses_half() -> Bool: dt_refused(commit_dtype(S.weakint(), Some{H
 # The fixture's own dtypes, so the rows above are not all literals.
 def t_commit_wi_is_weak() -> Bool: md_weak(md_dt(f_fx(g_fix()), f_wi(g_fix())))
 # THE REGRESSION ROW for the bug in this file's header: `commit_dtype` on a weakfloat
-# answers `dtypes.float` and does NOT read the ladder, which is only observable if the
+# answers `dtypes.f32` and does NOT read the ladder, which is only observable if the
 # fixture holds a node that is genuinely weak. `f_wf` is NOT one -- a CAST to `half` is
 # a concrete half node, and asking `dtypes.weaks` of it is False (measured). The weak
 # float is the bare CONST, which is why this row reads `f_ch` and `f_wf` is only ever
@@ -641,7 +641,7 @@ def t_bitcast_mint_is_bitcast() -> Bool: found_op_is(bitcast_at(f_fx(g_fix()), f
 
 
 # --- the row the brief asks for: TWO RULES, ONE NODE ----------------------
-# `cast` (dtype.py:36) and `bitcast` (dtype.py:51) are the same question -- "this node at
+# `cast` (tinygrad/dtype.py:36) and `bitcast` (tinygrad/dtype.py:51) are the same question -- "this node at
 # dtype D" -- asked of the SAME node, and they DISAGREE: `bitcast` adds the `dtypes.weaks`
 # refusal and `cast` does not. Python walks them as two independent methods, so nothing
 # stops a port from merging them into one rule that claims both. A gate that only ever
@@ -774,8 +774,6 @@ def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
 def b(v: Bool) -> U32: Bool.to_u32(v)
-
-def cnt_is(k: U32, want: U32) -> Bool: U32.is_eq(k, want)
 
 def main() -> IO(Unit):
   do IO<Unit>:

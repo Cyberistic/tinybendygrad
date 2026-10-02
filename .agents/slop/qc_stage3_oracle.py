@@ -63,7 +63,7 @@ def layout():
     from tinygrad.dtype import dtypes
     for nm, xs in (('empty', []), ('one', [4]), ('three', [4, 4, 4]),
                    ('six', [4] * 6), ('mix', [4, 2, 4])):
-        args = layout_args([UOp.const(x, dtypes.uint32) for x in xs], 2048)
+        args = layout_args([UOp.const(x, dtypes.u32) for x in xs], 2048)
         p('la_%s=%s' % (nm, ','.join(str(o) for o, _ in args)))
     # `pack_args`: sorted by offset, one BINARY pad per GAP, then a final pad.
     for nm, pairs, size in (('tight', [(2048, 4), (2052, 4)], 2560),
@@ -71,7 +71,7 @@ def layout():
                             ('big_gap', [(0, 4), (64, 4)], 128),
                             ('unsorted', [(2064, 4), (2048, 4)], 2560),
                             ('huge_tail', [(2048, 4)], 4096)):
-        words = pack_args([(o, UOp.const(o, dtypes.uint32)) for o, _ in pairs], size)
+        words = pack_args([(o, UOp.const(o, dtypes.u32)) for o, _ in pairs], size)
         pads = [len(w.arg) for w in words if isinstance(w.arg, bytes)]
         p('pa_%s=%s' % (nm, ','.join(str(x) for x in pads)))
 

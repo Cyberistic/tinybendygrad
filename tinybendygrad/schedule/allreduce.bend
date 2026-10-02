@@ -66,10 +66,6 @@ def Cfg.thr(x: Cfg) -> U32:
   match x:
     case Cfg{ring, all2all, thr, hdev, cast}: thr
 
-def Cfg.hdev(x: Cfg) -> U32:
-  match x:
-    case Cfg{ring, all2all, thr, hdev, cast}: hdev
-
 def Cfg.cast(x: Cfg) -> Bool:
   match x:
     case Cfg{ring, all2all, thr, hdev, cast}: cast
@@ -85,10 +81,6 @@ def Sel.a2(s: Sel) -> Bool:
 def Sel.ring(s: Sel) -> Bool:
   match s:
     case Sel{concrete, a2, ring}: ring
-
-def Ch.factor(c: Ch) -> U32:
-  match c:
-    case Ch{factor, base, left}: factor
 
 def Ch.base(c: Ch) -> U32:
   match c:

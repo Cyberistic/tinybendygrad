@@ -1782,8 +1782,8 @@ def pat_share() -> O.PatFound:
   O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
 
 # THE SAME LITERAL SPELLED IN A DIFFERENT ORDER --
-# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.int32, dtypes.half), tag=('B','A'),
-# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.half, dtypes.int32), tag=('A','B')),))`.
+# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.i32, dtypes.f16), tag=('B','A'),
+# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.f16, dtypes.i32), tag=('A','B')),))`.
 # All THREE multi-element arms are one node per axis, so all three print the same
 # `a{n}` twice, and `a0`/`a1`/`a2` are the whole of `dyn_lookup`.
 #

@@ -11,7 +11,7 @@ def code(u): return CODE.get(u.op, 0)
 
 def buf(slot, name):
   return UOp(Ops.BUFFER, src=(UOp(Ops.SPECIAL, arg=name, src=(UOp.const(1),)),),
-             arg=ParamArg(slot=slot, dtype=dtypes.int32, size=4, name=name, device="CPU"))
+             arg=ParamArg(slot=slot, dtype=dtypes.i32, size=4, name=name, device="CPU"))
 
 def body(n):
   return UOp(Ops.SINK, src=(UOp(Ops.STORE, src=(UOp.const(0), UOp.const(n))),))
@@ -26,8 +26,8 @@ def enc(xs):
 
 # ---------------------------------------------------------------- fx1
 A1, B1 = buf(0, "a"), buf(1, "b")
-Vb = UOp.variable("v", 0, 10, dtype=dtypes.int32).bind(3)
-Vu = UOp.variable("v", 0, 10, dtype=dtypes.int32)
+Vb = UOp.variable("v", 0, 10, dtype=dtypes.i32).bind(3)
+Vu = UOp.variable("v", 0, 10, dtype=dtypes.i32)
 K1 = UOp(Ops.CALL, src=(body(1), A1))
 K2 = UOp(Ops.CALL, src=(body(2), B1, Vb))
 E2 = UOp(Ops.END, src=(K2,))

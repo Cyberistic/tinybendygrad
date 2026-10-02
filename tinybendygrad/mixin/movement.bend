@@ -815,9 +815,6 @@ def mxm_marg(+ar: O.Arena, +i: U32) -> MxMarg:
 # the file -- the los and the his. `lo` is the `(o,)` of each `(o, sz)` and `sz` is
 # the size, and both come from the SAME zip, so they are two projections of one
 # walk rather than two walks over the arena.
-def MxP.lo(p: List<&2, U32>) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, p, 0n), 0)
-
 def MxP.sz(p: List<&2, U32>) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, p, 1n), 0)
 
@@ -1639,9 +1636,6 @@ def mxw_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
 # on a call and branch on a value and there is no higher-order way to say "and then
 # apply the identity test". The duplication is six lines per wrapper and it is the
 # honest cost of no closures.
-def mxw_finish(same: Bool, +t: T.Tensor, +made: T.Tensor) -> T.Tensor:
-  mxw_pick(same, t, made)
-
 # THE PAIR NODE: `UOp(op, src=(self, STACK_a, STACK_b))` for PAD and SHRINK. It is
 # written out rather than calling `T.tn_mop` with `T.APairs` because `tn_mop.pairs`
 # already exists and does exactly this -- so this def is `tn_mop.pairs` with the shape

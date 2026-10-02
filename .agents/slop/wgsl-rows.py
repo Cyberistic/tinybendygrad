@@ -80,7 +80,7 @@ def work_buf(dt, size):
 def rows_pure():
     for n in ["float", "uchar", "ushort", "short", "char", "int32", "uint32", "bool", "half"]:
         r("type_map " + n, R.type_map.get(dt_of(n), ""))
-    r("type_map double", R.type_map.get(dtypes.double, ""))
+    r("type_map double", R.type_map.get(dtypes.f64, ""))
 
     for n in ["uchar", "ushort", "char", "short", "int32", "uint32", "float", "half"]:
         r("render_cast " + n, R.render_cast(UOp(Ops.CAST, (UOp.const(0),), dt_of(n)), "V"))
@@ -121,9 +121,9 @@ def rows_pure():
     for op in ["SQRT", "RECIPROCAL", "NEG", "EXP2", "LOG2", "SIN", "TRUNC", "AND", "XOR", "OR",
                "ADD", "SUB", "MUL", "CMOD", "CDIV", "CMPNE", "SHR", "SHL", "CMPLT", "CMPEQ", "WHERE"]:
         f = R.code_for_op[getattr(Ops, op)]
-        r("code_for_op " + op, f("A", "B", "C", dtypes.float) if op == "WHERE" else (
-            f("A", dtypes.float) if op in ("SQRT", "RECIPROCAL", "NEG", "EXP2", "LOG2", "SIN", "TRUNC")
-            else f("A", "B", dtypes.float)))
+        r("code_for_op " + op, f("A", "B", "C", dtypes.f32) if op == "WHERE" else (
+            f("A", dtypes.f32) if op in ("SQRT", "RECIPROCAL", "NEG", "EXP2", "LOG2", "SIN", "TRUNC")
+            else f("A", "B", dtypes.f32)))
 
     for k in ["g", "l"]:
         for x in range(3):
@@ -133,8 +133,8 @@ def rows_pure():
     for arch, rr in [("", R), ("shader-f16", R16)]:
         r("supported_dtypes " + arch, ",".join(sorted(d.name for d in rr.supported_dtypes())))
 
-    r("render_dtype float", R.render_dtype(dtypes.float, True))
-    r("_render_dtype uchar global", R._render_dtype(dtypes.uchar, 1, addrspace=AddrSpace.GLOBAL,
+    r("render_dtype float", R.render_dtype(dtypes.f32, True))
+    r("_render_dtype uchar global", R._render_dtype(dtypes.u8, 1, addrspace=AddrSpace.GLOBAL,
                                                     mutable=True, override_ptr=True))
 
 
@@ -151,7 +151,7 @@ def rows_pure():
                   ("half", 17), ("float", 16), ("int32", 16)]:
         u = UOp(Ops.PARAM, (), ParamArg(0, dt_of(n), sz, device="CPU", addrspace=AddrSpace.GLOBAL))
         r("packed_size %s %d" % (n, sz), str(W._packed_size(u)))
-    u = UOp(Ops.PARAM, (), ParamArg(0, dtypes.uchar, 16, device="CPU", addrspace=AddrSpace.REG))
+    u = UOp(Ops.PARAM, (), ParamArg(0, dtypes.u8, 16, device="CPU", addrspace=AddrSpace.REG))
     r("packed_size uchar 16 REG", str(W._packed_size(u)))
 
 
@@ -171,15 +171,15 @@ def decl(nm, i, u):
 def rows_kernel():
 
     # R2's uops, named here because `rk_sz` and `rk_half` are rows of their own.
-    uops2 = [UOp.special(UOp.const(8).cast(dtypes.int32), "l0"),
-             UOp.special(UOp.const(2).cast(dtypes.int32), "l1"),
-             UOp(Ops.CAST, (UOp.const(0),), dtypes.half)]
+    uops2 = [UOp.special(UOp.const(8).cast(dtypes.i32), "l0"),
+             UOp.special(UOp.const(2).cast(dtypes.i32), "l1"),
+             UOp(Ops.CAST, (UOp.const(0),), dtypes.f16)]
     r("rk_sz none", "1")
     r("rk_sz mixed", ",".join(str(u.src[0].ssimplify()) for u in
                               sorted([u for u in uops2 if u.op is Ops.SPECIAL and u.arg[0] == "l"],
                                      key=lambda u: u.arg)))
-    r("rk_half mixed", str(any(u.dtype == dtypes.half for u in uops2)))
-    r("rk_half none", str(any(u.dtype == dtypes.half for u in [])))
+    r("rk_half mixed", str(any(u.dtype == dtypes.f16 for u in uops2)))
+    r("rk_half none", str(any(u.dtype == dtypes.f16 for u in [])))
 
     # THE TWO FOLDS, as rows. `;` cannot appear in a WGSL binding declaration, so
     # the row is one line, and these two rows are the only reason the Bend file's
@@ -188,13 +188,13 @@ def rows_kernel():
     # must PREPEND. Getting it backwards emits a shader with its bindings and its
     # body in reverse order, and that typechecks.
     r("rk_bindings", ";".join(decl(n, i, u) for i, (n, (u, _)) in enumerate(
-        [buf(dtypes.float, AddrSpace.GLOBAL, 4, x) for x in ["data0_4", "data1_4", "data2_4"]])))
+        [buf(dtypes.f32, AddrSpace.GLOBAL, 4, x) for x in ["data0_4", "data1_4", "data2_4"]])))
     r("rk_body", ";".join(KERN_ALU))
 
     # R1: the real float32 add. Three GLOBAL f32 PARAMs, no local axis, no half:
     # the prologue, the storage layout and the `[1]` fallback of an empty
     # local_size.
-    b = [buf(dtypes.float, AddrSpace.GLOBAL, 4, n) for n in ["data0_4", "data1_4", "data2_4"]]
+    b = [buf(dtypes.f32, AddrSpace.GLOBAL, 4, n) for n in ["data0_4", "data1_4", "data2_4"]]
     rm("rk alu", esc(R.render_kernel("E_4", KERN_ALU, b, [], prefix=None)))
 
     # R2: every branch at once. A packed GLOBAL uchar for `array<atomic<u32>>`, a
@@ -203,14 +203,14 @@ def rows_kernel():
     # `enable f16;`. The workgroup line is wgsl.py:74's OWN rule spelled from the
     # three functions this file ports, so the row cross-checks `is_packed`,
     # `_packed_size` and `buf_map` as well as `render_kernel`.
-    wbu = work_buf(dtypes.uchar, 16)
+    wbu = work_buf(dtypes.u8, 16)
     kern2 = ["  var val0 = atomicLoad(&data0_16[0]);",
              "  var<workgroup> buf0:array<%s,%d>;" % (R.buf_map(wbu), W._packed_size(wbu)),
              "  data0_16[0] = (val0+1);"]
-    b2 = [buf(dtypes.uchar, AddrSpace.GLOBAL, 16, "data0_16"), buf(dtypes.float, AddrSpace.LOCAL, 1, "t0")]
-    uops2 = [UOp.special(UOp.const(8).cast(dtypes.int32), "l0"),
-             UOp.special(UOp.const(2).cast(dtypes.int32), "l1"),
-             UOp(Ops.CAST, (UOp.const(0),), dtypes.half)]
+    b2 = [buf(dtypes.u8, AddrSpace.GLOBAL, 16, "data0_16"), buf(dtypes.f32, AddrSpace.LOCAL, 1, "t0")]
+    uops2 = [UOp.special(UOp.const(8).cast(dtypes.i32), "l0"),
+             UOp.special(UOp.const(2).cast(dtypes.i32), "l1"),
+             UOp(Ops.CAST, (UOp.const(0),), dtypes.f16)]
     rm("rk mixed", esc(R.render_kernel("K_mixed", kern2, b2, uops2, prefix=None)))
 
     # R3: the two short-circuits -- `"\\n".join([])` and `range(0)`.

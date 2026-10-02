@@ -42,7 +42,7 @@ def shape(t) -> str:
   every other row. `mo_at`'s index was off by one and this row is what caught it, so
   the oracle has to have it too.
   """
-  # `S.Dt.nm` is `float`; Python prints `dtypes.float`, so the `dtypes.` prefix is
+  # `S.Dt.nm` is `float`; Python prints `dtypes.f32`, so the `dtypes.` prefix is
   # stripped here rather than in the `.bend` file -- the `.bend` file prints what
   # the fold says and a row must not be doctored to match.
   return "".join(f"({d})" for d in t.shape) + f" {str(t.dtype).removeprefix('dtypes.')}"

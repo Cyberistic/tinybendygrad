@@ -845,7 +845,7 @@ def sh_6.pat(+fx: F.Folded, +self: U32) -> Bool:
 def sh_6(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_6.pat(fx, self), sp_vb(sh_6.body(fx, self)))
 
-# `c.dtype in (dtypes.uint, dtypes.weakint)` -- dtype.py:141 aliases `uint` to
+# `c.dtype in (dtypes.u32, dtypes.weakint)` -- dtype.py:141 aliases `uint` to
 # `uint32`, so this is two concrete dtypes and not a class test.
 def sp_is_uint_or_weak.go(+m: Maybe<&2, S.Dt>) -> Bool:
   Bool.or(dt_eq.go(m, S.uint32()), dt_eq.go(m, S.weakint()))
@@ -873,9 +873,9 @@ def OP_SHIFTS() -> List<&2, O.Op>:
   [O.OpsSHL{}, O.OpsSHR{}]
 
 # spec.py:71  (UPat((Ops.SHL, Ops.SHR), src=(UPat.var("x"), UPat.var("c")), name="a"),
-#              lambda a,x,c: matches_dtype(c, a.dtype) or c.dtype in (dtypes.uint, dtypes.weakint)
+#              lambda a,x,c: matches_dtype(c, a.dtype) or c.dtype in (dtypes.u32, dtypes.weakint)
 #                           or x.base.is_invalid)
-# `dtypes.uint` is the ALIAS for uint32 (dtype.py:141), so the pair is
+# `dtypes.u32` is the ALIAS for uint32 (dtype.py:141), so the pair is
 # `(uint32, weakint)` and not a "some unsigned width" test.
 def sh_8(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_SHIFTS()), nsrc_is(fx, self, 2)), sp_vb(sh_8.body(fx, self)))
@@ -1000,7 +1000,7 @@ def is_reg_or_local(m: Maybe<&2, S.Addr>) -> Bool:
 def sh_18.pat(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.and(sp_op(fx, self, O.OpsBINARY{}), sp_dt_is(fx, self, S.uint8())), nsrc_is(fx, self, 0))
 
-# spec.py:95  (UPat(Ops.BINARY, dtypes.uint8, src=(), name="x"), lambda x: isinstance(x.arg, bytes))
+# spec.py:95  (UPat(Ops.BINARY, dtypes.u8, src=(), name="x"), lambda x: isinstance(x.arg, bytes))
 def sh_18(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_18.pat(fx, self), sp_vb(arg_blob(sp_arg(fx, self))))
 
@@ -1642,9 +1642,9 @@ def te_9.body(+fx: F.Folded, +self: U32) -> Bool:
 # spec.py:172 (UPat(Ops.REDUCE, src=(UPat(),), allow_any_len=True, name="x"),
 #              lambda x: isinstance(x.arg, tuple) and len(x.arg) == 2 and
 #                x.arg[0] in GroupOp.Reduce and isinstance(x.arg[1], int) and
-#                all(y.dtype in (dtypes.weakint, dtypes.int) for y in x.src[1:]))
+#                all(y.dtype in (dtypes.weakint, dtypes.i32) for y in x.src[1:]))
 # `AReduce` IS that pair and `num_axes: U32` IS the `isinstance(..., int)`, so the
-# `all(y.dtype in (weakint, int))` is the one left -- and `dtypes.int` is the four
+# `all(y.dtype in (weakint, int))` is the one left -- and `dtypes.i32` is the four
 # signed widths PLUS the four unsigned (dtype.py:159), so it is `dtypes.ints`.
 def te_9(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsREDUCE{}), nsrc_ge(fx, self, 1)), sp_vb(te_9.body(fx, self)))
@@ -2006,7 +2006,7 @@ def pr_7.pat(+fx: F.Folded, +self: U32) -> Bool:
 def pr_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_7.pat(fx, self), O.VTrue{})
 
-# spec.py:227 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.int32),), name="s"), lambda s: isinstance(s.arg, str))
+# spec.py:227 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.i32),), name="s"), lambda s: isinstance(s.arg, str))
 # SPECIAL is weakint before index lowering (spec.py:164) and int32 after (here).
 def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSPECIAL{}), sp_src_dt(fx, self, 0, S.int32())), nsrc_is(fx, self, 1)),
@@ -2100,7 +2100,7 @@ def hq_0.pat(+fx: F.Folded, +self: U32) -> Bool:
 # `spec_hcq` -- spec.py:230-235. Two rules, then `+ spec_shared`. The device
 # queues: a GETADDR takes a device and a PROGRAM takes the bound buffers.
 # ===========================================================================
-# spec.py:231 (UPat(Ops.GETADDR, dtypes.uint64, name="x",
+# spec.py:231 (UPat(Ops.GETADDR, dtypes.u64, name="x",
 #                    src=(UPat((BUFFER, ALLOC, PARAM, SHRINK, BITCAST, MSTACK, MSELECT, LINEAR))
 #                         .or_after(),)), lambda x: is_device(x.arg))
 #

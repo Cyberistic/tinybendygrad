@@ -40,8 +40,8 @@ print("THREEFRY emitted:", "Ops.THREEFRY" in allops)
 print()
 print("=== storage_fmt_for_dtype / itemsize ===")
 for nm in ("float","int","uint","bool","half","bfloat16","long","uint64"):
-    d = {"float":dtypes.float,"int":dtypes.int,"uint":dtypes.uint,"bool":dtypes.bool,
-         "half":dtypes.half,"bfloat16":dtypes.bfloat16,"long":dtypes.long,"uint64":dtypes.uint64}[nm]
+    d = {"float":dtypes.f32,"int":dtypes.i32,"uint":dtypes.u32,"bool":dtypes.bool,
+         "half":dtypes.f16,"bfloat16":dtypes.bf16,"long":dtypes.i64,"uint64":dtypes.u64}[nm]
     print(f"  {nm:10s} fmt={d.fmt} itemsize={d.itemsize} storage={storage_fmt_for_dtype(d)}")
 
 print()
