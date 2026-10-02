@@ -10,7 +10,19 @@
 #   --plan                 report the batches (same as rebase-plan.py), vendor nothing
 #   --all                  probe every coupled batch
 #   --shrink <id>          MINIMISE batch <id> by dropping one file at a time
+#   --from-work <path>…    probe a file set overlaid on THE WORKING TREE (see below)
 #   <id> <path> [<path>…]  probe an ad-hoc file set
+#
+# --from-work exists because the PIN BASELINE IS THE WRONG QUESTION once any batch has
+# landed. Every other mode asks "is the pin + these files coherent?", which was the right
+# question while all 230 vendored blobs matched the pin. After B1 (ad117c92) and B2
+# (e68c8eaa) 19 of them do not, so "pin + file set" no longer describes the operation
+# anyone performs. The operation is `git checkout upstream/master -- <file set>` applied
+# to the working tree, and --from-work builds exactly that tree: the working tree's own
+# tinygrad/, with the candidate files overlaid at HEAD. It only reads the working tree
+# and writes into $WORK, so it is as safe as the rest of this script with other agents
+# live -- but it DOES read tinygrad/** as siblings see it, so a file someone is
+# mid-vendor on is probed in whatever state it is in.
 #
 # --shrink is the load-bearing one. rebase-plan.py says "these N files must move together";
 # --shrink re-tests every one-file reduction and reports the smallest set that still works.
@@ -27,14 +39,24 @@
 #   1. import   -- module-level NameError/ImportError
 #   2. compile  -- a real kernel through the full schedule/codegen/opt path
 #   3. shape    -- a second program using the arg-tuple fields directly
+#
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PIN=6c3d401cf324
 HEAD_REF=upstream/master
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/rebase-try.XXXXXX")"
-TREE="$WORK/tree"            # set by try_batch: the pinned tree plus this candidate overlay
+TREE="$WORK/tree"            # set by try_batch: the BASELINE tree plus this candidate overlay
+BASELINE=pin                 # pin | work -- what the candidate files are overlaid ON
 trap 'rm -rf "$WORK"' EXIT
-
+#
+# PART 0 is new and it closes a hole that cost a whole batch. `DEV=NULL` never imports
+# `codegen/opt/search`, so a probe of the file that BROKE THE IMPORT reported the same
+# verdict for the broken file as for a good one -- it never looked at it. `rebase-plan.py`
+# flagged `codegen/opt/search.py` CHANGED and no gate in the tree noticed, for exactly
+# this reason: every oracle touching `codegen/opt/` was dead or unwired. So `exercise`
+# now imports EVERY module named in the candidate set, derived from the file list rather
+# than hard-coded, because the hard-coded ops_* list was itself the bug being fixed.
+#
 # The functional probe, in three parts, because each covers a different kind of failure.
 #
 # PART 1 is the one the first version got WRONG, and getting it wrong silently under-reports
@@ -46,7 +68,7 @@ trap 'rm -rf "$WORK"' EXIT
 # each one is actually in sys.modules -- otherwise a rename or a lazy import would make the
 # probe report a clean tree that it never exercised.
 exercise() {
-  ( cd "$TREE" && PYTHONPATH="$TREE" DEV=NULL python3 - <<'PY' 2>&1
+  ( cd "$TREE" && PYTHONPATH="$TREE" DEV=NULL python3 - "$@" <<'PY' 2>&1
 import importlib, sys
 from tinygrad import Tensor
 (Tensor([64, 64]).realize() + Tensor([64, 64]).realize()).realize().tolist()
@@ -76,6 +98,13 @@ assert len(dtypes.uints) == 4, f"uint ladder has {len(dtypes.uints)} rungs, expe
 assert all(dtypes.is_float(d) for d in dtypes.floats), "floats contains a non-float"
 assert dtypes.int8.bitsize == 8 and dtypes.uint8.bitsize == 8
 assert dtypes.default_float.bitsize == 32, "default float is not 32-bit"
+
+# PART 0 -- import EVERY module the candidate set names, whatever DEV would have pulled in.
+for f in sys.argv[1:]:
+  mod = f[len("tinygrad/"):].removesuffix(".py").removesuffix("/__init__").replace("/", ".")
+  mod = "tinygrad." + mod if mod != "tinygrad.__init__" else "tinygrad"
+  importlib.import_module(mod)
+  assert mod in sys.modules, f"{mod} did not stay imported"
 print("EXERCISE-OK")
 PY
   )
@@ -87,7 +116,15 @@ why() { grep -E '^(Import|Attribute|Name|Key|Type|Assertion|Unbound)?Error' | he
 try_batch() {
   local label="$1"; shift
   rm -rf "$TREE"; mkdir -p "$TREE"
-  git -C "$REPO" archive "$PIN" | tar -x -C "$TREE" || return 2
+  if [ "$BASELINE" = work ]; then
+    # everything but tinygrad/, then the working tree's OWN tinygrad/ over the top, so the
+    # probe answers "what does `git checkout upstream/master -- <files>` produce HERE?"
+    git -C "$REPO" archive "$PIN" | tar -x -C "$TREE" || return 2
+    rm -rf "${TREE:?}/tinygrad"
+    cp -R "$REPO/tinygrad" "$TREE/" || return 2
+  else
+    git -C "$REPO" archive "$PIN" | tar -x -C "$TREE" || return 2
+  fi
   local f
   for f in "$@"; do
     git -C "$REPO" show "$HEAD_REF:$f" > "$TREE/$f" || return 2
@@ -95,7 +132,7 @@ try_batch() {
   local out
   out="$( cd "$TREE" && PYTHONPATH="$TREE" python3 -c "import $probe" 2>&1 )" || {
     printf '  %-34s IMPORT-FAIL  %s\n' "$label" "$(echo "$out" | why)"; return 1; }
-  out="$(exercise)" || {
+  out="$(exercise "$@")" || {
     printf '  %-34s RUN-FAIL     %s\n' "$label" "$(echo "$out" | why)"; return 1; }
   printf '  %-34s OK\n' "$label"
 }
@@ -107,6 +144,28 @@ load_batches() { python3 "$REPO/.agents/slop/rebase-plan.py" --json; }
 
 case "${1:---plan}" in
 --plan) exec python3 "$REPO/.agents/slop/rebase-plan.py" ;;
+
+--from-work)
+  BASELINE=work
+  shift
+  [ $# -gt 0 ] || { echo "--from-work needs at least one file" >&2; exit 2; }
+  probe="tinygrad.$(probe_of "$@")"
+  echo "BASELINE working tree  +  $(short "$@")"
+  try_batch "$(short "$@")" "$@"
+  ;;
+
+--solo-work)
+  # --solo-work is --solo against the working tree. Per-file vendoring is REFUTED, so
+  # this mode exists to REPRODUCE the refutation against the tree we actually have, not
+  # to advocate it: a per-file OK here means "this one file happens to be droppable now",
+  # and the four that fail are the evidence.
+  BASELINE=work
+  shift
+  for f in "$@"; do
+    probe="tinygrad.$(probe_of "$f")"
+    try_batch "$(short "$f")" "$f"
+  done
+  ;;
 
 --all)
   load_batches > "$WORK/plan.json"
@@ -149,6 +208,39 @@ for b in json.load(open('$WORK/plan.json'))['batches']:
   printf 'MINIMAL batch %s -- %d files: %s\n' "$2" "${#keep[@]}" "$(short "${keep[@]}")"
   echo "REQUIRED -- the batch fails without each of these (${#keep[@]} of ${#FILES[@]}):"
   printf '  %s\n' "${keep[@]}"
+  ;;
+
+--shrink-work)
+  # --shrink-work is --shrink against the working tree, on an EXPLICIT file list rather
+  # than a plan batch. It exists because after B1 and B2 a plan batch is partly landed, so
+  # "batch 1" is no longer a set of files to move -- it is a set of files to move plus
+  # eight files already moved. Shrinking the whole 23 asks the wrong question; shrinking
+  # the 15 that still differ asks the right one, and the answer is what may be deferred.
+  BASELINE=work
+  shift
+  [ $# -gt 0 ] || { echo "--shrink-work needs a file list" >&2; exit 2; }
+  FILES=("$@")
+  probe="tinygrad.$(probe_of "${FILES[@]}")"
+  echo "SHRINK-WORK -- ${#FILES[@]} files: $(short "${FILES[@]}")"
+  try_batch "full (${#FILES[@]})" "${FILES[@]}" || exit 1
+  drop=()
+  for f in "${FILES[@]}"; do
+    cand=()
+    for g in "${FILES[@]}"; do [ "$g" = "$f" ] && continue; cand+=("$g"); done
+    for d in ${drop[@]+"${drop[@]}"}; do cand+=("$d"); done
+    if try_batch "drop $(basename "$f")" "${cand[@]}"; then drop+=("$f"); fi
+  done
+  keep=()
+  for f in "${FILES[@]}"; do
+    skip=0
+    for d in ${drop[@]+"${drop[@]}"}; do [ "$d" = "$f" ] && skip=1; done
+    [ $skip -eq 0 ] && keep+=("$f")
+  done
+  printf 'MINIMAL -- %d REQUIRED of %d\n' "${#keep[@]}" "${#FILES[@]}"
+  echo "REQUIRED (the tree fails without each of these):"
+  printf '  %s\n' "${keep[@]}"
+  echo "FREE (deferring these to a later step keeps the tree working):"
+  printf '  %s\n' "${drop[@]}"
   ;;
 
 --solo)

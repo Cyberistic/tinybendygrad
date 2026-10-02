@@ -75,6 +75,102 @@ def pkg_of(path):
   return "tinygrad." + s.replace("/", ".").replace(".__init__", "")
 
 
+# `tinygrad/<...>.py` as it is SPELLED inside a header. A `.bend` header writes the
+# source path verbatim (`# kernel.bend -- tinygrad/codegen/__init__.py`) and a
+# multi-source port writes several, one per file, which is why `codegen/rewriter.bend`
+# is the port of THREE upstream files and why a one-source map cannot describe it.
+_SRC_RE = re.compile(r"tinygrad/[A-Za-z0-9_./]*\.py")
+
+# ...AND THE BARE FORM, because a multi-source header WRAPS and drops the prefix on
+# its continuation lines. `codegen/rewriter.bend`'s first three lines are
+#
+#   # rewriter.bend -- tinygrad/codegen/simplify.py + codegen/late/coalesce.py +
+#   # codegen/gpudims.py: the REWRITE TABLES the lowerer runs, in the compiled form
+#
+# so `gpudims.py` and `coalesce.py` are spelled WITHOUT `tinygrad/` and a regex that
+# demands the prefix misses both -- which is how the FIRST version of this map
+# answered `None` for the very file this whole fix is about.
+_BARE_RE = re.compile(r"(?<![\w/])((?:[a-z_0-9]+/)*[a-z_0-9]+\.py)\b")
+
+
+def header_ports():
+  """{tinygrad path: [port .bend paths]} read out of the ports' OWN headers.
+
+  A port's name is not derivable from its source's name: `codegen/__init__.py` is
+  ported by `codegen/kernel.bend`, `codegen/gpudims.py` by
+  `codegen/rewriter.bend`, and `codegen/decomp/transcendental.py` by
+  `codegen/transcendental.bend`. Inferring it by string surgery under-reported
+  B1 by two ports, and since `rebase-gate.py --batch 1` builds its port list from
+  this map, two ports in a live batch were gated by NOTHING while compiling and
+  running normally -- a silent pass, which is worse than a red file.
+
+  So the map is READ, not guessed. THREE FILTERS, and each one was found by
+  running this and looking at what it returned:
+
+  * Only the FIRST FEW LINES, and only lines whose comment names THE FILE ITSELF.
+    Scanning 40 lines collected every incidental path mention in a comment about
+    some other file's drift: `uop/ops.py` came back with five ports, because
+    `fold.bend`, `fold2_work.bend`, `fold_mm_work.bend` and `LAWS/spec.bend` all
+    quote it in their headers while porting something else.
+  * A leading `_` or a `_work` suffix marks a MUTATION or SCRATCH copy --
+    `_tc_coefonly.bend`, `_tcmut_transcendental_M04.bend`, `fold2_work.bend` --
+    and a scratch copy carries its original's header verbatim, so including them
+    reported `codegen/decomp/transcendental.py` with TEN ports of which nine were
+    somebody's throwaway. This is the `hdr-audit` shape: a name match is not a
+    claim, and the copy is not a claim either.
+  * The name in the comment must be THE FILE'S OWN NAME, in ANY SPELLING. This filter was
+    `body.startswith(f"{stem}.bend")`, which matches only the BARE-STEM spelling, and it
+    silently dropped 57 of the 111 `.bend` files in the tree -- measured, by re-running
+    this function with the test relaxed. A header that spells the port's PATH
+    (`# tinybendygrad/renderer/cstyle.bend -- tinygrad/renderer/cstyle.py`) or its
+    directory-relative path (`# codegen/late/gater.bend -- port of tinygrad/codegen/
+    late/gater.py`) failed the test, and with it the `tinygrad/...py` citation on the very
+    next token. Both spellings are the file naming ITSELF, which is exactly what this
+    filter is supposed to detect, so both are accepted: the first token of the header
+    comment must be a path ENDING in `<stem>.bend`. The "a comment about a DIFFERENT
+    file" property the filter exists for is preserved, because that is still a
+    name-equality test on the port's own name -- it is just not a PREFIX test on one
+    spelling of it.
+
+    Cost of getting this wrong, measured on the current window: 7 port-relevant changed
+    files got a wrong or missing port answer, and `tinygrad/runtime/ops_null.py` --
+    a file in the live batch -- came back `None` while `tinybendygrad/runtime/
+    ops_cpu_null.bend` was sitting right there porting it. A gate that skips a port
+    silently reads exactly like a gate that passed.
+
+  Everything a filter rejects is a port that EXISTED and is deliberately not
+  counted, so the filters are stated rather than applied quietly."""
+  out = defaultdict(list)
+  for b in sorted((REPO / "tinybendygrad").rglob("*.bend")):
+    stem = b.stem
+    if stem.startswith("_") or stem.endswith("_work"):
+      continue                      # a mutation or scratch copy, not a port
+    try:
+      head = b.read_text(errors="replace").split("\n")[:6]
+    except OSError:
+      continue
+    seen = False
+    block = False
+    for line in head:
+      st = line.lstrip()
+      if not st.startswith("#"):
+        break                       # provenance is the header; the code follows
+      body = st.lstrip("# ").strip()
+      if not block:
+        tok = body.split()[0] if body.split() else ""
+        tok = tok.removeprefix("tinybendygrad/").removeprefix("./")
+        if not (tok == f"{stem}.bend" or tok.endswith(f"/{stem}.bend")):
+          continue                  # a comment about a DIFFERENT file
+        block = seen = True
+      for src in _SRC_RE.findall(line):
+        out[src].append(str(b.relative_to(REPO)))
+      for bare in _BARE_RE.findall(line):
+        out["tinygrad/" + bare].append(str(b.relative_to(REPO)))
+    if not seen:
+      continue
+  return {k: sorted(set(v)) for k, v in out.items()}
+
+
 def path_of(module):
   s = module[len("tinygrad."):].replace(".", "/")
   return f"tinygrad/{s}.py"
@@ -508,10 +604,40 @@ def main():
     })
 
   # ---- per-file independence verdict, and a port-relevant flag ---------------
+  #
+  # A PORT'S NAME IS NOT DERIVABLE FROM ITS SOURCE'S NAME. This used to be
+  # `tinybendygrad/<same path>.py -> .bend`, i.e. pure string surgery, and it was
+  # WRONG for every port that flattens or merges:
+  #
+  #   tinygrad/codegen/__init__.py   -> tinybendygrad/codegen/kernel.bend
+  #   tinygrad/codegen/gpudims.py    -> tinybendygrad/codegen/rewriter.bend
+  #   tinygrad/codegen/decomp/transcendental.py -> tinybendygrad/codegen/transcendental.bend
+  #
+  # MEASURED, and the cost was not "two files look unported": it was that
+  # `rebase-gate.py --batch 1` builds its port list from this map, so two ports in
+  # B1 were gated by NOTHING while still compiling and still running. A gate that
+  # silently skips its ports reads exactly like a gate that passed.
+  #
+  # THE FIX IS TO ASK THE PORT, not to guess. Every `.bend` states its upstream
+  # source in its own first lines -- `# kernel.bend -- tinygrad/codegen/__init__.py`
+  # -- and 97 of them do, so the header is a machine-readable map that was already
+  # in the tree and nobody read. Read the first 40 lines of each `.bend`, find
+  # `tinygrad/...py` citations, and index THEM.
+  #
+  # The guess is kept as a FALLBACK and is reported as such, because a fallback that
+  # is silent is the original bug: `port[f]` carries `how` so the JSON says whether
+  # the answer came from a header or from the guess.
   port = {}
   for f in files:
-    b = REPO / "tinybendygrad" / f[len("tinygrad/"):].replace(".py", ".bend")
-    port[f] = str(b.relative_to(REPO)) if b.exists() else None
+    rel = f[len("tinygrad/"):]
+    guess = REPO / "tinybendygrad" / rel.replace(".py", ".bend")
+    by_header = header_ports().get(f, [])
+    if by_header:
+      port[f] = by_header
+    elif guess.exists():
+      port[f] = [str(guess.relative_to(REPO))]
+    else:
+      port[f] = None
 
   res = {"pin": pin, "head": head, "changed": changed, "batches": batches,
          "independent": [f for f in changed if not und[f]],

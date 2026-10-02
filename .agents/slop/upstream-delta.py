@@ -69,6 +69,38 @@ def find_pin(depth=400):
   return best[0], best[1], len(ours), best[2]
 
 
+def landed_at(head, ours, depth=120):
+  """{path: sha} for every vendored blob that EQUALS SOME post-pin upstream commit.
+
+  This exists because "LOCAL EDITS not from upstream" conflates two opposite things, and
+  the conflation started costing real work once the first batch landed:
+
+    * a file somebody EDITED BY HAND -- the thing the invariant exists to catch;
+    * a file that was correctly RE-VENDORED to a known upstream state -- the thing the
+      batch was FOR, and it moves AWAY from the pin, so it shows up in the same count.
+
+  Before any batch landed the two coincided (everything was at the pin, so a non-match was
+  a hand edit). After `ad117c92` and `e68c8eaa` they diverged, the count rose to 20 with
+  one real hand edit among them, and `UPSTREAM-PIN.md` was updated to describe 20 files
+  that were 19 correct re-vendors. Landing a batch then took the count from 20 to 26 and
+  the pin match from 210/230 to 204/230 -- which reads exactly like the regression the
+  record warns about, and is the opposite.
+
+  So the number that means anything is the one that counts blobs matching NO upstream
+  commit. That is reported separately, and the pin-match count is labelled as what it is:
+  a measure of distance from the pin, which moves DOWN every time a batch is landed
+  correctly and is not a health signal on its own.
+  """
+  hist = sh("git", "log", "--format=%H", UPSTREAM).splitlines()[:depth]
+  trees = {c: tree_blobs(c) for c in hist}
+  out = {}
+  for p, s in ours.items():
+    if s in {t.get(p) for t in trees.values()}:
+      continue
+    out[p] = s
+  return out
+
+
 def port_for(py):
   b = REPO / "tinybendygrad" / (py[len("tinygrad/"):]).replace(".py", ".bend")
   return b if b.exists() else None
@@ -85,9 +117,13 @@ def main():
   changed = sh("git", "diff", "--name-only", pin, head).splitlines()
   tg = [f for f in changed if f.startswith("tinygrad/")]
 
-  # which vendored files are NOT at the pin -- a local edit, or a stale vendored file
+  # which vendored files are NOT at the pin -- and WHICH KIND of not-at-the-pin, because
+  # "not at the pin" is both a hand edit (the alarm) and a landed re-vendor (the goal)
   ours = our_blobs()
-  local = [p for p, s in ours.items() if pin_tree and pin_tree.get(p) != s]
+  notpin = [p for p, s in ours.items() if pin_tree and pin_tree.get(p) != s]
+  unmatched = landed_at(head, ours)          # matches NO upstream commit at all
+  local = sorted(unmatched)                  # the hand edits -- the real invariant
+  vendored = sorted(p for p in notpin if p not in unmatched)
 
   relevant = []
   for f in tg:
@@ -100,7 +136,8 @@ def main():
   added = [f for f in sh("git", "diff", "--diff-filter=A", "--name-only", pin, head, "--", "tinygrad/*.py").splitlines()]
 
   res = {"pin": pin, "pin_date": pin_date, "pin_match": f"{matched}/{total}",
-         "local_diffs": local, "upstream_head": head, "head_date": head_date,
+         "local_diffs": local, "not_at_pin": notpin, "re_vendored": vendored,
+         "upstream_head": head, "head_date": head_date,
          "commits_behind": behind, "files_changed": len(changed),
          "tinygrad_files": len(tg), "port_relevant": len(relevant),
          "new_upstream_py": added, "detail": relevant}
@@ -112,7 +149,12 @@ def main():
   print(f"  UPSTREAM {head[:12]}  {head_date}")
   print(f"  BEHIND   {behind} commits, {len(changed)} files changed, {len(tg)} under tinygrad/")
   if local:
-    print(f"  LOCAL EDITS not from upstream ({len(local)}): {', '.join(local[:4])}")
+    print(f"  ⚠ HAND EDITS -- match NO upstream commit ({len(local)}): {', '.join(local)}")
+    print(f"      This is the invariant the pin exists to protect: a blob that is at no "
+          f"upstream commit was edited by hand.")
+  if vendored:
+    print(f"  RE-VENDORED past the pin ({len(vendored)}): a coupled batch landed; these "
+          f"EQUAL a post-pin upstream commit, which is the goal, not a regression.")
   print(f"  PORT-RELEVANT CHANGED: {len(relevant)} of our ports have moved under us")
   if added:
     print(f"  NEW upstream .py files ({len(added)}), each needs a scope decision:")
