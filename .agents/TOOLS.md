@@ -320,3 +320,149 @@ Five things worth knowing before writing the next one:
   `G.ix` but not in the fold's table, so every property of it reads as the arena's
   bottom (`mp_op` answers `OpsNOOP`, value 4). Symptom: `lay` rises, the new rows read
   0, and `ren_axis_in_dev` disagrees with the node's own constructor.
+
+## `runtime/support/memory.py` — the oracle/differ/mutator trio (2026-10-02)
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/memory_oracle.py` | **Every** `py=` row is produced by CALLING CPython: `MMIOInterface(...)`, `BumpAllocator(...).alloc(...)`, `TLSFAllocator(...).lv1/lv2`, `struct.calcsize`, `dataclasses.fields`, `inspect.signature`, `inspect.getsource`, `MemoryManager.__new__(...)._frag_size(...)`, and the two page-table assert loops run as Python against a recorder. Nothing typed. |
+| `.agents/slop/memory_oracle.txt` | the snapshot, 889 rows. Regenerate, never edit. |
+| `.agents/slop/memory-diff.py` | the gate. Diffs **whole `name=value` lines** and reports rows only in one side **in BOTH directions**. Prints `rows: bend=889 oracle=889 compared=889 disagreements=0` and exits 0. |
+| `.agents/slop/memory-mutate.py` | 70 mutations (M01–M70), rewrites a `.mut` copy, reports rows moved **by name**, and prints its own blind-spot list. Currently **6 moved nothing**. |
+| `.agents/slop/memory-report.md` | the report: citing-file audit, stage table, gate table traced to CPython calls, mutation table with reasons, the FFI seam split by Python line. |
+
+No new dependency. The only tool is `bin/bend` plus CPython 3 via `.venv/bin/python`.
+
+**THE THREE THINGS THIS TRIO TAUGHT, all now in `bend2-constraints.md`:**
+
+1. **The ONLY-IN check in both directions is the whole gate.** Reconciling this unit started at
+   570 compared / **0 value disagreements** / **547 rows on one side only** — the lanes agreed
+   perfectly about the rows they shared and the file had drifted off the oracle entirely. A
+   differ that skips the unmatched rows reports `disagreements=0` and measures nothing.
+2. **A mutation harness must diff whole lines, not row names**, and must print its own blind
+   list. Both directions of that have now bitten: comparing names reports 0 for every mutation,
+   and a harness that only prints what moved cannot tell a closed mutation from an unfalsifiable
+   one.
+3. **A row that cannot be computed in the lane must be DELETED from both sides, not kept as a
+   literal.** `va_alloc_off_*` was a literal on the Bend side because the TLSF free-list walk is
+   not ported; a literal that agrees is a change-detector.
+
+## `runtime/support/usb.py` — the assembler + the eight checks (2026-10-02)
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/usb-gen.py` | writes `.agents/slop/usb-arith-rows.bend.txt`: 17 flat row sections, 357 rows. A row that is a `#` comment is emitted verbatim, which is how the two "do not re-spell this row name" notes survive regeneration. |
+| `.agents/slop/usb-gen-strings.py` | patches `t_strings` in `.agents/slop/usb-sblock.bend.txt`. Idempotent, and the cut starts at the banner and not at the `def` — see the rule in `bend2-constraints.md`. |
+| `.agents/slop/usb-gen-tables.py` | prints the 21 `enum_libusb_*` tables, both folds, the 22 field lists and the 22 `ctypes.sizeof`s, read out of the LIVE `tinygrad.runtime.autogen.libusb`. |
+| `.agents/slop/usb-build.py` | the assembler. Reads the pieces in DEPENDENCY order and writes `tinybendygrad/runtime/support/usb.bend`, 2596 lines. The mutation table and the seam list are read back from their generators, so both are MEASURED rather than transcribed. |
+| `.agents/slop/usb-diff.py` | the gate. Diffs **whole `name=value` lines** against four CPython oracles and reports one-sided rows **in both directions**. `rows bend=939 oracle=939 disagree=0 oracle_only=0 bend_only=0`. |
+| `.agents/slop/usb-oracle{,-arith,-trace,-strings,-run}.py` | every `py=` expectation is produced by CALLING CPython: the live `autogen.libusb`, `struct.calcsize`, `struct.pack`, and `usb.py`'s own AST (arguments-first, `n.func` visited last). |
+| `.agents/slop/usb-handmap.py` | 74 port constant -> `(line, col)` in `usb.py`, so a wrong value is not expressible and a wrong POSITION is loud. `--list` prints every evaluable node on a line. |
+| `.agents/slop/usb-constsweep.py` | evaluates every `def NAME() -> U32` against the hand map, `ctypes.sizeof`, `struct.calcsize` or the port's own derivation. `swept 124: 123 CONFIRMED, 0 WRONG, 1 unverified` (the PORT-INTERNAL `NOT_FOUND`). |
+| `.agents/slop/usb-symmap.py` | the `K_*` -> `SYMS()` bijection and that every symbol is a real libusb export. `kinds=24 syms=24 injective=True all_symbols_real=True`. |
+| `.agents/slop/usb-dead.py` | a def nothing calls is invisible to every other check. `339 defs, 0 dead`. |
+| `.agents/slop/usb-mutate.py --md` | 45 mutations, one edit each, whole-line diff, and it WRITES the table the port quotes. `44 move rows, 1 theorem`. |
+| `.agents/slop/usb-seam.py` | the 111 unported lines of `usb.py` with a reason each, printing the source text out of `usb.py` so the list cannot drift. |
+
+No new dependency: `bin/bend` plus CPython 3. The three generators exist because the
+port is GENERATED — in-place edits destroyed the file twice, and the last stretch of
+this unit went into making the pipeline reproducible rather than into the file.
+
+**REPRODUCIBLE END TO END** (run the pipeline twice and diff — that check is what
+caught the non-idempotent patcher):
+
+    python3 .agents/slop/usb-gen.py && python3 .agents/slop/usb-gen-strings.py && \
+    python3 .agents/slop/usb-build.py && ./bin/bend tinybendygrad/runtime/support/usb.bend && \
+    python3 .agents/slop/usb-diff.py && python3 .agents/slop/usb-constsweep.py && \
+    python3 .agents/slop/usb-symmap.py && python3 .agents/slop/usb-dead.py && \
+    python3 .agents/slop/usb-mutate.py --md .agents/slop/usb-mutations.md
+
+`--check-only` exits 1 even when it is fine. **Read the FIRST LINE**: `ALL PROOFS CHECK`.
+
+---
+
+## Env-flag measurement (2026-10-02, owner: the env-flag audit unit)
+
+No new dependency: `bin/bend` plus CPython 3 via `uv run`. The point of these four
+is that a flag bug is INVISIBLE to a default-environment gate, so the oracles have
+to *set the environment* and the differ has to read CPython's answer rather than
+mine. `.agents/slop/env-flag-divergence.md` is the findings.
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/env-coercion-table.py` | the `getenv` coercion table, MEASURED. PART 1 replaces `os.getenv` with a spy before importing `tinygrad.helpers`, so the 64 (key, default, type) triples are the interpreter's own. PART 2 calls `H.getenv` once per (default type, probe). PART 3 re-imports in a fresh process per probe so PART 2 is not an artefact. PART 6 is the three `bool`-default flags. PART 7 walks `NO_COLOR` end to end through `helpers.colored`. Writes `env-coercion-table.txt`. |
+| `.agents/slop/nocolor-oracle.py` | the `py=` half of the `NO_COLOR` gate. **One fresh process per probe**, because `getenv` is `@functools.cache`'d and one process is one reading. A line that says `REFUSED` is `int()` raising, i.e. tinygrad refusing to import. |
+| `.agents/slop/nocolor-probe.bend` | the Bend half: `no_color_of` over the same 31 probes in the same order, one answer per line. `ALL PROOFS CHECK`. |
+| `.agents/slop/nocolor-diff.py` | diffs WHOLE LINES. `REFUSED` requires `False` (rule X: a refusal is not a value, so the port takes the default reading); one line is an allowlisted NAMED BOUNDARY with its reason. `exact 18  refusal-answered-False 13  named-boundary 1  DISAGREE 0  of 32`. |
+| `.agents/slop/flag-def-scan.py` | every `def <FLAG>() -> U32: <default>` in the tree, i.e. the mechanical signature of a substituted flag. 4 hits, 2 real. |
+| `.agents/slop/flag-consume.py` | every Python READ of each flag, with the Bend lines that name it. This is how a wall note is told from a silent absence. |
+| `.agents/slop/flag-literal-scan.py` | every literal equal to a distinctive (non-0, non-1) flag default inside the Bend port of each consuming file. **396 candidates, 3 real** — it can only nominate; see the false-positive list in the findings. |
+
+**`--check-only` exits 1 even when the file is fine. Read the FIRST LINE.** The three
+`SOME PROOFS FAIL` files that are NOT mine: `dtype.bend` (14 unfilled laws),
+`sz.bend` (7 foreign defs), `test/dtype_oracle.bend` (imports `dtype.bend`).
+
+---
+
+## Ungated-drift closure, `render.bend` + `rewriter.bend` (2026-10-03)
+
+No new dependency: `bin/bend` + CPython 3. Everything lives in `.agents/slop/xd1/`.
+**Nothing is committed.**
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/xd1/wt-sync.sh` | **A COMPILER WORKAROUND, not a design.** A live agent is mid-edit on `tinybendygrad/helpers.bend` and it does not compile (eight `nc_*` defs read an un-`+`-pinned binder twice), which fails EVERY file in the tree with the same error. This mirrors `tinybendygrad/` into `.agents/slop/xd1/wt/` and restores `helpers.bend` from HEAD — the substrate the baseline was measured against. The mirror is a whole tree, not one file: relative imports resolve inside it, and a single-file scratch copy produced 22 phantom blind spots in an earlier unit. **Delete this script and `wt/` the moment that agent lands.** |
+| `.agents/slop/xd1/verify.py` | the check `agent-core.md` asks for and that NOTHING in this repo had: a port and its own embedded `py=` oracle can AGREE AND BOTH BE WRONG (`nv_query_litter` was wrong in the port AND in the oracle, and the differ reported zero). This reads the lane, extracts each row's answer and its embedded `py=`, reads the SAME fixture out of a CPython oracle in a SEPARATE PROCESS against a SEPARATE TREE, and reports where they differ. Three shapes had to be got right, each after a failure recorded in the notes: (1) **the lane's row NAMES are the oracle's vocabulary** — a rendered pyrender tree puts `c1 = UOp.range(...)` on UNINDENTED lines inside a value, and any "does this line start a row" heuristic that did not know the names clobbers the real value; (2) **the `py=` regexes use SEPARATE capture groups and consume nothing** — cutting at the marker ate the value's closing `]` and reported 41 of 78 rows disagreeing by one character; (3) **the oracle dying is NOT a pass** — it raises, because `0 rows` is the broken shape. |
+| `.agents/slop/xd1/rowdiff.py` | whole-`name=value`-LINE diff between a clean lane and a mutated one, rows reported BY NAME. **Needs bracket-depth tracking**: a rendered pyrender value contains `[...]` on continuation lines, so counting lines starting a record mis-splits it. |
+| `.agents/slop/xd1/render-gate-oracle.py` / `rw-gate-oracle.py` | the CPython halves, run against `.agents/slop/xd1/head` (`git archive upstream/master`) because the working `tinygrad/` is a measured broken hybrid (`ops.py` at HEAD, `render.py` at the pin) whose `pyrender` answers NEITHER end. Every `py=` is a CALL into CPython, never a transcribed string — and no row's expected value was ever edited to make a change pass. Where the two ends read differently, the oracle builds the node the port's reading NAMES (e.g. `ARng` builds `UOp.range(4, 0, GLOBAL)`, not `UOp.range(4, (0,), GLOBAL)` — two nodes, one ucache key). |
+| `.agents/slop/xd1/mkrows.py` | turns a CPython run into gate rows. **Escapes quotes before newlines, never backslashes** — a backslash escape corrupts the value it is meant to carry. |
+| `.agents/slop/xd1/mutate.py` / `rw-mutate.py` | the mutation tables: 13 and 10 one-edit reverts of this unit's own fixes, each compiled, run, and diffed against the clean lane by whole lines. **Every mutation is a revert of one of the fixes, so the set a mutation moves IS the set that fix was load-bearing for.** A `0` is printed as a REQUEST for a fixture or a theorem, never as a coverage claim, and the two sorts are kept distinguishable from a whitespace control. |
+| `.agents/slop/xd1/stem-bug.py` | the proof for the `rebase-plan.py` fix: old map **34 ported / 15 NONE**, new map **38 ported / 11 NONE, 0 lost**. 4 files the planner had never seen, 3 whose status changed. |
+| `.agents/slop/xd1/rewrite-main.py` | moves a ported rule's block without touching its neighbours, used when a new rule has to land above `main()` because it is not entry-order-linear. |
+
+Current state: `render.bend` **66 -> 80 rows** (14 added, 4 re-measured, 0 removed),
+**77 agree / 3 disagree / 0 no-oracle-row of 80** — the 3 are `ops.bend` substrate
+(`CustomFunction` added, `CallInfo.dtype` dropped). `rewriter.bend` **32 -> 54 rows**
+(22 added, 0 re-measured), **54 agree / 0 disagree / 0 no-oracle-row of 54**.
+
+Counting rows through `verify.py`'s parser rather than `grep -c`: a rendered pyrender
+value puts `c2 = UOp.range(...)` and `ast = UOp(Ops.BUFFER, ...)` on UNINDENTED lines
+INSIDE a value, so a line-count over-reports by 5 and a name-split over-reports by
+more. `reassemble`'s bracket-depth tracking plus the name-vocabulary filter is the
+only count that matches what a reader sees.
+
+**`--check-only` exits 1 even when the file is fine. Read the FIRST LINE.**
+
+---
+
+## The rebase-gate wiring unit (2026-10-03) — instruments, no new dependency
+
+Everything below is `bin/bend` + CPython. **Nothing is committed.**
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/rebase-survey.py` | **WIRE AN ORACLE BY ITS OUTPUT, NEVER BY ITS FILENAME.** Runs every candidate under `.agents/slop/`, `xd1/`, `notes/`, `oracle/` and `oracles/`, and reports the row-NAME intersection with each port: `WIRED` / `NO-SHARED` / `DEAD-LANE` / `DISAGREES`. `hcq2-oracle.py` looks like it belongs to `hcq2.bend` and it does; `qc_oracle.py` runs, exits 0, emits 364 rows and shares **zero** names with `ops_qcom.bend`'s 750. Each candidate runs ONCE (an oracle's row names do not depend on the port it is passed) and the measurement is a set intersection; running 104 oracles per port is a 50-minute job that had not finished when it was abandoned. |
+| `.agents/slop/rebase-oracle-spec.py` | NEW oracle for `uop/spec.bend`, 11 of 21 rows, **RED on 2**: `te_len` 56 vs 55 and `fu_len` 71 vs 70, which is the "TWENTY-THIRD TENSOR RULE" the port's own header calls WRONG. `PatternMatcher` has no `len()` and every CPython spec table is a `PatternMatcher([...]) + spec_shared` CONCATENATION — `spec_full` names `spec_shared` three times, so `len(spec_full.patterns)` (136) cannot be the row a linear `full_table()` (70) answers. `own(pm, base) = len(pm) - len(base)` is the subtraction that survives it. The 10 rows it does NOT cover are 24-node fixture-arena verdicts, and re-typing the PORT's fixture into Python is the move that produced `nv/ip`'s hand-TABULATED oracle agreeing with a swapped `Bool.pick` on all five rows. |
+| `.agents/slop/rebase-oracle-ops.py` | `ops-oracle.py` plus the filter `ops-gate.sh` already applies, with the bend-only prefix list **DERIVED from the oracle's own `#bend_only_` lines**. Handing `ops-oracle.py` to the gate raw gives 5 `rngarg_*` disagreements — the `ARange` FIELD ORDER, which eleven committed files read positionally — and typing the filter list here would make the two filters drift. Reports three states itself: dead lane, empty output, agreement. |
+| `.agents/slop/rebase-oracle-search.py` | NEW oracle for `codegen/opt/search.bend`, 12 of 18 rows, **RED on 5**, and it exists because `tinygrad/codegen/opt/search.py` **in the vendored tree does not import**: line 15 reads `AxisType.UNROLL`, which upstream deleted. Measured against `.agents/slop/opstree`: `actions` is 209 where the port counts 269 and has 18 amt-0 entries where the port counts 28. `TG_TREE` picks the tree exactly as `ops-gate.sh` does, and the vendored tree's import failure is printed as the ROW `#repro_vendored_import` — because a fact that can only be read in a comment survives exactly as long as the comment. `acts_n_padto` is the length of `actions` imported **with `BEAM_PADTO=1`**, because the PADTO group is added by a module-scope `if getenv(...)` and is not in this process's list. |
+| `.agents/slop/rebase-break.py` | PROVE AN ORACLE IS CAPABLE OF BEING RED, by perturbing the PORT and reverting it. The revert is **asserted, not intended**: SHA-256 before, SHA-256 after, and a non-zero exit with the backup left in place if they differ. Fails when the perturbation string is not unique (it must occur exactly once or the proof is about nothing) and when it moves no row. |
+| `.agents/slop/rebase-shadow.py` | The same proof for an oracle whose INPUT IS THE TREE. `copytree(symlinks=True)` — 289 links, no bytes, two seconds — then one link is replaced by a real perturbed copy, so nothing upstream can be reached and `codegen/opt/*` (a live agent's file) is never touched. Asks the right question: not "did it go red" but **"did the row that moved belong to the thing the oracle claims to read"**. |
+| `.agents/slop/rebase-gate-selftest.py` | The six-state TEMPLATE every oracle must pass: dead lane, empty output, no shared row name, a shared name that differs, agreement, malformed baseline — each driven through the same `gate_port()` main() calls, with each wired oracle's OWN row names as the fixture. Synthetic names would pass a broken oracle and fail a working one. |
+
+Three bugs found in the instruments themselves this session, all recorded at the
+end of `.agents/slop/notes/bend2-constraints.md` as `AQ1`-`AQ7`: an unkeyed cache in
+`rebase-survey.py` that replayed a FAILED run for twenty minutes (the exact
+hazard the gate's GUARD 3 exists to prevent, reproduced in the tool that documents
+it); `ports_of()` raising `TypeError: cannot use 'list' as a dict key` once
+`rebase-plan.py` started mapping one upstream file to a LIST of ports; and
+`run_port()` running oracles under `sys.executable`, so an oracle that imports
+fine under `.venv`'s 3.12 can be reported dead under `python3`'s 3.14.
+
+**`--check-only` exits 1 even on a clean file. Read the FIRST LINE.** And a `.bend`
+that does not compile prints `SOME PROOFS FAIL` and **exits 0**, so a zero-row lane
+looks exactly like an oracle that emitted nothing — which is what GUARD 2 is for.
+| `.agents/slop/ga-oracle.py` -> `ga-oracle.txt` | the ORACLE for `renderer/amd/generate.bend`: **892 rows, every one produced by CALLING CPython**, and the file is checked in so the gate does not need Python to run. It imports `tinygrad/renderer/amd/generate.py` and calls `_strip_enc`/`_norm_field`/`_map_flat`/`parse_xml`/`extract_pcode` and the five emitters, whose emitted FILES are read back and emitted one row per LINE; `fetch` is satisfied from tinygrad's download cache so no network is used, and the 34 `parse_xml` rows are over the REAL pinned `amdgpu_isa_rdna3_5.xml`. **The per-LINE rows are joined per module by `ga_gate.py` into eight whole-file gate rows**, because a count row is identical for a dropped class, a dropped enum member, a swapped `default=NULL` and a reordered field. Two harness bugs here were real bugs elsewhere: `tag_join` re-reads the oracle FILE rather than a name-keyed dict, because blank lines in an emitted file share one row name (`common | `) and three separators were lost, producing a WRONG expectation that disagreed with the correct port. |
+| `.agents/slop/ga_fix.py`, `ga_splice.py`, `ga_topo.py`, `ga_dedup.py`, `ga_plus.py` | the fixture/gate GENERATOR and the three repair passes. `ga_splice.py` removes the ten generated defs (`g`, `gl`, `main`, six `fx_*`) WHEREVER they are and appends them at the end -- they are **NOT contiguous**, because `ga_topo.py` hoists the callees above `main`, so "cut from `def g` to end of file" once deleted 618 lines of port. `ga_topo.py` is a callee-first reorder that also hoists every `type`/`import` block (without which the file keeps whichever types happened to sit above the first def and silently loses the other fourteen). `ga_plus.py` drives `bend --check-only` and adds the `+` for the ONE error class this file keeps hitting (`x (consumed more than once)`), stopping loudly on anything else so a real type error is never papered over. |
+| `.agents/slop/ga_gate.py` | diffs a `bend` run against the oracle by diffing whole `name=[value]` ROWS, never row NAMES -- a name-comparing harness reported 0 moved rows for all 30 mutations of the autogen unit and all 68 of the ops_rdma one. The regex is DOTALL and lazy because six rows carry a whole generated Python file in one value. It also **refuses to score a row whose name is not an oracle row name**, so a hand-added row cannot pass unnoticed. |
+| `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a documented deliberate no-op (`NULL` is in BOTH `_ALL_DSL` and `_DSL_REGS` upstream, so the union cannot see either copy dropped). `--one M9` runs a subset. **It retries `the machine stack overflowed` eight times**, because the PRISTINE gate-green file died with it on 2 of 12 back-to-back runs under load and on 0 of 8 when idle; a single-shot harness reports a spurious failure about one run in six. The mutant runs IN THE ORIGINAL'S DIRECTORY (a `$TMPDIR` copy cannot resolve `import Base`), and each anchor is asserted to occur exactly once so a stale edit target is an error rather than a silent no-op. |
+| `.agents/slop/ga_probe.sh` | runs ONE gate row with every other removed, which is the only way to bisect a fold: `do IO<Unit>:` evaluates its whole body, so a hang or an overflow anywhere hides behind any earlier row. |

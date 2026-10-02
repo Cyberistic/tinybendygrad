@@ -1,0 +1,444 @@
+# tinybendygrad/renderer/amd/generate.bend -- tinygrad/renderer/amd/generate.py
+#
+# ===========================================================================
+# THE GENERATOR.  541 Python lines that fetch AMD's machine-readable ISA XML
+# bundle and three PDF manuals, walk them, and EMIT FOUR Python modules per
+# architecture: `runtime/autogen/amd/{common,arch/{enum,ins,operands,str_pcode}}.py`.
+#
+# WHAT THIS FILE IS.  The DECISIONS, not the emitted strings -- the same ruling
+# `runtime/support/autogen.bend` was ported under, and the same cost.  The four
+# emitted modules are 30,000+ lines of Python that a Bend runtime could not
+# execute, so porting them would be 30,000 lines of data in a language that
+# cannot run it.  What has value is the 346 lines that DECIDE what gets emitted.
+#
+# THE MEASUREMENT, by `.agents/slop/ga-meas2.py` -> `ga-meas2.txt`, over all
+# 541 lines, regions attributed to the enclosing TOP-LEVEL def (a nearest-`def`
+# scan attributes 78 lines to the nested `_pv_val` and 103 to the nested
+# `fmt_allowed`, which reads as though those two closures are the biggest
+# functions in the file; they are not, `write_ins` is):
+#
+#   region                  tot  logic  emis  ffi
+#   module(banner+config)     47     25     0     0
+#   _strip_enc                 8      5     0     0
+#   _norm_field                5      3     0     0
+#   _map_flat                 15      8     1     0
+#   parse_xml                 88     45     0    25
+#   extract_pdf_text          44     22     0    16
+#   extract_pcode             48     37     0     0
+#   write_common              17     13     1     1
+#   write_enum                16     12     1     1
+#   write_ins                175    122    16     1
+#   write_operands            20     13     2     1
+#   write_pcode               21     13     1     1
+#   __main__                  37     28     0     5
+#   TOTAL                    541    346    22    51
+#
+#   LOGIC:EMISSION = 346:22 = 15.7 : 1, i.e. 94.0% of the core is LOGIC.
+#   So the "a generator is mostly mechanical emission" story is wrong here too,
+#   the same way it was wrong for autogen.py: a port of this generator is a
+#   port of 346 decisions.  The 22 emission lines are the easy 6%.
+#
+# ===========================================================================
+# THE FOUR WALLS. Stated once, here, rather than as a TODO per arm.
+#
+# WALL 1 -- the XML/PDF fetch and parse.  `parse_xml` is 25 ffi lines and
+#   `extract_pdf_text` is 16, out of 132 for the pair.  `fetch` hits the
+#   network, `zipfile.ZipFile` and `zlib.decompress` are compression, and
+#   `root.findall(".//ISA/Instructions/Instruction")` is XPath -- there is no
+#   Bend spelling for any of it and no `ElementTree`.  So the XML and the PDF
+#   are FIXTURES here, values, exactly as `runtime/support/autogen.bend` makes
+#   the libclang AST a value: "each field is a fact one call would have
+#   returned".  EVERY DECISION THAT RUNS OVER THOSE FIXTURES IS PORTED AND
+#   GATED; the descent that produces them is not, and the seam is named.
+#
+# WALL 2 -- regex.  `extract_pdf_text` matches `rb'startxref\s+(\d+)'`,
+#   `rb'/Contents (\d+) 0 R'`, `r'BT(.*?)ET'` and a seven-alternative `_RE_BT`
+#   with named groups.  bend 2.0.34 has no regex, no `String.replace`, and no
+#   `String.split` on a multi-character separator.  Same ruling as
+#   `autogen.bend`'s WALL 2, same reason: re-adding a regex engine is
+#   Turing-completeness, which this repo does not permit without approval.
+#   `extract_pdf_text` is therefore NOT PORTED and it is the largest single
+#   omission in this file; `extract_pcode`, which consumes its output and makes
+#   twelve decisions of its own, IS ported.
+#
+# WALL 3 -- writing files.  Four `with open(path, "w") as f: f.write(...)`
+#   calls.  bend's only sink is `IO.print`, and a generator whose product is a
+#   file needs a file.  So every emitter here returns `List<&2, String` -- THE
+#   LINES -- and `main` prints them.  The line LIST is the port; `open` is the
+#   one line it does not make.  That is a departure in shape and not in
+#   content, and it is why the gate can diff the emission at all.
+#
+# WALL 4 -- `str.replace`.  There is no `String.replace` (notes position
+#   11040), and generate.py calls `str.replace` in FOUR places
+#   (`_strip_enc` x8 table entries, `_norm_field` x17, `get_base_fmt` x6,
+#   `base_enum` x6).  Rather than call it a wall, this file writes the general
+#   leftmost non-overlapping replace ONCE in SECTION 1 and calls it from all
+#   four.  See `rep.go` for the algorithm and for why the PENDING flag is what
+#   makes it one self-call rather than two.
+#
+# ===========================================================================
+# MEASURED bend 2.0.34 constraints that shape every def here.  Cite the
+# positions in `.agents/slop/notes/bend2-constraints.md`, not rule numbers:
+#
+#   * A `match` may only scrutinise a PARAMETER or a PATTERN BINDER (pos 2146).
+#     So every "is this Bool true" question gets its own def and the Bool
+#     arrives as a parameter.  This file has one `.cmp`/`.hit`/`.ok` def per
+#     decision, which is the single largest source of LOC here.
+#   * `Bool.pick` CHOOSES an arm and BEND IS STRICT, so it EVALUATES BOTH
+#     (pos 1389, 2106).  It is never used to guard a call, only to choose
+#     between two already-computed values.
+#   * `List.append(a, A, xs, ys)` is `xs ++ ys` (pos 1590), so an accumulator
+#     that must stay in order either APPENDS or is reversed at the end.  Every
+#     list-emitting fold in this file appends.
+#   * `String.to_list` / `String.from_list` are the string walk: `take`/`drop`
+#     CONSUME the string (pos 2000), so a substring walk is a walk over
+#     `List<&2, Char>` and the needle is a `List<&2, Char>` too.
+#   * No f-string interpolation (pos 11084), so every emitted line is built by
+#     `++`, and a row NAME must already be interpolated.
+#   * `do IO<Unit>:` must end with a BARE TERM (pos 3298) and may only bind
+#     `IO(Unit)` (pos 11076), so a gate row is `def ... -> IO(Unit)` that
+#     prints and returns nothing.
+
+import Base
+
+# ===========================================================================
+# SECTION 1 -- the string algebra, once, because FOUR of generate.py's
+# functions are `str.replace` and bend has none.
+#
+# `rep.go` is the general leftmost-first, non-overlapping replace, i.e. exactly
+# Python's `str.replace(old, new)`.  The algorithm, and why it is ONE def:
+#
+#   Python finds the leftmost occurrence of `old`, emits `new`, and RESUMES
+#   AFTER the replacement.  Written positionally that is "consume len(old) or
+#   consume 1", which is TWO SELF-CALLS IN ONE ARM and is refused (pos 1908).
+#   So the position is not carried; a PENDING flag in the accumulator is: the
+#   walk always consumes exactly one Char, and the accumulator says whether
+#   that Char extended a match, completed one, or is sitting in one.
+#
+#   THE NON-OBVIOUS CASE is the mismatch.  When a partial match breaks, the
+#   chars already consumed are LITERAL TEXT and must be emitted, and the
+#   CURRENT char must be re-tested as a fresh start -- otherwise "aa" over
+#   "aaa" drops an "a".  `rep.match` does exactly that by delegating to
+#   `rep.armed` with `done` already flushed, which is why this is exact for
+#   BORDERED needles too and needs no unbordered precondition.
+# ===========================================================================
+
+type RS is Data:
+  RS{out: List<&2, Char>, need: List<&2, Char>, done: List<&2, Char>,
+     old: List<&2, Char>, new: List<&2, Char>}
+
+# `c == head(needle)`.  A `match` on a LIST gives the head as a BINDER, so the
+# compare may scrutinise it directly.
+def rep.hit(nh: Char, +c: Char) -> Bool: Char.is_eq(c, nh)
+
+# NOT currently matching: `c` either starts a new match or is literal.
+# `Bool.pick` evaluates all three arms; `old`/`new` are read twice so `+`.
+def rep.armed(+out: List<&2, Char>, +need: List<&2, Char>, +done: List<&2, Char>,
+              +old: List<&2, Char>, +new: List<&2, Char>, +c: Char) -> RS:
+  match old:
+    case Nil{}: RS{List.append(&2, Char, out, [c]), Nil{}, Nil{}, old, new}
+    case oh <> orest:
+      RS{out,
+         Bool.pick(List<&2, Char>, rep.hit(oh, c), orest, Nil{}),
+         Bool.pick(List<&2, Char>, rep.hit(oh, c), [c], Nil{}),
+         old, new}
+
+# A complete match emits `new` and DROPS the matched chars -- they are already
+# in `out`?  No: a match never puts its chars in `out`, they sit in `done`.
+def rep.grow(+nr: List<&2, Char>, +out: List<&2, Char>, +done: List<&2, Char>,
+             +old: List<&2, Char>, +new: List<&2, Char>, +c: Char) -> RS:
+  match nr:
+    case Nil{}: RS{List.append(&2, Char, out, new), Nil{}, Nil{}, old, new}
+    case _ <> _: RS{out, nr, List.append(&2, Char, done, [c]), old, new}
+
+def rep.cmp(same: Bool, +nr: List<&2, Char>, +out: List<&2, Char>, +done: List<&2, Char>,
+            +old: List<&2, Char>, +new: List<&2, Char>, +c: Char) -> RS:
+  match same:
+    case True{}: rep.grow(nr, out, done, old, new, c)
+    case False{}: rep.armed(List.append(&2, Char, out, done), Nil{}, Nil{}, old, new, c)
+
+def rep.match(+out: List<&2, Char>, +need: List<&2, Char>, +done: List<&2, Char>,
+              +old: List<&2, Char>, +new: List<&2, Char>, +c: Char) -> RS:
+  match need:
+    case Nil{}: RS{out, Nil{}, Nil{}, old, new}
+    case nh <> nr: rep.cmp(rep.hit(nh, c), nr, out, done, old, new, c)
+
+# `need == Nil{}` IS the "not matching" case, so it must be an arm that
+# dispatches, not one that falls through.
+def rep.step(+ra: RS, +c: Char) -> RS:
+  match ra:
+    case RS{out, Nil{}, done, old, new}: rep.armed(out, Nil{}, done, old, new, c)
+    case RS{out, need, done, old, new}: rep.match(out, need, done, old, new, c)
+
+# End of input: whatever is still PENDING is literal text.
+def rep.go(cs: List<&2, Char>, +ra: RS) -> List<&2, Char>:
+  match cs:
+    case Nil{}:
+      match ra:
+        case RS{out, need, done, old, new}: List.append(&2, Char, out, done)
+    case c <> rest: rep.go(rest, rep.step(ra, c))
+
+def str_repl_all(+cs: List<&2, Char>, +old: List<&2, Char>, +new: List<&2, Char>) -> List<&2, Char>:
+  rep.go(cs, RS{Nil{}, Nil{}, Nil{}, old, new})
+
+# The `s.replace(old, new)` of generate.py, as a String.
+def repl(s: String, old: String, new: String) -> String:
+  String.from_list(str_repl_all(String.to_list(s), String.to_list(old), String.to_list(new)))
+
+# `s.removeprefix(p)` -- drop the prefix if it is there, else leave it alone.
+def strip_prefix(+s: String, +p: String) -> String:
+  Bool.pick(String, String.starts_with(s, p), String.drop(s, String.length(p)), s)
+
+# ===========================================================================
+# SECTION 2 -- the CONFIG TABLES, generate.py:11-42.  PORTED AS DATA, in
+# DECLARATION ORDER, and the order is load-bearing twice over:
+#   * `_FIELD_RENAMES` is a `dict`, so it is applied in INSERTION order, and
+#     `op_sel_hi_2` must run BEFORE `op_sel` or the longer name is destroyed;
+#   * `_ENC_SUFFIX_MAP` is applied in DESCENDING LENGTH order, by an explicit
+#     `sorted(..., key=lambda x: -len(x[0]))` at generate.py:53, because
+#     `_VOP_DPP` is a PREFIX of `_VOP_DPP8` and the wrong order mangles it.
+#
+# Both orders are gate rows (`order enc_suffix_map`, `order field_renames`)
+# taken from CPython, not from this comment.
+# ===========================================================================
+
+type Suf is Data: Suf{old: String, new: String}
+
+def enc_suffixes() -> List<&2, String>: ["_NSA1"]
+
+def skip_encodings() -> List<&2, String>: ["NSA"]
+
+def enc_suffix_map() -> List<&2, Suf>:
+  [Suf{"_VOP_SDWA_SDST_ENC", "_SDWA_SDST"}, Suf{"_INST_LITERAL", "_LIT"},
+   Suf{"_VOP_DPP16", "_DPP16"}, Suf{"_VOP_DPP8", "_DPP8"}, Suf{"_VOP_SDWA", "_SDWA"},
+   Suf{"_VOP_DPP", "_DPP16"}, Suf{"_MFMA", "_MFMA"}]
+
+def field_renames() -> List<&2, Suf>:
+  [Suf{"opsel_hi_2", "opsel_hi2"}, Suf{"op_sel_hi_2", "opsel_hi2"}, Suf{"op_sel", "opsel"},
+   Suf{"bound_ctrl", "bc"}, Suf{"tgt", "target"}, Suf{"row_en", "row"}, Suf{"unorm", "unrm"},
+   Suf{"clamp", "clmp"}, Suf{"wait_exp", "waitexp"}, Suf{"simm32", "literal"},
+   Suf{"dpp_ctrl", "dpp"}, Suf{"acc_cd", "acc_cd"}, Suf{"acc", "acc"},
+   Suf{"dst_sel", "dst_sel"}, Suf{"dst_unused", "dst_unused"},
+   Suf{"src0_sel", "src0_sel"}, Suf{"src1_sel", "src1_sel"}]
+
+# `NAME_MAP` -- the XML encoding name to the codebase enum name.  Applied to the
+# ALREADY-STRIPPED name at :119 and to the ALREADY-`_map_flat`'d base at :131,
+# which is why `VOP3_SDST_ENC` and `VOPDXY` must already be in the table: they
+# are the two non-`ENC_` names `is_base` accepts.
+def name_map() -> List<&2, Suf>:
+  [Suf{"VOP3_SDST_ENC", "VOP3SD"}, Suf{"VOP3_SDST_ENC_LIT", "VOP3SD_LIT"},
+   Suf{"VOP3_SDST_ENC_DPP16", "VOP3SD_DPP16"}, Suf{"VOP3_SDST_ENC_DPP8", "VOP3SD_DPP8"},
+   Suf{"VOPDXY", "VOPD"}, Suf{"VOPDXY_LIT", "VOPD_LIT"}, Suf{"VDS", "DS"}]
+
+# `FIXES` -- instructions present in the PDF but MISSING from the XML.  Nested
+# {arch: {fmt: {opcode: name}}}, so `FF{fmt: String, ops: List<&2, OP>}`.
+type OP is Data: OP{op: U32, nm: String}
+type FF is Data: FF{fmt: String, ops: List<&2, OP>}
+type FX is Data: FX{arch: String, ffs: List<&2, FF>}
+
+def op(n: U32, nm: String) -> OP: OP{n, nm}
+
+def fixes() -> List<&2, FX>:
+  [FX{"rdna3", [FF{"SOPK", [op(22, "S_SUBVECTOR_LOOP_BEGIN"), op(23, "S_SUBVECTOR_LOOP_END")]},
+                FF{"FLAT", [op(55, "FLAT_ATOMIC_CSUB_U32")]}]},
+   FX{"rdna4", [FF{"SOP1", [op(80, "S_GET_BARRIER_STATE"), op(81, "S_BARRIER_INIT"),
+                             op(82, "S_BARRIER_JOIN")]},
+                FF{"SOPP", [op(9, "S_WAITCNT"), op(21, "S_BARRIER_LEAVE")]}]},
+   FX{"cdna", [FF{"DS", [op(152, "DS_GWS_SEMA_RELEASE_ALL"), op(154, "DS_GWS_SEMA_V"),
+                         op(156, "DS_GWS_SEMA_P")]},
+               FF{"VOP3P", [op(44, "V_MFMA_LD_SCALE_B32"), op(62, "V_MFMA_F32_16X16X8_XF32"),
+                             op(63, "V_MFMA_F32_32X32X4_XF32")]}]}]
+
+# `FIELD_FIXES` -- {arch: {encoding: [(name, hi, lo)]}}, appended to that
+# encoding's field list by __main__:515.
+type Fx3 is Data: Fx3{nm: String, hi: U32, lo: U32}
+type FL is Data: FL{fmt: String, flds: List<&2, Fx3>}
+type FLX is Data: FLX{arch: String, fls: List<&2, FL>}
+
+def field_fixes() -> List<&2, FLX>:
+  [FLX{"cdna", [FL{"VOP3P", [Fx3{"opsel_hi2", 14, 14}]}]}]
+
+# `FIXED_FIELDS` -- {arch: {encoding: {field: int | (encoding, opcode)}}}.  A
+# PAIR value, so it is a sum type, not a record with empty slots.
+type Fv is Data: Fv{k: String, e: String, opc: U32, is_pair: Bool}
+type FD is Data: FD{fmt: String, kvs: List<&2, Fv>}
+
+def fixed_fields() -> List<&2, FD>:
+  [FD{"VOP3PX2", [Fv{"x2encoding", "VOP3P", 0, True{}}, Fv{"abid", "", 1, False{}}]}]
+
+def archs() -> List<&2, String>: ["rdna3", "rdna4", "cdna"]
+
+# THE INDEXED READER, shared: `xs[i]` as a COUNTDOWN, not as a comparison.
+# `List.get` answers a `Maybe`, so every caller would be a two-def reader; and
+# a comparison against the counter would need the Bool as a parameter, which
+# makes `str_at` and `str_at.of` mutually recursive -- refused (pos 11109).
+# Counting down to zero makes the index THE FUEL, so one def answers it.
+# "?" is the port's marker for "index past the end".
+def str_at(xs: List<&2, String>, n: Nat) -> String:
+  match xs:
+    case Nil{}: "?"
+    case h <> t:
+      match n:
+        case 0n: h
+        case 1n+p: str_at(t, p)
+
+# `ARCHS[a]["xml"]`, as a walk over the arch list rather than `List.get`: the
+# two list literals below are the ONLY copy of the three filenames, and
+# `List.get` answers a `Maybe`, which would make every caller a two-def
+# reader for a table of constants.
+def arch_xml(i: Nat) -> String: str_at(archs(), i)
+
+def xml_url() -> String: "https://gpuopen.com/download/AMD_GPU_MR_ISA_XML_2025_09_05.zip"
+
+# ===========================================================================
+# SECTION 3 -- `_strip_enc` (:48), `_norm_field` (:56), `_map_flat` (:61).
+# PORTED.  16 of the 28 logic lines of these three functions.
+# ===========================================================================
+
+# There is no `List.eq`, so membership is its own walk and the NEEDLE LEADS,
+# because a self-call must shrink its first argument (pos 1922).
+def str_in(+nm: String, o: List<&2, String>) -> Bool:
+  match o:
+    case Nil{}: False{}
+    case h <> t: Bool.or(String.eq(h, nm), str_in(nm, t))
+
+# `name.removeprefix("ENC_")`, then one `.replace` per `_ENC_SUFFIXES` entry,
+# then one per `_ENC_SUFFIX_MAP` entry in its DESCENDING-LENGTH order.
+def strip_enc.sfx(s: String, sfx: List<&2, String>) -> String:
+  match sfx:
+    case Nil{}: strip_enc.map(s, enc_suffix_map())
+    case h <> t: strip_enc.sfx(repl(s, h, ""), t)
+
+def strip_enc.map(s: String, rs: List<&2, Suf>) -> String:
+  match rs:
+    case Nil{}: s
+    case r <> rest: strip_enc.map(repl(s, Suf.old(r), Suf.new(r)), rest)
+
+def strip_enc(name: String) -> String: strip_enc.sfx(strip_prefix(name, "ENC_"), enc_suffixes())
+
+# `_norm_field`: one `.replace` per entry, IN INSERTION ORDER.
+def norm_field.go(rs: List<&2, Suf>, acc: String) -> String:
+  match rs:
+    case Nil{}: acc
+    case r <> rest: norm_field.go(rest, repl(acc, Suf.old(r), Suf.new(r)))
+
+def norm_field(name: String) -> String: norm_field.go(field_renames(), name)
+
+# `_map_flat`: FLAT/GLOBAL/SCRATCH share ONE opcode field and are told apart by
+# the INSTRUCTION's prefix, not the encoding's.  The V comes off the ENCODING.
+# Every test is a `*_b` def and every dispatch is a `.of` that takes the answer
+# as a PARAMETER, because a match may not scrutinise a call (pos 2146).  There
+# is no shorter spelling of that rule; the `.of` split IS the cost.
+def map_flat(enc_name: String, instr_name: String) -> String:
+  map_flat.of(enc_name, instr_name, map_flat.glbl_b(enc_name))
+
+def map_flat.of(enc_name: String, instr_name: String, glbl: Bool) -> String:
+  match glbl:
+    case True{}: "GLOBAL"
+    case False{}: map_flat.scratch.of(enc_name, instr_name, String.eq(enc_name, "FLAT_SCRATCH"))
+
+def map_flat.glbl_b(enc_name: String) -> Bool:
+  Bool.or(String.eq(enc_name, "FLAT_GLBL"), String.eq(enc_name, "FLAT_GLOBAL"))
+
+def map_flat.scratch.of(enc_name: String, instr_name: String, scr: Bool) -> String:
+  match scr:
+    case True{}: "SCRATCH"
+    case False{}: map_flat.prefixed.of(enc_name, instr_name, map_flat.five_b(enc_name))
+
+def map_flat.five_b(enc_name: String) -> Bool:
+  Bool.or(String.eq(enc_name, "FLAT"), Bool.or(String.eq(enc_name, "VFLAT"),
+    Bool.or(String.eq(enc_name, "VGLOBAL"), String.eq(enc_name, "VSCRATCH"))))
+
+def map_flat.prefixed.of(enc_name: String, instr_name: String, five: Bool) -> String:
+  match five:
+    case True{}: map_flat.by_instr.of(enc_name, instr_name, String.starts_with(instr_name, "GLOBAL_"))
+    case False{}: enc_name
+
+def map_flat.by_instr.of(enc_name: String, instr_name: String, glob: Bool) -> String:
+  match glob:
+    case True{}: map_flat.v(enc_name) ++ "GLOBAL"
+    case False{}: map_flat.scratch_instr.of(enc_name, String.starts_with(instr_name, "SCRATCH_"))
+
+def map_flat.scratch_instr.of(enc_name: String, scr: Bool) -> String:
+  match scr:
+    case True{}: map_flat.v(enc_name) ++ "SCRATCH"
+    case False{}: map_flat.v(enc_name) ++ "FLAT"
+
+def map_flat.v(enc_name: String) -> String: Bool.pick(String, String.starts_with(enc_name, "V"), "V", "")
+
+
+# SECTION 4 -- `write_ins`'s nested helpers.  `_VARIANT_SUFFIXES`, `get_base_fmt`
+# (:292), the field-kind ladder `field_def` (:295), `ORDER` + `sort_fields`
+# (:319/:327) and `fmt_allowed` (:361).
+# ===========================================================================
+
+def variant_suffixes() -> List<&2, String>: ["_LIT", "_DPP16", "_DPP8", "_SDWA_SDST", "_SDWA", "_MFMA"]
+
+def get_base_fmt.go(fmt: String, sfx: List<&2, String>, i: Nat) -> String:
+  match sfx:
+    case Nil{}: fmt
+    case h <> t: get_base_fmt.go(repl(fmt, h, ""), t, Nat.add(i, 1n))
+
+def get_base_fmt(fmt: String) -> String: get_base_fmt.go(fmt, variant_suffixes(), 0n)
+
+# `ORDER` -- the DECLARATION ORDER of a generated instruction's fields, which is
+# NOT the bit order: `encoding` is bit 31 and is emitted FIRST, `offset` is bit
+# 14 and is emitted 37th.  This list is the single most load-bearing table in
+# the file: `ORDER.index(f[0]) if f[0] in ORDER else 999` is the sort key, so a
+# name that is MISSING from it lands at 999 and sorts LAST, and a name that is
+# present sorts by declaration, not by `lo`.
+def order() -> List<&2, String>:
+  ["encoding", "op", "opx", "opy", "vdst", "vdstx", "vdsty", "sdst", "vdata", "sdata", "addr",
+   "vaddr", "data", "data0", "data1", "src0", "srcx0", "srcy0", "vsrc0", "ssrc0", "src1", "vsrc1",
+   "vsrcx1", "vsrcy1", "ssrc1", "src2", "vsrc2", "src3", "vsrc3", "saddr", "sbase", "srsrc",
+   "ssamp", "soffset", "offset", "simm16", "literal", "en", "target", "attr", "attr_chan", "omod",
+   "neg", "neg_hi", "abs", "clmp", "opsel", "opsel_hi", "waitexp", "wait_va", "dmask", "dim", "seg",
+   "format", "offen", "idxen", "glc", "dlc", "slc", "tfe", "unrm", "done", "row", "dpp", "fi", "bc",
+   "row_mask", "bank_mask", "src0_neg", "src0_abs", "src1_neg", "src1_abs", "cbsz", "abid",
+   "acc_cd", "acc", "blgp", "lane_sel_0", "lane_sel_1", "lane_sel_2", "lane_sel_3", "lane_sel_4",
+   "lane_sel_5", "lane_sel_6", "lane_sel_7", "dst_sel", "dst_unused", "src0_sel", "src1_sel"]
+
+def order.hit(o: List<&2, String>, nm: String) -> Bool: str_in(nm, o)
+
+# 999 is not a sentinel the port invented: it is the literal in generate.py:327,
+# and it is what puts a field this file has never heard of LAST.
+def order_idx(o: List<&2, String>, nm: String) -> U32:
+  Bool.pick(U32, order.hit(o, nm), order_at(o, nm, 0n), 999)
+
+def order_at(o: List<&2, String>, nm: String, i: U32) -> U32:
+  match o:
+    case Nil{}: 0
+    case h <> t: order_at.cmp(String.eq(h, nm), h, t, nm, i)
+
+def order_at.cmp(same: Bool, h: String, t: List<&2, String>, nm: String, i: U32) -> U32:
+  match same:
+    case True{}: i
+    case False{}: order_at(t, nm, U32.add(i, 1))
+
+type Fld is Data: Fld{nm: String, hi: U32, lo: U32}
+
+def Fld.nm(f: Fld) -> String:
+  match f:
+    case Fld{nm, hi, lo}: nm
+def Fld.hi(f: Fld) -> U32:
+  match f:
+    case Fld{nm, hi, lo}: hi
+def Fld.lo(f: Fld) -> U32:
+  match f:
+    case Fld{nm, hi, lo}: lo
+
+def Fld.of(nm: String, hi: U32, lo: U32) -> Fld: Fld{nm, hi, lo}
+
+# `sorted(fields, key=lambda f: (ORDER.index(...) else 999, f[2]))` -- a
+# TWO-KEY sort.  `List.sort` takes one `le`, so the pair is compared field by
+# field here rather than by a tuple, which bend has no spelling for.
+def fld_le(a: Fld, b: Fld) -> Bool:
+  fld_le.k2(U32.is_eq(order_idx(order(), Fld.nm(a)), order_idx(order(), Fld.nm(b))),
+    order_idx(order(), Fld.nm(a)), order_idx(order(), Fld.nm(b)), Fld.lo(a), Fld.lo(b))
+
+def fld_le.k2(same: Bool, ka: U32, kb: U32, la: U32, lb: U32) -> Bool:
+  match same:
+    case True{}: U32.is_le(la, lb)
+    case False{}: U32.is_lt(ka, kb)
+
+def sort_fields(fs: List<&2, Fld>) -> List<&2, Fld>: List.sort(&2, Fld, fld_le, fs)

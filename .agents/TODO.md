@@ -1979,9 +1979,31 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       ROWS (`wmma_row` / `under_row` expectations) still need a re-run by its
       owner — `type_map`'s keys were migrated here because the rename breaks them
       regardless of which cstyle.py we pin.
-- [ ] name-keyed tables left for their owners: `renderer/nir_llvmir.bend` (9),
+- [x] name-keyed tables left for their owners: `renderer/nir_llvmir.bend` (9),
       `renderer/isa/x86.bend` (2), `uop/fold.bend` + `fold_mm_work.bend` +
       `fold2_work.bend` (20)
+      — `nir_llvmir.bend`'s 9 DONE 2026-10-03: `ldt.fp` re-armed from the dtype
+      NAME onto `Cls`/`bits`/`pri` (the `renderer/llvmir.bend` `lt.fp` shape,
+      imported not reinvented), 79 red rows -> 0, 205/205 green against a
+      regenerated live-CPython oracle, both lanes byte-identical, mutation table
+      re-measured at 44 entries with M40/M40b reproducing the regression on
+      demand. `x86.bend` (2) and the three `fold*_work` files (20) are STILL
+      OPEN and belong to their owners — see the audit note below.
+- [ ] `renderer/isa/x86.bend` `Op.to_int` (`:750-754`) is STILL RED IN DISGUISE
+      — armed on `"float16"`/`"float32"`/`"float64"`; `S.Dt.nm` now spells those
+      `f16`/`f32`/`f64`, so every arm falls to `KeyError`. It is 761-row GREEN
+      because the three `toint` rows feed the ladder ITS OWN ARM KEY and the four
+      `toint.miss` rows expect `KeyError` anyway. Proven with four probe rows:
+      `Op.to_int("f16") = [KeyError]` where CPython answers `i16`. OWNER'S FILE —
+      REPORTED, NOT EDITED.
+- [ ] `runtime/ops_dsp.bend`: `grep -c 'py=\[' ` is **ZERO** — all 512 printed
+      rows carry their expected value in a `#` COMMENT, so the file compares
+      nothing and `ALL PROOFS CHECK` on it is worth nothing. On top of that
+      `dt_fmt` (`:652`) is armed on the NEW spellings while its rows (`:1876+`)
+      pass the OLD ones (eleven rows print an empty string where CPython prints
+      `b`/`e`/`f`/`d`), `dt_supported` (`:740`) compares against the OLD
+      `"__bf16"`, and `supported_12.at` (`:744`) returns OLD names where CPython
+      gives `bool,i8,u8,i16,u16,i32,u32,i64,u64,f16,f32,f64`. OWNER'S FILE.
 - [ ] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
       are done; its rows print `dt_name`, so they move with the rename and its
       oracle must be re-run)
@@ -2107,3 +2129,406 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       end (the ATTRIBUTE is `fp8e4m3`; `"float8_e4m3"` was only ever the *name* field, and the
       rename moved it to `fp8e4m3`, which IS now a key). Nothing reads those four strings, so
       this closed itself — recorded because it looked like the break and was not.
+
+## Session 2026-10-02 — env-flag semantic divergence audit (owner: the audit unit)
+
+- [x] **The `getenv` coercion table, MEASURED from live CPython** —
+      `.agents/slop/env-coercion-table.txt`. `helpers.py:162` is
+      `type(default)(os.getenv(key, default))`, so the coercion is `type(default)`
+      applied to the raw string and nothing validates it. **51 of the 61
+      `ContextVar`s have an `int` default, 6 `str`, and `bool` for EXACTLY THREE**
+      (`PMA`, `SQTT`, `PMC`, all `abs(VIZ.value) >= 2`). `int()` REFUSES a bad value
+      and tinygrad then does not import: `DEBUG=true`, `SPEC=1.5`, `JIT=yes`,
+      `PARALLEL=abc`, `TC_SELECT=x`, `MAX_BUFFER_SIZE=1GB` all raise
+      `ValueError: invalid literal for int() with base 10` at import. The 61/85/146
+      counts are AST-measured and the 85 bare-`getenv` keys are `getenv`'s other 85.
+- [x] **`helpers.bend`'s `no_color_of` was INVERTED. Fixed and gated.**
+      `NO_COLOR`'s default is the `int` `0`, so the observable is
+      `bool(int(...))` and `"0"`, `"00"`, `"-0"`, `"+0"`, `"0 "`, `" 0"` all read 0
+      and leave COLOUR ON. The port read `not String.is_empty(v)`, which turned
+      colour OFF for all six. **18 of 32 probes disagreed**; post-fix **0 disagree**
+      (18 exact, 13 CPython refusals answered `False`, 1 named boundary).
+      The old comment stated the opposite of the truth and claimed it "reproduces"
+      tinygrad. Gate: `.agents/slop/nocolor-{oracle.py,probe.bend,diff.py}`.
+- [x] **`helpers.bend`'s P6 comment corrected: 61 ContextVars, not ~40.**
+      `Flags` is **4 flags of 146** and **3 of the 61** ContextVars (`SUM_DTYPE` is
+      a bare `getenv`, `dtype.py:223`). The undercount was 21, so P6's scope as
+      written is too small. All 57 other ContextVars are CONSUMED.
+- [x] **DIVERGENCE SITES: 3 real substitutions outside `helpers.bend`, plus 1 doc
+      bug.** `mixin/dtype.bend:288` bakes `DEFAULT_FLOAT` as `S.single()`
+      (VERIFIED: `DEFAULT_FLOAT=float16` makes CPython's `strong_dtype(weakfloat)`
+      answer `f16`); `runtime/support/hcq2.bend:282` bakes `HCQ_CACHE_THRESH` as 64;
+      `runtime/support/system.bend:2221` bakes `REMOTE_TIMEOUT` as 60;
+      `codegen/kernel.bend:773,786` says ELEVEN/THIRTEEN where Python and its own
+      rows say 12/14. All reported with an owner, none edited.
+- [x] **THE HEADLINE: of 146 flags, only 15 are named anywhere outside a comment in
+      the whole `.bend` tree, and only 4 are genuinely read.** 5 more are name
+      collisions (`HALF`, `FLOAT16`, `DEV`, `TC`, `JIT`/`PROFILE`). So **131 flags
+      are silently absent** — most with a wall note naming them at the Python line
+      (which is honest), the residue in `env-flag-divergence.md` §2 is not.
+- [x] **BAKED GATE LITERALS named**: 13 rows that will all move on the day P6 lands,
+      each currently GREEN. `env-flag-divergence.md` §3.
+- [x] **`helpers.bend` has NO `main`, so it had NO gate at all** — the file that owns
+      the flag machinery was the one file where a flag bug is completely ungated.
+- [x] Rules V-X-Y-Z appended to `.agents/slop/notes/bend2-constraints.md` (from
+      position 11274). Four of the tools appended to `.agents/TOOLS.md`.
+- [ ] **P6 itself — NOT STARTED, and it needs its own unit with its own plan.** The
+      three things it must get right are in `env-flag-divergence.md` §6, and the gate
+      requirement that follows is: **every flag needs a row at a NON-DEFAULT
+      environment value.** A default-env gate cannot tell a correct flag read from a
+      baked default, and that is the entire failure mode this unit found.
+
+## Session 2026-10-03 — ungated-drift closure: `uop/render.bend`, `codegen/rewriter.bend`, `rebase-plan.py`
+
+Two committed `.bend` files that no gate had ever run, plus the reason the
+rebase planner had been skipping one of them. **NOT COMMITTED.**
+
+- [x] **The working `tinygrad/` is a MEASURED BROKEN HYBRID**, which is the first
+      fact and shapes every expectation: `uop/ops.py` is at upstream HEAD while
+      `uop/render.py` is at the pin, and `pyrender` in that tree answers
+      `UOp.range(4, AxisType.WEAK, 0)` — **neither** end. So every row's expected
+      value is generated by CALLING CPython in `.agents/slop/xd1/head`
+      (`git archive upstream/master`), and **no row's expected value was ever
+      changed to make a change pass**.
+- [x] **`uop/render.bend`, 66 -> 80 gate rows** (14 ADDED, 4 RE-MEASURED, 0 removed),
+      `ALL PROOFS CHECK`, interp and native lanes byte-identical,
+      **77 of 80 rows verified against live CPython**
+      (`agree=77 disagree=3 no-oracle-row=0`). The 4 re-measured rows are exactly the
+      4 whose baseline answer was WRONG: `arg_repr ARng` and the three BUFFER-rendered
+      rows `pyrender buffer`/`copy`/`store`. **The baseline's `arg_repr ARng` was
+      self-inconsistent** — the port answered `((0), AxisType.GLOBAL)` (with a comma,
+      the `u32_tuple_repr` bug) while its own embedded `py=` said `((0,), …)`, so the
+      port-vs-`py=` check was green and BOTH halves were wrong: the `nv_query_litter`
+      shape, found by `verify.py`'s third input.
+      Four measured upstream sites closed:
+      * `loop{x.arg[0]}` -> `x.axis_id[0]` (`render.py:365`). `render.bend` never
+        mentioned `AXIS_UNROLL`; the site lives in `renderer`, which is
+        `# TODO(p3) render.py:45` — **unported, so no row here could catch it**.
+        What landed instead is `peek_str` plus two rows (`pyrender mul3`/`xor3`)
+        that pin the head-of-id-list read the port needed.
+      * the `Ops.BUFFER` pyrender rule **DELETED, not neutered** (upstream dropped
+        it), taking `paramarg_of`/`arg_addr`/`addr_is_global`/`max_numel` with it;
+        the wall is kept in a comment block. Mutation M-b restores it in full and
+        moves 5 rows; restoring the dispatch arm alone moves **0** — because the
+        arm's fall-through target `pmp.fb` is exactly what a BUFFER already takes,
+        so a re-added arm that DELEGATES is the same program until it has a BODY.
+      * the `Ops.RANGE` rule rewritten to HEAD with a new `len(x.axis_id) == 1`
+        guard; the pin's `[repr(y) for y in x.arg]` prints the whole id list and
+        the guard selects the other branch. M-e/M-f/M-g are `>= 1` / no guard /
+        whole-list.
+      * the pyrender CALL-refusal predicate changed to `body.op is PROGRAM`
+        (`pyr_call` hoisted above `main` because it is not entry-order-linear);
+        M-c/M-d/M-m are the three readings.
+      * plus a **pre-existing bug the gate had been printing since it was written**:
+        `u32_tuple_repr` dropped the 1-tuple comma, which is WHY the baseline
+        `arg_repr ARng` read `((0), …)` — a comma inside a 1-tuple. `arg_repr ATup`
+        has two elements, so no other row could see it; `ATup1`/`ATup0` now exist
+        because M-h and M-j each moved nothing.
+      * The 3 disagreements are `arg_repr ACALL2`, `arg_repr ACALL3`, `pyrender cfn`
+        — all **`ops.bend` substrate** (`CustomFunction` added, `CallInfo.dtype`
+        dropped), annotated in-file, expected to go green with no edit here once
+        `ops.bend` re-cuts `CallInfo`. `arange_repr` takes HEAD's reading (ids = flat
+        tail); the resulting `ARange` ucache collision is `ops.bend`'s wall and is
+        recorded, not hidden.
+      * 13 mutations, 11 move rows; the two zeros are theorems (`peek_str`/`range_pieces`
+        can only see one-element lists). Mutation driver `.agents/slop/xd1/mutate.py`.
+- [x] **`codegen/rewriter.bend`, 32 -> 54 gate rows** (22 ADDED, 0 re-measured,
+      0 removed — the drift here was a RENAME plus an unported rule, not a wrong
+      answer, which is exactly why no gate could ever have caught it),
+      `ALL PROOFS CHECK`, lanes
+      byte-identical, **54 of 54 verified against live CPython, 0 disagree**.
+      `gd_table`/`dv_table` were re-pointed at HEAD's names and line numbers (a RENAME,
+      length 3 at both ends — measured, so no gate could ever have caught it);
+      `rs_table` (`RANGE` + `END`) was ADDED and **`pm_range_to_special`'s rule was
+      PORTED** (guard + rebuild, pure, no wall). 10 mutations, 9 move rows; N-e's zero
+      is a theorem (`rs_at`'s `AXIS_LOOP` fallback makes `claimed` imply `isrange`).
+- [x] **`rebase-plan.py`'s stem-matching bug, fixed and PROVEN.** The old map was
+      **34 ported / 15 NONE**; the new one is **38 ported / 11 NONE with 0 lost** —
+      4 files the planner had never seen (`codegen/__init__.py`, `codegen/gpudims.py`,
+      `codegen/simplify.py`, `runtime/ops_python.py`) and 3 whose status CHANGED.
+      Cause: the port map is read from `.bend` HEADERS, and multi-source headers WRAP
+      and ELIDE `tinygrad/`. Three filters fix it — header block only, skip `_`/`_work`
+      scratch names, accept bare paths. Proof: `.agents/slop/xd1/stem-bug.py`.
+- [x] 12 rules appended to `.agents/slop/notes/bend2-constraints.md` (from position
+      11741). Pin match **210/230 before and after — unchanged by this unit**, which
+      is correct: this closed drift inside the ports, not drift of the pin.
+- [ ] **`tinybendygrad/helpers.bend` does not compile right now** (a live agent is
+      mid-edit: eight `nc_*` defs read an un-`+`-pinned binder twice), which fails
+      EVERY file in the tree — `uop/ops.bend`, `codegen/rewriter.bend` and
+      `uop/render.bend` all with the same error, none of them mine. Worked around
+      with `.agents/slop/xd1/wt-sync.sh`, which mirrors the tree and restores
+      `helpers.bend` from HEAD. **FLIP BACK: delete `.agents/slop/xd1/wt-sync.sh`
+      and `.agents/slop/xd1/wt/` the moment that agent lands.** Not done by me — it
+      is not my file.
+- [ ] **The 3 remaining `render.bend` disagreements need `ops.bend`** (`CallInfo`
+      re-cut + `CustomFunction` added), and the `ARange` ucache collision needs the
+      same file. Both are named at `ops.bend:4705-4712` as one coupled change.
+
+## Session 2026-10-03 — REBASE GATE WIRING: 19 ports with gates and no instrument
+
+The unit is instruments, not ports. No `.bend` file's logic and no gate row's
+expected value was edited; three ports were perturbed for a red proof and each
+revert is SHA-256 verified. **NOT COMMITTED.**
+
+Progress: `rebase-gate.py --batch 1` — oracles wired **[7/21]** · oracles that
+exist and are dead **[3]** · measured with no oracle at all **[11]** ·
+`rebase-gate-selftest.py` states **[20/20 reachable]**
+
+- [x] **THE FINDING.** `--batch 1` reported `TALLY NOT-STARTED=19` and every one
+      of the nineteen was an INSTRUMENT failure, not a port failure:
+      `BASE_ORACLES` had three entries. 17 ports had a working gate and no
+      registration; 2 had one and no baseline. Nothing about the ports was known
+      from that number, which is the same silence as a pass.
+- [x] **`rebase-survey.py` — WIRE BY THE ROW-NAME INTERSECTION, NOT BY THE
+      FILENAME.** Every candidate is RUN and its rows intersected with the port's.
+      104 candidate scripts over 21 ports. The two shapes this rejects are the
+      value: `qc_oracle.py` runs, exits 0, emits 364 rows and shares ZERO names
+      with `ops_qcom.bend`'s 750; `rf-rows.py` shares 34 of 92 with
+      `schedule/rangeify.bend` and disagrees on 3.
+- [x] **WIRED, by measurement:** `ops_rdma` <- `oracle_rdma_gate.py` (389/389),
+      `ops_nv` <- `nv-oracle.py` (543/600), `hcq2` <- `hcq2-oracle.py` (157/360,
+      already wired), `uop/ops` <- `rebase-oracle-ops.py` (62/62),
+      `codegen/rewriter` <- `xd1/rw-oracle.py` (41 shared, 38 agree),
+      `codegen/opt/search` <- `rebase-oracle-search.py` (12/18),
+      `uop/spec` <- `rebase-oracle-spec.py` (11/21), `ops_metal` <-
+      `mt_seam_rows.py` (14/432).
+- [x] **ORACLE DEAD, named, never counted as coverage:** `hcq2-oracle2.py`
+      (`AttributeError: 'HCQInfo' has no attribute 'nargs'` after 26 rows, so it
+      is a DEAD LANE and wiring it would make the whole port BROKEN),
+      `oracle/dtype_tables.py` (TSV, 0 rows, exit 0), `mt_rows.py`
+      (`KeyError: 'SELECTORS'` — `ops_metal.py` lost it at HEAD),
+      `mt_constmap.py`, `amd_oracle.py` (`is_am`), `notes/rw-truth.py`
+      (`gpudims` has no `pm_add_gpudims`; it is `pm_group_gpudims`),
+      `notes/rz-oracle.py`, `qc_check.py`.
+- [x] **A NEW FINDING, and the reason this unit existed.**
+      `tinygrad/codegen/opt/search.py` IN THE VENDORED TREE DOES NOT IMPORT: line
+      15 reads `AxisType.UNROLL`, which upstream deleted (and which upstream's own
+      copy of that line no longer reads). Measured against the upstream snapshot:
+      `actions` is **209** where `codegen/opt/search.bend` counts **269**, and
+      **18** amt-0 entries where the port counts **28**; `zero_un9` and
+      `zero_red0` gate enum members that no longer exist. `rebase-plan.py`
+      recorded `actions` as CHANGED and no gate noticed. Reported, NOT FIXED —
+      `tinygrad/` is the re-vendor's and `codegen/opt/*` is a live agent's.
+      **The tree's own importability is now a ROW**
+      (`#repro_vendored_import`).
+- [x] **A ROW-NAME COLLISION THE GATE CANNOT SEE, measured.** `rs_claim_warp` is
+      `axis_type in (GLOBAL, LOCAL)` (the rule's negative control, 0) in
+      `rewriter.bend` and `range.axis_type is WARP` (a construction round-trip, 1)
+      in `xd1/rw-oracle.py`. Same name, two questions; GUARD 3 catches a pair
+      that shares NO name and there is no guard for a pair that shares a name and
+      means two things by it. Recorded in `KNOWN_RED` with that sentence.
+- [x] **`ports_of()` SHIPPED A CRASH AND THIS SESSION HIT IT.**
+      `plan["port"]` now maps an upstream file to a LIST of ports (`uop/ops.py`
+      names both `fold.bend` and `ops.bend`), so `out + ([p] if p else [])`
+      appended the list as one element and `BASE_ORACLES.get(p)` raised
+      `TypeError: cannot use 'list' as a dict key`. A gate that crashes on the
+      shape of its own input reports nothing, which is the same silence as
+      NOT-STARTED. Fixed and flattened.
+- [x] **`rebase-survey.py` REPRODUCED, IN ITS OWN BODY, THE BUG
+      `rebase-gate.py`'s GUARD 3 EXISTS TO PREVENT.** An unkeyed cache replayed
+      a FAILED run: `codegen/kernel.bend` measured `port_rows=0 rc=1` for twenty
+      minutes while `./bin/bend` on it printed 38 rows throughout. Every cache
+      entry is now keyed on the source file's `(mtime_ns, size)`.
+- [x] **`rebase-gate-selftest.py` IS NOW A TEMPLATE FOR EVERY ORACLE.** Six
+      states, each driven through the same `gate_port()` main() calls with each
+      wired oracle's OWN row names: dead lane, empty output, no shared row name,
+      a shared name that differs, agreement, malformed baseline. Eight oracles,
+      20/20 reachable.
+- [x] **RED PROOFS, every one observed, every revert SHA-256 verified.**
+      `uop/spec.bend` (adding one `hcq_own` entry moved `hq_len` 35->36 and the
+      oracle went red), `uop/ops.bend` (`axis_colors` "green"->"olive" moved
+      `axc_DEVICE`), `codegen/rewriter.bend` (deleting one `dv_table` entry moved
+      `dv_len` 2->1). The search oracle's red proof went the OTHER way, through
+      `rebase-shadow.py`, which perturbs the TREE: `codegen/opt/*` is a live
+      agent's file and a 40-second perturbation in front of them is not worth
+      the coverage. Narrowing the UPCAST group `range(10)`->`range(9)` moved
+      `acts_n` 209->203, `acts_n_padto` 216->210, `acts_zero` 18->17, `zero_up9`
+      1->0.
+- [ ] **NO ORACLE EXISTS, measured against 104 candidates — these are the ports
+      the rebase gate genuinely cannot see.** `codegen/kernel.bend` (38 rows,
+      3-symbol drift), `codegen/opt/heuristic.bend` (10, 0-symbol drift),
+      `codegen/opt/postrange.bend` (48, 4-symbol: `flatten`/`merge_dicts`
+      removed, `split_targets` changed), `device.bend` (105, 0-symbol),
+      `engine/realize.bend` (50, `array` removed), `runtime/ops_amd.bend` (520,
+      5-symbol), `runtime/ops_cl.bend` (445), `runtime/ops_cpu_null.bend` (308,
+      2-symbol), `runtime/ops_qcom.bend` (750, 1-symbol), `schedule/indexing.bend`
+      (252, 1-symbol), `schedule/rangeify.bend` (126, 1-symbol).
+- [ ] **THE BASELINE IS NOT RECORDED, DELIBERATELY.** `baseline.json` holds one
+      port (`cstyle.bend`). The tree has ALREADY been re-vendored to
+      `upstream/master` (`git diff 6c3d401cf324 HEAD -- tinygrad/` is 20 files),
+      so a baseline recorded now captures the AFTER state and the advance's
+      damage becomes invisible — which is the one thing `--record` must never be
+      used for. The honest verdict for the other 20 ports stays
+      `NOT-STARTED / no baseline recorded`. Re-record at a real pin, on a tree
+      known green.
+
+---
+
+## Session 2026-10-03 — `runtime/support/objc.bend`: the FFI seam that is MOSTLY logic
+
+- [x] **`tinybendygrad/runtime/support/objc.bend`** — `tinygrad/runtime/support/objc.py`
+      (77 lines). Verified genuinely unported before starting: `objc.py` was cited
+      **zero** times by any `.bend` file. 1129 lines, 123 gate rows, 111 of them
+      with a `py=` half. `ALL PROOFS CHECK`, both lanes byte-identical
+      (md5 `5b89106f…`), 18 mutations, control M17 at 0.
+      Artifacts: `.agents/slop/objc/{objc_oracle.py,objc_oracle.txt,objc_diff.py,
+      objc_mutate.py,objc_mutations.txt,symtab_oracle.py,symtab_oracle.txt,
+      objc_bend_gate.txt,objc_bend_native.txt}`.
+
+      WHAT PORTED. `:36`'s argument precedence — **THE HEADLINE RULE of this file**,
+      `[id_,id_]+list(argtypes) if argtypes else []`, so a message with NO declared
+      arguments gets `[]` and not the two implicit `id_`s. `:70`'s selector-name
+      mangling, both steps and **their order** (`strip(':')` removes the trailing
+      colon, so `newBufferWithLength:options:` mangles to
+      `newBufferWithLength_options` and NOT `…options_`). `:27`'s `functools.cache`
+      as a TYPE with its miss/hit counters. `:37`'s call shape and receiver swap,
+      and the fact that it is **TWO** C calls. The `retain`/`returns_retained`/
+      `own` ownership lattice, with `__del__`'s two conjuncts as parameters. `:71-73`
+      the `instancetype` substitution, per-argument. `:63-67` the inherit order.
+
+      WHAT DID NOT. Four walls, named with `TODO(p3)` and their Python lines:
+      the four `ctypes.CDLL` loads (`:25`, `:30`); `class id_`'s pointer identity
+      and the GC hook (`:13`); `MetaSpec` itself, which is a metaclass and Bend has
+      no classes (`:49`, `:71`); and the callables, because Bend has no first-class
+      functions (`:23`).
+
+      THE ORACLE. **The only thing stubbed is the four `ctypes` loads** — the
+      recorder is not cosmetic, it reproduces `ctypes.CDLL`'s ASYMMETRY, because
+      `:36`'s own comment is about it: subscript (`lib["objc_msgSend"]`) is a FRESH
+      fnptr per `msg`, attribute (`lib.sel_registerName`) is one cached fnptr. A
+      symmetric stub collapsed the file into a shared last-write-wins slot.
+      248 oracle rows, `sys.exit(0)` asserted, and the differ refuses a non-zero
+      exit or a row count below 200. The oracle's section 8 emits rows named
+      EXACTLY as the gate's, so the differ is a plain name lookup; the alias-table
+      version it replaced compared 23 rows and left 87 uncompared.
+
+      FOUR PORT BUGS THE ORACLE CAUGHT, all three of the first ones mine:
+      `getsel_ix` answered 1 for an absent name (index 0 is a real index);
+      `msg_argc` counted the tail of a `d <> r` pattern, and then counted `:36`'s
+      two implicit slots twice; `Idr.own` emitted only the `objc_msgSend` where
+      the real `msg("retain")` sends the selector lookup too; `mangle.rtrim`
+      returned the UNTRIMMED tail, so **every** mangled name came out wrong.
+
+- [ ] **TREE DEFECT, REPORTED NOT FIXED — the Metal host kernel cannot link.**
+      `tinygrad/runtime/ops_cpu.py:19,21` gives `jit_loader` `link_libs=[libm,
+      libSystem]`, and neither exports `sel_registerName`. But
+      `cstyle.py:268` emits `extern void sel_registerName();` into the generated
+      HOST kernel for every `CUSTOM_FUNCTION`, because `hcq2.py:84` names a device
+      symbol after `fn.__name__` and `ccall(SELNAME, sel)` is one. So
+      `(a@a.T).realize()` on `Device['METAL']` raises
+      `RuntimeError: Attempting to relocate against an undefined symbol
+      sel_registerName` — MEASURED end to end. The fix is libobjc in
+      `CPUProgram.link_libs`; `ops_cpu.py` is not this unit's file.
+      **OWNER: whoever owns `runtime/ops_cpu.bend`.**
+      See the note at the end of `bend2-constraints.md` position 10.
+- [ ] **`support/c.py:102-103` — `DLL.findlib`'s `is_file()` gate.** It silently
+      skips `/usr/lib/libSystem.dylib`, which a BARE `ctypes.CDLL` opens fine, so
+      routing `objc.py:30` through `DLL` would break a binding that works today
+      with no `emsg` and no error. MEASURED both ways.
+      **OWNER: whoever owns `runtime/support/c.bend` (or `support/c.py`).**
+- [ ] **`objc.py:30`'s `dispatch_data_create` is NOT a `libSystem` export.** It
+      resolves only through libSystem's re-export chain into
+      `/usr/lib/system/libdispatch.dylib`, and nothing in `tinygrad/` reaches the
+      symbol through a loader that does. One consumer, `ops_metal.py:243`.
+      **OWNER: the `ops_metal` agent** — `runtime/ops_metal.bend` already records
+      `ops_metal.py:86` as a TODO against a `SELECTORS`/`MSGSEND` shape the tree no
+      longer has, and this is the same file's `:243`.
+- [x] **THE DEMONSTRATION BASELINE IS NOT THE PIN BASELINE.**
+      `.agents/slop/rebase/baseline-DEMO.json` records the CURRENT tree and exists to prove
+      the four states are reachable on REAL ports: `TALLY BROKEN=3 NOT-STARTED=13
+      UNCHANGED=5`, with the three BROKEN being `uop/spec.bend` (2 rows), 
+      `codegen/opt/search.bend` (5 rows) and `codegen/rewriter.bend` (3 rows, all
+      row-name collisions). **`.agents/slop/rebase/baseline.json` is untouched** and still
+      holds one port. Delete `baseline-DEMO.json` when a real pin baseline is recorded —
+      leaving it is how a demonstration baseline becomes a silent pass later.
+
+---
+
+## Session 2026-10-03 — `renderer/amd/generate.bend` (the ISA-XML GENERATOR: 541 py, 346 logic)
+
+- [x] **`tinybendygrad/renderer/amd/generate.bend` — PORTED AND GREEN AT 91 ROWS.**
+      `ALL PROOFS CHECK`; `./bin/bend tinybendygrad/renderer/amd/generate.bend` prints
+      91 rows and `ga_gate.py` reports **91 rows, 91 agree, 0 differ** against
+      `.agents/slop/ga-oracle.txt` (**892 rows**, regenerated from CPython this
+      session and verified byte-for-byte reproducible). 2,699 bend lines, 413 defs,
+      23 record types. Ported: `_strip_enc`, `_norm_field`, `_map_flat`,
+      `field_def`, `write_common`, `write_enum`, `write_ins` (all four folds),
+      `write_operands`, `write_pcode`, plus the module tables (`FIXES`,
+      `FIELD_FIXES`, `FIXED_FIELDS`, `ARCHS`, `_SKIP_ENCODINGS`, `NAME_MAP`).
+      Toolchain, all reproducible from the inherited state:
+      `ga-oracle.py` -> `ga-oracle.txt`, `ga_fix.py` -> fixture+gate,
+      `ga_splice.py` (the tail is 10 defs and NOT contiguous),
+      `ga_topo.py` (callee-first), `ga_dedup.py`, `ga_plus.py`, `ga_gate.py`,
+      `ga_mutate.py`, `ga_probe.sh`.
+
+- [x] **`write_ins` is 100% ported and PINNED, not partially.** The inherited file
+      stopped inside `field_def` and never emitted a class; the four folds
+      (base classes with the FLAT `seg` split, variant classes, SDST classes,
+      `functools.partial` helpers) plus the import header are all in, and the two
+      `ins` gate rows diff a WHOLE generated `ins.py` (168 lines each) against
+      CPython's. Ten walks whose `Bool.pick` arm held a self-call were
+      de-exponentialised into `.step` accumulators (`all_ops.eos`, `bases.go`,
+      `variants.go`, `dsl_used`, `extra_fields.go`, `oi_otype`,
+      `variant_suffix.go`, `ss_go`, `sg_go`, `sdst_of`).
+
+- [x] **`write_pcode` PORTED (generate.py:484-499), `extract_pcode` NOT, and the
+      reason is a MEASURED WALL, not an omission.** `bend base --types` lists `F32`
+      and `bend base | grep -c F64` is 0, and `extract_pcode`'s 37 logic lines are
+      seven float decisions (`round(y)` grouping, `55 < x < 65`, `535 < x < 550`,
+      `end_y < y2 < start_y`, `prev_y - curr_y > 30`, `prev_y > 60 and curr_y <
+      730`, `-y` sort) over coordinates `extract_pdf_text` builds by SUMMING PDF
+      `Td` offsets. CPython's `round` is BANKER'S and `F32.round` is
+      half-away-from-zero, so the y-GROUPING would be a different function, not a
+      differently-typed one. `write_pcode` IS ported and IS gated against the dict
+      CPython's own `extract_pcode` returns on the same pages fixture, so the seam
+      is a value and a gate row. WALL 5 in the file header.
+
+- [x] **THE FIXTURE NOW HITS EVERY ARM OF `field_def`'s 19-ROW LADDER.** The
+      mutation table found 11 of them unexercised (only 7 of the 10 DSL field
+      classes were ever emitted; `SBaseField`, `SRsrcField`, `VDSTYField`,
+      `default=NULL` and `default=1` never appeared in any gate row).
+      `ga-oracle.py`'s `fixture_encodings` was extended -- SM now carries the three
+      7-bit SGPR shapes, SOP1 the 8-bit pair plus a 7-bit `soffset`, SOPK the only
+      5-bit (`srsrc`, `ssamp`) and 6-bit (`sbase`) shapes, VOP3P `opsel_hi2` and
+      `vdsty` -- and the oracle was REGENERATED BY CALLING CPython, so no `py=`
+      literal is typed. All ten DSL classes and all three `default=` forms are now
+      in the diff.
+
+- [x] **MUTATION TABLE: `.agents/slop/ga-mutate.txt`, 41 mutations, 40 MOVE ROWS.**
+      The one non-mover is a documented deliberate no-op (M41: `NULL` is in BOTH
+      `_ALL_DSL` and `_DSL_REGS` upstream and upstream takes `sorted(set(...))`, so
+      dropping it from one side cannot move a row -- the table PROVES the
+      redundancy rather than hiding it).
+
+- [x] **THE INHERITED 175 IS ACCOUNTED FOR AND WAS NOT A SUBSET.** It was the 84
+      scalar rows emitted TWICE, plus a stray line, plus three rows whose `gl` call
+      had lost its body. The oracle's 892 are 736 per-LINE rows of four generated
+      Python modules (which the gate joins into 8 whole-file rows so a dropped
+      class, a dropped enum member, a swapped `default=NULL` and a reordered field
+      are four different diffs), 50 `norm_field`, 50 `strip_enc`, 16 `map_flat`,
+      34 `parse_xml`, 4 `pcode`, 1 `pdf`, 6 `order` and 16 table rows.
+
+- [x] **EIGHT MEASURED BEND RULES APPENDED** to
+      `.agents/slop/notes/bend2-constraints.md` as GA1-GA8: `List.sort`'s
+      comparator is `@_ -> @_ -> Bool` and every field accessor is a `match`, so a
+      two-key comparator must destructure once; **`U32.is_lt`/`is_le`/`is_eq`
+      CONSUME their operands too** (the existing note said only `String.*` does);
+      a def body continues with a TERM and not with a leading `++`; **the machine
+      stack is not a fixed budget and the green file failed 2 of 12 back-to-back
+      runs under load** (`ga_mutate.py` retries that stderr 8x); there is no `F64`;
+      a char literal cannot spell `'` or `\`; `Bool` needs `import Base`; and a
+      gate on an emitted file must diff the file.
+
+- [x] **TWO INHERITED PORT BUGS THE GATE CAUGHT, both reported to the file's
+      history rather than left silent.** `write_enum` shipped THREE
+      implementations of the member walk (`write_enum.cells`, `write_enum.go2`,
+      `write_enum.cells.go`) and `write_enum.one` called the wrong-order one; and
+      `field_def`'s `hi_text` was dead code returning a String that `ctor_text`
+      never consumed, so the `BitField(12, lo)` arm could not fire. Both are gone.
+
+- [x] **`field_rules()` HAD `pb=1` IN ALL EIGHT WIDTH-GUARDED ARMS.** The
+      inherited report claimed all 17 arms were gated; they were not, because the
+      guard was `1` in every one, so `field_def` never matched VGPR/SBASE/SRSC/
+      SGPR/SGPRN/SSRC/SSRCN/SRC9. Fixed to the real widths (8,6,5,7,7,7,8,8,8,9)
+      from `generate.py:306-313`. No gate row had reached `field_def` before, which
+      is why nothing caught it.
