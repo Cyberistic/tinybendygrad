@@ -32,11 +32,40 @@ def nlines(p): return len(open(p).read().split('\n')) - 1
 def bend_for(rel): return 'tinybendygrad/' + rel[:-3] + '.bend'
 
 def top_level_defs(path):
-    """every `def`/`class` at column 0, `async def` included"""
+    """every top-level `def`/`class`, plus every top-level `NAME = ...` binding
+
+    GC4, MEASURED HERE, NOT ASSUMED. This used to match only
+    `^(?:async\\s+)?(?:def|class)`, which is a regex over column 0 -- and
+    upstream binds essentially every rewrite table by ASSIGNMENT:
+
+        pm_simplify_ranges = PatternMatcher([...])
+
+    so those names were invisible to `--names`. A prior unit measured 11 of
+    13 of its renames invisible for exactly this reason. Tree-wide, before
+    the fix: 1132 def/class names, 388 assigned names, and the 388 were not
+    in the denominator at all.
+
+    Two consequences, both of which are why this is an AST walk now:
+
+      * the regex could not see `x: int = 1`, `a = b = 1`, or a name first
+        assigned by a plain `def` and rebound later; the AST sees the binding
+        either way, and the set union collapses them as it should.
+      * `__all__` is excluded. It is a re-export manifest, not a definition,
+        and no `.bend` file would ever carry it -- counting it would
+        manufacture "missing" names out of a bookkeeping line.
+    """
+    import ast
     out = set()
-    for l in open(path):
-        m = re.match(r'(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)', l)
-        if m: out.add(m.group(1))
+    try: tree = ast.parse(open(path).read())
+    except SyntaxError: return out
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(node.name)
+        elif isinstance(node, ast.Assign):
+            out |= {t.id for t in node.targets
+                    if isinstance(t, ast.Name) and t.id != '__all__'}
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if node.target.id != '__all__': out.add(node.target.id)
     return out
 
 def bend_defs(path):

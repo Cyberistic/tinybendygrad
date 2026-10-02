@@ -12,36 +12,40 @@ python3 .agents/slop/upstream-delta.py --fetch
 
 ## The pin
 
-| | commit | date |
-|---|---|---|
-| **OUR PIN** — what the vendored `tinygrad/` actually is | `6c3d401cf324` | 2026-09-29 |
-| **UPSTREAM HEAD** | `cff94ae8828d` | 2026-10-02 |
-| **BEHIND** | **51 commits** | 122 files changed, 49 under `tinygrad/` |
-| **PORT-RELEVANT CHANGED** | **31** | files we have a committed `.bend` for |
+**The pin is `6c3d401cf324` and it is NOT to be advanced while drift is open.** The table
+below is what the tooling prints; recompute it rather than trusting it, because it has been
+stale twice today.
+
+| | commit | date | measured |
+|---|---|---|---|
+| **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `6c3d401cf324` | 2026-09-29 | 230 vendored blobs |
+| **UPSTREAM HEAD** | `91b8cb5fa6c0` | 2026-10-02 | 59 commits ahead |
+| **PIN MATCH** | **204/230** | | 26 blobs are past the pin |
+| of which **HAND-EDITED** | **1** | | `runtime/ops_bend.py` — matches no upstream commit |
+| of which **RE-VENDORED** | **25** | | a coupled batch landed; each equals a post-pin commit |
+| **PORT-RELEVANT CHANGED** | **39** | | files we have a committed `.bend` for |
+
+⚠ **THE PIN MATCH COUNT IS NOT A HEALTH SIGNAL, AND SAYING IT IS DROPS IS A BUG THAT HAS
+ALREADY LANDED IN THIS FILE.** It counts *blob ≠ the pin's blob*, so it **falls every time a
+batch is landed correctly** — 210/230 → 204/230 when B1's remainder landed. It also cannot
+tell a hand edit from a correct re-vendor; that conflation is what made "LOCAL EDITS" read
+20 when the true hand-edit count was 1. **The invariant is the HAND-EDIT count, and it must
+be 1** (or 0, if `ops_bend.py` is resolved). See the bottom of this file.
 
 The pin was found **by content, not by assumption**: every one of our 230 vendored blobs is
 hashed and compared against upstream's `tinygrad/` tree, walking history back until the
-match count peaks. It peaked at **229/230**, not 230, and **is now 227/230** — see
-`⚠ THE PIN HAS ALREADY MOVED PART WAY` at the bottom of this file. A drop here is the
-signal that the vendored tree was edited without the pin moving, and it is the entire
-reason this file exists.
+match count peaks. It peaked at **229/230**, not 230 — the one file being `ops_bend.py`.
 
 **`tinygrad/runtime/ops_bend.py`** is the long-standing non-match: a local edit, flagged by
-the script every run. Unresolved: it needs a decision (re-vendor from upstream, or keep
-ours and document why), not a shrug.
+the script every run, and now the *only* one. Unresolved: it needs a decision — re-vendor
+from upstream, or keep ours and document why — not a shrug.
 
-**`tinygrad/dtype.py` and `tinygrad/runtime/ops_null.py`** are *new* non-matches as of
-`d2cde2f2c`. They are half-applied re-vendors, not local edits, and the tree is broken
-because of them.
-
-## Why the pin is a *best* match and not an exact one
-
-A vendored fork will drift from its source in two directions — upstream moves, and we edit
-our copy — so an exact hash match is the wrong invariant. The invariant that matters is:
-**the pin is the newest commit whose tree explains the most of our files**, and the match
-count is reported every run so a regression in it is visible. If the count ever *drops*,
-someone has edited the vendored tree without the pin moving, which is exactly the failure
-this file exists to catch.
+**Why the pin is a *best* match and not an exact one.** A vendored fork will drift from its
+source in two directions — upstream moves, and we edit our copy — so an exact hash match is
+the wrong invariant. The invariant that matters is: **the pin is the newest commit whose
+tree explains the most of our files**, and the count is reported every run so that a
+*hand edit* is visible. Re-vendoring is supposed to move a file away from the pin; that is
+the batch working, not a regression, and the report now says so in those words.
 
 ## The number that matters: PORT-RELEVANT CHANGED
 
@@ -131,6 +135,60 @@ Three things the probe must do, all three of which it initially got wrong:
   probe. Every name the probe mentions must resolve at both ends.
 - **Run a program, not just an import.** Every deleted `AxisType` member is used inside a
   function body, so the broken tree imports cleanly and fails on the first kernel.
+- **Import every module the CANDIDATE SET names**, not a hard-coded list. `DEV=NULL` never
+  imports `codegen/opt/search`, so the probe of the file that BROKE THE IMPORT reported the
+  same verdict for the broken file as for a good one — it never looked at it. That is how
+  `search.py` sat at the pin, unimportable, with `rebase-plan.py` recording it CHANGED and
+  no gate in the tree noticing: **every oracle touching `codegen/opt/` was dead or unwired.**
+  `exercise` now derives the module list from the file list, because the hard-coded `ops_*`
+  list was itself the bug being fixed.
+
+#### ⚠ THE PROBE'S BASELINE WAS THE PIN, AND AFTER A BATCH LANDS THAT IS THE WRONG QUESTION
+
+Every mode above builds *the pin* plus a candidate overlay. That was the right question
+while all 230 blobs matched the pin. **After B1 and B2, 19 of them do not**, so "pin + file
+set" no longer describes the operation anyone performs — the operation is
+`git checkout upstream/master -- <files>` **applied to the working tree**.
+
+`.agents/slop/rebase-try.sh` therefore grew `--from-work` and `--solo-work` (overlay on the
+working tree) and `--shrink-work` (minimise an explicit file list against it). `--shrink`
+against a plan batch is now the *wrong question* too: BATCH 1 is 23 files of which 8 were
+already at HEAD, so shrinking all 23 minimises a set that includes 8 no-ops.
+
+#### THE SIX FILES `--shrink` FOUND REQUIRED, AND WHY NINE MORE ARE NOT OPTIONAL
+
+Shrinking the 15 that still differed gave **6 REQUIRED of 15**: `helpers.py`,
+`support/hcq2.py`, `codegen/opt/search.py`, `ops_null.py`, `support/usb.py`, `ops_amd.py`.
+The other nine probe **green without each other**, and landing only the six is a **silent**
+semantic change:
+
+```
+                                        class table   instance table
+6-file minimum                        3 rules        2 rules   <-- FORK
+all 15                                 3 rules        ABSENT     <-- one table
+```
+
+Upstream moved `pm_bufferize` off the `Compiled` **instance** and onto the **class**:
+`device.py@HEAD` only *declares* `pm_bufferize: Any = None`, `hcq2.py@HEAD` **defines**
+`Compiled.pm_bufferize = PatternMatcher([...])`, and every backend **extends** it with
+`Compiled.pm_bufferize += PatternMatcher([...])`. Our `device.py` still builds
+`self.pm_bufferize` in `__init__` and our `ops_cuda/nv/qcom` still extend the *instance*
+table. So with `hcq2.py` at HEAD and `device.py` behind, hcq2 reads the CLASS table while
+the backends keep extending the INSTANCE one: **two rule tables for one job**, the per-device
+placeholder rules never reach the bufferizer, and **a missing rewrite is not an error.**
+Reproduce with `.agents/slop/rebase-pm-fork.py <repo> <files…>`.
+
+**This is the sixth coupling level, and `rebase-plan.py` does not compute it:** not a name, an
+attribute, a signature or a tuple payload, but *which module a shared attribute is DEFINED
+in*. `rebase-plan.py` reports `ops_null.py -> device.py  use of NEW Compiled.pm_bufferize`,
+which is true and not actionable; the load-bearing edge is
+`device.py <-> hcq2.py <-> every ops_*`. Measured by `rebase-pm-fork.py`, not by an import
+probe — **no probe can see this one**, because nothing raises.
+
+`rebase-plan.py` also computes batches **pin → HEAD**, so once a batch is partly landed its
+answer describes a move that is half already done. `.agents/slop/rebase-remaining.py`
+classifies each vendored blob by *which commit it equals* and reports what is left; use it,
+not `rebase-plan.py`, to decide the next step.
 
 ### Step 3 — declare one of four outcomes, per file
 
@@ -192,6 +250,45 @@ has already been fooled here:
 210-rows → 0 shape — and fails if the gate cannot name it. A detector never shown failing
 is indistinguishable from a detector that cannot fail.
 
+#### ⚠ BATCH 1's GATE STATE IS `NOT-STARTED=23` AND THAT IS THE HONEST ANSWER
+
+`rebase-gate.py --batch 1` returns **no** `UNCHANGED`, `RE-PORTED` or `BROKEN`: all 23 of
+B1's ports are `NOT-STARTED`, 8 for want of a recorded baseline and 15 for want of a wired
+oracle. **Do not fix this with `--record` while the reds are still red** — see below. Guard
+1 was done by hand instead, and it passes:
+
+| | before landing | after landing |
+|---|---|---|
+| 8 ports with oracles, row counts | 1,978 rows | **1,978 rows — identical, per port, per lane** |
+| lanes that went to zero | — | **none** |
+
+By-name comparison against CPython, using the gate's own row extractor and its own oracle
+registry (`.agents/slop/rebase-rows-cmp.py <port> <oracle>`), which is the comparison a
+recorded baseline would have made:
+
+| port | shared rows | disagree |
+|---|---|---|
+| `runtime/support/hcq2.bend` | 157 | 0 |
+| `uop/ops.bend` | 62 | 0 |
+| `uop/spec.bend` | 11 | **2** — `te_len` 56/55, `fu_len` 71/70 |
+| `runtime/ops_metal.bend` | 14 | 0 |
+| `runtime/ops_nv.bend` | 543 | 0 |
+| `runtime/ops_rdma.bend` | 389 | 0 |
+| `codegen/rewriter.bend` | 41 | **3** — `rs_len`, `rs_claim_warp`, `rs_claim_loop` |
+| `codegen/opt/search.bend` | 12 | **5** — `acts_n`, `acts_n_padto`, `acts_zero`, `zero_un9`, `zero_red0` |
+
+**And every one of those 10 reds PREDATES the landing**, measured with
+`.agents/slop/rebase-ab-oracle.py`, which rebuilds the pre-landing tree by blob and runs the
+oracle on both: `rw-oracle.py` **0 of 55 rows moved**, `rebase-oracle-search.py` **0 of 12
+moved**. The single row that *did* change is the one the whole batch was for —
+`rebase-oracle-search.py`'s `#repro_vendored_import` went from
+`AttributeError: type object 'AxisType' has no attribute 'UNROLL'` to `OK:209`.
+
+So the reds are the **RE-PORT backlog**, not fallout from this landing. `--record` now would
+write `acts_n=269` into a baseline as if it were the truth, which is precisely the
+"a row that encodes upstream's bug" failure Step 3 warns about. **Record a baseline only
+after the reds are fixed.**
+
 ## Cadence
 
 tinygrad moves fast — **50 commits in 3 days** at the time of writing, and **31 of our
@@ -229,11 +326,15 @@ re-vendoring, in the other direction.** It vendors files whose ports were never 
 and files with no port at all, so the pin moves while 31 unexamined ports stay unexamined
 — the drift record then under-reports, which is worse than reporting it.
 
-## ⚠ THE PIN HAS ALREADY MOVED PART WAY, AND THE TREE IS CURRENTLY BROKEN
+## ⚠ HISTORY: THE PIN MOVED PART WAY, AND THE TREE WAS BROKEN — BOTH NOW RESOLVED
+
+**This section described a state that no longer exists. Read it as history; the current
+numbers are at the top of this file and the tooling that produces them is
+`upstream-delta.py`.** What follows is kept because the failure mode is the reusable part.
 
 Commit `d2cde2f2c` ("gate harnesses: four of them LIED") re-vendored `tinygrad/dtype.py`
 and `tinygrad/runtime/ops_null.py` to HEAD **without the rest of their batches**. This is
-the per-file anti-pattern, committed, and it is visible in the drift table above:
+the per-file anti-pattern, committed:
 
 ```
 LOCAL EDITS not from upstream (3): tinygrad/dtype.py, tinygrad/runtime/ops_bend.py,
@@ -241,23 +342,148 @@ LOCAL EDITS not from upstream (3): tinygrad/dtype.py, tinygrad/runtime/ops_bend.
 ```
 
 `ops_bend.py` is the known local edit. **`dtype.py` and `ops_null.py` are not** — they are
-half-done re-vendors. The tree does not import as a result:
+half-done re-vendors. `ops_null.py` at HEAD calls `UPat.custom_function`, which HEAD
+`uop/ops.py` defines and the pin does not, so `import tinygrad` raised
+`AttributeError: type object 'UPat' has no attribute 'custom_function'`.
+
+**"Do not 'fix' a file by editing it when it is correct for HEAD and wrong only because its
+batch is missing"** is the rule that came out of this, and it held: `ops_null.py` was
+finished by landing B1, never by hand-patching it.
+
+### ⚠ "LOCAL EDITS" WAS A LIE BY CONFLATION, AND IT IS NOW SPLIT
+
+The number in that block went **3 → 20 → 26** across two batches, and at no point did it
+mean what its label said. "LOCAL EDITS not from upstream" is computed as *blob ≠ the
+pin's blob*, which counts **two opposite things**:
+
+* a file somebody **edited by hand** — the thing this invariant exists to catch;
+* a file **correctly re-vendored** to a post-pin upstream state — the thing a batch is FOR,
+  and which necessarily moves *away* from the pin.
+
+Before any batch landed the two coincided, so a non-match really was a hand edit. Once
+`ad117c92` and `e68c8eaa` landed they diverged: 20 "local edits" with **one** hand edit
+among them. This file was then updated to describe 20 files that were 19 correct
+re-vendors, which is how a stale warning becomes worse than no warning.
+
+Landing B1's remainder took the count from **20 to 26** and the pin match from **210/230 to
+204/230** — which reads exactly like the regression this file warns about, and is its
+opposite. **A pin-match count that falls when a batch lands correctly is not a signal.**
+
+`upstream-delta.py` now reports the two kinds separately, and only the first is an alarm:
 
 ```
-AttributeError: type object 'UPat' has no attribute 'custom_function'
-  tinygrad/runtime/ops_null.py:57, in NullDevice
+⚠ HAND EDITS -- match NO upstream commit (1): tinygrad/runtime/ops_bend.py
+RE-VENDORED past the pin (25): a coupled batch landed; these EQUAL a post-pin
+                              upstream commit, which is the goal, not a regression.
 ```
 
-`ops_null.py` at HEAD calls `UPat.custom_function`, which HEAD `uop/ops.py` defines and the
-pin does not. **That is B1's coupling, arriving file-at-a-time.**
+`ops_bend.py` remains the one unresolved local edit. It needs a decision — re-vendor from
+upstream, or keep ours and document why — not a shrug.
 
-`dtype.py` is B2's dependency and is genuinely at HEAD, but `renderer/cstyle.py` — its other
-half — is still at the pin, and HEAD `cstyle.py` is what needs `dtypes.i8`. So B2 is half
-applied in the safe direction and the tree survives that much only because `cstyle.py` has
-not moved yet.
 
-**To restore a working tree, finish B2 or revert B2.** Do not "fix" `ops_null.py` by
-editing it; it is correct for HEAD and wrong only because its batch is missing.
+---
 
-The pin match count dropping from **229/230 to 227/230** is this, caught by the invariant
-this file was written to protect. That is the check working.
+## APPEND 2026-10-03: THE MISSING-FILE ENUMERATION, AND TWO THINGS THE PIN DOES NOT SEE
+
+Added, not substituted: **nothing above this line was edited.** The pin is not moved.
+
+### THE ANSWER IS 0. WE WERE NOT MISSING FILES.
+
+```bash
+python3 .agents/slop/unvendored.py
+```
+
+| | count |
+|---|---|
+| upstream `.py` under `tinygrad/` at the pin `6c3d401cf324` | **213** |
+| upstream `.py` under `tinygrad/` at HEAD `91b8cb5fa` | **213** |
+| **MISSING at the pin** | **0** |
+| **MISSING at HEAD** | **0** |
+| missing non-`.py` blobs (the 9 js, 2 css, 2 html, `py.typed`, `.sh`, `.md`) | **0** |
+| extra (ours, no upstream counterpart at that path) | 2 |
+
+The pin and HEAD have the **same 213 paths** — `git diff --name-status 6c3d401cf324
+upstream/master -- tinygrad/` reports only `M`, no `A` and no `D` — so "at the pin" and "at
+HEAD" are one answer, not two. Cross-checked three ways so that a 0 is not one tool's opinion:
+`comm` on the path lists, a basename comparison at **any** extension (empty, so nothing was
+relocated and nothing was dropped), and a blob-hash walk.
+
+**Nothing to classify, rank, or close.** There is no real gap and no ambiguous entry, because
+the list is empty. The two extras are `tinygrad/runtime/ops_bend.py` (the declared local edit)
+and `tinygrad/examples/beautiful_mnist.py`.
+
+### ⚠ SO THIS ENUMERATION IS NOT THE INSTRUMENT FOR THE `DEV=MOCK` FAILURE, AND NEVER WAS
+`DEV=MOCK` failed with `ModuleNotFoundError: No module named 'tinygrad.runtime.ops_mock'`
+because `device.py:37` builds the module name dynamically as `ops_{x}`. **There is no
+`ops_mock.py` upstream, so the set difference is EMPTY for it** — the measurement reports "no
+gap" while the tree is one `DEV=` from a hard crash. A path-set difference can only find a
+missing FILE; that failure was a missing NAME. `device.py:37` is the **only** site in all 213
+files that constructs an importable module name at runtime.
+
+The name space was therefore measured too, by **really importing** all 215 modules and really
+checking every `from tinygrad.X import a`, with resolution delegated to CPython rather than
+re-implemented:
+
+```
+215 modules imported · 0 missing modules · 0 missing names
+  1 conditionally bound (NOT a gap): tinygrad.uop.ops.launch_viz
+  4 dynamic import templates, 3 of them runtime/autogen/ (out of scope)
+```
+
+and the `DEV=` space closed by `dev-space-oracle.py`, **23 rows, exit 0**: every backend
+upstream declares resolves to a `Compiled`, every `ops_<x>` we ship imports, and the only
+`NO FILE` rows are names no upstream commit ever claimed. `WEBGPU` is `LOAD FAILS`, not a gap —
+no WebGPU on this machine, which is a different thing from a missing file.
+
+**`MOCK` is an INTERFACE, not a device.** `DEV` parses at `helpers.py:206` as
+`[iface+]dev[:renderer][:arch]`, so `+` means **iface + dev**: `MOCK+CL` → device `CL`
+(resolves), `CL+MOCK` → device `MOCK` (does not). Both were measured, because the asymmetry is
+the whole explanation and it is not guessable from reading one of them.
+
+### ⚠ A HAND EDIT NO TOOL IN THE TREE NAMES: `tinygrad/renderer/cstyle.py`
+`unvendored.py` section 4 classifies provenance, and this file is the finding:
+
+```
+equals upstream HEAD                   189
+equals the PIN (behind, correct)        23
+equals NEITHER                          1   tinygrad/renderer/cstyle.py
+```
+
+`11217606b` matches **no commit in any ref** — not `upstream/master`, not any of the ~500
+fetched upstream branches, not our own history. It is +31/-28 from the pin and +4/-4 from HEAD:
+the pin→HEAD moves landed, and on top of them `CStyleLanguage.param_type` was **inlined into
+its one caller and deleted**, and `type_map` hoisted into the class with subclasses composing
+from it. Commit `e68c8eaa2` ("rebase B2") introduced it.
+
+**It is a no-op, and only calling CPython established that.** Upstream's `param_type` passes
+`_render_dtype(p.dtype, 1, p.addrspace, True, ...)` **positionally**; the inline passes the same
+values by **keyword**. Evaluated side by side in one process over **240 (dtype × volatile ×
+addrspace) triples: 0 differences** — `sz=1` and `mutable=True` are the defaults. So this is a
+provenance defect, not a correctness one.
+
+**Why it still matters, in two ways that are both load-bearing:**
+
+1. `param_type` exists upstream at three sites and does not exist in our reference tree, so the
+   1:1 naming rule ("def names match upstream exactly") is **unsatisfiable** for
+   `renderer/cstyle.bend`, which indeed declares no `param_type`. The rule was violated in the
+   reference tree, and the port inherited it.
+2. **`upstream-delta.py` cannot see it.** That script reports `HAND EDITS (2)` naming
+   `tinygrad/examples/beautiful_mnist.py` and `tinygrad/runtime/ops_bend.py` — and
+   **`ops_bend.py` is not an upstream file**, so it can never appear in a walk over upstream's
+   paths. The **HAND-EDIT invariant this file declares ("it must be 1") is therefore not
+   measuring what it says it measures**: the count reads `2`, one of those two is outside the
+   set being walked, and the one upstream file that genuinely matches no upstream commit is
+   named by nothing. **A detector that walks the wrong side of the comparison reads healthy
+   while the set it cares about has an unnamed member.**
+
+**This is an owner decision, not an agent's** (SCOPE DECISION, Step 3): re-vendor `cstyle.py`
+from HEAD and port `param_type`, or keep ours and record it beside `ops_bend.py` as the second
+declared local edit. Either way the HAND-EDIT count needs to be computed over OUR files and
+hashed against upstream history, not over upstream's files. **`renderer/**` belongs to another
+agent; this was measured and reported, not edited.**
+
+### `tinygrad/examples/beautiful_mnist.py` IS AT A PATH UPSTREAM DOES NOT HAVE
+Byte-identical to upstream's `examples/beautiful_mnist.py` (`3826e625`), but upstream has **no
+`tinygrad/examples/` directory at all** — `git ls-tree upstream/master -- tinygrad/examples/` is
+empty. Staged, not committed, and added at 07:14 during this session, so it is most likely a
+concurrent agent mid-task; `examples/` is out of scope regardless. **Reported, not touched.**
