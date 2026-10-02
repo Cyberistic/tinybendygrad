@@ -156,12 +156,98 @@ def main():
     fails.append("malformed baseline is named")
   print(f"        {why}")
 
+  fails += oracle_template()
+
   print()
   if fails:
     print(f"{len(fails)} FAILED: {', '.join(fails)}")
     return 1
   print("all states reachable -- a gate that cannot fail is not a gate")
   return 0
+
+
+# THE SIX STATES EVERY ORACLE I WRITE MUST BE ABLE TO REPORT. This is the TEMPLATE, and it is
+# here rather than in prose because the failure it prevents has already happened: twelve
+# committed files printed 0 rows for an hour and a harness reported success, because "0
+# disagreements" over "0 comparisons" is indistinguishable from agreement. An oracle that
+# has never been shown producing each of these six verdicts is an oracle whose green means
+# nothing.
+#
+#   1 DEAD LANE          the oracle exits non-zero                -> BROKEN, naming the lane
+#   2 EMPTY OUTPUT       the oracle prints no name=value row       -> BROKEN, "compared nothing"
+#   3 NO SHARED ROW NAME the oracle's names are all different      -> BROKEN, naming the pair
+#   4 A SHARED NAME DIFFERS                                      -> BROKEN, counting the rows
+#   5 AGREEMENT                                               -> UNCHANGED
+#   6 MALFORMED BASELINE a baseline.json of the wrong shape      -> named, not absorbed
+#
+# `ORACLE_CONFORMANCE` lists the oracles this session wired into BASE_ORACLES, and the loop
+# drives the SAME `gate_port()` main() calls with each one's own row NAMES as the fixture. A
+# new oracle that cannot pass this is not finished.
+ORACLE_CONFORMANCE = [
+  # (port, oracle, shared-row count MEASURED by rebase-survey.py / by the oracle)
+  ("tinybendygrad/uop/spec.bend", ".agents/slop/rebase-oracle-spec.py", 11),
+  ("tinybendygrad/uop/ops.bend", ".agents/slop/rebase-oracle-ops.py", 62),
+  ("tinybendygrad/codegen/opt/search.bend", ".agents/slop/rebase-oracle-search.py", 12),
+  ("tinybendygrad/runtime/ops_rdma.bend", ".agents/slop/oracle_rdma_gate.py", 389),
+  ("tinybendygrad/runtime/ops_nv.bend", ".agents/slop/nv-oracle.py", 543),
+  ("tinybendygrad/runtime/support/hcq2.bend", ".agents/slop/hcq2-oracle.py", 157),
+  ("tinybendygrad/runtime/ops_metal.bend", ".agents/slop/mt_seam_rows.py", 14),
+  ("tinybendygrad/codegen/rewriter.bend", ".agents/slop/xd1/rw-oracle.py", 41),
+]
+
+
+def oracle_template():
+  """Drive the six states through gate_port() for each wired oracle. Returns failure names."""
+  fails = []
+  for port, oracle, shared_n in ORACLE_CONFORMANCE:
+    g = load_gate(f"conformance_{pathlib.Path(oracle).stem}")
+    # THE FIXTURE IS THE ORACLE'S OWN ROW SET, taken from the recorded survey, so the states
+    # are produced over the names this oracle actually emits. Synthetic names would pass a
+    # broken oracle and fail a working one, which is the same inversion as a shape mismatch.
+    port_rows = {f"r{i}": str(i) for i in range(shared_n)}
+    doc = {"lanes": {port: {"interpreted": dict(port_rows)}},
+           "hunks": {port: {"tinygrad/probe.py": {"api_delta": {"added": ["sym"]},
+                                                  "diff_stat": "1 file changed"}}}}
+    bend = FakeBend(port)
+
+    def synth(rows_by_lane, lanes):
+      g.run_port = lambda *a, **k: (lanes, rows_by_lane)
+      return g.gate_port(bend, [oracle], doc, native=True)[0]
+
+    ok_lanes = {"interpreted": {"rc": 0}, "native": {"rc": 0}, "cpython:o": {"rc": 0}}
+    dead = synth({"interpreted": dict(port_rows)},
+                 {"interpreted": {"rc": 0}, "cpython:o": {"rc": 1, "err": "boom"}})
+    # EMPTY OUTPUT is the `dtype_tables.py` shape: the oracle lane EXITS 0 and emits no rows.
+    # Removing the lane entirely is a different case and would be caught by a different
+    # guard, so the fixture keeps the lane and empties it -- which is what a TSV-printing
+    # oracle does when `rows()` keys on `=`.
+    empty = synth({"interpreted": dict(port_rows), "cpython:o": {}}, ok_lanes)
+    noshare = synth({"interpreted": dict(port_rows),
+                     "cpython:o": {f"unrelated{i}": "0" for i in range(shared_n)}}, ok_lanes)
+    differ = synth({"interpreted": dict(port_rows),
+                    "cpython:o": {**port_rows, "r0": "MUTATED"}}, ok_lanes)
+    # AGREEMENT: the oracle is missing one shared row, and every row they DO share agrees.
+    # This is the state that matters and the one that is easiest to get wrong -- a lane pair
+    # can share 388 of 389 names, agree on all 388, and be comparing almost nothing.
+    agree = synth({"interpreted": dict(port_rows),
+                   "cpython:o": {k: v for k, v in list(port_rows.items())[1:]}}, ok_lanes)
+
+    cases = [("dead lane", dead, "BROKEN", "lane"),
+             ("empty output", empty, "BROKEN", "compared nothing"),
+             ("no shared row name", noshare, "BROKEN", "share NO row names"),
+             ("a shared name differs", differ, "BROKEN", "disagree"),
+             ("agreement", agree, "UNCHANGED", "zero rows moved")]
+    bad = [f"{pathlib.Path(oracle).name}: {nm}" for nm, v, ws, wt in cases
+           if not (v["state"] == ws and wt.lower() in v.get("why", "").lower())]
+    g.run_port = lambda *a, **k: (ok_lanes, {"interpreted": dict(port_rows),
+                                             "cpython:o": dict(port_rows)})
+    bad_doc = g.baseline_for({"interpreted": dict(port_rows)}, port)
+    if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2]:
+      bad.append(f"{pathlib.Path(oracle).name}: malformed baseline")
+    print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle).name}: six states "
+          f"reachable ({shared_n} shared row names)")
+    fails += bad
+  return fails
 
 
 if __name__ == "__main__":
