@@ -7,6 +7,13 @@ byte for byte:
     ./bin/bend tinybendygrad/mixin/elementwise.bend > /tmp/bd.txt
     diff /tmp/py.txt /tmp/bd.txt
 
+This script is the AUTHORITY. It is the only side of that diff that was derived from
+CPython rather than from the port, so it must be regenerated, never hand-edited. It
+is an EMITTER and not a differ: it cannot report "0 rows compared", so the recipe's
+`diff` is what says whether anything moved -- and a `diff` that prints nothing means
+the two files are identical, which is a claim about BYTES and not about rows. Print
+`wc -l` on both sides before believing a clean diff.
+
 NOTHING IS EXECUTED. Every graph row is the SIGNATURE of the lazy graph
 elementwise.py BUILDS -- `n=<count> OP/<nsrc> ...` in DFS-postorder toposort with
 the bare `Enum.name` -- so the oracle needs no device, which is the whole reason
@@ -81,7 +88,7 @@ def dtsrc(u, k, nm):
 # a float32 BUFFER of four and an int8 BUFFER of four, both device PYTHON, so the
 # two promotion cells that need a non-weak dtype both have a fixture.
 f4 = Tensor([1., 2., 3., 4.], device='PYTHON')
-i4 = Tensor([1, 2, 3, 4], device='PYTHON', dtype=dtypes.int8)
+i4 = Tensor([1, 2, 3, 4], device='PYTHON', dtype=dtypes.i8)
 u4 = Tensor([1, 2, 3, 4], device='PYTHON')
 c3 = Tensor(3)
 cT = Tensor(True)
@@ -215,13 +222,35 @@ dtsrc(c3.uop.add(Tensor(5).uop), 1, 'ew_dt_weak')
 dtsrc(i4.uop.add(u4.uop), 1, 'ew_dt_cast')
 dtsrc(u4.uop.add(cT.uop), 1, 'ew_dt_bool_cast')
 
+# --- THE SECOND CONJUNCT: `promote`'s `t._uop.base.op is Ops.CONST` -------------
+# elementwise.py:31-33 is a CONJUNCTION, and every fixture above holds a weak CONST,
+# so the second conjunct is never load-bearing. The one CPython-reachable weak tensor
+# that is not a CONST is an ALGEBRAIC result, and that is this fixture: `Tensor(3) +
+# Tensor(5)` is weakint whose base op is ADD, so promoting THAT against an int32 must
+# take the CAST arm -- `weak_dtype(int32)` is weakint, so the weak arm would keep it.
+# These two rows print in the port's order (immediately after `ew_dt_bool_cast`) so
+# the diff stays a positional one.
+#
+# `ew_promo_nc` -- the SIGNATURE of that graph -- is deliberately NOT here, and the
+# reason is not laziness: the port builds it from a BUFFER of a weak dtype, and
+# CPython cannot build that at all. `Tensor.empty(..., dtype=dtypes.weakint)` raises
+# `cannot create storage for weak dtype dtypes.weakint` (tinygrad/mixin/creation.py:37),
+# so the port's fixture has no CPython counterpart and a row printed here would be
+# comparing two different graphs. Measured both ways: this fixture is
+# `7 CONST/0 CONST/0 ADD/2 CAST/1 CONST/0 CAST/1 ADD/2 ` and the port's is
+# `5 BUFFER/0 ADD/2 CAST/1 BUFFER/0 ADD/2 `. The two DERIVED values below agree,
+# which is why they are gates and the count is not.
+NC = (Tensor(3) + Tensor(5)).uop + Tensor(7, dtype=dtypes.i32).uop
+dtsrc(NC, 0, 'ew_dt_promo_nc')
+opat(NC, 0, 'ew_op_promo_nc')
+
 # --- the promotion lattice itself, from dtype.py:193 ----------------------------
-row('ew_lud_weakint_int32', least_upper_dtype(dtypes.weakint, dtypes.int32) == dtypes.int32)
-row('ew_lud_bool_int32', least_upper_dtype(dtypes.bool, dtypes.int32) == dtypes.int32)
-row('ew_lud_weakint_float32', least_upper_dtype(dtypes.weakint, dtypes.float32) == dtypes.float32)
-row('ew_lud_int8_uint8', least_upper_dtype(dtypes.int8, dtypes.uint8) == dtypes.int16)
-row('ew_wd_int32', weak_dtype(dtypes.int32) == dtypes.weakint)
-row('ew_wd_float32', weak_dtype(dtypes.float32) == dtypes.weakfloat)
+row('ew_lud_weakint_int32', least_upper_dtype(dtypes.weakint, dtypes.i32) == dtypes.i32)
+row('ew_lud_bool_int32', least_upper_dtype(dtypes.bool, dtypes.i32) == dtypes.i32)
+row('ew_lud_weakint_float32', least_upper_dtype(dtypes.weakint, dtypes.f32) == dtypes.f32)
+row('ew_lud_int8_uint8', least_upper_dtype(dtypes.i8, dtypes.u8) == dtypes.i16)
+row('ew_wd_int32', weak_dtype(dtypes.i32) == dtypes.weakint)
+row('ew_wd_float32', weak_dtype(dtypes.f32) == dtypes.weakfloat)
 row('ew_wd_bool', weak_dtype(dtypes.bool) == dtypes.bool)
 row('ew_weaks', tuple(dtypes.weaks) == (dtypes.weakint, dtypes.weakfloat))
 # NOTE ON A ROW THAT IS DELIBERATELY ABSENT: `least_upper_dtype(void, int32)`

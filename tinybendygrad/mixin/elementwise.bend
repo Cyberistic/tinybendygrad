@@ -70,13 +70,32 @@
 #      builds returns a `Found` or a `Tensor` carrying the GROWN arena, and
 #      `ew_promo2` re-folds between the two promotions for exactly that reason.
 #
-# THE GATE is at the foot: 69 rows, with the MEASURED mutation table under it. Both
-# lanes print the same rows and both are byte-identical to CPython:
+# THE GATE is at the foot: 72 rows, with the MEASURED mutation table under it.
+# `ew-gate.py` IS THE AUTHORITY -- it is the only side derived from CPython rather
+# than from this file -- so it is regenerated, never hand-edited.
 #     .venv/bin/python .agents/slop/ew-gate.py > /tmp/py.txt
 #     ./bin/bend tinybendygrad/mixin/elementwise.bend > /tmp/bd.txt
 #     ./bin/bend tinybendygrad/mixin/elementwise.bend -o /tmp/ew && /tmp/ew > /tmp/nat.txt
-#     cmp /tmp/py.txt /tmp/bd.txt && cmp /tmp/py.txt /tmp/nat.txt
-# EVERY row is derived from CPython rather than restated from this file, and three
+#     wc -l /tmp/py.txt /tmp/bd.txt       # 71 vs 72 -- COUNTS FIRST. A clean `diff`
+#                                         # over two EMPTY files is also clean.
+#     cmp /tmp/py.txt /tmp/nat.txt          # the two BEND lanes agree
+#     diff /tmp/py.txt /tmp/bd.txt          # 71 vs 72 -- ONE ROW DIFFERS, and
+#                                           # that is the honest state, not a
+#                                           # byte-identical claim.
+# THE ONE IS `ew_promo_nc`, and it is UNFALSIFIABLE, which is a stronger statement
+# than "three rows disagree". `ew-gate.py` NOW PRINTS the other two of that family
+# (`ew_dt_promo_nc=i32`, `ew_op_promo_nc=CAST`) from live CPython, both for the
+# fixture at :1253-1260 -- `Tensor(3) + Tensor(5)` is weakint with base op ADD;
+# after `+ Tensor(7, dtype=dtypes.i32)` its src0 is `int` with op CAST -- and both
+# AGREE with this port, so M13's conjunct is gated by CPython rather than by a
+# paragraph. The SIGNATURE row stays unpaired because this file builds it from a
+# BUFFER of a weak dtype and CPython cannot build that at all: `Tensor.empty(...,
+# dtype=dtypes.weakint)` raises "cannot create storage for weak dtype" at
+# tinygrad/mixin/creation.py:37. MEASURED both ways -- CPython's reachable fixture
+# is `7 CONST/0 CONST/0 ADD/2 CAST/1 CONST/0 CAST/1 ADD/2 ` and this file's is
+# `5 BUFFER/0 ADD/2 CAST/1 BUFFER/0 ADD/2 `. Printing the CPython one would compare
+# two different graphs, so it is named rather than faked.
+# EVERY OTHER row is derived from CPython rather than restated from this file, and three
 # kinds of row exist because three kinds of bug are invisible to the others: the
 # COUNT (a dropped or duplicated node), the INDEX/OP rows (`sub` builds an ADD with
 # a negated rhs and NOT an `Ops.SUB`; `eq` builds a CMPNE and NOT a `CMPEQ`; two
@@ -802,9 +821,14 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 #
 # EVERY ROW IS A GRAPH SHAPE, and the shape is the SIGNATURE of the toposort --
 # `n=<count> OP/<nsrc> ...` in DFS-postorder with the BARE enum name -- so the
-# oracle runs without hardware and the two lanes diff byte for byte:
+# oracle runs without hardware and the lanes diff byte for byte. `ew-gate.py` is
+# the AUTHORITY: it is derived from CPython and this file is not, so a difference
+# is a bug in THIS file unless the row is one of the named unfalsifiable ones at
+# the head (currently exactly one, `ew_promo_nc`).
 #     .venv/bin/python .agents/slop/ew-gate.py > /tmp/py.txt
 #     ./bin/bend tinybendygrad/mixin/elementwise.bend > /tmp/bd.txt
+#     wc -l /tmp/py.txt /tmp/bd.txt        # 71 vs 72 -- counts first: a clean
+#                                          # `diff` over two empty files is clean
 #     diff /tmp/py.txt /tmp/bd.txt
 #
 # The `n=` is in every signature on purpose. A boolean row that says "the ADD is
@@ -1253,7 +1277,7 @@ def t_dt_bool_cast() -> IO(Unit): ew_dtsrc("ew_dt_bool_cast", g_promo_bool_cast(
 # and promoting THAT against an int32 must CAST. CPython, elementwise.py:31-33:
 #
 #     Tensor(3) + Tensor(5)                        -> weakint, base op ADD
-#     ... + Tensor(7, dtype=dtypes.int32)          -> src0 int, src0 op CAST
+#     ... + Tensor(7, dtype=dtypes.i32)          -> src0 int, src0 op CAST
 #
 # because `weak_dtype(int32)` is weakint, so the weak arm would KEEP it -- and the
 # weak arm is only for CONSTs. Dropping the conjunct keeps it weakint and the root
@@ -1366,7 +1390,7 @@ def main() -> IO(Unit):
 # | M10 | `ew_logical_not`: drop the `cast(bool)` | 1 (`ew_lnot_i`) | `self.cast(dtypes.bool).ne(True)`'s CAST. |
 # | M11 | `ew_sub.of`: `O.OpsADD{}` -> `O.OpsSUB{}` | 3 | `sub` is an ADD over a negated rhs and NOT an `Ops.SUB`. |
 # | M12 | a comment-only edit | 0 -- THE CONTROL | a mutation table with no row that CANNOT move is a table of coincidences. |
-# | M13 | `ew_promote`: `Bool.and(W.dt_weak(dt), ew_is_const(fx, b))` -> `W.dt_weak(dt)` | 2 (`ew_dt_promo_nc`, `ew_op_promo_nc`) + the `ew_promo_nc` count 5->4 | `elementwise.py:31`'s SECOND conjunct, `t._uop.base.op is Ops.CONST`. This one was a REAL DEFECT, not a coverage hole: the port tested `t.dtype in dtypes.weaks` alone, and every other fixture in this file holds a weak CONST, so the conjunct was true wherever it was read and the gate could not see it. `weak_dtype(out_dtype)` is weak whenever `out_dtype` is strong, so the missing conjunct keeps a weakint ADD weakint against int32, and the root then adds weakint to int32 -- a promotion the lattice forbids. CPython: `Tensor(3)+Tensor(5)` is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.int32)` its src0 is `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture in this file whose weak tensor is NOT a CONST. |
+# | M13 | `ew_promote`: `Bool.and(W.dt_weak(dt), ew_is_const(fx, b))` -> `W.dt_weak(dt)` | 2 (`ew_dt_promo_nc`, `ew_op_promo_nc`) + the `ew_promo_nc` count 5->4 | `elementwise.py:31`'s SECOND conjunct, `t._uop.base.op is Ops.CONST`. This one was a REAL DEFECT, not a coverage hole: the port tested `t.dtype in dtypes.weaks` alone, and every other fixture in this file holds a weak CONST, so the conjunct was true wherever it was read and the gate could not see it. `weak_dtype(out_dtype)` is weak whenever `out_dtype` is strong, so the missing conjunct keeps a weakint ADD weakint against int32, and the root then adds weakint to int32 -- a promotion the lattice forbids. CPython: `Tensor(3)+Tensor(5)` is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.i32)` its src0 is `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture in this file whose weak tensor is NOT a CONST. |
 #
 # M9 is the one to read twice. It moves exactly the two rows whose graph crosses a
 # promotion that MINTS, and nothing else -- which is the point: a sibling-arena bug is

@@ -3,6 +3,13 @@
 output.  A `py=` that disagrees is a WRONG EXPECTATION, which is a port bug or a
 transcription bug -- either way it must not survive.
 Usage: python3 .agents/slop/dsp_gate_check.py <lane-output-file>
+
+THIS HAS NO AUTHORITY. Both sides of this comparison come out of ops_dsp.bend: the
+lane's printed value and the `py=` literal baked into the same file. It therefore
+answers "is the port self-consistent", never "does the port agree with CPython",
+and it must never print the word CPython -- the day it can, it is a real gate and
+this file is a strictly weaker thing. It says so on every run so nobody has to
+remember.
 """
 import re, sys
 SRC = "tinybendygrad/runtime/ops_dsp.bend"
@@ -11,6 +18,11 @@ for ln in open(sys.argv[1]):
   if "=" in ln:
     k, v = ln.rstrip("\n").split("=", 1)
     out[k] = v
+# 0 rows is not 0 disagreements: an empty lane file used to print "py= rows
+# matching: 0" and exit 0, which reads exactly like a clean run.
+if not out:
+  sys.exit("LANE DID NOT RUN: %s printed 0 name=value rows, so nothing was compared."
+           % sys.argv[1])
 bad, ok, noexp = [], 0, []
 for i, ln in enumerate(open(SRC), 1):
   m = re.search(r'\b(?:row|urow|srow|lrow)\("([^"]+)",.*?#\s*py=(.*)$', ln)
@@ -25,6 +37,7 @@ for i, ln in enumerate(open(SRC), 1):
     bad.append((i, name, want, got))
   else:
     ok += 1
+print(f"AUTHORITY: NONE -- both sides of this comparison come from {SRC}")
 print(f"py= rows matching: {ok}")
 print(f"py= rows MISMATCHED: {len(bad)}")
 for i, n, w, g in bad:
