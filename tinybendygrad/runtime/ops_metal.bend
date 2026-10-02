@@ -2833,15 +2833,17 @@ def pmb_metal(+ar: D.Bar, +n: PmbNode, ne: U32) -> PmbRun:
   pmb_go(3n, ar, n, ne, PmbRun{ar, False{}, PMB_NONE(), 0n})
 
 # `+ self.pm_bufferize` -- the TAIL of :220, and it is `device.bend`'s OWN scan
-# called, not a second copy of it. `Compiled`'s three rules read `is_param`,
+# called, not a second copy of it. `Compiled`'s TWO rules read `is_param`,
 # `tag="timeline"` and `name="b"`, and the first two are the `PmbNode` fields
-# that carry them across.
+# that carry them across. `device.bend`'s `Pn` lost its fourth `cfunc` field when
+# upstream `bdddaad21` deleted `pm_bufferize`'s `cfunc_buf` rule, so the trailing
+# `False{}` this call used to pass is gone.
 def pmb_tail(+ar: D.Bar, +n: PmbNode) -> PmbRun:
-  +p = D.pmb_bufferize(ar, D.param(PmbNode.par(n), PmbNode.tl(n), PmbNode.named_b(n), False{}))
+  +p = D.pmb_bufferize(ar, D.param(PmbNode.par(n), PmbNode.tl(n), PmbNode.named_b(n)))
   PmbRun{D.Pmb.ar(p), True{}, D.Pmb.got(p), 0n}
 
 # THE WHOLE OF :216-220. The `+` IS a list concatenation and `rewrite` is
-# FIRST-WINS, so Metal's three rules are consulted BEFORE device.bend's three --
+# FIRST-WINS, so Metal's three rules are consulted BEFORE device.bend's two --
 # and this is the only place that ordering is written down.
 def pm_bufferize(+ar: D.Bar, +n: PmbNode, ne: U32) -> PmbRun:
   +a = pmb_metal(ar, n, ne)

@@ -31,24 +31,60 @@
 # decisions read, and it is why `view` can be checked at all.
 #
 # ---------------------------------------------------------------------------
-# TWO FIRST-WINS CLAIMS, both load-bearing, and they are different kinds.
+# ONE FIRST-WINS CLAIM, and it is an ORDER.
 #
 # 1. `_canonicalize` (device.py:26) collapses `cpu:0` and `CPU` onto ONE
 #    registry slot, so `Device['cpu:0'] is Device['CPU']` and opening both
 #    opens one device. `open_one` is that count, and nothing else notices a
 #    canonicalize that forgets the `:0` strip -- it would print `open_two`.
-# 2. `pm_bufferize` (device.py:403) has THREE rules and rules 2 and 3 carry the
-#    IDENTICAL pattern `UPat(Ops.PARAM, name="b")`. The fold is first-wins, so
-#    rule 3 -- the `cfunc_buf` one -- CANNOT EVER RUN, for any input. That is
-#    not a simplification, it is what Python does. `pmb_dead` says so: a PARAM
-#    named `b` that IS a cfunc still gets rule 2's freshly-allocated program
-#    buffer, and a last-wins fold would hand it a cfunc buffer instead.
 #
-# A third, which is an ORDER rather than a rule: `ALL_DEVICES` (device.py:20) is
+# A THIRD, which is an ORDER rather than a rule: `ALL_DEVICES` (device.py:20) is
 # nine names and `get_available_devices` (device.py:46) yields in that order
 # and `_select_device` (device.py:58) takes `next(...)`. AMD is second and CPU
 # is seventh, so with both openable the default is AMD. `first_amd` is that row
 # and a last-wins fold prints CPU.
+#
+# ---------------------------------------------------------------------------
+# `pm_bufferize` LOST ITS FIRST-WINS DISCRIMINATOR, and this records why.
+#
+# This header used to claim `device.py:403` has THREE rules of which "rules 2
+# and 3 carry the IDENTICAL pattern `UPat(Ops.PARAM, name="b")`, so rule 3 --
+# the `cfunc_buf` one -- CANNOT EVER RUN, for any input", and `pmb_cfunc` was
+# the row that said so. That was TRUE at the pin and it is now GONE, for two
+# separate reasons, and the second is the one that matters:
+#
+#   1. Upstream `bdddaad21` ("ccall by symbol", #18521) DELETED rule 3 outright.
+#      `ccall` stopped needing a `Buffer` to hold a C function pointer -- it is
+#      now `UOp.custom_function(fn.__name__, dtype=ret).call(...)` -- so nothing
+#      in `device.py` is ever a `PARAM` tagged `"cfunc"` again. `Pn.cfunc`,
+#      `pmb_cond2`, `rule2`, `rule2.go` and answer `3` had no upstream
+#      counterpart left, and a row that can never move is a DEAD CLAIM rather
+#      than drift, so they were DELETED here. `--check-only` was read after each.
+#   2. Even before the deletion, answer `3` was UNREACHABLE IN THE PORT TOO, and
+#      that is measured rather than argued: `pmb_cfunc` printed **2**, not 3.
+#      Rule 2 claims the node first and `pmb.keep` is first-wins, so `Step.cand`
+#      for rule 3 was computed and then DISCARDED. Nothing in the whole import
+#      closure ever printed 3 -- `ops_metal.bend:2840`, the only other caller of
+#      `D.param`, hard-coded the fourth argument to `False{}`.
+#
+# So the two rows that went are NOT a loss of coverage that could be restored:
+# `pmb_cfunc` is bit-identical to `pmb_named` once the `cfunc` field is gone, and
+# `pmb_cfunc_noname` is bit-identical to `pmb_none`, so keeping either would have
+# been a CHANGE-DETECTOR row -- a row that passes however wrong the port is.
+# `pmb_nonparam` survives, and it still has a job: it is the only fixture that
+# can see rule 1's guard lose `is_param`.
+#
+# WHAT IS LOST AND CANNOT COME BACK: with two rules whose patterns are
+# `tag="timeline"` and `tag="program", name="b"`, and a PARAM carrying ONE tag,
+# NO node can be claimed twice -- so `pmb.keep`'s "accumulator already taken"
+# arm is unreachable from any honest fixture, and a mutation of it now moves
+# nothing. The mutation table reports that as a BLIND SPOT rather than closing it
+# with a fixture that cannot exist.
+#
+# SEPARATELY, AND STILL OPEN: upstream also ADDED `tag="program"` to rule 1's
+# pattern, which this port does not model -- `pmb_cond1` is `is_param &&
+# named_b` and carries no tag. That is drift, not a dead claim, and it is named
+# in the wall list below rather than folded in here.
 #
 # ---------------------------------------------------------------------------
 # TWO MEASURED BEND CONSTRAINTS THIS FILE IS BUILT AROUND. Both cost a compile
@@ -936,19 +972,23 @@ def dev_id(ix: String) -> U32:
   dev_id.go(Nat.read(part(ix, 1n)))
 
 # ===========================================================================
-# `pm_bufferize` -- device.py:403-408. THE RULE TABLE.
+# `pm_bufferize` -- device.py:403-405. THE RULE TABLE.
 #
 #   PatternMatcher([
 #     (UPat(Ops.PARAM, tag="timeline"),           lambda ctx: ctx.timeline),
-#     (UPat(Ops.PARAM, name="b"),                  lambda ctx, b: Buffer(...)),
-#     (UPat(Ops.PARAM, name="b"),                  lambda b: cfunc_buf(...) if ... else None),
+#     (UPat(Ops.PARAM, tag="program", name="b"),
+#      lambda ctx, b: ctx.prog_bufs.setdefault(b, Buffer(ctx.device, b.max_numel(), b.dtype,
+#                                                                        options=BufferSpec(cpu_access=True, nolru=True)))),
 #   ])
 #
-# Three rules, and rules 2 and 3 carry the SAME pattern. `rewrite` returns the
-# first non-None (ops.py:1611) and neither alternative is a "skip", so rule 3
-# is UNREACHABLE. It is in the source and it is dead, and the port says so
-# rather than quietly dropping it: a reader counting rules sees three, a reader
-# running one sees two, and both are right.
+# TWO rules, and this file used to carry three. Upstream `bdddaad21`
+# ("ccall by symbol", #18521) DELETED the third rule -- the `cfunc_buf` one --
+# because `ccall` stopped needing a `Buffer` to hold the C function pointer:
+# it is now `UOp.custom_function(fn.__name__, dtype=ret).call(...)`, so a
+# "cfunc" is a `custom_function` call and never a `PARAM` at all. Nothing named
+# `tag[0] == "cfunc"` survives in `device.py`, so `Pn.cfunc`, `pmb_cond2` and
+# answer `3` had no upstream counterpart left and were DELETED here rather than
+# re-verified forever. See "RULE 3 IS GONE" at the foot.
 #
 # Rule 2 GROWS THE ARENA (`Buffer(...)` is a new `Bn`), so the table is a
 # `(Bar, answer)` pair and the answer is a `Data` record, not a `Maybe` -- a
@@ -966,48 +1006,44 @@ def Pmb.got(p: Pmb) -> U32:
     case Pmb{ar, got}: got
 
 # The minimal PARAM a `pm_bufferize` rule can match. `ops.bend`'s `O.ParamArg`
-# has thirteen fields and these rules read three, so the port names those three.
+# has thirteen fields and these rules read two, so the port names those two.
 # `ops.bend` is NOT imported: `device.py` imports `UOp` lazily inside two
 # methods, and the registry must not depend upward on the arena that calls it.
 # TODO(p3) device.py:404  UPat(Ops.PARAM, tag="timeline") -- the real matcher is
 #   `spec.bend`'s compiled form over an `O.Arena`. PORTED HERE AS a `Data` node
-#   with the three fields the three rules read. Unblocked by importing
+#   with the two fields the two rules read. Unblocked by importing
 #   `./uop/ops.bend as O`, which is a LAYERING decision (the registry would then
 #   depend on the arena) and not a Bend one. P3.
 type Pn is Data:
-  Pn{is_param: Bool, timeline: Bool, named_b: Bool, cfunc: Bool}
+  Pn{is_param: Bool, timeline: Bool, named_b: Bool}
 
 # `is_param` is a PARAMETER and not a constant, because a fixture where
 # `is_param` is False and `named_b` is True is the only thing that can see rule
-# 1's guard drop it -- and a non-PARAM node is exactly what
-# `pmb_nonparam` and `pmb_cfunc_noname` are.
-def param(par: Bool, tl: Bool, nb: Bool, cf: Bool) -> Pn:
-  Pn{par, tl, nb, cf}
+# 1's guard drop it -- and a non-PARAM node is exactly what `pmb_nonparam` is.
+def param(par: Bool, tl: Bool, nb: Bool) -> Pn:
+  Pn{par, tl, nb}
 
 # `n.is_param` is a NAME lookup in Bend 2.0.34, not a projection, so each field
-# a rule reads is a def. Four Bool fields and no arithmetic: `Pn` is the smallest
-# node the three rules can be asked about.
+# a rule reads is a def. Three Bool fields and no arithmetic: `Pn` is the smallest
+# node the two rules can be asked about.
 def Pn.is_param(x: Pn) -> Bool:
   match x:
-    case Pn{is_param, timeline, named_b, cfunc}: is_param
+    case Pn{is_param, timeline, named_b}: is_param
 
 def Pn.timeline(x: Pn) -> Bool:
   match x:
-    case Pn{is_param, timeline, named_b, cfunc}: timeline
+    case Pn{is_param, timeline, named_b}: timeline
 
 def Pn.named_b(x: Pn) -> Bool:
   match x:
-    case Pn{is_param, timeline, named_b, cfunc}: named_b
+    case Pn{is_param, timeline, named_b}: named_b
 
-def Pn.cfunc(x: Pn) -> Bool:
-  match x:
-    case Pn{is_param, timeline, named_b, cfunc}: cfunc
-
-# rule 1's body (device.py:406) is a `Buffer` of `b.max_numel()` elements at
+# rule 1's body (device.py:405) is a `Buffer` of `b.max_numel()` elements at
 # `b.dtype` with `BufferSpec(cpu_access=True, nolru=True)`. It GROWS the arena.
-# The four answers, interned so the gate can print one. 0 is Python's `None`,
-# 1 is the device's timeline buffer, 2 is a freshly allocated program buffer and
-# 3 is a `cfunc_buf` -- which rule 3 can never return, and the gate says so.
+# The two answers, interned so the gate can print one. 0 is Python's `None` and
+# 1 is the device's timeline buffer. There was a 3 -- a `cfunc_buf` -- and it was
+# a row that read NOTHING: `pmb_cfunc=2`, because rule 2 claims the same node
+# first, so answer 3 never reached a printed row even before it was deleted.
 def rule1.pair(f: BFound) -> Pmb:
   Pmb{BFound.ar(f), 2}
 
@@ -1015,23 +1051,15 @@ def rule1(+ar: Bar, dev: U32, n_elems: U32, dt: S.Dt) -> Pmb:
   rule1.pair(bnew(ar, Bn{0, dev, n_elems, dt, 0, 0, False{}, 0,
                        Bspec{False{}, True{}, False{}, True{}, False{}}}))
 
-# rule 2's body (device.py:407) is `cfunc_buf(*b.tag[1:])` and is a WALL: it
-# returns a C buffer, and its `else None` is why the rule can answer None. It is
-# PORTED as answer 3, which is what it does for an input that IS a cfunc -- and
-# for one that is not, because rule 1 wins.
-def rule2.go(is_cfunc: Bool) -> U32:
-  Bool.pick(U32, is_cfunc, 3, 0)
-
-def rule2(+ar: Bar, cf: Bool) -> Pmb:
-  Pmb{ar, rule2.go(cf)}
-
-# THE SCAN. First-wins over the three rules, one arm per rule. `Nat` fuel first
+# THE SCAN. First-wins over the rules, one arm per rule. `Nat` fuel first
 # because this is the only self-recursive def in the file.
 # FIRST-WINS, spelled out: a rule's answer replaces the accumulator only if it
 # FIRES and the accumulator is still empty. `pmb.taken` is the whole of
-# `ops.bend`'s `pm_keep`, and it is what makes rule 3 unreachable -- rule 2 fires
-# on the same node with the same predicate, so by the time rule 3 is asked the
-# accumulator is already taken and `keep` answers the EARLIER rule.
+# `ops.bend`'s `pm_keep`. With two rules whose patterns are `tag="timeline"` and
+# `tag="program", name="b"` -- and a PARAM carries ONE tag -- no node can be
+# claimed twice, so first-wins is now a STATEMENT rather than a discriminator:
+# there is no fixture that can reach `keep` with a non-empty accumulator, and
+# the mutation table says so instead of claiming a row for it.
 # `acc` is read twice per arm -- once for the arena the candidate grows in and
 # once as the fallback -- so it is `+`. The Bools come in as parameters because a
 # `match` may not scrutinise `Pn`'s fields at the call site.
@@ -1059,12 +1087,9 @@ def Step.k(s: Step) -> Nat:
 def pmb_cond0(+n: Pn) -> Bool:
   Bool.and(Pn.is_param(n), Pn.timeline(n))
 
-# rules 1 and 2 share this predicate, which is the whole story
+# rule 1, `UPat(Ops.PARAM, tag="program", name="b")`
 def pmb_cond1(+n: Pn) -> Bool:
   Bool.and(Pn.is_param(n), Pn.named_b(n))
-
-def pmb_cond2(+n: Pn) -> Bool:
-  Bool.and(pmb_cond1(n), Pn.cfunc(n))
 
 def pmb.taken(+p: Pmb) -> Bool:
   U32.is_ne(Pmb.got(p), 0)
@@ -1078,14 +1103,8 @@ def pmb.apply(+s: Step, +acc: Pmb) -> Pmb:
 def pmb_step(k: Nat, +ar: Bar, +n: Pn) -> Step:
   match k:
     case 0n: Step{Pmb{ar, 1}, pmb_cond0(n), 1n}
-    case 1n: Step{rule1(ar, 7, 4, S.uint8()), pmb_cond1(n), 2n}
-    case _: Step{rule2(ar, Pn.cfunc(n)), pmb_cond2(n), 3n}
+    case _: Step{rule1(ar, 7, 4, S.uint8()), pmb_cond1(n), 2n}
 
-# FIRST-WINS, spelled out: a rule's answer replaces the accumulator only if it
-# FIRES and the accumulator is still empty. `pmb.taken` is the whole of
-# `ops.bend`'s `pm_keep`, and it is what makes rule 3 unreachable -- rule 1 fires
-# on the same node with the same predicate, so by the time rule 2 is asked the
-# accumulator is already taken and `keep` answers the EARLIER rule.
 # `Nat` fuel FIRST, because a self-call must be visibly decreasing. The rule
 # index is a SECOND counter rather than the fuel, because the fuel may not feed
 # both the self-call and the rule dispatch in one arm.
@@ -1117,11 +1136,11 @@ def pmb_scan(fuel: Nat, +ar: Bar, +n: Pn, r: Run) -> Pmb:
     case 1n+p: pmb_scan(p, ar, n, pmb.next(r, ar, n))
 
 def pmb_bufferize(+ar: Bar, +n: Pn) -> Pmb:
-  pmb_scan(3n, ar, n, Run{0n, Pmb{ar, 0}})
+  pmb_scan(2n, ar, n, Run{0n, Pmb{ar, 0}})
 
 # the table, COUNTED rather than derived, so a dropped or reordered rule shows up
 def pmb_len() -> U32:
-  3
+  2
 
 # ===========================================================================
 # THE GATE. Every row is a number `tinygrad/device.py` fixes, measured with
@@ -1251,29 +1270,23 @@ def vg_alloc() -> U32:
 def slots() -> List<&2, U32>:
   [1, 2, 3]
 
-def pmb_named(tl: Bool, cf: Bool) -> U32:
-  Pmb.got(pmb_bufferize(bar_empty(), param(True{}, tl, True{}, cf)))
+def pmb_named(tl: Bool) -> U32:
+  Pmb.got(pmb_bufferize(bar_empty(), param(True{}, tl, True{})))
 
-def pmb_grew(tl: Bool, cf: Bool) -> U32:
-  bar_next(Pmb.ar(pmb_bufferize(bar_empty(), param(True{}, tl, True{}, cf))))
-
-# A node that is a cfunc but is NOT named "b": rule 3's pattern is
-# `UPat(Ops.PARAM, name="b")`, so it does not match and the answer is None.
-# This is the only fixture that can see rule 3's guard lose `named_b`.
-def pmb_cfunc_noname() -> U32:
-  Pmb.got(pmb_bufferize(bar_empty(), param(True{}, False{}, False{}, True{})))
+def pmb_grew(tl: Bool) -> U32:
+  bar_next(Pmb.ar(pmb_bufferize(bar_empty(), param(True{}, tl, True{}))))
 
 # A node that is named "b" but is NOT a PARAM: no rule's pattern is `name="b"`
-# alone, so nothing matches. This is the only fixture that can see rule 1's and
-# rule 2's guard lose `is_param`.
+# alone, so nothing matches. This is the only fixture that can see rule 1's
+# guard lose `is_param`.
 def pmb_nonparam() -> U32:
-  Pmb.got(pmb_bufferize(bar_empty(), param(False{}, False{}, True{}, True{})))
+  Pmb.got(pmb_bufferize(bar_empty(), param(False{}, False{}, True{})))
 
 # A node tagged "timeline" that is NOT a PARAM: rule 0's pattern is
 # `UPat(Ops.PARAM, tag="timeline")`, so it does not match. This is the only
 # fixture that can see rule 0's guard lose `is_param`.
 def pmb_timeline_nonparam() -> U32:
-  Pmb.got(pmb_bufferize(bar_empty(), param(False{}, True{}, False{}, False{})))
+  Pmb.got(pmb_bufferize(bar_empty(), param(False{}, True{}, False{})))
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -1340,12 +1353,10 @@ def main() -> IO(Unit):
     A8 : Unit <- row("count_no", count(False{}, 8))
     A9 : Unit <- row("count_yes", count(True{}, 8))
     B1 : Unit <- row("pmb_len", pmb_len())
-    B2 : Unit <- row("pmb_tl", Pmb.got(pmb_bufferize(bar_empty(), param(True{}, True{}, False{}, False{}))))
-    B3 : Unit <- row("pmb_named", pmb_named(False{}, False{}))
-    B4 : Unit <- row("pmb_cfunc", pmb_named(False{}, True{}))
-    B5 : Unit <- row("pmb_none", Pmb.got(pmb_bufferize(bar_empty(), param(True{}, False{}, False{}, False{}))))
-    B6 : Unit <- row("pmb_grew", pmb_grew(False{}, False{}))
-    B6a : Unit <- row("pmb_cfunc_noname", pmb_cfunc_noname())
+    B2 : Unit <- row("pmb_tl", Pmb.got(pmb_bufferize(bar_empty(), param(True{}, True{}, False{}))))
+    B3 : Unit <- row("pmb_named", pmb_named(False{}))
+    B5 : Unit <- row("pmb_none", Pmb.got(pmb_bufferize(bar_empty(), param(True{}, False{}, False{}))))
+    B6 : Unit <- row("pmb_grew", pmb_grew(False{}))
     B6b : Unit <- row("pmb_nonparam", pmb_nonparam())
     B6c : Unit <- row("pmb_tl_nonparam", pmb_timeline_nonparam())
     B7 : Unit <- row("nb_py", bn_gate())
@@ -1403,23 +1414,24 @@ def main() -> IO(Unit):
 #   mem_cpu=25     device.py:190 -- 16 + 8 + 1 over the chain, and `mem_amd=0`
 #                  beside it is the per-device SUBSET, which is the only reason
 #                  the two counters are not the same number twice.
-#   pmb_len=3      device.py:403 -- three rules, of which ONE can run.
+#   pmb_len=2      device.py:403-405 -- two rules. It was 3 at the pin and
+#                  upstream `bdddaad21` deleted the `cfunc_buf` rule, so this row
+#                  MOVED and the port moved with it rather than being weakened.
 #
-#   THE FIRST-WINS CLAIMS, and they are three different kinds:
+#   THE FIRST-WINS CLAIMS, and they are two kinds now, not three:
 #   open_one=1     device.py:26 + :30 -- `cpu:0`, `CPU` and `cpu` are ONE opened
 #                  device. A canonicalize that kept the `:0` prints `open_two`.
 #   first_amd=AMD  device.py:46 + :58 -- with AMD and CPU both openable the
 #                  default is AMD, because AMD is row 2 and CPU is row 7. This
 #                  is an ORDER, and last-wins prints CPU.
-#   pmb_cfunc=2    device.py:404-408 -- rules 2 and 3 carry the IDENTICAL pattern
-#                  `UPat(Ops.PARAM, name="b")`, so rule 3 is UNREACHABLE and a
-#                  PARAM that IS a cfunc still gets rule 2's program buffer. This
-#                  is a first-wins-vs-last-wins discriminator on one node, and it
-#                  is the row the brief's "two rules claim one node" asks for.
-#   pmb_cfunc_noname=0 / pmb_nonparam=0 / pmb_tl_nonparam=0 -- the three
-#                  NEGATIVE fixtures. Each is the only thing that can see one
-#                  rule's guard lose `is_param` or `name="b"`, and without them
-#                  those three mutations move nothing. See the table.
+#   THE THIRD WAS `pmb_cfunc` AND IT IS GONE, with the reason and the row counts
+#                  in the header's "pm_bufferize LOST ITS FIRST-WINS
+#                  DISCRIMINATOR". In one line: upstream deleted the rule it
+#                  tested, and in the port it printed 2 rather than 3 anyway.
+#   pmb_nonparam=0 / pmb_tl_nonparam=0 -- the two NEGATIVE fixtures that remain.
+#                  Each is the only thing that can see one rule's guard lose
+#                  `is_param` or `name="b"`, and without them those two mutations
+#                  move nothing. See the table.
 #
 #   THE VIEW ARITHMETIC, device.py:252:
 #   nb_py=16        4 elements of int32.

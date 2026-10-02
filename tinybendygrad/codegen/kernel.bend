@@ -345,14 +345,42 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
   pm_number_params.of(O.pm_claimed([O.OpsPARAM{}], ar, self), kn_np(ar, self, n), ar, self)
 
 # ===========================================================================
-# `build_range_map` -- __init__.py:42-47. PORTED.
+# `build_range_map` -- __init__.py:40-45. PORTED, AND THE PORT IS NOW WRONG.
 #
 #     def build_range_map(sink):
 #       ctx = {}
 #       for x in sink.toposort():
-#         if x.op is Ops.RANGE and x.axis_type in {AxisType.UNROLL, AxisType.UPCAST}:
-#           ctx[x.axis_id] = len(ctx)
+#         if x.op is Ops.RANGE and x.axis_type is AxisType.UPCAST:
+#           ctx[x.arg] = len(ctx)
 #       return ctx
+#
+# `AxisType.UNROLL` IS DELETED UPSTREAM and so is the half of the membership test
+# that named it, AND the key changed with it: it was `ctx[x.axis_id]` and is now
+# `ctx[x.arg]`, because a RANGE's `arg` is `(axis_type, *axis_id)` now.
+# `kn_unroll.ax` below still admits `O.AXIS_UNROLL`, so it ports the PIN.
+#
+# MEASURED, NOT ARGUED. `.agents/slop/xb1/build_range_map-oracle.py`, run against
+# a pristine `git archive 6c3d401cf324` tree and against the vendored HEAD tree:
+#   pin  AxisType has UNROLL=True,  REDUCE=True   (10 members)
+#        build_range_map(UOp.range(3, 0, AxisType.UNROLL)) -> len=1  keys=[(0,)]
+#   HEAD AxisType has UNROLL=False, REDUCE=False  (8 members)
+#        build_range_map(UOp.range(3, 0, AxisType.UPCAST)) -> len=1 keys=[(AxisType.UPCAST, 0)]
+#        build_range_map(UOp.range(3, 0, AxisType.LOOP))   -> len=0
+#        AxisType.UNROLL -> AttributeError: type object 'AxisType' has no attribute 'UNROLL'
+# So `rm_unroll` and `rm` are rows that are GREEN AGAINST THE PIN AND WRONG AT
+# HEAD: both would move to 0, and the fixture's `R_U` is a member CPython can no
+# longer construct at all.
+#
+# REPORTED, NOT FIXED HERE, and the reason is scope rather than difficulty: this
+# is port LOGIC (a membership predicate, a fixture, and three row values), it is
+# B1's own RE-PORT -- `ad117c928` lists `kernel.bend:353` by name -- and folding
+# it in beside an orphan citation would move three rows without the row audit
+# that a three-row move owes. `uop/ops.bend` already keeps `AXIS_UNROLL` for
+# exactly this reason: it names `codegen/kernel.bend:366,:956` as a live consumer,
+# so the enum's ten members are load-bearing until this lands.
+#   TODO(p3) codegen/__init__.py:43  `build_range_map`'s set is `{UPCAST}` and its
+#     key is `x.arg`; `kn_unroll.ax`, `kn_fixture`'s `R_U`, `k_rm` and `k_rm_unroll`
+#     are all pinned to the pin's predicate.
 #
 # IT IS A FOLD, and `fold.bend` is where a fold belongs -- but its OUTPUT is a
 # `dict[axis_id, int]`, a map from an axis id to its ORDINAL AMONG UNROLL/UPCAST
@@ -360,6 +388,13 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 # and `kn_unroll` is the row for the membership test. `ops.bend`'s `UOp.axis_id`
 # and `UOp.axis_type` are both PORTED (fold.bend:2430-2436), which is why this
 # half is cheap.
+# ===========================================================================
+# `kn_unroll.ax` IS THE PIN'S PREDICATE. The UNROLL arm has no upstream
+# counterpart -- `AxisType.UNROLL` was deleted from the enum -- so this arm is
+# what makes `rm` and `rm_unroll` green against a tree CPython no longer has.
+# MEASURED both ends, in the block above. Delete the arm, drop `R_U` from
+# `kn_fixture`, and `rm`/`rm_unroll` go to 0 together; that is B1's RE-PORT and it
+# wants a row audit, so it is NOT done in a comment-fix pass.
 # ===========================================================================
 def kn_unroll.ax(t: O.AxisType) -> Bool:
   match t:

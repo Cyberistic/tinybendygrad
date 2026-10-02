@@ -1845,9 +1845,21 @@ def CU_TAGWORD_FUNCTION() -> String: "function"
 def CU_TAGWORD_COMPUTE() -> String: "submit_cuda_compute"
 def CU_TAGWORD_COPY() -> String: "submit_cuda_copy"
 
-# cu:99-100 `pm_encode` is TWO rules that differ ONLY in the tag string, and both
-# build `encode_submit(CUDAQueue(submit))`. So the dispatch is a two-entry table
-# and `cu_encode_tags` is the row that prints it.
+# cu:98-99 `pm_encode` is TWO rules that differ ONLY in the tag string, and both
+# build `CUDAQueue(s).encode()`. So the dispatch is a two-entry table and
+# `cu_encode_tags` is the row that prints it.
+# `encode_submit` IS GONE. Upstream folded it into `HWQueue.encode`
+# (hcq2.py:378, `return self.submit(encode_cmdbuf(self, self.lin))`) and folded
+# `bufferize_cmdbuf` into `encode_cmdbuf` at the same time, so what this comment
+# used to quote is now a METHOD on the queue and takes no argument. The two tag
+# STRINGS did not move, which is why `cu_encode_tags` still answers
+# `submit_cuda_compute,submit_cuda_copy` -- RE-VERIFYED, the row is unchanged.
+# TODO(p3) runtime/ops_cuda.py:98  -- the rule's PATTERN also moved, from
+#   `UPat(Ops.CUSTOM_FUNCTION, arg="<name>", name="submit")` to
+#   `UPat(Ops.CALL, src=(UPat.custom_function("<name>"), UPat()), name="s")`.
+#   A UPat is `spec.bend`'s compiled matcher over an `O.Arena` and this file
+#   models TAGS and VALUES and never a pattern, so the shape is not in its
+#   surface. Same wall as `pm_bufferize` above.
 def cu.encode_tags() -> List<&2, String>: [CU_TAGWORD_COMPUTE(), CU_TAGWORD_COPY()]
 
 # `dispatch` is a three-way over U32 tags that are not 0/1/n, which is REFUSED
