@@ -32,6 +32,39 @@ Also: `grep -n "<your py module>" tinybendygrad/**/*.bend` to find committed cod
 already cites your file. Those citations currently point at nothing, so they are your
 scope — already scoped for you.
 
+## THE SHAPE AND THE NAMES — owner ruling, both are hard rules
+
+**1. ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH.** `tinygrad/foo/bar.py` gets
+`tinybendygrad/foo/bar.bend`. No flattening, no merging, no prefixes standing in for a
+directory. If you need something from `ops_cuda.py`, put it in `ops_cuda.bend`. This is not
+negotiable and it is not a style preference — it is what makes the port navigable.
+
+**2. DEF NAMES MATCH UPSTREAM EXACTLY, WHEREVER POSSIBLE.** The standard is explicit:
+**anyone familiar with tinygrad should feel at home here and not have to map anything.** So
+port `Schedule.kernelize` as `kernelize`, not `sch_kernelize`. Do not invent a prefix to
+avoid a collision — a collision means two files are merged that should not be, and rule 1 is
+the fix. Prefix only where the name is genuinely unavailable.
+
+MEASURED, so you do not have to rediscover it: **2,419 of the 2,421 core tinygrad def and
+class names are valid Bend identifiers verbatim.** Exactly **two** collide with Bend keywords
+— **`match` and `where`** (confirmed by probing the compiler and iterating to a fixed point,
+because a batch parse stops at the first error and hides the rest). If your name is not one of
+those two, use it unchanged.
+
+If you must rename for one of the two, or for a Bend type/arity constraint, then and only then
+deviate — and **say so in your report, naming the upstream name and the one you used.**
+
+THE PORT HAS DEVIATED FROM BOTH RULES AT SCALE, and you should know it so you do not copy the
+habit: of24,583 port defs in files that declare an upstream source, only **724 (3%)** carry the
+upstream name. Common prefixes include `t_` (1,813 uses), `g_`, `dc_`, `r_`, `tx_`, `ix_`,
+`onx_`, `lt_`, `ra_`, `gt_`. **BUT DO NOT TRUST THAT 3% AS THE COST.** A later check showed
+much of it is not renamed ports at all: `codegen/late.bend` has 502 defs, 0 matching upstream
+and only 3 matching after the prefix is stripped, because most of them (`es`, `k`, `v`,
+`tb_get`, `hit`, `go`, `cat`) are port-local record types and accessors with **no upstream
+counterpart**. A real cost figure needs a per-def correspondence analysis, which has not been
+done. **So: measure before you claim a number, and expect that a large share of port defs are
+local constructs that the rule simply does not apply to.**
+
 ## THE SPLIT — the one rule that makes gates possible
 
 A def EITHER builds the argument of ONE device call (pure; the gate checks it) OR records
