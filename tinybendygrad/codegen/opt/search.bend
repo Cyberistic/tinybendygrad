@@ -18,9 +18,10 @@
 # THE INVENTORY, def by def, against search.py's 173 lines.
 #
 #   #  PY           KIND    STATE
-#   1  15-23  data  actions             PART: `acts_n` COUNTS all 269 entries and
-#                                         `zero_variant` reads the table's amt-0
-#                                         structure, but the 269 `OPT`s
+#   1  15-23  data  actions             PART: `acts_n` COUNTS all 209 entries, the
+#                                         `grp_*` / `tgt_*` / `byop_*` rows are its
+#                                         SHAPE, `zero_variant` reads the table's
+#                                         amt-0 structure -- but the 209 `OPT`s
 #                                         themselves are NOT BUILT
 #   2  25-33  def   get_test_global_size WALL #1 (the `sym_infer` of a symbolic
 #                                         bound is the symbolic algebra) and the
@@ -46,28 +47,56 @@
 #      and s.full_shape[a.axis] == arg[0] and replace(a, arg=(0,)+arg[1:]) in actions): continue
 #
 # "is the SAME action with the amount zeroed already in the table?" Python answers
-# with `in` over frozen dataclasses. Here it is a FOUR-ARM LADDER, because the
-# table's amt-0 entries are exactly four: (UPCAST, top=False) on axes 0..9,
-# (UNROLL, top=False) on axes 0..9, (LOCAL, top=False) on axes 0..7, and NONE in
-# the top=True group. It is DERIVED from the table rather than searched in it, and
-# the count that proves the derivation is `acts_zero`.
+# with `in` over frozen dataclasses. Here it is a THREE-ARM LADDER, because the
+# table's amt-0 entries are exactly three groups' worth: (UPCAST, top=False) on
+# axes 0..9, (LOCAL, top=False) on axes 0..7, and NONE in the top=True group. It
+# is DERIVED from the table rather than searched in it, and the count that proves
+# the derivation is `acts_zero`, whose two halves are `zero_n.up` and `zero_n.lcl`
+# -- the same two numbers the ladder tests against, so the count and the predicate
+# cannot drift apart again. (At the PIN this said FOUR groups and carried an
+# `(UNROLL, top=False)` arm on axes 0..9; upstream deleted that group, and a
+# ladder arm on a deleted enum member is a row that can never disagree.)
 #
-# AND IT IS THE REASON A COUNT IS NOT ENOUGH A GATE. MEASURED on CPython,
-# DEV=PYTHON, `PythonRenderer` (has_local True, has_shared True, shared_max
-# 32768, tensor_cores []), by patching `apply_opts` and reading
-# `get_kernel_actions(s, include_0=False).keys()`:
+# AND IT IS THE REASON A COUNT IS NOT ENOUGH A GATE. MEASURED AT HEAD on CPython,
+# DEV=PYTHON, `PythonRenderer`, by patching `apply_opts` -- the only place a
+# `Scheduler` is built on the way to beam search (codegen/__init__.py:298) -- and
+# reading `get_kernel_actions(s, include_0=False).keys()`. Reproduce with
+# `.agents/slop/measure-search-keys.py`; the DEDUP figures below come from
+# `.agents/slop/measure-search-dedup.py`, which WRAPS `search.replace` so the set of
+# actions CPython actually tested is observed rather than recomputed.
 #
 #   (a+1) 4 elements     [4]              [GLOBAL]
-#     4 keys: 1, 11, 121, 129          (include_0=True adds {0: s}, so 5)
-#   (a*b).sum(1) 16x32   [16, 32]         [GLOBAL, REDUCE]
-#     18 keys: 1 11 31 62 72 92 121 122 129 130 145 146 153 154 170 193 194 218
-#   a@b 64x64x64         [64, 64, 64]     [GLOBAL, GLOBAL, REDUCE]
+#     4 keys: 1, 11, 61, 69           (include_0=True adds {0: s}, so 5)
+#   (a*b).sum(1) 16x32   [16, 32]         [GLOBAL, WEAK]
+#     18 keys: 1 2 11 12 31 32 61 62 69 70 85 86 93 94 110 133 134 158
+#   a@b 64x64x64         [64, 64, 64]     [GLOBAL, GLOBAL, WEAK]
 #     32 keys
 #
-# The dedup shows up as an ABSENCE: 169 is `SPLIT(0, (16, LOCAL))`,
-# `full_shape[0] == 16 == arg[0]`, and `SPLIT(0, (0, LOCAL))` is 121 -- so 169 is
-# skipped, while 193 (`SPLIT(0, (16, LOCAL, True))`) is PRESENT because the
-# top=True group has no amt-0 entry. `n_red` and `zero_169` are the rows.
+# EVERY KEY ABOVE 60 IS A DIFFERENT KEY FROM THE PIN'S, and that is not a typo: these
+# are INDICES INTO `actions`, and deleting the 60-entry UNROLL group moved every position
+# at or above 60. The old text said `1 11 121 129` and `1 11 31 62 72 92 121 122 129
+# 130 145 146 153 154 170 193 194 218`; the counts (4, 18, 32) held and nothing else did.
+# `[GLOBAL, REDUCE]` is `[GLOBAL, WEAK]` for the same kind of reason -- `AxisType.REDUCE`
+# is one of the two members upstream renamed away, and `uop/ops.bend` already carries it.
+# A comment that quotes stale indices reads exactly like a gate row without being one,
+# which is the `device.bend` `sig=0 4 5` shape; `postrange.bend:772-778` still quotes the
+# OLD set and is not this file's to fix.
+#
+# THE DEDUP SHOWS UP AS AN ABSENCE, AND AT HEAD IT IS 108, NOT 169. For 16x32 the guard
+# tested exactly six indices -- 10, 68, 108, 132, 157, 181 -- and:
+#
+#   DEDUPED  10 `SPLIT(0, (2, UPCAST))`   full_shape[0]=16, twin `(0, UPCAST)` at index 0 is present
+#   DEDUPED  68 `SPLIT(0, (2, LOCAL))`    full_shape[0]=16, twin `(0, LOCAL)` at index 60 is present
+#   DEDUPED 108 `SPLIT(0, (16, LOCAL))`   full_shape[0]=16, twin `(0, LOCAL)` at index 60 is present
+#   KEPT    132 `SPLIT(0, (16, LOCAL, True))`  twin `(0, LOCAL, True)` ABSENT
+#   KEPT    157 `SPLIT(0, (32, LOCAL, True))`  twin `(0, LOCAL, True)` ABSENT
+#   KEPT    181 `SPLIT(1, (256, LOCAL, True))` twin `(0, LOCAL, True)` ABSENT
+#
+# So 108 is skipped while 132 is not, and the reason is the top=True group's amt list --
+# `[13,16,28,29,32,49,64,256]` -- containing no zero. 64x64x64 agrees and adds three more
+# KEPT (172, 173, 174, all `top=True` on axes 0/1/2): EVERY candidate this guard KEEPS
+# is a top=True one, on both shapes. That is the measured form of `zero_variant`'s
+# `case True{}: False{}` arm -- not an inference from the amt list, an observation.
 #
 # ---------------------------------------------------------------------------
 # THE BEAM GATE. The loop BODY and the counting are PORTED; the two device calls
@@ -135,9 +164,10 @@
 # TODO(p3) search.py:128-166 `while not exiting:` -- the round loop itself.
 #                                         WALL: needs a per-round candidate list,
 #                                         and round 2 needs the winner's rngs.
-# TODO(p3) search.py:15-23 `actions` -- the 269 `OPT`s are not built, only
-#                                         counted. `acts_n` is a constant sum of
-#                                         the eight group sizes.
+# TODO(p3) search.py:15-23 `actions` -- the 209 `OPT`s are not built, only
+#                                         counted, and the census is what makes
+#                                         the count checkable. `acts_n` is a sum
+#                                         of the eight group sizes.
 # TODO(p3) search.py:108-111 `diskcache_get`/`diskcache_put` -- a persistent
 #                                         cache keyed on `s.ast.key`; WALL: no
 #                                         stable key without `UOp.key`.
@@ -219,38 +249,55 @@ def CFG.padto_on(c: CFG) -> Bool:
   PARTS.padto(parts(c))
 
 # ===========================================================================
-# `actions` -- search.py:15-23. The eight comprehensions, with the count each
-# contributes:
+# `actions` -- search.py:15-23, AT HEAD. The eight comprehensions, with the count
+# each contributes. THE UNROLL GROUP IS GONE: search.py:15 used to enumerate
+# `AxisType.UNROLL` in the same comprehension as `AxisType.UPCAST`, and HEAD HAS
+# ONLY THE FIRST, so that pair's `2 * 6 * 10 = 120` is now `6 * 10 = 60`.
 #
-#   UPCAST/UNROLL, amts [0,2,3,4,5,7], axes 0..9   2 * 6 * 10 = 120
-#   LOCAL,        amts [0,2,3,4,8,13,16,29], 0..7    8 *  8      =  64
-#   LOCAL top,    amts [13,16,28,29,32,49,64,256], 0..7  8 *  8  =  64
-#   PADTO (only if BEAM_PADTO), amt 32, axes 0..6               =   7
-#   SPLIT(0, (32, LOCAL))                                      =   1
-#   TC(0, (-1, 0, TC))                                         =   1
-#   TC(axis, (-1, TC_OPT, TC)), axis 0..8                       =   9
-#   SWAP(a0, a1), 0 <= a0 < a1 < 5                             =  10
-#                                                        total = 269
+#   UPCAST,        amts [0,2,3,4,5,7], axes 0..9     6 * 10 =  60
+#   LOCAL,         amts [0,2,3,4,8,13,16,29], 0..7   8 *  8 =  64
+#   LOCAL top,     amts [13,16,28,29,32,49,64,256], 0..7 8 *  8 =  64
+#   PADTO (only if BEAM_PADTO), amt 32, axes 0..6          =   7
+#   SPLIT(0, (32, LOCAL))                                 =   1
+#   TC(0, (-1, 0, TC))                                    =   1
+#   TC(axis, (-1, TC_OPT, TC)), axis 0..8                  =   9
+#   SWAP(a0, a1), 0 <= a0 < a1 < 5                        =  10
+#                                                     total = 209
 #
-# `acts_n` is that sum as ARITHMETIC rather than as 269 constructed `OPT`s, which
-# is a real loss: the 269 entries themselves are not built here (see the header's
-# TODO). What the sum does buy is that `acts_n_padto` is 276, and that is the
+# `acts_n` is that sum as ARITHMETIC rather than as 209 constructed `OPT`s, which
+# is a real loss: the 209 entries themselves are not built here (see the header's
+# TODO). What the sum does buy is that `acts_n_padto` is 216, and that is the
 # observable consequence of `if getenv("BEAM_PADTO", 0)` splicing a group INTO
 # THE MIDDLE -- every index after it shifts by 7.
+#
+# AND A COUNT IS NOT A CENSUS. `209` is also what a table with the right SIZE and
+# the wrong SET prints, so the gate prints `tgt_kinds`, the `tgt_*` per-target
+# totals and the `zero_n_*` amt-0 census as well. "A COUNT IS NOT A CENSUS" below
+# names, for each of those, the wrong set it catches and the count cannot.
 # ===========================================================================
 
-# THE GROUP SIZES, ADDED ONE AT A TIME because a `U32` cannot be read twice in
-# one expression and `U32.add` is strict in BOTH arguments, so a balanced tree
-# still reads each leaf once -- which is legal, and is why the chain is flat and
-# left-nested rather than a `fold` over a list.
+# THE GROUP SIZES, ONE DEF EACH, so `main` can print them BY NAME and a wrong
+# group is localised instead of surfacing only as a moved total. They are still
+# ADDED ONE AT A TIME, because a `U32` cannot be read twice in one expression and
+# `U32.add` is strict in BOTH arguments, so a balanced tree still reads each leaf
+# once -- which is legal, and is why the chain is flat and left-nested rather than
+# a `fold` over a list.
 # the PADTO group is 7 entries when BEAM_PADTO is set and 0 when it is not.
-def acts_n.pad(pad: Bool) -> U32:
+def grp.padto(pad: Bool) -> U32:
   match pad:
     case True{}: 7
     case False{}: 0
 
+def grp.up() -> U32: 60
+def grp.lcl() -> U32: 64
+def grp.lcl_top() -> U32: 64
+def grp.split32() -> U32: 1
+def grp.tc0() -> U32: 1
+def grp.tc() -> U32: 9
+def grp.swap() -> U32: 10
+
 def acts_n.last(g: U32, pad: Bool) -> U32:
-  U32.add(g, acts_n.pad(pad))
+  U32.add(g, grp.padto(pad))
 
 def acts_n.tail(g: U32, g8: U32, pad: Bool) -> U32:
   acts_n.last(U32.add(g, g8), pad)
@@ -260,41 +307,122 @@ def acts_n.of(pad: Bool, g1: U32, g2: U32, g3: U32, g5: U32, g6: U32, g7: U32, g
 
 
 def acts_n(c: CFG) -> U32:
-  acts_n.of(CFG.padto_on(c), 120, 64, 64, 1, 1, 9, 10)
+  acts_n.of(CFG.padto_on(c), grp.up(), grp.lcl(), grp.lcl_top(), grp.split32(), grp.tc0(), grp.tc(), grp.swap())
 
-# THE amt-0 ENTRIES OF THE TABLE. 10 for UPCAST, 10 for UNROLL, 8 for LOCAL, and
-# ZERO for the top=True group -- which is the whole of `zero_variant`'s content.
+# THE amt-0 CENSUS, ONE NUMBER PER TARGET, AND IT IS ALSO THE LADDER'S BOUND. These
+# used to be written TWICE -- as `U32.add(U32.add(10, 10), 8)` here and as a literal
+# `10` inside `zero_variant` -- and they had already drifted, because that second
+# `10` belonged to UNROLL when this was written while this count still carried it.
+# `zero_variant` READS these now, so the count and the predicate cannot disagree and
+# the gate prints both sides of that one fact.
+def zero_n.up() -> U32: 10
+
+def zero_n.lcl() -> U32: 8
+
+def zero_max.up() -> U32:
+  U32.sub(zero_n.up(), 1)
+
+def zero_max.lcl() -> U32:
+  U32.sub(zero_n.lcl(), 1)
+
+# `zero_top_n` IS THE `case True{}` ARM AS A NUMBER. `search.py`'s top=True group is
+# `amts [13,16,28,29,32,49,64,256]`, which contains no zero, so the table has NO
+# amt-0 entry with `top=True` and `zero_variant`'s True arm is `False{}` outright.
+def zero_top_n() -> U32: 0
+
 def acts_zero() -> U32:
-  U32.add(U32.add(10, 10), 8)
+  U32.add(zero_n.up(), zero_n.lcl())
 
-# `replace(a, arg=(0,)+arg[1:]) in actions`, DERIVED from `acts_zero` rather
-# than searched in the table. `zero_kind.of` is 1 for the two axis ranges that
-# have an amt-0 entry at all, and 2 for LOCAL which has one on axes 0..7; the
-# top=True group is handled by `zero_kind` itself, which is 0 for it.
-# THE WHOLE LADDER IS FIVE ARMS AND NOTHING ELSE. `replace(a, arg=(0,)+arg[1:])
-# in actions` is TRUE exactly where an amount-zeroed twin exists in the table, and
-# the table has four such groups:
+# ===========================================================================
+# A COUNT IS NOT A CENSUS, AND THIS IS THE CENSUS. Each row below answers a question
+# `acts_n` cannot, and each catches a DIFFERENT wrong set that still sums to 209.
+#
+#   tgt_kinds  the number of distinct SPLIT target axis types; at HEAD it is 2.
+#              Catches: a rebase that reinstates UNROLL -- the `6 * 10` group GONE at
+#              HEAD -- moves this to 3 AND `acts_n` to 269. But a rebase that swaps
+#              UNROLL's 60 entries for a NEW 60-entry group of some OTHER target
+#              LEAVES `acts_n` at 209, and this is the only row that moves. It is
+#              the row the deleted enum member is actually about.
+#   tgt_up     entries targeting UPCAST (60), and
+#   tgt_lcl    entries targeting LOCAL (129 = 64 + 64 + 1). With tgt_split (189) these
+#              name the SET and its two SIZES, so a total-preserving reshuffle that
+#              moves entries BETWEEN the two targets is caught even though the 189
+#              and the 209 both hold.
+#   byop_tc    the per-OptOps totals -- SPLIT 189, TC 10, SWAP 10, PADTO 0 or 7.
+#   byop_swap  Catches: `grp.tc0`'s one entry and `grp.swap`'s ten are DIFFERENT
+#              OptOps with different arg shapes, so a TC that became a SWAP, or a TC
+#              entry whose arg changed, leaves EVERY count above untouched -- the 209
+#              is a sum over groups either way. Only these two rows see it.
+#   zero_n_*   the amt-0 census, and it is what pins IDENTITY rather than size.
+#              Only UPCAST and LOCAL have an amt-0 entry, so `zero_n_up = 10` and
+#              `zero_n_lcl = 8` ARE the two identities: no arrangement of `amt = 0`
+#              over a different target leaves both at 10 and 8 while the group
+#              sizes hold.
+# ===========================================================================
+def tgt_kinds() -> U32: 2
+
+def tgt_up() -> U32: grp.up()
+
+def tgt_lcl() -> U32:
+  U32.add(U32.add(grp.lcl(), grp.lcl_top()), grp.split32())
+
+def tgt_split() -> U32:
+  U32.add(tgt_up(), tgt_lcl())
+
+def byop.tc() -> U32: U32.add(grp.tc0(), grp.tc())
+
+def byop.swap() -> U32: grp.swap()
+
+def byop.padto(pad: Bool) -> U32: grp.padto(pad)
+
+# `replace(a, arg=(0,)+arg[1:]) in actions`, DERIVED from `zero_n_*` rather than
+# searched in the table, and read through the same two numbers the gate prints.
+# `replace(...) in actions` is TRUE exactly where an amount-zeroed twin exists, and
+# at HEAD the table has TWO such groups and no more:
 #
 #     (UPCAST, top=False)  axes 0..9    10 entries
-#     (UNROLL, top=False)  axes 0..9    10 entries
 #     (LOCAL,  top=False)  axes 0..7     8 entries
 #     (LOCAL,  top=True)   -- NONE, which is why the True arm is False outright
 #
-# and NOTHING targets a REDUCE, so every other AxisType is False too --
-# `zero_red0` is that row, and it is the row a mutation that widens the `case _`
-# arm moves.
+# NOTHING ELSE TARGETS AN AXIS AT ALL: `search.py:15-23` names `AxisType.UPCAST` and
+# `AxisType.LOCAL` and nothing else, which is what `tgt_kinds = 2` says. DEVICE,
+# GLOBAL, WARP, WEAK, LOOP and PLACEHOLDER are therefore all False, and so are the
+# two members upstream DELETED -- see `zero_variant.dead` immediately below.
 #
-# IT IS ONE `match` WITH NO `zero_kind`, NO `zero_max` AND NO `has_axis`, and the
+# THE TWO DELETED MEMBERS, IN ONE DEF, REACHED ONLY THROUGH THE FALLTHROUGH. This is
+# `uop/ops.bend`'s `AxisType.name.dead` shape copied, not a third spelling of it:
+# upstream deleted `AxisType.REDUCE` and `AxisType.UNROLL`, `ops.bend` retains both
+# constructors because six committed files still construct them, and `ops.bend:652`
+# keeps them in ONE def that the live ladder reaches only by its `case _`
+# fallthrough. This file does the same, so `zero_variant.flat`'s arms are exactly the
+# two axis types CPython's table actually contains -- which is what makes `tgt_kinds`
+# and this ladder checkable against each other -- and everything about a deleted
+# member is greppable in one place.
+#
+# It IS ONE `match` WITH NO `zero_kind`, NO `zero_max` AND NO `has_axis`, and the
 # reason is the rule this port hit eleven times: `U32` cannot be `+`, so a value
 # read twice in one expression is refused, and every attempt to factor the bound
 # out of `t` and `ax` re-read one of them. A plain ladder reads each exactly once
-# per arm, which is the shortest spelling that closes.
+# per arm, which is the shortest spelling that closes. The BOUNDS come from
+# `zero_n.*` rather than from literals, which is what closes the drift between
+# this ladder and `acts_zero` -- the one that let a deleted UNROLL group survive in
+# `acts_zero` while nothing else agreed with it. THE BOUND IS `zero_n`, NOT
+# `zero_max`: the ladder tests `ax < 10` and 10 is both the COUNT and the exclusive
+# bound, because the axes run 0..9. Reading `zero_max.up()` here instead printed
+# `ax < 9`, which is the off-by-one that put an amt-0 entry on axes 0..8 and none on
+# 9 -- caught immediately by `zero_up9` and `zero_lcl7`, which is what those two rows
+# are for. `zero_max.*` is a REPORTED quantity (the highest axis that has a twin),
+# not the ladder's input, and no gate row feeds it to `zero_variant`.
+def zero_variant.dead(t: O.AxisType, ax: U32) -> Bool:
+  match t:
+    case O.AXIS_REDUCE{}: False{}
+    case _: False{}
+
 def zero_variant.flat(t: O.AxisType, ax: U32) -> Bool:
   match t:
-    case O.AXIS_UPCAST{}: U32.is_lt(ax, 10)
-    case O.AXIS_UNROLL{}: U32.is_lt(ax, 10)
-    case O.AXIS_LOCAL{}: U32.is_lt(ax, 8)
-    case _: False{}
+    case O.AXIS_UPCAST{}: U32.is_lt(ax, zero_n.up())
+    case O.AXIS_LOCAL{}: U32.is_lt(ax, zero_n.lcl())
+    case _: zero_variant.dead(t, ax)
 
 def zero_variant(t: O.AxisType, top: Bool, ax: U32) -> Bool:
   match top:
@@ -381,6 +509,24 @@ def row(nm: String, v: U32) -> IO(Unit):
 # ===========================================================================
 # THE GATE. Every row is DERIVED FROM CPython, so a row can be wrong. The
 # reference values are in the header.
+#
+# `zero_un9` AND `zero_red0` ARE GONE, and their DELETION is the point. Both asked
+# `zero_variant` about `O.AXIS_UNROLL` / `O.AXIS_REDUCE`, members upstream no longer
+# has, so they asserted facts about BEND-ONLY CONSTRUCTS and could never disagree
+# with CPython -- the worst kind of row. `tgt_kinds`, `tgt_*`, `byop_*` and
+# `zero_n_*` replace them: those are read off CPython's REAL table and they fail if
+# the deleted 60-entry group comes back under any name. The two arms survive only as
+# `zero_variant.dead`, which is BEND-ONLY and says so, and which NO row asks -- a
+# deleted member's answer has nothing to compare against, and `ops.bend` takes the
+# same position on `axv_REDUCE` / `axv_UNROLL`.
+#
+# `zero_lcl8` IS NEW AND IT IS NOT REDUNDANT WITH `zero_lcl7` / `zero_lcl9`. Those
+# two sit either side of 8 only on ONE side: `lcl7 = 1` and `lcl9 = 0` are both
+# satisfied by a ladder whose LOCAL bound is 8, 7 or 9, because axis 8 is never
+# asked about. Widening the bound to 9 -- which puts an amt-0 entry on an axis the
+# table has none for, a WIDENING and therefore a silent one -- moved NOTHING before
+# this row existed. `zero_lcl8` is the one-axis-from-its-opposite pair the brief asks
+# for, and `zero_up9`/`zero_up10` already had that pair for UPCAST.
 # ===========================================================================
 
 def main() -> IO(Unit):
@@ -388,43 +534,94 @@ def main() -> IO(Unit):
     a : Unit <- row("acts_n", acts_n(CFG.def()))
     b : Unit <- row("acts_n_padto", acts_n(CFG.padto()))
     c : Unit <- row("acts_zero", acts_zero())
-    d : Unit <- row("zero_up0", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 0)))
-    e : Unit <- row("zero_up9", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 9)))
-    f : Unit <- row("zero_un9", b2u(zero_variant(O.AXIS_UNROLL{}, False{}, 9)))
-    g : Unit <- row("zero_lcl7", b2u(zero_variant(O.AXIS_LOCAL{}, False{}, 7)))
-    h : Unit <- row("zero_lcl9", b2u(zero_variant(O.AXIS_LOCAL{}, False{}, 9)))
-    i : Unit <- row("zero_top0", b2u(zero_variant(O.AXIS_LOCAL{}, True{}, 0)))
-    j : Unit <- row("zero_top9", b2u(zero_variant(O.AXIS_LOCAL{}, True{}, 9)))
-    k : Unit <- row("zero_up10", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 10)))
-    l : Unit <- row("zero_red0", b2u(zero_variant(O.AXIS_REDUCE{}, False{}, 0)))
-    m : Unit <- row("dropped", plus_dropped())
-    n : Unit <- row("drop_ok", b2u(drop(False{}, False{})))
-    o : Unit <- row("drop_seen", b2u(drop(True{}, True{})))
-    p : Unit <- row("keep_ok", b2u(drop(True{}, False{})))
-    q : Unit <- row("least_lo", least_of(True{}, 5, 9))
+    d : Unit <- row("grp_up", grp.up())
+    e : Unit <- row("grp_lcl", grp.lcl())
+    f : Unit <- row("grp_lcl_top", grp.lcl_top())
+    g : Unit <- row("grp_padto", grp.padto(CFG.padto_on(CFG.padto())))
+    h : Unit <- row("grp_split32", grp.split32())
+    i : Unit <- row("grp_tc0", grp.tc0())
+    j : Unit <- row("grp_tc", grp.tc())
+    k : Unit <- row("grp_swap", grp.swap())
+    l : Unit <- row("tgt_kinds", tgt_kinds())
+    m : Unit <- row("tgt_up", tgt_up())
+    n : Unit <- row("tgt_lcl", tgt_lcl())
+    o : Unit <- row("tgt_split", tgt_split())
+    p : Unit <- row("byop_split", tgt_split())
+    q : Unit <- row("byop_tc", byop.tc())
+    r : Unit <- row("byop_swap", byop.swap())
+    s : Unit <- row("byop_padto", byop.padto(CFG.padto_on(CFG.def())))
+    t : Unit <- row("zero_n_up", zero_n.up())
+    u : Unit <- row("zero_n_lcl", zero_n.lcl())
+    v : Unit <- row("zero_max_up", zero_max.up())
+    w : Unit <- row("zero_max_lcl", zero_max.lcl())
+    x : Unit <- row("zero_top_n", zero_top_n())
+    y : Unit <- row("zero_up0", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 0)))
+    z : Unit <- row("zero_up9", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 9)))
+    a1 : Unit <- row("zero_up10", b2u(zero_variant(O.AXIS_UPCAST{}, False{}, 10)))
+    b1 : Unit <- row("zero_lcl7", b2u(zero_variant(O.AXIS_LOCAL{}, False{}, 7)))
+    c1 : Unit <- row("zero_lcl8", b2u(zero_variant(O.AXIS_LOCAL{}, False{}, 8)))
+    d1 : Unit <- row("zero_lcl9", b2u(zero_variant(O.AXIS_LOCAL{}, False{}, 9)))
+    e1 : Unit <- row("zero_top0", b2u(zero_variant(O.AXIS_LOCAL{}, True{}, 0)))
+    f1 : Unit <- row("zero_top9", b2u(zero_variant(O.AXIS_LOCAL{}, True{}, 9)))
+    g1 : Unit <- row("dropped", plus_dropped())
+    h1 : Unit <- row("drop_ok", b2u(drop(False{}, False{})))
+    i1 : Unit <- row("drop_seen", b2u(drop(True{}, True{})))
+    j1 : Unit <- row("keep_ok", b2u(drop(True{}, False{})))
+    k1 : Unit <- row("least_lo", least_of(True{}, 5, 9))
     row("least_hi", least_of(False{}, 5, 9))
 # ===========================================================================
-# THE MEASURED MUTATION TABLE. 14 mutations, 14 localised.
+# THE MEASURED MUTATION TABLE. 21 mutations, 20 localised, 1 blind spot with a reason.
+# Re-measured 2026-10-03 by `.agents/slop/mutate.py`, which diffs whole `name=value`
+# lines and treats a zero-row run as a failed run rather than a verdict.
 #
-#   mutation                                    rows that moved
-#   -----------------------------------------  ------------------------------
-#   PADTO group always present                 acts_n
-#   UPCAST group 120 -> 119                    acts_n acts_n_padto
-#   LOCAL group 64 -> 63                       acts_n acts_n_padto
-#   SWAP group 10 -> 9                         acts_n acts_n_padto
-#   `acts_zero` forgets UNROLL                 acts_zero
-#   `acts_zero` LOCAL range 8 -> 10            acts_zero
-#   `zero_variant` LOCAL bound 8 -> 7          zero_lcl7
-#   `zero_variant` UNROLL range widened         zero_un9
-#   `zero_variant` allows top=True              zero_top0
-#   `zero_variant` treats REDUCE as LOCAL       zero_red0
-#   UPCAST amt-0 range 10 -> 9                 zero_up9
+#   mutation                                   rows that moved
+#   ---------------------------------------  -------------------------------------
+#   `grp.up`      60 -> 61                     grp_up tgt_up tgt_split byop_split acts_n acts_n_padto
+#   `grp.lcl`     64 -> 63                     grp_lcl tgt_lcl tgt_split byop_split acts_n acts_n_padto
+#   `grp.lcl_top` 64 -> 63                     grp_lcl_top tgt_lcl tgt_split byop_split acts_n acts_n_padto
+#   `grp.padto`   True 7 -> 8                  grp_padto acts_n_padto
+#   `grp.split32` 1 -> 2                       grp_split32 tgt_lcl tgt_split byop_split acts_n acts_n_padto
+#   `grp.tc0`     1 -> 2                       grp_tc0 byop_tc acts_n acts_n_padto
+#   `grp.tc`      9 -> 8                       grp_tc byop_tc acts_n acts_n_padto
+#   `grp.swap`    10 -> 9                      grp_swap byop_swap acts_n acts_n_padto
+#   the 60 UPCAST entries re-attributed to
+#     LOCAL, TOTAL HELD AT 209                 tgt_up tgt_split byop_split
+#   the 10 SWAP entries re-attributed to
+#     TC, TOTAL HELD AT 209                    byop_tc
+#   `tgt_kinds`   2 -> 3                       tgt_kinds
+#   `zero_n.up`   10 -> 11                     zero_n_up zero_max_up acts_zero zero_up10
+#   `zero_n.lcl`  8 -> 7                       zero_n_lcl zero_max_lcl acts_zero zero_lcl7
+#   `zero_top_n`  0 -> 1                       zero_top_n
+#   ladder reads `zero_max` (UPCAST)           zero_up9
+#   ladder reads `zero_max` (LOCAL)            zero_lcl7
+#   `zero_variant` allows top=True             zero_top0
+#   `zero_variant.dead` treats REDUCE as LOCAL NONE   <- THE BLIND SPOT, below
 #   `drop_ok` inverted                         drop_ok keep_ok
-#   `drop_seen` dropped                        drop_seen
-#   `min2` returns the larger                  least_lo least_hi
+#   `min2` returns the larger                  least_lo
+#   `plus_dropped` subtracts 3 not 4           dropped
 #
-# `zero_red0` IS THE ROW THAT MATTERS MOST HERE, and it found a bug while the
-# table was being built: `zero_kind`'s `case _` arm had swallowed REDUCE into
-# LOCAL's index range, so the dedup claimed a `(0, REDUCE)` twin that the table
-# does not contain. No split in `actions` ever TARGETS a REDUCE, so the arm is
-# now `False{}` and the row is 0.
+# THE THREE TOTAL-PRESERVING MUTATIONS ARE THE POINT OF THE CENSUS, and each is ONE
+# LINE so the compensating edit cannot be what hides the disagreement. `acts_n` does
+# NOT move for any of them; something else does. That is the difference between "the
+# table has 209 entries" and "the table has THESE 209 entries", and it is the reason
+# `tgt_kinds` and the `tgt_*` / `byop_*` / `zero_n_*` rows exist at all.
+#
+# `zero_n.up` / `zero_n.lcl` MOVING A LADDER ROW IS ALSO THE POINT. `acts_zero` used to
+# be `U32.add(U32.add(10, 10), 8)` and `zero_variant` used to carry its own literal
+# `10`, and the two had already drifted -- the count carried a UNROLL term the ladder
+# did not. They are one source now, so a census change cannot leave the predicate behind.
+#
+# THE BLIND SPOT, REPORTED RATHER THAN CLOSED. `zero_variant.dead` has no row asking it,
+# because the two members it names do not exist upstream: the oracle cannot construct
+# `AxisType.REDUCE` either, so any row over it would compare a Bend-only answer with
+# nothing and assert the Bend's own behaviour -- the `device.bend` `sig=0 4 5` shape.
+# What DOES cover the rebase that would make the dead arm matter is `tgt_kinds`: a
+# rebase that reinstates UNROLL has to add its `amt = 0` group too, and that moves
+# `tgt_kinds` 2 -> 3. `uop/ops.bend` takes the same position on `axv_REDUCE` /
+# `axv_UNROLL` for the same reason.
+#
+# THE OFF-BY-ONE THAT WAS REAL. Both "ladder reads `zero_max`" rows are here because the
+# refactor made that mistake once: `zero_max.up()` is the highest axis that HAS a twin
+# (9), while the ladder needs the exclusive bound (10). Reading the former printed
+# `ax < 9`, which is `zero_up9` 1 -> 0 and `zero_lcl7` 1 -> 0 -- two rows, immediately,
+# the moment the census was introduced. `zero_max.*` is reported, not consumed.

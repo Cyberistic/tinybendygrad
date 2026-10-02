@@ -44,7 +44,7 @@
 #    everything, which is why most rules always fire. It is built from the ops of
 #    the pattern's FIRST src (`ops.py:1483`), and for a pattern whose first src is
 #    an `is_any` the ops are `None` and the set is empty. `spec.py`'s four
-#    non-empty sets -- `sh_15`, `te_19`..`te_22`, `pr_7`, `kg_2` -- are every one
+#    non-empty sets -- `sh_15`, `te_18`..`te_21`, `pr_7`, `kg_2` -- are every one
 #    already implied by the rule's own src-op test, so the `backedge_ok` and
 #    `prog4_ok` rows exist to catch a MISSPELLED set, which would silently skip a
 #    rule that should have fired.
@@ -610,7 +610,7 @@ def validate_index(+fx: F.Folded, +uidx: U32) -> Maybe<&1, Bool>:
 # no mutable uop here, so it is rebuilt per rule, and that is the one place this port
 # is slower than the thing it ports. It folds over ALL of `src`, which is what
 # Python's set comprehension does -- `ops.bend`'s `pm_ler` reads only `src[0]` and
-# `src[1]`, and that is wrong for `te_22` (spec.py:198), whose reject set is all four
+# `src[1]`, and that is wrong for `te_21` (spec.py:198), whose reject set is all four
 # of a PROGRAM's srcs. `prog4_ok` in the gate is the row that shows the difference.
 # ===========================================================================
 def sp_ler.go(srcs: List<&2, U32>, +ar: O.Arena, acc: List<&2, O.Op>) -> List<&2, O.Op>:
@@ -1029,7 +1029,27 @@ def sh_20(+fx: F.Folded, +self: U32) -> O.Verdict:
 def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, [O.OpsCUSTOMI{}, O.OpsCUSTOM{}]), sp_vb(arg_ink(sp_arg(fx, self))))
 
-# spec.py:110 (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True), lambda x: isinstance(x.arg, str))
+# A WALL, REPORTED NOT QUIETLY CARRIED: this conjunct is STALE AGAINST HEAD. At the pin
+# `spec.py:110` read `lambda x: isinstance(x.arg, str)` and `arg_str` below is that,
+# correctly. At HEAD it reads `lambda x: isinstance(x.arg, CustomFunction)` -- upstream
+# changed a CUSTOM_FUNCTION's arg from a `str` to a `CustomFunction` object stating the
+# return dtype, and that is the SAME change that made upstream delete `spec_tensor`'s
+# CUSTOM_FUNCTION rule (see THE TWENTY-THIRD TENSOR RULE above). So `sh_22` now answers
+# about the wrong thing.
+#
+# NO GATE ROW CAN SEE IT, and that is the part worth stating: `sh_len` is 33 at the pin
+# and 33 at HEAD, so the rule count is unchanged and the table-size rows cannot notice that
+# a rule's BODY moved. This is the same class as a dtype rename in `uop/fold.bend` --
+# a value a pattern matches on changing underneath a green gate -- except here the gate has
+# no row that could ever have read the arg's type.
+#
+# NOT FIXED HERE, AND THE BLOCKER IS NAMED: `arg_str` is right for the pin and there is
+# nothing to replace it with until `uop/ops.bend` HAS a `CustomFunction` datatype, which
+# that file records as outstanding on its own lines 148-151 ("The rebase therefore also
+# needs a `CustomFunction` datatype here and `CallInfo` re-cut"). `ops.bend` is not this
+# file's. OWNER: the `uop/ops.bend` unit. Until it lands, `sh_22` is the pin's rule and
+# this comment is the only place that says so.
+# spec.py:110 (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True), lambda x: isinstance(x.arg, CustomFunction))
 def sh_22(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_str(sp_arg(fx, self))))
 
@@ -1584,46 +1604,42 @@ def te_3(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 0)),
             sp_vd(sp_tri(te_3.guard(fx, self), te_3.body(fx, self))))
 
-# spec.py:161 (UPat(Ops.CUSTOM_FUNCTION, name="x"), lambda x: isinstance(x.arg, str))
+# spec.py:161 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.weakint),), name="s"), lambda s: isinstance(s.arg, str))
 def te_4(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_str(sp_arg(fx, self))))
-
-# spec.py:164 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.weakint),), name="s"), lambda s: isinstance(s.arg, str))
-def te_5(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSPECIAL{}), sp_src_dt(fx, self, 0, S.weakint())), nsrc_is(fx, self, 1)),
             sp_vb(arg_str(sp_arg(fx, self))))
 
 def OP_REEXP() -> List<&2, O.Op>:
   [O.OpsRESHAPE{}, O.OpsEXPAND{}]
 
-# spec.py:167 (UPat((Ops.RESHAPE, Ops.EXPAND), src=(UPat(), UPat())), lambda: True)
-def te_6(+fx: F.Folded, +self: U32) -> O.Verdict:
+# spec.py:164 (UPat((Ops.RESHAPE, Ops.EXPAND), src=(UPat(), UPat())), lambda: True)
+def te_5(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_REEXP()), nsrc_is(fx, self, 2)), O.VTrue{})
 
 def OP_PADSHRINK() -> List<&2, O.Op>:
   [O.OpsPAD{}, O.OpsSHRINK{}]
 
-# spec.py:168 (UPat((Ops.PAD, Ops.SHRINK), src=(UPat(), UPat(), UPat()), name="x"),
+# spec.py:165 (UPat((Ops.PAD, Ops.SHRINK), src=(UPat(), UPat(), UPat()), name="x"),
 #              lambda x: x.src[1].shape == x.src[2].shape)
-def te_7(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_6(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_PADSHRINK()), nsrc_is(fx, self, 3)),
             sp_vb(sp_shape_same(fx, sp_src(fx, self, 1), sp_src(fx, self, 2))))
 
 def OP_PERMFLIP() -> List<&2, O.Op>:
   [O.OpsPERMUTE{}, O.OpsFLIP{}]
 
-# spec.py:169 (UPat((Ops.PERMUTE, Ops.FLIP), name="mv", src=(UPat(),)), lambda mv: isinstance(mv.arg, tuple))
-def te_8(+fx: F.Folded, +self: U32) -> O.Verdict:
+# spec.py:166 (UPat((Ops.PERMUTE, Ops.FLIP), name="mv", src=(UPat(),)), lambda mv: isinstance(mv.arg, tuple))
+def te_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_PERMFLIP()), nsrc_is(fx, self, 1)),
             sp_vb(some_list(arg_tuple(sp_arg(fx, self)))))
 
-def te_9.body.pick(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
+def te_8.body.pick(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
   match rop:
     case Some{r}: Bool.and(O.GroupOp.reduce(r), widths)
     case _: False{}
 
-def te_9.body.of(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
-  te_9.body.pick(rop, widths)
+def te_8.body.of(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
+  te_8.body.pick(rop, widths)
 
 # `dtypes.ints` is `uints + sints` and `dtypes.weakint` is the weak sibling, so
 # `(weakint, int)` is `is_int` plus `CWeakInt` -- and `S.Dt.is_int` already
@@ -1636,20 +1652,20 @@ def all_ints_or_weak(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case Nil{}: acc
     case s <> t: all_ints_or_weak(t, fx, Bool.and(acc, sp_int_or_weak(fx, s)))
 
-def te_9.body(+fx: F.Folded, +self: U32) -> Bool:
-  te_9.body.of(arg_reduce_op(sp_arg(fx, self)), all_ints_or_weak(sp_src_from(fx, self, 1), fx, True{}))
+def te_8.body(+fx: F.Folded, +self: U32) -> Bool:
+  te_8.body.of(arg_reduce_op(sp_arg(fx, self)), all_ints_or_weak(sp_src_from(fx, self, 1), fx, True{}))
 
-# spec.py:172 (UPat(Ops.REDUCE, src=(UPat(),), allow_any_len=True, name="x"),
+# spec.py:169 (UPat(Ops.REDUCE, src=(UPat(),), allow_any_len=True, name="x"),
 #              lambda x: isinstance(x.arg, tuple) and len(x.arg) == 2 and
 #                x.arg[0] in GroupOp.Reduce and isinstance(x.arg[1], int) and
 #                all(y.dtype in (dtypes.weakint, dtypes.i32) for y in x.src[1:]))
 # `AReduce` IS that pair and `num_axes: U32` IS the `isinstance(..., int)`, so the
 # `all(y.dtype in (weakint, int))` is the one left -- and `dtypes.i32` is the four
 # signed widths PLUS the four unsigned (tinygrad/dtype.py:159), so it is `dtypes.ints`.
-def te_9(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsREDUCE{}), nsrc_ge(fx, self, 1)), sp_vb(te_9.body(fx, self)))
+def te_8(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsREDUCE{}), nsrc_ge(fx, self, 1)), sp_vb(te_8.body(fx, self)))
 
-def te_10.rest(+fx: F.Folded, +self: U32) -> Maybe<&1, Bool>:
+def te_9.rest(+fx: F.Folded, +self: U32) -> Maybe<&1, Bool>:
   valid_device_range(dev_opt(arg_dev(sp_arg(fx, self))), sp_src_from(fx, self, 1), fx)
 
 # spec.py:177 (UPat(Ops.COPY, name="copy", src=(UPat(),), allow_any_len=True), lambda copy:
@@ -1660,17 +1676,17 @@ def te_10.rest(+fx: F.Folded, +self: U32) -> Maybe<&1, Bool>:
 # ask. So the FIRST conjunct is decided and the SECOND IS NOT, and this rule answers
 # `False` when the arg is not a device and `None` when it is, and `None` fails
 # `type_verify` exactly as `False` does. See the TODO on `is_disk_device`.
-def te_10(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_9(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsCOPY{}), nsrc_ge(fx, self, 1)),
-            sp_vd(sp_tri_v(is_device(arg_dev(sp_arg(fx, self))), te_10.rest(fx, self))))
+            sp_vd(sp_tri_v(is_device(arg_dev(sp_arg(fx, self))), te_9.rest(fx, self))))
 
-def te_11.body.pick(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
+def te_10.body.pick(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
   match rop:
     case Some{r}: Bool.and(O.GroupOp.reduce(r), dev)
     case _: False{}
 
-def te_11.body.of(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
-  te_11.body.pick(rop, dev)
+def te_10.body.of(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
+  te_10.body.pick(rop, dev)
 
 # `AAllred` is `(Ops, str|tuple)` and `AReduce` is `(Ops, int)`, and an ALLREDUCE's
 # arg is the `AAllred`, so its `arg[0]` needs its own reader.
@@ -1682,41 +1698,41 @@ def arg_reduce_op_of_allred.go(a: O.Arg) -> Maybe<&1, O.Op>:
 def arg_reduce_op_of_allred(a: O.Arg) -> Maybe<&1, O.Op>:
   arg_reduce_op_of_allred.go(a)
 
-def te_11.body(+fx: F.Folded, +self: U32) -> Bool:
-  te_11.body.of(arg_reduce_op_of_allred(sp_arg(fx, self)), is_device(arg_allred_dev(sp_arg(fx, self))))
+def te_10.body(+fx: F.Folded, +self: U32) -> Bool:
+  te_10.body.of(arg_reduce_op_of_allred(sp_arg(fx, self)), is_device(arg_allred_dev(sp_arg(fx, self))))
 
 # spec.py:176 (UPat(Ops.ALLREDUCE, name="red", src=(UPat(),)),
 #              lambda red: isinstance(red.arg, tuple) and len(red.arg) == 2 and
 #                red.arg[0] in GroupOp.Reduce and is_device(red.arg[1]))
-def te_11(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLREDUCE{}), nsrc_is(fx, self, 1)), sp_vb(te_11.body(fx, self)))
+def te_10(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLREDUCE{}), nsrc_is(fx, self, 1)), sp_vb(te_10.body(fx, self)))
 
 def len_of(a: List<&2, U32>) -> U32:
   U32.from_nat(List.length(&2, U32, a))
 
-def te_12.body.pick(ys: Maybe<&2, List<&2, U32>>, n: U32, weak: Bool) -> Bool:
+def te_11.body.pick(ys: Maybe<&2, List<&2, U32>>, n: U32, weak: Bool) -> Bool:
   match ys:
     case Some{a}: Bool.and(U32.is_eq(n, U32.add(1, len_of(a))), weak)
     case _: False{}
 
-def te_12.body.of(ys: Maybe<&2, List<&2, U32>>, n: U32, weak: Bool) -> Bool:
-  te_12.body.pick(ys, n, weak)
+def te_11.body.of(ys: Maybe<&2, List<&2, U32>>, n: U32, weak: Bool) -> Bool:
+  te_11.body.pick(ys, n, weak)
 
 def all_weak(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
     case s <> t: all_weak(t, fx, Bool.and(acc, sp_is_weak(fx, s)))
 
-def te_12.body(+fx: F.Folded, +self: U32) -> Bool:
-  te_12.body.of(arg_tuple(sp_arg(fx, self)), sp_nsrc(fx, self), all_weak(sp_src_from(fx, self, 1), fx, True{}))
+def te_11.body(+fx: F.Folded, +self: U32) -> Bool:
+  te_11.body.of(arg_tuple(sp_arg(fx, self)), sp_nsrc(fx, self), all_weak(sp_src_from(fx, self, 1), fx, True{}))
 
-# spec.py:184 (UPat(Ops.UNSHARD, name="multi"), lambda multi: len(multi.src) == 1+len(multi.arg)
+# spec.py:181 (UPat(Ops.UNSHARD, name="multi"), lambda multi: len(multi.src) == 1+len(multi.arg)
 #                and all(isinstance(a, int) for a in multi.arg)
 #                and all(r.dtype in dtypes.weaks for r in multi.src[1:]))
 # `all(isinstance(a, int) for a in multi.arg)` is `List<&2, U32>` being
 # well-formed, so it is the TYPE and not a test.
-def te_12(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsUNSHARD{}), sp_vb(te_12.body(fx, self)))
+def te_11(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sp_op(fx, self, O.OpsUNSHARD{}), sp_vb(te_11.body(fx, self)))
 
 def mselect_lt.pick(a: List<&2, U32>, tags: List<&2, U32>) -> Bool:
   match a:
@@ -1737,11 +1753,11 @@ def mselect_ok.of(d: Maybe<&2, S.Dev>, ys: Maybe<&2, List<&2, U32>>) -> Bool:
 def mselect_ok(+fx: F.Folded, +self: U32) -> Bool:
   mselect_ok.of(dev_of(sp_dev(fx, sp_src(fx, self, 0))), arg_tuple(sp_arg(fx, self)))
 
-# spec.py:186 (UPat(Ops.MSELECT, name="x"),
+# spec.py:183 (UPat(Ops.MSELECT, name="x"),
 #              lambda x: isinstance(x.src[0].device, tuple) and x.arg < len(x.src[0].device))
 # `x.arg` is a bare int in Python; `Arg` has no bare-int constructor and
 # `ops.bend` models MSELECT's arg as `ATuple`, so the index is its one element.
-def te_13(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_12(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsMSELECT{}), sp_vb(mselect_ok(fx, self)))
 
 def mstack_body.of(named: Bool, +srcs: List<&2, U32>, head_none: Bool) -> Bool:
@@ -1751,32 +1767,32 @@ def mstack_body(+fx: F.Folded, +self: U32) -> Bool:
   mstack_body.of(all_dev(sp_srcs(fx, self), fx, True{}), sp_srcs(fx, self),
     dopt_none(dev_opt(dev_of(sp_dev(fx, sp_src(fx, self, 0))))))
 
-# spec.py:187 (UPat(Ops.MSTACK, name="x"),
+# spec.py:184 (UPat(Ops.MSTACK, name="x"),
 #              lambda x: all(isinstance(s.device, str) for s in x.src)
 #                        or (all_same(x.src) and x.src[0].device is None))
-def te_14(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_13(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsMSTACK{}), sp_vb(mstack_body(fx, self)))
 
 def OP_DETACH() -> List<&2, O.Op>:
   [O.OpsDETACH{}, O.OpsCONTIGUOUS_BACKWARD{}]
 
-# spec.py:190 (UPat((Ops.DETACH, Ops.CONTIGUOUS_BACKWARD), src=(UPat(),), arg=None), lambda: True)
+# spec.py:187 (UPat((Ops.DETACH, Ops.CONTIGUOUS_BACKWARD), src=(UPat(),), arg=None), lambda: True)
 # `arg=None` in a `UPat` is NOT `self.arg is None` -- `upat.py:27` emits a clause
 # only `if self.arg is not None` -- so it is a no-op here and the rule is an arity
 # test and `True`.
-def te_15(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_14(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_DETACH()), nsrc_is(fx, self, 1)), O.VTrue{})
 
-# spec.py:193 (UPat(Ops.STAGE, src=(UPat(),), allow_any_len=True), lambda: True)
-def te_16(+fx: F.Folded, +self: U32) -> O.Verdict:
+# spec.py:190 (UPat(Ops.STAGE, src=(UPat(),), allow_any_len=True), lambda: True)
+def te_15(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsSTAGE{}), nsrc_ge(fx, self, 1)), O.VTrue{})
 
-# spec.py:196 (UPat(Ops.LINEAR, dtypes.void), lambda: True)
-def te_17(+fx: F.Folded, +self: U32) -> O.Verdict:
+# spec.py:193 (UPat(Ops.LINEAR, dtypes.void), lambda: True)
+def te_16(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsLINEAR{}), sp_dt_is(fx, self, S.void())), O.VTrue{})
 
-# spec.py:197 (UPat(Ops.SOURCE, dtypes.void, src=()), lambda: True)
-def te_18(+fx: F.Folded, +self: U32) -> O.Verdict:
+# spec.py:194 (UPat(Ops.SOURCE, dtypes.void, src=()), lambda: True)
+def te_17(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSOURCE{}), sp_dt_is(fx, self, S.void())), nsrc_is(fx, self, 0)), O.VTrue{})
 
 # the pipeline PREFIX, and it is cumulative: a 2-src PROGRAM has SINK and LINEAR, a
@@ -1804,16 +1820,16 @@ def prog_pat.of(op: Bool, d: Bool, n: Bool, srcs: Bool) -> Bool:
 def prog_pat(+fx: F.Folded, +self: U32, n: U32, srcs: Bool) -> Bool:
   prog_pat.of(sp_op(fx, self, O.OpsPROGRAM{}), sp_dt_is(fx, self, S.void()), nsrc_is(fx, self, n), srcs)
 
-def te_19(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_18(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(prog_pat(fx, self, 1, prog1(fx, self)), O.VTrue{})
 
-def te_20(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_19(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(prog_pat(fx, self, 2, prog2(fx, self)), O.VTrue{})
 
-def te_21(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_20(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(prog_pat(fx, self, 3, prog3(fx, self)), O.VTrue{})
 
-def te_22(+fx: F.Folded, +self: U32) -> O.Verdict:
+def te_21(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(prog_pat(fx, self, 4, prog4(fx, self)), O.VTrue{})
 
 # ---------------------------------------------------------------------------
@@ -1841,31 +1857,70 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
   bump.go(n, O.PMEntrys.es(ts), Nil{})
 
 # ---------------------------------------------------------------------------
-# THE TWENTY-THIRD TENSOR RULE -- A REPORTED DEFECT, NOT A CLAIM. The `# NN` on
-# each row below is a spec.py line, and from row 4 on they are ALL THREE TOO
-# HIGH, which is the tell:
+# THE TWENTY-THIRD TENSOR RULE -- RESOLVED 2026-10-03, AND THE ROOT CAUSE IS NOT
+# WHAT THE OLD TEXT SAID. It is kept because the OLD TEXT was wrong in an instructive
+# way, and because the reason it was wrong is the one thing a reader needs here.
 #
-#   row 4 is `Ops.CUSTOM_FUNCTION`, cited at 161. spec.py:161 is the SPECIAL
-#   rule; the CUSTOM_FUNCTION rule is spec.py:111, and it lives in `spec_shared`
-#   -- where `shared_table()` ALREADY HAS IT, as tag 22. So `tensor_own()` is
-#   CPython's 22 tensor rules plus a DUPLICATE of one of the 33 shared ones.
+# THE OLD TEXT claimed `tensor_own()` was "CPython's 22 tensor rules plus a DUPLICATE of
+# one of the 33 shared ones" -- i.e. a rule the port's author added by mistake. THAT IS
+# WRONG, and the pin settles it:
 #
-# TWO CONSEQUENCES, and neither is a comment problem:
-#   * `tensor_table()` is 23 + 33 = 56 entries; CPython's `spec_tensor +
-#     spec_shared` is 22 + 33 = 55. The gate row `te_len` prints 56 and its
-#     expectation is 56, so the row is GREEN over the wrong answer -- the row
-#     asserts the table's own length, and the table is the thing in question.
-#   * a `CUSTOM_FUNCTION` node is scanned twice, by `sh_11`(tag 22) and again by
-#     `te_4`(tag 4+33). First-wins makes the second unreachable, so no ANSWER
-#     changes -- but the count is a real disagreement with CPython.
+#     git show 6c3d401cf324:tinygrad/uop/spec.py     # OUR PIN
 #
-# The fix is a DELETION of row 4 and a decrement of `bump(23, ...)` to
-# `bump(22, ...)`, which moves `te_len` to 55. That changes the table and a row's
-# expected value, so it is NOT done here: this pass is comments-only.
+# At the pin, `spec_tensor`'s fourth rule WAS `Ops.CUSTOM_FUNCTION`, at spec.py:161, and
+# it took THREE lines -- a blank, the comment `# custom function`, and the rule. At HEAD
+# it is GONE, and upstream's `spec_shared` CUSTOM_FUNCTION rule changed with it:
+#
+#     PIN   (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True),
+#            lambda x: isinstance(x.arg, str))
+#     HEAD  (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True),
+#            lambda x: isinstance(x.arg, CustomFunction))
+#
+# So upstream stopped giving a CUSTOM_FUNCTION a `str` arg and started giving it a
+# `CustomFunction` object stating the return dtype. The tensor rule that asserted
+# `isinstance(x.arg, str)` became FALSE for every such node, so it was DELETED rather than
+# left to reject. The port was CORRECT at the pin and upstream moved -- which is why the
+# old text called the count a DUPLICATE: from HEAD it looks exactly like one.
+#
+# THE THREE-LINE TELL WAS THE CLUE AND IT WAS READ BACKWARDS. Every `# NN` on the rows
+# from row 4 down was three too high -- 164 for a rule now at 161, 167 for 164, and so on
+# to 201 for 198 -- and rows 0..3 were exact. Three extra lines inside `spec_tensor`,
+# below row 3, is the deletion itself. The port read that as "the citations drifted", when
+# the citations were the only thing still remembering the pin. `.agents/slop/
+# spec-citations.py` now derives every one of them from spec.py's AST (`--check` to
+# verify), so they cannot drift again; it rewrote 51 of them across `tensor_own`,
+# `program_own` and `hcq_own`, and NO GATE ROW MOVED, which is what a comment-only change
+# should look like.
+#
+# WHAT THE DELETION WAS WORTH. `tensor_table()` was 23 + 33 = 56 and is now 22 + 33 = 55,
+# which is CPython's. `te_len` moved 56 -> 55 and `fu_len` 71 -> 70, and both were RED
+# before and are green now, read from `.agents/slop/rebase-oracle-spec.py` calling the real
+# `tinygrad.uop.spec`. A CUSTOM_FUNCTION node is no longer scanned twice either -- once by
+# `sh_22` and again by `te_4` -- which changed no ANSWER, because first-wins made the
+# second unreachable.
+#
+# THE DELETE WAS NOT ONE LINE, AND THAT IS THE PART TO CARRY AWAY. Renaming the rule defs
+# and renumbering the table was the easy half. THREE THINGS ELSE READ THE SAME NUMBERS and
+# had to move with it, and each of the three failed SILENTLY -- compiled, ran, raised
+# nothing, and answered a different question:
+#
+#   * `te_dispatch.go`'s ladder still read `case N: te_(N-1)` for every N from 5 up, so
+#     tag 5 answered `te_4` and tag 21 answered `te_20`. Renaming the right-hand sides of
+#     a `match` does NOT renumber its left-hand arms, and that is precisely the trap in
+#     agent-core.md: a tag that stops selecting the rule it was written for lands on a
+#     DIFFERENT rule.
+#   * `full_table.go`'s bumps went to 26 / 59 / 68 while `fu_dispatch.of` still subtracted
+#     27 / 60 / 69, so every tag past `full_own`'s four entered the wrong table.
+#   * `t_tag_rej` read `entry_at(tensor_own(), 22)` for the four-src PROGRAM rule, which
+#     had moved to 21 -- so it read the three-src rule's reject set instead, which is 3
+#     where the row demands 4. That one the row caught.
+#
+# `spec-offsets.py` now checks all fourteen offsets against the table sizes AND checks that
+# every dispatch ladder reads `case N: _N` pairwise. Those three bugs are why it exists.
 # ---------------------------------------------------------------------------
 # THE TABLE. `spec.py:199` is `])+spec_shared`, so this list is followed by
-# `shared_table()`'s, in that order. The `# NN` on each row is the spec.py line
-# the rule came from, EXCEPT row 4 and everything after it: see the block above.
+# `shared_table()`'s, in that order. The `# NN` on each row is the spec.py line the rule
+# came from, DERIVED from spec.py's AST rather than transcribed.
 # ---------------------------------------------------------------------------
 def tensor_own() -> O.PMEntrys:
   O.PMEntrys{[
@@ -1873,28 +1928,27 @@ def tensor_own() -> O.PMEntrys:
     O.PMEntry{1,  [O.OpsBUFFER{}],              Nil{}},   # 148
     O.PMEntry{2,  [O.OpsALLOC{}],               Nil{}},   # 151
     O.PMEntry{3,  [O.OpsPARAM{}],               Nil{}},   # 158
-    O.PMEntry{4,  [O.OpsCUSTOM_FUNCTION{}],     Nil{}},   # 161
-    O.PMEntry{5,  [O.OpsSPECIAL{}],             Nil{}},   # 164
-    O.PMEntry{6,  OP_REEXP(),                   Nil{}},   # 167
-    O.PMEntry{7,  OP_PADSHRINK(),               Nil{}},   # 168
-    O.PMEntry{8,  OP_PERMFLIP(),                Nil{}},   # 169
-    O.PMEntry{9,  [O.OpsREDUCE{}],              Nil{}},   # 172
-    O.PMEntry{10, [O.OpsCOPY{}],                Nil{}},   # 177
-    O.PMEntry{11, [O.OpsALLREDUCE{}],           Nil{}},   # 179
-    O.PMEntry{12, [O.OpsUNSHARD{}],             Nil{}},   # 184
-    O.PMEntry{13, [O.OpsMSELECT{}],             Nil{}},   # 186
-    O.PMEntry{14, [O.OpsMSTACK{}],              Nil{}},   # 187
-    O.PMEntry{15, OP_DETACH(),                  Nil{}},   # 190
-    O.PMEntry{16, [O.OpsSTAGE{}],               Nil{}},   # 193
-    O.PMEntry{17, [O.OpsLINEAR{}],              Nil{}},   # 196
-    O.PMEntry{18, [O.OpsSOURCE{}],              Nil{}},   # 197
-    O.PMEntry{19, [O.OpsPROGRAM{}],             [O.OpsSINK{}]},                     # 198
-    O.PMEntry{20, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}]},      # 199
-    O.PMEntry{21, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}, O.OpsSOURCE{}]},       # 200
-    O.PMEntry{22, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}]}]}  # 201
+    O.PMEntry{4,  [O.OpsSPECIAL{}],             Nil{}},   # 161
+    O.PMEntry{5,  OP_REEXP(),                   Nil{}},   # 164
+    O.PMEntry{6,  OP_PADSHRINK(),               Nil{}},   # 165
+    O.PMEntry{7,  OP_PERMFLIP(),                Nil{}},   # 166
+    O.PMEntry{8,  [O.OpsREDUCE{}],              Nil{}},   # 169
+    O.PMEntry{9, [O.OpsCOPY{}],                Nil{}},   # 174
+    O.PMEntry{10, [O.OpsALLREDUCE{}],           Nil{}},   # 176
+    O.PMEntry{11, [O.OpsUNSHARD{}],             Nil{}},   # 181
+    O.PMEntry{12, [O.OpsMSELECT{}],             Nil{}},   # 183
+    O.PMEntry{13, [O.OpsMSTACK{}],              Nil{}},   # 184
+    O.PMEntry{14, OP_DETACH(),                  Nil{}},   # 187
+    O.PMEntry{15, [O.OpsSTAGE{}],               Nil{}},   # 190
+    O.PMEntry{16, [O.OpsLINEAR{}],              Nil{}},   # 193
+    O.PMEntry{17, [O.OpsSOURCE{}],              Nil{}},   # 194
+    O.PMEntry{18, [O.OpsPROGRAM{}],             [O.OpsSINK{}]},                     # 195
+    O.PMEntry{19, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}]},      # 196
+    O.PMEntry{20, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}, O.OpsSOURCE{}]},       # 197
+    O.PMEntry{21, [O.OpsPROGRAM{}],             [O.OpsSINK{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}]}]}  # 198
 
 def tensor_table() -> O.PMEntrys:
-  O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(tensor_own()), O.PMEntrys.es(bump(23, shared_table())))}
+  O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(tensor_own()), O.PMEntrys.es(bump(22, shared_table())))}
 
 def te_dispatch.go(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match tag:
@@ -1920,8 +1974,7 @@ def te_dispatch.go(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
     case 19: te_19(fx, self)
     case 20: te_20(fx, self)
     case 21: te_21(fx, self)
-    case 22: te_22(fx, self)
-    case _: sh_dispatch(U32.sub(tag, 23), fx, self)
+    case _: sh_dispatch(U32.sub(tag, 22), fx, self)
 
 def te_dispatch(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   te_dispatch.go(tag, fx, self)
@@ -1959,14 +2012,14 @@ def pr_0.body(fx: F.Folded, self: U32) -> Bool:
 # `spec_program` -- spec.py:205-228. Nine rules, then `+ spec_shared`.
 # "these ops can exist in programs but not the tensor spec. example: LOAD"
 # ===========================================================================
-# spec.py:207 (UPat(GroupOp.All, name="x"),
+# spec.py:204 (UPat(GroupOp.All, name="x"),
 #              lambda x: False if x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src) else None)
 # A CONST under anything but a CAST is not allowed in a program: every width is
 # stated by the CAST, and a bare CONST is a vconst that survived lowering.
 def pr_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_0.claims(fx, self), sp_vd(sp_tri(pr_0.body(fx, self), False{})))
 
-# spec.py:208 (UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks), lambda: False)
+# spec.py:205 (UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks), lambda: False)
 # `dtypes.weaks` is a TWO-element set, so upat.py:35 emits `dtype in {weakint,
 # weakfloat}` -- a class test, and the only weak node in a program is illegal.
 def pr_1(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -1979,12 +2032,12 @@ def pr_2.pat(+fx: F.Folded, +self: U32) -> Bool:
   pr_2.pat.of(sp_op(fx, self, O.OpsSHRINK{}), buf_or_bitcasted(fx, sp_src(fx, self, 0)),
               const_or_casted(fx, sp_src(fx, self, 2)), nsrc_is(fx, self, 3))
 
-# spec.py:211 (UPat(Ops.SHRINK, src=(UPat((Ops.PARAM, Ops.BUFFER, Ops.ALLOC, Ops.AFTER))
+# spec.py:208 (UPat(Ops.SHRINK, src=(UPat((Ops.PARAM, Ops.BUFFER, Ops.ALLOC, Ops.AFTER))
 #                     .or_bitcasted(), UPat(), UPat.cvar().or_casted())), lambda: True)
 def pr_2(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_2.pat(fx, self), O.VTrue{})
 
-# spec.py:214 (UPat(GroupOp.Movement), lambda: False)
+# spec.py:211 (UPat(GroupOp.Movement), lambda: False)
 # movement ops are not allowed in programs. A REPLACEMENT, not a skip: a RESHAPE in
 # a program graph is wrong even though `spec_tensor` accepts one.
 def pr_3(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -1993,12 +2046,12 @@ def pr_3(+fx: F.Folded, +self: U32) -> O.Verdict:
 def OP_BA() -> List<&2, O.Op>:
   [O.OpsBUFFER{}, O.OpsALLOC{}]
 
-# spec.py:217 (UPat((Ops.BUFFER, Ops.ALLOC), name="x"),
+# spec.py:214 (UPat((Ops.BUFFER, Ops.ALLOC), name="x"),
 #              lambda x: isinstance(x.arg, ParamArg) and x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL))
 def pr_4(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_BA()), sp_vb(Bool.and(Pa.ok(pa_of(fx, self)), is_reg_or_local(addr_of(sp_addr(fx, self))))))
 
-# spec.py:220 (UPat(Ops.CONST, arg=Invalid), lambda: False)
+# spec.py:217 (UPat(Ops.CONST, arg=Invalid), lambda: False)
 def pr_5(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsCONST{}), arg_const_invalid(sp_arg(fx, self))), O.VFalse{})
 
@@ -2012,7 +2065,7 @@ def pr_6.pat(+fx: F.Folded, +self: U32) -> Bool:
   pr_6.pat.of(sp_op(fx, self, O.OpsIF{}), sp_dt_is(fx, self, S.void()),
               sp_src_dt(fx, self, 0, S.boolean()), sp_src_in(fx, self, 1, OP_CIS()), nsrc_is(fx, self, 2))
 
-# spec.py:223 (UPat(Ops.IF, dtype=dtypes.void,
+# spec.py:220 (UPat(Ops.IF, dtype=dtypes.void,
 #                    src=(UPat(dtype=dtypes.bool), UPat((Ops.CAST, Ops.INDEX, Ops.SHRINK)))), lambda: True)
 def pr_6(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_6.pat(fx, self), O.VTrue{})
@@ -2024,12 +2077,12 @@ def pr_7.pat(+fx: F.Folded, +self: U32) -> Bool:
   pr_7.pat.of(sp_op(fx, self, O.OpsENDIF{}), sp_dt_is(fx, self, S.void()),
               sp_src_op(fx, self, 0, O.OpsIF{}), nsrc_is(fx, self, 1))
 
-# spec.py:224 (UPat(Ops.ENDIF, dtype=dtypes.void, src=(UPat(Ops.IF),)), lambda: True)
+# spec.py:221 (UPat(Ops.ENDIF, dtype=dtypes.void, src=(UPat(Ops.IF),)), lambda: True)
 # the second non-empty `early_reject`: `src[0]` is a single-op upat, so `[IF]`.
 def pr_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_7.pat(fx, self), O.VTrue{})
 
-# spec.py:227 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.i32),), name="s"), lambda s: isinstance(s.arg, str))
+# spec.py:224 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.i32),), name="s"), lambda s: isinstance(s.arg, str))
 # SPECIAL is weakint before index lowering (spec.py:164) and int32 after (here).
 def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSPECIAL{}), sp_src_dt(fx, self, 0, S.int32())), nsrc_is(fx, self, 1)),
@@ -2058,15 +2111,15 @@ def OP_MOVE() -> List<&2, O.Op>:
 
 def program_own() -> O.PMEntrys:
   O.PMEntrys{[
-    O.PMEntry{0, OP_ALL(),                   Nil{}},   # 207
-    O.PMEntry{1, OP_ALL(),                   Nil{}},   # 208
-    O.PMEntry{2, [O.OpsSHRINK{}],            Nil{}},   # 211
-    O.PMEntry{3, OP_MOVE(),                  Nil{}},   # 214
-    O.PMEntry{4, OP_BA(),                    Nil{}},   # 217
-    O.PMEntry{5, [O.OpsCONST{}],             Nil{}},   # 220
-    O.PMEntry{6, [O.OpsIF{}],                Nil{}},   # 223
-    O.PMEntry{7, [O.OpsENDIF{}],             [O.OpsIF{}]},   # 224
-    O.PMEntry{8, [O.OpsSPECIAL{}],           Nil{}}]}  # 227
+    O.PMEntry{0, OP_ALL(),                   Nil{}},   # 204
+    O.PMEntry{1, OP_ALL(),                   Nil{}},   # 205
+    O.PMEntry{2, [O.OpsSHRINK{}],            Nil{}},   # 208
+    O.PMEntry{3, OP_MOVE(),                  Nil{}},   # 211
+    O.PMEntry{4, OP_BA(),                    Nil{}},   # 214
+    O.PMEntry{5, [O.OpsCONST{}],             Nil{}},   # 217
+    O.PMEntry{6, [O.OpsIF{}],                Nil{}},   # 220
+    O.PMEntry{7, [O.OpsENDIF{}],             [O.OpsIF{}]},   # 221
+    O.PMEntry{8, [O.OpsSPECIAL{}],           Nil{}}]}  # 224
 
 def program_table() -> O.PMEntrys:
   O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(program_own()), O.PMEntrys.es(bump(9, shared_table())))}
@@ -2144,15 +2197,15 @@ def hq_1.pat(+fx: F.Folded, +self: U32) -> Bool:
   hq_1.pat.of(sp_op(fx, self, O.OpsPROGRAM{}), sp_dt_is(fx, self, S.void()),
               after_or(fx, sp_src(fx, self, 0), OP_HCQ1()), nsrc_is(fx, self, 1))
 
-# spec.py:234 (UPat(Ops.PROGRAM, dtypes.void, src=(UPat((Ops.BUFFER, Ops.PARAM)).or_after(),)),
+# spec.py:231 (UPat(Ops.PROGRAM, dtypes.void, src=(UPat((Ops.BUFFER, Ops.PARAM)).or_after(),)),
 #              lambda: True)
 def hq_1(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(hq_1.pat(fx, self), O.VTrue{})
 
 def hcq_own() -> O.PMEntrys:
   O.PMEntrys{[
-    O.PMEntry{0, [O.OpsGETADDR{}],  Nil{}},   # 231
-    O.PMEntry{1, [O.OpsPROGRAM{}], Nil{}}]}  # 234
+    O.PMEntry{0, [O.OpsGETADDR{}],  Nil{}},   # 228
+    O.PMEntry{1, [O.OpsPROGRAM{}], Nil{}}]}  # 231
 
 def hcq_table() -> O.PMEntrys:
   O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(hcq_own()), O.PMEntrys.es(bump(2, shared_table())))}
@@ -2243,8 +2296,8 @@ def full_own() -> O.PMEntrys:
 
 def full_table() -> O.PMEntrys:
   full_table.go(O.PMEntrys.es(full_own()), O.PMEntrys.es(bump(4, tensor_own())),
-    O.PMEntrys.es(bump(27, shared_table())), O.PMEntrys.es(bump(60, program_own())),
-    O.PMEntrys.es(bump(69, hcq_own())))
+    O.PMEntrys.es(bump(26, shared_table())), O.PMEntrys.es(bump(59, program_own())),
+    O.PMEntrys.es(bump(68, hcq_own())))
 
 def fu_block.last(c: Bool) -> U32:
   match c:
@@ -2272,14 +2325,21 @@ def fu_block(tag: U32) -> U32:
   fu_block.go(tag)
 
 # the tag spaces of the four blocks, each with its own dispatch and its base
-# subtracted: 4-26 `spec_tensor`, 27-59 `spec_shared`, 60-68 `spec_program`,
-# 69-70 `spec_hcq`.
+# subtracted: 4-25 `spec_tensor` (22 own + 33 shared), 26-58 `spec_shared`,
+# 59-67 `spec_program` (9 own), 68-69 `spec_hcq` (2 own).
+#
+# EVERY NUMBER HERE IS SPELLED TWICE -- once as the `bump(N, ...)` that builds the table
+# and once as the `U32.sub(tag, N)` below -- and NOTHING TIES THE TWO TOGETHER. Deleting
+# one rule rebased `full_table.go` to 26 / 59 / 68 and left these four still at 27 / 60 /
+# 69, so every tag past `full_own`'s four entered the WRONG table's dispatch. It compiled,
+# it ran, and it raised nothing. `.agents/slop/spec-offsets.py` checks all fourteen
+# offsets against the table sizes AND checks that every ladder reads `case N: _N`.
 def fu_dispatch.of(blk: U32, tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match blk:
     case 1: te_dispatch(U32.sub(tag, 4), fx, self)
-    case 2: sh_dispatch(U32.sub(tag, 27), fx, self)
-    case 3: pr_dispatch(U32.sub(tag, 60), fx, self)
-    case _: hq_dispatch(U32.sub(tag, 69), fx, self)
+    case 2: sh_dispatch(U32.sub(tag, 26), fx, self)
+    case 3: pr_dispatch(U32.sub(tag, 59), fx, self)
+    case _: hq_dispatch(U32.sub(tag, 68), fx, self)
 
 def fu_dispatch.go(+tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match tag:
@@ -2839,8 +2899,9 @@ def tbl_len(ts: O.PMEntrys) -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(ts)))
 
 # the six table sizes, counted from `spec.py` and NOT from this file: shared 33,
-# tensor 23+33, program 9+33, hcq 2+33, full 4+23+33+9+2, kernel_graph 13. The
-# tensor figure is WRONG; see THE TWENTY-THIRD TENSOR RULE below.
+# tensor 22+33, program 9+33, hcq 2+33, full 4+22+33+9+2, kernel_graph 13. The
+# tensor figure was 23+33 and was WRONG until 2026-10-03 -- see THE TWENTY-THIRD
+# TENSOR RULE above for the deletion that took it to 22.
 def t_sh_len() -> U32: tbl_len(shared_table())
 
 def t_te_len() -> U32: tbl_len(tensor_table())
@@ -2892,7 +2953,7 @@ def t_tag_rej.of(a: Bool, b: U32) -> U32:
 
 def t_tag_rej() -> U32:
   t_tag_rej.of(rej_is(O.PMEntry.rej(entry_at(shared_table(), 15)), [O.OpsRANGE{}]),
-               rej_len(entry_at(tensor_own(), 22)))
+               rej_len(entry_at(tensor_own(), 21)))
 
 # spec.py:51 -- a SINK is `True` in `spec_shared`, with no arity test.
 def t_sink_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.sink(main_arena())))
@@ -2927,7 +2988,7 @@ def t_shl_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_i(m
 # whose verdict depends on it being spelled right.
 def t_backedge_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.backedge(main_arena())))
 
-# spec.py:198 -- a FOUR-src PROGRAM. `te_22`'s `rej` is all four of its src ops, so
+# spec.py:198 -- a FOUR-src PROGRAM. `te_21`'s `rej` is all four of its src ops, so
 # `ler` has to fold over ALL of `src`: a two-element `ler` can never contain four
 # ops and this rule would never fire.
 def t_prog4_ok() -> U32: show_v(tensor_rewrite(Land.fx(main_arena()), Land.prog(main_arena())))
@@ -2975,7 +3036,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   solver over a z3 encoding of the index expression; Bend has no z3. P3.
 # TODO(p3) spec.py:7   is_disk_device -- `from tinygrad.device import is_disk_device`
 #   and `tinygrad/device.py` is not ported: there is no device, so "is this device
-#   a DISK" has nothing to ask. The only reader is `te_10` (spec.py:177) and the
+#   a DISK" has nothing to ask. The only reader is `te_9` (spec.py:177) and the
 #   wall is stated there. P6.
 # ===========================================================================
 #
@@ -3031,12 +3092,13 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # rejects a `False`.
 #
 #   sh_len=33    spec.py:50-138 is 33 entries. A count, so a MISSING rule shows.
-#   te_len=56    23 own (spec.py:143-199) + 33 shared. **CPYTHON HAS 22 OWN** --
-#                see THE TWENTY-THIRD TENSOR RULE below; this row prints 56 and
-#                CPython's table is 55, so the row and the table are BOTH wrong.
+#   te_len=55    22 own (spec.py:143-199) + 33 shared. It PRINTED 56 and its
+#                expectation was 56, so the row was GREEN over the wrong answer --
+#                the row asserts the table's own length and the table was the thing in
+#                question. Both moved 2026-10-03; see THE TWENTY-THIRD TENSOR RULE.
 #   pr_len=42    9 own (spec.py:202-225) + 33 shared.
 #   hq_len=35    2 own (spec.py:227-232) + 33 shared.
-#   fu_len=71    4 + 23 + 33 + 9 + 2 -- NOT 137, and `full_table`'s header says why
+#   fu_len=70    4 + 22 + 33 + 9 + 2 -- NOT 136, and `full_table`'s header says why
 #                the other 66 are UNREACHABLE rather than merely redundant.
 #   kg_len=13    spec.py:251-277 is 13 entries and NOTHING is appended.
 #   tag_const=1  spec.py:57 is `UPat(Ops.CONST, ...)` with an EMPTY reject set.
@@ -3083,12 +3145,59 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # | --- | --- | --- |
 # | `sp_early.go`'s subset test `and` -> `or` | NONE | 0 |
 # | `sh_scan`'s `pm_keep(acc, v)` -> `pm_keep(v, acc)` (last-wins) | `shl_wins` | 1 |
+# | `te_scan`'s, the same fold over the TENSOR table | NONE | 0 |
 # | `sp_ler` reads only `src[0]` and `src[1]` (ops.bend's `pm_ler`) | `prog4_ok` | 1 |
 # | `alt_of`'s `or` -> `and` (`is_any` as a conjunction) | `hcq_plain`, `hcq_after` | 2 |
 # | `sp_vd`'s `Some{False}` -> `VSkip` | `shl_wins`, `multidev_bad` | 2 |
 # | `sp_vb`'s `False` -> `VSkip` | `stack_dt` | 1 |
 # | `sp_tri.of`'s `Some{v}` -> `None{}` | `shl_wins` | 1 |
 # | `sp_tri_v.go`'s taken `v` -> `None{}` | `multidev_ok`, `multidev_bad` | 2 |
+#
+# ADDED 2026-10-03, for the twenty-third-rule deletion. 12 mutations, 5 localised,
+# 7 blind spots -- and every blind spot is a FIXTURE-COVERAGE fact, not a gate defect,
+# which is the good kind to have and the kind that must still be written down.
+#
+# | mutation | rows that moved | how many |
+# | --- | --- | --- |
+# | re-insert the deleted `CUSTOM_FUNCTION` rule as `tensor_own` tag 4 | `te_len`, `fu_len`, `tag_rej` | 3 |
+# | `t_tag_rej` reads `entry_at(tensor_own(), 20)` instead of 21 | `tag_rej` | 1 |
+# | `sh_scan` last-wins | `shl_wins` | 1 |
+# | `alt_of` conjunction | `hcq_plain`, `hcq_after` | 2 |
+# | `sp_vd`'s `Some{False}` -> `VSkip` | `shl_wins`, `multidev_bad` | 2 |
+# | `full_table`'s hcq bump 68 -> 69 | NONE | 0 |
+# | `fu_dispatch.of`'s shared offset 26 -> 27 | NONE | 0 |
+# | `te_dispatch.go`'s shared handoff 22 -> 21 | NONE | 0 |
+# | `tensor_table`'s shared bump 22 -> 23 | NONE | 0 |
+# | `te_dispatch.go` ladder: `case 5: te_4` | NONE | 0 |
+# | `te_dispatch.go` ladder: `case 4: te_5` | NONE | 0 |
+# | `te_scan` last-wins | NONE | 0 |
+#
+# THE FIRST ROW IS THE ONE THAT ANSWERS "WAS THE DELETION WORTH MAKING": three rows, not
+# two. `tag_rej` joins `te_len` and `fu_len` because re-inserting the rule pushes the
+# four-src PROGRAM rule from index 21 back to 22, and `t_tag_rej` reads index 21 -- so the
+# deletion is witnessed by a row that reads a rule's CONTENT, not only by two that count
+# entries. Before the deletion that row read the three-src rule's reject set, which is
+# where it would have gone wrong.
+#
+# THE FOUR TAG-SPACE BLIND SPOTS SHARE ONE REASON AND IT IS WORTH NAMING. Nothing in the
+# gate drives `full_table()` or the tensor-to-shared HANDOFF on any fixture, so every
+# offset in `full_table.go` and `fu_dispatch.of` and `te_dispatch.go`'s `case _` arm is
+# ungated: `fu_len` counts entries and `bump` does not change how many there are. Two of
+# those offsets were WRONG for part of this session -- `fu_dispatch.of` said 27 / 60 / 69
+# while `full_table.go` said 26 / 59 / 68 -- and no row noticed, because no row could.
+# That is why the offsets moved to `spec-offsets.py`, which checks all fourteen against
+# the table sizes and checks every ladder reads `case N: _N`: a mutation the gate cannot
+# see is exactly what a checker outside the gate is for. A fixture with both a tensor and
+# a program op would close two of the four; the two handoff rows need a node that no
+# tensor rule claims, which is a different fixture again.
+#
+# THE THREE `te_dispatch.go` LADDER BLIND SPOTS ARE PURE COVERAGE. `Land` has no SPECIAL
+# node and no RESHAPE/EXPAND node, so `te_4` and `te_5` have no row that can reach them,
+# and shifting either arm is invisible. `te_scan`'s first-wins is blind for the same kind
+# of reason: no tensor fixture has two rules claiming one node with DISAGREEING answers,
+# which is precisely the property `shl_wins` was built to give the shared table. Adding
+# the missing nodes is fixture work, and saying so is more useful than a row that cannot
+# fail.
 #
 # THE FIRST ROW IS THE INTERESTING ONE, and it is a NEGATIVE result worth keeping.
 # Flipping the subset test's `and` for its `or` moves NOTHING, and that is the
@@ -3112,7 +3221,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # THE THIRD ROW IS A REPORT ABOUT `ops.bend`, and it is the reason this file needed
 # its own `sp_ler`. `ops.bend`'s `pm_ler` reads `src[0]` and `src[1]` and appends,
 # so it can only ever see two ops; `spec.py:201`'s reject set is FOUR ops long, so
-# under `ops.bend`'s `pm_ler` `te_22` can NEVER fire and a four-src PROGRAM is
+# under `ops.bend`'s `pm_ler` `te_21` can NEVER fire and a four-src PROGRAM is
 # unverified. `spec.py:31` and `:32` are safe by accident -- `len(src) == 0` and
 # `len(src) == 1`. `sp_ler` here folds over EVERY src, which is what Python's
 # `{u.op for u in uop.src}` does. REPORTED, NOT FIXED: `ops.bend` is not this file's.
