@@ -27,7 +27,7 @@ emit). Each entry is asserted: the named def must exist at the named line, its
 body must emit the named op, and the comment above it must name the same Python
 line. A map entry that does not survive that assertion is LOUD.
 
-    (vendor, port_line, op_tag, python_line, what the line calls)
+    (vendor, port_def_NAME, op_tag, python_line, what the line calls)
 
 Run: .venv/bin/python .agents/slop/cl_emit_map.py
 """
@@ -47,6 +47,7 @@ BLINES = BENCH.read_text().splitlines()
 BSRC = BENCH.read_text()
 SRC_LINES = {v: SRC[v].read_text().splitlines() for v in SRC}
 
+CONST = re.compile(r"^def [A-Za-z_][A-Za-z_0-9]*\(\) -> \w+: -?\d+\s*$")
 BEND_CONST = re.compile(r"^def\s+([A-Za-z_][A-Za-z_0-9]*)\(\)\s*->\s*\w+:\s*(-?\d+)\s*$")
 
 
@@ -94,89 +95,106 @@ def symbol_at(vendor, line, pick=None):
 
 
 # --------------------------------------------------------------------------- map
-# (vendor, port_line, op_tag, python_line)
+# (vendor, port_def_NAME, op_tag, python_line[, pick][, via])
+#
+# THE ANCHOR IS THE DEF NAME AND NOT A LINE NUMBER. A line anchor is correct only
+# until the file grows by one comment line, and correcting WALL 7 grew it by 9 --
+# after which this map reported 71 MAP ERRORs and compared ONE entry. The
+# self-assertion caught that (it is why the map asserts its own entries at all),
+# but a hand map that must be re-anchored after every comment edit is a bad map.
+# The python line stays a line number because IT is the authority and it lives in
+# a file that does not change.
+#
+# A LINE ANCHOR ALSO HIDES A WRONG EMITTER, WHICH A NAME ANCHOR MAKES IMPOSSIBLE.
+# The old map resolved an emit site by walking UP to the nearest `def`, so
+# ("cu", 2073, "OP_SIGNAL", 66) resolved to `cu.signal` -- and `cu.signal` really
+# does emit OP_SIGNAL, so the assertion passed while the entry was really about
+# `cu.submit` at :2081. One name per emitter removes the ambiguity.
+#
+# A CONSTANT IS NEVER AN EMITTER: `def OP_HOST_FUNC() -> U32: 36` "contains"
+# OP_HOST_FUNC() because the block IS `() -> U32: 36`. Excluded below and again in
+# the assertion.
 MAP = [
   # ---- CL, ops_cl.py ------------------------------------------------------
-  ("cl", 1101, "OP_GET_DEVICES", 98),      # the PROBE, err = clGetDeviceIDs
-  ("cl", 1117, "OP_PLATFORMS", 95),        # clGetPlatformIDs(0, None, n)
-  ("cl", 1122, "OP_PLATFORMS", 96),        # clGetPlatformIDs(n, ids, None)
-  ("cl", 1127, "OP_GET_DEVICES", 102),     # the real, checked query
-  ("cl", 1184, "OP_GET_DEVICE_INFO", 105), # CL_DEVICE_NAME
-  ("cl", 1187, "OP_GET_DEVICE_INFO", 107), # CL_DRIVER_VERSION
-  ("cl", 1191, "OP_CTX_CREATE", 110),      # clCreateContext
-  ("cl", 1196, "OP_QUEUE_CREATE", 111),    # clCreateCommandQueue
-  ("cl", 1202, "OP_GET_DEVICE_INFO", 113), # CL_DEVICE_EXTENSIONS, len probe
-  ("cl", 1205, "OP_GET_DEVICE_INFO", 114), # CL_DEVICE_EXTENSIONS, read
-  ("cl", 1209, "OP_GET_DEVICE_INFO", 122), # CL_DEVICE_IMAGE_PITCH_ALIGNMENT
-  ("cl", 1353, "OP_PRG_FROM_SRC", 26),     # clCreateProgramWithSource
-  ("cl", 1358, "OP_BUILD", 27),            # clBuildProgram, compile
-  ("cl", 1365, "OP_BUILD_LOG", 29),        # clGetProgramBuildInfo (size probe)
-  ("cl", 1370, "OP_PRG_INFO", 33),         # clGetProgramInfo BINARY_SIZES
-  ("cl", 1373, "OP_RELEASE_PRG", 36),      # clReleaseProgram, compiler
-  ("cl", 1499, "OP_PRG_FROM_BIN", 42),     # clCreateProgramWithBinary
-  ("cl", 1507, "OP_BUILD", 46),            # clBuildProgram, program init
-  ("cl", 1512, "OP_KERNEL", 47),           # clCreateKernel
-  ("cl", 1540, "OP_RELEASE_KERNEL", 50),   # clReleaseKernel  (inside prog.del.go)
-  ("cl", 1535, "OP_RELEASE_PRG", 52),      # clReleaseProgram (inside prog.del.prg)
-  ("cl", 1626, "OP_IMAGE", 63),            # clCreateImage
-  ("cl", 1638, "OP_SET_ARG", 64),          # clSetKernelArg, image arm
-  ("cl", 1693, "OP_LAUNCH", 68),           # clEnqueueNDRangeKernel
-  ("cl", 1696, "OP_WAIT_EVENT", 72),       # clWaitForEvents
-  ("cl", 1701, "OP_TIME_END", 73),         # clGetEventProfilingInfo, START
-  ("cl", 1731, "OP_ALLOC", 80),            # clCreateBuffer
-  ("cl", 1736, "OP_FREE", 83),             # clReleaseMemObject
-  ("cl", 1744, "OP_COPY_IN", 86),          # clEnqueueWriteBuffer
-  ("cl", 1762, "OP_COPY_OUT", 88),         # clEnqueueReadBuffer
-  ("cl", 1756, "OP_FINISH", 129),          # clFinish
+  ("cl", "cl.probe.at", "OP_GET_DEVICES", 98),      # the UNCHECKED probe, err = ...
+  ("cl", "cl.platforms", "OP_PLATFORMS", 95),        # clGetPlatformIDs(0, None, n)
+  ("cl", "cl.platform_ids", "OP_PLATFORMS", 96),     # clGetPlatformIDs(n, ids, None)
+  ("cl", "cl.device_ids", "OP_GET_DEVICES", 102),     # the real, CHECKED query
+  ("cl", "cl.info_name", "OP_GET_DEVICE_INFO", 105),  # CL_DEVICE_NAME
+  ("cl", "cl.info_drv", "OP_GET_DEVICE_INFO", 107),   # CL_DRIVER_VERSION
+  ("cl", "cl.context", "OP_CTX_CREATE", 110),         # clCreateContext
+  ("cl", "cl.queue", "OP_QUEUE_CREATE", 111),         # clCreateCommandQueue
+  ("cl", "cl.exts_len", "OP_GET_DEVICE_INFO", 113),   # CL_DEVICE_EXTENSIONS, len probe
+  ("cl", "cl.exts_get", "OP_GET_DEVICE_INFO", 114),   # CL_DEVICE_EXTENSIONS, read
+  ("cl", "cl.ipa_get", "OP_GET_DEVICE_INFO", 122),    # CL_DEVICE_IMAGE_PITCH_ALIGNMENT
+  ("cl", "comp.from_src", "OP_PRG_FROM_SRC", 26),     # clCreateProgramWithSource
+  ("cl", "comp.build", "OP_BUILD", 27),               # clBuildProgram, the compiler's
+  ("cl", "comp.build_log", "OP_BUILD_LOG", 29),       # clGetProgramBuildInfo, size probe
+  ("cl", "comp.prg_info", "OP_PRG_INFO", 33),         # clGetProgramInfo BINARY_SIZES
+  ("cl", "comp.release", "OP_RELEASE_PRG", 36),       # clReleaseProgram, the compiler's
+  ("cl", "prog.from_bin", "OP_PRG_FROM_BIN", 42),     # clCreateProgramWithBinary
+  ("cl", "prog.build", "OP_BUILD", 46),               # clBuildProgram, the program's
+  ("cl", "prog.kernel", "OP_KERNEL", 47),             # clCreateKernel
+  ("cl", "prog.del.go", "OP_RELEASE_KERNEL", 50),     # clReleaseKernel
+  ("cl", "prog.del.prg", "OP_RELEASE_PRG", 52),       # clReleaseProgram, __del__
+  ("cl", "img.create", "OP_IMAGE", 63),               # clCreateImage
+  ("cl", "prog.arg_at", "OP_SET_ARG", 64),            # clSetKernelArg, the IMAGE arm
+  ("cl", "prog.arg_at", "OP_SET_ARG", 65),            # clSetKernelArg, the else arm
+  ("cl", "cl.launch", "OP_LAUNCH", 68),               # clEnqueueNDRangeKernel
+  ("cl", "cl.wait_events", "OP_WAIT_EVENT", 72),      # clWaitForEvents
+  ("cl", "cl.profiling", "OP_TIME_END", 73),          # clGetEventProfilingInfo, START
+  ("cl", "alloc.of", "OP_ALLOC", 80),                 # clCreateBuffer
+  ("cl", "alloc.free", "OP_FREE", 83),                # clReleaseMemObject
+  ("cl", "copy.copyin", "OP_COPY_IN", 86),            # clEnqueueWriteBuffer
+  ("cl", "copy.copyout", "OP_COPY_OUT", 88),          # clEnqueueReadBuffer
+  ("cl", "cl.sync", "OP_FINISH", 129),                # clFinish
   # ---- CUDA, ops_cuda.py --------------------------------------------------
-  ("cu", 1922, "OP_GET_DEVICES", 106),     # cuDeviceGet
-  ("cu", 1927, "OP_CTX_CREATE", 107),      # cuCtxCreate_v2
-  ("cu", 1932, "OP_INIT", 105),            # cuInit(0)
-  ("cu", 1937, "OP_COMPUTE_CAP", 108),     # cuDeviceComputeCapability
-  ("cu", 1943, "OP_QUEUE_CREATE", 109),    # cuStreamCreate
-  ("cu", 1993, "OP_HOST_FUNC", 38),        # the `extern` slot, cu:38
-  ("cu", 1997, "OP_CTX_SET", 34),          # ccall(cuCtxSetCurrent, ...)
-  ("cu", 2044, "OP_LAUNCH", 47),           # ccall(cuLaunchKernel, ...)
-  ("cu", 2050, "OP_COPY_IN", 55),          # ccall(cuMemcpyAsync, ...)
-  ("cu", 2054, "OP_WAIT_VALUE", 58),       # ccall(cuStreamWaitValue64_v2, ...)
-  ("cu", 2059, "OP_SIGNAL", 61),           # ccall(cuStreamWriteValue64_v2, ...)
-  ("cu", 2067, "OP_HOST_FUNC", 64),        # ccall(cuLaunchHostFunc, ...)
-  ("cu", 2073, "OP_SIGNAL", 66),           # rt_vars.index(3).store -> submit
-  ("cu", 2098, "OP_ALLOC_HOST", 76),       # cuMemHostAlloc
-  ("cu", 2102, "OP_ALLOC", 78),            # cuMemAlloc_v2
-  ("cu", 2123, "OP_FREE_HOST", 82, 0),     # cu:82 `(cuMemFreeHost if ... else cuMemFree_v2)`
-  ("cu", 2123, "OP_FREE", 82, 1),          # same line, the SECOND name in source order
-  ("cu", 2159, "OP_HOST_REGISTER", 90),    # cuMemHostRegister_v2
-  ("cu", 2171, "OP_HOST_UNREGISTER", 94),  # cuMemHostUnregister
-  ("cu", 2187, "OP_PRG_FROM_BIN", 128),    # cuModuleLoadData   <-- THE ONE
-  ("cu", 2185, "OP_KERNEL", 129),          # cuModuleGetFunction
-  ("cu", 2192, "OP_CTX_SET", 127),         # check(cuCtxSetCurrent(self.context))
-  ("cu", 2196, "OP_GET_DEVICE_COUNT", 132),  # cuDeviceGetCount
-  ("cu", 2202, "OP_CTX_SET", 135),         # check(cuCtxSetCurrent)
-  # cu.wait_signal emits OP_FINISH only INDIRECTLY, through `cl.sync`, which is
-  # CL's helper. So this entry names the helper and the assertion checks the
-  # helper's own block -- a second mechanism, because `cu.wait_signal`'s own text
-  # carries no OP_FINISH and an assertion that looked for one would be a lie.
-  ("cu", 2202, "OP_FINISH", 136, None, "cl.sync"),  # cu:136 cuCtxSynchronize
+  ("cu", "cu.init.dev", "OP_GET_DEVICES", 106),       # cuDeviceGet
+  ("cu", "cu.init.ctx", "OP_CTX_CREATE", 107),        # cuCtxCreate_v2
+  ("cu", "cu.init.drv", "OP_INIT", 105),              # cuInit(0)
+  ("cu", "cu.compute_cap", "OP_COMPUTE_CAP", 108),    # cuDeviceComputeCapability
+  ("cu", "cu.stream_create", "OP_QUEUE_CREATE", 109),  # cuStreamCreate
+  ("cu", "cu.extern", "OP_HOST_FUNC", 38),            # `extern`, which calls no cuda symbol
+  ("cu", "cu.q_init", "OP_CTX_SET", 34),              # ccall(cuCtxSetCurrent, ...)
+  ("cu", "cu.launch", "OP_LAUNCH", 47),               # ccall(cuLaunchKernel, ...)
+  ("cu", "cu.copy", "OP_COPY_IN", 55),                # ccall(cuMemcpyAsync, ...)
+  ("cu", "cu.wait", "OP_WAIT_VALUE", 58),             # ccall(cuStreamWaitValue64_v2, ...)
+  ("cu", "cu.signal", "OP_SIGNAL", 61),               # ccall(cuStreamWriteValue64_v2, ...)
+  ("cu", "cu.timestamp", "OP_HOST_FUNC", 64),         # ccall(cuLaunchHostFunc, ...)
+  ("cu", "cu.submit", "OP_SIGNAL", 66),               # rt_vars.index(3).store, no cuda call
+  ("cu", "cu.alloc.host", "OP_ALLOC_HOST", 76),       # cuMemHostAlloc
+  ("cu", "cu.alloc.dev", "OP_ALLOC", 78),             # cuMemAlloc_v2
+  ("cu", "cu.free.at", "OP_FREE_HOST", 82, 0),        # cu:82 `(cuMemFreeHost if ... else
+  ("cu", "cu.free.at", "OP_FREE", 82, 1),             #   cuMemFree_v2)(storage.buf)`, 2nd name
+  ("cu", "cu.map.at", "OP_HOST_REGISTER", 90),        # cuMemHostRegister_v2
+  ("cu", "cu.unmap.at", "OP_HOST_UNREGISTER", 94),    # cuMemHostUnregister
+  ("cu", "cu.function", "OP_PRG_FROM_BIN", 128),      # cuModuleLoadData   <-- THE ONE
+  ("cu", "cu.build.after", "OP_KERNEL", 129),         # cuModuleGetFunction
+  ("cu", "cu.function.ctx", "OP_CTX_SET", 127),       # check(cuCtxSetCurrent(self.context))
+  ("cu", "cu.count", "OP_GET_DEVICE_COUNT", 132),     # cuDeviceGetCount
+  ("cu", "cu.wait_signal", "OP_CTX_SET", 135),        # check(cuCtxSetCurrent)
+  # cu.wait_signal emits OP_FINISH only INDIRECTLY, through CL's `cl.sync`, so this
+  # entry names the HELPER. cu:136 is cuCtxSynchronize.
+  ("cu", "cu.wait_signal", "OP_FINISH", 136, None, "cl.sync"),
   # ---- HIP, ops_hip.py ----------------------------------------------------
-  ("hp", 2346, "OP_GET_DEVICE_PROPS", 15),  # hipGetDeviceProperties
-  ("hp", 2352, "OP_QUEUE_CREATE", 16),      # hipEventCreate
-  ("hp", 2359, "OP_SET_DEVICE", 23),        # hipSetDevice, synchronize
-  ("hp", 2361, "OP_FINISH", 24),            # hipDeviceSynchronize
-  ("hp", 2367, "OP_GET_DEVICE_COUNT", 20),  # hipGetDeviceCount
-  ("hp", 2384, "OP_SET_DEVICE", 29),        # hipSetDevice, HIPProgram.__init__
-  ("hp", 2390, "OP_PRG_FROM_BIN", 30),      # hipModuleLoadData  <-- THE ONE
-  ("hp", 2392, "OP_KERNEL", 31),            # hipModuleGetFunction
-  ("hp", 2398, "OP_RELEASE_PRG", 35),       # hipModuleUnload
-  ("hp", 2406, "OP_SET_DEVICE", 38),        # hipSetDevice, __call__
-  ("hp", 2412, "OP_TIME_START", 49),        # hipEventRecord, start
-  ("hp", 2417, "OP_LAUNCH", 51),            # hipModuleLaunchKernel
-  ("hp", 2423, "OP_WAIT_EVENT", 55),        # hipEventSynchronize
-  ("hp", 2425, "OP_TIME_END", 56),          # hipEventElapsedTime
-  ("hp", 2465, "OP_ALLOC", 62),             # hipMalloc
-  ("hp", 2470, "OP_FREE", 64),              # hipFree
-  ("hp", 2480, "OP_COPY_IN", 67),           # hipMemcpy H2D
-  ("hp", 2489, "OP_COPY_OUT", 70),          # hipMemcpy D2H
+  ("hp", "hp.props", "OP_GET_DEVICE_PROPS", 15),      # hipGetDeviceProperties
+  ("hp", "hp.event_create", "OP_QUEUE_CREATE", 16),   # hipEventCreate
+  ("hp", "hp.set_device", "OP_SET_DEVICE", 23),       # hipSetDevice, synchronize
+  ("hp", "hp.sync", "OP_FINISH", 24),                 # hipDeviceSynchronize
+  ("hp", "hp.count", "OP_GET_DEVICE_COUNT", 20),      # hipGetDeviceCount
+  ("hp", "hp.prog_init.dev", "OP_SET_DEVICE", 29),    # hipSetDevice, HIPProgram.__init__
+  ("hp", "hp.prog_init.prg", "OP_PRG_FROM_BIN", 30),  # hipModuleLoadData  <-- THE ONE
+  ("hp", "hp.prog_init.fn", "OP_KERNEL", 31),         # hipModuleGetFunction
+  ("hp", "hp.prog_del", "OP_RELEASE_PRG", 35),        # hipModuleUnload
+  ("hp", "hp.call_set_device", "OP_SET_DEVICE", 38),  # hipSetDevice, __call__
+  ("hp", "hp.event_record", "OP_TIME_START", 49),     # hipEventRecord, start
+  ("hp", "hp.launch", "OP_LAUNCH", 51),               # hipModuleLaunchKernel
+  ("hp", "hp.event_sync", "OP_WAIT_EVENT", 55),       # hipEventSynchronize
+  ("hp", "hp.event_elapsed", "OP_TIME_END", 56),      # hipEventElapsedTime
+  ("hp", "hp.alloc", "OP_ALLOC", 62),                 # hipMalloc
+  ("hp", "hp.free", "OP_FREE", 64),                   # hipFree
+  ("hp", "hp.copyin.at", "OP_COPY_IN", 67),           # hipMemcpy, HostToDevice
+  ("hp", "hp.copyout.at", "OP_COPY_OUT", 70),         # hipMemcpy, DeviceToHost
 ]
 
 # THREE (vendor, op) pairs the map cannot resolve to a Python call, each with the
@@ -212,36 +230,34 @@ def main():
   wrong, skipped, badmap = [], [], []
   seen_ops = {}
   for entry in MAP:
-    vendor, port_line, op, pyline = entry[:4]
+    vendor, port_def, op, pyline = entry[:4]
     pick = entry[4] if len(entry) > 4 else None
     via = entry[5] if len(entry) > 5 else None
     # --- assert the map entry itself, so a moved line is LOUD not silent
     if op not in consts:
       badmap.append(f"{op} is not a constant in ops_cl.bend"); continue
-    # the def whose OWN block carries the emit: `via` names a helper this def
-    # calls, and then the assertion follows the call instead.
-    k = port_line - 1
-    while k >= 0 and not BLINES[k].startswith("def "): k -= 1
-    if k < 0:
-      badmap.append(f"port_line {port_line}: no enclosing def"); continue
-    if via is not None:
-      hit = [i for i, l in enumerate(BLINES) if l.startswith(f"def {via}(")]
-      if len(hit) != 1:
-        badmap.append(f"via={via!r}: {len(hit)} defs"); continue
-      k = hit[0]
+    # the def whose OWN block carries the emit, found BY NAME -- exactly one, or
+    # the map is ambiguous. `via` names a helper this def calls instead.
+    name = via or port_def
+    hit = [i for i, l in enumerate(BLINES) if l.startswith(f"def {name}(")]
+    if len(hit) != 1:
+      badmap.append(f"def {name!r}: {len(hit)} definitions in ops_cl.bend"); continue
+    k = hit[0]
+    if CONST.match(BLINES[k]):
+      badmap.append(f"`def {name}` is a CONSTANT, not an emitter"); continue
     j = k
     while j + 1 < len(BLINES) and BLINES[j + 1].strip(): j += 1
     block = "\n".join(BLINES[k:j + 1])
     if f"{op}()" not in block:
-      badmap.append(f"ops_cl.bend:{k + 1} (for {op}) does not emit it")
+      badmap.append(f"ops_cl.bend:{k + 1} `def {name}` does not emit {op}")
     # --- the authority: what CPython says that line calls
     got, allc = symbol_at(vendor, pyline, pick)
     if got is None:
       reason = NO_CALL.get((vendor, op))
-      skipped.append((vendor, port_line, op, pyline, allc, reason)); continue
+      skipped.append((vendor, port_def, op, pyline, allc, reason)); continue
     want = tables[vendor][consts[op][1]]
     if got != want:
-      wrong.append((vendor, port_line, op, consts[op][1], got, want, pyline))
+      wrong.append((vendor, port_def, op, consts[op][1], got, want, pyline))
     seen_ops.setdefault((vendor, op), []).append(pyline)
   print(f"emit-site map: {len(MAP)} entries over "
         f"{len(set((e[0], e[2]) for e in MAP))} (vendor, op) pairs")
@@ -250,14 +266,14 @@ def main():
   print(f"  NO PYTHON CALL on the named line: {len(skipped)}")
   for v, pl, op, py, allc, reason in skipped:
     tag = "OK " if reason else "!! "
-    print(f"    {tag}SKIP {v} bend:{pl} {op} py:{py} -- symbols on that line: {allc}")
+    print(f"    {tag}SKIP {v} `def {pl}` {op} py:{py} -- symbols on that line: {allc}")
     if reason: print(f"         reason: {reason}")
     else:
       print("         !! NO REASON RECORDED in NO_CALL -- an unexplained skip"); badmap.append("unexplained skip")
   print(f"  WRONG                        : {len(wrong)}")
   for v, pl, op, oi, got, want, py in wrong:
-    print(f"    WRONG {v} ops_cl.py:{py} calls {got}, but {op}={oi} "
-          f"(ops_cl.bend:{pl}) holds {want!r} -- should be {got!r}")
+    print(f"    WRONG {v} ops_{v}.py:{py} calls {got}, but {op}={oi} "
+          f"(ops_cl.bend `def {pl}`) holds {want!r} -- should be {got!r}")
   # --- the ops NO emit site covers. A cell nothing emits is either a dead op or
   # a site the map missed, and either way it is not the port's own claim.
   emitted = set((e[0], e[2]) for e in MAP)
