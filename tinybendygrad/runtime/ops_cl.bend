@@ -60,7 +60,7 @@
 #   :23     extern                 WALL 6  POINTERS
 #   :30-34  CUDAQueue.__init__     PORTED  `cu.q_init`
 #   :36-37  the stream property    PORTED  `cu.stream_slot`
-#   :38     extern                 PORTED  `cu.extern_tag`
+#   :38     extern                 PORTED  `cu.extern`
 #   :40-47  launch                 PORTED  `cu.launch`
 #   :49-52  exec                   PORTED  `cu.exec`
 #   :54-55  copy                   PORTED  `cu.copy`
@@ -74,7 +74,8 @@
 #   :93-94  _unmap                 PORTED  `cu.unmap`
 #   :98-101 pm_encode              PORTED  `cu.encode_pick`
 #   :104-110 __init__              PORTED  `cu.init`
-#   :111-115 pm_bufferize          PORTED  `cu.bufferize_pick`
+#   :111-115 pm_bufferize          PORTED  `cu.encode_tags` + the three
+#                                               `CU_TAGWORD_*` rows
 #   :117-122 handles / stamp       PORTED  `cu.handles` (the pack is WALL 6)
 #   :124-130 function              PORTED  `cu.function`
 #   :132    count                  PORTED  `cu.count`

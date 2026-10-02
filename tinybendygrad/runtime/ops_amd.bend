@@ -166,7 +166,7 @@
 #    TODO(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd").
 #    TODO(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM.
 #    TODO(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU.
-#    TODO(p3) runtime/ops_amd.py:666  AMDKFD_IOC_MAP_MEMORY_TO_GPU.
+#    TODO(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU.
 #    TODO(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE.
 #    TODO(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS.
 #
@@ -179,7 +179,7 @@
 #    TODO(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098).
 #    TODO(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs.
 #    TODO(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring.
-#    TODO(p3) runtime/ops_amd.py:735  struct_drm_amdgpu_info_device.cu_bitmap.
+#    TODO(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap.
 #
 # 3. USB3 (USBIface, :810-833). `USB3.list_devices`, `dma_view`, the
 #    `0/4096/20480` controller window and its `AddrSpace.SYS` mapping.

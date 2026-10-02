@@ -8531,3 +8531,88 @@ read values.
 fp8 family are module-level defs, and `S.single()` is the 32-bit float -- there is no `float32`.
 Searching for a `Dt` CONSTRUCTOR rather than a reader is the wrong first move here: `Dt` is a
 four-field `Data` record and every dtype is a `Dt{...}` literal inside a named def.
+
+### 10. SIX UNSIGNED-64 ARITHMETIC TRAPS, ALL MEASURED 2026-10-02 (the `_min_max` unit)
+
+Numbering continues from rule 9 (line ~7820, the `ip.bend` name-vs-line rule) and
+rule 10/11 at lines 3499/3516; as the INDEX says, numbers are not unique, so these
+are cited by position -- the tail of this file.
+
+The subject is the arithmetic core that `uop/fold.bend`'s `_min_max` section carries
+as `mm.u64.*` / `mm.dm.*`, gated by `.agents/slop/mm-gate.py` (72 rows, byte-identical
+to CPython on the interpreted AND the `-o` lane) with a 21-entry mutation table at
+`.agents/slop/mm-mutate.py`. **20 of the 21 move rows; the one that does not has a
+proof (item 6).** Every rule below is a bug that was IN the code and produced a
+plausible number.
+
+1. **`Bool.or(is_zero(lo), is_zero(hi))` DOES NOT MEAN "the pair is zero".** It means
+   "SOME word is zero", which is true for `(0, 5)` as well as for `(0, 0)`. With it,
+   `2**32` came out as a product of zero and `(1:0) * (1:0)` answered `0:0` instead of
+   `OVER`. The predicate that every overflow test wants is `and`. This is the
+   `(Bool, Bool)` flag-pair trap at line 1684 in its purest form: the name says "zero",
+   the code says "at least one half", and nothing complains. Mutation M5, 4 rows.
+
+2. **AN UNSIGNED SUBTRACT'S UNDERFLOW TEST IS `a < b`, NOT `result < a`.** The second is
+   what an ADD overflows on, and it is silently the wrong predicate for a subtraction:
+   `0 - 2**32` wraps to a value GREATER than `a`, so `result < a` reads as "no
+   underflow" and the port answers `4294967295:0` where CPython has nothing
+   representable. `helpers.bend:1238` records the related borrow-into-the-high-word
+   bug for i64; this is its unsigned sibling and it is a DIFFERENT predicate.
+   Mutations M3 (7 rows) and M4 (1 row).
+
+3. **IN A 64x64 PRODUCT THE TWO ACCUMULATORS ARE LIMB 1 AND LIMB 2 -- THE WORDS, NOT
+   PARTIAL WORDS.** So every bit of the second one is already above `2**64` and the
+   overflow test is `u != 0 or t3.hi != 0`. Three wrong spellings, all measured:
+   `t3.hi + (u >> 32) != 0` WRAPS a U32 and reads as zero for a product that
+   overflowed; `u << 32` in the high word SATURATES TO 0 (the `1 << 34` trap); and
+   dropping `t3.hi` needs the fixture `mul_2p48sq` to be caught at all, which is why
+   `2**48 * 2**48` is in the gate. Mutations M6 (1 row) and M7 (8 rows).
+
+4. **`U32.mul` WRAPS, SO A 32x32 PRODUCT CANNOT BE OVERFLOW-TESTED; A 16x16 ONE CAN.**
+   `U32.mul(a,b)/a == b` holds for a wrapped product of a particular size as readily
+   as for an exact one, so the "obvious" 32-wide schoolbook is wrong in a way no
+   single flag catches. A 16x16 product is BELOW `2**32`, so `U32.mul` is exact on it
+   and four of them accumulate with every column sum under `2**20` -- no wrap test at
+   all. Mutations M8 (8 rows) and M9 (5 rows). This is the cheapest arithmetic fact in
+   the whole note.
+
+5. **FOR A LEFT SHIFT PAST 31 THE HIGH WORD COMES FROM `al` AND ONLY FROM `al`.**
+   `a * 2**k` has high word `al * 2**(k-32)` plus `ah * 2**k` reduced mod `2**32`, and
+   the second term is 0 for every `k` past 31. Reading `ah` there drops the low word
+   entirely and answers `0:0` for `1 << 63`, which is `2147483648:0`. Symmetrically, the
+   FIT test is `a >= 2**(64-k)`, which is one word and one shift, and it must be `and`
+   -- `or` fits every divisor-shaped word and answers a value where CPython says OVER
+   (`1 << 64` is the row that notices). Mutations M10 (4 rows), M11 (3 rows), M12 (2),
+   M13 (7).
+
+6. **RESTORING DIVISION SUBTRACTS WHEN THE REMAINDER REACHED THE DIVISOR, NOT WHEN IT
+   IS BELOW IT, AND STEP `k` READS AND WRITES BIT `k`.** Two separate halves of one
+   algorithm, and both are `le`-vs-`ge` / `63-k`-vs-`k` mistakes:
+   * `dm.fit` with `le` subtracts on every step where the remainder is merely below
+     the divisor, which for any dividend smaller than the divisor is EVERY step. The
+     answer is a quotient of all ones and a remainder equal to the dividend. 16 rows.
+   * The dividend bit and the quotient bit are at the SAME index; counting down from
+     63 is what makes the first bit processed the most significant of each. Writing
+     `63 - k` for both is self-consistent and wrong. 13 rows.
+   * `Bool.pick` names the arm it PICKS, so a flag that says "the low word" has to
+     select the low arm. Swapping the two arms reads every dividend bit out of the
+     wrong half and the quotient comes out zero. 17 rows -- the largest of the table.
+   * `case 32n:` is an EXACT match and not a range, so a two-arm match on it answers
+     True for `k = 63`; `U32.is_lt(U32.from_nat(k), 32)` is the whole test. 8 rows.
+   * THE 65th BIT OF THE REMAINDER IS UNREACHABLE, and that is a THEOREM rather than a
+     gap. Forcing it to `False{}` moves NOTHING (mutation M20), and the reason is that
+     `r < d` before a step, so `r >= 2**63` needs `d > 2**63`, and a divisor above
+     `2**63` cannot have had a subtraction yet (`2r + b < 2**63` for every pre-subtract
+     `r`), so `r < 2**63` at every step. Carrying the bit is free; testing it is
+     ungated; and this is the third category agent-core.md asks for.
+
+7. **THE BIT COUNT IS NOT AVAILABLE, AND THAT IS A STRUCTURAL FACT, NOT A TODO.**
+   `int(x).bit_length()` needs a walk whose zero test cannot be a `match` scrutinee
+   (Bend refuses a call, so `u64.is_zero(...)` is out), whose growing counter cannot
+   lead a self-call (each argument must pass unchanged until one shrinks, and a `U32`
+   that halves is not a shrink as far as the checker is concerned), and whose test and
+   step cannot be two defs (mutual recursion is refused). A `List` tail IS a shrink,
+   which is why `toposort` and `dts_of` are walks -- but a three-scrutinee `match` over
+   `(List, U32, U32)` refuses the repeated `_ _` placeholders. The dodge that WORKS for
+   `shl` is to avoid the count: `shl` overflows iff `a >= 2**(64-k)`, one word and one
+   shift. There is no such dodge for a bare bit count.

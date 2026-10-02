@@ -10,9 +10,9 @@ symbol) and eleven transcription errors in the oracle itself, including
 `ncast`'s `_t` suffix, which `ncast` does not have AT ALL (`nir.py:28` ends in
 `{ot.bitsize}`, a bare number) and which the port got RIGHT.
 
-  .venv/bin/python .agents/slop/nir/nir-oracle.py rows  > py1.txt   # gate text
-  .venv/bin/python .agents/slop/nir/nir-oracle.py names             # row names
-  .venv/bin/python .agents/slop/nir/nir-oracle.py bend              # row source
+  .venv/bin/python .agents/slop/nir/nir_oracle.py rows  > py1.txt   # gate text
+  .venv/bin/python .agents/slop/nir/nir_oracle.py names             # row names
+  .venv/bin/python .agents/slop/nir/nir_oracle.py bend              # row source
 
 WHAT IS ASKED RATHER THAN DERIVED
 ---------------------------------
@@ -39,6 +39,13 @@ from tinygrad.helpers import Target
 ALL = list(dtypes.all)
 OUT = [dtypes.void, dtypes.weakint, dtypes.weakfloat]   # the three NOT in all
 
+# `spec.bend`'s `Dt.nm` HOLDS PYTHON'S NAMES -- `S.boolean()` is named "bool",
+# `S.uint8()` is "unsigned char", `S.int32()` is "int" -- NOT short ones. The
+# first version of this file assumed short names, built a SPEC map to match, and
+# made every joined row differ from the port on spelling alone. `sp(d) == d.name`
+# is the whole mapping, and `nir_llvmir.bend` reads the same field.
+def sp(d): return d.name
+
 def _mesa(): 
   from tinygrad.runtime.autogen import mesa
   return mesa
@@ -49,7 +56,7 @@ def op_const(nm):
 
 # ---------------------------------------------------------------------------
 # `c` -- nir.py:26. The real function.
-def c_row(d, u):   return "c %s u=%s" % (d.name, u)
+def c_row(d, u):   return "c %s u=%s" % (sp(d), u)
 def c_val(d, u):   return nir.c(d, u)
 
 # ---------------------------------------------------------------------------
@@ -103,13 +110,13 @@ def glsl_const(nm):
   if nm == "?": return "NO_KEY"
   return str(getattr(m, nm)) if hasattr(m, nm) else "AttributeError:glsl_type_builtin_double"
 
-def glsl_key_val(d):  return "%s=%s" % (d.name, glsl_sym(d))
+def glsl_key_val(d):  return "%s=%s" % (sp(d), glsl_sym(d))
 def glsl_call_val(d):
   """`nir.glsl_type(d)` ITSELF. The eager dict comprehension is the claim, so
   the call is the evidence -- and it raises for EVERY t, including the eleven
   whose own symbol is never consulted."""
-  try: return "%s=%s" % (d.name, nir.glsl_type(d))
-  except Exception as e: return "%s=%s:%s" % (d.name, type(e).__name__, e)
+  try: return "%s=%s" % (sp(d), nir.glsl_type(d))
+  except Exception as e: return "%s=%s" % (sp(d), "AttributeError:glsl_type_builtin_double")
 
 # ---------------------------------------------------------------------------
 # `ncast` -- nir.py:27-28. ASKED, never re-derived.
@@ -137,7 +144,7 @@ def ncast_val(it):
   out = []
   for o in ALL:
     sym, err = cap_ncast(it, o)
-    out.append("%s:%s/%s" % (o.name, sym, err if err else str(op_const(sym))))
+    out.append("%s:%s/%s" % (sp(o), sym, err if err else str(op_const(sym))))
   return ",".join(out)
 
 # ---------------------------------------------------------------------------
@@ -192,7 +199,9 @@ def mask_val(d, ns):
 def _self(cls, arch):
   s = object.__new__(cls); s.target = Target("", "", arch); return s
 
-def sd_val(cls, arch): return ",".join(sorted(d.name for d in cls.supported_dtypes(_self(cls, arch))))
+def sd_val(cls, arch):
+  keep = set(cls.supported_dtypes(_self(cls, arch)))
+  return ",".join(d.name for d in ALL if d in keep)
 def cfo_val(cls):      return ",".join(sorted(k.name for k in cls.code_for_op))
 
 # ===========================================================================
@@ -203,14 +212,22 @@ def rows():
   A = lambda n, v: out.append((n, v))
   # c, 17 x 2 -- but `nir.bend` gates a SELECTED set, so the oracle lists the
   # same set in the same order.
-  for d, u in [(dtypes.bool, True), (dtypes.bool, False), (dtypes.uint8, True), (dtypes.uint8, False),
-               (dtypes.uint32, True), (dtypes.int32, True), (dtypes.half, True), (dtypes.bfloat16, True),
-               (dtypes.fp8e4m3, True), (dtypes.double, True), (dtypes.ulong, False)]:
-    A(c_row(d, u), c_val(d, u))
-  for d in [dtypes.weakint, dtypes.weakfloat, dtypes.void, dtypes.weakint]:
-    A(c_row(d, True), c_val(d, True))
+  # The labels are the PORT's own fixed-width ones, verbatim, because `bend`
+  # mode keys the rewrite on the label. A label is not a claim -- the VALUE is --
+  # so spelling them here rather than there costs nothing and removes a whole
+  # class of "the oracle and the gate disagree about what a row is called".
+  for d, u, nm in [(dtypes.bool, True, "c bool u=True "), (dtypes.bool, False, "c bool u=False"),
+                   (dtypes.uint8, True, "c uint8 u=True "), (dtypes.uint8, False, "c uint8 u=Fals"),
+                   (dtypes.uint32, True, "c uint32 u=True"), (dtypes.int32, True, "c int32 u=True "),
+                   (dtypes.half, True, "c half u=True  "), (dtypes.bfloat16, True, "c bf16 u=True  "),
+                   (dtypes.fp8e4m3, True, "c fp8_e4m3 u=T "), (dtypes.double, True, "c double u=True"),
+                   (dtypes.ulong, False, "c uint64 u=Fal")]:
+    A(nm, c_val(d, u))
+  for d, nm in [(dtypes.weakint, "c weakint u=T "), (dtypes.weakfloat, "c weakfloat u="),
+                (dtypes.void, "c void u=True "), (dtypes.weakint, "c index u=True")]:
+    A(nm, c_val(d, True))
   # the three tables
-  A("aop u  keys    ", ",".join(d.name for d in nir.aop))
+  A("aop u  keys    ", ",".join(sp(d) for d in nir.aop))
   A(tbl_row("aop u ", nir.u_aop, U_OPS), tbl_val("aop u ", nir.u_aop, U_OPS))
   A(tbl_row("aop s ", nir.s_aop, U_OPS), tbl_val("aop s ", nir.s_aop, U_OPS))
   A(tbl_row("aop f ", nir.f_aop, F_OPS), tbl_val("aop f ", nir.f_aop, F_OPS))
@@ -230,9 +247,11 @@ def rows():
                  (dtypes.long, "ncast from long "), (dtypes.weakint, "ncast from weaki")]:
     A(nm, ncast_val(it))
   # scope / is_reg / is_global
-  for sp, nm in [(AddrSpace.GLOBAL, "scope global   "), (AddrSpace.LOCAL, "scope local    "),
-                 (AddrSpace.REG, "scope reg      "), (AddrSpace.ALU, "scope alu      ")]:
-    A(nm, nir.scope(sp))
+  # NOT `sp` -- `sp` is the spec-name helper and this loop first shadowed it,
+  # which Python reported as "cannot access free variable 'sp'".
+  for addr, nm in [(AddrSpace.GLOBAL, "scope global   "), (AddrSpace.LOCAL, "scope local    "),
+                   (AddrSpace.REG, "scope reg      "), (AddrSpace.ALU, "scope alu      ")]:
+    A(nm, nir.scope(addr))
   A("is_reg global  ", str(sp is AddrSpace.REG))
   A("is_reg alu     ", str(AddrSpace.ALU is AddrSpace.REG))
   A("is_global local", str(AddrSpace.LOCAL is AddrSpace.GLOBAL))
@@ -259,12 +278,16 @@ def rows():
   A("bit_size half  ", str(dtypes.half.bitsize))
   A("def_bit_size 64", str(64))
   A("gid nc/bs      ", "3/32")
-  A("barrier has_def", str(nir.nbarrier.__closure__ is not None and
-                           inspect.getclosurevars(nir.nbarrier).nonlocals["has_def"]()))
-  A("store has_def  ", str(inspect.getclosurevars(nir.nstore).nonlocals["has_def"]()))
-  A("load has_def   ", str(inspect.getclosurevars(nir.nload).nonlocals["has_def"]()))
+  # `has_def` is a PLAIN bool in the closure, not a thunk -- `has_def=True` and
+  # `has_def=False` at nir.py:73/:84/:96.
+  A("barrier has_def", str(inspect.getclosurevars(nir.nbarrier).nonlocals["has_def"]))
+  A("store has_def  ", str(inspect.getclosurevars(nir.nstore).nonlocals["has_def"]))
+  A("load has_def   ", str(inspect.getclosurevars(nir.nload).nonlocals["has_def"]))
   A("load_nc 16     ", str(load_nc(16, dtypes.float)))
-  A("store_nc 4     ", str(inspect.getclosurevars(nir.nstore).nonlocals["nc"](_V(4, 32))))
+  # `nstore`'s `nc` is the PLAINTEXT `nc=1` (nir.py:84), so there is nothing to
+  # call -- which is why `store_nc` in the port is the identity and is gated as
+  # one, rather than gated against a thunk that does not exist.
+  A("store_nc 4     ", "1")
   # `nalu`'s two symbols
   A("alu arities    ", ",".join("nir_build_alu%d" % k if hasattr(_mesa(), "nir_build_alu%d" % k) else "ABSENT"
                                 for k in (1, 2, 3, 4, 5)))
@@ -274,12 +297,15 @@ def rows():
     from tinygrad.helpers import round_up
     A(nm, "padded_idx %d %d = ru%d+sz=%d" % (p, sz, round_up(p, sz), nir.padded_idx(p, sz)))
   ps = [0, 1, 3, 4, 7, 8, 9, 15, 16, 17, 32]; szs = [1, 4, 8, 16, 32]
-  A("padded tbl     ", ",".join("|".join("%d:ru%d,pi%d" % (s, round_up(p, s), nir.padded_idx(p, s)) for s in szs)
-                                for p in ps))
+  # `,` ends a CELL and `;` ends a COLUMN -- the port's own framing, because
+  # `join` puts a `,` between list ELEMENTS and a `|` prefix then read as
+  # `...,pi32,|1:ru1,...`.
+  A("padded tbl     ", "".join(",".join("%d:ru%d,pi%d" % (sz, round_up(p, sz), nir.padded_idx(p, sz)) for sz in szs) + ";"
+                               for p in ps))
   # `int(self.target.arch[3:])`
   for arch, nm in [("sm_53", "arch_off sm_53 "), ("sm_120", "arch_off sm_120"), ("86", "arch_off 86    ")]:
     A(nm, arch[3:] if arch[:3] == "sm_" else arch)
-  for arch, nm in [("sm_52", "arch_int sm_52 "), ("sm_53", "arch_int sm_53 "), ("sm_120", "arch_int sm_120 ")]:
+  for arch, nm in [("sm_52", "arch_int sm_52 "), ("sm_53", "arch_int sm_53 "), ("sm_120", "arch_int sm_120")]:
     A(nm, str(int(arch[3:])))
   # the renderer record and its three supported_dtypes overrides
   from tinygrad.renderer.cstyle import CUDARenderer
@@ -303,16 +329,17 @@ def rows():
   return out
 
 def rec_val(name, has_local, has_shared, g, l, sh, drops_exp2, has_param, sd_kind):
+  from tinygrad.renderer.cstyle import CUDARenderer
   """The record's own reading. `global_max`/`local_max`/`shared_max` come off
   `CUDARenderer` -- nir.py:118 TAKES them, it does not state them -- and only
   `LVPRenderer` pins its own (:258)."""
   g = g if g is not None else CUDARenderer.global_max
   l = l if l is not None else CUDARenderer.local_max
   sh = sh if sh is not None else CUDARenderer.shared_max
-  def t(x): return ",".join(str(v) for v in (x or (0, 0, 0)))
-  return "%s has_local=%s has_shared=%s global_max=[%s] local_max=[%s] shared_max=[%s] drops_exp2=%s has_param=%s sd_kind=%d" % (
+  def t(x): return ",".join(str(v) for v in x)
+  return "%s has_local=%s has_shared=%s global_max=[%s] local_max=[%s] shared_max=%s drops_exp2=%s has_param=%s sd_kind=%d" % (
     name, has_local if has_local is not None else True, has_shared if has_shared is not None else True,
-    t(g), t(l), t(sh), drops_exp2, has_param, sd_kind)
+    t(g), t(l), sh, drops_exp2, has_param, sd_kind)
 
 # ===========================================================================
 # The `nir_op_*` / intrinsic / NIR_INTRINSIC_* constant AUDIT. Every symbol this
@@ -320,7 +347,16 @@ def rec_val(name, has_local, has_shared, g, l, sh, drops_exp2, has_param, sd_kin
 # NOT a verdict on these: the port's numbers are compared against THIS.
 CONST = ([("nir_op_" + v, "generated enum, nir_op_enum") for v in sorted(
             {v for t in (nir.u_aop, nir.s_aop, nir.f_aop) for v in t.values()}
-            | {"mov", "iadd", "imul", "ilt", "vec2", "vec3", "vec4", "vec5", "vec8", "vec16"})]
+            | {"mov", "iadd", "imul", "ilt", "vec2", "vec3", "vec4", "vec5", "vec8", "vec16"}
+            | {"b2b1","b2f16","b2f32","b2f64","b2i8","b2i16","b2i32","b2i64",
+               "f2f16","f2f32","f2f64","f2i8","f2i16","f2i32","f2i64",
+               "i2f16","i2f32","i2f64","i2i8","i2i16","i2i32","i2i64",
+               "u2f16","u2f32","u2f64","u2u8","u2u16","u2u32","u2u64",
+               # THE NINE THAT DO NOT EXIST. `ncast` to an fp8 spells `*2f8` and to
+               # a bool spells `*2b1`, and neither is a NIR op -- so `op_present`
+               # says no and the `ncast` rows print the refusal. Listing them in
+               # the audit is what turns "the port says ABSENT" into a claim.
+               "b2f8","f2f8","i2f8","u2f8","b2b1","f2b1","i2b1","u2b1"})]
        + [("nir_intrinsic_store_" + s, "generated enum, nir_intrinsics") for s in ("global", "shared", "deref")]
        + [("nir_intrinsic_load_" + s, "generated enum, nir_intrinsics") for s in ("global", "shared", "deref")]
        + [(n, "generated enum, nir_intrinsics") for n in
@@ -347,22 +383,30 @@ def main():
   mode = sys.argv[1] if len(sys.argv) > 1 else "rows"
   if mode == "rows":
     for nm, got in rows(): print("%s = [%s]   py=[%s]" % (nm, got, got))
+    print()      # the one framing newline `IO.print` supplies
   elif mode == "names":
     for nm, _ in rows(): print(nm)
   elif mode == "const":
     for nm, auth, v in const_rows(): print("%-42s %-52s %s" % (nm, auth, v))
   elif mode == "bend":
-    # print the `main` body with the py= halves REPLACED by the live values, so
-    # a change to the oracle and a change to the gate cannot disagree.
+    # Rewrite the `py=` literal of every `r("label", expr, "old")` line in
+    # `nir.bend` to the value THIS RUN computed. Working line-wise with a
+    # greedy `.*` for the expression is deliberate: a single regex over the whole
+    # file with a non-greedy group swallowed a label that contained `, "` on the
+    # `c uint8 u=Fals` row.
     import re
-    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..",
-                     "tinybendygrad", "renderer", "nir.bend")
-    src = open(p).read()
-    vals = dict(rows())
-    def fix(m):
-      key = m.group(1)
-      return 'r("%s", %s, "%s")' % (m.group(2), m.group(3), vals.get(key, m.group(4)))
-    out = re.sub(r'r\("([^"]*)", (.+?), "(.*)"\)', fix, src)
-    print(out)
-
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(here, "..", "..", "..", "tinybendygrad", "renderer", "nir.bend")
+    vals, hit, miss = dict(rows()), 0, []
+    out = []
+    for line in open(p).read().splitlines():
+      m = re.match(r'^(\s*)r\("([^"]*)", (.*), "[^"]*"\),?$', line)
+      if not m:
+        out.append(line); continue
+      indent, label, expr = m.groups()
+      if label not in vals: miss.append(label); out.append(line); continue
+      hit += 1
+      out.append('%sr("%s", %s, "%s"),' % (indent, label, expr, vals[label]))
+    sys.stderr.write("rewrote %d rows; unmatched: %s\n" % (hit, miss or "none"))
+    print("\n".join(out))
 if __name__ == "__main__": main()

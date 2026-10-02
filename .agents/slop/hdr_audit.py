@@ -42,6 +42,8 @@ MOVED_RE = re.compile(r"\b(moved|kills|closes|moves)\s+\d+\s+rows?\b")
 MUTATION_RE = re.compile(r"\b(moved|MOVED|EQUIV|BLIND)\b")
 RETRACT_RE = re.compile(r"\b(never written|does not exist|no such|previously named|"
                         r"was deleted|is not a def|nothing called it)\b")
+# "CPython's `Foo.bar`" names a Python attribute and is checked by the wall pass.
+CPYTHON_RE = re.compile(r"\b(CPython|Python'?s?|python'?s?)\b")
 # every committed .bend, for cross-file def claims. Loaded once; a header that
 # says "ops_webgpu's Tr.pop" is only checkable because the other file is here.
 BEND_FILES = [p for p in ROOT.rglob('*.bend')
@@ -108,12 +110,38 @@ def printed_rows(path):
     return [l for l in r.stdout.splitlines() if l.strip()]
 
 
+prefer = None
+
+
 def pyfile(name):
-    """A `.py` name as the header writes it -> a real path, or None."""
+    """A `.py` name as the header writes it -> a real path, or None.
+
+    Headers write the module SHORT -- `examples/beautiful_mnist.py`,
+    `mixin/op.py` -- so the whole repo is searched, not just `tinygrad/`, and a
+    directory-qualified short name is preferred over a bare basename.
+
+    A BARE basename with more than one match is resolved by the audited file's
+    OWN PORT TARGET: a `.bend` that is `tinygrad/mixin/rand.bend` reaches
+    `mixin/`, not `codegen/decomp/`. Passing `prefer` is how that is expressed,
+    and a basename that STILL does not resolve is reported rather than guessed --
+    guessing is how a stale wall survives.
+    """
     if name.startswith('tinygrad/') or name.startswith('references/'):
         return ROOT / name
-    hits = list((ROOT / 'tinygrad').rglob(name))
-    return hits[0] if len(hits) == 1 or hits else None
+    hits = [p for p in ROOT.rglob(Path(name).name) if p.parts[len(ROOT.parts):] == tuple(name.split('/'))]
+    if hits:
+        return hits[0]
+    hits = [p for p in ROOT.rglob(Path(name).name) if p.suffix == '.py'
+            and 'references' not in p.parts and '.venv' not in p.parts]
+    if len(hits) == 1:
+        return hits[0]
+    # prefer the module that lives in the same package as the audited .bend
+    if prefer:
+        tag = Path(prefer).parts[-2]
+        tagged = [p for p in hits if tag in p.parts]
+        if len(tagged) == 1:
+            return tagged[0]
+    return None
 
 
 def bendfile(name):
@@ -139,6 +167,7 @@ def main():
     false_n = 0
     for p in files:
         path = Path(p)
+        globals()['prefer'] = p
         lines = path.read_text().splitlines()
         hdr = header(lines)
         defs, body = defs_and_body(lines)
@@ -182,22 +211,28 @@ def main():
                 continue
             src = f.read_text().splitlines()
             if ln > len(src):
-                print('  FALSE  hdr:%d TODO(%s) %s:%d %s -- file has %d lines'
-                      % (i, m.group(1), mod, ln, sym, len(src)))
+                print('  FALSE  hdr:%d TODO(%s) %s:%d %s -- %s has %d lines'
+                      % (i, m.group(1), mod, ln, sym, f, len(src)))
                 false_n += 1
                 continue
             body_line = src[ln - 1]
             ok = (not sym) or sym in body_line
             if not ok:
-                print('  FALSE  hdr:%d TODO(%s) %s:%d %s -- line is: %s'
-                      % (i, m.group(1), mod, ln, sym, body_line.strip()[:66]))
+                print('  FALSE  hdr:%d TODO(%s) %s:%d %s -- %s:%d is: %s'
+                      % (i, m.group(1), mod, ln, sym, f.relative_to(ROOT),
+                         body_line.strip()[:66]))
                 false_n += 1
         # --- 2. every backticked def-ish token in ANY comment block. A token only
         # CLAIMS a local def if its namespace is one this file defines -- that is
         # what separates `pc.key` (a claim about a local def) from `NVQueue.q`
         # (a Python name) and `U32.or` (a Bend core name).
         printed = '\n'.join(outs)
-        printed_names = {l.split('=')[0] for l in outs}
+        # a row is `name=value`, and a header's `` `llvm.code_for_op` `` is a
+        # claim about a ROW just as much as about a def. Both count.
+        printed_names = {l.split('=')[0].strip() for l in outs}
+        # some rows are `NAME key=value` -- `lop.op ADD=...` -- so a header may
+        # name the PREFIX and claim a row count. Keep the prefix set too.
+        printed_prefix = {n.split()[0] for n in printed_names if ' ' in n}
         ns = {n.split('.')[0].lower() for n in names if '.' in n}
         for blk in comment_blocks(lines):
             for i, line in blk:
@@ -208,9 +243,16 @@ def main():
                     seen.add(key)
                     if '.' not in tok or tok.endswith('.'):
                         continue
+                    # a `.py` is a FILE, not a def: `function.py`, `op.py:198`
+                    if tok.endswith('.py'):
+                        continue
+                    # `CPython's X.y` names a PYTHON attribute; a dunder cannot be
+                    # a Bend def name in any of these files.
+                    if '__' in tok or CPYTHON_RE.search(line):
+                        continue
                     if tok.split('.')[0].lower() not in ns:
                         continue
-                    if tok in printed_names:
+                    if tok in printed_names or tok in printed_prefix:
                         continue
                     if tok.lower() in lower:
                         print('  FALSE  hdr:%d `%s` -- the def is spelled `%s`'
@@ -289,11 +331,16 @@ def main():
                     continue
                 f = pyfile(mod)
                 if f is None:
-                    print('  FALSE  hdr:%d `%s` -- no such Python file' % (i, mod))
+                    amb = [p for p in ROOT.rglob(Path(mod).name) if p.suffix == '.py']
+                    note = (' AMBIGUOUS: %s' % ', '.join(
+                        str(p.relative_to(ROOT)) for p in amb)) if amb else ''
+                    print('  FALSE  hdr:%d `%s` -- no unique such Python file.%s'
+                          % (i, mod, note))
                     false_n += 1
                 elif int(ln) > len(f.read_text().splitlines()):
-                    print('  FALSE  hdr:%d `%s:%s` -- file has %d lines'
-                          % (i, mod, ln, len(f.read_text().splitlines())))
+                    print('  FALSE  hdr:%d `%s:%s` -- %s has %d lines'
+                          % (i, mod, ln, f.relative_to(ROOT),
+                             len(f.read_text().splitlines())))
                     false_n += 1
     print('\n%d FALSE claims' % false_n)
     return 1 if false_n else 0

@@ -13,22 +13,23 @@
 #            `nvm` word encoding (:47-48), `hilo` (:33), `nv_flags` (:40-41), the
 #            `layout_args` kernel-argument trace (hcq2.py:74-76), and the four
 #            queues' command vocabularies (:99-225).
-#   STAGE 3  LANDED AND CHECKED. the program cache and its key (:313-320), the
-#            reloc table both ways (:261-265), the image padding and the
-#            `NVProgramData` derivations (:230-305), and the launch path's
-#            graph-upload/launch trace and two refusals (:161-186).
+#   STAGE 3  LANDED AND CHECKED. the program cache (:313-320 -- the lookup is
+#            `pc.find`/`pc.same`, NOT a key reader), the reloc table both ways
+#            (:261-265), the image padding and the `NVProgramData` derivations
+#            (:230-305), and the launch path's graph-upload/launch trace and two
+#            refusals (:161-186).
 #   STAGE 4  LANDED AND CHECKED. the QMD version/slot/grid layer (:50-94), the
 #            ioctl command encoding (:43-45), the video-HW sizing (:699-715),
 #            `to_name` (hcq2.py:63), `reg_ops`'s chunking (:818-824), the
 #            profiler register addresses (:793-816), the error-string tables
 #            (:35, :37-38) and the GPA-info index fallback (:664-665).
 #
-# 3897 lines, 630 `def`/`type`, 600 gate rows. `./bin/bend --check-only` prints
-# ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` prints 600 Bend rows against 547
+# 3960 lines, 630 `def`/`type`, 611 gate rows. `./bin/bend --check-only` prints
+# ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` compares the Bend rows against
 # CPython rows with **0 disagreements**. The mutation table is at the FOOT and
 # every "rows moved" in it is measured, not estimated.
 #
-# THE 600 ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
+# THE 611 ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
 # many rows were ever compared to anything:
 #
 #   543  CROSS-CHECKED. The gate prints a row and the oracle prints the SAME row
@@ -69,7 +70,8 @@
 #     refusals; the ctypes structs are the seam.
 #   TODO(p3) ops_nv.py:403-432  setup_usermode/setup_vm/setup_gpfifo_vm --
 #     WALL: MMIOInterface and a memoryview cast. The CLASS LADDER is PORTED
-#     (`iface.classes`) because it is a pure function of the class list.
+#     (`iface.want`/`iface.alt`/`iface.mid`/`iface.ladder`) because it is a pure
+#     function of the class list.
 #   TODO(p3) ops_nv.py:434-445  _new_gpu_fd/_gpu_map_to_cpu -- mmap + MAP_FIXED.
 #   TODO(p3) ops_nv.py:447-514  alloc/free/unmap/_gpu_uvm_map -- the VA bump
 #     allocators and NVOS02/NVOS32/NVOS46 attribute bitmasks. `alloc.page_size`
@@ -94,10 +96,13 @@
 #   TODO(p3) ops_nv.py:50-62  `QMD.fields` is a 181-row and a 296-row table
 #     generated from `nv_gpu.__dict__`. MEASURED: NO field in EITHER table is
 #     wider than 32 bits and NONE straddles a 32-bit word boundary, which is
-#     why a `List<&2, U32>` of words models `bytearray(sz*4)` EXACTLY and
-#     `qmd.read`/`qmd.write` are total over both whole tables. The port carries
-#     the 45 ver-3 and 25 ver-5 fields ops_nv.py NAMES; the other 407 rows are
-#     unreferenced and are not transcribed.
+#     why a `List<&2, U32>` of words models `bytearray(sz*4)` EXACTLY, so a
+#     read/write pair over either whole table WOULD be total. It is not written:
+#     this port carries the 45 ver-3 and 25 ver-5 fields ops_nv.py NAMES, as the
+#     constants and the three `qmd.*_sfx`/`qmd.slot` selectors beside them; the
+#     other 407 table rows are unreferenced and are not transcribed. The
+#     ORACLE-ONLY rows `nv_qmd_wide_v3/_v5` and `nv_qmd_straddle_v3/_v5` measure
+#     those two tables and this port answers neither.
 #   TODO(p3) ops_nv.py:101-103  `NVQueue.q_rewrite` and :562-567 `pm_encode`
 #     -- PatternMatcher tables over UOps, which is `ops.bend`'s substrate.
 #     `pm_encode`'s FOUR custom-function names ARE PORTED as strings, because a
@@ -111,69 +116,125 @@
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF. Python line numbers are ops_nv.py unless the
-# entry names another file.
+# entry names another file. Every `def` named here EXISTS in this file -- an
+# earlier version of this table named twenty-eight defs that were never
+# written (a QMD accessor family, a `pc.` key, a video-HW sizing entry, a
+# compute-queue init, ...) and every check in the repo passed, because the
+# compiler does not read prose. Where a name in the previous draft has NO
+# counterpart here it is marked NOT PORTED and the reason is given, because the
+# claim that failed was never a near-miss.
 #
 #   :26  nv_gpu = nv_570                     PORTED  the constant table below
 #   :28  PMA                                 WALL    ContextVar + VIZ.value
 #   :33  hilo                                PORTED  `hilo.pair`
-#   :35  get_error_str                       PORTED  `iface.err_str`
-#   :37-38 NV_PFAULT_FAULT/ACCESS_TYPE       PORTED  `pfault` (counts + rows)
-#   :40-41 nv_flags                          PORTED  `flags.of` + `FLD_*`
+#   :35  get_error_str                       PORTED  `iface.err_str_of`
+#   :37-38 NV_PFAULT_FAULT/ACCESS_TYPE       PORTED  `pfault.n`, `pfault.status_n`
+#   :40-41 nv_flags                          PORTED  `flags.term`, `flags.or`,
+#                                                    `flags.go` + `FLD_*`
 #   :43-45 nv_iowr                           PORTED  `iowr.cmd`; the `fd.ioctl`
 #                                                    is the seam
 #   :47-48 nvm                               PORTED  `nvm.word`, `nvm.emit`
-#   :50-94 QMD                               PORTED  `qmd.of`, `qmd.read`,
-#                                                    `qmd.write`, `qmd.set_addr`,
-#                                                    `qmd.set_release`,
-#                                                    `qmd.grid`
-#   :105 NVQueue.nvm                         PORTED  `q.nvm`
+#   :50-62 QMD.fields (the two tables)       NOT PORTED  the 45 ver-3 and 25
+#                                                    ver-5 FIELDS are carried as
+#                                                    CONSTANTS + `qmd.slot` /
+#                                                    `qmd.prog_sfx` / `qmd.cbuf_sfx`;
+#                                                    a generic read/write over
+#                                                    either table is NOT here. An
+#                                                    earlier version of THIS TABLE
+#                                                    claimed five QMD accessors by
+#                                                    name and none of the five was
+#                                                    ever written.
+#   :63-94 QMD version/slot/grid             PORTED  `qmd.ver.of`, `qmd.sz.of`,
+#                                                    `qmd.slot`, `qmd.slot.ok`,
+#                                                    `qmd.grid`, `qmd.rel_size`
+#   :105 NVQueue.nvm                         NOT PORTED  `NVQueue.nvm` is the
+#                                                    `self.q(*nvm(...))` CALL and
+#                                                    the call is the seam; `nvm.word`
+#                                                    and `nvm.emit` carry its
+#                                                    arithmetic. No per-queue
+#                                                    wrapper over it was written.
 #   :107-115 sem/wait/signal/timestamp/      PORTED  `q.sem`, `q.wait`,
-#        release                                   `q.release`, `q.timestamp`
+#        release                                   `q.release`, `q.timestamp`,
+#                                                    `q.signal`, `q.nsi.at`
 #   :117-128 NVQueue.submit                  PARTIAL the five placeholders and
 #                                                    the fifo lookups
-#   :131-138 NVComputeQueue.__init__         PORTED  `cq.init` (qmd_sz, stride)
-#   :141-148 wait/release (prev_qmd)         PORTED  `cq.prev_reset`
+#   :131-138 NVComputeQueue.__init__         PORTED  `cq.qmd_sz`, `cq.stride`,
+#                                                    `cq.qmd_off`, `cq.qmd_buf_len`
+#   :141-148 wait/release (prev_qmd)         NOT PORTED  the prev-qmd reset arm
+#                                                    is not written; the `wait`
+#                                                    half is `q.wait`.
 #   :150-154 submit (patch the qmd blob)     WALL    `patch()` writes bytes
 #   :156-159 memory_barrier                  PORTED  `cq.memory_barrier`
 #   :161-186 exec                            PORTED  `cq.exec` + its TWO raises
-#   :189-195 NVCopyQueue.copy                PORTED  `cq.copy` (the step loop)
-#   :197-201 semaphore/timestamp/signal      PORTED  `cq.semaphore`
-#   :204-225 NVEncDecQueue.encdec            PARTIAL the arithmetic (h, the
-#                                                    picture offsets); the
+#   :189-195 NVCopyQueue.copy                PORTED  `cq.copy`, `copy.nsteps`
+#   :197-201 semaphore/timestamp/signal      PORTED  `cq.semaphore`, `cq.ts`,
+#                                                    `cq.sig`, `cq.sem2`
+#   :204-225 NVEncDecQueue.encdec            PARTIAL the arithmetic (`dev.vid_h`,
+#                                                    the picture offsets); the
 #                                                    nvm sequence is PORTED
 #   :230-305 NVProgramData.__init__          PORTED  the derivations:
-#                                                    `pd.kernargs_size`,
-#                                                    `pd.max_threads`,
-#                                                    `pd.smem_cfg`, `pd.cbuf0`,
-#                                                    `pd.image_len`, `pd.vars`
-#   :261-265 the reloc table                 PORTED  `pd.reloc` BOTH ways + the
-#                                                    `else: raise`
+#                                                    `pd.kernargs`, `pd.max_threads`,
+#                                                    `pd.smem_cfg`, `pd.cbuf0_len`,
+#                                                    `pd.image_len`, `pd.var_isize`,
+#                                                    `pd.relocs`
+#   :261-265 the reloc table                 PORTED  `pd.reloc.off`,
+#                                                    `pd.reloc.shift`,
+#                                                    `pd.reloc.isize` BOTH ways
+#                                                    + the `else: raise` arm
 #   :307-311 _parse_elf_info                 WALL    `struct.unpack_from`
-#   :313-320 _nv_program_cache/nv_build_prog PORTED  `pc.key`, `pc.put`, and
-#                                                    the NO-EVICTION claim
-#   :322-331 NVAllocator                     PORTED  `alloc.alloc/free/offset`
-#   :337 GPFifo                              PORTED  `GPFifo` (field order)
+#   :313-320 _nv_program_cache/nv_build_prog PORTED  `pc.find`, `pc.put`,
+#                                                    `pc.same`, `pc.new_id`, and
+#                                                    the NO-EVICTION claim. There is
+#                                                    no key reader: the key IS the
+#                                                    `UOp`-list equality `pc.same`
+#                                                    decides.
+#   :322-331 NVAllocator                     PORTED  `alloc.alloc_size`,
+#                                                    `alloc.page_size`
+#   :337 GPFifo                              NOT PORTED  the record is `dev.gpfifo_n`
+#                                                    + `dev.gpfifo_fields`; there
+#                                                    is no `GPFifo` type.
 #   :347-352 the VA bump allocators          PORTED  as CONSTANTS + a row
-#   :403-415 setup_usermode                  PARTIAL `iface.classes` (the
-#                                                    ladder); MMIOInterface
-#                                                    is the seam
+#   :403-415 setup_usermode                  PARTIAL `iface.ladder`,
+#                                                    `iface.want`, `iface.alt`,
+#                                                    `iface.mid` (the ladder);
+#                                                    MMIOInterface is the seam. No
+#                                                    class-list reader of its own is
+#                                                    written; `iface.pick` takes the
+#                                                    count directly.
 #   :484-528 alloc/free/unmap/_alloc_vaddr   PARTIAL `alloc.page_size` + the
 #                                                    host/device branch
-#   :537 PCIIface root/instance              PORTED  `iface.pc_root`
-#   :559-561 NVDevice class attrs            PORTED  `dev.ifaces`,
+#   :537 PCIIface root/instance              PARTIAL `iface.pc_ok` (the predicate);
+#                                                    a `pc_root` reader was named
+#                                                    here and never written
+#   :559-561 NVDevice class attrs            PORTED  `dev.iface_count`,
+#                                                    `dev.iface_names`,
 #                                                    `dev.sleep_timeout_ms`,
 #                                                    `dev.encode_rules`
 #   :569 is_nvd                              PORTED  `dev.is_nvd`
 #   :571-611 NVDevice.__init__               PORTED  `dev.init` (the ORDER)
-#   :601-607 arch/sass/windows/slm          PORTED  `dev.arch_of`,
-#                                                    `dev.sass_of`,
-#                                                    `dev.windows`
-#   :613-629 fifos                           PORTED  `dev.fifos` (the ORDER)
-#   :631-662 _new_gpu_fifo                   PORTED  `dev.new_fifo`,
-#                                                    `dev.gpput_off`, `GPFifo`
-#   :688-697 _ensure_has_local_memory        PORTED  `dev.ensure_local`
-#   :699-715 _ensure_has_vid_hw              PORTED  `dev.vid_hw` + the raise
-#   :818-824 reg_ops (the 124-row chunking)   PORTED  `dev.reg_chunk`
+#   :601-607 arch/sass/windows/slm          PORTED  `arch_of`, `sass_of`,
+#                                                    `dev.windows`, `dev.slm`
+#   :613-629 fifos                           PORTED  `dev.fifos_root`,
+#                                                    `dev.fifos_of`,
+#                                                    `dev.fifos_ring`,
+#                                                    `dev.fifos_pair` (the ORDER)
+#   :631-662 _new_gpu_fifo                   PARTIAL `dev.gpput_off`,
+#                                                    `dev.gpfifo_n`; the
+#                                                    `_new_gpu_fifo` class CHOICE
+#                                                    and the `/dev/nvidiaN` fd are
+#                                                    the seam
+#   :688-697 _ensure_has_local_memory        PARTIAL `dev.windows` +
+#                                                    `LOCAL_MAX_X/Y/Z`; the
+#                                                    bump-or-raise arm itself is
+#                                                    not a separate def
+#   :699-715 _ensure_has_vid_hw              PORTED  `dev.vid_top`, `dev.vid_ok`,
+#                                                    `dev.vid_h`, `dev.vid_chroma`,
+#                                                    `dev.vid_coloc`, `dev.vid_filter`
+#                                                    + the raise, all under the
+#                                                    `dev.vid_*` prefix
+#   :818-824 reg_ops (the 124-row chunking)   PORTED  `dev.reg_clen`,
+#                                                    `dev.reg_clen.at`,
+#                                                    `dev.reg_nchunks`
 #
 # ===========================================================================
 # THE WALL THAT IS NOT A WALL, and it is the whole of the argument trace.
@@ -236,7 +297,8 @@ import ../device.bend as D
 
 # --- :403-415 setup_usermode, the class ladders. `next(c for c in [...] if c
 # in self.nvclasses)` is FIRST-WINS over these pairs and the ORDER of each pair
-# is the policy, so both directions are ported: `iface.cls` and `iface.want`.
+# is the policy, so both directions are ported: `iface.want`/`iface.alt` (the
+# FIRST-WINS pick) and `iface.mid`/`iface.ladder3` (the pair it walks).
 #
 # EVERY ONE OF THESE ELEVEN WAS HAND-TYPED WRONG THE FIRST TIME -- the oracle
 # caught all eleven, and nine of them by more than a factor of two. They are the
@@ -409,8 +471,8 @@ def UVMTYPE_REGISTRATION() -> U32: 1
 # All four are 48-bit numbers and `U32` tops out at 32, so they live as `I64`
 # pairs (helpers.py's `data64`, `helpers.bend`'s `i64_of_hi_lo`) and the gate
 # prints the PAIR, because a 48-bit constant has no U32 image and a decimal row
-# would be a lie. `va.uvm_top` is the one place the arithmetic matters and it
-# is where the 48 bits are checked.
+# would be a lie. `va.uvm_top_linux`/`va.uvm_top_osx` are the one place the
+# arithmetic matters and it is where the 48 bits are checked.
 def LOW_VA_HI() -> U32: 16
 def LOW_VA_LO() -> U32: 0
 def LOW_VA_BASE_OSX_HI() -> U32: 128
@@ -484,7 +546,7 @@ type Fifo is Data:
 # THE TRACE. `Tr.emit` is the seam: every driver call in this file goes through
 # it, so the trace is the ordered list of ioctls and words the GPU will see.
 #
-# THE RAISE IS IN THE TRACE, and it is `Tr.emit.go`'s `refused`: once a
+# THE RAISE IS IN THE TRACE, and it is `Tr.emit`'s `refused`: once a
 # refusal has fired no later step records anything, so a raise shows up as a
 # TRUNCATION and needs no guard of its own. The failing call IS still recorded
 # -- it sets `refused` in the same breath, so on entry its own `refused` is
@@ -653,7 +715,7 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
 #
 # `ifaces = [NVKIface, PCIIface, MOCKIface]` is a FIRST-WINS ladder
 # (`Compiled._select_iface` walks it), so the ORDER is the policy and
-# `dev.ifaces` returns the count while `dev.encode_rules` returns the four
+# `dev.iface_count` returns the count while `dev.encode_rules` returns the four
 # custom-function names. A misspelled `pm_encode` entry silently matches
 # NOTHING, so both directions are rows.
 # ===========================================================================
@@ -740,7 +802,7 @@ def win_lo(x: H.I64) -> U32: H.lo32(x)
 #
 # The pairs are the property: `nvclasses` is a SET of ids and the ladder is
 # "newest generation this GPU has", so BLACKWELL before AMPERE is not a style
-# choice. `iface.cls` answers the winner and `iface.want` names the FIRST
+# choice. `iface.pick` answers the winner and `iface.want` names the FIRST
 # candidate of each ladder so a gate can pin the order rather than the answer.
 # ===========================================================================
 
@@ -957,8 +1019,9 @@ def dev.rm3(d: Dev, root: U32, c1: U32, c2: U32, c3: U32) -> Dev:
 # :579 `self.usermode, self.gpu_mmio = self.iface.setup_usermode()` -- an
 # rm_alloc and then an mmap of MMIO_SZ bytes. The mmio is the seam; the ORDER
 # is what the trace keeps.
-# The binder is `usrmode`, NOT `usermode`: a pattern binder that SHADOWS a def
-# name is refused, and `dev.usermode` would have been the reader.
+# The binder is `usrmode`, NOT `usermode`: a pattern binder that SHADOWS the
+# `Dev` record's own `usermode` field is refused, so the reader is `dev.mmio`'s
+# parameter and not a def of its own.
 def dev.mmio(d: Dev, +usrmode: U32) -> Dev:
   match d:
     case Dev{sm, compute, gpfifo, dma, viddec, _, iface, slm, pma, next_qmd, +t}:
@@ -3834,7 +3897,7 @@ def main() -> IO(Unit):
 # | M4 | `nvm.emit`: one word more for `NVQueue.sem` | 4 | :48 the UOp WEIGHTING -- a uint64 argument counts two words, so the header says 5. It moves `nv_sem_wait`, `nv_sem_signal`, `nv_sem_timestamp` and `nv_sig_value_kept`. |
 # | M5 | `qmd.slot.ok`: `not (a and b)` becomes `not (a or b)` | 1 | :86 `set_release` refuses only when BOTH release slots are busy. One row, and it is the case that differs. |
 # | M6 | `smemcfg.cand`: the candidates are walked largest-first | 2 | :293 the `min()` over {32768, 65536, 102400}. `nv_smemcfg_0` and `nv_smemcfg_1024` do NOT move, which is the trap: a `min` and a `max` agree on a zero shmem. |
-# | M7 | `to_name.join.parts`: the separator is appended to the head too | 11 | hcq2.py:63 `String.split` DROPS the separator, so it has to be put back. This is a `dev.bend` `rest_of` shape. |
+# | M7 | `to_name.join.parts`: the separator is appended to the head too | 11 | hcq2.py:63 `String.split` DROPS the separator, so it has to be put back. This is a `device.bend` `rest_of` shape. |
 # | M8 | `flags.term`: the shift is `lo - 1` | 21 | :40 `getattr(nv_gpu, f"{reg}_{k}")[1]` is the bitfield tuple's SECOND element, which is the SHIFT and not the low bit. |
 # | M9 | `Tr.emit`: the append is built OUTSIDE the `Bool.pick` | 12 | the emit REPLACES the head instead of appending -- the `Bool.pick` selector trap. It reaches the semaphores, the copy command and the launch. |
 # | M10 | `copy.nsteps`: `ceildiv` becomes "1 unless zero" | 5 | :191 `len(range(0, sz, 1 << 31))` is 0 for an empty copy and 2 at the top of the `U32` range; `nv_copy_nsteps_half` and the two top-of-range rows are what move. |

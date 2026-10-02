@@ -21,7 +21,10 @@ import tinygrad.runtime.support.rdma.bnxtdev as B                            # n
 
 out = []
 def row(name, val):
-    out.append(f"{name}={val}")
+    # Bend's `Bool.show` prints `True`/`False`, so a boolean oracle row must
+    # print Python's bool and not 1/0 -- otherwise every boolean row disagrees
+    # for a reason that is not arithmetic.
+    out.append(f"{name}={val!r}" if isinstance(val, bool) else f"{name}={val}")
 
 # ===========================================================================
 # A FAKE PCI DEVICE, so the REAL build_pbl / alloc_queue / BNXTQueue run.
@@ -212,19 +215,25 @@ for i, (w, psn, sz) in enumerate(MSN_CASES):
 # bytes are read back out at the offsets ops_rdma.bend's rows use.
 # ===========================================================================
 def words(b): return [int.from_bytes(b[i:i + 4], "little") for i in range(0, len(b), 4)]
-for i, (va, key, sz) in enumerate([(0x1000, 0xaa, 64), (0, 0, 0), (0xdeadbeef00, 0xffffffff, 4096)]):
+for i, (va, key, sz) in enumerate([(0x1000, 0xaa, 64), (0, 0, 0), (0xdeadbeef, 0xffffffff, 4096)]):
     s = words(B.send_wqe(va, key, sz))
     r = words(B.recv_wqe(va, key, sz))
     row(f"wqe_{i}_S_LEN", len(B.send_wqe(va, key, sz)))
     row(f"wqe_{i}_R_LEN", len(B.recv_wqe(va, key, sz)))
-    for w in range(8):
-        row(f"wqe_{i}_S_W{w}", s[w])
-    for w in range(7):
-        row(f"wqe_{i}_R_W{w}", r[w])
-    row(f"wqe_{i}_S_VA_LO", int.from_bytes(B.send_wqe(va, key, sz)[8:16], "little"))
-    row(f"wqe_{i}_S_VA_HI", int.from_bytes(B.send_wqe(va, key, sz)[16:24], "little"))
-    row(f"wqe_{i}_R_VA_LO", int.from_bytes(B.recv_wqe(va, key, sz)[16:24], "little"))
-    row(f"wqe_{i}_R_VA_HI", int.from_bytes(B.recv_wqe(va, key, sz)[24:32], "little"))
+    # the header as ONE joined row IN ORDER. Eight separate rows were the first
+    # spelling and the port cannot produce them without eight `U32.show` calls
+    # whose order nothing checks; the joined row carries every word and its
+    # position, and a transposed word moves it.
+    row(f"wqe_{i}_S", " ".join(str(x) for x in s[:8]))
+    row(f"wqe_{i}_R", " ".join(str(x) for x in r[:7]))
+    # the scatter-gather element is at bytes 32..48 for BOTH packs: `va` is a Q
+    # at 32, `key` an I at 40 and `size` an I at 44. The first version of this
+    # read bytes 8..16, which is the send pack's `I size` and nothing else --
+    # the gate caught it as `wqe_0_S_VA_LO` disagreeing by 4032.
+    row(f"wqe_{i}_S_VA_LO", int.from_bytes(B.send_wqe(va, key, sz)[32:36], "little"))
+    row(f"wqe_{i}_S_VA_HI", int.from_bytes(B.send_wqe(va, key, sz)[36:40], "little"))
+    row(f"wqe_{i}_R_VA_LO", int.from_bytes(B.recv_wqe(va, key, sz)[32:36], "little"))
+    row(f"wqe_{i}_R_VA_HI", int.from_bytes(B.recv_wqe(va, key, sz)[36:40], "little"))
 
 # ===========================================================================
 # 5b. THE CROSS-CHECK ops_rdma.bend's COMMENT GETS WRONG. `ops_rdma.py:140`
@@ -245,7 +254,7 @@ for nm, w0 in (("SEND", words(B.send_wqe(0, 0, 0))[0]), ("RECV", words(B.recv_wq
     row(f"hdr0_{nm}_TYPE_AT0", typ)
     # the spelling ops_rdma.bend's COMMENT claims, computed
     row(f"hdr0_{nm}_COMMENT_SAYS", (typ << 16) | (flags << 8) | kind)
-    row(f"hdr0_{nm}_COMMENT_IS_RIGHT", 1 if ((typ << 16) | (flags << 8) | kind) == w0 else 0)
+    row(f"hdr0_{nm}_COMMENT_IS_RIGHT", ((typ << 16) | (flags << 8) | kind) == w0)
 
 # ===========================================================================
 # 6. build_pbl (:27-37) -- THE REAL FUNCTION IS CALLED. Both directions:
@@ -257,7 +266,7 @@ for n in (1, 2, 511, 512, 513, 1024, 1025):
     paddrs = [0x7a0000000000 + i * 0x1000 for i in range(n)]
     lvl, base = B.build_pbl(d, paddrs, queue=True)
     row(f"pbl_q_{n}_LEVEL", lvl)
-    row(f"pbl_q_{n}_BASE_IS_FIRST", 1 if base == paddrs[0] else 0)
+    row(f"pbl_q_{n}_BASE_IS_FIRST", base == paddrs[0])
     row(f"pbl_q_{n}_ALLOCS", len(d.pci_dev.sizes))
     # n == 1 returns BEFORE any allocation, so `ALLOCS == 0` is the claim and
     # there is no size 0 to read; 0 stands in for the absent one.
@@ -268,9 +277,9 @@ for n in (1, 2, 511, 512, 513, 1024, 1025):
     if lvl == 0:
         # the one-paddr shortcut returns the paddr ITSELF, unencoded: no
         # PTU_PTE_VALID, because nothing is encoded on this path at all.
-        row("pbl_one_NOFLAGS", 0 if (paddrs[0] & (bnxt.PTU_PTE_VALID | bnxt.PTU_PTE_LAST |
-                                                  bnxt.PTU_PTE_NEXT_TO_LAST)) else 1)
-        row("pbl_one_BASE_IS_INPUT", 1)
+        row("pbl_one_NOFLAGS", not (paddrs[0] & (bnxt.PTU_PTE_VALID | bnxt.PTU_PTE_LAST |
+                                                 bnxt.PTU_PTE_NEXT_TO_LAST)))
+        row("pbl_one_BASE_IS_INPUT", True)
     elif lvl == 1:
         vals = [int.from_bytes(d.pci_dev.pbl_mem.b[i * 8:i * 8 + 8], "little") for i in range(n)]
         row(f"pbl_q_{n}_ENTRY0_HI", hi64(vals[0]))
@@ -305,9 +314,9 @@ d = FakeDev()
 n = 512 * 512 + 1
 try:
     B.build_pbl(d, [i * 0x1000 for i in range(n)], queue=False)
-    row("pbl_deep_REFUSED", 0)
+    row("pbl_deep_REFUSED", False)
 except AssertionError as e:
-    row("pbl_deep_REFUSED", 1)
+    row("pbl_deep_REFUSED", True)
     row("pbl_deep_ALLOCS", len(d.pci_dev.sizes))
 
 # ===========================================================================
@@ -344,7 +353,7 @@ q = B.alloc_queue(d, 16, False, 0)
 nslots = q.size // q.stride
 row("qwrap_SLOTS", nslots)
 row("qwrap_READ", len(q.read(nslots)))
-row("qwrap_READ_EQ0", 1 if q.read(nslots) == q.read(0) else 0)
+row("qwrap_READ_EQ0", q.read(nslots) == q.read(0))
 
 # ===========================================================================
 # 8. cqe_ready (:25) -- THE REAL FUNCTION IS CALLED on real bytes.
@@ -352,7 +361,7 @@ row("qwrap_READ_EQ0", 1 if q.read(nslots) == q.read(0) else 0)
 for i, (toggle, cons) in enumerate([(0, 0), (1, 0), (0, 4096), (1, 4096), (1, 1), (0, 1), (0, 4097), (3, 2)]):
     cqe = bytearray(32)
     cqe[24] = toggle
-    row(f"cqe_{i}_READY", 1 if B.cqe_ready(bytes(cqe), cons) else 0)
+    row(f"cqe_{i}_READY", B.cqe_ready(bytes(cqe), cons))
 row("c_CQE_TOGGLE_MASK", bnxt.CQ_BASE_TOGGLE)
 row("c_CQE_STATUS_AT", 25)
 row("c_CREQ_V_AT", 8)
@@ -401,18 +410,22 @@ for i, ibm in enumerate([0b00000001, 0b00000000, 0b00000100, 0b11111111, 0b10000
     row(f"bs_INST_{i}", " ".join(str(x) for x in insts))
     row(f"bs_INST_{i}_N", len(insts))
 # the ctx_init sweep length, :102, transcribed: `len(range(off, len(mem), size))`.
+# The MEMORY-CONTENT rows (`HASH`, `LAST`, `AT0`) are DROPPED, not faked: they
+# need a byte buffer, and a U32 port has none. What is left is what the source
+# actually COMPUTES: `len(range(ctx_init_offset, len(mem), entry_size))` -- the
+# swept position count -- beside the memory length and the stride, so the three
+# numbers that :102 uses are each pinned and a version that confuses the stride
+# with the count moves a row.
 for i, (size, civ, cio, nbytes) in enumerate([(64, 0, 0, 4096), (128, 7, 64, 4096),
                                               (64, 0xff, 32, 1000), (1024, 1, 0, 4096)]):
-    mem = bytearray(nbytes)
-    if civ:
-        init = bytearray(len(mem))
-        init[cio::size] = bytes([civ]) * len(range(cio, len(mem), size))
-        mem[:] = init
-    row(f"bs_INIT_{i}_LEN", len(mem))
-    row(f"bs_INIT_{i}_HASH", sum((j + 1) * mem[j] for j in range(nbytes)) % 1000003)
-    row(f"bs_INIT_{i}_LAST", mem[nbytes - 1])
-    row(f"bs_INIT_{i}_AT0", mem[0])
-    row(f"bs_INIT_{i}_NPOS", len([j for j in range(nbytes) if mem[j] == civ]) if civ else 0)
+    npos = len(range(cio, nbytes, size)) if cio < nbytes else 0
+    row(f"bs_INIT_{i}_MEM", nbytes)
+    row(f"bs_INIT_{i}_STRIDE", size)
+    row(f"bs_INIT_{i}_NPOS", npos)
+for i, (size, civ, cio, nbytes) in enumerate([(64, 0, 4096, 4096), (64, 0, 5000, 4096)], start=4):
+    row(f"bs_INIT_{i}_MEM", nbytes)
+    row(f"bs_INIT_{i}_STRIDE", size)
+    row(f"bs_INIT_{i}_NPOS", len(range(cio, nbytes, size)) if cio < nbytes else 0)
 # the flags at :107 -- ALL_DONE for 15, ZERO otherwise.
 row("bs_FLAGS_15", bnxt.FUNC_BACKING_STORE_CFG_V2_REQ_FLAGS_BS_CFG_ALL_DONE)
 row("bs_FLAGS_14", 0)

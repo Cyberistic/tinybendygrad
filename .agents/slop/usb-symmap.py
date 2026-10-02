@@ -22,9 +22,9 @@ src = io.open(P).read()
 
 kinds = dict((m.group(1), int(m.group(2)))
             for m in re.finditer(r"^def (K_[A-Z_]+)\(\) -> U32: (\d+)$", src, re.M))
-m = re.search(r"def SYMS\(\) -> List<&2, String>:\n((?:  .*\n)+?)\s*\]\n", src)
-assert m, "SYMS() not found"
-syms = re.findall(r'"([^"]+)"', m.group(1))
+i = src.index("def SYMS() -> List<&2, String>:")
+j = src.index("libusb_strerror\"]", i) + len('libusb_strerror"]')
+syms = re.findall(r'"([^"]+)"', src[i:j])
 
 # `memcpy` is libc, not libusb; it is the one name with no `libusb.` prefix.
 LIBC = {"memcpy"}

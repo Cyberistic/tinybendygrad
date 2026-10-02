@@ -24,7 +24,7 @@
 #   :59  DSPProgram.__init__    PORTED  `prog.call`'s inputs (no state to keep)
 #   :62  DSPProgram.__call__    PORTED  `prog.call`
 #   :63    the buffer refusal   PORTED  `prog.too_many` + `Tr.refuse_now`
-#   :65-66  the three ins/outs  PORTED  `prog.nins`, `prog.nouts`, `prog.ins_lens`
+#   :65-66  the three ins/outs  PORTED  `prog.nins`, `prog.nouts`, `prog.pra_lens`
 #   :67  the size writes        PORTED  `vt_size_at`, `vt_size_byte`
 #   :68  the val writes         PORTED  `vt_val_offset`, `vt_hi_written`
 #   :69  the off_mv writes      PORTED  `off_nbytes`
@@ -34,9 +34,9 @@
 #   :78  _alloc                 PORTED  `alloc.alloc` (MOCKDSP and real arms)
 #   :79    the MOCKDSP arm      PORTED  `alloc.mock_flags`
 #   :81    the ION arm          PORTED  `ION_ALIGN`, `ion.aligned`
-#   :83    the mmap + BufferStorage PORTED `alloc.alloc.go`
+#   :83    the mmap + BufferStorage PORTED `alloc.alloc.real.go`
 #   :86-91 _free                PORTED  `alloc.free_calls`
-#   :93  _as_buffer             PORTED  `alloc.as_buffer`
+#   :93  _as_buffer             PORTED  `alloc.as_buffer_bytes`
 #   :94  _copyin                PORTED  `alloc.copyin_bytes`
 #   :95  _copyout               PORTED  `alloc.copyout_bytes`
 #   :96  _offset                PORTED  `alloc.offset` -- offsets ACCUMULATE
@@ -394,7 +394,7 @@ type Tr is Data:
 # ONE remote_arg (:52) as the two arms of the union declared at :23. A `buf` arm
 # carries (pv, len) and a `dma` arm carries (fd, offset). `len` is 0 on a dma arm
 # MEASURED -- the fill loop at :56 stops at `len(ins)+len(outs)`, so a dma slot's
-# `buf.len` still reads 0 from untouched union storage. `pv` is reported as 0 or
+# `buf.size` still reads 0 from untouched union storage. `pv` is reported as 0 or
 # nonzero, never as a value: it is an address and addresses are not reproducible.
 type Pra is Data:
   Pra{is_dma: Bool, pv: U32, len: U32, fd: U32}

@@ -204,7 +204,7 @@ def mu_count(+ar: O.Arena, +rng: U32) -> U32:
 #
 # The axes are `arg`, an `ATuple` of them (ops.py:748, `tuple[int, ...]`), and
 # the ranges are `src[1:]`, so the pairing is a zip of a node's own arg against
-# a node's own srcs. `mu_shard.of` is that zip with the range turned into its
+# a node's own srcs. `mu_shard.zip` is that zip with the range turned into its
 # count by `mu_count`.
 # ===========================================================================# the axes, `self.arg` -- ops.py:748 spells an UNSHARD's arg `tuple[int, ...]`,
 # which `ops.bend` has already split into `ATuple{ys}`.
@@ -553,7 +553,7 @@ def mu_exp_add(keep: Bool, ax: U32, acc: List<&2, U32>) -> List<&2, U32>:
     case False{}: acc
 
 # ONE recursive def for the whole walk: the step is `put` and `next` folded in,
-# because `mu_exp.put` calling back into `mu_exp.go` would be MUTUAL recursion and
+# because `mu_exp` calling back into `mu_exp.go` would be MUTUAL recursion and
 # is refused, and the declaration rule means a helper above cannot call a def
 # below it. The two helpers above are leaves, so this stays a single self-call.
 # THE LIST IS THE FIRST PARAMETER because the self-call must be DECREASING AND

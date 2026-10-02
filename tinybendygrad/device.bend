@@ -620,7 +620,7 @@ def bvalid_base(+ar: Bar, b: U32, nb: U32) -> Bool:
 # `Buffer.__init__` appends, so it returns the pair. THE ARENA RULE, and it is
 # why `bnew`, `bview` and `rule1` are `Found` and not a bare index: a def that
 # builds a node and returns only its index hands the caller nothing and the node
-# is eliminated along with the call. `bnew.put` also STAMPS the slot, which is
+# is eliminated along with the call. `bnew.stamp` also STAMPS the slot, which is
 # why a caller builds its `Bn` with a placeholder `self_ix` of 0.
 # The arena is destructured OUTSIDE the `match`: a `Type.def` call inside a
 # `Data` record arm is read as the type applied to the arm's binder, and the
@@ -844,8 +844,9 @@ def round_up(n: U32, a: U32) -> U32:
 #   `for _,_,dt,_ in signature: yield (offset:=round_up(offset, dt.itemsize)), dt; offset += dt.itemsize`
 # Every slot is ALIGNED UP to its own itemsize and then the itemsize is added,
 # so [uint8, uint32] puts the uint32 at slot 4 and ends at 8: one padding byte
-# and no more. `Telf.sig` holds itemsizes, not dtypes, because itemsize is the
-# only thing this reads and a `List` of `S.Dt` is a list of an imported record.
+# and no more. The `Telf` record's `sigs` FIELD holds itemsizes, not dtypes,
+# because itemsize is the only thing this reads and a `List` of `S.Dt` is a list
+# of an imported record.
 # `round_up(off, k)` is computed once per entry and used twice -- as the yielded
 # slot and as the base of the next offset -- so the pair travels in a record for
 # the same reason `Amt` does. The fold APPENDS (`List.append` is `xs ++ ys`), so

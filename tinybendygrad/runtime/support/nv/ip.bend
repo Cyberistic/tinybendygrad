@@ -28,9 +28,9 @@
 # ---------------------------------------------------------------------------
 # A DISAGREEMENT WITH THE TASK BRIEF, REPORTED NOT RECONCILED.
 #
-# The brief said `ops_nv.bend` (3897 lines, committed, green) cites `nv/ip.py`
-# by line and that those citations "point at nothing" until this file exists.
-# IT DOES NOT. Measured:
+# The brief said `ops_nv.bend` (3960 lines at this commit, committed, green) cites
+# `nv/ip.py` by line and that those citations "point at nothing" until this file
+# exists. IT DOES NOT. Measured:
 #
 #     $ grep -n "nv/ip\|nv_ip" tinybendygrad/runtime/ops_nv.bend   -> no hits
 #     $ grep -c "nv/ip\|nv_ip" ops_nv.bend                          -> 0
@@ -51,24 +51,32 @@
 #
 # `hcq2.py` overlaps this file on exactly one thing: the GSP command queue this
 # file drives (`cmd_q`/`stat_q`, :387/:511) and the doorbell
-# `NV_PGSP_QUEUE_HEAD[0].write(0x0)` at :55. At the time of writing
-# `tinybendygrad/runtime/support/hcq2.bend` is still a 29-line STUB (imports plus
-# an empty `main`), so there is no second table to contradict and I have NOT
-# picked a side. What this port therefore fixes, and what the hcq2 agent must
-# agree with or report, is:
+# `NV_PGSP_QUEUE_HEAD[0].write(0x0)` at :55. RETIRED WALL, and this is what
+# retired it: `tinybendygrad/runtime/support/hcq2.bend` is no longer a 29-line
+# stub. It is 2272 lines with 284 defs and prints 360 gate rows, so there IS a
+# second table and it CAN be contradicted. MEASURED against it: hcq2 prints no
+# row for the ring's usable length, the wrap threshold or the msgqTxHeader
+# field order, so nothing here is contradicted YET and nothing here is
+# corroborated either -- "no row" is not "agreement". What this port fixes,
+# and what the hcq2 port must agree with or report, is:
 #
 #   1. The queue header is `nv.msgqTxHeader` -- (version, size, msgSize,
 #      msgCount, writePtr, flags, rxHdrOff, entryOff), 32 bytes, and
 #      :384-385 writes (0, queue_size, 0x1000, (queue_size-0x1000)//0x1000, 0, 1,
-#      sizeof(msgqTxHeader)). `q.init` is that and nothing else.
+#      sizeof(msgqTxHeader)). `q.of` is that and nothing else, and the `Q`
+#      record's field order is the port's `Q.*` readers.
 #   2. The ring's usable length is `msgSize*msgCount`, and the wrap threshold is
 #      `wp*msgSize + msgSize*msgCount` -- i.e. `ring_len`, NOT `size`. :30 slices
 #      the ring at `entryOff` but :48 measures the wrap against
-#      `len(self.queue_mv)`, which is `msgSize*msgCount`. `q.ring_len` is the
-#      second number and `q.rx_hdr_off` is the first; a port that confuses them
-#      wraps one message early.
+#      `len(self.queue_mv)`, which is `msgSize*msgCount`. `Q.ring_len` is the
+#      second number and `Q.rx_hdr_off` is the first; a port that confuses them
+#      wraps one message early. (This header previously named three q.*
+#      readers that were never written; the contract above is carried by
+#      `q.of` plus the `Q` record's own field order.)
 #   3. The doorbell is a write of 0x0, once per RPC record, AFTER the write
-#      pointer is advanced. Order is the gate; see `ip_doorbell_*`.
+#      pointer is advanced. Order is the gate; the rows are `ip_rp_*_order`
+#      (the whole `send/qwrite/qwp/barrier/doorbell/wait` sequence as one
+#      string) and `ip_door_*` (the value and the two architecture bits).
 #
 # ---------------------------------------------------------------------------
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
@@ -197,8 +205,8 @@
 #    `NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K` come from -- `autogen/nv_570.py`
 #    is not enough for them. So those three constants are NOT PORTED here and
 #    NOT in `nv_ip_tables.bend`: they belong to whoever ports `ops_nv.py`'s
-#    register table, and `fl.dma_cmd` takes its bit positions as parameters for
-#    exactly that reason.
+#    register table, and `fl.dma_chunk` takes its bit positions as parameters
+#    for exactly that reason.
 #      # TODO(p3) support/nv/ip.py:242  NV_PFALCON_FALCON_DMATRFCMD.encode(...)
 #      # TODO(p3) support/nv/ip.py:253  NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K
 #      # TODO(p3) support/nv/ip.py:99   the register map `include` produces
@@ -217,9 +225,10 @@
 #   PYTHON:      tinygrad/runtime/support/nv/ip.py:1-661 (the whole file)
 #
 # WHAT IS PORTED, DEF BY DEF. Every def named here EXISTS; the first draft of this
-# table named forty-eight defs that were never written (`ip.init_hw`, `q.init`,
-# `gsp.wpr_meta`, `seq.table`, ...), which is what a plan written before the code
-# looks like from the outside. The names below are the file's own namespaces.
+# table named forty-eight defs that were never written -- a device-init entry, a
+# queue reader, a WPR-meta builder, a dispatch table -- which is what a plan
+# written before the code looks like from the outside. The names below are the
+# file's own namespaces.
 #
 #   GENERATED   cn_table / cn_rows / cn_names             the 64 U32 constants
 #               st_<struct> / st_rows / st_sum_*          the 54 layouts, 413 fields
@@ -346,7 +355,7 @@
 #              register order, and the init order.
 #   t_refuse   each refusal: what the trace looks like after it.
 #
-# 1394 rows, and BOTH lanes print the same 57 KB. `ip.py` IS IN tinygrad's tree
+# 1428 rows, and BOTH lanes print the same 57 KB. `ip.py` IS IN tinygrad's tree
 # at the revision this port follows, so every expectation in the gate was
 # produced by CALLING CPython on it -- never typed. Five units have now been
 # bitten by a hand-typed expectation, and the fifth was the worst: the Stage E
@@ -1527,7 +1536,7 @@ def libos_n() -> U32: 6
 def pma.is_one(nm: String) -> Bool: U32.is_eq(Cn.v(const_of(nm)), 1)
 
 
-# `over.fits` -- the 64-BIT WALL, stated as a predicate rather than as a
+# `over.fixtures_fit` -- the 64-BIT WALL, stated as a predicate rather than as a
 # comment. 24 GiB does not fit a U32 and no port of `init_wpr_meta` can hold it.
 # THE 64-BIT WALL, WRITTEN DOWN TWICE BECAUSE BEND HAS NO HEX LITERALS.
 #
@@ -1537,7 +1546,7 @@ def pma.is_one(nm: String) -> Bool: U32.is_eq(Cn.v(const_of(nm)), 1)
 # with the caret on the `x`, so EVERY constant in this file is decimal and the
 # header's `0x...` spellings are prose only. That is convenient here, because a
 # real card's `vram_size` is 24 GiB -- five hex digits, larger than any U32 -- and
-# it cannot be written down either way. `over.fits` asks the question with a
+# it cannot be written down either way. `over.fixtures_fit` asks it with a
 # constant that fits and the oracle says a real 24 GiB card is above it;
 # `ip_wpr_vram_max` is the ceiling the fixtures stop at.
 # every fixture this gate uses is a VRAM that FITS a U32 -- the row that makes
@@ -2137,7 +2146,7 @@ def tr.hit(refused: Bool, fail_at: U32, n: U32) -> Bool:
 
 
 # THE SEAM. `Bool.pick` answers its TRUE arm first and the untaken arm does not
-# reach the answer, so the accumulator is computed by `tr.pick` and the append is
+# reach the answer, so the accumulator is computed by `tr.go` and the append is
 # the CALL -- see the note on `bump`. The failing call IS appended; everything
 # after it is not, which is what makes a refusal a truncation.
 def Tr.emit.go(+k: U32, +a: U32, +b: U32, +c: U32, +calls: List<&2, Cx>, +n: U32,
@@ -2291,8 +2300,8 @@ def rp.wp_after(+wp: U32, +elem: U32) -> U32: U32.mod(U32.add(wp, elem), rp.msg_
 #
 # The ONE thing that does not fold is the checksum slot ITSELF: :44 evaluates
 # `bytes(phdr)` while `phdr.checkSum` is still zero, so the fold runs over a zero
-# there and the value lands afterwards.  `rp.cksum` reproduces that, and the
-# `cks_put` row is the slot.
+# there and the value lands afterwards.  `rp.cksum.xor` reproduces that, and the
+# `ip_rp_<i>_cksum` rows are the slot.
 # ---------------------------------------------------------------------------
 def rp.w_seq() -> U32: 9
 
@@ -2794,7 +2803,7 @@ def wpr.leg8(vram: U32, vga_off: U32, frts_off: U32, boot_off: U32, gsp_off: U32
   wpr.leg9(vram, vga_off, frts_off, boot_off, gsp_off, heap_off, wpr_st, rsvd)
 
 
-# `pma.all_three_are_1` -- the row that says a value-only constant table is not
+# the row `ip_pma_all_three_are_1` -- which says a value-only constant table is not
 # enough for the PMA flags, because all three constants ARE the value 1 and only
 # the SHIFT carries the meaning.
 def pma.all_ones() -> Bool:
@@ -3201,8 +3210,9 @@ def wpr.leg7(+vram: U32, vga_off: U32, frts_off: U32, boot_off: U32, gsp_off: U3
 #
 # Dropping a VARIABLE number of tails in the self-call is refused: a self-call is
 # read LEFT TO RIGHT and each argument must pass unchanged until one shrinks, so
-# `seq_walk.go(seq.skip(t, o), ...)` is "expected : a decreasing self-call" even
-# though `t` is passed unchanged INTO `seq.skip`. So the fold carries the skip
+# a self-call that DROPS a variable number of tails is "expected : a
+# decreasing self-call" even though `t` is passed unchanged INTO the arm.
+# So the fold carries the skip
 # COUNT as a second U32 and steps one tail at a time -- a two-state machine over
 # (skip, head), three lines long, and the only shape the substrate allows.
 def seq_walk(+ops: List<&2, U32>) -> Wk: seq_walk.go(ops, 0, 0, Nil{})

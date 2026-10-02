@@ -673,7 +673,7 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # sets `cap = read_config(cap + 1, 1) & 0xfc`. The values `read_config` answers
 # are the SEAM's, so the fixture supplies them as two parallel lists: `links` is
 # what `read_config(cap, 1)` says and `nexts` is what `read_config(cap + 1, 1)`
-# says. `Tr.walk_done` is what the trace reads back.
+# says. `Tr.count(OP_CFG_RD(), ...)` is what the trace reads back.
 # ===========================================================================
 
 # ===========================================================================

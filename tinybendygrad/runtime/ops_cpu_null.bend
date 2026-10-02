@@ -53,7 +53,7 @@
 #   :26  the remote LOAD_PROG branch     PORTED  `prog.remote.at`
 #   :27-36 the win32 VirtualAlloc branch PORTED  `prog.win.at`
 #   :38-41 the posix mmap branch         PORTED  `prog.mmap`, `prog.address`
-#   :43,45 pthread_jit_write_protect_np PORTED  `prog.wp.at`
+#   :43,45 pthread_jit_write_protect_np PORTED  `prog.wp.on`/`prog.wp.off`
 #   :44  `mem.write(self._load(...))`    PORTED  `prog.load.at`, `prog.write`
 #   :47-54 `__clear_cache` vs `msync`   PORTED  `prog.cache.at`
 #   :56  `CFUNCTYPE(...)`                PORTED  `prog.fxn.at`
@@ -61,7 +61,7 @@
 #   :60-64 the remote EXEC_PROG branch   PORTED  `prog.remote.at` (the tag IS
 #                                                `wait`)
 #   :67-71 the LVP argument buffer       PORTED  `lvp.size`, `lvp.d64`,
-#                                                `lvp.header`, `lvp.slots`
+#                                                `lvp.at`, `lvp.slots`
 #   :75-78 `__del__` / VirtualFree      PORTED  `prog.del.at`
 #   :81  `wait_timeout_ms = 30000`       PORTED  `cpu.wait_timeout_ms`
 #   :84  `has_copy_queue` -> False       PORTED  `cpu.has_copy_queue`
@@ -88,9 +88,9 @@
 #   :34  `timestamp`                     PORTED  `nr.timestamp`
 #   :35  `submit`                        PORTED  `nr.submit_graph`
 #   :27-30 `pack_args`' kernargs         PORTED  `pk.nsrc`, `pk.size`,
-#                                                `pk.tail`, `pk.pads0`
+#                                                `pk.tail`, `pk.pads`
 #   :38  `streams`                       PORTED  `nprog.streams`
-#   :40-43 the emulated timestamps       PORTED  `nprog.stamp_n`,
+#   :40-43 the emulated timestamps       PORTED  `nprog.stamp.go`,
 #                                                `nprog.stamp_val`
 #   :40  `itertools.accumulate`          PORTED  `nprog.done_at`
 #   :44  `descs`                         PORTED  `nprog.descs`
@@ -169,7 +169,7 @@
 # 4. WHAT NULL DOES NOT COMPUTE. `ops_null.py` is named for the fact that its
 #    kernels are never run, and `NullRenderer.asm` refuses anything that is not
 #    `gfx`. There is nothing to port in a result because there is nothing there:
-#    the port says so in `nr.runs_nothing` -- the emulated device WRITES NOTHING
+#    the port says so in `nr.asm_msg` -- the emulated device WRITES NOTHING
 #    into a stream with no TIMESTAMP word -- rather than inventing a result. A
 #    backend that computed something would need a different file.
 #

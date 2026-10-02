@@ -1133,7 +1133,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 #   def __call__(self, images, labels) -> number:
 #     ...
 #
-# with `FN.TinyFunction.of` standing for the class `_function`, `fn_enter` for
+# with `Fn.of` standing for the class `_function`, `fn_enter.of` for
 # `_function.depth += 1`, `fn_exit` for the `finally: _function.depth -= 1`, and
 # `Fn.depth` for the counter. The DECORATOR ITSELF is the seam: `fn_enter`/`fn_exit`
 # are pure functions of a `Data` value, so a TypeScript class holds the `Fn` record

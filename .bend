@@ -2,31 +2,11 @@
 # BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its
 # toposorted uops once per global work item, and writes PACKET.out.
 #
-# STATE OF THIS FILE, MEASURED. `--check-only` is clean apart from the inherited
-# "relies on unsafe or foreign code" notice that `dtype.bend` already produces on
-# its own, and `-o` builds. The 28-fixture end-to-end gate against the NATIVE
-# binary is 18 pass / 10 fail / 3 skip, where the three skips are dtypes the v1
-# wire has no lane for (f16, bf16, i64 -- ops_bend raises, which is the contract).
-# A pass means `Device['BEND']` and `Device['PYTHON']` agree to 1e-6 on the same
-# program, so the loop, the arena, the wire and the ALU lane are all exercised.
-#
-# WHAT PASSES: const_f32, every elementwise fixture (add, mul, broadcast, i32, u32,
-# ishl_shr, compare_where, gated_mul), bool_copy, matmul_vec, reshape, flip, shrink,
-# copy_through, mulacc_rowsum, reduce_sum_axis, reduce_rowsum, permute's first
-# eighth.
-#
-# WHAT DOES NOT, and where to look -- all three are ONE defect each:
-#   * idiv, imod, reduce_i32 -- the i32 lane's DIV and MOD.
-#   * reduce_sum_1d, reduce_sum_2step, reduce_max, reduce_exp2, matmul,
-#     permute -- NESTED RANGE loops. The first eight outputs of `permute` are
-#     right and the remaining 120 are untouched, so the inner loop is right and
-#     the OUTER one's back edge is not: `Prog.loop`/`Prog.rng` walk
-#     `loop_ends` and the nested END at ops_python.py:70 jumps to the inner head.
-#   * pad -- refused. The refusal is `Prog.bad`, so it is an oob load or store.
-#
-# `run` is a real interpreter: an arena threaded through a fuel recursion, with a
-# DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
-# a RANGE-driven kernel has no static step bound.
+# STATE OF THIS FILE. The wire format, the op table, the packet reader and the
+# ALU lane are here and compile. THE INTERPRETER LOOP IS NOT: `run` below is a
+# refusal, not a stub that silently answers. Read THE REMAINING WORK before
+# assuming any of this executes a packet, and read THE FOUR WALLS before
+# assuming it ever will for a given dtype or op.
 #
 # ops_python.py's own header calls itself "the living definition of uops", and
 # this file ports the ONE function that gives those uops their meaning. The
@@ -228,23 +208,25 @@
 #    index is `3`.
 #
 # ===========================================================================
-# THE SHAPE OF THE MACHINE, and the two parts that were not obvious.
+# THE REMAINING WORK, and why it is not here.
 #
-# `run` carries the mutable state ops_python.py:52-157 keeps in four locals: the
+# `run` needs the mutable machine ops_python.py:52-157 keeps in four locals: the
 # `values` dict, the buffer bytearrays, `exec_masks`, and `pbufs`/`pvals`. Under
-# the rules above that is one `Prog` record threaded through a fuel recursion.
+# rules 1-4 that is an arena threaded through a fuel recursion, and the two
+# remaining hard parts are named so they are not rediscovered:
 #
 #   * THE PC IS A LOOP, NOT A RECURSION. Python is `while i < len(self.uops)`
 #     with `BACKEDGE`/`END`/`RANGE` writing `i`. Bend has no loop and no
-#     `continue`, so `run` is `run(fuel, pr)` with the PC threaded and a DIE on
-#     fuel exhaustion -- which is also the "stay turing-incomplete" answer, since
-#     a RANGE-driven kernel has no static step bound.
-#   * THE ARENA IS STRIDED, NOT BUMP-ALLOCATED. Python's `values` is keyed by
-#     UOp, so a RANGE body overwrites exactly the entries the first pass wrote
-#     (ops_python.py:125-127 increments `values[u]` in place, and :129 `del`s
-#     it). A bump allocator would append afresh on the second pass and the loop
-#     would read its own history, so uop `i` owns a FIXED slot run -- see
-#     `Uop.run_of.op` -- and a re-executed uop lands back on it.
+#     `continue`, so `run` must be `run(fuel: Nat, ...)` with the PC threaded and
+#     a DIE on fuel exhaustion -- which is also the "stay turing-incomplete"
+#     answer, since a RANGE-driven kernel has no static step bound.
+#   * THE ARENA MUST BE STRIDED, NOT BUMP-ALLOCATED. Python's `values` is keyed
+#     by UOp, so a RANGE body overwrites exactly the entries the first pass
+#     wrote (ops_python.py:125-127 increments `values[u]` in place, and :129
+#     `del`s it). A bump allocator would append afresh on the second pass and
+#     the loop would read its own history, so uop `i` must own a FIXED slot run
+#     and a re-executed uop must land back on it.
+# TODO(p3) runtime/ops_python.py:52 -- the interpreter loop.
 #
 # ONE KNOWN WRONG ANSWER, and it is measured rather than argued. `alu1(SQRT, ...)`
 # over an ELEMENT whose dtype is int32 answers 456459507 where Python's
@@ -424,23 +406,6 @@ def bytes.acc(+ok: Bool, +c: U32, +pend: U32, acc: List<U32>) -> List<U32>:
     case True{}: U32.add(U32.mul(hexdig_val(pend), 16), hexdig_val(c)) <> acc
     case False{}: acc
 
-# A signature's `List<T>` depth is FIXED, not inferred per call site
-# (MEASURED), and `String.to_list` answers one lifetime DEEPER than its String
-# while the byte store lives in the arena at `&2`. So the hex fold below is `&1`
-# and `Prog.chars1` copies `&2` characters down to it -- Data elements move
-# between depths for free, it is only the LIST that carries one.
-def Prog.chars1(cs: List<&2, Char>, acc: List<&1, Char>) -> List<&1, Char>:
-  match cs:
-    case Nil{}: acc
-    case h <> t: Prog.chars1(t, h <> acc)
-
-# ...and `Prog.bytes1` copies the bytes back up into the arena, for the same
-# reason. Two copies, ONE hex fold.
-def Prog.bytes1(cs: List<&1, U32>, acc: List<&2, U32>) -> List<&2, U32>:
-  match cs:
-    case Nil{}: acc
-    case h <> t: Prog.bytes1(t, h <> acc)
-
 def bytes.go(cs: List<Char>, acc: List<U32>, +ok: Bool, +pend: U32, +live: Bool) ->
   (Bool & List<U32>):
   match cs live:
@@ -456,7 +421,7 @@ def bytes.go(cs: List<Char>, acc: List<U32>, +ok: Bool, +pend: U32, +live: Bool)
 # The caller reverses the string and hands over the characters: `String.to_list`
 # answers a list one lifetime DEEPER than a `String` parameter, and taking the
 # characters as a parameter of their own is what keeps the fold's type free of
-# that dance. See `Prog.chars1` for the one depth hop this needs.
+# that dance.
 def bytes_of(cs: List<Char>) -> (Bool & List<U32>):
   bytes.go(cs, Nil{}, True{}, 0, False{})
 
@@ -675,7 +640,7 @@ def alu3(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
 # while the values arena is a REBOUND list: `List.set` copies only the path it
 # rebuilds, which is what keeps an assignment affordable.
 #
-# THE STRIDE IS FIXED AT PARSE TIME, which is what THE SHAPE OF THE MACHINE's second
+# THE STRIDE IS FIXED AT PARSE TIME, which is what THE REMAINING WORK's second
 # requirement was about. ops_python's `values` is keyed by UOp, so a RANGE body
 # overwrites exactly the entries the first pass wrote and a bump allocator would
 # let the second pass read its own history. So uop i owns the FIXED slot run
@@ -780,29 +745,12 @@ def Uop.add(+u: Uop, +s: U32) -> Uop:
 def Uop.run2(+u: Uop, +run: U32) -> Uop:
   Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), run, Uop.srcs(u)}
 
-# MEASURED: a STACK's run is its src count, a LOAD's and a STORE's are their lane
-# count (`k:vec:`), and every other op's is 1 -- which is the scalar case
-# ops_python has too, since a `-` arg is what a LOAD with `max_numel() == 1`
-# writes.
-#
-# AND `-` IS ONE LANE, NOT ZERO. The wire spells the scalar case `-`, which parses
-# to `a == 0`, and a run of 0 makes the LOAD write no lane and the STORE store
-# none -- the uop then shares its slot with the next one (MEASURED: a straight
-# line `LOAD; STORE` packet answered 0, and a vec-4 STORE wrote one element per
-# pass instead of four). `Uop.vec` is that floor.
-#
-# A RANGE OWNS TWO SLOTS, and the second is why. ops_python.py:124 reads
-# `if u not in values: values[u] = [0]` ELSE `values[u][j] += 1`, and the arena is
-# zeroed, so "never visited" and "visited with value 0" are the SAME cell. One
-# slot cannot tell them apart: incrementing unconditionally makes the body read
-# 1..trip where ops_python has it read 0..trip-1, and the last pass then indexes
-# one element past the end. So slot+1 is the visited flag.
-def Uop.vec(+u: Uop) -> U32: Bool.pick(U32, U32.is_eq(Uop.a(u), 0), 1, Uop.a(u))
-
+# MEASURED: a STACK's run is its src count and a LOAD's is its lane count
+# (`k:vec:`), and every other op's is 1 -- which is the scalar case ops_python
+# has too, since a `-` arg is what a LOAD with `max_numel() == 1` writes.
 def Uop.run_of.op(+op: O.Op, +u: Uop) -> U32:
-  Bool.pick(U32, O.op_in([O.OpsLOAD{}, O.OpsSTORE{}], op), Uop.vec(u),
-    Bool.pick(U32, O.eq_op(op, O.OpsSTACK{}), Uop.nsrc(u),
-      Bool.pick(U32, O.eq_op(op, O.OpsRANGE{}), 2, 1)))
+  Bool.pick(U32, O.eq_op(op, O.OpsSTACK{}), Uop.nsrc(u),
+    Bool.pick(U32, O.eq_op(op, O.OpsLOAD{}), Uop.a(u), 1))
 
 def Uop.run_of(+u: Uop) -> U32: Uop.run_of.op(Uop.op(u), u)
 
@@ -890,333 +838,14 @@ def Mem.st(+ms: List<&2, U32>, +at: U32, +w: U32, +v: U32) -> List<&2, U32>:
     Mem.st4(ms, at, v))
 
 # ===========================================================================
-# the accessors Arg's remaining fields need; see the note above the
-# Arg block.
-type Arg is Data:
-  Arg{kind: U32, x: U32, y: U32}
-
-def Arg.kind(+g: Arg) -> U32:
-  match g:
-    case Arg{kind, x, y}: kind
-
-def Arg.x(+g: Arg) -> U32:
-  match g:
-    case Arg{kind, x, y}: x
-
-def Arg.y(+g: Arg) -> U32:
-  match g:
-    case Arg{kind, x, y}: y
-
-# ===========================================================================
-# THE PARSE. One fold over `String.lines`, because that is the only order the
-# wire has: the header, then the uops, then the buffers. The fold carries a
-# `Build` -- the uops reversed, the packet bytes reversed, the two buffer tables
-# in buffer-id order, the running slot, and `ok`.
-#
-# `ok` rather than a refusal at each step, because a fold cannot carry a
-# `Maybe` and a malformed packet IS a boolean (the same reason `bytes_of` answers
-# a pair). The IO layer turns it into the die, naming the count that disagreed.
-# ===========================================================================
-
-type Build is Data:
-  Build{us: List<&2, Uop>, sp: List<&2, Buf>, ss: List<&2, Buf>, bp: List<&2, U32>,
-        nu: U32, nb: U32, nbp: U32, sbn: U32, pn: U32, slot: U32, ok: Bool}
-
-def Build.blank() -> Build: Build{Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0, 0, 0, 0, True{}}
-
-# what a parsed packet is: the program, its buffers, the store, and the zeroed
-# arena. No grid and no `vals` -- those are per launch, so they arrive later.
-type Load is Data:
-  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, U32>, v0: List<&2, Elem>,
-       n: U32, nb: U32}
-
-
-# the accessors Load's remaining fields need; see the note above the
-# Load block.
-def Load.us(+l: Load) -> List<&2, Uop>:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: us
-
-def Load.fs(+l: Load) -> List<&2, Buf>:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: fs
-
-def Load.ms(+l: Load) -> List<&2, U32>:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: ms
-
-def Load.v0(+l: Load) -> List<&2, Elem>:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: v0
-
-def Load.n(+l: Load) -> U32:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: n
-
-def Load.nb(+l: Load) -> U32:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: nb
-
-def Prog.bases.next(+f: Buf, +at: U32) -> U32: U32.add(at, U32.mul(Buf.w(f), Buf.e(f)))
-
-def Prog.bases.put(+fs: List<&2, Buf>, +at: U32) -> List<&2, Buf>:
-  match fs:
-    case Nil{}: Nil{}
-    # PREPENDED, not appended: a buffer id is an INDEX into this list (A1), so
-    # the list has to come out in `fs`'s own order. `List.append(tail, [f])`
-    # would reverse it and every id after the first would name the wrong buffer.
-    case f <> t: Buf{at, Buf.w(f), Buf.e(f)} <> Prog.bases.put(t, Prog.bases.next(f, at))
-
-# A `Build` field is readable as `b.x` inside a record literal but not as an
-# ARGUMENT, so the fields the parse hands to another def have accessors. The
-# defs are laid out by hand because Bend refuses a forward reference, and a
-# topological sort of this file keeps moving them.
-def Build.us(+b: Build) -> List<&2, Uop>:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: us
-
-def Build.ok(+b: Build) -> Bool:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: ok
-
-def Build.slot(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: slot
-
-def Build.nu(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: nu
-
-def Build.nb(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: nb
-
-def Build.bp(+b: Build) -> List<&2, U32>:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: bp
-
-def Build.sp(+b: Build) -> List<&2, Buf>:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: sp
-
-def Build.ss(+b: Build) -> List<&2, Buf>:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: ss
-
-# the accessors Build's remaining fields need; see the note above the
-# Build block.
-def Build.nbp(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: nbp
-
-def Build.pn(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: pn
-
-def Build.sbn(+b: Build) -> U32:
-  match b:
-    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: sbn
-
-# ONE list, walked once: the packet buffers FIRST (by A1 they are buffer ids
-# 0..nb-1 and the store holds them in that order) and the scratch ones after, so
-# a buffer id is an INDEX into `fs` and `Buf.at` needs no arithmetic. Assigning
-# the two lists separately would leave the packet buffers out of `fs` entirely,
-# and every load and store would read the bottom buffer.
-def Prog.bases(+b: Build) -> List<&2, Buf>:
-  Prog.bases.put(List.append(&2, Buf, Build.sp(b), Build.ss(b)), 0)
-
-def Prog.pad(+n: Nat, acc: List<&2, U32>) -> List<&2, U32>:
-  match n:
-    case 0n: acc
-    case 1n+p: Prog.pad(p, 0 <> acc)
-
-def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
-  match fs:
-    case Nil{}: acc
-    case f <> t: Prog.zeros(t, Prog.pad(U32.to_nat(Buf.e(f)), acc))
-
-# THE STORE: the packet's bytes in packet order, then `nbytes` zeros for each
-# scratch buffer (ops_python.py:101,104 allocate `bytearray(n)`, and two scratch
-# buffers must not share bytes). The zeros' order inside their region is not
-# observable -- they are all zero -- so they are prepended, which is the cheap
-# direction.
-def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
-  Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), Build.bp(b))
-
-def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
-  Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
-       Build.nu(b), Build.nb(b)}
-
-def Prog.load.go(+ok: Bool, +b: Build, us: List<&2, Uop>, fs: List<&2, Buf>) -> Maybe<&2, Load>:
-  match ok:
-    case True{}: Some{Prog.load.put(b, us, fs)}
-    case False{}: None{}
-
-def Prog.load.at(+b: Build, us: List<&2, Uop>, fs: List<&2, Buf>, +ok: Bool) -> Maybe<&2, Load>:
-  Prog.load.go(ok, b, us, fs)
-
-def Prog.load(+b: Build) -> Maybe<&2, Load>:
-  Prog.load.at(b, List.reverse(&2, Uop, Build.us(b)), Prog.bases(b), Build.ok(b))
-
-# `nu` is the header's OWN uop count, not a running total: `Prog.parse.at` uses
-# `k <= nu` to tell a uop line from a buffer line, so it has to be the count the
-# header stated (32 in the measured packets), and `pn` is the running number of
-# uops actually parsed.
-def Prog.hdr.put(+b: Build, +named: Bool, +some: Bool, +nu: U32, +nb: U32) -> Build:
-  Build{Build.us(b), Build.sp(b), Build.ss(b), Build.bp(b), nu, nb, Build.nbp(b), Build.sbn(b), Build.pn(b), Build.slot(b),
-        Bool.and(Build.ok(b), Bool.and(named, some))}
-
-# ===========================================================================
-# ONE UOP LINE, IN ONE PASS over its words: 1 the op, 2 the dtype, 3 the arg,
-# 4.. the srcs. The `<idx>:` field is not read, because ops_bend.encode walks the
-# renderer's own list in order and asserts post-order -- a line's POSITION is the
-# index its srcs name. A fifth src is refused: measured max 4, and only a STACK
-# gets near it.
-# ===========================================================================
-
-def Prog.hdr.of(+ws: List<&2, String>, +b: Build) -> Build:
-  Prog.hdr.put(b, String.eq(w(ws, 0n), "bendexec1"), U32.is_gt(num_of(num(w(ws, 1n))), 0),
-    num_of(num(w(ws, 1n))), num_of(num(w(ws, 2n))))
-
-# `bendexec1 <nuops> <nbuffers>`, read as strictly as the rest
-def Prog.hdr(l: String, +b: Build) -> Build: Prog.hdr.of(words(l), b)
-
-def Uop.refused(+u: Uop) -> Bool: U32.is_ge(Uop.kind(u), 14)
-
-# `slot` is the slot THIS uop owns, and the Build's next-free slot is
-# `slot + Uop.run(u)` -- a uop that owns a RUN of cells (a vector LOAD, a STACK, or
-# a RANGE with its visited flag) has to advance the counter by its whole run.
-# Storing `slot` instead is right only while every run is 1, and it silently makes
-# the next uop's first cell the current uop's second.
-def Prog.one.put(+b: Build, +slot: U32, +u: Uop, +ok: Bool) -> Build:
-  Build{u <> Build.us(b), Build.sp(b), Build.ss(b), Build.bp(b), Build.nu(b), Build.nb(b), Build.nbp(b), Build.sbn(b), U32.add(Build.pn(b), 1),
-        U32.add(slot, Uop.run(u)), Bool.and(Build.ok(b), ok)}
-
-def Prog.alloc.ss(+b: Build, +f: Buf) -> Build:
-  Build{Build.us(b), Build.sp(b), List.append(&2, Buf, Build.ss(b), [f]), Build.bp(b), Build.nu(b), Build.nb(b), Build.nbp(b),
-        U32.add(Build.sbn(b), 1), Build.pn(b), Build.slot(b), Build.ok(b)}
-
-def Prog.w(+u: Uop) -> U32: S.Dt.itemsize(Uop.dt(u))
-
-def Prog.alloc.sp(+b: Build, +f: Buf) -> Build:
-  Build{Build.us(b), List.append(&2, Buf, Build.sp(b), [f]), Build.ss(b), Build.bp(b), Build.nu(b), Build.nb(b), U32.add(Build.nbp(b), 1),
-        Build.sbn(b), Build.pn(b), Build.slot(b), Build.ok(b)}
-
-def Prog.alloc.at(+u: Uop, +b: Build, +scratch: Bool) -> Build:
-  Bool.pick(Build, scratch, Prog.alloc.ss(b, Buf.make(Prog.w(u), Uop.a(u))),
-    Prog.alloc.sp(b, Buf.make(Prog.w(u), Uop.a(u))))
-
-# addrspace r (4) and a BUFFER (5) allocate scratch; g (2) and l (3) bind a packet
-# buffer; a (6) reads a `vals` entry and binds NO buffer.
-def Prog.scratch(+u: Uop) -> Bool: Bool.or(U32.is_eq(Uop.kind(u), 4), U32.is_eq(Uop.kind(u), 5))
-
-# THE KINDS THAT BIND A BUFFER, and nothing else. ops_python.py:99-105 binds a
-# buffer on exactly two arms -- PARAM and BUFFER -- and every other arm writes
-# `values[u]` only. A uop that binds nothing must append NOTHING: the buffer
-# table is indexed by buffer id (A1), so an extra entry would shift every id
-# after it and every load and store would read the wrong bytes.
-def Prog.binds(+u: Uop) -> Bool:
-  Bool.or(Bool.or(U32.is_eq(Uop.kind(u), 2), U32.is_eq(Uop.kind(u), 3)),
-    Bool.or(U32.is_eq(Uop.kind(u), 4), U32.is_eq(Uop.kind(u), 5)))
-
-def Prog.alloc.at2(+u: Uop, +b: Build, +binds: Bool) -> Build:
-  match binds:
-    case True{}: Prog.alloc.at(u, b, Prog.scratch(u))
-    case False{}: b
-
-def Prog.alloc(+u: Uop, +b: Build) -> Build: Prog.alloc.at2(u, b, Prog.binds(u))
-
-def Prog.pkt(+u: Uop) -> Bool: Bool.or(U32.is_eq(Uop.kind(u), 2), U32.is_eq(Uop.kind(u), 3))
-
-# A1: the packet buffers are the PARAMs of addrspace g or l in uop order, so
-# their ids are 0..nb-1 in that order and PACKET.out is written back in it. The
-# scratch a PARAM of addrspace r or a BUFFER allocates takes the ids after those,
-# so it can never be mistaken for a packet buffer on the way out.
-def Prog.one.bid(+u: Uop, +b: Build) -> U32:
-  Bool.pick(U32, Prog.pkt(u), Build.nbp(b), U32.add(Build.nb(b), Build.sbn(b)))
-
-# THE REFUSALS. `Uop.refused` is the whole of the parse's validation, so the walk
-# never has to know a kind exists that it cannot answer.
-# THE SLOT the uop owns is the next-free slot, so the uop and the Build agree on
-# where the next one starts.
-def Prog.one.two(+u: Uop, +b: Build) -> Build:
-  Prog.one.put(Prog.alloc(u, b), Build.slot(b),
-    Uop.slot1(u, Build.slot(b), Prog.one.bid(u, b)), Bool.not(Uop.refused(u)))
-
-def Prog.one.no(+b: Build) -> Build:
-  Build{Build.us(b), Build.sp(b), Build.ss(b), Build.bp(b), Build.nu(b), Build.nb(b), Build.nbp(b), Build.sbn(b), U32.add(Build.pn(b), 1), Build.slot(b), False{}}
-
-def Prog.one.of(m: Maybe<&2, Uop>, +b: Build) -> Build:
-  match m:
-    case Some{+u}: Prog.one.two(u, b)
-    case None{}: Prog.one.no(b)
-
-# ===========================================================================
-# THE LOADED PACKET: the bases, the store, the arena, and the counts that have to
-# agree with the header.
-# ===========================================================================
-
-# ===========================================================================
-# A HEX STRING IS READ BY POSITION, and that is the whole point of this block.
-# Byte k is characters 2k and 2k+1, high nibble first. Any other order is wrong
-# in a way the round trip hides: `Prog.line` writes nibbles back the same way it
-# read them, so a PURE COPY of a buffer looks perfect while the arena holds
-# nonsense (MEASURED: the buffer line `8 0000803f`, which is 1.0f, landed in the
-# arena as the word 0xF3080000 -- both bytes nibble-swapped -- and only the
-# arithmetic fixtures noticed).
-#
-# `bytes_of` cannot do this job. Its accumulator prepends, so it answers the
-# bytes in REVERSE order and pairs the characters from wherever the walk starts;
-# `Prog.chars1` and `Prog.bytes` each reverse around it and those two reversals
-# cancel, which is why `bytes_of` is still right for its own callers and wrong
-# here. A positional walk has no order to get wrong.
-# ===========================================================================
-
-# a missing or junk character is '0', whose value is 0 -- so a short hex line
-# shortens the arena rather than refusing it, and the byte COUNT is what refuses
-def Prog.hex.at(+cs: List<&2, Char>, k: Nat) -> Char:
-  Maybe.default(&2, Char, List.get(&2, Char, cs, k), Char.from_u32(48))
-
-def Prog.hex.nib(+cs: List<&2, Char>, k: Nat) -> U32:
-  hexdig_val(Char.to_u32(Prog.hex.at(cs, k)))
-
-def Prog.hex.byte(+cs: List<&2, Char>, +k: Nat) -> U32:
-  U32.add(U32.mul(Prog.hex.nib(cs, Nat.mul(k, 2n)), 16),
-    Prog.hex.nib(cs, Nat.add(Nat.mul(k, 2n), 1n)))
-
-# PREPENDED, and `Prog.hex.app` below appends, so the block lands in wire order
-# without a `List.reverse` anywhere: the two directions cancel inside one line.
-def Prog.hex.go(+cs: List<&2, Char>, +k: Nat, acc: List<&2, U32>) -> List<&2, U32>:
-  match k:
-    case 0n: acc
-    case 1n+p: Prog.hex.go(cs, p, Prog.hex.byte(cs, p) <> acc)
-
-def Prog.hex.app(bs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
-  match bs:
-    case Nil{}: acc
-    case h <> t: Prog.hex.app(t, List.append(&2, U32, acc, [h]))
-
-# `(Bool & List<U32>)` is a PAIR and may be consumed once, so it is destructured
-# here rather than asked twice through `list_of`/`bytes_ok`. The bytes go up from
-# `&1` into the arena's `&2` (see `Prog.bytes1`), which also reverses them --
-# `Prog.bytes` reverses once more, and the arena sees them in wire order.
-def Prog.hex.put(+b: Build, r: (Bool & List<&2, U32>)) -> Build:
-  (ok, bs) = r
-  Build{Build.us(b), Build.sp(b), Build.ss(b), Prog.hex.app(bs, Build.bp(b)), Build.nu(b), Build.nb(b), Build.nbp(b), Build.sbn(b),
-        Build.pn(b), Build.slot(b), Bool.and(Build.ok(b), ok)}
-
-def Prog.hex.of(+ws: List<&2, String>, +b: Build) -> Build:
-  +cs = String.to_list(w(ws, 1n))
-  +n = U32.from_nat(List.length(&2, Char, cs))
-  Prog.hex.put(b, (U32.is_eq(n, U32.mul(2, Maybe.default(&2, U32, num(w(ws, 0n)), 0))),
-    Prog.hex.go(cs, U32.to_nat(U32.div(n, 2)), Nil{})))
-
-def Prog.hex(l: String, +b: Build) -> Build: Prog.hex.of(words(l), b)
-
 # `<arg>`, BY ITS WIRE SPELLING. `String.split` on ':' gives the head and up to
 # three fields, and a String is affine so each field is read exactly once --
 # which is why every dispatch below is a `match` on a parameter rather than a
 # Bool.pick over `String.eq`.
+# ===========================================================================
+
+type Arg is Data:
+  Arg{kind: U32, x: U32, y: U32}
 
 def Arg.put(+k: U32, m: Maybe<&2, U32>) -> Maybe<&2, Arg>:
   match m:
@@ -1236,24 +865,20 @@ def Arg.dec2(+ps: List<&2, String>) -> Maybe<&2, U32>:
 
 def Arg.dec(s: String) -> Maybe<&2, U32>: Arg.dec2(String.split(s, Char.from_u32(45)))
 
+# The fold carries the accumulator rather than shifting on the way out, and the
+# nibble test is a leaf rather than a Bool.pick inside an arm: a SELF-recursive
+# def may not name a later def, so anything it calls has to be above it.
+def Arg.hex.d(+h: Char, +acc: U32) -> U32:
+  Bool.pick(U32, hexdig_ok(Char.to_u32(h)),
+    U32.add(U32.shln(acc, 4n), hexdig_val(Char.to_u32(h))), acc)
 
+def Arg.hex.go(+cs: List<&2, Char>, +n: Nat, +acc: U32) -> Maybe<&2, U32>:
+  match cs n:
+    case Nil{} _ : Some{acc}
+    case h <> t 0n: Arg.hex.go(t, 1n, Arg.hex.d(h, acc))
+    case h <> t 1n+p: Arg.hex.go(t, p, Arg.hex.d(h, acc))
 
-
-# `f:<hex>` is ops_bend's `struct.pack('<f', arg).hex()` -- the LITTLE-ENDIAN BYTES
-# of one f32, eight characters -- so it is read by THE BUFFER PATH, verbatim: a
-# synthetic `<4> <hex>` line through `Prog.hex`, then the same reversal
-# `Prog.bytes` applies before the arena sees a byte, then `Mem.ld4`.
-#
-# Reusing `bytes_of` directly does NOT work. `Prog.chars1` and `Prog.bytes` each
-# reverse around that fold and the two reversals cancel THERE; standalone, the
-# constant came out a denormal no float add can see, so every `x + 2.0` answered
-# plain `x` and changing the packet's constant to 10.0 changed nothing. Three
-# readings were MEASURED wrong before this one: a left-to-right digit fold gives
-# 0x00000040, a reversed string gives 0x04000000, and the bare buffer fold gives
-# 4. Going through the line path is what makes the two agree by construction.
-def Arg.hex(h1: String) -> Maybe<&2, U32>:
-  +b = Prog.hex(String.concat(["4 ", h1]), Build.blank())
-  Bool.pick(Maybe<&2, U32>, Build.ok(b), Some{Mem.ld4(Build.bp(b), 0)}, None{})
+def Arg.hex(s: String) -> Maybe<&2, U32>: Arg.hex.go(String.to_list(s), 0n, 0)
 
 def Arg.letter.of(+c: U32, +v: U32) -> Maybe<&2, Arg>:
   Bool.pick(Maybe<&2, Arg>, U32.is_lt(c, 3), Some{Arg{U32.add(2, c), v, 0}},
@@ -1306,6 +931,223 @@ def Arg.of2(+ps: List<&2, String>) -> Maybe<&2, Arg>:
 def Arg.of(a: String) -> Maybe<&2, Arg>: Arg.of2(String.split(a, Char.from_u32(58)))
 
 
+# ===========================================================================
+# THE PARSE. One fold over `String.lines`, because that is the only order the
+# wire has: the header, then the uops, then the buffers. The fold carries a
+# `Build` -- the uops reversed, the packet bytes reversed, the two buffer tables
+# in buffer-id order, the running slot, and `ok`.
+#
+# `ok` rather than a refusal at each step, because a fold cannot carry a
+# `Maybe` and a malformed packet IS a boolean (the same reason `bytes_of` answers
+# a pair). The IO layer turns it into the die, naming the count that disagreed.
+# ===========================================================================
+
+type Build is Data:
+  Build{us: List<&2, Uop>, sp: List<&2, Buf>, ss: List<&2, Buf>, bp: List<&2, U32>,
+        nu: U32, nb: U32, nbp: U32, sbn: U32, pn: U32, slot: U32, ok: Bool}
+
+def Build.blank() -> Build: Build{Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0, 0, 0, 0, True{}}
+
+# what a parsed packet is: the program, its buffers, the store, and the zeroed
+# arena. No grid and no `vals` -- those are per launch, so they arrive later.
+type Load is Data:
+  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, U32>, v0: List<&2, Elem>,
+       n: U32, nb: U32}
+
+def Prog.bases.next(+f: Buf, +at: U32) -> U32: U32.add(at, U32.mul(Buf.w(f), Buf.e(f)))
+
+def Prog.bases.put(+fs: List<&2, Buf>, +at: U32) -> List<&2, Buf>:
+  match fs:
+    case Nil{}: Nil{}
+    case f <> t: List.append(&2, Buf, Prog.bases.put(t, Prog.bases.next(f, at)),
+      [Buf{at, Buf.w(f), Buf.e(f)}])
+
+def Prog.bases.ss(+fs: List<&2, Buf>, +at: U32) -> List<&2, Buf>:
+  Prog.bases.put(fs, at)
+def Prog.bases.total(+fs: List<&2, Buf>, +at: U32) -> U32:
+  match fs:
+    case Nil{}: at
+    case f <> t: Prog.bases.total(t, Prog.bases.next(f, at))
+
+# A `Build` field is readable as `b.x` inside a record literal but not as an
+# ARGUMENT, so the fields the parse hands to another def have accessors. The
+# defs are laid out by hand because Bend refuses a forward reference, and a
+# topological sort of this file keeps moving them.
+def Build.us(+b: Build) -> List<&2, Uop>:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: us
+
+def Build.ok(+b: Build) -> Bool:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: ok
+
+def Build.slot(+b: Build) -> U32:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: slot
+
+def Build.nu(+b: Build) -> U32:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: nu
+
+def Build.nb(+b: Build) -> U32:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: nb
+
+def Build.bp(+b: Build) -> List<&2, U32>:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: bp
+
+def Build.sp(+b: Build) -> List<&2, Buf>:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: sp
+
+def Build.ss(+b: Build) -> List<&2, Buf>:
+  match b:
+    case Build{us, sp, ss, bp, nu, nb, nbp, sbn, pn, slot, ok}: ss
+def Prog.bases(+b: Build) -> List<&2, Buf>:
+  Prog.bases.ss(Build.ss(b), Prog.bases.total(Build.sp(b), 0))
+def Prog.bases.sp(+fs: List<&2, Buf>, +at: U32) -> List<&2, Buf>:
+  Prog.bases.put(fs, at)
+
+def Prog.pad(+n: Nat, acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+p: Prog.pad(p, 0 <> acc)
+
+def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
+  match fs:
+    case Nil{}: acc
+    case f <> t: Prog.zeros(t, Prog.pad(U32.to_nat(Buf.e(f)), acc))
+
+# THE STORE: the packet's bytes in packet order, then `nbytes` zeros for each
+# scratch buffer (ops_python.py:101,104 allocate `bytearray(n)`, and two scratch
+# buffers must not share bytes). The zeros' order inside their region is not
+# observable -- they are all zero -- so they are prepended, which is the cheap
+# direction.
+def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
+  Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))),
+    List.reverse(&2, U32, Build.bp(b)))
+
+def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
+  Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
+       U32.add(Build.nu(b), 1), Build.nb(b)}
+
+def Prog.load.go(+ok: Bool, +b: Build, us: List<&2, Uop>, fs: List<&2, Buf>) -> Maybe<&2, Load>:
+  match ok:
+    case True{}: Some{Prog.load.put(b, us, fs)}
+    case False{}: None{}
+
+def Prog.load.at(+b: Build, us: List<&2, Uop>, fs: List<&2, Buf>, +ok: Bool) -> Maybe<&2, Load>:
+  Prog.load.go(ok, b, us, fs)
+
+def Prog.load(+b: Build) -> Maybe<&2, Load>:
+  Prog.load.at(b, List.reverse(&2, Uop, Build.us(b)), Prog.bases(b), Build.ok(b))
+
+def Prog.hdr.put(+b: Build, +named: Bool, +some: Bool, +nb: U32) -> Build:
+  Build{b.us, b.sp, b.ss, b.bp, U32.add(b.nu, 1), nb, b.nbp, b.sbn, b.pn, b.slot,
+        Bool.and(b.ok, Bool.and(named, some))}
+
+# ===========================================================================
+# ONE UOP LINE, IN ONE PASS over its words: 1 the op, 2 the dtype, 3 the arg,
+# 4.. the srcs. The `<idx>:` field is not read, because ops_bend.encode walks the
+# renderer's own list in order and asserts post-order -- a line's POSITION is the
+# index its srcs name. A fifth src is refused: measured max 4, and only a STACK
+# gets near it.
+# ===========================================================================
+
+def Prog.hdr.of(+ws: List<&2, String>, +b: Build) -> Build:
+  Prog.hdr.put(b, String.eq(w(ws, 0n), "bendexec1"), U32.is_gt(num_of(num(w(ws, 1))), 0),
+    num_of(num(w(ws, 2))))
+
+# `bendexec1 <nuops> <nbuffers>`, read as strictly as the rest
+def Prog.hdr(l: String, +b: Build) -> Build: Prog.hdr.of(words(l), b)
+
+def Uop.refused(+u: Uop) -> Bool: U32.is_ge(Uop.kind(u), 14)
+
+def Prog.one.put(+b: Build, +slot: U32, +u: Uop, +ok: Bool) -> Build:
+  Build{u <> b.us, b.sp, b.ss, b.bp, b.nu, b.nb, b.nbp, b.sbn, U32.add(b.pn, 1), slot,
+        Bool.and(b.ok, ok)}
+
+def Prog.alloc.ss(+b: Build, +f: Buf) -> Build:
+  Build{b.us, b.sp, List.append(&2, Buf, b.ss, [f]), b.bp, b.nu, b.nb, b.nbp,
+        U32.add(b.sbn, 1), b.pn, b.slot, b.ok}
+
+def Prog.w(+u: Uop) -> U32: S.Dt.itemsize(Uop.dt(u))
+
+def Prog.alloc.sp(+b: Build, +f: Buf) -> Build:
+  Build{b.us, List.append(&2, Buf, b.sp, [f]), b.ss, b.bp, b.nu, b.nb, U32.add(b.nbp, 1),
+        b.sbn, b.pn, b.slot, b.ok}
+
+def Prog.alloc.at(+u: Uop, +b: Build, +scratch: Bool) -> Build:
+  Bool.pick(Build, scratch, Prog.alloc.ss(b, Buf.make(Prog.w(u), Uop.a(u))),
+    Prog.alloc.sp(b, Buf.make(Prog.w(u), Uop.a(u))))
+
+def Prog.scratch(+u: Uop) -> Bool: Bool.or(U32.is_eq(Uop.kind(u), 4), U32.is_eq(Uop.kind(u), 5))
+
+def Prog.alloc(+u: Uop, +b: Build) -> Build: Prog.alloc.at(u, b, Prog.scratch(u))
+
+def Prog.pkt(+u: Uop) -> Bool: Bool.or(U32.is_eq(Uop.kind(u), 2), U32.is_eq(Uop.kind(u), 3))
+
+# A1: the packet buffers are the PARAMs of addrspace g or l in uop order, so
+# their ids are 0..nb-1 in that order and PACKET.out is written back in it. The
+# scratch a PARAM of addrspace r or a BUFFER allocates takes the ids after those,
+# so it can never be mistaken for a packet buffer on the way out.
+def Prog.one.bid(+u: Uop, +b: Build) -> U32:
+  Bool.pick(U32, Prog.pkt(u), b.nbp, U32.add(b.nb, b.sbn))
+
+# THE REFUSALS. `Uop.refused` is the whole of the parse's validation, so the walk
+# never has to know a kind exists that it cannot answer.
+def Prog.one.two(+u: Uop, +b: Build) -> Build:
+  Prog.one.put(Prog.alloc(u, b), U32.add(b.slot, Uop.run(u)),
+    Uop.slot1(u, Uop.slot(u), Prog.one.bid(u, b)), Bool.not(Uop.refused(u)))
+
+def Prog.one.no(+b: Build) -> Build:
+  Build{b.us, b.sp, b.ss, b.bp, b.nu, b.nb, b.nbp, b.sbn, U32.add(b.pn, 1), b.slot, False{}}
+
+def Prog.one.of(m: Maybe<&2, Uop>, +b: Build) -> Build:
+  match m:
+    case Some{u}: Prog.one.two(u, b)
+    case None{}: Prog.one.no(b)
+
+def Uop.line(l: String, +slot: U32) -> Maybe<&2, Uop>:
+  Uop.line.go(words(l), 0n, slot, Uop.bottom())
+
+def Prog.one(l: String, +b: Build) -> Build: Prog.one.of(Uop.line(l, b.slot), b)
+
+def Prog.hex.put.go(cs: List<U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case Nil{}: acc
+    case h <> t: Prog.hex.put.go(t, h <> acc)
+
+# ===========================================================================
+# THE LOADED PACKET: the bases, the store, the arena, and the counts that have to
+# agree with the header.
+# ===========================================================================
+
+def Prog.hex.put(b: Build, r: (Bool & List<U32>)) -> Build:
+  Build{b.us, b.sp, b.ss, Prog.hex.put.go(list_of(r), b.bp), b.nu, b.nb, b.nbp, b.sbn,
+        b.pn, b.slot, Bool.and(b.ok, bytes_ok(r))}
+
+def Prog.hex.of(+ws: List<&2, String>, +b: Build) -> Build:
+  Prog.hex.put(b, bytes_of(String.to_list(w(ws, 1n))))
+
+def Prog.hex(l: String, +b: Build) -> Build: Prog.hex.of(words(l), b)
+
+# `Bool.pick` computes both arms and this is a pure fold, so the wrong arm's work
+# is discarded: cheaper than a match, and it keeps the phase test in one place. A
+# buffer line parsed as a uop and a uop line parsed as hex both set ok False in
+# the arm that gets thrown away.
+def Prog.parse.at(l: String, +k: U32, +b: Build) -> Build:
+  Bool.pick(Build, U32.is_eq(k, 0), Prog.hdr(l, b),
+    Bool.pick(Build, U32.is_le(k, b.nu), Prog.one(l, b), Prog.hex(l, b)))
+
+def Prog.parse.go(ls: List<&2, String>, +k: U32, +b: Build) -> Build:
+  match ls:
+    case Nil{}: b
+    case l <> t: Prog.parse.go(t, U32.add(k, 1), Prog.parse.at(l, k, b))
+
+def Prog.parse(s: String) -> Maybe<&2, Load>:
+  Prog.load(Prog.parse.go(String.lines(s), 0, Build.blank()))
 
 def Uop.of.op2(+u: Uop, m: Maybe<&1, O.Op>) -> Uop:
   match m:
@@ -1321,59 +1163,16 @@ def Uop.of.dt2(+u: Uop, m: Maybe<&1, S.Dt>) -> Uop:
 
 def Uop.of.dt(+u: Uop, h: String) -> Uop: Uop.of.dt2(u, D.to_dtype(h))
 
-# the wire name of a uop's op, for the probes in .agents/slop -- a debug aid and
-# nothing the walk depends on
-def opname(op: O.Op) -> String:
-  match op:
-    case O.OpsBACKEDGE{}: "BACKEDGE"
-    case O.OpsEND{}: "END"
-    case O.OpsRANGE{}: "RANGE"
-    case O.OpsINDEX{}: "INDEX"
-    case O.OpsSHRINK{}: "SHRINK"
-    case O.OpsLOAD{}: "LOAD"
-    case O.OpsSTORE{}: "STORE"
-    case O.OpsSTACK{}: "STACK"
-    case O.OpsPARAM{}: "PARAM"
-    case O.OpsCAST{}: "CAST"
-    case O.OpsCONST{}: "CONST"
-    case O.OpsSHL{}: "SHL"
-    case O.OpsADD{}: "ADD"
-    case O.OpsGROUP{}: "GROUP"
-    case O.OpsSINK{}: "SINK"
-    case _: "?"
-
-def opname.of(+u: Uop) -> String: opname(Uop.op(u))
-
-def show.k(+k: Nat) -> String: U32.show(U32.from_nat(k))
-
-def bs(b: Bool) -> String:
-  match b:
-    case True{}: "T"
-    case False{}: "F"
-
-def elemname(+e: Elem) -> String:
-  match e:
-    case Bf{b}: String.concat(["Bf(", U32.show(b), ")"])
-    case Sc{b, d}: String.concat(["Sc(", U32.show(b), ")"])
-    case Rf{b, o, n}: String.concat(["Rf(buf=", U32.show(b), ",o=", U32.show(o), ",n=", bs(n), ")"])
-
-def Uop.is_idx(+u: Uop) -> Bool: O.op_in([O.OpsINDEX{}, O.OpsSHRINK{}], Uop.op(u))
-
-# A3's TWO ARMS ARE SPELLED THE SAME for `-`: `-` on an INDEX is the BUFFER arm
-# with scale 1 (ops_python.py:121) and `k:idx:0` is the ALU arm (:114), and both
-# reach `Arg.of3`'s default as `a == 0`. So the arm is chosen HERE, where the op
-# is known, and `-` becomes scale 1 -- which makes `U32.is_eq(Uop.a(u), 0)` the
-# ALU test in `Prog.index`. Without this the buffer arm is UNREACHABLE and every
-# INDEX/SHRINK over a PARAM reads an arena slot instead of a buffer reference.
-def Uop.of.arg3(+u: Uop, +g: Arg) -> Uop:
-  Bool.pick(Uop, Bool.and(Uop.is_idx(u), U32.is_eq(Arg.kind(g), 0)),
-    Uop.ak(u, 8, 1, 0), Uop.ak(u, Arg.kind(g), Arg.x(g), Arg.y(g)))
-
-# `+g` because the arm reads all THREE fields: a plain pattern binding is affine.
 def Uop.of.arg2(+u: Uop, m: Maybe<&2, Arg>) -> Uop:
   match m:
-    case Some{+g}: Uop.of.arg3(u, g)
+    case Some{g}: Uop.ak(u, Arg.kind(g), Arg.x(g), Arg.y(g))
     case None{}: Uop.ak(u, 14, 0, 0)
+
+# ===========================================================================
+# A BUFFER LINE, `<nbytes> <hex-bytes>`. Its bytes are consed onto `bp` in
+# packet order and the whole run is reversed once at the end -- `List.set` per
+# byte would be quadratic on a 2 KiB buffer.
+# ===========================================================================
 
 def Uop.of.arg(+u: Uop, h: String) -> Uop: Uop.of.arg2(u, Arg.of(h))
 
@@ -1382,229 +1181,113 @@ def Uop.of.arg(+u: Uop, h: String) -> Uop: Uop.of.arg2(u, Arg.of(h))
 # the bottom, and the bottom of an INDEX is the zero this walk then reads.
 def Uop.of.sr(h: String) -> U32: U32.sub(num_of(num(h)), 1)
 
-# TWO things are decided HERE, and both are why the walk cannot stop at the first
-# src:
-#   * every src is appended. A STACK has up to 4 and a GROUP four, and the END's
-#     SECOND src is the loop head -- so a walk that returned after src 1 would
-#     give every uop one src and `Uop.src1` the answer 0.
-#   * the RUN is set ONCE, at the terminal, with the whole src list already in
-#     place: a STACK's run is its src COUNT (`Uop.run_of`), so setting it after
-#     the first src would make every STACK a run of 1.
-# A line that runs out of words at k >= 4 is a complete uop -- ops_python has arms
-# for PARAM and CONST that read no src at all. Too short to carry
-# `<idx> <op> <dtype> <arg>` is a refusal, and so is a FIFTH src (measured max 4).
 def Uop.of.go(ws: List<&2, String>, +k: Nat, +slot: U32, +u: Uop) -> Maybe<&2, Uop>:
   match ws k:
-    case Nil{} 0n: None{}
-    case Nil{} 1n: None{}
-    case Nil{} 2n: None{}
-    case Nil{} 3n: None{}
-    case Nil{} _ : Some{Uop.run1(u)}
-    case _ <> t 0n: Uop.of.go(t, 1n, slot, u)
-    case h <> t 1n: Uop.of.go(t, 2n, slot, Uop.of.op(u, h))
-    case h <> t 2n: Uop.of.go(t, 3n, slot, Uop.of.dt(u, h))
-    case h <> t 3n: Uop.of.go(t, 4n, slot, Uop.of.arg(u, h))
-    case h <> t 4n: Uop.of.go(t, 5n, slot, Uop.add(u, Uop.of.sr(h)))
-    case h <> t 5n: Uop.of.go(t, 6n, slot, Uop.add(u, Uop.of.sr(h)))
-    case h <> t 6n: Uop.of.go(t, 7n, slot, Uop.add(u, Uop.of.sr(h)))
+    case Nil{} _ : None{}
+    case _ <> t 0n: Uop.line.go(t, 1n, slot, u)
+    case h <> t 1n: Uop.line.go(t, 2n, slot, Uop.of.op(u, h))
+    case h <> t 2n: Uop.line.go(t, 3n, slot, Uop.of.dt(u, h))
+    case h <> t 3n: Uop.line.go(t, 4n, slot, Uop.of.arg(u, h))
+    case h <> t 4n: Some{Uop.run1(Uop.add(u, Uop.of.sr(h)))}
+    case h <> t 5n: Some{Uop.run1(Uop.add(u, Uop.of.sr(h)))}
+    case h <> t 6n: Some{Uop.run1(Uop.add(u, Uop.of.sr(h)))}
     case h <> t 7n: Some{Uop.run1(Uop.add(u, Uop.of.sr(h)))}
     case _ <> t _ : None{}
-
-def Uop.line(l: String, +slot: U32) -> Maybe<&2, Uop>:
-  Uop.of.go(words(l), 0n, slot, Uop.bottom())
-
-def Prog.one(l: String, +b: Build) -> Build: Prog.one.of(Uop.line(l, Build.slot(b)), b)
-
-# `Bool.pick` computes both arms and this is a pure fold, so the wrong arm's work
-# is discarded: cheaper than a match, and it keeps the phase test in one place. A
-# buffer line parsed as a uop and a uop line parsed as hex both set ok False in
-# the arm that gets thrown away.
-# AN EMPTY LINE IS NOT A LINE. `String.lines` is `String.split(s, '\n')`, so the
-# newline every packet ends with leaves a trailing "" behind, and no packet line
-# is ever empty (the header is `bendexec1 ...`, a uop line is `<idx>: ...`, a
-# buffer line is `<nbytes> <hex>`). Skipping empty lines is therefore reading the
-# wire, not hiding a malformed packet.
-#
-# `k` is the line counter `Prog.parse.at` uses to tell a uop line from a buffer
-# line, so an empty line must not move it -- hence the counter is a SEPARATE def
-# rather than `U32.add(k, 1)` inline. It has to be separate because `h` is needed
-# both for the counter and for the parse, and a `Bool.pick` holding both plus the
-# recursion would be mutual recursion with `Prog.parse.go`, which Bend refuses.
-def Prog.parse.k(+h: String, +k: U32) -> U32:
-  Bool.pick(U32, String.is_empty(h), k, U32.add(k, 1))
-
-def Prog.parse.at(+h: String, +k: U32, +b: Build) -> Build:
-  Bool.pick(Build, String.is_empty(h), b,
-    Bool.pick(Build, U32.is_eq(k, 0), Prog.hdr(h, b),
-      Bool.pick(Build, U32.is_le(k, Build.nu(b)), Prog.one(h, b), Prog.hex(h, b))))
-
-def Prog.parse.go(ls: List<&2, String>, +k: U32, +b: Build) -> Build:
-  match ls:
-    case Nil{}: b
-    case +h <> t: Prog.parse.go(t, Prog.parse.k(h, k), Prog.parse.at(h, k, b))
-
-def Prog.parse(s: String) -> Maybe<&2, Load>:
-  Prog.load(Prog.parse.go(String.lines(s), 0, Build.blank()))
-
-# ===========================================================================
-# A BUFFER LINE, `<nbytes> <hex-bytes>`. Its bytes are consed onto `bp` in
-# packet order and the whole run is reversed once at the end -- `List.set` per
-# byte would be quadratic on a 2 KiB buffer.
-# ===========================================================================
 
 type Prog is Data:
   Prog{us: List<&2, Uop>, vs: List<&2, Elem>, v0: List<&2, Elem>, ms: List<&2, U32>,
        fs: List<&2, Buf>, mk: List<&2, Bool>, vals: List<&2, U32>, pc: U32, n: U32,
-       pv: U32, gx: U32, gy: U32, gz: U32, cx: U32, cy: U32, cz: U32, bad: Bool,
-       dead: Bool}
+       pv: U32, gx: U32, gy: U32, gz: U32, cx: U32, cy: U32, cz: U32, bad: Bool}
 
-type Args is Data:
-  Args{path: String, gx: U32, gy: U32, gz: U32, vals: List<&2, U32>, ok: Bool}
+def Prog.of(+args: Args, +ld: Load) -> Prog:
+  Prog{ld.us, ld.v0, ld.v0, ld.ms, ld.fs, Nil{}, args.vals, 0, ld.n, 3, 0, 0, 0,
+       args.gx, args.gy, args.gz, False{}}
 
-def Args.path(+a: Args) -> String:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: path
+def Prog.at(+p: Prog, +pc: U32) -> Prog:
+  Prog{p.us, p.vs, p.v0, p.ms, p.fs, p.mk, p.vals, pc, p.n, p.pv, p.gx, p.gy, p.gz,
+       p.cx, p.cy, p.cz, p.bad}
 
-def Args.gx(+a: Args) -> U32:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: gx
-
-def Args.gy(+a: Args) -> U32:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: gy
-
-def Args.gz(+a: Args) -> U32:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: gz
-
-def Args.vals(+a: Args) -> List<&2, U32>:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: vals
-
-def Args.ok(+a: Args) -> Bool:
-  match a:
-    case Args{path, gx, gy, gz, vals, ok}: ok
-
-def Args.blank() -> Args: Args{"", 1, 1, 1, Nil{}, True{}}
-
-# argv[0] is the program itself and is SKIPPED (k == 0 hands `a` back
-# unchanged); argv[1] is the packet (k == 1 takes `h`); argv[2..4] are the grid;
-# everything after is a `vals` entry. A `String` is single-use, so `h` reaches
-# exactly one arm.
-def Args.at(+h: String, +k: U32, +a: Args) -> Args:
-  Bool.pick(Args, U32.is_eq(k, 1), Args{h, Args.gx(a), Args.gy(a), Args.gz(a), Args.vals(a), Args.ok(a)},
-    Bool.pick(Args, U32.is_eq(k, 0), a,
-      Bool.pick(Args, U32.is_eq(k, 2), Args{Args.path(a), num_of(num(h)), Args.gy(a), Args.gz(a), Args.vals(a), Args.ok(a)},
-        Bool.pick(Args, U32.is_eq(k, 3), Args{Args.path(a), Args.gx(a), num_of(num(h)), Args.gz(a), Args.vals(a), Args.ok(a)},
-          Bool.pick(Args, U32.is_eq(k, 4), Args{Args.path(a), Args.gx(a), Args.gy(a), num_of(num(h)), Args.vals(a), Args.ok(a)},
-            Args{Args.path(a), Args.gx(a), Args.gy(a), Args.gz(a), List.append(&2, U32, Args.vals(a), [num_of(num(h))]), Args.ok(a)})))))
-
-def Args.go(as: List<String>, +k: U32, +a: Args) -> Maybe<&2, Args>:
-  match as:
-    case Nil{}: Some{a}
-    case h <> t: Args.go(t, U32.add(k, 1), Args.at(h, k, a))
-
-def Args.of(as: List<String>) -> Maybe<&2, Args>:
-  Args.go(as, 0, Args.blank())
-
+def Prog.next(+p: Prog) -> Prog: Prog.at(p, U32.add(p.pc, 1))
 
 def Prog.us(+p: Prog) -> List<&2, Uop>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: us
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: us
 
 def Prog.vs(+p: Prog) -> List<&2, Elem>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: vs
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: vs
 
 def Prog.v0(+p: Prog) -> List<&2, Elem>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: v0
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: v0
 
 def Prog.ms(+p: Prog) -> List<&2, U32>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: ms
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: ms
 
 def Prog.fs(+p: Prog) -> List<&2, Buf>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: fs
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: fs
 
 def Prog.mk(+p: Prog) -> List<&2, Bool>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: mk
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: mk
 
 def Prog.vals(+p: Prog) -> List<&2, U32>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: vals
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: vals
 
 def Prog.pc(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: pc
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: pc
 
 def Prog.n(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: n
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: n
 
 def Prog.pv(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: pv
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: pv
 
 def Prog.gx(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: gx
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: gx
 
 def Prog.gy(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: gy
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: gy
 
 def Prog.gz(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: gz
-
-def Prog.cx(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: cx
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: gz
 
 def Prog.cy(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: cy
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: cy
 
 def Prog.cz(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: cz
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: cz
 
 def Prog.bad(+p: Prog) -> Bool:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: bad
-
-def Prog.dead(+p: Prog) -> Bool:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}: dead
-
-def Prog.of(+args: Args, +ld: Load) -> Prog:
-  Prog{Load.us(ld), Load.v0(ld), Load.v0(ld), Load.ms(ld), Load.fs(ld), Nil{}, Args.vals(args), 0, Load.n(ld), 3, 0, 0, 0,
-       Args.gx(args), Args.gy(args), Args.gz(args), False{}, False{}}
-
-def Prog.at(+p: Prog, +pc: U32) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), pc, Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
-
-def Prog.next(+p: Prog) -> Prog: Prog.at(p, U32.add(Prog.pc(p), 1))
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad}: bad
 
 def Prog.vs1(+p: Prog, vs: List<&2, Elem>) -> Prog:
-  Prog{Prog.us(p), vs, Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  Prog{p.us, vs, p.v0, p.ms, p.fs, p.mk, p.vals, p.pc, p.n, p.pv, p.gx, p.gy, p.gz,
+       p.cx, p.cy, p.cz, p.bad}
 
 def Prog.ms1(+p: Prog, ms: List<&2, U32>) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), ms, Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  Prog{p.us, p.vs, p.v0, ms, p.fs, p.mk, p.vals, p.pc, p.n, p.pv, p.gx, p.gy, p.gz,
+       p.cx, p.cy, p.cz, p.bad}
 
 def Prog.mk1(+p: Prog, mk: List<&2, Bool>) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), mk, Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  Prog{p.us, p.vs, p.v0, p.ms, p.fs, mk, p.vals, p.pc, p.n, p.pv, p.gx, p.gy, p.gz,
+       p.cx, p.cy, p.cz, p.bad}
 
 def Prog.pv1(+p: Prog) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), U32.add(Prog.pv(p), 1),
-       Prog.gx(p), Prog.gy(p), Prog.gz(p), Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  Prog{p.us, p.vs, p.v0, p.ms, p.fs, p.mk, p.vals, p.pc, p.n, U32.add(p.pv, 1),
+       p.gx, p.gy, p.gz, p.cx, p.cy, p.cz, p.bad}
 
 # `values[v]` for the k-th src: one arena read and one program read, which is
 # what a step costs.
@@ -1671,32 +1354,10 @@ def Prog.put(+p: Prog, +u: Uop, +e: Elem) -> Prog:
 
 def Prog.cur(+p: Prog, +u: Uop) -> U32: Elem.bits(Val.at(Prog.vs(p), Uop.slot(u)))
 
-# THE VISITED FLAG of a RANGE, in the slot after its counter (see Uop.run_of.op)
-def Prog.flag.put(+p: Prog, +u: Uop) -> Prog:
-  Prog.vs1(p, Val.put(Prog.vs(p), U32.add(Uop.slot(u), 1), elem_of(1, Uop.dt(u))))
-
-# THE VALUE THIS VISIT LEAVES BEHIND, and it is the value ops_python's exit test
-# sees. On the first visit `values[u] = [0]` and does NOT increment; after it
-# every visit adds 1 -- and the test `values[u][0] == src_values[0][0]` runs on
-# THAT. So the counter left behind is 0, 1, 2, 3 for the four body passes and 4
-# on the fifth, which exits: the body reads 0..trip-1, and a body that read trip
-# would index one element past the end of its buffer. Testing the OLD counter
-# instead is the off-by-one that puts `trip` in the last pass.
-def Prog.rng.nxt(+p: Prog, +u: Uop, +seen: Bool) -> U32:
-  Bool.pick(U32, seen, U32.add(Prog.cur(p, u), 1), Prog.cur(p, u))
-
-# THE FIRST VISIT SETS THE FLAG AND LEAVES THE COUNTER; every visit after it
-# stores the incremented counter.
-def Prog.rng.put(+p: Prog, +u: Uop, +seen: Bool, +nxt: U32) -> Prog:
-  Bool.pick(Prog, seen, Prog.put(p, u, elem_of(nxt, Uop.dt(u))), Prog.next(Prog.flag.put(p, u)))
-
-def Prog.seen(+p: Prog, +u: Uop) -> Bool:
-  Elem.is_true(Val.at(Prog.vs(p), U32.add(Uop.slot(u), 1)))
-
-def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Prog:
+def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool) -> Prog:
   match over:
     case True{}: Prog.at(p, U32.add(Prog.loop(p, Prog.pc(p)), 1))
-    case False{}: Prog.rng.put(p, u, seen, nxt)
+    case False{}: Prog.put(p, u, elem_of(U32.add(Prog.cur(p, u), 1), Uop.dt(u)))
 
 # ===========================================================================
 # :73-78 IF/ENDIF. `exec_masks` is a stack of "one Bool per work item" (the warp
@@ -1708,14 +1369,12 @@ def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Pro
 
 def Prog.trip(+p: Prog, +u: Uop) -> U32: Elem.bits(Prog.src(p, u, 0n))
 
-def Prog.rng.at(+p: Prog, +u: Uop, +void: Bool, +seen: Bool, +nxt: U32) -> Prog:
+def Prog.rng.at(+p: Prog, +u: Uop, +void: Bool) -> Prog:
   match void:
     case True{}: Prog.next(p)
-    case False{}: Prog.rng.over(p, u, U32.is_eq(nxt, Prog.trip(p, u)), seen, nxt)
+    case False{}: Prog.rng.over(p, u, U32.is_eq(Prog.cur(p, u), Prog.trip(p, u)))
 
-def Prog.rng(+p: Prog, +u: Uop) -> Prog:
-  Prog.rng.at(p, u, U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0), Prog.seen(p, u),
-    Prog.rng.nxt(p, u, Prog.seen(p, u)))
+def Prog.rng(+p: Prog, +u: Uop) -> Prog: Prog.rng.at(p, u, U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0))
 
 # the store gate of :87 and the load gate of :24: `exec_masks[-1]`, which is True
 # when nothing is masked
@@ -1730,7 +1389,7 @@ def Prog.open(+p: Prog) -> Bool:
 # ===========================================================================
 
 def Prog.ifs(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.mk1(p, Bool.and(Prog.open(p), Elem.is_true(Prog.src(p, u, 0n))) <> Prog.mk(p)))
+  Prog.mk1(p, Bool.and(Prog.open(p), Elem.is_true(Prog.src(p, u, 0n))) <> Prog.mk(p))
 
 def Prog.val(+p: Prog) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, Prog.vals(p), U32.to_nat(Prog.pv(p))), 0)
@@ -1762,13 +1421,9 @@ def Prog.idx(+gx: U32, +gy: U32, +gz: U32, +a: U32) -> U32:
 def Prog.special(+p: Prog, +u: Uop) -> Prog:
   Prog.put(p, u, elem_of(Prog.idx(Prog.gx(p), Prog.gy(p), Prog.gz(p), Uop.a(u)), Uop.dt(u)))
 
-# `src_values[0][i][0]` (ops_python.py:114) -- the lane-0 element of a vector
-# LOAD at ELEMENT index `i`, and `i` comes from `enumerate(src_values[1])`, so
-# it is src 1's value; src 0's value is the element COUNT and reads one run past
-# the end. Both indices are 0 at LOCAL SIZE 1 (see below), so `i` is the whole
-# offset.
+# `src_values[0][i][0]` -- the flat run of a vector LOAD indexed by the scalar
 def Prog.index.alu(+p: Prog, +u: Uop) -> Elem:
-  Val.at(Prog.vs(p), U32.add(Prog.slot(p, u, 0n), Elem.bits(Prog.src(p, u, 1n))))
+  Val.at(Prog.vs(p), U32.add(Prog.slot(p, u, 0n), Prog.trip(p, u)))
 
 def Prog.index.rf(+b: U32, +o: U32, +n: Bool, +i: U32, +scale: U32) -> Elem:
   Rf{b, U32.add(o, U32.mul(i, scale)), n}
@@ -1782,19 +1437,16 @@ def Prog.index.rf(+b: U32, +o: U32, +n: Bool, +i: U32, +scale: U32) -> Elem:
 # `(m[0], m[1] + o*scale) if isinstance(m, tuple) else (m, o*scale)` -- ONE
 # spelling, because `Elem.off` of a bare Bf is 0 and `Elem.off_none` of a Bf is
 # False, which is exactly what the two arms of that line compute.
-# `zip(src_values[0], src_values[1])` (ops_python.py:121) pairs the BUFFER
-# REFERENCE with the OFFSET, so the offset is src 1 -- not src 0, which is the
-# buffer reference itself.
 def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
   Prog.index.rf(Elem.buf(Prog.src(p, u, 0n)), Elem.off(Prog.src(p, u, 0n)),
-    Elem.off_none(Prog.src(p, u, 0n)), Elem.bits(Prog.src(p, u, 1n)), Uop.a(u))
+    Elem.off_none(Prog.src(p, u, 0n)), Prog.trip(p, u), Uop.a(u))
 
 def Prog.index.at(+p: Prog, +u: Uop, +alu: Bool) -> Prog:
   Prog.put(p, u, Bool.pick(Elem, alu, Prog.index.alu(p, u), Prog.index.mem(p, u)))
 
 def Prog.index(+p: Prog, +u: Uop) -> Prog: Prog.index.at(p, u, U32.is_eq(Uop.a(u), 0))
 
-def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, Elem>, +slot: U32, +k: Nat) ->
+def Prog.stack.copy(es: List<&2, Elem>, vs: List<&2, Elem>, slot: U32, k: Nat) ->
   List<&2, Elem>:
   match es:
     case Nil{}: vs
@@ -1812,7 +1464,7 @@ def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, Elem>, +slot: U32, +k: Nat
 # dtype (:93) and which the wire does not spell: see AMENDMENT A6.
 # ===========================================================================
 
-def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, Elem>, +us: List<&2, Uop>,
+def Prog.stack.at(ss: List<&2, U32>, vs: List<&2, Elem>, us: List<&2, Uop>,
   acc: List<&2, Elem>) -> List<&2, Elem>:
   match ss:
     case Nil{}: acc
@@ -1820,10 +1472,10 @@ def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, Elem>, +us: List<&2, Uop>,
       [Val.at(vs, Uop.slot(Uop.at(us, s)))]))
 
 def Prog.stack(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.vs1(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.vs(p), Prog.us(p), Nil{}),
-    Prog.vs(p), Uop.slot(u), 0n)))
+  Prog.vs1(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.vs(p), Prog.us(p), Nil{}),
+    Prog.vs(p), Uop.slot(u), 0n))
 
-def Prog.cast.dt(+dst: S.Dt, src: S.Dt, +e: Elem) -> Elem:
+def Prog.cast.dt(dst: S.Dt, src: S.Dt, +e: Elem) -> Elem:
   Bool.pick(Elem, S.Dt.is_bool(dst), elem_of(Bool.to_u32(Elem.is_true(e)), dst),
     Bool.pick(Elem, S.Dt.is_float(dst), elem_of(F32.bits(f_of(e)), dst),
       Bool.pick(Elem, S.Dt.is_float(src), elem_of(F32.bits(F32.trunc(f_of(e))), dst),
@@ -1849,10 +1501,10 @@ def Prog.cast(+p: Prog, +u: Uop) -> Prog: Prog.cast.at(p, u, Uop.dt(u), Prog.dt(
 def Prog.bitcast(+p: Prog, +u: Uop) -> Prog: Prog.cast(p, u)
 
 def Prog.live.at(+p: Prog, +oob: Bool) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Bool.or(Prog.bad(p), oob), Prog.dead(p)}
+  Prog{p.us, p.vs, p.v0, p.ms, p.fs, p.mk, p.vals, p.pc, p.n, p.pv, p.gx, p.gy, p.gz,
+       p.cx, p.cy, p.cz, Bool.or(p.bad, oob)}
 
-def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
+def Prog.lane.of(+f: Buf, dt: S.Dt) -> U32:
   Bool.pick(U32, U32.is_lt(S.Dt.itemsize(dt), Buf.w(f)), 1,
     U32.div(S.Dt.itemsize(dt), Buf.w(f)))
 
@@ -1869,11 +1521,6 @@ def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
 # LOAD and STORE (an INDEX/SHRINK of a PARAM, or a pass-through of one).
 def Prog.buf(+p: Prog, +u: Uop) -> Buf: Buf.at(Prog.fs(p), Elem.buf(Prog.src(p, u, 0n)))
 
-# EVERY ARM ADVANCES THE PC. ops_python.py:156 ends each iteration with `i += 1`,
-# so an arm that only writes `values[u]` still has to step -- and five of them
-# (IF, ENDIF, STACK, LOAD, STORE) build the new state without going through
-# `Prog.put`, which is where the step lives. Without the explicit `Prog.next`
-# the walk revisits the same uop forever and the launch dies of fuel.
 # ===========================================================================
 # :151-154 GroupOp.ALU. The two asserts of :152-153 are dropped: they are
 # invariants the scheduler upholds, and breaking one is a wrong packet rather
@@ -1889,30 +1536,21 @@ def Prog.buf(+p: Prog, +u: Uop) -> Buf: Buf.at(Prog.fs(p), Elem.buf(Prog.src(p, 
 def Prog.lane(+p: Prog, +u: Uop) -> U32:
   Prog.lane.of(Prog.buf(p, u), Uop.dt(u))
 
-# the storage element index of lane j, `o + j*_step`. A STORE's `_step` is
-# `src_dtypes[1]` (ops_python.py:90) -- the VALUE's dtype -- and not the STORE's
-# own, which is void and would floor every lane step at 1.
+# the storage element index of lane j, `o + j*_step` (ops_python.py:24, :90)
 def Prog.store.i(+p: Prog, +u: Uop, +j: U32) -> U32:
-  U32.add(Elem.off(Prog.src(p, u, 0n)),
-    U32.mul(j, Prog.lane.of(Prog.buf(p, u), Prog.dt(p, u, 1n))))
+  U32.add(Elem.off(Prog.src(p, u, 0n)), U32.mul(j, Prog.lane(p, u)))
 
-# ONE def, not two: the step reads lane j of `n` and recurses on `n - 1`, so a
-# separate `oob.go` would be a forward reference with nothing to gain.
-#
-# `match` AND NOT `Bool.pick`, MEASURED: `Bool.pick` evaluates its condition
-# before its arms, so by the time the self-call is reached the countdown has
-# already been read and the call is not decreasing. A `match` binds `n` and hands
-# the tail to the arm. `q` is the shrinking argument and comes first.
-def Prog.oob(+p: Prog, +u: Uop, +j: U32, +n: Nat) -> Bool:
-  match n:
-    case 0n: False{}
-    case 1n+q: Bool.or(U32.is_ge(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))), Prog.oob(p, u, j, q))
+def Prog.oob.go(+p: Prog, +u: Uop, +n: Nat, +j: U32) -> Bool:
+  Bool.or(U32.is_ge(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))), Prog.oob(p, u, n, j))
+
+def Prog.oob(+p: Prog, +u: Uop, +n: Nat, +j: U32) -> Bool:
+  Bool.pick(Bool, U32.is_eq(n, 0), False{}, Prog.oob.go(p, u, U32.sub(n, 1), j))
 
 # THE POISON. ops_python raises IndexError on a load or a store past the end of a
 # buffer (:17, :28); Bend answers a default instead, so the check runs here and
 # the launch is refused at the end rather than answering a plausible wrong number.
 def Prog.live(+p: Prog, +u: Uop) -> Prog:
-  Prog.live.at(p, Prog.oob(p, u, 0, U32.to_nat(Uop.run(u))))
+  Prog.live.at(p, Prog.oob(p, u, U32.to_nat(Uop.run(u)), 0))
 
 def Prog.ld.gate(+got: Elem, +three: Bool, +alt: Elem, +open: Bool) -> Elem:
   Bool.pick(Elem, Bool.and(three, Bool.not(open)), alt, got)
@@ -1936,23 +1574,20 @@ def Prog.ld.read(+p: Prog, +u: Uop, +ptr: Elem, +j: U32) -> Elem:
   elem_of(Prog.ld(p, Buf.at(Prog.fs(p), Elem.buf(ptr)),
     U32.add(Elem.off(ptr), U32.mul(j, Prog.lane(p, u))), Uop.dt(u)), Uop.dt(u))
 
-def Prog.ld.three(+u: Uop) -> Bool: U32.is_eq(Uop.nsrc(u), 3)
+def Prog.ld.three(+u: Uop) -> Bool: U32.eq(Uop.nsrc(u), 3)
 
 def Prog.ld.lane(+p: Prog, +u: Uop, +j: U32) -> Elem:
   Prog.ld.gate(Prog.ld.read(p, u, Prog.src(p, u, 0n), j), Prog.ld.three(u),
     Prog.src(p, u, 1n), Elem.is_true(Prog.src(p, u, 2n)))
 
-# `n` is the FIRST parameter because the store list is REBUILT each step, and a
-# recursive call's arguments are read left to right: nothing rebuilt may come
-# before the one that shrinks (MEASURED).
-def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, Elem>, +j: U32, +p: Prog) -> List<&2, Elem>:
+def Prog.ld.at(+u: Uop, vs: List<&2, Elem>, +n: Nat, +j: U32, +p: Prog) -> List<&2, Elem>:
   match n:
     case 0n: vs
-    case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Uop.slot(u), j), Prog.ld.lane(p, u, j)),
-      U32.add(j, 1), p)
+    case 1n+q: Prog.ld.at(u, Val.put(vs, U32.add(Uop.slot(u), j), Prog.ld.lane(p, u, j)),
+      q, U32.add(j, 1), p)
 
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.vs1(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.vs(p), 0, p)), u))
+  Prog.live(Prog.vs1(p, Prog.ld.at(u, Prog.vs(p), U32.to_nat(Uop.run(u)), 0, p)), u)
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
@@ -1966,30 +1601,25 @@ def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
 def Prog.store.v(+p: Prog, +u: Uop, +j: U32) -> U32:
   Elem.bits(Val.at(Prog.vs(p), U32.add(Prog.slot(p, u, 1n), j)))
 
-# THE ACCUMULATED BYTE LIST, not `Prog.ms(p)`. Every lane must see the previous
-# lanes' writes: reading the arena afresh per lane makes each write a copy of the
-# ORIGINAL and only the LAST lane survives, so a vec-4 store laid down one element
-# per pass with the last lane's value (MEASURED: `elementwise_add` wrote 6, 10,
-# 14, 18 at indices 3, 7, 11, 15 where it wanted 3..18).
-def Prog.store.lane.at(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
-  Mem.st(ms, Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.v(p, u, j))
+def Prog.store.lane.at(+p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
+  Mem.st(Prog.ms(p), Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.v(p, u, j))
 
 def Prog.store.open(+p: Prog, +u: Uop, +j: U32) -> Bool:
   Bool.and(Prog.open(p), U32.is_lt(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))))
 
 # `_store(m, o + j*_step, v, src_dtypes[1])` -- `to_storage_scalar` is the
 # identity for the three 4-byte lanes and `bool(x)` for bool
-def Prog.store.lane(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
-  Prog.store.go(ms, Prog.store.lane.at(ms, p, u, j), Prog.store.open(p, u, j))
+def Prog.store.lane(+p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
+  Prog.store.go(Prog.ms(p), Prog.store.lane.at(p, u, j), Prog.store.open(p, u, j))
 
-# `n` FIRST for the same reason as `Prog.ld.at`: the byte list is rebuilt each step.
-def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, U32>, +j: U32, +p: Prog) -> List<&2, U32>:
+def Prog.store.at(+u: Uop, ms: List<&2, U32>, +n: Nat, +j: U32, +p: Prog) -> List<&2, U32>:
   match n:
     case 0n: ms
-    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, p, u, j), U32.add(j, 1), p)
+    case 1n+q: Prog.store.at(u, Prog.store.go(ms, Prog.store.lane(p, u, j),
+      Prog.store.open(p, u, j)), q, U32.add(j, 1), p)
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.ms1(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p)), u))
+  Prog.live(Prog.ms1(p, Prog.store.at(u, Prog.ms(p), U32.to_nat(Uop.run(u)), 0, p)), u)
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 
@@ -2023,7 +1653,7 @@ def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
     case O.OpsBACKEDGE{}: Prog.backedge(p, u)
     case O.OpsRANGE{}: Prog.rng(p, u)
     case O.OpsIF{}: Prog.ifs(p, u)
-    case O.OpsENDIF{}: Prog.next(Prog.mk1(p, List.tail(&2, Bool, Prog.mk(p))))
+    case O.OpsENDIF{}: Prog.mk1(p, List.tail(&2, Bool, Prog.mk(p)))
     case O.OpsPARAM{}: Prog.param(p, u)
     case O.OpsBUFFER{}: Prog.put(p, u, Bf{Uop.b(u)})
     case O.OpsCONST{}: Prog.put(p, u, elem_of(Uop.a(u), Uop.dt(u)))
@@ -2045,32 +1675,15 @@ def Prog.step(+p: Prog) -> Prog: Prog.run(p, Uop.at(Prog.us(p), Prog.pc(p)))
 
 def FUEL() -> Nat: 4000000n
 
-# `Prog.over` -- ops_python's `while i < len(self.uops)` -- is `pc >= n`, and it
-# lives in its own def because a computed Bool may only be read as a `Bool.pick`
-# GUARD, never as a `match` scrutinee.
-def Prog.over(+pr: Prog) -> Bool: U32.is_ge(Prog.pc(pr), Prog.n(pr))
-
-# `dead` is set here and nowhere else: a work item asked for more steps than
-# FUEL allows. ops_python has no such bound -- a RANGE-driven kernel has no
-# static step count -- so this is the "stay turing-incomplete" guard, and it
-# refuses the launch instead of answering a plausible wrong number.
-def Prog.die(+pr: Prog) -> Prog:
-  Prog{Prog.us(pr), Prog.vs(pr), Prog.v0(pr), Prog.ms(pr), Prog.fs(pr), Prog.mk(pr),
-       Prog.vals(pr), Prog.pc(pr), Prog.n(pr), Prog.pv(pr), Prog.gx(pr), Prog.gy(pr),
-       Prog.gz(pr), Prog.cx(pr), Prog.cy(pr), Prog.cz(pr), Prog.bad(pr), True{}}
-
-# ONE def for the whole loop, and it has to be ONE: Bend refuses mutual
-# recursion, so `run` and a separate `run.at` cannot both exist. The shape that
-# works is MEASURED, not guessed:
-#   * `match` on the FUEL, with the termination test as the `Bool.pick` GUARD.
-#   * the countdown comes FIRST in the self-call: arguments are read left to
-#     right and nothing rebuilt may precede the one that shrinks, and
-#     `Prog.step(pr)` is rebuilt.
-#   * `+pr` because `Bool.pick` evaluates both arms and each consumes `pr`.
-def run(+f: Nat, +pr: Prog) -> Prog:
+def run(+f: Nat, +pr: Prog) -> Maybe<&1, Prog>:
   match f:
-    case 0n: Prog.die(pr)
-    case 1n+k: Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))
+    case 0n: None{}
+    case 1n+k: run.at(pr, U32.is_ge(Prog.pc(pr), Prog.n(pr)), k)
+
+def run.at(+pr: Prog, +over: Bool, +f: Nat) -> Maybe<&1, Prog>:
+  match over:
+    case True{}: Some{pr}
+    case False{}: run(f, Prog.step(pr))
 
 # ===========================================================================
 # THE GRID, :56 -- `for idxs in itertools.product(*[range(x) for x in
@@ -2080,28 +1693,14 @@ def run(+f: Nat, +pr: Prog) -> Prog:
 # what makes a second work item accumulate into the first one's stores.
 # ===========================================================================
 
-def Prog.count(+args: Args) -> Nat: Nat.mul(U32.to_nat(Args.gx(args)), Nat.mul(U32.to_nat(Args.gy(args)), U32.to_nat(Args.gz(args))))
+def Prog.count(+args: Args) -> Nat: Nat.mul(args.gx, Nat.mul(args.gy, args.gz))
 
-def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.vs1(Prog.mk1(pr, Nil{}), Prog.v0(pr)), 0)
-
-def Prog.carry(+pr: Prog, +oz: Bool) -> Prog:
-  Prog{Prog.us(pr), Prog.vs(pr), Prog.v0(pr), Prog.ms(pr), Prog.fs(pr), Prog.mk(pr), Prog.vals(pr), Prog.pc(pr), Prog.n(pr), Prog.pv(pr),
-       Bool.pick(U32, oz, U32.add(Prog.gx(pr), 1), Prog.gx(pr)),
-       Bool.pick(U32, oz, 0, U32.add(Prog.gy(pr), 1)),
-       Bool.pick(U32, oz, U32.add(Prog.gz(pr), 1), 0),
-       Prog.cx(pr), Prog.cy(pr), Prog.cz(pr), Prog.bad(pr), Prog.dead(pr)}
-
-def Prog.tick(+pr: Prog) -> Prog: Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Prog.gz(pr), 1), Prog.cz(pr))))
-
-
-# ONE def, like `run`: a separate def to resolve `run`'s answer would be mutual
-# recursion. The work-item count shrinks and `Prog.tick(run(FUEL(), pr))` is
-# rebuilt, so the count comes first. A work item that ran out of fuel sets
-# `dead`, and `Prog.launch.grid` refuses the launch on it.
-def grid(+n: Nat, +pr: Prog) -> Prog:
+def grid(+n: Nat, +pr: Prog) -> Maybe<&1, Prog>:
   match n:
-    case 0n: pr
-    case 1n+k: grid(k, Prog.tick(run(FUEL(), pr)))
+    case 0n: None{}
+    case 1n+k: grid.at(run(FUEL(), pr), k)
+
+def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.vs1(Prog.mk1(pr, Nil{}), pr.v0), 0)
 
 # ===========================================================================
 # THE COMMAND LINE. `IO.args()` is affine, so it is read ONCE, in order, and the
@@ -2110,60 +1709,92 @@ def grid(+n: Nat, +pr: Prog) -> Prog:
 # because the first three numbers are the grid.
 # ===========================================================================
 
+def Prog.carry(+pr: Prog, +oz: Bool) -> Prog:
+  Prog{pr.us, pr.vs, pr.v0, pr.ms, pr.fs, pr.mk, pr.vals, pr.pc, pr.n, pr.pv,
+       Bool.pick(U32, oz, U32.add(pr.gx, 1), pr.gx),
+       Bool.pick(U32, oz, 0, U32.add(pr.gy, 1)),
+       Bool.pick(U32, oz, U32.add(pr.gz, 1), 0),
+       pr.cx, pr.cy, pr.cz, pr.bad}
+
+def Prog.tick(+pr: Prog) -> Prog: Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Prog.gz(pr), 1), Prog.cz(pr))))
+
+def grid.at(m: Maybe<&1, Prog>, +n: Nat) -> Maybe<&1, Prog>:
+  match m:
+    case Some{pr}: grid(n, Prog.tick(pr))
+    case None{}: None{}
+
+type Args is Data:
+  Args{path: String, gx: U32, gy: U32, gz: U32, vals: List<&2, U32>, ok: Bool}
+
+def Args.blank() -> Args: Args{"", 1, 1, 1, Nil{}, True{}}
+
+def Args.path(+a: Args) -> String:
+  match a:
+    case Args{path, gx, gy, gz, vals, ok}: path
+
+def Args.gx(+a: Args) -> U32:
+  match a:
+    case Args{path, gx, gy, gz, vals, ok}: gx
+
+def Args.gy(+a: Args) -> U32:
+  match a:
+    case Args{path, gx, gy, gz, vals, ok}: gy
+
+def Args.gz(+a: Args) -> U32:
+  match a:
+    case Args{path, gx, gy, gz, vals, ok}: gz
+
+def Args.vals(+a: Args) -> List<&2, U32>:
+  match a:
+    case Args{path, gx, gy, gz, vals, ok}: vals
+
+def Args.at(h: String, +k: U32, +a: Args) -> Args:
+  Bool.pick(Args, U32.is_eq(k, 1), Args{a.path, a.gx, a.gy, a.gz, a.vals, a.ok},
+    Bool.pick(Args, U32.is_eq(k, 0), a,
+      Bool.pick(Args, U32.is_eq(k, 2), Args{a.path, num_of(num(h)), a.gy, a.gz, a.vals, a.ok},
+        Bool.pick(Args, U32.is_eq(k, 3), Args{a.path, a.gx, num_of(num(h)), a.gz, a.vals, a.ok},
+          Bool.pick(Args, U32.is_eq(k, 4), Args{a.path, a.gx, a.gy, num_of(num(h)), a.vals, a.ok},
+            Args{a.path, a.gx, a.gy, a.gz, List.append(&2, U32, a.vals, [num_of(num(h))]), a.ok})))))
+
 # ===========================================================================
 # THE ENTRY POINT: `bend-executor PACKET gx gy gz vals...`, which reads PACKET,
 # runs every work item, and writes PACKET.out beside it.
 # ===========================================================================
 
-def SLASH() -> Char: Char.from_u32(47)
+def Args.go(as: List<String>, +k: U32, +a: Args) -> Maybe<&2, Args>:
+  match as:
+    case Nil{}: Some{a}
+    case h <> t: Args.go(t, U32.add(k, 1), Args.at(h, k, a))
 
-# A '/' at index `at` means the directory runs to `at + 1`, so `best` becomes
-# `at + 1` -- the character index JUST PAST the last slash, which is the length of
-# the directory prefix. This is a leaf def so that the walk below makes exactly
-# ONE recursive call per character.
-def Prog.write.slash.hit(+h: Char, +at: U32, +best: U32) -> U32:
-  Bool.pick(U32, Char.is_eq(h, SLASH()), U32.add(at, 1), best)
+def Args.of(as: List<String>) -> Maybe<&2, Args>:
+  Args.go(as, 0, Args.blank())
 
-# ONE def, not two. `Prog.write.slash.at` and `.go` were a 2-def cycle, which
-# Bend refuses (MEASURED). And the test is NOT a `Bool.pick` in the walk:
-# `Bool.pick` evaluates both arms, so a recursive call in each arm would branch
-# the walk twice over -- exponential in the path length. Hence the leaf def.
-#
-# MEASURED, and the reason the countdown `n` is gone: the old pair threaded a
-# countdown that `.at` passed on UNCHANGED, so every step took the `0n` arm,
-# `at` was pinned at 0, and `best` was always 0. `List.take` (not `drop`) is
-# what keeps the directory: `String.drop` removes the FIRST n characters.
-def Prog.write.slash(+cs: List<&2, Char>, +at: U32, +best: U32) -> U32:
-  match cs:
-    case Nil{}: best
-    case h <> t: Prog.write.slash(t, U32.add(at, 1), Prog.write.slash.hit(h, at, best))
+def Prog.write.slash.at(+h: Char, t: List<Char>, +n: Nat, +at: U32, +best: U32) -> U32:
+  Bool.pick(U32, Char.is_eq(h, Char.from_u32(47)), Prog.write.slash.go(t, n, U32.add(at, 1), at),
+    Prog.write.slash.go(t, n, U32.add(at, 1), best))
 
-# the directory of the packet's path, which is where PACKET.out goes
-def Prog.write.out(+path: String) -> String:
-  String.concat([String.take(path,
-    U32.to_nat(Prog.write.slash(String.to_list(path), 0, 0))), "PACKET.out"])
+def Prog.write.slash.go(cs: List<Char>, +n: Nat, +at: U32, +best: U32) -> U32:
+  match cs n:
+    case Nil{} _ : best
+    case h <> t 0n: Prog.write.slash.at(h, t, 0n, 0, best)
+    case h <> t 1n+p: Prog.write.slash.at(h, t, p, U32.add(at, 1), best)
+
+# the character index just past the last '/', or 0 when there is none
+def Prog.write.slash(path: String) -> U32:
+  Prog.write.slash.go(String.to_list(path), 0n, 0, 0)
+
+def Prog.write.out(path: String) -> String:
+  String.concat([String.drop(path, U32.to_nat(Prog.write.slash(path))), "PACKET.out"])
+
+def Prog.out.join(ls: List<&2, String>, sep: String) -> String:
+  String.concat(List.append(&2, String, List.reverse(&2, String, ls), [sep]))
 
 def Prog.line.hex(cs: List<&2, Char>) -> String: String.from_list(cs)
 
-# `h <> t` is the CONS; `[h] <> t` is a list literal followed by a cons and is
-# refused (MEASURED). Two digits, low byte first, into the reversed accumulator.
-# A nibble above 9 is a LETTER: 87 is 'a' - 10, so `87 + v` lands on a..f. Adding
-# 48 unconditionally would answer '?' for 15 and write a byte ops_python never
-# could read back.
-def Prog.line.dig(+v: U32) -> Char:
-  Bool.pick(Char, U32.is_lt(v, 10), Char.from_u32(U32.add(48, v)), Char.from_u32(U32.add(87, v)))
-
 def Prog.line.put2(acc: List<&2, Char>, +v: U32) -> List<&2, Char>:
-  Prog.line.dig(v) <> acc
-
-# THE HIGH NIBBLE IS PUSHED FIRST, because the accumulator prepends and the block
-# is reversed once at the end. Pushing the low nibble first wrote every byte
-# DIGIT-SWAPPED -- 0x3f as "f3" -- and, because the reader was digit-swapped in
-# the same way, the two cancelled on a pure COPY and every copy fixture passed
-# while every ARITHMETIC one computed on nonsense (MEASURED: a LOAD of 1.0 read
-# back as 0xF3080000). This is the whole difference between the two hex paths.
+  [Char.from_u32(U32.add(48, v))] <> acc# two digits, low byte first into the reversed accumulator
 def Prog.line.put(acc: List<&2, Char>, +b: U32) -> List<&2, Char>:
-  Prog.line.put2(Prog.line.dig(U32.div(b, 16)) <> acc, U32.mod(b, 16))
+  Prog.line.put2([Char.from_u32(U32.add(48, U32.mod(b, 16)))] <> acc, U32.div(b, 16))
 
 def Prog.line.go(+ms: List<&2, U32>, +n: Nat, +at: U32, acc: List<&2, Char>) -> List<&2, Char>:
   match n:
@@ -2171,76 +1802,57 @@ def Prog.line.go(+ms: List<&2, U32>, +n: Nat, +at: U32, acc: List<&2, Char>) -> 
     case 1n+p: Prog.line.go(ms, p, U32.add(at, 1), Prog.line.put(acc, Mem.byte(ms, at)))
 def Prog.line(+f: Buf, +ms: List<&2, U32>) -> String:
   String.concat([U32.show(U32.mul(Buf.w(f), Buf.e(f))), " ",
-    Prog.line.hex(List.reverse(&2, Char,
-      Prog.line.go(ms, U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), Buf.base(f), Nil{}))), "\n"])
+    String.from_list(Prog.line.hex(List.reverse(&2, Char,
+      Prog.line.go(ms, U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), Buf.base(f), Nil{})))), "\n"])
 
-# THE BUFFER BLOCK, in buffer-id order, which is the order ops_bend hands the
-# buffers in (A1). The walk counts DOWN from `nb`, so the index is `nb - n` and
-# NOT the countdown itself: reading the countdown as the index writes the LAST
-# buffer first, and a reversed PACKET.out silently mislabels every readback
-# (MEASURED: the two packet lines came back the wrong way round).
-def Prog.out.at(+fs: List<&2, Buf>, +ms: List<&2, U32>, +nb: Nat, +n: Nat,
-  acc: List<&2, String>) -> List<&2, String>:
+def Prog.out.at(+fs: List<&2, Buf>, +ms: List<&2, U32>, n: Nat, acc: List<&2, String>) ->
+  List<&2, String>:
   match n:
     case 0n: acc
-    case 1n+q: Prog.out.at(fs, ms, nb, q,
-      Prog.line(Buf.at(fs, U32.from_nat(Nat.sub(nb, Nat.add(q, 1n)))), ms) <> acc)
+    case 1n+p: Prog.out.at(fs, ms, p, Prog.line(Buf.at(fs, U32.from_nat(p)), ms) <> acc)
 
 # the buffer block, the first `nb` buffers of `fs` -- which are the packet's, by
-# buffer id (A1). `nb` is an ARGUMENT and not a Prog field: it is a constant of
-# the parsed packet, so the machine state carries the buffers without carrying
-# how many of them the packet had.
-#
-# The block is a plain CONCATENATION, because every `Prog.line` already ends in
-# its own newline and `String.concat` joins with nothing. Appending a separator
-# -- which the old `Prog.out.join` did -- put a THIRD, empty line in PACKET.out,
-# which ops_bend counted as a buffer (MEASURED: "wrote 3 buffers, the packet had
-# 2" on every fixture with two packet buffers).
-def Prog.out(+nb: U32, +pr: Prog) -> String:
-  +n = U32.to_nat(nb)
-  String.concat(List.reverse(&2, String,
-    Prog.out.at(Prog.fs(pr), Prog.ms(pr), n, n, Nil{})))
+# buffer id (A1)
+def Prog.out(+pr: Prog) -> String:
+  Prog.out.join(Prog.out.at(Prog.fs(pr), Prog.ms(pr), U32.to_nat(Prog.nb(pr)), Nil{}), "\n")
 
 def Prog.write.close(m: (File & Result<&1, &1, U32 & String, Unit>)) -> IO(Unit):
   (f, _) = m
   File.close(f)
 
-def Prog.write.put(nb: U32, f: File, +pr: Prog) -> IO(Unit):
-  IO.bind(File & Result<&1, &1, U32 & String, Unit>, Unit, File.write(f, Prog.out(nb, pr)),
+def Prog.write.put(f: File, +pr: Prog) -> IO(Unit):
+  IO.bind(File & Result<&1, &1, U32 & String, Unit>, Unit, File.write(f, Prog.out(pr)),
     m => Prog.write.close(m))
 
-def Prog.write.open(nb: U32, r: Result<&1, &1, U32 & String, File>, +pr: Prog) -> IO(Unit):
-  IO.bind(File, Unit, IO.pass(File, r), f => Prog.write.put(nb, f, pr))
+def Prog.write.open(r: Result<&1, &1, U32 & String, File>, +pr: Prog) -> IO(Unit):
+  IO.bind(File, Unit, IO.pass(File, r), f => Prog.write.put(f, pr))
 
 # PACKET.out, in the packet's own buffer order, `<nbytes> <hex-bytes>` per line.
 # The path is AMENDMENT A6: ops_bend reads `<dir>/PACKET.out` and does not pass
 # the name, so it is derived from the packet's.
-def Prog.write(nb: U32, +pr: Prog, +args: Args) -> IO(Unit):
-  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(Prog.write.out(Args.path(args)), "w"),
-    r => Prog.write.open(nb, r, pr))
+def Prog.write(+pr: Prog, +args: Args) -> IO(Unit):
+  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(Prog.write.out(args.path), "w"),
+    r => Prog.write.open(r, pr))
 
-def Prog.done.go2.bad(+bad: Bool, +args: Args, +pr: Prog, nb: U32) -> IO(Unit):
+def Prog.done.go2(+bad: Bool, +args: Args, +pr: Prog) -> IO(Unit):
   match bad:
     case True{}: IO.die(Unit, 1, "executor: refused the packet -- a line it does not port, or a load or store past the end of its buffer, where ops_python raises IndexError")
-    case False{}: Prog.write(nb, pr, args)
+    case False{}: Prog.write(pr, args)
 
-def Prog.done.go2(nb: U32, +dead: Bool, +bad: Bool, +args: Args, +pr: Prog) -> IO(Unit):
-  match dead:
-    case True{}: IO.die(Unit, 1, "executor: out of fuel -- the kernel wanted more steps than FUEL() allows")
-    case False{}: Prog.done.go2.bad(bad, args, pr, nb)
+def Prog.done.go(+pr: Prog, +args: Args, +ok: Bool) -> IO(Unit):
+  Prog.done.go2(Bool.or(Prog.bad(pr), Bool.not(ok)), args, pr)
 
-def Prog.done.go(nb: U32, +pr: Prog, +args: Args, +ok: Bool) -> IO(Unit):
-  Prog.done.go2(nb, Prog.dead(pr), Bool.or(Prog.bad(pr), Bool.not(ok)), args, pr)
-
-def Prog.done(nb: U32, +pr: Prog, +args: Args) -> IO(Unit):
-  Prog.done.go(nb, pr, args, True{})
+def Prog.done(m: Maybe<&1, Prog>, +args: Args) -> IO(Unit):
+  match m:
+    case Some{pr}: Prog.done.go(pr, args, True{})
+    case None{}: IO.die(Unit, 1, "executor: out of fuel -- the kernel wanted more steps than FUEL() allows")
 
 def Prog.launch.grid(+ld: Load, +args: Args) -> IO(Unit):
-  Prog.done(Load.nb(ld), grid(Prog.count(args), Prog.of(args, ld)), args)
+  Prog.done(grid(Prog.count(args), Prog.of(args, ld)), args)
 
 def Prog.launch.run.at(ld: Maybe<&2, Load>, +args: Args) -> IO(Unit):
   match ld:
-    case Some{+l}: Prog.launch.grid(l, args)
+    case Some{l}: Prog.launch.grid(l, args)
     case None{}: IO.die(Unit, 1, "executor: refused the packet -- a dtype, an op, an `<arg>` or a src index that this file does not port")
 
 def Prog.launch.run(text: String, +args: Args) -> IO(Unit):
@@ -2261,19 +1873,18 @@ def Prog.launch.file(f: File, +args: Args) -> IO(Unit):
     m => Prog.launch.pkt(m, args))
 
 def Prog.launch.open(+args: Args) -> IO(Unit):
-  IO.bind(File, Unit, IO.try(File, File.open(Args.path(args), "r")),
-    f => Prog.launch.file(f, args))
+  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(args.path, "r"),
+    r => Prog.launch.file(IO.pass(File, r), args))
 
 def Prog.launch.at(a: Maybe<&2, Args>) -> IO(Unit):
   match a:
-    case Some{+args}: Prog.launch.open(args)
+    case Some{args}: Prog.launch.open(args)
     case None{}: IO.die(Unit, 1, "executor: no PACKET on the command line")
 
 def Prog.launch() -> IO(Unit):
   do IO<Unit>:
     as : List<String> <- IO.args()
-    Prog.launch.at(Args.of(as))
-
+    return Prog.launch.at(Args.of(as))
 
 def main() -> IO(Unit): Prog.launch()
 

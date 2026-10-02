@@ -162,8 +162,8 @@ def Task.of(tag: U32, name: String, args: List<&2, Arg>) -> Task:
   Task{tag, name, args}
 
 # THE SCHEDULE, rendered `tag:name/nargs` per task, comma-separated, INPUT ORDER.
-# `Pool.map` returns results in input order, so the schedule is the input order too,
-# and this is the ONE join (movement.bend rule 20).
+# CPython's `Pool.map` returns results in input order, so the schedule is the
+# input order too, and this is the ONE join (movement.bend rule 20).
 def sch_one(+t: Task) -> String:
   String.concat([U32.show(Task.tag(t)), ":", Task.name(t), "/", U32.show(Task.nargs(t))])
 

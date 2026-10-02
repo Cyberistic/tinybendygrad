@@ -116,7 +116,8 @@
 #      TODO(p3) mixin/op.py:166  `arange` -- delete the `op_` block and call
 #        `mixin/op.bend`'s `mo_arange` when that file grows it. `arange` is also reached by
 #        `mixin/op.py:198 linspace`, `:215 eye`, `:233 _tri`, `:236 triu`, `:259 tril` and
-#        `mixin/nn/__init__.py:369`, so this block is worth more than this file.
+#        `nn/__init__.py:370` (`_embedding_fwd`), so this block is worth more than
+#        this file.
 #   W2 mixin/op.py:731 `cat`, reached from rand.py:15, rand.py:29 and tensor.py:471.
 #      `cat`'s all-equal-shapes arm is `stack(*args, dim).flatten(dim, dim+1)`, `stack`
 #      (movement.py:256) is `_mop(Ops.STACK, arg=tensors[1:])` -- ops.py:831-834, which

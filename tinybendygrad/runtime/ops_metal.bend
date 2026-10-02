@@ -2,7 +2,8 @@
 #
 # THE HALF OF THE METAL CHAIN THAT SUBMITS. `renderer/cstyle.bend` already emits
 # Metal kernel TEXT and its `kern2 METAL` rows are committed and green, so the
-# shader half of this chain exists. This file is the other half: the 287 lines
+# shader half of this chain exists (`renderer/cstyle.bend`, 2314 lines, 228 rows).
+# This file is the other half: the 287 lines of `tinygrad/runtime/ops_metal.py`
 # that turn a compiled program and a list of buffers into an
 # `MTLComputePipelineState`, an indirect command buffer, and a committed
 # command buffer.
@@ -85,7 +86,8 @@
 #   :24  checked                    PORTED  the WRAPPER, i.e. the refusal
 #   :29  class MetalCompiler        PORTED  the four tables and three refs
 #   :35   support = DLL(MTLCompiler) WALL 1
-#   :38   __init__                  PORTED  `dev.cgs`, the cachekey name
+#   :38   __init__                  PORTED  `cgs_create`, and the ENTRY name
+#                                               travels as `Cmd.name`
 #   :41   __reduce__                WALL 3  PICKLE (a multiprocessing detail)
 #   :42   compile                   PARTIAL  the layout and the refusals
 #   :55   macos_major/metal_version PORTED  the four-way `-std=` ladder
@@ -1073,8 +1075,8 @@ def q.timestamp(q: Q) -> Q:
       Q{rows, cmds, sizes, U32.add(stamps, 1), nbytes, npipes, t}
 
 # :125 `signal(self, dst, val): self.value = val`. The value is read by :162's
-# `encodeSignalEvent:value:`, which is inside `run`, so it travels as `Run.val`
-# and NOT as a field of the queue -- Python puts it on the queue because Python
+# `encodeSignalEvent:value:`, which is inside `run`, so it is a `Run` field and
+# NOT a field of the queue -- Python puts it on the queue because Python
 # has a `self`, and Bend has none. `q.signal` is the queue unchanged and
 # `mt_signal_keeps_nbytes` is the row that says the queue did not grow.
 def q.signal(q: Q, v: U32) -> Q: q

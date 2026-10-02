@@ -292,7 +292,16 @@ for bn, size, base, wrap in BUMP:
 # answers sit one row apart -- which is the negative-case requirement, and the
 # refusal is the NEGATIVE side of the pair.
 row("bump_pair_same_size", BUMP[0][1])
-row("bump_pair_plain_refused", bump_seq(BUMP[0][1], BUMP[0][2], BUMP[0][3], BUMP_ALLOCS)[-1][0])
+# the REFUSAL FLAG, not a sentinel address: the two lanes share one `U32`
+# representation, so "did the nth request raise" is the portable claim.
+def refused_nth(size, base, wrap, n):
+  b = M.BumpAllocator(size, base, wrap)
+  for i, (anm, asz, al) in enumerate(BUMP_ALLOCS[:n+1]):
+    try: b.alloc(asz, al)
+    except RuntimeError: return int(i == n)
+  return 0
+row("bump_pair_plain_refused", refused_nth(BUMP[0][1], BUMP[0][2], BUMP[0][3], 5))
+row("bump_pair_wrap_refused", refused_nth(BUMP[1][1], BUMP[1][2], BUMP[1][3], 5))
 row("bump_pair_wrap_addr", bump_seq(BUMP[1][1], BUMP[1][2], BUMP[1][3], BUMP_ALLOCS)[-1][0])
 # the pointer after the refusal: it must be UNCHANGED, which is the row that a
 # refused allocation that still advanced the pointer fails.
@@ -306,6 +315,10 @@ row("bump_refuse_ptr_after", bp.ptr)
 # the wrap arm RESETS to 0, not to the aligned value: the next allocation's
 # padding is measured from 0.
 bw = M.BumpAllocator(BUMP[1][1], BUMP[1][2], BUMP[1][3])
+# the 0x800-at-0x100 request OVERFLOWS the 0x1000 window, so this pair is the
+# WRAP arm itself and not a plain allocation: the pointer resets to 0 and the
+# next 16-byte request comes back at 0x800 with the pointer at 0x810.
+row("bump_wrap_over", int(round_up(bw.ptr, 0x100) + 0x800 > bw.size))
 bw.alloc(0x800, 0x100)
 row("bump_wrap_ptr_pre", bw.ptr)
 row("bump_wrap_next", bw.alloc(16, 0x100))

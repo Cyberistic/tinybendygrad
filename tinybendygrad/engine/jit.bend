@@ -140,7 +140,8 @@ def has_str(m: Maybe<&2, String>) -> Bool:
     case _: False{}
 
 # `Maybe<&2, String>` -> a printable row. `"unprintable"` is the honest answer
-# for the `None` arm: `InInfo.repr` returns `None{}` whenever the substituted view
+# for the `None` arm: CPython's `InInfo.__repr__` returns `None{}` whenever the
+# substituted view
 # carries a non-`ANone` arg or any src, because CPython's own repr of such a view
 # is `pretty_print`'s MULTILINE form and is not byte-stable (Section 10).
 def j_str(m: Maybe<&2, String>) -> String:

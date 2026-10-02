@@ -42,12 +42,14 @@
 #
 #   :16  RDMA_CHUNK                  PORTED  `RDMA_CHUNK()`
 #   :18  BNXT_IDS                     PORTED  the four constants and `vram_bar`
-#   :22  `BNXTIface.__init__`         PORTED  `iface.of`  -- vram_bar=2,
+#   :22  `BNXTIface.__init__`         PORTED  `Iface.of`  -- vram_bar=2,
 #                                               base_class, dev_impl_t, the PCs
 #   :24  `device_fini`                PORTED  `iface.fini`
-#   :26-29 `storage`                  PORTED  `alloc.storage` -- the DOUBLE
+#   :26-29 `storage`                  PORTED  `alloc.va` + `alloc.sysmem_size`
+#                                               -- the DOUBLE
 #                                               round_up and the SYS mapping
-#   :30-31 `buffer`                   PORTED  `alloc.buffer` -- and the nbytes /
+#   :30-31 `buffer`                   PORTED  `alloc.buf_size` / `alloc.va_size`
+#                                               -- and the nbytes /
 #                                               VA divergence, which is the whole
 #                                               point of `rdma_buf_nb_vs_va`
 #   :33-36 `doorbell`                 PORTED  `db.of` -- page-aligned DOWN, and
@@ -55,13 +57,13 @@
 #                                               defaults snooped=True
 #   :39-40 `_alloc`                   PORTED  `alloc.of`
 #   :41  `_copyin`                    PORTED  `alloc.copyin` -- the SOURCE's len
-#   :43-44 `_map`'s peer guard        PORTED  `map.guard`  (the REFUSAL)
+#   :43-44 `_map`'s peer guard        PORTED  `map.peer_ok` (the REFUSAL)
 #   :46  the aspace branch            PORTED  `map.paddrs`  SYS keeps, else p2p
 #   :47  `align`                      PORTED  `align_or` -- the OR-reduction
 #   :48  `log_page`                   PORTED  `log_page` -- and NONE, which is
 #                                               `max()` of an empty generator
-#   :49-50 `register_mem`             PORTED  `map.register` -- the page EXPANSION
-#   :51  `BufferStorage(key, key)`    PORTED  `map.storage_args` -- key twice
+#   :49-50 `register_mem`             PORTED  `map.run` -- the page EXPANSION
+#   :51  `BufferStorage(key, key)`    PORTED  `va_of` -- key twice
 #   :52  `_offset` returns `buf`      PORTED  `alloc.offset` -- IDENTITY, no call
 #   :53  `_unmap`                     PORTED  `alloc.unmap` -- `.meta`, not `.buf`
 #   :56  `functools.cache`            WALL 1  memoisation
@@ -69,15 +71,16 @@
 #   :58  `bus`                        PORTED  `nic.bus`   -- last match, base 16
 #   :61  the `except RuntimeError`    PORTED  `nic.list` -- no pcie -> None
 #   :64  the closest NIC              PORTED  `nic.closest` -- min |bus - bus|, FIRST
-#   :67  `ifaces = [BNXTIface]`       PORTED  `dev.ifaces`
+#   :67  `ifaces = [BNXTIface]`       PORTED  `Rdma.ifaces`
 #   :69-71 `RDMADevice.__init__`      PORTED  `dev.init` -- iface FIRST, then
 #                                               `BNXTAllocator(self), [], None`
 #   :79  the anchor `Device[min(pair)]` PORTED `qp.anchor`
 #   :80  `{nic.device: BNXTQP(...)}`  PORTED  `qp.new`
-#   :82  the four ring buffers        PORTED  `qp.bufs`  -- sq rq scq rcq
-#   :83  the three uint64s + `db`     PORTED  `qp.seqs`  -- sq_seq rq_seq psn, db
-#   :84  the UPat rules               PORTED  `qp.rules` -- 8 tags, FIRST-WINS
-#   :85  `PatternMatcher(rules) + pm_bufferize` PORTED `qp.prepended`
+#   :82  the four ring buffers        PORTED  `ring_elems.at` -- sq rq scq rcq
+#   :83  the three uint64s + `db`     PORTED  `qp_name`/`qp_itemsize` -- sq_seq
+#                                               rq_seq psn, db
+#   :84  the UPat rules               PORTED  `qp.rules_len` -- 8 tags, FIRST-WINS
+#   :85  `PatternMatcher(rules) + pm_bufferize` PORTED `qp_len`
 #   :86  `connect` both ways          PORTED  `qp.connect` -- nics THEN reversed
 #   :89  `rdma_mem`                   PORTED  `mem.of` -- volatile, dtype, tag
 #   :91-92 `rdma_ring`                PORTED  `mem.ring` -- send is WQE+8
@@ -87,35 +90,36 @@
 #   :96  `rdma_db`                    PORTED  `mem.db`   -- one whole page
 #   :99-100 `rdma_wire`               PORTED  `wire.of`  -- CALL/STORE, then RDMA
 #   :101 `is_rdma`                    PORTED  `wire.is_rdma`
-#   :104-106 `queue_of`               PORTED  `queue.of` -- the SORTED pair and
+#   :104-106 `queue_of`               PORTED  `queue.hi`/`queue.lo` -- the SORTED
+#                                               pair and
 #                                               `wire is src`
-#   :109 `ins`                        PORTED  `ins.of` -- every int is a uint32
-#   :112 `queue_of(calls[0])`         PORTED  `copies.of`
-#   :113 `rdma_qp(pair)[nic.device]`  PORTED  `copies.qp`
-#   :116 `bufs = [args[c][0 if recv else 1]]` PORTED `copies.buf_ix`
-#   :117 the chunks comprehension     PORTED  `chunks.of` / `wqes_of` / `packets_of`
-#   :118 `len(chunks), sum(chunks)`   PORTED  `wqes_of`, `packets_of`
+#   :109 `ins`                        PORTED  `queue.is_recv` -- every int is a uint32
+#   :112 `queue_of(calls[0])`         PORTED  `copies.cap_ok` + `Tr.count`
+#   :113 `rdma_qp(pair)[nic.device]`  PORTED  `qp.new`
+#   :116 `bufs = [args[c][0 if recv else 1]]` PORTED `ops.wqe`
+#   :117 the chunks comprehension     PORTED  `chunks_of` / `nchunks` / `psns_len`
+#   :118 `len(chunks), sum(chunks)`   PORTED  `nchunks`, `ops.n_writes`
 #   :120 the ring-cap ASSERT          PORTED  `copies.guard`  (the REFUSAL)
 #   :123 the bumps                    PORTED  `bump.seq` / `bump.psn`
-#   :125 `accumulate(chunks, 0)`      PORTED  `psns.of`
+#   :125 `accumulate(chunks, 0)`      PORTED  `psns_of`
 #   :126 `n`, `p`                     PORTED  `ops.n_of` / `ops.p_of`
-#   :128 `ring.getaddr`, `cq.getaddr` PORTED  `ops.ring_addr` / `ops.cq_addr`
-#   :129 the `db` address             PORTED  `ops.db_addr` -- low 12 bits only
+#   :128 `ring.getaddr`, `cq.getaddr` PORTED  `ins.write` / `ins.cq_db`
+#   :129 the `db` address             PORTED  `ins.ring_db` -- low 12 bits only
 #   :130-131 `db_value`               PORTED  `db_value.hi` / `db_value.lo`
-#   :136-137 the chunk loop           PORTED  `ops.buf` / `ops.wqe`
-#   :140 `hdr` and `key`              PORTED  `hdr.of` and `Pdt.key_of`
+#   :136-137 the chunk loop           PORTED  `ops.chunk_size` / `ops.wqe`
+#   :140 `hdr` and `key`              PORTED  `hdr.of` and `key_of`
 #   :141 the ring write               PORTED  `ins.write`
 #   :144-145 the msn entry            PORTED  `ins.msn` -- 48/24/24, two halves
 #   :148 the ring doorbell            PORTED  `ins.ring_db`
 #   :151 `wait_eq`                    PORTED  `ins.wait` -- the inverted epoch
 #   :152 the cq doorbell              PORTED  `ins.cq_db`
 #   :155 the recv barrier             PORTED  `ins.barrier`
-#   :162 the `{i: queue_of(u)}` dict  PORTED  `submit.queues`
-#   :164 `ops = [[u] for u in lin.src]` PORTED `submit.ops0` -- a NON-rdma src
+#   :162 the `{i: queue_of(u)}` dict  PORTED  `submit.fires`
+#   :164 `ops = [[u] for u in lin.src]` PORTED `submit.src_replaced` -- a NON-rdma src
 #                                               keeps ITSELF
-#   :165 `dict.fromkeys(queues.values())` PORTED `submit.keys`
-#   :166 `positions`                  PORTED  `submit.positions`
-#   :167 the zip                      PORTED  `submit.zip`
+#   :165 `dict.fromkeys(queues.values())` PORTED `submit.srcs_kept`
+#   :166 `positions`                  PORTED  `submit.pos_at`
+#   :167 the zip                      PORTED  `psns_at` + `ops.n_of`
 #   :169 `pm_rdma_encode`             PORTED  `encode_len`
 #
 # ===========================================================================
@@ -585,7 +589,7 @@ def va_of(+t: Pdt, +key: U32) -> U32:
 #   * the candidate list is ASCENDING, so `max()` is "the LAST match" and a fold
 #     that keeps the FIRST match answers 12 for everything;
 #   * an address with a low bit set matches NOTHING, and `max()` of an empty
-#     generator is a `ValueError`. `NO_LOG_PAGE` is that, and `ops.map` REFUSES
+#     generator is a `ValueError`. `NO_LOG_PAGE` is that, and `map.run` REFUSES
 #     rather than registering with a page size of zero.
 # ===========================================================================
 # one region `(paddr, size)` folded into the running alignment.
@@ -812,7 +816,7 @@ def iface.fini(+i: Iface) -> Iface: Iface.at(i, Tr.emit(CALL_FINI(), OBJ_NONE(),
 # `HostAllocator.__init__`-equivalent runs the device already has an interface.
 # `[]` is `renderers or [Renderer]` at device.py:396 and is falsy, exactly as in
 # `ops_npy.bend` -- the same one-token fact, and the same reason it is a row.
-# `peer_group` (device.py:398) is `iface.peer_group` here and NOT the device
+# `peer_group` (device.py:398) is `Rdma.peer` here and NOT the device
 # head, because `self.iface` EXISTS. That is the difference from NPY and it is
 # load-bearing: `_map`'s guard at :44 compares two peer groups.
 # ===========================================================================
@@ -993,18 +997,19 @@ def db.snooped() -> Bool: False{}
 #   1. THE NODE GUARD (:44) is TWO conjuncts and both are needed -- the buffer's
 #      device must have a `PCIIfaceBase` AT ALL, and its peer group must be the
 #      NIC's. A buffer on another node is a silently wrong transfer if it is not
-#      refused, so `map.guard` refuses and the trace truncates.
+#      refused, so `map.peer_ok` is False and `map.run` refuses, so the trace
+#      truncates.
 #   2. THE ASPACE BRANCH (:46) -- `AddrSpace.SYS` keeps `mapping.paddrs` and
 #      everything else is TRANSLATED by `p2p_paddrs`, because the NIC reaches
 #      peer GPU memory over PCIe even where two GPUs reach each other over XGMI.
 #      That is the comment at :45 and it is the whole reason the registration is
 #      per-buffer at all.
-#   3. THE PAGE SIZE (:48) -- `log_page`, above. `map.guard` refuses when there is
-#      none, which is `max()` of an empty generator.
+#   3. THE PAGE SIZE (:48) -- `log_page`, above. `map.page_guard` refuses when
+#      there is none, which is `max()` of an empty generator.
 #   4. `BufferStorage(key, key)` (:51) -- the KEY IS BOTH `.buf` AND `.meta`, so
 #      the address the GPU stops using and the handle the NIC uses are the same
-#      number, and `_unmap` at :53 can hand it straight back. `map.storage_args`
-#      is that claim as a COUNT, because a BufferStorage that kept the GPU address
+#      number, and `_unmap` at :53 can hand it straight back. `va_of` is that
+#      claim as a COUNT, because a BufferStorage that kept the GPU address
 #      in `.buf` would still unregister correctly and would be silently wrong for
 #      every transfer.
 # ===========================================================================
@@ -1135,7 +1140,7 @@ def qp.new(t: Tr) -> Tr: Tr.emit(CALL_QP_NEW(), OBJ_NONE(), t)
 #       -- the pair is SORTED and the flag is `wire is src`. So a RECEIVE has the
 #       wire as its SOURCE.
 #
-# REPORTED, NOT FIXED: `wire.tag` is `None` on a bufferized PARAM (`UOp.tag` is
+# REPORTED, NOT FIXED: the wire tag is `None` on a bufferized PARAM (`UOp.tag` is
 # `None` by default, ops.py:244, and `UOp.from_buffer` does not set it, ops.py:862),
 # so on a graph that reached `lower_call` with the wire already bufferized,
 # `min(gpu, None)` raises `TypeError`. I could not exercise it -- there is no RDMA
@@ -1655,7 +1660,7 @@ def submit.srcs_kept(+n_srcs: U32, n_queues: U32) -> U32: U32.sub(n_srcs, submit
 # queue, and because the dict at :162 was built by `enumerate` they are ASCENDING.
 # A queue whose srcs are at 0 and 3 has positions [0, 3] and gets ONE
 # `rdma_copies` over both, so its work queue elements are numbered 0 and 1 while
-# its src indices are 0 and 3. `submit.pos_0`/`submit.pos_3` are those.
+# its src indices are 0 and 3. `submit.pos_at` answers 3 at k=1 and 0 elsewhere.
 def submit.pos_at(+k: U32) -> U32: Bool.pick(U32, U32.is_eq(k, 1), 3, 0)
 
 # ===========================================================================
@@ -2306,7 +2311,7 @@ def main() -> IO(Unit):
 #     where Python calls the device, and the two agree because the device's answer
 #     IS the key -- an assumption, and the only one in this file that is not a
 #     transcription.
-#   5. `wire.tag`. REPORTED IN THE HEADER and not fixed: on a graph that reached
+#   5. THE WIRE TAG. REPORTED IN THE HEADER and not fixed: on a graph that reached
 #     `lower_call` with the wire already bufferized, `UOp.tag` is `None` and
 #     `min(gpu, None)` raises. `rdma_queue_sorted` pins the sort with the tag
 #     spelled as a string, which is the case the source unambiguously supports,

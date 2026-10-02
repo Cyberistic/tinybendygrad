@@ -348,6 +348,7 @@ for nm, need, fence in [
     ("need_fence_ahead3", 7, 4), ("need_fence_1behind", 7, 8), ("need_fence_2behind", 7, 9),
     ("wrap_need1_fence3", 1, 3), ("wrap_need0_fence0", 0, 0), ("wrap_need0_fence255", 0, 255),
     ("wrap_need0_fence254", 0, 254), ("wrap_need255_fence0", 255, 0), ("wrap_need2_fence0", 2, 0),
+    ("need300_fence44", 300, 44), ("need300_fence43", 300, 43),
 ]:
     b(f"usb_drain_{nm}", drained_step(need, fence))
 

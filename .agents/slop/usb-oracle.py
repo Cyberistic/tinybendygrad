@@ -102,6 +102,26 @@ u("usb_classcode_image_walrus", getattr(libusb, "LIBUSB_CLASS_IMAGE"))
 u("usb_classcode_image_in_dict", int("LIBUSB_CLASS_IMAGE" in libusb.enum_libusb_class_code))
 u("usb_classcode_ptp_walrus", getattr(libusb, "LIBUSB_CLASS_PTP"))
 
+# THE LAST-WINS FIXTURE, as a REAL dict: a repeated KEY is overwritten by the
+# later literal, which is exactly what `dict[int, str]` did to
+# `LIBUSB_CLASS_IMAGE`, and the NAME side is exercised by two entries carrying the
+# same string.
+SYNTH = {}
+for _v, _n in ((10, "SYNTH_ALPHA"), (11, "SYNTH_BETA"), (10, "SYNTH_GAMMA"),
+               (12, "SYNTH_BETA"), (13, "SYNTH_DELTA")):
+    SYNTH[_v] = _n
+s("usb_synth_n_10", SYNTH[10])
+s("usb_synth_n_11", SYNTH[11])
+s("usb_synth_n_13", SYNTH[13])
+_byname = {}
+for _v, _n in ((10, "SYNTH_ALPHA"), (11, "SYNTH_BETA"), (10, "SYNTH_GAMMA"),
+               (12, "SYNTH_BETA"), (13, "SYNTH_DELTA")):
+    _byname[_n] = _v          # a repeated NAME, LAST wins
+u("usb_synth_v_alpha", _byname["SYNTH_ALPHA"])
+u("usb_synth_v_gamma", _byname["SYNTH_GAMMA"])
+u("usb_synth_v_beta", _byname["SYNTH_BETA"])
+u("usb_synth_v_absent", NOT_FOUND)
+
 # PORT_INTERNAL: the two "absent" rows. CPython has no name for them; what is
 # being asserted is that the port answers NOT_FOUND and NOT 0.
 u("usb_enumval_notfound_is_io", NOT_FOUND)
