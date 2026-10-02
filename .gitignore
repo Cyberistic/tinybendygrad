@@ -28,3 +28,11 @@ __pycache__/
 *.bak
 *.orig
 *.rej
+
+# in-place mutation scratch. Four COMPLETED PORTS were nearly lost because 5,336 uncommitted
+# files made real work invisible in `jj status`. These are never sources.
+*.mut.bend
+_mut_*.bend
+*mut.bend
+probe-*.bend
+probe-*.bend.mut
