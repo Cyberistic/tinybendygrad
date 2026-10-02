@@ -1,0 +1,149 @@
+<!doctype html>
+<!-- examples/webgpu/mnist/index.html -- examples/beautiful_mnist.py in a browser
+     on WebGPU.
+
+     The page does three things and reports each one honestly:
+
+       1. ASKS FOR AN ADAPTER. If there is none it says so and stops. It never
+          reports a number it did not compute.
+       2. REPLAYS the kernel launches CPython made for this model's forward pass,
+          using the WGSL tinygrad's own WGSLRenderer emitted for the SAME
+          Ops.PROGRAM (net.json, produced by .agents/slop/xd2/trace_forward.py).
+       3. COMPARES the logits against the oracle, bit for bit, and prints a row
+          per logit -- so a gate that silently stopped running cannot pass.
+
+     It is the EVAL forward path, which is examples/beautiful_mnist.py:29-30
+     (`get_test_acc`), i.e. Model.__call__ under TRAINING=0. Training is NOT here;
+     see the note at the bottom of this file. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>beautiful_mnist on WebGPU</title>
+<style>
+  body { font-family: ui-monospace, Menlo, monospace; margin: 2rem; max-width: 60rem; }
+  h1 { font-size: 1.2rem; }
+  table { border-collapse: collapse; margin-top: 1rem; }
+  td, th { border: 1px solid #ccc; padding: .25rem .6rem; text-align: right; }
+  th { text-align: left; background: #f4f4f4; }
+  .ok { color: #0a0; font-weight: bold; }
+  .bad { color: #d00; font-weight: bold; }
+  .why { color: #d00; }
+  pre { background: #f6f6f6; padding: .6rem; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>examples/beautiful_mnist.py &mdash; forward pass on WebGPU</h1>
+<pre id="status">starting...</pre>
+<table id="logits"></table>
+
+<script type="module">
+import { runForward, getDevice } from "./mnist-webgpu.js";
+
+const status = document.getElementById("status");
+const say = (s) => { status.textContent += "\n" + s; };
+// Every exit sets __MNIST_RESULT, including the ones a top-level await would
+// otherwise swallow, so the harness never has to scrape prose or guess.
+const fail = (why, extra = {}) => {
+  const r = { ok: false, why: String(why), statusText: status.textContent, ...extra };
+  console.error("MNIST_RESULT " + JSON.stringify(r));
+  window.__MNIST_RESULT = r;
+};
+
+// The u32 bits of the oracle, same transport as net.json's buffers.
+const b64ToU32 = (b64) => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Uint32Array(bytes.buffer);
+};
+const f32 = (bits) => { const b = new ArrayBuffer(4); new Uint32Array(b)[0] = bits; return new Float32Array(b)[0]; };
+
+try {
+  const [net, oracle] = await Promise.all([
+    fetch("./net.json").then((r) => r.json()),
+    fetch("./oracle.json").then((r) => r.json()),
+  ]);
+
+  say(`kernels ${net.kernels.length}  buffers ${Object.keys(net.buffers).length}  output ${oracle.shape.join("x")}`);
+  say(`oracle: ${oracle.note}`);
+
+  const gpu = await getDevice();
+  if (!gpu.ok) {
+    say("");
+    say("NO WEBGPU ADAPTER: " + gpu.why);
+    say("This page will not print a loss or an accuracy it did not compute.");
+    fail(gpu.why);
+  } else {
+    const i = gpu.info;
+    say(`adapter: vendor=${i.vendor} architecture=${i.architecture} device=${i.device}`);
+    const OUT = "b25";   // the buffer the trace's last launch writes; see trace_forward.py
+    const t0 = performance.now();
+    const { words, launches, snaps } = await runForward(gpu.device, net, OUT, { snapshot: true });
+    const ms = performance.now() - t0;
+
+    // THE LADDER. net.json carries CPython's buffer contents after EVERY launch,
+    // so the first launch whose state differs names the kernel that moved, rather
+    // than leaving "the logits are wrong" with nowhere to start.
+    //
+    // Per launch it reports how MANY elements differ and the largest gap in ulp,
+    // not just the first one: a single element off by a few ulp and every element
+    // off by a lot are different bugs and one number cannot tell them apart.
+    const asI32 = (w) => new Int32Array(new Int32Array([w]).buffer)[0];
+    const ladder = snaps.map((s) => {
+      const want = net.kernels[s.launch].after ?? {};
+      let ndiff = 0, maxUlp = 0, maxAbs = 0, worst = null, total = 0;
+      for (const [name, gotWords] of Object.entries(s.state)) {
+        if (!(name in want)) continue;                 // the i64 counters are not on the u32 wire
+        const w = b64ToU32(want[name]);
+        total += w.length;
+        for (let k = 0; k < Math.min(w.length, gotWords.length); k++) {
+          if (w[k] === gotWords[k]) continue;
+          ndiff++;
+          const ulp = Math.abs(asI32(w[k]) - asI32(gotWords[k]));
+          const abs = Math.abs(f32(gotWords[k]) - f32(w[k]));
+          if (ulp > maxUlp) { maxUlp = ulp; worst = `${name}[${k}] ${gotWords[k]}/${w[k]}`; }
+          maxAbs = Math.max(maxAbs, abs);
+        }
+      }
+      return { launch: s.launch, entry: s.entry, ndiff, total, maxUlp, maxAbs, worst };
+    });
+    for (const r of ladder) {
+      say(`  launch ${String(r.launch).padStart(2)} ${r.entry.padEnd(24)} ` +
+          (r.ndiff ? `${r.ndiff}/${r.total} elements differ, max ${r.maxUlp} ulp / ${r.maxAbs.toExponential(2)} absolute`
+                   : `exact (${r.total} elements)`));
+    }
+    const firstBad = ladder.find((r) => r.ndiff);
+
+    const want = b64ToU32(oracle.logits_b64);
+    let exact = 0, maxUlp = 0;
+    const rows = [...want].map((w, k) => {
+      const got = words[k];
+      if (got === w) exact++;
+      const ulp = Math.abs(new Int32Array(new Int32Array([w]).buffer)[0] - new Int32Array(new Int32Array([got]).buffer)[0]);
+      maxUlp = Math.max(maxUlp, ulp);
+      return `<tr><td>${k}</td><td>${got}</td><td>${f32(got).toExponential(6)}</td><td>${w}</td>` +
+             `<td>${f32(w).toExponential(6)}</td><td>${got === w ? "exact" : "DIFF"}</td></tr>`;
+    }).join("");
+    document.getElementById("logits").innerHTML =
+      `<tr><th>#</th><th>gpu bits</th><th>gpu f32</th><th>cpu bits</th><th>cpu f32</th><th></th></tr>${rows}`;
+
+    const pass = exact === want.length;
+    say(`launches ${launches} in ${ms.toFixed(1)} ms`);
+    say(`bit-exact ${exact}/${want.length}${pass ? "" : `  max ulp diff ${maxUlp}`}`);
+    say(pass ? "MATCH: the browser reproduced CPython's forward pass exactly"
+             : "MISMATCH: see the table above; do not trust this page's numbers");
+    const r = { ok: pass, exact, total: want.length, maxUlp, launches, ms, ran: true,
+                ladder: ladder.map((l) => `launch${l.launch} ${l.entry} ndiff=${l.ndiff}/${l.total} maxUlp=${l.maxUlp} maxAbs=${l.maxAbs}`),
+                gpuBits: [...words], cpuBits: [...want], statusText: status.textContent };
+    console.log("MNIST_RESULT " + JSON.stringify({ ...r, gpuBits: r.gpuBits.length, cpuBits: r.cpuBits.length }));
+    window.__MNIST_RESULT = r;
+  }
+} catch (e) {
+  say("");
+  say("FAILED: " + (e?.message ?? e));
+  fail(e?.message ?? e, { stack: String(e?.stack ?? "") });
+}
+</script>
+</body>
+</html>

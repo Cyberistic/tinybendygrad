@@ -1,0 +1,9 @@
+{
+ "bs": 1,
+ "shape": [
+  1,
+  10
+ ],
+ "logits_b64": "xyuSvqC4g78hudG/Vj2IPV5bs7+GzGM/RN9qP7AK7z1Wy38/SNrevQ==",
+ "note": "CPython tinygrad, DEV=CPU, TRAINING=0 (py:29-30 get_test_acc path), u32 bit patterns"
+}
