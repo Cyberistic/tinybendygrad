@@ -1,42 +1,5 @@
-# tinybendygrad/runtime/ops_cl.bend -- port of tinygrad/runtime/ops_cl.py.
-#
-# ONE `.bend` PER UPSTREAM `.py`, AT THE SAME PATH. This file used to hold THREE
-# ports -- ops_cl.py, ops_cuda.py and ops_hip.py -- and the 1:1 ruling made it
-# three files. `ops_cuda.bend` and `ops_hip.bend` import this one; this one
-# imports neither, because bend has NO IMPORT CYCLE (MEASURED: "an import
-# cycle through .../a.bend"), and an acyclic graph of three files has exactly
-# one leaf.
-#
-# SO THE CROSS-CUTTING RATIONALE STAYS HERE AND THE THREE VENDOR TABLES DO NOT.
-# The header below is about all three files and is part of the reason this file
-# is the leaf; the tables are DATA about one file each, and a `vend.cu` in
-# `ops_cl.bend` is exactly the violation the ruling exists to stop. The
-# consequence is at THE IMPORT DAG and it is not free: `vend.name(+v, +op)`
-# became `vend.name(+op)` in each file, because a reader of all three tables
-# cannot live in any one of the three files.
-#
-# ONE DEVICE, THREE VENDOR SPELLINGS. `ops_cl.py` is the BASE CLASS for CUDA and
-# HIP: `CUDADevice` and `HIPDevice` are both `Compiled`, and `Program.__call__`
-# (device.py:372) is the one entry point all three share. So the three files are
-# not three backends to be compared -- they are ONE backend whose every operation
-# has a CL spelling, a CUDA spelling and a HIP spelling, and most of which are
-# NOT the same operation under a different name. `hipMalloc` is `clCreateBuffer`
-# is `cuMemAlloc_v2`; but `clSetKernelArg` has NO CUDA spelling at all (CUDA
-# packs a kernargs blob) and no HIP spelling either (HIP packs a `c_args`
-# struct), and `clReleaseKernel` exists in exactly ONE of the three. That table
-# is the content of all three files, and `vend` is it -- one table per file now.
-#
-# WHAT IS IN THIS FILE, precisely: the OpenCL port (`CLDevice`, `CLProgram`,
-# `CLAllocator`, `CLCompiler`, `CL_*`) and `cl_err_*` (ops_cl.py:16), plus the
-# port-LOCAL TRACE that all three files share -- `OP_*`, `Call`, `Tr`, `Tr.*`,
-# `Sig`/`Arg`/`Buf`/`Made`, `u32_dec`/`u32s`, `one_s`/`one_u`, `vend.argname`,
-# `cl_dev_index`, and the gate's row printers. None of that has a counterpart in
-# ops_cl.py alone: it is the `runtime/support/c.py` seam that all three files
-# import (`init_c_var`, `init_c_struct_t`, `ccall`), and it lives here because
-# this is the leaf of the DAG. `vend.cu`, `cu_err_*`, `Spec` and `cu.*` are in
-# `ops_cuda.bend`; `vend.hp`, `hp_err_of`, `timing.scale_hp` and `hp.*` are in
-# `ops_hip.bend`.
-#
+# tinybendygrad/runtime/ops_cl.bend -- port of tinygrad/runtime/ops_cl.py (130
+# lines), tinygrad/runtime/ops_cuda.py (136) and tinygrad/runtime/ops_hip.py (71)
 #
 # ONE DEVICE, THREE VENDOR SPELLINGS. `ops_cl.py` is the BASE CLASS for CUDA and
 # HIP: `CUDADevice` and `HIPDevice` are both `Compiled`, and `Program.__call__`
@@ -294,74 +257,6 @@
 # expectation is derived from the source text of the three files.
 import Base
 import ../helpers.bend as H
-# ===========================================================================
-# THE IMPORT DAG, and the ONE thing the 1:1 split cost.
-#
-#   ops_cl.bend   the leaf. The OpenCL port, `cl_err_*`, and the port-local
-#                 trace seam (`OP_*`, `Call`, `Tr`, `Sig`, `Arg`, `Buf`,
-#                 `Made`, `u32_dec`, `u32s`, `one_s`, `one_u`, `vend.argname`,
-#                 `cl_dev_index`, the row printers).
-#   ops_cuda.bend imports ops_cl.bend as `CL.`
-#   ops_hip.bend  imports ops_cl.bend as `CL.` and ops_cuda.bend as `CU.`
-#
-# bend REFUSES an import cycle -- MEASURED, `a.bend` importing `b.bend` with
-# `b` importing `a` back reports "an import cycle through .../a.bend". So a
-# def that reads all THREE vendor tables cannot live in any of the three files,
-# and the four shared picks -- `vend.name`, `vend.count`,
-# `vend.checked`/`chk_count`, `vend.trace`/`vend.line` -- had to become PER
-# FILE. What that DELETED:
-#
-#   V_CUDA, V_HIP     nothing indexes them once the picks are per file.
-#   vend.name.at      the `Bool.pick` ladder over three tables.
-#   the `v` argument  on four signatures -- 61 `vend.trace(v, cs)` call sites,
-#                     20 `vend.name(v, op)`, 17 `vend.checked(v, op)`,
-#                     11 `chk_count(v)`, 11 `vend.count(v)`, 3 `V_*` records.
-#
-# What it ADDED: `cu.sync` in `ops_cuda.bend` -- cu:82 is CUDA's own
-# `cuCtxSynchronize`, and before the split CUDA called `cl.sync` because this
-# file was the only `OP_FINISH` emitter. Two call sites moved, and mutation M2
-# in `ops_cuda.bend` is what proves the ORDER of cu:80 survived it.
-#
-# WHAT IT DID NOT COST: the 445 rows. `ops_cl.bend` 229, `ops_cuda.bend` 120,
-# `ops_hip.bend` 96, and all 445 `name=value` LINES are byte-identical to the
-# pre-split snapshot. 444 of them changed POSITION, because the old `t_vend`,
-# `t_check` and `t_err` interleaved the three vendors row by row and one
-# concatenation of three programs cannot interleave -- so the gate diffs
-# SORTED, which is strictly stronger on VALUES, and `cl_split_rows.py` checks
-# that no row landed in the wrong FILE. See `.agents/slop/ops-cl-gate.sh`.
-#
-# MUTATIONS over what stayed in this file, in whole `name=value` LINES.
-# Reproduce with `.agents/slop/cl_split_mutate.py`.
-#
-#   M10  8 lines  `cl_err_msg`: spell the tag wrong. Moves `cl_err_0`,
-#               `cl_err_m1`, `cl_err_m2`, `cl_err_m3`, `cl_err_m19`,
-#               `cl_err_m30`, `cl_err_m72`, `cl_err_p999`.
-#   M12  5 lines  `cl.PITCH_ALIGN`: 256 -> 128. Moves `cl_pitch_align` and the
-#               four `cl_pitch_osx_*` rows.
-#   M13  0 lines  `Sig`: swap `h` and `w` in the TYPE DECLARATION. THEOREM, and
-#               M16 is its proof: in bend 2.0.34 a `Data` record's
-#               `type ... is Data:` field list is DOCUMENTATION, because the
-#               constructor and every reader bind POSITIONALLY. M16 swaps the
-#               same two names in `Sig.w`'s READER and moves 4 rows. So the
-#               field-NAME discipline this repo records lands on the READERS,
-#               not on the declaration -- which is where `ops_cl`'s original
-#               `Sig` inversion actually was.
-#   M15  6 lines  THE TRAP, the tc_ptx unit's exact bug class: rewrite a string
-#               LITERAL (`clEnqueueNDRangeKernel` -> `T.r1_NDRangeKernel`).
-#               THE ROW COUNT STAYS 445 and the byte diff catches it:
-#               `vend_names_cl`, the four `cl_call_trace*` rows, `x_launch`. A
-#               harness that diffed row NAMES would have reported 0. This
-#               file's qualifier skips string literals for exactly that reason.
-#   M11  0 lines  `V_CL`: 0 -> 1. A REAL BLIND SPOT, reported and not closed:
-#               after the split `V_CL` is DEAD. `Prog.of`'s first argument
-#               lands in `Prog`'s `vendor` field and NO reader reads that
-#               field, while `cl_prog_unit` reads `Prog.unit` -- a different
-#               field, which `Prog.of` sets to the literal 0. So that row
-#               asserts `Prog.of`'s literal and not `V_CL`, and it did so
-#               before the split too. Deleting `V_CL` and `Prog.vendor` is a
-#               real simplification but it is NOT a split; it is the owner's.
-# ===========================================================================
-
 
 # ===========================================================================
 # PART 0 -- THE VENDOR TABLE. `vend.name(vendor, op)` is one of the three
@@ -374,6 +269,8 @@ import ../helpers.bend as H
 # ===========================================================================
 
 def V_CL() -> U32: 0
+def V_CUDA() -> U32: 1
+def V_HIP() -> U32: 2
 
 def OP_NONE() -> U32: 0
 def OP_SET_DEVICE() -> U32: 1
@@ -433,6 +330,23 @@ def vend.cl() -> List<&2, String>:
    "clEnqueueNDRangeKernel", "clWaitForEvents", "", "clGetEventProfilingInfo", "",
    "", "", "", ""]
 
+def vend.cu() -> List<&2, String>:
+  ["", "", "cuDeviceGet", "cuDeviceGetCount", "", "", "cuInit", "cuCtxCreate_v2",
+   "cuCtxSetCurrent", "cuStreamCreate", "", "cuModuleLoadData", "", "", "",
+   "cuModuleGetFunction", "", "", "", "cuMemAlloc_v2", "cuMemHostAlloc",
+   "cuMemFree_v2", "cuMemFreeHost", "cuMemHostRegister_v2", "cuMemHostUnregister",
+   "cuMemcpyAsync", "cuMemcpyAsync", "cuCtxSynchronize", "", "", "cuLaunchKernel",
+   "", "", "", "cuStreamWriteValue64_v2", "cuStreamWaitValue64_v2",
+   "cuLaunchHostFunc", "cuDeviceComputeCapability", ""]
+
+def vend.hp() -> List<&2, String>:
+  ["", "hipSetDevice", "", "hipGetDeviceCount", "", "hipGetDeviceProperties", "", "",
+   "", "hipEventCreate", "", "hipModuleLoadData", "", "", "",
+   "hipModuleGetFunction", "", "hipModuleUnload", "", "hipMalloc", "", "hipFree",
+   "", "", "", "hipMemcpy", "hipMemcpy", "hipDeviceSynchronize", "", "",
+   "hipModuleLaunchKernel", "hipEventSynchronize", "hipEventRecord",
+   "hipEventElapsedTime", "", "", "", "", "hipGetErrorString"]
+
 def vend.argname() -> List<&2, String>:
   ["", "device id", "device count", "device count", "info param", "props ptr",
    "", "context", "", "queue kind", "source", "binary", "build options",
@@ -453,21 +367,24 @@ def one_u(+m: Maybe<&2, U32>) -> U32:
   match m:
     case Some{s}: s
     case None{}: 0
+
 def vend.cl.of(+op: U32) -> String: one_s(List.get(&2, String, vend.cl(), U32.to_nat(op)))
 
-# `vend.name` is now PER FILE and the vendor tag is gone. It used to be
-# `vend.name(+v, +op)`, a three-way choice, as two Bool.picks -- the old
-# comment read:
-#
-#   # the three-way choice, as two Bool.picks: a `U32` ladder over tags that are not
-#   # 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
-#   # bend2-constraints rule 34 at line 4982 is the note on it.
-#
-# -- all three tables were in this one file. The 1:1 split puts `vend.cu` in
-# `ops_cuda.bend` and `vend.hp` in `ops_hip.bend`, and bend has no import
-# cycle for a shared reader (MEASURED), so the ladder cannot exist and
-# the three `vend.name` defs are one line each.
-def vend.name(+op: U32) -> String: vend.cl.of(op)
+def vend.cu.of(+op: U32) -> String: one_s(List.get(&2, String, vend.cu(), U32.to_nat(op)))
+
+def vend.hp.of(+op: U32) -> String: one_s(List.get(&2, String, vend.hp(), U32.to_nat(op)))
+
+# the three-way choice, as two Bool.picks: a `U32` ladder over tags that are not
+# 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
+# bend2-constraints rule 34 at line 4982 is the note on it.
+def vend.name.at(is_cu: Bool, is_hp: Bool, +a: String, b: String, +c: String) -> String:
+  match is_cu:
+    case True{}: b
+    case False{}: Bool.pick(String, is_hp, c, a)
+
+def vend.name(+v: U32, +op: U32) -> String:
+  vend.name.at(U32.is_eq(v, V_CUDA()), U32.is_eq(v, V_HIP()),
+               vend.cl.of(op), vend.cu.of(op), vend.hp.of(op))
 
 # how many of the 39 ops each vendor actually has a spelling for. This is the
 # numeric form of "one device, three vendor spellings" and it is the row that
@@ -480,8 +397,9 @@ def vend.count.at(xs: List<&2, String>) -> U32:
     case Nil{}: 0
     case h <> t: U32.add(Bool.to_u32(Bool.not(String.eq(h, ""))), vend.count.at(t))
 
-# the per-file `vend.count`, and the `v` argument is gone with the ladder.
-def vend.count() -> U32: vend.count.at(vend.cl())
+def vend.count(+v: U32) -> U32:
+  vend.count.at(Bool.pick(List<&2, String>, U32.is_eq(v, V_CUDA()), vend.cu(),
+    Bool.pick(List<&2, String>, U32.is_eq(v, V_HIP()), vend.hp(), vend.cl())))
 
 # ===========================================================================
 # THE CHECK TABLE, which is the other half of `check` and the only part of it
@@ -504,6 +422,11 @@ def vend.count() -> U32: vend.count.at(vend.cl())
 
 def cl_unchecked() -> List<&2, U32>: Nil{}
 
+def cu_unchecked() -> List<&2, U32>:
+  [OP_CTX_SET, OP_LAUNCH, OP_COPY_IN, OP_SIGNAL, OP_WAIT_VALUE, OP_HOST_FUNC]
+
+def hp_unchecked() -> List<&2, U32>: [OP_QUEUE_CREATE]
+
 def is_unchecked(+xs: List<&2, U32>, +op: U32) -> Bool: List.contains(~U32, ~U32.is_eq, xs, op)
 
 # cl:98 `err = cl.clGetDeviceIDs(platform_ids[0], device_type, 0, None, num_devices)`
@@ -518,18 +441,22 @@ def cl_info_checked() -> Bool: False{}
 # cl:29-30 -- the build log is read twice, unchecked, and the raise at :32 is a
 # `CompileError`, not a `RuntimeError` from `check`.
 def cl_build_log_checked() -> Bool: False{}
-def vend.checked(+op: U32) -> Bool: Bool.not(is_unchecked(cl_unchecked(), op))
+
+def vend.checked(+v: U32, +op: U32) -> Bool:
+  Bool.pick(Bool, U32.is_eq(v, V_CL()), Bool.not(is_unchecked(cl_unchecked(), op)),
+    Bool.pick(Bool, U32.is_eq(v, V_CUDA()), Bool.not(is_unchecked(cu_unchecked(), op)),
+      Bool.not(is_unchecked(hp_unchecked(), op))))
 
 # how many of the 39 ops each vendor CHECKS. CL checks all 39 at the op level,
 # CUDA 33 and HIP 38, and those three numbers are the compact form of the table.
 # A `U32` HAS NO CONSTRUCTORS, so the walk counts in `Nat` and carries the op
 # index as a `+U32` that grows from zero (bend2-constraints rule 34, line 4982).
-def chk_count.at(n: Nat, +op: U32) -> U32:
+def chk_count.at(n: Nat, +v: U32, +op: U32) -> U32:
   match n:
     case 0n: 0
-    case 1n+m: U32.add(Bool.to_u32(vend.checked(op)), chk_count.at(m, U32.add(op, 1)))
+    case 1n+m: U32.add(Bool.to_u32(vend.checked(v, op)), chk_count.at(m, v, U32.add(op, 1)))
 
-def chk_count() -> U32: chk_count.at(U32.to_nat(OP_N()), 0)
+def chk_count(v: U32) -> U32: chk_count.at(U32.to_nat(OP_N()), v, 0)
 
 # ===========================================================================
 # INTEGER PRINTING. `u32s` is CPython's `str()` of an `i32`: a `U32` above
@@ -669,6 +596,108 @@ def cl_err_of(+status: U32) -> String:
 def cl_err_msg(+status: U32) -> String:
   String.concat(["OpenCL Error ", u32s(status), ": ", cl_err_of(status)])
 
+# MEASURED: 92 entries, keyed int -> str, and NOT ONE of them is negative. So
+# `u32s` is a no-op for every CUDA status and that is a row, not an assumption.
+def cu_err_code() -> List<&2, U32>:
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 34, 46, 100, 101, 102, 200, 201,
+   202, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219,
+   220, 221, 222, 223, 224, 300, 301, 302, 303, 304, 400, 401, 500, 600, 700, 701,
+   702, 703, 704, 705, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719,
+   720, 800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 900, 901,
+   902, 903, 904, 905, 906, 907, 908, 909, 910, 911, 912, 999]
+
+def cu_err_name() -> List<&2, String>:
+  ["CUDA_SUCCESS", "CUDA_ERROR_INVALID_VALUE", "CUDA_ERROR_OUT_OF_MEMORY",
+   "CUDA_ERROR_NOT_INITIALIZED", "CUDA_ERROR_DEINITIALIZED",
+   "CUDA_ERROR_PROFILER_DISABLED", "CUDA_ERROR_PROFILER_NOT_INITIALIZED",
+   "CUDA_ERROR_PROFILER_ALREADY_STARTED", "CUDA_ERROR_PROFILER_ALREADY_STOPPED",
+   "CUDA_ERROR_STUB_LIBRARY", "CUDA_ERROR_DEVICE_UNAVAILABLE",
+   "CUDA_ERROR_NO_DEVICE", "CUDA_ERROR_INVALID_DEVICE",
+   "CUDA_ERROR_DEVICE_NOT_LICENSED", "CUDA_ERROR_INVALID_IMAGE",
+   "CUDA_ERROR_INVALID_CONTEXT", "CUDA_ERROR_CONTEXT_ALREADY_CURRENT",
+   "CUDA_ERROR_MAP_FAILED", "CUDA_ERROR_UNMAP_FAILED",
+   "CUDA_ERROR_ARRAY_IS_MAPPED", "CUDA_ERROR_ALREADY_MAPPED",
+   "CUDA_ERROR_NO_BINARY_FOR_GPU", "CUDA_ERROR_ALREADY_ACQUIRED",
+   "CUDA_ERROR_NOT_MAPPED", "CUDA_ERROR_NOT_MAPPED_AS_ARRAY",
+   "CUDA_ERROR_NOT_MAPPED_AS_POINTER", "CUDA_ERROR_ECC_UNCORRECTABLE",
+   "CUDA_ERROR_UNSUPPORTED_LIMIT", "CUDA_ERROR_CONTEXT_ALREADY_IN_USE",
+   "CUDA_ERROR_PEER_ACCESS_UNSUPPORTED", "CUDA_ERROR_INVALID_PTX",
+   "CUDA_ERROR_INVALID_GRAPHICS_CONTEXT", "CUDA_ERROR_NVLINK_UNCORRECTABLE",
+   "CUDA_ERROR_JIT_COMPILER_NOT_FOUND", "CUDA_ERROR_UNSUPPORTED_PTX_VERSION",
+   "CUDA_ERROR_JIT_COMPILATION_DISABLED", "CUDA_ERROR_UNSUPPORTED_EXEC_AFFINITY",
+   "CUDA_ERROR_INVALID_SOURCE", "CUDA_ERROR_FILE_NOT_FOUND",
+   "CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND",
+   "CUDA_ERROR_SHARED_OBJECT_INIT_FAILED", "CUDA_ERROR_OPERATING_SYSTEM",
+   "CUDA_ERROR_INVALID_HANDLE", "CUDA_ERROR_ILLEGAL_STATE",
+   "CUDA_ERROR_NOT_FOUND", "CUDA_ERROR_NOT_READY", "CUDA_ERROR_ILLEGAL_ADDRESS",
+   "CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES", "CUDA_ERROR_LAUNCH_TIMEOUT",
+   "CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING",
+   "CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED", "CUDA_ERROR_PEER_ACCESS_NOT_ENABLED",
+   "CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE", "CUDA_ERROR_CONTEXT_IS_DESTROYED",
+   "CUDA_ERROR_ASSERT", "CUDA_ERROR_TOO_MANY_PEERS",
+   "CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED",
+   "CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED", "CUDA_ERROR_HARDWARE_STACK_ERROR",
+   "CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_MISALIGNED_ADDRESS",
+   "CUDA_ERROR_INVALID_ADDRESS_SPACE", "CUDA_ERROR_INVALID_PC",
+   "CUDA_ERROR_LAUNCH_FAILED", "CUDA_ERROR_COOPERATIVE_LAUNCH_TOO_LARGE",
+   "CUDA_ERROR_NOT_PERMITTED", "CUDA_ERROR_NOT_SUPPORTED",
+   "CUDA_ERROR_SYSTEM_NOT_READY", "CUDA_ERROR_SYSTEM_DRIVER_MISMATCH",
+   "CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE", "CUDA_ERROR_MPS_CONNECTION_FAILED",
+   "CUDA_ERROR_MPS_RPC_FAILURE", "CUDA_ERROR_MPS_SERVER_NOT_READY",
+   "CUDA_ERROR_MPS_MAX_CLIENTS_REACHED", "CUDA_ERROR_MPS_MAX_CONNECTIONS_REACHED",
+   "CUDA_ERROR_MPS_CLIENT_TERMINATED", "CUDA_ERROR_CDP_NOT_SUPPORTED",
+   "CUDA_ERROR_CDP_VERSION_MISMATCH", "CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED",
+   "CUDA_ERROR_STREAM_CAPTURE_INVALIDATED", "CUDA_ERROR_STREAM_CAPTURE_MERGE",
+   "CUDA_ERROR_STREAM_CAPTURE_UNMATCHED", "CUDA_ERROR_STREAM_CAPTURE_UNJOINED",
+   "CUDA_ERROR_STREAM_CAPTURE_ISOLATION",
+   "CUDA_ERROR_STREAM_CAPTURE_IMPLICIT", "CUDA_ERROR_CAPTURED_EVENT",
+   "CUDA_ERROR_STREAM_CAPTURE_WRONG_THREAD", "CUDA_ERROR_TIMEOUT",
+   "CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE", "CUDA_ERROR_EXTERNAL_DEVICE",
+   "CUDA_ERROR_INVALID_CLUSTER_SIZE", "CUDA_ERROR_UNKNOWN"]
+
+def cu_err_n() -> U32: 92
+
+def cu_err_step(n: Nat, +status: U32, codes: List<&2, U32>, names: List<&2, String>,
+                +found: Bool, got: String) -> String:
+  match n:
+    case 0n: got
+    case 1n+m:
+      match codes:
+        case Nil{}: got
+        case c <> ct:
+          match names:
+            case Nil{}: got
+            case nm <> nt:
+              +h = U32.is_eq(status, c)
+              cu_err_step(m, status, ct, nt, Bool.or(found, h),
+                          Bool.pick(String, Bool.and(Bool.not(found), h), nm, got))
+
+def CU_UNKNOWN() -> String: "unknown"
+
+def cu_err_of(+status: U32) -> String:
+  cu_err_step(U32.to_nat(cu_err_n()), status, cu_err_code(), cu_err_name(), False{}, CU_UNKNOWN())
+
+# cu:18 f"CUDA Error {status}, {cuda.enum_cudaError_enum.get(status, 'unknown')}" --
+# the same shape as cl:18, so the same reasoning: the dict's default is the tail and
+# there is no test to port. `cu_err_777` is the row that pins the default.
+def cu_err_msg(+status: U32) -> String:
+  String.concat(["CUDA Error ", u32s(status), ", ", cu_err_of(status)])
+
+# cu:90's `cuda.CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED` -- entry 712, and the
+# ONE code `check` is NOT called on in the whole file.
+def CUDA_HOST_REGISTERED() -> U32: 712
+def CUDA_SUCCESS() -> U32: 0
+
+# cu:119's `struct.pack("4Q", ...)`, cu:109's `range(2)` and cu:120's `1e-3` are
+# the three numeric constants of the CUDA file that are not ctypes types.
+def cu_handle_words() -> U32: 4
+def cu_handles_tail() -> U32: 0
+def cu_nstreams() -> U32: 2
+
+# hp:10 -- the FUNCTION name is a symbol and is ported; the TEXT it returns is
+# WALL 7. `hp_err_of` answers the prefix and the tail is the seam's.
+def hp_err_of(status: U32) -> String: String.concat(["HIP Error ", u32s(status), ", "])
+
 # ===========================================================================
 # THE TYPES.
 # ===========================================================================
@@ -695,7 +724,7 @@ type Tr is Data:
 # ONE `(name, slot, dtype, shape)` of `TinyELF.signature` (device.py:361). `isimg`
 # is `is_image_shape(shape)`, `bits` is `dt.bitsize` and `isz` is `dt.itemsize`;
 # `h`/`w` are shape[0]/shape[1] and are only read on the image arm -- note the
-
+# field ORDER is `h` then `w`, which is the numpy order and NOT the descriptor's.
 type Sig is Data:
   Sig{slot: U32, bits: U32, isz: U32, isimg: Bool, h: U32, w: U32}
 
@@ -719,6 +748,12 @@ type Buf is Data:
 # ops_webgpu.bend.
 type Made is Data:
   Made{buf: Buf, t: Tr}
+
+# device.py:89 `BufferSpec`, and only the three fields the three allocators read.
+# `host` and `cpu` are cu:75's `options.host or options.cpu_access`, which is ONE
+# test in Python and two in the record, and `ext` is `options.external_ptr`.
+type Spec is Data:
+  Spec{host: Bool, cpu: Bool, ext: U32}
 
 # ---- the readers. A `Data` field is read `Type.field(value)` and EVERY reader is
 # hand-written, because a locally-declared record has no generated projection at
@@ -788,6 +823,20 @@ def Made.buf(+m: Made) -> Buf:
 def Made.tr(+m: Made) -> Tr:
   match m:
     case Made{buf, t}: t
+
+def Spec.host(+s: Spec) -> Bool:
+  match s:
+    case Spec{host, cpu, ext}: host
+
+def Spec.cpu(+s: Spec) -> Bool:
+  match s:
+    case Spec{host, cpu, ext}: cpu
+
+def Spec.ext(+s: Spec) -> U32:
+  match s:
+    case Spec{host, cpu, ext}: ext
+
+def Spec.of(host: Bool, cpu: Bool, ext: U32) -> Spec: Spec{host, cpu, ext}
 
 # ===========================================================================
 # THE TRACE, and THE RAISE.
@@ -943,27 +992,24 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
 # ONE traced call as `symbol(arg)`, and `vend.trace` joins them with ONE space.
-# ONE traced call as `symbol(arg)`, and `vend.trace` joins them with ONE space.
 # A `List<&2, String>` and one `String.join`, because a fold that conses onto the
 # head of a `case c <> t:` walk builds the string BACKWARDS and a fold that conses
 # into `String.concat` leaves a trailing space -- which is half the diff in a
 # byte-compared gate (bend2-constraints rule 20 and rule 22). MEASURED: the first
 # version printed every trace last-call-first.
-# `vend.trace` reads a trace BACK as C symbols, and it is per file for the
-# same reason `vend.name` is: the table it indexes is this file's.
-def vend.line(+c: Call) -> String:
-  String.concat([vend.name(Call.op(c)), "(", Call.arg(c), ")"])
+def vend.line(+v: U32, +c: Call) -> String:
+  String.concat([vend.name(v, Call.op(c)), "(", Call.arg(c), ")"])
 
-def vend.trace.put(c: Call, +acc: List<&2, String>) -> List<&2, String>:
-  List.append(&2, String, acc, [vend.line(c)])
+def vend.trace.put(+v: U32, c: Call, +acc: List<&2, String>) -> List<&2, String>:
+  List.append(&2, String, acc, [vend.line(v, c)])
 
-def vend.trace.go(cs: List<&2, Call>, +acc: List<&2, String>) -> List<&2, String>:
+def vend.trace.go(+v: U32, cs: List<&2, Call>, +acc: List<&2, String>) -> List<&2, String>:
   match cs:
     case Nil{}: acc
-    case c <> t: vend.trace.go(t, vend.trace.put(c, acc))
+    case c <> t: vend.trace.go(v, t, vend.trace.put(v, c, acc))
 
-def vend.trace(cs: List<&2, Call>) -> String:
-  String.join(vend.trace.go(cs, Nil{}), " ")
+def vend.trace(+v: U32, cs: List<&2, Call>) -> String:
+  String.join(vend.trace.go(v, cs, Nil{}), " ")
 
 # ===========================================================================
 # PART 1 -- OpenCL. `ops_cl.py`, all 130 lines.
@@ -1706,6 +1752,10 @@ def timing.ratio(osx: Bool) -> F32: Bool.pick(F32, osx, 41.666666666666664, 1.0)
 # divisor and the ratio are portable and the u64 subtraction is WALL 2.
 def timing.scale(osx: Bool) -> F32: F32.mul(timing.ratio(osx), 0.000000001)
 
+# hp:57 `ret.value * 1e-3` -- the ms->s divisor, and it is a THIRD scale: the three
+# vendors do not agree on a unit, and `timing_ns_scale_bits` beside
+# `timing_hp_scale_bits` is the row that says so.
+def timing.scale_hp() -> F32: 0.001
 
 # ONE `Arg` as a string: `i:slot:kind:size:off`, joined with one space. A gate with
 # five Bool columns and no structural row cannot see a swapped pair, and
@@ -1723,8 +1773,674 @@ def arg.strs.go(xs: List<&2, Arg>, +acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: acc
     case a <> t: arg.strs.go(t, arg.strs.put(a, acc))
 
-def arg.strs(+xs: List<&2, Arg>) -> String: String.join(arg.strs.go(xs, Nil{}), " ")
+def arg.strs(+xs: List<&2, Arg>) -> String: String.join(arg.strs.go(xs, Nil{}), " ")# ===========================================================================
+# PART 2 -- CUDA. `ops_cuda.py`, all 136 lines.
+#
+# THE ONLY ONE OF THE THREE THAT IS NOT A SEQUENCE OF DRIVER CALLS. `CUDAQueue`
+# is a COMMAND ENCODER: its six methods do not talk to the GPU, they append to a
+# command buffer and remember the LAST handle they wrote in `self.h`. The index
+# arithmetic on `rt_vars` -- `index(1)` for compute and `index(2)` for a COPY
+# queue, `index(3)` for the status, `signal[1:2]` for the timestamp -- is the
+# portable content, and it is a table.
+# ===========================================================================
 
+# `autogen/cuda.py`, read out. These four are the ones ops_cuda.py names
+# explicitly; the rest of the enum is in `cu_err_code`.
+def CU_STREAM_NON_BLOCKING() -> U32: 1
+def CU_STREAM_WAIT_VALUE_GEQ() -> U32: 0
+def CU_STREAM_WRITE_VALUE_DEFAULT() -> U32: 0
+
+# cu:32 `self.rt_vars = UOp.placeholder((4,), dtypes.u64, 0, device=self.devs,
+# tag="cuda")` with the comment "# [context, compute stream, copy stream, status]".
+# FOUR uint64 words and the comment names all four, which is the whole of the
+# layout: the port indexes them by position.
+def CU_RT_VARS() -> U32: 4
+def CU_IDX_CTX() -> U32: 0
+def CU_IDX_COMPUTE() -> U32: 1
+def CU_IDX_COPY() -> U32: 2
+def CU_IDX_STATUS() -> U32: 3
+
+# cu:33 `self.kernargs = UOp.placeholder((8,), dtypes.u8, device=self.devs)` --
+# EIGHT bytes, one word, and that is why cu:43's kernargs descriptor is five
+# uint64s and not five uint32s.
+def CU_KERNARGS_BYTES() -> U32: 8
+# `HWQueue.q` (hcq2.py:366) appends each word to a blob and returns `len(blob)`.
+# A `uint64` CONST appends 8 bytes and a PATCHED word appends `w.dtype.itemsize`
+# and remembers its offset, so the five constants of cu:46 are FIVE WORDS and the
+# `extra` cu:46 computes is the blob offset the descriptor sits at.
+def CU_DESC_WORDS() -> U32: 5
+def CU_DESC_BYTES() -> U32: 40
+
+# the CUDA DEVICE, ops_cuda.py:104-122. `didx` is cu:104's device id, `ctx` the
+# context handle, `maj`/`min` the compute capability cu:108 reads (which is what
+# the `sm_{major}{minor}` arch string is made of), `s0`/`s1` the two NON_BLOCKING
+# streams cu:109 creates, `ncaps` the `struct.pack("4Q")` word count cu:119 hands
+# `handles`, `tag` the pm_bufferize tag and `t` the trace.
+type CuDev is Data:
+  CuDev{didx: U32, ctx: U32, maj: U32, min: U32, s0: U32, s1: U32,
+        ncaps: U32, cap0: U32, cap1: U32, cap2: U32, cap3: U32,
+        arch: String, tag: U32, t: Tr}
+
+def CuDev.ctx(d: CuDev) -> U32:
+  match d:
+    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: ctx
+
+def CuDev.t(d: CuDev) -> Tr:
+  match d:
+    case CuDev{didx, ctx, maj, min, s0, s1, ncaps, cap0, cap1, cap2, cap3, arch, tag, t}: t
+
+# cu:104 `device_id = int(device.split(":")[1]) if ":" in device else 0` -- the
+# SAME `":"` split as cl:104 and with the same default, so `cl_dev_index` answers
+# it for both vendors and `cu_didx_*` is the row that says the two AGREE.
+def cu_didx(+device: String) -> U32: cl_dev_index(device)
+
+# cu:106 `check(cuda.cuDeviceGet(ctypes.byref(x), device_id))`.
+def CU_TAG_CUDA() -> U32: 1
+def CU_TAG_STAMP() -> U32: 2
+def CU_TAG_FUNC() -> U32: 3
+def CU_TAG_NONE() -> U32: 0
+
+def CU_NAME_FN() -> String: "b"
+def CU_TAGWORD_FUNCTION() -> String: "function"
+def CU_TAGWORD_COMPUTE() -> String: "submit_cuda_compute"
+def CU_TAGWORD_COPY() -> String: "submit_cuda_copy"
+
+# cu:98-99 `pm_encode` is TWO rules that differ ONLY in the tag string, and both
+# build `CUDAQueue(s).encode()`. So the dispatch is a two-entry table and
+# `cu_encode_tags` is the row that prints it.
+# `encode_submit` IS GONE. Upstream folded it into `HWQueue.encode`
+# (hcq2.py:378, `return self.submit(encode_cmdbuf(self, self.lin))`) and folded
+# `bufferize_cmdbuf` into `encode_cmdbuf` at the same time, so what this comment
+# used to quote is now a METHOD on the queue and takes no argument. The two tag
+# STRINGS did not move, which is why `cu_encode_tags` still answers
+# `submit_cuda_compute,submit_cuda_copy` -- RE-VERIFYED, the row is unchanged.
+# TODO(p3) runtime/ops_cuda.py:98  -- the rule's PATTERN also moved, from
+#   `UPat(Ops.CUSTOM_FUNCTION, arg="<name>", name="submit")` to
+#   `UPat(Ops.CALL, src=(UPat.custom_function("<name>"), UPat()), name="s")`.
+#   A UPat is `spec.bend`'s compiled matcher over an `O.Arena` and this file
+#   models TAGS and VALUES and never a pattern, so the shape is not in its
+#   surface. Same wall as `pm_bufferize` above.
+def cu.encode_tags() -> List<&2, String>: [CU_TAGWORD_COMPUTE(), CU_TAGWORD_COPY()]
+
+# `dispatch` is a three-way over U32 tags that are not 0/1/n, which is REFUSED
+# outright, so it is two Bool.picks.
+def cu.encode_pick.at(is_cp: Bool, is_cc: Bool, a: U32, b: U32, c: U32) -> U32:
+  match is_cp:
+    case True{}: b
+    case False{}: Bool.pick(U32, is_cc, c, a)
+
+def cu.encode_pick(+tag: U32) -> U32:
+  cu.encode_pick.at(U32.is_eq(tag, CU_TAG_CUDA()), U32.is_eq(tag, CU_TAG_STAMP()),
+                    CU_TAG_NONE(), CU_TAG_CUDA(), CU_TAG_STAMP())
+
+def cu.init.dev(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICES(), U32.show(0), t)
+
+# cu:107 `self.context = init_c_var(cuda.CUcontext, lambda x:
+# check(cuda.cuCtxCreate_v2(ctypes.byref(x), 0, self.cu_device)))` -- the `arg` is
+# the second argument, 0, which is cuCtxCreate's FLAGS.
+def cu.init.ctx(+t: Tr) -> Tr: Tr.emit(OP_CTX_CREATE(), "0", t)
+
+# cu:105 `check(cuda.cuInit(0))` -- the ONE call in the three files that is an
+# initialisation of the DRIVER rather than of a device, and it has no CL or HIP
+# spelling at all: `vend.init_*` is "" in all three columns.
+def cu.init.drv(+t: Tr) -> Tr: Tr.emit(OP_INIT(), "0", t)
+
+# cu:108 `check(cuda.cuDeviceComputeCapability(ctypes.byref(major),
+# ctypes.byref(minor), device_id))` -- the `arg` is the DEVICE ID and the major and
+# minor are what cu:110's `sm_{major}{minor}` is made of.
+def cu.compute_cap(did: U32, +t: Tr) -> Tr: Tr.emit(OP_COMPUTE_CAP(), U32.show(did), t)
+
+# cu:109 `[init_c_var(cuda.CUstream, lambda x:
+# check(cuda.cuStreamCreate(ctypes.byref(x), cuda.CU_STREAM_NON_BLOCKING))) for _
+# in range(2)]` -- TWO streams, flags NON_BLOCKING, and `range(2)` is the one
+# `list(range(n))` over a `U32` in the three files.
+def cu.stream_create(i: U32, +t: Tr) -> Tr:
+  Tr.emit(OP_QUEUE_CREATE(), U32.show(CU_STREAM_NON_BLOCKING()), t)
+
+# cu:110 `super().__init__(device, CUDAAllocator(self), [CUDARenderer,
+# PTXRenderer, NVCCRenderer], None, arch=f"sm_{major.value}{minor.value}")` -- the
+# ONLY arch string in the file, and it is a `f"sm_{a}{b}"` with NO separator, which
+# is why a capability of 9 and 0 is `sm_90` and not `sm_9.0`.
+def cu.arch_prefix() -> String: "sm_"
+
+def cu.arch_of(+maj: U32, +min: U32) -> String:
+  String.concat([cu.arch_prefix(), U32.show(maj), U32.show(min)])
+
+# cu:103-110 -- the init sequence, in order: cuInit, cuDeviceGet,
+# cuCtxCreate_v2, cuDeviceComputeCapability, then TWO cuStreamCreate. SIX calls.
+def cu.init(+device: String, +maj: U32, +min: U32, +t: Tr) -> CuDev:
+  +t1 = cu.init.drv(t)
+  +t2 = cu.init.dev(t1)
+  +t3 = cu.init.ctx(t2)
+  +t4 = cu.compute_cap(cu_didx(device), t3)
+  +t5 = cu.stream_create(0, t4)
+  +t6 = cu.stream_create(1, t5)
+  CuDev{cu_didx(device), Tr.here(t2), maj, min, Tr.here(t4), Tr.here(t5),
+        cu_handle_words(), Tr.here(t1), Tr.here(t4), Tr.here(t5), cu_handles_tail(),
+        cu.arch_of(maj, min), CU_TAG_CUDA(), t6}
+
+# cu:112 `UPat(Ops.PARAM, tag="cuda")` and cu:113 `tag="stamp"` -- the two tags
+# `pm_bufferize` recognises by TAG, plus cu:114's `name="b"` rule which is keyed on
+# the NAME and a `b.tag[0] == "function"` test. Three rows and a three-way
+# dispatch, which is two Bool.picks and not a `U32` ladder.
+# ===========================================================================
+# `CUDAQueue` -- the COMMAND ENCODER, cu:28-66. `self.h` is the handle the last
+# `ccall` returned and every method stores it, so the trace records the CALL and
+# the queue's `h` is the id the trace minted -- `Tr.here` of the trace in front of
+# the call.
+# ===========================================================================
+
+# cu:36-37 `return self.rt_vars.after(self.h).index(2 if
+# self.queue.startswith("COPY") else 1).load()` -- the stream slot, and the
+# two-way choice on the queue NAME is the whole test. `cu.stream_slot` is that
+# choice and `cu_stream_compute`/`cu_stream_copy` are its rows.
+def cu.stream_slot.at(is_copy: Bool) -> U32: Bool.pick(U32, is_copy, CU_IDX_COPY(), CU_IDX_COMPUTE())
+
+def cu.stream_slot(queue: String) -> U32:
+  cu.stream_slot.at(String.starts_with(queue, "COPY"))
+# cu:34 `self.h = ccall(cuda.cuCtxSetCurrent, self.rt_vars.index(0).load())` --
+# the queue's FIRST call, and it reads rt_vars index 0, the CONTEXT.
+def cu.q_init(+t: Tr) -> Tr: Tr.emit(OP_CTX_SET(), U32.show(CU_IDX_CTX()), t)
+
+# cu:40-47 `launch`. The portable content is the FOUR numbers:
+#
+#   rows  = layout_args(args, 8)                      # offset/word pairs, base 8
+#   size  = max([o + w.dtype.itemsize for o, w in rows], default=8) - 8
+#   extra = self.q(1, addr+8, 2, addr, 0) - 40
+#   self.h = ccall(cuLaunchKernel, func, *gs, *ls, 0, stream, const(0), kernargs[extra])
+#
+# and the `default=8` is the answer when `args` is EMPTY, so `size` is 0 for an
+# empty argument list and the kernargs blob is one word long.
+def CU_KERNARGS_BASE() -> U32: 8
+
+# `size = max([o + w.dtype.itemsize ...], default=8) - 8` -- the END of the last
+# argument minus the base, and `default=8` makes it 0 when there are none. The
+# fold is a MAX so it is a running best and NOT a sum: the accumulated value is
+# never smaller than `CU_KERNARGS_BASE`. The base comes off ONCE, at the end --
+# subtracting inside the fold would make the running best `max - 8`, and then
+# `max - 8` would be compared against the next end instead of `max`, which walks
+# `[40, 12, 24]` down to 16.
+def cu.launch_size.at(+end: U32, +best: U32) -> U32:
+  Bool.pick(U32, U32.is_lt(best, end), end, best)
+
+def cu.launch_size.go(ends: List<&2, U32>, best: U32) -> U32:
+  match ends:
+    case Nil{}: U32.sub(best, CU_KERNARGS_BASE())
+    case e <> t: cu.launch_size.go(t, cu.launch_size.at(e, best))
+
+def cu.launch_size(ends: List<&2, U32>) -> U32:
+  cu.launch_size.go(ends, CU_KERNARGS_BASE())
+
+# `extra = self.q(1, addr+8, 2, addr, 0) - 40` -- `q` returns `len(blob)` AFTER
+# appending the five words, so subtracting the five words' own 40 bytes leaves the
+# offset the descriptor starts at. On a FRESH blob that is 0.
+def CU_DESC_OFF() -> U32: 40
+
+def cu.kernarg_extra(blob_after: U32) -> U32: U32.sub(blob_after, CU_DESC_OFF())
+
+# the five descriptor words, in order: 1, addr+8, 2, addr, 0. The two CONSTs are
+# the kernel-arg descriptor's COUNT and FLAG and the last 0 is the FLAG, so
+# `cu_desc_words` prints them and the launch row pins the ORDER.
+def cu.desc_words() -> List<&2, U32>: [1, 0, 2, 0, 0]
+
+# cu:47 -- `ccall(cuda.cuLaunchKernel, func, *global_size, *local_size, 0,
+# self.stream, UOp.const(0, dtypes.u64), self.kernargs.index(extra))`. The `arg`
+# is the kernargs OFFSET, and it is the only traced number that is a real memory
+# offset in the file.
+def cu.launch(extra: U32, +t: Tr) -> Tr: Tr.emit(OP_LAUNCH(), U32.show(extra), t)
+
+# cu:54-55 `copy` -- `ccall(cuda.cuMemcpyAsync, dst.getaddr(self.devs),
+# src.getaddr(self.devs), UOp.const(sz, dtypes.u64), self.stream)`. The `arg`
+# is the BYTE COUNT and it is the only one of the six queue calls whose traced
+# argument is not a slot index.
+def cu.copy(sz: U32, +t: Tr) -> Tr: Tr.emit(OP_COPY_IN(), U32.show(sz), t)
+
+# cu:57-58 `wait` -- `ccall(cuda.cuStreamWaitValue64_v2, self.stream,
+# signal.getaddr(self.devs), value, cuda.CU_STREAM_WAIT_VALUE_GEQ)`.
+def cu.wait(+t: Tr) -> Tr: Tr.emit(OP_WAIT_VALUE(), U32.show(CU_STREAM_WAIT_VALUE_GEQ()), t)
+
+# cu:60-61 `signal` -- the same shape with CU_STREAM_WRITE_VALUE_DEFAULT. Both
+# constants are 0, which MEASURED, so `cu_signal_arg` and `cu_wait_arg` are equal
+# and the only way to tell the two calls apart in the trace is the OP.
+def cu.signal(+t: Tr) -> Tr: Tr.emit(OP_SIGNAL(), U32.show(CU_STREAM_WRITE_VALUE_DEFAULT()), t)
+
+# cu:63-64 `timestamp` -- `ccall(cuda.cuLaunchHostFunc, self.stream,
+# self.extern("stamp"), signal[1:2].getaddr(self.devs))` and the comment "a slot
+# is [signal][timestamp]". The `[1:2]` is a SLOT INDEX, not an offset: the
+# timestamp is the second element of the signal's own vector.
+def CU_SIGNAL_SLOT() -> U32: 1
+
+def cu.timestamp(+t: Tr) -> Tr: Tr.emit(OP_HOST_FUNC(), U32.show(CU_SIGNAL_SLOT()), t)
+
+# cu:66 `submit` -- `return self.rt_vars.after(self.h).index(3).store(
+# self.h.cast(dtypes.u64)).substitute({self.kernargs: ka})`. The `arg` is the
+# STATUS slot, index 3, which is the only one of the four rt_vars indices that is
+# written rather than read.
+def cu.submit(+t: Tr) -> Tr: Tr.emit(OP_SIGNAL(), U32.show(CU_IDX_STATUS()), t)
+
+# cu:49-52 `exec` -- `obj, bufs, vals = prg.to_elf(), get_call_arg_uops(call),
+# get_call_var_uops(call, prg)` then the launch. `prg.arg.globals` and
+# `prg.arg.vars` are the two SIZES the kernel-arg layout needs, and the address
+# list is `[bufs[i].getaddr for i in prg.arg.globals] + [v.ccast(v.dtype) for v,
+# var in zip(vals, prg.arg.vars)]` -- buffers THEN values, which is the same order
+# as the CL signature walk.
+def cu.exec(nbufs: U32, nvals: U32, +t: Tr) -> Tr:
+  cu.launch(0, t)
+
+# ===========================================================================
+# `CUDAAllocator`, cu:71-95. `_alloc` has THREE branches and the third is the
+# only one that is not an early return: `external_ptr`, then `host or
+# cpu_access`, then device. Two of the three are `Bool.pick`s over one `Spec`.
+# ===========================================================================
+
+# cu:74 `if options.external_ptr: return BufferStorage(options.external_ptr)` --
+# NO CALL AT ALL, and that is the row: the external branch traces nothing.
+def cu.alloc.ext(ptr: U32, +t: Tr) -> Tr: t
+
+# cu:75-76 `if options.host or options.cpu_access: ptr = init_c_var(
+# ctypes.c_void_p, lambda x: check(cuda.cuMemHostAlloc(ctypes.byref(x), size, 0)))
+# return BufferStorage(ptr, None, MMIOInterface(ptr, size))` -- the host branch,
+# and it is the ONLY one of the three branches that returns an MMIOInterface.
+def cu.alloc.host(size: U32, +t: Tr) -> Tr: Tr.emit(OP_ALLOC_HOST(), U32.show(size), t)
+
+# cu:78 `return BufferStorage(init_c_var(cuda.CUdeviceptr, lambda x:
+# check(cuda.cuMemAlloc_v2(ctypes.byref(x), size))).value)` -- the device branch.
+def cu.alloc.dev(size: U32, +t: Tr) -> Tr: Tr.emit(OP_ALLOC(), U32.show(size), t)
+
+# `options.host or options.cpu_access` is ONE test in Python over TWO fields, and
+# the port keeps them as a `Data` record with a Bool.pick over the disjunction.
+def spec.is_host(+s: Spec) -> Bool: Bool.or(Spec.host(s), Spec.cpu(s))
+
+def cu.alloc.at(is_ext: Bool, is_host: Bool, size: U32, ptr: U32, +t: Tr) -> Tr:
+  match is_ext:
+    case True{}: cu.alloc.ext(ptr, t)
+    case False{}:
+      match is_host:
+        case True{}: cu.alloc.host(size, t)
+        case False{}: cu.alloc.dev(size, t)
+
+def cu.alloc(size: U32, +s: Spec, +t: Tr) -> Tr:
+  cu.alloc.at(Bool.not(U32.is_zero(Spec.ext(s))), spec.is_host(s), size, Spec.ext(s), t)
+
+# cu:80-82 `_free` -- `self.dev.synchronize()` FIRST, then
+# `check((cuda.cuMemFreeHost if options.host or options.cpu_access else
+# cuda.cuMemFree_v2)(storage.buf))`. TWO calls and the ORDER is the content: the
+# free waits for the device, and the CL `_free` does not wait at all.
+def cu.free.at(is_host: Bool, host: U32, dev: U32, +t: Tr) -> Tr:
+  match is_host:
+    case True{}: Tr.emit(OP_FREE_HOST(), U32.show(host), t)
+    case False{}: Tr.emit(OP_FREE(), U32.show(dev), t)
+
+def cu.free(+s: Spec, +buf: U32, +t: Tr) -> Tr:
+  cu.free.at(spec.is_host(s), buf, buf, cl.sync(t))
+
+# cu:84-92 `_map` -- the branch that matters is `buf.device.startswith("CUDA")`
+# and NOT the presence of a host: a CUDA device with a host interface RETURNS
+# without asking about the page alignment (cu:87), while a NON-CUDA device
+# refuses on a missing host just as it refuses on a misaligned one (cu:88's `or`).
+# So `has_host` alone cannot pick the message -- the six cases are `is_cuda` x
+# {no host, misaligned, aligned} and TWO of them refuse. Empty is the answer for
+# "no refusal", which is the only way the port can state a third outcome.
+def cu.map_err_ctx() -> String: " device memory is only reachable through the host"
+def cu.map_err_align() -> String: " memory is not page aligned host memory"
+def NO_REFUSAL() -> String: ""
+
+# cu:88 `host.addr % mmap.PAGESIZE`. THE AUTHORITY IS HOST-DEPENDENT AND A `U32`
+# CONSTANT CANNOT BE, so `cu.map_err.at` below takes `aligned: Bool` -- the SEAM's
+# answer -- and never computes the modulus. There is therefore NO page-size
+# constant here any more, and that is the fix rather than the loss: a `PAGE_SIZE`
+# def existed with exactly one reader, and that reader was the `cu_page_size` row
+# printing it, which is why the pruner called it dead and why the row asserted
+# nothing. MEASURED, arm64 darwin, this very gate: `mmap.PAGESIZE` is 16384, so
+# "4096 on every platform tinygrad supports" was false here. The literal the row
+# pins is 4096 because that is what every platform CUDA actually runs on answers
+# (x86-64 Linux and macOS); a 64K-page aarch64 Linux answers 65536 and the seam
+# is what must notice. NO ROW CAN CHECK THE MODULUS: it is host state, and this
+# gate has no host.
+
+def cu.map_err.at(is_cuda: Bool, has_host: Bool, aligned: Bool, +device: String) -> String:
+  +no_host = Bool.not(has_host)
+  +unusable = Bool.or(no_host, Bool.not(aligned))
+  Bool.pick(String, is_cuda,
+    Bool.pick(String, no_host, String.concat([device, cu.map_err_ctx()]), NO_REFUSAL()),
+    Bool.pick(String, unusable, String.concat([device, cu.map_err_align()]), NO_REFUSAL()))
+
+def cu.map_err(+device: String, is_cuda: Bool, has_host: Bool, aligned: Bool) -> String:
+  cu.map_err.at(is_cuda, has_host, aligned, device)
+
+# cu:90 `if (status := cuda.cuMemHostRegister_v2(host.addr, buf.nbytes, 0)) !=
+# cuda.CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED: check(status)` -- the ONE place
+# `check` is NOT called unconditionally, and 712 is the code it tolerates.
+def cu.map.at(registered: Bool, nbytes: U32, +t: Tr) -> Tr:
+  match registered:
+    case True{}: Tr.emit(OP_HOST_REGISTER(), U32.show(nbytes), t)
+    case False{}: Tr.emit(OP_HOST_REGISTER(), U32.show(nbytes), t)
+
+# cu:92 `return BufferStorage(host.addr, status == cuda.CUDA_SUCCESS)` -- the
+# `meta` is "did this device register it", so it is a BOOL and not a handle.
+def cu.map_ok(registered: Bool) -> Bool: Bool.not(registered)
+
+# cu:94 `if mapping.meta: check(cuda.cuMemHostUnregister(mapping.buf))` -- the
+# unmap is CONDITIONAL on meta, which is the same Bool, so an unmap of a mapping
+# this device did not make traces nothing.
+def cu.unmap.at(ours: Bool, buf: U32, +t: Tr) -> Tr:
+  match ours:
+    case True{}: Tr.emit(OP_HOST_UNREGISTER(), U32.show(buf), t)
+    case False{}: t
+
+# cu:119 `struct.pack("4Q", *[as_int(h) for h in (self.context, *self.streams)], 0)`
+# -- FOUR uint64 words: the context, the TWO streams, and a trailing 0. The pack is
+# WALL 6 and the COUNT is not, so `cu_handle_words` is 4 and `cu_handles_tail` is
+# the trailing zero.
+def cu.handles(d: CuDev) -> List<&2, U32>: [CuDev.ctx(d), 0, 0, 0]
+
+# cu:117-122 `handles` and `stamp` are the two `cached_property` buffers, and
+# cu:121-122's `stamp` is a `CUhostFn(host_stamp)` which is WALL 6. The TAG is
+# what `pm_bufferize` matches on, so it is the portable half.
+def cu.build.after(+t: Tr) -> Tr: Tr.emit(OP_KERNEL(), "0", t)
+
+def cu.function(libn: U32, +t: Tr) -> Tr: cu.build.after(Tr.emit(OP_PRG_FROM_BIN(), U32.show(libn), t))
+# cu:132 `def count(self) -> int: return init_c_var(ctypes.c_int, lambda x:
+# check(cuda.cuDeviceGetCount(ctypes.byref(x)))).value`
+def cu.count(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_COUNT(), "0", t)
+
+# cu:134-136 `_wait_signal` -- `check(cuCtxSetCurrent(self.context))` then
+# `check(cuCtxSynchronize())`, with the comment "a fault raises here". TWO calls
+# and the SECOND is the one that raises, which is why the trace's truncation at
+# `cuCtxSynchronize` IS the fault.
+def cu.wait_signal(+t: Tr) -> Tr: cl.sync(Tr.emit(OP_CTX_SET(), "0", t))
+
+# ===========================================================================
+# PART 3 -- HIP. `ops_hip.py`, all 71 lines.
+#
+# THE MOST DIFFERENT OF THE THREE and the smallest. Where CL sets one kernel
+# argument at a time by pointer and CUDA packs a blob, HIP packs a C STRUCT: hp:39
+# builds `c_args` ONCE from `init_c_struct_t` and then assigns `c_args.f{i}` and
+# `c_args.v{i}` on every call. The struct's field NAMES and OFFSETS are therefore
+# the portable content, and they are what `Arg.off` carries -- `0` for CL,
+# `i*8` for HIP, and the `round_up` walk for CUDA.
+# ===========================================================================
+
+# hp:41 `[(f'f{i}', hip.hipDeviceptr_t, i*8) for i in range(len(args))] +
+# [(f'v{i}', getattr(ctypes, f"c_int{dt.bitsize}"), o) for i,(o,dt) in
+# enumerate(TinyELF.iter_sig(self.signature[len(args):], len(args)*8))]`
+#
+# -- so the BUFFER fields are `f0` at 0, `f1` at 8, `f2` at 16 ... and the VALUE
+# fields start at `len(args)*8` and are aligned by `round_up(offset,
+# dt.itemsize)`. The 8 is `sizeof(hipDeviceptr_t)`.
+def HP_PTR_SZ() -> U32: 8
+
+# hp:42 `init_c_struct_t(fields[-1][2] + ctypes.sizeof(fields[-1][1]) if len(fields)
+# else 0, tuple(fields))` -- the struct's SIZE is the last field's OFFSET plus its
+# SIZE, and it is 0 for an empty signature. That is `fields[-1][2] + sizeof` and
+# NOT `sizeof(last)` alone, which is why the LAST argument's own size is in the
+# total.
+def hp.cargs_size(last_off: U32, last_sz: U32, n: U32) -> U32:
+  Bool.pick(U32, U32.is_zero(n), 0, U32.add(last_off, last_sz))
+
+# device.py:365 `TinyELF.iter_sig(signature, offset)`: `yield (offset :=
+# round_up(offset, dt.itemsize)), dt; offset += dt.itemsize`. This is the walk
+# hp:41 calls and it is the SAME walk `hcq2.layout_args` calls for CUDA -- so the
+# two vendors agree on the alignment rule and differ only in what they do with it.
+# It is not in any of the three files, so the local copy names device.py as owner.
+def iter_sig.at(off: U32, isz: U32) -> U32: H.round_up_u32(off, isz)
+
+def iter_sig.go(+iszs: List<&2, U32>, +off: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match iszs:
+    case Nil{}: acc
+    case z <> t:
+      +a = iter_sig.at(off, z)
+      iter_sig.go(t, U32.add(a, z), List.append(&2, U32, acc, [a]))
+
+def iter_sig(+iszs: List<&2, U32>, off: U32) -> List<&2, U32>: iter_sig.go(iszs, off, Nil{})
+
+# the ALIGNED offsets of the value fields, given the buffer count and the value
+# itemsizes. `hp_offsets` is the row and it is the first place the three vendors
+# visibly disagree on one signature.
+def hp_val_offsets(nargs: U32, +iszs: List<&2, U32>) -> List<&2, U32>:
+  iter_sig(iszs, U32.mul(nargs, HP_PTR_SZ()))
+
+# hp:41's `f{i}` OFFSET is `i*8` with no alignment at all, so `hp_buf_offsets` is
+# the other half and the two halves together are the struct.
+def hp_buf_offsets.go(n: Nat, +i: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+m: hp_buf_offsets.go(m, U32.add(i, 1), List.append(&2, U32, acc, [U32.mul(i, HP_PTR_SZ())]))
+
+def hp_buf_offsets(nargs: Nat) -> List<&2, U32>: hp_buf_offsets.go(nargs, 0, Nil{})
+
+# hp:43-44 `self.vargs = (ctypes.c_void_p * 5)(1,
+# ctypes.cast(ctypes.byref(self.c_args), ctypes.c_void_p), 2,
+# ctypes.cast(ctypes.pointer(ctypes.c_size_t(ctypes.sizeof(self.c_args))),
+# ctypes.c_void_p), 3)` -- FIVE words: the FLAG, the struct address, 2, the struct
+# SIZE, and 3. The FLAG and the SIZE are the two that are not the address, and
+# `hp_vargs_words` prints all five so the row is the whole descriptor.
+def HP_VARGS_WORDS() -> U32: 5
+def HP_VARGS_FLAG() -> U32: 1
+def HP_VARGS_KIND() -> U32: 2
+def HP_VARGS_LAST() -> U32: 3
+
+def hp.vargs_words(size: U32) -> List<&2, U32>:
+  [HP_VARGS_FLAG(), 0, HP_VARGS_KIND(), size, HP_VARGS_LAST()]
+
+# hp:42 the struct size, and the field table it comes from is `[f{i}] + [v{i}]`
+# with the last field's offset and size.
+def hp.last_at.go(+voffs: List<&2, U32>, at: U32) -> U32:
+  match voffs:
+    case Nil{}: at
+    case o <> t: hp.last_at.go(t, o)
+
+def hp.last_at(+voffs: List<&2, U32>) -> U32: hp.last_at.go(voffs, 0)
+
+def hp.last_sz.go(+visz: List<&2, U32>, at: U32) -> U32:
+  match visz:
+    case Nil{}: at
+    case z <> t: hp.last_sz.go(t, z)
+
+def hp.last_sz(+visz: List<&2, U32>) -> U32: hp.last_sz.go(visz, 0)
+
+# hp:42 -- the size is the LAST field's offset plus its size over `f{i}` fields THEN
+# `v{i}` fields, so the last field is the last VALUE whenever there is one and is
+# the last BUFFER otherwise, and a buffer field is 8 wide, so that arm is `nf*8`.
+# `len(fields)` in the conditional is therefore `nv > 0`, not `nf`.
+def hp.fields.at(nf: U32, nv: U32, +voffs: List<&2, U32>, +visz: List<&2, U32>) -> U32:
+  +n = nv
+  Bool.pick(U32, U32.is_zero(n), U32.mul(nf, HP_PTR_SZ()),
+    hp.cargs_size(hp.last_at(voffs), hp.last_sz(visz), n))
+
+def hp.fields(nf: Nat, +iszs: List<&2, U32>) -> U32:
+  +nf = U32.from_nat(nf)
+  hp.fields.at(nf, U32.from_nat(List.length(&2, U32, iszs)), hp_val_offsets(nf, iszs), iszs)
+
+# ===========================================================================
+# `HIPDevice`, hp:12-24. THREE calls in `__init__` and one of them is the only
+# unchecked call in the whole file.
+# ===========================================================================
+
+# the HIP DEVICE, ops_hip.py:14-24. `didx` is hp:14's device id, `arch` hp:15's
+# `gcnArchName` -- a STRING straight out of the driver, with NO derivation at all,
+# unlike CL's `",".join(exts)` and CUDA's `f"sm_{a}{b}"` -- and `ev0`/`ev1` the two
+# events hp:16 creates, `t` the trace.
+type HpDev is Data:
+  HpDev{didx: U32, arch: String, ev0: U32, ev1: U32, nevents: U32, t: Tr}
+
+def HpDev.didx(d: HpDev) -> U32:
+  match d:
+    case HpDev{didx, arch, ev0, ev1, nevents, t}: didx
+
+def HpDev.arch(d: HpDev) -> String:
+  match d:
+    case HpDev{didx, arch, ev0, ev1, nevents, t}: arch
+
+def HpDev.t(d: HpDev) -> Tr:
+  match d:
+    case HpDev{didx, arch, ev0, ev1, nevents, t}: t
+
+# hp:14 `self.device_id = int(device.split(":")[1]) if ":" in device else 0` --
+# the THIRD spelling of that line, and it is the same one: `cu_didx` and
+# `cl_dev_index` answer it identically and `hp_didx_*` is the row that says so.
+def hp_didx(device: String) -> U32: cl_dev_index(device)
+
+# hp:15 `self.arch = init_c_var(hip.hipDeviceProp_t, lambda x:
+# check(hip.hipGetDeviceProperties(x, self.device_id))).gcnArchName.decode()` --
+# the `arg` is the device id and the arch is the driver's own STRING.
+def hp.props(did: U32, +t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_PROPS(), U32.show(did), t)
+
+# hp:16 `self.time_event_st, self.time_event_en = [init_c_var(hip.hipEvent_t,
+# lambda x: hip.hipEventCreate(ctypes.byref(x), 0)) for _ in range(2)]` -- TWO
+# events, flags 0, and NO `check`: this is the single unchecked `hip*` call in the
+# three files, which is why `hp_unchecked` is exactly `[OP_QUEUE_CREATE]`.
+def hp.event_create(i: U32, +t: Tr) -> Tr: Tr.emit(OP_QUEUE_CREATE(), "0", t)
+
+# hp:23-24 `synchronize` is `check(hip.hipSetDevice(self.device_id))` then
+# `check(hip.hipDeviceSynchronize())` -- TWO calls, where CL's is ONE and CUDA's
+# is TWO with a different second. `hipDeviceSynchronize` takes NO argument, so its
+# arg column is the constant "0" like every other zero-argument call here and NOT
+# the device id -- the id is already the arg of the `hipSetDevice` in front of it.
+def hp.set_device(did: U32, +t: Tr) -> Tr: Tr.emit(OP_SET_DEVICE(), U32.show(did), t)
+
+def hp.sync(did: U32, +t: Tr) -> Tr: Tr.emit(OP_FINISH(), "0", hp.set_device(did, t))
+
+def hp.device_sync(d: HpDev, +t: Tr) -> Tr: hp.sync(HpDev.didx(d), t)
+
+# hp:20 `def count(self) -> int: return init_c_var(ctypes.c_int, lambda x:
+# check(hip.hipGetDeviceCount(x))).value`
+def hp.count(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_COUNT(), "0", t)
+
+# hp:14-18 -- the init sequence: hipGetDeviceProperties, TWO hipEventCreate, and
+# nothing else. FOUR calls, and the SUPER().__init__ at :18 makes no call.
+def hp.init(device: String, arch: String, +t: Tr) -> HpDev:
+  +did = hp_didx(device)
+  +t1 = hp.props(did, t)
+  +t2 = hp.event_create(0, t1)
+  +t3 = hp.event_create(1, t2)
+  HpDev{did, arch, Tr.here(t2), Tr.here(t3), 2, t3}
+
+# ===========================================================================
+# `HIPProgram`, hp:26-57. `__init__` is THREE calls and the FIRST is
+# `hipSetDevice`, which CUDA also does per-entry-point and CL does NOT do at all.
+# ===========================================================================
+
+# hp:29 `check(hip.hipSetDevice(self.dev.device_id))` -- in `__init__`.
+def hp.prog_init.dev(+t: Tr) -> Tr: Tr.emit(OP_SET_DEVICE(), "0", t)
+
+# hp:30-31 `self.module = init_c_var(hip.hipModule_t, lambda x:
+# check(hip.hipModuleLoadData(ctypes.byref(x), obj.lib)))` then
+# `self.prg = init_c_var(hip.hipFunction_t, lambda x:
+# check(hip.hipModuleGetFunction(ctypes.byref(x), self.module, obj.name.encode())))
+def hp.prog_init.prg(libn: U32, +t: Tr) -> Tr: Tr.emit(OP_PRG_FROM_BIN(), U32.show(libn), t)
+
+def hp.prog_init.fn(name: String, +t: Tr) -> Tr: Tr.emit(OP_KERNEL(), name, t)
+
+# hp:33-35 `__del__` is `if hasattr(self, 'module'):
+# check(hip.hipModuleUnload(self.module))` -- ONE call and ONE attribute, where
+# CL's `__del__` is two calls and two attributes. `hp_prog_del_bare` is the row for
+# the `hasattr` being False.
+def hp.prog_del(have: Bool, +t: Tr) -> Tr:
+  match have:
+    case True{}: Tr.emit(OP_RELEASE_PRG(), "0", t)
+    case False{}: t
+
+# hp:38 `check(hip.hipSetDevice(self.dev.device_id))` -- on EVERY call, which is
+# the opposite of CL (once, in __init__) and of CUDA (once, in the queue's
+# __init__).
+def hp.call_set_device(did: U32, +t: Tr) -> Tr: Tr.emit(OP_SET_DEVICE(), U32.show(did), t)
+
+# hp:49 `if wait: check(hip.hipEventRecord(self.dev.time_event_st, None))` and
+# hp:54 the same for `time_event_en`. The `arg` is WHICH event, and it is the only
+# way to tell the two apart -- the CL equivalent has two different profiling PARAMS
+# for the same reason.
+def hp.event_record(which: U32, +t: Tr) -> Tr: Tr.emit(OP_TIME_START(), U32.show(which), t)
+
+# hp:51 `check(hip.hipModuleLaunchKernel(self.prg, *global_size, *local_size, 0,
+# None, None, self.vargs))` -- the `arg` is the VARGS STRUCT SIZE, which is the one
+# traced number here that is a real byte count.
+def hp.launch(cargs_size: U32, +t: Tr) -> Tr: Tr.emit(OP_LAUNCH(), U32.show(cargs_size), t)
+
+# hp:55-56 `check(hip.hipEventSynchronize(self.dev.time_event_en))` then
+# `check(hip.hipEventElapsedTime(ctypes.byref(ret), self.dev.time_event_st,
+# self.dev.time_event_en))`. TWO calls where CL has THREE, and the elapsed call's
+# argument is the pair of EVENTS, not a profiling param.
+def hp.event_sync(which: U32, +t: Tr) -> Tr: Tr.emit(OP_WAIT_EVENT(), U32.show(which), t)
+
+def hp.event_elapsed(st: U32, en: U32, +t: Tr) -> Tr:
+  Tr.emit(OP_TIME_END(), String.concat([U32.show(st), ":", U32.show(en)]), t)
+
+# hp:39-44 -- the ONCE-ONLY construction of `c_args` and `vargs`. It is guarded by
+# `if not hasattr(self, "vargs")`, so it happens on the first call and NOT on the
+# second. It MAKES NO CALL -- the struct is built by ctypes, not by the driver --
+# so `hp.build.at` returns the trace UNCHANGED on both arms and the gate pins that
+# with a count: `hp_call_first_n` and `hp_call_second_n` are EQUAL.
+def hp.build.at(built: Bool, +t: Tr) -> Tr:
+  match built:
+    case True{}: t
+    case False{}: t
+
+def hp.record.at(+want: Bool, built: Bool, +t: Tr) -> Tr:
+  match want:
+    case False{}: hp.build.at(built, t)
+    case True{}: hp.event_record(0, hp.build.at(built, t))
+
+def hp.elapsed.at(+want: Bool, +t: Tr) -> Tr:
+  match want:
+    case False{}: t
+    case True{}: hp.event_elapsed(0, 1, hp.event_sync(1, t))
+
+# hp:49-57 -- one call, as the step list it is: set-device, then the once-only
+# struct build (no call), then the `if wait:` record, then the launch, then the
+# `if wait:` synchronize/elapsed pair. So a non-waiting call is TWO trace entries
+# and a waiting one is FIVE.
+def hp.call.at(did: U32, cargs: U32, +want: Bool, built: Bool, +t: Tr) -> Tr:
+  +t1 = hp.call_set_device(did, t)
+  +t2 = hp.record.at(want, built, t1)
+  +t3 = hp.launch(cargs, t2)
+  hp.elapsed.at(want, t3)
+
+# ===========================================================================
+# `HIPAllocator`, hp:59-71. Four methods, and `_offset` is the one that is WALL 6.
+# ===========================================================================
+
+# hp:61-62 `_alloc` -- `check(hip.hipSetDevice(self.dev.device_id))` then
+# `check(hip.hipMalloc(ctypes.byref(x), size))`. TWO calls, where CL's is ONE and
+# CUDA's is one call in each of its three branches.
+def hp.alloc(did: U32, size: U32, +t: Tr) -> Tr: Tr.emit(OP_ALLOC(), U32.show(size), hp.call_set_device(did, t))
+
+# hp:64 `_free` -- `check(hip.hipFree(storage.buf))`. ONE call and NO
+# `synchronize()`, which is what makes HIP's `_free` differ from CUDA's and agree
+# with CL's.
+def hp.free(buf: U32, +t: Tr) -> Tr: Tr.emit(OP_FREE(), U32.show(buf), t)
+
+# hipMemcpyKind. MEASURED out of `autogen/hip.py`'s enum: HostToDevice is 1 and
+# DeviceToHost is 2, and the two are the ONLY argument HIP's `_copyin` and
+# `_copyout` differ on -- the same struct, the same size, two calls.
+def HIP_H2D() -> U32: 1
+def HIP_D2H() -> U32: 2
+
+# hp:65-67 `_copyin` -- `check(hip.hipSetDevice(self.dev.device_id))` then
+# `check(hip.hipMemcpy(dest, mv_address(src), len(src), hip.hipMemcpyHostToDevice))`.
+def hp.copyin.at(did: U32, n: U32, +t: Tr) -> Tr:
+  Tr.emit(OP_COPY_IN(), U32.show(n), hp.call_set_device(did, t))
+
+def hp.copyin(did: U32, n: U32, +t: Tr) -> Tr: hp.copyin.at(did, n, t)
+
+# hp:68-70 `_copyout` -- `self.dev.synchronize()` FIRST, then
+# `check(hip.hipMemcpy(mv_address(dest), src, len(dest), hip.hipMemcpyDeviceToHost))`.
+# So HIP copies out DEVICE-TO-HOST after synchronising, and CL copies out after
+# synchronising too: the two agree and CUDA does neither.
+def hp.copyout.at(did: U32, n: U32, +t: Tr) -> Tr:
+  Tr.emit(OP_COPY_OUT(), U32.show(n), hp.device_sync(HpDev{did, "", 0, 0, 2, t}, t))
+
+def hp.copyout(did: U32, n: U32, t: Tr) -> Tr: hp.copyout.at(did, n, t)
+
+# hp:67 / hp:70 -- the memcpy KIND, which is the only thing that differs between the
+# two copies, and it is a two-entry table.
+def hp.memcpy_kind(is_out: Bool) -> U32: Bool.pick(U32, is_out, HIP_D2H(), HIP_H2D())
+
+# hp:71 `def _offset(self, buf, size, offset): return
+# hipDeviceptr_t(buf.value + offset)` -- a POINTER-TYPED SUM, and WALL 6. The
+# arithmetic is `buf + offset` and that is what `hp_offset_sum` is; the `U32` it
+# returns is the VALUE the pointer holds.
+def hp_offset_sum(buf: U32, offset: U32) -> U32: U32.add(buf, offset)# ===========================================================================
 # THE GATE. Every row is a claim about the TEXT of the three Python files, about
 # a constant read out of `tinygrad/runtime/autogen/*.py`, or about a table those
 # two things define. The row name says which Python line it is about, and where a
@@ -1764,40 +2480,70 @@ def ssh(xs: List<&2, String>, +sep: String, +acc: List<&2, String>) -> List<&2, 
 
 def srowlist(nm: String, xs: List<&2, String>) -> IO(Unit):
   IO.print(String.concat([nm, "=", String.join(ssh(xs, ",", Nil{}), ",")]))
-# --- 1: the vendor table, the CL column ---------------------------------
+
+# --- 1: the vendor table, the three files' whole call vocabulary -----------
 def t_vend() -> IO(Unit):
   do IO<Unit>:
-    urow("vend_count_cl", vend.count())
+    urow("vend_count_cl", vend.count(V_CL()))
+    urow("vend_count_cuda", vend.count(V_CUDA()))
+    urow("vend_count_hip", vend.count(V_HIP()))
+    # the ABSENCES, which are the point of the table: an op only one vendor has,
+    # and one that NO vendor has.
     srowlist("vend_names_cl", vend.cl())
-    urow("vend_len_cl", U32.from_nat(List.length(&2, String, vend.cl())))
-    srow("vend_alloc_cl", vend.name(OP_ALLOC()))
-    srow("vend_setarg_cl", vend.name(OP_SET_ARG()))
-    srow("vend_relkernel_cl", vend.name(OP_RELEASE_KERNEL()))
-    srow("vend_relprg_cl", vend.name(OP_RELEASE_PRG()))
-    srow("vend_initext_cl", vend.name(OP_INIT()))
-    srow("vend_none_cl", vend.name(OP_NONE()))
-    srow("vend_oob", vend.name(39))
-    # the two ARGUMENT-COLUMN rows and the table width are not per vendor:
-    # `vend.argname` is the trace's one `arg` column and `OP_N` is the width
-    # all three tables are asserted against, so they live with the first file.
+    srowlist("vend_names_cu", vend.cu())
+    srowlist("vend_names_hp", vend.hp())
     srowlist("vend_argnames", vend.argname())
+    urow("vend_len_cl", U32.from_nat(List.length(&2, String, vend.cl())))
+    urow("vend_len_cu", U32.from_nat(List.length(&2, String, vend.cu())))
+    urow("vend_len_hp", U32.from_nat(List.length(&2, String, vend.hp())))
     urow("vend_len_argnames", U32.from_nat(List.length(&2, String, vend.argname())))
     urow("vend_op_n", OP_N())
+    srow("vend_alloc_cl", vend.name(V_CL(), OP_ALLOC()))
+    srow("vend_alloc_cu", vend.name(V_CUDA(), OP_ALLOC()))
+    srow("vend_alloc_hp", vend.name(V_HIP(), OP_ALLOC()))
+    srow("vend_setarg_cl", vend.name(V_CL(), OP_SET_ARG()))
+    srow("vend_setarg_cu", vend.name(V_CUDA(), OP_SET_ARG()))
+    srow("vend_setarg_hp", vend.name(V_HIP(), OP_SET_ARG()))
+    srow("vend_relkernel_cl", vend.name(V_CL(), OP_RELEASE_KERNEL()))
+    srow("vend_relkernel_cu", vend.name(V_CUDA(), OP_RELEASE_KERNEL()))
+    srow("vend_relkernel_hp", vend.name(V_HIP(), OP_RELEASE_KERNEL()))
+    srow("vend_relprg_cl", vend.name(V_CL(), OP_RELEASE_PRG()))
+    srow("vend_relprg_cu", vend.name(V_CUDA(), OP_RELEASE_PRG()))
+    srow("vend_relprg_hp", vend.name(V_HIP(), OP_RELEASE_PRG()))
+    srow("vend_initext_cl", vend.name(V_CL(), OP_INIT()))
+    srow("vend_initext_cu", vend.name(V_CUDA(), OP_INIT()))
+    srow("vend_initext_hp", vend.name(V_HIP(), OP_INIT()))
+    srow("vend_errstr_hp", vend.name(V_HIP(), OP_ERRSTR()))
+    srow("vend_none_cl", vend.name(V_CL(), OP_NONE()))
+    srow("vend_none_cu", vend.name(V_CUDA(), OP_NONE()))
+    srow("vend_oob", vend.name(V_CL(), 39))
 
-# --- 2: the check table, cl:98/105/114 ----------------------------------
+# --- 2: the check table, cu:17/34-64 and hp:16 and cl:98/105/114 ------------
 def t_check() -> IO(Unit):
   do IO<Unit>:
-    urow("vend_nchecked_cl", chk_count())
+    urow("vend_nchecked_cl", chk_count(V_CL()))
+    urow("vend_nchecked_cu", chk_count(V_CUDA()))
+    urow("vend_nchecked_hp", chk_count(V_HIP()))
+    urow("cu_unchecked_n", U32.from_nat(List.length(&2, U32, cu_unchecked())))
+    urow("hp_unchecked_n", U32.from_nat(List.length(&2, U32, hp_unchecked())))
     urow("cl_unchecked_n", U32.from_nat(List.length(&2, U32, cl_unchecked())))
-    brow("chk_cl_alloc", vend.checked(OP_ALLOC()))
+    lrow("cu_unchecked_ops", cu_unchecked())
+    lrow("hp_unchecked_ops", hp_unchecked())
+    brow("chk_cu_launch", vend.checked(V_CUDA(), OP_LAUNCH()))
+    brow("chk_cu_ctxset", vend.checked(V_CUDA(), OP_CTX_SET()))
+    brow("chk_cu_alloc", vend.checked(V_CUDA(), OP_ALLOC()))
+    brow("chk_hp_queue", vend.checked(V_HIP(), OP_QUEUE_CREATE()))
+    brow("chk_hp_launch", vend.checked(V_HIP(), OP_LAUNCH()))
+    brow("chk_cl_alloc", vend.checked(V_CL(), OP_ALLOC()))
     brow("cl_probe_checked", cl_probe_checked())
     brow("cl_info_checked", cl_info_checked())
     brow("cl_build_log_checked", cl_build_log_checked())
 
-# --- 3: the error table, cl:16 ------------------------------------------
+# --- 3: the error tables, cl:16 and cu:18 and hp:10 ------------------------
 def t_err() -> IO(Unit):
   do IO<Unit>:
     urow("cl_err_n", cl_err_n())
+    urow("cu_err_n", cu_err_n())
     urow("cl_err_aliases", cl_err_aliases())
     srow("cl_err_0", cl_err_msg(0))
     srow("cl_err_m1", cl_err_msg(4294967295))
@@ -1815,6 +2561,16 @@ def t_err() -> IO(Unit):
     srow("cl_err_alias_m2", cl_err_of(4294967294))
     srow("cl_err_alias_m1", cl_err_of(4294967295))
     srow("cl_err_alias_0", cl_err_of(0))
+    srow("cu_err_0", cu_err_msg(0))
+    srow("cu_err_1", cu_err_msg(1))
+    srow("cu_err_712", cu_err_msg(712))
+    srow("cu_err_777", cu_err_msg(777))
+    srow("cu_err_999", cu_err_msg(999))
+    srow("hp_err_0", hp_err_of(0))
+    srow("hp_err_1", hp_err_of(1))
+    srow("hp_err_999", hp_err_of(999))
+    urow("cu_host_registered", CUDA_HOST_REGISTERED())
+    urow("cu_success", CUDA_SUCCESS())
 
 # --- 4: the integer printer, which is the only sign repair in the file -----
 def t_print() -> IO(Unit):
@@ -1847,6 +2603,7 @@ def t_print() -> IO(Unit):
     urow("timing_ratio_on_bits", F32.bits(timing.ratio(True{})))
     urow("timing_ns_scale_bits", F32.bits(timing.scale(False{})))
     urow("timing_ns_scale_on_bits", F32.bits(timing.scale(True{})))
+    urow("timing_hp_scale_bits", F32.bits(timing.scale_hp()))
 
 # --- 5: the OpenCL INIT SEQUENCE, cl:93-124 --------------------------------
 def EXTS_A() -> List<&2, String>: ["cl_khr_fp16", "cl_khr_int64_base_atomics"]
@@ -1865,9 +2622,9 @@ def fx_none() -> Dev: cl.init(Prb.seed([0, 0]), DEV0(), NAME(), DRV(), EXTS_C(),
 
 def t_clinit() -> IO(Unit):
   do IO<Unit>:
-    srow("cl_init_trace", vend.trace(Tr.calls(Dev.t(fx_gpu()))))
-    srow("cl_init_trace_def", vend.trace(Tr.calls(Dev.t(fx_def()))))
-    srow("cl_init_trace_img", vend.trace(Tr.calls(Dev.t(fx_img()))))
+    srow("cl_init_trace", vend.trace(V_CL(), Tr.calls(Dev.t(fx_gpu()))))
+    srow("cl_init_trace_def", vend.trace(V_CL(), Tr.calls(Dev.t(fx_def()))))
+    srow("cl_init_trace_img", vend.trace(V_CL(), Tr.calls(Dev.t(fx_img()))))
     urow("cl_init_calls", Tr.n(Dev.t(fx_gpu())))
     urow("cl_init_calls_def", Tr.n(Dev.t(fx_def())))
     urow("cl_init_calls_img", Tr.n(Dev.t(fx_img())))
@@ -1972,23 +2729,23 @@ def sig_skew() -> List<&2, Sig>:
 # --- 7: the compile and program-init sequences, cl:25-47 ------------------
 def t_clprog() -> IO(Unit):
   do IO<Unit>:
-    srow("cl_compile_trace", vend.trace(Tr.calls(comp.compile(Tr.of()))))
-    srow("cl_compile_bad_trace", vend.trace(Tr.calls(comp.compile.bad(Tr.of()))))
+    srow("cl_compile_trace", vend.trace(V_CL(), Tr.calls(comp.compile(Tr.of()))))
+    srow("cl_compile_bad_trace", vend.trace(V_CL(), Tr.calls(comp.compile.bad(Tr.of()))))
     urow("cl_compile_calls", Tr.n(comp.compile(Tr.of())))
     urow("cl_compile_bad_calls", Tr.n(comp.compile.bad(Tr.of())))
     srowlist("cl_compile_prginfo", Tr.args(OP_PRG_INFO(), Tr.calls(comp.compile(Tr.of()))))
     srowlist("cl_compile_badlog", Tr.args(OP_BUILD_LOG(), Tr.calls(comp.compile.bad(Tr.of()))))
     srow("cl_compile_err", CL_COMPILE_ERR())
     +p : Prog <- IO.pure(Prog, prog.init(fx_gpu(), "k", 128, Tr.of(), sig3()))
-    srow("cl_prog_init_trace", vend.trace(Tr.calls(Prog.t(p))))
+    srow("cl_prog_init_trace", vend.trace(V_CL(), Tr.calls(Prog.t(p))))
     urow("cl_prog_init_calls", Tr.n(Prog.t(p)))
     urow("cl_prog_prg_id", Prog.prg(p))
     urow("cl_prog_kernel_id", Prog.kernel(p))
     urow("cl_prog_unit", Prog.unit(p))
     urow("cl_prog_ctx", Prog.ctx(p))
     srow("cl_prog_kernel_name", Prog.entry(p))
-    srow("cl_prog_del_trace", vend.trace(Tr.calls(prog.del(p))))
-    srow("cl_prog_del_nokernel", vend.trace(Tr.calls(prog.del(Prog.of(V_CL(), "k", Nil{})))))
+    srow("cl_prog_del_trace", vend.trace(V_CL(), Tr.calls(prog.del(p))))
+    srow("cl_prog_del_nokernel", vend.trace(V_CL(), Tr.calls(prog.del(Prog.of(V_CL(), "k", Nil{})))))
     urow("cl_prog_del_full", Tr.n(prog.del(p)))
     urow("cl_prog_del_bare", Tr.n(prog.del(Prog.of(V_CL(), "k", Nil{}))))
 
@@ -2006,13 +2763,13 @@ def t_clcall() -> IO(Unit):
   do IO<Unit>:
     +p : Prog <- IO.pure(Prog, fx_call3(False{}))
     +t : Tr <- IO.pure(Tr, Prog.t(p))
-    srow("cl_call_trace", vend.trace(Tr.calls(t)))
+    srow("cl_call_trace", vend.trace(V_CL(), Tr.calls(t)))
     srow("cl_call_args", arg.strs(Prog.args(p)))
-    srow("cl_call_trace_wait", vend.trace(Tr.calls(Prog.t(fx_call3(True{})))))
+    srow("cl_call_trace_wait", vend.trace(V_CL(), Tr.calls(Prog.t(fx_call3(True{})))))
     srow("cl_call_args_img", arg.strs(Prog.args(fx_callimg(False{}))))
     srow("cl_call_args_skew", arg.strs(Prog.args(fx_callskew(False{}))))
-    srow("cl_call_trace_img", vend.trace(Tr.calls(Prog.t(fx_callimg(False{})))))
-    srow("cl_call_trace_skew", vend.trace(Tr.calls(Prog.t(fx_callskew(False{})))))
+    srow("cl_call_trace_img", vend.trace(V_CL(), Tr.calls(Prog.t(fx_callimg(False{})))))
+    srow("cl_call_trace_skew", vend.trace(V_CL(), Tr.calls(Prog.t(fx_callskew(False{})))))
     urow("cl_call_calls", Tr.n(t))
     urow("cl_call_calls_wait", Tr.n(Prog.t(fx_call3(True{}))))
     urow("cl_call_setargs", Tr.count(OP_SET_ARG(), Tr.calls(t)))
@@ -2042,27 +2799,24 @@ def t_clcall() -> IO(Unit):
 def t_clalloc() -> IO(Unit):
   do IO<Unit>:
     +a : Made <- IO.pure(Made, alloc.of(64, Tr.of()))
-    srow("cl_alloc_trace", vend.trace(Tr.calls(Made.tr(a))))
+    srow("cl_alloc_trace", vend.trace(V_CL(), Tr.calls(Made.tr(a))))
     urow("cl_alloc_size", Buf.size(Made.buf(a)))
     urow("cl_alloc_id", Buf.id(Made.buf(a)))
     +f : Tr <- IO.pure(Tr, alloc.free(a))
-    srow("cl_free_trace", vend.trace(Tr.calls(f)))
+    srow("cl_free_trace", vend.trace(V_CL(), Tr.calls(f)))
     srowlist("cl_free_args", Tr.args(OP_FREE(), Tr.calls(f)))
     +i : Tr <- IO.pure(Tr, copy.copyin(64, Tr.of()))
-    srow("cl_copyin_trace", vend.trace(Tr.calls(i)))
+    srow("cl_copyin_trace", vend.trace(V_CL(), Tr.calls(i)))
     srowlist("cl_copyin_args", Tr.args(OP_COPY_IN(), Tr.calls(i)))
     +o : Tr <- IO.pure(Tr, copy.copyout(64, Tr.of()))
-    srow("cl_copyout_trace", vend.trace(Tr.calls(o)))
+    srow("cl_copyout_trace", vend.trace(V_CL(), Tr.calls(o)))
     srowlist("cl_copyout_args", Tr.args(OP_COPY_OUT(), Tr.calls(o)))
     urow("cl_copyout_finishes", Tr.count(OP_FINISH(), Tr.calls(o)))
     urow("cl_copyin_finishes", Tr.count(OP_FINISH(), Tr.calls(i)))
     +sy : Tr <- IO.pure(Tr, cl.sync(Tr.of()))
-    srow("cl_sync_trace", vend.trace(Tr.calls(sy)))
+    srow("cl_sync_trace", vend.trace(V_CL(), Tr.calls(sy)))
 
-# --- 10: the REFUSAL paths, every CL `check` (cl:17-19) ----------------------
-# PORT-LOCAL CORRECTION: the pre-split heading read "every `check` in the three
-# files", and ALL 29 of its rows are `cl_refuse_*`. It was CL-only before the
-# split too. `t_cross`'s `x_free_*` rows are the three-file part.
+# --- 10: the REFUSAL paths, every `check` in the three files ---------------
 # `bad_at` names the CALL ORDINAL at which `check` reports, and the trace is
 # TRUNCATED from there -- which is the whole refusal model. `bad_at` is read AT
 # EMIT TIME, so it must be armed BEFORE the calls happen: the first version armed
@@ -2082,11 +2836,11 @@ def t_refuse() -> IO(Unit):
     +c : Prog <- IO.pure(Prog, fx_refuse(4))
     +d : Prog <- IO.pure(Prog, fx_refuse(5))
     +e : Prog <- IO.pure(Prog, fx_refuse(6))
-    srow("cl_refuse_1_trace", vend.trace(Tr.calls(Prog.t(a))))
-    srow("cl_refuse_2_trace", vend.trace(Tr.calls(Prog.t(b))))
-    srow("cl_refuse_4_trace", vend.trace(Tr.calls(Prog.t(c))))
-    srow("cl_refuse_5_trace", vend.trace(Tr.calls(Prog.t(d))))
-    srow("cl_refuse_6_trace", vend.trace(Tr.calls(Prog.t(e))))
+    srow("cl_refuse_1_trace", vend.trace(V_CL(), Tr.calls(Prog.t(a))))
+    srow("cl_refuse_2_trace", vend.trace(V_CL(), Tr.calls(Prog.t(b))))
+    srow("cl_refuse_4_trace", vend.trace(V_CL(), Tr.calls(Prog.t(c))))
+    srow("cl_refuse_5_trace", vend.trace(V_CL(), Tr.calls(Prog.t(d))))
+    srow("cl_refuse_6_trace", vend.trace(V_CL(), Tr.calls(Prog.t(e))))
     urow("cl_refuse_1_calls", Tr.n(Prog.t(a)))
     urow("cl_refuse_2_calls", Tr.n(Prog.t(b)))
     urow("cl_refuse_4_calls", Tr.n(Prog.t(c)))
@@ -2114,6 +2868,263 @@ def t_refuse() -> IO(Unit):
     brow("cl_has_pair", Tr.has(Tr.calls(t), [Call{OP_SET_ARG(), "1"}, Call{OP_LAUNCH(), "3"}]))
     brow("cl_has_prefix", Tr.has(Tr.calls(t), [Call{OP_SET_ARG(), "0"}, Call{OP_SET_ARG(), "1"}]))
 
+# ===========================================================================
+# PART 4 -- CUDA. cu:17-136.
+# ===========================================================================
+
+def CUDEV0() -> String: ""
+def CUDEV1() -> String: "CUDA:1"
+
+def fx_cu() -> CuDev: cu.init(CUDEV1(), 8, 6, Tr.of())
+
+def t_cuinit() -> IO(Unit):
+  do IO<Unit>:
+    srow("cu_init_trace", vend.trace(V_CUDA(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_calls", Tr.n(CuDev.t(fx_cu())))
+    urow("cu_init_cuinit", Tr.count(OP_INIT(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_devget", Tr.count(OP_GET_DEVICES(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_ctx", Tr.count(OP_CTX_CREATE(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_cap", Tr.count(OP_COMPUTE_CAP(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_streams", Tr.count(OP_QUEUE_CREATE(), Tr.calls(CuDev.t(fx_cu()))))
+    urow("cu_init_streams_n", cu_nstreams())
+    srowlist("cu_init_stream_args", Tr.args(OP_QUEUE_CREATE(), Tr.calls(CuDev.t(fx_cu()))))
+    srow("cu_arch_86", cu.arch_of(8, 6))
+    srow("cu_arch_90", cu.arch_of(9, 0))
+    srow("cu_arch_120", cu.arch_of(12, 0))
+    srow("cu_arch_00", cu.arch_of(0, 0))
+    urow("cu_didx_empty", cu_didx(CUDEV0()))
+    urow("cu_didx_1", cu_didx(CUDEV1()))
+    urow("cu_didx_17", cu_didx(DEV17()))
+    brow("cu_didx_agrees_cl", U32.is_eq(cu_didx(CUDEV1()), cl_dev_index(CUDEV1())))
+    urow("cu_rtvars", CU_RT_VARS())
+    urow("cu_idx_ctx", CU_IDX_CTX())
+    urow("cu_idx_compute", CU_IDX_COMPUTE())
+    urow("cu_idx_copy", CU_IDX_COPY())
+    urow("cu_idx_status", CU_IDX_STATUS())
+    urow("cu_kernargs_bytes", CU_KERNARGS_BYTES())
+    lrow("cu_handles", cu.handles(fx_cu()))
+    urow("cu_handle_words", cu_handle_words())
+    urow("cu_handles_tail", cu_handles_tail())
+    urow("cu_tag_cuda", CU_TAG_CUDA())
+    urow("cu_tag_stamp", CU_TAG_STAMP())
+    urow("cu_tag_func", CU_TAG_FUNC())
+    urow("cu_tag_none", CU_TAG_NONE())
+    srowlist("cu_encode_tags", cu.encode_tags())
+    urow("cu_encode_cuda", cu.encode_pick(CU_TAG_CUDA()))
+    urow("cu_encode_stamp", cu.encode_pick(CU_TAG_STAMP()))
+    urow("cu_encode_other", cu.encode_pick(CU_TAG_FUNC()))
+    srow("cu_name_fn", CU_NAME_FN())
+    srow("cu_tagword_function", CU_TAGWORD_FUNCTION())
+
+# --- the queue, cu:28-66 ---------------------------------------------------
+def t_cuqueue() -> IO(Unit):
+  do IO<Unit>:
+    urow("cu_stream_compute", cu.stream_slot("CUDA:0"))
+    urow("cu_stream_copy", cu.stream_slot("COPY:0"))
+    urow("cu_stream_queue", cu.stream_slot("QUEUE:0"))
+    srow("cu_q_init_trace", vend.trace(V_CUDA(), Tr.calls(cu.q_init(Tr.of()))))
+    # cu:43's `size = max([o + w.dtype.itemsize for o, w in rows], default=8) - 8`
+    urow("cu_size_empty", cu.launch_size(Nil{}))
+    urow("cu_size_one8", cu.launch_size([16]))
+    urow("cu_size_one4", cu.launch_size([12]))
+    urow("cu_size_two", cu.launch_size([12, 24]))
+    urow("cu_size_three", cu.launch_size([12, 24, 40]))
+    urow("cu_size_unsorted", cu.launch_size([40, 12, 24]))
+    urow("cu_kernargs_base", CU_KERNARGS_BASE())
+    urow("cu_desc_words", CU_DESC_WORDS())
+    urow("cu_desc_bytes", CU_DESC_BYTES())
+    urow("cu_desc_off", CU_DESC_OFF())
+    urow("cu_extra_fresh", cu.kernarg_extra(CU_DESC_BYTES()))
+    urow("cu_extra_44", cu.kernarg_extra(44))
+    urow("cu_extra_84", cu.kernarg_extra(84))
+    lrow("cu_desc_word_list", cu.desc_words())
+    srow("cu_launch_trace", vend.trace(V_CUDA(), Tr.calls(cu.launch(44, Tr.of()))))
+    srow("cu_copy_trace", vend.trace(V_CUDA(), Tr.calls(cu.copy(4096, Tr.of()))))
+    srow("cu_wait_trace", vend.trace(V_CUDA(), Tr.calls(cu.wait(Tr.of()))))
+    srow("cu_signal_trace", vend.trace(V_CUDA(), Tr.calls(cu.signal(Tr.of()))))
+    srow("cu_timestamp_trace", vend.trace(V_CUDA(), Tr.calls(cu.timestamp(Tr.of()))))
+    srow("cu_submit_trace", vend.trace(V_CUDA(), Tr.calls(cu.submit(Tr.of()))))
+    srowlist("cu_wait_arg", Tr.args(OP_WAIT_VALUE(), Tr.calls(cu.wait(Tr.of()))))
+    srowlist("cu_signal_arg", Tr.args(OP_SIGNAL(), Tr.calls(cu.signal(Tr.of()))))
+    urow("cu_wait_geq", CU_STREAM_WAIT_VALUE_GEQ())
+    urow("cu_signal_def", CU_STREAM_WRITE_VALUE_DEFAULT())
+    urow("cu_wait_signal_eq", Bool.to_u32(U32.is_eq(CU_STREAM_WAIT_VALUE_GEQ(), CU_STREAM_WRITE_VALUE_DEFAULT())))
+    urow("cu_signal_slot", CU_SIGNAL_SLOT())
+    urow("cu_streams_nonblocking", CU_STREAM_NON_BLOCKING())
+    srow("cu_exec_trace", vend.trace(V_CUDA(), Tr.calls(cu.exec(3, 1, Tr.of()))))
+    srow("cu_wait_signal_trace", vend.trace(V_CUDA(), Tr.calls(cu.wait_signal(Tr.of()))))
+    srow("cu_count_trace", vend.trace(V_CUDA(), Tr.calls(cu.count(Tr.of()))))
+    srow("cu_function_trace", vend.trace(V_CUDA(), Tr.calls(cu.function(2048, Tr.of()))))
+
+# --- the allocator, cu:71-95 -----------------------------------------------
+def cu_alloc_trace(s: Spec, size: U32) -> Tr: cu.alloc(size, s, Tr.of())
+
+def t_cualloc() -> IO(Unit):
+  do IO<Unit>:
+    srow("cu_alloc_dev", vend.trace(V_CUDA(), Tr.calls(cu_alloc_trace(Spec.of(False{}, False{}, 0), 64))))
+    srow("cu_alloc_host", vend.trace(V_CUDA(), Tr.calls(cu_alloc_trace(Spec.of(True{}, False{}, 0), 64))))
+    srow("cu_alloc_cpu", vend.trace(V_CUDA(), Tr.calls(cu_alloc_trace(Spec.of(False{}, True{}, 0), 64))))
+    srow("cu_alloc_ext", vend.trace(V_CUDA(), Tr.calls(cu_alloc_trace(Spec.of(False{}, False{}, 4096), 64))))
+    urow("cu_alloc_dev_n", Tr.n(cu_alloc_trace(Spec.of(False{}, False{}, 0), 64)))
+    urow("cu_alloc_ext_n", Tr.n(cu_alloc_trace(Spec.of(False{}, False{}, 4096), 64)))
+    srowlist("cu_alloc_dev_args", Tr.args(OP_ALLOC(), Tr.calls(cu_alloc_trace(Spec.of(False{}, False{}, 0), 64))))
+    srowlist("cu_alloc_host_args", Tr.args(OP_ALLOC_HOST(), Tr.calls(cu_alloc_trace(Spec.of(True{}, False{}, 0), 64))))
+    srow("cu_free_dev", vend.trace(V_CUDA(), Tr.calls(cu.free(Spec.of(False{}, False{}, 0), 7, Tr.of()))))
+    srow("cu_free_host", vend.trace(V_CUDA(), Tr.calls(cu.free(Spec.of(True{}, False{}, 0), 7, Tr.of()))))
+    srow("cu_free_cpu", vend.trace(V_CUDA(), Tr.calls(cu.free(Spec.of(False{}, True{}, 0), 7, Tr.of()))))
+    srow("cu_map_registered", vend.trace(V_CUDA(), Tr.calls(cu.map.at(True{}, 4096, Tr.of()))))
+    srow("cu_map_new", vend.trace(V_CUDA(), Tr.calls(cu.map.at(False{}, 4096, Tr.of()))))
+    brow("cu_map_ok_new", cu.map_ok(False{}))
+    brow("cu_map_ok_reg", cu.map_ok(True{}))
+    srow("cu_unmap_ours", vend.trace(V_CUDA(), Tr.calls(cu.unmap.at(True{}, 7, Tr.of()))))
+    srow("cu_unmap_theirs", vend.trace(V_CUDA(), Tr.calls(cu.unmap.at(False{}, 7, Tr.of()))))
+    # THE LITERAL IS THE POINT. This row used to be `urow("cu_page_size",
+    # PAGE_SIZE())`, and that asserted nothing: the expected value was a def of
+    # the thing it was checking, so no edit to the constant could move the row --
+    # the shape `device.bend` shipped as `sig=0 4 5`. 4096 is a JUDGEMENT and not
+    # a port of a Python number (see cu:88 above: this very machine answers
+    # 16384), so it belongs in the row, where a diff shows it. See the comment
+    # there for why the def that used to hold it is gone.
+    urow("cu_page_size", 4096)
+    srow("cu_map_err_other_nohost", cu.map_err(CUDEV1(), False{}, False{}, False{}))
+    srow("cu_map_err_other_unaligned", cu.map_err(CUDEV1(), False{}, True{}, False{}))
+    srow("cu_map_err_other_aligned", cu.map_err(CUDEV1(), False{}, True{}, True{}))
+    srow("cu_map_err_cu_nohost", cu.map_err(CUDEV1(), True{}, False{}, False{}))
+    srow("cu_map_err_cu_unaligned", cu.map_err(CUDEV1(), True{}, True{}, False{}))
+    srow("cu_map_err_cu_aligned", cu.map_err(CUDEV1(), True{}, True{}, True{}))
+    urow("cu_map_err_ctx_len", U32.from_nat(List.length(&2, String, Nil{})))
+    urow("cu_map_err_len", U32.from_nat(List.length(&2, String, Nil{})))
+
+# ===========================================================================
+# PART 5 -- HIP. hp:9-71.
+# ===========================================================================
+
+def HPNAME() -> String: "gfx1100"
+def HPDEV0() -> String: ""
+def HPDEV2() -> String: "HIP:2"
+
+def fx_hp() -> HpDev: hp.init(HPDEV0(), HPNAME(), Tr.of())
+
+def t_hpinit() -> IO(Unit):
+  do IO<Unit>:
+    srow("hp_init_trace", vend.trace(V_HIP(), Tr.calls(HpDev.t(fx_hp()))))
+    urow("hp_init_calls", Tr.n(HpDev.t(fx_hp())))
+    urow("hp_init_props", Tr.count(OP_GET_DEVICE_PROPS(), Tr.calls(HpDev.t(fx_hp()))))
+    urow("hp_init_events", Tr.count(OP_QUEUE_CREATE(), Tr.calls(HpDev.t(fx_hp()))))
+    srowlist("hp_init_event_args", Tr.args(OP_QUEUE_CREATE(), Tr.calls(HpDev.t(fx_hp()))))
+    srow("hp_arch", HpDev.arch(fx_hp()))
+    urow("hp_nhandles", Tr.next(HpDev.t(fx_hp())))
+    urow("hp_didx_empty", hp_didx(HPDEV0()))
+    urow("hp_didx_2", hp_didx(HPDEV2()))
+    brow("hp_didx_agrees_cl", U32.is_eq(hp_didx(HPDEV2()), cl_dev_index(HPDEV2())))
+    srow("hp_sync_trace", vend.trace(V_HIP(), Tr.calls(hp.sync(0, Tr.of()))))
+    srow("hp_count_trace", vend.trace(V_HIP(), Tr.calls(hp.count(Tr.of()))))
+    srow("hp_prog_init_trace", vend.trace(V_HIP(), Tr.calls(hp.prog_init.fn("k",
+      hp.prog_init.prg(128, hp.prog_init.dev(Tr.of()))))))
+    srow("hp_prog_del_yes", vend.trace(V_HIP(), Tr.calls(hp.prog_del(True{}, Tr.of()))))
+    srow("hp_prog_del_no", vend.trace(V_HIP(), Tr.calls(hp.prog_del(False{}, Tr.of()))))
+    urow("hp_h2d", HIP_H2D())
+    urow("hp_d2h", HIP_D2H())
+    urow("hp_memcpy_kind_in", hp.memcpy_kind(False{}))
+    urow("hp_memcpy_kind_out", hp.memcpy_kind(True{}))
+    srow("hp_alloc_trace", vend.trace(V_HIP(), Tr.calls(hp.alloc(0, 64, Tr.of()))))
+    srow("hp_free_trace", vend.trace(V_HIP(), Tr.calls(hp.free(7, Tr.of()))))
+    srow("hp_copyin_trace", vend.trace(V_HIP(), Tr.calls(hp.copyin(0, 64, Tr.of()))))
+    srow("hp_copyout_trace", vend.trace(V_HIP(), Tr.calls(hp.copyout(0, 64, Tr.of()))))
+    urow("hp_offset_sum", hp_offset_sum(4096, 64))
+    urow("hp_offset_sum_0", hp_offset_sum(4096, 0))
+
+# --- the c_args struct, hp:39-44 -- THE THIRD VENDOR'S ARGUMENT LAYOUT -----
+def t_hpargs() -> IO(Unit):
+  do IO<Unit>:
+    urow("hp_ptr_sz", HP_PTR_SZ())
+    lrow("hp_buf_offsets_0", hp_buf_offsets(0n))
+    lrow("hp_buf_offsets_1", hp_buf_offsets(1n))
+    lrow("hp_buf_offsets_3", hp_buf_offsets(3n))
+    lrow("hp_val_offsets_3_32", hp_val_offsets(3, [4, 4, 4, 4]))
+    lrow("hp_val_offsets_3_mixed", hp_val_offsets(3, [4, 2, 8, 1]))
+    lrow("hp_val_offsets_1_mixed", hp_val_offsets(1, [1, 2, 4]))
+    lrow("hp_val_offsets_2_odd", hp_val_offsets(2, [2, 4]))
+    lrow("hp_val_offsets_0", hp_val_offsets(0, [8]))
+    urow("hp_cargs_size_0", hp.cargs_size(0, 0, 0))
+    urow("hp_cargs_size_1_0_8", hp.cargs_size(0, 8, 1))
+    urow("hp_cargs_size_3_24_4", hp.cargs_size(24, 4, 3))
+    urow("hp_cargs_size_3_26_4", hp.cargs_size(26, 4, 3))
+    urow("hp_cargs_size_3_32_4", hp.cargs_size(32, 4, 3))
+    urow("hp_fields_3_4444", hp.fields(3n, [4, 4, 4, 4]))
+    urow("hp_fields_3_mixed", hp.fields(3n, [4, 2, 8, 1]))
+    urow("hp_fields_0_empty", hp.fields(0n, Nil{}))
+    urow("hp_fields_3_novals", hp.fields(3n, Nil{}))
+    urow("hp_fields_0_1val", hp.fields(0n, [4]))
+    urow("hp_fields_1_1val", hp.fields(1n, [1]))
+    urow("hp_vargs_words", HP_VARGS_WORDS())
+    lrow("hp_vargs_list", hp.vargs_words(32))
+    srow("hp_call_first_trace", vend.trace(V_HIP(), Tr.calls(hp.call.at(0, 32, False{}, False{}, Tr.of()))))
+    srow("hp_call_wait_trace", vend.trace(V_HIP(), Tr.calls(hp.call.at(0, 32, True{}, False{}, Tr.of()))))
+    srow("hp_call_second_trace", vend.trace(V_HIP(), Tr.calls(hp.call.at(0, 32, False{}, True{}, Tr.of()))))
+    urow("hp_call_first_n", Tr.n(hp.call.at(0, 32, False{}, False{}, Tr.of())))
+    urow("hp_call_wait_n", Tr.n(hp.call.at(0, 32, True{}, False{}, Tr.of())))
+    urow("hp_call_second_n", Tr.n(hp.call.at(0, 32, False{}, True{}, Tr.of())))
+    urow("hp_call_built_eq", Bool.to_u32(U32.is_eq(Tr.n(hp.call.at(0, 32, False{}, False{}, Tr.of())),
+                                                Tr.n(hp.call.at(0, 32, False{}, True{}, Tr.of())))))
+    srowlist("hp_call_elapsed_args", Tr.args(OP_TIME_END(), Tr.calls(hp.call.at(0, 32, True{}, False{}, Tr.of()))))
+    srowlist("hp_call_launch_args", Tr.args(OP_LAUNCH(), Tr.calls(hp.call.at(0, 32, False{}, False{}, Tr.of()))))
+
+# --- 12: the CROSS-VENDOR COMPARISON, which is the content of this file ----
+def t_cross() -> IO(Unit):
+  do IO<Unit>:
+    # THE SAME OPERATION, THREE SPELLINGS: alloc, free, finish, copy-in,
+    # copy-out, launch, and the set-context each vendor does.
+    srow("x_alloc", String.join([
+      vend.name(V_CL(), OP_ALLOC()), vend.name(V_CUDA(), OP_ALLOC()), vend.name(V_HIP(), OP_ALLOC())], "|"))
+    srow("x_alloc_host", String.join([
+      vend.name(V_CL(), OP_ALLOC_HOST()), vend.name(V_CUDA(), OP_ALLOC_HOST()),
+      vend.name(V_HIP(), OP_ALLOC_HOST())], "|"))
+    srow("x_free", String.join([
+      vend.name(V_CL(), OP_FREE()), vend.name(V_CUDA(), OP_FREE()), vend.name(V_HIP(), OP_FREE())], "|"))
+    srow("x_finish", String.join([
+      vend.name(V_CL(), OP_FINISH()), vend.name(V_CUDA(), OP_FINISH()),
+      vend.name(V_HIP(), OP_FINISH())], "|"))
+    srow("x_copyin", String.join([
+      vend.name(V_CL(), OP_COPY_IN()), vend.name(V_CUDA(), OP_COPY_IN()),
+      vend.name(V_HIP(), OP_COPY_IN())], "|"))
+    srow("x_copyout", String.join([
+      vend.name(V_CL(), OP_COPY_OUT()), vend.name(V_CUDA(), OP_COPY_OUT()),
+      vend.name(V_HIP(), OP_COPY_OUT())], "|"))
+    srow("x_launch", String.join([
+      vend.name(V_CL(), OP_LAUNCH()), vend.name(V_CUDA(), OP_LAUNCH()),
+      vend.name(V_HIP(), OP_LAUNCH())], "|"))
+    srow("x_setctx", String.join([
+      vend.name(V_CL(), OP_CTX_SET()), vend.name(V_CUDA(), OP_CTX_SET()),
+      vend.name(V_HIP(), OP_SET_DEVICE())], "|"))
+    srow("x_wait", String.join([
+      vend.name(V_CL(), OP_WAIT_EVENT()), vend.name(V_CUDA(), OP_WAIT_VALUE()),
+      vend.name(V_HIP(), OP_WAIT_EVENT())], "|"))
+    srow("x_time", String.join([
+      vend.name(V_CL(), OP_TIME_END()), vend.name(V_CUDA(), OP_TIME_END()),
+      vend.name(V_HIP(), OP_TIME_END())], "|"))
+    srow("x_arglayout", String.join([
+      vend.name(V_CL(), OP_SET_ARG()), vend.name(V_CUDA(), OP_SET_ARG()),
+      vend.name(V_HIP(), OP_SET_ARG())], "|"))
+    # THE THREE ARCH STRINGS, which are three different derivations of the same
+    # `Compiled.__init__` argument.
+    srow("x_arch_cl", Dev.arch(fx_img()))
+    srow("x_arch_cu", cu.arch_of(8, 6))
+    srow("x_arch_hp", HpDev.arch(fx_hp()))
+    # THE THREE DEVICE-INDEX SPELLINGS, which agree.
+    brow("x_didx_agrees", Bool.and(U32.is_eq(cl_dev_index(DEV2()), cu_didx(DEV2())),
+                                   U32.is_eq(hp_didx(DEV2()), cu_didx(DEV2()))))
+    # THE THREE `_free`s: CL waits for nothing, CUDA waits then frees, HIP frees
+    # and waits for nothing. The three traces say so.
+    srow("x_free_cl", vend.trace(V_CL(), Tr.calls(alloc.free(alloc.of(64, Tr.of())))))
+    srow("x_free_cu", vend.trace(V_CUDA(), Tr.calls(cu.free(Spec.of(False{}, False{}, 0), 7, Tr.of()))))
+    srow("x_free_hp", vend.trace(V_HIP(), Tr.calls(hp.free(7, Tr.of()))))
+    # THE THREE `_copyout`s: CL enqueues then finishes, CUDA does neither, HIP
+    # finishes then enqueues -- the SAME pair of calls in a DIFFERENT order.
+    srow("x_copyout_cl", vend.trace(V_CL(), Tr.calls(copy.copyout(64, Tr.of()))))
+    srow("x_copyout_hp", vend.trace(V_HIP(), Tr.calls(hp.copyout(0, 64, Tr.of()))))
+    srow("x_copyin_cl", vend.trace(V_CL(), Tr.calls(copy.copyin(64, Tr.of()))))
+    srow("x_copyin_hp", vend.trace(V_HIP(), Tr.calls(hp.copyin(0, 64, Tr.of()))))
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -2127,4 +3138,10 @@ def main() -> IO(Unit):
     h : Unit <- t_clcall()
     i : Unit <- t_clalloc()
     j : Unit <- t_refuse()
+    k : Unit <- t_cuinit()
+    l : Unit <- t_cuqueue()
+    m : Unit <- t_cualloc()
+    n : Unit <- t_hpinit()
+    o : Unit <- t_hpargs()
+    p : Unit <- t_cross()
     IO.print("cl-done=1")
