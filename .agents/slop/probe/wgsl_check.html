@@ -1,0 +1,20 @@
+<!doctype html><meta charset=utf-8><title>wgsl</title><body><pre id=o></pre><script type="module">
+const WGSL = `fn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }
+@group(0) @binding(0)
+var<uniform> INFINITY : f32;
+@group(0) @binding(1)var<storage,read_write>a:array<f32>;
+@group(0) @binding(2)var<storage,read_write>b:array<f32>;
+@group(0) @binding(3)var<storage,read_write>c:array<i32>;
+@compute @workgroup_size(1) fn k(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.x;
+  a[i] = select(b[i], INFINITY, a[i] > b[i]);
+  c[i] = i32(a[i] * 2.0);
+}`;
+const a = await navigator.gpu.requestAdapter();
+const d = await a.requestDevice();
+d.pushErrorScope("validation");
+const m = d.createShaderModule({ code: WGSL });
+const info = await m.getCompilationInfo();
+document.getElementById("o").textContent = JSON.stringify(info.messages.map(x=>[x.type,x.lineNum,x.message]));
+document.title="done";
+</script></body>

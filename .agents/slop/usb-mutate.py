@@ -245,13 +245,13 @@ MUTATIONS = [
        "case Ent{vv, nn} <> t: Bool.pick(String, U32.is_eq(vv, v), nn, enum_nm.go(m, v, t, hit))")],
      "the LAST-wins rule the generated dicts have. The ONLY row in the file that "
      "sees it is `usb_synth_n_10`, because 6 is the only value that ever repeats "
-     "in twenty-one tables and `LIBUSB_CLASS_IMAGE` is not a table entry at all "
+     "in twenty-two tables and `LIBUSB_CLASS_IMAGE` is not a table entry at all "
      "-- a one-row fixture for a real rule, BUILT for it."),
     ("M37", "`enum_val`: LAST-wins -> FIRST-wins",
      [("case Ent{vv, nn} <> t: enum_val.go(m, nm, t, Bool.pick(U32, String.eq(nn, nm), vv, hit))",
        "case Ent{vv, nn} <> t: Bool.pick(U32, String.eq(nn, nm), vv, enum_val.go(m, nm, t, hit))")],
      "the same rule the other way, and the ONLY row that sees it is "
-     "`usb_synth_v_beta`: no name repeats in the twenty-one live tables, so the "
+     "`usb_synth_v_beta`: no name repeats in the twenty-two live tables, so the "
      "fixture had to be BUILT (`E_SYNTH` carries SYNTH_BETA at 11 and 12) for the "
      "rule to be observable at all."),
     ("M38", "`F_TRANSFER`: swap `status` and `length`",

@@ -1,0 +1,28 @@
+# Rows that are DELIBERATELY NOT CPython FACTS, so the residual after comparison is
+# provably empty rather than "empty apart from the ones I expected". ag-diff-rows.py
+# refuses an ignore name that is present on BOTH sides or on NEITHER, so this list
+# cannot quietly hide a real disagreement.
+#
+# --- the BEAM rows: the port's own SCORE-table decisions, not tinygrad's --------------
+# `plus_scores` is a four-row SCORE table standing in for `_try_compile` and
+# `_time_program`, both of which are WALL #2 here. These rows exercise `drop` and
+# `least_of` over that table; nothing upstream answers them.
+dropped
+drop_ok
+drop_seen
+keep_ok
+least_lo
+least_hi
+#
+# --- PROVENANCE for ops.bend's two dead members, which search.bend does not own -------
+# `AxisType` is declared in `uop/ops.bend`, which keeps `axv_REDUCE` / `axv_UNROLL` and
+# the `AxisType.name.dead` shape this file copied its `zero_variant.dead` FROM. These
+# rows are what `zero_variant.dead` is for, and they are printed HERE because
+# search.bend's oracle has to read CPython's enum to answer them at all. They are
+# provenance, not gate rows: no Bend row asks them, by design -- a deleted member's
+# answer has nothing to compare against.
+dead_REDUCE_in_enum
+dead_REDUCE_in_actions
+dead_UNROLL_in_enum
+dead_UNROLL_in_actions
+axis_types_n

@@ -1,5 +1,5 @@
 # ===========================================================================
-# THE STRING TABLE. `usb.py` has twenty-one user-visible strings and every one
+# THE STRING TABLE. `usb.py` has nineteen user-visible strings and every one
 # of them is either a LITERAL or an f-string whose literal parts are load-bearing.
 # They are diffed AS STRINGS, not as a boolean about a string, because
 # `String.concat` drops a literal silently and a row that said "the message is

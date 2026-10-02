@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : 'p'
+Location:
+125 |       IO.print(pr_two(n, h))
+126>|       pr_emit(Nat.add(n, 1n), t)
+    |       ^
+127 | 

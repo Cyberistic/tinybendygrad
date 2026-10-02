@@ -1,0 +1,35 @@
+import Base
+def hx.d(c: Char) -> U32: Char.to_u32(c)
+def hx.isdig(c: Char) -> Bool: Char.is_digit(c)
+def hx.isupp(c: Char) -> Bool: Char.is_upper(c)
+def hx.islow(c: Char) -> Bool: Char.is_lower(c)
+# MEASURED OFFSHOOTS (python3 -c "for c in '0123456789abcdefABCDEF': ..."):
+#   ord(c) - int(c,16) is 48 for '0'-'9', 87 for 'a'-'f', 55 for 'A'-'F'.
+# Three independent constants, so the table is a table and not a formula.
+def hx.v.d(c: Char) -> U32: U32.sub(hx.d(c), 48)
+def hx.v.l(c: Char) -> U32: U32.sub(hx.d(c), 87)
+def hx.v.u(c: Char) -> U32: U32.sub(hx.d(c), 55)
+def hx.v.p1(+c: Char) -> U32: Bool.pick(U32, hx.isupp(c), hx.v.u(c), 15)
+def hx.v.p0(+c: Char) -> U32: Bool.pick(U32, hx.islow(c), hx.v.l(c), hx.v.p1(c))
+def hx.v(+c: Char) -> U32: Bool.pick(U32, hx.isdig(c), hx.v.d(c), hx.v.p0(c))
+def shw(h: String, i: U32) -> Char: Maybe.default(&2, Char, String.get(h, U32.to_nat(i)), Char.from_u32(48))
+def blob.nib(h: String, i: U32) -> U32: hx.v(shw(h, i))
+def blob.u8(+h: String, +i: U32) -> U32: U32.add(U32.mul(blob.nib(h, U32.mul(i, 2)), 16), blob.nib(h, U32.add(U32.mul(i, 2), 1)))
+def blob.le16(+h: String, +i: U32) -> U32: U32.add(blob.u8(h, i), U32.mul(blob.u8(h, U32.add(i, 1)), 256))
+def blob.le32(+h: String, +i: U32) -> U32: U32.add(blob.le16(h, i), U32.mul(blob.le16(h, U32.add(i, 2)), 65536))
+def nm(i: U32) -> String: String.concat(["u8[", U32.show(i), "]="])
+def main() -> IO(Unit):
+  do IO<Unit>:
+    IO.print(String.concat(["nib_0f0=", U32.show(blob.nib("0f", 0)), " nib_0f1=", U32.show(blob.nib("0f", 1))]))
+    IO.print(String.concat(["nib_aF=", U32.show(blob.nib("aF", 0)), " nib_aF1=", U32.show(blob.nib("aF", 1))]))
+    IO.print(String.concat([nm(0), U32.show(blob.u8("0002000110010003", 0))]))
+    IO.print(String.concat([nm(1), U32.show(blob.u8("0002000110010003", 1))]))
+    IO.print(String.concat([nm(2), U32.show(blob.u8("0002000110010003", 2))]))
+    IO.print(String.concat([nm(3), U32.show(blob.u8("0002000110010003", 3))]))
+    IO.print(String.concat([nm(4), U32.show(blob.u8("0002000110010003", 4))]))
+    IO.print(String.concat([nm(5), U32.show(blob.u8("0002000110010003", 5))]))
+    IO.print(String.concat(["le16_4=", U32.show(blob.le16("0002000110010003", 4))]))
+    IO.print(String.concat(["le16_0=", U32.show(blob.le16("0002000110010003", 0))]))
+    IO.print(String.concat(["le32_0=", U32.show(blob.le32("efbeadde11223344", 0))]))
+    IO.print(String.concat(["le32_4=", U32.show(blob.le32("00000000efbeadde", 4))]))
+    IO.print("probe-done=1")

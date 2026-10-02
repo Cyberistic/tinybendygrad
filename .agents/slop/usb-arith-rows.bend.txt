@@ -355,8 +355,8 @@ def t_fastpath() -> IO(Unit):
     u1("usb_fast_p1_val", FAST_P1_VAL()),
     u1("usb_fast_p2_mask", FAST_P2_MASK()),
     u1("usb_fast_p2_val", FAST_P2_VAL()),
-    # DECIMAL IN THE ROW NAME TOO: Bend has no `0x` literal and the oracle names
-    # these rows with `str(hx)`, so a hex-spelled name is a permanent
+    # DECIMAL IN THE ROW NAME TOO. Bend has no `0x` literal, and the oracle
+    # names these rows with `str(hx)`, so a hex-spelled name is a permanent
     # disagreement rather than a visible one.
     b1("usb_nocompletion_64", pcie_no_completion(64)),
     b1("usb_nocompletion_48", pcie_no_completion(48)),
@@ -397,10 +397,10 @@ def t_drained() -> IO(Unit):
     b1("usb_drain_wrap_need0_fence254", drained_step(0, 254)),
     b1("usb_drain_wrap_need255_fence0", drained_step(255, 0)),
     b1("usb_drain_wrap_need2_fence0", drained_step(2, 0)),
-    # A `need` PAST the one-byte window is the case the `& 0xff` exists for: 300
-    # and 44 differ by 256, so the masked difference is 44 and the step is True,
-    # while 300 and 43 differ by 257 and the masked difference is 1, which is not
-    # `> 1`. One row from its positive, and it is the only pair that can see it.
+    # A `need` PAST the one-byte window is what the `& 0xff` exists for: 300
+    # and 44 differ by 256, so the masked difference is 44 and the step is
+    # True; 300 and 43 differ by 257, so it is 1 and is not `> 1`. One row
+    # from its positive, and the only pair that can see it.
     b1("usb_drain_need300_fence44", drained_step(300, 44)),
     b1("usb_drain_need300_fence43", drained_step(300, 43))
   ]))

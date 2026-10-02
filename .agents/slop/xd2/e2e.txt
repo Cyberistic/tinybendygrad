@@ -1,0 +1,64 @@
+binary=chrome-stable
+oracle_note=CPython tinygrad, DEV=CPU, TRAINING=0 (py:29-30 get_test_acc path), u32 bit patterns
+page=starting...
+page=kernels 17  buffers 28  output 1x10
+page=oracle: CPython tinygrad, DEV=CPU, TRAINING=0 (py:29-30 get_test_acc path), u32 bit patterns
+page=adapter: vendor=apple architecture=metal-3 device=
+page=  launch  0 E_8_4                    exact (32 elements)
+page=  launch  1 E_8_4                    exact (32 elements)
+page=  launch  2 E                        exact (0 elements)
+page=  launch  3 E_8_4                    exact (32 elements)
+page=  launch  4 E_8_4                    exact (32 elements)
+page=  launch  5 E_16_4                   exact (64 elements)
+page=  launch  6 E_16_4                   exact (64 elements)
+page=  launch  7 E                        exact (0 elements)
+page=  launch  8 E_16_4                   exact (64 elements)
+page=  launch  9 E_16_4                   exact (64 elements)
+page=  launch 10 r_8_24_8_3_4_5_5         1168/20048 elements differ, max 512 ulp / 8.94e-8 absolute
+page=  launch 11 r_8_20_5_4_4_32_5_5      3701/56992 elements differ, max 4158 ulp / 7.45e-8 absolute
+page=  launch 12 r_320_10_2_2             exact (16000 elements)
+page=  launch 13 r_16_8_2_4_4_32_3_3      618/25792 elements differ, max 320 ulp / 2.38e-7 absolute
+page=  launch 14 r_64_6_2_3_64_3_3        1485/43584 elements differ, max 87 ulp / 3.58e-7 absolute
+page=  launch 15 r_192_3_2_2              exact (2880 elements)
+page=  launch 16 r_10_144_4               exact (6356 elements)
+page=launches 17 in 136.6 ms
+page=bit-exact 10/10
+page=MATCH: the browser reproduced CPython's forward pass exactly
+ladder=launch0 E_8_4 ndiff=0/32 maxUlp=0 maxAbs=0
+ladder=launch1 E_8_4 ndiff=0/32 maxUlp=0 maxAbs=0
+ladder=launch2 E ndiff=0/0 maxUlp=0 maxAbs=0
+ladder=launch3 E_8_4 ndiff=0/32 maxUlp=0 maxAbs=0
+ladder=launch4 E_8_4 ndiff=0/32 maxUlp=0 maxAbs=0
+ladder=launch5 E_16_4 ndiff=0/64 maxUlp=0 maxAbs=0
+ladder=launch6 E_16_4 ndiff=0/64 maxUlp=0 maxAbs=0
+ladder=launch7 E ndiff=0/0 maxUlp=0 maxAbs=0
+ladder=launch8 E_16_4 ndiff=0/64 maxUlp=0 maxAbs=0
+ladder=launch9 E_16_4 ndiff=0/64 maxUlp=0 maxAbs=0
+ladder=launch10 r_8_24_8_3_4_5_5 ndiff=1168/20048 maxUlp=512 maxAbs=8.940696716308594e-8
+ladder=launch11 r_8_20_5_4_4_32_5_5 ndiff=3701/56992 maxUlp=4158 maxAbs=7.450580596923828e-8
+ladder=launch12 r_320_10_2_2 ndiff=0/16000 maxUlp=0 maxAbs=0
+ladder=launch13 r_16_8_2_4_4_32_3_3 ndiff=618/25792 maxUlp=320 maxAbs=2.384185791015625e-7
+ladder=launch14 r_64_6_2_3_64_3_3 ndiff=1485/43584 maxUlp=87 maxAbs=3.5762786865234375e-7
+ladder=launch15 r_192_3_2_2 ndiff=0/2880 maxUlp=0 maxAbs=0
+ladder=launch16 r_10_144_4 ndiff=0/6356 maxUlp=0 maxAbs=0
+verdict=MATCH
+launches=17
+ms=137
+exact=10/10
+logit0=3197250503 cpu=3197250503
+logit1=3213080736 cpu=3213080736
+logit2=3218192673 cpu=3218192673
+logit3=1032338774 cpu=1032338774
+logit4=3216202590 cpu=3216202590
+logit5=1063505030 cpu=1063505030
+logit6=1063968580 cpu=1063968580
+logit7=1039076016 cpu=1039076016
+logit8=1065339734 cpu=1065339734
+logit9=3185498696 cpu=3185498696
+harness_agrees_with_oracle_file=true
+bend_mdl_walk=conv2d=(1,32,24,24) relu=(1,32,24,24) conv2d=(1,32,20,20) relu=(1,32,20,20) batchnorm=(1,32,20,20) max_pool2d=(1,32,10,10) conv2d=(1,64,8,8) relu=(1,64,8,8) conv2d=(1,64,6,6) relu=(1,64,6,6) batchnorm=(1,64,6,6) max_pool2d=(1,64,3,3) flatten=(1,576) linear=(1,10) 
+bend_mdl_out=(1,10)
+bend_mdl_lin_in=(1,576)
+browser_linear_in_elements=576
+browser_has_10x576_linear_weight=true
+bend_lin_in_576_vs_browser=true

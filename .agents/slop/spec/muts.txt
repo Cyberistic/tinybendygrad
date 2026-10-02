@@ -1,0 +1,57 @@
+# Mutations for tinybendygrad/uop/spec.bend, one stanza each. `LINE` is an exact
+# substring of the target line and must match EXACTLY ONE line, so a stanza that has gone
+# stale is a loud failure rather than a silent no-op.
+
+# Group 1 -- THE FIX REVERTED. `te_len` 55 -> 56 and `fu_len` 70 -> 71, and nothing else,
+# because a CUSTOM_FUNCTION is no longer scanned twice and first-wins had made the second
+# scan unreachable anyway. That is the whole observable content of the deletion.
+--- re-insert the deleted CUSTOM_FUNCTION rule as tensor_own tag 4
+LINE     O.PMEntry{3,  [O.OpsPARAM{}],               Nil{}},   # 158
+NEW  O.PMEntry{3,  [O.OpsPARAM{}],               Nil{}},   # 158
+NEW  O.PMEntry{4,  [O.OpsCUSTOM_FUNCTION{}],     Nil{}},   # 161
+--- full_table still bumps the pre-deletion total for its hcq block
+LINE O.PMEntrys.es(bump(68, hcq_own())))
+NEW  O.PMEntrys.es(bump(69, hcq_own())))
+
+# Group 2 -- THE THREE SILENT BUGS. Each of these compiled, ran, raised nothing, and
+# answered a DIFFERENT question. They are the reason `spec-offsets.py` exists, so they
+# are the mutations that check the checker has something to check.
+--- fu_dispatch.of sends the shared block in at the pre-deletion offset
+LINE case 2: sh_dispatch(U32.sub(tag, 26), fx, self)
+NEW  case 2: sh_dispatch(U32.sub(tag, 27), fx, self)
+--- te_dispatch.go sends the shared half in one tag too low
+LINE case _: sh_dispatch(U32.sub(tag, 22), fx, self)
+NEW  case _: sh_dispatch(U32.sub(tag, 21), fx, self)
+--- t_tag_rej reads the three-src PROGRAM rule's reject set instead of the four-src one
+LINE rej_len(entry_at(tensor_own(), 21)))
+NEW  rej_len(entry_at(tensor_own(), 20)))
+--- te_dispatch.go's ladder is off by one: tag 5 answers te_4 again
+LINE     case 5: te_5(fx, self)
+NEW  case 5: te_4(fx, self)
+--- te_dispatch.go's ladder is off by one the other way: tag 4 answers te_5
+LINE     case 4: te_4(fx, self)
+NEW  case 4: te_5(fx, self)
+--- tensor_table bumps the shared half one tag too high, so every tensor verdict for a
+# shared rule lands one table too low
+LINE O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(tensor_own()), O.PMEntrys.es(bump(22,
+NEW  O.PMEntrys{List.append(&2, O.PMEntry, O.PMEntrys.es(tensor_own()), O.PMEntrys.es(bump(23, shared_table())))}
+
+# Group 3 -- THE FOLD'S FIRST-WINS. The previous pass recorded this against `sh_scan`,
+# which is where `shl_wins` lives: two shared rules claim one SHL and they DISAGREE, so
+# a last-wins fold answers `shl_wins` the other way. `te_scan` is the SAME fold over the
+# tensor table and is listed separately because it is a DIFFERENT fold with no such
+# fixture -- see the blind-spot note in spec.bend.
+--- sh_scan's pm_keep(acc, v) -> pm_keep(v, acc) (last-wins)
+LINE case e <> t: sh_scan(ts, fx, self, t, O.pm_keep(acc, sh_try(ts, fx, self, e)))
+NEW  case e <> t: sh_scan(ts, fx, self, t, O.pm_keep(sh_try(ts, fx, self, e), acc))
+--- te_scan's, which moves nothing (see the blind-spot note)
+# no tensor fixture has two rules claiming one node with disagreeing answers, so
+# te_scan's first-wins is untested while sh_scan's is tested
+LINE case e <> t: te_scan(ts, fx, self, t, O.pm_keep(acc, te_try(ts, fx, self, e)))
+NEW  case e <> t: te_scan(ts, fx, self, t, O.pm_keep(te_try(ts, fx, self, e), acc))
+--- alt_of's or -> and (is_any as a conjunction)
+LINE Bool.or(plain, Bool.and(wrapped, inner))
+NEW  Bool.and(plain, Bool.and(wrapped, inner))
+--- sp_vd's Some{False} arm answers VSkip, so a False verdict becomes "no rule"
+LINE     case Some{False{}}: O.VFalse{}
+NEW  case Some{False{}}: O.VSkip{}

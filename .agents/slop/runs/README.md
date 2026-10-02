@@ -12,6 +12,7 @@ are proved against.
 | `base_renderer_tc_ptx.bend.txt` | 620 | `renderer/tc_ptx.bend`, the pre-split MERGED file |
 | `base_codegen_kernel.bend.txt` | 38 | `codegen/kernel.bend` — must not move; three files import it |
 | `base_codegen_rewriter.bend.txt` | 54 | `codegen/rewriter.bend` — must not move; `kernel.bend` imports it |
+| `base_codegen_rewriter.bend.txt` | 54 | **SPENT 2026-10-03.** `codegen/rewriter.bend` split into `codegen/simplify.bend` (28 rows) + `codegen/late/coalesce.bend` (2) + `codegen/gpudims.bend` (24) + a substrate with no `main`. It is now the diff target of `.agents/slop/codegen3-gate.sh`, which concatenates the three in Python's order. **The snapshot stays valid and is still the oracle**: the union is byte-identical to it, in both lanes. |
 | `base_runtime_ops_cl.bend.txt` | 445 | `runtime/ops_cl.bend` — the NEXT split's baseline (`ops_cuda.py`, `ops_hip.py`) |
 | `base_renderer_nir.bend.txt` | 102 | `renderer/nir.bend` — carries `runtime/support/c.py`'s port |
 | `base_exec_gate.txt` | 18 ok | `runtime/executor.bend`'s gate, `ok`-line form not `name=value` |
@@ -20,7 +21,11 @@ are proved against.
 The three the split gates use are ALSO checked in under their own names —
 `late-pre-split.txt`, `ops_cpu_null-pre-split.txt`, `tc_ptx-pre-split.txt` — because
 those are the files the `*-gate.sh` scripts diff and a script should not reach into a
-subdirectory to find its oracle.
+subdirectory to find its oracle. The fourth is `rewriter-pre-split.bend`, and it is the
+PRE-SPLIT **SOURCE** rather than the expected output: `split-codegen3.py` cuts bodies by
+line range out of it, so it has to be the bytes, not the 54 rows. **Reading the pre-split
+source from the file you are editing is how the next unit loses an afternoon** — `@` in jj
+is the working copy, so `jj file show -r @` hands your own edits back.
 
 `.err` files are bend's stderr for the same runs; they are empty for every
 gate-green file, because `--check-only` and a run agree here.

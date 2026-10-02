@@ -1,192 +1,186 @@
-#!/usr/bin/env python3
-"""The mutation harness for ops_rdma.bend, ops_npy.bend and nn/torch.bend.
+#!/usr/bin/env python
+"""Mutation runner for the ports in this unit.
 
-Applies ONE textual edit to a scratch copy of a port file, runs the INTERPRETED
-lane, and diffs the resulting row NAMES against the unmutated baseline. Prints
-`| M<n> | rows moved | what it is testing |`. A mutation that moves NOTHING is
-information about the GATE and not about the code, and says so.
+  usage: python .agents/slop/mutate.py <file.bend> <muts.txt> <baseline.txt> [label]
 
-    python3 .agents/slop/mutate.py tinybendygrad/nn/torch.bend
+muts.txt, one stanza per mutation --
+
+    --- <name>
+    LINE <exact substring of the target line>
+    NEW  <the WHOLE replacement line>
+
+Line-oriented on purpose. A substring-pair format cannot express "change the 2 on the
+line after `def tgt_kinds()`", and a mutation that silently mutates nothing is the worst
+kind: the harness therefore REQUIRES exactly one line to match and reports a stale
+stanza as a failure rather than as "moved 0 rows".
+
+Each mutation is written BESIDE the port (a copy outside the tree cannot resolve a
+relative import -- agent-core), run through ./bin/bend, and compared to the baseline by
+WHOLE `name=value` LINE. A name-comparing harness reported 0 moved rows for all 30
+mutations in one unit and 0 for all 68 in another.
+
+THREE THINGS THIS REFUSES TO DO, because all three have happened:
+  * a 0-row run is reported as INCONCLUSIVE and never as "moved nothing" -- bend 2.0.34's
+    stack overflow prints nothing roughly one run in twenty, and 0 rows is
+    indistinguishable from "not started";
+  * the port is re-run before each mutation and the run aborted if the BASELINE moved,
+    because another agent editing a dependency makes every row appear to move;
+  * the port file itself is never written to, and is re-read afterwards and compared.
 """
-import subprocess, sys, os, tempfile, shutil
+import pathlib
+import subprocess
+import sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BEND = os.path.join(ROOT, 'bin', 'bend')
-
-
-def rows(path):
-  out = subprocess.run([BEND, path], capture_output=True, text=True, cwd=ROOT)
-  if out.returncode != 0:
-    return None, out.stdout + out.stderr
-  d = {}
-  for line in out.stdout.splitlines():
-    if '=' in line:
-      k, v = line.split('=', 1)
-      d[k] = v
-  return d, None
+REPO = pathlib.Path(__file__).resolve().parents[2]
+BEND = REPO / "bin" / "bend"
 
 
-def run(rel, muts, verbose=True):
-  base, err = rows(os.path.join(ROOT, rel))
-  if base is None:
-    print(f"{rel}: BASELINE FAILED\n{err}")
-    return
-  src = open(os.path.join(ROOT, rel)).read()
-  print(f"\n=== {rel} -- {len(base)} baseline rows ===")
-  for i, (name, old, new) in enumerate(muts, 1):
-    if old is None:
-      print(f"| M{i} | NOT RUN | {name}")
-      continue
-    if old not in src:
-      print(f"| M{i} | !! PATTERN NOT FOUND | {name}")
-      continue
-    d = tempfile.mkdtemp()
-    # beside the original, so the RELATIVE imports still resolve
-    tgt = os.path.join(ROOT, os.path.dirname(rel), '.mut_' + os.path.basename(rel))
-    open(tgt, 'w').write(src.replace(old, new, 1))
+TRANSIENT = ("machine stack overflow", "SOME PROOFS FAIL", "Error:")
+
+
+def run_bend(path):
+  """(rows, first_output_line), retried through every transient failure shape.
+
+  `rows` is the parsed `name=value` set. It is EMPTY both when the compiler failed and
+  when 2.0.34's stack overflow printed nothing, and those two must never be read as a
+  verdict: the first run of this harness reported "38 rows moved" for five mutations that
+  were merely MALFORMED, because a compile error parses to zero rows and an empty row set
+  differs from every baseline row.
+
+  The retry is on a MARKER as well as on emptiness. A concurrent agent mid-edit in a
+  dependency makes a file this unit does not own fail to compile or trip `dtype.bend`'s
+  14 permanently-red laws for a moment -- measured here, one mutation of twenty came back
+  `SOME PROOFS FAIL` and produced correct rows on all three manual re-runs -- and reading
+  that as INCONCLUSIVE for the mutant rather than as a transient is the difference between
+  a mutation table and a table of noise.
+  """
+  first = "<no output>"
+  for _ in range(6):
+    p = subprocess.run([str(BEND), str(path)], capture_output=True, text=True,
+                       cwd=str(REPO), timeout=900)
+    out = (p.stdout + p.stderr).strip()
+    if out:
+      got = rows(out)
+      first = out.splitlines()[0]
+      if got and not any(m in out for m in TRANSIENT):
+        return got, first
+  return {}, first
+
+
+def rows(text):
+  out = {}
+  for line in text.splitlines():
+    if "=" in line and not line.startswith("#"):
+      k, _, v = line.partition("=")
+      out[k] = v
+  return out
+
+
+def parse_muts(path):
+  muts, cur = [], None
+  for n, line in enumerate(pathlib.Path(path).read_text().splitlines(), 1):
+    if line.startswith("--- "):
+      cur = {"name": line[4:].strip(), "line": None, "new": None}
+      muts.append(cur)
+    elif line.strip() and not line.startswith(("#", "LINE ", "NEW  ")):
+      raise ValueError(f"line {n} is neither a comment, a LINE, nor a NEW: {line!r}. "
+                       "`---` alone marks a stanza, so using it for a continuation line "
+                       "silently starts a NEW stanza and drops the real one.")
+    elif line.startswith("LINE "):
+      cur["line"] = line[5:]
+    elif line.startswith("NEW  "):
+      # ACCUMULATE, not overwrite. Two NEW lines make a stanza that INSERTS a line; with
+      # overwrite semantics the second replaced the first, so "re-insert the deleted rule"
+      # silently SWAPPED one rule for another and moved nothing -- a mutation that
+      # reported 0 moved rows for a reason that had nothing to do with the gate.
+      cur["new"] = (cur["new"] + "\n" + line[5:]) if cur["new"] else line[5:]
+  # A stanza with no LINE or no NEW is a typo, and dropping it is how "re-insert the
+  # deleted rule" once reported 0 moved rows because its LINE had been swallowed by the
+  # stanza above it. Loud, not silent.
+  for m in muts:
+    if not m["line"] or not m["new"]:
+      raise ValueError(f"stanza {m['name']!r} is missing a LINE or a NEW")
+  return muts
+
+
+def apply_mut(lines, m):
+  """The one line whose text contains `m['line']`, replaced whole by `m['new']`.
+
+  Exactly one line must match, so a stanza that has gone stale is a loud failure and not
+  a silent no-op. The matched line's LEADING WHITESPACE is prepended to the replacement,
+  so a stanza never has to re-type the indentation: getting that wrong is not a failed
+  mutation but a file that will not parse, and one such stanza here reported itself as
+  "INCONCLUSIVE -- no rows" because a compile error and a stack overflow both look like
+  zero rows.
+  """
+  hits = [i for i, ln in enumerate(lines) if m["line"] in ln]
+  if len(hits) != 1:
+    raise ValueError(f"{m['line']!r} matched {len(hits)} lines, want 1")
+  i = hits[0]
+  indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+  # A multi-line replacement gets the SAME indent on every line, so a stanza that inserts
+  # a line never has to spell the indentation of a line that does not exist yet.
+  body = [(indent + ln if ln else "") for ln in m["new"].split("\n")]
+  lines[i:i + 1] = body
+  return lines
+
+
+def main():
+  target, muts_path, baseline_path = sys.argv[1], sys.argv[2], sys.argv[3]
+  label = sys.argv[4] if len(sys.argv) > 4 else pathlib.Path(target).name
+  target = REPO / target
+  base_text = (REPO / baseline_path).read_text()
+  base = rows(base_text)
+  if not base:
+    print(f"{label}: BASELINE IS EMPTY -- aborting", file=sys.stderr)
+    return 2
+
+  check, first = run_bend(target)
+  if not check:
+    print(f"{label}: UNMUTATED RUN EMITTED ZERO ROWS ({first}) -- aborting",
+          file=sys.stderr)
+    return 2
+  if check != base:
+    print(f"{label}: PORT HAS MOVED SINCE THE BASELINE -- aborting", file=sys.stderr)
+    for k in sorted(set(base) | set(check)):
+      if base.get(k) != check.get(k):
+        print(f"  {k}: baseline={base.get(k)} now={check.get(k)}")
+    return 2
+
+  original = target.read_text()
+  muts = parse_muts(REPO / muts_path)
+  failures = 0
+  for m in muts:
     try:
-      got, err = rows(tgt)
-      if got is None:
-        print(f"| M{i} | DID NOT COMPILE | {name}")
-      else:
-        moved = sorted(k for k in set(base) | set(got) if base.get(k) != got.get(k))
-        print(f"| M{i} | {len(moved)} | {name}")
-        if verbose and moved:
-          print(f"|      | moved: {', '.join(moved)} |")
+      lines = apply_mut(original.splitlines(), m)
+    except ValueError as e:
+      print(f"  {m['name']}: STALE -- {e}")
+      failures += 1
+      continue
+    beside = target.with_suffix(".mutant.bend")
+    beside.write_text("\n".join(lines) + "\n")
+    try:
+      got, first = run_bend(beside)
     finally:
-      os.remove(tgt)
-      shutil.rmtree(d, ignore_errors=True)
+      beside.unlink(missing_ok=True)
+    if not got:
+      print(f"  {m['name']}: NO ROWS after 6 attempts -- the stanza is probably "
+            f"malformed, not transient. compiler said: {first}")
+      failures += 1
+      continue
+    moved = sorted(k for k in set(base) | set(got) if base.get(k) != got.get(k))
+    if not moved:
+      print(f"  {m['name']}: 0 MOVED -- BLIND SPOT")
+      failures += 1
+    else:
+      print(f"  {m['name']}: {len(moved)} moved  {moved}")
+
+  if target.read_text() != original:
+    print(f"{label}: PORT WAS MODIFIED -- restore it", file=sys.stderr)
+    return 2
+  print(f"{label}: {len(muts)} mutations, {failures} problems")
+  return 1 if failures else 0
 
 
-TORCH = [
- ("`drop2` drops ONE component (parent, not parent.parent)",
-  "U32.add(prev, U32.add(1, U32.from_nat(String.length(x))))",
-  "U32.add(1, U32.from_nat(String.length(x)))"),
- ("`tail2` drops ONE separator from the total",
-  "Ac{U32.add(prev, U32.add(1, U32.from_nat(String.length(x)))), U32.add(1, U32.from_nat(String.length(x)))}",
-  "Ac{U32.add(prev, U32.from_nat(String.length(x))), U32.add(1, U32.from_nat(String.length(x)))}"),
- ("`as_posix` maps EVERY char to a slash",
-  "Bool.pick(Char, Char.is_eq(h, BSLASH_C()), SLASH_C(), h)", "SLASH_C()"),
- ("`drop2` returns DOT for a rooted path too",
-  "Bool.pick(String, rooted, ROOT_SLASH(), DOT()),", "DOT(),"),
- ("`drop2` takes a PREFIX (drop) instead of a SUFFIX (take)",
-  "String.take(s, Nat.sub(String.length(s), U32.to_nat(tail)))",
-  "String.drop(s, U32.to_nat(tail))"),
- ("`MSG()` joins the two halves the wrong way round",
-  'def MSG() -> String: String.concat([MSG_HEAD(), NL(), MSG_TAIL()])',
-  'def MSG() -> String: String.concat([MSG_TAIL(), NL(), MSG_HEAD()])'),
- ("the path append happens AFTER the import",
-  "def shim.run(f: String, ok: Bool) -> Imp: shim.import(ok, shim.append(f, Imp.of()))",
-  "def shim.run(f: String, ok: Bool) -> Imp: shim.append(f, shim.import(ok, Imp.of()))"),
- ("the raise is NOT recorded in the trace",
-  "List.append(&2, Call, calls, [Call{CALL_RAISE(), FROM_E()}]))),\n         Bool.pick(Bool, ok, refused, True{})}",
-  "calls)),\n         Bool.pick(Bool, ok, refused, True{})}"),
- ("the raise does NOT set `refused`",
-  "Bool.pick(Bool, ok, refused, True{})", "refused"),
- ("`ok` is ignored -- the raise always fires",
-  "      Tr{Bool.pick(List<&2, Call>, ok, calls,\n                   Bool.pick(List<&2, Call>, refused, calls,\n                             List.append(&2, Call, calls, [Call{CALL_RAISE(), FROM_E()}]))),\n         Bool.pick(Bool, ok, refused, True{})}",
-  "      Tr{Bool.pick(List<&2, Call>, refused, calls,\n                   Bool.pick(List<&2, Call>, refused, calls,\n                             List.append(&2, Call, calls, [Call{CALL_RAISE(), FROM_E()}]))),\n         True{}}"),
- ("a comment-only edit -- THE CONTROL",
-  "# THE SPLIT, stated once and then obeyed. A def here EITHER derives the argument",
-  "# THE SPLIT, stated once and then obeyed (control). A def here EITHER derives"),
-]
-
-NPY = [
- ("`renderers or [Renderer]` -- the EMPTY list survives",
-  "def Npy.of(+dev: String) -> Npy:\n  Npy{dev, ALLOC_HOST(), RUNTIME_NONE(), RENDERERS_EFFECTIVE(), False{}, False{},",
-  "def Npy.of(+dev: String) -> Npy:\n  Npy{dev, ALLOC_HOST(), RUNTIME_NONE(), RENDERERS_PASSED(), False{}, False{},"),
- ("`npy.mmap` rounds the size up to a page",
-  "def npy.mmap(size: U32, t: Tr) -> Tr: Tr.emit(CALL_MMAP(), size, t)",
-  "def npy.mmap(size: U32, t: Tr) -> Tr: Tr.emit(CALL_MMAP(), H.round_up_u32(size, 4096), t)"),
- ("`synchronize` moves AFTER the view and the write",
-  "  Tr.emit(CALL_MVWRITE(), len, npy.mview(len, npy.sync(t)))",
-  "  npy.sync(Tr.emit(CALL_MVWRITE(), len, npy.mview(len, t)))"),
- ("`_copyin` copies the BUFFER's length, not the source's",
-  "def npy.copyin(+len: U32, t: Tr) -> Tr:\n  Tr.emit(CALL_MVWRITE(), len, npy.mview(len, npy.sync(t)))",
-  "def npy.copyin(+len: U32, t: Tr) -> Tr:\n  Tr.emit(CALL_MVWRITE(), 12, npy.mview(12, npy.sync(t)))"),
- ("`_map`'s host guard is dropped",
-  "  npy.map.at(D.map_ok(src_host, dev_host), t)", "  npy.map.at(True{}, t)"),
- ("`_free` always munmaps",
-  "  Bool.pick(Tr, remote, Tr.emit(CALL_MUNMAP(), 0, t), t)", "  Tr.emit(CALL_MUNMAP(), 0, t)"),
- ("`alloc`'s `assert size > 0` is dropped",
-  "  Bool.pick(Tr, U32.is_gt(size, 0), npy.alloc.go(Sz{size, npy.alloc_msg(size)}, t),\n            Tr.refuse(REFUSE_ALLOC(), t))",
-  "  npy.alloc.go(Sz{size, npy.alloc_msg(size)}, t)"),
- ("`_offset` returns `buf` UNCHANGED -- the RDMA rule, not the host one",
-  "def npy.offset(buf: U32, off: U32) -> U32: D.host_offset(buf, off)",
-  "def npy.offset(buf: U32, off: U32) -> U32: buf"),
- ("the refusal ENTRY is guarded on `refused` too (nothing is ever recorded)",
-  "      Tr{Bool.pick(List<&2, Call>, refused, calls,\n                   List.append(&2, Call, calls, [Call{CALL_REFUSE(), which}])), True{}}",
-  "      Tr{Bool.pick(List<&2, Call>, refused, calls,\n                   List.append(&2, Call, calls, [Call{CALL_REFUSE(), which}])), refused}"),
- ("a comment-only edit -- THE CONTROL",
-  "# FOUR LINES:", "# FOUR LINES (control):"),
-]
-
-RDMA = [
- ("the candidate list is DESCENDING, so the fold's LAST match is the SMALLEST",
-  "  [LP_12(), LP_13(), LP_16(), LP_18(), LP_20(), LP_21(), LP_22(), LP_30()]",
-  "  [LP_30(), LP_22(), LP_21(), LP_20(), LP_18(), LP_16(), LP_13(), LP_12()]"),
- ("`log_page` answers 12 when NOTHING matches -- no ValueError",
-  "log_page.go(List.length(&2, U32, lp_cands()), lp_cands(), align, NO_LOG_PAGE)",
-  "log_page.go(List.length(&2, U32, lp_cands()), lp_cands(), align, LP_12())"),
- ("`wait_expected` drops the `^ 1` epoch inversion",
-  "def cq_epoch_of(+n: U32) -> U32: U32.xor(U32.and(U32.div(n, CQ_ENTRIES()), 1), 1)",
-  "def cq_epoch_of(+n: U32) -> U32: U32.and(U32.div(n, CQ_ENTRIES()), 1)"),
- ("the doorbell rings slot `n` instead of `n + 1`",
-  "def db_slot(+n: U32) -> U32: U32.mod(U32.add(n, 1), RING_ENTRIES())",
-  "def db_slot(+n: U32) -> U32: U32.mod(n, RING_ENTRIES())"),
- ("the epoch drops its `& 1`",
-  "def db_epoch(+n: U32) -> U32: U32.and(U32.div(U32.add(n, 1), RING_ENTRIES()), 1)",
-  "def db_epoch(+n: U32) -> U32: U32.div(U32.add(n, 1), RING_ENTRIES())"),
- ("the receive bit is dropped from `wait_expected`",
-  "U32.or(cq_epoch_of(n), Bool.pick(U32, recv, 2, 0))", "cq_epoch_of(n)"),
- ("the msn slot sits at bit 0 instead of bit 48",
-  "U32.or(U32.shln(U32.and(slot, PSN_MASK()), MSN_SLOT_HI_AT_NAT()), U32.shrn(U32.and(next_psn, PSN_MASK()), 8n))",
-  "U32.or(U32.and(slot, PSN_MASK()), U32.shrn(U32.and(next_psn, PSN_MASK()), 8n))"),
- ("the msn psn fields are unmasked (no `& 0xffffff`)",
-  "U32.or(U32.shln(U32.and(next_psn, PSN_MASK()), MSN_PSN_AT_NAT()), U32.and(p, PSN_MASK()))",
-  "U32.or(U32.shln(next_psn, MSN_PSN_AT_NAT()), p)"),
- ("the send ring drops the `+ 8` msn table",
-  "U32.add(WQE_SIZE(), 8)", "WQE_SIZE()"),
- ("`bump.psn` adds `packets` on a RECEIVE too",
-  "def bump.psn(+recv: Bool, packets: U32) -> U32:\n  Bool.pick(U32, recv, 0, packets)",
-  "def bump.psn(+recv: Bool, packets: U32) -> U32:\n  packets"),
- ("the receive header gets the size in word 2 as well",
-  "def hdr2(+recv: Bool, size: U32) -> U32:\n  Bool.pick(U32, recv, 0, size)",
-  "def hdr2(+recv: Bool, size: U32) -> U32:\n  size"),
- ("`psns` drops the `initial=0` -- one entry short",
-  "    case 0n: List.append(&2, U32, out, [acc])\n    case 1n+m:\n      match chunks:",
-  "    case 0n: out\n    case 1n+m:\n      match chunks:"),
- ("`chunks_of` reverses the chunk order",
-  "def chunks.go(n: Nat, +nbytes: U32, +off: U32, +acc: List<&2, U32>) -> List<&2, U32>:\n  match n:\n    case 0n: acc",
-  "def chunks.go(n: Nat, +nbytes: U32, +off: U32, +acc: List<&2, U32>) -> List<&2, U32>:\n  match n:\n    case 0n: List.reverse(&2, U32, acc)"),
- ("`alloc.buf_size` rounds the BUFFER's size to a page too",
-  "def alloc.buf_size(+nbytes: U32) -> U32: nbytes", "def alloc.buf_size(+nbytes: U32) -> U32: alloc.va_size(nbytes)"),
- ("`db.off_down` keeps the low twelve bits -- the doorbell pages UP",
-  "def db.off_down(+db_off: U32) -> U32: U32.and(db_off, U32.not(PAGE_MASK()))",
-  "def db.off_down(+db_off: U32) -> U32: db_off"),
- ("the page guard is OUTSIDE the register call -- a warning, not a refusal",
-  "  map.call(npages(sizes, log_page(align_or(va, map.paddrs(sys, raw, translated), sizes))),\n           map.page_guard(has_page(align_or(va, map.paddrs(sys, raw, translated), sizes)),\n                          map.guard2(map.peer_ok(has_iface, src_peer, dev_peer), t)))",
-  "  map.page_guard(has_page(align_or(va, map.paddrs(sys, raw, translated), sizes)),\n                 map.call(npages(sizes, log_page(align_or(va, map.paddrs(sys, raw, translated), sizes))),\n                          map.guard2(map.peer_ok(has_iface, src_peer, dev_peer), t)))"),
- ("`va_of` is the forward lookup too -- no reverse direction",
-  "def va_of.put(+e: PEnt, +key: U32, +got: U32) -> U32:\n  Bool.pick(U32, Bool.and(U32.is_zero(got), U32.is_eq(PEnt.key(e), key)), PEnt.va(e), got)",
-  "def va_of.put(+e: PEnt, +key: U32, +got: U32) -> U32:\n  Bool.pick(U32, Bool.and(U32.is_zero(got), U32.is_eq(PEnt.va(e), key)), PEnt.key(e), got)"),
- ("`_offset` adds the offset -- the HOST allocator's rule",
-  "def alloc.offset(+buf: U32) -> U32: buf", "def alloc.offset(+buf: U32) -> U32: U32.add(buf, 4)"),
- ("`submit.src_replaced` replaces EVERY src, RDMA or not",
-  "def submit.src_replaced(+n_srcs: U32, n_queues: U32) -> U32: n_queues",
-  "def submit.src_replaced(+n_srcs: U32, n_queues: U32) -> U32: n_srcs"),
- ("the qp buffer-name table is reversed against ops_rdma.py's order",
-  '    case 1: "sq"\n    case 2: "rq"', '    case 8: "sq"\n    case 2: "rq"'),
- ("a comment-only edit -- THE CONTROL",
-  "#   3. THE COMPLETION QUEUE HAS ITS OWN ORDER, AND IT IS NOT THE RING'S. The",
-  "#   3. THE COMPLETION QUEUE ORDER (control). The"),
-]
-
-if __name__ == '__main__':
-  for f in sys.argv[1:]:
-    if f.endswith('ops_rdma.bend'):
-      run('tinybendygrad/runtime/ops_rdma.bend', RDMA)
-    elif f.endswith('ops_npy.bend'):
-      run('tinybendygrad/runtime/ops_npy.bend', NPY)
-    elif f.endswith('torch.bend'):
-      run('tinybendygrad/nn/torch.bend', TORCH)
+if __name__ == "__main__":
+  sys.exit(main())

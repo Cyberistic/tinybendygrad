@@ -1,0 +1,12 @@
+amdkey.env=1
+amdkey.getenv=1
+amdkey_gfx1100_none.key=compile_hipcc_gfx1100_e3b0c442_nohipcc
+amdkey_gfx1100_none.nohip=1
+amdkey_gfx942_-DFOO1.key=compile_hipcc_gfx942_ec5fc367_nohipcc
+amdkey_gfx942_-DFOO1.nohip=1
+META.amd.rows=0
+META.mesa.rows=0
+META.qcom.rows=0
+META.cs.rows=0
+META.amdkey.rows=6
+META.total=11

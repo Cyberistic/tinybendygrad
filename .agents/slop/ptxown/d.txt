@@ -1,0 +1,6 @@
+119c119
+< f11_stack.r[4] STACK = [{%local_u64_0}]   py=[{%local_u64_0, %alu_f32_0}]
+---
+> f11_stack.r[4] STACK = [{%local_u64_0, %alu_f32_0}]   py=[{%local_u64_0, %alu_f32_0}]
+246d245
+< 

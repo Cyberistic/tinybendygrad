@@ -1,0 +1,139 @@
+# dtype.bend -- tinygrad/codegen/decomp/dtype.py (224 lines).
+#
+# THE LONG AND FLOAT DECOMPOSITIONS. `dtype.py` splits a 64-bit or an
+# fp8/half/bfloat16 arithmetic node into 32-bit words (`l2i`) or into a
+# bit-level float conversion (`f2f`), and rewrites the graph so the 32-bit nodes
+# reach the hardware. This file is the SPLIT half -- `l2i`, `f2f`, `f2f_clamp`,
+# `reindex`, `unpack32`, `rne`, `l2i_define` and the three pattern tables --
+# which is most of the 224 lines. The REWRITE half (`split_l2i`,
+# `l2i_rewrite_idx`, `f2f_load`, `f2f_store`, `f2f_rewrite`,
+# `do_dtype_decomps`) is PORTED IN SHAPE, and each def says so.
+#
+# `decomp/op.bend` is the sibling (`decomp/op.py`) and
+# `decomp/transcendental.bend` is the other half of `decomp/transcendental.py`.
+# BOTH ARE IMPORTED, not re-derived: `P.dc_*` is `op.bend`'s node vocabulary
+# (its `dc_sub` IS `__sub__`'s shape, its `dc_band` IS `x & k`, its `dc_cint` IS
+# `UOp.const(v)`) and `T.tx_*` / `T.exponent_bias` / `T.tx_is_fnuz` /
+# `T.tx_finfo_*` is `transcendental.bend`'s. `dtype.py` itself imports
+# `exponent_bias`, `shl` and `shr` FROM `transcendental.py`, so those three are
+# used under `transcendental.bend`'s names and are not re-derived here.
+#
+# ---------------------------------------------------------------------------
+# THE INVENTORY, def by def, against dtype.py's 224 lines.
+#
+#   #  PY        KIND    STATE
+#   1  12        data    l2i_dt                     PORTED IN FULL
+#   2  13        graph   unpack32                   PORTED IN FULL
+#   3  14-18     graph   reindex                    PORTED IN FULL
+#   4  21-81     graph   l2i                        15 of 17 arms, every arm shape
+#   5  83-86     graph   l2i_define                 PORTED IN FULL
+#   6  88-92     rewrite split_l2i                 PORTED IN SHAPE
+#   7  94        rewrite l2i_rewrite_idx           PORTED IN SHAPE
+#   8  97        data    f2f_dt                     PORTED IN FULL
+#   9  99        graph   rne                        PORTED IN FULL
+#  10  101-125   graph   f2f                        both branches, both raises
+#  11  127-134   graph   f2f_clamp                  7 of 8 targets
+#  12  136-139   rewrite f2f_load                   PORTED IN SHAPE
+#  13  141-143   rewrite f2f_store                  PORTED IN SHAPE
+#  14  145       rewrite f2f_rewrite                PORTED IN SHAPE
+#  15  148-178   table   pm_long_decomp             PORTED, 13 rules, both reject sets
+#  16  181-206   table   pm_float_decomp            PORTED, 10 rules, both reject sets
+#  17  208-216   rewrite do_dtype_decomps          PORTED IN SHAPE
+#  18  218-224   table   pm_dtype_decomps           PORTED, 2 rules
+#
+# ---------------------------------------------------------------------------
+# HOW THE DTYPE QUESTIONS ARE ASKED. A `match` arm on a dtype NAME is a silent
+# fall-through after a rename, so this file arms on `Cls` and `bits` and `pri`
+# everywhere it can, and on the NAME only where nothing else can work.
+#
+#   `dt in (long, ulong)`    Cls.is_int AND bits == 64. Renaming `dtypes.long`
+#                            cannot change this answer.
+#   `dt in dtypes.floats`    Cls.is_float AND bits != 800. `800` is the WEAK
+#                            sentinel, and `weakfloat` is a float by class while
+#                            not being in `dtypes.floats`.
+#   `dt in dtypes.fp8s`      Cls.is_float AND bits == 8: the four layouts, OCP
+#                            and fnuz together, which is exactly the set.
+#   `dt in dtypes.fp8_fnuz`  `T.tx_is_fnuz` -- IMPORTED, not re-derived. `pri`
+#                            cannot separate `fp8e4m3` from `fp8e4m3fnuz` (both
+#                            10) and `bits` cannot either (both 8), so the NAME
+#                            is load-bearing here and only here.
+#   `dt == dtypes.fp8e4m3`   NOT fnuz AND `T.tx_finfo_e(dt) == 4`. The exponent
+#                            width is one half of the name, and `pri` alone would
+#                            also accept the fnuz layout.
+#   `dt == dtypes.int`       `pri == 5`, and 5 is `int32` alone.
+#   `dt == dtypes.float64`   `pri == 15`, and 15 is `float64` alone.
+#
+# ---------------------------------------------------------------------------
+# FIVE DIVERGENCES, stated rather than hidden.
+#
+# A. `UOp.const(v, dt)` IS A PAIR. `ops.py:631` is
+# `UOp(Ops.CONST, arg=dt.const(v), src=()).cast(dt)`, and the cast folds only
+# when the CONST's own dtype already IS `dt`. A CONST's dtype is read off its
+# ARG (`ops.py:246`), so it is `dtypes.from_py(arg)`, and `from_py`
+# (`dtype.py:100-104`) returns ONLY `bool`, `weakint` or `weakfloat`. So for
+# every CONCRETE `dt` the cast cannot fold and the pair is what Python builds:
+# `UOp.const(0, dtypes.uint)` is TWO nodes. `UOp.const(v)` with no dtype folds
+# and is ONE, which is every constant `shl`/`shr` and every bare `(1 << k) - 1`
+# in the file. `ops.bend`'s `UOp.const` drops the cast (its own TODO), so
+# `dd_const` here builds the pair itself.
+#
+# B. `_broadcasted`'s PROMOTION CAST AND `logical_not`'s `cast(bool)` ARE NOT
+# BUILT. `mixin/elementwise.py` is not ported, so `a + b`, `a & b`, `a == b`,
+# `a < b` and `a.where(x, y)` build the bare ALU node here. The oracle deletes
+# exactly those two CASTs and keeps every CAST dtype.py writes -- and two of
+# those are load-bearing (`.bitcast(uint).cast(cdt)` reinterprets bits as a
+# float), which is why `op.bend`'s delete-every-CAST rule cannot be reused.
+#
+# C. THE FLOAT-TARGET `CAST` ARM OF `l2i` IS NOT PORTED (dtype.py:35-38). It is
+# unreachable through `pm_long_decomp`, because every `dt` that table passes to
+# `split_l2i` is `l2i_dt[x.dtype]`, an integer. It is also the one place in the
+# file where `_broadcasted`'s weak-CONST REMINT (`elementwise.py:31-32`) turns
+# `2**32` from an integer constant into a FLOAT constant, and that remint is not
+# modelled, so the arm is absent rather than wrong.
+#
+# D. NO `float16`, `bfloat16` OR `float64` SOURCE FOR `f2f` / `f2f_clamp`.
+# `f2f_clamp` mints `mx` with `val.const_like(...)` and `val` is `v.bitcast(fr)`,
+# so `mx` is a CONST at the SOURCE's width: CPython truncates it with
+# `float_to_fp16` / `float_to_bf16` / `float_to_fp8` (`dtype.py:225/229/244`,
+# all `struct` and bit-twiddling C code) and this file has none of them. THE
+# WIDENING BRANCH HAS NO `f2f_clamp` AND NO FLOAT CONSTANT, so an fp8 source IS
+# gated there: the four widening fixtures are the fnuz arm and the `fp8e4m3`
+# arm of `is_nan`, which are otherwise dead defs.
+#
+# E. `float64` AS AN `f2f_clamp` TARGET IS NOT PORTED, because `mx` is
+# `2**1023 * (2 - 2**-52)` = the `float64` maximum and the port's only float
+# type is `F32`. Its CPython value is in the oracle (`c7=F(ovf)`) and the
+# fixture is absent rather than gated wrong.
+#
+# ---------------------------------------------------------------------------
+# THE `graph_rewrite` WALL. `split_l2i`, `l2i_rewrite_idx`, `f2f_load`,
+# `f2f_store`, `f2f_rewrite` and `do_dtype_decomps` all call `graph_rewrite`
+# (ops.py:1611), which no file here ports: a bottom-up rewrite to fixpoint over
+# an APPEND-ONLY arena is a map from one arena to another, and `uop/fold.bend`'s
+# header names the cycle `dtype_from_uop <-> _shape <-> simplify() ->
+# graph_rewrite -> the rules -> dtype`. Each of those six is PORTED IN SHAPE:
+# the arguments, the guard that picks `pm_long_decomp` over `pm_float_decomp`,
+# `bottom_up=True` and the `ctx` are all here, and the rewrite call itself
+# answers "no node". `uop/ops.bend` DOES own what they need -- the `PMEntrys`
+# table, the `UPat` compiler and `pm_rewrite`'s first-wins scan -- so WHAT THE
+# RULES MATCH is gated even though WHAT THEY REWRITE is not.
+#
+# ---------------------------------------------------------------------------
+# WHY `l2i` NEEDS NO FUEL. Every recursive step of `l2i` lands on a DIFFERENT
+# op -- `NEG` calls `SUB`, `MUL` calls `ADD`, `MAX` calls `CMPLT` and `WHERE`,
+# `CDIV` calls `NEG`/`SHL`/`SHR`/`CMPLT`/`SUB`/`WHERE`/`BITCAST` -- and none of
+# those calls `l2i` again. So `l2i` is a `match` with no self-call, which is why
+# the 64-iteration `CDIV` loop can be its own def: Bend refuses MUTUAL recursion,
+# and this loop's body calls only arms that are themselves leaves.
+#
+# ---------------------------------------------------------------------------
+# THE ORDER OF THIS FILE IS A TOPOLOGICAL SORT, not an accident. bend 2.0.34
+# refuses a forward reference, and `.agents/slop/dd-sort.py` reads the call
+# graph off this file and rewrites it; run it after adding a def.
+
+import Base
+import ./../../helpers.bend as H
+import ./../../LAWS/spec.bend as S
+import ./../../uop/ops.bend as O
+import ./op.bend as P
+import ./transcendental.bend as T

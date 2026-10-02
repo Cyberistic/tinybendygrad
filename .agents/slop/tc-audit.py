@@ -106,6 +106,7 @@ class _D:
 def val(lineno, needle, dtype=None):
   ns = {'math': math, 'dtypes': dtypes, 'len': len, 'float_dtype': '<param>',
         'two_over_pi_f': eval(assigns(77)['two_over_pi_f'], {'__builtins__': {}}),
+        'denormal_exp': 10 if dtype == dtypes.float16 else 64,
         '__builtins__': {}}
   if dtype is not None: ns['d'] = _D(dtype)
   return eval(seg(lineno, needle), ns)
@@ -142,6 +143,20 @@ def dtype_dicts(line):
                                '__builtins__': {}}))
                 for k, v in zip(n.keys, n.values)])
   return out
+
+
+def frexp_masks():
+  """:56-57 -- `m1 = {...}[v.dtype]`, so the Dict is a Subscript's `.value`
+  and every key is `dtypes.<name>`."""
+  m1, m2 = {}, {}
+  for n in ast.walk(TREE):
+    if not (isinstance(n, ast.Assign) and isinstance(n.value, ast.Subscript)): continue
+    tgt = getattr(n.targets[0], 'id', '')
+    if tgt not in ('m1', 'm2'): continue
+    for k, v in zip(n.value.value.keys, n.value.value.values):
+      key = k.attr if isinstance(k, ast.Attribute) else ast.literal_eval(k)
+      (m1 if tgt == 'm1' else m2)[key] = ast.literal_eval(v)
+  return m1, m2
 
 
 def main():
@@ -223,6 +238,20 @@ def main():
     em = T.exponent_mask(dt)
     for k, v in (('mantissa_bits', mb), ('exponent_bias', eb), ('exponent_mask', em)):
       out.append((f'{k}[{tag}]', 'u', str(v), hex(v), str(v), hex(v)))
+  # ---- the two 32-bit frexp masks as a U32 each (the 64-bit ones are hi/lo)
+  m1w, m2w = frexp_masks()
+  for k, tag in (('float32', 'f32'), ('float16', 'f16')):
+    out.append(hexrow(f'frexp.m1w[{tag}]', 'u', m1w[k] & 0xffffffff))
+    out.append(hexrow(f'frexp.m2w[{tag}]', 'u', m2w[k] & 0xffffffff))
+  # ---- frexp's fraction field, DERIVED from the audited mask and not typed:
+  # the port rebuilds the mantissa from `m1` without its sign bit.
+  out.append(hexrow('port.frac_mask', 'u', m1w['float32'] & 0x7fffffff))
+  # ---- the scaling constants the port needs, EVALUATED from the source
+  out.append(hexrow('port.denorm_scale_f32', 's',
+                    val(229, '2.0 ** denormal_exp', dtypes.float32)))
+  out.append(hexrow('port.denorm_exp_f32', 's',
+                    val(226, '10 if', dtypes.float32)))
+  out.append(hexrow('port.two_m24', 's', 2.0 ** -24))
   # ---- TRANSCENDENTAL_DTYPES, read off the module
   out.append(('TRANSCENDENTAL_DTYPES', 'dtype',
               ' '.join(dt.name for dt in T.TRANSCENDENTAL_DTYPES),

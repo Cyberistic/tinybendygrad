@@ -1,0 +1,107 @@
+amd.M01 argv1 offload-arch arch dropped	3 rows	amd.C.argv1_extra|amd.C.argv1_none|amd.C.argv1_rocm
+amd.M02 argv2 mcpu arch dropped	2 rows	amd.C.argv2_extra|amd.C.argv2_none
+amd.M03 argv1 rocm include path changed	5 rows	amd.C.argv1_extra|amd.C.argv1_none|amd.C.argv1_rocm|amd.C.rocm_include_def|amd.C.rocm_include_my
+amd.M04 extra_options spliced BEFORE -o	1 rows	amd.C.argv1_extra
+amd.M05 extra_options appended before the SOURCE	1 rows	amd.C.argv1_extra
+amd.M06 prog renamed	1 rows	amd.C.prog
+amd.M07 rocm default changed	2 rows	amd.C.rocm_default|amd.C.rocm_include_def
+amd.M08 suffixes reordered	1 rows	amd.C.suffixes
+amd.M09 set_options count +1 (empties dropped)	14 rows	amd.h.opt_codegen_n|amd.h.opt_empty_n|amd.h.opt_n_1100|amd.h.opt_n_942|amd.sp.n_dbl|amd.sp.n_empty|amd.sp.n_lead|amd.sp.n_many|amd.sp.n_one|amd.sp.n_tabs|amd.sp.n_three|amd.sp.n_trail|amd.sp.n_two|amd.tr.compile.optn0
+amd.M10 set_options count -1	14 rows	amd.h.opt_codegen_n|amd.h.opt_empty_n|amd.h.opt_n_1100|amd.h.opt_n_942|amd.sp.n_dbl|amd.sp.n_empty|amd.sp.n_lead|amd.sp.n_many|amd.sp.n_one|amd.sp.n_tabs|amd.sp.n_three|amd.sp.n_trail|amd.sp.n_two|amd.tr.compile.optn0
+amd.M11 set_options splits on a NUL-ish char	10 rows	amd.h.opt_codegen_n|amd.h.opt_n_1100|amd.h.opt_n_942|amd.sp.n_dbl|amd.sp.n_lead|amd.sp.n_many|amd.sp.n_three|amd.sp.n_trail|amd.sp.n_two|amd.tr.compile.optn0
+amd.M12 is_asm drops the strip()	4 rows	amd.C.asm_15|amd.C.asm_2|amd.C.asm_3|amd.C.asm_8
+amd.M13 is_asm drops the strip() AND the trim of both ends	3 rows	amd.C.asm_15|amd.C.asm_2|amd.C.asm_8
+amd.M14 is_asm compares a prefix	3 rows	amd.C.asm_12|amd.C.asm_14|amd.C.asm_4
+amd.M15 hip_key loses the prefix	3 rows	amd.C.hip_key_1100|amd.C.hip_key_1101|amd.C.hip_key_942
+amd.M16 hipcc_key drops the _nohipcc suffix	1 rows	amd.C.hipcc_key_nohip
+amd.M17 check() message drops the status	3 rows	amd.c.msg_255|amd.c.msg_7|amd.c.msg_min
+amd.M18 check() treats 0 as a failure	3 rows	amd.c.msg_255|amd.c.msg_7|amd.c.msg_min
+amd.M19 CompileError prefixes its message	1 rows	amd.C.compile_error_1
+amd.M20 one option dropped from the 19	4 rows	amd.h.opt_n_1100|amd.h.opt_n_942|amd.h.opt_string_1100|amd.tr.compile.optn0
+amd.M21 the codegen option string loses -mllvm	2 rows	amd.h.opt_codegen|amd.h.opt_codegen_n
+amd.M22 the ISA name loses its prefix	3 rows	amd.h.isa_1100|amd.h.isa_942|amd.h.isa_sm86
+amd.M23 the asm data name loses its suffix	2 rows	amd.h.dataname_1|amd.tr.asm.dataname
+amd.M24 hiplang answers 3 for both versions	1 rows	amd.Ad.hiplang_2
+amd.M25 a comgr enum value changed	2 rows	amd.A.act_compile|amd.tr.compile.act0
+amd.M26 gd calls count	1 rows	amd.gd.calls
+amd.M27 the asm trace inserts the codegen action	0 rows	
+mesa.M01 warps: sm_86 drops out of the set	2 rows	nak.dev_sm_86|w.warps_sm_86
+mesa.M02 warps: sm_120 drops out of the set	2 rows	nak.dev_sm_120|w.warps_sm_120
+mesa.M03 warps: the set becomes a PREFIX test	5 rows	w.warps_sm_120|w.warps_sm_8|w.warps_sm_80|w.warps_sm_86_SP|w.warps_sm_86x
+mesa.M04 warps: 48 and 64 swapped	14 rows	w.warps_EMPTY|w.warps_SM_86|w.warps_sm|w.warps_sm_100|w.warps_sm_120|w.warps_sm_75|w.warps_sm_8|w.warps_sm_80|w.warps_sm_86|w.warps_sm_86_SP|w.warps_sm_86x|w.warps_sm_87|w.warps_sm_89|w.warps_sm_90
+mesa.M05 hex: the digit offset for a-f	13 rows	da.data64_str_dead_beef|da.line_15_0_15|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_65535_max_max|da.line_999_0_low|hx.pair_10|hx.pair_15|hx.pair_255|hx.u32_8_255|hx.u32_8_3735928559|hx.u32_8_4294967295
+mesa.M06 hex: pair shifts by 3	15 rows	da.data64_str_dead_beef|da.line_15_0_15|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_65535_max_max|da.line_65536_0_16|da.line_999_0_low|hx.pair_10|hx.pair_15|hx.pair_255|hx.u32_8_255|hx.u32_8_3735928559|hx.u32_8_4096|hx.u32_8_4294967295
+mesa.M07 hex: upper case A-F	13 rows	da.data64_str_dead_beef|da.line_15_0_15|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_65535_max_max|da.line_999_0_low|hx.pair_10|hx.pair_15|hx.pair_255|hx.u32_8_255|hx.u32_8_3735928559|hx.u32_8_4294967295
+mesa.M08 hex: u32_8 keeps 4 bytes but in LE order	12 rows	da.data64_str_1|da.data64_str_dead_beef|da.line_15_0_15|da.line_1_0_1|da.line_1_1_2|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_65536_0_16|hx.u32_8_1|hx.u32_8_255|hx.u32_8_3735928559
+mesa.M09 decimal: the padding is one short	0 rows	
+mesa.M10 decimal: pad with the digit, not '0'	12 rows	da.line_0_0_0|da.line_15_0_15|da.line_1_0_1|da.line_1_1_2|da.line_255_0_255|da.line_2_abcdef_2|da.line_999_0_low|dc.fixed4_0|dc.fixed4_100|dc.fixed4_15|dc.fixed4_255|dc.fixed4_999
+mesa.M11 decimal: width is off by one	17 rows	da.line_0_0_0|da.line_15_0_15|da.line_1_0_1|da.line_1_1_2|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_999_0_low|dc.fixed1_0|dc.fixed4_0|dc.fixed4_100|dc.fixed4_1000|dc.fixed4_15|dc.fixed4_255|dc.fixed4_4096|dc.fixed4_999|dc.fixed4_9999
+mesa.M12 line: the two halves swapped	8 rows	da.line_15_0_15|da.line_1_0_1|da.line_1_1_2|da.line_255_0_255|da.line_2_abcdef_2|da.line_4096_dead_beef|da.line_65536_0_16|da.line_999_0_low
+mesa.M13 line: the trailing space dropped	DID NOT COMPILE	
+mesa.M41 data64 swaps hi and lo	2 rows	da.data64_str_1|da.data64_str_dead_beef
+mesa.M14 line: width 3 not 4	7 rows	da.line_0_0_0|da.line_15_0_15|da.line_1_0_1|da.line_1_1_2|da.line_255_0_255|da.line_2_abcdef_2|da.line_999_0_low
+mesa.M15 a3 drops 2 characters not 3	12 rows	a3.drop3_sm_120|a3.drop3_sm_86|a3.n_sm_120|a3.n_sm_75|a3.n_sm_86|a3.n_sm_89|nak.dev_sm_120|nak.dev_sm_75|nak.dev_sm_86|nak.dev_sm_89|nv.cmd_str|nv.cmd_str120
+mesa.M16 a3 read multiplies by 8	8 rows	a3.n_sm_120|a3.n_sm_75|a3.n_sm_86|a3.n_sm_89|nak.dev_sm_120|nak.dev_sm_75|nak.dev_sm_86|nak.dev_sm_89
+mesa.M17 nak.dev warps 0/1 instead of 48/64	4 rows	nak.dev_sm_120|nak.dev_sm_75|nak.dev_sm_86|nak.dev_sm_89
+mesa.M18 the chip id off by one	1 rows	ir3.chip_id
+mesa.M19 the a630 assert accepts any arch	4 rows	ir3.arch_ok_a63|ir3.arch_ok_a630|ir3.arch_ok_a630_comma|ir3.arch_ok_a630_x
+mesa.M20 num_uavs is a difference	3 rows	ir3.num_uavs_2_3|ir3.num_uavs_4294967295_1|ir3.num_uavs_65535_65535
+mesa.M21 num_uavs counts only the images	3 rows	ir3.num_uavs_2_3|ir3.num_uavs_4294967295_1|ir3.num_uavs_65535_65535
+mesa.M22 ul.head drops the const_state offset	8 rows	ul.head|ul.split_point_0|ul.split_point_3|ul.split_point_9|ul.total_0|ul.total_1|ul.total_3|ul.total_9
+mesa.M23 ul.head drops the variant offset	8 rows	ul.head|ul.split_point_0|ul.split_point_3|ul.split_point_9|ul.total_0|ul.total_1|ul.total_3|ul.total_9
+mesa.M24 ul.imm count*4 becomes count*2	3 rows	ul.imm_1|ul.imm_3|ul.imm_9
+mesa.M25 ul.imm count*4 becomes count	3 rows	ul.imm_1|ul.imm_3|ul.imm_9
+mesa.M26 ul.total adds head TWICE	7 rows	ul.asm_len_0|ul.asm_len_3|ul.asm_len_9|ul.total_0|ul.total_1|ul.total_3|ul.total_9
+mesa.M27 ul.asm_len is the head, not total-minus-head	3 rows	ul.asm_len_0|ul.asm_len_3|ul.asm_len_9
+mesa.M28 ul.split_point forgets the head	3 rows	ul.split_point_0|ul.split_point_3|ul.split_point_9
+mesa.M29 ret_parts multiplies by 8	1 rows	ir3.ret_parts_str
+mesa.M30 nvdisasm loses the -b flag	2 rows	nv.cmd_str|nv.cmd_str120
+mesa.M31 nvdisasm drops the -b flag entirely	2 rows	nv.cmd_str|nv.cmd_str120
+mesa.M32 nvdisasm drops the SM prefix	2 rows	nv.cmd_str|nv.cmd_str120
+mesa.M33 the temp path loses its directory	3 rows	nv.cmd_str|nv.cmd_str120|nv.path
+mesa.M34 objdump loses the -d flag	1 rows	dso.cmd_str
+mesa.M35 objdump renames kernel.o	2 rows	dso.cmd_str|dso.file
+mesa.M36 lvp arch_n +1	4 rows	lvp.arch_n_EMPTY|lvp.arch_n_a630|lvp.arch_n_a630_x|lvp.arch_n_trailing
+mesa.M37 lp_type width 64	1 rows	lpt.width
+mesa.M38 lp_type length 8	1 rows	lpt.length
+mesa.M39 b64 padding ignores the second '='	2 rows	de.b64_bytes_8|de.b64_pad_8
+mesa.M40 b64 bytes forget the padding	2 rows	de.b64_bytes_8|de.b64_bytes_8b
+qcom.M01 read big-endian	11 rows	q.read_le_0001|q.read_le_0010|q.read_le_0100|q.read_le_1|q.read_le_1234|q.read_le_chip|q.slice_end_4_7|q.slice_len_4_7|q.slice_str_4_0|q.slice_str_4_7|q.slice_str_8_32
+qcom.M02 read shifts by 4	6 rows	q.read_le_0001|q.read_le_0010|q.read_le_0100|q.read_le_1234|q.read_le_chip|q.read_le_ff
+qcom.M03 read_ok uses > not >=	1 rows	q.read_ok_4_0
+qcom.M04 the two positions collapse to one	6 rows	q.pos_len|q.slice_end_4_7|q.slice_len_4_7|q.slice_str_4_0|q.slice_str_4_7|q.slice_str_8_32
+qcom.M05 slice_end forgets to add the offset	4 rows	q.slice_end_4_7|q.slice_str_4_0|q.slice_str_4_7|q.slice_str_8_32
+qcom.M06 slice_len is the offset, not the length	1 rows	q.slice_len_4_7
+qcom.M07 the a630 assert accepts a63	4 rows	q.arch_ok_a63|q.arch_ok_a630|q.arch_ok_a630_c|q.arch_ok_a630_x
+qcom.M08 the chip id	3 rows	q.chip_id|q.compile_args_str|q.link_args_str
+qcom.M09 the cache key prefix	2 rows	q.key_a630|q.key_a630_x
+qcom.M10 qemu drops -L	2 rows	q.cmd_qemu|q.cmd_qemu_2
+qcom.M11 qemu drops pauth=off	2 rows	q.cmd_qemu|q.cmd_qemu_2
+qcom.M12 docker drops the second -v mount	2 rows	q.cmd_docker|q.cmd_docker_2
+qcom.M13 docker drops PYTHONPATH	2 rows	q.cmd_docker|q.cmd_docker_2
+qcom.M14 docker drops the platform	2 rows	q.cmd_docker|q.cmd_docker_2
+qcom.M15 docker mounts the fs read-write as /usr	2 rows	q.cmd_docker|q.cmd_docker_2
+qcom.M16 fails() ignores the error code	1 rows	q.fails_err
+qcom.M17 msg() always appends the log	1 rows	q.msg_null
+qcom.M18 msg() drops the colon	2 rows	q.msg_err|q.msg_nolog
+qcom.M19 the linked handle id	3 rows	q.handle_linked|q.picks_exe_1|q.picks_exe_2
+qcom.M20 the two zeros become one	2 rows	q.compile_args_n|q.compile_args_str
+qcom.M21 CL_SRC_STR is 0	2 rows	q.compile_args_str|q.src_str
+qcom.M22 the link count is 1 -> 0	1 rows	q.link_args_str
+qcom.M23 CL_MODE_64BIT	1 rows	q.mode
+cs.M01 pack big-endian	10 rows	cs.pack_1|cs.pack_2147483647|cs.pack_255|cs.pack_256|cs.pack_305419896|cs.pack_65535|cs.unpack_le_0010|cs.unpack_le_0100|cs.unpack_le_1|cs.unpack_le_305419896
+cs.M02 pack shifts by 4	12 rows	cs.pack_2147483647|cs.pack_255|cs.pack_256|cs.pack_305419896|cs.pack_4294967295|cs.pack_65535|cs.unpack_be_1|cs.unpack_be_305419896|cs.unpack_le_0010|cs.unpack_le_0100|cs.unpack_le_305419896|cs.unpack_le_max
+cs.M03 unpack is big-endian	4 rows	cs.unpack_le_0010|cs.unpack_le_0100|cs.unpack_le_1|cs.unpack_le_305419896
+cs.M04 the hex digit offset for a-f	4 rows	cs.pack_2147483647|cs.pack_255|cs.pack_4294967295|cs.pack_65535
+cs.M05 hex: upper case	4 rows	cs.pack_2147483647|cs.pack_255|cs.pack_4294967295|cs.pack_65535
+cs.M06 the nth-byte ladder inverted	7 rows	cs.unpack_be_1|cs.unpack_be_305419896|cs.unpack_le_0010|cs.unpack_le_0100|cs.unpack_le_1|cs.unpack_le_305419896|cs.unpack_le_max
+cs.M07 the loop head is >= 0	1 rows	cs.more_0
+cs.M08 the loop head is always true	2 rows	cs.more_1|cs.more_4
+cs.M09 on_error keeps the library	1 rows	cs.on_error_99
+cs.M10 the argv floor is 2	1 rows	cs.argv_min
+cs.M11 argv_ok is > 3	1 rows	cs.argv_ok_3
+cs.M12 the spec arity is 3	2 rows	cs.spec_ok_2|cs.spec_ok_3
+cs.M13 the spec splits on '.'	5 rows	cs.spec_n_a_b|cs.spec_n_colon|cs.spec_n_three|cs.spec_n_trailing|cs.spec_ok_2
+cs.M14 the usage string	1 rows	cs.usage
+cs.M15 the extra count is argc - 2	2 rows	cs.extra_n_3|cs.extra_n_6
+cs.M16 the frame header is 5 bytes	3 rows	cs.n_needed|tr.srv.first|tr.srv_err.first

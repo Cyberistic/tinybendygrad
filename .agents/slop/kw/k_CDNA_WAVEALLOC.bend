@@ -1,0 +1,2 @@
+def CDNA_WAVEALLOC() -> U32:
+  1

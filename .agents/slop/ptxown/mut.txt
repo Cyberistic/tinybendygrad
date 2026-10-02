@@ -1,0 +1,67 @@
+MUTATION TABLE  (one textual edit at a time, whole-line diff)
+id     moved  what
+M01      171  the counter KEY loses a separator
+            moved: f10_loads.r[0] BUFFER, f10_loads.r[3] LOAD, f10_loads.r[5] LOAD, f10_loads.r[6] BUFFER
+M02       99  the register loses its `%`
+            moved: f10_loads.r[0] BUFFER, f10_loads.r[3] LOAD, f10_loads.r[5] LOAD, f10_loads.r[6] BUFFER
+M03        2  the bump is 1 per key, not k per ssa call
+            moved: f10_loads.r[8] LOAD, f10_loads.reg[1]
+M05       10  `to_function_name`'s digit range is or(not and)
+            moved: f21_name.entry, to_function_name '  lead', to_function_name 'a b c', to_function_name 'a-b'
+M06       10  %02X prints the LOW nibble first
+            moved: f21_name.entry, to_function_name '  lead', to_function_name 'a b c', to_function_name 'a-b'
+M07        6  END's table dtype is the dtype, not the literal `pred`
+            moved: f17_u64.r[10] END, f17_u64.reg[4], f20_idx_pred.r[4] END, f20_idx_pred.reg[3]
+M08       66  BUFFER's table dtype is the dtype, not the literal `u64`
+            moved: f10_loads.r[0] BUFFER, f10_loads.r[6] BUFFER, f10_loads.reg[0], f11_stack.r[0] BUFFER
+M09        8  INDEX/SHRINK's table dtype is the dtype, not `u64`
+            moved: f15_bidx.r[3] INDEX, f15_bidx.r[5] SHRINK, f15_bidx.reg[1], f17_u64.r[3] INDEX
+M10        9  PARAM is never `u64`, GLOBAL or not
+            moved: f13_param.entry, f13_param.r[0] PARAM, f13_param.r[1] PARAM, f13_param.reg.count
+M11        4  a REG buffer is a LIST even with one element
+            moved: f5_regbuf.r[0] BUFFER, f6_regbuf1.r[0] BUFFER, f7_reuse.r[0] BUFFER, f7_reuse.r[6] LOAD
+M12        1  a LOAD is a LIST even with one element
+            moved: f23_load1.r[3] LOAD
+M13       12  a void RANGE still allocates a register
+            moved: f24_range.entry, f24_range.r[2] RANGE, f24_range.r[3] BUFFER, f24_range.r[5] CAST
+M14        1  a RANGE allocates TWO registers
+            moved: f24_range.reg[1]
+M15        8  the SPECIAL `.reg .u32` line is APPENDED, not PREPENDED
+            moved: f10_loads.reg[2], f10_loads.reg[4], f15_bidx.reg[2], f15_bidx.reg[3]
+M16       34  the `.reg` block is `kern ++ decls`, not `decls ++ kern`
+            moved: f10_loads.reg[0], f10_loads.reg[1], f10_loads.reg[2], f10_loads.reg[3]
+M17        8  a register LIST joins with `,` not `, `
+            moved: f10_loads.r[3] LOAD, f10_loads.r[5] LOAD, f10_loads.r[8] LOAD, f11_stack.r[4] STACK
+M18      102  a scalar register renders its SECOND part
+            moved: f10_loads.r[0] BUFFER, f10_loads.r[2] SPECIAL, f10_loads.r[4] SPECIAL, f10_loads.r[6] BUFFER
+M19        1  on a REG src0 a LOAD PICKS instead of copying
+            moved: f7_reuse.r[6] LOAD
+M20       10  the dynamic-register-indexing REFUSAL is gone
+            moved: f8_refuse.EXTRA[1], f8_refuse.EXTRA[2], f8_refuse.EXTRA[3], f8_refuse.EXTRA[4]
+M21       99  `Wal.rput` PREPENDS instead of appending
+            moved: f10_loads.r[0] BUFFER, f10_loads.r[2] SPECIAL, f10_loads.r[3] LOAD, f10_loads.r[4] SPECIAL
+M23        1  an INDEX's subscript is off by one
+            moved: f7_reuse.r[3] INDEX
+M24        0  CONTROL: whitespace-only edit
+M25       72  the `.reg` line puts the KEY where the DTYPE goes
+            moved: f10_loads.reg[0], f10_loads.reg[1], f11_stack.reg[0], f11_stack.reg[1]
+M26       24  the row count forgets to count ITSELF
+            moved: f10_loads.rows, f11_stack.rows, f12_after.rows, f13_param.rows
+M27      153  the counter's hit and miss arms are SWAPPED
+            moved: f10_loads.r[5] LOAD, f10_loads.r[6] BUFFER, f10_loads.r[8] LOAD, f10_loads.reg[0]
+M28       14  a REG buffer takes the SPECIAL arm
+            moved: f5_regbuf.r[0] BUFFER, f5_regbuf.reg[0], f6_regbuf1.r[0] BUFFER, f6_regbuf1.reg[0]
+M29        0  CONST is no longer a skip  <-- BLIND
+M30        2  a SINK no longer renames the entry point
+            moved: f21_name.entry, f22_name2.entry
+
+CONSTANT SWEEP: +1 on every numeric literal outside the generated fixtures
+literal sites swept (excluding 0/1/2): 17
+moved > 0: 15   moved == 0 (BLIND): 2
+
+CONSTANTS BLIND LIST (a literal nothing notices -- these are the
+deliverable, not a coverage claim):
+  line ~370  7   def A_ALLOC() -> U32: 7
+  line ~596  3   reg_lines(ls, 0, Nil{}), [String.concat([P.px_pline(3), " ", Wal.nm(w)
+
+MUTATION BLIND LIST: ['M29']

@@ -1,0 +1,20 @@
+dsp_link_script = [SECTIONS { . = 0x0; .text : ALIGN(4096) { *(.text) }
+.rela.plt : ALIGN(4096) { *(.rela.plt) }
+.rela.dyn : ALIGN(4096) { *(.rela.dyn) }
+.plt : ALIGN(4096) { *(.plt) }
+.data : ALIGN(4096) { *(.data) }
+.bss : ALIGN(4096) { *(.bss) }
+.hash : ALIGN(4096) { *(.hash) }
+.dynamic : ALIGN(4096) { *(.dynamic) }
+.got : ALIGN(4096) { *(.got) }
+.got.plt : ALIGN(4096) { *(.got.plt) }
+.dynsym : ALIGN(4096) { *(.dynsym) }
+.dynstr : ALIGN(4096) { *(.dynstr) }
+.symtab : ALIGN(4096) { *(.symtab) }
+.shstrtab : ALIGN(4096) { *(.shstrtab) }
+.strtab : ALIGN(4096) { *(.strtab) }
+ /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }]   py=[SECTIONS { . = 0x0; .text : ALIGN(4096) { *.text }
+.rela.plt : ALIGN(4096) { *.rela.plt }
+.rela.dyn : ALIGN(4096) { *.rela.dyn }
+.plt : ALIGN(4096) { *.plt }
+.data : ALIGN(4096) { *.data }

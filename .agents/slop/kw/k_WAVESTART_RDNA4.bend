@@ -1,0 +1,2 @@
+def WAVESTART_RDNA4() -> U32:
+  1

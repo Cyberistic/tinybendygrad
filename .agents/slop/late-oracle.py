@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""CPython oracle for tinybendygrad/codegen/late.bend.
+"""CPython oracle for tinybendygrad/codegen/late/{linearizer,regalloc,gater}.bend.
 
 Drives tinygrad/codegen/late/{linearizer,regalloc,gater}.py over FIXED inputs and
 prints the rows the Bend gate must reproduce byte for byte.
 
     python3 /tmp/opencode/late-oracle.py > /tmp/opencode/late-cpython.txt
-    diff /tmp/opencode/late-cpython.txt <(./bin/bend tinybendygrad/codegen/late.bend)
+    .agents/slop/late-gate.sh   # runs the three files and diffs their union
 
 `TUPLE_ORDER=0` is used for every `linearize` row. That is a REAL supported
 configuration (helpers.py:280, default 1) and it is the only one that ports:

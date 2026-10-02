@@ -1,0 +1,15 @@
+  rows             rows=17     differ=1
+  lut_rows         rows=289    differ=0
+  clc_rows         rows=289    differ=0
+  sum_rows(f32)    rows=17     differ=0
+  sum_rows(bf16)   rows=17     differ=0
+  sum_rows(f16)    rows=17     differ=0
+  finfo_rows       rows=8      differ=0
+  commit_rows      rows=14112  differ=0
+
+DECLARED DEVIATION (rows):
+  cpython: u64	8	64	8	True	False	True	False	0:0	4294967295:4294967295	-
+  bend   : u64	8	64	8	True	False	True	False	0:0	2147483647:4294967295	-
+  reason : the I64 is a signed pair of U32s, so 2^64-1 has no image and `i64_max_u` answers int64's max; pre-dates the rename
+
+14766 rows compared, 1 declared, 0 unexpected

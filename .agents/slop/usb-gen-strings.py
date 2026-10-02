@@ -53,7 +53,11 @@ def t_strings() -> IO(Unit):
 
 """
 
-i = s.index("def t_strings() -> IO(Unit):")
+# THE CUT STARTS AT THE BANNER AND NOT AT THE `def`, because the banner is
+# ABOVE the `def`: cutting from the `def` leaves the old banner in place and every
+# run of this script appends another copy, which is a defect that only shows up as
+# a file that grows each time the pipeline runs.
+i = s.index("# THE STRING ROWS.")
 j = s.index("def t_packets() -> IO(Unit):")
 s = s[:i] + TSTR + s[j:]
 io.open(P, "w").write(s)

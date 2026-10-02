@@ -1,0 +1,2 @@
+def TS_DELTA_OR_MARK_RDNA4() -> U32:
+  1

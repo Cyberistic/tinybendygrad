@@ -135,4 +135,12 @@ finfo[f16].1|u|10|0xa|10|0xa
 mantissa_bits[f16]|u|10|0xa|10|0xa
 exponent_bias[f16]|u|15|0xf|15|0xf
 exponent_mask[f16]|u|31|0x1f|31|0x1f
+frexp.m1w[f32]|u|2155872255|0x807fffff|2155872255|0x807fffff
+frexp.m2w[f32]|u|1056964608|0x3f000000|1056964608|0x3f000000
+frexp.m1w[f16]|u|33791|0x83ff|33791|0x83ff
+frexp.m2w[f16]|u|14336|0x3800|14336|0x3800
+port.frac_mask|u|8388607|0x7fffff|8388607|0x7fffff
+port.denorm_scale_f32|s|1.8446744073709552e+19|0x1.0000000000000p+64|1602224128|0x5f800000
+port.denorm_exp_f32|s|64|0x40|64|0x40
+port.two_m24|s|5.960464477539063e-08|0x1.0000000000000p-24|864026624|0x33800000
 TRANSCENDENTAL_DTYPES|dtype|f16 f32 f64|f16 f32 f64|f16 f32 f64|f16 f32 f64

@@ -60,7 +60,7 @@ HEADER = '''# tinybendygrad/runtime/support/usb.bend -- port of tinygrad/runtime
 #
 # WHAT IS WORTH PORTING, AND WHY. `usb.py` is the only file in tinygrad that
 # talks to a device through a GENERATED ctypes binding, and
-# `tinygrad/runtime/autogen/libusb.py` is that binding: 21 `enum_libusb_*` dicts and
+# `tinygrad/runtime/autogen/libusb.py` is that binding: 22 `enum_libusb_*` dicts and
 # 22 `@c.record` structs whose `register_fields` carries a field NAME and an OFFSET
 # for every member. That is a descriptor table in the exact sense this project gets
 # burned on -- `ops_nv`'s audit found 33 of 219 constants wrong in a file already
@@ -203,7 +203,7 @@ def tables_block():
     return r.stdout
 
 
-# THE ENUM ROWS, GENERATED so the twenty-one table walks and the scalar rows
+# THE ENUM ROWS, GENERATED so the twenty-two table walks and the scalar rows
 # cannot drift apart. ONE `IO.print` PER SECTION and not a `do IO<Unit>:` chain,
 # because a `do` block's arms must all be statements and so a block cannot be
 # followed by the next `def`.
@@ -259,7 +259,7 @@ def consts_block():
 
 ROWS = '''# THE LAST-WINS FIXTURE. The generated dicts are LAST-wins -- a repeated key is
 # overwritten by the later literal -- and both folds have to agree with that. But
-# NONE of the twenty-one live tables can exercise the rule: 6 is the only value that
+# NONE of the twenty-two live tables can exercise the rule: 6 is the only value that
 # ever repeats, and `LIBUSB_CLASS_IMAGE` is NOT a table entry (it is a walrus
 # binding the dict overwrote), so after that correction every value and every name
 # in every table is UNIQUE. `M36` and `M37` measured 0 rows moved, and a 0 is a
@@ -360,32 +360,33 @@ TAIL = '''# ====================================================================
 # `@extern` seam would have to be exactly these calls and nothing else, and
 # replacing `Tr.emit` is the entire change.
 #
-# | call | usb.py | checked? | what `a`, `b`, `c` carry |
-# | --- | --- | --- | --- |
-# | `libusb_init` | :24 | yes | all zero: the argument is a `POINTER(context)` |
-# | `libusb_set_option` | :25 | yes | `LIBUSB_OPTION_LOG_LEVEL` (0) and level 4 |
-# | `libusb_get_device_list` | :32 | yes | all zero: the list is the SEAM's |
-# | `libusb_get_device_descriptor` | :33, :49 | yes | all zero: the struct is the SEAM's |
-# | `libusb_ref_device` | :35 | NO | all zero: a pointer in, a pointer out |
-# | `libusb_get_bus_number` | :35 | yes | the bus number -- the label's first field |
-# | `libusb_get_device_address` | :35 | yes | the device address -- the label's second |
-# | `libusb_free_device_list` | :36 | NO | `1`, `usb_unref_devices` |
-# | `libusb_open` | :44 | yes | all zero: the handle is the SEAM's |
-# | `libusb_get_device` | :49 | NO | all zero: a pointer in, a pointer out |
-# | `libusb_get_string_descriptor_ascii` | :50 | yes | 256, `_buf` |
-# | `libusb_kernel_driver_active` | :55 | yes | 0, the interface |
-# | `libusb_detach_kernel_driver` | :56 | yes | 0, the interface |
-# | `libusb_reset_device` | :57 | yes | all zero |
-# | `libusb_set_configuration` | :60 | yes | 1, the configuration |
-# | `libusb_claim_interface` | :61 | yes | 0, the interface |
-# | `libusb_set_interface_alt_setting` | :62 | yes | 0, 0: interface and alt-setting |
-# | `libusb_control_transfer` | :67, :71 | yes | rtype 0x40/0xC0, request, n |
-# | `libusb_bulk_transfer` | :78, :83 | yes | 0x02/0x81, n |
-# | `libusb_alloc_transfer` | :457 | yes | all zero: `libusb_alloc_transfer(0)` |
-# | `libusb_handle_events_timeout` | :326 | yes | all zero: the timeout is 0 |
-# | `libusb_submit_transfer` | :352 | yes | all zero: the xfer is the SEAM's |
-# | `memcpy` | :343 | NO | the byte count |
-# | `libusb_strerror` | :16 | NO | NO EMIT SITE: `checked` calls it inside the |
+# | call | usb.py: the LITERAL site | called from | checked? | what `a`, `b`, `c` carry |
+# | --- | --- | --- | --- | --- |
+# | `libusb_init` | :24 | -- | yes | all zero: the argument is a `POINTER(context)` |
+# | `libusb_set_option` | :25 | -- | yes | `LIBUSB_OPTION_LOG_LEVEL` (0) and level 4 |
+# | `libusb_get_device_list` | :32 | -- | yes | all zero: the list is the SEAM's |
+# | `libusb_get_device_descriptor` | :33, :49 | -- | yes | all zero: the struct is the SEAM's |
+# | `libusb_ref_device` | :35 | -- | NO | all zero: a pointer in, a pointer out |
+# | `libusb_get_bus_number` | :35 | -- | yes | the bus number -- the label's first field |
+# | `libusb_get_device_address` | :35 | -- | yes | the device address -- the label's second |
+# | `libusb_free_device_list` | :36 | -- | NO | `1`, `usb_unref_devices` |
+# | `libusb_open` | :44 | -- | yes | all zero: the handle is the SEAM's |
+# | `libusb_get_device` | :49 | -- | NO | all zero: a pointer in, a pointer out |
+# | `libusb_get_string_descriptor_ascii` | :50 | -- | yes | 256, `_buf` |
+# | `libusb_kernel_driver_active` | :55 | -- | yes | 0, the interface |
+# | `libusb_detach_kernel_driver` | :56 | -- | yes | 0, the interface |
+# | `libusb_reset_device` | :57 | -- | yes | all zero |
+# | `libusb_set_configuration` | :60 | -- | yes | 1, the configuration |
+# | `libusb_claim_interface` | :61 | -- | yes | 0, the interface |
+# | `libusb_set_interface_alt_setting` | :62 | -- | yes | 0, 0: interface and alt-setting |
+# | `libusb_control_transfer` | :67, :71 | :237 `usb_ctrl`, from :243, :246, :306, :332, :348, :378 | yes | rtype 0x40/0xC0, request, n |
+# | `libusb_bulk_transfer` | :78, :83 | :240 `usb_bulk`, from :247, :380 | yes | 0x02/0x81, n |
+# | `libusb_alloc_transfer` | :457 | -- | yes | all zero: `libusb_alloc_transfer(0)` |
+# | `libusb_handle_events_timeout` | :326 | -- | yes | all zero: the timeout is 0 |
+# | `libusb_submit_transfer` | :352 | -- | yes | all zero: the xfer is the SEAM's |
+# | `memcpy` | :343 | -- | NO | the byte count |
+# | `memcpy` | :381, :382 | the copyout's two halves | NO | `first`, then `second` |
+# | `libusb_strerror` | :16 | -- | NO | NO EMIT SITE: `checked` calls it inside the |
 # |   |   |   | exception it is raising, and a trace that has refused records |
 # |   |   |   | nothing further. `usb_inventory_strerror` names it. |
 #
@@ -400,6 +401,8 @@ TAIL = '''# ====================================================================
 # pretends to cover one. The full list of `TODO(p3)` lines is at the end of this
 # file.
 # ===========================================================================
+SEAM_LIST
+
 MUTATION_TABLE
 
 SEAM_TABLE
@@ -421,6 +424,15 @@ MUTATION_TABLE = '''# ==========================================================
 # ===========================================================================
 '''
 
+SEAM_LIST = '''# ===========================================================================
+# EVERY LINE OF `usb.py` THAT IS NOT PORTED, WITH THE REASON. 111 of them.
+#
+# THIS TABLE IS GENERATED by `.agents/slop/usb-seam.py`, which prints the source
+# text out of `usb.py` rather than repeating it here, so a line that moves cannot
+# silently keep its old description.
+# ===========================================================================
+'''
+
 SEAM_TABLE = '''# ===========================================================================
 # THE GATE. Seven scripts, all in `.agents/slop/`, and every number below is one
 # of their outputs rather than an estimate.
@@ -429,12 +441,13 @@ SEAM_TABLE = '''# ==============================================================
 # | --- | --- | --- |
 # | `usb-diff.py` | runs the INTERPRETED lane and diffs WHOLE `name=value` lines against four CPython oracles | `rows bend=939 oracle=939 disagree=0 oracle_only=0 bend_only=0` |
 # | `usb-constsweep.py` | evaluates every `def NAME() -> U32` and compares it against an AST POSITION in `usb.py`, `ctypes.sizeof`, or `struct.calcsize` | `swept 124: 123 CONFIRMED, 0 WRONG, 1 unverified` |
-# | `usb-handmap.py` | the position map itself; `--list` prints every candidate so a position is auditable without running anything | 71 positions |
+# | `usb-handmap.py` | the position map itself; `--list` prints every candidate so a position is auditable without running anything | `74 positions, 0 unresolved` |
 # | `usb-symmap.py` | the `K_*` -> `SYMS()` bijection, and that every name is a real libusb export | `kinds=24 syms=24 injective=True all_symbols_real=True` |
 # | `usb-dead.py` | a def nothing calls is invisible to every other check | `339 defs, 0 dead` |
 # | `usb-mutate.py` | 45 mutations, one edit each, diffing whole `name=value` lines | 44 move rows, 1 theorem |
-# | `usb-build.py` | assembles THIS FILE from its pieces | -- |
-#
+# | `usb-seam.py` | the 111 unported lines of `usb.py`, printing the source text so the list cannot drift | `111 unported lines` |
+# | `usb-build.py` | assembles THIS FILE from its pieces | 2596 lines |
+# ===========================================================================
 # THE ONE UNVERIFIED CONSTANT IS `NOT_FOUND`, and it is PORT-INTERNAL: it is this
 # port's own "no such name" answer, chosen to be 0xFFFFFFFF because every
 # `enum_libusb_*` value is a C enum and the largest negative is -1. It has no line
@@ -461,7 +474,7 @@ SEAM_TABLE = '''# ==============================================================
 #   * `usb_enum.device` read the descriptor AFTER the ref/bus/address triple, and
 #     the SEEN-SET version of `enum_rows` emitted zero `_n_` rows.
 #   * `enum_rows` walked the REVERSED table, which builds the accumulator
-#     backwards, so all 478 enum rows came out in the opposite of the header's own
+#     backwards, so all 260 enum rows came out in the opposite of the header's own
 #     order. A cons fold over a reversed walk is still a backwards fold.
 # ===========================================================================
 
@@ -504,12 +517,17 @@ def main() -> IO(Unit):
 def main():
     mut = io.open(os.path.join(HERE, "usb-mutations.md")).read().rstrip("\n")
     # THE TWO SENTINELS ARE THE NAME AND NOT THE TEXT, because the text is what
-    # gets substituted into it. And the table is COMMENTED line by line, because a
-    # bare `| M1 | 11 |` is a TERM to Bend's lexer and not a row of a table.
-    mut = "\n".join("# " + ln if ln else ln for ln in mut.split("\n"))
-    tail = TAIL.replace("MUTATION_TABLE", MUTATION_TABLE + mut + "\n\n", 1)
+    # gets substituted into it. And both tables are COMMENTED line by line, because
+    # a bare `| M1 | 11 |` is a TERM to Bend's lexer and not a row of a table.
+    def comment(t):
+        return "\n".join("# " + ln if ln else ln for ln in t.split("\n"))
+    seam = subprocess.run([sys.executable, os.path.join(HERE, "usb-seam.py")],
+                          check=True, capture_output=True, text=True).stdout.rstrip("\n")
+    tail = TAIL.replace("SEAM_LIST", SEAM_LIST + comment(seam) + "\n\n", 1)
+    tail = tail.replace("MUTATION_TABLE", MUTATION_TABLE + comment(mut) + "\n\n", 1)
     tail = tail.replace("SEAM_TABLE", SEAM_TABLE, 1)
-    assert mut in tail and "# THE FFI SEAM SPLIT." in tail
+    assert comment(mut) in tail and comment(seam) in tail
+    assert "# THE FFI SEAM SPLIT." in tail
     # ORDER IS A DEPENDENCY ORDER AND NOT A TIDYING ORDER: Bend refuses a def
     # USED before it is WRITTEN, so `usb-secure`'s trace needs the request types
     # and endpoint bits that live in `usb-sblock`, and `usb-tracerows` needs the

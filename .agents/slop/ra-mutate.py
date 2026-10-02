@@ -1,15 +1,37 @@
 import re, subprocess, sys, os, shutil
-F = 'tinybendygrad/codegen/late.bend'
+# POST-SPLIT. `codegen/late.bend` was ONE file for linearizer.py + regalloc.py +
+# gater.py and the 1:1 ruling gave each upstream .py its own file at its own path.
+# Every MUTATION below is a REGALLOC rule, so the file written is
+# `codegen/late/regalloc.bend` and `run()` prints all three in Python's order -- 128
+# rows before the split, 128 across the three after it. The MUTATION ENTRIES are
+# unchanged; `q()` applies the `LT.` qualifier the split forced on a call site, and on
+# a TYPE MENTION too, because a cross-file type name is not in scope unqualified.
+MUTATED = 'tinybendygrad/codegen/late/regalloc.bend'
+FILES = ['linearizer', 'regalloc', 'gater']
+_qpat = re.compile(r'(?<![\w.])(%s)(?![\w])' % '|'.join(re.escape(n) for n in
+    ['RaEn', 'RaEn.k', 'RaEn.v', 'RaTb', 'RaTb.es', 'at', 'b2u', 'cfg_entry',
+     'lt_is_exit', 'lt_is_range', 'lt_key', 'lt_lines', 'lt_op_is', 'row', 'tb_get',
+     'tb_has', 'tb_ins', 'tb_keys', 'tb_new', 'tb_pget', 'tb_pput', 'tb_pset',
+     'tb_put', 'tb_vput', 'tb_vs', 'u32_none']))
+
+def q(s):
+  return _qpat.sub(lambda m: 'LT.' + m.group(1), s)
+
 BAK = '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/late-base.bend'
 OUT = '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode'
-shutil.copy(F, BAK)
+shutil.copy(MUTATED, BAK)
 base = open('/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/full.txt').read().split('\n')
 base = [l for l in base if l.strip()]
 
 def run():
-  r = subprocess.run(['./bin/bend', F], capture_output=True, text=True)
-  t = (r.stdout + r.stderr).strip().split('\n')
-  return [l for l in t if l.strip()]
+  out = []
+  for f in FILES:
+    for _ in range(5):     # bend 2.0.34 machine-stack-overflows ~1 run in 20
+      r = subprocess.run(['./bin/bend', 'tinybendygrad/codegen/late/%s.bend' % f],
+                         capture_output=True, text=True)
+      t = [l for l in (r.stdout + r.stderr).strip().split('\n') if l.strip()]
+      if t: out += t; break
+  return out
 
 def moved(before, after):
   b, a = set(before), set(after)
@@ -79,19 +101,20 @@ print('%-52s %s' % ('MUTATION', 'ROWS MOVED'))
 print('-' * 100)
 for name, old, new in MUT:
   src = open(BAK).read()
+  old, new = q(old), q(new)
   if old not in src:
     print('%-52s %s' % (name[:52], 'DID NOT APPLY'))
     continue
   try:
-    open(F, 'w').write(src.replace(old, new, 1))
+    open(MUTATED, 'w').write(src.replace(old, new, 1))
     got = run()
   finally:
-    open(F, 'w').write(src)
+    open(MUTATED, 'w').write(src)
   lost, added = moved(base, got)
   if not lost and not added:
     print('%-52s %s' % (name[:52], 'NOTHING (blind spot)'))
   else:
     print('%-52s %s' % (name[:52], ', '.join(l.split('=')[0] for l in lost + added)))
-shutil.copy(BAK, F)
+shutil.copy(BAK, MUTATED)
 print()
 print('restored:', run() == base)

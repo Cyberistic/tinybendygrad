@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ptx-s3-oracle.py", line 162, in <module>
+    if len(sys.argv) > 1 and sys.argv[1] == "rows": sys.stdout.write(rows())
+                                                                     ~~~~^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ptx-s3-oracle.py", line 158, in rows
+    for nm, f in FIX: out += walk_rows(nm, f())
+                             ~~~~~~~~~^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ptx-s3-oracle.py", line 66, in walk_rows
+    src = r.render(list(uops))
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/ptx.py", line 206, in render
+    if u.op is Ops.SPECIAL: r[u] = "%" + u.arg
+                                   ~~~~^~~~~~~
+TypeError: can only concatenate str (not "tuple") to str

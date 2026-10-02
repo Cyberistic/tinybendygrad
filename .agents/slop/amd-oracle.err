@@ -1,0 +1,4 @@
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cs_oracle.py", line 508
+    r = subprocess.run(argv, input=b"", capture_output=True=env.get("PYTHONPATH") and env or env, timeout=60)
+                                                           ^
+SyntaxError: invalid syntax

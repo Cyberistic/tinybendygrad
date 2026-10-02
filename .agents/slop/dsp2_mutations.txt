@@ -1,0 +1,52 @@
+baseline rows: 510
+ID     RESULT     ROWS MOVED
+------------------------------------------------------------------------
+SC01   MOVED      2  dsp_rpc_reply_io, dsp_rpc_scs
+                  SC_OPEN: upstream 0x13050100; the port's OLD wrong value was 0x0BE00000
+SC02   MOVED      2  dsp_rpc_scs, dsp_rpc_seek_err
+                  SC_SEEK: upstream 0x9010000; the port's OLD wrong value was 0x09002600
+SC03   MOVED      1  dsp_rpc_scs
+                  SC_READ: upstream 0x4010200; the port's OLD wrong value was 0x04004000
+SC04   MOVED      1  dsp_rpc_scs
+                  SC_STAT: upstream 0x1F020100; the port's OLD wrong value was 0x01DC0000
+SC05   MOVED      1  dsp_rpc_scs
+                  SC_MMAP: upstream 0x2010100; the port's OLD wrong value was 0x02010000
+SC06   MOVED      1  dsp_ion
+                  ION_SYSTEM_HEAP_ID: qcom_dsp's own value is 25, so heap_id_mask is 1<<25
+SC07   MOVED      3  dsp_link_line, dsp_link_line2, dsp_link_script
+                  :106's link line: upstream emits `*(.text)`, the port emitted `*.(text)`
+AL01   MOVED      2  dsp_kind_munmap_is_not_mmap, dsp_kind_n
+                  munmap is its OWN kind; folding it into MMAP is what made a real _free look like 2
+AL02   MOVED      2  dsp_free_r_n, dsp_free_r_order
+                  :86-91's `if share_info is not None` guards the CLOSE too
+AL03   MOVED      3  dsp_free_m_close, dsp_free_m_ionfree, dsp_free_m_n
+                  the MOCK arm must be ONE call -- the negative case for AL02. (`9` and not `handle`, because `handle` is already consumed by the real arm: a literal that typechecks.)
+AL04   MOVED      3  dsp_free_r_hdl, dsp_free_r_n, dsp_free_r_order
+                  the `has_share` FLAG reaching `_free` -- if it is dropped, the MOCK arm silently takes the REAL one and every dsp_free_m_* row is the dsp_free_r_* measurement
+RP01   MOVED      12  dsp_rpc_a_0, dsp_rpc_a_1, dsp_rpc_a_close, dsp_rpc_a_exec, dsp_rpc_a_greet, dsp_rpc_a_hello
+                  the dispatch selector itself: a `match` on a wrong literal FALLS THROUGH, so the test must be the equality and not its negation
+RP02   MOVED      12  dsp_rpc_a_0, dsp_rpc_a_1, dsp_rpc_a_close, dsp_rpc_a_exec, dsp_rpc_a_greet, dsp_rpc_a_hello
+                  RP01 restated so the two entries are independent anchors for the SAME line
+RP03   MOVED      2  dsp_rpc_objpad, dsp_rpc_pad
+                  :201's `round_up(ptr+4, 8)` -- the resulting POINTER, not the padding
+HX01   MOVED      4  dsp_hex_75BCD15, dsp_hex_all, dsp_hex_hi_s, dsp_rpc_unknown
+                  :239's `{sc=:X}` is UPPERCASE; lowercase agrees on 0..8 and nowhere else
+HX02   MOVED      8  dsp_hex_1, dsp_hex_10, dsp_hex_75BCD15, dsp_hex_all, dsp_hex_ff, dsp_hex_hi
+                  the LEADING-ZERO drop: counting trailing zeros instead
+HX03   MOVED      4  dsp_hex_75BCD15, dsp_hex_all, dsp_hex_hi, dsp_hex_hi_s
+                  a U32 is EIGHT nibbles, so the walk must run eight deep
+FN01   MOVED      3  dsp_fp, dsp_fp_len, dsp_ol_ins
+                  :143's `fp` INCLUDES its NUL -- len 44, not 43
+FN02   MOVED      1  dsp_m_boiler
+                  :243-251's first line is 106 chars; 65 was a hardcoded number
+FN03   MOVED      1  dsp_mp_nstdin
+                  :284's stdin is the sum over the ACTUAL buffers; `nbufs` used to be dead
+TP01   BLIND      0  
+                  the UNSTABLE span: changing the interpolated name must move NOTHING, which is what 'declared unstable' means
+KD01   MOVED      1  dsp_kind_n
+                  dsp_kind_n: a gap in the 0..16 kinds. (Setting it to 2 instead is AL01.)
+KD02   MOVED      2  dsp_kind_munmap_is_not_mmap, dsp_kind_n
+                  dsp_kind_munmap_is_not_mmap: the collision AL01 relied on being invisible
+------------------------------------------------------------------------
+23 mutations: 22 moved, 1 blind, 0 did not typecheck
+  BLIND TP01: the UNSTABLE span: changing the interpolated name must move NOTHING, which is what 'declared unstable' means

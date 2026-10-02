@@ -19,7 +19,7 @@
 #   NVOS02_FLAGS_PHYSICALITY_NONCONTIGUOUS
 #   REGISTRY_TABLE_ENTRY_TYPE_DWORD
 # so the generated (name-sorted) order is load-bearing for `const_name`.
-# `ip_c_one_first` pins the winner and `ip_c_one_n` pins how many it beat.
+# `ip_nm_first` pins the winner and `ip_nm_one_n` pins how many it beat.
 type Cn is Data:
   Cn{name: String, v: U32}
 

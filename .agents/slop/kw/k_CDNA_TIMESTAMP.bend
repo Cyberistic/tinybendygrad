@@ -1,0 +1,2 @@
+def CDNA_TIMESTAMP() -> U32:
+  1

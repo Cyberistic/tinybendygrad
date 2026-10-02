@@ -1,0 +1,114 @@
+58 CONSTANTS SWEPT (one `+1` each), baseline 472 rows
+
+C1   literal 286 -> 287               0
+C2   literal 1142 -> 1143             0
+C3   literal 205 -> 206               0
+C4   literal 156 -> 157               0
+C5   literal 160 -> 161               0
+C6   literal 210 -> 211               0
+C7   literal 265 -> 266               0
+C8   literal 144 -> 145               0
+C9   literal 161 -> 162               0
+C10  literal 202 -> 203               0
+C11  literal 634 -> 635               0
+C12  literal 215 -> 216               0
+C13  literal 219 -> 220               0
+C14  literal 590 -> 591               0
+C15  literal 181 -> 182               0
+C16  literal 191 -> 192               0
+C17  literal 694 -> 695               0
+C18  literal 701 -> 702               0
+C19  literal 149 -> 150               0
+C20  literal 221 -> 222               0
+C21  literal 225 -> 226               0
+C22  literal 178 -> 179               0
+C23  literal 252 -> 253               0
+C24  literal 263 -> 264               0
+C25  literal 244 -> 245               0
+C26  literal 295 -> 296               0
+C27  literal 248 -> 249               0
+C28  literal 250 -> 251               0
+C29  literal 211 -> 212               0
+C30  literal 214 -> 215               0
+C31  literal 274 -> 275               0
+C32  literal 284 -> 285               0
+C33  literal 2798 -> 2799             0
+C34  literal 754 -> 755               0
+C35  literal 256 -> 257               0
+C36  literal 502 -> 503               0
+C37  literal 232 -> 233               0
+C38  literal 242 -> 243               0
+C39  literal 102 -> 103               0
+C40  literal 105 -> 106               0
+C41  literal 107 -> 108               0
+C42  literal 115 -> 116               0
+C43  literal 111 -> 112               0
+C44  literal 122 -> 123               0
+C45  literal 140 -> 141               0
+C46  literal 143 -> 144               0
+C47  literal 236 -> 237               0
+C48  literal 612 -> 613               0
+C49  literal 494 -> 495               0
+C50  literal 4294967295 -> 4294967296 BROKE
+C51  literal 158 -> 159               0
+C52  literal 159 -> 160               0
+C53  literal 273 -> 274               0
+C54  literal 512 -> 513               1   ftr amd wx64h8
+C55  literal 1024 -> 1025             1   ftr amd prod wgx1024
+C56  literal 32768 -> 32769           1   ftr amd w3
+C57  literal 65535 -> 65536           1   ftr amd prod wbig
+C58  literal 4294836225 -> 4294836226    1   ftr amd wbig
+
+6 of 58 constants moved something; 52 blind.
+  BLIND: C1   literal 286 -> 287
+  BLIND: C2   literal 1142 -> 1143
+  BLIND: C3   literal 205 -> 206
+  BLIND: C4   literal 156 -> 157
+  BLIND: C5   literal 160 -> 161
+  BLIND: C6   literal 210 -> 211
+  BLIND: C7   literal 265 -> 266
+  BLIND: C8   literal 144 -> 145
+  BLIND: C9   literal 161 -> 162
+  BLIND: C10  literal 202 -> 203
+  BLIND: C11  literal 634 -> 635
+  BLIND: C12  literal 215 -> 216
+  BLIND: C13  literal 219 -> 220
+  BLIND: C14  literal 590 -> 591
+  BLIND: C15  literal 181 -> 182
+  BLIND: C16  literal 191 -> 192
+  BLIND: C17  literal 694 -> 695
+  BLIND: C18  literal 701 -> 702
+  BLIND: C19  literal 149 -> 150
+  BLIND: C20  literal 221 -> 222
+  BLIND: C21  literal 225 -> 226
+  BLIND: C22  literal 178 -> 179
+  BLIND: C23  literal 252 -> 253
+  BLIND: C24  literal 263 -> 264
+  BLIND: C25  literal 244 -> 245
+  BLIND: C26  literal 295 -> 296
+  BLIND: C27  literal 248 -> 249
+  BLIND: C28  literal 250 -> 251
+  BLIND: C29  literal 211 -> 212
+  BLIND: C30  literal 214 -> 215
+  BLIND: C31  literal 274 -> 275
+  BLIND: C32  literal 284 -> 285
+  BLIND: C33  literal 2798 -> 2799
+  BLIND: C34  literal 754 -> 755
+  BLIND: C35  literal 256 -> 257
+  BLIND: C36  literal 502 -> 503
+  BLIND: C37  literal 232 -> 233
+  BLIND: C38  literal 242 -> 243
+  BLIND: C39  literal 102 -> 103
+  BLIND: C40  literal 105 -> 106
+  BLIND: C41  literal 107 -> 108
+  BLIND: C42  literal 115 -> 116
+  BLIND: C43  literal 111 -> 112
+  BLIND: C44  literal 122 -> 123
+  BLIND: C45  literal 140 -> 141
+  BLIND: C46  literal 143 -> 144
+  BLIND: C47  literal 236 -> 237
+  BLIND: C48  literal 612 -> 613
+  BLIND: C49  literal 494 -> 495
+  BLIND: C51  literal 158 -> 159
+  BLIND: C52  literal 159 -> 160
+  BLIND: C53  literal 273 -> 274

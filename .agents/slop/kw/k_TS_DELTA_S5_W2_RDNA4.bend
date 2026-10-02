@@ -1,0 +1,2 @@
+def TS_DELTA_S5_W2_RDNA4() -> U32:
+  1

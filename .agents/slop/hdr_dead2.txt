@@ -1,0 +1,263 @@
+========================================================================================================
+langs/core.bend
+  343 lines, 33 defs, 1 rows printed, 26-line header
+  DEAD 1 of 33
+    line 320    core_step                  def core_step(images: Array<F32>, labels: Array<U32>, we
+========================================================================================================
+tinybendygrad/LAWS.bend
+  386 lines, 10 defs, 0 rows printed, 37-line header
+  DEAD 0 of 10
+========================================================================================================
+tinybendygrad/LAWS/alu.bend
+  121 lines, 19 defs, 2 rows printed, 18-line header
+  DEAD 15 of 19
+    line 31     zero                       def zero() -> S.Sp:
+    line 34     k                          def k(m: S.Sp) -> S.Sp:
+    line 53     sub                        def sub(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 63     div                        def div(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 78     cmp_gt                     def cmp_gt(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 81     cmp_ge                     def cmp_ge(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 84     cmp_le                     def cmp_le(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 87     cmp_ne                     def cmp_ne(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 90     cmp_eq                     def cmp_eq(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 93     logical_not                def logical_not(a: S.Sp) -> S.Sp:
+    line 105    half_of                    def half_of(x: S.Sp) -> S.Sp:
+    line 111    exp2                       def exp2(a: S.Sp) -> S.Sp:
+    line 114    sqrt                       def sqrt(a: S.Sp) -> S.Sp:
+    line 117    powf                       def powf(a: S.Sp, b: S.Sp) -> S.Sp:
+    line 120    mulacc                     def mulacc(a: S.Sp, b: S.Sp, c: S.Sp) -> S.Sp:
+========================================================================================================
+tinybendygrad/LAWS/spec.bend
+  770 lines, 75 defs, 2 rows printed, 46-line header
+  DEAD 29 of 75
+    line 155    Dt.bits                    def Dt.bits(d: Dt) -> U32:
+    line 159    Dt.pri                     def Dt.pri(d: Dt) -> U32:
+    line 163    Dt.is_int                  def Dt.is_int(d: Dt) -> Bool:
+    line 166    Dt.is_float                def Dt.is_float(d: Dt) -> Bool:
+    line 169    Dt.is_unsigned             def Dt.is_unsigned(d: Dt) -> Bool:
+    line 172    Dt.is_bool                 def Dt.is_bool(d: Dt) -> Bool:
+    line 175    Dt.itemsize                def Dt.itemsize(d: Dt) -> U32:
+    line 215    Dt.min                     def Dt.min(d: Dt) -> Maybe<&2, U32>:
+    line 220    Dt.max                     def Dt.max(d: Dt) -> Maybe<&2, U32>:
+    line 242    Shape.ndim                 def Shape.ndim(s: Shape) -> Nat:
+    line 253    Shape.append               def Shape.append(s: Shape, +d: Sdim) -> Shape:
+    line 338    dims_prod                  def dims_prod(s: Maybe<&2, Shape>) -> Nat:
+    line 678    void                       def void() -> Dt: Dt{0, 0, CVoid{}, "void"}
+    line 685    int8                       def int8() -> Dt: Dt{1, 8, CSint{}, "i8"}
+    line 687    int16                      def int16() -> Dt: Dt{3, 16, CSint{}, "i16"}
+    line 688    uint16                     def uint16() -> Dt: Dt{4, 16, CUint{}, "u16"}
+    line 689    int32                      def int32() -> Dt: Dt{5, 32, CSint{}, "i32"}
+    line 690    uint32                     def uint32() -> Dt: Dt{6, 32, CUint{}, "u32"}
+    line 691    int64                      def int64() -> Dt: Dt{7, 64, CSint{}, "i64"}
+    line 692    uint64                     def uint64() -> Dt: Dt{8, 64, CUint{}, "u64"}
+    line 693    weakfloat                  def weakfloat() -> Dt: Dt{9, 800, CWeakFloat{}, "weakflo
+    line 694    fp8e4m3                    def fp8e4m3() -> Dt: Dt{10, 8, CFloat{}, "fp8e4m3"}
+    line 695    fp8e4m3fnuz                def fp8e4m3fnuz() -> Dt: Dt{10, 8, CFloat{}, "fp8e4m3fnu
+    line 696    fp8e5m2                    def fp8e5m2() -> Dt: Dt{11, 8, CFloat{}, "fp8e5m2"}
+    line 697    fp8e5m2fnuz                def fp8e5m2fnuz() -> Dt: Dt{11, 8, CFloat{}, "fp8e5m2fnu
+    line 698    half                       def half() -> Dt: Dt{12, 16, CFloat{}, "f16"}
+    line 699    bfloat16                   def bfloat16() -> Dt: Dt{13, 16, CFloat{}, "bf16"}
+    line 700    single                     def single() -> Dt: Dt{14, 32, CFloat{}, "f32"}
+    line 701    double                     def double() -> Dt: Dt{15, 64, CFloat{}, "f64"}
+========================================================================================================
+tinybendygrad/LAWS/PROOF-ALL.bend
+  15 lines, 0 defs, 0 rows printed, 12-line header
+  DEAD 0 of 0
+========================================================================================================
+tinybendygrad/PROOF.bend
+  194 lines, 14 defs, 0 rows printed, 24-line header
+  DEAD 8 of 14
+    line 32     L.permute_preserves_numel  def L.permute_preserves_numel(t, order):
+    line 36     L.flip_preserves_numel     def L.flip_preserves_numel(t, flags):
+    line 42     L.reshape_preserves_numel  def L.reshape_preserves_numel(t, dst, premise):
+    line 46     L.reshape_numel_is_the_new_shape def L.reshape_numel_is_the_new_shape(t, dst):
+    line 51     L.pad_numel_is_the_new_shape def L.pad_numel_is_the_new_shape(t, off, size):
+    line 56     L.shrink_numel_is_the_new_shape def L.shrink_numel_is_the_new_shape(t, off, size):
+    line 61     L.pad_shrink_round_trip    def L.pad_shrink_round_trip(t, off, size, premise):
+    line 116    L.store_matches_its_buffer def L.store_matches_its_buffer(buf, val, gate, premise):
+========================================================================================================
+tinybendygrad/PROOF2.bend
+  103 lines, 18 defs, 0 rows printed, 12-line header
+  DEAD 18 of 18
+    line 24     L.neg_is_mul_by_minus_one  def L.neg_is_mul_by_minus_one(a):
+    line 28     L.sub_is_add_of_neg        def L.sub_is_add_of_neg(a, b):
+    line 32     L.div_is_mul_by_recip      def L.div_is_mul_by_recip(a, b):
+    line 36     L.cmp_gt_is_cmp_lt_swapped def L.cmp_gt_is_cmp_lt_swapped(a, b):
+    line 40     L.cmp_ge_is_ne_of_cmp_lt   def L.cmp_ge_is_ne_of_cmp_lt(a, b):
+    line 44     L.cmp_le_is_ne_of_cmp_lt_swapped def L.cmp_le_is_ne_of_cmp_lt_swapped(a, b):
+    line 48     L.cmp_eq_is_double_neg     def L.cmp_eq_is_double_neg(a, b):
+    line 52     L.not_is_ne_one            def L.not_is_ne_one(a):
+    line 56     L.mulacc_is_add_of_mul     def L.mulacc_is_add_of_mul(a, b, c):
+    line 70     L.comparison_is_bool       def L.comparison_is_bool(a, b):
+    line 73     L.comparison_ne_is_bool    def L.comparison_ne_is_bool(a, b):
+    line 78     L.where_takes_the_second_operand_dtype def L.where_takes_the_second_operand_dtype(p, a, b):
+    line 82     L.store_is_void            def L.store_is_void(buf, val, gate):
+    line 86     L.call_is_void             def L.call_is_void(body, args):
+    line 90     L.range_is_index           def L.range_is_index(bound):
+    line 94     L.binary_is_uint8          def L.binary_is_uint8(size):
+    line 99     L.detach_preserves_dtype   def L.detach_preserves_dtype(a):
+    line 102    L.detach_preserves_numel   def L.detach_preserves_numel(a):
+========================================================================================================
+tinybendygrad/sz.bend
+  1675 lines, 220 defs, 0 rows printed, 51-line header
+  DEAD 0 of 220
+========================================================================================================
+tinybendygrad/tensor.bend
+  1584 lines, 179 defs, 0 rows printed, 126-line header
+  DEAD 3 of 179
+    line 141    Tensors.of                 def Tensors.of() -> Tensors:
+    line 279    Tensor.grad_set            def Tensor.grad_set(+t: Tensor, g: U32) -> Tensor:
+    line 1138   g_t4a                      def g_t4a(+ar: O.Found) -> O.Found:
+========================================================================================================
+tinybendygrad/test/dtype_oracle.bend
+  256 lines, 33 defs, 0 rows printed, 9-line header
+  DEAD 0 of 33
+========================================================================================================
+tinybendygrad/uop/spec.bend
+  3145 lines, 578 defs, 0 rows printed, 61-line header
+  DEAD 8 of 578
+    line 2108   program_rewrite            def program_rewrite(fx: F.Folded, self: U32) -> O.Verdic
+    line 2313   full_rewrite               def full_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
+    line 2623   verify_shared              def verify_shared(+fx: F.Folded, sink: U32) -> Maybe<&2,
+    line 2626   verify_tensor              def verify_tensor(+fx: F.Folded, sink: U32) -> Maybe<&2,
+    line 2629   verify_program             def verify_program(+fx: F.Folded, sink: U32) -> Maybe<&2
+    line 2632   verify_hcq                 def verify_hcq(+fx: F.Folded, sink: U32) -> Maybe<&2, U3
+    line 2635   verify_full                def verify_full(+fx: F.Folded, sink: U32) -> Maybe<&2, U
+    line 2638   verify_kernel_graph        def verify_kernel_graph(+fx: F.Folded, sink: U32) -> May
+========================================================================================================
+tinybendygrad/uop/render.bend
+  2329 lines, 269 defs, 0 rows printed, 114-line header
+  DEAD 2 of 269
+    line 1226   range_pieces.tail          def range_pieces.tail(ids: List<&2, U32>, at: O.AxisType
+    line 1926   f_rng_ids                  def f_rng_ids(ar: O.Arena, n: U32, ids: List<&2, U32>) -
+========================================================================================================
+tinybendygrad/codegen/kernel.bend
+  1380 lines, 169 defs, 0 rows printed, 106-line header
+  DEAD 13 of 169
+    line 184    kn_src_from                def kn_src_from(+ar: O.Arena, i: U32, k: U32) -> List<&2
+    line 190    kn_nsrc_is                 def kn_nsrc_is(+ar: O.Arena, i: U32, n: U32) -> Bool:
+    line 193    kn_nsrc_ge                 def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
+    line 232    kn_replace                 def kn_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self
+    line 742    lw_tail                    def lw_tail(rest: Line, +step: Line) -> Line:
+    line 769    line_rewrite               def line_rewrite(+lst: List<&2, U32>, +ar: O.Arena, fire
+    line 836    k_lins                     def k_lins(+ar: O.Arena, self: U32) -> U32:
+    line 839    k_is_ins                   def k_is_ins(+ar: O.Arena, self: U32) -> Bool:
+    line 1044   k_op                       def k_op(nm: String, +kx: K, n: Nat) -> String:
+    line 1155   k_al_store_nsrc            def k_al_store_nsrc() -> U32:
+    line 1162   k_al_sqrt                  def k_al_sqrt() -> U32:
+    line 1250   k_lw_sub_0                 def k_lw_sub_0() -> U32:
+    line 1309   k_dup.at                   def k_dup.at(at: U32) -> U32:
+========================================================================================================
+tinybendygrad/codegen/rewriter.bend
+  981 lines, 138 defs, 0 rows printed, 132-line header
+  DEAD 3 of 138
+    line 195    rw_src                     def rw_src(ar: O.Arena, i: U32, n: U32) -> U32:
+    line 204    rw_srcs                    def rw_srcs(ar: O.Arena, i: U32) -> List<&2, U32>:
+    line 213    rw_nsrc_is                 def rw_nsrc_is(ar: O.Arena, i: U32, n: U32) -> Bool:
+========================================================================================================
+tinybendygrad/codegen/decomp.bend
+  2437 lines, 327 defs, 0 rows printed, 73-line header
+  DEAD 3 of 327
+    line 197    dc_pick                    def dc_pick(+ar: O.Arena,+u: U32,+which: U32) -> U32:
+    line 571    dc_rejlen                  def dc_rejlen(m: Maybe<&2, O.PMEntry>,+k: U32) -> U32:
+    line 1280   dc_side_of                 def dc_side_of(+ar: O.Arena,+u: U32,+x0: Bool,+x1: Bool)
+========================================================================================================
+tinybendygrad/codegen/opt/heuristic.bend
+  196 lines, 10 defs, 0 rows printed, 140-line header
+  DEAD 1 of 10
+    line 179    b2u                        def b2u(b: Bool) -> U32:
+========================================================================================================
+tinybendygrad/codegen/opt/postrange.bend
+  1108 lines, 145 defs, 0 rows printed, 113-line header
+  DEAD 8 of 145
+    line 169    OPT.op                     def OPT.op(x: OPT) -> OPTOPS:
+    line 194    opt_top                    def opt_top(a: OPTARG) -> Bool:
+    line 326    Sched.copy                 def Sched.copy(x : Sched) -> Sched:
+    line 357    Sched.axis_types           def Sched.axis_types(x : Sched) -> List<&2, O.AxisType>:
+    line 415    Sched.ranges_of            def Sched.ranges_of(x: Sched, ts: List<&2, O.AxisType>) 
+    line 507    ul_ok                      def ul_ok(up: U32, lcl: U32, tc_up: U32, max_up: U32, ma
+    line 759    Sched.tc_up                def Sched.tc_up(x : Sched) -> U32:
+    line 798    matmul_sched               def matmul_sched() -> Sched:
+========================================================================================================
+tinybendygrad/codegen/opt/search.bend
+  430 lines, 36 defs, 0 rows printed, 146-line header
+  DEAD 8 of 36
+    line 205    CFG.upcast_max             def CFG.upcast_max(c: CFG) -> U32:
+    line 209    CFG.local_max              def CFG.local_max(c: CFG) -> U32:
+    line 213    CFG.min_progress           def CFG.min_progress(c: CFG) -> U32:
+    line 313    SCORE.i                    def SCORE.i(h: SCORE) -> U32:
+    line 317    SCORE.ok                   def SCORE.ok(h: SCORE) -> Bool:
+    line 321    SCORE.lib                  def SCORE.lib(h: SCORE) -> U32:
+    line 325    SCORE.ops                  def SCORE.ops(h: SCORE) -> U32:
+    line 332    SCORE.t                    def SCORE.t(h: SCORE) -> U32:
+========================================================================================================
+tinybendygrad/nn/__init__.bend
+  835 lines, 91 defs, 0 rows printed, 117-line header
+  DEAD 11 of 91
+    line 152    nn_mt_seq                  def nn_mt_seq(xs: List<&2, U32>) -> List<&2, U32>: H.to_
+    line 176    nn_k1                      def nn_k1(k: U32) -> U32: U32.sub(k, 1)
+    line 391    conv_pad                   def conv_pad(dil: U32, ks: List<&2, U32>) -> List<&2, U3
+    line 405    convT_st                   def convT_st(w: T.Tensor, b: T.Tensor) -> List<&2, ST.En
+    line 410    convT_ks1                  def convT_ks1(k: U32) -> List<&2, U32>: H.make_tuple_rep
+    line 423    lin_st                     def lin_st(w: T.Tensor, b: T.Tensor) -> List<&2, ST.Ent>
+    line 451    gn_st                      def gn_st(w: T.Tensor, b: T.Tensor) -> List<&2, ST.Ent>:
+    line 487    ln_st                      def ln_st(w: T.Tensor, b: T.Tensor) -> List<&2, ST.Ent>:
+    line 510    rms_st                     def rms_st(w: T.Tensor) -> List<&2, ST.Ent>:
+    line 522    emb_idx_ok                 def emb_idx_ok(dt: S.Dt) -> Bool: S.Dt.is_int(dt)
+    line 524    emb_st                     def emb_st(w: T.Tensor) -> List<&2, ST.Ent>:
+========================================================================================================
+tinybendygrad/nn/state.bend
+  832 lines, 81 defs, 0 rows printed, 126-line header
+  DEAD 3 of 81
+    line 140    sd_dot                     def sd_dot() -> Char: Char.from_u32(46)
+    line 434    sd_is_weak                 def sd_is_weak(+dt: S.Dt) -> Bool:
+    line 543    sd_strip_keys              def sd_strip_keys(o: Obj) -> String:
+========================================================================================================
+tinybendygrad/nn/optim.bend
+  1453 lines, 180 defs, 0 rows printed, 63-line header
+  DEAD 17 of 180
+    line 276    op_lr_ok                   def op_lr_ok(lr: F32) -> Bool:
+    line 286    op_param_dtype             def op_param_dtype(nm: String) -> Maybe<&1, S.Dt>:
+    line 395    op_zero_grad.of            def op_zero_grad.of(+o: Optim, xs: List<&2, T.Tensor>) -
+    line 398    op_zg_params               def op_zg_params(params: List<&2, T.Tensor>) -> List<&2,
+    line 519    op_group.zero_grad         def op_group.zero_grad(xs: List<&2, Optim>) -> List<&2, 
+    line 544    op_sched.of                def op_sched.of(training: Bool, +o: Optim, ups: Upd) -> 
+    line 552    op_slice.lo                def op_slice.lo(pp: List<&2, U32>, i: Nat) -> U32:
+    line 555    op_slice.hi                def op_slice.hi(pp: List<&2, U32>, i: Nat) -> U32:
+    line 591    op_f32                     def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
+    line 644    op_mulr                    def op_mulr(+a: U32, +b: T.Tensor) -> T.Tensor:
+    line 792    op_one                     def op_one(ar: O.Arena) -> U32:
+    line 875    op_postwd                  def op_postwd(+ar: O.Arena, g: U32, t: U32, lr: U32, wd:
+    line 909    op_vstep                   def op_vstep(+ar: O.Arena, v: U32, +g: U32, +b2: F32) ->
+    line 926    op_mhat                    def op_mhat(+ar: O.Arena, m: U32, b1_t: U32) -> T.Tensor
+    line 929    op_vhat                    def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor
+    line 1054   g_grad                     def g_grad(ar: O.Arena) -> T.Tensor:
+    line 1338   op_lamb_of_r2              def op_lamb_of_r2(+ar: O.Arena, +m: T.Tensor, +s: St) ->
+========================================================================================================
+tinybendygrad/renderer/__init__.bend
+  560 lines, 52 defs, 0 rows printed, 79-line header
+  DEAD 0 of 52
+========================================================================================================
+tinybendygrad/mixin/op.bend
+  1511 lines, 162 defs, 0 rows printed, 249-line header
+  DEAD 1 of 162
+    line 814    mo_prod                    def mo_prod(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>
+========================================================================================================
+tinybendygrad/mixin/elementwise.bend
+  1399 lines, 221 defs, 0 rows printed, 105-line header
+  DEAD 13 of 221
+    line 546    ew_bitwise_and             def ew_bitwise_and(+t: T.Tensor, +e: Ew, rev: Bool) -> T
+    line 547    ew_bitwise_or              def ew_bitwise_or(+t: T.Tensor, +e: Ew, rev: Bool) -> T.
+    line 548    ew_bitwise_xor             def ew_bitwise_xor(+t: T.Tensor, +e: Ew, rev: Bool) -> T
+    line 549    ew_lshift                  def ew_lshift(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tens
+    line 550    ew_rshift                  def ew_rshift(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tens
+    line 551    ew_maximum                 def ew_maximum(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Ten
+    line 552    ew_pow                     def ew_pow(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
+    line 553    ew_lt                      def ew_lt(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: 
+    line 554    ew_ne                      def ew_ne(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: 
+    line 611    ew_masked_fill             def ew_masked_fill(+t: T.Tensor, +mask: T.Tensor, +value
+    line 916    ew_t                       def ew_t(+f: O.Found) -> T.Tensor: T.tn_new(O.Found.ar(f
+    line 919    ew_ctrue                   def ew_ctrue() -> Ew: ECon{O.CBool{True{}}}
+    line 920    ew_cfalse                  def ew_cfalse() -> Ew: ECon{O.CBool{False{}}}
+
+0 FALSE claims

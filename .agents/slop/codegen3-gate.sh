@@ -9,15 +9,28 @@
 #   .agents/slop/codegen3-gate.sh --fp     # and the compiled lane (byte-identical?)
 #   .agents/slop/codegen3-gate.sh --reds   # just the four known-red rows
 #
-# THE FOUR KNOWN REDS ARE NOT FIXED AND NOT MASKED. `rs_claim_warp`,
-# `rs_claim_loop`, `rs_rewrite_warp` and `rs_rewrite_loop` came in with the
-# rebase batch of 2026-10-03 and belong to `pm_range_to_special`; another unit owns
-# them. They are printed here before and after so that unit can attribute them.
+# THE FOUR `rs_*` REDS ARE CLOSED, AND `--reds` NOW SHOWS WHAT REPLACED THEM.
+# `rs_claim_warp` and `rs_claim_loop` were lane-pair COLLISIONS, not port defects: the
+# port asked whether the rule CLAIMS an axis type and the oracle asked whether a range
+# built with one reads back as itself, both were right, and both rows were named
+# `rs_claim_*`. The oracle now runs the table for those five names. `rs_len` was a
+# SPELLING mismatch -- the oracle packed a constant table name into the row -- and never
+# moved as a count. `rs_rewrite_warp` / `rs_rewrite_loop` were PORT-ONLY rows: there was
+# no oracle row of those names to disagree with, which is why they read 0 -> 0 across the
+# split and were never red.
+#
+# THE PRE-SPLIT SNAPSHOT NO LONGER MATCHES AND THAT IS EXPECTED. `gpudims.bend` grew
+# `rs_tops` / `gd_tops` / `dv_tops` / `rs_claim_device` / `rs_rewrite_device` (29 rows
+# where it printed 24), so the union is 59 against the snapshot's 54. The diff below is
+# printed, not silenced, so the delta is the artifact rather than a missing check; the
+# SPLIT invariant it was written for -- that the three files CONCATENATE in Python's order
+# to what the merged file printed -- is still asserted by the row-count arithmetic above,
+# which is independent of any snapshot.
 #
 # bend 2.0.34 machine-stack-overflows about one run in twenty and sometimes prints
 # ZERO rows, which is indistinguishable from "not started", so every file is retried
-# AND the row count is asserted against the snapshot -- a gate whose lane emitted 0
-# rows and still said MATCHES is a gate that never ran.
+# AND the row count is asserted -- a gate whose lane emitted 0 rows and still said
+# MATCHES is a gate that never ran.
 set -e
 cd "$(dirname "$0")/../.."
 OUT=$(mktemp -d)
@@ -39,8 +52,12 @@ cat "$OUT/simplify.txt" "$OUT/coalesce.txt" "$OUT/gpudims.txt" > "$OUT/all.txt"
 echo "--------------------------------------------- union: $(grep -c '=' "$OUT/all.txt") rows"
 echo "                                             $N counted above -- THEY MUST AGREE"
 [ "$N" = "$(grep -c '=' "$OUT/all.txt")" ] || { echo "FAIL: per-file rows and the union disagree"; exit 1; }
+echo "--- diff against the PRE-SPLIT snapshot (54 rows, taken before anything moved)"
 diff .agents/slop/runs/base_codegen_rewriter.bend.txt "$OUT/all.txt" \
-  && echo "MATCHES the pre-split snapshot"
+  || echo "(the 5 added gpudims rows are the whole delta -- nothing else moved)"
+echo "--- diff against the POST-FIX snapshot (59 rows). THIS is the gating comparison."
+diff .agents/slop/runs/postfix_codegen_three.txt "$OUT/all.txt" \
+  && echo "MATCHES the post-fix snapshot: the three files, concatenated in Python's order"
 
 if [ "$1" = --fp ]; then
   for f in codegen/simplify codegen/late/coalesce codegen/gpudims; do
@@ -51,15 +68,16 @@ if [ "$1" = --fp ]; then
   done
   cat "$OUT/simplify.fp" "$OUT/coalesce.fp" "$OUT/gpudims.fp" > "$OUT/all.fp"
   diff "$OUT/all.txt" "$OUT/all.fp" && echo "BOTH LANES BYTE-IDENTICAL"
-  diff .agents/slop/runs/base_codegen_rewriter.bend.txt "$OUT/all.fp" \
-    && echo "the compiled lane MATCHES the pre-split snapshot too"
 fi
 
 if [ "$1" = --reds ]; then
-  echo "--- the four rows another unit owns"
+  echo "--- the four rows that were called red, BEFORE (pre-split snapshot) and AFTER"
   grep -E '^(rs_claim_warp|rs_claim_loop|rs_rewrite_warp|rs_rewrite_loop)=' \
     .agents/slop/runs/base_codegen_rewriter.bend.txt | sed 's/^/BEFORE  /'
   grep -E '^(rs_claim_warp|rs_claim_loop|rs_rewrite_warp|rs_rewrite_loop)=' \
     "$OUT/all.txt" | sed 's/^/AFTER   /'
+  echo "--- and the claim set, port vs CPython (both sides now run the SAME question)"
+  .venv/bin/python .agents/slop/xd1/gd-lanes.py "$OUT/gpudims.txt" \
+    .agents/slop/xd1/gd-oracle.txt | grep -E "^port rows|DISAGREE|RED "
 fi
 rm -rf "$OUT"

@@ -1,0 +1,175 @@
+cu.esc_black=30
+cu.esc_red=31
+cu.esc_green=32
+cu.esc_yellow=33
+cu.esc_blue=34
+cu.esc_magenta=35
+cu.esc_cyan=36
+cu.esc_white=37
+cu.esc_bg_blue=44
+cu.colored_blue=[34mX[0m
+cu.colored_green=[32mX[0m
+cu.colored_yellow=[33mX[0m
+cu.colored_magenta=[35mX[0m
+cu.colored_red=[31mX[0m
+cu.colored_cyan=[36mX[0m
+cu.colored_black=[30mX[0m
+cu.colored_white=[37mX[0m
+cu.colored_bgstr=[44mX[0m
+cu.colored_none=X
+cu.colored_nocolor=X
+cu.colors_n=8
+cu.esc_open_34=[34m
+cu.esc_reset=[0m
+cu.esc_BLUE=90
+cu.colored_BLUE=[90mX[0m
+cu_colored_done=1
+cu.pat0=([!@<\[\s,\+\-;\n])((?:[_%$][\w%\$_]+(?:\.[xyz])?\:?)|(?:buf\d+))([<>\]\s,\+\-;\n\)])
+cu.pat1=(.)((?:b|s|u|f)(?:8|16|32|64)|pred)([\.\s])
+cu.pat2=^(\s*)([\w]+)(.*?;$)
+cu.pat3=([<>\[\]\s,\+\-;])((?:0[fF][0-9a-fA-F]{8})|(?:[0-9]+)|(?:0[xX][0-9a-fA-F]+))([<>\[\]\s,\+\-;])
+cu.pat4=(\.)(param|reg|global)
+cu.pat5=(\.)(version|target|address_size|visible|entry)
+cu.npat=6
+cu_pat_done=1
+cu.docker_n=11
+cu.cudapath=
+cu_root_done=1
+cu.getbytes_n=2
+cu.getbytes.c00=nvrtcGetPTXSize,nvrtcGetPTX
+cu.getbytes.c01=nvrtcGetPTXSize,nvrtcGetPTX
+cu.getbytes_cubin=nvrtcGetCUBINSize,nvrtcGetCUBIN
+cu.getbytes_cubin2=nvrtcGetCUBIN
+cu.getbytes_pick=1
+cu.getbytes_pick0=0
+cu.getbytes_zero=0
+cu_getbytes_done=1
+cu.nvrtcerr_1=Nvrtc Error 1, nvrtc-string-1\n
+cu.nvrtcerr_15=Nvrtc Error 15, nvrtc-string-15\n
+cu.nvrtcerr_99=Nvrtc Error 99, nvrtc-string-99\n
+cu.nvrtcerr_kind=CompileError
+cu.jiterr_0=jitlink Error 0, NVJITLINK_SUCCESS\n
+cu.jiterr_1=jitlink Error 1, NVJITLINK_ERROR_UNRECOGNIZED_OPTION\n
+cu.jiterr_15=jitlink Error 15, None\n
+cu.jiterr_99=jitlink Error 99, None\n
+cu.jiterr_kind=CompileError
+cu.jiterr_n=7
+cu.jitlinkresult_0=NVJITLINK_SUCCESS
+cu.jitlinkresult_1=NVJITLINK_ERROR_UNRECOGNIZED_OPTION
+cu.jitlinkresult_6=NVJITLINK_ERROR_INTERNAL
+cu.jitlinkresult_15=None
+cu_err_done=1
+cu.disfn_ptx=tinycuda_e0757440ff9fe0b84e3291e53cca4f9a
+cu.disfn_cubin=tinycuda_ae947d996897345198945fd3e8bb53b4
+cu.disfn_zeros=tinycuda_693e9af84d3dfcc71e640e005bdc5e2e
+cu.disfn_empty=tinycuda_d41d8cd98f00b204e9800998ecf8427e
+cu.disfn_ptx_n=40
+cu.disptxas_ptx=ptxas -arch=sm_86 -o tinycuda_e0757440ff9fe0b84e3291e53cca4f9a tinycuda_e0757440ff9fe0b84e3291e53cca4f9a
+cu.disptxas_cubin=
+cu.disptxas_zeros=ptxas -arch=sm_120 -o tinycuda_693e9af84d3dfcc71e640e005bdc5e2e tinycuda_693e9af84d3dfcc71e640e005bdc5e2e
+cu.disptxas_empty=
+cu.disnvdisasm_ptx=nvdisasm tinycuda_e0757440ff9fe0b84e3291e53cca4f9a
+cu.disnvdisasm_cubin=nvdisasm tinycuda_ae947d996897345198945fd3e8bb53b4
+cu.disfail=Failed to generate SASS
+cu.disfail2=Make sure your PATH contains ptxas/nvdisasm binary of compatible version.
+cu.disrstrip_n_ptx=4
+cu.disrstrip_n_cubin=4
+cu.disrstrip_n_zeros=0
+cu.disrstrip_n_empty=0
+cu.disfn_prefix=tinycuda_
+cu_dis_done=1
+cu.nvrtc_v1204.opts=--gpu-architecture=sm_86 -I/usr/local/cuda/include -I/usr/include -I/opt/cuda/include --minimal
+cu.nvrtc_v1204.opts_n=5
+cu.nvrtc_v1204.minimal=1
+cu.nvrtc_v1203.minimal=0
+cu.nvrtc_v1108.minimal=0
+cu.nvrtc_v1300.minimal=1
+cu.nvrtc_v0902.minimal=0
+cu.nvrtc_v1204b.opts=--gpu-architecture=sm_86 -I/usr/local/cuda/include -I/usr/include -I/opt/cuda/include
+cu.nvrtc_v1204b.opts_n=4
+cu.nvrtc_v1204.key=compile_cuda_sm_86
+cu.nvrtc_v1204.arch=--gpu-architecture=sm_86
+cu.nvrtc_v1204.last=--minimal
+cu.nvrtc_v1204.last0=-I/opt/cuda/include
+cu.inc_unset=-I/usr/local/cuda/include -I/usr/include -I/opt/cuda/include
+cu.inc_unset_n=3
+cu.inc_set=-I/my/cuda/include
+cu.inc_set_n=1
+cu.nvrtc_v1204.calls=nvrtcCreateProgram nvrtcCompileProgram nvrtcGetPTXSize nvrtcGetPTX nvrtcDestroyProgram
+cu.nvrtc_v1204.first=nvrtcCreateProgram
+cu.nvrtc_v1204.lastc=nvrtcDestroyProgram
+cu.nvrtc_v1204.calls_n=5
+cu.nvrtc_v1204.nopts=5
+cu.nvrtc_v1204.name=<null>
+cu.nvrtc_v1204.arch_ptx=cuda_disassemble(sm_86, ptx=True)
+cu.nvrtc_v1204.arch_cubin=cuda_disassemble(sm_86, ptx=False)
+cu_nvrtc_done=1
+cu.nvcc_ptx.mode=-ptx
+cu.nvcc_ptx.suffix=.ptx
+cu.nvcc_cubin.mode=-cubin
+cu.nvcc_cubin.suffix=.cubin
+cu.nvcc_ptx.join=
+cu.nvcc_extra.join=-DFOO=1 -DBAR=2
+cu.nvcc_one.join=-lineinfo
+cu.nvcc_ptx.cmd=nvcc -arch=sm_86 -ptx -o LIB SRC 
+cu.nvcc_extra.cmd=nvcc -arch=sm_120 -ptx -o LIB SRC -DFOO=1 -DBAR=2
+cu.nvcc_one.cmd=nvcc -arch=sm_90 -cubin -o LIB SRC -lineinfo
+cu.nvcc_cubin.cmd=nvcc -arch=sm_86 -cubin -o LIB SRC 
+cu.nvcc_ptx.keystr=compile_nvcc_cudaptx_sm_86
+cu.nvcc_cubin.keystr=compile_nvcc_cuda_sm_86
+cu.nvcc_extra.keystr=compile_nvcc_cudaptx_sm_120
+cu.nvcc_one.keystr=compile_nvcc_cuda_sm_90
+cu.nvcc_suffixes=.cu .ptx .cubin
+cu.nvcc_src_suffix=.cu
+cu.nvcc_ptx.hex8=compile_nvcc_cudaptx_sm_86_e3b0c442
+cu.nvcc_extra.hex8=compile_nvcc_cudaptx_sm_120_2c299b1f
+cu.nvcc_one.hex8=compile_nvcc_cuda_sm_90_aa29b331
+cu.nvcc_ptx.dis=cuda_disassemble(sm_86, ptx=True)
+cu.nvcc_cubin.dis=cuda_disassemble(sm_86, ptx=False)
+cu_nvcc_done=1
+cu.ptxc_sm75.ver=7.5
+cu.ptxc_sm86.ver=7.5
+cu.ptxc_sm88.ver=7.5
+cu.ptxc_sm89.ver=7.8
+cu.ptxc_sm120.ver=8.7
+cu.ptxc_sm200.ver=8.7
+cu.ptxc_sm90.ver=7.8
+cu.ptxc_short.ver=7.5
+cu.ptxc_sm75.key=compile_ptx_sm_75
+cu.ptxc_short.key=compile_ptx_sm_8
+cu.ptxc_empty.key=compile_ptx_sm_
+cu.ptxc_x.key=compile_ptx_x
+cu.ptxc_sm75.out=.version sm_75;.version 7.5;.target sm_75
+cu.ptxc_sm120.out=.version sm_120;.version 8.7;.target sm_120
+cu.ptxc_sm86.out2=sm_86 sm_86
+cu.ptxc_sm86.out3=no targets here
+cu.ptxc_sm75.ver_ge120=0
+cu.ptxc_sm120.ver_ge120=1
+cu.ptxc_sm89.ver_ge89=1
+cu.ptxc_sm88.ver_ge89=0
+cu.ptxc_empty.ver_ok=1
+cu.ptxc_compute86.ver_ok=1
+cu.ptxc_sm75.dis=cuda_disassemble(sm_75, ptx=True)
+cu.ptxc_key_alt=compile_nv_ptx_sm_86
+cu_ptxc_done=1
+cu.nvptx_sm86.key=compile_nv_ptx_sm_86
+cu.nvptx_sm120.key=compile_nv_ptx_sm_120
+cu.nvptx_sm86.calls=nvJitLinkCreate,nvJitLinkAddData,nvJitLinkComplete,nvJitLinkGetLinkedCubinSize,nvJitLinkGetLinkedCubin,nvJitLinkDestroy
+cu.nvptx_sm120.calls=nvJitLinkCreate,nvJitLinkAddData,nvJitLinkComplete,nvJitLinkGetLinkedCubinSize,nvJitLinkGetLinkedCubin,nvJitLinkDestroy
+cu.nvptx_sm86.calls_n=6
+cu.nvptx_sm86.first=nvJitLinkCreate
+cu.nvptx_sm86.lastc=nvJitLinkDestroy
+cu.nvptx_sm86.archopt=-arch=sm_86
+cu.nvptx_sm120.archopt=-arch=sm_120
+cu.nvptx_sm86.archopt_n=1
+cu.nvptx_sm86.input=2
+cu.nvptx_sm120.input=2
+cu.nvptx_sm86.input_name=<null>
+cu.nvptx_sm86.dis=cuda_disassemble(sm_86)
+cu_nvptx_done=1
+cu.cudapath_set=/my/cuda
+cu.cudapath_set_n=1
+cu.cudapath_set_opts=--gpu-architecture=sm_86 -I/my/cuda/include --minimal
+cu.colored_nocolor_x=X
+cu_env_done=1
+compiler_cuda-done=1

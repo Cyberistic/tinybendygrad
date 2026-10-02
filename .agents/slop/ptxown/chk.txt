@@ -1,0 +1,8 @@
+SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ptxown/mut_base/tc_ptx.bend
+Location:
+64 | import Base
+65>| import ./tc_ptx.bend as P
+   |        ^
+66 | import ./../LAWS/spec.bend as S

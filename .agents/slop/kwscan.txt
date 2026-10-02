@@ -1,0 +1,3 @@
+core tinygrad def/class names: 2421
+distinct BEND KEYWORDS colliding: 2
+   match where

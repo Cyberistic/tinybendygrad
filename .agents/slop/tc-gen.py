@@ -22,9 +22,29 @@ Row shapes, and WHY there are five of them per element:
                        typing it, so the hex is a second reading of the same
                        constant.
 """
-import sys
+import sys, struct
 
 AUDIT = '.agents/slop/tc-audit.txt'
+
+
+def f32bits(dec):
+  """The binary32 a CPython float denotes.  Computed, never transcribed.
+
+  The audit's column 4 already IS this for every FLOAT constant -- it is
+  `struct.pack('<f', value)` -- but NOT for the two `xexp2` bounds, which are
+  Python `int`s at transcendental.py:211 and which the audit therefore recorded
+  as ints.  Reading column 4 for those two produced an `xf_` row that claimed the
+  f32 bit pattern was the string `-150`; the port's `F32.bits(F32.read("-150"))`
+  is the real answer and the oracle was the wrong half.  MEASURED.
+  """
+  return struct.unpack('<I', struct.pack('<f', float(dec)))[0]
+
+
+def rowname(nm):
+  """The row suffix for a bend def name.  `SCALARS_U32_OF_U64` entries carry NO
+  `sp.` prefix, and `nm[3:]` turned `mb_64` into `64` -- two orphan rows named
+  `cu_64`/`cx_64` that matched nothing."""
+  return nm[3:] if nm.startswith('sp.') else nm
 
 TABLES = {                       # audit prefix -> (bend def, 'f' float | 'u' u32)
   'sin_poly.coeff32': ('sp.sin32', 'f'),
@@ -59,9 +79,19 @@ SCALARS_F = [                    # bend def -> audit name
   ('sp.xexp2_up_32', 'xexp2.bounds.upper[float32]'),
   ('sp.flmin_16', 'xlog2.FLT_MIN[float16]'),
   ('sp.flmin_32', 'xlog2.FLT_MIN[float32]'),
+  ('sp.denorm_scale', 'port.denorm_scale_f32'),
+  ('sp.two_m24', 'port.two_m24'),
 ]
 
+ONLY_SCALARS = ['sp.cw0', 'sp.cw1', 'sp.cw2', 'sp.cw3', 'sp.denorm_scale', 'sp.flmin_32', 'sp.m_1_pi', 'sp.nlog2e32', 'sp.one_over_075', 'sp.pi_over_2', 'sp.s_lo32', 'sp.switch_over', 'sp.two_24', 'sp.two_m24', 'sp.xexp2_lo_32', 'sp.xexp2_up_32']
+
 SCALARS_U = [
+  ('sp.fm1_32', 'frexp.m1w[f32]'),
+  ('sp.fm2_32', 'frexp.m2w[f32]'),
+  ('sp.fm1_16', 'frexp.m1w[f16]'),
+  ('sp.fm2_16', 'frexp.m2w[f16]'),
+  ('sp.frac_mask', 'port.frac_mask'),
+  ('sp.de_32', 'port.denorm_exp_f32'),
   ('sp.q_shift', 'ph.q_shift_amount'),
   ('sp.take_window', 'ph._take_window'),
   ('sp.mb_32', 'mantissa_bits[f32]'),
@@ -127,24 +157,52 @@ def main():
   if mode == 'bend':
     for aud, (nm, kind) in TABLES.items():
       body = [R[k][2] for k in elems(R, aud)]
-      parts = [f'String.read("{b}")' for b in body] if kind == 'f' else body
-      ty = 'String' if kind == 'f' else 'U32'
-      print(f'def {nm}() -> List<&2, {ty}>:')
-      print('  ' + ' <> '.join(parts))
+      # Bend has no list literal, so a table is ONE delimited String and one
+      # `String.split`.  No coefficient in this file contains '|', and that is
+      # asserted by the row that reads every element back.
+      print(f'def {nm}() -> List<&2, String>:')
+      if kind == 'u':
+        # the ONE table tinygrad writes in hex (:77), so each element carries
+        # both readings and the row prints both.  `_raw` stays the plain
+        # rendering because it is what the reverse lookup re-splits.
+        print('  String.split("' + '|'.join(
+            f'{b}|0x{int(b):08x}' for b in body) + "\", '|')")
+      else:
+        print("  String.split(\"" + "|".join(body) + "\", '|')")
+      print(f'def {nm}_raw() -> String: "{" | ".join(body)}"')
+    # the float scalars, as ONE list of `name|decimal` pairs.  The row walker
+    # reads an element once and prints BOTH readings of it, so `xf_` (the
+    # binary32) and `cd_` (the exact float64 decimal) cannot drift apart: a
+    # missing one is a missing PAIR, which a diff on names would hide.
+    print('def sp.fscal() -> List<&2, String>:')
+    print('  String.split("' + '|'.join(
+        f'{rowname(nm)}|{R[aud][2]}' for nm, aud in SCALARS_F) + "\", '|')")
+    # Only the scalars something CALLS.  MEASURED, not guessed: eight of the
+    # twenty-four had no call site after `sp.fscal()` took over the `xf_`/`cd_`
+    # rows, and a def nothing calls is invisible to every other check -- three of
+    # the mutation table's zeros were mutations of those eight and moved nothing
+    # for that reason.  `ONLY_SCALARS` was computed by counting call sites.
     for nm, aud in SCALARS_F:
-      print(f'def {nm}() -> String: String.read("{R[aud][2]}")')
+      if nm not in ONLY_SCALARS: continue
+      print(f'def {nm}() -> String: "{R[aud][2]}"')
     for nm, aud in SCALARS_U:
-      print(f'def {nm}() -> U32: {int(R[aud][2])}')
-    for nm, aud in SCALARS_U32_OF_U64:
-      print(f'def {nm}() -> U32: {int(R[aud][2]) & 0xffffffff}')
+      v = int(R[aud][2])
+      print(f'def {nm}() -> U32: {v}')
+      print(f'def {nm}_hex() -> String: "0x{v:08x}"')
     for nm, aud in SCALARS_U64:
       v = int(R[aud][2])
-      print(f'def {nm}.hi() -> U32: {v >> 32}')
-      print(f'def {nm}.lo() -> U32: {v & 0xffffffff}')
+      print(f'def sp.{nm}_hi() -> U32: {v >> 32}')
+      print(f'def sp.{nm}_lo() -> U32: {v & 0xffffffff}')
+    for nm, aud in SCALARS_U32_OF_U64:
+      v = int(R[aud][2]) & 0xffffffff
+      print(f'def sp.{nm}() -> U32: {v}')
+      print(f'def sp.{nm}_hex() -> String: "0x{v:08x}"')
+    for nm, aud in TEXT:
+      print(f'def {nm}_t() -> String: "{R[aud][2]}"')
   elif mode == 'rows':
     for aud, (nm, kind) in TABLES.items():
       for i, k in enumerate(elems(R, aud)):
-        b = int(R[k][4]) if kind == 'f' else int(R[k][2])
+        b = f32bits(R[k][2]) if kind == 'f' else int(R[k][2])
         print(f'xf_{nm}_{i}={b}')
         print(f'xv_{nm}_{b}={i}')
         if kind == 'f':
@@ -152,19 +210,25 @@ def main():
         else:
           print(f'cu_{nm}_{i}={b}')
           print(f'cx_{nm}_{i}=0x{b:08x}')
+    print(f'xf_sp.topi_len={len(elems(R, "two_over_pi_f"))}')
+    # the reverse-lookup MISS: a bit pattern no table holds has no index
+    print('xv_sp.sin32_miss=4294967295')
+    print('xv_sp.topi_miss=4294967295')
     for nm, aud in SCALARS_F:
-      t = nm[3:].replace('_', '.')
-      print(f'xf_{t}={R[aud][4]}')
+      t = rowname(nm)
+      print(f'xf_{t}={f32bits(R[aud][2])}')
       print(f'cd_{t}={R[aud][2]}')
     for nm, aud in SCALARS_U + SCALARS_U32_OF_U64:
-      t = nm[3:].replace('_', '.')
-      print(f'cu_{t}={int(R[aud][2]) & 0xffffffff}')
-      print(f'cx_{t}=0x{int(R[aud][2]) & 0xffffffff:08x}')
+      t = rowname(nm)
+      v = int(R[aud][2]) & 0xffffffff
+      print(f'cu_{t}={v}')
+      print(f'cx_{t}=0x{v:08x}')
+    # the 64-bit words are gated hi/lo, because `1 << 34` saturates to zero in
+    # a u32 and the whole word is exactly the constant that cannot be held.
     for nm, aud in SCALARS_U64:
       v = int(R[aud][2])
       print(f'cu_{nm}.hi={v >> 32}')
       print(f'cu_{nm}.lo={v & 0xffffffff}')
-      print(f'cx_{nm}.lo=0x{v & 0xffffffff:08x}')
     for nm, aud in TEXT:
       print(f'{nm}={R[aud][2]}')
 

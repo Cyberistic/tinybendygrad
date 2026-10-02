@@ -46,3 +46,8 @@ probe-*.bend.mut
 # browser/profile probes: an agent hunting for a WebGPU-capable browser drops a whole
 # Chrome profile here (35MB .tflite models, 22MB crx blobs). Never source, never a gate input.
 .agents/slop/probe/
+
+# MNIST net.json is 2.2MB of downloaded dataset. A page fetches it; a repo does not
+# carry it, and jj refuses to snapshot the whole fileset over one file.
+examples/webgpu/mnist/net.json
+examples/webgpu/mnist/*.gz

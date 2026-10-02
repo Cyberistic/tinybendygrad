@@ -171,9 +171,11 @@ FLAT = [
     ("t_fastpath", [
         'u1("usb_fast_p1_mask", FAST_P1_MASK())', 'u1("usb_fast_p1_val", FAST_P1_VAL())',
         'u1("usb_fast_p2_mask", FAST_P2_MASK())', 'u1("usb_fast_p2_val", FAST_P2_VAL())',
-        # DECIMAL IN THE ROW NAME TOO. Bend has no `0x` literal, and the oracle
-        # names these rows with `str(hx)`, so a hex-spelled name would be a
-        # permanent disagreement rather than a visible one.
+        # A ROW THAT IS A COMMENT is emitted verbatim, because these are the two
+        # places a reader is most likely to re-spell a row name by eye.
+        '# DECIMAL IN THE ROW NAME TOO. Bend has no `0x` literal, and the oracle',
+        '# names these rows with `str(hx)`, so a hex-spelled name is a permanent',
+        '# disagreement rather than a visible one.',
         'b1("usb_nocompletion_64", pcie_no_completion(64))',
         'b1("usb_nocompletion_48", pcie_no_completion(48))',
         'b1("usb_nocompletion_68", pcie_no_completion(68))',
@@ -207,6 +209,12 @@ FLAT = [
         'b1("usb_drain_wrap_need0_fence254", drained_step(0, 254))',
         'b1("usb_drain_wrap_need255_fence0", drained_step(255, 0))',
         'b1("usb_drain_wrap_need2_fence0", drained_step(2, 0))',
+        '# A `need` PAST the one-byte window is what the `& 0xff` exists for: 300',
+        '# and 44 differ by 256, so the masked difference is 44 and the step is',
+        '# True; 300 and 43 differ by 257, so it is 1 and is not `> 1`. One row',
+        '# from its positive, and the only pair that can see it.',
+        'b1("usb_drain_need300_fence44", drained_step(300, 44))',
+        'b1("usb_drain_need300_fence43", drained_step(300, 43))',
     ]),
     ("t_remote", [
         's1("usb_remote_prefixes", remote_prefixes())',
@@ -215,12 +223,12 @@ FLAT = [
         'b1("usb_remote_usb_xfer1", is_remote_prefix("usb_xfer1", "usb_xfer"))',
         'b1("usb_remote_put_value", is_remote_prefix("put_value", "put_value"))',
         'b1("usb_remote_cmdbuf_copy", is_remote_prefix("cmdbuf_copy", "cmdbuf_copy"))',
-        'b1("usb_remote_kernargs", is_remote_prefix("kernargs", "usb_host"))',
-        'b1("usb_remote_kernargs_xfer", is_remote_prefix("kernargs", "usb_xfer"))',
+        'b1("usb_remote_kernargs_usb_host", is_remote_prefix("kernargs", "usb_host"))',
+        'b1("usb_remote_kernargs_usb_xfer", is_remote_prefix("kernargs", "usb_xfer"))',
         'b1("usb_remote_kernargs_put_value", is_remote_prefix("kernargs", "put_value"))',
         'b1("usb_remote_kernargs_cmdbuf_copy", is_remote_prefix("kernargs", "cmdbuf_copy"))',
         'b1("usb_remote_usb_table", is_remote_prefix("usb_table", "usb_host"))',
-        'b1("usb_remote_arg_cache", is_remote_prefix("usb_arg_cache", "usb_xfer"))',
+        'b1("usb_remote_arg_cache", is_remote_prefix("arg_cache", "usb_xfer"))',
         'b1("usb_remote_usb_hostx", is_remote_prefix("usb_hostx", "usb_host"))',
         'b1("usb_remote_xusb_host", is_remote_prefix("xusb_host", "usb_host"))',
     ]),
@@ -250,7 +258,10 @@ def split_top(a: str):
 def section_src(name, rows):
     out = [f"def {name}() -> IO(Unit):", "  IO.print(lines_of(["]
     for j, r in enumerate(rows):
-        out.append("    " + r + ("," if j < len(rows) - 1 else ""))
+        # A COMMENT ROW carries no comma: it is the last thing on its line, and a
+        # trailing comma after a `#` would comment it out anyway.
+        tail = "," if j < len(rows) - 1 else ""
+        out.append("    " + (r if r.startswith("#") else r + tail))
     out.append("  ]))")
     return "\n".join(out)
 

@@ -79,25 +79,23 @@ def verify():
     print("ALL LANES AGREE: %d rows, byte identical" % len(py))
     return 0
   d = [l for l in difflib.unified_diff(py, bd, "cpython", "bend", lineterm="", n=0)]
-  # THE ONE ROW THAT IS RED ON ANOTHER FILE'S BUG. `helpers.bend`'s `ansistrip`
-  # is the state machine at helpers.bend:858-884 and upstream is
-  # `re.sub('\x1b\[(K|.*?m)', '', s)` (helpers.py:48) -- a RUN of parameters, not
-  # one character. MEASURED, both from CPython and from the Bend lane:
+  # THE `KNOWN` SET IS EMPTY AND THAT IS A RESULT, NOT AN OMISSION. It used to
+  # hold `fmt_colored.on`, which was red because `helpers.bend`'s `ansistrip`
+  # walked a run as if it were one character (upstream helpers.py:48 is
+  # `re.sub('\x1b\[(K|.*?m)', '', s)` -- a RUN of parameters). `ansistrip` was
+  # rewritten on 2026-10-03 and the row now agrees: the gate above reports
+  # "ALL LANES AGREE: 177 rows, byte identical" and never reaches this branch.
+  # Leaving the name in would have made a REGRESSION on it invisible, because a
+  # `KNOWN` row is subtracted from `bad` whether or not it is red.
   #
-  #   "\x1b[31mred\x1b[0m"   CPython "red"   helpers.bend "1medm"
-  #   "\x1b[Kx"               CPython "x"     helpers.bend ""     <- it eats the x
-  #
-  # `viz/serve.bend` CONSUMES `ansistrip` (`fmt_colored`) and cannot fix it, so
-  # the row stays RED and is NAMED rather than deleted or fudged. OWNER: whoever
-  # owns `helpers.bend`. Drop this row's name from KNOWN and the gate goes red on
-  # it, which is the point.
-  KNOWN = {"fmt_colored.on"}
+  # The port's own gate is `.agents/slop/ansi_gate.py`, which is where that row is
+  # now measured against `tinygrad.helpers.ansistrip` directly.
+  KNOWN = set()
   bad = [l[1:].split("=", 1)[0] for l in d if l[:1] == "-" and not l.startswith("---")]
   named = [n for n in bad if n in KNOWN]
   other = [n for n in bad if n not in KNOWN]
   if not other:
-    print("LANES AGREE on %d rows; %d RED on a helpers.bend bug: %s"
-          % (len(py) - len(named), len(named), ",".join(named)))
+    print("LANES AGREE on %d rows" % (len(py) - len(named)))
     print("ALL LANES AGREE: %d rows byte identical, %d red on another file's bug"
           % (len(py) - len(named), len(named)))
     for l in d:
