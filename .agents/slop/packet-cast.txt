@@ -1,0 +1,31 @@
+bendexec1 30 2
+1: PARAM f32 k:param:16:g
+2: PARAM i32 k:param:16:g
+3: CONST weakint c:0
+4: CAST i32 - 3
+5: CONST weakint c:4
+6: CAST i32 - 5
+7: SHRINK i32 - 2 4 6
+8: LOAD i32 k:vec:4 7
+9: INDEX i32 k:idx:0 8 4
+10: CONST weakint c:1
+11: CAST i32 - 10
+12: INDEX i32 k:idx:0 8 11
+13: CONST weakint c:2
+14: CAST i32 - 13
+15: INDEX i32 k:idx:0 8 14
+16: CONST weakint c:3
+17: CAST i32 - 16
+18: INDEX i32 k:idx:0 8 17
+19: ADD i32 - 9 11
+20: CAST f32 - 19
+21: ADD i32 - 12 11
+22: CAST f32 - 21
+23: ADD i32 - 15 11
+24: CAST f32 - 23
+25: ADD i32 - 18 11
+26: CAST f32 - 25
+27: STACK f32 - 20 22 24 26
+28: SHRINK f32 - 1 4 6
+29: STORE void k:vec:4 28 27
+30: SINK void - 29 29 29 29

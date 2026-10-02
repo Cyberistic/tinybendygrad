@@ -1,8 +1,8 @@
 lanes_fwd=py=bool f32 i32 u32
-lane_is_i32=py=True
 lane_is_f32=py=True
-lane_is_u32=py=True
 lane_is_bool=py=True
+lane_is_u32=py=True
+lane_is_i32=py=True
 lanes_sorted_by_str=py=dtypes.bool dtypes.f32 dtypes.i32 dtypes.u32
 dtype_roundtrip_i8=py=i8
 dtype_roundtrip_u8=py=u8

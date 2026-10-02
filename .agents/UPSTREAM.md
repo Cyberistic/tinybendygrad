@@ -70,6 +70,27 @@ port does **not** silently swallow it.
 
 ---
 
+## D2 — `ops_bend.py`: the LOCAL param arm is unreachable, and `__init__` can hang
+
+**Status: CONFIRMED by measurement, both parts.**
+
+**D2a — `k:param:..:l` cannot be emitted, and the file says it can.** `ops_bend.py:112-113`
+claims the `l` (LOCAL) arm is "spelled rather than refused", and `:36` lists `<g|l|r|a>` — but
+the dict at `:116` has keys `GLOBAL` and `REG` only. A LOCAL param therefore raises
+`KeyError: 'LOCAL'`. Measured by driving the function, not by reading it. Either the comment
+and the `:36` grammar are aspirational, or a dict key is missing.
+
+**D2b — `BendProgram.__init__`'s `:208` `while` has no termination guard.** A packet
+containing a cycle hangs **CPython as well as the port**. This is why synthetic
+"arm-reordering" fixtures hang and had to be dropped from the port's oracle: they hang the
+authority too, so there is no answer to compare against.
+
+Both were found by porting, and in both cases the port reports the divergence rather than
+bending to match — see `runtime/ops_bend.bend`, which gates the `KeyError` and keeps 32 rows
+red under a named wall.
+
+---
+
 ## NOT defects — investigated, and it is important they are written down
 
 Each of these looked like an upstream bug and is not. Recorded so nobody spends a turn on

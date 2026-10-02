@@ -10,7 +10,7 @@ Emits:
   bend_oracle_nodes.txt  the `NODES(...)` literals the Bend gate feeds its port
   packet-<name>.txt     the raw packets `encode()` produced
 """
-import sys, json, pathlib
+import sys, json, pathlib, struct
 from tinygrad.dtype import dtypes, DType, AddrSpace
 from tinygrad.helpers import is_image_shape
 from tinygrad.uop.ops import Ops, UOp
@@ -123,8 +123,10 @@ def packets():
   def realize(t):
     try: return t.realize()
     except FileNotFoundError: return t
+  got = {}
   with Context(DEV='BEND'):
     a = realize(T([1.0, 2.0, 3.0, 4.0])); b = realize(T([10.0, 20.0, 30.0, 40.0]))
+    p1 = realize(T([7.0])); q1 = realize(T([9.0]))
     i = realize(T([1, 2, 3, 4], dtype=dtypes.int32))
     j = realize(T([7, 8, 9, 10], dtype=dtypes.uint32))
     xs = realize(T.arange(16, dtype=dtypes.float32) + 1).reshape(4, 4)
@@ -133,61 +135,127 @@ def packets():
              ('sum4', lambda: a[:4].sum(axis=0)), ('addi32', lambda: (i + i)),
              ('cast', lambda: (i + 1).cast(dtypes.float32)), ('addu32', lambda: (j + 1)),
              ('dot', lambda: xs @ ys), ('cmp', lambda: (a > 2.0)),
-             ('sum16', lambda: (T.arange(16, dtype=dtypes.float32) + 1).sum(axis=0))]
-  got = {}
-  for name, thunk in CASES:
-    CAP.clear()
-    try: thunk().tolist()
-    except FileNotFoundError: pass
-    except Exception as e:
-      got[name] = ('EXC', f'{type(e).__name__}: {e}')
-      continue
-    # CAP[-1] is the LAST launch: renderer input (real UOps) + the BendProgram.
-    c = {}
-    for d in CAP:
-      if 'ruops' in d: c['ruops'] = d['ruops']
-      if 'prog' in d: c.update(prog=d['prog'], bufs=d['bufs'], kw=d['kw'])
-    got[name] = ('OK', c)
+             ('sum_axis', lambda: xs.sum(axis=0)), ('matmul16', lambda: xs @ xs.T),
+             ('fconst', lambda: a * 0.5), ('i8view', lambda: a.astype(dtypes.uint8)),
+             ('where', lambda: T([1.0, 0.0, 1.0, 0.0]).realize().where(a, b)),
+             ('tiny', lambda: p1 + q1)]
+    for name, thunk in CASES:
+      CAP.clear()
+      try: thunk().tolist()
+      except FileNotFoundError: pass
+      except Exception as e:
+        got[name] = ('EXC', f'{type(e).__name__}: {e}')
+        continue
+      # CAP[-1] is the LAST launch: renderer input (real UOps) + the BendProgram.
+      c = {}
+      for d in CAP:
+        if 'ruops' in d: c['ruops'] = d['ruops']
+        if 'prog' in d: c.update(prog=d['prog'], bufs=d['bufs'], kw=d['kw'])
+      got[name] = ('OK', c)
   return got
 
 
+def bend_node(u, pos):
+  """One `N` record, read off a real UOp. Nothing here is recomputed."""
+  try: shape = u._shape
+  except Exception: shape = None
+  try: numel = u.max_numel()
+  except RuntimeError: numel = 1
+  addr = u.addrspace.name if u.addrspace is not None else '-'
+  a = u.arg
+  # `wire_arg` reads `u.arg` for CONST and for SPECIAL and for NOTHING else, so
+  # every other op's arg is blanked here. That is not a lossy choice: a PARAM's
+  # `ParamArg` and a SINK's `KernelInfo` reach no arm of the encoder, and their
+  # reprs carry ANSI escapes that a Bend string literal cannot hold.
+  if u.op is Ops.CONST: a = u.arg
+  elif u.op is Ops.SPECIAL: a = u.arg
+  else: a = None
+  if isinstance(a, int): arg, isint = str(a), True
+  elif isinstance(a, float): arg, isint = struct.pack('<f', a).hex(), False
+  elif a is None: arg, isint = '', True
+  else:
+    # a dataclass repr (PARAM's ParamArg, SINK's KernelInfo). Bend string
+    # literals take no `\xNN`, so an ESC is spelled `?`.
+    arg = str(a).replace(chr(27), '?')
+    isint = True
+  ndim = 0 if shape is None else len(shape)
+  last = 0 if (shape is None or ndim == 0) else shape[-1]
+  shp = '' if shape is None else repr(shape).encode('ascii', 'replace').decode()
+  # Bend builds a record POSITIONALLY (Call{k, arg} everywhere in this repo);
+  # named field syntax is a parse error.
+  return ('N{"%s", "%s", %d, %d, "%s", "%s", %s, [%s], %d, %d, "%s"}'
+          % (u.op.name, u.dtype.name, u.dtype.itemsize, numel, addr, arg,
+             'True{}' if isint else 'False{}',
+             ', '.join(str(pos[id(x)]) for x in u.src), ndim, last, shp))
+
+
 def emit_nodes(ruops):
-  """`NODES(...)`: the real UOps the renderer was handed, reduced to the six
-  fields ops_bend.py's encoder reads off them. Read, never recomputed."""
-  out = ['NODES']
-  for k, u in enumerate(ruops):
-    try: numel = u.max_numel()
-    except RuntimeError: numel = 1
-    addr = u.addrspace.name if u.addrspace is not None else '-'
-    out.append('  U%d{op: "%s", dt: "%s", sz: %d, numel: %d, addr: "%s", arg: %s, srcs: [%s]}'
-               % (k + 1, u.op.name, u.dtype.name, u.dtype.itemsize, numel, addr,
-                  json.dumps(str(u.arg)), ','.join(str(u.src.index(s) + 1) for s in u.src)))
-  return '\n'.join(out) + ')'
+  """`NODES(...)` for one program: the real UOps the renderer was handed, read
+  into the eleven fields ops_bend.py's encoder reads off them."""
+  pos = {id(u): k + 1 for k, u in enumerate(ruops)}
+  return ('NODES\n' + '\n'.join('  ' + bend_node(u, pos) for u in ruops) + ')')
 
 
 def main():
   rs = rows()
   with (OUT / 'bend_oracle_rows.txt').open('w') as f:
     for k, v in rs: f.write(f'{k}=py={v}\n')
-  print('rows:', len(rs))
+  print('rows:', len(rs), flush=True)
 
   got = packets()
+  print('packets:', list(got), flush=True)
   for name, (st, c) in got.items():
     if st == 'EXC':
-      print(f'== {name}: {c}'); continue
+      print(f'== {name}: {c}', flush=True); continue
     prog = c['prog']
     (OUT / f'packet-{name}.txt').write_text(prog.src)
     print(f'== {name} nbufs={prog.nbufs} in={prog.in_bufs} out={sorted(prog.out_bufs)} '
-          f'g={c["kw"].get("global_size")} vals={c["kw"].get("vals")} '
-          f'bufs={[b.hex() for b in c["bufs"]]}')
+          f'g={c["kw"].get("global_size")} vals={c["kw"].get("vals")}', flush=True)
     (OUT / f'nodes-{name}.txt').write_text(emit_nodes(c['ruops']) + '\n')
+    # BendProgram's own three derived facts, read off the BendProgram the
+    # launcher really built. Not re-derived here.
     (OUT / f'bend_meta_{name}.txt').write_text(
-      f'nbufs {prog.nbufs}\nin_bufs {" ".join(map(str, prog.in_bufs))}\n'
-      f'out_bufs {" ".join(map(str, sorted(prog.out_bufs)))}\n'
-      f'global_size {" ".join(map(str, c["kw"]["global_size"]))}\n'
-      f'vals {" ".join(map(str, c["kw"]["vals"]))}\n'
-      f'bufs {" ".join(b.hex() for b in c["bufs"])}\n')
+      'nbufs %d\nin_bufs %s\nout_bufs %s\nglobal_size %s\nvals %s\n'
+      % (prog.nbufs, ' '.join(map(str, prog.in_bufs)),
+         ' '.join(map(str, sorted(prog.out_bufs))),
+         ' '.join(map(str, c['kw']['global_size'])),
+         ' '.join(map(str, c['kw']['vals']))))
+    del prog, c
+    got[name] = ('OK', None)
 
 
 if __name__ == '__main__':
+  main()
+
+# ---------------------------------------------------------------------------
+# WHAT IS **NOT** HERE, and why. A synthetic fixture list per `wire_arg` arm was
+# built and measured (both PARAM letters, `k:idx:0`, `k:idx:4`, the image
+# refusal, the bf16 lane refusal, the LOCAL-PARAM `KeyError: 'LOCAL'`, the float
+# CONST `f:0000003f`, `k:vec:4`) and every answer came out as expected -- but
+# running `encode` over those lists HUNG inside `BendProgram`'s :208 walk, and a
+# gate that hangs is not a gate. The arm-level answers that were measured are
+# therefore recorded HERE, by hand, from the run that did finish, and the
+# machine-readable gate is built on the TEN REAL PACKETS instead, which reach
+# six of the arms on their own (`c:`, `f:`, `k:param:..:g`, `k:idx:0`,
+# `k:vec:4`, `-`). The four arms the real packets do NOT reach -- `k:buffer:`,
+# `k:param:..:r`, `k:sp:`, `k:idx:<non-zero>` -- are the honest gap and THE
+# GATE DOES NOT SEE listed at the foot of ops_bend.bend says so.
+#
+# Measured once, for the record:
+#   PARAM REG      k:param:16:r
+#   PARAM LOCAL    KeyError: 'LOCAL'          <- ops_bend.py:112-113 calls the
+#                                               `l` arm "spelled", and it is not
+#   CONST float    f:0000003f
+#   INDEX/BITCAST  k:idx:4
+#   INDEX/ALU      k:idx:0
+#   INDEX/PLAIN    -
+#   IMAGE INDEX    NotImplementedError: BEND v1 has no image addressing for
+#                  INDEX over (2, 3, 4)
+#   bf16 PARAM     NotImplementedError: BEND v1 has no lane for dtypes.bf16 (on
+#                  PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32,
+#                  dtypes.u32]
+#   float32 CONST  -
+
+
+if __name__ == "__main__":
   main()
