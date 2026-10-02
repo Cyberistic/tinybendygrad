@@ -3,8 +3,8 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-spec-as-laws    [#########] 9/9      python-to-bend  [##........] 3/96  (0 defs outstanding)
-proofs          [########.] 28/34    oracle-green     [###.......] 3/3
+spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 4/96  (0 defs outstanding)
+proofs          [########.] 28/34    oracle-green     [####......] 4/4
 walkthroughs    [######...] 6/7
 ```
 
@@ -159,11 +159,37 @@ day rediscovering that `2n+p` is not an even-case test.
       field of it. `TODO(p3) ops.py:1590 upat_interpret` and `TODO(p3) ops.py:1459
       get_location` are the other two omissions, both Python reflection.
 - [ ] `uop/fold.bend` — the derived properties of `ops.py` as ONE Kahn worklist.
-      **DONE.** `dt`+`shape` as a pair (they read each other), `device`,
-      `addrspace`, `base`, `ended_ranges`, and `axis_id`/`axis_type` (not fold
-      properties — the arena already split `ARange{ids, at}`). Both lanes green, no
-      `@unsafe`, five rows all True, mutations run both ways. The rest of `ops.py`
-      is a `TODO(p3)` line per property with the wall it waits for.
+      **DONE, AND THE FIVE MOVEMENT SHAPES LANDED.** `dt`+`shape` as a pair (they read
+      each other), `device`, `addrspace`, `base`, `ended_ranges`, and `axis_id`/`axis_type`
+      (not fold properties — the arena already split `ARange{ids, at}`). Both lanes green,
+      no `@unsafe`, eleven fold rows all True, mutations run both ways. The rest of
+      `ops.py` is a `TODO(p3)` line per property with the wall it waits for.
+      **THE FIVE ARMS: `expand_ds`, `pad_ds`, `shrink_ds`, `perm_ds`, `flip_ds`,**
+      answering ops.py:414-431. 16 `mv_*` rows, FOUR FACTS PLUS THE ANSWER AS ONE
+      STRING each (`n= op= nsrc= srcops= shape= dtype=`), and **15 of 16 byte-identical
+      to CPython**, the one exception being the declared `ssimplify` divergence. The
+      eleven original rows are BYTE-IDENTICAL to the pre-change file.
+      **THE RECORDED WALL WAS WRONG FOR THREE OF THE FIVE, and that is the finding.**
+      TODO said EXPAND/PERMUTE/FLIP wait on `marg -> as_shape -> ssimplify`; `marg` for
+      PERMUTE and FLIP is `self.arg` (ops.py:818), the arena's `ATuple` of plain indices,
+      so NEITHER reads `as_shape` and both were answerable from the day the arena existed.
+      PAD and SHRINK really did need `zip(as_shape, as_shape)` and are now ONE walk with a
+      `Bool` picking the arm (mutation M2 exchanges the sums and moves 5 rows). UNSHARD
+      still defers, on `vmax`/`_min_max` — a DIFFERENT wall. **So `_min_max` is now the
+      largest unlock in the file and `simplify` is not**, which REORDERS the "what next"
+      list at the foot of `fold.bend`.
+      **THE E2E MEASUREMENT, which is what retires the eight downstream walls**
+      (`.agents/slop/oracles/fold-mvt-e2e.bend`): a graph whose ROOT is a STORE over an
+      EXPAND, and one whose root is an AFTER over a PERMUTE, both read
+      `settled=False shape=ABSENT dtype=ABSENT` on the pre-change file and
+      `settled=True shape=() dtype=void` / `shape=(3,2) dtype=int` now — CPython's own
+      answers. That is constraints-note rule 18 (position ~4099) retired for movement ops.
+      **14 mutations measured** (`.agents/slop/oracles/fold-mut.py`), 12 move rows; the
+      2 zero-movers are MEASURED EQUIVALENCES, not gaps — M9 is unreachable (`O.SU` has
+      no producer anywhere in the tree) and M10 is a symmetry of PAD's own `o+s<=sz`.
+      Both are reported as equivalences rather than closed with rows that encode the bug.
+      M5's zero-mover found a REAL redundancy (`U32.is_lt(y,n)` beside `List.get`'s own
+      bound) and 8 lines came out.
 - [ ] `uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
 - [x] `uop/symbolic.bend` — `tinygrad/uop/symbolic.py`: the REWRITER. **HALF
       PORTED, and the half is chosen so every MECHANISM is exercised.** Both lanes
@@ -217,7 +243,7 @@ day rediscovering that `2n+p` is not an even-case test.
 | P3 | `uop/` | 10 | [####......] 4/10 |
 | P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
 | P5 | `codegen/` `renderer/` | 30 | [##.......] 5/30 |
-| P6 | `runtime/` | 36 | [..........] 2/36 |
+| P6 | `runtime/` | 36 | [...........] 3/36 |
 | P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
 | P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [##.......] 1/15 |
 
@@ -675,6 +701,26 @@ diffed.
       off-by-one, the INS dispatch, `ab_miss` reading a count instead of a bool), and
       the one real finding in the PYTHON: `pm_to_program` rule 3 is unreachable because
       rule 2's unconstrained `LINEAR` arm shadows it.
+- [x] `codegen/late.bend` — **regalloc is no longer a stub**: 3/118 → 115/118, and the
+      lowerer is whole (240/243 lines across the three Python files). 45 rows added and
+      128 rows diffed against `.agents/slop/late-oracle.py` with a zero diff in BOTH
+      lanes. The gate is PER-UOP and ORDERED: `ra<t>_a<i>` is one row per program point
+      carrying every virtual register it defines or uses and the real register each
+      landed on, and `ra0_a7`/`ra1_a7` differ (`v4>10->rcx>1` against `v4>10->rdx>2`)
+      because `is_two_address` only REORDERS `cons` — that pair is the whole reason
+      `ra0` and `ra1` are two rows. `ra2` is the fixture that reaches the loop
+      prologue and epilogue, which are dead code on `ra0`. **Twelve real bugs found by
+      the gate**, four of which are Bend traps rather than Python traps and are appended
+      to `bend2-constraints.md`: `Bool.pick` CHOOSES an arm and does not sequence one, so
+      three drafted folds silently dropped the rest of their list; `tb_put` APPENDS its
+      `vs`, so `lr[v].append(n)` and `reals[i][v] = r` need the delta and the new
+      `tb_vput`; `tb_get`'s "absent = 0" convention collides with **rax being interned
+      at 0**, so every use of a vreg holding rax refilled it (W5b); and a skip whose two
+      arms both recurse cannot be a `match` guard at all, because bend refuses the
+      mutual recursion. Nine blind spots are reported with reasons rather than closed
+      with rows that agree with the bug — including one WALL: the oracle prints `r[1]`
+      and not `r[0]`, so `regalloc_rewrite`'s whole `nsrc` half is invisible to every
+      row (W5c). Mutation drivers `.agents/slop/ra-mutate.py`, `ra-mutate2.py`.
 - [x] `examples/beautiful_mnist.ts` — 611 lines, mirrors the 48-line .py section by
       section, decorators carrying the tinygrad NAMES (`@TinyJit`, `@Context({TRAINING:
       1})`, `@function_` because `function` is a TS reserved word — verified, TS1146).
@@ -745,6 +791,13 @@ entries below and commit `d685f998`.)
       `mixin/op.bend`'s `mo_permute` builds in `Tensor.ar(t)` then wraps in that same
       arena, landing the PERMUTE one node short of the `AOrder` tuple. Both are filed
       under the fold wall rather than worked around silently.
+      **THE FOLD HALF OF THAT IS NOW RETIRED** by the `uop/fold.bend` movement unit:
+      `perm_ds` answers a PERMUTE's dtype and shape (`src[0].dtype` and
+      `tuple(ps[i] for i in marg)`), so `unverified_lin2`'s "the fold defers a
+      PERMUTE's dtype" no longer holds. The `mixin/op.bend` arena half is untouched
+      and remains the live half. **The example's owner should re-run `lin2`** and
+      re-check the 11-vs-15 node count, since the cause named here is gone. The fold
+      unit did NOT edit this file and did NOT re-gate the example.
 
 - [x] `nn/state.bend` 834 and `nn/__init__.bend` 828 — LANDED, 38 gate rows all green on
       three lanes (CPython oracle == interpreted == native, byte-identical diffs), and
@@ -1237,12 +1290,21 @@ this queue — in that order, so the queue is never stalled behind a verificatio
 
 ### The queue, in priority order. All are non-overlapping with everything in flight.
 
-1. **`runtime/support/am/ip.py` (755)** — the am ioctl protocol. `ops_amd.bend` is
-   being written against it RIGHT NOW and cites it; same "committed code leans on an
-   unported file" shape as `hcq2`. Do NOT read `ops_amd.bend` as read-only truth while
-   its agent is live — grep it for `am/ip` citations and AGREE, report contradictions.
-2. **`runtime/support/nv/ip.py` (661)** — the nv ioctl protocol. Same shape;
-   `ops_nv.bend` is committed and cites `hcq2`, so check whether it also cites this.
+1. ~~**`runtime/support/am/ip.py` (755)**~~ **DONE** — see the `- [x]` entry for
+   `tinybendygrad/runtime/support/am/ip.bend` below. On the instruction to "grep
+   `ops_amd.bend` for `am/ip` citations and AGREE, report contradictions": grepped,
+   and it cites `am/ip` **nowhere**. The two files agree on the seam split anyway and
+   share no register table and no constant; their only overlapping function is
+   `setup_ring`, which `ops_amd.bend` lists as a wall from `ops_amd.py:772` and this
+   file ports as a trace. No contradiction to report.
+2. ~~**`runtime/support/nv/ip.py` (661)**~~ **DONE** — see the `- [x]` entry for
+   `tinybendygrad/runtime/support/nv/ip.bend` below. On the instruction to "grep
+   `ops_nv.bend` for `nv/ip.py` citations": grepped, and it cites `nv/ip.py`
+   **nowhere** — 22 hits for `ops_nv.py`, 10 for `hcq2.py`, **0** for `nv/ip.py`.
+   So the premise that its citations constrain this port is FALSE, and that is
+   reported in the file header rather than reconciled. Two further corrections to
+   the brief: `nv/ip.py` is not "the nv ioctl protocol" (that is generated
+   `autogen/nv.py`); it is the GSP RPC ring protocol and two bootloaders.
 3. **`runtime/support/am/amdev.py` (421)** — the `/dev/kfd` surface. Most of it is FFI,
    so the gateable part is the **request struct layouts and the field order** (packed
    field order is the same lesson as `ops_cl`'s inverted `Sig` names, and a wrong order
@@ -1366,3 +1428,384 @@ and both times every SYMMETRIC fixture agreed either way — an appending fold n
 a two-element unequal fixture before it can be checked at all), and **a port of a
 load-after-a-store takes the POST-store value as its parameter** (reading the
 pre-bump value computes `0 - 2` and a `U32` wraps silently to 4294967294).
+
+---
+
+## Session 2026-10-02 — `runtime/ops_dsp.bend` (the generic C-backend-for-a-DSP wrapper)
+
+- [x] `tinybendygrad/runtime/ops_dsp.bend` — `tinygrad/runtime/ops_dsp.py`, 292 ->
+      2827 lines, 385 defs/types, **496 rows**, both lanes byte-identical,
+      `ALL PROOFS CHECK`. No foreign effect and no `import "./x.c"`: a
+      template-following device records its calls in a `Tr` and declares nothing,
+      which is why it prints no SOME PROOFS FAIL.
+- [x] **420 of the 496 rows carry a `py=` expectation GENERATED by CPython**, and
+      `.agents/slop/dsp_gate_check.py` re-checks every one of them against the lane's
+      output on every run. First run: **35 disagreements, SIX of them real port
+      bugs** — `attrs_of`'s head/tail order (`List.append(a,A,xs,ys)` is `xs ++ ys`),
+      `dt_itemsize` with no fp8 arm, `compiler_args_first`'s two arms swapped,
+      `alloc.offset` keeping the parent's size because the record binder shadowed the
+      parameter, `open_lib_bad`'s unsigned compare for a SIGNED 32-bit test, and
+      `link_lines` which was wrong twice (a leading separator, then a reversed
+      order). Six bugs at a fifth of `cstyle.bend`'s 215 hand-typed expectations.
+- [x] `.agents/slop/dsp_oracle.py` — the CPython oracle. Beyond the pure tables it
+      **drives the real `DSPDevice` methods with the ioctl/os layer faked**, which is
+      how `init_dsp`'s seven-call ORDER, `exec_lib`'s ELEVEN-call retry and NINE-call
+      double failure, and `_free`'s munmap/close/ION_FREE order were measured rather
+      than read.
+- [x] `.agents/slop/dsp_mutate.py` — **68 mutations** (67 + a comment-only control),
+      applied one edit at a time to a scratch copy BESIDE the source. 65 move rows,
+      17 of them localised single-row rows. Control moves 0. The table is in the file.
+- [x] `.agents/slop/dsp_gate_check.py` — the mechanical `py=` checker.
+- [x] `.agents/slop/notes/bend2-constraints.md` — **eight more measured Bend rules**,
+      appended at lines 7295-7376. The load-bearing ones: `U32.shl` is a ONE-BIT
+      shift (the n-bit one is `U32.shln(a, n: Nat)`, so every shift AMOUNT is a
+      `Nat` literal); a `case 1n+m:` arm spends the scrutinee `n` as well as `m`;
+      a record pattern's binder SHADOWS a same-named parameter and nothing says so;
+      and **a mutation harness that diffs row NAMES instead of whole `name=value`
+      lines reports all 68 mutations as "0 rows moved"**.
+- [x] **`to_scalar`/`from_scalar` DO NOT EXIST in tinygrad.** The brief named them as
+      this file's centre; `rg -n "to_scalar|from_scalar" tinygrad/` finds only
+      `lower_to_scalar`, a Mesa NIR boolean in `autogen/mesa.py`. What ops_dsp.py
+      actually does with a dtype is four tables — `dt_fmt`, `dt_itemsize`,
+      `dt_cname`, and the GLOBAL/ALU split of :32 — and those are what the file
+      gates. Reported in the file's header rather than invented.
+- [x] **`ops_qcom.bend` CANNOT BE CONTRADICTED BY THIS FILE.** Read at 2026-10-02, it
+      was a 15-line stub claiming the shared qnn/htq op tables. ops_dsp.py has NO op
+      table: `DSPRenderer` inherits `ClangRenderer.code_for_op` and removes exactly
+      one entry (MEASURED 18 -> 17, the difference being `Ops.SQRT`), which is a
+      renderer-internal dict. So `dsp_cfop_*` pins the COUNT and the REMOVAL and
+      deliberately does NOT restate the seventeen entries — a second table is a
+      second thing to drift.
+- [x] Four walls, each with `# TODO(p3) runtime/ops_dsp.py:<line>` in the file: the
+      clang spawn and the `.so` read-back; the ION/mmap/adsprpc ioctls; the
+      listener's host syscalls and its `in_ptr` pointer walk; and the two u64 timer
+      reads. The two programs' DIVISORS (1e6 and 1e9) are ported and gated, because
+      a shared scale would move exactly one of three rows.
+- [x] **The eviction NEGATIVE CASE is in this file's OWN code, not a fixture invented
+      for it**: `ops_dsp.py:135` allocates the fastrpc shell with
+      `BufferSpec(nolru=True)`, so `dev.shell_spec` is the one spec in the file that
+      must NOT be recycled, and `dsp_norecycle_nolru` sits one row from
+      `dsp_recycle_plain` at the SAME size with the opposite answer. Dropping the
+      `nolru` moves exactly 3 rows (M59).
+
+## Session 2026-10-02 — `schedule/indexing.bend`
+
+`tinygrad/schedule/indexing.py` (328 lines) is ported and **green in both lanes with
+245 of its 253 gate rows byte-identical to a CPython oracle**. The remaining 88 oracle
+rows are three named walls and one blind spot, all stated in the file's footer.
+
+- [x] **`prepare.py` in THIS checkout is `prepare_rangeify`, not `prepare_shape`.**
+      Verified: `git log --all -Sprepare_shape` is empty and `rg prepare_shape
+      tinygrad/` is 0 hits. The brief's framing was wrong, so `schedule/prepare.bend`
+      must be ported from the file as written and gated on `_mop_index` /
+      `split_reduceop` / `walk_mop` / `expand_bitcast`, NOT on a `prepare_shape`.
+- [x] **The file no longer imports `uop/fold.bend`.** RA-8 in
+      `bend2-constraints.md` records that a cold compile of anything importing
+      `fold.bend` fails while another agent has it mid-edit, and the error names a
+      def that is not in your file. That happened here four separate times
+      (`Kahn.get`, `perm.go`, `perm_step`, `g_mv_r23`). `UOp.axis_id`/`axis_type`
+      are now two LOCAL readers over `ARange{ids, at}` (8 lines) and `UOp.base` is a
+      named wall (`ix_base_miss`). **Flip this back to `F.UOp.axis_id` once
+      `fold.bend` settles** — reuse is the better default and this is a workaround,
+      not a design.
+- [x] **The mutation table found THREE dead decisions.** `ix_mv_flip_is_add`,
+      `ix_mv_shrink_is_add` and `ix_ds_take` were each written, each commented with
+      what it was for, and each never called — inverting the first two and widening
+      the third moved ZERO rows. All three are wired now and move 8, 10 and 13. The
+      lesson is RA-14: a `Bool.pick` inversion and an uncalled decision look exactly
+      the same under `--check-only`.
+- [x] **88 oracle rows this port cannot print**, in three buckets: 55 are `UPat`
+      fields (`slen`/`rlen`/`anylen`/`name`/`nalts`/`src`) that `PMEntry` does not
+      carry; 1 is `par_3_ops` (no tag -> `Op` inverse in `ops.bend`); 32 are the
+      `_stack_select` binary tree (`ss{n>8}_{len,h}`) plus `mv_reshape{0,1,3}`. The
+      walls print `W3` or nothing, never a faked value, so a diff can tell a wall
+      from an answer.
+- [ ] **`schedule/prepare.bend` is STILL A STUB** (8 lines). Port it from
+      `prepare.py` as written: `walk_mop`, `_mop_index`, `store_hazard_boundary`,
+      `fix_store_hazard`'s unsafe set, `split_reduceop`'s candidate scan, and
+      `expand_bitcast`'s rate. The oracle already exists and runs:
+      `/…/iprep/pp-rows.py` -> 631 rows in `pp-truth.txt`, clean.
+
+- [x] **`tinybendygrad/runtime/support/hcq2.bend`** — `tinygrad/runtime/support/hcq2.py`
+      (646 lines). **All three stages landed and checked.** 2243 lines, 360 gate rows,
+      `ALL PROOFS CHECK`, interpreted and native lanes BYTE-IDENTICAL, and **0
+      disagreements** against CPython on the 240 rows both sides compute.
+      Oracle: `.agents/slop/hcq2-oracle.py` + `hq2-oracle2.py`, both run with `DEV=NULL`
+      so no device is present; `.agents/slop/hcq2-diff.py` diffs; `.agents/slop/hcq2-mutate.py`
+      is the 30-edit table at the foot of the file.
+      PORTED: the constants both ways (`HCQ_DEVS`, `CDTYPE`, `HCQ_CACHE_THRESH`,
+      `STAGING_*`), `to_name`, `all_devices_in`, **`layout_args`** (:74-76, the one
+      `ops_nv.bend` cites at :14/:181/:205/:1439/:1873), `pack_args` (:78-83) with its
+      `bytes(size-end)` refusal, the `cstruct`/`cfield` field tables and FIELD ORDER,
+      `BatchCtx`'s `queues`/`last`/`prev`/`peers`/`signal_tags`/`slots`, `slot`/
+      `queue_signal`/`sched_timeline`/`stamps` (the `n -> n*2` expansion),
+      `_wait_ins`/`_start_ins`/**`_build_queues`**/`_finalize_batch`'s step order, and
+      `sched_batches`' queue naming.
+      NOT PORTED, WITH THE WALL FOR EACH: the ten `UPat`/`PatternMatcher` tables and
+      every `u.toposort()` (the UOp arena is `uop/ops.bend`), `cfunc_buf`/`ccall`/
+      `cfield`'s `getattr` (ctypes FFI — recorded as a `Tr` seam instead, which is why
+      the file is `ALL PROOFS CHECK` and not `SOME PROOFS FAIL`), and the u64
+      `nbytes` arithmetic in `lower_call`'s 128-alignment.
+      CONFIRMED against the committed `ops_nv.bend`: `layout_args` of the six-word
+      mixed list at base 0 is `0, 4, 8, 16, 24, 28` (ops_nv:205) and of three uint64
+      buffers at 512 is `512, 520, 528` (ops_nv:181) — both asked of `hcq2.layout_args`
+      itself in the oracle. `to_name` (:63) is the same formula `ops_nv:2917` carries.
+      NO CONTRADICTION FOUND with `runtime/support/nv/ip.bend`: its traces are ioctls and
+      this file's are the `hcq_fence`/`make_submit`/`HWQueue.submit` sequence, so the two
+      traces share no table. Reported rather than reconciled.
+      **THREE REPORTED BLIND SPOTS**, all in the file: `epilogue_queue`'s two arms are not
+      separable with any NULL fixture (every batch opens on `COMPUTE:0`), `latest`'s
+      per-queue `max` is unreachable because the same-queue FIFO filter runs first, and
+      `HWQueue.q`'s word ladder is ported as a plan with its CPython blob hex in
+      `hcq2-probe2.py` but has NO gate row, because the only trace it could hang on is a
+      `NotImplementedError`.
+
+- [x] **`tinybendygrad/runtime/support/am/ip.bend`** — `tinygrad/runtime/support/am/ip.py`
+      (755 lines). **All four stages landed and checked.** 2792 lines, 447 gate rows,
+      `ALL PROOFS CHECK`, interpreted and native lanes IDENTICAL, and **0 disagreements**
+      against CPython over the 444 row names both sides compute. `ip.py` imports with NO
+      card present, so the oracle needs no hardware.
+      Oracle: `.agents/slop/ip_oracle.py`; driver `.agents/slop/ip_check.sh` (three lanes,
+      diff keyed on ROW NAME because three names would otherwise collide silently).
+      It keeps to the `ops_webgpu.bend` **trace lane** — `Tr`/`Call`/`Row`, `Tr.emit` as
+      the only seam — which is why it is `ALL PROOFS CHECK` and not `SOME PROOFS FAIL`.
+      PORTED: the version substrate `V` and every ladder (:15-47), the KIQ `flush_tlb` PM4
+      packet (:99-113), the four-generation PTE flag tables and `is_pte_huge_page`
+      (:177-195), the per-arch SMU message table 3 rows x 20 columns both directions
+      (:199-215), the three-register C2PMSG protocol (:264-273), the doorbell arithmetic
+      (:354 :366 :373 :570-572 :592), the `setup_ring` trace and its ONE raise (:584-606),
+      115 register field-name rows BY NAME AND IN ORDER, the IH entry decode with eleven
+      extractors (:502-513), and the PSP ring frame plus four union command field lists
+      (:707-751).
+      NOT PORTED, SIX WALLS, EACH WITH ITS `TODO(p3)` MARKERS: register ACCESS and
+      `AMDReg.encode` bit POSITIONS (:367 :411), `hasattr`/`getattr` (:260 :389 :646),
+      `functools.cache` (:177 :230), firmware BLOBS and `int(round(watts))` (:228 :250),
+      thirteen `wait_cond` polls and six `time.sleep`s, and the memory manager (:278 :331).
+      **CROSS-FILE, REPORTED NOT RECONCILED.** `ops_amd.bend`'s WALL 2 (its :173-178) says
+      the same thing this file's WALL 1 does: the port carries WHICH register, WHICH field
+      NAMES and IN WHICH order, and the OFFSETS are `autogen/am/regs/*`'s, per arch. The
+      two AGREE. MEASURED: `ops_amd.bend` cites `am/ip` NOWHERE, and the two share no
+      register table and no constant. Their one overlapping FUNCTION is `setup_ring`,
+      which `ops_amd.bend` lists as a wall from `ops_amd.py:772` (:181) and this file
+      ports as a seven-call trace. The seam is named twice and built once.
+      **TWO REAL BUGS FOUND, both by making the oracle stricter, both now closed by M44/M45.**
+      `*data64_le(...)` is a STAR-UNPACK, so `ip.py:108-110` builds a **seventeen**-word
+      PM4 packet; the port emitted sixteen and the ORACLE AGREED because its row
+      re-transcribed `lo, _ = data64_le(...)`. All 447 rows were green on a packet that was
+      a word short. Asking CPython for `len(pkt(...))` found it, and the same fix exposed
+      that `kiq.pkt.addr` was missing the `+ 0x1010` fence offset. THE GENERAL LESSON is
+      appended to `bend2-constraints.md`: **an oracle row that re-transcribes a Python
+      expression will agree with a port that misread it.**
+      **THE MUTATION TABLE IS AT THE FOOT OF THE FILE AND IT IS MEASURED.** `rows MOVED` is
+      the load-bearing column. Two harnesses, because "every rule" means two kinds of rule:
+      `ip_mutate.sh` (45 hand-written LOGIC mutations, one per rule; 42 move 1-21 rows) and
+      `ip_sweep.py` (369 EXHAUSTIVE LEAF perturbations — every numeric constant by one unit,
+      and every register row twice, on its LINE and on its NAME; 354 move, 588 row
+      displacements). Three non-movers, each an EQUIVALENCE and each PAIRED with a
+      same-rule mutation that DOES move: M08 (`U32.or` is commutative, paired M43=9), M22
+      (`V.ge(13,0,6)` already covers the two `V.eq` disjuncts, paired M42=18), M39 (two
+      smu columns are lockstep (F,T,F), paired M41=2).
+      **FOURTEEN BLIND SPOTS REPORTED, NOT CLOSED WITH A ROW THAT ENCODES THE BUG.** Nine
+      are field-name swaps where the name is a Python f-string two lines legitimately share
+      (`regCP_{cntl_reg}_CNTL`, `regIH_RB_CNTL{suf}`, `{reg_pref}_64`, …) — MEASURED, and
+      the reason `Row` is keyed on `(ln, reg)`: the LINE perturbation moves on 115 of 115.
+      Five are constants used by code that reach no emitted row. One, `MQD_SE_VALUE`, cannot
+      be perturbed at all: `0xFFFFFFFF + 1` is outside `U32` and the type system refuses.
+      **THE SWEEP'S OTHER HALF WAS DELETION: 46 constants had ZERO call sites** — no def read
+      them and no gate row printed them — so no mutation of them could ever move a row. They
+      were removed and all three lanes re-verified byte-identical, which is the point: an
+      unread def is provably behaviour-preserving to drop. `.agents/slop/ip_prune.py` refuses
+      to remove anything it cannot prove unread. A mutation table is not only a bug-finder;
+      it is the only mechanical way to find the part of the port that is not a port.
+
+## Session 2026-10-02 — schedule/rangeify.bend REPAIR (not extension)
+
+- [x] **Bisected the pre-existing `expected : O.Arg` failure to `e959ece3798f`**
+      ("fix movement.bend: the port (not Python) had the inversion"). That commit
+      widened `M.mp_replace` from `(op, ar, self, src)` to `(op, arg, ar, self, src)` —
+      CORRECT, because `UOp.replace` (ops.py:252) takes `arg` as a kwarg — and updated
+      `movement.bend`'s own two call sites but not the FOUR in `rangeify.bend`.
+      PROOF: `movement.bend` at `e959ece3798f-` + `rangeify.bend` at head is
+      `ALL PROOFS CHECK`. A correct change to a file others import is still a change to
+      every caller's type; widening a parameter is not a local edit.
+- [x] Repaired all four sites by passing each rule's OWN node's arg
+      (`rf_remove_noop_afters.of`, `rf_no_indexing_calls.fin`, `ct_8.of`, `ab_7`).
+      All four port a `x.replace(src=...)` and CPython's `replace(src=...)` passes
+      `self.arg`; the arg-replacing rules (rangeify.py:301, :324) are DIFFERENT rules.
+- [x] **5 new gate rows**, `py=` generated by CALLING CPython (`.agents/slop/rf-arg-oracle.py`):
+      `ab7_clik_nsrc=2`, `ab7_clik_arg=1`, `ab7_clik0_arg=0`, `nic_clik_nsrc=2`,
+      `nic_clik_arg=1`. Zero existing rows moved; `lay` 45->47 (the two new fixture nodes).
+- [x] Fixture gained `clik`/`clik0`: the fixture gave EVERY node a repaired rule can
+      reach an `ANone` arg, so `eq_arg(rebuilt, original)` was `eq_arg(ANone, ANone)`
+      — TRUE for a correct port and for one that hardcodes `ANone`, which is the
+      mistake that silences this type error. A CALL's arg is a `Kernel`, so `clik` is
+      the node that separates them and `clik0` is the negative.
+- [x] Mutation table, 11 mutations, whole-`name=value`-line diff
+      (`.agents/slop/rf-arg-mutate.py`). 4 sharp (M2/M3/M5/M6 move `ab7_clik_arg` /
+      `nic_clik_arg`), M8 = the original defect and does not compile. **4 zeros
+      reported, not closed with rows that encode the bug.**
+- [ ] **NOT FIXED, REPORTED: `ct_table` carries the SUB-pattern's op for every `.f`
+      entry (4, 5, 8) while the bodies read the OUTER node's op, so `ct_4` can never
+      fire.** M9/M10/M11 all move 0 rows; M11 (forcing `ct_4`'s claim to `True{}`) is
+      the proof that `ct_4` is ungated. Python side: for `UPat(Ops.MSTACK).f(Ops.INDEX,
+      name="idx")` the replace is an IDENTITY on the INDEX and
+      `pm_const_buffer_folding.rewrite(mst) is None`. `ct_4_ans` and `ct_8_ans` are
+      named in comments and exist in NEITHER `main`. Semantics, not a compile error —
+      needs its own CPython-gated rows, so it was left alone.
+- [ ] NOT FIXED, REPORTED: M1/M4 (arg at the AFTER and MSTACK sites) move 0 rows, and
+      they are FIXTURE REQUESTS rather than theorems — `UOp` does NOT type-check `arg`
+      against `op`, and an AFTER/MSTACK carrying a `Range`, `KernelInfo` or `ParamArg`
+      arg constructs without complaint (measured). One such node per op closes both.
+
+- [x] **`tinybendygrad/runtime/support/nv/ip.bend`** — `tinygrad/runtime/support/nv/ip.py`
+      (661 lines). **All four stages landed and checked.** 185 KB, 543 defs, **1394 gate
+      rows**, `ALL PROOFS CHECK`, interpreted and native lanes BYTE-IDENTICAL (57 KB),
+      and **0 disagreements** against CPython on 1394 of 1394 row names. `ip.py` imports
+      with NO card present, so the oracle needs no hardware.
+      **WHAT `ip.py` ACTUALLY IS** (the brief called it the nv ioctl protocol; it is not —
+      the NVOS attribute tables are generated `autogen/nv.py`): the **GSP RPC ring
+      protocol** and two bootloaders — `NVRpcQueue` (:19-91), `NV_FLCN` (:93-283),
+      `NV_FLCN_COT` (:285-344), `NV_GSP` (:346-661). The load-bearing part is the STRUCT
+      FIELD LAYOUTS: 54 ctypes structs, 413 fields, declaration order, byte offsets and
+      widths, plus 64 U32 constants both directions, `rpc_fns` (224) and `rpc_events` (36).
+      PORTED: the queue header and ring length `msgSize*msgCount` (not `size`), the RPC
+      record (:38-55) including the wrap-around copy, the **64-bit u64 checksum folded
+      into two U32 folds**, the continuation split, the response read pointer, the
+      handle generator, the radix3 page tree, the WPR-meta ladder on both branches, the
+      registry-table layout, `bdf_as_int`, the PMA flag shifts, the ctx-buffer map, the
+      cpu-sequencer opcode table and walk, the FSP framing, and ten refusals.
+      NOT PORTED, and each with a Python line: the MMIO map and every register write, the
+      VBIOS byte scan (:110-169 — the offsets are ported, the bytes are not), every RPC's
+      payload bytes, one 64-bit constant, and `init_sw`/`init_hw` themselves.
+      **THE 64-BIT WALLS**, each named with the line that owns it:
+      `GSP_FW_WPR_META_MAGIC` (:442), `GspSystemInfo.gpuPhys*`/`maxUserVa` (:605/:608),
+      `LibosMemoryRegionInitArgument.id8` as an 8-byte big-endian int (:395), and the
+      `init_wpr_meta` offsets, which overflow U32 for any real card with vram >= 4 GiB.
+      The 64-BIT CHECKSUM IS **NOT** A WALL: `hi32(c) ^ lo32(c)` COMMUTES with the XOR
+      over the words, so it collapses to two U32 folds — which is what makes the row
+      sensitive to byte offsets, field order and endianness, where a count gate would
+      not be.
+      **MUTATION TABLE**: `.agents/slop/nv_ip_mutate.py` + `nv_ip_mutations.txt`.
+      37 mutations, **33 move rows, 4 are provably EQUIVALENT mutants, 0 blind, 0 failed
+      to run**. The four: `rd.trunc` (Euclidean identity), `rp.cont_more.ge` (both guards
+      reach `cdiv(0,m)==0`), `rp.pickw.swap` (`rp.finish` XORs the two accumulators, so
+      permuting words between them is the identity — the endianness assumption is NOT
+      gateable through the checksum), `rp.which.last_word` (words 18 and 19 are both zero
+      slots with no arm).
+      **FIVE DEFECTS THE GATE FOUND THAT PROSE DID NOT**, and they are why the mutation
+      table was worth building:
+        (1) `rp.put_wp`'s `Bool.pick` arms were SWAPPED — the only guard in the file, the
+            one that stops the write pointer advancing past a refusal, did the opposite of
+            its comment. **The hand-tabulated oracle AGREED with the bug on all five rows**,
+            because the table had the fault position backwards and so did the port.
+        (2) `C_ALLOC_MEM()` (a TRACE TAG) was passed to `rp.record` where Python passes a
+            FUNCTION ID, so the alloc trace claimed to send function 8 and sent 4.
+        (3) `rpc.bump` rebuilt the trace as `Tr{Nil{}, ...}`, dropping the five calls the
+            record had just appended; `rpc.am*` was called by no row, so nothing noticed.
+        (4) The handle was a TRACE ENTRY when `next(self.handle_gen)` is `itertools.count`
+            and touches no device — which put it LAST where :529 mints it FIRST.
+        (5) `rp.bump` rung the doorbell before the sequence bump, where ip.py :52, :54,
+            :55 put `self.seq += 1` BETWEEN the barrier and the doorbell.
+      Also removed: **30 dead defs** found by a comment-aware, full-dotted-name audit
+      (`.agents/slop/dead-defs2.py`) — a base-name audit had scored `rp.acc` alive on the
+      strength of three COMMENTS that mention it. The 30 included an abandoned
+      `type Wv`/`rp.acc`/`rp.pair.hi`/`rp.pair.lo` fold that could never have worked.
+      And the file's own layout comment had words 10 and 11 **swapped** for its whole life
+      (`elemCount` is at [10], not [11]) — which no gate could see, because a comment is
+      not a row.
+      FIVE SUBSTRATE FACTS appended to `.agents/slop/notes/bend2-constraints.md`, the
+      important one being that **`Bool.pick` DROPS the arm it does not take**, so a
+      self-call inside an untaken arm is unreachable: a fold written
+      `Bool.pick(U32, hit, x+1, go(t,n))` measured `ip_d_fns_max=1` against CPython's
+      `223`, and "first-wins" in a table lookup is not a policy but a consequence of where
+      the recursion sits.
+      REPRODUCIBLE END TO END:
+        python3 .agents/slop/nv_ip_gen.py && python3 .agents/slop/nv_ip_oracle.py &&
+        python3 .agents/slop/nv_ip_oracle3.py && python3 .agents/slop/nv_ip_oracle4.py &&
+        python3 .agents/slop/nv_ip_build.py && ./bin/bend tinybendygrad/runtime/support/nv/ip.bend
+      The file is BUILT from parts in `.agents/slop/` and then topologically reordered,
+      which replaced 40+ hand patches that had corrupted it.
+      NOT COMMITTED, per the task's instruction.
+
+## Session 2026-10-02 — schedule/rangeify.bend: THE `ct` TABLE'S OP SETS WERE THE CHILD'S
+
+- [x] **THE PROVEN BUG, CONFIRMED AND FIXED, AND IT WAS BIGGER THAN REPORTED.** A `.f()`
+      chain is `def f(self, op, **kwargs): return UPat(op, src=(self,), **kwargs)`
+      (ops.py:1449), so it REBUILDS the pattern with the op passed to `f` at the ROOT;
+      `PatternMatcher.__init__` keys `pdict` on `p.op` and `rewrite` looks the node up
+      with `pdict.get(uop.op)`. So the port's op sets must be the op handed to `f`, and
+      **five of the nine `ct_table` entries carried the RECEIVER'S op instead** — tags
+      0, 1, 2, 5 and 8 — which makes the rule UNFIREABLE rather than wrong: the engine
+      never looks the node up. `ab_table` tags 0-2 had the same defect. Measured roots,
+      read off `p.op` and `pdict` by `.agents/slop/rf-ct-oracle.py`:
+      `0 INDEX  1 AFTER  2 END  3 STAGE  4 STAGE  5 STAGE  6 INDEX  7 INDEX  8 INDEX`
+      — **all nine are single-op sets**, and the three reject sets (which ARE the
+      child's op, `UPat.early_reject` ops.py:1477) were already right.
+- [x] **WHICH OF `ct_4` / `ct_5` / `ct_8` ARE LIVE, ASKED OF CPYTHON, NOT GUESSED: ALL
+      THREE, and on shapes the old fixture could not build.** `ct_4` is live on
+      `STAGE(INDEX(b4,r0), r0)` (`claim_n=2`, answers the BUFFER) and dead on the mirror
+      `INDEX(STAGE(b4,r0), r0)` (`claim_n=0`); `ct_5` is live on BOTH `or_casted` arms
+      (`STAGE(c4,r0)` and `STAGE(CAST(c4,half),r0)`, each answering an `EXPAND`) and
+      binds `c` zero times on `STAGE(b4,r0)`; `ct_8` is live on
+      `INDEX(MSTACK(c4,c1))` (answers `INDEX, srcops=[CONST]`) and refuses on
+      `INDEX(MSTACK(buf-with-device))`. **CORRECTION TO THE PREVIOUS NOTE:** its recorded
+      "`rewrite(mst) is None` and the replace is an IDENTITY" is TRUE of `MSTACK(c4,c1)`
+      — the MIRROR, which is the CHILD and which no pattern binds — and FALSE of the
+      INDEX the pattern is written for. The finding was sound; it was measured on the
+      wrong node, and the fix is the fixture pair, not a "dead rule" row.
+- [x] **16 NEW FIXTURE NODES AND 44 NEW ROWS**, all `py=` generated by CALLING
+      CPython. The discriminator is WHICH OP IS AT THE INNER VS THE OUTER POSITION, and
+      the ARG gate is an INDEX carrying `O.ARange{ids, at}` — which `ops.bend` can build
+      and which `ct_8`'s rebuild preserves (`UOp` does not type-check `arg` against
+      `op`; prepare.py:70 passes `arg=idx.arg`).
+- [x] **THREE MORE REAL DEFECTS, each found by the new fixtures and each now mutated:**
+      `ct_6` answered `M.mp_src(ar, self, 0)` on its `False` arm, which made "indexing a
+      const" a CATCH-ALL that stole `ct_8`'s answer on `INDEX(MSTACK(...))`;
+      `ct_8`'s `s.device is None` was `Bool.not(<always False>)`, i.e. `True` for every
+      device-BEARING node, so `ct_8` fired where CPython refuses; and `ct_8` had NO
+      pattern re-check of its own, which is a hole the moment the reject set goes
+      vacuous.
+- [x] **THE PREVIOUS MUTATION TABLE'S M3 "PROOF" IS REFUTED.** It read "for a
+      ONE-element set `and` and `or` are the same function". They are not:
+      `rf_early.go`'s base case is `True{}`, so `and(x, True{})` is `x` and `or(x,
+      True{})` is `True{}` — `or` makes the reject test VACUOUS on a singleton as on
+      anything else. MEASURED, before `ct_8` gained its self-check: M3 moved
+      `ct7b_none` 1 → 0. M3 is a zero NOW, with the correct reason, and M36/M38 measure
+      that reason.
+- [x] `M12` was a zero because EVERY RANGE in the fixture was `AXIS_WEAK`, so
+      "rebuild the AxisType" and "read it off the node" are the same function there.
+      One `AXIS_DEVICE` RANGE plus `ren_axis_out_dev` makes it sharp.
+- [x] **M30 was a zero because `ct_7`'s reject set is satisfied by an AFTER in ANY
+      src.** `ct7b = INDEX(R0, AFTER)` is the one node in the fixture where the reject
+      set is not the claim, and it is the row that makes M30 and M20b measurable.
+- [x] **PART 2, ITEM BY ITEM, in file order** — `ct_3` still walled
+      (`BufferizeOpts.removable` + `ranges` + two movement ops; MEASURED live);
+      `ct_5`'s CLAIM is now ported and its ANSWER is walled (`DType.const` + `_mop`);
+      `ct_7` is walled on `_min_max`, which `uop/fold.bend` still has only as a TODO —
+      done LAST as instructed, and a **CPython defect was measured on the way**:
+      `after_all_invalid` raises `AttributeError` on an END that ends no RANGE, because -- **NOW TRACKED IN `.agents/UPSTREAM.md` AS D1**, with the
+      reachability argument (`ops.py:472` FILTERS `src[1:]` for RANGEs, so an END with no
+      RANGE there yields `()`) and an honest note that the triggering graph is not built.
+      The original text follows.
+      `prod()` over an empty `ended_ranges` is the python int `1` and the `cast(UOp,
+      ...)` on rangeify.py:113 does nothing; `ab_4` is walled on `commit_dtype` (absent
+      from `ops.bend`), `sorted(idx.ranges, key=x.arg)` (the `ranges` wall plus a sort
+      by a TUPLE arg) and `next(ctx)`; the four foreign `pm_mops` BODIES are **BLOCKED
+      on `schedule/prepare.bend`, which names `pm_mops` in its header and defines
+      nothing** — their op sets are ported here because those are a Python fact and the
+      engine's lookup is a Python fact, and no local copy of `_mop_index` was invented;
+      `KernelInfo.estimates` is `ops.bend`'s own NOT-PORTED field and is why
+      `ab7_clik_arg` compares `O.KernelInfo.of()` on BOTH sides; `UOp.device` and
+      `UOp.ranges` are unchanged walls and `ct_8` no longer depends on the first.
+- [x] **41 mutations, 37 sharp, whole-`name=value`-line diff**
+      (`.agents/slop/rf2-mutate.py`, raw table `.agents/slop/rf2-mutations.txt`). FIVE
+      zeros: M3, M8, M20b, M36, M38 — four PROOFS with stated reasons and one
+      REPORTED BLIND SPOT (M36/M38: no single-arena fixture can see `ct_8`'s self-check
+      because the two defects it defends against are one defect from two ends).
+- [x] Gate grew 81 → 126 rows. `ALL PROOFS CHECK`. The scratch is
+      `.agents/slop/rf2root/schedule/rf2_work.bend` (reached through the symlink
+      `.agents/slop/rf2_work.bend`; the symlink farm exists because a scratch outside
+      the tree cannot resolve `./../uop/ops.bend`).
+- [ ] **NOT COMMITTED**, per the task's instruction. Seven general rules appended to
+      `.agents/slop/notes/bend2-constraints.md` as `RF1`-`RF7` at line 8146, indexed in
+      the table at the top of that file.
