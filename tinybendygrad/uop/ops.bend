@@ -94,6 +94,69 @@
 # and the two dtype.py functions ops.py needs and dtype.bend has
 # (`least_upper_dtype`, `dt.min`/`dt.max`) are NOT PORTED with the folds that
 # call them. When they land, so does the import, and the notice comes back.
+#
+# ===========================================================================
+# THE REBASE DEPENDENCY LIST -- what `78d482262` needs from the OTHER files.
+#
+# `78d482262` ("range AxisType is first / delete REDUCE/UNROLL") is 53 files and
+# it is the pin's hard blocker: `tinygrad/codegen/opt/postrange.py` at the pin
+# imports `axis_to_pos`, so re-vendoring upstream without re-porting the AxisType
+# consumers fails at import. This file was the first candidate and it turned out
+# to be a CROSS-FILE change, so here is the list an agent can sequence. Every
+# line was read out of that commit's tree, not guessed from the diff.
+#
+# 16 of the 53 are under `tinygrad/`; one is this one. Of the other 15, ELEVEN read
+# a symbol `78d482262` changed:
+#
+#   #  file                     needs from ops.py                        lines
+#   1  codegen/__init__.py      axis_type, axis_id, `arg=(at, id, ...)`  45,162,166,170,184,190
+#   2  codegen/gpudims.py       axis_type, axis_id                      39,40,53,55,56,66
+#   3  codegen/simplify.py      axis_type, axis_id, range_start         3,9,26,33,68
+#   4  codegen/opt/heuristic.py AxisType.UPCAST                         36
+#   5  codegen/opt/postrange.py AxisType.UPCAST, axis_to_pos (DELETED)  14 and the -2 prefix
+#   6  codegen/opt/search.py    AxisType.UPCAST                         15
+#   7  schedule/indexing.py     range_start                             67
+#   8  schedule/prepare.py      axis_id[0]                              114
+#   9  schedule/multi.py        .ranges                                 11
+#  10  schedule/rangeify.py     .ranges, `arg=(AxisType.WEAK, n)`       36,191
+#  11  runtime/support/hcq2.py  custom_function(dtype=), axis_id, axis_type  69,87,283,336,429,467
+#  12  uop/render.py            axis_id, axis_type, .ranges             51,96,101,102
+#  13  uop/spec.py              CustomFunction, axis_type               4,34,110,271,290
+#  14  nn/__init__.py           AxisType.WEAK                           340
+#  15  llm/kernels/amd.py       contiguous_view                         82
+#
+# `tinygrad/uop/__init__.py` (`Ops`, `GroupOp`) is NOT among the 53 at all, so
+# this file's other import surface is unmoved and nothing here waits on that half
+# of the commit. The remaining 37 files in the 53 are `test/`, `extra/`,
+# `docs/`, `spec/` and `llm/` kernels, which are out of scope for the port.
+#
+# THREE THINGS THE LIST SAYS THAT A DIFF WOULD NOT.
+#
+#   * `uop/spec.py`'s RANGE-arg predicate MOVED with the flip. Pin:
+#     `all(isinstance(ra, int) for ra in rng.arg[0:-1]) and isinstance(rng.arg[-1], AxisType)`.
+#     Upstream: `isinstance(rng.arg[0], AxisType) and all(isinstance(ra, int) for ra in rng.arg[1:])`.
+#     MEASURED: the pin REJECTS the three-element arg and upstream ACCEPTS it.
+#     `spec.py` is P3 here, so this is a row the CPython lane prints and the port
+#     cannot -- `rngspec_*`, bend-only, reason in the oracle.
+#   * `codegen/__init__.py:190` writes
+#     `rr.replace(arg=(rr.axis_type, next_axis + j, *rr.axis_id[1:]))`. The SPLAT is
+#     the load-bearing part: it only concatenates if `axis_id` is a TUPLE OF INTS,
+#     i.e. the flat `(AxisType, int, ...)` arg. So `UOp.axis_id`'s RETURN TYPE is
+#     forced by a file six levels away, and a port that returned the axis type with
+#     the ids would break there. That is why the accessors above return two things.
+#   * `runtime/support/hcq2.py:69,87` is `UOp.custom_function(name).call(...)` with
+#     and without `dtype=`. Upstream that is `UOp(Ops.CUSTOM_FUNCTION, src=srcs,
+#     arg=CustomFunction(name, dtype))`, and `CallInfo` LOST its `dtype` field
+#     because the return dtype moved into the CUSTOM_FUNCTION's arg. The rebase
+#     therefore also needs a `CustomFunction` datatype here and `CallInfo` re-cut.
+#     Both are P3/P6 in this port, neither is in the gate, and both are in the
+#     NOT PORTED block at the foot of this file.
+#
+# THE REVERSE LIST -- who needs THIS file -- is the one that is not obvious, and
+# it is the one that makes this a two-file change at minimum. `ARange`'s FIELD
+# ORDER is read and written positionally by ELEVEN committed `.bend` files, listed
+# at `UOp.range_end` below, and `AXIS_REDUCE`/`AXIS_UNROLL` are still constructed
+# by SIX. Neither can move inside this file alone.
 
 import Base
 import ./../helpers.bend as H
@@ -692,6 +755,15 @@ def axis_colors(a: AxisType) -> String:
 # real answer there. `Ops.LINEAR`'s answer is 0 and the miss is also 0, so without the
 # marker row a dropped `LINEAR` entry and a dropped `NOOP` entry would be the same
 # string; `range_start_str` is what keeps them apart.
+#
+# DEAD CLAIM, MEASURED. This `U32` ladder has NO CALLER in the port -- `ended_ranges` is
+# P3 -- and the rows read `range_start_str` instead. Mutation M14 of
+# `.agents/slop/ops-mutate.py` breaks this ladder (`STAGE 1 -> 0`) and moves NOTHING,
+# which is the "a def nothing calls is invisible to every other check" rule landing
+# inside this file. It is NOT deleted because it is a ported Python symbol that
+# `ended_ranges` needs the moment it lands, and deleting it would move the break to P3.
+# The fix is a caller, not a deletion, and it is recorded here so the next reader knows
+# the ladder is currently unchecked.
 def range_start(op: Op) -> U32:
   match op:
     case OpsSTAGE{}: 1
@@ -2284,34 +2356,37 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
   UOp.new(ar, OpsRANGE{}, [end], ARange{ids, at}, TNone{})
 
 # axis_id / axis_type -- ops.py:499-505 upstream, 502-508 at the pin. Both assert
-# `self.op is Ops.RANGE` in Python; the port reads the arg's shape instead, because an
-# `Arg` that is not an `ARange` cannot be a RANGE's -- `UOp.new` puts the arg and the
-# op in the same node, so the op is the discriminator and there is nothing to assert.
+# `self.op is Ops.RANGE` in Python; the port reads the arg's SHAPE instead, because an
+# `Arg` that is not an `ARange` cannot be a RANGE's -- `UOp.new` puts the arg and the op
+# in the same node, so the op is the discriminator and there is nothing to assert. The
+# answer is a `Maybe` because that is what the assertion would have been.
 #
 # THESE ARE THE SWAPPED PAIR the rebase moved, and the gate asks CPython's PROPERTY
 # (`u.axis_id`, `u.axis_type`) rather than re-deriving either slice, so the row follows
 # the tree instead of encoding a reading of the diff. Measured: for an arg of length
 # TWO -- which is every `UOp.range` and every `UOp.loop` -- the pin's `arg[0:-1]` and
 # upstream's `arg[1:]` are the SAME slice, so those four fixtures answer identically on
-# both trees. Only a three-element arg separates them, and `rng_twoid` /
-# `axid_twoid` is that fixture.
+# both trees. Only a three-element arg separates them, and `rng_twoid` is that fixture.
+#
+# THE ROWS READ THESE DEFS AND NOT THE FIXTURE'S LITERALS. An earlier version of
+# `t_rng_row` printed the `ids` it had been handed, which left these two defs with no
+# caller -- and mutation M19 of `.agents/slop/ops-mutate.py`, `axis_id` answering
+# `Nil{}`, moved NOTHING, which is the "a def nothing calls is invisible to every other
+# check" failure in miniature. The row now goes through `Arena.arg`, so the properties
+# are what is gated.
 #
 # Note what the port CANNOT do here: upstream's `axis_id` is `self.arg[1:]`, a slice of
 # a Python TUPLE of arbitrary length, so a port whose `ARange` holds a `List` answers it
 # only while the list is the whole tail. That is the same shape as every other
 # tuple-to-`List` conversion in this file and it is stated, not hidden.
-def UOp.axis_id.of(at: AxisType, ids: List<&2, U32>) -> List<&2, U32>: ids
-def UOp.axis_id.dead(at: AxisType, ids: List<&2, U32>) -> List<&2, U32>: Nil{}
-def UOp.axis_id.at(a: Arg) -> Maybe<&2, List<&2, U32>>:
-  match a:
-    case ARange{ids, at}: Some{UOp.axis_id.of(at, ids)}
+def UOp.axis_id(arg: Arg) -> Maybe<&2, List<&2, U32>>:
+  match arg:
+    case ARange{ids, at}: Some{ids}
     case _: None{}
 
-def UOp.axis_type.of(at: AxisType, ids: List<&2, U32>) -> AxisType: at
-def UOp.axis_type.dead(at: AxisType, ids: List<&2, U32>) -> AxisType: AXIS_REDUCE{}
-def UOp.axis_type.at(a: Arg) -> Maybe<&2, AxisType>:
-  match a:
-    case ARange{ids, at}: Some{UOp.axis_type.of(at, ids)}
+def UOp.axis_type(arg: Arg) -> Maybe<&2, AxisType>:
+  match arg:
+    case ARange{ids, at}: Some{at}
     case _: None{}
 
 # loop -- ops.py:644. `UOp(Ops.RANGE, src=(UOp(Ops.NOOP),), arg=(AxisType.WEAK, axis_id))`
@@ -4476,42 +4551,57 @@ def t_ax_range_start() -> IO(Unit):
     srow("axs_STAGE", range_start_str(OpsSTAGE{}))
     srow("axs_REDUCE", range_start_str(OpsREDUCE{}))
 
-# `rng_<tag>` (four facts) + `rngarg_<tag>` (the arg) + `axid_/axt_` (the properties).
-# `Rng.sig` is the four facts; the arg printer spells the port's OWN `ARange` encoding,
-# `(ids, at)`, which is the wall -- see the block above `UOp.range_end` -- and every
-# `rngarg_*` row is BEND-ONLY for that reason.
-def Rng.arg(at: AxisType, ids: List<&2, U32>) -> String:
-  String.concat(["(", IdsStr(ids), ",", AxisType.name(at), ")/len=2"])
+# `rng_<tag>` (four facts) + `rngarg_<tag>` (the arg) + `axid_/axt_` (the PROPERTIES,
+# read off the NODE through `UOp.axis_id` / `UOp.axis_type` and not off the fixture's
+# literals -- see the note above `UOp.axis_id` for why that is the difference between a
+# gated property and a dead claim).
+#
+# `rngarg_<tag>` spells the port's OWN `ARange` encoding, `(ids, at)`, which is the wall
+# -- see the block above `UOp.range_end` -- so every `rngarg_*` row is BEND-ONLY.
+def Rng.arg(arg: Arg) -> String:
+  match arg:
+    case ARange{ids, at}: String.concat(["(", IdsStr(ids), ",", AxisType.name(at), ")/len=2"])
+    case _: "!NotARange"
 
-def t_rng_row(+nm: String, +ar: Arena, +self: U32, +at: AxisType, +ids: List<&2, U32>) -> IO(Unit):
+def AxIds.of(m: Maybe<&2, List<&2, U32>>) -> String:
+  match m:
+    case Some{ids}: IdsStr.ids(ids)
+    case None{}: "!NotARange"
+
+def AxTypes.of(m: Maybe<&2, AxisType>) -> String:
+  match m:
+    case Some{at}: AxisType.name(at)
+    case None{}: "!NotARange"
+
+def t_rng_row(+nm: String, +ar: Arena, +self: U32) -> IO(Unit):
   do IO<Unit>:
     srow("rng_" ++ nm, Rng.sig(ar, self))
-    srow("rngarg_" ++ nm, Rng.arg(at, ids))
-    srow("axid_" ++ nm, IdsStr.ids(ids))
-    srow("axt_" ++ nm, AxisType.name(at))
+    srow("rngarg_" ++ nm, Rng.arg(Arena.arg(ar, self)))
+    srow("axid_" ++ nm, AxIds.of(UOp.axis_id(Arena.arg(ar, self))))
+    srow("axt_" ++ nm, AxTypes.of(UOp.axis_type(Arena.arg(ar, self))))
 
 # ONE BUILD PER ROW, one def per fixture. `g_rng_*` returns a `Found` over an affine
 # arena, so `main` cannot call it twice to get `.ar` and `.i`: the two calls build two
 # arenas and the signature would be over one node read from the other.
 def t_rng_weak1() -> IO(Unit):
   +f = g_rng_weak1()
-  t_rng_row("weak1", Found.ar(f), Found.i(f), AXIS_WEAK{}, [0])
+  t_rng_row("weak1", Found.ar(f), Found.i(f))
 
 def t_rng_loop1() -> IO(Unit):
   +f = g_rng_loop1()
-  t_rng_row("loop1", Found.ar(f), Found.i(f), AXIS_LOOP{}, [0])
+  t_rng_row("loop1", Found.ar(f), Found.i(f))
 
 def t_rng_dev3() -> IO(Unit):
   +f = g_rng_dev3()
-  t_rng_row("dev3", Found.ar(f), Found.i(f), AXIS_DEVICE{}, [0])
+  t_rng_row("dev3", Found.ar(f), Found.i(f))
 
 def t_rng_loopfn() -> IO(Unit):
   +f = g_rng_loopfn()
-  t_rng_row("loopfn", Found.ar(f), Found.i(f), AXIS_WEAK{}, [7])
+  t_rng_row("loopfn", Found.ar(f), Found.i(f))
 
 def t_rng_twoid() -> IO(Unit):
   +f = g_rng_twoid()
-  t_rng_row("twoid", Found.ar(f), Found.i(f), AXIS_LOOP{}, [0, 1])
+  t_rng_row("twoid", Found.ar(f), Found.i(f))
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -4612,6 +4702,25 @@ def main() -> IO(Unit):
 #     `canonicalize_device` -- the device memory layer. P6, and `ParamArg.buffer`
 #     is the slot they all read.
 #   `Estimates` in `KernelInfo` -- the renderer's cost model, P5.
+#   `CustomFunction` -- ops.py:1394 upstream, ADDED by `78d482262`. It is the arg of
+#     an `Ops.CUSTOM_FUNCTION`: a function name and the dtype the external function
+#     RETURNS. Two dataclass fields, and it is PORTABLE -- but only reachable from
+#     `UOp.custom_function`, which is P6 (`runtime/support/hcq2.py` is the only caller
+#     and it is out of scope), so it lands with that. It is NOT optional: upstream
+#     MOVED `CallInfo.dtype` into it, so a CALL's return dtype now lives on its
+#     CUSTOM_FUNCTION body. The rebase must add this datatype AND re-cut `CallInfo`
+#     without its `dtype` field, and those are ONE change, not two.
+#   `UOp.custom_function(name, *src, dtype=dtypes.void)` and
+#     `UPat.custom_function(fn, **kwargs)` -- the same P6/P3 pair. `UPat`'s is a
+#     `PatternMatcher` rule constructor, so it lands with `uop/upat.py`.
+#   `UOp.param_like(slot, name=None)` -- ops.py:1241 upstream. `name` was added so a
+#     scalar argument can be bound by NAME while its slot and value stay out of the
+#     schedule cache key. P6, with the hcq call sites that use it.
+#   `UOp.contiguous_view()`'s new tail -- upstream now returns a BITCAST SLICE
+#     (`b.src[0].flatten()[...]`) where the pin returned `(b.rtag(None), offset)`, and
+#     it computes the offset with `strides_for_shape` instead of a
+#     `pm_contiguous_view_offset` matcher. P3 with `symbolic.bend`; the matcher form is
+#     NOT PORTED for the reason the pattern compiler is, below.
 #   `Target` in `ProgramInfo` -- helpers.py's device-target record, already
 #     listed as P6 in helpers.bend's own NOT PORTED block.
 #   `grad_fxn` in `CallInfo` and `uopfunc` -- a Python function object; a Bend

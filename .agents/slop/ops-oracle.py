@@ -217,23 +217,27 @@ def rngrow(name: str, u) -> None:
   print(f"rngarg_{name}={argstr(u)}")
 
 
-def axprop_row(name: str, u) -> None:
-  """`axis_id` and `axis_type` READ AS THE PROPERTIES.
+def render_ids(u) -> str:
+  """`u.axis_id` WITH ITS LENGTH, read as the PROPERTY.
 
-  CPython asserts `self.op is Ops.RANGE` in both, so a non-RANGE cannot be asked; every
-  fixture here is a RANGE and that is stated rather than worked around.
-
-  The TYPE of the answer is printed alongside it, and that is not decoration: on the
-  three-element `twoid` fixture the pin's `axis_type` -- `self.arg[-1]` -- answers the
-  INT `1`, not an `AxisType`, so `.name` raises. Printing `int:1` is the measured fact
-  and it is the same fact `rng_twoid`'s `arg=` row carries from the other side.
+  The length is in the row because upstream's `axis_id` is a SLICE of the arg, and a
+  slice's length is what says which slice: on the three-element `twoid` fixture
+  `arg[1:]` is `(0, 1)` and the pin's `arg[0:-1]` is `(LOOP, 0)`, and the two agree on
+  every arg of length two. That agreement is why `twoid` exists.
   """
   ids = u.axis_id
-  idstr = render(ids) + f"/len={len(ids) if isinstance(ids, tuple) else 1}"
+  return render(ids) + f"/len={len(ids) if isinstance(ids, tuple) else 1}"
+
+
+def axis_type_str(u) -> str:
+  """`u.axis_type`, read as the PROPERTY, WITH ITS TYPE when it is not an AxisType.
+
+  Not decoration: on `twoid` the pin's `axis_type` -- `self.arg[-1]` -- answers the INT
+  `1` rather than an AxisType, and printing `int:1` is the measured fact rather than a
+  crash on `.name`.
+  """
   at = u.axis_type
-  atstr = at.name if isinstance(at, AxisType) else f"{type(at).__name__}:{at}"
-  print(f"axid_{name}={idstr}")
-  print(f"axt_{name}={atstr}")
+  return at.name if isinstance(at, AxisType) else f"{type(at).__name__}:{at}"
 
 
 print(f"#shared_tree={TAG}")
@@ -324,8 +328,15 @@ _rng_twoid = UOp(Ops.RANGE, src=(UOp.const(2),), arg=(AxisType.LOOP, 0, 1))
 RANGES = (("weak1", _rng_weak1), ("loop1", _rng_loop1), ("dev3", _rng_dev3),
           ("loopfn", _rng_loopfn), ("twoid", _rng_twoid))
 
+# The four rows of a fixture are printed TOGETHER, `rng_` then `rngarg_` then `axid_`
+# then `axt_`, because the Bend prints them together and the gate is a byte diff: an
+# interleaved order would report a whole-file reordering instead of the one row that is
+# actually different.
 for _name, _u in RANGES:
-  rngrow(_name, _u)
+  print(f"rng_{_name}={facts(_u)}")
+  print(f"rngarg_{_name}={argstr(_u)}")
+  print(f"axid_{_name}={render_ids(_u)}")
+  print(f"axt_{_name}={axis_type_str(_u)}")
 
 
 # The RANGE-arg SPEC, asked of the TREE ITSELF. `tinygrad/uop/spec.py` states what a
@@ -342,14 +353,10 @@ from tinygrad.uop.spec import spec_shared  # noqa: E402
 for _name, _u in RANGES:
   print(f"rngspec_{_name}={spec_shared.rewrite(_u)}")
 
-# ---------------------------------------------------------------------------
-# 4. `axis_id` / `axis_type`, READ AS THE PROPERTIES -- never as a hand-written slice
-#    of `.arg`. Every fixture is a RANGE, which is what CPython's `assert self.op is
-#    Ops.RANGE` in both properties requires; there is no non-RANGE fixture here because
-#    there is no non-RANGE answer to ask for.
-# ---------------------------------------------------------------------------
-for _name, _u in RANGES:
-  axprop_row(_name, _u)
+# `axis_id` / `axis_type` are read in the loop above, AS THE PROPERTIES and never as a
+# hand-written slice of `.arg`. Every fixture is a RANGE, which is what CPython's
+# `assert self.op is Ops.RANGE` in both properties requires; there is no non-RANGE fixture
+# here because there is no non-RANGE answer to ask for.
 
 # ---------------------------------------------------------------------------
 # 5. `AxisType.__lt__`, which upstream ADDED and the port does not have. Two rows: the
@@ -430,24 +437,61 @@ print(f"mstack0={facts(_m_self.mstack())}")
 # ---------------------------------------------------------------------------
 BEND_ONLY = [
   # (row, why CPython cannot be asked)
+  #
+  # --- THE 22 EXISTING ROWS. This file shipped with these and with `cpython=0`, so
+  # --- every one of them is listed with its reason rather than left implicit: a lane
+  # --- that silently omits 22 rows is how `AxisType.value` survived. Most are Booleans
+  # --- over a bend-only fact (a bit pattern, a fuel budget, a UPat, a PatternMatcher
+  # --- rule) and the honest thing for each is to name the thing.
+  ("hashcons", "the ARENA's hash-consing: `UOpMetaClass.ucache` keyed on `UOp.key`, "
+               "which is `hashlib.sha256` over the render (P3/P6). The port interns by "
+               "a linear scan with `eq_node`, so CPython cannot be asked for an index."),
   ("float_zeros_differ", "F32.bits of +0.0 vs -0.0; the port's bit pattern, CPython's float"),
   ("float_nan_interns", "nan CONSTs interning to one node; F32.div(0,0) is the port's nan"),
+  ("dtype_key", "the same as hashcons, one field on: `True == 1` as dict keys, which is "
+                "`type(arg)` in the key and a `CWeakFloat`/`CFloat` arm in the ladder"),
   ("cycle", "a BACKEDGE cycle is a LEGAL arena state in Bend and illegal in CPython's dict"),
+  ("after_puts_self_first", "ops.py:621's `src=(self,)+src`; a self-first AFTER has the "
+                            "same op, nsrc, shape and dtype as the inverse, so the row is "
+                            "the src op SEQUENCE and CPython's answer is the same string "
+                            "either way -- it cannot fail"),
+  ("end_puts_self_first", "as after_puts_self_first, ops.py:619"),
+  ("toposort", "the port's FUEL-BOUNDED toposort answers a partial set where Python's "
+               "`while stack:` cannot run out; the count is over the port's budget"),
   ("cycle_terminates", "the FUEL exhaustion path; CPython's while loop cannot run out"),
+  ("key_eq", "`UOp.key`'s equality over op/srcs/arg/tag; the packed arg is a Bend `Arg` "
+             "and the Python key is a sha256"),
+  ("eq_dt", "DType equality: `@dataclass(frozen=True, eq=False)` under a metaclass that "
+            "caches by (priority, bitsize, name, fmt), so it is identity and the port "
+            "spells the four fields out. CPython's answer is True for every pair."),
+  ("eq_dt_disjoint", "as eq_dt: the five disjoint pairs"),
+  ("weakfloat_interns", "the ARENA's intern count over a CAST pair; `UOp(...)` returns "
+                        "the object and there is no index to ask for"),
+  ("eq_addr", "dtype.py:51-54's `AddrSpace` is a plain IntEnum of four singletons; the "
+              "port's `eq_addr` ladder is the four-arm spelling and CPython's answer is "
+              "identity, which is the same predicate over the same four values"),
+  ("addr_interns", "as weakfloat_interns: two PARAMs differing only in addrspace"),
+  ("ops_name", "`Ops` is a FastEnum, so `name` and `value` are both attributes of ONE "
+               "object; the port splits them into two ladders and `UOp.tuplize` uses the "
+               "number. CPython has no ladder to disagree with."),
+  ("var_interns", "as weakfloat_interns"),
   ("ler_len", "the `pm_ler` regression: a PatternMatcher rule length, P3 in the port"),
   ("early_reject", "UPat early-reject collection, which is `uop/upat.py` (P3)"),
   ("broadcast_repeats", "UPat permutation arity, `uop/upat.py` (P3)"),
   ("required_len", "UPat required_len, `uop/upat.py` (P3)"),
   ("alu_permutes", "GroupOp.Commutative membership read off the port's own Op datatype"),
-  # --- the AXISTYPE REBASE WALLS. Each is a row the Bend prints and CPython cannot
+  # --- THE AXISTYPE REBASE WALLS. Each is a row the Bend prints and CPython cannot
   # --- match, and each is here with the REASON so the gate script can filter by name.
   ("rngarg", "ARange's FIELD ORDER is the pin's `(ids, at)`; eleven committed files read "
              "and write it positionally. Upstream packs `(at, ids)`. ops-gate.sh greps "
              "the Bend source and fails if ARange is flipped without them."),
-  ("axid_twoid", "the three-element arg a flat `arg[1:]` slice produces; the port's "
-                 "`ARange` holds `(ids, at)` so it answers the pin's `(LOOP, 0)`"),
-  ("axt_twoid", "as axid_twoid: the pin's `arg[-1]` answers the INT 1, which is the "
-                "discrimination, and the port cannot produce a flat three-part arg"),
+  ("eqax_collide_all", "the port has TEN AxisType members where CPython has eight, so "
+                       "the off-diagonal collision count over all ten is a PORT-INTERNAL "
+                       "invariant with no CPython counterpart. It is the row that keeps "
+                       "the two retained dead members from colliding with a live one."),
+  ("eqax_diag_all", "as eqax_collide_all"),
+  ("mstack_puts_self_first", "the Bool naming the MSTACK self-first regression; the "
+                             "CPython-compared half is `mstack2`'s src op sequence"),
   ("rngspec", "`tinygrad/uop/spec.py`'s matcher, which is P3 and not ported; the oracle "
               "prints it because the PREDICATE moved with the flip and the movement is "
               "the fact (pin rejects `twoid`, upstream accepts it)"),
@@ -470,6 +514,6 @@ BEND_ONLY = [
   ("axc_REDUCE", "as axv_REDUCE: upstream deleted the axis_colors entry too"),
   ("axc_UNROLL", "as axv_REDUCE"),
 ]
-print("#existing_rows=" + ",".join(r for r, _ in BEND_ONLY))
+print("#bend_only_count=" + str(len(BEND_ONLY)))
 for r, why in BEND_ONLY:
   print(f"#bend_only_{r}={why}")

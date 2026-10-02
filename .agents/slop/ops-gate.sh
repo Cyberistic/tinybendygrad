@@ -80,20 +80,29 @@ fi
 # BEND_ONLY is derived from the oracle's own `#bend_only_*` reasons, so the two cannot
 # drift: a row that gains a reason gains a filter entry without anyone editing this file.
 # It is joined with `|` and NOT left newline-separated -- a newline inside a `grep -E`
-# pattern makes grep read the rest as a filename, which is a silent no-filter.
-BEND_ONLY=$(.venv/bin/python .agents/slop/ops-oracle.py | sed -n 's/^#bend_only_\([a-zA-Z_]*\)=.*/\1/p' \
-  | sort -u | awk '{printf "%s^%s($|_)", (n++ ? "|" : ""), $0}')
+# pattern makes grep read the rest as a filename, which is a silent no-filter. The match
+# is a PREFIX, not `name=`, because two families are prefixes (`rngarg_*`, `rngspec_*`)
+# and one is a prefix of another (`cycle` of `cycle_terminates`). Both are bend-only and
+# both are listed, so prefix matching cannot hide a row that is not already accounted for.
+BEND_ONLY_NAMES=$(.venv/bin/python .agents/slop/ops-oracle.py | sed -n 's/^#bend_only_\([a-zA-Z_]*\)=.*/\1/p' | sort -u)
+BEND_ONLY=$(echo "$BEND_ONLY_NAMES" | awk '{printf "%s^%s", (n++ ? "|" : ""), $0}')
 
-filter() { grep -vE "$BEND_ONLY"; }
+# WHAT IS FILTERED AND WHY. `BEND_ONLY` is the bend-only ROW FAMILIES. The two explicit
+# prefixes are oracle-only COMMENT lines: `#shared_tree` names the tree the oracle read,
+# and the `#bend_only_*` lines are the reasons themselves. NOTHING ELSE is filtered --
+# in particular the `#shared_axis_*` rows are NOT comments but GATED rows, because they
+# are the member list, the value sequence, the count and the sort, and a lane that
+# dropped them would agree about the wrong number of axis types.
+filter() { grep -vE "^#shared_tree|^#bend_only|$BEND_ONLY"; }
 
-.venv/bin/python .agents/slop/ops-oracle.py | grep -v '^#' | filter > "$F-py.txt"
-./bin/bend tinybendygrad/uop/ops.bend | grep -v '^#' | filter > "$F-bd.txt"
+.venv/bin/python .agents/slop/ops-oracle.py | filter > "$F-py.txt"
+./bin/bend tinybendygrad/uop/ops.bend | filter > "$F-bd.txt"
 ./bin/bend tinybendygrad/uop/ops.bend -o "$F.bin"
-"$F.bin" | grep -v '^#' | filter > "$F-bn.txt"
+"$F.bin" | filter > "$F-bn.txt"
 
 diff "$F-py.txt" "$F-bd.txt"
 diff "$F-py.txt" "$F-bn.txt"
 
 echo "ops-gate: $(wc -l < "$F-py.txt" | tr -d ' ') shared rows, 3 lanes identical"
-echo "ops-gate: $(echo "$BEND_ONLY" | wc -l | tr -d ' ') bend-only row families, each with a #bend_only_ reason in the oracle"
+echo "ops-gate: $(echo "$BEND_ONLY_NAMES" | wc -l | tr -d ' ') bend-only row families, each with a #bend_only_ reason in the oracle"
 echo "ops-gate: total bend rows = $(./bin/bend tinybendygrad/uop/ops.bend | grep -vc '^#')"
