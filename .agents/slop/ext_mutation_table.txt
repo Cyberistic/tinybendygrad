@@ -1,0 +1,94 @@
+baseline rows: amd=104, compiler_cpu=116, compiler_cuda=175, compiler_llvm=132
+
+restored to baseline: True
+
+file             rows moved  mutation
+amd                       9  getbits.mask: the width-32 saturating branch (M1)
+                               moved: amd.asic_gc_9_4_3.dec_str, amd.asic_gc_9_4_3.mask1, amd.asic_gc_9_4_3.mask2, amd.asic_gc_9_4_3.mask_hex, amd.asic_gc_9_4_3.mask_rev, amd.asic_hdp_6_0_0.mask2, amd.dec_hdp, amd.getbits_1_0_0 ...
+amd                       3  getbits: drop the mask (M2)
+                               moved: amd.asic_gc_9_4_3.dec_str, amd.dec_hdp, amd.getbits_3735928559_4_7
+amd                       2  AMDReg.encode: `|` becomes `+` (M3)
+                               moved: amd.encode_ovl_a, amd.encode_ovl_b
+amd                       8  AMDReg.encode: drop the shift (M4)
+                               moved: amd.asic_gc_9_4_3.enc2, amd.asic_gc_9_4_3.enc_rev, amd.asic_gc_9_4_3.enc_same, amd.asic_hdp_6_0_0.enc2, amd.asic_hdp_6_0_0.enc_rev, amd.asic_hdp_6_0_0.enc_same, amd.encode_ovl_a, amd.encode_ovl_b
+amd                       5  AMDReg.fields_mask: shift by end instead of start (M5)
+                               moved: amd.asic_gc_9_4_3.mask1, amd.asic_gc_9_4_3.mask2, amd.asic_gc_9_4_3.mask_hex, amd.asic_gc_9_4_3.mask_rev, amd.mask_w32
+amd                       1  AMDReg.addr: ignore the segment index (M6 -- the shadowing)
+                               moved: amd.addrlist_1
+amd                       1  import_module.override: the second table entry is 13.0.11 (M7)
+                               moved: amd.ovr_smu_13_0_10
+amd                       4  import_module.vle: drop the length tiebreak (M8)
+                               moved: amd.fake_gc_9_4_3.kids, amd.fake_gc_9_4_3.last, amd.fake_gc_9_4_3.n, amd.fake_gc_9_4_3.sorted_last
+amd                       5  import_module.keep: drop `startswith` (M9)
+                               moved: amd.fake_gc_9_4_3.kids, amd.fake_gc_9_4_3.last, amd.fake_gc_9_4_3.n, amd.fake_gc_9_4_3.sorted_last, amd.fake_gc_9_4_3_1.kids
+amd                       1  import_module.pick_last: take the FIRST of __all__ (M10)
+                               moved: amd.fake_gc_9_4_3.last
+amd                       4  AMDIP.name10: the replacement is `nn` (M11)
+                               moved: amd.ga_gc_rewrite_mmMM_A, amd.ga_gc_rewrite_reg, amd.ga_gc_rewrite_reg_, amd.ga_gc_rewrite_regregMM_A
+amd              NOT-APPLIED  amd.ip_9_16_0.key: no-op (M12 -- control)
+amd                       5  hex: forget to add d for a-f (M13)
+                               moved: amd.addrlist_1, amd.asic_gc_9_4_3.mask_hex, amd.hex_15, amd.hex_255, amd.ip_9_15_255.key
+amd              NOT-APPLIED  hex: divide/modulo by 15 instead of 16 (M14)
+amd                       3  hex: divide by 15 instead of 16 (M14)
+                               moved: amd.hex_15, amd.hex_255, amd.ip_9_15_255.key
+amd                      10  AMDReg.width / hx2.len: the count is one too many (M12)
+                               moved: amd.addr_one, amd.addr_one_off, amd.addrlist_0, amd.addrlist_1, amd.asic_gc_9_4_3.mask_hex, amd.hex_15, amd.hex_255, amd.ip_9_15_255.key ...
+compiler_cpu              2  x86_feat: `-mno{s}` loses its own `-` (M16)
+                               moved: cpu.x86_64f.args, cpu.x86_64f.argv
+compiler_cpu              1  arm64_feat: keep the dash (M17)
+                               moved: cpu.arm64f.args
+compiler_cpu              0  riscv64_cpu: control (M18)
+compiler_cpu              2  riscv64_cpu: native -> rv64gc (M19)
+                               moved: cpu.riscv64n.args, cpu.riscv64nf.args
+compiler_cpu              4  ClangCompiler.ge2: the threshold (M20)
+                               moved: cpu.X86.kind, cpu.ge2_two, cpu.sparc.kind, cpu.x86_64.kind
+compiler_cpu              4  arm64: the fixed register is x17 (M21)
+                               moved: cpu.arm64.args, cpu.arm64.argv, cpu.arm64dash.args, cpu.arm64f.args
+compiler_cpu              1  arm64: join with `_` instead of `+` (M22)
+                               moved: cpu.arm64f.args
+compiler_cpu              5  compile_argv: count the features twice (M23)
+                               moved: cpu.arm64f.comp_n, cpu.riscv64.argv_n, cpu.riscv64nf.comp_n, cpu.x86_64f.argv_n, cpu.x86_64f.comp_n
+compiler_cpu              5  hx.bad: invert the found test (M24)
+                               moved: cpu.x86_dot, cpu.x86_dot_n, cpu.x86_dot_ok, cpu.x86_nodash, cpu.x86_nodash_n
+compiler_cpu     COMPILE-FAIL  hx.count: count a space too (M25)
+                               moved: the mutation does not typecheck; not a blind spot
+compiler_cuda             2  colored.esc: drop the upper-case +60 (M26)
+                               moved: cu.colored_BLUE, cu.esc_BLUE
+compiler_cuda             1  nvrtc_ge_12_4: the minor threshold is 5 (M27)
+                               moved: cu.nvrtc_v1204.minimal
+compiler_cuda             1  PTXCompiler.ver: the 89 threshold is 88 (M28)
+                               moved: cu.ptxc_sm88.ver
+compiler_cuda             7  PTXCompiler.num: `arch[3:]` becomes `arch[2:]` (M29)
+                               moved: cu.ptxc_sm120.out, cu.ptxc_sm120.ver, cu.ptxc_sm120.ver_ge120, cu.ptxc_sm200.ver, cu.ptxc_sm89.ver, cu.ptxc_sm89.ver_ge89, cu.ptxc_sm90.ver
+compiler_cuda             2  NVCCCompiler.suffix: invert ptx (M30)
+                               moved: cu.nvcc_cubin.suffix, cu.nvcc_ptx.suffix
+compiler_cuda             5  NVRTCCompiler.includes: invert the CUDA_PATH test (M31)
+                               moved: cu.cudapath_set_opts, cu.inc_set, cu.inc_unset, cu.nvrtc_v1204.opts, cu.nvrtc_v1204b.opts
+compiler_cuda             3  zr.n: no rstrip at all (M32)
+                               moved: cu.disrstrip_n_cubin, cu.disrstrip_n_ptx, cu.disrstrip_n_zeros
+compiler_cuda             3  rst.allzeros: an empty tail is not all zeros (M33)
+                               moved: cu.disrstrip_n_cubin, cu.disrstrip_n_ptx, cu.disrstrip_n_zeros
+compiler_cuda             2  NVRTCCompiler.arch_opt: drop the arch (M34)
+                               moved: cu.cudapath_set_opts, cu.nvrtc_v1204.opts
+compiler_llvm             2  LLVMCompiler.passes: invert the LLVMOPT flag (M35)
+                               moved: ll.arch_arm64.passes, ll.passes_opt0
+compiler_llvm            10  LLVMCompiler.prefix: invert the arm64 arm (M36)
+                               moved: ll.arch_AMDGPU.names, ll.arch_AMDGPU.prefix, ll.arch_EMPTY.prefix, ll.arch_arm32.names, ll.arch_arm32.prefix, ll.arch_arm64.names, ll.arch_arm64.prefix, ll.arch_riscv64.names ...
+compiler_llvm             2  prefix: riscv64 falls to X86 (M37)
+                               moved: ll.arch_riscv64.names, ll.arch_riscv64.prefix
+compiler_llvm             6  CPULLVMCompiler.featstr: join with a space (M38)
+                               moved: ll.cpu_arm.feat_final, ll.cpu_arm.featstr, ll.cpu_x86f.feat_final, ll.cpu_x86f.featstr, ll.cpu_x86nf.feat_final, ll.cpu_x86nf.featstr
+compiler_llvm             3  reserve_x18: x17 instead of x18 (M39)
+                               moved: ll.cpu_arm.feat_final, ll.cpu_arm.x18, ll.cpu_x18_arm
+compiler_llvm             1  feat_native: drop the separating comma (M40)
+                               moved: ll.cpu_x86nf.feat_final
+compiler_llvm             2  remap: `in` becomes `startswith` (M41)
+                               moved: ll.remap_amdgcn_end, ll.remap_amdgcn_end_msg
+compiler_llvm             6  key: the `or` arm is inverted (M42)
+                               moved: ll.ckey_, ll.ckey_NONE, ll.ckey_NONE_opt0, ll.ckey_mykey, ll.ckey_mykey_opt0, ll.key_opt0
+compiler_llvm    NOT-APPLIED  append_diag: control (M43)
+compiler_llvm             5  append_diag: collect on a NON-error severity (M44)
+                               moved: ll.append_no, ll.append_no_n, ll.append_ok, ll.append_ok2, ll.append_ok_n
+
+45 mutations, 43 moving, 1 blind spots, 1 did not typecheck
+  BLIND compiler_cpu: riscv64_cpu: control (M18)
