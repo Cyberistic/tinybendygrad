@@ -3360,68 +3360,99 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
 # and reads the Verdict. The codegen rewrite engine is a NEW consumer and
 # reads `Maybe<&2, U32>`. The two families co-exist until spec.bend moves
 # off Verdict (it won't, in this unit). Each rule's `_m` body takes
-# `(ctx: U32, ar: Arena, self: U32)` and returns `Maybe<&2, U32>`.
-# `ctx` is a `U32` here because the dispatch is a `U32 -> U32 -> ...`
-# surface; the engine threads the real `ctx` (a `Data` record, a `Nat`
-# counter, whatever) as a `U32`-keyed `Map<&2, U32>` indexed off the arena
-# the way `VarVals` does.
+# `(ctx: List<&2, U32>, ar: Arena, self: U32)` and returns `Maybe<&2, U32>`.
+# `ctx` is a `List<&2, U32>` here, which is the wall-passing shape from
+# `walk_rewrite`; the engine threads it through the dispatch so the rule body
+# can read it. The codegen pipeline eventually passes a typed `CTX` record
+# and the `List<&2, U32>` becomes the new record's first projection.
 # ===========================================================================
 
 # the rule bodies. The default for every rule is "no rewrite" (`None{}`).
 # The no-op `pm_rewrite_m` body for a SINK is `Some(self)` so the engine
 # does not have to special-case SINK in the rebuild step.
 
-def pm_r_sink_m(ar: Arena, self: U32) -> Maybe<&2, U32>:
+def pm_r_sink_m(+ctx: List<&2, U32>, ar: Arena, self: U32) -> Maybe<&2, U32>:
   Some{self}
 
-def pm_r_cast_m(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
+def pm_r_cast_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   # the rule does not transform a CAST/BITCAST; it just claims it for
   # tables whose body is identity. The real `pm_dtype_decomps` /
   # `pm_move_gates_from_index` will replace this.
   Some{self}
 
-def pm_r_noop_m(ar: Arena, self: U32) -> Maybe<&2, U32>:
+def pm_r_noop_m(+ctx: List<&2, U32>, ar: Arena, self: U32) -> Maybe<&2, U32>:
   # NOOP -> its source. The minimal "rule fires and returns a new node".
   Some{Arena.src(ar, self, 0)}
 
-# dispatch by tag. Tags 0/1/2 are the same as `pm_dispatch.go`. A new rule
-# body in the table adds a `case n: pm_r_NEW_m(ar, self)`.
-def pm_dispatch_m.go(tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
-  match tag:
-    case 0: pm_r_sink_m(ar, self)
-    case 1: pm_r_noop_m(ar, self)
-    case 2: pm_r_cast_m(ar, self)
+# Tag 3: PARAM. Reads the node's `AParam` arg, looks up `ctx[slot]`. The
+# rule fires on a positive slot (0 or 1 in the test fixture; any other slot
+# is the "free Variable" sentinel and is left alone with `None{}`).
+#
+# The .go split: a `match` cannot scrutinize a computed value, so the match
+# on `Arena.arg` lives in `pm_r_param_m.go` and the wrapper computes it.
+def pm_r_param_m.slot(arg: Arg) -> U32:
+  match arg:
+    case AParam{pa}: ParamArg.slot(pa)
+    case _: 4294967295
+
+def pm_r_param_m.go(slot: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  match slot:
+    case 0: List.get(&2, U32, ctx, U32.to_nat(0))
+    case 1: List.get(&2, U32, ctx, U32.to_nat(1))
     case _: None{}
 
-def pm_dispatch_m(tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
-  pm_dispatch_m.go(tag, ar, self)
+def pm_r_param_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  pm_r_param_m.go(pm_r_param_m.slot(Arena.arg(ar, self)), ctx)
 
-def pm_try_m.go(ok: Bool, tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+# Tag 4: ALLOC. Mints a fresh BUFFER with a placeholder slot (99, dtype int).
+# The new arena is the `Found.ar` of `UOp.new`; the engine discards it (the
+# `+ar` it carries is the pre-mint arena, and the new node's index points
+# into the grown arena which the test fixture does not need to address).
+def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  Some{Found.i(UOp.new(ar, OpsBUFFER{}, Nil{},
+    AParam{ParamArg{99, S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
+    TNone{}))}
+
+# dispatch by tag. Tags 0/1/2 are the same as `pm_dispatch.go`. Tags 3/4
+# are the codegen pipeline's `pm_post_sched_cache` rules and read `ctx`.
+def pm_dispatch_m.go(tag: U32, ar: Arena, self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  match tag:
+    case 0: pm_r_sink_m(ctx, ar, self)
+    case 1: pm_r_noop_m(ctx, ar, self)
+    case 2: pm_r_cast_m(ctx, ar, self)
+    case 3: pm_r_param_m(ctx, ar, self)
+    case 4: pm_r_alloc_m(ctx, ar, self)
+    case _: None{}
+
+def pm_dispatch_m(tag: U32, ar: Arena, self: U32, ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  pm_dispatch_m.go(tag, ar, self, ctx)
+
+def pm_try_m.go(ok: Bool, tag: U32, ar: Arena, self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
   match ok:
-    case True{}: pm_dispatch_m(tag, ar, self)
+    case True{}: pm_dispatch_m(tag, ar, self, ctx)
     case False{}: None{}
 
-def pm_try_m.of(claimed: Bool, early: Bool, tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
-  pm_try_m.go(Bool.and(claimed, early), tag, ar, self)
+def pm_try_m.of(claimed: Bool, early: Bool, tag: U32, ar: Arena, self: U32, ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  pm_try_m.go(Bool.and(claimed, early), tag, ar, self, ctx)
 
-def pm_try_m(ts: PMEntrys, +ar: Arena, +self: U32, +e: PMEntry) -> Maybe<&2, U32>:
-  pm_try_m.of(pm_claimed(PMEntry.ops(e), ar, self), pm_early(ts, ar, self, PMEntry.rej(e)), PMEntry.tag(e), ar, self)
+def pm_try_m(ts: PMEntrys, +ar: Arena, +self: U32, +e: PMEntry, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  pm_try_m.of(pm_claimed(PMEntry.ops(e), ar, self), pm_early(ts, ar, self, PMEntry.rej(e)), PMEntry.tag(e), ar, self, ctx)
 
 # `pm_scan_m` is a first-wins fold over the rule list. First `Some` wins;
 # later `Some`s are dropped. The accumulator is `Maybe<&2, U32>` and the
 # identity is `None{}`. The order is the table order, which IS Python's
 # `PatternMatcher` order (Python's `pm.rewrite` returns the first non-None
 # result).
-def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc: Maybe<&2, U32>, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
   match todo:
     case Nil{}: acc
     case e <> t:
       match acc:
         case Some{value}: acc
-        case None{}: pm_scan_m(ts, ar, self, t, pm_try_m(ts, ar, self, e))
+        case None{}: pm_scan_m(ts, ar, self, t, pm_try_m(ts, ar, self, e, ctx), ctx)
 
-def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
-  pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{})
+def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
+  pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
 
 # one rule: does it claim this op, and does `early_reject` pass?

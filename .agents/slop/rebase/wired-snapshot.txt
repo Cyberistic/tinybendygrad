@@ -1,0 +1,10 @@
+# wire-snapshot, measured by wire-snapshot.py on 2026-10-03
+#
+#   rows   interpreted / native / oracle / shared / disagree / claimed
+
+tinybendygrad/runtime/support/elf.bend
+  interpreted=353 native=353 oracle=1042 shared=353 disagree=0 claimed=353 OK
+  port rows outside the oracle: 0
+tinybendygrad/renderer/amd/sqtt.bend
+  interpreted=1033 native=1033 oracle=1324 shared=1015 disagree=0 claimed=1015 OK
+  port rows outside the oracle: 18

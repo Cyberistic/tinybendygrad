@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/renderer_oracle.py", line 177, in <module>
+    (rows_init if sys.argv[1] == "init" else rows_cstyle)()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/renderer_oracle.py", line 163, in rows_cstyle
+    R("k1_load_store", render(f_load_store()))
+                              ^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/renderer_oracle.py", line 91, in f_load_store
+    p0 = UOp.param(0, dtypes.f32, 4)
+                      ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'f32'

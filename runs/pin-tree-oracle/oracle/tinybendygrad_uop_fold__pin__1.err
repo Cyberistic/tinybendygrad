@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-lift-gate.py", line 330, in <module>
+    emit_py()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-lift-gate.py", line 285, in emit_py
+    rows, sat = run()
+                ^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-lift-gate.py", line 275, in run
+    for opn, pa in (("PARAM", UOp(O.PARAM, arg=ParamArg(0, dtypes.i32, None, (a, b)))),
+                                                           ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'i32'

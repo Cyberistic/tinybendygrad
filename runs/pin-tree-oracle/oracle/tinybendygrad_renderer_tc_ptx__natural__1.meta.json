@@ -1,0 +1,275 @@
+{
+ "rc": 0,
+ "timeout": false,
+ "elapsed": 0.24,
+ "nrows": 333,
+ "bytes": 21541,
+ "imports": [
+  {
+   "name": "tinygrad.helpers",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/helpers.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/dtype.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.runtime.support.memory",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/support/memory.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.device",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/device.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/dtype.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.ops",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.movement",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/movement.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.creation",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/creation.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.elementwise",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/elementwise.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.reduce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/reduce.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.op",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/op.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.mixin.rand",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/rand.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.render",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/render.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.spec",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/spec.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.memory",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/memory.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.renderer.tc",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/tc.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.renderer",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.weak",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/weak.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.renderer.isa",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/isa/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.late.linearizer",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/late/linearizer.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.gpudims",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/gpudims.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.divandmod",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/divandmod.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.movement",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/movement.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.transcendental",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/decomp/transcendental.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.uop.symbolic",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/symbolic.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/decomp/dtype.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.op",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/decomp/op.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.late.coalesce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/late/coalesce.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.opt",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/opt/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.simplify",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/simplify.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.opt.postrange",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/opt/postrange.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.late.gater",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/late/gater.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.allreduce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/allreduce.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.multi",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/multi.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.indexing",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/indexing.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.prepare",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/prepare.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen.late.regalloc",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/late/regalloc.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule.rangeify",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/rangeify.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.codegen",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.engine.worker",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/worker.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.engine.realize",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/realize.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.runtime.support.hcq2",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/support/hcq2.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.schedule",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/schedule/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.tensor",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/tensor.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.nn.state",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/nn/state.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.nn",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/nn/__init__.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.nn.optim",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/nn/optim.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.nn.datasets",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/nn/datasets.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.engine.jit",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/jit.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.function",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/function.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.renderer.cstyle",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/cstyle.py",
+   "tree": "vendor"
+  },
+  {
+   "name": "tinygrad.renderer.ptx",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/renderer/ptx.py",
+   "tree": "vendor"
+  }
+ ],
+ "err_tail": ""
+}

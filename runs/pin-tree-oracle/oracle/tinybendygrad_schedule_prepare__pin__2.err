@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/prepare-oracle.py", line 23, in <module>
+    I32 = dtypes.i32
+          ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'i32'

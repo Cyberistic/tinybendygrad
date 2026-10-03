@@ -27,6 +27,46 @@ from tinygrad.runtime.ops_amd import AMDDevice, AMDProgramData
 OUT = {}
 
 def row(nm, v): OUT[nm] = str(v)
+
+def bshow(v):
+    """`str(bool(v))`, which is what Bend `Bool.show` prints (`ops_amd.bend` `row`).
+
+    `int(True)` is `1`. The gate compares the rendered string, so a bool row
+    printed as `1` disagrees with a port row printed as `True` and the
+    disagreement is not a value. Do not use this for `urow` rows: those are
+    U32, and `1` is the rendering that agrees.
+    """
+    return str(bool(v))
+
+def bare(cls):
+    """An instance that did not run `__init__`.
+
+    `USBIface.__init__` (`ops_amd.py:816`) calls `USB3.list_devices` and needs a
+    device. `object.__new__` does not. `isinstance` then sees the MRO only.
+    This is the marshalling fixture, not the device path, and it must not be
+    described as one.
+    """
+    return object.__new__(cls)
+
+@functools.cache
+def ifaces():
+    """`AMDDevice.ifaces` at `ops_amd.py:850`, in that order."""
+    return (M.KFDIface, M.PCIIface, M.USBIface,
+            M._mock(M.KFDIface, "MOCKIface"), M._mock(M.KFDIface),
+            M._mock(M.PCIIface), M._mock(M.USBIface))
+
+def is_am_at(i):
+    """`isinstance(self.iface, (PCIIface,))` at `ops_amd.py:854`, no device."""
+    return isinstance(bare(ifaces()[i]), (M.PCIIface,))
+
+def is_usb_at(i):
+    """`isinstance(self.iface, USBIface)` at `ops_amd.py:858`, no device."""
+    return isinstance(bare(ifaces()[i]), M.USBIface)
+
+# Bend iface ids (`ops_amd.bend` `IFACE_*`). `pci_vf` is PCIIface plus a
+# labelled `is_vf` flag: `dev_impl.is_vf` (`ops_amd.py:859`) needs a device.
+IFACE_IX = {"kfd": 0, "pci": 1, "usb": 2, "mockkfd": 3, "mock": 4,
+            "mockpci": 5, "mockusb": 6, "pci_vf": 1}
 def sh(kind, n): return f"{kind}{n}"
 def csize(u): return ctypes.sizeof(u)
 
@@ -272,9 +312,9 @@ def t_prog():
     for devs in (('AMD',), ('AMD:1',), ('AMD:1', 'AMD:1')):
         key = (b'\xaa'*8, devs)
         row(f"amd_key_{len(devs)}_{devs[0].count('1')}", f"{len(key)} {len(key[0])} {len(key[1])}")
-    row("amd_key_hit_miss_same", int((b'x', ('AMD',)) == (b'x', ('AMD',))))
-    row("amd_key_hit_miss_devs", int((b'x', ('AMD',)) == (b'x', ('AMD:1',))))
-    row("amd_key_hit_miss_lib", int((b'x', ('AMD',)) == (b'y', ('AMD',))))
+    row("amd_key_hit_miss_same", bshow((b'x', ('AMD',)) == (b'x', ('AMD',))))
+    row("amd_key_hit_miss_devs", bshow((b'x', ('AMD',)) == (b'x', ('AMD:1',))))
+    row("amd_key_hit_miss_lib", bshow((b'x', ('AMD',)) == (b'y', ('AMD',))))
     # :1033-1038 program_buffer: the dict is keyed by the BUFFER UOP, and the
     # BufferSpec is `cpu_access=True, nolru=True` -- the two flags that make it
     # invisible to the allocator's LRU. That is the NEGATIVE eviction case.
@@ -306,7 +346,7 @@ def t_prog():
                    ("ib", dict(external_ptr=0x1000, nolru=False)),
                    ("plain", dict(nolru=False, external_ptr=None))):
         rec = bool(LRU) and True and not sp['nolru'] and sp['external_ptr'] is None
-        row(f"amd_recycled_{nm}", int(rec))
+        row(f"amd_recycled_{nm}", bshow(rec))
     row("amd_recycled_nconjuncts", 4)
     # the two flags Allocator.free reads, as the .bend renders them
     row("amd_spec_ring", "False False")
@@ -317,14 +357,38 @@ def t_prog():
         row(f"amd_lru_take_{'_'.join(map(str, xs))}", xs[-1])
 
 # ------------------------------------------------------- 7. occupancy, init
-def expr(line_no, ns):
-    """Evaluate ops_amd.py's OWN source line (RHS of an assignment), with `ns`
-    as its namespace. Reads the file, so it cannot drift from the port."""
+# Repo-relative. `open('tinygrad/...')` is cwd-relative, and the gate's cwd is
+# the repo only by convention.
+OPS_AMD = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                       'tinygrad', 'runtime', 'ops_amd.py')
+
+def expr_marked(marker, ns):
+    """Evaluate the RHS of the unique non-comment assignment containing `marker`.
+
+    A line number is not an identity. This function used to eval line 858, which
+    was the target decomposition when the oracle was written and is now
+    `isinstance(self.iface, USBIface)` (`ops_amd.py:858`). That eval's namespace
+    binds `trgt` and `self` only, so the name `USBIface` is unbound THERE.
+
+    `USBIface` is not missing from the module. It is a Python class defined at
+    import (`ops_amd.py:814`, `class USBIface(PCIIface)`), not a ctypes struct
+    (`_fields_` is absent) and not a lazy import. `import tinygrad.runtime.ops_amd`
+    binds it as `M.USBIface` with no device present. Instantiating it calls
+    `USB3.list_devices` and needs hardware; referencing the class does not. The
+    target expression does not mention `USBIface`, so injecting the class into
+    this namespace would eval the wrong statement (a bool) and is not the fix.
+    """
     import ast, textwrap
-    src = open('tinygrad/runtime/ops_amd.py').read().split('\n')
-    node = ast.parse(textwrap.dedent(src[line_no-1])).body[0]
-    val = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else node
-    return eval(compile(ast.Expression(val), '<amd>', 'eval'), ns)
+    src = open(OPS_AMD).read().split('\n')
+    hits = [(i, line) for i, line in enumerate(src, 1)
+            if marker in line and not line.lstrip().startswith('#')]
+    if len(hits) != 1:
+        raise RuntimeError(f'{marker!r} matched lines {[i for i, _ in hits]}, want exactly one')
+    i, line = hits[0]
+    node = ast.parse(textwrap.dedent(line)).body[0]
+    if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+        raise RuntimeError(f'ops_amd.py:{i} is not an assignment')
+    return eval(compile(ast.Expression(node.value), f'<ops_amd.py:{i}>', 'eval'), ns)
 
 class Sh:
     def __init__(s, target, props, xccs=1):
@@ -337,10 +401,11 @@ PROPS = {'num_xcc': 1, 'array_count': 8, 'simd_arrays_per_engine': 4, 'simd_coun
          'cu_per_simd_array': 8, 'gfx_target_version': 110000, 'drm_render_minor': 0}
 
 def t_occupancy():
-    # :858 target decomposition, :859 arch
+    # target decomposition. Selected by text: the line number drifted from 858
+    # to 862, and 858 is now `isinstance(self.iface, USBIface)`.
     for trgt in (90402, 90403, 90500, 110000, 110001, 115501, 120000, 120001):
         ns = {'trgt': trgt, 'self': types.SimpleNamespace(iface=types.SimpleNamespace(props={'gfx_target_version': trgt}))}
-        t = expr(858, ns)
+        t = expr_marked("gfx_target_version']) // 10000", ns)
         row(f"amd_trgt_{trgt}", " ".join(map(str, t)))
         row(f"amd_arch_{trgt}", "gfx%d%x%x" % t)
     # :864-867
@@ -363,7 +428,7 @@ def t_occupancy():
     for tgt in ((9,4,2),(9,5,0),(9,0,0),(10,0,0),(11,0,0),(12,0,0),(13,0,0)):
         arch = "gfx%d%x%x" % tgt
         ok = (tgt in ((9,4,2),(9,5,0))) or tgt[0] in (11, 12)
-        row(f"amd_arch_ok_{tgt[0]}_{tgt[1]}{tgt[2]}", int(ok))
+        row(f"amd_arch_ok_{tgt[0]}_{tgt[1]}{tgt[2]}", bshow(ok))
     # :880 max_copy_size, both directions
     for v in ((4,4,1),(4,4,2),(4,4,3),(5,0,0),(5,1,9),(5,2,0),(5,2,1),(6,0,0)):
         row(f"amd_maxcopy_{v[0]}_{v[1]}_{v[2]}", 0x40000000 if (4, 4, 2) <= v < (5, 0, 0) or v >= (5, 2, 0) else 0x400000)
@@ -371,7 +436,7 @@ def t_occupancy():
     for se, sa, wgp, bm in [(0,0,0,0x3),(0,0,0,0x0),(0,0,0,0x1),(0,0,1,0xc),(1,2,0,0x3),(3,5,1,0xc0000),(7,0,3,0x1f)]:
         off = (2*wgp)
         cell = (bm >> off) & 0x3
-        row(f"amd_wgp_{se}_{sa}_{wgp}_{bm:x}", int(cell == 0x3))
+        row(f"amd_wgp_{se}_{sa}_{wgp}_{bm:x}", bshow(cell == 0x3))
     # :194-195 the PMC block counts
     for block in ('GRBM','GL2C','TCC','SQ'):
         for gfx9, se_cnt, cpus in ((True, 4, 8), (False, 4, 8), (False, 8, 4)):
@@ -458,7 +523,7 @@ def t_queue():
         row(f"amd_qb_split_{nm}_{idx}", " ".join(t.rsplit('_', 2)))
     for bad in ("", "ring", "ring_", "ring_compute", "prof_log_compute", "Ring_compute", "ring_COMPUTE", "ib_compute"):
         ok = bad.startswith(("ring_", "write_ptr_", "doorbell_", "put_value_"))
-        row(f"amd_qb_ok_{bad or 'empty'}", int(ok))
+        row(f"amd_qb_ok_{bad or 'empty'}", bshow(ok))
     # the dispatch arm: `compute_queue if queue == 'compute' else sdma_queue(int(idx))`
     for t in (to_name("ring","COMPUTE:0"), to_name("ring","SDMA:0"), to_name("ring","SDMA:7")):
         name, queue, idx = t.rsplit('_', 2)
@@ -501,10 +566,10 @@ def t_sqtt():
         row(f"amd_sq_mask_{gsize}_{cu_cnt}_{se_cnt}_{cpus}_{i}_{mask3}", lo32((cu_mask & sa_mask) | (cu_mask & (sa_mask << 16)) << 16))
     # :1044 the refusal threshold
     for wptr, win in ((0, 64), (64, 64), (65, 64), (-1, 64)):
-        row(f"amd_sq_refuse_{wptr}_{win}", int(0 <= wptr <= win))
+        row(f"amd_sq_refuse_{wptr}_{win}", bshow(0 <= wptr <= win))
     # the buffer-overflow warning threshold
     for wptr, win in ((0, 64), (32, 64), (33, 64), (63, 64), (64, 64)):
-        row(f"amd_sq_full_{wptr}_{win}", int(wptr >= win - 32))
+        row(f"amd_sq_full_{wptr}_{win}", bshow(wptr >= win - 32))
 
 # ------------------------------------------------------------- 11. refusals
 def t_refuse():
@@ -541,7 +606,7 @@ def t_refuse():
 def t_init():
     # the order AMDDevice.__init__ runs in, by source line
     order = []
-    for i, l in enumerate(open('tinygrad/runtime/ops_amd.py').read().split('\n'), 1):
+    for i, l in enumerate(open(OPS_AMD).read().split('\n'), 1):
         s = l.strip()
         if 852 <= i <= 884 and ('self.' in s and '=' in s and not s.startswith('#')): order.append((i, s.split('=')[0].strip()))
     row("amd_init_n", len(order))
@@ -549,15 +614,16 @@ def t_init():
     row("amd_init_last", f"{order[-1][0]}:{order[-1][1]}")
     # the ifaces list, in order
     row("amd_ifaces", "KFDIface PCIIface USBIface MOCKIface MOCK MOCKPCIIface MOCKUSBIface")
-    # is_am / is_usb / is_vf
-    # `is_am` is `isinstance(iface, (PCIIface,))` and `USBIface(PCIIface)`, so
-    # the USB device IS AM -- which is what makes `can_recover` False for it.
-    for nm, is_pc, is_usb, is_vf in (("kfd",False,False,False), ("pci",True,False,False),
-                                     ("usb",True,True,False), ("pci_vf",True,False,True),
-                                     ("mockpci",True,False,False), ("mockusb",True,True,False)):
-        row(f"amd_isam_{nm}", int(is_pc))
-        row(f"amd_isusb_{nm}", int(is_usb))
-        row(f"amd_isvf_{nm}", int(is_pc and is_vf))
+    # is_am / is_usb from isinstance on the no-device MRO fixture. `can_recover`
+    # is `is_am and not is_vf` (`ops_amd.py:860`). USB is a PCIIface subclass, so
+    # it IS am; `is_vf` is what clears `can_recover`, and USB is not a VF.
+    # `amd_canrec_*` is a U32 on the port (`urow`), so it stays `0`/`1`.
+    for nm, is_vf in (("kfd", False), ("pci", False), ("usb", False), ("pci_vf", True),
+                      ("mockpci", False), ("mockusb", False)):
+        is_pc, is_usb = is_am_at(IFACE_IX[nm]), is_usb_at(IFACE_IX[nm])
+        row(f"amd_isam_{nm}", bshow(is_pc))
+        row(f"amd_isusb_{nm}", bshow(is_usb))
+        row(f"amd_isvf_{nm}", bshow(is_pc and is_vf))
         row(f"amd_canrec_{nm}", int(is_pc and not is_vf))
         row(f"amd_rtalloc_{nm}", (4 if is_usb else 64) << 20)
     # timestamp_divider / sleep_timeout_ms / max_scratch_psize
@@ -631,18 +697,18 @@ def t_extra():
     for t in ((12,10,0),(9,255,15),(9,4,3),(9,0,0),(10,0,0),(13,0,0),(11,99,9)):
         row(f"amd_arch_{t[0]}_{t[1]}{t[2]}", "gfx%d%x%x" % t)
         row(f"amd_arch_ok_{t[0]}_{t[1]}{t[2]}",
-            int((t in ((9,4,2),(9,5,0))) or t[0] in (11,12)))
+            bshow((t in ((9,4,2),(9,5,0))) or t[0] in (11,12)))
     row("amd_arch_9_255_15", "gfx%d%x%x" % (9,255,15))
     row("amd_arch_12_10_0", "gfx%d%x%x" % (12,10,0))
     # --- the occupancy chain --------------------------------------------
     P = PROPS
-    for is_pc, is_usb, is_vf, tag in ((False,False,False,"kfd"), (True,False,False,"pci"),
-                                      (True,True,False,"usb"), (True,False,True,"pci_vf")):
-        row(f"amd_isam_{tag}", int(is_pc))
+    for is_vf, tag in ((False, "kfd"), (False, "pci"), (False, "usb"), (True, "pci_vf")):
+        is_pc = is_am_at(IFACE_IX[tag])
+        row(f"amd_isam_{tag}", bshow(is_pc))
         row(f"amd_canrec_{tag}", int(is_pc and not is_vf))
-        row(f"amd_canrecb_{tag}", int(is_pc and not is_vf))
+        row(f"amd_canrecb_{tag}", bshow(is_pc and not is_vf))
     for forced, want, tag in ((False,True,"default_1"), (False,False,"default_2"), (True,False,"forced")):
-        row(f"amd_is_aql_{tag}", int(bool(forced or want)))
+        row(f"amd_is_aql_{tag}", bshow(bool(forced or want)))
     # the exact expressions of :864-867
     for tgt, props, xccs in [((11,0,0),P,1),((12,0,0),P,1),((9,4,2),P,1),
                              ((11,0,0),dict(P,num_xcc=2),2),((9,5,0),P,1)]:
@@ -709,23 +775,24 @@ def t_extra():
     for a, b, tag in ((( b'x',('AMD',)),(b'x',('AMD',)),"same"),
                       (( b'x',('AMD',)),(b'x',('AMD:1',)),"devs"),
                       (( b'x',('AMD',)),(b'y',('AMD',)),"lib")):
-        row(f"amd_key_hit_miss_{tag}", int(a == b))
+        row(f"amd_key_hit_miss_{tag}", bshow(a == b))
     row("amd_key_sum_1_0", 2+8+1)
     row("amd_key_sum_2_1", 2+8+2)
     # :1016-1017, the two prof-buffer specs
     for host in (True, False):
         row(f"amd_recycled_prof_{'host' if host else 'dev'}",
-            int(bool(LRU) and True and not True and None is None))
+            bshow(bool(LRU) and True and not True and None is None))
     # :944, the four-prefix allow-list and :946's arm
     for tag in ("ring_compute_0","ring_sdma_7","gc_compute_0","","ring","ring_","ib_compute_0"):
-        row(f"amd_qb_ok_{tag or 'empty'}", int(tag.startswith(("ring_","write_ptr_","doorbell_","put_value_"))))
+        row(f"amd_qb_ok_{tag or 'empty'}", bshow(tag.startswith(("ring_","write_ptr_","doorbell_","put_value_"))))
     for q, want, tag in (("compute_0","compute","compute"),("sdma_0","sdma","sdma0"),("sdma_7","sdma","sdma7")):
         row(f"amd_qb_arm_{tag}", q.split('_')[0])
-        row(f"amd_qb_armb_{tag}", int(q.split('_')[0] == want))
-    row("amd_qb_ok_bare_ring", 0)
-    row("amd_qb_ok_bare_underscore", 0)
-    row("amd_qb_ok_ring_0", 1)
-    row("amd_qb_ok_ring_7", 1)
+        row(f"amd_qb_armb_{tag}", bshow(q.split('_')[0] == want))
+    qb_pref = ("ring_", "write_ptr_", "doorbell_", "put_value_")
+    row("amd_qb_ok_bare_ring", bshow("ring".startswith(qb_pref)))
+    row("amd_qb_ok_bare_underscore", bshow("ring_".startswith(qb_pref)))
+    row("amd_qb_ok_ring_0", bshow("ring_0".startswith(qb_pref)))
+    row("amd_qb_ok_ring_7", bshow("ring_7".startswith(qb_pref)))
 
 def t_last():
     P = PROPS
@@ -745,17 +812,18 @@ def t_last():
         row(f"amd_qb_split_name_{tag}", want)
     # the four-prefix allow-list at its exact boundaries
     for tag in ("ring_", "ring", "", "ib_compute_0"):
-        row(f"amd_qb_pref_{tag or 'empty'}", int(bool(tag.startswith(("ring_","write_ptr_","doorbell_","put_value_")))))
+        row(f"amd_qb_pref_{tag or 'empty'}", bshow(tag.startswith(("ring_","write_ptr_","doorbell_","put_value_"))))
     # :946's arm, by name
     for q, tag in (("compute_0","compute"), ("sdma_0","sdma0"), ("sdma_7","sdma7")):
         row(f"amd_qb_armname_{tag}", q.split('_')[0])
-    # `is_am` is isinstance and USBIface subclasses PCIIface
-    row("amd_isam_mock", 0)
-    row("amd_isam_mockkfd", 0)
-    row("amd_canrecb_mockpci", 1)
-    row("amd_canrecb_mockusb", 1)
-    row("amd_isam_mockpci", 1)
-    row("amd_isam_mockusb", 1)
+    # `is_am` is isinstance (`ops_amd.py:854`). Last write wins, so these must
+    # be the call, not a typed 0/1 that overwrites it.
+    row("amd_isam_mock", bshow(is_am_at(IFACE_IX["mock"])))
+    row("amd_isam_mockkfd", bshow(is_am_at(IFACE_IX["mockkfd"])))
+    row("amd_canrecb_mockpci", bshow(is_am_at(IFACE_IX["mockpci"])))
+    row("amd_canrecb_mockusb", bshow(is_am_at(IFACE_IX["mockusb"])))
+    row("amd_isam_mockpci", bshow(is_am_at(IFACE_IX["mockpci"])))
+    row("amd_isam_mockusb", bshow(is_am_at(IFACE_IX["mockusb"])))
 
 def main():
     for f in (t_const, t_layout, t_dispatch, t_prog, t_occupancy, t_tmpring, t_queue, t_sqtt, t_refuse, t_init, t_mods, t_extra, t_last):

@@ -1,0 +1,10 @@
+{
+ "rc": 0,
+ "timeout": false,
+ "overflow": false,
+ "elapsed": 1.02,
+ "nrows": 134,
+ "bytes": 3306,
+ "err_tail": "",
+ "out": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/pin-tree-oracle/bend/tinybendygrad_runtime_ops_cpu__1.out"
+}

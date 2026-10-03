@@ -1,0 +1,320 @@
+{
+ "rc": 0,
+ "timeout": false,
+ "elapsed": 0.74,
+ "nrows": 176,
+ "bytes": 5733,
+ "imports": [
+  {
+   "name": "tinygrad.helpers",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/helpers.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/dtype.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.support.memory",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/support/memory.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.device",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/device.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/dtype.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.ops",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/ops.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.movement",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/movement.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.creation",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/creation.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.elementwise",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/elementwise.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.reduce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/reduce.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.op",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/op.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.mixin.rand",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/rand.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.render",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/render.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.spec",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/spec.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.memory",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/memory.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.renderer.tc",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/tc.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.renderer",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.weak",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/weak.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.renderer.isa",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/isa/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.gpudims",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/gpudims.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.divandmod",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/divandmod.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.movement",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/movement.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.transcendental",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/decomp/transcendental.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.uop.symbolic",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/symbolic.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.dtype",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/decomp/dtype.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.op",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/decomp/op.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.late.coalesce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/late/coalesce.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.opt",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/opt/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.simplify",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/simplify.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.opt.postrange",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/opt/postrange.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.late.gater",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/late/gater.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.allreduce",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/allreduce.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.multi",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/multi.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.indexing",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/indexing.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.prepare",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/prepare.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.late.linearizer",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/late/linearizer.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen.late.regalloc",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/late/regalloc.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule.rangeify",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/rangeify.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.codegen",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.engine.worker",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/engine/worker.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.engine.realize",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/engine/realize.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.support.hcq2",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/support/hcq2.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.schedule",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.tensor",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/tensor.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.nn.state",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/nn/state.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.nn",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/nn/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.nn.optim",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/nn/optim.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.nn.datasets",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/nn/datasets.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.engine.jit",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/engine/jit.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.function",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/function.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.common",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/common.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.rdna3.enum",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/rdna3/enum.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.rdna3.operands",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/rdna3/operands.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.rdna4.enum",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/rdna4/enum.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.rdna4.operands",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/rdna4/operands.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.cdna.enum",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/cdna/enum.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.runtime.autogen.amd.cdna.operands",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/cdna/operands.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.renderer.amd.dsl",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/amd/dsl.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.renderer.amd",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/amd/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.viz",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/viz/__init__.py",
+   "tree": "pin"
+  },
+  {
+   "name": "tinygrad.viz.serve",
+   "file": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/viz/serve.py",
+   "tree": "pin"
+  }
+ ],
+ "err_tail": ""
+}

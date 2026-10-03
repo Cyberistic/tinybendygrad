@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nl/nl-oracle.py", line 31, in <module>
+    CA = [dtypes.void, dtypes.f16, dtypes.bf16, dtypes.f32, dtypes.f64, dtypes.bool,
+                       ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'f16'

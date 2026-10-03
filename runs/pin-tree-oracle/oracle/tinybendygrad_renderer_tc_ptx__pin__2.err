@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tcptx-oracle.py", line 187, in <module>
+    DTS12 = (dtypes.i8, dtypes.i16, dtypes.i32, dtypes.i64, dtypes.u8, dtypes.u16,
+             ^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'i8'

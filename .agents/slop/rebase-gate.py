@@ -727,18 +727,38 @@ BASE_ORACLES = {
   #    tinygrad; neither port had been wired to them. Measured over all THREE lanes
   #    (interpreted, compiled native, CPython) with .agents/slop/wire-lanes.py, never inferred
   #    from a filename:
+  #      sqtt.bend 1033 interpreted / 1033 native / 1324 oracle rows, 1015 shared, 0
+  #                 disagreements; 18 of its row names lie outside the oracle's set. PROBE-
+  #                 RECORDED and re-gated: UNCHANGED, zero rows moved. This one is recordable.
   #      elf.bend   353 interpreted / 353 native / 1042 oracle rows, all three pairs agree,
   #                 and PORT FULLY COVERED: 0 of its 353 row names are ungated, which is a
   #                 stronger claim than any other entry in this dict can make.
-  #      sqtt.bend 1033 interpreted / 1033 native / 1324 oracle rows, 1015 shared, 0
-  #                 disagreements; 18 of its row names lie outside the oracle's set.
+  #
   #    BOTH WERE INVISIBLE TO rebase-scan-oracles.py, which finds candidates with
   #    `re.search(r"(oracle|gate)", p.name)`. Neither filename contains either substring, so
   #    the survey structurally COULD NOT list them, and the "no oracle at all" count included
   #    two ports that have had a working CPython oracle for hours. Its candidate filter -- not
   #    the absence of an oracle -- is part of why this gap looked as large as it did.
+  # ⚠ elf.bend IS CORRECT AND MUST NOT BE RECORDED IN rebase/baseline.json.
+  #   PROBE-RECORDED and re-gated, elf.bend came back RE-PORTED with 8+ rows "moved", and not
+  #   ONE of the 353 gated rows moved. The movement is in 14 rows the ORACLE prints and the
+  #   PORT DOES NOT -- `elf_built_*`, which embed the runtime addresses of the `libstub.dylib`
+  #   the fixtures are linked against, so ASLR changes them on every process launch. Measured:
+  #   two consecutive `elf_rows.py` processes differ on exactly those 14 rows and on ZERO of the
+  #   353 shared ones. Recording elf would freeze a lane that can never report UNCHANGED and
+  #   would train the reader to read RE-PORTED as "something drifted". Same species as
+  #   `ops_cpu`'s `findlib_*` rows and 74x smaller: 14 rows of 1042, none of them gated.
   "tinybendygrad/runtime/support/elf.bend": [".agents/slop/elf_rows.py"],            #  353
   "tinybendygrad/renderer/amd/sqtt.bend": [".agents/slop/sqtt_spec.py"],            # 1015
+  # 84 of 233, measured 2026-10-03 after the print-shape fix in ga-oracle.py.
+  # strip_enc 18 + norm_field 50 + map_flat 16. All three CALL generate.py
+  # (_strip_enc:48, _norm_field:56, _map_flat:61) — not a Python reimplementation
+  # of the port. 0 disagreements once the oracle emits `[val]   py=[val]`, the
+  # shape `g` prints. The other 149 port rows are lines of generated Python that
+  # rows() splits on `=`; the oracle names that text `tag | line`, so they do
+  # not intersect. Not recorded: GUARD 1 would freeze the oracle's 554 ungated
+  # rows (parse_xml of a fetched ISA zip, a pdf-error class).
+  "tinybendygrad/renderer/amd/generate.bend": [".agents/slop/ga-oracle.py"],       # 84
   "tinybendygrad/nn/onnx.bend": [".agents/slop/onnx-gate.py"],                     # 123
   "tinybendygrad/mixin/elementwise.bend": [".agents/slop/ew-gate.py"],             #  71
   "tinybendygrad/mixin/op.bend": [".agents/slop/mixin-op-gate.py"],                #  32

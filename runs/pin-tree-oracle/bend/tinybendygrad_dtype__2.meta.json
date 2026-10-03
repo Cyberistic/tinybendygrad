@@ -1,0 +1,10 @@
+{
+ "rc": 1,
+ "timeout": false,
+ "overflow": false,
+ "elapsed": 1.93,
+ "nrows": 0,
+ "bytes": 0,
+ "err_tail": "- Dt.i64_cmod\n- Dt.i64_ceildiv\n- float_to_bf16\n- float_to_fp16\n- float_to_fp8\n- fp8_to_float",
+ "out": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/pin-tree-oracle/bend/tinybendygrad_dtype__2.out"
+}

@@ -37,12 +37,15 @@ WHAT IS AND IS NOT GATEABLE, and why, stated here rather than discovered later:
 
     .venv/bin/python .agents/slop/ops-python-render-oracle.py > .agents/slop/ops-python-render-oracle.txt
 """
-import base64, itertools, os, sys, traceback
+import base64, itertools, os, subprocess, sys, traceback
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 
 
-def row(k, v): print(f'{k}={v!r}')
+def row(k, v):
+    # The value, not repr(value). ops_python.py:169-177 stores the str; repr adds
+    # quote characters the field does not contain, and the port prints the field.
+    print(f'{k}={v}')
 
 
 def archs():

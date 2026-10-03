@@ -1,0 +1,50 @@
+class CallInfo:
+  grad_fxn: Callable|None = None
+  name: str|None = None
+  precompile: bool = False
+  precompile_backward: bool = False
+  aux: Any = None
+  # grad_fxn can't be pickled
+  def __reduce__(self): return (CallInfo, (None, self.name, self.precompile, self.precompile_backward, self.aux))
+  def __repr__(self):
+    gf = id(self.grad_fxn) if self.grad_fxn else None
+    return f"CallInfo({gf}, {repr(self.name)}, {self.precompile}, {self.precompile_backward})"
+
+# ******** ops in python ********
+
+def safe_exp2(x):
+  try: return 2 ** x
+  except OverflowError: return math.inf
+
+def safe_pow(x, y):
+  try: return math.nan if isinstance(p:=pow(x, y), complex) else p
+  except ZeroDivisionError: return math.inf
+  except ValueError: return math.inf if x > 0 else -math.inf
+
+python_alu: dict[Ops, Callable]  = {
+  Ops.LOG2: lambda x: math.log2(x) if x > 0 else -math.inf if x == 0 else math.nan, Ops.EXP2: safe_exp2,
+  Ops.SQRT: lambda x: math.sqrt(x) if x >= 0 else math.nan, Ops.RECIPROCAL: lambda x: 1/x if x != 0 else math.copysign(math.inf, x),
+  Ops.SIN: lambda x: math.sin(x) if not math.isinf(x) else math.nan, Ops.POW: safe_pow,
+  Ops.TRUNC: lambda x: math.trunc(x) if math.isfinite(x) else x,
+  Ops.NEG: operator.neg, Ops.ADD: operator.add, Ops.SUB: operator.sub, Ops.MUL: operator.mul, Ops.CMPNE: operator.ne, Ops.CMPLT: operator.lt,
+  Ops.XOR: operator.xor, Ops.OR: operator.or_, Ops.AND: operator.and_, Ops.SHR: operator.rshift, Ops.SHL: operator.lshift, Ops.MAX: max,
+  Ops.CMOD: cmod, Ops.CDIV: cdiv, Ops.FLOORDIV: floordiv, Ops.FLOORMOD: floormod,
+  Ops.MULACC: lambda x,y,z: (x*y)+z, Ops.WHERE: lambda x,y,z: y if x else z, Ops.CMPEQ: operator.eq}
+
+def exec_alu(op:Ops, dtype:DType, operands, truncate_output=True):
+  if any(isinstance(x, tuple) for x in operands):
+    count = max(len(x) for x in operands if isinstance(x, tuple))
+    return tuple([exec_alu(op, dtype, [x[i] if isinstance(x, tuple) else x for x in operands]) for i in range(count)])
+  if op in GroupOp.Binary and Invalid in operands: return Invalid
+  alu = python_alu[op](*operands)
+  if truncate_output and (truncate_fxn:=truncate.get(dtype)) is not None: return truncate_fxn(alu)
+  return alu
+
+# ***** pattern matcher *****
+
+def get_location() -> tuple[str, int]:
+  frm = sys._getframe(1)
+  # skip over ops.py and anything in mixin
+  while frm.f_back is not None and not frm.f_back.f_code.co_filename.startswith("<frozen"):
+    fn = frm.f_code.co_filename.replace("\\", "/")
+    if not (fn.endswith("/ops.py") 

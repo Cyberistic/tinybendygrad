@@ -331,6 +331,20 @@ ORACLE_CONFORMANCE = {
   "tinybendygrad/viz/serve.bend": (".agents/slop/vz/viz_oracle.py", 176, "live"),
   "tinybendygrad/runtime/support/c.bend": (".agents/slop/c-oracle.py", 129, "live"),
   "tinybendygrad/uop/fold.bend": (".agents/slop/mm-lift-gate.py", 126, "live"),
+  # -- the oracle-WIRING unit's two. The equality check below is what caught them: BASE_ORACLES
+  #    gained two entries and this roster did not, and the FAIL names exactly the two. That is
+  #    the contract working -- one file changed, the other file said so.
+  #    elf: 353 shared of the port's 353 rows, so PORT FULLY COVERED. It is the only "live"
+  #    entry with zero uncovered rows. Its oracle emits 689 further rows, 14 of which are
+  #    `libstub.dylib` runtime addresses that ASLR changes every launch -- none of them shared,
+  #    so GUARD 4 is unaffected and GUARD 1 is why elf must never be recorded.
+  "tinybendygrad/runtime/support/elf.bend": (".agents/slop/elf_rows.py", 353, "live"),
+  #    sqtt: 1015 of 1033. Probe-recorded and re-gated UNCHANGED, so this one IS recordable.
+  "tinybendygrad/renderer/amd/sqtt.bend": (".agents/slop/sqtt_spec.py", 1015, "live"),
+  # 84 of 233. The other 149 are generated-Python lines rows() splits on `=`,
+  # which the oracle names `tag | line`, so they are not shared. Measured
+  # 2026-10-03: 0 disagreements after the print-shape fix.
+  "tinybendygrad/renderer/amd/generate.bend": (".agents/slop/ga-oracle.py", 84, "live"),
   "tinybendygrad/nn/onnx.bend": (".agents/slop/onnx-gate.py", 123, "live"),
   "tinybendygrad/mixin/elementwise.bend": (".agents/slop/ew-gate.py", 71, "live"),
   "tinybendygrad/mixin/op.bend": (".agents/slop/mixin-op-gate.py", 32, "live"),

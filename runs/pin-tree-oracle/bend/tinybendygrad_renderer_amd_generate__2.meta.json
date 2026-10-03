@@ -1,0 +1,10 @@
+{
+ "rc": 1,
+ "timeout": false,
+ "overflow": true,
+ "elapsed": 0.74,
+ "nrows": 0,
+ "bytes": 0,
+ "err_tail": "Error: the machine stack overflowed (a deep recursion, or a literal too large to expand)",
+ "out": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/pin-tree-oracle/bend/tinybendygrad_renderer_amd_generate__2.out"
+}

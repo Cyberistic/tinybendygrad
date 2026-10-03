@@ -81,3 +81,75 @@ restructured rule language.
 so indexed reads are O(n) and the Kahn fold is O(n²). `Map` exists but is
 string-keyed and O(log n), so it is not a free win. Measured and left alone until
 there is a profile in front of us.
+
+## The actual port (2026-10-03)
+
+The model above is the SHAPE that was ported, not the SHAPE that
+shipped. The first port tried a `Type`-with-rule-body shape and got
+blocked by the third of the "thirteen shapes" above. What shipped
+instead is a different machine: the rule body's *tag* selects a
+top-level def, and the table itself is a `Data` record of tags, ops
+and reject sets.
+
+```bend
+type PMEntry is Data:
+  PMEntry{tag: U32, ops: List<&2, Op>, rej: List<&2, Op>}
+
+type PMEntrys is Data:
+  PMEntrys{es: List<&2, PMEntry>}
+
+def pm_r_sink_m(ar: Arena, self: U32) -> Maybe<&2, U32>:
+  Some{self}
+
+def pm_dispatch_m(tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+  match tag:
+    case 0: pm_r_sink_m(ar, self)
+    case 1: pm_r_noop_m(ar, self)
+    case 2: pm_r_cast_m(ar, self)
+    case _: None{}
+```
+
+**The rule body is a top-level def.** Three consequences, all of them
+things the interpreter could not do:
+
+* THE TABLE IS `Data`, SO IT IS COPYABLE. `PMEntry` is read by the scan
+  and by `early_reject` in the same pass, with no `+` and no linear-table
+  workaround. A table of closures forces `Type`; a table of tags does
+  not.
+* A RULE MAY READ THE ARENA AS OFTEN AS IT LIKES. A closure cannot take
+  a shared argument -- there is no spelling of one in a function type
+  -- so an interpreter rule could not receive `+Arena`. A def can.
+* A RULE'S CAPTURES ARE ITS OWN PARAMETERS. No store, no `setdefault`,
+  no cartesian product, and `is_any` is a DISJUNCTION rather than a
+  flatten.
+
+The cost is the dispatch: Bend has no first-class functions, so a tag
+selects a top-level def through a `match`. One `case` per rule. For
+`spec.py`'s 82 rules that is 82 cases, which is the trade the master
+plan's LOC rule cares about -- more lines, in exchange for rules that
+are individually readable and individually gateable.
+
+The engine that drives the dispatch is `walk_rewrite` in
+`tinybendygrad/codegen/__init__.bend`: a fold over a toposorted list
+threading a `+Arena` and a `+Map<&2, U32>` replace store, with a
+per-node "seen? scan? mint? rebuild?" step. The fold's shape is the
+`consumers.go`/`consumers.step` pair in `uop/render.bend:1787`, which
+proved that a `+` on the list head and the next-node call on the tail
+satisfies Bend's descent check.
+
+**OUTSTANDING.** The fixpoint driver (`unified_rewrite`) and the
+dispatcher (`graph_rewrite`) are still walls. A `pm_post_sched_cache`
+table with its two rules (`UPat(Ops.PARAM, ...)` and
+`UPat(Ops.ALLOC, ...)`) is the smallest test case; a CPython oracle
+that runs the same fixture through CPython's `graph_rewrite` and
+diffes the op/src/arg of each node is the gate, and it is not built.
+
+**BEND NAMING RULE, observed during this port and worth its own section
+in the constraints notes (R-3).** A sub-namespace def (`name.subname`)
+must be declared BEFORE the parent `def name` that calls it. The
+reverse order compiles, but every call to the sub-def is reported as
+"an unfilled law is a dead claim: live code cannot use it" -- a
+useful error once you know what it means, hostile until you do.
+`uop/fold.bend` obeys it (`fold.dt.of` at line 713, `fold.dt` at
+4041); the engine in `codegen/__init__.bend` obeys it (leaves first,
+parents last). When you need a helper, declare it BEFORE the caller.

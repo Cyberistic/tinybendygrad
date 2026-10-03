@@ -14157,3 +14157,364 @@ last: `rebuild.go` -> `rebuild.of` -> `rebuild` -> `step.mint` ->
 When you need a helper, declare it BEFORE the caller. Forward references
 to top-level defs work; forward references to a parent def's sub-namespace
 do not.
+
+
+## ORACLE-WIRING UNIT, 2026-10-03. Six rules, all measured on the live tree.
+
+Numbering continues the `### N (DUP)` series; the file's INDEX at the top says to cite
+POSITIONS, so each rule below names its own line and carries its own reproducer. Nothing here
+is about the Bend language -- it is about what makes a gate answer a question.
+
+### 1 (DUP). A SURVEY THAT FINDS CANDIDATES BY FILENAME REPORTS ABSENCE AS FACT
+
+`rebase-scan-oracles.py` collects candidates with
+
+    re.search(r"(oracle|gate)", p.name)
+
+Two ports that have had a working CPython oracle for hours are **structurally invisible** to
+it, because neither filename contains either substring:
+
+| oracle | port | shared rows | verdict |
+|---|---|---|---|
+| `.agents/slop/elf_rows.py` | `tinybendygrad/runtime/support/elf.bend` | 353, 0 disagree | clean |
+| `.agents/slop/sqtt_spec.py` | `tinybendygrad/renderer/amd/sqtt.bend` | 1015, 0 disagree | clean |
+
+So "26 of 52 gated ports have NO CPython oracle at all" counted two ports that have one. The
+filter, not the absence of an oracle, is part of why the gap looked as large as it did.
+Widen the filter to every `.py` under `.agents/slop` that (a) imports tinygrad and (b) contains
+a row emitter, and the survey's own answer for the 25 ports with rows changes from 5 wireable
+to 5 wireable -- the two above were the whole difference on the ports they name, and nothing
+new appeared. Reproducer: `.agents/slop/wire-sweep.py` (writes
+`.agents/slop/rebase/wire-sweep-2026-10-03.json`).
+
+### 2 (DUP). A PYTHON "CONTROL" MUST STRIP THE VARIABLE IT IS TESTING
+
+    PYTHONPATH=. python3 - <<'PY'      # <-- sets PYTHONPATH in the PARENT
+    ...
+    dict(os.environ, DEV="NULL")       # <-- "without PYTHONPATH" STILL HAS IT
+
+Measured on the three oracles in rule 3: the control arm reported 71/71 shared, 30/30 shared
+and 123/123 shared with **zero** disagreements, and the treated arm (with `PYTHONPATH` removed
+from `dict(os.environ, ...)`) reported 0 rows and rc=1 for all three. The control was
+measuring the treatment. `env -u PYTHONPATH python3 ...` is the only control that controls.
+This is `sort`/`comm` fabricating a diff on a no-op, in a different tool.
+
+### 3 (DUP). AN ORACLE WITH NO `sys.path` INSERT IS RED UNDER A GATE THAT RUNS `python ORACLE`
+
+`rebase-gate.py`'s `run_port` does `subprocess.run([sys.executable, *argv], cwd=REPO)`, so
+`sys.path[0]` is the ORACLE'S OWN DIRECTORY and the repo root is **not importable**. Three
+ports wired in `BASE_ORACLES` exit 1 with `ModuleNotFoundError: No module named 'tinygrad'`
+on every run:
+
+A whole-tree gate run with `--no-native` measured **BROKEN=10**, and **eight** of those ten
+are this one cause. The other two (`dtype.bend`, `cstyle.bend`) are the sentinels BASE_ORACLES
+documents as deliberately dead. Every one of the eight, run bare with `PYTHONPATH` unset:
+
+    ModuleNotFoundError: No module named 'tinygrad'
+
+| port | oracle | unset | `PYTHONPATH=.` |
+|---|---|---|---|
+| `viz/serve.bend` | `vz/viz_oracle.py` | 0, rc=1 | **176** shared, 0 disagree |
+| `uop/fold.bend` | `mm-lift-gate.py` | 0, rc=1 | **126** shared, 0 disagree |
+| `runtime/support/c.bend` | `c-oracle.py` | 0, rc=1 | **129** shared, 0 disagree |
+| `nn/onnx.bend` | `onnx-gate.py` | 0, rc=1 | **123** shared, 0 disagree |
+| `mixin/elementwise.bend` | `ew-gate.py` | 0, rc=1 | **71** shared, 0 disagree |
+| `tensor.bend` | `tensor-gate.py` | 0, rc=1 | **30** shared, 0 disagree |
+| `codegen/simplify.bend` | `xd1/rw-oracle.py` | 0, rc=1 | **28** shared, 0 disagree |
+| `codegen/gpudims.bend` | `xd1/rw-gate-oracle.py` | 0, rc=1 | **24** shared, 0 disagree |
+
+**707 shared row names, zero disagreements, blocked by one missing environment variable.**
+Every one of those eight numbers is already written in `BASE_ORACLES`'s own comments, which is
+the proof that they were measured by hand with `PYTHONPATH` set and that the gate has never
+reproduced them. CONTROL: `mixin/op.bend` + `mixin-op-gate.py` (32 shared) and
+`nn/__init__.bend` + `nn-init-gate.py` (24 shared) DO have the `sys.path` line, run correctly
+with `PYTHONPATH` unset, and report identical numbers both ways.
+
+One line in `run_port` -- `env=dict(os.environ, DEV="NULL", PYTHONPATH=str(REPO))` -- turns
+BROKEN=10 into BROKEN=2 and adds 707 corroborated claims. `sys.path.insert(0, ...)` in each
+of the eight oracles does the same thing one file at a time. **Unfixed as of this writing;
+owner is whoever holds `rebase-gate.py`** (out of scope for the unit that found it).
+
+### 4 (DUP). A LANE'S **NON-SHARED** ROWS MAY BE NON-DETERMINISTIC AND THE WIRE STILL BE CORRECT
+
+`elf_rows.py` emits 1042 rows; the port prints 353; all 353 are shared and none disagree. But
+14 of the oracle's 689 extra rows -- `elf_built_*` -- embed the runtime addresses of the
+`libstub.dylib` the ELF fixtures are linked against, so ASLR changes them every launch.
+Measured: two consecutive `elf_rows.py` processes differ on **exactly those 14 rows and on 0
+of the 353 shared ones**.
+
+GUARD 4 cannot see them (no shared name) so the wire is right; GUARD 1 compares them, so
+`--record` followed by a re-gate yields RE-PORTED **forever**. `elf.bend` was probe-recorded
+and returned RE-PORTED with 8+ "moved" rows, not one of them gated. **Do not record elf in
+`rebase/baseline.json`.** Same species as `ops_cpu`'s `findlib_*` rows and 74x smaller. The
+general form: a recording freezes every row the LANE prints, including the ones no comparison
+depends on, so a lane is only recordable if the whole lane -- not just the intersection -- is
+reproducible.
+
+### 5 (DUP). AN ORACLE'S LINE FORMAT MUST MATCH THE PORT'S EXACTLY OR GUARD 4 CAN NEVER PASS
+
+`renderer/amd/generate.bend` (233 rows) and `.agents/slop/ga-oracle.py` (638 rows) share **84
+row names and disagree on all 84**, and not one disagreement is data:
+
+    bend   [FLAT]   py=[FLAT]
+    oracle [FLAT]
+
+`ga-oracle.py:12` prints `f"{nm} = [{val}]"`; the port's `py_row` prints
+`[bend]   py=[literal]`. GUARD 4 compares the whole value, so the two can never be equal. The
+fix is one character class at the emitter -- `f"{nm} = [{val}]   py=[{val}]"`, the shape
+`tcptx-oracle.py` already uses -- after which the 84 rows become a real gate that also catches
+a port whose `py=` literal has gone stale (the `device.bend` `sig=0 4 5` bug). 149 of the
+port's 233 rows are still outside the oracle's name set. Owner: whoever holds `ga-oracle.py`.
+
+### 6 (DUP). `.agents/slop/` ORACLES ARE DELETED AND RENAMED WHILE A SURVEY RUNS, AND A CACHED ROW-SET OUTLIVES ITS INPUT
+
+`/tmp/rebase-scan/o__agents_slop_dd_oracle_py.json` was written at 14:32 for a file that no
+longer exists, and `ga_oracle.py` became `ga-oracle.py` inside the same session.
+`rebase-scan-oracles.py`'s `oracle_rows` caches by SPEC PATH and never checks the file is
+still there, so a survey re-read over its own cache reports a wireable pair for a deleted
+oracle. This cost a wiring attempt on a nonexistent file. Any tool that reads another tool's
+cache must re-check existence, or must print the cache's age next to its numbers.
+
+---
+
+Reproducers for this block, all in `.agents/slop/`: `wire-rows.py` (a port's row names and
+count, static cross-checked against the interpreter's), `wire-pair.py` (one pair, every
+disagreement NAMED; its standing control is `tc_ptx.bend` + `tcptx-oracle.py stage2`, which
+must keep reporting its 6 disagreements -- a 0 there means the instrument has stopped
+working), `wire-lanes.py` (all three lanes, counts only, and it refuses to print CLEAN when a
+lane is empty -- its first version printed CLEAN over two empty lanes, reproducing
+rebase-gate.py's GUARD 2 failure in a second instrument), `wire-sweep.py` (rule 1),
+`wire-survey.py` (rule 6).
+
+---
+
+## TREE-VERDICT UNIT, 2026-10-03. Seven rules, all measured on the live 137-file tree.
+## Numbering continues after the ORACLE-WIRING block at position ~14162; cite positions.
+
+Instrument: `.agents/slop/tree-verdict.py` + `.agents/slop/one.sh`. Reproducer for every
+number below is one command: `python3 .agents/slop/tree-verdict.py -P 12`.
+
+### 1. `SOME PROOFS FAIL` IS NOT ONE CONDITION, AND THREE OF ITS FOUR MEANINGS ARE BY DESIGN
+
+agent-core.md line 138 tells you to read the first line instead of the exit status. It does
+not say that the first line is two words wide. Measured, the whole tree:
+
+    ALL PROOFS CHECK                                          109
+    SOME PROOFS FAIL + "N defs rely on unsafe or foreign code"  10   <- a DECLARED seam
+    SOME PROOFS FAIL + "N TODOs found" + "not a valid proof yet"  3   <- unfinished, BY DESIGN
+    SOME PROOFS FAIL + "expected/observed/Location"              0   <- actually broken
+
+The 10 are `dtype.bend` (declares 14 own: `Dt.bf16`, `Dt.fp16`, `Dt.fp8_from`,
+`Dt.i64_trunc`, ...) plus 8 that merely IMPORT it (their names read `../dtype.Dt.bf16`) and
+`sz.bend`, which declares its own 7 (`Sz.read_dir`, `Sz.is_dir`, and `main` itself -- so
+`sz.bend` prints 0 rows because its main IS the foreign seam). **One RED bucket over these
+four sent a unit to fix things that were not broken, twice.** The discriminator is the text on
+line 2, never a filename.
+
+### 2. A COMPILE ERROR PROPAGATES, AND BEND'S `Location:` BLOCK DOES NOT NAME THE FILE
+
+Observed live at 14:38, mid-edit by another unit: `tinybendygrad/PROOF.bend` reported
+
+    Location:
+    820 |   do IO<Unit>:
+    821>|     d0 = dims_show(drop_n(gate_456(), 0n))
+
+and `PROOF.bend`'s own line 821 is a comment about the OOM retry. The error is in
+`tinybendygrad/LAWS/spec.bend`, which PROOF imports -- **76 files import it**, and all of them
+reported the same 821 error while looking innocent. Worse, the reported `observed` differs
+between importer and owner: `{LAWS/spec.d0 : IO(Unit)}` when imported, `{d0 : IO(Unit)}` when
+the owner is checked directly, so the prefix IS a usable hint. But the reliable attribution is
+to ask **which file in the tree holds that source text at that line**. Rule 3.
+
+**So a RED COUNT IS NOT A DEFECT COUNT.** The planted negative control below turned ONE
+unterminated `def` at the end of `LAWS/spec.bend` into **87 red files**: 1 owner + 86
+importers. Any tool that reports "N red" for this tree is reporting a number that moves by
+76 per edit to one datatype.
+
+### 3. ATTRIBUTE BY THE SOURCE TEXT, WALKING BACK PAST A BLANK MARKED LINE
+
+The `>` gutter marks a CARET, so the marked line can be empty -- an unterminated `def foo(`
+points at the line *after* it. My first attribution took the marked line's text and searched
+the tree for it; with an empty text it matched **seven unrelated files** that happened to
+have a blank line at that number, and the control reported 7 false owners. Empty text
+identifies nothing. The rule: take the nearest preceding non-empty gutter line, and if there
+is none, report "owner NOT identifiable" rather than guess.
+
+### 4. WHICH STREAM THE VERDICT ARRIVES ON DEPENDS ON THE VERDICT
+
+Measured, not assumed, and it breaks the obvious implementation:
+
+    bend helpers.bend --check-only   -> stdout 2 lines, stderr EMPTY   (ALL PROOFS CHECK)
+    bend dtype.bend  --check-only    -> stdout EMPTY,   stderr 9 lines (SOME PROOFS FAIL)
+
+Success prints to stdout, failure to stderr. So a harness reading `check.err` alone sees an
+empty verdict on every GREEN file -- which is exactly what my first version did, and it
+classified `helpers.bend` as `no-verdict`. Read stderr and fall back to stdout. The same split
+is what makes a row count honest: the error block is on stderr, so stdout is rows apart from
+bend's own two success messages, which must be subtracted by name.
+
+### 5. "0 ROWS" IS THREE DIFFERENT ANSWERS AND THE RUN CANNOT TELL THEM APART
+
+`no main` (a library: 15 files, `helpers.bend` among them, imported by 91), `main` that prints
+nothing (`no-rows`, currently 0 files), and **the 1-in-20 stack overflow**, which prints an
+EMPTY stdout and is therefore indistinguishable from the first two. This is the same fact as
+the GA4 block at position ~12910 ("type-check green and run green are separate claims"), and
+it is why the verdict for a library is its `--check-only` first line and never its row count.
+`runrows.sh` already retries; `one.sh` is that retry, in one place.
+
+**The brief's premise is stale on this point:** it reports `codegen/opt/postrange.bend` at 0
+rows three times running. Measured now: **48 rows, three times running**, three minutes apart,
+`ALL PROOFS CHECK`. Whatever produced that 0 is gone; do not record it as a property of the
+file.
+
+### 6. A FILE COUNT IN THIS TREE IS NOT A COUNT OF TREE FILES
+
+137 `.bend` files live under `tinybendygrad` + `examples`; a brief that says 128 is counting a
+different set. At least **9 are mutation scratch or probes that a naive `find` counts**:
+`runtime/ops_bend.mut.bend`, `runtime/_p6.bend`, `renderer/_mut_m35.bend`,
+`renderer/_ptxmut.bend`, `uop/fold_mm_work.bend`, `uop/fold2_work.bend`,
+`uop/probe-bl.bend`, `uop/probe-f32.bend`, `uop/probe-mmcore.bend`, plus
+`test/_probe/v5.bend`. `tree-verdict.py` labels these `scratch?` and never lets the label
+decide a bucket -- a filename is not evidence.
+
+### 7. TWO AGENTS WERE ASSIGNED THE SAME TWO FILENAMES, AND THE LOSER'S TOOL WAS SILENT
+
+`one.sh` and `tree-verdict.py` were created at 14:39, DELETED at 14:58, and `one.sh` was
+RECREATED at 14:59 by another unit in a version lacking the `$BEND_ROOT` switch my negative
+control depends on. Nothing errored: `one.sh` reported `ALL PROOFS CHECK` for a deliberately
+broken file, because it silently ran against the LIVE tree instead of the copy. **A tree tool
+whose output varies with the tree it read is worse than no tool, and this is how it happens:
+a benign-looking fallback path, not a crash.** The `$BEND_ROOT` test is now an `if`, not
+`${BEND_ROOT:-...}`, because the command substitution inside that form is evaluated eagerly by
+this `/bin/sh` and sent the "control" back to the repo. This is the same hazard as the
+ORACLE-WIRING rule 6 at position ~14210.
+
+### 8. NO `def main` IN THE SOURCE IS NOT THE SAME AS NO MAIN IN SCOPE, AND ONE FILE IN THIS
+###    TREE IS THE PROOF
+
+`codegen/rewriter.bend` declares no `def main` anywhere -- `grep -c '^def main'` is 0 -- and
+a grep for `def main` across all 137 files with a loose `^\s*def main` finds **0** files the
+strict `\ndef main` misses, so the obvious check looks settled. But appending a `main` to it
+fails:
+
+    Error:
+    - expected : a fresh name (duplicate declaration: main)
+    - observed : 'main'
+
+because `rewriter.bend` imports `./../helpers.bend`, `./../LAWS/spec.bend`, `./../uop/ops.bend`
+and `./../uop/fold.bend`, and **three of those declare a `main`**. So a main IS in scope, it
+prints 0 rows, and that is a DIFFERENT situation from `helpers.bend`, whose import closure
+contains no main at all. Both are `ALL PROOFS CHECK` with 0 rows, and calling both
+"no main, by design" repeats, one level down, the exact conflation rule 1 is about.
+
+**Therefore: to separate "library" from "a main that prints nothing", walk the import graph.**
+Grepping the source answers a different question. Owner: whoever holds `codegen/rewriter.bend`.
+This is also a trap for any `--only`-style filter in a graph walk: the walk reads from DISK,
+not from the swept corpus, because a filtered sweep truncates the corpus and then reports
+every filtered file as a library -- which is what my first version did, silently, until a file
+I had PROVEN had a main in scope came back labelled "library".
+
+### 9. A SINGLE RUN IS NOT EVIDENCE FOR A ROW COUNT, AND THE DISAGREEMENT CAN BE PARTIAL
+
+Found by the tool's own no-op control, which is the only reason it was found: two
+full-tree sweeps 16 minutes apart, **nothing edited in between**, agreed on **136 of 137**
+files and disagreed on exactly one line:
+
+    green   353 rows  runtime/support/elf.bend   <- run 1
+    green   331 rows  runtime/support/elf.bend   <- run 2
+
+`stat` says `elf.bend` mtime **14:59:55**, before both runs, and 6 further runs right after
+gave 353 every time. So this is **bend printing a TRUNCATED row set**, not an edit and not a
+harness bug -- 22 rows silently missing, with **no stderr, no overflow message, exit 0**. It
+is a third species beside the two the GA4 block at POSITION ~12910 records (an overflow with
+a message, and an overflow with an empty stdout): **a partial success that looks like a
+success.** Any gate that diffs a whole recorded lane against a re-run will see a spurious
+disagreement here, and any tree tool that reports one run's row count is reporting a coin
+flip.
+
+The rule that follows: **report the MODAL count over repeated runs, and report how many
+DISTINCT counts were seen.** A file bend disagrees about must be labelled, not silently
+reported at whatever it said last. `one.sh` repeats until two consecutive attempts agree,
+never lets 0 be the agreement, and records void (overflowed) attempts separately so a
+truncated total cannot win the mode -- because a void attempt can leave PARTIAL rows behind,
+which is exactly the shape of the 331 above.
+
+---
+
+## GA-ORACLE WIRING, 2026-10-03. Appended after the TREE-VERDICT block that ends at
+## position 14440. Cite the positions below, not a number.
+
+### 1. A PRINT-SHAPE MISMATCH IS NOT AN UNWIRABLE PAIR
+
+`renderer/amd/generate.bend` and `.agents/slop/ga-oracle.py` were declared unwirable at
+position ~14254 because they shared 84 names and disagreed on all 84. None of that was data:
+
+    bend   [FLAT]   py=[FLAT]
+    oracle [FLAT]
+
+GUARD 4 compares the whole value. The port's `g` prints `[got]   py=[want]`; the oracle
+printed `[val]`. The print the note called `ga-oracle.py:12` had moved — when this was
+fixed it was the loop at line 417. One change, `f"{nm} = [{val}]   py=[{val}]"`, the shape
+`tcptx-oracle.py` already uses.
+
+Re-measured with `rows()` (split on the first `=`, names may contain spaces) against a live
+`./bin/bend` run and a live `env -u PYTHONPATH python3 .agents/slop/ga-oracle.py`:
+
+    bend_rows=233  oracle_rows=638  shared=84  disagree=0
+
+The 84 are `strip_enc` 18 + `norm_field` 50 + `map_flat` 16. Each is a call, not a
+reimplementation: `ga-oracle.py` does `from tinygrad.renderer.amd import generate as G` and
+calls `G._strip_enc` / `G._norm_field` / `G._map_flat`. CPython is
+`tinygrad/renderer/amd/generate.py:48`, `:56`, `:61`, reading `_ENC_SUFFIXES` at `:32`,
+`_ENC_SUFFIX_MAP` at `:34`, `_FIELD_RENAMES` at `:37`. Both halves of every port value
+(`got` and the baked `py=` literal) equalled the call. Residue: none. No constant in
+`generate.bend` was touched.
+
+The oracle prints 892 lines. `rows()` keeps 638 keys because emitter lines contain `=` and
+the first `=` truncates the name (`enum rdna3 |   V_DOT2ACC_F32_F16 = 0` keys as
+`enum rdna3 |   V_DOT2ACC_F32_F16`). A `^(\S+) = ` parse would have dropped the 84, every
+one of which has a space in the name.
+
+### 2. `rows()` ON A MULTI-LINE VALUE INVENTS NAMES THE ORACLE CANNOT SHARE
+
+The port's `gl` prints a whole generated file as one value. `rows()` splits on newlines, so
+`FLAT_LOAD_DWORD = 16` inside that file becomes a row named `FLAT_LOAD_DWORD`. The oracle
+names the same text `enum rdna3 | line`, which `rows()` keys differently. 149 of the port's
+233 rows are this species. They are not disagreements and they are not coverage. Wiring the
+84 does not gate them. `ga_gate.py` (DOTALL, keyed on `]   py=[`) is the tool that diffs the
+whole file; `rebase-gate.py`'s `rows()` cannot see it.
+
+### 3. WIRED, NOT RECORDED
+
+`BASE_ORACLES` and `ORACLE_CONFORMANCE` both gained
+`tinybendygrad/renderer/amd/generate.bend` -> `.agents/slop/ga-oracle.py` (84, live). Not
+`--record`ed. GUARD 1 freezes every row the lane prints, including the oracle's 554 ungated
+rows (`parse_xml` of a fetched ISA zip, a pdf-error class). Same species as elf at position
+~14238: a recording that can never report UNCHANGED trains the reader to ignore RE-PORTED.
+
+### 4. AN OVERFLOW IS A FALSE BROKEN, AND THE WHY TEXT DOES NOT SAY SO
+
+This session: `./bin/bend tinybendygrad/renderer/amd/generate.bend` overflowed on attempts 1
+and 2 (`the machine stack overflowed`) and printed 233 rows on attempt 3. A wired gate does
+not retry. GUARD 3 then says `lane(s) failed to run: interpreted` and includes stderr only
+when the error is `ORACLE SCRIPT MISSING` or `COLLISION`. Re-run before reading that BROKEN
+as a row disagreement. Continues the stack-overflow note in the `ga` block.
+
+### 5. THE GATE WAS SEEN RED, AND THE PLANT WAS NOT A PATCH OF THE PORT
+
+Control called `gate_port` (the function `main` calls) with `native=False`, under
+`env -u PYTHONPATH`. `rebase-plan.py --json` did not return within 120s, so the CLI was
+not the vehicle; the exit rule applied is `main`'s (`1 if BROKEN else 0`). The plant was a
+copy of the oracle in the session temp dir, one print arm rewritten for
+`strip_enc ENC_VOP1`, then deleted. `generate.bend` was not edited.
+
+    CLEAN  NOT-STARTED rc=0  interpreted=233 cpython=638 shared=84 disagree=0
+    PLANT  BROKEN      rc=1  1 row named: strip_enc ENC_VOP1
+           (attempt 1 overflowed; attempt 2 named the row)
+    CLEAN  NOT-STARTED rc=0  interpreted=233 cpython=638 shared=84 disagree=0
+           (attempts 1-3 overflowed; attempt 4 agreed)
+
+NOT-STARTED, not UNCHANGED, because the lane was not `--record`ed (rule 3 above).
+`compared_pairs` is what shows the 84 agreed; `baseline_for` overwrites the why text
+with "no baseline recorded" whenever the state is NOT-STARTED, so the why line alone
+does not say the lanes agreed.
