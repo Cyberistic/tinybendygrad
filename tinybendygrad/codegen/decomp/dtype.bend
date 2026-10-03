@@ -121,6 +121,14 @@
 # RULES MATCH is gated even though WHAT THEY REWRITE is not.
 #
 # ---------------------------------------------------------------------------
+# CONTROL, dd-fix round 1 (2026-10-04): this comment block is a comment and nothing
+# else, and the gate is required to read the SAME 172 rows byte for byte. Recorded
+# because the THREE arena-aliasing defects fixed this round -- `l2i_shl.hi`
+# (dtype.py:41-44), `l2i_cdiv.abs` (dtype.py:58-61) and `l2i_cdiv.signed`
+# (dtype.py:71) -- are the kind a green gate cannot tell from a fixed one: each read
+# as a plausible string, and `--check-only` said `ALL PROOFS CHECK` on every one of
+# them. See `.agents/slop/notes/bend2-constraints.md` at the end.
+#
 # WHY `l2i` NEEDS NO FUEL. Every recursive step of `l2i` lands on a DIFFERENT
 # op -- `NEG` calls `SUB`, `MUL` calls `ADD`, `MAX` calls `CMPLT` and `WHERE`,
 # `CDIV` calls `NEG`/`SHL`/`SHR`/`CMPLT`/`SUB`/`WHERE`/`BITCAST` -- and none of
@@ -1159,7 +1167,13 @@ def l2i_cdiv.signed(isdiv: Bool, +ar: O.Arena, +dt: S.Dt, +c: Cd) -> W2:
   +nq = l2i_bitcast(W2.ar(negq), dt, ws2(W2.lo(negq), W2.hi(negq)))
   +nar = W2.ar(nq)
   +negr = l2i_cdiv.neg(nar, z, r0, r1)
-  +nr = l2i_bitcast(nar, dt, ws2(W2.lo(negr), W2.hi(negr)))
+  # `W2.ar(negr)` AND NOT `nar`. `nar` is the arena as it stood BEFORE the two
+  # negations of `r`, so `l2i_bitcast` re-used the slots `negr`'s own nodes occupy
+  # and `nr`'s srcs read back as `O.NOOP` -- the arena's bottom, index 0, whose
+  # `lab` is `NOOP`. MEASURED: `lgrp`'s root src2 label was `NOOP` and `lgrsig`
+  # position 8 was `NOOP/0` where CPython has `CAST/1`. Third instance of the same
+  # defect in this file, and the third to be invisible in `--check-only`.
+  +nr = l2i_bitcast(W2.ar(negr), dt, ws2(W2.lo(negr), W2.hi(negr)))
   +qar = W2.ar(nr)
   +qq = l2i_bitcast(qar, dt, ws2(q0, q1))
   +rar = W2.ar(qq)

@@ -125,3 +125,10 @@ try:
   print("   .val =", f.val, " inner arg =", f.src[0].arg)
 except Exception as e:
   print("   val err", e)
+ORDER.clear(); _SEEN.clear()
+print()
+print("=== `z - r` with z = UOp.const(0, dtypes.uint) (dtype.py:27 NEG -> SUB)")
+zz = UOp.const(0, dtypes.uint)
+rr = UOp.variable("r", 0, 0, dtypes.u32)
+show("sub", zz - rr)
+print("   op sequence:", ",".join(f"{u.op.name}/{len(u.src)}" for u in ORDER))

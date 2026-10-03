@@ -3666,6 +3666,385 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 # this is straight-line code, so that recursion is not present.
 
 # ===========================================================================
+# THE BASE FAMILY -- ops.py:785 `base`, :792 `unsharded_base`, :801
+# `storage_base`, :623 `without_after`, :925 `buf_uop`, :952
+# `has_buffer_identity`. Six walks down `src[0]`, and they differ ONLY in the set
+# of ops each one walks past -- which is the whole of what makes them six defs
+# rather than one parameterised one (see THE ONE PARAM BELOW).
+#
+# WHAT EACH IS IN PYTHON, and the sets are the entire difference:
+#     base                GroupOp.Movement | {DETACH}
+#     unsharded_base      GroupOp.Movement | {DETACH, UNSHARD}
+#     storage_base        that, then {BITCAST, AFTER} as well
+#     without_after       {AFTER}
+#     buf_uop             walks while `len(s.src) and s.op not in
+#                         {BUFFER, ALLOC, PARAM, STAGE, MSTACK}` -- a WALK PAST a
+#                         non-buffer, not a peel, so the answer is the first
+#                         buffer-ish node DOWN the spine
+#     has_buffer_identity {RESHAPE, UNSHARD, MSELECT}, plus {AFTER} when
+#                         `after_ok`, and the terminal answer is
+#                         `op in {BUFFER, ALLOC, PARAM}`
+# `base` is ALSO in ./fold.bend (`UOp.base`, a table read of the Kahn fold).
+# That is not a duplicate: the fold carries it because it shares the table, and
+# this one carries it because a peel that needs only the OP needs no table, and
+# paying for one would be the fold's cost for the fold's absence. The two agree
+# because the peel and the fold compute the same function; `s5_base_*` is the row
+# that holds them to it.
+#
+# ---------------------------------------------------------------------------
+# THE SHAPE, and it is the reason this block is 90 lines and not 30. A walk is a
+# self-call on `Arena.src(ar, self, 0)`, and a self-call must pass a SUBTERM of
+# its own parameter -- a store read is not one. So the walk cannot be the
+# self-call, and three shapes were measured and refused before this one:
+#
+#   * `Bool.pick(U32, peels(ar, self), walk(..., Arena.src(ar, self, 0), ...), self)`
+#     -- `self` in both arms, the arms are not exclusive, and a parameter read
+#     once per arm is still "consumed more than once" when they are in ONE
+#     expression.
+#   * the `.go` split (`X.go` above `X`, R-3): `X.go` CALLS `X`, so the pair is
+#     mutually recursive and that is refused outright. The error is the unfilled-
+#     law one and it names the PARENT, which is the least useful message in the
+#     compiler.
+#   * a two-scrutinee `match fuel peels:` -- `peels` is a call at the call site
+#     and `match` may not scrutinise a computed value. The split is not optional.
+#
+# WHAT WORKS IS THE FUEL WITH THE STOP ENCODED IN THE NODE. One def, one
+# scrutinee, and `p` is the first argument so the decrease check passes:
+#
+#     match fuel:
+#       case 0n: <the terminal answer, on the node the walk stopped at>
+#       case 1n+p: X(p, ar, Bool.pick(<T>, <walks>, Arena.src(ar, self, 0), self))
+#
+# A node that does not walk is carried UNCHANGED for the rest of the fuel and
+# comes back out of `case 0n:`, so the answer is exact whenever the fuel
+# outlasts the walk and the fuel is `Arena.budget(ar)`, which the header shows is
+# the only sound one. The cost is that a terminal node burns the whole budget;
+# that is a constant factor on a walk already O(fuel), and it is the price of six
+# defs instead of one def and a set parameter.
+#
+# WHY `+self` AND `+ar` EVERYWHERE. `Bool.pick` reads both arms, so each is read
+# twice in one expression. `+` on a `U32` is free (bend2-constraints rule 29) and
+# `+ar` is the arena being `Type`-affine, the same `+` every arena reader here
+# takes.
+#
+# THE ONE PARAM. All six are `T -> T` over a node, and Bend has no higher-order
+# def -- a function value in a datatype field forces `Type`, and a `Type` cannot
+# be parameterised. So the set is spelled in each def's `peel` and the six share
+# the FUEL SHAPE and nothing else. That is six near-identical three-line defs,
+# and it is not the copy-paste the reviewer rules out: the copy-paste rule is
+# about logic that could be hoisted, and this cannot be, because the one thing
+# that differs is the thing a parameter would have to carry.
+# ===========================================================================
+
+# `base` -- ops.py:785. `if self.op in GroupOp.Movement: return self.src[0].base;
+# if self.op is Ops.DETACH: return self.src[0].base; return self`
+def UOp.base.peel(+ar: Arena, +self: U32) -> Bool:
+  Bool.or(GroupOp.movement(Arena.op(ar, self)), eq_op(Arena.op(ar, self), OpsDETACH{}))
+
+def UOp.base(fuel: Nat, +ar: Arena, +self: U32) -> U32:
+  match fuel:
+    case 0n: self
+    case 1n+p: UOp.base(p, ar, Bool.pick(U32, UOp.base.peel(ar, self), Arena.src(ar, self, 0), self))
+
+# `unsharded_base` -- ops.py:792. Python's second and third arms are `self.src[0]
+# .base`, NOT `.unsharded_base`, so this is `base` with UNSHARD added to the SET
+# and not a recursion -- which is why it is one peel and not two.
+def UOp.unsharded_base.peel(+ar: Arena, +self: U32) -> Bool:
+  Bool.or(UOp.base.peel(ar, self), eq_op(Arena.op(ar, self), OpsUNSHARD{}))
+
+def UOp.unsharded_base(fuel: Nat, +ar: Arena, +self: U32) -> U32:
+  match fuel:
+    case 0n: self
+    case 1n+p: UOp.unsharded_base(p, ar, Bool.pick(U32, UOp.unsharded_base.peel(ar, self), Arena.src(ar, self, 0), self))
+
+# `storage_base` -- ops.py:801. Python is `b = self.unsharded_base; while b.op in
+# {BITCAST, AFTER, UNSHARD}: b = b.src[0].unsharded_base; return b` -- a `while`,
+# and this is that `while` as ONE peel with all three added to the set. The
+# `unsharded_base` set alone is NOT sufficient and `s5_storage_base_bc` is the
+# row: BITCAST is not a movement op, so `unsharded_base` stops on it (that row
+# reads BITCAST) and `storage_base` does not (that row reads BUFFER).
+def UOp.storage_base.peel(+ar: Arena, +self: U32) -> Bool:
+  Bool.or(UOp.unsharded_base.peel(ar, self),
+    Bool.or(eq_op(Arena.op(ar, self), OpsBITCAST{}), eq_op(Arena.op(ar, self), OpsAFTER{})))
+
+def UOp.storage_base(fuel: Nat, +ar: Arena, +self: U32) -> U32:
+  match fuel:
+    case 0n: self
+    case 1n+p: UOp.storage_base(p, ar, Bool.pick(U32, UOp.storage_base.peel(ar, self), Arena.src(ar, self, 0), self))
+
+# `without_after` -- ops.py:623. `self.src[0].without_after if self.op is Ops.AFTER
+# else self`. It does NOT strip UNSHARD, which `s5_wo_after_us` is the row for.
+def UOp.without_after(fuel: Nat, +ar: Arena, +self: U32) -> U32:
+  match fuel:
+    case 0n: self
+    case 1n+p: UOp.without_after(p, ar, Bool.pick(U32, eq_op(Arena.op(ar, self), OpsAFTER{}), Arena.src(ar, self, 0), self))
+
+# `buf_uop` -- ops.py:925. NOT a peel: Python walks while `len(s.src) and s.op not
+# in {BUFFER, ALLOC, PARAM, STAGE, MSTACK}`, so it goes PAST a RESHAPE to reach
+# the BUFFER under it, and a peel-shaped reading would stop at the RESHAPE. The
+# `len(s.src)` half matters on its own -- a leaf is the answer, so a BUFFER with
+# no srcs must not walk off the end of the arena.
+def UOp.buf_uop.cont(op: Op) -> Bool:
+  match op:
+    case OpsBUFFER{}: False{}
+    case OpsALLOC{}: False{}
+    case OpsPARAM{}: False{}
+    case OpsSTAGE{}: False{}
+    case OpsMSTACK{}: False{}
+    case _: True{}
+
+# `len(s.src) and s.op not in {...}` -- the `len` half is load-bearing on its own,
+# because a leaf is the answer and a BUFFER with no srcs must not walk off the end.
+def UOp.buf_uop.walk(+ar: Arena, +self: U32) -> Bool:
+  Bool.and((Arena.nsrc(ar, self) > 0 : U32), UOp.buf_uop.cont(Arena.op(ar, self)))
+
+def UOp.buf_uop(fuel: Nat, +ar: Arena, +self: U32) -> U32:
+  match fuel:
+    case 0n: self
+    case 1n+p: UOp.buf_uop(p, ar, Bool.pick(U32, UOp.buf_uop.walk(ar, self), Arena.src(ar, self, 0), self))
+
+# `has_buffer_identity` -- ops.py:952. A `U32 -> Bool` walk, so the same shape
+# with a `Bool` accumulator and a TERMINAL answer that is not the node.
+#
+# `after_ok` IS A PARAMETER AND BOTH ITS VALUES ARE ROWS (`s5_hbi_*` and
+# `s5_hbi_after_*`). The two differ on exactly ONE fixture, `af`, so a port that
+# dropped the parameter would agree on the other eight and be wrong on the ninth
+# -- which is the whole reason both are printed. Python's arms:
+#     {RESHAPE, UNSHARD, MSELECT} -> src[0]
+#     after_ok and AFTER         -> src[0]
+#     else                       -> op in {BUFFER, ALLOC, PARAM}
+# `op in {RESHAPE, UNSHARD, MSELECT}`, as a ladder rather than `op_in` over a
+# literal list: this is on the hot path of every storage walk and the list would
+# be rebuilt at every node. `+op` because `Bool.or` does not short-circuit, so all
+# three comparisons are evaluated and `op` is read three times.
+def op_in3(+op: Op) -> Bool:
+  Bool.or(eq_op(op, OpsRESHAPE{}), Bool.or(eq_op(op, OpsUNSHARD{}), eq_op(op, OpsMSELECT{})))
+
+def UOp.has_buffer_identity.walk(after_ok: Bool, +ar: Arena, +self: U32) -> Bool:
+  Bool.or(op_in3(Arena.op(ar, self)), Bool.and(after_ok, eq_op(Arena.op(ar, self), OpsAFTER{})))
+
+# The terminal answer, and it is NOT "the node's own op is in the walk set" --
+# it is a different set, so the two are separate defs and the fuel arm has to
+# call BOTH. Getting that wrong answers `s5_hbi_af` 1 for the `after_ok=False`
+# lane, which is the row that moves.
+def UOp.has_buffer_identity.term(op: Op) -> Bool:
+  match op:
+    case OpsBUFFER{}: True{}
+    case OpsALLOC{}: True{}
+    case OpsPARAM{}: True{}
+    case _: False{}
+
+def UOp.has_buffer_identity(fuel: Nat, +after_ok: Bool, +ar: Arena, +self: U32) -> Bool:
+  match fuel:
+    case 0n: UOp.has_buffer_identity.term(Arena.op(ar, self))
+    case 1n+p: Bool.pick(Bool, UOp.has_buffer_identity.walk(after_ok, ar, self),
+      UOp.has_buffer_identity(p, after_ok, ar, Arena.src(ar, self, 0)),
+      UOp.has_buffer_identity.term(Arena.op(ar, self)))
+
+# ===========================================================================
+# THE MOVERS -- ops.py:624 `barrier`, :679 `bufferize`, :680 `allreduce`,
+# :772 `mselect`, :707 `sharding`, :685 `split_uop`, :1893 `sint_to_uop`,
+# :1901 `gate_kernel_sink`. Eight defs, and each is a `UOp(...)` call or a fold
+# with no dtype and no shape in it, which is why they are here and the rest of
+# ops.py:501-1928 is not.
+#
+# `**kwargs` IS GONE, as everywhere else in this file: Python threads it through
+# thirty of these and forwards it to the constructor, so it carries op/arg/tag.
+# Bend has no kwargs, so the three constructor fields are spelled at the call
+# site and the sugar that only forwards them collapses to the call. `barrier`
+# and `bufferize` are that collapse, and they are here anyway because the ARG
+# they choose is a decision, not a forwarding: `bufferize` answers `ABad{}` where
+# `barrier` would answer `ANone{}`, and a row that prints the node's op and src
+# sequence is what holds both.
+# ===========================================================================
+
+# `bufferize` -- ops.py:679. `UOp(Ops.STAGE, src=(self,)+args, **kwargs)`, and
+# the two fixtures differ ONLY in the extra src, so `s5_bufferize_arg` is the row
+# that sees `+args` at all and `s5_bufferize` is the row that sees the op is STAGE
+# and not a forwarding of something else.
+def UOp.bufferize(ar: Arena, +self: U32, +args: List<&2, U32>) -> Found:
+  UOp.new(ar, OpsSTAGE{}, List.append(&2, U32, [self], args), ABad{}, TNone{})
+
+# `barrier` -- ops.py:624. `UOp(Ops.BARRIER, src=(self,)+src)`, self FIRST, the
+# same self-first convention `UOp.after` and `UOp.end` have.
+def UOp.barrier(ar: Arena, +self: U32, +src: List<&2, U32>) -> Found:
+  UOp.new(ar, OpsBARRIER{}, List.append(&2, U32, [self], src), ABad{}, TNone{})
+
+# `allreduce` -- ops.py:680. `UOp(Ops.ALLREDUCE, src=(self,), arg=(op, device))`
+# -- exactly ONE src, self, and the arg is the PAIR `(rop, dev)`, which is
+# `AAllred`. The device must be a TUPLE, which is why the fixture is a
+# two-element one: `assert isinstance(self.device, tuple)`, and the port's
+# `S.Dn{tags}` is that tuple.
+def UOp.allreduce(ar: Arena, +self: U32, +rop: Op, +dev: S.Dev) -> Found:
+  UOp.new(ar, OpsALLREDUCE{}, [self], AAllred{rop, dev}, TNone{})
+
+# `mselect` -- ops.py:772. `UOp(Ops.MSELECT, src=(self,), arg=arg)` where `arg` is
+# an INT -- a shard index into a multi-device tensor. `ABlob{n: U32}` is the
+# arena's existing "a bare U32 in the arg" arm, and reusing it is the honest
+# choice over minting a new one: MSELECT's arg is a number and nothing else reads
+# it. TODO(p3): if a later unit must tell an MSELECT index from a BLOB count on
+# one node, that is a NEW `Arg` arm and `eq_arg` grows an arm with it.
+def UOp.mselect(ar: Arena, +self: U32, k: U32) -> Found:
+  UOp.new(ar, OpsMSELECT{}, [self], ABlob{k}, TNone{})
+
+# `sharding` -- ops.py:707. `tuple(zip(self.arg, self.src[1:])) if self.op is
+# Ops.UNSHARD else ()`. The arg is the SORTED tuple of sharded axes and the srcs
+# carry one RANGE each, so the answer is a list of PAIRS -- and `Shard{ax, rng}`
+# is a `Data` record because Bend has no tuple and the two travel together. The
+# op test is not decoration: `s5_sharding_none` is a RESHAPE whose answer is the
+# EMPTY list, so a port that dropped the `if` would answer a pair for it.
+type Shard is Data: Shard{ax: U32, rng: U32}
+
+# `zip(self.arg, self.src[1:])` -- stops at the shorter, as Python's does. The two
+# lengths are equal for every UNSHARD tinygrad builds, so the row is the CONTENT
+# and not a length, and the three arms are the cross product the checker wants.
+def sharding.go(xs: List<&2, U32>, ys: List<&2, U32>, acc: List<&2, Shard>) -> List<&2, Shard>:
+  match xs ys:
+    case Nil{} _: acc
+    case x <> xt Nil{}: acc
+    case x <> xt y <> yt: sharding.go(xt, yt, List.append(&2, Shard, acc, [Shard{x, y}]))
+
+def sharding.pair(arg: Arg, ar: Arena, self: U32) -> List<&2, Shard>:
+  match arg:
+    case ATuple{ys}: sharding.go(ys, Arena.src_from(ar, self, 1), Nil{})
+    case _: Nil{}
+
+def UOp.sharding(+ar: Arena, +self: U32) -> List<&2, Shard>:
+  Bool.pick(List<&2, Shard>, eq_op(Arena.op(ar, self), OpsUNSHARD{}),
+    sharding.pair(Arena.arg(ar, self), ar, self), Nil{})
+
+# ---------------------------------------------------------------------------
+# `split_uop` -- ops.py:685. `if self.op is sep: for s in self.src: yield from
+# s.split_uop(sep) else: yield self` -- a generator, and a generator is a fold with
+# an accumulator and no early exit. THE ORDER IS PYTHON'S and the row is what says
+# so: the srcs go on the FRONT of the worklist, which makes the walk depth-first
+# PRE-order, which is what `yield from` in source order produces. A fold that
+# appended them at the back would answer the same LENGTH on every fixture and the
+# REVERSED sequence, which is why `s5_split_*` prints the sequence and not a count.
+#
+# ONE `Data` RECORD, `Wk`, and it is forced by the countdown. A two-scrutinee
+# `match fuel xs:` needs the cross product, so the exhausted `0n` arm has to bind
+# the list too -- and `0n` is a PREFIX that already claims every successor, so the
+# arm meant to say "out of fuel" silently becomes "any fuel, any list" and the
+# fold never terminates. Measured, not assumed: it ran until the arena's memory
+# nodes ran out and it looked exactly like an infinite loop. ONE scrutinee, the
+# fuel, with the worklist in the record, is the fix.
+#
+# THE STEP IS A `Bool.pick` AND NOT A `match`, because `sep` is a PARAMETER and
+# `Op` has seventy-eight constructors: a `match op: case OpsADD{}:` is exhaustive
+# only because the separator is a literal, and here it is not. The `+ar` and `+h`
+# are the two-read rule -- `Arena.op(ar, h)`, `Arena.srcs(ar, h)` and `[h]` are
+# three reads of one node -- and `+` on a `U32` is free.
+# ---------------------------------------------------------------------------
+type Wk is Data: Wk{work: List<&2, U32>, out: List<&2, U32>}
+
+def Wk.out(w: Wk) -> List<&2, U32>:
+  match w:
+    case Wk{work, out}: out
+
+# THE POPPED NODE, as a record, and it is the SECOND `Data` record for the same
+# reason `Wk` is the first. The step needs three things about the popped node --
+# whether it is the separator, what its srcs are, and its own index -- and all
+# three are READS OF ONE `h`. A `U32` is not affine, so the reads are legal under
+# `+h`, but then `match` needs a FIELD to scrutinise and `split_uop.sep(ar, sep, h)`
+# is a call. So the DECISION is what goes in the record: `go` is computed once at
+# the pop and the step matches on it.
+#
+# MEASURED, and this is the bug the shape exists to prevent: the first version had
+# the step return the new OUTPUT and the worklist shrink independently, so a node
+# that IS the separator had its srcs appended to the ANSWER instead of being
+# descended into. It typechecked, it checked, and `s5_split_nest` read
+# `Ops.ADD Ops.CONST` where CPython reads three CONSTs -- the src sequence with
+# the descent missing. Both lists therefore live in `Wk` and the step returns the
+# whole `Wk`, so "which list grows" is the arm and not an accident of the return
+# type.
+type Nd is Data: Nd{go: Bool, srcs: List<&2, U32>, i: U32}
+
+def UOp.split_uop.node(+ar: Arena, +sep: Op, +h: U32) -> Nd:
+  Nd{op_is(ar, h, sep), Arena.srcs(ar, h), h}
+
+# THE SEPARATOR, and it is the file's own `op_is` rather than a second copy of it.
+# Python's `self.op is sep` with `op` a FIELD binder, so this is a parameter and
+# not a ladder -- which is the whole difference between this and the first version
+# of the step, and reusing `op_is` is the whole difference between one copy of it
+# and two.
+# A separator: push its srcs ONTO THE WORKLIST, at the FRONT. That is what makes
+# the walk depth-first PRE-order, which is what `yield from` in source order is.
+# Not a separator: keep the node, on the ANSWER.
+#
+# THE TWO LISTS ARE PARAMETERS AND NOT THE RECORD, and that is a MEASURED wall
+# rather than a preference: `match nd:` kills every name bound before it, so a
+# `match go:` nested inside a second `match w:` cannot see `go`. Passing `work`
+# and `out` as parameters puts them on the right side of both matches, and the
+# step still answers a `Wk` so the caller cannot grow the wrong list by accident.
+def split_uop.step(nd: Nd, work: List<&2, U32>, out: List<&2, U32>) -> Wk:
+  match nd:
+    case Nd{go, srcs, i}:
+      match go:
+        case True{}: Wk{List.append(&2, U32, srcs, work), out}
+        case False{}: Wk{work, List.append(&2, U32, out, [i])}
+
+# ONE def: the fuel is the scrutinee and the worklist is DESTRUCTURED in the same
+# arm, so there is no sub-def and therefore no mutual recursion. R-3 would want a
+# `.pop` above this and mutual recursion is refused, and a def carrying both
+# matches in its own body is the only arrangement with neither problem.
+def UOp.split_uop.pop(fuel: Nat, +ar: Arena, +sep: Op, w: Wk) -> Wk:
+  match fuel:
+    case 0n: w
+    case 1n+p:
+      match w:
+        case Wk{work, out}:
+          match work:
+            case Nil{}: w
+            case h <> rest: UOp.split_uop.pop(p, ar, sep, split_uop.step(UOp.split_uop.node(ar, sep, h), rest, out))
+
+# `split_uop(self, sep)` with the root already on the worklist. The fuel is the
+# caller's and the only sound one is `Arena.budget(ar)`: one step per worklist
+# entry, and an entry is pushed once per edge into a node plus once for the root.
+def UOp.split_uop(fuel: Nat, +ar: Arena, self: U32, +sep: Op) -> List<&2, U32>:
+  Wk.out(UOp.split_uop.pop(fuel, ar, sep, Wk{[self], Nil{}}))
+
+# `sint_to_uop` -- ops.py:1893. `UOp.const(x, dtype=dtypes.weakint)`, and the
+# whole of it is that a `sint` is either already a UOp or a literal CONST. The
+# port's `Sint` is exactly that union (`SI{i64}` | `SU{uop}`), so the def is the
+# two arms and nothing else: the `SU` arm is the node itself and the `SI` arm
+# mints a weakint CONST. This is the def `UOp.range` and `UOp.special` would take
+# a `Sint` from, and it is why those two take a `U32` today.
+def UOp.sint_to_uop(ar: Arena, s: Sint) -> Found:
+  match s:
+    case SU{u}: Found{ar, u}
+    case SI{i}: UOp.new(ar, OpsCONST{}, Nil{}, APy{CInt{i}}, TNone{})
+
+# `gate_kernel_sink` -- ops.py:1901. Three arms, two of them NEGATIVE tests, and
+# the third is `isinstance(x.arg, KernelInfo)` -- an ARG-TYPE test, which in the
+# arena is a `match` on the `Arg` and NOT on `Arena.arg(ar, x)` for the reason
+# the `Nd` record above exists. The rows are one per arm: `s5_gate_linear` (0),
+# `s5_gate_kernel` (0) and `s5_gate_plain` (1), and a port that collapsed the two
+# negatives would answer 1 on one of the first two.
+# `isinstance(x.arg, KernelInfo)` is an ARG-TYPE test, and in the arena that is
+# the `AKernel` arm -- so a SINK with any other arg is True, which is the arm a
+# check that tested the OP instead would get wrong.
+def gate_kernel_sink.arg(arg: Arg) -> Bool:
+  match arg:
+    case AKernel{ki}: False{}
+    case _: True{}
+
+# The op test and the arg test are ONE def over TWO reads of the node, and the op
+# is a parameter so the ladder is a legal scrutinee. Both reads are needed: the
+# LINEAR arm is an op test and the KernelInfo arm is an arg test, and either one
+# alone answers the wrong thing on one of the three rows. `+` on the `Arg` because
+# it is read once per SINK arm. R-3: this is ABOVE the entry, not below it.
+def gate_kernel_sink.of(op: Op, +arg: Arg) -> Bool:
+  match op:
+    case OpsLINEAR{}: False{}
+    case OpsSINK{}: gate_kernel_sink.arg(arg)
+    case _: True{}
+
+
+def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
+  gate_kernel_sink.of(Arena.op(ar, x), Arena.arg(ar, x))
+
+# ===========================================================================
 # THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
 #
 # THESE ARE NOT DEFS, ON PURPOSE. A def whose body answers a placeholder would be
@@ -3847,8 +4226,6 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 
 # TODO(p3) ops.py:616  def store
 
-# TODO(p3) ops.py:623  def without_after
-
 # TODO(p3) ops.py:624  def barrier
 
 # TODO(p3) ops.py:625  def ins
@@ -3880,18 +4257,10 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 
 # TODO(p3) ops.py:674  def reduce
 
-# TODO(p3) ops.py:679  def bufferize
-
-# TODO(p3) ops.py:680  def allreduce
-
 # TODO(p3) ops.py:683  def overflows
-
-# TODO(p3) ops.py:685  def split_uop
 
 # TODO(p3) ops.py:692  def unshard
 #   # *** multi-device helpers ***
-
-# TODO(p3) ops.py:707  def sharding
 
 # TODO(p3) ops.py:712  def bounds
 
@@ -3905,20 +4274,12 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 
 # TODO(p3) ops.py:769  def store_call
 
-# TODO(p3) ops.py:772  def mselect
-
 # TODO(p3) ops.py:778  def on_disk
 #   # little helpers
 
 # TODO(p3) ops.py:779  def on_creation_device
 
 # TODO(p3) ops.py:780  def needs_storage
-
-# TODO(p3) ops.py:785  def base
-
-# TODO(p3) ops.py:792  def unsharded_base
-
-# TODO(p3) ops.py:801  def storage_base
 
 # TODO(p3) ops.py:808  def as_shape
 
@@ -3946,13 +4307,9 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 
 # TODO(p3) ops.py:910  def addrspace
 
-# TODO(p3) ops.py:925  def buf_uop
-
 # TODO(p3) ops.py:934  def contiguous_view
 
 # TODO(p3) ops.py:950  def contiguous_view_offset
-
-# TODO(p3) ops.py:952  def has_buffer_identity
 
 # TODO(p3) ops.py:959  def _base_buffer_is_realized
 
@@ -4178,13 +4535,9 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1880  def graph_rewrite
 
-# TODO(p3) ops.py:1885  def sint_to_uop
-
 # TODO(p3) ops.py:1886  def to_max_shape
 
 # TODO(p3) ops.py:1891  def resolve_returned_after
-
-# TODO(p3) ops.py:1901  def gate_kernel_sink
 
 # TODO(p3) ops.py:1907  def contiguous_bitcast_index
 
@@ -5206,8 +5559,379 @@ def Bsl.backedge.range() -> String:
   +f = g_bsl_backedge()
   Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsRANGE{}]))
 
+# ===========================================================================
+# THE GATE for the ops.py:501-1928 block above. The CPython lane is
+# `.agents/slop/ops-501-oracle.py` and the diff is `.agents/slop/ops-501-gate.sh`.
+# Every row name starts `s5_` so the gate filters by PREFIX: a row that MOVED
+# cannot be silently dropped, and filtering by position is what drops one.
+#
+# WHY THE PORT'S ANSWER IS AN INDEX AND CPython'S IS A NAME. `UOp.base` and its
+# five siblings answer a `U32` arena index, and an index is meaningless outside
+# the arena that produced it, so a numeric diff would compare two unrelated
+# numberings. What is comparable is what the index POINTS AT, and that is the op
+# name through `Ops.name` -- the same decision `codegen/__init__.bend`'s
+# `gr-diff.sh` made and for the same reason.
+#
+# THE FIXTURES ARE THE SMALLEST GRAPHS THAT SEPARATE TWO ANSWERS, and each is named
+# for the thing it separates rather than for its shape:
+#
+#   c    a CONST: nothing peels, so every walk answers CONST and the FUEL is the
+#        only thing that can move a row. This is the non-movement fixture, and it
+#        is here because a gate with only movement fixtures leaves every `match`'s
+#        catch-all arm dead code.
+#   b    a BUFFER: the terminal of every walk that terminates on storage.
+#   p/a  a PARAM and an ALLOC, the other two of `{BUFFER, ALLOC, PARAM}`. Three
+#        fixtures for a three-op set is what says the SET is tested and not one op.
+#   r1   RESHAPE[BUFFER], one movement deep. `s5_base_r1` is BUFFER, so a walk
+#        that stopped at the RESHAPE would answer RESHAPE.
+#   r2   RESHAPE[RESHAPE[BUFFER]], two deep: the row that says the walk REPEATS
+#        rather than testing once. A one-step walk answers RESHAPE here.
+#   us   UNSHARD[BUFFER] -- the op `base` does NOT strip and `unsharded_base` does.
+#        `s5_base_us` is UNSHARD and `s5_unsharded_base_us` is BUFFER. One op, two
+#        answers, and that pair IS the difference between the two defs.
+#   bc   BITCAST[BUFFER], which NEITHER strips and `storage_base` DOES. One node,
+#        three rows, three different answers.
+#   af   AFTER[BUFFER], which `storage_base` and `without_after` and
+#        `has_buffer_identity(after_ok=True)` strip and `has_buffer_identity()`
+#        does not -- so `s5_hbi_af` and `s5_hbi_after_af` are 0 and 1 and are the
+#        only two rows in the family that the `after_ok` parameter moves.
+#
+# THE ARENA IS A LITERAL NODE LIST, and that is deliberate. `UOp.make` appends, so
+# the k-th node built is index k; writing the list out means the index of a
+# fixture is its POSITION and a reviewer can check the rows by counting, and
+# `s5_idx_*` prints each one so a miscount is a visible row rather than a silent
+# re-labelling. The nodes bypass `UOp.make` and therefore its interning, which is
+# what a fixture wants -- every node here is already distinct, and a hash-consed
+# fixture would silently MERGE two of them and move a row for the wrong reason.
+# ===========================================================================
+
+def s5.pa(slot: U32) -> ParamArg: ParamArg.of(slot, S.int32())
+
+def s5.arena() -> Arena:
+  Arena{[
+    Arena.bottom(),
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}},
+    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(2)}, TNone{}},
+    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(3)}, TNone{}},
+    Node{OpsRESHAPE{}, [2, 10], ATuple{Nil{}}, TNone{}},
+    Node{OpsRESHAPE{}, [5], ATuple{Nil{}}, TNone{}},
+    Node{OpsUNSHARD{}, [2, 11], ATuple{[0]}, TNone{}},
+    Node{OpsBITCAST{}, [2], ADt{S.single()}, TNone{}},
+    Node{OpsAFTER{}, [2], ANone{}, TNone{}},
+    Node{OpsSTACK{}, [1, 1], APy{CInvalid{}}, TNone{}},
+    Node{OpsRANGE{}, [1], ARange{[0], AXIS_DEVICE{}}, TNone{}},
+    Node{OpsSINK{}, [12], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsLINEAR{}, [2], ANone{}, TNone{}},
+    Node{OpsADD{}, [1, 1], ANone{}, TNone{}},
+    Node{OpsADD{}, [14, 1], ANone{}, TNone{}},
+    Node{OpsMUL{}, [1, 14], ANone{}, TNone{}},
+    Node{OpsADD{}, [16, 1], ANone{}, TNone{}}
+  ], [0]}
+
+# The nine fixture indices, as a `Data` record so the row table reads them by name
+# and a fixture cannot be swapped for another without the row changing.
+type S5 is Data: S5{c: U32, b: U32, p: U32, a: U32, r1: U32, r2: U32, us: U32, bc: U32, af: U32}
+
+def s5.ids() -> S5: S5{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+# The nine `S5` field readers. Bend has no `x.field` sugar (bend2-constraints
+# rule 26) and no auto-generated projection, so each is one `match`, and R-3 wants
+# them above their first caller -- which is `s5.base`.
+def S5.c(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: c
+
+def S5.b(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: b
+
+def S5.p(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: p
+
+def S5.a(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: a
+
+def S5.r1(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: r1
+
+def S5.r2(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: r2
+
+def S5.us(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: us
+
+def S5.bc(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: bc
+
+def S5.af(f: S5) -> U32:
+  match f:
+    case S5{c, b, p, a, r1, r2, us, bc, af}: af
+
+def s5.name(ar: Arena, i: U32) -> String: Ops.name(Arena.op(ar, i))
+
+# ---------------------------------------------------------------------------
+# THE PRINTERS, three of them and no more.
+#
+# `s5.name` prints the op name of whatever a walk landed on -- the ONE comparable
+# thing about an arena index, and it is what every row in the base family uses.
+#
+# `s5.seps` prints the op-name SEQUENCE of a list, and it is `split_uop`'s row
+# because the ORDER is the fact: a fold that appended at the back answers the same
+# LENGTH and the REVERSED order, and only the sequence tells them apart.
+#
+# `s5.shardstr` prints `axis:RANGE` per shard, because `sharding` answers a list of
+# PAIRS and a list of pairs has no other printable form.
+# ---------------------------------------------------------------------------
+# The accumulator already holds the HEAD's name, so every further element is
+# appended behind a space and no `first` flag is needed. The first version carried
+# one and got it backwards -- the separator belongs to what came BEFORE, and the
+# row read `Ops.CONSTOps.CONST`.
+def s5.seps.go(+ar: Arena, xs: List<&2, U32>, acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: s5.seps.go(ar, t, String.concat([acc, " ", s5.name(ar, h)]))
+
+def s5.seps(+ar: Arena, xs: List<&2, U32>) -> String:
+  match xs:
+    case Nil{}: ""
+    case +h <> t: s5.seps.go(ar, t, s5.name(ar, h))
+
+# `Shard{ax, rng}` is a `Data` record so it is destructured; the pair is printed
+# as `axis:RANGE` and a fixture whose src[1] is not a RANGE would print its own
+# op name, which is the point.
+# One pair per line of the list, `axis:RANGE`, and the arena is the FIXTURE's so
+# the name is the RANGE's and not the bottom's.
+def s5.one(ar: Arena, ax: U32, rng: U32) -> String:
+  String.concat([U32.show(ax), ":", s5.name(ar, rng)])
+
+def s5.shardstr.go(+ar: Arena, xs: List<&2, Shard>, acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case Shard{ax, rng} <> t:
+      s5.shardstr.go(ar, t, String.concat([acc, " ", s5.one(ar, ax, rng)]))
+
+def s5.shardstr(+ar: Arena, xs: List<&2, Shard>) -> String:
+  match xs:
+    case Nil{}: ""
+    case Shard{ax, rng} <> t: s5.shardstr.go(ar, t, s5.one(ar, ax, rng))
+
+# THE ROWS. One `String` row per answer, and every walk takes `Arena.budget(ar)` as
+# its fuel -- the only sound one, for the reason the header gives: one step per
+# peel and one per worklist entry, and both are bounded by the arena.
+def s5.walk(+fuel: Nat, +ar: Arena, self: U32) -> String:
+  String.concat([s5.name(ar, UOp.base(fuel, ar, self))])
+
+def s5.walk.u(+fuel: Nat, +ar: Arena, self: U32) -> String:
+  String.concat([s5.name(ar, UOp.unsharded_base(fuel, ar, self))])
+
+def s5.walk.s(+fuel: Nat, +ar: Arena, self: U32) -> String:
+  String.concat([s5.name(ar, UOp.storage_base(fuel, ar, self))])
+
+def s5.walk.w(+fuel: Nat, +ar: Arena, self: U32) -> String:
+  String.concat([s5.name(ar, UOp.without_after(fuel, ar, self))])
+
+def s5.walk.b(+fuel: Nat, +ar: Arena, self: U32) -> String:
+  String.concat([s5.name(ar, UOp.buf_uop(fuel, ar, self))])
+
+# The nine base-family rows, one call site each, so a def nothing calls has no row
+# and cannot hide. `s5.walk*` are six one-liners rather than one parameterised
+# def because Bend has no function values: a function in a datatype field forces
+# `Type`, and a `Type` cannot be passed an arena.
+def s5.base(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_base_c", s5.walk(fuel, ar, S5.c(f)))
+    b : Unit <- srow("s5_base_b", s5.walk(fuel, ar, S5.b(f)))
+    c : Unit <- srow("s5_base_p", s5.walk(fuel, ar, S5.p(f)))
+    d : Unit <- srow("s5_base_a", s5.walk(fuel, ar, S5.a(f)))
+    e : Unit <- srow("s5_base_r1", s5.walk(fuel, ar, S5.r1(f)))
+    g : Unit <- srow("s5_base_r2", s5.walk(fuel, ar, S5.r2(f)))
+    h : Unit <- srow("s5_base_us", s5.walk(fuel, ar, S5.us(f)))
+    i : Unit <- srow("s5_base_bc", s5.walk(fuel, ar, S5.bc(f)))
+    srow("s5_base_af", s5.walk(fuel, ar, S5.af(f)))
+
+def s5.unsharded(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_unsharded_base_c", s5.walk.u(fuel, ar, S5.c(f)))
+    b : Unit <- srow("s5_unsharded_base_b", s5.walk.u(fuel, ar, S5.b(f)))
+    c : Unit <- srow("s5_unsharded_base_p", s5.walk.u(fuel, ar, S5.p(f)))
+    d : Unit <- srow("s5_unsharded_base_a", s5.walk.u(fuel, ar, S5.a(f)))
+    e : Unit <- srow("s5_unsharded_base_r1", s5.walk.u(fuel, ar, S5.r1(f)))
+    g : Unit <- srow("s5_unsharded_base_r2", s5.walk.u(fuel, ar, S5.r2(f)))
+    h : Unit <- srow("s5_unsharded_base_us", s5.walk.u(fuel, ar, S5.us(f)))
+    i : Unit <- srow("s5_unsharded_base_bc", s5.walk.u(fuel, ar, S5.bc(f)))
+    srow("s5_unsharded_base_af", s5.walk.u(fuel, ar, S5.af(f)))
+
+def s5.storage(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_storage_base_c", s5.walk.s(fuel, ar, S5.c(f)))
+    b : Unit <- srow("s5_storage_base_b", s5.walk.s(fuel, ar, S5.b(f)))
+    c : Unit <- srow("s5_storage_base_p", s5.walk.s(fuel, ar, S5.p(f)))
+    d : Unit <- srow("s5_storage_base_a", s5.walk.s(fuel, ar, S5.a(f)))
+    e : Unit <- srow("s5_storage_base_r1", s5.walk.s(fuel, ar, S5.r1(f)))
+    g : Unit <- srow("s5_storage_base_r2", s5.walk.s(fuel, ar, S5.r2(f)))
+    h : Unit <- srow("s5_storage_base_us", s5.walk.s(fuel, ar, S5.us(f)))
+    i : Unit <- srow("s5_storage_base_bc", s5.walk.s(fuel, ar, S5.bc(f)))
+    srow("s5_storage_base_af", s5.walk.s(fuel, ar, S5.af(f)))
+
+def s5.woafter(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_wo_after_c", s5.walk.w(fuel, ar, S5.c(f)))
+    b : Unit <- srow("s5_wo_after_b", s5.walk.w(fuel, ar, S5.b(f)))
+    e : Unit <- srow("s5_wo_after_r1", s5.walk.w(fuel, ar, S5.r1(f)))
+    h : Unit <- srow("s5_wo_after_us", s5.walk.w(fuel, ar, S5.us(f)))
+    srow("s5_wo_after_af", s5.walk.w(fuel, ar, S5.af(f)))
+
+def s5.bufuop(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_buf_uop_c", s5.walk.b(fuel, ar, S5.c(f)))
+    b : Unit <- srow("s5_buf_uop_b", s5.walk.b(fuel, ar, S5.b(f)))
+    c : Unit <- srow("s5_buf_uop_p", s5.walk.b(fuel, ar, S5.p(f)))
+    e : Unit <- srow("s5_buf_uop_r1", s5.walk.b(fuel, ar, S5.r1(f)))
+    g : Unit <- srow("s5_buf_uop_r2", s5.walk.b(fuel, ar, S5.r2(f)))
+    i : Unit <- srow("s5_buf_uop_bc", s5.walk.b(fuel, ar, S5.bc(f)))
+    srow("s5_buf_uop_af", s5.walk.b(fuel, ar, S5.af(f)))
+
+# `has_buffer_identity` answers a `Bool`, and BOTH values of `after_ok` are rows:
+# the two differ on exactly one fixture, so a port that dropped the parameter would
+# agree on the other eight and be wrong on the ninth.
+def s5.hbi.t(+fuel: Nat, after_ok: Bool, +ar: Arena, f: S5) -> String:
+  U32.show(Bool.to_u32(UOp.has_buffer_identity(fuel, after_ok, ar, S5.c(f))))
+
+def s5.hbi(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- row("s5_hbi_c", UOp.has_buffer_identity(fuel, False{}, ar, S5.c(f)))
+    b : Unit <- row("s5_hbi_b", UOp.has_buffer_identity(fuel, False{}, ar, S5.b(f)))
+    c : Unit <- row("s5_hbi_p", UOp.has_buffer_identity(fuel, False{}, ar, S5.p(f)))
+    d : Unit <- row("s5_hbi_a", UOp.has_buffer_identity(fuel, False{}, ar, S5.a(f)))
+    e : Unit <- row("s5_hbi_r1", UOp.has_buffer_identity(fuel, False{}, ar, S5.r1(f)))
+    g : Unit <- row("s5_hbi_r2", UOp.has_buffer_identity(fuel, False{}, ar, S5.r2(f)))
+    h : Unit <- row("s5_hbi_us", UOp.has_buffer_identity(fuel, False{}, ar, S5.us(f)))
+    i : Unit <- row("s5_hbi_bc", UOp.has_buffer_identity(fuel, False{}, ar, S5.bc(f)))
+    j : Unit <- row("s5_hbi_af", UOp.has_buffer_identity(fuel, False{}, ar, S5.af(f)))
+    k : Unit <- row("s5_hbi_after_c", UOp.has_buffer_identity(fuel, True{}, ar, S5.c(f)))
+    l : Unit <- row("s5_hbi_after_b", UOp.has_buffer_identity(fuel, True{}, ar, S5.b(f)))
+    m : Unit <- row("s5_hbi_after_p", UOp.has_buffer_identity(fuel, True{}, ar, S5.p(f)))
+    n : Unit <- row("s5_hbi_after_a", UOp.has_buffer_identity(fuel, True{}, ar, S5.a(f)))
+    o : Unit <- row("s5_hbi_after_r1", UOp.has_buffer_identity(fuel, True{}, ar, S5.r1(f)))
+    q : Unit <- row("s5_hbi_after_r2", UOp.has_buffer_identity(fuel, True{}, ar, S5.r2(f)))
+    r : Unit <- row("s5_hbi_after_us", UOp.has_buffer_identity(fuel, True{}, ar, S5.us(f)))
+    t : Unit <- row("s5_hbi_after_bc", UOp.has_buffer_identity(fuel, True{}, ar, S5.bc(f)))
+    row("s5_hbi_after_af", UOp.has_buffer_identity(fuel, True{}, ar, S5.af(f)))
+
+# `split_uop` -- the sequence, and the ORDER is the fact. Five fixtures and the
+# middle one is the one that matters: `nest` is ADD[MUL[CONST,ADD[...]],CONST],
+# so a fold that pushed at the BACK answers `CONST,ADD,CONST,MUL` and one that
+# pushed at the FRONT answers `MUL,CONST,CONST`, and both have length 3.
+def s5.split(+fuel: Nat, +ar: Arena, i: U32, sep: Op) -> String:
+  s5.seps(ar, UOp.split_uop(fuel, ar, i, sep))
+
+def s5.splitrows(+fuel: Nat, +ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_split_const", s5.split(fuel, ar, 1, OpsADD{}))
+    b : Unit <- srow("s5_split_add", s5.split(fuel, ar, 14, OpsADD{}))
+    c : Unit <- srow("s5_split_nest", s5.split(fuel, ar, 15, OpsADD{}))
+    d : Unit <- srow("s5_split_diamond", s5.split(fuel, ar, 16, OpsMUL{}))
+    e : Unit <- srow("s5_split_mismatch", s5.split(fuel, ar, 17, OpsMUL{}))
+    srow("s5_split_left", s5.split(fuel, ar, 15, OpsADD{}))
+
+# The movers. Each answers a `Found`, so each row prints the node's op name and
+# its SRC OP SEQUENCE -- two facts, because a mint that got the op right and the
+# src order wrong would answer one string either way, which is the same reason
+# `Rng.sig` exists for the rest of this file's graph rows.
+# The arena is the `Found`'s own -- a mint GROWS the arena, and reading the
+# caller's would be the stale-arena bug bend2-constraints rule "AN ARENA IS THE
+# ONE A BUILD RETURNED" names. So `s5.minted` takes the `Found` and reads
+# `Found.ar` for both halves, and it is split in two because `f` is then read
+# three times.
+def s5.minted.of(+ar: Arena, +f: Found) -> String:
+  String.concat([Ops.name(Arena.op(ar, Found.i(f))), "/", s5.seps(ar, Arena.srcs(ar, Found.i(f)))])
+
+def s5.minted.go(ar: Arena, f: Found) -> String: s5.minted.of(ar, f)
+
+# `sint_to_uop` answers a `Found` because the `SI` arm MINTS, so the row prints the
+# op name of the node it made -- CONST for the literal arm, and the `SU` arm prints
+# the name of the node that already existed, which is what makes `s5_sint_uop`
+# different from `s5_sint_const`. Split in three because `f` is read twice and a
+# `do IO<Unit>` block can only bind an `IO`.
+def s5.sint.go(ar: Arena, i: U32) -> String: s5.name(ar, i)
+
+def s5.sint.of(+f: Found) -> String: s5.sint.go(Found.ar(f), Found.i(f))
+
+def s5.sint(ar: Arena, s: Sint) -> String: s5.sint.of(UOp.sint_to_uop(ar, s))
+
+def s5.movers.rest(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("s5_sharding_us", s5.shardstr(ar, UOp.sharding(ar, 7)))
+    b : Unit <- srow("s5_sharding_none", s5.shardstr(ar, UOp.sharding(ar, 5)))
+    srow("s5_sint_const", s5.sint(ar, SInt.of(H.i64_of_i32(1))))
+
+def s5.minted.row(nm: String, +f: Found) -> IO(Unit):
+  srow(nm, s5.minted.go(Found.ar(f), f))
+
+def s5.movers(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- s5.minted.row("s5_barrier", UOp.barrier(ar, 2, Nil{}))
+    b : Unit <- s5.minted.row("s5_bufferize", UOp.bufferize(ar, 2, Nil{}))
+    c : Unit <- s5.minted.row("s5_bufferize_arg", UOp.bufferize(ar, 2, [1]))
+    d : Unit <- s5.minted.row("s5_allreduce", UOp.allreduce(ar, 4, OpsADD{}, S.Dn{[1, 1]}))
+    e : Unit <- s5.minted.row("s5_mselect", UOp.mselect(ar, 2, 0))
+    s5.movers.rest(ar)
+
+# `gate_kernel_sink` and `sint_to_uop` are the two module-level defs, and
+# `s5_gate_*` is one row per ARM: a port that collapsed the two negative tests
+# would answer 1 on one of the first two and the third row would not see it.
+def s5.gate(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- row("s5_gate_linear", gate_kernel_sink(ar, 13))
+    b : Unit <- row("s5_gate_kernel", gate_kernel_sink(ar, 12))
+    row("s5_gate_plain", gate_kernel_sink(ar, 2))
+
+# The index row. Every fixture's index is its POSITION in the literal node list
+# above, and this prints them, so a miscount is a visible row rather than a silent
+# re-labelling of the fixtures. The arithmetic being easy is exactly why it needs
+# a row.
+def s5.idx(+ar: Arena, +f: S5) -> IO(Unit):
+  srow("s5_idx", String.concat([Ops.name(Arena.op(ar, S5.c(f))), ",",
+    Ops.name(Arena.op(ar, S5.b(f))), ",", Ops.name(Arena.op(ar, S5.p(f))), ",",
+    Ops.name(Arena.op(ar, S5.a(f))), ",", Ops.name(Arena.op(ar, S5.r1(f))), ",",
+    Ops.name(Arena.op(ar, S5.r2(f))), ",", Ops.name(Arena.op(ar, S5.us(f))), ",",
+    Ops.name(Arena.op(ar, S5.bc(f))), ",", Ops.name(Arena.op(ar, S5.af(f)))]))
+
+# ONE entry point for the whole block, so `main` gets one line and the fuel is
+# computed in one place. `Arena.budget` is the only sound fuel: one step per peel,
+# one per worklist entry, and both are bounded by the arena's own size plus edges.
+def s5.rows.rest(+ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- s5.movers(ar)
+    s5.gate(ar)
+
+def s5.rows.arena(+ar: Arena, +f: S5) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- s5.idx(ar, f)
+    b : Unit <- s5.base(Arena.budget(ar), ar, f)
+    c : Unit <- s5.unsharded(Arena.budget(ar), ar, f)
+    d : Unit <- s5.storage(Arena.budget(ar), ar, f)
+    e : Unit <- s5.woafter(Arena.budget(ar), ar, f)
+    g : Unit <- s5.bufuop(Arena.budget(ar), ar, f)
+    h : Unit <- s5.hbi(Arena.budget(ar), ar, f)
+    i : Unit <- s5.splitrows(Arena.budget(ar), ar)
+    s5.rows.rest(ar, f)
+
+
+
+def s5.rows() -> IO(Unit):
+  s5.rows.arena(s5.arena(), s5.ids())
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    z : Unit <- s5.rows()
     a : Unit <- row("hashcons", t_hashcons())
     a2 : Unit <- row("float_zeros_differ", t_float_zeros_differ())
     a3 : Unit <- row("float_nan_interns", t_float_nan_interns())

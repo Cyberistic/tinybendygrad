@@ -15,6 +15,7 @@
 # `fold.bend` is the file under test. Editing the working tree in place would put this
 # harness in a race with two writers.
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -23,6 +24,7 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(REPO, 'bin/bend')
 PIN = 'master'
+KV = re.compile(r'^([^ =]+)[ =](.*)$')
 
 
 def jj(*a):
@@ -50,25 +52,24 @@ MUT = [
    "def RTable.get(t: RTable, +i: U32) -> Rng:  \n",
    "SANITY: a no-op edit, expected to move 0. A harness that reports a row-move for a "
    "no-op is reporting the substrate, not the mutation"),
-  ("R2", "def set_union.go(xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:\n  match ys:\n    case Nil{}: acc\n    case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))",
-   "def set_union.go(+xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:\n  match ys:\n    case Nil{}: acc\n    case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(xs, y), acc, List.append(&2, U32, acc, [y])))",
-   "the union's membership test read against the INPUT instead of the ACCUMULATOR, which is "
-   "the set/multiset line: `ADD(r, r)` names one range twice and a dict prints it once. The "
-   "SIGNATURE edit rides along because it is what makes the body edit compile at all (the "
-   "swap drops one read of `xs`, and a one-use list parameter is a type error) -- and R2b is "
-   "the signature ALONE, so R2b's 0 is what makes R2's row-moves the accumulator's"),
-  ("R2b", "def set_union.go(xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:",
-   "def set_union.go(+xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:",
-   "SANITY, and it is the control for R2: R2's body edit NEEDS this `+xs` to compile at all "
-   "(the `mem_u32(acc, y)` -> `mem_u32(xs, y)` swap drops one read of `xs`, and a one-use "
-   "list parameter is a type error). So R2 is a SIGNATURE+body mutation and R2b is the "
-   "signature alone, and R2b moving 0 is what makes R2's row-moves the accumulator's"),
-  ("R3", "Rng{i, Bool.pick(List<&2, U32>, self, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}",
+  ("R2", "def set_union(+xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:\n  set_union.go(ys, xs)",
+   "def set_union(+xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:\n  set_union.go(ys, Nil{})",
+   "THE ACCUMULATOR FORGOT: the union starts from nothing instead of from what it already "
+   "holds, so `dict.update` becomes an overwrite. This is the readable form of the R2 "
+   "theorem -- `mem_u32(xs, y)` was the second spelling of the same test and is equal on "
+   "every reachable input, because every row's set is duplicate-FREE by induction (base: the "
+   "empty seed; step: append only what the accumulator lacks, and the delete removes), and "
+   "so it is not a line a fixture can separate. R16 drops the test instead"),
+  ("R2b", "def set_union.go(ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:",
+   "def set_union.go(ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:  \n",
+   "SANITY on the union WALK, the control for R2: a well-formed edit to its signature moves "
+   "nothing, which is what makes R2's rows the seed"),
+  ("R3", "Rng{i, Bool.pick(List<&2, U32>, pre, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}",
    "Rng{i, Rng.rs(r), Rng.ok(r)}",
    "the `{self:None} | _ranges` PREPEND dropped, which is `ranges` against `_ranges` and is "
    "invisible from every node that is not itself a RANGE"),
-  ("R4", "case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))",
-   "case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(acc, y), List.append(&2, U32, [y], acc), acc))",
+  ("R4", "case +y <> t: set_union.go(t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))",
+   "case +y <> t: set_union.go(t, Bool.pick(List<&2, U32>, mem_u32(acc, y), List.append(&2, U32, [y], acc), acc))",
    "the union PREPENDS, so it is still a set and still correct as a set -- only the "
    "first-occurrence ORDER is wrong, and a gate that sorted its answer could not see it"),
   ("R5", "Bool.pick(Del, is_range.of(O.Arena.op(ar, er)), Del{[er], True{}}, del_of.row(RTable.get(t, er)))",
@@ -125,6 +126,22 @@ MUT = [
    "def rng_union.go(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, +acc: Rng) -> Rng:  \n",
    "SANITY on the UNION walk's own body, second control: a well-formed edit to a different "
    "def must move nothing"),
+  ("R16", "Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))",
+   "Bool.pick(List<&2, U32>, False{}, acc, List.append(&2, U32, acc, [y])))",
+   "THE MEMBERSHIP TEST DROPPED, so the union is a multiset. R2 and R16 are the two ends of "
+   "one line -- R2 drops the SEED and R16 drops the TEST -- and `rg_dup`, one range named "
+   "twice as two srcs, is the row only R16 can move"),
+  ("M3", "    case Some{d}: eq_sint(d, sint_of(4))",
+   "    case Some{d}: eq_sint(d, sint_of(1))",
+   "THE IMAGE-SHAPE CONSTANT, back to the pre-fix value. `is_image_shape` compared the last "
+   "dim against ONE, which answers False for `(32,32,4)` and True for nothing -- a defect "
+   "MEASURED by `probe-sized-consumers.bend` and left alone then only so that the `sized` "
+   "mutation M2 would keep moving exactly one row. This is the row that defect was "
+   "waiting for, and this is the mutation that says so"),
+  ("M3b", "    case Some{d}: eq_sint(d, sint_of(4))",
+   "    case Some{d}: eq_sint(d, sint_one())",
+   "the same defect spelled the way it was WRITTEN rather than as a literal, so the two "
+   "together say the fix is the constant and not the spelling of it"),
 ]
 
 
@@ -134,11 +151,19 @@ def run(work, extra=()):
 
 
 def rows(work):
+  """`name=value` AND `name value=...`, because this file prints both shapes.
+
+  The sibling harness `.agents/slop/fold-lift-mutate.py` keys on `if ' ' in line` and so
+  cannot see this file's `row()` output at all -- `img_shape=True` has no space, and every
+  `dtype_key=`/`shape_ok=` row has the same shape. Its mutations are all inside `mm.lift`,
+  so the blind spot never cost it a result; REPORTED rather than fixed, because that file
+  is not this unit's.
+  """
   out = {}
   for line in run(work)[0].splitlines():
-    if ' ' in line:
-      k, v = line.split(' ', 1)
-      out[k] = v
+    m = KV.match(line)
+    if m:
+      out[m.group(1)] = m.group(2)
   return out
 
 

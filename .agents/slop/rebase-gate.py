@@ -864,6 +864,17 @@ def main():
     # with either --record, because a mutant oracle recorded as a baseline would then read as
     # the port's history -- which is the "recording that turns a red into a green" outcome,
     # reached here by a different route.
+    #
+    # ⚠ IT WAS A NO-OP FOR ITS ENTIRE FIRST LIFE, and it is the worst kind of bug: it printed
+    # `[oracle-override] ... -> <spec>` and carried on. targets_of() SNAPSHOTS
+    # `tuple(BASE_ORACLES.get(port, []))` into the (port, oracles) list, and the gate loop
+    # iterates that snapshot -- so mutating BASE_ORACLES here changed nothing the loop could
+    # see. MEASURED by another agent driving this flag on the live tree: an already-wired port
+    # ran its BASE oracle anyway, and an UNWIRED port answered "NOT-STARTED: no oracle wired in
+    # BASE_ORACLES" immediately after the flag said it had just wired one. So the one mechanism
+    # this flag exists to provide -- prove a planted disagreement WITHOUT editing this file --
+    # did not work for any port, and a flag that reports success while doing nothing is worse
+    # than no flag. The override now replaces the TARGET, which is the thing iterated.
     if a.record or a.record_stable:
       print("REFUSING: --oracle with --record would write a MUTANT's rows into the baseline.")
       return 1
@@ -871,9 +882,13 @@ def main():
       print(f"REFUSING: --oracle judges ONE target and this run names {len(targets)}. "
             f"Use --port to name exactly one.")
       return 1
-    port, _ = targets[0]
-    print(f"[oracle-override] {port}: {BASE_ORACLES.get(port, ('<unwired>',))} -> {a.oracle}")
-    BASE_ORACLES[port] = [a.oracle]
+    port, was = targets[0]
+    # stderr, NOT stdout: --json's contract is that stdout IS the JSON document, and a notice
+    # line in front of it makes `json.loads` fail on the caller's side. Measured the hard way --
+    # rebase-plant-disagreement.py does `json.loads(r.stdout)["verdicts"][0]` and died on
+    # "Expecting value: line 1 column 2" because of this one print.
+    print(f"[oracle-override] {port}: {list(was) or '<unwired>'} -> {a.oracle}", file=sys.stderr)
+    targets = [(port, (a.oracle,))]
 
   if a.record:
     rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}}, 0

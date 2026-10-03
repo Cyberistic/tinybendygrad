@@ -44,11 +44,13 @@ from __future__ import annotations
 import hashlib
 import os
 import pathlib
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from collections import defaultdict
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 COMM_OPS = ("ADD", "MUL", "MAX", "AND", "OR", "XOR", "CMPEQ", "CMPNE")
@@ -247,6 +249,22 @@ def main(argv: list[str]) -> int:
         del argv[i:i + 2]
     names = [a for a in argv if not a.startswith("--")] or list(PORTS)
     fr = Frozen()
+    print()
+    print("PRE-FLIGHT: every port must print rows from the FROZEN copy before any")
+    print("mutation runs. A zero-row port is the bend stack overflow, or another")
+    print("agent mid-edit; it is NOT a result.")
+    dead = []
+    for nm in names:
+        for rel in PORTS.get(nm, []):
+            try:
+                n = len(rows_of(fr.bend(rel)))
+            except SystemExit as e:
+                print(f"  PRE-FLIGHT FAIL {rel}: {e}")
+                dead.append(rel)
+                continue
+            print(f"  pre-flight {rel}: {n} rows")
+    if dead:
+        raise SystemExit("PRE-FLIGHT FAILED -- no census was run:\n  " + "\n  ".join(dead))
     print()
     grand_base = grand_moved = 0
     report = []

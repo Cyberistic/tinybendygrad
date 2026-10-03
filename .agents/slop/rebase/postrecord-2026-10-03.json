@@ -1,0 +1,2389 @@
+{
+  "oracle_py": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python",
+  "tinygrad": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py",
+  "python": "3.12.10",
+  "tally": {
+    "NOT-STARTED": 11,
+    "UNCHANGED": 28,
+    "RE-PORTED": 1,
+    "BROKEN": 4,
+    "AGREE-UNRECORDED": 6
+  },
+  "verdicts": [
+    {
+      "port": "tinybendygrad/helpers.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/helpers.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/codegen/simplify.bend",
+      "oracles": [
+        ".agents/slop/xd1/rw-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 28,
+        "native": 28,
+        "cpython:rw-oracle": 60
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rw-oracle": {
+          "rc": 0,
+          "err": "# rows=60\n"
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rw-oracle",
+          "interpreted",
+          28
+        ],
+        [
+          "cpython:rw-oracle",
+          "native",
+          28
+        ],
+        [
+          "interpreted",
+          "native",
+          28
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/codegen/simplify.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/codegen/simplify.py | 4 ++-- 1 file changed, 2 insertions(+), 2 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/simplify.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/simplify.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/support/hcq2.bend",
+      "oracles": [
+        ".agents/slop/hcq2-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 360,
+        "native": 360,
+        "cpython:hcq2-oracle": 163
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:hcq2-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:hcq2-oracle",
+          "interpreted",
+          157
+        ],
+        [
+          "cpython:hcq2-oracle",
+          "native",
+          157
+        ],
+        [
+          "interpreted",
+          "native",
+          360
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/support/hcq2.py": {
+          "api_delta": {
+            "added": [
+              "Compiled",
+              "_needs_arg",
+              "_param_for",
+              "encode_cmdbuf",
+              "encode_fence",
+              "fold_ranged",
+              "lift",
+              "pm_hoist_links",
+              "pm_lift",
+              "pm_lift_deps",
+              "sym_infer",
+              "uopfunc",
+              "words",
+              "write_words"
+            ],
+            "removed": [
+              "bitcast_view",
+              "bufferize_cmdbuf",
+              "cfunc_buf",
+              "encode_submit",
+              "importlib",
+              "pm_mops",
+              "pm_patches",
+              "pm_renumber",
+              "pm_views",
+              "round_up"
+            ],
+            "changed": [
+              "pm_hcq_encode",
+              "to_name"
+            ]
+          },
+          "diff_stat": "tinygrad/runtime/support/hcq2.py | 264 ++++++++++++++++++--------------------- 1 file changed, 123 insertions(+), 141 deletions(-)"
+        }
+      },
+      "hunks_status": "26 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/hcq2.py",
+      "why": "zero rows moved; 26 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/hcq2.py"
+    },
+    {
+      "port": "tinybendygrad/schedule/indexing.bend",
+      "oracles": [
+        ".agents/slop/indexing-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 252,
+        "native": 252,
+        "cpython:indexing-oracle": 104
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:indexing-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:indexing-oracle",
+          "interpreted",
+          104
+        ],
+        [
+          "cpython:indexing-oracle",
+          "native",
+          104
+        ],
+        [
+          "interpreted",
+          "native",
+          252
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/schedule/indexing.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [
+              "dtypes"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/schedule/indexing.py | 14 +++++++------- 1 file changed, 7 insertions(+), 7 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/schedule/indexing.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/schedule/indexing.py"
+    },
+    {
+      "port": "tinybendygrad/schedule/rangeify.bend",
+      "oracles": [
+        ".agents/slop/rangeify-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 126,
+        "native": 126,
+        "cpython:rangeify-oracle": 89
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rangeify-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rangeify-oracle",
+          "interpreted",
+          31
+        ],
+        [
+          "cpython:rangeify-oracle",
+          "native",
+          31
+        ],
+        [
+          "interpreted",
+          "native",
+          126
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/schedule/rangeify.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [
+              "ALWAYS_RUN_OPS"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/schedule/rangeify.py | 18 ++++++++---------- 1 file changed, 8 insertions(+), 10 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/schedule/rangeify.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/schedule/rangeify.py"
+    },
+    {
+      "port": "tinybendygrad/uop/fold.bend",
+      "oracles": [
+        ".agents/slop/mm-lift-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 214,
+        "native": 214,
+        "cpython:mm-lift-gate": 130
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:mm-lift-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:mm-lift-gate",
+          "interpreted",
+          126
+        ],
+        [
+          "cpython:mm-lift-gate",
+          "native",
+          126
+        ],
+        [
+          "interpreted",
+          "native",
+          214
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/uop/ops.py": {
+          "api_delta": {
+            "added": [
+              "CustomFunction"
+            ],
+            "removed": [
+              "axis_to_pos",
+              "contiguous_bitcast_index",
+              "pm_contiguous_view_offset"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/uop/ops.py | 130 ++++++++++++++++++++++++---------------------------- 1 file changed, 61 insertions(+), 69 deletions(-)"
+        }
+      },
+      "hunks_status": "4 symbol(s) changed across 1 upstream file(s): tinygrad/uop/ops.py",
+      "why": "zero rows moved; 4 symbol(s) changed across 1 upstream file(s): tinygrad/uop/ops.py"
+    },
+    {
+      "port": "tinybendygrad/uop/ops.bend",
+      "oracles": [
+        ".agents/slop/rebase-oracle-ops.py"
+      ],
+      "row_counts": {
+        "interpreted": 129,
+        "native": 129,
+        "cpython:rebase-oracle-ops": 82
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rebase-oracle-ops": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rebase-oracle-ops",
+          "interpreted",
+          81
+        ],
+        [
+          "cpython:rebase-oracle-ops",
+          "native",
+          81
+        ],
+        [
+          "interpreted",
+          "native",
+          129
+        ]
+      ],
+      "moved": [
+        [
+          "cpython:rebase-oracle-ops",
+          "#rebase_inner",
+          "ops-oracle.py  inner_rows=82 bend_only_families=42 filtered=15 kept=67",
+          "ops-oracle.py  inner_rows=96 bend_only_families=42 filtered=15 kept=81"
+        ]
+      ],
+      "moved_count": 1,
+      "state": "RE-PORTED",
+      "why": "1 row(s) moved and now agree"
+    },
+    {
+      "port": "tinybendygrad/uop/spec.bend",
+      "oracles": [
+        ".agents/slop/rebase-oracle-spec.py"
+      ],
+      "row_counts": {
+        "interpreted": 25,
+        "native": 25,
+        "cpython:rebase-oracle-spec": 16
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rebase-oracle-spec": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rebase-oracle-spec",
+          "interpreted",
+          11
+        ],
+        [
+          "cpython:rebase-oracle-spec",
+          "native",
+          11
+        ],
+        [
+          "interpreted",
+          "native",
+          25
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/uop/spec.py": {
+          "api_delta": {
+            "added": [
+              "CustomFunction"
+            ],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/uop/spec.py | 19 ++++++++----------- 1 file changed, 8 insertions(+), 11 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/uop/spec.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/uop/spec.py"
+    },
+    {
+      "port": "tinybendygrad/uop/validate.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/uop/validate.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/codegen/kernel.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/codegen/kernel.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/codegen/gpudims.bend",
+      "oracles": [
+        ".agents/slop/xd1/rw-gate-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 24,
+        "native": 24,
+        "cpython:rw-gate-oracle": 54
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rw-gate-oracle": {
+          "rc": 0,
+          "err": "# rows=54\n"
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rw-gate-oracle",
+          "interpreted",
+          24
+        ],
+        [
+          "cpython:rw-gate-oracle",
+          "native",
+          24
+        ],
+        [
+          "interpreted",
+          "native",
+          24
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/codegen/gpudims.py": {
+          "api_delta": {
+            "added": [
+              "group_gpudims",
+              "pm_group_gpudims",
+              "pm_range_to_special",
+              "pm_split_ends"
+            ],
+            "removed": [
+              "add_gpudims",
+              "pm_add_gpudims"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/codegen/gpudims.py | 37 +++++++++++++++++++++++-------------- 1 file changed, 23 insertions(+), 14 deletions(-)"
+        }
+      },
+      "hunks_status": "6 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/gpudims.py",
+      "why": "zero rows moved; 6 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/gpudims.py"
+    },
+    {
+      "port": "tinybendygrad/codegen/opt/heuristic.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/codegen/opt/heuristic.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/codegen/opt/postrange.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/codegen/opt/postrange.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/codegen/opt/search.bend",
+      "oracles": [
+        ".agents/slop/rebase-oracle-search.py"
+      ],
+      "row_counts": {
+        "interpreted": 38,
+        "native": 38,
+        "cpython:rebase-oracle-search": 20
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:rebase-oracle-search": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:rebase-oracle-search",
+          "interpreted",
+          10
+        ],
+        [
+          "cpython:rebase-oracle-search",
+          "native",
+          10
+        ],
+        [
+          "interpreted",
+          "native",
+          38
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/codegen/opt/search.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": [
+              "actions"
+            ]
+          },
+          "diff_stat": "tinygrad/codegen/opt/search.py | 4 ++-- 1 file changed, 2 insertions(+), 2 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/opt/search.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/codegen/opt/search.py"
+    },
+    {
+      "port": "tinybendygrad/device.bend",
+      "oracles": [
+        ".agents/slop/device-oracle-MUTANT.py"
+      ],
+      "row_counts": {
+        "interpreted": 110,
+        "native": 110,
+        "cpython:device-oracle-MUTANT": 23
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:device-oracle-MUTANT": {
+          "rc": 0,
+          "err": "# ONE LINE CHANGED from device-oracle.py: line 85\n#   -     row(\"allow_lower\", allowed(False, \"python:1\"))\n#   +     row(\"allow_lower\", 0)  # PLANTED for the control: the ONE wrong answer\n"
+        }
+      },
+      "state": "BROKEN",
+      "why": "2 row(s) disagree with CPython across 3 lane pair(s)",
+      "disagreements": [
+        [
+          "cpython:device-oracle-MUTANT",
+          "interpreted",
+          "allow_lower"
+        ],
+        [
+          "cpython:device-oracle-MUTANT",
+          "native",
+          "allow_lower"
+        ]
+      ]
+    },
+    {
+      "port": "tinybendygrad/engine/realize.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/engine/realize.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_cuda.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/runtime/ops_cuda.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_metal.bend",
+      "oracles": [
+        ".agents/slop/mt_seam_rows.py"
+      ],
+      "row_counts": {
+        "interpreted": 432,
+        "native": 432,
+        "cpython:mt_seam_rows": 18
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:mt_seam_rows": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:mt_seam_rows",
+          "interpreted",
+          14
+        ],
+        [
+          "cpython:mt_seam_rows",
+          "native",
+          14
+        ],
+        [
+          "interpreted",
+          "native",
+          432
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/ops_metal.py": {
+          "api_delta": {
+            "added": [
+              "AddrSpace",
+              "mtl_handle",
+              "mtl_run",
+              "mtl_send",
+              "to_name",
+              "to_tuple",
+              "uopfunc"
+            ],
+            "removed": [
+              "MSGSEND",
+              "SELECTORS",
+              "encode_submit",
+              "mtl_cb",
+              "mtl_enc",
+              "mtl_poll",
+              "mtl_sel"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/ops_metal.py | 129 +++++++++++++++++++++--------------------- 1 file changed, 64 insertions(+), 65 deletions(-)"
+        }
+      },
+      "hunks_status": "14 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_metal.py",
+      "why": "zero rows moved; 14 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_metal.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_null.bend",
+      "oracles": [
+        ".agents/slop/null-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 180,
+        "native": 180,
+        "cpython:null-oracle": 9
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:null-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:null-oracle",
+          "interpreted",
+          7
+        ],
+        [
+          "cpython:null-oracle",
+          "native",
+          7
+        ],
+        [
+          "interpreted",
+          "native",
+          180
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/ops_null.py": {
+          "api_delta": {
+            "added": [
+              "null_submit",
+              "to_tuple",
+              "uopfunc"
+            ],
+            "removed": [
+              "encode_submit"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/ops_null.py | 19 ++++++++++++------- 1 file changed, 12 insertions(+), 7 deletions(-)"
+        }
+      },
+      "hunks_status": "4 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_null.py",
+      "why": "zero rows moved; 4 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_null.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_qcom.bend",
+      "oracles": [
+        ".agents/slop/qcom-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 750,
+        "native": 750,
+        "cpython:qcom-oracle": 312
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:qcom-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:qcom-oracle",
+          "interpreted",
+          312
+        ],
+        [
+          "cpython:qcom-oracle",
+          "native",
+          312
+        ],
+        [
+          "interpreted",
+          "native",
+          750
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/ops_qcom.py": {
+          "api_delta": {
+            "added": [
+              "qcom_submit",
+              "uopfunc"
+            ],
+            "removed": [
+              "encode_submit"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/ops_qcom.py | 33 +++++++++++++++++---------------- 1 file changed, 17 insertions(+), 16 deletions(-)"
+        }
+      },
+      "hunks_status": "3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_qcom.py",
+      "why": "zero rows moved; 3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_qcom.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/support/usb.bend",
+      "oracles": [
+        ".agents/slop/usb-oracle-run.py"
+      ],
+      "row_counts": {
+        "interpreted": 940,
+        "native": 940,
+        "cpython:usb-oracle-run": 939
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:usb-oracle-run": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:usb-oracle-run",
+          "interpreted",
+          939
+        ],
+        [
+          "cpython:usb-oracle-run",
+          "native",
+          939
+        ],
+        [
+          "interpreted",
+          "native",
+          940
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/support/usb.py": {
+          "api_delta": {
+            "added": [
+              "to_name",
+              "usb_bufferize"
+            ],
+            "removed": [
+              "pm_usb_bufferize"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/support/usb.py | 64 ++++++++++++++++++++--------------------- 1 file changed, 32 insertions(+), 32 deletions(-)"
+        }
+      },
+      "hunks_status": "3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/usb.py",
+      "why": "zero rows moved; 3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/usb.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_amd.bend",
+      "oracles": [
+        ".agents/slop/amd_oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 520,
+        "native": 520,
+        "cpython:amd_oracle": 1010
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:amd_oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:amd_oracle",
+          "interpreted",
+          409
+        ],
+        [
+          "cpython:amd_oracle",
+          "native",
+          409
+        ],
+        [
+          "interpreted",
+          "native",
+          520
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:amd_oracle', 'interpreted', 409), ('cpython:amd_oracle', 'native', 409), ('interpreted', 'native', 520)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/runtime/ops_amd.bend)"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_nv.bend",
+      "oracles": [
+        ".agents/slop/nv-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 600,
+        "native": 600,
+        "cpython:nv-oracle": 547
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:nv-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:nv-oracle",
+          "interpreted",
+          543
+        ],
+        [
+          "cpython:nv-oracle",
+          "native",
+          543
+        ],
+        [
+          "interpreted",
+          "native",
+          600
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/ops_nv.py": {
+          "api_delta": {
+            "added": [
+              "nv_submit",
+              "uopfunc"
+            ],
+            "removed": [
+              "encode_submit"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/ops_nv.py | 49 +++++++++++++++++++++++----------------------- 1 file changed, 25 insertions(+), 24 deletions(-)"
+        }
+      },
+      "hunks_status": "3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_nv.py",
+      "why": "zero rows moved; 3 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_nv.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_rdma.bend",
+      "oracles": [
+        ".agents/slop/oracle_rdma_gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 389,
+        "native": 389,
+        "cpython:oracle_rdma_gate": 389
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:oracle_rdma_gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:oracle_rdma_gate",
+          "interpreted",
+          389
+        ],
+        [
+          "cpython:oracle_rdma_gate",
+          "native",
+          389
+        ],
+        [
+          "interpreted",
+          "native",
+          389
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/ops_rdma.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": [
+              "pm_rdma_encode"
+            ]
+          },
+          "diff_stat": "tinygrad/runtime/ops_rdma.py | 7 +++---- 1 file changed, 3 insertions(+), 4 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_rdma.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/ops_rdma.py"
+    },
+    {
+      "port": "tinybendygrad/codegen/decomp/dtype.bend",
+      "oracles": [
+        ".agents/slop/dtype-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 172,
+        "native": 172,
+        "cpython:dtype-oracle": 351
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:dtype-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "state": "BROKEN",
+      "why": "2 row(s) disagree with CPython across 3 lane pair(s)",
+      "disagreements": [
+        [
+          "cpython:dtype-oracle",
+          "interpreted",
+          "c7"
+        ],
+        [
+          "cpython:dtype-oracle",
+          "native",
+          "c7"
+        ]
+      ]
+    },
+    {
+      "port": "tinybendygrad/dtype.bend",
+      "oracles": [
+        ".agents/slop/oracle/dtype_tables.py"
+      ],
+      "row_counts": {
+        "interpreted": 0,
+        "cpython:dtype_tables": 0
+      },
+      "lanes": {
+        "check": {
+          "rc": 1,
+          "first": ""
+        },
+        "interpreted": {
+          "rc": 1,
+          "err": "SOME PROOFS FAIL\nError: 14 defs rely on unsafe or foreign code:\n- Dt.bf16\n- Dt.fp16\n- Dt.fp8_from\n- Dt.fp8_to\n- Dt.i64_trunc\n- Dt.i64_floor_div\n- Dt.i64_floor_mod\n- Dt.i64_cdiv\n- Dt.i64_cmod\n- Dt.i64_ceildiv\n- float_to_bf16\n- float_to_fp16\n- float_to_fp8\n- fp8_to_float\n"
+        },
+        "native": {
+          "rc": 1,
+          "err": "Error: no main to run\n"
+        },
+        "cpython:dtype_tables": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "state": "BROKEN",
+      "why": "lane(s) failed to run: interpreted, native"
+    },
+    {
+      "port": "tinybendygrad/renderer/cstyle.bend",
+      "oracles": [
+        ".agents/slop/renderer_oracle.py cstyle"
+      ],
+      "row_counts": {
+        "interpreted": 225,
+        "native": 225,
+        "cpython:renderer_oracle": 15
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:renderer_oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "state": "BROKEN",
+      "why": "lane pair(s) share NO row names, so they compared nothing: `cpython:renderer_oracle` vs `interpreted`, `cpython:renderer_oracle` vs `native`. Two lanes that cannot be compared cannot agree",
+      "uncompared_pairs": [
+        [
+          "cpython:renderer_oracle",
+          "interpreted",
+          0
+        ],
+        [
+          "cpython:renderer_oracle",
+          "native",
+          0
+        ]
+      ]
+    },
+    {
+      "port": "tinybendygrad/engine/jit.bend",
+      "oracles": [
+        ".agents/slop/jit-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 137,
+        "native": 137,
+        "cpython:jit-oracle": 30
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:jit-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:jit-oracle",
+          "interpreted",
+          18
+        ],
+        [
+          "cpython:jit-oracle",
+          "native",
+          18
+        ],
+        [
+          "interpreted",
+          "native",
+          137
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/engine/jit.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/engine/jit.py | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)"
+        },
+        "tinygrad/function.py": {
+          "api_delta": {},
+          "diff_stat": "(upstream has no diff for tinygrad/function.py)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 2 upstream file(s): tinygrad/engine/jit.py, tinygrad/function.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 2 upstream file(s): tinygrad/engine/jit.py, tinygrad/function.py"
+    },
+    {
+      "port": "tinybendygrad/mixin/elementwise.bend",
+      "oracles": [
+        ".agents/slop/ew-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 72,
+        "native": 72,
+        "cpython:ew-gate": 71
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:ew-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:ew-gate",
+          "interpreted",
+          71
+        ],
+        [
+          "cpython:ew-gate",
+          "native",
+          71
+        ],
+        [
+          "interpreted",
+          "native",
+          72
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/mixin/elementwise.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/mixin/elementwise.py | 3 +-- 1 file changed, 1 insertion(+), 2 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/mixin/elementwise.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/mixin/elementwise.py"
+    },
+    {
+      "port": "tinybendygrad/mixin/gradient.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/mixin/gradient.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/mixin/op.bend",
+      "oracles": [
+        ".agents/slop/mixin-op-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 36,
+        "native": 36,
+        "cpython:mixin-op-gate": 32
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:mixin-op-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:mixin-op-gate",
+          "interpreted",
+          32
+        ],
+        [
+          "cpython:mixin-op-gate",
+          "native",
+          32
+        ],
+        [
+          "interpreted",
+          "native",
+          36
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/mixin/op.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/mixin/op.py | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/mixin/op.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/mixin/op.py"
+    },
+    {
+      "port": "tinybendygrad/nn/__init__.bend",
+      "oracles": [
+        ".agents/slop/nn-init-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 24,
+        "native": 24,
+        "cpython:nn-init-gate": 24
+      },
+      "lanes": {
+        "check": {
+          "rc": 1,
+          "first": ""
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:nn-init-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:nn-init-gate",
+          "interpreted",
+          24
+        ],
+        [
+          "cpython:nn-init-gate",
+          "native",
+          24
+        ],
+        [
+          "interpreted",
+          "native",
+          24
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/nn/__init__.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/nn/__init__.py | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/nn/__init__.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/nn/__init__.py"
+    },
+    {
+      "port": "tinybendygrad/nn/onnx.bend",
+      "oracles": [
+        ".agents/slop/onnx-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 123,
+        "native": 123,
+        "cpython:onnx-gate": 123
+      },
+      "lanes": {
+        "check": {
+          "rc": 1,
+          "first": ""
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:onnx-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:onnx-gate",
+          "interpreted",
+          123
+        ],
+        [
+          "cpython:onnx-gate",
+          "native",
+          123
+        ],
+        [
+          "interpreted",
+          "native",
+          123
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/nn/onnx.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/nn/onnx.py | 18 ++++++------------ 1 file changed, 6 insertions(+), 12 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/nn/onnx.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/nn/onnx.py"
+    },
+    {
+      "port": "tinybendygrad/renderer/amd/generate.bend",
+      "oracles": [
+        ".agents/slop/ga-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 726,
+        "native": 726,
+        "cpython:ga-oracle": 779
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:ga-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:ga-oracle",
+          "interpreted",
+          726
+        ],
+        [
+          "cpython:ga-oracle",
+          "native",
+          726
+        ],
+        [
+          "interpreted",
+          "native",
+          726
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:ga-oracle', 'interpreted', 726), ('cpython:ga-oracle', 'native', 726), ('interpreted', 'native', 726)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/renderer/amd/generate.bend)"
+    },
+    {
+      "port": "tinybendygrad/renderer/amd/sqtt.bend",
+      "oracles": [
+        ".agents/slop/sqtt_spec.py"
+      ],
+      "row_counts": {
+        "interpreted": 1033,
+        "native": 1033,
+        "cpython:sqtt_spec": 1324
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:sqtt_spec": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:sqtt_spec",
+          "interpreted",
+          1015
+        ],
+        [
+          "cpython:sqtt_spec",
+          "native",
+          1015
+        ],
+        [
+          "interpreted",
+          "native",
+          1033
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/renderer/amd/sqtt.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/renderer/amd/sqtt.py | 26 ++++++++++++++++++++------ 1 file changed, 20 insertions(+), 6 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/amd/sqtt.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/amd/sqtt.py"
+    },
+    {
+      "port": "tinybendygrad/renderer/llvmir.bend",
+      "oracles": [
+        ".agents/slop/llvmir-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 323,
+        "native": 323,
+        "cpython:llvmir-oracle": 323
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:llvmir-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:llvmir-oracle",
+          "interpreted",
+          323
+        ],
+        [
+          "cpython:llvmir-oracle",
+          "native",
+          323
+        ],
+        [
+          "interpreted",
+          "native",
+          323
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/renderer/llvmir.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/renderer/llvmir.py | 18 ++++++++++++------ 1 file changed, 12 insertions(+), 6 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/llvmir.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/llvmir.py"
+    },
+    {
+      "port": "tinybendygrad/renderer/nir_llvmir.bend",
+      "oracles": [
+        ".agents/slop/nl/nl-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 201,
+        "native": 201,
+        "cpython:nl-oracle": 201
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:nl-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:nl-oracle",
+          "interpreted",
+          201
+        ],
+        [
+          "cpython:nl-oracle",
+          "native",
+          201
+        ],
+        [
+          "interpreted",
+          "native",
+          201
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/renderer/llvmir.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/renderer/llvmir.py | 18 ++++++++++++------ 1 file changed, 12 insertions(+), 6 deletions(-)"
+        },
+        "tinygrad/renderer/nir.py": {
+          "api_delta": {},
+          "diff_stat": "(upstream has no diff for tinygrad/renderer/nir.py)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 2 upstream file(s): tinygrad/renderer/llvmir.py, tinygrad/renderer/nir.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 2 upstream file(s): tinygrad/renderer/llvmir.py, tinygrad/renderer/nir.py"
+    },
+    {
+      "port": "tinybendygrad/renderer/ptx.bend",
+      "oracles": [
+        ".agents/slop/ptx-s3-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 281,
+        "native": 281,
+        "cpython:ptx-s3-oracle": 281
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:ptx-s3-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:ptx-s3-oracle",
+          "interpreted",
+          281
+        ],
+        [
+          "cpython:ptx-s3-oracle",
+          "native",
+          281
+        ],
+        [
+          "interpreted",
+          "native",
+          281
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/renderer/ptx.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/renderer/ptx.py | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/ptx.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/renderer/ptx.py"
+    },
+    {
+      "port": "tinybendygrad/renderer/tc_ptx.bend",
+      "oracles": [
+        ".agents/slop/tcptx-oracle.py stage2"
+      ],
+      "row_counts": {
+        "interpreted": 333,
+        "native": 333,
+        "cpython:tcptx-oracle": 333
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:tcptx-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:tcptx-oracle",
+          "interpreted",
+          228
+        ],
+        [
+          "cpython:tcptx-oracle",
+          "native",
+          228
+        ],
+        [
+          "interpreted",
+          "native",
+          333
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/renderer/ptx.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/renderer/ptx.py | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)"
+        },
+        "tinygrad/renderer/tc.py": {
+          "api_delta": {},
+          "diff_stat": "(upstream has no diff for tinygrad/renderer/tc.py)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 2 upstream file(s): tinygrad/renderer/ptx.py, tinygrad/renderer/tc.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 2 upstream file(s): tinygrad/renderer/ptx.py, tinygrad/renderer/tc.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/support/c.bend",
+      "oracles": [
+        ".agents/slop/c-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 129,
+        "native": 129,
+        "cpython:c-oracle": 129
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:c-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:c-oracle",
+          "interpreted",
+          129
+        ],
+        [
+          "cpython:c-oracle",
+          "native",
+          129
+        ],
+        [
+          "interpreted",
+          "native",
+          129
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/runtime/support/c.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/runtime/support/c.py | 4 ++-- 1 file changed, 2 insertions(+), 2 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/c.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/runtime/support/c.py"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_cpu.bend",
+      "oracles": [
+        ".agents/slop/cpulink_oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 134,
+        "native": 134,
+        "cpython:cpulink_oracle": 20
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:cpulink_oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:cpulink_oracle",
+          "interpreted",
+          3
+        ],
+        [
+          "cpython:cpulink_oracle",
+          "native",
+          3
+        ],
+        [
+          "interpreted",
+          "native",
+          134
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:cpulink_oracle', 'interpreted', 3), ('cpython:cpulink_oracle', 'native', 3), ('interpreted', 'native', 134)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/runtime/ops_cpu.bend)"
+    },
+    {
+      "port": "tinybendygrad/runtime/ops_python.bend",
+      "oracles": [
+        ".agents/slop/ops-python-render-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 85,
+        "native": 85,
+        "cpython:ops-python-render-oracle": 241
+      },
+      "lanes": {
+        "check": {
+          "rc": 1,
+          "first": ""
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:ops-python-render-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:ops-python-render-oracle",
+          "interpreted",
+          59
+        ],
+        [
+          "cpython:ops-python-render-oracle",
+          "native",
+          59
+        ],
+        [
+          "interpreted",
+          "native",
+          85
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:ops-python-render-oracle', 'interpreted', 59), ('cpython:ops-python-render-oracle', 'native', 59), ('interpreted', 'native', 85)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/runtime/ops_python.bend)"
+    },
+    {
+      "port": "tinybendygrad/runtime/support/elf.bend",
+      "oracles": [
+        ".agents/slop/elf_rows.py"
+      ],
+      "row_counts": {
+        "interpreted": 353,
+        "native": 353,
+        "cpython:elf_rows": 1042
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:elf_rows": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:elf_rows",
+          "interpreted",
+          353
+        ],
+        [
+          "cpython:elf_rows",
+          "native",
+          353
+        ],
+        [
+          "interpreted",
+          "native",
+          353
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:elf_rows', 'interpreted', 353), ('cpython:elf_rows', 'native', 353), ('interpreted', 'native', 353)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/runtime/support/elf.bend)"
+    },
+    {
+      "port": "tinybendygrad/schedule/__init__.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/schedule/__init__.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/schedule/multi.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/schedule/multi.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/schedule/prepare.bend",
+      "oracles": [
+        ".agents/slop/prepare-oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 321,
+        "native": 321,
+        "cpython:prepare-oracle": 2521
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:prepare-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:prepare-oracle",
+          "interpreted",
+          321
+        ],
+        [
+          "cpython:prepare-oracle",
+          "native",
+          321
+        ],
+        [
+          "interpreted",
+          "native",
+          321
+        ]
+      ],
+      "state": "AGREE-UNRECORDED",
+      "why": "compared clean and UNRECORDED: [('cpython:prepare-oracle', 'interpreted', 321), ('cpython:prepare-oracle', 'native', 321), ('interpreted', 'native', 321)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for tinybendygrad/schedule/prepare.bend)"
+    },
+    {
+      "port": "tinybendygrad/tensor.bend",
+      "oracles": [
+        ".agents/slop/tensor-gate.py"
+      ],
+      "row_counts": {
+        "interpreted": 33,
+        "native": 33,
+        "cpython:tensor-gate": 30
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:tensor-gate": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:tensor-gate",
+          "interpreted",
+          30
+        ],
+        [
+          "cpython:tensor-gate",
+          "native",
+          30
+        ],
+        [
+          "interpreted",
+          "native",
+          33
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/tensor.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/tensor.py | 4 ++-- 1 file changed, 2 insertions(+), 2 deletions(-)"
+        }
+      },
+      "hunks_status": "0 symbol(s) changed across 1 upstream file(s): tinygrad/tensor.py",
+      "why": "zero rows moved; 0 symbol(s) changed across 1 upstream file(s): tinygrad/tensor.py"
+    },
+    {
+      "port": "tinybendygrad/uop/render.bend",
+      "oracles": [
+        ".agents/slop/xd1/render-gate-oracle.py --gate"
+      ],
+      "row_counts": {
+        "interpreted": 86,
+        "native": 86,
+        "cpython:render-gate-oracle": 85
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:render-gate-oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:render-gate-oracle",
+          "interpreted",
+          85
+        ],
+        [
+          "cpython:render-gate-oracle",
+          "native",
+          85
+        ],
+        [
+          "interpreted",
+          "native",
+          86
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/uop/render.py": {
+          "api_delta": {
+            "added": [],
+            "removed": [
+              "AddrSpace"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/uop/render.py | 15 ++++++--------- 1 file changed, 6 insertions(+), 9 deletions(-)"
+        }
+      },
+      "hunks_status": "1 symbol(s) changed across 1 upstream file(s): tinygrad/uop/render.py",
+      "why": "zero rows moved; 1 symbol(s) changed across 1 upstream file(s): tinygrad/uop/render.py"
+    },
+    {
+      "port": "tinybendygrad/uop/weak.bend",
+      "state": "NOT-STARTED",
+      "why": "no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/uop/weak.bend has no oracle entry, not a missing recording"
+    },
+    {
+      "port": "tinybendygrad/viz/serve.bend",
+      "oracles": [
+        ".agents/slop/vz/viz_oracle.py"
+      ],
+      "row_counts": {
+        "interpreted": 176,
+        "native": 176,
+        "cpython:viz_oracle": 176
+      },
+      "lanes": {
+        "check": {
+          "rc": 0,
+          "first": "ALL PROOFS CHECK"
+        },
+        "interpreted": {
+          "rc": 0,
+          "err": ""
+        },
+        "native": {
+          "rc": 0,
+          "err": ""
+        },
+        "cpython:viz_oracle": {
+          "rc": 0,
+          "err": ""
+        }
+      },
+      "compared_pairs": [
+        [
+          "cpython:viz_oracle",
+          "interpreted",
+          176
+        ],
+        [
+          "cpython:viz_oracle",
+          "native",
+          176
+        ],
+        [
+          "interpreted",
+          "native",
+          176
+        ]
+      ],
+      "moved": [],
+      "moved_count": 0,
+      "state": "UNCHANGED",
+      "hunks_examined": {
+        "tinygrad/viz/serve.py": {
+          "api_delta": {
+            "added": [
+              "get_cfg"
+            ],
+            "removed": [
+              "amdgpu_cfg"
+            ],
+            "changed": []
+          },
+          "diff_stat": "tinygrad/viz/serve.py | 61 +++++++++++++++++++-------------------------------- 1 file changed, 23 insertions(+), 38 deletions(-)"
+        }
+      },
+      "hunks_status": "2 symbol(s) changed across 1 upstream file(s): tinygrad/viz/serve.py",
+      "why": "zero rows moved; 2 symbol(s) changed across 1 upstream file(s): tinygrad/viz/serve.py"
+    }
+  ]
+}

@@ -103,18 +103,29 @@ def walk_mutant(root: UOp, ctx) -> dict:
 
 
 def src_reading_rules() -> list[str]:
-    """Q3: which of `pm_post_sched_cache`'s patterns constrain a node's SRCS?
+    """Q3/Q4: what does `pm_post_sched_cache` ACTUALLY contain, read off the
+    pattern objects rather than off a transcription of the source.
 
-    Read off the pattern objects, not the lambda source: a `UPat(Ops.X)` with no
-    `src=` field cannot distinguish two nodes that agree on `op` and `arg`.
+    `UPat.op` is a TUPLE of ops and a `UPat` with no field pattern has no
+    `fields` attribute at all -- that is the structural statement "this pattern
+    cannot look at anything but the op", and it is what makes Q1 a theorem
+    rather than a guess.
     """
     out = []
     for pat, _ in pm_post_sched_cache.patterns:
-      name = pat.__class__.__name__
+      ops = "+".join(o.name for o in pat.op)
       fields = getattr(pat, "fields", None)
-      constrained = [f for f in (fields or ()) if f in ("src", "arg")]
-      out.append(f"{name}(op={pat.op.name}) constrains={constrained or 'NONE'}")
+      out.append(f"UPat(op={ops}) fields={fields!r} "
+                 f"-> src-visible={bool(fields) and 'src' in (fields or ())}")
     return out
+
+
+def ctx_for(root: UOp):
+  """ctx[1] must be indexable by every PARAM slot in the fixture, or the
+  `pm_post_sched_cache` lambda raises IndexError before any row is printed."""
+  slots = {s.arg.slot for s in root.src if s.op is Ops.PARAM}
+  slots |= {t.arg.slot for s in root.src for t in s.src if t.op is Ops.PARAM}
+  return ({}, tuple(param(99 + i) for i in range(max(slots) + 2 if slots else 2)))
 
 
 def q1() -> None:
@@ -122,13 +133,11 @@ def q1() -> None:
     print("Q1  UPSTREAM, MEASURED: does `pm_rewrite(n)` ever differ from")
     print("    `pm_rewrite(new_n)` over pm_post_sched_cache?")
     print("=" * 78)
-    from tinygrad.uop.ops import ParamArg
-    ca = param(99)
-    cb = param(100)
-    ctx = ({}, (ca, cb))
     diffs = 0
-    for k in range(10):
+    N = 10
+    for k in range(N):
       root = fixture(k)
+      ctx = ctx_for(root)
       a = walk_u(root, ctx)
       b = walk_mutant(root, ctx)
       same = a == b
@@ -136,7 +145,7 @@ def q1() -> None:
       print(f"  fixture {k}: {len(a)} repl entries, "
             f"{'IDENTICAL' if same else 'DIFFERS'}"
             f"{'' if same else '  ' + str(sorted(set(a.items()) ^ set(b.items()))[:3])}")
-    print(f"  --> {10 - diffs}/10 fixtures byte-identical, {diffs} differ")
+    print(f"  --> {N - diffs}/{N} fixtures byte-identical, {diffs} differ")
     if diffs == 0:
         print("  VERDICT: THEOREM (as far as a sweep can show) -- the mutation is")
         print("  UNREACHABLE for this table. Both patterns are `UPat(Ops.X)` with no")
@@ -151,10 +160,8 @@ def q2() -> None:
     print("Q2  THE ORACLE'S OWN BLINDNESS: does the SINK repl row distinguish the")
     print("    ORIGINAL node from a REBUILT one?")
     print("=" * 78)
-    from tinygrad.uop.ops import ParamArg
-    ca, cb = param(99), param(100)
-    ctx = ({}, (ca, cb))
     root = fixture(0)
+    ctx = ctx_for(root)
     rc = RewriteContext(pm=pm_post_sched_cache, bpm=None, ctx=ctx, enter_calls=False)
     new_sink = rc.walk_rewrite(root)
     rep = rc.replace[root]
@@ -175,34 +182,57 @@ def q2() -> None:
 def q3() -> None:
     print()
     print("=" * 78)
-    print("Q3  WHAT A DISCRIMINATING FIXTURE MUST LOOK LIKE")
+    print("Q3  WHAT `pm_post_sched_cache` ACTUALLY CONTAINS (read off the patterns)")
     print("=" * 78)
     for line in src_reading_rules():
       print(f"  {line}")
+    print(f"  rule count: {len(pm_post_sched_cache.patterns)}")
     print()
-    print("  A rule that reads a node's SRCS is what makes `u` and `rebuilt`")
+    print("  A rule that READS a node's srcs is what makes `u` and `rebuilt`")
     print("  different arguments: `src(rebuilt,0)` is the REWRITTEN src and")
-    print("  `src(u,0)` is the original. pm_post_sched_cache carries none, so a")
-    print("  fixture built only from PARAM/ALLOC/SINK cannot separate them and no")
-    print("  number of such fixtures will.")
+    print("  `src(u,0)` is the original. pm_post_sched_cache carries no such rule,")
+    print("  so a fixture built only from PARAM/ALLOC/SINK cannot separate them and")
+    print("  NO NUMBER OF SUCH FIXTURES EVER WILL. That is a closed case.")
+
+
+def q4() -> None:
     print()
-    # A src-reading rule, to show the shape is reachable at all.
-    pm_src = PatternMatcher([(UPat(Ops.SINK), lambda ctx, x: x.src[0])])
-    ca, cb = param(99), param(100)
-    ctx = ({}, (ca, cb))
+    print("=" * 78)
+    print("Q4  THE DANGEROUS ONE: the PORT's table has a SINK rule upstream does not")
+    print("=" * 78)
     root = fixture(0)
-    a = RewriteContext(pm=pm_post_sched_cache, bpm=None, ctx=ctx, enter_calls=False)
-    a.walk_rewrite(root)
-    ref = {u.key: v.key for u, v in a.replace.items()}
-    rc = RewriteContext(pm=pm_src, bpm=None, ctx=ctx, enter_calls=False)
+    ctx = ctx_for(root)
+    rc = RewriteContext(pm=pm_post_sched_cache, bpm=None, ctx=ctx, enter_calls=False)
     got = rc.walk_rewrite(root)
-    b = {u.key: v.key for u, v in rc.replace.items()}
-    print(f"  CONTROL, a src-reading rule on the SAME fixture:")
-    print(f"    pm_post_sched_cache gave the SINK -> {ref.get(root.key)!r}")
-    print(f"    a `lambda x: x.src[0]` SINK rule gives it -> "
-          f"{UOp.load if False else got.src[0].op.name}")
-    print(f"    the two differ: {ref.get(root.key) != got.key}")
-    print("    so the mutation IS observable -- with a rule that reads srcs.")
+    print(f"  upstream pm_post_sched_cache ops: "
+          f"{sorted({o.name for p, _ in pm_post_sched_cache.patterns for o in p.op})}")
+    print(f"  the port's pm_post_sched_cache table (codegen/__init__.bend):")
+    print(f"      O.PMEntry{{0, [O.OpsSINK{{}}], Nil{{}}}}   <- tag 0, NOT upstream")
+    print(f"      O.PMEntry{{3, [O.OpsPARAM{{}}], Nil{{}}}}")
+    print(f"      O.PMEntry{{4, [O.OpsALLOC{{}}], Nil{{}}}}")
+    print(f"  uop/ops.bend pm_dispatch_m case 0 -> pm_r_sink_m -> Some{{self}}")
+    print()
+    print(f"  upstream's returned SINK:      srcs = "
+          f"{[s.op.name + (f'({s.arg.slot})' if s.op is Ops.PARAM else '') for s in got.src]}")
+    print(f"  upstream's SINK is a new node: {got is not root}")
+    print()
+    print("  With the port's extra `SINK -> self` rule, `pm_rewrite_m` returns")
+    print("  Some{u}, so `wr.step.try_rule` takes the Some arm and records")
+    print("  `repl[sink] = sink` -- the ORIGINAL node, whose srcs are")
+    print(f"      {[s.op.name + (f'({s.arg.slot})' if s.op is Ops.PARAM else '') for s in root.src]}")
+    print("  i.e. the UNREWRITTEN srcs. Upstream records the REBUILT node.")
+    print()
+    print("  The gate cannot see this: `uop_short` renders a SINK as the bare")
+    print("  string 'SINK', so upstream's rebuilt SINK and the port's original")
+    print("  SINK print identically, and `gr-diff.sh` compares COUNTS. This is")
+    print("  an IDENTITY invariant guarded by an unobservable row, and it is the")
+    print("  shape agent-core ranks highest.")
+    print()
+    print("  THE ROW THAT SEES IT -- expected value CALLED from CPython above:")
+    print(f"      gr.sink_identity = 0        (upstream: replace[sink] is not sink)")
+    print(f"      gr.sink_srcs = {','.join(s.op.name for s in got.src)}")
+    print(f"      gr.sink_src_slots = "
+          f"{','.join(str(s.arg.slot) for s in got.src if s.op is Ops.PARAM)}")
 
 
 if __name__ == "__main__":

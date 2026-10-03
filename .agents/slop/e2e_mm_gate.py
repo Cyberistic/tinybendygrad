@@ -67,6 +67,14 @@ def main(bend_rows):
   res = g.get("result") or {}
   bend = rows_of(bend_rows)
 
+  # A WALK THAT DIED IS A CLEAN FAIL, NOT A TRACEBACK. The negative control's third
+  # case kills the walk, and the first version of this gate raised
+  # "operands could not be broadcast" on the absent readback -- so the harness saw
+  # zero `# FAILED` lines and read a crash as a pass. Every row below is now written
+  # against an empty result rather than against a missing key, and
+  # `mm_e2e_walk_completed` is the row that says so in one place.
+  if not res.get("ok"):
+    print(f"# the GPU walk did not complete: {str(res.get('error'))[:400]}")
   L = o["per_launch"]
   up = {nm: np.frombuffer(bytes(bs), dtype=np.uint8).view("<f4").astype(np.float64).reshape(8, 8)
         for nm, bs in o["uploads"]}
@@ -74,7 +82,7 @@ def main(bend_rows):
   # answer below is computed from the SAME words the GPU was given.
   A, B, Cm = up[o["per_launch"][0]["names"][1]], up[o["per_launch"][0]["names"][2]], up[L[1]["names"][2]]
   cpu = f32(o["answer_u32"])
-  got = f32(res.get("out_u32") or []).reshape(8, 8)
+  got = f32(res.get("out_u32") or [0] * 64).reshape(8, 8)
 
   r, bad = {}, []
 
@@ -82,6 +90,8 @@ def main(bend_rows):
     r[name] = value
     if value != expect:
       bad.append(f"{name}={value} expected {expect}")
+
+  row("mm_e2e_walk_completed", res.get("ok"), True)
 
   # ---- the device ----------------------------------------------------------
   row("mm_e2e_gpu_present", res.get("gpu_present"), True)

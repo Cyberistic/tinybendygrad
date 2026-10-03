@@ -989,17 +989,22 @@ ORACLE_CONFORMANCE = {
 #   exists; and the planted row is the SAME row the port fix moved, so the control would
 #   have caught a regression of the very fix that opened the lane.
 #
-#   ⚠ THE MECHANISM, because it was looked for and is NOT there: `rebase-gate.py --oracle`
-#   LOOKS like the way to do this without editing anything, and it is a NO-OP. main() calls
-#   targets_of(), which SNAPSHOTS `tuple(BASE_ORACLES.get(port, []))`, and only then applies
-#   `BASE_ORACLES[port] = [a.oracle]`; the gate loop iterates the snapshot. Measured on this
-#   tree: `--port tinybendygrad/device.bend --oracle .agents/slop/device-oracle.py` printed
+#   ⚠ THE MECHANISM, because it was looked for and is now FIXED, not merely noted.
+#   `rebase-gate.py --oracle` LOOKS like the way to do this without editing anything, and for
+#   its entire first life it was a NO-OP: main() called targets_of(), which SNAPSHOTS
+#   `tuple(BASE_ORACLES.get(port, []))`, and only then applied `BASE_ORACLES[port] =
+#   [a.oracle]`; the gate loop iterated the snapshot. Measured on this tree: `--port
+#   tinybendygrad/device.bend --oracle .agents/slop/device-oracle.py` printed
 #   `[oracle-override] ... -> device-oracle.py` and then answered `NOT-STARTED ... no oracle
 #   wired in BASE_ORACLES`, and for an ALREADY-WIRED port it ran the BASE oracle anyway. The
 #   flag whose stated reason for existing is "prove a planted disagreement WITHOUT editing
-#   this file" cannot do that for any port. REPORTED, NOT FIXED: rebase-gate.py is another
-#   unit's file mid-edit. The control above therefore plants by editing the entry and
-#   restoring it, and PROVES the restore with a hash rather than with a `finally`.
+#   this file" could not do that for any port. The unit that owns rebase-gate.py has since
+#   FIXED it -- `targets = [(port, (a.oracle,))]`, replacing the thing that is ITERATED rather
+#   than the dict the snapshot was taken from -- and credited the measurement above in its own
+#   comment. So the control above was necessarily run by editing the entry and restoring it,
+#   with the restore proved by a HASH; a control written after the fix should use the flag,
+#   and should FIRST assert that the flag changed what the lanes ran, because a flag that
+#   prints its own confirmation while doing nothing is worse than no flag.
 ORACLE_NOT_WIRED: dict[str, str] = {}
 
 

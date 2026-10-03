@@ -110,6 +110,35 @@
 # own rank order. When dtype.bend becomes importable these go back there and the
 # import comes with them; nothing else in this file changes, because `promo_dtype`
 # is the only caller.
+#
+# THE RANGES FOLD IS LANDED, and the `P3` LIST WAS WRONG ABOUT WHY. It said `_ranges` and
+# `ranges` need "one set algebra over a `List`", as though the algebra were the wall. It is
+# not: the arena interns, so a `dict[UOp, None]` is a list with a membership test and the
+# algebra is two short walks. What the list did not see is the two REAL questions, and both
+# are answered rather than routed around:
+#   * `_ranges` reads `er.ranges` for an `er` in `ended_ranges(self)`, and `er` need not be
+#     a SRC of `self` -- `AFTER` and `BARRIER` carry their SRCS' ENDED LISTS, so `er` is a
+#     GRANDCHILD, and a `Derived` field sees only its own srcs. The answer is a FORWARD
+#     SWEEP in arena-index order: `ended_of` reaches only `src[i:]` and the `ended` of a
+#     direct src, so every index this pass reads is strictly below the node it is answering.
+#     That is the same argument the header makes for Kahn, applied to a set.
+#   * `ended_ranges` IS a `Derived` field, so a node the dtype/shape ladder DEFERS has no
+#     `ended` list and its set is not answered. That is a REAL divergence from Python and it
+#     is the `ok` flag rather than a silent empty set; `rg_absent` is the row and mutation R8
+#     is the measurement.
+# Twelve rows, byte-identical to CPython, and a 19-entry mutation table of which 16 move
+# rows and 3 are the harness's own controls -- including the ones that are the
+# fixture-independent ORDER facts (the union prepends, the delete preserves order,
+# `dict.update` keeps a key's first position) and the one that is the INHERITED reader's
+# `src[1:2]` off-by-one. `set_union`/`set_del` are the set algebra the
+# `bool_slice`/`is_realized`/`variables` entries were waiting for, so those three are now
+# short of the algebra and long of their own folds.
+#
+# `is_image_shape` IS FIXED, and the fix is a CONSTANT. It compared the last dim against
+# `sint_one()`, so it answered False for `(32,32,4)` and True for nothing -- a defect two
+# units measured and one unit declined to fix, because the `sized` mutation M2 had to keep
+# moving exactly one row and a fix with no row of its own would have hidden that. `img_shape`
+# is the row M2 asked for.
 
 import Base
 import ./../helpers.bend as H
@@ -4178,18 +4207,18 @@ def Rng.ok(r: Rng) -> Bool:
   match r:
     case Rng{i, rs, ok}: ok
 
-# `ret.update(other)`: the elements of `ys` that `xs` does not already hold, APPENDED, so
+# `ret.update(other)`: the elements of `ys` that `acc` does not already hold, APPENDED, so
 # the result is a set in FIRST-OCCURRENCE order -- which is what a Python dict's insertion
-# order is and what `dict.update` preserves. The membership test is against the
-# ACCUMULATOR and not against `xs`, and that is the difference between a set and a
-# multiset: `ADD(r, r)` names one range twice and the answer must name it once.
-def set_union.go(xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+# order is and what `dict.update` preserves. The test reads the ACCUMULATOR, and the input
+# is deliberately NOT IN SCOPE there: `mem_u32(xs, y)` is a second spelling that is equal
+# on every reachable input, and the mutation table's R2 is that proof.
+def set_union.go(ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ys:
     case Nil{}: acc
-    case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))
+    case +y <> t: set_union.go(t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))
 
 def set_union(+xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:
-  set_union.go(xs, ys, xs)
+  set_union.go(ys, xs)
 
 # `ret.pop(s, None)` for every `s` in `ds`, which KEEPS the order of what survives --
 # a Python dict's order is its insertion order and a pop does not reorder.
@@ -4227,8 +4256,8 @@ def RTable.get(t: RTable, +i: U32) -> Rng:
 # `UOp.ranges` -- ops.py:497. The ONLY difference from `_ranges` is this prepend, and a
 # prepend is why the union cannot use the raw table rows: `for s in self.src` reads
 # `s.ranges`, which for a RANGE src is the src ITSELF.
-def rng_of.put(i: U32, self: Bool, +r: Rng) -> Rng:
-  Rng{i, Bool.pick(List<&2, U32>, self, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}
+def rng_of.put(i: U32, pre: Bool, +r: Rng) -> Rng:
+  Rng{i, Bool.pick(List<&2, U32>, pre, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}
 
 def rng_of(+ar: O.Arena, t: RTable, +i: U32) -> Rng:
   rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i))
@@ -4301,7 +4330,9 @@ def rng_dels(+ar: O.Arena, +t: RTable, m: Maybe<&2, List<&2, U32>>) -> Del:
 def rng_del.put(+acc: Rng, +d: Del) -> Rng:
   Rng{Rng.i(acc), set_del(Rng.rs(acc), Del.ds(d), Nil{}), Bool.and(Rng.ok(acc), Del.ok(d))}
 
-# ONE NODE: the union, the pops, and the `{self:None} |` prepend, in Python's order.
+# ONE NODE, and it is `_ranges` and not `ranges`: the union, then the pops, and the
+# `{self:None} |` prepend is the READER's (`rng_of` above), because the table holds
+# `_ranges` and a RANGE's own row is what the union needs to see.
 def rng_of.got(+ar: O.Arena, +t: RTable, +i: U32, d: Del) -> Rng:
   rng_del.put(rng_union(ar, t, O.Arena.srcs(ar, i), i), d)
 
@@ -4318,32 +4349,30 @@ def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: 
 def rng_sweep(+ar: O.Arena, +main: Table) -> RTable:
   rng_sweep.go(ar, main, O.Arena.nodes(ar), 0, RTable{Nil{}})
 
-# THE READERS. `UOp.ranges(ar, tb, rt, i)` is a sweep read, and there is no
+# THE READER. `UOp.ranges(ar, rt, i)` is a sweep read, and there is no
 # `UOp.ranges(ar, i)` here for the reason the header gives for `UOp.dtype`: answering one
-# node IS the sweep.
-def UOp.ranges(ar: O.Arena, tb: Table, rt: RTable, i: U32) -> Rng:
+# node IS the sweep. It does not take the main `Table` because the sweep closed over it.
+def UOp.ranges(ar: O.Arena, rt: RTable, i: U32) -> Rng:
   rng_of(ar, rt, i)
 
 # The main fold ONCE, then the sweep over the FINISHED table. That order is the whole
 # reason the sweep may read `ended` for a grandchild: the main table is complete, so
-# `fold.ended` answers for every index the main fold answered, settled or not.
+# `fold.ended` answers for every index the main fold answered, settled or not. The main
+# `Table` is not a field -- the sweep closed over it, and a field nothing reads is a def
+# nothing can check.
 type Ranged is Data:
-  Ranged{ar: O.Arena, tb: Table, rt: RTable}
+  Ranged{ar: O.Arena, rt: RTable}
 
 def Ranged.ar(x: Ranged) -> O.Arena:
   match x:
-    case Ranged{ar, tb, rt}: ar
-
-def Ranged.tb(x: Ranged) -> Table:
-  match x:
-    case Ranged{ar, tb, rt}: tb
+    case Ranged{ar, rt}: ar
 
 def Ranged.rt(x: Ranged) -> RTable:
   match x:
-    case Ranged{ar, tb, rt}: rt
+    case Ranged{ar, rt}: rt
 
 def Ranged.of(+ar: O.Arena, +tb: Table) -> Ranged:
-  Ranged{ar, tb, rng_sweep(ar, tb)}
+  Ranged{ar, rng_sweep(ar, tb)}
 
 def ranged(+ar: O.Arena) -> Ranged:
   Ranged.of(ar, UOp.fold(ar))
@@ -4506,7 +4535,7 @@ def rng_str(+ar: O.Arena, r: Rng) -> String:
 def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
   +x = ranged(O.Found.ar(f))
   IO.print(String.concat(["rg_", nm, " ranges=",
-    rng_str(Ranged.ar(x), UOp.ranges(Ranged.ar(x), Ranged.tb(x), Ranged.rt(x), O.Found.i(f)))]))
+    rng_str(Ranged.ar(x), UOp.ranges(Ranged.ar(x), Ranged.rt(x), O.Found.i(f)))]))
 
 # ===========================================================================
 # THE MOVEMENT FIXTURES AND ROWS: `dt_shape`'s arms for ops.py:414-431's five
@@ -5442,12 +5471,17 @@ def main() -> IO(Unit):
 # TODO(p3) ops.py:461  def shard_shape          -- `self.device`, `self.axis` and
 #   `self.src[1].vmax`; the last is `_min_max`, which is below.
 # TODO(p3) ops.py:470  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
-# TODO(p3) ops.py:483  def _ranges              -- the union of the srcs' `ranges` minus
-#   the ended ones. A `dict[UOp, None]`, i.e. a set, and the `ended_ranges` arms
-#   that recurse (AFTER, BARRIER) need a set union over the srcs' answers. P3 with
-#   the set algebra `_bool_slice` also wants.
-# TODO(p3) ops.py:497  def ranges               -- `{self:None} | self._ranges`, so it is
-#   `_ranges` plus one prepend.
+# TODO(p3) ops.py:483  def _ranges              -- PORTED, and the set algebra is NOT the
+#   wall this list called it. The dict is a set over a hash-consed arena, so a list with
+#   a membership test IS the set; the real questions were (a) a GRANDCHILD read, because
+#   `AFTER`/`BARRIER` carry their srcs' ENDED LISTS and so name a node this fold has not
+#   answered, and (b) a refutation, since `ended_ranges` IS a `Derived` field. (a) is a
+#   FORWARD SWEEP in arena-index order -- every index in `ended_ranges(i)` is below `i`,
+#   which `ended_of` already guarantees -- and (b) is the `ok` flag and the `rg_absent`
+#   row. `Ranged`/`UOp.ranges` above, 12 rows byte-identical to CPython.
+# TODO(p3) ops.py:497  def ranges               -- PORTED with it, as the reader
+#   `UOp.ranges`: `_ranges` plus the `{self:None} |` prepend, and the prepend is the only
+#   difference. `rg_self` is the row, because a prepend is invisible from any other node.
 # TODO(p3) ops.py:502  def axis_id              -- PORTED, and NOT a fold property:
 #   `self.arg[0:-1]` is the `ids` field of `ARange`, and `ops.bend` already split
 #   the Python tuple into the pair. See `UOp.axis_id`.
@@ -5590,8 +5624,13 @@ def main() -> IO(Unit):
 #      `_min_max`'s float arms -- NOT the movement shapes, which all answer. `mv_expsym`
 #      is the one row it would change, and it would change it from ABSENT to a shape
 #      holding a UOp.
-#   3. `UOp._ranges` and `UOp.bool_slice` (P3) need one set algebra over a `List`,
-#      and the three set-valued properties are exactly that.
+#   3. `UOp.bool_slice`, `UOp.is_realized` and `UOp.variables` (P3) need the set algebra
+#      `_ranges` used, and that algebra IS LANDED and gated: `set_union`/`set_del` over a
+#      `List<&2, U32>` with `mem_u32`, in `Ranged` above. What is left on those three is
+#      NOT the algebra -- it is that each wants a set of BOOLEANS rather than of indices
+#      (`frozenset` over `src[0].dtype is bool`, over a `WeakKeyDictionary` identity, and
+#      over a `UOp.unbind` walk), so each is its own fold and its own rows. `_ranges`
+#      itself is DONE and this entry is shorter because of it.
 #   4. `UOp.key` (P3) needs a SHA-256 round, which needs rotate and popcount.
 #   5. `dtypes.weaks` unblocks `is_virtual` and it is free the moment dtype.bend
 #      becomes importable.
@@ -5644,14 +5683,16 @@ def main() -> IO(Unit):
 # has a shape whose dims are distinguishable in order.
 #
 # WHAT M2 DID NOT CATCH, because M2 tests ORDER and this is a CONSTANT: `is_image_shape`
-# answers False for `(32,32,4)`, and helpers.py:37 says True. `is_image_shape.four` is
-# named for the 4 and its body tests `sint_one()`, so it compares the last dim against
+# answered False for `(32,32,4)`, and helpers.py:37 says True. `is_image_shape.four` is
+# named for the 4 and its body tested `sint_one()`, so it compared the last dim against
 # ONE. This is a SEPARATE defect from the one M2 removes -- `List.last` now reads the
 # right dim and the comparison is still the wrong one -- and the two masked each other
 # on the `(4,32,32)` fixture `probe-sized2` used: mirrored, `List.last` answered 4, and
 # 4 against 1 is False, which agrees with CPython's False for the wrong reason.
-# MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`. REPORTED NOT FIXED: it is
-# out of this fix's scope and it wants its own row, so that M2 keeps moving exactly one.
+# MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`, and REPORTED NOT FIXED by
+# that unit for exactly one reason: it wanted its own row, so that M2 would keep moving
+# exactly one row. **THE ROW EXISTS NOW** -- `img_shape`, in the mutation table at the foot
+# of this file, with `M3`/`M3b` as its two mutations -- and the constant is FOUR.
 # `bitcast_dims`, the other order-sensitive consumer, does agree with CPython now --
 # `[2,6]` with itemsize 4 into 8 is `[2,3]`, and `[3]` into 8 is the `RuntimeError` the
 # fold reports by not answering.
@@ -5751,4 +5792,50 @@ def main() -> IO(Unit):
 # interval against the near end of the other, and that a monotone map trades them. An
 # all-CONST gate cannot see any of it, because on a CONST interval every one of those
 # properties is an identity.
+# ===========================================================================
+# THE MUTATION TABLE for THE RANGES FOLD and for the IMAGE-SHAPE CONSTANT, MEASURED.
+# `.agents/slop/fold-rng-mutate.py` applies each edit, re-runs, and diffs whole `name
+# value` lines against a baseline captured from the SAME file in the SAME state; the table
+# is its output and nothing here is transcribed by hand.
+#
+# IT RUNS IN A SCRATCH TREE with `ops.bend` PINNED AT `master`, and that is a fact about
+# the repo rather than a preference: `uop/ops.bend` and `uop/symbolic.bend` belong to two
+# other agents and went transiently uncompilable three times while this table was being
+# measured, so a harness that edited the working tree in place would have been in a race
+# with two writers and a stale baseline would make every row look as if it moved.
+#
+# | # | mutation | rows MOVED | what it is testing |
+# |---|---|---|---|
+# | R1 | a no-op edit (trailing whitespace) | **0** | **THE CONTROL.** A well-formed edit that changes nothing moves nothing, which is what makes the other 0s interpretable. |
+# | R2b | a no-op edit on the union WALK's signature | **0** | the control for R2, on the def whose body R2 does not touch |
+# | R11 | a no-op edit on the union walk's signature | **0** | the control, on a second def |
+# | R2 | `set_union` SEEDED WITH `Nil{}` instead of with what it already holds | 7 | `dict.update` against an accumulator that forgot the earlier srcs. It was first written as the membership test reading the INPUT instead of the ACCUMULATOR, and that spelling moves NOTHING -- a THEOREM, not a gap: every row's set is DUPLICATE-FREE (base: the empty seed; step: append only what the accumulator lacks; the delete only removes; the `{self:None} \|` prepend cannot repeat a range because the arena is a DAG whose src indices are all smaller), so `mem_u32(xs, y)` and `mem_u32(acc, y)` are equal on every reachable input. **The input is therefore NOT IN SCOPE at the test**, which is a stronger statement than the mutation was, and `set_union.go` lost the parameter that made the second spelling expressible. |
+# | R16 | the membership test DROPPED, so the union is a multiset | 1 (`rg_dup`) | the set/multiset line, and R2/R16 are its two ends: R2 drops the SEED, R16 drops the TEST. `ADD(r, r)` names one range twice as two srcs, so it is two `set_union` calls each with `ys = [r]` -- the only way a fixture reaches a repeat |
+# | R3 | the `{self:None} \|` prepend dropped | 9 | `ranges` against `_ranges`, and a PREPEND is invisible from every node that is not itself a RANGE, so the row that sees it is `rg_self` |
+# | R4 | the union PREPENDS instead of appending | 8 | **still a correct SET, wrong ORDER.** `dict.update` keeps a key's first position, so the union is order-sensitive and `rg_two`/`rg_rev` are the same two ranges in two orders -- one row cannot see this and the pair can |
+# | R9 | the delete PREPENDS the survivors | 9 | a Python `pop` does not REORDER, and four rows have more than one survivor, so the delete is an order-preserving filter and not a filter |
+# | R5 | the `else` arm of the `er` conditional taken everywhere | 4 | a RANGE `er` deletes its own live set instead of itself, so an END's ranges survive. `rg_call_c` and the three other ended-list rows are the carriers |
+# | R6 | the `if` arm taken everywhere | 1 (`rg_er`) | a non-RANGE `er` deletes ITSELF rather than its live set. ONE row, and it is the only fixture with a non-RANGE `er` that does not also end a RANGE directly -- which is the measurement that the `else` arm has exactly one witness |
+# | R13 | the `else` delete set dropped, `if` arm kept | 5 | R5's mirror image: the two halves of the one conditional, separated, and `rg_er` is the row both need |
+# | R7 | **the INHERITED reader**: `ended_of.one` (a BACKEDGE's `src[1:2]`) rewritten as `src[0:1]` | 2 (`cycle_safe` `rg_er`) | a mutation of `ended_ranges` and NOT of the new fold, and it is here because `rg_er` is the ranges-side witness for the off-by-one bend2-constraints.md already flags. `cycle_safe` moving too is the cross-check that both rows watch the same arm |
+# | R12 | the ended list ignored, so nothing ever ends | 5 | the five rows that end something, and the six that do not are unmoved -- which is the measurement that the pop-arms are carried by ROWS and not by the fold terminating |
+# | R15 | the ended walk DROPS its accumulator, so each `er` replaces the last delete set | 2 (`rg_call_c` `rg_end`) | the `for er in ...` loop is an accumulation and not a fold to the last element. Only the two fixtures with a non-trivial SECOND ended range move |
+# | R10 | the sweep STORES node `k`'s answer under `k+1` | 11 | **the index lockstep.** The sweep's `k` is the node INDEX and not a counter, and this is bend2-constraints.md's "index order is not resolution order" one layer down: every row is off by one and the last node's row is lost |
+# | R14 | the READER short-circuited to the empty set | 10 | `UOp.ranges` is a table read and not a constant, and `rg_absent` is in the list because the short-circuit would print `[]` where the fold refuses |
+# | R8 | the refusal flag dropped, so "no `ended` list" reads as "no ended ranges" | 1 (`rg_absent`) | **THE ONE MUTATION THAT MAKES A ROW AGREE WITH CPython, and that is the point of it.** `rg_absent` pins the divergence -- a DEFERRED op has no `ended` list, so the set is not answered -- and R8 is the mutation that removes the divergence, which is what makes the row a measurement rather than a note |
+# | M3 | `is_image_shape`'s constant back to ONE | 1 (`img_shape`) | **the image-shape defect, closed.** It compared the last dim against `sint_one()`, so it answered False for `(32,32,4)` and True for nothing; the M2 table below filed it as "REPORTED NOT FIXED" only so that M2 would keep moving exactly one row, and `img_shape` is the row it asked for |
+# | M3b | the same defect as it was WRITTEN (`sint_one()` rather than `sint_of(1)`) | 1 (`img_shape`) | with M3, the fix is the CONSTANT and not the spelling of it |
+#
+# **SIXTEEN OF NINETEEN MOVE ROWS, AND ALL THREE ZEROS ARE THE HARNESS'S OWN CONTROLS**
+# (R1, R2b, R11). One mutation that DID move nothing -- the membership test reading the
+# input -- is not in the table as a zero at all: it was a THEOREM, the input is no longer in
+# scope where it would be written, and R2 measures the same line from the other end.
+# **No zero is closed with a row that would encode the equivalence as a check.**
+#
+# WHAT THE `rg_` GATE IS THINNEST ON, and it is the same wall the header names. `rg_absent`
+# pins the refusal and `R8` measures it, but a reader cannot tell a node the fold DOES NOT
+# ANSWER from a node whose answer is the empty set unless the flag rides the whole walk --
+# and it does, here, by `del_un` and `rng_union.put`. What no row can reach is a graph
+# whose live ranges change under an op this file DEFERS (`UNSHARD` ends the DEVICE range
+# and is one of the four), so its `ended` list is not in the table.
 # ===========================================================================

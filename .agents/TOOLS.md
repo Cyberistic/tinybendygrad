@@ -557,3 +557,78 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
   with exit 2** rather than reporting zero rows; `ORACLE_PY=` overrides the pin and is probed
   the same way. Control: `python3` and `.venv/bin/python` on the same port now produce
   byte-identical verdicts.
+
+## The E2E lane (`.agents/slop/e2e*`) — the port COMPUTES
+
+`runs/e2e/README.md` is the writeup. Ledger only:
+
+- **`.agents/slop/e2e.sh`** — THE ONE COMMAND. oracle -> pure bend -> GPU -> gate.
+  Prints `PASS`/`FAIL`, exit 0/1. Retries the bend run up to 8 times and checks the
+  ROW COUNT (bend stack-overflows ~1 run in 20 and prints nothing, and a 0-row result
+  is indistinguishable from "not started"). Reads the first diagnostic line, never the
+  exit status.
+- **`.agents/slop/e2e_mm.py`** — the ORACLE and the fixture GENERATOR. Traces a real
+  `(A @ B) @ C` out of tinygrad on `DEV=CPU`, takes tinygrad's **own WGSL** for each of
+  the two launches, PARSES the bindings out of the shader, and writes both
+  `runs/e2e/e2e-mm-oracle.json` and `.agents/slop/e2e_mm.bend`. **Every literal in the
+  `.bend` came from a call here.** Two renderer shims, both quoted from
+  `xd2/trace_forward.py`: the float4 STACK (`wgsl.py`'s `supports_float4` is read in one
+  place and a STACK still reaches `string_rewrite` with `float4 = None`). The FDIV shim
+  is deliberately NOT applied — a matmul chain has no division, and shimming it would
+  widen the fixture past the program under test. `.venv/bin/python` only.
+- **`.agents/slop/e2e_mm_run.mjs`** — the GPU lane. Emits `bend -o` for both the program
+  and a **fresh** `webgpu_call.mjs` into `.agents/slop/e2e/`, serves it, drives headless
+  Chrome-stable over CDP. Imports the port's own `xd2/cdp.mjs` and `xd2/serve.mjs`;
+  `xd2/sh.mjs` is new and is three lines.
+- **`.agents/slop/e2e/index.html`** — the page. Three imports and one `walk`. Its one
+  addition is the constructor-tag normalisation (rules C1/C6), guarded by injectivity
+  and by a check against the driver's own source text.
+- **`.agents/slop/e2e_mm_gate.py`** — 40 rows, diffed by whole `name=value` line. No
+  typed constants: every row is an identity between two measured counts or between the
+  port and `e2e-mm-oracle.json`. Six `mm_power_*` rows prove the equality can fail.
+- **`.agents/slop/e2e_negctl.sh`** — the negative control. `$TMPDIR` copy with the
+  relative layout intact (`tinybendygrad/` copied = 11 MB; `bin/` and the 227 MB
+  `references/` SYMLINKED). Three breaks, all caught.
+- **`.agents/slop/e2e_gpu_probe.mjs`** -> `e2e-gpu-probe.txt` — is there a device that
+  **computes** here? Dispatches a kernel and reads it back, because
+  `requestAdapter()` resolving is a name. **This file's first expectation was wrong**
+  (`?? 0` for the wrap instead of the shader's wrap-to-0) and disagreed with a correct
+  GPU on 7 of 8 — which is the rule about transcribing an expectation, caught by the
+  device. chrome-stable works headless and headed; **chrome-for-testing reports
+  `"gpu": false` for every flag set tried**, including `--enable-unsafe-webgpu`.
+- **`.agents/slop/e2e/cc-no-fma.sh`** — a `CC` wrapper adding `-ffp-contract=off`, so
+  the CPU's contraction is a MEASUREMENT rather than an assumption. The flag must come
+  FIRST: `compiler_cpu.py`'s argv ends in `- -o -`, and a flag appended after the stdin
+  marker does not reach clang's option parser.
+
+## The `uop/fold.bend` oracle and mutation harnesses (2026-10-04)
+
+Four scripts, all `.venv/bin/python`, all in `.agents/slop/`. **The fold has no oracle of
+its own until this session — it is the only file in the port whose 300 rows were pinned by
+hand-written expectations.** Two lanes are the contract everywhere: `./bin/bend <file>` and
+`<oracle>.py > py.txt`, then `diff` of the row names.
+
+- **`.agents/slop/oracles/fold-rng-oracle.py`** — the CPython oracle for the RANGES fold
+  (`UOp._ranges` ops.py:483, `UOp.ranges` ops.py:497). 12 rows, one per fixture, spelled
+  `rg_<tag> ranges=[R(0),R(1)]`. A range is labelled by the ints of its innermost
+  `axis_id` and NEVER by an index: CPython's interning order is not the arena's, so a
+  number neither lane means the same thing by, and the NESTING (`arg[1:]` makes CPython's
+  `axis_id` `((0,),)` where the arena's `ARange{ids}` is `[0]`) is ops.bend's recorded wall
+  and is read one way on each side. `ABSENT` is where the two lanes DISAGREE by design: a
+  DEFERRED op has no `ended` list (the fold's `Derived` field), and CPython answers.
+  Prints its own DIVERGES block, as `fold-mvt-oracle.py` does.
+- **`.agents/slop/fold-rng-mutate.py`** — 19 mutations of the ranges fold and of
+  `is_image_shape`, 15 of which move rows. **IT RUNS IN A SCRATCH TREE with `ops.bend`
+  PINNED AT `master`**, and that is not a style choice: `uop/ops.bend` and
+  `uop/symbolic.bend` are owned by two other agents and went transiently uncompilable three
+  times while this table was measured, so a harness editing the working tree in place is a
+  race with two writers, and a baseline captured from a different state makes every row look
+  as if it moved. **Its row parser is `re.match(r'^([^ =]+)[ =](.*)$')` rather than the
+  sibling's `if ' ' in line`**, because this file prints BOTH `name=value` and
+  `name value=...` and the sibling's test cannot see `img_shape=True` at all. Reported
+  there, not fixed: that file is not this unit's.
+- **`.agents/slop/fold-lift-mutate.py`** — the `_min_max` op table's 35-entry table. The
+  control whose lesson this unit's harness copies: four "neutral" mutations there were NOT
+  no-ops and took 276 rows with them, and they were REMOVED rather than counted, because a
+  "moved every row" line in a mutation table is a harness bug wearing a result's clothes.
+- **`.agents/slop/oracles/fold-mut.py`** — the movement arms' 14 mutations, both lanes.

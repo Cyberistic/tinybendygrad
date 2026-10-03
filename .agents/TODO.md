@@ -5,8 +5,14 @@ The port's state. Progress bars are `[###.....] n/m`.
 ```
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
-walkthroughs    [######...] 6/7
+walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 ```
+
+**`E2E-PROVES-COMPUTE` is the bar that was at zero all session.** A port can agree
+with CPython on thirty thousand gate rows and still not add two numbers. There is now
+one program whose answer is bit-identical to CPython's on real hardware, and
+`.agents/slop/e2e.sh` says so in one command. It is **1/1 and not 2/2** on purpose: the
+second would be a forward pass, and there is no kernel executor to run one.
 
 ---
 
@@ -226,6 +232,38 @@ day rediscovering that `2n+p` is not an even-case test.
       Both are reported as equivalences rather than closed with rows that encode the bug.
       M5's zero-mover found a REAL redundancy (`U32.is_lt(y,n)` beside `List.get`'s own
       bound) and 8 lines came out.
+
+      **`_ranges` + `ranges` LANDED, and `is_image_shape` FIXED (session 2026-10-04).**
+      `UOp._ranges` (ops.py:483) and `UOp.ranges` (ops.py:497) are a second fold in this
+      file, `Ranged`/`rng_sweep`, and the `P3` list's reason for them was WRONG: it said
+      they need "one set algebra over a `List`", and the algebra is not the wall. The arena
+      interns, so `dict[UOp, None]` IS a list with `mem_u32`, and `set_union`/`set_del` are
+      two short walks. The two real questions were both answered rather than routed around:
+      * **THE GRANDCHILD READ.** `_ranges` reads `er.ranges` for an `er` in
+        `ended_ranges(self)`, and `AFTER`/`BARRIER` carry their SRCS' ENDED LISTS, so `er`
+        is a grandchild and a `Derived` field sees only its own srcs. The answer is a
+        FORWARD SWEEP in arena-index order: `ended_of` reaches only `src[i:]` and the
+        `ended` of a direct src, so every index the pass reads is strictly below the node
+        it answers. Same argument as Kahn, applied to a set.
+      * **THE REFUSAL, which is a real divergence.** `ended_ranges` IS a `Derived` field,
+        so a node `dt_shape` DEFERS (UNSHARD, STAGE, CUSTOM, CUSTOMI) has no `ended` list
+        and its set is not answered, where Python has no such limit. Carried by an `ok`
+        FLAG rather than a silent empty set, and pinned by `rg_absent`.
+      **12 `rg_*` rows, byte-identical to CPython** (`.agents/slop/oracles/fold-rng-oracle.py`,
+      same twelve graphs node for node; `diff` of the two lanes is the test). **19 mutations
+      measured** (`.agents/slop/fold-rng-mutate.py`), **15 move rows**, and all 4 zeros are
+      classified: three harness controls (R1, R2b, R11) and one THEOREM (R2 — the union's
+      membership test may read the input instead of the accumulator because every row's set
+      is duplicate-free by induction; R16, which DROPS the test, is the row that shows the
+      test is load-bearing). The table also carries **R7: a mutation of the INHERITED
+      `ended_of.one`** (`src[1:2]` → `src[0:1]`), which moves `rg_er` AND `cycle_safe` — the
+      ranges-side witness for the off-by-one `bend2-constraints.md` already flags.
+      `is_image_shape` (helpers.py:37) compared the last dim against `sint_one()`, so it
+      answered False for `(32,32,4)` and True for nothing; two units measured that defect and
+      one declined to fix it because M2 had to keep moving exactly one row. **`img_shape` is
+      the row M2 asked for** (six cases, expectations as literals, `M3`/`M3b` are its
+      mutations). The set algebra is now available to `bool_slice`/`is_realized`/`variables`,
+      so those three are short of the ALGEBRA and long of their own folds.
 - [ ] `uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
 - [x] `uop/symbolic.bend` — `tinygrad/uop/symbolic.py`: the REWRITER. **HALF
       PORTED, and the half is chosen so every MECHANISM is exercised.** Both lanes
@@ -4178,3 +4216,171 @@ All six were measured first by CALLING CPython. Four fixed, two ruled out or bou
       rule actually fires on a node with rewritten srcs, because a one-row gate that is identical
       under a wrong argument is the same "gate that cannot fail" failure as `p_tcn` vs `p_nbufs`
       in #2, one level up.
+
+- [x] **THE E2E: the port computes, proved end to end, with a repeatable artifact.**
+      **`.agents/slop/e2e.sh` — one command, prints `PASS`/`FAIL`, exit 0/1.**
+      Read: **`runs/e2e/README.md`**.
+
+      `(A @ B) @ C` for three 8x8 f32 matrices, **two launches**, dispatched by
+      `tinybendygrad/runtime/webgpu_call.bend`'s own call layer (`Cs.call`,
+      `Cs.readable`, `Cs.read`, called unmodified) onto a **real WebGPU adapter**
+      (`vendor=apple architecture=metal-3`, Chrome stable `--headless=new`).
+      **84 WebGPU calls, every one dispatched. 64/64 u32 words of the answer
+      BIT-IDENTICAL to CPython tinygrad on the identical bytes.** 40 gate rows, 0 failed.
+
+      * **A matmul, not a forward pass**, because the port has no kernel executor:
+        `exec` is the last wall in `uop/fold.bend` and no `.bend` defines one. What
+        exists is the device call layer, and a 2-launch matmul is the smallest program
+        that makes it do arithmetic. A forward pass needs `backward` + autograd +
+        optimizer, none of which are in Bend.
+      * **TWO launches, not one**, because launch 1 reads launch 0's output, so the
+        intermediate had to be computed ON the GPU. `mm_e2e_writes=3` is the row that
+        says it was not re-uploaded — 3 being the buffers no earlier launch wrote,
+        counted from the trace. An all-equal fixture cannot see this.
+      * **The shaders are tinygrad's own WGSL**, from `renderer/wgsl.py` on the same
+        `ast` the CPU executed, with the bindings PARSED out of the shader and checked
+        against the port's `bgl.flat`.
+      * **BIT-exact, not "within a tolerance",** and the inputs are dyadic ON PURPOSE.
+        Random inputs differ by 2.86e-6 because `compiler_cpu.py:21` compiles with
+        `-O2` and no `-ffp-contract=off` — measured: **57 `llvm.fmuladd`** in the IR at
+        `-O2`, **0** with the flag — and the WGSL->MSL path contracts too. Neither side
+        is the reference. Dyadic entries make every partial sum exact in f32, so no
+        order and no contraction can change a bit.
+      * **`mm_e2e_in_bits_equal` reads an uploaded matrix back off the GPU**, bit-exact,
+        which is what says the answer's exactness is about ARITHMETIC and not DATA.
+      * **NEGATIVE CONTROL, `.agents/slop/e2e_negctl.sh`, on a `$TMPDIR` copy with the
+        relative layout intact: all three breaks caught.** one uploaded byte -> the two
+        answer/data rows; the second launch's binding order -> the binding row plus two
+        power rows; and **the port** — `Cs.caller` binding every `bufs` slot to id 0,
+        the bug `webgpu_call.bend`'s own header records as once invisible to every row
+        in both files — stops the walk, 19 rows red.
+      * **SIX POWER ROWS.** `abad/bada/atc/self/zero/ctb`, computed by calling numpy on
+        the oracle's own words, all 21-30 away from the answer. The right answer is 0.0
+        away, so the equality can fail.
+      * **MY OWN GATE WAS WRONG FOUR TIMES AND THE PORT WAS RIGHT**: a hand-counted op
+        multiset and four hand-counted buffer rows. They are now identities between two
+        measured counts, which cannot be satisfied by typing a constant. Also caught in
+        my own harness: `$?` after a pipeline is `tee`'s, so a crashed gate printed
+        `PASS`.
+      * **REPORTED, NOT FIXED (no existing gate or port file was edited):** the
+        committed `tinybendygrad/runtime/webgpu_call.mjs` is **stale** (610 exports vs
+        664 from a fresh emit of the same `.bend`; every shared export byte-identical,
+        the delta being `../helpers.gi_*` defs added since). The E2E emits its own fresh
+        copy instead of editing the committed artifact. Owner: whoever holds that file.
+      * **THE LATENT FINDING, reported as latent and NOT as a bug:** `Cs.dispatch`
+        forwards `global_size` where WebGPU wants a workgroup count, and
+        **every matmul size emits `global_size (1,1,1)`** (measured: 8x8x8, 16^3, 32^3,
+        64x8x64, 8x64x8, 4^3, batched 4x(8x8@8x8) — all (1,1,1)), so the two readings
+        coincide and **no matmul can exercise it**. An E2E on a matmul does NOT prove
+        parallel dispatch.
+      * **THE ADAPTER IS PROBED, NOT ASSUMED**: `.agents/slop/e2e_gpu_probe.mjs`
+        dispatches a kernel and reads the answer back, because `requestAdapter()`
+        resolving is a NAME. Artifact `.agents/slop/e2e-gpu-probe.txt`.
+      * Rules C1-C11 appended at the END of `.agents/slop/notes/bend2-constraints.md`
+        (positions ~16630+). C1 (the `-o` emitter qualifies an imported constructor's
+        tag with the importing file's path, so a `.bend` outside `webgpu_call.bend`
+        cannot drive `webgpu_call.js` without a name normalisation), C2 (callee-first,
+        reported as "an unfilled law is a dead claim"), C3 (alias `WC` is unusable),
+        C4 (`WriteBuffer.bytes` is BYTES), C7 (FMA contraction, both sides), C8 (stale
+        `.mjs`), C9 (`$?` after a pipeline), C10 (the `$TMPDIR` layout), C11 (the
+        `(1,1,1)` matmul wall) are the ones that cost real time.
+
+## Session 2026-10-04 — `codegen/decomp/dtype.bend`: 33 of 52 gate disagreements closed
+
+**Progress: gate 120/172 -> 153/172 agree (52 disagree -> 19).** Verified starting state
+first, twice: 172 rows / 31 `*sig` / `ALL PROOFS CHECK` / exit 0, `rebase-gate.py`'s own
+`rows()` 172 with 0 missing, 120 agree / 52 disagree against a fresh `dd-oracle.py`. Nothing
+newly broken; comment-only control read 0 row diffs and byte-identical output.
+
+- [x] `DType.const` is `int(val)` for an integer dtype, not a `truncate` width wrap
+      (tinygrad/dtype.py:84, uop/ops.py:600-602/628-635). dtype.py:32's
+      `lo.const_like(-1)` leaves `-1` in the arena even for a `u32`. Closes `lg2k`, `lg2p`,
+      `lg6k`, `lg6p`, and `lg2n` as a side effect.
+- [x] Three ARENA-ALIASING defects — `l2i_shl.hi` (dtype.py:41-44), `l2i_cdiv.abs`
+      (dtype.py:58-61), `l2i_cdiv.signed` (dtype.py:71) — each handed the same immutable
+      `O.Arena` to two builders. `O.Arena.node` answers the BOTTOM out of range, so the
+      loser read back as `NOOP`. Closes `lg9p`, `lgq`, `lgqp`, `lgr`, `lgrp`, `lgrn`.
+- [x] `31 - n` is `ADD(C(31), MUL(n, C(-1)))`, measured by calling it; the port built
+      `SUB(C(2**31), n)`. Closes `lg9k`, `lgak`, `lgbk`.
+- [x] `bitcast`/`cast` fold at the same dtype (mixin/dtype.py:53/36); three call sites built
+      the node unconditionally. Closes `lgf*`, `lgm*`, `lgb`, `lgbn`, `lgbsig`.
+- [x] `.logical_not()` is on `l2i(CMPLT, ...)`'s ANSWER (the `OR`), not on the comparison
+      inside it (dtype.py:66 vs :75). Closes `lgt`.
+- [x] `return r if op is Ops.CMOD else q` (dtype.py:74) — the port's two arms were swapped,
+      visible only on the unsigned pair. Closes `lgs`.
+- [x] `shl(cond.cast(uint), i % 32)` (dtype.py:68) — the `% 32` was missing, so `i = 63`
+      built `2**63`.
+- [x] dtype.py:54-55: `shr` reads the RAW product, one product yields TWO words (`shl` and
+      `shr`), the last term is `a1*b0` not `a1*b1`, and both `w3` and `w4` must be returned.
+      Closes `lge`, `lgek`, `lgep`, `lgesig`.
+
+- [ ] **OPEN, REPORTED NOT CLOSED — the `n` SLOT-COUNT rows: `lg1n` `lg6n` `lg9n` `lgqn`
+      `lgsn` (5 of the 19).** They measure how many arena slots a fixture mints, which is a
+      property of `UOpMetaClass.ucache` interning; CPython's key carries the Python TYPE of
+      the arg, so `CONST True` and `CONST 1` are two nodes (measured: `(Ops.CONST,(),True,None,bool)`
+      vs `(Ops.CONST,(),1,None,int)`). A different kind of claim from the tree/sig/k rows, and
+      NOT addressed. Two of the five moved a long way (`lgtn` is now exactly `0`; `lgan` `9` =
+      CPython) which is evidence the interning IS close, but close is not equal.
+
+- [ ] **OPEN — `lg5k` `lg5n` `lg5sig` (3 of the 19): the float-SOURCE `CAST` arm,
+      dtype.py:33-34.** `x / 2**32` promotes `2**32` to an `f32` CONST, so the port must
+      build `CAST(f32)` over `CONST weakfloat ConstFloat(4294967296.0)` = `F(1333788672)`
+      where it builds the weakint `C(1:0)`. Measured `UOp.const(2**32, dtypes.float32).val ==
+      4294967296.0`; not attempted.
+
+- [ ] **OPEN — the `CDIV`/`CMOD` cone rows: `lgqk` `lgqsig` `lgrk` `lgrsig` `lgsk` `lgssig`
+      `lgtk` `lgtsig` (8 of the 19).** Shape and value rows for the 64-iteration loop agree
+      (`lgt`, `lgs`, `lgq` are closed); the CONE rows do not. `lgsk` is the diagnostic: the
+      port's cone has 36 constants and CPython's has 92 — the port builds all thirty
+      `2**(i%32)` but **none of the 56 `UOp.const(i, dtypes.uint)` words of dtype.py:65**, so
+      something in the step's arena is unreadable to the cone walk. Not a wrong constant; a
+      missing subtree, and the same shape of bug as rule 1 in the notes.
+
+- [ ] **OPEN, NOT MINE — `c7`, and it is a DECLARED REFUSAL.** `rebase-gate.py` (the
+      authoritative gate, wired to `dtype-oracle.py`) reports exactly ONE disagreement on this
+      port, before and after: `c7`. Left alone per instruction. NOTE the oracle's own
+      docstring at `.agents/slop/dd-oracle.py:370-374` says `c7` is CONSTANT under both `fr`
+      rather than under-determined — a disagreement between the two, worth reconciling.
+
+- [ ] **OPEN, REPORTED — `rebase-gate.py` CANNOT SEE THIS PORT'S HARD ROWS.** It wires
+      `dtype.bend` to `.agents/slop/dtype-oracle.py`, which shares **107 of 172** row names and
+      **none of the `lgXY` families that carried the 52**. Measured on the same
+      `rebase-gate.py rows()` parser, that pair reports `c7` only, before and after. GUARD 4
+      checks disagreement over SHARED names only, so a lane missing the 52 hardest rows is a
+      pass. The pair that measures this port is `dd-oracle.py`. **Wiring decision for the
+      coordinator: `BASE_ORACLES` for this port should name `dd-oracle.py`.**
+
+- [ ] **REPORTED, NOT FIXED: `tinybendygrad/runtime/executor.bend` is at the REPO ROOT,
+      named `.bend`, and does not compile. Five files cite a path that does not exist.**
+      Found 2026-10-04 while answering "how far does the port get" for the E2E unit.
+      **NOT MINE AND NOT EDITED.** Full measurement in note **C12** at the END of
+      `.agents/slop/notes/bend2-constraints.md`; the short version:
+
+      * `git log --all -- tinybendygrad/runtime/executor.bend` returns commits, so it
+        **was** at that path. `find` now turns up only two snapshot copies under
+        `.agents/slop/`.
+      * The repo root holds **`.bend`**, 1890 lines, first line
+        `# executor.bend -- tinygrad/runtime/ops_python.py ...`. That is the file.
+      * `./bin/bend .bend --check-only` → `no such file:
+        /Users/cyberistic/src/tries/helpers.bend`. Its five `../` imports are right for
+        `tinybendygrad/runtime/` and escape the repository from the root.
+      * **NOTHING CAN SEE IT.** `tree-verdict.py` globs `*.bend` under `tinybendygrad`
+        + `examples`; `tools/check` is per-file; every gate takes an explicit path. A
+        file named `.bend` matches no glob, so **every "ALL PROOFS CHECK" claim in this
+        repo is a claim about a glob** and a misplaced file is invisible to it in both
+        directions.
+      * Five citations now point at nothing: `runtime/ops_bend.bend:10`,
+        `runtime/ops_python.bend:2285`, `runtime/ops_webgpu.bend:673`,
+        `uop/symbolic.bend:842` and `:943`, and `.agents/TODO.md:1037` still counts it
+        at 2245 LOC.
+      * **AND EVEN RESTORED IT EXECUTES NOTHING**, by its own header lines 5-9: "THE
+        INTERPRETER LOOP IS NOT: `run` below is a refusal, not a stub that silently
+        answers." So the `DEV=BEND` device cannot run a packet **by design**. This is
+        the wall behind the E2E unit's choice of the WebGPU call layer: there is no
+        Bend-side kernel executor to point a `DEV=BEND` E2E at.
+
+      **Owner: whoever moved it.** Two candidate causes, and this unit cannot tell them
+      apart: a concurrent agent mid-`mv`, or a scripted block move that asserted nothing
+      (agent-core.md's `end > start` trap). Either way the fix is one `mv` back plus a
+      decision about the interpreter loop, and the second is a design question, not a
+      typo.

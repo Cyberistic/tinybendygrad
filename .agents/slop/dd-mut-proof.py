@@ -32,6 +32,11 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, "bin", "bend")
 SCRATCH = "/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode"
+# The SAME pinned tree dd-mutate.py uses.  Built from HEAD this tool failed its
+# own substrate probe, because HEAD moved to a revision whose tree prints zero
+# lines with this dtype.bend -- a proof tool with a moving substrate proves
+# nothing about anything.
+TREE_REV = "e17d3f7dd48cf84c7a101b3d6aee11c0284a165e"
 
 
 def shape(t):
@@ -70,7 +75,7 @@ def main():
     tree = os.path.join(SCRATCH, "ddproof-%d" % os.getpid())
     shutil.rmtree(tree, ignore_errors=True)
     os.makedirs(tree)
-    archive = subprocess.run(["git", "-C", ROOT, "archive", "HEAD", "tinybendygrad"],
+    archive = subprocess.run(["git", "-C", ROOT, "archive", TREE_REV, "tinybendygrad"],
                              stdout=subprocess.PIPE, check=True).stdout
     subprocess.run(["tar", "-x", "-C", tree], input=archive, check=True)
     tgt = os.path.join(tree, "tinybendygrad", "codegen", "decomp", "dtype.bend")

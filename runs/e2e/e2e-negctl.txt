@@ -1,0 +1,33 @@
+copy at /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//e2e-negctl.99432 (tinybendygrad copied, bin/ and references/ symlinked)
+
+== control 0: the copy, unmutated
+launches 2  uploads 3 (768 words)  ids {'b0': 100, 'b1': 101, 'b2': 102, 'b3': 103, 'b4': 104}  answer_u32[:4]=[1044381696, 1079115776, 1050148864, 3231514624]  csum=-287.156250
+wrote .agents/slop/e2e_mm.bend and runs/e2e/e2e-mm-oracle.json
+gate-exit=0 failed_rows=0
+
+== NC1: one byte of an uploaded matrix
+    bytes_b1[0] 0 -> 1
+NC1 one uploaded byte                                gate-exit=1 failed_rows=2
+    died: mm_e2e_out_bits_equal=False expected True
+    died: mm_e2e_in_bits_equal=False expected True
+
+== NC2: the second launch's binding order
+    bufs1 W.Buf{id_b4(), size_b4()} W.Buf{id_b0(), size_b0()} W.Buf{id_b3(), size_b3()}
+NC2 second launch's binding order                    gate-exit=1 failed_rows=4
+    died: mm_e2e_l1_bg_bufs=['104', '100', '103'] expected ['103', '100', '104']
+    died: mm_e2e_out_bits_equal=False expected True
+    died: mm_e2e_answer_nonzero=False expected True
+    died: mm_power_zero=False expected True
+
+== NC3: the port -- Cs.caller binding every bufs slot to id 0
+    Cs.caller -> Bool.pick(U32, is_buf, 0, 0)   (the bug webgpu_call.bend's header records)
+the walk itself: WALK FAILED 
+NC3 Cs.caller binds every buffer to id 0             gate-exit=1 failed_rows=19
+    died: mm_e2e_walk_completed=False expected True
+    died: mm_e2e_steps=None expected 84
+    died: mm_e2e_writes=None expected 3
+    died: mm_e2e_dispatches=None expected 2
+    died: mm_e2e_mapped=None expected 1
+    died: mm_e2e_buffers=None expected 6
+
+NEGATIVE CONTROL PASS: all three breaks were caught
