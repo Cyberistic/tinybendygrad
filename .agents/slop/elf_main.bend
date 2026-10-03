@@ -30,7 +30,7 @@ def g_glob() -> IO(Unit):
     # --- THE BYTE LAYER, against CPython's struct.unpack.
     row("elf_blk_hexlen", U32.show(Blob.hexlen(B_E64_O())))
     row("elf_blk_bytes", U32.show(Blob.nbytes(B_E64_O())))
-    row("elf_blk_magic_hex", Hex.of(Blob.le32(B_E64_O(), 0)))
+    row("elf_blk_magic_hex", Blob.magic_hex(B_E64_O()))
     urow("elf_blk_u8_0", Blob.u8(B_E64_O(), 0))
     urow("elf_blk_u8_1", Blob.u8(B_E64_O(), 1))
     urow("elf_blk_u8_3", Blob.u8(B_E64_O(), 3))
@@ -54,6 +54,8 @@ def g_glob() -> IO(Unit):
     urow("elf_hexval_A", Hex.val(Char.from_u32(65)))
     urow("elf_hexval_F", Hex.val(Char.from_u32(70)))
     urow("elf_hexval_z", Hex.val(Char.from_u32(122)))
+    urow("elf_hexval_g", Hex.val(Char.from_u32(103)))
+    urow("elf_hexval_slash", Hex.val(Char.from_u32(47)))
     # --- THE HEX FORMATTER, all sixteen nibbles, plus the endianness pair.
     row("elf_hexdig", Hex.digit(0n) ++ Hex.digit(1n) ++ Hex.digit(2n) ++ Hex.digit(3n) ++ Hex.digit(4n) ++ Hex.digit(5n) ++ Hex.digit(6n) ++ Hex.digit(7n) ++ Hex.digit(8n) ++ Hex.digit(9n) ++ Hex.digit(10n) ++ Hex.digit(11n) ++ Hex.digit(12n) ++ Hex.digit(13n) ++ Hex.digit(14n) ++ Hex.digit(15n))
     row("elf_hexof_deadbeef", Hex.of(3735928559))
@@ -121,7 +123,7 @@ def Sec.ehdr(+t: String, +h: String) -> IO(Unit):
     row(String.concat([t, "_shentsize_declared"]), U32.show(Ehdr.e_shentsize(Ehdr.at(h, is64(h)))))
     row(String.concat([t, "_shdr_stride"]), U32.show(Shdr.size(is64(h))))
     row(String.concat([t, "_shdr_nfields"]), U32.show(Shdr.nfields(is64(h))))
-    row(String.concat([t, "_magic"]), Hex.of(Blob.le32(h, 0)))
+    row(String.concat([t, "_magic"]), Blob.magic_hex(h))
     row(String.concat([t, "_bytes"]), U32.show(Blob.nbytes(h)))
     row(String.concat([t, "_is64"]), Bool.show(is64(h)))
 
@@ -129,7 +131,7 @@ def Sec.all(+t: String, +h: String) -> IO(Unit):
   do IO<Unit>:
     row(String.concat([t, "_nsec"]), U32.show(Sections.len(Sections.of(h, Ehdr.at(h, is64(h)), is64(h)))))
     row(String.concat([t, "_names"]), Sec.names(Sections.build(h, Ehdr.at(h, is64(h)), is64(h))))
-    row(String.concat([t, "_hdrtxt"]), Sec.hd_text(Sections.build(h, Ehdr.at(h, is64(h)), is64(h))))
+    row(String.concat([t, "_hdrtxt"]), Sec.hd_text(Sections.build(h, Ehdr.at(h, is64(h)), is64(h)), is64(h)))
     row(String.concat([t, "_sh_name"]), Sec.col.name(Sections.build(h, Ehdr.at(h, is64(h)), is64(h))))
     row(String.concat([t, "_sh_type"]), Sec.col.typ(Sections.build(h, Ehdr.at(h, is64(h)), is64(h))))
     row(String.concat([t, "_sh_flags"]), Sec.col.flags(Sections.build(h, Ehdr.at(h, is64(h)), is64(h))))

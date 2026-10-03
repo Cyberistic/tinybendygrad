@@ -3,11 +3,11 @@
 # tinygrad schedules onto Device['BEND'] exactly as it does PYTHON -- same Compiled device, same
 # HostAllocator, same Renderer base, so the same kernels come out of the scheduler. The difference is
 # where they RUN: ops_python base64-pickles the uops and walks them in this process, while BendRenderer
-# writes the v1 wire packet and BendProgram hands it to tinybendygrad/runtime/executor.bend, one
+# writes the v1 wire packet and BendProgram hands it to tinybendygrad/runtime/ops_python.bend, one
 # subprocess per launch.
 #
 # THE WIRE, v1.1 (ASCII text, one launch per packet). This is the executor's own format, taken from the
-# header of tinybendygrad/runtime/executor.bend, which is authoritative for the spellings:
+# header of tinybendygrad/runtime/ops_python.bend, which is authoritative for the spellings:
 #
 #   line 1      bendexec1 <nuops> <nbuffers>
 #   uop lines   <idx>: <OP> <dtype|-> <arg|-> <src1> <src2> ...     1-based, in post-order
@@ -62,9 +62,9 @@
 # whatever the kernel left behind. BendProgram copies back the STORE-reachable ones and drops the rest
 # (see WRITEBACK), so a read-only input is never written.
 #
-# The executor is compiled once into tinygrad's cache dir, keyed by executor.bend's mtime and size:
-#   ./bin/bend tinybendygrad/runtime/executor.bend -o <cache>/bend-executor-<key>
-# Missing ./bin/bend or executor.bend raises with the path it wanted. A launch is a subprocess, so the
+# The executor is compiled once into tinygrad's cache dir, keyed by ops_python.bend's mtime and size:
+#   ./bin/bend tinybendygrad/runtime/ops_python.bend -o <cache>/bend-executor-<key>
+# Missing ./bin/bend or ops_python.bend raises with the path it wanted. A launch is a subprocess, so the
 # -o out.js lane is NOT used: bun's startup would be paid per kernel on top of the executor's own work.
 #
 # COST, stated rather than hidden: one subprocess per launch plus a hex round trip of every buffer. See
@@ -80,7 +80,7 @@ from tinygrad.uop.ops import Ops, UOp
 from tinygrad.runtime.ops_python import PythonRenderer
 
 BEND = pathlib.Path(__file__).resolve().parents[2]                  # the repo root: ./bin and tinybendygrad resolve from here
-BEND_SRC = BEND/"tinybendygrad"/"runtime"/"executor.bend"
+BEND_SRC = BEND/"tinybendygrad"/"runtime"/"ops_python.bend"   # ONE .bend per upstream .py: the port of ops_python.py IS the executor
 BEND_BIN = BEND/"bin"/"bend"
 
 # **************** encoding ****************
@@ -148,7 +148,7 @@ def encode(uops:list[UOp]) -> str:
 
 @functools.cache
 def executor() -> pathlib.Path:
-  """the compiled executor, built once per executor.bend (mtime+size keyed) and cached beside tinygrad's"""
+  """the compiled executor, built once per ops_python.bend (mtime+size keyed) and cached beside tinygrad's"""
   for p in (BEND_BIN, BEND_SRC):
     if not p.exists(): raise RuntimeError(f"BEND needs {p}, which is not there")
   st = BEND_SRC.stat()

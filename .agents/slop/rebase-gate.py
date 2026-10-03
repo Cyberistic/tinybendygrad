@@ -16,8 +16,10 @@ matches" from "nothing was compared". Four states are distinguished here:
     NOT-STARTED no oracle wired for this port, so nothing can be claimed. Explicit, because
                 silence here is indistinguishable from success in every other tool.
 
-HOW "ROWS WENT TO ZERO" IS DETECTED, which is the whole point and is three independent
-guards, because any one of them alone has already been fooled here:
+HOW "ROWS WENT TO ZERO" IS DETECTED, which is the whole point and is FOUR independent
+guards, because any one of them alone has already been fooled here. The numbers are the
+guard's NUMBER and the inline `# GUARD n` comments name the same four, in the order the
+code runs them:
 
   1. ABSOLUTE COUNT. A baseline row count is recorded per port. If now < BASELINE, rows
      were LOST -- and a loss to exactly 0 is the failure mode that was invisible for an
@@ -27,6 +29,43 @@ guards, because any one of them alone has already been fooled here:
   3. ORACLE REACHABILITY. The oracle script must exist and must have been RUN THIS TIME --
      no cache. drift-gate.py caches lane output in $TMPDIR, and a cached "0 rows" from an
      hour ago is indistinguishable from a fresh 0.
+  4. COMPARABILITY AND DISAGREEMENT. Two lanes must share at least one row NAME -- a pair that
+     shares none compared nothing -- and any shared row whose values differ is BROKEN. This
+     guard reads NOTHING from baseline.json, so it runs BEFORE the baseline shortcut: a live
+     disagreement must never be reported as "no baseline recorded", which is a verdict that
+     gets believed. Measured: with the order reversed, a port and a corrupted oracle
+     disagreed on one row and the gate answered NOT-STARTED with rc=0.
+
+⚠ THE NUMBERING WAS WRONG ON ARRIVAL AND WAS NOT COSMETIC. The header's guard 3 is
+ORACLE REACHABILITY, which is the `died` loop -- but the code labelled the *pair*
+comparison "# GUARD 3", so the header described a guard the code did not name and the code
+numbered one the header did not list. A reader checking the header against the code found
+two different GUARD 3s. Renumbered so both say the same thing.
+
+  THE ORDER IS NOT THE NUMBERING. The code runs 3, 2, 4, 1, and that order is the design:
+reachability first, because a lane that never ran cannot be non-empty; emptiness second;
+comparability third, because it consults no baseline and must therefore not wait for one;
+and the count last, because it is the only guard that genuinely needs the recording.
+
+⚠ `plan["port"]`'s VALUE TYPE IS A CROSS-FILE CONTRACT AND IT CHANGED UNDER THIS READER,
+which is how this tool came to print a traceback and exit non-zero with no verdict at all.
+rebase-plan.py wrote `port[f] = str | None`. Commit d4f647349 changed it to
+`port[f] = [str, ...] | None` -- one port may be the port of SEVERAL upstream files, which
+is how codegen/rewriter.bend came to be the port of three -- and did not touch this file.
+ports_of() still did `[p]`, so it returned a list of lists and main()'s de-duplicating
+dict died on `TypeError: unhashable type: 'list'`.
+
+  A crash is the BEST outcome that bug could have had: the shape mismatch was LOUD. The
+  reader below accepts both shapes and RAISES on any other, so the next contract change
+  is loud too. A reader that answers "no ports" to a value it does not understand is the
+  silent pass this file exists to prevent, and it is worse: 213 of 213 ports would have
+  answered NOT-STARTED and a rebase would have read as "nothing drifted".
+
+  The gate crashed on its default (no-argument) invocation, so `--port`, `--batch`,
+  `--record` and the whole-tree sweep were ALL unreachable -- and a selftest that calls
+  gate_port() directly went green the entire time, because the crash was in main()'s
+  TARGET CONSTRUCTION, above the part the selftest drives. That gap is closed:
+  rebase-gate-selftest.py now drives targets_of(), the same function main() calls.
 
 ⚠ GUARD 1 WAS DEAD AS SHIPPED, AND THE DEADNESS WAS INVISIBLE. baseline.json is
 {"lanes": {port: rows}, "hunks": {port: delta}} and the call site read base.get(port).
@@ -39,15 +78,22 @@ here rather than in one call site:
   * baseline_for() is the ONLY place baseline.json is read, and it names a malformed
     document instead of returning None for one -- a wrong nesting level is a silent pass,
     so it must be loud.
-  * rebase-gate-selftest.py drives gate_port(), the same function main() calls. It used to
-    hand verdict() a hand-built {"lanes": {lane: rows}} dict, which is NOT the shape
-    baseline.json has, so it went green on a call the tool never makes. A selftest that
-    tests a differently-shaped call than production is the same instrument lying, one
-    layer down, and it is why this bug survived a selftest that passed.
+  * rebase-gate-selftest.py drives gate_port() and targets_of(), the same functions main()
+    calls. It used to hand verdict() a hand-built {"lanes": {lane: rows}} dict, which is
+    NOT the shape baseline.json has, so it went green on a call the tool never makes. A
+    selftest that tests a differently-shaped call than production is the same instrument
+    lying, one layer down, and it is why this bug survived a selftest that passed.
 
   usage: python3 .agents/slop/rebase-gate.py [--batch N] [--port P] [--record]
          --record   write/refresh the baseline from the CURRENT state (do this at the pin,
                     once, on a tree known green -- never to silence a failure)
+
+  the gate has been SEEN RED, twice, and both are reproducible:
+    .agents/slop/rebase-plant-disagreement.py   a planted disagreement -> BROKEN, named row,
+                                                 plus the SAME pair uncorrupted -> not BROKEN
+    rebase-gate-selftest.py                     the four states over synthetic lanes, plus
+                                                 the two deliberately-dead lanes on the real
+                                                 tree, plus the plan contract in BOTH shapes
 """
 import argparse, json, os, pathlib, subprocess, sys
 
@@ -90,35 +136,105 @@ def diff_stat(src):
   return " ".join(d.stdout.split()) or f"(upstream has no diff for {src})"
 
 
-# The plan's port map is derived from a file's STEM, so every file whose port has a
-# different stem is missing from it -- and a missing port is a port whose drift is never
-# measured, which is worse than a reported non-match. B1 found two of these; the rest are
-# read out of each port's own HEADER, which names the upstream file(s) it ports:
-#   codegen/__init__.py -> kernel.bend      (codegen/ is a PACKAGE: there is no kernel.py)
-#   codegen/gpudims.py   -> rewriter.bend   (+ kernel.bend, which also reads it)
-#   renderer/ptx.py     -> tc_ptx.bend      ("tc.py AND ptx.py, in ONE file")
-#   renderer/llvmir.py  -> nir_llvmir.bend  ("nir.py AND llvmir.py")
-#   runtime/ops_python.py -> executor.bend  (plan mapped it nowhere)
-#   runtime/ops_cuda.py  -> ops_cl.bend     ("ops_cl.py + ops_cuda.py + ops_hip.py")
+# The plan's port map is READ out of each port's own HEADER by rebase-plan.py's
+# header_ports(), so it already covers every port whose header names its own upstream file.
+# What it cannot cover is a port with NO header comment: header_ports() requires the first
+# token of the header comment to be a path ending in `<stem>.bend`, and a file whose first
+# line is `import Base` has no header, so nothing maps it.
+#
+# AUDITED 2026-10-03 against header_ports() on the live tree, entry by entry. Nine entries,
+# and EIGHT of the nine are redundant or wrong. Measured, not assumed:
+#
+#   codegen/__init__.py   -> kernel.bend        OBSOLETE, identity of the header map
+#   runtime/ops_python.py -> executor.bend      OBSOLETE, identity of the header map. It was
+#                                              ALSO a dead path by the time it was audited --
+#                                              the 1:1 ruling split executor.bend into
+#                                              runtime/ops_python.bend, and the selftest's
+#                                              "every removed target still exists" check is
+#                                              what found that, not a re-read of the comment
+#   codegen/simplify.py   -> rewriter.bend      OBSOLETE and WRONG: rewriter.bend has no
+#                                              upstream .py of its own; simplify.bend does
+#   codegen/gpudims.py    -> rewriter.bend,     OBSOLETE and both WRONG: same 1:1 split,
+#                          kernel.bend           gpudims.bend is the real port
+#   renderer/ptx.py       -> tc_ptx.bend        SUBSET of the header map, which also has
+#                                              ptx.bend; a merge split into two files
+#   renderer/llvmir.py    -> nir_llvmir.bend    SUBSET, same shape (llvmir.bend + nir_llvmir)
+#   runtime/ops_null.py   -> ops_cpu_null.bend  OBSOLETE and a DEAD PATH -- the file no longer
+#                                              exists; the 1:1 split made ops_null.bend
+#   runtime/ops_cpu.py    -> ops_cpu_null.bend  OBSOLETE and a DEAD PATH -- same split
+#   runtime/ops_cuda.py   -> ops_cl.bend        KEPT, and CORRECTED to ops_cuda.bend. The
+#                                              header map says NOTHING for this file, and
+#                                              the wrong answer it does give
+#                                              (`tinygrad/ops_cuda.py`, a path that does
+#                                              not exist upstream) comes from rebase-plan.py's
+#                                              _BARE_RE, which prefixes a bare name with
+#                                              `tinygrad/` and so cannot resolve a directory.
+#                                              REPORTED, not fixed -- not this file.
+#
+# So the redundant entries go and only the one header_ports() provably cannot see is kept.
+# rebase-gate-selftest.py asserts every remaining entry is ABSENT from the header map, so a
+# later header edit cannot quietly make one redundant again -- which is how all eight got
+# here in the first place. It also asserts every port named below EXISTS, which is how the
+# two dead paths were found rather than left to fire as "no oracle" forever.
 EXTRA_PORTS = {
+  "tinygrad/runtime/ops_cuda.py": ["tinybendygrad/runtime/ops_cuda.bend"],
+}
+
+# Kept as DATA so the selftest re-checks the audit against the live tree instead of against a
+# comment that can go stale. (upstream, [ports rebase-plan.py's header map already derives])
+OBSOLETE_EXTRA_PORTS = {
   "tinygrad/codegen/__init__.py": ["tinybendygrad/codegen/kernel.bend"],
-  "tinygrad/codegen/gpudims.py": ["tinybendygrad/codegen/rewriter.bend",
-                                  "tinybendygrad/codegen/kernel.bend"],
-  "tinygrad/codegen/simplify.py": ["tinybendygrad/codegen/rewriter.bend"],
-  "tinygrad/renderer/ptx.py": ["tinybendygrad/renderer/tc_ptx.bend"],
-  "tinygrad/renderer/llvmir.py": ["tinybendygrad/renderer/nir_llvmir.bend"],
-  "tinygrad/runtime/ops_python.py": ["tinybendygrad/runtime/executor.bend"],
-  "tinygrad/runtime/ops_cuda.py": ["tinybendygrad/runtime/ops_cl.bend"],
-  "tinygrad/runtime/ops_null.py": ["tinybendygrad/runtime/ops_cpu_null.bend"],
-  "tinygrad/runtime/ops_cpu.py": ["tinybendygrad/runtime/ops_cpu_null.bend"],
+  "tinygrad/codegen/gpudims.py": ["tinybendygrad/codegen/gpudims.bend"],
+  "tinygrad/codegen/simplify.py": ["tinybendygrad/codegen/simplify.bend"],
+  "tinygrad/renderer/ptx.py": ["tinybendygrad/renderer/ptx.bend",
+                               "tinybendygrad/renderer/tc_ptx.bend"],
+  "tinygrad/renderer/llvmir.py": ["tinybendygrad/renderer/llvmir.bend",
+                                  "tinybendygrad/renderer/nir_llvmir.bend"],
+  "tinygrad/runtime/ops_python.py": ["tinybendygrad/runtime/ops_python.bend"],
+  "tinygrad/runtime/ops_null.py": ["tinybendygrad/runtime/ops_null.bend"],
+  "tinygrad/runtime/ops_cpu.py": ["tinybendygrad/runtime/ops_cpu.bend"],
 }
 
 
+class PlanShapeError(ValueError):
+  """rebase-plan.py's JSON is not the shape this tool reads. Raised, never absorbed: a target
+  list built from a plan nobody understood is the silent pass this file exists to prevent, and
+  it would answer NOT-STARTED for all 213 ports, which reads exactly like "nothing drifted"."""
+
+
 def ports_of(src, plan):
-  """Every port that reads this upstream file: the plan's stem map plus EXTRA_PORTS."""
-  out = list(EXTRA_PORTS.get(src, []))
-  p = plan["port"].get(src)
-  return out + ([p] if p and p not in out else [])
+  """Every port that reads this upstream file: the plan's map plus EXTRA_PORTS.
+
+  THE VALUE TYPE OF plan["port"][src] IS A CONTRACT WITH ANOTHER FILE, and it changed under
+  this reader without a word. rebase-plan.py wrote `str | None`; commit d4f647349 wrote
+  `[str, ...] | None`, because one port may be the port of SEVERAL upstream files -- which is
+  how codegen/rewriter.bend came to be the port of three. This function kept `[p]`, so it
+  returned a list of lists and main() died on `TypeError: unhashable type: 'list'` -- on its
+  DEFAULT invocation, which took --port, --batch, --record and the whole-tree sweep with it.
+
+  Both shapes are read. Anything else is NAMED, never flattened. The contract is documented
+  here and pinned by rebase-gate-selftest.py, which drives this function through BOTH shapes.
+  """
+  raw = (plan.get("port") or {}).get(src)
+  if raw is None:
+    out = []
+  elif isinstance(raw, str):
+    out = [raw]
+  elif isinstance(raw, (list, tuple)):
+    out = list(raw)
+  else:
+    raise PlanShapeError(
+      f"plan['port'][{src!r}] is a {type(raw).__name__}, expected a port path or a list of "
+      f"them: {raw!r}")
+  junk = [p for p in out if not isinstance(p, str)]
+  if junk:
+    raise PlanShapeError(
+      f"plan['port'][{src!r}] holds {junk} -- a list OF lists is exactly what this reader "
+      "produced by accident, so it is called out rather than silently flattened")
+  for p in EXTRA_PORTS.get(src, []):
+    if p not in out:
+      out.append(p)
+  return out
 
 
 def run_port(bend, oracle, native=True):
@@ -150,17 +266,32 @@ def run_port(bend, oracle, native=True):
       lanes["native"] = {"rc": n.returncode, "err": n.stderr[-600:]}
       r["native"] = rows(n.stdout)
 
+  # GUARD 3's evidence. A lane is keyed `cpython:<STEM>`, which is NOT unique: two oracles
+  # with the same stem collide and the second SILENTLY overwrites the first lane's rows, so a
+  # wired oracle could vanish and nothing would say so. The collision is therefore named,
+  # before anything is run, rather than resolved by renaming the lane -- renaming would
+  # invalidate every recorded baseline, since baseline.json is keyed by lane NAME.
+  stems = {}
+  for spec in oracle:
+    s = pathlib.Path(spec.split()[0]).stem
+    stems.setdefault(s, []).append(spec)
+  collided = {s: spec for s, spec in stems.items() if len(spec) > 1}
+
   for spec in oracle:
     argv = spec.split()
     p = REPO / argv[0]
+    key = f"cpython:{p.stem}"
+    if key in lanes:
+      lanes[key] = {"rc": 127, "err": f"LANE NAME COLLISION: {collided.get(p.stem, [spec])}"}
+      continue
     if not p.exists():
-      lanes[f"cpython:{p.stem}"] = {"rc": 127, "err": "ORACLE SCRIPT MISSING"}
+      lanes[key] = {"rc": 127, "err": "ORACLE SCRIPT MISSING"}
       continue
     e = dict(os.environ, DEV="NULL")
     c = subprocess.run([sys.executable, *argv], cwd=REPO, capture_output=True, text=True,
                        env=e, timeout=1800)
-    lanes[f"cpython:{p.stem}"] = {"rc": c.returncode, "err": c.stderr[-600:]}
-    r[f"cpython:{p.stem}"] = rows(c.stdout)
+    lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:]}
+    r[key] = rows(c.stdout)
   return lanes, r
 
 
@@ -252,15 +383,23 @@ def verdict(bend, oracle, base, hunks, native=True):
   lanes, now = run_port(bend, oracle, native)
   v = {"port": port_key(bend), "oracles": oracle,
        "row_counts": {k: len(x) for k, x in now.items()}, "lanes": lanes}
+  # GUARD 3 first: a lane that did not run at all (missing oracle, non-zero exit, collided
+  # lane name) cannot be compared with anything, so there is nothing to say about its rows.
   died = [k for k, l in lanes.items() if l["rc"] != 0 and k != "check"]
   if died:
-    v["state"], v["why"] = BROKEN, f"lane(s) failed to run: {', '.join(died)}"
+    v["state"], v["why"] = BROKEN, (
+      f"lane(s) failed to run: {', '.join(died)}"
+      + ("  (" + "; ".join(f"{k}: {lanes[k]['err'][:120]}" for k in died) + ")"
+         if any("ORACLE SCRIPT MISSING" in lanes[k]["err"] or "COLLISION" in lanes[k]["err"]
+                for k in died) else ""))
     return v, now
   # GUARD 2: an empty lane is a failed oracle, never a pass. This is the hour-long bug.
+  # Ordering is 3, 2, 4, 1 -- reachability first (a lane that never ran cannot be non-empty),
+  # then emptiness, then comparability (baseline-free, so it must not wait for the baseline),
+  # then the count, which is the only guard that genuinely needs the recording.
   empty = [k for k, x in now.items() if not x]
   if empty:
-    # GUARD 2 fires before GUARD 1 on purpose: a lane with no rows is wrong whether or not a
-    # baseline exists. Naming the baseline count here is what lets the 210 -> 0 case say
+    # Naming the baseline count here is what lets the 210 -> 0 case say
     # "TO ZERO" instead of the vague "produced zero rows" -- the number is the evidence.
     was = {k: len((base or {}).get(k, {})) for k in empty}
     v["state"] = BROKEN
@@ -272,8 +411,46 @@ def verdict(bend, oracle, base, hunks, native=True):
                    if any(was.values()) else ""))
     return v, now
 
+  # GUARD 4 BEFORE THE BASELINE SHORTCIRCUIT, and this ordering is the whole reason a live
+  # disagreement can never be mistaken for an unrecorded port. GUARD 4 compares two lanes of
+  # THIS RUN against each other; it reads nothing from baseline.json, so a baseline is not
+  # evidence it needs and its absence cannot excuse it. GUARD 1 below is the opposite: it is
+  # entirely about movement since the recording, so without a baseline there is genuinely
+  # nothing to say and NOT-STARTED is the truthful answer.
+  #
+  # ⚠ THE ORDER WAS BACKWARDS AND IT REPORTED A WRONG VERDICT, which is worse than crashing.
+  # Measured with a planted disagreement against ops_nv: the port and a CORRUPTED oracle
+  # disagreed on one row, and the gate answered "NOT-STARTED: no baseline recorded for
+  # tinybendygrad/runtime/ops_nv.bend" with rc=0. A crashing gate is a finding; a gate that
+  # says NOT-STARTED while the port and CPython visibly disagree is believed. Every port with
+  # no baseline recorded could have been hiding a live disagreement in exactly that state.
+  compared, uncompared, bad = [], [], []
+  for lane in sorted(now):
+    for other in sorted(now):
+      if lane >= other:
+        continue
+      shared = set(now[lane]) & set(now[other])
+      (compared if shared else uncompared).append((lane, other, len(shared)))
+      bad += [(lane, other, k) for k in shared if now[lane][k] != now[other][k]]
+  if uncompared:
+    v["state"] = BROKEN
+    v["why"] = ("lane pair(s) share NO row names, so they compared nothing: "
+                + ", ".join(f"`{a}` vs `{b}`" for a, b, _ in uncompared)
+                + ". Two lanes that cannot be compared cannot agree")
+    v["uncompared_pairs"] = uncompared
+    return v, now
+  if bad:
+    v["state"] = BROKEN
+    v["why"] = f"{len(bad)} row(s) disagree with CPython across {len(compared)} lane pair(s)"
+    v["disagreements"] = bad[:20]
+    return v, now
+  v["compared_pairs"] = compared
+
   if base is None:
-    v["state"], v["why"] = NOT_STARTED, "no baseline recorded"
+    v["state"], v["why"] = NOT_STARTED, (
+      "no baseline recorded, so UNCHANGED-vs-RE-PORTED cannot be judged -- but every lane "
+      "pair DID compare and agrees, which is a weaker claim than UNCHANGED and is not one. "
+      "Record with --record on a tree known green")
     return v, now
 
   if not base:
@@ -296,7 +473,7 @@ def verdict(bend, oracle, base, hunks, native=True):
     return v, now
 
   # GUARD 1: absolute count. Relative comparison cannot see a row set that emptied.
-  moved, lost, bad = [], [], []
+  moved, lost = [], []
   for lane, was in base.items():
     have = now.get(lane, {})
     if not was:
@@ -316,33 +493,6 @@ def verdict(bend, oracle, base, hunks, native=True):
       for n, was, have in lost)
     return v, now
 
-  # GUARD 3: a lane PAIR that shares no row name compared NOTHING. `cstyle.bend` prints
-  # `name = [...]   py=[...]` while renderer_oracle.py prints `name = [...]` for a
-  # different set of claims, so the key intersection is ZERO -- and a loop over an empty
-  # intersection reports no disagreements, forever. Measured: 225 bend rows vs 33 oracle
-  # rows, 0 shared names. Silence here is the same lie as silence in GUARD 2, one level up,
-  # so a pair that cannot be compared is named instead of counted as agreeing.
-  compared, uncompared, bad = [], [], []
-  for lane in sorted(now):
-    for other in sorted(now):
-      if lane >= other:
-        continue
-      shared = set(now[lane]) & set(now[other])
-      (compared if shared else uncompared).append((lane, other, len(shared)))
-      bad += [(lane, other, k) for k in shared if now[lane][k] != now[other][k]]
-  if uncompared:
-    v["state"] = BROKEN
-    v["why"] = ("lane pair(s) share NO row names, so they compared nothing: "
-                + ", ".join(f"`{a}` vs `{b}`" for a, b, _ in uncompared)
-                + ". Two lanes that cannot be compared cannot agree")
-    v["uncompared_pairs"] = uncompared
-    return v, now
-  if bad:
-    v["state"] = BROKEN
-    v["why"] = f"{len(bad)} row(s) disagree with CPython across {len(compared)} lane pair(s)"
-    v["disagreements"] = bad[:20]
-    return v, now
-  v["compared_pairs"] = compared
   v["moved"] = moved[:50]
   v["moved_count"] = len(moved)
   if moved:
@@ -364,6 +514,48 @@ def load_baseline():
   return json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
 
 
+def targets_of(port, srcs, plan):
+  """[(port, oracles)] for this run, de-duplicated by port. The function main() calls.
+
+  It is extracted and named because THIS IS WHERE THE CRASH WAS, and the selftest drove
+  gate_port() instead -- so it went green for the whole session while the tool's DEFAULT
+  invocation, and every flag with it, raised `TypeError: unhashable type: 'list'`. A
+  selftest that covers the decision and not the target list is a gate that is green and does
+  not run.
+
+  `--port` names a PORT (.bend path); everything else names UPSTREAM FILES, which is what the
+  plan maps. Mixing the two is how a target list comes out empty and the gate prints an empty
+  TALLY, which reads as "nothing to report" rather than "nothing was checked"."""
+  if port:
+    return [(port, tuple(BASE_ORACLES.get(port, [])))]
+  raw = [(p, tuple(BASE_ORACLES.get(p, []))) for f in srcs for p in ports_of(f, plan)]
+  return list({p: o for p, o in raw}.items())
+
+
+def srcs_of(a, plan):
+  """The upstream files this run covers. A --port run has none: it names a port directly."""
+  if a.port:
+    return []
+  if a.singletons:
+    return plan["independent"]
+  batch = next((b for b in plan["batches"] if b["id"] == a.batch), None) if a.batch else None
+  return batch["files"] if batch else [f for b in plan["batches"] for f in b["files"]]
+
+
+def upstream_of(targets, plan):
+  """{port: [upstream files it is the port of]}. The reverse of ports_of, built ONCE.
+
+  Both --record and the gate loop need it, and both used to recompute it per port with
+  `for f in plan["port"] if port in ports_of(f, plan)` -- 213 ports_of calls per target, over
+  a dict read whose value type had already changed once. One reader, one traversal."""
+  rev = {p: [] for p, _ in targets}
+  for f in (plan.get("port") or {}):
+    for p in ports_of(f, plan):
+      if p in rev and f not in rev[p]:
+        rev[p].append(f)
+  return rev
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--batch", type=int, default=None)
@@ -378,22 +570,29 @@ def main():
   ap.add_argument("--json", action="store_true")
   a = ap.parse_args()
 
-  plan = json.loads(sh("python3", ".agents/slop/rebase-plan.py", "--json").stdout)
+  # The plan is another file's output and this tool reads three things out of it. An empty or
+  # unparseable plan used to be a bare `json.JSONDecodeError` traceback; it is named instead,
+  # because the difference between "the plan says nothing changed" and "the plan did not run"
+  # is the whole question this tool exists to answer.
+  pr = sh("python3", ".agents/slop/rebase-plan.py", "--json")
+  try:
+    plan = json.loads(pr.stdout)
+  except ValueError as e:
+    print(f"PLAN UNAVAILABLE: rebase-plan.py --json did not produce JSON ({e}).\n"
+          f"  rc={pr.returncode}  stderr={' '.join(pr.stderr.split())[:200]}\n"
+          "Nothing was checked. rebase-gate.py exits 1.")
+    return 1
   baseline_path = pathlib.Path(a.baseline) if a.baseline else BASELINE
   base = json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
-  batch = next((b for b in plan["batches"] if b["id"] == a.batch), None) if a.batch else None
 
-  # --port names a PORT (.bend path); everything else names UPSTREAM FILES, which is what
-  # the plan maps. Mixing the two is how a target list comes out empty and the gate prints
-  # an empty TALLY, which reads as "nothing to report" rather than "nothing was checked".
-  if a.port:
-    targets = [(a.port, tuple(BASE_ORACLES.get(a.port, [])))]
-  else:
-    srcs = (plan["independent"] if a.singletons else
-            batch["files"] if batch else
-            [f for b in plan["batches"] for f in b["files"]])
-    targets = [(p, tuple(BASE_ORACLES.get(p, []))) for f in srcs for p in ports_of(f, plan)]
-  targets = list({p: o for p, o in targets}.items())
+  try:
+    srcs = srcs_of(a, plan)
+    targets = targets_of(a.port, srcs, plan)
+  except PlanShapeError as e:
+    # LOUD, and it stops the run. The alternative -- carrying on with whatever ports did
+    # parse -- is how a rebase reads as "nothing drifted" when the plan was not understood.
+    print(f"PLAN SHAPE BROKEN: {e}\nNothing was checked. rebase-gate.py exits 1.")
+    return 1
   if not targets:
     # An empty TALLY is the shape of the bug being fixed: it reads as "nothing to report"
     # when it means "nothing was checked". Name it.
@@ -402,27 +601,38 @@ def main():
     return 1
 
   if a.record:
-    out = {"lanes": {}, "hunks": {}}
+    rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}}, 0
     for port, oracles in targets:
       bend = REPO / port
       if not oracles or not bend.exists():
+        skipped += 1
         continue
       _, now = run_port(bend, oracles, not a.no_native)
-      out["lanes"][port] = now  # empty lanes are KEPT: a dropped lane cannot be counted as lost
+      doc["lanes"][port] = now  # empty lanes are KEPT: a dropped lane cannot be counted as lost
       # The hunks a later UNCHANGED has to name: which upstream file(s) the port reads, the
       # computed API delta of each, and the real diff's line counts. Computed, never typed.
-      out["hunks"][port] = {
+      doc["hunks"][port] = {
         f: {"api_delta": plan["api_delta"].get(f, {}), "diff_stat": diff_stat(f)}
-        for f in plan["port"] if port in ports_of(f, plan)}
+        for f in rev[port]}
     baseline_path.parent.mkdir(parents=True, exist_ok=True)
-    baseline_path.write_text(json.dumps(out, indent=1))
-    print(f"recorded baseline for {len(out['lanes'])} ports -> {baseline_path}")
+    baseline_path.write_text(json.dumps(doc, indent=1))
+    print(f"recorded baseline for {len(doc['lanes'])} ports -> {baseline_path}"
+          + (f"; SKIPPED {skipped} target(s) with no oracle or no .bend file, which is why "
+             "they are absent from the file" if skipped else ""))
     return 0
 
-  verdicts, tally = [], {}
+  verdicts, tally, missing = [], {}, []
+  rev = upstream_of(targets, plan)
   for port, oracles in targets:
     bend = REPO / port
     if not bend.exists():
+      # Named rather than `continue`d: a target that is not a file is not a pass, and a
+      # silently dropped port is the exact shape that hid here for an hour.
+      missing.append(port)
+      verdicts.append({"port": port, "state": NOT_STARTED,
+                       "why": f"NO SUCH FILE: {bend}. The plan maps an upstream file to a port "
+                              "path that does not exist; nothing was checked"})
+      tally[NOT_STARTED] = tally.get(NOT_STARTED, 0) + 1
       continue
     if not oracles:
       verdicts.append({"port": port, "state": NOT_STARTED,
@@ -430,8 +640,7 @@ def main():
       tally[NOT_STARTED] = tally.get(NOT_STARTED, 0) + 1
       continue
     v, _ = gate_port(bend, oracles, base, not a.no_native,
-                     files={f: plan["api_delta"].get(f, {}) for f in plan["port"]
-                            if port in ports_of(f, plan)})
+                     files={f: plan["api_delta"].get(f, {}) for f in rev[port]})
     verdicts.append(v)
     tally[v["state"]] = tally.get(v["state"], 0) + 1
     if v.get("hunks_status", "").startswith("NO HUNKS"):
@@ -466,8 +675,67 @@ def main():
 # instead of letting silence pass for success. Widen this as oracles land -- and do not
 # point an oracle at a different port's question, which is how a file ends up "verified"
 # by rows that never touched it.
+#
+# ONE ORACLE PER PORT, ON PURPOSE. A lane is keyed `cpython:<STEM>` (see run_port), so a
+# second oracle on the same port must share the first's STEM to be distinguishable at all,
+# and GUARD 4 then demands that the two lanes share a row NAME -- which is only true if they
+# are the same question. Two different questions on one port do not compose here, and wiring
+# them anyway is how a lane goes missing without a word.
+#
+# The 3 -> 9 widening below is not typing names into a dict. Every added pair was MEASURED by
+# .agents/slop/rebase-scan-oracles.py -- which runs the .bend, runs the oracle, and intersects
+# the row-name SETS -- and each is recorded with its shared-row count, because a count is what
+# tells a reader whether the pair compares 543 claims or 10:
+#
+#   uop/spec.bend          11    uop/ops.bend             62
+#   codegen/opt/search.bend 10    runtime/ops_rdma.bend  389
+#   runtime/ops_nv.bend   543    runtime/ops_metal.bend  14
+#   runtime/support/hcq2.bend 157
+#
+# 3 -> 21 working oracles, and 29 of the 50 gated ports still have no CPython oracle at all.
+# That residue is the structural gap, it is a fact about ORACLE AUTHORSHIP rather than about
+# this tool, and NOT-STARTED is the only honest thing this tool can say about them.
 BASE_ORACLES = {
-  "tinybendygrad/runtime/support/hcq2.bend": [".agents/slop/hcq2-oracle.py"],
+  # -- working, measured. `shared` is the number of row NAMES the port and the oracle both
+  #    print, so it is the number of claims CPython actually corroborates --
+  "tinybendygrad/runtime/support/hcq2.bend": [".agents/slop/hcq2-oracle.py"],       # 157
+  "tinybendygrad/runtime/ops_rdma.bend": [".agents/slop/oracle_rdma_gate.py"],      # 389
+  "tinybendygrad/runtime/ops_nv.bend": [".agents/slop/nv-oracle.py"],               # 543
+  "tinybendygrad/runtime/ops_metal.bend": [".agents/slop/mt_seam_rows.py"],         #  14
+  "tinybendygrad/uop/ops.bend": [".agents/slop/rebase-oracle-ops.py"],             #  62
+  "tinybendygrad/uop/spec.bend": [".agents/slop/rebase-oracle-spec.py"],           #  11
+  "tinybendygrad/codegen/opt/search.bend": [".agents/slop/rebase-oracle-search.py"],  # 10
+  # -- the 2026-10-03 widening, 3 -> 21. Every one measured by rebase-scan-oracles.py, and
+  #    every one chosen because the oracle imports and CALLS tinygrad rather than restating
+  #    the port. A row whose expectation is a Python def of the thing under test is not a
+  #    test, so the criterion for wiring one was an import of `tinygrad` plus a shared row
+  #    name -- not merely that the numbers happen to match.
+  "tinybendygrad/runtime/support/usb.bend": [".agents/slop/usb-oracle-run.py"],     # 939
+  "tinybendygrad/schedule/prepare.bend": [".agents/slop/prepare-oracle.py"],       # 321
+  "tinybendygrad/renderer/ptx.bend": [".agents/slop/ptx-s3-oracle.py"],            # 281
+  "tinybendygrad/renderer/nir_llvmir.bend": [".agents/slop/nl/nl-oracle.py"],      # 201
+  "tinybendygrad/viz/serve.bend": [".agents/slop/vz/viz_oracle.py"],               # 176
+  "tinybendygrad/runtime/support/c.bend": [".agents/slop/c-oracle.py"],            # 129
+  "tinybendygrad/uop/fold.bend": [".agents/slop/mm-lift-gate.py"],                 # 126
+  "tinybendygrad/nn/onnx.bend": [".agents/slop/onnx-gate.py"],                     # 123
+  "tinybendygrad/mixin/elementwise.bend": [".agents/slop/ew-gate.py"],             #  71
+  "tinybendygrad/mixin/op.bend": [".agents/slop/mixin-op-gate.py"],                #  32
+  "tinybendygrad/tensor.bend": [".agents/slop/tensor-gate.py"],                   #  30
+  "tinybendygrad/codegen/simplify.bend": [".agents/slop/xd1/rw-oracle.py"],        #  28
+  "tinybendygrad/nn/__init__.bend": [".agents/slop/nn-init-gate.py"],             #  24
+  "tinybendygrad/codegen/gpudims.bend": [".agents/slop/xd1/rw-gate-oracle.py"],    #  24
+  "tinybendygrad/runtime/ops_cpu.bend": [".agents/slop/cpulink_oracle.py"],        #   3
+  # `ops_cpu` is wired on THREE shared row names out of the oracle's 20, and that is named
+  # rather than dressed up: 17 of its rows are `findlib_*` HOST answers (where libm and
+  # libobjc live on THIS machine) which the port cannot be expected to reproduce off-Mac,
+  # and the 3 that remain -- cpu_lib_objc, cpu_link_libs_10, cpu_link_libs_n -- are real.
+  # A gate's strength is the intersection, so the honest number is 3 and it is in the
+  # comment above, not 20.
+  # -- deliberately dead, wired so BROKEN is reachable on the REAL tree and not only over
+  #    synthetic fixtures. Do NOT "fix" these by removing them; that is what NOT-STARTED and
+  #    this comment are for. dtype_tables.py exits 0 printing TSV, so rows() finds no `=`
+  #    (GUARD 2, "compared nothing"); renderer_oracle.py `cstyle` exits 1 AND shares 0 of
+  #    225 row names (GUARD 3, and its stderr is printed rather than swallowed). --
   "tinybendygrad/dtype.bend": [".agents/slop/oracle/dtype_tables.py"],
   "tinybendygrad/renderer/cstyle.bend": [".agents/slop/renderer_oracle.py cstyle"],
 }

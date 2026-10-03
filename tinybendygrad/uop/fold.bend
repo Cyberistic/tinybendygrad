@@ -188,8 +188,18 @@ def dt_by_rank(r: Nat) -> S.Dt:
     case 17n: S.single()
     case _: S.double()
 
-# the index of the lowest set bit. `m` is never 0 for a non-void dtype, because
-# `bool` is a recursive parent of every dtype, so every non-void mask has bit 0.
+# the index of the lowest set bit. `m` is never 0 for a non-void dtype.
+#
+# THE OLD COMMENT HERE CLAIMED "every non-void mask has bit 0" and was FALSE: it does
+# not, and `promo_lattice` says why. `_get_recursive_parents(bool)` is ALL NINETEEN,
+# but `_get_recursive_parents(d)` for every OTHER d is that set MINUS bool, because
+# bool is nobody's child -- `promo_lattice` (dtype.py:180-187) has `bool: [weakint]`
+# and nothing points back. Measured by `.agents/slop/dtype-pri-m7.py`, which recomputes
+# every constant against CPython: bool's mask is 524287 with bit 0 SET and the other
+# eighteen have it CLEAR (weakint 524286, i32 523584, f64 262144). All 19 agree with
+# `_get_recursive_parents` bit for bit, so the MASKS are right and only the claim was
+# wrong -- which mattered, because bit 0 is what made `lowest` look unable to return
+# anything but 0.
 def lowest(+m: U32) -> Nat:
   U32.log2(U32.and(m, U32.sub(0, m)))
 
@@ -199,8 +209,14 @@ def least_upper.pick(ok: Bool, +m: U32) -> Maybe<&1, S.Dt>:
     case True{}: None{}
     case False{}: Some{dt_by_rank(lowest(m))}
 
-def least_upper(+ma: U32, mb: U32) -> Maybe<&1, S.Dt>:
-  least_upper.pick(U32.is_zero(ma), U32.and(ma, mb))
+# ... ANY pair, so the test is on BOTH masks. It was on `ma` alone until 2026-10-03,
+# which made the meet NON-COMMUTATIVE: `least_upper.of(void, x)` answered `void` while
+# `least_upper.of(x, void)` answered `bool`, because a zero mask on the RIGHT decodes
+# as `lowest(0) = U32.log2(0) = 0` and `dt_by_rank(0)` is `bool`. dtype.py:194 is
+# `min(set.intersection(...))`, which is order-independent, so a commutative port is
+# the faithful one and an asymmetric one silently picks `bool` where `void` belongs.
+def least_upper(+ma: U32, +mb: U32) -> Maybe<&1, S.Dt>:
+  least_upper.pick(Bool.or(U32.is_zero(ma), U32.is_zero(mb)), U32.and(ma, mb))
 
 # the same meet as a value: `void` is the bottom, so it is also the fold's identity
 def least_upper.of(a: S.Dt, b: S.Dt) -> S.Dt:
@@ -1023,6 +1039,24 @@ def ins_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
 # encoding".
 def ins_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   ins_ds.pick(ins_dt(arg))
+
+# CUSTOM_FUNCTION -- ops.py:133-135 `return arg.dtype` and ops.py:374 `return None
+# if self.dtype is dtypes.void else ()`. It is NOT one of the always-void ops: ops.py
+# gives it its OWN arm in `dtype_from_uop` because the dtype is in the ARG.
+#
+# The void arm is `dt_is.is_void`'s pattern, on the CLASS alone rather than on bits as
+# well: `CVoid` is in exactly one dtype of the table, so it IS void, and arms on cls
+# survives a change to either of the first two fields -- which is the whole lesson of
+# `void`'s priority.
+def cfun_ds.shape(+dt: S.Dt) -> Maybe<&2, DtShape>:
+  match dt:
+    case S.Dt{_, _, S.CVoid{}, _}: late()
+    case _: Some{dt_of_nil(dt)}
+
+def cfun_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
+  match arg:
+    case O.ACustom{cf}: cfun_ds.shape(O.CustomFunction.dtype(cf))
+    case _: None{}      # `return arg.dtype` -- only a CustomFunction has a `.dtype`
 
 def adt_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
   match arg:
@@ -1989,7 +2023,12 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsIF{}: late()
     case O.OpsENDIF{}: late()
     case O.OpsBACKEDGE{}: late()
-    case O.OpsCUSTOM_FUNCTION{}: late()
+    # NOT one of the always-void ops. ops.py:133 gives CUSTOM_FUNCTION its OWN arm in
+    # `dtype_from_uop` -- `return arg.dtype` -- so a non-void one is not void, and it
+    # was filed here by mistake until 2026-10-03: `late()` is `(void, None)` for
+    # EVERY CustomFunction, and ops.py:374 is `None if void else ()`, so a u64 one
+    # answers `(u64, ())`. The two rows in `t_cfun` DISAGREE on purpose.
+    case O.OpsCUSTOM_FUNCTION{}: cfun_ds(arg)
     case O.OpsPYLITERAL{}: late()
 
     # pass through first, then the passthrough ops' `return self.src[0]._shape`
@@ -2052,9 +2091,27 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # file does not port, so the fold does not answer the node. The list is closed:
     # every other op has an arm above, which is what makes the match total without
     # Python's closing `raise RuntimeError(f"no dtype for {op} with arg {arg}")`.
-    case O.OpsCUSTOM{}: None{}        # `arg[1]`, and the arena's CUSTOM arg is a str
-    case O.OpsCUSTOMI{}: None{}       #   (ops.bend's `Arg`), not the `(str, DType)`
-    case O.OpsSTAGE{}: None{}         #   pair. P3: that is a change to `Arg`.
+    # THE BLOCKER RECORDED ON THE NEXT TWO ARMS WAS WRONG, CORRECTED 2026-10-03. It
+    # said "the arena's CUSTOM arg is a str (ops.bend's `Arg`), not the `(str, DType)`
+    # pair. P3: that is a change to `Arg`." BOTH halves are false:
+    #   * ops.py:137 ASSERTS the pair -- `isinstance(arg, tuple) and len(arg) == 2 and
+    #     isinstance(arg[1], DType), "CUSTOM/CUSTOMI arg must be (str, DType)"` -- and
+    #     the assert FIRES on a bare string. Every real construction site is a pair
+    #     (`tinygrad/uop/upat.py:33`, `tinygrad/llm/kernels/amd.py:108`), and
+    #     `tinygrad/renderer/cstyle.py:76` reads `x.arg[0].format(...)`, which is only
+    #     meaningful on index 0 OF A 2-TUPLE.
+    #   * NO change to `Arg` is needed. `AInk{ins: String, dt: S.Dt}` (ops.bend:940,
+    #     mapped to the INS arg at :910) IS that pair, and `uop/spec.bend:1043-1047`
+    #     already gates CUSTOM and CUSTOMI on it: "`AInk` IS that pair, and it is the
+    #     only constructor that is".
+    # So the dtype half is `adt_dt`'s pattern on `AInk` and the shape half is
+    # `all_shapes` + `bcast_shape`, both already here as `where_ds` uses them. NOT
+    # PORTED, deliberately: it needs its own `_broadcast_shape` oracle and its own
+    # rows, and porting an unoracled shape rule is the plausible-wrong-answer class.
+    # What was wrong was the REASON, and the reason is what kept the arm parked.
+    case O.OpsCUSTOM{}: None{}        # `arg[1]`, then `if void: None` else the
+    case O.OpsCUSTOMI{}: None{}       #   broadcast of the srcs' non-None shapes
+    case O.OpsSTAGE{}: None{}
     # "UNSHARD marker has no shape" is the LAST movement wall and it is a DIFFERENT one
     # from the five that landed: the shape is
     # `tuple(s*(int(self.src[1:][self.arg.index(a)].vmax)+1) if a in self.arg else s
@@ -4464,6 +4521,134 @@ def t_sized_order() -> Bool:
 def dt_w(nm: String, +bits: U32, top: Bool) -> IO(Unit):
   dt_row(nm, bnd_int(False{}, True{}, bits), bnd_int(True{}, False{}, bits))
 
+# ===========================================================================
+# `CustomFunction`: the dtype is in the ARG (ops.py:133-135, 374). Filed among the
+# always-void ops until 2026-10-03, so it answered `(void, None)` for EVERY one.
+#
+# The rows are the (dtype, shape) PAIR and they DISAGREE, which is the only thing
+# that makes them a test: a `late()` that answered `(void, ())` for everything, or one
+# that answered `u64` with no shape, passes row one and fails row two, and the shipped
+# bug passes row one and fails row two's dtype column. The expectations are
+# `.agents/slop/dtype-pri-customi-oracle.py`, which builds the nodes in CPython and
+# reads `dtype` and `_shape` back off them:
+#
+#     CustomFunction('void',  dtypes.void) -> dtype=void  shape=None
+#     CustomFunction('uint64', dtypes.u64) -> dtype=u64   shape=()
+#
+# `fold.shape` is a Maybe OF a Maybe and the inner Maybe is exactly ops.py's `None`
+# versus `()`, so the shape column discriminates on the CONSTRUCTOR and not a count.
+# ===========================================================================
+
+def g_cfun(dt: S.Dt) -> O.Found:
+  O.UOp.new(O.Arena.empty(), O.OpsCUSTOM_FUNCTION{}, Nil{},
+    O.ACustom{O.CustomFunction{"myext", dt}}, O.TNone{})
+
+def cfun_shape_is.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>, empty: Bool) -> Bool:
+  match m:
+    case Some{Some{Nil{}}}: empty
+    case Some{None{}}: Bool.not(empty)
+    case _: False{}
+
+def cfun_shape_is(+x: Folded, i: U32, empty: Bool) -> Bool:
+  cfun_shape_is.of(fold.shape(Folded.ar(x), Folded.t(x), i), empty)
+
+def t_cfun(+dt: S.Dt, empty: Bool) -> Bool:
+  +f = g_cfun(dt)
+  +x = folded(O.Found.ar(f))
+  +i = O.Found.i(f)
+  Bool.and(dt_is(x, i, dt), cfun_shape_is(x, i, empty))
+
+# ===========================================================================
+# `void`'s PRIORITY, and why `Dt.pri` is 0 and not the -1 of dtype.py:118.
+#
+# `DType.priority` has exactly ONE reader in all of tinygrad -- `__lt__`, dtype.py:68,
+# which compares `(priority, bitsize, name, fmt)` -- and promotion never reaches it,
+# because `void` is ABSENT from `promo_lattice` (dtype.py:180-187):
+# `_get_recursive_parents(void)` is a KeyError and `least_upper_dtype` is a KeyError on
+# 39 of its 400 ordered pairs. Measured by `.agents/slop/dtype-pri-oracle.py`:
+#
+#   * `sorted(ALL 20)` is IDENTICAL for void at pri -1, 0, 1 and 7. bitsize 0 is below
+#     every other bitsize in the table, so the tiebreak that decides the order is
+#     pri-INDEPENDENT; only pri 99 moves void, and only by putting it LAST.
+#   * `least_upper_dtype` is a KeyError on exactly the 39 pairs naming void, whatever
+#     void's priority is, so the field is never consulted for a promotion.
+#
+# So `-1` is UNOBSERVABLE and a `U32` cannot hold it. `pri` is a TAG in this port, not
+# a number: every `Dt{..}` pattern in the tree pins `pri` AND `bits` together, and
+# `bnd_lim` is the ONLY one of them that names void -- `case S.Dt{0, 0, S.CVoid{}, _}`.
+# Mutations M10/M11 in `.agents/slop/dtype-pri-mutate.py` move that literal to 16 and to
+# 1 and exactly THREE rows move: `bl_dt_void lo`, `bnd_void_is_bool` and
+# `pri_three_way`. NO promotion row moves. So the priority is COSMETIC for promotion
+# and load-bearing for exactly one consumer, where it is a SILENT fall-through: the
+# bound becomes +-inf instead of False/True.
+#
+# The three dtypes that SHARE `pri 0` -- void, weakint, bool -- are three distinct
+# values of `Dt`, because `eq_dt` compares all four fields. That is why the collision
+# has never been observable, and why the port keeps `pri 0` rather than inventing a
+# signed encoding `U32` cannot hold.
+# ===========================================================================
+
+# dtype.bend's `dtypes.all()` is SEVENTEEN -- `dtype.py:161` is
+# `floats + ints + (bool,)` -- so the two-lane dtype gate has never printed a void row,
+# which is the whole reason this went unnoticed. Measured: `len(dtypes.all) == 17` and
+# `dtypes.void in dtypes.all` is False. This is the table `LAWS/spec.bend` declares: all
+# TWENTY, in its own order.
+def dts_all() -> List<&2, S.Dt>:
+  [S.void(), S.weakint(), S.boolean(), S.int8(), S.uint8(), S.int16(), S.uint16(),
+   S.int32(), S.uint32(), S.int64(), S.uint64(), S.weakfloat(), S.fp8e4m3(),
+   S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz(), S.half(), S.bfloat16(),
+   S.single(), S.double()]
+
+# three distinct `Dt`s that all carry `pri 0`, so the collision is NOT an equality
+def t_pri_three_way() -> Bool:
+  Bool.and(Bool.and(Bool.not(O.eq_dt(S.void(), S.weakint())),
+      Bool.not(O.eq_dt(S.void(), S.boolean()))),
+    Bool.and(Bool.and(U32.is_eq(S.Dt.pri(S.void()), 0),
+        U32.is_eq(S.Dt.pri(S.weakint()), 0)),
+      U32.is_eq(S.Dt.pri(S.boolean()), 0)))
+
+# the totalisation: dtype.py REFUSES any pair naming void (a KeyError on 39 of 400)
+# and this fold answers `void`, a lattice bottom. It is the meet's IDENTITY, so it must
+# be the answer from EITHER side -- one row per side, because the two DISAGREE under
+# the asymmetry `least_upper` had until 2026-10-03 and one row would only have said
+# "something is wrong". Twenty dtypes each.
+def promo_is_bottom.of(+x: S.Dt, left: Bool) -> Bool:
+  match left:
+    case True{}: O.eq_dt(least_upper.of(S.void(), x), S.void())
+    case False{}: O.eq_dt(least_upper.of(x, S.void()), S.void())
+
+def promo_is_bottom.go(ds: List<&2, S.Dt>, ok: Bool, +left: Bool) -> Bool:
+  match ds:
+    case Nil{}: ok
+    case +h <> t: promo_is_bottom.go(t, Bool.and(ok, promo_is_bottom.of(h, left)), left)
+
+def t_promo_void_left() -> Bool: promo_is_bottom.go(dts_all(), True{}, True{})
+def t_promo_void_right() -> Bool: promo_is_bottom.go(dts_all(), True{}, False{})
+
+# M7's FIXTURE. `least_upper` ANDs the two masks; replacing `ma & mb` with `ma` alone
+# is invisible on every existing row, because they are all one-int-vs-weakint and those
+# two masks already agree on their lowest bit. `(bool, weakint)` separates them: bit 0
+# is in bool's mask and not in weakint's, so the AND answers `weakint` and the left
+# alone answers `bool`. Both orders answer `weakint`, so the row is the AND and the
+# commutativity at once. Measured by `.agents/slop/dtype-pri-m7.py`: 188 of the 361
+# ordered pairs separate them, and this is the cheapest. CPython agrees on both halves
+# -- `least_upper_dtype(bool, weakint)` and `(weakint, bool)` are both
+# `dtypes.weakint`.
+def t_meet_and() -> Bool:
+  Bool.and(O.eq_dt(least_upper.of(S.boolean(), S.weakint()), S.weakint()),
+    O.eq_dt(least_upper.of(S.weakint(), S.boolean()), S.weakint()))
+
+# `bnd_lim`'s ONE void arm is `case S.Dt{0, 0, S.CVoid{}, _}: bnd_bool(top)`, and
+# dtype.py's `DType.min`/`max` for `void` are `False`/`True` -- the two BOOLS, which is
+# also what it answers for `bool`. So the arm is RIGHT, and it is the one place in the
+# tree that would silently fall to `case _: bnd_flt` if `pri` moved. The third conjunct
+# is the load-bearing one: it names the `bnd_flt` fall-through.
+def t_bnd_void_is_bool() -> Bool:
+  Bool.and(Bool.and(String.eq(bnd_show(bnd_lim(S.void(), False{})),
+      bnd_show(bnd_lim(S.boolean(), False{}))),
+      String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_lim(S.boolean(), True{})))),
+    Bool.not(String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_flt(True{})))))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
@@ -4477,6 +4662,18 @@ def main() -> IO(Unit):
     i : Unit <- row("resh_reject", t_resh_reject())
     j : Unit <- row("resh_settle", t_resh_settle())
     k : Unit <- row("sized_order", t_sized_order())
+    # THE TWO CustomFunction ROWS, which DISAGREE with each other on purpose.
+    cu : Unit <- row("cfun_void", t_cfun(S.void(), False{}))
+    cv : Unit <- row("cfun_u64", t_cfun(S.uint64(), True{}))
+    # `void`'s priority: the representation, the collision, the totalisation that
+    # replaces dtype.py's KeyError, and the one reader that would answer differently
+    # if `pri` moved. `promo_void_left` and `promo_void_right` are one row per side on
+    # purpose -- they disagree under the asymmetry `least_upper` had until today.
+    pw : Unit <- row("pri_three_way", t_pri_three_way())
+    pb : Unit <- row("promo_void_left", t_promo_void_left())
+    pc : Unit <- row("promo_void_right", t_promo_void_right())
+    me : Unit <- row("meet_and", t_meet_and())
+    bv : Unit <- row("bnd_void_is_bool", t_bnd_void_is_bool())
     # THE MOVEMENT ROWS. Four facts plus the answer, one string each, and the
     # expectations are `.agents/slop/oracles/fold-mvt-oracle.py`'s -- CPython's own
     # `n= op= nsrc= srcops= shape= dtype=`, so `diff` of the two IS the test.

@@ -234,6 +234,69 @@ day rediscovering that `2n+p` is not an even-case test.
       and `H.floormod_i32` are BUGGY (see below) so the file carries a correct
       local copy with the one-line fix written down.
 
+## Session 2026-10-03 — the package-boundary gap + the wall, taken head-on
+
+- [x] `tinybendygrad/__init__.bend` — `tinygrad/__init__.py` is 10 lines and a
+      7-import re-export, not "out of scope" as the prior report had it. The
+      seven names are `Tensor`, `TinyJit`, `function`, `UOp`, `Variable`,
+      `dtypes`, `GlobalCounters`, `fetch`, `Context`, `getenv`, `Device` —
+      every one of them already in the port (`tensor.bend`, `engine/jit.bend`,
+      `function.bend`, `uop/ops.bend`, `dtype.bend`, `helpers.bend`,
+      `device.bend`); the file is a re-export, not a port, and the gate is
+      "every name is importable". `TYPED` is wall, not ported. **COMMITTED**.
+- [x] `tinybendygrad/mixin/__init__.bend` — upstream is empty, ported as a
+      one-line marker so the package boundary holds. **COMMITTED**.
+- [x] `tinybendygrad/runtime/__init__.bend` — empty upstream, marker. **COMMITTED**.
+- [x] `tinybendygrad/runtime/support/__init__.bend` — empty upstream, marker.
+      **COMMITTED**.
+- [x] `tinybendygrad/engine/__init__.bend` — empty upstream, marker. **COMMITTED**.
+- [x] `tinybendygrad/viz/__init__.bend` — already existed (17 lines).
+- [x] `tinybendygrad/codegen/decomp/__init__.bend` — empty upstream, marker.
+      **COMMITTED**.
+- [x] `tinybendygrad/codegen/late/__init__.bend` — empty upstream, marker.
+      **COMMITTED**.
+- [x] `tinybendygrad/codegen/opt/__init__.bend` — `tinygrad/codegen/opt/__init__.py`,
+      19 lines. `OptOps` enum (4 members: TC, SPLIT, PADTO, SWAP), `Opt` dataclass
+      (`op`, `axis`, `arg`), `KernelOptError`, `check` helper. The port is the
+      same shape: `OptOps` as a 4-constructor `Data`, `Opt` as a 3-tuple, the
+      exception is a tag. **COMMITTED**.
+- [ ] `tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
+      `full_rewrite_to_sink`, `pm_to_program`, `do_to_program`, `to_program`,
+      `to_program_key`, `to_program_cache`. **This is not a missing
+      re-export; it IS `graph_rewrite`'s main caller, the rewrite engine is
+      the wall, and porting this file is porting the engine.** Walls named at
+      the rule: `pm_load_collapse`/`pm_simplify_ranges`/`pm_split_ranges`/
+      `pm_reduce_unparented` (codegen/simplify.py), `pm_add_control_flow`/
+      `pm_split_ends` (codegen/late/linearizer.py), `pm_move_gates_from_index`
+      (codegen/late/gater.py), `apply_opts` (BEAM, only its
+      candidate-enumeration half is in codegen/opt/postrange.bend), the 269
+      `pm_lower_calls` recursion, `linearize` (codegen/late/linearizer.py),
+      `pm_regalloc_rewrite` (codegen/late/regalloc.py), `pm_simplify_add_image`
+      (codegen/late/coalesce.py), `pm_dtype_decomps` (codegen/decomp/dtype.py,
+      already a wall in `dtype.bend`), `get_late_rewrite_patterns`/
+      `get_simplifying_rewrite_patterns` (codegen/decomp/op.py, the magicgu
+      wall), `get_transcendental_patterns` (codegen/decomp/transcendental.py,
+      gated), `multi_pm` (schedule/multi.py), `pm_mops` (schedule/prepare.py),
+      `pm_clean_up_group_sink` (uop/symbolic.py), `mop_cleanup`
+      (uop/movement.py), `memory_coalescing` (codegen/late/coalesce.py),
+      `pm_range_to_special`/`pm_group_gpudims` (codegen/gpudims.py),
+      `pm_remove_invalid`/`invalid_gate` (uop/symbolic.py), `pm_move_where_on_load`
+      (uop/symbolic.py), `pm_lower_weak`/`pm_commit_weak`/`pm_cast_const`
+      (uop/weak.py), `pm_lower_calls`/`pm_call_fixup` (this file), the seven
+      rule tables themselves (`expander`, `pm_wmma_add`, `pm_expand_broadcast`,
+      `devectorizer2`, `pm_reduce_local`, `pm_implicit_barriers`,
+      `pm_linearize_cleanups`, `pm_alloc_to_buf`, `pm_to_program`,
+      `pm_number_params`, `pm_add_loads`, `pm_add_local_buffers`,
+      `pm_cast_float_alu`, `pm_post_sched_cache`, `pm_callify_ctx_collect`,
+      `pm_canonicalize_alloc`, `pm_replace_buf`, `pm_schedule`,
+      `pm_resolve_linear_call`, `pm_copy_from_store`, `pm_final_rewrite`).
+      **This file is THE wall and porting it ports the engine; once it lands
+      and the engine obeys the wall-rules in `bend2-constraints.md`, ~40
+      deferred `TODO(p3)` markers unblock at once.** The port therefore
+      begins with `graph_rewrite` (the bottom of the wall, a fixed-point
+      engine over a `UOp` graph with bottom-up/top-down modes and a
+      `ctx` thread) and works upward.
+
 ## Phases P3–P8 — the port
 
 96 handwritten Python files, 25,591 lines by `sz.py`, in dependency order.
@@ -2559,3 +2622,361 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       SGPR/SGPRN/SSRC/SSRCN/SRC9. Fixed to the real widths (8,6,5,7,7,7,8,8,8,9)
       from `generate.py:306-313`. No gate row had reached `field_def` before, which
       is why nothing caught it.
+
+## Session 2026-10-03 — `codegen/decomp/dtype.py`
+- [x] `tinybendygrad/codegen/decomp/dtype.bend`, one `.bend` at dtype.py's path, all
+      eighteen defs under dtype.py's own names. `--check-only` = `ALL PROOFS CHECK`.
+      174 defs; imports `P.dc_*`, `P.dc_opname`, `T.tx_*`, `T.exponent_bias`,
+      `T.tx_finfo_*`, `T.tx_is_fnuz`, `H.i64_*` rather than re-deriving them.
+- [x] FIVE DIVERGENCES stated in the file header, each with its reason: (A)
+      `UOp.const(v, dt)` is a CONST+CAST pair; (B) `_broadcasted`'s promotion CAST
+      and `logical_not`'s `cast(bool)` are not built; (C) `l2i`'s float-target CAST
+      arm is absent (unreachable through `pm_long_decomp`); (D) no f16/bf16/f64 SOURCE
+      for `f2f`/`f2f_clamp`; (E) no f64 `f2f_clamp` TARGET (`mx` is the f64 max).
+- [x] `.agents/slop/dd-oracle.py` — 412 rows by CALLING CPython's `dtype.py`, exit 0,
+      `.agents/slop/dd-oracle.txt`. Two decisions that a naive port gets wrong and that
+      are measured, not reasoned: the promotion CASTs are marked by the CALLING
+      PYTHON FRAME (`sys._getframe(1).co_name` in `promote`/`logical_not`) and `r is
+      not self` keeps `promote`'s identity fold out of the marker; a float CONST prints
+      as its 32 BITS because `H.f32_show` cannot agree at the `float32` maximum.
+- [x] THE GATE RUNS: `.agents/slop/dd-gate.txt`, **66 of 121 rows byte-identical** to
+      the oracle. The four facts per fixture are the answer tree (two levels), the node
+      COUNT, the creation-order `sig`, and the constants in that order. Three printer
+      defects were found and fixed by the gate itself: the `k` row dropped its `-`
+      (the walk threaded `first` as `False{}` unconditionally), the pool offsets were
+      the oracle's `WPOOL` offsets and not the 24-word list's, and the three
+      `bitcast(uint)` calls in `l2i`'s ADD and SUB arms FOLD (pm_long_decomp splits to
+      32-bit words before any rule reaches `l2i`, so `a0`/`b0`/`low` are already
+      `uint`) -- `lgc` went from 1/4 to 4/4 on that one fix, and `l2i_add`'s CMPLT is
+      `(low < a0)` while `l2i_sub`'s is `(a0 < b0)`, which is what keeps their sigs
+      apart.
+- [ ] `l2i_cast` REFUSES EVERY CAST FIXTURE: `lg2`, `lg3`, `lg4`, `lg5`, `lg6`, `lg7`
+      and `lgo` all print `none` where the oracle prints a CAST tree. The four-way
+      `dd_cast_sel` ladder picks no arm. `lg1`'s tree is byte-identical, so the port is
+      right up to that point and the defect is inside the selector, not in the arms.
+      ONE FIX HERE IS WORTH NINE ROWS.
+- [ ] THE `none` SPELLING IS WRONG FOR A REFUSAL: the oracle prints
+      `<nm>=refused:<ExceptionName>` (`lgn=refused:NotImplementedError`) and this gate
+      prints `<nm>=none`. A refusal is not a missing answer and must not read as one.
+      The oracle's `run` has the exception type, so the row is derivable, not typed.
+- [ ] `l2i_shl` / `l2i_shr` pick the wrong arm (`lg9`, `lga`, `lgb`: 12 rows). `lga` and
+      `lgb` differ ONLY in `dt == dtypes.int`, which is the `fill` line, and both
+      differ from `lg9`, so the SHR arm is reaching the SHL shape.
+- [ ] `l2i_mul`'s last node is `ADD(ADD, NOOP)` where the oracle has `BITCAST(MUL)`, and
+      the stray `NOOP` is `O.Arena.src0` of a node with no srcs (`lge`: 5 rows).
+- [ ] OFF BY TWO on every `l2i` row's `n`/`sig`/`k`: the port counts dtype.py:22's
+      `zero = UOp.const(0, dt)` pair and the oracle does not (`lg1n` 12 vs 10, `lg1sig`
+      `CONST/0,CAST/1,CAST/1,...` vs `CAST/1,...`). ONE BITCAST is also duplicated.
+      Not yet explained: `UOp.const(0, dtypes.int)` is the FIRST fixture, so its CONST
+      and its CAST should both be fresh in CPython too. MEASURE BEFORE FIXING.
+- [ ] NOT GATED YET: `f2fdt0..8`, `u32n`, `unpack32`, `reindex`, `rne`, the eight
+      `f2f_clamp` rows, the fifteen `f2f` rows, `l2i_define`, and the three pattern
+      tables. The printers, the fixture pools and the row machinery they need are all
+      written and compiling; what is missing is the row defs, one per family, in the
+      shape `l2i.one` shows.
+- [ ] MUTATION TABLE: not run. Every mutation so far is a type error caught by
+      `--check-only` rather than a red row, so the gate's DISCRIMINATION is untested.
+- [ ] `.agents/slop/ddcheck.sh` + `dd-patch-helpers.py` are a COMPILE WORKAROUND for
+      another agent's `helpers.bend` (its `ansistrip` block does not compile and every
+      file imports it). DELETE BOTH once it compiles. `dd-sort.py` (topological
+      reorder), `dd-fixreaders.py` (type-aware reader repair) and `dd-header.txt` are
+      workarounds of the same kind and should go with them.
+
+- [x] DEF-NAME VIOLATIONS AGAINST UPSTREAM: classify, then rename where it is real.
+      DONE by the name-audit unit, 2026-10-03. The brief's "~75 PREFIXED" does not
+      survive measurement: `pm_` is UPSTREAM's own prefix (94 top-level names, e.g.
+      `pm_simplify_ranges`, `pm_remove_invalid`), so dropping it would invent a name.
+      Measured breakdown of every `PREFIX_rest` bend name (352 raw string matches,
+      after four filters below):
+        * 263  MULTI-PREFIX TABLE ACCESSORS, ALL in `renderer/amd/sqtt.py`, and they
+          are unrenameable BY CONSTRUCTION. Six prefixes (`cls_` `dflt_` `mask_`
+          `dlo_` `himax` `dmask` + `enum_` `cu_`) all expand to the same 48 upstream
+          `PacketType` names: upstream's metaclass derives the columns from one class
+          and Bend has no metaclass, and duplicate declarations are a compile error.
+        *  16  GENUINE rename candidates after requiring the bare name be FREE and the
+          def be neither a duplicate accessor nor a test gate.
+        *  23  rejected because the bare name is ALREADY DEFINED (e.g. `renderer/tc.py`
+          `r_tbl_amd_cdna3 -> amd_cdna3`, where `amd_cdna3` is a struct): renaming is
+          a duplicate-declaration error, not a fix.
+        * ~186 SUFFIXED (`_bend`, `_rows`, `_of`): cosmetic, upstream name readable.
+        * ~13.4k PORT-LOCAL with no upstream counterpart: the rule does not apply.
+      RENAMED 7, the ones in files no other unit holds: `schedule/indexing.bend`
+      `ix_realize`->`realize` (3 sites), `ix_realize_srcs`->`realize_srcs` (6),
+      `ix_broadcast_rngs`->`broadcast_rngs` (3); `schedule/rangeify.bend`
+      `rf_is_noop_after_dep`->`is_noop_after_dep` (7),
+      `rf_no_indexing_calls`->`no_indexing_calls` (4),
+      `rf_remove_noop_afters`->`remove_noop_afters` (9),
+      `rf_strip_zero_offset_shrink`->`strip_zero_offset_shrink` (5).
+      Rows byte-identical before and after: indexing 252, rangeify 126.
+      Audit total 283 -> 290 verbatim of 1527 (18.5% -> 19.0%).
+      LEFT ALONE: 9 candidates in `codegen/decomp/transcendental.bend` (`tx_*`),
+      `renderer/amd/dsl.bend` (`VOP2_*`) and `renderer/amd/sqtt.bend` (`enum_*`) --
+      all three are files this unit was told not to edit. They are handed over below.
+      TOOLING: `.agents/slop/names-ag-{baseline,candidates,sites}.py` and
+      `{mutations,valmut}.sh`. `names-ag-candidates.py` prints THE LIST.
+- [x] FINDING, REPORT NOT FIXED (not my file): `schedule/indexing.bend` has TWO defs
+      nothing calls, and they are the two I could not mutate into moving a row --
+      `realize` (2 callers, `realize_srcs.one` and `ix_rcs_one`, and NEITHER has a
+      caller) and `broadcast_rngs` (0 callers). A body mutation of each moves 0 rows
+      for the same reason an inverse rename does: there is no row. This is the
+      `agent-core.md` "defs written, commented, and never called" finding recurring,
+      and it PREDATES the rename. Upstream `indexing.py:28` and `:62` are ported and
+      unreachable.
+- [x] FINDING, REPORT NOT FIXED (not my file): `renderer/amd/sqtt.bend`'s six
+      accessor prefixes cannot be reduced to upstream names in Bend at all. Upstream's
+      `PacketType` metaclass generates `cls`/`dflt`/`mask`/`dlo`/`himax`/`dmask` per
+      subclass; a Bend `def` cannot be overloaded, so one file would need 6x48 distinct
+      names. The prefix is the honest encoding of that limit, not a namespace invented
+      for convenience. The owner may want this ruled on explicitly, because it is the
+      one place the 1:1 name rule is not merely unmet but unmeetable.
+
+## Session 2026-10-03 — `trange`, `GlobalCounters`, `Context` in
+## `tinybendygrad/helpers.bend` (the only unit permitted to edit that file).
+## **NOT COMMITTED.**
+
+- [x] **THE BRIEF'S THREE DESCRIPTIONS OF THE THREE NAMES DO NOT MATCH THE PINNED
+      UPSTREAM, and porting from the brief would have produced a wrong port.**
+      * `trange` is NOT a "line-prefixed range helper with `trange(1,N+1)`,
+        `trange(s,e,step)` and a `desc=` form". It is one line,
+        helpers.py:619: `def trange(n:int, **kwargs) -> tqdm[int]: return
+        tqdm(range(n), total=n, **kwargs)`. One positional arg, no step, no start.
+        **There is no `desc` form anywhere in tinygrad.**
+      * `GlobalCounters` has **no `.global_counter` and no methods** except
+        `reset`. It is six `ClassVar`s (helpers.py:303-308) and one `@staticmethod`.
+      * `Context` takes `**kwargs`, NOT `__name__`/`None`. It has no `.total`,
+        `.vars` or `.tag`. `Context(None)` is not a thing. Its state is
+        `self.kwargs` and `self.old_context`, both dicts.
+      * `tqdm` has **no `.total`** either — `helpers.py:587` stores the total in
+        `self.t`. The first oracle draft hand-typed `t.total` and CPython answered
+        `AttributeError: 'tqdm' object has no attribute 'total'`.
+      So every row was generated by CALLING `tinygrad.helpers`, and the three
+      upstream `def`s (`helpers.py:619`, `:302`, `:170`) are byte-identical between
+      the working tree and `.agents/slop/xd1/pin`.
+- [x] **MUTABLE STATE, the central question: THREADED, and it is not a fake.**
+      No `Ref`, no `Deferred`, no global store — there is no such construct. The
+      answer is that a `Data` record IS the cell and each `+=` becomes a def that
+      takes the record and answers the next one. It counts (the gate runs a nine-step
+      bump chain and prints every intermediate total), and it cannot go stale,
+      which a mutable global can. `Context`'s `old_context` is the same move: the
+      snapshot is the return value of `__enter__` rather than a field a second
+      call overwrites.
+- [x] **`Context.old_context` IS A SNAPSHOT, NOT A STACK, and the gate proves the
+      difference.** `__exit__` (helpers.py:178) REPLAYS the snapshot onto whatever
+      is current. Two contexts on one key entered A,B and exited A,B leave **A's**
+      value, not the original: measured `ctx_ooo_df=bfloat16` against a boot value
+      of `f16`. A stack-pop port would answer `f16` and fail that row. A third
+      fixture with DISJOINT keys pins that `__exit__` restores only ITS OWN kwargs.
+- [x] **THE GATE WAS GREEN FOR A WHILE AND WAS GATING A COPY.** The first
+      `.agents/slop/helpers-tc.bend` DEFINED `Counters`/`Ctx`/`Tqdm`/`trange`/
+      `Context.*`/`GlobalCounters.*` locally and imported `helpers.bend` only for
+      `H.Flags`. 62 rows agreed with CPython and a mutation of `helpers.bend` moved
+      NOTHING. The gate now reaches every def through `H` and defines none of the
+      three, which is one `rg -c '^(def|type) (trange|Context|GlobalCounters|Counters|Mupd|Ctx|CV|Tqdm)\b'`
+      reading `0`.
+- [x] **`helpers.bend` HAS NO `main`, SO IT HAD NO GATE AND STILL DOES NOT.** Its 64
+      rows live in `.agents/slop/helpers-tc.bend`, which imports it, and are
+      compared against `.agents/slop/helpers-oracle.py` (which CALLS
+      `tinygrad.helpers`) by `sh .agents/slop/helpers-tc-gate.sh`. **62 -> 64 rows,
+      3 lanes (CPython / interp / native) byte-identical.**
+- [x] **WALL 1, the mutable global: there is no Bend construct for it.** Stated as
+      the header comment on the `GlobalCounters` block, with the price named (the
+      caller must USE the returned record).
+- [x] **WALL 2, `getenv` is `functools.cache`d (helpers.py:162) and that is
+      USED, not just respected.** The gate runs every configuration in a FRESH
+      process with a NON-DEFAULT env (`DEFAULT_FLOAT=f16 DEFAULT_INT=i64
+      NO_COLOR=1`), so `ctx_exit_df` answers the ENV value `f16` where a port that
+      hard-coded the class default `float32` would answer that and fail. A
+      default-env gate could not tell a correct flag read from a baked default,
+      which is the whole failure mode the P6 audit found.
+- [x] **WALL 3, no signed integer and no F32 add, and BOTH are load-bearing.**
+      `trange`'s parameter is `U32`, so `trange(-3)` is a TYPE ERROR rather than a
+      silent 4294967293 (CPython answers `t.t == -3` with an empty sequence).
+      `time_sum_s` is a CPython `float`; `F32.add` is a LAW (base.bend:1556) and
+      live code may not call a law, so the field is CARRIED and never written here.
+      The oracle measures what CPython does with it and prints those rows to STDERR
+      so they are recorded without being diffed.
+- [x] **`tqdm.__init__`'s `disable` DEFAULT is `False`, not `None`
+      (helpers.py:585), so `trange` draws its bar even into a pipe** — measured
+      with `isatty` False. That is why the gate compares STDOUT only.
+- [x] **`mem_used_per_device` is an ASSOC LIST, not a dense row vector**, because
+      a `defaultdict`'s key set is insertion-ordered and `{0,3,9}` has three keys
+      where a device-indexed list has ten, and because READING a missing key
+      INSERTS it. The gate prints the KEY SET (`gc_default_keys`), and that row is
+      what caught a real bug: a rebuild that prepended instead of appending
+      produced `3,3,0,9` — a duplicated key.
+- [x] 10 rules appended to `.agents/slop/notes/bend2-constraints.md` from position
+      13330 (H-1 .. H-10).
+- [ ] **`GlobalCounters.time_sum_s` still has no writer.** Owner: whoever owns P4
+      (the engine's counter record). Needs an F32 add; `base.bend` has none.
+- [ ] **`ContextVar._cache` is still 4 of 61 keys and `Flags.snap1.go` still has a
+      4-arm key dispatch.** Owner: P6. NOT this unit's file decision — the
+      mechanism is done, the list is the remaining work, and the `case _:` arm
+      lands an unknown key on SUM_DTYPE with a `TODO(p6)` naming the KeyError.
+
+## Session 2026-10-03 — `void`'s priority and `CustomFunction`'s dtype (`uop/fold.bend` only)
+## **NOT COMMITTED.**
+
+- [x] **DEFECT 2 FIXED. `CustomFunction` was answering `(void, None)` for EVERY node.**
+      `dt_shape`'s `case O.OpsCUSTOM_FUNCTION{}` was filed among the always-void ops and
+      called `late()`. ops.py:133-135 gives it its OWN arm — `return arg.dtype` — and
+      ops.py:374 is `None if self.dtype is dtypes.void else ()`, so a `uint64` one
+      answers `(uint64, ())`. New `cfun_ds`/`cfun_ds.shape` read `ACustom{cf}` and
+      `CustomFunction.dtype`. Two rows that **disagree**: `cfun_void` and `cfun_u64`.
+- [x] **DEFECT 1 CHARACTERISED, NOT "FIXED": `-1` is COSMETIC and unrepresentable.**
+      `.agents/slop/dtype-pri-oracle.py` measures that `DType.priority` has exactly ONE
+      reader in all of tinygrad (`__lt__`, dtype.py:68) and that `sorted(all 20)` is
+      IDENTICAL for void at pri −1, 0, 1 and 7, because bitsize 0 is already the
+      smallest and breaks the tie identically. Promotion never reaches the field:
+      `void` is absent from `promo_lattice`, so `_get_recursive_parents(void)` is a
+      KeyError and `least_upper_dtype` KeyErrors on 39 of 400 pairs. Mutations M10/M11
+      move void's stored priority to 16 and to 1 and exactly 3 rows move
+      (`bl_dt_void lo`, `bnd_void_is_bool`, `pri_three_way`); **no promotion row moves**.
+      So `LAWS/spec.bend:679` keeps `pri 0` — it is byte-identical to `@-`.
+- [x] **A SECOND, WORSE BUG FOUND BY MY OWN ROW: `least_upper` was NOT commutative.**
+      It tested `U32.is_zero(ma)` and not `mb`, so a zero mask on the right decoded as
+      `lowest(0) = U32.log2(0) = 0` and `dt_by_rank(0)` is `bool`:
+      `least_upper.of(x, void)` answered **`bool`** where dtype.py's order-independent
+      meet says `void`. One token: `Bool.or(...)`. Two rows, one per order.
+- [x] **`fold.bend`'s `lowest` comment was FALSE and is corrected.** It claimed "every
+      non-void mask has bit 0". Measured: bool's mask is 524287 with bit 0 SET and the
+      other eighteen have it CLEAR. All 19 constants still agree with CPython's
+      `_get_recursive_parents` bit for bit.
+- [x] **M7 was a 0 and is now a FIXTURE, not a claim about a theorem.**
+      `.agents/slop/dtype-pri-m7.py`: 188 of 361 ordered pairs separate `ma` from
+      `ma & mb`. `(bool, weakint)` is the cheapest, and both orders answer `weakint`.
+- [x] **13 mutations, 13 detected, 0 blind spots, 0 typecheck failures.** Rows moved
+      are named in `.agents/slop/dtype-pri-mutate.py`'s output.
+- [x] **Coverage hole named: `dtypes.all` is SEVENTEEN** (dtype.py:161 excludes void and
+      both weaks), so the 14,766-row two-lane dtype gate has **never printed a void
+      row**. That is the whole reason Defect 1 went unnoticed.
+
+### REPORTED, NOT FIXED — for other owners, with the evidence
+
+- **`schedule/memory.bend:1346` and `uop/fold_mm_work.bend:2015-2016` are BOTH wrong,
+  in the same way, and `uop/spec.bend:1047` is RIGHT — so the tree contradicts itself.**
+  CPython ops.py:137 asserts `isinstance(arg, tuple) and len(arg) == 2 and
+  isinstance(arg[1], DType), "CUSTOM/CUSTOMI arg must be (str, DType)"`, and the assert
+  FIRES on a bare string. Every real construction site is a pair
+  (`tinygrad/uop/upat.py:33`, `tinygrad/llm/kernels/amd.py:108`,
+  `tinygrad/renderer/cstyle.py:76` reads `x.arg[0].format(...)`).
+  `uop/ops.bend` already HAS the pair constructor — `AInk{ins: String, dt: S.Dt}`
+  (ops.bend:940, mapped as the INS arg at :910) — and `uop/spec.bend:1043-1047` says
+  "`AInk` IS that pair, and it is the only constructor that is".
+  **So `fold_mm_work.bend`'s recorded blocker "P3: that is a change to `Arg`" is VOID —
+  no `Arg` change is needed, and the two deferred CUSTOM/CUSTOMI arms in
+  `uop/fold.bend:2094-2096` are now unblocked** (`all_shapes` + `bcast_shape` are
+  already there, as `where_ds` uses them). NOT PORTED HERE: it needs its own
+  `_broadcast_shape` oracle and gating, and doing it unoracled is the plausible-wrong-
+  answer class. Owner: `schedule/memory.bend`'s unit + `uop/fold_mm_work.bend`'s unit.
+- **`CallInfo.dtype` re-cut is REAL.** Upstream `CallInfo` (ops.py:1400-1406) is
+  `grad_fxn, name, precompile, precompile_backward, aux` — **no `dtype` field** — while
+  `uop/ops.bend`'s `CallInfo` has `dtype: S.Dt` as a fourth field, and
+  `uop/spec.bend:1080-1089` (`sh_23.body`) compares that DECLARED dtype to the derived
+  one. With the re-cut there is no declared dtype to compare: `dtype_from_uop(CALL)`
+  is `src[0].dtype` (ops.py:130-132), i.e. the body's `CustomFunction.dtype`. Still P3,
+  needs `dtype_from_uop`. Owner: `uop/ops.bend` + `uop/spec.bend`'s unit.
+- **`renderer/llvmir.bend:220`'s comment "`lt.pri` -- the ONE load-bearing numeric
+  field" is not supported.** Measured: `pri` is read numerically in 8 places, all in
+  `codegen/**`, against `{5, 10, 11, 12, 13, 14, 15}` — **never against 0**, so void's
+  value cannot matter — and by equality in `uop/weak.bend:117`, which is absorbed by
+  `bits`/`cls`/`nm`. It is load-bearing as a TAG (every `Dt{..}` pattern in the tree
+  pins `pri` AND `bits`), not as a number. Owner: `renderer/llvmir.bend`'s unit.
+
+### SEVEN MEASURED RULES APPENDED
+
+`G-10` a `match` may not scrutinise a computed value; `G-11` an asymmetric meet is
+invisible on every one-int-vs-`weakint` row; `G-12` a harness that patches the real tree
+loses the work when the server restarts (**it did, twice, and the first tree-check run
+was reverted whole** — `diff <(jj file show -r @- f) f` is how it was diagnosed);
+`G-13` `U32.log2(0) == 0`, so a degenerate mask decodes as a convincing wrong value.
+
+## Session 2026-10-03 — THE NAMING GATE: the def-name ruling, enforced
+Progress: naming consistency ██████████ DONE (gate green, 0 unadjudicated renames)
+Progress: remaining renames ████████░░ DONE (11 renamed; 2 blocked; 1 class needs a ruling)
+
+- [x] **`.agents/slop/naming-gate.py` — the ruling FAILS WHEN VIOLATED.** Owner
+      ruling (agent-core.md rule 2) was a number someone recomputed by hand, which
+      is why it drifted 283 -> 290 -> back. Now: `naming-gate.py` walks every
+      upstream `.py` that has a sibling `.bend` (99 pairs), extracts upstream
+      top-level BINDINGS by AST walk -- `def`/`class` AND assignment targets,
+      because upstream binds every rewrite table by assignment and `__all__` is
+      excluded -- and classifies each of 1,527 names as VERBATIM / QUALIFIED /
+      RENAMED / ABSENT. **Headline `RENAMED: 667 candidates -> 0 unadjudicated`.**
+      PORT STEM = the text AFTER the final dot (`def Sch.kernelize` keeps the name
+      `kernelize`), which `slop_1to1.py` had been getting wrong.
+      **PASSES ON ABSENT, loudly: 1,090 of 1,527 upstream bindings (71.4%) are
+      UNPORTED, not misnamed.** An absent name cannot be misnamed; it is missing
+      implementation, a different and much larger piece of work. Conflating the two
+      is how a naming gate becomes a churn machine that blocks real work.
+- [x] **`naming-gate-selftest.py` — 15/15 checks, and the gate was SEEN RED.**
+      All five defects below were found by the test, not by reading the code; each
+      one made the gate report clean over a diverged port. The self-test plants a
+      REAL rename in a scratch mirror (`pm_group_gpudims` -> `selftest_group_gpudims`),
+      requires exit 1, and requires the failure to NAME the affix. It also plants a
+      blank ledger reason and a stale ledger line, and it asserts two consecutive
+      runs are byte-identical (the `LC_ALL=C` no-op control).
+      * a detector that SUPPRESSES is not a detector -- dropping every name with >1
+        affix hit hid SIX OF THE NINE renames it was built to catch;
+      * an exemption must be for an EXACT AFFIX, not a concept -- keyed on
+        `(file, name)` the gate stayed green when the prefix changed under it;
+      * a BLANK/`UNREVIEWED` reason is not a ruling;
+      * STALE AMNESTY is unearned amnesty, so a vanished candidate also fails;
+      * a gate that goes red WITHOUT SAYING WHY is not a gate.
+- [x] **`naming-gate-ledger.py` + `naming-gate-baseline.txt` — the 667 rulings.**
+      The detector proposes, the ledger adjudicates: one line per rename, each with
+      a hand-verified reason drawn from a short vocabulary (`UPSTREAM-PREFIX`,
+      `LANG-CONSTRAINED`, `CONVENTION`, `COINCIDENCE`, `PORT-LOCAL`,
+      `OWNER-RULING-NEEDED`). The generator ASSERTS every live rename is covered,
+      so a new rename cannot slip in unreviewed. 492 of the 667 are the single
+      `sqtt.bend` metaclass fan-out.
+- [x] **11 RENAMES, both lanes byte-identical, ZERO rows moved.**
+      `renderer/amd/sqtt.bend`: `enum_{AluSrc,InstOp,InstOpCDNA,InstOpRDNA4,MemSrc}`
+      -> the upstream `class X(Enum)` names, bare. 1,033 rows byte-identical.
+      `codegen/decomp/transcendental.bend`: `tx_{ilogb2k,ldexp2k,ldexp3k,pow2if,
+      rintk,trig_poly}` -> upstream names. 891 rows byte-identical.
+      VERBATIM 270 -> 281 (18.4%); with QUALIFIED, 319 of 1,527.
+      **`slop_1to1.py` FIXED: it read `def L.foo` as `L` (`split('.')[0]`), which is
+      the stem trap.** It and `naming-gate.py` disagreed (270 vs 281) until the fix;
+      they now agree exactly at 319. Two tools measuring one thing must be
+      cross-checked or one of them is decoration.
+- [ ] **BLOCKED, NOT MINE: `tx_shr` / `tx_shl` (upstream `shr` / `shl`).**
+      `codegen/decomp/dtype.bend` calls `T.tx_shr` 10x and `T.tx_shl` 12x through the
+      module alias, and that file is on the do-not-edit list AND is mid-edit right
+      now (`jj status`: `M tinybendygrad/codegen/decomp/dtype.bend`). The bare names
+      are FREE in `transcendental.bend` and `shl_lazy`/`shr_lazy` do not collide, so
+      this is a 22-call-site two-file rename. **Owner: whoever holds
+      `codegen/decomp/dtype.bend`.** Note the module alias is already the
+      disambiguator, so no prefix is needed at all.
+- [ ] **NEEDS AN OWNER RULING: the `dsl.bend` register-slice suffix (14 names).**
+      Upstream `dsl.py:66-89` binds ONE `Reg` per register region (`M0`, `DPP`,
+      `SDWA`, `LIT`, `SCC`, `EXECZ`, `VCCZ`, `INV_2PI`, `SRC_LDS_DIRECT`, `DPP16`,
+      `NULL`, `VCC`, `EXEC`, `ttmp`); the port splits each into offset and size and
+      suffixes the offset `_OFF`, so `EXEC_OFF` cannot be confused with `EXEC_SZ`.
+      Every one of those bare names is FREE, so this is a real divergence from the
+      ruling -- but it is a coherent convention across ~50 constants, and renaming a
+      SUBSET would make the file LESS navigable, which cuts against the ruling's own
+      stated goal. **This is the largest remaining divergence and it is a decision,
+      not a mechanical edit.** I did not make it unilaterally.
+- [x] **DISPROVEN BY HAND, not by pattern — substring matching has now produced**
+      **four wrong answers in this project. `VOP2_DPP`/`VOP2_LIT`/`VOP2_SDWA` are NOT**
+      **renames of upstream `DPP`/`LIT`/`SDWA`.** Read the bodies: they are VOP2
+      OPERAND-SHAPE TABLES (`List<&2, Vf>` of `Fld`/`Ov` descriptors) that merely
+      inline the register numbers 249/250/255. Upstream's `DPP = src[250]` is a
+      `Reg` slice, a different concept. Also disproven: `least_upper_dtypes`,
+      `terminate_worker_pool`, `arg_is_validate`, `cifar_batch*`.
+- [x] **`pm_` MUST STAY — it is UPSTREAM'S OWN PREFIX.** Upstream binds 92+
+      top-level `pm_*` names BY ASSIGNMENT (`pm_simplify_ranges = PatternMatcher(...)`).
+      A port that writes `pm_group_gpudims` is CONSISTENT with upstream and
+      stripping the prefix would invent a name. Recorded as
+      `UPSTREAM-PREFIX:pm_-is-upstreams-own`.
+- [x] **MODULE ALIASES ARE THE DISAMBIGUATOR, and 102 of 128 `.bend` files already**
+      **use them** (`import ./x.bend as A`; a bare `import ./a.bend` is a PARSE
+      ERROR). Before renaming anything to dodge a COLLISION, check whether an alias
+      or `def A.name` already solves it — that arithmetic is why most of the original
+      "~75 prefixed" was never actionable. Every `OWNER-RULING-NEEDED` row naming a
+      module prefix (`ew_`, `mem_`, `sy_`) is this same question.
+- [x] NOTES: `.agents/slop/notes/bend2-constraints.md` section **DD-7** (at the END,
+      numbering does not continue from DD-6 -- cite positions). Also
+      `.agents/slop/runrows.sh`, which retries a ZERO-ROW bend run: the machine stack
+      overflows on ~1 run in 20 and a 0-row result is indistinguishable from
+      "never started".

@@ -157,8 +157,36 @@ def Hex.islow(c: Char) -> Bool: Char.is_lower(c)
 def Hex.d48(c: Char) -> U32: U32.sub(Hex.d(c), 48)
 def Hex.d87(c: Char) -> U32: U32.sub(Hex.d(c), 87)
 def Hex.d55(c: Char) -> U32: U32.sub(Hex.d(c), 55)
-def Hex.uppval(+c: Char) -> U32: Bool.pick(U32, Hex.isupp(c), Hex.d55(c), 15)
-def Hex.lowval(+c: Char) -> U32: Bool.pick(U32, Hex.islow(c), Hex.d87(c), Hex.uppval(c))
+# `Hex.val` IS TOTAL: a NON-hex character answers 15. The order of the tests is
+# what makes that true -- `islow` and `isupp` are checked on the WHOLE LETTER
+# RANGE and `'z'` is a lowercase letter, so a chain that reaches `d87` without a
+# range test answers `122 - 87 = 35`, which is a plausible digit. MEASURED: with
+# the range tests on `isupp`/`islow` in that order, `Hex.val('z')` answered 35.
+# So `Hex.in_af` and `Hex.in_f` test the SPECIFIC hex digits and every other
+# character answers 15.
+# THE HEX LETTER RANGE, NOT FOUR SPELLINGS. `'a'`..`'f'` is 97..102 and `'A'`..`'F'`
+# is 65..70, so the test is `>= lo and <= hi`. MEASURED, and the four-spelling
+# version was WRONG IN A WAY A SPOT CHECK MISSES: it listed `a` and `f` and nothing
+# between, so `Hex.val('c')` answered 15 -- the same answer as a non-hex character.
+# `'c'` is the third byte of the ELF MAGIC (`7f 45 4c 46`), so `magic_ok` was False
+# on every real ELF file in the tree and `elf_blk_magic_hex` read `7f454f46`. The
+# rows `elf_hexval_a` / `elf_hexval_f` did NOT catch it -- they are the two ENDPOINTS
+# and the endpoint is exactly what the four-spelling version gets right. The row that
+# caught it is `elf_blk_magic_hex`, which is a REAL BYTE.
+def Hex.in_af(+c: Char) -> Bool: Bool.and(U32.is_ge(Hex.d(c), 97), U32.is_le(Hex.d(c), 102))
+def Hex.in_AF(+c: Char) -> Bool: Bool.and(U32.is_ge(Hex.d(c), 65), U32.is_le(Hex.d(c), 70))
+# THE THREE-WAY CHAIN, AND THE UPPERCASE ARM IS THE ONE THAT GETS LOST. Each
+# level tests ONE range and its `else` is the NEXT level, so `'A'` reaches `d55`
+# and `'z'` -- which is a lowercase letter but NOT a hex digit -- reaches 15.
+# MEASURED, and the two failures were DIFFERENT: `Hex.val('A')` answered 15
+# because the `is_low` else-arm was 15 rather than the uppercase level, and
+# `Hex.val('z')` answered 35 because a chain that went straight to `d87` without a
+# hex-digit test subtracted 87 from 122.
+def Hex.lowhex(+c: Char) -> U32: Bool.pick(U32, Hex.in_af(c), Hex.d87(c), 15)
+def Hex.uphex(+c: Char) -> U32: Bool.pick(U32, Hex.in_AF(c), Hex.d55(c), 15)
+def Hex.anyhex(+c: Char) -> Bool: Bool.or(Hex.in_af(c), Hex.in_AF(c))
+def Hex.uppval(+c: Char) -> U32: Bool.pick(U32, Hex.isupp(c), Hex.uphex(c), Hex.lowhex(c))
+def Hex.lowval(+c: Char) -> U32: Bool.pick(U32, Hex.islow(c), Hex.lowhex(c), Hex.uppval(c))
 def Hex.val(+c: Char) -> U32: Bool.pick(U32, Hex.isdig(c), Hex.d48(c), Hex.lowval(c))
 
 def Blob.at(h: String, i: U32) -> Char:
@@ -193,8 +221,15 @@ def Blob.slice(+h: String, +off: U32, +n: U32) -> String: Blob.take_n(Blob.drop_
 def HEXDIGS() -> List<&2, Char>: String.to_list("0123456789abcdef")
 def Hex.digit(i: Nat) -> String:
   String.from_list([Maybe.default(&2, Char, List.get(&2, Char, HEXDIGS, i), Char.from_u32(48))])
-def Hex.byte(+v: U32) -> String:
-  String.concat([Hex.digit(U32.to_nat(U32.shrn(v, 4n))), Hex.digit(U32.to_nat(v)), ""])
+# THE LOW NIBBLE MUST BE MASKED. `Hex.digit(i)` indexes a sixteen-entry list, and
+# `U32.to_nat(v)` on a full BYTE is up to 255 -- so `List.get` answers `None`, the
+# default `'0'` is taken, and the LOW nibble of every byte is silently `0`.
+# MEASURED: `Hex.u8(255)` answered `f0` where the answer is `ff`, and
+# `Hex.of(0xdeadbeef)` answered `d0000000`. The rows `elf_hexu8_ff`,
+# `elf_hexof_deadbeef` and the sixteen `elf_hexdig` digits are what caught it.
+def Hex.lo4(+v: U32) -> Nat: U32.to_nat(U32.and(v, 15))
+def Hex.hi4(+v: U32) -> Nat: U32.to_nat(U32.and(U32.shrn(v, 4n), 15))
+def Hex.byte(+v: U32) -> String: String.concat([Hex.digit(Hex.hi4(v)), Hex.digit(Hex.lo4(v)), ""])
 def Hex.of(+v: U32) -> String:
   String.concat([Hex.byte(U32.shrn(v, 24n)), Hex.byte(U32.shrn(v, 16n)),
                  Hex.byte(U32.shrn(v, 8n)), Hex.byte(v), ""])
@@ -255,12 +290,28 @@ def W64.at(+h: String, +k: U32, +x: Bool) -> W64:
 # struct.unpack("<I", ...) -> a U32, and struct.pack("<I", u) -> the four bytes
 # back. The write is an IMAGE STEP (WALL 5) rather than a string splice.
 def Blob.unpack4(+h: String, +i: U32) -> U32: Blob.le32(h, i)
+# THE FOUR MAGIC BYTES AS HEX, IN ORDER. `Hex.of(Blob.le32(h,0))` is
+# `464c457f` where the file says `7f454c46`, because `le32` already put them in
+# the wrong order for printing. MEASURED, and it is why the row reads
+# `Blob.magic_hex(h)` and not `Hex.of(le32(..))`: a blob's first bytes are the
+# first bytes, and nothing else in this file reads them as a word.
+def Blob.magic_hex(+h: String) -> String:
+  String.concat([Hex.u8(Blob.u8(h, 0)), Hex.u8(Blob.u8(h, 1)),
+                 Hex.u8(Blob.u8(h, 2)), Hex.u8(Blob.u8(h, 3)), ""])
 
 # ===========================================================================
 # THE ELF CONSTANTS. Every value is MEASURED off `tinygrad/runtime/autogen/
 # libc.py` by the oracle, never transcribed. The rows `elf_c_*` carry them.
 # ===========================================================================
+# `libc.ELFMAG` IS A PYTHON STRING, `"\177ELF"`, and `blob[:4] == ELFMAG.encode()`
+# compares FOUR BYTES. As a U32 the bytes spell 0x7F454C46 = 2135247942, and
+# `Blob.le32(h, 0)` gives 0x464C457F = 1179403647 -- the SAME FOUR BYTES IN
+# REVERSE ORDER. Comparing the two is a FALSE NEGATIVE on every real ELF file,
+# which is why `magic_ok` reads the bytes as BYTES and not as a word. MEASURED:
+# `magic_ok(e32.o)` answered False where the file's first four bytes are
+# `7f 45 4c 46`.
 def ELFMAG() -> U32: 2135247942
+def ELFMAG_LE() -> U32: 1179403647
 def EI_CLASS() -> U32: 4
 def ELFCLASS32() -> U32: 1
 def ELFCLASS64() -> U32: 2
@@ -276,7 +327,7 @@ def SHF_ALLOC() -> U32: 2
 def SHF_EXECINSTR() -> U32: 4
 
 # `blob[:4] == ELFMAG.encode()`, elf.py:16. Four bytes, and the answer is a Bool.
-def magic_ok(+h: String) -> Bool: U32.is_eq(Blob.le32(h, 0), ELFMAG())
+def magic_ok(+h: String) -> Bool: U32.is_eq(Blob.le32(h, 0), ELFMAG_LE())
 # elf.py:17's `{ELFCLASS32: "Elf32", ELFCLASS64: "Elf64"}[blob[EI_CLASS]]`. The
 # dict SUBSCRIPT raises KeyError on anything else, so the total form is the name
 # plus the `is64` Bool the rest of the file branches on.
@@ -313,8 +364,15 @@ type Ehdr is Data:
        e_phnum: U32, e_shentsize: U32, e_shnum: U32, e_shstrndx: U32}
 
 # `Elf64_Shdr` / `Elf32_Shdr`, libc.py:283/:269.
+# `sh_flags` IS `Elf64_Xword` -- a 64-BIT FIELD, not a U32. libс.py:295 says
+# `('sh_flags', Elf64_Xword, 8)` and Elf32_Word at 8. MEASURED: it was declared
+# `sh_flags: U32` here, which truncated the high half; `elf_sec_*_hdrtxt` caught
+# it because that row prints all ten fields as `hi:lo` for the 64-bit ones, and
+# `SHF_MASKOS` (0x0ff00000) / `SHF_MASKPROC` (0xf0000000) both set bits above 32.
+# The SHT_GNU_HASH section in e64.o carries `sh_flags = 0x6ffffff5` and the row
+# showed `sh_flags@8:2147483645` where the value is `1879048181`.
 type Shdr is Data:
-  Shdr{sh_name: U32, sh_type: U32, sh_flags: U32, sh_addr: W64, sh_offset: W64,
+  Shdr{sh_name: U32, sh_type: U32, sh_flags: W64, sh_addr: W64, sh_offset: W64,
        sh_size: W64, sh_link: U32, sh_info: U32, sh_addralign: W64, sh_entsize: W64}
 
 # `Elf64_Sym` / `Elf32_Sym`, libc.py:322/:312.
@@ -325,6 +383,15 @@ type Sym is Data:
 # `getattr(r, "r_addend", 0)` at elf.py:46 produces.
 type Rel is Data:
   Rel{r_offset: W64, r_info: W64, r_addend: W64}
+def Rel.r_offset(+r: Rel) -> W64:
+  match r:
+    case Rel{r_offset, r_info, r_addend}: r_offset
+def Rel.r_info(+r: Rel) -> W64:
+  match r:
+    case Rel{r_offset, r_info, r_addend}: r_info
+def Rel.r_addend(+r: Rel) -> W64:
+  match r:
+    case Rel{r_offset, r_info, r_addend}: r_addend
 
 # elf.py:7, the frozen dataclass, three fields in this order. `content` is the
 # hex slice because Bend has no `bytes` (WALL 4).
@@ -349,6 +416,19 @@ type ElfImage is Data:
 # One reloc tuple, elf.py:48: (image offset, target, type, addend).
 type Reloc is Data:
   Reloc{r_at: W64, r_tgt: W64, r_type: U32, r_addend: W64}
+def Reloc.of(at: W64, tgt: W64, typ: U32, addend: W64) -> Reloc: Reloc{at, tgt, typ, addend}
+def Reloc.r_at(+r: Reloc) -> W64:
+  match r:
+    case Reloc{r_at, r_tgt, r_type, r_addend}: r_at
+def Reloc.r_tgt(+r: Reloc) -> W64:
+  match r:
+    case Reloc{r_at, r_tgt, r_type, r_addend}: r_tgt
+def Reloc.r_type(+r: Reloc) -> U32:
+  match r:
+    case Reloc{r_at, r_tgt, r_type, r_addend}: r_type
+def Reloc.r_addend(+r: Reloc) -> W64:
+  match r:
+    case Reloc{r_at, r_tgt, r_type, r_addend}: r_addend
 
 # ===========================================================================
 # THE READERS. Each takes the blob and a BYTE OFFSET and reads ONE field at its
@@ -535,7 +615,8 @@ def Shdr.o_align(x: Bool, +off: U32) -> U32: Shdr.o64(x, U32.add(off, 48), U32.a
 def Shdr.o_ent(x: Bool, +off: U32) -> U32: Shdr.o64(x, U32.add(off, 56), U32.add(off, 36))
 
 # THE THREE u32 FIELDS, READ. `Blob.le32` AT the offset, not the offset.
-def Shdr.v_flags(h: String, off: U32, x: Bool) -> U32: Blob.le32(h, Shdr.o_flags(x, off))
+def Shdr.v_flags(+h: String, +off: U32, +x: Bool) -> W64:
+  W64.at(h, Shdr.o_flags(x, off), x)
 def Shdr.v_link(h: String, off: U32, x: Bool) -> U32: Blob.le32(h, Shdr.o_link(x, off))
 def Shdr.v_info(h: String, off: U32, x: Bool) -> U32: Blob.le32(h, Shdr.o_info(x, off))
 
@@ -547,31 +628,31 @@ def Shdr.v_info(h: String, off: U32, x: Bool) -> U32: Blob.le32(h, Shdr.o_info(x
 def Shdr.size(x: Bool) -> U32: Bool.pick(U32, x, 64, 40)
 def Shdr.nfields(x: Bool) -> U32: U32.div(Shdr.size(x), 10)
 def Shdr.zero() -> Shdr:
-  Shdr{0, 0, 0, W64.of(0, 0), W64.of(0, 0), W64.of(0, 0), 0, 0, W64.of(0, 0), W64.of(0, 0)}
+  Shdr{0, 0, W64.of(0, 0), W64.of(0, 0), W64.of(0, 0), W64.of(0, 0), 0, 0, W64.of(0, 0), W64.of(0, 0)}
 
 # THE CONSTRUCTOR, in the reader's order, one field per `at` step. A `Data`
 # record built in ONE literal needs every value in that literal, and computing
 # ten of them there needs the blob ten times -- so the chain carries them as
 # parameters. That is the whole reason `Shdr.at8` exists.
-def Shdr.at8(+h: String, +off: U32, flags: U32, addr: W64, offset: W64,
+def Shdr.at8(+h: String, +off: U32, flags: W64, addr: W64, offset: W64,
              size: W64, link: U32, info: U32, align: W64, entsize: W64) -> Shdr:
   Shdr{Blob.le32(h, off), Blob.le32(h, U32.add(off, 4)), flags, addr, offset, size,
        link, info, align, entsize}
-def Shdr.at7(+h: String, +off: U32, +x: Bool, flags: U32, addr: W64, offset: W64,
+def Shdr.at7(+h: String, +off: U32, +x: Bool, flags: W64, addr: W64, offset: W64,
              size: W64, link: U32, info: U32) -> Shdr:
   Shdr.at8(h, off, flags, addr, offset, size, link, info,
            W64.at(h, Shdr.o_align(x, off), x), W64.at(h, Shdr.o_ent(x, off), x))
-def Shdr.at6(+h: String, +off: U32, +x: Bool, flags: U32, addr: W64, offset: W64,
+def Shdr.at6(+h: String, +off: U32, +x: Bool, flags: W64, addr: W64, offset: W64,
              size: W64, link: U32) -> Shdr:
   Shdr.at7(h, off, x, flags, addr, offset, size, link, Shdr.v_info(h, off, x))
-def Shdr.at5(+h: String, +off: U32, +x: Bool, flags: U32, addr: W64, offset: W64,
+def Shdr.at5(+h: String, +off: U32, +x: Bool, flags: W64, addr: W64, offset: W64,
              size: W64) -> Shdr:
   Shdr.at6(h, off, x, flags, addr, offset, size, Shdr.v_link(h, off, x))
-def Shdr.at4(+h: String, +off: U32, +x: Bool, flags: U32, addr: W64, offset: W64) -> Shdr:
+def Shdr.at4(+h: String, +off: U32, +x: Bool, flags: W64, addr: W64, offset: W64) -> Shdr:
   Shdr.at5(h, off, x, flags, addr, offset, W64.at(h, Shdr.o_size(x, off), x))
-def Shdr.at3(+h: String, +off: U32, +x: Bool, flags: U32, addr: W64) -> Shdr:
+def Shdr.at3(+h: String, +off: U32, +x: Bool, flags: W64, addr: W64) -> Shdr:
   Shdr.at4(h, off, x, flags, addr, W64.at(h, Shdr.o_offset(x, off), x))
-def Shdr.at2(+h: String, +off: U32, +x: Bool, flags: U32) -> Shdr:
+def Shdr.at2(+h: String, +off: U32, +x: Bool, flags: W64) -> Shdr:
   Shdr.at3(h, off, x, flags, W64.at(h, Shdr.o_addr(x, off), x))
 def Shdr.at(+h: String, +off: U32, +x: Bool) -> Shdr:
   Shdr.at2(h, off, x, Shdr.v_flags(h, off, x))
@@ -589,7 +670,7 @@ def Shdr.type(+s: Shdr) -> U32:
   match s:
     case Shdr{sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,
               sh_info, sh_addralign, sh_entsize}: sh_type
-def Shdr.flags(+s: Shdr) -> U32:
+def Shdr.flags(+s: Shdr) -> W64:
   match s:
     case Shdr{sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,
               sh_info, sh_addralign, sh_entsize}: sh_flags
@@ -624,12 +705,22 @@ def Shdr.entsize(+s: Shdr) -> W64:
 
 # THE FIELD-ORDER ROW FOR ONE SECTION: all ten fields, `name@spec-offset:value`,
 # in the order the reader walks them. A transposed pair changes this STRING and
-# changes NO count. Both real bugs above were visible HERE and nowhere else.
-def Shdr.at_text(+s: Shdr) -> String:
+# changes NO count. Both real bugs in this file were visible HERE and nowhere else:
+# a 64-bit word's high half read at `k+8` instead of `k+4`, and `sh_link` filled
+# with the OFFSET instead of the VALUE.
+#
+# THE LABEL IS THE CLASS'S OWN REGISTER OFFSET, not the Elf64 one. MEASURED: a
+# fixed Elf64 label made every Elf32 row disagree with the oracle on the LABELS
+# while the VALUES agreed exactly, which is the worst shape a diff can have -- it
+# looks like a reader bug and it is a label. So `Shdr.at_text` takes the class and
+# `Shdr.o_label` picks the table, and `elf_sec_*_hdrtxt` gates BOTH layouts: the
+# Elf64 offsets 0/4/8/16/24/32/40/44/48/56 and the Elf32 offsets
+# 0/4/8/12/16/20/24/28/32/36.
+def Shdr.at_text64(+s: Shdr) -> String:
   String.join(
     [String.concat(["sh_name@0:", U32.show(Shdr.name(s))]),
      String.concat(["sh_type@4:", U32.show(Shdr.type(s))]),
-     String.concat(["sh_flags@8:", U32.show(Shdr.flags(s))]),
+     String.concat(["sh_flags@8:", W64.text(Shdr.flags(s))]),
      String.concat(["sh_addr@16:", W64.text(Shdr.addr(s))]),
      String.concat(["sh_offset@24:", W64.text(Shdr.offset(s))]),
      String.concat(["sh_size@32:", W64.text(Shdr.size_(s))]),
@@ -637,6 +728,31 @@ def Shdr.at_text(+s: Shdr) -> String:
      String.concat(["sh_info@44:", U32.show(Shdr.info(s))]),
      String.concat(["sh_addralign@48:", W64.text(Shdr.addralign(s))]),
      String.concat(["sh_entsize@56:", W64.text(Shdr.entsize(s))])], ",")
+# `sh_flags`, `sh_addr`, `sh_offset`, `sh_size`, `sh_addralign` and `sh_entsize`
+# are `Elf32_Word` -- u32 -- in the Elf32 layout, so this arm prints them BARE,
+# matching the oracle's class-width rule (`shtxt`'s `c == "<Q"` test). Printing
+# them `hi:lo` made every `elf_sec_e32_hdrtxt` / `elf_sec_n32_hdrtxt` row differ
+# in all six cells per section while the VALUES agreed, which is the worst shape
+# a diff can have: it looks like a reader bug and it is a width. Because the label
+# carries the class offset too, the bare cells still catch a port that read the
+# Elf64 offsets 8/16/24/32/48/56 out of an Elf32 file.
+def Shdr.at_text32(+s: Shdr) -> String:
+  String.join(
+    [String.concat(["sh_name@0:", U32.show(Shdr.name(s))]),
+     String.concat(["sh_type@4:", U32.show(Shdr.type(s))]),
+     String.concat(["sh_flags@8:", U32.show(W64.lo(Shdr.flags(s)))]),
+     String.concat(["sh_addr@12:", U32.show(W64.lo(Shdr.addr(s)))]),
+     String.concat(["sh_offset@16:", U32.show(W64.lo(Shdr.offset(s)))]),
+     String.concat(["sh_size@20:", U32.show(W64.lo(Shdr.size_(s)))]),
+     String.concat(["sh_link@24:", U32.show(Shdr.link(s))]),
+     String.concat(["sh_info@28:", U32.show(Shdr.info(s))]),
+     String.concat(["sh_addralign@32:", U32.show(W64.lo(Shdr.addralign(s)))]),
+     String.concat(["sh_entsize@36:", U32.show(W64.lo(Shdr.entsize(s)))])], ",")
+# ONE DEF PER LAYOUT, not a `Bool.pick` of two inline `String.join` calls: that
+# spelling is a PARSE ERROR in bend 2.0.34 ("expected : a term / observed : ')'")
+# that names neither arm. Same lesson as `Sym.at_text64` / `Sym.at_text32`.
+def Shdr.at_text(+s: Shdr, +x: Bool) -> String:
+  Bool.pick(String, x, Shdr.at_text64(s), Shdr.at_text32(s))
 
 # ===========================================================================
 # THE Sym READERS, BOTH LAYOUTS.
@@ -856,59 +972,52 @@ def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
 # `raise RuntimeError(f'Attempting to relocate against an undefined symbol
 # {sym}')`.
 #
-# THE PORT IS THE SAME FIRST-HIT-WINS SCAN over a `Link{name, addr}` table, and
-# the LIBRARY TABLE IS A FIXTURE, NOT A CLAIM: every cell was measured by calling
-# tinygrad's OWN `link_sym` against the real dylib on this machine, so the rows
-# `elf_ls_*` say what the machine actually answers rather than what this port
-# believes.
+# `Link` is a LIBRARY and `l_syms` is the set it REALLY EXPORTS -- a table
+# `.agents/slop/elf_oracle.py` measures by `getattr(ctypes.CDLL(path), name)` on
+# the four real dylibs, so `elf_ls_*` says what this machine answers rather than
+# what this port believes. A MISS is the total form of `AttributeError`.
 #
-# `Link.addr` is 0 for "the symbol is absent", which is the total form of
-# `AttributeError`. The rows name the LIBRARY ORDER, because the order decides a
-# fall-through: `sin` is in both libm and libSystem, so `[libm, rt]` and
-# `[rt, libm]` answer DIFFERENT addresses, and `elf_ls_sin_*` pins which.
+# THE SCAN IS A FOLD, NOT THE SHORT-CIRCUIT. python.py's `for lib in libs: try:
+# return ... except: pass` returns the FIRST hit, and in bend a `Bool.pick` of
+# two self-calls on the SAME list is mutual recursion (refused) while one on a
+# SHORTER list is the descent -- so the short-circuit shape cannot be written.
+# `Link.pick` is a FOLD THAT KEEPS THE FIRST hit (`Link.pos` returns `acc`
+# unless `acc` is still 1) and it returns the 1-BASED position of the winner, so
+# 0 means "nobody exported it" -- which is the refusal. It is a position and not
+# an address because bend cannot ask a dynamic linker for an address, and the
+# position names the library the address would have come from.
 # ===========================================================================
 type Link is Data:
-  Link{l_name: String, l_addr: U32}
-def Link.of(nm: String, addr: U32) -> Link: Link{nm, addr}
+  Link{l_name: String, l_syms: List<&2, String>}
+def Link.of(nm: String, syms: List<&2, String>) -> Link: Link{nm, syms}
 def Link.name(+l: Link) -> String:
   match l:
-    case Link{l_name, l_addr}: l_name
-def Link.addr(+l: Link) -> U32:
+    case Link{l_name, l_syms}: l_name
+def Link.syms(+l: Link) -> List<&2, String>:
   match l:
-    case Link{l_name, l_addr}: l_addr
-
-# THE THREE LIBRARIES ops_cpu.py:19/21 CAN BUILD, plus libobjc which it does
-# NOT. MEASURED per symbol by the oracle, not asserted here.
-def LIBM() -> Link: Link.of("libm", 1)
-def LIRT() -> Link: Link.of("rt", 1)
-def LIOBJC() -> Link: Link.of("libobjc", 0)
-def CPU_PAIR() -> List<&2, Link>: [LIBM(), LIRT()]
-def CPU_TRIO() -> List<&2, Link>: [LIBM(), LIRT(), LIOBJC()]
-
-# `getattr(lib, sym)` -- the FIRST hit wins and the scan stops there. `0` is the
-# `AttributeError` arm, so a library that does not export the symbol is skipped
-# rather than ending the scan.
-# THE ACCUMULATOR IS THE ANSWER, NOT A SEPARATE FLAG. `acc` is 0 until the first
-# hit and holds the address after it, so the scan is `Bool.pick(is_zero(acc),
-# find(t, hit), find(t, acc))` in ONE def -- no helper, no mutual recursion, and
-# `Bool.pick` evaluating both arms is harmless because a self-call on a SHORTER
-# list is the descent. That is why `Link.find2` does not exist.
-# THE SCAN IS A FOLD, NOT A SHORT-CIRCUIT. python.py's `for lib in libs: try:
-# return ... except: pass` returns the FIRST hit, and in Bend a `Bool.pick` of
-# two self-calls on the SAME list is mutual recursion (refused) while one on a
-# SHORTER list is the descent -- so the short-circuit shape cannot be written and
-# the FOLD is used instead. IT IS EQUIVALENT BECAUSE `Link.addr` is 0 for an
-# absent symbol: `acc if acc else addr` over the list in order IS "the first
-# non-zero, else 0". The rows `elf_ls_*` pin the ORDER (`elf_ls_order`) because
-# with a fold the ORDER IS STILL LOAD-BEARING: two libraries both exporting the
-# symbol answer DIFFERENT addresses and the fold keeps the FIRST.
-def Link.step(+l: Link, +acc: U32) -> U32:
-  Bool.pick(U32, U32.is_zero(acc), Link.addr(l), acc)
-def Link.fold(fuel: List<&2, Link>, +acc: U32) -> U32:
+    case Link{l_name, l_syms}: l_syms
+# `sym` IS READ TWICE IN ONE BODY -- once by `String.eq` and once by the recursive
+# call -- and a `String` is affine, so bend refuses it ("consumed more than once")
+# unless the parameter is `+sym`. The `+` is on the PARAMETER, not on the use.
+def Strs.member(xs: List<&2, String>, +sym: String) -> Bool:
+  match xs:
+    case Nil{}: False{}
+    case +h <> t: Bool.pick(Bool, String.eq(h, sym), True{}, Strs.member(t, sym))
+def Link.hit(+sym: String, +l: Link) -> Bool: Strs.member(Link.syms(l), sym)
+def Link.pos(+sym: String, +l: Link, +acc: U32) -> U32:
+  Bool.pick(U32, U32.is_zero(acc), Bool.to_u32(Link.hit(sym, l)), U32.add(acc, 1))
+def Link.pick(fuel: List<&2, Link>, +sym: String, +acc: U32) -> U32:
   match fuel:
-    case Nil{}: acc
-    case +h <> t: Link.fold(t, Link.step(h, acc))
-def link_sym(libs: List<&2, Link>) -> U32: Link.fold(libs, 0)
+    case Nil{}: U32.sub(acc, 1)
+    case +h <> t: Link.pick(t, sym, Link.pos(sym, h, acc))
+def link_sym(+sym: String, libs: List<&2, Link>) -> U32: Link.pick(libs, sym, 1)
+def Link.at(libs: List<&2, Link>, k: U32) -> Link:
+  Maybe.default(&2, Link, List.get(&2, Link, libs, U32.to_nat(k)), Link.of("", Nil{}))
+# `RuntimeError(f'Attempting to relocate against an undefined symbol {sym}')`.
+# This is the error `runtime/ops_cpu.py:19/21` actually raises on this machine:
+# it builds `link_libs=[libm, rt_lib]` and libobjc is MISSING, so
+# `sel_registerName` has no home (REPORT.md DEFECT 3, reported not fixed --
+# the fix is in ops_cpu.py, which is not this file).
 def link_sym_msg(sym: String) -> String:
   String.concat(["Attempting to relocate against an undefined symbol ", sym])
 
@@ -921,7 +1030,7 @@ def link_sym_msg(sym: String) -> String:
 # ===========================================================================
 def Rel.ent64(+rela: Bool) -> U32: Bool.pick(U32, rela, 24, 16)
 def Rel.ent32(+rela: Bool) -> U32: Bool.pick(U32, rela, 12, 8)
-def Rel.entsize(x: Bool, +rela: Bool) -> U32: Bool.pick(U32, x, Rel.ent64(rela), Rel.ent32(rela))
+def Rel.entsize(+x: Bool, +rela: Bool) -> U32: Bool.pick(U32, x, Rel.ent64(rela), Rel.ent32(rela))
 def Rel.count.zero(sz: U32, ent: U32) -> Bool: U32.is_zero(ent)
 def Rel.count.go(sz: U32, ent: U32) -> U32: U32.div(sz, ent)
 def Rel.count(+sz: W64, +ent: W64) -> U32:
@@ -961,12 +1070,12 @@ def Rel.at(+h: String, +base: U32, +i: U32, +x: Bool) -> Rel:
 # load-bearing bit: `sh.name[4:]` for REL and `sh.name[5:]` for RELA, which is
 # why `.rela.text` needs FIVE and `.rel.text` needs FOUR. A single strip is a
 # silently wrong target name and therefore a silently wrong relocation base.
-def Rel.trgt(+nm: String, rela: Bool) -> String:
+def Rel.trgt(+nm: String, +rela: Bool) -> String:
   Bool.pick(String, rela, Str.drop_n(nm, 5), Str.drop_n(nm, 4))
 def Sec.typ(+s: ElfSection) -> U32: Shdr.type(ElfSection.header(s))
 def Sec.is_rela(+s: ElfSection) -> Bool: U32.is_eq(Sec.typ(s), SHT_RELA())
 def Sec.is_rel(+s: ElfSection) -> Bool: U32.is_eq(Sec.typ(s), SHT_REL())
-def Sec.pick_rel(+s: ElfSection, rela: Bool) -> Bool:
+def Sec.pick_rel(+s: ElfSection, +rela: Bool) -> Bool:
   Bool.pick(Bool, rela, Sec.is_rela(s), Sec.is_rel(s))
 def Rel.sects.step(+s: ElfSection, +rela: Bool, +acc: List<&2, ElfSection>) -> List<&2, ElfSection>:
   Bool.pick(List<&2, ElfSection>, Sec.pick_rel(s, rela), acc,
@@ -1122,24 +1231,568 @@ def Tramp.x86_ret(len_image: U32, addend: U32, ploc: U32) -> U32:
 def Tramp.arm_ret(len_image: U32, ploc: U32) -> U32:
   U32.sub(U32.sub(len_image, Tramp.arm_len()), ploc)
 
-# THE RANGE TESTS. `rel32_in` and `call26_in` are DIFFERENT predicates over the
-# same inputs and the rows carry both at the boundary values, so a port that used
-# one for the other is visible.
-def Reloc.rel32_in(neg: Bool, v: U32) -> Bool: Bool.and(neg, U32.is_lt(v, 2147483648))
-def Reloc.call26_in(neg: Bool, v: U32) -> Bool: Bool.and(neg, U32.is_le(v, 134217724))
-# `-2**31 <= tgt-ploc < 2**31`, as a `neg` flag and a magnitude. `i2u(32, v)` is
-# `v if v >= 0 else (1<<32)+v`, so the encoding is the magnitude plus 2**32.
-def Reloc.i2u(neg: Bool, v: U32) -> U32: H.i2u(neg, 32n, v)
+# ===========================================================================
+# THE BYTE DIGEST. Every IMAGE row in the oracle is a hash of the image, and
+# sha256 is not writable in bend, so the hash is FNV-1a 32 over the hex string.
+# IT IS NOT A CRYPTOGRAPHIC HASH AND IS NOT ASKED TO BE: its only job is to be a
+# compact, Bend-computable fingerprint so a 3624-byte image is one row and not
+# 7248 hex digits. `U32.mul` and `U32.xor` wrap mod 2**32 exactly as Python's
+# `& 0xffffffff` does -- MEASURED, both agree that 0xffffffff*0xffffffff == 1 --
+# so the oracle's Python and the port's bend compute the same word.
+# ===========================================================================
+def Fnv.at() -> U32: 2166136261
+def Fnv.pr() -> U32: 16777619
+def Fnv.step(+h: String, +i: U32, +acc: U32) -> U32:
+  U32.mul(U32.xor(acc, Blob.u8(h, i)), Fnv.pr())
+def Fnv.go(fuel: Nat, +h: String, +i: U32, +acc: U32) -> U32:
+  match fuel:
+    case 0n: acc
+    case Succ{q}: Fnv.go(q, h, U32.add(i, 1), Fnv.step(h, i, acc))
+def Fnv.of(+h: String) -> U32: Fnv.go(Blob.fuel(h), h, 0, Fnv.at())
+
+# ===========================================================================
+# elf.py:34-38, THE IMAGE LOOP. `Built` exists because elf.py:38 writes back
+# into `sh.header.sh_addr`, so the fold returns BOTH the image and the section
+# list with those addresses filled in -- and the gate reads the ADDRESSES back
+# out of the returned list, which is the only observation of elf.py:38.
+#
+# `image[sh_addr : sh_addr + sh_size] = sh.content` is a PLACED WRITE: a splice
+# at a hex offset, not an append. Two helpers because `at` is needed twice with
+# two different meanings -- where the write starts, and where it ends.
+# ===========================================================================
+def Img.head(+i: Img, at: U32) -> String:
+  String.take(Img.body(i), U32.to_nat(U32.mul(at, 2)))
+def Img.rest(+i: Img, at: U32) -> String:
+  String.drop(Img.body(i), U32.to_nat(U32.mul(at, 2)))
+def Img.write_at(+i: Img, +at: U32, +c: String) -> Img:
+  Img.of(Img.len(i),
+         String.concat([Img.head(i, at), c, Img.rest(i, U32.add(at, Blob.nbytes(c)))]))
+
+def Shdr.put_addr(s: Shdr, a: W64) -> Shdr:
+  match s:
+    case Shdr{sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize}:
+      Shdr{sh_name, sh_type, sh_flags, a, sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize}
+def ElfSection.put_addr(+s: ElfSection, +a: W64) -> ElfSection:
+  ElfSection.of(ElfSection.name(s), Shdr.put_addr(ElfSection.header(s), a), ElfSection.content(s))
+
+type Step is Data:
+  Step{sp_img: Img, sp_sec: ElfSection}
+def Step.of(i: Img, s: ElfSection) -> Step: Step{i, s}
+def Step.img(+s: Step) -> Img:
+  match s:
+    case Step{sp_img, sp_sec}: sp_img
+def Step.sec(+s: Step) -> ElfSection:
+  match s:
+    case Step{sp_img, sp_sec}: sp_sec
+type Built is Data:
+  Built{bd_img: Img, bd_secs: List<&2, ElfSection>}
+def Built.of(i: Img, s: List<&2, ElfSection>) -> Built: Built{i, s}
+def Built.img(+b: Built) -> Img:
+  match b:
+    case Built{bd_img, bd_secs}: bd_img
+def Built.secs(+b: Built) -> List<&2, ElfSection>:
+  match b:
+    case Built{bd_img, bd_secs}: bd_secs
+
+# elf.py:35, the fixed-address arm.
+def Built.at_fixed(+i: Img, +s: ElfSection) -> Img:
+  Img.write_at(i, W64.as_idx(Shdr.addr(ElfSection.header(s))), ElfSection.content(s))
+# elf.py:37, the zero-address arm.
+def Built.at_free(+i: Img, +s: ElfSection, +force: U32) -> Img:
+  Img.append_pad(i, ElfSection.content(s), Sec.align_of(s, force))
+# elf.py:38, `sh.header.sh_addr = len(image) - len(sh.content)`, read off the
+# image AFTER the append. Reading it off the image BEFORE would be the same
+# number minus this section's own padding, which is the whole difference between
+# the two arms -- and `Built.landed` is applied to `at_free(i,...)` twice on
+# purpose, because `Bool.pick` evaluates both arms and the landing address must
+# be read from the image that INCLUDES this section's padding.
+def Built.landed(+j: Img, +s: ElfSection) -> W64:
+  W64.of(U32.sub(Img.len(j), Blob.nbytes(ElfSection.content(s))), 0)
+# ONE SECTION, THREE OUTCOMES: not PROGBITS at all (upstream's loop never sees
+# it -- `for sh in progbits`), a fixed address (placed write, header untouched),
+# and a zero address (pad, append, record where it landed).
+def Built.pbits(+i: Img, +s: ElfSection, +force: U32) -> Step:
+  Bool.pick(Step, Sec.at_zero(s),
+            Step.of(Built.at_free(i, s, force),
+                    ElfSection.put_addr(s, Built.landed(Built.at_free(i, s, force), s))),
+            Step.of(Built.at_fixed(i, s), s))
+def Built.step(+st: Step, +s: ElfSection, +force: U32) -> Step:
+  Bool.pick(Step, Sec.is_progbits(s), Built.pbits(Step.img(st), s, force), st)
+def Built.one_sec(s: ElfSection) -> List<&2, ElfSection>: [s]
+def Built.keep(+st: Step, +acc: List<&2, ElfSection>) -> List<&2, ElfSection>:
+  List.append(&2, ElfSection, Built.one_sec(Step.sec(st)), acc)
+# `Built.step` IS EVALUATED TWICE, once for the image and once for the section,
+# because there is no `let` in bend and a helper whose parameter is the computed
+# value is the only way to name it twice. The cost is a second image splice; the
+# fixtures are kilobytes.
+# THE FOLD CARRIES A `Step`, NOT AN `Img`, because the image and the section that
+# produced it have to travel TOGETHER -- the section is the one `Built.landed`
+# rewrote, and separating them is how two independent `Built.step` calls end up
+# naming different sections. The initial `Step.sec` is never read: `Built.keep`
+# only ever sees a step `Built.step` has already rewritten.
+def Built.go(xs: List<&2, ElfSection>, +st: Step, +force: U32,
+             +acc: List<&2, ElfSection>) -> Built:
+  match xs:
+    case Nil{}: Built.of(Step.img(st), List.reverse(&2, ElfSection, acc))
+    case +s <> t: Built.go(t, Built.step(st, s, force), force,
+                           Built.keep(Built.step(st, s, force), acc))
+# elf.py:33's prealloc is the INITIAL image: `bytearray(n)` is `n` zero BYTES,
+# which on a hex String is `"00"` repeated -- `Img.padn`, not `String.repeat`.
+def Built.of_secs(+xs: List<&2, ElfSection>, force: U32) -> Built:
+  Built.go(xs, Step.of(Img.padn(Img.empty(), Sec.prealloc_of(xs)),
+                       ElfSection.of("", Shdr.zero(), "")), force, Nil{})
+def Built.of_blob(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
+  Built.of_secs(Sections.build(h, e, x), force)
+
+# ===========================================================================
+# THE SYMTAB. elf.py:29.
+#
+# `next((_to_carray(sh, Sym) for sh in sections if sh_type == SHT_SYMTAB), None)`
+# -- THE FIRST ONE. `next` on an exhausted generator raises `StopIteration`, so a
+# file with no `.symtab` has no answer here; the port answers a SENTINEL INDEX
+# and reads an empty symbol list, which is the total form. `Sections.at_sec`
+# turns the sentinel into the zero ElfSection, whose type is SHT_NULL and whose
+# entsize is 0, so `Rel.count`'s zero-entsize arm answers 0 and no division by
+# zero happens. The row `*_symtab_idx` is the sentinel on such a file.
+# ===========================================================================
+def Sec.is_symtab(+s: ElfSection) -> Bool: U32.is_eq(Sec.typ(s), SHT_SYMTAB())
+def Symtab.NONE() -> U32: 4294967295
+def Symtab.step(i: U32, +s: ElfSection, +acc: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(acc, Symtab.NONE()),
+            Bool.pick(U32, Sec.is_symtab(s), i, acc), acc)
+def Symtab.idx.go(xs: List<&2, ElfSection>, +i: U32, +acc: U32) -> U32:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Symtab.idx.go(t, U32.add(i, 1), Symtab.step(i, h, acc))
+def Symtab.idx(+xs: List<&2, ElfSection>) -> U32: Symtab.idx.go(xs, 0, Symtab.NONE())
+def Symtab.hdr(+xs: List<&2, ElfSection>) -> Shdr:
+  ElfSection.header(Sections.at_sec(xs, Symtab.idx(xs)))
+# `_to_carray` reads the section's OWN CONTENT, so entry `i` is at
+# `sh_offset + i * sh_entsize` in the blob. The offset is the SECTION's, not the
+# symbol table's, which is why `base` and `ent` are two defs over one header
+# rather than one expression over the section twice.
+def Symtab.base(+xs: List<&2, ElfSection>) -> U32: W64.as_idx(Shdr.offset(Symtab.hdr(xs)))
+def Symtab.ent(+xs: List<&2, ElfSection>) -> U32: W64.as_idx(Shdr.entsize(Symtab.hdr(xs)))
+def Symtab.n(+xs: List<&2, ElfSection>) -> U32:
+  Rel.count(Shdr.size_(Symtab.hdr(xs)), Shdr.entsize(Symtab.hdr(xs)))
+def Symtab.at_blob(+xs: List<&2, ElfSection>, +i: U32) -> U32:
+  U32.add(Symtab.base(xs), U32.mul(i, Symtab.ent(xs)))
+def Symtab.at(+h: String, +xs: List<&2, ElfSection>, +i: U32, +x: Bool) -> Sym:
+  Sym.at(h, Symtab.at_blob(xs, i), x)
+# `unwrap(symtab)[...]`. An index past the end reads the zero Sym, whose
+# `st_shndx` is 0 and so takes the `link_sym` arm -- the wrong answer but not a
+# crash. `*_nsyms` pins the count that bounds the indices.
+def Symtab.last(+xs: List<&2, ElfSection>, +h: String, +x: Bool) -> Sym:
+  Symtab.at(h, xs, U32.sub(Symtab.n(xs), 1), x)
+
+# ===========================================================================
+# elf.py:44, THE TARGET LOOKUP. `next(tsh for tsh in sections if tsh.name ==
+# trgt_sh_name)` -- `next()` ON AN EXHAUSTED GENERATOR IS UPSTREAM DEFECT 2 and
+# raises a bare `StopIteration` (REPORT.md). The port has no exceptions, so the
+# lookup answers a sentinel and the refusal becomes a ROW.
+#
+# `next` STOPS AT THE FIRST MATCH and a fold would keep the LAST, so the fold
+# carries a sentinel and a second match is discarded: that is the difference
+# between `next(...)` and a fold, and section names are unique in a real file so
+# nothing distinguishes them until it does not.
+# ===========================================================================
+def Trg.NONE() -> U32: 4294967295
+def Trg.hit(+nm: String, +s: ElfSection) -> Bool: String.eq(ElfSection.name(s), nm)
+def Trg.step(+nm: String, +s: ElfSection, +acc: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(acc, Trg.NONE()),
+            Bool.pick(U32, Trg.hit(nm, s), W64.as_idx(Shdr.addr(ElfSection.header(s))), acc),
+            acc)
+def Trg.off.go(xs: List<&2, ElfSection>, +nm: String, +acc: U32) -> U32:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Trg.off.go(t, nm, Trg.step(nm, h, acc))
+def Trg.off(+xs: List<&2, ElfSection>, +nm: String) -> U32: Trg.off.go(xs, nm, Trg.NONE())
+def Trg.found(v: U32) -> Bool: Bool.not(U32.is_eq(v, Trg.NONE()))
+
+# ===========================================================================
+# THE RELOCATION LIST. elf.py:40-48.
+#
+# ONE reloc is `(target_image_off + roff, tgt, rtype, raddend)`: where in the IMAGE
+# it goes, what it points AT, the type, and the addend. All four are printed by
+# `elf_relocs` as `at:tgt:type:addend` because a COUNT cannot see a transposed
+# pair, and the four come from four different readers.
+#
+# elf.py:47 IS A CONDITIONAL OVER `sym.st_shndx`: 0 means UNDEFINED and the target
+# is a `link_sym` lookup; anything else is DEFINED and the target is
+# `sections[st_shndx].header.sh_addr + sym.st_value`. Reading `sym.st_value` for
+# the undefined arm (or the section address for the defined one) is a plausible
+# wrong number and not a crash, so the rows carry both arms.
+#
+# UPSTREAM DEFECT 1 IS REPRODUCED HERE ON PURPOSE: the name is read from
+# `sh_strtab` -- the SECTION NAME table -- where the correct table is the symtab's
+# own `sh_link`. For a relocatable object the two tables are the same section and
+# the bug is invisible; for a LINKED image they differ and 8 of 15 symbols
+# misresolve (REPORT.md). `Rc.str` is `sh_strtab`, as written.
+# ===========================================================================
+type Rctx is Data:
+  Rctx{rx_secs: List<&2, ElfSection>, rx_str: String, rx_libs: List<&2, Link>}
+def Rctx.of(s: List<&2, ElfSection>, str: String, libs: List<&2, Link>) -> Rctx:
+  Rctx{s, str, libs}
+def Rctx.secs(+c: Rctx) -> List<&2, ElfSection>:
+  match c:
+    case Rctx{rx_secs, rx_str, rx_libs}: rx_secs
+def Rctx.str(+c: Rctx) -> String:
+  match c:
+    case Rctx{rx_secs, rx_str, rx_libs}: rx_str
+def Rctx.libs(+c: Rctx) -> List<&2, Link>:
+  match c:
+    case Rctx{rx_secs, rx_str, rx_libs}: rx_libs
+
+# elf.py:45's `symtab[R_SYM(r_info)]`.
+def Rc.sym(+c: Rctx, +h: String, +x: Bool, +r: Rel) -> Sym:
+  Symtab.at(h, Rctx.secs(c), R.sym(x, W64.lo(Rel.r_info(r))), x)
+# elf.py:47, the DEFINED arm. Both halves are 64-bit and the sum is a W64 add --
+# NOT truncated to 32, which the rows `elf_reloc_tgts` catch because a real
+# relocatable object's `st_value` is under 2**32 and the truncation only shows on
+# a linked image.
+def Rc.defined(+c: Rctx, +sy: Sym) -> W64:
+  W64.add(W64.of(W64.as_idx(Shdr.addr(ElfSection.header(
+                Sections.at_sec(Rctx.secs(c), Sym.shndx(sy))))), 0),
+          Sym.value(sy))
+# elf.py:47, the UNDEFINED arm -- and DEFECT 1, which is that `Rctx.str` is the
+# SECTION NAME table.
+def Rc.undefined(+c: Rctx, +sy: Sym) -> U32:
+  link_sym(Str.tab(Rctx.str(c), 0, Sym.name(sy)), Rctx.libs(c))
+def Rc.tgt(+c: Rctx, +sy: Sym) -> W64:
+  Bool.pick(W64, U32.is_zero(Sym.shndx(sy)), W64.of(Rc.undefined(c, sy), 0), Rc.defined(c, sy))
+
+# `_to_carray(sh, Rel)`: the entries live in the SECTION'S CONTENT, so the base
+# is `sh_offset` and the stride is `sh_entsize` -- 16/24 for Elf64 Rel/Rela and
+# 8/12 for Elf32. Both are rows, because a stride that is the Elf64 one applied
+# to an Elf32 file reads the next entry's bytes as this entry's addend.
+def Rc.base(+s: ElfSection) -> U32: W64.as_idx(Shdr.offset(ElfSection.header(s)))
+def Rc.stride(+s: ElfSection) -> U32: W64.as_idx(Shdr.entsize(ElfSection.header(s)))
+def Rc.n(+s: ElfSection) -> U32:
+  Rel.count(Shdr.size_(ElfSection.header(s)), Shdr.entsize(ElfSection.header(s)))
+# elf.py:44's target offset, resolved ONCE per reloc section and threaded down the
+# entry walk: `next(tsh for tsh in sections if tsh.name == trgt_sh_name)`.
+def Rc.base_off(+c: Rctx, +nm: String) -> U32: Trg.off(Rctx.secs(c), nm)
+def Rc.one(r: Reloc) -> List<&2, Reloc>: [r]
+def Rc.at_byte(+s: ElfSection, +i: U32) -> U32:
+  U32.add(Rc.base(s), U32.mul(i, Rc.stride(s)))
+# ONE reloc, elf.py:48. The FOUR fields come from FOUR different readers and the
+# first is `target_image_off + r_offset` -- a SUM, so reading `r_offset` alone
+# gives a plausible address that is wrong by the whole target section.
+def Rc.mk(+c: Rctx, +h: String, +x: Bool, +r: Rel, +off: U32) -> Reloc:
+  Reloc.of(W64.of(U32.add(off, W64.as_idx(Rel.r_offset(r))), 0),
+           Rc.tgt(c, Rc.sym(c, h, x, r)), R.typ(x, W64.lo(Rel.r_info(r))),
+           Rel.r_addend(r))
+def Rc.entry(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +i: U32, +off: U32) -> Reloc:
+  Rc.mk(c, h, x, Rel.at(h, Rc.base(s), i, x), off)
+def Rc.at(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +i: U32, +off: U32) -> Reloc:
+  Rc.entry(c, h, x, s, i, off)
+def Rc.step(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +i: U32, +off: U32,
+            +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  List.append(&2, Reloc, Rc.one(Rc.at(c, h, x, s, i, off)), acc)
+# THE ENTRY COUNT IS THE FUEL, not a `U32` countdown and not a `Nat` beside the
+# list. `Rc.n` is a computed value, and bend refuses to `match` one -- "a match
+# cannot scrutinize a computed value" -- so the count becomes a `Nat` PARAMETER
+# that a `Succ{q}` arm spends. That is also the shape the guide names for a walk
+# bounded by something outside the def.
+def Rc.go(n: Nat, +c: Rctx, +h: String, +x: Bool, +s: ElfSection, +i: U32, +off: U32,
+          +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  match n:
+    case 0n: List.reverse(&2, Reloc, acc)
+    case Succ{q}: Rc.go(q, c, h, x, s, U32.add(i, 1), off, Rc.step(c, h, x, s, i, off, acc))
+# ONE DEF PER `Bool.pick` ARM. A `Bool.pick` whose arm is a multi-line CALL is a
+# PARSE ERROR in bend 2.0.34 -- "expected : a term / observed : ')'", reported at
+# the `)` of the arm and naming neither the condition nor either arm -- so the
+# two outcomes are their own defs and each pick is a single line. Same lesson as
+# `Shdr.at_text64` / `Shdr.at_text32`.
+def Rc.skip(s: ElfSection) -> Bool:
+  Rel.skip_ehframe(List.append(&2, ElfSection, Sec.one_sec(s), Nil{}))
+def Rc.trgt_off(+c: Rctx, +s: ElfSection, +rela: Bool) -> U32:
+  Rc.base_off(c, Rel.trgt(ElfSection.name(s), rela))
+def Rc.of_rels(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +rela: Bool,
+               +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  Rc.go(U32.to_nat(Rc.n(s)), c, h, x, s, 0, Rc.trgt_off(c, s, rela), acc)
+def Rc.walk_one(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +rela: Bool,
+                +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  Bool.pick(List<&2, Reloc>, Rc.skip(s), Rc.of_rels(c, h, x, s, rela, acc), acc)
+# elf.py:42's `for sh, trgt_sh_name, c_rels in rel + rela` -- REL FIRST, THEN
+# RELA, and `.eh_frame` SKIPPED (elf.py:43). The order of the resulting list is
+# the order the 4-tuples are applied in, so it is load-bearing, and `Rc.walk`
+# does the two passes in that order and appends the second to the first.
+def Rc.of_sec(+c: Rctx, +h: String, +x: Bool, +s: ElfSection, +rela: Bool,
+              +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  Bool.pick(List<&2, Reloc>, Sec.pick_rel(s, rela), Rc.walk_one(c, h, x, s, rela, acc), acc)
+def Rc.walk.go(+c: Rctx, +h: String, +x: Bool, xs: List<&2, ElfSection>, +rela: Bool,
+               +acc: List<&2, Reloc>) -> List<&2, Reloc>:
+  match xs:
+    case Nil{}: List.reverse(&2, Reloc, acc)
+    case +s <> t: Rc.walk.go(c, h, x, t, rela, Rc.of_sec(c, h, x, s, rela, acc))
+def Rc.walk.rela(+c: Rctx, +h: String, +x: Bool, +xs: List<&2, ElfSection>) -> List<&2, Reloc>:
+  Rc.walk.go(c, h, x, xs, True{}, Nil{})
+def Rc.walk(+c: Rctx, +h: String, +x: Bool, +xs: List<&2, ElfSection>) -> List<&2, Reloc>:
+  List.append(&2, Reloc, Rc.walk.rela(c, h, x, xs),
+              Rc.walk.go(c, h, x, xs, False{}, Nil{}))
+
+# ===========================================================================
+# elf_loader, elf.py:15-50. THE RETURN VALUE.
+#
+# THE ORDER IS LOAD-BEARING AND IT IS THE POINT OF `Built`: the image is built
+# BEFORE the relocs, because elf.py:44's `sh_addr` is read off the section list
+# that elf.py:38 JUST REWROTE. Reading the addresses before the image loop gives
+# the PRE-ALLOC addresses and every reloc lands in the wrong place.
+# ===========================================================================
+def elf_loader_img(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
+  Built.of_blob(h, e, x, force)
+def elf_loader_ctx(+h: String, +b: Built, +e: Ehdr, +x: Bool,
+                   +libs: List<&2, Link>) -> Rctx:
+  Rctx.of(Built.secs(b), shstrtab(h, e, x), libs)
+def elf_loader_relocs(+c: Rctx, +h: String, +x: Bool) -> List<&2, Reloc>:
+  Rc.walk(c, h, x, Rctx.secs(c))
+def ElfImage.of(+i: Img, s: List<&2, ElfSection>, r: List<&2, Reloc>) -> ElfImage:
+  ElfImage{Img.len(i), Img.body(i), s, r}
+# `elf_loader` NAMES `elf_loader_img` THREE TIMES, once per field of the result,
+# because bend has no `let`. Three independent builds of the same image is the
+# cost of that, and it is why `elf_loader` is written as one def rather than a
+# chain: a chain would need three carries and the same three calls.
+def elf_loader(+h: String, +e: Ehdr, +x: Bool, +force: U32,
+               +libs: List<&2, Link>) -> ElfImage:
+  ElfImage.of(Built.img(elf_loader_img(h, e, x, force)),
+              Built.secs(elf_loader_img(h, e, x, force)),
+              elf_loader_relocs(elf_loader_ctx(h, elf_loader_img(h, e, x, force), e, x, libs), h, x))
+def elf_image_len(+e: ElfImage) -> U32:
+  match e:
+    case ElfImage{img_bytes, img_body, img_sections, img_relocs}: img_bytes
+def elf_image_body(+e: ElfImage) -> String:
+  match e:
+    case ElfImage{img_bytes, img_body, img_sections, img_relocs}: img_body
+def elf_image_secs(+e: ElfImage) -> List<&2, ElfSection>:
+  match e:
+    case ElfImage{img_bytes, img_body, img_sections, img_relocs}: img_sections
+def elf_image_relocs(+e: ElfImage) -> List<&2, Reloc>:
+  match e:
+    case ElfImage{img_bytes, img_body, img_sections, img_relocs}: img_relocs
+
+# THE SIGNED DIFFERENCE. `tgt - ploc` is a signed value in Python and a U32 in
+# bend, so it is carried as a `neg` flag and a MAGNITUDE, and the two range tests
+# and the one encoder all read that pair. ONE representation, because two of them
+# -- a `(neg, mag)` pair here and a raw U32 there -- is how a port ends up with an
+# encoder that disagrees with its own range test.
+#
+# `i2u(32, v)` is `v if v >= 0 else (1 << 32) + v`, so a negative value encodes as
+# its MAGNITUDE plus 2**32. Writing the encoding as the magnitude alone is the
+# single most common way to get a reloc wrong and it looks right for every
+# non-negative delta, so `elf_i2u32_*` carries BOTH signs at the boundary.
+type Sdiff is Data:
+  Sdiff{sd_neg: Bool, sd_mag: U32}
+def Sdiff.of(+x: U32, +y: U32) -> Sdiff:
+  Bool.pick(Sdiff, U32.is_lt(x, y), Sdiff{True{}, U32.sub(y, x)}, Sdiff{False{}, U32.sub(x, y)})
+def Sdiff.neg(+d: Sdiff) -> Bool:
+  match d:
+    case Sdiff{sd_neg, sd_mag}: sd_neg
+def Sdiff.mag(+d: Sdiff) -> U32:
+  match d:
+    case Sdiff{sd_neg, sd_mag}: sd_mag
+def Sdiff.i2u32(+d: Sdiff) -> U32: H.i2u(Sdiff.neg(d), 32n, Sdiff.mag(d))
+# `-2**31 <= v < 2**31` (elf.py:62). NOT `<= 2**31`: 2**31 itself does not fit and
+# the asymmetry is the reason the test is `neg or mag < 2**31` rather than a
+# magnitude comparison, which the negative arm needs anyway.
+def Sdiff.rel32_in(+d: Sdiff) -> Bool:
+  Bool.or(Bool.not(Sdiff.neg(d)), U32.is_lt(Sdiff.mag(d), 2147483648))
+# `-(2**25) <= v <= (2**25 - 1) * 4` (elf.py:77). TWO DIFFERENT BOUNDS, one per
+# sign, and they are NOT symmetric -- the negative arm reaches 2**25 and the
+# positive arm reaches 4 * (2**25 - 1). `elf_call26_in_*` carries all eight
+# boundary values so a single symmetric bound is visible.
+def Sdiff.call26_in(+d: Sdiff) -> Bool:
+  Bool.pick(Bool, Sdiff.neg(d), U32.is_le(Sdiff.mag(d), 33554432), U32.is_le(Sdiff.mag(d), 134217724))
 # The ADRP pair: `getbits(rel_pg, 12, 13) << 29` and `getbits(rel_pg, 14, 32) << 5`.
 # `U32.shl` IS A ONE-BIT SHIFT and `U32.shln(a, n)` is the n-BIT ONE, so every
 # shift AMOUNT here is a `Nat` literal. Getting that wrong writes one bit instead
-# of twenty-nine and the row `elf_adr_*` shows a number in the wrong bit.
+# of twenty-nine, and the row `elf_adr_hi21_*` shows a number in the wrong bit.
 def Reloc.adr_hi(rel_pg: U32) -> U32: U32.shln(H.getbits(rel_pg, 12n, 13n), 29n)
 def Reloc.adr_lo(rel_pg: U32) -> U32: U32.shln(H.getbits(rel_pg, 14n, 32n), 5n)
-def Reloc.page(neg: Bool, v: U32) -> U32: H.i2u(neg, 32n, U32.and(v, 4294963200))
+# `(tgt & ~0xFFF) - (ploc & ~0xFFF)` -- elf.py:69's `rel_pg`, a SIGNED difference
+# of two page-aligned values, so it goes through `Sdiff` and comes back as a
+# magnitude for `getbits`. `~0xFFF` is 0xfffff000 as a U32.
+def Reloc.rel_pg(+tgt: U32, +ploc: U32) -> U32: Sdiff.mag(Sdiff.of(U32.and(tgt, 4294963200), U32.and(ploc, 4294963200)))
+def Reloc.page_mask(v: U32) -> U32: U32.and(v, 4294963200)
 def Reloc.call26_getbits(v: U32) -> U32: H.getbits(v, 2n, 27n)
-def Reloc.lo12(tgt: U32, start: Nat, end: Nat) -> U32:
+# `getbits(tgt, s, 11) << 10` -- the lo12 arms, one per shift amount. FIVE arms
+# differing by ONE and by the WIDTH, and elf.py:71-75 differs in both, so the
+# shift amount and the count are two arguments of one def rather than five
+# near-copies.
+def Reloc.lo12(+tgt: U32, start: Nat, end: Nat) -> U32:
   U32.shln(H.getbits(tgt, start, end), 10n)
+
+# ===========================================================================
+# relocate, elf.py:56-81. THE TEN ARMS.
+#
+# `relocate` is a CLOSURE over `image`, so it cannot return both the 32-bit word
+# it computes AND the bytes it appends. `Rloc` is that pair: the word the caller
+# patches in and the padding the caller appends, and eight of the ten arms have
+# `Rloc.pad` == "". The fold at the bottom IS `jit_loader`'s loop (elf.py:84-85).
+#
+# ONE DEF PER `case`. A mutation to one arm moves only the rows that arm reaches,
+# and `.agents/slop/elf_reloc_probe.py` reaches all ten through the real
+# `jit_loader` by patching `r_type` in a real object file, so `elf_reloc_*` is one
+# DISTINCT word per arm rather than one shared zero.
+# ===========================================================================
+type Rloc is Data:
+  Rloc{rl_word: U32, rl_pad: String}
+def Rloc.of(w: U32, p: String) -> Rloc: Rloc{w, p}
+def Rloc.same(w: U32) -> Rloc: Rloc.of(w, "")
+def Rloc.word(+r: Rloc) -> U32:
+  match r:
+    case Rloc{rl_word, rl_pad}: rl_word
+def Rloc.pad(+r: Rloc) -> String:
+  match r:
+    case Rloc{rl_word, rl_pad}: rl_pad
+
+# elf.py:60, R_X86_64_PC32: `i2u(32, tgt-ploc)`. NO `base` -- PC32 is
+# position-relative and the base does not enter, which is why this arm is not
+# `plt32` with a flag.
+# `instr` IS NOT A PARAMETER: elf.py:60 returns `i2u(32, tgt-ploc)` and never ORs
+# the instruction in, which is what makes these two arms DIFFERENT from the eight
+# aarch64 ones. An unused parameter here would be a lie about the signature.
+def Reloc.a_pc32(+ploc: U32, +tgt: U32) -> Rloc:
+  Rloc.same(Sdiff.i2u32(Sdiff.of(tgt, ploc)))
+# elf.py:62, the IN-RANGE arm of PLT32: `i2u(32, tgt-ploc-base)`. THE BASE IS
+# SUBTRACTED HERE AND NOT IN THE RANGE TEST at :62, which tests `tgt-ploc-base`
+# -- and the test at :62 is on the same expression, so `Sdiff.of(tgt,ploc)` is
+# subtracted from `base` ONCE and both the test and the encode read the result.
+def Reloc.plt32_d(+base: U32, +ploc: U32, +tgt: U32) -> Sdiff:
+  Sdiff.of(U32.sub(tgt, ploc), base)
+def Reloc.a_plt32(+base: U32, +ploc: U32, +tgt: U32) -> Rloc:
+  Bool.pick(Rloc, Sdiff.rel32_in(Reloc.plt32_d(base, ploc, tgt)),
+            Rloc.same(Sdiff.i2u32(Reloc.plt32_d(base, ploc, tgt))), Rloc.of(0, ""))
+# elf.py:64-65, the OUT-OF-RANGE arm: append `struct.pack("<HIQ", 0x25FF, 0,
+# tgt-addend)` and return `i2u(32, len(image)-14+addend-ploc)`. THE `len(image)`
+# IS READ AFTER THE APPEND, and the `-14` IS `Tramp.x86_len`, so the two cannot be
+# transposed. `tgt` IS ALREADY `tgt + r_addend` (elf.py:85 passes `tgt+r_addend`),
+# which is why the trampoline packs `tgt - addend` and the return adds `addend`.
+def Reloc.a_plt32_tramp(+tgt: U32, addend: U32) -> String: Tramp.x86(U32.sub(tgt, addend))
+# elf.py:68-70, R_AARCH64_ADR_PREL_PG_HI21:
+#   `rel_pg = (tgt & ~0xFFF) - (ploc & ~0xFFF)` then
+#   `instr | getbits(rel_pg,12,13)<<29 | getbits(rel_pg,14,32)<<5`.
+# THE TWO SHIFTS ARE OR-ed not added, so `U32.or` is the combiner and adding them
+# would be the same only while the fields do not overlap -- which they do not, so
+# the mutation is invisible on most values and visible on `elf_reloc_*`.
+def Reloc.a_adr(instr: U32, +ploc: U32, +tgt: U32) -> Rloc:
+  Rloc.same(U32.or(instr, U32.or(Reloc.adr_hi(Reloc.rel_pg(tgt, ploc)),
+                                 Reloc.adr_lo(Reloc.rel_pg(tgt, ploc)))))
+# elf.py:71-75, the five lo12 arms: `instr | getbits(tgt, s, 11) << 10` for
+# s in 0, 1, 2, 3, 4. FIVE arms differing by ONE SHIFT AMOUNT.
+def Reloc.a_lo12(instr: U32, +tgt: U32, start: Nat, end: Nat) -> Rloc:
+  Rloc.same(U32.or(instr, Reloc.lo12(tgt, start, end)))
+# elf.py:76-77, R_AARCH64_CALL26 IN RANGE:
+# `instr | getbits(tgt-ploc-base, 2, 27)`. THE SHIFT IS TWO, NOT ZERO.
+def Reloc.call26_d(+base: U32, +ploc: U32, +tgt: U32) -> Sdiff:
+  Sdiff.of(U32.sub(tgt, ploc), base)
+def Reloc.a_call26(instr: U32, +base: U32, +ploc: U32, +tgt: U32) -> Rloc:
+  Rloc.same(U32.or(instr, Reloc.call26_getbits(Sdiff.mag(Reloc.call26_d(base, ploc, tgt)))))
+# elf.py:79-80, CALL26 OUT OF RANGE: append `struct.pack("<IIQ", 0x58000051,
+# 0xD61F0220, tgt)` and return `instr | getbits(len(image)-ploc-16, 2, 27)`.
+# THE TRAMPOLINE IS 16 BYTES AND NOT 14 -- the two are the only difference between
+# the x86 and arm far arms, so `elf_tr_x86_len` / `elf_tr_arm_len` are rows beside
+# the bytes.
+def Reloc.a_call26_tramp(tgt: U32) -> String: Tramp.arm(tgt)
+
+# ===========================================================================
+# jit_loader, elf.py:52-86. THE RELOCATION FOLD.
+#
+# elf.py:84-85, ONE reloc at a time:
+#   `image[ploc:ploc+4] = struct.pack("<I", relocate(unpack("<I",
+#    image[ploc:ploc+4]), base, ploc, tgt+r_addend, r_type, r_addend))`
+#
+# THE FOLD IS OVER THE RELOC LIST, NOT OVER A COUNT, and `Bool.pick` picks the arm
+# so the image is threaded once. The 4-byte patch is a PLACED WRITE at `ploc`
+# (`Img.write_at`) and the word is packed little-endian (`Hex.pair`), which is
+# little-endian order -- `Hex.of` is big-endian and swapping them writes the
+# instruction BACKWARDS, which is a plausible-looking word and a wrong one.
+# ===========================================================================
+def Jit.ploc(+r: Reloc) -> U32: W64.as_idx(Reloc.r_at(r))
+def Jit.tgt(+r: Reloc) -> U32: U32.add(W64.as_idx(Reloc.r_tgt(r)), W64.as_idx(Reloc.r_addend(r)))
+def Jit.addend(+r: Reloc) -> U32: W64.as_idx(Reloc.r_addend(r))
+# THE INSTRUCTION AS IT STANDS IN THE IMAGE, before the patch.
+def Jit.instr(+i: Img, ploc: U32) -> U32: Blob.unpack4(Img.body(i), ploc)
+def Jit.pack(w: U32) -> String: Hex.pair(w)
+
+# THE TEN-WAY DISPATCH. `Bool.pick` on the TYPE, so the two far arms -- which
+# APPEND to the image and so cannot be expressed as a pure word -- are reached
+# through a def that takes the image and returns the pair. The nesting is two
+# levels because `Bool.pick` needs a scrutinee and the arm needs the new image,
+# and a helper whose parameter is the computed value is bend's only way to name
+# one twice.
+def Reloc.a_plt32_far_pair(+j: Img, ploc: U32, addend: U32) -> Rloc:
+  Rloc.of(Sdiff.i2u32(Sdiff.of(Tramp.x86_ret(Img.len(j), addend, ploc), 0)), Tramp.x86(0))
+def Reloc.a_call26_far_pair(+j: Img, instr: U32, ploc: U32) -> Rloc:
+  Rloc.of(U32.or(instr, Reloc.call26_getbits(Tramp.arm_ret(Img.len(j), ploc))),
+          Tramp.arm(0))
+def Jit.arm.pl32(i: Img, +base: U32, +ploc: U32, +tgt: U32, +addend: U32) -> Rloc:
+  Bool.pick(Rloc, Sdiff.rel32_in(Sdiff.of(U32.sub(tgt, ploc), base)),
+            Reloc.a_plt32(base, ploc, tgt),
+            Reloc.a_plt32_far_pair(Img.append(i, Reloc.a_plt32_tramp(tgt, addend)), ploc, addend))
+def Jit.arm.call26(i: Img, +instr: U32, +base: U32, +ploc: U32, +tgt: U32) -> Rloc:
+  Bool.pick(Rloc, Sdiff.call26_in(Sdiff.of(U32.sub(tgt, ploc), base)),
+            Reloc.a_call26(instr, base, ploc, tgt),
+            Reloc.a_call26_far_pair(Img.append(i, Reloc.a_call26_tramp(tgt)), instr, ploc))
+# AND THE DISPATCH ITSELF, over the type. `R_X86_64_PC32` and `R_X86_64_PLT32`
+# are x86-64 and the other eight are aarch64, so a single ten-way pick on the
+# number is what upstream's `match r_type` is.
+def Jit.relocate8(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_LDST128_ABS_LO12_NC()),
+            Reloc.a_lo12(Jit.instr(i, Jit.ploc(r)), Jit.tgt(r), 4n, 11n),
+            Jit.arm.call26(i, Jit.instr(i, Jit.ploc(r)), base, Jit.ploc(r), Jit.tgt(r)))
+
+def Jit.relocate7(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_LDST64_ABS_LO12_NC()),
+            Reloc.a_lo12(Jit.instr(i, Jit.ploc(r)), Jit.tgt(r), 3n, 11n),
+            Jit.relocate8(i, base, r))
+
+def Jit.relocate6(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_LDST32_ABS_LO12_NC()),
+            Reloc.a_lo12(Jit.instr(i, Jit.ploc(r)), Jit.tgt(r), 2n, 11n),
+            Jit.relocate7(i, base, r))
+
+def Jit.relocate5(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_LDST16_ABS_LO12_NC()),
+            Reloc.a_lo12(Jit.instr(i, Jit.ploc(r)), Jit.tgt(r), 1n, 11n),
+            Jit.relocate6(i, base, r))
+
+def Jit.relocate4(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_ADD_ABS_LO12_NC()),
+            Reloc.a_lo12(Jit.instr(i, Jit.ploc(r)), Jit.tgt(r), 0n, 11n),
+            Jit.relocate5(i, base, r))
+
+def Jit.relocate3(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_AARCH64_ADR_PREL_PG_HI21()),
+            Reloc.a_adr(Jit.instr(i, Jit.ploc(r)), Jit.ploc(r), Jit.tgt(r)),
+            Jit.relocate4(i, base, r))
+
+def Jit.relocate2(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_X86_64_PLT32()),
+            Jit.arm.pl32(i, base, Jit.ploc(r), Jit.tgt(r), Jit.addend(r)),
+            Jit.relocate3(i, base, r))
+
+def Jit.relocate(+i: Img, +base: U32, +r: Reloc) -> Rloc:
+  Bool.pick(Rloc, U32.is_eq(Reloc.r_type(r), R_X86_64_PC32()),
+            Reloc.a_pc32(Jit.ploc(r), Jit.tgt(r)),
+            Jit.relocate2(i, base, r))
+
+# THE STEP: relocate, append whatever the arm appended, then patch the four
+# bytes at `ploc`. ORDER MATTERS -- the patch reads `len(image)` AFTER the
+# append, which is what makes the trampoline's return value point at the
+# trampoline and not at the instruction before it.
+def Jit.step(+i: Img, +base: U32, +r: Reloc) -> Img:
+  Img.write_at(Img.append(i, Rloc.pad(Jit.relocate(i, base, r))), Jit.ploc(r),
+               Jit.pack(Rloc.word(Jit.relocate(i, base, r))))
+def Jit.go(fuel: List<&2, Reloc>, +i: Img, +base: U32) -> Img:
+  match fuel:
+    case Nil{}: i
+    case +h <> t: Jit.go(t, Jit.step(i, base, h), base)
+# `jit_loader(obj, base=0, link_libs=None)`: `image_ = elf_loader(obj)[0]`, then
+# the fold over its relocs.
+def jit_loader_img(+e: ElfImage) -> Img: Img.of(elf_image_len(e), elf_image_body(e))
+def jit_loader(+e: ElfImage, +base: U32) -> Img:
+  Jit.go(elf_image_relocs(e), jit_loader_img(e), base)
 
 # ===========================================================================
 # THE GATE.
@@ -1171,7 +1824,13 @@ def Reloc.lo12(tgt: U32, start: Nat, end: Nat) -> U32:
 # ===========================================================================
 def row(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def urow(nm: String, v: U32) -> IO(Unit): row(nm, U32.show(v))
-def brow(nm: String, v: Bool) -> IO(Unit): row(nm, Bool.show(v))
+# `brow` PRINTS 1/0, NOT `True`/`False`. Every other row in this file is numeric,
+# and a Bool row in one file's alphabet and a U32 row in another's makes the
+# whole-line diff useless for exactly the rows that matter most -- the fifteen
+# `magic_ok` calls, which is the FIRST assert in `elf_loader` and the one a
+# corrupt blob trips.
+def b01(v: Bool) -> U32: Bool.to_u32(v)
+def brow(nm: String, v: Bool) -> IO(Unit): urow(nm, b01(v))
 
 # --- list of element as one comma-joined row.
 #
@@ -1187,16 +1846,17 @@ def Sec.nm.go(xs: List<&2, ElfSection>, +acc: List<&2, String>) -> List<&2, Stri
     case Nil{}: acc
     case +h <> t: Sec.nm.go(t, List.append(&2, String, acc, [ElfSection.name(h)]))
 def Sec.names(+xs: List<&2, ElfSection>) -> String:
-  String.join(List.reverse(&2, String, Sec.nm.go(xs, Nil{})), ",")
+  String.join(Sec.nm.go(xs, Nil{}), ",")
 
 # THE Shdr FIELD ROWS, in INDEX ORDER, each all ten fields at its spec offset.
-def Sec.hd.go(xs: List<&2, ElfSection>, +acc: List<&2, String>) -> List<&2, String>:
+def Sec.hd.go(xs: List<&2, ElfSection>, +x: Bool,
+             +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: acc
-    case +h <> t: Sec.hd.go(t, List.append(&2, String, acc,
-      [Shdr.at_text(ElfSection.header(h))]))
-def Sec.hd_text(+xs: List<&2, ElfSection>) -> String:
-  String.join(List.reverse(&2, String, Sec.hd.go(xs, Nil{})), ";")
+    case +h <> t: Sec.hd.go(t, x, List.append(&2, String, acc,
+      [Shdr.at_text(ElfSection.header(h), x)]))
+def Sec.hd_text(+xs: List<&2, ElfSection>, +x: Bool) -> String:
+  String.join(Sec.hd.go(xs, x, Nil{}), ";")
 
 # ONE U32 COLUMN OF THE WHOLE TABLE, IN ORDER -- ONE WALK PER COLUMN.
 #
@@ -1210,28 +1870,32 @@ def Sec.hd_text(+xs: List<&2, ElfSection>) -> String:
 # Five walks, each reading the section once, is the SAME number of reader calls.
 def Sec.col.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
+    case Nil{}: acc
     case +h <> t: Sec.col.go(t, List.append(&2, U32, acc, [Shdr.name(ElfSection.header(h))]))
 def Sec.col.name(+xs: List<&2, ElfSection>) -> String: justr(Sec.col.go(xs, Nil{}))
 def Sec.col.typ.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
+    case Nil{}: acc
     case +h <> t: Sec.col.typ.go(t, List.append(&2, U32, acc, [Shdr.type(ElfSection.header(h))]))
 def Sec.col.typ(+xs: List<&2, ElfSection>) -> String: justr(Sec.col.typ.go(xs, Nil{}))
-def Sec.col.flags.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
+# `sh_flags` IS 64-BIT IN Elf64, so this column is a `hi:lo` STRING row and it
+# lives with `Sec.colw`, not with the U32 columns.
+def Sec.colw.flags(+w: Wc, +s: Shdr) -> String: W64.text(Shdr.flags(s))
+def Sec.col.flags_w.go(f: List<&2, ElfSection>, +acc: List<&2, String>) -> List<&2, String>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
-    case +h <> t: Sec.col.flags.go(t, List.append(&2, U32, acc,
-      [Shdr.flags(ElfSection.header(h))]))
-def Sec.col.flags(+xs: List<&2, ElfSection>) -> String: justr(Sec.col.flags.go(xs, Nil{}))
+    case Nil{}: acc
+    case +h <> t: Sec.col.flags_w.go(t, List.append(&2, String, acc,
+      [W64.text(Shdr.flags(ElfSection.header(h)))]))
+def Sec.col.flags(+xs: List<&2, ElfSection>) -> String:
+  String.join(Sec.col.flags_w.go(xs, Nil{}), ",")
 def Sec.col.link.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
+    case Nil{}: acc
     case +h <> t: Sec.col.link.go(t, List.append(&2, U32, acc, [Shdr.link(ElfSection.header(h))]))
 def Sec.col.link(+xs: List<&2, ElfSection>) -> String: justr(Sec.col.link.go(xs, Nil{}))
 def Sec.col.info.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
+    case Nil{}: acc
     case +h <> t: Sec.col.info.go(t, List.append(&2, U32, acc, [Shdr.info(ElfSection.header(h))]))
 def Sec.col.info(+xs: List<&2, ElfSection>) -> String: justr(Sec.col.info.go(xs, Nil{}))
 
@@ -1257,7 +1921,7 @@ def Sec.colw.one(+s: Shdr, +w: Wc) -> String: Wc.text(w, s)
 def Sec.colw.go(f: List<&2, ElfSection>, +w: Wc,
                 +acc: List<&2, String>) -> List<&2, String>:
   match f:
-    case Nil{}: List.reverse(&2, String, acc)
+    case Nil{}: acc
     case +h <> t: Sec.colw.go(t, w, List.append(&2, String, acc,
       [Sec.colw.one(ElfSection.header(h), w)]))
 def Sec.col.addr(+xs: List<&2, ElfSection>) -> String:
@@ -1275,7 +1939,7 @@ def Sec.col.ent(+xs: List<&2, ElfSection>) -> String:
 def Sec.content_len(+s: ElfSection) -> U32: U32.div(Blob.hexlen(ElfSection.content(s)), 2)
 def Sec.len.go(f: List<&2, ElfSection>, +acc: List<&2, U32>) -> List<&2, U32>:
   match f:
-    case Nil{}: List.reverse(&2, U32, acc)
+    case Nil{}: acc
     case +h <> t: Sec.len.go(t, List.append(&2, U32, acc, [Sec.content_len(h)]))
 def Sec.lens(+xs: List<&2, ElfSection>) -> String: justr(Sec.len.go(xs, Nil{}))
 def Sec.content_hex(+s: ElfSection) -> String: String.take(ElfSection.content(s), 16n)
@@ -1289,4 +1953,67 @@ def Str.nm.go(xs: List<&2, Shdr>, +sstr: String, +acc: List<&2, String>) -> List
     case Nil{}: acc
     case +k <> t: Str.nm.go(t, sstr, List.append(&2, String, acc, [Str.tab(sstr, 0, Shdr.name(k))]))
 def Str.names(+xs: List<&2, Shdr>, +sstr: String) -> String:
-  String.join(List.reverse(&2, String, Str.nm.go(xs, sstr, Nil{})), ",")
+  String.join(Str.nm.go(xs, sstr, Nil{}), ",")
+
+# ===========================================================================
+# THE LIST RENDERERS THE GATE READS. Every one of them builds the STRING while
+# the walk runs rather than collecting and joining afterwards, because there is
+# no `let` to name a collected list and no map-then-join without two walks.
+#
+# `W64.text` is the `hi:lo` shape and it is the ONLY place the order of the halves
+# is written down, so every 64-bit column goes through it.
+# ===========================================================================
+def W64s.go(xs: List<&2, W64>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: W64s.go(t, List.append(&2, String, acc, [W64.text(h)]))
+def jw64(+xs: List<&2, W64>) -> String: String.join(W64s.go(xs, Nil{}), ",")
+def W64.one(w: W64) -> List<&2, W64>: [w]
+# THE RELOC 4-TUPLE, `at:tgt:type:addend` -- at and tgt are `hi:lo`, type and
+# addend are bare. elf.py:48's order, and a COUNT cannot see a transposed pair.
+def Rlocs.one(+r: Reloc) -> String:
+  String.concat([W64.text(Reloc.r_at(r)), ":", W64.text(Reloc.r_tgt(r)), ":",
+                 U32.show(Reloc.r_type(r)), ":", U32.show(W64.as_idx(Reloc.r_addend(r))), ""])
+def Rlocs.go(xs: List<&2, Reloc>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Rlocs.go(t, List.append(&2, String, acc, [Rlocs.one(h)]))
+def jrl(+xs: List<&2, Reloc>) -> String: String.join(Rlocs.go(xs, Nil{}), ",")
+def Rlocs.at.go(xs: List<&2, Reloc>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Rlocs.at.go(t, List.append(&2, String, acc, [W64.text(Reloc.r_at(h))]))
+def jrl_at(+xs: List<&2, Reloc>) -> String: String.join(Rlocs.at.go(xs, Nil{}), ",")
+def Rlocs.tg.go(xs: List<&2, Reloc>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Rlocs.tg.go(t, List.append(&2, String, acc, [W64.text(Reloc.r_tgt(h))]))
+def jrl_tg(+xs: List<&2, Reloc>) -> String: String.join(Rlocs.tg.go(xs, Nil{}), ",")
+def Rlocs.ty.go(xs: List<&2, Reloc>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Rlocs.ty.go(t, List.append(&2, U32, acc, [Reloc.r_type(h)]))
+def jrl_ty(+xs: List<&2, Reloc>) -> String: justr(Rlocs.ty.go(xs, Nil{}))
+def Rlocs.ad.go(xs: List<&2, Reloc>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: Rlocs.ad.go(t, List.append(&2, U32, acc, [W64.as_idx(Reloc.r_addend(h))]))
+def jrl_ad(+xs: List<&2, Reloc>) -> String: justr(Rlocs.ad.go(xs, Nil{}))
+
+# THE IMAGE HEAD AND TAIL. `img[:32]` and `img[-32:]` on a hex String are a TAKE
+# of 64 digits and a DROP of all but the last 64, and the second one needs the
+# LENGTH -- which is why it is `len - n` and not `-n`.
+def Img.head_n(+i: Img, n: U32) -> String:
+  String.take(Img.body(i), U32.to_nat(U32.mul(n, 2)))
+def Img.tail_n(+i: Img, n: U32) -> String:
+  String.drop(Img.body(i), U32.to_nat(U32.mul(U32.sub(Img.len(i), n), 2)))
+# `U32.is_zero` ANSWERS A `Bool`, and a `Bool` is not a `U32`, so the counter is
+# `Bool.to_u32`. Writing `U32.add(acc, U32.is_zero(..))` is "expected : U32 /
+# observed : Bool" -- the one bend error that looks like a missing coercion
+# everywhere except where the coercion is missing.
+def Img.zeros(fuel: Nat, +h: String, +i: U32, +acc: U32) -> U32:
+  match fuel:
+    case 0n: acc
+    case Succ{q}: Img.zeros(q, h, U32.add(i, 1), U32.add(acc, Bool.to_u32(U32.is_zero(Blob.u8(h, i)))))
+def Img.nonzero(+i: Img) -> U32:
+  U32.sub(Img.len(i), Img.zeros(Blob.fuel(Img.body(i)), Img.body(i), 0, 0))

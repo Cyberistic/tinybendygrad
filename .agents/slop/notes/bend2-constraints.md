@@ -13092,3 +13092,773 @@ Two rules, both measured here:
      rather than yours. It happened to be the right recovery here -- it was the
      NEWEST copy, taken after the encoder threading -- and it would just as easily
      have been a stale one. Do not rely on it.
+
+### WC10: `match` MAY SCRUTINISE A PARAMETER OR A BINDER AND NOTHING ELSE -- NOT A CALL
+
+Written while porting `codegen/decomp/dtype.py`. Bend 2.0.34, all measured on
+`tinybendygrad/codegen/decomp/dtype.bend`.
+
+  1. `match U32.ge(a, b):` is refused, and so is `match my_def(a, b):`. The
+     scrutinee must be a `def`'s own parameter or a pattern binder. "Give it its
+     own def" in the error message is NOT the whole answer -- a helper returning
+     the `Bool` does not help, because the call is still a call. The shape that
+     works is a THREADED parameter: the caller computes the `Bool` and passes it,
+     so the def that matches on it is not the def that computed it.
+  2. A `+`-marked parameter may be READ MANY TIMES; a by-value parameter may be
+     read ONCE. That is the whole of the "consumed more than once" family, and it
+     is why `op.bend`'s printers mark every arena and index `+`. The corollary
+     bites at destructuring too: `match i: case H.I64{+hi, +lo}:` is right and
+     `dd_cval(H.i64_is_neg(i), H.lo32(i), H.hi32(i))` is refused, because `I64` is
+     linear and a parameter is not a copy.
+  3. A `+` binder inside a `match` arm is ALSO single-use, so `case Some{c}:
+     f(O.Found.ar(c), O.Found.i(c))` is refused while `+c = f(...); g(O.Found.ar(c),
+     O.Found.i(c))` is fine. Move the arm body into its own def whose parameters
+     are `+`.
+  4. MUTUAL RECURSION IS REFUSED and so is a self-call whose scrutinee argument
+     is also used in the arm. The shape that walks a countdown is
+
+        def go(n: Nat, +i: U32, +acc: T) -> T:
+          match n:
+            case 0n: acc
+            case 1n+p:
+              +x = step(i, acc)
+              go(p, U32.add(i, 1), x)
+
+     -- the countdown FIRST, every other parameter `+`, and `n` not mentioned in
+     the arm. Passing the countdown second, or passing `n` inside the arm, is
+     "consumed more than once" on the binder.
+  5. `List.append(&s, T, list, [x])` takes a LIST of elements. `List.append(&s,
+     T, list, x)` type-checks the `x` against the list's type and fails with a
+     message that points at the wrong argument.
+  6. `nan` IS A KEYWORD TOKEN and may not appear anywhere in a name: `f2f.nan`
+     and `f2f.nanbits` both parse as `f2f` `.` `nan` and then fail as "a defined
+     name". `inf` is not.
+  7. A `do` block's value must come from a BIND: a trailing bare expression is
+     "expected a continuation, observed <the type>", and `IO.pure` wants a `Type`
+     rather than a value, so a `do IO<Non-Unit>` is not reachable. A gate whose
+     rows need a threaded value must therefore build ONE string purely and print
+     it with a single `IO.print`.
+  8. An UNDER-APPLIED def is reported as "expected Data, observed Type" at the
+     call, not as an arity error. Count the parameters before reading the
+     message.
+  9. `def a.b.c(...)` does NOT work as a namespace for INHERITED names: the nested
+     defs have to be siblings under one prefix (`dd_wpool.go`, `dd_wpool.pick`),
+     not `l2i.rows` next to an existing `l2i.go`. Two defs with the same full
+     name are a "duplicate declaration" whichever file they are in, and the
+     message points at the SECOND one, so grep for the full dotted name before
+     renaming anything.
+ 10. `String.concat` takes a `Data` list, so a computed `Bool` in the middle of
+     one is a type error: the conditional string has to be its own `match` arm.
+     And `U32.sub(3, n)` with `n: Nat` is a type error too -- `U32.from_nat(n)`
+     first.
+
+---
+## APPENDED 2026-10-03, the `runtime/support/elf.bend` port
+
+APPEND-ONLY, at the END, and every rule below cites the line POSITION in
+`tinybendygrad/runtime/support/elf.bend` (2054-line generated file; the hand half
+is `.agents/slop/elf_prologue.bend` and is where the edits belong).
+
+11. **`Bool.pick`'s FIRST ARGUMENT IS A TYPE AND MUST BE CLOSED.** `Bool.pick(List<&2, Reloc>, cond, a, b)`
+    is right; `Bool.pick(List<&2, Reloc, cond, a, b)` parses the rest as one type
+    application and reports
+      Error: - expected : a term
+              - observed : ')'
+    pointing at the LAST `)` and naming neither the condition nor either arm. The
+    same shape with `String.join` in an arm is the same error. ONE DEF PER ARM is
+    the fix, and it is also what makes a per-arm mutation move only its own rows.
+12. **`import Base` IS NOT OPTIONAL FOR A STANDALONE PROBE.** A four-line
+    `bin/bend` probe that omits it fails with
+      Error: - expected : a defined name
+              - observed : String
+    on the probe's OWN first def name. bend parses `def f(nm: String, ...)` and
+    then cannot resolve `String`, because the file never brought `Base` into
+    scope. The port has `import Base` at its line 140 and is unaffected; a reader
+    who strips it to make a minimal probe gets an error about the probe.
+13. **A `U32` IS AFFINE TOO.** `U32.mul(x, y)` and `U32.sub` and `Bool.to_u32`
+    all read their operands once, so a `U32` parameter read twice in one body needs
+    `+` exactly like a `String`:
+      Error: - expected : x
+              - observed : x (consumed more than once)
+    The one that bites hardest is a `Bool.pick` whose CONDITION and THEN ARM both
+    compute `U32.sub(a, b)` (elf.bend `Reloc.a_plt32`): the condition is evaluated
+    and so is the arm, so `a`, `b` and the `base` they are compared against are
+    each read twice.
+14. **`U32.is_zero` ANSWERS A `Bool`, NOT A `U32`.** A counter written
+    `U32.add(acc, U32.is_zero(x))` is
+      Error: - expected : U32
+              - observed : Bool
+    and the coercion is `Bool.to_u32`. It reads like a missing `int()` in C and it
+    is not: it is a missing `Bool.to_u32`.
+15. **AN UNDER-APPLIED DEF OF A `Nat` FUEL SHOWS UP AS A FUNCTION TYPE.** Calling
+    `Img.zeros(fuel, h, i)` against `def Img.zeros(fuel: Nat, +h: String, +i: U32,
+    +acc: U32)` is
+      Error: - expected : U32
+              - observed : @+acc:U32 -> U32
+    -- the message shows the PARTIAL APPLICATION, not the arity. Count the
+    parameters against the arguments before reading anything else; this is the
+    same failure as rule 8 above seen from the other side.
+16. **A `match` CANNOT SCRUTINISE A COMPUTED VALUE, AND `Nat` IS THE ONLY FUEL
+    THAT WORKS.** `match Rc.n(s):` where `Rc.n(s)` is a def call is
+      Error: - message : a parameter or field scrutinee (a match cannot
+                scrutinize a computed value: give it its own def)
+    The fix that typechecks is to pass the COUNT AS A `Nat` PARAMETER and spend it
+    with `case Succ{q}`. A `U32` fuel decremented with `U32.sub(fuel, 1)` is NOT
+    accepted as a decreasing self-call; a `Nat` fuel spent by a `Succ` arm is.
+17. **`Bool.to_u32` IS THE ONLY BRIDGE FROM `Bool` TO `U32`, AND THE REFUSALS
+    NEED IT.** Upstream raises `StopIteration` and `RuntimeError` and bend has no
+    exceptions, so a three-valued answer (0 / 1 / 2) is built from nested
+    `Bool.pick`s that each carry a `Bool.to_u32`. That nesting is also why the
+    code reads badly and why it is worth it: the row that says WHICH refusal fired
+    is a string, and a `Bool` would collapse "which" into "whether".
+18. **DEF ORDER IS A HARD CONSTRAINT AND IT PROPAGATES BACKWARDS.** `bend` binds
+    only types out of order; a def may only call defs written ABOVE it. So a chain
+    of N `Bool.pick` arms must be written from the LAST case backwards, and a
+    helper that a mid-chain arm needs has to be hoisted above the whole chain. Two
+    consequences seen here: `Jit.relocate` .. `Jit.relocate8` are in reverse
+    numeric order in the file, and `Fnv` / `Img.write_at` / `Built` / `Symtab` /
+    `Trg` had to move ABOVE the `Sdiff` / `Reloc` / `Jit` block because
+    `Jit.step` calls `Img.write_at`. The error is always
+      Error: - expected : a filled definition (an unfilled law is a dead claim:
+                live code cannot use it)
+      - observed : <the name>
+    which reads like a `LAWS.bend` problem and is not one.
+19. **`List.append(&2, A, xs, ys)` IS `xs ++ ys`, MEASURED AGAIN ON A SECOND
+    FILE.** Confirmed on `Sections.step`, `Sections.go2`, `Sec.col.*.go`,
+    `U32s.go`, `Strs.go`, `W64s.go`, `Rlocs.go` and the ten `Rc`/`Jit` walks. A
+    walk that APPENDS in visit order writes `List.append(.., acc, [x])` and does
+    NOT reverse; a walk that PREPENDS writes `List.append(.., [x], acc)` and does
+    not reverse either. Mutating either direction is caught by the `*_names` and
+    `*_hdrtxt` STRING rows (125 rows each in `elf_mutations.txt`) and by NOTHING
+    in a count.
+20. **`U32` WRAPS MOD 2**32** EXACTLY AS PYTHON'S `& 0xffffffff`.** MEASURED on
+    this machine for `mul`, `shln`, `sub` and an FNV-1a step, so a digest written
+    in bend and one written in Python agree bit for bit. That is what lets the
+    image rows be a 32-bit word instead of 7248 hex digits, and it is why sha256
+    is not needed and not used.
+21. **AN EXISTING `+` PARAMETER THAT LOSES ITS LAST USE IS A COMPILE ERROR.**
+    Removing the only read of a `+x` parameter turns the declaration into a shape
+    bend rejects ("removing the last use of a parameter"), so a refactor that
+    deletes a use has to delete the `+` in the same edit. Hit twice while
+    replacing the `(neg, mag)` pair with `Sdiff`.
+22. **A MUTATION HARNESS MUST RUN ITS MUTANTS BESIDE THE TARGET.** The port's
+    `import ./../../helpers.bend` is RELATIVE; a mutant written to `/tmp` cannot
+    find the substrate, and every mutation then reads as "did not compile" -- which
+    looks like a caught mutation and is a blind spot in the harness. Two mutation
+    harnesses in this tree did that. And a mutation that makes the port NOT
+    TERMINATE must be given a wall-clock limit and reported as its own outcome,
+    not waited out: `Sections.step`'s argument-order mutation is a real
+    non-termination, and the table's first run burned 1200 s on it.
+23. **`--check-only` EXITS 1 EVEN ON A CLEAN FILE** and the message that matters is
+    the FIRST LINE. `ALL PROOFS CHECK` is the pass; `SOME PROOFS FAIL` is not, and
+    `grep -q "ALL PROOFS CHECK"` on line 1 is the test that works from a shell
+    script.
+
+---
+## APPENDED 2026-10-03, from the def-name audit unit. Numbering CONTINUES from the
+## 23-item list above; cite these by POSITION (they are at the end of the file).
+
+24. **BEND HAS MODULE ALIASES, AND THEY ARE ALREADY USED TREE-WIDE.**
+    `import ./x.bend as A` then `A.name`. 102 of 128 `.bend` files carry an aliased
+    import (`device.bend` -> `S` for `LAWS/spec.bend`, `H` for `helpers.bend`, `O`
+    for `uop/ops.bend`, `F` for `uop/fold.bend`). Three measured consequences:
+      * an import is NOT optional: bare `import ./a.bend` is a parse error, it must
+        be `import ./a.bend as <Name>`;
+      * two modules may each define `check`; `A.check` and `B.check` are distinct
+        (probed with a 3-file tree). So a def name that collides ACROSS files needs
+        no prefix -- the importer's alias is the disambiguator, exactly as upstream
+        writes `import x as y`;
+      * `def A.check` is also a legal declaration, giving `A.A.check` from an
+        importer, so even an INTRA-file collision can be namespaced rather than
+        prefixed.
+    This is the arithmetic that makes most renames unnecessary. Rule: before
+    inventing a prefix to dodge a collision, check whether the collision is
+    intra-file (needs `def A.name`) or cross-file (needs nothing at all).
+
+25. **A DOTTED DEF IS A NAME, NOT A NAMESPACE DECLARATION** -- but `A.A.check`
+    resolving does NOT mean the prefix is free. `bend_defs()` in
+    `slop_1to1.py` reads `def A.b` as `A`, which is correct for counting.
+
+26. **`comm` IS LOCALE-COLLATING AND WILL FABRICATE A DIFF.** A mutation harness
+    built on `comm -12`/`comm -13` reported 6 spurious "rows moved" out of 252 --
+    and did so on the NO-OP CONTROL, which is the only reason the control was
+    worth running. Fix: `LC_ALL=C sort` both sides and `diff` over them, which
+    compares MULTISETS and so is also immune to duplicate row names. Same trap,
+    second instance today: a name-comparing harness is the failure mode the core
+    brief already records; this is the same class one layer down, in the DIFF.
+
+27. **A MUTATION THAT "MOVED 0 ROWS" MUST BE VERIFIED APPLIED, OR IT IS NOT A
+    RESULT.** Three of my own value-change mutations reported 0 rows moved and all
+    three were dead patches:
+      * a regex aimed at `def noopf_go(O.Arena.budget(...))`, which is not on that
+        line at all -- it is on the CALLER's body line;
+      * two patterns whose `grep` guard was a regex, so `{` / `(` made grep answer
+        "invalid repetition count" and then 0, i.e. a broken guard read as a
+        clean result;
+      * a `nic.drop_last(Bld.ys(b))` written with one `)` too few, which swallowed
+        the NEXT LINE so the file stopped building and the error pointed at an
+        innocent `def`.
+    The guard must be `grep -qF` on a literal the mutant is REQUIRED to contain.
+    A patch that does not apply prints "PATCH DID NOT APPLY", never "0 rows".
+
+28. **A MIRROR MUST LIVE INSIDE THE REPO.** `cp -R` into `$TMPDIR` cannot resolve
+    Bend's RELATIVE imports, so every mutation reads BUILD FAILED -- including the
+    no-op control, which is what distinguishes "the mutants broke it" from "the
+    mirror broke it". Mirror to `<repo>/.agents/slop/<work>/` and the control
+    returns to 0.
+
+29. **A COLD-COMPILE FAILURE NAMING A DEF THAT IS NOT IN YOUR FILE IS A CONCURRENT
+    AGENT, AND THE LINE NUMBER IS THEIRS.** `bend schedule/rangeify.bend` reported
+    `def cfun_ds.shape` at line 1030 -- a def in `uop/fold.bend`, which another unit
+    was editing at the time (111 insertions in its working diff). Reproduced at
+    HEAD with all 128 `.bend` files restored via `jj file show -r @`, which is the
+    step that proves it is not your rename. Correct response: wait for the other
+    file's mtime to be stable across ~4 polls 20 s apart, then RE-RUN the baseline;
+    the row count must return unchanged.
+
+30. **`def X.of` MUST PRECEDE `def X`, and a partial rename of a dotted family
+    breaks the file in a way that reads like a type error.** Renaming
+    `rf_no_indexing_calls` -> `no_indexing_calls` while `rf_no_indexing_calls_of`
+    kept its prefix is CORRECT and compiles. Renaming only the `def` line and
+    leaving `def X.fin` behind does not.
+
+31. **`t_<upstream>` DEFS ARE NOT RENAMED PORTS.** In this repo 663 defs match
+    `^def t_\w+\(\) -> IO\(Unit\):` -- they are test gates that PRINT ROWS about
+    upstream `<upstream>`. Upstream's `check` and the port's `t_check` are unrelated
+    defs. Renaming `t_check` -> `check` would be wrong twice: it misnames the def,
+    and in 16 measured cases the bare name ALREADY EXISTS in the same file, so it is
+    a duplicate-declaration compile error rather than a fix.
+
+## APPENDED 2026-10-03, the `trange`/`GlobalCounters`/`Context` unit on
+## `tinybendygrad/helpers.bend`. Numbering CONTINUES from the 31-item list that ends
+## the previous block; cite these by POSITION (they are at the end of the file) and
+## grep with `rg '^### ' .agents/slop/notes/bend2-constraints.md | tail -14`.
+
+### H-1. A GATE THAT DEFINES THE THING UNDER TEST GATES A COPY
+    An earlier draft of `.agents/slop/helpers-tc.bend` declared `type Counters`,
+    `type Ctx`, `type Tqdm`, `def trange` and every `Context.*` / `GlobalCounters.*`
+    def LOCALLY and imported `helpers.bend` only for `H.Flags`. It passed 62 rows
+    against CPython. It was still worthless: a mutation of
+    `tinybendygrad/helpers.bend` moved NOTHING, because nothing in that file reached
+    the rows. The test is one grep -- `rg -c '^(def|type) (trange|Context|GlobalCounters|Counters|Mupd|Ctx|CV|Tqdm)\b'`
+    over the gate must print `0`. This is the same failure as the three
+    `schedule/indexing.bend` defs that were written, commented and never called, and
+    it is invisible for the same reason: a def nothing calls is outside every check.
+    The proof that a gate is wired is a mutation that moves a row, not a green run.
+
+### H-2. `F32.add` IS A LAW, SO A FLOAT ACCUMULATOR HAS NO EXPRESSION
+    `base.bend` declares `law F32.add`, `law F32.mul`, `law F32.sub`, `law F32.to_u32`
+    and about twenty more (F32 block at base.bend:1552-1635). Live code may not call a
+    law, so `GlobalCounters.time_sum_s` (helpers.py:305, a CPython `float`) can be
+    CARRIED in an `F32` field and can never be INCREMENTED. The exact text is
+        - expected : a filled definition (an unfilled law is a dead claim: live code
+          cannot use it)
+        - observed : F32.add
+    A `U32` microsecond field would count, and would be a silent change of unit and
+    type; carrying the `F32` and declaring the gap is the honest answer. Same wall for
+    `F32.show`, which is why `helpers.bend` has a hand-written `f32_fixed`.
+
+### H-3. `A do` BIND IS AFFINE AND CANNOT BE `+`-ED, SO A GATE'S SHARED STATE MUST
+###     BE A `+` PARAMETER OF A SECOND DEF
+    `f : +H.Flags <- H.Flags.from_env()` is a PARSE error -- "expected: a quantified
+    datatype after +", "observed: '<'". Three reads of a do-bound value is
+    "consumed more than once", and there is no way to add the `+`. The shape that
+    works, used eight times in `.agents/slop/helpers-tc.bend`:
+        def go(+f: Flags) -> IO(Unit): ...        # three reads, legal
+        def rows() -> IO(Unit):
+          do IO<Unit>:
+            f : Flags <- Flags.from_env()        # moved ONCE, into a `+` param
+            go(f)
+    The corollary: a PURE value cannot be `<-`-bound either -- `c : Ctx <-
+    Context.__enter__(...)` gives "expected: @-R:Type -> ..., observed: Ctx" -- so
+    the gate passes pure intermediates as ARGUMENTS to `+` params and RECOMPUTES them
+    where a `let` would be affine.
+
+### H-4. A SELF-CALL'S SHRINKING ARGUMENT MUST BE A BINDER, NOT A COMPUTED `Nat.sub`
+    `f(l, ds)` recursing as `f(Nat.sub(l, 1n), t)` is refused:
+        - expected : a decreasing self-call (arguments are read left to right: each
+          passed unchanged until one shrinks)
+    `Nat.sub` is not recognised as shrinking, so the checker reads it as a computed
+    argument and gives up. What IS accepted is a destructured binder (`case 1n+m:` ->
+    `f(m, ...)`, as `List.range.go` does at base.bend:929) or the list TAIL, in which
+    case every argument BEFORE it must be passed unchanged. `kv_find.go` in
+    `helpers.bend` is the reference shape: `kv_find.go(t, k, <computed>)`.
+
+### H-5. `List.append(a, xs, ys)` IS `xs ++ ys` AND `xs ++ ys` PUTS `ys` LAST, SO A
+###     REBUILD THAT PREPENDS REVERSES THE PREFIX
+    Rebuilding a list element-wise as `List.append(&2, A, [new], rest)` prepends
+    `new`, so a fold that rebuilds `[e] ++ f(t)` reverses every element it has
+    already walked. This shipped inside `GlobalCounters.mupd_put` and the gate caught
+    it as `gc_default_keys=3,3,0,9` against CPython's `0,3,9` -- one duplicated key,
+    produced because the walk continued past the key it had just replaced and
+    appended it again. Two rules, both measured here: a rebuild PREPENDS
+    (`List.append(&2, A, [x], rest)`), and an insert-at-the-end APPENDS
+    (`List.append(&2, A, rest, [x])`). Note the ARGUMENT ORDER is `(quantifier,
+    elementtype, xs, ys)` -- `List.append(x, &2, U32, ...)` is a type error, and
+    `&2`/`U32` are the two leading arguments, not the last two.
+
+### H-6. AN EXPLICIT `Nil{}` CANNOT BE THE `ys` OF `List.append` WITHOUT ITS QUANTIFIER
+    `List.append(&2, U32, ds, Nil{})` gives "expected : Quant / observed : U32" --
+    an empty list has no element type to infer from on that side. Write a one-element
+    literal (`[k]`) or pass a list whose type is already known. This is a third
+    distinct spelling of the empty list in one file, which is why `Nil{}` /
+    `[x]` / `List.replicate` are worth naming explicitly in a port.
+
+### H-7. `U32` HAS NO `u32` LITERAL SUFFIX
+    `7u32` is "expected : a numeric literal (NUMBER is U32, NUMBER n is Nat) /
+    observed : 'u'". A bare `7` is a `U32` in a `U32` context; the `n` suffix is how
+    you get a `Nat`. Also `Nat`/`U32` are not interchangeable in either direction --
+    `U32.to_nat` is a runtime conversion, not the identity, and `Bool.to_u32` is NOT a
+    `Nat` context (a `Nat` literal will not bind there).
+
+### H-8. `Bool.pick` TAKES A TYPE AND `List.append` TAKES A QUANTIFIER, AND THE ERROR
+###     POINTS AT THE WRONG TOKEN
+    `Bool.pick(&2, U32, c, a, b)` fails with "expected : Type / observed : Quant"
+    and the caret sits on `List.append(&2, U32, ...)` two tokens earlier, because the
+    two calls are on the same line. `Bool.pick` is `(-A: Type, ...)`; the `&2`/`U32`
+    pair belongs to `List.append`. Same for `Maybe<&2, T>` versus a `+` param, which
+    rule 3 (position 1223) already covers.
+
+### H-9. A `Data` PATTERN FROM AN IMPORTED MODULE WORKS, SO THE GATE NEEDS NO READERS
+    `case H.Flags{nc, df, di, sd}` and `case H.Counters{ops, mem, t, k, used, devs}`
+    both compile in a file that only did `import .../helpers.bend as H`. Bend has no
+    `value.field` sugar INSIDE a module, but a cross-module `match` on a `Data`
+    record binds every field. This is what keeps a gate from growing one reader def
+    per field.
+
+### H-10. `Python dict` HAS AN INSERTION-ORDERED KEY SET THAT A DENSE ARRAY CANNOT
+###     REPRODUCE, AND A READ OF A `defaultdict` INSERTS
+    `GlobalCounters.mem_used_per_device` is `defaultdict(int)`. Touching devices 3 and
+    0 leaves a key set of `{3, 0}`; a dense `List<&2, U32>` indexed by device would
+    answer `0,1,2,3` -- four keys where Python has two, and a wrong `len` as well as a
+    wrong key set. And `d[9]` on a fresh counter INSERTS 9. The assoc list (the
+    `merge_dicts` idiom already in `helpers.bend`) is the only one of the two
+    representations that gets both. A gate row that prints the key SET, not just the
+    value at a key, is what caught the duplicate-key rebuild in H-5.
+
+---
+
+## G-1. A JSON VALUE'S TYPE IS A CROSS-FILE CONTRACT, AND CHANGING IT BREAKS THE READER
+##     SILENTLY-UNTIL-IT-CRASHES  (2026-10-03, `.agents/slop/rebase-gate.py`)
+
+`rebase-plan.py` emitted `"port": {<upstream .py>: "<one .bend path>" | null}`.
+Commit `d4f647349` changed it to `{<upstream .py>: ["<path>", ...] | null}`, for a
+good reason: one port can be the port of SEVERAL upstream files (rewriter.bend was the
+port of three). It touched only `rebase-plan.py`. `rebase-gate.py`'s reader kept
+`out + [p]` and so returned `[[path, ...]]`; the next thing to touch it was a
+de-duplicating dict comprehension, and the tool died on its DEFAULT invocation with
+`TypeError: unhashable type: 'list'`, taking `--port`, `--batch`, `--record` and the
+whole-tree sweep with it.
+
+    * A crash is the BEST outcome. It is the shape mismatch being LOUD. The silent
+      outcome was available and worse: had `ports_of` filtered non-strings instead of
+      wrapping them, all 213 ports would have answered NOT-STARTED and a rebase would
+      have read as "nothing drifted".
+    * A reader that answers "none" to a value it does not UNDERSTAND is the worst
+      shape. Raise and name the value; `PlanShapeError` here.
+    * The JSON producer is not yours to change, and neither is its commit. The fix
+      belongs in the reader, and it has to accept BOTH shapes -- the old producer is
+      still on disk in older baselines and in any cached `--json` output.
+    * The generalisable form: **the type of a value crossing a file boundary is a
+      published contract.** When you widen one, grep the READERS, not the writers.
+
+## G-2. A SELFTEST THAT COVERS THE DECISION BUT NOT THE TARGET LIST IS A GATE THAT
+##     IS GREEN AND DOES NOT RUN
+The same crash survived a selftest that passed on every run. The selftest called
+`gate_port()`; the defect was in `main()`'s TARGET CONSTRUCTION, above it. So the
+instrument measured the part that works and was silent about the part that did not --
+the same inversion as the shape mismatch it was written to prevent, one layer up.
+
+    * Every gate needs each of its stages driven by name, INCLUDING the stage that turns
+      a request into the list of things to check. That stage is where "which files?" is
+      answered, and it is the stage a cross-file contract change lands in.
+    * `targets_of()` / `srcs_of()` now exist as functions purely so the selftest can
+      drive them, and the selftest runs BOTH shapes of the plan's value.
+
+## G-3. GUARD ORDER IS SEMANTICS, AND THE WRONG ORDER REPORTS A WRONG VERDICT
+`verdict()` ran GUARD 4 (two lanes of THIS RUN disagree) BELOW the "no baseline
+recorded" shortcut. GUARD 4 reads nothing from `baseline.json`, so the shortcut
+excused a check that had no dependence on it. Measured, by planting one disagreeing row
+in a copy of `nv-oracle.py` and gating `ops_nv` against it:
+
+    before:  NOT-STARTED  "no baseline recorded for tinybendygrad/runtime/ops_nv.bend"   rc=0
+    after:   BROKEN       "1 row(s) disagree with CPython across 1 lane pair(s)"          rc=1
+
+A crashing gate is a finding. A gate that says NOT-STARTED while the port and CPython
+visibly disagree is BELIEVED, and 29 un-recorded ports could each have been hiding one.
+
+    * A guard that consults the baseline must sort AFTER every guard that does not.
+    * Conversely, `NOT-STARTED` must not become a catch-all for "some guard did not
+      run". Its `why` now says which guards DID pass, because "they agree right now" is
+      a weaker claim than UNCHANGED and must not borrow its name.
+
+## G-4. A ROW-PRINTING ORACLE IS THE RIGHT SHAPE AND A GATE THAT WRAPS ONE IS NOT
+Scanning `.agents/slop/*oracle*.py` for wireable pairs turned up ~35 candidates for 50
+ports. Several of the best-looking ones (`ew-gate.py`, `tensor-gate.py`,
+`nn-init-gate.py`, `mm-dt-gate.py`, `mixin-op-gate.py`, `onnx-gate.py`) are NOT oracles
+in this sense: they run `./bin/bend <port>` and diff the result against a fixture. That
+makes them harnesses for ONE port, and pointing the tree-wide gate at one binds the gate
+to that harness's own bend invocation rather than to the tool's lanes.
+
+    * Wire the ROW PRINTER (imports `tinygrad`, calls it, prints `name=value`), not a
+      script whose docstring shows a bend pipeline.
+    * "It imports tinygrad" is necessary and not sufficient. `mm-lift-gate.py` imports
+      it and is still the weaker gate: its docstring states that one fixture list is
+      written once and BOTH lanes are generated from it, so the two lanes cannot
+      disagree by construction. That is a fine SHARED-FIXTURE gate and a weak
+      INDEPENDENT one, and the difference is worth a comment rather than a refusal.
+    * A gate's strength is the INTERSECTION of row names, never what either side emits.
+      `cpulink_oracle.py` prints 20 rows and shares 3 with its port; the other 17 are
+      `findlib_*` answers about where libm lives ON THIS MACHINE. Wired, with the number
+      3 written down rather than 20.
+
+## G-5. A SCAN THAT DIES ON ITS THIRD PROBE REPORTS NOTHING ABOUT THE FIRST TWO
+`rebase-scan-oracles.py` ran every candidate oracle with a 900s budget and
+`nv_nvdev_gate.py` exceeded it, taking the whole sweep down -- including every row set it
+had already computed and written to its cache. A timeout is a fact about a probe, not
+about the scan.
+
+    * Per-probe timeout, caught, recorded as "emits no rows", sweep continues.
+    * A 0-row bend result is re-run ONCE before being believed: bend's machine stack
+      overflows on roughly 1 run in 20 and can print ZERO rows, which is byte-identical
+      to "this file has no `main`".
+    * Cache every probe's rows to disk keyed by its spec, so a sweep can be resumed and
+      so a measurement is reproducible rather than a memory of one run.
+
+## G-6. THE HEADER'S GUARD NUMBERS AND THE CODE'S WERE TWO DIFFERENT GUARD 3s
+The module docstring listed guard 3 as ORACLE REACHABILITY, which is implemented as the
+`died` loop. A code comment labelled "# GUARD 3:" sat on the lane-PAIR comparison. So
+the header described a guard the code did not name, and the code numbered one the header
+did not list -- and a reader checking the header against the code finds two guard 3s and
+cannot tell which one the prose is promising.
+
+    * Name the guards ONCE, in the header, and let the inline comments cite the header's
+      numbering. The ORDER they fire in is part of the contract (see G-3), so it is
+      stated in both places rather than left to be inferred from the layout.
+    * The count in the header ("three independent guards") was itself stale by the time
+      it was read, which is the tell that a guard list needs the same equality check a
+      conformance roster needs.
+
+## G-7. `EXTRA_PORTS` EIGHT-OF-NINE-REDUNDANT: A HARDCODED MAP SHADOWS A COMPUTED ONE
+Once `rebase-plan.py` grew `header_ports()` -- which reads each port's OWN header -- the
+hand-maintained `EXTRA_PORTS` in `rebase-gate.py` became a second source of the same
+answer, and it had rotted: two entries were exact identities of the computed map, two
+were SUBSETS of it, two named files that no longer EXIST (the 1:1 ruling split
+`ops_cpu_null.bend` into `ops_cpu.bend` + `ops_null.bend`, and later split
+`executor.bend` into `ops_python.bend`), and two named a port that is not the port at all.
+
+    * Two sources for one answer is one too many. Keep the hand map ONLY for what the
+      computed one provably cannot see -- here, `runtime/ops_cuda.py`, whose port's file
+      begins with `import Base` and therefore has no header to read.
+    * Then PIN it: the selftest asserts every surviving entry is ABSENT from the computed
+      map. Without that assertion the rotted entries came straight back, because nothing
+      failed when a header started naming a file the map also covered.
+    * Keep the removed entries as DATA and assert their current paths exist. That check
+      is what found `executor.bend` had since been deleted -- a comment about a
+      removed map entry cannot notice that the world moved after the comment was written.
+
+## G-8. A LANE KEYED BY FILENAME STEM IS NOT A UNIQUE LANE KEY
+`run_port` keyed an oracle's lane `cpython:<path.stem>`. Wire two oracles whose scripts
+share a stem on one port and the second silently overwrote the first's rows, so a wired
+oracle could vanish with nothing to report. Renaming the lane would have invalidated every
+recorded baseline, since `baseline.json` is keyed by lane NAME -- so the collision is
+NAMED as a dead lane (rc 127) instead, and the reason is written down at the call site.
+
+    * A lane is an identity, and a derived identity is a key waiting to collide. If it
+      must be derived for compatibility, detect the collision loudly rather than
+      silently overwriting.
+
+## G-9. A MUTATION APPENDED AT THE END OF AN ORACLE RUNS AFTER THE ORACLE HAS PRINTED
+First attempt at planting a disagreement: append a `builtins.print` shim to a copy of
+`nv-oracle.py`. The mutant printed the UNCORRUPTED rows and reported "0 rows differ",
+which read as "the port survived the mutation" -- the most expensive possible false
+negative. Every oracle in this tree collects rows into a list as the module imports and
+prints them from an `if __name__ == "__main__":` block at the BOTTOM, so a shim appended
+after that block is installed too late.
+
+    * Mutate the printer's EXPRESSION, in place, and assert the substitution count is
+      exactly 1. `rebase-plant-disagreement.py` does this and additionally asserts that
+      the mutant differs from the real oracle in exactly one row before gating against
+      it -- so "the mutant did not take" can never again be mistaken for "the port is
+      correct".
+
+## G-10. A `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND THAT FORCES AN ARM SHAPE
+Position: this section starts at the line after `## G-9`. Numbering continues the `G`
+series; `G-10` is used by no other section, and the INDEX at the top is stale as always
+-- cite the header, not the number.
+
+Writing `match O.eq_dt(dt, vd):` to pick between two answers is refused with "give it
+its own def". The escape is not a `Bool` binder and not `Bool.pick` on a `Maybe` type
+argument (see H-8 on how `Bool.pick` takes a type). It is to arm on the DATA the
+comparison was standing in for. `self.dtype is dtypes.void` became
+`case S.Dt{_, _, S.CVoid{}, _}` -- which is better anyway, because it arms on the class
+and so survives a change to the first two fields. `ins_ds.shape` avoids the question
+only because `some_if` CONSUMES a computed `Bool` instead of matching on it.
+
+## G-11. AN ASYMMETRIC MEET IS INVISIBLE ON EVERY ROW THAT MIXES ONE INT WITH `weakint`
+Position: the section after G-10.
+
+`least_upper(+ma, mb)` tested `U32.is_zero(ma)` and not `mb`, so a zero mask on the
+RIGHT decoded as `lowest(0) = U32.log2(0) = 0` and `dt_by_rank(0)` is `bool`:
+`least_upper.of(void, x)` answered `void` and `least_upper.of(x, void)` answered
+`bool`. Both of a commutative definition's halves disagreed, and NOTHING caught it,
+because every pre-existing row mixed one integer dtype with `weakint` and those two
+masks already agree on their lowest bit. Two lessons:
+
+    * A row that ANDs both orders of a commutative predicate is the cheapest fixture
+      that separates it, and it is also the row that names WHICH side broke. One
+      combined row would only have said "something is wrong".
+    * `_get_recursive_parents(bool)` is ALL NINETEEN dtypes and every other dtype's
+      closure is that set MINUS bool, because `promo_lattice` has `bool: [weakint]` and
+      nothing points back. So bit 0 is the only bit an AND can remove, and 188 of 361
+      ordered pairs separate `ma` from `ma & mb`. The separating fixture is
+      `(bool, weakint)`, which is the CHEAPEST possible one and was not the one in use.
+
+## G-12. A HARNESS THAT PATCHES THE REAL TREE LOSES THE WORK WHEN THE SERVER RESTARTS
+Position: the section after G-11.
+
+A before/after harness that swapped the pristine file into the live tree and swapped it
+back was killed by a server restart between the two writes, and silently reverted the
+entire unit's edit. The file was left INTACT (byte-identical to `@-`), so nothing looked
+broken -- the unit simply had no work any more, and `jj status` showed the file as
+unmodified. Three rules that came out of it:
+
+    * Build the "before" tree as a full COPY under `.agents/slop/` and never open the
+      real tree for writing. Copying the whole DIRECTORY is required rather than
+      convenient: every import here is relative, so a single-file copy elsewhere cannot
+      resolve `./ops.bend`.
+    * A mutation harness must restore through an atomic `os.replace` of a `.mutbase`
+      copy taken first, and should report the post-run row count so a lost restore is
+      visible in its own output instead of only in `jj status`.
+    * After ANY interrupted run, `diff <(jj file show -r @- <file>) <file>` before
+      redoing anything. It is one command and it distinguishes "clean loss" from
+      "truncated file", which look identical from the editor.
+
+## G-13. `U32.log2(0) == 0`, SO A DEGENERATE MASK DECODES AS RANK 0 AND NOT AS AN ERROR
+Position: the section after G-12.
+
+`lowest(+m: U32) -> Nat` is `U32.log2(U32.and(m, U32.sub(0, m)))`. For `m = 0` that is
+`U32.log2(0)`, which is `0`, and `dt_by_rank(0)` is `bool`. So a zero mask never
+surfaces as a missing value -- it surfaces as a CONVINCING WRONG ONE. This is the
+general shape of the trap: a total function over a domain that includes a value the
+caller meant to exclude will answer something, and the answer will be a member of the
+type rather than an absence. Guard the domain (`Bool.or(is_zero(ma), is_zero(mb))`), do
+not rely on the decode failing.
+
+## G-10. `rows()` SHREDS A MULTI-LINE ORACLE VALUE INTO BOGUS ROW NAMES
+Measured on `renderer_oracle.py cstyle`: it prints C source, so lines inside the body
+contain `=`. `rows()` keys on the FIRST `=` in a line, so the 11 "rows" it appeared to
+emit were FOUR claims (`k1_load_store`, `k2_alu`, `k3_consts`, `k4_smem`) plus SEVEN
+fragments of C code -- `float val0`, `*(buf0+1)`, `int val1` -- that were never claims at
+all. They still satisfy GUARD 2 ("the lane is non-empty"), so the count looked healthy.
+
+    * An oracle value must be ONE LINE. A row whose value can contain a newline is a row
+      whose name is not a name, and no guard here can tell the difference -- GUARD 2 only
+      asks whether SOMETHING was printed.
+    * `codegen/simplify.py`'s oracle and `ops_nv`'s use `=` inside a value too and survive,
+      so the fix is not a ban on `=` in a value but a rule: the FIRST `=` delimits the
+      name, therefore the name is whatever precedes it, therefore a value containing a
+      line with a different `=` silently re-keys the row. Quote/escape the payload.
+
+## G-11. `UOp.const` AND `UOp.range` CARRY `dtypes.weakint`, AND cstyle CANNOT RENDER IT
+`renderer_oracle.py`'s `k6_range` fixture dies with `KeyError: dtypes.weakint`, so the
+whole cstyle oracle exits 1 and the lane is BROKEN. Traced to the vendored dtype rather
+than to the port:
+
+    UOp.const(0).dtype    == dtypes.weakint
+    UOp.range(4).dtype    == dtypes.weakint      # both at the PIN and at HEAD
+    CStyleLanguage.type_map has no weakint entry, at the PIN and at HEAD either
+
+`f_range` stores `rg + rg`, whose dtype is weakint, and upstream `render_type` indexes
+`type_map[dtype]` with it. So the fixture asks CPython to render a dtype CPython cannot
+render. It is NOT a port bug and NOT a rebase symptom.
+
+    * The fix belongs in the ORACLE: cast the range result the way the same file's `I()`
+      already casts its consts (`UOp.const(n).cast(dtypes.i32)`). A dtype reaching a
+      renderer un-cast is a fixture bug, because a real kernel's RANGE is consumed by an
+      ALU that commits its dtype first.
+    * Worth checking before blaming a port: does the dtype appear in `type_map` AT THE
+      PIN as well as at HEAD? If not, it is not drift and no amount of re-vendoring moves
+      it.
+
+## G-12. A PORT'S ROW NAMES AND ITS ORACLE'S CAN BE DISJOINT NAMING SCHEMES OVER THE
+##      SAME FIXTURES, AND THEN NO ORACLE CAN BE WIRED WITHOUT A PORT CHANGE
+`cstyle.bend` prints 225 rows named `tmap BASE`, `acc  BASE  plain`, `buf2 CUDA  LOC`,
+`buft BASE` -- one row per (construct, TARGET, MODE) triple. `renderer_oracle.py` prints
+one row per FIXTURE, `k1_load_store`. Same eleven fixtures, two orthogonal axes, and not
+one shared name.
+
+    * GUARD 4 reporting "share NO row names" on such a pair is CORRECT and not a bug to be
+      worked around by renaming a row. The honest move is to say which axis each side
+      indexes and re-point the oracle, or to leave the lane BROKEN and name it.
+    * A port naming rows by TARGET is stronger than one naming them by fixture, because it
+      separates the backend axis from the construct axis. That is worth preferring when a
+      new port's row names are being chosen, and it is invisible until an oracle exists.
+
+## DD-1. A NODE INVENTORY OVER A CREATION WINDOW IS A PROPERTY OF THE SESSION, NOT OF THE FUNCTION
+Position: this section; numbering continues the `G-` series above and starts at LINE
+13648 of this file, because the integers in the two series above are taken.
+
+`tinybendygrad/codegen/decomp/dtype.bend`'s gate printed `<nm>sig=` as the `op/nsrc` of
+every arena node a fixture interned, in INDEX order. Measured consequence: the row is a
+function of everything interned *before* the fixture as well as by it, because
+`UOpMetaClass.ucache` interns structurally and a module-level `UOp.const(0, dt)` is
+therefore reused by every later fixture. The oracle in that file made it worse without
+anyone noticing: its own `u32n` row calls `IDX()`, which interns `C(0)`/`C(1)` at u32, so
+the first `l2i` fixture already found them on disk. A row that measures interning cannot
+distinguish decomposition from bookkeeping, and it manufactures confident diffs.
+
+The replacement, and the invariant it actually has:
+
+* `<nm>sig=` is the answer's CONE in DFS PRE-ORDER -- every node reachable from the
+  answer root(s), each ONCE, parent before child, `src[0]` before `src[1]`.
+* It is invariant to WHEN a node was interned (slot numbers, the window, the call order
+  never appear) and to SHARING (one index visited once), so a constant interned once and
+  a constant copied N times are the same row -- by construction, not by luck.
+* It is NOT blind: a `BITCAST` replaced by a `CONST` still moves it, because those are
+  different nodes with different `op`.
+* It still cannot see: slots minted (`<nm>n=` is that row), a node's dtype/tag/metadata,
+  which src an equal node is, and a raise that minted nodes before firing.
+* Both lanes compute it the same way: `intern.find` compares whole `Node`s, so on the
+  Bend side "visited an index once" IS structural deduplication.
+
+Measured on a FIXED row set of 129 rows: the creation-order row agreed with CPython on
+44, the cone row on 68. Nothing regressed. Comparing the two totals directly is
+meaningless, because the row set changed too.
+
+## DD-2. A FOLD THAT THREADS A `first` FLAG MUST CLEAR IT, AND A COLUMN THAT IS CONSTANT OVER THE WHOLE SUITE IS NOT A ROW
+Position: this section; continues DD-1 above.
+
+`dd_eck`/`dd_join.ck` threaded `first` unchanged. `dd_join.add(first, acc, s)` answers
+`s` when `first` is true and `acc + "," + s` when it is false -- so an unchanged `first`
+means the accumulator is REPLACED on every step, and the fold ends holding the LAST
+label. The row printed `-` (its empty fallback) for all 145 rows: `k=` was a column that
+no mutation can move, and it looked like a working row. The fix is one expression,
+`new_first = first AND NOT k`, computable from parameters already in scope.
+
+This is the general shape: a gate column that is constant over the whole suite is
+either dead or a tautology, and nothing but a mutation distinguishes the two.
+
+## DD-3. A WRITTEN PRINTER THAT NOTHING CALLS IS NOT A ROW
+Position: this section; continues DD-2 above.
+
+`dd_text.head`, the only def that printed `l2idt0/1` and `f2fdt*`, had no caller. So
+the "121 rows" a report counted were 121 `lg*` rows and the two dtype tables had NO row
+at all -- and `dd_dtb.maybe` printed the TARGET TWICE (`i32->i32` where CPython says
+`i64->i32`), because `l2i_dt`/`f2f_dt` answer only the target. The bug was invisible for
+exactly as long as the printer was unreachable. Wiring it up turned 2 dead defs into 11
+green rows and surfaced the doubled target immediately.
+
+Same shape as `rules/indexing.bend`'s three written, commented, never-called defs.
+
+## DD-4. `case 1n+q:` SHADOWS A PARAMETER NAMED `n`, AND THAT BREAKS THE DECREASE CHECK
+Position: this section; continues DD-3 above.
+
+`def dd_rs.go(n: Nat, ...)` with `case 1n+p:` binds `p` AND `n`. Inside the arm, `n` is
+the literal `1n`, not the fuel -- so `dd_rs.has(n, seen, u)` silently searched one list
+element. Worse, the self-call's decrease check then compared `p` against the binder's
+`1n` and reported "not decreasing", which reads as a termination problem and is not one.
+Two fixes, both needed: name the fuel parameter something else (`f`), and name the binder
+something else (`q`). Also, once `case 1n+q:` has SPENT the countdown, reading it again in
+the arm is a second consumption of a piece of it -- which is why `dd_seen(ar)` derives a
+second fuel from `Arena.next` instead of reusing `f`.
+
+## DD-5. A PYTHON `case ... if` LADDER IS FIRST-WINS, SO A THREE-BOOL SELECTOR HAS ITS SOURCE TEST INVERTED
+Position: this section; continues DD-4 above.
+
+`dtype.py:28-40` is four `case Ops.CAST if <guard>:` clauses and Python takes the FIRST
+that matches. The port's `dd_cast_sel(srcfl, ...)` answered arm 0 when the SOURCE WAS A
+FLOAT -- the inverse -- so all six CAST fixtures refused. Two further facts fell out:
+
+* guard 2 (`dt in (long, ulong)`) has NO float test at all, so `dt` being a float is
+  never consulted while `dt` is a long; and guard 3 (`dt in dtypes.floats`) is only
+  reachable once guards 1 and 2 have both failed.
+* `UOp.bitcast` FOLDS when the dtype already agrees. On the `pm_long_decomp` entry path
+  every word IS `uint32`, so `a0.bitcast(uint)` is free -- but `l2i(NEG, dt, *uops)`
+  reaches SUB with `a0 = zero` at `dt` and `b0 = uops[0]` at `xdt`, so ONE dtype is not
+  enough and assuming the fold either way is wrong in opposite directions (`lg1sig` and
+  `lg1n` caught the two).
+
+## DD-6. A MUTATION HARNESS MUST RESTORE THE TARGET IMMEDIATELY, NOT IN A `finally`
+Position: this section; continues DD-5 above. The prior G-12 note says this; here is the
+measurement. A 35-mutation run was killed by a server restart part-way through, and the
+`finally` never ran: `l2i_where` was left SWAPPED on disk and `--check-only` still said
+`ALL PROOFS CHECK`, because the mutation is well-typed. Nothing about the compiler tells
+you. Two additions to G-12's advice:
+
+* restore after EVERY run, before deciding the verdict;
+* write each verdict to its own file and skip verdicts already on disk, so the suite is
+  resumable across the restarts that will otherwise eat it.
+
+And the number that matters: a mutation that does not compile is NOT a blind spot. It is
+reported in its own bucket and never counted as "moved 0 rows".
+
+════════════════════════════════════════════════════════════════════════════
+DD-7. A NAMING GATE MUST BE PROVED RED BEFORE IT IS BELIEVED
+Position: this section; continues DD-6 above (numbering does NOT continue from
+DD-6's own count -- rule numbers have collided three times, cite positions).
+
+Five defects in the first draft of `naming-gate.py`, all found by testing the
+gate rather than reading it. Every one of them made the gate report a clean tree
+over a diverged port, which is the one thing a gate must never do.
+
+1. A DETECTOR THAT SUPPRESSES IS NOT A DETECTOR. The draft dropped every upstream
+   name with more than one affix hit, reasoning that a fan-out is not a rename.
+   Measured: that rule hid SIX of the NINE renames the gate was built to catch --
+   `transcendental.py`'s `shl`/`shr`, `elementwise.py`'s `remint`,
+   `datasets.py`'s `cifar`, `dsl.py`'s `DPP`/`SDWA`, `cstyle.py`'s `_ocml`,
+   `render.py`'s `precedence`. Emit everything; let a written ledger adjudicate.
+
+2. AN EXEMPTION MUST BE FOR AN EXACT AFFIX, NOT FOR A CONCEPT. Keyed on
+   `(file, upstream_name)`, the gate was green when the self-test renamed
+   `pm_group_gpudims` -> `selftest_group_gpudims`, because the name had been
+   reviewed ONCE and the key admitted any later affix of it. Key on
+   `(file, name, affix)`. Measured: 667 exact triples over 157 distinct affixes;
+   the coarse key was 118 keys and unsound.
+
+3. A MALFORMED LEDGER LINE IS NOT AN EXEMPTION. `--update` mints one line per
+   candidate in a single command, so a fresh ledger is 100% "exempt" and the gate
+   reads the tree as clean. Treat a BLANK or `UNREVIEWED` reason as unadjudicated.
+
+4. STALE AMNESTY IS UNEARNED AMNESTY. Fail on a ledger line whose candidate no
+   longer exists, or a fixed rename keeps its excuse forever. A gate that only
+   fails forward accumulates permission.
+
+5. A GATE THAT GOES RED WITHOUT SAYING WHY IS NOT A GATE. The self-test asserts
+   the failure NAMES the planted def, not merely that the exit code moved.
+
+THE STEM TRAP, which `slop_1to1.py` had walked into for its whole life: it read
+`def L.foo` as `L` (`split('.')[0]`). Upstream has NO module qualifier -- it
+writes `Schedule.kernelize` as a plain `kernelize` in its own file -- so the
+qualifier is the disambiguator and is not part of the name. Compare the text
+AFTER the final dot. Measured on the fix: `slop_1to1.py` and `naming-gate.py`
+went from disagreeing (270 vs 281 verbatim) to agreeing exactly at 319 = 281
+bare + 38 qualified. Two tools that measure one thing must be cross-checked, or
+one of them is decoration.
+
+GC4, RE-STATED BECAUSE IT COST A WHOLE CENSUS: upstream binds rewrite tables by
+ASSIGNMENT, not by `def`. `pm_simplify_ranges = PatternMatcher([...])` is a
+top-level name. A `^(async )?(def|class)` regex misses every one, and `pm_` is
+UPSTREAM's own prefix -- so a port that writes `pm_group_gpudims` is CONSISTENT
+and stripping the prefix would invent a name. Walk the AST.
+
+DEGENERATE MATCHES ARE NOT RENAMES. With no affix-length floor the detector
+reports 582 candidate pairs from 94 upstream names, because upstream `dsl.py`
+binds the one-letter names `s` and `v`, so `src`, `S_OFF`, `LDS` and
+`VOP2_FNOLIT` all "rename" them. An affix shorter than 3 characters is noise.
+
+TWO TRAPS IN RENAMING, BOTH MEASURED HERE:
+
+* A ROW LABEL IS A JOIN KEY, NOT A LABEL. `renderer/amd/sqtt.bend` emits 1033
+  rows whose names are compared against `.agents/slop/sqtt_oracle.txt`, which is
+  generated from CPython. Renaming a def whose name appears in a `srow("...")`
+  label desynchronises a gate this unit does not own: renaming the five `_n`
+  defs changed 5 row names and nothing else. The labels stay; the defs move.
+* A RENAME MUST MOVE ZERO ROWS, AND THE CHECK IS A BYTE DIFF OF THE WHOLE ROW
+  STREAM -- names AND values. Both lanes: `sqtt.bend` 1033 rows, `dsl.bend` 1175
+  rows, `transcendental.bend` 891 rows, byte-identical before and after.
+
+`LC_ALL=C` FOR EVERY SORT/DIFF, and ALWAYS RUN A NO-OP CONTROL: `sort`/`comm` are
+locale-colating here and fabricate diffs even on an unchanged tree, so only a
+control that is SUPPOSED to be empty can tell you your comparison works. The
+naming gate's self-test asserts two consecutive runs are byte-identical.

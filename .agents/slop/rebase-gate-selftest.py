@@ -21,6 +21,7 @@ import json, pathlib, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "rebase-gate.py"
+REPO = HERE.parent.parent
 
 
 def load_gate(name):
@@ -43,7 +44,7 @@ class FakeBend:
 
 
 def verdict_of(base_rows, moved_rows, dead=False, base_doc=None, port="/tmp/probe.bend",
-               oracle_rows=None):
+               oracle_rows=None, no_baseline=False):
   """Drive gate_port() with a baseline document in the SHAPE baseline.json actually has.
 
   This used to hand verdict() a hand-built {"lanes": {"interpreted": rows}} dict, which is
@@ -64,9 +65,14 @@ def verdict_of(base_rows, moved_rows, dead=False, base_doc=None, port="/tmp/prob
       r["cpython:oracle"] = dict(oracle_rows)
     g.run_port = lambda *a, **k: (lanes, r)
   g.REPO = pathlib.Path("/tmp")
-  doc = base_doc if base_doc is not None else {
-    "lanes": {port: {"interpreted": dict(base_rows)}},
-    "hunks": {port: {"tinygrad/probe.py": {"api_delta": {"added": []}, "diff_stat": "1 file"}}}}
+  if no_baseline:
+    # A baseline document with NO entry for this port, which is what every port without a
+    # --record looks like to baseline_for(): None, not {}.
+    doc = {"lanes": {}, "hunks": {}}
+  else:
+    doc = base_doc if base_doc is not None else {
+      "lanes": {port: {"interpreted": dict(base_rows)}},
+      "hunks": {port: {"tinygrad/probe.py": {"api_delta": {"added": []}, "diff_stat": "1 file"}}}}
   return g.gate_port(FakeBend(port), ["oracle"], doc, native=True)[0]
 
 
@@ -127,6 +133,30 @@ def main():
         verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "2"}),
         "BROKEN", "disagree")
 
+  # ⚠ THE ORDER THAT REPORTED A WRONG VERDICT. GUARD 4 compares two lanes of THIS RUN and
+  # reads nothing from baseline.json, so its result does not depend on a recording -- and it
+  # used to sit BELOW the "no baseline recorded" shortcut. Measured on ops_nv with one planted
+  # disagreement: the port and a corrupted oracle disagreed, and the gate answered
+  # "NOT-STARTED: no baseline recorded" with rc=0. Any un-recorded port could hide a live
+  # disagreement in exactly that state, and NOT-STARTED is a verdict a reader BELIEVES.
+  check("a live disagreement is BROKEN even with NO baseline recorded",
+        verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "2"}, no_baseline=True),
+        "BROKEN", "disagree")
+  check("a live disagreement is BROKEN even when the baseline is EMPTY",
+        verdict_of({}, {"a": "1"}, base_doc={"lanes": {"/tmp/probe.bend": {}},
+                                               "hunks": {}}, oracle_rows={"a": "2"}),
+        "BROKEN", "disagree")
+  # ...while the OTHER direction still holds: lanes that DO agree, with no baseline, are
+  # NOT-STARTED and NOT UNCHANGED, because "they agree right now" is not "nothing moved".
+  check("lanes that agree with NO baseline -> NOT-STARTED, not UNCHANGED",
+        verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "1"}, no_baseline=True),
+        "NOT-STARTED", "no baseline recorded")
+  # GUARD 4 must not be a loophole: it is baseline-free, so it must still fire for a port
+  # whose baseline lane was recorded with ZERO rows (which is NOT-STARTED, not a pass).
+  check("a live disagreement beats a ZERO-ROW baseline lane too",
+        verdict_of({}, {"a": "1"}, oracle_rows={"a": "2"}),
+        "BROKEN", "disagree")
+
   check("two lanes sharing rows that agree -> UNCHANGED",
         verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "1"}),
         "UNCHANGED", "zero rows moved")
@@ -156,6 +186,7 @@ def main():
     fails.append("malformed baseline is named")
   print(f"        {why}")
 
+  fails += plan_contract()
   fails += oracle_template()
 
   print()
@@ -164,6 +195,85 @@ def main():
     return 1
   print("all states reachable -- a gate that cannot fail is not a gate")
   return 0
+
+
+def plan_contract():
+  """The cross-file contract with rebase-plan.py, which is where this tool CRASHED.
+
+  `plan["port"][src]` was `str | None` and became `[str, ...] | None` in commit d4f647349,
+  for a good reason -- one port can be the port of SEVERAL upstream files, which is how
+  codegen/rewriter.bend came to be the port of three. rebase-gate.py kept `[p]`, so
+  ports_of() returned a list of lists and main() raised `TypeError: unhashable type: 'list'`
+  on its DEFAULT invocation, which took every flag and the whole-tree sweep with it.
+
+  The selftest was GREEN the whole time, because it drove gate_port() and the defect was in
+  main()'s TARGET CONSTRUCTION. So the coverage it lacked is exactly the coverage added
+  here: ports_of() and targets_of(), through BOTH shapes and through the shapes neither
+  should be allowed to answer quietly."""
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  g = load_gate("rebase_gate_plan")
+  LIST, STR = "tinybendygrad/codegen/rewriter.bend", "tinybendygrad/codegen/kernel.bend"
+  listy = {"port": {"tinygrad/codegen/__init__.py": [STR],
+                    "tinygrad/codegen/simplify.py": [LIST]}}
+  strr = {"port": {"tinygrad/codegen/__init__.py": STR,
+                   "tinygrad/codegen/simplify.py": LIST}}
+
+  for label, plan, want in (("list", listy, [STR]), ("str", strr, [STR])):
+    got = g.ports_of("tinygrad/codegen/__init__.py", plan)
+    ok(f"plan['port'] as {label} -> {want[0]}", got == want, f"got {got}")
+
+  # The shape that CRASHED the tool: a list OF lists. It must raise, not flatten and not
+  # answer "no ports" -- the latter is 213 ports answering NOT-STARTED, which reads exactly
+  # like "nothing drifted".
+  nested = {"port": {"tinygrad/codegen/__init__.py": [[STR]]}}
+  try:
+    g.ports_of("tinygrad/codegen/__init__.py", nested)
+    ok("a list OF lists is named, not flattened", False, "ports_of returned instead of raising")
+  except g.PlanShapeError as e:
+    ok("a list OF lists is named, not flattened", True, str(e)[:100])
+  for bad in ({"port": {"x": 7}}, {"port": {"x": {"a": 1}}}):
+    try:
+      g.ports_of("x", bad)
+      ok(f"a {type(list(bad['port'].values())[0]).__name__} value is named", False, "returned")
+    except g.PlanShapeError as e:
+      ok(f"a {type(list(bad['port'].values())[0]).__name__} value is named", True, str(e)[:80])
+  ok("a missing 'port' key answers empty, not crash", g.ports_of("x", {}) == [])
+
+  # targets_of is what main() calls, and the de-duplication there is what raised.
+  t = g.targets_of(None, ["tinygrad/codegen/__init__.py", "tinygrad/codegen/simplify.py"], listy)
+  ok("targets_of de-duplicates by PORT across upstream files",
+     t == [(STR, ()), (LIST, ())], f"got {t}")
+  ok("targets_of --port takes the path verbatim",
+     g.targets_of(STR, [], listy) == [(STR, ())], f"got {g.targets_of(STR, [], listy)}")
+
+  # EXTRA_PORTS must stay NON-redundant. Eight of nine entries were removed precisely
+  # because rebase-plan.py's header map already derived them; nothing would stop a later
+  # header edit from making a kept one redundant again, which is how all eight got here.
+  hp = header_ports()
+  redundant = {src: [p for p in ps if p in hp.get(src, [])] for src, ps in g.EXTRA_PORTS.items()}
+  redundant = {k: v for k, v in redundant.items() if v}
+  ok("every EXTRA_PORTS entry is one header_ports() CANNOT see", not redundant,
+     f"redundant: {redundant}" if redundant else f"{len(g.EXTRA_PORTS)} entry, all needed")
+  gone = [p for ps in g.OBSOLETE_EXTRA_PORTS.values() for p in ps
+          if not (REPO / p).exists()]
+  ok("every removed EXTRA_PORTS target that names a file still exists under its new name",
+     not gone, f"dead: {gone}" if gone else "")
+  return fails
+
+
+def header_ports():
+  """rebase-plan.py's header map, loaded rather than re-implemented."""
+  import importlib.util
+  spec = importlib.util.spec_from_file_location("rebase_plan_hp", HERE / "rebase-plan.py")
+  m = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(m)
+  return m.header_ports()
 
 
 # THE SIX STATES EVERY ORACLE I WRITE MUST BE ABLE TO REPORT. This is the TEMPLATE, and it is
@@ -180,31 +290,111 @@ def main():
 #   5 AGREEMENT                                               -> UNCHANGED
 #   6 MALFORMED BASELINE a baseline.json of the wrong shape      -> named, not absorbed
 #
-# `ORACLE_CONFORMANCE` lists the oracles this session wired into BASE_ORACLES, and the loop
-# drives the SAME `gate_port()` main() calls with each one's own row NAMES as the fixture. A
-# new oracle that cannot pass this is not finished.
-ORACLE_CONFORMANCE = [
-  # (port, oracle, shared-row count MEASURED by rebase-survey.py / by the oracle)
-  ("tinybendygrad/uop/spec.bend", ".agents/slop/rebase-oracle-spec.py", 11),
-  ("tinybendygrad/uop/ops.bend", ".agents/slop/rebase-oracle-ops.py", 62),
-  ("tinybendygrad/codegen/opt/search.bend", ".agents/slop/rebase-oracle-search.py", 12),
-  ("tinybendygrad/runtime/ops_rdma.bend", ".agents/slop/oracle_rdma_gate.py", 389),
-  ("tinybendygrad/runtime/ops_nv.bend", ".agents/slop/nv-oracle.py", 543),
-  ("tinybendygrad/runtime/support/hcq2.bend", ".agents/slop/hcq2-oracle.py", 157),
-  ("tinybendygrad/runtime/ops_metal.bend", ".agents/slop/mt_seam_rows.py", 14),
-  ("tinybendygrad/codegen/rewriter.bend", ".agents/slop/xd1/rw-oracle.py", 41),
-]
+# `ORACLE_CONFORMANCE` is the list of oracles WIRED into BASE_ORACLES, and the loop drives
+# the SAME `gate_port()` main() calls with each one's own row NAMES as the fixture. A new
+# oracle that cannot pass this is not finished.
+#
+# ⚠ THIS LIST LIED. It carried a header saying these were "the oracles this session wired
+# into BASE_ORACLES" and named EIGHT, while BASE_ORACLES held THREE and only ONE of the
+# eight. A conformance roster that over-reports is worse than none: it reads as coverage of
+# the thing this file exists to guarantee. So the check below is now EQUALITY between the
+# roster and BASE_ORACLES, in both directions, and the shared-row counts are MEASURED by
+# rebase-scan-oracles.py against the live tree rather than typed here and left to rot.
+# THE ROSTER IS WRITTEN ONCE, HERE, AND BASE_ORACLES IS BUILT FROM IT. It started the other
+# way round: BASE_ORACLES held three entries and this list held nine, its header claimed all
+# nine were "wired", and the equality check that would have caught the difference did not
+# exist. A conformance roster that over-reports is worse than none -- it reads as coverage of
+# the thing this file exists to guarantee.
+#
+# shared = row NAMES the port and the oracle both print, MEASURED by rebase-scan-oracles.py.
+# It is the number of claims CPython actually corroborates, and for two pairs it is far below
+# what the oracle emits, which is stated in the comment rather than rounded away.
+ORACLE_CONFORMANCE = {
+  # port: (oracle spec, shared row names, kind)
+  # kind "live" -- the six synthetic states are driven against this oracle's own row names
+  # kind "dead" -- wired to make BROKEN reachable on the REAL tree, so there is no shared
+  #   name to drive (0 BY DESIGN) and the assertion is a real subprocess run of the gate
+  "tinybendygrad/uop/spec.bend": (".agents/slop/rebase-oracle-spec.py", 11, "live"),
+  "tinybendygrad/uop/ops.bend": (".agents/slop/rebase-oracle-ops.py", 62, "live"),
+  "tinybendygrad/codegen/opt/search.bend": (".agents/slop/rebase-oracle-search.py", 10, "live"),
+  "tinybendygrad/runtime/ops_rdma.bend": (".agents/slop/oracle_rdma_gate.py", 389, "live"),
+  "tinybendygrad/runtime/ops_nv.bend": (".agents/slop/nv-oracle.py", 543, "live"),
+  "tinybendygrad/runtime/support/hcq2.bend": (".agents/slop/hcq2-oracle.py", 157, "live"),
+  "tinybendygrad/runtime/ops_metal.bend": (".agents/slop/mt_seam_rows.py", 14, "live"),
+  "tinybendygrad/runtime/support/usb.bend": (".agents/slop/usb-oracle-run.py", 939, "live"),
+  "tinybendygrad/schedule/prepare.bend": (".agents/slop/prepare-oracle.py", 321, "live"),
+  "tinybendygrad/renderer/ptx.bend": (".agents/slop/ptx-s3-oracle.py", 281, "live"),
+  "tinybendygrad/renderer/nir_llvmir.bend": (".agents/slop/nl/nl-oracle.py", 201, "live"),
+  "tinybendygrad/viz/serve.bend": (".agents/slop/vz/viz_oracle.py", 176, "live"),
+  "tinybendygrad/runtime/support/c.bend": (".agents/slop/c-oracle.py", 129, "live"),
+  "tinybendygrad/uop/fold.bend": (".agents/slop/mm-lift-gate.py", 126, "live"),
+  "tinybendygrad/nn/onnx.bend": (".agents/slop/onnx-gate.py", 123, "live"),
+  "tinybendygrad/mixin/elementwise.bend": (".agents/slop/ew-gate.py", 71, "live"),
+  "tinybendygrad/mixin/op.bend": (".agents/slop/mixin-op-gate.py", 32, "live"),
+  "tinybendygrad/tensor.bend": (".agents/slop/tensor-gate.py", 30, "live"),
+  "tinybendygrad/codegen/simplify.bend": (".agents/slop/xd1/rw-oracle.py", 28, "live"),
+  "tinybendygrad/nn/__init__.bend": (".agents/slop/nn-init-gate.py", 24, "live"),
+  "tinybendygrad/codegen/gpudims.bend": (".agents/slop/xd1/rw-gate-oracle.py", 24, "live"),
+  # 3 of the oracle's 20 rows, and the other 17 are `findlib_*` HOST answers. The strength
+  # of a gate is the intersection, so 3 is the number and the comment in BASE_ORACLES says
+  # which 3.
+  "tinybendygrad/runtime/ops_cpu.bend": (".agents/slop/cpulink_oracle.py", 3, "live"),
+  "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", 0, "dead"),
+  "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", 0, "dead"),
+}
+
+
+def dead_lane_is_broken(port, oracle):
+  """Run the REAL gate -- real run_port, real bend file, real oracle script -- on a
+  deliberately-dead pair and require BROKEN.
+
+  This is the state the whole tool exists for, and the one a synthetic fixture cannot supply:
+  GUARD 2 and GUARD 4 both need lanes that were actually produced. `dtype_tables` exits 0
+  printing TSV (so `rows()` finds no `=`), and `renderer_oracle.py cstyle` exits 1 with
+  `KeyError: dtypes.weakint` inside upstream cstyle. Both were BROKEN-by-construction in the
+  briefing, and a wiring change must never quietly turn either into a pass.
+
+  IT CALLS gate_port(), NOT main(). That is deliberate and it is a correction: shelling out to
+  the whole gate took 4m25s per port -- measured, and almost entirely `rebase-plan.py` re-walking
+  every header -- which made the selftest long enough to be killed by a server restart TWICE.
+  gate_port() is the same decision function main() calls; what it does not cover is main()'s
+  TARGET CONSTRUCTION, and plan_contract() covers that separately and instantly. Both halves
+  are driven, neither is driven twice, and neither is driven through an interpreter."""
+  g = load_gate(f"dead_lane_{pathlib.Path(oracle.split()[0]).stem}")
+  bend = FakeBend(str(REPO / port))
+  v, _ = g.gate_port(bend, [oracle], {"lanes": {}, "hunks": {}}, native=False)
+  return v["state"] == "BROKEN", (f"{v['state']}: {v['why'][:150]}\n"
+                                 f"        rows {v['row_counts']}")
 
 
 def oracle_template():
   """Drive the six states through gate_port() for each wired oracle. Returns failure names."""
+  g_all = load_gate("rebase_gate_roster")
+  wired = {p: o[0] for p, o in g_all.BASE_ORACLES.items()}
   fails = []
-  for port, oracle, shared_n in ORACLE_CONFORMANCE:
-    g = load_gate(f"conformance_{pathlib.Path(oracle).stem}")
-    # THE FIXTURE IS THE ORACLE'S OWN ROW SET, taken from the recorded survey, so the states
-    # are produced over the names this oracle actually emits. Synthetic names would pass a
-    # broken oracle and fail a working one, which is the same inversion as a shape mismatch.
-    port_rows = {f"r{i}": str(i) for i in range(shared_n)}
+  if wired != {p: s for p, (s, _, _) in ORACLE_CONFORMANCE.items()}:
+    fails.append("BASE_ORACLES and ORACLE_CONFORMANCE disagree")
+    print(f"  FAIL  BASE_ORACLES and ORACLE_CONFORMANCE are the same roster")
+    print(f"        only in BASE_ORACLES: { {k: v for k, v in wired.items() if k not in ORACLE_CONFORMANCE} }")
+    print(f"        only in conformance: { {k: v for k, v in ORACLE_CONFORMANCE.items() if k not in wired} }")
+  else:
+    print(f"  PASS  BASE_ORACLES and ORACLE_CONFORMANCE are the same roster "
+          f"({len(wired)} oracles)")
+
+  for port, (oracle, shared_n, kind) in ORACLE_CONFORMANCE.items():
+    name = pathlib.Path(oracle.split()[0]).name
+    if kind == "dead":
+      ok, detail = dead_lane_is_broken(port, oracle)
+      print(f"  {'PASS' if ok else 'FAIL'}  {name}: wired on purpose, and the REAL gate still "
+            f"says BROKEN\n        {detail}")
+      if not ok:
+        fails.append(f"{name}: dead lane stopped being BROKEN")
+      continue
+    g = load_gate(f"conformance_{pathlib.Path(oracle.split()[0]).stem}_{shared_n}")
+    # THE FIXTURE IS THE ORACLE'S OWN ROW SET, so the states are produced over the names this
+    # oracle actually emits. Synthetic names would pass a broken oracle and fail a working
+    # one, which is the same inversion as a shape mismatch.
+    port_rows = {f"r{i}": str(i) for i in range(max(shared_n, 1))}
     doc = {"lanes": {port: {"interpreted": dict(port_rows)}},
            "hunks": {port: {"tinygrad/probe.py": {"api_delta": {"added": ["sym"]},
                                                   "diff_stat": "1 file changed"}}}}
@@ -237,15 +427,15 @@ def oracle_template():
              ("no shared row name", noshare, "BROKEN", "share NO row names"),
              ("a shared name differs", differ, "BROKEN", "disagree"),
              ("agreement", agree, "UNCHANGED", "zero rows moved")]
-    bad = [f"{pathlib.Path(oracle).name}: {nm}" for nm, v, ws, wt in cases
+    bad = [f"{pathlib.Path(oracle.split()[0]).name}: {nm}" for nm, v, ws, wt in cases
            if not (v["state"] == ws and wt.lower() in v.get("why", "").lower())]
     g.run_port = lambda *a, **k: (ok_lanes, {"interpreted": dict(port_rows),
                                              "cpython:o": dict(port_rows)})
     bad_doc = g.baseline_for({"interpreted": dict(port_rows)}, port)
     if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2]:
-      bad.append(f"{pathlib.Path(oracle).name}: malformed baseline")
-    print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle).name}: six states "
-          f"reachable ({shared_n} shared row names)")
+      bad.append(f"{pathlib.Path(oracle.split()[0]).name}: malformed baseline")
+    print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle.split()[0]).name}: six "
+          f"states reachable ({shared_n} shared row names)")
     fails += bad
   return fails
 

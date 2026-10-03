@@ -382,12 +382,16 @@ def dd_rsub31(+ar: O.Arena, +n: U32) -> O.Found:
 # halves read it, which is what CPython's interning does with its two calls.
 # ===========================================================================
 
-def unpack32(+ar: O.Arena, +v: U32) -> W2:
-  +bc = T.tx_bitcast(ar, v, S.uint32())
+def unpack32.bc(isu: Bool, +ar: O.Arena, +v: U32) -> O.Found:
+  match isu:
+    case True{}: O.Found{ar, v}
+    case False{}: T.tx_bitcast(ar, v, S.uint32())
+
+def unpack32(+ar: O.Arena, +v: U32, +xdt: S.Dt) -> W2:
+  +bc = unpack32.bc(O.eq_dt(xdt, S.uint32()), ar, v)
   +lo = dd_band(O.Found.ar(bc), O.Found.i(bc), 65535)
-  +li = O.Found.i(lo)
-  +hi = T.tx_shr(O.Found.ar(lo), li, 16)
-  W2{O.Found.ar(hi), li, O.Found.i(hi)}
+  +hi = T.tx_shr(O.Found.ar(lo), O.Found.i(bc), 16)
+  W2{O.Found.ar(hi), O.Found.i(lo), O.Found.i(hi)}
 
 # ===========================================================================
 # `reindex` -- dtype.py:14-18. The SHRINK arm's `assert mul == 1` is a `raise`
@@ -404,7 +408,7 @@ def reindex.plus(+ar: O.Arena, +i1: U32, +off: U32) -> O.Found:
 
 def reindex.scaled(+ar: O.Arena, +i1: U32, +off: U32, +mul: U32) -> O.Found:
   +cm = dd_wk(ar, H.i64_of_i32(mul))
-  +m = dd_mul(O.Found.ar(cm), i1, O.Found.i(cm))
+  +m = dd_mul(O.Found.ar(cm), O.Found.i(cm), i1)
   +co = dd_wk(O.Found.ar(m), H.i64_of_i32(off))
   dd_add(O.Found.ar(co), O.Found.i(m), O.Found.i(co))
 
@@ -442,18 +446,23 @@ def reindex(+ar: O.Arena, +idx: U32, +off: U32, +mul: U32) -> Maybe<&2, O.Found>
 # selector over three Booleans and not three separate answers.
 # ===========================================================================
 
-def dd_cast_sel.go(sfl: Bool, flt: Bool) -> U32:
-  match sfl:
-    case True{}: 0
-    case False{}:
-      match flt:
-        case True{}: 1
-        case False{}: 2
-
+# dtype.py:28-40 IS FOUR `case ... if` CLAUSES AND PYTHON TAKES THE FIRST THAT
+# MATCHES, so the selector is first-wins over three Booleans and NOT a priority
+# list. Guard 1 is `dt in (long,ulong) AND the source is NOT a float`, guard 2 is
+# `dt in (long,ulong)` ALONE -- so `dt` being a float is never consulted while it
+# is a long, and guard 3's `dt in dtypes.floats` can only be reached once guards 1
+# and 2 have both failed, which means `dt` is not a long. The float test on the
+# TARGET is therefore asked only in the `lng == False` arm, and the float test on
+# the SOURCE is INVERTED relative to what the name suggests: a NON-float source is
+# the one that lands on arm 0.
+#
+# Arm 2 needs `dt in dtypes.floats`, which is a FLOAT target for a function called
+# "long as 2 ints", so no fixture in the table reaches it and it stays a refusal.
+# `sel == 2` is the one selector value with no arm behind it.
 def dd_cast_sel(lng: Bool, srcfl: Bool, flt: Bool) -> U32:
   match lng:
-    case True{}: dd_cast_sel.go(srcfl, flt)
-    case False{}: 3
+    case True{}: Bool.pick(U32, srcfl, 1, 0)
+    case False{}: Bool.pick(U32, flt, 2, 3)
 
 def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
   +x0 = dd_clike(ar, 0, xdt)
@@ -512,25 +521,46 @@ def l2i_cast1(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> W2:
 # `a.cast(default_float)` when `a` is a bool. `reciprocal()` is UNARY
 # (`elementwise.py:468`), not `FDIV(C(1), x)`.
 
-def l2i_cast3(+ar: O.Arena, +a0: U32, +dt: S.Dt) -> W2:
-  +bc = T.tx_bitcast(ar, a0, S.uint32())
+# `UOp.bitcast` FOLDS when the dtype already agrees (`ops.py`), so on a `uint32`
+# source there is no BITCAST at all -- which is what makes `lg7` answer the very
+# node `lg2`/`lg6` already interned, with `n = 0`. `l2i` hands the port `xdt`
+# precisely so this fold can be asked.
+def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:
+  match isu:
+    case True{}: O.Found{ar, a0}
+    case False{}: T.tx_bitcast(ar, a0, S.uint32())
+
+def l2i_cast3(+ar: O.Arena, +a0: U32, +dt: S.Dt, +xdt: S.Dt) -> W2:
+  +bc = l2i_cast3.bitc(O.eq_dt(xdt, S.uint32()), ar, a0)
   +c = P.dc_cast(O.Found.ar(bc), O.Found.i(bc), dt)
   W2{O.Found.ar(c), O.Found.i(c), 0}
 
-def l2i_cast.got(sel: U32, +ar: O.Arena, +a0: U32, +ldt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:
+def l2i_cast.got(sel: U32, +ar: O.Arena, +a0: U32, +dt: S.Dt, +ldt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:
   match sel:
     case 0: Some{l2i_cast0(ar, a0, ldt, Bool.or(dd_is_bool(xdt), dd_is_uint(xdt)), xdt)}
     case 1: Some{l2i_cast1(ar, a0, ldt, xdt)}
+    case 3: Some{l2i_cast3(ar, a0, dt, xdt)}
     case _: None{}
 
-def l2i_cast.ldt(sel: U32, m: Maybe<&2, S.Dt>, +ar: O.Arena, +a0: U32, +xdt: S.Dt) -> Maybe<&2, W2>:
+# `l2i_dt[dt]` is the NARROW dtype, and only arms 0 and 1 use it. Guarding every
+# arm with it made arms 2 and 3 DEAD: `sel == 2`/`sel == 3` mean `dt` is NOT
+# long/ulong, so `l2i_dt[dt]` is `None` and the unwrap refused first. That is what
+# `lg7` measured -- the `else` at dtype.py:39 is `a0.bitcast(dtypes.uint).cast(dt)`
+# and it needs `dt`, not `l2i_dt[dt]`. M02 and M06 moved nothing for this reason
+# and nothing else.
+def l2i_cast.wide(sel: U32, m: Maybe<&2, S.Dt>, +ar: O.Arena, +a0: U32, +dt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:
   match m:
-    case Some{d}: l2i_cast.got(sel, ar, a0, d, xdt)
+    case Some{d}: l2i_cast.got(sel, ar, a0, dt, d, xdt)
     case None{}: None{}
+
+def l2i_cast.ldt(sel: U32, m: Maybe<&2, S.Dt>, +ar: O.Arena, +a0: U32, +dt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:
+  match sel:
+    case 3: Some{l2i_cast3(ar, a0, dt, xdt)}
+    case _: l2i_cast.wide(sel, m, ar, a0, dt, xdt)
 
 def l2i_cast(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> Maybe<&2, W2>:
   l2i_cast.ldt(dd_cast_sel(dd_is_long(dt), dd_is_float(xdt), dd_is_float(dt)),
-    l2i_dt(dt), ar, nth(ws, 0n), xdt)
+    l2i_dt(dt), ar, nth(ws, 0n), dt, xdt)
 
 # -- BITCAST (dtype.py:40)
 
@@ -548,7 +578,7 @@ def l2i_shl.hi(+ar: O.Arena, +a1u: U32, +n: U32, +a0u: U32) -> U32:
   +o = dd_shr(O.Found.ar(c1), a0u, O.Found.i(c1))
   +k = dd_rsub31(O.Found.ar(o), n)
   +t = dd_shr(O.Found.ar(k), O.Found.i(o), O.Found.i(k))
-  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t)))
+  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(t), O.Found.i(s)))
 
 def l2i_shl.ge(+ar: O.Arena, +b0: U32) -> O.Found:
   +c = dd_wk(ar, H.i64_of_i32(32))
@@ -610,28 +640,47 @@ def l2i_shr(+ar: O.Arena, +dt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
 # `fill = a1 >> 31 if dt == dtypes.int else zero` -- the vacated high word, sign
 # bits when signed and 0 when not. `a1` and NOT `a1u` is the dtype.py spelling.
 
-# `low.bitcast(dtypes.uint) < a0.bitcast(dtypes.uint)` at dtype.py:51, and the
-# three bitcasts FOLD: `pm_long_decomp` splits to 32-bit words BEFORE any rule
-# reaches `l2i`, so `a0`, `b0` and `low` are already `uint` and CPython's `bitcast`
-# returns the node itself. `lgc` and `lgd` are the rows, and both sigs are
-# `...CMPLT...` with no BITCAST at all.
-def l2i_add(+ar: O.Arena, +ws: List<&2, U32>) -> W2:
+# `low.bitcast(dtypes.uint) < a0.bitcast(dtypes.uint)` at dtype.py:50 and
+# `a0.bitcast(dtypes.uint) < b0.bitcast(dtypes.uint)` at dtype.py:51. `bitcast`
+# FOLDS when the dtype already agrees, and on the `pm_long_decomp` entry path the
+# words ARE `uint` -- so `lgc` and `lgd` have no BITCAST anywhere in their sigs.
+#
+# They are NOT always `uint`, and ONE dtype is not enough: `l2i` hands the port
+# only `uops[0].dtype`, while dtype.py reads the dtype off EACH node. `l2i(NEG,
+# dt, *uops)` is `l2i(SUB, dt, zero, zero, *uops)`, so there `a0` is `zero` at
+# `dt` and `b0` is `uops[0]` at `xdt` -- TWO dtypes for ONE arm. Assuming the fold
+# unconditionally is what `lg1sig` caught; assuming it for both is what `lg1n`
+# caught. So `ad` and `bd` are the two low-word dtypes, and every call site says
+# which it means.
+def dd_bc(isu: Bool, +ar: O.Arena, +x: U32) -> O.Found:
+  match isu:
+    case True{}: O.Found{ar, x}
+    case False{}: T.tx_bitcast(ar, x, S.uint32())
+
+def l2i_add(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
   +a0 = nth(ws, 0n)
   +b0 = nth(ws, 2n)
   +lo = dd_add(ar, a0, b0)
   +s1 = dd_add(O.Found.ar(lo), nth(ws, 1n), nth(ws, 3n))
-  +lt = dd_lt1(O.Found.ar(s1), O.Found.i(lo), a0)
+  +ua = O.eq_dt(ad, S.uint32())
+  +bl = dd_bc(ua, O.Found.ar(s1), O.Found.i(lo))
+  +ba = dd_bc(ua, O.Found.ar(bl), a0)
+  +lt = dd_lt1(O.Found.ar(ba), O.Found.i(bl), O.Found.i(ba))
   +hi = dd_add(O.Found.ar(lt), O.Found.i(s1), O.Found.i(lt))
   W2{O.Found.ar(hi), O.Found.i(lo), O.Found.i(hi)}
 
 # -- SUB (dtype.py:51)
 
-def l2i_sub(+ar: O.Arena, +ws: List<&2, U32>) -> W2:
+def l2i_sub(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
   +a0 = nth(ws, 0n)
   +b0 = nth(ws, 2n)
   +lo = P.dc_sub(ar, a0, b0)
   +s1 = P.dc_sub(O.Found.ar(lo), nth(ws, 1n), nth(ws, 3n))
-  +lt = dd_lt1(O.Found.ar(s1), a0, b0)
+  +ua = O.eq_dt(ad, S.uint32())
+  +ub = O.eq_dt(bd, S.uint32())
+  +ba = dd_bc(ua, O.Found.ar(s1), a0)
+  +bb = dd_bc(ub, O.Found.ar(ba), b0)
+  +lt = dd_lt1(O.Found.ar(bb), O.Found.i(ba), O.Found.i(bb))
   +hi = P.dc_sub(O.Found.ar(lt), O.Found.i(s1), O.Found.i(lt))
   W2{O.Found.ar(hi), O.Found.i(lo), O.Found.i(hi)}
 
@@ -662,9 +711,9 @@ def l2i_mul.p(+ar: O.Arena, +dt: S.Dt, +a0: U32, +a1: U32, +b1: U32, +a00: U32, 
   +y1 = dd_mul(O.Found.ar(s0), a1, b1)
   dd_add(O.Found.ar(y1), O.Found.i(s0), O.Found.i(y1))
 
-def l2i_mul(+ar: O.Arena, +dt: S.Dt, +ws: List<&2, U32>) -> W2:
-  +ua = unpack32(ar, nth(ws, 0n))
-  +ub = unpack32(W2.ar(ua), nth(ws, 2n))
+def l2i_mul(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
+  +ua = unpack32(ar, nth(ws, 0n), xdt)
+  +ub = unpack32(W2.ar(ua), nth(ws, 2n), xdt)
   +m0 = l2i_mul.w(W2.ar(ub), dt, W2.lo(ua), W2.hi(ub), W2.hi(ua), W2.lo(ub))
   +a0 = O.Found.ar(m0)
   +m1 = l2i_mul.w(a0, dt, W2.hi(ua), W2.lo(ub), W2.lo(ua), W2.hi(ub))
@@ -673,14 +722,14 @@ def l2i_mul(+ar: O.Arena, +dt: S.Dt, +ws: List<&2, U32>) -> W2:
   +a2 = O.Found.ar(m2)
   +m3 = l2i_mul.w(a2, dt, W2.hi(ua), W2.lo(ub), W2.lo(ua), W2.hi(ub))
   +a3 = O.Found.ar(m3)
-  +mid = l2i_add(a3, ws4(O.Found.i(m0), O.Found.i(m1), O.Found.i(m2), O.Found.i(m3)))
+  +mid = l2i_add(a3, dt, dt, ws4(O.Found.i(m0), O.Found.i(m1), O.Found.i(m2), O.Found.i(m3)))
   +am = W2.ar(mid)
   +p = l2i_mul.p(am, dt, nth(ws, 0n), nth(ws, 1n), nth(ws, 3n), W2.lo(ua), W2.lo(ub), W2.hi(ua), W2.hi(ub))
   +ap = O.Found.ar(p)
   +ml = W2.lo(mid)
   +mh = W2.hi(mid)
   +pi = O.Found.i(p)
-  l2i_add(ap, ws4(ml, mh, pi, 0))
+  l2i_add(ap, dt, dt, ws4(ml, mh, pi, 0))
 
 # -- comparisons (dtype.py:75-77)
 
@@ -798,7 +847,7 @@ def Cd.bn(x: Cd) -> U32:
 # `l2i(SUB, dt, zero, zero, *uops)` and so is two SUBTRACTs from `zero`.
 
 def l2i_cdiv.neg(+ar: O.Arena, +z: U32, +a0: U32, +a1: U32) -> W2:
-  l2i_sub(ar, ws4(z, z, a0, a1))
+  l2i_sub(ar, S.uint32(), S.uint32(), ws4(z, z, a0, a1))
 
 # `if dt == dtypes.int`: take both operands' absolute values through `l2i(NEG)`
 # and remember each one's sign, because a restoring division on negatives needs
@@ -892,7 +941,7 @@ def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +rar = W2.ar(r)
   +cond = dd_ge1(rar, rlo, rhi)
   +condi = O.Found.i(cond)
-  +diff = l2i_sub(O.Found.ar(cond), ws4(rlo, rhi, Cd.b0(c), Cd.b1(c)))
+  +diff = l2i_sub(O.Found.ar(cond), S.uint32(), S.uint32(), ws4(rlo, rhi, Cd.b0(c), Cd.b1(c)))
   +dar = W2.ar(diff)
   +q = l2i_cdiv.q(dar, condi, c, i)
   +dl = W2.lo(diff)
@@ -994,14 +1043,14 @@ def l2i_cdiv(isdiv: Bool, +ar: O.Arena, +dt: S.Dt, +zero: U32, +ws: List<&2, U32
 
 def l2i.go(+ar: O.Arena, +zero: U32, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> Maybe<&2, W2>:
   match op:
-    case O.OpsNEG{}: Some{l2i_sub(ar, ws4(zero, zero, nth(ws, 0n), nth(ws, 1n)))}
+    case O.OpsNEG{}: Some{l2i_sub(ar, dt, xdt, ws4(zero, zero, nth(ws, 0n), nth(ws, 1n)))}
     case O.OpsCAST{}: l2i_cast(ar, dt, xdt, ws)
     case O.OpsBITCAST{}: Some{l2i_bitcast(ar, dt, ws)}
     case O.OpsSHL{}: Some{l2i_shl(ar, dt, zero, ws)}
     case O.OpsSHR{}: Some{l2i_shr(ar, dt, zero, ws)}
-    case O.OpsADD{}: Some{l2i_add(ar, ws)}
-    case O.OpsSUB{}: Some{l2i_sub(ar, ws)}
-    case O.OpsMUL{}: Some{l2i_mul(ar, dt, ws)}
+    case O.OpsADD{}: Some{l2i_add(ar, xdt, xdt, ws)}
+    case O.OpsSUB{}: Some{l2i_sub(ar, xdt, xdt, ws)}
+    case O.OpsMUL{}: Some{l2i_mul(ar, dt, xdt, ws)}
     case O.OpsCMPLT{}: Some{l2i_cmplt(ar, ws)}
     case O.OpsCMPEQ{}: Some{l2i_cmpeq(ar, ws)}
     case O.OpsCMPNE{}: Some{l2i_cmpne(ar, ws)}
@@ -1730,17 +1779,13 @@ def dd_tree.go(+ar: O.Arena, +u: U32, leaf: Bool) -> String:
 def dd_tree(+ar: O.Arena, +u: U32) -> String:
   dd_tree.go(ar, u, U32.is_zero(O.Arena.nsrc(ar, u)))
 
-# The walk over `[from, to)`. `Arena.next` is the end and the start is the
-# fixture's mark, so a fixture that builds nothing walks zero times.
+# THE FUEL. bend wants a DECREASING self-call ("arguments are read left to
+# right: each passed unchanged until one shrinks"), so every walk here counts in a
+# `Nat` countdown and the other arguments only ever move. A window of `n` nodes
+# holds at most `n` stack entries per edge, so `32 * n + 64` cannot run out.
 
-# The walk over `[from, to)`. bend wants a DECREASING self-call ("arguments are
-# read left to right: each passed unchanged until one shrinks"), so the count is
-# a `Nat` countdown and the index only ever goes up. `from` and `to` are the
-# fixture's mark and `Arena.next`, so a fixture that builds nothing walks zero
-# times and prints the empty string.
-
-def dd_span(+from: U32, +to: U32) -> Nat:
-  U32.to_nat(U32.sub(to, from))
+def dd_fuel(+from: U32, +to: U32) -> Nat:
+  U32.to_nat(U32.add(U32.shln(U32.sub(to, from), 5n), 64))
 
 def dd_join.add(first: Bool, +acc: String, +s: String) -> String:
   match first:
@@ -1755,18 +1800,105 @@ def dd_join.dash(first: Bool, acc: String) -> String:
 def dd_sig1(+ar: O.Arena, +u: U32) -> String:
   String.concat([P.dc_opname(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u))])
 
-def dd_sig.go(+ar: O.Arena, n: Nat, +from: U32, +to: U32, first: Bool, +acc: String) -> String:
-  match n:
+# ===========================================================================
+# THE CANONICAL ROW, and the invariant it has.
+#
+# `sig` IS THE ANSWER'S CONE IN DFS PRE-ORDER: every arena node REACHABLE from
+# the answer root(s), each ONCE, listed parent-before-child and src[0] first.
+#
+# WHAT IT IS INVARIANT TO, which is what the old row was not:
+#   * WHEN a node was interned. Arena slot numbers, the window `[from, to)` and
+#     the order CPython happened to call things in never appear.
+#   * SHARING. `intern.find` compares whole `Node`s, so two structurally equal
+#     nodes are the SAME index, and the walk visits an index once. A module-level
+#     constant interned once and referenced N times contributes ONE entry, exactly
+#     as N equal copies would -- so the row cannot tell them apart, BY CONSTRUCTION.
+#   * CONSTANT INTERNING SPECIFICALLY, which is the trap this row was rebuilt for.
+#     `dtype.py:22`'s `zero = UOp.const(0, dt)` is interned by `ucache` the first
+#     time any fixture needs it and REUSED by every later one, so a node inventory
+#     measured over the window is a function of the WHOLE SESSION, not of `l2i`.
+#     Measured: `IDX()` is called by the oracle's own `u32n` row, so it interns
+#     `C(0)/C(1)` at u32 before the first `l2i` fixture runs.
+#
+# WHAT IT STILL CANNOT SEE, stated so nobody reads agreement as proof:
+#   * HOW MANY SLOTS were minted, or nodes the answer does not reach. `<nm>n=` is
+#     the row for that, and it still measures interning -- a disagreement there is
+#     a real difference in the arena, not a metric artefact.
+#   * A NODE'S DTYPE, TAG or metadata: `op/nsrc` is the whole node shape.
+#   * WHICH src of a node an equal node is: that is the sharing the row is blind
+#     to on purpose, so two ISOMORPHIC cones agree by definition.
+#   * A RAISE that happened after nodes were minted. CPython's `sig` on a refusal
+#     is "what the body interned before the raise"; this row is the cone of an
+#     answer that does not exist, which is empty. `lgn` is the row that shows the
+#     two coincide, and the port's pre-call guard at dtype.py:81 is why.
+# ===========================================================================
+
+def dd_rs.cat(h: U32, st: List<&2, U32>) -> List<&2, U32>:
+  h <> st
+
+# `srcs` onto `st` head-first, so popping visits `src[0]` before `src[1]`.
+def dd_rs.push(f: Nat, srcs: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
+  match f:
+    case 0n: st
+    case 1n+q:
+      match srcs:
+        case Nil{}: st
+        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))
+
+def dd_rs.has(f: Nat, xs: List<&2, U32>, +u: U32) -> Bool:
+  match f:
+    case 0n: False{}
+    case 1n+q:
+      match xs:
+        case Nil{}: False{}
+        case h <> t:
+          r = dd_rs.has(q, t, u)
+          Bool.or(U32.is_eq(h, u), r)
+
+# PREPENDED, so the push is O(1) and only the one `List.reverse` at the end is
+# O(n). Appending instead makes the walk O(n^2) in list cells on top of `has`.
+
+def dd_rs.add(u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, [u], xs)
+
+# `seen` never outgrows the arena, and the FUEL is spent here rather than read
+# out of `dd_rs.go`'s own countdown: `case 1n+q:` has already SPENT that `Nat`, so
+# a second read of it inside the arm is a second consumption of a piece of it.
+def dd_seen(ar: O.Arena) -> Nat:
+  U32.to_nat(O.Arena.next(ar))
+
+def dd_rs.more(nat: Bool, +ar: O.Arena, +u: U32, st: List<&2, U32>) -> List<&2, U32>:
+  match nat:
+    case True{}: dd_rs.push(U32.to_nat(O.Arena.nsrc(ar, u)), O.Arena.srcs(ar, u), st)
+    case False{}: st
+
+def dd_rs.go(f: Nat, +ar: O.Arena, +st: List<&2, U32>, +seen: List<&2, U32>) -> List<&2, U32>:
+  match f:
+    case 0n: seen
+    case 1n+q:
+      match st:
+        case Nil{}: seen
+        case +u <> rest:
+          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
+          sn = dd_rs.add(u, seen)
+          dd_rs.go(q, ar, st2, sn)
+
+def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:
+  List.reverse(&2, U32, dd_rs.go(n, ar, roots, Nil{}))
+
+def dd_esig(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String) -> String:
+  match f:
     case 0n: acc
-    case 1n+p: dd_sig.go(ar, p, U32.add(from, 1), to, False{}, dd_join.add(first, acc, dd_sig1(ar, from)))
+    case 1n+q:
+      match xs:
+        case Nil{}: acc
+        case u <> t:
+          s = dd_join.add(first, acc, dd_sig1(ar, u))
+          dd_esig(ar, q, t, False{}, s)
 
-def dd_sig(+ar: O.Arena, +from: U32, +to: U32) -> String:
-  dd_sig.go(ar, dd_span(from, to), from, to, True{}, "")
-
-# The CONSTANTS in `[from, to)`, and only those: `lab` prints a CAST as the bare
-# word `CAST`, so two `f2f_clamp`s over different `mx` values share a `sig` and
-# this row is what tells them apart. The `k` is skipped and `first` is KEPT, so
-# the commas are the CONSTS' own.
+# The CONSTANTS of the cone, in the cone's own order. `sig` alone cannot separate
+# two `f2f_clamp`s over different `mx` values, because `lab` prints a CAST as the
+# bare word `CAST` and a CONST's VALUE is in no node shape at all.
 
 def dd_ck.arg(+arg: O.Arg) -> Bool:
   match arg:
@@ -1778,24 +1910,28 @@ def dd_ck.arg(+arg: O.Arg) -> Bool:
 def dd_ck(+ar: O.Arena, +u: U32) -> Bool:
   dd_ck.arg(O.Arena.arg(ar, u))
 
-# The filter and the join are ONE def, not two: splitting them makes `csig` and
-# `step` mutually recursive and bend refuses that. `k` says whether the node the
-# walk is ON is a CONST, so it is computed by the caller and threaded -- which is
-# also why `from` advances here rather than there.
-
 def dd_join.ck(first: Bool, k: Bool, +acc: String, +s: String) -> String:
   match k:
     case True{}: dd_join.add(first, acc, s)
     case False{}: acc
 
-def dd_csig.go(+ar: O.Arena, n: Nat, k: Bool, +from: U32, +to: U32, +first: Bool, +acc: String) -> String:
-  match n:
-    case 0n: dd_join.dash(first, acc)
-    case 1n+p: dd_csig.go(ar, p, dd_ck(ar, U32.add(from, 1)), U32.add(from, 1), to, first,
-                           dd_join.ck(first, k, acc, dd_lab(ar, from)))
+# `first` CLEARS ITSELF HERE AND NOT IN `dd_join.add`: `dd_join.add(first, acc, s)`
+# answers `s` when `first`, so a fold that threaded `first` unchanged printed the
+# LAST label and then the `-` fallback -- which is why every one of the 121 rows
+# said `k=-`, and `k` was a column no mutation could move. `nf` is
+# `first AND NOT k`: nothing seen yet, or this node was not a CONST.
 
-def dd_csig(+ar: O.Arena, +from: U32, +to: U32) -> String:
-  dd_csig.go(ar, dd_span(from, to), dd_ck(ar, from), from, to, True{}, "")
+def dd_eck(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String) -> String:
+  match f:
+    case 0n: dd_join.dash(first, acc)
+    case 1n+q:
+      match xs:
+        case Nil{}: dd_join.dash(first, acc)
+        case u <> t:
+          +k = dd_ck(ar, u)
+          nf = Bool.and(first, Bool.not(k))
+          s = dd_join.ck(first, k, acc, dd_lab(ar, u))
+          dd_eck(ar, q, t, nf, s)
 
 # ---- the four rows, and the mark that separates one fixture from the next
 
@@ -1858,16 +1994,26 @@ def Ga.acc(ga: Ga, ar: O.Arena, n: U32, s: String) -> Ga:
     case Ga{a, _, t, ps, w, z, o}: Ga{ar, n, String.concat([t, s]), ps, w, z, o}
 
 # ---- the four rows, appended to the text
+#
+# `<nm>=` the answer's TREE two levels deep, `<nm>n=` the SLOTS MINTED (the
+# window, so this is the interning row), `<nm>sig=` the answer's CONE in pre-order
+# and `<nm>k=` its CONSTS. A refusal names dtype.py's exception, mints nothing and
+# has no cone -- see the CANONICAL ROW header for what that does and does not mean.
 
-def rows.body(+nm: String, k: Bool, u: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
-  match k:
-    case True{}: String.concat([nm, "=", dd_tree(ar, u), "\n", nm, "n=", U32.show(U32.sub(to, from)),
-                                 "\n", nm, "sig=", dd_sig(ar, from, to), "\n", nm, "k=", dd_csig(ar, from, to), "\n"])
-    case False{}: String.concat([nm, "=none\n", nm, "n=", U32.show(U32.sub(to, from)),
-                                 "\n", nm, "sig=", dd_sig(ar, from, to), "\n"])
+def dd_ref(ar: O.Arena, from: U32, to: U32, +nm: String) -> String:
+  String.concat([nm, "=refused:", "NotImplementedError", "\n", nm, "n=", U32.show(U32.sub(to, from)), "\n"])
 
-def rows.put(+nm: String, k: Bool, u: U32, +ar: O.Arena, +from: U32) -> String:
-  rows.body(nm, k, u, ar, from, O.Arena.next(ar))
+def rows.body(+nm: String, ok: Bool, +u: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
+  match ok:
+    case True{}:
+      +c = dd_cone(dd_fuel(from, to), ar, [u])
+      String.concat([nm, "=", dd_tree(ar, u), "\n", nm, "n=", U32.show(U32.sub(to, from)),
+                     "\n", nm, "sig=", dd_esig(ar, dd_fuel(from, to), c, True{}, ""),
+                     "\n", nm, "k=", dd_eck(ar, dd_fuel(from, to), c, True{}, ""), "\n"])
+    case False{}: dd_ref(ar, from, to, nm)
+
+def rows.put(+nm: String, ok: Bool, u: U32, +ar: O.Arena, +from: U32) -> String:
+  rows.body(nm, ok, u, ar, from, O.Arena.next(ar))
 
 
 # ===========================================================================
@@ -1983,16 +2129,6 @@ def Ga.pool(ga: Ga, k: Nat) -> U32:
 def Ga.word(ga: Ga, k: Nat) -> U32:
   Ga.pool(ga, k)
 
-def fixtures.put(+ar: O.Arena, +ns: List<&2, U32>) -> Ga:
-  Ga{ar, O.Arena.next(ar), "", ns, ns, 0, 0}
-
-def fixtures.nd(nd: Nd) -> Ga:
-  match nd:
-    case Nd{+ar, +ns}: fixtures.put(ar, ns)
-
-def fixtures() -> Ga:
-  fixtures.nd(dd_wpool.step(24n, O.Arena.empty(), Nil{}, 0, 0))
-
 # ===========================================================================
 # THE ROWS. One def per fixture family, each a PURE fold over the text.
 # ===========================================================================
@@ -2001,23 +2137,47 @@ def dd_dtb.nm(k: S.Dt) -> String:
   match k:
     case S.Dt{pri, bits, cls, +nm}: nm
 
-def dd_dtb.maybe(d: Maybe<&2, S.Dt>) -> String:
+def dd_dtb.maybe(key: S.Dt, d: Maybe<&2, S.Dt>) -> String:
   match d:
-    case Some{+k}: String.concat([dd_dtb.nm(k), "->", dd_dtb.nm(k)])
+    case Some{+t}: String.concat([dd_dtb.nm(key), "->", dd_dtb.nm(t)])
     case None{}: "none"
 
-def dd_dtb.to(m: Maybe<&2, S.Dt>) -> String:
-  dd_dtb.maybe(m)
+def dd_dtb.to(key: S.Dt, m: Maybe<&2, S.Dt>) -> String:
+  dd_dtb.maybe(key, m)
 
 # `l2i_dt` and `f2f_dt` as `a->b` and the refusal as `none`: the TARGET is the
 # dtype and the NAME is the load, so these are the two rows that make a rename of
 # `dtypes.long` visible rather than silent.
 
 def dd_l2i.row(nm: String, +k: S.Dt) -> String:
-  String.concat([nm, "=", dd_dtb.to(l2i_dt(k)), "\n"])
+  String.concat([nm, "=", dd_dtb.to(k, l2i_dt(k)), "\n"])
 
 def dd_f2f.row(nm: String, +k: S.Dt) -> String:
-  String.concat([nm, "=", dd_dtb.to(f2f_dt(k)), "\n"])
+  String.concat([nm, "=", dd_dtb.to(k, f2f_dt(k)), "\n"])
+
+# THE HEAD ROWS, and they are SEEDED rather than appended: `l2idt*` and `f2fdt*`
+# were both written and both DEAD -- nothing called `dd_text.head`, so the "121
+# rows" the first report counted were 121 `lg*` rows and the two dtype tables had
+# NO row at all. `f2fdt8` is the NEGATIVE case: `f2f_dt` is keyed on
+# `dtypes.floats`, so an integer key is `none`.
+def dd_text.head() -> String:
+  String.concat([dd_l2i.row("l2idt0", S.int64()), dd_l2i.row("l2idt1", S.uint64()),
+    dd_f2f.row("f2fdt0", S.fp8e4m3()), dd_f2f.row("f2fdt1", S.fp8e5m2()),
+    dd_f2f.row("f2fdt2", S.fp8e4m3fnuz()), dd_f2f.row("f2fdt3", S.fp8e5m2fnuz()),
+    dd_f2f.row("f2fdt4", S.half()), dd_f2f.row("f2fdt5", S.bfloat16()),
+    dd_f2f.row("f2fdt6", S.single()), dd_f2f.row("f2fdt7", S.double()),
+    dd_f2f.row("f2fdt8", S.int32()), "# l2i\n"])
+
+def fixtures.put(+ar: O.Arena, +ns: List<&2, U32>) -> Ga:
+  Ga{ar, O.Arena.next(ar), dd_text.head(), ns, ns, 0, 0}
+
+def fixtures.nd(nd: Nd) -> Ga:
+  match nd:
+    case Nd{+ar, +ns}: fixtures.put(ar, ns)
+
+def fixtures() -> Ga:
+  fixtures.nd(dd_wpool.step(24n, O.Arena.empty(), Nil{}, 0, 0))
+
 
 # ---- the `l2i` rows
 #
@@ -2058,20 +2218,28 @@ def dd_ws(ga: Ga, base: Nat, nw: U32) -> List<&2, U32>:
   match ga:
     case Ga{+ar, n, s, +ps, +w, z, o}: dd_ws.go(U32.to_nat(nw), U32.from_nat(base), ps, Nil{})
 
-# `hi == 0` IS "ONE NODE": six of dtype.py's seventeen arms answer a single UOp
-# (`Ops.CAST`'s `else`, CMPLT, CMPEQ, CMPNE and `return r if op is Ops.CMOD else
-# q`), which is why the `<nm>p` row exists only for the arms that answer two.
+# `hi == 0` IS "ONE NODE": four of dtype.py's seventeen arms answer a single UOp
+# (`Ops.CAST`'s `else` at :39, CMPLT, CMPEQ and CMPNE), which is why the `<nm>p`
+# row exists only for the arms that answer two, and why the CONE is rooted at
+# `lo` alone for them.
 def l2i.ph(+nm: String, two: Bool, hi: U32, +ar: O.Arena) -> String:
   match two:
     case True{}: String.concat([nm, "p=", dd_tree(ar, hi), "\n"])
     case False{}: ""
 
-def l2i.put(+nm: String, two: Bool, lo: U32, hi: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
+def l2i.roots(two: Bool, lo: U32, hi: U32) -> List<&2, U32>:
+  match two:
+    case True{}: [lo, hi]
+    case False{}: [lo]
+
+def l2i.put(+nm: String, +two: Bool, +lo: U32, +hi: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
+  +f = dd_fuel(from, to)
   +a = String.concat([nm, "=", dd_tree(ar, lo), "\n"])
   +b = l2i.ph(nm, two, hi, ar)
   +c = String.concat([nm, "n=", U32.show(U32.sub(to, from)), "\n"])
-  +d = String.concat([nm, "sig=", dd_sig(ar, from, to), "\n"])
-  +e = String.concat([nm, "k=", dd_csig(ar, from, to), "\n"])
+  +g = dd_cone(f, ar, l2i.roots(two, lo, hi))
+  +d = String.concat([nm, "sig=", dd_esig(ar, f, g, True{}, ""), "\n"])
+  +e = String.concat([nm, "k=", dd_eck(ar, f, g, True{}, ""), "\n"])
   String.concat([a, b, c, d, e])
 
 def l2i.put.put2(+nm: String, two: Bool, lo: U32, hi: U32, +ar: O.Arena, +from: U32) -> String:
@@ -2143,9 +2311,6 @@ def l2i.pick(+i: U32, +ga: Ga) -> Ga:
     case 26: l2i.one("lgs", O.OpsCDIV{}, S.uint32(), S.uint32(), 9n, 4, ga)
     case _: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
 
-def dd_text.head(ga: Ga) -> String:
-  String.concat([dd_l2i.row("l2idt0", S.int64()), dd_l2i.row("l2idt1", S.uint64()), "# l2i\n"])
-
 def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
   match n:
     case 0n: ga
@@ -2153,8 +2318,17 @@ def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
       +g2 = l2i.pick(i, ga)
       l2i.rows(p, U32.add(i, 1), g2)
 
+# ---- `unpack32` (dtype.py:13) over `WPOOL[u32][0]`, the pool word at 9. It is
+# the only two-root fixture outside `l2i`, and it is what shows `unpack32` builds
+# the BITCAST ONCE for both halves -- `u.bitcast(uint) & 0xFFFF` and
+# `shr(u.bitcast(uint), 16)` share it, so the cone has one BITCAST and not two.
+
+def unpack.one(nm: String, +ga: Ga) -> Ga:
+  +from = Ga.n(ga)
+  l2i.two(nm, unpack32(Ga.ar(ga), Ga.pool(ga, 9n), S.uint32()), ga, from)
+
 def gate() -> IO(Unit):
-  IO.print(Ga.s(l2i.rows(28n, 0, fixtures())))
+  IO.print(Ga.s(unpack.one("up", l2i.rows(28n, 0, fixtures()))))
 
 def main() -> IO(Unit):
   gate()

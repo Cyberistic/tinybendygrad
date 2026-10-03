@@ -157,6 +157,44 @@ def sig(built):
     return ",".join(f"{u.op.name}/{len(u.src)}" for u in kept(built))
 
 
+def cone(roots):
+    """THE CANONICAL ROW. Every node REACHABLE from the answer root(s), each ONCE,
+    in DFS pre-order: parent before child, src[0] before src[1].
+
+    It is invariant to WHEN a node was interned -- arena slot numbers, the
+    creation window and the order the body happened to call things never appear --
+    and to SHARING, because `UOpMetaClass.ucache` interns structurally, so two
+    equal nodes ARE one object and the walk visits an object once. That is the
+    whole point: `dtype.py:22`'s `zero = UOp.const(0, dt)` is interned by the first
+    fixture that needs it and reused by every later one, so a node inventory
+    measured over the window is a property of the SESSION, not of `l2i`. Measured:
+    this file's own `u32n` row calls `IDX()`, which interns `C(0)`/`C(1)` at u32
+    before the first `l2i` fixture runs.
+
+    It still cannot see: how many slots were minted (the `<nm>n=` row, which still
+    measures interning); a node's dtype/tag/metadata; which src of a node an equal
+    node is (the sharing it is blind to on purpose); and a raise that minted nodes
+    before it fired -- CPython has no cone for a refusal and neither does the port.
+    """
+    seen, out = set(), []
+
+    def go(v):
+        v = uncast(v)
+        if id(v) in seen:
+            return
+        seen.add(id(v))
+        out.append(v)
+        for s in v.src:
+            go(s)
+    for r in roots:
+        go(r)
+    return out
+
+
+def esig(nodes):
+    return ",".join(f"{u.op.name}/{len(u.src)}" for u in nodes)
+
+
 def csig(built):
     """the CONSTANTS created, in order -- `sig` alone cannot separate two
     `f2f_clamp`s whose graphs are the same SHAPE over different `mx` values,
@@ -164,20 +202,38 @@ def csig(built):
     return ",".join(lab(u) for u in kept(built) if u.op is Ops.CONST) or "-"
 
 
+def ck(nodes):
+    """the cone's constants, in the cone's order. `op/nsrc` carries no VALUE, so
+    a node's constant is invisible to `sig` without this."""
+    return ",".join(lab(u) for u in nodes if u.op is Ops.CONST) or "-"
+
+
+def roots_of(r):
+    """`l2i` and `f2f_clamp` answer ONE UOp and `l2i`'s other arms answer a pair;
+    `isinstance(r, tuple)` is CPython's own statement of which, and the port says
+    the same thing with `hi == 0`."""
+    return list(r) if isinstance(r, tuple) else [r]
+
+
 def run(nm, body):
-    """run one fixture, print the four facts plus the answer, capture the creation order"""
+    """run one fixture, print the four facts plus the answer.
+
+    A REFUSAL prints `refused:<ExceptionType>`, `n`, and nothing else: CPython
+    has no answer, so it has no cone.  The port's `l2i` has exactly one refusal
+    arm (dtype.py:81) and names it; the other families name theirs too.
+    """
     b = len(ORDER)
     try:
         out = body()
     except Exception as e:
         print(f"{nm}=refused:{type(e).__name__}")
         print(f"{nm}n={len(kept(ORDER[b:]))}")
-        print(f"{nm}sig={sig(ORDER[b:])}")
         return None
+    c = cone(roots_of(out))
     print(f"{nm}={tree(out)}")
     print(f"{nm}n={len(kept(ORDER[b:]))}")
-    print(f"{nm}sig={sig(ORDER[b:])}")
-    print(f"{nm}k={csig(ORDER[b:])}")
+    print(f"{nm}sig={esig(c)}")
+    print(f"{nm}k={ck(c)}")
     return out
 
 
@@ -349,23 +405,31 @@ def main():
         except Exception as e:
             print(f"{nm}=refused:{type(e).__name__}")
             print(f"{nm}n={len(kept(ORDER[b:]))}")
-            print(f"{nm}sig={sig(ORDER[b:])}")
             continue
-        if not isinstance(r, tuple): r = (r,)
+        if not isinstance(r, tuple):
+            r = (r,)
         print(f"{nm}={tree(r[0])}")
-        # SIX of dtype.py's seventeen `l2i` arms answer ONE node rather than a
-        # pair -- `Ops.CAST`'s `else`, `CMPLT`, `CMPEQ`, `CMPNE` and
-        # `return r if op is Ops.CMOD else q` -- so the second column exists only
-        # for the arms that answer two, and the port's `hi == 0` says "one".
+        # FOUR of dtype.py's seventeen `l2i` arms answer ONE node rather than a
+        # pair -- `Ops.CAST`'s `else` at :39, CMPLT, CMPEQ and CMPNE -- so the
+        # second column exists only for the arms that answer two, and the port's
+        # `hi == 0` says "one".
         if len(r) > 1:
             print(f"{nm}p={tree(r[1])}")
+        c = cone(list(r))
         print(f"{nm}n={len(kept(ORDER[b:]))}")
-        print(f"{nm}sig={sig(ORDER[b:])}")
-        print(f"{nm}k={csig(ORDER[b:])}")
+        print(f"{nm}sig={esig(c)}")
+        print(f"{nm}k={ck(c)}")
     print("# unpack32")
+    # `up=`/`upp=` rather than `up0=`/`up1=`: two-root answers use the port's
+    # generic shape, which is the `l2i` one. `WPOOL[u32][0]` is pool word 9.
+    ub = len(ORDER)
     u = DD.unpack32(WPOOL[dtypes.u32][0])
-    print(f"up0={tree(u[0])}")
-    print(f"up1={tree(u[1])}")
+    print(f"up={tree(u[0])}")
+    print(f"upp={tree(u[1])}")
+    cu = cone([u[0], u[1]])
+    print(f"upn={len(kept(ORDER[ub:]))}")
+    print(f"upsig={esig(cu)}")
+    print(f"upk={ck(cu)}")
     print("# reindex")
     for nm, idx, off, mul in IDX():
         run(nm, lambda: DD.reindex(idx, off, mul))

@@ -1,0 +1,3 @@
+baseline: 64 rows, sha(helpers.bend)=67347a406884
+M-a	no-op control	CONTROL: 0 rows (unchanged)
+M-b	total is n+1, i.e. `total=n` dropped	trange_0_t, trange_1_t, trange_2_t, trange_3_t, trange_5_t

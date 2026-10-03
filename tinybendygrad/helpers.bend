@@ -1,11 +1,17 @@
 # helpers.bend -- tinygrad/helpers.py, the pure and I/O-reachable half.
 #
-# SCOPE. tinygrad/helpers.py is 646 lines and three of them are this port:
+# SCOPE. tinygrad/helpers.py is 646 lines and four of them are this port:
 #   - the pure list/string/number helpers (prod, dedup, argsort, ceildiv, ...)
-#   - the ContextVar/Context flag machinery, as an immutable `Flags` record
+#   - the ContextVar/Context flag machinery, as an immutable `Flags` record, plus
+#     `Context` itself as a snapshot that is threaded rather than pushed
+#   - `GlobalCounters`, as a threaded `Counters` record: six fields and `reset`
 #   - the two things that need the host: `lines` (a file) and `Timing` (a clock)
 # The rest is I/O or dynamic Python and is listed, with a one-line reason each,
 # in the NOT PORTED block at the end of this file.
+#
+# GATE. This file has no `main` -- it is imported by 88 others -- so its rows live in
+# `.agents/slop/helpers-tc.bend` and are compared against `.agents/slop/helpers-oracle.py`
+# by `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
 #
 # `truncate` is not one of helpers.py's: it is dtype.py:296, it needs `dtypes`,
 # and it lives in ./dtype.bend. See dtype.bend `def truncate`.
@@ -143,6 +149,129 @@ def Flags.from_env() -> IO(Flags):
     di : String <- getenv_str("DEFAULT_INT", "int32")
     sd : String <- getenv_str("SUM_DTYPE", "float32")
     return Flags.of(nc, df, di, sd)
+
+# ===========================================================================
+# Context -- `class Context(contextlib.ContextDecorator)`, helpers.py:170
+#
+# THE WHOLE MECHANIC IS THREE LINES of upstream and none of them is `with`:
+#   __init__      self.kwargs = kwargs                                   (:171)
+#   __enter__     snapshot every named cell, then overwrite it           (:175-176)
+#   __exit__      write the snapshot back                                 (:178)
+# `ContextVar._cache` (:181) is a class-level dict of cells, so "overwrite a cell"
+# is a mutation of a module global and a `with` block is the scope that bounds it.
+# Bend has neither, so the block becomes two calls and the snapshot is the VALUE
+# the first one returns: `Context.__enter__` answers `Ctx`, which carries BOTH the
+# snapshot and the record now in force, and `Context.__exit__` needs the snapshot and
+# the current record to write it back. A caller cannot "enter" without doing both
+# halves, because there is no separate enter step to forget.
+#
+# `old_context` IS A SNAPSHOT, NOT A STACK, and that is the load-bearing fact.
+# `__exit__` (:178) replays `self.old_context` onto whatever is CURRENT; it does not
+# pop. Two contexts on the SAME key, entered in order A then B and exited in the
+# order A then B, leave the value A wrote, not the original -- measured, and it is
+# the `ctx_ooo_df` row in `.agents/slop/helpers-oracle.py`. A port that pushed and
+# popped a stack would answer the original value and be wrong. The gate nests the
+# pair twice, once in order and once out of order, precisely to tell those two
+# readings apart, and a third fixture with DISJOINT keys pins that `__exit__` writes
+# back only its OWN kwargs.
+#
+# `CV` mirrors `Flags` field for field rather than holding one value, and the reason
+# is a measurement: `__enter__` assigns the RAW kwarg into the cell and does NOT go
+# back through getenv's `type(default)(...)` (:163). So `Context(NO_COLOR="0")` puts
+# the STRING "0" in the cell, and `ContextVar.__bool__` (:188) is `bool(self.value)`,
+# where `bool("0")` is True. At boot `no_color` is the COERCION of the env string and
+# "0" reads False; inside a `Context` the same text reads True. One `String` slot
+# could not carry both, so `CV` keeps the coerced bool AND the raw text and
+# `Context.arg` (:171, the kwargs entry) is where the coercion happens ONCE, on the
+# way IN. The snapshot (`Flags.snap1`, :175) therefore restores the boot bool and
+# `ctx_nc_exit` is 0 where `ctx_nc_enter` is 1.
+#
+# `_recreate_cm` (:173) is NOT PORTED and there is nothing to port: it exists because
+# `ContextDecorator` reuses `self`, so a RECURSIVE use of one instance would
+# overwrite `self.old_context` with the inner call's snapshot. Here the snapshot is
+# returned as a value instead of being written into the manager, so the hazard has
+# no representation -- two nested uses of the same kwargs are two `Ctx` values and
+# neither can reach the other.
+# ===========================================================================
+
+type CV is Data:
+  CV{k: String, nc: Bool, v: String}
+
+type Ctx is Data:
+  Ctx{old_context: List<&2, CV>, entered: Flags}
+
+# the kwargs entry, `Context(DEFAULT_FLOAT="bfloat16")`
+def Context.arg(k: String, +v: String) -> CV:
+  CV{k, Bool.not(String.is_empty(v)), v}
+
+def Context.cv_key(cv: CV) -> String:
+  match cv:
+    case CV{k, nc, v}: k
+
+# `{k: ContextVar._cache[k].value for k in self.kwargs}` (:175)
+def Flags.snap1.go(k: String, nc: Bool, df: String, di: String, sd: String) -> CV:
+  match k:
+    case "NO_COLOR": CV{"NO_COLOR", nc, ""}
+    case "DEFAULT_FLOAT": CV{"DEFAULT_FLOAT", nc, df}
+    case "DEFAULT_INT": CV{"DEFAULT_INT", nc, di}
+    case _: CV{"SUM_DTYPE", nc, sd}
+
+def Flags.snap1(f: Flags, k: String) -> CV:
+  match f:
+    case Flags{nc, df, di, sd}: Flags.snap1.go(k, nc, df, di, sd)
+
+def Flags.snap.go(+f: Flags, cvs: List<&2, CV>, acc: List<&2, CV>) -> List<&2, CV>:
+  match cvs:
+    case Nil{}: acc
+    case cv <> t: Flags.snap.go(f, t, List.append(&2, CV, acc, [Flags.snap1(f, Context.cv_key(cv))]))
+
+def Flags.snap(f: Flags, cvs: List<&2, CV>) -> List<&2, CV>:
+  Flags.snap.go(f, cvs, Nil{})
+
+# `for k, v in kwargs.items(): ContextVar._cache[k].value = v` (:176), and the same
+# loop again for the restore in `__exit__` (:178). Both are "write these keys", so
+# both are `Flags.put`; LAST wins, which is what building a dict does.
+#
+# TODO(p6) helpers.py:176  `ContextVar._cache[k]` is a KeyError for a name that is
+# not a ContextVar. `Flags` holds 4 of the 61, so an unknown key has nowhere to go and
+# lands on SUM_DTYPE. Loud rather than silent: the alternative is a no-op that cannot
+# be told from a correct write.
+def Flags.put1.go(k: String, cnnc: Bool, v: String, nc: Bool, df: String, di: String, sd: String) -> Flags:
+  match k:
+    case "NO_COLOR": Flags{cnnc, df, di, sd}
+    case "DEFAULT_FLOAT": Flags{nc, v, di, sd}
+    case "DEFAULT_INT": Flags{nc, df, v, sd}
+    case _: Flags{nc, df, di, v}
+
+def Flags.put2(cv: CV, nc: Bool, df: String, di: String, sd: String) -> Flags:
+  match cv:
+    case CV{k, cnnc, v}: Flags.put1.go(k, cnnc, v, nc, df, di, sd)
+
+def Flags.put1(f: Flags, cv: CV) -> Flags:
+  match f:
+    case Flags{nc, df, di, sd}: Flags.put2(cv, nc, df, di, sd)
+
+def Flags.put.go(cvs: List<&2, CV>, acc: Flags) -> Flags:
+  match cvs:
+    case Nil{}: acc
+    case cv <> t: Flags.put.go(t, Flags.put1(acc, cv))
+
+def Flags.put(f: Flags, cvs: List<&2, CV>) -> Flags:
+  Flags.put.go(cvs, f)
+
+def Context.__enter__(+f: Flags, +cvs: List<&2, CV>) -> Ctx:
+  Ctx{Flags.snap(f, cvs), Flags.put(f, cvs)}
+
+def Context.inside(c: Ctx) -> Flags:
+  match c:
+    case Ctx{old_context, entered}: entered
+
+def Context.old(c: Ctx) -> List<&2, CV>:
+  match c:
+    case Ctx{old_context, entered}: old_context
+
+def Context.__exit__(c: Ctx, f: Flags) -> Flags:
+  Flags.put(f, Context.old(c))
 
 # ===========================================================================
 # prod -- functools.reduce(operator.mul, x, 1). NOTE the Python comment: it
@@ -1607,6 +1736,134 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
         case _: None{}
 
 # ===========================================================================
+# GlobalCounters -- `class GlobalCounters`, helpers.py:302
+#
+# SIX ClassVars (helpers.py:303-308) and one `@staticmethod reset` (:309-310). The
+# class has no methods beyond `reset` and no instances anywhere: every write is
+# `GlobalCounters.<name> = ...` or `GlobalCounters.<name> += ...` on the CLASS.
+#
+# THE MUTABLE-STATE ANSWER, since it is the question this block exists to settle.
+# Upstream's state lives in the class object and every reader sees the last write.
+# Bend has no mutable globals, no `Ref`, no store and no closures, so the state is a
+# `Data` VALUE that is threaded: `Counters` in, `Counters` out, and each `bump_*` is
+# the one-line rebuild that upstream's `+=` is. That is not a weaker counter, it is
+# the same counter:
+#   - it COUNTS. `bump_ops` adds `d` to the value that came IN, so a sequence of five
+#     bumps accumulates, and the gate runs exactly that sequence and prints the total
+#     after each step (`gc_init_ops`, `gc_bumped_ops`) against live CPython.
+#   - it CANNOT GO STALE, which is the property a mutable global does not have. There
+#     is no second copy to read, so a reader that forgets to thread the newest record
+#     gets the OLD value -- a wrong answer the gate can see, not a silently shared
+#     cell that is right until someone forgets to update it.
+# What threading costs is the caller: `GlobalCounters.reset()` upstream is a statement
+# and `GlobalCounters.reset(GlobalCounters.reset())` here is a value the caller must
+# use. That is the whole price and it is paid at the one place that owns the record.
+#
+# `mem_used` and `mem_used_per_device` are the interesting half and `reset` is why:
+# the tuple at :310 names FOUR fields, and the source says on :324-325 that the other
+# two are "NOT reset". A `reset` that zeroed all six would be a plausible-looking bug
+# that no test of the four would catch, so the gate reads `mem_used` and the per-device
+# counts AFTER a reset (`gc_after_used`, `gc_after_dev0`, `gc_after_dev3`).
+#
+# `time_sum_s` is a CPython `float`, i.e. an F64, and it is the one field that cannot
+# be incremented here: `base.bend` has no F32 addition. `F32.add` is a `law`
+# (base.bend:1556) -- an axiom with no body -- and live code may not call a law, so a
+# float accumulator has no expression. The field is carried, typed `F32`, and is
+# never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
+# it and prints those rows to STDERR so they are recorded without being diffed.
+# TODO(p4) helpers.py:305  `time_sum_s` needs the engine's clock, which is a C effect.
+# ===========================================================================
+
+type Counters is Data:
+  Counters{global_ops: U32, global_mem: U32, time_sum_s: F32, kernel_count: U32,
+           mem_used: U32, mem_used_per_device: List<&2, Mupd>}
+
+def GlobalCounters.init() -> Counters:
+  Counters{0, 0, 0.0, 0, 0, Nil{}}
+
+# `reset` (:310). `used` and `devs` ride through UNCHANGED on purpose; see the header.
+def GlobalCounters.reset(c: Counters) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, devs}: Counters{0, 0, 0.0, 0, used, devs}
+
+def GlobalCounters.bump_ops(c: Counters, d: U32) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, devs}: Counters{U32.add(ops, d), mem, t, k, used, devs}
+
+def GlobalCounters.bump_mem(c: Counters, d: U32) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, devs}: Counters{ops, U32.add(mem, d), t, k, used, devs}
+
+def GlobalCounters.bump_kernel(c: Counters) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, devs}: Counters{ops, mem, t, U32.add(k, 1), used, devs}
+
+def GlobalCounters.bump_mem_used(c: Counters, d: U32) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, devs}: Counters{ops, mem, t, k, U32.add(used, d), devs}
+
+# `mem_used_per_device` is a `defaultdict(int)` (:306) and two of its facts are not a
+# number. A READ of a missing key INSERTS a zero, so `mem_used_per_device[9]` on a
+# fresh counter answers 0 AND adds key 9. And the key set is INSERTION-ordered, so
+# CPython prints {0, 3, 9} as "0,3,9" while a dense row vector indexed by device
+# would print "0,1,2,3" -- four keys where Python has three, and a wrong key SET is
+# worse than a wrong count because it is also a different `len`. So this is the
+# `merge_dicts` idiom already used in this file for Python dicts: a list of pairs,
+# which is what `d.items()` yields and what keeps insertion order.
+#
+# The read-insert is why `mem_used_add(c, dev, 0)` is the port of a dict READ: adding
+# zero to a missing key inserts it and reads back zero, which is exactly what
+# `defaultdict.__missing__` does. The gate relies on that -- `gc_init`'s two device
+# rows are reads, and they leave the key set as {0, 3} before any bump runs.
+type Mupd is Data:
+  Mupd{dev: U32, n: U32}
+
+def GlobalCounters.mupd_dev(m: Mupd) -> U32:
+  match m:
+    case Mupd{dev, n}: dev
+
+def GlobalCounters.mupd_num(m: Mupd) -> U32:
+  match m:
+    case Mupd{dev, n}: n
+
+def GlobalCounters.mupd_put.step(same: Bool, +e: Mupd, +dev: U32, +n: U32, out: List<&2, Mupd>) -> List<&2, Mupd>:
+  List.append(&2, Mupd, out, [Bool.pick(Mupd, same, Mupd{dev, n}, e)])
+
+# not found, so append; found, so the rebuilt list already holds the new value
+def GlobalCounters.mupd_put.end(found: Bool, +dev: U32, n: U32, out: List<&2, Mupd>) -> List<&2, Mupd>:
+  match found:
+    case True{}: out
+    case False{}: List.append(&2, Mupd, out, [Mupd{dev, n}])
+
+def GlobalCounters.mupd_put.go(xs: List<&2, Mupd>, +dev: U32, +n: U32, found: Bool, out: List<&2, Mupd>) -> List<&2, Mupd>:
+  match xs:
+    case Nil{}: GlobalCounters.mupd_put.end(found, dev, n, out)
+    case +e <> t: GlobalCounters.mupd_put.go(t, dev, n, Bool.or(found, U32.is_eq(GlobalCounters.mupd_dev(e), dev)),
+      GlobalCounters.mupd_put.step(U32.is_eq(GlobalCounters.mupd_dev(e), dev), e, dev, n, out))
+
+def GlobalCounters.mupd_put(dev: U32, n: U32, xs: List<&2, Mupd>) -> List<&2, Mupd>:
+  GlobalCounters.mupd_put.go(xs, dev, n, False{}, Nil{})
+
+def GlobalCounters.mupd_get.pick(found: U32, same: Bool, +e: Mupd) -> U32:
+  match same:
+    case True{}: GlobalCounters.mupd_num(e)
+    case False{}: found
+
+def GlobalCounters.mupd_get.go(xs: List<&2, Mupd>, +dev: U32, found: U32) -> U32:
+  match xs:
+    case Nil{}: found
+    case +e <> t: GlobalCounters.mupd_get.go(t, dev, GlobalCounters.mupd_get.pick(found, U32.is_eq(GlobalCounters.mupd_dev(e), dev), e))
+
+def GlobalCounters.mupd_get(dev: U32, xs: List<&2, Mupd>) -> U32:
+  GlobalCounters.mupd_get.go(xs, dev, 0)
+
+def GlobalCounters.mem_used_add(c: Counters, +dev: U32, +d: U32) -> Counters:
+  match c:
+    case Counters{ops, mem, t, k, used, +devs}:
+      Counters{ops, mem, t, k, used,
+        GlobalCounters.mupd_put(dev, U32.add(GlobalCounters.mupd_get(dev, devs), d), devs)}
+
+# ===========================================================================
 # Timing
 #
 # `class Timing(contextlib.ContextDecorator)`: __enter__ stamps
@@ -1629,6 +1886,44 @@ def Timing.report.go(enabled: Bool, s: String) -> IO(Unit):
 
 def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
   Timing.report.go(enabled, Timing.report.text(prefix, st, en))
+
+# ===========================================================================
+# trange -- `def trange(n:int, **kwargs) -> tqdm[int]`, helpers.py:619
+#
+# The entire body is `return tqdm(range(n), total=n, **kwargs)`, so a `trange` IS its
+# `range(n)` with a total attached, and there are no `kwargs` to pass: every call
+# site in tinygrad is a bare `trange(k)` (`examples/beautiful_mnist.py:39` is the one
+# this block was added for). `Tqdm` therefore holds exactly what `trange` supplies:
+# the sequence and the total.
+#
+# `Tqdm.t` IS THE TOTAL, and the name is upstream's: `tqdm.__init__` (:587) does
+# `self.st, self.i, self.n, self.skip, self.t = ..., total`. There is no `total`
+# ATTRIBUTE -- the first draft of the oracle hand-typed `t.total` and CPython answered
+# `AttributeError: 'tqdm' object has no attribute 'total'`, which is why every row
+# here is generated by calling the def instead of by reading it.
+#
+# The parameter is `U32`, which is the wall. CPython's `n` is an `int` and
+# `trange(-3)` answers `t.t == -3` with an EMPTY sequence, because `range(-3)` is
+# empty while `total=-3` is a real, negative integer; `base.bend` declares `Nat`,
+# `U32` and `F32` and no signed type, so the port does not have a way to hold that and
+# `trange(-3)` is a TYPE ERROR rather than a silent 4294967293. Strengthening the
+# argument is the same answer `head :: NonEmpty a -> a` gives, and the cost is that
+# one upstream input is unrepresentable rather than wrong.
+#
+# `tqdm`'s presentation state -- `disable`, `desc`, `unit`, `rate`, `n`, `i` and the
+# bar itself -- is NOT PORTED, as the NOT PORTED block at the foot of this file says,
+# and `trange` does not invent it. One measured consequence is worth recording because
+# it is counter-intuitive: `tqdm.__init__`'s `disable` DEFAULT is `False`, not `None`
+# (:585), so the `sys.stderr.isatty()` arm is never taken by `trange` and the bar IS
+# drawn into a pipe. That is why `.agents/slop/helpers-tc-gate.sh` compares stdout
+# only, and why the oracle's `disable` / `desc` / `unit` / `rate` rows go to stderr.
+# ===========================================================================
+
+type Tqdm is Data:
+  Tqdm{t: U32, seq: List<&2, Nat>}
+
+def trange(+n: U32) -> Tqdm:
+  Tqdm{n, List.range(U32.to_nat(n))}
 
 # ===========================================================================
 # lines / printable
@@ -1685,9 +1980,12 @@ def printable(path: String, line: U32) -> IO(String):
 # 64-bit quotient and a 2^64-1 bound have no U32 encoding. They are declared in
 # ./dtype.bend next to the runtime/dtype.c that implements them.
 #
-# The ContextVar variable list is 3 of ~40. The rest (DEBUG, BEAM, NOOPT, DEV,
-# CACHELEVEL, ...) is phase P6: they need a process-wide store with save and
-# restore, which is exactly the mutable global Bend does not have.
+# The ContextVar variable LIST is 3 of 61 (the count is measured at the top of this
+# file, and the "~40" this line used to carry was wrong by 21). The rest (DEBUG, BEAM,
+# NOOPT, DEV, CACHELEVEL, ...) is phase P6: they need FIELDS on the record, and the
+# save/restore MECHANIC they need is already ported above -- `Context.__enter__`
+# snapshots named keys and `Context.__exit__` writes them back, so P6 is a wider
+# `Flags` and a wider `Flags.snap1.go` dispatch, not a new mechanism.
 #
 # `Target` and `Target.parse` are phase P6 too: they exist to parse DEV, and DEV
 # only exists once there is a device to point at.
@@ -1723,10 +2021,13 @@ def printable(path: String, line: U32) -> IO(String):
 # Python address into a memoryview. Bend's `Array<T>` is already a reference-
 # counted buffer, so the arena in P6 owns the memory and these become the
 # arena's accessors rather than a port of the casts.
-# `tqdm` and `trange` are a terminal progress bar: ANSI redraw, a width from
-# shutil.get_terminal_size and a rate heuristic. It is pure presentation over a
-# loop the caller already owns; the port prints a line per kernel instead
-# (viz.bend, P8).
+# `trange` IS ported above, as the `range(n)` and the total that `tqdm(range(n),
+# total=n)` is. What is left of `tqdm` is its terminal progress bar: ANSI redraw, a
+# width from shutil.get_terminal_size and a rate heuristic, plus `disable`, `desc`,
+# `unit`, `unit_scale`, `rate`, `n` and `i`. It is pure presentation over a loop the
+# caller already owns; the port prints a line per kernel instead (viz.bend, P8).
+# `t.__enter__`/`t.__exit__` are the same close-the-bar pair as `Timing` above, which
+# IS ported, so the only reason `tqdm` is not is the bar itself.
 # `copyreg.pickle(types.CodeType/ModuleType)`, `_serialize_code`,
 # `_reconstruct_code` and `_serialize_module` make Python objects picklable.
 # Bend has no code objects and no modules to pickle.
@@ -1737,8 +2038,11 @@ def printable(path: String, line: U32) -> IO(String):
 # is CPython's own frame stack, which does not exist in Bend; they are rebuilt
 # in P8 on the IO.now clock, which is why `Timing` above is ported and
 # `Profiling` is not.
-# `GlobalCounters` is a mutable class with ClassVar state. It becomes the
-# engine's counter record in P4, threaded like the arena, not a global.
+# `GlobalCounters` is ported above as `Counters`: six fields, `init`, `reset`, five
+# bumps and the per-device dict, threaded like the arena rather than global. Its
+# remaining gap is `time_sum_s`, which needs an F32 add that `base.bend` does not
+# have (`F32.add` is a law at base.bend:1556), so in P4 the engine's clock writes
+# that one field. Nothing else in the class is outstanding.
 # `disable_gc` and the DEBUG_GC `gc.callbacks` hook control CPython's collector.
 # Bend's collector is the reference count in the runtime, which no def can
 # switch off, so these have no meaning here.
