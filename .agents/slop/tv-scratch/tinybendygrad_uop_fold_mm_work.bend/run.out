@@ -1,0 +1,99 @@
+dtype_key=True
+shape_ok=True
+device_ok=True
+cycle_safe=True
+gap_ok=True
+resh_2d=True
+resh_1d=True
+resh_noop=True
+resh_reject=True
+resh_settle=True
+sized_order=True
+mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=i32
+mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=i32
+mv_expnoop n=4 op=Ops.EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+mv_expsym n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=ABSENT dtype=ABSENT
+mv_pad1 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=i32
+mv_pad23 n=12 op=Ops.PAD nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(6,5) dtype=i32
+mv_padr n=8 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.STACK|Ops.STACK shape=ABSENT dtype=ABSENT
+mv_padr2 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=ABSENT dtype=ABSENT
+mv_shr1 n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(2) dtype=i32
+mv_shr23 n=10 op=Ops.SHRINK nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(2,1) dtype=i32
+mv_shrbad n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=ABSENT dtype=ABSENT
+mv_perm n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=i32
+mv_permrep n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_permlen n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_flip n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=(2,3) dtype=i32
+mv_fliplen n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mm_add_zero 0:0
+mm_add_small 0:12
+mm_add_carrylo 1:0
+mm_add_carryhi 1:0
+mm_add_hilo 1:4294967295
+mm_add_over64 OVER
+mm_add_maxmax OVER
+mm_add_2p31 1:0
+mm_sub_ok 0:2
+mm_sub_zero 0:0
+mm_sub_borrow OVER
+mm_sub_borrowhi 0:4294967295
+mm_sub_under64 OVER
+mm_sub_tomax OVER
+mm_sub_maxmax 0:0
+mm_mul_small 2:1410065408
+mm_mul_16sq 0:4294836225
+mm_mul_31sq 1073741823:1
+mm_mul_32sq 4294967294:1
+mm_mul_2p32sq OVER
+mm_mul_over64 4294967295:0
+mm_mul_maxsq OVER
+mm_mul_1e12 232:3567587328
+mm_mul_6x 1:2
+mm_mul_zero 0:0
+mm_mul_2p63 2147483648:0
+mm_mul_2p32m 4294967294:1
+mm_mul_2p48sq OVER
+mm_mul_2p47sq OVER
+mm_shl_0 0:1
+mm_shl_1 0:2
+mm_shl_31 0:2147483648
+mm_shl_32 1:0
+mm_shl_63 2147483648:0
+mm_shl_64 OVER
+mm_shl_hi1 2:0
+mm_shl_hi32 OVER
+mm_shl_hi63 OVER
+mm_shl_over63 OVER
+mm_shl_over32 OVER
+mm_shl_edge32 OVER
+mm_shl_max32 4294967295:0
+mm_shl_max31 2147483647:2147483648
+mm_shl_max63 OVER
+mm_shl_0hi 1:0
+mm_shl_bigk OVER
+mm_shr_0 1:5
+mm_shr_1 0:2147483650
+mm_shr_31 0:1
+mm_shr_32 0:1
+mm_shr_63 0:0
+mm_shr_64 0:0
+mm_shr_max 2147483647:4294967295
+mm_shr_max40 0:16777215
+mm_shr_bigk 0:0
+mm_div_17_5 q=0:3 r=0:2
+mm_div_17_1 q=0:17 r=0:0
+mm_div_2p32_3 q=0:1431655765 r=0:1
+mm_div_7_2p32 q=0:0 r=0:7
+mm_div_maxmax q=0:1 r=0:0
+mm_div_max_2p32m q=1:1 r=0:0
+mm_div_2p32m_x q=0:5 r=0:715827880
+mm_div_max_2p32 q=0:4294967295 r=0:4294967295
+mm_div_2p33_7 q=0:613566757 r=0:2
+mm_div_max_p1 q=4294967295:4294967295 r=0:0
+mm_div_100_7 q=0:14 r=0:2
+mm_div_max_3 q=1431655765:1431655765 r=0:0
+mm_div_2p32_2p32m q=0:1 r=0:1
+mm_div_max_2 q=2147483647:4294967295 r=0:1
+mm_div_1_2 q=0:0 r=0:1
+mm_div_2p63_max q=0:0 r=2147483648:0
+mm_div_2p63_2p62 q=0:2 r=0:0

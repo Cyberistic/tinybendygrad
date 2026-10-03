@@ -286,6 +286,12 @@ def type_rows():
   return out
 
 def supported_rows():
+  """ptx.py:230-231, names from DType.name (dtype.py:120-137).
+
+  `dtypes.half` is an alias of `dtypes.f16` (dtype.py:140), so `.name` is
+  `"f16"`, not `"half"`. A `py=` literal that still says `half` is the port
+  being stale, not CPython.
+  """
   out = ""
   from tinygrad.helpers import Target
   # `PTXRenderer.__init__` needs the CUDA compiler (a runtime import), so the
@@ -302,6 +308,12 @@ def supported_rows():
   return out
 
 def tensor_core_rows():
+  """ptx.py:146's filter, spelled with the live `.name` (dtype.py:134, :136).
+
+  `dtypes.half is dtypes.f16` and `dtypes.float is dtypes.f32`, so the filter
+  `dtype_in in (dtypes.half, dtypes.float)` and the spelling `f16->f32` are the
+  same fact. sm_80 drops `bf16->f32`; sm_89 also drops the two fp8 cores.
+  """
   out = ""
   for arch in ("sm_75", "sm_80", "sm_89"):
     got = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.f16, dtypes.f32)]

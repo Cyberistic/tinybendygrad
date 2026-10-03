@@ -1,1 +1,1 @@
-OK	lg2k,lg2n,lg2p,lg2sig,lg3k,lg3n,lg3p,lg3sig,lg4k,lg4n,lg4p,lg4sig,lg5k,lg5n,lg5p,lg5sig,lg6k,lg6n,lg6p,lg6sig,lgbn,lgok,lgop,lgosig,lgqk,lgqn,lgqsig,lgrk,lgsk,lgtk
+MOVED	lg2k,lg2n,lg2p,lg2sig,lg3k,lg3n,lg3p,lg3sig,lg4k,lg4n,lg4p,lg4sig,lg5k,lg5n,lg5p,lg5sig,lg6k,lg6n,lg6p,lg6sig,lgbn,lgok,lgop,lgosig,lgqk,lgqn,lgqsig,lgrk,lgsk,lgtk

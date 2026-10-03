@@ -38,7 +38,11 @@ walkthroughs    [######...] 6/7
       (10/10 proven; 8 shape-column mutations each killed by their own law.
       Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
-- [ ] `PROOF-ALL.bend` green
+- [ ] `PROOF-ALL.bend` green — still 2 TODOs. Broadcast is false as quantified.
+      The reduce law's term is corrected and unproven, not false.
+- [x] `drop_n` drops `n`, not `n+1`, and the reduce-numel multiplier is
+      `List.take(dims, n)`. Index of arity 1 over rank 3 is rank 2.
+      Gate: `./bin/bend tinybendygrad/LAWS/spec.bend`.
 
 ### The fuel detour — done, and it is worth remembering
 
@@ -2980,3 +2984,10 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
       `.agents/slop/runrows.sh`, which retries a ZERO-ROW bend run: the machine stack
       overflows on ~1 run in 20 and a 0-row result is indistinguishable from
       "never started".
+- [x] **`renderer/tc_ptx.bend` vs `tcptx-oracle.py`: the oracle was right.** Six
+      shared rows disagreed only in the `py=` half (`half`/`float` vs live
+      `DType.name` `f16`/`f32`, dtype.py:134 and :136). Computation already
+      matched. Literals fixed; flip of `sd_keep` / `dsh_half.keep` moved all 6;
+      comment-only moved 0. Wired as `stage2` (228 shared, 0 disagree). 105 other
+      rows do not intersect because the ROW KEY still uses the legacy spelling;
+      aligned values agree. Rule **TC-PY** at the end of `bend2-constraints.md`.

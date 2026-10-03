@@ -408,7 +408,7 @@ def reindex.plus(+ar: O.Arena, +i1: U32, +off: U32) -> O.Found:
 
 def reindex.scaled(+ar: O.Arena, +i1: U32, +off: U32, +mul: U32) -> O.Found:
   +cm = dd_wk(ar, H.i64_of_i32(mul))
-  +m = dd_mul(O.Found.ar(cm), O.Found.i(cm), i1)
+  +m = dd_mul(O.Found.ar(cm), i1, O.Found.i(cm))
   +co = dd_wk(O.Found.ar(m), H.i64_of_i32(off))
   dd_add(O.Found.ar(co), O.Found.i(m), O.Found.i(co))
 
@@ -578,7 +578,7 @@ def l2i_shl.hi(+ar: O.Arena, +a1u: U32, +n: U32, +a0u: U32) -> U32:
   +o = dd_shr(O.Found.ar(c1), a0u, O.Found.i(c1))
   +k = dd_rsub31(O.Found.ar(o), n)
   +t = dd_shr(O.Found.ar(k), O.Found.i(o), O.Found.i(k))
-  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(t), O.Found.i(s)))
+  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t)))
 
 def l2i_shl.ge(+ar: O.Arena, +b0: U32) -> O.Found:
   +c = dd_wk(ar, H.i64_of_i32(32))

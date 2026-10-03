@@ -1,0 +1,47 @@
+<!doctype html><meta charset=utf-8><title>webgpu_call</title><body><pre id=o>start</pre>
+<script type="module">
+import j, { program, toJS } from "/tinybendygrad/runtime/webgpu_call.js";
+const L = []; const say = (s) => { L.push(s); document.getElementById("o").textContent = L.join("\n"); };
+const step = async (name, f) => { say("> " + name); return await Promise.race([f(), new Promise((_, rj) => setTimeout(() => rj(new Error("TIMEOUT " + name)), 6000))]); };
+try {
+  // `fx` uses CODE() == "k", which is the ENTRY POINT NAME and not the shader
+  // source. `webgpu_call.bend`'s `ShaderModule.code` is the WGSL TEXT, which
+  // `ops_webgpu.bend` says is wgsl.bend's artefact -- so the driver is handed the
+  // text from OUTSIDE the port, exactly as a caller would hand it to
+  // `prog.init`. This is the one input the seam cannot derive, and it says so.
+  // The text is the layout `ops_webgpu.bend` documents at THE LAYOUT DERIVATION:
+  // binding 0 is the f32 INFINITY uniform, 1..3 are the storage buffers.
+  const WGSL = `fn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }
+@group(0) @binding(0)
+var<uniform> INFINITY : f32;
+@group(0) @binding(1)var<storage,read_write>a:array<f32>;
+@group(0) @binding(2)var<storage,read_write>b:array<f32>;
+@group(0) @binding(3)var<storage,read_write>c:array<i32>;
+@compute @workgroup_size(1) fn k(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.x;
+  a[i] = select(b[i], INFINITY, a[i] > b[i]);
+  c[i] = i32(a[i] * 2.0);
+}`;
+  // `Cs.call` takes the code as its LAST argument, so this is the port's own
+  // fixture with the shader text supplied -- no restatement of the call.
+  const cs = j.M["Cs.call"](j.M["bufs3"](), 1n, j.M["ONE"](), 8, 1, 1, 1, j.M["BOTH"](), "k", WGSL);
+  const a = await step("requestAdapter", () => navigator.gpu.requestAdapter());
+  const d = await step("requestDevice", () => a.requestDevice());
+  const alloc = 128 | 8 | 4;
+  const owned = new Map([100,101,102].map(id => [id, d.createBuffer({size:64,usage:alloc})]));
+  const r = await step("program", () => program("WGPUBackendType_Metal", [3,8], cs, owned));
+  say("OK performed=" + r.performed.length + "/" + r.steps);
+  say("RANGE " + (r.range ? r.range.byteLength + " bytes" : "null"));
+  say("TIMESTAMPS " + (r.range ? Array.from(new BigUint64Array(r.range)).join(",") : "none"));
+  say("TAIL " + r.performed.slice(-8).join(","));
+  // THE READBACK. `MappedRange` handed back a 16-byte ArrayBuffer: two u64
+  // timestamps, which is WALL 2's delta and the ONLY place it is computed. In JS
+  // they are BigInts, so the subtraction is exact and the /1e9 is the :141 scale.
+  if (r.range) {
+    const u = new BigUint64Array(r.range);
+    say("TIMESTAMPS " + u[0] + " " + u[1]);
+    say("DELTA_SECONDS " + Number(u[1] - u[0]) / 1e9);
+  }
+} catch (e) { say("FAIL " + (e && e.message ? e.message : e)); }
+document.title = "done";
+</script></body>

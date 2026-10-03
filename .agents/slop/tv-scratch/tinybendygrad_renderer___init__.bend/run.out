@@ -1,0 +1,19 @@
+sd empty      = [fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool]   py=[fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool]
+sd emu long   = [fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,u8,u16,u32,u64,i8,i16,i32,i64,bool]   py=[fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,u8,u16,u32,u64,i8,i16,i32,i64,bool]
+dtypes.all     = [fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool]   py=[fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool]
+emu_long []      = [False]   py=False
+emu_long [long]  = [True]   py=True
+is_named double  = [True]   py=True
+is_named long!=  = [False]   py=False
+is_alu ADD       = [True]   py=True
+is_alu SINK      = [False]   py=False
+is_mem LOAD      = [True]   py=True
+is_mem STORE     = [True]   py=True
+is_mem ADD       = [False]   py=False
+est add     = [Estimates(ops=5, lds=7, mem=9)]   py=[Estimates(ops=5, lds=7, mem=9)]
+est simplfy  = [Estimates(ops=3, lds=4, mem=5)]   py=[Estimates(ops=3, lds=4, mem=5)]
+ws buffer   = [f32]   py=[f32]
+ws index    = [None]   py=[None]
+ws idx.src0 = [f32]   py=[f32]
+ws alloc    = [f32]   py=[f32]
+

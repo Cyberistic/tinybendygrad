@@ -713,6 +713,12 @@ BASE_ORACLES = {
   "tinybendygrad/runtime/support/usb.bend": [".agents/slop/usb-oracle-run.py"],     # 939
   "tinybendygrad/schedule/prepare.bend": [".agents/slop/prepare-oracle.py"],       # 321
   "tinybendygrad/renderer/ptx.bend": [".agents/slop/ptx-s3-oracle.py"],            # 281
+  # stage2 is the ptx.py half this file prints. stage1 is tc.bend's question and
+  # shares 0 names, so wiring `rows` would compare the same 228 and nothing more.
+  # 105 other port rows use legacy dtype spellings in the ROW KEY (`half` vs
+  # `f16`) and so do not intersect; aligned values agree. The six that did
+  # intersect and disagree were stale `py=` literals, fixed against a live call.
+  "tinybendygrad/renderer/tc_ptx.bend": [".agents/slop/tcptx-oracle.py stage2"],  # 228
   "tinybendygrad/renderer/nir_llvmir.bend": [".agents/slop/nl/nl-oracle.py"],      # 201
   "tinybendygrad/viz/serve.bend": [".agents/slop/vz/viz_oracle.py"],               # 176
   "tinybendygrad/runtime/support/c.bend": [".agents/slop/c-oracle.py"],            # 129

@@ -1,1 +1,1 @@
-OK	lgbk,lgbp,lgbsig,lgqn,lgrn
+MOVED	lgbk,lgbp,lgbsig,lgqn,lgrn

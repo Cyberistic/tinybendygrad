@@ -1,0 +1,69 @@
+ix_len=22
+ix=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
+po_param=0
+po_bufl=3
+po_bufg=2
+po_load=19
+po_store=21
+po_range=25
+po_end=15
+po_backedge=15
+po_add=20
+rc_nil=1
+rc_1=4
+rc_2=64
+rc_3=20
+rc_max=65536
+rc_big=262144
+lin_srcs=CONST CAST SPECIAL BUFFER PARAM ADD STORE CONST CAST ADD STORE CONST CAST RANGE:0 END RANGE:1 END ALLOC SINK
+lin_n=19
+lin_vm=0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 0 1 15 0 0 0
+lin_nkey=5 6 7 2 0 8 15 9 10 11 16 12 13 17 3 18 4 1 14
+lin_ord=PARAM ALLOC BUFFER END END CONST CAST SPECIAL ADD CONST CAST ADD CONST CAST SINK STORE STORE RANGE:0 RANGE:1
+lin_u0=PARAM rc=1 po=0 nk=0
+lin_u1=CONST rc=1 po=20 nk=5
+lin_u2=CAST rc=1 po=20 nk=6
+lin_u3=ALLOC rc=1 po=2 nk=1
+lin_u4=SPECIAL rc=1 po=20 nk=7
+lin_u5=BUFFER rc=1 po=3 nk=2
+lin_u6=ADD rc=1 po=20 nk=8
+lin_u7=CONST rc=1 po=20 nk=12
+lin_u8=CAST rc=1 po=20 nk=13
+lin_u9=STORE rc=1 po=21 nk=15
+lin_u10=RANGE rc=4 po=25 nk=17
+lin_u11=END rc=1 po=15 nk=3
+lin_u12=CONST rc=1 po=20 nk=9
+lin_u13=CAST rc=1 po=20 nk=10
+lin_u14=ADD rc=1 po=20 nk=11
+lin_u15=STORE rc=1 po=21 nk=16
+lin_u16=RANGE rc=16 po=25 nk=18
+lin_u17=END rc=1 po=15 nk=4
+lin_u18=SINK rc=1 po=20 nk=14
+lin_ties=47
+lin_exmix=0
+linc_srcs=PARAM CONST CAST ADD CALL SINK
+linc_n=6
+linc_vm=0 0 0 0 0 0
+linc_nkey=0 1 2 3 4 5
+linc_ord=PARAM CONST CAST ADD CALL SINK
+linc_u0=PARAM rc=1 po=0 nk=0
+linc_u1=CONST rc=1 po=20 nk=1
+linc_u2=CAST rc=1 po=20 nk=2
+linc_u3=ADD rc=1 po=20 nk=3
+linc_u4=CALL rc=1 po=20 nk=4
+linc_u5=SINK rc=1 po=20 nk=5
+linc_ties=10
+linc_exmix=0
+cfg_edges=RANGE/1->END
+cfg_edges_n=1
+cfg_hits=- 1->[CAST,END,END]
+cfg_tbl_len=1
+cfg_tbl_ops=RANGE
+se_rngs=2 1 0
+se_ops=CONST/- CAST/- CONST/- CAST/- RANGE/2 END/- CONST/- CAST/- RANGE/1 END/- RANGE/0 END/-
+se_len=3
+se_nsrc=2
+se_tbl_len=1
+se_tbl_ops=END
+se_fired=1
+se_miss=0

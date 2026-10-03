@@ -13862,3 +13862,62 @@ TWO TRAPS IN RENAMING, BOTH MEASURED HERE:
 locale-colating here and fabricate diffs even on an unchanged tree, so only a
 control that is SUPPOSED to be empty can tell you your comparison works. The
 naming gate's self-test asserts two consecutive runs are byte-identical.
+
+## TC-PY. A `py=` LITERAL THAT SURVIVED A DTYPE RENAME IS A DISAGREEMENT THE COMPUTATION CANNOT SEE
+
+Measured 2026-10-03, `renderer/tc_ptx.bend` against `.agents/slop/tcptx-oracle.py stage2`.
+228 shared row names, 6 disagree. The left bracket — the port's computation, via
+`S.Dt.nm` — already said `f16`/`f32`. The `py=` literal still said `half`/`float`.
+CPython's `DType.name` is the canonical spelling (`tinygrad/dtype.py:120-137`); the
+legacy alias (`dtype.py:140-142`, `half = f16`) does not change `.name`. Called, not
+inferred: `dtypes.half.name == "f16"`, `dtypes.float.name == "f32"`. The oracle was
+right. The port's annotation was stale.
+
+A second shape of the same rename does not even disagree. 105 row KEYS still say
+`half` / `signed char` while the oracle says `f16` / `i8`, so the gate's name
+intersection never compares them. Aligned values agree. A wrong key is invisible,
+not green. Naive substitution is also wrong: replacing `float` inside `float8_e4m3`
+produces `f328_e4m3`. Longest-first, and do not rename a key you have not aligned.
+
+Flipping the computation (drop half from `sd_keep` and from `dsh_half.keep`, on a
+COPY in the same directory) moved all 6 rows. A comment-only copy moved 0. The
+`py=` literal staying put while the left bracket moved is what makes the row a
+test: the expectation is not a def of the thing under test.
+
+The three `supported_dtypes` fixtures are sm_53 / sm_75 / sm_80, all `>= 53`, so
+dropping ONLY the `arch >= 53` conjunct moves none of them. That blind spot is
+pre-existing (the mutation comment on M17 describes a different edit than the one
+that would test the conjunct) and is not one of the six.
+
+### DN-1. `drop_n`'s `case 0n` ARM AND THE LAW THAT CALLS IT ARE TWO DEFECTS, AND
+###     FIXING ONLY THE ARM DOES NOT MAKE THE LAW TRUE
+Measured 2026-10-03. Positions: `references/bend/bend2/base.bend:909-916`
+(`List.drop`, `case h <> t 0n: h <> t` — n=0 keeps the head);
+`tinygrad/uop/ops.py:351-354` (`shape[len(src[1:]):]`) and `:431-435`
+(`ps[num_axes:]`); `spec/tinyspec.tex:107` ("Reduce the first n axes").
+There is no CPython `drop_n`. The oracle is tinygrad's `_shape`,
+`.agents/slop/ind/dropn-oracle.py`: Reduce n=0 of (4,5,6) is (4, 5, 6);
+Reduce n=1 and an arity-1 scalar Index are (5, 6), rank 2.
+
+The old `LAWS/spec.bend` match returned the tail at `case 0n`, so it dropped
+`n+1`. On (4,5,6) it kept 5,6 / 6 / empty at n=0,1,2 where `List.drop` keeps
+4,5,6 / 5,6 / 6 (`.agents/slop/ind/dropn-before.txt`). An Index of arity 1 over
+rank 3 had rank 1.
+
+That off-by-one is not why the reduce law was false. The law multiplied
+`reduced_numel` by `prod(drop_n(...))`, and `drop_n` returns the KEPT suffix.
+Fixing the arm and leaving the body makes `kept * kept == all`: 16==4 and
+900==120, still false (`.agents/slop/ind/dropn-after.txt`). `List.take(dims, n+1)`
+is true only against the buggy drop (4==4, 120==120) and false once drop is
+exact (16==4, 600==120). The term the name describes, once drop is exact, is
+`List.take(dims, n)`: 4==4 and 120==120.
+
+Callers of spec's `drop_n`, audited: `Shape.drop` (Reduce, passes `k` as "first
+n axes"), `Sp.shape.index` (passes the arity, not arity-1), and `LAWS.bend`'s
+forwarder, which the law no longer calls. None depended on n+1. `uop/fold.bend`'s
+`drop_n` is a different def and already calls `List.drop`. Changing the arm
+value in place would have been a silent fall-through; the fix deletes the match
+and calls `List.drop`. The Index rank defect is closed (`idx1_rank3=2`), not
+only reported. The reduce law is true on the measured cases and still unproven:
+`PROOF-ALL` stayed at 2 TODOs, and deleting `L.flip_preserves_numel` on a copy
+took that to 3.

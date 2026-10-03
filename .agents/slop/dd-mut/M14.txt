@@ -1,1 +1,1 @@
-NO-COMPILE	SOME PROOFS FAIL | Error:
+DID-NOT-COMPILE	SOME PROOFS FAIL | Error: | - expected : a defined name
