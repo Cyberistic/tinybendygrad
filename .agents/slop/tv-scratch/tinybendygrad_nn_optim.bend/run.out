@@ -1,0 +1,11 @@
+op_params=True
+op_bufs=True
+op_acc=True
+op_nop=True
+unverified_apply=4 BUFFER/0 DETACH/1 BUFFER/0 SUB/2 
+unverified_prewd=1 BUFFER/0 
+unverified_lars0=1 BUFFER/0 
+unverified_trust=0 
+unverified_mom=1 BUFFER/0 
+unverified_nesterov=1 BUFFER/0 
+unverified_lamb=1 NOOP/0 

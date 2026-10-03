@@ -324,6 +324,9 @@ ORACLE_CONFORMANCE = {
   "tinybendygrad/runtime/support/usb.bend": (".agents/slop/usb-oracle-run.py", 939, "live"),
   "tinybendygrad/schedule/prepare.bend": (".agents/slop/prepare-oracle.py", 321, "live"),
   "tinybendygrad/renderer/ptx.bend": (".agents/slop/ptx-s3-oracle.py", 281, "live"),
+  # 228 of 333. The other 105 are legacy dtype spellings in the row KEY, measured
+  # 2026-10-03: aligned values agree, so the intersection is the honest number.
+  "tinybendygrad/renderer/tc_ptx.bend": (".agents/slop/tcptx-oracle.py stage2", 228, "live"),
   "tinybendygrad/renderer/nir_llvmir.bend": (".agents/slop/nl/nl-oracle.py", 201, "live"),
   "tinybendygrad/viz/serve.bend": (".agents/slop/vz/viz_oracle.py", 176, "live"),
   "tinybendygrad/runtime/support/c.bend": (".agents/slop/c-oracle.py", 129, "live"),
@@ -339,6 +342,9 @@ ORACLE_CONFORMANCE = {
   # of a gate is the intersection, so 3 is the number and the comment in BASE_ORACLES says
   # which 3.
   "tinybendygrad/runtime/ops_cpu.bend": (".agents/slop/cpulink_oracle.py", 3, "live"),
+  # 85 of the port's 86 naive keys. The leftover is `py`, an indented continuation
+  # the parser invents; it is port-only and not a claim. HEAD, not the vendored hybrid.
+  "tinybendygrad/uop/render.bend": (".agents/slop/xd1/render-gate-oracle.py --gate", 85, "live"),
   "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", 0, "dead"),
   "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", 0, "dead"),
 }

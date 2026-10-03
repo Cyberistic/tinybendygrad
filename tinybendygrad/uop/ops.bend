@@ -3349,6 +3349,81 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
   pm_scan(ts, ar, self, PMEntrys.es(ts), VSkip{})
 
 
+# ===========================================================================
+# THE ENGINE FAMILY (`_m`). PARALLEL to the `pm_rewrite` family above; this
+# one returns the REPLACEMENT NODE, not just the verdict. `pm_rewrite` is the
+# scan and decides which rule WANTS the node; `pm_rewrite_m` is the scan and
+# the rule body's answer, which is the new U32 (or `None{}` to mean "no
+# rewrite, rebuild with rewritten srcs").
+#
+# WHY A PARALLEL FAMILY. `uop/spec.bend` is the only consumer of `pm_rewrite`
+# and reads the Verdict. The codegen rewrite engine is a NEW consumer and
+# reads `Maybe<&2, U32>`. The two families co-exist until spec.bend moves
+# off Verdict (it won't, in this unit). Each rule's `_m` body takes
+# `(ctx: U32, ar: Arena, self: U32)` and returns `Maybe<&2, U32>`.
+# `ctx` is a `U32` here because the dispatch is a `U32 -> U32 -> ...`
+# surface; the engine threads the real `ctx` (a `Data` record, a `Nat`
+# counter, whatever) as a `U32`-keyed `Map<&2, U32>` indexed off the arena
+# the way `VarVals` does.
+# ===========================================================================
+
+# the rule bodies. The default for every rule is "no rewrite" (`None{}`).
+# The no-op `pm_rewrite_m` body for a SINK is `Some(self)` so the engine
+# does not have to special-case SINK in the rebuild step.
+
+def pm_r_sink_m(ar: Arena, self: U32) -> Maybe<&2, U32>:
+  Some{self}
+
+def pm_r_cast_m(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  # the rule does not transform a CAST/BITCAST; it just claims it for
+  # tables whose body is identity. The real `pm_dtype_decomps` /
+  # `pm_move_gates_from_index` will replace this.
+  Some{self}
+
+def pm_r_noop_m(ar: Arena, self: U32) -> Maybe<&2, U32>:
+  # NOOP -> its source. The minimal "rule fires and returns a new node".
+  Some{Arena.src(ar, self, 0)}
+
+# dispatch by tag. Tags 0/1/2 are the same as `pm_dispatch.go`. A new rule
+# body in the table adds a `case n: pm_r_NEW_m(ar, self)`.
+def pm_dispatch_m.go(tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+  match tag:
+    case 0: pm_r_sink_m(ar, self)
+    case 1: pm_r_noop_m(ar, self)
+    case 2: pm_r_cast_m(ar, self)
+    case _: None{}
+
+def pm_dispatch_m(tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+  pm_dispatch_m.go(tag, ar, self)
+
+def pm_try_m.go(ok: Bool, tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+  match ok:
+    case True{}: pm_dispatch_m(tag, ar, self)
+    case False{}: None{}
+
+def pm_try_m.of(claimed: Bool, early: Bool, tag: U32, ar: Arena, self: U32) -> Maybe<&2, U32>:
+  pm_try_m.go(Bool.and(claimed, early), tag, ar, self)
+
+def pm_try_m(ts: PMEntrys, +ar: Arena, +self: U32, +e: PMEntry) -> Maybe<&2, U32>:
+  pm_try_m.of(pm_claimed(PMEntry.ops(e), ar, self), pm_early(ts, ar, self, PMEntry.rej(e)), PMEntry.tag(e), ar, self)
+
+# `pm_scan_m` is a first-wins fold over the rule list. First `Some` wins;
+# later `Some`s are dropped. The accumulator is `Maybe<&2, U32>` and the
+# identity is `None{}`. The order is the table order, which IS Python's
+# `PatternMatcher` order (Python's `pm.rewrite` returns the first non-None
+# result).
+def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match todo:
+    case Nil{}: acc
+    case e <> t:
+      match acc:
+        case Some{value}: acc
+        case None{}: pm_scan_m(ts, ar, self, t, pm_try_m(ts, ar, self, e))
+
+def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{})
+
+
 # one rule: does it claim this op, and does `early_reject` pass?
 
 

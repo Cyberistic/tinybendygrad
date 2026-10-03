@@ -713,10 +713,32 @@ BASE_ORACLES = {
   "tinybendygrad/runtime/support/usb.bend": [".agents/slop/usb-oracle-run.py"],     # 939
   "tinybendygrad/schedule/prepare.bend": [".agents/slop/prepare-oracle.py"],       # 321
   "tinybendygrad/renderer/ptx.bend": [".agents/slop/ptx-s3-oracle.py"],            # 281
+  # stage2 is the ptx.py half this file prints. stage1 is tc.bend's question and
+  # shares 0 names, so wiring `rows` would compare the same 228 and nothing more.
+  # 105 other port rows use legacy dtype spellings in the ROW KEY (`half` vs
+  # `f16`) and so do not intersect; aligned values agree. The six that did
+  # intersect and disagree were stale `py=` literals, fixed against a live call.
+  "tinybendygrad/renderer/tc_ptx.bend": [".agents/slop/tcptx-oracle.py stage2"],  # 228
   "tinybendygrad/renderer/nir_llvmir.bend": [".agents/slop/nl/nl-oracle.py"],      # 201
   "tinybendygrad/viz/serve.bend": [".agents/slop/vz/viz_oracle.py"],               # 176
   "tinybendygrad/runtime/support/c.bend": [".agents/slop/c-oracle.py"],            # 129
   "tinybendygrad/uop/fold.bend": [".agents/slop/mm-lift-gate.py"],                 # 126
+  # -- the oracle-WIRING unit, +2. Both oracles already existed and both import and CALL
+  #    tinygrad; neither port had been wired to them. Measured over all THREE lanes
+  #    (interpreted, compiled native, CPython) with .agents/slop/wire-lanes.py, never inferred
+  #    from a filename:
+  #      elf.bend   353 interpreted / 353 native / 1042 oracle rows, all three pairs agree,
+  #                 and PORT FULLY COVERED: 0 of its 353 row names are ungated, which is a
+  #                 stronger claim than any other entry in this dict can make.
+  #      sqtt.bend 1033 interpreted / 1033 native / 1324 oracle rows, 1015 shared, 0
+  #                 disagreements; 18 of its row names lie outside the oracle's set.
+  #    BOTH WERE INVISIBLE TO rebase-scan-oracles.py, which finds candidates with
+  #    `re.search(r"(oracle|gate)", p.name)`. Neither filename contains either substring, so
+  #    the survey structurally COULD NOT list them, and the "no oracle at all" count included
+  #    two ports that have had a working CPython oracle for hours. Its candidate filter -- not
+  #    the absence of an oracle -- is part of why this gap looked as large as it did.
+  "tinybendygrad/runtime/support/elf.bend": [".agents/slop/elf_rows.py"],            #  353
+  "tinybendygrad/renderer/amd/sqtt.bend": [".agents/slop/sqtt_spec.py"],            # 1015
   "tinybendygrad/nn/onnx.bend": [".agents/slop/onnx-gate.py"],                     # 123
   "tinybendygrad/mixin/elementwise.bend": [".agents/slop/ew-gate.py"],             #  71
   "tinybendygrad/mixin/op.bend": [".agents/slop/mixin-op-gate.py"],                #  32
@@ -725,6 +747,11 @@ BASE_ORACLES = {
   "tinybendygrad/nn/__init__.bend": [".agents/slop/nn-init-gate.py"],             #  24
   "tinybendygrad/codegen/gpudims.bend": [".agents/slop/xd1/rw-gate-oracle.py"],    #  24
   "tinybendygrad/runtime/ops_cpu.bend": [".agents/slop/cpulink_oracle.py"],        #   3
+  # 85 shared, 0 disagree, measured against `--gate` (imports xd1/head, prints the
+  # port's bracket shape). The vendored tree is a hybrid — ops.py at HEAD, render.py
+  # at the pin — and pyrender there disagrees on 18 rows the port gets right. Wiring
+  # that tree would be BROKEN on every run. `--gate` is the HEAD call.
+  "tinybendygrad/uop/render.bend": [".agents/slop/xd1/render-gate-oracle.py --gate"],  # 85
   # `ops_cpu` is wired on THREE shared row names out of the oracle's 20, and that is named
   # rather than dressed up: 17 of its rows are `findlib_*` HOST answers (where libm and
   # libobjc live on THIS machine) which the port cannot be expected to reproduce off-Mac,

@@ -12,13 +12,19 @@ import sys
 sys.path.insert(0, '.')
 from tinygrad.dtype import dtypes, AddrSpace
 from tinygrad.helpers import Target
-from tinygrad.uop.ops import UOp, Ops, KernelInfo, AxisType
+from tinygrad.uop.ops import UOp, Ops, KernelInfo, AxisType, graph_rewrite
+from tinygrad.uop.weak import pm_lower_weak
 from tinygrad.renderer import Renderer, Estimates, with_storage
 from tinygrad.renderer.cstyle import (CStyleLanguage, OpenCLRenderer, ClangRenderer, MetalRenderer,
                                      CUDARenderer, HIPRenderer)
 
 def R(nm, got):
-  print(f"{nm} = [{got}]")
+  # cstyle.bend's `esc_row`, byte for byte: `String.join(String.split(s, '\n'), "\\n")`. A
+  # lane that prints a MULTI-LINE value is shredded by any differ that reads one row per line
+  # -- and MEASURED on this file unescaped, 96 physical lines become 33 "rows" of which 18 are
+  # line noise (`float val0`, `*(data1_4+0)`, `int g0`, a `for (int gidx0` whose value is the
+  # tail of the loop header). The port escapes; this oracle did not; that asymmetry is the bug.
+  print(nm + " = [" + got.replace("\n", "\\n") + "]")
 
 def alu(op, *xs):
   x = xs[0]
@@ -67,7 +73,19 @@ CLG = _bare(ClangRenderer, "x86_64,znver2")
 MTL = _bare(MetalRenderer, "Apple M4")
 CUD = _bare(CUDARenderer, "sm_89")
 
-def render(sinks, r=CS): return r.render(UOp.sink(*sinks, arg=KernelInfo()).toposort())
+def render(sinks, r=CS):
+  # `codegen/__init__.py:340` runs `pm_lower_weak` immediately before it hands a graph to ANY
+  # renderer ("the boundary: required compute dtypes settle here"). Calling `render()`
+  # directly skipped it, which left every RANGE and SPECIAL `weakint` -- a dtype `type_map` has
+  # no name for -- so `_render_dtype` raised `KeyError: dtypes.weakint` out of a graph no real
+  # kernel ever has. MEASURED: adding this pass leaves the 8 rows that already rendered
+  # byte-identical (an LC_ALL=C diff of the two stdout's first 17 lines is empty) and unblocks
+  # the 7 that never rendered: k6_range, k5_special.ocl, k8_stack.clang, k8_stack4.clang and
+  # the .clang/.metal/.cuda variants of k1_load_store and k4_smem. `UOp.special` takes no dtype
+  # (`ops.py:647` hardcodes `sint_to_uop(end)`), so no per-fixture cast can fix k5_special --
+  # only this pass can.
+  s = UOp.sink(*sinks, arg=KernelInfo())
+  return r.render(graph_rewrite(s, pm_lower_weak, name="lower all index dtypes").toposort())
 
 def f_load_store():
   p0 = UOp.param(0, dtypes.f32, 4)
@@ -113,9 +131,18 @@ def f_special():
   return [UOp.store(p[g], p[g].load() + p[l].load())]
 
 def f_range():
+  # `dtype=` IS the cast `I()` performs, on the range's producer. `UOp.range`'s default is
+  # `dtype=dtypes.weakint`, which names the RANGE and its end `weakint`, and `type_map` has no
+  # `weakint` at EITHER end of the rebase: HEAD raises `KeyError: dtypes.weakint` out of
+  # `type_map[dtype]`, and the pin's `.get(dtype, dtype.name)` fallback is WORSE than a crash
+  # because it renders `for (weakint gidx0 = 0; ...)`, which is not a C type at all. MEASURED
+  # at the pin with the old dtype spellings: unfixed -> 'for (weakint gidx0 = 0; ...)', fixed
+  # -> 'for (int gidx0 = 0; ...)'. A real CPU kernel's loop header is `for (int Lidx0 = 0; ...)`
+  # (measured), so `dtypes.i32` is what this renderer is downstream of, and it is what `I()`
+  # already states for every index in this file.
   p = UOp.param(0, dtypes.f32, 8)
   n = p[I(0)].load()
-  rg = UOp.range(n, 0, AxisType.GLOBAL)
+  rg = UOp.range(n, 0, AxisType.GLOBAL, dtype=dtypes.i32)
   return [UOp.store(p[rg], rg + rg)]
 
 def f_cast():

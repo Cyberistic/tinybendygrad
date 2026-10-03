@@ -1,1 +1,1 @@
-OK	lgip,lgisig,lgjn,lgjp,lgjsig,lgkn
+MOVED	lgip,lgisig,lgjn,lgjp,lgjsig,lgkn

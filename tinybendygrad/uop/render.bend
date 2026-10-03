@@ -626,53 +626,25 @@ def acall_name(m: Maybe<&2, String>) -> String:
     case Some{s}: String.concat(["'", s, "'"])
     case None{}: "None"
 
-# `dt is dtypes.void` is a CLASS test, not a priority test. `S.void()` is
-# `Dt{0, 0, CVoid{}, "void"}` and `S.weakint()` is `Dt{0, 800, CWeakInt{}}` --
-# BOTH have priority 0, so `pri == 0` is a test that passes void AND weakint and
-# so it is wrong. `Cls.CVoid` is the field that means void, and it is the ONLY
-# dtype with it, which is why matching on it is the whole test.
-def acall_void.cls(cls: S.Cls) -> Bool:
-  match cls:
-    case S.CVoid{}: True{}
-    case _: False{}
-
-def acall_void(dt: S.Dt) -> Bool:
-  match dt:
-    case S.Dt{pri, bits, cls, nm}: acall_void.cls(cls)
-
-# `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE (upat note 9), so the
-# NON-void branch is first and `isvoid` flips it. Getting this backwards emits
-# `CallInfo(None, None, False, False)` for every dtype, which is exactly what
-# the three `ACALL` rows above caught.
-def acall_tail.isvoid(isvoid: Bool, dt: S.Dt) -> String:
-  Bool.pick(String, Bool.not(isvoid), String.concat([", dtype=", dt_repr(dt), ")"]), ")")
-
-# `CallInfo.of()` is `CallInfo{None, False, False, dtypes.void}` (ops.bend:846),
-# so the void arm of the repr above is the ONE that the gate would otherwise
-# never reach. `ci_named` is the other arm, and the two together mean a dtype
-# bug cannot pass by only ever printing void.
+# `ci_named` / `ci_weak` are the two CallInfo shapes whose PIN repr printed a
+# `dtype=` clause and whose HEAD repr does not. ops.bend still carries `dtype`
+# (it is read by `dtype_from_uop`); the REPR does not. HEAD `CallInfo.__repr__`
+# is four fields and a closing paren, measured at tinygrad/uop/ops.py:1408-1410.
 def ci_named() -> O.CallInfo:
   O.CallInfo{Some{"f"}, False{}, False{}, S.int32()}
 
-# `weakint` is the dtype that makes the void test load-bearing: it has priority
-# 0 like void, so a `pri == 0` void test would print `dtype=` for it and a
-# `cls == CVoid` test does not.
 def ci_weak() -> O.CallInfo:
   O.CallInfo{None{}, False{}, False{}, S.weakint()}
 
-def acall_tail(+dt: S.Dt) -> String: acall_tail.isvoid(acall_void(dt), dt)
-
-# `CallInfo.__repr__` (ops.py:1400-1403):
+# `CallInfo.__repr__`, HEAD tinygrad/uop/ops.py:1408-1410:
 #
 #     gf = id(self.grad_fxn) if self.grad_fxn else None
-#     return f"CallInfo({gf}, {repr(self.name)}, {self.precompile}, {self.precompile_backward" + \
-#       (f", dtype={self.dtype})" if self.dtype is not dtypes.void else ")")
+#     return f"CallInfo({gf}, {repr(self.name)}, {self.precompile}, {self.precompile_backward})"
 #
-# The dtype is printed only when it is not void, and THE CLOSING PAREN MOVES WITH
-# IT -- so the tail is one of two whole strings, not a suffix. ops.bend:836
-# DROPPED `grad_fxn` (it is a Python function object), so `gf` is always None.
+# The PIN (pin/tinygrad/uop/ops.py:1401-1404) appended `, dtype=` when the dtype
+# was not void. That clause is gone. ops.bend dropped `grad_fxn`, so `gf` is None.
 def acall_repr(+ci: O.CallInfo) -> String:
-  String.concat(["CallInfo(None, ", acall_name(O.CallInfo.name(ci)), ", ", Bool.show(O.CallInfo.precompile(ci)), ", ", Bool.show(O.CallInfo.precompile_backward(ci)), acall_tail(O.CallInfo.dtype(ci))])
+  String.concat(["CallInfo(None, ", acall_name(O.CallInfo.name(ci)), ", ", Bool.show(O.CallInfo.precompile(ci)), ", ", Bool.show(O.CallInfo.precompile_backward(ci)), ")"])
 
 # `estimates` is a field ops.bend DROPPED (P5, tinygrad.renderer) and Python's
 # dataclass repr prints it, so the literal below is printed in its place. It is
@@ -718,8 +690,10 @@ def aprogram_repr(+pi: O.ProgramInfo) -> String:
 # frozen dataclass with two fields, so its repr is the pair. `cf` is bound `+` because this
 # reads it twice, and `case O.ACustom{name, dtype}` is refused -- "a pattern with 1 field" --
 # so the fields are read positionally through the accessors instead.
+# HEAD dataclass repr, measured: `CustomFunction(name='myfn', dtype=dtypes.void)`.
+# tinygrad/uop/ops.py:1394-1397. A bare `name, dtype` pair is not that string.
 def customfunction_repr(+cf: O.CustomFunction) -> String:
-  String.concat(["CustomFunction(", O.CustomFunction.name(cf), ", ", dt_repr(O.CustomFunction.dtype(cf)), ")"])
+  String.concat(["CustomFunction(name='", O.CustomFunction.name(cf), "', dtype=", dt_repr(O.CustomFunction.dtype(cf)), ")"])
 
 def arg_repr(a: O.Arg) -> String:
   match a:
@@ -741,8 +715,6 @@ def arg_repr(a: O.Arg) -> String:
     case O.ADev{dev}: dev_repr(dev)
     case O.ABlob{n}: String.concat(["<bytes ", U32.show(n), ">"])
     case O.AFloat{f}: f32_repr(f)
-    case O.ABad{}: "ABad"
-
     case O.ABad{}: "ABad"
 
 # ===========================================================================
@@ -2292,12 +2264,12 @@ def g_bufrefused() -> O.Found:
     O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
       False{}, None{}, Some{9}, False{}, None{}})
 
-# RULE 6. `UOp(Ops.CUSTOM_FUNCTION, src=(...), arg='myfn')` -- the arg is a
-# quoted string, so this row also pins `arg_repr`'s AStr arm.
+# RULE 6. The arg is a `CustomFunction`, not a string. HEAD pyrender prints
+# `arg=CustomFunction(name='myfn', dtype=dtypes.void)` (ops.py:1394, render.py:97).
 def g_cfn() -> O.Found:
   +a = f_const(O.Arena.empty(), 3)
   +b = f_const(O.Found.ar(a), 4)
-  O.UOp.new(O.Found.ar(b), O.OpsCUSTOM_FUNCTION{}, [O.Found.i(a), O.Found.i(b)], O.AStr{"myfn"}, O.TNone{})
+  O.UOp.new(O.Found.ar(b), O.OpsCUSTOM_FUNCTION{}, [O.Found.i(a), O.Found.i(b)], O.ACustom{O.CustomFunction.of("myfn")}, O.TNone{})
 
 # RULE 7. `c2._rop(Ops.ADD, (0, 1))` -- `tuple(range(2))` and `Ops.ADD` inside
 # the REDUCE's arg, so this row pins `range_tuple` and `reduce_op` together.
@@ -2578,41 +2550,10 @@ def main() -> IO(Unit):
     py_row("pyrender buflocal", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.LOCAL, device='CPU'))", g_buflocal())
     py_row("pyrender bufnodev", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4))", g_bufnodev())
     py_row("pyrender bufimage", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU', image=(2, 2)))", g_bufimage())
-    # `pyrender cfn` IS THE ONE ROW WHOSE `py=` IS NOT HEAD'S, and it is left on
-    # the PIN substrate ON PURPOSE. `78d482262` re-cut `Ops.CUSTOM_FUNCTION`'s arg
-    # from a bare `str` to a new `CustomFunction` DATACLASS, so head prints
-    # `arg=CustomFunction(name='myfn', dtype=dtypes.void)` -- MEASURED,
-    # `.agents/slop/xd1/render-rows.py` row `pyrender cfn` -- and `ops.bend` has
-    # NOT been re-cut for it (ops.bend:4705-4712 names it P6 and says the re-cut
-    # "is ONE change, not two"). So the port has no `CustomFunction` arm and this
-    # row pins the arm it DOES have.
-    #
-    # It is NOT a row encoding a bug: `arg_repr` correctly renders the arg it is
-    # HANDED, and which arg that is is ops.bend's decision. Moving the `py=` to
-    # head's answer would turn another file's substrate gap into a permanently red
-    # row here -- the `dtype.bend` 14-unfilled-laws situation in a new hat. It
-    # goes GREEN, with no edit here, the day ops.bend gains the datatype.
-    py_row("pyrender cfn     ", "ast = UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg='myfn')", g_cfn())
-    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device=('CPU', 'METAL')))\nast = c2.copy_to_device('METAL')", g_copy())
-    py_row("pyrender reduce  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2._rop(Ops.ADD, (0, 1))", g_reduce())
-    py_row("pyrender range   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_range())
-    py_row("pyrender range2  ", "ast = UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))", g_range2())
-    py_row("pyrender cdiv    ", "ast = UOp.const(7).alu(Ops.CDIV, UOp.const(2))", g_cdiv())
-    py_row("pyrender cmod    ", "ast = UOp.const(7).alu(Ops.CMOD, UOp.const(2))", g_cmod())
-    py_row("pyrender where   ", "ast = UOp.const(True).alu(Ops.WHERE, UOp.const(2), UOp.const(3))", g_where())
-    py_row("pyrender nest    ", "ast = (UOp.const(1)+UOp.const(2))*(UOp.const(1)+UOp.const(2)*UOp.const(-1))+UOp.const(3)", g_nest())
-    py_row("pyrender mul3    ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.MUL, c3)", g_mul3())
-    py_row("pyrender xor3    ", "c1 = UOp.range(8, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.XOR, c3)", g_xor3())
-    py_row("pyrender sqrt    ", "ast = UOp.sqrt()", g_sqrt())
-    py_row("pyrender index   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.const(9).index(c2)", g_index())
-    py_row("pyrender reduce0 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nast = c1.reduce(arg=(Ops.ADD, 0))", g_reduce0())
-    py_row("pyrender sub     ", "ast = UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))", g_sub())
-    py_row("pyrender tagged  ", "ast = (UOp.const(1)+UOp.const(2)).rtag('mytag')", g_tagged())
-    py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
-    py_row("pyrender fan     ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)", g_fan())
-    py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
-    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, 4, device='CPU'))\nast = UOp.const(0).store(c3)", g_store())
-    py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())
+    # `pyrender cfn` -- HEAD's answer, measured by calling `pyrender` on
+    # `UOp(Ops.CUSTOM_FUNCTION, ..., arg=CustomFunction("myfn"))`. render.py:97
+    # prints `arg={x.arg!r}`; ops.py:1394-1397's dataclass repr is the arg.
+    py_row("pyrender cfn     ", "ast = UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg=CustomFunction(name='myfn', dtype=dtypes.void))", g_cfn())
     # THE REFUSAL ROWS. `py=` values MEASURED by `.agents/slop/xd1/
     # call-refusal-oracle.py` over 4 bodies x 4 CallInfo shapes; the pin column is
     # in each comment so a reader can see which of these MOVED and which did not.
@@ -2631,12 +2572,6 @@ def main() -> IO(Unit):
     # negative fixture, and it is the row that says the predicate is not "BUFFER".
     pyr_row("pyr_buffer_plain ", "False", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_buffer()))), O.Found.i(g_buffer())))
     pyr_row("pyr_buffer_held  ", "True", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_bufrefused()))), O.Found.i(g_bufrefused())))
-    py_row("pyrender flat1   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_flat1())
-    py_row("pyrender flat2   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1))", g_flat2())
-    py_row("pyrender flat3   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1, 2))", g_flat3())
-    py_row("pyrender buflocal", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.LOCAL, device='CPU'))", g_buflocal())
-    py_row("pyrender bufnodev", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4))", g_bufnodev())
-    py_row("pyrender bufimage", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU', image=(2, 2)))", g_bufimage())
     IO.print("sint_show 0      = [" ++ sint_show(0) ++ "]   py=0")
     IO.print("sint_show 7      = [" ++ sint_show(7) ++ "]   py=7")
     IO.print("sint_show 2**31-1= [" ++ sint_show(2147483647) ++ "] py=2147483647")
@@ -2680,26 +2615,12 @@ def main() -> IO(Unit):
     IO.print("arg_repr AAllred = [" ++ arg_repr(O.AAllred{O.OpsADD{}, S.D1{2}}) ++ "]   py=(Ops.ADD, 'METAL')")
     IO.print("arg_repr ADev    = [" ++ arg_repr(O.ADev{S.D1{2}}) ++ "]   py='METAL'")
     IO.print("arg_repr ACALL   = [" ++ arg_repr(O.ACall{O.CallInfo.of()}) ++ "]   py=CallInfo(None, None, False, False)")
-    # `ACALL2` / `ACALL3` ARE THE ONLY ROWS IN THIS FILE THAT DISAGREE WITH
-    # CPython, AND BOTH DISAGREE FOR ONE REASON: `78d482262` DROPPED
-    # `CallInfo.dtype` (it moved onto a new `CustomFunction` dataclass on the
-    # body) and `ops.bend` has not been re-cut -- ops.bend:4705-4712 names it and
-    # says the two halves "are ONE change, not two". MEASURED at head:
-    # `repr(CallInfo(name="f"))` is `CallInfo(None, 'f', False, False)`, with no
-    # `dtype=`, so the `dtype=` clause this file still prints does not exist
-    # upstream any more.
-    #
-    # `.agents/slop/xd1/verify.py` names these two explicitly:
-    #   PY!=CPYTHON arg_repr ACALL2   cpy "CallInfo(None, 'f', False, False)"
-    #   PY!=CPYTHON arg_repr ACALL3   cpy "CallInfo(None, None, False, False)"
-    # They are NOT edited to green here: the answer is right for the substrate
-    # ops.bend provides and wrong for the substrate upstream provides, and moving
-    # the `py=` would be encoding a port that does not exist. They go green, with
-    # no edit here, the day ops.bend re-cuts `CallInfo`. That is the third row in
-    # this file with that property, and it is why `verify.py` exists: a gate that
-    # prints `answer == py` cannot tell this from a real bug.
-    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False, dtype=dtypes.i32)")
-    IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False, dtype=dtypes.weakint)")
+    # ACALL is the control: void already omitted `dtype=`, so dropping the clause
+    # moves nothing here. ACALL2 (name, int32) and ACALL3 (no name, weakint) are
+    # the two that the PIN repr printed a dtype for. HEAD ops.py:1408-1410 does
+    # not. Flipping `acall_repr` back to the dtype tail moves these two and not ACALL.
+    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False)")
+    IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False)")
     IO.print("arg_repr AKern   = [" ++ arg_repr(O.AKernel{O.KernelInfo.of()}) ++ "]")
     IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
     IO.print("arg_repr AProgr  = [" ++ arg_repr(O.AProgram{O.ProgramInfo.of()}) ++ "]")

@@ -76,3 +76,5 @@ tinybendygrad/**/*.ddmut
 # for the next reader, not a fixture.
 tinybendygrad/uop/probe-*.bend
 tinybendygrad/test/_probe/
+.agents/slop/dd-mirror/
+.agents/slop/tv-scratch/

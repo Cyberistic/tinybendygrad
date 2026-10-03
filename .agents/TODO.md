@@ -38,7 +38,11 @@ walkthroughs    [######...] 6/7
       (10/10 proven; 8 shape-column mutations each killed by their own law.
       Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
-- [ ] `PROOF-ALL.bend` green
+- [ ] `PROOF-ALL.bend` green — still 2 TODOs. Broadcast is false as quantified.
+      The reduce law's term is corrected and unproven, not false.
+- [x] `drop_n` drops `n`, not `n+1`, and the reduce-numel multiplier is
+      `List.take(dims, n)`. Index of arity 1 over rank 3 is rank 2.
+      Gate: `./bin/bend tinybendygrad/LAWS/spec.bend`.
 
 ### The fuel detour — done, and it is worth remembering
 
@@ -2676,6 +2680,15 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       shape `l2i.one` shows.
 - [ ] MUTATION TABLE: not run. Every mutation so far is a type error caught by
       `--check-only` rather than a red row, so the gate's DISCRIMINATION is untested.
+      Owner: `dd-mutate.py`. Do not start while `dtype.bend.ddmut` exists — that bake
+      is M32 (`Bool.not(dd_l2i_ok)`), and the live file does not match it.
+- [x] GATE ROW SET RESTORED (2026-10-03). The 72-row run was M32, not `dd_fuel`: every
+      `l2i` fixture took `l2i.gone` → `dd_ref`, which prints `=` and `n=` and never
+      `p=`/`sig=`/`k=`. `up*` survives because `unpack.one` bypasses the guard.
+      Measured on a copy: 147 rows → 72, missing 27 `sig` + 27 `k` + 21 `p`. Live file
+      has the guard un-inverted. Verified run: 147 rows, comment-only control SAME.
+      Old-metric vs new-metric on the same 120-row intersection (old ∩ new ∩ oracle):
+      44/120 → 65/120, gained 22, lost 1 (`lg1n` 10 → 11; oracle is 10).
 - [ ] `.agents/slop/ddcheck.sh` + `dd-patch-helpers.py` are a COMPILE WORKAROUND for
       another agent's `helpers.bend` (its `ansistrip` block does not compile and every
       file imports it). DELETE BOTH once it compiles. `dd-sort.py` (topological
@@ -2980,3 +2993,98 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
       `.agents/slop/runrows.sh`, which retries a ZERO-ROW bend run: the machine stack
       overflows on ~1 run in 20 and a 0-row result is indistinguishable from
       "never started".
+- [x] **`renderer/tc_ptx.bend` vs `tcptx-oracle.py`: the oracle was right.** Six
+      shared rows disagreed only in the `py=` half (`half`/`float` vs live
+      `DType.name` `f16`/`f32`, dtype.py:134 and :136). Computation already
+      matched. Literals fixed; flip of `sd_keep` / `dsh_half.keep` moved all 6;
+      comment-only moved 0. Wired as `stage2` (228 shared, 0 disagree). 105 other
+      rows do not intersect because the ROW KEY still uses the legacy spelling;
+      aligned values agree. Rule **TC-PY** at the end of `bend2-constraints.md`.
+
+- [x] **`renderer_oracle.py`'s `KeyError: dtypes.weakint` is fixed, and the trace's "the bug
+      is in the ORACLE, not the port" is CORRECT but INCOMPLETE.** Called at both ends:
+      `UOp.range(4,0,GLOBAL).dtype is dtypes.weakint` and `UOp.const(0).dtype is
+      dtypes.weakint` at the pin `6c3d401cf324` AND at `upstream/master` `91b8cb5fa6`;
+      `weakint` is in neither `dtypes.all` nor `dtypes.ints`; `type_map` has no `weakint` at
+      either. TWO fixes, not one:
+      * `render()` now runs `graph_rewrite(sink, pm_lower_weak, name="lower all index
+        dtypes")` -- the pass `tinygrad/codegen/__init__.py:340` runs before ANY renderer.
+        Calling `render()` directly skipped it, so every RANGE/SPECIAL was still weakint.
+        This is the ROOT fix and it is PURELY ADDITIVE: `LC_ALL=C diff` of the two stdout's
+        first 17 lines is empty, and it unblocks 7 rows. Without it the oracle still dies on
+        **`k5_special.ocl`**, a SECOND `weakint` the finding did not name -- and no per-fixture
+        cast can fix it, because `UOp.special` (`ops.py:647`) hardcodes `sint_to_uop(end)` and
+        takes no dtype.
+      * `f_range` passes `dtype=dtypes.i32` to `UOp.range`, which IS the cast `I()` performs
+        (`sint_to_uop(x, dtype)` == `UOp.const(x, dtype)` == `x.cast(dtype)` for a UOp).
+      **Oracle now runs to completion: rc=0, empty stderr, 15 claims** (was: rc=1 at `k6_range`
+      with 5 claims emitted). New rules at `.agents/slop/notes/bend2-constraints.md` G-13/G-14.
+
+- [x] **`rows()` shredding: DEMONSTRATED and CLOSED, and it was already in the baseline.**
+      `rebase-gate.py`'s `rows()` reads a row from every line containing `=`. The oracle's
+      whole-kernel C values span lines whose continuations contain `=` constantly, so 96
+      physical lines became **33 names of which 15 are claims and 18 are line noise**
+      (`float val0`, `*(data1_4+0)`, `int g0`, `for (int gidx0`, and one row split
+      mid-identifier). 18 of the 33 oracle rows in `rebase/baseline.json` are that noise --
+      including a recorded expectation `'for (weakint gidx0' = '0; gidx0 < ((weakint)(val0));
+      gidx0++) {'`. `renderer/cstyle.bend` documents the hazard and fixes it on ITS side
+      (`esc_row` at `kern2_row`); the oracle never got it. CLOSED on both sides:
+      `renderer_oracle.py`'s `R()` now escapes newlines exactly as `esc_row` does, and the new
+      `.agents/slop/cstyle-gate.py` REFUSES to shred (a row is `name = [value]` with the
+      closing bracket on the same line; anything else is a shred and is BROKEN) and treats a
+      duplicate name as an error per G-60. 33 rows / 18 shreds -> **15 rows / 0 shreds**.
+
+- [x] **The row-naming collision: RECOMMENDATION IS TO RE-POINT THE ORACLE, NOT TO RENAME
+      EITHER SIDE'S NAMES INTO A CROSSWALK.** Measured: 0 shared names (port 225 unique,
+      oracle 15 claims; even the 18 shredded names share 0). Keep the port's
+      (construct, target, mode) axis -- it is recorded in `rebase/baseline.json` (225
+      interpreted + 225 native), `drift-record-probe.json`, `rebase/survey-cache.json`,
+      `hdrbase/tinybendygrad_renderer_cstyle.bend.rows`, `wip/main_rows.txt`, and cited at
+      POSITION ~9496 and ~13685 of the notes -- and it is the axis that can LOCALISE a bug
+      (`rd` alone is 42 rows over 6 devices x 7 dtypes; the oracle's `k1_load_store` collapses
+      all six devices into one). G-12 (POSITION ~13685) already ruled that GUARD 4 reporting
+      "share NO row names" is CORRECT and not to be worked around by renaming a port row. A
+      hand-maintained crosswalk is the `nv_query_litter` failure mode: a correspondence table
+      maintained by hand is wrong twice and the differ then reports 0 disagreements over an
+      error made twice. **But a rename is NECESSARY AND NOT SUFFICIENT** -- see the next entry.
+
+- [ ] **REPORTED, NOT FIXED (owner: the `renderer/cstyle.bend` unit) -- `cstyle.bend` cannot be
+      gated by ANY CPython oracle as it stands, and the first comparison the new gate can make
+      is already RED.**
+      * **Its 30 `kern2` rows are unfalsifiable.** `g_kernel()` returns two HARDCODED C
+        strings, so the kernel BODY is a fixture and `render_kernel` only assembles the
+        signature and prefix. No CPython call can produce those values. Its own comment calls
+        the prefixes "a fixture, not a product"; the body is the same and the comment does not
+        say so.
+      * **Its clause rows render SYMBOLIC operands** -- `idx BASE lane = [(B)[R]]`,
+        `cfo BASE SQRT f32 = [sqrt(X)]`, `acc BASE plain = [*V]`. CPython can only answer these
+        by calling the same clause functions with the same symbols, so an oracle must be
+        re-pointed per construct, not per fixture.
+      * **Its VALUE column and its `py=` column are readings of two different trees (G-15).**
+        `tmap BASE`: the `py=` column is CPython at the PIN (generated by
+        `wip/gen_main.py:73`, `r.type_map.get(dt, dt.name)`) and is 4 cells stale at HEAD
+        (`float8_e4m3` vs `fp8e4m3`); the VALUE column is `dtypes.all`'s NAMES for all 17
+        cells, which is neither tree's `type_map` answer. And at HEAD
+        `CStyleLanguage._render_dtype` **raises `KeyError` on all four fp8 cells**, so the
+        honest CPython answer for `tmap BASE` cannot be a string at all. 102 cells in 6 rows.
+        `.agents/slop/cstyle-gate.py` has this as its one LIVE crosswalk entry and it reports
+        BROKEN rc=1 today.
+
+- [ ] **REPORTED (owner: `rebase-gate.py`, shared tool, no single owner).** The brief calls the
+      shared-name check "GUARD 2"; in `rebase-gate.py` GUARD 2 is the EMPTY-LANE guard and the
+      shared-name check is **GUARD 4** (the `uncompared` branch). GUARD 4 is correct to fire
+      and its verdict is right; what is wrong is the READER it is fed. `rows()` should require
+      `name = [value]` with the closing bracket on the same line, call any other line a shred,
+      and treat a duplicate name as an error (G-60, POSITION ~9496). `.agents/slop/cstyle-gate.py`
+      implements all three; `rebase-gate.py` does not use it.
+
+- [ ] **REPORTED (owner: whoever owns `.agents/slop/`).** `.agents/slop/tools/renderer-oracle.py`
+      is a byte-identical STALE copy of the pre-fix `.agents/slop/renderer_oracle.py`. Nothing
+      wires it (`rebase-gate.py` names `renderer_oracle.py`), but it is a trap: it still crashes
+      on `weakint`. Also: during this session a concurrent process REVERTED my
+      `renderer_oracle.py` fix and DELETED `.agents/slop/cstyle-gate.py` outright; both had to
+      be reapplied from measurement. And `tinybendygrad/renderer/cstyle.bend` went
+      cold-compile-broken mid-session twice (the refusal moved from POSITION 816 to 821, so an
+      agent was editing it) and `tinybendygrad/renderer/__init__.bend` does not compile at all
+      (`expected : a term / observed : end of input` at POSITION 821) -- which is why the
+      oracle's `init` section cannot be used as a green control either.

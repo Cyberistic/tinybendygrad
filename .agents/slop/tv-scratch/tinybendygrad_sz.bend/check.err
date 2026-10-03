@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error: 7 defs rely on unsafe or foreign code:
+- Sz.read_dir
+- Sz.is_dir
+- walk.item
+- walk.scan
+- walk
+- sz.main
+- main

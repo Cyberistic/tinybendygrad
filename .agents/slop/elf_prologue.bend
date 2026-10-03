@@ -113,29 +113,51 @@
 # are named here as the port's own tables and are gated against the oracle
 # reading those same constants out of the real module.
 #
-#   :7   ElfSection                PORTED  `ElfSection` + its three readers
-#   :9   link_sym                  PORTED  `link_sym`, `Link` table
+#   :7   ElfSection                PORTED  `type ElfSection` + name/header/content
+#   :9   link_sym                  PORTED  `link_sym`, `type Link`, `Link.pick`
 #   :15  elf_loader                PORTED  `elf_loader`
 #   :16  the ELFMAG assert         PORTED  `magic_ok`
-#   :17  the ecls dict             PORTED  `ecls`, `is64`
-#   :19  _strtab                   PORTED  `Str.tab`
-#   :21  the Ehdr struct           PORTED  `Ehdr`, `Ehdr.at`, 13 readers
-#   :22  the Shdr array            PORTED  `Shdr.at`, `Sections.go`, 10 readers
-#   :23  the shstrtab slice        PORTED  `shstrtab`
+#   :17  the ecls dict             PORTED  `ecls.name`, `is64`
+#   :19  _strtab                   PORTED  `Str.tab`, `Str.at`
+#   :21  the Ehdr struct           PORTED  `type Ehdr`, `Ehdr.at`, 13 readers
+#   :22  the Shdr array            PORTED  `Shdr.at`, `Sections.of`, 10 readers
+#   :23  the shstrtab slice        PORTED  `shstrtab`, `shstrtab_at`
 #   :24  the ElfSection list       PORTED  `Sections.build`
-#   :26  _to_carray                PORTED  `Rel.entsize`, `Rel.count`
-#   :27  rel                       PORTED  `Rel.sects`, `Rel.trgt`
-#   :28  rela                      PORTED  `Rel.sects` with `rela`, `Rel.trgt`
-#   :29  symtab                    PORTED  `Sym.at`, 6 readers
-#   :30  progbits                  PORTED  `Sec.progbits`
-#   :33  the image prealloc        PORTED  `Img.prealloc`
-#   :34-38 the aligned append      PORTED  `Img.pad`, `Img.place`
-#   :42-48 the reloc loop          PORTED  `Relocs.of`, `Sym.name`, `Sym.tgt`
-#   :50  the return                PORTED  `ElfImage`
-#   :52  jit_loader                PORTED  `jit_loader`
-#   :56  relocate                  PORTED  `relocate`, `Reloc.t`, the ten arms
-#                                         and both trampolines
-#   :84-85 the 4-byte write-back   PORTED  `pack4`, `unpack4`
+#   :26  _to_carray                PORTED  `Rel.entsize`, `Rel.count`,
+#                                         `Symtab.base`, `Symtab.ent`
+#   :27  rel                       PORTED  `Rel.sects(xs, False{})`, `Rel.trgt`
+#   :28  rela                      PORTED  `Rel.sects(xs, True{})`, `Rel.trgt`
+#   :29  symtab                    PORTED  `Symtab.idx/n/at`, `type Sym`, 6 readers
+#   :30  progbits                  PORTED  `Sec.is_progbits`
+#   :33  the image prealloc        PORTED  `Sec.prealloc_of`
+#   :34-38 the aligned append      PORTED  `Built.of_secs`, `Img.pad`, `Img.place`,
+#                                         `Img.write_at`, `Shdr.put_addr`
+#   :42-48 the reloc loop          PORTED  `type Rctx`, `Rc.walk`, `Rc.mk`,
+#                                         `Trg.off`, `Rc.defined`, `Rc.undefined`
+#   :50  the return                PORTED  `type ElfImage` + its four readers
+#   :52  jit_loader                PORTED  `jit_loader`, `Jit.go`, `Jit.step`
+#   :56  relocate                  PORTED  `Jit.relocate`..`Jit.relocate8`, the ten
+#                                         `Reloc.a_*` arms, `type Sdiff` (the one
+#                                         signed-difference representation),
+#                                         `type Rloc` (word + appended bytes)
+#   :58-81 the two trampolines     PORTED  `Tramp.x86`, `Tramp.arm`, `Tramp.x86_len`,
+#                                         `Tramp.arm_len`, `Tramp.x86_ret`,
+#                                         `Tramp.arm_ret`
+#   :84-85 the 4-byte write-back   PORTED  `Jit.instr` (unpack), `Jit.pack`, and
+#                                         `Img.write_at` as the placed write
+#
+# WHAT IS PORTED BUT NOT YET GATED is stated once, here, rather than left to be
+# discovered. The 353 rows the gate emits cover the READERS, the byte layer, the
+# hex layer, the section walk, `_strtab` and `magic_ok`. The image loop
+# (`Built`), the relocation list (`Rc`), `jit_loader` (`Jit`), the ten `Reloc.a_*`
+# arms, both trampolines and `link_sym` are WRITTEN AND COMPILING and have 823
+# CPython rows waiting in `.agents/slop/elf_rows.py` and
+# `.agents/slop/elf_reloc_probe.py` that `elfdiff.py` reports as a per-family
+# `COVERAGE GAP` and `elfmutate.py` reports as 18 mutation-table HOLES. The two
+# reports are the same fact seen twice: wiring the rows into `elf_main.bend` turns
+# all 18 holes into caught mutations. "It compiles" is NOT "it is right" --
+# roughly 40% of upstream's lines were missing from this port when the work
+# started. See `.agents/slop/elf/REPORT.md` sections 2 and 7.
 
 import Base
 import ./../../helpers.bend as H

@@ -1,1 +1,1 @@
-OK	lg9p,lg9sig,lgqk,lgqsig
+MOVED	lg9p,lg9sig,lgqk,lgqsig

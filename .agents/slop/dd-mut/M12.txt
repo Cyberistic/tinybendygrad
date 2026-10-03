@@ -1,1 +1,1 @@
-OK	lgak,lgan,lgap,lgasig
+MOVED	lgak,lgan,lgap,lgasig

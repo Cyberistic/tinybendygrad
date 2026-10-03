@@ -13862,3 +13862,262 @@ TWO TRAPS IN RENAMING, BOTH MEASURED HERE:
 locale-colating here and fabricate diffs even on an unchanged tree, so only a
 control that is SUPPOSED to be empty can tell you your comparison works. The
 naming gate's self-test asserts two consecutive runs are byte-identical.
+
+## TC-PY. A `py=` LITERAL THAT SURVIVED A DTYPE RENAME IS A DISAGREEMENT THE COMPUTATION CANNOT SEE
+
+Measured 2026-10-03, `renderer/tc_ptx.bend` against `.agents/slop/tcptx-oracle.py stage2`.
+228 shared row names, 6 disagree. The left bracket — the port's computation, via
+`S.Dt.nm` — already said `f16`/`f32`. The `py=` literal still said `half`/`float`.
+CPython's `DType.name` is the canonical spelling (`tinygrad/dtype.py:120-137`); the
+legacy alias (`dtype.py:140-142`, `half = f16`) does not change `.name`. Called, not
+inferred: `dtypes.half.name == "f16"`, `dtypes.float.name == "f32"`. The oracle was
+right. The port's annotation was stale.
+
+A second shape of the same rename does not even disagree. 105 row KEYS still say
+`half` / `signed char` while the oracle says `f16` / `i8`, so the gate's name
+intersection never compares them. Aligned values agree. A wrong key is invisible,
+not green. Naive substitution is also wrong: replacing `float` inside `float8_e4m3`
+produces `f328_e4m3`. Longest-first, and do not rename a key you have not aligned.
+
+Flipping the computation (drop half from `sd_keep` and from `dsh_half.keep`, on a
+COPY in the same directory) moved all 6 rows. A comment-only copy moved 0. The
+`py=` literal staying put while the left bracket moved is what makes the row a
+test: the expectation is not a def of the thing under test.
+
+The three `supported_dtypes` fixtures are sm_53 / sm_75 / sm_80, all `>= 53`, so
+dropping ONLY the `arch >= 53` conjunct moves none of them. That blind spot is
+pre-existing (the mutation comment on M17 describes a different edit than the one
+that would test the conjunct) and is not one of the six.
+
+### DN-1. `drop_n`'s `case 0n` ARM AND THE LAW THAT CALLS IT ARE TWO DEFECTS, AND
+###     FIXING ONLY THE ARM DOES NOT MAKE THE LAW TRUE
+Measured 2026-10-03. Positions: `references/bend/bend2/base.bend:909-916`
+(`List.drop`, `case h <> t 0n: h <> t` — n=0 keeps the head);
+`tinygrad/uop/ops.py:351-354` (`shape[len(src[1:]):]`) and `:431-435`
+(`ps[num_axes:]`); `spec/tinyspec.tex:107` ("Reduce the first n axes").
+There is no CPython `drop_n`. The oracle is tinygrad's `_shape`,
+`.agents/slop/ind/dropn-oracle.py`: Reduce n=0 of (4,5,6) is (4, 5, 6);
+Reduce n=1 and an arity-1 scalar Index are (5, 6), rank 2.
+
+The old `LAWS/spec.bend` match returned the tail at `case 0n`, so it dropped
+`n+1`. On (4,5,6) it kept 5,6 / 6 / empty at n=0,1,2 where `List.drop` keeps
+4,5,6 / 5,6 / 6 (`.agents/slop/ind/dropn-before.txt`). An Index of arity 1 over
+rank 3 had rank 1.
+
+That off-by-one is not why the reduce law was false. The law multiplied
+`reduced_numel` by `prod(drop_n(...))`, and `drop_n` returns the KEPT suffix.
+Fixing the arm and leaving the body makes `kept * kept == all`: 16==4 and
+900==120, still false (`.agents/slop/ind/dropn-after.txt`). `List.take(dims, n+1)`
+is true only against the buggy drop (4==4, 120==120) and false once drop is
+exact (16==4, 600==120). The term the name describes, once drop is exact, is
+`List.take(dims, n)`: 4==4 and 120==120.
+
+Callers of spec's `drop_n`, audited: `Shape.drop` (Reduce, passes `k` as "first
+n axes"), `Sp.shape.index` (passes the arity, not arity-1), and `LAWS.bend`'s
+forwarder, which the law no longer calls. None depended on n+1. `uop/fold.bend`'s
+`drop_n` is a different def and already calls `List.drop`. Changing the arm
+value in place would have been a silent fall-through; the fix deletes the match
+and calls `List.drop`. The Index rank defect is closed (`idx1_rank3=2`), not
+only reported. The reduce law is true on the measured cases and still unproven:
+`PROOF-ALL` stayed at 2 TODOs, and deleting `L.flip_preserves_numel` on a copy
+took that to 3.
+
+## G-13. A LANE THAT PRINTS A MULTI-LINE VALUE IS SHREDDED INTO ONE ROW PER LINE, AND THE
+##      RESULTING NAMES SATISFY THE COMPARABILITY GUARD. NUMBERING CONTINUES FROM G-12 AT
+##      POSITION ~13685; RULE NUMBERS REPEAT ACROSS UNITS, SO CITE POSITIONS.
+`rebase-gate.py`'s `rows()` takes a row out of EVERY line containing `=`. A whole-kernel C
+value spans many lines and its continuation lines contain `=` constantly -- `float val0 = ...`,
+`for (int i = 0; ...)`, `int x = f(y);` -- so each becomes a "row". MEASURED on
+`renderer_oracle.py cstyle`: 96 physical lines -> 33 names, of which **15 are claims and 18 are
+line noise** (`float val0`, `*(data1_4+0)`, `int g0`, `int l0`, `for (int gidx0`, and one row
+whose name is `template <class T, class F> __device__ __forceinline__ T tg_bitcast(F v) { ...
+u.f` and whose value is `v; return u.t; }` -- a row split mid-identifier). A name is the ONE
+thing a comparability guard reads as evidence, so a differ that manufactures names
+manufactures evidence: a loud failure becomes a quiet pass.
+
+    * THIS IS NOT HYPOTHETICAL. `.agents/slop/rebase/baseline.json`'s `cpython:renderer_oracle`
+      lane holds 33 recorded rows and **18 of them are this noise**, including
+      `'for (weakint gidx0' = '0; gidx0 < ((weakint)(val0)); gidx0++) {'` -- a recorded
+      expectation that `weakint` is C output -- and
+      `'template <class T, class F> ... u.f' = 'v; return u.t; }'`. The shredding is already
+      committed as a baseline.
+    * `renderer/cstyle.bend` does not have this problem and SAYS WHY in its own source, at
+      `kern2_row`: "THE ONE ROW THAT SEES A NEWLINE ... so `esc_row` is applied to BOTH sides
+      ... the multi-line hazard is the reason the very first version of these rows passed while
+      dropping three devices' prefixes entirely." `esc_row` is
+      `String.join(String.split(s, '\n'), "\\n")`. The PORT escapes; the ORACLE never got the
+      same treatment. **The asymmetry is the bug, and the fix belongs on the READER** -- a
+      differ that requires `name = [value]` with the closing bracket ON THE SAME LINE, and calls
+      any other line a shred -- not in every lane author's memory. Applied: the same oracle goes
+      33 rows / 18 shreds -> **15 rows / 0 shreds**, and the port lane is 227 rows / 0 shreds.
+    * A name-keyed reader must also treat a DUPLICATE name as an ERROR. G-60 (POSITION ~9496)
+      already ruled this after `cstyle_oracle.py` emitted `rd BASE ` 7 times and `cfo BASE ` 20
+      times and `{name: value}` discarded 99 of 127 rows. `rows_strict` reports the duplicate
+      instead of overwriting it.
+
+## G-14. A RENDERER IS DOWNSTREAM OF A DTYPE-COMMITTING REWRITE PASS, AND A FIXTURE THAT
+##      SKIPS IT INVENTS A DTYPE NO KERNEL EVER HAS.
+`tinygrad/codegen/__init__.py:340` runs `graph_rewrite(sink, pm_lower_weak+indexing_simplify,
+name="lower all index dtypes")` immediately before handing a graph to ANY renderer, under its
+own comment "the boundary: required compute dtypes settle here". An oracle that calls
+`Renderer.render()` DIRECTLY has skipped it, so every `UOp.range` and every `UOp.special` is
+still `dtypes.weakint` and `cstyle`'s `type_map[dtype]` raises `KeyError: dtypes.weakint`.
+
+    * MEASURED at BOTH ends of the rebase: `UOp.const(0).dtype is dtypes.weakint` and
+      `UOp.range(4, 0, GLOBAL).dtype is dtypes.weakint` at the pin `6c3d401cf324` AND at
+      `upstream/master` `91b8cb5fa6`; `weakint in dtypes.all` is **False** and
+      `weakint in dtypes.ints` is **False** at both; `CStyleLanguage.type_map` has no `weakint`
+      at either.
+    * THE PIN IS WORSE THAN HEAD, which is the part that is easy to get backwards. Head's
+      `render_type` is `self.type_map[dtype]` and CRASHES. The pin's is
+      `.get(dtype, dtype.name)`, and the fallback renders
+      `for (weakint gidx0 = 0; gidx0 < ((weakint)(val0)); gidx0++) {` -- measured. That is not a
+      C type, so it compiles to nothing, and it arrives as a plausible-looking string. **A
+      `.get` default converts an impossible request into a wrong answer instead of a refusal.**
+      Same shape as the dtype-rename fall-through in `agent-core.md`.
+    * `UOp.special` has NO dtype parameter -- `ops.py:647` hardcodes
+      `UOp(Ops.SPECIAL, src=(sint_to_uop(end),), arg=name)` and `sint_to_uop`'s default is
+      `dtypes.weakint` -- so **no per-fixture cast can fix a SPECIAL fixture.** Only the pass
+      can. `UOp.range`'s `dtype=` IS a cast (`sint_to_uop(x, dtype)` is `UOp.const(x, dtype)`,
+      which for a UOp is `x.cast(dtype)`), and `cstyle.py:257` `render_type`s BOTH `Ops.RANGE`
+      and `Ops.SPECIAL`.
+    * MEASURED that adding the pass is PURELY ADDITIVE: an `LC_ALL=C diff` of the two stdout's
+      first 17 lines is EMPTY, and it unblocks 7 rows that never rendered. A pass that changes
+      rows which already rendered would have been a different, louder finding.
+
+## G-15. A PORT'S OWN `py=` COLUMN AND ITS OWN VALUE COLUMN CAN BE READINGS OF TWO DIFFERENT
+##      TREES, AND A ROW THAT ASSERTS BOTH IS GREEN AGAINST NEITHER.
+`cstyle.bend`'s `tmap` rows print `NAME = [<the port's dtype alphabet>]   py=[<CPython's C
+spelling>]`. Measured against the tree the gate actually runs on (`upstream/master`
+`91b8cb5fa6`), for all 17 `dtypes.all` cells and the BASE renderer:
+
+| what | answer at HEAD | answer at the pin |
+|---|---|---|
+| `CStyleLanguage.type_map` size | 14 keys, **no fp8, no `weakint`** | `{}` (empty) |
+| `_render_dtype` over `dtypes.all` | **`KeyError` on all 4 fp8 cells**; `half,__bf16,float,double,unsigned char,...,bool` for the other 13 | `float8_e4m3,...,half,__bf16,float,...,bool`, no crash |
+| the port's `tmap BASE` VALUE column | `fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool` | -- |
+| the port's `tmap BASE` `py=` column | -- | `float8_e4m3,...,half,__bf16,float,...,bool` |
+
+    * The `py=` column was GENERATED, not typed: `.agents/slop/wip/gen_main.py:73` is
+      `",".join(r.type_map.get(dt, dt.name) for dt in dtypes.all)` -- the PIN's `.get` semantics.
+      So it is a PIN reading, and it is **4 cells stale** at HEAD.
+    * The VALUE column is `dtypes.all`'s **names** (`f16`,`bf16`,`u8`,`i32`) for all 17 cells,
+      which is neither tree's `type_map` answer. The file's own comment at `g_tmap_names`
+      insists the row "walks the RENDERED NAME, not `dt_name`", and its header records that a
+      `py=` string "transcribed by hand is a claim about CPython rather than a measurement of
+      it" -- so the generator is right and the RESULT is still wrong, because the generator was
+      run against a different tree. **A generated expectation is only as fresh as its last run.**
+    * HEAD's honest answer for those 4 cells is `KeyError`, and a differ that reports a crash as
+      a value is how a broken cell becomes a green one. This row is 1 of 6; the 6 `tmap` rows
+      are 102 cells.
+
+## DD-7. A HALVED GATE THAT STILL PRINTS `=` AND `n=` IS THE REFUSAL PRINTER, NOT A FUEL WALK
+Numbering continues from DD-6 at line 13782. Appended after the G-15 block
+(the paragraph ending "are 102 cells."). Cite this section by position, not by
+"DD-1" — that number is already the creation-window rule at line 13698.
+
+Measured 2026-10-03 on `codegen/decomp/dtype.bend`, in a copy, live file never patched
+by the harness.
+
+`l2i.gone` calls `rows.put(ok=False)` which is `dd_ref`: two lines, `<nm>=refused:…`
+and `<nm>n=`, and nothing else. `p=`, `sig=` and `k=` are emitted only by `l2i.put`
+(the success path). Inverting the pre-call guard (`Bool.not(dd_l2i_ok(op))`, mutation
+M32) sends every supported op down that path. The four CDIV fixtures never reach
+`dd_fuel`. `lg1` (NEG, eleven nodes) refuses the same way, which a cone-walk failure
+cannot do. `unpack.one` calls `l2i.two` directly, so `up`/`upp`/`upn`/`upsig`/`upk`
+survive.
+
+The copy with only that inversion: 147 rows → 72, missing exactly 27 `sig` + 27 `k` +
+21 `p`. Deterministic, exit 0, not a stack overflow. The un-inverted file prints 147.
+
+A Bool bound in an arm is linear. `fresh` passed to two calls is
+`fresh (consumed more than once)` — the same error class as the affinity rule near
+line 243. A seen-set that must both test and branch has to `match` the Bool once.
+
+A well-typed src swap of a commutative op is not evidence the capture moved.
+`l2i_shl.hi`'s final `OR` swapped (`i(t), i(s)` vs Python's `(a1u << n) | shr`, i.e.
+`i(s), i(t)`) changed 0 of 147 rows. `reindex.scaled`'s mul swap is not called by this
+gate at all. Diff the rows before calling a capture contaminated.
+
+
+=== APPENDED 2026-10-03, mutation table for codegen/decomp/dtype.bend ===
+(continues from the section above; numbers repeat across units, cite POSITIONS --
+this block starts after the paragraph ending "Diff the rows before calling a
+capture contaminated." at line 14039.)
+
+MUTATE A MIRROR, NEVER THE PORT. `git archive HEAD` into a scratch dir, copy the
+one file you will edit over it, and run the LIVE `bin/bend` against the mirror's
+path. `bin/bend` resolves `references/bend` relative to itself, so the launcher
+works unchanged from the repo root on a mirror anywhere. Measured: the mirror's
+output was byte-identical to the live gate's, so a mirror is not a second-class
+substrate. Three reasons it is mandatory here, all observed in one session: the
+live `dtype.bend` changed twice in four minutes (once INTO A NON-COMPILING
+state), another agent DELETED files under `.agents/slop/` mid-run and took the
+first mirror with it, and a third party has a `.ddmut` bake sitting in the tree.
+Put the mirror in the approved temp dir, not `.agents/slop/`.
+
+A KILLED RUN CAN LEAVE A MUTANT IN A COMMIT, NOT JUST ON DISK. Probing every
+anchor against `git show HEAD:<file>` found M09 AND M23 already applied in the
+committed `dtype.bend`. So `git diff HEAD` being empty does NOT mean the file is
+pristine -- compare HEAD against the anchors too. Any baseline captured at HEAD
+is a baseline of a mutated port. Here the mirror was HEAD minus those two lines,
+and its output matched the pre-existing 149-row capture byte-for-byte, which is
+what identified the capture as pre-contamination.
+
+THE BAKE GUARD IS NECESSARY BUT NOT SUFFICIENT. It fires correctly (verified: it
+exits 1 and refuses), but the harness that had it DELETED the bake after its first
+successful mutation, so M02..M35 ran with no bake at all. A guard must span the
+whole run, not the first write.
+
+RUN ACCEPTANCE MUST BE SHAPE, NOT A MAGIC NUMBER. The old harness required
+`head.count("\nlg") > 100`. A row-set change makes that silently wrong in both
+directions. Compare the run's (first line, line count, last line) against the
+BASELINE'S OWN shape -- that is also the only guard that separates "bend's stack
+overflow printed nothing" from "this mutation refused every row", because both
+produce a short stdout and only one is a result.
+
+BEND INDENTATION IS SEMANTIC, SO A "WHITESPACE-ONLY" MUTATION IS NOT A NO-OP.
+Re-indenting a `case` arm by two spaces does not compile: `expected : 'def',
+'type' or 'law'`. The whitespace control has to re-indent a continuation line.
+Recorded because "whitespace-only edit" has been used as a control before and it
+silently becomes a DID-NOT-COMPILE.
+
+A `+k = f(...)` BINDER CAN BE REPLACED BY A BARE CONSTRUCTOR ONLY WITH AN
+ANNOTATION. `+k = dd_ck(ar, u)` types `k`; `+k = True{}` gives
+`expected : an annotated term (cannot infer)`. Same-intent mutations on such a
+line need the type spelled out, and a mutation that does not compile is a
+DID-NOT-COMPILE verdict, never a zero.
+
+A MUTATION CAN BE WRITTEN AGAINST A NAME THE PORT NEVER BINDS. `l2i_mul.p`
+takes `(a0, a1, b1, a00, b00, a01, b01)` and has no `b0`, so the upstream-shaped
+swap `a0*b1` -> `a1*b0` fails with `expected : a defined name / observed : b0`.
+The port folds `a00*b00` and `a01*b01` into `p` and `q` before the cross terms,
+so upstream's `b0` is already gone. Read the def's BINDER LIST before writing a
+mutation that names a variable.
+
+AN ANCHOR THAT MATCHES TWICE IS NOT A PATCH. `case 3: Some{l2i_cast3(ar, a0, dt,
+xdt)}` appears in BOTH `l2i_cast.got` and `l2i_cast.ldt`; `str.replace(old, new, 1)`
+silently edits whichever comes first and reports it as deliberate. Assert the
+anchor is UNIQUE and report `PATCH DID NOT APPLY: anchor is 2-AMBIGUOUS`. A
+third anchor had drifted by a `+` binder and reported PATCH-NOT-FOUND. Both were
+real measurements lost to a stale anchor list.
+
+DEAD ARMS ARE ZEROS WITH A PROOF, NOT WITH A FIXTURE. `l2i_cast.got`'s sel-3 arm
+cannot be reached: `l2i_cast.ldt` intercepts `sel == 3` and returns `l2i_cast3`
+before `l2i_cast.wide` can forward it. Proven by deleting the interception -- that
+moves exactly `lg7, lg7k, lg7sig`. And `reindex` (five defs) and `l2i_define`
+(six defs) have NO CALLER anywhere in the tree, so no fixture in this gate can
+reach them. A def nothing calls is invisible to every other check.
+
+TWO ORACLES CAN SHARE ONE BLIND SPOT AND THEN AGREE. The gate emits no
+`sig`/`k`/`p` for a REFUSED row, and neither does `.agents/slop/dd-oracle.py`, so
+`lgop`/`lgon`/`lgok`/`lgosig` for the refusing row `lgo` are produced by neither
+computation -- and dd-cmp reports all seven `lgo*`/`lgn*` rows as AGREEING.
+Agreement there is one gap copied twice, the mirror image of the `nv_query_litter`
+case above. When two lanes agree, check that the value is derived from the row's
+own fixture at all.
+
+CPython IS THE TIE-BREAKER AND IT WILL OVERTURN A PORT ROW. `l2i(Ops.CAST,
+dtypes.long, UOp.const(0, dtypes.uint32))` does NOT raise upstream -- it returns
+`(CAST(C(0)), CAST(C(0)))`. Verify with the interpreter before believing a
+refusal row.

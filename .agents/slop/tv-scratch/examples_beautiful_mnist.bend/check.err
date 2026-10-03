@@ -1,0 +1,16 @@
+SOME PROOFS FAIL
+Error: 14 defs rely on unsafe or foreign code:
+- ../tinybendygrad/dtype.Dt.bf16
+- ../tinybendygrad/dtype.Dt.fp16
+- ../tinybendygrad/dtype.Dt.fp8_from
+- ../tinybendygrad/dtype.Dt.fp8_to
+- ../tinybendygrad/dtype.Dt.i64_trunc
+- ../tinybendygrad/dtype.Dt.i64_floor_div
+- ../tinybendygrad/dtype.Dt.i64_floor_mod
+- ../tinybendygrad/dtype.Dt.i64_cdiv
+- ../tinybendygrad/dtype.Dt.i64_cmod
+- ../tinybendygrad/dtype.Dt.i64_ceildiv
+- ../tinybendygrad/dtype.float_to_bf16
+- ../tinybendygrad/dtype.float_to_fp16
+- ../tinybendygrad/dtype.float_to_fp8
+- ../tinybendygrad/dtype.fp8_to_float

@@ -1,0 +1,21 @@
+# Pre-fix measurement. ./bin/bend .agents/slop/ind/dropn-measure.bend
+# against spec.bend's old `case 0n: r`. Saved so the live tree's later
+# fix does not erase the counterexample.
+drop_n_456_0=5,6
+drop_n_456_1=6
+drop_n_456_2=
+list_drop_456_0=4,5,6
+list_drop_456_1=5,6
+list_drop_456_2=6
+idx1_rank=1
+idx1_dims=6
+law_now_4_0 LHS=1 RHS=4 eq=False
+law_now_456_1 LHS=36 RHS=120 eq=False
+law_take_np1_4_0 LHS=4 RHS=4 eq=True
+law_take_np1_456_1 LHS=120 RHS=120 eq=True
+if_exact_as_written_4_0 LHS=16 RHS=4 eq=False
+if_exact_as_written_456_1 LHS=900 RHS=120 eq=False
+if_exact_take_n_4_0 LHS=4 RHS=4 eq=True
+if_exact_take_n_456_1 LHS=120 RHS=120 eq=True
+if_exact_take_np1_4_0 LHS=16 RHS=4 eq=False
+if_exact_take_np1_456_1 LHS=600 RHS=120 eq=False
