@@ -414,7 +414,11 @@ row("dsl_regs", json.dumps(["s", "v", "src", "VCC_LO", "VCC_HI", "VCC", "EXEC_LO
                             "INV_2PI", "SDWA", "DPP", "DPP16", "LIT", "SRC_LDS_DIRECT"]))
 
 for nm, val in ROWS:
-    print(f"{nm} = [{val}]")
+    # GUARD 4 compares the whole value. The port prints `[got]   py=[want]`
+    # (generate.bend `g`), so an oracle that stops at `[val]` disagrees on
+    # every shared name even when the data is identical. Same shape as
+    # tcptx-oracle.py.
+    print(f"{nm} = [{val}]   py=[{val}]")
 
 print(f"ORACLE ROW COUNT = {len(ROWS)}")
 assert len(ROWS) > 200, f"ORACLE EMITTED {len(ROWS)} ROWS -- a gate whose oracle prints nothing is not a gate"

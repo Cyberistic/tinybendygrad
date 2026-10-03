@@ -39,7 +39,11 @@ def main(path):
     seen = []
     for ln in (HERE / "ga-oracle.txt").read_text().split("\n"):
         if " = [" in ln and ln.endswith("]"):
-            seen.append((ln.split(" = [", 1)[0], ln.split(" = [", 1)[1][:-1]))
+            nm, val = ln.split(" = [", 1)
+            # See ga_fix.py: the oracle emits `nm = [got]   py=[want]`; a blind [:-1]
+            # yields `VOP1]   py=[VOP1`. Prefer the py= field.
+            val = val.split("   py=[", 1)[1] if "   py=[" in val else val
+            seen.append((nm, val[:-1]))
     want = [(k, v) for k, v in seen if " |" not in k]
     want += [(tag, "\n".join(v for k, v in seen if k.startswith(tag + " |")))
              for tag in ("enum rdna3", "operands rdna3", "common", "ins rdna3", "ins cdna",

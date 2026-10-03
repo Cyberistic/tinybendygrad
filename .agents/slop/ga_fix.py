@@ -126,6 +126,9 @@ ORACLE_KEYS = []
 for ln in (_HERE / "ga-oracle.txt").read_text().split("\n"):
     if " = [" in ln and ln.endswith("]"):
         nm, val = ln.split(" = [", 1)
+        # `ga-oracle.py` now emits `nm = [got]   py=[want]`. A blind `val[:-1]` yields
+        # `VOP1]   py=[VOP1` and splices that into every py= literal. Prefer the py= field.
+        val = val.split("   py=[", 1)[1] if "   py=[" in val else val
         if nm not in ORACLE:
             ORACLE[nm] = val[:-1]
             ORACLE_KEYS.append(nm)
