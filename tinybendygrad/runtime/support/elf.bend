@@ -138,7 +138,7 @@
 #   :84-85 the 4-byte write-back   PORTED  `pack4`, `unpack4`
 
 import Base
-import ./helpers_local.bend as H
+import ./../../helpers.bend as H
 
 # ===========================================================================
 # THE BYTE LAYER. A blob is a hex String (WALL 4) and these are its readers.

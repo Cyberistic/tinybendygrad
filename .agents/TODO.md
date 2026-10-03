@@ -658,6 +658,33 @@ diffed.
       its own gate caught: `Tr.has` returned True to everything (fuel was the pattern
       length, so eight order rows were decorative), and `slots` consed then reversed
       (which would have silently broken the wgsl binding correspondence).
+
+- [x] **THE CALL LAYER** — `runtime/webgpu_call.bend` (1312 lines, 58 rows, 0 False,
+      `ALL PROOFS CHECK`) + `runtime/webgpu_call.js` (502 lines) + the emitted
+      `runtime/webgpu_call.mjs`. This is the `# TODO(p3) runtime/ops_webgpu.py:<line>`
+      half of `ops_webgpu.bend` turned into real `navigator.gpu` calls.
+      **The boundary is `bend -o x.mjs` + a `.js` driver**, and it was chosen by
+      measurement, not taste: an FFI effect (`def .. -> IO(R): import "./e.c"`) would
+      make `Tr.emit` answer `IO(Tr)` and DESTROY the pure gate the 147 rows depend
+      on, and `bend guide effects` gives the JS side an FD-shaped `need`/`io_park_on`
+      with no promise arm for WebGPU's six `synchronous` calls. `Call` cannot carry
+      a descriptor either — it is `{k, arg}` by design.
+      **`ALL 147 ORIGINAL ROWS BYTE-IDENTICAL`, both lanes**, and 4 rows ADDED: a
+      real bug the seam found. `dev.uniform_bytes` used `U32.shrn(v, 1n)`, a
+      ONE-BIT shift, so `7` came out `7,3,1,0` against CPython's `7,0,0,0`; its own
+      three byte rows (0, 1, 0xFFFFFFFF) are all values a one-bit shift also gets
+      right, so nothing in that file could see it. Also `Buf.id`, the reader the
+      seam needed.
+      **RAN FOR REAL**: headless Chrome 154 over CDP, real adapter, real device,
+      `57/57` steps from `requestAdapter` to `mapAsync`/`getMappedRange`, 16-byte
+      readback. Timestamps read 0 — headless Chrome's Metal backend does not populate
+      `timestamp-query` here, and that is reported rather than dressed up.
+      Boundaries: WebGPU is NOT reachable from CPython on this machine
+      (`failed to load library webgpu: try setting WEBGPU_PATH?`, verified
+      independently of the port's own claim), and `navigator.gpu` is undefined in
+      both `bun` and `node` here.
+      Three blind spots the mutation table reports rather than closes, in
+      `.agents/slop/mutate_webgpu_call.py`.
 - [x] `renderer/wgsl.bend` — `tinygrad/renderer/wgsl.py`. 1062 lines, 168 string-diff
       rows, `ALL PROOFS CHECK` (`eb020720`). `is_packed` shipped with its third clause
       INVERTED, so the entire packed path was dead code while 100+ rows stayed green;

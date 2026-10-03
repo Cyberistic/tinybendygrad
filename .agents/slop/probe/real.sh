@@ -21,7 +21,7 @@ while [ $i -lt 40 ]; do
   i=$((i+1)); sleep 0.5
 done
 bun .agents/slop/probe/cdp.mjs \
-  "http://127.0.0.1:8731/.agents/slop/probe/${PAGE:-run.html}" "$EXPR" 40000 2>&1 | tail -4
+  "http://127.0.0.1:8731/.agents/slop/probe/${PAGE:-run.html}" "$EXPR" 40000 2>&1
 kill -9 $CPID 2>/dev/null
 pkill -9 -f "probe/chrome" 2>/dev/null
 exit 0

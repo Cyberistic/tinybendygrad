@@ -60,3 +60,4 @@ PROLOGUE = open(os.path.join(HERE, "elf_prologue.bend")).read()
 
 sys.stdout.write(PROLOGUE)
 sys.stdout.write(blobs())
+sys.stdout.write(open(os.path.join(HERE, "elf_main.bend")).read())

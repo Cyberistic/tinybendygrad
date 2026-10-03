@@ -1224,8 +1224,7 @@ def f2f.sign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32, +ts: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
   +a = dd_band(O.Found.ar(s), v, O.Found.i(s))
   +c = P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
-  +k = dd_wk(O.Found.ar(c), T.tx_powi(U32.sub(ts, fs)))
-  T.tx_shl(O.Found.ar(k), O.Found.i(c), O.Found.i(k))
+  T.tx_shl(O.Found.ar(c), O.Found.i(c), U32.sub(ts, fs))
 
 # `(v & (shl(1, fs-1) - 1)).cast(f2f_dt[to])`
 
@@ -1248,10 +1247,9 @@ def f2f.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to: S.D
 
 # `shl(nosign, tm - fm) | shl((shl(1, te) - 1), tm)`
 
-def f2f.nan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Found:
+def f2f.qnan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Found:
   +a = T.tx_shl(ar, O.Found.i(ns), U32.sub(tm, fm))
-  +bt = dd_wk(O.Found.ar(a), T.tx_powi(te))
-  +b = T.tx_shl(O.Found.ar(bt), O.Found.i(a), tm)
+  +b = T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)
   dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
 
 # `fnuz_nan = sign.ne(0) & nosign.eq(0)`; `qnan = shl(shl(1, te) - 1, tm) | shl(1, tm - 1)`
@@ -1263,8 +1261,7 @@ def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Foun
   +fn = dd_and(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
   +q1 = T.tx_shl(O.Found.ar(fn), f2f.em1(O.Found.ar(fn), te), tm)
   +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))
-  +q2 = T.tx_shl(O.Found.ar(qk), O.Found.i(q1), O.Found.i(qk))
-  +q = dd_or(O.Found.ar(q2), O.Found.i(q1), O.Found.i(q2))
+  +q = dd_or(O.Found.ar(q1), O.Found.i(q1), O.Found.i(qk))
   +e = dd_eq1(O.Found.ar(q), O.Found.i(ex), O.Found.i(z))
   +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(nm))
   +s = dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w))
@@ -1287,18 +1284,14 @@ def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, 
   +i = f2f.isnan(ar, ns, ex, fe, fm, e4m3)
   +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
   +e = dd_eq1(O.Found.ar(z), O.Found.i(ex), O.Found.i(z))
-  +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), dd_where(O.Found.ar(e), O.Found.i(i), O.Found.i(nn), O.Found.i(nm)))
+  +iu = dd_where(O.Found.ar(e), O.Found.i(i), O.Found.i(nn), O.Found.i(nm))
+  +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(iu))
   O.Found.i(dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w)))
 
 def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> U32:
   match fnuz:
     case True{}: f2f.fnuz(ar, ns, sg, ex, nm, te, tm)
     case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm)
-
-def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> U32:
-  match fnuz:
-    case True{}: f2f.fnuz(ar, ns, sg, ex, nm, te, tm)
-    case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm, te)
 
 # `shl(1, k) - 1`, the mask dtype.py writes four times. `P.dc_sub` is
 # `a - 1` = `ADD(a, MUL(C(1), C(-1)))`.
@@ -1308,45 +1301,48 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
   +fs = S.Dt.bits(fr)
   +ts = S.Dt.bits(to)
   +sg = f2f.sign(ar, udt, v, fs, ts)
-  +ns = f2f.nosign(O.Found.sg(ar), udt, v, fs)
-  +ex = T.tx_shr(O.Found.ns(ar), ns, fm)
-  +nm = f2f.norm(O.Found.ex(ar), ns, fm, tm, fr, to)
-  +nn = f2f.nan(O.Found.nm(ar), ns, tm, te)
-  T.tx_bitcast(O.Found.ar(nn), f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), ar, ns, sg, ex, nm, nn, fe, fm, te, tm), to)
+  +ns = f2f.nosign(O.Found.ar(sg), udt, v, fs)
+  +ex = T.tx_shr(O.Found.ar(ns), O.Found.i(ns), fm)
+  +nm = f2f.norm(O.Found.ar(ex), ns, fm, tm, fr, to)
+  +nq = f2f.qnan(O.Found.ar(nm), ns, fm, tm, te)
+  T.tx_bitcast(O.Found.ar(nq), f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), ar, ns, sg, ex, nm, nq, fe, fm, te, tm), to)
 
 def f2f.down.sign(+ar: O.Arena, +v: O.Found, +fs: U32, +ts: U32) -> O.Found:
-  +a = T.tx_shr(ar, v, U32.sub(fs, ts))
-  +b = T.tx_shl(O.Found.ar(a), dd_wk(O.Found.ar(a), T.tx_powi(U32.sub(ts, 1))), U32.sub(ts, 1))
+  +a = T.tx_shr(ar, O.Found.i(v), U32.sub(fs, ts))
+  +b = dd_wk(O.Found.ar(a), T.tx_powi(U32.sub(ts, 1)))
   dd_band(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
 
 # `v & (shl(1, fs - 1) - 1)`
 
 def f2f.down.nosign(+ar: O.Arena, +v: O.Found, +fs: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
-  +m = P.dc_sub(O.Found.ar(s), s, dd_wk(ar, H.i64_of_i32(1)))
+  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
+  +m = P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
   dd_band(O.Found.ar(m), O.Found.i(v), O.Found.i(m))
 
 # `(rne(nosign, fm - tm) - shl(fb - tb, tm)).cast(f2f_dt[to])`
 
+def f2f.down.norm.put(+tudt: S.Dt, +ar: O.Arena, +x: O.Found, +fr: S.Dt, +to: S.Dt) -> O.Found:
+  +k = dd_wk(ar, H.i64_sub(H.i64_of_i32(T.exponent_bias(fr)), H.i64_of_i32(T.exponent_bias(to))))
+  +b = T.tx_shl(O.Found.ar(k), O.Found.i(x), T.tx_finfo_m(to))
+  +d = P.dc_sub(O.Found.ar(b), O.Found.i(x), O.Found.i(b))
+  P.dc_cast(O.Found.ar(d), O.Found.i(d), tudt)
+
 def f2f.down.norm.g(r: Maybe<&2, O.Found>, +tudt: S.Dt, +ar: O.Arena, +fr: S.Dt, +to: S.Dt) -> O.Found:
   match r:
-    case Some{x}:
-      +b = T.tx_shl(O.Found.ar(x), dd_wk(O.Found.ar(x), H.i64_sub(H.i64_of_i32(T.exponent_bias(fr)), H.i64_of_i32(T.exponent_bias(to)))), T.tx_finfo_m(to))
-      +d = P.dc_sub(O.Found.ar(b), O.Found.i(x), O.Found.i(b))
-      P.dc_cast(O.Found.ar(d), O.Found.i(d), tudt)
+    case Some{x}: f2f.down.norm.put(tudt, ar, x, fr, to)
     case None{}: dd_const.int(ar, 0, tudt)
 
 # `underflow = (shr(v, fm) & (shl(1, fe) - 1)) < (1 + fb - tb)`. The right side is
 # a Python int, so `ufix` makes it a WEAKINT const and the promotion folds.
 
 def f2f.down.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
-  +tudt = f2f.udt(to)
-  f2f.down.norm.g(rne(ar, ns, U32.sub(fm, tm)), tudt, ar, fr, to)
+  f2f.down.norm.g(rne(ar, O.Found.i(ns), U32.sub(fm, tm)), f2f.udt(to), ar, fr, to)
 
 def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
-  +a = T.tx_shr(ar, v, fm)
+  +a = T.tx_shr(ar, O.Found.i(v), fm)
   +m = f2f.em1(O.Found.ar(a), fe)
-  +b = dd_band(O.Found.ar(m), O.Found.i(a), m)
+  +b = dd_band(O.Found.ar(O.Found.i(m)), O.Found.i(a), m)
   +c = dd_wk(O.Found.ar(b), H.i64_of_i32(U32.add(U32.sub(T.exponent_bias(fr), T.exponent_bias(to)), 1)))
   dd_lt1(O.Found.ar(c), O.Found.i(b), O.Found.i(c))
 
@@ -1354,13 +1350,15 @@ def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S
 
 def f2f.down.m1(+ar: O.Arena, +tm: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(tm))
-  P.dc_sub(O.Found.ar(s), s, dd_wk(ar, H.i64_of_i32(1)))
+  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
+  P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
 
 def f2f.down.m2(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32) -> O.Found:
-  +a = T.tx_shr(ar, ns, U32.sub(fm, tm))
+  +a = T.tx_shr(ar, O.Found.i(ns), U32.sub(fm, tm))
   +s = dd_wk(O.Found.ar(a), T.tx_powi(tm))
-  +m = P.dc_sub(O.Found.ar(s), s, dd_wk(ar, H.i64_of_i32(1)))
-  dd_band(O.Found.ar(m), O.Found.i(a), O.Found.i(m))
+  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
+  +m = P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
+  dd_band(O.Found.ar(c1), O.Found.i(a), O.Found.i(m))
 
 # `(sign | nan_mantissa | shl(shl(1, te) - 1, tm)).cast(f2f_dt[to])`
 
@@ -1369,7 +1367,7 @@ def f2f.down.mant(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, e4m3: Bool) ->
     case True{}: f2f.down.m1(ar, tm)
     case False{}: f2f.down.m2(ar, ns, fm, tm)
 
-def f2f.down.nan(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, +to: S.Dt) -> O.Found:
+def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, +to: S.Dt) -> O.Found:
   +tudt = f2f.udt(to)
   +a = dd_or(ar, O.Found.i(sg), O.Found.i(nm))
   +b = T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)
@@ -1379,30 +1377,31 @@ def f2f.down.nan(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, +
 # `is_nan = (shr(v, fm) & (shl(1, fe) - 1)).eq(shl(1, fe) - 1)`. The AND is the
 # one `underflow` built, so it is interned; the `eq` is two CMPNEs.
 
-def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +uf: O.Found) -> O.Found:
-  +a = T.tx_shr(ar, v, fm)
+def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32) -> O.Found:
+  +a = T.tx_shr(ar, O.Found.i(v), fm)
   +m = f2f.em1(O.Found.ar(a), fe)
   +b = dd_band(O.Found.ar(m), O.Found.i(a), m)
-  dd_eq1(O.Found.ar(b), b, m)
+  dd_eq1(O.Found.ar(b), O.Found.i(b), m)
 
-# the two returns. `sign.cast(f2f_dt[to]) | norm` appears in BOTH, inside
-# `underflow.where(0, ...)`, and CPython evaluates only the taken branch.
+# `sign.cast(f2f_dt[to]) | norm`, which the fnuz return wraps.
 
 def f2f.down.inner(+ar: O.Arena, +sg: O.Found, +nr: O.Found, +to: S.Dt) -> O.Found:
   +c = P.dc_cast(ar, O.Found.i(sg), f2f.udt(to))
   dd_or(O.Found.ar(c), O.Found.i(c), O.Found.i(nr))
 
 def f2f.down.fnuz(+ar: O.Arena, +sg: O.Found, +nr: O.Found, +uf: O.Found, +ii: O.Found, +ts: U32, +to: S.Dt) -> O.Found:
-  +inner = f2f.down.inner(O.Found.ii(ar), sg, nr, to)
-  +z = dd_const.int(O.Found.ar(inner), 0, f2f.udt(to))
-  +w = dd_where(O.Found.ar(z), O.Found.i(uf), z, O.Found.i(inner))
-  dd_where(O.Found.ar(w), O.Found.i(ii), dd_wk(O.Found.ar(w), T.tx_powi(U32.sub(ts, 1))), O.Found.i(w))
+  +k = dd_wk(ar, T.tx_powi(U32.sub(ts, 1)))
+  +in = f2f.down.inner(O.Found.ar(k), sg, nr, to)
+  +z = dd_wk(O.Found.ar(in), H.i64_of_i32(0))
+  +w = dd_where(O.Found.ar(z), O.Found.i(uf), O.Found.i(z), O.Found.i(in))
+  dd_where(O.Found.ar(w), O.Found.i(ii), O.Found.i(k), O.Found.i(w))
 
 def f2f.down.ocp(+ar: O.Arena, +sg: O.Found, +nr: O.Found, +uf: O.Found, +ii: O.Found, +nm: O.Found, +to: S.Dt) -> O.Found:
-  +inner = f2f.down.inner(O.Found.ii(ar), sg, nr, to)
-  +z = dd_const.int(O.Found.ar(inner), 0, f2f.udt(to))
-  +w = dd_where(O.Found.ar(z), O.Found.i(uf), z, O.Found.i(inner))
-  dd_where(O.Found.ar(w), O.Found.i(ii), O.Found.i(nm), O.Found.i(w))
+  +c = P.dc_cast(ar, O.Found.i(sg), f2f.udt(to))
+  +z = dd_wk(O.Found.ar(c), H.i64_of_i32(0))
+  +w = dd_where(O.Found.ar(c), O.Found.i(uf), O.Found.i(z), O.Found.i(nr))
+  +o = dd_or(O.Found.ar(w), O.Found.i(c), O.Found.i(w))
+  dd_where(O.Found.ar(o), O.Found.i(ii), O.Found.i(nm), O.Found.i(o))
 
 # ===========================================================================
 # THE THREE PATTERN TABLES -- dtype.py:148, :181 and :218. They are
@@ -1428,13 +1427,13 @@ def f2f.narrow(+v: O.Found, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, 
   +fs = S.Dt.bits(fr)
   +ts = S.Dt.bits(to)
   +sg = f2f.down.sign(O.Found.ar(v), v, fs, ts)
-  +ns = f2f.down.nosign(O.Found.sg(ar), v, fs)
-  +nr = f2f.down.norm(O.Found.ns(ar), ns, fm, tm, fr, to)
-  +uf = f2f.down.uf(O.Found.nr(ar), v, fm, fe, fr, to)
-  +nm = f2f.down.mant(O.Found.uf(ar), ns, fm, tm, dd_is_e4m3(to))
-  +nn = f2f.down.nan(O.Found.nm(ar), sg, nm, te, tm, to)
-  +ii = f2f.down.isnan(O.Found.ar(nn), v, fm, fe, uf)
-  f2f.down.tail(T.tx_is_fnuz(to), O.Found.ii(ar), sg, nr, uf, ii, nm, ts, to)
+  +ns = f2f.down.nosign(O.Found.ar(sg), v, fs)
+  +nr = f2f.down.norm(O.Found.ar(ns), ns, fm, tm, fr, to)
+  +uf = f2f.down.uf(O.Found.ar(nr), v, fm, fe, fr, to)
+  +nm = f2f.down.mant(O.Found.ar(uf), ns, fm, tm, dd_is_e4m3(to))
+  +nn = f2f.down.npat(O.Found.ar(nm), sg, nm, te, tm, to)
+  +ii = f2f.down.isnan(O.Found.ar(nn), v, fm, fe)
+  f2f.down.tail(T.tx_is_fnuz(to), O.Found.ar(ii), sg, nr, uf, ii, nm, ts, to)
 
 # `shr(v, fs - ts) & shl(1, ts - 1)`
 

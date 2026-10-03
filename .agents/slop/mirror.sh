@@ -32,3 +32,10 @@ else cp "$ROOT/.agents/slop/helpers.frozen.bend" "$M/helpers.bend"; fi
 cp "$ROOT/tinybendygrad/runtime/ops_webgpu.bend" "$M/runtime/ops_webgpu.bend"
 cp "$ROOT/tinybendygrad/runtime/webgpu_call.bend" "$M/runtime/webgpu_call.bend"
 echo "$M"
+# NOT MY FILES. `.agents/slop/ddcheck/tree/` and `.agents/slop/xd1/` belong to
+# OTHER agents and contain copies of MY webgpu_call.* from when they were reading
+# this file to work on it. `mirror.sh` must never write into them; it writes only
+# `.agents/slop/mirror/`. The copies in `ddcheck/tree/` are what I RECOVERED
+# webgpu_call.bend from after a scripted def-reordering pass truncated it to 11
+# lines -- see `.agents/slop/recover_webgpu_call.py` for why recovery was the right
+# move and `.agents/slop/notes/bend2-constraints.md` WC9 for the lesson.

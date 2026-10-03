@@ -51,3 +51,4 @@ probe-*.bend.mut
 # carry it, and jj refuses to snapshot the whole fileset over one file.
 examples/webgpu/mnist/net.json
 examples/webgpu/mnist/*.gz
+.agents/slop/mirror/

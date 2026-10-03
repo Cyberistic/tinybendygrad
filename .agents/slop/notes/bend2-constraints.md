@@ -12974,3 +12974,121 @@ a dropped enum member, a swapped `default=NULL` and a reordered field are four
 DIFFERENT diffs. A count row is identical for all four. This unit's inherited
 175 was neither 91 nor a subset: it was the 84 scalar rows emitted TWICE plus a
 stray line plus three rows whose `gl` call had lost its body.
+
+---
+
+## WEBGPU CALL LAYER (`runtime/webgpu_call.bend`, `runtime/webgpu_call.js`)
+
+Appended by the `ops_webgpu` call-layer agent. Numbering continues from GA8; these
+are letters again because the file's own numbering is per-unit.
+
+### WC1: `bend -o x.mjs` PUTS EVERY DEF ON THE MODULE'S `default`, UNDER ITS OWN NAME
+
+`import * as M` gives `Object.keys(M).length === 1` and that key is `default`.
+There are NO named exports, and a dotted Bend name is ONE key -- `Cs.order`, not
+`{Cs: {order}}`. So a JS caller writes `M["Cs.order"](cs)` and never `M.Cs.order`.
+
+The emitter DOES exclude every def containing a `do IO<>` block, which is what
+makes the seam possible at all: `webgpu_call.bend`'s 58 rows and its `main` are
+absent from the `.mjs` while `Cs.call`, `Cs.order` and the fixtures are present.
+Verified on `ops_webgpu.bend` too: 490 exports, `main`/`t_call` absent.
+
+### WC2: A `List` CROSSES THE FFI IN TWO SHAPES AND ONLY ONE OF THEM IS A LIST
+
+A `List` RETURNED BY A DEF crosses as the cons list `{$: "Con", head, tail}`.
+A `List` STORED IN A RECORD FIELD crosses as a plain JS ARRAY. MEASURED:
+`RequestDevice.feats` arrives as `[3, 8]`, and `toJS` reading `l.$` off an array
+got `undefined` and killed the walk at step 5 of 57. A `toJS` that accepts both
+(`Array.isArray` first, then the cons walk) handles every case measured.
+
+### WC3: `Maybe` CROSSES AS `{$: "Some", value: x}` OR `{$: "None"}` -- NEVER AS `x`
+
+Not `null`, not the bare value. A Bend `Maybe` in a record field reaches JS as a
+tagged object, so `op.ts === null` is false for a `Some` and `op.ts.qs` is
+`undefined`. MEASURED: "unbound slot undefined" at `BeginPass`.
+
+### WC4: THE WEBGPU IDL HAS BOTH STRING ENUMS AND NUMERIC BITMASKS, AND WHICH IS WHICH IS NOT GUESSABLE
+
+Six constants cross, and THREE are numeric (`unsigned long`) and THREE are
+strings. MEASURED per constant against Chrome 154 on this machine:
+
+| constant | spelling | evidence |
+| --- | --- | --- |
+| `GPUBindGroupLayoutEntry.visibility` | **numeric** | `"compute"` REJECTED "Value is not of type 'unsigned long'"; 1, 2, 4 all accepted; `GPUShaderStage.COMPUTE === 4` |
+| `GPUQueue.mapAsync` mode | **numeric** | `"read"` REJECTED, same message; `GPUMapMode.READ === 1` |
+| `GPUBufferDescriptor.usage` | **numeric** | `GPUBufferUsage` bit flags, identical to the C `WGPUBufferUsage_*` |
+| `GPUBindGroupLayoutEntry.buffer.type` | string | `"uniform"` accepted, `1` not |
+| `GPUQuerySetDescriptor.type` | string | `"timestamp"` |
+| `GPURequestAdapterOptions.powerPreference` | string | `"high-performance"` |
+
+So `GPUBufferUsage`, `GPUShaderStage` and `GPUMapMode` are forwarded BY VALUE and
+the other three are mapped. Getting one wrong is a descriptor rejection at the
+first real bind group layout, which is late.
+
+### WC5: `def e(..) -> IO(R): import "./e.c"` CANNOT CARRY A PROMISE, AND `bend guide effects` SAYS SO
+
+The effects guide gives the JS side `need` (a function returning `{read: true}`
+or `{time: true}`) and `io_park_on(fd, out, k, more)`. Both are FD-shaped and
+there is no promise arm. WebGPU's six `synchronous`-wrapped calls are Promises, so
+the FFI-effect seam has nowhere to put them -- which is a measurement, not a
+preference, and it is why the boundary chosen here is `-o x.mjs` plus a `.js`
+driver and not an `@extern`.
+
+### WC6: A COUNTER NOTHING READS IS INVISIBLE TO EVERY GATE
+
+`Cs.mint(c)` returns the state; binding it to a name and then threading the
+ORIGINAL `c` through the rest of the step throws the mint away. MEASURED: every
+handle became `4294967295` (`Cs.next(0) - 1`) and **all 58 rows stayed green**,
+because `Cs.calls` reads the trace, `Cs.bg` reads the bind group, and NEITHER
+reads `next`. It surfaced only in a real browser, at `PipelineLayout`, with
+"unbound slot 4294967295".
+
+The general rule: **a mutation that no row reads is not a passing gate.** The row
+that closed it (`wgc_handles_monotone`) asks the counter a question nothing else
+asks -- are the slots MONOTONE -- and monotone rather than strictly increasing,
+because `Finish` and `Submit` correctly SHARE one slot.
+
+### WC7: A `Bool.pick` ARM ORDER IS A SILENT CHANGE AND A SIZE ROW CANNOT SEE IT
+
+`Cs.caller` reads `Bool.pick(U32, is_buf, <the buffer id>, 0)`. With the arms the
+other way round every `bufs` slot bound handle 0. `wgc_bg_sizes` did not move,
+because a wrong HANDLE does not change a SIZE. It surfaced in the browser as
+"Failed to convert value to 'GPUBuffer'". The row that closes it reads the
+handles (`wgc_bg_handles`), not the sizes -- so a bind group needs BOTH rows, and
+one is not a substitute for the other.
+
+### WC8: `U32.shrn(v, 1n)` IS A ONE-BIT SHIFT, AND THE THREE NATURAL FIXTURES MISS IT
+
+`ops_webgpu.bend`'s `dev.uniform_bytes` had `U32.shrn(v, 1n)` where the byte
+extraction wants an eight-BIT shift, so 7 came out `7,3,1,0` against CPython's
+`7,0,0,0`. Its three byte rows were 0, 1 and 0xFFFFFFFF -- and a one-bit shift
+gets ALL THREE right (0 shifts to 0, 1 to 0 after one step, 0xFFFFFFFF has no
+zero byte). The fourth byte of 7 is the first value that separates them, and it
+took a fixture from a DIFFERENT FILE (`webgpu_call.bend`'s `wgc_wall3_int_bytes`,
+which failed) to supply it.
+
+`U32.shr` is ALSO the one-bit shift; the byte shift has no shorter name, so
+`U32.shrn(v, 8n)` is the spelling. This is the `U32.shl`-is-one-bit trap in
+`agent-core.md` wearing a different hat, and the lesson generalises: **three
+fixtures that are all special cases of a wrong implementation are not coverage.**
+
+### WC9: A SCRIPT THAT REORDERS DEFS MUST NOT BE THE ONLY COPY, AND `.agents` IS NOT PRIVATE
+
+A scripted def-reordering pass truncated `webgpu_call.bend` from 1301 lines to 11
+and left the mirror truncated with it. The file was recovered from
+`.agents/slop/ddcheck/tree/runtime/webgpu_call.bend` -- a copy ANOTHER AGENT had
+made while reading it, in a directory of theirs, for their own purposes.
+
+Two rules, both measured here:
+
+  1. **A scripted structural edit needs a line-count assertion.** Every pass that
+     moved a block checked "is the substring there" and not "is the file still the
+     size it was". A pass that rewrote a whole region should assert
+     `len(out) == len(lines) - moved + inserted` BEFORE writing, and several of
+     these passes did not.
+  2. **`.agents/slop/` IS SHARED AND IS NOT A WORKAREA.** Other agents put their
+     scratch trees inside it (`ddcheck/tree/`, `xd1/`), so a directory that looks
+     private is not, and a "backup" found there is someone's intermediate state
+     rather than yours. It happened to be the right recovery here -- it was the
+     NEWEST copy, taken after the encoder threading -- and it would just as easily
+     have been a stale one. Do not rely on it.

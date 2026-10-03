@@ -466,3 +466,22 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
 | `.agents/slop/ga_gate.py` | diffs a `bend` run against the oracle by diffing whole `name=[value]` ROWS, never row NAMES -- a name-comparing harness reported 0 moved rows for all 30 mutations of the autogen unit and all 68 of the ops_rdma one. The regex is DOTALL and lazy because six rows carry a whole generated Python file in one value. It also **refuses to score a row whose name is not an oracle row name**, so a hand-added row cannot pass unnoticed. |
 | `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a documented deliberate no-op (`NULL` is in BOTH `_ALL_DSL` and `_DSL_REGS` upstream, so the union cannot see either copy dropped). `--one M9` runs a subset. **It retries `the machine stack overflowed` eight times**, because the PRISTINE gate-green file died with it on 2 of 12 back-to-back runs under load and on 0 of 8 when idle; a single-shot harness reports a spurious failure about one run in six. The mutant runs IN THE ORIGINAL'S DIRECTORY (a `$TMPDIR` copy cannot resolve `import Base`), and each anchor is asserted to occur exactly once so a stale edit target is an error rather than a silent no-op. |
 | `.agents/slop/ga_probe.sh` | runs ONE gate row with every other removed, which is the only way to bisect a fold: `do IO<Unit>:` evaluates its whole body, so a hang or an overflow anywhere hides behind any earlier row. |
+
+## WebGPU call layer (`runtime/webgpu_call.*`)
+
+- `bend FILE -o FILE.mjs` — the ES-module emitter. Every NON-IO def, all on
+  `default` under its own name (`M["Cs.order"]`, never `M.Cs.order`); `do IO<>`
+  blocks are dropped, which is what lets a pure Bend file drive JS.
+- `bend FILE -o FILE.js` — the whole program plus the IO event loop; run with
+  `bun FILE.js`. Used for the `ops_webgpu.bend` second lane.
+- `bend guide effects` — the custom-effect protocol. Read before writing one; the
+  JS side is FD-shaped and there is no promise arm.
+- Headless Chrome + CDP, for a real `navigator.gpu`:
+  `--headless=new --enable-unsafe-webgpu --use-angle=metal --no-sandbox
+  --remote-debugging-port=9222`, driven by `.agents/slop/probe/cdp.mjs` via
+  `.agents/slop/probe/real.sh`. Chrome does NOT survive the shell that launched it
+  here, so `real.sh` starts and kills it in one invocation.
+- `.agents/slop/probe/serve.py` — a static server on :8731, because `file://`
+  blocks a module importing a relative `.mjs`.
+- The WebGPU IDL mixes string enums and numeric bitmasks; WC4 in
+  `.agents/slop/notes/bend2-constraints.md` has the measured table.
