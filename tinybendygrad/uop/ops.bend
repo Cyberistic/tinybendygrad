@@ -2709,11 +2709,15 @@ def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 # reached for `toposort` here would agree on `chain` and on `backedge`.
 # ===========================================================================
 
-# `res.pop(self)`. Python pops BY KEY, and the key is `self`, so this filters on
-# IDENTITY instead of dropping a position. That is not pedantry: on a BACKEDGE
-# the fuel cuts the walk before `self` is ever cached, `self` is NOT in the list,
-# and `List.drop(.., 1n)` would delete a real node. The `backedge` row is the one
-# that moves. `+h` because the head is both the test and the kept element.
+# `res.pop(self)`. Python pops BY KEY and the key is `self`, so this filters on
+# IDENTITY. The tempting one-liner is `List.drop(.., 1n)`, and it is wrong in a way
+# the toposort order hides until it is measured: the root is the LAST node to
+# complete -- it has no consumers -- so `self` is the TAIL of the cache, and a drop
+# from the front removes a different node. MEASURED on `chain`:
+#     toposort_nocalls   = Ops.CONST Ops.RANGE Ops.CONST Ops.ADD Ops.CONST Ops.ADD
+#     List.drop(.., 1n)  = Ops.RANGE Ops.CONST Ops.ADD Ops.CONST Ops.ADD
+# and substituting the drop moved all four `bsl_*` rows. `+h` because the head is
+# both the test and the kept element.
 def bsl.go(+self: U32, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: acc
@@ -3698,51 +3702,102 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 # and it is written down in spec/ops.md.
 # ===========================================================================
 
-# TODO(p3) ops.py:18  def __repr__
+# ===========================================================================
+# ops.py:1-500. WHERE EACH NAME ACTUALLY LIVES NOW.
+#
+# This block used to be nineteen bare `# TODO(p3)` lines and ELEVEN of them were
+# lies: the def was already written, in ANOTHER file, and the queue was the only
+# thing that did not know it. `rg "TODO(p3)"` is the work queue, so a stale entry
+# is not a note -- it is work that gets done twice, or a name the next agent
+# re-derives from scratch. So every ops.py line in [1, 500] is now in exactly one
+# of three buckets, and the two that are PORTED have no queue line at all:
+#
+#   PORTED HERE         a real def in this file, with its rows.
+#   PORTED ELSEWHERE    a real def in the named file, with its rows. The queue
+#                       entry is DELETED, not deferred: the wall is not this
+#                       file's to clear, and writing it here would be a second
+#                       implementation of a thing that already has one.
+#   STILL A WALL        a Bend rule no arrangement in THIS file beats. Kept in
+#                       the queue WITH the rule, so the next agent does not spend
+#                       an hour rediscovering it.
+# ===========================================================================
 
-# TODO(p3) ops.py:41  def __repr__
+# PORTED HERE, 2026-10-03. Four defs, above `pm_r_sink`:
+#     bsl.go, UOp.backward_slice (ops.py:280), UOp.backward_slice_with_self (:286)
+#     op_in_bsl.go, UOp.op_in_backward_slice_with_self (:289)
+# They are BELOW the toposort they are written in terms of, and Python has them
+# above it, because Bend has no forward references. Gated by `bsl_<tag>` and
+# `bsws_<tag>` over four fixtures plus six `bsop_<tag>_*` Booleans: 14 rows, three
+# lanes, byte-identical. The `call` and `nest` fixtures are the ones that carry
+# `enter_calls=False`; `bsl_chain` would agree with a plain `toposort`.
 
+# PORTED ELSEWHERE -- `uop/render.bend`, which IMPORTS this file, so nothing here
+# can call it and nothing here should re-implement it.
+#     ops.py:18  AxisType.__repr__   -> axis_repr        (render.bend:561)
+#     ops.py:41  ParamArg.__repr__   -> paramarg_repr    (render.bend:512)
+#     ops.py:269 UOp.__repr__        -> pretty_print, render.bend's `pyrender`
+# The first two are reached by `arg_repr`'s `ARange` and `AParam` arms, which is
+# where the mutation table's `arg_repr ARng` / `arg_repr AParam` labels point; the
+# third IS `UOp.__repr__`'s whole body (`return pretty_print(self)`) and it carries
+# 25 CPython-compared rows of its own. `repr` is a rendering concern, so
+# render.bend is where it belongs.
+
+# PORTED ELSEWHERE -- `uop/fold.bend`, the Kahn worklist the block above this one
+# describes, and the reason the entries below are walls and not chores.
+#     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:888)
+#     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:4038)
+#     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:4013)
+# `UOp.dtype` came with them, and `dtype` is what every remaining entry below reads.
+
+# STILL A WALL. Each names the rule, and each is ALSO in the NOT PORTED block at
+# the foot of this file, where the reason is longer.
 # TODO(p3) ops.py:76  def srender
-
+#   `x.render()` is render.bend's and `str(x)` is its `const_repr`. Both live in
+#   the file that imports this one, so the two-arm dispatch cannot be written here.
 # TODO(p3) ops.py:95  def sym_infer
-
+#   `exec` in `_sym_fxn` builds Python source from the graph and runs it in a
+#   namespace of `max/cdiv/cmod/floordiv/floormod/bitcast/dtypes`. Bend has no
+#   `eval`, so this needs a C effect that compiles a lambda or a tree-walking
+#   interpreter. P3/P6.
 # TODO(p3) ops.py:219  def __init__
-
 # TODO(p3) ops.py:223  def __get__
-
+#   `recursive_property` stores a FUNCTION in a record field (`self.fxn = fxn`),
+#   and a function value in a field forces `Type`, not `Data` -- measured, and the
+#   reason the rule tables in this file are linear. The `__get__` half is the memo
+#   the header's point 5 drops, and its GATE is `self.nm not in node.__dict__`:
+#   a memo-less port cannot answer that, because the predicate is vacuously true
+#   for every node and the "gate" would visit the whole slice unconditionally.
 # TODO(p3) ops.py:247  def __del__
-
+#   Refcount-driven eviction from `ucache`. The arena is monotone, so nothing is
+#   ever evicted and there is nothing to port.
 # TODO(p3) ops.py:251  def __reduce__
-
+#   Pickling. A `U32` index and an `Arena` are not picklable objects, and this
+#   file has no process boundary to pickle across.
 # TODO(p3) ops.py:267  def key
-
-# TODO(p3) ops.py:269  def __repr__
-
-# TODO(p3) ops.py:278  def backward_slice
-
-# TODO(p3) ops.py:284  def backward_slice_with_self
-
-# TODO(p3) ops.py:285  def op_in_backward_slice_with_self
-
+#   `hashlib.sha256` over `str((op, dtype, arg))` and the srcs' keys concatenated.
+#   Two walls: the digest is a C effect (`tinygrad/runtime/`'s), and the string
+#   half reads `dtype`, which is `fold.bend`'s -- so neither half is writable here.
 # TODO(p3) ops.py:290  def _bool_slice
-
 # TODO(p3) ops.py:293  def bool_slice
-
+#   A `recursive_property` over the srcs, gated on `self.dtype is dtypes.bool`.
+#   `dtype` is `fold.bend`'s, so both halves belong to the worklist beside it; and
+#   `bool_slice`'s `| {self}` is a self-reference the fold has to add OUTSIDE its
+#   own memo, which is what Python's comment above the property says.
 # TODO(p3) ops.py:322  def tuplize
-
-# TODO(p3) ops.py:329  def _shape
-
-# TODO(p3) ops.py:456  def shape
-
+#   `_UOpTuple((op.value, repr(arg), self.dtype) plus every src's tuplize)`:
+#   `dtype` again, plus a `recursive_property` over the srcs, plus the sort it
+#   feeds. `repr(arg)` is render.bend's `arg_repr`, so this is three files deep.
 # TODO(p3) ops.py:461  def shard_shape
-
 # TODO(p3) ops.py:467  def max_shard_shape
-
-# TODO(p3) ops.py:470  def ended_ranges
-
+#   `shard_shape` reads `self.device` (fold), `self.axis` (fold) and `self.shape`
+#   (fold), and `max_shard_shape` is `to_max_shape(shard_shape)`, a fold over a
+#   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
+#   `schedule/multi.bend` is the caller and it inlines what it can today.
 # TODO(p3) ops.py:483  def _ranges
-
 # TODO(p3) ops.py:497  def ranges
+#   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
+#   ones the ended ranges close. The wall is named where it is HIT --
+#   `schedule/rangeify.bend:189`, whose `rf_in_ranges` is the standing stub.
 
 # TODO(p3) ops.py:502  def axis_id
 
@@ -5004,6 +5059,153 @@ def t_rng_twoid() -> IO(Unit):
   +f = g_rng_twoid()
   t_rng_row("twoid", Found.ar(f), Found.i(f))
 
+# ---------------------------------------------------------------------------
+# THE BACKWARD-SLICE LANE -- ops.py:280, :286, :289. The three defs are above
+# `pm_r_sink`; the fixtures and the rows are here because a row is a fixture plus
+# a printer and both of those belong with the other gates.
+#
+# CPython answers, read live off the oracle's tree:
+#     bsl_chain=5    Ops.CONST Ops.RANGE Ops.CONST Ops.ADD Ops.CONST
+#     bsl_call=1     Ops.CONST
+#     bsl_nest=3     Ops.CONST Ops.CALL Ops.CONST
+#     bsl_backedge=3 Ops.CONST Ops.RANGE Ops.CONST
+# and `toposort(enter_calls=True)` answers 6, 5, 6 and 4 for the same four. So
+# the `call`, `nest` and `backedge` rows are the ones that carry
+# `enter_calls=False`, and `bsl_chain` would agree with a `toposort`.
+#
+# THE FIXTURES ARE THE SMALLEST GRAPHS THAT SEPARATE THE FOUR ANSWERS, and each
+# is named for the thing it separates rather than for its shape:
+#   chain    no CALL anywhere, so the two walks agree -- the baseline.
+#   call     a CALL AT THE ROOT, whose body is src[0] and so is dropped.
+#   nest     the same CALL ONE LEVEL DOWN, so the pruning cannot be a special
+#            case on the root.
+#   backedge `src[0] is src[2]`, so the walk meets the same RANGE twice and it is
+#            the CACHE that makes it terminate. `g_cycle` is NOT this fixture: it
+#            reads `Found.i(r)` out of `Found.ar(sp)`, and `g_rng()` builds in a
+#            different arena, so that index is past the end and `Arena.node`
+#            answers the bottom for it. The wall is "an arena is the one a build
+#            RETURNED, not the one that went in", and this fixture threads it.
+# ---------------------------------------------------------------------------
+def Bsl.facts(+xs: List<&2, U32>, ar: Arena) -> String:
+  String.concat([Nat.show(List.length(&2, U32, xs)), " ", Rng.srcops.seeded(ar, xs)])
+
+# `Arena.budget(ar)` IS the fuel and the header says why: one step per pushed
+# frame, so it is exact for a DAG and is only ever reached on one by cutting.
+# Hoisting it here keeps four rows from each re-deriving it.
+def Bsl.row(+ar: Arena, +self: U32) -> String:
+  Bsl.facts(UOp.backward_slice(Arena.budget(ar), ar, self), ar)
+
+def Bsl.with_self(+ar: Arena, +self: U32) -> String:
+  Bsl.facts(UOp.backward_slice_with_self(Arena.budget(ar), ar, self), ar)
+
+def Bsl.op_in(+ar: Arena, +self: U32, want: List<&2, Op>) -> Bool:
+  UOp.op_in_backward_slice_with_self(Arena.budget(ar), ar, self, want)
+
+# CONST(0), CONST(1) <- RANGE(LOOP, 0) <- ADD <- ADD, which is CPython's
+# `UOp.range(1, 0, AxisType.LOOP)`, an ADD of it with CONST(0) and an ADD of that
+# with CONST(2). A range's end is a src of its own, which is why there are three
+# CONSTs here and not two.
+def g_bsl_chain() -> Found:
+  +c0 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +c1 = UOp.const(Found.ar(c0), CInt{H.i64_of_i32(1)})
+  +c2 = UOp.const(Found.ar(c1), CInt{H.i64_of_i32(2)})
+  +r0 = UOp.range_end(Found.ar(c2), Found.i(c1), [0], AXIS_LOOP{})
+  +a0 = UOp.alu(Found.ar(r0), OpsADD{}, [Found.i(r0), Found.i(c0)])
+  UOp.alu(Found.ar(a0), OpsADD{}, [Found.i(a0), Found.i(c2)])
+
+# CALL(ADD(CONST(1), CONST(2)), CONST(9)). The BODY is src[0] and
+# `src_without_body` is `src[1:]`, so the three body nodes are not in the slice.
+def g_bsl_call() -> Found:
+  +c1 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(1)})
+  +c2 = UOp.const(Found.ar(c1), CInt{H.i64_of_i32(2)})
+  +c9 = UOp.const(Found.ar(c2), CInt{H.i64_of_i32(9)})
+  +b = UOp.alu(Found.ar(c9), OpsADD{}, [Found.i(c1), Found.i(c2)])
+  UOp.new(Found.ar(b), OpsCALL{}, [Found.i(b), Found.i(c9)], ACall{CallInfo.of()}, TNone{})
+
+# ADD(CALL(..), CONST(2)) -- the same CALL, one level down.
+def g_bsl_nest() -> Found:
+  +c1 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(1)})
+  +c2 = UOp.const(Found.ar(c1), CInt{H.i64_of_i32(2)})
+  +c9 = UOp.const(Found.ar(c2), CInt{H.i64_of_i32(9)})
+  +b = UOp.alu(Found.ar(c9), OpsADD{}, [Found.i(c1), Found.i(c2)])
+  +cl = UOp.new(Found.ar(b), OpsCALL{}, [Found.i(b), Found.i(c9)], ACall{CallInfo.of()}, TNone{})
+  UOp.alu(Found.ar(cl), OpsADD{}, [Found.i(cl), Found.i(c2)])
+
+# BACKEDGE(RANGE(DEVICE, 0), CONST(0), RANGE(DEVICE, 0)) -- ops.py:617's
+# `self.backedge(loop, cond)` with `cond` the same node as `self`, so the walk
+# meets the RANGE twice and the shared node must appear ONCE.
+def g_bsl_backedge() -> Found:
+  +c0 = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
+  +c1 = UOp.const(Found.ar(c0), CInt{H.i64_of_i32(1)})
+  +r = UOp.range_end(Found.ar(c1), Found.i(c1), [0], AXIS_DEVICE{})
+  UOp.backedge(Found.ar(r), Found.i(r), Found.i(c0), Found.i(r))
+
+# ONE PURE DEF PER ROW, named after the row, because a `do IO<Unit>` block can
+# only bind an `IO` -- so the arena has to be built in a def BODY. That is the
+# same reason `MStack.sig` and `Uc.depth` are the shape they are.
+#
+# `bsop_chain_add` is the SRC half and `bsop_chain_mul` is the miss; `bsop_call_call`
+# is the SELF half, because CALL is in no src of that slice so only reading `self`
+# answers True. `bsop_nest_pair` is the `*ops` list, which is `*args` in Python.
+def Bsl.chain() -> String:
+  +f = g_bsl_chain()
+  Bsl.row(Found.ar(f), Found.i(f))
+
+def Bsl.chain.ws() -> String:
+  +f = g_bsl_chain()
+  Bsl.with_self(Found.ar(f), Found.i(f))
+
+def Bsl.chain.add() -> String:
+  +f = g_bsl_chain()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsADD{}]))
+
+def Bsl.chain.mul() -> String:
+  +f = g_bsl_chain()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsMUL{}]))
+
+def Bsl.call() -> String:
+  +f = g_bsl_call()
+  Bsl.row(Found.ar(f), Found.i(f))
+
+def Bsl.call.ws() -> String:
+  +f = g_bsl_call()
+  Bsl.with_self(Found.ar(f), Found.i(f))
+
+def Bsl.call.call() -> String:
+  +f = g_bsl_call()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsCALL{}]))
+
+def Bsl.nest() -> String:
+  +f = g_bsl_nest()
+  Bsl.row(Found.ar(f), Found.i(f))
+
+def Bsl.nest.ws() -> String:
+  +f = g_bsl_nest()
+  Bsl.with_self(Found.ar(f), Found.i(f))
+
+def Bsl.nest.pair() -> String:
+  +f = g_bsl_nest()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsMUL{}, OpsCALL{}]))
+
+# `bsop_backedge_backedge` is the SELF half again and `bsop_backedge_range` the
+# SRC half on the fixture where the two nodes are not the same op, so neither
+# answer can be produced by reading only one of them.
+def Bsl.backedge() -> String:
+  +f = g_bsl_backedge()
+  Bsl.row(Found.ar(f), Found.i(f))
+
+def Bsl.backedge.ws() -> String:
+  +f = g_bsl_backedge()
+  Bsl.with_self(Found.ar(f), Found.i(f))
+
+def Bsl.backedge.be() -> String:
+  +f = g_bsl_backedge()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsBACKEDGE{}]))
+
+def Bsl.backedge.range() -> String:
+  +f = g_bsl_backedge()
+  Bool.show(Bsl.op_in(Found.ar(f), Found.i(f), [OpsRANGE{}]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("hashcons", t_hashcons())
@@ -5064,6 +5266,21 @@ def main() -> IO(Unit):
     row("uc_flat_same", Uc.same(0, 0, [0, 1]))
     row("uc_nest_same", Uc.same(1, 1, [0, 1]))
     srow("ucdepth_flat_nest", Uc.depth(0, 1, [0, 1]))
+    # --- THE BACKWARD-SLICE LANE. ops.py:280/286/289, ported above `pm_r_sink`.
+    srow("bsl_chain", Bsl.chain())
+    srow("bsws_chain", Bsl.chain.ws())
+    srow("bsop_chain_add", Bsl.chain.add())
+    srow("bsop_chain_mul", Bsl.chain.mul())
+    srow("bsl_call", Bsl.call())
+    srow("bsws_call", Bsl.call.ws())
+    srow("bsop_call_call", Bsl.call.call())
+    srow("bsl_nest", Bsl.nest())
+    srow("bsws_nest", Bsl.nest.ws())
+    srow("bsop_nest_pair", Bsl.nest.pair())
+    srow("bsl_backedge", Bsl.backedge())
+    srow("bsws_backedge", Bsl.backedge.ws())
+    srow("bsop_backedge_backedge", Bsl.backedge.be())
+    srow("bsop_backedge_range", Bsl.backedge.range())
 
 # ===========================================================================
 # NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape

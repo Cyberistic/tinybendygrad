@@ -50,10 +50,37 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "runs/e2e"
 BEND = ROOT / ".agents/slop/e2e_mm.bend"
 
-M = K = N = 8                      # 8x8 f32 = 64 bytes = 16 u32 per buffer
+M = K = N = 8                      # 8x8 f32 = 256 bytes = 64 u32 per buffer
 SEED = 0x5EED                      # one seed, so the fixture is reproducible
 BASE_ID = 100                      # `bufs3`'s convention: a caller's id cannot
                                    # collide with a slot the seam mints
+
+# THE INPUT VALUES, AND WHY THEY ARE DYADIC RATHER THAN RANDOM. This is the whole
+# reason the E2E can claim BIT-EXACTNESS instead of a tolerance, so it is a
+# theorem and not a hope:
+#
+#   every entry is a multiple of 2^-6 (0.015625) with |entry| <= 2;
+#   every product of two of them is a multiple of 2^-12 with |product| <= 4;
+#   every PARTIAL SUM of the eight products is a multiple of 2^-12 with
+#     |partial| <= 32, so it needs at most 18 significand bits;
+#   f32 has a 24-bit significand, so every partial sum is EXACTLY representable.
+#
+# A sum of exactly-representable values is the same value in any association order
+# and under any multiply-add CONTRACTION, because no rounding ever occurs. So the
+# CPU's answer and the GPU's answer are the same bits whichever one of them fuses
+# and whichever order the eight terms are added in.
+#
+# WHY THAT MATTERED. With `np.random.randn` inputs the GPU and CPython disagreed by
+# up to 2.86e-6 absolute, and the cause was measured rather than guessed:
+# `tinygrad/runtime/support/compiler_cpu.py:21` compiles the generated C with `-O2`
+# and no `-ffp-contract=off`, and the LLVM IR for that exact kernel contains
+# `llvm.fmuladd` -- 57 of them at `-O2` and ZERO with the flag added. So the CPU
+# contracts; the WGSL path (Tint -> SPIR-V -> MSL on this `apple/metal-3` adapter)
+# contracts too, differently. Neither side is the reference and no tolerance can
+# settle it, so the inputs are chosen where contraction is a theorem instead of a
+# difference. The random-input distance is recorded in the run notes as the
+# measurement that forced this choice.
+DYADIC = [-2.0, -1.5, -0.75, -0.5, -0.25, 0.25, 0.5, 1.5]
 ENTRY_RE = re.compile(r"@compute[^\n]*\bfn\s+(\w+)\s*\(", re.M)
 # `@group(0) @binding(N) var<uniform|storage,...>` -- the layout tinygrad's OWN
 # emitted WGSL declares, parsed rather than transcribed, so the port's
@@ -97,7 +124,19 @@ def bits_of(buf):
 
 
 def u32_of(raw):
+  """u32 little-endian bit patterns -- the READBACK's unit, and the oracle's."""
   return [int(w) for w in np.frombuffer(raw, dtype="<u4")]
+
+
+def bytes_of(raw):
+  """ONE BYTE PER ELEMENT, and that is not the same list as `u32_of`. `WriteBuffer`'s
+  `bytes` field is a byte list: `webgpu_call.js` does `Uint8Array.from(bytes)`, so a
+  u32 word there truncates to its LOW byte and the other three become zero. MEASURED
+  by getting it wrong: the first GPU run returned 0x7FC00000 (a quiet NaN) in every
+  element, because both inputs were three-quarters zeros. `Uniform`'s bytes are the
+  same shape -- the gate row `wgc_wall3_int_bytes` reads `[7, 0, 0, 0]` for the
+  value 7 -- so this is the port's own unit and not an accident of the driver."""
+  return list(raw)
 
 
 def name_of(buf):
@@ -165,9 +204,10 @@ def trace():
   RZ._orig_exec_kernel = _orig_exec_kernel
   RZ.exec_kernel = traced_exec_kernel
   rng = np.random.RandomState(SEED)
-  A = Tensor(rng.randn(M, K).astype(np.float32))
-  B = Tensor(rng.randn(K, N).astype(np.float32))
-  Cm = Tensor(rng.randn(N, N).astype(np.float32))
+  pick = lambda r, c: Tensor(np.array(DYADIC, dtype=np.float32)[rng.randint(0, len(DYADIC), (r, c))])
+  A = pick(M, K)
+  B = pick(K, N)
+  Cm = pick(N, N)
   E = (A.matmul(B)).matmul(Cm)          # the program: two launches, one buffer chained
   real = E.realize()
   RZ.exec_kernel = _orig_exec_kernel
@@ -200,7 +240,7 @@ def main():
   for i, r in enumerate(launches):
     for nm in r["names"]:
       if nm not in written and nm not in [u[0] for u in uploads] and nm in r.get("in", {}):
-        uploads.append((nm, u32_of(base64.b64decode(r["in"][nm]))))
+        uploads.append((nm, bytes_of(base64.b64decode(r["in"][nm]))))
     written.update(r["names"][p] for p in r["outs"])
 
   # ---- CPython's answer, and the reference for each launch's output ---------
@@ -223,7 +263,10 @@ def main():
   oracle = {
     "note": "every value below was produced by CALLING CPython tinygrad (DEV=CPU) in "
             "this file; nothing here is transcribed. u32 little-endian bit patterns.",
-    "program": "(A @ B) @ C, three 8x8 f32 matrices, np.random.RandomState(0x5EED)",
+    "program": "(A @ B) @ C, three 8x8 f32 matrices, entries drawn from "
+               "DYADIC by np.random.RandomState(0x5EED); see the DYADIC note at "
+               "the top of this file for why every partial sum is exact in f32.",
+    "dyadic": DYADIC,
     "shape": {"M": M, "K": K, "N": N},
     "seed": SEED,
     "mats": {k: u32_of(v.tobytes()) for k, v in mats.items()},
@@ -240,6 +283,8 @@ def main():
     "uploads": [[nm, ws] for nm, ws in uploads],
     "upload_words": len([w for _, ws in uploads for w in ws]),
     "final_buffer": final,
+    "probe_buffer": uploads[0][0],
+    "probe_bytes_u32": uploads[0][1],
     "answer_u32": answer,
     "answer_f64": [float(np.frombuffer(np.uint32(x).tobytes(), dtype="<f4")[0]) for x in answer],
     "csum_f64": float(E.numpy().sum()),
@@ -283,11 +328,13 @@ def emit_bend(o):
     A(f"def id_{nm}() -> U32: {o['ids'][nm]}")
     A(f"def size_{nm}() -> U32: {o['sizes'][nm]}")
   A("")
-  A("# THE WORDS EACH BUFFER IS WRITTEN WITH. `mm_uploads` is the number of")
-  A("# WriteBuffers the run must issue and it is a gate row, because it is what")
-  A("# says the port did NOT re-upload the first launch's output.")
-  for nm, words in o["uploads"]:
-    A(f"def words_{nm}() -> List<&2, U32>: {u32s(words)}")
+  A("# THE BYTES EACH BUFFER IS WRITTEN WITH -- BYTES, one per element, because")
+  A("# `WriteBuffer`'s field is a byte list (`webgpu_call.js` does")
+  A("# `Uint8Array.from(bytes)`), NOT the u32 words the readback is compared in.")
+  A("# `mm_uploads` is the number of WriteBuffers the run must issue and it is a gate")
+  A("# row, because it is what says the port did NOT re-upload launch 0's output.")
+  for nm, bs in o["uploads"]:
+    A(f"def bytes_{nm}() -> List<&2, U32>: {u32s(bs)}")
   A(f"def mm_upload_count() -> U32: {len(o['uploads'])}")
   A("")
   A("# THE BIND LISTS, one per launch, in `ProgramInfo.globals` order -- the order")
@@ -320,23 +367,41 @@ def emit_bend(o):
   # OUTPUT slot 0, so a launch's buffers read `[out, in, in]` and the intermediate
   # is the FIRST buffer of launch 0, not the first input. The readback likewise is
   # not `b4`.
-  A("# ONE `Cs` PER BUFFER, then one `putbytes` per upload, in the oracle's order.")
+  A("")
+  A("# THE DEVICE BUFFERS, one `CreateBuffer` each in first-bind order, then one")
+  A("# `putbytes` per upload in the oracle's order. Spelled out from the oracle's")
+  A("# own lists so a different fixture needs no edit here and cannot drift from")
+  A("# the trace that produced it.")
   chain = "G.Cs.of()"
   for nm in o["first_bind"]:
-    A(f"def mkbuf_{nm}(+c: G.Cs) -> G.Cs: mkbuf(c, size_{nm}())")
+    A(f"def mkbuf_{nm}(+c: G.Cs) -> G.Cs: mkbuf(c, id_{nm}(), size_{nm}())")
     chain = f"mkbuf_{nm}({chain})"
   A("")
   A("def mm_buffers() -> G.Cs:")
   A(f"  c = {chain}")
   for nm, _ in o["uploads"]:
-    A(f"  c = putbytes(c, id_{nm}(), words_{nm}())")
+    A(f"  c = putbytes(c, id_{nm}(), bytes_{nm}())")
   A("  c")
   A("")
-  A("def mm_read() -> G.Cs:")
+  A("# TWO READBACKS OF THE SAME RUN, and the second one is what makes the first one")
+  A("# interpretable. `mm_read_out` maps the ANSWER; `mm_read_in` maps an UPLOADED")
+  A("# INPUT. If `mm_read_in` comes back bit-identical to the words that were written,")
+  A("# then the buffers held exactly what CPython held and any difference in the")
+  A("# answer is the ARITHMETIC; if it does not, the difference is the DATA and the")
+  A("# arithmetic is not what needs looking at. One number cannot tell those apart.")
+  A("#")
+  A("# They are two `walk`es rather than two `MappedRange`es in one, because")
+  A("# `webgpu_call.js` keeps only the LAST mapped range (`m.range` is overwritten),")
+  A("# so a single walk would silently drop the first readback -- a null range that")
+  A("# reads as an empty answer rather than as a missing one.")
   fin = o["final_buffer"]
-  A(f"  +r = G.Cs.readable(G.Cs.of(), id_{fin}(), size_{fin}())")
-  A(f"  G.Cs.read(r, G.Cs.next(G.Cs.of()), size_{fin}())")
+  probe = o["uploads"][0][0]
+  for nm, label in ((fin, "out"), (probe, "in")):
+    A(f"def mm_read_{label}() -> G.Cs:")
+    A(f"  +r = G.Cs.readable(G.Cs.of(), id_{nm}(), size_{nm}())")
+    A(f"  G.Cs.read(r, G.Cs.next(G.Cs.of()), size_{nm}())")
   A("")
+  A("def mm_read() -> G.Cs: mm_read_out()")
   A("# THE WHOLE RUN, as the `List<&2, G.Cs>` `webgpu_call.js`'s `walk` consumes: the")
   A("# device init, the device buffers, the two launches, the staging read.")
   A("#")
@@ -344,8 +409,9 @@ def emit_bend(o):
   A("# STAGING buffer first, so its handle is `Cs.next` of the state it was handed")
   A("# -- `webgpu_call.bend` names the mistake: `next(r) - 1` is the command buffer")
   A("# and the walk stops with \"unbound slot\".")
-  A("def mm_run() -> List<&2, G.Cs>:")
-  A("  [G.Cs.init(G.METAL(), Nil{}), mm_buffers(), l0(), l1(), mm_read()]")
+  A("def mm_prefix() -> List<&2, G.Cs>: [G.Cs.init(G.METAL(), Nil{}), mm_buffers(), l0(), l1()]")
+  A("def mm_run() -> List<&2, G.Cs>: List.append(&2, G.Cs, mm_prefix(), [mm_read_out()])")
+  A("def mm_run_in() -> List<&2, G.Cs>: List.append(&2, G.Cs, mm_prefix(), [mm_read_in()])")
   A("")
   A(BEND_MAIN)
   return "\n".join(out) + "\n"
@@ -390,9 +456,16 @@ BEND_DEFS = r'''
 # workaround. `WriteBuffer`'s `(CALL_WRITE, write_len)` pair is `copy.copyin`'s
 # own emission (ops_webgpu.py:221), not a shape invented for this file.
 # ---------------------------------------------------------------------------
-def mkbuf(+c: G.Cs, size: U32) -> G.Cs:
-  +m = G.Cs.mint(c)
-  G.Cs.at(m, W.CALL_CREATE, W.OBJ_BUFFER, G.CreateBuffer{G.Cs.last(m), size, W.alloc.usage()})
+# THE HANDLE IS THE CALLER'S OWN ID, NOT A MINT. `webgpu_call.bend` binds a `bufs`
+# slot to `bs[i-1].id` -- the caller's id -- precisely so the seam's minted slots and
+# the caller's buffers are two namespaces a collision would be visible in, and
+# `webgpu_call.js`'s `buf()` resolves `m.slots.get(id) ?? m.owned.get(id)`. So the
+# `CreateBuffer` op carries `id_bN` as its `slot`, and `Cs.mint` is not called here
+# at all. MEASURED the other way round: minting and then writing to `id_bN` stopped
+# the walk at step 13 of 84 with "unbound slot 101", because the create was filed
+# under 1 and the write asked for 101.
+def mkbuf(+c: G.Cs, id: U32, size: U32) -> G.Cs:
+  G.Cs.at(c, W.CALL_CREATE, W.OBJ_BUFFER, G.CreateBuffer{id, size, W.alloc.usage()})
 
 def putbytes(+c: G.Cs, buf: U32, +bytes: List<&2, U32>) -> G.Cs:
   G.Cs.at(c, W.CALL_WRITE, W.copy.write_len(U32.from_nat(List.length(&2, U32, bytes))),

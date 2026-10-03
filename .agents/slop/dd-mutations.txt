@@ -1,129 +1,598 @@
 # dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend
-# target sha1 1381aa594257c2b00915f9578ad7fc8ceebaf544, asserted EQUAL to the live file (RULE I)
+# target sha1 73b0e1e7fd6652c5fc7b49323a1956d44545f230, asserted EQUAL to the live file (RULE I)
 # baseline 172 rows, shape (first='l2idt0=i64->i32' lines=174 last='')
-# 0 controls SAME | 0 mutations MOVED | 0 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 39 DID-NOT-COMPILE | 0 DEAD ANCHOR
+# 3 controls SAME | 28 mutations MOVED | 6 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 2 DID-NOT-COMPILE | 0 DEAD ANCHOR
 #
 # DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.
 #   (none: every anchor occurs exactly once)
 #
 # CONTROLS (RULE C -- all must read SAME; a MOVED control voids every verdict below)
-#   C00 C00 no-op control (rewrite the file byte-identical)        DID-NOT-COMPILE
-#   C01 C01 comment-only control (insert a comment line above a def) DID-NOT-COMPILE
-#   C02 C02 whitespace-only control (re-indent one trailing statement) DID-NOT-COMPILE
+#   C00 C00 no-op control (rewrite the file byte-identical)        SAME
+#   C01 C01 comment-only control (insert a comment line above a def) SAME
+#   C02 C02 whitespace-only control (re-indent one trailing statement) SAME
 #
 #   NOTE: a whitespace-only edit of a `case` arm does NOT compile -- Bend's indentation is
 #   semantic -- so C02 re-indents a trailing statement, not an arm.
 
 M01 dd_cast_sel: swap the long arm 0/1
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  42 rows
+    lg2k
+    lg2n
+    lg2p
+    lg2sig
+    lg3k
+    lg3n
+    lg3p
+    lg3sig
+    lg4k
+    lg4n
+    lg4p
+    lg4sig
+    lg5k
+    lg5n
+    lg5p
+    lg5sig
+    lg6k
+    lg6n
+    lg6p
+    lg6sig
+    lgbn
+    lgok
+    lgop
+    lgosig
+    lgqk
+    lgqn
+    lgqsig
+    lgrk
+    lgsk
+    lgtk
+    lgvk
+    lgvn
+    lgvp
+    lgvsig
+    lgwk
+    lgwn
+    lgwp
+    lgwsig
+    lgxk
+    lgxn
+    lgxp
+    lgxsig
 
 M02 dd_cast_sel: swap the non-long arm 2/3
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  7 rows
+    lg7
+    lg7k
+    lg7sig
+    lgu
+    lguk
+    lgun
+    lgusig
 
 M03 dd_cast_fold: never fold a same-dtype cast
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  14 rows
+    lg2
+    lg2n
+    lg2sig
+    lgqk
+    lgqsig
+    lgrk
+    lgsk
+    lgtk
+    lgw
+    lgwn
+    lgwsig
+    lgx
+    lgxn
+    lgxsig
 
 M04 dd_cast_bool: invert the bool-source test
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  2 rows
+    lg5n
+    lg5sig
 
 M05 l2i_cast3.bitc: never fold the uint bitcast
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  4 rows
+    lg7
+    lg7n
+    lg7sig
+    lg9n
 
 M06 l2i_cast.got: route sel 3 to arm 0 instead of arm 3
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M07 dd_bc: never fold (ADD/SUB word bitcasts)
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  21 rows
+    lg1n
+    lg1sig
+    lg9n
+    lgcn
+    lgcp
+    lgcsig
+    lgdn
+    lgdsig
+    lgfn
+    lgqk
+    lgqn
+    lgqsig
+    lgr
+    lgrk
+    lgrn
+    lgrp
+    lgrsig
+    lgsk
+    lgsn
+    lgtk
+    lgtn
 
 M08 l2i_cast0.sgn: const_like(-1) as 1 instead of -1
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  4 rows
+    lg6k
+    lg6n
+    lg6p
+    lgqn
 
 M09 l2i_shl.hi: OR the halves the other way round
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M10 l2i_shl.hi: `>> 31 - n` becomes `>> n`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  3 rows
+    lg9p
+    lgqk
+    lgqsig
 
 M11 l2i_shr.fill: always sign-extend
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  5 rows
+    lgbk
+    lgbp
+    lgbsig
+    lgqn
+    lgrn
 
 M12 l2i_shr.fill: always fill with zero
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  4 rows
+    lgak
+    lgan
+    lgap
+    lgasig
 
 M13 l2i_shl.ge: `b0 >= 32` becomes `b0 < 32`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  23 rows
+    lg9
+    lg9k
+    lg9n
+    lg9p
+    lg9sig
+    lga
+    lgak
+    lgap
+    lgasig
+    lgb
+    lgbk
+    lgbp
+    lgbsig
+    lgfn
+    lgqk
+    lgqn
+    lgqsig
+    lgrk
+    lgrsig
+    lgsk
+    lgssig
+    lgtk
+    lgtsig
 
 M14 l2i_mul.p: swap `a0*b1` and `a1*b0`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : a defined name
 
 M15 l2i_mul.w: shift the product right before left
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  1 rows
+    lgen
 
 M16 l2i_cmplt: swap the two OR halves
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  9 rows
+    lgf
+    lgfsig
+    lgm
+    lgmp
+    lgmsig
+    lgqsig
+    lgrsig
+    lgssig
+    lgtsig
 
 M17 l2i_where: swap the two branch pairs
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  7 rows
+    lgl
+    lglp
+    lgqsig
+    lgrsig
+    lgs
+    lgssig
+    lgtsig
 
 M18 l2i_max: swap the WHERE branches
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  1 rows
+    lgm
 
 M19 l2i_binop: force AND on both halves
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  6 rows
+    lgip
+    lgisig
+    lgjn
+    lgjp
+    lgjsig
+    lgkn
 
 M20 dd_rsub31: `31 - n` becomes `31 + n`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  10 rows
+    lg9p
+    lgak
+    lgan
+    lgasig
+    lgbk
+    lgbsig
+    lgqn
+    lgqsig
+    lgsk
+    lgssig
 
 M21 unpack32: mask 0xFFFF becomes 0x10000
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  6 rows
+    lgek
+    lgen
+    lgesig
+    up
+    upk
+    upsig
 
 M22 unpack32: shift the masked low word instead of the bitcast
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  3 rows
+    lgek
+    lgesig
+    upp
 
 M23 reindex.scaled: swap `i1*mul` to `mul*i1`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M24 l2i_cdiv: 64 iterations become 63
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  9 rows
+    lgqn
+    lgqsig
+    lgrn
+    lgrsig
+    lgsn
+    lgssig
+    lgt
+    lgtn
+    lgtsig
 
 M25 l2i_cast0.pick: sign-extend where dtype.py zero-extends
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  36 rows
+    lg2k
+    lg2n
+    lg2p
+    lg2sig
+    lg3k
+    lg3n
+    lg3p
+    lg3sig
+    lg4k
+    lg4n
+    lg4p
+    lg4sig
+    lg6k
+    lg6n
+    lg6p
+    lg6sig
+    lgok
+    lgop
+    lgosig
+    lgqk
+    lgqsig
+    lgrk
+    lgsk
+    lgtk
+    lgvk
+    lgvn
+    lgvp
+    lgvsig
+    lgwk
+    lgwn
+    lgwp
+    lgwsig
+    lgxk
+    lgxn
+    lgxp
+    lgxsig
 
 M26 dd_rs.push: visit src[n] before src[0]
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  27 rows
+    lg1k
+    lg1sig
+    lg2sig
+    lg5k
+    lg5sig
+    lg6sig
+    lg9k
+    lg9sig
+    lgak
+    lgasig
+    lgbk
+    lgbsig
+    lgcsig
+    lgdsig
+    lgesig
+    lgfsig
+    lggsig
+    lgmsig
+    lgqk
+    lgqsig
+    lgrk
+    lgrsig
+    lgsk
+    lgssig
+    lgtk
+    lgtsig
+    upsig
 
 M27 dd_rs.has: never remember a node (cone visits every edge)
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  7 rows
+    lgqk
+    lgqsig
+    lgrk
+    lgrsig
+    lgssig
+    lgtk
+    lgtsig
 
 M28 l2i.roots: root the cone at the low word only
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  34 rows
+    lg1sig
+    lg2k
+    lg2sig
+    lg3k
+    lg3sig
+    lg4k
+    lg4sig
+    lg5k
+    lg5sig
+    lg6k
+    lg6sig
+    lg8sig
+    lg9sig
+    lgasig
+    lgbk
+    lgbsig
+    lgcsig
+    lgdsig
+    lgesig
+    lgisig
+    lgjsig
+    lgksig
+    lglsig
+    lgmsig
+    lgok
+    lgosig
+    lgqk
+    lgqsig
+    lgrsig
+    lgvsig
+    lgxk
+    lgxsig
+    upk
+    upsig
 
 M29 l2i.gone: print `none` instead of naming the exception
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  1 rows
+    lgn
 
 M30 dd_eck: treat every node as a CONST
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : an annotated term (cannot infer)
 
 M31 dd_join.add: join with `-` instead of `,`
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  45 rows
+    lg1k
+    lg1sig
+    lg2k
+    lg2sig
+    lg3sig
+    lg4sig
+    lg5k
+    lg5sig
+    lg6k
+    lg6sig
+    lg7sig
+    lg8sig
+    lg9k
+    lg9sig
+    lgak
+    lgasig
+    lgbk
+    lgbsig
+    lgcsig
+    lgdsig
+    lgek
+    lgesig
+    lgfsig
+    lggsig
+    lghsig
+    lgisig
+    lgjsig
+    lgksig
+    lglsig
+    lgmsig
+    lgosig
+    lgqk
+    lgqsig
+    lgrk
+    lgrsig
+    lgsk
+    lgssig
+    lgtk
+    lgtsig
+    lgvsig
+    lgwsig
+    lgxk
+    lgxsig
+    upk
+    upsig
 
 M32 l2i.went: never call l2i (the refusal guard always fires)
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  132 rows
+    lg1
+    lg1k
+    lg1n
+    lg1p
+    lg1sig
+    lg2
+    lg2k
+    lg2n
+    lg2p
+    lg2sig
+    lg3
+    lg3k
+    lg3n
+    lg3p
+    lg3sig
+    lg4
+    lg4k
+    lg4n
+    lg4p
+    lg4sig
+    lg5
+    lg5k
+    lg5n
+    lg5p
+    lg5sig
+    lg6
+    lg6k
+    lg6n
+    lg6p
+    lg6sig
+    lg7
+    lg7k
+    lg7sig
+    lg8
+    lg8k
+    lg8n
+    lg8p
+    lg8sig
+    lg9
+    lg9k
+    lg9n
+    lg9p
+    lg9sig
+    lga
+    lgak
+    lgan
+    lgap
+    lgasig
+    lgb
+    lgbk
+    lgbn
+    lgbp
+    lgbsig
+    lgc
+    lgck
+    lgcn
+    lgcp
+    lgcsig
+    lgd
+    lgdk
+    lgdn
+    lgdp
+    lgdsig
+    lge
+    lgek
+    lgen
+    lgep
+    lgesig
+    lgf
+    lgfk
+    lgfn
+    lgfsig
+    lgg
+    lggk
+    lggn
+    lggsig
+    lgh
+    lghk
+    lghn
+    lghsig
+    lgi
+    lgik
+    lgin
+    lgip
+    lgisig
+    lgj
+    lgjk
+    lgjn
+    lgjp
+    lgjsig
+    lgk
+    lgkk
+    lgkn
+    lgkp
+    lgksig
+    lgl
+    lglk
+    lgln
+    lglp
+    lglsig
+    lgm
+    lgmk
+    lgmn
+    lgmp
+    lgmsig
+    lgn
+    lgo
+    lgok
+    lgop
+    lgosig
+    lgq
+    lgqk
+    lgqn
+    lgqp
+    lgqsig
+    lgr
+    lgrk
+    lgrn
+    lgrp
+    lgrsig
+    lgs
+    lgsk
+    lgsn
+    lgssig
+    lgt
+    lgtk
+    lgtn
+    lgtsig
+    lgu
+    lgvn
+    lgwn
+    upn
 
 M33 l2i_define.size2: stop doubling the size
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M34 f2f.up.tail: always take the non-fnuz arm
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M35 rne.sel: refuse every shift
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  SAME  0 rows   << 1 attempt(s)
 
 M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
+  MOVED  6 rows
+    lgs
+    lgsk
+    lgssig
+    lgt
+    lgtk
+    lgtsig
 
 
-=== ROWS NO MUTATION MOVED (172 of 172 baseline rows) ===
+=== ROWS NO MUTATION MOVED (22 of 172 baseline rows) ===
   c0
   c1
   c2
@@ -143,156 +612,6 @@ M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
   f2fdt8
   l2idt0
   l2idt1
-  lg1
-  lg1k
-  lg1n
-  lg1p
-  lg1sig
-  lg2
-  lg2k
-  lg2n
-  lg2p
-  lg2sig
-  lg3
-  lg3k
-  lg3n
-  lg3p
-  lg3sig
-  lg4
-  lg4k
-  lg4n
-  lg4p
-  lg4sig
-  lg5
-  lg5k
-  lg5n
-  lg5p
-  lg5sig
-  lg6
-  lg6k
-  lg6n
-  lg6p
-  lg6sig
-  lg7
-  lg7k
-  lg7n
-  lg7sig
-  lg8
-  lg8k
-  lg8n
-  lg8p
-  lg8sig
-  lg9
-  lg9k
-  lg9n
-  lg9p
-  lg9sig
-  lga
-  lgak
-  lgan
-  lgap
-  lgasig
-  lgb
-  lgbk
-  lgbn
-  lgbp
-  lgbsig
-  lgc
-  lgck
-  lgcn
-  lgcp
-  lgcsig
-  lgd
-  lgdk
-  lgdn
-  lgdp
-  lgdsig
-  lge
-  lgek
-  lgen
-  lgep
-  lgesig
-  lgf
-  lgfk
-  lgfn
-  lgfsig
-  lgg
-  lggk
-  lggn
-  lggsig
-  lgh
-  lghk
-  lghn
-  lghsig
-  lgi
-  lgik
-  lgin
-  lgip
-  lgisig
-  lgj
-  lgjk
-  lgjn
-  lgjp
-  lgjsig
-  lgk
-  lgkk
-  lgkn
-  lgkp
-  lgksig
-  lgl
-  lglk
-  lgln
-  lglp
-  lglsig
-  lgm
-  lgmk
-  lgmn
-  lgmp
-  lgmsig
-  lgn
   lgnn
-  lgo
-  lgok
   lgon
-  lgop
-  lgosig
-  lgq
-  lgqk
-  lgqn
-  lgqp
-  lgqsig
-  lgr
-  lgrk
-  lgrn
-  lgrp
-  lgrsig
-  lgs
-  lgsk
-  lgsn
-  lgssig
-  lgt
-  lgtk
-  lgtn
-  lgtsig
-  lgu
-  lgun
   lgv
-  lgvk
-  lgvn
-  lgvp
-  lgvsig
-  lgw
-  lgwk
-  lgwn
-  lgwp
-  lgwsig
-  lgx
-  lgxk
-  lgxn
-  lgxp
-  lgxsig
-  up
-  upk
-  upn
-  upp
-  upsig

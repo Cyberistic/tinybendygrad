@@ -4178,10 +4178,18 @@ def Rng.ok(r: Rng) -> Bool:
   match r:
     case Rng{i, rs, ok}: ok
 
-# `ret[key] = None` on a key that is already there is a NO-OP, so the insert is
-# `if key not in xs`.
-def set_add(+xs: List<&2, U32>, +y: U32) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, mem_u32(xs, y), xs, List.append(&2, U32, xs, [y]))
+# `ret.update(other)`: the elements of `ys` that `xs` does not already hold, APPENDED, so
+# the result is a set in FIRST-OCCURRENCE order -- which is what a Python dict's insertion
+# order is and what `dict.update` preserves. The membership test is against the
+# ACCUMULATOR and not against `xs`, and that is the difference between a set and a
+# multiset: `ADD(r, r)` names one range twice and the answer must name it once.
+def set_union.go(xs: List<&2, U32>, ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ys:
+    case Nil{}: acc
+    case +y <> t: set_union.go(xs, t, Bool.pick(List<&2, U32>, mem_u32(acc, y), acc, List.append(&2, U32, acc, [y])))
+
+def set_union(+xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:
+  set_union.go(xs, ys, xs)
 
 # `ret.pop(s, None)` for every `s` in `ds`, which KEEPS the order of what survives --
 # a Python dict's order is its insertion order and a pop does not reorder.
@@ -4213,17 +4221,17 @@ def RTable.get.go(+i: U32, rs: List<&2, Rng>, acc: Rng) -> Rng:
 
 # "no row yet" and "the fold does not know" are the SAME row, which is why the default
 # is `ok: False{}` and not an empty set: an absent row must not read as "no ranges".
-def RTable.get(t: RTable, i: U32) -> Rng:
+def RTable.get(t: RTable, +i: U32) -> Rng:
   RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
 
 # `UOp.ranges` -- ops.py:497. The ONLY difference from `_ranges` is this prepend, and a
 # prepend is why the union cannot use the raw table rows: `for s in self.src` reads
 # `s.ranges`, which for a RANGE src is the src ITSELF.
-def rng_of(+ar: O.Arena, t: RTable, i: U32) -> Rng:
-  rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i))
-
-def rng_of.put(i: U32, self: Bool, r: Rng) -> Rng:
+def rng_of.put(i: U32, self: Bool, +r: Rng) -> Rng:
   Rng{i, Bool.pick(List<&2, U32>, self, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}
+
+def rng_of(+ar: O.Arena, t: RTable, +i: U32) -> Rng:
+  rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i))
 
 # `for s in self.src: ret.update(s.ranges)` -- the union, in src order, and the flag
 # rides along because `dict.update` of a MISSING src is a silent no-op in Python and
@@ -4231,7 +4239,7 @@ def rng_of.put(i: U32, self: Bool, r: Rng) -> Rng:
 # that hands back two values needs a destructuring `=`, and Bend reads that as a
 # scrutinee (see the error this spelling produced).
 def rng_union.put(+acc: Rng, +s: Rng) -> Rng:
-  Rng{Rng.i(acc), Bool.pick(List<&2, U32>, Rng.ok(s), set_add(Rng.rs(acc), Rng.rs(s)), Rng.rs(acc)),
+  Rng{Rng.i(acc), Bool.pick(List<&2, U32>, Rng.ok(s), set_union(Rng.rs(acc), Rng.rs(s)), Rng.rs(acc)),
       Bool.and(Rng.ok(acc), Rng.ok(s))}
 
 def rng_union.go(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, +acc: Rng) -> Rng:
@@ -4243,36 +4251,66 @@ def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32) -> Rng:
   rng_union.go(ar, t, ss, Rng{i, Nil{}, True{}})
 
 # the `for er in self.ended_ranges` pops, as ONE delete set: a pop is idempotent, so
-# subtracting the union of the delete sets is the same dict Python reaches by popping
-# them one at a time, and it is one walk instead of one per ended range.
-def rng_del.put(+acc: Rng, +d: Rng) -> Rng:
-  Rng{Rng.i(acc), set_del(Rng.rs(acc), Rng.rs(d), Nil{}), Bool.and(Rng.ok(acc), Rng.ok(d))}
+# the union of the per-`er` delete sets is the same dict Python reaches by popping them
+# one at a time, and it is one walk instead of one per ended range.
+#
+# `Del` is its own record and not an `Rng` because a delete set has no node index, and
+# because it is what carries the refusal out of a `Maybe`: a `Data` record can hold the
+# two answers side by side where a `Maybe` parameter cannot be read twice.
+type Del is Data:
+  Del{ds: List<&2, U32>, ok: Bool}
+
+def Del.ds(d: Del) -> List<&2, U32>:
+  match d:
+    case Del{ds, ok}: ds
+
+def Del.ok(d: Del) -> Bool:
+  match d:
+    case Del{ds, ok}: ok
+
+def del_un(+a: Del, +b: Del) -> Del:
+  Del{set_union(Del.ds(a), Del.ds(b)), Bool.and(Del.ok(a), Del.ok(b))}
+
+# `er`'s own live set, as a delete set. `RTable.get` already answers `ok: False{}` for
+# an absent row, so the refusal needs no arm of its own.
+def del_of.row(+r: Rng) -> Del:
+  Del{Rng.rs(r), Rng.ok(r)}
 
 # THE ONE CONDITIONAL, and it is the whole `if er.op is Ops.RANGE ... else ...`: a RANGE
 # `er` deletes ITSELF and anything else deletes its own live set. `Bool.pick` is strict,
 # so the `RTable.get` runs on both arms -- it is a search over a table this sweep has
 # already filled, and `er < i` is the sweep's whole ordering argument.
-def rng_del.step(+ar: O.Arena, +t: RTable, er: U32, +acc: Rng) -> Rng:
-  rng_del.put(acc, Bool.pick(Rng, is_range.of(O.Arena.op(ar, er)), Rng{er, [er], True{}}, RTable.get(t, er)))
+def del_of.er(+ar: O.Arena, +t: RTable, +er: U32) -> Del:
+  Bool.pick(Del, is_range.of(O.Arena.op(ar, er)), Del{[er], True{}}, del_of.row(RTable.get(t, er)))
 
-def rng_del.go(+ar: O.Arena, +t: RTable, ers: List<&2, U32>, +acc: Rng) -> Rng:
+def rng_dels.go(+ar: O.Arena, +t: RTable, ers: List<&2, U32>, +acc: Del) -> Del:
   match ers:
     case Nil{}: acc
-    case er <> tl: rng_del.go(ar, t, tl, rng_del.step(ar, t, er, acc))
+    case +er <> tl: rng_dels.go(ar, t, tl, del_un(acc, del_of.er(ar, t, er)))
 
-# ONE NODE. The `Maybe` from `fold.ended` is a `Maybe` PARAMETER, which cannot be `+`,
-# so the "is there an `ended` list" question is a LAMBDA BINDER and not a `match` on a
-# call -- the same two rules the header's `Perm` block records composing.
-def rng_of.node(+ar: O.Arena, +main: Table, +t: RTable, i: U32) -> Rng:
-  Maybe.bind(&1, List<&2, U32>, Rng, fold.ended(ar, main, i), ended => rng_of.got(ar, t, i, ended))
+# "no `ended` list" and "an empty one" are the same delete set and differ only in the
+# flag, which is the whole of the `Derived`-field refusal this fold inherits.
+def rng_dels.m(ar: O.Arena, t: RTable, m: Maybe<&2, List<&2, U32>>) -> Del:
+  match m:
+    case Some{ers}: rng_dels.go(ar, t, ers, Del{Nil{}, True{}})
+    case None{}: Del{Nil{}, False{}}
 
-def rng_of.got(+ar: O.Arena, +t: RTable, i: U32, ended: List<&2, U32>) -> Rng:
-  rng_of.put(i, is_range.of(O.Arena.op(ar, i)),
-    rng_del.go(ar, t, ended, rng_union(ar, t, O.Arena.srcs(ar, i), i)))
+def rng_dels(+ar: O.Arena, +t: RTable, m: Maybe<&2, List<&2, U32>>) -> Del:
+  rng_dels.m(ar, t, m)
+
+def rng_del.put(+acc: Rng, +d: Del) -> Rng:
+  Rng{Rng.i(acc), set_del(Rng.rs(acc), Del.ds(d), Nil{}), Bool.and(Rng.ok(acc), Del.ok(d))}
+
+# ONE NODE: the union, the pops, and the `{self:None} |` prepend, in Python's order.
+def rng_of.got(+ar: O.Arena, +t: RTable, +i: U32, d: Del) -> Rng:
+  rng_del.put(rng_union(ar, t, O.Arena.srcs(ar, i), i), d)
+
+def rng_of.node(+ar: O.Arena, +main: Table, +t: RTable, +i: U32) -> Rng:
+  rng_of.got(ar, t, i, rng_dels(ar, t, fold.ended(ar, main, i)))
 
 # THE SWEEP. `k` is the arena INDEX and it is a parameter rather than `List.length`,
 # because the node list IS the index space: `Kahn.seed` numbers it the same way.
-def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, k: U32, +t: RTable) -> RTable:
+def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: RTable) -> RTable:
   match ns:
     case Nil{}: t
     case _ <> tl: rng_sweep.go(ar, main, tl, U32.add(k, 1), RTable.put(t, rng_of.node(ar, main, t, k)))
@@ -4408,18 +4446,28 @@ def rg_f_er() -> O.Found:
 # `CALL`'s ONE CONDITIONAL, twice: a CUSTOM_FUNCTION body ends nothing and a CONST body
 # ends every range in `src[1:]`. The two rows are one condition apart, so neither can be
 # right while the other is wrong.
+#
+# THE CALL CARRIES A NON-VOID `CallInfo`, and that is not decoration. `call_ds.go` is
+# `some_if(not dt is void, ...)`, so a VOID CALL is a node `dt_shape` does not answer,
+# and then `ended` is not in the table and the whole set is refused -- measured, not
+# assumed: both rows read ABSENT with an `ANone{}` arg. The two rows are about
+# `ended_of.call`'s conditional, so they need a node that exists in the table.
+def rg_call(ar: O.Arena, body: U32, a: U32, b: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsCALL{}, [body, a, b],
+    O.ACall{O.CallInfo{None{}, False{}, False{}, S.int32()}}, O.TNone{})
+
 def rg_f_call_cf() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
   +cf = rg_cf(O.Found.ar(r1))
-  O.UOp.new(O.Found.ar(cf), O.OpsCALL{}, [O.Found.i(cf), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+  rg_call(O.Found.ar(cf), O.Found.i(cf), O.Found.i(r0), O.Found.i(r1))
 
 def rg_f_call_c() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
-  O.UOp.new(O.Found.ar(r1), O.OpsCALL{}, [O.Found.i(c), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+  rg_call(O.Found.ar(r1), O.Found.i(c), O.Found.i(r0), O.Found.i(r1))
 
 # THE REFUSAL, and it is the divergence the header names: `STAGE` is a DEFERRED op in
 # `dt_shape`, so `ended_ranges` is not in the main table and neither is the set. CPython
@@ -5029,6 +5077,7 @@ def main() -> IO(Unit):
     i : Unit <- row("resh_reject", t_resh_reject())
     j : Unit <- row("resh_settle", t_resh_settle())
     k : Unit <- row("sized_order", t_sized_order())
+    im : Unit <- row("img_shape", t_img())
     # THE TWO CustomFunction ROWS, which DISAGREE with each other on purpose.
     cu : Unit <- row("cfun_void", t_cfun(S.void(), False{}))
     cv : Unit <- row("cfun_u64", t_cfun(S.uint64(), True{}))
@@ -5060,6 +5109,19 @@ def main() -> IO(Unit):
     mv_of("permlen", g_mv_permlen())
     mv_of("flip", g_mv_flip10())
     mv_of("fliplen", g_mv_fliplen())
+    # THE RANGES ROWS, in the oracle's order: `diff` of the two lanes is the test.
+    rng_of_row("none", rg_f_none())
+    rng_of_row("self", rg_f_self())
+    rng_of_row("two", rg_f_two())
+    rng_of_row("rev", rg_f_rev())
+    rng_of_row("dup", rg_f_dup())
+    rng_of_row("end", rg_f_end())
+    rng_of_row("after", rg_f_after())
+    rng_of_row("barrier", rg_f_barrier())
+    rng_of_row("er", rg_f_er())
+    rng_of_row("call_cf", rg_f_call_cf())
+    rng_of_row("call_c", rg_f_call_c())
+    rng_of_row("absent", rg_f_absent())
     lf_row("add_int32_3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
     lf_row("add_int32_-3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
     lf_row("add_int32_-3_-4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))

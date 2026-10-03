@@ -1,0 +1,54 @@
+# adapter            apple/metal-3
+# program            (A @ B) @ C, 2 launches, 5 buffers
+# steps performed    84  writes 3  dispatches 2
+# wrong-answer distances (max abs, must exceed 1.0):
+#   abad   24.343750
+#   atc    25.796875
+#   bada   22.453125
+#   ctb    30.031250
+#   self   22.843750
+#   zero   21.343750
+
+mm_e2e_all_ops_armed=True
+mm_e2e_answer_nonzero=True
+mm_e2e_answer_not_an_input=True
+mm_e2e_buffers=6
+mm_e2e_dispatches=2
+mm_e2e_finish_equals_submit=3
+mm_e2e_gpu_arch=metal-3
+mm_e2e_gpu_present=True
+mm_e2e_in_bits_equal=True
+mm_e2e_init_once=[True, True, True, True, True, True, True, True]
+mm_e2e_inputs_distinct=True
+mm_e2e_l0_bg_bufs=['100', '101', '102']
+mm_e2e_l0_bg_ids=0,1,2,3
+mm_e2e_l0_bg_sizes=4,256,256,256
+mm_e2e_l0_nowait=True
+mm_e2e_l0_uniform_not_a_buffer=True
+mm_e2e_l1_bg_bufs=['103', '100', '104']
+mm_e2e_l1_bg_ids=0,1,2,3
+mm_e2e_l1_bg_sizes=4,256,256,256
+mm_e2e_l1_nowait=True
+mm_e2e_l1_uniform_not_a_buffer=True
+mm_e2e_layout=0,1,1,2,2,2,3,2
+mm_e2e_map_ops=[2, 1]
+mm_e2e_mapped=1
+mm_e2e_one_copy=1
+mm_e2e_one_object_per_launch=[True, True, True, True, True, True, True, True, True, True]
+mm_e2e_out_bits_equal=True
+mm_e2e_out_finite=True
+mm_e2e_out_words=64
+mm_e2e_readback_encoder_extra=1
+mm_e2e_scopes_balanced=True
+mm_e2e_steps=84
+mm_e2e_uniforms_per_launch=2
+mm_e2e_upload_count=3
+mm_e2e_uploads_eq_fixture=True
+mm_e2e_writes=3
+mm_power_abad=True
+mm_power_atc=True
+mm_power_bada=True
+mm_power_ctb=True
+mm_power_self=True
+mm_power_zero=True
+mm_e2e_failed=0

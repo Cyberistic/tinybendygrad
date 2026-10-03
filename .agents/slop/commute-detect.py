@@ -121,6 +121,20 @@ class Frozen:
     def src_of(self, rel: str) -> pathlib.Path:
         return self.dst / rel
 
+    def substrate_stable(self) -> list[str]:
+        """WHICH live `.bend` files changed while this tool was running.
+
+        agent-core records `fold.bend` and `movement.bend` going transiently
+        uncompilable from a concurrent agent and one baseline silently
+        corrupted, so a run whose substrate moved is DISCARDED, not reported.
+        """
+        moved = []
+        for p in sorted(self.src.rglob("*.bend")):
+            q = self.dst / p.relative_to(self.src)
+            if not q.exists() or md5(p) != md5(q):
+                moved.append(str(p.relative_to(self.src)))
+        return moved
+
     def bend(self, rel: str, tries: int = 6) -> str:
         """Run a port. A ZERO-ROW run is the bend stack overflow, not a result."""
         last = ""
@@ -299,6 +313,16 @@ def main(argv: list[str]) -> int:
         print("-" * 96)
         print(f"{'TOTAL':22} {tot:>6} {sum(r[2] for r in report):>6} {mv:>7} "
               f"{mv/tot*100:>6.1f}%")
+    moved = fr.substrate_stable()
+    print()
+    if moved:
+        print("SUBSTRATE MOVED -- THESE NUMBERS ARE ABOUT A TREE THAT NO LONGER EXISTS.")
+        print("Another agent is mid-edit in:")
+        for x in moved:
+            print(f"      {x}")
+        print("Re-run when the tree settles. This run is NOT a result.")
+    else:
+        print("substrate check: no live .bend file changed during this run")
     print()
     for nm, nb, ns, nmv, hit, blind in report:
         print(f"--- {nm}: {len(blind)} rows no order mutation moved ({len(blind)*100/nb:.0f}% of the port)")

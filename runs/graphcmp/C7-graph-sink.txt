@@ -1,0 +1,6 @@
+emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  bend attempt 1: 0 rows, rc=1, stderr tail: h for a forward sweep IS index order, so the search stops at the row. 4209>| def RTable.get.go(i: U32, rs: List<&2, Rng>, acc: Rng) -> Rng: | ^ 4210 | match rs:
+  bend attempt 2: 0 rows, rc=1, stderr tail: : an absent row must not read as "no ranges". 4216>| def RTable.get(t: RTable, i: U32) -> Rng: | ^ 4217 | RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
+  bend attempt 3: 0 rows, rc=1, stderr tail: : an absent row must not read as "no ranges". 4216>| def RTable.get(t: RTable, i: U32) -> Rng: | ^ 4217 | RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
+  bend attempt 4: 0 rows, rc=1, stderr tail: : an absent row must not read as "no ranges". 4216>| def RTable.get(t: RTable, i: U32) -> Rng: | ^ 4217 | RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
+  bend attempt 5: 0 rows, rc=1, stderr tail: on: rng_of 4222 | def rng_of(+ar: O.Arena, t: RTable, i: U32) -> Rng: 4223>| rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i)) | ^^^^^^^^^^ 4224 |

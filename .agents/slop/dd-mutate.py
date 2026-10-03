@@ -104,7 +104,7 @@ def build_mirror():
     tag = sha1(src)[:12]
     top = os.path.join(SCRATCH, "dd-mut-" + tag)
     if not os.path.isdir(os.path.join(top, "tinybendygrad")):
-        archive = subprocess.run(["git", "-C", ROOT, "archive", "HEAD", "tinybendygrad"],
+        archive = subprocess.run(["git", "-C", ROOT, "archive", TREE_REV, "tinybendygrad"],
                                  stdout=subprocess.PIPE, check=True).stdout
         base = os.path.join(SCRATCH, "dd-mut-base-" + tag)
         shutil.rmtree(base, ignore_errors=True)
@@ -119,9 +119,6 @@ def build_mirror():
         sys.exit("RULE I: the mirror does not reproduce the frozen snapshot")
     if os.path.realpath(tgt) == os.path.realpath(LIVE):
         sys.exit("RULE J: refusing to run -- the mirror IS the live file")
-    # The dependencies dtype.bend imports are the LIVE ones only insofar as they
-    # are at HEAD; if a sibling is dirty the mirror still gets HEAD's copy, and
-    # the C00 control below is what catches the pair being inconsistent.
     return top, tgt, sha1(src)
 
 
@@ -298,6 +295,14 @@ PLAN = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)] + M
 # To retarget: freeze the file, record its sha1 here, and re-run the baseline.
 FROZEN = os.path.join(HERE, "dd-mutations.frozen.bend")
 FROZEN_SHA1 = "73b0e1e7fd6652c5fc7b49323a1956d44545f230"
+
+# The TREE the snapshot is dropped into, pinned for the same reason.  Measured:
+# 097aadb08 and e17d3f7dd both reproduce the 172-row baseline BYTE-IDENTICALLY
+# with this dtype.bend, and eb16fa874 prints ZERO lines -- HEAD is another unit's
+# and it was mid-edit.  A mirror built from HEAD is therefore a moving target
+# even when the target file is frozen, so the tree is pinned too and
+# `probe_substrate` refuses the run if the pair stops agreeing.
+TREE_REV = "e17d3f7dd48cf84c7a101b3d6aee11c0284a165e"
 
 
 def edit(src, old, new):

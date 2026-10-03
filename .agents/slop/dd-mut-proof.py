@@ -41,14 +41,26 @@ def shape(t):
 
 def gate(tgt, want):
     """RULE E/H from dd-mutate.py: shape is the guard, exit code is not, and an
-    empty print is retried rather than believed."""
-    out = os.path.join(SCRATCH, "ddproof.txt")
+    empty print is retried rather than believed.
+
+    A COMPILE REFUSAL IS ALSO AN EMPTY PRINT here: bend prints its error on
+    stderr and nothing on stdout.  So an empty stdout is ambiguous between "stack
+    overflow" and "bend refused this edit", and the first 24 attempts here burned
+    on the second kind.  It is not ambiguous once stderr is read: a refusal names
+    `Error:` and the overflow does not.
+    """
+    out = os.path.join(SCRATCH, "ddproof-%d.txt" % os.getpid())
     for _ in range(24):
         with open(out, "w") as fh:
-            subprocess.run([BEND, tgt], stdout=fh, stderr=subprocess.PIPE)
+            p = subprocess.run([BEND, tgt], stdout=fh, stderr=subprocess.PIPE)
         text = open(out).read()
         if text:
             return text
+        err = (p.stderr or b"").decode()
+        if "Error" in err or "expected" in err:
+            # bend refused the edit.  Return it as stdout so the classifier below
+            # sees it, and mark it so a refusal is never read as THEOREM.
+            return err
     return ""
 
 
@@ -69,6 +81,8 @@ def main():
         sys.exit("the unmutated mirror does not reproduce the baseline shape; "
                  "no proof here is evidence")
     print("baseline reproduced: %d lines\n" % len(base_txt.splitlines()))
+    print("A `REACHABLE-WAS` line means the zero needs a FIXTURE, not a defence.\n"
+          "A `THEOREM` line is the rename compiling AND the output matching.\n")
 
     for name in sys.argv[3:]:
         dead = "__unreachable_%s" % hashlib.sha1(name.encode()).hexdigest()[:8]
@@ -81,15 +95,21 @@ def main():
         open(tgt, "w").write(src.replace(old, "def %s(" % dead, 1))
         got = gate(tgt, want)
         if not got:
-            sys.exit("bend printed nothing in 24 attempts for %s" % name)
-        if "not defined" in got or "undefined" in got or "expected : a defined name" in got:
-            verdict = "REACHABLE-WAS -- bend refuses the rename, so a caller exists"
+            sys.exit("bend printed nothing on stdout AND nothing on stderr in 24 "
+                     "attempts for %s -- that is the stack overflow, and it is "
+                     "NOT a proof either way." % name)
+        if "SOME PROOFS FAIL" in got and not base_txt.startswith("SOME PROOFS"):
+            # dtype.bend has 14 permanently-red laws, so the first line is expected.
+            # A refusal is anything past that.
+            verdict = "REACHABLE-WAS  -- bend REFUSED the rename:\n%s" % got[:300]
+        elif "expected : a defined name" in got or "not defined" in got:
+            verdict = "REACHABLE-WAS  -- bend names a missing def:\n%s" % got[:300]
         elif got == base_txt:
-            verdict = "THEOREM: UNREACHABLE -- rename compiled, output BYTE-IDENTICAL"
+            verdict = "THEOREM        -- rename compiled, output BYTE-IDENTICAL"
         elif shape(got) != want:
-            verdict = "THEOREM-ish: rename compiled and the output CHANGED (%r)" % (shape(got),)
+            verdict = "NOT A THEOREM  -- rename compiled and the output changed shape"
         else:
-            verdict = "ROWS CHANGED -- rename compiled and rows differ"
+            verdict = "NOT A THEOREM  -- rename compiled and rows differ"
         print("%-24s %s" % (name, verdict))
         open(tgt, "w").write(src)
 

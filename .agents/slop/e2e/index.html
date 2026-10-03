@@ -6,47 +6,120 @@
 // the five `Cs` values `tinybendygrad/runtime/webgpu_call.bend` built, and the
 // driver performs them against `navigator.gpu` in that order.
 //
-// The adapter is asked for SEPARATELY, before the walk, because `walk` does not
-// return it and "a device with a name" is not the claim -- the claim is the
-// `out_u32` row, which is what the GPU computed.
 // `walk` is NOT a named export of `webgpu_call.js` -- MEASURED, and the page
 // caught it: `import { walk } from "./webgpu_call.js"` throws "does not provide an
 // export named 'walk'", because the def is `async function walk` and reaches JS
 // only through the module's DEFAULT object. `toJS` is a real named export.
+//
+// ---------------------------------------------------------------------------
+// THE ONE THING THE PAGE ADDS, and it is a real constraint on the port's JS lane
+// rather than a convenience.
+//
+// `bend -o x.mjs` emits a constructor as `{$: "<Name>"}` when the constructor is
+// declared in the file being emitted, and as `{$: "<import path>.<Name>"}` when it
+// is only IMPORTED. MEASURED on this machine: `webgpu_call.mjs` contains 59 bare
+// tags (`CreateBuffer`, `Dispatch`, ...) and 23 qualified ones (`../helpers.Ctx`),
+// because `webgpu_call.bend` declares the `Op` constructors itself. A program that
+// BUILDS those ops from another file -- which is exactly what this one does --
+// gets `{$: "../../tinybendygrad/runtime/webgpu_call.CreateBuffer"}`, and
+// `webgpu_call.js`'s `switch (op.$)` matches none of its arms. The first run died
+// at "step 0/84 ... unhandled op".
+//
+// So the tag is stripped of its qualifier here, at the boundary, and four things
+// make that safe rather than convenient:
+//   1. ONLY the qualifier is removed -- everything up to the LAST dot -- and a Bend
+//      constructor name is a single identifier, so the last dot is always the
+//      separator. MEASURED, and the qualifier is not always a path: it is
+//      `webgpu_call.Instance` for `webgpu_call.bend`'s own constructors and
+//      `../helpers.Ctx` for `helpers.bend`'s, so "strip up to the first slash" is
+//      the wrong rule and was an earlier version of this page's bug;
+//   2. the strip must be INJECTIVE over the raw tags, so two distinct tags can
+//      never collapse onto one name and hide an op;
+//   3. every stripped name is CHECKED AGAINST THE DRIVER'S OWN SOURCE, fetched
+//      from the served file, so an op with no arm is a hard failure rather than a
+//      silently skipped step; and
+//   4. the raw tags are reported in the artifact, so a reader can see exactly
+//      what Bend emitted and what was removed.
 import M from "./e2e_mm.mjs";
 import WC, { toJS, M as WCM } from "./webgpu_call.js";
 
+const rawTags = new Set();
+const bare = (t) => t.slice(t.lastIndexOf(".") + 1);
+const strip = (v) => {
+  if (Array.isArray(v)) return v.map(strip);
+  if (v === null || typeof v !== "object") return v;
+  const o = {};
+  for (const [k, x] of Object.entries(v)) {
+    if (k === "$" && typeof x === "string" && x !== bare(x)) { rawTags.add(x); o[k] = bare(x); }
+    else o[k] = strip(x);
+  }
+  return o;
+};
+
 const out = {};
 try {
+  const driverSrc = await (await fetch("./webgpu_call.js")).text();
   const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
   out.gpu_present = !!adapter;
   out.gpu_vendor = adapter.info?.vendor ?? null;
   out.gpu_architecture = adapter.info?.architecture ?? null;
 
-  const css = toJS(M["mm_run"]());
+  const css = strip(toJS(M["mm_run"]()));
   out.cs_count = css.length;
   // `Cs.len` is NOT in `e2e_mm.mjs`: the `-o` emitter exports only the defs the
-  // FILE defines, so an IMPORTED def comes from the import's own module. That
-  // is `webgpu_call.js`'s `M`, which is the fresh emit of
-  // `tinybendygrad/runtime/webgpu_call.bend`.
+  // FILE defines, so an IMPORTED def comes from the import's own module -- which
+  // is `webgpu_call.js`'s `M`, the fresh emit of `webgpu_call.bend`.
   out.cs_lens = css.map((c) => WCM["Cs.len"](c));
+
+  // EVERY OP MUST HAVE AN ARM, checked against the driver's own text.
+  // `Cs.order` answers a CONS LIST, not an array -- the same asymmetry
+  // `webgpu_call.js`'s own header spells out -- so it goes through `toJS`.
+  const ops = css.flatMap((c) => toJS(WCM["Cs.order"](c))).map((s) => s.op);
+  out.ops = ops.length;
+  // THE STRIP MUST BE INJECTIVE. If two distinct tags collapsed onto one name then
+  // an op could be standing in for another, and the arm check below would pass on
+  // the survivor. This is what makes the normalisation a bijection and not a guess.
+  const byName = new Map();
+  for (const t of rawTags) {
+    const n = bare(t);
+    if (byName.has(n) && byName.get(n) !== t) throw new Error(`tag collision: ${byName.get(n)} and ${t} both -> ${n}`);
+    byName.set(n, t);
+  }
+  out.tag_map = Object.fromEntries([...rawTags].sort().map((t) => [bare(t), t]));
+  out.op_names = [...new Set(ops.map((o) => o.$))];
+  const armless = out.op_names.filter((n) => !driverSrc.includes(`case "${n}":`));
+  if (armless.length) throw new Error("ops with no arm in webgpu_call.js: " + armless.join(","));
+  out.ops_all_armed = true;
 
   const res = await WC.walk(css, new Map());
   out.performed = res.performed;
   out.steps = res.steps;
+  out.out_bytes = res.range ? [...new Uint8Array(res.range)] : null;
   out.writes = res.performed.filter((n) => n === "WriteBuffer").length;
   out.dispatches = res.performed.filter((n) => n === "Dispatch").length;
   out.mapped = res.performed.filter((n) => n === "MappedRange").length;
   out.buffers = res.performed.filter((n) => n === "CreateBuffer").length;
+  out.submits = res.performed.filter((n) => n === "Submit").length;
+  out.raw_tags = [...rawTags].sort();
   out.range_bytes = res.range ? res.range.byteLength : 0;
   // u32 LITTLE-ENDIAN bit patterns, the same words the oracle carries. NOT
   // decimals: a printed float would hide a 1-ulp difference behind a rounding.
   out.out_u32 = res.range ? [...new Uint32Array(res.range)] : null;
-  out.out_f32 = res.range ? [...new Float32Array(res.range)].map((v) => Math.fround(v)) : null;
+
+  // THE SECOND WALK, which maps an UPLOADED INPUT instead of the answer. If its
+  // bytes are exactly the bytes that were written, the buffers held what CPython
+  // held and the answer's difference is arithmetic; if not, the difference is the
+  // data. One number cannot tell those apart, and claiming "FMA" without this row
+  // would be a story.
+  const inCss = strip(toJS(M["mm_run_in"]()));
+  const inRes = await WC.walk(inCss, new Map());
+  out.in_writes = inRes.performed.filter((n) => n === "WriteBuffer").length;
+  out.in_bytes = inRes.range ? [...new Uint8Array(inRes.range)] : null;
   out.ok = true;
 } catch (e) {
   out.ok = false;
   out.error = String(e && e.stack ? e.stack : e).slice(0, 2000);
+  out.raw_tags = [...rawTags].sort();
 }
 document.getElementById("o").textContent = JSON.stringify(out);
 document.title = "done";

@@ -16161,3 +16161,334 @@ used in more than one arm of a `Bool.pick` chain needs `+`, exactly as it would 
 expression.** The error names the binder twice and points at the signature, which is at least
 honest, but it does not say "you may only run one of these".
 
+
+---
+
+## APPENDED 2026-10-03, rebase-gate recording unit. Numbering continues from rule 31 at POSITION 15944 (the `--cached` rule above); these are 32-37. Cite POSITIONS, not numbers -- numbers have collided three times in this file already.
+
+### 32. "COMPARED CLEAN BUT NOT RECORDED" AND "NOBODY COMPARED" MUST NOT SHARE A STATE NAME. MEASURED: 46 OF 50 TARGETS.
+
+`rebase-gate.py` had four states, and the one that was MISSING was the one the whole baseline
+question turns on. Its `verdict()` reached "every lane pair DID compare and DID agree, and no
+baseline exists" and returned **`NOT-STARTED`** -- the same answer as "no oracle wired in
+`BASE_ORACLES` -- nothing can be claimed". A full run therefore printed `NOT-STARTED=46` next
+to `UNCHANGED=1`, and a reader could not tell which of the two readings was true. Both were: 46
+ports had just compared clean and were unrecorded; 1 had a recording, for a port whose oracle
+is BROKEN BY CONSTRUCTION and whose 225 bend rows share ZERO row names with it.
+
+The state is now `AGREE-UNRECORDED`, and it is drawn by exactly one question: **did this run
+compare anything?** It is reachable only on the path where all four guards passed and the
+baseline is merely absent -- never on a dead lane, an empty lane, an incomparable pair, a
+disagreement, or a missing oracle. So the never-wired shapes stay `NOT-STARTED`, and
+`never_wired()` is extracted from `main()` specifically so the selftest can DRIVE that
+distinction rather than assume it.
+
+**Generalise: a state that cannot say WHICH of two very different situations it is in cannot
+drive a decision about what to do next.** Here the next action differs completely -- record
+versely go write an oracle -- and the merged state made the second invisible.
+
+### 33. `baseline_for()` NEEDS A THIRD ANSWER, NOT A BETTER MESSAGE: "ABSENT" AND "UNREADABLE" ARE DIFFERENT CLAIMS.
+
+Adding `AGREE-UNRECORDED` exposed a defect one layer down. `baseline_for()` returned
+`(rows, hunks, complaint)` and both "the document is intact and has no entry for this port" and
+"the document is not a baseline at all" returned `rows=None`. Mapping `None` to
+`AGREE-UNRECORDED` then described a **MALFORMED** `baseline.json` as *compared clean,
+nothing recorded* -- a claim no run supports, and the most believable one available.
+
+So `baseline_for()` returns a fourth value, `readable`, and `readable=False` keeps the loud
+`NOT-STARTED` + MALFORMED shape it always had. It is a returned boolean and not a function of
+the complaint TEXT: deriving a contract from a string is a string compare wearing a
+disguise, and the string is prose that someone will reword.
+
+**Measured cost of getting the fixture wrong:** the control was first written with
+`{"lanes": {}}`, which IS a readable document with no entry -- i.e. exactly the
+`AGREE-UNRECORDED` case -- so it tested the wrong branch while looking like it tested this one,
+and printed a convincing failure about a defect that was not there.
+
+### 34. A MEASUREMENT INSTRUMENT THAT RAN ONCE SHIPPED TWO SELF-INFLICTED FALSE POSITIVES, AND BOTH WERE "STABLE".
+
+`rebase-stability.py` decides which lanes may be recorded. Its first draft applied three of
+GUARD 4's four guards and reported `dead_lanes` **without using them**. Two consequences,
+both measured on the live tree, and both would have written a baseline that could not report
+anything true:
+
+  * `tinybendygrad/dtype.bend` measured as **stable across 2 runs** on two identical EMPTY row
+    sets. Its oracle `dtype_tables.py` EXITS 0 printing TSV, so `rows()` finds no `=`. The
+    instrument rated the ABSENCE of output as its stability, for the one port whose entire
+    purpose is to be BROKEN.
+  * `tinybendygrad/renderer/cstyle.bend` measured as recordable with **ZERO shared row names**,
+    because the draft checked *disagreements* and not *comparability*. Zero disagreements over
+    zero shared rows is a vacuous truth, and it is the precise bug this project has paid for
+    seven times. `rebase-gate.py` had been describing that oracle as "exits 1 AND shares 0 of
+    225 row names"; measured, it now exits 0 and still shares 0 -- so the comment was stale AND
+    the instrument agreed with the stale part.
+
+**Two runs agreeing is a statement about the two runs.** It says nothing about whether anything
+was compared, whether either run finished, or whether a lane died. An instrument that checks
+stability must ALSO check non-emptiness, run-completion, and comparability, or "stable" is a
+statement about two empty sets. And the two-run test alone is necessary and not sufficient:
+`codegen/decomp/dtype.bend` was byte-identical across both runs on one lane and still had **13
+rows differ on the interpreted lane** and **1 shared row that DISAGREES in both runs**.
+
+### 35. A BASELINE IS A CLAIM THAT THE PORT AND CPYTHON AGREE. RECORDING A RED LAUNDERS IT.
+
+The recording precondition is GUARD 4 restated as a rule about what may be written: **zero
+disagreements on every shared pair, and every pair must share at least one name.** Without it,
+`--record` pointed at a healthy-looking tree writes a baseline for a port that is red, and the
+next run reads `UNCHANGED` off it.
+
+The control that proves it is the interesting part, and its result was STRONGER than the
+assertion first written. Driving `record_stable()` with an evidence file that CLAIMS a
+disagreeing port is `recordable`:
+
+  * the claim is REFUSED, naming the disagreeing rows (`REFUSED ... 2 shared row(s) DISAGREE`);
+  * a claim refused for a NON-red reason (`interpreted != native`, i.e. a partial bend run) is
+    refused too;
+  * gated against the resulting document, the refused RED port reads **`BROKEN`** -- not
+    `AGREE-UNRECORDED`, because GUARD 4 is baseline-free and runs ahead of the baseline
+    shortcut. So refusing to record does not merely leave a lane un-recorded; it leaves it RED
+    and NAMED. That is the requirement stated as a test.
+
+Also asserted there, because it is the tempting half of the same mistake: a port already in
+`baseline.json` that the evidence says nothing about is **LEFT ALONE**, not deleted. Deleting a
+pre-existing entry is how a recording quietly becomes a rewrite.
+
+### 36. A RECORDED ROW THAT IS A PROPERTY OF THE MACHINE OR THE INTERPRETER IS A TRIPWIRE WIRED TO THE ENVIRONMENT. MEASURED, NOT INFERRED.
+
+Two-lane stability does not make a row safe to record, because GUARD 1 is an ABSOLUTE
+comparison: a recorded row that moves for any reason other than a port change produces a false
+`RE-PORTED`, which trains the reader to read `RE-PORTED` as noise. Two exclusions here are not
+judgement calls, they are readings of the measured evidence:
+
+    tinybendygrad/runtime/ops_python.bend
+      182 of the oracle's 241 rows are ungated. `ops-python-render-oracle.py:64` emits
+      `row('py_version_tuple', tuple(sys.version_info[:2]))` -- a LITERAL reading of the
+      interpreter that ran the oracle. Measured value in this tree: `(3, 12)`. `.venv` is 3.12
+      and PATH's `python3` is 3.14. Repoint the venv, or run the gate under the other
+      interpreter, and this row moves on a port nobody edited.
+
+    tinybendygrad/runtime/ops_cpu.bend
+      17 of 20 oracle rows are ungated HOST answers. Measured:
+      `findlib_m=/usr/lib/libm.dylib`,
+      `findlib_rt=/System/Library/Frameworks/System.framework/System`,
+      `findlib_objc=None`, and `# OSX=True WIN=False` straight from
+      `from tinygrad.helpers import OSX, WIN`. An OS point release moves them.
+
+And two more by VOLUME, both already documented in `rebase-gate.py`'s own comments:
+`runtime/ops_amd.bend` (601 ungated of 1010) and `renderer/amd/generate.bend` (53 ungated of
+779 -- `parse_xml` over the pinned ISA XML, `extract_pcode`'s dict, module-order tables).
+
+**So the rule is: a lane is recordable only if every lane row is byte-stable across two runs,
+every lane is non-empty and exited 0, every lane pair shares at least one name and agrees on
+all of them, `interpreted == native` within each run, AND no recorded row answers a question
+about the host.** The last clause cannot be derived from the measurement, so it is a named
+list whose entries are RE-CHECKED against the measured rows: an entry whose witness rows have
+gone is reported `STALE` rather than silently passing, because a hazard list that cannot notice
+it has stopped applying reads as a live finding.
+
+### 37. TWO PHANTOM ROW SPECIES IN `rows()`, MEASURED, AND NEITHER CAN CHANGE A VERDICT -- SO NEITHER IS FIXED.
+
+`rows()` splits every line containing `=` on the FIRST `=`. Measured on
+`prepare-oracle.py`: **2535** lines contain `=`, `rows()` yields **2521** keys. The gap is
+**14 lines whose pre-`=` part is empty** -- the `== SECTION ==` banners -- collapsing into ONE
+key named `""` whose value is the last banner. `2535 - 14 = 2521` exactly.
+
+A second species, found in the same sweep and not previously named: **lines beginning with `#`
+that contain `=`** are COMMENTS and are parsed as rows. Measured: `#repro_split_LOCAL_top0`,
+`#repro_tree`, `#repro_vendored_import` in `codegen/opt/search.bend` (10 of 20 oracle rows),
+`#repro_four_src_reject` and four others in `uop/spec.bend` (5 of 16), `#rebase_inner` in
+`uop/ops.bend`, and `# OSX=True WIN=False` in `cpulink_oracle.py`.
+
+Why both are left alone, which is the generalisable part: **an empty-named row can never
+intersect a port's row names**, so it can never produce a comparison, a disagreement, a
+`compared` pair, or an empty lane. Its only effect is on a printed count. Fixing it would change
+`row_counts` -- the very numbers another agent's `SUPERSET_LANES` check compares against, in a
+file being edited concurrently -- in exchange for changing no verdict anywhere. The brief
+permits the fix only if it can be PROVEN to change no verdict; proven for the lanes measured
+here, unproven for all 38 without another full sweep, and worth nothing where it applies.
+
+### 38. `diff_stat()` RE-RAN A 6-MINUTE PLANNER ON EVERY CALL, SO `--record` COULD NOT FINISH.
+
+`rebase-plan.py --json` re-walks every port header and costs **~6 minutes** on this tree.
+`diff_stat()` called it to read the pin, and `--record`/`--record-stable` call `diff_stat` once
+per upstream file per port. Recording 29 ports therefore ran the planner ~30 times: the command
+**exceeded a 15-minute timeout having written nothing**, and from the outside a wedged process
+and a working one look identical -- which is this project's recurring failure mode, not a
+private one. One memoized `plan_of()` per process now serves the pin, the port map and
+`api_delta`; `main()` had been asking for the plan a second time independently, so the fix also
+halves the cost of an ordinary gate run.
+
+**A slow helper called in a loop is a timeout that looks like a hang.** When a command times out
+having produced no output, measure the unit before assuming the unit is wrong.
+
+### 39. A HARNESS THAT PROVES A DISAGREEMENT MUST NOT PATCH THE TREE IT PROVES IT WITH.
+
+`rebase-plant-disagreement.py` reached a non-default oracle pairing by **rewriting
+`BASE_ORACLES` inside `rebase-gate.py` and restoring it in a `finally`**. That is patching the
+live tree from a harness, and the failure mode is not a wrong answer but a damaged tree: a kill
+inside that window -- and servers here restart without warning and kill agents silently, four
+agents dead today -- leaves the gate wired to a script that `--clean` then deletes, so the next
+run reports `ORACLE SCRIPT MISSING` on a port that was fine a minute ago. With other agents live
+in the tree, the window is not theoretical.
+
+The fix is not a lock or a copy of the gate. It is that **the gate needed a flag it did not
+have**: `--oracle SPEC` judges ONE named target against SPEC, for that run, writing nothing. The
+source edit stopped being necessary, so it stopped being possible. `--oracle` refuses to
+combine with either `--record`, since a mutant's rows must never reach a baseline.
+
+The same harness also called `sys.executable` for the oracle lanes, so under PATH's python3 it
+would have read `{}` from an oracle that died on import and planted a row against nothing. It is
+pinned now, for the reason in rule 29.
+
+**A control that has to modify the thing under test to run is not a control.** When a harness
+opens a write handle on live source, the missing abstraction is in the tool, not in the harness.
+
+### 40. A ZOMBIE OF A DEAD ATTEMPT WAS STILL MEASURING, WITH THE OLD RULES, INTO THE SAME ARTIFACT.
+
+The previous attempt at this task "died without reporting". Its `rebase-stability.py` process
+was alive, `ppid 1`, 31 minutes into a sweep, running the **pre-fix** code -- the version whose
+`dead_lanes` were reported and not used -- writing its JSON to the default
+`.agents/slop/rebase/stability.json` and its text to the SAME file the new sweep was writing.
+
+The tell was in the output, not the process table: one log contained two formats, the new
+`shared[a=24/0]` and the old `shared[a=353]`, with a run of spaces between them where a second
+writer sat at a large file offset. **A mixed-format log means two writers, and it is visible
+before `ps` is.**
+
+It also cost a false EXCLUSION: `runtime/support/elf.bend` reported
+`measurement crashed: TimeoutExpired(..., 1800)` in the new sweep, because two sweeps were
+sharing 12 CPUs under a load average above 20. That timeout is a property of the LOAD, not of
+`elf.bend`, and it would have been recorded as a lane measurement.
+
+**A timed-out measurement is a measurement of the machine.** And: check for orphaned processes
+from a previous attempt before trusting an artifact it wrote, especially when the report says it
+died.
+
+### 41. A CACHE RULE HAS TWO HALVES, AND GUARDING ONLY THE WRITE LEAVES EVERY LEGACY FAILURE STILL BELIEVED.
+
+`rebase-scan-oracles.py` caches lane rows in `/tmp/rebase-scan`. Its writer already refused to
+store an empty cache -- "NOTHING IS CACHED UNLESS IT PRODUCED ROWS" -- and the fix looked
+complete. It was not, and the residue was measurable on the tree: **82 of the 211 cache files
+held `{}`**, written before that rule existed.
+
+`read_fresh_cache` decides on mtime alone, and **a fresh file holding `{}` is not stale.** So
+every one of those 82 was answered `"fresh"` and read as a measurement of "this lane has no
+rows". `main()` saw an empty dict and `continue`d, in silence. Measured with the write-side rule
+in place and the read side unfixed: **8 of the 38 wired pairs measured 0 shared row names, and
+all eight were an oracle cache holding `{}`** -- `vz_oracle.py`, `c-oracle.py`, `mm-lift-gate.py`,
+`onnx-gate.py`, `ew-gate.py`, `tensor-gate.py`, `rw-oracle.py`, `rw-gate-oracle.py`. Not one had
+been re-run. A lane that FAILED hours ago was skipped without printing a word.
+
+The rule is one sentence with two halves: **A CACHE THAT RECORDS NOTHING IS NOT A READING**,
+exactly as a cache older than its source is not a reading. The mtime half is shared with
+`wire-rows.py`; the emptiness half is local, because `wire-rows.py` never wrote an empty file and
+so has nothing to be wrong about.
+
+The general shape is the one worth keeping: **a reader does not care how old a rule is.** Landing
+the write-side guard changed what the tool would produce from now on and changed nothing about
+what it could still believe.
+
+### 42. A CACHE THAT NEVER INVALIDATED HAD ALSO HIDDEN A BUDGET THAT WAS NEVER MEASURED.
+
+`bend_rows` ran the interpreter with `timeout=600`. That number had never been checked, because
+with the staleness rule absent the lane was simply never re-run. The moment the staleness rule
+landed, `runtime/support/elf.bend` was finally re-run -- and TIMED OUT at 600s, which the tool
+records as "no rows", i.e. the 0-rows-means-nothing trap.
+
+`wire-rows.py` has always spent **1800s** on the same file. Measured unloaded: **159s, 353
+rows**. Measured under contention from a parallel sweep: over 600s. So the timeout was not a
+property of `elf.bend` at all; it was a number nobody had needed yet, and it became wrong the
+moment the cache stopped hiding it.
+
+**A cache that never invalidates does not just report stale numbers -- it prevents the
+measurements that would have told you the rest of the tool was wrong.**
+
+### 43. A NUMBER TYPED NEXT TO A CLAIM IS A SECOND SOURCE OF TRUTH WITH NO INVALIDATION RULE.
+
+`rebase-gate-selftest.py`'s `ORACLE_CONFORMANCE` carried a shared-row count per entry. It said
+**84** for `ga-oracle.py` after the real number became **726**, and it went on saying 84 through
+every run, because nothing in the file re-read it. Its own comment already claimed the counts
+"are MEASURED by rebase-scan-oracles.py against the live tree rather than typed here and left to
+rot" -- the code directly beneath contradicted the comment, which is the tell.
+
+Measured, every run, through the scan tool's own staleness rule and 8-way concurrently (36 bend
+and 36 oracle lanes; serial, `elf.bend` alone is 159s). The roster now stores `(oracle, kind)`
+and the count is obtained, so a number appears only if a lane was just re-run against its current
+source. What each entry's comment now carries is the **unshared remainder**, which is the part
+that does not rot.
+
+Reading it instead of storing it found two drifted numbers and one live red on the first run:
+
+| port | stored | measured | |
+|---|---|---|---|
+| `renderer/amd/generate.bend` | 84 | **726**, 0 disagree | the one in the brief |
+| `uop/ops.bend` | 62 | **67**, 0 disagree | unnoticed |
+| `codegen/decomp/dtype.bend` | 99 | **107**, **1 DISAGREES** | a live BROKEN, see 44 |
+
+The same species produced the two false findings in the brief: "26 of 52 have no oracle" (the
+survey matched on FILENAME, so `elf_rows.py` and `sqtt_spec.py` were structurally invisible) and
+"8 of 31 gates BROKEN" (measured under the wrong interpreter, `oracle_py.py`'s whole subject).
+
+### 44. A COUNT THAT COULD NOT BE MEASURED MUST BE REPORTED AS UNMEASURED, NOT ROUNDED AND NOT INHERITED.
+
+The replacement for a stored number has to fail in a way a reader can act on, and the natural
+shortcut -- `max(measured, 1)` -- is the defect again with a different spelling. Three outcomes,
+and the middle one is the dangerous one:
+
+* lanes both produced rows, intersection empty -> the wiring is wrong. **FAIL.**
+* a lane produced no rows -> the measurement is ABSENT. **FAIL**, and it must say which lane and
+  why, because "the interpreter fell over" and "the oracle shares nothing with its port" are
+  different claims and a reader who cannot tell them apart will believe the reassuring one.
+* the previous run's count -> **never.** A fixture sized by a remembered number is the whole
+  defect.
+
+Measured while writing this: bend prints 0 rows on roughly 1 run in 20, and under a loaded
+machine `schedule/prepare.bend` (unmodified, mtime 15:55) printed 0 on three consecutive
+attempts inside one selftest run and 321 rows on five consecutive runs minutes later.
+`lane_text` therefore retries **3** times, which is `wire-rows.py`'s `tries=3` and not a number
+of its own. Three is not a fix for a port being edited mid-run -- `uop/fold.bend` was 30 seconds
+from a concurrent agent's save when it printed 0 three times -- and that is correct: a port under
+edit genuinely has nothing to say, so it stays UNMEASURED and stays red.
+
+### 45. A SUPERSET PROOF MUST PARSE THE TEXT, AND ITS FIXTURES MUST NOT BYPASS THE PARSER.
+
+`rows()` counted an empty row name, so `prepare-oracle.py`'s 14 `== SECTION ==` banners collapsed
+onto the key `""` and it reported **2522** rows where it has **2521**. Fixed by excluding an
+empty name. The proof that the fix is safe is NOT "the count went down by one" -- it is that the
+fixed parser returns **every** row the old one did, and `rows()` is shared by 38 wired gates,
+where a parser that silently drops or renames a row makes some *other* gate agree by comparing
+nothing.
+
+Three things had to be true for the proof to mean anything, and each was wrong on the first
+attempt:
+
+1. **Both parsers on the same TEXT.** Run over a cache it checks that a stored dict still parses,
+     which is not the claim.
+2. **Real lane output, not synthetic.** A parser that passes on synthetic text and drops one row
+     out of `prepare-oracle.py` IS the failure. Measured, both parsers, 4 ports x 2 lanes:
+     `prepare.bend` 321/321 port and **2522 -> 2521** oracle, `tc_ptx.bend` 333/333 and 333/333,
+     `fold.bend` 214/214 and 130/130, `generate.bend` 726/726 and 779/779 -- and on every lane
+     the only dropped key is `''`.
+3. **The fixtures must go THROUGH the parser.** The first version handed `gate_port()` a dict
+     containing a `""` key. `run_port` is stubbed in that control, so `rows()` never saw a banner
+     and the phantom arrived by the back door -- and the control that exists to catch the phantom
+     reported it as **AGREE-UNRECORDED**. A control whose fixture bypasses the unit under test is
+     not a weak control, it is an inverted one.
+
+The direction that matters is the one a dropped key cannot produce: GUARD 4 compares lanes over
+the keys they SHARE, so removing a key can only shrink the intersection. Driven both ways
+through the real `gate_port()`: a pair whose only shared key was a banner and AGREED is now
+BROKEN ("share NO row names"), and a pair that DISAGREED on that banner is still BROKEN, never
+agreement.
+
+**Positions, because rule NUMBERS REPEAT.** Rules 41-45 above occupy lines 16367-16482, continuing
+from the file's previous end at 16365 (rule 40 was at 16346). `### 45.` ALSO occurs at line 9329,
+from an earlier unit -- the collision agent-core.md warns about, so cite the line, never the rule
+number. The sources for every number quoted above, by position:
+
+* `rebase-scan-oracles.py` -- `cached()` (the `empty` half), `say_not_used()` (names both files),
+  `bend_rows()` (1800s budget), and its header's "GUARDING THE WRITE WAS NOT ENOUGH" paragraph.
+* `rebase-gate-selftest.py` -- `cache_rule()`, `SUPERSET_LANES`, `lane_text()`, `superset()`,
+  `measure_roster()`, `oracle_template()`, and the `ORACLE_CONFORMANCE` header.
+* `rebase-gate.py` -- `rows()` (the empty-name rule and its superset argument) and the
+  `BASE_ORACLES` comments.

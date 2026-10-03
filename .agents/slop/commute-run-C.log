@@ -1,0 +1,10 @@
+frozen copy reproduces the live tree: 137 .bend files, md5-verified, under /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/commute-freeze-y2jjx5ar
+
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commute-detect.py", line 335, in <module>
+    raise SystemExit(main(sys.argv[1:]))
+                     ^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commute-detect.py", line 277, in main
+    label = f"{Path(rel).name}:{orig[:off].count(chr(10)) + 1}:{kind}"
+               ^^^^
+NameError: name 'Path' is not defined

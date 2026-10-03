@@ -183,8 +183,11 @@ def rows(text):
 
   The one direction that DOES change is the safe one: two lanes that agreed on nothing but a
   banner used to be counted as a comparable, agreeing pair, and are now refused as
-  incomparable. rebase-gate-selftest.py drives all three, over synthetic lanes and over four
-  real ones, and reports both parsers' row counts side by side."""
+  incomparable. rebase-gate-selftest.py's superset() drives all three, over synthetic text and
+  over the four real lane pairs in its SUPERSET_LANES -- both sides of each pair, 8 lane texts --
+  and reports both parsers' row counts side by side. It builds the lane rows by CALLING this
+  rows() on text rather than handing gate_port() a dict containing a `""` key, because run_port is
+  stubbed in that control and the phantom would arrive by the back door."""
   out = {}
   for line in text.splitlines():
     if "=" in line:
@@ -196,23 +199,33 @@ def rows(text):
   return out
 
 
-_PIN = None
+_PLAN = None
 
 
-def pin_of():
-  """The rebase pin, ONCE per process.
+def plan_of():
+  """rebase-plan.py --json, parsed, ONCE per process.
 
-  ⚠ diff_stat() used to run `rebase-plan.py --json` on every call, and that planner re-walks
-  every port header in the tree -- measured at 4m25s per invocation. --record and
-  --record-stable call diff_stat once per upstream file per port, so recording 29 ports
-  re-ran the planner ~29 times: the command exceeded a 15-minute timeout with nothing written,
-  and there was no way to tell from the outside whether it was working or wedged. One planner
-  call for the whole process; the pin cannot change inside a single run."""
-  global _PIN
-  if _PIN is None:
-    plan = json.loads(sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json").stdout or "{}")
-    _PIN = plan.get("pin") or ""
-  return _PIN
+  ⚠ THE PLAN COSTS ~6 MINUTES TO PRODUCE on this tree -- it re-walks every port header -- and
+  this file used to ask for it in three places: main() for the port map and api_delta, and
+  inside diff_stat() once PER UPSTREAM FILE PER PORT. So `--record-stable` over 29 ports ran the
+  planner ~30 times: the command exceeded a 15-minute timeout having written nothing, and from
+  the outside that is indistinguishable from a wedged process. One call per process; the plan
+  cannot change inside a single run."""
+  global _PLAN
+  if _PLAN is None:
+    raw = sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json")
+    try:
+      _PLAN = json.loads(raw.stdout)
+    except ValueError as e:
+      raise PlanUnavailable(
+        f"rebase-plan.py --json did not produce JSON ({e}).\n"
+        f"  rc={raw.returncode}  stderr={' '.join(raw.stderr.split())[:200]}")
+  return _PLAN
+
+
+class PlanUnavailable(RuntimeError):
+  """rebase-plan.py's JSON did not parse. Named, because the difference between "the plan says
+  nothing changed" and "the plan did not run" is the whole question this tool exists to answer."""
 
 
 def diff_stat(src):
@@ -222,7 +235,7 @@ def diff_stat(src):
   A FAILED git must not read as "no diff": an out-of-tree copy with no `.git` answers the
   same empty stdout as a file upstream never touched, and "no upstream diff" is the one
   answer that would let a re-verify look examined when nothing was asked."""
-  pin = pin_of()
+  pin = plan_of().get("pin")
   if not pin:
     return "UNAVAILABLE: rebase-plan.py produced no pin"
   d = sh("git", "diff", "--stat", pin, "upstream/master", "--", src)
@@ -820,13 +833,10 @@ def main():
   # unparseable plan used to be a bare `json.JSONDecodeError` traceback; it is named instead,
   # because the difference between "the plan says nothing changed" and "the plan did not run"
   # is the whole question this tool exists to answer.
-  pr = sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json")
   try:
-    plan = json.loads(pr.stdout)
-  except ValueError as e:
-    print(f"PLAN UNAVAILABLE: rebase-plan.py --json did not produce JSON ({e}).\n"
-          f"  rc={pr.returncode}  stderr={' '.join(pr.stderr.split())[:200]}\n"
-          "Nothing was checked. rebase-gate.py exits 1.")
+    plan = plan_of()
+  except PlanUnavailable as e:
+    print(f"PLAN UNAVAILABLE: {e}\nNothing was checked. rebase-gate.py exits 1.")
     return 1
   baseline_path = pathlib.Path(a.baseline) if a.baseline else BASELINE
   base = json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
@@ -1143,8 +1153,11 @@ BASE_ORACLES = {
   # -- deliberately dead, wired so BROKEN is reachable on the REAL tree and not only over
   #    synthetic fixtures. Do NOT "fix" these by removing them; that is what NOT-STARTED and
   #    this comment are for. dtype_tables.py exits 0 printing TSV, so rows() finds no `=`
-  #    (GUARD 2, "compared nothing"); renderer_oracle.py `cstyle` exits 1 AND shares 0 of
-  #    225 row names (GUARD 3, and its stderr is printed rather than swallowed). --
+  #    (GUARD 2, "compared nothing"); renderer_oracle.py `cstyle` shares 0 of the port's 225
+  #    row names (GUARD 3). ⚠ IT USED TO ALSO exit 1, with `KeyError: dtypes.weakint`
+  #    inside upstream cstyle; measured 2026-10-03 it exits 0 and prints 15 real C kernels
+  #    under the names k1_load_store / k2_alu / ... So its BROKEN is now GUARD 3 alone, and
+  #    "it crashes" is a stale reason. Either way it must never read as a pass. --
   "tinybendygrad/dtype.bend": [".agents/slop/oracle/dtype_tables.py"],
   "tinybendygrad/renderer/cstyle.bend": [".agents/slop/renderer_oracle.py cstyle"],
 }

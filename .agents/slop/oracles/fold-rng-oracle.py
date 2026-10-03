@@ -29,6 +29,7 @@ import sys
 sys.path.insert(0, '.')
 from tinygrad.uop.ops import UOp, Ops  # noqa: E402
 from tinygrad.uop.spec import AxisType  # noqa: E402
+from tinygrad import dtypes  # noqa: E402
 
 DIV = {}
 
@@ -107,9 +108,14 @@ row("er", UOp(Ops.BACKEDGE, (r0, st(r1), cst(4))))
 # 10/11. `CALL`'s ONE CONDITIONAL. `if self.op is Ops.CALL and self.body.op is
 #       Ops.CUSTOM_FUNCTION: return ()`, else `src[1:]`. Two rows one condition apart:
 #       the CUSTOM_FUNCTION body ends nothing, a CONST body ends both ranges.
-cf = UOp(Ops.CUSTOM_FUNCTION, (), ("myext", None))
-row("call_cf", UOp(Ops.CALL, (cf, r0, r1)))
-row("call_c", UOp(Ops.CALL, (cst(4), r0, r1)))
+#       The CallInfo dtype is NON-VOID on purpose: `call_ds.go` is
+#       `some_if(not dt is void, ...)`, so a void CALL is a node the dtype/shape ladder
+#       does not answer and its `ended` list is not in the table. Measured on both
+#       lanes: with a void arg both rows read ABSENT here, and the point of the two rows
+#       is `ended_of.call`'s conditional rather than that refusal.
+cf = UOp(Ops.CUSTOM_FUNCTION, (), ("myext", dtypes.void))
+row("call_cf", UOp(Ops.CALL, (cf, r0, r1), (None, False, False, dtypes.int32)))
+row("call_c", UOp(Ops.CALL, (cst(4), r0, r1), (None, False, False, dtypes.int32)))
 
 # 12. THE REFUSAL. `STAGE` is one of the four ops `dt_shape` does not answer, so its
 #     `ended` list is not in the fold's table and the whole set is not answered.

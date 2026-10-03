@@ -81,7 +81,7 @@ sys.path.insert(0, TG_TREE)
 
 import tinygrad.uop.ops as O  # noqa: E402
 from tinygrad.uop import Ops  # noqa: E402
-from tinygrad.uop.ops import UOp, AxisType, axis_letters, axis_colors, range_start  # noqa: E402
+from tinygrad.uop.ops import UOp, AxisType, CallInfo, axis_letters, axis_colors, range_start  # noqa: E402
 
 TAG = f"TG_TREE={TG_TREE}"
 
@@ -442,6 +442,74 @@ print(f"uc_int_tup1={_uc_int is _uc_tup}")
 print(f"uc_nest_deep={_uc_nest is _uc_deep}")
 print(f"uc_flat_same={_uc_flat is UOp(Ops.RANGE, src=(_uc_end,), arg=(AxisType.WEAK, 0, 1))}")
 print(f"uc_nest_same={_uc_nest is UOp.range(4, (0, 1), AxisType.WEAK)}")
+
+# ---------------------------------------------------------------------------
+# 10. THE BACKWARD SLICE -- `UOp.backward_slice` (ops.py:280),
+#     `UOp.backward_slice_with_self` (:286) and
+#     `UOp.op_in_backward_slice_with_self` (:289).
+#
+#     WHY A FAMILY AND NOT ONE ROW. `backward_slice` is
+#     `self.toposort(enter_calls=False)` minus `self`, and BOTH halves of that
+#     are invisible on a graph with no CALL: the two walks return the same list
+#     and the root is the last node to complete either way. So a single fixture
+#     would agree with a port that dropped `enter_calls=False` AND with one that
+#     returned the whole toposort. Each fixture below is the smallest graph that
+#     separates one of those, and each is named for the thing it separates:
+#
+#       chain     no CALL, so the two walks agree -- the baseline.
+#       call      a CALL AT THE ROOT: its body is src[0] and `src_without_body`
+#                 is `src[1:]`, so three body nodes are not in the slice.
+#       nest      the same CALL ONE LEVEL DOWN, so the pruning cannot be a
+#                 special case on the root.
+#       backedge  ops.py:617's `self.backedge(loop, cond)` with `cond` the same
+#                 node as `self`, so src[0] IS src[2]: the walk meets the RANGE
+#                 twice and the shared node must appear ONCE.
+#
+#     `bsl_*` is `<COUNT> <SRC OP SEQUENCE>` of the slice, `bsws_*` the same for
+#     `backward_slice_with_self` (whose ONLY difference is that `self` is put
+#     back, first, because a Dict iterates in insertion order), and `bsop_*` the
+#     `op_in_backward_slice_with_self` Booleans. The `bsop` rows are split into
+#     a SELF half and a SRC half on purpose: `bsop_call_call` and
+#     `bsop_backedge_backedge` are True only because `self` is read, and
+#     `bsop_chain_add` and `bsop_backedge_range` only because a src is, so a
+#     port that dropped either half has a row that moves.
+# ---------------------------------------------------------------------------
+def opseq(xs) -> str:
+  """The SRC OP SEQUENCE of a LIST of nodes -- `srcops` for a list rather than a node.
+
+  `srcops(u)` reads `u.src`; a backward slice is itself a list, so it needs the
+  same join over a different argument. `-` for the empty slice, which is what
+  CPython's `str` of an empty sequence means here and what the port's
+  `Rng.srcops.seeded` prints for `Nil{}`.
+  """
+  return " ".join(str(x.op) for x in xs) if xs else "-"
+
+
+def bslrows(tag: str, u, opsets) -> None:
+  bsl = list(u.backward_slice)
+  print(f"bsl_{tag}={len(bsl)} {opseq(bsl)}")
+  bsws = list(u.backward_slice_with_self)
+  print(f"bsws_{tag}={len(bsws)} {opseq(bsws)}")
+  for suffix, wanted in opsets:
+    print(f"bsop_{tag}_{suffix}={u.op_in_backward_slice_with_self(*wanted)}")
+
+
+_bc0, _bc1, _bc2 = UOp.const(0), UOp.const(1), UOp.const(2)
+_br0 = UOp.range(1, 0, AxisType.LOOP)
+_ba0 = UOp(Ops.ADD, (_br0, _bc0))
+bslrows("chain", UOp(Ops.ADD, (_ba0, _bc2)), [("add", (Ops.ADD,)), ("mul", (Ops.MUL,))])
+
+# The body is a three-node subtree and the arg is a fourth node, so a wrong
+# `enter_calls` answers four where the right one answers one.
+_bb = UOp(Ops.ADD, (UOp.const(1), UOp.const(2)))
+_bcall = UOp(Ops.CALL, (_bb, UOp.const(9)), CallInfo(None, "f", False, False, None))
+bslrows("call", _bcall, [("call", (Ops.CALL,))])
+
+bslrows("nest", UOp(Ops.ADD, (_bcall, UOp.const(2))), [("pair", (Ops.MUL, Ops.CALL))])
+
+bslrows("backedge", UOp(Ops.BACKEDGE, (UOp.range(1, 0, AxisType.DEVICE), UOp.const(0),
+                                       UOp.range(1, 0, AxisType.DEVICE))),
+        [("backedge", (Ops.BACKEDGE,)), ("range", (Ops.RANGE,))])
 
 # ---------------------------------------------------------------------------
 # 9. The 22 EXISTING rows. Every one is a BOOLEAN whose Python counterpart is either a

@@ -166,10 +166,24 @@ def never_wired_control():
     if not cond:
       fails.append(name)
 
-  unwired = "tinybendygrad/device.bend"  # ORACLE_NOT_WIRED names it, and it exists on disk
+  # THE CONTROL PORT CHANGED, AND THE OLD CHOICE NO LONGER EXISTED. This used to be
+  # `tinybendygrad/device.bend`, with the comment "ORACLE_NOT_WIRED names it, and it exists on
+  # disk" -- which stopped being true the moment device.bend was WIRED, and the control that
+  # guards AGREE-UNRECORDED would then have failed on a port that is legitimately wired. The
+  # assertion below is what makes the choice auditable: the port must be absent from
+  # BASE_ORACLES and present on disk, so a control that stops testing an unwired port is a
+  # FAIL, not a silent pass.
+  unwired = "tinybendygrad/helpers.bend"
   ok("the control port is really unwired",
      unwired not in g.BASE_ORACLES and (REPO / unwired).exists(),
      f"{unwired}: in BASE_ORACLES = {unwired in g.BASE_ORACLES}")
+  # AND THE ONE IT REPLACED IS NOW WIRED, so the swap cannot rot into "the port I used to
+  # name is unwired again" without anything saying so.
+  ok("the port this control used to name is WIRED now, and says why",
+     "tinybendygrad/device.bend" in g.BASE_ORACLES
+     and "tinybendygrad/device.bend" not in ORACLE_NOT_WIRED,
+     f"wired={'tinybendygrad/device.bend' in g.BASE_ORACLES} "
+     f"in ORACLE_NOT_WIRED={'tinybendygrad/device.bend' in ORACLE_NOT_WIRED}")
   v = g.never_wired(unwired, REPO / unwired, ())
   ok("a port with NO ORACLE is NOT-STARTED and never AGREE-UNRECORDED",
      v is not None and v["state"] == "NOT-STARTED" and "NOTHING WAS COMPARED" in v["why"],
@@ -211,6 +225,12 @@ def record_stable_control():
   GOOD, RED, PARTIAL = ("tinybendygrad/tensor.bend", "tinybendygrad/mixin/op.bend",
                         "tinybendygrad/nn/onnx.bend")
   KEPT = "tinybendygrad/renderer/cstyle.bend"
+  # The "honestly EXCLUDED" entry used to be device.bend with the reason "no oracle wired",
+  # which became false the day device.bend was wired -- a fixture whose stated reason is no
+  # longer true still tests the same code path, so nothing would have failed. helpers.bend
+  # carries a reason that is true and MEASURED (it prints zero rows, twice, so no oracle can
+  # ever share a name with it) rather than merely plausible.
+  EXCLUDED = "tinybendygrad/helpers.bend"
   lanes = {"interpreted": {"a": "1", "b": "2"}, "native": {"a": "1", "b": "2"},
            "cpython:o": {"a": "1", "b": "2"}}
   evidence = {
@@ -220,7 +240,7 @@ def record_stable_control():
     PARTIAL: {"recordable": True, "reasons": [],
               "rows": {"interpreted": {"a": "1", "only_here": "9"}, "native": {"a": "1"},
                        "cpython:o": {"a": "1"}}},
-    "tinybendygrad/device.bend": {"recordable": False, "reasons": ["no oracle wired"]},
+    EXCLUDED: {"recordable": False, "reasons": ["no oracle wired", "port prints zero rows"]},
   }
   fails = []
 
@@ -247,7 +267,7 @@ def record_stable_control():
        any("REFUSED" in c and PARTIAL in c and "partial" in c for c in complaints),
        "; ".join(c for c in complaints if PARTIAL in c)[:200])
     ok("an honestly EXCLUDED port is named and absent",
-       any("EXCLUDED" in c for c in complaints) and "tinybendygrad/device.bend" not in after["lanes"])
+       any("EXCLUDED" in c for c in complaints) and EXCLUDED not in after["lanes"])
     ok("an entry the evidence says nothing about is LEFT ALONE, not deleted",
        after["lanes"].get(KEPT) == before["lanes"][KEPT], f"{after['lanes'].get(KEPT)}")
     # THE POINT, and the outcome is STRONGER than the assertion first written for it. Gated
@@ -297,11 +317,19 @@ def lane_text(argv, port, env=None, timeout=1800):
 
   A superset proof over a cache would be checking that a stored dict still parses, which is not
   the claim: `rows_before_fix` and `rows()` differ on the TEXT, so the text is what has to be in
-  the room. Two attempts, because bend's machine stack overflows on roughly 1 run in 20 and
-  prints ZERO rows -- and a lane that reports nothing must be reported as reporting nothing, not
-  silently counted as a lane whose old and new counts agree at 0."""
+  the room.
+
+  THREE attempts, which is wire-rows.py's `tries=3` and not a number of my own: bend's machine
+  stack overflows on roughly 1 run in 20 and prints ZERO rows, and a lane that reports nothing
+  must be reported as reporting nothing rather than silently counted as a lane whose old and new
+  counts agree at 0. MEASURED on an unmodified port: `schedule/prepare.bend` printed 0 rows on
+  both attempts of one run and 321 rows minutes later on the same tree. A port being EDITED does
+  the same thing -- `uop/fold.bend` was 30 seconds from a concurrent edit when it printed 0 twice
+  -- and that is not a flake to retry away, it is a lane with nothing to say right now, so it
+  stays UNMEASURED and stays a FAILURE.
+  """
   scan = load_scan()
-  for attempt in (1, 2):
+  for attempt in (1, 2, 3):
     r = scan.run(argv, env=env, timeout=timeout)
     text = r.stdout if r is not None else ""
     if scan.rows(text):
@@ -381,8 +409,8 @@ def superset():
   for (port, oracle), (bend_text, oracle_text) in zip(SUPERSET_LANES, texts):
     for label, text in (("port  ", bend_text), ("oracle", oracle_text)):
       if not text:
-        print(f"  FAIL  {label} {port}: UNMEASURED -- the lane printed 0 rows twice, so this pair "
-              f"proves nothing and is NOT counted as agreement")
+        print(f"  FAIL  {label} {port}: UNMEASURED -- the lane produced 0 rows on all 3 attempts, "
+              f"so this pair proves nothing and is NOT counted as agreement")
         fails.append(f"superset {label} {pathlib.Path(port).name}: unmeasured")
         continue
       measured += 1
@@ -415,8 +443,9 @@ def superset():
   # reason the fix is worth a control rather than a diff.
   ok("...which the OLD parser would have read as a comparable, agreeing pair",
      set(rows_before_fix(banner + "walk_mop=7\n")) & set(rows_before_fix(banner + "walk_other=7\n"))
-     == {""} and not p_only and not o_only,
-     f"old shared {{''}} from a banner; new shared {set(p_only) & set(o_only)}")
+     == {""} and p_only == {"walk_mop": "7"} and o_only == {"walk_other": "7"},
+     f"old shared {{''}} from a banner; new shared {set(p_only) & set(o_only)}, "
+     f"and the new parsers kept {sorted(p_only)} / {sorted(o_only)}")
   # THE DIRECTION THAT MATTERS. A disagreement on the banner alone must stay BROKEN: agreement is
   # the only outcome a dropped key could turn a disagreement into, so the assertion is on the
   # STATE and not on the reason.
@@ -913,6 +942,11 @@ ORACLE_CONFORMANCE = {
   "tinybendygrad/schedule/rangeify.bend": (".agents/slop/rangeify-oracle.py", "live"),
   "tinybendygrad/engine/jit.bend": (".agents/slop/jit-oracle.py", "live"),
   "tinybendygrad/runtime/ops_null.bend": (".agents/slop/null-oracle.py", "live"),
+  # device: 23 of the port's 110, 0 disagreements, measured through measure_roster() on
+  # every run of this file -- so the number printed here is a number about THIS tree.
+  # It was NOT wired until the `allow_lower` port fix landed; the history is in
+  # BASE_ORACLES and the control that had to pass first is in ORACLE_NOT_WIRED below.
+  "tinybendygrad/device.bend": (".agents/slop/device-oracle.py", "live"),
   "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", "dead"),
   "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", "dead"),
 }
@@ -921,16 +955,52 @@ ORACLE_CONFORMANCE = {
 # what passed cannot answer "why is this one missing?" -- which is the question the next
 # reader asks about every port that is NOT-STARTED.
 #
-#   tinybendygrad/device.bend  device-oracle.py  18 of 105 shared, 1 DISAGREES.
-#       CPython 1, the port 0, CPython right. device.py:30 canonicalizes BEFORE the assert
-#       at :31, and `_canonicalize` upper-cases the stem (device.py:26), so `python:1`
-#       passes. Measured by calling `Device['python:1']` under `Context(ALLOW_DEVICE_USAGE=0)`,
-#       and the real gate answers BROKEN rc=1 naming `allow_lower`. A permanently-BROKEN
-#       lane in every sweep would teach the reader that BROKEN is normal. PORT BUG, REPORTED.
-ORACLE_NOT_WIRED = {
-  "tinybendygrad/device.bend": ("allow_lower: CPython 1 (device.py:30 canonicalizes before "
-                                "the assert at :31), device.bend 0 -- proven port bug"),
-}
+# ⚠ IT IS EMPTY, AND AN EMPTY ROSTER IS NOT AN ABSENCE OF THE QUESTION. Every one of the 50
+# targets is either wired in BASE_ORACLES or named here; that is what the disjointness
+# assertion below checks, and it is checked so that adding a port to one list and not the
+# other cannot pass. The roster being empty says the QUESTION is now answered for every
+# port, not that no port needs it. As of 2026-10-03, `device.bend` was the only entry; it is
+# gone because the row that blocked it was a real port bug and the bug was fixed:
+#
+#   THE CONTROL, AND WHY THE ROSTER EXISTS AT ALL. The rule this file is built around is
+#   that a lane is not wired until it has been SEEN RED. So device.bend's control ran all
+#   three readings through the REAL gate (three real bend lanes, a real CPython subprocess,
+#   `main()`'s own rc), and the planted disagreement named the row:
+#
+#     1 clean      rebase-gate.py --port tinybendygrad/device.bend
+#                    -> AGREE-UNRECORDED, rc=0. rows interpreted=110 native=110
+#                       cpython:device-oracle=23. 0 disagreements.
+#     2 PLANTED    the same entry, one path swapped for
+#                  .agents/slop/device-oracle-MUTANT.py, which is device-oracle.py with
+#                  exactly one line changed -- allow_lower answers 0 instead of 1, proven to
+#                  be one line by the mutant itself before it prints a row. Nothing else
+#                  touched, and the port not touched at all.
+#                    -> BROKEN, rc=1, why = "2 row(s) disagree with CPython across 3 lane
+#                       pair(s)", and `disagreements` NAMES the row `allow_lower` for
+#                       cpython-vs-interpreted and cpython-vs-native. TWO of the three
+#                       pairs, and that is correct rather than a shortfall: the third is
+#                       interpreted-vs-native, both lanes being the same port, so it
+#                       cannot disagree with itself.
+#     3 restored   entry back to device-oracle.py. The gate's stdout is BYTE-IDENTICAL to
+#                  reading 1, and both edited files hash to their pre-plant values.
+#
+#   Reading 2 is the one that matters. A gate that has only ever printed AGREE-UNRECORDED
+#   is indistinguishable from a gate that cannot fail, which is the whole reason this file
+#   exists; and the planted row is the SAME row the port fix moved, so the control would
+#   have caught a regression of the very fix that opened the lane.
+#
+#   ⚠ THE MECHANISM, because it was looked for and is NOT there: `rebase-gate.py --oracle`
+#   LOOKS like the way to do this without editing anything, and it is a NO-OP. main() calls
+#   targets_of(), which SNAPSHOTS `tuple(BASE_ORACLES.get(port, []))`, and only then applies
+#   `BASE_ORACLES[port] = [a.oracle]`; the gate loop iterates the snapshot. Measured on this
+#   tree: `--port tinybendygrad/device.bend --oracle .agents/slop/device-oracle.py` printed
+#   `[oracle-override] ... -> device-oracle.py` and then answered `NOT-STARTED ... no oracle
+#   wired in BASE_ORACLES`, and for an ALREADY-WIRED port it ran the BASE oracle anyway. The
+#   flag whose stated reason for existing is "prove a planted disagreement WITHOUT editing
+#   this file" cannot do that for any port. REPORTED, NOT FIXED: rebase-gate.py is another
+#   unit's file mid-edit. The control above therefore plants by editing the entry and
+#   restoring it, and PROVES the restore with a hash rather than with a `finally`.
+ORACLE_NOT_WIRED: dict[str, str] = {}
 
 
 def dead_lane_is_broken(port, oracle):
@@ -939,9 +1009,15 @@ def dead_lane_is_broken(port, oracle):
 
   This is the state the whole tool exists for, and the one a synthetic fixture cannot supply:
   GUARD 2 and GUARD 4 both need lanes that were actually produced. `dtype_tables` exits 0
-  printing TSV (so `rows()` finds no `=`), and `renderer_oracle.py cstyle` exits 1 with
-  `KeyError: dtypes.weakint` inside upstream cstyle. Both were BROKEN-by-construction in the
-  briefing, and a wiring change must never quietly turn either into a pass.
+  printing TSV (so `rows()` finds no `=`). `renderer_oracle.py cstyle` USED to exit 1 with
+  `KeyError: dtypes.weakint` inside upstream cstyle, and NO LONGER DOES: measured 2026-10-03
+  it exits 0 and prints 15 real C kernels under the names `k1_load_store`, `k2_alu`,
+  `k3_consts`, ... It is still BROKEN, and now for the ONE remaining reason rather than two:
+  those 15 names share 0 of cstyle.bend's 225, so GUARD 3 fires. Stating this matters --
+  "exits 1" was true when this docstring was written, a reader checking it would now be told
+  it is broken code, and the obvious repair -- trusting the exit status -- is the mistake this
+  function exists to prevent. Both were BROKEN-by-construction in the briefing, and a wiring
+  change must never quietly turn either into a pass.
 
   IT CALLS gate_port(), NOT main(). That is deliberate and it is a correction: shelling out to
   the whole gate took 4m25s per port -- measured, and almost entirely `rebase-plan.py` re-walking

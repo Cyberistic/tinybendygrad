@@ -117,6 +117,30 @@ day rediscovering that `2n+p` is not an even-case test.
       put `graph_rewrite` in a separate module so nothing in the engine calls
       back into the fold. Recorded in `spec/ops.md` and in the
       `# THE INVENTORY` block of the file. **P3 decides it.**
+      **RESOLVED for the property folds: `uop/fold.bend` IS that Kahn worklist**,
+      so `dtype`/`_shape`/`device`/`addrspace`/`ended_ranges` are ported there and
+      not here.
+
+- [x] `uop/ops.bend`, ops.py **[1, 500]** — the backward slice, and the queue.
+      Four defs landed: `bsl.go` + `UOp.backward_slice` (ops.py:280),
+      `UOp.backward_slice_with_self` (:286), `op_in_bsl.go` +
+      `UOp.op_in_backward_slice_with_self` (:289). Placed BELOW
+      `UOp.toposort_nocalls`, which Python has them above, because Bend has no
+      forward references. **14 rows, three lanes byte-identical**:
+      `bsl_{chain,call,nest,backedge}` + `bsws_*` + six `bsop_*` Booleans, with
+      `chain`/`call`/`nest`/`backedge` chosen so `enter_calls=False` is visible —
+      `call` and `nest` answer 1 and 3 where `toposort(enter_calls=True)` answers
+      5 and 6, and `bsl_chain` would agree with a plain `toposort`.
+      `res.pop(self)` is an IDENTITY filter, not `List.drop(.., 1n)`: the root is
+      the LAST node to complete, so `self` is the tail. Measured, and substituting
+      the drop moved all four `bsl_*` rows.
+      **The other 19 entries in [1, 500] were not a backlog, they were a lie:**
+      9 are already ported (`__repr__`×3, `_shape`, `shape`, `ended_ranges` in
+      `render.bend`/`fold.bend`; the backward slice above) and 10 are walls whose
+      rule is now written next to each queue line, so the next agent does not
+      rediscover it. `rg "TODO(p3)"` for this range is now 14 lines, each with its
+      reason. Gate: `sh .agents/slop/ops-gate.sh` (still red on five pre-existing
+      `cfun_*` rows, which are ops.py:1258/1394 — the other range's).
 
 - [x] `uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
       Ported inside `uop/ops.bend` because the gate needed `match op` to work.
@@ -336,6 +360,88 @@ day rediscovering that `2n+p` is not an even-case test.
       them. The 269 `pm_lower_calls` recursion is a future unit. The ~40
       deferred `TODO(p3)` markers that the engine unblocked are still gated
       on the fixpoint.
+
+## Session 2026-10-04 — P3 parallel wave, and the queue count is NOT a backlog
+
+Four agents, partitioned by FILE so they cannot collide:
+`ops.bend` split at ops.py line 500 (two agents, disjoint ranges), `fold.bend`
+alone, `symbolic.bend` + `weak.bend` together.
+
+### THE MEASUREMENT THAT MATTERS MOST, and it came from a subagent
+
+**`rg "TODO(p3)" tinybendygrad/uop/ops.bend` says 185. The real backlog is
+much smaller, and the difference is not laziness — it is a queue that was
+never reconciled against what landed elsewhere.**
+
+The ops.py-lines-1-500 agent took 23 queue lines and landed **5 defs**. The
+other 18 split as:
+* **9 were ALREADY PORTED** in another file and are now deleted from the
+  queue with a pointer: `__repr__`×3 (render.bend's `axis_repr`,
+  `paramarg_repr`, `pretty_print`); `_shape`/`shape`/`ended_ranges` and
+  `dtype` (fold.bend's Kahn worklist, which landed earlier this week).
+* **10 are WALLS**, and each now carries the RULE next to the line instead of
+  a bare marker. The recurring wall is `dtype`: `shard_shape`, `max_shard_shape`,
+  `_ranges`, `ranges`, `tuplize`, `bool_slice`, `key` all read it, and it is
+  `fold.bend`'s. The rest are `exec` of generated source (`sym_infer`),
+  a function stored in a record field (`__get__`, which is why the rule tables
+  are linear), refcount eviction on a monotone arena (`__del__`), pickling
+  (`__reduce__`), and a two-arm dispatch into the file that imports this one
+  (`srender`).
+
+**SO THE HONEST NUMBER IS: of 185 markers in `ops.bend`, roughly 60 are real
+work and the rest are walls or done.** Every wall is now NAMED, which is the
+thing that lets the next agent skip it in one read instead of one session.
+
+### What agent A landed
+
+`backward_slice` / `backward_slice_with_self` /
+`op_in_backward_slice_with_self` — ops.py:280/286/289. **14 gate rows, three
+lanes byte-identical** (`sh .agents/slop/ops-gate.sh`). The fixtures are the
+smallest graphs that SEPARATE the answers: `chain` (no CALL, so the two walks
+agree), `call` (a CALL at the root), `nest` (the same CALL one level down),
+`backedge` (ops.py:617 with `cond is self`, so `src[0] IS src[2]`). `call`
+and `nest` are what carry `enter_calls=False` — they answer 1 and 3 where
+`toposort(enter_calls=True)` answers 5 and 6. **Four mutations, all of which
+move rows.**
+
+Two findings worth carrying:
+* **`backward_slice` had to be placed BELOW `toposort_nocalls`** even though
+  Python has it above, because it is written in terms of the walk and Bend has
+  no forward references. This is the R-3 rule in a place nobody expected it.
+* **`bsl.go` dropping from the FRONT is wrong.** The root is the LAST node to
+  complete in a toposort, so `self` is the tail. A front drop takes a
+  different node. The mutation that proves it moves all four rows.
+
+### The gate got teeth and immediately found a real bug
+
+`gr-diff.sh` was COUNTING repl entries because the port printed arena indices
+and the oracle printed op+arg. A count cannot tell `PARAM->PARAM` from
+`PARAM->BUFFER`. Teaching `gr_show.repl` to print `OP(slot)->OP(slot)` made
+the first run say `ALLOC->PARAM(99)` where CPython says
+`ALLOC->BUFFER(slot=0)`: `pm_r_alloc_m` was returning `case h <> t: Some{h}`,
+the ctx HEAD, which is the slot-99 dummy PARAM. **The count gate said AGREE
+with that bug live.** Same lesson as `ops_nv` shipping 606 green rows with 33
+of 219 constants wrong.
+
+### The engine's remaining walls
+
+`unified_rewrite` (the fixpoint) and `graph_rewrite` (the dispatcher).
+`walk_rewrite` runs and agrees; the fixpoint needs the same fold threading
+iterated, so the arena question returns in a harder form. A wall that compiles
+and prints an honest gap beats a fixpoint that lies.
+
+### Coordination notes that cost time and should not be paid twice
+
+* **A shared jj working copy means one agent's `jj describe` swallows
+  another agent's `jj diff`.** Agent A's first four def lines were swept into
+  another agent's commit. The lesson is that in a parallel wave each agent
+  needs its OWN WORKSPACE, or at minimum its own bookmark, or the commit
+  history lies about who wrote what.
+* **The five red `cfun_*` rows in `ops-gate.sh` are the OTHER range** and were
+  red before the wave started.
+* **`g_cycle()` has a stale-arena bug**: it reads `Found.i(r)` out of
+  `Found.ar(sp)` while `g_rng()` builds in a different arena, so the index is
+  past the end and `Arena.node` answers the bottom. Not agent A's range.
 
 ## Phases P3–P8 — the port
 
@@ -3879,19 +3985,30 @@ the verdict. A `0/0` is printed too, because it is a measurement.
 
 ### Outside this unit's files
 
-- **`rebase-scan-oracles.py:16` `CACHE = pathlib.Path("/tmp/rebase-scan")` NEVER
-  INVALIDATES.** It printed `84 84  generate.bend` — 84 shared, **84 disagree** — against
-  the real gate's `726 shared, 0 disagree`, from cache files written at 14:30 and 14:32.
-  Delete the two entries and it prints `726  0`. This is the failure `rebase-gate.py`'s
-  GUARD 3 was written to prevent ("the oracle script must have been RUN THIS TIME — no
-  cache; a cached 0 from an hour ago is indistinguishable from a fresh 0"), fixed in
-  `drift-gate.py` and never applied to its sibling. Left alone; not mine. Owner: whoever
-  owns `rebase-scan-oracles.py`.
-- **`rebase-gate-selftest.py`'s `ORACLE_CONFORMANCE` carries a hard-coded `84` for
-  `ga-oracle.py`** (line 58 of its output reads `six states reachable (84 shared row
-  names)`). It should read 726. It sizes only a SYNTHETIC fixture, so the selftest is not
-  lying about the real gate — but the number is a claim and it is stale. Left alone; not
-  mine. Owner: whoever owns the selftest.
+- [x] **`rebase-scan-oracles.py` CACHED FOREVER AND NEVER INVALIDATED — FIXED, AND THE FIX HAD
+      A SECOND HALF NOBODY HAD FOUND.** It printed `84 84  generate.bend` — 84 shared, **84
+      disagree** — against the real gate's `726 shared, 0 disagree`, off cache hours old. The
+      mtime half landed first and **was not sufficient**: `read_fresh_cache` decides on mtime
+      alone, and a *fresh* file holding `{}` is not stale, so the 82 legacy `{}` files — every
+      one written before the "nothing is cached unless it produced rows" rule existed — were
+      still answered `"fresh"` and read as "this lane has no rows", and `main()` skipped them in
+      SILENCE. **MEASURED: 8 of the 38 wired pairs measured 0 shared row names, and all eight
+      were an oracle cache holding `{}`.** The read side now refuses an empty cache
+      (`cached()` returns `"empty"`), the message names the file and says it records a FAILED run,
+      and `store()` already refused to write one. Control in `rebase-gate-selftest.py`'s
+      `cache_rule()`: NO-OP (cache newer than source → used, rows unchanged) and CONTROL (cache
+      older → refused, both files named), plus CONTROL (empty but newest → refused). Live tree:
+      warm `726  0` → `touch` the port → stale message, re-run, still `726  0` → warm again.
+      **A CACHE THAT RECORDS NOTHING IS NOT A READING**, exactly as one older than its source is
+      not. See rules 41-42 in `notes/bend2-constraints.md` (positions 16367-16405).
+- [x] **`ORACLE_CONFORMANCE`'s hard-coded `84` — THE NUMBER IS NOW READ, NOT STORED.** All 38
+      stored counts are gone; the roster holds `(oracle, kind)` and `measure_roster()` measures
+      the intersection every run through the scan tool's own staleness rule, 8 lanes concurrently.
+      `generate.bend` measures **726** (0 disagree). The stale numbers it found: **`uop/ops.bend`
+      62 → 67**, and **`codegen/decomp/dtype.bend` 99 → 107 with 1 live DISAGREEMENT** — see the
+      next session. A count that cannot be measured is printed **UNMEASURED** and FAILS, naming
+      which lane produced nothing; it is never rounded to 0 and never inherited. See rules 43-44
+      (positions 16406-16452).
 
 ## Session 2026-10-03 (n) — NAMING GATE BACK TO PASS: `getenv :: _int` is QUALIFIED, AND IT IS A LEDGER RULING, NOT A TALLY
 

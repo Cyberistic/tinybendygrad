@@ -44,12 +44,14 @@ def size_b3() -> U32: 256
 def id_b4() -> U32: 104
 def size_b4() -> U32: 256
 
-# THE WORDS EACH BUFFER IS WRITTEN WITH. `mm_uploads` is the number of
-# WriteBuffers the run must issue and it is a gate row, because it is what
-# says the port did NOT re-upload the first launch's output.
-def words_b1() -> List<&2, U32>: [1065515629,3211477334,1069720045,3211769974,3193899395,3212796257,1057705381,3210731525,3189846039,3206677461,1063997991,1062536552,1059265132,3202257647,1068856035,3209032727,1049571066,1063510890,3214022936,1073797047,3200207291,1060259909,3200048583,3205553872,3213728021,3200440284,1065335770,3198937807,1055972615,1058062804,3207232115,1071691362,3218226413,1054692606,3197941058,1068476744,1067121501,1061161692,1033130975,1052371095,3215568517,3217495082,1058543567,3213315081,3205231602,1068669219,1065128874,3192190233,1058321960,1075767912,3213571913,1064425709,3198399488,3204889241,1054196470,3204541015,1057659737,3207634051,1074933821,1056051901,3209728669,3217504514,1067132992,3213366710]
-def words_b2() -> List<&2, U32>: [1057633385,3176085267,3196178142,3141055480,1051869422,3218376067,3212953087,1068363561,3214133208,1064914394,3190697290,3200948387,3202224623,3206660789,3192756571,3208626694,1058199605,3212598130,1049962717,1053322772,1069030689,1066572314,3202540450,1042356865,1065583960,3212332543,3206290363,3215325271,3197016760,3217517091,3198552884,1053727279,1074900573,3190904531,1066174366,1069998311,1043561591,1060661365,1057962199,1056418040,3192599764,1055411361,3218657309,3205272767,1066650287,1035938254,1050534988,1053127471,1072200666,1069289123,1048420526,1044413996,1070935690,3211546628,3201928156,1067701863,3217326593,1062370089,3210278275,1057151834,1059960337,3212069264,1020604396,1065878359]
-def words_b4() -> List<&2, U32>: [3213187607,1049900743,3221356081,3189881345,1049943909,3218448569,1068675437,3204610531,3204794015,3196672108,3215561449,3213575936,1050438329,3212364900,3215619664,3217442145,3205739150,3208301105,1067763150,1060447435,1066056477,1073782238,1075013997,3214420538,3215413836,3199367041,3197682819,3201139979,3215390370,3206032018,3191020332,1035020923,3206694773,1065845396,3218441448,1053485329,3207417091,1051746177,1066388325,1060096510,3214134010,3173101739,3185194761,1060549885,1052477026,1069721996,3215037913,1040630883,3200290300,3193800444,1047993454,3214365807,3208800967,1062006102,1062660870,3200728589,1060022954,1069933668,1047720961,3207792615,1071350265,1068606565,1064952843,1059914378]
+# THE BYTES EACH BUFFER IS WRITTEN WITH -- BYTES, one per element, because
+# `WriteBuffer`'s field is a byte list (`webgpu_call.js` does
+# `Uint8Array.from(bytes)`), NOT the u32 words the readback is compared in.
+# `mm_uploads` is the number of WriteBuffers the run must issue and it is a gate
+# row, because it is what says the port did NOT re-upload launch 0's output.
+def bytes_b1() -> List<&2, U32>: [0,0,192,63,0,0,64,191,0,0,192,63,0,0,0,192,0,0,0,63,0,0,128,62,0,0,0,63,0,0,128,62,0,0,64,191,0,0,0,63,0,0,0,191,0,0,192,63,0,0,128,190,0,0,64,191,0,0,64,191,0,0,0,191,0,0,0,192,0,0,64,191,0,0,0,191,0,0,128,190,0,0,192,63,0,0,0,192,0,0,128,62,0,0,192,191,0,0,128,190,0,0,0,192,0,0,128,190,0,0,192,63,0,0,64,191,0,0,128,190,0,0,128,190,0,0,0,191,0,0,128,190,0,0,0,192,0,0,0,192,0,0,0,191,0,0,64,191,0,0,64,191,0,0,128,62,0,0,0,192,0,0,192,63,0,0,0,191,0,0,128,190,0,0,128,190,0,0,192,191,0,0,0,192,0,0,192,191,0,0,192,191,0,0,0,63,0,0,0,192,0,0,192,191,0,0,0,191,0,0,0,192,0,0,0,63,0,0,0,191,0,0,192,63,0,0,192,63,0,0,192,191,0,0,0,192,0,0,0,191,0,0,0,191,0,0,192,191,0,0,0,191,0,0,128,62]
+def bytes_b2() -> List<&2, U32>: [0,0,128,62,0,0,64,191,0,0,128,62,0,0,64,191,0,0,0,192,0,0,192,191,0,0,128,190,0,0,128,62,0,0,128,62,0,0,0,191,0,0,0,63,0,0,128,62,0,0,0,192,0,0,192,191,0,0,192,63,0,0,0,192,0,0,64,191,0,0,0,191,0,0,128,62,0,0,0,191,0,0,0,63,0,0,128,62,0,0,192,63,0,0,128,190,0,0,0,191,0,0,192,191,0,0,128,190,0,0,128,62,0,0,0,191,0,0,128,62,0,0,192,63,0,0,128,62,0,0,128,62,0,0,0,191,0,0,0,192,0,0,128,62,0,0,128,190,0,0,0,192,0,0,64,191,0,0,128,62,0,0,0,192,0,0,64,191,0,0,0,63,0,0,128,190,0,0,128,62,0,0,0,63,0,0,0,192,0,0,64,191,0,0,0,63,0,0,64,191,0,0,64,191,0,0,192,191,0,0,128,190,0,0,192,63,0,0,128,62,0,0,128,62,0,0,0,63,0,0,128,62,0,0,64,191,0,0,64,191,0,0,192,63,0,0,192,191,0,0,0,192,0,0,0,63]
+def bytes_b4() -> List<&2, U32>: [0,0,0,191,0,0,64,191,0,0,192,191,0,0,64,191,0,0,0,191,0,0,128,62,0,0,128,190,0,0,192,63,0,0,192,63,0,0,192,191,0,0,64,191,0,0,192,191,0,0,128,190,0,0,0,192,0,0,128,190,0,0,0,63,0,0,128,62,0,0,128,190,0,0,0,192,0,0,128,62,0,0,192,191,0,0,192,63,0,0,192,63,0,0,64,191,0,0,0,191,0,0,192,191,0,0,192,191,0,0,192,63,0,0,0,63,0,0,192,191,0,0,192,191,0,0,64,191,0,0,128,190,0,0,0,63,0,0,192,63,0,0,128,62,0,0,64,191,0,0,64,191,0,0,0,63,0,0,128,62,0,0,0,191,0,0,128,190,0,0,128,62,0,0,192,191,0,0,0,192,0,0,0,191,0,0,0,191,0,0,128,62,0,0,128,62,0,0,128,190,0,0,192,63,0,0,128,62,0,0,192,191,0,0,192,63,0,0,192,63,0,0,192,191,0,0,0,192,0,0,0,192,0,0,128,190,0,0,128,190,0,0,128,190,0,0,128,190,0,0,128,62,0,0,0,63]
 def mm_upload_count() -> U32: 3
 
 # THE BIND LISTS, one per launch, in `ProgramInfo.globals` order -- the order
@@ -80,9 +82,16 @@ def gz1() -> U32: 1
 # workaround. `WriteBuffer`'s `(CALL_WRITE, write_len)` pair is `copy.copyin`'s
 # own emission (ops_webgpu.py:221), not a shape invented for this file.
 # ---------------------------------------------------------------------------
-def mkbuf(+c: G.Cs, size: U32) -> G.Cs:
-  +m = G.Cs.mint(c)
-  G.Cs.at(m, W.CALL_CREATE, W.OBJ_BUFFER, G.CreateBuffer{G.Cs.last(m), size, W.alloc.usage()})
+# THE HANDLE IS THE CALLER'S OWN ID, NOT A MINT. `webgpu_call.bend` binds a `bufs`
+# slot to `bs[i-1].id` -- the caller's id -- precisely so the seam's minted slots and
+# the caller's buffers are two namespaces a collision would be visible in, and
+# `webgpu_call.js`'s `buf()` resolves `m.slots.get(id) ?? m.owned.get(id)`. So the
+# `CreateBuffer` op carries `id_bN` as its `slot`, and `Cs.mint` is not called here
+# at all. MEASURED the other way round: minting and then writing to `id_bN` stopped
+# the walk at step 13 of 84 with "unbound slot 101", because the create was filed
+# under 1 and the write asked for 101.
+def mkbuf(+c: G.Cs, id: U32, size: U32) -> G.Cs:
+  G.Cs.at(c, W.CALL_CREATE, W.OBJ_BUFFER, G.CreateBuffer{id, size, W.alloc.usage()})
 
 def putbytes(+c: G.Cs, buf: U32, +bytes: List<&2, U32>) -> G.Cs:
   G.Cs.at(c, W.CALL_WRITE, W.copy.write_len(U32.from_nat(List.length(&2, U32, bytes))),
@@ -98,24 +107,43 @@ def ush(xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
 def l0() -> G.Cs: G.Cs.call(bufs0(), 0n, Nil{}, gx0(), gy0(), gz0(), False{}, Nil{}, entry0(), wgsl0())
 def l1() -> G.Cs: G.Cs.call(bufs1(), 0n, Nil{}, gx1(), gy1(), gz1(), False{}, Nil{}, entry1(), wgsl1())
 
-# ONE `Cs` PER BUFFER, then one `putbytes` per upload, in the oracle's order.
-def mkbuf_b0(+c: G.Cs) -> G.Cs: mkbuf(c, size_b0())
-def mkbuf_b1(+c: G.Cs) -> G.Cs: mkbuf(c, size_b1())
-def mkbuf_b2(+c: G.Cs) -> G.Cs: mkbuf(c, size_b2())
-def mkbuf_b3(+c: G.Cs) -> G.Cs: mkbuf(c, size_b3())
-def mkbuf_b4(+c: G.Cs) -> G.Cs: mkbuf(c, size_b4())
+
+# THE DEVICE BUFFERS, one `CreateBuffer` each in first-bind order, then one
+# `putbytes` per upload in the oracle's order. Spelled out from the oracle's
+# own lists so a different fixture needs no edit here and cannot drift from
+# the trace that produced it.
+def mkbuf_b0(+c: G.Cs) -> G.Cs: mkbuf(c, id_b0(), size_b0())
+def mkbuf_b1(+c: G.Cs) -> G.Cs: mkbuf(c, id_b1(), size_b1())
+def mkbuf_b2(+c: G.Cs) -> G.Cs: mkbuf(c, id_b2(), size_b2())
+def mkbuf_b3(+c: G.Cs) -> G.Cs: mkbuf(c, id_b3(), size_b3())
+def mkbuf_b4(+c: G.Cs) -> G.Cs: mkbuf(c, id_b4(), size_b4())
 
 def mm_buffers() -> G.Cs:
   c = mkbuf_b4(mkbuf_b3(mkbuf_b2(mkbuf_b1(mkbuf_b0(G.Cs.of())))))
-  c = putbytes(c, id_b1(), words_b1())
-  c = putbytes(c, id_b2(), words_b2())
-  c = putbytes(c, id_b4(), words_b4())
+  c = putbytes(c, id_b1(), bytes_b1())
+  c = putbytes(c, id_b2(), bytes_b2())
+  c = putbytes(c, id_b4(), bytes_b4())
   c
 
-def mm_read() -> G.Cs:
+# TWO READBACKS OF THE SAME RUN, and the second one is what makes the first one
+# interpretable. `mm_read_out` maps the ANSWER; `mm_read_in` maps an UPLOADED
+# INPUT. If `mm_read_in` comes back bit-identical to the words that were written,
+# then the buffers held exactly what CPython held and any difference in the
+# answer is the ARITHMETIC; if it does not, the difference is the DATA and the
+# arithmetic is not what needs looking at. One number cannot tell those apart.
+#
+# They are two `walk`es rather than two `MappedRange`es in one, because
+# `webgpu_call.js` keeps only the LAST mapped range (`m.range` is overwritten),
+# so a single walk would silently drop the first readback -- a null range that
+# reads as an empty answer rather than as a missing one.
+def mm_read_out() -> G.Cs:
   +r = G.Cs.readable(G.Cs.of(), id_b3(), size_b3())
   G.Cs.read(r, G.Cs.next(G.Cs.of()), size_b3())
+def mm_read_in() -> G.Cs:
+  +r = G.Cs.readable(G.Cs.of(), id_b1(), size_b1())
+  G.Cs.read(r, G.Cs.next(G.Cs.of()), size_b1())
 
+def mm_read() -> G.Cs: mm_read_out()
 # THE WHOLE RUN, as the `List<&2, G.Cs>` `webgpu_call.js`'s `walk` consumes: the
 # device init, the device buffers, the two launches, the staging read.
 #
@@ -123,8 +151,9 @@ def mm_read() -> G.Cs:
 # STAGING buffer first, so its handle is `Cs.next` of the state it was handed
 # -- `webgpu_call.bend` names the mistake: `next(r) - 1` is the command buffer
 # and the walk stops with "unbound slot".
-def mm_run() -> List<&2, G.Cs>:
-  [G.Cs.init(G.METAL(), Nil{}), mm_buffers(), l0(), l1(), mm_read()]
+def mm_prefix() -> List<&2, G.Cs>: [G.Cs.init(G.METAL(), Nil{}), mm_buffers(), l0(), l1()]
+def mm_run() -> List<&2, G.Cs>: List.append(&2, G.Cs, mm_prefix(), [mm_read_out()])
+def mm_run_in() -> List<&2, G.Cs>: List.append(&2, G.Cs, mm_prefix(), [mm_read_in()])
 
 
 # ---------------------------------------------------------------------------
