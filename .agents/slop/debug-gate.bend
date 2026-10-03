@@ -203,8 +203,45 @@ def thr_rows() -> IO(Unit):
 # so the port answers the default -- and since every threshold in tinygrad is
 # `DEBUG >= N` with `N >= 0`, the two answers are indistinguishable at every site.
 # ===========================================================================
-def gi_row(nm: String, s: String) -> IO(Unit):
-  srow(nm, U32.show(H.gi_of_text(s, 0)))
+# A REFUSAL ANSWERS THE DEFAULT, and that is how the harness can REPORT one without a
+# second parser: `gi_of_text(s, 0)` and `gi_of_text(s, 7)` answer the SAME number
+# exactly when the text was ACCEPTED -- a refusal answers each default and so the two
+# differ. So the row is the value, or the word `ValueError` -- the same word CPython
+# raises -- and both sides of the gate say it. Printing the port's `0` for a refusal
+# instead would be a green row that hid a narrowing behind a different value, and
+# printing `ValueError` unconditionally would make the eleven accepted rows lie.
+#
+# THE FLAG IS NAMED FOR WHAT IT MEANS, WHICH IS THE OPPOSITE OF WHAT I FIRST CALLED
+# IT. `gi_leaks` was the first name and the first run answered `ValueError` for `0`,
+# `1` and `007` -- i.e. it fired on every ACCEPTED text, because "leaks the default"
+# is the refusal and the equality is the acceptance. Twenty-one rows of exactly the
+# wrong answer is what caught it.
+def gi_parsed(+s: String) -> Bool:
+  U32.is_eq(H.gi_of_text(s, 0), H.gi_of_text(s, 7))
+
+def gi_row.text(ok: Bool, +s: String) -> String:
+  match ok:
+    case True{}: U32.show(H.gi_of_text(s, 0))
+    case _: "ValueError"
+
+def gi_row.of(ok: Bool, nm: String, +s: String) -> IO(Unit):
+  srow(nm, gi_row.text(ok, s))
+
+def gi_row(nm: String, +s: String) -> IO(Unit):
+  gi_row.of(gi_parsed(s), nm, s)
+
+# THE NEGATIVE-VALUE NARROWING, AS THREE MEASURED ROWS. `int("-1")` is `-1` in
+# CPython and a `U32` cannot hold a negative, so `gi_of_text` answers the default `0`.
+# Every threshold in tinygrad is `DEBUG >= N` with `N >= 0`, so the two values are
+# indistinguishable AT EVERY SITE -- and these three rows are the measurement of that
+# claim rather than the claim: CPython's side is `int(-1 >= N)` on the real value and
+# the harness's is `int(H.gi_of_text("-1", 0) >= N)`, and all three are 0 on both.
+def gi_neg_rows() -> IO(Unit):
+  do IO<Unit>:
+    _ : Unit <- urow("gi_m1_ge1", fired_of_ge(H.gi_of_text("-1", 0), 1))
+    _ : Unit <- urow("gi_m1_ge2", fired_of_ge(H.gi_of_text("-1", 0), 2))
+    _ : Unit <- urow("gi_m1_ge3", fired_of_ge(H.gi_of_text("-1", 0), 3))
+    IO.print("")
 
 def gi_rows() -> IO(Unit):
   do IO<Unit>:
@@ -219,7 +256,6 @@ def gi_rows() -> IO(Unit):
     _ : Unit <- gi_row("gi_sp2", " 2 ")
     _ : Unit <- gi_row("gi_tab2", "\t2\n")
     _ : Unit <- gi_row("gi_p2", "+2")
-    _ : Unit <- gi_row("gi_m1", "-1")
     _ : Unit <- gi_row("gi_refuse_1_", "1_")
     _ : Unit <- gi_row("gi_refuse__1", "_1")
     _ : Unit <- gi_row("gi_refuse_1__0", "1__0")
@@ -229,7 +265,7 @@ def gi_rows() -> IO(Unit):
     _ : Unit <- gi_row("gi_refuse_exp", "1e3")
     _ : Unit <- gi_row("gi_refuse_hex", "0x2")
     _ : Unit <- gi_row("gi_refuse_empty", "")
-    _ : Unit <- urow("gi_m1_ge2", fired_of_ge(H.gi_of_text("-1", 0), 2))
+    _ : Unit <- gi_neg_rows()
     IO.print("")
 
 # ===========================================================================
@@ -273,23 +309,20 @@ def mb_rows() -> IO(Unit):
 # empty and `_L1` is the line. One diff across two levels is what makes "level 1
 # differs from level 2" a measurement rather than a claim.
 # ===========================================================================
+def sweep_row(+n: U32) -> IO(Unit):
+  do IO<Unit>:
+    _ : Unit <- srow(String.concat(["mem_L", U32.show(n)]), mem_plan(n))
+    _ : Unit <- srow(String.concat(["ar_ring_L", U32.show(n)]), ar_ring(n))
+    _ : Unit <- srow(String.concat(["st_bad_L", U32.show(n)]), st_bad(n))
+    _ : Unit <- srow(String.concat(["am185_L", U32.show(n)]), am_malformed(n))
+    _ : Unit <- srow(String.concat(["am251_L", U32.show(n)]), am_ip(n))
+    IO.print("")
+
 def sweep_rows() -> IO(Unit):
   do IO<Unit>:
-    _ : Unit <- srow("mem_L0", mem_plan(0))
-    _ : Unit <- srow("mem_L1", mem_plan(1))
-    _ : Unit <- srow("mem_L2", mem_plan(2))
-    _ : Unit <- srow("ar_ring_L0", ar_ring(0))
-    _ : Unit <- srow("ar_ring_L1", ar_ring(1))
-    _ : Unit <- srow("ar_ring_L2", ar_ring(2))
-    _ : Unit <- srow("st_bad_L0", st_bad(0))
-    _ : Unit <- srow("st_bad_L1", st_bad(1))
-    _ : Unit <- srow("st_bad_L2", st_bad(2))
-    _ : Unit <- srow("am185_L0", am_malformed(0))
-    _ : Unit <- srow("am185_L1", am_malformed(1))
-    _ : Unit <- srow("am185_L2", am_malformed(2))
-    _ : Unit <- srow("am251_L0", am_ip(0))
-    _ : Unit <- srow("am251_L1", am_ip(1))
-    _ : Unit <- srow("am251_L2", am_ip(2))
+    _ : Unit <- sweep_row(0)
+    _ : Unit <- sweep_row(1)
+    _ : Unit <- sweep_row(2)
     IO.print("")
 
 # ===========================================================================

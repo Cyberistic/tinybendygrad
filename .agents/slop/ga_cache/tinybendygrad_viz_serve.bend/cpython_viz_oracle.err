@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/vz/viz_oracle.py", line 38, in <module>
+    from tinygrad.viz import serve as viz
+ModuleNotFoundError: No module named 'tinygrad'

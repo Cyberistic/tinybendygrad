@@ -1,0 +1,8 @@
+SOME PROOFS FAIL
+Error:
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+Location:
+1888 |           # A freshness Bool cannot be read twice ("consumed more than once").
+1889>|           (st2, sn) = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
+     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1890 |           dd_rs.go(q, ar, st2, sn)

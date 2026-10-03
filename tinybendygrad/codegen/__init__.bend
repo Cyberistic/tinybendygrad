@@ -192,27 +192,24 @@ def fixture.sink(ar: O.Arena, p0: U32, p1: U32, a: U32) -> O.Found:
 def gr_show.repl.kv(k: String, v: U32) -> String:
   String.concat([k, "->", U32.show(v)])
 
+def gr_show.repl.go.bind(t: List<&2, U32>, +m: Map<&2, U32>, acc: String) -> String:
+  match t:
+    case Nil{}: acc
+    case +v <> rest: gr_show.repl.go.bind(rest, m, String.concat([acc, gr_show.repl.kv(U32.show(v), R.cu32(m, v)), ","]))
+
+def gr_show.repl.go.first(t: List<&2, U32>, +m: Map<&2, U32>, +u: U32) -> String:
+  gr_show.repl.go.bind(t, m, gr_show.repl.kv(U32.show(u), R.cu32(m, u)))
+
 def gr_show.repl.go(+m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   match topo:
     case Nil{}: ""
-    case +u <> +t:
-      match t:
-        case Nil{}: gr_show.repl.kv(U32.show(u), R.cu32(m, u))
-        case _: String.concat([gr_show.repl.kv(U32.show(u), R.cu32(m, u)), ",", gr_show.repl.go(m, t)])
+    case +u <> t: gr_show.repl.go.first(t, m, u)
 
 # Print the repl map as a comma-separated list of "old->new" pairs,
 # one per toposort node. We iterate the toposort (the keys of `repl`)
 # and look up each one in the map.
 def gr_show.repl(m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   gr_show.repl.go(m, topo)
-
-def main.run.show.go(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>, topo_s: String, repl_s: String) -> IO(Unit):
-  match r:
-    case Some{new_sink}: IO.print(String.concat(["new_sink=", U32.show(new_sink), " topo=", topo_s, " repl=", repl_s]))
-    case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
-
-def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
-  main.run.show.go(r, repl, topo, gr_show.topo(topo), gr_show.repl(repl, topo))
 
 # Show the toposort as a comma-separated list of U32s. A direct
 # recursive fold on the list. The recursion is on `rest` (the
@@ -222,7 +219,7 @@ def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) ->
 def gr_show.topo.k(rest: List<&2, U32>, acc: String) -> String:
   match rest:
     case Nil{}: acc
-    case +v <> t: gr_show.topo.k(t, String.concat([acc, U32.show(v), ","]))
+    case v <> t: gr_show.topo.k(t, String.concat([acc, U32.show(v), ","]))
 
 def gr_show.topo.k.of(t: List<&2, U32>, acc: String, u: U32) -> String:
   gr_show.topo.k(t, String.concat([acc, U32.show(u), ","]))
@@ -230,12 +227,20 @@ def gr_show.topo.k.of(t: List<&2, U32>, acc: String, u: U32) -> String:
 def gr_show.topo(topo: List<&2, U32>) -> String:
   match topo:
     case Nil{}: ""
-    case +u <> t: gr_show.topo.k.of(t, "", u)
+    case u <> t: gr_show.topo.k.of(t, "", u)
 
 # Build the full fixture and the ctx; the gate runs `walk_rewrite` and
 # prints the repl map. The `+ar` is consumed once per `walk_rewrite`
 # /`wr.go`/`toposort` call, so the three calls each take a `+ar` and
 # the per-step result is bound through a sub-def.
+def main.run.show.go(r: Maybe<&2, U32>, repl_s: String) -> IO(Unit):
+  match r:
+    case Some{new_sink}: IO.print(String.concat(["new_sink=", U32.show(new_sink), " repl=", repl_s]))
+    case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
+
+def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
+  main.run.show.go(r, gr_show.repl(repl, topo))
+
 def main.run.call.of(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
   main.run.show(walk_rewrite(ar, sink, pm, ctx), repl, topo)
 

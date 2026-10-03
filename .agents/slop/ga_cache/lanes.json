@@ -240,5 +240,181 @@
   "native": {
    "rc": 0
   }
+ },
+ "tinybendygrad/runtime/ops_python.bend": {
+  "cpython:ops-python-render-oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_qcom.bend": {
+  "cpython:qcom-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_rdma.bend": {
+  "cpython:oracle_rdma_gate": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/support/c.bend": {
+  "cpython:c-oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/support/elf.bend": {
+  "cpython:elf_rows": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/support/hcq2.bend": {
+  "cpython:hcq2-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/support/usb.bend": {
+  "cpython:usb-oracle-run": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/schedule/indexing.bend": {
+  "cpython:indexing-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/schedule/prepare.bend": {
+  "cpython:prepare-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/schedule/rangeify.bend": {
+  "cpython:rangeify-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/tensor.bend": {
+  "cpython:tensor-gate": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/uop/fold.bend": {
+  "cpython:mm-lift-gate": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/uop/ops.bend": {
+  "cpython:rebase-oracle-ops": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/uop/render.bend": {
+  "cpython:render-gate-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/uop/spec.bend": {
+  "cpython:rebase-oracle-spec": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/viz/serve.bend": {
+  "cpython:viz_oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
  }
 }

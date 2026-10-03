@@ -266,40 +266,47 @@ def fixture_suffix_only_ops():
 ENCS, ENUMS, TYPES, SUFFIX = fixture_encodings(), fixture_enums(), fixture_types(), fixture_suffix_only_ops()
 
 
-# The VALUE is the emitted FILE, not "ok": the port's `gl` joins the file with
-# newlines and the gate joins the oracle's per-LINE rows into the same string, so
-# a "ok" value would have made every emitter row assert the same thing, which is
-# the exact "count row" failure the renderer conventions warn about -- one row
-# that cannot fail.
+# ONE ROW PER EMITTED LINE, KEYED ON ITS INDEX, PLUS ONE COUNT ROW PER FILE.
 #
-# ⚠ ONE ROW PER FILE, NOT ONE PER LINE, and the per-line shape was MEASURED to be
-# the wrong key.  The oracle used to emit `f"{tag} | {ln}"` -> the emitted LINE,
-# 585 rows.  The emitted text REPEATS -- `  saddr = SSrcField(31, 24,
-# default=NULL)` appears in four classes, `  V_DOT2ACC_F32_F16 = 0` in three --
-# so the line is NOT a unique key and a name-keyed dict kept 585 of 588+ lines by
-# accident.  Worse, that shape is what `ga_fix.py:tag_join` had to reassemble, and
-# reassembling it LOST blank lines (`tag | ` is one row for four separators) --
-# which is how a correct oracle produced a wrong `py=` literal that disagreed
-# with a right port.  Keying on the line can only be made sound by an index,
-# and an index cannot see a dropped LAST line.  One whole-file row can: it moves
-# for a dropped line at ANY position, including the tail.
+# The obvious key -- the line itself, `f"{tag} | {ln}"` -- is NOT A KEY.  The emitted
+# text REPEATS: `  saddr = SSrcField(31, 24, default=NULL)` appears in four classes,
+# `  V_DOT2ACC_F32_F16 = 0` in three, and four BLANK lines are one key.  A name-keyed
+# dict kept 585 of 756 rows by accident, and `ga_fix.py:tag_join` reassembling the
+# files out of them LOST three blank separators -- which is how `common.py` came out
+# with no blank line before `class Fmt(Enum):`, a WRONG expectation spliced from a
+# correct oracle that then disagreed with the RIGHT port.
 #
-# The name is the TAG, so it is the port's `gl` name and `rows()` sees it.  It
-# only sees it because the port applies `esc_row` (`renderer/cstyle.bend:1760`)
-# -- see generate.bend's `gl` -- and so does `R()` below, on both sides.
-def R(s):
-    """A row's text, escaped to ONE line.  `renderer/cstyle.bend:1760` verbatim:
-    every REAL newline becomes the two characters `\\` and `n`, on BOTH sides, so
-    the comparison stays textual.  It is deliberately NOT injective -- a literal
-    `\\` `n` already in the text is left alone and so maps to the same thing.  Two
-    of the seven emitted files contain one (`write_pcode` emits `{code!r}`,
-    generate.py:497); generate.bend's `esc_row` names the blind spot and
-    `.agents/slop/ga_gate.py` diffs the RAW text to cover it."""
-    return s.replace("\n", "\\n")
+# An INDEX is a key, and it cannot see a dropped LAST line -- which is what `lines`
+# is for, and it is a real disagreement because its `py=` is CPython's count while
+# the port's is its own list length.  With the count, per-line is exactly as strong
+# as one whole-file row: drop a middle line and every later row moves; drop the last
+# and `lines` moves.
+#
+# WHY NOT ONE WHOLE-FILE ROW, which is what the port emitted until today?  Because
+# it does not RUN.  A `String` is an `SCon` spine (references/bend/bend2/base.bend:1848)
+# and the interpreter has no tail call, so touching a 16,815-character value is
+# 16,815 nested frames; measured on a probe, 4,000 characters works and 8,000 is
+# "the machine stack overflowed".  The whole-file version measured 5 successes in 12
+# runs on the real file, WITH NO ESCAPING AT ALL, so this lane has been BROKEN about
+# half the time for a reason that has nothing to do with rows.  A per-line row builds
+# no string longer than one emitted line, so it cannot reach that ceiling.
+# The RAW emitted text per tag, for `ga_fix.py` to splice as the port's `want`
+# literal.  It is a dict, NOT a reassembly of the rows above: every blank line of an
+# emitted file is the row `tag | `, so the rows COLLAPSE four blank separators into
+# one and a reassembled file loses three of them -- which is how `common.py` came out
+# with no blank line before `class Fmt(Enum):`, a wrong expectation spliced from a
+# correct oracle that then disagreed with the RIGHT port.  ga_fix.py imports this
+# module and reads this dict, so the whole-file `want` never passes through a text
+# file at all.
+EMITTED = {}
 
 
 def emit_rows(tag, text):
-    row(tag, R(text))
+    EMITTED[tag] = text
+    lines = text.split("\n")
+    for i, ln in enumerate(lines):
+        row(f"{tag} | {i}", ln)
+    row(f"{tag} lines", str(len(lines)))
 
 
 # `extract_pcode` runs FIRST because upstream `__main__` runs it first and feeds
@@ -455,14 +462,17 @@ for nm, val in ROWS:
     print(f"{nm} = [{val}]   py=[{val}]")
 
 print(f"ORACLE ROW COUNT = {len(ROWS)}")
-# A ROW-COUNT FLOOR IS THE WRONG LIVENESS CHECK ALONE, because the count fell by
-# 748 when 756 per-line emitter rows became 8 whole-file rows -- and every one of
-# those 748 lines is still compared, inside one of the 8.  So the count is
-# asserted at its measured value AND the eight emitter tags are asserted PRESENT,
-# which is the thing that actually dies silently.  Measured 2026-10-03: 144 rows,
-# of which 8 are emitter files totalling 588 emitted lines.
+# A ROW-COUNT FLOOR IS THE WRONG LIVENESS CHECK ALONE, because the count fell by 748
+# when 756 per-line emitter rows became 8 whole-file rows and then ROSE to 778 when
+# they went back to one row per line keyed on an INDEX.  So the count is asserted at
+# its measured value AND every emitter tag's LAST index is asserted PRESENT, which is
+# the thing that actually dies silently -- an emitter that returns an empty string
+# would otherwise emit one `| 0` row and look alive.  Measured 2026-10-03: 778 rows,
+# 642 of them emitter rows (634 lines across 8 files + 8 counts).
 EMITTER_TAGS = ("enum rdna3", "operands rdna3", "operands cdna", "ins rdna3",
                 "ins cdna", "pcode rdna3", "pcode cdna", "common")
-assert len(ROWS) >= 144, f"ORACLE EMITTED {len(ROWS)} ROWS -- a gate whose oracle prints nothing is not a gate"
-missing = [t for t in EMITTER_TAGS if not any(n == t for n, _ in ROWS)]
+names = [n for n, _ in ROWS]
+assert len(ROWS) >= 778, f"ORACLE EMITTED {len(ROWS)} ROWS -- a gate whose oracle prints nothing is not a gate"
+missing = [t for t in EMITTER_TAGS
+           if f"{t} lines" not in names or f"{t} | 0" not in names]
 assert not missing, f"EMITTER ROWS MISSING: {missing} -- write_and_read returned nothing"

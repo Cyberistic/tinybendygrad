@@ -1165,12 +1165,17 @@ def rne(+ar: O.Arena, +v: U32, +s: U32) -> Maybe<&2, O.Found>:
 def f2f_clamp_max.put(+dt: S.Dt) -> Maybe<&2, F32>:
   +e = T.tx_finfo_e(dt)
   +m = T.tx_finfo_m(dt)
-  # fnuz and fp8e4m3 are the `(1 << e) - 1, (1 << m) - 2` layouts; the rest are
-  # `(1 << e) - 2, (1 << m) - 1`. `dd_is_e4m3` is NOT fnuz AND a 4-bit exponent,
-  # so the two tests together read all three of dtype.py's lines.
-  +ocp = Bool.or(T.tx_is_fnuz(dt), dd_is_e4m3(dt))
-  +me = U32.sub(T.tx_powi32(e), Bool.pick(U32, ocp, 0, 2))
-  +mm = U32.sub(T.tx_powi32(m), Bool.pick(U32, ocp, 0, 2))
+  # dtype.py:129-130 is TWO PREDICATES AND NOT ONE. `max_exp` is `(1 << e) - 1`
+  # for the fnuz-and-e4m3 layouts and `(1 << e) - 2` for the other three;
+  # `max_man` is `(1 << m) - 2` for `fp8e4m3` ALONE and `(1 << m) - 1`
+  # everywhere else -- fnuz INCLUDED. One `ocp` for both gets `fp8e4m3fnuz` and
+  # `fp8e5m2fnuz` wrong, and the two errors partly cancel so the row that
+  # would have caught it was never printed. `dd_is_e4m3` is NOT fnuz AND a
+  # 4-bit exponent.
+  +e4m = dd_is_e4m3(dt)
+  +ocp = Bool.or(T.tx_is_fnuz(dt), e4m)
+  +me = U32.sub(T.tx_powi32(e), Bool.pick(U32, ocp, 1, 2))
+  +mm = U32.sub(T.tx_powi32(m), Bool.pick(U32, e4m, 2, 1))
   +num = U32.add(T.tx_powi32(m), mm)
   +ex = U32.sub(U32.sub(me, T.exponent_bias(dt)), m)
   +nn = U32.to_nat(num)
@@ -2391,8 +2396,59 @@ def unpack.one(nm: String, +ga: Ga) -> Ga:
   +from = Ga.n(ga)
   l2i.two(nm, unpack32(Ga.ar(ga), Ga.pool(ga, 9n), S.uint32()), ga, from)
 
+# ---- the `c*` rows: `f2f_clamp`'s `mx` CONSTANT (dtype.py:131), as a VALUE
+#
+# These are the ONLY fixtures that reach `f2f_clamp_max`, and until they existed
+# nothing in this file called it from the gate at all: `f2f_clamp` is the only
+# caller and no `f2f`/`f2f_clamp` fixture is printed either. The def was written,
+# documented as "factored out because it is a VALUE", and never exercised -- and
+# it was wrong on all SEVEN dtypes it answers, in a way that cancelled on the
+# two fnuz layouts.
+#
+# THE ORACLE'S `c{i}` ROW IS A FUNCTION OF `dt` ALONE AND CPython'S IS NOT.
+# `mx` is `val.const_like(...)`, so its VALUE also depends on `fr`, and the two
+# answers differ for `float64` AND ONLY THERE. Called, in
+# `.agents/slop/dd-divE-probe.py`:
+#
+#     f2f_clamp(f32_val, float64) -> mx = inf     -> F(2139095040)
+#     f2f_clamp(f64_val, float64) -> mx = 1.8e308 -> F(ovf), outside f32
+#
+# `c0..c6` are the same number under both, which is why the row is well posed
+# for seven of the eight. `c7` prints `unported` here rather than matching the
+# oracle's `F(ovf)`, which is the oracle declining to render a value, not a
+# value at all -- and matching it would be a statement about tinygrad that the
+# `fr = f32` call above contradicts. TODO: `c7` closes when this file has an
+# `F64` or when `f2f_clamp_max` returns the `fr`-narrowed value instead of the
+# bare `mx`; either way the fixture is printed, so the gap is COUNTED.
+
+def dd_cmx.row(nm: String, m: Maybe<&2, F32>) -> String:
+  match m:
+    case Some{f}: String.concat([nm, "=F(", U32.show(F32.bits(f)), ")\n"])
+    case None{}: String.concat([nm, "=refused:unported\n"])
+
+def dd_cmx.put(nm: String, +dt: S.Dt, +ga: Ga) -> Ga:
+  match ga:
+    case Ga{+ar, +n, +s, +ps, +w, z, o}:
+      Ga{ar, n, String.concat([s, dd_cmx.row(nm, f2f_clamp_max(dt))]), ps, w, z, o}
+
+def dd_cmx.pick(i: U32, +ga: Ga) -> Ga:
+  match i:
+    case 0: dd_cmx.put("c0", S.fp8e4m3(), ga)
+    case 1: dd_cmx.put("c1", S.fp8e4m3fnuz(), ga)
+    case 2: dd_cmx.put("c2", S.fp8e5m2(), ga)
+    case 3: dd_cmx.put("c3", S.fp8e5m2fnuz(), ga)
+    case 4: dd_cmx.put("c4", S.half(), ga)
+    case 5: dd_cmx.put("c5", S.bfloat16(), ga)
+    case 6: dd_cmx.put("c6", S.single(), ga)
+    case _: dd_cmx.put("c7", S.double(), ga)
+
+def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
+  match n:
+    case 0n: ga
+    case 1n+p: dd_cmx.rows(p, U32.add(i, 1), dd_cmx.pick(i, ga))
+
 def gate() -> IO(Unit):
-  IO.print(Ga.s(unpack.one("up", l2i.rows(32n, 0, fixtures()))))
+  IO.print(Ga.s(dd_cmx.rows(8n, 0, unpack.one("up", l2i.rows(32n, 0, fixtures())))))
 
 def main() -> IO(Unit):
   gate()

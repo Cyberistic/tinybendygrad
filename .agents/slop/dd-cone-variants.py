@@ -109,13 +109,75 @@ ADD_PAIR = """def dd_rs.add(u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
 
 CALL_PAIR = """          # TODO: add is unconditional, so a node with two parents is listed twice.
           # A freshness Bool cannot be read twice ("consumed more than once").
-          st2, sn = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
+          (st2, sn) = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
           dd_rs.go(q, ar, st2, sn)"""
 
-EDITS = {"push": (PUSH_OLD, PUSH_NEW), "add": (ADD_OLD, ADD_NEW), "call": (CALL_OLD, CALL_NEW),
+# (1b) as (1), but the pair is bound to a NAME before it is destructured: the
+#      destructuring itself is a match, and a match may not scrutinise a computed
+#      value -- which is why `Found.of` destructures its PARAMETER `p`.
+CALL_PAIR2 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
+          # A freshness Bool cannot be read twice ("consumed more than once").
+          r2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
+          (st2, sn) = r2
+          dd_rs.go(q, ar, st2, sn)"""
+
+# ---- BISECTION: which of the two new things breaks the cone? --------------
+# T1 changes ONLY the `has` call count on the ADD side: `add` gains an unused
+#     fuel parameter, so `ar` gains one extra read and NOTHING else changes.
+# T2 changes ONLY `add`'s BODY: same call site as the fix, but `add` ignores the
+#     Bool and prepends unconditionally, so it keeps the old (buggy) semantics.
+# If T1 empties the cone the wall is the extra READ of a `+` binder; if T1 passes
+# and T2 empties it, the wall is the `match nat` body.
+ADD_T1 = """def dd_rs.add(f: Nat, u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, [u], xs)"""
+
+CALL_T1 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
+          # A freshness Bool cannot be read twice ("consumed more than once").
+          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
+          sn = dd_rs.add(dd_seen(ar), u, seen)
+          dd_rs.go(q, ar, st2, sn)"""
+
+ADD_T2 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, [u], xs)"""
+
+CALL_T2 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
+          # A freshness Bool cannot be read twice ("consumed more than once").
+          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
+          sn = dd_rs.add(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), u, seen)
+          dd_rs.go(q, ar, st2, sn)"""
+
+# T3 isolates the `match` itself (both arms return `xs`, no allocation).
+# T5 keeps the `match` but replaces the `[u]` LITERAL in the allocating arm with
+#     `dd_rs.cat(u, xs)`, which is the same prepend without a fresh list literal.
+ADD_T3 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  match nat:
+    case True{}: xs
+    case False{}: xs"""
+
+CALL_T3 = CALL_T2
+
+ADD_T5 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  match nat:
+    case True{}: dd_rs.cat(u, xs)
+    case False{}: xs"""
+
+CALL_T5 = CALL_T2
+
+ADD_T6 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  match nat:
+    case True{}: xs
+    case False{}: dd_rs.cat(u, xs)"""
+
+CALL_T6 = CALL_T2
+
+EDITS = {"addT6": (ADD_OLD, ADD_T6), "callT6": (CALL_OLD, CALL_T6), "push": (PUSH_OLD, PUSH_NEW), "add": (ADD_OLD, ADD_NEW), "call": (CALL_OLD, CALL_NEW),
          "add4": (ADD_OLD, ADD_NEW), "call4": (CALL_OLD, CALL_REORDER),
          "add1": (ADD_OLD, ADD_PAIR), "more1": (MORE_OLD, MORE_PAIR),
-         "call1": (CALL_OLD, CALL_PAIR)}
+         "call1": (CALL_OLD, CALL_PAIR), "call1b": (CALL_OLD, CALL_PAIR2),
+         "addT1": (ADD_OLD, ADD_T1), "callT1": (CALL_OLD, CALL_T1),
+         "addT2": (ADD_OLD, ADD_T2), "callT2": (CALL_OLD, CALL_T2),
+         "addT3": (ADD_OLD, ADD_T3), "callT3": (CALL_OLD, CALL_T3),
+         "addT5": (ADD_OLD, ADD_T5), "callT5": (CALL_OLD, CALL_T5)}
 
 # name -> which of the three edits to apply.  `fix-add`/`fix-push` isolate the two
 # bugs; `revert-*` are the mutation harness's A/B arms; `ctl-comment` is RULE C.
@@ -125,7 +187,14 @@ VARIANTS = {
     "fix-push": ["push"],
     "fix-both": ["push", "add", "call"],
     "shape4": ["push", "add4", "call4"],
+    "T1": ["addT1", "callT1"],
+    "T2": ["addT2", "callT2"],
+    "fix5": ["push", "addT5", "callT5"],
+    "T3": ["addT3", "callT3"],
+    "T5": ["addT5", "callT5"],
+    "T6": ["addT6", "callT6"],
     "shape1": ["push", "add1", "more1", "call1"],
+    "shape1b": ["push", "add1", "more1", "call1b"],
     "revert-add": ["push"],
     "revert-push": ["add", "call"],
     "revert-both": [],
