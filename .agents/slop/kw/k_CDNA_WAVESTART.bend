@@ -1,2 +1,0 @@
-def CDNA_WAVESTART() -> U32:
-  1

@@ -1,2 +1,0 @@
-def IMMEDIATE_MASK() -> U32:
-  1

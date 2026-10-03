@@ -1,2 +1,0 @@
-def TS_DELTA_S5_W3_RDNA4() -> U32:
-  1
