@@ -301,11 +301,41 @@ day rediscovering that `2n+p` is not an even-case test.
       * Output: `new_sink=8 repl=1->5,2->6,3->5,4->8` -- PARAM0 -> A,
         PARAM1 -> B, ALLOC -> BUF, SINK -> rebuilt. All gates green.
 
+      **THE FIRST REAL GATE LANDED** (commit `b2cb00fb`): three fixes, all
+      found by comparing the port to CPython rather than by reading either.
+      * **THE SINK IDENTITY.** The engine mints a new SINK in the rebuild
+        step and then matches the ORIGINAL against the rule table.
+        `pm_post_sched_cache` had no SINK entry, so no rule fired and the
+        rebuild's value stood. CPython's table HAS one (it returns self) and
+        CPython's repl says `SINK->SINK`. Adding the tag-0 entry makes the
+        port say `4->4`, which is the same statement about identity. **A
+        table that omits a rule the Python has is a silently different
+        rewrite, and the only thing that finds it is the diff.**
+      * **THE PRINTER SEPARATOR.** `gr_show.repl` emitted no comma between
+        the first two entries, so `1->5` and `2->6` rendered as
+        `1->52->6` -- a row that reads as a malformed pair. The comma now
+        rides on the FIRST entry (`gr_show.repl.go.first`) and not only on
+        the tail (`gr_show.repl.go.bind`), because the first entry has no
+        predecessor to have appended one.
+      * **THE GATE ITSELF.** `.agents/slop/gr-diff.sh` counts repl entries on
+        both sides and exits 1 with both lanes printed on a mismatch. It
+        COUNTS rather than diffs byte-for-byte because the port prints
+        arena indices and CPython prints op+arg, and the two arenas number
+        the same logical nodes differently -- a byte diff would be a diff
+        of two unrelated numberings. The count is the coarse gate; per-entry
+        comparison needs the port's printer to NAME ops, which is the next
+        unit.
+      * Gate: `bash .agents/slop/gr-diff.sh` prints `AGREE on 4 repl
+        entries`. `codegen/__init__.bend`, `uop/ops.bend` and
+        `uop/spec.bend` are all `ALL PROOFS CHECK`, and the interpreted and
+        native lanes of the engine are byte-identical.
+
       **OUTSTANDING**: `unified_rewrite` (the fixpoint driver) and
-      `graph_rewrite` (the dispatcher) are still walls. The 269
-      `pm_lower_calls` recursion is a future unit. The ~40 deferred
-      `TODO(p3)` markers that the engine unblocked are still gated on
-      those walls.
+      `graph_rewrite` (the dispatcher) are still walls. The printer must be
+      taught to NAME ops so the gate can compare per entry and not only count
+      them. The 269 `pm_lower_calls` recursion is a future unit. The ~40
+      deferred `TODO(p3)` markers that the engine unblocked are still gated
+      on the fixpoint.
 
 ## Phases P3–P8 — the port
 
