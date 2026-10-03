@@ -449,7 +449,13 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
     case O.OpsCMPLT{}     : cfo_bin("<", a, b)
     case O.OpsCMPEQ{}     : cfo_bin("==", a, b)
     case O.OpsWHERE{}     : String.concat(["select(", c, ",", b, ",", a, ")"])
-    case _                : ""
+      # Upstream is LOUD here: `code_for_op[op](...)` raises KeyError for an op with no arm
+      # (measured: KeyError - Ops.LOAD). This port returned "", which is the divergence that let
+      # Ops.FDIV render as the EMPTY STRING -- a malformed shader, not an error.
+      # Bend is total and cannot raise, so the equivalent of KeyError is an operand that CANNOT
+      # COMPILE and that NAMES THE OP: `UNHANDLED(Ops.FDIV)` is a call to nothing. A WGSL comment
+      # would have been valid and would have silently deleted the operand instead.
+    case _                : String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])
 
 # :95 render_cast -- `f"{self.type_map[u.dtype]}({val})"`, then the two narrow
 # forms. `u` is a UOp in Python and only `u.dtype` is read, so `dt` is the
@@ -1105,8 +1111,14 @@ def r_cfos() -> String:
     r_cfo1(O.OpsTRUNC{}, "trunc(A)"), r_cfo1(O.OpsAND{}, "(A&B)"), r_cfo1(O.OpsXOR{}, "(A^B)"),
     r_cfo1(O.OpsOR{}, "(A|B)"), r_cfo1(O.OpsADD{}, "(A+B)"), r_cfo1(O.OpsSUB{}, "(A-B)"),
     r_cfo1(O.OpsMUL{}, "(A*B)"), r_cfo1(O.OpsCMOD{}, "(A%B)"), r_cfo1(O.OpsCDIV{}, "(A/B)"),
+    r_cfo1(O.OpsFDIV{}, "(A/B)"),
     r_cfo1(O.OpsCMPNE{}, "(A!=B)"), r_cfo1(O.OpsSHR{}, "(A>>B)"), r_cfo1(O.OpsSHL{}, "(A<<B)"),
-    r_cfo1(O.OpsCMPLT{}, "(A<B)"), r_cfo1(O.OpsCMPEQ{}, "(A==B)"), r_cfo1(O.OpsWHERE{}, "select(C,B,A)")])
+    r_cfo1(O.OpsCMPLT{}, "(A<B)"), r_cfo1(O.OpsCMPEQ{}, "(A==B)"), r_cfo1(O.OpsWHERE{}, "select(C,B,A)"),
+    # The FALLTHROUGH is the row that matters most: upstream raises KeyError for an op with no arm,
+    # so an unhandled op must not render as valid-looking WGSL. LOAD is chosen because it has no arm
+    # and is an op a reader would expect to be absent (it never reaches a rendered kernel).
+    r_cfo1(O.OpsLOAD{}, "UNHANDLED(Ops.LOAD)"),
+    r_cfo1(O.OpsMAX{}, "UNHANDLED(Ops.MAX)"), r_cfo1(O.OpsPOW{}, "UNHANDLED(Ops.POW)")])
 
 # -- code_for_workitem --------------------------------------------------------
 def r_wi1(+k: String, isg: Bool, x: U32, py: String) -> String: r("workitem " ++ k, code_for_workitem(isg, x), py)
