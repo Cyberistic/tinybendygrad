@@ -194,31 +194,34 @@ def gr_show.repl.go(+m: Map<&2, U32>, topo: List<&2, U32>) -> String:
         case Nil{}: gr_show.repl.kv(U32.show(u), R.cu32(m, u))
         case _: String.concat([gr_show.repl.kv(U32.show(u), R.cu32(m, u)), ",", gr_show.repl.go(m, t)])
 
-# Print the repl map as a comma-separated list of "old->new" pairs,
-# one per toposort node. We iterate the toposort (the keys of `repl`)
-# and look up each one in the map.
-def gr_show.repl(m: Map<&2, U32>, topo: List<&2, U32>) -> String:
-  gr_show.repl.go(m, topo)
+def gr_show.repl.kv2(+ar: O.Arena, u: U32, v: U32) -> String:
+  String.concat([O.Ops.name.of(O.Arena.op(ar, u)), "->", O.Ops.name.of(O.Arena.op(ar, v))])
 
-def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
-  match r:
-    case Some{new_sink}: IO.print(String.concat(["new_sink=", U32.show(new_sink), " topo=", gr_show.topo(topo), " repl=", gr_show.repl(repl, topo)]))
-    case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
-
-def gr_show.topo(topo: List<&2, U32>) -> String:
+def gr_show.repl.go2(+m: Map<&2, U32>, topo: List<&2, U32>, +ar: O.Arena) -> String:
   match topo:
     case Nil{}: ""
     case +u <> +t:
       match t:
-        case Nil{}: U32.show(u)
-        case _: String.concat([U32.show(u), ",", gr_show.topo(t)])
+        case Nil{}: gr_show.repl.kv2(ar, u, R.cu32(m, u))
+        case _: String.concat([gr_show.repl.kv2(ar, u, R.cu32(m, u)), ",", gr_show.repl.go2(m, t, ar)])
+
+# Print the repl map as a comma-separated list of "old_op->new_op"
+# pairs (using `O.Ops.name`), one per toposort node. This is the
+# gate's comparable form: the CPython oracle prints the same shape.
+def gr_show.repl(m: Map<&2, U32>, topo: List<&2, U32>, ar: O.Arena) -> String:
+  gr_show.repl.go2(m, topo, ar)
+
+def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>, +ar: O.Arena) -> IO(Unit):
+  match r:
+    case Some{new_sink}: IO.print(String.concat(["new_sink_op=", O.Ops.name.of(O.Arena.op(ar, new_sink)), " repl=", gr_show.repl(repl, topo, ar), " (wall: arena growth lost)"]))
+    case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
 
 # Build the full fixture and the ctx; the gate runs `walk_rewrite` and
 # prints the repl map. The `+ar` is consumed once per `walk_rewrite`
 # /`wr.go`/`toposort` call, so the three calls each take a `+ar` and
 # the per-step result is bound through a sub-def.
 def main.run.call.of(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
-  main.run.show(walk_rewrite(ar, sink, pm, ctx), repl, topo)
+  main.run.show(walk_rewrite(ar, sink, pm, ctx), repl, topo, ar)
 
 def main.run.call(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
   main.run.call.of(ar, sink, pm, ctx, wr.go(topo, ar, pm, Map.new(&2, U32), ctx), topo)

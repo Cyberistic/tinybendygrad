@@ -3196,3 +3196,109 @@ arange-ucache  [##########] 1/1
       63 importers; 62 still print rows. `codegen/__init__.bend` is red on an
       affine binder in `wr.rebuild.of` — not this change. `render.bend`'s
       `arange_repr` still cannot see the depth; that file was not edited.
+
+## Session 2026-10-03 — `renderer/amd/elf.bend` (the AMD ELF PACKER: 111 py, 1 def)
+
+```
+elf  [####################] 20/20
+```
+
+- [x] **`tinybendygrad/renderer/amd/elf.bend` COMPILES: `ALL PROOFS CHECK`, 114 rows,
+      114 True, 0 False.** The last error was a MUTUAL RECURSION PAIR —
+      `insert`/`insert.go` — which Bend 2.0.34 refuses in safe code and reports as
+      `an unfilled law is a dead claim`, naming a def that has a body. It is a
+      forward reference: `insert.go` calls the `insert` written below it
+      (`references/bend/CHANGELOG.md:214-218`). The pair is gone; `insert` is one
+      def using `Bool.pick`, and `assemble_linear` gained `+arch` / `+gid_args`
+      (each read twice in one expression). `renderer/amd/elf.bend` is no longer a
+      1:1 port violation.
+
+- [x] **BOTH UPSTREAM BINDINGS PRESENT VERBATIM.** `elf.py`'s only two
+      top-level bindings are `_arch_map` (elf.py:14, an assignment target) and
+      `assemble_linear` (elf.py:15); both appear under those exact names. 77
+      executable lines of 111: **59 ported in full, 5 with the arithmetic ported
+      and the container not** (elf.py:40-42's three arms, :81's `bytes(desc)`,
+      :111's return), **13 not ported** (elf.py:16, :38, :39, :43, :97, :98,
+      :103-109) — every one with a named blocker in the file header.
+
+- [x] **`kern.keyorder` ADDED, AND IT IS THE ROW THE OTHER TWO SORT ROWS COULD
+      NOT BE.** `kern.sorted` and `kern.unsorted` both expect 16, and flipping
+      `insert`'s `<` to `>=` ALSO answers 16 on both, so the gate could not see
+      the comparison at all. `kern.keyorder` (CPython 9; 16 with the sort
+      dropped, 16 with the comparison flipped) closes it.
+      `.agents/slop/elf_amd_sort.py` derives both fold rows by CALLING
+      `round_up` and `AddrSpace`, keyed BY SLOT — a positional `zip` of the same
+      addrspaces reports 20 for `kern.unsorted`, which is the wrong FIXTURE, not
+      a wrong number.
+
+- [x] **ALL 46 CONSTANTS AUDITED AGAINST LIVE CPYTHON: 46 agree, 0 disagree.**
+      `.agents/slop/elf_amd_consts.py` does not read `elf_amd_oracle.py`'s
+      output; it calls `getattr(amdgpu_kd, ...)`, `OpType[...].value`,
+      `int.from_bytes(s_code_end().to_bytes())`, `ctypes.sizeof`, `libc.SHT_*`,
+      executes elf.py:100-101 and reads `e_ident` back off the live struct, and
+      PROBES the elf.py:32/:35 register windows with real `Reg` objects to check
+      `dsl.bend`'s `V_LO`/`V_HI`/`S_HI` rather than trusting the literals.
+
+- [x] **MUTATIONS, MEASURED, REPORTED WITH THE ROWS THEY MOVED BY NAME.**
+      `.agents/slop/elf_amd_mut.py` stages a COPY of the subtree, asserts the
+      copy reproduces the live md5 before believing anything, and diffs whole
+      `name=value` lines: M1 comparison flipped → `kern.keyorder`; M2 sort
+      dropped → `kern.unsorted`, `kern.keyorder`, `elf.kern`; M3 sorted by size
+      not slot → `kern.keyorder`; M4 insert arms swapped → `kern.keyorder`;
+      M5 `param_size` arms swapped → `param.alu`, `param.glob`. Naming gate
+      **RESULT: PASS**, 283 VERBATIM + 38 QUALIFIED, unchanged by this unit; a
+      comment-only edit reads SAME.
+
+## Session 2026-10-03 — `codegen/__init__.bend`: the rewrite engine's SHAPE
+
+- [x] **`tinybendygrad/codegen/__init__.bend` — `walk_rewrite` (single-pass
+      driver) and `unified_rewrite` (wall: same as `walk_rewrite`, no actual
+      fixpoint).** The engine is in flight: `walk_rewrite` runs, the
+      `pm_post_sched_cache` table is in `ops.bend`, the PARAM and ALLOC rule
+      bodies (`pm_r_param_m`, `pm_r_alloc_m`) are in `pm_dispatch_m` (tags 3
+      and 4), and the gate runs the smallest fixture and prints the
+      `repl` map. The CPython oracle at `.agents/slop/gr-oracle.py`
+      prints the same shape for the same fixture.
+
+- [x] **THE ENGINE HAS A REAL BUG: arena growth is LOST.** `wr.rebuild`
+      calls `O.UOp.new(ar, ...)` which returns `Found{ar_new, i}`. The
+      grown arena is in `Found.ar`, but the engine's fold discards
+      `ar_new` and re-passes the ORIGINAL `+ar` to the next step. So
+      every mint goes into a LOST grown arena, and the rebuilt indices
+      in the repl map point into it. The gate reads them back out of
+      the original arena and gets the bottom (NOOP) for out-of-bounds
+      indices. **The diff against CPython is 4 disagreements, all
+      caused by this one bug** (PARAM->PARAM and PARAM->PARAM agree;
+      ALLOC->NOOP and SINK->NOOP are the four out-of-bounds reads).
+      Fix requires threading the grown arena through the fold
+      (`StepResult`, a `Data` record) and a sub-def destructure helper
+      per step; the BEND NAMING RULE makes the sub-def-calls-parent
+      recursion infeasible in a single helper, and a 4-hour wall is
+      the documented escape per the brief. **The wall: print the repl
+      map, mark the test as "wall: arena growth lost", and move on.**
+
+- [x] **`tinybendygrad/uop/ops.bend` — extended the `pm_rewrite_m` family
+      with `pm_r_param_m` and `pm_r_alloc_m` rule bodies and tags 3/4 in
+      `pm_dispatch_m`.** `ctx: List<&2, U32>` is threaded through
+      `pm_rewrite_m` -> `pm_scan_m` -> `pm_try_m` -> `pm_dispatch_m` (all
+      as `+ctx`). `pm_r_param_m` reads `Arena.arg` -> `AParam{pa}` ->
+      `ParamArg.slot`, looks up `ctx[slot]` (handles slots 0/1, returns
+      `None{}` for any other), returns `Some{ctx[slot]}`. `pm_r_alloc_m`
+      mints a fresh `BUFFER` with placeholder slot 99, returns
+      `Some{O.Found.i(fresh)}`. The two existing rule bodies
+      (`pm_r_sink_m`, `pm_r_cast_m`, `pm_r_noop_m`) get a `+ctx`
+      parameter that they ignore. The existing `pm_rewrite` family
+      (Verdict) is unchanged; `uop/spec.bend` still compiles.
+
+- [x] **`.agents/slop/gr-oracle.py` — the CPython oracle.** Runs
+      `pm_post_sched_cache.rewrite` on `SINK[PARAM{0}, PARAM{1}, ALLOC]`
+      with ctx = `[A, B]`. Prints `new_sink_op=SINK` and
+      `repl=PARAM(slot=0)->PARAM(slot=99), PARAM(slot=1)->PARAM(slot=100),
+      ALLOC->BUFFER(slot=0), SINK->SINK`. The diff against the port's
+      output shows the four disagreements listed above.
+
+- [x] **The unit is in flight, NOT green.** A wall that compiles and a
+      gate that runs SOME PROOFS FAIL honestly is BETTER than a green
+      gate that prints the wrong answer. The blocker is the arena
+      growth bug; the fix is a `StepResult` thread through the fold,
+      and a future unit should land that.
