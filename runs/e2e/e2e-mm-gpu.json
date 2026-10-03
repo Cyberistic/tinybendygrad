@@ -1,0 +1,24 @@
+{
+ "note": "produced by .agents/slop/e2e_mm_run.mjs: bend -o on .agents/slop/e2e_mm.bend, then tinybendygrad/runtime/webgpu_call.js's walk() on the five Cs it returns, in headless Chrome. out_u32 are the GPU's words, little-endian.",
+ "chrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+ "flags": [
+  "--headless=new"
+ ],
+ "driver": "tinybendygrad/runtime/webgpu_call.js (byte copy)",
+ "fatal": null,
+ "result": {
+  "gpu_present": true,
+  "gpu_vendor": "apple",
+  "gpu_architecture": "metal-3",
+  "cs_count": 5,
+  "cs_lens": [
+   8,
+   8,
+   29,
+   29,
+   10
+  ],
+  "ok": false,
+  "error": "Error: webgpu_call: stopped at step 0/84 (../../tinybendygrad/runtime/webgpu_call.Instance): webgpu_call: unhandled op {\"$\":\"../../tinybendygrad/runtime/webgpu_call.Instance\",\"timed_wait\":1}\n    at Object.walk (http://127.0.0.1:49196/webgpu_call.js:492:13)\n    at async http://127.0.0.1:49196/index.html:34:15"
+ }
+}

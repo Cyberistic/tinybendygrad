@@ -1,0 +1,1 @@
+MOVED	lg2,lg2n,lg2sig,lgqk,lgqsig,lgrk,lgsk,lgtk,lgw,lgwn,lgwsig,lgx,lgxn,lgxsig

@@ -196,6 +196,25 @@ def rows(text):
   return out
 
 
+_PIN = None
+
+
+def pin_of():
+  """The rebase pin, ONCE per process.
+
+  ⚠ diff_stat() used to run `rebase-plan.py --json` on every call, and that planner re-walks
+  every port header in the tree -- measured at 4m25s per invocation. --record and
+  --record-stable call diff_stat once per upstream file per port, so recording 29 ports
+  re-ran the planner ~29 times: the command exceeded a 15-minute timeout with nothing written,
+  and there was no way to tell from the outside whether it was working or wedged. One planner
+  call for the whole process; the pin cannot change inside a single run."""
+  global _PIN
+  if _PIN is None:
+    plan = json.loads(sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json").stdout or "{}")
+    _PIN = plan.get("pin") or ""
+  return _PIN
+
+
 def diff_stat(src):
   """The upstream diff for one file, pin..HEAD, in words. Computed, so a re-verify names the
   hunks it looked at without anyone transcribing them.
@@ -203,8 +222,7 @@ def diff_stat(src):
   A FAILED git must not read as "no diff": an out-of-tree copy with no `.git` answers the
   same empty stdout as a file upstream never touched, and "no upstream diff" is the one
   answer that would let a re-verify look examined when nothing was asked."""
-  plan = json.loads(sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json").stdout or "{}")
-  pin = plan.get("pin")
+  pin = pin_of()
   if not pin:
     return "UNAVAILABLE: rebase-plan.py produced no pin"
   d = sh("git", "diff", "--stat", pin, "upstream/master", "--", src)
@@ -1088,28 +1106,34 @@ BASE_ORACLES = {
   # jit: 18 of 137. Four rows disagree: DEV=NULL says 'NULL' where the port baked
   # 'PYTHON', and jit_oracle's cap() returned 'none' for two log lines.
   "tinybendygrad/engine/jit.bend": [".agents/slop/jit-oracle.py"],               #  18
-  # device: DELIBERATELY NOT WIRED. Its oracle runs, exits 0, prints 18 rows, and 18 of
-  #    them are shared with the port's 105 -- and `allow_lower` disagrees, PERMANENTLY.
-  #    CPython says 1, device.bend says 0, and CPython is right. device.py:29-31:
+  # device: WIRED 2026-10-03, and it was NOT WIRED before for ONE ROW, `allow_lower`.
+  #    That is the whole history and it is worth keeping, because the reason the row
+  #    disagreed is not a typo and is not a stale expectation:
   #      29  def __getitem__(self, ix:str) -> Compiled:
-  #      30    ix = self.canonicalize(ix)          # canonicalizes FIRST
+  #      30    ix = self.canonicalize(ix)          # REBINDS ix
   #      31    assert ALLOW_DEVICE_USAGE or ix.split(":")[0] in ["DISK","NPY","PYTHON"]
-  #    `_canonicalize` upper-cases the stem (device.py:26), so line 31 already sees
-  #    `PYTHON:1` and the assert PASSES. Measured by CALLING `Device['python:1']` under
-  #    `Context(ALLOW_DEVICE_USAGE=0)`: PYTHON:1 -> 1, python:1 -> 1, METAL -> 0.
-  #    device.bend:329 and :338 assert the opposite twice ("`__getitem__` asserts before it
-  #    canonicalizes", "compares the head exactly as it arrived") while citing :30 as the
-  #    canonicalize and :31 as the assert -- the order it then denies. Its `allowed` omits
-  #    line 30. Same at pin 6c3d401cf324, HEAD and upstream/master, so NOT rebase drift.
-  #    MEASURED through the real gate: BROKEN, rc=1, `allow_lower` named in both the
-  #    interpreted and the native pair. Wiring it would put a permanently-BROKEN lane in
-  #    every tree sweep, which trains the reader to read BROKEN as normal -- the failure
-  #    the elf.bend comment above is about. PORT BUG REPORTED, NOT FIXED (device.bend is
-  #    not this unit's file). The oracle is left on disk so the next reader does not
-  #    rebuild it.
+  #    Line 30 REBINDS `ix`, so line 31's subject is `PYTHON:1` whatever case arrived, and a
+  #    transcription of the assert STATEMENT -- `allowed(allow, ix)`, which is what the port
+  #    shipped -- structurally CANNOT see the rebind. It disagreed on every lowercase
+  #    spelling and agreed on none of them. The fix is the pair `canon` + the assert:
+  #    device.bend:359 `device_usage(allow, ix) = allowed(allow, canon(ix))`, and 5 new
+  #    corners (allow_cpu/allow_disk/allow_npy/allow_cpu_l/allow_mixed) measured by CALLING
+  #    `Device[...]` under `Context(ALLOW_DEVICE_USAGE=0)`.
+  #    MEASURED here, not taken on trust: 110 port rows, 23 oracle rows, 23 shared,
+  #    0 disagreements, `allow_lower=1` on both sides. See the CONTROL in
+  #    rebase-gate-selftest.py's ORACLE_NOT_WIRED block: a lane is not wired until it has
+  #    been SEEN BROKEN, because a lane that is red on every sweep teaches the reader to
+  #    read BROKEN as normal -- the failure the elf.bend comment above is about.
+  #    The 87 unshared port rows are the registry, buffer/allocator and error-timeline
+  #    answers this oracle does not ask for. Not a claim about them.
   # null: 7 of 180. The five opcodes and two EMULATE messages NullDevice raises.
   # The other two messages this oracle prints are not rows the port prints.
   "tinybendygrad/runtime/ops_null.bend": [".agents/slop/null-oracle.py"],        #   7
+  # device: 23 of the port's 110. Measured 2026-10-03 through this tool's own lane
+  # reader after the `allow_lower` port fix; the CONTROL is recorded beside
+  # ORACLE_NOT_WIRED in rebase-gate-selftest.py, because wiring a lane nobody has watched
+  # go red is how a permanently-red sweep gets normalised.
+  "tinybendygrad/device.bend": [".agents/slop/device-oracle.py"],                #  23
   # `ops_cpu` is wired on THREE shared row names out of the oracle's 20, and that is named
   # rather than dressed up: 17 of its rows are `findlib_*` HOST answers (where libm and
   # libobjc live on THIS machine) which the port cannot be expected to reproduce off-Mac,

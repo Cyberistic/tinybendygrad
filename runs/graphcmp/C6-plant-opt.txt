@@ -1,11 +1,6 @@
-########## 6. --plant opt ##########
-# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
-# py rows=19  bend rows=18  plant=opt
-# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
-# RESIDUALS IN THIS RUN: E=3/0 (an enum member outside {Ops, AxisType, AddrSpace}: NAME only) -- agreement below does NOT cover these.
-# SHARED cores=18  ONLY-PY=1  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
-# ONLY ON THE PY SIDE (1), IN FULL:
-  py#19 SINK dtype=void shape=R depth=i0 tag=N arg=kI(splant,n(Opt(op=EOptOps.TCaxis=i0arg=i4),Opt(op=EOptOps.SWAPaxis=Narg=N)),n(Opt(op=EOptOps.PADTOaxis=i1arg=N)),i2) src=['18']
-# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
-# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# VERDICT: DISAGREE
+emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  bend attempt 1: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |
+  bend attempt 2: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |
+  bend attempt 3: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |
+  bend attempt 4: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |
+  bend attempt 5: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |

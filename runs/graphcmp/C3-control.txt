@@ -1,4 +1,3 @@
-########## 3. control (each side vs itself) ##########
 == CONTROL py vs itself: rc=0
 # py rows=18  py rows=18  plant=none
 # devices py=['sCPU'] py=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)

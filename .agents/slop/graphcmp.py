@@ -88,8 +88,11 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
                   change; a form that prints a device object can never match.
                 * so `ParamArg` is ALL THIRTEEN fields, in DECLARATION order (ops.py:
                   26-42), by NAME. `pyrender` itself refuses a BUFFER carrying a device
-                  Buffer (render.py:159-160), so `buffer` reduces to `realized<slot>` /
-                  `unrealized`: presence and slot are compared, the object is not.
+                  Buffer (render.py:159-160), so `buffer` reduces to PRESENCE -- `z` or
+                  `N`. It USED TO emit the Buffer's `repr`, i.e. a device object, which is
+                  the one thing this rule exists to forbid, and the header then claimed the
+                  slot was compared when MEASURED `Buffer` has no `slot` at all. See
+                  `paramarg`.
                 * `CallInfo` (ops.py:1400) is not even a dataclass -- a plain class whose
                   `__repr__` prints `id(self.grad_fxn)`, a per-process address
                   (ops.py:1408-1410). So it is field-by-field too, and a CALL's difference
@@ -113,6 +116,29 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
                correspondence is DERIVED from the port's own table instead of typed at a
                prompt. `--dev-map` and the `t<tag>` atom are GONE: a declared binding that
                can be wrong is worse than a name that cannot.
+
+THE LEDGER, and why it is printed on EVERY report.
+
+  A construct the normal form renders lossily is a construct whose difference this file
+  CANNOT see. Left alone that is the worst kind of gap, because an absent disagreement
+  reads as an agreement. So each one is a LETTER -- `z` a realized buffer's presence, `y`
+  a bytes length, `u` a UOp nested in an arg, `q` an applied option the port cannot
+  resolve, `X!` a dead AxisType member, `BAD` the arena's bottom, `E` an enum outside the
+  three it knows -- or a field-local marker, `?` for a shape the port's fold could not
+  settle. Each is COUNTED on both sides of every report and the non-zero ones are called
+  out in a `# RESIDUALS IN THIS RUN:` line ABOVE the verdict, so the ledger can never be
+  mistaken for part of the agreement. `selfcheck` asserts each marker is a spelling the
+  emitter can actually produce, and `.agents/slop/graphcmp-probe-optq.bend` calls the
+  three emitters no graph reaches today, so their rows are MEASURED rather than 0 by
+  assumption.
+
+  The ledger is also what makes a `0/0` worth printing: it answers "did that path run?"
+  for the refusals, which is the question a residual list otherwise never answers.
+
+  One field is NOT countable and is NAMED rather than counted, because a count would be 0
+  by construction and therefore a claim: `KernelInfo.estimates`, which `ops.bend` dropped
+  (P5, `tinygrad.renderer`) and whose upstream value is None for every kernel the port can
+  build.
   R8  src     the ORDERED child indices. Order, not a multiset: the differ must be able to
               see a commutative-child swap (`--plant srcswap`), and `UOp.key` (ops.py:269)
               concatenates `s.key` for `s in self.src` IN ORDER, so upstream's own node
@@ -372,18 +398,34 @@ def _carg(x) -> str:
   for anything unmapped. A fallback that printed `repr` here would reintroduce the whole
   problem this file exists to remove.
 
-  THE ENUM ARM IS NOT COSMETIC. Before it, `enum.Enum` fell through to the `vars()`
-  arm below, and MEASURED `vars(OptOps.TC)` raises
-  `TypeError: vars() argument must have __dict__ attribute` on 3.12 -- an enum MEMBER has
-  no `__dict__`, so `vars` is right to refuse (`getattr(m, "__dict__")` only appears to
-  work because it falls back to the CLASS's dict). So `carg(Ops.SINK, <a KernelInfo with
-  a non-empty applied_opts>)` DIED with a traceback: a kernelized graph could not be
-  emitted at all, and the residual was reported as "an Option dataclass the port cannot
-  read" when the honest answer was "this emitter raises". `Ops`, `AxisType` and
-  `AddrSpace` are matched by exact type above, so this arm is the one that catches
-  `OptOps` (codegen/opt/__init__.py:6) and anything a later commit adds. The member's
-  `name` is its identity -- `list(OptOps)` is TC/SPLIT/PADTO/SWAP and `name` is unique per
-  member -- so `name` is what is compared and `value` is not."""
+  THE ENUM ARM IS NOT COSMETIC, and the reason is not the one first written down here.
+  Before it, `enum.Enum` fell through to the `vars()` arm below and MEASURED
+  `carg(Ops.SINK, <a KernelInfo with a non-empty applied_opts>)` DIED with
+  `TypeError: vars() argument must have __dict__ attribute`, so a kernelized graph could
+  not be emitted at all and the residual was written up as "an `Opt` dataclass the port
+  cannot read" when the honest answer was "this emitter raises".
+
+  THE ACTUAL CHAIN, because the obvious explanation is wrong and cost a probe
+  (`runs/graphcmp/probe/p12-residual-evidence.py`). It is NOT that an enum member lacks
+  `__dict__` -- MEASURED, `vars(OptOps.TC)` returns a real `dict` with four entries and
+  three of them (`_value_` 1, `_name_` "TC", `_sort_order_` 0) render perfectly as
+  `i1`/`sTC`/`i0` through the arms above. The fourth, `__objclass__`, is THE ENUM CLASS.
+  `vars()` on a class returns its `mappingproxy` (17 entries for `OptOps`), the loop walks
+  that namespace, and MEASURED the first entry that reaches the `vars()` arm and is not a
+  class is `_new_member_`, a `builtin_function_or_method`, which has no `__dict__` --
+  `TypeError`. (`_member_map_`, a `dict`, is the second.) So the defect was never "enums
+  are special": it was that **the generic `vars()` fallback FOLLOWS `__objclass__` out of
+  the value and into its class**, and had it survived it would have emitted a text full of
+  dunder names and a recursive walk back through `OptOps.TC` -- the printer instability
+  this whole file exists to remove, arriving through the back door.
+
+  Two independent guards, and both are load-bearing: the enum arm stops the walk at the
+  value, and the `__dict__ is None` guard at the bottom catches the descriptors had the
+  arm not existed. `Ops`, `AxisType` and `AddrSpace` are matched by exact type above, so
+  this arm is the one that catches `OptOps` (codegen/opt/__init__.py:6) and anything a
+  later commit adds. The member's `name` is its identity -- `list(OptOps)` is
+  TC/SPLIT/PADTO/SWAP and `name` is unique per member -- so `name` is what is compared and
+  `value` is not."""
   if x is None:
     return ATOMS["none"]
   if isinstance(x, DType):
@@ -962,9 +1004,10 @@ LEDGER = (
    "PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple "
    "(ops.py:455), so upstream has no third state. `?` cannot be produced by the py side"),
   ("E", 6, "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
-   "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: `vars()` "
-   "raises on an enum member, so a SINK with a non-empty applied_opts could not be "
-   "emitted at all"),
+   "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
+   "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
+   "attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could "
+   "not be emitted at all"),
 )
 
 
@@ -1010,6 +1053,16 @@ def ledger_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
   for m, fi, what, why in LEDGER:
     out.append(f"#   {m:<3} {WIRE[fi]:<5} py={py[m]:<4} bend={bd[m]:<4} {what}")
     out.append(f"#       {why}")
+  # THE ONE FIELD WITH NO MARKER, because neither side can write one.
+  # `KernelInfo.estimates: Estimates|None` (ops.py:1346) exists upstream, ops.bend DROPPED
+  # it (P5, `tinygrad.renderer`), and `uop/render.bend:653` pins the literal
+  # `estimates=None` in its place with the reason "it is None for every kernel this port
+  # can build". So it is not a countable construct -- a count would be 0 by construction,
+  # which is a claim -- it is a field neither side carries, and it is named here so that
+  # "not compared" is a printed sentence rather than a silence.
+  out.append("#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT "
+             "(port dropped it, P5); upstream's value is None for every kernel the port can "
+             "build, so the count would be 0 BY CONSTRUCTION and is not printed as one")
   return out
 
 

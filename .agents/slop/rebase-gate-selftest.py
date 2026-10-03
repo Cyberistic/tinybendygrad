@@ -764,7 +764,11 @@ def plan_contract():
 
 
 def measure_roster():
-  """{port: (shared, disagree, port_rows, oracle_rows)} per LIVE entry, MEASURED against the tree.
+  """({port: (shared, disagree, port_rows, oracle_rows)}, bend_rows, oracle_rows) -- counts AND rows.
+
+  The rows come back because A DISAGREEMENT IS NOT A COUNT: a FAIL that says "1 of 107 shared row
+  names disagree" sends the reader off to a diff to find out which one, and naming it here costs
+  one reference per port.
 
   Through rebase-scan-oracles.py, so through its cache AND through its staleness-and-emptiness
   rule: a number appears here only if a lane was actually re-run against its current source. The
@@ -787,7 +791,7 @@ def measure_roster():
     b, o = bend[port], orc[spec]
     shared = set(b) & set(o)
     out[port] = (len(shared), sum(1 for k in shared if b[k] != o[k]), len(b), len(o))
-  return out
+  return out, bend, orc
 
 
 def header_ports():
@@ -997,7 +1001,7 @@ def oracle_template():
   print(f"\nMEASURING {live_pairs} live pairs against the tree "
         f"(shared names / disagreements / port rows / oracle rows)\n")
   t0 = time.monotonic()
-  measured = measure_roster()
+  measured, bend_all, orc_all = measure_roster()
   print(f"  measured in {time.monotonic() - t0:.1f}s\n")
 
   for port, (oracle, kind) in ORACLE_CONFORMANCE.items():
@@ -1025,8 +1029,14 @@ def oracle_template():
       print(f"  FAIL  {name}: {why}")
       continue
     if disagree:
-      fails.append(f"{name}: {disagree} of {shared_n} shared row names disagree on the live tree")
-      print(f"  FAIL  {name}: {disagree} of {shared_n} shared row names DISAGREE on the live tree")
+      bad = [k for k in set(bend_all[port]) & set(orc_all[oracle]) if bend_all[port][k] != orc_all[oracle][k]]
+      where = ", ".join(f"{k!r}: port {bend_all[port][k]!r} vs CPython {orc_all[oracle][k]!r}"
+                        for k in sorted(bad))
+      fails.append(f"{name}: LIVE TREE DISAGREEMENT on {len(bad)} of {shared_n} shared row names "
+                   f"-- a PORT finding, not a roster finding: {where}")
+      print(f"  FAIL  {name}: {disagree} of {shared_n} shared row names DISAGREE on the live tree"
+            f"\n        {where}\n        corroborated by `rebase-gate.py --port {port}` -> BROKEN, rc=1"
+            f"\n        NOT FIXED HERE: the port is not this unit's file.")
       continue
     g = load_gate(f"conformance_{pathlib.Path(oracle.split()[0]).stem}_{shared_n}")
     # THE FIXTURE IS THE ORACLE'S OWN ROW SET, so the states are produced over the names this

@@ -187,24 +187,56 @@ def fixture.sink(ar: O.Arena, p0: U32, p1: U32, a: U32) -> O.Found:
 def gr_show.repl.kv(k: String, v: U32) -> String:
   String.concat([k, "->", U32.show(v)])
 
-def gr_show.repl.go.bind(t: List<&2, U32>, +m: Map<&2, U32>, acc: String) -> String:
+# A node's printable form is `OP(slot=N)` for PARAM and BUFFER and the bare
+# OP name otherwise, which is CPython's `uop_short` in `gr-oracle.py`. The
+# printer needs the ARENA to read the op and the arg, so it is threaded
+# through: an arena index alone names nothing outside this file, and the
+# oracle prints names.
+def gr_show.node.slot(pa: O.ParamArg) -> String:
+  String.concat(["(", U32.show(O.ParamArg.slot(pa)), ")"])
+
+def gr_show.node.of(ar: O.Arena, u: U32, op: O.Op, arg: O.Arg) -> String:
+  match arg:
+    case O.AParam{pa}: String.concat([O.Ops.name.of(op), gr_show.node.slot(pa)])
+    case _: O.Ops.name.of(op)
+
+def gr_show.node.op(ar: O.Arena, u: U32) -> O.Op:
+  O.Arena.op(ar, u)
+
+def gr_show.node.arg(ar: O.Arena, u: U32) -> O.Arg:
+  O.Arena.arg(ar, u)
+
+def gr_show.node(+ar: O.Arena, +u: U32) -> String:
+  gr_show.node.of(ar, u, gr_show.node.op(ar, u), gr_show.node.arg(ar, u))
+
+def gr_show.repl.pair.of(ar: O.Arena, u: U32, v: U32, a: String, b: String) -> String:
+  String.concat([a, "->", b])
+
+def gr_show.repl.pair(+ar: O.Arena, +u: U32, +v: U32) -> String:
+  gr_show.repl.pair.of(ar, u, v, gr_show.node(ar, u), gr_show.node(ar, v))
+
+def gr_show.repl.go.bind(t: List<&2, U32>, +ar: O.Arena, +m: Map<&2, U32>, acc: String) -> String:
   match t:
     case Nil{}: acc
-    case +v <> rest: gr_show.repl.go.bind(rest, m, String.concat([acc, gr_show.repl.kv(U32.show(v), R.cu32(m, v)), ", "]))
+    case +v <> rest:
+      gr_show.repl.go.bind(rest, ar, m, String.concat([acc, gr_show.repl.pair(ar, v, R.cu32(m, v)), ", "]))
 
-def gr_show.repl.go.first(t: List<&2, U32>, +m: Map<&2, U32>, +u: U32) -> String:
-  gr_show.repl.go.bind(t, m, String.concat([gr_show.repl.kv(U32.show(u), R.cu32(m, u)), ", "]))
+def gr_show.repl.go.first.of(+ar: O.Arena, t: List<&2, U32>, +m: Map<&2, U32>, +u: U32, +v: U32) -> String:
+  gr_show.repl.go.bind(t, ar, m, String.concat([gr_show.repl.pair(ar, u, v), ", "]))
 
-def gr_show.repl.go(+m: Map<&2, U32>, topo: List<&2, U32>) -> String:
+def gr_show.repl.go.first(t: List<&2, U32>, +ar: O.Arena, +m: Map<&2, U32>, +u: U32) -> String:
+  gr_show.repl.go.first.of(ar, t, m, u, R.cu32(m, u))
+
+def gr_show.repl.go(ar: O.Arena, +m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   match topo:
     case Nil{}: ""
-    case +u <> t: gr_show.repl.go.first(t, m, u)
+    case +u <> t: gr_show.repl.go.first(t, ar, m, u)
 
-# Print the repl map as a comma-separated list of "old->new" pairs,
-# one per toposort node. We iterate the toposort (the keys of `repl`)
-# and look up each one in the map.
-def gr_show.repl(m: Map<&2, U32>, topo: List<&2, U32>) -> String:
-  gr_show.repl.go(m, topo)
+# Print the repl map as a comma-separated list of `OP(slot)->OP(slot)` pairs,
+# one per toposort node. NAMES, not indices: the oracle prints names, so an
+# index would be a diff of two unrelated numberings.
+def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
+  gr_show.repl.go(ar, m, topo)
 
 # Show the toposort as a comma-separated list of U32s. A direct
 # recursive fold on the list. The recursion is on `rest` (the
@@ -233,11 +265,17 @@ def main.run.show.go(r: Maybe<&2, U32>, repl_s: String) -> IO(Unit):
     case Some{new_sink}: IO.print(String.concat(["new_sink=", U32.show(new_sink), " repl=", repl_s]))
     case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
 
-def main.run.show(r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
-  main.run.show.go(r, gr_show.repl(repl, topo))
+def main.run.show.of(r: Maybe<&2, U32>, repl_s: String) -> IO(Unit):
+  main.run.show.go(r, repl_s)
+
+def main.run.show(+ar: O.Arena, r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
+  main.run.show.of(r, gr_show.repl(ar, repl, topo))
+
+def main.run.call.of.show(+ar: O.Arena, r: Maybe<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
+  main.run.show(ar, r, repl, topo)
 
 def main.run.call.of(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
-  main.run.show(walk_rewrite(ar, sink, pm, ctx), repl, topo)
+  main.run.call.of.show(ar, walk_rewrite(ar, sink, pm, ctx), repl, topo)
 
 def main.run.call(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
   main.run.call.of(ar, sink, pm, ctx, wr.go(topo, ar, pm, Map.new(&2, U32), ctx), topo)

@@ -1019,17 +1019,26 @@ def l2i_cdiv.abs(+ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U3
 # ONE `.where` PAIR PER STEP, with every record and index passed as a `U32`, so
 # nothing is read twice: `W2.ar`/`W2.lo`/`W2.hi` are three CALLS on one record and
 # a `Found`'s `.ar`/`.i` are two, so every intermediate is destructured once.
-
+#
+# THE SHIFT AMOUNT IS `i % 32`, NOT `i`. dtype.py:68 writes
+# `shl(cond.cast(dtypes.uint), i % 32)` and `shl` is transcendental.py:20,
+# `x * 2**y` -- so for `i = 63` the constant is `2**31` = `C(2147483648)` and NOT
+# `2**63`, which `tx_powi(63)` builds as the 64-bit `C(2147483648:0)`. MEASURED
+# (`lgqk`): CPython's cone constants after the fixed six are `C(63), C(62), ...,
+# C(2)` -- the `UOp.const(i, dtypes.uint)` words of dtype.py:65 -- followed by the
+# `2**0..2**31` of the quotient accumulator, while the port printed `C(64)` and
+# `C(2147483648)` there and never produced a `2**31` at all. `U32.mod` is a
+# machine word, so the reduction is exact and needs no special case.
 def l2i_cdiv.q.lo(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
   +ci = P.dc_cast(ar, cond, S.uint32())
-  +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), i)
+  +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), U32.mod(i, 32))
   +o = dd_or(O.Found.ar(b), Cd.q0(c), O.Found.i(b))
   Cd{O.Found.ar(o), Cd.z(c), Cd.a0(c), Cd.a1(c), Cd.b0(c), Cd.b1(c), Cd.r0(c), Cd.r1(c),
     O.Found.i(o), Cd.q1(c), Cd.an(c), Cd.bn(c)}
 
 def l2i_cdiv.q.hi(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
   +ci = P.dc_cast(ar, cond, S.uint32())
-  +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), i)
+  +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), U32.mod(i, 32))
   +o = dd_or(O.Found.ar(b), Cd.q1(c), O.Found.i(b))
   Cd{O.Found.ar(o), Cd.z(c), Cd.a0(c), Cd.a1(c), Cd.b0(c), Cd.b1(c), Cd.r0(c), Cd.r1(c),
     Cd.q0(c), O.Found.i(o), Cd.an(c), Cd.bn(c)}
@@ -1068,7 +1077,13 @@ def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +rlo = W2.lo(r)
   +rhi = W2.hi(r)
   +rar = W2.ar(r)
-  +cond = dd_ge1(rar, rlo, rhi)
+  # dtype.py:66, `cond = l2i(Ops.CMPLT, dtypes.uint, *r, b0, b1).logical_not()`.
+  # `.logical_not()` IS ON THE ANSWER OF `l2i`, WHICH IS THE `OR` OF dtype.py:75 --
+  # NOT on the `a1 < b1` inside it. `dd_ge1(rar, rlo, rhi)` re-ran the comparison
+  # and negated THAT, so the port's `cond` was `CMPNE(CMPLT, C(True))` over a node
+  # CPython never built. MEASURED: `lgt`'s root src0 label is `OR` in CPython and
+  # `CMPLT` in the port, and that ONE label is the whole of `lgt`'s disagreement.
+  +cond = T.tx_lnot(rar, rlo)
   +condi = O.Found.i(cond)
   +diff = l2i_sub(O.Found.ar(cond), S.uint32(), S.uint32(), ws4(rlo, rhi, Cd.b0(c), Cd.b1(c)))
   +dar = W2.ar(diff)
@@ -1093,12 +1108,18 @@ def l2i_cdiv.loop(k: Nat, +c: Cd, +i: U32) -> Cd:
       +d = l2i_cdiv.step(Cd.ar(c), c, i)
       l2i_cdiv.loop(p, d, U32.sub(i, 1))
 
-# `return r if op is Ops.CMOD else q`
-
+# `return r if op is Ops.CMOD else q` -- dtype.py:74. SO `isdiv` ANSWERS `q` AND
+# NOT `r`. The arms were the other way round, and it is invisible on the SIGNED
+# fixtures, where dtype.py:73 has already replaced the return with the two WHEREs
+# and `l2i_cdiv.uns` is never reached. It shows on the unsigned pair, and it shows
+# as a SWAP: MEASURED, `lgs` (CDIV uint) is `OR(OR(OR,MUL),MUL(CAST,C(1)))` --
+# the quotient, `q[1] | shl(cond, i%32)` -- while the port answered the `r` shape
+# `WHERE(CMPNE(CMPLT,C(1)),ADD(OR,MUL),OR(WHERE,AND))`, which is what CPython
+# answers for `lgt`. `lgs` and `lgt` were each other's answer.
 def l2i_cdiv.uns(isdiv: Bool, +ar: O.Arena, +c: Cd) -> W2:
   match isdiv:
-    case True{}: W2{ar, Cd.r0(c), 0}
-    case False{}: W2{ar, Cd.q0(c), 0}
+    case True{}: W2{ar, Cd.q0(c), 0}
+    case False{}: W2{ar, Cd.r0(c), 0}
 
 # `(nq0,nq1), (nr0,nr1) = l2i(BITCAST, dt, *l2i(NEG, uint, *q)), l2i(BITCAST, dt,
 # *l2i(NEG, uint, *r))` then the un-negated pair, then the WHEREs -- in THAT

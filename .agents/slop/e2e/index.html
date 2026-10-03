@@ -1,0 +1,53 @@
+<!doctype html><meta charset=utf-8><title>e2e mm</title><body><pre id=o>running</pre>
+<script type="module">
+// THE PAGE. One import of the PORT'S OWN driver, one import of the compiled Bend
+// program, and one `walk`. Nothing here decides anything: it does not choose a
+// buffer, a binding, a dispatch size or a step. `mm_run()` hands `webgpu_call.js`
+// the five `Cs` values `tinybendygrad/runtime/webgpu_call.bend` built, and the
+// driver performs them against `navigator.gpu` in that order.
+//
+// The adapter is asked for SEPARATELY, before the walk, because `walk` does not
+// return it and "a device with a name" is not the claim -- the claim is the
+// `out_u32` row, which is what the GPU computed.
+// `walk` is NOT a named export of `webgpu_call.js` -- MEASURED, and the page
+// caught it: `import { walk } from "./webgpu_call.js"` throws "does not provide an
+// export named 'walk'", because the def is `async function walk` and reaches JS
+// only through the module's DEFAULT object. `toJS` is a real named export.
+import M from "./e2e_mm.mjs";
+import WC, { toJS, M as WCM } from "./webgpu_call.js";
+
+const out = {};
+try {
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+  out.gpu_present = !!adapter;
+  out.gpu_vendor = adapter.info?.vendor ?? null;
+  out.gpu_architecture = adapter.info?.architecture ?? null;
+
+  const css = toJS(M["mm_run"]());
+  out.cs_count = css.length;
+  // `Cs.len` is NOT in `e2e_mm.mjs`: the `-o` emitter exports only the defs the
+  // FILE defines, so an IMPORTED def comes from the import's own module. That
+  // is `webgpu_call.js`'s `M`, which is the fresh emit of
+  // `tinybendygrad/runtime/webgpu_call.bend`.
+  out.cs_lens = css.map((c) => WCM["Cs.len"](c));
+
+  const res = await WC.walk(css, new Map());
+  out.performed = res.performed;
+  out.steps = res.steps;
+  out.writes = res.performed.filter((n) => n === "WriteBuffer").length;
+  out.dispatches = res.performed.filter((n) => n === "Dispatch").length;
+  out.mapped = res.performed.filter((n) => n === "MappedRange").length;
+  out.buffers = res.performed.filter((n) => n === "CreateBuffer").length;
+  out.range_bytes = res.range ? res.range.byteLength : 0;
+  // u32 LITTLE-ENDIAN bit patterns, the same words the oracle carries. NOT
+  // decimals: a printed float would hide a 1-ulp difference behind a rounding.
+  out.out_u32 = res.range ? [...new Uint32Array(res.range)] : null;
+  out.out_f32 = res.range ? [...new Float32Array(res.range)].map((v) => Math.fround(v)) : null;
+  out.ok = true;
+} catch (e) {
+  out.ok = false;
+  out.error = String(e && e.stack ? e.stack : e).slice(0, 2000);
+}
+document.getElementById("o").textContent = JSON.stringify(out);
+document.title = "done";
+</script></body>

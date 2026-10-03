@@ -1,0 +1,1 @@
+MOVED	lgf,lgfsig,lgm,lgmp,lgmsig,lgqsig,lgrsig,lgssig,lgtsig

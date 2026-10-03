@@ -1,3 +1,8 @@
+cfun_interns=True
+cfun_dtype_splits=True
+cfun_name_splits=True
+cfun_arg=sel_registerName|u64
+cfun_of=sel_registerName|void
 #shared_axis_members=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
 #shared_axis_values=1,2,3,4,5,6,7,8
 #shared_axis_count=8
@@ -64,3 +69,8 @@ eqax_diag=8
 mstack2=5 Ops.MSTACK/3 Ops.RANGE Ops.CONST Ops.CONST
 mstack1=4 Ops.MSTACK/2 Ops.RANGE Ops.CONST
 mstack0=2 Ops.RANGE/1 Ops.CONST
+uc_flat_nest=False
+uc_int_tup1=False
+uc_nest_deep=False
+uc_flat_same=True
+uc_nest_same=True

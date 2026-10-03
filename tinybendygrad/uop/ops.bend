@@ -2695,6 +2695,38 @@ def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   toposort(fuel, ar, Topo{Nil{}, List.append(&2, Frame, Nil{}, [Frame{self, False{}}]), False{}})
 
+# ===========================================================================
+# THE BACKWARD SLICE -- ops.py:280, :286, :289. THREE DEFS, ONE WALK.
+#
+# MOVED BELOW `toposort_nocalls`, and Python has them above it: `backward_slice`
+# is DEFINED in terms of `toposort`, and Bend has no forward references. This is
+# the same class of move the header lists, and it is the only one this block needs.
+#
+# WHY `nocalls` AND NOT `toposort`. `enter_calls=False` is the WHOLE of the
+# difference between `backward_slice` and a plain toposort, and on every fixture
+# whose graph has no CALL it is invisible -- the two walks return the same list.
+# So the `call` and `nest` rows are the ones that carry the fact, and a port that
+# reached for `toposort` here would agree on `chain` and on `backedge`.
+# ===========================================================================
+
+# `res.pop(self)`. Python pops BY KEY, and the key is `self`, so this filters on
+# IDENTITY instead of dropping a position. That is not pedantry: on a BACKEDGE
+# the fuel cuts the walk before `self` is ever cached, `self` is NOT in the list,
+# and `List.drop(.., 1n)` would delete a real node. The `backedge` row is the one
+# that moves. `+h` because the head is both the test and the kept element.
+def bsl.go(+self: U32, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: bsl.go(self, t, Bool.pick(List<&2, U32>, U32.is_eq(h, self), acc, List.append(&2, U32, acc, [h])))
+
+def UOp.backward_slice(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, U32>:
+  bsl.go(self, UOp.toposort_nocalls(fuel, ar, self), Nil{})
+
+# `{self:None, **self.backward_slice}` -- a dict literal whose only addition is
+# the key `self`, and a Dict iterates in INSERTION order, so the key is FIRST.
+def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, U32>:
+  List.append(&2, U32, [self], UOp.backward_slice(fuel, ar, self))
+
 # topovisit -- ops.py:309. "NOTE: this shares a lot of code with toposort". It
 # has no caller in ops.py, and its visitor is a Python callable, so the def is
 # here for the inventory and its body is the toposort order with the visitor
@@ -3387,6 +3419,22 @@ def op_in(ops: List<&2, Op>, +want: Op) -> Bool:
 
 def pm_claimed(ops: List<&2, Op>, ar: Arena, self: U32) -> Bool:
   op_in(ops, Arena.op(ar, self))
+
+# `any(x.op in ops for x in self.backward_slice)` -- ops.py:289. Python's comment
+# says it checks `self` first "to avoid creating an intermediate dict", so the
+# port does not prepend `self` to the slice and rescan it either: the two halves
+# are `self.op in ops or <this fold>`, one `Bool.or` at the call site.
+# `Bool.or` does not short-circuit, and here it does not need to: the arena read
+# is total (`Arena.node` answers the bottom past the end), so a wasted read is
+# not a wrong answer. `+ar` and `+want` are both read once per element.
+def op_in_bsl.go(+ar: Arena, +want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool:
+  match xs:
+    case Nil{}: acc
+    case h <> t: op_in_bsl.go(ar, want, t, Bool.or(acc, op_in(want, Arena.op(ar, h))))
+
+def UOp.op_in_backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32, +want: List<&2, Op>) -> Bool:
+  Bool.or(op_in(want, Arena.op(ar, self)), op_in_bsl.go(ar, want, UOp.backward_slice(fuel, ar, self), False{}))
+
 def pm_early.go(+have: List<&2, Op>, rej: List<&2, Op>) -> Bool:
   match rej:
     case Nil{}: True{}
@@ -3497,10 +3545,16 @@ def pm_r_param_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # here, but the new arena was discarded by the engine fold, so the
 # rebuilt index was unreachable. Returning a pre-minted BUFFER
 # avoids the wall entirely: the index is in the engine's arena.
-def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+def pm_r_alloc_m.at(+ctx: List<&2, U32>, n: Nat) -> Maybe<&2, U32>:
   match ctx:
     case Nil{}: None{}
-    case h <> t: Some{h}
+    case h <> t:
+      match n:
+        case 0n: Some{h}
+        case 1n+p: pm_r_alloc_m.at(t, p)
+
+def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  pm_r_alloc_m.at(ctx, 2n)
 
 # dispatch by tag. Tags 0/1/2 are the same as `pm_dispatch.go`. Tags 3/4
 # are the codegen pipeline's `pm_post_sched_cache` rules and read `ctx`.

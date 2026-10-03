@@ -16087,3 +16087,77 @@ it was last noticed.
 mutation results from a typo'd temp path; an empty diff is indistinguishable from "moved nothing".
 `.agents/slop/dev-mutate.py` now `sys.exit`s if the baseline or any mutant prints zero rows, and
 aborts if a mutation pattern is not present exactly once.
+
+### 37. A `do` BLOCK MUST END IN A BARE TERM. A `<-` BINDING IS NOT A TERM.
+
+MEASURED writing `.agents/slop/graphcmp-probe-optq.bend`, and it is a silent-ish one: a `do`
+block whose LAST line is `x : T <- IO.print(...)` fails with
+
+    expected : a term
+    observed : end of input
+
+at the position one past the last line — an error that points at EOF, not at the line that is
+wrong, so it reads like a truncation. With the same block ending in a bare `IO.pure(Unit,
+Unit{})` after the `<-` lines it compiles. `graphcmp.bend`'s `main` ends its `do IO<Unit>`
+with a bare `rows.of(...)` for the same reason and I did not notice until I wrote one that did
+not.
+
+**Rule: the last line of a `do` block is the block's RESULT and is a bare term.** Every
+`<-` line above it is a statement. The error message naming "end of input" is the tell.
+
+### 38. `bend` IMPORT PATHS REJECT ANY SEGMENT CONTAINING A DOT -- SO NOTHING UNDER `.agents/`
+###     CAN BE IMPORTED.
+
+MEASURED: a probe at `runs/graphcmp/probe/pk.bend` with
+
+    import ./../../../../.agents/slop/graphcmp.bend as G
+
+fails with
+
+    expected : an import path of plain names (letters, digits, _ and -; the hub's files import the hub's)
+    observed : './../../../../.agents/slop/graphcmp.bend'
+
+**Rule: a Bend file that must IMPORT another non-hub `.bend` file has to sit in the same
+directory as it.** The `.agents/` directory name is the blocker, so a harness emitter kept
+under `.agents/slop/` can only be imported by a probe that ALSO lives in `.agents/slop/` --
+`runs/graphcmp/probe/` can import `tinybendygrad/**` (no dotted directory anywhere on the
+path) but never a sibling harness. The corollary is the trap: a probe placed in the obvious
+location fails for a reason that has nothing to do with the probe, and "move it next to the
+file" is the fix.
+
+### 39. `match` CANNOT SCRUTINISE A LOCAL BINDER, SO A COMPUTED VALUE NEEDS ITS OWN DEF AND
+###     MUST BE PASSED IN AS A PARAMETER.
+
+Already in `agent-core.md` as "a record binder shadows a same-named parameter", and this pass
+found the sharper form twice. `+m = F.UOp.shape(ar, tb, k)` followed by `match m:` is
+
+    message : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+    message : a parameter or field scrutinee (a match cannot scrutinize a local binder: give it its own def)
+
+and the FIX for both is the same and is not obvious: the value must be a **parameter** of the
+def that matches it. `def shape_str(m: Maybe<...>) -> String: match m:` compiles when `m` is
+a parameter; it does not compile when `m` is a local `+` binder, and it does not compile when
+the `Maybe` is a field access either ("or field scrutinee" is the third variant of the same
+rule).
+
+**Rule: to branch on a computed `Maybe`/`Bool`, write a def that TAKES it and call it with the
+computation at the call site.** `def dt_str.of(m: Maybe<&2, S.Dt>) -> String` +
+`def dt_str(tb, ar, k): dt_str.of(F.UOp.dtype(ar, tb, k))` is the shape that works, and it
+costs one extra def per branching value.
+
+### 40. TWO PLACES IN ONE EXPRESSION, ONE `+`. A NESTED `Bool.pick` CHAIN NEEDS `+` ON THE
+###     SHARED PARAMETER EVEN THOUGH ONLY ONE ARM RUNS.
+
+MEASURED: extending `rows.pick` from two graphs to four, as a nested
+`Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(), Bool.pick(..., String.eq(name,
+"reduce"), ...))`:
+
+    expected : name
+    observed : name (consumed more than once)
+
+`name` is read TWICE in the STATIC expansion, and `String` is linear, so bend counts both even
+though `Bool.pick` CHOOSES an arm and only one read happens at runtime. **Rule: a parameter
+used in more than one arm of a `Bool.pick` chain needs `+`, exactly as it would inside one
+expression.** The error names the binder twice and points at the signature, which is at least
+honest, but it does not say "you may only run one of these".
+

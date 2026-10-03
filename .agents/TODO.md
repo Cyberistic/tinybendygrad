@@ -3433,6 +3433,114 @@ deliverable is a normal form BOTH sides emit.
   `.venv/bin/python`). Noted rather than edited, to avoid colliding with concurrent
   `TOOLS.md` writers.
 
+## Session 2026-10-03 (gc2) — `graphcmp`: THE FIVE RESIDUALS, classified and closed-or-counted
+## **NOT COMMITTED.**
+
+Progress: graph comparison [##########] DONE (differ, 8 fields, ledger, 7 graphs, 6 plants, 2 sides)
+Progress: residual mismatches [##########] DONE (0 of 5 invisible; 1 was a live bug, 3 reported wrong, 1 new finding)
+
+Entry point: `.agents/slop/graphcmp-report.md` §5, rewritten. Evidence in one file:
+`runs/graphcmp/probe/p12-residual-evidence.txt`. The MECHANISM is a **LEDGER**: every
+construct the normal form renders lossily is a marker (`z y u q X! BAD E ?`) counted on both
+sides of EVERY report, with the non-zero ones called out in `# RESIDUALS IN THIS RUN:` above
+the verdict. A `0/0` is printed too, because it is a measurement.
+
+- [x] **R1 realized BUFFER: CLOSED, and it was a LIVE BUG.** The code emitted
+      `f"realized{u(pa.buffer)}"` = `"realized"+"i"+str(<Buffer>)` -- MEASURED, 52 chars of
+      DEVICE OBJECT REPR inside the normal form, carrying `dtypes.f32` (the token R3 exists
+      to drop) and an allocation state. The header claimed a `slot` was compared;
+      MEASURED, `Buffer` has NO `slot` attribute. Now `z`/`N` (presence) on both sides, and
+      `--graph buffer` is a NEW fixture that diffs a realized graph for real (`z=1/1`,
+      `AGREE`, byte-identical). MEASURED while writing it: `Tensor.empty(4,3)` is
+      `ALLOC slot=0` and `.realize()` mints a **fresh** ParamArg at `slot=1`
+      (`UOp.new_buffer`, ops.py:1208) with `bind_on_realize=False`.
+
+- [x] **R2 `KernelInfo.applied_opts`: the py emitter CRASHED, and `Option` does not exist.**
+      MEASURED, `carg(Ops.SINK, <KernelInfo with a non-empty applied_opts>)` raised
+      `TypeError: vars() argument must have __dict__ attribute` -- a kernelized graph could
+      not be emitted AT ALL. There is no `class Option` in this tree; the class is `Opt`
+      (codegen/opt/__init__.py:11) over `OptOps` (a plain `Enum`). The chain is NOT "an enum
+      member has no `__dict__`": `vars(OptOps.TC)` IS a real dict; the fallback followed
+      `__objclass__` (THE CLASS, a 17-entry `mappingproxy`) and died on `_new_member_`, a
+      `builtin_function_or_method`. Fixed by an `enum.Enum` arm plus a `__dict__ is None`
+      guard. Also: the port emitted **2** slots against CPython's 3 (now 4 on both), and
+      **`opts_to_apply` was dropped on BOTH sides** -- a field neither side carries cannot be
+      seen by either. `--graph sink` is a new fixture (`AGREE`, `kI(stest,n(),N,i0)`), and
+      `--plant opt` is the crash regression row. Unresolvable content is a `q` REFUSAL
+      (count compared), NOT the port's answer: `render.bend:655`'s "UOp INDICES" reading is
+      UNVERIFIED because MEASURED no port file ever writes a non-empty list.
+
+- [x] **R3 `bytes`: a PORT BUG, not a normal-form limitation.** MEASURED both sides on the
+      same two blobs: upstream `b"aaaa"` and `b"bbbb"` are DIFFERENT objects with different
+      keys (`ops.py:201` keys on `arg`), and the port **interned them as the SAME arena node**
+      (index 1 twice, `Arena.next` 2). So the port's node IDENTITY does not see the bytes.
+      `ops.bend`'s `eq_arg.ABlob` -- 63 importers, **REPORTED, NOT FIXED**.
+      `--plant bytes` reports it; the ledger counts `y=2/0`.
+
+- [x] **R4 nested UOp: the JUSTIFICATION was false, and it was rendering as a STRING.** The
+      comment said "the arg's identity is already carried by the graph's `src` edges".
+      MEASURED: `UOp(Ops.PYLITERAL, (), (UOp.const(4),))` has `len(src)==0` and
+      `toposort() == [itself]` -- the nested UOp is in NEITHER, so it has no arena index
+      here. It also rendered `s<uop>`, the STRING atom, so a UOp-in-arg was byte-identical
+      to the five-char string `<uop>`. Now its own letter `u`; `--plant pyuop` reports it.
+
+- [x] **R5 AxisType: it is TWO, not three, and the report was WRONG.** MEASURED twice at
+      3138973dc: `list(AxisType)` is DEVICE GLOBAL LOCAL WARP WEAK LOOP UPCAST
+      **PLACEHOLDER** (8) and `hasattr(AxisType,'PLACEHOLDER')` is **True**. Only
+      `AXIS_REDUCE` and `AXIS_UNROLL` are port-only. Now `X!REDUCE`/`X!UNROLL`, spellings no
+      CPython reading can produce, so they cannot silently agree if upstream re-adds the name.
+      The port's own comment (ops.bend:650-652) said "these two" and was right.
+
+- [x] **A SIXTH FINDING, NOT ON THE LIST: the shape column's `N` was a LETTER COLLISION.**
+      Found by the new `--graph sink`, which is the first fixture with a shape-less node:
+      `MISMATCH SINK py#2 vs bend#2 shape py=R bend=N` -- a rung-1 mismatch on a node whose
+      CORE MATCHED, which cannot mean the graphs differ. MEASURED: `UOp.shape` RAISES iff
+      `_shape is None` (ops.py:455), probed over all 12 no-shape ops, so it NEVER RETURNS
+      `None` and the py-side `N` is DEAD, while the bend side was using `N` meaningfully.
+      Bend's `Some{None}` now renders `R`; its port-only no-Derived state gets `?`. The dead
+      py arm is KEPT and COUNTED (`# shape-N hits py=0`) -- a deleted branch is a claim, a
+      counter is a measurement.
+
+- [x] **ALL CONTROLS RE-RUN AND PASTED** in `runs/graphcmp/C*.txt`: `selfcheck`, `control`
+      (both sides vs itself), `cross` (both sides, two graphs), the ORIGINAL three plants
+      (`srcswap` / `dtype` / `shape`) with unchanged counts -- `srcswap` still 3 rung-2 pairs
+      with `ONLY-PY=0 / ONLY-BEND=0` and the reordered pair's OWN fields still clean -- plus
+      the three new plants, four graphs, 6-run stability, byte-identity of all four graphs,
+      and the 0-row guard fired on purpose.
+
+- [x] **SUPERSET CHECK.** `runs/graphcmp/C11-superset.txt`: the ONLY change to the matmul is
+      `unrealized` -> `N` on the two ALLOC rows, IDENTICALLY on both sides. Same information
+      (absence), uniform spelling with the other six `Maybe` fields. MEASURED reason, not
+      taste: `unrealized` contains `realized` as a substring and STARTS WITH the ledger's
+      `u`, so at a value position a scan counted the absent case as present AND counted a
+      nested UOp that was not there. No currently-agreeing field changed meaning.
+
+- [x] **FOUR RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at the END,
+      numbered 37-40 continuing from 36, cited by POSITION: a `do` block must end in a bare
+      TERM; `bend` import paths reject a dotted segment so NOTHING under `.agents/` can be
+      imported; `match` needs the value as a PARAMETER not a local binder; two arms of a
+      nested `Bool.pick` need `+` on the shared parameter.
+
+### New port findings, REPORTED and NOT FIXED
+
+- `ops.bend`'s `eq_arg.ABlob` FALSE-INTERNS two different equal-length blobs into one arena
+  node; upstream keys them apart. (63 importers.)
+- `uop/render.bend:664` prints `opts_to_apply=None` where every `llm/kernels/amd.py` (nine
+  sites) and `nn/__init__.py:363` SINK writes `opts_to_apply=()` -- an empty tuple is not
+  `None`. **This one is a port OUTPUT bug that `graphcmp` can now see.**
+
+### Outside this unit's files
+
+- `tinybendygrad/codegen/__init__.bend`, `codegen/decomp/dtype.bend` and `rebase-gate.py`
+  were all modified by OTHER agents DURING this pass (mtimes 23:32-23:38, overlapping my
+  own 23:23-23:33 edits, and none of them is in anything I wrote). Not mine.
+- `TOOLS.md` still not updated: this pass added no library and no CLI beyond the repo's own
+  `./bin/bend` and `.venv/bin/python`. Noted rather than edited, to avoid colliding with
+  concurrent `TOOLS.md` writers.
+- New file `.agents/slop/graphcmp-probe-optq.bend` sits in `.agents/slop/` rather than
+  `runs/graphcmp/probe/` because MEASURED: bend rejects an import path with a dotted
+  segment, and `.agents` has a dot -- so nothing under `runs/` can import it.
+
 ## Session 2026-10-03 (b) — the eight `c{i}` fixtures, `codegen/decomp/dtype.py`
 
 - [x] **THE 8 MISSING `cN=` FIXTURES, CLOSED 7 OF 8 AND THE 8TH MADE VISIBLE.** All eight

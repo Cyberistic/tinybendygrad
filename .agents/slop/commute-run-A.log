@@ -1,0 +1,4 @@
+frozen copy reproduces the live tree: 137 .bend files, md5-verified, under /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/commute-freeze-xbvgsafp
+
+ZERO ROWS from renderer/cstyle.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+

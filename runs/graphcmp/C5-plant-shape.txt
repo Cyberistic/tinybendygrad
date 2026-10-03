@@ -1,23 +1,6 @@
-########## 5. --plant shape ##########
-# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
-# py rows=18  bend rows=18  plant=shape
-# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
-# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
-# SHARED cores=12  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=6
-# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
-MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
-    src  py=['cd2c88ba'] bend=['06ff9493']
-MISMATCH RESHAPE   py#5 vs bend#5  (no shared core; paired one-to-one on the dtype-erased arg)
-    shape py=(l0:3,l0:4) bend=(l0:4,l0:3)
-    src  py=['aa763d62', 'a923cbbb'] bend=['aa763d62', 'c7634b1f']
-MISMATCH STACK     py#4 vs bend#4  (no shared core; paired one-to-one on the dtype-erased arg)
-    src  py=['951332ef', 'a81952e6'] bend=['a81952e6', '951332ef']
-MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
-    src  py=['d5b706de'] bend=['07a90938']
-MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
-    src  py=['fc6e2c2b', 'bd57da94'] bend=['2b7d1a7e', 'bd57da94']
-MISMATCH RESHAPE   py#8 vs bend#8  (no shared core; paired one-to-one on the dtype-erased arg)
-    src  py=['90a8f0c2', '061d05dc'] bend=['91aee5d3', '061d05dc']
-# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
-# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# VERDICT: DISAGREE
+emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  bend attempt 1: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
+  bend attempt 2: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
+  bend attempt 3: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
+  bend attempt 4: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3508 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3509>| pm_r_alloc_m.at(ctx, 2) | ^ 3510 |
+  bend attempt 5: 0 rows, rc=1, stderr tail: 2721 | 2722>| def UOp.backward_slice(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>: | ^^^^ 2723 | bsl.go(self, UOp.toposort_nocalls(fuel, ar, self), Nil{})

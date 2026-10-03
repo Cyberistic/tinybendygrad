@@ -384,15 +384,15 @@ def eq_sint(+x: O.Sint, y: O.Sint) -> Bool:
 
 # is_image_shape -- helpers.py:37, `shape is not None and len(shape) == 3 and
 # shape[-1] == 4`, over the resolved dims rather than helpers.bend's `Nest`.
-# TODO(p3) helpers.py:37 def is_image_shape -- `four` compares against `sint_one()`,
-#   so it tests `shape[-1] == 1` and answers False for `(32,32,4)`, which Python says
-#   True. MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`; see the mutation
-#   table at the bottom of this file. `helpers.bend`'s own `is_image_shape.tail` gets
-#   it right (`U32.is_eq(x, 4)`). Wants its own gate row, so this file's `sized` fix
-#   keeps moving exactly one row.
+# FIXED, and `t_img` is the row that pins it: the constant is FOUR and was ONE, which
+# made this answer False for `(32,32,4)` and True for nothing. `helpers.bend`'s own
+# `is_image_shape.tail` already read `U32.is_eq(x, 4)`, so two ports of one line
+# disagreed and only this one was wrong. M2's note filed the defect as out of that fix's
+# scope so that M2 would keep moving exactly one row; the row it asked for is here, and
+# the mutation table has the measurement.
 def is_image_shape.four(last: Maybe<&2, O.Sint>) -> Bool:
   match last:
-    case Some{d}: eq_sint(d, sint_one())
+    case Some{d}: eq_sint(d, sint_of(4))
     case None{}: False{}
 
 def is_image_shape.ds(+n: Nat, last: Maybe<&2, O.Sint>) -> Bool:
@@ -4117,6 +4117,350 @@ def folded(+ar: O.Arena) -> Folded:
   Folded{ar, UOp.fold(ar)}
 
 # ===========================================================================
+# THE RANGES FOLD -- ops.py:483 `UOp._ranges` and ops.py:497 `UOp.ranges`. This is
+# the set algebra the `P3` list wanted for `_bool_slice`, `is_realized` and
+# `variables`, and the one the file's own list named as the reason those three wait.
+#
+#   @recursive_property
+#   def _ranges(self) -> dict[UOp, None]:
+#     ret: dict[UOp, None] = {}
+#     for s in self.src: ret.update(s.ranges)
+#     for er in self.ended_ranges:
+#       if er.op is Ops.RANGE: ret.pop(er, None)
+#       else:
+#         for s in er.ranges: ret.pop(s, None)
+#     return ret
+#
+#   @property
+#   def ranges(self) -> dict[UOp, None]:
+#     if self.op is Ops.RANGE: return {self:None} | self._ranges
+#     return self._ranges
+#
+# A `dict[UOp, None]` IS A SET here, because the arena interns (ops.bend's
+# `UOp.make.intern`): two structurally equal UOps are ONE index, so a list of indices
+# with a membership test is the set. It is a set in FIRST-OCCURRENCE ORDER, which is
+# what a Python dict gives and what `dict.update` preserves, so the list is a set AND
+# its order is CPython's -- which is what makes the two `rg_two`/`rg_rev` rows
+# different rows rather than one row twice.
+#
+# WHY A SECOND PASS AND NOT A SEVENTH `Derived` FIELD. `_ranges` reads `er.ranges` for
+# an `er` in `ended_ranges(self)`, and `er` need not be a SRC of `self`: `AFTER` and
+# `BARRIER` carry the ENDED LISTS OF THEIR SRCS, so `er` is a GRANDCHILD. A `Derived`
+# field sees only its own srcs. What a second pass buys is the ordering: EVERY index in
+# `ended_ranges(i)` is strictly less than `i` (`ended_of` above reaches only `src[i:]`
+# and the `ended` of a direct src), and so is every src, so ONE FORWARD SWEEP IN ARENA
+# INDEX ORDER reads nothing that is not already in the table. That is the same argument
+# the header makes for Kahn being unnecessary here, and it is why this pass is a sweep
+# and not a worklist.
+#
+# IT REUSES THE MAIN TABLE FOR `ended_ranges` rather than recomputing it, and THAT is
+# the whole divergence: `ended` is a `Derived` field, so a node the dtype/shape ladder
+# does not answer (UNSHARD, STAGE, CUSTOM, CUSTOMI) has no `ended` list, so its set is
+# not answered either. Python has no such limit. The refusal is a FLAG and not an
+# absence, so it rides through the union and the pops -- a fold that cannot say "I do not
+# know" is not a fold. `rg_absent` is the row that pins it.
+# ===========================================================================
+
+# The node index rides IN the set, because the table is a search and a `List` cannot
+# carry the key beside the value without a second record. `ok` is the "do not know".
+type Rng is Data:
+  Rng{i: U32, rs: List<&2, U32>, ok: Bool}
+
+def Rng.i(r: Rng) -> U32:
+  match r:
+    case Rng{i, rs, ok}: i
+
+def Rng.rs(r: Rng) -> List<&2, U32>:
+  match r:
+    case Rng{i, rs, ok}: rs
+
+def Rng.ok(r: Rng) -> Bool:
+  match r:
+    case Rng{i, rs, ok}: ok
+
+# `ret[key] = None` on a key that is already there is a NO-OP, so the insert is
+# `if key not in xs`.
+def set_add(+xs: List<&2, U32>, +y: U32) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, mem_u32(xs, y), xs, List.append(&2, U32, xs, [y]))
+
+# `ret.pop(s, None)` for every `s` in `ds`, which KEEPS the order of what survives --
+# a Python dict's order is its insertion order and a pop does not reorder.
+def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case +x <> t: set_del(t, ds, Bool.pick(List<&2, U32>, mem_u32(ds, x), acc, List.append(&2, U32, acc, [x])))
+
+type RTable is Data:
+  RTable{es: List<&2, Rng>}
+
+def RTable.es(t: RTable) -> List<&2, Rng>:
+  match t:
+    case RTable{es}: es
+
+def RTable.put(t: RTable, r: Rng) -> RTable:
+  match t:
+    case RTable{es}: RTable{List.append(&2, Rng, es, [r])}
+
+def RTable.get.step(i: U32, +r: Rng, acc: Rng) -> Rng:
+  Bool.pick(Rng, U32.is_eq(i, Rng.i(r)), r, acc)
+
+# The same O(n) SEARCH `Kahn.get` is, and for the same reason: the table is in
+# SWEEP order, which for a forward sweep IS index order, so the search stops at the row.
+def RTable.get.go(+i: U32, rs: List<&2, Rng>, acc: Rng) -> Rng:
+  match rs:
+    case Nil{}: acc
+    case r <> t: RTable.get.go(i, t, RTable.get.step(i, r, acc))
+
+# "no row yet" and "the fold does not know" are the SAME row, which is why the default
+# is `ok: False{}` and not an empty set: an absent row must not read as "no ranges".
+def RTable.get(t: RTable, i: U32) -> Rng:
+  RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
+
+# `UOp.ranges` -- ops.py:497. The ONLY difference from `_ranges` is this prepend, and a
+# prepend is why the union cannot use the raw table rows: `for s in self.src` reads
+# `s.ranges`, which for a RANGE src is the src ITSELF.
+def rng_of(+ar: O.Arena, t: RTable, i: U32) -> Rng:
+  rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i))
+
+def rng_of.put(i: U32, self: Bool, r: Rng) -> Rng:
+  Rng{i, Bool.pick(List<&2, U32>, self, List.append(&2, U32, [Rng.i(r)], Rng.rs(r)), Rng.rs(r)), Rng.ok(r)}
+
+# `for s in self.src: ret.update(s.ranges)` -- the union, in src order, and the flag
+# rides along because `dict.update` of a MISSING src is a silent no-op in Python and
+# must not be one here. The accumulator IS an `Rng` and not a `(&2, Bool)` pair: a walk
+# that hands back two values needs a destructuring `=`, and Bend reads that as a
+# scrutinee (see the error this spelling produced).
+def rng_union.put(+acc: Rng, +s: Rng) -> Rng:
+  Rng{Rng.i(acc), Bool.pick(List<&2, U32>, Rng.ok(s), set_add(Rng.rs(acc), Rng.rs(s)), Rng.rs(acc)),
+      Bool.and(Rng.ok(acc), Rng.ok(s))}
+
+def rng_union.go(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, +acc: Rng) -> Rng:
+  match ss:
+    case Nil{}: acc
+    case s <> tl: rng_union.go(ar, t, tl, rng_union.put(acc, rng_of(ar, t, s)))
+
+def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32) -> Rng:
+  rng_union.go(ar, t, ss, Rng{i, Nil{}, True{}})
+
+# the `for er in self.ended_ranges` pops, as ONE delete set: a pop is idempotent, so
+# subtracting the union of the delete sets is the same dict Python reaches by popping
+# them one at a time, and it is one walk instead of one per ended range.
+def rng_del.put(+acc: Rng, +d: Rng) -> Rng:
+  Rng{Rng.i(acc), set_del(Rng.rs(acc), Rng.rs(d), Nil{}), Bool.and(Rng.ok(acc), Rng.ok(d))}
+
+# THE ONE CONDITIONAL, and it is the whole `if er.op is Ops.RANGE ... else ...`: a RANGE
+# `er` deletes ITSELF and anything else deletes its own live set. `Bool.pick` is strict,
+# so the `RTable.get` runs on both arms -- it is a search over a table this sweep has
+# already filled, and `er < i` is the sweep's whole ordering argument.
+def rng_del.step(+ar: O.Arena, +t: RTable, er: U32, +acc: Rng) -> Rng:
+  rng_del.put(acc, Bool.pick(Rng, is_range.of(O.Arena.op(ar, er)), Rng{er, [er], True{}}, RTable.get(t, er)))
+
+def rng_del.go(+ar: O.Arena, +t: RTable, ers: List<&2, U32>, +acc: Rng) -> Rng:
+  match ers:
+    case Nil{}: acc
+    case er <> tl: rng_del.go(ar, t, tl, rng_del.step(ar, t, er, acc))
+
+# ONE NODE. The `Maybe` from `fold.ended` is a `Maybe` PARAMETER, which cannot be `+`,
+# so the "is there an `ended` list" question is a LAMBDA BINDER and not a `match` on a
+# call -- the same two rules the header's `Perm` block records composing.
+def rng_of.node(+ar: O.Arena, +main: Table, +t: RTable, i: U32) -> Rng:
+  Maybe.bind(&1, List<&2, U32>, Rng, fold.ended(ar, main, i), ended => rng_of.got(ar, t, i, ended))
+
+def rng_of.got(+ar: O.Arena, +t: RTable, i: U32, ended: List<&2, U32>) -> Rng:
+  rng_of.put(i, is_range.of(O.Arena.op(ar, i)),
+    rng_del.go(ar, t, ended, rng_union(ar, t, O.Arena.srcs(ar, i), i)))
+
+# THE SWEEP. `k` is the arena INDEX and it is a parameter rather than `List.length`,
+# because the node list IS the index space: `Kahn.seed` numbers it the same way.
+def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, k: U32, +t: RTable) -> RTable:
+  match ns:
+    case Nil{}: t
+    case _ <> tl: rng_sweep.go(ar, main, tl, U32.add(k, 1), RTable.put(t, rng_of.node(ar, main, t, k)))
+
+def rng_sweep(+ar: O.Arena, +main: Table) -> RTable:
+  rng_sweep.go(ar, main, O.Arena.nodes(ar), 0, RTable{Nil{}})
+
+# THE READERS. `UOp.ranges(ar, tb, rt, i)` is a sweep read, and there is no
+# `UOp.ranges(ar, i)` here for the reason the header gives for `UOp.dtype`: answering one
+# node IS the sweep.
+def UOp.ranges(ar: O.Arena, tb: Table, rt: RTable, i: U32) -> Rng:
+  rng_of(ar, rt, i)
+
+# The main fold ONCE, then the sweep over the FINISHED table. That order is the whole
+# reason the sweep may read `ended` for a grandchild: the main table is complete, so
+# `fold.ended` answers for every index the main fold answered, settled or not.
+type Ranged is Data:
+  Ranged{ar: O.Arena, tb: Table, rt: RTable}
+
+def Ranged.ar(x: Ranged) -> O.Arena:
+  match x:
+    case Ranged{ar, tb, rt}: ar
+
+def Ranged.tb(x: Ranged) -> Table:
+  match x:
+    case Ranged{ar, tb, rt}: tb
+
+def Ranged.rt(x: Ranged) -> RTable:
+  match x:
+    case Ranged{ar, tb, rt}: rt
+
+def Ranged.of(+ar: O.Arena, +tb: Table) -> Ranged:
+  Ranged{ar, tb, rng_sweep(ar, tb)}
+
+def ranged(+ar: O.Arena) -> Ranged:
+  Ranged.of(ar, UOp.fold(ar))
+
+# ===========================================================================
+# THE RANGES ROWS. `.agents/slop/oracles/fold-rng-oracle.py` builds the same twelve
+# graphs node for node and prints CPython's own `u.ranges`, so `diff` of the two lanes
+# IS the test. The label is a RANGE's axis, never an index: CPython's interning order
+# is not the arena's, so a number neither lane means the same thing by.
+# ===========================================================================
+
+# `UOp.range(end, (axis,), AxisType.LOOP)` -- one fixture, one axis per range, which is
+# what makes a range a NAME rather than a position.
+def rg_rng(ar: O.Arena, end: U32, axis: U32) -> O.Found:
+  O.UOp.range_end(ar, end, [axis], O.AXIS_LOOP{})
+
+def rg_c(ar: O.Arena, n: U32) -> O.Found:
+  O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
+
+def rg_st(ar: O.Arena, a: O.Found, b: O.Found) -> O.Found:
+  O.UOp.new(ar, O.OpsSTACK{}, [O.Found.i(a), O.Found.i(b)], O.ANone{}, O.TNone{})
+
+def rg_cf(ar: O.Arena) -> O.Found:
+  O.UOp.new(ar, O.OpsCUSTOM_FUNCTION{}, Nil{}, O.ACustom{O.CustomFunction{"myext", S.void()}}, O.TNone{})
+
+# NO RANGE ANYWHERE: the empty set, and the same `Nil` the union's seed carries.
+def rg_f_none() -> O.Found:
+  rg_c(O.Arena.empty(), 4)
+
+# A RANGE AS THE ROOT: the `{self:None} | _ranges` PREPEND, and a prepend is invisible
+# from anywhere else.
+def rg_f_self() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+
+# THE UNION, BOTH SRC ORDERS. `dict.update` keeps a key's FIRST position, so these two
+# graphs have the same SET and two different rows -- and a union that forgot its order
+# could not tell them apart.
+def rg_f_two() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  rg_st(O.Found.ar(r1), r0, r1)
+
+def rg_f_rev() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  rg_st(O.Found.ar(r1), r1, r0)
+
+# THE SAME RANGE TWICE. `ADD(r0, r0)` names it twice, so a MULTISET answer prints it
+# twice. This is bend2-constraints.md's "membership where the count is wanted" family,
+# on the set side.
+def rg_f_dup() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  O.UOp.new(O.Found.ar(r0), O.OpsADD{}, [O.Found.i(r0), O.Found.i(r0)], O.ANone{}, O.TNone{})
+
+# `END`'s OWN ARM -- `tuple(r for r in src[1:] if r.op is Ops.RANGE)`, and NOT
+# `range_start[END]`. Two of the three end and the one at src[0] does not, so a reading
+# that pops src[0] as well answers `[]` where CPython answers `[R(0)]`.
+def rg_f_end() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +r2 = rg_rng(O.Found.ar(r1), O.Found.i(c), 2)
+  O.UOp.end(O.Found.ar(r2), O.Found.i(r0), [O.Found.i(r1), O.Found.i(r2)])
+
+# `AFTER`'s ARM IS THE FLATTEN of its srcs' ENDED LISTS, not `src[1:]`: the END at
+# src[1] is what ends `r1` here, and reading `src[1:]` as the delete list would end the
+# END and not `r1`.
+def rg_f_after() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +e = O.UOp.end(O.Found.ar(r1), O.Found.i(r0), [O.Found.i(r1)])
+  O.UOp.after(O.Found.ar(e), O.Found.i(c), [O.Found.i(e)])
+
+# `BARRIER` flattens over ALL ITS SRCS, so `r1` arrives twice -- once under the END and
+# once inside it -- and is popped once, while `r2` stays and stays in union order.
+def rg_f_barrier() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +r2 = rg_rng(O.Found.ar(r1), O.Found.i(c), 2)
+  +e = O.UOp.end(O.Found.ar(r2), O.Found.i(r0), [O.Found.i(r1)])
+  O.UOp.new(O.Found.ar(e), O.OpsBARRIER{}, [O.Found.i(e), O.Found.i(r2)], O.ANone{}, O.TNone{})
+
+# THE `else` BRANCH, and the one that needs `er.ranges`. `BACKEDGE`'s ended list is
+# `src[1:2]`, so the STACK at src[1] is the `er`, and `er` is NOT a RANGE: the delete set
+# is `STACK(r1,r1).ranges` = {R(1)} and not {STACK}. `r0` at src[0] is the `self` and
+# does NOT end, so this row is also the `src[1:2]` off-by-one.
+def rg_f_er() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +st = rg_st(O.Found.ar(r1), r1, r1)
+  O.UOp.backedge(O.Found.ar(st), O.Found.i(r0), O.Found.i(st), O.Found.i(c))
+
+# `CALL`'s ONE CONDITIONAL, twice: a CUSTOM_FUNCTION body ends nothing and a CONST body
+# ends every range in `src[1:]`. The two rows are one condition apart, so neither can be
+# right while the other is wrong.
+def rg_f_call_cf() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +cf = rg_cf(O.Found.ar(r1))
+  O.UOp.new(O.Found.ar(cf), O.OpsCALL{}, [O.Found.i(cf), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+
+def rg_f_call_c() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  O.UOp.new(O.Found.ar(r1), O.OpsCALL{}, [O.Found.i(c), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+
+# THE REFUSAL, and it is the divergence the header names: `STAGE` is a DEFERRED op in
+# `dt_shape`, so `ended_ranges` is not in the main table and neither is the set. CPython
+# has no such limit, so the oracle records its answer in a DIVERGES block rather than
+# printing a row the two lanes could agree on.
+def rg_f_absent() -> O.Found:
+  +c = rg_c(O.Arena.empty(), 4)
+  +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
+  +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
+  +st = rg_st(O.Found.ar(r1), r0, r1)
+  O.UOp.new(O.Found.ar(st), O.OpsSTAGE{}, [O.Found.i(c), O.Found.i(st)], O.ANone{}, O.TNone{})
+
+def ids_str.go(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: ids_str.go(t, List.append(&2, String, acc, [U32.show(x)]))
+
+def ids_str(xs: List<&2, U32>) -> String:
+  String.concat(["(", String.join(ids_str.go(xs, Nil{}), ","), ")"])
+
+def rng_lab.of(+ar: O.Arena, i: U32) -> String:
+  String.concat(["R", ids_str(Maybe.default(&2, List<&2, U32>, UOp.axis_id(ar, i), Nil{}))])
+
+def rng_lab.go(+ar: O.Arena, rs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match rs:
+    case Nil{}: acc
+    case x <> t: rng_lab.go(ar, t, List.append(&2, String, acc, [rng_lab.of(ar, x)]))
+
+# `ABSENT` is this file's "this fold cannot answer", and it is the same word the other
+# readers use, so a refused set is not mistakable for an empty one.
+def rng_str(+ar: O.Arena, r: Rng) -> String:
+  match r:
+    case Rng{i, rs, True{}}: String.concat(["[", String.join(rng_lab.go(ar, rs, Nil{}), ","), "]"])
+    case Rng{i, rs, False{}}: "ABSENT"
+
+def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
+  +x = ranged(O.Found.ar(f))
+  IO.print(String.concat(["rg_", nm, " ranges=",
+    rng_str(Ranged.ar(x), UOp.ranges(Ranged.ar(x), Ranged.tb(x), Ranged.rt(x), O.Found.i(f)))]))
+
+# ===========================================================================
 # THE MOVEMENT FIXTURES AND ROWS: `dt_shape`'s arms for ops.py:414-431's five
 # deferred movement ops. Every `g_mv*` is built node for node against
 # `.agents/slop/oracles/fold-mvt-oracle.py`, and every row prints the FOUR FACTS
@@ -4510,6 +4854,29 @@ def t_sized_order() -> Bool:
   Bool.and(eq_sints(Sized.s(sized([sint_of(2), sint_of(3)])), [sint_of(2), sint_of(3)]),
     eq_sints(Sized.s(pad_to(sized([sint_of(2), sint_of(3)]), 3n)),
       [sint_one(), sint_of(2), sint_of(3)]))
+
+# THE IMAGE-SHAPE ROW, and the one M2's note asked for. `shape[-1] == 4` is a
+# CONSTANT and the pre-fix body compared against `sint_one()`, so all six cases are one
+# row: the constant either side, the LENGTH either side of three, the last dim in the
+# wrong place, no shape at all, and a UOp dim leading a shape CPython also accepts. The
+# expectations are helpers.py:37's own predicate, written as literals -- a def of the
+# thing under test would be a tautology, and `bnd.same` is this file's `Bool` equality
+# because Bend has no `Bool.is_eq`.
+def img_case(m: Maybe<&2, List<&2, O.Sint>>, want: Bool) -> Bool:
+  bnd.same(is_image_shape(m), want)
+
+def t_img() -> Bool:
+  Bool.and(
+    img_case(Some{[sint_of(32), sint_of(32), sint_of(4)]}, True{}),
+    Bool.and(
+      img_case(Some{[sint_of(32), sint_of(32), sint_of(3)]}, False{}),
+      Bool.and(
+        img_case(Some{[sint_of(4), sint_of(32), sint_of(32)]}, False{}),
+        Bool.and(
+          img_case(Some{[sint_of(32), sint_of(32)]}, False{}),
+          Bool.and(
+            img_case(None{}, False{}),
+            img_case(Some{[O.SU{0}, sint_of(4), sint_of(4)]}, True{}))))))
 
 # THE WIDTH IS NOT HARD-CODED TO `weakint`. `bnd_int` is a general statement about the
 # representation -- "an integer width past 64 saturates" -- and the twenty dtype rows can

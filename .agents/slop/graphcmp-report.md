@@ -4,6 +4,18 @@ Measured 2026-10-03. Harness: `.agents/slop/graphcmp.py` (the differ and the CPy
 emitter) and `.agents/slop/graphcmp.bend` (the port-side emitter). Artifacts:
 `runs/graphcmp/`. No port file was edited. No live tree was patched.
 
+**Second pass, 2026-10-03 (the five residuals).** Section 5 is rewritten; the four
+residual claims that survived measurement are listed there with their owners. Three things
+the first version of this report asserted turned out to be **wrong on measurement** and are
+corrected in place rather than quietly: the realized-BUFFER row was **emitting a device
+object's `repr`** and comparing a `slot` that does not exist; `KernelInfo.applied_opts`
+made the emitter **crash**, and there is no `Option` class in this tree; and there are
+**two** bend-only `AxisType` members, not three — `PLACEHOLDER` exists upstream. Section 5.6
+is a sixth finding that was not on the list: the shape column's third value was a letter
+collision, found only because a fixture with a shape-less node now exists. The device
+resolver landed from the other unit during this pass, so `diff` reads `VERDICT: AGREE` with
+no `--dev-map` and nothing here binds a device at a prompt.
+
 **`tinybendygrad/uop/render.bend` was NOT touched.** `pretty_print` (`render.bend:1903`'s
 `PORTED IN PART`) was the suggested anchor and is still unportable for this purpose — see
 "Why not `pretty_print`" below. `uop/ops.bend` (63 importers) untouched. `helpers.bend`,
@@ -196,28 +208,377 @@ a **fresh `ParamArg.slot` every call** (measured: 0,1 then 2,3), so a clean and 
 that each built their own graph differed in two slot fields before the plant did anything; and
 `erase` found no dtype inside `P(i0,Di32,...)` because the first `)` was `P`'s own.
 
-## 5. Today's honest residual mismatch list
+## 5. The five residuals — classified, closed or made visible
 
-The two graphs **match exactly** on the matmul, so this is a list of what the normal form
-*cannot* compare and of what was true before `--dev-map`.
+Second pass, 2026-10-03. Every number below is measured by calling CPython or `bend`;
+the consolidated evidence file is **`runs/graphcmp/probe/p12-residual-evidence.txt`**,
+regenerate it with `env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python
+runs/graphcmp/probe/p12-residual-evidence.py`. Two of the five classifications in the
+previous version of this section were **wrong**, and the measurements say so.
 
-| # | residual | why | owner |
+### The mechanism: a LEDGER, printed on every report
+
+Each residual is now a **marker** in the normal form, counted on both sides of every
+report, with the non-zero ones called out in a `# RESIDUALS IN THIS RUN:` line **above**
+the verdict:
+
+| marker | field | meaning |
+|---|---|---|
+| `z` | arg | a realized BUFFER: presence only |
+| `y` | arg | a bytes arg: length only |
+| `u` | arg | a UOp nested in an arg: identity not compared |
+| `q` | arg | an applied option the port cannot resolve: count only |
+| `X!` | arg | an `AxisType` member with no counterpart at this tree |
+| `BAD` | arg | the port's arena bottom |
+| `E` | arg | an enum member outside `{Ops, AxisType, AddrSpace}` |
+| `?` | shape | the port's fold produced no shape at all |
+
+A `0/0` is printed too, because it is a measurement: it answers *"did that path run?"*,
+which is the question a residual list otherwise never answers. `selfcheck` asserts every
+marker is a spelling the emitter can produce, and `.agents/slop/graphcmp-probe-optq.bend`
+calls the three emitters no graph reaches today so their rows are measured, not assumed:
+
+```
+Q-KI-DEFAULT kI(stest,n(),N,i0)      Q-AXIS-LIVE   XWEAK
+Q-KI-REFUSAL kI(splant,n(q,q),n(q),i2)  Q-AXIS-DEAD   X!REDUCE
+Q-KI-OTA-None kI(sprobe,n(),N,i0)    Q-AXIS-DEAD   X!UNROLL
+Q-BUF-YES     z                      Q-SHAPE-NONE  ?
+Q-BUF-NO      N                      Q-SHAPE-NOSHAPE R
+```
+
+**The precedent this follows is the DEBUG unit's**, not a new idea: a residual is closed by
+a measurement over the space where it would have appeared, or it is left visible. None of
+the five below is closed by copying the port's answer into the oracle.
+
+---
+
+### 1. A realized BUFFER's `buffer` — **CLOSED (as far as it can be), and it was a live bug**
+
+**Classification: a PORT limitation in the middle of a NORMAL-FORM BUG, and the bug was
+worse than the residual.**
+
+The previous version of this report claimed `buffer` "reduces to `realized<slot>` /
+`unrealized`: presence **and slot** are compared". The code said
+`f"realized{u(pa.buffer)}"`, and `u(x)` is `"i" + str(x)` — so on a realized graph the
+normal form was emitting
+
+```
+realizedi<buf real:False device:CPU size:12 dtype:dtypes.f32>
+```
+
+**52 characters of device object inside the normal form**, including `dtypes.f32` — the
+exact token R3 exists to drop because it moves between upstream commits — and `real:`, an
+allocation state. The header's own rule ("a form that prints a device object can never
+match") was being broken by the code two hundred lines below it.
+
+And the "slot" was never there. **MEASURED: `Buffer` has no `slot` attribute.** There was
+nothing to compare.
+
+**What is comparable, and is compared:** `size`, `dtype`, `device`, `offset` are already
+`ParamArg` fields 3, 2, 8 and are already compared. `trace_num` is a per-process counter
+and is never read. So presence is the finest split both sides can make, and both sides now
+emit `z` / `N`.
+
+**It is now exercised by a real diff, not asserted by a comment.** `--graph buffer` is a
+new fixture on both sides, and MEASURED facts it encodes:
+
+```
+Tensor.empty(4,3)   -> ALLOC , ParamArg.slot=0
+.realize()          -> BUFFER, ParamArg.slot=1   <-- A DIFFERENT SLOT
+```
+
+Realize **mints a fresh `ParamArg`** (`UOp.new_buffer`, ops.py:1208,
+`if slot is None: slot = next(UOp.unique_num)`), and a BUFFER's `bind_on_realize` is
+`False` where an ALLOC's is `True`. Writing `slot=0` in the fixture because "it was 0
+before the realize" is exactly the reading that measurement forbids.
+
+```
+$ graphcmp.py diff --graph buffer
+# py rows=5  bend rows=5  plant=none
+# RESIDUALS IN THIS RUN: z=1/1 (a realized BUFFER: device-object PRESENCE only) -- agreement below does NOT cover these.
+# SHARED cores=5  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# VERDICT: AGREE
+```
+
+The two canonical files are also byte-identical (5 rows), so the cheapest check in the file
+still works.
+
+**One text change on the matmul, on both sides:** `unrealized` → `N`. Same information —
+absence — now spelled the way the other six `Maybe` fields of the same record already
+spell it. The reason is measured, not aesthetic: `unrealized` **contains `realized` as a
+substring** and **starts with the ledger's `u`**, so at a value position — exactly where
+it sat — any scan counted the absent case as a present one *and* counted a nested UOp that
+was not there. The before/after is `runs/graphcmp/C11-superset.txt` and it is two lines.
+
+### 2. `KernelInfo.applied_opts` — **the emitter CRASHED. Now closed for the reachable half, refusal for the rest**
+
+**Classification: a NORMAL-FORM BUG (a hard failure, not a comparison gap) sitting on top
+of a PORT limitation.**
+
+The previous report said these "are emitted from the port's `U32` ids and from CPython's
+`Option` dataclasses, and will not agree". Both halves of that are wrong:
+
+* **there is no `Option` class in this tree.** `grep -rn "class Option" tinygrad/` finds
+  nothing. The class is `Opt` (`tinygrad/codegen/opt/__init__.py:11`,
+  `@dataclass(frozen=True, order=True)` with `op: OptOps`, `axis`, `arg`), and `OptOps` is a
+  plain `Enum` (`TC, SPLIT, PADTO, SWAP`).
+* **the emitter did not emit anything at all.** `carg(Ops.SINK, <a KernelInfo with a
+  non-empty applied_opts>)` **died**:
+
+  ```
+  File ".agents/slop/graphcmp.py", line 361, in _carg
+  File ".agents/slop/graphcmp.py", line 360, in _carg
+      d = {k: v for k, v in vars(x).items() if k != "grad_fxn"}
+  TypeError: vars() argument must have __dict__ attribute
+  ```
+
+  A kernelized graph could not be emitted at all. The residual was written up as a
+  comparison limit; it was a traceback.
+
+**The crash chain, because the obvious explanation is wrong and cost a probe.** Not "an
+enum member has no `__dict__`" — MEASURED, `vars(OptOps.TC)` returns a real `dict` whose
+`_value_` (1), `_name_` ("TC") and `_sort_order_` (0) all render fine through the arms
+above the fallback. The fourth entry is `__objclass__`, **the enum class**. `vars()` on a
+class is its `mappingproxy` (17 entries for `OptOps`), the fallback walks that namespace,
+and the first entry that reaches the `vars()` arm and is not a class is **`_new_member_`,
+a `builtin_function_or_method`** — no `__dict__`, `TypeError`. (`_member_map_`, a `dict`,
+is the second.) So the defect was never "enums are special": it was that **the generic
+`vars()` fallback follows `__objclass__` out of the value and into its class**, and had it
+survived it would have emitted a text full of dunder names and a recursive walk back
+through `OptOps.TC` — the printer instability this whole file exists to remove, arriving
+through the back door.
+
+Two independent guards, both load-bearing: the new `enum.Enum` arm stops the walk at the
+value, and the `__dict__ is None` guard at the bottom catches the descriptors had the arm
+not existed.
+
+**Three structural fixes, each with its own measurement:**
+
+| was | is | why |
+|---|---|---|
+| py: 3 slots `kI(name, applied, beam)` | **4** `kI(name, applied, ota, beam)` | `KernelInfo`'s declaration order (ops.py:1342-1347) minus `estimates` |
+| bend: **2** slots `kI(name, beam)` | **4** | a 2-vs-3 arity accident can only ever report "the port renders fewer fields", which is not about the graph |
+| both: `opts_to_apply` **dropped** | both emit it | see below |
+
+**`opts_to_apply` was the residual nobody was looking at**, because it was dropped on
+*both* sides and a field neither side carries cannot be seen by either. `KernelInfo`
+(ops.py:1345) declares it; `tinygrad/llm/kernels/amd.py` (nine sites) and
+`nn/__init__.py:363` write `opts_to_apply=()` on **every** SINK they build — an **EMPTY
+TUPLE, not `None`** — while the port's `KernelInfo.of()` answers `None` (MEASURED, probe
+Q1b). So the two sides genuinely differ on a field this gate could not name in either
+direction. Note also that `uop/render.bend:664` hard-codes `opts_to_apply=None` in its
+`KernelInfo` repr, so it prints `None` where upstream prints `()` — **a port output bug,
+reported, not fixed** (`render.bend` is not this unit's file).
+
+**The reachable half is now a real diff.** `--graph sink` is a new fixture:
+
+```
+$ graphcmp.py diff --graph sink
+# py rows=2  bend rows=2  plant=none
+# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
+# SHARED cores=2  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# VERDICT: AGREE
+```
+
+with `kI(stest,n(),N,i0)` on both sides — the one `kI` text both sides can produce, and
+`shape=R` on both sides (see finding 6 below).
+
+**The unreachable half is a refusal, and it is not the port's answer.** The port types both
+lists `List<&2,U32>` (ops.bend:978) and upstream's elements are `Opt` dataclasses, so the
+bend side emits **one `q` per option** — the count compares, the content is a named
+refusal. Copying `U32.show` of the port's indices into the oracle would have been exactly
+the failure this project has paid for, and there is a measured reason it would have been
+wrong: `uop/render.bend:655` calls those U32s "UOp INDICES", and **no port file ever writes
+a non-empty list** (the only writer is `KernelInfo.of()` → `Nil{}`; the only other reader is
+`engine/realize.bend:1200` passing it through), so that reading is UNVERIFIED — there is no
+construction site to verify it against.
+
+**The non-empty case is a reported mismatch, and it is the regression row for the crash:**
+
+```
+$ graphcmp.py diff --plant opt
+# RESIDUALS IN THIS RUN: E=3/0 (an enum member outside {Ops, AxisType, AddrSpace}: NAME only)
+# ONLY-PY=1
+  py#19 SINK dtype=void shape=R depth=i0 tag=N arg=kI(splant,n(Opt(op=EOptOps.TCaxis=i0arg=i4),Opt(op=EOptOps.SWAPaxis=Narg=N)),n(Opt(op=EOptOps.PADTOaxis=i1arg=N)),i2) src=['18']
+# VERDICT: DISAGREE
+```
+
+**Owner, unchanged:** P5 / `codegen/opt/__init__.bend`. `ops.bend`'s `KernelInfo` is 63
+importers' business and is not this unit's to change.
+
+### 3. `bytes` by length only — **a PORT BUG, not a normal-form limitation, and it is reported**
+
+**Classification: PORT limitation, with a measured correctness consequence on the port's
+IDENTITY.** The previous report called it "not fixable without a byte string", which is
+true and is the least interesting part.
+
+**MEASURED, both sides, on the same two blobs:**
+
+```
+upstream  UOp(Ops.BINARY, (), b"aaaa") is UOp(Ops.BINARY, (), b"bbbb")  -> False
+upstream  their keys are equal                                          -> False
+upstream  UOp(Ops.BINARY, (), b"aaaa") is UOp(Ops.BINARY, (), b"aaaa")  -> True   (interned)
+PORT      ABlob{4} twice -> arena indices 1 and 1, Arena.next = 2                (ONE node)
+```
+
+`ops.py:201` keys on `arg`, so **upstream's node identity includes the bytes content** and
+the port's does not: the port **interns two different blobs of the same length as the same
+node**. That is a port-level false-interning bug, and it is in `ops.bend`'s `eq_arg.ABlob`
+— 63 importers, **reported, not fixed**.
+
+So this residual is stronger than "we compare less than the printer would": two graphs
+upstream calls different, this gate can only report as equal. Upstream's own renderer is
+also length-only (`viz/serve.py:134` prints `<{len(u.arg)} bytes>`, `spec.py:96` only tests
+`isinstance`), which is why it went unnoticed — but the interning is not upstream's
+behaviour and the port is not upstream's renderer.
+
+**Made visible three ways:** the `y` ledger row with the measurement in its reason; a
+`--plant bytes` that builds two equal-length different-content BINARIES and gets them
+reported; and the probe above. The plant:
+
+```
+$ graphcmp.py diff --plant bytes
+# RESIDUALS IN THIS RUN: y=2/0 (a bytes arg: LENGTH only) -- agreement below does NOT cover these.
+# SHARED cores=18  ONLY-PY=3  ONLY-BEND=0
+  py#19 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y4 src=[]
+  py#20 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y4 src=[]
+  py#21 SOURCE dtype=void shape=R depth=i0 tag=N arg=N src=['18', '19', '20']
+# VERDICT: DISAGREE
+```
+
+Note the two BINARIES print **identically** (`arg=y4`) — that is the hole, shown rather than
+described — and the port cannot express the second one at all, so it is reported one-sided.
+
+### 4. A `UOp` nested in an `arg` — **the justification for it was false; now a counted refusal and a reported node**
+
+**Classification: NORMAL-FORM LIMITATION, on both sides, genuinely unreachable here — but
+the comment that excused it was a claim and the claim was false.**
+
+The old comment: *"the arg's identity is already carried by the graph's `src` edges"*.
+**MEASURED, and it is not true:**
+
+```
+p = UOp(Ops.PYLITERAL, (), (UOp.const(4),))
+p.arg[0] is c4        -> True      (the same object)
+len(p.src)            -> 0         <== the comment said src carried it
+p.toposort()          -> ['PYLITERAL']
+c4 in p.toposort()    -> False
+```
+
+The nested UOp is in **neither** `src` nor `toposort`, so it has no index in the toposort
+this file numbers arenas by, and there is nothing for the differ to compare it against. The
+port's only carriers are `ATuple`/`TTuple` of `U32`, and `ATuple` **also spells PERMUTE's
+literal ints** (`graphcmp.bend`'s own matmul builds `O.ATuple{[0, 2, 1]}` for a PERMUTE),
+so the two readings cannot be told apart from the value.
+
+**It was also rendering as a STRING.** The old text was `ATOMS["str"] + "<uop>"` — the `s`
+atom — so a PYLITERAL holding a UOp was byte-identical to one holding the five-character
+string `<uop>`, and `selfcheck`'s distinctness claim did not cover it because both sides
+made the same substitution. `u` is its own letter now.
+
+**Made visible:** the `u` ledger row and a plant.
+
+```
+$ graphcmp.py diff --plant pyuop
+# RESIDUALS IN THIS RUN: u=1/0 (a UOp nested in an arg: identity NOT compared)
+# SHARED cores=18  ONLY-PY=1
+  py#19 PYLITERAL dtype=void shape=R depth=i0 tag=N arg=n(u) src=['18']
+# VERDICT: DISAGREE
+```
+
+### 5. Three BEND-ONLY `AxisType` members — **it is TWO, and they are now marked**
+
+**Classification: PORT retention of deleted upstream members. Reported wrong before; now
+measured and marked.**
+
+The previous report listed `AxisType.PLACEHOLDER / REDUCE / UNROLL` as port-only.
+**MEASURED at `3138973dc`, calling CPython, twice:**
+
+```
+list(AxisType) -> ['DEVICE','GLOBAL','LOCAL','WARP','WEAK','LOOP','UPCAST','PLACEHOLDER']  (8)
+hasattr(AxisType,'PLACEHOLDER') -> True      hasattr(AxisType,'REDUCE') -> False
+hasattr(AxisType,'UNROLL')     -> False      hasattr(AxisType,'LOOP')     -> True
+```
+
+`PLACEHOLDER` **exists** here. The port's `type AxisType` (ops.bend:641-654) declares
+**ten**: the eight live ones plus `AXIS_REDUCE` and `AXIS_UNROLL`, deleted upstream by
+`78d482262` and retained for six committed files. **So it is two, not three.** The report
+was wrong and the port's own comment ("these two", ops.bend:650-652) was right.
+
+**Now marked, not just commented.** `AxisType.name` answers the bare `"REDUCE"`, a name no
+CPython enum can have, so a node carrying one reports as ONLY-ON-THE-BEND — loud enough
+today, but **not** if upstream ever adds a `REDUCE` back with different meaning: then the
+two would render identically and agree for the wrong reason. `axis1` emits `X!REDUCE` and
+`X!UNROLL`, spellings no other reading can produce, so "is this member real?" is in the
+text rather than in a comment. The ledger counts them (`X!`), and it reads `0/0` on every
+graph measured today, which is the honest answer: no graph either side builds reaches them.
+
+### 6. **NEW, not on the list: the shape column's third value was a COLLISION**
+
+Found by `--graph sink`, and reported rather than hidden, because it is exactly the failure
+this project has hit repeatedly — a rule that stops discriminating.
+
+`--graph sink` is the first fixture with a shape-less node, and the differ reported:
+
+```
+MISMATCH SINK  py#2 vs bend#2  shape py=R bend=N
+```
+
+a **rung-1 field mismatch on a node whose CORE MATCHED**, which by this file's own measured
+theorem cannot mean the graphs differ — it means the two `_shape` implementations disagree.
+
+**MEASURED which one is wrong.** `UOp.shape` is a property that raises **iff** `_shape is
+None` (ops.py:455), so it **never returns `None`**. Probed over all ten ops in the upstream
+no-shape list (ops.py:331-338) plus a void `INS` and a `PYLITERAL` — twelve ops,
+`_shape is None` **and** `shape` raises in all twelve. So:
+
+* the normal form's `N` is **dead on the CPython side**, and
+* the bend side was using `N` **meaningfully** (its `Some{None}` = "this op has no shape"),
+* i.e. one letter for two different facts, invisible until a graph existed that used it.
+
+The bend side's `Some{None}` now renders `R`, the same as a raise. The port's **other**
+no-Derived state — the fold produced nothing for this node — is a port-only fact with no
+upstream counterpart and gets its own atom, `?`, so a fold that stops settling reads as a
+hole rather than as an agreement. The dead py-side `N` arm is **kept and counted**, because
+a deleted branch is a claim and a counter is a measurement:
+
+```
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+```
+
+printed on every report.
+
+---
+
+### Still residual, unchanged, with the owner named
+
+| # | residual | why it cannot close here | owner |
 |---|---|---|---|
-| **1** | **The device is an interned index on one side and a name on the other.** The port emits `t0`, CPython emits `sNULL`; with no binding the differ reports `UNBOUND-DEVTAG [0]` and the two ALLOCs land in ONLY-PY / ONLY-BEND (`05-diff-unbound-devtag.txt`). | `S.Dev` is `D1{tag}` (`spec.bend:85-87`) and the tag is a local interning index. **Three port files, three tables**: `schedule/__init__.bend:1095` "tag 0 stands for CPU"; `schedule/memory.bend:998-999` 0 = CPU, 1 = DISK; `device.bend:702` `dev_name` 7 = CPU, 11 = NULL. There is **no reader from a tag to a name**. `--dev-map 0=NULL` is a **declared binding, not a derived one**, and the report says so on every line. | whoever reconciles the three device tables |
-| **2** | **A realized BUFFER's `buffer` cannot be compared.** Only presence + slot are. | `pyrender` itself refuses it (`render.py:159-160`); the port's `buffer` is a P6 allocator slot with no runtime behind it (`ops.bend:883`). | the P6 runtime |
-| **3** | **`CallInfo` texts differ by one field.** CPython has `name, precompile, precompile_backward` (`ops.py:1400-1406`); the port has `name, precompile, precompile_backward, dtype` (`ops.bend:1059-1060`) — the `dtype` one is the pin's, dropped three commits later. A CALL node will report as a named `arg` mismatch. Not exercised by the matmul (no CALL in it). | pin vs head, per `UPSTREAM-PIN.md` | the rebase owner |
-| **4** | **`KernelInfo.applied_opts` / `opts_to_apply` are emitted from the port's `U32` ids and from CPython's `Option` dataclasses, and will not agree.** Not exercised by the matmul (no SINK). | the port's option ids are a P5 cost-model table; CPython's are `Option` dataclasses | the P5 cost model |
-| **5** | **A `bytes` arg is compared by LENGTH only.** | `ops.bend:913`: "bytes BINARY arg; only its length is read". There is no byte string in the port. | not fixable without a byte string |
-| **6** | **A `UOp` inside an `arg` is recorded as `<uop>`, not by identity.** | `Ops.PYLITERAL`'s literal and `Ops.MSELECT`'s matcher can hold UOps (`ops.bend:938-941`). The arg's identity is already carried by the `src` edges, and a UOp's repr is the whole problem this file removes. Not exercised by the matmul. | — |
-| **7** | **`AxisType.PLACEHOLDER` / `REDUCE` / `UNROLL` exist on the port and not at this tree** (`ops.bend:649-654`). No CPython row can ask for them, so those three arms of `AxisType.name` are BEND-ONLY and would read as a one-sided node. | deleted upstream by `78d482262`, retained for six committed files | `ops.bend`'s owner |
-| **8** | **`Ops.ALPHA_REWRITE` and any op added to `ops.bend` after this measurement** would have no CPython counterpart and would surface as a one-sided node. The emitter is an exhaustive `match`, so this is a compile error rather than a silent omission — which is the right failure. | — | — |
+| A | a realized buffer's **identity** | `Buffer` has no `slot` (measured); the port's is a P6 allocator slot with no runtime (ops.bend:913). `z=1/1` on `--graph buffer` — presence is compared, identity is not, and the report says so. | the P6 runtime |
+| B | `applied_opts` / `opts_to_apply` **contents** | the port holds `List<U32>` and no port file writes a non-empty list, so the "UOp indices" reading of `render.bend:655` is unverifiable. `q` = count compared, content refused. | `codegen/opt/__init__.bend` + whoever may type those fields |
+| C | a bytes arg's **content** | the port has no byte string, and — measured — the port's *identity* does not see it either (`ABlob{4}` interned twice). | `ops.bend`'s `eq_arg.ABlob` (63 importers) |
+| D | a nested UOp's **identity** | not in `src`, not in `toposort`, so no arena index; and `ATuple` is ambiguous with PERMUTE. | needs a distinct `Arg` variant — `ops.bend`'s `Arg` |
+| E | `KernelInfo.estimates` | dropped by `ops.bend` (P5). **Named, not counted**: a count would be 0 by construction. | P5 |
+| F | `AxisType.REDUCE` / `UNROLL` | deleted upstream by `78d482262`, retained for six committed files. Now `X!`-marked. | `ops.bend`'s owner |
 
-**What is NOT residual, and was measured rather than assumed:** `PYTHONPATH` is not a blocker
-(confirmed by the pin/HEAD import log and re-confirmed here — `tinygrad` is an editable
-install and resolves from any cwd); `DEBUG >= 1` appears **nowhere** in
-`tinygrad/uop/ops.py` or `tinygrad/codegen/__init__.py`, so the indexed dump is not gated
-there and `print_uops` (`render.py:18`) is the only indexed dump in reach — this unit did not
-need it and did not wire the `DEBUG >= 2` sites.
+**New port findings this pass produced, both REPORTED and NOT FIXED** (neither file is this
+unit's, and `ops.bend` has 63 importers):
+
+1. **`ops.bend`'s `eq_arg.ABlob` false-interns.** Two different byte blobs of equal length
+   become the same arena node; upstream keys them apart. `runs/graphcmp/probe/pb-buf-binary.bend`
+   Q1 and `p7-binary-upstream.py`.
+2. **`uop/render.bend:664` prints `opts_to_apply=None`** where every `llm/kernels/amd.py`
+   and `nn/__init__.py` SINK writes `opts_to_apply=()`. An empty tuple is not `None`.
+
+**And one correction to this file's own previous text:** residual #3 in the old version
+claimed `CallInfo` "will report as a named `arg` mismatch". It will not — `arg` is in
+`core`, so a differing text means a differing core, which means rung 3, i.e. ONLY-`<side>`,
+not a named field. The same applies to every `arg`-carrying residual above: they are
+one-sided nodes, and the ledger says *why* they could not be matched.
+
+**What is NOT residual, re-measured rather than assumed:** `PYTHONPATH` is not a blocker
+(tinygrad is an editable install); `DEBUG` appears nowhere in `uop/ops.py` or
+`codegen/__init__.py`, so the indexed dump is not gated there.
 
 ## 6. The comparability traps, and what answers each
 
@@ -276,25 +637,37 @@ of a graph.
 ## 9. Commands
 
 ```
-E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py
+E() { env -u PYTHONPATH LC_ALL=C .venv/bin/python .agents/slop/graphcmp.py "$@"; }
 
 E selfcheck
-E emit --side py                    > runs/graphcmp/01-canon-py.txt
-E emit --side bend --dev-map 0=NULL  > runs/graphcmp/02-canon-bend.txt
-diff runs/graphcmp/01-canon-py.txt runs/graphcmp/02-canon-bend.txt   # rc=0, BYTE-IDENTICAL
-E control   --dev-map 0=NULL        # each side against itself
-E diff      --dev-map 0=NULL        # the real comparison
-E diff                                # the same, device binding absent
-E diff      --dev-map 0=NULL --plant srcswap
-E diff      --dev-map 0=NULL --plant dtype
-E diff      --dev-map 0=NULL --plant shape
-E cross     --dev-map 0=NULL        # matmul vs sum(axis=1)
-E diff --bend-probe .agents/slop/graphcmp-empty.bend   # the 0-row guard, fired on purpose
+E diff                                   # matmul, the real comparison
+E diff --graph reduce
+E diff --graph buffer                    # a REALIZED BUFFER, residual 1
+E diff --graph sink                      # a SINK + the R shape value, residual 2
+E control                                # each side against itself
+E cross                                  # two different graphs, BOTH sides
+E diff --plant srcswap                   # the reordered pair's OWN fields must stay clean
+E diff --plant dtype
+E diff --plant shape
+E diff --plant bytes                     # residual 3: two same-length blobs
+E diff --plant pyuop                     # residual 4: a UOp inside an arg
+E diff --plant opt                       # residual 2: the emitter-crash regression row
+E diff --bend-probe runs/graphcmp/graphcmp-empty.bend   # the 0-row guard, fired on purpose
+
+# the five residuals, one measurement each:
+env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python runs/graphcmp/probe/p12-residual-evidence.py
+bin/bend runs/graphcmp/probe/pb-buf-binary.bend      # the ABlob false-interning, port side
+bin/bend .agents/slop/graphcmp-probe-optq.bend      # the three refusal spellings
 ```
+
+There is **no `--dev-map`**. The device name is not bound at a prompt: the port resolves its
+interned tag through its own table (`uop/render.bend:363`) and both sides carry a NAME.
 
 Exit status: `0` agree, `1` disagree, `2` a side produced nothing (a failure, never a verdict).
 
-Two Bend-specific rules the port side taught and this file records: a record pattern binds
+Four Bend-specific rules the port side taught and this file records: a record pattern binds
 **positionally with bare names** (`case ADt{y1}`, `ops.bend:1715`) — there is no `field:
-binder` form and no `x.field`; and a binder or parameter used more than once needs a leading
-`+` (`bend2-constraints.md` position ~627).
+binder` form and no `x.field`; a binder or parameter used more than once needs a leading `+`;
+`match` can scrutinise only a *parameter* or a *pattern binder*, never a local binder and
+never a computed value (give the value its own def and pass it as a parameter); and a `do`
+block must end in a bare TERM, not a `<-` binding (`bend2-constraints.md`, end of file).

@@ -1,4 +1,3 @@
-########## 4. cross (two different graphs, BOTH sides) ##########
 # py matmul rows=18  py buffer rows=5  plant=matmul-vs-buffer
 # devices py matmul=['sCPU'] py buffer=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
 # RESIDUALS IN THIS RUN: z=0/1 (a realized BUFFER: device-object PRESENCE only) -- agreement below does NOT cover these.

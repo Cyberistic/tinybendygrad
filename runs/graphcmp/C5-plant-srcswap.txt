@@ -1,4 +1,3 @@
-########## 5. --plant srcswap ##########
 # bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
 # py rows=18  bend rows=18  plant=srcswap
 # devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
