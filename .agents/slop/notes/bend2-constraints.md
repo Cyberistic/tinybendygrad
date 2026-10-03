@@ -14137,3 +14137,23 @@ Measured 2026-10-03, after `drop_n` was already `List.drop` (the other unit's fi
 **THE BROADCAST COUNT FORM IS FALSE IN TINYGRAD, NOT ONLY IN THE SPEC.** `Tensor.ones(2, 0) + Tensor.ones(1, 1)` is shape `(2, 0)`, numel 0 < 1. `(2, 3) + (3, 3)` is `IndexError` (neither axis is 1). `Nat.max(0, 1)` is 1, so the spec's old `max_dim` disagreed with that row; `pick_dim` returns the non-1 size and the gate row `bc_20_11=2,0` fails under `Nat.max`. `zip_max` still zips from the head. tinygrad right-aligns (`_align_left` pads on the left). They coincide at equal length, which is why the law's quantifier stops there rather than claiming the unequal-length shapes the spec gets wrong (`(3,)+(2,3)` is `(3,3)` in the spec and `(2,3)` in tinygrad).
 
 **A COMMENT-ONLY CONTROL THAT STAYS GREEN IS SAME, NOT A BLIND SPOT.** A harness that prints BLIND for every GREEN mislabels the control. The control must be reported as SAME.
+
+## R-3. SUB-DEF ORDER MATTERS
+
+A sub-namespace def (`name.subname`) must be declared BEFORE the parent
+`def name` that calls it. The reverse order compiles, but every call to
+the sub-def is reported as
+
+    expected : a filled definition (an unfilled law is a dead claim:
+               live code cannot use it)
+    observed : name.subname
+
+which is hostile to read and impossible to debug without this rule.
+`uop/fold.bend` obeys it (`fold.dt.of` at line 713, `fold.dt` at 4041).
+`codegen/__init__.bend`'s `walk_rewrite` obeys it (leaves first, parents
+last: `rebuild.go` -> `rebuild.of` -> `rebuild` -> `step.mint` ->
+`step.go` -> `step` -> `go`).
+
+When you need a helper, declare it BEFORE the caller. Forward references
+to top-level defs work; forward references to a parent def's sub-namespace
+do not.
