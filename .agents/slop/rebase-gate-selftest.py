@@ -7,10 +7,18 @@ zero disagreements and zero comparisons look identical. A detector that has neve
 failing is indistinguishable from a detector that cannot fail. So each state is produced on
 purpose and the gate is required to name it.
 
-THE THREE STATES, AND WHAT MAKES EACH ONE REACHABLE:
-  UNCHANGED  no row value differs from the baseline, and no row was lost
-  RE-PORTED  a row value moved, and the moved rows now agree with CPython
-  BROKEN     rows went to ZERO, or a lane died, or rows disagree
+THE FIVE STATES, AND WHAT MAKES EACH ONE REACHABLE:
+  UNCHANGED         no row value differs from the baseline, and no row was lost
+  RE-PORTED         a row value moved, and the moved rows now agree with CPython
+  BROKEN            rows went to ZERO, or a lane died, or rows disagree
+  NOT-STARTED       nothing was COMPARED -- no oracle wired, or no .bend, or a baseline that
+                    cannot be read
+  AGREE-UNRECORDED  something WAS compared, every shared row agreed, and no baseline exists.
+                    ⚠ THIS STATE WAS MISSING AND ITS ABSENCE WAS THE GAP: reporting it as
+                    NOT-STARTED merged "compared clean, nobody wrote it down" with "nobody
+                    looked", so 46 of 50 targets read as never-examined when every one of
+                    them had just compared clean. never_wired_control() below is what keeps it
+                    honest -- the same state must NOT be reachable where nothing ran.
 
 The tests run against SYNTHETIC ports and a synthetic baseline, plus THREE REAL lane pairs
 named in SUPERSET_LANES. They do not touch tinygrad/, do not write any .bend file, and do
@@ -25,7 +33,7 @@ Use .venv/bin/python. PATH's python3 cannot import tinygrad at all, and every or
 exits 1 under it -- which the selftest then has to report as a FAILED LANE rather than as a
 row count.
 """
-import pathlib, subprocess, sys
+import json, pathlib, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "rebase-gate.py"
@@ -107,6 +115,130 @@ def verdict_of(base_rows, moved_rows, dead=False, base_doc=None, port="/tmp/prob
   return g.gate_port(FakeBend(port), ["oracle"], doc, native=True)[0]
 
 
+def gate_with(g, doc, rows_by_lane, lanes=None):
+  """gate_port() with run_port() stubbed to return exactly the lanes handed over, and the
+  baseline document handed over verbatim. The general form verdict_of() wraps; this is the one
+  that lets a test state the BASELINE DOCUMENT and the LANES independently, which the
+  AGREE-UNRECORDED controls need -- they are about what happens when a document is intact but
+  has no entry, versus a document that cannot be read at all."""
+  g.REPO = pathlib.Path("/tmp")
+  g.run_port = lambda *a, **k: (lanes or {k: {"rc": 0} for k in rows_by_lane}, rows_by_lane)
+  return g.gate_port(FakeBend("/tmp/probe.bend"), ["oracle"], doc, native=True)[0]
+
+
+def never_wired_control():
+  """THE CONTROL THAT KEEPS AGREE-UNRECORDED HONEST.
+
+  AGREE-UNRECORDED means "this run compared lane pairs and every shared row agreed". The
+  target it must NEVER claim that for is the one where NOTHING ran -- no oracle in
+  BASE_ORACLES, or no .bend file. So the control drives exactly that, through the same
+  never_wired() main() calls, and requires NOT-STARTED.
+
+  The partition is then checked in BOTH directions, because a one-directional test is half a
+  test: every port BASE_ORACLES wires and that exists on disk must be comparable (return None),
+  and the only wired port whose oracle is deliberately dead must still be returned as
+  comparable, so that its BROKEN verdict -- which is the point of wiring it -- survives.
+  """
+  g = load_gate("rebase_gate_never_wired")
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  unwired = "tinybendygrad/device.bend"  # ORACLE_NOT_WIRED names it, and it exists on disk
+  ok("the control port is really unwired",
+     unwired not in g.BASE_ORACLES and (REPO / unwired).exists(),
+     f"{unwired}: in BASE_ORACLES = {unwired in g.BASE_ORACLES}")
+  v = g.never_wired(unwired, REPO / unwired, ())
+  ok("a port with NO ORACLE is NOT-STARTED and never AGREE-UNRECORDED",
+     v is not None and v["state"] == "NOT-STARTED" and "NOTHING WAS COMPARED" in v["why"],
+     f"{v['state']}: {v['why']}" if v else "never_wired returned None -- it would be gated")
+  gone = g.never_wired(unwired, REPO / "tinybendygrad/no-such-port.bend", ())
+  ok("a port with NO SUCH FILE is NOT-STARTED",
+     gone is not None and gone["state"] == "NOT-STARTED" and "NO SUCH FILE" in gone["why"],
+     f"{gone['state']}: {gone['why']}" if gone else "never_wired returned None")
+  # The other direction: a wired port whose file EXISTS must be comparable, or main() would
+  # report every wired port as never-wired and AGREE-UNRECORDED would count nothing.
+  unwired_ok = [p for p in g.BASE_ORACLES
+                if (REPO / p).exists() and g.never_wired(p, REPO / p, g.BASE_ORACLES[p]) is not None]
+  ok("every WIRED port on disk is comparable, so never_wired does not swallow the roster",
+     not unwired_ok, f"swallowed: {unwired_ok}" if unwired_ok
+     else f"{len(g.BASE_ORACLES)} wired ports checked")
+  # And the two ports wired ON PURPOSE to be BROKEN must not be classified as never-wired:
+  # their BROKEN verdict is a reachable state, not a missing wiring.
+  dead = [p for p in g.BASE_ORACLES if p.endswith(("dtype.bend", "renderer/cstyle.bend"))]
+  ok("the deliberately-BROKEN pair is still classified comparable, not never-wired",
+     all(g.never_wired(p, REPO / p, g.BASE_ORACLES[p]) is None for p in dead),
+     f"{dead}")
+  return fails
+
+
+def record_stable_control():
+  """A RECORDING MUST NOT BE ABLE TO TURN A RED INTO A GREEN.
+
+  This is the one outcome the whole recording half of this unit is forbidden to produce, so it
+  is driven directly: an evidence file that claims a port is `recordable` while its stored rows
+  DISAGREE, a second that stores interpreted != native, and a third that is honestly marked
+  un-recordable. record_stable() must write only the good one, must leave the others out, must
+  preserve an entry it was not asked about, and -- the assertion that matters -- the refused red
+  must then read AGREE-UNRECORDED through the real gate, NOT UNCHANGED. A recording that made a
+  disagreeing lane report UNCHANGED would be worse than no recording: it would convert the
+  gate's most valuable output into a green light and hide the port bug behind it.
+  """
+  g = load_gate("rebase_gate_record_stable")
+  plan = {"port": {}, "api_delta": {}}  # empty, so hunks need no git/rebase-plan subprocess
+  GOOD, RED, PARTIAL = ("tinybendygrad/tensor.bend", "tinybendygrad/mixin/op.bend",
+                        "tinybendygrad/nn/onnx.bend")
+  KEPT = "tinybendygrad/renderer/cstyle.bend"
+  lanes = {"interpreted": {"a": "1", "b": "2"}, "native": {"a": "1", "b": "2"},
+           "cpython:o": {"a": "1", "b": "2"}}
+  evidence = {
+    GOOD: {"recordable": True, "rows": lanes, "reasons": []},
+    RED: {"recordable": True, "reasons": [],
+          "rows": {"interpreted": {"a": "1"}, "native": {"a": "1"}, "cpython:o": {"a": "2"}}},
+    PARTIAL: {"recordable": True, "reasons": [],
+              "rows": {"interpreted": {"a": "1", "only_here": "9"}, "native": {"a": "1"},
+                       "cpython:o": {"a": "1"}}},
+    "tinybendygrad/device.bend": {"recordable": False, "reasons": ["no oracle wired"]},
+  }
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  with tempfile.TemporaryDirectory() as td:
+    ev = pathlib.Path(td) / "stability.json"
+    bl = pathlib.Path(td) / "baseline.json"
+    ev.write_text(json.dumps(evidence))
+    before = {"lanes": {KEPT: {"interpreted": {"kept": "1"}}}, "hunks": {KEPT: {}}}
+    bl.write_text(json.dumps(before))
+    written, refused, complaints = g.record_stable(str(ev), bl, plan)
+    after = json.loads(bl.read_text())
+    ok("only the proven-clean port is written", written == 1 and GOOD in after["lanes"]
+       and RED not in after["lanes"] and PARTIAL not in after["lanes"],
+       f"written={written} lanes={sorted(after['lanes'])}")
+    ok("a DISAGREEING 'recordable' claim is REFUSED, naming the rows",
+       any("REFUSED" in c and RED in c and "DISAGREE" in c for c in complaints),
+       "; ".join(c for c in complaints if RED in c)[:200])
+    ok("a PARTIAL (interpreted != native) 'recordable' claim is REFUSED",
+       any("REFUSED" in c and PARTIAL in c and "partial" in c for c in complaints),
+       "; ".join(c for c in complaints if PARTIAL in c)[:200])
+    ok("an honestly EXCLUDED port is named and absent",
+       any("EXCLUDED" in c for c in complaints) and "tinybendygrad/device.bend" not in after["lanes"])
+    ok("an entry the evidence says nothing about is LEFT ALONE, not deleted",
+       after["lanes"].get(KEPT) == before["lanes"][KEPT], f"{after['lanes'].get(KEPT)}")
+    # THE POINT. Gated against the doc that resulted, the refused red must still be visible.
+    g2 = load_gate("rebase_gate_after_refusal")
+    v = gate_with(g2, after, evidence[RED]["rows"])
+    ok("...and the refused lane then reads AGREE-UNRECORDED, NOT UNCHANGED",
+       v["state"] == "AGREE-UNRECORDED", f"{v['state']}: {v['why'][:110]}")
+  return fails
+
+
 def main():
   fails = []
 
@@ -121,7 +253,7 @@ def main():
             + f", got {got['state']}: {got.get('why')}")
       fails.append(name)
 
-  print("selftest: the four states are each REACHABLE\n")
+  print("selftest: the five states are each REACHABLE\n")
 
   check("no row moved -> UNCHANGED, names the hunks",
         verdict_of({"a": "1", "b": "2"}, {"a": "1", "b": "2"}),
@@ -177,11 +309,26 @@ def main():
         verdict_of({}, {"a": "1"}, base_doc={"lanes": {"/tmp/probe.bend": {}},
                                                "hunks": {}}, oracle_rows={"a": "2"}),
         "BROKEN", "disagree")
-  # ...while the OTHER direction still holds: lanes that DO agree, with no baseline, are
-  # NOT-STARTED and NOT UNCHANGED, because "they agree right now" is not "nothing moved".
-  check("lanes that agree with NO baseline -> NOT-STARTED, not UNCHANGED",
-        verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "1"}, no_baseline=True),
-        "NOT-STARTED", "no baseline recorded")
+  # ⚠ THE STATE THIS ENTIRE UNIT EXISTS TO RESTORE. Lanes that agree, with an INTACT baseline
+  # document that simply has no entry for this port, used to answer NOT-STARTED -- the same
+  # answer as "no oracle wired in BASE_ORACLES -- nothing can be claimed". So 46 of 50 targets
+  # read "nobody ever compared these" when every one of them had just compared clean, and the
+  # tally could not say which of the two it was looking at. It is NOT UNCHANGED either: "they
+  # agree right now" is strictly weaker than "nothing moved since someone looked", and
+  # recording is the only thing that moves a port off this state.
+  unrec = verdict_of({"a": "1"}, {"a": "1"}, oracle_rows={"a": "1"}, no_baseline=True)
+  check("lanes that agree with NO baseline -> AGREE-UNRECORDED, not NOT-STARTED",
+        unrec, "AGREE-UNRECORDED", "compared clean and UNRECORDED")
+  print(f"        {unrec['state']}: {unrec['why']}")
+  # The state must carry its EVIDENCE -- which lane pairs compared and agreed -- because that
+  # is the whole difference between it and NOT-STARTED. A `why` that could be printed for an
+  # unwired port is a state that has not really been separated from one.
+  ev = unrec.get("compared_pairs") or []
+  ok = bool(ev) and all(n >= 1 for _, _, n in ev)
+  print(f"  {'PASS' if ok else 'FAIL'}  AGREE-UNRECORDED names the lane pairs that compared "
+        f"({ev})")
+  if not ok:
+    fails.append("AGREE-UNRECORDED carries no comparison evidence")
   # GUARD 4 must not be a loophole: it is baseline-free, so it must still fire for a port
   # whose baseline lane was recorded with ZERO rows (which is NOT-STARTED, not a pass).
   check("a live disagreement beats a ZERO-ROW baseline lane too",
@@ -210,12 +357,32 @@ def main():
   # for the port at top level gets None, which means "no baseline", which short-circuits
   # before GUARD 1. A malformed document must be NAMED, not absorbed as unstarted.
   g = load_gate("rebase_gate_malformed")
-  rows_, hunks_, why = g.baseline_for({"interpreted": {"a": "1"}}, "/tmp/probe.bend")
-  ok = rows_ is None and hunks_ is None and "MALFORMED" in why
+  rows_, hunks_, why, readable = g.baseline_for({"interpreted": {"a": "1"}}, "/tmp/probe.bend")
+  ok = rows_ is None and hunks_ is None and "MALFORMED" in why and not readable
   print(f"  {'PASS' if ok else 'FAIL'}  a baseline of the WRONG SHAPE is named, not absorbed")
   if not ok:
     fails.append("malformed baseline is named")
   print(f"        {why}")
+
+  # ⚠ IT MUST ALSO STAY NOT-STARTED ON A RUN THAT COMPARED EVERYTHING CLEANLY. "This file could
+  # not be parsed" is not "compared clean, nothing recorded" -- the second is a claim about the
+  # port and the first is a claim about the tool, and conflating them would let a corrupt
+  # baseline.json read as coverage. `readable` is what separates them.
+  #
+  # The fixture is a document with NO "lanes" key at all, which is the shape baseline_for()
+  # calls MALFORMED. `{"lanes": {}}` would NOT do: that is a perfectly readable document with
+  # no entry for this port, which is precisely the AGREE-UNRECORDED case above, and using it
+  # here tested the wrong branch while looking like it tested this one.
+  v = gate_with(load_gate("rebase_gate_unreadable"), {"interpreted": {"a": "1"}},
+                {"interpreted": {"a": "1"}, "cpython:oracle": {"a": "1"}})
+  ok = v["state"] == "NOT-STARTED" and "MALFORMED" in v["why"]
+  print(f"  {'PASS' if ok else 'FAIL'}  a MALFORMED baseline is NOT-STARTED, never AGREE-UNRECORDED")
+  if not ok:
+    fails.append("a malformed baseline reads as AGREE-UNRECORDED")
+  print(f"        {v['state']}: {v['why']}")
+
+  fails += never_wired_control()
+  fails += record_stable_control()
 
   fails += plan_contract()
   fails += oracle_template()
@@ -524,7 +691,7 @@ def oracle_template():
     g.run_port = lambda *a, **k: (ok_lanes, {"interpreted": dict(port_rows),
                                              "cpython:o": dict(port_rows)})
     bad_doc = g.baseline_for({"interpreted": dict(port_rows)}, port)
-    if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2]:
+    if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2] or bad_doc[3]:
       bad.append(f"{pathlib.Path(oracle.split()[0]).name}: malformed baseline")
     print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle.split()[0]).name}: six "
           f"states reachable ({shared_n} shared row names)")

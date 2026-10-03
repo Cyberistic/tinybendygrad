@@ -1073,6 +1073,9 @@ def mem_len(+xs: List<&2, U32>) -> U32:
 def mem_len2(+xs: List<&2, Asz>) -> U32:
   U32.from_nat(List.length(&2, Asz, xs))
 
+def mem_len3(+xs: List<&2, Bf>) -> U32:
+  U32.from_nat(List.length(&2, Bf, xs))
+
 def mem_nb_f(+b: U32, tc: List<&2, Bf>) -> U32:
   mem_first_i.of2(b, tc)
 
@@ -1363,6 +1366,25 @@ def w_cp_mdev_cl() -> U32:
 # on DISK, so both are out. A count is the row that catches a MISSING filter.
 def p_nbufs() -> U32:
   mem_len(mem_scan_bs(proj_of()))
+
+# THE TOUCH COUNT, and this row exists because `Scan.tc` IS NOT
+# `first_appearance`. `mem_tc_add` appends on EVERY touch, so `Scan.tc` has one
+# `Bf` per (buffer, kernel) pair while CPython's `first_appearance` is a dict with
+# one entry per DISTINCT buffer -- and the fixture's buffer B is touched by two
+# kernels, so the two counts differ by exactly one.
+#
+# THIS IS NOT A PORT BUG, and the row is what says so. memory.py:60 prints
+# `len(first_appearance)`, and this file's counterpart for that number is
+# `p_nbufs` -- `Scan.bs`, THE DISTINCT LIST, built by `mem_bs_add` which is
+# append-IF-ABSENT -- not `Planned.tc`. Measured: `p_nbufs=5` and `p_tcn=6`.
+# Everything that reads a lifetime (`mem_first_i`, `mem_last_i`, `mem_hold2`,
+# `mem_events`) folds over `Scan.bs` and looks the buffer up in `Scan.tc`, so the
+# touch list is a strict SUPERSET that answers the same questions: it is CPython's
+# `first_appearance` and `last_appearance` FUSED, which is why `Bf` is one record
+# and not two. Renaming `tc` to `fa` would make the row look closed and change no
+# answer, so the pair is printed instead.
+def p_tcn() -> U32:
+  mem_len3(mem_scan_tc(proj_of()))
 
 # the copy-buffer COUNT is 2 (B2, C2): only kernels whose BODY is a STORE.
 def p_ncopy() -> U32:
@@ -1704,6 +1726,7 @@ def main() -> IO(Unit):
     _ : Unit <- mem_row("w_cp_mdev", w_cp_mdev())
     _ : Unit <- mem_row("w_cp_mdev_cl", w_cp_mdev_cl())
     _ : Unit <- mem_row("p_nbufs", p_nbufs())
+    _ : Unit <- mem_row("p_tcn", p_tcn())
     _ : Unit <- mem_row("p_ncopy", p_ncopy())
     _ : Unit <- mem_row("p_b2_f", p_b2_f())
     _ : Unit <- mem_row("p_c2_f", p_c2_f())

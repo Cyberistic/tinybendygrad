@@ -85,6 +85,14 @@ def main():
     row("allow_lower", allowed(False, "python:1"))
     row("allow_metal", allowed(False, "METAL"))
     row("allow_on", allowed(True, "METAL"))
+    # device.bend reads `device_usage` -- `__getitem__`'s TWO lines -- so these five
+    # go through the same `allowed`, and they are here to cover the two allow-list
+    # branches `tag_of` never had a fixture for. Measured by CALLING, 2026-10-03.
+    row("allow_cpu", allowed(False, "CPU:1"))
+    row("allow_disk", allowed(False, "disk:1"))
+    row("allow_npy", allowed(False, "npy:1"))
+    row("allow_cpu_l", allowed(False, "cpu:1"))
+    row("allow_mixed", allowed(False, "PyThOn:0"))
     row("disk_one", int(is_disk(["CPU:1"])))
     row("disk_two", int(is_disk(["CPU:1", "disk:0"])))
     row("disk_no", int(is_disk([])))

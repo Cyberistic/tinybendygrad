@@ -41,7 +41,14 @@ def sh(*a, timeout=1800):
 # from this cache.  An empty oracle lane reads as "this gate compares nothing",
 # which is the very shape the sweep exists to disprove.
 VENV = REPO / ".venv" / "bin" / "python"
-PY = str(VENV) if VENV.exists() else sys.executable
+# The `else sys.executable` this replaces was a DETECTION, and a detection still lets the
+# sweep run under an interpreter whose lanes print nothing -- the failure the comment above
+# measures. oracle_py.resolve() pins AND refuses (exit 2), and it probes under -I from a
+# directory with no tinygrad/ beside it, so the cwd cannot make the probe answer for itself.
+sys.path.insert(0, str(SLOP))
+import oracle_py  # noqa: E402 -- needs SLOP, which is defined above
+
+PY, _TINYGRAD, _PYVER = oracle_py.resolve()
 
 
 def main():

@@ -15799,3 +15799,180 @@ must exist and must have been RUN THIS TIME — no cache. `drift-gate.py` caches
 in `$TMPDIR`, and a cached '0 rows' from an hour ago is indistinguishable from a fresh 0."
 The fix in `drift-gate.py` was never applied to its sibling. **REPORTED, NOT FIXED** —
 `rebase-scan-oracles.py` is not this unit's file.
+
+---
+
+# APPENDED 2026-10-03 by the naming-gate/getenv unit. Numbering continues from `### 19` above; cite POSITIONS.
+
+### 20. A GATE'S OWN TALLY LABEL AND ITS ADJUDICATION MECHANISM ARE NOT THE SAME THING — FIND THE SECOND ONE IN THE CODE.
+
+`naming-gate.py` prints a bucket called `QUALIFIED` (`naming-gate.py:189-191`,
+`if name in quals`) whose meaning is *"the port reproduced this upstream name under a module
+qualifier"* — a fact about the PORT'S FORM. Adjudicating a rename proposal is the LEDGER
+(`naming-gate.py:210-228`, written by `naming-gate-ledger.py:51-153`). Asked to make
+`helpers.py :: getenv` + `_int` "counted QUALIFIED", the correct recording was neither: it
+was one more line in the ledger, because the sibling arm `_str` was already there and
+`_str` was never in the QUALIFIED bucket either.
+
+Why it matters beyond this gate: the briefing carried a *confident description of a
+mechanism* that the code does not have, and following it would have meant inventing a
+`def X.getenv` line in a do-not-edit `.bend` file to move a counter. **A tally bucket is not
+a ruling; a ruling is the thing that makes the gate pass, and it is a different object.**
+Read the branch that decides the verdict, not the branch that decides the label.
+
+Corollary, from the same file: **suppressing a proposal in the DETECTOR is not a stricter
+gate.** `naming-gate.py:47-66` records that dropping upstream names with more than one affix
+hit "hid 6 of the 9 renames this gate was built to catch". Adding a new "overload
+materialisation" concept to the detector would have been the same move with a better story.
+
+### 21. WHEN A RULE TABLE WRITES A FILE, NOTHING CHECKS THE FILE AGAINST THE TABLE — SO A HAND EDIT IS A SILENT TIME BOMB.
+
+The gate reads `naming-gate-baseline.txt`; the generator WRITES it from `RULES`. Between them
+was no assertion, so a hand-added line keeps the gate green and the next generator run
+silently deletes it — and the gate then goes red with no edit to point at. `naming-gate-ledger-check.py`
+now asserts byte-equality between the file and what the generator would write, plus full
+coverage and no dead rule.
+
+**Do not regenerate that ledger to add one line.** It rewrites all 668 rows from the live
+census, and other units are mid-write (`codegen/__init__.bend`, `nn/state.bend`,
+`generate.bend` were all being written during this unit). A regeneration taken at the wrong
+moment drops rows for transient candidates and leaves the ledger permanently wrong. Hand-place
+the row at its `sorted()` position, then PROVE it with the checker.
+
+### 22. A CONTROL THAT RENAMES ONE HALF OF A MONOMORPHISED PAIR RENAMES NOTHING THE GATE CAN SEE.
+
+`port_names` splits a port name on the final dot (`naming-gate.py:135-147`), so
+`def getenv_int.go(...)` contributes the STEM `go` and pushes `getenv_int` into the
+QUALIFIER set. The bare `def getenv_int(...)` is a separate line, so renaming ONLY the
+`.go` half leaves a matching stem behind and the gate answers **PASS**. Measured on a
+mirror: `RESULT: PASS`.
+
+I hit this by accident — the first version of the control used `count=1`, hit the `.go`
+half, and "passed". A control that cannot fail is indistinguishable from a control that
+did nothing. **A rename control must rename EVERY occurrence**, and when the target is a
+`.go` pair, say in the control that it does. Pinned as `naming-gate-selftest.py` case 11,
+printed and never asserted (asserting a known hole would fail the wrong way, on the day it
+closes).
+
+### 23. A GREEN SUMMARY LINE WHOSE NUMBER IS TYPED INSTEAD OF COUNTED HIDES A DROPPED CASE.
+
+`naming-gate-selftest.py` ended `'ALL %d CHECKS PASS' % (7 * 2 + 1)` and printed **15 for 12
+checks**. Nothing was wrong that run — the summary was simply not derived from the checks.
+Now `len(ran)`. Same shape as the over-reporting `ORACLE_CONFORMANCE` roster
+(`rebase-gate-selftest.py:279-311`), and the same lesson: **an audit artefact that
+over-reports is worse than none, because it reads as coverage of the thing it exists to
+guarantee.**
+
+Corollary from the same session: **when a gate's clean-tree check is red, its negative cases
+are passing for the wrong reason.** With `getenv` unadjudicated, selftest cases 3/4/5 (planted
+rename, blank reason, stale line) were green while the gate was *already* failing — they
+could not tell "caught the plant" from "already red". Fixing the tree is what made them mean
+anything; that is the real argument for never leaving a gate red "just for now".
+
+### 24. `MIN_AFFIX` HAS A PRICE, AND THE PRICE WAS NEVER COUNTED: 22.
+
+`naming-gate.py:111` sets `MIN_AFFIX = 3` (the docstring at `:58-63` gives the reason:
+upstream `dsl.py` binds one-letter `s`/`v`, which would manufacture 582 pairs). Measured cost
+over the live tree: **22 real (name, stem) pairs an affix of length >= 3 would report and the
+gate cannot** — `runtime/ops_cl.py check +t_ -> t_check`, `runtime/ops_cuda.py check +ed ->
+checked`, `renderer/nir.py aop +f_ -> f_aop`, `helpers.py argfix +1 -> argfix1`,
+`uop/symbolic.py casted_const +p_ -> p_casted_const`, and 17 more. A guard whose price is
+unmeasured reads as free; report the number next to the rule.
+
+### 25. `upstream_names` SWALLOWS A PARSE FAILURE AND SILENTLY ZEROES A FILE'S WHOLE DENOMINATOR.
+
+`naming-gate.py:120-122` catches `SyntaxError`/`UnicodeDecodeError`/`ValueError` and returns
+an empty set. A `.py` that stops parsing therefore contributes ZERO upstream names, and
+every port def in its sibling `.bend` becomes undetectable — the gate goes quiet on a whole
+file with no message. Measured: **0 files currently fail to parse**, so this is latent, not
+active. One `print` to stderr closes it. Same family as the GC4 trap already recorded: a
+census that cannot see upstream cannot report the port disagreeing with it.
+
+Related, measured, benign: 8 sibling `.bend` files have zero upstream bindings — 7 are
+0-byte `__init__.py`, and the two that are not (`tinygrad/nn/torch.py`, 336 bytes;
+`tinygrad/runtime/support/compileserver.py`, 596 bytes) genuinely bind no module-level names.
+Nothing is miscounted, but a rename in either is undetectable **by construction rather than
+by policy**, which is worth stating next to the denominator.
+
+### 26. THE NAMING GATE HAS NO `rows()` PHANTOM-ROW BLIND SPOT, AND THAT IS A MEASUREMENT, NOT AN ASSUMPTION.
+
+Asked to check whether `naming-gate.py` has the counterpart of `rebase-gate.py`'s
+`rows()`-manufactures-phantom-rows-from-`== SECTION ==` bug. It does not, because it has no
+row-splitting layer: `port_names` keys on `DEF_LINE`, anchored
+`^\s*(def|struct|type)\s+([A-Za-z_][\w.]*)`, so a `#`/`//` comment cannot manufacture a stem.
+Measured over the whole `.bend` tree: 27,490 `DEF_LINE` matches, **0 `== ... ==` banner lines
+anywhere**, 3 files containing a triple-quoted block and **0 `DEF_LINE` matches inside one**.
+**A gate with no counterpart for another gate's bug is a claim; measure it, because "I read
+the code" is how the blank-reason case got in.**
+
+### 27. AN EMPTY-NAMED LEDGER ROW IS STALE BY CONSTRUCTION, AND MUST STAY LOUD.
+
+An empty-affix ledger row cannot be admitted as a rename candidate: `MIN_AFFIX` means the
+detector can only propose affixes of length >= 3, so the key is unreachable, and
+`naming-gate.py:249` classifies it STALE — "stale amnesty is unearned amnesty". Measured on a
+mirror: `*** 1 STALE LEDGER LINE(S) ***  helpers.py getenv +  (ledger says: ANY REASON AT
+ALL)`, `RESULT: FAIL`. The empty name is not a *rename candidate with an empty affix*; it is a
+ruling about a proposal that cannot exist, and treating it as a candidate would make the
+ledger able to grant amnesty for nothing. Pinned as selftest case 9.
+
+## THE HARNESS'S VERDICT WAS A FUNCTION OF ITS LAUNCHER, 2026-10-03. Appended after
+## section 27 ("stale amnesty is unearned amnesty"). Cite POSITIONS, not numbers: this
+## block starts at the line after that heading.
+
+### 28. A GATE THAT INHERITS `sys.executable` REPORTS A DIFFERENT VERDICT PER LAUNCHER.
+
+`rebase-gate.py` spawned its CPython lanes with `sys.executable` and fetched its plan with
+a hardcoded `sh("python3", ...)`. Measured, same file, same tree, same second:
+
+    .venv/bin/python .agents/slop/tensor-gate.py | wc -l   ->  30
+    python3           .agents/slop/tensor-gate.py | wc -l   ->   0  ModuleNotFoundError
+
+The editable install exists ONLY in .venv/3.12
+(`.venv/lib/python3.12/site-packages/__editable__.tinygrad-0.14.0.pth`, an
+`__editable___tinygrad_0_14_0_finder` hook). PATH's `python3` is 3.14 and has **no `.pth` at
+all**. Three contradictory published claims came out of that in one day, and a fourth --
+"8 of 31 gates are BROKEN on every run, 707 rows blocked" -- is FALSE: it was measured
+under the wrong interpreter. **A measurement is only a measurement of what ran; a harness
+that silently changes its interpreter reports a different truth per launcher and every
+verdict it produces is unciteable.** Pinned in `oracle_py.py` (119 lines): children always
+launch under `.venv/bin/python`, and the verdict carries `oracle_py` / `tinygrad` / `python`
+in its `--json` so a published number can be traced to the interpreter that produced it.
+
+### 29. `python3 -c "import tinygrad"` FROM THE REPO ROOT IS A FALSE POSITIVE, AND IT IS WHY TWO WRONG CONCLUSIONS SURVIVED.
+
+`sys.path[0]` is `''` for `-c`, and a `tinygrad/` sits in the cwd, so the import SUCCEEDS
+and prints this repo's `tinygrad/__init__.py` **without any install at all**. Verified both
+ways: from the repo root `python3 -c` succeeds; from an empty cwd the same command is
+`ModuleNotFoundError`. Two published claims came from exactly this check. So a probe must
+not be run the way a human checks by hand: `oracle_py.probe()` runs the import under `-I`
+(isolated: cwd and script dir off `sys.path`, `PYTHON*` env dropped) with `cwd` set to
+`.agents/slop`, which has no `tinygrad/` beside it. **Under those conditions the only way to
+import tinygrad is a real install, so a probe that passes means what it says.** Generalise:
+an import check that runs with the repo root on `sys.path` is not a check of the install.
+
+### 30. A CACHE-SHAPED NAME IS NOT THE TEST FOR "DERIVED"; "A REPORT CITES IT" IS.
+
+`.agents/slop/` had six committed cache-shaped trees. Deleting all six would have destroyed
+four kinds of evidence, so each was classified by whether a report cites it:
+
+  DELETED (derived, regenerable, uncited): `ga_cache/` 343 tracked files / 2.00 MB
+    (25 MB on disk with the .bin lanes) -- `ga_sweep.py`'s output, header says "Run once";
+    `tv-scratch/` 318 tracked files / 0.55 MB -- `tree-verdict.py`'s flat-tree scratch.
+  KEPT (cited): `arange-ucache/` (TOOLS.md's ledger and section 1 of this file cite it as
+    the measurement behind the ARange collision), `runs/` (pre-split oracle baselines,
+    tabulated in `runs/README.md`; the `*-gate.sh` scripts diff those exact bytes),
+    `probe/` and `commentpass/` (both hold AUTHORED `.py` harnesses, which re-running
+    cannot recreate -- a path that *looks* like a cache can contain source).
+
+`dd-cone-wt/` is committed derived scratch (1684 files) and was **NOT** deleted: a live
+agent was mid-flight in it, and that is the failure this project has already paid for seven
+times today. It is ignored instead, so a careless `jj split` cannot sweep it into a commit.
+
+### 31. `.gitignore` CANNOT UNTRACK. THE FIX IS `rm`, AND `rm --cached` IS A NO-OP THAT LOOKS LIKE SUCCESS.
+
+A prior attempt to untrack `net.json` silently no-opped four commits. `.gitignore` only
+affects untracked paths; a tracked file stays tracked and keeps being committed forever. The
+evidence that the fix worked is **not** `git check-ignore` (which passes for a tracked file
+too) but the file being **absent from disk and listed by `git ls-files --deleted`** -- here
+661 paths, which is exactly 343 + 318. **When removing a committed cache, verify with
+`ls-files --deleted`, not with `check-ignore`.**

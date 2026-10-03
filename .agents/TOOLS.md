@@ -541,3 +541,19 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
   variant are both non-local. `baseline.txt` / `after.txt` / `reverted.txt` /
   `comment.txt` are the before, after, comparison-reverted, and comment-only
   lanes. `importers-all.txt` is the 63-importer row count.
+
+- `.agents/slop/oracle_py.py` — WHICH PYTHON RUNS THE CPYTHON ORACLES, pinned in one place.
+  `rebase-gate.py` used to spawn its lanes with `sys.executable` and fetch its plan with a
+  hardcoded `sh("python3", ...)`, so the gate's verdict was a function of the LAUNCHER:
+  `.venv/bin/python tensor-gate.py` printed 30 rows and `python3 tensor-gate.py` printed 0
+  with `ModuleNotFoundError`, because the editable tinygrad install exists only in `.venv`
+  (3.12) and PATH's python3 (3.14) has no `.pth`. Three contradictory published claims came
+  out of that in one day. Now the lanes, the plan fetch and the verifier all launch under
+  `.venv/bin/python`, and `rebase-gate.py --json` carries `oracle_py` / `tinygrad` / `python`
+  so a published number is traceable to the interpreter that produced it. `probe()` runs the
+  import under `-I` with `cwd=.agents/slop`, because `python3 -c "import tinygrad"` from the
+  repo root SUCCEEDS spuriously — `sys.path[0]` is `''` and a `tinygrad/` sits in the cwd, so
+  the only honest check is one the cwd cannot answer. An unresolvable interpreter **refuses
+  with exit 2** rather than reporting zero rows; `ORACLE_PY=` overrides the pin and is probed
+  the same way. Control: `python3` and `.venv/bin/python` on the same port now produce
+  byte-identical verdicts.

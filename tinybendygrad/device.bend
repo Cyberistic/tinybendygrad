@@ -325,21 +325,39 @@ def reg_len(+r: Reg) -> U32:
 # device.py:31, `assert ALLOW_DEVICE_USAGE or ix.split(":")[0] in
 # ["DISK", "NPY", "PYTHON"]`. `ALLOW_DEVICE_USAGE` is an env read so it is a
 # parameter; the membership is the decision.
-# `["DISK", "NPY", "PYTHON"]` is UPPER case and `__getitem__` asserts before it
-# canonicalizes (device.py:30 canonicalizes, :31 asserts), so the head is
-# compared exactly as it arrived: `Device['PYTHON:1']` PASSES with
-# `ALLOW_DEVICE_USAGE=0` and `Device['python:1']` does not. Lower-casing here is
-# a real port bug and `allow_py` is the row that caught it.
+#
+# THE THREE COMMENTS HERE USED TO SAY "`__getitem__` asserts BEFORE it
+# canonicalizes ... so the head is compared exactly as it arrived", AND THEY
+# CITED device.py:30 as the canonicalize and :31 as the assert -- the order they
+# then denied. MEASURED, `.venv/bin/python`, CALLING `Device[...]` under
+# `Context(ALLOW_DEVICE_USAGE=0)`:
+#     Device['PYTHON:1'] -> SUCCEEDS      Device['python:1'] -> SUCCEEDS
+#     Device['METAL']    -> AssertionError
+# `_canonicalize` upper-cases the stem (device.py:26), so by the time line 31
+# reads `ix` the name is ALREADY `PYTHON:1`. Line 30 REBINDS `ix`; the assert
+# reads the rebound value. Lower-casing here is a real port bug and `allow_py`
+# is the row that caught it.
 def tag_of(+h: String) -> U32:
   Bool.pick(U32, String.eq(h, "DISK"), 6,
     Bool.pick(U32, String.eq(h, "NPY"), 10, Bool.pick(U32, String.eq(h, "PYTHON"), 13, 0)))
 
-# `ix.split(":")[0]` is NOT canonicalized here -- `__getitem__` asserts before it
-# canonicalizes -- so the head is compared in whatever case it arrived in, which
-# is Python's own behaviour: `ALLOW_DEVICE_USAGE=0` and `Device['PYTHON']` both
-# FAIL the assert. The lower-case is `get_class`'s, not this one's.
+# The assert STATEMENT, on an already-canonical name. It cannot see the rebind
+# above because it is handed whatever the caller passes -- `allowed` alone is
+# what let `allow_lower` read 0 for a device CPython opens.
 def allowed(allow: Bool, ix: String) -> Bool:
   Bool.or(allow, U32.is_ne(tag_of(head(ix)), 0))
+
+# device.py:29-31 as a UNIT, which is what a caller of `allowed` has. This is the
+# fix for `allow_lower`, and it is one line because `canon` already exists: the
+# assert's subject is `canon(ix)`, not `ix`. The PAIR `allow_py`/`allow_lower` is
+# the row -- they answer the SAME number now, because both spellings reach line 31
+# as `PYTHON`, and either one alone is a row that cannot see the case fold.
+# `allow_disk`/`allow_npy` exist because the mutation table's `tag_of` row is a
+# documented blind spot: "a case fold on a never-exercised conjunct is invisible
+# however many fixtures you add for the others", and only the PYTHON branch was
+# ever exercised. All four measured by CALLING CPython.
+def device_usage(allow: Bool, ix: String) -> Bool:
+  allowed(allow, canon(ix))
 
 # device.py:418, `f"CPU:{self.peer_group[7:]}" if self.peer_group.startswith(
 # "remote:") else HCQ_RUNTIME_DEV.value`. A PREFIX claim: a peer group is either
@@ -1304,10 +1322,15 @@ def main() -> IO(Unit):
     l : Unit <- row("dcls_none", dcls("nope"))
     m : Unit <- row("open_one", reg_len(reg_open(reg_open(reg_open(reg_empty(), canon("cpu:0")), canon("CPU")), canon("cpu"))))
     n : Unit <- row("open_two", reg_len(reg_open(reg_open(reg_empty(), canon("cpu")), canon("cpu:1"))))
-    o : Unit <- row("allow_py", if_b(allowed(False{}, "PYTHON:1")))
-    o2 : Unit <- row("allow_lower", if_b(allowed(False{}, "python:1")))
-    p : Unit <- row("allow_metal", if_b(allowed(False{}, "METAL")))
-    q : Unit <- row("allow_on", if_b(allowed(True{}, "METAL")))
+    o : Unit <- row("allow_py", if_b(device_usage(False{}, "PYTHON:1")))
+    o2 : Unit <- row("allow_lower", if_b(device_usage(False{}, "python:1")))
+    o3 : Unit <- row("allow_metal", if_b(device_usage(False{}, "METAL")))
+    o4 : Unit <- row("allow_on", if_b(device_usage(True{}, "METAL")))
+    o5 : Unit <- row("allow_cpu", if_b(device_usage(False{}, "CPU:1")))
+    o6 : Unit <- row("allow_disk", if_b(device_usage(False{}, "disk:1")))
+    o7 : Unit <- row("allow_npy", if_b(device_usage(False{}, "npy:1")))
+    o8 : Unit <- row("allow_cpu_l", if_b(device_usage(False{}, "cpu:1")))
+    o9 : Unit <- row("allow_mixed", if_b(device_usage(False{}, "PyThOn:0")))
     r : Unit <- srow("first_amd", select_device(130))
     s : Unit <- srow("first_wg", select_device(256))
     t : Unit <- srow("first_none", select_device(0))
@@ -1455,12 +1478,23 @@ def main() -> IO(Unit):
 #                   the selector `METAL` instead of `""`.
 #   host_remote=CPU:node0 / host_plain=CPU -- the `remote:` prefix is the whole
 #                   discriminator for a peer group.
-#   allow_py=1 / allow_lower=0  `["DISK","NPY","PYTHON"]` is UPPER case and the
-#                   assert runs BEFORE canonicalize (device.py:30 canonicalizes,
-#                   :31 asserts), so `Device['PYTHON:1']` is ALLOWED and
-#                   `Device['python:1']` is NOT. The PAIR is the row; either one
-#                   alone is a row that cannot see the case fold.
-#                   `allow_metal=0` and `allow_on=1` are the other two corners.
+#   allow_py=1 / allow_lower=1  `["DISK","NPY","PYTHON"]` is UPPER case, but
+#                   device.py:30 REBINDS `ix = self.canonicalize(ix)` and :31 then
+#                   reads the REBOUND value, so by the time the assert runs the
+#                   name is already `PYTHON:1`. Both spellings PASS with
+#                   `ALLOW_DEVICE_USAGE=0` and CPython agrees: measured by
+#                   CALLING `Device[...]` under `Context(ALLOW_DEVICE_USAGE=0)`,
+#                   `Device['python:1']` SUCCEEDS. These two rows used to read
+#                   `allow_lower=0` from `allowed(False{}, "python:1")` -- handing
+#                   the assert a name CPython never shows it -- which is how
+#                   `device.bend` came to be the one gate left UNWIRED. `allowed`
+#                   is still the port of the assert STATEMENT; `device_usage` is
+#                   the port of `__getitem__`'s TWO lines and is what the rows read.
+#   allow_disk=1 / allow_npy=1  the other two branches of the allow-list, and
+#                   they exist because `tag_of`'s only fixture was PYTHON: see the
+#                   `tag_of` row in the mutation table, which was a measured ZERO.
+#                   `allow_metal=0`, `allow_on=1`, `allow_cpu=0`, `allow_cpu_l=0`
+#                   and `allow_mixed=1` (`PyThOn:0`) are the other corners.
 #   disk_two=1      `is_disk_device` UPPER-cases, so `disk:0` in a tuple counts.
 #   sig=0 4 8       `iter_sig` yields the ROUNDED slot and advances the running
 #                   offset FROM THAT SLOT, because device.py:366s walrus assigns the
@@ -1493,7 +1527,11 @@ def main() -> IO(Unit):
 # | `registry` loses the NULL row | `reg_len`, `dcls_null` | 2 |
 # | `all_devices` renames WEBGPU | `first_wg` | 1 |
 # | `canon_device.multi` appends (reverses) | `multi` | 1 |
-# | `tag_of` lower-cases the allow-list | `allow_py` | 1 |
+# | `tag_of` lower-cases the allow-list | `allow_disk` | 1 |
+# | `device_usage` does NOT canonicalize | `allow_lower`, `allow_disk`, `allow_npy`, `allow_mixed` | 4 |
+# | `tag_of` never matches NPY | `allow_npy` | 1 |
+# | `tag_of` never matches DISK | `allow_disk` | 1 |
+# | `tag_of` never matches PYTHON | `allow_py`, `allow_lower`, `allow_mixed` | 3 |
 # | `pmb.keep` is LAST-wins | `pmb_cfunc` | 1 |
 # | `pmb.keep` ignores `fires` | `pmb_cfunc`, `pmb_named`, `pmb_grew`, `pmb_none` | 4 |
 # | `pmb_cond2` drops the shared `name="b"` predicate | `pmb_cfunc_noname`, `pmb_nonparam` | 2 |
@@ -1543,6 +1581,13 @@ def main() -> IO(Unit):
 # others. A mutation that moves nothing is information about the GATE and not
 # about the code, and the only honest response to it -- twice -- is to go and
 # build the fixture or fix the mutation it is asking for.
+#
+# RE-MEASURED 2026-10-03, and the lesson finished paying: with `allow_disk` and
+# `allow_npy` added (the other two allow-list branches) that mutation now moves
+# `allow_disk`, M4 and M5 each move their own branch, and M1 -- deleting the one
+# line that is the `allow_lower` fix -- moves four rows. Table above, produced by
+# `.agents/slop/dev-mutate.py`, which diffs whole `name=value` lines, mutates a
+# scratch COPY, and ABORTS on a zero-row run rather than reporting a false zero.
 #
 # THE `strip0` ROW IS THE BIGGEST, and it is the one that would have shipped.
 # `re.sub(r":0$", "", s)` strips a SUFFIX and `String.drop` takes a PREFIX, so

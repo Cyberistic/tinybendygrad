@@ -114,23 +114,24 @@ def cval(a):
 
 
 def fbits(x):
-    """decision 2: a float CONST as its F32 bit pattern. `numpy`-free overflow
-    guard: `struct.pack('f', ...)` RAISES above the f32 range and prints `F(ovf)).
+    """decision 2: a float CONST as its F32 bit pattern.
 
-    `F(ovf)` IS NOT A VALUE, and it is `c7` ALONE -- measured, `.agents/slop/
-    dd-divE-probe.py`, CALLING `DD.f2f_clamp` at both source widths:
-      f2f_clamp(f32_val, float64) -> mx = inf     -> F(2139095040)
-      f2f_clamp(f64_val, float64) -> mx = 1.8e308 -> F(ovf)
-    `mx` is `val.const_like(...)` (dtype.py:131), so its value is a function of
-    (dt, fr) and this row is a function of `dt` ALONE -- `clamp_mx` below drops
-    `const_like`. It is well posed for the other seven because their `mx` fits in
-    f32 under both `fr` and then the two coincide. So the `F(ovf)` here is the ORACLE
-    declining to render a value, not a statement about tinygrad, and a port that
-    printed `F(2139095040)` for `c7` would be answering for `fr = f32` only."""
-    try:
-        return f"F({struct.unpack('I', struct.pack('f', float(x)))[0]})"
-    except OverflowError:
-        return "F(ovf)"
+    THE `except OverflowError: return "F(ovf)"` ARM THAT USED TO BE HERE IS DEAD,
+    and its docstring was false. Measured on this interpreter (3.12.10, arm64
+    macOS) over 2516 doubles -- `m * 2.0**e` for every `e` in -320..308 and
+    `m` in {1.0, 1.5, 1.9999, 3.7}: **zero** raised. Every finite double above
+    FLT_MAX packs to `+inf` (0x7f800000) and `struct.pack` says nothing:
+
+        struct.pack('f', 1.7976931348623157e308)  ->  b'\\x00\\x00\\x80\\x7f'  (inf)
+        struct.pack('f', 1e300)                   ->  b'\\x00\\x00\\x80\\x7f'  (inf)
+
+    So `F(ovf)` was never a value, `dd-oracle.txt` could not have been produced
+    by this script, and the old claim "f2f_clamp(f64_val, float64) -> 1.8e308
+    -> F(ovf)" was wrong twice: `1.8e308` renders as `F(2139095040)`, and
+    `+inf` renders as `F(2139095040)` too, so the two source widths COINCIDE
+    here. That false claim had already propagated into
+    `tinybendygrad/codegen/decomp/dtype.bend`'s comment; see the report."""
+    return f"F({struct.unpack('I', struct.pack('f', float(x)))[0]})"
 
 
 def lab(v):
@@ -347,11 +348,33 @@ CLAMP_DTS = [dtypes.fp8e4m3, dtypes.fp8e4m3fnuz, dtypes.fp8e5m2, dtypes.fp8e5m2f
              dtypes.float16, dtypes.bfloat16, dtypes.float32, dtypes.float64]
 
 
-def clamp_mx(dt):
-    e, m = dtypes.finfo(dt)
-    if dt in dtypes.fp8_fnuz: max_exp, max_man = (1 << e) - 1, (1 << m) - 1
-    else: max_exp, max_man = ((1 << e) - 1, (1 << m) - 2) if dt == dtypes.fp8e4m3 else ((1 << e) - 2, (1 << m) - 1)
-    return 2.0 ** (max_exp - DD.exponent_bias(dt)) * (1.0 + max_man / (1 << m))
+def clamp_mx(fr, dt, sat=True):
+    """dtype.py:131's `mx`, CALLED, not transcribed.
+
+    This USED to hand-copy dtype.py:128-131's arithmetic -- which contradicted
+    this file's own header ("nothing here is a reimplementation of it") and was
+    wrong twice over, because the value that reaches the graph is not the
+    Python float. `val.const_like(b)` is `UOp.const(b, val.dtype)` (ops.py:601),
+    so `mx` is a CONST AT THE SOURCE WIDTH `fr`, already rounded:
+
+        f2f_clamp(f32_val, float64) -> mx = UOp.const(inf)
+        f2f_clamp(f64_val, float64) -> mx = UOp.const(1.7976931348623157e+308)
+
+    Read back out of CPython's OWN graph rather than recomputed. dtype.py:133
+    returns `val.ne(val).where(val, (val < -mx).where(-sat, (mx < val).where(
+    sat, val)))`, so `mx` is the `-mx` multiply's left operand at
+    `r.src[2].src[0].src[1].src[0]` -- one uniform path for every dtype, and
+    the arm is unconditional. `.val` there is the CAST's, i.e. the `fr`-rounded
+    value, which is the thing `const_like` produced.
+
+    MEASURED, all 8 dtypes x both `fr` -- `c0..c6` are byte-identical to the
+    hand-transcribed formula and `c7` is `F(2139095040)` under BOTH `fr`
+    (f32 gives `inf`, f64 gives 1.797e308, and `fbits` renders both as
+    0x7f800000). So `c7` is not under-determined, it is CONSTANT: no fixture on
+    the `fr` axis can move it. That is a blind spot with a reason, not a gap.
+    """
+    r = DD.f2f_clamp(UOp.variable("t", 0, 0, fr), dt, sat)
+    return r.src[2].src[0].src[1].src[0]
 
 
 def clamp_fr():
@@ -461,9 +484,6 @@ def main():
     for nm, fr, to in F2F():
         v = P(F2F_DT[fr])
         run(nm, lambda: DD.f2f(v, fr, to))
-    print("# f2f_clamp's mx value, and its graph")
-    for i, dt in enumerate(CLAMP_DTS):
-        print(f"c{i}={fbits(clamp_mx(dt))}")
     print("# l2i_define")
     for nm, x in defines():
         r = run(nm, lambda: DD.l2i_define(x))
@@ -504,6 +524,15 @@ def main():
             print(f"{nm}{i}={len(pat.early_reject)}")
             print(f"{nm}{i}r={','.join(sorted(o.name for o in pat.early_reject)) or '-'}")
             print(f"{nm}{i}o={','.join(sorted({o.name for o in (pat.op or ())})) or '-'}")
+    # LAST, because `clamp_mx` CALLS `f2f_clamp` and therefore INTERNS nodes, and
+    # `ORDER` counts a node only the FIRST time it is interned. Run anywhere else
+    # and the CONSTs it builds stop counting for whichever fixture came after --
+    # the same trap the "the clamps come before f2f" note above is about, one
+    # level up. `fr` is PINNED to f32 because `fc1..fc6, fc8` all use it, and
+    # `clamp_mx`'s docstring carries the measurement that f64 agrees on all 8.
+    print("# f2f_clamp's mx value")
+    for i, dt in enumerate(CLAMP_DTS):
+        print(f"c{i}={fbits(clamp_mx(dtypes.float32, dt).val)}")
 
 
 if __name__ == "__main__":

@@ -3754,3 +3754,84 @@ deliverable is a normal form BOTH sides emit.
   names)`). It should read 726. It sizes only a SYNTHETIC fixture, so the selftest is not
   lying about the real gate — but the number is a claim and it is stale. Left alone; not
   mine. Owner: whoever owns the selftest.
+
+## Session 2026-10-03 (n) — NAMING GATE BACK TO PASS: `getenv :: _int` is QUALIFIED, AND IT IS A LEDGER RULING, NOT A TALLY
+
+Progress: naming gate ██████████ PASS (668 candidates, 0 unadjudicated) — MEASURED 22:40:24
+
+- [x] **THE MECHANISM IS THE LEDGER, AND THE `QUALIFIED` TALLY IS NOT IT.** `naming-gate.py`
+      has two things called QUALIFIED. The TALLY (`naming-gate.py:189-191`, `name in quals`)
+      means "the port reproduced this name under a module qualifier" — a fact about the
+      port's FORM. The ADJUDICATION is a ledger line keyed `(file, upstream_name, affix)`
+      with a mandatory reason, written by `naming-gate-ledger.py`'s `RULES` table.
+      **`getenv_str` was never in the QUALIFIED tally either** — it was an adjudicated
+      rename in the `RENAMED/n` bucket, exempted by a ledger line that already existed at
+      `naming-gate-baseline.txt:47`. So the precedent is a ledger line and the mechanism to
+      extend it is one token in one tight per-file regex, not a new def in a `.bend` file.
+      **`RESULT: FAIL` (exit 1, 1 unadjudicated) -> `PASS` (exit 0, 0 unadjudicated).**
+      `naming-gate.py` ITSELF was not touched: mtime still 13:00:38.
+
+- [x] **`helpers.py:156-163` READ, NOT PARAPHRASED.** One binding, `getenv`, that is
+      simultaneously overloaded (two `@overload` stubs, :158-161) and generic
+      (`default:T -> T` coerced by `type(default)`, :163). `helpers.bend:137` and `:293`
+      are its two arms, split by return type because Bend cannot overload; the port says so
+      itself at `helpers.bend:143` ("THE OTHER ARM OF THE SAME `getenv`") and `:150`
+      ("a default of `""` gives `str` ... while a default of `0` gives `int`").
+
+- [x] **WHY THE MONOMORPHISATION REASON AND NOT THE OVERLOADING ONE.** Both are true of
+      `getenv`, so the sibling decides: `_str` already sits on
+      `LANG-CONSTRAINED:no-generics-one-def-per-element-type`, and putting `_int` on
+      `no-overloading-split-by-branch` would print one arm of one def under two reasons and
+      read as two unrelated rulings. **MEASURED before the edit: the widened regex newly
+      matches exactly ONE key of 668** (`getenv :: _int`), so nothing else is exempted as
+      collateral — now a standing check, because the generator applies a regex to every
+      live proposal and writes the exemptions with no reviewer in the loop.
+
+- [x] **HAND-PLACED, NOT REGENERATED, AND PROVEN.** `naming-gate-ledger-check.py` (new)
+      asserts the ledger FILE is byte-identical to what `naming-gate-ledger.py` would
+      write, plus full coverage and no dead rule: 668 proposals, 668 lines, 37 of 37 rules
+      live. Nothing previously connected the file to the table, so a hand-added line would
+      have stayed green and then been silently deleted by the next generator run.
+
+- [x] **THE GATE STILL BITES — four controls on a throwaway mirror, live tree never
+      patched.** `PASS` clean -> `getenv_int`->`getenv_integer` **`FAIL`**, naming
+      `helpers.py getenv + _integer` AND reporting `_int` STALE -> `PASS` restored ->
+      `getenv_int`->`getenv_u32` **`FAIL`** as STALE -> empty-affix ledger row **`FAIL`**
+      as STALE. Pinned as selftest cases 8-10.
+
+- [x] **`naming-gate-selftest.py`: 12 ok / 3 FAIL -> ALL 20 CHECKS PASS.** It was RED
+      because case 1 requires a clean tree, and cases 3/4/5 were passing VACUOUSLY — with
+      the gate already failing they could not tell "caught the plant" from "already red".
+      Added 8 EXACT AFFIX (both `getenv` arms re-spelled must go red), 9 EMPTY-NAMED ROW,
+      10 RULE WIDTH, 11 REPORTED BLIND SPOT (printed, never asserted). **Fixed a typed
+      count**: the summary read `'ALL %d CHECKS PASS' % (7 * 2 + 1)` and printed **15 for
+      12 checks**; the total is now `len(ran)`. NOTE the older entry above saying "15/15
+      checks" was that typed number and was never true.
+
+- [x] **QUALIFIED is 38 BEFORE AND 38 AFTER, and that is the honest answer.** All four
+      consecutive runs 22:25:32-22:25:43 were byte-identical including VERBATIM 283, so the
+      substrate was settled (consistent with 283 at 18:53; I did not reproduce the 278 of
+      19:34-19:36 and am not claiming 283 is a stable baseline). VERBATIM 283 / RENAMED-1
+      29 / RENAMED-n 89 / ABSENT 1144 unchanged; `getenv` and both arms are counted
+      together in the 89.
+
+- [x] **THE EMPTY-NAMED-ROW CAUTION HOLDS, MEASURED.** `MIN_AFFIX = 3` means the detector
+      can never PROPOSE an empty affix, so an empty-named ledger row is unreachable as a
+      candidate and is classified STALE — a FAILURE, loudly. And the naming gate has NO
+      counterpart to `rebase-gate.py`'s `rows()` phantom-row bug: 27,490 `DEF_LINE`
+      matches over the whole `.bend` tree, **0 `== ... ==` banner lines at all**, and **0
+      matches inside a triple-quoted block** in the 3 files that have one.
+
+- [x] **RULING NOTE: `.agents/slop/ruling-naming-gate-getenv-int.md`.** Rules 20-27
+      appended to `.agents/slop/notes/bend2-constraints.md` (positions 15807-15916).
+
+### Outside this unit's files
+
+- **`rebase-gate-selftest.py` IS RED AGAIN SINCE 22:40:38, AND IT IS NOT MINE.**
+  `rebase-gate.py`'s `baseline_for` now returns FOUR values (`rows, hunks, complaint,
+  readable`) while `rebase-gate-selftest.py:213` still unpacks three:
+  `ValueError: too many values to unpack (expected 3)`, rc=1 after 15 checks. Measured
+  PASS=66/FAIL=0 at 22:23:45 (before my edit) and again at 22:26:24 (after), so my change
+  did not break it; the crash appeared when `rebase-gate.py` was rewritten at 22:40:38, and
+  it is reproducible on a retry at 22:41:33. **Owner: whoever owns the rebase gate /
+  oracle-wiring unit.** Left alone; not my file, and the edit was 55 seconds old.

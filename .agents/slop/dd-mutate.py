@@ -346,6 +346,17 @@ def main():
         print("# %d DEAD ANCHOR(S): these are requests for fixtures/anchors, NOT"
               " passes, and they are reported as such in the table." % len(dead))
 
+    # RULE G, at STARTUP: a bake already inside the mirror means an earlier run
+    # was killed mid-write and that mirror cannot be trusted.  `git archive`
+    # cannot carry one, so only a killed run leaves it.
+    for base, _, files in os.walk(top):
+        for f in files:
+            if f.endswith(".ddmut"):
+                sys.exit("REFUSING TO START: bake %s -- an earlier run was killed "
+                         "mid-mutation.\n  diff %s %s\n  delete %s only once they "
+                         "agree." % (os.path.join(base, f), LIVE,
+                                     os.path.join(base, f), top))
+
     workers = max(1, min(int(os.environ.get("DD_WORKERS", 6)), len(plan)))
     cache = os.path.join(HERE, "dd-mut", digest)   # keyed: a stale cache from a
     os.makedirs(cache, exist_ok=True)               # 147-row baseline cannot be
@@ -369,9 +380,8 @@ def main():
         if not os.path.isdir(tree):
             shutil.copytree(top, tree)
         bake = wtgt + ".ddmut"            # RULE G: written before the first write
-        if os.path.exists(bake):
-            return name, "BAKE-PRESENT", [], "a bake is in worker tree " + tree
-        open(bake, "w").write(src)
+        if not os.path.exists(bake):
+            open(bake, "w").write(src)
         mutated, how = edit(src, old, new)
         if mutated is None:
             open(wtgt, "w").write(src)    # nothing was written; be sure
@@ -396,7 +406,12 @@ def main():
 
     def run(chunk):
         w, jobs = chunk
-        return [one(w, job) for job in jobs]
+        try:
+            return [one(w, job) for job in jobs]
+        finally:
+            # The bake is dropped only when the chunk finished; a kill leaves it
+            # and the startup walk above then refuses to start.
+            shutil.rmtree(os.path.join(top, "w%d" % w), ignore_errors=True)
 
     with ThreadPoolExecutor(workers) as pool:
         results = list(pool.map(run, chunks))

@@ -1,42 +1,21 @@
-# THE MUTATION TABLE for codegen/decomp/dtype.bend
-# ============================================================
+# dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend
+# target sha1 73b0e1e7fd6652c5fc7b49323a1956d44545f230, asserted EQUAL to the live file (RULE I)
+# baseline 172 rows, shape (first='l2idt0=i64->i32' lines=174 last='')
+# 3 controls SAME | 4 mutations MOVED | 0 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 0 DID-NOT-COMPILE | 0 DEAD ANCHOR
 #
-# TREE: a MIRROR at /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/ddwork/tree, built from
-#   `git archive HEAD` (shasum ae7e3de7e905afda8a39f88cefdea3fa96ebd5fc) MINUS the M09 and M23
-#   mutants, which ARE COMMITTED AT origin/master -- see the
-#   CONTAMINATION section at the foot.  dtype.bend sha1:
-#   4a11768f8e0790a92fdb1ec3645002bb74601d17
-#   The mirror's gate output is BYTE-IDENTICAL to the committed
-#   149-row baseline .agents/slop/dd-gate.txt, so the table is
-#   against the row set that baseline names.
+# DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.
+#   (none: every anchor occurs exactly once)
 #
-# BASELINE: 147 rows, 149 lines, first `l2idt0=i64->i32`,
-#   last `upk=C(65535),C(65536)`.  Diff unit is the WHOLE
-#   `name=value` LINE (a name-only diff reports 0 for every
-#   mutation that changes a value).
+# CONTROLS (RULE C -- all must read SAME; a MOVED control voids every verdict below)
+#   C00 C00 no-op control (rewrite the file byte-identical)        SAME
+#   C01 C01 comment-only control (insert a comment line above a def) SAME
+#   C02 C02 whitespace-only control (re-indent one trailing statement) SAME
 #
-# SUMMARY: 3 controls SAME | 27 MOVED | 6 SAME (zeros) |
-#   2 DID-NOT-COMPILE | 13 baseline rows no mutation moves.
-#
-# CONTROLS (RULE C -- all three read SAME, so the harness and
-# the diff are sound; a control that MOVED would have voided
-# every verdict below):
-#   C00 no-op control (rewrite the file byte-identical) SAME
-#   C01 comment-only control (append a comment line to a def body) SAME
-#   C02 whitespace-only control (re-indent a CONTINUATION line only) SAME
-
-#   NOTE: a whitespace-only edit of a `case` arm does NOT
-#   compile -- Bend's indentation is semantic, so C02 re-indents
-#   a continuation line instead.  That is itself a finding: a
-#   "whitespace-only" mutation is not a no-op in Bend.
-#
-
-==========================================================================
-== MOVED (the gate has teeth)
-==========================================================================
+#   NOTE: a whitespace-only edit of a `case` arm does NOT compile -- Bend's indentation is
+#   semantic -- so C02 re-indents a trailing statement, not an arm.
 
 M01 dd_cast_sel: swap the long arm 0/1
-  MOVED -- 30 rows
+  MOVED  42 rows
     lg2k
     lg2n
     lg2p
@@ -67,15 +46,31 @@ M01 dd_cast_sel: swap the long arm 0/1
     lgrk
     lgsk
     lgtk
+    lgvk
+    lgvn
+    lgvp
+    lgvsig
+    lgwk
+    lgwn
+    lgwp
+    lgwsig
+    lgxk
+    lgxn
+    lgxp
+    lgxsig
 
 M02 dd_cast_sel: swap the non-long arm 2/3
-  MOVED -- 3 rows
+  MOVED  7 rows
     lg7
     lg7k
     lg7sig
+    lgu
+    lguk
+    lgun
+    lgusig
 
 M03 dd_cast_fold: never fold a same-dtype cast
-  MOVED -- 8 rows
+  MOVED  14 rows
     lg2
     lg2n
     lg2sig
@@ -84,527 +79,235 @@ M03 dd_cast_fold: never fold a same-dtype cast
     lgrk
     lgsk
     lgtk
+    lgw
+    lgwn
+    lgwsig
+    lgx
+    lgxn
+    lgxsig
 
 M04 dd_cast_bool: invert the bool-source test
-  MOVED -- 2 rows
+  MOVED  2 rows
     lg5n
     lg5sig
 
 M05 l2i_cast3.bitc: never fold the uint bitcast
-  MOVED -- 4 rows
-    lg7
-    lg7n
-    lg7sig
-    lg9n
-
-M07 dd_bc: never fold (ADD/SUB word bitcasts)
-  MOVED -- 21 rows
-    lg1n
-    lg1sig
-    lg9n
-    lgcn
-    lgcp
-    lgcsig
-    lgdn
-    lgdsig
-    lgfn
-    lgqk
-    lgqn
-    lgqsig
-    lgr
-    lgrk
-    lgrn
-    lgrp
-    lgrsig
-    lgsk
-    lgsn
-    lgtk
-    lgtn
-
-M08 l2i_cast0.sgn: const_like(-1) as 1 instead of -1
-  MOVED -- 4 rows
-    lg6k
-    lg6n
-    lg6p
-    lgqn
-
-M10 l2i_shl.hi: `>> 31 - n` becomes `>> n`
-  MOVED -- 4 rows
-    lg9p
-    lg9sig
-    lgqk
-    lgqsig
-
-M11 l2i_shr.fill: always sign-extend
-  MOVED -- 5 rows
-    lgbk
-    lgbp
-    lgbsig
-    lgqn
-    lgrn
-
-M12 l2i_shr.fill: always fill with zero
-  MOVED -- 4 rows
-    lgak
-    lgan
-    lgap
-    lgasig
-
-M13 l2i_shl.ge: `b0 >= 32` becomes `b0 < 32`
-  MOVED -- 23 rows
-    lg9
-    lg9k
-    lg9n
-    lg9p
-    lg9sig
-    lga
-    lgak
-    lgap
-    lgasig
-    lgb
-    lgbk
-    lgbp
-    lgbsig
-    lgfn
-    lgqk
-    lgqn
-    lgqsig
-    lgrk
-    lgrsig
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-
-M15 l2i_mul.w: shift the product right before left
-  MOVED -- 1 rows
-    lgen
-
-M16 l2i_cmplt: swap the two OR halves
-  MOVED -- 13 rows
-    lgf
-    lgfsig
-    lgm
-    lgmp
-    lgmsig
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-
-M17 l2i_where: swap the two branch pairs
-  MOVED -- 11 rows
-    lgl
-    lglp
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    lgs
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-
-M18 l2i_max: swap the WHERE branches
-  MOVED -- 1 rows
-    lgm
-
-M19 l2i_binop: force AND on both halves
-  MOVED -- 6 rows
-    lgip
-    lgisig
-    lgjn
-    lgjp
-    lgjsig
-    lgkn
-
-M20 dd_rsub31: `31 - n` becomes `31 + n`
-  MOVED -- 12 rows
-    lg9p
-    lg9sig
-    lgak
-    lgan
-    lgasig
-    lgbk
-    lgbsig
-    lgqk
-    lgqn
-    lgqsig
-    lgsk
-    lgssig
-
-M21 unpack32: mask 0xFFFF becomes 0x10000
-  MOVED -- 4 rows
-    lgek
-    lgen
-    up
-    upk
-
-M22 unpack32: shift the masked low word instead of the bitcast
-  MOVED -- 4 rows
-    lgek
-    lgesig
-    upp
-    upsig
-
-M24 l2i_cdiv: 64 iterations become 63
-  MOVED -- 13 rows
-    lgqk
-    lgqn
-    lgqsig
-    lgrk
-    lgrn
-    lgrsig
-    lgsk
-    lgsn
-    lgssig
-    lgt
-    lgtk
-    lgtn
-    lgtsig
-
-M25 l2i_cast0.pick: sign-extend where dtype.py zero-extends
-  MOVED -- 24 rows
-    lg2k
-    lg2n
-    lg2p
-    lg2sig
-    lg3k
-    lg3n
-    lg3p
-    lg3sig
-    lg4k
-    lg4n
-    lg4p
-    lg4sig
-    lg6k
-    lg6n
-    lg6p
-    lg6sig
-    lgok
-    lgop
-    lgosig
-    lgqk
-    lgqsig
-    lgrk
-    lgsk
-    lgtk
-
-M26 dd_rs.push: visit src[n] before src[0]
-  MOVED -- 30 rows
-    lg1k
-    lg1sig
-    lg5k
-    lg5sig
-    lg9sig
-    lgak
-    lgasig
-    lgbk
-    lgbsig
-    lgcsig
-    lgdsig
-    lgek
-    lgesig
-    lgfsig
-    lggsig
-    lghsig
-    lgisig
-    lgjsig
-    lgksig
-    lglsig
-    lgmsig
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-    upsig
-
-M27 dd_rs.has: never remember a node (cone visits every edge)
-  MOVED -- 24 rows
-    lg1k
-    lg1sig
-    lg2k
-    lg2sig
-    lg5sig
-    lg9k
-    lg9sig
-    lgak
-    lgasig
-    lgbk
-    lgbsig
-    lgcsig
-    lgek
-    lgesig
-    lgmk
-    lgmsig
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-
-M28 l2i.roots: root the cone at the low word only
-  MOVED -- 36 rows
-    lg1k
-    lg1sig
-    lg2k
-    lg2sig
-    lg3k
-    lg3sig
-    lg4k
-    lg4sig
-    lg5k
-    lg5sig
-    lg6k
-    lg6sig
-    lg8sig
-    lg9sig
-    lgak
-    lgasig
-    lgbk
-    lgbsig
-    lgcsig
-    lgdk
-    lgdsig
-    lgek
-    lgesig
-    lgisig
-    lgjsig
-    lgksig
-    lglsig
-    lgmsig
-    lgok
-    lgosig
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    upk
-    upsig
-
-M29 l2i.gone: print `none` instead of naming the exception
-  MOVED -- 1 rows
-    lgn
-
-M31 dd_join.add: join with `-` instead of `,`
-  MOVED -- 43 rows
-    lg1k
-    lg1sig
-    lg2k
-    lg2sig
-    lg3sig
-    lg4sig
-    lg5k
-    lg5sig
-    lg6k
-    lg6sig
-    lg7sig
-    lg8sig
-    lg9k
-    lg9sig
-    lgak
-    lgasig
-    lgbk
-    lgbsig
-    lgcsig
-    lgdk
-    lgdsig
-    lgek
-    lgesig
-    lgfsig
-    lggk
-    lggsig
-    lghsig
-    lgisig
-    lgjsig
-    lgksig
-    lglsig
-    lgmsig
-    lgosig
-    lgqk
-    lgqsig
-    lgrk
-    lgrsig
-    lgsk
-    lgssig
-    lgtk
-    lgtsig
-    upk
-    upsig
-
-M32 l2i.went: never call l2i (the refusal guard always fires)
-  MOVED -- 128 rows
-    lg1
-    lg1k
-    lg1n
-    lg1p
-    lg1sig
-    lg2
-    lg2k
-    lg2n
-    lg2p
-    lg2sig
-    lg3
-    lg3k
-    lg3n
-    lg3p
-    lg3sig
-    lg4
-    lg4k
-    lg4n
-    lg4p
-    lg4sig
-    lg5
-    lg5k
-    lg5n
-    lg5p
-    lg5sig
-    lg6
-    lg6k
-    lg6n
-    lg6p
-    lg6sig
-    lg7
-    lg7k
-    lg7sig
-    lg8
-    lg8k
-    lg8n
-    lg8p
-    lg8sig
-    lg9
-    lg9k
-    lg9n
-    lg9p
-    lg9sig
-    lga
-    lgak
-    lgan
-    lgap
-    lgasig
-    lgb
-    lgbk
-    lgbn
-    lgbp
-    lgbsig
-    lgc
-    lgck
-    lgcn
-    lgcp
-    lgcsig
-    lgd
-    lgdk
-    lgdn
-    lgdp
-    lgdsig
-    lge
-    lgek
-    lgen
-    lgep
-    lgesig
-    lgf
-    lgfk
-    lgfn
-    lgfsig
-    lgg
-    lggk
-    lggn
-    lggsig
-    lgh
-    lghk
-    lghn
-    lghsig
-    lgi
-    lgik
-    lgin
-    lgip
-    lgisig
-    lgj
-    lgjk
-    lgjn
-    lgjp
-    lgjsig
-    lgk
-    lgkk
-    lgkn
-    lgkp
-    lgksig
-    lgl
-    lglk
-    lgln
-    lglp
-    lglsig
-    lgm
-    lgmk
-    lgmn
-    lgmp
-    lgmsig
-    lgo
-    lgok
-    lgop
-    lgosig
-    lgq
-    lgqk
-    lgqn
-    lgqp
-    lgqsig
-    lgr
-    lgrk
-    lgrn
-    lgrp
-    lgrsig
-    lgs
-    lgsk
-    lgsn
-    lgssig
-    lgt
-    lgtk
-    lgtn
-    lgtsig
-    upn
-
-==========================================================================
-== SAME -- zeros, each argued below
-==========================================================================
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
 
 M06 l2i_cast.got: route sel 3 to arm 0 instead of arm 3
-  SAME -- 0 rows
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+
+M07 dd_bc: never fold (ADD/SUB word bitcasts)
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+
+M08 l2i_cast0.sgn: const_like(-1) as 1 instead of -1
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
 
 M09 l2i_shl.hi: OR the halves the other way round
-  SAME -- 0 rows
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
 
-M23 reindex.scaled: swap `i1*mul` to `mul*i1`
-  SAME -- 0 rows
+M10 l2i_shl.hi: `>> 31 - n` becomes `>> n`
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
 
-M33 l2i_define.size2: stop doubling the size
-  SAME -- 0 rows
+M11 l2i_shr.fill: always sign-extend
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
 
-M34 f2f.up.tail: always take the non-fnuz arm
-  SAME -- 0 rows
+M12 l2i_shr.fill: always fill with zero
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
 
-M35 rne.sel: refuse every shift
-  SAME -- 0 rows
-
-==========================================================================
-== DID-NOT-COMPILE -- RULE 73, not blind spots
-==========================================================================
+M13 l2i_shl.ge: `b0 >= 32` becomes `b0 < 32`
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
 
 M14 l2i_mul.p: swap `a0*b1` and `a1*b0`
-  DID-NOT-COMPILE -- 1 rows
-    SOME PROOFS FAIL | Error: | - expected : a defined name
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+
+M15 l2i_mul.w: shift the product right before left
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+
+M16 l2i_cmplt: swap the two OR halves
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+
+M17 l2i_where: swap the two branch pairs
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+
+M18 l2i_max: swap the WHERE branches
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+
+M19 l2i_binop: force AND on both halves
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+
+M20 dd_rsub31: `31 - n` becomes `31 + n`
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+
+M21 unpack32: mask 0xFFFF becomes 0x10000
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+
+M22 unpack32: shift the masked low word instead of the bitcast
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+
+M23 reindex.scaled: swap `i1*mul` to `mul*i1`
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+
+M24 l2i_cdiv: 64 iterations become 63
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+
+M25 l2i_cast0.pick: sign-extend where dtype.py zero-extends
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+
+M26 dd_rs.push: visit src[n] before src[0]
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+
+M27 dd_rs.has: never remember a node (cone visits every edge)
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+
+M28 l2i.roots: root the cone at the low word only
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+
+M29 l2i.gone: print `none` instead of naming the exception
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
 
 M30 dd_eck: treat every node as a CONST
-  DID-NOT-COMPILE -- 1 rows
-    SOME PROOFS FAIL | Error: | - expected : an annotated term (cannot infer)
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+
+M31 dd_join.add: join with `-` instead of `,`
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+
+M32 l2i.went: never call l2i (the refusal guard always fires)
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+
+M33 l2i_define.size2: stop doubling the size
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+
+M34 f2f.up.tail: always take the non-fnuz arm
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+
+M35 rne.sel: refuse every shift
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+
+M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
+  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+
+
+=== ROWS NO MUTATION MOVED (122 of 172 baseline rows) ===
+  c0
+  c1
+  c2
+  c3
+  c4
+  c5
+  c6
+  c7
+  f2fdt0
+  f2fdt1
+  f2fdt2
+  f2fdt3
+  f2fdt4
+  f2fdt5
+  f2fdt6
+  f2fdt7
+  f2fdt8
+  l2idt0
+  l2idt1
+  lg1
+  lg1k
+  lg1n
+  lg1p
+  lg1sig
+  lg3
+  lg4
+  lg5
+  lg6
+  lg7n
+  lg8
+  lg8k
+  lg8n
+  lg8p
+  lg8sig
+  lg9
+  lg9k
+  lg9n
+  lg9p
+  lg9sig
+  lga
+  lgak
+  lgan
+  lgap
+  lgasig
+  lgb
+  lgbk
+  lgbp
+  lgbsig
+  lgc
+  lgck
+  lgcn
+  lgcp
+  lgcsig
+  lgd
+  lgdk
+  lgdn
+  lgdp
+  lgdsig
+  lge
+  lgek
+  lgen
+  lgep
+  lgesig
+  lgf
+  lgfk
+  lgfn
+  lgfsig
+  lgg
+  lggk
+  lggn
+  lggsig
+  lgh
+  lghk
+  lghn
+  lghsig
+  lgi
+  lgik
+  lgin
+  lgip
+  lgisig
+  lgj
+  lgjk
+  lgjn
+  lgjp
+  lgjsig
+  lgk
+  lgkk
+  lgkn
+  lgkp
+  lgksig
+  lgl
+  lglk
+  lgln
+  lglp
+  lglsig
+  lgm
+  lgmk
+  lgmn
+  lgmp
+  lgmsig
+  lgn
+  lgnn
+  lgo
+  lgon
+  lgq
+  lgqp
+  lgr
+  lgrn
+  lgrp
+  lgrsig
+  lgs
+  lgsn
+  lgssig
+  lgt
+  lgtn
+  lgtsig
+  lgv
+  up
+  upk
+  upn
+  upp
+  upsig

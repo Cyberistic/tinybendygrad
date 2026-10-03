@@ -294,15 +294,6 @@ k2=refused:NotImplementedError
 k2n=0
 k3=refused:NotImplementedError
 k3n=0
-# f2f_clamp's mx value, and its graph
-c0=F(1138753536)
-c1=F(1131413504)
-c2=F(1197473792)
-c3=F(1197473792)
-c4=F(1199562752)
-c5=F(2139029504)
-c6=F(2139095039)
-c7=F(ovf)
 # l2i_define
 df1=refused:RuntimeError
 df1n=0
@@ -325,6 +316,26 @@ df4sz=i32/8
 df5=refused:KeyError
 df5n=0
 df5sz=f32/None
+# l2i const sources
+lgv=CAST(CAST(C(0)))
+lgvp=CAST(C(0))
+lgvn=1
+lgvsig=CAST/1,CAST/1,CONST/0,CAST/1
+lgvk=C(0)
+lgw=CAST(C(0))
+lgwp=CAST(C(0))
+lgwn=0
+lgwsig=CAST/1,CONST/0
+lgwk=C(0)
+lgx=CAST(C(1))
+lgxp=CAST(C(0))
+lgxn=0
+lgxsig=CAST/1,CONST/0,CAST/1,CONST/0
+lgxk=C(1),C(0)
+lgu=WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))
+lgun=14
+lgusig=WHERE/3,OR/2,AND/2,CMPNE/2,CMPNE/2,PARAM/0,CONST/0,CONST/0,CMPNE/2,CMPLT/2,PARAM/0,AND/2,CMPNE/2,CMPNE/2,CONST/0,ADD/2,MUL/2,CONST/0,CAST/1,BITCAST/1
+lguk=F(0),C(1),F(3212836864),F(1333788672)
 # the three tables: rule counts and reject-set sizes
 nlong=13
 nlong0=0
@@ -404,24 +415,12 @@ ndtype0o=ADD,AFTER,ALLOC,ALLREDUCE,AND,BACKEDGE,BARRIER,BINARY,BITCAST,BUFFER,CA
 ndtype1=0
 ndtype1r=-
 ndtype1o=SINK
-# l2i const sources — appended 2026-10-03, called, not transcribed
-# l2i const sources
-lgv=CAST(CAST(C(0)))
-lgvp=CAST(C(0))
-lgvn=1
-lgvsig=CAST/1,CAST/1,CONST/0,CAST/1
-lgvk=C(0)
-lgw=CAST(C(0))
-lgwp=CAST(C(0))
-lgwn=0
-lgwsig=CAST/1,CONST/0
-lgwk=C(0)
-lgx=CAST(C(1))
-lgxp=CAST(C(0))
-lgxn=0
-lgxsig=CAST/1,CONST/0,CAST/1,CONST/0
-lgxk=C(1),C(0)
-lgu=WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))
-lgun=14
-lgusig=WHERE/3,OR/2,AND/2,CMPNE/2,CMPNE/2,PARAM/0,CONST/0,CONST/0,CMPNE/2,CMPLT/2,PARAM/0,AND/2,CMPNE/2,CMPNE/2,CONST/0,ADD/2,MUL/2,CONST/0,CAST/1,BITCAST/1
-lguk=F(0),C(1),F(3212836864),F(1333788672)
+# f2f_clamp's mx value
+c0=F(1138753536)
+c1=F(1131413504)
+c2=F(1197473792)
+c3=F(1197473792)
+c4=F(1199562752)
+c5=F(2139029504)
+c6=F(2139095039)
+c7=F(2139095040)

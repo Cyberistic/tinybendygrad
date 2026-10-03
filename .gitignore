@@ -78,3 +78,34 @@ tinybendygrad/uop/probe-*.bend
 tinybendygrad/test/_probe/
 .agents/slop/dd-mirror/
 .agents/slop/tv-scratch/
+
+# Measurement caches under .agents/slop. Both were COMMITTED and both had to be DELETED,
+# because .gitignore cannot untrack a file that is already tracked: a prior attempt to
+# untrack net.json silently no-opped four commits, and the failure mode looks exactly like
+# success. If one of these reappears, delete it -- do not treat this pattern as the fix.
+#
+#   ga_cache/   ga_sweep.py's output. 343 tracked files / 2.00 MB of tracked bytes
+#               (25 MB on disk with the .bin lanes), written as <port>/{lane.txt,lane.rc,
+#               lane.err} + lanes.json so a parser can be MEASURED offline instead of
+#               re-running bend per candidate. Header says "Run once". Regenerate with
+#               `python3 .agents/slop/ga_sweep.py`. NOTE ga_rows_blast.py reads it offline
+#               and will not run until the sweep is re-run.
+#   tv-scratch/ tree-verdict.py / state-audit.py's flat-tree working scratch, rebuilt on
+#               every run. 318 tracked files / 0.55 MB. Already ignored above by name; kept
+#               here so the two live together with the reason.
+.agents/slop/ga_cache/
+.agents/slop/*_cache/
+
+# dd-cone-wt/ is the same class -- a per-unit probe/working tree of full littlebendygrad
+# copies, 1684 tracked files -- but NOT deleted: a live agent is mid-flight in it and
+# deleting it would destroy their work. Ignored so that one careless `jj split` cannot
+# sweep it into a commit, for the same reason xd1/ is listed above.
+.agents/slop/dd-cone-wt/
+
+# DELIBERATELY NOT IGNORED. A cache-shaped path is not the test; "a report cites it" is.
+# These are tracked on purpose and a future sweep must leave them alone:
+#   arange-ucache/  TOOLS.md's ledger and notes/bend2-constraints.md cite it as the
+#                   measurement behind the ARange ucache collision.
+#   runs/           pre-split oracle baselines, tabulated in runs/README.md; the
+#                   *-gate.sh scripts diff against those exact bytes.
+#   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.

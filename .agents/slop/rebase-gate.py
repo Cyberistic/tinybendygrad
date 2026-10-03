@@ -15,6 +15,12 @@ matches" from "nothing was compared". Four states are distinguished here:
                 that matters and the reason the tool exists.
     NOT-STARTED no oracle wired for this port, so nothing can be claimed. Explicit, because
                 silence here is indistinguishable from success in every other tool.
+    AGREE-UNRECORDED
+                every lane pair DID compare and DID agree, and no baseline was recorded. This is
+                the state the tool could not report for a whole session, which made 46 of 50
+                targets read as "nobody ever compared these" when every one of them had just
+                compared clean. Distinct from NOT-STARTED precisely because this run compared
+                something -- see AGREE_UNRECORDED below.
 
 HOW "ROWS WENT TO ZERO" IS DETECTED, which is the whole point and is FOUR independent
 guards, because any one of them alone has already been fooled here. The numbers are the
@@ -84,14 +90,29 @@ here rather than in one call site:
     selftest that tests a differently-shaped call than production is the same instrument
     lying, one layer down, and it is why this bug survived a selftest that passed.
 
-  usage: python3 .agents/slop/rebase-gate.py [--batch N] [--port P] [--record]
-         --record   write/refresh the baseline from the CURRENT state (do this at the pin,
-                    once, on a tree known green -- never to silence a failure)
+  usage: .venv/bin/python .agents/slop/rebase-gate.py [--batch N] [--port P] [--json]
+         [--record | --record-stable STABILITY_JSON]
+
+         INVOKE WITH .venv/bin/python. The CPython lanes run under a PINNED interpreter
+         (oracle_py.py), not sys.executable, because the verdict must not be a function of the
+         launcher: PATH's python3 is 3.14 with no tinygrad installed, so every oracle exits with
+         ModuleNotFoundError, which is GUARD 3 and reads as a broken port.
+
+         --record           write/refresh the baseline from the CURRENT state of EVERY target
+                            (at the pin, once, on a tree known green -- never to silence a
+                            failure). UNTESTED: it freezes whatever printed at that instant,
+                            including lanes that can never report UNCHANGED again.
+         --record-stable F  record ONLY the ports a .agents/slop/rebase-stability.py measurement
+                            marked recordable, copying that measurement's rows verbatim and
+                            re-checking disagreement and interpreted==native before writing.
+                            This is the path to use; excluded ports are named on stdout.
 
   the gate has been SEEN RED, twice, and both are reproducible:
     .agents/slop/rebase-plant-disagreement.py   a planted disagreement -> BROKEN, named row,
                                                  plus the SAME pair uncorrupted -> not BROKEN
-    rebase-gate-selftest.py                     the four states over synthetic lanes, plus
+    rebase-gate-selftest.py                     the five states over synthetic lanes, plus
+                                                 the AGREE-UNRECORDED control and the
+                                                 never-wired control that keeps it honest, plus
                                                  the two deliberately-dead lanes on the real
                                                  tree, plus the plan contract in BOTH shapes
 """
@@ -107,11 +128,33 @@ BASELINE = SLOP / "rebase" / "baseline.json"
 # The interpreter that runs the CPython lanes, PINNED -- see oracle_py.py's header for the
 # measurement that forced it. Resolved once, at import, so a harness launched by an
 # interpreter that cannot import tinygrad dies HERE, loudly, instead of reporting that every
-# port agrees. `ORACLE_PY`, `sh(*a)` and the lane spawner below all read these two names.
+# port agrees. `ORACLE_PY`, `sh(*a)` and the lane spawner below all read this one name.
 ORACLE_PY, TINYGRAD_FROM, PY_VERSION = oracle_py.resolve()
 PY_PROVENANCE = oracle_py.line(ORACLE_PY, TINYGRAD_FROM, PY_VERSION)
 
 UNCHANGED, REPORTED, BROKEN, NOT_STARTED = "UNCHANGED", "RE-PORTED", "BROKEN", "NOT-STARTED"
+
+# ⚠ AGREE-UNRECORDED WAS MISSING AND ITS ABSENCE IS THE WHOLE GAP THIS FILE WAS SENT TO CLOSE.
+# It is the state meaning "every lane pair DID compare and DID agree, and no baseline was
+# recorded". Reporting it as NOT-STARTED merged it with "no oracle wired in BASE_ORACLES --
+# nothing can be claimed", which compares nothing at all. That collapse is not cosmetic: 46 of
+# 50 targets read NOT-STARTED and one lane read UNCHANGED, so the tally said "no port has ever
+# been compared" when 49 of them had just been compared successfully, and "one port has been
+# examined" when it had not. A state that cannot say WHICH of those two it is in cannot drive a
+# decision about what to record, and recording is the only thing that moves a port off
+# AGREE-UNRECORDED.
+#
+# It is a DISTINCT state, not a flavour of NOT-STARTED, and the distinction is drawn by one
+# question: DID THIS RUN COMPARE ANYTHING? AGREE-UNRECORDED answers yes (GUARD 4 passed on real
+# lanes) and NOT-STARTED answers no. So it is reachable ONLY on the path where all four guards
+# passed and the baseline is merely absent -- never on a dead lane, an empty lane, an
+# incomparable pair, a disagreement, or a missing oracle, each of which is BROKEN or NOT-STARTED
+# with its own evidence.
+#
+# It is NOT a pass. Its `why` says so in words, and it is not UNCHANGED: "they agree right now"
+# is a strictly weaker claim than "nothing moved since someone looked", and conflating the two is
+# how a missing recording turns into a green light.
+AGREE_UNRECORDED = "AGREE-UNRECORDED"
 
 
 def sh(*a, timeout=1800):
@@ -355,7 +398,7 @@ def hunks_summary(hunks):
 
 
 def baseline_for(base, port):
-  """baseline.json -> (lane_rows, hunks, complaint). The ONLY reader of that file.
+  """baseline.json -> (lane_rows, hunks, complaint, readable). The ONLY reader of that file.
 
   baseline.json is `{"lanes": {port: {lane: {name: value}}}, "hunks": {port: delta}}`.
   Reading the wrong nesting level returns None, and None means "no baseline", so a wrong
@@ -363,16 +406,24 @@ def baseline_for(base, port):
   `base.get(port)` was None for every port and verdict() returned NOT-STARTED before
   GUARD 1. So: one reader, called by main() and by the selftest, and it distinguishes
   "there is no baseline for this port" from "this baseline is not the shape I read".
-  """
+
+  ⚠ `readable` IS A FOURTH ANSWER AND IT EXISTS BECAUSE AGREE-UNRECORDED NEEDS ONE. Both
+  "the document is intact and simply has no entry for this port" and "the document cannot be
+  read at all" return lane_rows=None, and verdict() maps a None baseline to AGREE-UNRECORDED --
+  which would then describe a MALFORMED baseline.json as "compared clean, nothing recorded",
+  a claim no run supports. `readable=False` sends those two back to NOT-STARTED with the
+  complaint as the entire `why`, which is the loud shape this function has always had.
+  Deriving it from the complaint TEXT would be a string-compare dressed as a contract, so it is
+  a returned value and rebase-gate-selftest.py drives both branches."""
   if not base:
-    return None, None, "no baseline.json on disk"
+    return None, None, "no baseline.json on disk", False
   if "lanes" not in base:
     return None, None, (f"baseline.json is MALFORMED: top-level keys {sorted(base)}, "
                         "expected 'lanes' and 'hunks'. A guard that cannot read its own "
-                        "baseline must not report a port as unstarted")
+                        "baseline must not report a port as unstarted"), False
   if port not in base["lanes"]:
-    return None, None, f"no baseline recorded for {port}"
-  return base["lanes"][port] or {}, base.get("hunks", {}).get(port) or {}, None
+    return None, None, f"no baseline recorded for {port}", True
+  return base["lanes"][port] or {}, base.get("hunks", {}).get(port) or {}, None, True
 
 
 def port_key(bend):
@@ -393,10 +444,20 @@ def gate_port(bend, oracles, base, native=True, files=None):
   when the recorded hunks are a bare api_delta that lost its filename: the diff is then
   recomputed and the verdict says so, because a record that cannot name a file must not be
   reported as "nothing changed"."""
-  base_rows, hunks, complaint = baseline_for(base, port_key(bend))
+  base_rows, hunks, complaint, readable = baseline_for(base, port_key(bend))
   v, now = verdict(bend, oracles, base_rows, hunks_view(hunks), native)
-  if complaint and v["state"] == NOT_STARTED:
-    v["why"] = complaint
+  if complaint and v["state"] == AGREE_UNRECORDED and readable:
+    # The complaint is kept, APPENDED. It used to REPLACE `why` outright for every
+    # NOT-STARTED, which for an unrecorded port replaced the evidence -- how many shared row
+    # names agreed -- with the four words "no baseline recorded". The evidence is the only
+    # thing distinguishing AGREE-UNRECORDED from NOT-STARTED, so it is the last thing that
+    # should be overwritten.
+    v["why"] = f"{v['why']} ({complaint})"
+  elif complaint and not readable and v["state"] == AGREE_UNRECORDED:
+    # An unreadable document is NOT "compared clean, unrecorded". It is NOT-STARTED and the
+    # complaint is the whole of the answer, which is how this function behaved before
+    # AGREE-UNRECORDED existed and how it still behaves for a malformed baseline.
+    v["state"], v["why"] = NOT_STARTED, complaint
   if files and "<file not named at record time>" in v.get("hunks_examined", {}):
     v["hunks_examined"] = {f: {"api_delta": d, "diff_stat": diff_stat(f)}
                            for f, d in files.items()}
@@ -481,10 +542,18 @@ def verdict(bend, oracle, base, hunks, native=True):
   v["compared_pairs"] = compared
 
   if base is None:
-    v["state"], v["why"] = NOT_STARTED, (
-      "no baseline recorded, so UNCHANGED-vs-RE-PORTED cannot be judged -- but every lane "
-      "pair DID compare and agrees, which is a weaker claim than UNCHANGED and is not one. "
-      "Record with --record on a tree known green")
+    # ⚠ THIS RETURNED NOT-STARTED FOR THE WHOLE SESSION AND THAT IS WHAT MADE 46 OF 50 TARGETS
+    # UNREADABLE. Reached only when all four guards passed, so the honest reading is not "we
+    # don't know" -- it is "we compared N row names across M lane pairs, every one agreed, and
+    # there is nothing to compare the result against next time". NOT-STARTED says "no oracle
+    # wired", which for these lanes was false: they each had an oracle, it ran, and it agreed.
+    # The shared counts are in `why` because they are the EVIDENCE that this lane was examined;
+    # a state that cannot show its evidence is the reason the collapse was invisible.
+    v["state"], v["why"] = AGREE_UNRECORDED, (
+      f"compared clean and UNRECORDED: {v['compared_pairs']} lane pair(s) shared row names and "
+      "every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED "
+      "cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means "
+      "nothing was compared. Record with --record-stable on a tree known green")
     return v, now
 
   if not base:
@@ -590,6 +659,120 @@ def upstream_of(targets, plan):
   return rev
 
 
+def record_stable(evidence_path, baseline_path, plan):
+  """baseline.json <- ONLY the ports rebase-stability.py measured as recordable.
+
+  ⚠ WHY THIS IS NOT `--record`. `--record` freezes whatever the tree printed at the instant it
+  ran, over EVERY target it was pointed at, with no test at all. Pointed at the whole tree it
+  writes 38 lanes, and two of those can never report UNCHANGED afterwards -- `elf.bend`'s oracle
+  emits 14 `elf_built_*` rows carrying raw runtime addresses (ASLR), and its row COUNT has been
+  observed at both 353 and 331 with no edit at all. A baseline recorded from an unmeasured run
+  is not a baseline; it is a hope with a timestamp. So this path takes the DECISION from the
+  measurement and the ROWS from the same measurement, rather than re-running and recording
+  something that was never tested.
+
+  The rows are copied VERBATIM from the evidence file. Re-running the tree here would be a
+  different, untested measurement wearing the same evidence's name.
+
+  It refuses, rather than warns, on any of:
+    * a port marked recordable that has no .bend on disk or no BASE_ORACLES entry -- the
+      evidence file is not about this tree;
+    * a stored lane set with an empty lane, or missing interpreted/native, which rule 2 of the
+      stability contract should already have excluded;
+    * ANY shared lane pair that disagrees, re-checked HERE from the stored rows. The stability
+      harness already applies this rule; re-applying it at the only place that writes means a
+      future edit to the harness cannot silently start recording a red;
+    * interpreted != native, re-checked here for the same reason.
+
+  Ports the evidence EXCLUDED are absent from the output and named on stdout. Ports already in
+  the target baseline that are not in the qualifying set are LEFT ALONE, not deleted: deleting a
+  pre-existing entry is a way of losing information nobody asked to lose, and `renderer/cstyle.bend`
+  is such an entry -- recorded on purpose while its oracle is BROKEN, so deleting it would
+  change what the gate reports about a port this run did not measure.
+
+  Returns (written, excluded, complaints)."""
+  doc = json.loads(pathlib.Path(evidence_path).read_text())
+  base = json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
+  if "lanes" not in base or "hunks" not in base:
+    print(f"REFUSING: {baseline_path} is not a baseline document (top-level keys "
+          f"{sorted(base)}). Recording into a file this tool cannot read would replace a loud "
+          "error with a silent pass.")
+    return 0, len(doc), ["target baseline is not a baseline document"]
+  todo = sorted(doc.items())
+  qualified = [p for p, r in todo if r.get("recordable")]
+  rev = upstream_of([(p, ()) for p in qualified], plan)
+
+  written, complaints = [], []
+  for port, r in todo:
+    if not r.get("recordable"):
+      complaints.append(f"EXCLUDED {port}: " + "; ".join(r.get("reasons", ["no reason recorded"])))
+      continue
+    rows_by_lane = r.get("rows") or {}
+    if port not in BASE_ORACLES:
+      complaints.append(f"REFUSED {port}: marked recordable but has no BASE_ORACLES entry, so "
+                        "the evidence file is not about this tree")
+      continue
+    if not (REPO / port).exists():
+      complaints.append(f"REFUSED {port}: marked recordable but the .bend is not on disk")
+      continue
+    empty = [k for k, v in rows_by_lane.items() if not v]
+    if empty or not {"interpreted", "native"} <= set(rows_by_lane):
+      complaints.append(f"REFUSED {port}: lane(s) {sorted(set(empty) | ({'interpreted', 'native'} - set(rows_by_lane)))} "
+                        "empty or absent from the evidence")
+      continue
+    if rows_by_lane["interpreted"] != rows_by_lane["native"]:
+      complaints.append(f"REFUSED {port}: interpreted != native in the stored evidence, so at "
+                        "least one bend run was partial")
+      continue
+    bad = [(a, b, k) for a in sorted(rows_by_lane) for b in sorted(rows_by_lane) if a < b
+           for k in set(rows_by_lane[a]) & set(rows_by_lane[b]) if rows_by_lane[a][k] != rows_by_lane[b][k]]
+    if bad:
+      complaints.append(f"REFUSED {port}: {len(bad)} shared row(s) DISAGREE in the stored "
+                        f"evidence, e.g. {bad[:2]} -- recording this would launder a red")
+      continue
+    base["lanes"][port] = rows_by_lane
+    base["hunks"][port] = {f: {"api_delta": plan["api_delta"].get(f, {}), "diff_stat": diff_stat(f)}
+                           for f in rev[port]}
+    written.append(port)
+
+  baseline_path.parent.mkdir(parents=True, exist_ok=True)
+  baseline_path.write_text(json.dumps(base, indent=1))
+  print(f"recorded {len(written)} proven-stable port(s) -> {baseline_path}")
+  for port in written:
+    print(f"  REC  {port:<46} " + " ".join(f"{k}={len(v)}" for k, v in sorted(base["lanes"][port].items())))
+  for c in complaints:
+    print(f"  {c}")
+  kept = sorted(set(base["lanes"]) - set(written))
+  if kept:
+    print(f"  LEFT UNTOUCHED (already recorded, not in the qualifying set): {', '.join(kept)}")
+  return len(written), len(complaints), complaints
+
+
+def never_wired(port, bend, oracles):
+  """The verdict for a target that CANNOT be compared, for either reason main() finds BEFORE
+  it runs a single lane: no such .bend file, or no oracle wired in BASE_ORACLES. Returns the
+  verdict, or None when the target is comparable and main() should gate it normally.
+
+  ⚠ THIS IS EXTRACTED SO IT CAN BE CONTROLLED, and the control is the point. AGREE-UNRECORDED's
+  entire claim is "this run compared something and it agreed". A state that claimed it without
+  being able to distinguish itself from "nothing ran" would be worse than the NOT-STARTED it
+  replaced -- it would mark un-wired ports as examined. So rebase-gate-selftest.py drives this
+  function directly and requires NOT-STARTED for a port with no oracle, AND requires that it
+  never runs a lane: a "verdict" for an unwired target that had to execute anything to
+  produce would itself be an unwired-target-shaped hole."""
+  if not bend.exists():
+    # Named rather than `continue`d: a target that is not a file is not a pass, and a
+    # silently dropped port is the exact shape that hid here for an hour.
+    return {"port": port, "state": NOT_STARTED,
+            "why": f"NO SUCH FILE: {bend}. The plan maps an upstream file to a port path that "
+                   "does not exist; nothing was checked"}
+  if not oracles:
+    return {"port": port, "state": NOT_STARTED,
+            "why": f"no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not "
+                   f"AGREE-UNRECORDED either: {port} has no oracle entry, not a missing recording"}
+  return None
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--batch", type=int, default=None)
@@ -601,6 +784,10 @@ def main():
                   help="a baseline file other than rebase/baseline.json -- for measuring a "
                        "port without touching the recorded one")
   ap.add_argument("--no-native", action="store_true")
+  ap.add_argument("--record-stable", default=None, metavar="STABILITY_JSON",
+                  help="record into the baseline ONLY the ports a rebase-stability.py "
+                       "measurement marked recordable, copying that measurement's rows verbatim. "
+                       "--record without this freezes an untested run over every target")
   ap.add_argument("--json", action="store_true")
   a = ap.parse_args()
 
@@ -634,6 +821,9 @@ def main():
           "maps to no port that exists. Nothing was checked.")
     return 1
 
+  if a.record_stable:
+    return 0 if record_stable(a.record_stable, baseline_path, plan)[0] else 1
+
   if a.record:
     rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}}, 0
     for port, oracles in targets:
@@ -659,18 +849,11 @@ def main():
   rev = upstream_of(targets, plan)
   for port, oracles in targets:
     bend = REPO / port
-    if not bend.exists():
-      # Named rather than `continue`d: a target that is not a file is not a pass, and a
-      # silently dropped port is the exact shape that hid here for an hour.
-      missing.append(port)
-      verdicts.append({"port": port, "state": NOT_STARTED,
-                       "why": f"NO SUCH FILE: {bend}. The plan maps an upstream file to a port "
-                              "path that does not exist; nothing was checked"})
-      tally[NOT_STARTED] = tally.get(NOT_STARTED, 0) + 1
-      continue
-    if not oracles:
-      verdicts.append({"port": port, "state": NOT_STARTED,
-                       "why": "no oracle wired in BASE_ORACLES -- nothing can be claimed"})
+    unwired = never_wired(port, bend, oracles)
+    if unwired:
+      if "NO SUCH FILE" in unwired["why"]:
+        missing.append(port)
+      verdicts.append(unwired)
       tally[NOT_STARTED] = tally.get(NOT_STARTED, 0) + 1
       continue
     v, _ = gate_port(bend, oracles, base, not a.no_native,
