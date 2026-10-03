@@ -271,7 +271,7 @@ def noopf_go(fuel: Nat, +ar: O.Arena, n: Nd) -> Bool:
                     case True{}  : noopf_go(p, ar, noopf_next(ar, node))
                     case False{} : noopf_done(ar, node)
 
-def rf_is_noop_after_dep(+ar: O.Arena, +self: U32) -> Bool:
+def is_noop_after_dep(+ar: O.Arena, +self: U32) -> Bool:
   noopf_go(O.Arena.budget(ar), ar, Nd{self, noopf.cont(ar, self)})
 
 # `remove_noop_afters` -- rangeify.py:249-252. FULLY PORTED, and the shape is
@@ -300,7 +300,7 @@ def raf.keep(x: U32, keep: Bool) -> List<&2, U32>:
 def raf.keep.go(+ar: O.Arena, xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{} : acc
-    case +x <> t: raf.keep.go(ar, t, List.append(&2, U32, acc, raf.keep(x, Bool.not(rf_is_noop_after_dep(ar, x)))))
+    case +x <> t: raf.keep.go(ar, t, List.append(&2, U32, acc, raf.keep(x, Bool.not(is_noop_after_dep(ar, x)))))
 
 def raf.keep_srcs(+ar: O.Arena, +self: U32) -> List<&2, U32>:
   raf.keep.go(ar, O.Arena.src_from(ar, self, 1), [M.mp_src0(ar, self)])
@@ -310,15 +310,15 @@ def raf.keep_srcs(+ar: O.Arena, +self: U32) -> List<&2, U32>:
 def raf_one(kept: List<&2, U32>) -> Bool:
   Nat.is_eq(List.length(&2, U32, kept), 1n)
 
-def rf_remove_noop_afters.of(one: Bool, shrank: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+def remove_noop_afters.of(one: Bool, shrank: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match one:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
     case False{}: match shrank:
                   case True{} : M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self, raf.keep_srcs(ar, self))
                   case False{}: M.Hop{ar, 0}
 
-def rf_remove_noop_afters(+ar: O.Arena, +self: U32) -> M.Hop:
-  rf_remove_noop_afters.of(raf_one(raf.keep_srcs(ar, self)),
+def remove_noop_afters(+ar: O.Arena, +self: U32) -> M.Hop:
+  remove_noop_afters.of(raf_one(raf.keep_srcs(ar, self)),
                            Bool.not(U32.is_eq(M.mp_nsrc(ar, self),
                                               U32.from_nat(List.length(&2, U32, raf.keep_srcs(ar, self))))),
                            ar, self)
@@ -365,7 +365,7 @@ def rf_strip.of(shrink: Bool, zero: Bool, +ar: O.Arena, self: U32) -> M.Hop:
                   case False{}: M.Hop{ar, self}
     case False{}: M.Hop{ar, self}
 
-def rf_strip_zero_offset_shrink(+ar: O.Arena, +self: U32) -> M.Hop:
+def strip_zero_offset_shrink(+ar: O.Arena, +self: U32) -> M.Hop:
   rf_strip.of(M.mp_is(ar, self, O.OpsSHRINK{}),
               Bool.and(M.mp_is(ar, self, O.OpsSHRINK{}), rf_zero_off.go(rf_offsets(ar, self))),
               ar, self)
@@ -374,7 +374,7 @@ def rf_strip_zero_offset_shrink(+ar: O.Arena, +self: U32) -> M.Hop:
 # predicate, for the two call sites in `no_indexing_calls` that need an INDEX
 # and one that does not.
 def rf_strip_ix(ar: O.Arena, self: U32) -> U32:
-  M.hop_ix(rf_strip_zero_offset_shrink(ar, self))
+  M.hop_ix(strip_zero_offset_shrink(ar, self))
 
 # `no_indexing_calls` -- rangeify.py:143-158. FULLY PORTED. THE MSTACK ARM BUILDS A
 # NODE, so this fold CARRIES THE ARENA and cannot be a pure `List` fold: the record `Bld`
@@ -465,11 +465,11 @@ def rf_no_indexing_calls_of(fuel: Nat, +ar: O.Arena, self: U32) -> Bld:
   nic.go(fuel, Bld{ar, Nil{}}, M.mp_srcs(ar, self))
 
 # the rule: the fold, then the rebuild in the arena the fold ended with.
-def rf_no_indexing_calls.fin(+self: U32, +b: Bld) -> M.Hop:
+def no_indexing_calls.fin(+self: U32, +b: Bld) -> M.Hop:
   M.mp_replace(M.mp_op(Bld.ar(b), self), M.mp_arg(Bld.ar(b), self), Bld.ar(b), self, Bld.ys(b))
 
-def rf_no_indexing_calls(+ar: O.Arena, +self: U32) -> M.Hop:
-  rf_no_indexing_calls.fin(self, rf_no_indexing_calls_of(O.Arena.budget(ar), ar, self))
+def no_indexing_calls(+ar: O.Arena, +self: U32) -> M.Hop:
+  no_indexing_calls.fin(self, rf_no_indexing_calls_of(O.Arena.budget(ar), ar, self))
 
 # `renumber_range` -- rangeify.py:299-303. FULLY PORTED, and the FIRST place this file has
 # to be honest about a Python `ctx`: `ctx.range += 1` happens AFTER the node is built and
@@ -686,7 +686,7 @@ def rb_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
 # invariant this whole rule exists to establish.
 def nic_dispatch.go(tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match tag:
-    case 0: rf_self(rf_no_indexing_calls(ar, self), self)
+    case 0: rf_self(no_indexing_calls(ar, self), self)
     case _: M.Hop{ar, 0}
 
 def nic_dispatch(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
@@ -1588,7 +1588,7 @@ def ab_6(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ab_9: `remove_noop_afters` -- rangeify.py:271, ported above as a def. The
 # table entry is the ONLY thing new here.
-def ab_9(+fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop: rf_self(rf_remove_noop_afters(ar, self), self)
+def ab_9(+fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop: rf_self(remove_noop_afters(ar, self), self)
 
 def ab_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   match tag:
@@ -2042,29 +2042,29 @@ def t_gs_len() -> U32: U32.from_nat(List.length(&2, O.PMEntry, gs_table()))
 # the foreign prefix. `mops_rules` is how many `pm_mops` RULES the composition
 # shifts every own tag by, and the ROOT/SUB rows above are its three pdict keys.
 
-def t_noopf_n0() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_n0(g())))
-def t_noopf_nx() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_nx(g())))
-def t_noopf_e_n0() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_e0(g())))
-def t_noopf_e_nx() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_e1(g())))
-def t_noopf_b4() -> U32: b2u(rf_is_noop_after_dep(g_ar(g()), g_b4(g())))
+def t_noopf_n0() -> U32: b2u(is_noop_after_dep(g_ar(g()), g_n0(g())))
+def t_noopf_nx() -> U32: b2u(is_noop_after_dep(g_ar(g()), g_nx(g())))
+def t_noopf_e_n0() -> U32: b2u(is_noop_after_dep(g_ar(g()), g_e0(g())))
+def t_noopf_e_nx() -> U32: b2u(is_noop_after_dep(g_ar(g()), g_e1(g())))
+def t_noopf_b4() -> U32: b2u(is_noop_after_dep(g_ar(g()), g_b4(g())))
 
 def t_raf_after_nsrc() -> U32:
-  M.mp_nsrc(M.hop_ar(rf_remove_noop_afters(g_ar(g()), g_af(g()))), M.hop_ix(rf_remove_noop_afters(g_ar(g()), g_af(g()))))
+  M.mp_nsrc(M.hop_ar(remove_noop_afters(g_ar(g()), g_af(g()))), M.hop_ix(remove_noop_afters(g_ar(g()), g_af(g()))))
 
 def t_raf_after1_is_src0() -> U32:
-  b2u(U32.is_eq(M.hop_ix(rf_remove_noop_afters(g_ar(g()), g_af1(g()))), g_b4(g())))
+  b2u(U32.is_eq(M.hop_ix(remove_noop_afters(g_ar(g()), g_af1(g()))), g_b4(g())))
 
 def t_raf_afterk_none() -> U32:
-  b2u(O.UOp.is_none(M.hop_ix(rf_remove_noop_afters(g_ar(g()), g_afk(g())))))
+  b2u(O.UOp.is_none(M.hop_ix(remove_noop_afters(g_ar(g()), g_afk(g())))))
 
 def t_szs_sh0_is_src0() -> U32:
-  b2u(U32.is_eq(M.hop_ix(rf_strip_zero_offset_shrink(g_ar(g()), g_sh0(g()))), g_b4(g())))
+  b2u(U32.is_eq(M.hop_ix(strip_zero_offset_shrink(g_ar(g()), g_sh0(g()))), g_b4(g())))
 
 def t_szs_sh1_is_src0() -> U32:
-  b2u(U32.is_eq(M.hop_ix(rf_strip_zero_offset_shrink(g_ar(g()), g_sh1(g()))), g_b4(g())))
+  b2u(U32.is_eq(M.hop_ix(strip_zero_offset_shrink(g_ar(g()), g_sh1(g()))), g_b4(g())))
 
 def t_szs_n0_is_self() -> U32:
-  b2u(U32.is_eq(M.hop_ix(rf_strip_zero_offset_shrink(g_ar(g()), g_n0(g()))), g_n0(g())))
+  b2u(U32.is_eq(M.hop_ix(strip_zero_offset_shrink(g_ar(g()), g_n0(g()))), g_n0(g())))
 
 def t_nic_calli_ans() -> U32: b2u(Bool.not(O.UOp.is_none(M.hop_ix(nic_rewrite(g_ar(g()), g_cli(g()))))))
 def t_nic_calls_ans() -> U32: b2u(Bool.not(O.UOp.is_none(M.hop_ix(nic_rewrite(g_ar(g()), g_cls(g()))))))
@@ -2328,7 +2328,7 @@ def t_rej_ab8() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ab_entr
 #       the input (which is what this file did first) cannot see a rule that
 #       rebuilt the arg from scratch.
 def t_raf_aftn_is_src0() -> U32:
-  b2u(U32.is_eq(M.hop_ix(rf_remove_noop_afters(g_ar(g()), g_aftn(g()))), g_n0(g())))
+  b2u(U32.is_eq(M.hop_ix(remove_noop_afters(g_ar(g()), g_aftn(g()))), g_n0(g())))
 
 def t_ab8_stc0_none() -> U32: b2u(O.UOp.is_none(M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_stc0(g())))))
 

@@ -824,7 +824,7 @@ def ix_nr_next(+ridx: U32, one: Bool) -> U32: Bool.pick(U32, one, ridx, U32.add(
 
 #
 
-def ix_realize(tr: U32) -> IxReal: IxReal{tr, False{}, Nil{}}
+def realize(tr: U32) -> IxReal: IxReal{tr, False{}, Nil{}}
 
 # `realize_srcs(ctx, rb)` (:30-32) -- every src whose base is NOT in
 # ALWAYS_CONTIGUOUS. `s.base.op` is `F.fold.base` -> `F.UOp.base`, which is a
@@ -850,16 +850,16 @@ def ix_base_op(+ar: O.Arena, s: U32) -> O.Op: O.Arena.op(ar, ix_base_idx(ar, s))
 # the `not in ALWAYS_CONTIGUOUS` test is `Bool.not(ix_ac(...))` and the base
 # read is `ix_base_op`. `ix_base_op` is the WALL reader and it is named here.
 
-def ix_realize_srcs.one(+s: U32, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
-  Bool.pick(List<&2, IxReal>, ix_ac(ix_base_op(ar, s)), acc, List.append(&2, IxReal, acc, [ix_realize(s)]))
+def realize_srcs.one(+s: U32, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
+  Bool.pick(List<&2, IxReal>, ix_ac(ix_base_op(ar, s)), acc, List.append(&2, IxReal, acc, [realize(s)]))
 
-def ix_realize_srcs.go(+ss: List<&2, U32>, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
+def realize_srcs.go(+ss: List<&2, U32>, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
   match ss:
     case Nil{}: acc
-    case s <> t: ix_realize_srcs.go(t, ar, ix_realize_srcs.one(s, ar, acc))
+    case s <> t: realize_srcs.go(t, ar, realize_srcs.one(s, ar, acc))
 
-def ix_realize_srcs(+ar: O.Arena, rb: U32) -> List<&2, IxReal>:
-  ix_realize_srcs.go(O.Arena.srcs(ar, rb), ar, Nil{})
+def realize_srcs(+ar: O.Arena, rb: U32) -> List<&2, IxReal>:
+  realize_srcs.go(O.Arena.srcs(ar, rb), ar, Nil{})
 
 
 
@@ -897,7 +897,7 @@ def ix_rcs_at(fuel: Nat, +ar: O.Arena, +s: U32) -> U32:
 def ix_rcs_base(+ar: O.Arena, s: U32) -> U32: ix_rcs_at(O.Arena.budget(ar), ar, s)
 
 def ix_rcs_one(+s: U32, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
-  Bool.pick(List<&2, IxReal>, ix_ac(O.Arena.op(ar, s)), acc, List.append(&2, IxReal, acc, [ix_realize(s)]))
+  Bool.pick(List<&2, IxReal>, ix_ac(O.Arena.op(ar, s)), acc, List.append(&2, IxReal, acc, [realize(s)]))
 
 # ===========================================================================
 # `BufferizeOpts` -- indexing.py:56-61, a FROZEN dataclass read at :91-92.
@@ -984,7 +984,7 @@ def ix_br_go(+rngs: List<&2, U32>, +j: Nat, +nleft: U32, +baxes: List<&2, U32>, 
     case r <> t:
       ix_br_go(t, Nat.add(j, 1n), nleft, baxes, ix_br_one(ix_br_in_baxes(baxes, U32.from_nat(j)), nleft, r, acc, U32.from_nat(j)))
 
-def ix_broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
+def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
   match nb:
     case True{}: rngs
     case False{}: ix_br_go(rngs, 0n, ix_bax_nleft(src, x), ix_bax(src, x), Nil{})
@@ -1045,8 +1045,8 @@ def ix_broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs
 #
 #
 
-def ix_broadcast_rngs(op: O.Op, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
-  ix_broadcast_rngs.of(ix_br_not_bcast(op), src, x, rngs)
+def broadcast_rngs(op: O.Op, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
+  broadcast_rngs.of(ix_br_not_bcast(op), src, x, rngs)
 
 def ix_cbis_one.lst(+hit: Bool, +xs: List<&2, O.Op>, op: O.Op) -> Bool:
   match xs:
