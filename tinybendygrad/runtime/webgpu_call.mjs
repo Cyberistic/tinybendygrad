@@ -5282,6 +5282,50 @@ function $Cs$first_slot$(_c_0) {
   return $Cs$or0$(($List$get$(($Cs$slots$(_c_0)), 0)));
 }
 
+function $Cs$append4$(_acc_0, _bs_0) {
+  return $List$append$(($List$append$(($List$append$(($List$append$(_acc_0, {$: "Con", "head": ($Cs$or0$(($List$get$(_bs_0, 0)))), "tail": {$: "Nil"}})), {$: "Con", "head": ($Cs$or0$(($List$get$(_bs_0, 1)))), "tail": {$: "Nil"}})), {$: "Con", "head": ($Cs$or0$(($List$get$(_bs_0, 2)))), "tail": {$: "Nil"}})), {$: "Con", "head": ($Cs$or0$(($List$get$(_bs_0, 3)))), "tail": {$: "Nil"}});
+}
+
+function $Cs$uniform_bytes$go$($0, $1, $2) {
+  for (;;) {
+    {
+      const _n_0 = $0;
+      const _ss_0 = $1;
+      const _acc_0 = $2;
+      if (_n_0 === 0) {
+        return _acc_0;
+      } else {
+        const _m_0 = (_n_0 - 1);
+        if (_ss_0.$ === "Nil") {
+          return _acc_0;
+        } else {
+          const _t_0 = _ss_0["head"];
+          const _t_1 = _t_0["op"];
+          if (_t_1.$ === "Uniform") {
+            const _bytes_0 = _t_1["bytes"];
+            const _is_f32_0 = _t_1["is_f32"];
+            const _t_2 = _ss_0["tail"];
+            $0 = _m_0;
+            $1 = _t_2;
+            $2 = ($Bool$pick$(_is_f32_0, _acc_0, ($Cs$append4$(_acc_0, _bytes_0))));
+            continue;
+          } else {
+            const _t_3 = _ss_0["tail"];
+            $0 = _m_0;
+            $1 = _t_3;
+            $2 = _acc_0;
+            continue;
+          }
+        }
+      }
+    }
+  }
+}
+
+function $Cs$uniform_bytes$(_c_0) {
+  return $Cs$uniform_bytes$go$(($List$length$(($Cs$ops$(_c_0)))), ($Cs$ops$(_c_0)), {$: "Nil"});
+}
+
 function $Cs$dupe_of$go$($0, $1, $2, $3) {
   for (;;) {
     {
@@ -6902,6 +6946,9 @@ const TAB_0 = [0, 1, 2];export default {
   "Cs.slots.go": run_lib((a0, a1, a2) => { const r = (run_loop($Cs$slots$go$(nat_host(a0), (a1), (a2)))); BigInt(a0); (a1); (a2); return r; }, 3),
   "Cs.slots": run_lib((a0) => { const r = (run_loop($Cs$slots$((a0)))); (a0); return r; }, 1),
   "Cs.first_slot": run_lib((a0) => { const r = (run_loop($Cs$first_slot$((a0)))); (a0); return r; }, 1),
+  "Cs.append4": run_lib((a0, a1) => { const r = (run_loop($Cs$append4$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "Cs.uniform_bytes.go": run_lib((a0, a1, a2) => { const r = (run_loop($Cs$uniform_bytes$go$(nat_host(a0), (a1), (a2)))); BigInt(a0); (a1); (a2); return r; }, 3),
+  "Cs.uniform_bytes": run_lib((a0) => { const r = (run_loop($Cs$uniform_bytes$((a0)))); (a0); return r; }, 1),
   "Cs.dupe_of.go": run_lib((a0, a1, a2, a3) => { const r = (run_loop($Cs$dupe_of$go$(nat_host(a0), (a1), (a2), (a3)))); BigInt(a0); (a1); (a2); (a3); return r; }, 4),
   "Cs.monotone.go": run_lib((a0, a1, a2, a3) => { const r = (run_loop($Cs$monotone$go$(nat_host(a0), (a1), (a2), (a3)))); BigInt(a0); (a1); (a2); (a3); return r; }, 4),
   "Cs.monotone": run_lib((a0) => { const r = (run_loop($Cs$monotone$((a0)))); (a0); return r; }, 1),

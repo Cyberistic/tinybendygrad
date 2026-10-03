@@ -1045,6 +1045,42 @@ def Cs.slots(+c: Cs) -> List<&2, U32>:
 
 def Cs.first_slot(+c: Cs) -> U32: Cs.or0(List.get(&2, U32, Cs.slots(c), 0n))
 
+# THE BYTES OF THE ONE INT UNIFORM, out of the OP and not out of `dev.uniform_bytes`.
+# `Cs.entry` writes `W.dev.uniform_bytes(val)` into `Uniform.bytes` for every
+# non-first slot, and this is the only reader of that field -- which is why M20,
+# which reintroduces the one-bit shift at the CALL SITE, moved nothing until this
+# row existed. The expectation is the LITERAL :204 produces for a val of 7.
+# THE FOUR BYTES, in order. `Uniform.bytes` IS `dev.uniform_bytes(val)` and is
+# ALWAYS FOUR ELEMENTS, so the count is a constant here and not a fold -- which is
+# also what makes this a CHECK of the byte PATTERN and not of a length.
+def Cs.append4(+acc: List<&2, U32>, +bs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, List.append(&2, U32,
+    List.append(&2, U32,
+      List.append(&2, U32, acc, [Cs.or0(List.get(&2, U32, bs, 0n))]),
+      [Cs.or0(List.get(&2, U32, bs, 1n))]),
+    [Cs.or0(List.get(&2, U32, bs, 2n))]),
+    [Cs.or0(List.get(&2, U32, bs, 3n))])
+
+def Cs.uniform_bytes.go(n: Nat, ss: List<&2, Step>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+m:
+      match ss:
+        case Nil{}: acc
+        case Step{k, a, Uniform{slot, bytes, is_f32}} <> t:
+          Cs.uniform_bytes.go(m, t, Bool.pick(List<&2, U32>, is_f32, acc,
+                                 Cs.append4(acc, bytes)))
+        case Step{k, a, op} <> t: Cs.uniform_bytes.go(m, t, acc)
+
+def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
+  Cs.uniform_bytes.go(List.length(&2, Step, Cs.ops(c)), Cs.ops(c), Nil{})
+
+# A Bend `List<&2, U32>` as the gate's own list type, for `uniform_bytes`'s fold to
+# cons into. `Cs.calls` already builds one of these for `Call`, and this is the
+# `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
+# list of a different element type, which does not typecheck.
+
+
 # 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
 # actually counting? A frozen counter hands out the same handle forever and every
 # other row in the file stays green, because nothing else reads `next`.
@@ -1256,6 +1292,12 @@ def t_wall3() -> IO(Unit):
     row("wgc_wall3_found", U32.is_eq(Bind.n(b), 0))
     urow("wgc_wall3_size", Bind.size(b))
     row("wgc_wall3_int_bytes", W.u32_list_eq(W.dev.uniform_bytes(7), [7, 0, 0, 0]))
+    # AND THE BYTES THE UNIFORM OP ACTUALLY CARRIES. M20 reintroduces the
+    # one-bit shift INSIDE this file's own `Uniform` and moved no row at all,
+    # because `wgc_wall3_int_bytes` calls `dev.uniform_bytes` DIRECTLY and never
+    # reads what `Cs.entry` put in the op. That is the row that was missing and
+    # this is it -- it reads the op, so a wrong byte pattern in the op is visible.
+    lrow("wgc_uniform_bytes", Cs.uniform_bytes(fx(False{})))
     row("wgc_wall3_neg_bytes", W.u32_list_eq(W.dev.uniform_bytes(4294967295),
                                              [255, 255, 255, 255]))
 

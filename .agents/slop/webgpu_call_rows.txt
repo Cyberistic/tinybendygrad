@@ -53,5 +53,6 @@ wgc_handles_init=0
 wgc_wall3_found=True
 wgc_wall3_size=4
 wgc_wall3_int_bytes=True
+wgc_uniform_bytes=7,0,0,0
 wgc_wall3_neg_bytes=True
 wgc-done=1
