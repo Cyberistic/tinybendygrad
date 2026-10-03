@@ -747,6 +747,21 @@ def wk_commit_table() -> O.PMEntrys:
 #   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
 #   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
 
+# _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
+# portable thing in this file's queue: `GroupOp.Binary | GroupOp.Unary | {WHERE,
+# RANGE, STACK, SPECIAL}`. `ops.bend`'s `GroupOp.binary` has NINETEEN members,
+# `GroupOp.unary` has SEVEN, and the four named extras are FOUR, so the set is
+# THIRTY. It is written as a LIST because `GroupOp` is a `match` and a `match`
+# cannot be or'd into another, and it is a COUNT in the gate because a set that is
+# a subset test is invisible to any per-op boolean: a dropped op makes
+# `lower_weak_node` skip a node and a spurious one makes it rewrite one.
+def LOWER_OPS() -> List<&2, O.Op>:
+  [O.OpsADD{}, O.OpsMUL{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{},
+   O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
+   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{},
+   O.OpsFLOORMOD{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{},
+   O.OpsNEG{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsRANGE{}, O.OpsSTACK{}, O.OpsSPECIAL{}]
+
 # pm_lower_weak -- weak.py:67-78. FOUR rules in Python; NONE here. All four read
 # `commit_dtype`: three directly, and the fourth through `max_numel` ->
 # `to_max_shape` -> `x.vmax`, which is the same fold.
@@ -1228,6 +1243,27 @@ def t_store_sealed(+f: Fix) -> Bool:
 def t_store_sealed_pm(+f: Fix) -> Bool:
   t_store_sealed.go(pm_commit_weak(Fix.fx(f), Fix.bs(f)))
 
+# `_lower_weak_ops` -- weak.py:45 -- and it is a COUNT over a list because a SET
+# that gates a rewrite is invisible to a per-op boolean: a dropped op makes
+# `lower_weak_node` SKIP a node and a spurious one makes it rewrite one, and both
+# look like a rule that never fires. CPython's own `len` is the oracle, and the
+# arithmetic is `GroupOp.binary` NINETEEN + `GroupOp.unary` SEVEN + FOUR named.
+def op_count.go(os: List<&2, O.Op>, n: Nat) -> Nat:
+  match os:
+    case Nil{}: n
+    case _ <> t: op_count.go(t, Nat.add(n, 1n))
+
+def t_lower_n() -> Bool: U32.is_eq(U32.from_nat(op_count.go(LOWER_OPS(), 0n)), 30)
+
+# THE THREE MEMBERSHIP CLAIMS a count cannot see, and they are the three ends of
+# the set: a NAMED EXTRA is IN, a `GroupOp.Unary` member is IN, and a movement op
+# -- which is in NEITHER group and not in the four -- is OUT.
+def t_lower_in() -> Bool: O.op_in(LOWER_OPS(), O.OpsRANGE{})
+
+def t_lower_unary() -> Bool: O.op_in(LOWER_OPS(), O.OpsEXP2{})
+
+def t_lower_out() -> Bool: Bool.not(O.op_in(LOWER_OPS(), O.OpsEXPAND{}))
+
 # --- the TABLE claims ----------------------------------------------------
 def len_of(ts: O.PMEntrys) -> Nat:
   List.length(&2, O.PMEntry, O.PMEntrys.es(ts))
@@ -1351,6 +1387,10 @@ def main() -> IO(Unit):
     row("dts_cast_none", t_dts_cast_none(g_fix()))
     row("claimed_store_b", claimed_store_b(g_fix()))
     row("disjoint", disjoint())
+    row("lower_n", t_lower_n())
+    row("lower_in", t_lower_in())
+    row("lower_unary", t_lower_unary())
+    row("lower_out", t_lower_out())
 
 # ===========================================================================
 # NOT PORTED, one line each, and the wall each one is behind. The Python line numbers are
@@ -1385,14 +1425,25 @@ def main() -> IO(Unit):
 #   `.cast` folds at the dtypes a bare CONST derives, so the width is forced. Invalid never
 #   commits.
 # ===========================================================================
+# WHAT `commit_dtype` ACTUALLY IS, and it is the finding that makes this block
+# CHEAPER than it was filed. mixin/dtype.py:16 is
+#     commit_int(self._uop.vmin, self._uop.vmax, default_int) if self.dtype is
+#     weakint else strong_dtype(self.dtype)
+# so the ONLY thing behind these four defs and four rules is the PAIR `(vmin, vmax)`.
+# `strong_dtype` is PORTED (`strong_dtype` above), `weak_dtype` is PORTED, the dtype
+# lattice is PORTED (`F.promo_dtype`), and `commit_int` (dtype.py:171) is itself
+# expressible -- a FOUR-rung ladder over `(default_int, int32, int64, uint64)`
+# keeping the first `dt.min <= lo and hi <= dt.max`, with the fallback `int64` --
+# but its `uint64` rung needs `2**64 - 1`, and that is the SAME window `fold.bend`
+# measures for `_min_max`: a SIGN BIT PLUS AN UNSIGNED 64-BIT MAGNITUDE, not a
+# signed 64-bit word. `fold.bend`'s `Bnd`/`bnd_lim` is that pair and is landed.
+# SO: `commit_int` is `Bnd`'s consumer, and the missing argument is `F`'s walk of
+# `_min_max` -- ONE def, not four. That is the ordering this block wants stated.
 # TODO(p3) weak.py:27 def cast_weak_srcs -- `weak_dtype(c.dtype)` is ported, and the
 #   `least_upper_dtype` lattice is ported, but the `dt` it computes reads
 #   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`. P3 with `_min_max`.
 #   It is `pm_commit_weak`'s THIRD rule (weak.py:40) and it is the one rule of that
 #   table whose body is not in this file.
-# TODO(p3) weak.py:45 _lower_weak_ops -- the `GroupOp.Binary|GroupOp.Unary|{WHERE,
-#   RANGE, STACK, SPECIAL}` set, a module constant, belongs with `lower_weak_node` and
-#   is only read there. 30 op literals; no value without the def.
 # TODO(p3) weak.py:48 def absorb_weak_src -- `s.commit_dtype(dtypes.i32)` on the
 #   weakint-over-a-bool-or-float arm. P3 with `_min_max`.
 # TODO(p3) weak.py:53 def lower_weak_node -- reads `commit_dtype` (line 57) and

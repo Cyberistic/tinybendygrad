@@ -267,17 +267,40 @@ day rediscovering that `2n+p` is not an even-case test.
 - [ ] `uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
 - [x] `uop/symbolic.bend` — `tinygrad/uop/symbolic.py`: the REWRITER. **HALF
       PORTED, and the half is chosen so every MECHANISM is exercised.** Both lanes
-      green and identical; 368 defs; 27 gate rows, 22 green; 11 mutations
-      measured. PORTED AND GATED: the prelude (`split_uop`, `pop_const`,
+      green and identical; 27 gate rows, 22 green; 17 mutations measured; 23 of 47
+      `symbolic_simple` rules and 3 of 5 reciprocal rules. **2026-10-04 PASS: 10 of
+      the 32 `TODO(p3)` blocks CLOSED, 22 REMAIN, 57 gate rows all green, 16 new
+      mutations measured (3 of them by re-running the gate, not by reading it).**
+      THE THREE THINGS THAT PASS FOUND, and each one was filed as a wall:
+      (a) `UPat.alu` (ops.py:1543) hands a COMMUTATIVE op a LIST `src` and a list is
+      EVERY PERMUTATION (ops.py:1464) — so a `CMPNE`/`AND`/`OR`/`MUL` pattern arrives
+      with its two captured names on either side and the question a rule must answer
+      is "which src is the CONST", not "src[0]". `Sw` is that question and SIX rules
+      share it. Every `early_reject` in the table was read out of CPython's own
+      `UPat.early_reject` for the pattern at that line, not derived by reading
+      ops.py. (b) A rule body that MINTS must not re-read `sy_ar(x)`: the fold's arena
+      is stale the moment the first node is interned into it, so the second node lands
+      on the slot the first one took. `mint_bin`/`mint_un`/`mint_cast`/`mint_const`/
+      `mint_replace`/`mint_not`/`mint_recip` thread a `Found` chain instead.
+      `sym_3` and `sym_10` still re-read it and are the two rules here whose answer
+      index is therefore NOT gated — stated, not hidden. (c) `dtypes.ints` is EIGHT
+      concrete widths, not four: the two dtype-set helpers answered SIX and FIVE,
+      which is an UNDER-approximation, so a rule gated on one silently SKIPS a node
+      Python rewrites. `ints_n`/`intish_n`/`intweak_n` are the rows and the oracle is
+      CPython's `len(dtypes.ints)`. A fourth: `Arena.next` is the ONLY symptom a
+      stale arena has, and reading it is what found three broken fixtures.
+      PORTED AND GATED: the prelude (`split_uop`, `pop_const`,
       `identity_element`, `val`/`is_invalid` reading through a CAST, `truncate`,
       `const_like`/`ccast`/`cconst`, the raw `alu` sugar), `exec_alu` over a
       closed tree in TWO lanes, `simplify_pow` (2 of 5 arms), `fold_bitcast`,
       `fold_const_alu`, the compiled rule shape (table + first-wins fold +
-      `ret is not uop` + the name-rebind identity check), and 15 RULES: 13 in
-      `sym` and 2 in `pm_remove_invalid`. DEFERRED: 114 of symbolic.py's 127 own
-      rules, each a `TODO(p3)` naming its wall — `_min_max` gates 9 of the 14
+      `ret is not uop` + the name-rebind identity check), and 25 RULES: 23 in
+      `sym` and 2 in `pm_remove_invalid`. DEFERRED: 104 of symbolic.py's 127 own
+      rules, each a `TODO(p3)` naming its wall — `_min_max` gates 9 of the 22
       deferred blocks, `UOp.ranges` + set algebra 4, `gcd` 2, and
       `mixin/elementwise.py`'s promotion is a caveat on every rule body.
+      `sym_table_len`/`rm_table_len` were DEAD defs (a count nothing checks is a
+      comment with a type) and are now live through `len_dec`/`len_dec_rm`.
       **FOUR THINGS THE PREMISE GOT WRONG, all measured:** (a) the DAY-ONE
       QUESTION — `exec_alu` DOES evaluate a closed ALU tree over `U32` and `F32`
       with the right overflow and sign semantics; `helpers.bend` has the four
@@ -296,6 +319,26 @@ day rediscovering that `2n+p` is not an even-case test.
       The gate's `M2`/`M5` rows also measure TWO NEGATIVES worth keeping: the
       `ret is not uop` test has no witness in this file because none of the 13
       rules answers its own node.
+- [x] `uop/weak.bend` — `tinygrad/uop/weak.py`: **1 of 17 `TODO(p3)` blocks CLOSED,
+      16 REMAIN, 4 gate rows added, all green.** CLOSED: `weak.py:45`
+      `_lower_weak_ops`, the one item in this file's queue with NO `_min_max` behind
+      it — a module CONSTANT, `GroupOp.Binary | GroupOp.Unary | {WHERE, RANGE, STACK,
+      SPECIAL}`, THIRTY ops, gated by `lower_n` (a COUNT, because a set that gates a
+      rewrite is invisible to a per-op boolean: a dropped op makes `lower_weak_node`
+      SKIP a node and a spurious one makes it rewrite one) and by `lower_in`/
+      `lower_unary`/`lower_out` for the three ends. THE FINDING THAT MAKES THE OTHER
+      SIXTEEN CHEAPER: mixin/dtype.py:16 is
+      `commit_int(self._uop.vmin, self._uop.vmax, default_int) if self.dtype is
+      weakint else strong_dtype(self.dtype)`, so the ONLY thing behind all four
+      remaining defs and four rules is the PAIR `(vmin, vmax)`. `strong_dtype`,
+      `weak_dtype` and the dtype lattice are all PORTED here already, and
+      `commit_int` (dtype.py:171) is expressible — a four-rung ladder over
+      `(default_int, int32, int64, uint64)` — except that its `uint64` rung needs
+      `2**64 - 1`, which is the SAME window `fold.bend` measures for `_min_max`: a
+      SIGN BIT PLUS AN UNSIGNED 64-BIT MAGNITUDE, not a signed 64-bit word.
+      `fold.bend`'s `Bnd`/`bnd_lim` is that pair and is landed. So `commit_int` is
+      `Bnd`'s consumer and the missing argument is ONE def — `fold.bend`'s walk of
+      `_min_max` — and not four.
 - [x] `uop/divandmod.bend` — `tinygrad/uop/divandmod.py`: `div_and_mod_symbolic`,
       three rules plus `fold_divmod_general`. Both lanes green, 55 rows, 18
       mutations measured. `fold_divmod_general` is 3 arms of 89 lines and the rest
