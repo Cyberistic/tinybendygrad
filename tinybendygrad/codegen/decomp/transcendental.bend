@@ -345,7 +345,7 @@ def tx_int_dt(dt: S.Dt) -> S.Dt:
 # pre-converts double-converts: `tx_int_dt(S.int32())` is not `S.int32()` but
 # `S.int64()` (pri 5 is neither 12 nor 14), and the rintk CAST comes out `long`
 # where the oracle says `int` -- `a_cw 23`, `a_xsinf 39`, `a_xsin 143`.
-def tx_rintk(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
+def rintk(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +z = tx_cf(ar, 0.0)
   +c = tx_alu2(O.Found.ar(z), O.OpsCMPLT{}, d, O.Found.i(z))
   +nm = tx_cf(O.Found.ar(c), F32.neg(0.5))
@@ -390,7 +390,7 @@ def tx_sub(+ar: O.Arena, +x: U32, +y: U32, pf: Bool) -> O.Found:
 # `pow2if` -- lines 27-30. `q.dtype` picks `out_dtype`; the port takes it as a
 # parameter, because a CONST has no dtype to read (divergence B) and `qexp2if`'s
 # three callers all pass the same width as `d`.
-def tx_pow2if(+ar: O.Arena, +q: U32, +out: S.Dt) -> O.Found:
+def pow2if(+ar: O.Arena, +q: U32, +out: S.Dt) -> O.Found:
   +b = tx_ci(ar, exponent_bias(out))
   +s = tx_alu2(O.Found.ar(b), O.OpsADD{}, q, O.Found.i(b))
   +m = tx_shl(O.Found.ar(s), O.Found.i(s), mantissa_bits(out))
@@ -398,7 +398,7 @@ def tx_pow2if(+ar: O.Arena, +q: U32, +out: S.Dt) -> O.Found:
 
 # `ilogb2k` -- lines 32-37. A BITCAST down, a shift, a mask, and a subtraction
 # written `ADD(x, MUL(bias, C(-1)))` because that is what `-` is (divergence B).
-def tx_ilogb2k(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
+def ilogb2k(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +b = tx_bitcast(ar, d, tx_int_dt(dt))
   +f = tx_shr(O.Found.ar(b), O.Found.i(b), mantissa_bits(dt))
   +m = tx_ci(O.Found.ar(f), exponent_mask(dt))
@@ -409,7 +409,7 @@ def tx_ilogb2k(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   tx_alu2(O.Found.ar(x), O.OpsADD{}, O.Found.i(a), O.Found.i(x))
 
 # `ldexp3k` -- lines 39-45.
-def tx_ldexp3k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
+def ldexp3k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
   +m1 = tx_bitcast(ar, d, tx_int_dt(dt))
   +ec = tx_cast(O.Found.ar(m1), e, tx_int_dt(dt))
   +m2 = tx_shl(O.Found.ar(ec), O.Found.i(ec), mantissa_bits(dt))
@@ -418,12 +418,12 @@ def tx_ldexp3k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
 
 # `ldexp2k` -- lines 47-50. `shr(e, 1)` is `e // 2` and the WHOLE of this
 # function's use of the dead UOp arm of `shr` is that `1`.
-def tx_ldexp2k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
+def ldexp2k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
   +h = tx_shr(ar, e, 1)
-  +a = tx_pow2if(O.Found.ar(h), O.Found.i(h), dt)
+  +a = pow2if(O.Found.ar(h), O.Found.i(h), dt)
   +m = tx_alu2(O.Found.ar(a), O.OpsMUL{}, d, O.Found.i(a))
   +r = tx_sub(O.Found.ar(m), e, O.Found.i(h), False{})
-  +b = tx_pow2if(O.Found.ar(r), O.Found.i(r), dt)
+  +b = pow2if(O.Found.ar(r), O.Found.i(r), dt)
   tx_alu2(O.Found.ar(b), O.OpsMUL{}, O.Found.i(m), O.Found.i(b))
 
 # `frexp` -- lines 52-63. It returns a TUPLE and Bend has no tuple, so the pair
@@ -608,14 +608,14 @@ def trig_coeffs(d64: Bool) -> List<&2, F32>:
 # The two halves are `(Arena, U32)` -- a `Data` record would be a second type for
 # the same thing -- so every expansion here returns `O.Found` and `O.Found.i` is
 # the only place an index is taken back out.
-def tx_trig_poly(+ar: O.Arena, +d: U32, cs: List<&2, F32>) -> O.Found:
+def trig_poly(+ar: O.Arena, +d: U32, cs: List<&2, F32>) -> O.Found:
   +sq = tx_alu2(ar, O.OpsMUL{}, d, d)
   +p = tx_poly(O.Found.ar(sq), O.Found.i(sq), cs)
   tx_alu2(O.Found.ar(p), O.OpsMUL{}, d, O.Found.i(p))
 
 # `sin_poly` -- approximate sine on [-pi/2, pi/2].
 def sin_poly(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
-  tx_trig_poly(ar, d, trig_coeffs(d64))
+  trig_poly(ar, d, trig_coeffs(d64))
 
 # ===========================================================================
 # `_ifand` -- line 158, `(q & n).ne(0)`. `uprod` with a bool `self` would be an
@@ -974,13 +974,13 @@ def cw_qdh(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
 def cw_quadrant.f32(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +a = tx_cf(ar, 0.318309886183790671537767526745028724)
   +m = tx_alu2(O.Found.ar(a), O.OpsMUL{}, d, O.Found.i(a))
-  tx_rintk(O.Found.ar(m), O.Found.i(m), dt)
+  rintk(O.Found.ar(m), O.Found.i(m), dt)
 
 def cw_quadrant.d64(+ar: O.Arena, +d: U32, +qdh: U32) -> O.Found:
   +a = tx_cf(ar, 0.318309886183790671537767526745028724)
   +m = tx_alu2(O.Found.ar(a), O.OpsMUL{}, d, O.Found.i(a))
   +s = tx_sub(O.Found.ar(m), O.Found.i(m), qdh, True{})
-  tx_rintk(O.Found.ar(s), O.Found.i(s), S.double())
+  rintk(O.Found.ar(s), O.Found.i(s), S.double())
 
 def cw_quadrant(+ar: O.Arena, +d: U32, +dt: S.Dt, +qdh: U32, d64: Bool) -> O.Found:
   match d64:
@@ -1221,10 +1221,10 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   +zero = tx_cf(ar, 0.0)
   +inf = tx_cf(O.Found.ar(zero), tx_inf())
   +x = tx_lazy_map(O.Found.ar(inf), d, O.Found.i(zero), O.Found.i(zero), O.Found.i(zero), d)
-  +q = tx_rintk(O.Found.ar(x), O.Found.i(x), S.single())
+  +q = rintk(O.Found.ar(x), O.Found.i(x), S.single())
   +s = tx_sub(O.Found.ar(q), O.Found.i(x), O.Found.i(q), True{})
   +u = tx_poly(O.Found.ar(s), O.Found.i(s), exp_coeffs(d64))
-  +l = tx_ldexp2k(O.Found.ar(u), O.Found.i(u), O.Found.i(q), S.single())
+  +l = ldexp2k(O.Found.ar(u), O.Found.i(u), O.Found.i(q), S.single())
   xexp2.tail(O.Found.ar(l), O.Found.i(l), d)
 
 # `upper, lower = {float32: (128, -150), ...}[d.dtype]` -- line 211. Python's
@@ -1303,11 +1303,11 @@ def xlog2.head(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   +a = tx_alu3(O.Found.ar(m1), O.OpsWHERE{}, O.Found.i(lt), O.Found.i(m1), d)
   +q = tx_cf(O.Found.ar(a), F32.div(1.0, 0.75))
   +qa = tx_alu2(O.Found.ar(q), O.OpsMUL{}, O.Found.i(a), O.Found.i(q))
-  +ig = tx_ilogb2k(O.Found.ar(qa), O.Found.i(qa), S.single())
+  +ig = ilogb2k(O.Found.ar(qa), O.Found.i(qa), S.single())
   +e0 = tx_cast(O.Found.ar(ig), O.Found.i(ig), S.single())
   +nm = tx_cf(O.Found.ar(e0), F32.neg(1.0))
   +ne = tx_alu2(O.Found.ar(nm), O.OpsMUL{}, O.Found.i(e0), O.Found.i(nm))
-  +m = tx_ldexp3k(O.Found.ar(ne), O.Found.i(a), O.Found.i(ne), S.single())
+  +m = ldexp3k(O.Found.ar(ne), O.Found.i(a), O.Found.i(ne), S.single())
   +de = tx_pintf(O.Found.ar(m), 64)
   +es = tx_sub(O.Found.ar(de), O.Found.i(e0), O.Found.i(de), True{})
   +e = tx_alu3(O.Found.ar(es), O.OpsWHERE{}, O.Found.i(lt), O.Found.i(es), O.Found.i(e0))
@@ -1680,19 +1680,19 @@ def t_c2() -> U32: 7
 def t_c2f() -> U32: 8
 
 def w_rintk() -> O.Arena:
-  O.Found.ar(tx_rintk(t_fixtures(), t_d(), S.single()))
+  O.Found.ar(rintk(t_fixtures(), t_d(), S.single()))
 
 def w_pow2if() -> O.Arena:
-  O.Found.ar(tx_pow2if(t_fixtures(), t_c3(), S.single()))
+  O.Found.ar(pow2if(t_fixtures(), t_c3(), S.single()))
 
 def w_ilogb() -> O.Arena:
-  O.Found.ar(tx_ilogb2k(t_fixtures(), t_d(), S.single()))
+  O.Found.ar(ilogb2k(t_fixtures(), t_d(), S.single()))
 
 def w_ldexp3() -> O.Arena:
-  O.Found.ar(tx_ldexp3k(t_fixtures(), t_d(), t_cm2f(), S.single()))
+  O.Found.ar(ldexp3k(t_fixtures(), t_d(), t_cm2f(), S.single()))
 
 def w_ldexp2() -> O.Arena:
-  O.Found.ar(tx_ldexp2k(t_fixtures(), t_d(), t_cm2(), S.single()))
+  O.Found.ar(ldexp2k(t_fixtures(), t_d(), t_cm2(), S.single()))
 
 def w_frexp() -> O.Arena:
   Frexp.ar(frexp(t_fixtures(), t_d(), S.single(), S.uint32()))

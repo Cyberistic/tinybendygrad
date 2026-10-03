@@ -69,13 +69,33 @@ def top_level_defs(path):
     return out
 
 def bend_defs(path):
-    """every top-level Bend def; a dotted `A.b` reads as `A`"""
-    out = set()
-    if not os.path.exists(path): return out
+    """every top-level Bend def, as (STEMS, QUALIFIERS)
+
+    THE STEM TRAP, and this function used to walk straight into it: a dotted
+    `A.b` was read as `A` (`split('.')[0]`). Upstream has NO module qualifier --
+    it writes `Schedule.kernelize` as a plain `kernelize` in its own file -- and
+    the port writes `def Sch.kernelize`. The qualifier is the disambiguator and
+    is NOT part of the name, so the comparison must be against the text AFTER
+    the final dot. Reading `L.foo` as `L` compares the wrong string and silently
+    hides every qualified port of a bare upstream name.
+
+    102 of 128 `.bend` files already disambiguate with `import ./x.bend as A`
+    (a bare `import ./a.bend` is a PARSE ERROR), so `def A.name` plus an alias
+    solves most collisions with NO prefix at all. Check both before renaming.
+
+    The name correspondence is now a GATE, not a number someone recomputes:
+    `.agents/slop/naming-gate.py` fails on any rename without a written ruling.
+    This function answers the OTHER question -- how much is unported.
+    """
+    stems, quals = set(), set()
+    if not os.path.exists(path): return stems, quals
     for l in open(path):
-        m = re.match(r'(?:def|struct|type)\s+([A-Za-z_][\w.]*)', l)
-        if m: out.add(m.group(1).split('.')[0])
-    return out
+        m = re.match(r'\s*(?:def|struct|type)\s+([A-Za-z_][\w.]*)', l)
+        if not m: continue
+        parts = m.group(1).split('.')
+        stems.add(parts[-1])
+        quals.update(parts[:-1])
+    return stems, quals
 
 py = core_py()
 miss = [(r, nlines('tinygrad/' + r)) for r in py if not os.path.exists(bend_for(r))]
@@ -91,14 +111,24 @@ if '--names' in sys.argv:
     print('\nTHE NAME CORRESPONDENCE, per file. IT IS A CORRESPONDENCE, NOT A SCORE: a')
     print('bend def with NO upstream counterpart is a port-local record or one of its')
     print('readers, and the naming rule simply does not apply to it. `local` is that')
-    print('count; `verbatim` is upstream names the port reproduces exactly.')
-    tv = tu = 0
+    print('count; `verbatim` is upstream names the port reproduces exactly, either')
+    print('bare or under a module qualifier (`def Sch.kernelize` keeps the name).')
+    print('\nRENAMED is deliberately NOT counted here. It has its own gate:')
+    print('`naming-gate.py` fails on any rename that lacks a written ruling, which')
+    print('is the only way the number stops drifting back.')
+    tv = tu = tq = tr = 0
     for rel in py:
-        up, bd = top_level_defs('tinygrad/' + rel), bend_defs(bend_for(rel))
-        if not bd: continue
-        tv += len(up & bd); tu += len(up)
-        print('  %-42s upstream=%4d bend=%4d verbatim=%3d local=%4d  %s'
-              % (rel, len(up), len(bd), len(up & bd), len(bd) - len(up & bd),
-                 ' '.join(sorted(up & bd)[:6])))
-    print('\n  TOTAL upstream top-level defs %d, reproduced verbatim %d (%.1f%%)'
+        up = top_level_defs('tinygrad/' + rel)
+        bd, bq = bend_defs(bend_for(rel))
+        if not bd and not bq: continue
+        verbatim = (up & bd) | (up & bq)
+        renamed = {u for u in up - verbatim
+                   if any(s != u and (s.endswith(u) or s.startswith(u)) for s in bd)}
+        tv += len(verbatim); tu += len(up); tq += len(renamed)
+        print('  %-42s upstream=%4d bend=%4d verbatim=%3d local=%4d renamed=%3d  %s'
+              % (rel, len(up), len(bd), len(verbatim), len(bd) - len(verbatim),
+                 len(renamed), ' '.join(sorted(verbatim)[:6])))
+    print('\n  TOTAL upstream top-level bindings %d, reproduced verbatim %d (%.1f%%)'
           % (tu, tv, 100.0 * tv / max(tu, 1)))
+    print('  bindings with a RENAME candidate %d -- see naming-gate.py for the ruling'
+          % tq)
