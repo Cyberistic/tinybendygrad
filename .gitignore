@@ -66,3 +66,13 @@ examples/webgpu/mnist/*.gz
 .agents/slop/srch/
 .agents/slop/ddcheck/
 .agents/slop/mirror/
+
+# .ddmut is a broken mutant from a mutation run, same class as _mut_*.bend and
+# *.mut. A deliberate break in the source tree is a trap for the next reader.
+tinybendygrad/**/*.ddmut
+
+# probe-nat.bend and test/_probe/ are scratch: a hand-made probe that does not even parse
+# ("expected : a term / observed : end of input"). A broken probe in the source tree is a trap
+# for the next reader, not a fixture.
+tinybendygrad/uop/probe-*.bend
+tinybendygrad/test/_probe/
