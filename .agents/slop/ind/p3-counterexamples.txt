@@ -1,0 +1,15 @@
+-- dims drop_n(ds, n) KEEPS on (4,5,6); List.drop would keep 3, 2, 1 --
+  n=0n -> 2
+  n=1n -> 1
+  n=2n -> 0
+  Index of arity 1 over a rank-3 base has rank 1 (tinyspec: 2)
+-- reduce_numel_divides_by_the_reduced_axes, AS WRITTEN --
+  t=(4,)     n=0n    LHS=1  RHS=4  equal=False
+  t=(4,5,6) n=1n    LHS=36  RHS=120  equal=False
+-- the same law with the multiplier the NAME describes --
+  t=(4,)     n=0n    LHS=4  RHS=4  equal=True
+  t=(4,5,6) n=1n    LHS=120  RHS=120  equal=True
+-- broadcast_is_elementwise_max --
+  a=(2,3) b=(3,3)    LHS=9  RHS=9  equal=True
+  a=(SS,5) b=(3,7)   LHS=21  RHS=0  equal=False
+  a=(5,0) b=(3,)     LHS=3  RHS=0  equal=False

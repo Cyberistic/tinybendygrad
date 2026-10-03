@@ -23,11 +23,11 @@ def run_gate(path):
     """`bend` overflows its machine stack on ~1 run in 20 and sometimes prints
     ZERO rows, which is indistinguishable from 'did not start'.  So loop until a
     run prints the head rows, and never gate on the exit code."""
-    for _ in range(8):
+    for _ in range(24):
         with open(path, "w") as fh:
             p = subprocess.run([BEND, TARGET], stdout=fh, stderr=subprocess.PIPE)
         head = open(path).read()
-        if head.startswith("l2idt0=") and head.count("\nlg") > 100:
+        if head.startswith("l2idt0=") and head.count("\nlg") > 100 and head.rstrip().endswith("upk=C(65535),C(65536)"):
             return head, None
     return None, (p.stderr.decode()[:200] or p.stdout.decode()[:200])
 
@@ -172,6 +172,16 @@ def main():
     want = set(sys.argv[3:])
     base = load(base_txt)
     src = open(TARGET).read()
+    # This harness writes the REAL port file. Killed between the write and the restore it leaves a
+    # well-typed mutant in the source tree that `--check-only` CANNOT see -- which is exactly what
+    # happened (M09), silently invalidating a 147-row baseline. So: bake a copy BEFORE the first
+    # write, and REFUSE TO START if one already exists, because that refusal is the only tell.
+    BAKE = TARGET + ".ddmut"
+    if os.path.exists(BAKE):
+        sys.exit("REFUSING TO START: %s exists, so an earlier run was killed mid-mutation and %s "
+                 "may be contaminated.\n  diff %s %s\n  delete the bake only once they agree."
+                 % (BAKE, TARGET, TARGET, BAKE))
+    open(BAKE, "w").write(src)
     os.makedirs(RESULTDIR, exist_ok=True)
     rows = []
     for name, old, new in MUTATIONS:
@@ -192,6 +202,7 @@ def main():
         open(TARGET, "w").write(src.replace(old, new, 1))
         got, err = run_gate("/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/ddmut.txt")
         open(TARGET, "w").write(src)          # RESTORE FIRST, decide after
+        os.remove(BAKE)
         if got is None:
             first = (err or "").splitlines()[:2]
             open(dest, "w").write("NO-COMPILE\t" + " | ".join(first))
