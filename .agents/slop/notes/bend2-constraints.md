@@ -14866,3 +14866,114 @@ print `False` (both indices are the first node) and the row no longer moves.
 `UOp.axis_id` still returns the flat list. `List<U32>` cannot hold `((0, 1),)`.
 The nested repr is `render.bend`'s `arange_repr`, which reads `ARange` and not
 `Arena.depth`. Not edited — another unit is live there.
+## Bend 2.0.34 — a MUTUAL RECURSION PAIR is refused as "an unfilled law", and the message does not say so
+
+Appended 2026-10-03 by the `renderer/amd/elf.bend` unit. This section continues
+from the `### 1. THE MISSING KEY COMPONENT` section immediately above it at
+position ~14825; nothing above is renumbered.
+
+### 1. THE ERROR NAMES A `def` THAT IS RIGHT THERE, WITH A BODY
+
+`renderer/amd/elf.bend` held this and would not compile:
+
+    def insert.go(lt: Bool, p: Slot, h: Slot, t: List<&2, Slot>) -> List<&2, Slot>:
+      match lt:
+        case True{}: List.append(&2, Slot, [p], List.append(&2, Slot, [h], t))
+        case False{}: List.append(&2, Slot, [h], insert(p, t))     # <-- the error
+    def insert(+p: Slot, xs: List<&2, Slot>) -> List<&2, Slot>:     # <-- has a body
+
+    SOME PROOFS FAIL
+    Error:
+    - expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+    - observed : insert
+    Location: insert.go
+
+There is no `law insert` in the file and `insert` is not bodiless. It is a
+**term-level forward reference**: `insert.go` is written ABOVE `insert` and calls
+it, and a def below is a bodiless claim to code above. The message is not wrong
+— from `insert.go`'s position, `insert` really is only a claim. `grep -n 'law'`
+finds nothing and misleads; the diagnosis is ORDER, not a missing `:`.
+`references/bend/tests/check/forward_reference.bend` is the minimal repro, and
+`references/bend/CHANGELOG.md:214-218` states the rule: *"Safe code is as strict
+as before: a live call to a def below, or a mutual pair, is refused as an
+unfilled law, which is how a forward reference is now reported (it was an
+undefined name)."*
+
+**So a MUTUAL PAIR IS IMPOSSIBLE in safe Bend.** Neither order compiles: whichever
+of the two is written second is the claim. Bend's two sanctioned answers:
+
+  - **`def f?(..)` / `@unsafe def f(..)`** — "sugar for `@unsafe def f(..)`, so
+    two mutually recursive unsafe defs need no law" (CHANGELOG.md:214-216). One
+    character per def, and it drops the check for good.
+  - **remove the pair.**
+
+### 2. WHY THE `.go` SPLIT EXISTS AT ALL, AND WHY IT CREATES THE PAIR
+
+The split was not gratuitous. `match` may not scrutinize a computed value:
+
+    case +h <> t:
+      match U32.is_lt(Slot.slot(p), Slot.slot(h)):    # a parameter or field scrutinee
+                                                      # (a match cannot scrutinize a computed
+                                                      #  value: give it its own def)
+
+so the comparison must become a **parameter of a helper**, and the helper needs
+the recursive call back — hence the pair. `base.bend:1015-1023` shows Bend's own
+answer to the same constraint: `List.merge.step(..., le: Bool)` takes the
+comparison `le(x, y)` as a parameter. `.go` helpers across this tree
+(`sub1.go`/`sub1`, `apply_v.go`/`apply_v`, `arch_pick9`..`_arch_map`,
+`last_cp.go`/`last_cp`) are all one-directional for exactly this reason: each is
+called from BELOW and never calls back down.
+
+`Bool.pick(-A, c, a, b)` is the ternary without the split, and it is what
+`param_size` in the same file already used. Two uses in one expression need `+`
+on the binder — `p`, `h` and `t` all become `+`, and `case +h <> +t:` (not
+`case +h <> t:`; bend answers `t (consumed more than once)`). The trade is that
+both arms are BUILT and one is reduced, so the recursive call now sits inside an
+argument. That is safe here, and it is the trap from the traps list only if you
+use `Bool.pick` as an `if` AROUND a recursive call and mean to keep going — the
+arm's value IS the result, and both arms return a whole list.
+
+### 3. THE `+` RULE, ADDED TO THE ONE AT POSITION ~2312, FROM TWO MORE CASES
+
+  - **Twice in ONE expression -> `+` on the param.** `assemble_linear` reads
+    `arch` twice (`arch_hit(arch)` and the `arch` it passes on) and `gid_args`
+    twice (`Gids.bad(gids_of(...))` and `gids_of(...)`), so
+    `def assemble_linear(+arch: String, insts, code_len, locs, params, +gid_args)`.
+    Note the def above it, `asm_text`, already carried `+arch`, `+m`, `+text`,
+    `+g` for the same reason — so this was never a `.go` question at all.
+  - **Twice in one `match` arm -> `+`. Once per ARM -> no `+`.** Unchanged; the
+    `Bool.pick` case is the first instance where the two uses sit in arms that
+    bend does NOT treat as exclusive, because they are arguments of one call and
+    not `case` arms. That is the whole difference, and it is why `+t` is needed
+    there and not in the arms of a `match`.
+
+### 4. A MUTATION CAN BE INVISIBLE TO EVERY ROW THAT NAMES THE DEF
+
+`kern.sorted` and `kern.unsorted` both expect `16`. Flipping `insert`'s `<` to
+`>=` also answers `16` on both (the folds over `[8,1,4]`, `[4,1,8]` and `[8,4,1]`
+all reach 16), so before this unit added a row the gate could not see the sort's
+COMPARISON AT ALL — only that a sort happened. `kern.keyorder` (CPython: 9, and
+16 both with the sort dropped and with the comparison flipped) is the row that
+sees it. Measured with `.agents/slop/elf_amd_mut.py`, which works on a COPY of
+the subtree and diffs whole `name=value` lines:
+
+    M1 insert comparison flipped  -> moved 1: kern.keyorder
+    M2 sort dropped               -> moved 3: kern.unsorted, kern.keyorder, elf.kern
+    M3 sorted by size not slot    -> moved 1: kern.keyorder
+    M4 insert arms swapped        -> moved 1: kern.keyorder
+    M5 param_size arms swapped    -> moved 2: param.alu, param.glob
+
+The general rule: **if a def has two gates that both answer the same number for
+every mutation you can think of, the def is not gated.** Ask what fixture makes
+the two candidate implementations disagree.
+
+### 5. A `UOp` KEYED FIXTURE MUST BE KEYED BY KEY IN THE ORACLE TOO
+
+CPython reported `20` for `kern.unsorted` when the oracle built `param_sizes` by
+`zip(slots, addrspaces, itemsizes)` — positionally — and `16` when it built the
+dict by SLOT. Both are "derived by calling CPython"; only one is the fixture.
+`param_sizes` is a dict (elf.py:38, :40) and the fold sorts its KEYS
+(elf.py:62), so a positional zip is a different fixture with the same
+provenance and a different answer. `.agents/slop/elf_amd_sort.py` states this at
+the top, because it is the second time in this repo that a plausible oracle was
+the wrong FIXTURE rather than a wrong number.

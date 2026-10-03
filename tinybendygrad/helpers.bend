@@ -139,6 +139,167 @@ def getenv_str(k: String, d: String) -> IO(String):
     v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
     return getenv_str.go(v, d)
 
+# ===========================================================================
+# `getenv_int` -- THE OTHER ARM OF THE SAME `getenv`. This is NOT a second
+# environment mechanism: `IO.get_env` (base.bend:172) is the only reader and both
+# arms call it. helpers.py:163 is the whole of `getenv`:
+#
+#     @functools.cache
+#     def getenv(key:str, default:Any=0): return type(default)(os.getenv(key, default))
+#
+# so `default` CHOOSES THE COERCION and a default of `""` gives `str` (`getenv_str`
+# above) while a default of `0` gives `int` (here). `DEBUG` is the ContextVar that
+# needs the int arm -- `DEBUG = ContextVar("DEBUG", 0)`, helpers.py:237 -- and
+# `DEBUG >= 2` is a COMPARISON, so a `String` cell cannot carry it. Measured: with
+# `DEBUG="2"` the live object is `<class 'int'> 2`, and `int(DEBUG >= 2)` is 1;
+# `DEBUG=""` and `DEBUG="abc"` both make the IMPORT raise
+# `ValueError: invalid literal for int() with base 10`, which tinygrad does not
+# catch (`.agents/slop/debug_oracle.py`, `dbg_value_*` / `dbg_int_getenv_*` rows).
+#
+# `int()` IS NOT A REGEX. MEASURED, live CPython, 24 probes:
+#   "0" 0   "1" 1   "2" 2   "3" 3   "00" 0   "007" 7   "1_0" 10   "2_0_0" 200
+#   " 2 " 2   "\t2\n" 2   "+2" 2   "-1" -1
+#   "" "_" "1_" "_1" "1__0" "abc" "2.0" "1e3" "0x2"  ALL ValueError
+# So: trim, drop ONE leading `+`/`-`, and require what is left to be digits with
+# `_` STRICTLY BETWEEN them and at least one digit present. `gi_of_text` is that
+# rule as a three-state walk -- PRE (no digit yet), MID (a digit just ended), PEND
+# (a `_` just ended, so the next char MUST be a digit) -- and DEAD once refused,
+# which is what stops a later digit from resurrecting a prefix that already failed.
+#
+# THE ONE MEASURED GAP IS `Char.is_digit`, which is ASCII: CPython's `int("٣")` is
+# 3 and `gi_of_text("٣")` refuses. That is the SAME gap `no_color_of` above already
+# documents for `nc_digits`, and it is left as it is rather than fixed twice.
+#
+# A LEADING `-` REFUSES rather than yielding a negative, and `getenv_int` then
+# answers the DEFAULT. That is a real narrowing of CPython's `int`, so it is
+# measured rather than argued: CPython's `int("-1")` is `-1` and every threshold in
+# tinygrad is `DEBUG >= N` with `N >= 0`, so `-1 >= 2` and the default `0 >= 2` are
+# both False. `debug_ge_neg` in `.agents/slop/debug-gate.bend` holds the two sides
+# of that equivalence down. A `U32` cannot hold `-1` and the alternative -- an
+# `I64` here and a comparison type change at each of the seven sites -- would buy a
+# distinction no site can observe.
+# ===========================================================================
+def gi_pick(b: Bool, a: U32, z: U32) -> U32:
+  match b:
+    case True{}: a
+    case _: z
+
+# PRE 0, MID 1, PEND 2, DEAD 3. DEAD IS ABSORBING, so `1_` cannot be resurrected by
+# nothing and `1__0` cannot be read as `10` by skipping the second `_`.
+type Gi is Data:
+  Gi{st: U32, v: U32}
+
+def gi_dead(st: U32) -> Bool:
+  U32.is_eq(st, 3)
+
+# A `match` MAY ONLY SCRUTINEE A PARAMETER OR A FIELD BINDER. Both of these are
+# refused, and they are the reason this is a TABLE and not three comparisons:
+#   `match gi_dead(st)`     -> "a match cannot scrutinize a computed value"
+#   `match U32.is_eq(st,3)` -> the same, even though it is a comparison
+# So the whole transition is one indexed read: `gi_tab()[st*3 + kind]` with
+# `kind` DIG 0 / UND 1 / OTHER 2. A 16-entry table is shorter than the four
+# one-comparison defs it replaces and it cannot drift out of step with them,
+# because there is only one of it.
+#
+#      PRE 0  MID 1  PEND 2  DEAD 3          DIG UND OTHER
+#   PRE 0  ->  [  1,    3,     3  ]           a leading `_` is a REFUSAL
+#   MID 1  ->  [  1,    2,     3  ]           a `_` is legal only here
+#   PEND 2 ->  [  1,    3,     3  ]           a `_` must be FOLLOWED by a digit
+#   DEAD 3 ->  [  3,    3,     3  ]           DEAD IS ABSORBING
+def gi_tab() -> List<&2, U32>:
+  [1, 3, 3, 1, 2, 3, 1, 3, 3, 3, 3, 3]
+
+def gi_index(st: U32, kind: Nat) -> U32:
+  U32.add(U32.mul(st, 3), U32.from_nat(kind))
+
+def gi_nxt(st: U32, kind: Nat) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, gi_tab(), U32.to_nat(gi_index(st, kind))), 3)
+
+def gi_acc(v: U32, kind: Nat, d: U32) -> U32:
+  match kind:
+    case 0n: U32.add(U32.mul(v, 10), d)
+    case _: v
+
+def gi_kind.of(dig: Bool, und: Bool) -> Nat:
+  match dig:
+    case True{}: 0n
+    case False{}:
+      match und:
+        case True{}: 1n
+        case _: 2n
+
+def gi_kind(+h: Char) -> Nat:
+  gi_kind.of(Char.is_digit(h), U32.is_eq(Char.to_u32(h), 95))
+
+def gi_step(st: U32, v: U32, +h: Char) -> Gi:
+  Gi{gi_nxt(st, gi_kind(h)), gi_acc(v, gi_kind(h), U32.sub(Char.to_u32(h), 48))}
+
+def Gi.st(g: Gi) -> U32:
+  match g:
+    case Gi{st, v}: st
+
+def Gi.v(g: Gi) -> U32:
+  match g:
+    case Gi{st, v}: v
+
+# `nc_walk` above is the shape: the ACCUMULATOR IS THE LAST PARAMETER and the head is
+# destructured as `+h <> t`, so the self-call's only shrinking argument is the tail.
+def gi_go(cs: List<&2, Char>, +g: Gi) -> Gi:
+  match cs:
+    case Nil{}: g
+    case +h <> t: gi_go(t, gi_step(Gi.st(g), Gi.v(g), h))
+
+# `+` ON A STRING PARAMETER IS WHAT MAKES IT REUSABLE, and it is the same annotation
+# `nc_sign` uses on its own `+s`. Without it `Bool.or(starts_with(t,"+"),
+# starts_with(t,"-"))` is refused with "expected : t / observed : t (consumed more
+# than once)", which is a different error from the `U32` one above and reads like
+# the same bug.
+def gi_signed(+t: String) -> Bool:
+  Bool.or(String.starts_with(t, "+"), String.starts_with(t, "-"))
+
+def gi_body(sgn: Bool, +t: String) -> List<&2, Char>:
+  match sgn:
+    case True{}: String.to_list(String.drop(t, 1n))
+    case _: String.to_list(t)
+
+def gi_neg(+t: String) -> Bool:
+  String.starts_with(t, "-")
+
+# a REFUSAL is DEAD, or PRE with no digit seen, and DEAD IS NOT 0 -- a walk that
+# ended in DEAD after three digits carries `v` = those digits and must not be read.
+def gi_ok(+g: Gi) -> Bool:
+  Bool.not(Bool.or(gi_dead(Gi.st(g)), U32.is_zero(Gi.st(g))))
+
+def gi_of_text(+s: String) -> Maybe<&1, U32>:
+  gi_of_text.go(gi_neg(s), gi_signed(s), String.trim(s))
+
+def gi_of_text.go(neg: Bool, sgn: Bool, +t: String) -> Maybe<&1, U32>:
+  match neg:
+    case True{}: Nothing
+    case _: gi_of_text.walk(gi_ok(gi_go(gi_body(sgn, t), Gi{0, 0})))
+
+def gi_of_text.walk(ok: Bool, +g: Gi) -> Maybe<&1, U32>:
+  match ok:
+    case True{}: Just(Gi.v(g))
+    case _: Nothing
+
+def getenv_int.go(v: Result<&1, &1, U32 & String, String>, d: U32) -> U32:
+  match v:
+    case Done{value}: Maybe.default(&1, U32, gi_of_text(value), d)
+    case Fail{error}: d
+
+def getenv_int(k: String, d: U32) -> IO(U32):
+  do IO<U32>:
+    v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
+    return getenv_int.go(v, d)
+
+# `DEBUG`, at helpers.py:237's own value and helpers.py:163's own coercion. THE
+# NAME IS UPSTREAM'S: the port spells a ContextVar it has decided to thread as the
+# ContextVar's own name, so a reader of `debug()` does not have to know it was
+# renamed to `getenv_int("DEBUG", 0)` underneath.
+def debug() -> IO(U32):
+  getenv_int("DEBUG", 0)
+
 def Flags.of(nc: String, df: String, di: String, sd: String) -> Flags:
   Flags{no_color_of(nc), df, di, sd}
 
