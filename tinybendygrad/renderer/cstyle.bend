@@ -540,34 +540,54 @@ def Kv.go(ks: Kv, +m: Map<&2, String>) -> Map<&2, String>:
 
 def tm(ks: Kv) -> Map<&2, String>: Kv.go(ks, Map.new(&2, String))
 
-# `type_map = {}` -- cstyle.py:139. The base CStyleLanguage maps NOTHING, which
-# is why every dtype row on the base device prints as the dtype's own C name.
+# UPSTREAM'S `{**CStyleLanguage.type_map, ...}` IS AN OVERLAY, and this is the
+# overlay. The previous version of this port read the base as `{}` and wrote each
+# device map as a WHOLE map, which was internally consistent -- `Map.set` over an
+# empty map is the map -- and agreed with every `py=` literal, because those
+# literals were generated against the same wrong reading. MEASURED at HEAD:
+# `CStyleLanguage.type_map` has FOURTEEN entries (cstyle.py:136-139), so a base of
+# `{}` is not a base, it is a hole, and every device inherits the hole.
+#
+# THE fp8 GROUP IS NOT IN THE BASE. `CStyleLanguage.type_map` at cstyle.py:136
+# lists void/bool/i8/u8/i16/u16/i32/u32/i64/u64/f16/bf16/f32/f64 and NOTHING
+# else; only CUDA (cstyle.py:441) and HIP (cstyle.py:542) add fp8 entries. So
+# `type_map[dtypes.fp8e4m3]` is a `KeyError` on four of the six devices and that
+# is the truth, not a gap in this table.
 #
 # EVERY KEY BELOW IS A `DType.name`, NOT A `dtypes.*` ATTRIBUTE. tinygrad 793abbb
 # moved `DType.name` onto the rust spellings, so the keys moved with it and the
 # old C spellings ("signed char", "unsigned char", "__bf16", "half") are the
 # LEGACY ATTRIBUTE names, not the name field, and never were -- which is why the
 # comment this file used to carry at :477 is now wrong rather than merely stale.
-def type_map.base() -> Map<&2, String>: tm(KvEnd{})
+def type_map.base() -> Map<&2, String>:
+  tm(Kv{"bool", "bool", Kv{"i8", "signed char", Kv{"u8", "unsigned char", Kv{"i16", "short",
+    Kv{"u16", "unsigned short", Kv{"i32", "int", Kv{"u32", "unsigned int", Kv{"i64", "long",
+    Kv{"u64", "unsigned long", Kv{"f16", "half", Kv{"bf16", "__bf16", Kv{"f32", "float",
+    Kv{"f64", "double", Kv{"void", "void", KvEnd{}}}}}}}}}}})
 
-# `{dtypes.bool: "_Bool", dtypes.f16: "__fp16"}` -- cstyle.py:287. TWO entries.
-def type_map.clang() -> Map<&2, String>: tm(Kv{"bool", "_Bool", Kv{"f16", "__fp16", KvEnd{}}})
+# `Kv.go` IS AN OVERLAY ALREADY -- it folds the tail into the map it is handed --
+# so the device maps take the base as their seed and there is no second fold.
+def type_map_over(ks: Kv) -> Map<&2, String>: Kv.go(ks, type_map.base())
 
-# cstyle.py:331. SIX entries, and the fp8 group is ABSENT -- so all four fp8
+# `{dtypes.bool: "_Bool", dtypes.f16: "__fp16"}` -- cstyle.py:290. TWO entries.
+def type_map.clang() -> Map<&2, String>:
+  type_map_over(Kv{"bool", "_Bool", Kv{"f16", "__fp16", KvEnd{}}})
+
+# cstyle.py:334. SIX entries, and the fp8 group is ABSENT -- so all four fp8
 # dtypes print as themselves on OpenCL, which is a gate row.
 def type_map.opencl() -> Map<&2, String>:
-  tm(Kv{"i8", "char", Kv{"u8", "uchar", Kv{"u32", "uint",
+  type_map_over(Kv{"i8", "char", Kv{"u8", "uchar", Kv{"u32", "uint",
     Kv{"u16", "ushort", Kv{"u64", "ulong", Kv{"bf16", "ushort", KvEnd{}}}}}}})
 
-# cstyle.py:373. TWO entries.
+# cstyle.py:376. TWO entries.
 def type_map.metal() -> Map<&2, String>:
-  tm(Kv{"u32", "uint", Kv{"bf16", "bfloat", KvEnd{}}})
+  type_map_over(Kv{"u32", "uint", Kv{"bf16", "bfloat", KvEnd{}}})
 
-# cstyle.py:439. FOUR entries -- and the two FNUZ fp8 dtypes are NOT among them,
+# cstyle.py:441. FOUR entries -- and the two FNUZ fp8 dtypes are NOT among them,
 # so on CUDA `fp8e4m3fnuz` prints as itself while `fp8e4m3` does not.
 def type_map.cuda() -> Map<&2, String>:
-  tm(Kv{"u32", "uint", Kv{"bf16", "nv_bfloat16",
-    Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"fp8e5m2", "__nv_fp8_e5m2", KvEnd{}}}}})
+  type_map_over(Kv{"u32", "uint", Kv{"bf16", "nv_bfloat16",
+    Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"fp8e5m2", "__nv_fp8_e5m2", KvEnd{}}}})
 
 # cstyle.py:539. `{bfloat16: "hip_bfloat16", **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
 # -- and `fp8_index(d) = fp8s.index(d) % 2` with `fp8s` in dtype.py's order

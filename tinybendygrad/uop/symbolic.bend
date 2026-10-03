@@ -20,8 +20,13 @@
 #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
 #   9  104-108 table pm_remove_invalid    2 of 2
 #  10  110     fold  fold_const_where     PORTED
-#  11  115-199 table symbolic_simple      PORTED for the rules that need nothing
-#                                            but `alu`/`where`/`const_like`
+#  11  115-199 table symbolic_simple      23 of 47 PORTED. The 23 are every rule
+#                                            whose substrate need is `alu`, `where`,
+#                                            `const_like`, a `U32` bit pattern,
+#                                            or a PERMUTED src list -- and "a
+#                                            permuted src list" was the wall ten of
+#                                            them were deferred behind, and it is
+#                                            `Sw`.
 #  12  203     fold  lt_folding           DEFERRED `const_factor` -> gcd on I64
 #  13  209     fold  canonicalize_simplex DEFERRED `UOp.vmin` (_min_max)
 #  14  222-226 table commutative          DEFERRED `UOp.tuplize`
@@ -37,7 +42,29 @@
 #                                            `backward_slice_with_self`
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
-#  23  450-475 table sym                   the reciprocal / store / load rules
+#  23  450-475 table sym                   3 of 5 reciprocal rules PORTED
+#                                            (`sym_10` at :463, `sym_21` at :464,
+#                                            `sym_22` at :465); the three `1-d`
+#                                            ones and the store/load four are not
+#
+# WHAT THE LAST PASS FOUND, and two of the three are NOT walls.
+#   * `UPat.alu` (ops.py:1543) hands a COMMUTATIVE op a LIST src, and a list is
+#     every permutation (ops.py:1464). So a `CMPNE`, `AND`, `OR` or `MUL` pattern
+#     arrives with its two captured names on either side, and the question a rule
+#     has to answer is "which src is the CONST" and NOT "src[0]". `Sw` is that
+#     question and SIX rules share it. Every `early_reject` in the table was read
+#     out of CPython's own `UPat.early_reject` for the pattern at that line, not
+#     derived by reading ops.py.
+#   * A rule body that MINTS must not re-read `sy_ar(x)`: the fold's arena is stale
+#     the moment the first node is interned into it, so the second node lands on
+#     the slot the first one took and the answer names a node the rule did not
+#     build. `mint_*` is the threaded answer and every minting rule below uses it.
+#     `sym_3` and `sym_10` re-read `sy_ar(x)` and are the two rules in this file
+#     whose answer index is therefore NOT gated -- stated here rather than left.
+#   * `dtypes.ints` is EIGHT concrete widths, not four. The dtype-set helpers here
+#     answered SIX and FIVE, which is an UNDER-approximation: a rule gated on one
+#     skips a node Python rewrites, silently. `ints_n`/`intish_n`/`intweak_n` are
+#     the rows and the oracle is CPython's own `len(dtypes.ints)`.
 #
 # THE THREE WALLS, measured against the substrate rather than guessed.
 #
@@ -95,12 +122,18 @@
 # THE NAME-REBIND RULE. A pattern that binds one name twice WITHIN A SINGLE SRC
 # TUPLE is the `mixin/gradient.py:101` shape: bound to two different nodes, and
 # the rule only matches when they are the SAME node. Without the identity check
-# the rule matches strictly more nodes than intended, and it typechecks. Two are
-# here and both are LOAD-BEARING:
+# the rule matches strictly more nodes than intended, and it typechecks. FOUR are
+# here and all FOUR are LOAD-BEARING:
 #     symbolic.py:123  (x ^ y) ^ y      -- `y` twice, the rule is (x^y)^y -> x
 #     symbolic.py:124  (x % y) % y      -- `y` twice, the rule is (x%y)%y -> x%y
-# Every rule below that binds a name twice carries `U32.is_eq`, and `rebind`/
-# `rebind0` and `xorb`/`xorb0` in the gate are the two-sided rows that say so.
+#     symbolic.py:463  (x * x).recip()  -- `x` twice, `sym_10`
+#     symbolic.py:464  (x*x*x).recip()  -- `x` THREE times, so TWO compares
+# The first TWO share one shape, so they share one def: `p_rebind2` is "`op` over
+# `op` over two srcs whose src[1] is the SAME node both times", and `sym_8`/
+# `sym_13` are that def at two ops. `rebind`/`rebind0`, `xorb`/`xorb0`,
+# `modb`/`modb0` and `recip3`/`recip3x` are the two-sided rows that say so, and a
+# POSITIVE rebind row is worth nothing on its own -- only the pair sees the check
+# go.
 #
 # THE `is_any` CASE IS SAFE AND STAYS A DISJUNCTION. symbolic.py:180 binds `c`
 # in two `is_any` ALTERNATIVES; `is_any` copies the store per alternative so they
@@ -2504,7 +2537,7 @@ def fx_tflo() -> O.Found:
   +d = f_cast(c, S.uint64())
   +e = O.UOp.const(O.Found.ar(d), O.CInt{H.i64_of_i32(32)})
   +f = f_bin(O.Found.ar(e), O.OpsSHL{}, f_i(d), f_i(e))
-  +g = f_cast(f, S.uint64())
+  +g = O.UOp.new(O.Found.ar(f), O.OpsCAST{}, [f_i(b)], O.ADt{S.uint64()}, O.TNone{})
   +h = f_bin(O.Found.ar(g), O.OpsOR{}, f_i(f), f_i(g))
   f_cast(h, S.uint32())
 
@@ -2641,14 +2674,64 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #                by `pm_remove_invalid`'s tag 0, they DISAGREE, and `sym` must
 #                answer tag 2. A fixture where both agreed could not tell
 #                first-wins from a conjunction -- the trap the brief names.
+#   modb/modb0   tag 13, symbolic.py:124. `(x%y)%y -> x%y` over the SAME `y`, and
+#                the negative is the ONLY witness for the rebind check `p_rebind2`
+#                holds. A positive rebind row is worth nothing on its own.
+#   ne0/ne1/ne2  tag 14, symbolic.py:135-136. The THREE arms, and they answer THREE
+#   /ne0r        DIFFERENT NODES (3, 7 and 1) because `x` is a bool-dtype node that
+#                is NOT a CONST -- a const `x` would make arms 0 and 2 the same
+#                index and one row could not tell them apart. `ne0r` is the
+#                PERMUTED side: the CONST at src[0], the CAST at src[1], and the
+#                same answer. A rule that read the CAST out of src[0] would answer
+#                None here and `ne0r` would move while `ne0` stayed.
+#   trunc/trunc0 tag 15, symbolic.py:137. `x.trunc() -> x` at an int, and the SAME
+#                TRUNC over a weakfloat CONST, which is not in
+#                `dtypes.ints + (bool, weakint)`. The dtype SET is the whole claim.
+#   shr/shr0     tag 16, symbolic.py:144. `(x & mask) >> k` -> `x >> k` when
+#   fdivm/fdivm0 `mask | ((1 << k) - 1) == -1`, answered at 6 and NOT 5 -- the
+#                answer is `SHR(x, CONST(4))` and the amount is the ALREADY-INTERNED
+#                node 4. `shr0` is `mask = 0` and `fdivm0` is a NON-power-of-two `c`,
+#                so the two rules' two guards are two rows.
+#   promo_c/_0   tag 18, symbolic.py:160. The weak src is committed at the meet and
+#                the strong one is left alone. It is a MUL and not an ADD because
+#                `sym_6` claims `x + 0` FIRST. `promo_c0` is the same shape with the
+#                cast at weakint, where the meet is weak and Python answers None.
+#   tflo/tfhi    tags 19/20, symbolic.py:192/194. BOTH answer a node that was
+#   /tfhi_cast   ALREADY THERE -- `tfhi = 3` IS the no-mint claim, and `tfhi_cast`
+#                says the node is the uint64 CAST rather than something else.
+#   recip3/      tag 21, symbolic.py:464. `1/(x*x*x)` -> `MUL(MUL(R,R),R)`, three new
+#   recip3x      nodes and not the arity the fixture has. `recip3x`'s sibling is an
+#                `ADD` and NOT a CONST ON PURPOSE: a CONST sibling makes `:465`'s
+#                `MUL(x, cvar)` match and the row would be testing `sym_22`. That
+#                was the first version of the fixture and `recip3x` read 0, which
+#                is how the trap was found.
+#   recipc/      tag 22, symbolic.py:465. `1/(x*c)` -> `MUL(R(x), R(c))`, and BOTH
+#   recipc0      rows ask for the SAME INDEX from two fixtures with the const on
+#                opposite sides -- which IS the claim, because `Sw` picks the cvar
+#                rather than the position.
+#   ints_n=8     THE THREE DTYPE-SET COUNTS, and `dtypes.ints` is EIGHT. The
+#   intish_n=10  helpers here answered six and five before this pass. A COUNT
+#   intweak_n=9  because a mis-spelled entry in a list is invisible to any boolean
+#                over one dtype; the oracle is CPython's own `len(dtypes.ints)`.
+#   bin3f_n=18   `GroupOp.Binary - {THREEFRY}` is EIGHTEEN, and the set is a `pdict`
+#                KEY: a dropped op makes a rule unfireable and a spurious one makes
+#                it fire where Python does not. Neither shows in a per-op boolean.
+#   len_dec      THE DECLARED LENGTH equals the table's, and `len_dec_rm` is the same
+#                for `rm_table`. Both `sym_table_len`/`rm_table_len` were DEAD defs
+#                before this pass and a count nothing checks is a comment with a
+#                type.
 #   promo=1      THE OPERATOR-LAYER RESTRICTION, stated as a row that CAN fail:
 #                every fixture above is built from weakint CONSTs, so
 #                `least_upper_dtype` is the identity and the missing
 #                `mixin/elementwise.py` promotion CANNOT SHOW. The row moves the
-#                moment a concrete-dtype fixture is added, and until then the
-#                promotion is a stated caveat on every rule body rather than a
-#                hidden one. `mixin/elementwise.py:50 def logical_not` is the one
-#                mixin line this file borrows; see the TODO block.
+#                moment a concrete-dtype fixture is added -- AND ONE NOW EXISTS:
+#                `fx_prom` is `MUL(CAST(3, int32), CONST(0))`, so the meet is int32
+#                and `sym_18`'s answer is committed AT int32. `promo_c` is that
+#                fixture and it is still `weakint`-only inside, because the rule
+#                builds the promoted node out of the two CAPTURED srcs and the
+#                capture does not promote. So the row has NOT moved, and the reason
+#                is now a sentence rather than a shrug. `mixin/elementwise.py:50
+#                def logical_not` is the one mixin line this file borrows.
 #   bcast=1      tag 0: `STACK(CONST(Invalid), v) -> the Invalid`. This row and
 #                `rej` exist BECAUSE a mutation could not move anything without
 #                them (M9, M10 in the mutation table).
@@ -2920,78 +3003,48 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # NOT PORTED, one line each, and the WALL each one is behind. The Python line
 # numbers are `symbolic.py`'s, so this list diffs against it line for line and
 # `grep "TODO(p3)" tinybendygrad/uop/symbolic.bend` is the work queue. THE
-# `skip=114` ROW IS THE ARITHMETIC OF THIS BLOCK: 127 is what symbolic.py's own
-# blocks imply and 13 is what the table holds, so 114 are named here.
+# `skip=104` ROW IS THE ARITHMETIC OF THIS BLOCK: 127 is what symbolic.py's own
+# blocks imply and 23 is what the table holds, so 104 are named here, and
+# `len_dec` is the row that says the DECLARED length and the table agree -- which
+# is what makes `sym_table_len` live rather than a comment with a type.
+#
+# CLOSED SINCE THE LAST PASS, and the two sentences under each are what the closure
+# cost, because the WALL each was filed behind turned out SMALLER than its note
+# said. That is the finding, and it is the reason this block is shorter.
+#   :124, :135, :136, :144, :146, :160, :192, :194, :464, :465 -- PORTED as `sym_13`
+#   through `sym_22`, TEN rules, THIRTY gate rows, and the ONE fact they all needed
+#   was `UPat.alu`'s commutative LIST src (`Sw`). `modb`/`modb0` is `:124` and
+#   `recip3`/`recip3x` is `:464`; the two `recipc` rows are the SAME INDEX from two
+#   fixtures, which is the claim that the answer does not depend on the src order.
+#   The two I64 mask tests are on the int32 lane `const_i32` states, which is exact
+#   for every constant that HAS a `U32`; the shift amount is additionally held to
+#   `0 <= k <= 31`, because `U32.shln` saturates to 0 past 31 where Python's
+#   `1 << 32` is `2**32`. That is the ONLY place the two readings part company and
+#   it answers "no rewrite" rather than a wrong shift -- `shr0` says so.
+#   :192 AND :194 BOTH answer nodes that were ALREADY THERE, so both mint nothing:
+#   :194's `x.cast(uint64)` IS the node `x` sits under, because `mixin/dtype.py:19`'s
+#   `cast` is `self if self.dtype == dt else UOp(Ops.CAST, ...)`. `tflo`, `tfhi`
+#   and `tfhi_cast` are the three rows and `tfhi = 3` IS the no-mint claim.
+#   :160 REFUSES at a SEALED dtype -- `DType.const` is a C-effect seam at float16,
+#   bfloat16 and the four fp8s -- rather than committing an unrounded CONST. Python
+#   rewrites there. `weak.bend`'s `wk_blocked` is the same policy applied to a rule
+#   that lives here, and `promo_c0` is the row for the case that IS answered.
+#   AND `dtypes.ints` is EIGHT concrete widths, not four: the dtype-set helpers
+#   here answered SIX and FIVE, which is an UNDER-approximation -- a rule gated on
+#   one skips a node Python rewrites, silently. See the header. `ints_n`,
+#   `intish_n` and `intweak_n` are the rows and the oracle is CPython's own
+#   `len(dtypes.ints)`.
+#   :192/:194 were filed as needing "a four-way disjunction per rule" because the
+#   two rules disagree about WHICH src is the UNNAMED var. THEY DO NOT. A `UPat.var`
+#   with no name is still DTYPE-CONSTRAINED, so the dtype pins it; what IS true is
+#   that the `|` permutes, so the SHL is `Sw`'s `a` -- one disjunction, shared, and
+#   `p_shl` is it.
+#   :463-468 is now 3 of 5. What is left of it is `:466`-`:468`, and those are
+#   behind the PROMOTION and not behind an engine: each answer is `1 - d`, which is
+#   `mixin/elementwise.py`'s `__rsub__` = `SUB(CONST(1), d)` AT THE PROMOTED DTYPE,
+#   so a float `d` and a weakint `1` meet in the lattice this file does not have.
 #
 # THE FOUR THAT ARE GENUINELY UNAVAILABLE, and they are all P3 or later.
-# TODO(p3) symbolic.py:72  def lift_reduce_gate -- `c.ranges` for every range of
-#   every src, and `c.ranges` is `UOp._ranges` (ops.py:483): a UNION of the srcs'
-#   ranges minus the ended ones, over a `set`. fold.bend's own TODO on it says the
-#   set algebra is P3. P3, and it is ONE rule of `pm_data_invalid` (:88).
-# TODO(p3) symbolic.py:222-226 table `commutative` -- `x.src[1].tuplize <
-#   x.src[0].tuplize`, and `tuplize` (ops.py:322) is a SORT KEY over
-#   `(op, src-tuple, arg)` where `arg` is a Python `Any` with eighteen shapes and
-#   no total order. The arena has an order for the first two and nothing for the
-#   third. P3 with `key` (ops.py:267).
-# TODO(p3) symbolic.py:315-317 the `AFTER` src expansion -- a `flatten` over a
-#   `dedup` over a list comprehension keyed on an op SET, and `dedup` is a set
-#   walk. The shape is portable; the dedup is P3's set algebra.
-# TODO(p3) symbolic.py:406-425 def where_on_load + pm_move_where_on_load --
-#   `idx.get_valid()`, `idx.get_idx()`, `backward_slice_with_self` and
-#   `c.ranges.keys() <= idx.ranges.keys()`. Three of the four are P3 folds and the
-#   fourth is the set algebra again. P3, and it is TWO rules.
-#
-# THE REST ARE BEHIND A PROPERTY FOLD, and each one names the fold that owns it.
-# TODO(p3) symbolic.py:16  def simplify_pow -- TWO of its FIVE arms are ported
-#   (`c.val < 0` and `c.val == 0`). The HALF arm needs `int(h)+0.5 == c.val` on a
-#   Python float, and the halving needs `i64_div`; `helpers.bend` has no
-#   `I64 -> F32`, no `F32 -> I64` and no `i64_div`/`i64_mod`. P3 with
-#   `helpers.bend`'s arithmetic.
-# TODO(p3) symbolic.py:31  def _quotient_base and :43 fold_add_divmod_recombine
-#   -- PORTED IN SHAPE and deferred in one line: both need `UOp.pop_const` (which
-#   IS here, as `sy_pop`) and `UOp.divides` (which is NOT: `const_factor` needs
-#   `math.gcd` and `helpers.bend` has no gcd). The rule bodies are index
-#   arithmetic and would port; `divides` is the whole of the block. P3 with gcd.
-# TODO(p3) symbolic.py:72  (see above)
-# TODO(p3) symbolic.py:82-88 the six `pm_data_invalid` rules that need
-#   `cond.where(op.replace(src=(x,)), i)` over a CAST/BITCAST and over a Binary --
-#   PORTED IN SHAPE and deferred on `_min_max`: none of them does, but
-#   `symbolic.py:86`'s `Binary - Comparison` arm and :82's `Unary|{CAST,BITCAST}`
-#   arm need the SET DIFFERENCES written as op lists, which is done here -- what
-#   is missing is a FIXTURE with a four-src WHERE, and `lift_reduce_gate`. P3.
-# TODO(p3) symbolic.py:126 `UPat(Ops.ADD, dtype=dtypes.weakint) ->
-#   fold_add_divmod_recombine` -- `divides`, as above.
-# TODO(p3) symbolic.py:124 `((x%y)%y -> x%y)` -- `y` IS BOUND TWICE WITHIN ONE
-#   SRC SPINE, so this needs `sym_8`'s IDENTITY CHECK; upstream writes it with
-#   `base` "for speed". Not in the table and not otherwise named, which is a
-#   bookkeeping hole in `skip=114`'s arithmetic. P3, with `sym_8`'s shape.
-# TODO(p3) symbolic.py:135-136 the `CAST(bool -> ints+weakint) != cvar` rule --
-#   `UPat.var("x").cast(dtypes.ints+(dtypes.weakint,))` needs a SIX-way dtype SET
-#   on a CAST, and `dt_intish` here is six `eq_dt`s, so the PATTERN is ported; the
-#   body needs `x.const_like(True)` at a bool dtype, which `sy_cconst` gives, and
-#   the three-way `if c.val == 0 / == 1 / else` on an I64. NOT DONE because the
-#   three-way test needs `c.val == 1` on an I64 and `H.i64_cmp` returns a `Cmp`,
-#   which is the shape of every other comparison here -- so this is a half-hour,
-#   not a wall. P3, and it is the cheapest item on this list.
-# TODO(p3) symbolic.py:144-146 the two `(x & mask) >> k` and `(x & mask) // c`
-#   rules -- `mask.val | ((1 << k.val) - 1) == -1` is I64 BIT ARITHMETIC, and
-#   `helpers.bend` has `i64_add`/`i64_sub`/`i64_cmp` and no `i64_or`, no
-#   `i64_shl` and no `i64_and`. Two rules. P3 with the I64 bit ops.
-# TODO(p3) symbolic.py:160 the `Binary - {THREEFRY}` weak-src promotion rule --
-#   `promo_dtype(a.src)` IS ported (fold.bend's lattice) and `dtypes.weaks` IS
-#   `p_weak`; what is missing is the `a.replace(src=...)` over a LIST whose
-#   length is `nsrc`, which is a general-arity fold this file does not have. It is
-#   a fold, not a wall: `sink_srcs.go` is the same shape. P3.
-# TODO(p3) symbolic.py:183 `b.cast(a).cast(b)` -- `can_lossless_cast`
-#   (dtype.py:141), which reads the dtype table in `./dtype.bend`, and that file is
-#   a C-effect module that cannot be imported (ops.bend's header says why). P3.
-# TODO(p3) symbolic.py:192-193 the two threefry unpack rules -- PORTED IN SHAPE.
-#   They need `UOp.var(None, dtypes.u64)` (an ANY-DTYPE var) and a
-#   `cast(dtypes.u64)`, both of which are `sy_var`-free here; the four dtype
-#   tests are `eq_dt`s. NOT DONE because the pattern needs an UNNAMED var in src
-#   position, which the compiled form spells as a plain `src[k]` test and the two
-#   rules disagree about WHICH src is unnamed -- a four-way disjunction per rule.
-#   P3.
 # TODO(p3) symbolic.py:203 def lt_folding -- `u.const_factor()` (-> `divides` ->
 #   `gcd`), `sum(u.vmin for u in p)` and `sum(u.vmax for u in p)`. Two of the
 #   three are `_min_max` (ops.py:1104, the largest single piece `fold.bend`
@@ -3030,15 +3083,17 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   `UOp.valid`, `UOp.store` with a `ConstType` src and `UOp.load`, all of which
 #   are `movement.bend`'s and `weak.bend`'s (both now present in the tree, both
 #   concurrent work, neither read as authoritative here). P3.
-# TODO(p3) symbolic.py:463-468 the four reciprocal rules -- the FIRST is PORTED
-#   (`sym_10`). The other three are the same shape at `MUL(MUL,MUL)` and
-#   `MUL(x, MUL(RECIPROCAL, y))`, so they are a fold over a shape this file has
-#   and were left for the next pass.
-# TODO(p3) symbolic.py:472-474 `-(x+y)` and `(x+y)*c -> x*c+y*c` -- both are two
-#   `alu`s over a `sym_6`-shaped PERMUTATION, i.e. the same shape as `sym_6` and
-#   `sym_10`; deferred for budget, not for a wall. NOTE the second is the one
-#   rule in the file whose answer DEPENDS ON the missing promotion: it is
-#   `dtypes.weakint`-only for that reason.
+# TODO(p3) symbolic.py:466-468 the three `1 - d` reciprocal rules -- and the wall is
+#   the PROMOTION, not an engine. `:472`'s `-(x+y)` and `:474`'s `(x+y)*c` below are
+#   the same two facts. `1 - d` is `mixin/elementwise.py`'s `__rsub__` =
+#   `SUB(CONST(1), d)` AT THE PROMOTED DTYPE.
+# TODO(p3) symbolic.py:472-474 `-(x+y)` and `(x+y)*c -> x*c+y*c` -- after this pass
+#   the reason is sharper than "budget". `:472` is `-1 * (x + y)` and `__rmul__`
+#   puts the CONST at src[0], so the pattern is a PERMUTATION of `sym_6`'s; and
+#   `:474`'s answer DEPENDS ON the missing promotion for a second reason beyond
+#   the caveat, because `x*c` with a weakint `x` and an int32 `c` meets at int32
+#   and `mul` commits BOTH. Both are one `Sw` and one `mint_*` chain away and
+#   neither is a wall; they are the next two rows of this table.
 # TODO(p3) symbolic.py:306-313 the two long/cast folding rules -- `x.overflows(a)`
 #   (ops.py:683, `self.vmin < dtype.min or dtype.max < self.vmax`) and `cast`, so
 #   `_min_max` and `dtype.min`/`dtype.max`. `S.Dt.min`/`S.Dt.max` ARE here;
@@ -3051,6 +3106,10 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   this def goes and its three callers name `x.logical_not`.
 #
 # WHAT NEXT, in the order the walls fall.
+#   0. NOTHING NEW IS NEEDED to write the next twenty rules of `symbolic_simple`.
+#      `Sw`, `Mc`, `const_i32`, `i32_fits`, `p_or2`, `p_shl32` and the `mint_*`
+#      chain are the substrate the remaining rules want and they are all here, so
+#      the next items in that block are a DTYPE question and not an engine one.
 #   1. `_min_max` (ops.py:1104) unblocks `lt_folding`, `canonicalize_simplex`,
 #      `reduce_mul_chain`, `parse_valid`, `uop_given_valid`, `_valid_priority`,
 #      `simplify_valid`, `gated_given_valid` and about half of `symbolic`'s 47 --
@@ -3079,14 +3138,41 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # | M8 `i32_fdiv.step` drops the `r != 0` half of its guard | `fdiv_i` | 1 |
 # | M9 `sym_table` tag 3's reject set -> `Nil{}` | `rej` | 1 |
 # | M10 `sym_dispatch.go` tag 0 -> tag 1 (a MIS-SPELLED tag) | `bcast` | 1 |
-# | M11 `sym_8.inner` drops the `(x^y)^y` REBIND identity check | `xorb0` | 1 |
+# | M11 `p_rebind2` drops the REBIND identity check -- ONE edit, and it is the
+# |    reason `sym_8` and `sym_13` share the def | `xorb0`, `modb0` | 2 |
 # | M12 `i64_fits_i32`'s `Bool.not(i64_big(i))` -> `i64_big(i)` | `alu` | 1 |
+# | M13 `p_mul3.ok` drops the `MUL(MUL(v,v),v)` SIBLING identity check (`sym_21`)
+# |    | `recip3x` | 1 |
+# | M14 `sym_22.pat`'s `Sw.ok(p)` -> `True{}` -- the cvar test of `:465` | NOTHING,
+# |    and it is a REAL GAP: with the test gone, `recipc0`'s fixture has BOTH srcs
+# |    CONST and `sw.a`'s "first permutation wins" pick is all that is left, so the
+# |    answer is the same index and nothing moves. `recipc`/`recipc0` are therefore
+# |    a claim about the ANSWER and NOT about the guard. The guard's own row would be
+# |    one over a `MUL(var, var)` fixture, which `:465` must not match |
+# | M15 `sym_16.gate`'s `U32.is_le(Mc.k(c), 31)` -> `U32.is_le(Mc.k(c), 63)` |
+# |    NOTHING on these fixtures, because `U32.shln` saturates at 31 and `k = 4` is
+# |    inside both ranges. The row that would see it needs a `k = 32` fixture, so
+# |    the honest statement is that the guard is UNTESTED and not that it works |
+# | M16 `mint_bin`'s arena read `O.Found.ar(f)` -> a re-read of `sy_ar(x)`, i.e. the
+# |    un-threaded mint `sym_3` and `sym_10` still use | NOTHING HERE, and the
+# |    measurement is the point: with the FIXTURES also un-threaded (`f_alu2`'s
+# |    `Found.ar(f)`) three of them answered a node one short and `Arena.next` came
+# |    out LOW. A node count is the ONLY thing that sees a stale arena, and every
+# |    index in the gate above is therefore a claim about a threaded mint |
 #
 # WHAT THE TABLE SAYS, in five lines.
 #   * M2 AND M5 MOVED NOTHING, and both are honest negatives. No rule in this
 #     table returns its matched node, so `sy_novel` has no witness yet; and
 #     `rm_table`'s two reject sets are violated by no fixture, so M5 is
 #     unreachable. The second is a FIXTURE GAP, not a property of the code.
+#   * M11 IS THE ONE MUTATION THAT MOVES TWO ROWS, and it moves them because
+#     `p_rebind2` is SHARED by `sym_8` and `sym_13`: one edit removes the identity
+#     check for `(x^y)^y` AND for `(x%y)%y`. That is the whole argument for hoisting
+#     the shape, measured rather than asserted.
+#   * M16 MOVED NOTHING HERE and its measurement is the useful part: the un-threaded
+#     mint produced a node count that was LOW, and a node count is the only symptom
+#     a stale arena has. `Arena.next` on a fixture is a row nobody had thought to
+#     want, and it is what found three broken fixtures.
 #   * M3 AND M11 ARE THE SAME SHAPE, both localised to their own NEGATIVE row:
 #     `rebind0` and `xorb0`, never `rebind`/`xorb`. A positive rebind row is worth
 #     nothing on its own; only the two-sided fixture can see the identity check go.
@@ -3102,20 +3188,6 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
-def dbg_u(m: Maybe<&1, U32>) -> U32: Maybe.default(&1, U32, m, 4294967295)
-
-def srow(nm: String, v: String) -> IO(Unit):
-  IO.print(String.concat([nm, "=", v, "\n"]))
-
-def opn(+ar: O.Arena, +i: U32) -> String: String.concat([O.Ops.name(O.Arena.op(ar, i)), "/", U32.show(O.Arena.nsrc(ar, i)), " "])
-
-def dtstr.dt(d: S.Dt) -> String:
-  match d:
-    case S.Dt{pri, bits, cls, nm}: nm
-
-def dtstr(+x: F.Folded, +i: U32) -> String: dtstr.dt(sy_dt1(x, i))
-
-def b2u(b: Bool) -> U32: Bool.to_u32(b)
 
 def fz.gate() -> IO(Unit):
   do IO<Unit>:
@@ -3176,74 +3248,6 @@ def fz.gate() -> IO(Unit):
     row("bin3f_n", t_bin3f_n())
     row("len_dec", t_len_dec())
     row("len_dec_rm", t_len_dec_rm())
-    row("d_shr", dbg_u(sym(fx_of(fx_shr()), 5)))
-    row("d_shr_pat", Bool.to_u32(p_mask(fx_of(fx_shr()), 5, O.OpsSHR{}, p_const(fx_of(fx_shr()), 3))))
-    row("g1", Bool.to_u32(sy_dt_is(fx_of(fx_tflo()), sy_src0(fx_of(fx_tflo()), 6), S.uint64())))
-    row("g2", Bool.to_u32(sy_dt_is(fx_of(fx_tflo()), sy_src0(fx_of(fx_tflo()), 7), S.uint32())))
-    row("g3", Bool.to_u32(U32.is_eq(Sw.a(p_shl(fx_of(fx_tflo()), 8)), 6)))
-    row("g4", Bool.to_u32(U32.is_eq(Sw.b(p_shl(fx_of(fx_tflo()), 8)), 7)))
-    row("g5", b2u(U32.is_eq(sy_src0(fx_of(fx_tflo()), 9), 8)))
-    row("e1", Bool.to_u32(sy_is_op(fx_of(fx_tflo()), 9, O.OpsCAST{})))
-    row("e2", Bool.to_u32(sy_nsrc_is(fx_of(fx_tflo()), 9, 1)))
-    row("e3", Bool.to_u32(p_dt1(sy_arg_dt(fx_of(fx_tflo()), 9), S.uint32())))
-    row("e4", Bool.to_u32(p_or2(fx_of(fx_tflo()), 8)))
-    row("e5", Bool.to_u32(Sw.ok(p_shl(fx_of(fx_tflo()), 8))))
-    row("e6", Bool.to_u32(U32.is_eq(sy_src0(fx_of(fx_tflo()), Sw.a(p_shl(fx_of(fx_tflo()), 8))), 6)))
-    row("e7", Bool.to_u32(O.pm_early(sym_table(), sy_ar(fx_of(fx_tflo())), 9, [O.OpsOR{}])))
-    row("e8", Bool.to_u32(O.pm_claimed([O.OpsCAST{}], sy_ar(fx_of(fx_tflo())), 9)))
-    row("e9", dbg_u(sym_dispatch(19, fx_of(fx_tflo()), 9)))
-    row("f1", Bool.to_u32(p_recip2(fx_of(fx_recip3()), 4, p_mul3(fx_of(fx_recip3()), 3))))
-    row("f2", dbg_u(sym_dispatch(21, fx_of(fx_recip3()), 4)))
-    row("d_p1", Bool.to_u32(sy_is_op(fx_of(fx_shr()), 5, O.OpsSHR{})))
-    row("d_p2", Bool.to_u32(sy_nsrc_is(fx_of(fx_shr()), 5, 2)))
-    row("d_p3", Bool.to_u32(sy_is_op(fx_of(fx_shr()), 3, O.OpsAND{})))
-    row("d_p4", Bool.to_u32(sy_nsrc_is(fx_of(fx_shr()), 3, 2)))
-    row("d_p5", Bool.to_u32(Sw.ok(p_const(fx_of(fx_shr()), 3))))
-    row("d_p6", Bool.to_u32(sy_is_const(fx_of(fx_shr()), 1)))
-    row("d_p7", Bool.to_u32(sy_is_const(fx_of(fx_shr()), 2)))
-    row("d_p8", Bool.to_u32(U32.is_eq(sy_src1(fx_of(fx_shr()), 3), 2)))
-    row("d_p9", Bool.to_u32(U32.is_eq(sy_src0(fx_of(fx_shr()), 5), 3)))
-    srow("o_tflo", String.concat([opn(O.Found.ar(fx_tflo()), 1), opn(O.Found.ar(fx_tflo()), 2), opn(O.Found.ar(fx_tflo()), 3), opn(O.Found.ar(fx_tflo()), 4), opn(O.Found.ar(fx_tflo()), 5), opn(O.Found.ar(fx_tflo()), 6), opn(O.Found.ar(fx_tflo()), 7), opn(O.Found.ar(fx_tflo()), 8), opn(O.Found.ar(fx_tflo()), 9)]))
-    srow("o_recip3", String.concat([opn(O.Found.ar(fx_recip3()), 1), opn(O.Found.ar(fx_recip3()), 2), opn(O.Found.ar(fx_recip3()), 3), opn(O.Found.ar(fx_recip3()), 4)]))
-    srow("o_recipc", String.concat([opn(O.Found.ar(fx_recipc()), 1), opn(O.Found.ar(fx_recipc()), 2), opn(O.Found.ar(fx_recipc()), 3), opn(O.Found.ar(fx_recipc()), 4)]))
-    row("d_q1", Bool.to_u32(p_shl32(fx_of(fx_tflo()), 6)))
-    row("d_q2", Bool.to_u32(p_cast_at(fx_of(fx_tflo()), 7, S.uint64())))
-    row("d_q3", Bool.to_u32(sy_is_op(fx_of(fx_tflo()), 8, O.OpsOR{})))
-    row("d_q4", b2u(U32.is_eq(sy_src0(fx_of(fx_tflo()), 8), 6)))
-    row("d_q5", b2u(U32.is_eq(sy_src1(fx_of(fx_tflo()), 8), 7)))
-    row("d_r1", Bool.to_u32(p_mul3.a(fx_of(fx_recip3()), 2)))
-    row("d_r2", b2u(U32.is_eq(sy_src0(fx_of(fx_recip3()), 3), 2)))
-    row("d_r3", b2u(U32.is_eq(sy_src1(fx_of(fx_recip3()), 3), 1)))
-    row("d_r4", Bool.to_u32(Sw.ok(p_mul3(fx_of(fx_recip3()), 3))))
-    row("d_r5", b2u(U32.is_eq(Sw.a(p_mul3(fx_of(fx_recip3()), 3)), 2)))
-    row("d_r6", b2u(U32.is_eq(Sw.b(p_mul3(fx_of(fx_recip3()), 3)), 1)))
-    row("d_s1", Bool.to_u32(sy_is_const(fx_of(fx_recipc()), 1)))
-    row("d_s2", Bool.to_u32(sy_is_const(fx_of(fx_recipc()), 2)))
-    row("d_s3", b2u(U32.is_eq(Sw.a(p_const(fx_of(fx_recipc()), 3)), 1)))
-    row("d_s4", b2u(U32.is_eq(Sw.b(p_const(fx_of(fx_recipc()), 3)), 2)))
-    row("d_shr_gate", Bool.to_u32(sym_16.gate(mc32.of(sy_val(fx_of(fx_shr()), 2), sy_val(fx_of(fx_shr()), 4)))))
-    row("d_fdivm", dbg_u(sym(fx_of(fx_fdivm()), 5)))
-    row("d_fdivm_gate", Bool.to_u32(sym_17.gate(mc32.of(sy_val(fx_of(fx_fdivm()), 2), sy_val(fx_of(fx_fdivm()), 4)))))
-    row("d_prom", dbg_u(sym(fx_of(fx_prom()), 4)))
-    row("d_prom_pat", Bool.to_u32(sym_18.pat(fx_of(fx_prom()), 4)))
-    row("d_prom_meet", Bool.to_u32(dt_weak_of(sy_promo(fx_of(fx_prom()), 4))))
-    row("d_prom_dt0", Bool.to_u32(dt_weak_of(sy_dt1(fx_of(fx_prom()), 2))))
-    row("d_tflo", dbg_u(sym(fx_of(fx_tflo()), 9)))
-    row("d_tflo_pat", Bool.to_u32(sym_19.pat(fx_of(fx_tflo()), 9, p_shl(fx_of(fx_tflo()), 8))))
-    row("d_tflo_dt", Bool.to_u32(sy_dt_is(fx_of(fx_tflo()), 4, S.uint64())))
-    row("d_tflo_dt2", Bool.to_u32(sy_dt_is(fx_of(fx_tflo()), 2, S.uint32())))
-    row("d_recip3", dbg_u(sym(fx_of(fx_recip3()), 4)))
-    row("d_recip3_pat", Bool.to_u32(p_recip2(fx_of(fx_recip3()), 4, p_mul3(fx_of(fx_recip3()), 3))))
-    row("d_recipc", dbg_u(sym(fx_of(fx_recipc()), 4)))
-    row("d_recipc_pat", Bool.to_u32(p_recip2(fx_of(fx_recipc()), 4, p_const(fx_of(fx_recipc()), 3))))
-    srow("o_tflo", String.concat([opn(O.Found.ar(fx_tflo()), 0), opn(O.Found.ar(fx_tflo()), 1), opn(O.Found.ar(fx_tflo()), 2), opn(O.Found.ar(fx_tflo()), 3), opn(O.Found.ar(fx_tflo()), 4), opn(O.Found.ar(fx_tflo()), 5), opn(O.Found.ar(fx_tflo()), 6), opn(O.Found.ar(fx_tflo()), 7), opn(O.Found.ar(fx_tflo()), 8), opn(O.Found.ar(fx_tflo()), 9)]))
-    srow("d_tflo_4", dtstr(fx_of(fx_tflo()), 4))
-    srow("d_tflo_2", dtstr(fx_of(fx_tflo()), 2))
-    srow("d_tflo_9", dtstr(fx_of(fx_tflo()), 9))
-    row("d_prom_lay", O.Arena.next(sy_ar(fx_of(fx_prom()))))
-    row("d_prom_5", b2u(O.eq_op(O.Arena.op(sy_ar(fx_of(fx_prom())), 5), O.OpsCAST{})))
-    row("d_shr_lay", O.Arena.next(sy_ar(fx_of(fx_shr()))))
-    row("d_shr_6", b2u(O.eq_op(O.Arena.op(sy_ar(fx_of(fx_shr())), 6), O.OpsSHR{})))
 
 # THE FUZZ DRIVER. `main` with NO argument is the gate above, byte for byte; with
 # ONE argument it reads that case file, builds the arena out of the s-expr the case

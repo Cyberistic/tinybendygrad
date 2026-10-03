@@ -15,7 +15,7 @@
 # `uint64` answered as `int64` all change the STRING, so a mistake here cannot hide.
 #
 #     .venv/bin/python .agents/slop/mm-dt-gate.py                 > $OUT/dt-py.txt
-#     ./bin/bend tinybendygrad/uop/fold2_work.bend                  > $OUT/dt-bend.txt
+#     ./bin/bend tinybendygrad/uop/fold.bend                  > $OUT/dt-bend.txt
 #     diff $OUT/dt-py.txt <(grep '^bl_dt_' $OUT/dt-bend.txt)
 #
 # `TG_TREE` OVERRIDES WHERE `tinygrad` IS READ FROM, and it exists because another agent

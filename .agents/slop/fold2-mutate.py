@@ -17,7 +17,7 @@ import sys
 import os
 import time
 
-WORK = 'tinybendygrad/uop/fold2_work.bend'
+WORK = 'tinybendygrad/uop/fold.bend'
 BEND = './bin/bend'
 # The dtype oracle reads a CLEAN `git archive HEAD tinygrad` snapshot, because another
 # agent edits `tinygrad/uop/ops.py` and a half-synchronised tree breaks the import.

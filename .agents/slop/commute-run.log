@@ -1,0 +1,43 @@
+frozen copy reproduces the live tree: 137 .bend files, md5-verified, under /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/commute-freeze-5gp8eluh
+
+PRE-FLIGHT: every port must print rows from the FROZEN copy before any
+mutation runs. A zero-row port is the bend stack overflow, or another
+agent mid-edit; it is NOT a result.
+  pre-flight codegen/__init__.bend: 1 rows
+  pre-flight renderer/cstyle.bend: 225 rows
+  pre-flight codegen/gpudims.bend: 24 rows
+  pre-flight codegen/late/gater.bend: 11 rows
+  pre-flight runtime/ops_cl.bend: 229 rows
+  pre-flight runtime/ops_cuda.bend: 120 rows
+  pre-flight runtime/ops_hip.bend: 96 rows
+  pre-flight runtime/ops_cpu.bend: 134 rows
+  pre-flight runtime/ops_null.bend: 180 rows
+  pre-flight codegen/late/linearizer.bend: 69 rows
+  pre-flight codegen/late/regalloc.bend: 48 rows
+  pre-flight runtime/ops_dsp.bend: 498 rows
+  pre-flight renderer/tc_ptx.bend: 333 rows
+
+PATCH DID NOT APPLY  __init__.bend:65:A: ZERO ROWS from codegen/__init__.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+--- codegen/init: 1 rows, 1 sites, 0 APPLIED -> NO MEASUREMENT (every patch failed; a zero here is not a result)
+PATCH DID NOT APPLY  cstyle.bend:1193:A: ZERO ROWS from renderer/cstyle.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  cstyle.bend:1336:A: ZERO ROWS from renderer/cstyle.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  cstyle.bend:1527:A: ZERO ROWS from renderer/cstyle.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  cstyle.bend:1653:A: ZERO ROWS from renderer/cstyle.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+--- cstyle: 225 rows, 5 sites (1 applied, 4 did not apply), 9 rows moved, hit rate 4.0%
+--- gpudims: 24 rows, 0 sites, 0 APPLIED -> NO MEASUREMENT (every patch failed; a zero here is not a result)
+--- late/gater: 11 rows, 0 sites, 0 APPLIED -> NO MEASUREMENT (every patch failed; a zero here is not a result)
+PATCH DID NOT APPLY  ops_cl.bend:857:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cl.bend:899:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cl.bend:905:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cl.bend:958:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cl.bend:1562:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cl.bend:1719:A: ZERO ROWS from runtime/ops_cl.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cuda.bend:199:A: ZERO ROWS from runtime/ops_cuda.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_hip.bend:78:A: ZERO ROWS from runtime/ops_hip.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_hip.bend:120:A: ZERO ROWS from runtime/ops_hip.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_hip.bend:135:A: ZERO ROWS from runtime/ops_hip.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+--- ops_cl: 445 rows, 10 sites, 0 APPLIED -> NO MEASUREMENT (every patch failed; a zero here is not a result)
+PATCH DID NOT APPLY  ops_cpu.bend:185:A: ZERO ROWS from runtime/ops_cpu.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cpu.bend:472:A: ZERO ROWS from runtime/ops_cpu.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cpu.bend:505:A: ZERO ROWS from runtime/ops_cpu.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:
+PATCH DID NOT APPLY  ops_cpu.bend:1088:A: ZERO ROWS from runtime/ops_cpu.bend after 6 tries -- bend did not run (the ~1-in-20 stack overflow). stderr tail:

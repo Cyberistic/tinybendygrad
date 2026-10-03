@@ -16589,6 +16589,20 @@ editing `BASE_ORACLES` and prove the restore with a hash. A reader who "uses `--
 green control and learns nothing. Assert the flag CHANGES what the lanes run, or do not use it
 in a control.
 
+**⚠ FIXED, by the unit that owns `rebase-gate.py`, on 2026-10-03 — one line, and the credit is
+recorded in its own comment there.** The fix replaces the thing that is ITERATED rather than
+the dict the snapshot was taken from:
+
+    -    port, _ = targets[0]
+    -    BASE_ORACLES[port] = [a.oracle]
+    +    port, was = targets[0]
+    +    targets = [(port, (a.oracle,))]
+
+So the no-op above is a PAST defect, kept here because "it was never fixed" and "it was fixed
+and the note was not updated" read identically from here. The control recorded in section 46
+was necessarily run before that fix and planted by editing the entry; a control written after
+it should use the flag — and should first assert the flag changed what the lanes ran.
+
 ### 48. `ORACLE_NOT_WIRED` BECOMING EMPTY IS A RESULT, NOT A DISSOLVED QUESTION.
 
 

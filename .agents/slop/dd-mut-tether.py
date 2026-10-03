@@ -66,13 +66,20 @@ def main():
             continue
         open(tgt, "w").write(src.replace(old, new, 1))
         got = gate(tgt)
+        # A refusal prints on stderr and NOTHING on stdout, so `gate` hands back
+        # the error text.  Test for it by SHAPE -- a row set starts `l2idt0=` --
+        # not by grepping for "Error", which appears in a diff summary too and
+        # turned a real 5-line result into a bogus "REFUSED" once already.
+        rows = got.splitlines()[:1] and got.splitlines()[0].startswith("l2idt0=")
         if got == base:
             v = "THEOREM -- compiled, output BYTE-IDENTICAL"
-        elif "Error" in got or "expected" in got:
+        elif not rows:
             v = "REFUSED -- %s" % " / ".join(got.splitlines()[1:5])
         elif got:
-            diff = sum(1 for a, b in zip(got.splitlines(), base.splitlines()) if a != b)
-            v = "STILL REACHED -- %d lines differ from the baseline" % diff
+            a, b = got.splitlines(), base.splitlines()
+            diff = sum(1 for x, y in zip(a, b) if x != y)
+            v = ("STILL REACHED -- %d of %d lines differ (%d vs %d lines)"
+                 % (diff, len(b), len(a), len(b)))
         else:
             v = "NO OUTPUT in 24 attempts (bend's stack overflow) -- NOT A VERDICT"
         print("%-28s %s" % (name, v))

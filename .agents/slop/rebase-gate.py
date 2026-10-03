@@ -814,7 +814,10 @@ def main():
   ap.add_argument("--baseline", default=None,
                   help="a baseline file other than rebase/baseline.json -- for measuring a "
                        "port without touching the recorded one")
-  ap.add_argument("--no-native", action="store_true")
+  ap.add_argument("--no-native", action="store_true",
+                  help="skip the compiled lane. REFUSED for a port whose baseline recorded one: "
+                       "GUARD 1 is an absolute count, so a lane that was not run reads as "
+                       "`LOST ROWS: 600 -> 0` -- a false red manufactured by a speed flag")
   ap.add_argument("--record-stable", default=None, metavar="STABILITY_JSON",
                   help="record into the baseline ONLY the ports a rebase-stability.py "
                        "measurement marked recordable, copying that measurement's rows verbatim. "
@@ -855,6 +858,31 @@ def main():
     print(f"NO TARGETS: {' '.join(srcs) if not a.port else a.port} "
           "maps to no port that exists. Nothing was checked.")
     return 1
+
+  if a.no_native:
+    # ⚠ --no-native MANUFACTURES A FALSE RED ON A RECORDED PORT, and it did so in the wild.
+    # run_port() simply omits the lane, so `now` has no `native` key, so GUARD 1 computes
+    # `len(have)=0 < len(was)=600` and reports "lane `native` LOST ROWS: 600 -> 0 (TO ZERO --
+    # the failure that went unnoticed for an hour)". The rows did not go anywhere; the flag
+    # declined to look. MEASURED through rebase-plant-disagreement.py against the recorded
+    # ops_nv: the UNCORRUPTED oracle answered BROKEN on that false red, which would have made
+    # this control report that recording hides a disagreement.
+    #
+    # It was invisible while every port was unrecorded -- which is the state the gate was in
+    # until this unit recorded 29 lanes -- so the flag was harmless by accident and is not any
+    # more. Refused rather than tolerated: silently skipping a recorded lane would report
+    # UNCHANGED over a lane nobody looked at, which is the exact "nobody looked" lie the whole
+    # UNCHANGED/hunks mechanism exists to prevent.
+    blocked = sorted(p for p, _ in targets
+                     if (baseline_for(base, p)[0] or {}).get("native"))
+    if blocked:
+      print("REFUSING: --no-native for a port whose BASELINE RECORDED A native lane.\n"
+            f"  {', '.join(blocked)}\n"
+            "  GUARD 1 counts absolutely, so a lane that was not run is indistinguishable from a\n"
+            "  lane that went to zero, and the gate would report TO ZERO on rows that are intact.\n"
+            "  Drop --no-native, or judge against a copy of the baseline with the native lane\n"
+            "  removed (--baseline PATH). rebase-gate.py exits 1.")
+      return 1
 
   if a.record_stable:
     return 0 if record_stable(a.record_stable, baseline_path, plan)[0] else 1

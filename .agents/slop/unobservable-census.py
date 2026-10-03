@@ -166,6 +166,36 @@ def analyse(path: pathlib.Path) -> dict:
     }
 
 
+def hand_typed(oracle_py: pathlib.Path) -> list[tuple[str, str]]:
+    """Rows whose expected value is a LITERAL, not a CALL into tinygrad.
+
+    `.agents/slop/c-oracle.py` is the expected side of `runtime/support/c.bend`'s
+    gate and it derives every value by CALLING the port's subject. One row does
+    not:
+
+        row("sname_ctor_idx_given", "0,0")     # both constructed with idx=0
+
+    The value `"0,0"` is typed, so the row asserts what the author believed about
+    `Field.__init__`'s default rather than what `Field.__init__` does. If the
+    default changed to 1 the row would still read `0,0` and still pass. It is not
+    a test; it is a belief.
+
+    DETECTED, NOT GUESSED: a `row(...)`/`srow(...)` call whose value argument is a
+    bare string/number literal rather than an expression containing a call, a
+    subscript, or an attribute read. A row whose whole value is an f-string with
+    no expression inside it is the same defect.
+    """
+    text = oracle_py.read_text(errors="replace")
+    out = []
+    for m in re.finditer(r'\b(?:s?row)\(\s*"([^"]+)"\s*,\s*(.+?)\)\s*(?:#.*)?$', text, re.M):
+        name, val = m.group(1), m.group(2).strip()
+        lit = re.fullmatch(r'(?:"[^"]*"|\'[^\']*\'|-?\d+(?:\.\d+)?|True|False|None)', val)
+        bare = re.fullmatch(r'f"[^"{]*"', val)
+        if lit or bare:
+            out.append((name, val))
+    return out
+
+
 WIRED = {
     # oracle txt -> the port whose rows it is the expected side of
     "runs/base_runtime_ops_cl.bend.txt": "runtime/ops_cl+ops_cuda+ops_hip",
@@ -246,5 +276,31 @@ def main(argv: list[str]) -> int:
     return 0
 
 
+def q_handtyped() -> int:
+    print("=" * 96)
+    print("HAND-TYPED ROWS -- a row whose expected value is a LITERAL, not a CALL")
+    print("=" * 96)
+    total = 0
+    seen = set()
+    for f in sorted(SLOP.rglob("*oracle*.py")):
+        if f in seen:
+            continue
+        seen.add(f)
+        try:
+            rows = hand_typed(f)
+        except Exception:  # noqa: BLE001 - a scratch probe is not a failure here
+            continue
+        if not rows:
+            continue
+        total += len(rows)
+        print(f"--- {f.relative_to(SLOP)}  {len(rows)} hand-typed rows")
+        for nm, v in rows:
+            print(f"      {nm} = {v}")
+    print(f"\nTOTAL hand-typed rows across every committed oracle: {total}")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--handtyped" in sys.argv:
+        raise SystemExit(q_handtyped())
     raise SystemExit(main(sys.argv[1:]))

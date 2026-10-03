@@ -112,6 +112,7 @@ HIP4 = _bare(HIPRenderer, "gfx950")
 # `dev CLANG` is tag 1 and so on. The `A` suffix is the metal-4/HIP-cdna4 twin.
 def RD(d): return (CS, CLG, OCL, MTL, CUD, HIP)[d]
 DEVN = {0: "BASE ", 1: "CLANG", 2: "OPENCL", 3: "METAL", 4: "CUDA ", 5: "HIP  "}
+NIDX = {v: k for k, v in DEVN.items()}
 def dn(d): return DEVN[d]
 
 def render(sinks, r=CS):
@@ -266,46 +267,49 @@ UN = {Ops.SQRT, Ops.RECIPROCAL, Ops.NEG, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.TRUNC}
 BIN = {Ops.AND, Ops.XOR, Ops.OR, Ops.ADD, Ops.SUB, Ops.MUL, Ops.CMOD, Ops.CDIV,
        Ops.CMPNE, Ops.SHR, Ops.SHL, Ops.CMPLT, Ops.CMPEQ, Ops.FDIV}
 XS = ["X", "Y", "Z"]
+# THE ROW NAMES, TRANSCRIBED FROM cstyle.bend's `main` (2152-2219). They are KEYS
+# and not values, and they are padded by hand there -- `cfo CUDA ` carries two
+# spaces and `cfo BASE ` two -- so a name rebuilt from a device list is a name
+# that will not join. Every row's OP and DTYPE TAG are named separately because
+# the tag is `f32`/`f16`/`f64`/`bf16` and NOT `dt_name`, which would print `f32`
+# where the rows say `half`.
+F32, F16, F64, BF16 = "f32", "f16", "f64", "bf16"
+DT = {F32: dtypes.f32, F16: dtypes.half, F64: dtypes.float64, BF16: dtypes.bfloat16}
+CFO = ([("BASE ", o, t) for o, t in (
+        (Ops.SQRT, F32), (Ops.SQRT, F16), (Ops.SQRT, F64), (Ops.NEG, F32), (Ops.RECIPROCAL, F32),
+        (Ops.RECIPROCAL, F16), (Ops.EXP2, F32), (Ops.LOG2, F32), (Ops.SIN, F32), (Ops.TRUNC, F32),
+        (Ops.ADD, F32), (Ops.SUB, F32), (Ops.MUL, F32), (Ops.CDIV, F32), (Ops.CMOD, F32),
+        (Ops.SHR, F32), (Ops.SHL, F32), (Ops.CMPLT, F32), (Ops.CMPEQ, F32), (Ops.CMPNE, F32),
+        (Ops.AND, F32), (Ops.OR, F32), (Ops.XOR, F32), (Ops.FDIV, F32))]
+     + [("CLANG", o, t) for o, t in (
+        (Ops.SQRT, F32), (Ops.SQRT, F16), (Ops.SQRT, F64), (Ops.TRUNC, F32), (Ops.TRUNC, F64),
+        (Ops.FDIV, F32), (Ops.EXP2, F32), (Ops.LOG2, F32), (Ops.SIN, F32), (Ops.RECIPROCAL, F32),
+        (Ops.ADD, F32))]
+     + [("METAL", o, t) for o, t in ((Ops.SIN, F32), (Ops.SIN, F16), (Ops.SQRT, F32), (Ops.FDIV, F32))]
+     + [("CUDA ", o, t) for o, t in (
+        (Ops.SQRT, F16), (Ops.SQRT, F32), (Ops.SQRT, F64), (Ops.TRUNC, F16), (Ops.TRUNC, F32),
+        (Ops.SIN, F16), (Ops.LOG2, F16), (Ops.EXP2, F16), (Ops.RECIPROCAL, F16), (Ops.RECIPROCAL, F32),
+        (Ops.SQRT, BF16), (Ops.SIN, BF16), (Ops.TRUNC, BF16), (Ops.LOG2, BF16), (Ops.EXP2, BF16),
+        (Ops.RECIPROCAL, BF16), (Ops.FDIV, F32))]
+     + [("HIP  ", o, t) for o, t in (
+        (Ops.SQRT, F16), (Ops.SQRT, F32), (Ops.SQRT, F64), (Ops.TRUNC, F16), (Ops.SIN, F32),
+        (Ops.LOG2, F32), (Ops.EXP2, F16), (Ops.RECIPROCAL, F32), (Ops.SQRT, BF16), (Ops.TRUNC, BF16))]
+     + [("OPENCL", o, t) for o, t in ((Ops.SIN, F32), (Ops.SQRT, F16))])
 
 def rows_cfo():
-  # `(cfo <dev> <OPNAME> <tag>, ...)`. The port spells the dtype tag f32/f16/f64/
-  # bf16 rather than calling `dt_name`, so the tag is part of the ROW NAME.
-  def cfo(d, op, tag, dt):
-    r = RD(d)
-    if not hasattr(r, "code_for_op"): return
+  # The arity is upstream's: a dict of lambdas has no arity field, so `WHERE` is
+  # the only ternary and every other entry is unary or binary. Passing three
+  # arguments to a unary lambda would raise and answer nothing.
+  for dev, op, tag in CFO:
+    r = RD(NIDX[dev])
     fn = call(r.code_for_op.get, op)
     args = (XS[0],) if op in UN else (XS[0], XS[1]) if op in BIN else tuple(XS)
-    R(f"cfo {dn(d)} {op.name} {tag}", KEYERROR if fn is None else fn(*args, dt))
-  Y, N, S16 = dtypes.f16, dtypes.f32, dtypes.int16
-  for tag, dt in (("f32", N), ("f16", Y), ("f64", dtypes.float64), ("bf16", dtypes.bfloat16)):
-    for op in (Ops.SQRT, Ops.NEG, Ops.RECIPROCAL, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.TRUNC,
-               Ops.ADD, Ops.SUB, Ops.MUL, Ops.CDIV, Ops.CMOD, Ops.SHR, Ops.SHL,
-               Ops.CMPLT, Ops.CMPEQ, Ops.CMPNE, Ops.AND, Ops.OR, Ops.XOR, Ops.FDIV):
-      cfo(0, op, tag, dt)
-  cfo(0, Ops.WHERE, "f32", N); cfo(0, Ops.WHERE, "f64", dtypes.float64)
-  for op in (Ops.SQRT, Ops.TRUNC, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.RECIPROCAL,
-             Ops.FDIV, Ops.ADD, Ops.CDIV, Ops.NEG, Ops.MUL, Ops.WHERE):
-    cfo(1, op, "f32", N)
-  for tag, dt in (("f32", N), ("f16", Y), ("f64", dtypes.float64)): cfo(1, Ops.SQRT, tag, dt)
-  cfo(1, Ops.TRUNC, "f64", dtypes.float64); cfo(1, Ops.WHERE, "f16", Y)
-  cfo(2, Ops.SIN, "f32", N); cfo(2, Ops.SQRT, "f16", Y); cfo(2, Ops.WHERE, "f32", N)
-  cfo(2, Ops.MUL, "f16", Y); cfo(2, Ops.SIN, "f64", dtypes.float64)
-  for op in (Ops.SIN, Ops.SQRT, Ops.TRUNC, Ops.FDIV, Ops.ADD, Ops.MUL, Ops.WHERE):
-    cfo(3, op, "f32", N)
-  for tag, dt in (("f32", N), ("f16", Y), ("f64", dtypes.float64)): cfo(3, Ops.SIN, tag, dt)
-  for op in (Ops.SQRT, Ops.TRUNC, Ops.LOG2, Ops.EXP2, Ops.SIN, Ops.RECIPROCAL,
-             Ops.ADD, Ops.MUL, Ops.WHERE):
-    cfo(4, op, "f32", N)
-  for tag, dt in (("f32", N), ("f16", Y), ("f64", dtypes.float64)): cfo(4, Ops.SQRT, tag, dt)
-  for op in (Ops.TRUNC, Ops.SIN, Ops.WHERE, Ops.SUB, Ops.MUL, Ops.NEG):
-    cfo(4, op, "f16", Y)
-  for op in (Ops.SQRT, Ops.SIN, Ops.TRUNC, Ops.LOG2, Ops.EXP2, Ops.RECIPROCAL,
-             Ops.ADD, Ops.WHERE):
-    cfo(4, op, "bf16", dtypes.bfloat16)
-  for tag, dt in (("f32", N), ("f16", Y), ("f64", dtypes.float64)): cfo(5, Ops.SQRT, tag, dt)
-  cfo(5, Ops.TRUNC, "f16", Y); cfo(5, Ops.SIN, "f32", N); cfo(5, Ops.LOG2, "f32", N)
-  cfo(5, Ops.EXP2, "f16", Y); cfo(5, Ops.RECIPROCAL, "f32", N)
-  cfo(5, Ops.SQRT, "bf16", dtypes.bfloat16); cfo(5, Ops.TRUNC, "bf16", dtypes.bfloat16)
+    R(f"cfo {dev} {op.name} {tag}", KEYERROR if fn is None else fn(*args, DT[tag]))
+  # THE TWO `cfo_where_row` ROWS: no op and no tag in the key, because
+  # `cfo_where_row` prints neither.
+  for dev in ("BASE ", "CLANG"):
+    r = RD(NIDX[dev])
+    R(f"cfo {dev}", r.code_for_op[Ops.WHERE](*XS, dtypes.f32))
 
 def rows_kern():
   for d, lb in ((0, 1), (1, 4), (2, 1), (3, 1), (4, 1), (4, 4), (5, 1), (5, 4)):
@@ -330,9 +334,9 @@ def rows_misc():
   R("img OPENCLwrite   ", call(OCL._render_dtype, dtypes.f32, 1, AddrSpace.GLOBAL, True, False, IMG))
   R("cast BASE  half  ", f"({call(CS._render_dtype, dtypes.half, 1, AddrSpace.REG)})(V)")
   R("cast CLANG half  ", f"({call(CLG._render_dtype, dtypes.half, 1, AddrSpace.REG)})(V)")
-  R("leg  BASE  ", call(CS._render_dtype, dtypes.f32))
-  R("leg  CLANG ", call(CLG._render_dtype, dtypes.half))
-  R("leg  CLANG ", call(CLG._render_dtype, dtypes.bool))   # a duplicate NAME, see rows_strict
+  R("leg  BASE   f32", call(CS._render_dtype, dtypes.f32))
+  R("leg  CLANG  f16", call(CLG._render_dtype, dtypes.half))
+  R("leg  CLANG  bool", call(CLG._render_dtype, dtypes.bool))
   R("type BASE  stk4  ", call(CS._render_dtype, dtypes.f32, 4, AddrSpace.ALU))
   R("type BASE  regidx", call(CS._render_dtype, dtypes.f32, 1, AddrSpace.REG, True, True, None))
   R("type BASE  scalar", call(CS._render_dtype, dtypes.f32, 1, AddrSpace.ALU))
@@ -370,17 +374,26 @@ def rows_wmma():
 def rows_buft():
   # `buftypes` IS a comprehension inside `render_kernel`, so the only way to read
   # it without restating it is to CALL `render_kernel` and read the signature.
-  # METAL is the exception upstream itself names: `MetalRenderer.render_kernel`
+  # FIVE CELLS, in the port's order: ALU plain, ALU volatile, GLOBAL plain,
+  # GLOBAL volatile, LOCAL plain.
+  # METAL IS THE EXCEPTION UPSTREAM ITSELF NAMES: `MetalRenderer.render_kernel`
   # calls `super()` with `bufs=[]`, so `buftypes` is empty there and
-  # `var_prefix`/`var_suffix` are read by NOTHING in cstyle.py.
+  # `var_prefix`/`var_suffix` are read by NOTHING in cstyle.py. The gate names
+  # `buft METAL` as an exclusion rather than passing it on a cell CPython cannot
+  # produce. (CUDA's and HIP's signatures ARE reachable; their prefixes are full
+  # of parentheses, which is why the signature is cut at `E_4(` and not at the
+  # first `(` -- that bug produced `|||||` for two devices on the first run.)
   for d in range(6):
     if d == 3: continue
     cells = []
-    for a in (AddrSpace.ALU, AddrSpace.GLOBAL, AddrSpace.LOCAL):
+    for a in (AddrSpace.ALU, AddrSpace.GLOBAL):
       for vol in (False, True):
         u = UOp.param(0, dtypes.f32, (), addrspace=a, volatile=vol)
-        s = RD(d).render_kernel("E", ["  ;"], [("v0", (u, True))], [], None)
-        cells.append(s[s.index("E(")+2:s.index(")")])
+        s = RD(d).render_kernel("E_4", ["  ;"], [("v0", (u, True))], [], None)
+        cells.append(s[s.index("E_4(")+4:s.index(")")])
+    u = UOp.param(0, dtypes.f32, (), addrspace=AddrSpace.LOCAL)
+    s = RD(d).render_kernel("E_4", ["  ;"], [("v0", (u, True))], [], None)
+    cells.append(s[s.index("E_4(")+4:s.index(")")])
     R(f"buft {dn(d)}", "|".join(cells))
 
 def rows_hip():
@@ -413,7 +426,7 @@ def B(dtype=dtypes.f32, vol0=False, alu=False):
            ("data1_4", (UOp.param(1, dtype, ()), True))])
 def U_half(): return UOp(Ops.ADD, (UOp.const(1, dtypes.half), UOp.const(2, dtypes.half)), None)
 def U_bf16(): return UOp(Ops.CAST, (UOp.const(1, dtypes.bfloat16),), dtypes.bfloat16)
-def U_fp8(): return UOp(Ops.CAST, (UOp.param(0, dtypes.fp8e4m3, ()),), dtypes.fp8e4m3)
+def U_fp8(): return UOp(Ops.CAST, (UOp.const(1.0),), dtypes.fp8e4m3)
 def U_spec(): return UOp.special(UOp.const(3).cast(dtypes.i32), "g0")
 def U_inf(): return UOp(Ops.CAST, (UOp.const(float("inf")),), dtypes.f32)
 def U_sq(dt): return UOp(Ops.SQRT, (UOp.const(1, dt),), None)
@@ -423,20 +436,32 @@ def rk(d, nm, bufs, uops, prefix=None, cdna4=False):
   R(nm, r.render_kernel("E_4", BODY, bufs, uops, prefix))
 
 def rows_kern2():
-  for d in (0, 1, 2, 4, 5): rk(d, f"kern2 {dn(d)}      ", B(), [], None)
+  # ONE ENTRY PER `kern2_row` CALL IN cstyle.bend:2295-2324, in order. The FIXTURE
+  # is what makes the call: `bs` from `B`, the uop list that produces the `Emit_`
+  # the port is HANDED, and the prefix. Nothing here is transcribed -- `render_kernel`
+  # reads the bufs' `volatile`/addrspace/dtype, computes `buftypes`, reads
+  # `kernel_typedef`, and derives every prefix line from the uop list.
+  rk(0, "kern2 BASE       ", B(), [], None)
+  rk(1, "kern2 CLANG      ", B(), [], None)
+  rk(2, "kern2 OPENCL     ", B(), [], None)
+  rk(5, "kern2 HIP        ", B(), [], None)
   rk(3, "kern2 METAL      ", B(), [], None)
-  for d in (0, 2, 4, 5): rk(d, f"kern2 {dn(d)} pref2", B(), [], CALLER)
+  rk(0, "kern2 BASE  pref2", B(), [], CALLER)
   rk(0, "kern2 BASE  pref0", B(), [], [])
+  rk(2, "kern2 OPENCL pref2", B(), [], CALLER)
+  rk(4, "kern2 CUDA  pref2", B(), [], CALLER)
+  rk(5, "kern2 HIP   pref2", B(), [], CALLER)
+  rk(3, "kern2 METAL pref2", B(), [], CALLER)
   rk(2, "kern2 OPENCL f16 ", B(), [U_half()], CALLER)
   rk(0, "kern2 BASE  vol  ", B(vol0=True), [], None)
   rk(1, "kern2 CLANG vol  ", B(vol0=True), [], None)
   rk(5, "kern2 HIP   spec ", B(), [U_spec()], None)
-  rk(5, "kern2 HIP   ockl ", B(dtypes.half), [U_half(), U_sq(dtypes.half), U_sq(dtypes.f32)], None)
-  rk(5, "kern2 HIP   half ", B(dtypes.half), [U_half()], None)
-  rk(5, "kern2 HIP   bf16 ", B(), [U_bf16()], None)
-  rk(5, "kern2 HIP   bf16h", B(), [U_bf16(), U_half()], None)
-  rk(5, "kern2 HIP   cdna4", B(), [U_bf16()], None, True)
-  rk(5, "kern2 HIP   inf  ", B(), [U_inf()], None)
+  rk(5, "kern2 HIP   ockl ", B(), [U_half(), U_sq(dtypes.half), U_sq(dtypes.f32), U_spec()], None)
+  rk(5, "kern2 HIP   half ", B(), [U_half(), U_spec()], None)
+  rk(5, "kern2 HIP   bf16 ", B(), [U_bf16(), U_spec()], None)
+  rk(5, "kern2 HIP   bf16h", B(), [U_bf16(), U_half(), U_spec()], None)
+  rk(5, "kern2 HIP   cdna4", B(), [U_bf16(), U_spec()], None, True)
+  rk(5, "kern2 HIP   inf  ", B(), [U_inf(), U_spec()], None)
   rk(4, "kern2 CUDA  half ", B(), [U_half()], None)
   rk(4, "kern2 CUDA  bf16 ", B(), [U_bf16()], None)
   rk(4, "kern2 CUDA  fp8  ", B(), [U_fp8()], None)
@@ -444,7 +469,7 @@ def rows_kern2():
   rk(1, "kern2 CLANG alu  ", B(alu=True), [], None)
   rk(3, "kern2 METAL alu  ", B(alu=True), [], None)
   rk(4, "kern2 CUDA  vecs ", B(), [U_vec(dtypes.half)], None)
-  rk(5, "kern2 HIP   vecs ", B(), [U_vec(dtypes.half)], None)
+  rk(5, "kern2 HIP   vecs ", B(), [U_vec(dtypes.half), U_spec()], None)
   rk(4, "kern2 CUDA  all  ", B(), [U_fp8(), U_half(), U_bf16()], None)
 
 # ------------------------------------------------------------------- idx
@@ -453,28 +478,43 @@ def rows_kern2():
 # dict by hand, and "B"/"R" are the two names the port's rows print -- which is
 # what makes `(B)[R]` and `B.x` and `(B+R)` comparable at all.
 def CIX(k): return UOp(Ops.CAST, (UOp.const(k),), dtypes.int32)
-def ix(nm, d, baddr, bnumel, buf, idx):
-  r = RD(d)
-  r.r = {buf: "B", idx: "R"}
-  R(nm, r.render_index(idx, buf, idx))
 def rows_idx():
-  ab = UOp.param(0, dtypes.f32, (), addrspace=AddrSpace.ALU)
-  rb = UOp.param(0, dtypes.f32, (), addrspace=AddrSpace.REG)
-  lane = UOp(Ops.INDEX, (CIX(0),), dtypes.f32)
-  for d, k, lbl in ((0, 0, "sz1 k0 "), (0, 1, "sz1 k1 "), (0, 3, "sz1 k3 ")):
-    ix(f"idx {dn(d)}  {lbl}", d, AddrSpace.ALU, 1, ab, CIX(k))
-  for d, nb, lbl in ((0, 1, "sz1 k0 "), (0, 8, "sz8 k0 "), (1, 1, "sz1 k0 "), (1, 8, "sz8 k0 "),
-                     (2, 1, "sz1 k0 "), (2, 8, "sz8 k0 "), (4, 8, "sz8 k0 "), (4, 16, "sz16k0"),
-                     (4, 8, "sz8 k1 "), (4, 8, "sz8 k3 "), (5, 1, "sz1 k0 "), (3, 1, "sz1 k0 ")):
-    ix(f"idx {dn(d)} {lbl}", d, AddrSpace.ALU, nb, ab, CIX(0 if "k1" not in lbl and "k3" not in lbl
-                                                            else (1 if "k1" in lbl else 3)))
-  for d in (0, 1, 5): ix(f"idx {dn(d)}   lane   ", d, AddrSpace.ALU, 1 if d == 0 else 16, ab, lane)
-  # `idx.arg == Ops.ADD` IS THE OTHER HALF of the non-ALU arm. `UOp(..., arg=Ops.ADD)`
-  # with zero axes is what `Ops.INDEX`'s sugar builds for a sum.
-  for d in (0, 5):
-    addi = UOp(Ops.CAST, (CIX(0),), dtypes.int32, arg=Ops.ADD)
-    ix(f"idx {dn(d)}  regadd ", d, AddrSpace.REG, 1, rb, addi)
-    ix(f"idx {dn(d)}  regnoad", d, AddrSpace.REG, 1, rb, CIX(0))
+  # THE BUFFER'S ELEMENT COUNT IS `buf.max_numel()` UPSTREAM, so the fixture is a
+  # PARAM of that length in that address space rather than a number. The ROW
+  # NAMES are copied from the port verbatim -- they are not `dn(d)`-shaped, and
+  # `idx OPENCLsz1 k0 ` has NO SPACE AT ALL, which is what a name rebuilt from
+  # `dn()` would silently lose.
+  #
+  # THE TWO `regadd` ROWS ARE ABSENT AND THE GATE NAMES THEM AS AN EXCLUSION.
+  # `render_index`'s non-ALU arm is `strip_parens(self[idx]) if idx.arg ==
+  # Ops.ADD else self[idx]`, and MEASURED at HEAD `u.arg == Ops.ADD` is False for
+  # every UOp a caller can build: INDEX's arg is `None`, RANGE's is
+  # `(AxisType, id)`, REDUCE's is `(Ops.ADD, n)`, CAST's is a DType, SPECIAL's is
+  # a string. So the ADD arm is unreachable, `strip_parens` is dead in cstyle.py,
+  # and the port's `AReduce{ADD, 0}` fixture is a shape `UOp.arg` does not have.
+  SWZ = (("idx BASE  sz1 k0 ", 0, 1, 0), ("idx BASE  sz8 k0 ", 0, 8, 0),
+         ("idx BASE  sz1 k1 ", 0, 1, 1), ("idx BASE  sz1 k3 ", 0, 1, 3),
+         ("idx CLANG sz1 k0 ", 1, 1, 0), ("idx CLANG sz8 k0 ", 1, 8, 0),
+         ("idx OPENCLsz1 k0 ", 2, 1, 0), ("idx OPENCLsz8 k0 ", 2, 8, 0),
+         ("idx CUDA  sz8 k0 ", 4, 8, 0), ("idx CUDA  sz16k0", 4, 16, 0),
+         ("idx CUDA  sz8 k1 ", 4, 8, 1), ("idx CUDA  sz8 k3 ", 4, 8, 3),
+         ("idx HIP   sz1 k0 ", 5, 1, 0), ("idx METAL sz1 k0 ", 3, 1, 0))
+  for nm, d, n, k in SWZ:
+    buf = UOp.param(0, dtypes.f32, (n,), addrspace=AddrSpace.ALU)
+    idx = CIX(k); RD(d).r = {buf: "B", idx: "R"}
+    R(nm, RD(d).render_index(idx, buf, idx))
+  for nm, d, n in (("idx BASE  lane   ", 0, 1), ("idx CLANG lane   ", 1, 16), ("idx HIP   lane   ", 5, 16)):
+    buf = UOp.param(0, dtypes.f32, (n,), addrspace=AddrSpace.ALU)
+    lane = UOp(Ops.INDEX, (CIX(0),), dtypes.f32)
+    RD(d).r = {buf: "B", lane: "R"}
+    R(nm, RD(d).render_index(lane, buf, lane))
+  # `idx.arg == Ops.ADD` IS FALSE, so upstream prints `self[idx]` UNCHANGED --
+  # and `self[idx]` is whatever the ctx holds. The port's row passes `iname` as a
+  # PARAMETER, so the fixture's ctx name must be that parameter, parens included:
+  # `"(R)"` is what makes this row `(B+(R))` and `"R"` would make it `(B+R)`.
+  buf = UOp.param(0, dtypes.f32, (1,), addrspace=AddrSpace.REG)
+  idx = CIX(0); CS.r = {buf: "B", idx: "(R)"}
+  R("idx BASE  regnoad", CS.render_index(idx, buf, idx))
 
 def rows_all():
   for f in (rows_tmap, rows_rd, rows_witem, rows_cfo, rows_kern, rows_opt, rows_misc,

@@ -5839,7 +5839,7 @@ def s5.splitrows(+fuel: Nat, +ar: Arena) -> IO(Unit):
     c : Unit <- srow("s5_split_nest", s5.split(fuel, ar, 15, OpsADD{}))
     d : Unit <- srow("s5_split_diamond", s5.split(fuel, ar, 16, OpsMUL{}))
     e : Unit <- srow("s5_split_mismatch", s5.split(fuel, ar, 17, OpsMUL{}))
-    srow("s5_split_left", s5.split(fuel, ar, 15, OpsADD{}))
+    srow("s5_split_left", s5.split(fuel, ar, 16, OpsADD{}))
 
 # The movers. Each answers a `Found`, so each row prints the node's op name and
 # its SRC OP SEQUENCE -- two facts, because a mint that got the op right and the

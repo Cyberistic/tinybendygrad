@@ -280,7 +280,8 @@ def main(argv: list[str]) -> int:
             print(f"!! {nm}: zero baseline rows")
             continue
         moved: set[str] = set()
-        n_sites = 0
+        n_sites = n_applied = 0
+        failed: list[str] = []
         detail = []
         for rel in files:
             p = fr.src_of(rel)
@@ -293,44 +294,64 @@ def main(argv: list[str]) -> int:
             for kind, off, old, new in pool:
                 n_sites += 1
                 label = f"{Path(rel).name}:{orig[:off].count(chr(10)) + 1}:{kind}"
+                why = None
+                out = None
                 try:
                     p.write_text(apply(orig, off, old, new))
                     try:
                         out = fr.bend(rel)
                     except SystemExit as e:
-                        print(f"PATCH DID NOT APPLY  {label}: {e}")
-                        continue
+                        why = str(e).splitlines()[0]
                 except AssertionError:
-                    print(f"PATCH DID NOT APPLY  {label}: anchor moved")
-                    continue
+                    why = "anchor moved"
                 finally:
                     p.write_text(orig)
-                got = rows_of(out)
-                if not got:
-                    print(f"PATCH DID NOT APPLY  {label}: mutant printed ZERO rows")
+                if out is None or not rows_of(out):
+                    why = why or "mutant printed ZERO rows"
+                    failed.append(f"{label}: {why}")
+                    print(f"PATCH DID NOT APPLY  {label}: {why}")
                     continue
-                m = diff_rows(base, got)
+                # ONLY A SITE THAT APPLIED AND RAN COUNTS. A site that did not
+                # apply is NOT a zero -- reporting one as a zero is precisely how
+                # M26 sat undetected, so the two are separate columns and a port
+                # with zero applied sites reports NO MEASUREMENT, not 0%.
+                n_applied += 1
+                m = diff_rows(base, rows_of(out))
                 moved.update(m)
                 detail.append((label, m))
-        hit = len(moved) / len(base)
+        hit = (len(moved) / len(base)) if n_applied else None
         grand_base += len(base)
         grand_moved += len(moved)
-        report.append((nm, len(base), n_sites, len(moved), hit, sorted(set(base) - moved)))
-        print(f"--- {nm}: {len(base)} rows, {n_sites} mutation sites, "
-              f"{len(moved)} rows moved, hit rate {hit*100:.1f}%")
+        report.append((nm, len(base), n_sites, n_applied, len(moved), hit,
+                       sorted(set(base) - moved) if n_applied else [], failed))
+        if n_applied:
+            print(f"--- {nm}: {len(base)} rows, {n_sites} sites ({n_applied} applied, "
+                  f"{len(failed)} did not apply), {len(moved)} rows moved, "
+                  f"hit rate {hit*100:.1f}%")
+        else:
+            print(f"--- {nm}: {len(base)} rows, {n_sites} sites, 0 APPLIED "
+                  f"-> NO MEASUREMENT (every patch failed; a zero here is not a result)")
     print()
-    print("=" * 96)
-    print("COMMUTATIVE-REORDER / HEAD-TAIL-SWAP HIT RATE  (rows moved / rows, per port)")
-    print("=" * 96)
-    print(f"{'port':22} {'rows':>6} {'sites':>6} {'moved':>7} {'hit%':>7} {'blind':>7}")
-    for nm, nb, ns, nmv, hit, blind in report:
-        print(f"{nm:22} {nb:>6} {ns:>6} {nmv:>7} {hit*100:>6.1f}% {len(blind):>7}")
-    if report:
-        tot = sum(r[1] for r in report)
-        mv = sum(r[3] for r in report)
-        print("-" * 96)
-        print(f"{'TOTAL':22} {tot:>6} {sum(r[2] for r in report):>6} {mv:>7} "
-              f"{mv/tot*100:>6.1f}%")
+    print("=" * 110)
+    print("COMMUTATIVE-REORDER / HEAD-TAIL-SWAP HIT RATE  (rows moved / rows, over APPLIED sites)")
+    print("=" * 110)
+    print(f"{'port':20} {'rows':>6} {'sites':>6} {'appl':>6} {'moved':>7} {'hit%':>8} {'blind':>7}")
+    for nm, nb, ns, nap, nmv, hit, blind, failed in report:
+        hs = f"{hit*100:>7.1f}%" if hit is not None else "   NO-MEAS"
+        print(f"{nm:20} {nb:>6} {ns:>6} {nap:>6} {nmv:>7} {hs} {len(blind) if nap else '-':>7}")
+    meas = [r for r in report if r[5] is not None]
+    if meas:
+        tot = sum(r[1] for r in meas)
+        mv = sum(r[4] for r in meas)
+        print("-" * 110)
+        print(f"{'TOTAL (measured)':20} {tot:>6} {sum(r[2] for r in meas):>6} "
+              f"{sum(r[3] for r in meas):>6} {mv:>7} {mv/tot*100:>7.1f}%")
+    nmeas = [r for r in report if r[5] is None]
+    if nmeas:
+        print()
+        print(f"{len(nmeas)} port(s) reported NO MEASUREMENT because no patch applied:")
+        for nm, *_rest in nmeas:
+            print(f"      {nm}")
     moved = fr.substrate_stable()
     print()
     if moved:
@@ -342,10 +363,18 @@ def main(argv: list[str]) -> int:
     else:
         print("substrate check: no live .bend file changed during this run")
     print()
-    for nm, nb, ns, nmv, hit, blind in report:
-        print(f"--- {nm}: {len(blind)} rows no order mutation moved ({len(blind)*100/nb:.0f}% of the port)")
+    for nm, nb, ns, nap, nmv, hit, blind, failed in report:
+        if not nap:
+            print(f"--- {nm}: NO MEASUREMENT ({len(failed)} of {ns} patches did not apply)")
+            for f in failed[:12]:
+                print(f"      DID NOT APPLY  {f}")
+            continue
+        print(f"--- {nm}: {len(blind)} of {nb} rows no APPLIED order mutation moved "
+              f"({len(blind)*100/nb:.0f}% of the port)")
         for b in blind[:top]:
             print(f"      {b}")
+        if failed:
+            print(f"    ({len(failed)} of {ns} sites did not apply and are EXCLUDED, not counted as zeros)")
     return 0
 
 

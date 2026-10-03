@@ -592,6 +592,13 @@ BEND_ONLY = [
                  "codegen/opt/{heuristic,postrange,search}); three are under codegen/opt "
                  "and are another unit's. The port keeps it on value 9, a slot upstream "
                  "does not use, so eq_axis stays injective."),
+  ("s5", "the ops.py:501-1928 UNIT (the base family, the movers, `split_uop`). Those "
+         "75 rows have their OWN CPython lane and their own gate -- "
+         "`.agents/slop/ops-501-oracle.py` and `sh .agents/slop/ops-501-gate.sh` -- because "
+         "adding them here would make this file's row ORDER the contract for a unit "
+         "that does not live in this file's unit. They are filtered here so this gate "
+         "keeps answering the question it was written for, and they are NOT "
+         "un-gated: `ops-501-gate.sh` diffs the same three lanes."),
   ("axv_UNROLL", "as axv_REDUCE"),
   ("axn_REDUCE", "as axv_REDUCE"),
   ("axn_UNROLL", "as axv_REDUCE"),
