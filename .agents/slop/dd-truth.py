@@ -39,6 +39,13 @@ DD = ".agents/slop/dd-oracle.py"
 DT = ".agents/slop/dtype-oracle.py"
 MUTANT = ".agents/slop/dtype-oracle-MUTANT.py"
 
+# dtype-oracle.py emits its own denominator as `dtype_oracle_*` rows. They are a LABEL, not
+# a measurement, so they are excluded from the filter-identity check and from nothing else
+# -- if one ever collided with a port row it would be compared, which is why the prefix is
+# deliberately not a name any port row could want.
+PROVENANCE = {f"dtype_oracle_{k}" for k in
+              ("of", "printed", "suppressed", "skip_names_unused", "full_disagreements")}
+
 
 def load(name, path):
   spec = importlib.util.spec_from_file_location(name, path)
@@ -118,13 +125,18 @@ def main():
   # `FILTERED` and therefore vacuously true-or-false on noise: it printed a confident
   # "NOT a pure filter" on a filter that is exactly one. An identity that cannot fail is not
   # an identity. The expression is now the one whose failure means something.
-  extra = sorted(set(FILTERED) - set(ORACLE))
+  extra = sorted(set(FILTERED) - set(ORACLE) - PROVENANCE)
   want = set(ORACLE) - skip
-  pure = not extra and want == set(FILTERED)
-  print(f"[truth] FILTER IDENTITY: dtype-oracle prints {len(FILTERED)} names; "
+  pure = not extra and want == (set(FILTERED) - PROVENANCE)
+  prov = sorted(set(FILTERED) & PROVENANCE)
+  print(f"[truth] FILTER IDENTITY: dtype-oracle prints {len(FILTERED)} names "
+        f"({len(prov)} of them the `dtype_oracle_*` provenance LABEL); "
         f"dd-oracle prints {len(ORACLE)}; SKIP holds {len(skip)}; "
         f"{len(ORACLE) - len(skip)} expected")
-  print(f"[truth]   {'PURE FILTER -- confirmed: FILTERED == dd-oracle rows - SKIP' if pure else 'NOT A PURE FILTER'}")
+  print(f"[truth]   {'PURE FILTER -- confirmed: FILTERED == dd-oracle rows - SKIP'
+                    + ' + provenance labels' if pure else 'NOT A PURE FILTER'}")
+  if prov:
+    print(f"[truth]   provenance labels carried by the lane itself: {prov}")
   if not pure:
     print(f"[truth]   rows it ADDS: {extra}")
     print(f"[truth]   rows it drops beyond SKIP: {sorted(want - set(FILTERED))}")
@@ -146,8 +158,12 @@ def main():
   print(f"[truth]   {len(only_dd):>3} NOT gated -- dtype-oracle.py never prints them")
   unseen = sorted(set(ORACLE) - set(B))
   print(f"[truth] {len(unseen)} of dd-oracle.py's rows the PORT does not emit at all")
-  print(f"[truth] {len(set(ORACLE) & set(FILTERED))} rows gated; "
-        f"{len(set(FILTERED)) - d_dt} of those agree")
+  # ⚠ THE PROVENANCE ROWS ARE NOT "AGREEING ROWS". `len(FILTERED) - d_dt` counts them,
+  # because the port does not emit them and so they cannot disagree -- which reads as
+  # five free passes. They are subtracted before the agreement rate is quoted.
+  gated = (set(FILTERED) & set(B)) - PROVENANCE
+  print(f"[truth] {len(gated)} rows the lane GATES against the port; {len(gated) - d_dt} agree "
+        f"({100 * (len(gated) - d_dt) // max(1, len(gated))}%)")
 
   print("\n[truth] EVERY disagreement against dd-oracle.py, with its gate status:")
   for k, pv, ov in sorted(bad_dd):

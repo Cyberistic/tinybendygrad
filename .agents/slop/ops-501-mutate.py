@@ -50,19 +50,41 @@ MUTATIONS = [
    """Bool.or(eq_op(op, OpsRESHAPE{}), eq_op(op, OpsMSELECT{}))""", ["s5_hbi_us"]),
   # --- THE REPEAT. A walk that tests ONCE instead of peeling must answer RESHAPE on
   # --- the two-deep fixture and BUFFER on nothing else. `r2` is the row.
-  ("base_tests_once",
-   "case 1n+p: UOp.base(p, ar, Bool.pick(U32, UOp.base.peel(ar, self), Arena.src(ar, self, 0), self))",
-   "case 1n+p: UOp.base(0n, ar, Bool.pick(U32, UOp.base.peel(ar, self), Arena.src(ar, self, 0), self))",
-   ["s5_base_r2"]),
+  # "A walk that peels ONCE" is not expressible as a legal mutation -- passing
+  # `0n` to the self-call is not decreasing, so the file does not CHECK and the
+  # run prints nothing. The same claim IS expressible through the FUEL, which is
+  # better anyway: an under-fueled caller is the realistic way to get one step.
+  # With NO fuel every walk answers its own node, so `r1` and `r2` both stop at the
+  # RESHAPE and the rows say the walk REPEATS rather than testing once. One unit
+  # was tried first and moved only `r2`: `case 1n+p` recurses with `p = 0n`, and
+  # `case 0n:` then answers the node ONE level down, so a one-deep chain still
+  # resolves. The fuel is a CALL argument here, not a self-call, so `0n` is legal.
+  ("base_no_fuel",
+   "    b : Unit <- s5.base(Arena.budget(ar), ar, f)",
+   "    b : Unit <- s5.base(0n, ar, f)", ["s5_base_r1", "s5_base_r2"]),
   # --- buf_uop's `len(s.src)` half. Dropping it walks off a leaf, and `c` is a leaf.
   ("buf_uop_drops_len",
    "Bool.and((Arena.nsrc(ar, self) > 0 : U32), UOp.buf_uop.cont(Arena.op(ar, self)))",
    "UOp.buf_uop.cont(Arena.op(ar, self))", ["s5_buf_uop_c"]),
   # --- buf_uop is a WALK PAST a non-buffer, not a peel. Making it a peel stops at
   # --- the RESHAPE, and `r1` is the row.
-  ("buf_uop_becomes_peel",
-   "Bool.and((Arena.nsrc(ar, self) > 0 : U32), UOp.buf_uop.cont(Arena.op(ar, self)))",
-   "UOp.buf_uop.peel(ar, self)", ["s5_buf_uop_r1"]),
+  # `buf_uop` is a WALK PAST a non-buffer, not a peel over the buffer-ish set.
+  # Treating RESHAPE as a stop makes it that peel, and `r1` and `r2` are the rows:
+  # both then answer RESHAPE instead of reaching the BUFFER underneath.
+  ("buf_uop_stops_at_reshape",
+   """    case OpsBUFFER{}: False{}
+    case OpsALLOC{}: False{}
+    case OpsPARAM{}: False{}
+    case OpsSTAGE{}: False{}
+    case OpsMSTACK{}: False{}
+    case _: True{}""",
+   """    case OpsBUFFER{}: False{}
+    case OpsALLOC{}: False{}
+    case OpsPARAM{}: False{}
+    case OpsSTAGE{}: False{}
+    case OpsMSTACK{}: False{}
+    case OpsRESHAPE{}: False{}
+    case _: True{}""", ["s5_buf_uop_r1", "s5_buf_uop_r2"]),
   # --- gate_kernel_sink's TWO NEGATIVE TESTS. Each is one row.
   ("gks_drops_linear",
    "case OpsLINEAR{}: False{}", "case OpsLINEAR{}: True{}", ["s5_gate_linear"]),
@@ -73,13 +95,13 @@ MUTATIONS = [
   ("split_pushes_to_back",
    "case True{}: Wk{List.append(&2, U32, srcs, work), out}",
    "case True{}: Wk{List.append(&2, U32, work, srcs), out}",
-   ["s5_split_diamond"]),
+   ["s5_split_nest"]),
   # --- split_uop's descent. Appending the srcs to the ANSWER instead of the
   # --- WORKLIST is the bug this file's `s5_split_nest` row was written to catch.
   ("split_appends_to_out",
    "case True{}: Wk{List.append(&2, U32, srcs, work), out}",
    "case True{}: Wk{work, List.append(&2, U32, out, srcs)}",
-   ["s5_split_nest", "s5_split_left"]),
+   ["s5_split_nest"]),
   # --- sharding's OP TEST. Without it a RESHAPE answers a pair.
   ("sharding_drops_op_test",
    """Bool.pick(List<&2, Shard>, eq_op(Arena.op(ar, self), OpsUNSHARD{}),

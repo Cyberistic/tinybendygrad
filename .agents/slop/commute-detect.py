@@ -123,19 +123,27 @@ class Frozen:
     def src_of(self, rel: str) -> pathlib.Path:
         return self.dst / rel
 
-    def substrate_stable(self) -> list[str]:
+    def substrate_stable(self, scope: list[str]) -> tuple[list[str], list[str]]:
         """WHICH live `.bend` files changed while this tool was running.
+
+        `scope` is the port set plus everything it transitively imports; a file
+        OUTSIDE the scope cannot change the numbers for the ports inside it, and
+        discarding a 20-minute run because `renderer/cstyle.bend` — which
+        `codegen/late/linearizer.bend` never imports — moved would be its own
+        kind of dishonesty. Both lists are reported.
 
         agent-core records `fold.bend` and `movement.bend` going transiently
         uncompilable from a concurrent agent and one baseline silently
-        corrupted, so a run whose substrate moved is DISCARDED, not reported.
+        corrupted, so a run whose IN-SCOPE substrate moved is DISCARDED.
         """
         moved = []
         for p in sorted(self.src.rglob("*.bend")):
             q = self.dst / p.relative_to(self.src)
             if not q.exists() or md5(p) != md5(q):
                 moved.append(str(p.relative_to(self.src)))
-        return moved
+        in_scope = [x for x in moved if any(x == s or x.startswith(s.split("/")[0] + "/")
+                                            for s in scope)]
+        return moved, in_scope
 
     def bend(self, rel: str, tries: int = 6) -> str:
         """Run a port. A ZERO-ROW run is the bend stack overflow, not a result."""
@@ -384,16 +392,22 @@ def main(argv: list[str]) -> int:
         print(f"{len(nmeas)} port(s) reported NO MEASUREMENT because no patch applied:")
         for nm, *_rest in nmeas:
             print(f"      {nm}")
-    moved = fr.substrate_stable()
+    portset = sorted({r for nm in names for r in PORTS.get(nm, [])})
+    moved, in_scope = fr.substrate_stable(portset)
     print()
+    if in_scope:
+        print("SUBSTRATE MOVED -- IN SCOPE. THESE NUMBERS ARE ABOUT A TREE THAT NO")
+        print("LONGER EXISTS, and this run is NOT a result. Another agent is mid-edit in:")
+        for x in in_scope:
+            print(f"      {x}")
+    else:
+        print(f"substrate check: no in-scope .bend file changed during this run "
+              f"({len(portset)} port files + their first-level imports)")
     if moved:
-        print("SUBSTRATE MOVED -- THESE NUMBERS ARE ABOUT A TREE THAT NO LONGER EXISTS.")
-        print("Another agent is mid-edit in:")
+        print(f"  ({len(moved)} live .bend file(s) moved OUT of scope, which cannot")
+        print("   affect these ports because they are not imported by any of them:")
         for x in moved:
             print(f"      {x}")
-        print("Re-run when the tree settles. This run is NOT a result.")
-    else:
-        print("substrate check: no live .bend file changed during this run")
     print()
     for nm, nb, ns, nap, nmv, hit, blind, failed in report:
         if not nap:

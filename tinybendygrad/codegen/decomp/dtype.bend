@@ -1031,12 +1031,29 @@ def l2i_cdiv.abs(+ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U3
 # THE SHIFT AMOUNT IS `i % 32`, NOT `i`. dtype.py:68 writes
 # `shl(cond.cast(dtypes.uint), i % 32)` and `shl` is transcendental.py:20,
 # `x * 2**y` -- so for `i = 63` the constant is `2**31` = `C(2147483648)` and NOT
-# `2**63`, which `tx_powi(63)` builds as the 64-bit `C(2147483648:0)`. MEASURED
-# (`lgqk`): CPython's cone constants after the fixed six are `C(63), C(62), ...,
-# C(2)` -- the `UOp.const(i, dtypes.uint)` words of dtype.py:65 -- followed by the
-# `2**0..2**31` of the quotient accumulator, while the port printed `C(64)` and
-# `C(2147483648)` there and never produced a `2**31` at all. `U32.mod` is a
-# machine word, so the reduction is exact and needs no special case.
+# `2**63`, which `tx_powi(63)` builds as the 64-bit `C(2147483648:0)`. `U32.mod` is
+# a machine word, so the reduction is exact and needs no special case.
+#
+# ⚠ THE MEASUREMENT THAT USED TO STAND HERE WAS WRONG AND IS CORRECTED IN PLACE, because a
+# stale measurement in a comment is a measurement that gets cited. It claimed: "CPython's
+# cone constants after the fixed six are `C(63), C(62), ..., C(2)` ... while the port
+# printed `C(64)` and `C(2147483648)` there and NEVER PRODUCED A `2**31` AT ALL."
+# Re-measured on the live tree, the port DOES print `2**31`. The port's `lgqk` is
+#
+#     C(0),C(1),C(32),C(1),C(31),C(-1),C(64),C(2147483648),C(1073741824),...
+#
+# and CPython's is
+#
+#     C(0),C(1),C(32),C(1),C(31),C(-1),C(63),C(62),C(61),C(60),...,C(33),
+#     C(2147483648),C(30),C(1073741824),C(29),...
+#
+# So the real difference is not a missing power of two. It is that the port emits ONE
+# leading word `C(64)` and then a RUN of powers of two, while CPython interleaves
+# `C(i)` with `2**(i-32)` for i = 63..33 -- the port never emits the 31 `UOp.const(i,
+# dtypes.uint)` shift words of dtype.py:65 at all. Whether that is the CDIV loop or the
+# `q` accumulator is not yet established; `lgtk` is still 3 constants against CPython's
+# 66 and `lgtsig` 57 cone nodes against 2184, so the family is OPEN. `.agents/slop/
+# dd-truth.py` is what prints both sequences side by side.
 def l2i_cdiv.q.lo(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
   +ci = P.dc_cast(ar, cond, S.uint32())
   +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), U32.mod(i, 32))
@@ -1124,10 +1141,37 @@ def l2i_cdiv.loop(k: Nat, +c: Cd, +i: U32) -> Cd:
 # the quotient, `q[1] | shl(cond, i%32)` -- while the port answered the `r` shape
 # `WHERE(CMPNE(CMPLT,C(1)),ADD(OR,MUL),OR(WHERE,AND))`, which is what CPython
 # answers for `lgt`. `lgs` and `lgt` were each other's answer.
+#
+# THE HIGH WORD IS AN ARENA INDEX, NOT A VALUE. `W2` is `{ar: Arena, lo: U32, hi: U32}`
+# and both `lo` and `hi` are INDICES -- `W2.hi` is read by `l2i_shr`, `l2i_shl` and the
+# final WHERE as `Arena.op(ar, hi)`. Writing the literal `0` here did not mean "high word
+# is zero", it meant "high word is ARENA SLOT 0", and slot 0 is the arena's bottom node,
+# whose label is `NOOP`. dtype.py:74 returns the PAIR, not one word: `q` and `r` are both
+# `(z, z)`-shaped 2-tuples from dtype.py:62, so the unsigned answer is `(q[0], q[1])` and
+# `(r[0], r[1])`.
+#
+# MEASURED, and it is invisible for the reason the `nr` note below describes -- the node
+# COUNT barely moves while the CONE collapses:
+#
+#     row         CPython sig   CPython k   port sig   port k   port rows gained
+#     lgtsig            2184          66         57        3      lgsp, lgtp
+#     lgssig            2396          92       1642       36      lgsp, lgtp
+#
+# So the port's CMOD cone is 38x smaller than CPython's and still is after this fix. THE
+# FIX IS CORRECT AND INCOMPLETE: it stopped an arena slot from being read as a node and it
+# recovered the two rows CPython emits that the port was not emitting at all, but the loop
+# still does not reach back through its own iterations. `lgsn` is 1976 against CPython's
+# 1977, so the nodes ARE built -- they are not REACHABLE from the answer, which is a
+# different defect and a smaller one.
+#
+# `lgt`'s BARE answer row still agreed before the fix, because `tree()` only reaches two
+# levels and slot 0's label is a valid-looking word there. The disagreement was in `lgtk`
+# and `lgtsig` -- both of which dtype-oracle.py SUPPRESSES, so the wired gate reported
+# neither. Fourth instance of the NOOP species in this file.
 def l2i_cdiv.uns(isdiv: Bool, +ar: O.Arena, +c: Cd) -> W2:
   match isdiv:
-    case True{}: W2{ar, Cd.q0(c), 0}
-    case False{}: W2{ar, Cd.r0(c), 0}
+    case True{}: W2{ar, Cd.q0(c), Cd.q1(c)}
+    case False{}: W2{ar, Cd.r0(c), Cd.r1(c)}
 
 # `(nq0,nq1), (nr0,nr1) = l2i(BITCAST, dt, *l2i(NEG, uint, *q)), l2i(BITCAST, dt,
 # *l2i(NEG, uint, *r))` then the un-negated pair, then the WHEREs -- in THAT

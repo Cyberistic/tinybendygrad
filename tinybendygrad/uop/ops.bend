@@ -4528,12 +4528,26 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   # no cache needed: pm_rewrite is called at most once per UOp due to the replace dict check in unified_rewrite
 
 # TODO(p3) ops.py:1777  def cached_bpm_rewrite
+#   The `bpm_cache` memo. `unified_rewrite` calls it once per node per pass, and
+#   its whole body is "have I seen this node on an earlier pass" -- which is the
+#   `repl` map the engine already threads. It is a wall until the fixpoint lands,
+#   because with a single pass there is nothing to cache.
 
-# TODO(p3) ops.py:1782  def walk_rewrite
-
-# TODO(p3) ops.py:1808  def unified_rewrite
-
-# TODO(p3) ops.py:1880  def graph_rewrite
+# PORTED ELSEWHERE -- `codegen/__init__.bend` is the engine, and these three are
+# where its remaining walls are named from the Python's side.
+#     ops.py:1782 walk_rewrite    -> walk_rewrite    (codegen/__init__.bend:111)
+#                                    LANDED and gated: 82 rows over three lanes,
+#                                    `sh .agents/slop/ops-501-gate.sh`.
+#     ops.py:1808 unified_rewrite  -> unified_rewrite  (codegen/__init__.bend:139)
+#                                    WALL -- ships as a pass-through, no fixpoint.
+#     ops.py:1880 graph_rewrite    -> graph_rewrite    (codegen/__init__.bend:143)
+#                                    WALL -- the dispatcher over the two above.
+# THE DIRECTION IS codegen CALLS ops.bend, never the reverse. `ops.bend` is the
+# arena and every reader; `codegen/__init__.bend` is the pipeline that drives
+# them. So `ops.bend` cannot import the engine without a cycle, and the three
+# markers above are REFERENCES to where the work lives, not pending work here.
+# What is still genuinely pending IN THIS FILE is `to_max_shape` and
+# `resolve_returned_after` below, and the 150 other markers.
 
 # TODO(p3) ops.py:1886  def to_max_shape
 
@@ -5624,7 +5638,7 @@ def s5.arena() -> Arena:
     Node{OpsSINK{}, [12], AKernel{KernelInfo.of()}, TNone{}},
     Node{OpsLINEAR{}, [2], ANone{}, TNone{}},
     Node{OpsADD{}, [1, 1], ANone{}, TNone{}},
-    Node{OpsADD{}, [14, 1], ANone{}, TNone{}},
+    Node{OpsADD{}, [14, 16], ANone{}, TNone{}},
     Node{OpsMUL{}, [1, 14], ANone{}, TNone{}},
     Node{OpsADD{}, [16, 1], ANone{}, TNone{}},
     Node{OpsDETACH{}, [2], ANone{}, TNone{}}

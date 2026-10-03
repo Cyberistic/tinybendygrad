@@ -141,8 +141,8 @@ def split(u: UOp, sep: Ops) -> str:
 
 
 add2 = UOp(Ops.ADD, src=(c, c))
-nest = UOp(Ops.ADD, src=(add2, c))
 mulu = UOp(Ops.MUL, src=(c, add2))
+nest = UOp(Ops.ADD, src=(add2, mulu))
 left = UOp(Ops.ADD, src=(mulu, c))
 row("s5_split_const", split(c, Ops.ADD))
 row("s5_split_add", split(add2, Ops.ADD))
@@ -150,6 +150,7 @@ row("s5_split_nest", split(nest, Ops.ADD))
 row("s5_split_diamond", split(mulu, Ops.MUL))
 row("s5_split_mismatch", split(left, Ops.MUL))
 row("s5_split_left", split(mulu, Ops.ADD))
+
 
 # ---------------------------------------------------------------------------
 # THE MOVERS. Each row is the minted node's op and its SRC OP SEQUENCE, so a mint

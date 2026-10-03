@@ -632,3 +632,50 @@ hand-written expectations.** Two lanes are the contract everywhere: `./bin/bend 
   no-ops and took 276 rows with them, and they were REMOVED rather than counted, because a
   "moved every row" line in a mutation table is a harness bug wearing a result's clothes.
 - **`.agents/slop/oracles/fold-mut.py`** — the movement arms' 14 mutations, both lanes.
+
+### `sh .agents/slop/ops-501-gate.sh` -- the ops.py:501-1928 unit's three-lane gate
+
+The CPython lane is `.agents/slop/ops-501-oracle.py` and the mutation table is
+`.agents/slop/ops-501-mutate.py`. It is a SEPARATE gate from `ops-gate.sh` rather
+than more rows in that one, for one reason: `ops-gate.sh` diffs a byte stream whose
+row ORDER is the contract, and this unit's 82 rows are a different unit with a
+different fixture arena. `ops-oracle.py` carries a `#bend_only_s5=` entry so
+`ops-gate.sh` filters them, with the reason written down -- filtered, not un-gated.
+
+TWO THINGS IN IT THAT ARE WORTH THE REUSE.
+
+1. **THE ROW-NAMES DIFF IS SEPARATE FROM THE VALUES DIFF.** A row that exists on
+   one side only is a different failure from a row whose value differs, and a
+   value-only diff hides the first inside the second. The gate diffs the sorted
+   `name=` prefixes first, then the values. It is three extra lines and it is what
+   turns "75 rows" into "the same 75 rows".
+
+2. **`ops-gate.sh`'s `sed` for the filter was `[a-zA-Z_]*` and a family name with a
+   DIGIT in it was silently DROPPED** -- so the filter missed its rows and the gate
+   failed on rows that were supposed to be filtered, with an error that pointed at
+   the rows and not at the filter. Widened to `[a-zA-Z0-9_]*`; a no-op for every
+   name already there, none of which has a digit. If a new `#bend_only_<name>` ever
+   fails to filter, LOOK AT THE CHARACTER CLASS before looking at the rows.
+
+## Unobservable-row census (2026-10-03/04)
+
+Five tools, all read-only against the ports; the only file one of them *writes*
+is a frozen copy it owns, md5-asserted against the live tree first.
+
+| tool | what it is | what it found |
+|---|---|---|
+| `.agents/slop/unobservable-census.py` | static blind-transposition census over every committed oracle; `--handtyped`; `--countgate` | 17684 rows / 10 ORDER-DEAD / 10374 order-weak / 14136 blind transpositions / 111 sibling-blind; 290 hand-typed rows; 1 count-only gate |
+| `.agents/slop/commute-detect.py` | frozen-copy harness; swaps commutative srcs and same-shape `List.append` args; hit rate over APPLIED patches only | population 2 comm + 2 append sites over 7 ports; `late/linearizer` 0/69 moved |
+| `.agents/slop/unobservable-gr-oracle.py` | answers `u` vs `rebuilt` by CALLING tinygrad (10-fixture sweep + pattern introspection) | 10/10 identical => THEOREM closed upstream; the SINK-identity defect |
+| `.agents/slop/unobservable-gr-probe.bend` | THE FIXTURE. `gr.sink_srcs` = the op+slot sequence the engine RETURNS | 3 distinct answers over 3 behaviours => the row MOVES |
+| `.agents/slop/unobservable-gr-move.py` | runs the probe under 3 port behaviours on an md5-asserted frozen copy | proof of movement; prints `PATCH DID NOT APPLY`, never a count |
+
+Harness rules learned here and worth keeping:
+
+* a patch that does not apply is **not a zero** — `applied` is its own column and
+  a port with zero applied sites reports **NO MEASUREMENT**, not 0%;
+* every run needs a **pre-flight** (each port prints rows from the frozen copy
+  before any mutation) and a **port-scoped end-of-run md5 re-check**, because
+  two agents were mid-edit in `uop/ops.bend` and `uop/fold.bend` for 15 minutes
+  of the first run;
+* the freeze asserts md5 per file BEFORE mutating, never after.

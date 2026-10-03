@@ -1,0 +1,227 @@
+selftest: the five states are each REACHABLE
+
+  PASS  no row moved -> UNCHANGED, names the hunks
+  PASS  a row moved and agrees -> RE-PORTED
+  PASS  rows LOST -> BROKEN
+  PASS  210 rows -> 0 -> BROKEN, says TO ZERO
+  PASS  a dead lane -> BROKEN, not an empty success
+  PASS  an oracle that prints no name=value -> BROKEN, names it
+  PASS  two lanes sharing NO row name -> BROKEN, names the pair
+  PASS  two lanes sharing a row name that differs -> BROKEN, counts the rows
+  PASS  a live disagreement is BROKEN even with NO baseline recorded
+  PASS  a live disagreement is BROKEN even when the baseline is EMPTY
+  PASS  lanes that agree with NO baseline -> AGREE-UNRECORDED, not NOT-STARTED
+        AGREE-UNRECORDED: compared clean and UNRECORDED: [('cpython:oracle', 'interpreted', 1)] lane pair(s) shared row names and every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with --record-stable on a tree known green (no baseline recorded for /tmp/probe.bend)
+  PASS  AGREE-UNRECORDED names the lane pairs that compared ([('cpython:oracle', 'interpreted', 1)])
+  PASS  a live disagreement beats a ZERO-ROW baseline lane too
+  PASS  two lanes sharing rows that agree -> UNCHANGED
+  PASS  a baseline lane of zero rows is NOT-STARTED, not UNCHANGED
+  PASS  UNCHANGED with no hunks says LOOK-UNRECORDED out loud
+        hunks_status: NO HUNKS RECORDED -- this is a re-verify that examined nothing
+  PASS  a baseline of the WRONG SHAPE is named, not absorbed
+        baseline.json is MALFORMED: top-level keys ['interpreted'], expected 'lanes' and 'hunks'. A guard that cannot read its own baseline must not report a port as unstarted
+  PASS  a MALFORMED baseline is NOT-STARTED, never AGREE-UNRECORDED
+        NOT-STARTED: baseline.json is MALFORMED: top-level keys ['interpreted'], expected 'lanes' and 'hunks'. A guard that cannot read its own baseline must not report a port as unstarted
+  PASS  the control port is really unwired
+        tinybendygrad/helpers.bend: in BASE_ORACLES = False
+  PASS  the port this control used to name is WIRED now, and says why
+        wired=True in ORACLE_NOT_WIRED=False
+  PASS  a port with NO ORACLE is NOT-STARTED and never AGREE-UNRECORDED
+        NOT-STARTED: no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not AGREE-UNRECORDED either: tinybendygrad/helpers.bend has no oracle entry, not a missing recording
+  PASS  a port with NO SUCH FILE is NOT-STARTED
+        NOT-STARTED: NO SUCH FILE: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/no-such-port.bend. The plan maps an upstream file to a port path that does not exist; nothing was checked
+  PASS  every WIRED port on disk is comparable, so never_wired does not swallow the roster
+        39 wired ports checked
+  PASS  the deliberately-BROKEN pair is still classified comparable, not never-wired
+        ['tinybendygrad/codegen/decomp/dtype.bend', 'tinybendygrad/dtype.bend', 'tinybendygrad/renderer/cstyle.bend']
+recorded 1 proven-stable port(s) -> /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmpnqfwh0jz/baseline.json
+  REC  tinybendygrad/tensor.bend                      cpython:o=2 interpreted=2 native=2
+  EXCLUDED tinybendygrad/helpers.bend: no oracle wired; port prints zero rows
+  REFUSED tinybendygrad/mixin/op.bend: 2 shared row(s) DISAGREE in the stored evidence, e.g. [('cpython:o', 'interpreted', 'a'), ('cpython:o', 'native', 'a')] -- recording this would launder a red
+  REFUSED tinybendygrad/nn/onnx.bend: interpreted != native in the stored evidence, so at least one bend run was partial
+  LEFT UNTOUCHED (already recorded, not in the qualifying set): tinybendygrad/renderer/cstyle.bend
+  PASS  only the proven-clean port is written
+        written=1 lanes=['tinybendygrad/renderer/cstyle.bend', 'tinybendygrad/tensor.bend']
+  PASS  a DISAGREEING 'recordable' claim is REFUSED, naming the rows
+        REFUSED tinybendygrad/mixin/op.bend: 2 shared row(s) DISAGREE in the stored evidence, e.g. [('cpython:o', 'interpreted', 'a'), ('cpython:o', 'native', 'a')] -- recording this would launder a red
+  PASS  a PARTIAL (interpreted != native) 'recordable' claim is REFUSED
+        REFUSED tinybendygrad/nn/onnx.bend: interpreted != native in the stored evidence, so at least one bend run was partial
+  PASS  an honestly EXCLUDED port is named and absent
+  PASS  an entry the evidence says nothing about is LEFT ALONE, not deleted
+        {'interpreted': {'kept': '1'}}
+  PASS  ...and the refused RED lane is still BROKEN, never UNCHANGED
+        BROKEN: 2 row(s) disagree with CPython across 3 lane pair(s)
+  PASS  ...and a lane refused for a NON-red reason reads AGREE-UNRECORDED, never UNCHANGED
+        AGREE-UNRECORDED: compared clean and UNRECORDED: [('cpython:o', 'interpreted', 1), ('cpython:o', 'native', 1), ('interpreted', 'native', 1
+
+CACHE RULE: a cache is a reading only if it is NEWER than its source and RECORDS SOMETHING
+
+  PASS  NO-OP: a cache NEWER than its source is used, rows unchanged
+        fresh, {'PTX tensor_cores sm_75': '[1, 2]', 'load': '', 'empty value row': '0'}
+  PASS  CONTROL: a cache OLDER than its source is refused, not read
+        stale, None
+  PASS  ...and the refusal NAMES BOTH FILES and which one is older
+        (tinybendygrad/probe.bend: cache /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp9b48k4pl/tinybendygrad_probe.bend.json is OLDER than its source /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp9b48k4pl/port.bend; not using it)
+  PASS  CONTROL: a cache that holds NO ROWS is refused however NEW it is
+        empty, None
+  PASS  ...and says the file records a FAILED run rather than an empty one
+        (tinybendygrad/probe.bend: cache /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp9b48k4pl/tinybendygrad_probe.bend.json holds NO ROWS, which records a FAILED run rather than an empty one; not using it, and the lane is re-run)
+  (probe produced ZERO rows: nothing cached, and the next run re-runs it)
+  PASS  ...and store() writes NOTHING for an empty result
+        /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp9b48k4pl/tinybendygrad_probe.bend.json absent
+
+ROWS() SUPERSET: the fixed parser returns every row the old one returned
+
+  PASS  synthetic: the fixed parser is a superset, and every dropped key is empty-named
+        synthetic: old=4 new=3 dropped=[''] changed=[]
+  PASS  synthetic: no surviving key's VALUE changed
+  PASS  synthetic: exactly the empty-named lines are dropped, and they were ONE key before
+        old keys ['', 'PTX tensor_cores sm_75', 'empty value row', 'load']
+        new keys ['PTX tensor_cores sm_75', 'empty value row', 'load']
+  PASS  prepare.bend port  : fixed rows() is a superset of the old one
+        tinybendygrad/schedule/prepare.bend port  : old=321 new=321 dropped=[] changed=[]
+  PASS  prepare.bend port  : no surviving key's VALUE changed
+  PASS  prepare.bend oracle: fixed rows() is a superset of the old one
+        tinybendygrad/schedule/prepare.bend oracle: old=2522 new=2521 dropped=[''] changed=[]
+  PASS  prepare.bend oracle: no surviving key's VALUE changed
+  PASS  tc_ptx.bend port  : fixed rows() is a superset of the old one
+        tinybendygrad/renderer/tc_ptx.bend port  : old=333 new=333 dropped=[] changed=[]
+  PASS  tc_ptx.bend port  : no surviving key's VALUE changed
+  PASS  tc_ptx.bend oracle: fixed rows() is a superset of the old one
+        tinybendygrad/renderer/tc_ptx.bend oracle: old=333 new=333 dropped=[] changed=[]
+  PASS  tc_ptx.bend oracle: no surviving key's VALUE changed
+  PASS  fold.bend port  : fixed rows() is a superset of the old one
+        tinybendygrad/uop/fold.bend port  : old=214 new=214 dropped=[] changed=[]
+  PASS  fold.bend port  : no surviving key's VALUE changed
+  PASS  fold.bend oracle: fixed rows() is a superset of the old one
+        tinybendygrad/uop/fold.bend oracle: old=130 new=130 dropped=[] changed=[]
+  PASS  fold.bend oracle: no surviving key's VALUE changed
+  PASS  generate.bend port  : fixed rows() is a superset of the old one
+        tinybendygrad/renderer/amd/generate.bend port  : old=726 new=726 dropped=[] changed=[]
+  PASS  generate.bend port  : no surviving key's VALUE changed
+  PASS  generate.bend oracle: fixed rows() is a superset of the old one
+        tinybendygrad/renderer/amd/generate.bend oracle: old=779 new=779 dropped=[] changed=[]
+  PASS  generate.bend oracle: no surviving key's VALUE changed
+  PASS  the superset proof MEASURED 8 real lanes, not 0
+        8 of 8 lanes measured
+  PASS  a pair whose ONLY shared key was a BANNER is BROKEN, not agreement
+        BROKEN: lane pair(s) share NO row names, so they compared nothing: `cpython:o` vs `interpreted`, `cpython:o` vs `nativ
+  PASS  ...which the OLD parser would have read as a comparable, agreeing pair
+        old shared {''} from a banner; new shared set(), and the new parsers kept ['walk_mop'] / ['walk_other']
+  PASS  ...and a DISAGREEMENT on that banner is still BROKEN, never agreement
+        BROKEN: lane pair(s) share NO row names, so they compared nothing: `cpython:o` vs `interpreted`, `cpython:o` vs `nativ
+  PASS  a real named row that DIFFERS is still BROKEN and still counted
+        BROKEN: 2 row(s) disagree with CPython across 3 lane pair(s)
+  PASS  plan['port'] as list -> tinybendygrad/codegen/kernel.bend
+        got ['tinybendygrad/codegen/kernel.bend']
+  PASS  plan['port'] as str -> tinybendygrad/codegen/kernel.bend
+        got ['tinybendygrad/codegen/kernel.bend']
+  PASS  a list OF lists is named, not flattened
+        plan['port']['tinygrad/codegen/__init__.py'] holds [['tinybendygrad/codegen/kernel.bend']] -- a list
+  PASS  a int value is named
+        plan['port']['x'] is a int, expected a port path or a list of them: 7
+  PASS  a dict value is named
+        plan['port']['x'] is a dict, expected a port path or a list of them: {'a': 1}
+  PASS  a missing 'port' key answers empty, not crash
+  PASS  targets_of de-duplicates by PORT across upstream files
+        got [('tinybendygrad/codegen/kernel.bend', ()), ('tinybendygrad/codegen/rewriter.bend', ())]
+  PASS  targets_of --port takes the path verbatim
+        got [('tinybendygrad/codegen/kernel.bend', ())]
+  PASS  every EXTRA_PORTS entry is one header_ports() CANNOT see
+        1 entry, all needed
+  PASS  every removed EXTRA_PORTS target that names a file still exists under its new name
+  PASS  BASE_ORACLES and ORACLE_CONFORMANCE are the same roster (39 oracles)
+  PASS  ORACLE_NOT_WIRED is disjoint from the wired roster (0 named, with reasons)
+
+MEASURING 37 live pairs against the tree (shared names / disagreements / port rows / oracle rows)
+
+  (tinybendygrad/codegen/decomp/dtype.bend: cache /tmp/rebase-scan/tinybendygrad_codegen_decomp_dtype.bend.json is OLDER than its source /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/codegen/decomp/dtype.bend; not using it)
+  (tinybendygrad/uop/ops.bend: cache /tmp/rebase-scan/tinybendygrad_uop_ops.bend.json is OLDER than its source /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/uop/ops.bend; not using it)
+  (o__agents_slop_dtype_oracle_py: cache /tmp/rebase-scan/o__agents_slop_dtype_oracle_py.json is OLDER than its source /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dtype-oracle.py; not using it)
+  measured in 13.9s
+
+  uop/spec.bend                      rebase-oracle-spec.py           11 / 0 / 25 / 16
+  PASS  rebase-oracle-spec.py: six states reachable (shared_n=11 MEASURED)
+  uop/ops.bend                       rebase-oracle-ops.py            67 / 0 / 211 / 68
+  PASS  rebase-oracle-ops.py: six states reachable (shared_n=67 MEASURED)
+  codegen/opt/search.bend            rebase-oracle-search.py         10 / 0 / 38 / 20
+  PASS  rebase-oracle-search.py: six states reachable (shared_n=10 MEASURED)
+  runtime/ops_rdma.bend              oracle_rdma_gate.py            389 / 0 / 389 / 389
+  PASS  oracle_rdma_gate.py: six states reachable (shared_n=389 MEASURED)
+  runtime/ops_nv.bend                nv-oracle.py                   543 / 0 / 600 / 547
+  PASS  nv-oracle.py: six states reachable (shared_n=543 MEASURED)
+  runtime/support/hcq2.bend          hcq2-oracle.py                 157 / 0 / 360 / 163
+  PASS  hcq2-oracle.py: six states reachable (shared_n=157 MEASURED)
+  runtime/ops_metal.bend             mt_seam_rows.py                 14 / 0 / 432 / 18
+  PASS  mt_seam_rows.py: six states reachable (shared_n=14 MEASURED)
+  runtime/support/usb.bend           usb-oracle-run.py              939 / 0 / 940 / 939
+  PASS  usb-oracle-run.py: six states reachable (shared_n=939 MEASURED)
+  schedule/prepare.bend              prepare-oracle.py              321 / 0 / 321 / 2522
+  PASS  prepare-oracle.py: six states reachable (shared_n=321 MEASURED)
+  renderer/ptx.bend                  ptx-s3-oracle.py               281 / 0 / 281 / 281
+  PASS  ptx-s3-oracle.py: six states reachable (shared_n=281 MEASURED)
+  renderer/tc_ptx.bend               tcptx-oracle.py stage2         228 / 0 / 333 / 333
+  PASS  tcptx-oracle.py: six states reachable (shared_n=228 MEASURED)
+  renderer/nir_llvmir.bend           nl-oracle.py                   201 / 0 / 201 / 201
+  PASS  nl-oracle.py: six states reachable (shared_n=201 MEASURED)
+  viz/serve.bend                     viz_oracle.py                  176 / 0 / 176 / 176
+  PASS  viz_oracle.py: six states reachable (shared_n=176 MEASURED)
+  runtime/support/c.bend             c-oracle.py                    129 / 0 / 129 / 129
+  PASS  c-oracle.py: six states reachable (shared_n=129 MEASURED)
+  uop/fold.bend                      mm-lift-gate.py                126 / 0 / 214 / 130
+  PASS  mm-lift-gate.py: six states reachable (shared_n=126 MEASURED)
+  runtime/support/elf.bend           elf_rows.py                    353 / 0 / 353 / 1042
+  PASS  elf_rows.py: six states reachable (shared_n=353 MEASURED)
+  renderer/amd/sqtt.bend             sqtt_spec.py                  1015 / 0 / 1033 / 1324
+  PASS  sqtt_spec.py: six states reachable (shared_n=1015 MEASURED)
+  renderer/amd/generate.bend         ga-oracle.py                   726 / 0 / 726 / 779
+  PASS  ga-oracle.py: six states reachable (shared_n=726 MEASURED)
+  nn/onnx.bend                       onnx-gate.py                   123 / 0 / 123 / 123
+  PASS  onnx-gate.py: six states reachable (shared_n=123 MEASURED)
+  mixin/elementwise.bend             ew-gate.py                      71 / 0 / 72 / 71
+  PASS  ew-gate.py: six states reachable (shared_n=71 MEASURED)
+  mixin/op.bend                      mixin-op-gate.py                32 / 0 / 36 / 32
+  PASS  mixin-op-gate.py: six states reachable (shared_n=32 MEASURED)
+  tensor.bend                        tensor-gate.py                  30 / 0 / 33 / 30
+  PASS  tensor-gate.py: six states reachable (shared_n=30 MEASURED)
+  codegen/simplify.bend              rw-oracle.py                    28 / 0 / 28 / 60
+  PASS  rw-oracle.py: six states reachable (shared_n=28 MEASURED)
+  nn/__init__.bend                   nn-init-gate.py                 24 / 0 / 24 / 24
+  PASS  nn-init-gate.py: six states reachable (shared_n=24 MEASURED)
+  codegen/gpudims.bend               rw-gate-oracle.py               24 / 0 / 24 / 54
+  PASS  rw-gate-oracle.py: six states reachable (shared_n=24 MEASURED)
+  runtime/ops_cpu.bend               cpulink_oracle.py                3 / 0 / 134 / 20
+  PASS  cpulink_oracle.py: six states reachable (shared_n=3 MEASURED)
+  runtime/ops_python.bend            ops-python-render-oracle.py     59 / 0 / 85 / 241
+  PASS  ops-python-render-oracle.py: six states reachable (shared_n=59 MEASURED)
+  runtime/ops_amd.bend               amd_oracle.py                  409 / 0 / 520 / 1010
+  PASS  amd_oracle.py: six states reachable (shared_n=409 MEASURED)
+  uop/render.bend                    render-gate-oracle.py --gate    85 / 0 / 86 / 85
+  PASS  render-gate-oracle.py: six states reachable (shared_n=85 MEASURED)
+  renderer/llvmir.bend               llvmir-oracle.py               323 / 0 / 323 / 323
+  PASS  llvmir-oracle.py: six states reachable (shared_n=323 MEASURED)
+  runtime/ops_qcom.bend              qcom-oracle.py                 312 / 0 / 750 / 312
+  PASS  qcom-oracle.py: six states reachable (shared_n=312 MEASURED)
+  schedule/indexing.bend             indexing-oracle.py             104 / 0 / 252 / 104
+  PASS  indexing-oracle.py: six states reachable (shared_n=104 MEASURED)
+  codegen/decomp/dtype.bend          dtype-oracle.py                109 / 1 / 174 / 356
+  FAIL  dtype-oracle.py: 1 of 109 shared row names DISAGREE on the live tree
+        'c7': port 'refused:unported' vs CPython 'F(2139095040)'
+        corroborated by `rebase-gate.py --port tinybendygrad/codegen/decomp/dtype.bend` -> BROKEN, rc=1
+        NOT FIXED HERE: the port is not this unit's file.
+  schedule/rangeify.bend             rangeify-oracle.py              31 / 0 / 126 / 89
+  PASS  rangeify-oracle.py: six states reachable (shared_n=31 MEASURED)
+  engine/jit.bend                    jit-oracle.py                   18 / 0 / 137 / 30
+  PASS  jit-oracle.py: six states reachable (shared_n=18 MEASURED)
+  runtime/ops_null.bend              null-oracle.py                   7 / 0 / 180 / 9
+  PASS  null-oracle.py: six states reachable (shared_n=7 MEASURED)
+  device.bend                        device-oracle.py                23 / 0 / 110 / 23
+  PASS  device-oracle.py: six states reachable (shared_n=23 MEASURED)
+  PASS  dtype_tables.py: wired on purpose, and the REAL gate still says BROKEN
+        BROKEN: lane(s) failed to run: interpreted
+        rows {'interpreted': 0, 'cpython:dtype_tables': 0}
+  PASS  renderer_oracle.py: wired on purpose, and the REAL gate still says BROKEN
+        BROKEN: lane(s) failed to run: interpreted
+        rows {'interpreted': 0, 'cpython:renderer_oracle': 15}
+
+1 FAILED: dtype-oracle.py: LIVE TREE DISAGREEMENT on 1 of 109 shared row names -- a PORT finding, not a roster finding: 'c7': port 'refused:unported' vs CPython 'F(2139095040)'

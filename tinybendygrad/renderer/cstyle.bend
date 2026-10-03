@@ -564,7 +564,7 @@ def type_map.base() -> Map<&2, String>:
     Kv{"i16", "short", Kv{"u16", "unsigned short", Kv{"i32", "int",
     Kv{"u32", "unsigned int", Kv{"i64", "long", Kv{"u64", "unsigned long",
     Kv{"f16", "half", Kv{"bf16", "__bf16", Kv{"f32", "float",
-    Kv{"f64", "double", Kv{"void", "void", KvEnd{}}}}}}}}}}}}}})
+    Kv{"f64", "double", Kv{"void", "void", KvEnd{}}}}}}}}}}}}}}})
 
 # `Kv.go` IS AN OVERLAY ALREADY -- it folds the tail into the map it is handed --
 # so the device maps take the base as their seed and there is no second fold.

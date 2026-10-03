@@ -4427,3 +4427,220 @@ newly broken; comment-only control read 0 row diffs and byte-identical output.
       (agent-core.md's `end > start` trap). Either way the fix is one `mv` back plus a
       decision about the interpreter loop, and the second is a design question, not a
       typo.
+
+## ops.py:501-1928 (the base family, the movers, `split_uop`) -- 14 defs LANDED, 149 remain
+
+**Range:** `tinybendygrad/uop/ops.bend` lines 501-1928. **Gate:**
+`sh .agents/slop/ops-501-gate.sh` -- 82 rows, three lanes (CPython / interpreted /
+native) byte-identical. **Mutations:** `.venv/bin/python .agents/slop/ops-501-mutate.py`
+-- 15/15 move the rows they name.
+
+LANDED, with a row each: `base`(:785), `unsharded_base`(:792), `storage_base`(:801),
+`without_after`(:623), `buf_uop`(:925), `has_buffer_identity`(:952), `barrier`(:624),
+`bufferize`(:679), `allreduce`(:680), `mselect`(:772), `sharding`(:707),
+`split_uop`(:685), `sint_to_uop`(:1893), `gate_kernel_sink`(:1901). 29 Bend defs in
+total including the peel predicates, the printers and the rows.
+
+**THE SHAPE, and it is the reusable finding.** A walk down `src[0]` cannot be the
+self-call, because a self-call must pass a SUBTERM of its own parameter and an
+arena read is not one. Three shapes were measured and refused: `Bool.pick` with the
+peel in the condition (both arms read `self`); the `.go` split (a sub-def above its
+parent is R-3, but the sub-def CALLS the parent, so it is mutual recursion); and a
+two-scrutinee `match fuel peels:` (`peels` is a call and `match` may not scrutinise a
+computed value). WHAT WORKS is one def, one scrutinee, the fuel first, with the STOP
+encoded in the NODE:
+
+    match fuel:
+      case 0n: <the terminal answer on the node the walk stopped at>
+      case 1n+p: X(p, ar, Bool.pick(<T>, <walks>, Arena.src(ar, self, 0), self))
+
+A node that does not walk is carried UNCHANGED for the rest of the fuel and comes
+back out of `case 0n:`, so the answer is exact whenever the fuel outlasts the walk
+and `Arena.budget(ar)` is the only sound fuel. Six walks in six three-line defs, and
+the six differ ONLY in the peel set -- which is the one thing a parameter would have
+to carry, and a function value cannot be parameterised in Bend (a function in a
+datatype field forces `Type`, and a `Type` cannot be passed an arena).
+
+**FIVE THINGS THE GATE FOUND THAT I HAD WRONG, all of them silent.**
+1. `split_uop`'s first version appended a separator's srcs to the ANSWER and
+   shrank the worklist independently, so a node that IS the separator was never
+   descended into. It typechecked, it checked, and `s5_split_nest` read the src
+   sequence with the descent missing. Both lists now live in `Wk` and the step
+   answers the whole record, so "which list grows" is the arm.
+2. `base`'s DETACH arm had NO fixture. `base_drops_detach` moved NOTHING, which is
+   the hole a mutation exists to find; `s5_base_detach` closes it and the mutation
+   moves three rows.
+3. `sharding`'s op test was not load-bearing: the RESHAPE fixture's `ATuple` arg was
+   EMPTY, so dropping the `if` still answered the empty list. A non-empty arg makes
+   the test the thing the row reads.
+4. `split_pushes_to_back` moved nothing until a fixture with a NESTED push existed.
+   The first push is `work = srcs ++ rest` either way and every all-CONST fixture has
+   the same sequence under both, so front-vs-back is invisible without a two-level
+   split whose second level is not a CONST.
+5. "A walk that peels once" is NOT a legal mutation -- passing `0n` to the self-call
+   is not decreasing, so the file does not check and the run prints nothing. The
+   same claim is expressible through the FUEL at the call site, which is better: an
+   under-fueled caller is the realistic way to get one step. `base_no_fuel` moves
+   `s5_base_r1` and `s5_base_r2`. Note `1n` does NOT: `case 1n+p` recurses with
+   `p = 0n` and `case 0n:` then answers the node one level down.
+
+**WHAT IS STILL A WALL, and why it is not a stub.** `simplify`(:513) / `ssimplify`
+(:520) / `_eval`(:523) all bottom out in `graph_rewrite` and `_min_max`(:1104), and
+`_min_max` needs the dtype and shape folds. `buf_uop`'s MSELECT and MSTACK arms MINT
+and so hit the same arena-growth wall `codegen/__init__.bend`'s rules have. `walk_
+rewrite`(:1782) / `unified_rewrite`(:1808) / `graph_rewrite`(:1880) are PORTED, in
+`./codegen/__init__.bend`, and re-porting them here would be a copy; the TODO lines
+stay so the queue still says where the code is. `base` is in BOTH files: a Kahn table
+read in `fold.bend` and this fuel peel, and they compute the same function.
+
+**THE TWO FILES NEXT.** `codegen/__init__.bend` and `ops.bend` both own a
+`walk_rewrite`. That is a duplication to resolve, and the fix is to make
+`codegen/__init__.bend` call the `ops.bend` one, not the reverse -- the TODO lines
+for :1782/:1808/:1880 in `ops.bend` are where that decision belongs.
+
+---
+
+## [DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)
+
+Progress: `[████████████████████] 100%` — state restored, controls green, 29 recorded, 9 excluded.
+
+- **State restored.** `AGREE-UNRECORDED` distinguishes "compared clean, nobody wrote it down"
+  from "nobody looked". Full run went `NOT-STARTED=46 / UNCHANGED=1` to
+  `UNCHANGED=28  RE-PORTED=1  BROKEN=4  AGREE-UNRECORDED=6  NOT-STARTED=11` over the same
+  50 targets. **BROKEN is still BROKEN** (4, unchanged) and the recorded lanes read UNCHANGED.
+- **Control, both directions.** An unrecorded-but-agreeing lane fires `AGREE-UNRECORDED` and
+  prints the shared-row evidence; a never-wired port stays `NOT-STARTED` and runs no lane at
+  all; a MALFORMED baseline stays `NOT-STARTED`. A lane refused for being RED still reads
+  `BROKEN` after the refusal, and one refused for a non-red reason reads `AGREE-UNRECORDED` —
+  neither ever reaches `UNCHANGED`.
+- **29 lanes recorded** from a two-run measurement (`rebase-stability.py`), 7447 bend rows,
+  5498 shared row names, **0 disagreements**. **9 excluded, each with a measured reason**:
+  `elf` (ASLR), `prepare` (**38 oracle rows differ between runs** — new), `dtype.bend`
+  (0 rows, `SOME PROOFS FAIL`), `codegen/decomp/dtype` (13 rows differ + 1 shared row red),
+  `cstyle` (0 shared rows), and `ops_cpu` / `ops_python` / `ops_amd` / `generate`
+  (freeze hazards: host paths, `sys.version_info`, 601 and 53 ungated oracle rows).
+- **Laundering test green.** `ops_nv` HAS a baseline; a one-row mutant oracle → `BROKEN` naming
+  `nv_pick_new_dma`, rc=1; the same pair uncorrupted → `UNCHANGED, zero rows moved`.
+- **Interpreters:** always `.venv/bin/python` (3.12.10). `rebase-gate.py` now PINS its oracle
+  interpreter via `oracle_py.resolve()` and prints it with every verdict.
+- **Two gates fixed that recording exposed:** `--no-native` manufactured a false
+  `LOST ROWS 600 -> 0` red on any recorded port (now refused), and `--oracle` was a silent
+  no-op because `targets_of()` snapshots `BASE_ORACLES` before the override (now replaces the
+  target; reported by another agent, fixed here).
+- **Still open for the coordinator:** GUARD 1 only compares `set(baseline) & set(now)`, so rows
+  **ADDED** to a port are invisible — `uop/ops.bend` gained 14 rows mid-session and the gate
+  called it RE-PORTED for an unrelated oracle diagnostic row. Changing that reclassifies
+  recorded lanes, so it is reported rather than changed.
+
+## Session 2026-10-03/04 — UNOBSERVABLE-ROW CENSUS: rows that cannot tell two behaviours apart
+
+Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
+`commute-detect.py`, `unobservable-gr-oracle.py`, `unobservable-gr-probe.bend`,
+`unobservable-gr-move.py`. **No port edited. Nothing committed.**
+
+- [x] **THE METRIC IS A THEOREM ABOUT THE ROW TEXT, NOT A SUSPICION.**
+      `blind_swaps(V) = sum over tokens t of C(#{i : T[i]==t}, 2)` is the exact
+      number of reorderings of what a row displays that produce byte-identical
+      output. `blind_swaps > 0` means no fixture on that row will ever catch one.
+      The **cross-row half** is the one nobody checks: when the index lives in the
+      NAME (`gt_ops0..5`), a swap of two equal-valued siblings is invisible.
+      Census over the wired gates: **17684 rows, 10 ORDER-DEAD, 10374 order-weak,
+      14136 blind transpositions, 111 sibling-blind.** Worst per port:
+      `codegen/decomp/dtype` (9858 weak), `renderer/tc_ptx` (347 / 1902),
+      `runtime/ops_dsp` (123 / 1793), `codegen/late` (320).
+
+- [x] **A COUNT-ONLY GATE IS A GATE THAT CANNOT FAIL ON A VALUE. ONE EXISTS.**
+      `--countgate` swept every `.sh`/`.py` in slop (~250). Exactly **one** gate's
+      SOLE pass condition is a count comparison: `.agents/slop/gr-diff.sh`,
+      `if [ "$py_count" -eq "$bend_count" ]`. Two other count comparisons are
+      correct RUN-HEALTH guards against the bend ~1-in-20 stack overflow.
+
+- [x] **`codegen/__init__.bend` — THE `u` vs `rebuilt` QUESTION IS THE WRONG
+      QUESTION, AND THE PORT IS WRONG ON A ROW NOBODY CAN SEE.**
+      The change is **still present** (`codegen/__init__.bend:86`) and its own
+      comment at :48-50 still says the opposite. `u` -> `rebuilt` **MOVES** the
+      row (`SINK->SINK` -> `SINK->NOOP`, `new_sink` 4 -> 8) and `gr-diff.sh` says
+      AGREE both times, because it compares counts. **But the root cause is a rule
+      upstream does not have:** upstream's `pm_post_sched_cache` is exactly TWO
+      rules (read off the pattern objects: `UPat(op=PARAM) fields=None`,
+      `UPat(op=ALLOC) fields=None`), and the PORT's table adds
+      `O.PMEntry{0, [O.OpsSINK{}], Nil{}}` -> `pm_r_sink_m` -> `Some{self}`, so
+      `repl[sink] = sink` and the engine returns the ORIGINAL SINK with the
+      **UNREWRITTED** srcs. CPython returns a NEW SINK whose srcs are the
+      rewritten ones (measured `replace[sink] is not sink` -> False).
+      **MEASURED, DO NOT SIMPLY RESTORE `rebuilt`:** that moves the row to `-`,
+      FURTHER from CPython, because the port's second defect (the documented
+      ARENA GROWTH WALL) makes `rebuilt` unreadable either way. Fix order:
+      drop the spurious SINK entry, then the arena wall, then the :48-50 comment.
+      **The file is being rewritten by another agent RIGHT NOW** (268 -> 306 lines,
+      printer changed mid-session), so REPORTED, NOT EDITED.
+
+- [x] **THE FIXTURE, LANDED IN MY OWN FILE: `gr.sink_srcs`.**
+      `.agents/slop/unobservable-gr-probe.bend` imports the port and prints the
+      op+slot sequence of the node the engine RETURNS. Expected value CALLED from
+      CPython: `PARAM(99),PARAM(100),BUFFER`. Measured three behaviours
+      (`unobservable-gr-move.py`, md5-asserted frozen copy): BASE
+      `PARAM(0),PARAM(1),ALLOC`, `u`->`rebuilt` `-`, SINK-rule-dropped `-`.
+      **3 distinct answers, so the row MOVES.** None matches CPython yet, which is
+      the point: the probe exposes the spurious rule AND the arena wall at once.
+
+- [x] **`u` vs `rebuilt` IS A CLOSED CASE UPSTREAM, WITH A PROOF.**
+      `unobservable-gr-oracle.py` transcribes upstream's driver with ONE token
+      changed and runs both over ten fixture shapes: **10/10 repl maps
+      byte-identical.** Proof: (a) both patterns have `fields=None`, so neither can
+      read a node's `src`; (b) upstream guards the rebuild with
+      `new_n = UOp(...) if new_src != n.src else n` (ops.py:1809) and both carried
+      ops are src-free, so `new_n IS n` — the two arguments are the SAME OBJECT.
+      **No fixture over `pm_post_sched_cache` can ever separate them.** Same shape
+      as the `floor(floor(a/b)/c)` theorem.
+
+- [x] **WHY NO ROW COULD SEE THE SINK IDENTITY: TWO INDEPENDENT BLINDS.**
+      (1) `gr-oracle.py`'s `uop_short` renders a SINK as the bare string `"SINK"`
+      and so does `gr_show.node`, so upstream's rebuilt SINK and the port's
+      original print identically — **the two lanes can agree for a reason that is
+      not correctness**, the `nv_query_litter` failure mode. (2) `gr-diff.sh`
+      compares counts.
+
+- [x] **THE CHEAP GENERAL DETECTOR BUILT AND MEASURED — AND IT FOUND A REAL ZERO.**
+      `commute-detect.py` swaps src[0]/src[1] at every commutative op construction
+      (the set `uop/ops.bend`'s own `is_comm` declares) and the last two args of
+      every same-shape `List.append`. **Population across 7 gated ports: 2 comm
+      sites + 2 append sites.** Hit rate over APPLIED patches:
+      `codegen/late/linearizer` **0 of 69 rows moved, 0.0%** (the port's ONLY port
+      with a commutative population, and not one row noticed);
+      `renderer/amd/generate` 187 of 726, 25.8%. **Five ports report NO
+      MEASUREMENT** — zero sites, not failed patches. Substrate check passed.
+
+- [x] **DANGEROUS ROWS FOUND, REPORTED TO THEIR OWNERS, NOT LANDED.**
+      `codegen/late` `ra0_uops`/`ra1_uops` (`INS` x8 each, blind=46, and the two
+      rows are byte-identical to each other while their `a7` rows differ);
+      `gt_ops4=WHERE`/`gt_ops5=WHERE` sibling-blind; `runtime/support/c`
+      `sname_ctor_idx_given=0,0` is **hand-typed** (`c-oracle.py:134`) and so
+      cannot fail at all — its sibling `sname_idx_after=0,1` is order-exact, so the
+      fix is one line. `--handtyped` finds **290** literal-valued rows across the
+      committed oracles.
+
+- [x] **CLOSED WITH A SIBLING, PROVEN NOT NEEDLESS.**
+      `field_sizes=4,4,4` cannot see a struct's field order but
+      `field_offsets=0,4,2` can; `sname_entry_width=3,3` cannot but
+      `sname_real_fields=a,b` and `sname_idx_after=0,1` can;
+      `record_size_fields=8,8,_mem_,8`'s three 8s are three unrelated facts.
+
+- [x] **THREE WAYS THIS UNIT NEARLY PRODUCED A GREEN LIE, all recorded.**
+      (a) My first run printed `ops_cl: 445 rows, 10 sites, 0 rows moved, 0.0%`
+      when **all ten patches had failed to compile** — the dead-M26 shape. Fixed:
+      `applied` is its own column and a port with zero applied sites reports
+      **NO MEASUREMENT**. (b) Two agents were mid-edit in `uop/ops.bend` and
+      `uop/fold.bend` for ~15 minutes; file count 137 -> 135 `.bend`;
+      `renderer/cstyle.bend` went from compiling to unparseable at :590. Fixed by
+      a pre-flight plus a port-scoped end-of-run md5 check that printed
+      `SUBSTRATE MOVED` and discarded a run. (c) `renderer/cstyle.bend` printed
+      `repl=1->5, 2->6, 3->5, 4->4` at session start and
+      `repl=PARAM(0)->PARAM(99), ...` forty minutes later, from a file I never
+      touched — every number here is hash-stamped.
+
+- [ ] **OPEN, NEXT UNIT.** `runtime/ops_bend`'s **98 sibling-blind
+      transpositions** (largest cross-row blindness found, nothing classified);
+      the **10360** order-weak rows in `dtype`/`tc_ptx`/`ops_dsp`; and
+      commutative fixtures for the 5 gated ports that have none, `linearizer`
+      first (its 0.0% is the strongest signal in this census).

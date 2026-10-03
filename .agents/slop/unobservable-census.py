@@ -276,6 +276,65 @@ def main(argv: list[str]) -> int:
     return 0
 
 
+def count_only_gates() -> list[tuple[str, str, str]]:
+    """A GATE that compares COUNTS cannot distinguish two behaviours that change
+    a row's VALUE but not how many rows there are.
+
+    This is the general form of the defect that prompted this unit.
+    `tinybendygrad/codegen/__init__.bend`'s gate, `.agents/slop/gr-diff.sh`, does:
+
+        py_count=$(printf '%s' "$py_line" | tr ',' '\\n' | grep -c -- '->')
+        bend_count=$(printf '%s' "$bend_line" | tr ',' '\\n' | grep -c -- '->')
+        if [ "$py_count" -eq "$bend_count" ]; then echo "AGREE"; fi
+
+    and the mutation that prompted the triage -- passing `u` where the comment
+    says `rebuilt` -- moves the SINK's repl entry from `SINK->SINK` to
+    `SINK->NOOP` on one printer and from one index to another on another. Neither
+    changes how many `->` there are. MEASURED, both readings are 4.
+
+    DETECTED, NOT GUESSED: a gate script that computes a row count with
+    `grep -c` (or `wc -l`) and then compares two COUNTS as the pass condition.
+    The evidence line is quoted so a reader can check it.
+    """
+    out = []
+    for f in sorted(SLOP.rglob("*.sh")) + sorted(SLOP.rglob("*.py")):
+        try:
+            lines = f.read_text(errors="replace").splitlines()
+        except Exception:  # noqa: BLE001
+            continue
+        counts = [(i, ln) for i, ln in enumerate(lines, 1)
+                  if re.search(r"\bgrep -c\b|\bwc -l\b", ln)]
+        compares = [(i, ln) for i, ln in enumerate(lines, 1)
+                    if re.search(r"-eq|-ne", ln)]
+        for ci, cl in counts:
+            for xi, xl in compares:
+                if abs(ci - xi) <= 4:
+                    ev = f"count@{ci}: {cl.strip()}  ||  compare@{xi}: {xl.strip()}"
+                    if len(ev) > 150:
+                        ev = ev[:147] + "..."
+                    out.append((f.name, ev))
+                    break
+            else:
+                continue
+            break
+    return out
+
+
+def q_countgate() -> int:
+    print("=" * 96)
+    print("COUNT-ONLY GATES -- a pass condition that compares COUNTS cannot see a")
+    print("value change. Evidence is quoted, not inferred.")
+    print("=" * 96)
+    rows = count_only_gates()
+    for name, ev in rows:
+        print(f"--- {name}")
+        print(f"      {ev}")
+    print(f"\nTOTAL gate scripts with a count-adjacent pass condition: {len(rows)}")
+    print("(NOT all of these are wrong -- a count check is a legitimate FIRST check.")
+    print(" What is wrong is a count being the ONLY check. Read the script.)")
+    return 0
+
+
 def q_handtyped() -> int:
     print("=" * 96)
     print("HAND-TYPED ROWS -- a row whose expected value is a LITERAL, not a CALL")
@@ -301,6 +360,8 @@ def q_handtyped() -> int:
 
 
 if __name__ == "__main__":
+    if "--countgate" in sys.argv:
+        raise SystemExit(q_countgate())
     if "--handtyped" in sys.argv:
         raise SystemExit(q_handtyped())
     raise SystemExit(main(sys.argv[1:]))

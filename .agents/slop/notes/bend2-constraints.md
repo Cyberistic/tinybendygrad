@@ -17039,3 +17039,292 @@ is a mitigation, not a fix.
 **THE STANDING RULE FOR A PARALLEL WAVE:** partition by FILE, and if two
 agents must share a file, partition by a NAMED RANGE inside it and say so
 in both prompts. Never let two agents own the same lines.
+
+================================================================================
+## UNOBSERVABLE ROWS — appended 2026-10-04 by the unobservable-row census unit.
+   CONTINUES FROM the previous section's numbering; cite these by POSITION
+   (the rules are at the very end of this file, after the "STANDING RULE FOR A
+   PARALLEL WAVE" heading), never by number, because rule NUMBERS have collided
+   three times in this file already.
+================================================================================
+
+**A GATE ROW IS A TEST ONLY IF SOME SUBSTITUTION OF THE BEHAVIOUR IT CLAIMS TO
+TEST CHANGES ITS VALUE. There is a cheap, mutation-free test for a whole class
+of that, and it is a property of the ROW TEXT alone.**
+
+Let `V` be a row value and `T` its token word (split on comma, space, brackets).
+A transposition of positions `i<j` changes `V` iff `T[i] != T[j]`. So
+
+    blind_swaps(V) = sum over distinct tokens t of C( |{i : T[i] == t}| , 2 )
+
+is the NUMBER of reorderings of the things `V` displays that produce
+byte-identical output. `blind_swaps(V) == 0` means the row encodes its token
+order faithfully. `blind_swaps(V) > 0` means that many orderings are invisible,
+and **no fixture on that row will ever catch one**. This is a theorem about the
+string, not a suspicion, which is why it belongs in this file: it converts
+"this row looks weak" into "this row provably cannot see these N orderings".
+
+Three cases fall out and they are the shapes that have already cost money:
+
+  * **ORDER-DEAD**, `T` all one token: blind to EVERY ordering. This is the
+    `1,1` shape and the `ra0_uops=CONST INS INS INS INS ...` shape. `rafter`'s
+    `CONST INS INS RANGE INS END` has 5 INS over 3 slots.
+  * **ORDER-WEAK**, some token repeats: blind to those transpositions only.
+  * **THE CROSS-ROW HALF**, which is the one nobody checks: when the index lives
+    in the row NAME (`gt_ops0`..`gt_ops5`, `ra0_a1`..`ra0_a11`), a swap of two
+    sibling VALUES is invisible iff the two values are equal. `gt_ops4=WHERE`
+    and `gt_ops5=WHERE` cannot be swapped apart. A harness that diffs whole
+    `name=value` lines sees nothing, and a harness that diffs names sees less.
+  * **SCALAR / NO-STATE**, one token or none: no ordering claim is attached, so
+    these are NOT counted as blind. A one-token value has `C(1,2) == 0`.
+
+`.agents/slop/unobservable-census.py` computes this over every committed oracle.
+It also finds the two adjacent defects, and both are mechanical:
+
+  * **A COUNT-ONLY GATE IS A GATE THAT CANNOT FAIL ON A VALUE.**
+    `.agents/slop/unobservable-census.py --countgate` found exactly ONE such
+    gate in ~250 committed slop scripts: `.agents/slop/gr-diff.sh`, whose entire
+    pass condition is `py_count -eq bend_count`. The `codegen/__init__.bend`
+    mutation that started this unit changes `SINK->SINK` to `SINK->NOOP` and
+    leaves the count at 4. A count check is a legitimate FIRST check -- two
+    other gates use one to catch the bend ~1-in-20 stack overflow, which is
+    exactly right -- and a count that is the ONLY check is a gate that reads
+    green over a wrong value.
+  * **A HAND-TYPED ROW IS A BELIEF, NOT A MEASUREMENT.**
+    `--handtyped` finds 290 rows across the committed oracles whose value
+    argument is a bare literal rather than a call. Most are deliberate "the
+    rejected answer, for contrast" rows. `c-oracle.py`'s
+    `row("sname_ctor_idx_given", "0,0")` is not: it asserts what the author
+    believed about `Field.__init__`'s default, and if the default changed to 1
+    the row would still read `0,0` and still pass.
+
+**THE COMMUTATIVE-REORDER DETECTOR, AND THE HONEST MEASUREMENT OF HOW LITTLE
+POPULATION IT HAS HERE.** `.agents/slop/commute-detect.py` swaps src[0]/src[1]
+at every construction of a commutative op -- the set `uop/ops.bend`'s own
+`is_comm` declares: ADD, MUL, MAX, AND, OR, XOR, CMPEQ, CMPNE -- and separately
+swaps the last two arguments of every `List.append`, because
+`List.append(x, A, xs, ys)` is `xs ++ ys` and a head/tail swap there has already
+been a real bug in this tree.
+
+**MEASURED POPULATION ACROSS EIGHT GATED PORTS: 2 commutative sites, both in
+`codegen/late/linearizer.bend`, and 10 same-shape `List.append` sites.** The
+gates are dominated by scalar and total rows; they barely build commutative
+trees at all. So the "commutative pair makes order invisible" defect class is
+real but is concentrated in `renderer/amd/{generate,elf}.bend`, where the sort
+and insert logic runs over CPython-level lists rather than over Bend `Ops.ADD`
+src lists, and a src-list regex does not reach it. **A detector with two sites
+in the whole corpus measures nothing, and reporting a percentage over it would
+be exactly the unexplained zero this file warns about.**
+
+**RULES THE DETECTOR ITSELF HAD TO LEARN, each because breaking it produces a
+number that reads like a pass:**
+
+  * **A SITE THAT DID NOT APPLY IS NOT A ZERO.** My first run reported
+    `ops_cl: 445 rows, 10 sites, 0 rows moved, hit rate 0.0%` when **all ten
+    patches had failed to compile** and not one had run. That is the same
+    failure mode as the dead M26 patch: a count that reads 0 because nothing
+    happened is indistinguishable from a count that reads 0 because nothing
+    moved. A site is now counted only if it APPLIED and the mutant printed
+    rows; `applied` is its own column and a port with zero applied sites
+    reports **NO MEASUREMENT**, not 0%. A `List.append` swap of a `String`
+    accumulator with a `List` is a TYPE ERROR, not a behaviour change, so the
+    site generator now only emits a swap when the two arguments have the same
+    syntactic shape.
+  * **THE SUBSTRATE MOVES.** Two agents were mid-edit in `uop/ops.bend` and
+    `uop/fold.bend` for ~15 minutes of this run, and `codegen/__init__.bend`
+    went 268 -> 306 lines under it. A zero-row run is indistinguishable from
+    "did not start", so a detector needs (a) a PRE-FLIGHT that every port
+    prints rows from the frozen copy before any mutation runs, and (b) an
+    end-of-run md5 re-check of every live `.bend` that prints
+    `SUBSTRATE MOVED -- THESE NUMBERS ARE ABOUT A TREE THAT NO LONGER EXISTS`
+    and discards the run. Without (b) one agent's baseline is another agent's
+    working copy.
+  * **A FROZEN COPY MUST REPRODUCE THE LIVE HASH BEFORE IT IS MUTATED.**
+    Asserted per file with md5 at freeze time, not assumed.
+
+**`walk_rewrite`'s `u` vs `rebuilt` IS A CLOSED CASE UPSTREAM, MEASURED AND
+WITH A PROOF, AND IT IS NOT CLOSED IN THE PORT.** `.agents/slop/
+unobservable-gr-oracle.py` transcribes upstream's driver with ONE token changed
+(`pm_rewrite(n)` instead of `pm_rewrite(new_n)`) and runs both over ten fixture
+shapes: **10/10 repl maps byte-identical.** The proof is three lines of upstream
+and two facts read off the pattern OBJECTS rather than off a transcription:
+
+  * `pm_post_sched_cache.patterns` is exactly two rules, `UPat(op=PARAM)` and
+    `UPat(op=ALLOC)`, and a `UPat` with no field pattern has **no `fields`
+    attribute at all**. Neither pattern can see a node's `src`, so
+    `src(rebuilt,0)` and `src(u,0)` cannot enter the answer.
+  * upstream guards the rebuild: `new_n = UOp(n.op, new_src, n.arg, n.tag) if
+    new_src != n.src else n`. Both carried ops are `src`-free in practice, so
+    `new_n IS n` and the two arguments are the SAME OBJECT.
+
+So **a fixture over `pm_post_sched_cache` can never separate `u` from
+`rebuilt`, and no number of such fixtures ever will.** This is the shape of the
+project's `floor(floor(a/b)/c) == floor(a/(b*c))` theorem: two spellings of one
+function.
+
+**BUT THE PORT'S OWN TABLE HAS A RULE UPSTREAM DOES NOT, AND THAT IS THE LIVE
+DEFECT, AND IT IS AN IDENTITY ONE.** The port's `pm_post_sched_cache()` carries
+`O.PMEntry{0, [O.OpsSINK{}], Nil{}}`, and `uop/ops.bend`'s
+`pm_dispatch_m case 0` sends SINK to `pm_r_sink_m`, which answers `Some{self}`.
+`wr.step.try_rule`'s `Some` arm then records `repl[u] = u`, so the engine
+returns the **ORIGINAL** SINK, whose srcs are the **UNREWRITTEN** ones.
+CPython returns a **NEW** SINK whose srcs are the rewritten ones -- measured,
+`replace[sink] is not sink` is `False` and `replace[sink].src != sink.src`.
+
+**The gate cannot see it, for TWO independent reasons, and either alone is
+enough.** (1) `gr-oracle.py`'s `uop_short` renders a SINK as the bare string
+`"SINK"`, and so does `gr_show.node` on the port side: upstream's rebuilt SINK
+and the port's original SINK print identically. (2) `gr-diff.sh` compares
+counts. **The two lanes can agree on that row for a reason that is not
+correctness**, which is the failure this file has already been bitten by
+(`nv_query_litter` wrong in the port AND in the oracle, "0 disagreements" over
+an error made twice).
+
+**SO THE FIXTURE IS THE SRCS, NOT THE OP.**
+`.agents/slop/unobservable-gr-probe.bend` imports the port and prints
+`gr.sink_srcs`, the op+slot sequence of the node the engine returns:
+
+    CPython, CALLED:  gr.sink_srcs = PARAM(99),PARAM(100),BUFFER
+    the port TODAY:   gr.sink_srcs = PARAM(0),PARAM(1),ALLOC
+    `u` -> `rebuilt`: gr.sink_srcs = -
+    SINK rule dropped: gr.sink_srcs = -
+
+**Three distinct answers, so the row MOVES** (`.agents/slop/unobservable-gr-move.py`,
+which asserts the frozen copy's md5 before mutating and prints
+`PATCH DID NOT APPLY` rather than a count). None of the three matches CPython,
+because the port's second defect -- the documented ARENA GROWTH WALL, where
+`wr.rebuild` mints into an arena the fold discards, so `rebuilt`'s index is
+unreadable from the original arena -- makes `rebuilt` `-` whatever argument the
+rule gets. **The probe exposes both defects at once, which is why it is the row
+the missing one was asking for.**
+
+**GENERALISE IT. Whenever a gate renders a node by its OP alone, it has thrown
+away the identity and the srcs, and those are the two things a rewrite driver
+exists to compute.** `uop_short`-style rendering is fine for a row that claims
+to be about an op; it is disqualifying for a row about a rewrite, because
+`new is old` and `new.src != old.src` are both invisible to it.
+
+---
+---
+
+## APPENDED 2026-10-04 by the dtype.two-oracles unit. Numbering CONTINUES from the
+## section above; positions 17206+ of this file. Cite POSITIONS, never numbers -- rule
+## NUMBERS have collided three times in this repo and these are no exception.
+
+### (17206) A DISAGREEMENT COUNT IS A FUNCTION OF THE ORACLE'S SKIP SET, AND THE SKIP SET IS NOT PART OF THE PORT
+
+MEASURED on `tinybendygrad/codegen/decomp/dtype.bend`, live tree, pinned `.venv`
+(3.12.10), all three lanes parsed with `rebase-gate.py`'s OWN `rows()` (loaded, not
+copied -- a second parser is a second opinion nobody checked, and three false zeros
+have already come out of a `\s=\s` parser meeting `name=value` lanes):
+
+    port `./bin/bend`               174 rows
+    dd-oracle.py                    416 rows   174 shared   19 disagreements
+    dtype-oracle.py                 351 rows   109 shared    1 disagreement
+
+`351 == 416 - 65` and dtype-oracle.py's names are EXACTLY dd-oracle.py's minus a 65-name
+SKIP set, asserted not assumed. So the two oracles do not test different things: **one is
+the other with 65 rows deleted**, and the 65 are all rows the port ALSO emits.
+
+**THE GENERAL RULE. A filter's disagreement count is a property of the filter.** Two
+oracles over one port, disagreeing by 19x on the same tree, is not evidence that one of
+them is right about health -- it is evidence that the SKIP set is doing the work. Until a
+lane's denominator is printed alongside its numerator, "1 of 107" and "1 of 107" are the
+same string whether the port has one defect or nineteen.
+
+**AND THE 18 ARE NOT UNCHECKED ROWS -- THAT IS THE WORSE CASE.** All 19 names are in
+`port ∩ dd-oracle`, so the port emits every one of them. Eighteen are rows the port emits
+with the WRONG VALUE that the wired lane never prints. An unchecked row reports itself as a
+denominator shortfall. **A suppressed disagreement is a known-wrong value the gate cannot
+see, and it reports itself as an agreement.**
+
+### (17207) THE CONTROL THAT SETTLES IT: RUN THE ORACLE WITH ITS FILTER EMPTIED
+
+`dtype-oracle-MUTANT.py` is `dtype-oracle.py` with `SKIP = set()` and NOTHING else changed
+-- one `diff` block proves it. Running it through the same harness:
+
+    live filter :  1 disagree of 109 shared
+    MUTANT      : 19 disagree of 174 shared
+
+Same port, same CPython, same interpreter, same parser. **A filter that suppresses
+disagreements is indistinguishable, from the outside, from a port that is nearly correct,
+and this is the cheapest possible way to tell them apart: empty the filter and see whether
+the number moves.** Do this for EVERY filter-shaped oracle in the repo, not just this one.
+
+### (17208) `SKIP` SETS CONTAIN BARE ANSWER ROWS, AND CALLING THEM "CREATION ORDER" EXCUSES THEM
+
+`dtype-oracle.py`'s header described all 65 skipped names as creation-order (`sig`/`k`/`n`/`p`).
+MEASURED by `.agents/slop/dd-coverage.py`: 57 are; **8 are BARE -- the answer itself.**
+`lga lgb lge lgq lgr lgs lgt lgu`. Five of those six `l2i` fixtures agree today only because
+`tree()` reaches two levels; their `k`/`sig` rows disagree. **A filter that drops the
+answer row and keeps the ordering row has dropped the stronger fact and kept the weaker
+one.** Classify skipped names by SUFFIX AGAINST THE TABLE FAMILIES ONLY: `lgr` is the CMOD
+fixture's answer and its trailing `r` is not a row kind, because `r`/`o` are the rule-table
+kinds on `nlong`/`nfloat`/`ndtype` and nowhere else. Read that wrong and the classifier
+files a real answer under an unrelated row type.
+
+### (17209) A LANE MUST PRINT ITS OWN DENOMINATOR AS ROWS
+
+`dtype-oracle.py` now emits five `dtype_oracle_*` rows -- `of=416`, `printed=351`,
+`suppressed=65`, `skip_names_unused=0`, and
+`full_disagreements=19 (of which 18 are on rows this filter does not print)`.
+
+**They are named so they CANNOT collide with a port row, so they can never be compared and
+so they can never fail.** That is the design constraint: a provenance row that participates
+in the gate is a provenance row that can be silenced. A lane's LABEL is the one thing a
+reader never has to diff, so the label belongs in the lane.
+
+**AND COUNT THE GAP FROM THE STREAM, NEVER FROM `len(SKIP)`.** `len(dd) - len(SKIP)` is
+wrong the moment SKIP holds a name the producer stopped printing, and a stale entry
+silently inflates the gap -- which is the 82-stale-`{}`-cache failure in a different
+costume. `skip_names_unused` exists to make that visible; it is 0 on this tree.
+
+### (17210) AN ARENA INDEX WRITTEN AS A LITERAL `0` IS `NOOP`, AND IT IS THE FOURTH OF ITS SPECIES IN ONE FILE
+
+`W2` is `{ar: O.Arena, lo: U32, hi: U32}` and BOTH `lo` and `hi` are arena **indices** --
+consumers call `Arena.op(ar, hi)`. `W2{ar, Cd.q0(c), 0}` therefore did not mean "high word
+is zero"; it meant "high word is **arena slot 0**", and slot 0 is the arena's bottom node,
+whose label is `NOOP`. dtype.py:74 returns the PAIR. Fixed to `Cd.q1(c)` / `Cd.r1(c)`.
+
+**A literal in an index-typed field is the most dangerous thing you can write in an arena
+port, because it is a valid U32.** It typechecks, it runs, and it names a real node --
+just not the node you meant.
+
+**THE SPECIES, MEASURED, in `tinybendygrad/codegen/decomp/dtype.bend`:**
+  1. `l2i_cdiv.abs.b` handed `abs.b` the arena `l2i` started with (comment at :1007)
+  2. `l2i_shl.hi` aliasing (comment at :1010)
+  3. `l2i_cdiv.signed` handed `l2i_bitcast` `nar` instead of `W2.ar(negr)` (comment at :1187)
+  4. `l2i_cdiv.uns` writing `0` into `W2.hi`
+
+**EVERY ONE IS INVISIBLE TO `--check-only`.** All four compile, all four run, all four are
+silent. The shared signature is **THE NODE COUNT BARELY MOVES WHILE THE CONE COLLAPSES**,
+so a count-based row and `ALL PROOFS CHECK` both stay green. `lgsn` is 1976 against
+CPython's 1977 -- the nodes ARE built -- and `lgtsig` reaches 57 against CPython's 2184.
+**They are not REACHABLE from the answer.** Only a CONE row sees that class, and only a
+cone row that is not suppressed sees it.
+
+### (17211) A CORRECT FIX CAN CLOSE ZERO DISAGREEMENTS -- SAY SO
+
+`l2i_cdiv.uns` was unambiguously wrong, the fix is one word per arm, `ALL PROOFS CHECK`,
+and the measured effect was: port rows 172 -> 174 (`lgsp`, `lgtp` -- rows CPython emits
+that the port was silently not emitting, so the DENOMINATOR got honest), one existing row
+moved (`lgssig`), nothing lost, **and 19 disagreements stayed 19.**
+
+Reporting that as "fixed" would be the same error as the one that produced the 52-vs-1
+disagreement in the first place. **A fix is closed when a disagreement goes away, or when a
+blind spot with a REASON is recorded. A green check is neither.**
+
+### (17212) WHEN A CONCURRENT AGENT'S FILE BREAKS YOUR LANE, THE PORT LANE PRINTS ZERO AND A NAIVE HARNESS CALLS IT "NOT STARTED"
+
+`tinybendygrad/uop/ops.bend` was written 14 SECONDS before a run and the run failed with
+
+    a parameter or field scrutinee (a match cannot scrutinize a computed value)
+    3948 |       match split_uop.sep.of(op, sep):
+
+`match split_uop.sep.of(...)` returns a computed `Bool` and Bend 2.0.34 refuses it. Two
+minutes earlier the same file compiled and the port printed 174 rows.
+
+**A `0 rows` result from this is a COLD SUBSTRATE, not a port that emits nothing**, and the
+two look identical to every harness that only counts. `dd-truth.py` refuses to print any
+verdict when the port lane yields 0 rows and says why. **Do NOT edit the other agent's file
+to unblock your measurement -- wait for it and re-measure.** Report the collision.
