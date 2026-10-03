@@ -44,6 +44,7 @@ helpers.py	floordiv	_i32	LANG-CONSTRAINED:no-generics-one-def-per-element-type
 helpers.py	floordiv	_u32	LANG-CONSTRAINED:no-generics-one-def-per-element-type
 helpers.py	floormod	_i32	LANG-CONSTRAINED:no-generics-one-def-per-element-type
 helpers.py	floormod	_u32	LANG-CONSTRAINED:no-generics-one-def-per-element-type
+helpers.py	getenv	_int	LANG-CONSTRAINED:no-generics-one-def-per-element-type
 helpers.py	getenv	_str	LANG-CONSTRAINED:no-generics-one-def-per-element-type
 helpers.py	make_tuple	_of	LANG-CONSTRAINED:no-overloading-split-by-branch
 helpers.py	make_tuple	_rep	LANG-CONSTRAINED:no-overloading-split-by-branch

@@ -21,6 +21,10 @@ kept = DDO.kept
 
 want = sys.argv[1:] or ["lg1", "lg2", "lg3", "lg4", "lg5", "lg6", "lg7", "lg8",
                         "lg9", "lga", "lgb", "lge", "lgu"]
+# FIDELITY: dd-oracle evaluates `IDX()` inside the `u32n=` row, i.e. BEFORE the
+# first `l2i` fixture, so `CONST(0)`/`CONST(1)` weakint are already interned and
+# `lg1n` is 10 and not 11.  Reproduce that or every `n=` after it is off.
+DDO.IDX()
 for nm, op, dt, xdt, n in DDO.L2I():
     if nm not in want:
         continue
@@ -36,7 +40,7 @@ for nm, op, dt, xdt, n in DDO.L2I():
     fresh = kept(ORDER[b:])
     print("=== %s  n=%d   answer=%s" % (nm, len(fresh), DDO.tree(r[0])))
     for i, u in enumerate(fresh):
-        print("   %2d %s" % (i, u))
+        print("   %2d %-34s %s" % (i, DDO.lab(u) + "/" + str(len(u.src)), DDO.sh1(u)))
 
 # the f32-source CAST arm, dtype.py:35-38
 fa0, fa1 = DDO.WPOOL[dtypes.f32][:2]

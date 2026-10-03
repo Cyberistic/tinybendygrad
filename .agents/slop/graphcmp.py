@@ -143,12 +143,16 @@ USAGE
     python3 .agents/slop/graphcmp.py selfcheck
     python3 .agents/slop/graphcmp.py emit py   --graph matmul  > runs/graphcmp/py.txt
     python3 .agents/slop/graphcmp.py emit bend                  > runs/graphcmp/bend.txt
-    python3 .agents/slop/graphcmp.py diff --dev-map 0=NULL
+    python3 .agents/slop/graphcmp.py diff
     python3 .agents/slop/graphcmp.py diff --plant srcswap
     python3 .agents/slop/graphcmp.py control
 
+There is no `--dev-map`. The device name is not bound at a prompt: the port resolves its
+interned tag through its own table (R7) and both sides then carry a NAME.
+
 Exit status: 0 when the two sides agree on every core and every field, 1 when they do not,
-2 when a side produced nothing -- which is a FAILURE and never a verdict (trap 4 above).
+2 when the comparison was NOT WELL-POSED or a side produced nothing -- which is a FAILURE
+and never a verdict (trap 4 above).
 """
 from __future__ import annotations
 
@@ -164,8 +168,18 @@ SLOP = REPO / ".agents" / "slop"
 BEND_PROBE = SLOP / "graphcmp.bend"
 BEND = REPO / "bin" / "bend"
 
-from tinygrad.dtype import AddrSpace, DType, dtypes  # noqa: E402
-from tinygrad.uop.ops import AxisType, Ops, ParamArg, UOp  # noqa: E402
+# `tinygrad.helpers.DEV` is resolved when tinygrad is IMPORTED, so `--dev` has to be decided
+# before the import or the py side quietly builds its graph on whatever device opens first
+# (METAL here). MEASURED both ways: `os.environ["DEV"]="CPU"` before `from tinygrad import
+# Tensor` gives `Device.DEFAULT == "CPU"`; the same assignment after it leaves `METAL`.
+# `from __future__ import annotations` is above, so every tinygrad name here is used only in
+# a body or a never-evaluated annotation and the import can be deferred to `load`.
+def load_tinygrad() -> None:
+  import tinygrad.dtype as dtm
+  import tinygrad.uop.ops as opm
+  globals().update(AddrSpace=dtm.AddrSpace, DType=dtm.DType, dtypes=dtm.dtypes,
+                   AxisType=opm.AxisType, Ops=opm.Ops, ParamArg=opm.ParamArg, UOp=opm.UOp)
+
 
 # THE ATOM TABLE. One letter per value KIND and no letter reused, because a collision
 # would make two different values render the same and a differ would then agree with
@@ -555,14 +569,15 @@ def clean_env(dev: str) -> dict:
   return e
 
 
-def emit_bend(dev: str, tries: int = 5, probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
+def emit_bend(dev: str, graph: str = "matmul", tries: int = 5,
+              probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
   """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
   nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
   20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
   is exactly the guard that does not work."""
   notes = []
   for attempt in range(1, tries + 1):
-    c = subprocess.run([str(BEND), str(probe or BEND_PROBE)], cwd=REPO, capture_output=True, text=True,
+    c = subprocess.run([str(BEND), str(probe or BEND_PROBE), graph], cwd=REPO, capture_output=True, text=True,
                        env=clean_env(dev), timeout=1800)
     lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
     rows = [ln for ln in lines if not ln.startswith("#")]
@@ -838,18 +853,22 @@ def main() -> int:
   ap.add_argument("--graph", choices=sorted(GRAPHS), default="matmul")
   ap.add_argument("--side", choices=["py", "bend"], default="py")
   ap.add_argument("--plant", choices=sorted(PLANTS), default=None)
-  ap.add_argument("--dev", default=os.environ.get("DEV", "NULL"))
-  ap.add_argument("--dev-map", default="", help="TAG=NAME[,...] binding the port's interned device index")
+  # CPU, NOT `os.environ.get("DEV")`. The port's graph fixture pins the ALLOC device at
+  # tag 0, which `uop/render.bend:361` names CPU and `schedule/__init__.bend:1095` says so
+  # in words; upstream's default device is whichever of `ALL_DEVICES` opens first
+  # (device.py:55-58), which is METAL on this machine and NULL under `DEV=NULL`, so an
+  # inherited DEV silently compares the port's CPU graph against a different device. The
+  # comparison is only well-posed at a PINNED device, and CPU is the one tag 0 names.
+  ap.add_argument("--dev", default="CPU")
   ap.add_argument("--plant-side", choices=["py", "bend"], default="py",
                   help="which side --plant edits; always ONE side's copy, never the tree")
   ap.add_argument("--bend-probe", default=None,
                   help="override the port-side probe; used to SEE the 0-row re-run guard fire")
   a = ap.parse_args()
-
-  dev_map = {}
-  for kv in filter(None, a.dev_map.split(",")):
-    k, v = kv.split("=")
-    dev_map[int(k)] = v
+  # ONE `--dev` GOVERNS BOTH SIDES, and it must be in the environment before tinygrad is
+  # imported (`load` above). `clean_env` then hands the same value to the bend child.
+  os.environ["DEV"] = a.dev
+  load_tinygrad()
 
   if a.cmd == "selfcheck":
     return selfcheck()
@@ -861,9 +880,6 @@ def main() -> int:
     else:
       rows, notes = emit_bend(a.dev)
       print("\n".join("# " + n for n in notes), file=sys.stderr)
-      if dev_map:
-        rows = [rebind(r, dev_map) for r in rows]
-        print(f"# dev-map {dev_map} bound into the stream", file=sys.stderr)
       print("\n".join(rows))
     return 0
   if a.cmd == "control":
@@ -871,7 +887,7 @@ def main() -> int:
     ok = True
     for name, get in (("py", lambda: emit_py(a.graph, a.plant)),
                       ("bend", lambda: emit_bend(a.dev)[0])):
-      rc, txt = report(get(), get(), a.plant, dev_map)
+      rc, txt = report(get(), get(), a.plant)
       print(f"== CONTROL {name} vs itself: rc={rc}\n{txt}")
       ok = ok and rc == 0
     print(f"# CONTROL VERDICT: {'OK' if ok else 'THE DIFFER DISAGREES WITH ITSELF'}")
@@ -882,12 +898,28 @@ def main() -> int:
     # answers AGREE to `matmul` and to `sum(axis=1)` is worse than no differ, and the only
     # way to know it is not that one is to ask.
     other = [g for g in sorted(GRAPHS) if g != a.graph]
-    rc, txt = report(emit_py(a.graph, None), emit_py(other[0], None), f"{a.graph}-vs-{other[0]}", dev_map)
+    rc, txt = report(emit_py(a.graph, None), emit_py(other[0], None), f"{a.graph}-vs-{other[0]}")
     print(txt)
     print(f"# CROSS VERDICT: {'OK -- it disagrees' if rc else 'IT AGREED WITH A DIFFERENT GRAPH'}")
     return 0 if rc else 1
   bd, notes = emit_bend(a.dev, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
-  rc, txt = report(emit_py(a.graph, a.plant), bd, a.plant, dev_map)
+  py = emit_py(a.graph, a.plant)
+  # THE PRECONDITION. The port's fixture names one device and the py graph carries
+  # whatever `--dev` opened, so the two device sets must be EQUAL before the cores mean
+  # anything: an ALLOC whose device differs has a different `core`, which propagates to
+  # every consumer and reports as a cascade of `src` differences with the cause in none of
+  # them. Exit 2 -- a FAILURE, never a verdict, on the same principle as the 0-row guard.
+  pdev, bdev = sorted(devnames(py)), sorted(devnames(bd))
+  if pdev != bdev:
+    print(f"# devices py={pdev} bend={bdev} -- NOT WELL-POSED, and this is NOT a verdict "
+          f"(exit 2). The port's graph fixture is pinned at the arena tag 0 and the py graph "
+          f"is on {pdev}, so every consumer of the ALLOC would carry a different `core` and "
+          f"the report would be a cascade of `src` differences with the cause in none of "
+          f"them. Re-run with --dev <the name the port resolved> -- or, if the name is not "
+          f"in the port's table at all, that is a port gap to report, not a flag to set.",
+          file=sys.stderr)
+    return 2
+  rc, txt = report(py, bd, a.plant)
   print("\n".join("# " + n for n in notes))
   print(txt)
   return rc

@@ -1,0 +1,17 @@
+REC  tinybendygrad/nn/__init__.bend                   rows [24, 24, 24] shared[cpytho=24,cpytho=24,interp=24] stable across 2 runs
+REC  tinybendygrad/mixin/elementwise.bend             rows [72, 72, 71] shared[cpytho=71,cpytho=71,interp=72] stable across 2 runs
+REC  tinybendygrad/uop/fold.bend                      rows [201, 201, 130] shared[cpytho=126,cpytho=126,interp=201] stable across 2 runs
+REC  tinybendygrad/codegen/gpudims.bend               rows [24, 24, 54] shared[cpytho=24,cpytho=24,interp=24] stable across 2 runs
+REC  tinybendygrad/renderer/amd/generate.bend         rows [726, 726, 779] shared[cpytho=726,cpytho=726,interp=726] stable across 2 runs
+REC  tinybendygrad/runtime/support/hcq2.bend          rows [360, 360, 163] shared[cpytho=157,cpytho=157,interp=360] stable across 2 runs
+REC  tinybendygrad/schedule/indexing.bend             rows [252, 252, 104] shared[cpytho=104,cpytho=104,interp=252] stable across 2 runs
+REC  tinybendygrad/engine/jit.bend                    rows [137, 137, 30] shared[cpytho=18,cpytho=18,interp=137] stable across 2 runs
+REC  tinybendygrad/renderer/llvmir.bend               rows [323, 323, 323] shared[cpytho=323,cpytho=323,interp=323] stable across 2 runs
+REC  tinybendygrad/renderer/nir_llvmir.bend           rows [201, 201, 201] shared[cpytho=201,cpytho=201,interp=201] stable across 2 runs
+REC  tinybendygrad/mixin/op.bend                      rows [36, 36, 32] shared[cpytho=32,cpytho=32,interp=36] stable across 2 runs
+REC  tinybendygrad/uop/ops.bend                       rows [115, 115, 68] shared[cpytho=67,cpytho=67,interp=115] stable across 2 runs
+REC  tinybendygrad/runtime/ops_amd.bend               rows [520, 520, 1010] shared[cpytho=409,cpytho=409,interp=520] stable across 2 runs
+REC  tinybendygrad/runtime/ops_cpu.bend               rows [134, 134, 20] shared[cpytho=3,cpytho=3,interp=134] stable across 2 runs
+REC  tinybendygrad/runtime/ops_null.bend              rows [180, 180, 9] shared[cpytho=7,cpytho=7,interp=180] stable across 2 runs
+REC  tinybendygrad/runtime/ops_metal.bend             rows [432, 432, 18] shared[cpytho=14,cpytho=14,interp=432] stable across 2 runs
+REC  tinybendygrad/runtime/ops_nv.bend                rows [600, 600, 547] shared[cpytho=543,cpytho=543,interp=600] stable across 2 runs

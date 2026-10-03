@@ -76,7 +76,20 @@ RULES = [
     # -- MONOMORPHISATION. Upstream `cdiv(x:int, y:int)` and friends are generic
     #    over the element type; Bend has no generics, so the port has one def per
     #    concrete type. This is the LANGUAGE, not a naming preference.
-    ('helpers.py', r'_(?:i32|u32|str|nat|sign|seq)(?:_go|_str)?',
+    #
+    #    `int` is in this class, not in the NO-OVERLOADING class below, and it is
+    #    here for a reason that is a FACT about the two sibling arms rather than a
+    #    preference. Upstream `getenv` (helpers.py:158-163) is BOTH overloaded AND
+    #    generic -- two `@overload` stubs over `def getenv(key, default:Any=0):
+    #    return type(default)(os.getenv(key, default))` -- so both reasons are true
+    #    of it. The port splits it into `getenv_str` and `getenv_int`, and the SPLIT
+    #    is driven by the element type (`helpers.bend:150`: "a default of `""` gives
+    #    `str` ... while a default of `0` gives `int`"). So `_int` must carry the
+    #    SAME reason string as its already-adjudicated sibling `_str`, or the gate's
+    #    own by-reason report would print one `getenv` arm under "monomorphisation"
+    #    and the other under "overloading" and read as two separate rulings. Split
+    #    the pair's reason and the audit record starts lying.
+    ('helpers.py', r'_(?:i32|u32|str|nat|sign|seq|int)(?:_go|_str)?',
      'LANG-CONSTRAINED:no-generics-one-def-per-element-type'),
     # -- NO OVERLOADING. Upstream `make_tuple(x:int|Sequence[int], cnt)` and
     #    `argfix(*x)` branch internally; Bend cannot overload, so each arm is

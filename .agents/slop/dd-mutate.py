@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """dd-mutate.py -- the MUTATION TABLE for codegen/decomp/dtype.bend.
 
-Runs against a MIRROR of the tree, never the live file.  The live file is owned
-by the row-regression unit and was observed changing under this harness twice in
-four minutes, once of them into a NON-COMPILING state; a mutation harness that
-writes it can therefore both corrupt the other unit and be corrupted by it.
+NEVER writes the live tree.  It builds a MIRROR from `git archive HEAD
+tinybendygrad`, drops the live `dtype.bend` into it, and mutates only the mirror.
+The live file is owned by another unit and was observed changing under a harness
+twice in four minutes, once of them into a NON-COMPILING state; a harness that
+writes it can corrupt that unit and be corrupted by it.
 
-RULES THIS FILE ENFORCES (each one has already cost this project a real run):
+RULES, each of which has already cost this project a real run:
 
 * RULE A -- diff whole `name=value` LINES, not row names.  A name-comparing
   harness reports 0 for every mutation that changes only a value.
@@ -17,66 +18,68 @@ RULES THIS FILE ENFORCES (each one has already cost this project a real run):
 * RULE C -- CONTROLS.  Three no-semantics edits (no-op, comment-only,
   whitespace-only) must all read SAME.  A control that reads MOVED is a BROKEN
   HARNESS and is reported as such, loudly, before any real verdict is trusted.
+  NOTE the whitespace control is a CONTINUATION line, never a `case` arm: Bend's
+  indentation IS semantic, so re-indenting an arm does not compile and a
+  "whitespace-only" edit is not a no-op here.
 
-* RULE D -- PATCH DID NOT APPLY is never printed as "0 rows moved".  Those are
-  different facts and conflating them has already produced three false zeros.
+* RULE D -- PATCH DID NOT APPLY is NEVER a zero.  `edit()` returns the phrase, the
+  pre-flight audit prints every dead anchor BEFORE the first mutation, and the
+  report gets its own `DEAD ANCHOR` section.  A dead patch that reads "0 rows"
+  is indistinguishable from a mutation the port survives.
 
-* RULE E -- `bend` prints NOTHING on a stack overflow (~1 run in 20 here) and
-  that is indistinguishable from "did not start".  So a run is only accepted
-  when it reproduces the baseline's exact shape: same first line, same line
-  count, same last line.  Otherwise retry.
+* RULE E -- `bend` prints NOTHING on a stack overflow (~1 run in 20 here) and that
+  is indistinguishable from "never started".  A run is accepted only when it
+  reproduces the baseline's exact shape: same first line, same line count, same
+  last line.  Otherwise retry.
 
-* RULE F -- LC_ALL=C.  Locale-colating `sort`/`comm` fabricated 6 spurious
-  diffs in this project, including on a no-op control.
+* RULE F -- LC_ALL=C.  Locale-colating `sort`/`comm` fabricated 6 spurious diffs
+  in this project, including on a no-op control.  (Python's `sorted` is byte
+  order, so the diff below needs no shell.)
 
-* RULE G -- REFUSE TO START if a bake exists, and write the bake BEFORE the
-  first mutation.  The previous harness deleted the bake after the first
-  successful run, so only M01 was ever protected.
+* RULE G -- REFUSE TO START if a bake exists IN THE MIRROR, and write the bake
+  BEFORE that mirror's first write.  The earlier harness deleted the bake after
+  the first successful run, so only M01 was ever protected.  A bake is a
+  mirror-local artifact: it exists to catch a run killed mid-write, and it does
+  that only for the tree being written.  One in the LIVE tree guards nothing --
+  it is a bake against a file this harness refuses to write -- while making the
+  harness refuse to start for anyone who mirrors the live tree.  RULE J.
 
 * RULE H -- never gate on the exit code: `--check-only` exits 1 on a clean file.
 
-usage: dd-mutate.py BASELINE.txt OUT.txt [name ...]
+* RULE I -- ASSERT THE MIRROR REPRODUCES THE LIVE DIGEST before mutating it.
+  Otherwise a mutation run measures a file that is not the file.
+
+* RULE J -- NO BAKE, NO MUTANT, NO BYTE OUTSIDE THE MIRROR OR .agents/slop/.
+  `git archive` only carries tracked files, so the mirror cannot inherit a bake;
+  a stray one is reported, not silently deleted.
+
+usage: dd-mutate.py BASELINE.txt OUT.txt [id ...]
+env:   DD_WORKERS (default 6)   DD_KEEP (leave the mirror behind)
 """
+import hashlib
 import os
+import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# The mirror defaults into .agents/slop/ but DD_TREE overrides it: another
-# agent was observed DELETING files under .agents/slop/ mid-run, which took the
-# first mirror and its baseline with it.
-MIRROR = os.environ.get("DD_TREE") or os.path.join(
-    ROOT, ".agents", "slop", "dd-mirror", "tinybendygrad")
-TARGET = os.path.join(MIRROR, "codegen", "decomp", "dtype.bend")
+LIVE = os.path.join(ROOT, "tinybendygrad", "codegen", "decomp", "dtype.bend")
 BEND = os.path.join(ROOT, "bin", "bend")
 SCRATCH = "/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode"
+HERE = os.path.dirname(os.path.abspath(__file__))
 
-# RULE H: the shape of a GOOD run, taken from the baseline itself rather than
-# hardcoded, so a row-set change upstream invalidates the guard loudly instead
-# of silently accepting a truncated run.
+
+def sha1(text):
+    return hashlib.sha1(text.encode()).hexdigest()
+
+
 def shape(text):
+    """RULE E/H: the shape of a GOOD run, taken from the BASELINE rather than
+    hardcoded, so a row-set change upstream invalidates the guard loudly instead
+    of silently accepting a truncated run."""
     lines = text.splitlines()
     return (lines[0] if lines else "", len(lines), lines[-1] if lines else "")
-
-
-def run_gate(path, want):
-    """Run the gate until it reproduces `want`'s exact shape.  bend's stack
-    overflow prints nothing at all, which is what makes a 0-row result
-    indistinguishable from 'never started', so shape is the guard and the
-    exit code is not (RULE E, RULE H)."""
-    err = ""
-    for attempt in range(24):
-        with open(path, "w") as fh:
-            p = subprocess.run([BEND, TARGET], stdout=fh, stderr=subprocess.PIPE)
-        text = open(path).read()
-        if shape(text) == want:
-            return text, None, attempt + 1
-        err = (p.stderr or b"").decode()[:400]
-        if text:
-            # It printed SOMETHING but the wrong shape: a real behavioural
-            # change (fewer rows, refused trace) -- not an overflow.
-            return text, None, attempt + 1
-    return None, err, 24
 
 
 def load(text):
@@ -89,23 +92,68 @@ def load(text):
     return d
 
 
+# --- RULE I + J: the mirror.  Built once, from HEAD, with the live file dropped
+# in, and only then asserted equal to the live file.  `git archive HEAD
+# tinybendygrad` carries the port and nothing else; the gate's output is
+# BYTE-IDENTICAL with the 172 MB full archive, so 11 MB per worker is enough.
+def build_mirror():
+    src = open(LIVE).read()
+    tag = sha1(src)[:12]
+    top = os.path.join(SCRATCH, "dd-mut-" + tag)
+    if not os.path.isdir(os.path.join(top, "tinybendygrad")):
+        archive = subprocess.run(["git", "-C", ROOT, "archive", "HEAD", "tinybendygrad"],
+                                 stdout=subprocess.PIPE, check=True).stdout
+        base = os.path.join(SCRATCH, "dd-mut-base-" + tag)
+        shutil.rmtree(base, ignore_errors=True)
+        shutil.rmtree(top, ignore_errors=True)
+        os.makedirs(base)
+        subprocess.run(["tar", "-x", "-C", base], input=archive, check=True)
+        os.rename(base, top)   # rename, not move: move() into an existing dir nests
+    tgt = os.path.join(top, "tinybendygrad", "codegen", "decomp", "dtype.bend")
+    open(tgt, "w").write(src)
+    got = open(tgt).read()
+    if sha1(got) != sha1(src):
+        sys.exit("RULE I: the mirror does not reproduce the live file")
+    if os.path.realpath(tgt) == os.path.realpath(LIVE):
+        sys.exit("RULE J: refusing to run -- the mirror IS the live file")
+    return top, tgt, sha1(src)
+
+
+def stray_bakes():
+    """RULE J.  `git archive` cannot carry a bake, so any `.ddmut` outside the
+    slop dir and this run's mirror is a leftover from a run that wrote the live
+    tree.  It is reported, never deleted: somebody else's mirror may still be
+    mid-run against it."""
+    out = []
+    for base, dirs, files in os.walk(ROOT):
+        dirs[:] = [d for d in dirs if d != ".git"]
+        if base == HERE or base.startswith(HERE + os.sep):
+            continue                       # slop holds other units' mirrors
+        for f in files:
+            if f.endswith(".ddmut"):
+                out.append(os.path.join(base, f))
+    return out
+
+
 # --- RULE C: the controls.  Each is an edit with NO semantic content.  If any
-# of these moves a row, the diff or the harness is wrong and every verdict in
-# the table is void -- so they run FIRST and are reported first.
+# moves a row, the diff or the harness is wrong and EVERY verdict is void -- so
+# they run first and are reported first.
 CONTROLS = [
     ("C00 no-op control (rewrite the file byte-identical)",
      None, None),
-    ("C01 comment-only control (append a comment line to a def body)",
-     "def l2i_shr.fill(+ar: O.Arena, +a1: U32, +zero: U32, signed: Bool) -> O.Found:\n  match signed:",
-     "def l2i_shr.fill(+ar: O.Arena, +a1: U32, +zero: U32, signed: Bool) -> O.Found:\n  # CONTROL C01: a comment line, no semantics\n  match signed:"),
-    ("C02 whitespace-only control (re-indent a CONTINUATION line only)",
+    ("C01 comment-only control (insert a comment line above a def)",
+     "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:",
+     "# CONTROL C01: a comment line, no semantics\n"
+     "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:"),
+    # A CONTINUATION/TRAILING statement, NOT a `case` arm: Bend's indentation is
+    # semantic and a re-indented arm does not compile, which would make this
+    # control fail for the wrong reason (RULE C).
+    ("C02 whitespace-only control (re-indent one trailing statement)",
      "  W2{O.Found.ar(c), O.Found.i(c), 0}",
      "    W2{O.Found.ar(c), O.Found.i(c), 0}"),
 ]
 
-# --- the mutations.  Anchors are asserted UNIQUE in the target (RULE D), because
-# `str.replace(old, new, 1)` on a non-unique anchor mutates whichever site
-# happens to come first and reports it as a deliberate one.
+# --- the mutations.  Anchors are asserted EXACTLY-ONCE (RULE D).
 MUTATIONS = [
     # --- the CAST ladder: first-wins over three Booleans -------------------
     ("M01 dd_cast_sel: swap the long arm 0/1",
@@ -186,9 +234,14 @@ MUTATIONS = [
      "    case True{}: z\n    case False{}: s",
      "    case True{}: s\n    case False{}: z"),
     # --- the GATE's own metric, which is what makes the table worth having --
+    # RE-AIMED.  The old M26 anchored the PRE-fix prepending line, which occurs
+    # ZERO times in the fixed file, so it was PATCH-NOT-APPLIED and read as a
+    # zero.  The anchor is now the FIXED line and the mutant is the pre-fix one,
+    # so the name ("visit src[n] before src[0]") finally describes the edit and
+    # the entry finally tests the defect it was written for.
     ("M26 dd_rs.push: visit src[n] before src[0]",
-     "        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))",
-     "        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, List.reverse(&2, U32, st)))"),
+     "        case s <> t: dd_rs.cat(s, dd_rs.push(q, t, st))",
+     "        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))"),
     ("M27 dd_rs.has: never remember a node (cone visits every edge)",
      "          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)",
      "          st2 = dd_rs.more(True{}, ar, u, rest)"),
@@ -217,127 +270,214 @@ MUTATIONS = [
     ("M35 rne.sel: refuse every shift",
      "  match zero:\n    case True{}: None{}\n    case False{}: Some{rne.go(ar, v, s)}",
      "  match zero:\n    case True{}: None{}\n    case False{}: None{}"),
+    # --- FOUND LIVE, 2026-10-03.  dtype.py:74 is `return r if op == Ops.CMOD
+    # else q`, and the comment above `uns` quotes it verbatim -- but the arms
+    # are the other way round, so the UNSIGNED CDIV row (`lgs`) answers with the
+    # remainder and the UNSIGNED CMOD row (`lgt`) answers with the quotient.
+    # Same shape as the two mutants that reached origin/master (`l2i_shl.hi`'s
+    # OR swap, `reindex.scaled`'s mul swap): operand/arm identity inside a
+    # commutative-looking pair.  See dd-mutate-report.md.
+    ("M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)",
+     "  match isdiv:\n    case True{}: W2{ar, Cd.r0(c), 0}\n    case False{}: W2{ar, Cd.q0(c), 0}",
+     "  match isdiv:\n    case True{}: W2{ar, Cd.q0(c), 0}\n    case False{}: W2{ar, Cd.r0(c), 0}"),
 ]
 
-RESULTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dd-mut")
+PLAN = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)] + MUTATIONS
 
 
 def edit(src, old, new):
     """Apply one edit and report EXACTLY what happened.  RULE D: a missing or
-    ambiguous anchor is `PATCH DID NOT APPLY`, which is never a zero."""
+    ambiguous anchor is PATCH DID NOT APPLY, which is never a zero."""
     if old is None:
-        return src, "no-op"
+        return src, "no-op (byte-identical rewrite)"
     n = src.count(old)
     if n == 0:
-        return None, "PATCH DID NOT APPLY: anchor absent"
+        return None, "PATCH DID NOT APPLY: anchor absent (0 occurrences)"
     if n > 1:
         return None, "PATCH DID NOT APPLY: anchor is %d-AMBIGUOUS" % n
     return src.replace(old, new, 1), "applied"
 
 
+def run_gate(path, tgt, want):
+    """Run the gate until it reproduces `want`'s exact shape.  bend's stack
+    overflow prints nothing at all, which is what makes a 0-row result
+    indistinguishable from 'never started', so SHAPE is the guard and the exit
+    code is not (RULE E, RULE H)."""
+    err = ""
+    for attempt in range(24):
+        with open(path, "w") as fh:
+            p = subprocess.run([BEND, tgt], stdout=fh, stderr=subprocess.PIPE)
+        text = open(path).read()
+        if shape(text) == want:
+            return text, None, attempt + 1
+        err = (p.stderr or b"").decode()[:400]
+        if text:
+            # It printed SOMETHING but the wrong shape: a real behavioural change
+            # (fewer rows, a refused trace) -- not an overflow.
+            return text, None, attempt + 1
+    return None, err, 24
+
+
 def main():
     base_txt = open(sys.argv[1]).read()
     base = load(base_txt)
-    good = shape(base_txt)          # `want` is the name-filter set; `good` the shape
+    good = shape(base_txt)          # `want` is the id filter; `good` the shape
     want = set(sys.argv[3:])
-    src = open(TARGET).read()
+    plan = [p for p in PLAN if not want or p[0].split()[0] in want or p[0] in want]
+    top, tgt, digest = build_mirror()
+    src = open(tgt).read()
+    print("# mirror  %s" % top)
+    print("# target  sha1 %s == live sha1 %s  (RULE I asserted)"
+          % (digest, sha1(open(LIVE).read())))
+    for stray in stray_bakes():
+        print("# RULE J: STRAY BAKE outside .agents/slop/ and this mirror: %s"
+              % stray)
 
-    # RULE G: bake BEFORE the first write and refuse to start if one is there.
-    # The old harness deleted the bake after the first successful mutation, so
-    # M02..M35 ran with no bake at all.
-    BAKE = TARGET + ".ddmut"
-    if os.path.exists(BAKE):
-        sys.exit("REFUSING TO START: %s exists, so an earlier run was killed "
-                 "mid-mutation and the mirror may be contaminated.\n"
-                 "  diff %s %s\n"
-                 "  delete the bake only once they agree."
-                 % (BAKE, TARGET, BAKE))
-    open(BAKE, "w").write(src)
-    os.makedirs(RESULTDIR, exist_ok=True)
-
-    plan = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)]
-    plan += MUTATIONS
-
-    rows, broken = [], []
+    # RULE D, PRE-FLIGHT: every anchor is audited BEFORE the first write, so a
+    # dead patch is a refusal to measure, not a zero discovered afterwards.
+    dead = []
     for name, old, new in plan:
+        if old is not None and src.count(old) != 1:
+            dead.append((name, src.count(old)))
+    for name, n in dead:
+        print("# PATCH DID NOT APPLY  %s  (anchor occurs %d times, need 1)"
+              % (name.split()[0], n))
+    if dead:
+        print("# %d DEAD ANCHOR(S): these are requests for fixtures/anchors, NOT"
+              " passes, and they are reported as such in the table." % len(dead))
+
+    workers = max(1, min(int(os.environ.get("DD_WORKERS", 6)), len(plan)))
+    cache = os.path.join(HERE, "dd-mut", digest)   # keyed: a stale cache from a
+    os.makedirs(cache, exist_ok=True)               # 147-row baseline cannot be
+
+    def one(w, job):
+        """One entry.  Every worker owns a private copy of the mirror, so no two
+        mutations can ever see each other's file."""
+        name, old, new = job
         short = name.split()[0]
-        if want and short not in want and name not in want:
-            continue
-        dest = os.path.join(RESULTDIR, short + ".txt")
+        tree = os.path.join(top, "w%d" % w)
+        wtgt = os.path.join(tree, "tinybendygrad", "codegen", "decomp", "dtype.bend")
+        # ONE output file PER WORKER, never one shared path: two workers writing
+        # the same path interleave, and a worker's "this shape is not the
+        # baseline's" reading of ANOTHER mutation's text is reported as a real
+        # behavioural change.  That is a fabricated verdict, not a flaky one.
+        out = os.path.join(SCRATCH, "ddmut-%d.txt" % w)
+        dest = os.path.join(cache, short + ".txt")
         if os.path.exists(dest):          # resumable: converges over re-runs
             verdict, moved = open(dest).read().split("\t", 1)
-            moved = [x for x in moved.split(",") if x]
-            rows.append((name, verdict, moved))
-            print("%-62s (cached) %s %d rows" % (name[:62], verdict, len(moved)))
-            continue
-
+            return name, verdict, [x for x in moved.split(",") if x], "cached"
+        if not os.path.isdir(tree):
+            shutil.copytree(top, tree)
+        bake = wtgt + ".ddmut"            # RULE G: written before the first write
+        if os.path.exists(bake):
+            return name, "BAKE-PRESENT", [], "a bake is in worker tree " + tree
+        open(bake, "w").write(src)
         mutated, how = edit(src, old, new)
         if mutated is None:
-            open(TARGET, "w").write(src)          # nothing was written; be sure
+            open(wtgt, "w").write(src)    # nothing was written; be sure
             open(dest, "w").write("PATCH-NOT-APPLIED\t" + how)
-            rows.append((name, "PATCH-NOT-APPLIED", []))
-            print("%-62s %s" % (name[:62], how))
-            continue
-
-        open(TARGET, "w").write(mutated)
-        got, err, tries = run_gate(os.path.join(SCRATCH, "ddmut.txt"), good)
-        open(TARGET, "w").write(src)              # RESTORE FIRST, decide after
+            return name, "PATCH-NOT-APPLIED", [], how
+        open(wtgt, "w").write(mutated)
+        got, err, tries = run_gate(out, wtgt, good)
+        open(wtgt, "w").write(src)        # RESTORE FIRST, decide after
         if got is None:
             first = " | ".join((err or "").splitlines()[:3])
             open(dest, "w").write("DID-NOT-COMPILE\t" + first)
-            rows.append((name, "DID-NOT-COMPILE", []))
-            print("%-62s DID-NOT-COMPILE  %s" % (name[:62], first))
-            continue
-
+            return name, "DID-NOT-COMPILE", [], first
         cur = load(got)
         moved = sorted(k for k in set(base) | set(cur) if base.get(k) != cur.get(k))
         verdict = "SAME" if not moved else "MOVED"
-        if name.split()[0].startswith("C") and moved:
-            verdict, broken = "CONTROL-BROKEN", name
+        if short.startswith("C") and moved:
+            verdict = "CONTROL-BROKEN"
         open(dest, "w").write(verdict + "\t" + ",".join(moved))
-        rows.append((name, verdict, moved))
-        print("%-62s %-9s %3d rows  %s"
-              % (name[:62], verdict, len(moved), ", ".join(moved[:10])))
+        return name, verdict, moved, "%d attempt(s)" % tries
 
-    os.remove(BAKE)
+    chunks = [(i, plan[i::workers]) for i in range(workers) if plan[i::workers]]
 
-    out = open(sys.argv[2], "w")
-    out.write("# dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend\n")
-    out.write("# tree: MIRROR .agents/slop/dd-mirror (git archive HEAD + the live\n")
-    out.write("# dtype.bend at shasum %s). The live file is NOT written.\n"
-              % __import__("hashlib").sha1(src.encode()).hexdigest())
-    out.write("# baseline: %d rows, shape (first=%r lines=%d last=%r)\n"
-              % (len(base), good[0], good[1], good[2]))
+    def run(chunk):
+        w, jobs = chunk
+        return [one(w, job) for job in jobs]
+
+    with ThreadPoolExecutor(workers) as pool:
+        results = list(pool.map(run, chunks))
+    rows = [r for chunk in results for r in chunk]
+    rows.sort(key=lambda r: PLAN.index(next(p for p in PLAN if p[0] == r[0])))
+    broken = next((n for n, v, _, _ in rows if v == "CONTROL-BROKEN"), None)
+    for name, verdict, moved, note in rows:
+        print("%-4s %-62s %-17s %3d rows  %s"
+              % (name.split()[0], name[len(name.split()[0]):][:62], verdict,
+                 len(moved), note))
+
     ctl = [r for r in rows if r[1] == "SAME" and r[0].startswith("C")]
     mv = [r for r in rows if r[1] == "MOVED"]
-    dead = [r for r in rows if r[1] == "SAME" and not r[0].startswith("C")]
-    nocc = [r for r in rows if r[1] in ("DID-NOT-COMPILE", "PATCH-NOT-APPLIED")]
-    out.write("# %d controls SAME, %d mutations MOVED, %d mutations SAME (zeros), "
-              "%d did-not-compile/patch\n" % (len(ctl), len(mv), len(dead), len(nocc)))
-    if broken:
-        out.write("#\n# !!!!! CONTROL BROKEN: %s MOVED ROWS.  EVERY VERDICT BELOW "
-                  "IS VOID. !!!!!\n" % broken)
-    for name, verdict, moved in rows:
-        out.write("\n%s\n  %s  %d rows\n" % (name, verdict, len(moved)))
-        for k in moved:
-            out.write("    %s\n" % k)
+    deadr = [r for r in rows if r[0] not in ("x",) and r[1] == "PATCH-NOT-APPLIED"]
+    zero = [r for r in rows if r[1] == "SAME" and not r[0].startswith("C")]
+    nocc = [r for r in rows if r[1] == "DID-NOT-COMPILE"]
 
-    # The most valuable output: rows NO mutation moved.
+    fh = open(sys.argv[2], "w")
+    w = fh.write
+    w("# dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend\n")
+    w("# target sha1 %s, asserted EQUAL to the live file (RULE I)\n" % digest)
+    w("# baseline %d rows, shape (first=%r lines=%d last=%r)\n"
+      % (len(base), good[0], good[1], good[2]))
+    w("# %d controls SAME | %d mutations MOVED | %d SAME (zeros: REQUEST or "
+      "THEOREM, never a silent pass) | %d DID-NOT-COMPILE | %d DEAD ANCHOR\n"
+      % (len(ctl), len(mv), len(zero), len(nocc), len(deadr)))
+    w("#\n# DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.\n")
+    for name, verdict, moved, note in deadr:
+        w("#   %-62s %s\n" % (name, note))
+    if not deadr:
+        w("#   (none: every anchor occurs exactly once)\n")
+    w("#\n# CONTROLS (RULE C -- all must read SAME; a MOVED control voids every "
+      "verdict below)\n")
+    for name, verdict, moved, note in rows:
+        if name.startswith("C"):
+            w("#   %-62s %s\n" % (name, verdict))
+    w("#\n#   NOTE: a whitespace-only edit of a `case` arm does NOT compile -- "
+      "Bend's indentation is\n#   semantic -- so C02 re-indents a trailing "
+      "statement, not an arm.\n")
+    if broken:
+        w("#\n# !!!!! CONTROL BROKEN: %s MOVED ROWS.  EVERY VERDICT BELOW IS VOID. "
+          "!!!!!\n" % broken)
+    for name, verdict, moved, note in rows:
+        if name.startswith("C"):
+            continue
+        w("\n%s\n  %s  %d rows%s\n" % (name, verdict, len(moved),
+                                        "" if verdict in ("MOVED",) else
+                                        "   << " + note))
+        for k in moved:
+            w("    %s\n" % k)
     covered = set()
-    for _, _, moved in rows:
+    for _, _, moved, _ in rows:
         covered |= set(moved)
     orphans = sorted(k for k in base if k not in covered)
-    out.write("\n\n=== ROWS NO MUTATION MOVED (%d of %d baseline rows) ===\n"
-              % (len(orphans), len(base)))
+    w("\n\n=== ROWS NO MUTATION MOVED (%d of %d baseline rows) ===\n"
+      % (len(orphans), len(base)))
     for k in orphans:
-        out.write("  %s\n" % k)
-    out.close()
+        w("  %s\n" % k)
+    fh.close()
 
+    # The machine-readable sidecar, so the table can be rebuilt without parsing
+    # the prose and the classification lives in one place.
+    tsv = open(sys.argv[2] + ".tsv", "w")
+    for name, verdict, moved, _ in rows:
+        tsv.write("%s\t%s\t%d\t%s\n"
+                  % (name.split()[0], verdict, len(moved), ",".join(moved)))
+    tsv.close()
+
+    if not os.environ.get("DD_KEEP"):
+        for i in range(workers):
+            shutil.rmtree(os.path.join(top, "w%d" % i), ignore_errors=True)
+        shutil.rmtree(top, ignore_errors=True)
+    print("\n%d controls SAME | %d moved | %d zeros | %d did-not-compile | "
+          "%d dead anchor | %d unmoveable rows"
+          % (len(ctl), len(mv), len(zero), len(nocc), len(deadr), len(orphans)))
     if broken:
         sys.exit("CONTROL BROKEN: %s moved rows -- the harness is wrong, not the port"
                  % broken)
-    print("\n%d controls SAME | %d moved | %d zeros | %d did-not-compile | %d unmoveable rows"
-          % (len(ctl), len(mv), len(dead), len(nocc), len(orphans)))
+    if deadr:
+        sys.exit("DEAD ANCHOR: %d mutation(s) did not apply; the table is "
+                 "INCOMPLETE, not green" % len(deadr))
 
 
 main()

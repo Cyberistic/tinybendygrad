@@ -88,13 +88,8 @@ def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +c
 def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.scan(ar, pm, u, repl, ctx, rebuilt)
 
-def wr.step.seen(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, seen: Bool) -> Map<&2, U32>:
-  match seen:
-    case True{}: repl
-    case False{}: wr.step.seen.go(ar, pm, u, wr.rebuild(ar, u, repl), ctx, R.cu32(wr.rebuild(ar, u, repl), u))
-
 def wr.step(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
-  wr.step.seen(ar, pm, u, repl, ctx, R.chas(repl, u))
+  wr.step.seen.go(ar, pm, u, repl, ctx, R.cu32(wr.rebuild(ar, u, repl), u))
 
 # Fold over the toposort list. Returns the replace map.
 def wr.go(lst: List<&2, U32>, +ar: O.Arena, +pm: O.PMEntrys, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:

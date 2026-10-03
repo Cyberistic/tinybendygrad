@@ -12,26 +12,57 @@ THE THREE STATES, AND WHAT MAKES EACH ONE REACHABLE:
   RE-PORTED  a row value moved, and the moved rows now agree with CPython
   BROKEN     rows went to ZERO, or a lane died, or rows disagree
 
-The tests run against SYNTHETIC ports and a synthetic baseline in a temp tree. They do not
-touch tinygrad/, do not touch any .bend file, and do not touch the real baseline.json.
+The tests run against SYNTHETIC ports and a synthetic baseline, plus THREE REAL lane pairs
+named in SUPERSET_LANES. They do not touch tinygrad/, do not write any .bend file, and do
+not touch the real baseline.json. They DO run three ports and three oracles, because the
+superset check is only worth anything over real lane output: a parser that passes on
+synthetic text and drops one row out of prepare-oracle.py is the failure itself, and 38 wired
+gates share that parser.
 
-    python3 .agents/slop/rebase-gate-selftest.py
+    .venv/bin/python .agents/slop/rebase-gate-selftest.py
+
+Use .venv/bin/python. PATH's python3 cannot import tinygrad at all, and every oracle here
+exits 1 under it -- which the selftest then has to report as a FAILED LANE rather than as a
+row count.
 """
-import json, pathlib, shutil, subprocess, sys, tempfile
+import pathlib, subprocess, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "rebase-gate.py"
 REPO = HERE.parent.parent
 
+scan = load_module = None  # replaced below; see load_scan()
 
-def load_gate(name):
-  """Import rebase-gate.py under a private name. The gate is loaded, never restated: a
-  test that re-implements the rule under test is testing the test."""
+
+def load_scan():
+  """rebase-scan-oracles.py: the owner of the cache rule, of the cache KEYS, and -- by
+  importing it -- of the row parser. Loaded, never restated: a test that re-implements the
+  rule under test is testing the test."""
   import importlib.util
-  spec = importlib.util.spec_from_file_location(name, GATE)
+  spec = importlib.util.spec_from_file_location(
+    "rebase_scan_oracles", HERE / "rebase-scan-oracles.py")
   m = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(m)
   return m
+
+
+def load_gate(name):
+  """Import rebase-gate.py under a private name, so one check can hold two of them with
+  different `rows` in place. The gate is loaded, never restated."""
+  return load_scan().load_module(GATE, name)
+
+
+def rows_before_fix(text):
+  """`rows()` as it stood before the empty-name rule. This is the CONTROL'S REFERENCE, not
+  the rule: a superset check has to compare the fixed parser against what the tool used to
+  answer with, and re-typing that here is the only way to keep it from drifting back into the
+  tool itself."""
+  out = {}
+  for line in text.splitlines():
+    if "=" in line:
+      k, v = line.split("=", 1)
+      out[k.strip()] = v.strip()
+  return out
 
 
 class FakeBend:

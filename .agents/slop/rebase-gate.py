@@ -97,9 +97,19 @@ here rather than in one call site:
 """
 import argparse, json, os, pathlib, subprocess, sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import oracle_py
+
 REPO = pathlib.Path(__file__).resolve().parents[2]
 SLOP = REPO / ".agents" / "slop"
 BASELINE = SLOP / "rebase" / "baseline.json"
+
+# The interpreter that runs the CPython lanes, PINNED -- see oracle_py.py's header for the
+# measurement that forced it. Resolved once, at import, so a harness launched by an
+# interpreter that cannot import tinygrad dies HERE, loudly, instead of reporting that every
+# port agrees. `ORACLE_PY`, `sh(*a)` and the lane spawner below all read these two names.
+ORACLE_PY, TINYGRAD_FROM, PY_VERSION = oracle_py.resolve()
+PY_PROVENANCE = oracle_py.line(ORACLE_PY, TINYGRAD_FROM, PY_VERSION)
 
 UNCHANGED, REPORTED, BROKEN, NOT_STARTED = "UNCHANGED", "RE-PORTED", "BROKEN", "NOT-STARTED"
 
@@ -110,12 +120,36 @@ def sh(*a, timeout=1800):
 
 def rows(text):
   """`name=value` rows. Whole-LINE keyed on name, NEVER on row index: agent-core.md records
-  that an index-comparing harness reported 0 for all 30 mutations in one unit."""
+  that an index-comparing harness reported 0 for all 30 mutations in one unit.
+
+  ⚠ A LINE WITH AN EMPTY NAME IS NOT A ROW, and it is EXCLUDED ON PURPOSE rather than by
+  accident. prepare-oracle.py prints 14 `== SECTION ==` banners; splitting each on its FIRST
+  `=` yields the name `""`, so all fourteen landed on ONE key and the oracle reported 2522
+  rows where it has 2521 (measured, on this tree). The count was off by one for a STRUCTURAL
+  reason -- the number counted 14 banners as one row -- and a count that is wrong for a
+  structural reason is a count nobody can check by looking at the rows.
+
+  DROPPING A PHANTOM CANNOT TURN A REAL DISAGREEMENT INTO A MATCH, and the argument is three
+  lines because it is the only thing that could go wrong here. GUARD 4 compares two lanes over
+  the keys they SHARE, so removing a key can only SHRINK that intersection:
+
+    * a disagreement on a real key is untouched -- the key and both values are still there;
+    * a pair whose ONLY shared key was the phantom no longer shares anything, and GUARD 4
+      reports that as BROKEN ("share NO row names"), never as agreement. So the only two
+      movements available are BROKEN -> BROKEN and BROKEN -> BROKEN.
+
+  The one direction that DOES change is the safe one: two lanes that agreed on nothing but a
+  banner used to be counted as a comparable, agreeing pair, and are now refused as
+  incomparable. rebase-gate-selftest.py drives all three, over synthetic lanes and over four
+  real ones, and reports both parsers' row counts side by side."""
   out = {}
   for line in text.splitlines():
     if "=" in line:
       k, v = line.split("=", 1)
-      out[k.strip()] = v.strip()
+      k = k.strip()
+      if not k:
+        continue
+      out[k] = v.strip()
   return out
 
 
@@ -126,7 +160,7 @@ def diff_stat(src):
   A FAILED git must not read as "no diff": an out-of-tree copy with no `.git` answers the
   same empty stdout as a file upstream never touched, and "no upstream diff" is the one
   answer that would let a re-verify look examined when nothing was asked."""
-  plan = json.loads(sh("python3", ".agents/slop/rebase-plan.py", "--json").stdout or "{}")
+  plan = json.loads(sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json").stdout or "{}")
   pin = plan.get("pin")
   if not pin:
     return "UNAVAILABLE: rebase-plan.py produced no pin"
@@ -288,7 +322,7 @@ def run_port(bend, oracle, native=True):
       lanes[key] = {"rc": 127, "err": "ORACLE SCRIPT MISSING"}
       continue
     e = dict(os.environ, DEV="NULL")
-    c = subprocess.run([sys.executable, *argv], cwd=REPO, capture_output=True, text=True,
+    c = subprocess.run([ORACLE_PY, *argv], cwd=REPO, capture_output=True, text=True,
                        env=e, timeout=1800)
     lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:]}
     r[key] = rows(c.stdout)
@@ -574,7 +608,7 @@ def main():
   # unparseable plan used to be a bare `json.JSONDecodeError` traceback; it is named instead,
   # because the difference between "the plan says nothing changed" and "the plan did not run"
   # is the whole question this tool exists to answer.
-  pr = sh("python3", ".agents/slop/rebase-plan.py", "--json")
+  pr = sh(ORACLE_PY, ".agents/slop/rebase-plan.py", "--json")
   try:
     plan = json.loads(pr.stdout)
   except ValueError as e:
@@ -647,8 +681,13 @@ def main():
       tally["LOOK-UNRECORDED"] = tally.get("LOOK-UNRECORDED", 0) + 1
 
   if a.json:
-    print(json.dumps({"tally": tally, "verdicts": verdicts}, indent=2))
+    # `oracle_py` travels WITH the verdict, so a published number can always be traced to
+    # the interpreter that produced it. The failure this records -- three contradictory
+    # claims in one day, all true somewhere -- is invisible in a bare tally.
+    print(json.dumps({"oracle_py": ORACLE_PY, "tinygrad": TINYGRAD_FROM,
+                      "python": PY_VERSION, "tally": tally, "verdicts": verdicts}, indent=2))
   else:
+    print(PY_PROVENANCE)
     for v in verdicts:
       print(f"{v['state']:<12} {v['port']}")
       print(f"             {v['why']}")

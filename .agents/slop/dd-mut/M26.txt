@@ -1,1 +1,0 @@
-MOVED	lg1k,lg1sig,lg5k,lg5sig,lg9sig,lgak,lgasig,lgbk,lgbsig,lgcsig,lgdsig,lgek,lgesig,lgfsig,lggsig,lghsig,lgisig,lgjsig,lgksig,lglsig,lgmsig,lgqk,lgqsig,lgrk,lgrsig,lgsk,lgssig,lgtk,lgtsig,upsig

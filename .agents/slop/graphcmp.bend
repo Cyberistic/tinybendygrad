@@ -398,16 +398,48 @@ def g_matmul() -> O.Found:
   +p201 = O.UOp.new(O.Found.ar(mul), O.OpsPERMUTE{}, [O.Found.i(mul)], O.ATuple{[2, 0, 1]}, O.TNone{})
   O.UOp.new(O.Found.ar(p201), O.OpsREDUCE{}, [O.Found.i(p201)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
 
+# `Tensor.empty(4,8).sum(axis=1).uop` -- 7 nodes, MEASURED by running the py side, not
+# written from the docstring's expectation. Two facts here are worth stating because both
+# are the OPPOSITE of the obvious reading:
+#   * the sum's accumulator CONST is NOT in this graph. `sum` lowers to a bare `REDUCE`,
+#     so there is no `CONST 0` node to re-type and this graph CANNOT test a CONST dtype;
+#     and the two CONSTs that ARE here are the shape's `4` and `8`, both `weakint`, the
+#     same as the matmul's. The port spells `weakint` as `S.single()` and it agrees.
+#   * the PERMUTE is `(1, 0)` on a `(4,8)` giving `(8,4)`, and the REDUCE collapses axis 0,
+#     so the result is `(4,)`.
+def g_reduce() -> O.Found:
+  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 32)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c8 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(8)})
+  +s48 = O.UOp.new(O.Found.ar(c8), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c8)], O.ANone{}, O.TNone{})
+  +r48 = O.UOp.new(O.Found.ar(s48), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s48)], O.ANone{}, O.TNone{})
+  +p10 = O.UOp.new(O.Found.ar(r48), O.OpsPERMUTE{}, [O.Found.i(r48)], O.ATuple{[1, 0]}, O.TNone{})
+  O.UOp.new(O.Found.ar(p10), O.OpsREDUCE{}, [O.Found.i(p10)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
+
 # ONE BEND PROCESS, EVERY NODE. `Arena.next` is `len(nodes)` (ops.bend:1167) and index 0 is
 # the bottom (ops.bend:1162), so the live nodes are 1..next-1 and the toposort is read
 # only so the OUTPUT is in a stable order -- the differ pairs structurally, so the order
 # is for the reader, not for correctness.
+def rows.of(+ar: O.Arena, +tb: F.Table, +f: O.Found) -> IO(Unit):
+  rows.go(ar, tb, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(f)))
+
+def rows.pick(name: String) -> O.Found:
+  # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
+  # local binder either (measured: both `match String.eq(..)` and `match <local>` are compile
+  # errors), so a CHOICE between two values is `Bool.pick`.
+  Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul())
+
+# `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
+# head of the TAIL and no argument at all is the default rather than an error.
+def fz_name(as: List<String>) -> String:
+  Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
+
 def main() -> IO(Unit):
   do IO<Unit>:
-    +f : O.Found <- IO.pure(O.Found, g_matmul())
+    as : List<String> <- IO.args()
+    +f : O.Found <- IO.pure(O.Found, rows.pick(fz_name(List.tail(&1, String, as))))
     +x : F.Folded <- IO.pure(F.Folded, F.folded(O.Found.ar(f)))
     h : Unit <- IO.print(String.concat(["# root=", U32.show(O.Found.i(f)), " nodes=",
       U32.show(O.Arena.next(O.Found.ar(f))), " settled=",
       Bool.show(F.Kahn.settled(F.Folded.ar(x), F.Folded.t(x)))]))
-    rows.go(F.Folded.ar(x), F.Folded.t(x), O.UOp.toposort(O.Arena.budget(F.Folded.ar(x)), F.Folded.ar(x),
-      O.Found.i(f)))
+    rows.of(F.Folded.ar(x), F.Folded.t(x), f)
