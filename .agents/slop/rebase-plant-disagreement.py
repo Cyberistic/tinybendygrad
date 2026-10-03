@@ -13,7 +13,14 @@ uncorrupted oracle must read UNCHANGED. Both halves are asserted here, so the pr
 """
 import json, pathlib, subprocess, sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import oracle_py
+
 REPO = pathlib.Path(__file__).resolve().parents[2]
+# The CPython lanes must not depend on the LAUNCHER: PATH's python3 cannot import tinygrad, so
+# under it nv-oracle.py exits 1 and rows_of() returns {} -- and the script would then "plant" a
+# row against an oracle that printed nothing.
+ORACLE_PY, _, _ = oracle_py.resolve()
 GATE = REPO / ".agents" / "slop" / "rebase-gate.py"
 PORT = "tinybendygrad/runtime/ops_nv.bend"
 REAL = ".agents/slop/nv-oracle.py"
@@ -27,7 +34,7 @@ def run(cmd):
 
 
 def rows_of(spec):
-  r = run([sys.executable, *spec.split()])
+  r = run([ORACLE_PY, *spec.split()])
   out = {}
   for line in r.stdout.splitlines():
     if "=" in line:
@@ -61,18 +68,20 @@ def plant(row_name):
 
 
 def gate_wired(spec):
-  """Point PORT at `spec` by editing BASE_ORACLES, run the gate, restore. The edit is the
-  only way to reach a non-default pairing, which is itself the finding: the gate has no
-  --oracle flag, so proving a disagreement requires a source edit. Named, not hidden."""
-  text = GATE.read_text()
-  old = f'"{PORT}": ["{REAL}"],'
-  assert old in text, "BASE_ORACLES no longer holds the pair this script plants against"
-  GATE.write_text(text.replace(old, f'"{PORT}": ["{spec}"],'))
-  try:
-    r = run([sys.executable, str(GATE), "--port", PORT, "--no-native", "--json"])
-    return json.loads(r.stdout)["verdicts"][0], r.returncode
-  finally:
-    GATE.write_text(text)
+  """Judge PORT against `spec` WITHOUT touching rebase-gate.py.
+
+  ⚠ THIS USED TO REWRITE BASE_ORACLES IN THE GATE AND RESTORE IT IN A `finally`. That is
+  patching the live tree from a harness, and the failure mode is not a wrong answer but a
+  damaged tree: a kill inside that window -- and servers here restart without warning and kill
+  agents silently -- leaves the gate wired to a script that --clean then deletes, and the next
+  run reports "ORACLE SCRIPT MISSING" on a port that was fine a minute ago. Other agents are
+  live in this tree, so the window is not theoretical.
+
+  rebase-gate.py now has `--oracle SPEC`, which overrides the wiring for ONE run and writes
+  nothing, so the edit this function needed no longer exists to be made. The refusal to combine
+  --oracle with --record lives in the gate: a mutant's rows must never reach the baseline."""
+  r = run([ORACLE_PY, str(GATE), "--port", PORT, "--no-native", "--json", "--oracle", spec])
+  return json.loads(r.stdout)["verdicts"][0], r.returncode
 
 
 def main():
@@ -102,6 +111,16 @@ def main():
     ok = ok and cond
     print(f"  {'PASS' if cond else 'FAIL'}  {name}\n        {detail}")
 
+  # ⚠ WITHOUT THIS THE PROOF IS VACUOUS. GUARD 4 is baseline-free and runs ahead of the
+  # baseline shortcut, so a planted disagreement reads BROKEN whether or not a baseline exists
+  # -- which means running this against an UNRECORDED port shows nothing about recording. The
+  # question "did recording launder a red?" is only asked of a port that HAS a recording, so
+  # the control now requires one and refuses to report a pass without it.
+  rec = json.loads((REPO / ".agents/slop/rebase/baseline.json").read_text())
+  lanes = (rec.get("lanes") or {}).get(PORT) or {}
+  check(f"{PORT} HAS A RECORDED BASELINE, so this is a laundering test and not a vacuous one",
+        bool(lanes), f"recorded lanes: { {k: len(v) for k, v in lanes.items()} }")
+
   v, rc = gate_wired(MUTANT_SPEC)
   check("the MUTANT is BROKEN and NAMES the row", v["state"] == "BROKEN", v["why"][:200])
   named = [d for d in v.get("disagreements", []) if d[2] == target]
@@ -113,6 +132,12 @@ def main():
   v2, rc2 = gate_wired(REAL)
   check("the SAME pair with the UNCORRUPTED oracle is not BROKEN", v2["state"] != "BROKEN",
         f"{v2['state']}: {v2['why'][:160]}")
+  # ...and, once the lane is recorded, that state is UNCHANGED -- zero rows moved against the
+  # recorded rows. AGREE-UNRECORDED would mean the recording did not take, which is a finding
+  # and not a pass, so it is named rather than folded into "not BROKEN".
+  check("...and with a baseline present it reads UNCHANGED, zero rows moved",
+        v2["state"] == "UNCHANGED" and v2.get("moved_count", 0) == 0,
+        f"{v2['state']}, moved={v2.get('moved_count')}: {v2['why'][:140]}")
   check("and it is not a pass by accident -- it names its rows",
         v2.get("row_counts", {}).get("cpython:nv-oracle", 0) > 1, str(v2.get("row_counts")))
 

@@ -1618,6 +1618,8 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 # | mutation | rows that moved | how many |
 # | --- | --- | --- |
 # | `mem_ev_cmp`'s differing-index arm `is_le(ai,bi)` -> `F... | p_ev3_o0, p_ev3_b0, p_ev3_o1, p_ev3_b1, p_ev3_b2, p_ev2_b0, p_ev2_o1, p_ev2_b1, p_ev_first, p_ev_last, p_peak0, p_peak1, p_lane0cp, p_lane1cp, p_azs0, p_azs1 | 16 |
+# | `mem_bs_add` appends UNCONDITIONALLY -- the distinct list stops deduping, so `Scan.bs` becomes a touch list too | p_nbufs, p_nev, p_ev3_i, p_ev3_o0, p_ev3_b0, p_ev3_b1, p_ev3_o2, p_ev3_b2, p_tot, p_nplan, COUNT bufs | 11 |
+# |   ...and `p_tcn` did NOT move, which is the whole point of the pair. It read 6 before the mutation and 6 after, while `p_nbufs` went 5 -> 6 and collided with it. So `p_nbufs` is `len(first_appearance)` and is load-bearing across eleven rows; `p_tcn` is a DIFFERENT quantity that merely happens to be one larger. `Scan.tc` is not `first_appearance` and the gate now says so in two numbers instead of a comment. | | |
 # | the open's `o` 1 -> 0, i.e. OPEN and CLOSE share a key ... | p_ev3_b0, p_ev3_b1, p_ev3_o2, p_ev3_b2, p_ev2_b0, p_ev2_o1, p_ev2_b1 | 7 |
 # | `mem_hold.of`'s copy arm `add(d,1)` -> `d` (buf_hold of... | p_hold_b2, p_ev3_i, p_ev3_o0, p_ev3_b0, p_ev2_o0, p_ev2_b0, p_ev2_o1, p_ev2_b1 | 8 |
 # | `mem_hold.of`'s non-copy arm 0 -> `d` (every buffer get... | p_hold_d2, p_ev_last | 2 |

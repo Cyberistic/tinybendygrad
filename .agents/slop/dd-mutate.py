@@ -349,13 +349,16 @@ def main():
     # RULE G, at STARTUP: a bake already inside the mirror means an earlier run
     # was killed mid-write and that mirror cannot be trusted.  `git archive`
     # cannot carry one, so only a killed run leaves it.
-    for base, _, files in os.walk(top):
+    # NOT `for base, ...`: that rebound `base` from the baseline row dict to a
+    # directory name, so every diff below raised AttributeError on a str.  A
+    # shadowed baseline is worse than no baseline.
+    for root, _, files in os.walk(top):
         for f in files:
             if f.endswith(".ddmut"):
                 sys.exit("REFUSING TO START: bake %s -- an earlier run was killed "
                          "mid-mutation.\n  diff %s %s\n  delete %s only once they "
-                         "agree." % (os.path.join(base, f), LIVE,
-                                     os.path.join(base, f), top))
+                         "agree." % (os.path.join(root, f), LIVE,
+                                     os.path.join(root, f), top))
 
     workers = max(1, min(int(os.environ.get("DD_WORKERS", 6)), len(plan)))
     cache = os.path.join(HERE, "dd-mut", digest)   # keyed: a stale cache from a
@@ -430,7 +433,7 @@ def main():
     nocc = [r for r in rows if r[1] == "DID-NOT-COMPILE"]
 
     fh = open(sys.argv[2], "w")
-    w = fh.write
+    w = fh.write           # NOT `w`: that is the worker index, still in scope
     w("# dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend\n")
     w("# target sha1 %s, asserted EQUAL to the live file (RULE I)\n" % digest)
     w("# baseline %d rows, shape (first=%r lines=%d last=%r)\n"

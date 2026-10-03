@@ -3835,3 +3835,91 @@ Progress: naming gate ██████████ PASS (668 candidates, 0 una
   did not break it; the crash appeared when `rebase-gate.py` was rewritten at 22:40:38, and
   it is reproducible on a retry at 22:41:33. **Owner: whoever owns the rebase gate /
   oracle-wiring unit.** Left alone; not my file, and the edit was 55 seconds old.
+
+---
+
+## Session 2026-10-03 — six ADOPTED defects (reported, never picked up)
+
+All six were measured first by CALLING CPython. Four fixed, two ruled out or bounded. **The
+`allow_lower` cause was confirmed; the `F(ovf)` half of the `clamp_mx` cause was FALSIFIED.**
+
+- [x] **1. `device.bend` `allow_lower` — STILL CURRENT, FIXED.** Port said `allow_lower=0`,
+      CPython says `1`. Measured live: `Device['python:1']` **SUCCEEDS** under
+      `Context(ALLOW_DEVICE_USAGE=0)`. Cause: `device.py:30` REBINDS `ix` and `:31` asserts on
+      the rebound value, so the port's `allowed` — a correct port of the assert *statement* —
+      cannot see the canonicalize. Added `device_usage(allow, ix) = allowed(allow, canon(ix))`
+      and 7 new corners. **Gate: 23 shared rows, 23 agree, 0 disagree (was 17/18).** New
+      `.agents/slop/dev-mutate.py`; the `tag_of` mutation that was a documented ZERO for three
+      revisions now moves `allow_disk`. The `c7`/DDK-NONE row and the DISK/NPY branches are closed.
+
+- [x] **2. `memory.bend` `Scan.tc` — CAUSE CURRENT, CLAIMED CONSEQUENCE WRONG, CLOSED.**
+      `mem_tc_add` does append on every touch: measured `p_tcn=6` where the distinct count is
+      `p_nbufs=5`. But `memory.py:60` prints `len(first_appearance)` and this file's counterpart
+      for that number is `Scan.bs` / `p_nbufs` = **5, already correct**. `Planned.tc` is not what
+      `memory.py:60` reads. Added `p_tcn` so 5-vs-6 is a GATE FACT instead of a comment, plus the
+      mutation that proves the pair discriminates (`mem_bs_add` unconditional: `p_nbufs` 5->6 and
+      collides with `p_tcn`, which does not move; 11 rows move).
+
+- [x] **3. `UOp.axis_id` flat list / depth invisible — CAUSE CURRENT, FIX NOT LANDED (bounded).**
+      Confirmed by CALLING CPython: `axis_id` is a tuple and depth shows in it, in `pyrender`
+      (render.py:101 is `repr(y) for y in x.arg`) and in `range_str` (ops.py:96). The depth IS
+      stored (`Arena.shp`) and IS gated (`ucdepth_flat_nest=0,1`); `UOp.axis_id(arg)` takes the
+      arg and structurally cannot see it, and neither can `arange_repr(ids, at)`. **Blast radius
+      re-measured: `UOp.axis_id` has 5 textual call sites and ONE real one** — not 63. Left
+      undone: closing it needs a depth-aware `AxIds` (one def, one call site) **and** a matching
+      row in `.agents/slop/ops-oracle.py`, which is a BYTE DIFF whose row order is documented as
+      exact, and that oracle is not this unit's file. Documented at `uop/ops.bend`'s
+      `UOp.axis_id`. Note the brief named `tinybendygrad/renderer/render.bend`, which does not
+      exist; the file with `arange_repr` is `tinybendygrad/uop/render.bend`.
+
+- [x] **4. `dd-oracle.py` `clamp_mx` — STILL CURRENT (the reimplementation), FIXED.** `clamp_mx`
+      transcribed dtype.py:128-131's arithmetic, in a file whose header says "nothing here is a
+      reimplementation of it". Replaced with a CALL: `DD.f2f_clamp` + read `mx` off CPython's own
+      graph at `r.src[2].src[0].src[1].src[0]`. Behaviour-preserving on all 8 dtypes
+      (`c0..c6` byte-identical). **The claim's `F(ovf)` half is FALSIFIED:** `struct.pack('f', ·)`
+      never raises on this interpreter (2516 doubles, 0 raises), so `fbits`'s `except
+      OverflowError` arm was DEAD and its docstring was false — `1.8e308` renders `F(2139095040)`,
+      and so does `+inf`, which makes `c7` CONSTANT on `fr` rather than under-determined. Dead arm
+      removed. **`c7` is `F(2139095040)`.** The false claim had propagated into
+      `codegen/decomp/dtype.bend`'s comment; that file is another unit's, left alone.
+
+- [x] **5. `codegen/__init__.bend` reads red — RULED OUT, and the specific error never existed.**
+      Green in `--check-only` (`ALL PROOFS CHECK`), interpreted, AND native; both lanes print
+      `new_sink=8 repl=1->52->6,3->5,4->8,`. Swept all 8 versions in its git history: 4 red
+      states, 4 DIFFERENT causes (`Maybe<&2,U32>` vs a closure, `Sigma<...>` vs `StepResult`, and
+      `gr_show.topo` unfilled twice), **none of them `expected : Data`**. No occurrence of that
+      string anywhere in the repo refers to this file. The residual is honest: a ONE-row gate on a
+      file whose header declares `unified_rewrite` a wall. Separately verified the live tree's
+      one-token difference from the `ctl-comment` cone arm is the CORRECT one — upstream
+      `walk_rewrite` does `pm_rewrite(new_n)` on the REBUILT node.
+
+- [x] **6. `dd-oracle.txt` 20 phantom lines — STILL CURRENT, FIXED.** Byte-diff vs a fresh run:
+      20 duplicated `lg*` rows plus 1 hand-written comment (`# l2i const sources — appended
+      2026-10-03, called, not transcribed`) at file lines 407-427, shadowing the real block at
+      328-347. **The brief's count is exact.** Regenerated; a fresh run now reproduces the file
+      byte for byte, 426 lines, 152 `lg` rows. **And there was a 21st defect the brief did not
+      name: `c7=F(ovf)` was STALE** — the committed `dd-oracle.py` cannot print it (see #4), so
+      the committed txt did not match the committed script.
+
+- [ ] **NEW, FOUND WHILE TRIAGING #5, NOT LANDED — `codegen/__init__.bend` is being
+      rewritten by another agent RIGHT NOW and has taken a wrong turn.**
+      Commits `e17d3f7dd48c` ("pass original u to pm_rewrite_m (not rebuilt)") and
+      `8ab673c7cd38` landed while I was measuring; the file went 273 -> 275 lines and grew a
+      `DEBUG:` print at line 73 between two of my reads. The change makes `wr.step.scan` pass
+      `u` to `O.pm_rewrite_m` where it passed `rebuilt`, **while the comment three lines above
+      it still says "try the rule on the rebuilt node"** — the code and its own comment now
+      contradict each other, and the file is GREEN (`ALL PROOFS CHECK`, `new_sink=8
+      repl=1->52->6,3->5,4->8,` unchanged).
+      **The gate cannot see it, measured:** that single row is byte-identical either way on
+      this 8-node fixture, because `pm_post_sched_cache`'s rules do not discriminate `u` from
+      `rebuilt` here. Upstream is unambiguous — `walk_rewrite` (tinygrad/uop/ops.py) does
+      `new_n = UOp(n.op, new_src, n.arg, n.tag) if new_src != n.src else n` and then
+      `self.pm_rewrite(new_n)`, commented "top-down: try pm on rebuilt node". So `rebuilt` is
+      the correct argument and `u` is a silent behaviour change.
+      **NOT EDITED BY ME, deliberately:** agent-core's rule is to report a file another agent is
+      mid-edit in, and the file did not even compile cleanly for my revert attempt because the
+      agent was mid-write. **Owner: whoever holds `codegen/__init__.bend` now.** Two things are
+      needed, in this order: (1) restore `rebuilt`; (2) add a fixture where a `pm_post_sched_cache`
+      rule actually fires on a node with rewritten srcs, because a one-row gate that is identical
+      under a wrong argument is the same "gate that cannot fail" failure as `p_tcn` vs `p_nbufs`
+      in #2, one level up.

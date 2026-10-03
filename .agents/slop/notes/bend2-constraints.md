@@ -15976,3 +15976,114 @@ evidence that the fix worked is **not** `git check-ignore` (which passes for a t
 too) but the file being **absent from disk and listed by `git ls-files --deleted`** -- here
 661 paths, which is exactly 343 + 318. **When removing a committed cache, verify with
 `ls-files --deleted`, not with `check-ignore`.**
+
+---
+
+# APPENDED 2026-10-03 — six adopted defects. Numbering continues from rule 31 above
+# (the file's last numbered heading), so these are 32-36. Cite the POSITIONS, not the
+# numbers: numbers have collided across units four times now.
+
+### 32. A PYTHON REBIND BEFORE AN ASSERT IS PART OF THE ASSERT, AND OMITTING IT IS INVISIBLE.
+
+`device.py:29-31` is `def __getitem__` / `ix = self.canonicalize(ix)` / `assert ALLOW_DEVICE_USAGE
+or ix.split(":")[0] in ["DISK","NPY","PYTHON"]`. Line 30 **rebinds** `ix`; line 31 reads the
+rebound value. So the assert's subject is the CANONICAL name, and `_canonicalize` upper-cases
+the stem, so `Device['python:1']` reaches line 31 as `PYTHON:1` and PASSES. Measured by CALLING
+`Device[...]` under `Context(ALLOW_DEVICE_USAGE=0)`: `PYTHON:1`, `python:1` and `PyThOn:0` all
+SUCCEED, `METAL` and `CPU:1` raise AssertionError.
+
+**The general rule, and it is the expensive one: two adjacent Python lines that share a NAME are
+one semantic unit, and porting the second without the first is a silent wrong answer, not a
+compile error.** `allowed(allow, ix)` is a correct port of the assert *statement* and still gives
+the wrong answer, because it cannot see the rebind. The port of `__getitem__` needs BOTH lines.
+A port that transcribes one line of a two-line statement has not halved the work; it has moved
+the bug somewhere the type system cannot see.
+
+Corollary for a port whose CPython side is DYNAMIC: `assert X or f(ix)` where `ix` is rebound
+one line above is the shape to grep for. The tell is a port comment that cites `:NN` and `:NN+1`
+as the canonicalize and the assert **and then denies that order** — that is a comment arguing
+against its own citations.
+
+### 33. A `dict` KEY SET AND AN APPEND-ON-EVERY-TOUCH LIST ARE NOT INTERCHANGEABLE, AND THE
+###     PORT ALREADY KNOWS WHICH ONE IT HAS. MEASURE THE BOTH-NUMBERS ROW.
+
+`memory.py`'s `first_appearance` is a `dict[UOp,int]`: append-if-absent, so `len()` is the
+DISTINCT buffer count and the four comprehensions over it (`buf_hold`, `nbytes`, `events`, and
+the `memory.py:60` print) all iterate DISTINCT buffers. `Scan.tc` in `schedule/memory.bend` is a
+`List<Bf>` appended by `mem_tc_add` on EVERY touch, so it is a superset: one entry per
+(buffer, kernel) pair. Measured on the file's own fixture: `p_nbufs=5` and `p_tcn=6`.
+
+**The rule: when a port fuses two CPython dicts into one list plus a distinct-index list, print
+BOTH lengths as gate rows.** The touch list is a legitimate representation — it is
+`first_appearance` and `last_appearance` FUSED into one `Bf` record, which is why every lifetime
+reader folds over the distinct list and looks the buffer up in the touch list — and it answers
+every question CPython asks. What is NOT legitimate is leaving the distinction as a prose claim,
+because the next reader cannot tell a fused representation from an un-deduplicated one.
+
+The mutation that settles it, and it is one line: make the DISTINCT list append unconditionally.
+Measured, it moved 11 rows (`p_nbufs` 5->6, `p_nev` 10->12, and the event/peaks rows) and did
+**not** move the touch-count row at all. So the two numbers are genuinely different quantities
+and the smaller one is the `first_appearance` counterpart. A reader who has only the touch count
+cannot tell those apart.
+
+### 34. A STORED DEPTH THAT NO READER TAKES AS AN ARGUMENT IS INVISIBLE IN EVERY OUTPUT, AND
+###     THAT IS A DIFFERENT DEFECT FROM "THE DEPTH IS NOT STORED".
+
+`ARange{ids: List<&2,U32>, at}` cannot hold `((0,1),)`, so upstream's `axis_id` (`self.arg[1:]`,
+a tuple slice, ops.py:500-503) has no port. The nesting depth IS stored — `Arena.shp`, read by
+`Arena.depth`, written by `intern.put.shp` — and it IS gated (`ucdepth_flat_nest=0,1` builds a
+flat and a nested RANGE with the same ids and reads 0 and 1). What is missing is that
+`UOp.axis_id(arg: Arg)` takes the ARG and not the arena, so it structurally cannot see the
+depth, and `arange_repr(ids, at)` likewise.
+
+**The rule: a value carried in a side-channel field is only "supported" if some reader's signature
+takes it.** Grep for the field's reader and check the parameter list. Also: measure the blast
+radius PER DEF, not per file — `UOp.axis_id` has 5 textual call sites and exactly ONE calls that
+def (the gate row); the other three are same-named defs of a different shape, `(ar, i)`, in
+`fold.bend`, `fold_mm_work.bend` and `fold2_work.bend`. "63 importers" is a statement about the
+file and would have wrongly killed a one-line fix here.
+
+### 35. `struct.pack('f', x)` DOES NOT RAISE `OverflowError` ON THIS INTERPRETER, SO AN
+###     `except OverflowError` GUARD IS DEAD AND THE COMMENT THAT EXPLAINS IT IS FALSE.
+
+Measured on CPython 3.12.10 / arm64 macOS over 2516 doubles (`m * 2.0**e`, `e` in -320..308,
+`m` in {1.0, 1.5, 1.9999, 3.7}): **zero** raised. Every finite double above FLT_MAX packs to
+`+inf` (0x7f800000) silently. So an oracle helper shaped
+
+    try: return f"F({struct.unpack('I', struct.pack('f', float(x)))[0]})"
+    except OverflowError: return "F(ovf)"
+
+has a **dead arm**, and `F(ovf)` is not a value. Worse, the docstring explaining it was false in
+both directions: it claimed `1.8e308 -> F(ovf)` when `1.8e308` renders as `F(2139095040)`, and
+it used that to argue the row was under-determined when in fact `+inf` and `1.7976931348623157e+308`
+render to the **same** `F(2139095040)`, making the row CONSTANT, not ambiguous.
+
+**The rule: a guard arm needs a fixture that reaches it, and a sweep beats an argument.** The
+false claim had already propagated out of the oracle into a PORT's comment
+(`codegen/decomp/dtype.bend`: "`-> mx = 1.8e308 -> F(ovf), outside f32`"), which is the real cost
+of a wrong oracle comment: the next port cites it instead of measuring.
+
+Related, and the same shape: `const_like(b)` is `UOp.const(b, self.dtype)` (ops.py:601), so the
+float that reaches a graph is a CONST **at the source width** and is already rounded. An oracle
+that recomputes a float instead of CALLING the builder is a reimplementation, and this project's
+own header rule ("nothing here is a reimplementation of it") is the thing to check first when a
+row turns out to be untestable.
+
+### 36. A REIMPLEMENTATION HIDES IN THE HELPER, NOT IN THE ROW. WHEN YOU FIX IT, MOVE ITS
+###     CALLS AFTER EVERY COUNTED FIXTURE.
+
+`ORDER` counts a node the FIRST time it is interned. An oracle row that was a pure arithmetic
+helper interned nothing; replacing it with a real call (`f2f_clamp`) interns CONSTs, and every
+later fixture that builds the same node stops counting it — a silent `n=` shift across half the
+file. Measured here: moving the block to the END of `main()` changed **no** data row, and the
+whole diff against the pre-fix run was the section header.
+
+**The rule: in an arena-interning oracle, any block that CALLS the thing under test goes LAST,
+past every `n=`-counting fixture.** The tell is a comment in the file already warning about this
+for a neighbouring block ("the clamps come before `f2f`") — the hazard is one level up from where
+it was last noticed.
+
+**And the diff harness must abort on a zero-row run.** While measuring this I got three empty
+mutation results from a typo'd temp path; an empty diff is indistinguishable from "moved nothing".
+`.agents/slop/dev-mutate.py` now `sys.exit`s if the baseline or any mutant prints zero rows, and
+aborts if a mutation pattern is not present exactly once.

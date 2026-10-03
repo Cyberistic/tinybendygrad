@@ -788,6 +788,13 @@ def main():
                   help="record into the baseline ONLY the ports a rebase-stability.py "
                        "measurement marked recordable, copying that measurement's rows verbatim. "
                        "--record without this freezes an untested run over every target")
+  ap.add_argument("--oracle", default=None, metavar="SPEC",
+                  help="judge the single named target against SPEC instead of its BASE_ORACLES "
+                       "entry, FOR THIS RUN ONLY. It exists so a planted disagreement can be "
+                       "proven WITHOUT editing this file: rebase-plant-disagreement.py used to "
+                       "rewrite BASE_ORACLES in place and restore it in a finally block, which "
+                       "is patching the live tree from a harness -- and a kill inside that "
+                       "window leaves the tree wired to a script that has been deleted")
   ap.add_argument("--json", action="store_true")
   a = ap.parse_args()
 
@@ -823,6 +830,22 @@ def main():
 
   if a.record_stable:
     return 0 if record_stable(a.record_stable, baseline_path, plan)[0] else 1
+
+  if a.oracle:
+    # Overrides the wiring FOR THIS RUN and touches nothing on disk. It refuses to combine
+    # with either --record, because a mutant oracle recorded as a baseline would then read as
+    # the port's history -- which is the "recording that turns a red into a green" outcome,
+    # reached here by a different route.
+    if a.record or a.record_stable:
+      print("REFUSING: --oracle with --record would write a MUTANT's rows into the baseline.")
+      return 1
+    if len(targets) != 1:
+      print(f"REFUSING: --oracle judges ONE target and this run names {len(targets)}. "
+            f"Use --port to name exactly one.")
+      return 1
+    port, _ = targets[0]
+    print(f"[oracle-override] {port}: {BASE_ORACLES.get(port, ('<unwired>',))} -> {a.oracle}")
+    BASE_ORACLES[port] = [a.oracle]
 
   if a.record:
     rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}}, 0

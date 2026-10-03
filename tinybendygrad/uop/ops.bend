@@ -2487,6 +2487,38 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 # a Python TUPLE of arbitrary length, so a port whose `ARange` holds a `List` answers it
 # only while the list is the whole tail. Nesting depth is `Arena.depth`, not a second
 # list — `List<U32>` cannot hold `((0, 1),)`. TODO(p3): a reader that needs that tuple.
+#
+# MEASURED 2026-10-03, CALLING CPython (`UOp.range(4, <axis_id>, AxisType.WEAK)`), which
+# is what makes this a NAMED wall rather than a shrug. The depth is real and visible:
+#
+#   axis_id arg      CPython `u.arg`             `u.axis_id`      `str(u.axis_id)`
+#   0                (AxisType.WEAK, 0)           (0,)             '(0,)'
+#   (0,)             (AxisType.WEAK, (0,))        ((0,),)          '((0,),)'
+#   (0, 1)           (AxisType.WEAK, (0, 1))      ((0, 1),)        '((0, 1),)'
+#   ((0, 1),)        (AxisType.WEAK, ((0, 1),))   (((0, 1),),)     '(((0, 1),),)'
+#
+# So the nesting is observable THREE ways upstream -- in `axis_id`'s value, in
+# `pyrender` (render.py:101 is `repr(y) for y in x.arg`, not `axis_id`), and in
+# `range_str` (ops.py:96 joins `str(x) for x in u.axis_id`) -- and this def can see
+# NONE of them, because it takes `arg` and not the arena. `Arena.shp` is where the
+# depth lives (`Arena.depth.at(Arena.shp(ar), ...)`, and `intern.put.shp`), and
+# `Uc.depth` already GATES it: `ucdepth_flat_nest=0,1` is a flat and a nested RANGE
+# with the same ids, and it reads 0 and 1. So the arena half is done and tested.
+#
+# WHAT IS LEFT, and it is SMALL: this def's signature is right and should not change
+# (`axis_id`'s ints ARE the flat tail; only the SHAPE nests, so `(ids, depth)` is the
+# honest answer, not a nested list). What is missing is that `t_rng_row`'s four rows
+# are only ever fed DEPTH-0 fixtures -- `rng_twoid` builds with `UOp.range_end`, so
+# `axid_twoid=(0,1)/len=2` gates only the flat case, and no row routes a depth-1
+# arg through here. Adding one means a depth-aware `AxIds` (ops.bend:4881, one def,
+# ONE call site) plus a matching row in `.agents/slop/ops-oracle.py`, and that oracle
+# is a BYTE DIFF whose row order is documented as matching EXACTLY -- so a row added
+# here and not there is a diff, not a silent gap. Hence not done blind.
+#
+# BLAST RADIUS, measured rather than assumed: `UOp.axis_id` has FIVE textual call
+# sites, and only ONE of them calls THIS def -- the gate row at 4895. The other three
+# are same-named defs of a DIFFERENT shape, `(ar, i)`, in `fold.bend`, `fold_mm_work.bend`
+# and `fold2_work.bend`. The 63-importer figure is for the FILE, not for this def.
 def UOp.axis_id(arg: Arg) -> Maybe<&2, List<&2, U32>>:
   match arg:
     case ARange{ids, at}: Some{ids}

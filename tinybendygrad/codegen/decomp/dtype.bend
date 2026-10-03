@@ -257,29 +257,33 @@ def f2f_dt(+dt: S.Dt) -> Maybe<&2, S.Dt>:
     case S.Dt{pri, +bits, cls, nm}: f2f_dt.of(dd_is_float(dt), f2f_dt.w(bits))
 
 # ===========================================================================
-# `UOp.const` -- divergence A. `truncate[dt](v)` for an integer dtype is a WIDTH
-# WRAP, so `dd_trunc` is that wrap: a signed dtype reads the word as a two's
-# complement `int32` and an unsigned one does not. Every call site passes a
-# value that already fits the width, so the wrap is only the extension.
+# `UOp.const(v, dt)` -- divergence A. THE INTEGER PATH IS `int(val)` AND NOT A
+# WIDTH WRAP, and that is the whole reason the word here is an `H.I64` and not a
+# `U32`.
+#
+# MEASURED, not read off `truncate`: `DType.const` (tinygrad/dtype.py:79-84) ends
+# `... else int(val)`, and `truncate` reaches only the FLOAT branch's
+# `truncate.get(self, float)`. `UOp.const` (uop/ops.py:628-635) is
+# `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`, so the CONST's arg is
+# the raw Python int whatever `dt` is.
+#
+# It is OBSERVABLE, and in both directions. `dd-probe-intern.py`:
+#     UOp.const(-1, dtypes.uint32).src[0].arg   ->  -1
+#     UOp.const(4294967295, dtypes.uint32)     ->  4294967295
+# so dtype.py:32's `lo.const_like(-1)` (uop/ops.py:600-602 -> `UOp.const`) leaves
+# `-1` in the arena even when `lo` is `u32`. A port that wraps to the width stores
+# `4294967295` there, which is the same 32 bits and a DIFFERENT node: the gate
+# reads the word, and `lg6k`/`lg6p` say `C(4294967295)` where CPython says
+# `C(-1)`.
+#
+# `truncate` for the integer dtypes IS a width wrap (tinygrad/dtype.py:298-299,
+# `ctypes.c_int32(x).value`), so a port that modelled IT would be right about the
+# float dtypes and wrong about every integer one. The comment this replaced
+# claimed the opposite.
 # ===========================================================================
 
-def dd_is_sgn(+dt: S.Dt) -> Bool:
-  match dt:
-    case S.Dt{pri, bits, +cls, nm}: Bool.not(S.Cls.is_unsigned(cls))
-
-def dd_trunc(+v: U32, sgn: Bool) -> U32:
-  match sgn:
-    case True{}: Bool.pick(U32, H.i32_is_neg(v), H.i32_neg(v), v)
-    case False{}: v
-
-def dd_const.i64(lo: U32, sgn: Bool) -> H.I64:
-  match sgn:
-    case True{}: H.i64_of_i32(lo)
-    case False{}: H.i64_of_hi_lo(0, lo)
-
-def dd_const.int(+ar: O.Arena, +v: U32, +dt: S.Dt) -> O.Found:
-  +w = dd_trunc(v, dd_is_sgn(dt))
-  +c = O.UOp.const(ar, O.CInt{dd_const.i64(w, dd_is_sgn(dt))})
+def dd_const.int(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
+  +c = O.UOp.const(ar, O.CInt{v})
   O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{dt}, O.TNone{})
 
 # `UOp.const(v)` with NO dtype: `from_py` answers `weakint`, the `.cast` folds,
@@ -300,7 +304,7 @@ def dd_cf(+ar: O.Arena, +v: F32, +dt: S.Dt) -> O.Found:
 # a PARAMETER (`xdt` in `l2i`, `fr` in `f2f_clamp`) because `ops.bend`'s arena
 # has no dtype field -- `dtype_from_uop` is `fold.bend`'s job.
 
-def dd_clike(+ar: O.Arena, +v: U32, +dt: S.Dt) -> O.Found:
+def dd_clike(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
   dd_const.int(ar, v, dt)
 
 # ===========================================================================
@@ -466,12 +470,20 @@ def dd_cast_sel(lng: Bool, srcfl: Bool, flt: Bool) -> U32:
     case True{}: Bool.pick(U32, srcfl, 1, 0)
     case False{}: Bool.pick(U32, flt, 2, 3)
 
-def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
-  +x0 = dd_clike(ar, 0, xdt)
+# `(x < x.const_like(0)).where(lo.const_like(-1), lo.const_like(0))` -- dtype.py:32.
+# THE SIGN EXTENSION IS `-1` AND NOT `2**32-1`. dtype.py:32 writes `-1` and
+# `const_like` (uop/ops.py:600-602) is `UOp.const(-1, lo.dtype)`, whose arg is
+# `dtype.const(-1)` = `int(-1)` (tinygrad/dtype.py:84) -- so the arena word is `-1`
+# for `l2i_dt[ulong]` = `u32` exactly as it is for `int`. MEASURED: the `u32`
+# fixture `lg6` answers `CAST(u32)` over `CONST arg=-1`. A `U32`-typed parameter
+# cannot spell `-1`, which is the reason `dd_clike` takes an `H.I64`.
+
+def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> O.Found:
+  +x0 = dd_clike(ar, H.i64_of_i32(0), xdt)
   +c = dd_lt1(O.Found.ar(x0), x, O.Found.i(x0))
-  +cm = dd_clike(O.Found.ar(c), 4294967295, ldt)
+  +cm = dd_clike(O.Found.ar(c), H.i64_of_i32(4294967295), ldt)
   +cmi = O.Found.i(cm)
-  +c0 = dd_clike(O.Found.ar(cm), 0, ldt)
+  +c0 = dd_clike(O.Found.ar(cm), H.i64_of_i32(0), ldt)
   dd_where(O.Found.ar(c0), O.Found.i(c), cmi, O.Found.i(c0))
 
 def l2i_cast0.pick(zeroext: Bool, +ar: O.Arena, +z: O.Found, +s: O.Found) -> O.Found:
@@ -485,15 +497,11 @@ def l2i_cast0(+ar: O.Arena, +x: U32, +ldt: S.Dt, +zeroext: Bool, +xdt: S.Dt) -> 
   +lo = dd_cast_fold(ar, x, ldt, O.eq_dt(xdt, ldt))
   +loi = O.Found.i(lo)
   +loar = O.Found.ar(lo)
-  +z = dd_clike(loar, 0, ldt)
-  +s = l2i_cast0.sgn(O.Found.ar(z), x, ldt, xdt, loi)
+  +z = dd_clike(loar, H.i64_of_i32(0), ldt)
+  +s = l2i_cast0.sgn(O.Found.ar(z), x, ldt, xdt)
   +l = l2i_cast0.pick(zeroext, loar, z, s)
   W2{O.Found.ar(l), loi, O.Found.i(l)}
 
-
-# `(x < x.const_like(0)).where(lo.const_like(-1), lo.const_like(0))` -- the high
-# word is the sign extension. `-1` into an UNSIGNED `ldt` is `c_uint(-1)`, so
-# `dd_trunc` is what makes the word `4294967295` and not `-1`.
 
 # -- arm 1: a long CAST off a float source (dtype.py:33-34)
 
@@ -884,7 +892,7 @@ def l2i_cdiv.abs(+ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U3
   +ub0 = T.tx_bitcast(O.Found.ar(ua1), b0, S.uint32())
   +ub1 = T.tx_bitcast(O.Found.ar(ub0), b1, S.uint32())
   +an = dd_lt1(O.Found.ar(ub1), a1, zero)
-  +z = dd_const.int(O.Found.ar(an), 0, S.uint32())
+  +z = dd_const.int(O.Found.ar(an), H.i64_of_i32(0), S.uint32())
   +zi = O.Found.i(z)
   +na = l2i_cdiv.neg(O.Found.ar(z), zi, O.Found.i(ua0), O.Found.i(ua1))
   l2i_cdiv.abs.b(ar, O.Found.i(an), zi, O.Found.i(ua0), O.Found.i(ua1), W2.lo(na), W2.hi(na), zero, b1, zi, O.Found.i(ub0), O.Found.i(ub1), na)
@@ -920,14 +928,14 @@ def l2i_cdiv.q(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
 
 def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +z = Cd.z(c)
-  +one = dd_const.int(ar, 1, S.uint32())
+  +one = dd_const.int(ar, H.i64_of_i32(1), S.uint32())
   +onei = O.Found.i(one)
   +onear = O.Found.ar(one)
   +sh = l2i_shl(onear, S.uint32(), z, ws4(Cd.r0(c), Cd.r1(c), onei, z))
   +shl = W2.lo(sh)
   +shh = W2.hi(sh)
   +shar = W2.ar(sh)
-  +ci = dd_const.int(shar, i, S.uint32())
+  +ci = dd_const.int(shar, H.i64_of_i32(i), S.uint32())
   +cii = O.Found.i(ci)
   +sr = l2i_shr(O.Found.ar(ci), S.uint32(), z, ws4(Cd.a0(c), Cd.a1(c), cii, z))
   +srl = W2.lo(sr)
@@ -1028,7 +1036,7 @@ def l2i_cdiv.sign(sgn: Bool, +ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: 
   match sgn:
     case True{}: l2i_cdiv.abs(ar, zero, a0, a1, b0, b1)
     case False{}:
-      +z = dd_const.int(ar, 0, S.uint32())
+      +z = dd_const.int(ar, H.i64_of_i32(0), S.uint32())
       +zi = O.Found.i(z)
       +zar = O.Found.ar(z)
       Cd{zar, zi, a0, a1, b0, b1, zi, zi, zi, zi, zi, zi}
@@ -1070,7 +1078,7 @@ def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> M
   # 23-25. A one-word CAST does not fail: arms 0 and 1 read `uops[0]`, not `a0`.
   # An arm that reads `a0` (`:39`, the float-target arm) raises `UnboundLocalError`
   # on one word. That is not `NotImplementedError`.
-  +zero = dd_const.int(ar, 0, dt)
+  +zero = dd_const.int(ar, H.i64_of_i32(0), dt)
   l2i.go(O.Found.ar(zero), O.Found.i(zero), op, dt, xdt, ws)
 
 
@@ -1389,7 +1397,7 @@ def f2f.down.norm.put(+tudt: S.Dt, +ar: O.Arena, +x: O.Found, +fr: S.Dt, +to: S.
 def f2f.down.norm.g(r: Maybe<&2, O.Found>, +tudt: S.Dt, +ar: O.Arena, +fr: S.Dt, +to: S.Dt) -> O.Found:
   match r:
     case Some{x}: f2f.down.norm.put(tudt, ar, x, fr, to)
-    case None{}: dd_const.int(ar, 0, tudt)
+    case None{}: dd_const.int(ar, H.i64_of_i32(0), tudt)
 
 # `underflow = (shr(v, fm) & (shl(1, fe) - 1)) < (1 + fb - tb)`. The right side is
 # a Python int, so `ufix` makes it a WEAKINT const and the promotion folds.
@@ -2330,7 +2338,7 @@ def l2i.const.put(+nm: String, +dt: S.Dt, +xdt: S.Dt, +c: O.Found, +ga: Ga) -> G
       l2i.got(nm, l2i(ar, O.OpsCAST{}, dt, xdt, [i]), ga, from)
 
 def l2i.const(+nm: String, +v: U32, +dt: S.Dt, +xdt: S.Dt, +ga: Ga) -> Ga:
-  l2i.const.put(nm, dt, xdt, dd_const.int(Ga.ar(ga), v, xdt), ga)
+  l2i.const.put(nm, dt, xdt, dd_const.int(Ga.ar(ga), H.i64_of_i32(v), xdt), ga)
 
 # THE `l2i` TABLE, index 0..31, in the oracle's order. `base` is the POOL OFFSET
 # into the TWENTY-FOUR word list -- four `w` words then five `i32` at 4, five

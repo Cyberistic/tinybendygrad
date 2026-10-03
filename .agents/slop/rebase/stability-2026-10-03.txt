@@ -14,19 +14,38 @@ REC  tinybendygrad/runtime/ops_null.bend          rows [180, 180, 9] shared[cpyt
 REC  tinybendygrad/renderer/amd/generate.bend     rows [726, 726, 779] shared[cpytho=726/0,cpytho=726/0,interp=726/0] ungated+53 stable across 2 runs
 REC  tinybendygrad/runtime/ops_metal.bend         rows [432, 432, 18] shared[cpytho=14/0,cpytho=14/0,interp=432/0] ungated+4 stable across 2 runs
 REC  tinybendygrad/runtime/ops_nv.bend            rows [600, 600, 547] shared[cpytho=543/0,cpytho=543/0,interp=600/0] ungated+4 stable across 2 runs
-0, 312] shared[cpytho=312,cpytho=312,interp=750] stable across 2 runs
-REC  tinybendygrad/runtime/ops_rdma.bend              rows [389, 389, 389] shared[cpytho=389,cpytho=389,interp=389] stable across 2 runs
-EXCL tinybendygrad/runtime/support/elf.bend           rows [353, 353, 1042] shared[cpytho=353,cpytho=353,interp=353] cpython:elf_rows: 14 row(s) differ between runs, e.g. ['elf_built_e32_reloc_tgts', 'elf_built_e32_relocs', 'elf_built_e64_reloc_tgts']
-REC  tinybendygrad/renderer/ptx.bend                  rows [281, 281, 281] shared[cpytho=281,cpytho=281,interp=281] stable across 2 runs
-EXCL tinybendygrad/schedule/prepare.bend              rows [321, 321, 2521] shared[cpytho=321,cpytho=321,interp=321] cpython:prepare-oracle: 38 row(s) differ between runs, e.g. ['dsk_0_src', 'dsk_1_src', 'ear_0_src']
-REC  tinybendygrad/schedule/rangeify.bend             rows [126, 126, 89] shared[cpytho=31,cpytho=31,interp=126] stable across 2 runs
-REC  tinybendygrad/uop/render.bend                    rows [86, 86, 85] shared[cpytho=85,cpytho=85,interp=86] stable across 2 runs
-REC  tinybendygrad/codegen/opt/search.bend            rows [38, 38, 20] shared[cpytho=10,cpytho=10,interp=38] stable across 2 runs
-REC  tinybendygrad/codegen/simplify.bend              rows [28, 28, 60] shared[cpytho=28,cpytho=28,interp=28] stable across 2 runs
-REC  tinybendygrad/nn/onnx.bend                       rows [123, 123, 123] shared[cpytho=123,cpytho=123,interp=123] stable across 2 runs
-REC  tinybendygrad/viz/serve.bend                     rows [176, 176, 176] shared[cpytho=176,cpytho=176,interp=176] stable across 2 runs
-REC  tinybendygrad/renderer/tc_ptx.bend               rows [333, 333, 333] shared[cpytho=228,cpytho=228,interp=333] stable across 2 runs
-REC  tinybendygrad/tensor.bend                        rows [33, 33, 30] shared[cpytho=30,cpytho=30,interp=33] stable across 2 runs
-REC  tinybendygrad/renderer/amd/sqtt.bend             rows [1033, 1033, 1324] shared[cpytho=1015,cpytho=1015,interp=1033] stable across 2 runs
-REC  tinybendygrad/runtime/support/c.bend             rows [129, 129, 129] shared[cpytho=129,cpytho=129,interp=129] stable across 2 runs
-REC  tinybendygrad/runtime/support/usb.bend           rows [940, 940, 939] shared[cpytho=939,cpytho=939,interp=940] stable across 2 runs
+REC  tinybendygrad/runtime/ops_rdma.bend          rows [389, 389, 389] shared[cpytho=389/0,cpytho=389/0,interp=389/0] ungated+0 stable across 2 runs
+EXCL tinybendygrad/schedule/prepare.bend          rows [321, 321, 2521] shared[cpytho=321/0,cpytho=321/0,interp=321/0] ungated+2200 cpython:prepare-oracle: 38 row(s) DIFFER between runs, e.g. ['dsk_0_src', 'dsk_1_src', 'ear_0_src']
+REC  tinybendygrad/renderer/ptx.bend              rows [281, 281, 281] shared[cpytho=281/0,cpytho=281/0,interp=281/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/runtime/ops_qcom.bend          rows [750, 750, 312] shared[cpytho=312/0,cpytho=312/0,interp=750/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/nn/onnx.bend                   rows [123, 123, 123] shared[cpytho=123/0,cpytho=123/0,interp=123/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/codegen/opt/search.bend        rows [38, 38, 20] shared[cpytho=10/0,cpytho=10/0,interp=38/0] ungated+10 stable across 2 runs
+REC  tinybendygrad/uop/render.bend                rows [86, 86, 85] shared[cpytho=85/0,cpytho=85/0,interp=86/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/schedule/rangeify.bend         rows [126, 126, 89] shared[cpytho=31/0,cpytho=31/0,interp=126/0] ungated+58 stable across 2 runs
+REC  tinybendygrad/codegen/simplify.bend          rows [28, 28, 60] shared[cpytho=28/0,cpytho=28/0,interp=28/0] ungated+32 stable across 2 runs
+REC  tinybendygrad/viz/serve.bend                 rows [176, 176, 176] shared[cpytho=176/0,cpytho=176/0,interp=176/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/runtime/ops_python.bend        rows [85, 85, 241] shared[cpytho=59/0,cpytho=59/0,interp=85/0] ungated+182 stable across 2 runs
+REC  tinybendygrad/uop/spec.bend                  rows [25, 25, 16] shared[cpytho=11/0,cpytho=11/0,interp=25/0] ungated+5 stable across 2 runs
+REC  tinybendygrad/renderer/amd/sqtt.bend         rows [1033, 1033, 1324] shared[cpytho=1015/0,cpytho=1015/0,interp=1033/0] ungated+309 stable across 2 runs
+REC  tinybendygrad/renderer/tc_ptx.bend           rows [333, 333, 333] shared[cpytho=228/0,cpytho=228/0,interp=333/0] ungated+105 stable across 2 runs
+REC  tinybendygrad/runtime/support/c.bend         rows [129, 129, 129] shared[cpytho=129/0,cpytho=129/0,interp=129/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/tensor.bend                    rows [33, 33, 30] shared[cpytho=30/0,cpytho=30/0,interp=33/0] ungated+0 stable across 2 runs
+EXCL tinybendygrad/dtype.bend                     rows [0, 0] shared[cpytho=0/0] ungated+0 run 1: lane(s) exited non-zero: interpreted, native -- interpreted: SOME PROOFS FAIL
+Error: 14 defs rely on unsafe or foreign code:
+- Dt.bf16
+- Dt.fp16
+- Dt.fp8_from
+- Dt.fp8_to
+; native: Error: no main to run
+; run 1: lane(s) produced ZERO rows: cpython:dtype_tables, interpreted. An oracle that emits no name=value rows compared nothing, and two empty runs are equally empty -- recording that freezes silence; run 2: lane(s) exited non-zero: interpreted, native -- interpreted: SOME PROOFS FAIL
+Error: 14 defs rely on unsafe or foreign code:
+- Dt.bf16
+- Dt.fp16
+- Dt.fp8_from
+- Dt.fp8_to
+; native: Error: no main to run
+; run 2: lane(s) produced ZERO rows: cpython:dtype_tables, interpreted. An oracle that emits no name=value rows compared nothing, and two empty runs are equally empty -- recording that freezes silence
+REC  tinybendygrad/runtime/support/usb.bend       rows [940, 940, 939] shared[cpytho=939/0,cpytho=939/0,interp=940/0] ungated+0 stable across 2 runs
+REC  tinybendygrad/renderer/cstyle.bend           rows [225, 225, 15] shared[cpytho=0/0,cpytho=0/0,interp=225/0] ungated+15 stable across 2 runs
+EXCL tinybendygrad/runtime/support/elf.bend       rows [] shared[] ungated+0 measurement crashed: TimeoutExpired(('./bin/bend', '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/support/elf.bend'), 1800)
+REC  tinybendygrad/mixin/elementwise.bend         rows [72, 72, 71] shared[cpytho=71/0,cpytho=71/0,interp=72/0] ungated+0 stable across 2 runs

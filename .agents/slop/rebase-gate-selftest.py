@@ -231,11 +231,25 @@ def record_stable_control():
        any("EXCLUDED" in c for c in complaints) and "tinybendygrad/device.bend" not in after["lanes"])
     ok("an entry the evidence says nothing about is LEFT ALONE, not deleted",
        after["lanes"].get(KEPT) == before["lanes"][KEPT], f"{after['lanes'].get(KEPT)}")
-    # THE POINT. Gated against the doc that resulted, the refused red must still be visible.
+    # THE POINT, and the outcome is STRONGER than the assertion first written for it. Gated
+    # against the doc that resulted, the refused red reads BROKEN -- not AGREE-UNRECORDED,
+    # because GUARD 4 is baseline-free and runs ahead of the baseline shortcut. So refusing to
+    # record does not merely leave the lane un-recorded, it leaves it RED and named. That is
+    # the whole requirement: a recording must never be able to convert a disagreeing lane into
+    # UNCHANGED, and here the two halves are asserted together -- refused above, still BROKEN
+    # below, with the disagreeing row named.
     g2 = load_gate("rebase_gate_after_refusal")
     v = gate_with(g2, after, evidence[RED]["rows"])
-    ok("...and the refused lane then reads AGREE-UNRECORDED, NOT UNCHANGED",
-       v["state"] == "AGREE-UNRECORDED", f"{v['state']}: {v['why'][:110]}")
+    ok("...and the refused RED lane is still BROKEN, never UNCHANGED",
+       v["state"] == "BROKEN" and "disagree" in v["why"],
+       f"{v['state']}: {v['why'][:120]}")
+    # And the other refusal shape -- a lane refused for being PARTIAL, whose rows are not red --
+    # must read AGREE-UNRECORDED rather than UNCHANGED. UNCHANGED is the green this whole
+    # control exists to keep out of reach of a port we declined to record.
+    w = gate_with(load_gate("rebase_gate_after_partial"), after,
+                  {"interpreted": {"a": "1"}, "native": {"a": "1"}, "cpython:o": {"a": "1"}})
+    ok("...and a lane refused for a NON-red reason reads AGREE-UNRECORDED, never UNCHANGED",
+       w["state"] == "AGREE-UNRECORDED", f"{w['state']}: {w['why'][:120]}")
   return fails
 
 

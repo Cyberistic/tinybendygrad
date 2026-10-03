@@ -569,9 +569,18 @@ def clean_env(dev: str) -> dict:
   return e
 
 
-def emit_bend(dev: str, graph: str = "matmul", tries: int = 5,
+def emit_bend(dev: str, graph: str, tries: int = 5,
               probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
-  """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
+  """`graph` is REQUIRED, with no default, and that is the fix rather than the style.
+  MEASURED: `graph` defaulted to `"matmul"` and all three call sites passed only `dev`, so
+  `--graph reduce` compared the py side's `sum(axis=1)` against the bend side's MATMUL --
+  7 py rows against 18 bend rows, every one of them reported as a real difference, and the
+  verdict said DISAGREE while naming no cause. A default that is also the DEFAULT `--graph`
+  is a silent wrong answer: it is correct for the default invocation, so no test of the
+  default invocation can see it, and the disagreement it produces looks like a port bug.
+  Making the argument required turns a future omission into a TypeError.
+
+  `probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
   nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
   20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
   is exactly the guard that does not work."""
@@ -878,7 +887,7 @@ def main() -> int:
       print(f"# graph={a.graph} plant={a.plant or 'none'} tree={tinygrad.__file__}", file=sys.stderr)
       print("\n".join(emit_py(a.graph, a.plant)))
     else:
-      rows, notes = emit_bend(a.dev)
+      rows, notes = emit_bend(a.dev, a.graph)
       print("\n".join("# " + n for n in notes), file=sys.stderr)
       print("\n".join(rows))
     return 0
@@ -886,7 +895,7 @@ def main() -> int:
     # A differ never seen to agree with ITSELF is not known to work.
     ok = True
     for name, get in (("py", lambda: emit_py(a.graph, a.plant)),
-                      ("bend", lambda: emit_bend(a.dev)[0])):
+                      ("bend", lambda: emit_bend(a.dev, a.graph)[0])):
       rc, txt = report(get(), get(), a.plant)
       print(f"== CONTROL {name} vs itself: rc={rc}\n{txt}")
       ok = ok and rc == 0
@@ -902,7 +911,7 @@ def main() -> int:
     print(txt)
     print(f"# CROSS VERDICT: {'OK -- it disagrees' if rc else 'IT AGREED WITH A DIFFERENT GRAPH'}")
     return 0 if rc else 1
-  bd, notes = emit_bend(a.dev, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
+  bd, notes = emit_bend(a.dev, a.graph, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
   py = emit_py(a.graph, a.plant)
   # THE PRECONDITION. The port's fixture names one device and the py graph carries
   # whatever `--dev` opened, so the two device sets must be EQUAL before the cores mean
