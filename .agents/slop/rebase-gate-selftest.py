@@ -20,12 +20,25 @@ THE FIVE STATES, AND WHAT MAKES EACH ONE REACHABLE:
                     them had just compared clean. never_wired_control() below is what keeps it
                     honest -- the same state must NOT be reachable where nothing ran.
 
-The tests run against SYNTHETIC ports and a synthetic baseline, plus THREE REAL lane pairs
-named in SUPERSET_LANES. They do not touch tinygrad/, do not write any .bend file, and do
-not touch the real baseline.json. They DO run three ports and three oracles, because the
-superset check is only worth anything over real lane output: a parser that passes on
-synthetic text and drops one row out of prepare-oracle.py is the failure itself, and 38 wired
-gates share that parser.
+They do not touch tinygrad/, do not write any .bend file, and do not touch the real
+baseline.json. Three of these checks carry a control that would FAIL if its rule were removed,
+and all three exist because a number was confidently wrong:
+
+  * `cache_rule()` -- rebase-scan-oracles.py printed `84 shared, 84 disagree` against a real
+    `726 shared, 0 disagree`, off cache written HOURS earlier. The control ages a scratch cache
+    file against its source in BOTH directions, and also refuses a cache that records nothing.
+  * `superset()` -- `rows()` used to key on an empty name, so 14 `== SECTION ==` banners counted
+    as one row and the oracle reported 2522 rows where it has 2521. It drives `rows()` and the
+    pre-fix parser over synthetic text AND over the four real lane pairs in SUPERSET_LANES, both
+    sides of every pair, and requires the fixed parser to return every row the old one did. A
+    parser that passes on synthetic text and drops one row out of prepare-oracle.py IS the
+    failure, and 38 wired gates share that parser -- which is also how some OTHER gate can come
+    to agree by comparing nothing.
+  * `measure_roster()` -- the conformance roster used to CARRY a shared-row count, and carried a
+    STALE one: 84 for a pair that measures 726. The count is measured every run now, through
+    rebase-scan-oracles.py's cache and its staleness rule, so no number in this file is typed
+    where it can outlive its input. It has to run the real lanes to do it, which is why this
+    file runs three ports and three oracles rather than only fixtures.
 
     .venv/bin/python .agents/slop/rebase-gate-selftest.py
 
@@ -33,11 +46,17 @@ Use .venv/bin/python. PATH's python3 cannot import tinygrad at all, and every or
 exits 1 under it -- which the selftest then has to report as a FAILED LANE rather than as a
 row count.
 """
-import json, pathlib, subprocess, sys, tempfile
+import concurrent.futures as cf
+import json, os, pathlib, subprocess, sys, tempfile, time
 
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "rebase-gate.py"
 REPO = HERE.parent.parent
+sys.path.insert(0, str(HERE))
+# The PINNED interpreter, so no control below can measure the LAUNCHER instead of the port. A
+# lane run under PATH's python3 imports no tinygrad, exits 1, prints nothing, and lands in the
+# scan cache as `{}` -- which is the very file item 1's control exists to catch.
+import oracle_py  # noqa: E402
 
 scan = load_module = None  # replaced below; see load_scan()
 
@@ -253,6 +272,264 @@ def record_stable_control():
   return fails
 
 
+# THE LANES THE SUPERSET PROOF RUNS OVER. Four, not the three the brief asked for, and chosen for
+# what they emit rather than for being convenient:
+#
+#   schedule/prepare.bend + prepare-oracle.py   THE LANE THE DEFECT IS ABOUT. prepare-oracle.py
+#       prints 14 `== SECTION ==` banners; split on the FIRST `=` each has an EMPTY name, so all
+#       fourteen landed on ONE key and the oracle reported 2522 rows where it has 2521.
+#   renderer/tc_ptx.bend + tcptx-oracle.py      the OTHER print shape, `name = [v]   py=[w]`, so
+#       the proof covers an emitter with spaces in the name and a second `=` in the value.
+#   uop/fold.bend + mm-lift-gate.py              201 port rows; one of the eight whose ORACLE cache
+#       held `{}`, i.e. the item-1 defect seen through a lens.
+#   renderer/amd/generate.bend + ga-oracle.py    726 port rows against 779 oracle rows, 0 shared
+#       disagreements -- the pair whose stale `84` is item 2.
+SUPERSET_LANES = [
+  ("tinybendygrad/schedule/prepare.bend", ".agents/slop/prepare-oracle.py"),
+  ("tinybendygrad/renderer/tc_ptx.bend", ".agents/slop/tcptx-oracle.py stage2"),
+  ("tinybendygrad/uop/fold.bend", ".agents/slop/mm-lift-gate.py"),
+  ("tinybendygrad/renderer/amd/generate.bend", ".agents/slop/ga-oracle.py"),
+]
+
+
+def lane_text(argv, port, env=None, timeout=1800):
+  """A lane's RAW stdout, run HERE rather than read from the cache.
+
+  A superset proof over a cache would be checking that a stored dict still parses, which is not
+  the claim: `rows_before_fix` and `rows()` differ on the TEXT, so the text is what has to be in
+  the room. Two attempts, because bend's machine stack overflows on roughly 1 run in 20 and
+  prints ZERO rows -- and a lane that reports nothing must be reported as reporting nothing, not
+  silently counted as a lane whose old and new counts agree at 0."""
+  scan = load_scan()
+  for attempt in (1, 2):
+    r = scan.run(argv, env=env, timeout=timeout)
+    text = r.stdout if r is not None else ""
+    if scan.rows(text):
+      return text
+    print(f"        ({port} printed 0 rows on attempt {attempt})")
+  return ""
+
+
+def superset():
+  """ITEM 3's PROOF: the fixed `rows()` RETURNS EVERY ROW THE OLD ONE RETURNED.
+
+  `rows()` used to key on the empty string when a line began with `=`, which is what all 14 of
+  prepare-oracle.py's `== SECTION ==` banners do. So it reported 2522 rows where the oracle has
+  2521 -- a count off by one for a STRUCTURAL reason, which is the kind nobody can check by
+  looking at the rows. It is fixed. The question this answers is not "is the new count smaller"
+  (of course it is, by exactly the phantom) but "IS THE NEW PARSER A SUPERSET OF THE OLD ONE",
+  because `rows()` is shared by 38 wired gates and a parser that silently drops or renames a row
+  makes some OTHER gate agree by comparing nothing.
+
+  `rows()` is loaded from the gate, never restated. `rows_before_fix` is the only restatement in
+  this file and it is labelled as the control's reference.
+
+  TWO PARTS, and the second is the one that matters:
+
+    1. THE PROPERTY, over synthetic text and over four REAL lane pairs: every key the old parser
+       produced is present in the new one with the SAME value, and the only keys the new parser
+       drops are the empty-named ones.
+    2. THE CONSEQUENCE, driven through the real `gate_port()`: GUARD 4 compares lanes over the keys
+       they SHARE, so removing a key can only SHRINK that intersection. Dropping a phantom
+       therefore cannot turn a real disagreement into a match -- it turns "agreed on a banner"
+       into "compared nothing", and "compared nothing" is BROKEN. Both directions are driven:
+       a pair whose ONLY shared key was a banner, agreeing AND disagreeing, plus a real named row
+       that differs. A one-directional test is half a test.
+  """
+  g = load_gate("rebase_gate_superset")
+  fixed, old = g.rows, rows_before_fix
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  def superset_of(text, label):
+    """(ok, detail) for one block of text. Every old key present, same value, and every dropped
+    key EMPTY -- named, because a superset with a non-empty deletion is a different defect and
+    the reader needs to be able to tell them apart."""
+    n, o = fixed(text), old(text)
+    dropped = [k for k in o if k not in n]
+    changed = [k for k in o if k in n and o[k] != n[k]]
+    detail = f"{label}: old={len(o)} new={len(n)} dropped={[k for k in dropped]} changed={changed}"
+    return not dropped or all(not k for k in dropped), not changed, detail
+
+  # ---- PART 1, synthetic. The three shapes this parser has to survive, in one text.
+  SYNTH = ("== A: TABLES ==\n"                       # empty name -> a phantom under the old rule
+           "PTX tensor_cores sm_75 = [1, 2]   py=[3]\n"   # SPACES in the name, two `=`
+           "load=0\n"                                  # tight, and a value that is not empty
+           "empty value row=0\n"                       # EMPTY VALUE, which IS a row
+           "= trailing equals in the value\n"          # empty name again
+           "load=1\n")                                 # a MOVE, to catch value drift
+  keep, same, detail = superset_of(SYNTH, "synthetic")
+  ok("synthetic: the fixed parser is a superset, and every dropped key is empty-named", keep, detail)
+  ok("synthetic: no surviving key's VALUE changed", same)
+  ok("synthetic: exactly the empty-named lines are dropped, and they were ONE key before",
+     set(old(SYNTH)) - set(fixed(SYNTH)) == {""} and len(old(SYNTH)) - len(fixed(SYNTH)) == 1,
+     f"old keys {sorted(old(SYNTH))}\n        new keys {sorted(fixed(SYNTH))}")
+
+  # ---- PART 1, real lanes. Both parsers on the same stdout, both counts printed.
+  py = oracle_py.resolve()[0]
+  env = load_scan().stripped_env({"DEV": "NULL"})  # measured: tcptx-oracle exits 2 without DEV=NULL
+  measured = 0
+  with cf.ThreadPoolExecutor(max_workers=4) as pool:
+    texts = list(pool.map(
+      lambda pl: (lane_text(["./bin/bend", str(REPO / pl[0])], pl[0]),
+                  lane_text([py, *pl[1].split()], pl[1], env=env, timeout=600)),
+      SUPERSET_LANES))
+  for (port, oracle), (bend_text, oracle_text) in zip(SUPERSET_LANES, texts):
+    for label, text in (("port  ", bend_text), ("oracle", oracle_text)):
+      if not text:
+        print(f"  FAIL  {label} {port}: UNMEASURED -- the lane printed 0 rows twice, so this pair "
+              f"proves nothing and is NOT counted as agreement")
+        fails.append(f"superset {label} {pathlib.Path(port).name}: unmeasured")
+        continue
+      measured += 1
+      keep, same, detail = superset_of(text, f"{port} {label}")
+      ok(f"{pathlib.Path(port).name} {label}: fixed rows() is a superset of the old one", keep, detail)
+      ok(f"{pathlib.Path(port).name} {label}: no surviving key's VALUE changed", same)
+  # A sweep in which nothing ran must not be able to report four quiet passes, which is the
+  # "0 rows is indistinguishable from not started" trap wearing the costume of a passing check.
+  ok(f"the superset proof MEASURED {measured} real lanes, not 0", measured >= 6,
+     f"{measured} of {2 * len(SUPERSET_LANES)} lanes measured")
+
+  # ---- PART 2, the consequence, through the real gate_port() AND the real rows().
+  # THE LANE ROWS ARE BUILT BY CALLING rows() ON TEXT. Handing gate_port() a dict with a "" key
+  # in it tests nothing: run_port is stubbed, so rows() never sees the banner and the phantom
+  # arrives by the back door. The whole claim is about what the parser does with `== X ==`, so the
+  # parser has to be in the room.
+  doc = {"lanes": {}, "hunks": {}}
+  banner = "== D: mop_index ==\n"
+  # Two lanes whose ONLY overlap is the banner: each has one real row, and the real rows differ.
+  # Under the old parser they shared {"": ...}, compared one row, and agreed. Under this one they
+  # share NOTHING and GUARD 4 calls that BROKEN -- which is the safe direction, and the only
+  # direction available, since dropping a key can only shrink an intersection.
+  p_only, o_only = g.rows(banner + "walk_mop=7\n"), g.rows(banner + "walk_other=7\n")
+  both = gate_with(load_gate("rebase_gate_banner_agree"), doc,
+                   {"interpreted": p_only, "native": p_only, "cpython:o": o_only})
+  ok("a pair whose ONLY shared key was a BANNER is BROKEN, not agreement",
+     both["state"] == "BROKEN" and "share NO row names" in both["why"],
+     f"{both['state']}: {both['why'][:110]}")
+  # ...and the old parser really did call that comparable-and-agreeing, which is the whole
+  # reason the fix is worth a control rather than a diff.
+  ok("...which the OLD parser would have read as a comparable, agreeing pair",
+     set(rows_before_fix(banner + "walk_mop=7\n")) & set(rows_before_fix(banner + "walk_other=7\n"))
+     == {""} and not p_only and not o_only,
+     f"old shared {{''}} from a banner; new shared {set(p_only) & set(o_only)}")
+  # THE DIRECTION THAT MATTERS. A disagreement on the banner alone must stay BROKEN: agreement is
+  # the only outcome a dropped key could turn a disagreement into, so the assertion is on the
+  # STATE and not on the reason.
+  split = gate_with(load_gate("rebase_gate_banner_differ"), doc,
+                    {"interpreted": p_only, "native": p_only,
+                     "cpython:o": g.rows("== E: something else ==\n" + "walk_other=7\n")})
+  ok("...and a DISAGREEMENT on that banner is still BROKEN, never agreement",
+     split["state"] == "BROKEN", f"{split['state']}: {split['why'][:110]}")
+  named = gate_with(load_gate("rebase_gate_named_differ"), doc,
+                    {"interpreted": g.rows(banner + "walk_mop=7\n"),
+                     "native": g.rows(banner + "walk_mop=7\n"),
+                     "cpython:o": g.rows(banner + "walk_mop=8\n")})
+  ok("a real named row that DIFFERS is still BROKEN and still counted",
+     named["state"] == "BROKEN" and "disagree" in named["why"],
+     f"{named['state']}: {named['why'][:110]}")
+  return fails
+
+
+def cache_rule():
+  """THE CACHE IS NOT A READING UNLESS IT IS NEWER THAN ITS SOURCE AND IT RECORDS SOMETHING.
+
+  rebase-scan-oracles.py printed `84 shared, 84 disagree` against a pair whose real gate measures
+  `726 shared, 0 disagree`, off cache files written HOURS earlier. Not a rounding, not a stale
+  comment: a number about the tree as it stood before three edits, presented as a number about
+  the tree. The rule that prevents it already existed -- wire-rows.py's "a cache older than the
+  source is not a reading" -- and the scan did not use it.
+
+  Three controls, because the rule has three ways to be wrong and the third is the one that is
+  easiest to declare fixed:
+
+    CONTROL    cache OLDER than its source  -> refused, and the message names BOTH files and
+                says which is older. `wire-rows.py`'s message says "the cache is older than the
+                source" without saying which of the two moved, so the reader has to guess.
+    NO-OP      cache NEWER than its source  -> used, and the rows come back UNCHANGED. This is
+                the SAME answer on both sides of the boundary, which is what makes the control
+                above a control rather than a rule that refuses everything.
+    CONTROL    cache that holds NO ROWS, but is newer than its source -> refused. The write side
+                refuses to store an empty cache, and 82 legacy `{}` files were still on disk
+                after that rule shipped; a fresh file holding `{}` is not stale, so the mtime
+                rule alone reads a FAILED lane from hours ago as a fresh measurement of zero.
+                Measured consequence of the mtime rule alone: 8 of the 38 wired pairs measured
+                0 shared row names and every one of them was skipped in silence.
+
+  Every control drives `rebase-scan-oracles.py`'s OWN `cached()` against a scratch cache
+  directory. Re-implementing the rule here would test the re-implementation, which is the
+  mistake this file already made once with the six states (see `verdict_of`).
+  """
+  s = load_scan()
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  ROWS = {"PTX tensor_cores sm_75": "[1, 2]", "load": "", "empty value row": "0"}
+  KEY, SRC = "tinybendygrad/probe.bend", "port.bend"
+
+  with tempfile.TemporaryDirectory() as td:
+    root, real = pathlib.Path(td), s.CACHE
+    src, cache = root / SRC, s.cache_file(root, KEY)
+    src.write_text("PROBE SOURCE\n")
+    s.write_cache(root, KEY, ROWS)
+    s.CACHE = root  # the reader resolves CACHE at call time
+
+    def age(seconds):  # the CACHE file's mtime, `seconds` from the source's. + is OLDER.
+      st = src.stat().st_mtime
+      os.utime(cache, (st - seconds, st - seconds))
+
+    age(-1)  # cache 1s NEWER than its source
+    d, why = s.cached(KEY, src)
+    ok("NO-OP: a cache NEWER than its source is used, rows unchanged",
+       why == "fresh" and d == ROWS, f"{why}, {d}")
+    age(60)  # cache 60s OLDER than its source
+    d, why = s.cached(KEY, src)
+    ok("CONTROL: a cache OLDER than its source is refused, not read",
+       why == "stale" and d is None, f"{why}, {d}")
+    msg = capture(s.say_not_used, KEY, "stale", src)
+    ok("...and the refusal NAMES BOTH FILES and which one is older",
+       str(cache) in msg and str(src) in msg and "OLDER" in msg, msg.strip())
+    # The empty half. Newer than its source, so ONLY the emptiness can refuse it.
+    s.write_cache(root, KEY, {})
+    age(-1)
+    d, why = s.cached(KEY, src)
+    ok("CONTROL: a cache that holds NO ROWS is refused however NEW it is",
+       why == "empty" and d is None, f"{why}, {d}")
+    msg = capture(s.say_not_used, KEY, "empty", src)
+    ok("...and says the file records a FAILED run rather than an empty one",
+       str(cache) in msg and "NO ROWS" in msg, msg.strip())
+    # And the write half, because the two halves must agree: if store() wrote `{}`, the read
+    # refusal above would be a rule with no second half to catch. The file is REMOVED first --
+    # it still holds the `{}` written two checks ago, and "size > 2" would then be testing the
+    # previous step's file rather than whether store() wrote anything.
+    cache.unlink()
+    s.store(KEY, {}, "probe")
+    ok("...and store() writes NOTHING for an empty result", not cache.exists(),
+       f"{cache} {'exists' if cache.exists() else 'absent'}")
+    s.CACHE = real
+  return fails
+
+
+def capture(fn, *a):
+  """What a diagnostic function PRINTS, as a string. A message is part of the contract here --
+  rebase-scan-oracles.py's whole failure was a confident number with nothing beside it -- so it
+  is asserted, not assumed."""
+  import io
+  import contextlib
+  buf = io.StringIO()
+  with contextlib.redirect_stdout(buf):
+    fn(*a)
+  return buf.getvalue()
+
+
 def main():
   fails = []
 
@@ -398,6 +675,13 @@ def main():
   fails += never_wired_control()
   fails += record_stable_control()
 
+  print("\nCACHE RULE: a cache is a reading only if it is NEWER than its source and RECORDS "
+        "SOMETHING\n")
+  fails += cache_rule()
+
+  print("\nROWS() SUPERSET: the fixed parser returns every row the old one returned\n")
+  fails += superset()
+
   fails += plan_contract()
   fails += oracle_template()
 
@@ -479,6 +763,33 @@ def plan_contract():
   return fails
 
 
+def measure_roster():
+  """{port: (shared, disagree, port_rows, oracle_rows)} per LIVE entry, MEASURED against the tree.
+
+  Through rebase-scan-oracles.py, so through its cache AND through its staleness-and-emptiness
+  rule: a number appears here only if a lane was actually re-run against its current source. The
+  lanes are independent processes, so they are measured CONCURRENTLY -- serially a cold cache
+  charges the sum of 36 bend and 36 oracle runs, and `runtime/support/elf.bend` alone needs 159s
+  unloaded and exceeded 600s under contention before its budget was raised to wire-rows.py's
+  1800s. Serial measurement is why "type the number" and "skip the measurement" both looked
+  reasonable, and neither of them is.
+
+  Keys are de-duplicated, so a lane two entries share is run once and read twice -- which also
+  means no two threads ever write the same cache file."""
+  scan = load_scan()
+  live = {p: o for p, (o, k) in ORACLE_CONFORMANCE.items() if k == "live"}
+  ports, specs = sorted(live), sorted(set(live.values()))
+  with cf.ThreadPoolExecutor(max_workers=8) as pool:
+    bend = dict(zip(ports, pool.map(scan.bend_rows, ports)))
+    orc = dict(zip(specs, pool.map(scan.oracle_rows, specs)))
+  out = {}
+  for port, spec in live.items():
+    b, o = bend[port], orc[spec]
+    shared = set(b) & set(o)
+    out[port] = (len(shared), sum(1 for k in shared if b[k] != o[k]), len(b), len(o))
+  return out
+
+
 def header_ports():
   """rebase-plan.py's header map, loaded rather than re-implemented."""
   import importlib.util
@@ -506,88 +817,100 @@ def header_ports():
 # the SAME `gate_port()` main() calls with each one's own row NAMES as the fixture. A new
 # oracle that cannot pass this is not finished.
 #
-# ⚠ THIS LIST LIED. It carried a header saying these were "the oracles this session wired
-# into BASE_ORACLES" and named EIGHT, while BASE_ORACLES held THREE and only ONE of the
-# eight. A conformance roster that over-reports is worse than none: it reads as coverage of
-# the thing this file exists to guarantee. So the check below is now EQUALITY between the
-# roster and BASE_ORACLES, in both directions, and the shared-row counts are MEASURED by
-# rebase-scan-oracles.py against the live tree rather than typed here and left to rot.
-# THE ROSTER IS WRITTEN ONCE, HERE, AND BASE_ORACLES IS BUILT FROM IT. It started the other
-# way round: BASE_ORACLES held three entries and this list held nine, its header claimed all
-# nine were "wired", and the equality check that would have caught the difference did not
-# exist. A conformance roster that over-reports is worse than none -- it reads as coverage of
-# the thing this file exists to guarantee.
+# ⚠ AND IT NO LONGER CARRIES A SHARED-ROW COUNT, BECAUSE A COUNT HERE WAS A SECOND SOURCE OF
+# TRUTH WITH NO INVALIDATION RULE. It said 84 for `ga-oracle.py` after the real number became 726,
+# and it kept saying 84 through every run, because nothing in this file re-reads it -- the same
+# species as the cache that never invalidated, and the same consequence: a plausible number that
+# outlived its input and was believed. The 84 only ever SIZED A SYNTHETIC FIXTURE, so no verdict
+# was ever wrong; that is the one mercy in this story and it is not a reason to keep the number.
 #
-# shared = row NAMES the port and the oracle both print, MEASURED by rebase-scan-oracles.py.
-# It is the number of claims CPython actually corroborates, and for two pairs it is far below
-# what the oracle emits, which is stated in the comment rather than rounded away.
+# The count is now MEASURED, every run, by measure_roster() below: the same bend and oracle lanes
+# rebase-scan-oracles.py runs, through its own staleness-and-emptiness rule, so a number appears
+# here only if it was measured against the live tree. What each entry's comment now carries is
+# what the UNSHARED remainder is, which is the part that does not rot.
+#
+# A number that could not be measured is printed UNMEASURED and FAILS. It is never rounded to 0
+# and never inherited from a previous run: a fixture sized by a remembered 84 is the defect this
+# paragraph exists to remove.
+#
+# The unshared remainders, measured 2026-10-03, stated because they are the interesting part:
+#   tc_ptx    228 of 333 -- the other 105 use legacy dtype spellings in the ROW KEY (`half` vs
+#              `f16`) and so do not intersect; aligned values agree.
+#   elf       353 of 353 -- PORT FULLY COVERED, the only "live" entry with zero uncovered rows.
+#              Its oracle emits 689 further rows, 14 of which are `libstub.dylib` runtime
+#              addresses that ASLR changes every launch: none shared, so GUARD 4 is unaffected
+#              and GUARD 1 is why elf must never be recorded.
+#   sqtt      1015 of 1033 -- probe-recorded and re-gated UNCHANGED, so this one IS recordable.
+#   generate  726 of 726 -- WAS 84 of 233 before the producer was re-cut. The 149 "lost" rows
+#              were generated-Python lines `gl` printed whole, one per row, and rows() split them
+#              on `=`. BASE_ORACLES says why rows() was deliberately NOT touched for this.
+#   ops_cpu   3 of the oracle's 20 -- 17 are `findlib_*` HOST answers (where libm and libobjc live
+#              on THIS machine). A gate's strength is the intersection, so 3 is the number.
+#   ops_python 59 of 85 -- the other 26 are the port's own encodings (table ids, constructor tags,
+#              a completion sentinel, a hardcoded b64 flag, synthetic core_find fixtures, and one
+#              assertion string no real tensor core emits).
+#   ops_amd   409 of 520 -- the other 111 are ungated (init trace, differently-keyed names). Not
+#              a claim about those 111.
+#   render    85 of the port's 86 naive keys -- the leftover is `py`, an indented continuation the
+#              parser invents; port-only and not a claim. HEAD, not the vendored hybrid.
+#   llvmir    323 of 323 -- the file was deleted in 668d3194d, so the filename sweep could not see
+#              a file that was no longer on disk. Restored as llvmir-oracle.py.
+#   qcom      312 of 750 -- omitted: qc_ctz_zero (CPython -1, port 32, ops_qcom.py:43), the U32
+#              miss sentinels (not a CPython return), and the stage-2 ELF walk.
+#   indexing  104 of 252 -- ALWAYS_CONTIGUOUS, data_srcs, broadcast_axes and argsort are left
+#              out; `mv_*` is arena-slot identity, and apply_movement_op does not return those.
+#   dtype     99 of 164 -- the rest are interning-order rows plus lgu, which the port prints
+#              `refused:unported` where CPython builds a WHERE. Not gated.
+#   rangeify  31 of 126 -- 3 rows are a different field (AxisType.WEAK vs the axis index).
+#   jit       18 of 137 -- four rows disagree: DEV=NULL says 'NULL' where the port baked 'PYTHON',
+#              and jit_oracle's cap() returned 'none' for two log lines.
+#   null      7 of 180 -- the five opcodes and two EMULATE messages NullDevice raises.
 ORACLE_CONFORMANCE = {
-  # port: (oracle spec, shared row names, kind)
+  # port: (oracle spec, kind)
   # kind "live" -- the six synthetic states are driven against this oracle's own row names
   # kind "dead" -- wired to make BROKEN reachable on the REAL tree, so there is no shared
   #   name to drive (0 BY DESIGN) and the assertion is a real subprocess run of the gate
-  "tinybendygrad/uop/spec.bend": (".agents/slop/rebase-oracle-spec.py", 11, "live"),
-  "tinybendygrad/uop/ops.bend": (".agents/slop/rebase-oracle-ops.py", 62, "live"),
-  "tinybendygrad/codegen/opt/search.bend": (".agents/slop/rebase-oracle-search.py", 10, "live"),
-  "tinybendygrad/runtime/ops_rdma.bend": (".agents/slop/oracle_rdma_gate.py", 389, "live"),
-  "tinybendygrad/runtime/ops_nv.bend": (".agents/slop/nv-oracle.py", 543, "live"),
-  "tinybendygrad/runtime/support/hcq2.bend": (".agents/slop/hcq2-oracle.py", 157, "live"),
-  "tinybendygrad/runtime/ops_metal.bend": (".agents/slop/mt_seam_rows.py", 14, "live"),
-  "tinybendygrad/runtime/support/usb.bend": (".agents/slop/usb-oracle-run.py", 939, "live"),
-  "tinybendygrad/schedule/prepare.bend": (".agents/slop/prepare-oracle.py", 321, "live"),
-  "tinybendygrad/renderer/ptx.bend": (".agents/slop/ptx-s3-oracle.py", 281, "live"),
-  # 228 of 333. The other 105 are legacy dtype spellings in the row KEY, measured
-  # 2026-10-03: aligned values agree, so the intersection is the honest number.
-  "tinybendygrad/renderer/tc_ptx.bend": (".agents/slop/tcptx-oracle.py stage2", 228, "live"),
-  "tinybendygrad/renderer/nir_llvmir.bend": (".agents/slop/nl/nl-oracle.py", 201, "live"),
-  "tinybendygrad/viz/serve.bend": (".agents/slop/vz/viz_oracle.py", 176, "live"),
-  "tinybendygrad/runtime/support/c.bend": (".agents/slop/c-oracle.py", 129, "live"),
-  "tinybendygrad/uop/fold.bend": (".agents/slop/mm-lift-gate.py", 126, "live"),
-  # -- the oracle-WIRING unit's two. The equality check below is what caught them: BASE_ORACLES
-  #    gained two entries and this roster did not, and the FAIL names exactly the two. That is
-  #    the contract working -- one file changed, the other file said so.
-  #    elf: 353 shared of the port's 353 rows, so PORT FULLY COVERED. It is the only "live"
-  #    entry with zero uncovered rows. Its oracle emits 689 further rows, 14 of which are
-  #    `libstub.dylib` runtime addresses that ASLR changes every launch -- none of them shared,
-  #    so GUARD 4 is unaffected and GUARD 1 is why elf must never be recorded.
-  "tinybendygrad/runtime/support/elf.bend": (".agents/slop/elf_rows.py", 353, "live"),
+  "tinybendygrad/uop/spec.bend": (".agents/slop/rebase-oracle-spec.py", "live"),
+  "tinybendygrad/uop/ops.bend": (".agents/slop/rebase-oracle-ops.py", "live"),
+  "tinybendygrad/codegen/opt/search.bend": (".agents/slop/rebase-oracle-search.py", "live"),
+  "tinybendygrad/runtime/ops_rdma.bend": (".agents/slop/oracle_rdma_gate.py", "live"),
+  "tinybendygrad/runtime/ops_nv.bend": (".agents/slop/nv-oracle.py", "live"),
+  "tinybendygrad/runtime/support/hcq2.bend": (".agents/slop/hcq2-oracle.py", "live"),
+  "tinybendygrad/runtime/ops_metal.bend": (".agents/slop/mt_seam_rows.py", "live"),
+  "tinybendygrad/runtime/support/usb.bend": (".agents/slop/usb-oracle-run.py", "live"),
+  "tinybendygrad/schedule/prepare.bend": (".agents/slop/prepare-oracle.py", "live"),
+  "tinybendygrad/renderer/ptx.bend": (".agents/slop/ptx-s3-oracle.py", "live"),
+  "tinybendygrad/renderer/tc_ptx.bend": (".agents/slop/tcptx-oracle.py stage2", "live"),
+  "tinybendygrad/renderer/nir_llvmir.bend": (".agents/slop/nl/nl-oracle.py", "live"),
+  "tinybendygrad/viz/serve.bend": (".agents/slop/vz/viz_oracle.py", "live"),
+  "tinybendygrad/runtime/support/c.bend": (".agents/slop/c-oracle.py", "live"),
+  "tinybendygrad/uop/fold.bend": (".agents/slop/mm-lift-gate.py", "live"),
+  "tinybendygrad/runtime/support/elf.bend": (".agents/slop/elf_rows.py", "live"),
   #    sqtt: 1015 of 1033. Probe-recorded and re-gated UNCHANGED, so this one IS recordable.
-  "tinybendygrad/renderer/amd/sqtt.bend": (".agents/slop/sqtt_spec.py", 1015, "live"),
-  # 84 of 233. The other 149 are generated-Python lines rows() splits on `=`,
-  # which the oracle names `tag | line`, so they are not shared. Measured
-  # 2026-10-03: 0 disagreements after the print-shape fix.
-  "tinybendygrad/renderer/amd/generate.bend": (".agents/slop/ga-oracle.py", 84, "live"),
-  "tinybendygrad/nn/onnx.bend": (".agents/slop/onnx-gate.py", 123, "live"),
-  "tinybendygrad/mixin/elementwise.bend": (".agents/slop/ew-gate.py", 71, "live"),
-  "tinybendygrad/mixin/op.bend": (".agents/slop/mixin-op-gate.py", 32, "live"),
-  "tinybendygrad/tensor.bend": (".agents/slop/tensor-gate.py", 30, "live"),
-  "tinybendygrad/codegen/simplify.bend": (".agents/slop/xd1/rw-oracle.py", 28, "live"),
-  "tinybendygrad/nn/__init__.bend": (".agents/slop/nn-init-gate.py", 24, "live"),
-  "tinybendygrad/codegen/gpudims.bend": (".agents/slop/xd1/rw-gate-oracle.py", 24, "live"),
-  # 3 of the oracle's 20 rows, and the other 17 are `findlib_*` HOST answers. The strength
-  # of a gate is the intersection, so 3 is the number and the comment in BASE_ORACLES says
-  # which 3.
-  "tinybendygrad/runtime/ops_cpu.bend": (".agents/slop/cpulink_oracle.py", 3, "live"),
-  # 59 of 85. The other 26 are port-internal encodings, not CPython outputs.
-  # PYTHONPATH unset still imports (editable install); measured, not assumed.
-  "tinybendygrad/runtime/ops_python.bend": (".agents/slop/ops-python-render-oracle.py", 59, "live"),
-  # 409 of 520. The other 111 are ungated (init trace, differently-keyed names).
-  # Not a claim about those 111. Measured 2026-10-03, 0 disagreements.
-  "tinybendygrad/runtime/ops_amd.bend": (".agents/slop/amd_oracle.py", 409, "live"),
-  # 85 of the port's 86 naive keys. The leftover is `py`, an indented continuation
-  # the parser invents; it is port-only and not a claim. HEAD, not the vendored hybrid.
-  "tinybendygrad/uop/render.bend": (".agents/slop/xd1/render-gate-oracle.py --gate", 85, "live"),
+  "tinybendygrad/renderer/amd/sqtt.bend": (".agents/slop/sqtt_spec.py", "live"),
+  "tinybendygrad/renderer/amd/generate.bend": (".agents/slop/ga-oracle.py", "live"),
+  "tinybendygrad/nn/onnx.bend": (".agents/slop/onnx-gate.py", "live"),
+  "tinybendygrad/mixin/elementwise.bend": (".agents/slop/ew-gate.py", "live"),
+  "tinybendygrad/mixin/op.bend": (".agents/slop/mixin-op-gate.py", "live"),
+  "tinybendygrad/tensor.bend": (".agents/slop/tensor-gate.py", "live"),
+  "tinybendygrad/codegen/simplify.bend": (".agents/slop/xd1/rw-oracle.py", "live"),
+  "tinybendygrad/nn/__init__.bend": (".agents/slop/nn-init-gate.py", "live"),
+  "tinybendygrad/codegen/gpudims.bend": (".agents/slop/xd1/rw-gate-oracle.py", "live"),
+  "tinybendygrad/runtime/ops_cpu.bend": (".agents/slop/cpulink_oracle.py", "live"),
+  "tinybendygrad/runtime/ops_python.bend": (".agents/slop/ops-python-render-oracle.py", "live"),
+  "tinybendygrad/runtime/ops_amd.bend": (".agents/slop/amd_oracle.py", "live"),
+  "tinybendygrad/uop/render.bend": (".agents/slop/xd1/render-gate-oracle.py --gate", "live"),
   # -- the no-candidate unit. Counts are the measured intersection, not the
   #    oracle's row count. llvmir is 323 of the port's 323.
-  "tinybendygrad/renderer/llvmir.bend": (".agents/slop/llvmir-oracle.py", 323, "live"),
-  "tinybendygrad/runtime/ops_qcom.bend": (".agents/slop/qcom-oracle.py", 312, "live"),
-  "tinybendygrad/schedule/indexing.bend": (".agents/slop/indexing-oracle.py", 104, "live"),
-  "tinybendygrad/codegen/decomp/dtype.bend": (".agents/slop/dtype-oracle.py", 99, "live"),
-  "tinybendygrad/schedule/rangeify.bend": (".agents/slop/rangeify-oracle.py", 31, "live"),
-  "tinybendygrad/engine/jit.bend": (".agents/slop/jit-oracle.py", 18, "live"),
-  "tinybendygrad/runtime/ops_null.bend": (".agents/slop/null-oracle.py", 7, "live"),
-  "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", 0, "dead"),
-  "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", 0, "dead"),
+  "tinybendygrad/renderer/llvmir.bend": (".agents/slop/llvmir-oracle.py", "live"),
+  "tinybendygrad/runtime/ops_qcom.bend": (".agents/slop/qcom-oracle.py", "live"),
+  "tinybendygrad/schedule/indexing.bend": (".agents/slop/indexing-oracle.py", "live"),
+  "tinybendygrad/codegen/decomp/dtype.bend": (".agents/slop/dtype-oracle.py", "live"),
+  "tinybendygrad/schedule/rangeify.bend": (".agents/slop/rangeify-oracle.py", "live"),
+  "tinybendygrad/engine/jit.bend": (".agents/slop/jit-oracle.py", "live"),
+  "tinybendygrad/runtime/ops_null.bend": (".agents/slop/null-oracle.py", "live"),
+  "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", "dead"),
+  "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", "dead"),
 }
 
 # NOT WIRES, and named here as well as in BASE_ORACLES because a roster that only records
@@ -630,11 +953,22 @@ def dead_lane_is_broken(port, oracle):
 
 
 def oracle_template():
-  """Drive the six states through gate_port() for each wired oracle. Returns failure names."""
+  """Drive the six states through gate_port() for each wired oracle. Returns failure names.
+
+  ⚠ THE FIXTURE IS SIZED BY A MEASUREMENT, NOT BY A NUMBER WRITTEN DOWN HERE. It used to be sized
+  by a stored shared-row count, which said 84 for a pair that measures 726, and the stale number
+  was printed in the PASS line of every run -- a confident claim about the tree, in the one file
+  whose whole purpose is refusing those. So measure_roster() re-measures, every run, and the
+  number that appears below is one that was just obtained.
+
+  An entry that could not be measured FAILS and says UNMEASURED, naming which lane produced
+  nothing. It does NOT fall back to 1 and it does not inherit the previous run's count: a fixture
+  sized by a remembered number IS the defect, and "0 rows" quietly becoming a passed check is the
+  same species of thing that hid for an hour here."""
   g_all = load_gate("rebase_gate_roster")
-  wired = {p: o[0] for p, o in g_all.BASE_ORACLES.items()}
+  wired = {p: o[0] for p, o in g_all.BASE_ORACLES.items()}  # BASE_ORACLES holds a LIST of oracles
   fails = []
-  if wired != {p: s for p, (s, _, _) in ORACLE_CONFORMANCE.items()}:
+  if wired != {p: s for p, (s, _) in ORACLE_CONFORMANCE.items()}:
     fails.append("BASE_ORACLES and ORACLE_CONFORMANCE disagree")
     print(f"  FAIL  BASE_ORACLES and ORACLE_CONFORMANCE are the same roster")
     print(f"        only in BASE_ORACLES: { {k: v for k, v in wired.items() if k not in ORACLE_CONFORMANCE} }")
@@ -654,7 +988,19 @@ def oracle_template():
     print(f"  PASS  ORACLE_NOT_WIRED is disjoint from the wired roster "
           f"({len(ORACLE_NOT_WIRED)} named, with reasons)")
 
-  for port, (oracle, shared_n, kind) in ORACLE_CONFORMANCE.items():
+  # THE SHARED-ROW COUNTS ARE MEASURED HERE, EVERY RUN, and printed whether or not they agree
+  # with anything -- so the number a reader sees is a number about this tree, not a number typed
+  # in a file that outlived its input. 1 disagreement on a live pair is a FAILURE: it is the same
+  # red the gate would report, and a conformance check that passed over a live disagreement would
+  # be reporting on the roster rather than on the ports.
+  live_pairs = sum(1 for _, k in ORACLE_CONFORMANCE.values() if k == "live")
+  print(f"\nMEASURING {live_pairs} live pairs against the tree "
+        f"(shared names / disagreements / port rows / oracle rows)\n")
+  t0 = time.monotonic()
+  measured = measure_roster()
+  print(f"  measured in {time.monotonic() - t0:.1f}s\n")
+
+  for port, (oracle, kind) in ORACLE_CONFORMANCE.items():
     name = pathlib.Path(oracle.split()[0]).name
     if kind == "dead":
       ok, detail = dead_lane_is_broken(port, oracle)
@@ -663,11 +1009,30 @@ def oracle_template():
       if not ok:
         fails.append(f"{name}: dead lane stopped being BROKEN")
       continue
+    shared_n, disagree, n_bend, n_ora = measured[port]
+    print(f"  {port.split('/', 1)[-1]:<34} {oracle.split('/')[-1]:<28} "
+          f"{shared_n:>5} / {disagree} / {n_bend} / {n_ora}")
+    # A live entry with no measurable intersection has no fixture to drive, and the REASON
+    # matters: a lane that produced no rows is an ABSENT measurement, which is a different claim
+    # from "this oracle shares nothing with its port". Both fail; they must not read alike, or a
+    # reader will take "the interpreter fell over" for "the wiring is fine".
+    if shared_n == 0:
+      blank = [w for w, n in (("port", n_bend), ("oracle", n_ora)) if not n]
+      why = (f"UNMEASURED: the {' and '.join(blank)} lane produced 0 rows, so nothing was "
+             f"compared and no fixture can be sized from it") if blank else (
+            f"0 shared row names: {n_bend} port rows against {n_ora} oracle rows, NOTHING in common")
+      fails.append(f"{name}: {why}")
+      print(f"  FAIL  {name}: {why}")
+      continue
+    if disagree:
+      fails.append(f"{name}: {disagree} of {shared_n} shared row names disagree on the live tree")
+      print(f"  FAIL  {name}: {disagree} of {shared_n} shared row names DISAGREE on the live tree")
+      continue
     g = load_gate(f"conformance_{pathlib.Path(oracle.split()[0]).stem}_{shared_n}")
     # THE FIXTURE IS THE ORACLE'S OWN ROW SET, so the states are produced over the names this
     # oracle actually emits. Synthetic names would pass a broken oracle and fail a working
     # one, which is the same inversion as a shape mismatch.
-    port_rows = {f"r{i}": str(i) for i in range(max(shared_n, 1))}
+    port_rows = {f"r{i}": str(i) for i in range(shared_n)}
     doc = {"lanes": {port: {"interpreted": dict(port_rows)}},
            "hunks": {port: {"tinygrad/probe.py": {"api_delta": {"added": ["sym"]},
                                                   "diff_stat": "1 file changed"}}}}
@@ -708,7 +1073,7 @@ def oracle_template():
     if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2] or bad_doc[3]:
       bad.append(f"{pathlib.Path(oracle.split()[0]).name}: malformed baseline")
     print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle.split()[0]).name}: six "
-          f"states reachable ({shared_n} shared row names)")
+          f"states reachable (shared_n={shared_n} MEASURED)")
     fails += bad
   return fails
 

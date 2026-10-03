@@ -95,10 +95,17 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
                   (ops.py:1408-1410). So it is field-by-field too, and a CALL's difference
                   is reported as a NAMED field.
                THE DEVICE FIELD is the one that used to need a DECLARED binding, and it
-               no longer does. Upstream's `ParamArg.device` is a NAME: `Compiled.device`
-               is the canonicalized `str` the device was opened with (device.py:396, from
-               `_Device.__getitem__`'s `cls(ix)` at :29 over `_canonicalize` at :26). The
-               port's arena carries an interned `U32` tag instead (LAWS/spec.bend:85-87)
+               no longer does. Upstream's `ParamArg.device` is a NAME, and the chain to it
+               is FIVE hops, every position CALLED rather than read off a docstring.
+               MEASURED: `Device['CPU'].device == 'CPU'`. The chain is
+               `_Device.__getitem__` (device.py:29) -> `ix = self.canonicalize(ix)` (:30)
+               -> `_canonicalize` (:26), which upper-cases the stem and strips a trailing
+               `:0` -> `__get_canonicalized_item(ix)` (:32) -> `get_class`'s `cls(ix)`
+               (:37 -- NOT :29, which is the `def` itself) -> `Compiled.__init__`'s
+               `self.device, ... = device, ...` (:396). From there the NAME flows into the
+               graph through `ParamArg(..., device=device, ...)`: uop/ops.py:855 for a
+               BUFFER, :1211 for a PARAM. The port's arena carries an interned `U32` tag
+               instead (LAWS/spec.bend:85-87)
                and THE PORT ALREADY HAS THE READER -- `uop/render.bend:360-364`, whose
                table at :361 is the one `schedule/__init__.bend:1095` ("tag 0 stands for
                CPU") and `schedule/memory.bend:998` (`cpu() = S.D1{0}`) write against. So
@@ -157,6 +164,7 @@ and never a verdict (trap 4 above).
 from __future__ import annotations
 
 import argparse
+import enum
 import hashlib
 import os
 import pathlib
@@ -184,8 +192,21 @@ def load_tinygrad() -> None:
 # THE ATOM TABLE. One letter per value KIND and no letter reused, because a collision
 # would make two different values render the same and a differ would then agree with
 # itself for the wrong reason -- `selfcheck` asserts the distinctness.
+#
+# `z` and `q` and `u` are the three REFUSALS, added 2026-10-03, one letter each:
+#   z  a realized BUFFER's device object is PRESENT. Nothing about it is compared but
+#      its presence. MEASURED: `Buffer` has no `slot`, so there is no name for it on
+#      this side, and the port's `Maybe<&2,U32>` is a P6 allocator slot with no runtime
+#      behind it (ops.bend:913 is the same note for bytes). The ABSENT case keeps the
+#      older spelling `unrealized` rather than `N` for one measured reason and not for
+#      taste: `unrealized` CONTAINS `realized` as a substring, so any substring scan
+#      over an arg counts the absent case as a present one. Measured by writing the scan
+#      that way first and getting the wrong answer.
+#   u  a UOp nested inside an `arg`. Both sides emit it; neither compares identity.
+#   q  an APPLIED OPTION the port cannot resolve (see R7's KernelInfo note).
 ATOMS = {"none": "N", "u32": "i", "i64": "l", "float": "f", "bool": "b", "str": "s",
-         "bytes": "y", "dtype": "D", "ops": "O", "axis": "X", "addr": "S", "invalid": "v"}
+         "bytes": "y", "dtype": "D", "ops": "O", "axis": "X", "addr": "S", "invalid": "v",
+         "buf": "z", "uop": "u", "opt": "q", "enum": "E"}
 
 
 def chunk(s: str) -> str:
@@ -233,6 +254,11 @@ def bstr(s: str) -> str:
 
 def bo(x) -> str:
   return ATOMS["bool"] + ("1" if x else "0")
+
+
+# The `N` arm of `cshape`, counted. See that function: it is dead by measurement and this
+# counter is what keeps the measurement honest across future edits.
+SHAPE_NONE_HITS = 0
 
 
 def dt(d: DType) -> str:
@@ -304,7 +330,34 @@ def carg(op: Ops, x) -> str:
     return "cI(" + ",".join([bstr(x.name) if x.name is not None else ATOMS["none"],
                              bo(x.precompile), bo(x.precompile_backward)]) + ")"
   if op is Ops.SINK:
-    return f"kI({bstr(x.name)},{tup([_carg(o) for o in x.applied_opts])},{u(x.beam)})"
+    # FOUR SLOTS, and the arity is the point. It was three, and the port's emitter wrote
+    # TWO (`kI(<name>,<beam>)`, graphcmp.bend), so the texts could not agree for any
+    # reason other than "the port renders fewer fields" -- which a differ reports as a
+    # disagreement about the graph. The four are `KernelInfo`'s own fields in DECLARATION
+    # order (ops.py:1342-1347), minus `estimates`:
+    #   * `name`, `beam` -- compared outright.
+    #   * `applied_opts` -- the port types it `List<&2,U32>` (ops.bend:978) and upstream's
+    #     elements are `Opt` dataclasses (`Opt(op=OptOps.TC, axis=0, arg=4)`). Those are
+    #     not comparable and pretending otherwise is the "copy the port's answer into the
+    #     oracle" move, so the PORT emits one `q` per option: the COUNT still compares and
+    #     the content is a named refusal. MEASURED, and this is why the count is worth
+    #     keeping: the port's own `KernelInfo.of()` has `applied_opts = Nil{}` and
+    #     `opts_to_apply = None` (probe `pb-buf-binary.bend`, Q1b), and no port file ever
+    #     writes a non-empty one -- `render.bend:655` calls those U32s "UOp INDICES", and
+    #     that reading is UNVERIFIED, because there is no construction site to verify it
+    #     against. So the port cannot fill them and must not pretend to.
+    #   * `opts_to_apply` -- it was DROPPED ON BOTH SIDES, which is the residual nobody was
+    #     looking at: `KernelInfo` (ops.py:1345) declares it, upstream writes it on every
+    #     `llm/kernels/amd.py` and `nn/__init__.py` SINK as `opts_to_apply=()` -- an EMPTY
+    #     TUPLE, which is not `None` -- and the port's field is `None` (measured, Q1b).
+    #     So the two sides genuinely differ here, on every SINK those files build, and
+    #     until now this gate could not see that in either direction.
+    #   `estimates: Estimates|None` is not ported (P5, `tinygrad.renderer`) and upstream's
+    #   value is None for every kernel the port can build; `render.bend:653` pins it to the
+    #   literal `estimates=None` for the same reason. It is not a fourth-vs-fifth slot: a
+    #   field neither side carries cannot be compared by either, and the ledger below is
+    #   where "not carried" is stated.
+    return f"kI({bstr(x.name)},{tup([_carg(o) for o in x.applied_opts])},{_carg(x.opts_to_apply)},{u(x.beam)})"
   if op is Ops.PROGRAM:
     # `ProgramInfo.global_size` is `tuple[int|float, ...]` (ops.bend:1352); the port holds
     # `H.I64` and the float case is a `sint`'s, recorded on `sint_of` there. CPython's
@@ -317,7 +370,20 @@ def carg(op: Ops, x) -> str:
 def _carg(x) -> str:
   """The generic value grammar: one letter per kind, no letter reused, and a NAMED `raw`
   for anything unmapped. A fallback that printed `repr` here would reintroduce the whole
-  problem this file exists to remove."""
+  problem this file exists to remove.
+
+  THE ENUM ARM IS NOT COSMETIC. Before it, `enum.Enum` fell through to the `vars()`
+  arm below, and MEASURED `vars(OptOps.TC)` raises
+  `TypeError: vars() argument must have __dict__ attribute` on 3.12 -- an enum MEMBER has
+  no `__dict__`, so `vars` is right to refuse (`getattr(m, "__dict__")` only appears to
+  work because it falls back to the CLASS's dict). So `carg(Ops.SINK, <a KernelInfo with
+  a non-empty applied_opts>)` DIED with a traceback: a kernelized graph could not be
+  emitted at all, and the residual was reported as "an Option dataclass the port cannot
+  read" when the honest answer was "this emitter raises". `Ops`, `AxisType` and
+  `AddrSpace` are matched by exact type above, so this arm is the one that catches
+  `OptOps` (codegen/opt/__init__.py:6) and anything a later commit adds. The member's
+  `name` is its identity -- `list(OptOps)` is TC/SPLIT/PADTO/SWAP and `name` is unique per
+  member -- so `name` is what is compared and `value` is not."""
   if x is None:
     return ATOMS["none"]
   if isinstance(x, DType):
@@ -328,6 +394,8 @@ def _carg(x) -> str:
     return ATOMS["axis"] + x.name
   if isinstance(x, AddrSpace):
     return ATOMS["addr"] + x.name
+  if isinstance(x, enum.Enum):
+    return ATOMS["enum"] + f"{type(x).__name__}.{x.name}"
   if isinstance(x, bool):
     return bo(x)
   if isinstance(x, int):
@@ -340,16 +408,35 @@ def _carg(x) -> str:
     # LENGTH only, and so does the port (ops.bend:913: "bytes BINARY arg; only its length
     # is read"). Comparing the content would be a field the port can never fill, and
     # comparing the length is a real comparison both sides can make.
+    #
+    # NOT NEUTRAL, and the ledger says so on every report. MEASURED, both sides:
+    #   upstream `UOp(Ops.BINARY, (), b"aaaa")` and `..., b"bbbb")` are DIFFERENT objects
+    #   with different keys, and the port interns the SAME arena node for the two
+    #   (index 1 twice, `Arena.next` 2). So the loss is not "we compare less than the
+    #   printer would": the port's IDENTITY does not see the bytes, and two graphs that
+    #   upstream calls different this gate can only report as equal. See `--plant bytes`.
     return ATOMS["bytes"] + str(len(x))
   if isinstance(x, (tuple, list)):
     return tup([_carg(e) for e in x])
   if isinstance(x, UOp):
-    # An ARG may hold a UOp (`Ops.PYLITERAL`'s literal, `Ops.MSELECT`'s matcher --
-    # ops.bend:938-941). The normal form records THAT IT IS A UOP and not WHICH, because
-    # the arg's identity is already carried by the graph's `src` edges and a UOp's repr is
-    # the whole pretty-print problem this file exists to remove. A named limitation, not
-    # something papered over.
-    return ATOMS["str"] + "<uop>"
+    # An ARG may hold a UOp: `Ops.PYLITERAL`'s literal and `Ops.MSELECT`'s matcher
+    # (ops.bend:907-911). This was `ATOMS["str"] + "<uop>"`, which is a STRING atom --
+    # so a PYLITERAL holding a UOp was indistinguishable from a PYLITERAL holding the
+    # five-character string `<uop>`, and `selfcheck`'s distinctness claim did not cover
+    # it because both sides made the same substitution. It is its own letter now.
+    #
+    # THE JUSTIFICATION THE OLD COMMENT GAVE WAS FALSE, and measuring it is the reason
+    # this is a refusal rather than a fix. The comment said "the arg's identity is
+    # already carried by the graph's `src` edges". MEASURED, calling CPython:
+    #   `p = UOp(Ops.PYLITERAL, (), (UOp.const(4),))`  ->  `len(p.src) == 0` and
+    #   `p.toposort() == [p]` -- the nested UOp is in NEITHER. So it has no index in the
+    #   toposort this file numbers arenas by, and there is no arena index to compare. The
+    #   port's only carriers are `ATuple`/`TTuple` of U32, and `ATuple` also serves
+    #   PERMUTE, where the U32s are LITERAL ints (graphcmp.bend's own matmul builds
+    #   `O.ATuple{[0, 2, 1]}` for PERMUTE), so the two readings cannot be told apart from
+    #   the value. Hence: both sides emit `u`, the ledger counts it, and `--plant pyuop`
+    #   shows the resulting node as one-sided rather than as agreement.
+    return ATOMS["uop"]
   if isinstance(x, ParamArg):
     return paramarg(x)
   if type(x).__name__ == "Invalid":      # dtype.py:32; a CONST holding one is a refusal
@@ -357,11 +444,39 @@ def _carg(x) -> str:
   if hasattr(x, "__dataclass_fields__"):
     return f"{type(x).__name__}(" + "".join(
       f"{n}={_carg(getattr(x, n))}" for n in x.__dataclass_fields__) + ")"
-  d = {k: v for k, v in vars(x).items() if k != "grad_fxn"}
-  return f"{type(x).__name__}(" + "".join(f"{k}={_carg(v)}" for k, v in d.items()) + ")"
+  d = getattr(x, "__dict__", None)
+  # `None` here is an object with no instance dict -- a slot-only class, a C type. The
+  # old `vars(x)` raised on those (the enum case above, reached first now); `raw` is the
+  # NAMED refusal the grammar promises, and it is visibly a refusal rather than a value.
+  if d is None:
+    return f"raw({type(x).__name__})"
+  return f"{type(x).__name__}(" + "".join(
+    f"{k}={_carg(v)}" for k, v in d.items() if k != "grad_fxn") + ")"
 
 
 def paramarg(pa: ParamArg) -> str:
+  # Field 11 (`buffer`) is PRESENCE and nothing else, and that is a CHANGE, not a
+  # restatement. It used to be `f"realized{u(pa.buffer)}"`, which is `"realized" + "i" +
+  # str(<Buffer>)` -- MEASURED on `Tensor.empty(4,3).realize().uop`:
+  #     P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+  #       realizedi<buf real:False device:CPU size:12 dtype:dtypes.f32>,b0,N)
+  # so the normal form carried a DEVICE OBJECT REPR, which is the one thing R7 exists to
+  # forbid, and the header claimed otherwise. That repr embeds `dtypes.f32` (the token
+  # that moves between upstream commits, R3) and `real:<bool>` (an allocation state), and
+  # `Buffer` has no `slot` attribute at all -- MEASURED -- so there was never a slot
+  # there to compare. Everything about a Buffer that IS stable and IS meaningful --
+  # `size`, `dtype`, `device`, `offset` -- is ALREADY one of ParamArg's own thirteen
+  # fields and is already compared above, so presence is the finest split the two sides
+  # can both make. `trace_num` is a per-process counter and is never read.
+  #
+  # `N` FOR ABSENCE, and this is a TEXT change from the `unrealized` it replaces -- on
+  # both sides, so the comparison is untouched. Two reasons, both measured. `unrealized`
+  # CONTAINS `realized` as a substring, so any substring scan over an arg counts the
+  # absent case as a present one. And it starts with the ledger's `u`, so at a value
+  # position -- which is exactly where it sits -- `at_value` counts a nested UOp that is
+  # not there. `selfcheck` asserts the collision is gone. The uniform `N` is also what
+  # the other six `Maybe` fields of this same record already render, so the record has
+  # ONE spelling for absence instead of two.
   return "P(" + ",".join([
     u(pa.slot), dt(pa.dtype),
     u(pa.size) if pa.size is not None else ATOMS["none"],
@@ -372,17 +487,42 @@ def paramarg(pa: ParamArg) -> str:
     dev(pa.device),
     bo(pa.volatile),
     "n(" + u(pa.image[0]) + "," + u(pa.image[1]) + ")" if pa.image is not None else ATOMS["none"],
-    f"realized{u(pa.buffer)}" if pa.buffer is not None else "unrealized",
+    ATOMS["buf"] if pa.buffer is not None else ATOMS["none"],
     bo(pa.bind_on_realize),
     _carg(pa.val)]) + ")"
 
 
 def cshape(n: UOp) -> str:
+  """R4. Three values, and MEASURED 2026-10-03: one of them is DEAD on this side.
+  `UOp.shape` is a property that raises IFF `_shape is None` (ops.py:455), so it NEVER
+  RETURNS `None` and the `N` arm below cannot fire. Probed over every op in the upstream
+  no-shape list (IF BARRIER SINK REWRITE_ERROR ENDIF BACKEDGE GROUP LINEAR PROGRAM SOURCE,
+  ops.py:331-338) plus a void `INS` and a `PYLITERAL`: in all twelve, `_shape is None` AND
+  `shape` raises (`runs/graphcmp/probe/p9-shape-none.py`).
+
+  The arm is KEPT and counted rather than deleted, because a deleted branch is a claim and
+  a counter is a measurement: `SHAPE_NONE_HITS` is printed on every report, so "this never
+  fires" is asserted by the run that says so instead of by a comment that can rot.
+
+  THE COLLISION THIS EXPOSED, which is the finding and not the fix. The bend side spells
+  "the op has no shape" as `N`, so the two sides were using ONE letter for TWO different
+  facts and only the py side's copy was unreachable. It stayed invisible until a graph
+  with a shape-less node existed: `--graph sink` (added for this unit) is the first, and it
+  reported `MISMATCH SINK py#2 vs bend#2 shape py=R bend=N` -- a rung-1 field mismatch on a
+  node whose CORE MATCHED, which by this file's own measured theorem cannot mean the graphs
+  differ. It means the two `_shape` implementations disagree, and here is which one is
+  wrong: upstream's `shape` RAISES for every no-shape op, so the faithful rendering of
+  "no shape" is `R` on both sides, and graphcmp.bend now emits `R` for its `Some{None}`.
+  The port's OTHER no-Derived state (the fold produced nothing for this node) is a
+  port-only fact with no upstream counterpart at all, and it gets its own atom, `?`, so a
+  fold that stops settling cannot read as an agreement with a raise."""
+  global SHAPE_NONE_HITS
   try:
     shp = n.shape
   except RuntimeError:
     return "R"
   if shp is None:
+    SHAPE_NONE_HITS += 1
     return "N"
   return "(" + ",".join("U" if isinstance(d, UOp) else i64(d) for d in shp) + ")"
 
@@ -424,7 +564,37 @@ def g_reduce():
   return Tensor.empty(4, 8).sum(axis=1).uop
 
 
-GRAPHS = {"matmul": g_matmul, "reduce": g_reduce}
+def g_buffer():
+  """`Tensor.empty(4,3).realize().uop` -- MEASURED: five nodes, BUFFER CONST CONST STACK
+  RESHAPE, the ALLOC having become a BUFFER. This is the graph that exercises `ParamArg`'s
+  ELEVENTH field, which no lazy graph can carry, so the `z` atom is diffed for real rather
+  than asserted in a comment. Its ParamArg is the same as the matmul's ALLOC except that
+  `buffer` is a device `Buffer` instead of None.
+
+  MEASURED, and it is why the fixture is not the matmul with one word changed:
+  `Tensor.empty(4,3)` builds `ALLOC(ParamArg(slot=0, ..., bind_on_realize=True))` and
+  `.realize()` replaces it with `BUFFER(ParamArg(slot=1, ..., buffer=<Buffer>,
+  bind_on_realize=False))`. Realize MINTS A FRESH ParamArg -- `UOp.new_buffer`,
+  ops.py:1208, `if slot is None: slot = next(UOp.unique_num)` -- so a realized buffer's
+  slot is not the ALLOC's slot and its `bind_on_realize` is not the ALLOC's."""
+  from tinygrad import Tensor
+  t = Tensor.empty(4, 3)
+  t.realize()
+  return t.uop
+
+
+def g_sink():
+  """`UOp(Ops.SINK, (UOp.const(4),), KernelInfo())` -- the graph that exercises the SINK
+  arg, and so the four-slot `kI(..)` and the `R` shape value (MEASURED: `UOp.shape` on a
+  SINK raises `RuntimeError`, ops.py:455, so the shape column is `R` and not `N`). All
+  five `KernelInfo` fields are at their defaults, which is the only value BOTH sides can
+  produce: the port's `KernelInfo.of()` is `{"test", Nil{}, None{}, 0}` and no port file
+  ever writes a non-empty option list."""
+  from tinygrad.uop.ops import KernelInfo, UOp
+  return UOp(Ops.SINK, (UOp.const(4),), KernelInfo())
+
+
+GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink}
 
 _BASE: dict[str, UOp] = {}
 
@@ -532,7 +702,49 @@ def plant_shape(ast: UOp) -> UOp:
                        lambda n: UOp(Ops.STACK, src=(n.src[1], n.src[0])) if n is st else n)
 
 
-PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap, "shape": plant_shape}
+def plant_bytes(ast: UOp) -> UOp:
+  """TWO `Ops.BINARY` nodes of the SAME LENGTH with DIFFERENT CONTENT, hung off the root.
+
+  This is the `bytes` residual made into a REPORTED MISMATCH. Before it, a length-only
+  comparison was invisible: two graphs differing only in blob content scored identical, and
+  the reason was stronger than "the printer shows less" -- MEASURED, the port's
+  `ABlob{4}` makes the two the SAME arena node (`Arena.next` 2 after two inserts), while
+  upstream's `UOp(Ops.BINARY, (), b"aaaa")` and `..., b"bbbb")` are different objects with
+  different keys (`tinygrad/uop/ops.py:201` keys on `arg`). So this plant is expected to
+  report the two nodes as ONLY-PY, because the port cannot express the second one at all.
+  That is the point: an invisible hole has become a row."""
+  b1 = UOp(Ops.BINARY, (), b"aaaa")
+  b2 = UOp(Ops.BINARY, (), b"bbbb")
+  return UOp(Ops.SOURCE, src=(ast, b1, b2), arg=None)
+
+
+def plant_pyuop(ast: UOp) -> UOp:
+  """A `PYLITERAL` whose arg holds a `UOp`, hung off the root. This is the nested-UOp
+  residual made into a REPORTED MISMATCH. `at_value(u, "u")` counts the refusal and
+  `SHAPE_NONE_HITS`-style the row shows the node as ONLY-PY, because the port has no
+  `Arg` variant for a UOp and its `ATuple` cannot be told apart from PERMUTE's literal
+  ints. MEASURED that the nested UOp is in neither `src` nor `toposort`, so the differ
+  could not have resolved it even if the port could hold it."""
+  return UOp(Ops.PYLITERAL, src=(ast,), arg=(UOp.const(4),))
+
+
+def plant_opt(ast: UOp) -> UOp:
+  """A `SINK` carrying a NON-DEFAULT `KernelInfo`: two `applied_opts` and a non-empty
+  `opts_to_apply`. This is the `KernelInfo` residual made into a REPORTED MISMATCH, and it
+  is also the regression row for the emitter CRASH: before the `enum.Enum` arm,
+  `carg(Ops.SINK, ...)` raised `TypeError: vars() argument must have __dict__ attribute`
+  on this exact value, so this plant is the smallest thing in the file that reproduces it.
+  MEASURED: `OptOps` is a plain `Enum` and an enum MEMBER has no `__dict__`, so `vars()`
+  is right to refuse."""
+  from tinygrad.codegen.opt import Opt, OptOps
+  from tinygrad.uop.ops import KernelInfo
+  ki = KernelInfo(name="plant", applied_opts=(Opt(OptOps.TC, 0, 4), Opt(OptOps.SWAP)),
+                  opts_to_apply=(Opt(OptOps.PADTO, 1),), beam=2)
+  return UOp(Ops.SINK, src=(ast,), arg=ki)
+
+
+PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap, "shape": plant_shape,
+          "bytes": plant_bytes, "pyuop": plant_pyuop, "opt": plant_opt}
 
 
 def emit_py(graph: str, plant: str | None) -> list[str]:
@@ -581,6 +793,10 @@ def emit_bend(dev: str, graph: str, tries: int = 5,
   Making the argument required turns a future omission into a TypeError.
 
   `probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
+  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
+  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
+  is exactly the guard that does not work."""
+  """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
   nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
   20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
   is exactly the guard that does not work."""
@@ -706,6 +922,109 @@ def devnames(lines: list[str]) -> set[str]:
   return out
 
 
+# ============================================================================
+# THE LEDGER. Every construct the normal form emits that is NOT a full structural
+# comparison, with the reason and the count on BOTH sides, PRINTED ON EVERY REPORT.
+#
+# WHY IT EXISTS. A residual that is INVISIBLE is worse than one that is red, because an
+# absent disagreement reads as an agreement. Each entry below was a thing the differ
+# could not see, and the report said nothing -- so a graph full of them scored the same
+# as a clean one. A fixed list with a `0/0` count is a LEDGER rather than a variable
+# list: a construct that is PRESENT and lossy is a printed fact, and a construct that is
+# ABSENT is a printed `0`, which is the one thing here that cannot be mistaken for
+# "not started".
+#
+# Every entry was MEASURED; the measurement is named in the reason and the probe is under
+# `runs/graphcmp/probe/`. Nothing in this table is an assertion about a docstring.
+#
+# The second element is the FIELD INDEX each marker can appear in, because a marker that
+# lives in `shape` is not in `arg` and scanning the wrong one is a silent zero.
+WIRE = ("id", "op", "dtype", "shape", "depth", "tag", "arg", "src")
+LEDGER = (
+  ("z", 6, "a realized BUFFER: device-object PRESENCE only",
+   "Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/"
+   "device/offset are already ParamArg fields 2/3/8 and ARE compared"),
+  ("y", 6, "a bytes arg: LENGTH only",
+   "upstream gives two same-length blobs different keys; the port interns them as ONE "
+   "node (measured) -- this is a port IDENTITY divergence, not only a normal-form loss"),
+  ("u", 6, "a UOp nested in an arg: identity NOT compared",
+   "measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no "
+   "arena index here; the port's ATuple also spells PERMUTE's literal ints"),
+  ("q", 6, "an applied option the port cannot resolve: COUNT only",
+   "ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are "
+   "`Opt` dataclasses and no port file writes a non-empty list"),
+  ("X!", 6, "an AxisType member with no counterpart at this tree",
+   "measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps "
+   "AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files"),
+  ("BAD", 6, "the port's arena bottom: not a node",
+   "ops.bend:1154 -- a read of an index that was never interned"),
+  ("?", 3, "the port's fold produced no shape at all for this node",
+   "PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple "
+   "(ops.py:455), so upstream has no third state. `?` cannot be produced by the py side"),
+  ("E", 6, "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
+   "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: `vars()` "
+   "raises on an enum member, so a SINK with a non-empty applied_opts could not be "
+   "emitted at all"),
+)
+
+
+def at_value(arg: str, marker: str) -> int:
+  """How many times `marker` sits where a VALUE starts -- offset 0, or right after one of
+  `( , : =`. `value_starts` below is the same scan with the extra rule that a NAME follows
+  the letter; these atoms are a letter (or a two-character marker) and nothing else, so
+  that rule would count zero. It is what keeps a marker inside a string payload
+  (`sNULL`, `s<name>`) from being counted.
+
+  `=` IS a value-start delimiter, and leaving it out was MEASURED to cost a count: the
+  dataclass arm renders `name=value`, so `Opt(op=EOptOps.TC, ...)` puts every enum atom
+  after an `=` and `--plant opt` reported `RESIDUALS IN THIS RUN: none` while the row it
+  printed plainly contained `EOptOps.TC`. A ledger that misses its own row is worse than no
+  ledger, which is the whole reason it exists."""
+  n, i = 0, 0
+  while True:
+    i = arg.find(marker, i)
+    if i < 0:
+      return n
+    if i == 0 or arg[i - 1] in "(,:=":
+      n += 1
+      i += len(marker)
+    else:
+      i += 1
+
+
+def ledger(lines: list[str]) -> dict[str, int]:
+  """`{marker: occurrences}` over the field each marker can appear in. The other seven
+  fields are plain op/dtype/shape/depth/tag/src texts with nothing this file renders
+  lossily in them, and scanning them would be scanning for nothing."""
+  out = {m: 0 for m, _, _, _ in LEDGER}
+  for ln in lines:
+    f = unchunks(ln)
+    for m, fi, _, _ in LEDGER:
+      out[m] += at_value(f[fi], m)
+  return out
+
+
+def ledger_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
+  out = ["# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a "
+         "fact, not an absence:"]
+  for m, fi, what, why in LEDGER:
+    out.append(f"#   {m:<3} {WIRE[fi]:<5} py={py[m]:<4} bend={bd[m]:<4} {what}")
+    out.append(f"#       {why}")
+  return out
+
+
+def residual_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
+  """The subset that is PRESENT on either side, so a reader does not have to scan the
+  ledger's `0`s to find the live losses. Anything non-zero here is a known blind spot
+  this run's agreement does NOT cover."""
+  live = [(m, what) for m, _, what, _ in LEDGER if py[m] or bd[m]]
+  if not live:
+    return ["# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides."]
+  return ["# RESIDUALS IN THIS RUN: " + ", ".join(f"{m}={py[m]}/{bd[m]} ({what})"
+                                                   for m, what in live) +
+          " -- agreement below does NOT cover these."]
+
+
 def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]]:
   """(nodes by id, nodes by core). The core is computed from the CHILDREN's cores, so the
   walk is a topological one; `order` is derived here rather than trusted from the emitter,
@@ -768,9 +1087,18 @@ def mismatches(a: Node, b: Node) -> list[str]:
   return out
 
 
-def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
-  _, pcore = build(py, "py")
-  _, bcore = build(bd, "bend")
+def report(py: list[str], bd: list[str], plant: str | None,
+           lname: str = "py", rname: str = "bend") -> tuple[int, str]:
+  """`lname`/`rname` label the two sides in every line they appear in. They are PARAMETERS,
+  not the literals "py"/"bend", because MEASURED: hardcoding them made `cross` and `control`
+  -- which deliberately compare a side against ITSELF and one graph against another -- print
+  "ONLY ON THE PYTHON SIDE" for nodes that are only on the BEND side. A wrong label in a
+  report is not cosmetic here: `cross` is the check that decides whether the differ can see
+  a difference at all, and a reader who is told the wrong side sent a node stops trusting
+  the rest of the block. Defaulted to the two real sides so every existing call is unchanged.
+  """
+  _, pcore = build(py, lname)
+  _, bcore = build(bd, rname)
   pnodes = {n.nid: n for ns in pcore.values() for n in ns}
   bnodes = {n.nid: n for ns in bcore.values() for n in ns}
 
@@ -782,7 +1110,7 @@ def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
   for k in shared:
     for a, b in zip(pcore[k], bcore[k]):
       for d in mismatches(a, b):
-        hard.append(f"MISMATCH {a.op:<9} py#{a.nid} vs bend#{b.nid}  {d}")
+        hard.append(f"MISMATCH {a.op:<9} {lname}#{a.nid} vs {rname}#{b.nid}  {d}")
 
   # RUNG 2, ONE-TO-ONE. Pairing every leftover with every other leftover that shares a
   # `loose` key produces a cartesian product: all five RESHAPEs of this graph share one
@@ -808,22 +1136,31 @@ def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
   only_p = [n for n in only_p if not any(n is a for a, _ in pairs)]
   only_b = [n for n in only_b if id(n) not in taken_b]
 
-  o = [f"# py rows={len(pnodes)}  bend rows={len(bnodes)}  plant={plant or 'none'}",
-       f"# devices py={sorted(devnames(py))} bend={sorted(devnames(bd))}  "
+  o = [f"# {lname} rows={len(pnodes)}  {rname} rows={len(bnodes)}  plant={plant or 'none'}",
+       f"# devices {lname}={sorted(devnames(py))} {rname}={sorted(devnames(bd))}  "
        f"(both sides emit the NAME: CPython's is `Compiled.device`, the port's is "
-       f"`uop/render.bend:363` on the tag)",
-       f"# SHARED cores={len(shared)}  ONLY-PY={len(only_p)}  ONLY-BEND={len(only_b)}  "
-       f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"]
+       f"`uop/render.bend:363` on the tag)"]
+  o += residual_lines(ledger(py), ledger(bd))
+  o += [f"# SHARED cores={len(shared)}  ONLY-{lname.upper()}={len(only_p)}  "
+        f"ONLY-{rname.upper()}={len(only_b)}  "
+        f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"]
   o += hard
   if soft:
     o.append("# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:")
     o += soft
   if only_p:
-    o.append(f"# ONLY ON THE PYTHON SIDE ({len(only_p)}), IN FULL:")
-    o += [n.full("py") for n in sorted(only_p, key=lambda n: int(n.nid))]
+    o.append(f"# ONLY ON THE {lname.upper()} SIDE ({len(only_p)}), IN FULL:")
+    o += [n.full(lname) for n in sorted(only_p, key=lambda n: int(n.nid))]
   if only_b:
-    o.append(f"# ONLY ON THE BEND SIDE ({len(only_b)}), IN FULL:")
-    o += [n.full("bend") for n in sorted(only_b, key=lambda n: int(n.nid))]
+    o.append(f"# ONLY ON THE {rname.upper()} SIDE ({len(only_b)}), IN FULL:")
+    o += [n.full(rname) for n in sorted(only_b, key=lambda n: int(n.nid))]
+  o += ledger_lines(ledger(py), ledger(bd))
+  # The dead shape arm, MEASURED on this run rather than asserted in a comment. `shape`
+  # never returns None upstream (ops.py:455 raises instead), so this must read 0; a
+  # non-zero here means the normal form's `N` is live and the two sides disagree about
+  # what it means, which is the collision `--graph sink` found.
+  o.append(f"# shape-N hits py={SHAPE_NONE_HITS} (expected 0: `UOp.shape` RAISES instead "
+           f"of returning None, ops.py:455 -- probed over all 12 no-shape ops)")
   same = not hard and not soft and not only_p and not only_b
   o.append(f"# VERDICT: {'AGREE' if same else 'DISAGREE'}")
   return (0 if same else 1), "\n".join(o)
@@ -850,6 +1187,27 @@ def selfcheck() -> int:
       bad.append(f"non-ASCII accepted: {s!r}")
     except ValueError:
       pass
+  # THE LEDGER MARKERS MUST BE FINDABLE AND MUST NOT COLLIDE WITH THE OTHER SPELLINGS.
+  # `unrealized` used to be the absent-buffer spelling; it CONTAINS `realized` as a
+  # substring and STARTS WITH the ledger's `u`, so at a value position -- exactly where
+  # it sat -- a scan counted the absent case as a present one AND counted a nested UOp
+  # that was not there. Both were MEASURED by writing the scan that way first. The
+  # absence is now `N`, uniform with the other six `Maybe` fields of the same record.
+  for m, fi, _, _ in LEDGER:
+    if m not in ATOMS.values() and m not in ("X!", "BAD", "?"):
+      bad.append(f"ledger marker {m!r} is neither an atom letter nor a declared literal")
+    if m in ATOMS["none"] and m != ATOMS["none"]:
+      bad.append(f"ledger marker {m!r} collides with the absence atom")
+    if not 0 <= fi < len(WIRE):
+      bad.append(f"ledger marker {m!r} names field {fi}, outside the {len(WIRE)} fields")
+  if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "y") != 1:
+    bad.append("at_value does not count a bytes atom at a value position")
+  if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "u") != 1:
+    bad.append("at_value does not count exactly one nested-UOp atom")
+  if at_value("sAXIS!no", "X!") != 0:
+    bad.append("at_value counted a marker inside a string payload")
+  if at_value("op=EOptOps.TC", "E") != 1:
+    bad.append("at_value misses a dataclass value after '=' (--plant opt counted 0)")
   print("# SELFCHECK: " + ("OK" if not bad else "FAIL"))
   for b in bad:
     print("#   " + b)
@@ -891,12 +1249,20 @@ def main() -> int:
       print("\n".join("# " + n for n in notes), file=sys.stderr)
       print("\n".join(rows))
     return 0
+  # `--bend-probe` is read ONCE, here, and every bend emission goes through it. MEASURED
+  # before this line existed: the flag was parsed and then used by `diff` alone, so
+  # `control --bend-probe X` and `cross --bend-probe X` silently ran the REAL probe. That is
+  # the same defect as the `--graph` one this file was measured to already have -- a flag
+  # that is accepted and then does not reach the code it names -- and it is worse in a
+  # probe harness, because the whole point of a mutant probe is to be load-bearing somewhere.
+  probe = pathlib.Path(a.bend_probe) if a.bend_probe else None
+
   if a.cmd == "control":
     # A differ never seen to agree with ITSELF is not known to work.
     ok = True
     for name, get in (("py", lambda: emit_py(a.graph, a.plant)),
-                      ("bend", lambda: emit_bend(a.dev, a.graph)[0])):
-      rc, txt = report(get(), get(), a.plant)
+                      ("bend", lambda: emit_bend(a.dev, a.graph, probe=probe)[0])):
+      rc, txt = report(get(), get(), a.plant, name, name)
       print(f"== CONTROL {name} vs itself: rc={rc}\n{txt}")
       ok = ok and rc == 0
     print(f"# CONTROL VERDICT: {'OK' if ok else 'THE DIFFER DISAGREES WITH ITSELF'}")
@@ -906,12 +1272,27 @@ def main() -> int:
     # on a side against itself; this shows it is LOUD on two DIFFERENT graphs. A differ that
     # answers AGREE to `matmul` and to `sum(axis=1)` is worse than no differ, and the only
     # way to know it is not that one is to ask.
+    #
+    # BOTH SIDES, and that is the fix rather than a nicety. MEASURED: `cross` used to ask
+    # only the py side, and the py side is the one that cannot have this bug -- it is handed
+    # `graph` by `emit_py` and selects on it. The bend side is the one that can silently
+    # IGNORE its graph argument, and it did: `emit_bend` defaulted `graph` to `"matmul"` and
+    # every call site passed only `dev`, so asking the bend side to render `reduce` returned
+    # matmul's 18 nodes and `diff --graph reduce` reported DISAGREE with no cause. A check
+    # that only exercises the side which cannot fail is not a check. Now the bend side is
+    # asked for BOTH graphs and compared, so a `graph` argument that stops reaching it is
+    # LOUD here instead of silent in `diff`.
     other = [g for g in sorted(GRAPHS) if g != a.graph]
-    rc, txt = report(emit_py(a.graph, None), emit_py(other[0], None), f"{a.graph}-vs-{other[0]}")
-    print(txt)
-    print(f"# CROSS VERDICT: {'OK -- it disagrees' if rc else 'IT AGREED WITH A DIFFERENT GRAPH'}")
-    return 0 if rc else 1
-  bd, notes = emit_bend(a.dev, a.graph, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
+    ok = True
+    for name, get in (("py", lambda g: emit_py(g, None)),
+                      ("bend", lambda g: emit_bend(a.dev, g, probe=probe)[0])):
+      rc, txt = report(get(a.graph), get(other[0]), f"{a.graph}-vs-{other[0]}",
+                       f"{name} {a.graph}", f"{name} {other[0]}")
+      print(txt)
+      ok = ok and bool(rc)
+    print(f"# CROSS VERDICT: {'OK -- it disagrees' if ok else 'IT AGREED WITH A DIFFERENT GRAPH'}")
+    return 0 if ok else 1
+  bd, notes = emit_bend(a.dev, a.graph, probe=probe)
   py = emit_py(a.graph, a.plant)
   # THE PRECONDITION. The port's fixture names one device and the py graph carries
   # whatever `--dev` opened, so the two device sets must be EQUAL before the cores mean

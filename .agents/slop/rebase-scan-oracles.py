@@ -26,6 +26,14 @@
   oracle that imports tinygrad exited 1, and the failures were recorded as measurements. So:
   NOTHING IS CACHED UNLESS IT PRODUCED ROWS. wire-rows.py only writes on success too.
 
+  ⚠ AND GUARDING THE WRITE WAS NOT ENOUGH, MEASURED. Those 82 `{}` files were still on disk when
+  the write-side rule landed, and a reader does not care how old a rule is: `read_fresh_cache`
+  answered "fresh" for every one of them, because a fresh file holding `{}` is not stale. EIGHT
+  of the 38 wired pairs therefore measured 0 shared row names and `main()` skipped all eight in
+  SILENCE -- a lane that failed hours ago, skipped without a word. So the READ side refuses an
+  empty cache too, and `cached()` below is where that half lives. One rule, two halves: A CACHE
+  THAT RECORDS NOTHING IS NOT A READING.
+
   And the row parser is the GATE'S (`rebase-gate.py`'s `rows()`), imported, not copied. This
   tool's whole output is `shared`/`disagree` counts that are read as claims about what
   rebase-gate.py will say; two parsers make that a coincidence instead of a measurement.
@@ -43,7 +51,7 @@ import os, pathlib, re, subprocess, sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from wire_parse import read_fresh_cache, stripped_env, write_cache
+from wire_parse import cache_file, read_fresh_cache, stripped_env, write_cache
 
 REPO = HERE.parent.parent
 SLOP = REPO / ".agents" / "slop"
@@ -79,16 +87,38 @@ def oracle_key(spec):
 
 
 def cached(key, src):
-  """This tool's ONE cache reader, and it is wire-rows.py's: (rows, 'fresh'|'missing'|'stale').
-  Returns None for a cache that may not be believed, so the caller has to run the lane."""
-  return read_fresh_cache(CACHE, key, src)
+  """This tool's ONE cache reader. It is wire-rows.py's -- (rows, 'fresh'|'missing'|'stale') --
+  plus one state of this tool's own, 'empty', and it returns None for anything that may not be
+  believed, so the caller has to run the lane.
+
+  ⚠ 'empty' IS NOT A SUBTLETY, IT IS THE SAME BUG AS THE STALE RULE, AND THE WRITE-SIDE FIX
+  ALONE DID NOT CLOSE IT. store() below refuses to WRITE an empty cache, so every one of the 82
+  `{}` files already sitting in /tmp/rebase-scan predates that rule -- and `read_fresh_cache`
+  answers "fresh" for all of them, because a fresh file that holds `{}` is not stale. Measured on
+  this tree with the write-side rule in place and the read side unfixed: EIGHT of the 38 wired
+  pairs measure 0 shared row names, and all eight are an oracle cache holding `{}`. Not one of
+  them printed anything. `main()` saw an empty dict and `continue`d, so a lane that FAILED hours
+  ago was skipped in SILENCE -- which is the reading the no-cache-on-failure rule exists to
+  forbid, arrived at from the other direction.
+
+  So the rule is one sentence and it has two halves: A CACHE THAT RECORDS NOTHING IS NOT A
+  READING, exactly as a cache older than its source is not a reading. `read_fresh_cache` owns the
+  mtime half for wire-rows.py as well; this half is local because wire-rows.py has no empty files
+  to be wrong about -- it never wrote any."""
+  d, why = read_fresh_cache(CACHE, key, src)
+  return (None, "empty") if why == "fresh" and not d else (d, why)
 
 
-def say_stale(key, src):
-  """Name BOTH files and which of them is older. `wire-rows.py` says "the cache is older than
-  the source", which leaves the reader to guess which of the two moved."""
-  print(f"  ({key}: cache {CACHE / (key.replace('/', '_') + '.json')} is OLDER than its source "
-        f"{src}; not using it)")
+def say_not_used(key, why, src):
+  """Name BOTH files and which of them is older, or name the file that holds nothing.
+  `wire-rows.py` says "the cache is older than the source", which leaves the reader to guess which
+  of the two moved; and a bare `{}` names neither the file nor the run that produced it."""
+  f = cache_file(CACHE, key)
+  if why == "empty":
+    print(f"  ({key}: cache {f} holds NO ROWS, which records a FAILED run rather than an empty "
+          f"one; not using it, and the lane is re-run)")
+  else:
+    print(f"  ({key}: cache {f} is OLDER than its source {src}; not using it)")
 
 
 def run(argv, env=None, timeout=240):
@@ -106,24 +136,32 @@ def run(argv, env=None, timeout=240):
 
 
 def bend_rows(port):
-  """One .bend lane, from a cache that is REFUSED when it is older than the .bend it came from."""
+  """One .bend lane, from a cache REFUSED when it is older than the .bend it came from, and
+  refused when it holds nothing.
+
+  ⚠ THE BUDGET IS `wire-rows.py`'s 1800s, AND IT WAS RAISED BECAUSE A CACHE NEVER INVALIDATED.
+  With the stale rule in place for the first time, `runtime/support/elf.bend` was finally re-run
+  and TIMED OUT at the 600s this function used -- and a lane that times out is a lane that reports
+  no rows, which is the 0-rows-means-nothing trap this file already guards against at 1 run in 20.
+  `wire-rows.py` has always spent 1800s on the same file, so 600s was never a measured number
+  here; it was a number nobody had needed yet."""
   CACHE.mkdir(exist_ok=True)
   src = REPO / port
   d, why = cached(port_key(port), src)
   if why == "fresh":
     return d
-  if why == "stale":
-    say_stale(port, src)
-  r = run(["./bin/bend", str(src)], timeout=600)
+  if why != "missing":
+    say_not_used(port, why, src)
+  r = run(["./bin/bend", str(src)], timeout=1800)
   # 0 rows is INDISTINGUISHABLE from "this port has no main", and bend's machine stack
   # overflows on roughly 1 run in 20 and sometimes prints ZERO rows. A probe that reports 0
   # rows is therefore re-run once before being believed, and a second 0 is believed.
   d = rows(r.stdout) if r is not None else {}
   if not d and r is not None:
-    r2 = run(["./bin/bend", str(src)], timeout=600)
+    r2 = run(["./bin/bend", str(src)], timeout=1800)
     d2 = rows(r2.stdout) if r2 is not None else {}
     print(f"  ({port} printed 0 rows, re-ran: {len(d2)})" if d2 else
-          f"  ({port} printed 0 rows twice -- trusting it)")
+          f"  ({port} printed 0 rows twice -- trusting it, and caching NOTHING: see store())")
     d = d or d2
   store(port_key(port), d, port)
   return d
@@ -138,8 +176,8 @@ def oracle_rows(spec):
   d, why = cached(oracle_key(spec), src)
   if why == "fresh":
     return d
-  if why == "stale":
-    say_stale(oracle_key(spec), src)
+  if why != "missing":
+    say_not_used(oracle_key(spec), why, src)
   d = oracle_run(spec)
   store(oracle_key(spec), d, spec)
   return d

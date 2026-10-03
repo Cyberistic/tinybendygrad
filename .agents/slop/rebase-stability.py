@@ -22,9 +22,9 @@ So --record must be gated on MEASUREMENT, and this is the measurement. For every
                       as interpreted != native. This is a free second witness on the lane that
                       `same` alone would rate as stable twice in a row.
 
-RECORDABLE MEANS ALL FIVE OF THESE. Each one is here because a weaker test has already rated a
-lane as stable when it was not, and the strongest instance of that is this file's own first
-draft:
+RECORDABLE MEANS ALL SEVEN OF THESE. Each one is here because a weaker test has already rated a
+lane as stable when it was not, and the two strongest instances are THIS FILE'S OWN FIRST
+DRAFT -- it shipped twice, once for each half of GUARD 4.
 
   1 EVERY LANE EXITED 0, IN BOTH RUNS.
     ⚠ THE FIRST DRAFT OF THIS FILE REPORTED `dead_lanes` AND DID NOT USE THEM. So
@@ -100,6 +100,85 @@ def shared_of(rows):
   return out
 
 
+def freeze_hazard(port, rows_by_lane):
+  """RULE 7: a recorded row whose value is a property of the MACHINE or the INTERPRETER rather
+  than of the ported code. Returns a reason string, or "" if there is none.
+
+  Rules 1-6 are all about the two runs AGREEING. This one is about them agreeing for a reason
+  that has nothing to do with the port, and it cannot be derived from the measurement, so it is
+  a named list with the offending ROWS attached -- and every entry below was read out of the
+  measured evidence, not inferred from a filename.
+
+  WHY IT IS A SEPARATE RULE. GUARD 1 is an ABSOLUTE comparison over every recorded lane, so a
+  recorded row that moves for any reason other than a port change produces RE-PORTED on a port
+  that did not move. Two of these are not hypothetical, and this project has already published
+  three contradictory numbers today over exactly one of them:
+
+    * `runtime/ops_python.bend` -- 182 of the oracle's 241 rows are ungated, and among them
+      `py_version_tuple`, which the oracle emits as `tuple(sys.version_info[:2])`
+      (ops-python-render-oracle.py:64). MEASURED value in this tree: `(3, 12)`. It is a literal
+      reading of the INTERPRETER THAT RAN THE ORACLE -- `.venv` is 3.12 and PATH's python3 is
+      3.14. Repoint the venv, or run the gate under the other interpreter, and this row moves on
+      a port nobody edited. A baseline containing it is a tripwire wired to the environment.
+
+    * `runtime/ops_cpu.bend` -- 17 of 20 oracle rows are ungated, and they are HOST answers:
+      MEASURED `findlib_m=/usr/lib/libm.dylib`,
+      `findlib_rt=/System/Library/Frameworks/System.framework/System`,
+      `findlib_objc=None`, plus `# OSX=True WIN=False` straight from
+      `from tinygrad.helpers import OSX, WIN`. An OS point release or a different machine moves
+      them. rebase-gate.py already names them "HOST answers ... which the port cannot be expected
+      to reproduce off-Mac".
+
+  The third entry is the same species with a different trigger -- not environment, but VOLUME:
+
+    * `runtime/ops_amd.bend` -- 601 ungated oracle rows of 1010 (59%). rebase-gate.py's own
+      comment says "Not --record'ed: the oracle emits 601 further rows, and GUARD 1 would freeze
+      them". Those rows are `amd_alloc_*` / `amd_arch_*`; none of them is gated by the port, so a
+      change in any of them is invisible to GUARD 4 and visible only as a false RE-PORTED.
+    * `renderer/amd/generate.bend` -- 53 ungated oracle rows of 779: `parse_xml`'s decisions over
+      the real pinned ISA XML, `extract_pcode`'s dict, module-order tables (`order archs`), the
+      `pdf error class`. Same reason, and the briefing names it MUST-NOT-RECORD.
+
+  The entry is CHECKED AGAINST THE MEASUREMENT rather than trusted: if the named rows are no
+  longer present, or are no longer ungated, that is reported as a STALE entry rather than
+  silently passing. A hazard list that cannot notice it has stopped applying is worse than no
+  list, because it reads as a live finding."""
+  entry = FREEZE_HAZARD.get(port)
+  if not entry:
+    return ""
+  why, witnesses = entry
+  port_rows = set(rows_by_lane.get("interpreted", {}))
+  cpy = sorted(k for k in rows_by_lane if k.startswith("cpython:"))
+  if not cpy:
+    return f"STALE FREEZE_HAZARD entry: {why} -- but no cpython lane was measured"
+  missing = [w for w in witnesses if not any(w in set(rows_by_lane[k]) - port_rows for k in cpy)]
+  if len(missing) == len(witnesses):
+    return (f"STALE FREEZE_HAZARD entry for {port}: none of {witnesses} is an ungated oracle "
+            f"row any more, so the recorded reason ({why}) no longer applies. Re-measure and "
+            "either drop this entry or replace its witnesses")
+  return f"{why} (witness rows present: {', '.join(w for w in witnesses if w not in missing)})"
+
+
+# port: (why it is unrecordable, [ungated oracle rows that prove it -- MEASURED, and re-checked])
+FREEZE_HAZARD = {
+  "tinybendygrad/runtime/ops_python.bend": (
+    "the oracle records sys.version_info as a gate row, so the recording is wired to the "
+    "interpreter rather than to the port",
+    ["py_version_tuple", "py_version_ge_312"]),
+  "tinybendygrad/runtime/ops_cpu.bend": (
+    "the oracle records HOST answers (absolute library paths on THIS machine) as gate rows",
+    ["findlib_m", "findlib_rt", "findlib_objc", "# OSX"]),
+  "tinybendygrad/runtime/ops_amd.bend": (
+    "601 of the oracle's 1010 rows are ungated, so GUARD 1 would freeze 601 rows that no port "
+    "row corroborates",
+    ["amd_arch_ok_11_999", "amd_alloc_vram", "amd_alloc_enomem_0"]),
+  "tinybendygrad/renderer/amd/generate.bend": (
+    "53 of the oracle's 779 rows are ungated (pinned-ISA parse_xml decisions, extract_pcode's "
+    "dict, module-order tables), so GUARD 1 would freeze them",
+    ["order archs", "arch xml", "ORACLE ROW COUNT"]),
+}
+
+
 def measure(port, oracle, runs=2):
   g = load_gate()
   bend = REPO / port
@@ -143,12 +222,35 @@ def measure(port, oracle, runs=2):
       reasons.append(f"run {i+1}: interpreted != native ({len(d)} row(s)), so at least one bend "
                      f"run was PARTIAL (a stack overflow prints nothing), e.g. {d[:3]}")
 
-  # RULE 5, in both runs.
+  # RULE 5 + 6, in both runs. GUARD 4 RESTATED AS A RECORDING PRECONDITION, and it has TWO
+  # halves, which is exactly how it went half-recorded here:
+  #
+  #   5 ZERO disagreements on every shared lane pair -- a baseline asserts the port and CPython
+  #     agree, so recording a red and reading UNCHANGED off it LAUNDERS the red. Measured, not
+  #     theoretical: this rule is what excluded `codegen/decomp/dtype.bend` (1 shared row
+  #     disagrees, in BOTH runs) and `runtime/ops_python` stays honest only because it is
+  #     checked at all.
+  #   6 EVERY lane pair SHARES AT LEAST ONE ROW NAME. ⚠ THE FIRST DRAFT CHECKED ONLY
+  #     DISAGREEMENT, so an INCOMPARABLE pair passed it: zero disagreements over zero shared
+  #     rows is a vacuous truth, and it is the exact bug this project has paid for seven times.
+  #     It rated `renderer/cstyle.bend` recordable -- 225 stable bend rows, a stable oracle, and
+  #     ZERO shared row names -- which the real gate reports BROKEN ("lane pair(s) share NO row
+  #     names, so they compared nothing"). A baseline for that port would have been a recording
+  #     of silence. "No disagreements" and "compared something" are different claims and the
+  #     precondition needs both.
   for i in range(runs):
     for pair, s in shared_of(seen[i]).items():
-      if s["disagree"]:
+      if not s["shared"]:
+        reasons.append(f"run {i+1}: lane pair `{pair}` shares NO row name, so it compares "
+                       "nothing -- GUARD 4 reports this BROKEN, and a baseline here would be a "
+                       "recording of silence")
+      elif s["disagree"]:
         reasons.append(f"run {i+1}: lane pair `{pair}` DISAGREES on {s['disagree']} of "
                        f"{s['shared']} shared row(s) -- recording this would launder a red")
+
+  haz = freeze_hazard(port, seen[0])
+  if haz:
+    reasons.append(f"FREEZE HAZARD: {haz}")
 
   port_rec = {
     "port": port, "oracle": list(oracle), "runs": runs,

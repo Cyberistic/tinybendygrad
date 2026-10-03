@@ -1,0 +1,11 @@
+########## 6. --plant pyuop ##########
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=19  bend rows=18  plant=pyuop
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: u=1/0 (a UOp nested in an arg: identity NOT compared) -- agreement below does NOT cover these.
+# SHARED cores=18  ONLY-PY=1  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# ONLY ON THE PY SIDE (1), IN FULL:
+  py#19 PYLITERAL dtype=void shape=R depth=i0 tag=N arg=n(u) src=['18']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE

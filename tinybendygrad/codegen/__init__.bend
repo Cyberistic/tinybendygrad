@@ -150,7 +150,7 @@ def graph_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>, wa
 # `pm_dispatch_m`. The reject set is empty (the rules fire on any
 # PARAM/ALLOC with no other nodes in the srcs).
 def pm_post_sched_cache() -> O.PMEntrys:
-  O.PMEntrys{[O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}
+  O.PMEntrys{[O.PMEntry{0, [O.OpsSINK{}], Nil{}}, O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}
 
 # A dummy PARAM that the ctx carries. The minimal printable form is
 # `AParam{slot=N, dtype=int32, ...}`; the rest of the fields default to
@@ -190,10 +190,10 @@ def gr_show.repl.kv(k: String, v: U32) -> String:
 def gr_show.repl.go.bind(t: List<&2, U32>, +m: Map<&2, U32>, acc: String) -> String:
   match t:
     case Nil{}: acc
-    case +v <> rest: gr_show.repl.go.bind(rest, m, String.concat([acc, gr_show.repl.kv(U32.show(v), R.cu32(m, v)), ","]))
+    case +v <> rest: gr_show.repl.go.bind(rest, m, String.concat([acc, gr_show.repl.kv(U32.show(v), R.cu32(m, v)), ", "]))
 
 def gr_show.repl.go.first(t: List<&2, U32>, +m: Map<&2, U32>, +u: U32) -> String:
-  gr_show.repl.go.bind(t, m, gr_show.repl.kv(U32.show(u), R.cu32(m, u)))
+  gr_show.repl.go.bind(t, m, String.concat([gr_show.repl.kv(U32.show(u), R.cu32(m, u)), ", "]))
 
 def gr_show.repl.go(+m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   match topo:

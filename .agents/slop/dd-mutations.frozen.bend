@@ -257,33 +257,29 @@ def f2f_dt(+dt: S.Dt) -> Maybe<&2, S.Dt>:
     case S.Dt{pri, +bits, cls, nm}: f2f_dt.of(dd_is_float(dt), f2f_dt.w(bits))
 
 # ===========================================================================
-# `UOp.const(v, dt)` -- divergence A. THE INTEGER PATH IS `int(val)` AND NOT A
-# WIDTH WRAP, and that is the whole reason the word here is an `H.I64` and not a
-# `U32`.
-#
-# MEASURED, not read off `truncate`: `DType.const` (tinygrad/dtype.py:79-84) ends
-# `... else int(val)`, and `truncate` reaches only the FLOAT branch's
-# `truncate.get(self, float)`. `UOp.const` (uop/ops.py:628-635) is
-# `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`, so the CONST's arg is
-# the raw Python int whatever `dt` is.
-#
-# It is OBSERVABLE, and in both directions. `dd-probe-intern.py`:
-#     UOp.const(-1, dtypes.uint32).src[0].arg   ->  -1
-#     UOp.const(4294967295, dtypes.uint32)     ->  4294967295
-# so dtype.py:32's `lo.const_like(-1)` (uop/ops.py:600-602 -> `UOp.const`) leaves
-# `-1` in the arena even when `lo` is `u32`. A port that wraps to the width stores
-# `4294967295` there, which is the same 32 bits and a DIFFERENT node: the gate
-# reads the word, and `lg6k`/`lg6p` say `C(4294967295)` where CPython says
-# `C(-1)`.
-#
-# `truncate` for the integer dtypes IS a width wrap (tinygrad/dtype.py:298-299,
-# `ctypes.c_int32(x).value`), so a port that modelled IT would be right about the
-# float dtypes and wrong about every integer one. The comment this replaced
-# claimed the opposite.
+# `UOp.const` -- divergence A. `truncate[dt](v)` for an integer dtype is a WIDTH
+# WRAP, so `dd_trunc` is that wrap: a signed dtype reads the word as a two's
+# complement `int32` and an unsigned one does not. Every call site passes a
+# value that already fits the width, so the wrap is only the extension.
 # ===========================================================================
 
-def dd_const.int(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
-  +c = O.UOp.const(ar, O.CInt{v})
+def dd_is_sgn(+dt: S.Dt) -> Bool:
+  match dt:
+    case S.Dt{pri, bits, +cls, nm}: Bool.not(S.Cls.is_unsigned(cls))
+
+def dd_trunc(+v: U32, sgn: Bool) -> U32:
+  match sgn:
+    case True{}: Bool.pick(U32, H.i32_is_neg(v), H.i32_neg(v), v)
+    case False{}: v
+
+def dd_const.i64(lo: U32, sgn: Bool) -> H.I64:
+  match sgn:
+    case True{}: H.i64_of_i32(lo)
+    case False{}: H.i64_of_hi_lo(0, lo)
+
+def dd_const.int(+ar: O.Arena, +v: U32, +dt: S.Dt) -> O.Found:
+  +w = dd_trunc(v, dd_is_sgn(dt))
+  +c = O.UOp.const(ar, O.CInt{dd_const.i64(w, dd_is_sgn(dt))})
   O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{dt}, O.TNone{})
 
 # `UOp.const(v)` with NO dtype: `from_py` answers `weakint`, the `.cast` folds,
@@ -304,29 +300,8 @@ def dd_cf(+ar: O.Arena, +v: F32, +dt: S.Dt) -> O.Found:
 # a PARAMETER (`xdt` in `l2i`, `fr` in `f2f_clamp`) because `ops.bend`'s arena
 # has no dtype field -- `dtype_from_uop` is `fold.bend`'s job.
 
-def dd_clike(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
+def dd_clike(+ar: O.Arena, +v: U32, +dt: S.Dt) -> O.Found:
   dd_const.int(ar, v, dt)
-
-# `x.bitcast(dt)` -- mixin/dtype.py:53, `return self if self.dtype == dt else
-# self._wrap_uop(self._uop.alu(Ops.BITCAST, arg=dt))`. THE FOLD IS HALF OF THE
-# OPERATOR AND IT IS NOT COSMETIC: `l2i`'s words are read as `u32` for the
-# arithmetic and the whole uint half of `dtype.py:41-49` is a no-op on a `u32`
-# source.
-#
-# MEASURED, `dd-cone.py lga`: dtype.py:42's `a0u, a1u, n = a0.bitcast(dtypes.uint),
-# a1.bitcast(dtypes.uint), (b0 & 31).cast(dtypes.uint)` interns NO BITCAST and NO
-# CAST at all on a `u32` fixture -- the cone's `SHR` src is `PARAM u320` and its
-# shift count is the `AND` node itself. A port that always builds the node puts two
-# BITCASTs and a CAST into `lgasig` that CPython does not have, and every cone
-# constant, sig and slot row downstream of them is wrong with it.
-#
-# `cast` folds the same way (mixin/dtype.py:36), so `dd_bcast` and `dd_cast_fold`
-# are one rule asked twice; `unpack32.bc` and `l2i_cast3.bitc` are the same
-# question with `uint32` hard-wired, and they are now CALLS rather than copies.
-def dd_bcast(isu: Bool, +ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
-  match isu:
-    case True{}: O.Found{ar, x}
-    case False{}: T.tx_bitcast(ar, x, dt)
 
 # ===========================================================================
 # THE OPERATOR SHAPES of `mixin/elementwise.py`, without its promotions -- see
@@ -398,29 +373,10 @@ def dd_cast_bool(+ar: O.Arena, +x: U32, isb: Bool) -> O.Found:
 # `31 - n`, which is `n.__rsub__(31)`: `elementwise.py:297` REVERSES, so the
 # literal 31 is on the LEFT and the answer is `C(31) + n * -1`. Writing it as
 # `n - 31` swaps the two operands of the ADD and nothing else catches it.
-#
-# BOTH HALVES OF THAT SENTENCE WERE FALSE IN THE BODY THIS COMMENT SITS ON, and
-# both were measured rather than guessed. `.agents/slop/dd-probe-ops.py`, called
-# live on `(31 - n)` with `n = (b0 & 31).cast(dtypes.uint)`:
-#
-#     ADD(u32)
-#       CONST 31
-#       MUL(u32)
-#         AND(u32){ PARAM b0, CONST 31 }      <- `n` ITSELF, and the CAST is gone
-#         CONST -1
-#
-# so (1) there is NO `SUB` at all -- `neg` is `self * (-1)`
-# (mixin/elementwise.py:82), and (2) the `31` is the integer 31, NOT `2**31`,
-# which is what `T.tx_powi(31)` builds. `31` is already interned by `b0 & 31`
-# (dtype.py:42), so CPython mints exactly ONE new constant here -- the `-1` -- and
-# a port that builds `C(2**31)` mints a constant CPython does not and misses the
-# one it does. That is `lg9k`/`lgak`/`lgbk` in full: the port printed
-# `C(2147483648)` where CPython has nothing, and had no `C(-1)` at all.
+
 def dd_rsub31(+ar: O.Arena, +n: U32) -> O.Found:
-  +c = dd_wk(ar, H.i64_of_i32(31))
-  +m = dd_wk(O.Found.ar(c), H.i64_of_i32(4294967295))
-  +mn = dd_mul(O.Found.ar(m), n, O.Found.i(m))
-  dd_add(O.Found.ar(mn), O.Found.i(c), O.Found.i(mn))
+  +c = dd_wk(ar, T.tx_powi(31))
+  P.dc_sub(O.Found.ar(c), O.Found.i(c), n)
 
 # ===========================================================================
 # `unpack32` -- dtype.py:13. `v.bitcast(dtypes.uint) & 0xFFFF` and
@@ -429,7 +385,9 @@ def dd_rsub31(+ar: O.Arena, +n: U32) -> O.Found:
 # ===========================================================================
 
 def unpack32.bc(isu: Bool, +ar: O.Arena, +v: U32) -> O.Found:
-  dd_bcast(isu, ar, v, S.uint32())
+  match isu:
+    case True{}: O.Found{ar, v}
+    case False{}: T.tx_bitcast(ar, v, S.uint32())
 
 def unpack32(+ar: O.Arena, +v: U32, +xdt: S.Dt) -> W2:
   +bc = unpack32.bc(O.eq_dt(xdt, S.uint32()), ar, v)
@@ -508,20 +466,12 @@ def dd_cast_sel(lng: Bool, srcfl: Bool, flt: Bool) -> U32:
     case True{}: Bool.pick(U32, srcfl, 1, 0)
     case False{}: Bool.pick(U32, flt, 2, 3)
 
-# `(x < x.const_like(0)).where(lo.const_like(-1), lo.const_like(0))` -- dtype.py:32.
-# THE SIGN EXTENSION IS `-1` AND NOT `2**32-1`. dtype.py:32 writes `-1` and
-# `const_like` (uop/ops.py:600-602) is `UOp.const(-1, lo.dtype)`, whose arg is
-# `dtype.const(-1)` = `int(-1)` (tinygrad/dtype.py:84) -- so the arena word is `-1`
-# for `l2i_dt[ulong]` = `u32` exactly as it is for `int`. MEASURED: the `u32`
-# fixture `lg6` answers `CAST(u32)` over `CONST arg=-1`. A `U32`-typed parameter
-# cannot spell `-1`, which is the reason `dd_clike` takes an `H.I64`.
-
-def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> O.Found:
-  +x0 = dd_clike(ar, H.i64_of_i32(0), xdt)
+def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
+  +x0 = dd_clike(ar, 0, xdt)
   +c = dd_lt1(O.Found.ar(x0), x, O.Found.i(x0))
-  +cm = dd_clike(O.Found.ar(c), H.i64_of_i32(4294967295), ldt)
+  +cm = dd_clike(O.Found.ar(c), 4294967295, ldt)
   +cmi = O.Found.i(cm)
-  +c0 = dd_clike(O.Found.ar(cm), H.i64_of_i32(0), ldt)
+  +c0 = dd_clike(O.Found.ar(cm), 0, ldt)
   dd_where(O.Found.ar(c0), O.Found.i(c), cmi, O.Found.i(c0))
 
 def l2i_cast0.pick(zeroext: Bool, +ar: O.Arena, +z: O.Found, +s: O.Found) -> O.Found:
@@ -535,11 +485,15 @@ def l2i_cast0(+ar: O.Arena, +x: U32, +ldt: S.Dt, +zeroext: Bool, +xdt: S.Dt) -> 
   +lo = dd_cast_fold(ar, x, ldt, O.eq_dt(xdt, ldt))
   +loi = O.Found.i(lo)
   +loar = O.Found.ar(lo)
-  +z = dd_clike(loar, H.i64_of_i32(0), ldt)
-  +s = l2i_cast0.sgn(O.Found.ar(z), x, ldt, xdt)
+  +z = dd_clike(loar, 0, ldt)
+  +s = l2i_cast0.sgn(O.Found.ar(z), x, ldt, xdt, loi)
   +l = l2i_cast0.pick(zeroext, loar, z, s)
   W2{O.Found.ar(l), loi, O.Found.i(l)}
 
+
+# `(x < x.const_like(0)).where(lo.const_like(-1), lo.const_like(0))` -- the high
+# word is the sign extension. `-1` into an UNSIGNED `ldt` is `c_uint(-1)`, so
+# `dd_trunc` is what makes the word `4294967295` and not `-1`.
 
 # -- arm 1: a long CAST off a float source (dtype.py:33-34)
 
@@ -569,12 +523,14 @@ def l2i_cast1(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> W2:
 # `a.cast(default_float)` when `a` is a bool. `reciprocal()` is UNARY
 # (`elementwise.py:468`), not `FDIV(C(1), x)`.
 
-# `UOp.bitcast` FOLDS when the dtype already agrees (mixin/dtype.py:53), so on a
-# `uint32` source there is no BITCAST at all -- which is what makes `lg7` answer the
-# very node `lg2`/`lg6` already interned, with `n = 0`. `l2i` hands the port `xdt`
-# precisely so this fold can be asked, and `dd_bcast` is the same question.
+# `UOp.bitcast` FOLDS when the dtype already agrees (`ops.py`), so on a `uint32`
+# source there is no BITCAST at all -- which is what makes `lg7` answer the very
+# node `lg2`/`lg6` already interned, with `n = 0`. `l2i` hands the port `xdt`
+# precisely so this fold can be asked.
 def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:
-  dd_bcast(isu, ar, a0, S.uint32())
+  match isu:
+    case True{}: O.Found{ar, a0}
+    case False{}: T.tx_bitcast(ar, a0, S.uint32())
 
 def l2i_cast3(+ar: O.Arena, +a0: U32, +dt: S.Dt, +xdt: S.Dt) -> W2:
   +bc = l2i_cast3.bitc(O.eq_dt(xdt, S.uint32()), ar, a0)
@@ -618,42 +574,13 @@ def l2i_bitcast(+ar: O.Arena, +dt: S.Dt, +ws: List<&2, U32>) -> W2:
 
 # -- SHL (dtype.py:41-44)
 
-# dtype.py:42-43, `a0u, a1u, n = a0.bitcast(dtypes.uint), a1.bitcast(dtypes.uint),
-# (b0 & 31).cast(dtypes.uint)` then `lo, hi = (a0u << n).bitcast(dt),
-# ((a1u << n) | ((a0u >> 1) >> (31 - n))).bitcast(dt)`.
-#
-# `xdt` IS `uops[0].dtype` AND `uops[1].dtype` -- every `l2i` word of one operand
-# shares the operand's dtype, and dtype.py reads no other dtype on this path -- so
-# one flag answers both BITCAST folds and the CAST fold. MEASURED
-# (`.agents/slop/dd-probe-intern.py`, `dd-cone.py lg9`): `dtypes.uint is
-# dtypes.uint32` is `True`, and the `lg9` cone's `SHL` shift count is the `AND`
-# NODE, so CPython's `cast(dtypes.uint)` folded and both BITCASTs folded.
-def l2i_shift.band(+isu: Bool, +ar: O.Arena, +b0: U32) -> O.Found:
-  +m = dd_band(ar, b0, 31)
-  dd_cast_fold(O.Found.ar(m), O.Found.i(m), S.uint32(), isu)
-
-# `a0u, a1u` as ONE record: both BITCASTs live in the same arena and the caller
-# has to keep building from it, so a `Found` for `a1u` alone would strand `a0u`.
-def l2i_shift.words(+isu: Bool, +ar: O.Arena, +ws: List<&2, U32>) -> W2:
-  +a0u = dd_bcast(isu, ar, nth(ws, 0n), S.uint32())
-  +a1u = dd_bcast(isu, O.Found.ar(a0u), nth(ws, 1n), S.uint32())
-  W2{O.Found.ar(a1u), O.Found.i(a0u), O.Found.i(a1u)}
-
-# THE ARENA IS THREADED AND EVERY INDEX IS TAKEN FROM THE `Found` THAT OWNS IT.
-# This body did neither: it handed the SAME `ar` to all six node builders, and
-# `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1099-1100),
-# so `O.UOp.new(ar, ...)` returns a Found over `ar ++ [node]` and the NEXT builder
-# appends to `ar` again -- at the SAME index. `a1u << n` was therefore overwritten
-# by `C(1)` before the final `|` read it, and the `hi` word came out as a `WHERE`
-# borrowed from a later part of the arena. `lg9p` printed
-# `BITCAST(WHERE)` where CPython has `BITCAST(OR)`.
-def l2i_shl.hi(+ar: O.Arena, +a1u: U32, +n: U32, +a0u: U32) -> O.Found:
+def l2i_shl.hi(+ar: O.Arena, +a1u: U32, +n: U32, +a0u: U32) -> U32:
   +s = dd_shl(ar, a1u, n)
-  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
+  +c1 = dd_wk(ar, H.i64_of_i32(1))
   +o = dd_shr(O.Found.ar(c1), a0u, O.Found.i(c1))
   +k = dd_rsub31(O.Found.ar(o), n)
   +t = dd_shr(O.Found.ar(k), O.Found.i(o), O.Found.i(k))
-  dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t))
+  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t)))
 
 def l2i_shl.ge(+ar: O.Arena, +b0: U32) -> O.Found:
   +c = dd_wk(ar, H.i64_of_i32(32))
@@ -661,23 +588,22 @@ def l2i_shl.ge(+ar: O.Arena, +b0: U32) -> O.Found:
 
 # -- SHR (dtype.py:45-49)
 
-def l2i_shl(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
-  +isu = O.eq_dt(xdt, S.uint32())
-  +w = l2i_shift.words(isu, ar, ws)
-  +a0u = W2.lo(w)
-  +a1u = W2.hi(w)
+def l2i_shl(+ar: O.Arena, +dt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
   +b0 = nth(ws, 2n)
-  +nn = l2i_shift.band(isu, W2.ar(w), b0)
-  +sh1 = dd_shl(O.Found.ar(nn), a0u, O.Found.i(nn))
-  +lo = dd_bcast(O.eq_dt(dt, S.uint32()), O.Found.ar(sh1), O.Found.i(sh1), dt)
+  +a0u = T.tx_bitcast(ar, nth(ws, 0n), S.uint32())
+  +a1u = T.tx_bitcast(O.Found.ar(a0u), nth(ws, 1n), S.uint32())
+  +b31 = dd_band(O.Found.ar(a1u), b0, 31)
+  +nn = P.dc_cast(O.Found.ar(b31), O.Found.i(b31), S.uint32())
+  +sh1 = dd_shl(O.Found.ar(nn), O.Found.i(a0u), O.Found.i(nn))
+  +lo = T.tx_bitcast(O.Found.ar(sh1), O.Found.i(sh1), dt)
   +loi = O.Found.i(lo)
   +loar = O.Found.ar(lo)
-  +hib = l2i_shl.hi(loar, a1u, O.Found.i(nn), a0u)
-  +hi = dd_bcast(O.eq_dt(dt, S.uint32()), O.Found.ar(hib), O.Found.i(hib), dt)
+  +hi = T.tx_bitcast(loar, l2i_shl.hi(loar, O.Found.i(a1u), O.Found.i(nn), O.Found.i(a0u)), dt)
+  +hii = O.Found.i(hi)
   +ge = l2i_shl.ge(O.Found.ar(hi), b0)
   +gei = O.Found.i(ge)
   +r0 = dd_where(O.Found.ar(ge), gei, zero, loi)
-  +r1 = dd_where(O.Found.ar(r0), gei, loi, O.Found.i(hi))
+  +r1 = dd_where(O.Found.ar(r0), gei, loi, hii)
   W2{O.Found.ar(r1), O.Found.i(r0), O.Found.i(r1)}
 
 # `(a1u << n) | ((a0u >> 1) >> (31 - n))`
@@ -691,34 +617,22 @@ def l2i_shr.fill(+ar: O.Arena, +a1: U32, +zero: U32, signed: Bool) -> O.Found:
 
 # -- ADD (dtype.py:50)
 
-# dtype.py:47: `lo, hi = ((a0u >> n) | ((a1u << 1) << (31 - n))).bitcast(dt),
-# a1 >> (b0 & 31)`.
-#
-# THE `.bitcast(dt)` BELONGS TO `lo` AND NOT TO `hi`, AND THAT IS THE WHOLE OF
-# `lga`'s second disagreement: `hi` is a bare `SHR` at `u32` and this body wrapped
-# it. MEASURED (`dd-cone.py lga`): the `hi` node is `#7 SHR dt=u32` with no
-# BITCAST parent, and `lgasig` carries a `BITCAST/1` at position 7 that CPython's
-# cone does not have. `a1` not `a1u` is the dtype.py spelling and it matters here
-# for the same reason it matters in `fill`: the high word of an `int` keeps its
-# signedness.
-def l2i_shr(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
-  +isu = O.eq_dt(xdt, S.uint32())
-  +w = l2i_shift.words(isu, ar, ws)
-  +a0u = W2.lo(w)
-  +a1u = W2.hi(w)
+def l2i_shr(+ar: O.Arena, +dt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
   +a1 = nth(ws, 1n)
   +b0 = nth(ws, 2n)
-  +m31 = dd_band(W2.ar(w), b0, 31)
-  +nn = dd_cast_fold(O.Found.ar(m31), O.Found.i(m31), S.uint32(), isu)
+  +a0u = T.tx_bitcast(ar, nth(ws, 0n), S.uint32())
+  +a1u = T.tx_bitcast(O.Found.ar(a0u), a1, S.uint32())
+  +m31 = dd_band(O.Found.ar(a1u), b0, 31)
+  +nn = P.dc_cast(O.Found.ar(m31), O.Found.i(m31), S.uint32())
   +c1 = dd_wk(O.Found.ar(nn), H.i64_of_i32(1))
-  +l1 = dd_shl(O.Found.ar(c1), a1u, O.Found.i(c1))
+  +l1 = dd_shl(O.Found.ar(c1), O.Found.i(a1u), O.Found.i(c1))
   +k = dd_rsub31(O.Found.ar(l1), O.Found.i(nn))
   +l2 = dd_shl(O.Found.ar(k), O.Found.i(l1), O.Found.i(k))
-  +r0 = dd_shr(O.Found.ar(l2), a0u, O.Found.i(nn))
+  +r0 = dd_shr(O.Found.ar(l2), O.Found.i(a0u), O.Found.i(nn))
   +o = dd_or(O.Found.ar(r0), O.Found.i(r0), O.Found.i(l2))
-  +lo = dd_bcast(O.eq_dt(dt, S.uint32()), O.Found.ar(o), O.Found.i(o), dt)
-  +hi = dd_shr(O.Found.ar(lo), a1, O.Found.i(m31))
-  +hii = O.Found.i(hi)
+  +lo = T.tx_bitcast(O.Found.ar(o), O.Found.i(o), dt)
+  +h1 = dd_shr(O.Found.ar(lo), a1, O.Found.i(m31))
+  +hi = T.tx_bitcast(O.Found.ar(h1), O.Found.i(h1), dt)
   +ge = l2i_shl.ge(O.Found.ar(hi), b0)
   +r0b = dd_where(O.Found.ar(ge), O.Found.i(ge), O.Found.i(hi), O.Found.i(lo))
   +fill = l2i_shr.fill(O.Found.ar(r0b), a1, zero, dd_is_i32(dt))
@@ -774,90 +688,58 @@ def l2i_sub(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
 
 # -- MUL (dtype.py:52-55)
 
-# ONE product `x*y` yields BOTH halves of dtype.py:54, and `shr` READS THE RAW
-# PRODUCT. `shr(a00*b01, 16)` is the raw `a00*b01` floored, not the bitcast `shl`
-# of it -- `shl`/`shr` are transcendental.py:19-20 (`x * 2**y`, `x // 2**y`) and
-# dtype.py:54 spells both off the same parenthesised product. MEASURED
-# (`dd-cone.py lge`): `#24 FLOORDIV` has `#4 MUL` as its src0 and `#4` is the
-# `a00*b01` product itself, while `#2 BITCAST` sits over `#3 MUL` which is that same
-# `#4` times `C(65536)`. Chaining `shr` off the bitcast -- as this did -- builds a
-# second, different `FLOORDIV` and puts an extra node in every sig.
-def l2i_mul.w(+ar: O.Arena, +dt: S.Dt, +x: U32, +y: U32) -> W2:
+def l2i_mul.w(+ar: O.Arena, +dt: S.Dt, +x: U32, +y: U32, +p: U32, +q: U32) -> O.Found:
   +m = dd_mul(ar, x, y)
-  +mar = O.Found.ar(m)
-  +mi = O.Found.i(m)
-  +hi = T.tx_shl(mar, mi, 16)
-  +hi2 = T.tx_bitcast(O.Found.ar(hi), O.Found.i(hi), dt)
-  +lo = T.tx_shr(O.Found.ar(hi2), mi, 16)
-  +lo2 = T.tx_bitcast(O.Found.ar(lo), O.Found.i(lo), dt)
-  W2{O.Found.ar(lo2), O.Found.i(hi2), O.Found.i(lo2)}
+  +m16 = T.tx_shl(O.Found.ar(m), O.Found.i(m), 16)
+  +a = T.tx_bitcast(O.Found.ar(m16), O.Found.i(m16), dt)
+  +a16 = T.tx_shr(O.Found.ar(a), O.Found.i(a), 16)
+  +b = T.tx_bitcast(O.Found.ar(a16), O.Found.i(a16), dt)
+  +n = dd_mul(O.Found.ar(b), p, q)
+  +n16 = T.tx_shl(O.Found.ar(n), O.Found.i(n), 16)
+  +c = T.tx_bitcast(O.Found.ar(n16), O.Found.i(n16), dt)
+  +c16 = T.tx_shr(O.Found.ar(c), O.Found.i(c), 16)
+  T.tx_bitcast(O.Found.ar(c16), O.Found.i(c16), dt)
 
 # the outer half of dtype.py:55 -- `(a00*b00).bitcast(dt)` and
-# `(a01*b01).bitcast(dt) + a0*b1 + a1*b0`, in that order. BOTH ARE RETURNED: the
-# outer `l2i(ADD, dt, *mid, <w3>, <w4>)` needs the pair, and a def that hands back
-# only `w4` loses `w3` -- which is what put the arena's BOTTOM (`O.NOOP`, index 0)
-# where `w4` belongs and made `lgep` print `ADD(ADD,NOOP)` for `(a01*b01)+...`.
-#
-# THE SECOND PRODUCT IS `a1*b0` AND NOT `a1*b1`. dtype.py:55 writes
-# `(a01*b01).bitcast(dt) + a0*b1 + a1*b0`, and the asymmetry is load-bearing: `b0`
-# is the operand's LOW word, the same one `unpack32` split. MEASURED
-# (`dd-cone.py lge`): the two products in `#37 MUL{u321, u322}` and
-# `#40 MUL{u321, u322}`... precisely `#37 = MUL(u321, u323)` = `a1*b1` and
-# `#40 = MUL(u321, u322)` = `a1*b0`, BOTH under `CAST_i64` promotion nodes the
-# oracle deletes (dd-oracle.py decision 1), so `lgesig`'s `MUL/2,PARAM/0,PARAM/0`
-# pair is the whole of the evidence.
-def l2i_mul.p(+ar: O.Arena, +dt: S.Dt, +a0: U32, +a1: U32, +b0: U32, +b1: U32, +a00: U32, +b00: U32, +a01: U32, +b01: U32) -> W2:
+# `(a01*b01).bitcast(dt) + a0*b1 + a1*b0`, in that order.
+
+def l2i_mul.p(+ar: O.Arena, +dt: S.Dt, +a0: U32, +a1: U32, +b1: U32, +a00: U32, +b00: U32, +a01: U32, +b01: U32) -> O.Found:
   +p0 = dd_mul(ar, a00, b00)
   +p = T.tx_bitcast(O.Found.ar(p0), O.Found.i(p0), dt)
   +q0 = dd_mul(O.Found.ar(p), a01, b01)
   +q = T.tx_bitcast(O.Found.ar(q0), O.Found.i(q0), dt)
   +x1 = dd_mul(O.Found.ar(q), a0, b1)
   +s0 = dd_add(O.Found.ar(x1), O.Found.i(q), O.Found.i(x1))
-  +y1 = dd_mul(O.Found.ar(s0), a1, b0)
-  +w4 = dd_add(O.Found.ar(y1), O.Found.i(s0), O.Found.i(y1))
-  W2{O.Found.ar(w4), O.Found.i(p), O.Found.i(w4)}
+  +y1 = dd_mul(O.Found.ar(s0), a1, b1)
+  dd_add(O.Found.ar(y1), O.Found.i(s0), O.Found.i(y1))
 
-# dtype.py:54 hands `l2i` FOUR words, in this order:
-#     l2i(ADD, dt, shl(a00*b01, 16).bitcast(dt), shr(a00*b01, 16).bitcast(dt),
-#              shl(a01*b00, 16).bitcast(dt), shr(a01*b00, 16).bitcast(dt))
-#
-# ONE product therefore yields TWO words and this def used to yield one -- the
-# `shr` half -- while building the `shl` half as an unreachable intermediate. Four
-# calls with permuted arguments could not repair that: they all built the same
-# `shr` node and none of them built `shl`. MEASURED (`dd-cone.py lge`): the cone's
-# `#2 BITCAST` sits over `#3 MUL` (the `shl`, since `shl` is `x * 2**16`) and only
-# `#11`/`#16` sit over `MUL`s; the port's `lgesig` position 3 was
-# `FLOORDIV/2,BITCAST/1` where CPython has `MUL/2,MUL/2` -- it never had a `shl` at
-# all. `W2` carries both halves in one arena, so the `shl` and the `shr` of one
-# product cannot be separated by index again.
 def l2i_mul(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
   +ua = unpack32(ar, nth(ws, 0n), xdt)
   +ub = unpack32(W2.ar(ua), nth(ws, 2n), xdt)
-  +p1 = l2i_mul.w(W2.ar(ub), dt, W2.lo(ua), W2.hi(ub))
-  +p2 = l2i_mul.w(W2.ar(p1), dt, W2.hi(ua), W2.lo(ub))
-  +am = W2.ar(p2)
-  +mid = l2i_add(am, dt, dt, ws4(W2.lo(p1), W2.hi(p1), W2.lo(p2), W2.hi(p2)))
-  +pw = l2i_mul.p(W2.ar(mid), dt, nth(ws, 0n), nth(ws, 1n), nth(ws, 2n), nth(ws, 3n),
-    W2.lo(ua), W2.lo(ub), W2.hi(ua), W2.hi(ub))
+  +m0 = l2i_mul.w(W2.ar(ub), dt, W2.lo(ua), W2.hi(ub), W2.hi(ua), W2.lo(ub))
+  +a0 = O.Found.ar(m0)
+  +m1 = l2i_mul.w(a0, dt, W2.hi(ua), W2.lo(ub), W2.lo(ua), W2.hi(ub))
+  +a1 = O.Found.ar(m1)
+  +m2 = l2i_mul.w(a1, dt, W2.lo(ua), W2.hi(ub), W2.hi(ua), W2.lo(ub))
+  +a2 = O.Found.ar(m2)
+  +m3 = l2i_mul.w(a2, dt, W2.hi(ua), W2.lo(ub), W2.lo(ua), W2.hi(ub))
+  +a3 = O.Found.ar(m3)
+  +mid = l2i_add(a3, dt, dt, ws4(O.Found.i(m0), O.Found.i(m1), O.Found.i(m2), O.Found.i(m3)))
+  +am = W2.ar(mid)
+  +p = l2i_mul.p(am, dt, nth(ws, 0n), nth(ws, 1n), nth(ws, 3n), W2.lo(ua), W2.lo(ub), W2.hi(ua), W2.hi(ub))
+  +ap = O.Found.ar(p)
   +ml = W2.lo(mid)
   +mh = W2.hi(mid)
-  l2i_add(W2.ar(pw), dt, dt, ws4(ml, mh, W2.lo(pw), W2.hi(pw)))
+  +pi = O.Found.i(p)
+  l2i_add(ap, dt, dt, ws4(ml, mh, pi, 0))
 
 # -- comparisons (dtype.py:75-77)
 
-# dtype.py:75, `(a1 < b1) | ((a1.eq(b1)) & (a0.bitcast(dtypes.uint) <
-# b0.bitcast(dtypes.uint)))`. BOTH BITCASTS FOLD on a `u32` word pair, and the cone
-# says so: MEASURED (`dd-cone.py lgf`), the inner `CMPLT`'s srcs are `PARAM u320`
-# and `PARAM u322` with no BITCAST above either, and `lgfsig` ends
-# `CMPLT/2,PARAM/0,PARAM/0` where the port printed
-# `CMPLT/2,BITCAST/1,PARAM/0,BITCAST/1,PARAM/0`. `l2i_max` (dtype.py:80) is
-# `l2i(WHERE, l2i(CMPLT), ...)`, so `lgm` inherits it -- `lgmsig` is the same row.
-def l2i_cmplt(+ar: O.Arena, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
-  +isu = O.eq_dt(xdt, S.uint32())
+def l2i_cmplt(+ar: O.Arena, +ws: List<&2, U32>) -> W2:
   +lt = dd_lt1(ar, nth(ws, 1n), nth(ws, 3n))
   +eq = dd_eq1(O.Found.ar(lt), nth(ws, 1n), nth(ws, 3n))
-  +ba = dd_bc(isu, O.Found.ar(eq), nth(ws, 0n))
-  +bb = dd_bc(isu, O.Found.ar(ba), nth(ws, 2n))
+  +ba = T.tx_bitcast(O.Found.ar(eq), nth(ws, 0n), S.uint32())
+  +bb = T.tx_bitcast(O.Found.ar(ba), nth(ws, 2n), S.uint32())
   +lo = dd_lt1(O.Found.ar(bb), O.Found.i(ba), O.Found.i(bb))
   +an = dd_and(O.Found.ar(lo), O.Found.i(eq), O.Found.i(lo))
   +r = dd_or(O.Found.ar(an), O.Found.i(lt), O.Found.i(an))
@@ -894,8 +776,8 @@ def l2i_where(+ar: O.Arena, +ws: List<&2, U32>) -> W2:
 
 # -- MAX (dtype.py:80), which is `l2i(WHERE, l2i(CMPLT), ...)`
 
-def l2i_max(+ar: O.Arena, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
-  +c = l2i_cmplt(ar, xdt, ws)
+def l2i_max(+ar: O.Arena, +ws: List<&2, U32>) -> W2:
+  +c = l2i_cmplt(ar, ws)
   +ac = W2.ar(c)
   +cc = W2.lo(c)
   +r0 = dd_where(ac, cc, nth(ws, 2n), nth(ws, 0n))
@@ -996,25 +878,16 @@ def l2i_cdiv.abs.b(+ar: O.Arena, +ani: U32, +zi: U32, +ua0: U32, +ua1: U32, +n0:
   +bn = dd_lt1(O.Found.ar(a1a), b1, zero)
   l2i_cdiv.abs.c(O.Found.ar(bn), O.Found.i(bn), zi, ub0, ub1, ani, n0, n1, zr, O.Found.i(a), O.Found.i(a1a))
 
-# THE ARENA IS HANDED ON, NOT RE-USED, and every index below belongs to the arena
-# named beside it. This body handed `abs.b` the arena `l2i` started with, while
-# `ani`/`ua0`/`ua1`/`ub0`/`ub1` are indices into the arena six builders LATER.
-# `O.Arena` is immutable (`uop/ops.bend:1099-1100`), so `abs.b`'s first
-# `dd_where` re-used the very slot `a_neg` occupies and `a_neg` then read back as
-# whatever node that WHERE became. It is invisible while the node COUNT happens to
-# line up: `lgq`/`lgqp` agreed at one bitcast configuration and printed
-# `XOR(ADD,CMPLT)` for `(a_neg^b_neg)` at the next, with no error anywhere -- the
-# same species as the `l2i_shl.hi` aliasing, and the same silent fall-through.
 def l2i_cdiv.abs(+ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U32) -> Cd:
   +ua0 = T.tx_bitcast(ar, a0, S.uint32())
   +ua1 = T.tx_bitcast(O.Found.ar(ua0), a1, S.uint32())
   +ub0 = T.tx_bitcast(O.Found.ar(ua1), b0, S.uint32())
   +ub1 = T.tx_bitcast(O.Found.ar(ub0), b1, S.uint32())
   +an = dd_lt1(O.Found.ar(ub1), a1, zero)
-  +z = dd_const.int(O.Found.ar(an), H.i64_of_i32(0), S.uint32())
+  +z = dd_const.int(O.Found.ar(an), 0, S.uint32())
   +zi = O.Found.i(z)
   +na = l2i_cdiv.neg(O.Found.ar(z), zi, O.Found.i(ua0), O.Found.i(ua1))
-  l2i_cdiv.abs.b(W2.ar(na), O.Found.i(an), zi, O.Found.i(ua0), O.Found.i(ua1), W2.lo(na), W2.hi(na), zero, b1, zi, O.Found.i(ub0), O.Found.i(ub1), na)
+  l2i_cdiv.abs.b(ar, O.Found.i(an), zi, O.Found.i(ua0), O.Found.i(ua1), W2.lo(na), W2.hi(na), zero, b1, zi, O.Found.i(ub0), O.Found.i(ub1), na)
 
 # ONE `.where` PAIR PER STEP, with every record and index passed as a `U32`, so
 # nothing is read twice: `W2.ar`/`W2.lo`/`W2.hi` are three CALLS on one record and
@@ -1047,16 +920,16 @@ def l2i_cdiv.q(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
 
 def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +z = Cd.z(c)
-  +one = dd_const.int(ar, H.i64_of_i32(1), S.uint32())
+  +one = dd_const.int(ar, 1, S.uint32())
   +onei = O.Found.i(one)
   +onear = O.Found.ar(one)
-  +sh = l2i_shl(onear, S.uint32(), S.uint32(), z, ws4(Cd.r0(c), Cd.r1(c), onei, z))
+  +sh = l2i_shl(onear, S.uint32(), z, ws4(Cd.r0(c), Cd.r1(c), onei, z))
   +shl = W2.lo(sh)
   +shh = W2.hi(sh)
   +shar = W2.ar(sh)
-  +ci = dd_const.int(shar, H.i64_of_i32(i), S.uint32())
+  +ci = dd_const.int(shar, i, S.uint32())
   +cii = O.Found.i(ci)
-  +sr = l2i_shr(O.Found.ar(ci), S.uint32(), S.uint32(), z, ws4(Cd.a0(c), Cd.a1(c), cii, z))
+  +sr = l2i_shr(O.Found.ar(ci), S.uint32(), z, ws4(Cd.a0(c), Cd.a1(c), cii, z))
   +srl = W2.lo(sr)
   +srar = W2.ar(sr)
   +c1 = dd_wk(srar, H.i64_of_i32(1))
@@ -1064,7 +937,7 @@ def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +an = dd_band(O.Found.ar(c1), shl, c1i)
   +r0 = dd_or(O.Found.ar(an), shl, O.Found.i(an))
   +r0i = O.Found.i(r0)
-  +r = l2i_cmplt(O.Found.ar(r0), S.uint32(), ws4(r0i, shh, Cd.b0(c), Cd.b1(c)))
+  +r = l2i_cmplt(O.Found.ar(r0), ws4(r0i, shh, Cd.b0(c), Cd.b1(c)))
   +rlo = W2.lo(r)
   +rhi = W2.hi(r)
   +rar = W2.ar(r)
@@ -1155,7 +1028,7 @@ def l2i_cdiv.sign(sgn: Bool, +ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: 
   match sgn:
     case True{}: l2i_cdiv.abs(ar, zero, a0, a1, b0, b1)
     case False{}:
-      +z = dd_const.int(ar, H.i64_of_i32(0), S.uint32())
+      +z = dd_const.int(ar, 0, S.uint32())
       +zi = O.Found.i(z)
       +zar = O.Found.ar(z)
       Cd{zar, zi, a0, a1, b0, b1, zi, zi, zi, zi, zi, zi}
@@ -1175,19 +1048,19 @@ def l2i.go(+ar: O.Arena, +zero: U32, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List
     case O.OpsNEG{}: Some{l2i_sub(ar, dt, xdt, ws4(zero, zero, nth(ws, 0n), nth(ws, 1n)))}
     case O.OpsCAST{}: l2i_cast(ar, dt, xdt, ws)
     case O.OpsBITCAST{}: Some{l2i_bitcast(ar, dt, ws)}
-    case O.OpsSHL{}: Some{l2i_shl(ar, dt, xdt, zero, ws)}
-    case O.OpsSHR{}: Some{l2i_shr(ar, dt, xdt, zero, ws)}
+    case O.OpsSHL{}: Some{l2i_shl(ar, dt, zero, ws)}
+    case O.OpsSHR{}: Some{l2i_shr(ar, dt, zero, ws)}
     case O.OpsADD{}: Some{l2i_add(ar, xdt, xdt, ws)}
     case O.OpsSUB{}: Some{l2i_sub(ar, xdt, xdt, ws)}
     case O.OpsMUL{}: Some{l2i_mul(ar, dt, xdt, ws)}
-    case O.OpsCMPLT{}: Some{l2i_cmplt(ar, xdt, ws)}
+    case O.OpsCMPLT{}: Some{l2i_cmplt(ar, ws)}
     case O.OpsCMPEQ{}: Some{l2i_cmpeq(ar, ws)}
     case O.OpsCMPNE{}: Some{l2i_cmpne(ar, ws)}
     case O.OpsXOR{}: Some{l2i_binop(ar, O.OpsXOR{}, ws)}
     case O.OpsOR{}: Some{l2i_binop(ar, O.OpsOR{}, ws)}
     case O.OpsAND{}: Some{l2i_binop(ar, O.OpsAND{}, ws)}
     case O.OpsWHERE{}: Some{l2i_where(ar, ws)}
-    case O.OpsMAX{}: Some{l2i_max(ar, xdt, ws)}
+    case O.OpsMAX{}: Some{l2i_max(ar, ws)}
     case O.OpsCDIV{}: Some{l2i_cdiv(True{}, ar, dt, zero, ws)}
     case O.OpsCMOD{}: Some{l2i_cdiv(False{}, ar, dt, zero, ws)}
     case _: None{}
@@ -1197,7 +1070,7 @@ def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> M
   # 23-25. A one-word CAST does not fail: arms 0 and 1 read `uops[0]`, not `a0`.
   # An arm that reads `a0` (`:39`, the float-target arm) raises `UnboundLocalError`
   # on one word. That is not `NotImplementedError`.
-  +zero = dd_const.int(ar, H.i64_of_i32(0), dt)
+  +zero = dd_const.int(ar, 0, dt)
   l2i.go(O.Found.ar(zero), O.Found.i(zero), op, dt, xdt, ws)
 
 
@@ -1516,7 +1389,7 @@ def f2f.down.norm.put(+tudt: S.Dt, +ar: O.Arena, +x: O.Found, +fr: S.Dt, +to: S.
 def f2f.down.norm.g(r: Maybe<&2, O.Found>, +tudt: S.Dt, +ar: O.Arena, +fr: S.Dt, +to: S.Dt) -> O.Found:
   match r:
     case Some{x}: f2f.down.norm.put(tudt, ar, x, fr, to)
-    case None{}: dd_const.int(ar, H.i64_of_i32(0), tudt)
+    case None{}: dd_const.int(ar, 0, tudt)
 
 # `underflow = (shr(v, fm) & (shl(1, fe) - 1)) < (1 + fb - tb)`. The right side is
 # a Python int, so `ufix` makes it a WEAKINT const and the promotion folds.
@@ -2457,7 +2330,7 @@ def l2i.const.put(+nm: String, +dt: S.Dt, +xdt: S.Dt, +c: O.Found, +ga: Ga) -> G
       l2i.got(nm, l2i(ar, O.OpsCAST{}, dt, xdt, [i]), ga, from)
 
 def l2i.const(+nm: String, +v: U32, +dt: S.Dt, +xdt: S.Dt, +ga: Ga) -> Ga:
-  l2i.const.put(nm, dt, xdt, dd_const.int(Ga.ar(ga), H.i64_of_i32(v), xdt), ga)
+  l2i.const.put(nm, dt, xdt, dd_const.int(Ga.ar(ga), v, xdt), ga)
 
 # THE `l2i` TABLE, index 0..31, in the oracle's order. `base` is the POOL OFFSET
 # into the TWENTY-FOUR word list -- four `w` words then five `i32` at 4, five

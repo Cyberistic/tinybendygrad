@@ -1,0 +1,43 @@
+{
+ "tinybendygrad/renderer/cstyle.bend": {
+  "oracle": [
+   ".agents/slop/renderer_oracle.py cstyle"
+  ],
+  "oracle_rows_not_gated": {
+   "cpython:renderer_oracle": 15
+  },
+  "port": "tinybendygrad/renderer/cstyle.bend",
+  "reasons": [
+   "run 1: lane pair `cpython:renderer_oracle|interpreted` shares NO row name, so it compares nothing -- GUARD 4 reports this BROKEN, and a baseline here would be a recording of silence",
+   "run 1: lane pair `cpython:renderer_oracle|native` shares NO row name, so it compares nothing -- GUARD 4 reports this BROKEN, and a baseline here would be a recording of silence",
+   "run 2: lane pair `cpython:renderer_oracle|interpreted` shares NO row name, so it compares nothing -- GUARD 4 reports this BROKEN, and a baseline here would be a recording of silence",
+   "run 2: lane pair `cpython:renderer_oracle|native` shares NO row name, so it compares nothing -- GUARD 4 reports this BROKEN, and a baseline here would be a recording of silence"
+  ],
+  "recordable": false,
+  "row_counts_run1": {
+   "cpython:renderer_oracle": 15,
+   "interpreted": 225,
+   "native": 225
+  },
+  "row_counts_run2": {
+   "cpython:renderer_oracle": 15,
+   "interpreted": 225,
+   "native": 225
+  },
+  "runs": 2,
+  "shared_run1": {
+   "cpython:renderer_oracle|interpreted": {
+    "disagree": 0,
+    "shared": 0
+   },
+   "cpython:renderer_oracle|native": {
+    "disagree": 0,
+    "shared": 0
+   },
+   "interpreted|native": {
+    "disagree": 0,
+    "shared": 225
+   }
+  }
+ }
+}

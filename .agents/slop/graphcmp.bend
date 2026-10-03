@@ -92,6 +92,26 @@ def bo(x: Bool) -> String:
 def dt(d0: S.Dt) -> String:
   String.concat(["D", dname(d0)])
 
+def axis1(a: O.AxisType) -> String:
+  match a:
+    # THE TWO DEAD MEMBERS, MARKED. `78d482262` DELETED `AxisType.REDUCE` and
+    # `AxisType.UNROLL` upstream and ops.bend:649-654 keeps them because six committed
+    # files still construct them. MEASURED at 3138973dc, calling CPython:
+    #   `list(AxisType)` == DEVICE GLOBAL LOCAL WARP WEAK LOOP UPCAST PLACEHOLDER,
+    # eight members, and `hasattr(AxisType, "REDUCE") is False`.
+    # (The earlier claim in graphcmp-report.md that THREE members were port-only is
+    # WRONG -- `PLACEHOLDER` exists here. Two, not three.)
+    #
+    # WHY MARK THEM. `AxisType.name` answers the bare `"REDUCE"`, which is a name no
+    # CPython enum can have -- so a node carrying one would report as ONLY-ON-THE-BEND,
+    # which is loud enough today. It would NOT be loud if upstream ever ADDS a `REDUCE`
+    # back with different meaning, because then the two would render identically and
+    # agree for the wrong reason. `X!` cannot be produced by any other spelling, so the
+    # answer to "is this member real?" is in the text rather than in a comment.
+    case O.AXIS_REDUCE{}: "X!REDUCE"
+    case O.AXIS_UNROLL{}: "X!UNROLL"
+    case _: String.concat(["X", O.AxisType.name(a)])
+
 def opx(o: O.Op) -> String:
   String.concat(["O", O.Ops.name.of(o)])
 
@@ -106,16 +126,24 @@ def opx(o: O.Op) -> String:
 # canonicalized `str` the device was opened with, tinygrad/device.py:396 via :26,:29) --
 # and the emitted name cannot drift from the table because it IS the table.
 #
+# MEASURED 2026-10-03 by CALLING CPython, because the positions had drifted and a citation
+# that no longer resolves is worse than none: `Device['CPU'].device == 'CPU'`, reached as
+# `_Device.__getitem__` (device.py:29) -> `canonicalize` at :30 -> `_canonicalize` at :26 ->
+# `__get_canonicalized_item` at :32 -> `get_class`'s `cls(ix)` at :37 (NOT :29, which is
+# the `def`) -> `Compiled.__init__`'s `self.device, ... = device, ...` at :396.
+#
 # THE THREE TABLES ARE NOT ONE AND MUST NOT BE MERGED. Measured, not assumed:
 #   * `uop/render.bend:361`  -- the ARENA tag: 0=CPU 1=GPU 2=METAL ... 8=NULL 9=DISK.
-#   * `runtime/device.bend:702` `dev_name` -- `ALL_DEVICES` (device.py:20) by 1-based
+#   * `device.bend:720-732` `dev_name` -- `ALL_DEVICES` (device.py:20) by 1-based
 #     index: 1=METAL 2=AMD 3=NV 4=CUDA 5=QCOM 6=CL 7=CPU 8=DSP 9=WEBGPU 11=NULL.
 #     It is a faithful port of a DIFFERENT upstream object and its rows use it that way
 #     (`too_big(.., String.starts_with(dev_name(7), "NULL"))` is device.py:172's
 #     `self.device.startswith("NULL")`, where `self.device` is a BUFFER's, not a graph's).
 #   * `renderer/cstyle.bend:121` `dev_name` -- the compiler/LANGUAGE index.
 # So the tag column is NOT an index into any of those two, and reading one as the other
-# would be a wrong answer rather than a unification.
+# would be a wrong answer rather than a unification. (`ALL_DEVICES` itself is device.py:20
+# at this pin; `dev_name` moved 702 -> 720 as rows were added above it, which is why the
+# position is cited here freshly rather than carried forward.)
 def dev1(t: U32) -> String:
   bstr(R.dev_name.tag(t))
 
@@ -193,20 +221,29 @@ def valm(m: Maybe<&2, O.Const>) -> String:
     case Some{x}: konst(x)
     case _: "N"
 
+# Field 11, the device BUFFER, is PRESENCE and nothing else, and the port's payload is
+# NOT an identity: MEASURED on the Python side, `Buffer` has no `slot` attribute at all
+# and its repr is `<buf real:False device:CPU size:12 dtype:dtypes.f32>` -- a device
+# object, carrying the `dtypes.` token R3 exists to drop and an allocation state. So the
+# slot number is dropped here too and both sides answer `z` / `N`.
+#
+# The size, the dtype and the device of a realized buffer are ALREADY fields 2, 3 and 8
+# of this same record and are already compared above, so presence is the finest split the
+# two sides can both make; the realized-BUFFER row is the one that exercises it.
 def bufo(m: Maybe<&2, U32>) -> String:
   match m:
-    case Some{x}: String.concat(["realized", U32.show(x)])
-    case _: "unrealized"
+    case Some{_}: "z"
+    case _: "N"
 
 # `str(UOp.argstr)` is `repr(self.arg)` (ops.py:274-276) and `ParamArg.__repr__`
 # (ops.py:43-50) OMITS every field equal to its default and spells `buffer` as
 # `buffer=UOp.new_buffer(...).buffer`, a device object no second process can rebuild. So
 # the normal form is NOT a repr: it is EVERY field, by name, in DECLARATION order
-# (ops.py:26-42 for ParamArg), with the device Buffer reduced to `realized<slot>` /
-# `unrealized` because `pyrender` itself refuses to render a BUFFER carrying one
-# (render.py:160). Field NAMES are the format: a positional reader would encode the
-# order and pass a swap, and ops.bend:2432-2440 records that swapping two shape args
-# leaves op, nsrc and the src sequence identical.
+# (ops.py:26-42 for ParamArg), with the device Buffer reduced to its PRESENCE (`z` / `N`)
+# because `pyrender` itself refuses to render a BUFFER carrying one (render.py:160) and
+# because `Buffer` has no slot to name (MEASURED -- see `bufo`). Field NAMES are the
+# format: a positional reader would encode the order and pass a swap, and ops.bend:2432-2440
+# records that swapping two shape args leaves op, nsrc and the src sequence identical.
 # THE THIRTEEN-FIELD READER, one `Maybe` per def, because `match` may scrutinise only a
 # PARAMETER or a pattern binder and reading a `Maybe` field is a CALL.
 def paramarg.of(+slot: U32, +dtx: S.Dt, +size: Maybe<&2, U32>, +vmin_vmax: Maybe<&2, O.PyRange>, +multiple_of: Maybe<&2, U32>,
@@ -238,10 +275,44 @@ def callinfo(ci: O.CallInfo) -> String:
     case O.CallInfo{cname, precompile, precompile_backward, cdtype}:
       String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ",", dt(cdtype), ")"])
 
+# FOUR SLOTS: name, applied_opts, opts_to_apply, beam -- `KernelInfo`'s own fields in
+# DECLARATION order (ops.py:1342-1347) minus `estimates`, which ops.bend DROPPED (P5,
+# `tinygrad.renderer`) and which is None upstream for every kernel the port can build
+# (`uop/render.bend:653` pins the literal for the same reason).
+#
+# It was TWO here against CPython's THREE, so a SINK could only ever report a
+# disagreement that was really "the port renders fewer fields". And `opts_to_apply` was
+# dropped on BOTH sides, which is the residual nobody was looking at: upstream WRITES it
+# on every `llm/kernels/amd.py` and `nn/__init__.py` SINK as `opts_to_apply=()` -- an
+# EMPTY TUPLE, not `None` -- while `KernelInfo.of()` here answers `None` (MEASURED, probe
+# `runs/graphcmp/probe/pb-buf-binary.bend` Q1b). Now both sides render it and that
+# divergence is a reported one.
+#
+# THE OPTION LISTS ARE COUNTS, NOT CONTENTS, and that is a refusal rather than a
+# comparison. ops.bend:978 types both as `List<&2,U32>`; upstream's elements are `Opt`
+# dataclasses (`Opt(op=OptOps.TC, axis=0, arg=4)`, codegen/opt/__init__.py:11). MEASURED:
+# `KernelInfo.of().applied_opts` is EMPTY and no port file ever writes a non-empty one,
+# so `uop/render.bend:655`'s "UOp INDICES" reading of those U32s is UNVERIFIED -- there
+# is no construction site to verify it against. So one `q` per option: the count compares,
+# the content is a named refusal, and nothing here copies the port's answer into the
+# oracle.
+def opts.go(+ys: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match ys:
+    case Nil{}: acc
+    case _ <> r: opts.go(r, List.append(&2, String, acc, ["q"]))
+
+def opts(ys: List<&2, U32>) -> String:
+  String.concat(["n(", String.join(opts.go(ys, Nil{}), ","), ")"])
+
+def optsm(m: Maybe<&2, List<&2, U32>>) -> String:
+  match m:
+    case Some{x}: opts(x)
+    case _: "N"
+
 def kernelinfo(ki: O.KernelInfo) -> String:
   match ki:
     case O.KernelInfo{kname, applied_opts, opts_to_apply, beam}:
-      String.concat(["kI(", bstr(kname), ",", U32.show(beam), ")"])
+      String.concat(["kI(", bstr(kname), ",", opts(applied_opts), ",", optsm(opts_to_apply), ",", i(beam), ")"])
 
 def i64s.go(+ys: List<&2, H.I64>, acc: List<&2, String>) -> List<&2, String>:
   match ys:
@@ -276,7 +347,7 @@ def argstr(a: O.Arg, depth: U32) -> String:
     case O.ACall{ci}: callinfo(ci)
     case O.AKernel{ki}: kernelinfo(ki)
     case O.AProgram{pi}: prog_info(pi)
-    case O.ARange{ids, at}: String.concat(["rg(", i(depth), ",", O.AxisType.name(at), ",", us(ids), ")"])
+    case O.ARange{ids, at}: String.concat(["rg(", i(depth), ",", axis1(at), ",", us(ids), ")"])
     case O.AReduce{rop, num_axes}: String.concat(["rd(", opx(rop), ",", i(num_axes), ")"])
     case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", U32.show(threads), ",", us(tc), ")"])
     case O.ATuple{ys}: us(ys)
@@ -323,10 +394,32 @@ def dimlist(ds: List<&2, O.Sint>) -> String:
   String.concat(["(", String.join(dimlist.go(ds, Nil{}), ","), ")"])
 
 
+# THE SHAPE COLUMN, and a CORRECTION found by adding `--graph sink` (2026-10-03).
+#
+# `u.shape` (ops.py:454-456) is a PROPERTY that raises `RuntimeError` IFF `_shape is None`,
+# so it never RETURNS `None`. MEASURED over every op in the upstream no-shape list (ops.py:
+# 331-338: IF BARRIER SINK REWRITE_ERROR ENDIF BACKEDGE GROUP LINEAR PROGRAM SOURCE) plus a
+# void `INS` and a `PYLITERAL` -- twelve ops, `_shape is None` AND `shape` raises in all
+# twelve (`runs/graphcmp/probe/p9-shape-none.py`). So "the op has no shape" and "shape
+# raised" are ONE fact upstream, and the faithful spelling of both is `R`.
+#
+# This def used to answer `N` for its `Some{None}` arm while answering `R` for its outer
+# `None`, and the CPython side answers `N` for a value `shape` cannot return. So the two
+# sides were using one letter for two different facts. It stayed invisible until a graph
+# with a shape-less node existed: `--graph sink` is the first, and it reported
+#   MISMATCH SINK  py#2 vs bend#2  shape py=R bend=N
+# -- a rung-1 field mismatch on a node whose CORE MATCHED, which by graphcmp.py's own
+# measured theorem cannot mean the graphs differ. It means the two `_shape` implementations
+# disagree, and the measurement above says which is wrong.
+#
+# SO: `Some{None}` (this port knows the op has no shape) is `R`, the same as a raise. The
+# outer `None` (the fold produced NO `Derived` for this node) is a PORT-ONLY state with no
+# upstream counterpart, and it gets `?` -- a letter no upstream reading can produce, so a
+# fold that stops settling reads as a hole rather than as an agreement.
 def shape_str(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
   match m:
-    case None{}: "R"
-    case Some{None{}}: "N"
+    case None{}: "?"
+    case Some{None{}}: "R"
     case Some{Some{ds}}: dimlist(ds)
 
 def dt_str(m: Maybe<&2, S.Dt>) -> String:
@@ -423,11 +516,67 @@ def g_reduce() -> O.Found:
 def rows.of(+ar: O.Arena, +tb: F.Table, +f: O.Found) -> IO(Unit):
   rows.go(ar, tb, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(f)))
 
+# `--graph buffer`: `Tensor.empty(4,3).realize().uop` on the Python side, MEASURED to be
+# five nodes -- BUFFER CONST CONST STACK RESHAPE -- and built here node for node.
+#
+# WHY IT EXISTS. A realized BUFFER is the one `ParamArg` field this normal form cannot
+# compare by value, and until now that was only ever a CLAIM: no graph either side emitted
+# carried a `buffer`. This graph carries one, so the `z` atom is exercised by a real diff
+# rather than asserted by a comment, and the ledger's `z` row is measured instead of 0.
+#
+# The `buffer` slot number is DELIBERATELY 7 and means nothing (see `bufo`): upstream's
+# `Buffer` has no slot at all. The ParamArg's OWN `slot` is 1 and DOES mean something --
+# it is `UOp.unique_num` -- and it is 1, not 0, because MEASURED (probe p8-slot.py):
+#   `Tensor.empty(4,3)`          -> ALLOC , ParamArg.slot 0
+#   `.realize()`                 -> BUFFER, ParamArg.slot 1   <-- A DIFFERENT SLOT
+#   `Tensor.empty(3,5)`          -> ALLOC , ParamArg.slot 2
+# So realize MINTS A FRESH ParamArg (`UOp.new_buffer`, ops.py:1208 `if slot is None: slot
+# = next(UOp.unique_num)`) and a realized buffer's slot is not the ALLOC's. Writing 0 here
+# because "it was 0 before the realize" is exactly the reading the measurement forbids.
+# `bind_on_realize` is False on a BUFFER and True on an ALLOC -- also measured, also here.
+def allocbuf(slot: U32, size: U32, bslot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+    False{}, None{}, Some{bslot}, False{}, None{}}
+
+def g_buffer() -> O.Found:
+  +b0 = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{allocbuf(1, 12, 7)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(b0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+
+# `--graph sink`: `UOp(Ops.SINK, (UOp.const(4),), KernelInfo())` -- MEASURED to be two
+# nodes, CONST and SINK, and it exists to exercise two things no other graph reaches: the
+# four-slot `kI(..)` arg, and the `R` shape value (a SINK has no shape -- `UOp.shape`
+# raises `RuntimeError` at ops.py:455, so the column is `R`, not `N`).
+#
+# It is built with `KernelInfo.of()` -- the DEFAULT -- because that is the only value both
+# sides can produce, and MEASURED: the port's is `{"test", Nil{}, None{}, 0}`, `opts_to_apply`
+# is `None` and `applied_opts` is empty. Upstream's default is the same except that
+# `opts_to_apply` is `None` too, so `kI(stest,n(),N,i0)` is the ONE `kI` text both sides
+# can agree on. `llm/kernels/amd.py` writes `opts_to_apply=()` (an EMPTY TUPLE, not `None`)
+# on every SINK it builds, so a real kernelized graph diverges in that slot -- a reported
+# one now, and a reported NOTHING before, because both emitters dropped the field.
+def g_sink() -> O.Found:
+  +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  O.UOp.new(O.Found.ar(c4), O.OpsSINK{}, [O.Found.i(c4)], O.AKernel{O.KernelInfo.of()}, O.TNone{})
+
+# `rows.pick` is a `Bool.pick` chain: `Bool.pick` CHOOSES an arm, it does not SEQUENCE
+# one, so each rung is one more `Bool.pick` and the default is the matmul.
+# `+` on the binder because this body READS `name` TWICE (once per rung). `Bool.pick`
+# chooses an arm, so at runtime only one read happens, but `String` is linear and bend
+# counts the two static reads -- MEASURED: without `+` this is
+# "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
+def rows.pick3(+name: String) -> O.Found:
+  Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
+    Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
+      Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul())))
+
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
   # local binder either (measured: both `match String.eq(..)` and `match <local>` are compile
   # errors), so a CHOICE between two values is `Bool.pick`.
-  Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul())
+  rows.pick3(name)
 
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.

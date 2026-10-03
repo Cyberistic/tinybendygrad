@@ -1,0 +1,54 @@
+########## 4. cross (two different graphs, BOTH sides) ##########
+# py matmul rows=18  py buffer rows=5  plant=matmul-vs-buffer
+# devices py matmul=['sCPU'] py buffer=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: z=0/1 (a realized BUFFER: device-object PRESENCE only) -- agreement below does NOT cover these.
+# SHARED cores=3  ONLY-PY MATMUL=15  ONLY-PY BUFFER=2  field-mismatches=0  rung2-pairs=0
+# ONLY ON THE PY MATMUL SIDE (15), IN FULL:
+  py matmul#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  py matmul#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+  py matmul#6 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:1 src=[]
+  py matmul#7 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['2', '6', '3']
+  py matmul#8 RESHAPE dtype=f32 shape=(l0:4,l0:1,l0:3) depth=i0 tag=N arg=N src=['5', '7']
+  py matmul#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  py matmul#10 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:5 src=[]
+  py matmul#11 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['3', '10']
+  py matmul#12 RESHAPE dtype=f32 shape=(l0:3,l0:5) depth=i0 tag=N arg=N src=['9', '11']
+  py matmul#13 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['6', '3', '10']
+  py matmul#14 RESHAPE dtype=f32 shape=(l0:1,l0:3,l0:5) depth=i0 tag=N arg=N src=['12', '13']
+  py matmul#15 PERMUTE dtype=f32 shape=(l0:1,l0:5,l0:3) depth=i0 tag=N arg=n(i0,i2,i1) src=['14']
+  py matmul#16 MUL dtype=f32 shape=(l0:4,l0:5,l0:3) depth=i0 tag=N arg=N src=['8', '15']
+  py matmul#17 PERMUTE dtype=f32 shape=(l0:3,l0:4,l0:5) depth=i0 tag=N arg=n(i2,i0,i1) src=['16']
+  py matmul#18 REDUCE dtype=f32 shape=(l0:4,l0:5) depth=i0 tag=N arg=rd(OADD,i1) src=['17']
+# ONLY ON THE PY BUFFER SIDE (2), IN FULL:
+  py buffer#1 BUFFER dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i3,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,z,b0,N) src=[]
+  py buffer#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE
+# bend matmul rows=18  bend buffer rows=5  plant=matmul-vs-buffer
+# devices bend matmul=['sCPU'] bend buffer=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: z=0/1 (a realized BUFFER: device-object PRESENCE only) -- agreement below does NOT cover these.
+# SHARED cores=3  ONLY-BEND MATMUL=15  ONLY-BEND BUFFER=2  field-mismatches=0  rung2-pairs=0
+# ONLY ON THE BEND MATMUL SIDE (15), IN FULL:
+  bend matmul#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  bend matmul#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+  bend matmul#6 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:1 src=[]
+  bend matmul#7 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['2', '6', '3']
+  bend matmul#8 RESHAPE dtype=f32 shape=(l0:4,l0:1,l0:3) depth=i0 tag=N arg=N src=['5', '7']
+  bend matmul#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  bend matmul#10 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:5 src=[]
+  bend matmul#11 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['3', '10']
+  bend matmul#12 RESHAPE dtype=f32 shape=(l0:3,l0:5) depth=i0 tag=N arg=N src=['9', '11']
+  bend matmul#13 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['6', '3', '10']
+  bend matmul#14 RESHAPE dtype=f32 shape=(l0:1,l0:3,l0:5) depth=i0 tag=N arg=N src=['12', '13']
+  bend matmul#15 PERMUTE dtype=f32 shape=(l0:1,l0:5,l0:3) depth=i0 tag=N arg=n(i0,i2,i1) src=['14']
+  bend matmul#16 MUL dtype=f32 shape=(l0:4,l0:5,l0:3) depth=i0 tag=N arg=N src=['8', '15']
+  bend matmul#17 PERMUTE dtype=f32 shape=(l0:3,l0:4,l0:5) depth=i0 tag=N arg=n(i2,i0,i1) src=['16']
+  bend matmul#18 REDUCE dtype=f32 shape=(l0:4,l0:5) depth=i0 tag=N arg=rd(OADD,i1) src=['17']
+# ONLY ON THE BEND BUFFER SIDE (2), IN FULL:
+  bend buffer#1 BUFFER dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,z,b0,N) src=[]
+  bend buffer#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE
+# CROSS VERDICT: OK -- it disagrees

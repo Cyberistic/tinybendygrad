@@ -1,0 +1,16 @@
+########## 5. --plant srcswap ##########
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=srcswap
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
+# SHARED cores=15  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=3
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['d1670d45'] bend=['07a90938']
+MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['76377eb2'] bend=['06ff9493']
+MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['bd57da94', '2b7d1a7e'] bend=['2b7d1a7e', 'bd57da94']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE

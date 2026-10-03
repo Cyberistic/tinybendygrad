@@ -1,0 +1,9 @@
+########## 7. diff --graph reduce ##########
+# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+# py rows=7  bend rows=7  plant=none
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
+# SHARED cores=7  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: AGREE

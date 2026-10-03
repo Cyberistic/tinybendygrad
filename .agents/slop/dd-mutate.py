@@ -97,7 +97,10 @@ def load(text):
 # tinybendygrad` carries the port and nothing else; the gate's output is
 # BYTE-IDENTICAL with the 172 MB full archive, so 11 MB per worker is enough.
 def build_mirror():
-    src = open(LIVE).read()
+    src = open(FROZEN).read()
+    if sha1(src) != FROZEN_SHA1:
+        sys.exit("the frozen snapshot moved: %s is %s, the table says %s"
+                 % (FROZEN, sha1(src), FROZEN_SHA1))
     tag = sha1(src)[:12]
     top = os.path.join(SCRATCH, "dd-mut-" + tag)
     if not os.path.isdir(os.path.join(top, "tinybendygrad")):
@@ -112,10 +115,13 @@ def build_mirror():
     tgt = os.path.join(top, "tinybendygrad", "codegen", "decomp", "dtype.bend")
     open(tgt, "w").write(src)
     got = open(tgt).read()
-    if sha1(got) != sha1(src):
-        sys.exit("RULE I: the mirror does not reproduce the live file")
+    if sha1(got) != sha1(src):        # RULE I: the mirror is the file under test
+        sys.exit("RULE I: the mirror does not reproduce the frozen snapshot")
     if os.path.realpath(tgt) == os.path.realpath(LIVE):
         sys.exit("RULE J: refusing to run -- the mirror IS the live file")
+    # The dependencies dtype.bend imports are the LIVE ones only insofar as they
+    # are at HEAD; if a sibling is dirty the mirror still gets HEAD's copy, and
+    # the C00 control below is what catches the pair being inconsistent.
     return top, tgt, sha1(src)
 
 
@@ -284,6 +290,15 @@ MUTATIONS = [
 
 PLAN = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)] + MUTATIONS
 
+# The frozen snapshot this table is measured against.  `dtype.bend` belongs to a
+# CONCURRENT unit that was observed rewriting it mid-run (73b0e1e7 -> a2c68a7e
+# while 39 mutations were in flight), and the new file does not even compile
+# (`expected : H.I64`).  A harness that reads the live file per mutation measures
+# a moving target, so the snapshot is PINNED BY DIGEST and the run asserts it.
+# To retarget: freeze the file, record its sha1 here, and re-run the baseline.
+FROZEN = os.path.join(HERE, "dd-mutations.frozen.bend")
+FROZEN_SHA1 = "73b0e1e7fd6652c5fc7b49323a1956d44545f230"
+
 
 def edit(src, old, new):
     """Apply one edit and report EXACTLY what happened.  RULE D: a missing or
@@ -302,7 +317,13 @@ def run_gate(path, tgt, want):
     """Run the gate until it reproduces `want`'s exact shape.  bend's stack
     overflow prints nothing at all, which is what makes a 0-row result
     indistinguishable from 'never started', so SHAPE is the guard and the exit
-    code is not (RULE E, RULE H)."""
+    code is not (RULE E, RULE H).
+
+    The FIRST attempt of a WHOLE RUN is the substrate probe: the unmutated mirror
+    must reproduce the baseline's shape before any mutation is measured.  Without
+    it a substrate that stopped compiling turns 39 mutations into 39
+    DID-NOT-COMPILE rows, which is what happened once here.
+    """
     err = ""
     for attempt in range(24):
         with open(path, "w") as fh:
@@ -318,6 +339,22 @@ def run_gate(path, tgt, want):
     return None, err, 24
 
 
+def probe_substrate(tgt, want):
+    """RULE C, UPSTREAM of every control: the UNMUTATED mirror must reproduce the
+    baseline.  If it does not, no mutation result is evidence about the port."""
+    got, err, tries = run_gate(os.path.join(SCRATCH, "ddprobe.txt"), tgt, want)
+    if got is None:
+        sys.exit("SUBSTRATE FAILS: the unmutated mirror printed nothing in 24 "
+                 "attempts -- bend's stack overflow, or a compile failure.  No "
+                 "verdict is evidence until this passes.\n  %s" % (err or "")[:400])
+    if shape(got) != want:
+        sys.exit("SUBSTRATE MISMATCH: the unmutated mirror reads %r but the "
+                 "baseline is %r.\n  The mirror and the baseline are not the same "
+                 "build.  Re-freeze and re-baseline; do NOT read the diff as "
+                 "mutant behaviour." % (shape(got), want))
+    return got
+
+
 def main():
     base_txt = open(sys.argv[1]).read()
     base = load(base_txt)
@@ -327,8 +364,12 @@ def main():
     top, tgt, digest = build_mirror()
     src = open(tgt).read()
     print("# mirror  %s" % top)
-    print("# target  sha1 %s == live sha1 %s  (RULE I asserted)"
-          % (digest, sha1(open(LIVE).read())))
+    print("# FROZEN  %s sha1 %s (pinned; the live file is a concurrent unit's)"
+          % (FROZEN, digest))
+    if sha1(open(LIVE).read()) != digest:
+        print("#         live dtype.bend is now %s -- DIFFERENT.  This table is "
+              "against the snapshot, not against what is on disk."
+              % sha1(open(LIVE).read())[:12])
     for stray in stray_bakes():
         print("# RULE J: STRAY BAKE outside .agents/slop/ and this mirror: %s"
               % stray)
@@ -359,6 +400,9 @@ def main():
                          "mid-mutation.\n  diff %s %s\n  delete %s only once they "
                          "agree." % (os.path.join(root, f), LIVE,
                                      os.path.join(root, f), top))
+
+    probe_substrate(tgt, good)
+    print("# substrate OK: the unmutated mirror reproduces the baseline shape")
 
     workers = max(1, min(int(os.environ.get("DD_WORKERS", 6)), len(plan)))
     cache = os.path.join(HERE, "dd-mut", digest)   # keyed: a stale cache from a
@@ -400,8 +444,6 @@ def main():
         cur = load(got)
         moved = sorted(k for k in set(base) | set(cur) if base.get(k) != cur.get(k))
         verdict = "SAME" if not moved else "MOVED"
-        if short.startswith("C") and moved:
-            verdict = "CONTROL-BROKEN"
         open(dest, "w").write(verdict + "\t" + ",".join(moved))
         return name, verdict, moved, "%d attempt(s)" % tries
 
@@ -420,7 +462,23 @@ def main():
         results = list(pool.map(run, chunks))
     rows = [r for chunk in results for r in chunk]
     rows.sort(key=lambda r: PLAN.index(next(p for p in PLAN if p[0] == r[0])))
-    broken = next((n for n, v, _, _ in rows if v == "CONTROL-BROKEN"), None)
+    # RULE C, ENFORCED.  A control that is not SAME -- MOVED, or DID-NOT-COMPILE,
+    # or PATCH-NOT-APPLIED -- means the measurement is void, and a void
+    # measurement MUST NOT BE WRITTEN AS A TABLE.  A run where C00 (the
+    # byte-identical rewrite) could not compile produced 39 DID-NOT-COMPILE rows
+    # and called it a table; every one of those was noise about the substrate.
+    broken = next((n for n, v, _, _ in rows
+                   if v != "SAME" and n.split()[0].startswith("C")), None)
+    if broken:
+        for name, verdict, moved, note in rows:
+            print("%-4s %-62s %-17s %3d rows  %s"
+                  % (name.split()[0], name[len(name.split()[0]):][:62], verdict,
+                     len(moved), note))
+        sys.exit("CONTROL NOT SAME: %s read %s.  EVERY VERDICT IS VOID -- the "
+                 "harness or the substrate is wrong, not the port.\n"
+                 "  No table written.  Check C00 first: a byte-identical "
+                 "rewrite that does not compile is a COMPILE failure in the "
+                 "mirror, not a mutation result." % (broken, broken))
     for name, verdict, moved, note in rows:
         print("%-4s %-62s %-17s %3d rows  %s"
               % (name.split()[0], name[len(name.split()[0]):][:62], verdict,

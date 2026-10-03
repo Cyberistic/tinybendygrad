@@ -1,0 +1,13 @@
+########## 6. --plant bytes ##########
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=21  bend rows=18  plant=bytes
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: y=2/0 (a bytes arg: LENGTH only) -- agreement below does NOT cover these.
+# SHARED cores=18  ONLY-PY=3  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# ONLY ON THE PY SIDE (3), IN FULL:
+  py#19 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y4 src=[]
+  py#20 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y4 src=[]
+  py#21 SOURCE dtype=void shape=R depth=i0 tag=N arg=N src=['18', '19', '20']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE

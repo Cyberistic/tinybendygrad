@@ -1,0 +1,40 @@
+########## 5. --plant dtype ##########
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=dtype
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
+# SHARED cores=8  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=10
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['0e70ebed', '5d566c49'] bend=['2b7d1a7e', 'bd57da94']
+MISMATCH RESHAPE   py#8 vs bend#8  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['de96e81d', '061d05dc'] bend=['91aee5d3', '061d05dc']
+MISMATCH ALLOC     py#1 vs bend#1  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    arg   py=P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) bend=P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)
+MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['0ab48927'] bend=['07a90938']
+MISMATCH ALLOC     py#9 vs bend#9  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    arg   py=P(i1,Di32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) bend=P(i1,Df32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)
+MISMATCH PERMUTE   py#15 vs bend#15  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['e817df10'] bend=['1b0bc5b4']
+MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['49707f09'] bend=['06ff9493']
+MISMATCH RESHAPE   py#5 vs bend#5  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['21186596', 'c7634b1f'] bend=['aa763d62', 'c7634b1f']
+MISMATCH RESHAPE   py#14 vs bend#14  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['e90130d6', '52222228'] bend=['568f2777', '52222228']
+MISMATCH RESHAPE   py#12 vs bend#12  (no shared core; paired one-to-one on the dtype-erased arg)
+    dtype py=i32 bend=f32
+    src  py=['58aa7efa', '3a1c5aaf'] bend=['107a0748', '3a1c5aaf']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# VERDICT: DISAGREE

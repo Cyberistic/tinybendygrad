@@ -1,0 +1,28 @@
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=srcswap
+# devices py=['sCPU'] bend=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
+# SHARED cores=15  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=3
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['d1670d45'] bend=['07a90938']
+MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['76377eb2'] bend=['06ff9493']
+MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['bd57da94', '2b7d1a7e'] bend=['2b7d1a7e', 'bd57da94']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+#   z   py=0    bend=0    a realized BUFFER: device-object PRESENCE only
+#       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
+#   y   py=0    bend=0    a bytes arg: LENGTH only
+#       upstream gives two same-length blobs different keys; the port interns them as ONE node (measured) -- this is a port IDENTITY divergence, not only a normal-form loss
+#   u   py=0    bend=0    a UOp nested in an arg: identity NOT compared
+#       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
+#   q   py=0    bend=0    an applied option the port cannot resolve: COUNT only
+#       ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are `Opt` dataclasses and no port file writes a non-empty list
+#   X!  py=0    bend=0    an AxisType member with no counterpart at this tree
+#       measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files
+#   BAD py=0    bend=0    the port's arena bottom: not a node
+#       ops.bend:1154 -- a read of an index that was never interned
+#   E   py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
+#       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: `vars()` raises on an enum member, so a SINK with a non-empty applied_opts could not be emitted at all
+# VERDICT: DISAGREE

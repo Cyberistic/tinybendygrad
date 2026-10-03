@@ -1,9 +1,9 @@
-# PROBE 3: ONE SIZE PER PROCESS. probe2 reported "0 launches" for every size
-# after the first, which is the cache trace_forward.py's header warns about
-# ("a warm-up forward leaves the traced pass with ZERO launches"): the traced
-# pass hits the linear cache. So the size sweep must not share a process.
-# Usage: e2e_mm_probe3.py M K N
-import os, re, sys, sys
+# PROBE 4: WHAT DOES THE GLOBAL SIZE EVER LOOK LIKE? Every bare matmul came back
+# global=[1,1,1] local=[1,1,1] -- one workgroup, one invocation, the whole matmul
+# unrolled into a double loop. That is a real computation but it exercises no
+# dispatch geometry. So: batched matmul, an elementwise chain, and a big relu,
+# to find a launch whose global size is bigger than 1 in some axis.
+import os, re
 os.environ.setdefault("DEV", "CPU"); os.environ.setdefault("NO_MEMORY_PLANNER", "1")
 os.environ.setdefault("BEAM", "0"); os.environ.setdefault("CACHELEVEL", "0")
 import numpy as np
@@ -44,12 +44,23 @@ def traced(ctx, call, ast, devices=None):
     out.append(rec)
   return orig(ctx, call, ast, devices)
 
-RZ.exec_kernel = traced
-M, K, N = (int(v) for v in sys.argv[1:4])
+def show(label):
+  print(f"--- {label}: {len(out)} launch(es)")
+  for r in out:
+    print(f"      global={r['global']} local={r['local']} nbufs={len(r['bufs'])} sizes={[b[0] for b in r['bufs']]}"
+          f" vals={r['vals']} entry={r.get('entry')} wgsl={len(r['wgsl'] or '')}B err={r.get('wgslError')}")
+  out.clear()
+
 rng = np.random.RandomState(0x5EED)
-A = Tensor(rng.randn(M, K).astype(np.float32)); B = Tensor(rng.randn(K, N).astype(np.float32))
-C = A.matmul(B).realize()
-print(f"{M}x{K}x{N} csum={float(C.numpy().sum()):.6f} launches={len(out)}")
-for r in out:
-  print(f"  global={r['global']} local={r['local']} bufs={r['bufs']} entry={r.get('entry')} "
-        f"wgsl={len(r['wgsl'] or '')}B err={r.get('wgslError')}")
+RZ.exec_kernel = traced
+
+a4 = Tensor(rng.randn(4, 8, 8).astype(np.float32)); b4 = Tensor(rng.randn(4, 8, 8).astype(np.float32))
+c4 = a4.matmul(b4).realize()
+show("batched 4x(8x8 @ 8x8)")
+
+x = Tensor(rng.randn(64, 64).astype(np.float32)); y = x.relu().realize()
+show("relu 64x64")
+
+s = Tensor(rng.randn(8, 8).astype(np.float32)); t = Tensor(rng.randn(8, 8).astype(np.float32))
+u = (s.matmul(t)).realize(); v = (u * u + u).softmax(-1).realize()
+show("chain mm -> (x*x+x) -> softmax  8x8")

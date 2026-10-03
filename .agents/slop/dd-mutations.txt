@@ -1,194 +1,129 @@
 # dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend
-# target sha1 73b0e1e7fd6652c5fc7b49323a1956d44545f230, asserted EQUAL to the live file (RULE I)
+# target sha1 1381aa594257c2b00915f9578ad7fc8ceebaf544, asserted EQUAL to the live file (RULE I)
 # baseline 172 rows, shape (first='l2idt0=i64->i32' lines=174 last='')
-# 3 controls SAME | 4 mutations MOVED | 0 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 0 DID-NOT-COMPILE | 0 DEAD ANCHOR
+# 0 controls SAME | 0 mutations MOVED | 0 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 39 DID-NOT-COMPILE | 0 DEAD ANCHOR
 #
 # DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.
 #   (none: every anchor occurs exactly once)
 #
 # CONTROLS (RULE C -- all must read SAME; a MOVED control voids every verdict below)
-#   C00 C00 no-op control (rewrite the file byte-identical)        SAME
-#   C01 C01 comment-only control (insert a comment line above a def) SAME
-#   C02 C02 whitespace-only control (re-indent one trailing statement) SAME
+#   C00 C00 no-op control (rewrite the file byte-identical)        DID-NOT-COMPILE
+#   C01 C01 comment-only control (insert a comment line above a def) DID-NOT-COMPILE
+#   C02 C02 whitespace-only control (re-indent one trailing statement) DID-NOT-COMPILE
 #
 #   NOTE: a whitespace-only edit of a `case` arm does NOT compile -- Bend's indentation is
 #   semantic -- so C02 re-indents a trailing statement, not an arm.
 
 M01 dd_cast_sel: swap the long arm 0/1
-  MOVED  42 rows
-    lg2k
-    lg2n
-    lg2p
-    lg2sig
-    lg3k
-    lg3n
-    lg3p
-    lg3sig
-    lg4k
-    lg4n
-    lg4p
-    lg4sig
-    lg5k
-    lg5n
-    lg5p
-    lg5sig
-    lg6k
-    lg6n
-    lg6p
-    lg6sig
-    lgbn
-    lgok
-    lgop
-    lgosig
-    lgqk
-    lgqn
-    lgqsig
-    lgrk
-    lgsk
-    lgtk
-    lgvk
-    lgvn
-    lgvp
-    lgvsig
-    lgwk
-    lgwn
-    lgwp
-    lgwsig
-    lgxk
-    lgxn
-    lgxp
-    lgxsig
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M02 dd_cast_sel: swap the non-long arm 2/3
-  MOVED  7 rows
-    lg7
-    lg7k
-    lg7sig
-    lgu
-    lguk
-    lgun
-    lgusig
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M03 dd_cast_fold: never fold a same-dtype cast
-  MOVED  14 rows
-    lg2
-    lg2n
-    lg2sig
-    lgqk
-    lgqsig
-    lgrk
-    lgsk
-    lgtk
-    lgw
-    lgwn
-    lgwsig
-    lgx
-    lgxn
-    lgxsig
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M04 dd_cast_bool: invert the bool-source test
-  MOVED  2 rows
-    lg5n
-    lg5sig
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M05 l2i_cast3.bitc: never fold the uint bitcast
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M06 l2i_cast.got: route sel 3 to arm 0 instead of arm 3
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M07 dd_bc: never fold (ADD/SUB word bitcasts)
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M08 l2i_cast0.sgn: const_like(-1) as 1 instead of -1
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M09 l2i_shl.hi: OR the halves the other way round
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M10 l2i_shl.hi: `>> 31 - n` becomes `>> n`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M11 l2i_shr.fill: always sign-extend
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M12 l2i_shr.fill: always fill with zero
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M13 l2i_shl.ge: `b0 >= 32` becomes `b0 < 32`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M14 l2i_mul.p: swap `a0*b1` and `a1*b0`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M15 l2i_mul.w: shift the product right before left
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M16 l2i_cmplt: swap the two OR halves
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M17 l2i_where: swap the two branch pairs
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M18 l2i_max: swap the WHERE branches
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M19 l2i_binop: force AND on both halves
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M20 dd_rsub31: `31 - n` becomes `31 + n`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M21 unpack32: mask 0xFFFF becomes 0x10000
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M22 unpack32: shift the masked low word instead of the bitcast
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M23 reindex.scaled: swap `i1*mul` to `mul*i1`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M24 l2i_cdiv: 64 iterations become 63
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M25 l2i_cast0.pick: sign-extend where dtype.py zero-extends
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M26 dd_rs.push: visit src[n] before src[0]
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M27 dd_rs.has: never remember a node (cone visits every edge)
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M28 l2i.roots: root the cone at the low word only
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M29 l2i.gone: print `none` instead of naming the exception
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M30 dd_eck: treat every node as a CONST
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w4
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M31 dd_join.add: join with `-` instead of `,`
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w5
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M32 l2i.went: never call l2i (the refusal guard always fires)
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w6
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M33 l2i_define.size2: stop doubling the size
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w0
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M34 f2f.up.tail: always take the non-fnuz arm
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w1
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M35 rne.sel: refuse every shift
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w2
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
-  BAKE-PRESENT  0 rows   << a bake is in worker tree /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/dd-mut-73b0e1e7fd66/w3
+  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : H.I64
 
 
-=== ROWS NO MUTATION MOVED (122 of 172 baseline rows) ===
+=== ROWS NO MUTATION MOVED (172 of 172 baseline rows) ===
   c0
   c1
   c2
@@ -213,11 +148,35 @@ M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
   lg1n
   lg1p
   lg1sig
+  lg2
+  lg2k
+  lg2n
+  lg2p
+  lg2sig
   lg3
+  lg3k
+  lg3n
+  lg3p
+  lg3sig
   lg4
+  lg4k
+  lg4n
+  lg4p
+  lg4sig
   lg5
+  lg5k
+  lg5n
+  lg5p
+  lg5sig
   lg6
+  lg6k
+  lg6n
+  lg6p
+  lg6sig
+  lg7
+  lg7k
   lg7n
+  lg7sig
   lg8
   lg8k
   lg8n
@@ -235,6 +194,7 @@ M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
   lgasig
   lgb
   lgbk
+  lgbn
   lgbp
   lgbsig
   lgc
@@ -292,20 +252,45 @@ M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)
   lgn
   lgnn
   lgo
+  lgok
   lgon
+  lgop
+  lgosig
   lgq
+  lgqk
+  lgqn
   lgqp
+  lgqsig
   lgr
+  lgrk
   lgrn
   lgrp
   lgrsig
   lgs
+  lgsk
   lgsn
   lgssig
   lgt
+  lgtk
   lgtn
   lgtsig
+  lgu
+  lgun
   lgv
+  lgvk
+  lgvn
+  lgvp
+  lgvsig
+  lgw
+  lgwk
+  lgwn
+  lgwp
+  lgwsig
+  lgx
+  lgxk
+  lgxn
+  lgxp
+  lgxsig
   up
   upk
   upn
