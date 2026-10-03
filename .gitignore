@@ -52,3 +52,17 @@ probe-*.bend.mut
 examples/webgpu/mnist/net.json
 examples/webgpu/mnist/*.gz
 .agents/slop/mirror/
+
+# Per-unit probe/working trees. An ORACLE (.py that calls CPython) and a GATE (.py/.sh that runs
+# it) are the deliverable and live at slop/ TOP LEVEL; the tree a unit probed inside is not.
+# NOTE: .gitignore cannot untrack a file that is already tracked -- these had to be DELETED, not
+# just ignored, and the failure mode looks exactly like success.
+.agents/slop/elf/
+.agents/slop/elfprobe/
+.agents/slop/agprobe/
+.agents/slop/li/
+.agents/slop/ptxown/
+.agents/slop/spec/
+.agents/slop/srch/
+.agents/slop/ddcheck/
+.agents/slop/mirror/

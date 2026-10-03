@@ -1342,7 +1342,7 @@ def f2f.down.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to
 def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
   +m = f2f.em1(O.Found.ar(a), fe)
-  +b = dd_band(O.Found.ar(O.Found.i(m)), O.Found.i(a), m)
+  +b = dd_band(O.Found.ar(a), O.Found.i(a), m)
   +c = dd_wk(O.Found.ar(b), H.i64_of_i32(U32.add(U32.sub(T.exponent_bias(fr), T.exponent_bias(to)), 1)))
   dd_lt1(O.Found.ar(c), O.Found.i(b), O.Found.i(c))
 
@@ -1380,7 +1380,7 @@ def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, 
 def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
   +m = f2f.em1(O.Found.ar(a), fe)
-  +b = dd_band(O.Found.ar(m), O.Found.i(a), m)
+  +b = dd_band(O.Found.ar(a), O.Found.i(a), m)
   dd_eq1(O.Found.ar(b), O.Found.i(b), m)
 
 # `sign.cast(f2f_dt[to]) | norm`, which the fnuz return wraps.
