@@ -272,7 +272,7 @@ day rediscovering that `2n+p` is not an even-case test.
       (`op`, `axis`, `arg`), `KernelOptError`, `check` helper. The port is the
       same shape: `OptOps` as a 4-constructor `Data`, `Opt` as a 3-tuple, the
       exception is a tag. **COMMITTED**.
-- [ ] `tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
+- [~] `tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
       `full_rewrite_to_sink`, `pm_to_program`, `do_to_program`, `to_program`,
       `to_program_key`, `to_program_cache`. **This is not a missing
       re-export; it IS `graph_rewrite`'s main caller, the rewrite engine is

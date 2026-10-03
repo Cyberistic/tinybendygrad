@@ -6,6 +6,9 @@ allow/disk predicates at device.py:31 and device.py:70. Registry lengths that
 scan the filesystem (`stem_len`, `reg_len`) are omitted: they count files in
 this checkout, not a function's answer, and a second checkout disagrees.
 """
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from tinygrad.device import Device, ALL_DEVICES
 
 

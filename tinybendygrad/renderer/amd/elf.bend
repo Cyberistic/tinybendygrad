@@ -245,11 +245,13 @@ def Mx.a(m: Mx) -> U32:
     case Mx{v, s, a}: a
 def Mx.zero() -> Mx: Mx{0, 0, 0}
 def Mx.text(m: Mx) -> String:
-  String.concat([U32.show(Mx.v(m)), ",", U32.show(Mx.s(m)), ",", U32.show(Mx.a(m))])
+  match m:
+    case Mx{v, s, a}:
+      String.concat([U32.show(v), ",", U32.show(s), ",", U32.show(a)])
 
-def is_acc_t(t: U32) -> Bool:
+def is_acc_t(+t: U32) -> Bool:
   Bool.or(U32.is_eq(t, OPR_ACCVGPR()), U32.is_eq(t, OPR_SRC_ACCVGPR()))
-def is_or_t(t: U32) -> Bool:
+def is_or_t(+t: U32) -> Bool:
   Bool.or(U32.is_eq(t, OPR_VGPR_OR_ACCVGPR()),
     Bool.or(U32.is_eq(t, OPR_SRC_VGPR_OR_ACCVGPR()), U32.is_eq(t, OPR_SRC_VGPR_OR_ACCVGPR_OR_CONST())))
 def take_acc(+o: Opr, acc_cd: U32) -> Bool:
@@ -259,10 +261,10 @@ def acc_cons(yes: Bool, name: String, acc: List<&2, String>) -> List<&2, String>
   match yes:
     case True{}: List.append(&2, String, [name], acc)
     case False{}: acc
-def acc_go(oprs: List<&2, Opr>, acc_cd: U32, acc: List<&2, String>) -> List<&2, String>:
+def acc_go(oprs: List<&2, Opr>, +acc_cd: U32, acc: List<&2, String>) -> List<&2, String>:
   match oprs:
     case Nil{}: acc
-    case h <> t: acc_go(t, acc_cd, acc_cons(take_acc(h, acc_cd), Opr.name(h), acc))
+    case +h <> t: acc_go(t, acc_cd, acc_cons(take_acc(h, acc_cd), Opr.name(h), acc))
 def acc_names(oprs: List<&2, Opr>, acc_cd: U32) -> List<&2, String>:
   acc_go(oprs, acc_cd, Nil{})
 
@@ -271,7 +273,7 @@ def has_name(ns: List<&2, String>, +want: String) -> Bool:
     case Nil{}: False{}
     case h <> t: Bool.or(String.eq(h, want), has_name(t, want))
 
-def in_vgpr(off: U32) -> Bool:
+def in_vgpr(+off: U32) -> Bool:
   Bool.and(Bool.not(U32.is_lt(off, vgpr_lo())), U32.is_lt(off, vgpr_hi()))
 def in_sgpr(off: U32) -> Bool: U32.is_lt(off, sgpr_hi())
 
@@ -289,9 +291,9 @@ def apply_which(vg: Bool, sg: Bool, off: U32, sz: U32, name: String, names: List
   match vg:
     case True{}: apply_v(has_name(names, name), off, sz, m)
     case False{}: apply_s(sg, off, sz, m)
-def apply_off(off: U32, sz: U32, name: String, names: List<&2, String>, m: Mx) -> Mx:
+def apply_off(+off: U32, sz: U32, name: String, names: List<&2, String>, m: Mx) -> Mx:
   apply_which(in_vgpr(off), in_sgpr(off), off, sz, name, names, m)
-def apply_reg(reg: Bool, +u: Use, names: List<&2, String>, m: Mx) -> Mx:
+def apply_reg(+reg: Bool, +u: Use, names: List<&2, String>, m: Mx) -> Mx:
   match reg:
     case False{}: m
     case True{}: apply_off(D.Rg.off(Use.reg(u)), D.Rg.sz(Use.reg(u)), Use.name(u), names, m)
@@ -302,7 +304,7 @@ def apply_fixed(fix: Bool, +u: Use, names: List<&2, String>, m: Mx) -> Mx:
 def apply_use(+u: Use, names: List<&2, String>, m: Mx) -> Mx:
   apply_fixed(U32.is_eq(Use.kind(u), D.K_FIXED()), u, names, m)
 
-def scan_fields(fs: List<&2, Use>, names: List<&2, String>, m: Mx) -> Mx:
+def scan_fields(fs: List<&2, Use>, +names: List<&2, String>, m: Mx) -> Mx:
   match fs:
     case Nil{}: m
     case h <> t: scan_fields(t, names, apply_use(h, names, m))
@@ -335,14 +337,24 @@ def Slot.sz(p: Slot) -> U32:
   match p:
     case Slot{slot, sz}: sz
 
-def insert.go(lt: Bool, p: Slot, h: Slot, t: List<&2, Slot>) -> List<&2, Slot>:
-  match lt:
-    case True{}: List.append(&2, Slot, [p], List.append(&2, Slot, [h], t))
-    case False{}: List.append(&2, Slot, [h], insert(p, t))
-def insert(p: Slot, xs: List<&2, Slot>) -> List<&2, Slot>:
+# elf.py:62, insertion sort by slot index. `strict <`, so a tie appends AFTER
+# the equal key and the sort is stable -- the same as Python's `sorted`.
+# One def, not the `insert`/`insert.go` pair this was: those two were MUTUAL
+# (`insert.go` calls the `insert` written below it), and Bend 2.0.34 refuses a
+# forward reference in safe code, reporting it as `an unfilled law is a dead
+# claim` (references/bend/CHANGELOG.md:214-218). The sanctioned escape is
+# `@unsafe` / `def f?`, which drops the check for good, and the other escape --
+# `insert.go(lt: Bool, ..)` taking the comparison as a parameter -- is what
+# forced the pair in the first place, because `match` may not scrutinize a
+# computed value. `Bool.pick` is that ternary without the split; it is what
+# base's own `List.merge.step` cannot use, and what `param_size` above does.
+def insert(+p: Slot, xs: List<&2, Slot>) -> List<&2, Slot>:
   match xs:
     case Nil{}: [p]
-    case h <> t: insert.go(U32.is_lt(Slot.slot(p), Slot.slot(h)), p, h, t)
+    case +h <> +t:
+      Bool.pick(List<&2, Slot>, U32.is_lt(Slot.slot(p), Slot.slot(h)),
+        List.append(&2, Slot, [p], List.append(&2, Slot, [h], t)),
+        List.append(&2, Slot, [h], insert(p, t)))
 def sort_go(xs: List<&2, Slot>, acc: List<&2, Slot>) -> List<&2, Slot>:
   match xs:
     case Nil{}: acc
@@ -369,7 +381,7 @@ def Lds.item(x: Lds) -> U32:
 def lds_go(xs: List<&2, Lds>, acc: U32) -> U32:
   match xs:
     case Nil{}: acc
-    case h <> t: lds_go(t, U32.add(acc, U32.mul(Lds.numel(h), Lds.item(h))))
+    case +h <> t: lds_go(t, U32.add(acc, U32.mul(Lds.numel(h), Lds.item(h))))
 def lds_sum(xs: List<&2, Lds>) -> U32: lds_go(xs, 0)
 
 # elf.py:42. `u.arg.startswith("gidx")` then `int(u.arg[-1])`.
@@ -386,7 +398,7 @@ def last_cp.go(empty: Bool, +s: String, n: U32) -> U32:
     case False{}: last_ch(String.to_list(String.take(String.drop(s, U32.to_nat(U32.sub(n, 1))), 1n)))
 def last_cp(+s: String) -> U32:
   last_cp.go(U32.is_lt(U32.from_nat(String.length(s)), 1), s, U32.from_nat(String.length(s)))
-def is_digit(cp: U32) -> Bool:
+def is_digit(+cp: U32) -> Bool:
   Bool.and(Bool.not(U32.is_lt(cp, 48)), Bool.not(U32.is_lt(57, cp)))
 
 type Gids is Data:
@@ -405,7 +417,7 @@ def Gids.z(g: Gids) -> Bool:
     case Gids{bad, x, y, z}: z
 def Gids.zero() -> Gids: Gids{False{}, False{}, False{}, False{}}
 
-def gid_set(n: U32, +g: Gids) -> Gids:
+def gid_set(+n: U32, +g: Gids) -> Gids:
   Gids{False{}, Bool.or(Gids.x(g), U32.is_eq(n, 0)),
     Bool.or(Gids.y(g), U32.is_eq(n, 1)), Bool.or(Gids.z(g), U32.is_eq(n, 2))}
 def gid_one(prefix: Bool, dig: Bool, n: U32, +g: Gids) -> Gids:
@@ -506,7 +518,7 @@ def rsrc3(on: Bool, max_v: U32) -> U32:
 # whose last character is not a digit is Python's ValueError.
 # ===========================================================================
 
-def asm_text(+arch: String, +m: Mx, text: U32, lds: U32, kern: U32, +g: Gids) -> String:
+def asm_text(+arch: String, +m: Mx, +text: U32, lds: U32, kern: U32, +g: Gids) -> String:
   String.concat(["lds=", U32.show(lds), " kern=", U32.show(kern),
     " entry=", H.i64_text(entry_of(text)),
     " r1=", U32.show(rsrc1(vgpr_gran(next_vgpr(U32.is_lt(0, Mx.a(m)), Mx.v(m), Mx.a(m))),
@@ -524,8 +536,8 @@ def asm_go(hit: Bool, bad: Bool, arch: String, m: Mx, text: U32, lds: U32, kern:
         case True{}: "REFUSAL:ValueError"
         case False{}: asm_text(arch, m, text, lds, kern, g)
 
-def assemble_linear(arch: String, insts: List<&2, Ins>, code_len: U32,
-    locs: List<&2, Lds>, params: List<&2, Slot>, gid_args: List<&2, String>) -> String:
+def assemble_linear(+arch: String, insts: List<&2, Ins>, code_len: U32,
+    locs: List<&2, Lds>, params: List<&2, Slot>, +gid_args: List<&2, String>) -> String:
   asm_go(arch_hit(arch), Gids.bad(gids_of(gid_args)), arch, scan(insts), text_len(code_len),
     lds_sum(locs), kernarg(params), gids_of(gid_args))
 
@@ -675,6 +687,13 @@ def g_sink() -> IO(Unit):
     urow("param.glob", param_size(False{}, 4), 8)
     urow("kern.sorted", kernarg([Slot{0, 4}, Slot{1, 1}, Slot{2, 8}]), 16)
     urow("kern.unsorted", kernarg([Slot{2, 8}, Slot{0, 4}, Slot{1, 1}]), 16)
+    # The one row that can tell a correct sort from a wrong one. Both rows
+    # above fold to 16 whether the comparison is `<` or `>=`, so neither can
+    # see `insert`'s comparison at all; here key order (0 then 1) is the
+    # REVERSE of the fixture's list order, and the two folds differ.
+    # Called: `.venv/bin/python .agents/slop/elf_amd_sort.py` -- kernarg 9,
+    # and 16 with the sort dropped, and 16 again with the comparison flipped.
+    urow("kern.keyorder", kernarg([Slot{1, 1}, Slot{0, 8}]), 9)
     urow("kern.empty", kernarg(none_p()), 0)
     urow("lds.one", lds_sum([Lds{8, 4}]), 32)
     urow("lds.two", lds_sum([Lds{8, 4}, Lds{15, 2}]), 62)

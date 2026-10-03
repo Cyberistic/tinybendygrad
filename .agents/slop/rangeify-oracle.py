@@ -19,7 +19,8 @@ Those three are not emitted. The other shared rows are.
 import contextlib
 import importlib.util
 import io
-import pathlib
+import os, pathlib, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from tinygrad.schedule import rangeify as R  # witness: the calls live in rf-rows
 

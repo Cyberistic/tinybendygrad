@@ -10,6 +10,8 @@ rather than ask cmd what it laid down for a real exec/copy/wait. The device
 rows (`nr_copy_dev`) embed whichever device getenv selected and are host answers.
 """
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from tinygrad.helpers import getenv
 from tinygrad.runtime.ops_null import EXEC, COPY, WAIT, STORE, TIMESTAMP, NullDevice

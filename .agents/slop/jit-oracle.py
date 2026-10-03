@@ -20,8 +20,8 @@ MEASURED 2026-10-03 under DEV=NULL, 22 shared, 4 disagree. CPython's answer:
 
 The other 18 are emitted.
 """
-import pathlib
-import sys
+import os, pathlib, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from tinygrad.engine.jit import _prepare_jit_inputs  # witness
 

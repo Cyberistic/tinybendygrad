@@ -34,7 +34,10 @@ OMITTED, measured against the port's own rows, with CPython's answer:
       this file exists to not repeat.
 """
 import ast
+import os
 import struct
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from tinygrad.runtime.autogen import mesa, kgsl
 import tinygrad.runtime.ops_qcom as Q

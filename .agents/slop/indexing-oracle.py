@@ -6,6 +6,9 @@ movement-op rows (`mv_*`) are not printed: the port encodes them as arena slot
 ids, and apply_movement_op returns UOps whose identity is not that encoding.
 Printing a re-encoded arena would restate the port.
 """
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from tinygrad.uop.ops import Ops, broadcast_axes
 from tinygrad.schedule.indexing import ALWAYS_CONTIGUOUS, data_srcs
 from tinygrad.helpers import argsort
