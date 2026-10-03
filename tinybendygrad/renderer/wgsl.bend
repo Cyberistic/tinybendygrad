@@ -435,6 +435,14 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
     case O.OpsMUL{}       : cfo_bin("*", a, b)
     case O.OpsCMOD{}      : cfo_bin("%", a, b)
     case O.OpsCDIV{}      : cfo_bin("/", a, b)
+    # Ops.FDIV is MISSING from WGSLRenderer.code_for_op upstream and present in
+    # ClangRenderer's (cstyle.py:294 renders `(a/b)`). Measured, not assumed:
+    #   clang - wgsl = ['Ops.FDIV'];  wgsl - clang = ['Ops.EXP2','Ops.LOG2','Ops.RECIPROCAL','Ops.SIN']
+    # so this is ONE missing arm, not five -- the other four are WGSL builtins with no C spelling.
+    # It matters because the fallthrough below is `case _: ""`, so before this arm an FDIV rendered
+    # as the EMPTY STRING: a malformed shader, not a Python KeyError. BatchNorm's
+    # rsqrt(running_var + eps) is the shape that reaches it.
+    case O.OpsFDIV{}      : cfo_bin("/", a, b)
     case O.OpsCMPNE{}     : cfo_bin("!=", a, b)
     case O.OpsSHR{}       : cfo_bin(">>", a, b)
     case O.OpsSHL{}       : cfo_bin("<<", a, b)
