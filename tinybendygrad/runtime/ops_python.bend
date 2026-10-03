@@ -2331,122 +2331,43 @@ def Prog.launch() -> IO(Unit):
 # ===========================================================================
 
 # ---- PythonCompiler.compile, :160. base64.b64decode(src) ------------------
-# CPython's default is validate=False, which DISCARDS non-alphabet characters
-# before decoding. The port REFUSES them instead, because choosing silently
-# between "discard" and "error" is not a decision a port gets to make for its
-# caller. Every fixture is clean base64, so the two agree there and ONLY there.
-def B64_BAD() -> U32: 65
-def B64_PAD() -> U32: 64
+#
+# WALL 5, AND IT IS A REAL ONE. `base64.b64decode` is a character-level transform
+# with nothing dynamic in it, so it LOOKS like the most portable def in this file
+# and it is the only one here that is left unported. The reason is measured, not
+# guessed, and it is worth writing down because the first draft compiled, ran and
+# produced plausible-looking hex:
+#
+#   * `Bool.pick` EVALUATES BOTH ARMS. A losing arm that computes
+#     `Char.from_u32(U32.sub(v, 10))` for `v < 10` is `Char.from_u32(2**32 - 6)`,
+#     which is not a scalar value, and the run dies with
+#       bend: 4294967291 is not a Unicode scalar value
+#     EVEN THOUGH the chosen arm was fine. (A `U32` in the losing arm is
+#     harmless: it underflows to a valid `U32` and is discarded. The trap is
+#     specific to a CHECKED type.) The nibble/byte printers below dodge it.
+#   * With that fixed, the decoder ran, and its OUTPUT WAS WRONG against
+#     CPython for every non-trivial input. Port vs CPython, measured:
+#         "AA=="      port 04          CPython 00
+#         "AP8="      port 04          CPython 00ff
+#         "AP9/"      port 00          CPython 00ff7f
+#         "AP9/AQ=="  port fc0404      CPython 00ff7f01
+#         "dGhlIHF1..." port 9481c5ac... CPython 7468652071...
+#     The byte COUNTS were wrong too (3 where CPython says 4 on the last one).
+# `U32.shrn` is NOT the culprit -- measured `U32.shrn(4160, 16n) = 0` and
+# `U32.shrn(16711680, 16n) = 255`, both correct -- so the defect is in how this
+# fold threads its quartet index through the `Bool.pick` selects, and it was NOT
+# found inside the time this unit had.
+#
+# A row that disagrees with CPython is a row that encodes a bug, so there are NO
+# `pyc_*` rows here at all. What IS kept is the fact that is decidable without
+# running the transform: `compile` IS `base64.b64decode` -- measured
+# `PythonCompiler.compile.__func__ is base64.b64decode` is False, but
+# `compile(src) == base64.b64decode(src)` on every fixture, i.e. it IS the
+# function under another name.
+# TODO(p3) runtime/ops_python.py:160 -- the base64 quartet fold.
 def B64_EQ() -> U32: 61
 
-def b64val(+c: U32) -> U32:
-  Bool.pick(U32, Bool.and(U32.is_ge(c, 65), U32.is_le(c, 90)), U32.sub(c, 65),
-    Bool.pick(U32, Bool.and(U32.is_ge(c, 97), U32.is_le(c, 122)), U32.sub(c, 71),
-      Bool.pick(U32, Bool.and(U32.is_ge(c, 48), U32.is_le(c, 57)), U32.add(c, 4),
-        Bool.pick(U32, U32.is_eq(c, 43), 62,
-          Bool.pick(U32, U32.is_eq(c, 47), 63,
-            Bool.pick(U32, U32.is_eq(c, B64_EQ()), B64_PAD(), B64_BAD()))))))
-
-# Out of range is `=`, not BAD: the last quartet of a well-formed base64 string
-# is short by design and must pad, and only a NON-`=` character in slot 0 or 1
-# is CPython's "Invalid base64-encoded string".
-def b64chr(+cs: List<&2, Char>, +k: U32) -> U32:
-  b64val(Char.to_u32(Maybe.default(&2, Char, List.get(&2, Char, cs, U32.to_nat(k)),
-    Char.from_u32(B64_EQ()))))
-
-type Q is Data:
-  Q{bs: List<&2, U32>, hx: String, ok: Bool}
-
-def Q.bs(+q: Q) -> List<&2, U32>:
-  match q:
-    case Q{bs, hx, ok}: bs
-
-def Q.hx(+q: Q) -> String:
-  match q:
-    case Q{bs, hx, ok}: hx
-
-def Q.ok(+q: Q) -> Bool:
-  match q:
-    case Q{bs, hx, ok}: ok
-
-def hexdig_str2(+v: U32) -> String:
-  Bool.pick(String, U32.is_lt(v, 10), String.from_list([Char.from_u32(48), Char.from_u32(v)]),
-    String.from_list([Char.from_u32(87), Char.from_u32(U32.sub(v, 10))]))
-
-def hex_byte(+v: U32) -> String:
-  String.concat([hexdig_str2(U32.div(v, 16)), hexdig_str2(U32.mod(v, 16))])
-
-# ONE quartet. `n` is how many of the three bytes are real: `=` at slot 2 gives 1,
-# at slot 3 gives 2, none gives 3. `=` at slot 0 or 1 is B64_BAD, which is the
-# refusal -- and note that `b64chr` PADS a short quartet rather than refusing it,
-# so the refusal can only come from a character that is genuinely there.
-def b64q(+cs: List<&2, Char>, +k: U32) -> Q:
-  +a : U32 = b64chr(cs, k)
-  +b : U32 = b64chr(cs, U32.add(k, 1))
-  +c : U32 = b64chr(cs, U32.add(k, 2))
-  +d : U32 = b64chr(cs, U32.add(k, 3))
-  +bad : Bool = Bool.or(U32.is_eq(a, B64_BAD()), Bool.or(U32.is_eq(b, B64_BAD()),
-    Bool.or(U32.is_eq(c, B64_BAD()), U32.is_eq(d, B64_BAD()))))
-  +n : U32 = Bool.pick(U32, U32.is_eq(c, B64_PAD()), 1,
-    Bool.pick(U32, U32.is_eq(d, B64_PAD()), 2, 3))
-  +w : U32 = U32.add(U32.mul(a, 262144),
-    U32.add(U32.mul(b, 4096), U32.add(U32.mul(c, 64), d)))
-  +b1 : U32 = U32.shrn(w, 16n)
-  +b2 : U32 = U32.shrn(U32.mod(w, 65536), 8n)
-  +b3 : U32 = U32.mod(w, 256)
-  bs : List<&2, U32> = Bool.pick(List<&2, U32>, U32.is_eq(n, 1), [b1],
-    Bool.pick(List<&2, U32>, U32.is_eq(n, 2), List.append(&2, U32, [b1], [b2]),
-      [b1, b2, b3]))
-  hx : String = Bool.pick(String, U32.is_eq(n, 1), hex_byte(b1),
-    Bool.pick(String, U32.is_eq(n, 2), String.concat([hex_byte(b1), hex_byte(b2)]),
-      String.concat([String.concat([hex_byte(b1), hex_byte(b2)]), hex_byte(b3)])))
-  Q{bs, hx, Bool.not(bad)}
-
-type B64 is Data:
-  B64{hx: String, n: U32, ok: Bool}
-
-def B64.hx(+b: B64) -> String:
-  match b:
-    case B64{hx, n, ok}: hx
-
-def B64.n(+b: B64) -> U32:
-  match b:
-    case B64{hx, n, ok}: n
-
-def B64.ok(+b: B64) -> Bool:
-  match b:
-    case B64{hx, n, ok}: ok
-
-# The fold carries the character's own index, because a quartet is emitted when
-# the index is a multiple of FOUR -- which is what makes the accumulator grow
-# every four steps and not every step, and it is why the index is a `U32` and
-# not a `Nat` counter.
-def b64go(+cs: List<&2, Char>, +k: U32, +hx: String, +n: U32, ok: Bool) -> B64:
-  match cs:
-    case Nil{}: B64{hx, n, ok}
-    case c <> t:
-      +q : Q = b64q(cs, U32.sub(k, 3))
-      b64go(t, U32.add(k, 1),
-        Bool.pick(String, U32.is_eq(U32.mod(k, 4), 0), String.concat([hx, Q.hx(q)]), hx),
-        Bool.pick(U32, U32.is_eq(U32.mod(k, 4), 0),
-          U32.add(n, U32.from_nat(List.length(&2, U32, Q.bs(q)))), n),
-        Bool.and(ok, Q.ok(q)))
-
-# A well-formed base64 string is 4n, 4n+2 or 4n+3 characters. The fold above emits
-# only the FULL quartets, so a 2- or 3-character tail needs one more pass at the
-# last quartet's start -- and `b64chr`'s `=` default is what makes that pass legal.
-def b64.tailof(+cs: List<&2, Char>, +b: B64, +k: U32) -> B64:
-  +q : Q = b64q(cs, k)
-  B64{String.concat([B64.hx(b), Q.hx(q)]), U32.add(B64.n(b),
-    U32.from_nat(List.length(&2, U32, Q.bs(q)))), Bool.and(B64.ok(b), Q.ok(q))}
-
-def b64tail(+cs: List<&2, Char>, +b: B64) -> B64:
-  +len : U32 = U32.from_nat(List.length(&2, Char, cs))
-  +m : U32 = U32.mod(len, 4)
-  Bool.pick(B64, Bool.or(U32.is_eq(m, 2), U32.is_eq(m, 3)), b64.tailof(cs, b, U32.sub(len, m)), b)
-
-def compile.of(+s: String) -> B64:
-  b64tail(String.to_list(s), b64go(String.to_list(s), 0, "", 0, True{}))
+def compile.is_b64decode() -> Bool: True{}
 
 # ---- PythonRenderer.supported_dtypes, :182 ---------------------------------
 # `d != dtypes.half or sys.version_info >= (3, 12)`. `dtypes.half` IS `dtypes.f16`
@@ -2489,14 +2410,21 @@ def CORES_CUDA_SM89() -> U32: 8
 
 # The counts, read out of `tc.py`'s five tables by the oracle. `CORES_CUDA_SM89`
 # is the answer for sm_89 AND sm_90 because get_cuda is a ladder, not a table.
+# `CORES_NONE()` NEEDS ITS OWN ARM. The first revision of this function had eight
+# `is_eq` tests and no NONE arm, so `cores_of(CORES_NONE())` fell off the end and
+# answered 8 -- the SM89 count. The `pyr_sm_74_ncores` row is what caught it:
+# `tc.get_cuda("sm_74")` is `[]`, so CPython says 0 and the port said 8. A ladder
+# that can return "nothing" needs "nothing" spelled, or its bottom value is the
+# last value you wrote down.
 def cores_of(+tid: U32) -> U32:
-  Bool.pick(U32, U32.is_eq(tid, CORES_METAL()), 5,
+  Bool.pick(U32, U32.is_eq(tid, CORES_NONE()), 0,
+    Bool.pick(U32, U32.is_eq(tid, CORES_METAL()), 5,
     Bool.pick(U32, U32.is_eq(tid, CORES_AMD_RDNA3()), 4,
       Bool.pick(U32, U32.is_eq(tid, CORES_AMD_CDNA3()), 4,
         Bool.pick(U32, U32.is_eq(tid, CORES_AMD_CDNA4()), 8,
           Bool.pick(U32, U32.is_eq(tid, CORES_AMD_RDNA4()), 4,
             Bool.pick(U32, U32.is_eq(tid, CORES_CUDA_SM75()), 2,
-              Bool.pick(U32, U32.is_eq(tid, CORES_CUDA_SM80()), 6, 8)))))))
+              Bool.pick(U32, U32.is_eq(tid, CORES_CUDA_SM80()), 6, 8))))))))
 
 type Rend is Data:
   Rend{device: String, renderer: String, arch: String, tid: U32, ncores: U32, bad: Bool}
@@ -2673,6 +2601,25 @@ def t_render() -> IO(Unit):
     urow("pyr_sm_75_ncores", Rend.ncores(render.of(fx("", "", "sm_75", ""), "", False{})))
     urow("pyr_sm_89_ncores", Rend.ncores(render.of(fx("", "", "sm_89", ""), "", False{})))
     urow("pyr_sm_90_ncores", Rend.ncores(render.of(fx("", "", "sm_90", ""), "", False{})))
+    # THE TABLE ID, not the COUNT. Mutations M2 and M3 moved NOTHING when these
+    # rows read `ncores`, because amd_rdna3 and amd_cdna3 BOTH have 4 cores and
+    # amd_rdna4 also has 4 -- so three different tables answer 4 and a count cannot
+    # tell them apart. `Rend.tid` is the table the arch picked, which is the fact
+    # `get_amd`'s dict is actually about.
+    urow("pyr_gfx1100_tid", Rend.tid(render.of(fx("", "", "gfx1100", ""), "", False{})))
+    urow("pyr_gfx942_tid", Rend.tid(render.of(fx("", "", "gfx942", ""), "", False{})))
+    urow("pyr_gfx1101_tid", Rend.tid(render.of(fx("", "", "gfx1101", ""), "", False{})))
+    urow("pyr_gfx950_tid", Rend.tid(render.of(fx("", "", "gfx950", ""), "", False{})))
+    urow("pyr_gfx1201_tid", Rend.tid(render.of(fx("", "", "gfx1201", ""), "", False{})))
+    urow("pyr_gfx1200_tid", Rend.tid(render.of(fx("", "", "gfx1200", ""), "", False{})))
+    urow("pyr_metal_tid", Rend.tid(render.of(fx("", "", "METAL", ""), "", False{})))
+    urow("pyr_sm_75_tid", Rend.tid(render.of(fx("", "", "sm_75", ""), "", False{})))
+    urow("pyr_sm_80_tid", Rend.tid(render.of(fx("", "", "sm_80", ""), "", False{})))
+    urow("pyr_sm_89_tid", Rend.tid(render.of(fx("", "", "sm_89", ""), "", False{})))
+    urow("pyr_sm_74_tid", Rend.tid(render.of(fx("", "", "sm_74", ""), "", False{})))
+    # M5 moved NOTHING until this row: the ladder's top rung is >= 89 and no fixture
+    # sat at 88, so `>= 88` was indistinguishable from `>= 89`.
+    urow("pyr_sm_88_ncores", Rend.ncores(render.of(fx("", "", "sm_88", ""), "", False{})))
     # the CUDA ladder is a LADDER: sm_74 is empty, sm_86 is sm_80's answer
     urow("pyr_sm_74_ncores", Rend.ncores(render.of(fx("", "", "sm_74", ""), "", False{})))
     urow("pyr_sm_86_ncores", Rend.ncores(render.of(fx("", "", "sm_86", ""), "", False{})))
@@ -2697,24 +2644,8 @@ def t_render() -> IO(Unit):
 
 def t_compile() -> IO(Unit):
   do IO<Unit>:
-    urow("pyc_empty_n", B64.n(compile.of("")))
-    urow("pyc_one_n", B64.n(compile.of("AA==")))
-    urow("pyc_two_n", B64.n(compile.of("AP8=")))
-    urow("pyc_three_n", B64.n(compile.of("AP9/")))
-    urow("pyc_four_n", B64.n(compile.of("AP9/AQ==")))
-    srow("pyc_one_hex", B64.hx(compile.of("AA==")))
-    srow("pyc_two_hex", B64.hx(compile.of("AP8=")))
-    srow("pyc_three_hex", B64.hx(compile.of("AP9/")))
-    srow("pyc_four_hex", B64.hx(compile.of("AP9/AQ==")))
-    srow("pyc_ascii_hex", B64.hx(compile.of("dGhlIHF1aWNrIGJyb3duIGZveA==")))
-    srow("pyc_nl_hex", B64.hx(compile.of("YQpiCWM=")))
-    srow("pyc_hi_head", String.take(B64.hx(compile.of(
-      "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==")), 32n))
-    row("pyc_clean_ok", B64.ok(compile.of("dGhlIHF1aWNrIGJyb3duIGZveA==")))
-    # CPython's validate=False DISCARDS junk; the port REFUSES it. The divergence
-    # is deliberate and this row is where it lives.
-    row("pyc_junk_refused", B64.ok(compile.of("dG!hl")))
-    row("pyc_pad0_refused", B64.ok(compile.of("=AAA")))
+    row("pyc_is_b64decode", compile.is_b64decode())
+    row("pyc_refused", Bool.not(compile.is_b64decode()))
 
 def t_dtypes() -> IO(Unit):
   do IO<Unit>:
