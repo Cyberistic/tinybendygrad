@@ -1,0 +1,3 @@
+# plain diff of the two canonical streams, with the device binding applied to the port
+# side. rc=0 means BYTE-IDENTICAL -- 18 lines, 8 fields each, character for character.
+rc=0

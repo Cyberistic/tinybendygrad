@@ -1,0 +1,8 @@
+SOME PROOFS FAIL
+Error:
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+Location:
+1879 | def dd_rs.add(f: Nat, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+1880>|   match dd_rs.has(f, xs, u):
+     |         ^^^^^^^^^^^^^^^^^^^
+1881 |     case True{}: xs

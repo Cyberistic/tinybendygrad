@@ -14977,3 +14977,337 @@ dict by SLOT. Both are "derived by calling CPython"; only one is the fixture.
 provenance and a different answer. `.agents/slop/elf_amd_sort.py` states this at
 the top, because it is the second time in this repo that a plausible oracle was
 the wrong FIXTURE rather than a wrong number.
+
+---
+
+## ORACLE VERIFICATION UNIT, 2026-10-03 — numbering continues from POSITION ~14970
+(the "### 5. A `UOp` KEYED FIXTURE..." section immediately above; this block restarts at 1,
+as the previous block did)
+
+Six oracles were written by a unit that died mid-task. Every one of them was DEAD on arrival.
+
+### 1. "TINYGRAD IS AN EDITABLE INSTALL" IS TRUE IN `.venv` AND FALSE FOR THE GATE
+
+The editable install is real and it is here:
+
+    .venv/lib/python3.14/site-packages/__editable__.tinygrad-0.14.0.pth
+    .venv/lib/python3.14/site-packages/__editable___tinygrad_0_14_0_finder.py
+
+and `.venv/bin/python` imports `tinygrad` from any cwd. **But `rebase-gate.py` runs oracles
+with `sys.executable`, which is whatever interpreter is running the gate** -- and that is
+`/opt/homebrew/bin/python3`, which has NO tinygrad at all:
+
+    $ cd / && python3 -c "import tinygrad"
+    ModuleNotFoundError: No module named 'tinygrad'
+    $ python3 -m pip show tinygrad
+    WARNING: Package(s) not found: tinygrad
+
+So the two claims in circulation -- "PYTHONPATH is not a blocker" and "it is an editable
+install" -- are BOTH true and BOTH irrelevant to a script invoked BY PATH, because for
+`python3 a/b/oracle.py` it is `a/b`, not the cwd, that lands on `sys.path[0]`. Measured: all
+six oracles exited **rc=1 with `ModuleNotFoundError` and 0 rows** under the gate's own
+interpreter. `sys.path.insert(0, <repo>)` derived from `__file__` is the fix, and it is what
+the already-working oracles do (197 files in `.agents/slop/` bootstrap; 62 use
+`sys.path.insert(0, '.')`, 9 use the `__file__`-derived form). The `__file__` form is the one
+that does not also require the harness's cwd to be right.
+
+A consequence worth stating plainly: **an oracle that has never been executed is not an
+oracle, and "0 rows, rc=1" is the shape of that.** Nothing about a well-formatted, well-
+commented, plausible-looking script distinguishes it from a working one.
+
+### 2. AN ORACLE THAT COPIES A FUNCTION tinygrad EXPORTS IS THE WORST FAILURE MODE
+
+`device-oracle.py` shipped with
+
+    def allowed(usage, ix):  # device.py:31
+        return usage or ix.split(":")[0] in ("DISK", "NPY", "PYTHON")
+    def is_disk(ixs):       # device.py:70
+        return any(d.split(":", 1)[0].upper() == "DISK" for d in ixs)
+
+Both are **copy-pasted out of `tinygrad/device.py`**, with the citations right there in the
+comments. `is_disk_device` IS a public function at `tinygrad/device.py:69-70` and was callable
+the whole time. The copy agreed with the port on all 7 rows, so it read as coverage, and it
+was checking nothing.
+
+The general rule: **before writing a predicate in an oracle, grep the upstream module for that
+name.** If the module defines it, call it. A hand-copy of a body and a call to the body are
+the same bytes today and diverge the day upstream fixes a bug.
+
+The `allowed` copy was worse, because there is no `allowed` to call -- the assert lives inside
+`__getitem__`. And it turns out `__getitem__` IS callable, with upstream's own knob:
+
+    tinygrad/helpers.py:252  ALLOW_DEVICE_USAGE = ContextVar("ALLOW_DEVICE_USAGE", 1)
+    tinygrad/helpers.py:192  def __bool__(self): return bool(self.value)
+    tinygrad/helpers.py:170  class Context:  # writes ContextVar._cache[k].value
+
+`Context(ALLOW_DEVICE_USAGE=0)` writes the very object `device.py:31` tests, and `amd.py:34`
+already uses it for exactly this. So the row became a call instead of a transcription:
+
+    with Context(ALLOW_DEVICE_USAGE=0):
+        try: Device[ix]
+        except AssertionError: return 0
+        return 1
+
+### 3. AND THAT CALL FOUND A PORT BUG: A COMMENT THAT CITES LINE NUMBERS AND THEN DENIES THEM
+
+`device.bend:329` and `device.bend:338` both say `__getitem__` "asserts before it
+canonicalizes" / compares "the head exactly as it arrived". Both cite `device.py:30` as the
+canonicalize and `:31` as the assert -- which is the order they then deny:
+
+    tinygrad/device.py:29    def __getitem__(self, ix:str) -> Compiled:
+    tinygrad/device.py:30      ix = self.canonicalize(ix)        # canonicalizes FIRST
+    tinygrad/device.py:31      assert ALLOW_DEVICE_USAGE or ix.split(":")[0] in [...]
+
+and `_canonicalize` (`device.py:26`) upper-cases the stem, so line 31 already sees `PYTHON:1`.
+Called: `Device['python:1']` -> allowed. The port prints `allow_lower=0`.
+
+    port 0, CPython 1, CPython RIGHT. Same at pin 6c3d401cf324, at HEAD and at
+    upstream/master, so it is a long-standing port bug and NOT rebase drift.
+
+Two rules.
+
+  * **A comment that cites a line number is a CLAIM about an ORDER, and orders are the one
+    thing line numbers cannot check.** Here the numbers were right and the prose inverted
+    them. Compare the prose against the cited lines mechanically before trusting either.
+  * **This is the "row that encodes a bug" from agent-core, reached the other way round.** Not
+    by transcribing a wrong value, but by transcribing the *wrong reading of a correct
+    source*. The port and the oracle agreed for six rows and for one they agreed on a lie.
+
+### 4. A PERMANENTLY-DISAGREEING LANE IS WORSE THAN AN UNWIRED PORT
+
+The gate answered `BROKEN rc=1`, naming `allow_lower`, on both the interpreted and the native
+pair. Wiring that would put a red lane in every tree sweep forever. `BASE_ORACLES` already
+says, about `elf.bend`, that a lane which "can never report UNCHANGED" would "train the
+reader to read RE-PORTED as something drifted"; a lane that can never report anything else is
+the same disease and worse, because BROKEN is the state people are supposed to act on.
+
+So `device.bend` stays **UNWIRED**, and both gate files now say why, in `BASE_ORACLES` and in
+a new `ORACLE_NOT_WIRED` dict in `rebase-gate-selftest.py` with a disjointness assertion --
+because a list that only records successes cannot answer "why is this one missing?", which is
+the question every reader asks of a NOT-STARTED port.
+
+The oracle is left on disk so the next reader does not rebuild it.
+
+### 5. `.agents/slop/` IS MUTATED BY OTHER AGENTS WHILE YOU ARE RUNNING
+
+`device-oracle.py` was rewritten underneath this session: at one point it contained the fixed,
+calling version and printed `allow_lower=1`; twelve minutes later the same command printed
+`allow_lower=0` and `grep` showed the OLD transcribed body at line 25. Concurrent commits to
+`tinybendygrad/` were landing throughout (`codegen/__init__.bend` four times).
+
+This nearly produced the single most expensive misreport available here: **a "flaky row"**.
+The row was not flaky -- the FILE had changed. Two rules.
+
+  * **Re-read your own file immediately before believing a surprising measurement, and
+    `shasum` it before and after any control run.** A control that does not assert
+    "the real oracle is byte-identical to before the control" cannot tell you that it
+    restored anything; `rebase-control-new-oracles.py` asserts it for every case.
+  * **Never prove a control by editing `rebase-gate.py`'s `BASE_ORACLES`.**
+    `rebase-plant-disagreement.py` does exactly that (and says, honestly, that the gate has no
+    `--oracle` flag so it has no other way). It restores in a `finally`, which is necessary and
+    not sufficient in a tree with other readers. `verdict(bend, [oracle], base, hunks, native)`
+    takes the oracle list as an ARGUMENT, so the mutant can be driven with nothing on disk
+    modified but the mutant. Measured end to end, and one CLI-level `rc=1` was still taken
+    through a temporary edit with a sha256 assert on restore (it matched).
+
+### 6. THE PARSER TRAP, MEASURED TWICE MORE, AND THE `rows()` THAT IS ACTUALLY LIVE
+
+`rebase-gate.py`'s `rows()` splits on the first `=` and strips the key. Two consequences that
+cost time here and are worth writing down because they are silent:
+
+  * **A row whose VALUE contains `=` produces a MANGLED KEY.** `jit-oracle.py` inherits
+    multi-line `UOp(...)` reprs from `probe/jit_oracle.py`, and three of its 30 rows are
+    garbage keys like `UOp(Ops.CONST, arg`. They are harmless *only* because the port does not
+    print those names. A mangled key that collided with a port row name would be a phantom
+    comparison nobody asked for. Check `oracle-only` keys for this before trusting a count.
+  * **`<name>` with spaces** is handled here (`k.strip()` on a first-`=` split), but a
+    hand-written comparator using `^(\S+) = ` would have dropped them. The SPACES warning in
+    the briefing is real for any NEW comparator; the live `rows()` already handles it.
+
+Also measured: `wc -l` said 31 for `jit-oracle.py` and `rows()` found 30. One blank line.
+**Count rows with the gate's parser, never with `wc -l`.**
+
+---
+
+## APPENDED 2026-10-03 by the `graphcmp` unit (canonical graph normal form + differ)
+
+Position: this section starts at line **15131**; the nine rules are at positions 15138,
+15151, 15161, 15167, 15181, 15186, 15191, 15205 and 15213. Everything above it predates this
+unit.
+Rules are not renumbered and rule NUMBERS REPEAT across units, so cite these by POSITION.
+
+### 1. A RAW `repr` DIFF OF TWO GRAPH PRINTERS COMPARES TWO tinygrad COMMITS
+
+`.agents/slop/graphcmp.py` + `.agents/slop/graphcmp.bend`. The measured reason this unit
+exists: `.agents/slop/pin-tree-oracle-report.md` records the SAME logical node rendering four
+different ways across upstream commits -- `CallInfo(..., dtype=dtypes.int)` gaining and then
+losing a clause, a `CUSTOM_FUNCTION` arg moving from a bare `str` to a `CustomFunction`
+dataclass, `UOp.range(4, AxisType.WEAK, 0, 1)` against `UOp(Ops.RANGE, (c1,), (AxisType.WEAK,
+0, 1))`, and `dtypes.float`/`dtypes.int` against `dtypes.f32`/`dtypes.i32`. A pretty diff over
+those answers "which tinygrad commit is this?" twice. The deliverable is a NORMAL FORM both
+sides emit, and the diff is over that.
+
+### 2. `dtype` AND `shape` ARE DERIVED, SO A SHARED-CORE MISMATCH ON THEM IS A PORT BUG
+
+`UOp.dtype` is `dtype_from_uop(self.op, self.src, self.arg)` (ops.py:247) and `UOp.shape` is
+`self._shape` (ops.py:454); both read ONLY op/src/arg, which is the whole of the identity key.
+So a field mismatch on a node whose core MATCHED cannot mean the graphs differ -- it means the
+two implementations of `dtype_from_uop`/`_shape` disagree about the same node. That is a real
+class of port bug (the port computes both in one FOLD, `fold.bend`'s `DtShape`, a different
+implementation that can fail -- which is why `fold.shape` can answer `R`), and it is the only
+thing rung 1 of the differ can find. **It has not fired on any graph measured today.** Do not
+close it with a plant: see rule 3.
+
+### 3. A CONST'S DTYPE CANNOT BE PLANTED, AND THE OBVIOUS READING OF ops.py:199 IS WRONG
+
+ops.py:199 says "the key must separate nodes of different dtype: a CONST's dtype is the type
+of its arg". Read as "the ucache key has a dtype component" it is wrong: the key is
+`(op, src, arg, tag, type(arg))` (ops.py:201) and carries NO dtype. MEASURED:
+`UOp.const(4)` and `UOp.const(4, dtypes.i32)` are DIFFERENT objects with DIFFERENT keys,
+because `UOp.const` (ops.py:629-635) ends in `.cast(dtype)` and so builds a **`CAST`**, not a
+second `CONST`. So a CONST's dtype really is derived (`dtype_from_uop`, ops.py:184-190) and
+cannot be set independently. A dtype-only plant on a CONST is therefore a THEOREM, and any
+row claiming to exercise one is a tautology.
+
+### 4. THE DEVICE IS AN INTERNED INDEX ON ONE SIDE AND A NAME ON THE OTHER, AND NOBODY RECONCILED THEM
+
+`S.Dev` is `D1{tag} | Dn{tags}` (spec.bend:85-87) and the tag is a local interning index.
+Three port files give three different tables: `schedule/__init__.bend:1095` says "tag 0 stands
+for CPU"; `schedule/memory.bend:998-999` makes 0 CPU and 1 DISK; `device.bend:702`'s `dev_name`
+makes 7 CPU and 11 NULL. There is NO reader from a tag back to a name. CPython's is the name
+string (`tinygrad/device.py`). **This is residual difference #1 for any device-carrying node
+and it is not fixable in one file.** The differ emits `t<tag>` on the port side, takes a
+`--dev-map TAG=NAME` BINDING, and prints `UNBOUND-DEVTAG` when there is none -- it never
+compares a tag to a name as if both were present. Owner: whoever reconciles the three tables.
+
+### 5. A ROW-PARSER MUST WALK LENGTH COUNTS, NOT SPLIT ON WHITESPACE
+
+`^(\S+) = ` drops any row whose NAME contains a space, and pin/HEAD measured that losing 216
+of 228 rows (`PTX tensor_cores sm_75`). `rebase-gate.py`'s `rows()` already survives because
+it splits on the first `=`. graphcmp's format is one record per node as EIGHT
+`<bytecount>:<bytes>` chunks and the reader WALKS THE COUNTS, which also survives a name with
+a space and a value with a `=` in it. Same trap, third measurement.
+
+### 6. A `STACK`'s SHAPE IS ITS ELEMENT COUNT, NOT ITS DIM TUPLE
+
+`_shape` for `Ops.STACK` returns the number of elements (`ops.py:331`), so all four STACKs of a
+matmul answer `(2,)` or `(3,)`. A fixture that selects a STACK by `n.shape == (4,3)` selects
+NOTHING, and asserts. Select by its CONST `src` values. Found by writing the fixture that way.
+
+### 7. `UOp.replace` TAKES NO POSITIONAL ARGS, AND THE OBVIOUS REBUILD RETURNS ITS INPUT
+
+`UOp.replace(self, **kwargs)` (ops.py:253) -- `n.replace(a, b)` is a `TypeError`; it is
+`n.replace(src=(a, b))`. Worse, the natural fold-over-toposort rebuild comes out WRONG IN
+BOTH DIRECTIONS if you think about the root: treating "no parent" as "apply the replacement"
+returns the input graph UNCHANGED (`pl is ast`), which makes a plant report AGREE and reads
+as a passing differ. EVERY node must be rebuilt from its (possibly replaced) children,
+including the root; the node of the target op is REPLACED instead. A plant that silently did
+nothing is the most expensive shape of a tautological test.
+
+### 8. A PLANT MUST NOT BUILD ITS OWN GRAPH: `Tensor.empty` MINTS A FRESH SLOT EVERY CALL
+
+MEASURED: two `Tensor.empty(4,3)` in one process give `ParamArg.slot` 0 then 2 (`UOp.unique_num`,
+ops.py:842, "must never be reset"). So a clean emit and a planted emit that each build their own
+graph differ in TWO SLOT FIELDS before the plant does anything, and the differ reports the
+harness. Build the base graph ONCE and plant a copy of it.
+
+### 9. A RUNG-2 PAIRING KEY MUST BE ORDER-INSENSITIVE ON THE CHILD OPS
+
+Pairing the unmatched leftovers to recover a per-field report needs a key loose enough to find
+the partner and tight enough not to pair unrelated nodes. Both halves were measured wrong first:
+  * the child's OPS IN ORDER -- then a commutative-child swap cannot pair at all, and the one
+    node whose `src` moved is reported as "only on one side", which is the one report a differ
+    must never give for a node that exists on both sides;
+  * pairing EVERY leftover with EVERY other leftover sharing a key -- then all five RESHAPEs of
+    a matmul share one key (arg `N`, child ops `RESHAPE,RESHAPE`) and were paired with each
+    other, for a report full of crosswise nonsense.
+What works: SORTED child ops, one-to-one, best candidate by count of agreeing fields, and NO
+claim when the best is not a unique argmax -- both nodes then fall through and are printed in
+full.
+
+---
+
+## STATE-AUDIT UNIT, 2026-10-03. Appended after the `graphcmp` block that ends at
+## position 15225 (file was 15226 lines before this append). Cite POSITIONS, not numbers.
+## The six rules are at positions 15236, 15254, 15263, 15278, 15292 and 15306.
+## Instrument: `.agents/slop/state-audit.py`. These are rules about MEASURING, not about
+## Bend; the first four are traps that each produced a wrong headline number already.
+
+### 1. AN EDITABLE INSTALL IS NOT AN INSTALL: WHICH `python3` YOU TYPED DECIDES WHETHER ORACLES RUN AT ALL
+
+MEASURED, and it settles a contradiction two units were carrying. The editable install is
+`.venv/lib/python3.12/site-packages/__editable__.tinygrad-0.14.0.pth` -- **python3.12, in
+`.venv`, and nowhere else**. `/opt/homebrew/opt/python@3.14/.../site-packages` has no `.pth`
+at all. So:
+
+  `env -u PYTHONPATH .venv/bin/python .agents/slop/tensor-gate.py` -> **30 rows**
+  `env -u PYTHONPATH python3          .agents/slop/tensor-gate.py` -> **0 rows**, and
+      `ModuleNotFoundError: No module named 'tinygrad'`
+
+So "PYTHONPATH is a blocker" and "it is an editable install so it is never a blocker" are
+BOTH half-true, and which one you measure depends only on which interpreter is first on
+PATH. `rebase-gate.py` runs its oracles with `sys.executable`, so the sweep inherits the
+caller's interpreter: launched with the bare `python3`, all 38 wired ports go BROKEN on the
+`cpython:*` lanes and the reader concludes the tree is red. **PROBE THE INTERPRETER, do not
+assume it** -- `import tinygrad` from a NEUTRAL cwd as a SCRIPT (rule 2, position 15254).
+
+### 2. `-c` FROM THE REPO ROOT IS A FALSE POSITIVE CONTROL, BECAUSE sys.path[0] IS NOT THE SAME FOR `-c` AND FOR A SCRIPT
+
+`cd <repo> && python3 -c "import tinygrad"` **SUCCEEDS** with the bare 3.14 interpreter,
+because `-c` puts `''` -- the cwd -- on `sys.path`, and the repo root contains `tinygrad/`.
+`cd /elsewhere && python3 -c "import tinygrad"` FAILS. And running the oracle **as a
+script** fails even from the repo root, because `sys.path[0]` is then `.agents/slop`, not
+the cwd. Measured: all three answers, in one session. **The only probe that reproduces the
+real call is a SCRIPT run from a cwd that is not the repo.**
+
+### 3. A GATE THAT DERIVES ITS SCRATCH FROM ITS OWN LOCATION IS NOT SAFE UNDER CONCURRENCY, AND NOTHING WARNS
+
+`tree-verdict.py` hardcodes `SCRATCH = os.path.join(HERE, "tv-scratch")` and exposes no flag
+to move it, while `one.sh` writes `check.out`, `check.err`, `run.out`, `run.err` per file
+into it. Two agents running it in one repo therefore write the SAME four files for the SAME
+`.bend` and read each other's bytes. MEASURED here, not assumed: two `tree-verdict.py`
+processes were live, with `one.sh tinybendygrad/runtime/support/elf.bend` running under BOTH
+parents, and the other doing `rm -rf .agents/slop/tv-scratch` between its own two runs --
+i.e. deleting the first run's scratch mid-flight. A row count read out of that is a coin
+flip dressed as a measurement. **Run a COPY against a symlink root**: `one.sh` resolves the
+repo as `$(dirname $0)/../..`, so `<scratch>/tvroot/.agents/slop/{one.sh,tree-verdict.py}`
+gives them `parents[2] == <scratch>/tvroot` and therefore a private `tv-scratch`, with
+`tinybendygrad/ tinygrad/ examples/ references/ bin/bend` symlinked so bend still reads the
+real sources and nothing is copied.
+
+### 4. A NUMBER MEASURED WHILE OTHER AGENTS ARE EDITING IS A SNAPSHOT OF THEIR EDIT, NOT OF THE TREE
+
+MEASURED: six `naming-gate.py` runs, 14 s apart, byte-identical MD5 at 283 VERBATIM. Runs at
+19:34:12, 19:35:44, 19:35:57 and 19:36:19 read **278** VERBATIM / 1149 ABSENT, and the run at
+19:36:41 and the six after it read **283** / 1144. `ls -la` in the window showed
+`codegen/__init__.bend` at 19:34, `nn/state.bend` at 19:35, `renderer/amd/generate.bend` at
+19:36 -- three ports mid-edit by other agents, five upstream bindings moving from VERBATIM
+to ABSENT and back. **So a re-derived gate number is only a fact if you also record WHEN,
+and a number that moved between two runs of the same command on the same tree is not
+evidence of anything until you find out who was writing.** Report every reading, with its
+clock time. This is the same species as `elf.bend`'s 353-then-331 and a DIFFERENT species
+from a bend stack overflow: a stack overflow is bend disagreeing with itself, this is the
+tree moving underneath the measurement, and only one of the two is fixed by re-running.
+
+### 5. COUNT ROWS WITH THE GATE'S PARSER, AND COUNT THE TABLE'S OPTIONAL COLUMNS OPTIONALLY
+
+Two independent column-reading traps in the same minute, both of which produce a report that
+looks complete and is short one number:
+  * `naming-gate.py`'s table prints a percentage on VERBATIM and ABSENT and **NOT** on
+    QUALIFIED: `VERBATIM ... 283    17.9%` against `QUALIFIED ... 38`. A reader that
+    matches the number as `(\d+)\s+(?:\d+\.\d+%)?\s*$` -- requiring whitespace after the
+    digits -- gets 283 and 1144 and drops QUALIFIED silently. `(\d+)\s*(?:...)?\s*$` gets
+    all three. **A missing column and a missing row are indistinguishable in the output.**
+  * `PROOF-ALL.bend --check-only` printing `ALL PROOFS CHECK` says every law is discharged
+    and says NOTHING about how many laws exist. "34/34" is two measurements: the verdict
+    from bend, and the 34 counted from `^law NAME:` in `tinybendygrad/LAWS.bend`
+    (34 declarations, 34 distinct names, 19:33 today).
+
+### 6. A `0` FROM A `--check-only` THAT PRINTS NO ROWS IS THE EXPECTED ANSWER FOR A PROOF FILE, NOT A FAILURE
+
+`PROOF-ALL.bend` declares no `main` (it is three `import` lines), so it prints **0 rows** on
+every run, 3 for 3, and that is not a bend failure and not a stack overflow. This is the
+happy path of rule "a 0 is a request for a fixture": a 0 costs the FULL retry cap, because
+the agreement rule refuses to let 0 be the agreement -- so **a settled 0 costs `attempts`
+runs and reports `attempts`, and a reader who sees `rows=0, attempts=3, void_attempts=0`
+has a measurement, not a gap.**

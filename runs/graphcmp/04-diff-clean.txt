@@ -1,0 +1,6 @@
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=none
+# dev-map {0: 'NULL'}  (DECLARED, not derived -- see the S.Dev note in R7)
+# SHARED cores=18  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0
+# VERDICT: AGREE
+rc=0

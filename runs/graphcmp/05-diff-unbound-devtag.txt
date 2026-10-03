@@ -1,0 +1,30 @@
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=none
+# dev-map {}
+# SHARED cores=8  ONLY-PY=2  ONLY-BEND=2  field-mismatches=0  rung2-pairs=8
+# UNBOUND-DEVTAG [0] -- the port emits an INTERNED INDEX and CPython emits a NAME; pass --dev-map 0=NAME to bind it. Those fields are NOT compared.
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH RESHAPE   py#12 vs bend#12  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['8e64afb2', '3a1c5aaf'] bend=['b24650dc', '3a1c5aaf']
+MISMATCH PERMUTE   py#15 vs bend#15  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['30e7fcda'] bend=['520425bb']
+MISMATCH RESHAPE   py#14 vs bend#14  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['08e7b3a5', '52222228'] bend=['aa9e347d', '52222228']
+MISMATCH RESHAPE   py#5 vs bend#5  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['e9ce1f34', 'c7634b1f'] bend=['1693d388', 'c7634b1f']
+MISMATCH RESHAPE   py#8 vs bend#8  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['38d26989', '061d05dc'] bend=['22fe61aa', '061d05dc']
+MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['a3707272'] bend=['51239114']
+MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['52bd0806', '29e326cf'] bend=['8c55a736', '8f6a07a8']
+MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['6d49643c'] bend=['b41fa7bb']
+# ONLY ON THE PYTHON SIDE (2), IN FULL:
+  py#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sNULL,b0,N,unrealized,b1,N) src=[]
+  py#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sNULL,b0,N,unrealized,b1,N) src=[]
+# ONLY ON THE BEND SIDE (2), IN FULL:
+  bend#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,t0,b0,N,unrealized,b1,N) src=[]
+  bend#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,t0,b0,N,unrealized,b1,N) src=[]
+# VERDICT: DISAGREE
+rc=1

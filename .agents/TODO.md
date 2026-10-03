@@ -3302,3 +3302,105 @@ elf  [####################] 20/20
       gate that prints the wrong answer. The blocker is the arena
       growth bug; the fix is a `StepResult` thread through the fold,
       and a future unit should land that.
+
+## Session 2026-10-03 — `graphcmp`: a CANONICAL GRAPH NORMAL FORM both sides emit, and a differ over it
+## **NOT COMMITTED.**
+
+Progress: graph comparison [##########] DONE (differ, 8 normal-form fields, 4 discrimination checks)
+Progress: residual mismatches [...] 1 of 8 fixed (the device tag binding is DECLARED, not derived)
+
+The brief was "work towards debug so we can compare graphs properly with tinygrad", and
+the measurement that shaped it is in `.agents/slop/pin-tree-oracle-report.md`: the SAME
+logical node renders four different ways across upstream commits (`CallInfo` gaining and
+then losing its `dtype=` clause, a `CUSTOM_FUNCTION` arg moving from `str` to a dataclass,
+`UOp.range(...)` against `UOp(Ops.RANGE, ...)`, `dtypes.float` against `dtypes.f32`). A raw
+`repr` diff therefore compares two tinygrad COMMITS, twice, and never the port. So the
+deliverable is a normal form BOTH sides emit.
+
+- [x] **THE NORMAL FORM: eight fields, each with a `tinygrad/...:line` citation.** `id`
+      (reporting only, never identity) · `op` (`Ops.name`, bare) · `dtype` (`DType.name`,
+      `f32` not `dtypes.f32`) · `shape` (three-valued: dims / `R` raised / `N` no shape, and
+      a `sint` dim prints as its exact `hi:lo` I64 or as `U`, never as a number) · `depth`
+      (the RANGE `axis_id` NESTING count -- `ops.py:201` keys on `type(arg)`, so
+      `(WEAK,0,1)` and `(WEAK,(0,1))` are different nodes with the same `str(arg)`) · `tag`
+      (structured, `N` for absent) · `arg` (STRUCTURAL, never `repr`: `ParamArg.__repr__`
+      omits defaults and prints a device object) · `src` (ORDERED -- upstream's own
+      `UOp.key` concatenates child keys in order). Written down in graphcmp.py's header and
+      in `.agents/slop/graphcmp-report.md` §2.
+
+- [x] **THE WIRE FORMAT is self-delimiting.** Eight `<bytecount>:<bytes>` chunks per node
+      and the reader WALKS THE COUNTS, so whitespace is never structural. `selfcheck`
+      round-trips `"PTX tensor_cores sm_75"`, `"a b"`, `"x:y"`, `"name = [value]"`, `""` --
+      the row-name trap that cost 216 of 228 rows in the pin/HEAD study.
+
+- [x] **THE DIFFER: three rungs, naming fields.** rung 1 = equal `core` (`UOp.key` with the
+      structural arg, dtype/shape moved OUT so they are compared as fields) · rung 2 =
+      leftovers paired ONE-TO-ONE on the dtype-erased arg, best candidate by count of
+      agreeing fields, no claim when the best is not a unique argmax · rung 3 = unpaired,
+      printed IN FULL.
+
+- [x] **IT RUNS ON A REAL GRAPH, AND THE TWO STREAMS ARE BYTE-IDENTICAL.**
+      `(Tensor.empty(4,3) @ Tensor.empty(3,5)).uop`, 18 nodes, LAZY (a realized BUFFER
+      carries a device `Buffer` the port cannot name and `pyrender` refuses it,
+      render.py:159-160), built node for node on the port side by
+      `.agents/slop/graphcmp.bend`. `diff runs/graphcmp/01-canon-py.txt
+      runs/graphcmp/02-canon-bend.txt` -> `rc=0`. The differ says `SHARED cores=18,
+      ONLY-PY=0, ONLY-BEND=0, VERDICT: AGREE`.
+
+- [x] **IT DISCRIMINATES, four ways, all run.** `control` (each side vs ITSELF, AGREE) ·
+      `cross` (matmul vs `sum(axis=1)`: 18 rows vs 7, DISAGREE) · `--plant srcswap` (the
+      two children of the COMMUTATIVE MUL: DISAGREE, `ONLY-PY=0`, and the reordered pair's
+      OWN fields -- dtype, shape, depth, tag, arg -- are NOT flagged, only `src`, as a pure
+      ORDER) · `--plant dtype` (`dtype` named on all ten affected nodes, `arg` additionally
+      on the two ALLOCs).
+
+- [x] **THE CONTROLS ANSWERED BY CONSTRUCTION, NOT BY CARE.** no `sort`/`comm` at all
+      (every ordering is Python's own) · `LC_ALL=C` on every child · `PYTHONPATH` removed
+      from every child · a 0-row bend run RE-TRIES 5x and then RAISES -- and since 20
+      consecutive runs never produced a 0-row event, the guard was FIRED ON PURPOSE against
+      `.agents/slop/graphcmp-empty.bend` · the bend exit status is never gated on, only the
+      stream.
+
+- [x] **RESIDUALS, NAMED, NOT SMOOTHED.** 8 of them, report §5. Headline: **the device is
+      an INTERNED INDEX on the port side and a NAME on CPython's**, and three port files
+      give three different tables (`schedule/__init__.bend:1095` 0=CPU,
+      `schedule/memory.bend:998-999` 0=CPU/1=DISK, `device.bend:702` 7=CPU/11=NULL) with NO
+      reader from a tag to a name -- so `--dev-map` is a DECLARED binding and an unbound tag
+      is reported `UNBOUND-DEVTAG`, never compared as an integer. Owner: whoever reconciles
+      the three tables.
+
+- [x] **A MEASURED THEOREM, NOT A ROW.** A dtype-only plant on a CONST is unreachable, and
+      the obvious reading of `ops.py:199` is wrong: MEASURED, `UOp.const(4)` and
+      `UOp.const(4, dtypes.i32)` are DIFFERENT objects with DIFFERENT keys, because
+      `UOp.const` ends in `.cast(dtype)` (ops.py:629-635) and builds a `CAST`. Relatedly,
+      `dtype`/`shape` are DERIVED on both sides from only op/src/arg, so a rung-1 mismatch
+      cannot mean "the graphs differ" -- it means the two implementations of
+      `dtype_from_uop`/`_shape` disagree, which is a real port bug class and has NOT fired
+      on any graph measured today.
+
+- [x] **`pretty_print` was NOT the anchor and `uop/render.bend` was NOT touched.** Two
+      measured reasons in report §7: it prints the arg through the very `repr` that omits
+      defaults, and its `dfs` cache is a second store beside the arena over a CYCLIC graph
+      (which `render.bend`'s own `to_render` note says produced SHAPE-wrong output).
+      `pyrender` is landed and renders only a SUBSET (render.py:147-163), so it cannot be a
+      graph's normal form either. `uop/ops.bend` (63 importers) untouched. The seven
+      `DEBUG >= 2` sites untouched.
+
+- [x] **NOTHING PATCHED FROM A HARNESS.** Every plant edits one side's COPY in memory.
+
+- [x] **NINE RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at positions
+      15131+, cited by POSITION because rule numbers repeat across units.
+
+### Outside this unit's files
+
+- **`tinybendygrad/helpers.bend` was transiently broken during this session and was fixed by
+  another agent, not by me** (`gi_nz` an unfilled law at helpers.bend:246-250, then `st
+  consumed more than once`; `jj status` showed it `M` in the shared working copy). This
+  probe went red for reasons unrelated to it. Owner: the `helpers.bend` agent.
+- **`.agents/slop/graphcmp.bend` was DELETED from under this session once**, ~40 min after I
+  wrote it, and I rewrote it. `.agents/slop/` has 860+ entries and concurrent agents; a file
+  there is not durable until committed.
+- `TOOLS.md` was NOT updated with graphcmp. It is a tools ledger for LIBRARIES and this unit
+  added none (no new dependency, no new CLI beyond the repo's own `./bin/bend` and
+  `.venv/bin/python`). Noted rather than edited, to avoid colliding with concurrent
+  `TOOLS.md` writers.

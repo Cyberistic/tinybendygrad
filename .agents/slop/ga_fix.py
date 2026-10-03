@@ -36,10 +36,15 @@ def w(s=""):
 
 def bq(s):
     """A bend String literal.  `\"` and `\\` need escaping -- AND SO DOES A NEWLINE:
-    the emitter rows carry the whole emitted FILE joined with real newlines, and a
-    raw newline inside a `"..."` literal ends the literal.  bend then reports
-    "expected : a closing \" observed : end of input" against the LAST row, which
-    points at the wrong line entirely."""
+    the emitter rows carry the whole emitted FILE, and a raw newline inside a `"..."`
+    literal ends the literal.  bend then reports "expected : a closing \" observed :
+    end of input" against the LAST row, which points at the wrong line entirely.
+
+    `glrow` feeds this the ORACLE'S ALREADY-ESCAPED text (see ga-oracle.py's `R`),
+    so the doubling of `\\` above is what turns the oracle's two-character `\\n` into
+    a bend literal holding those same two characters -- and the port, which never
+    scans `want`, prints exactly what the oracle escaped.  One transform, both sides.
+    """
     out = s.replace("\\", "\\\\").replace('"', '\\"')
     return '"' + out.replace("\n", "\\n") + '"'
 
@@ -119,21 +124,28 @@ def fx_ots():
 
 
 # ---------------------------------------------------------------------------
-# THE GATE ROWS.  `py=` literals come from `ga-oracle.txt`, keyed by row name.
+# THE GATE ROWS.  `py=` literals come from the oracle's ROWS, read off the
+# IMPORTED MODULE and not off `ga-oracle.txt`.
+#
+# This used to parse the text file and reassemble each emitter file out of its
+# `tag | line` rows.  That is GONE and it is not a style choice.  The text file
+# now holds ESCAPED one-line rows -- which is the whole point, a line-keyed parser
+# cannot see a row whose value contains a newline -- and they cannot be unescaped
+# back without destroying `write_pcode`'s repr'd `\n`, because after `R` a real
+# newline and a literal `\n` are the same two characters.  Reading `O.ROWS`
+# sidesteps the round trip and removes the bug that lived in it: every BLANK line
+# of an emitted file was a row named `tag | `, so the name-keyed dict kept one of
+# four separators and the reassembled file lost three -- which is how `common.py`
+# came out with no blank line before `class Fmt(Enum):`, a WRONG expectation
+# spliced from a correct oracle that then disagreed with the RIGHT port.
 # ---------------------------------------------------------------------------
 ORACLE = {}
 ORACLE_KEYS = []
-for ln in (_HERE / "ga-oracle.txt").read_text().split("\n"):
-    if " = [" in ln and ln.endswith("]"):
-        nm, val = ln.split(" = [", 1)
-        # `ga-oracle.py` now emits `nm = [got]   py=[want]`. A blind `val[:-1]` yields
-        # `VOP1]   py=[VOP1` and splices that into every py= literal. Prefer the py= field.
-        val = val.split("   py=[", 1)[1] if "   py=[" in val else val
-        if nm not in ORACLE:
-            ORACLE[nm] = val[:-1]
-            ORACLE_KEYS.append(nm)
-    elif ln.startswith("ORACLE ROW COUNT = "):
-        print(f"# ORACLE ROW COUNT = {ln.split('= ')[1]}", file=sys.stderr)
+for nm, val in O.ROWS:
+    if nm not in ORACLE:
+        ORACLE[nm] = val
+        ORACLE_KEYS.append(nm)
+print(f"# ORACLE ROW COUNT = {len(O.ROWS)}", file=sys.stderr)
 
 
 def py(nm):
@@ -147,27 +159,13 @@ def srow(nm, call):
     w("  g(%s, %s, %s)" % (bq(nm), call, bq(py(nm))))
 
 
-def tag_join(tag):
-    """The oracle's `tag | line` rows, joined -- the whole emitted FILE as ONE
-    string, so a changed character moves the row and a count row cannot hide it.
-
-    READ THE FILE AGAIN rather than reading `ORACLE`: every BLANK line of an
-    emitted file is a row named `tag | `, so the name-keyed dict above keeps one
-    of the four and the joined file loses three separators.  That is how
-    `common.py` came out with no blank line before `class Fmt(Enum):` -- a wrong
-    expectation spliced from a correct oracle, and it disagreed with the PORT,
-    which was right."""
-    out = []
-    for ln in (_HERE / "ga-oracle.txt").read_text().split("\n"):
-        if " = [" in ln and ln.endswith("]"):
-            nm, val = ln.split(" = [", 1)
-            if nm.startswith(tag + " |"):
-                out.append(val[:-1])
-    return "\n".join(out)
-
-
 def glrow(nm, call, tag):
-    w("  gl(%s, %s, %s)" % (bq(nm), call, bq(tag_join(tag))))
+    """One emitter row: the WHOLE emitted file, so a dropped member, a dropped
+    alias, a swapped `default=NULL` and a reordered field all move it.  `tag` IS
+    `nm` -- one row per FILE, keyed on the file, the only key that cannot collide:
+    the emitted text repeats (`  saddr = SSrcField(31, 24, default=NULL)` appears
+    in four classes), and an index cannot see a dropped LAST line."""
+    w("  gl(%s, %s, %s)" % (bq(nm), call, bq(py(tag))))
 
 
 def gate():
@@ -179,8 +177,36 @@ def gate():
     w("# A count row would be identical for a dropped member, a dropped alias, a")
     w("# swapped `default=NULL` and a reordered field; a string diff is not.  This is")
     w("# the renderer convention 2 applied to a GENERATOR: the answer is the file.")
+    w("#")
+    w("# AND ESCAPED TO ONE LINE, AND THE ESCAPE MUST BE PER LINE.  `gl` prints a")
+    w("# WHOLE GENERATED FILE and the gate's row parser splits lane output on")
+    w("# newlines, so before this one row became 335 fragments whose NAMES are the")
+    w("# first token before an `=` inside the generated Python (`FLAT_LOAD_DWORD`,")
+    w("# `encoding`, `saddr`, ...).  Measured 2026-10-03: 233 row names for 91 rows,")
+    w("# 84 shared with the oracle, the other 149 naming text the oracle names")
+    w("# `tag | line`.")
+    w("#")
+    w("# `cstyle.bend:1760`'s `esc_row` is `String.join(String.split(s, '\\n'), \"\\\\n\")`")
+    w("# and IT DOES NOT RUN HERE.  `String.split` is one interpreter frame per")
+    w("# CHARACTER (references/bend/bend2/base.bend:2009) and the biggest file is")
+    w("# 16,815 characters.  Measured: a probe survives 4,000 characters and dies at")
+    w("# 8,000 with \"the machine stack overflowed\" -- and on the real file it was")
+    w("# FLAKY, 7 of 10 runs succeeding.  A gate that fails 3 runs in 10 is not a gate.")
+    w("#")
+    w("# So the escape is per line and it costs nothing: `write_*` already RETURNS the")
+    w("# file as `List<&2, String>`, so `String.join(got, \"\\\\n\")` is 177 frames and not")
+    w("# 16,815.  `want` is a LITERAL ga_fix writes already escaped, so the port never")
+    w("# scans it at all.  Same two characters cstyle and wgsl use, ga-oracle.py's `R()`")
+    w("# is the identical transform, and all 588 emitted lines stay inside one row.")
+    w("#")
+    w("# THE ONE BLIND SPOT, measured not guessed: `\\` `n` is not injective against a")
+    w("# real newline, and TWO of these files hold a literal `\\` `n` inside a pcode")
+    w("# body -- `write_pcode` emits `{code!r}` (generate.py:497), so CPython's own")
+    w("# output has them.  A port that turned one into a REAL newline is invisible")
+    w("# here; `.agents/slop/ga_gate.py` diffs the RAW text with a DOTALL parser and")
+    w("# sees it, so the two lanes cover each other.")
     w("def gl(nm: String, got: List<&2, String>, want: String) -> IO(Unit):")
-    w("  g(nm, String.join(got, \"\\n\"), want)")
+    w("  g(nm, String.join(got, \"\\\\n\"), want)")
     w()
     w("def main() -> IO(Unit):")
     w("  do IO<Unit>:")
@@ -243,8 +269,16 @@ if __name__ == "__main__":
     main_section()
     ins = "write_ins(fx_encs(), fx_eos(), fx_ssx(), fx_tys(), %s)"
     pc = "write_pcode(fx_ps(), fx_eos(), %s)"
+    # `operands cdna` is here because the oracle EMITS it and it was the one
+    # emitter file the port never showed: `write_operands` takes `arch` and uses
+    # it in exactly one line, the import (generate.py:471), so the two arch files
+    # differ in one token and a gate that only diffed rdna3 could not see an
+    # `arch` argument dropped or hard-coded.  `write_enum` takes NO arch
+    # (generate.py:273), so there is no `enum cdna` -- the oracle does not emit one
+    # either, and a second row for the same bytes is a row that cannot fail.
     for tag, call in (("enum rdna3", "write_enum(fx_eos())"),
                       ("operands rdna3", "write_operands(fx_tys(), fx_eos(), %s)" % bq("rdna3")),
+                      ("operands cdna", "write_operands(fx_tys(), fx_eos(), %s)" % bq("cdna")),
                       ("ins rdna3", ins % bq("rdna3")),
                       ("ins cdna", ins % bq("cdna")),
                       ("pcode rdna3", pc % bq("rdna3")),

@@ -1,0 +1,34 @@
+# py rows=18  bend rows=7  plant=matmul-vs-reduce
+# dev-map {0: 'NULL'}  (DECLARED, not derived -- see the S.Dev note in R7)
+# SHARED cores=1  ONLY-PY=14  ONLY-BEND=3  field-mismatches=0  rung2-pairs=3
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH RESHAPE   py#12 vs bend#5  (no shared core; paired one-to-one on the dtype-erased arg)
+    shape py=(l0:3,l0:5) bend=(l0:4,l0:8)
+    src  py=['8e64afb2', '3a1c5aaf'] bend=['21bd0b7a', '7854a03a']
+MISMATCH STACK     py#11 vs bend#4  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['951332ef', 'a0d6a456'] bend=['a81952e6', '6680dcf4']
+MISMATCH REDUCE    py#18 vs bend#7  (no shared core; paired one-to-one on the dtype-erased arg)
+    shape py=(l0:4,l0:5) bend=(l0:4)
+    src  py=['6d49643c'] bend=['8e95bcd0']
+# ONLY ON THE PYTHON SIDE (14), IN FULL:
+  py#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sNULL,b0,N,unrealized,b1,N) src=[]
+  py#3 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:3 src=[]
+  py#4 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['2', '3']
+  py#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+  py#6 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:1 src=[]
+  py#7 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['2', '6', '3']
+  py#8 RESHAPE dtype=f32 shape=(l0:4,l0:1,l0:3) depth=i0 tag=N arg=N src=['5', '7']
+  py#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sNULL,b0,N,unrealized,b1,N) src=[]
+  py#10 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:5 src=[]
+  py#13 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['6', '3', '10']
+  py#14 RESHAPE dtype=f32 shape=(l0:1,l0:3,l0:5) depth=i0 tag=N arg=N src=['12', '13']
+  py#15 PERMUTE dtype=f32 shape=(l0:1,l0:5,l0:3) depth=i0 tag=N arg=n(i0,i2,i1) src=['14']
+  py#16 MUL dtype=f32 shape=(l0:4,l0:5,l0:3) depth=i0 tag=N arg=N src=['8', '15']
+  py#17 PERMUTE dtype=f32 shape=(l0:3,l0:4,l0:5) depth=i0 tag=N arg=n(i2,i0,i1) src=['16']
+# ONLY ON THE BEND SIDE (3), IN FULL:
+  bend#1 ALLOC dtype=f32 shape=(l0:32) depth=i0 tag=N arg=P(i2,Df32,i32,N,N,N,SGLOBAL,sNULL,b0,N,unrealized,b1,N) src=[]
+  bend#3 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:8 src=[]
+  bend#6 PERMUTE dtype=f32 shape=(l0:8,l0:4) depth=i0 tag=N arg=n(i1,i0) src=['5']
+# VERDICT: DISAGREE
+# CROSS VERDICT: OK -- it disagrees
+rc=0

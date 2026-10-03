@@ -1,0 +1,20 @@
+# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+# py rows=18  bend rows=18  plant=shape
+# dev-map {0: 'NULL'}  (DECLARED, not derived -- see the S.Dev note in R7)
+# SHARED cores=12  ONLY-PY=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=6
+# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:
+MISMATCH RESHAPE   py#5 vs bend#5  (no shared core; paired one-to-one on the dtype-erased arg)
+    shape py=(l0:3,l0:4) bend=(l0:4,l0:3)
+    src  py=['e9ce1f34', 'a923cbbb'] bend=['e9ce1f34', 'c7634b1f']
+MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['8fb545f3', '29e326cf'] bend=['52bd0806', '29e326cf']
+MISMATCH RESHAPE   py#8 vs bend#8  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['067557e0', '061d05dc'] bend=['38d26989', '061d05dc']
+MISMATCH STACK     py#4 vs bend#4  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['951332ef', 'a81952e6'] bend=['a81952e6', '951332ef']
+MISMATCH REDUCE    py#18 vs bend#18  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['f9e6029c'] bend=['6d49643c']
+MISMATCH PERMUTE   py#17 vs bend#17  (no shared core; paired one-to-one on the dtype-erased arg)
+    src  py=['8af9c4f4'] bend=['a3707272']
+# VERDICT: DISAGREE
+rc=1

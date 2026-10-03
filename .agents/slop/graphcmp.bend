@@ -72,7 +72,7 @@ def addr1(a: S.Addr) -> String:
 def i(x: U32) -> String:
   String.concat(["i", U32.show(x)])
 
-# `H.i64_text` is `hi:lo` (helpers.bend:1227), which is why the shape column reads
+# `H.i64_text` is `hi:lo` (helpers.bend:1696-1699), which is why the shape column reads
 # `n(0:4,0:3)` rather than `n(4,3)`: a dim is an `H.I64` and dropping the HIGH word would
 # read a shape of `2**32` as `0`. It costs four characters per dim and it is the difference
 # between an exact column and one that cannot see a large dimension.
@@ -258,15 +258,18 @@ def argstr(a: O.Arg, depth: U32) -> String:
     case O.AKernel{ki}: kernelinfo(ki)
     case O.AProgram{pi}: prog_info(pi)
     case O.ARange{ids, at}: String.concat(["rg(", i(depth), ",", O.AxisType.name(at), ",", us(ids), ")"])
-    case O.AReduce{rop, num_axes}: String.concat(["rd(", opx(rop), ",", U32.show(num_axes), ")"])
+    case O.AReduce{rop, num_axes}: String.concat(["rd(", opx(rop), ",", i(num_axes), ")"])
     case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", U32.show(threads), ",", us(tc), ")"])
     case O.ATuple{ys}: us(ys)
     case O.AStr{s}: bstr(s)
     case O.AInk{ins, idt}: String.concat(["in(", bstr(ins), ",", dt(idt), ")"])
     case O.AAllred{arop, adev}: String.concat(["al(", opx(arop), ",", dev(adev), ")"])
     case O.ADev{dd}: dev(dd)
-    case O.ABlob{n2}: String.concat(["bl", U32.show(n2)])
-    case O.AFloat{f2}: String.concat(["fl", F32.show(f2)])
+    # `ABlob` is `bytes`, and ops.bend:913 says "only its length is read" -- there is no
+    # byte STRING in the port to compare, so the normal form compares the LENGTH on both
+    # sides and the loss is recorded rather than hidden.
+    case O.ABlob{n2}: String.concat(["y", U32.show(n2)])
+    case O.AFloat{f2}: String.concat(["f", F32.show(f2)])
     # THE BOTTOM. ops.bend:1154 calls this "a read of an index that was never interned".
     # It is not a node, so it must not read as an agreeing one.
     case O.ABad{}: "BAD"
@@ -285,10 +288,12 @@ def tagstr(t: O.Tag) -> String:
 # THREE-valued and all three are distinct: `N` (the op HAS no shape), `R` (`shape`
 # raises) and the dims. A dim is a `sint` (ops.py:1925) -- `int|UOp` -- so a symbolic
 # dim is `u` and never a number, which is why a symbolic shape cannot silently read as 0.
+# A dim is an `H.I64`, so it carries the same `l` prefix every other I64 does: a shape is
+# `(l0:4,l0:3)`, NOT `(0:4,0:3)`, because the high word is part of the value.
 def dim1(d: O.Sint) -> String:
   match d:
     case O.SU{u2}: "U"
-    case O.SI{di}: H.i64_text(di)
+    case O.SI{di}: String.concat(["l", H.i64_text(di)])
 
 def dimlist.go(+ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>:
   match ds:
@@ -297,6 +302,7 @@ def dimlist.go(+ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>
 
 def dimlist(ds: List<&2, O.Sint>) -> String:
   String.concat(["(", String.join(dimlist.go(ds, Nil{}), ","), ")"])
+
 
 def shape_str(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
   match m:

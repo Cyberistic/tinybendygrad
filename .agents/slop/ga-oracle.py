@@ -266,13 +266,40 @@ def fixture_suffix_only_ops():
 ENCS, ENUMS, TYPES, SUFFIX = fixture_encodings(), fixture_enums(), fixture_types(), fixture_suffix_only_ops()
 
 
-# The VALUE is the emitted LINE, not "ok": the gate joins these into the whole
-# emitted file and diffs it as a STRING.  A "ok" value would have made every
-# emitter row assert the same thing, which is the exact "count row" failure the
-# renderer conventions warn about -- one row that cannot fail.
+# The VALUE is the emitted FILE, not "ok": the port's `gl` joins the file with
+# newlines and the gate joins the oracle's per-LINE rows into the same string, so
+# a "ok" value would have made every emitter row assert the same thing, which is
+# the exact "count row" failure the renderer conventions warn about -- one row
+# that cannot fail.
+#
+# ⚠ ONE ROW PER FILE, NOT ONE PER LINE, and the per-line shape was MEASURED to be
+# the wrong key.  The oracle used to emit `f"{tag} | {ln}"` -> the emitted LINE,
+# 585 rows.  The emitted text REPEATS -- `  saddr = SSrcField(31, 24,
+# default=NULL)` appears in four classes, `  V_DOT2ACC_F32_F16 = 0` in three --
+# so the line is NOT a unique key and a name-keyed dict kept 585 of 588+ lines by
+# accident.  Worse, that shape is what `ga_fix.py:tag_join` had to reassemble, and
+# reassembling it LOST blank lines (`tag | ` is one row for four separators) --
+# which is how a correct oracle produced a wrong `py=` literal that disagreed
+# with a right port.  Keying on the line can only be made sound by an index,
+# and an index cannot see a dropped LAST line.  One whole-file row can: it moves
+# for a dropped line at ANY position, including the tail.
+#
+# The name is the TAG, so it is the port's `gl` name and `rows()` sees it.  It
+# only sees it because the port applies `esc_row` (`renderer/cstyle.bend:1760`)
+# -- see generate.bend's `gl` -- and so does `R()` below, on both sides.
+def R(s):
+    """A row's text, escaped to ONE line.  `renderer/cstyle.bend:1760` verbatim:
+    every REAL newline becomes the two characters `\\` and `n`, on BOTH sides, so
+    the comparison stays textual.  It is deliberately NOT injective -- a literal
+    `\\` `n` already in the text is left alone and so maps to the same thing.  Two
+    of the seven emitted files contain one (`write_pcode` emits `{code!r}`,
+    generate.py:497); generate.bend's `esc_row` names the blind spot and
+    `.agents/slop/ga_gate.py` diffs the RAW text to cover it."""
+    return s.replace("\n", "\\n")
+
+
 def emit_rows(tag, text):
-    for ln in text.split("\n"):
-        row(f"{tag} | {ln}", ln)
+    row(tag, R(text))
 
 
 # `extract_pcode` runs FIRST because upstream `__main__` runs it first and feeds
@@ -290,7 +317,14 @@ def emit_emitters():
         emit_rows(f"ins {arch}", write_and_read(G.write_ins, e, n, SUFFIX, TYPES, arch))
         e2 = copy.deepcopy(ENCS)
         n2 = copy.deepcopy(ENUMS)
-        emit_rows(f"enum {arch}", write_and_read(G.write_enum, n2))
+        # `write_enum` TAKES NO ARCH (generate.py:273), so `enum rdna3` and
+        # `enum cdna` were the SAME assertion under two names -- 122 emitted lines,
+        # byte for byte, and the port gates one of them.  A row that cannot fail is
+        # worse than no row, so only the one the port prints is emitted.
+        # `write_ins`/`write_operands`/`write_pcode` all take one and all use it
+        # (generate.py:457/464/484), so those stay per-arch.
+        if arch == "rdna3":
+            emit_rows("enum rdna3", write_and_read(G.write_enum, n2))
         emit_rows(f"operands {arch}",
                   write_and_read(G.write_operands, TYPES, copy.deepcopy(ENUMS), arch))
         emit_rows(f"pcode {arch}", write_and_read(G.write_pcode, copy.deepcopy(PCODE),
@@ -421,4 +455,14 @@ for nm, val in ROWS:
     print(f"{nm} = [{val}]   py=[{val}]")
 
 print(f"ORACLE ROW COUNT = {len(ROWS)}")
-assert len(ROWS) > 200, f"ORACLE EMITTED {len(ROWS)} ROWS -- a gate whose oracle prints nothing is not a gate"
+# A ROW-COUNT FLOOR IS THE WRONG LIVENESS CHECK ALONE, because the count fell by
+# 748 when 756 per-line emitter rows became 8 whole-file rows -- and every one of
+# those 748 lines is still compared, inside one of the 8.  So the count is
+# asserted at its measured value AND the eight emitter tags are asserted PRESENT,
+# which is the thing that actually dies silently.  Measured 2026-10-03: 144 rows,
+# of which 8 are emitter files totalling 588 emitted lines.
+EMITTER_TAGS = ("enum rdna3", "operands rdna3", "operands cdna", "ins rdna3",
+                "ins cdna", "pcode rdna3", "pcode cdna", "common")
+assert len(ROWS) >= 144, f"ORACLE EMITTED {len(ROWS)} ROWS -- a gate whose oracle prints nothing is not a gate"
+missing = [t for t in EMITTER_TAGS if not any(n == t for n, _ in ROWS)]
+assert not missing, f"EMITTER ROWS MISSING: {missing} -- write_and_read returned nothing"

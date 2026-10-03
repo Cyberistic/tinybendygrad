@@ -324,6 +324,10 @@ def main():
     global lines_by_file
     lines_by_file = corpus(files)
     os.makedirs(SCRATCH, exist_ok=True)
+    # The proof SET's verdict, not each member's. A concurrent edit to main() dropped this
+    # call once, leaving proof_set_verdict defined but never run -- so _SET stayed falsy and
+    # the classifier silently reverted to per-file verdicts with no error anywhere.
+    _SET[0], _SET[1], _SET[2] = proof_set_verdict(files)
     with cf.ThreadPoolExecutor(args.P) as pool:
         out = [(r, classify(r, lines_by_file)) for r in pool.map(check_one, files)]
 

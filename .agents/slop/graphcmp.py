@@ -66,7 +66,7 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
               when `_shape` is None (the ten ops at ops.py:331-338). Three-valued, because
               "has no shape" and "shape raised" are different facts. A dim is a `sint`
               (ops.py:1925) = `int|UOp`: an int prints as its EXACT `hi:lo` I64
-              (`H.i64_text`, helpers.bend:1227, is two words for exactly this) and a UOp
+              (`H.i64_text`, helpers.bend:1696-1699, is two words for exactly this) and a UOp
               prints as `U`. Never as a number -- a symbolic dim read as 0 is a silent
               wrong shape.
   R5  depth   how many times a RANGE arg's `axis_id` is NESTED. `UOp.range` builds
@@ -192,9 +192,10 @@ def u(x: int) -> str:
 
 
 def i64(x: int) -> str:
-  """`hi:lo`, exactly `H.i64_text` (helpers.bend:1227). A dim is an I64 and dropping the
-  high word would read a dimension of 2**32 as zero."""
-  return ATOMS["i64"] + f"{x >> 32:x}:{x & 0xFFFFFFFF:x}"
+  """`hi:lo` in DECIMAL, exactly `H.i64_text` = `i64_show(hi32, lo32)` = `U32.show(hi) ":"
+  U32.show(lo)` (helpers.bend:1696-1699). A dim is an I64, and dropping the high word would
+  read a dimension of 2**32 as zero."""
+  return ATOMS["i64"] + f"{x >> 32}:{x & 0xFFFFFFFF}"
 
 
 def tup(xs) -> str:
@@ -224,8 +225,75 @@ def dev(x) -> str:
   return ATOMS["str"] + ",".join(x) if isinstance(x, tuple) else bstr(str(x))
 
 
-def carg(x) -> str:
+def konst(x) -> str:
+  """`Ops.CONST`'s arg is a bare `PyConst` (`int|float|bool|bytes|Invalid`, ops.py:122) and
+  the port spells the same thing `Const` (ops.bend:807-811). CPython's int is normalised to
+  the port's I64 form so `UOp.const(4)` is `l0:4` on BOTH sides rather than `i4` here and
+  `l0:4` there."""
+  if isinstance(x, bool):
+    return bo(x)
+  if isinstance(x, int):
+    return i64(x)
+  if isinstance(x, float):
+    return ATOMS["float"] + repr(x)
+  if isinstance(x, bytes):
+    # LENGTH only, and so does the port (ops.bend:913: "bytes BINARY arg; only its length
+    # is read"). Comparing the content would be a field the port can never fill, and
+    # comparing the length is a real comparison both sides can make.
+    return ATOMS["bytes"] + str(len(x))
+  return ATOMS["invalid"] if type(x).__name__ == "Invalid" else f"raw({type(x).__name__})"
+
+
+# THE ARG TAXONOMY, BY OP. ops.bend:892-921 lists the nineteen things `arg: Any` can hold
+# and the op each belongs to; the same table is what makes the two sides' texts the same
+# TEXT and not merely two structurally-similar ones. Only the ops whose CPython value is
+# SHAPED differently from the port's typed record need a case -- CAST's DType and PERMUTE's
+# tuple already render identically through `_carg`.
+def carg(op: Ops, x) -> str:
   """R7, CPython side. Mirrors `argstr` in graphcmp.bend character for character."""
+  if op is Ops.CONST:
+    return konst(x)
+  if op is Ops.RANGE:
+    ids, k = x[1:], 0
+    while isinstance(ids, tuple):
+      ids, k = ids[0], k + 1
+    return f"rg({u(k)},{ATOMS['axis']}{x[0].name},{tup([u(i) for i in (x[1:] if k else (x[1],))])})"
+  if op is Ops.REDUCE:
+    return f"rd({ATOMS['ops']}{x[0].name},{u(x[1])})"
+  if op is Ops.WMMA:
+    dims, dtp, thr, tc = x
+    return (f"wm({tup([u(i) for i in dims])},{dt(dtp)},{u(thr)},"
+            + (tup([u(i) for i in tc]) if tc is not None else ATOMS["none"]) + ")")
+  if op is Ops.INS:
+    return f"in({bstr(x[0])},{dt(x[1])})"
+  if op is Ops.ALLREDUCE:
+    return f"al({ATOMS['ops']}{x[0].name},{dev(x[1])})"
+  if op is Ops.CUSTOM_FUNCTION:
+    return f"cF({bstr(x.name)},{dt(x.dtype)})"
+  if op is Ops.CALL:
+    # CPython's CallInfo (ops.py:1400-1410) is a PLAIN CLASS with five class-level
+    # attributes; `grad_fxn` is dropped because its own repr prints `id(...)` (ops.py:1409),
+    # a per-process address, and `aux` is dropped because it is `Any`. The port has four
+    # fields including a `dtype` CPython does not have (ops.bend:1059-1060), so the two
+    # TEXTS differ on purpose: a CALL node is reported as a named `arg` difference rather
+    # than smoothed into an agreement.
+    return "cI(" + ",".join([bstr(x.name) if x.name is not None else ATOMS["none"],
+                             bo(x.precompile), bo(x.precompile_backward)]) + ")"
+  if op is Ops.SINK:
+    return f"kI({bstr(x.name)},{tup([_carg(o) for o in x.applied_opts])},{u(x.beam)})"
+  if op is Ops.PROGRAM:
+    # `ProgramInfo.global_size` is `tuple[int|float, ...]` (ops.bend:1352); the port holds
+    # `H.I64` and the float case is a `sint`'s, recorded on `sint_of` there. CPython's
+    # floats are rendered as `f<value>` so a float size is visible rather than truncated.
+    return "pI(" + ",".join([_carg(x.global_size), _carg(x.local_size), _carg(x.vars),
+                             _carg(x.globals), _carg(x.outs), _carg(x.ins)]) + ")"
+  return _carg(x)
+
+
+def _carg(x) -> str:
+  """The generic value grammar: one letter per kind, no letter reused, and a NAMED `raw`
+  for anything unmapped. A fallback that printed `repr` here would reintroduce the whole
+  problem this file exists to remove."""
   if x is None:
     return ATOMS["none"]
   if isinstance(x, DType):
@@ -245,25 +313,28 @@ def carg(x) -> str:
   if isinstance(x, str):
     return bstr(x)
   if isinstance(x, bytes):
-    return ATOMS["bytes"] + x.hex()
+    # LENGTH only, and so does the port (ops.bend:913: "bytes BINARY arg; only its length
+    # is read"). Comparing the content would be a field the port can never fill, and
+    # comparing the length is a real comparison both sides can make.
+    return ATOMS["bytes"] + str(len(x))
   if isinstance(x, (tuple, list)):
-    return tup([carg(e) for e in x])
+    return tup([_carg(e) for e in x])
   if isinstance(x, UOp):
-    return f"{ATOMS['str']}uop"          # `Ops.NOOP`'s `src` may carry a UOp (ops.bend:838)
+    # An ARG may hold a UOp (`Ops.PYLITERAL`'s literal, `Ops.MSELECT`'s matcher --
+    # ops.bend:938-941). The normal form records THAT IT IS A UOP and not WHICH, because
+    # the arg's identity is already carried by the graph's `src` edges and a UOp's repr is
+    # the whole pretty-print problem this file exists to remove. A named limitation, not
+    # something papered over.
+    return ATOMS["str"] + "<uop>"
   if isinstance(x, ParamArg):
     return paramarg(x)
   if type(x).__name__ == "Invalid":      # dtype.py:32; a CONST holding one is a refusal
     return ATOMS["invalid"]
   if hasattr(x, "__dataclass_fields__"):
     return f"{type(x).__name__}(" + "".join(
-      f"{n}={carg(getattr(x, n))}" for n in x.__dataclass_fields__) + ")"
-  # `CallInfo` (ops.py:1400) and `KernelInfo` (ops.py:1339) are plain classes with
-  # class-level defaults, so `__dataclass_fields__` does not exist and the instance dict is
-  # the field list -- in DECLARATION order, because CPython dicts are ordered. `grad_fxn`
-  # is an `id()` upstream prints verbatim (ops.py:1409) and is dropped: a per-process
-  # address is not reproducible, and it is dropped on BOTH sides, not compared.
+      f"{n}={_carg(getattr(x, n))}" for n in x.__dataclass_fields__) + ")"
   d = {k: v for k, v in vars(x).items() if k != "grad_fxn"}
-  return f"{type(x).__name__}(" + "".join(f"{k}={carg(v)}" for k, v in d.items()) + ")"
+  return f"{type(x).__name__}(" + "".join(f"{k}={_carg(v)}" for k, v in d.items()) + ")"
 
 
 def paramarg(pa: ParamArg) -> str:
@@ -279,7 +350,7 @@ def paramarg(pa: ParamArg) -> str:
     "n(" + u(pa.image[0]) + "," + u(pa.image[1]) + ")" if pa.image is not None else ATOMS["none"],
     f"realized{u(pa.buffer)}" if pa.buffer is not None else "unrealized",
     bo(pa.bind_on_realize),
-    carg(pa.val)]) + ")"
+    _carg(pa.val)]) + ")"
 
 
 def cshape(n: UOp) -> str:
@@ -307,9 +378,9 @@ def ctag(t) -> str:
   return ATOMS["none"] if t is None else carg(t)
 
 
-def row_of(n: UOp, k: int) -> str:
+def row_of(n: UOp, k: int, ix: dict) -> str:
   return " ".join(chunk(v) for v in [u(k), n.op.name, n.dtype.name, cshape(n), u(cdepth(n)),
-                                     ctag(n.tag), carg(n.arg), tup([u(s) for s in n.src])])
+                                     ctag(n.tag), carg(n.op, n.arg), tup([u(ix[id(s)]) for s in n.src])])
 
 
 # ---------------------------------------------------------------------------
@@ -331,51 +402,135 @@ def g_reduce():
 
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce}
 
+_BASE: dict[str, UOp] = {}
+
+
+def base(graph: str) -> UOp:
+  """BUILT ONCE. `Tensor.empty` mints a FRESH `ParamArg.slot` from a process-global
+  counter every call -- MEASURED: two `Tensor.empty(4,3)` in one process give slots 0,1
+  then 2,3 (`UOp.unique_num`, ops.py:842, "must never be reset"). So a clean emit and a
+  planted emit that each built their own graph would differ in two SLOT FIELDS before the
+  plant did anything, and the differ would be reporting the harness rather than the
+  plant."""
+  if graph not in _BASE:
+    _BASE[graph] = GRAPHS[graph]()
+  return _BASE[graph]
+
+
+def _rebuild_with(ast: UOp, op: Ops, fn) -> UOp:
+  """Rebuild the DAG replacing `fn(u)` for the node of `op` and `ast` itself. Written as a
+  fold over the TOPOSORT (ops.py:297) rather than as a positional rebuild, because a
+  positional rebuild of 18 nodes is 18 chances to name the wrong child."""
+  par = {c: n for n in ast.toposort() for c in n.src}
+  par[ast] = None
+  new: dict[UOp, UOp] = {}
+
+  def go(n: UOp) -> UOp:
+    if n in new:
+      return new[n]
+    kids = [go(s) for s in n.src]
+    # EVERY node is rebuilt from its (possibly replaced) children -- including the root,
+    # which is what propagates a replacement upwards -- and the node of `op` is REPLACED
+    # instead. Getting that backwards returns the input graph unchanged, which is what the
+    # first version did: `pl is ast` and the plant reported AGREE.
+    r = fn(n) if (par.get(n) is not None and n.op is op) else n.replace(src=tuple(kids))
+    new[n] = r
+    return r
+
+  return go(ast)
+
 
 def plant_dtype(ast: UOp) -> UOp:
-  """Change the two ALLOCs and everything downstream of them to int32. MUL and ADD are
-  commutative and `promo_dtype` handles an int/f32 mix, so the SHAPE of the MUL changes
-  too -- which is the point: the differ must name `dtype`, not stop at "a node differs".
-  Every op, arg, depth, tag, child count and child order is untouched."""
-  def alloc(a):
-    return UOp(Ops.ALLOC, src=(), arg=ParamArg(a.arg.slot, dtypes.int, a.arg.size,
-                                               device=a.arg.device, bind_on_realize=True))
-  mul = ast.src[0]
-  a, b = mul.src
-  assert a.src[0].op is Ops.ALLOC and b.op is Ops.ALLOC, "plant targets the two ALLOCs"
-  aa, sh_a, sh_a2 = alloc(a.src[0]), a.src[1], a.src[1]
-  bb, sh_b = alloc(b.src[0]), a.src[1].src[1].src[1]
-  r_a = UOp(Ops.RESHAPE, src=(aa, sh_a))
-  r_a2 = UOp(Ops.RESHAPE, src=(r_a, sh_a2))
-  r_b = UOp(Ops.RESHAPE, src=(bb, sh_b))
-  r_b2 = UOp(Ops.RESHAPE, src=(r_b, mul.src[1].src[0].src[1]))
-  p0 = UOp(Ops.PERMUTE, src=(r_b2,), arg=(0, 2, 1))
-  return UOp(Ops.REDUCE, src=(UOp(Ops.PERMUTE, src=(UOp(Ops.MUL, src=(r_a2, p0)),), arg=(2, 0, 1)),),
-             arg=(Ops.ADD, 1))
+  """Re-type the two ALLOCs to int32, so every node downstream of them changes dtype. MUL
+  and ADD are commutative and `promo_dtype` handles an int mix, so the SHAPES of the
+  downstream nodes change too -- which is the point: the differ must name `dtype` on each
+  of them and not stop at "some node differs". Every op, arg, depth, tag, child count and
+  child order is untouched, and CONSTs are NOT retyped (a CONST's dtype is the type of its
+  arg, ops.py:199), so the CONST nodes must come out IDENTICAL."""
+  def retype(n: UOp) -> UOp:
+    if n.op is not Ops.ALLOC:
+      return n
+    a = n.arg
+    return UOp(Ops.ALLOC, src=(), arg=ParamArg(a.slot, dtypes.int, a.size, device=a.device,
+                                               bind_on_realize=True))
+  return _rebuild_with(ast, Ops.ALLOC, retype)
 
 
 def plant_srcswap(ast: UOp) -> UOp:
   """Swap the two children of the MUL. MUL is commutative in tinygrad, so this is a
-  SEMANTIC no-op -- which is exactly why a differ that only counted nodes would miss it.
-  Nothing else is touched, so the report must be the swapped pair ALONE: the reordered
-  pair's own fields must not be flagged."""
-  m = ast.src[0]
-  assert m.op is Ops.MUL, "plant targets the MUL"
-  sw = UOp(Ops.MUL, src=(m.src[1], m.src[0]))
-  return UOp(Ops.REDUCE, src=(UOp(Ops.PERMUTE, src=(sw,), arg=(2, 0, 1)),), arg=(Ops.ADD, 1))
+  SEMANTIC no-op -- exactly why a differ that only counted nodes would miss it. Nothing
+  else is touched, so the report must be the reordered pair ALONE and the pair's own
+  fields must come out clean: `--plant srcswap` failing to flag the reordered pair's own
+  fields is the half of this deliverable that a count-based differ cannot express."""
+  def swap(n: UOp) -> UOp:
+    return UOp(Ops.MUL, src=(n.src[1], n.src[0])) if n.op is Ops.MUL else n
+  return _rebuild_with(ast, Ops.MUL, swap)
 
 
-PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap}
+def plant_shape(ast: UOp) -> UOp:
+  """Reverse the `(4, 3)` shape STACK's two CONST children, so the RESHAPE over it answers
+  shape `(3, 4)` where it answered `(4, 3)`. Upstream's own lesson applied to a fixture:
+  ops.bend:2432-2440 records that swapping two shape args leaves op, nsrc and the src
+  sequence identical, which is why a count is not a gate.
+
+  MEASURED, and it is why this plant reaches rung 2 and not rung 1: it moves the STACK's
+  `src` ORDER, and `src` IS in the core, so the STACK's core moves and so does every
+  consumer's. The report is six rung-2 pairs, and exactly one of them -- RESHAPE#5 -- names
+  the `shape` field. What this ESTABLISHES is that a shape field is named as a shape field:
+  it is not folded into the identity and it is not summarised as a node difference.
+  (A shape change with `src` INTACT would land on rung 1. A CONST dtype plant cannot get
+  there either, and the reason is worth stating because the obvious reading of ops.py:199
+  is wrong: MEASURED, `UOp.const(4, dtypes.i32)` does NOT collide with `UOp.const(4)` --
+  they are different objects with different keys -- because `UOp.const` (ops.py:629-635)
+  ends in `.cast(dtype)` and so builds a `CAST`, not a second `CONST`. A CONST's dtype is
+  therefore genuinely DERIVED from its arg (`dtype_from_uop`, ops.py:184-190) and cannot be
+  set independently at all. Reported as a measured theorem, not closed with a row that
+  encodes it.)
+
+  WHAT RUNG 1 IS FOR, then, stated precisely: `dtype` and `shape` are DERIVED on both sides
+  -- `UOp.dtype` -> `dtype_from_uop` (ops.py:247), `UOp.shape` -> `_shape` (ops.py:454) --
+  and both read only op/src/arg, i.e. only the core's constituents. So a rung-1 mismatch
+  cannot mean "the graphs differ"; it means the two IMPLEMENTATIONS of `dtype_from_uop` and
+  `_shape` disagree about the same node, which is a real class of port bug (the port
+  computes both in one FOLD, fold.bend's `DtShape`, a different implementation that can and
+  does fail -- that is why `fold.shape` can answer `R`). Rung 1 has not fired on any graph
+  measured today."""
+  # The `(4, 3)` STACK, named by its CONST VALUES and not by its position: this graph has
+  # two two-CONST STACKs, `(4,3)` and `(3,5)`, and picking by position would plant the wrong
+  # one the day the graph grows a dimension. Note it CANNOT be named by `n.shape` -- a
+  # STACK's shape is its element COUNT (`_shape`, ops.py:331), so all four of this graph's
+  # STACKs answer `(2,)` or `(3,)`. The outer RESHAPE's `marg` is still `(4,1,3)` and the
+  # element count is unchanged, so no other node's shape moves.
+  sts = [n for n in ast.toposort() if n.op is Ops.STACK and [s.arg for s in n.src] == [4, 3]]
+  assert len(sts) == 1, f"expected exactly one (4,3) STACK, got {len(sts)}"
+  st = sts[0]
+  return _rebuild_with(ast, Ops.STACK,
+                       lambda n: UOp(Ops.STACK, src=(n.src[1], n.src[0])) if n is st else n)
+
+
+PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap, "shape": plant_shape}
 
 
 def emit_py(graph: str, plant: str | None) -> list[str]:
   """The CPython side. A plant edits THIS SIDE'S COPY and nothing else -- never the live
   tree, never a port file. 400 oracles under `.agents/slop/` mutate a COPY for the same
   reason."""
-  ast = GRAPHS[graph]()
+  ast = base(graph)
   if plant:
     ast = PLANTS[plant](ast)
-  return [row_of(n, i) for i, n in enumerate(ast.toposort())]
+  # The arena indices are the TOPOSORT POSITIONS, so R1 is a construction-order number
+  # rather than a hash. Deliberate: the differ pairs structurally, so `id` is for the
+  # reader only, and a construction-order number is the only one checkable against
+  # `print_uops`' own output.
+  # R1's ALIGNMENT. CPython's ucache has no index; the port's arena spends index 0 on its
+  # bottom node (ops.bend:1162-1168: "the arena starts with the bottom at index 0"), so this
+  # side counts from 1 too. The ids are REPORTING ONLY and the differ never keys on them,
+  # but with the alignment the two canonical files are byte-comparable and a plain
+  # `diff 01-canon-py.txt 02-canon-bend-bound.txt` is ITSELF a check -- the cheapest one
+  # in this file, and the one that fails first when an atom letter moves.
+  lst = list(ast.toposort())
+  ix = {id(n): i + 1 for i, n in enumerate(lst)}
+  return [row_of(n, i + 1, ix) for i, n in enumerate(lst)]
 
 
 # ---------------------------------------------------------------------------
@@ -390,10 +545,14 @@ def clean_env(dev: str) -> dict:
   return e
 
 
-def emit_bend(dev: str, tries: int = 5) -> tuple[list[str], list[str]]:
+def emit_bend(dev: str, tries: int = 5, probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
+  """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
+  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
+  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
+  is exactly the guard that does not work."""
   notes = []
   for attempt in range(1, tries + 1):
-    c = subprocess.run([str(BEND), str(BEND_PROBE)], cwd=REPO, capture_output=True, text=True,
+    c = subprocess.run([str(BEND), str(probe or BEND_PROBE)], cwd=REPO, capture_output=True, text=True,
                        env=clean_env(dev), timeout=1800)
     lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
     rows = [ln for ln in lines if not ln.startswith("#")]
@@ -411,9 +570,12 @@ def emit_bend(dev: str, tries: int = 5) -> tuple[list[str], list[str]]:
 class Node:
   """One record. `cores[c]` is the child's CORE, filled by `build`."""
 
-  def __init__(self, f: list[str]):
-    self.nid, self.op, self.dtype, self.shape, self.depth, self.tag, self.arg, self.src = f
+  def __init__(self, nid: str, f: list[str]):
+    self.nid = nid
+    self.op, self.dtype, self.shape, self.depth, self.tag, self.arg, self.src = f[1:]
     self.cores: dict[str, str] = {}
+    self.kidop: dict[str, str] = {}
+    self.side = ""
 
   def __repr__(self) -> str:
     return f"<{self.op}#{self.nid}>"
@@ -423,47 +585,92 @@ class Node:
     """Rung 2. The arg with every dtype SPEL erased, plus the children's OPS rather than
     their cores -- so a node whose only difference is a dtype finds a partner and the
     difference is reported as the `dtype` field."""
+    # SORTED, not in order: a reorder of two commutative children is a difference in the
+    # `src` FIELD, and if the rung-2 key were order-sensitive the swapped node would fail
+    # to pair at all and be reported as "only on one side" -- which is the one report a
+    # differ must never give for a node that is present on both sides. Measured: with the
+    # child ops in order, `--plant srcswap` printed `ONLY-PY=1 / ONLY-BEND=1` for the MUL
+    # and never named its `src`.
     return (f"{self.op}\x00{self.depth}\x00{self.tag}\x00{erase(self.arg)}\x00"
-            + ",".join(self.kid_ops[c] for c in self.src))
+            + ",".join(sorted(self.kidop[c] for c in self.src)))
 
   def full(self, side: str) -> str:
     return (f"  {side}#{self.nid} {self.op} dtype={self.dtype} shape={self.shape} "
             f"depth={self.depth} tag={self.tag} arg={self.arg} src={self.src}")
 
 
-def erase(arg: str) -> str:
-  """`D<name>` -> `D*`. Exhaustive by construction: a dtype appears in the normal form
-  ONLY as `D<name>`, so one pass cannot miss a spelling."""
+def value_starts(arg: str, letter: str) -> list[tuple[int, int]]:
+  """Every occurrence of `letter` that is a VALUE TAG rather than part of a string.
+
+  The atom letters are single characters and a string payload is emitted RAW (`sNULL`,
+  `s<name>`, and an Opt name like `OPT_SZ`), so a naive `arg.find("D")` finds the `D` in
+  `sDefault` and rewrites it. The grammar's own rule is the fix: an atom letter is a value
+  tag only when it sits where a VALUE starts -- at offset 0, or right after `(`, `,` or
+  `:`. MEASURED: without this guard `erase` rewrote nothing at all in `P(i0,Di32,i12,...)`,
+  because the first `)` after `D` was `P`'s own and the guard saw a comma, so
+  `--plant dtype` reported its two ALLOCs as "only on one side" instead of pairing them and
+  naming `dtype`.
+  """
   out, i = [], 0
   while i < len(arg):
-    if arg.startswith(ATOMS["dtype"], i):
-      j = arg.find(")", i)
-      if j != -1 and not set(",()") & set(arg[i + 1:j]):
-        out.append(ATOMS["dtype"] + "*")
+    if arg[i] == letter and (i == 0 or arg[i - 1] in "(,:"):
+      j = i + 1
+      while j < len(arg) and (arg[j].isalnum() or arg[j] == "_"):
+        j += 1
+      if j > i + 1:
+        out.append((i, j))
         i = j
         continue
-    out.append(arg[i])
     i += 1
+  return out
+
+
+def erase(arg: str) -> str:
+  """`D<name>` -> `D*`. Exhaustive by construction: a dtype appears in the normal form
+  ONLY as `D<name>`, so one pass cannot miss a spelling, and `value_starts` is what keeps
+  it off a string payload."""
+  out, i, hits = [], 0, value_starts(arg, ATOMS["dtype"])
+  for a, b in hits:
+    out.append(arg[i:a])
+    out.append(ATOMS["dtype"] + "*")
+    i = b
+  out.append(arg[i:])
   return "".join(out)
 
 
 def devtags(arg: str) -> set[int]:
   """The `t<n>` device tags in an arg text. Unbound until `--dev-map` names them, and
   reported as unbound rather than silently compared as integers."""
-  out, i = set(), 0
-  while i < len(arg):
-    if arg[i] == ATOMS["devex"] and arg[i + 1:i + 2].isdigit():
-      j = i + 1
-      while arg[j:j + 1].isdigit():
-        j += 1
-      out.add(int(arg[i + 1:j]))
-      i = j
-    else:
-      i += 1
-  return out
+  return {int(arg[a + 1:b]) for a, b in value_starts(arg, ATOMS["devex"])}
 
 
-def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]]:
+def rebind(line: str, dev_map: dict[int, str]) -> str:
+  """`emit --side bend --dev-map` writes the BOUND stream, so the two canonical files can be
+  compared with `diff` and nothing but a real difference can move a line."""
+  f = unchunks(line)
+  f[6] = bind_dev(f[6], dev_map)
+  return " ".join(chunk(v) for v in f)
+
+
+def bind_dev(arg: str, dev_map: dict[int, str]) -> str:
+  """Rewrite the port's `t<n>` device atom into the `s<NAME>` atom CPython emits, using a
+  DECLARED binding. Done on the arg TEXT because the arg is one opaque chunk and this is
+  the only substitution the port needs. A tag with no entry is LEFT ALONE and reported as
+  UNBOUND: an unbound tag must never be compared as an integer, which would read `t0`
+  against `sCPU` as a difference when it is an absence of information."""
+  out, i, hits = [], 0, value_starts(arg, ATOMS["devex"])
+  for a, b in hits:
+    nm = dev_map.get(int(arg[a + 1:b]))
+    if nm is None:
+      continue
+    out.append(arg[i:a])
+    out.append(ATOMS["str"] + nm)
+    i = b
+  out.append(arg[i:])
+  return "".join(out)
+
+
+def build(lines: list[str], side: str, dev_map: dict[int, str] | None = None) -> tuple[dict[str, Node], dict[str, Node]]:
   """(nodes by id, nodes by core). The core is computed from the CHILDREN's cores, so the
   walk is a topological one; `order` is derived here rather than trusted from the emitter,
   and a cycle is a loud failure instead of a recursion."""
@@ -472,31 +679,35 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
     f = unchunks(ln)
     if len(f) != 8:
       raise SystemExit(f"{side}: expected 8 chunks, got {len(f)}: {ln[:90]!r}")
+    if dev_map:
+      f[6] = bind_dev(f[6], dev_map)
     recs[f[0][1:]] = f
   kids = {nid: [x[1:] for x in f[7][2:-1].split(",") if x] for nid, f in recs.items()}
   for nid, cs in kids.items():
     for c in cs:
       if c not in recs:
         raise SystemExit(f"{side}: node {nid} names an unknown child {c}")
-  node, bycore, done, stack = {}, {}, set(), []
+  node, bycore, done, order, path = {}, {}, set(), [], set()
 
   def go(nid):
     if nid in done:
       return
-    if nid in stack:
+    if nid in path:
       raise SystemExit(f"{side}: CYCLE at node {nid}")
-    stack.add(nid)
+    path.add(nid)
     for c in kids[nid]:
       go(c)
-    stack.discard(nid)
+    path.discard(nid)
     done.add(nid)
-    stack.append(nid)
+    order.append(nid)
     f = recs[nid]
-    n = Node(f)
+    n = Node(nid, f)
+    n.side = side
+    n.src = kids[nid]           # CHILD INDICES, not the printed tuple -- R8 is a list
     node[nid] = n
     for c in kids[nid]:
       n.cores[c] = node[c].core
-    n.kid_ops = {c: node[c].op for c in kids[nid]}
+      n.kidop[c] = node[c].op
     n.core = hashlib.sha256((f"{n.op}\x00{n.depth}\x00{n.tag}\x00{n.arg}\x00"
                              + "|".join(n.cores[c] for c in kids[nid])).encode()).hexdigest()
     bycore.setdefault(n.core, []).append(n)
@@ -523,16 +734,9 @@ def mismatches(a: Node, b: Node) -> list[str]:
   return out
 
 
-def group_loose(ns: list[Node]) -> dict[str, list[Node]]:
-  out: dict[str, list[Node]] = {}
-  for n in ns:
-    out.setdefault(n.loose, []).append(n)
-  return out
-
-
-def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
-  _, pcore = build(py, "py")
-  _, bcore = build(bd, "bend")
+def report(py: list[str], bd: list[str], plant: str | None, dev_map: dict[int, str] | None = None) -> tuple[int, str]:
+  _, pcore = build(py, "py", dev_map)
+  _, bcore = build(bd, "bend", dev_map)
   pnodes = {n.nid: n for ns in pcore.values() for n in ns}
   bnodes = {n.nid: n for ns in bcore.values() for n in ns}
 
@@ -546,22 +750,40 @@ def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
       for d in mismatches(a, b):
         hard.append(f"MISMATCH {a.op:<9} py#{a.nid} vs bend#{b.nid}  {d}")
 
-  lp, lb = group_loose(only_p), group_loose(only_b)
-  for k in sorted(set(lp) & set(lb)):
-    for a in lp[k]:
-      for b in lb[k]:
-        soft.append(f"MISMATCH {a.op:<9} py#{a.nid} vs bend#{b.nid}  (no shared core)")
-        soft += ["    " + d for d in mismatches(a, b)]
-    only_p = [n for n in only_p if n.loose != k]
-    only_b = [n for n in only_b if n.loose != k]
+  # RUNG 2, ONE-TO-ONE. Pairing every leftover with every other leftover that shares a
+  # `loose` key produces a cartesian product: all five RESHAPEs of this graph share one
+  # `loose` key (arg `N`, src ops `RESHAPE,RESHAPE`) and were paired with each other, which
+  # is a report full of crosswise nonsense. So each leftover takes its BEST candidate --
+  # most agreeing fields -- and a candidate that is not a UNIQUE argmax is not taken at
+  # all, and both nodes fall through to rung 3 and are printed in full.
+  taken_b = set()
+  pairs = []
+  for a in only_p:
+    cands = [b for b in only_b if b.loose == a.loose and id(b) not in taken_b]
+    if not cands:
+      continue
+    scored = sorted(((len(mismatches(a, b)), b) for b in cands), key=lambda p: (p[0], p[1].nid))
+    if len(scored) > 1 and scored[0][0] == scored[1][0]:
+      continue                              # ambiguous: no mutual best, so no claim
+    pairs.append((a, scored[0][1]))
+    taken_b.add(id(scored[0][1]))
+  for a, b in pairs:
+    soft.append(f"MISMATCH {a.op:<9} py#{a.nid} vs {b.side}#{b.nid}  (no shared core; paired "
+                f"one-to-one on the dtype-erased arg)")
+    soft += ["    " + d for d in mismatches(a, b)]
+  only_p = [n for n in only_p if not any(n is a for a, _ in pairs)]
+  only_b = [n for n in only_b if id(n) not in taken_b]
 
   tags = sorted(t for n in list(pnodes.values()) + list(bnodes.values()) for t in devtags(n.arg))
   o = [f"# py rows={len(pnodes)}  bend rows={len(bnodes)}  plant={plant or 'none'}",
+       f"# dev-map {dev_map or '{}'}"
+       + ("  (DECLARED, not derived -- see the S.Dev note in R7)" if dev_map else ""),
        f"# SHARED cores={len(shared)}  ONLY-PY={len(only_p)}  ONLY-BEND={len(only_b)}  "
-       f"field-mismatches={len(hard)}  rung2-pairs={len(soft) // 2}"]
+       f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"]
   if tags:
-    o.append(f"# UNBOUND-DEVTAG {tags} -- the port emits an INTERNED INDEX and CPython emits "
-             f"a NAME; pass --dev-map 0=NAME to bind it.")
+    o.append(f"# UNBOUND-DEVTAG {sorted(set(tags))} -- the port emits an INTERNED INDEX and "
+             f"CPython emits a NAME; pass --dev-map 0=NAME to bind it. Those fields are NOT "
+             f"compared.")
   o += hard
   if soft:
     o.append("# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:")
@@ -606,13 +828,22 @@ def selfcheck() -> int:
 
 def main() -> int:
   ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-  ap.add_argument("cmd", choices=["emit", "diff", "control", "selfcheck"])
+  ap.add_argument("cmd", choices=["emit", "diff", "control", "cross", "selfcheck"])
   ap.add_argument("--graph", choices=sorted(GRAPHS), default="matmul")
   ap.add_argument("--side", choices=["py", "bend"], default="py")
   ap.add_argument("--plant", choices=sorted(PLANTS), default=None)
   ap.add_argument("--dev", default=os.environ.get("DEV", "NULL"))
   ap.add_argument("--dev-map", default="", help="TAG=NAME[,...] binding the port's interned device index")
+  ap.add_argument("--plant-side", choices=["py", "bend"], default="py",
+                  help="which side --plant edits; always ONE side's copy, never the tree")
+  ap.add_argument("--bend-probe", default=None,
+                  help="override the port-side probe; used to SEE the 0-row re-run guard fire")
   a = ap.parse_args()
+
+  dev_map = {}
+  for kv in filter(None, a.dev_map.split(",")):
+    k, v = kv.split("=")
+    dev_map[int(k)] = v
 
   if a.cmd == "selfcheck":
     return selfcheck()
@@ -624,6 +855,9 @@ def main() -> int:
     else:
       rows, notes = emit_bend(a.dev)
       print("\n".join("# " + n for n in notes), file=sys.stderr)
+      if dev_map:
+        rows = [rebind(r, dev_map) for r in rows]
+        print(f"# dev-map {dev_map} bound into the stream", file=sys.stderr)
       print("\n".join(rows))
     return 0
   if a.cmd == "control":
@@ -631,13 +865,23 @@ def main() -> int:
     ok = True
     for name, get in (("py", lambda: emit_py(a.graph, a.plant)),
                       ("bend", lambda: emit_bend(a.dev)[0])):
-      rc, txt = report(get(), get(), a.plant)
+      rc, txt = report(get(), get(), a.plant, dev_map)
       print(f"== CONTROL {name} vs itself: rc={rc}\n{txt}")
       ok = ok and rc == 0
     print(f"# CONTROL VERDICT: {'OK' if ok else 'THE DIFFER DISAGREES WITH ITSELF'}")
     return 0 if ok else 1
-  bd, notes = emit_bend(a.dev)
-  rc, txt = report(emit_py(a.graph, a.plant), bd, a.plant)
+  if a.cmd == "cross":
+    # THE OTHER HALF OF "the differ has been SEEN to disagree". `control` shows it is quiet
+    # on a side against itself; this shows it is LOUD on two DIFFERENT graphs. A differ that
+    # answers AGREE to `matmul` and to `sum(axis=1)` is worse than no differ, and the only
+    # way to know it is not that one is to ask.
+    other = [g for g in sorted(GRAPHS) if g != a.graph]
+    rc, txt = report(emit_py(a.graph, None), emit_py(other[0], None), f"{a.graph}-vs-{other[0]}", dev_map)
+    print(txt)
+    print(f"# CROSS VERDICT: {'OK -- it disagrees' if rc else 'IT AGREED WITH A DIFFERENT GRAPH'}")
+    return 0 if rc else 1
+  bd, notes = emit_bend(a.dev, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
+  rc, txt = report(emit_py(a.graph, a.plant), bd, a.plant, dev_map)
   print("\n".join("# " + n for n in notes))
   print(txt)
   return rc

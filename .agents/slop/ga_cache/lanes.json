@@ -1,0 +1,244 @@
+{
+ "tinybendygrad/codegen/decomp/dtype.bend": {
+  "cpython:dtype-oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/codegen/gpudims.bend": {
+  "cpython:rw-gate-oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/codegen/opt/search.bend": {
+  "cpython:rebase-oracle-search": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/codegen/simplify.bend": {
+  "cpython:rw-oracle": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/dtype.bend": {
+  "cpython:dtype_tables": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 1
+  },
+  "native": {
+   "rc": 1
+  }
+ },
+ "tinybendygrad/engine/jit.bend": {
+  "cpython:jit-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/mixin/elementwise.bend": {
+  "cpython:ew-gate": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/mixin/op.bend": {
+  "cpython:mixin-op-gate": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/nn/__init__.bend": {
+  "cpython:nn-init-gate": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/nn/onnx.bend": {
+  "cpython:onnx-gate": {
+   "rc": 1
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/amd/generate.bend": {
+  "cpython:ga-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 1
+  },
+  "native": {
+   "rc": 1
+  }
+ },
+ "tinybendygrad/renderer/amd/sqtt.bend": {
+  "cpython:sqtt_spec": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/cstyle.bend": {
+  "cpython:renderer_oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/llvmir.bend": {
+  "cpython:llvmir-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/nir_llvmir.bend": {
+  "cpython:nl-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/ptx.bend": {
+  "cpython:ptx-s3-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/renderer/tc_ptx.bend": {
+  "cpython:tcptx-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_amd.bend": {
+  "cpython:amd_oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_cpu.bend": {
+  "cpython:cpulink_oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_metal.bend": {
+  "cpython:mt_seam_rows": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_null.bend": {
+  "cpython:null-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ },
+ "tinybendygrad/runtime/ops_nv.bend": {
+  "cpython:nv-oracle": {
+   "rc": 0
+  },
+  "interpreted": {
+   "rc": 0
+  },
+  "native": {
+   "rc": 0
+  }
+ }
+}

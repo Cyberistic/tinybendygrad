@@ -373,10 +373,24 @@ ORACLE_CONFORMANCE = {
   "tinybendygrad/codegen/decomp/dtype.bend": (".agents/slop/dtype-oracle.py", 99, "live"),
   "tinybendygrad/schedule/rangeify.bend": (".agents/slop/rangeify-oracle.py", 31, "live"),
   "tinybendygrad/engine/jit.bend": (".agents/slop/jit-oracle.py", 18, "live"),
-  "tinybendygrad/device.bend": (".agents/slop/device-oracle.py", 18, "live"),
   "tinybendygrad/runtime/ops_null.bend": (".agents/slop/null-oracle.py", 7, "live"),
   "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", 0, "dead"),
   "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", 0, "dead"),
+}
+
+# NOT WIRES, and named here as well as in BASE_ORACLES because a roster that only records
+# what passed cannot answer "why is this one missing?" -- which is the question the next
+# reader asks about every port that is NOT-STARTED.
+#
+#   tinybendygrad/device.bend  device-oracle.py  18 of 105 shared, 1 DISAGREES.
+#       CPython 1, the port 0, CPython right. device.py:30 canonicalizes BEFORE the assert
+#       at :31, and `_canonicalize` upper-cases the stem (device.py:26), so `python:1`
+#       passes. Measured by calling `Device['python:1']` under `Context(ALLOW_DEVICE_USAGE=0)`,
+#       and the real gate answers BROKEN rc=1 naming `allow_lower`. A permanently-BROKEN
+#       lane in every sweep would teach the reader that BROKEN is normal. PORT BUG, REPORTED.
+ORACLE_NOT_WIRED = {
+  "tinybendygrad/device.bend": ("allow_lower: CPython 1 (device.py:30 canonicalizes before "
+                                "the assert at :31), device.bend 0 -- proven port bug"),
 }
 
 
@@ -416,6 +430,17 @@ def oracle_template():
   else:
     print(f"  PASS  BASE_ORACLES and ORACLE_CONFORMANCE are the same roster "
           f"({len(wired)} oracles)")
+
+  # ORACLE_NOT_WIRED must be DISJOINT from the roster, or "not wired" has stopped meaning
+  # anything -- a port can be in both lists and the gate would run it while the file claims
+  # it does not. This is the same rot the roster equality check exists for, one list over.
+  both = set(ORACLE_NOT_WIRED) & set(wired)
+  if both:
+    fails.append(f"ORACLE_NOT_WIRED lists a WIRED port: {sorted(both)}")
+    print(f"  FAIL  ORACLE_NOT_WIRED is disjoint from the wired roster\n        {sorted(both)}")
+  else:
+    print(f"  PASS  ORACLE_NOT_WIRED is disjoint from the wired roster "
+          f"({len(ORACLE_NOT_WIRED)} named, with reasons)")
 
   for port, (oracle, shared_n, kind) in ORACLE_CONFORMANCE.items():
     name = pathlib.Path(oracle.split()[0]).name

@@ -814,8 +814,25 @@ BASE_ORACLES = {
   # jit: 18 of 137. Four rows disagree: DEV=NULL says 'NULL' where the port baked
   # 'PYTHON', and jit_oracle's cap() returned 'none' for two log lines.
   "tinybendygrad/engine/jit.bend": [".agents/slop/jit-oracle.py"],               #  18
-  # device: 18 of 105. _canonicalize, ALL_DEVICES, the allow and disk predicates.
-  "tinybendygrad/device.bend": [".agents/slop/device-oracle.py"],                #  18
+  # device: DELIBERATELY NOT WIRED. Its oracle runs, exits 0, prints 18 rows, and 18 of
+  #    them are shared with the port's 105 -- and `allow_lower` disagrees, PERMANENTLY.
+  #    CPython says 1, device.bend says 0, and CPython is right. device.py:29-31:
+  #      29  def __getitem__(self, ix:str) -> Compiled:
+  #      30    ix = self.canonicalize(ix)          # canonicalizes FIRST
+  #      31    assert ALLOW_DEVICE_USAGE or ix.split(":")[0] in ["DISK","NPY","PYTHON"]
+  #    `_canonicalize` upper-cases the stem (device.py:26), so line 31 already sees
+  #    `PYTHON:1` and the assert PASSES. Measured by CALLING `Device['python:1']` under
+  #    `Context(ALLOW_DEVICE_USAGE=0)`: PYTHON:1 -> 1, python:1 -> 1, METAL -> 0.
+  #    device.bend:329 and :338 assert the opposite twice ("`__getitem__` asserts before it
+  #    canonicalizes", "compares the head exactly as it arrived") while citing :30 as the
+  #    canonicalize and :31 as the assert -- the order it then denies. Its `allowed` omits
+  #    line 30. Same at pin 6c3d401cf324, HEAD and upstream/master, so NOT rebase drift.
+  #    MEASURED through the real gate: BROKEN, rc=1, `allow_lower` named in both the
+  #    interpreted and the native pair. Wiring it would put a permanently-BROKEN lane in
+  #    every tree sweep, which trains the reader to read BROKEN as normal -- the failure
+  #    the elf.bend comment above is about. PORT BUG REPORTED, NOT FIXED (device.bend is
+  #    not this unit's file). The oracle is left on disk so the next reader does not
+  #    rebuild it.
   # null: 7 of 180. The five opcodes and two EMULATE messages NullDevice raises.
   # The other two messages this oracle prints are not rows the port prints.
   "tinybendygrad/runtime/ops_null.bend": [".agents/slop/null-oracle.py"],        #   7

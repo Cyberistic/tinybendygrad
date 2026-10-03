@@ -1148,6 +1148,141 @@ def Planned.azs(r: Planned) -> List<&2, Asz>:
   match r:
     case Planned{tc, bs, evs, tot, azs}: azs
 
+def Planned.tc(r: Planned) -> List<&2, Bf>:
+  match r:
+    case Planned{tc, bs, evs, tot, azs}: tc
+
+# ===========================================================================
+# `DEBUG >= 1` -- memory.py:59-60. This is the ONE site of the seven at level 1 and
+# the only one with a CONDITION beside the gate:
+#
+#     if DEBUG >= 1 and (omem:=sum(nbytes.values()) / 1e6) != (nmem:=sum(arena_sizes.values()) / 1e6):
+#       print(f"memory reduced from {omem:.2f} MB -> {nmem:.2f} MB, {len(first_appearance)} -> {len(arenas)} bufs")
+#
+# `Planned` ALREADY CARRIES ALL FOUR NUMBERS, so the site is a pure function of the
+# plan its own caller already has and it takes no new data: `tc` is
+# `first_appearance` (:39), `bs` is `nbytes` (:42), `azs` is `arena_sizes` (:53), and
+# `len(arenas)` IS `len(azs)` because `arenas = {key: UOp.new_buffer(...) for key, sz
+# in arena_sizes.items()}` (:56) builds ONE ARENA PER LANE.
+# ===========================================================================
+def mem_azs_head(xs: List<&2, Asz>) -> Asz:
+  Maybe.default(&2, Asz, List.head(&2, Asz, xs), Asz{Lane{S.D1{999}, 9}, 999})
+
+def mem_sum_a(fuel: Nat, +xs: List<&2, Asz>, acc: U32) -> U32:
+  match fuel:
+    case 0n: acc
+    case 1n+p: mem_sum_a(p, List.tail(&2, Asz, xs), U32.add(acc, Asz.sz(mem_azs_head(xs))))
+
+def mem_sum_arena(+xs: List<&2, Asz>) -> U32:
+  mem_sum_a(U32.to_nat(mem_len2(xs)), xs, 0)
+
+# `{x:.2f}` WHERE `x` IS `sum / 1e6`. Python formats the BINARY FLOAT, not the
+# rational, and that distinction is worth 483 disagreements over the first 40000
+# integers: `f"{0.015:.2f}"` is `'0.01'` because the double for 0.015 sits BELOW it,
+# where half-even on the rational `15/10000` would answer `0.02`. So this is NOT a
+# general `int()` formatter, and the precondition is what makes it one.
+#
+# THE PRECONDITION IS `block_size = 256` (:42), and it is not decorative. Both
+# `nbytes` (:42) and `arena_sizes` (:53) are `round_up(..., 256)`, so the byte sum
+# `S` is a MULTIPLE OF 256, and the tie `S % 10000 == 5000` is then IMPOSSIBLE:
+# that congruence forces `S % 16 == 8` while a multiple of 256 forces `S % 16 == 0`.
+# So `> 5000` is the whole rounding rule and the tie arm is unreachable for any input
+# this site can see. MEASURED: over EVERY multiple of 256 up to 40 MB this two-liner
+# agrees with CPython's own `%.2f` on all 156250 of them, while the same code on bare
+# integers disagrees on 483 of the first 40000. `mem_mb_*` rows in the gate are
+# sampled from both populations so that precondition is a row and not a promise.
+def mem_mb.hundredths.of(up: Bool, q: U32) -> U32:
+  match up:
+    case True{}: U32.add(q, 1)
+    case _: q
+
+def mem_mb.hundredths(+n: U32) -> U32:
+  mem_mb.hundredths.of(U32.is_gt(U32.mod(n, 10000), 5000), U32.div(n, 10000))
+
+def mem_mb.pad2.of(lt: Bool, w: U32) -> String:
+  match lt:
+    case True{}: String.concat(["0", U32.show(w)])
+    case _: U32.show(w)
+
+def mem_mb.pad2(+w: U32) -> String:
+  mem_mb.pad2.of(U32.is_lt(w, 10), w)
+
+def mem_mb.of(+h: U32) -> String:
+  String.concat([U32.show(U32.div(h, 100)), ".", mem_mb.pad2(U32.mod(h, 100))])
+
+def mem_mb(n: U32) -> String:
+  mem_mb.of(mem_mb.hundredths(n))
+
+def mem_dbg_text.of(omem: U32, nmem: U32, nfa: U32, nar: U32) -> String:
+  String.concat(["memory reduced from ", mem_mb(omem), " MB -> ", mem_mb(nmem),
+                 " MB, ", U32.show(nfa), " -> ", U32.show(nar), " bufs"])
+
+# the `omem != nmem` half of the condition, as INTEGER equality. Python compares the
+# two FLOATS, which can only collide for `S > 2^53`, and a memory plan's byte sum is
+# `len(buffers) * 2^32` at the absolute ceiling of a 32-bit arena -- so for every
+# representable plan the two tests are the same predicate.
+# `mem_dbg_same` IS `mem_dbg_text.keep` WITH THE COMPARISON INSIDE IT. It was a
+# separate def and the compiler refused it: "a filled definition (an unfilled law is
+# a dead claim: live code cannot use it)", which is what a FORWARD REFERENCE looks
+# like -- the callee has to be declared before its caller, unlike a `U32` argument
+# which has to be declared after. Two opposite orders in one file, both measured.
+def mem_dbg_same(omem: U32, nmem: U32) -> Bool:
+  U32.is_eq(omem, nmem)
+
+def mem_dbg_text.keep(same: Bool, t: String) -> String:
+  match same:
+    case True{}: ""
+    case _: t
+
+# THE THREE NUMBERS, AND WHERE EACH ONE ACTUALLY LIVES. `Planned` does NOT hold
+# `nbytes`, and getting this wrong was worth two wrong rows, so each is cited:
+#
+#   `len(first_appearance)` -- NOT `len(Planned.tc)`. `Scan.tc` is the fused
+#     `Bf` list and `mem_tc_add` (:445) APPENDS ON EVERY TOUCH, because
+#     memory.py:31-32 is `if b not in first_appearance: first_appearance[b] = i` and
+#     `last_appearance[b] = i` -- the FIRST is conditional and the SECOND is not, and
+#     one append cannot express both. So `Planned.tc` is a TOUCH list: this file's own
+#     fixture touches D2 at kernels k2 and k3, and CPython's `len(first_appearance)` is
+#     5 where the touch count is 6. `Planned.bs` IS the distinct list -- `mem_bs_add`
+#     (:439) is `mem_cp_one`, an append-IF-ABSENT over the same `si_bufs` -- so
+#     `len(bs)` is `len(first_appearance)` and `p_nbufs` (:1336) already gates it at 5.
+#     MEASURED: `mem_len(Planned.tc)` is 6 and `mem_len(Planned.bs)` is 5, and
+#     CPython's `len(first_appearance)` on the same graph is 5.
+#
+#   `sum(nbytes.values())` -- `Planned.bs` holds BUFFER SLOTS, not sizes: this file's
+#     fixture's list is literally `[3, 4, 5, 6, 7]`. The byte total is in
+#     `Planned.tot`, because memory.py:45 is `total_memory = sum(nbytes.values()) * 2`
+#     and `mem_total_memory` (:726) is the same multiply. So the sum is `tot / 2`, and
+#     it is exact: `tot` is `2 * sum`, hence always even, and `U32.div` truncates a
+#     value that has no remainder to truncate.
+#
+#   `sum(arena_sizes.values())` -- `Planned.azs` holds the sizes directly, so this one
+#     is a plain sum, and `mem_len2(Planned.azs)` is `len(arenas)` for the same reason
+#     the comment at the top gives: one arena per LANE (:56).
+def mem_omem(+p: Planned) -> U32:
+  U32.div(Planned.tot(p), 2)
+
+def mem_nmem(+p: Planned) -> U32:
+  mem_sum_arena(Planned.azs(p))
+
+def mem_dbg_text(+p: Planned) -> String:
+  mem_dbg_text.keep(mem_dbg_same(mem_omem(p), mem_nmem(p)),
+                    mem_dbg_text.of(mem_omem(p), mem_nmem(p),
+                                    mem_len(Planned.bs(p)), mem_len2(Planned.azs(p))))
+
+def mem_dbg_text.gate(open: Bool, t: String) -> String:
+  match open:
+    case True{}: t
+    case _: ""
+
+# THE SITE. Answers the line or `""`, and `H.debug_print` writes the non-empty one --
+# see helpers.bend's `debug_print` for why the gate and the text are two defs and not
+# one `if`. `dbg` is the THREADED level, which is this repository's standing
+# convention for a ContextVar (`schedule/allreduce.bend`'s header, "THE FLAGS ARE
+# PARAMETERS"), and `H.debug()` is the environment read behind it.
+def mem_dbg(dbg: U32, +p: Planned) -> String:
+  mem_dbg_text.gate(H.debug_ge(dbg, 1), mem_dbg_text(p))
+
 def mem_row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
