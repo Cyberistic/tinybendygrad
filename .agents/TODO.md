@@ -24,7 +24,13 @@ walkthroughs    [######...] 6/7
       output in all three modes save tinygrad's `ops:`/`flags:` reflection.
       `spec/sz.md`, `.agents/slop/notes/compare/sz.md`
 - [ ] `test/` harness that runs the ORIGINAL pytest suite against the Bend build
-- [ ] `tools/check` — one command that runs every `bend --check-only`
+- [x] `tools/check` — one command that runs every `bend --check-only`. **Done, and bucketed by
+      CAUSE rather than pass/fail**: `.agents/slop/tree-verdict.py -P 12` sweeps all 137
+      `.bend` files under `tinybendygrad` + `examples` and reports `green` / `no-main` /
+      `no-rows` / `foreign-code-surface` / `proof-in-progress` / `broken-here` /
+      `broken-in-import`. A single RED bucket is what sent a unit to fix things that were not
+      broken twice in one day. Read: `.agents/slop/tree-verdict.md`, rules at the END of
+      `.agents/slop/notes/bend2-constraints.md` (POSITIONS ~14290-14415).
 
 ## Phase P1 — the contract
 
@@ -1420,9 +1426,27 @@ this queue — in that order, so the queue is never stalled behind a verificatio
 5. **`renderer/nir.py` (321)** — real code, and `renderer/nir_llvmir.bend` stage 1 is
    already committed and names stages 2-4 in its header. Either do `nir.py` or continue
    those stages; check the header first for which is the bigger gap.
-6. **const audit of `ops_webgpu.bend` (67) + `ops_cl.bend` (89 uncovered)** — the
-   hand-map work, now that `ops_nv` (33/219) and `ops_metal` have had it. Cheap because
-   the method is now written down, and the two devices are committed and unowned.
+6. **[x] const audit of `ops_webgpu.bend` (67) + `ops_cl.bend` (89 uncovered)** — DONE
+   by hand map. The smoke-test script covers 0 of these because the port invents names;
+   the audit's value is the hand-built map. The two files audited in two commits.
+     - `ops_webgpu.bend`: **65 consts | 14 EXACT | 0 WRONG | 51 PORT_ONLY**
+       (`.agents/slop/ops_webgpu-const-audit.txt`, `.agents/slop/ops_webgpu_constmap.py`).
+       All 14 header-mapped values (BIND_*, FILTER_*, MAP_*, FEATURE_*, USAGE_*,
+       STATUS_SUCCESS) match `tinygrad/runtime/autogen/webgpu.py` byte-for-byte.
+       The 51 PORT_ONLY are the OBJ_* (13) + CALL_* (23) + SYNC_* (11) family
+       plus BIND_GROUP_INDEX, UNIFORM_SIZE, QUERY_COUNT, QUERY_BUF_SIZE -- all
+       port-internal.
+     - `ops_cl.bend`: **66 consts | 16 EXACT | 0 WRONG | 50 PORT_ONLY**
+       (`.agents/slop/ops_cl-const-audit.txt`, `.agents/slop/ops_cl_constmap.py`).
+       All 14 CL_* values match `tinygrad/runtime/autogen/opencl.py` byte-for-byte.
+       `cl_err_n` = 63 and `cl_err_names_n` = 74 verified against the live autogen
+       (74 names -> 63 unique codes). The 50 PORT_ONLY are the 41 OP_* trace tags,
+       V_CL, three fold bodies (chk_count, cl_err_aliases), NO_IDX, PROG_INIT_N,
+       KIND_MEM/IMAGE/SCALAR, PTR_SZ, IMAGE_CHANNELS.
+   ops_cuda.bend and ops_hip.bend were promised by the brief's "three vendor
+   spellings" note but, after the 1:1 file split, their vendor tables live in
+   THOSE files; ops_cl.bend has only the CL spelling. They remain queued under
+   ops_webgpu/cl's same recipe (commit `b5371bc4` for webgpu, `70297c60` for cl).
 7. ~~**`runtime/support/usb.py` (473)**~~ **DONE** — see the `- [x]` entry for
    `tinybendygrad/runtime/support/usb.bend` below. On the instruction to grep for
    citing files: the answer is **EMPTY**, so unlike every other unit in this wave it
@@ -2603,6 +2627,16 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       class, a dropped enum member, a swapped `default=NULL` and a reordered field
       are four different diffs), 50 `norm_field`, 50 `strip_enc`, 16 `map_flat`,
       34 `parse_xml`, 4 `pcode`, 1 `pdf`, 6 `order` and 16 table rows.
+
+- [x] **`ga-oracle.py` print shape wired into `BASE_ORACLES`.** The gate's
+      `rows()` compares whole values, so `nm = [val]` against the port's
+      `[got]   py=[want]` was 84/84 red and zero of it was data. One print
+      change to `f"{nm} = [{val}]   py=[{val}]"` recovered **84/84**
+      (`strip_enc` 18, `norm_field` 50, `map_flat` 16), all three calls of
+      `generate.py`. Residue: none. The other 149 port rows stay outside the
+      oracle's name set (generated-Python lines `rows()` splits on `=`). Wired
+      in both rosters; not `--record`ed, because GUARD 1 would freeze 554
+      ungated oracle rows.
 
 - [x] **EIGHT MEASURED BEND RULES APPENDED** to
       `.agents/slop/notes/bend2-constraints.md` as GA1-GA8: `List.sort`'s
