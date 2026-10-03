@@ -1283,13 +1283,17 @@ def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3
 
 # ---- NARROWING
 
-def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32) -> U32:
-  +i = f2f.isnan(e4m3, ar, ns, ex, fe, fm)
-  +nan = dd_where(O.Found.ar(i), O.Found.i(i), O.Found.i(nn), O.Found.i(nm))
-  +z = dd_wk(O.Found.ar(nan), H.i64_of_i32(0))
-  +e = dd_eq1(O.Found.ar(z), ex, z)
-  +w = dd_where(O.Found.ar(e), O.Found.i(e), z, O.Found.i(nan))
+def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32) -> U32:
+  +i = f2f.isnan(ar, ns, ex, fe, fm, e4m3)
+  +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
+  +e = dd_eq1(O.Found.ar(z), O.Found.i(ex), O.Found.i(z))
+  +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), dd_where(O.Found.ar(e), O.Found.i(i), O.Found.i(nn), O.Found.i(nm)))
   O.Found.i(dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w)))
+
+def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> U32:
+  match fnuz:
+    case True{}: f2f.fnuz(ar, ns, sg, ex, nm, te, tm)
+    case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm)
 
 def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> U32:
   match fnuz:

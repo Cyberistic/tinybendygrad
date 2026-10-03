@@ -38,23 +38,23 @@ MUTATIONS = [
    ":97 binds `float('inf')` at binding 0 -- WALL 3. Only the FIRST entry is a float."),
   ("M2", ("W.dev.uniform_bytes(val)", "Nil{}"),
    ":204's four-byte little-endian pattern. Dropping it leaves the int uniform unwritten."),
-  ("M3", ("QUERY_BUF_BYTES()", "8"),
+  ("M3", ("def QUERY_BUF_BYTES() -> U32: 16", "def QUERY_BUF_BYTES() -> U32: 8"),
    ":115's `size=16` on the query buffer, and :215's copy of the same size."),
-  ("M4", ("QUERY_TYPE_TIMESTAMP()", "0"),
+  ("M4", ("def QUERY_TYPE_TIMESTAMP() -> U32: 2", "def QUERY_TYPE_TIMESTAMP() -> U32: 0"),
    ":114's `type=WGPUQueryType_Timestamp`."),
-  ("M5", ("BEGIN_PASS()", "1"),
+  ("M5", ("def BEGIN_PASS() -> U32: 0", "def BEGIN_PASS() -> U32: 1"),
    ":116's `beginningOfPassWriteIndex=0`."),
-  ("M6", ("END_PASS()", "0"),
+  ("M6", ("def END_PASS() -> U32: 1", "def END_PASS() -> U32: 0"),
    ":117's `endOfPassWriteIndex=1`. M5 and M6 together pin the PAIR."),
-  ("M7", ("SHADER_STAGE_COMPUTE()", "2"),
+  ("M7", ("def SHADER_STAGE_COMPUTE() -> U32: 4", "def SHADER_STAGE_COMPUTE() -> U32: 2"),
    ":75's `visibility=WGPUShaderStage_Compute` at every layout entry."),
-  ("M8", ("MAP_MODE_READ()", "2"),
+  ("M8", ("def MAP_MODE_READ() -> U32: 1", "def MAP_MODE_READ() -> U32: 2"),
    ":18's `WGPUMapMode_Read`. 2 is Write, which the port never asks for."),
-  ("M9", ("POWER_PREF_HIGH_PERF()", "1"),
+  ("M9", ("def POWER_PREF_HIGH_PERF() -> U32: 2", "def POWER_PREF_HIGH_PERF() -> U32: 1"),
    ":169's `powerPreference=HighPerformance`. 1 is LowPower."),
-  ("M10", ("SUBMIT_COUNT()", "2"),
+  ("M10", ("def SUBMIT_COUNT() -> U32: 1", "def SUBMIT_COUNT() -> U32: 2"),
    ":129's `wgpuQueueSubmit(queue, 1, ...)`."),
-  ("M11", ("RESOLVE_COUNT()", "1"),
+  ("M11", ("def RESOLVE_COUNT() -> U32: 2", "def RESOLVE_COUNT() -> U32: 1"),
    ":126's `ResolveQuerySet(enc, qs, 0, 2, qbuf, 0)` -- the SECOND index."),
   ("M12", ("Release{Cs.last(buf), W.OBJ_COMMAND_BUFFER()}),\n        W.CALL_RELEASE, W.OBJ_COMMAND_ENCODER,",
            "Release{Cs.last(enc), W.OBJ_COMMAND_ENCODER()}),\n        W.CALL_RELEASE, W.OBJ_COMMAND_BUFFER,"),
@@ -76,7 +76,7 @@ MUTATIONS = [
   ("M19", ("def Cs.order.go(n: Nat, ss: List<&2, Step>, acc: List<&2, Step>) -> List<&2, Step>:\n  match n:\n    case 0n: List.reverse(&2, Step, acc)",
            "def Cs.order.go(n: Nat, ss: List<&2, Step>, acc: List<&2, Step>) -> List<&2, Step>:\n  match n:\n    case 0n: acc"),
    "THE ORDER of the ordered-steps walk. `Cs.at` conses onto the FRONT, so the walk already ends in step order and this reverse undid it -- MEASURED: it printed the whole call backwards while every subsequence row stayed green."),
-  ("M20", ("W.dev.uniform_bytes(val)", "W.dev.uniform_bytes(U32.shr(val, 1n))"),
+  ("M20", ("W.dev.uniform_bytes(val)", "W.dev.uniform_bytes(U32.shrn(val, 1n))"),
    "REINTRODUCES THE ops_webgpu BUG in webgpu_call.bend's own use of the function. `wgc_wall3_int_bytes` is the only row that sees it, which is the whole reason that row exists."),
   ("M21", ("W.bgl.of(nbufs, nvals)", "Nil{}"),
    ":82's `entries`. The layout the bind group is made against."),
@@ -123,13 +123,18 @@ def main():
     backup = tmp + ".bak"
     shutil.copy(tmp, backup)
     open(tmp, "w").write(mutated)
-    got = rows_of(tmp)
+    # THE TYPECHECK MUST RUN WHILE THE MUTATION IS IN PLACE. Running it after the
+    # restore reported the BASELINE's verdict, and every mutation in the first run
+    # of this table was mislabelled "DID NOT TYPECHECK" for that reason. This is
+    # the harness's own `device.bend` `sig=0 4 5` mistake: a gate that agrees with
+    # itself is not a gate.
     chk = subprocess.run([BEND, tmp, "--check-only"], capture_output=True, text=True, cwd=ROOT)
     failed = "SOME PROOFS FAIL" in chk.stdout + chk.stderr
     msg = ""
     if failed:
       m2 = re.search(r"- (?:message  : )?(.*)", chk.stdout)
       msg = (m2.group(1) if m2 else "typecheck failure")[:52]
+    got = None if failed else rows_of(tmp)
     shutil.move(backup, tmp)
     if got is None:
       print(f"| {mid} | 0{' -- DID NOT TYPECHECK: ' + msg if failed else ' -- STACK OVERFLOW, retried 6x'} | {what} |")
