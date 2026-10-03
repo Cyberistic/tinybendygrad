@@ -487,3 +487,154 @@ Byte-identical to upstream's `examples/beautiful_mnist.py` (`3826e625`), but ups
 `tinygrad/examples/` directory at all** — `git ls-tree upstream/master -- tinygrad/examples/` is
 empty. Staged, not committed, and added at 07:14 during this session, so it is most likely a
 concurrent agent mid-task; `examples/` is out of scope regardless. **Reported, not touched.**
+
+---
+
+## APPEND 2026-10-03 (drift accounting): FOUR STATES, ONE PIN, AND ONE RETRACTION
+
+Added, not substituted: **nothing above this line was edited. The pin is NOT moved.**
+
+Everything below was measured by running a tool or by executing a source line in CPython.
+Two of the numbers above this line are wrong and are corrected at the bottom rather than
+in place, because this file is append-only and a corrected-in-place number is
+indistinguishable from a number that was never wrong.
+
+### THE PIN, AS ONE NUMBER, WITH ITS METHOD
+
+```
+PIN      6c3d401cf324   2026-09-29   204 of our 230 vendored blobs match its tinygrad/ tree
+method:  content match. Hash all 230 of our blobs, compare against upstream/master's tree,
+         for the last 400 commits; take the commit whose tree explains the most files, and
+         on a tie take the NEWEST such commit.
+ties:    3 commits score 204. The runner-up is 203, so the tie is broken by one blob and
+         the pin is not sensitive to which of the three is chosen on evidence -- only to
+         the stated tie-break rule.
+```
+
+`upstream-delta.py` **re-derives** this every run and prints it. There is no stored copy
+to fall out of date, which is the whole point: the pin was a second number in two files
+and both were stale within a day.
+
+### FOUR STATES, NOT TWO. THE OLD "HAND EDITS" NUMBER WAS NOT COUNTING HAND EDITS.
+
+| state | meaning | count |
+|---|---|---|
+| **A at pin** | untouched baseline | **204** |
+| **B re-vendored** | equals SOME upstream commit in that path's FULL upstream history | **25** |
+| **C HAND EDIT** | upstream HAS this path; our blob is at NO upstream commit | **0** |
+| **D local-only path** | upstream has NEVER had this path -- a vendored-in fork, not an edit | **1** (`runtime/ops_bend.py`) |
+
+`upstream-delta.py` used to fold **D into C**, and printed `HAND EDITS (1)` naming
+`tinygrad/runtime/ops_bend.py`. That is not a coincidence and cannot be fixed by content:
+for a path upstream has never had, `tree.get(path)` is `None` at every commit, so no
+content can ever match and the file is reported however it was written. **The declared
+invariant ("HAND-EDIT must be 1") was measuring the wrong bucket.** It now measures **C**,
+which is **0**.
+
+It also bounded the search to the last **120** commits of `upstream/master`. That made the
+alarm's sensitivity a constant nobody chose: a blob equal to an upstream commit older than
+the window is indistinguishable from a hand edit. The search is now each path's **full**
+upstream history across **every fetched upstream ref**, which is exact — a file's content
+only changes at a commit that changed it — and costs two git calls per path.
+
+**What the alarm still cannot see, stated rather than implied:** it classifies content, so
+a hand edit that reproduces a byte-identical upstream file is invisible, and so is a local
+addition at an upstream path. The 1:1 NAME check is a separate question and lives in the
+ports.
+
+### RETRACTION: `renderer/cstyle.py` IS NOT A HAND EDIT, AND WAS NEVER ONE
+
+The section above beginning "⚠ A HAND EDIT NO TOOL IN THE TREE NAMES" is **retracted.**
+Its central fact — "`11217606b` matches no commit in any ref" — is **false.**
+
+```
+our blob    11217606b624cb8783c48e6eb34d086ec6d49201
+equals      upstream 87a4311b3c3a  "dead codes cleanup [PR] (#18579)"  2026-10-02 08:51 -0400
+checked by  git log --remotes=upstream -- tinygrad/renderer/cstyle.py   -> 642 commits
+            git cat-file --batch-check over <commit>:<path> for each    -> 605 distinct blobs
+            11217606b is among them
+```
+
+`renderer/cstyle.py` is a **correct re-vendor to an intermediate commit**, 9 commits behind
+`upstream/master` (+4/-4). It is bucket **B**, and `unvendored.py` now says so.
+
+**Two tools were wrong about it, in the same way.** `unvendored.py`'s `provenance()`
+compared each blob against exactly **two** revisions — HEAD and the pin — and reported
+everything else as "equals NEITHER". Landing a batch produces exactly an intermediate
+commit, so the bucket that *is* a batch was the bucket that *looked* like a hand edit.
+`provenance()` now resolves the middle case against the full upstream history, by calling
+`upstream-delta.py` rather than reimplementing it: two tools answering one question
+differently is how the same file got two opposite verdicts.
+
+### `param_type` WAS ADDED UPSTREAM. WE DID NOT DELETE IT.
+
+`renderer/cstyle.py:266` at `upstream/master` has `def param_type`. Our copy has zero
+occurrences. **Upstream added it after the commit we vendored:**
+
+```
+git log --remotes=upstream -S"def param_type" -- tinygrad/renderer/cstyle.py
+  e9a709ba4bf0  2026-10-02  remove warning (#18586)
+```
+
+Measured by constructing the class, not by grepping a comment:
+
+```
+CStyleLanguage(Target("NULL")) hasattr(lang, "param_type")
+  pin 6c3d401cf324        False
+  our-baseline 87a4311b3c3 False
+  upstream/master          True
+```
+
+So the 1:1 naming rule **is satisfiable** for `renderer/cstyle.bend` against the tree it was
+ported from, and **no exception is recorded**. What is real is one upstream def the port
+does not yet have: a RE-PORT item, one name, owned by whoever owns `renderer/**`.
+Reproduce both tables with `.agents/slop/drift-cstyle-head.py`.
+
+### `--record` RUNS. THE BLOCK WAS A POLICY, AND THE REAL BLOCKER IS A ZERO-ROW LANE.
+
+```
+.venv/bin/python .agents/slop/rebase-gate.py --record --baseline .agents/slop/drift-record-probe.json
+  -> recorded baseline for 3 ports; SKIPPED 47 targets with no oracle or no .bend file
+  -> EXIT 0
+```
+
+It was written to a probe path, not to `rebase/baseline.json`, so the recorded baseline was
+not touched. **Nothing mechanical blocks it.** What blocks adopting the result is that
+`--record` faithfully records what the oracles currently emit, and right now:
+
+| port | `interpreted` | `native` | `cpython:` lane |
+|---|---|---|---|
+| `runtime/support/hcq2.bend` | 360 | 360 | 163 (identical to `baseline-DEMO.json`) |
+| `renderer/cstyle.bend` | 225 | 225 | **11, was 33** |
+| `dtype.bend` | **0** | 0 | **0** |
+
+`rebase-gate.py` already refuses a baseline with a zero-row lane ("baseline recorded ZERO
+lanes for this port, so nothing can be compared against it"), so `dtype.bend` would record
+a baseline that the gate then declares hollow. **Fix the oracle, not the recorder.**
+
+The `cstyle` collapse is named by row, not by count — **25 rows lost, 3 new, 8 kept of
+which 4 changed value**:
+
+* `f32 val0 = ...` → `float val0 = ...`, `i32 val1 = ...` → `int val1 = ...` — `DType.name`
+  spellings moved in the rendered source.
+* `weakint g0 = get_group_id(0); /* 3 */`, `weakint l0 = ...`, `for (weakint gidx0 = ...)`
+  — three rows, all lost.
+* `k1_load_store.clang/.cuda/.metal`, `k4_smem.*`, `k5_special.ocl`, `k6_range`, `k7_cast`,
+  `k8_stack.clang`, `k8_stack4.clang` — the multi-line per-renderer keys, all lost.
+* changed in place: `k1_load_store` / `k2_alu` / `k3_consts` gained the `f32*`→`float*`
+  spelling; `*(data0_1+0) = ...` and `*(data0_2+0) = ...` changed their whole RHS.
+
+### STALE NUMBERS IN THE TABLE AT THE TOP OF THIS FILE
+
+Recomputed today, all from `upstream-delta.py`:
+
+| the table says | it is | why |
+|---|---|---|
+| HAND-EDITED **1** (`ops_bend.py`) | **0** hand edits; `ops_bend.py` is a local-only path (bucket D) | see above |
+| RE-VENDORED **25** | **25** | correct |
+| PIN MATCH **204/230** | **204/230** | correct |
+| PORT-RELEVANT CHANGED **39** | **45** | upstream moved on; `--fetch` before believing either |
+| "HAND EDITS (2) naming `beautiful_mnist.py` and `ops_bend.py`" | was true for one run; `beautiful_mnist.py` is gone from the index now | a concurrent agent, as that section says |
+
+**One number, one place: `upstream-delta.py` is the only place any of these are written
+down.** The table at the top of this file is a snapshot and should be read as one.

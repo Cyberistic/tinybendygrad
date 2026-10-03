@@ -269,3 +269,122 @@ Rules: quote the source, do not paraphrase it. Separate what you verified from w
 inferred — every entry above does, and D1 is only "confirmed" for its mechanism. If a
 suspected defect turns out not to be one, **move it to the "not defects" section and keep it
 there**; that is the section that saves the most time.
+
+---
+
+## APPEND 2026-10-03 (drift accounting): TWO NEW DEFECTS, TWO REFUTED CLAIMS
+
+Appended, not substituted. Reproduce all four with
+`.agents/slop/drift-verify-claims.py`; every number below came from executing a source line
+or constructing a real object in CPython against this tree.
+
+### D3 — `renderer/wgsl.py:60`: `WGSLRenderer` has no `Ops.FDIV` handler and one is one UOp away
+
+**Status: CONFIRMED mechanism, reached by rendering a real kernel. NOT established from a
+user program** (see "Not verified").
+
+`Ops.FDIV` is handled in exactly one renderer:
+
+```
+$ rg -n "Ops\.FDIV" tinygrad/renderer/
+  cstyle.py:294          Ops.FDIV: lambda a,b,dtype: f"({a}/{b})"     <- inside ClangRenderer
+```
+
+and `cstyle.py:294` is **below** `class ClangRenderer` (cstyle.py:278), so it is
+`ClangRenderer.code_for_op`, not `CStyleLanguage.code_for_op`. Measured:
+
+```python
+Ops.FDIV in CStyleLanguage.code_for_op   ->  False
+Ops.FDIV in ClangRenderer.code_for_op    ->  True
+Ops.FDIV in WGSLRenderer.code_for_op     ->  False
+```
+
+`wgsl.py:60` reads `code_for_op = {**CStyleLanguage.code_for_op, Ops.WHERE: ...}`, so
+WGSL inherits the **base** table — the one without `FDIV` — and adds only `WHERE`.
+
+**Reachability, measured by rendering.** A kernel whose body is `a.alu(Ops.FDIV, b)` over
+two loaded floats:
+
+```
+WGSLRenderer.render   ->  KeyError: Ops.FDIV
+ClangRenderer.render  ->  OK
+```
+
+and the neighbouring shapes on the same renderer are fine — `a + b`, `a / b`,
+`a.reciprocal()` all render. So the gap is specific to a surviving `Ops.FDIV` node, not to
+WGSL in general.
+
+**Reachability from a real program: NOT established.** `a / b` and `a.reciprocal()` both
+render, because decomposition rewrites them before the renderer sees them
+(`codegen/decomp/op.py:123-125` matches `Ops.FDIV` and rewrites it away). A user program
+that reaches the renderer with a bare `Ops.FDIV` was not constructed here, and
+`dev-space-oracle.py` reports `WEBGPU` as `LOAD FAILS` on this machine, so no end-to-end
+WebGPU run was possible. The charitable reading is the same one D2 uses: fp8-like
+restrictions here tend to be upstream declining to support a case and saying so loudly.
+
+**Fix (upstream's to make, not ours):** either give `WGSLRenderer.code_for_op` its own
+`Ops.FDIV`, or make `CStyleLanguage` fail with a `KeyError` that names the renderer, which
+it does not — the key it raises names the op and nothing about who was asked.
+
+**What the port does.** `renderer/**` belongs to another unit. Measured and reported, not
+edited.
+
+### D4 — `runtime/support/compiler_llvm.py:17`: the target-triple table has no `riscv64`, and the line above it does
+
+**Status: CONFIRMED by executing the real line.**
+
+Two lines of the same function index different dictionaries, and only one of them knows
+about RISC-V:
+
+```python
+15:  getattr(llvm, "LLVMInitialize" + {'arm64': 'AArch64', 'x86_64': 'X86', 'riscv64': 'riscv64'}.get(arch, "AMDGPU") + component)()
+17:  triple = {'arm64': b'aarch64-none-unknown-elf', 'x86_64': b'x86_64-none-unknown-elf', 'AMDGPU': b'amdgcn-amd-amdhsa'}[arch]
+```
+
+Executed straight out of the file (dedented, `component` bound so line 15 reaches the name
+lookup), one arch at a time:
+
+| arch | line 15 | line 17 |
+|---|---|---|
+| `arm64` | past the key lookup | OK |
+| `x86_64` | past the key lookup | OK |
+| `AMDGPU` | past the key lookup | OK |
+| **`riscv64`** | **past the key lookup** | **`KeyError: 'riscv64'`** |
+
+So line 15 accepts `riscv64` and line 17 raises on it. Line 17 is a bare `[arch]` subscript
+with no default, which is the whole mechanism: a `Target` whose second field is `riscv64`
+gets a correct LLVM init name and then dies choosing a triple.
+
+**Not verified:** that any shipped `Target` names `riscv64`. `compiler_cpu.py:14` does
+build a riscv64 `-march`, so the arch string is live in the tree; the LLVM backend's
+reachable `Target`s were not enumerated.
+
+**Fix (upstream's to make, not ours):** add `'riscv64': b'riscv64-none-unknown-elf'` at
+line 17, or `.get(arch, b'')` so the failure names the arch instead of the table.
+
+### N9 — `renderer/wgsl.py:58` `supports_float4`: the claim that it is read in one place while a stack still uses it is **REFUTED**
+
+**Not an upstream defect.** Measured: `Renderer.supports_float4 = True`,
+`CStyleLanguage.supports_float4 = True`, `WGSLRenderer.supports_float4 = False`, and there
+is exactly **one** reader in the whole tree — `codegen/late/coalesce.py:143`,
+`elif buf.dtype in (...) and ctx.supports_float4:` — where `ctx` is the language. One
+declaration, one intended consumer, and the declaration is honoured. The mechanism works.
+
+### N10 — "`renderer/cstyle.py` was hand-edited to inline and delete `param_type`": **REFUTED, and it was never ours to fix**
+
+The 2026-10-03 section of `.agents/UPSTREAM-PIN.md` claiming `11217606b` "matches no commit
+in any ref" is wrong. It equals upstream `87a4311b3c3` byte for byte; `param_type` was
+added **upstream** at `e9a709ba4bf0` ("remove warning (#18586)", 2026-10-02), after the
+commit we vendored. Nothing was inlined by anyone here.
+
+**Why it is recorded here and not deleted:** the same shape of error has now been asserted
+three times in one day about three different files, and each time it was a **tool**
+misreading a revision set rather than a fact about upstream.
+
+### N11 — `runtime/ops_bend.py:82-83` is a hardcoded path, and it resolves
+
+`BEND = pathlib.Path(__file__).resolve().parents[2]` assumes the file sits two levels below
+the repo root, and `BEND_SRC` names `tinybendygrad/runtime/ops_python.bend` from it. Both
+resolve today (`BEND` is the repo root, `bin/bend` and `BEND_SRC` both exist). Recorded
+here only because it is a **note, not a defect** — and because `ops_bend.py` is **our** file
+(bucket D, upstream has never had that path), so it is not an upstream entry at all.

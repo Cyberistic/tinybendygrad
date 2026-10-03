@@ -65,6 +65,18 @@ def git(*a):
                           capture_output=True, text=True, check=True).stdout
 
 
+def _load_delta():
+    """`upstream-delta.py` as a module, so the provenance classification is ONE
+    implementation. Two tools answering the same question differently is how
+    `renderer/cstyle.py` got called a hand edit by one and clean by the other."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_upstream_delta", REPO / ".agents/slop/upstream-delta.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
 def upstream(rev):
     return [p for p in git("ls-tree", "-r", "--name-only", rev, "--", "tinygrad/").splitlines() if p]
 
@@ -199,7 +211,7 @@ import re  # noqa: E402  (used by ops_backends)
 
 
 def provenance(up_pin, py_head, ours_py):
-    """Which of OUR files equal the pin, equal HEAD, or NEITHER.
+    """Which of OUR files equal HEAD, equal the pin, equal SOME OTHER upstream commit, or none.
 
     This is the section that found the one real problem, and it is a
     DIFFERENT question from the set difference. A file we never vendored is
@@ -208,12 +220,21 @@ def provenance(up_pin, py_head, ours_py):
     if the edit is not upstream's then the oracle is measuring a program
     nobody wrote. Nothing raises, so it must be a measured set.
 
+    It used to compare each blob against exactly TWO revisions -- HEAD and the
+    pin -- and report everything else as "equals NEITHER". That is not a hand
+    edit; it is a file re-vendored to an INTERMEDIATE upstream commit, which is
+    exactly what landing a batch does. `renderer/cstyle.py` was reported as a
+    hand edit because of it and was byte-identical to upstream `87a4311b3c3` all
+    along. So the middle bucket now resolves against each path's FULL upstream
+    history, using the same code as `upstream-delta.py` rather than a second
+    implementation of the same idea.
+
     "Neither" is only a CANDIDATE hand edit -- an upstream commit may have
     simply been missed. Deciding whether an edit is acceptable is an owner
     call (.agents/UPSTREAM-PIN.md, "SCOPE DECISION"), not this tool's.
     """
-    pin = head = 0
-    neither = []
+    ud = _load_delta()
+    head, pin, intermediate, neither, localonly = 0, 0, [], [], []
     for rel in sorted(py_head):
         ours = REPO / rel
         if not ours.exists():
@@ -229,8 +250,14 @@ def provenance(up_pin, py_head, ours_py):
         elif h == blob(PIN):
             pin += 1
         else:
-            neither.append(rel)
-    return head, pin, neither
+            blobs, owners, _ = ud.upstream_blob_history(rel)
+            if not blobs:
+                localonly.append(rel)            # upstream has never had this path
+            elif h in blobs:
+                intermediate.append((rel, owners[h]))
+            else:
+                neither.append(rel)
+    return head, pin, intermediate, neither, localonly
 
 
 def main():
@@ -253,7 +280,7 @@ def main():
     dyn = dynamic_sites()
     n_mod, unimp, mm, mn, cond = live_surface()
     exist, asked, mock_gap, dead = ops_backends()
-    n_head, n_pin, neither = provenance(py_pin, py_head, ours_py)
+    n_head, n_pin, intermediate, neither, localonly = provenance(py_pin, py_head, ours_py)
 
     if a.json:
         print(json.dumps({
@@ -268,8 +295,11 @@ def main():
                 "dynamic_templates": len(dyn),
                 "dev_targets_asked": len(asked), "dev_targets_missing": len(mock_gap),
                 "equals_head": n_head, "equals_pin": n_pin,
+                "equals_intermediate_upstream_commit": len(intermediate),
+                "local_only_paths": localonly,
             },
             "matches_neither_upstream_nor_pin": neither,
+            "intermediate_upstream_commit": {p: c for p, c in intermediate},
             "missing_at_pin": miss_pin, "missing_at_head": miss_head,
             "extra": extra, "retained": retained, "missing_nonpy": miss_nonpy,
             "unimportable": unimp, "missing_modules": mm, "missing_names": mn,
@@ -328,10 +358,18 @@ def main():
     print(f"\n{'4. PROVENANCE -- vendored, but is it OURS or UPSTREAMS?'.center(W, '=')}\n")
     print(f"  equals upstream HEAD                  {n_head:>4}")
     print(f"  equals the PIN (behind, correct)      {n_pin:>4}")
+    print(f"  equals ANOTHER upstream commit        {len(intermediate):>4}   "
+          f"a batch landed mid-window; these are correct, not edits")
+    for p, c in intermediate:
+        print(f"      {p}  <- {c[:12]}")
+    print(f"  upstream has NEVER had the path       {len(localonly):>4}   {localonly}")
     print(f"  ===> equals NEITHER (hand-edit CANDIDATE) {len(neither):>3}   {neither}")
     print("      a file here is in the reference tree but matches no upstream")
     print("      commit, so every CPython oracle measures it. That is a CANDIDATE:")
     print("      a missed commit reads the same. Deciding is an owner call.")
+    print("      NOTE: 'neither' used to include the row above it -- comparing against")
+    print("      HEAD and the pin alone cannot see an INTERMEDIATE upstream commit,")
+    print("      which is what landing a batch produces.")
 
     if a.expand:
         print("\n  unimportable detail:")

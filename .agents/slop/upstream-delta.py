@@ -83,20 +83,27 @@ def tree_blobs(commit):
 
 def find_pin(depth=PIN_DEPTH):
   """(sha, matched, total, runner_up_matched) -- the upstream commit whose tinygrad/ tree
-  best matches our vendored copy. Newest wins a tie, so the pin can only move UP."""
+  best matches our vendored copy.
+
+  Ties go to the NEWEST candidate, and that has to be written as `>` in a loop rather
+  than as `max(scores)`: three commits currently tie at 204/230, and `max` over
+  (score, sha) tuples breaks the tie by comparing the SHA AS TEXT, which silently
+  answered `a0fca89d` instead of the recorded `6c3d401c`. The pin is the identity of a
+  commit, so it may not depend on how two hex strings sort.
+  """
   ours = our_blobs()
   hist = sh("git", "log", "--format=%H", UPSTREAM).splitlines()[:depth]
-  # tree_blobs is a subprocess; hoist it OUT of the inner generator or this becomes
-  # len(ours) x depth git calls (92,000) instead of depth (400).
-  scores = []
+  scores = []                                  # tree_blobs is a subprocess: one per commit
   for c in hist:
     tree = tree_blobs(c)
     scores.append((sum(1 for p, s in ours.items() if tree.get(p) == s), c))
   if not scores:
-    return None, 0, len(ours), 0
-  best = max(scores)
-  runners = sorted({m for m, _ in scores if m < best[0]}, reverse=True)
-  return best[1], best[0], len(ours), runners[0] if runners else 0
+    return None, 0, len(ours), (0, 0)
+  best_score = max(m for m, _ in scores)
+  best_sha = next(c for m, c in scores if m == best_score)      # first == newest of a tie
+  tied = sum(1 for m, _ in scores if m == best_score)
+  runner = max((m for m, _ in scores if m < best_score), default=0)
+  return best_sha, best_score, len(ours), (runner, tied)
 
 
 def upstream_blob_history(path):
@@ -152,7 +159,7 @@ def port_for(py):
 def main():
   if "--fetch" in sys.argv:
     print(sh("git", "fetch", "upstream", "--quiet").strip() or "fetched upstream")
-  pin, matched, total, runner = find_pin()
+  pin, matched, total, (runner, tied) = find_pin()
   head = sh("git", "rev-parse", UPSTREAM).strip()
   pin_date = sh("git", "log", "-1", "--format=%ad", "--date=short", pin).strip()
   head_date = sh("git", "log", "-1", "--format=%ad", "--date=short", head).strip()
@@ -163,7 +170,7 @@ def main():
   ours = our_blobs()
   at_pin, revend, handedit, localonly = classify(ours, tree_blobs(pin))
 
-  disk = None
+  disk_dirty = None
   if "--worktree" in sys.argv:
     disk = our_blobs(from_disk=True)
     disk_dirty = sorted(p for p, s in disk.items() if ours.get(p) != s)
@@ -179,8 +186,9 @@ def main():
   added = [f for f in sh("git", "diff", "--diff-filter=A", "--name-only", pin, head, "--", "tinygrad/*.py").splitlines()]
 
   res = {"pin": pin, "pin_date": pin_date, "pin_match": f"{matched}/{total}",
-         "pin_runner_up": runner, "pin_method": f"content match over {PIN_DEPTH} commits "
-                     f"of {UPSTREAM}; newest wins a tie",
+         "pin_runner_up": runner, "pin_tied_commits": tied,
+         "pin_method": f"content match over {PIN_DEPTH} commits "
+                       f"of {UPSTREAM}; newest wins a tie",
          "at_pin": [p for p, _ in at_pin],
          "hand_edits": [p for p, _ in handedit],
          "local_only": [p for p, _ in localonly],
@@ -196,8 +204,9 @@ def main():
     print(json.dumps(res, indent=2)); return 0
 
   print(f"  PIN      {pin[:12]}  {pin_date}   {matched}/{total} vendored blobs match it")
-  print(f"           method: {res['pin_method']}. Runner-up {runner}/{total}, so the pin is "
-        f"unique by {matched - runner} blob(s).")
+  print(f"           method: {res['pin_method']}. {tied} commit(s) tie at {matched}; the "
+        f"newest is taken. Runner-up {runner}/{total}, so the tie is broken by "
+        f"{matched - runner} blob(s).")
   print(f"  UPSTREAM {head[:12]}  {head_date}   BEHIND {behind} commits, {len(changed)} files, "
         f"{len(tg)} under tinygrad/")
   print(f"  AT PIN                 {len(at_pin):>4}")
