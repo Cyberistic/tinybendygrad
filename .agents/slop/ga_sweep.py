@@ -35,6 +35,15 @@ def sh(*a, timeout=1800):
   return subprocess.run(a, cwd=REPO, capture_output=True, text=True, timeout=timeout)
 
 
+# `sys.executable` is whatever ran the sweep, and the oracles need the VENV:
+# measured, 10 of 38 CPython lanes exit non-zero under a bare `python3` and their
+# cached rows are EMPTY, which silently understates every shared count computed
+# from this cache.  An empty oracle lane reads as "this gate compares nothing",
+# which is the very shape the sweep exists to disprove.
+VENV = REPO / ".venv" / "bin" / "python"
+PY = str(VENV) if VENV.exists() else sys.executable
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--only", default=None)
@@ -44,7 +53,13 @@ def main():
   oracles = load_base_oracles()
   ports = sorted(p for p in oracles if not a.only or a.only in p)
   print(f"{len(ports)} wired gates", flush=True)
-  manifest = {}
+  # MERGE into the existing manifest.  A `--only` run used to REPLACE it, so a
+  # one-gate refresh left `ga_rows_blast.py` reporting one gate and every other
+  # gate silently absent -- which reads as "the other 37 gates are fine" when it
+  # means "they were not looked at".  A missing measurement and a clean one must be
+  # different bytes.
+  mpath = CACHE / "lanes.json"
+  manifest = json.loads(mpath.read_text()) if mpath.exists() else {}
   for i, port in enumerate(ports, 1):
     bend = REPO / port
     out_dir = CACHE / port.replace("/", "_")
@@ -94,7 +109,7 @@ def main():
         rcp = json.loads((out_dir / (key.replace(":", "_") + ".rc")).read_text())
       else:
         env = dict(os.environ, DEV="NULL")
-        c = subprocess.run([sys.executable, *argv], cwd=REPO, capture_output=True,
+        c = subprocess.run([PY, *argv], cwd=REPO, capture_output=True,
                            text=True, env=env, timeout=1800)
         fp.write_text(c.stdout)
         (out_dir / (key.replace(":", "_") + ".rc")).write_text(json.dumps(c.returncode))
@@ -103,7 +118,7 @@ def main():
       lanes[key] = {"rc": rcp}
 
     manifest[port] = lanes
-    (CACHE / "lanes.json").write_text(json.dumps(manifest, indent=1, sort_keys=True))
+    mpath.write_text(json.dumps(manifest, indent=1, sort_keys=True))
     print(f"[{i}/{len(ports)}] {port}  rc=" +
           " ".join(f"{k}:{v['rc']}" for k, v in sorted(lanes.items())), flush=True)
   print(f"cached -> {CACHE}", flush=True)

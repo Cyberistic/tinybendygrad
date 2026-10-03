@@ -750,15 +750,44 @@ BASE_ORACLES = {
   #   `ops_cpu`'s `findlib_*` rows and 74x smaller: 14 rows of 1042, none of them gated.
   "tinybendygrad/runtime/support/elf.bend": [".agents/slop/elf_rows.py"],            #  353
   "tinybendygrad/renderer/amd/sqtt.bend": [".agents/slop/sqtt_spec.py"],            # 1015
-  # 84 of 233, measured 2026-10-03 after the print-shape fix in ga-oracle.py.
-  # strip_enc 18 + norm_field 50 + map_flat 16. All three CALL generate.py
-  # (_strip_enc:48, _norm_field:56, _map_flat:61) — not a Python reimplementation
-  # of the port. 0 disagreements once the oracle emits `[val]   py=[val]`, the
-  # shape `g` prints. The other 149 port rows are lines of generated Python that
-  # rows() splits on `=`; the oracle names that text `tag | line`, so they do
-  # not intersect. Not recorded: GUARD 1 would freeze the oracle's 554 ungated
-  # rows (parse_xml of a fetched ISA zip, a pdf-error class).
-  "tinybendygrad/renderer/amd/generate.bend": [".agents/slop/ga-oracle.py"],       # 84
+  # 726 of the port's 726 rows, 0 disagree, measured 2026-10-03 TWICE: through the
+  # real gate (`--port`, all three lane pairs at 726 shared / 0 disagreements) and
+  # independently through rebase-scan-oracles.py, which printed `726  0`.
+  #
+  # WAS 84 of 233, and the other 149 were NOT disagreements -- they were rows the
+  # row parser could not see.  `gl` printed a WHOLE GENERATED FILE per row, so
+  # rows()'s split on newlines turned 7 rows into 335 fragments whose NAMES are the
+  # first token before an `=` inside the generated Python (`FLAT_LOAD_DWORD`,
+  # `encoding`, `saddr`, ...).  Measured by `.agents/slop/ga_rows.py`: of the 149,
+  # 7 were the real rows with a TRUNCATED value and 142 were fragments -- 0 were
+  # lost to genuine name divergence.  The oracle's own per-line rows, keyed on the
+  # line TEXT, shared 0 of them, because that text is not a unique key (four blank
+  # lines are one name; `  saddr = SSrcField(31, 24, default=NULL)` is in four
+  # classes).
+  #
+  # `rows()` IS NOT TOUCHED, and that is a measured decision, not a preference:
+  # `.agents/slop/ga_rows_blast.py` runs a `]   py=[`-terminated fold over all 38
+  # cached gates.  The naive fold DROPS 25,882 of 32,026 rows and 19,252 shared
+  # rows, because 31 of 38 lanes do not print that shape at all.  The safe fold
+  # still changes 76 rows, all on uop/render.bend, where folding MERGES distinct
+  # rows (`pyrender buffer` and `pyrender copy` become one key).  Neither is a
+  # superset, so the fix belongs in the PRODUCER, which is where cstyle.bend:1760
+  # already put it.
+  #
+  # The producer-side fix is one row per emitted LINE, keyed on its index, plus one
+  # `lines` count row per file -- 634 + 8 rows over 8 files.  A whole-file row is
+  # not available here: a `String` is an `SCon` spine and the interpreter has no
+  # tail call, so a 16,815-character row value is 16,815 nested frames.  Measured:
+  # 4,000 characters works and 8,000 overflows; THE PREVIOUS FILE, one whole-file
+  # row and no escaping at all, succeeded on 5 runs in 12, so this lane had been
+  # BROKEN about half the time for a reason that had nothing to do with rows.  It is
+  # now 25 of 25.
+  #
+  # The 52 ungated oracle rows are unchanged in kind: `parse_xml`'s decisions over
+  # the real pinned ISA XML, `extract_pcode`'s dict, the module-order tables and the
+  # `pdf error class`.  Not --record'ed, for the reason above: GUARD 1 would freeze
+  # all 778.
+  "tinybendygrad/renderer/amd/generate.bend": [".agents/slop/ga-oracle.py"],       # 726
   "tinybendygrad/nn/onnx.bend": [".agents/slop/onnx-gate.py"],                     # 123
   "tinybendygrad/mixin/elementwise.bend": [".agents/slop/ew-gate.py"],             #  71
   "tinybendygrad/mixin/op.bend": [".agents/slop/mixin-op-gate.py"],                #  32

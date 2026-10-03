@@ -1,0 +1,23 @@
+baseline: 72 rows at each of levels 0, 1, 2
+| mutation | rows that moved (level: rows) | how many |
+| --- | --- | --- |
+| memory.py:59's threshold 1 -> 2 (the level-1 site becomes level-2) | 0: mem_L1, 0: thr_mem, 1: mem_L1, 1: mem_plan, 1: thr_mem, 2: mem_L1, 2: thr_mem | 7 |
+| allreduce.py:16's threshold 2 -> 1 (the level-2 site becomes le... | 0: ar_ring_L1, 0: thr_ar, 1: ar_a2, 1: ar_naive, 1: ar_ring, 1: ar_ring_L1, 1: thr_ar, 2: ar_ring_L1, 2: thr_ar | 9 |
+| state.py:260's threshold 2 -> 1 | 0: st_bad_L1, 0: thr_st, 1: st_bad, 1: st_bad_L1, 1: thr_st, 2: st_bad_L1, 2: thr_st | 7 |
+| amdev.py:185's threshold 2 -> 3 | 0: am185_L2, 1: am185_L2, 2: am185, 2: am185_L2 | 4 |
+| amdev.py:225's threshold 2 -> 3 | 2: am225 | 1 |
+| amdev.py:251's threshold 2 -> 3 | 0: am251_L2, 1: am251_L2, 2: am251, 2: am251_L2 | 4 |
+| amdev.py:254's threshold 2 -> 3 | 2: am254 | 1 |
+| `debug_ge`'s `>=` -> `>` (every threshold becomes off-by-one, i... | 0: am185_L2, 0: am251_L2, 0: ar_ring_L2, 0: mem_L1, 0: st_bad_L2, 0: thr_mem, 1: am185_L2, 1: am251_L2, 1: ar_ring_L2, 1: env_ge1, 1: mem_L1, 1: mem_plan, 1: st_bad_L2, 1: thr_mem, 2: am185, 2: am185_L2, 2: am225, 2: am251, 2: am251_L2, 2: am254, 2: ar_a2, 2: ar_naive, 2: ar_ring, 2: ar_ring_L2, 2: env_ge2, 2: mem_L1, 2: st_bad, 2: st_bad_L2, 2: thr_mem | 29 |
+| `debug_print` writes `` too (the level-0 control is destroyed) | NONE | 0 |
+| `sd_fc_allowed`'s `not` is dropped (the whitelist test is inver... | 0: st_bad_L2, 1: st_bad_L2, 2: st_bad, 2: st_bad_L2, 2: st_ok1, 2: st_ok2 | 6 |
+| memory.py:59's `!=` condition is dropped (the line prints even ... | 0: mem_cond_same, 1: mem_cond_same, 2: mem_cond_same | 3 |
+| `mem_mb`'s rounding `> 5000` -> `>= 5000` (half-UP where the ti... | NONE | 0 |
+| `gi_of_text`'s acceptance `st == MID` -> `st == PEND` (a traili... | 0: gi_refuse_1_, 1: gi_refuse_1_, 2: gi_refuse_1_ | 3 |
+| `gi_tab`'s MID+`_` -> MID (a `_` anywhere between digits is acc... | 0: gi_refuse_1_, 0: gi_refuse_1__0, 1: gi_refuse_1_, 1: gi_refuse_1__0, 2: gi_refuse_1_, 2: gi_refuse_1__0 | 6 |
+| `red_mode_name`'s ALL2ALL arm is unreachable (ALL2ALL prints RING) | 2: ar_a2 | 1 |
+| `am_dbg_prefix` loses the `am ` (a wrong prefix on all four amd... | 0: am185_L2, 0: am251_L2, 1: am185_L2, 1: am251_L2, 2: am185, 2: am185_L2, 2: am225, 2: am251, 2: am251_L2, 2: am254 | 10 |
+
+BLIND SPOTS (mutations that moved nothing), 2:
+  - `debug_print` writes `` too (the level-0 control is destroyed)
+  - `mem_mb`'s rounding `> 5000` -> `>= 5000` (half-UP where the tie is unreachable)

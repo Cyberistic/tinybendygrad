@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/onnx-gate.py", line 22, in <module>
-    import tinygrad.nn.onnx as M
-ModuleNotFoundError: No module named 'tinygrad'

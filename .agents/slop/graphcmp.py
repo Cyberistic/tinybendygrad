@@ -94,6 +94,18 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
                   `__repr__` prints `id(self.grad_fxn)`, a per-process address
                   (ops.py:1408-1410). So it is field-by-field too, and a CALL's difference
                   is reported as a NAMED field.
+               THE DEVICE FIELD is the one that used to need a DECLARED binding, and it
+               no longer does. Upstream's `ParamArg.device` is a NAME: `Compiled.device`
+               is the canonicalized `str` the device was opened with (device.py:396, from
+               `_Device.__getitem__`'s `cls(ix)` at :29 over `_canonicalize` at :26). The
+               port's arena carries an interned `U32` tag instead (LAWS/spec.bend:85-87)
+               and THE PORT ALREADY HAS THE READER -- `uop/render.bend:360-364`, whose
+               table at :361 is the one `schedule/__init__.bend:1095` ("tag 0 stands for
+               CPU") and `schedule/memory.bend:998` (`cpu() = S.D1{0}`) write against. So
+               graphcmp.bend CALLS that reader and emits the port's NAME, and the
+               correspondence is DERIVED from the port's own table instead of typed at a
+               prompt. `--dev-map` and the `t<tag>` atom are GONE: a declared binding that
+               can be wrong is worse than a name that cannot.
   R8  src     the ORDERED child indices. Order, not a multiset: the differ must be able to
               see a commutative-child swap (`--plant srcswap`), and `UOp.key` (ops.py:269)
               concatenates `s.key` for `s in self.src` IN ORDER, so upstream's own node
@@ -159,8 +171,7 @@ from tinygrad.uop.ops import AxisType, Ops, ParamArg, UOp  # noqa: E402
 # would make two different values render the same and a differ would then agree with
 # itself for the wrong reason -- `selfcheck` asserts the distinctness.
 ATOMS = {"none": "N", "u32": "i", "i64": "l", "float": "f", "bool": "b", "str": "s",
-         "bytes": "y", "dtype": "D", "ops": "O", "axis": "X", "addr": "S", "invalid": "v",
-         "devex": "t"}
+         "bytes": "y", "dtype": "D", "ops": "O", "axis": "X", "addr": "S", "invalid": "v"}
 
 
 def chunk(s: str) -> str:
@@ -215,11 +226,10 @@ def dt(d: DType) -> str:
 
 
 def dev(x) -> str:
-  """The port's `S.D1{tag}` is an INTERNED INDEX, not a name: schedule/__init__.bend:1095
-  says tag 0 is CPU, schedule/memory.bend:998-999 says 0 is CPU and 1 is DISK, and
-  device.bend:702 says 7 is CPU and 11 is NULL -- three tables and no reader from a tag to
-  a name. CPython's value IS a name (`tinygrad/device.py`), so this side emits
-  `s<NAME>` and `--dev-map` is what binds the two. Unbound is reported, never guessed."""
+  """`ParamArg.device` is `str|tuple[str, ...]|None` (ops.py:33) and both spellings are
+  NAMES: `Compiled.device` is the canonicalized device string (device.py:396/:29/:26).
+  graphcmp.bend emits the port's name for the same device, resolved through
+  `uop/render.bend:363`, so there is nothing to bind and nothing to declare here."""
   if x is None:
     return ATOMS["none"]
   return ATOMS["str"] + ",".join(x) if isinstance(x, tuple) else bstr(str(x))
@@ -638,39 +648,41 @@ def erase(arg: str) -> str:
   return "".join(out)
 
 
-def devtags(arg: str) -> set[int]:
-  """The `t<n>` device tags in an arg text. Unbound until `--dev-map` names them, and
-  reported as unbound rather than silently compared as integers."""
-  return {int(arg[a + 1:b]) for a, b in value_starts(arg, ATOMS["devex"])}
+def split_top(s: str) -> list[str]:
+  """Split on the commas at DEPTH 0. `P(i0,Df32,i12,r(l0:0,l0:10),...)` has commas inside
+  `r(..)`/`n(..)` and a naive `split(",")` would put field 8 in the wrong place -- which is
+  exactly the failure a declared binding would have hidden."""
+  out, cur, depth, i = [], [], 0, 0
+  while i < len(s):
+    c = s[i]
+    if c in "([":
+      depth += 1
+    elif c in ")]":
+      depth -= 1
+    if c == "," and depth == 0:
+      out.append("".join(cur))
+      cur = []
+    else:
+      cur.append(c)
+    i += 1
+  out.append("".join(cur))
+  return out
 
 
-def rebind(line: str, dev_map: dict[int, str]) -> str:
-  """`emit --side bend --dev-map` writes the BOUND stream, so the two canonical files can be
-  compared with `diff` and nothing but a real difference can move a line."""
-  f = unchunks(line)
-  f[6] = bind_dev(f[6], dev_map)
-  return " ".join(chunk(v) for v in f)
+def devnames(lines: list[str]) -> set[str]:
+  """The device names the stream actually carries, read off `ParamArg`'s EIGHTH field
+  (ops.py:33, the declaration order this file emits). Only `P(..)` args have one, so a
+  `s`-atom elsewhere is never mistaken for a device. Used as a PRECONDITION, not as the
+  comparison -- the differ compares the device as part of `arg` either way."""
+  out = set()
+  for ln in lines:
+    arg = unchunks(ln)[6]
+    if arg.startswith("P("):
+      out.add(split_top(arg[2:-1])[7])
+  return out
 
 
-def bind_dev(arg: str, dev_map: dict[int, str]) -> str:
-  """Rewrite the port's `t<n>` device atom into the `s<NAME>` atom CPython emits, using a
-  DECLARED binding. Done on the arg TEXT because the arg is one opaque chunk and this is
-  the only substitution the port needs. A tag with no entry is LEFT ALONE and reported as
-  UNBOUND: an unbound tag must never be compared as an integer, which would read `t0`
-  against `sCPU` as a difference when it is an absence of information."""
-  out, i, hits = [], 0, value_starts(arg, ATOMS["devex"])
-  for a, b in hits:
-    nm = dev_map.get(int(arg[a + 1:b]))
-    if nm is None:
-      continue
-    out.append(arg[i:a])
-    out.append(ATOMS["str"] + nm)
-    i = b
-  out.append(arg[i:])
-  return "".join(out)
-
-
-def build(lines: list[str], side: str, dev_map: dict[int, str] | None = None) -> tuple[dict[str, Node], dict[str, Node]]:
+def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]]:
   """(nodes by id, nodes by core). The core is computed from the CHILDREN's cores, so the
   walk is a topological one; `order` is derived here rather than trusted from the emitter,
   and a cycle is a loud failure instead of a recursion."""
@@ -679,8 +691,6 @@ def build(lines: list[str], side: str, dev_map: dict[int, str] | None = None) ->
     f = unchunks(ln)
     if len(f) != 8:
       raise SystemExit(f"{side}: expected 8 chunks, got {len(f)}: {ln[:90]!r}")
-    if dev_map:
-      f[6] = bind_dev(f[6], dev_map)
     recs[f[0][1:]] = f
   kids = {nid: [x[1:] for x in f[7][2:-1].split(",") if x] for nid, f in recs.items()}
   for nid, cs in kids.items():
@@ -734,9 +744,9 @@ def mismatches(a: Node, b: Node) -> list[str]:
   return out
 
 
-def report(py: list[str], bd: list[str], plant: str | None, dev_map: dict[int, str] | None = None) -> tuple[int, str]:
-  _, pcore = build(py, "py", dev_map)
-  _, bcore = build(bd, "bend", dev_map)
+def report(py: list[str], bd: list[str], plant: str | None) -> tuple[int, str]:
+  _, pcore = build(py, "py")
+  _, bcore = build(bd, "bend")
   pnodes = {n.nid: n for ns in pcore.values() for n in ns}
   bnodes = {n.nid: n for ns in bcore.values() for n in ns}
 
@@ -774,16 +784,12 @@ def report(py: list[str], bd: list[str], plant: str | None, dev_map: dict[int, s
   only_p = [n for n in only_p if not any(n is a for a, _ in pairs)]
   only_b = [n for n in only_b if id(n) not in taken_b]
 
-  tags = sorted(t for n in list(pnodes.values()) + list(bnodes.values()) for t in devtags(n.arg))
   o = [f"# py rows={len(pnodes)}  bend rows={len(bnodes)}  plant={plant or 'none'}",
-       f"# dev-map {dev_map or '{}'}"
-       + ("  (DECLARED, not derived -- see the S.Dev note in R7)" if dev_map else ""),
+       f"# devices py={sorted(devnames(py))} bend={sorted(devnames(bd))}  "
+       f"(both sides emit the NAME: CPython's is `Compiled.device`, the port's is "
+       f"`uop/render.bend:363` on the tag)",
        f"# SHARED cores={len(shared)}  ONLY-PY={len(only_p)}  ONLY-BEND={len(only_b)}  "
        f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"]
-  if tags:
-    o.append(f"# UNBOUND-DEVTAG {sorted(set(tags))} -- the port emits an INTERNED INDEX and "
-             f"CPython emits a NAME; pass --dev-map 0=NAME to bind it. Those fields are NOT "
-             f"compared.")
   o += hard
   if soft:
     o.append("# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:")

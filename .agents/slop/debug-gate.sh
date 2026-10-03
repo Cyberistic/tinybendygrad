@@ -43,9 +43,14 @@
 set -e
 cd "$(dirname "$0")/../.."
 
-GT=.agents/slop/debug-gate
+# THE ARTEFACTS. Per-level row dumps and the compiled binary go to
+# `.agents/slop/debug-gate-out/` so a run leaves an auditable trail next to the harness
+# (oracles belong in `.agents/slop/`, never `$TMPDIR` -- one unit's was gone before the
+# commit). The compiled binary is a build product and is removed at the end.
+GT=.agents/slop/debug-gate-out
 mkdir -p "$GT"
 unset PYTHONPATH
+unset DEBUG
 
 # the rows each site must MOVE on, checked by name below. `mem_plan` is the level-1
 # site, so it must move between level 0 and level 1; the other six between 1 and 2.
@@ -71,12 +76,20 @@ value_of() {  # $1 = file, $2 = row name -- WHOLE name=value line, not the name
   grep "^$2=" "$1" || true
 }
 
-check_level() {  # $1 = level tag, $2 = env assignment (may be empty), $3 = expects content
-  lvl=$1; envassign=$2; wants=$3
-  $envassign .venv/bin/python .agents/slop/debug-gate.py "$lvl" > "$GT.$lvl.py" 2> "$GT.$lvl.py.err"
-  $envassign run_lane "$GT.$lvl.bd" ./bin/bend .agents/slop/debug-gate.bend
+# THE LEVEL IS EXPORTED, NOT PASSED AS A WORD. `$envassign cmd` was the first attempt
+# and it is refused with "DEBUG=0: command not found", because the expansion is ONE
+# word and a shell only honours a `NAME=value` PREFIX written literally -- the same
+# reason `env -u PYTHONPATH` could not wrap `run_lane`. `env` cannot wrap a shell
+# function either, so the variable is exported and unset again after the level.
+check_level() {  # $1 = level tag, $2 = DEBUG value ("unset" or a number), $3 = silent|any
+  lvl=$1; dbg=$2; wants=$3
+  if [ "$dbg" = "unset" ]; then unset DEBUG; else DEBUG=$dbg; export DEBUG; fi
+
+  .venv/bin/python .agents/slop/debug-gate.py "$lvl" > "$GT.$lvl.py" 2> "$GT.$lvl.py.err"
+  run_lane "$GT.$lvl.bd" ./bin/bend .agents/slop/debug-gate.bend
   ./bin/bend .agents/slop/debug-gate.bend -o "$GT.bin"
-  $envassign "$GT.bin" > "$GT.$lvl.bn" 2> "$GT.$lvl.bn.err"
+  "$GT.bin" > "$GT.$lvl.bn" 2> "$GT.$lvl.bn.err"
+  unset DEBUG
 
   # BLANK LINES CARRY NO ROW and the harness separates its groups with them (the rest
   # of the repository's gates do the same), so both lanes are filtered before the
@@ -108,11 +121,11 @@ check_level() {  # $1 = level tag, $2 = env assignment (may be empty), $3 = expe
   echo "debug-gate: level $lvl -- $(grep -c '=' "$GT.$lvl.py" | tr -d ' ') rows, 3 lanes identical"
 }
 
-check_level unset "" silent
-check_level 0    "DEBUG=0" silent
-check_level 1    "DEBUG=1" ""
-check_level 2    "DEBUG=2" ""
-check_level 3    "DEBUG=3" ""
+check_level unset unset silent
+check_level 0    0      silent
+check_level 1    1      any
+check_level 2    2      any
+check_level 3    3      any
 
 # ---------------------------------------------------------------------------
 # THE ROWS MOVE. Asserted by name, on the CPython lane, which is the one both sides
@@ -163,5 +176,6 @@ for nm in mem_plan ar_ring st_bad am185 am251; do
   [ "$got1" = "$want" ] || { echo "debug-gate: $nm fired at the wrong level 1" >&2; exit 1; }
 done
 
+rm -f "$GT.bin"
 ./bin/bend .agents/slop/debug-gate.bend --check-only | head -1
 echo "debug-gate: $(grep -c '=' "$GT.2.py" | tr -d ' ') shared rows at level 2; 5 levels x 3 lanes; all agree; 7 site rows all move; level-0 control silent"

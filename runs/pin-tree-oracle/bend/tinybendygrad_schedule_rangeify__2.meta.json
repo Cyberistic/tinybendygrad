@@ -1,0 +1,10 @@
+{
+ "rc": 0,
+ "timeout": false,
+ "overflow": false,
+ "elapsed": 1.6,
+ "nrows": 126,
+ "bytes": 1672,
+ "err_tail": "",
+ "out": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/pin-tree-oracle/bend/tinybendygrad_schedule_rangeify__2.out"
+}

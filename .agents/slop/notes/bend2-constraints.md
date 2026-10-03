@@ -15311,3 +15311,491 @@ happy path of rule "a 0 is a request for a fixture": a 0 costs the FULL retry ca
 the agreement rule refuses to let 0 be the agreement -- so **a settled 0 costs `attempts`
 runs and reports `attempts`, and a reader who sees `rows=0, attempts=3, void_attempts=0`
 has a measurement, not a gap.**
+
+### 1. NUMBERING NOTE
+
+This block is a fresh `### 1.` series and continues NOTHING above it. Rule numbers
+repeat across units in this file by design; cite the line POSITION, not the number.
+
+### 2. A DIFFER THAT COMPARES ONLY `keys IN BOTH LANES` CANNOT SEE A MISSING FIXTURE
+
+`dd-cmp.py` is `keys = [k for k in port if k in ora]` (`dd-cmp.py:65`), and its comment
+calls that deliberate: "A row ABSENT FROM BOTH lanes is not a row". That is true and it is
+also the hole: a row present in the ORACLE and absent from the PORT is dropped, so **a gate
+row that was never written is indistinguishable from a gate row that passes.** Measured on
+`codegen/decomp/dtype.bend`: the oracle prints 416 names, the port 164, all 164 shared --
+"100% name coverage of the port" -- and 8 of the 252 oracle-only names are `c0..c7`, the
+`f2f_clamp` `mx` constant, which the port had NEVER PRINTED and had never been asked for.
+
+  * **So coverage arithmetic must be done in the direction that can fail.** The number
+    `164/416 = 39.4%` is in `dd-cmp.py`'s own output and nobody read it as eight missing
+    fixtures; the reassuring "100% name coverage" is the same file, one sentence later.
+  * The fix is a checker whose ASSERTION is about the port lane, not a diff:
+    `.agents/slop/dd-divE-check.py` fails when `c{i}` is missing from the port and passes when
+    `c7` DISAGREES. A checker that can only report disagreement cannot report absence.
+  * Six of the eight were not even refusals. `f2f_clamp_max` (dtype.bend:1165) was WRONG on
+    every dtype it answers, and `dtype.bend:1147` called it "factored out because it is a
+    VALUE" -- which is a true statement used as a reason for no fixture.
+
+### 3. A STACK OVERFLOW MID-RUN PRINTS EVERY ROW AND EMPTY CONE WALKS, SO ROW COUNTS DO NOT DETECT IT
+
+`dd-run.sh` guards on `grep -c '^lg'` and a degraded run passes that guard with all 148 rows
+present. Measured, same tree, same command, four runs:
+
+    healthy    0 empty `sig`/`k`
+    degraded   7 empty   (lgrsig, lgssig, lgt*, lgvsig, lgwsig, lgxsig, upsig)
+    degraded  31 empty   (every `lg1*`..`lg6*` cone walk back empty, all rows present)
+
+An empty `sig=` and an empty `k=-` are the signature, and they are INVISIBLE in a diff
+against a healthy baseline unless you read them -- a diff shows them as 62 changed lines and
+a tired reader files it as "the tree moved". `.agents/slop/dd-divE-run.sh` guards on
+`dd-divE-check.py --degenerate` (any empty `sig`/`k`, any missing `c{i}`) instead.
+
+  * On a machine at 46% CPU with four runs measured, 3 of 4 degraded and the one healthy run
+    predated my edit. **Load correlates, so retrying under load is not free**: a bend gate run
+    here is 4.5-7 min wall, so a 6-attempt health loop is a 30-minute gamble.
+  * A def that touches NO arena (`f2f_clamp_max` is pure arithmetic on `F32`; `dd_cmx.row` is
+    pure string building) cannot be degraded by this failure mode. Measured: the degraded
+    31-empty run printed all eight `c{i}` values CORRECTLY. So a VALUE-only fixture does not
+    need a healthy run to be evidence, and a cone-walk fixture does not have one otherwise.
+
+### 4. `Bool.pick(t, b, A, B)` IS AN OFF-BY-ONE TRAP WHEN BOTH BRANCHES ARE "MINUS ONE"
+
+`dtype.py:129-130` reduces to two deltas off `1 << e` and `1 << m`, and the port shared ONE
+predicate for both:
+
+    me = 2**e - Bool.pick(U32, ocp, 0, 2)     # ocp -> should be 1, wrote 0
+    mm = 2**m - Bool.pick(U32, ocp, 0, 2)     # keyed on ocp; dtype.py keys on e4m3 ALONE
+
+Both fnuz layouts take BOTH wrong branches and the two errors land in the same product, so
+`fp8e5m2fnuz` came out 2.28x its true `mx` and `fp8e5m2` (not fnuz, one wrong branch) came out
+0.86x. Per-row attribution from `.agents/slop/dd-divE-math.py`, one factor at a time:
+
+    M1  max_exp subtracts 0 on ocp (was 1)   moves 3/8: fp8e4m3, fp8e4m3fnuz, fp8e5m2fnuz
+    M2  max_man keyed on ocp not e4m3        moves 2/8: fp8e4m3fnuz, fp8e5m2fnuz
+
+M2 moving ONLY the fnuz rows is the evidence that the fnuz handling was the defect, and it is
+the whole reason the fnuz defs need their own fixture rather than a neighbour's: nothing else
+in the file separates `fp8e5m2` from `fp8e5m2fnuz`.
+
+### 5. `Float32`/`F32` IS A TRAP-FREE PLACE TO MEASURE AN OVERFLOW, BUT IT IS NOT THE SAME QUESTION
+
+`struct.pack('f', 1.7976931348623157e+308)` RAISES `OverflowError` (CPython 3.14.6) -- so a
+`numpy`-free `fbits` cannot render the f64 maximum, and the `.agents/slop/dd-oracle.txt`
+baseline's `c7=F(2139095040)` (= `0x7F800000`, f32 `+inf`) is NOT reachable through it.
+`2139095040` is what a SATURATING conversion gives, and it is also the real CPython answer
+for the OTHER `fr`. This is the third time on this fixture that a value was read off a
+docstring instead of called:
+
+  * `fbits`' docstring said the port "prints nothing for that fixture (divergence E)";
+  * `.agents/slop/dd-oracle.py:36` cites `mxc*` rows -- there are none; `mxc` is a Bend record
+    FIELD binder at `dtype.bend:1226`;
+  * the saved baseline's `c7` disagreed with a fresh run and BOTH were right, because `mx` is
+    `val.const_like(...)` (dtype.py:131) and so is a function of (dt, fr).
+
+  * **`const_like` is not a formatting detail.** `UOp.const_like(b)` is `UOp.const(b,
+    self.dtype)` (`tinygrad/uop/ops.py:600-602`), so the dtype truncation at dtype.py:131 IS
+    the narrowing. An oracle that recomputes the arithmetic in Python floats has dropped the
+    only step that can change the answer.
+
+---
+
+## THE CONE WALK IN `codegen/decomp/dtype.bend`, 2026-10-03. Appended after the
+## dtype/f2f block that ends at position ~15398. Cite positions, not numbers.
+## Numbering continues from the last block; these are 1-4 of this block only.
+
+All measured with `.agents/slop/dd-cone-variants.py` (one frozen snapshot, one
+revert per arm) and `.agents/slop/dd-cone-run.sh` (shape-checked runs, because
+bend prints NOTHING on a stack overflow). Snapshot
+`dtype.bend.base` sha1 73b0e1e7fd6652c5fc7b49323a1956d44545f230, 172 rows.
+
+### 1. A `&`-PAIR CAN BE RETURNED AND READ FROM A PARAMETER, BUT NOT THREADED THROUGH A WALK
+
+Bend's product type is real and precedented: `helpers.bend:1891` `part_out(p: Parted)
+-> List<&2, U32> & List<&2, U32>` returns one, and `helpers.bend:1895` `part_yes(r: List<&2,
+U32> & List<&2, U32>)` destructures one with `(a, b) = r`. So "Bend has no pair" is FALSE
+and cost this unit a comment it had to retract.
+
+What is true, measured, is that a pair cannot be the CARRIER of a walk's state. Three
+attempts, three different errors, all on the `dd_rs.go` recursion:
+
+| attempt | error |
+|---|---|
+| `(st2, sn) = dd_rs.more(...)` | `a match cannot scrutinize a computed value: give it its own def` |
+| `r2 = dd_rs.more(...)` then `(st2, sn) = r2` | `a match cannot scrutinize a local binder: give it its own def` |
+| `(st, seen) = r` with `r: List<&2, U32> & List<&2, U32>` a def PARAMETER | `a match on a parameter or field (this name is a def or a consumed binder: give the value its own def)` |
+
+The third is the one that closes the door: the shape `part_yes` uses IS rejected when the
+pair's components are `List<&2, U32>` being threaded, so the accessor-defs workaround
+(`part_yes`/`part_no`) is not available either.
+
+**CONSEQUENCE, and it is a general one: ONE `Bool` DECISION WITH TWO EFFECTS IS NOT
+EXPRESSIBLE.** `dd_rs.go` needs "is `u` fresh?" to gate two things (push its srcs, and list
+it). `dd_rs.more` does one and `dd_rs.add` the other, so the test is run twice. That is a
+constant factor on a walk that is already O(n^2) in `seen`, and it is the price of not
+having pairs. Do not spend compile cycles rediscovering it.
+
+### 2. AN ALL-EMPTY `*sig` AND `*k` BLOCK IS A WALKER FAILURE, NOT DATA
+
+The first attempt at the dedup wrote `dd_rs.add`'s `match` with the arms the wrong way round
+(`case True{}: xs` for FRESH, i.e. "already listed"), because `dd_rs.more`'s identical shape
+(`case True{}: <effect>`) was the thing being copied. The gate answered:
+
+    lgvsig=            lgvk=-           lgwsig=           lgxsig=           upsig=
+
+i.e. **every** `*sig` and `*k` row in all 172 rows empty, and `--check-only` said
+`ALL PROOFS CHECK`. Both facts are the point:
+
+  * a `Bool` dispatch that is a no-op on the hot path does not fail to compile and does not
+    produce a partial answer -- it produces an EMPTY one, which reads exactly like "this
+    fixture has no cone";
+  * so **an all-empty `*sig` block is a signature to read as "the walker listed nothing",
+    never as "the fixture is empty"**. `upsig` and `lg2sig` both have a non-empty cone under
+    the same inputs, so the emptiness is not a property of the fixture.
+
+Bisected over five mirrors to be sure it was the arms and not a linearity wall, because the
+symptom looked like one: `T1` (an extra read of `ar`, `add` unchanged) compiled and ran;
+`T2` (the new call site, `add` ignoring the Bool) compiled and ran; `T3` (`match` with both
+arms returning `xs`) emptied the cone; `T5` (`case True{}: dd_rs.cat(u, xs)`) was correct.
+An extra read of a `+` binder is free here -- `ar` was already read three times per pop in
+the shipped code.
+
+### 3. AN EXPLICIT-STACK DFS NEEDS `push` TO BUILD THE STACK IN **POP** ORDER, AND `h <> st` IS A PREPEND
+
+`dd_rs.cat(h, st) = h <> st` PREPENDS, and `dd_rs.push` used it left-to-right:
+
+    case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))     # pops src[n] first
+
+so every multi-src node's children came out reversed against `dd-oracle.py`'s `cone`, which
+is `for s in v.src: go(s)` -- src[0] first. The fix is the other composition, so `push` builds
+the stack in the order it will be popped:
+
+    case s <> t: dd_rs.cat(s, dd_rs.push(q, t, st))     # pops src[0] first
+
+`upsig` and `lg2sig` are the witnesses and both are ORDER-ONLY, same multiset either side:
+
+    upsig   pre  AND/2,CONST/0,PARAM/0,FLOORDIV/2,CONST/0,PARAM/0
+            post AND/2,PARAM/0,CONST/0,FLOORDIV/2,CONST/0        (= CPython)
+    lg2sig  pre  PARAM/0,WHERE/3,CAST/1,CONST/0,CAST/1,CONST/0,CMPLT/2,CAST/1,PARAM/0
+            post PARAM/0,WHERE/3,CMPLT/2,CAST/1,CONST/0,CAST/1,CONST/0  (= CPython)
+
+**"An all-equal fixture cannot detect order" has a positive form:** these two detect it
+BECAUSE a multi-src node's srcs have different op shapes (`AND/2` over `CONST/0`+`PARAM/0`,
+`WHERE/3` over `CMPLT/2`+`CAST/1`+`CAST/1`). A cone of unary nodes is blind to this, which is
+the whole `lgv`/`lgw`/`lgx` fixture set -- those three CANNOT witness rule 3 and are only
+witnesses for the dedup.
+
+### 4. A MEMBERSHIP TEST MUST BE ITS OWN EFFECT: AN UNCONDITIONAL `add` LISTS A SHARED NODE ONCE PER PARENT
+
+`seen` is a prepend-built list, so an unconditional prepend lists a node once per POP and a
+node with two parents is popped twice. CPython's `cone` dedups by `id` and lists it once.
+`dd_rs.add` now takes the freshness `Bool` as a PARAMETER (a `match` may not scrutinise a
+computed value or a local binder -- rule 1's table, same wall `dd_rs.more` is shaped around).
+
+Witnesses that move ONLY when this one is reverted, and that agree with CPython afterwards:
+`lgdk lggk lglsig lgvk lgvsig lgwsig`. Before/after on the two the gate's own prose named:
+
+    lgvk    pre  C(0),C(0)          post C(0)                    (= CPython)
+    lgvsig  pre  CAST/1,CAST/1,CONST/0,CAST/1,CONST/0
+            post CAST/1,CAST/1,CONST/0,CAST/1                   (= CPython)
+    lgwsig  pre  CAST/1,CONST/0,CAST/1
+            post CAST/1,CONST/0                                (= CPython)
+
+### 5. FREEZE THE SNAPSHOT ONCE. THE LIVE FILE MOVED INSIDE ONE SESSION.
+
+`codegen/decomp/dtype.bend` gained 8 rows (`dd_cmx.rows(8n, ...)`, the `c0..c7` block) and
+had `f2f_clamp_max`'s `ocp`/`e4m` hoisting rewritten, BETWEEN this unit's first and last
+`bend` runs -- minutes apart. A "before" captured at the top of a session and an "after"
+captured at the bottom were 164 and 172 rows and were NOT comparable; the real row-count
+delta of the two fixes is **0**, measured against `dd_rs.go`'s own frozen snapshot
+(`dd-cone-variants.py snap`) and its `revert-both` arm, which share a key set exactly.
+
+Corollary for this file's gate: `dd-oracle.txt` carries a hand-added comment line
+(`# l2i const sources -- appended 2026-10-03, called, not transcribed`) that a fresh run of
+`dd-oracle.py` does not print, so a byte-diff of the two reports 20 phantom changed lines.
+The VALUES are identical; compare rows, not bytes.
+
+---
+
+## APPENDED 2026-10-03, `DEBUG` WIRING UNIT. NUMBERING CONTINUES FROM THE SECTION
+## ABOVE; NUMBERS REPEAT ACROSS UNITS, SO CITE POSITIONS.
+
+### 1. `A/B/C` WITH A COMPUTED VALUE IS REFUSED, INCLUDING A COMPARISON.
+
+`match` may scrutinise only a PARAMETER or a FIELD BINDER. All three of these are
+refused with the same message, and the middle one is the one that costs an edit cycle
+because it looks like an ordinary comparison:
+
+    match gi_dead(st):            # a DEF CALL
+    match U32.is_eq(st, 3):       # a COMPARISON
+    match Bool.or(dead, nodig):   # a COMBINED BOOL
+
+The way out is not "give it its own def" -- a def that reads its `U32` parameter twice
+is then refused with `expected : st / observed : st (consumed more than once)`. The two
+ways out that work, and which to reach for depends on the shape:
+
+  * AN INDEXED READ. A twelve-entry table `tab()[st*3 + kind]` replaces the whole
+    transition, has no comparison at all, and cannot drift out of step with itself.
+    Used by `helpers.bend`'s `gi_tab` / `gi_nxt`.
+  * A FIELD DESTRUCTURE. `match g: case Gi{st, v}: ...` binds FIELDS, and a field binder
+    is read-once like a parameter -- so this does NOT buy reusability either. Used by
+    `Gi.take`.
+
+### 2. `U32` AND `String` ARE READ-ONCE. `+` IS THE ONLY SPELLING, AND IT IS PER-SCOPE.
+
+Every scalar and `String` is single-use. Reading one twice is refused with
+`expected : X / observed : X (consumed more than once)`, which reads like a different
+error from the `match` one above and has cost time as if it were.
+
+  * IN A SIGNATURE: `def f(+s: String)` -- the annotation the rest of the repository
+    already uses for `+x` binders. It makes the parameter reusable ACROSS calls but NOT
+    twice inside ONE argument list, which is a separate refusal.
+  * IN A `do IO<Unit>:` BIND: THERE IS NONE. `d : U32 <- H.debug()` is single-use and
+    `+d <- H.debug()` is refused with `expected : a bound variable`. So one read has to
+    be handed to ONE `+d` function and every row group has to live inside it.
+  * A `List<&2, X>` element read out of `List.get` is fine; it is only PARAMETERS that
+    are consumed.
+
+### 3. A CALLEE MUST BE DECLARED BEFORE ITS CALLER -- AND A STEP DEF THAT RECURS
+###    CANNOT GO IN AN ARM.
+
+Bend refuses a forward reference with a message about LAWS, which reads as though an
+`@unimplemented` had been reached:
+
+    expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+
+That is not about proofs at all; it is "you called something that is not declared yet".
+This bites hardest on MUTUALLY recursive pairs: with `f.go` calling `f.of` and `f.of`
+calling `f.go`, one of the two is always a forward reference and NEITHER ORDER COMPILES.
+The shape that does compile is `Maybe.bind(..., _ => f.go(t, b))`, which is what
+`memory.bend`'s `mem_bf_find.go` already does, or a library call. `nn/state.bend`'s
+`sd_fc_root` spent four rounds on this before landing on `String.split(s, '.')` and
+deleting the hand-rolled walk -- which is what it should have been from the start.
+
+The corollary is the counter-intuitive part: a def that IS already declared is fine to
+call from anywhere above it, so the rule reads as "topological order", not "just before
+its user".
+
+### 4. A `do IO<Unit>:` BLOCK TAKES BINDINGS AND THEN EXACTLY ONE FINAL TERM.
+
+Three refusals, and the first two are worth writing down because both are legal-looking:
+
+  * a bare `IO.print(...)` in the middle: `expected : 'def', 'type' or 'law'`
+  * binds but NO final term: `expected : a term / observed : end of input`
+  * two binds then a bare call: `expected : a term (the keyword 'def' cannot head one)`
+
+So every block ends in `IO.print("")` or in one last bare call. And `IO.bind` by hand is
+NOT the escape -- it wants a `Type` witness for its `R` (`-R:Type -> ...`), which is why
+the repository's own row printers use `_ : Unit <-` instead.
+
+### 5. `$var cmd` IS NOT A PREFIX ASSIGNMENT, AND `env` CANNOT WRAP A SHELL FUNCTION.
+
+`$envassign .venv/bin/python ...` with `envassign="DEBUG=0"` dies with
+`DEBUG=0: command not found`: an expansion is ONE word and only a literally written
+`NAME=value` prefix is honoured. And `env -u PYTHONPATH run_lane ...` dies with
+`No such file or directory` because `env` execs a binary and `run_lane` is a function.
+Both bit `.agents/slop/debug-gate.sh`. The working shape is `unset X` / `X=v; export X`
+inside the function, with the variable unset again afterwards.
+
+### 6. `String.split(s, sep)` IS `str.split(sep)[0]`-READY AND THE ARGUMENT ORDER IS
+###    `(s, sep)`.
+
+`List.head(&2, String, String.split(s, Char.from_u32(46)))` answers `str.split(".")[0]`
+for `"collections"`, `"os.path"`, `"torch.storage"` and `""` (measured, four probes).
+The hand-rolled walk that preceded it returned the EMPTY root for every string with no
+dot, which inverted `whitelist` on every such module -- and `st_ok1`, whose expected
+value had been read off the port, would have agreed with it. The separator is a `+`
+parameter in the signature (`String.split(s, +sep: Char)`); a literal needs no
+annotation.
+
+### 7. A THREE-STATE WALK CAN BE A TWELVE-ENTRY TABLE, AND MID ALONE IS THE ACCEPTANCE
+###    TEST FOR `int()`.
+
+`int()` accepts surrounding whitespace, one leading `+`/`-`, digits, and `_` STRICTLY
+BETWEEN digits. PRE (no digit yet) is `""`, PEND (trailing `_`) is `"1_"`, DEAD is
+`"1__0"` / `"abc"`, so `st == MID` -- ONE comparison -- is the same predicate as
+"CPython would have accepted it" over every reachable state. No separate
+"seen a digit" flag is needed, and adding one would need a third `U32` the read-once
+rule (position 2) would immediately refuse.
+
+### 8. `%.2f` ON A BINARY FLOAT IS NOT HALF-EVEN ON THE RATIONAL, AND THE DIFFERENCE
+###    IS WORTH 483 OF THE FIRST 40000 INTEGERS.
+
+`f"{0.015:.2f}"` is `'0.01'` because the double for 0.015 sits BELOW it; half-even on
+the rational `15/10000` answers `'0.02'`. A gate row cannot therefore assert half-even
+on bare integers. It is EXACT on every multiple of 256, and that is not luck:
+`memory.py:42` and `:53` both `round_up(..., block_size=256)`, so the byte sum is a
+multiple of 256, and the tie `S % 10000 == 5000` forces `S % 16 == 8` while a multiple of
+256 forces `S % 16 == 0`. `gcd(10000, 256) = 16` and `5000 mod 16 = 8`. So `> 5000` is
+the whole rule for any input the site can see, and `>` vs `>=` is a THEOREM over that
+domain -- measured: 0 disagreements on all 156250 multiples of 256 up to 40 MB, and 483
+disagreements on bare integers. A mutation that swaps them is reported as a blind spot
+with this reason, not closed.
+
+Corollary for gates: a formatter precondition must be a PROPERTY OF THE FIXTURE, not a
+promise in a comment, or the mutation that violates it will not move.
+
+### 9. A SITE WHOSE FIXTURE NEVER TAKES A BRANCH CANNOT GATE THAT BRANCH.
+
+MEASURED, and it cost a mutation. `memory.py:59`'s `!=` condition: the repository's one
+plan fixture SAVES bytes (omem 12032 against nmem 11776), so `is_eq` and `is_lt` are
+BOTH false there, "print only when there is a saving" and "always print" are the same
+function over every row `mem_plan` can reach, and the mutation moved NOTHING. The fix
+was to give the condition its own parameterised seam (`mem_dbg_line(omem, nmem, nfa,
+nar)`) and ask CPython the same question with the same two sums -- NOT to add a second
+plan fixture, and NOT to accept the zero. The first attempt at that mutation was
+`is_eq -> is_lt`, which is a WRONG mutation: it also moved nothing, for the same reason,
+and looked like a second confirmation of the theorem.
+
+### 10. A `Unit`-RETURNING DEF IS INVISIBLE TO A ROW DIFF.
+
+`debug_print`'s mutation (write `""` instead of writing nothing) moved nothing, and it is
+a HARNESS limitation rather than a theorem: the gate observes a site by its RETURNED
+LINE, and this def's return type is `Unit`, so neither "prints an extra blank line" nor
+"never prints" can reach a `name=value` comparison. Reported as a blind spot with the
+reason. The general rule: a gate row must be a VALUE, and a def whose product is a side
+effect needs a value-returning companion to be gated at all.
+
+### 11. WHEN CPython CANNOT RUN THE FUNCTION, `exec` THE SOURCE LINE -- AND SAY SO.
+
+Four of the seven `DEBUG` sites are inside `AMDev.boot` / `init_hw` / `fini`, and
+`AMDev(0)` raises `AttributeError: 'int' object has no attribute 'pcibus'` on any host
+without `/dev/kfd`. The oracle's fallback reads the exact line with `linecache`, checks
+it contains `DEBUG >=`, and `exec`s it with the live `DEBUG` and stand-ins for the
+interpolated names. That makes the expected string impossible to get wrong by
+transcription and makes a wrong LINE fail loudly (a `NameError`, which the lane prints
+as `err_<site>`). It is evidence about the SOURCE LINE and not about a running device,
+and the gate says so on the row.
+
+The same trick reads the THRESHOLD: `re.search(r"DEBUG\s*>=\s*(\d+)", src)` and print it
+as `thr_<site>`. A table of thresholds written by hand is a transcription, and one of
+the seven being level 1 rather than 2 is exactly the sort of thing a single-level gate
+cannot see.
+
+### 12. TWO FIXTURE CRASHES THAT SILENTLY COST A ROW.
+
+Both found by a gate that reported "3 rows" where 3 were expected and "2" where 2 were
+expected, so neither announced itself:
+
+  * a BUFFER UOp with no `vmin_vmax` has `max_shape is None`, and
+    `buf.pad_to(buf.max_shape)` (`allreduce.py:19`) raises
+    `TypeError: 'NoneType' object is not iterable` -- killing the loop BEFORE the third
+    case, so the ALL2ALL row never existed and nothing reported its absence.
+  * `red.arg` is `(op, device)` and a `None` device raises the same way at `:32`'s
+    `copy_to_device`.
+
+A fixture row count that is small enough to look right is the failure mode. The
+`ar_ring` / `ar_naive` / `ar_a2` triple and CPython's `laneA_ar_lines` are the rows that
+would have caught it.
+
+### 13. A HARNESS THAT GATES A COPY IS WHAT MAKES A WHOLE MUTATION TABLE ZERO.
+
+Copied from `agent-core.md` and re-earned: `debug-gate.bend` reaches every def under test
+through the real port file (`H.*`, `A.*`, `M.*`, `St.*`, `AM.*`) and defines none of
+them, and `rg '^def (mem_dbg|red_dbg|sd_dbg|am_dbg)'` over it must find nothing. The
+assertion is in the file's header so the next person can check it.
+
+---
+
+## AMD generate.bend, 2026-10-03 — a row the parser cannot see, and the ceiling underneath it
+
+Numbering continues from the section above; cite POSITIONS, numbers repeat across units.
+
+### 14. A ROW WHOSE VALUE CONTAINS A NEWLINE IS INVISIBLE, AND NO GENERIC FOLD FIXES IT.
+
+`rebase-gate.py:rows()` splits lane output on newlines. `generate.bend`'s `gl` printed a
+WHOLE GENERATED FILE per row, so 7 rows became 335 fragments whose NAMES are the first
+token before an `=` inside the generated Python — `FLAT_LOAD_DWORD`, `encoding`, `saddr`,
+`encoding`, `seg`. Measured by `.agents/slop/ga_rows.py`: 233 row names for 91 rows, 84
+shared with CPython; of the 149 unshared, **7 were the real rows with a TRUNCATED value
+and 142 were fragments — 0 were lost to genuine name divergence.** The brief's premise
+("the two sides invent different row names") is half right and half wrong: the PORT never
+invents a name, it fragments, and the ORACLE invented `tag | line`.
+
+`cstyle.bend:1760` and `wgsl.bend:829` already record the fix (`esc_row`). The escape is
+NOT the general problem; the SIZE is.
+
+### 15. `String` IS AN `SCon` SPINE AND THE INTERPRETER HAS NO TAIL CALL — SO A ROW VALUE HAS A HARD CEILING.
+
+`references/bend/bend2/base.bend:1848` is `1n+String.length(t)`, `:1932` `String.take`,
+`:1941` `String.drop`, `:1806` `String.append`, `:1980` `String.join.go`. Every one of them
+is one interpreter frame per CHARACTER of the string it walks, and `String.join` is
+O(total length) in depth because it appends onto a growing prefix.
+
+Measured with a probe: `String.split` on a 4,000-character literal works, 8,000 is
+"the machine stack overflowed (a deep recursion, or a literal too large to expand)". The
+largest file `write_ins` emits here is **16,815 characters**.
+
+**THE CONSEQUENCE NOBODY WROTE DOWN: `generate.bend`'s interpreted lane had been BROKEN
+ABOUT HALF THE TIME FOR MONTHS, FOR A REASON THAT HAD NOTHING TO DO WITH ROWS.** Measured
+on the file as committed, one whole-file row and no escaping at all: **5 successes in 12
+runs.** A flake this size reads as "the gate is flaky" and gets ignored; it is actually a
+row value 4x over a hard limit. `rebase-gate.py` would have reported BROKEN on GUARD 3
+("lane(s) failed to run: interpreted") and nobody would have looked further.
+
+Per-line rows (634 over 8 files, plus one `lines` count row each) build no string longer
+than one emitted line: **25 of 25.** The same probe over `String.concat` is 6 of 6.
+
+### 16. A FOLD IN `rows()` IS NOT A SUPERSET, AND MEASURED OVER 38 GATES IT IS A DISASTER.
+
+`.agents/slop/ga_rows_blast.py` caches every wired lane's stdout (`ga_sweep.py`) and applies
+each candidate parser to the cache, so all three parsers see the same bytes:
+
+  parser                          rows returned   shared within a pair   shipped rows CHANGED
+  `rows()` (shipped)                    32,026                    24,935                    0
+  fold, safe fallback                   31,978                    24,885                   76
+  fold, naive                           6,172                     5,683                25,882
+
+The naive fold drops **25,882 of 32,026 rows and 19,252 shared rows**, because **31 of 38
+lanes do not print `name = [v]   py=[w]` at all** — they print `name=value` with no spaces,
+so every row runs off the end of the file. That is the brief's own warning ("a parser
+requiring `\s=\s` matches nothing and reports a clean zero") reproduced as a 19,252-row
+zero.
+
+The SAFE fold (a value whose terminator never arrives falls back to the shipped reading) is
+still not a superset: it changes 76 rows, all on `uop/render.bend`, because folding MERGES
+distinct rows — `pyrender buffer` and `pyrender copy` become one key and one of them
+vanishes. **A row name is not a stable identity once you let values span lines**, and the
+gate compares row-name SETS, so a merge reads as agreement over nothing.
+
+So the fix belongs in the PRODUCER, which is where cstyle already put it. `rows()` needs no
+terminator because the producer guarantees rows are one line.
+
+### 17. AN INDEX KEY IS NOT A KEY, AND IT CANNOT SEE A DROPPED LAST LINE — SO IT NEEDS A COUNT.
+
+The emitted text REPEATS: four BLANK lines are one name (`tag | `) and
+`  saddr = SSrcField(31, 24, default=NULL)` appears in four classes. Keying on the line
+TEXT kept 585 of 756 rows by accident. An INDEX is a key, and an index cannot see a dropped
+last line — `ins rdna3 | 0 .. | 176` would all still agree with CPython if the port emitted
+176 lines.
+
+`lines` is the row that closes it, and `.agents/slop/ga_controls.py` proves it is not
+tautological: dropping `ins rdna3 | 176` from the port's output moves **exactly one row**,
+`ins rdna3 lines`, and leaves the other 725 agreeing. Two numbers from two places —
+CPython's count against the port's own list length.
+
+A count row alone is not a gate (the renderer conventions say so) and this one is not
+pretending to be: the 634 line rows are the gate, `lines` is the one hole the index opens.
+
+### 18. `ga_fix.py:tag_join` LOST BLANK LINES, AND THE FIX WAS TO STOP REASSEMBLING.
+
+Every blank line of an emitted file was the oracle row `tag | `, so a name-keyed dict kept
+ONE of four and `"\n".join(...)` produced a file with three of its blank separators gone.
+That is how `common.py` came out with no blank line before `class Fmt(Enum):` — a WRONG
+expectation spliced from a CORRECT oracle, which then disagreed with the RIGHT port. The
+rule: **an expectation that has to be REASSEMBLED from a keyed store is a place a
+correct oracle turns into a wrong gate.** The whole file now lives in `ga-oracle.py`'s
+`EMITTED` dict as one string and `ga_fix.py` imports it directly.
+
+### 19. `rebase-scan-oracles.py` CACHES LANE ROWS IN `$TMPDIR` WITH NO INVALIDATION.
+
+`CACHE = pathlib.Path("/tmp/rebase-scan")`, populated on first sight and read forever after.
+Measured: it printed `84 84  generate.bend` (84 shared, **84 disagree**) against the real
+gate's `726 shared, 0 disagree`, from cache files written at 14:30 and 14:32. Deleting the
+two entries and re-running printed `726  0`.
+
+This is the exact failure `rebase-gate.py`'s GUARD 3 exists to prevent — "the oracle script
+must exist and must have been RUN THIS TIME — no cache. `drift-gate.py` caches lane output
+in `$TMPDIR`, and a cached '0 rows' from an hour ago is indistinguishable from a fresh 0."
+The fix in `drift-gate.py` was never applied to its sibling. **REPORTED, NOT FIXED** —
+`rebase-scan-oracles.py` is not this unit's file.

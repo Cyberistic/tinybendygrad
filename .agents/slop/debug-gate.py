@@ -105,7 +105,7 @@ for n in (1, 2, 3): print("env_ge%d=%d" % (n, int(DEBUG >= n)))
 GI_TEXTS = [("gi_0", "0"), ("gi_1", "1"), ("gi_2", "2"), ("gi_3", "3"),
             ("gi_00", "00"), ("gi_007", "007"), ("gi_1_0", "1_0"),
             ("gi_2_0_0", "2_0_0"), ("gi_sp2", " 2 "), ("gi_tab2", "\t2\n"),
-            ("gi_p2", "+2"), ("gi_m1", "-1"), ("gi_refuse_1_", "1_"),
+            ("gi_p2", "+2"), ("gi_refuse_1_", "1_"),
             ("gi_refuse__1", "_1"), ("gi_refuse_1__0", "1__0"),
             ("gi_refuse_us", "_"), ("gi_refuse_abc", "abc"),
             ("gi_refuse_dot", "2.0"), ("gi_refuse_exp", "1e3"),
@@ -245,6 +245,12 @@ def main():
     rows.append(nm + "=" + (got[0] if got else "ValueError"))
   # `gi_m1_ge2` is THE NARROWING, both sides measured: CPython's `int("-1")` is -1 and
   # `int(-1 >= 2)` is 0; the port answers the default `0` and `0 >= 2` is also 0.
+  # `gi_m1_*` IS THE NEGATIVE-VALUE NARROWING. `"-1"` is an ACCEPTED text, so it is
+  # NOT in `GI_TEXTS`: CPython stores `-1` and the port stores the default `0`, and a
+  # row holding either number would be red against the other. What must agree is the
+  # COMPARISON every site makes, and every threshold in tinygrad is `DEBUG >= N` with
+  # `N >= 0` -- so these three rows are `int(-1 >= N)` here and
+  # `int(H.gi_of_text("-1", 0) >= N)` there, and all three are 0 on both sides.
   for n in (1, 2, 3):
     row("gi_m1_ge%d" % n, int(-1 >= n))
 
@@ -256,6 +262,20 @@ def main():
     row(tag, at(ar_got, i))
   mem_got = keep(child(level, MEM_BODY), "mem")
   row("mem_plan", at(mem_got, 0))
+  # THE `!=` CONDITION, asked the way memory.py:59 asks it. `memory.py:59` is
+  #     DEBUG >= 1 and (omem := sum(nbytes.values()) / 1e6) != (nmem := sum(arena_sizes.values()) / 1e6)
+  # and the printed line is `f"memory reduced from {omem:.2f} MB -> {nmem:.2f} MB,
+  # {len(first_appearance)} -> {len(arenas)} bufs"`. The two sums are supplied as
+  # PARAMETERS so the NO-SAVING case is reachable: the one plan fixture in this
+  # repository saves bytes, so `mem_plan` alone cannot tell "print only when there is a
+  # saving" from "always print", and the mutation that drops the `!=` moved nothing
+  # until these rows existed.
+  for nm, omem, nmem in (("mem_cond_same", 12032, 12032), ("mem_cond_diff", 12032, 11776)):
+    om, nm_ = omem / 1e6, nmem / 1e6
+    if om != nm_:
+      row(nm, "memory reduced from %.2f MB -> %.2f MB, 5 -> 2 bufs" % (om, nm_))
+    else:
+      row(nm, "")
   st_got = keep(child(level, ST_BODY), "st")
   row("st_bad", at(st_got, 0))
   row("st_ok1", "")

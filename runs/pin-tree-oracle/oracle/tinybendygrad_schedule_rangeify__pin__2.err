@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rangeify-oracle.py", line 49, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rangeify-oracle.py", line 38, in main
+    spec.loader.exec_module(mod)
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-rows.py", line 22, in <module>
+    b4 = B(4, AddrSpace.GLOBAL, 0)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-rows.py", line 18, in B
+    def B(n=4, a=AddrSpace.GLOBAL, s=0): return UOp(Ops.BUFFER, arg=ParamArg(s, dtypes.i32, n, addrspace=a))
+                                                                                ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'i32'

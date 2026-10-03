@@ -1,7 +1,7 @@
 {
  "tinybendygrad/codegen/decomp/dtype.bend": {
   "cpython:dtype-oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -12,7 +12,7 @@
  },
  "tinybendygrad/codegen/gpudims.bend": {
   "cpython:rw-gate-oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -34,7 +34,7 @@
  },
  "tinybendygrad/codegen/simplify.bend": {
   "cpython:rw-oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -67,7 +67,7 @@
  },
  "tinybendygrad/mixin/elementwise.bend": {
   "cpython:ew-gate": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -100,7 +100,7 @@
  },
  "tinybendygrad/nn/onnx.bend": {
   "cpython:onnx-gate": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -114,10 +114,10 @@
    "rc": 0
   },
   "interpreted": {
-   "rc": 1
+   "rc": 0
   },
   "native": {
-   "rc": 1
+   "rc": 0
   }
  },
  "tinybendygrad/renderer/amd/sqtt.bend": {
@@ -243,7 +243,7 @@
  },
  "tinybendygrad/runtime/ops_python.bend": {
   "cpython:ops-python-render-oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -276,7 +276,7 @@
  },
  "tinybendygrad/runtime/support/c.bend": {
   "cpython:c-oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -353,7 +353,7 @@
  },
  "tinybendygrad/tensor.bend": {
   "cpython:tensor-gate": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -364,7 +364,7 @@
  },
  "tinybendygrad/uop/fold.bend": {
   "cpython:mm-lift-gate": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0
@@ -408,7 +408,7 @@
  },
  "tinybendygrad/viz/serve.bend": {
   "cpython:viz_oracle": {
-   "rc": 1
+   "rc": 0
   },
   "interpreted": {
    "rc": 0

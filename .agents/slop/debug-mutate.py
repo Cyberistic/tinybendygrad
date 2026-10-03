@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""debug-mutate.py -- does each new row MOVE when the DEBUG threshold is flipped?
+
+    .venv/bin/python .agents/slop/debug-mutate.py
+
+A gate that passes at every level proves nothing about a gate: a port that printed
+UNCONDITIONALLY would pass all five levels of `debug-gate.sh`. This flips each
+threshold and reports WHICH ROWS MOVED, by name, and an unexplained zero is a zero --
+`agent-core.md`'s rule, and the reason this file exists rather than a sentence.
+
+THE TREE IS COPIED FIRST. `agent-core.md`: "NEVER patch the live tree from a harness"
+and "several units have lost whole files to tree-patching across restarts". So
+`tinybendygrad/` and the gate file are copied into a scratch directory and every
+mutation lands THERE. The copy is under `.agents/slop/` (never `$TMPDIR`: an oracle
+written to `$TMPDIR` has been gone before the commit) and it is removed at the end.
+Relative imports resolve because the scratch tree keeps the same layout --
+`.agents/slop/debug-gate.bend` and `tinybendygrad/` are siblings of the same parents.
+
+THE THREE LANES, MEASURED NOT ASSUMED: levels 0, 1 and 2 of the INTERPRETED bend lane.
+`debug-gate.sh` already proves the compiled lane agrees with it; running it again per
+mutation would triple the cost for nothing.
+
+WHAT COUNTS AS A MOVE: a row whose whole `name=value` line differs from the baseline
+AT THE SAME LEVEL. Comparing row NAMES is the trap named in `agent-core.md` -- a
+name-comparing harness reported 0 for all 30 mutations in one unit -- so the whole
+line is the key, and rows present in one side only count as moved.
+"""
+import os, shutil, subprocess, sys
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+SCRATCH = os.path.join(ROOT, '.agents', 'slop', 'debug-mut-work')
+BEND = os.path.join(ROOT, 'bin', 'bend')
+
+# (label, file-under-scratch, old, new). Every `old` is asserted to be PRESENT exactly
+# once before anything runs, because "pattern absent" silently turns a mutation into a
+# no-op and a no-op reports 0 rows and looks like a theorem.
+MUT = [
+ ("memory.py:59's threshold 1 -> 2 (the level-1 site becomes level-2)",
+  "tinybendygrad/schedule/memory.bend",
+  "  mem_dbg_text.gate(H.debug_ge(dbg, 1), mem_dbg_text(p))",
+  "  mem_dbg_text.gate(H.debug_ge(dbg, 2), mem_dbg_text(p))"),
+ ("allreduce.py:16's threshold 2 -> 1 (the level-2 site becomes level-1)",
+  "tinybendygrad/schedule/allreduce.bend",
+  "  red_dbg_text.gate(H.debug_ge(dbg, 2), red_dbg_text(s, ndev, numel, dt))",
+  "  red_dbg_text.gate(H.debug_ge(dbg, 1), red_dbg_text(s, ndev, numel, dt))"),
+ ("state.py:260's threshold 2 -> 1",
+  "tinybendygrad/nn/state.bend",
+  "  sd_dbg_text.gate(Bool.and(H.debug_ge(dbg, 2), sd_fc_dummy(module)),",
+  "  sd_dbg_text.gate(Bool.and(H.debug_ge(dbg, 1), sd_fc_dummy(module)),"),
+ ("amdev.py:185's threshold 2 -> 3",
+  "tinybendygrad/runtime/support/am/amdev.bend",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 2), am_dbg_malformed(devfmt))",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 3), am_dbg_malformed(devfmt))"),
+ ("amdev.py:225's threshold 2 -> 3",
+  "tinybendygrad/runtime/support/am/amdev.bend",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 2), am_dbg_boot(devfmt))",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 3), am_dbg_boot(devfmt))"),
+ ("amdev.py:251's threshold 2 -> 3",
+  "tinybendygrad/runtime/support/am/amdev.bend",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 2), am_dbg_ip(devfmt, ip))",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 3), am_dbg_ip(devfmt, ip))"),
+ ("amdev.py:254's threshold 2 -> 3",
+  "tinybendygrad/runtime/support/am/amdev.bend",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 2), am_dbg_final(devfmt))",
+  "  am_dbg_text.gate(H.debug_ge(dbg, 3), am_dbg_final(devfmt))"),
+ ("`debug_ge`'s `>=` -> `>` (every threshold becomes off-by-one, in all four files)",
+  "tinybendygrad/helpers.bend",
+  "def debug_ge(dbg: U32, n: U32) -> Bool:\n  U32.is_ge(dbg, n)",
+  "def debug_ge(dbg: U32, n: U32) -> Bool:\n  U32.is_gt(dbg, n)"),
+ # REPORTED AS A HARNESS BLIND SPOT, NOT CLOSED. `debug_print` is the only new def
+ # whose return type is `Unit`, and the gate observes a site by its RETURNED LINE, so
+ # nothing about this def is on any row's value path. Both directions of the mutation
+ # are therefore invisible: writing `""` and never writing are equally undetectable by a
+ # row comparison. The gate's level-0 control is real -- it is `mem_L0` / `ar_ring_L0`
+ # and friends, which are EMPTY -- but it tests the SITES' gate, not `debug_print`'s.
+ ("`debug_print` writes `""` too (the level-0 control is destroyed)",
+  "tinybendygrad/helpers.bend",
+  "def debug_print.of(empty: Bool, s: String) -> IO(Unit):\n"
+  "  match empty:\n"
+  "    case True{}: IO.pure(Unit, Unit{})\n"
+  "    case _: IO.print(s)",
+  "def debug_print.of(empty: Bool, s: String) -> IO(Unit):\n"
+  "  match empty:\n"
+  "    case True{}: IO.print(\"\")\n"
+  "    case _: IO.print(s)"),
+ ("`sd_fc_allowed`'s `not` is dropped (the whitelist test is inverted)",
+  "tinybendygrad/nn/state.bend",
+  "  Bool.not(sd_fc_allowed(module))",
+  "  sd_fc_allowed(module)"),
+ # The FIRST attempt at this mutation replaced `mem_dbg_same`'s `is_eq` with `is_lt`,
+ # and it moved NOTHING -- correctly so, and the reason is worth keeping: the one plan
+ # fixture SAVES bytes (12032 against 11776), so `is_eq` and `is_lt` are BOTH false
+ # there and "print only when there is a saving" and "always print" are the same
+ # function over every row `mem_plan` can reach. `mem_cond_same` / `mem_cond_diff` are
+ # what made the arm reachable; this is the mutation they were added for.
+ ("memory.py:59's `!=` condition is dropped (the line prints even with no saving)",
+  "tinybendygrad/schedule/memory.bend",
+  "def mem_dbg_same(omem: U32, nmem: U32) -> Bool:\n  U32.is_eq(omem, nmem)",
+  "def mem_dbg_same(omem: U32, nmem: U32) -> Bool:\n  Bool.and(False{}, U32.is_eq(omem, nmem))"),
+ ("`mem_mb`'s rounding `> 5000` -> `>= 5000` (half-UP where the tie is unreachable)",
+  "tinybendygrad/schedule/memory.bend",
+  "  mem_mb.hundredths.of(U32.is_gt(U32.mod(n, 10000), 5000), U32.div(n, 10000))",
+  "  mem_mb.hundredths.of(U32.is_ge(U32.mod(n, 10000), 5000), U32.div(n, 10000))"),
+ ("`gi_of_text`'s acceptance `st == MID` -> `st == PEND` (a trailing `_` would pass)",
+  "tinybendygrad/helpers.bend",
+  "def gi_take(st: U32, v: U32, d: U32) -> U32:\n  match st:\n    case 1: v\n    case _: d",
+  "def gi_take(st: U32, v: U32, d: U32) -> U32:\n  match st:\n    case 1: v\n    case 2: v\n    case _: d"),
+ ("`gi_tab`'s MID+`_` -> MID (a `_` anywhere between digits is accepted)",
+  "tinybendygrad/helpers.bend",
+  "  [1, 3, 3, 1, 2, 3, 1, 3, 3, 3, 3, 3]",
+  "  [1, 3, 3, 1, 1, 3, 1, 3, 3, 3, 3, 3]"),
+ ("`red_mode_name`'s ALL2ALL arm is unreachable (ALL2ALL prints RING)",
+  "tinybendygrad/schedule/allreduce.bend",
+  "  match m:\n    case 2: \"ALL2ALL\"\n    case 1: \"RING\"\n    case _: \"NAIVE\"",
+  "  match m:\n    case 2: \"RING\"\n    case 1: \"RING\"\n    case _: \"NAIVE\""),
+ ("`am_dbg_prefix` loses the `am ` (a wrong prefix on all four amdev sites)",
+  "tinybendygrad/runtime/support/am/amdev.bend",
+  "  String.concat([\"am \", devfmt, \": \"])",
+  "  String.concat([devfmt, \": \"])"),
+]
+
+LEVELS = ("0", "1", "2")
+
+
+def rows_of(out):
+  d = {}
+  for l in out.split('\n'):
+    if '=' in l and l.strip():
+      k, v = l.split('=', 1)
+      d[k] = v.strip()
+  return d
+
+
+def run(gate, level):
+  env = dict(os.environ)
+  env['DEBUG'] = level
+  for tries in range(6):
+    p = subprocess.run([BEND, gate], cwd=ROOT, env=env, capture_output=True, text=True)
+    r = rows_of(p.stdout)
+    if r:
+      return r
+  return {}
+
+
+def main():
+  if os.path.exists(SCRATCH):
+    shutil.rmtree(SCRATCH)
+  os.makedirs(os.path.join(SCRATCH, '.agents', 'slop'))
+  shutil.copytree(os.path.join(ROOT, 'tinybendygrad'), os.path.join(SCRATCH, 'tinybendygrad'),
+                  ignore=shutil.ignore_patterns('__pycache__'))
+  shutil.copy(os.path.join(ROOT, '.agents', 'slop', 'debug-gate.bend'),
+              os.path.join(SCRATCH, '.agents', 'slop', 'debug-gate.bend'))
+  gate = os.path.join(SCRATCH, '.agents', 'slop', 'debug-gate.bend')
+
+  base = {lvl: run(gate, lvl) for lvl in LEVELS}
+  for lvl in LEVELS:
+    if not base[lvl]:
+      print("FATAL: the baseline produced 0 rows at level %s -- a bend stack overflow "
+            "looks exactly like this" % lvl, file=sys.stderr)
+      return 2
+  print("baseline: %d rows at each of levels %s" % (len(base['0']), ", ".join(LEVELS)))
+
+  print("| mutation | rows that moved (level: rows) | how many |")
+  print("| --- | --- | --- |")
+  zeros = []
+  for label, rel, old, new in MUT:
+    path = os.path.join(SCRATCH, rel)
+    with open(path) as f:
+      green = f.read()
+    n = green.count(old)
+    if n != 1:
+      print("| (NOT APPLIED -- pattern occurs %d times) %s | - | - |"
+            % (n, label[:60]))
+      continue
+    with open(path, 'w') as f:
+      f.write(green.replace(old, new, 1))
+    moved = []
+    for lvl in LEVELS:
+      r = run(gate, lvl)
+      if not r:
+        moved.append("%s: DID NOT COMPILE" % lvl)
+        continue
+      for k in sorted(set(r) | set(base[lvl])):
+        if r.get(k) != base[lvl].get(k):
+          moved.append("%s: %s" % (lvl, k))
+    with open(path, 'w') as f:
+      f.write(green)
+    short = label if len(label) <= 66 else label[:63] + "..."
+    print("| %s | %s | %d |" % (short, ", ".join(moved) if moved else "NONE", len(moved)))
+    if not moved:
+      zeros.append(label)
+
+  shutil.rmtree(SCRATCH)
+  print("")
+  if zeros:
+    print("BLIND SPOTS (mutations that moved nothing), %d:" % len(zeros))
+    for z in zeros:
+      print("  -", z)
+  else:
+    print("no blind spots: every mutation moved at least one row")
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())

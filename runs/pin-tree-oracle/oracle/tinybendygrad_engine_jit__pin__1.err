@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jit-oracle.py", line 44, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jit-oracle.py", line 37, in main
+    for k, v in jit_oracle.jit_rows():
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/probe/jit_oracle.py", line 113, in jit_rows
+    ("dt_repr_h", repr(dtypes.f16))]
+                       ^^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'f16'

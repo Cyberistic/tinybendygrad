@@ -28,6 +28,13 @@
  "tinybendygrad/runtime/ops_python.bend": ".agents/slop/ops-python-render-oracle.py",
  "tinybendygrad/runtime/ops_amd.bend": ".agents/slop/amd_oracle.py",
  "tinybendygrad/uop/render.bend": ".agents/slop/xd1/render-gate-oracle.py --gate",
+ "tinybendygrad/renderer/llvmir.bend": ".agents/slop/llvmir-oracle.py",
+ "tinybendygrad/runtime/ops_qcom.bend": ".agents/slop/qcom-oracle.py",
+ "tinybendygrad/schedule/indexing.bend": ".agents/slop/indexing-oracle.py",
+ "tinybendygrad/codegen/decomp/dtype.bend": ".agents/slop/dtype-oracle.py",
+ "tinybendygrad/schedule/rangeify.bend": ".agents/slop/rangeify-oracle.py",
+ "tinybendygrad/engine/jit.bend": ".agents/slop/jit-oracle.py",
+ "tinybendygrad/runtime/ops_null.bend": ".agents/slop/null-oracle.py",
  "tinybendygrad/dtype.bend": ".agents/slop/oracle/dtype_tables.py",
  "tinybendygrad/renderer/cstyle.bend": ".agents/slop/renderer_oracle.py cstyle"
 }

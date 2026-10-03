@@ -115,9 +115,18 @@ def cval(a):
 
 def fbits(x):
     """decision 2: a float CONST as its F32 bit pattern. `numpy`-free overflow
-    guard: `struct.pack('f', ...)` RAISES above the f32 range, and that IS the
-    answer for a `float64` target, so it prints as `F(ovf)` and the port prints
-    nothing for that fixture (divergence E)."""
+    guard: `struct.pack('f', ...)` RAISES above the f32 range and prints `F(ovf)).
+
+    `F(ovf)` IS NOT A VALUE, and it is `c7` ALONE -- measured, `.agents/slop/
+    dd-divE-probe.py`, CALLING `DD.f2f_clamp` at both source widths:
+      f2f_clamp(f32_val, float64) -> mx = inf     -> F(2139095040)
+      f2f_clamp(f64_val, float64) -> mx = 1.8e308 -> F(ovf)
+    `mx` is `val.const_like(...)` (dtype.py:131), so its value is a function of
+    (dt, fr) and this row is a function of `dt` ALONE -- `clamp_mx` below drops
+    `const_like`. It is well posed for the other seven because their `mx` fits in
+    f32 under both `fr` and then the two coincide. So the `F(ovf)` here is the ORACLE
+    declining to render a value, not a statement about tinygrad, and a port that
+    printed `F(2139095040)` for `c7` would be answering for `fr = f32` only."""
     try:
         return f"F({struct.unpack('I', struct.pack('f', float(x)))[0]})"
     except OverflowError:

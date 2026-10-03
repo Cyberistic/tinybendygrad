@@ -34,6 +34,7 @@ import ./../../tinybendygrad/uop/ops.bend as O
 import ./../../tinybendygrad/uop/fold.bend as F
 import ./../../tinybendygrad/helpers.bend as H
 import ./../../tinybendygrad/LAWS/spec.bend as S
+import ./../../tinybendygrad/uop/render.bend as R
 
 # ===========================================================================
 # THE CHUNK. `<bytecount>:<bytes>`. `String.length` counts CHARACTERS, which is byte
@@ -94,22 +95,40 @@ def dt(d0: S.Dt) -> String:
 def opx(o: O.Op) -> String:
   String.concat(["O", O.Ops.name.of(o)])
 
-# `S.D1{tag}` is an INTERNED INDEX, not a name. schedule/__init__.bend:1095 says "the
-# port interned device NAMES as S.D1{tag}, and tag 0 stands for CPU", and
-# schedule/memory.bend:998-999 makes tag 0 CPU and tag 1 DISK -- a table with nothing to
-# do with device.bend:702's `dev_name`, where 7 is CPU and 11 is NULL. NO reader turns a
-# tag back into a name, so this emits `t<tag>` and graphcmp.py NAMES the field as unbound
-# rather than pretending two tags are two devices. Residual difference #1 in the report.
+# THE DEVICE ATOM, RESOLVED THROUGH THE PORT'S OWN TABLE.
+#
+# `S.Dev`'s tag is interned, not named (LAWS/spec.bend:85-87, and ops.bend's own note
+# that the interning table "is NOT THERE" upstream). The port HAS a reader for it:
+# `uop/render.bend:360-364`, `dev_names()`/`dev_name.tag`, the table `render.py`'s
+# `dev_repr` is ported through and the one `schedule/__init__.bend:1095` and
+# `schedule/memory.bend:998` write their tags against. So this emits the port's NAME and
+# NOT its tag, which is the same thing CPython emits (`Compiled.device` is the
+# canonicalized `str` the device was opened with, tinygrad/device.py:396 via :26,:29) --
+# and the emitted name cannot drift from the table because it IS the table.
+#
+# THE THREE TABLES ARE NOT ONE AND MUST NOT BE MERGED. Measured, not assumed:
+#   * `uop/render.bend:361`  -- the ARENA tag: 0=CPU 1=GPU 2=METAL ... 8=NULL 9=DISK.
+#   * `runtime/device.bend:702` `dev_name` -- `ALL_DEVICES` (device.py:20) by 1-based
+#     index: 1=METAL 2=AMD 3=NV 4=CUDA 5=QCOM 6=CL 7=CPU 8=DSP 9=WEBGPU 11=NULL.
+#     It is a faithful port of a DIFFERENT upstream object and its rows use it that way
+#     (`too_big(.., String.starts_with(dev_name(7), "NULL"))` is device.py:172's
+#     `self.device.startswith("NULL")`, where `self.device` is a BUFFER's, not a graph's).
+#   * `renderer/cstyle.bend:121` `dev_name` -- the compiler/LANGUAGE index.
+# So the tag column is NOT an index into any of those two, and reading one as the other
+# would be a wrong answer rather than a unification.
 def dev1(t: U32) -> String:
-  String.concat(["t", U32.show(t)])
+  bstr(R.dev_name.tag(t))
 
 def devs.go(+ts: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ts:
     case Nil{}: acc
     case t <> r: devs.go(r, List.append(&2, String, acc, [dev1(t)]))
 
+# `device: str|tuple[str, ...]|None` (ops.py:33), and CPython's `dev()` renders the tuple
+# case as `s` over the comma-joined members -- NOT as a nested value, so this is the same
+# flat spelling rather than the `n(..)` this file uses for `O.ATuple`.
 def devs(ts: List<&2, U32>) -> String:
-  String.concat(["n(", String.join(devs.go(ts, Nil{}), ","), ")"])
+  bstr(String.join(devs.go(ts, Nil{}), ","))
 
 def dev(dv: S.Dev) -> String:
   match dv:

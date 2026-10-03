@@ -52,6 +52,42 @@ and `.agents/slop/dd-oracle.txt`, not a hand-typed constant.
 The port now prints `c7=refused:unported`, so the name exists in both lanes with different
 values: one disagreement, counted, instead of eight absences, uncounted.
 
+## Evidence, before and after
+
+Three independent methods agree on the same seven numbers, and the gate rows were proven to
+fail before the fix and pass after it:
+
+  * `.agents/slop/dd-divE-probe.bend` calls the port's own `f2f_clamp_max` and prints the
+    gate's exact `F(...)` strings. **2.3 seconds**, against a 4.5-7 minute gate run.
+  * `.agents/slop/dd-divE-math.py` evaluates both formulas in Python and attributes the
+    difference per factor.
+  * `.agents/slop/dd-divE-prefix-bug.txt` is a real gate run of a COPY of the tree with the
+    two factor lines reverted. It is a HEALTHY run (`worse-than-known-good sig/k=0`) and it
+    reports **7 of 8 c-rows FAIL**.
+
+| row | before (bug present) | after (fixed) | CPython, called |
+|---|---|---|---|
+| c0 fp8e4m3 | F(1149239296) | F(1138753536) | F(1138753536) = 448.0 |
+| c1 fp8e4m3fnuz | F(1140850688) | F(1131413504) | F(1131413504) = 240.0 |
+| c2 fp8e5m2 | F(1195376640) | F(1197473792) | F(1197473792) = 57344.0 |
+| c3 fp8e5m2fnuz | F(1207959552) | F(1197473792) | F(1197473792) = 57344.0 |
+| c4 f16 | F(1199554560) | F(1199562752) | F(1199562752) = 65504.0 |
+| c5 bf16 | F(2138963968) | F(2139029504) | F(2139029504) = 2^127*(1+127/128) |
+| c6 f32 | F(2139095038) | F(2139095039) | F(2139095039) = 0x7F7FFFFF |
+| c7 f64 | refused:unported | refused:unported | `F(ovf)` / `F(2139095040)`, see above |
+
+Note `c2` and `c3` are the SAME number in CPython (57344.0 by two different routes: OCP's
+`(1<<e)-2` exponent with bias 15, fnuz's `(1<<e)-1` with bias 16) and the port had them
+2.28x apart. That pair is the fixture; nothing else in the file separates `fp8e5m2` from
+`fp8e5m2fnuz`.
+
+## Row-count delta
+
+    gate rows      164 -> 172   (+8, the c{i} rows)
+    names shared with the oracle   164 -> 172   of 416  (39.4% -> 41.3%)
+    c-rows agreeing with CPython      0 ->   7
+    c-rows disagreeing on purpose     0 ->   1   (c7, named, not absent)
+
 ## Files
 
   * `dd-divE-probe.py` — CALLS `DD.f2f_clamp` for the eight targets at both `fr`, so the
@@ -61,4 +97,8 @@ values: one disagreement, counted, instead of eight absences, uncounted.
   * `dd-divE-check.py` — the checker. **`dd-cmp.py` cannot see this gap**: it compares
     `keys = [k for k in port if k in ora]`, so a row absent from the port lane is never
     compared and eight missing fixtures read exactly like eight passing ones.
-  * `dd-divE-run.sh` — run-health guard; see the note on empty cone walks.
+  * `dd-divE-run.sh` — run-health guard; self-tested `ok: healthy run on attempt 1`.
+  * `dd-divE-prefix-bug.txt` — the FAIL-BEFORE capture (bug reverted in a copy of the tree).
+  * `dd-divE-after.txt` / `dd-divE-rows-degraded.txt` — the PASS-AFTER capture and a
+    stack-overflowed run of the same code, kept because the pair is the evidence that a
+    degraded run is indistinguishable from a passing one by row count alone.

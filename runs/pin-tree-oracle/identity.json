@@ -1,7 +1,7 @@
 {
  "pin": "6c3d401cf324",
  "upstream": "91b8cb5fa6c031c5a7440159d955f66952c5e2e9",
- "origin": "b0f8f9c3b5490f5a76426e37fc85c226d3bcf8e3",
+ "origin": "097aadb08958c79157d023a5773d3abeacd5ddbf",
  "cmp": {
   "xd1pin_vs_pin": {
    "label": "xd1/pin vs 6c3d401cf324",

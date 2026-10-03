@@ -119,6 +119,19 @@ def ar_a2(d: U32) -> String:
 def mem_plan(d: U32) -> String:
   M.mem_dbg(d, M.mem_plan(M.proj_of()))
 
+# THE `!=` CONDITION, REACHABLE. The one plan fixture this repository has DOES save
+# bytes (omem 12032 against nmem 11776), so the suppressing arm of `memory.py:59` is
+# never taken by `mem_plan` and "print only when there is a saving" and "always print"
+# are the same function over that row. MEASURED: the mutation that drops the `!=` moved
+# nothing until these two rows existed (`.agents/slop/debug-mutate.txt`). So the two
+# sums are PARAMETERS here, and CPython is asked the same question the same way --
+# `(omem := S/1e6) != (nmem := S/1e6)` evaluated on the two byte counts.
+def mem_cond_same() -> String:
+  M.mem_dbg_line(12032, 12032, 5, 2)
+
+def mem_cond_diff() -> String:
+  M.mem_dbg_line(12032, 11776, 5, 2)
+
 # ===========================================================================
 # SITE 2 of 7 -- state.py:260, `DEBUG >= 2`.
 #
@@ -334,6 +347,8 @@ def site_rows(+d: U32) -> IO(Unit):
     _ : Unit <- srow("ar_naive", ar_naive(d))
     _ : Unit <- srow("ar_a2", ar_a2(d))
     _ : Unit <- srow("mem_plan", mem_plan(d))
+    _ : Unit <- srow("mem_cond_same", mem_cond_same())
+    _ : Unit <- srow("mem_cond_diff", mem_cond_diff())
     _ : Unit <- srow("st_bad", st_bad(d))
     _ : Unit <- srow("st_ok1", st_ok1(d))
     _ : Unit <- srow("st_ok2", st_ok2(d))

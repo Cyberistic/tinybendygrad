@@ -39,45 +39,61 @@ def load(path):
 
 CS = ["c%d" % i for i in range(8)]
 
+# the last run KNOWN to be healthy: `dd-gate.txt`, the port's own current output.
+# health() compares against this, never against the oracle -- see health() for why.
+GOOD = ".agents/slop/dd-gate.txt"
 
-def health(port):
-    """A bend run that stack-overflows mid-walk still prints EVERY row -- the cone
-    walks just come back EMPTY. Row counts therefore cannot detect it; an empty
-    `sig`/`k` can. Measured: a degraded run gave lgrsig=/lgssig=/lgtn=1719 with
-    every row present."""
-    empty = sorted(k for k, v in port.items() if k.endswith(("sig", "k")) and not v)
-    missing = [c for c in CS if c not in port]
-    return empty, missing
+
+def health(port, good):
+    """A bend run that stack-overflows mid-walk still prints EVERY row: the cone walks
+    just come back wrong. Measured across four runs of one tree, the signatures are an
+    EMPTY `sig=` and a `k=` that came back `-`, with the row itself present. Row COUNTS
+    see neither -- dd-run.sh's `^lg` guard passed every one of those runs.
+
+    So health is a comparison against a KNOWN-GOOD RUN, not against the oracle: `-` on a
+    `k` row is sometimes the right answer (`lg7k`, `lg8k`, `lgck` are `-` in the healthy
+    baseline because those cones hold no constant), so "is `-` bad?" has no oracle-shaped
+    answer -- only "is this run worse than the last run known to be good?". `good` is
+    `.agents/slop/dd-gate-base.txt`, the coordinator's byte-identical healthy capture."""
+    return sorted(k for k, gv in good.items()
+                  if gv and gv != "-"
+                  and (k.endswith("sig") or k.endswith("k"))
+                  and (not port.get(k) or port[k] == "-"))
 
 
 def main():
     a = [x for x in sys.argv[1:] if not x.startswith("--")]
     port, ora = load(a[0]), load(a[1])
-    empty, missing = health(port)
+    good = load(a[2]) if len(a) > 2 else load(GOOD)
+    bad_sig = health(port, good)
+    missing = [c for c in CS if c not in port]
 
     if "--degenerate" in sys.argv:
-        print("rows=%d  empty-sig-or-k=%d %s  missing-c=%d %s"
-              % (len(port), len(empty), empty[:6], len(missing), missing))
-        return 1 if (empty or missing) else 0
+        print("rows=%d  worse-than-known-good sig/k=%d %s  missing-c=%d %s"
+              % (len(port), len(bad_sig), bad_sig[:6], len(missing), missing))
+        return 1 if (bad_sig or missing) else 0
 
     bad = 0
     for c in CS:
         if c not in port:
-            print("%-4s ABSENT FROM THE PORT LANE -- not compared by dd-cmp.py, so "
-                  "invisible until now" % c)
+            print("%-4s FAIL               ABSENT FROM THE PORT LANE -- dd-cmp.py never "
+                  "compares it, so the absence was invisible until now" % c)
             bad += 1
             continue
         pv, ov = port[c], ora.get(c, "<oracle does not print it>")
-        # c7 is expected to disagree. Everything else must agree or this fails.
-        want = "DISAGREE-ON-PURPOSE" if c == "c7" else "AGREE"
-        got = "AGREE" if pv == ov else "DISAGREE"
-        flag = "ok " if got == want else "FAIL"
-        if flag == "FAIL":
+        # c7 is EXPECTED to disagree, so compare the FACT and not the two labels --
+        # comparing labels makes the intended-permanent disagreement unpassable.
+        disagree = pv != ov
+        ok = disagree if c == "c7" else not disagree
+        if not ok:
             bad += 1
-        print("%-4s %-20s port=%-18s ora=%-14s %s" % (c, flag, pv, ov, want))
+        print("%-4s %-19s port=%-18s ora=%-14s want=%s"
+              % (c, "ok" if ok else "FAIL", pv, ov,
+                 "DISAGREE" if c == "c7" else "AGREE"))
 
     print("\n%d/%d c-rows in the expected state, %d unexpected" % (8 - bad, 8, bad))
-    print("empty sig/k values in this run: %d %s" % (len(empty), empty[:6]))
+    print("run health: %d sig/k rows worse than the known-good capture: %s"
+          % (len(bad_sig), bad_sig[:6]))
     return 1 if bad else 0
 
 

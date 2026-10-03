@@ -276,38 +276,36 @@ day rediscovering that `2n+p` is not an even-case test.
       `full_rewrite_to_sink`, `pm_to_program`, `do_to_program`, `to_program`,
       `to_program_key`, `to_program_cache`. **This is not a missing
       re-export; it IS `graph_rewrite`'s main caller, the rewrite engine is
-      the wall, and porting this file is porting the engine.** Walls named at
-      the rule: `pm_load_collapse`/`pm_simplify_ranges`/`pm_split_ranges`/
-      `pm_reduce_unparented` (codegen/simplify.py), `pm_add_control_flow`/
-      `pm_split_ends` (codegen/late/linearizer.py), `pm_move_gates_from_index`
-      (codegen/late/gater.py), `apply_opts` (BEAM, only its
-      candidate-enumeration half is in codegen/opt/postrange.bend), the 269
-      `pm_lower_calls` recursion, `linearize` (codegen/late/linearizer.py),
-      `pm_regalloc_rewrite` (codegen/late/regalloc.py), `pm_simplify_add_image`
-      (codegen/late/coalesce.py), `pm_dtype_decomps` (codegen/decomp/dtype.py,
-      already a wall in `dtype.bend`), `get_late_rewrite_patterns`/
-      `get_simplifying_rewrite_patterns` (codegen/decomp/op.py, the magicgu
-      wall), `get_transcendental_patterns` (codegen/decomp/transcendental.py,
-      gated), `multi_pm` (schedule/multi.py), `pm_mops` (schedule/prepare.py),
-      `pm_clean_up_group_sink` (uop/symbolic.py), `mop_cleanup`
-      (uop/movement.py), `memory_coalescing` (codegen/late/coalesce.py),
-      `pm_range_to_special`/`pm_group_gpudims` (codegen/gpudims.py),
-      `pm_remove_invalid`/`invalid_gate` (uop/symbolic.py), `pm_move_where_on_load`
-      (uop/symbolic.py), `pm_lower_weak`/`pm_commit_weak`/`pm_cast_const`
-      (uop/weak.py), `pm_lower_calls`/`pm_call_fixup` (this file), the seven
-      rule tables themselves (`expander`, `pm_wmma_add`, `pm_expand_broadcast`,
-      `devectorizer2`, `pm_reduce_local`, `pm_implicit_barriers`,
-      `pm_linearize_cleanups`, `pm_alloc_to_buf`, `pm_to_program`,
-      `pm_number_params`, `pm_add_loads`, `pm_add_local_buffers`,
-      `pm_cast_float_alu`, `pm_post_sched_cache`, `pm_callify_ctx_collect`,
-      `pm_canonicalize_alloc`, `pm_replace_buf`, `pm_schedule`,
-      `pm_resolve_linear_call`, `pm_copy_from_store`, `pm_final_rewrite`).
-      **This file is THE wall and porting it ports the engine; once it lands
-      and the engine obeys the wall-rules in `bend2-constraints.md`, ~40
-      deferred `TODO(p3)` markers unblock at once.** The port therefore
-      begins with `graph_rewrite` (the bottom of the wall, a fixed-point
-      engine over a `UOp` graph with bottom-up/top-down modes and a
-      `ctx` thread) and works upward.
+      the wall, and porting this file is porting the engine.**
+
+      **WALL BROKEN, partially** (commits `b1ebb97c`, `fd4d1ee5`, `1302d660`):
+      * `walk_rewrite` (the MLIR-style single-pass driver) compiles
+        and runs, prints the rebuilt graph's repl map.
+      * The `pm_rewrite_m`/`pm_dispatch_m` family added to `uop/ops.bend`
+        returns `Maybe<&2, U32>` (parallel to `pm_rewrite`/`pm_dispatch`
+        so `uop/spec.bend` is still green).
+      * The `pm_post_sched_cache` table with tags 3 (PARAM) and 4 (ALLOC),
+        and the rule bodies `pm_r_param_m` (slot lookup) and
+        `pm_r_alloc_m` (returns pre-minted BUFFER from ctx).
+      * The arena-growth wall: `pm_r_alloc_m` mints in a lost arena.
+        The fix: pre-mint the BUFFER in the test fixture, return
+        `ctx[2]`. The fold then needs no new arena.
+      * The recursion substrate rule: sub-defs before parents. The
+        pattern `case +u <> t: match t: ... recursive_call(t)` is
+        two reads. Fix: introduce a binding helper (e.g.
+        `main.run.show.go`) that takes the computed value as a
+        parameter, so the parent calls the helper ONCE.
+      * The BEND NAMING RULE (sub-defs must be declared before the
+        parent that calls them) is appended to `bend2-constraints.md`
+        as R-3.
+      * Output: `new_sink=8 repl=1->5,2->6,3->5,4->8` -- PARAM0 -> A,
+        PARAM1 -> B, ALLOC -> BUF, SINK -> rebuilt. All gates green.
+
+      **OUTSTANDING**: `unified_rewrite` (the fixpoint driver) and
+      `graph_rewrite` (the dispatcher) are still walls. The 269
+      `pm_lower_calls` recursion is a future unit. The ~40 deferred
+      `TODO(p3)` markers that the engine unblocked are still gated on
+      those walls.
 
 ## Phases P3–P8 — the port
 
@@ -3404,3 +3402,355 @@ deliverable is a normal form BOTH sides emit.
   added none (no new dependency, no new CLI beyond the repo's own `./bin/bend` and
   `.venv/bin/python`). Noted rather than edited, to avoid colliding with concurrent
   `TOOLS.md` writers.
+
+## Session 2026-10-03 (b) — the eight `c{i}` fixtures, `codegen/decomp/dtype.py`
+
+- [x] **THE 8 MISSING `cN=` FIXTURES, CLOSED 7 OF 8 AND THE 8TH MADE VISIBLE.** All eight
+      are `f2f_clamp`'s `mx` constant, `dtype.py:131`, and the port printed NONE of them
+      because no gate fixture ever reached `f2f_clamp_max` (`dtype.bend:1165`). It was NOT
+      an unimplemented format: `dd_lab.node` at `dtype.bend:1734` is the float-CONST
+      renderer and emits the oracle's `F(<f32 bits>)` exactly; `C(mag)`/`C(hi:lo)` are at
+      `dd_cval` 1713-1723. Eight rows added (`dd_cmx.*`, dtype.bend:2426-2449).
+- [x] **TWO REAL PORT BUGS, both in `f2f_clamp_max.put`, both now fixed.** `dtype.py:129-130`
+      is TWO predicates: `max_exp` is `(1 << e) - 1` for fnuz-and-e4m3 (the port subtracted
+      `0`) and `max_man` is `(1 << m) - 2` for `fp8e4m3` ALONE (the port keyed it on
+      fnuz-or-e4m3, so both fnuz layouts got `- 2`). All SEVEN reachable values were wrong;
+      `c6` by one ulp (`0x7F7FFFFE` vs `0x7F7FFFFF`) and `fp8e5m2fnuz` by 2.28x.
+- [x] `c0..c6` now AGREE with CPython, values called not typed:
+      `F(1138753536) F(1131413504) F(1197473792) F(1197473792) F(1199562752) F(2139029504)
+      F(2139095039)`.
+- [x] `c7` (`float64`) PRINTS `refused:unported`, so the name exists in both lanes with
+      different values: ONE disagreement, counted. It is not closable AS THE ORACLE SPECIFIES
+      IT, because `mx` is `val.const_like(...)` (dtype.py:131) and so depends on `fr` too —
+      CALLED, `.agents/slop/dd-divE-probe.py`: `f2f_clamp(f32_val, float64)` mints
+      `mx = inf` = `F(2139095040)` and `f2f_clamp(f64_val, float64)` mints `mx = 1.8e308`,
+      which `struct.pack('f', ...)` refuses. The oracle's `c{i}` row is a function of `dt`
+      alone and has no single answer for the one dtype whose `mx` leaves f32 range.
+- [x] **THE BRIEF'S PREMISE HALF WRONG, MEASURED.** (a) "the port emits no float-CONST path"
+      is false — `dtype.bend:1734` has been there the whole time. (b) "fresh oracle vs saved
+      baseline is 416 shared, 0 disagreements" is false: 416 shared, **1** disagreement,
+      `c7` = `F(ovf)` fresh vs `F(2139095040)` saved. Both are correct CPython output for
+      different `fr`, so neither is a typo. `dd-oracle.txt` line 305 corrected to the value
+      a fresh run produces; all 416 names now agree with a fresh run.
+- [x] **THE CHECKER THAT MAKES ABSENCE AN ERROR**: `.agents/slop/dd-divE-check.py`.
+      `dd-cmp.py:65` compares `keys = [k for k in port if k in ora]`, so a row the port never
+      printed is dropped and eight missing fixtures read exactly like eight passing ones. On
+      the saved `.agents/slop/dd-gate.txt` it reports 8 named absences and exits 1.
+- [x] **RUN-HEALTH GUARD**: `.agents/slop/dd-divE-run.sh`. A stack-overflowed bend run prints
+      EVERY row and comes back with EMPTY cone walks — measured 0, 7 and 31 empty `sig`/`k`
+      across four runs of the same tree — so `dd-run.sh`'s `^lg` count guard cannot see it.
+- [x] CONTROL, per row, one factor at a time (`.agents/slop/dd-divE-math.py`):
+      M1 `max_exp` subtracts 0 on ocp moves 3/8 (`fp8e4m3`, `fp8e4m3fnuz`, `fp8e5m2fnuz`);
+      M2 `max_man` keyed on ocp moves 2/8 (`fp8e4m3fnuz`, `fp8e5m2fnuz`). M2 moving ONLY the
+      fnuz rows is the evidence the fnuz predicate was the defect. Neither is a zero.
+
+### Outside this unit's files
+
+- **`.agents/slop/dd-oracle.txt` had a stale `c7`** (`F(2139095040)`, a saturating-conversion
+  value a `struct.pack`-based oracle cannot emit). Corrected to `F(ovf)`. Owner of the file is
+  me; anyone who scored a lane against the old value has one stale row.
+- **`dd-oracle.py:36`'s `mxc*` citation names no row.** `mxc` is a Bend record FIELD binder at
+  `dtype.bend:1226`. Third stale-docstring instance on this file. Fixed.
+- **`.agents/slop/dd-oracle.txt` line 2693's "412 rows" is 416**; line 2699's "66 of 121
+  byte-identical" predates the current `dd-gate.txt`, which scores **99 of 164 agreeing,
+  65 disagreeing** against the oracle. All 65 are `l2i`-family rows and none are mine.
+  Owner: the `l2i` arm. Not touched.
+- **`agent-core.md`'s "`dtype.bend` has 14 permanently unfilled laws" is STALE.**
+  `./bin/bend tinybendygrad/codegen/decomp/dtype.bend --check-only` now prints
+  `ALL PROOFS CHECK`, exit 0. Owner: whoever last filled them.
+
+---
+
+## Session 2026-10-03 — the two `dd_rs` cone bugs in codegen/decomp/dtype.bend (measured)
+
+- [x] **BUG 1, `dd_rs.add` appended unconditionally**: a node with two parents was listed
+      once per PARENT. `seen` is prepend-built, so one prepend per POP. CPython's `cone`
+      (`dd-oracle.py:179-191`) dedups by `id(v)`. `dd_rs.add` now takes the freshness `Bool`
+      as a PARAMETER (a `match` may not scrutinise a computed value or a local binder) and
+      reuses `dd_rs.cat` for the prepend instead of `List.append(&2, U32, [u], xs)`.
+- [x] **BUG 2, `dd_rs.push` prepended left-to-right**: `dd_rs.cat(h, st) = h <> st` is a
+      PREPEND, so `push(q, t, cat(s, st))` popped `src[n]` first. Now `cat(s, push(q, t, st))`,
+      which builds the stack in pop order = `src[0]` first, matching `for s in v.src: go(s)`.
+- [x] **The three named rows now agree with CPython. THE PORT WAS WRONG, not the oracle:**
+      `lgvk` `C(0),C(0)` -> `C(0)`; `lgvsig` `CAST/1,CAST/1,CONST/0,CAST/1,CONST/0` ->
+      `CAST/1,CAST/1,CONST/0,CAST/1`; `lgwsig` `CAST/1,CONST/0,CAST/1` -> `CAST/1,CONST/0`.
+- [x] **Row count: DELTA 0.** 172 before, 172 after, identical key sets, 35 values changed.
+- [x] **A gate row per bug, each moving on its own revert** (`.agents/slop/dd-cone-variants.py`):
+      `revert-push` 27 rows, `revert-add` 33, `revert-both` 35. Picked witnesses: `lgvsig`
+      (add-only) and `upsig` (push). **CONTROL `ctl-comment`: 0 rows moved.**
+- [x] **M26.** As written in `dd-mutate.py` it is **PATCH-NOT-APPLIED** — its anchor quotes
+      the PRE-fix `push` line, 0 occurrences in the fixed file (RULE D, not a zero). Re-aimed
+      at the fixed line it **FIRES on 27 rows**, and its name ("visit src[n] before src[0]")
+      becomes correct for the first time: against the pre-fix file the defect it describes WAS
+      the base behaviour. **M27's anchor is byte-identical and still applies** — `dd_rs.more`'s
+      call site was left untouched deliberately. Owner: the `dd-mutate.py` mutation table.
+- [x] **AGAINST CPYTHON, on the same 172-row key set: 106 agree / 66 disagree -> 120 / 52.
+      14 rows flipped disagree->AGREE, 0 flipped the other way.** So the two cone bugs
+      accounted for **14** disagreements, not the 3 named in the brief: `lg1k lg1sig lg2sig
+      lg6sig lgcsig lgdk lgdsig lggk lggsig lglsig lgvk lgvsig lgwsig upsig`.
+- [x] **52 rows still disagree and they are NOT the cone.** `l2i`'s CAST/shift arms: tree
+      values (`lg2p` `C(1)` vs CPython `C(-1)` — a real sign bug, already M08/M25), node
+      counts, and CONST render conventions (`lg6p` `C(4294967295)` vs `C(-1)` is the SAME
+      32-bit word printed two ways). Out of `dd_rs`'s scope. **The gate is NOT green and this
+      fix does not make it green; it only removes 14 of 66.**
+- [x] Evidence: `.agents/slop/dd-cone-report.txt`. Rules: `bend2-constraints.md`, appended at
+      position ~15399 (this block is rules 1-5).
+
+### Outside this unit's files
+
+- **`.agents/slop/dd-mutate.py` lines 189-191 (M26) need re-aiming**, quoted exactly in
+  `dd-cone-report.txt` section 5. **Owner: that unit. NOT edited here.**
+- **`tinybendygrad/codegen/decomp/dtype.bend.ddmut` is a bake sitting in the LIVE tree**
+  (dated Oct 3 14:09), not in a mirror — `dd-mutate.py` says it never writes the live file, so
+  either `DD_TREE` was pointed at the live tree or the mirror was moved. Any harness that
+  mirrors the live tree inherits it and `dd-mutate.py`'s RULE G will refuse to start. I did
+  not delete it. **Owner: whoever ran it.**
+- **`codegen/decomp/dtype.bend` moved 164 -> 172 rows mid-session** (a concurrent agent added
+  `dd_cmx.rows(8n, ...)` and rewrote `f2f_clamp_max`'s ocp/e4m hoisting), so any before/after
+  captured at different times in one session is not comparable. Freezing one snapshot first
+  is not optional here.
+- **`.agents/slop/dd-oracle.txt` carries a hand-added comment line a fresh run does not
+  print**, so a byte-diff against it reports 20 phantom changed lines. Compare rows.
+
+## Session 2026-10-03 (c) — `DEBUG` IS WIRED: the seven gated prints, `getenv_int`, and a
+## five-level gate. **NOT COMMITTED.**
+
+- [x] **THE KNOB EXISTED NOWHERE.** MEASURED before the change: `DEBUG reads in ported
+      code : 0`. All 73 occurrences of `DEBUG` in `tinybendygrad/` are comments,
+      `DEBUG_RANGEIFY` / `DEBUG_GC`, or prose. No ported def branched on it and no gate
+      row existed for it anywhere. `.agents/slop/prepare-oracle.py:12` actively pins
+      `os.environ["DEBUG"] = "0"`, which is why no oracle could see a gate even by
+      accident.
+
+- [x] **`DEBUG` IS AN INT AND `helpers.py` IS THE AUTHORITY — NO `DEBUGLEVEL`.**
+      `grep -c 'DEBUGLEVEL =' tinygrad/helpers.py` is `0`: upstream does not define one
+      and tests `DEBUG` directly. `helpers.py:237` is
+      `DEV, DEBUG, BEAM, NOOPT = _DEV("DEV", ""), ContextVar("DEBUG", 0), ...` and
+      `helpers.py:163` is the whole of `getenv`:
+      `return type(default)(os.getenv(key, default))`. So with a default of `0` the
+      coercion is `int`. MEASURED in live CPython: with `DEBUG=2`, `type(DEBUG.value)`
+      is `int` and `DEBUG.value` is `2`; `DEBUG=""` and `DEBUG="abc"` both make the
+      IMPORT raise `ValueError: invalid literal for int() with base 10`, which tinygrad
+      does not catch.
+
+- [x] **THE MECHANISM IS ONE NEW DEF PAIR IN `helpers.bend`, NOT A SECOND ENV MECHANISM.**
+      `getenv_int(k, d)` is the `int` arm of the SAME `IO.get_env` (base.bend:172) the
+      existing `getenv_str` uses -- helpers.py:163's `type(default)` is the only thing
+      that differs between them, so this is the other half of one mechanism, not a new
+      one. `debug()` is `getenv_int("DEBUG", 0)`, i.e. the ContextVar read. `debug_ge`,
+      `gi_of_text` and `debug_print` are the three shared pieces the seven sites use.
+      BLAST RADIUS, stated because the file has 88 importers: four new top-level defs
+      (`gi_*` x 12, `getenv_int`, `debug`, `debug_ge`, `debug_print`) and one new type
+      `Gi`; nothing existing was renamed, moved or re-signed. Importers of `helpers.bend`
+      that reach these names: none, because they are new. Importers of the names I had to
+      touch: `debug_print`'s only caller is the four port files plus this unit's gate.
+      MEASURED: all four port files' own row sets are BYTE-IDENTICAL to `HEAD` after the
+      change (`schedule/memory.bend` 57, `schedule/allreduce.bend` 48,
+      `nn/state.bend` 14, `runtime/support/am/amdev.bend` 552; `diff` of the sorted
+      `name=value` rows is empty for all four).
+
+- [x] **ALL SEVEN SITES WIRED, AT UPSTREAM'S OWN THRESHOLD.** The threshold is READ OUT
+      OF EACH CITED SOURCE LINE by `re.search(r"DEBUG\s*>=\s*(\d+)", src)` and printed by
+      the oracle as `thr_<site>`, so it cannot be a hand-typed table: `thr_ar=2`,
+      `thr_st=2`, `thr_am185=thr_am225=thr_am251=thr_am254=2`, and **`thr_mem=1`** --
+      `schedule/memory.py:59` is the only level-1 site and it is easy to get wrong.
+      Wired: `red_dbg` (allreduce), `mem_dbg` (memory), `sd_dbg` (state), and
+      `am_dbg_malformed_of` / `am_dbg_boot_of` / `am_dbg_ip_of` / `am_dbg_final_of`
+      (amdev). All seven check clean.
+
+- [x] **`nn/state.bend` WAS INVERTED ON EVERY MODULE WITH NO DOT, AND THE ROW CAUGHT IT.**
+      `str.split(".")[0]` on a string with no `.` is the WHOLE string, and the first
+      version of `sd_fc_root` walked to `Nil{}` and returned the empty root, so
+      `collections` and `numpy` read as not whitelisted and `st_ok1` printed
+      `WARNING: returning Dummy for collections OrderedDict`. It now reads
+      `List.head(&2, String, String.split(s, Char.from_u32(46)))`, measured on four
+      probes. This is the second bug this unit's rows caught and it is reported here
+      because a row whose expected value had been read off the port would have agreed.
+
+- [x] **`schedule/memory.bend`'s `Scan.tc` IS A TOUCH LIST, NOT `first_appearance`, AND
+      `len(first_appearance)` IS THE NUMBER THE PRINT USES.** MEASURED: `mem_tc_add`
+      (memory.bend:445) appends on EVERY touch, because memory.py:31-32 is
+      `if b not in first_appearance: first_appearance[b] = i` followed by
+      `last_appearance[b] = i` -- the first is conditional and the second is not, and
+      one append cannot express both. This file's fixture touches D2 at k2 and k3, so
+      `len(Planned.tc)` is 6 where CPython's `len(first_appearance)` is 5, and
+      `memory.py:60`'s `len(first_appearance)` is 5. `mem_dbg_text` therefore reads the
+      DISTINCT count, which `Planned.bs` is (`mem_bs_add` is `mem_cp_one`, an
+      append-IF-ABSENT over the same `si_bufs`), and the `p_nbufs` row already gates it
+      at 5. **REPORTED, NOT FIXED: fixing `Scan.tc` means splitting `mem_tc_add` into a
+      conditional first-appearance and an unconditional last-appearance, which touches
+      `mem_first_i`, `mem_last_i` and `mem_events` and every `p_*` row. Owner: the
+      `schedule/memory.bend` unit (this one, if it wants the follow-up).**
+      `sum(nbytes)` is likewise NOT in `Planned` -- `Planned.bs` is the buffer SLOTS,
+      literally `[3,4,5,6,7]` -- so `mem_omem` is `Planned.tot / 2`, which is exact
+      because memory.py:45 is `total_memory = sum(nbytes.values()) * 2`.
+
+- [x] **A GATE THAT CANNOT SEE A BRANCH: `memory.py:59`'s `!=` had no row.** The one
+      plan fixture SAVES bytes (12032 against 11776), so "print only when there is a
+      saving" and "always print" are the same function over every row `mem_plan` can
+      reach, and the mutation that drops the `!=` moved NOTHING. Fixed with a
+      parameterised seam, `mem_dbg_line(omem, nmem, nfa, nar)`, and `mem_cond_same` /
+      `mem_cond_diff`; CPython is asked the same question with the same two sums. The
+      mutation now moves 3 rows. The first attempt at that mutation (`is_eq -> is_lt`)
+      ALSO moved nothing and looked like a second confirmation of a non-theorem.
+
+- [x] **THE FIVE-LEVEL GATE: `sh .agents/slop/debug-gate.sh`.** 72 rows, at levels
+      `unset` / `0` / `1` / `2` / `3`, each level diffed against CPython
+      (`.agents/slop/debug-gate.py`, which CALLS tinygrad) and against the COMPILED bend
+      lane, so 5 levels x 3 lanes and all fifteen agree. It ASSERTS, by name, that every
+      site row moves (a diff alone would pass a port that printed unconditionally) and
+      that the level-0 control is thirteen EMPTY rows. GREEN.
+
+- [x] **LEVEL 1 IS DISTINGUISHED FROM LEVEL 2, BY MEASUREMENT, NOT BY PROSE.** The gate
+      prints the table: at level 1 `mem_plan` is already printing while `ar_ring`,
+      `st_bad`, `am185` and `am251` are silent; at level 2 all seven print. The
+      `thr_<site>` rows are "does this site print at level EXACTLY 1", computed by
+      CALLING the site -- `thr_mem=1` and the other six `0`.
+
+- [x] **THE EXPECTED STRINGS COME FROM CALLING CPYTHON, ON TWO INDEPENDENT LANES.**
+      Lane A calls the real function: `handle_allreduce` over a real BUFFER UOp with a
+      4-tuple device in three ContextVar configurations (`RING ALLREDUCE 4x300000 |
+      dtypes.f32`, `NAIVE ALLREDUCE 2x100 | dtypes.f32`, `ALL2ALL ALLREDUCE 4x100 |
+      dtypes.f32`); `memory_plan_rewrite` over the port's own fixture (`memory reduced
+      from 0.01 MB -> 0.01 MB, 5 -> 2 bufs`); `torch_load` over a real on-disk pickle
+      (`WARNING: returning Dummy for posixpath join`). Lane B `exec`s the cited source
+      line with the live `DEBUG` and covers the four amdev sites, which CPython cannot
+      run here at all -- `AMDev(0)` raises `AttributeError: 'int' object has no attribute
+      'pcibus'`, measured. Lane B's expected strings:
+      `am 0000:01:00.0: Malformed state. Issuing a full reset.`, `am 0000:01:00.0: boot
+      done`, `am 0000:01:00.0: AM_GFX initialized`, `am 0000:01:00.0: Finalizing`.
+
+- [x] **MUTATIONS: 15 OF 17 MOVE. `.agents/slop/debug-mutate.py` ->
+      `.agents/slop/debug-mutate.txt`, run in a SCRATCH COPY of the tree, never the live
+      one.** Flipping `memory.py:59` 1->2 moves 7 rows; `allreduce.py:16` 2->1 moves 9;
+      `state.py:260` 2->1 moves 7; `amdev.py:185` 2->3 moves 4; `:225` moves 1; `:251`
+      moves 4; `:254` moves 1; `debug_ge`'s `>=`->`>` moves 29; `sd_fc_allowed`'s `not`
+      moves 6; the `!=` moves 3; `gi_take` moves 3; `gi_tab` moves 6; `red_mode_name`
+      moves 1; `am_dbg_prefix` moves 10.
+
+- [ ] **BLIND SPOT, REPORTED NOT CLOSED: `debug_print`.** Its mutation (write `""`
+      instead of writing nothing) moved nothing, and it is a HARNESS limitation, not a
+      theorem: the gate observes a site by its RETURNED LINE and `debug_print` returns
+      `Unit`, so neither "prints an extra blank line" nor "never prints" can reach a
+      `name=value` comparison. The level-0 control is real -- `mem_L0`, `ar_ring_L0`,
+      `st_bad_L0`, `am185_L0`, `am251_L0` and the eight site rows are EMPTY at unset and
+      at 0, asserted by name -- but it tests the SITES' gate, not `debug_print`'s. Fix
+      would be a value-returning companion for the gate to diff.
+- [ ] **BLIND SPOT, REPORTED AS A THEOREM: `mem_mb`'s `> 5000` -> `>= 5000`.** A tie at
+      `S % 10000 == 5000` forces `S % 16 == 8` while a multiple of 256 forces
+      `S % 16 == 0`, and `gcd(10000, 256) = 16`, so the tie is UNREACHABLE for any input
+      `memory.py:59` can see: `nbytes` and `arena_sizes` are both `round_up(..., 256)`.
+      MEASURED: 0 disagreements with CPython's `%.2f` over all 156250 multiples of 256
+      up to 40 MB, and 483 disagreements over bare integers. Every `mem_mb_*` row is a
+      multiple of 256, so the mutation cannot move one. **The population that WOULD
+      separate them is deliberately NOT a row**, because a row is diffed against CPython
+      and this formatter is wrong on it: CPython's `f"{0.015:.2f}"` is `'0.01'` where
+      half-even on the rational is `'0.02'`, since Python formats the BINARY FLOAT.
+      Recorded in `bend2-constraints.md` position ~15520 rule 8.
+
+- [x] **TWO DOCUMENTED NARROWINGS, BOTH MEASURED FROM BOTH SIDES, NOT PROMISES.**
+      A refused text answers the DEFAULT where CPython raises `ValueError` at import: the
+      `gi_refuse_*` rows print `ValueError` on BOTH sides (CPython's own exception, the
+      harness's two-default leak test) so the gate is green AND says so. And `int("-1")`
+      is `-1` in CPython while a `U32` cannot hold a negative, so `gi_of_text` answers
+      `0`; the `gi_m1_ge1/2/3` rows are the measurement that this is unobservable at
+      every site, because every threshold in tinygrad is `DEBUG >= N` with `N >= 0`.
+
+- [x] **TWELVE RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at position
+      15517+, cited by POSITION because rule numbers repeat across units.
+
+### Outside this unit's files
+
+- **`.agents/slop/prepare-oracle.py:12` PINS `os.environ["DEBUG"] = "0"`**, which is
+  correct for that oracle and is why `DEBUG` could never be visible in a gate before
+  this. Left alone; it is not mine and it is right for its purpose. Owner: whoever owns
+  that oracle.
+- **`Schedule`/`memory`'s `Scan.tc` duplication** (the `len(first_appearance)` finding
+  above). Reported, not fixed, with the reason. Owner: the `schedule/memory.bend` unit.
+- **`dtype.bend`'s 14 unfilled laws** make every `--check-only` on a file that imports it
+  exit 1 with `SOME PROOFS FAIL` naming exactly those 14. Pre-existing, measured against
+  the pristine file, and `debug-gate.sh` reads the FIRST LINE rather than the exit code.
+
+---
+
+## Session 2026-10-03 — `renderer/amd/generate.bend`: THE 149 UNGATED ROWS (233 -> 726)
+
+- [x] **THE 149 DIAGNOSED BY CAUSE, and the premise corrected.** `.agents/slop/ga_rows.py`
+      measures it: `rows()` returned **233 names for 91 rows**, 84 shared with the oracle.
+      Of the 149 unshared, **7 were the real rows with a TRUNCATED value and 142 were
+      fragments of those same 7 rows — 0 were lost to genuine name divergence.** The PORT
+      never invents a name; it fragments one whole-file row at every `=` inside the
+      generated Python (`FLAT_LOAD_DWORD`, `encoding`, `saddr`). The ORACLE invented the
+      competing name: its `tag | <line>` rows, and `<line>` is not unique (four blank
+      lines are one name; `  saddr = SSrcField(31, 24, default=NULL)` is in four classes),
+      so they shared 0.
+
+- [x] **ROUTE CHOSEN: per-LINE rows keyed on an INDEX, plus one `lines` COUNT row per
+      file — NOT a change to `rows()`.** `rows()` is UNTOUCHED. The blast radius was
+      measured first, over all 38 cached gates (`.agents/slop/ga_rows_blast.py`, cache from
+      `ga_sweep.py`):
+
+      | parser | rows | shared in a pair | shipped rows CHANGED |
+      |---|---|---|---|
+      | `rows()` shipped | 32,026 | 24,935 | 0 |
+      | fold, safe fallback | 31,978 | 24,885 | **76** |
+      | fold, naive | 6,172 | 5,683 | **25,882** |
+
+      The naive fold destroys 25,882 rows and 19,252 shared ones because **31 of 38 lanes
+      do not print `name = [v]   py=[w]` at all** (they print `name=value`, no spaces). The
+      safe fold still fails the superset test on `uop/render.bend`: folding MERGES
+      `pyrender buffer` and `pyrender copy` into one key. Neither is a superset, so the
+      fix belongs in the producer, which is where `cstyle.bend:1760` already put it.
+
+- [x] **THE WHOLE-FILE ROW IS NOT AVAILABLE HERE, MEASURED, and this lane was BROKEN HALF
+      THE TIME ALREADY.** A `String` is an `SCon` spine and the interpreter has no tail
+      call, so a 16,815-character row value is 16,815 nested frames: a probe survives
+      4,000 characters and dies at 8,000. **The file as committed — one whole-file row, no
+      escaping — succeeded on 5 of 12 runs**, and 5 of 12 with `String.join`, and 5 of 12
+      with the char-wise `esc_row`. `rebase-gate.py` would have said BROKEN / "lane(s)
+      failed to run: interpreted" and the cause is not rows. Per-line rows build no string
+      longer than one emitted line: **25 of 25.**
+
+- [x] **726 rows, 726 agree, 0 differ — corroborated twice.** `ga_gate.py`:
+      `GATE: 726 rows, 726 agree, 0 differ` / `ORACLE: 778 rows, 726 gated, 52 ungated`.
+      The real gate, `--port`, all three lane pairs: `[['cpython:ga-oracle','interpreted',726],
+      ['cpython:ga-oracle','native',726], ['interpreted','native',726]]`, 0 disagreements,
+      rc=0. And independently `rebase-scan-oracles.py`: `726  0`.
+
+- [x] **`ga-oracle.py` emits 778 rows** (was 892): 634 per-line + 8 counts replace 756
+      per-line rows, and the tautological `enum cdna` is GONE — `write_enum` takes no arch
+      (generate.py:273) so `enum rdna3` and `enum cdna` were the same 122 lines under two
+      names. A row that cannot fail is worse than no row. `operands cdna` was the mirror
+      gap: the oracle emitted it and the port never showed it, and `write_operands` uses
+      `arch` in exactly one line (generate.py:471), so it is now gated.
+
+- [x] **FOUR CONTROLS, `.agents/slop/ga_controls.py`, all PASS.** (1) SUPERSET: 84 gated
+      rows before, 726 now, **0 lost, 0 values changed**. (2) NO FRAGMENTS: 726 real rows,
+      726 row names, **0 invented by `rows()`**. (3) A PLANTED multi-line value is NAMED by
+      `ga_gate.py` with rc=1, not swallowed. (4) Dropping `ins rdna3 | 176` moves **exactly
+      one row**, `ins rdna3 lines` — the count row is the only thing that sees a dropped
+      last line, which is why it exists and why it is not tautological.
+
+- [x] **`rebase-gate-selftest.py`: 66 PASS, 0 FAIL, rc=0.** Both rosters still agree.
+
+- [x] **ONE REAL BUG CAUGHT BY THE GATE, NOT BY ME.** The first `gl.go` destructured
+      `want` as `case +h <> t, +wh <> _:` and recursed on `want` instead of the tail, so
+      every `py=` from row 1 onward was row 0's text: **626 of 726 rows red.** Fixed to
+      `+wh <> wr:` / `gl.go(nm, t, wr, ...)`. The lockstep `case Nil{}, Nil{}` /
+      `case _, _:` arms make a length mismatch a loud stop rather than a truncated diff.
+
+### Outside this unit's files
+
+- **`rebase-scan-oracles.py:16` `CACHE = pathlib.Path("/tmp/rebase-scan")` NEVER
+  INVALIDATES.** It printed `84 84  generate.bend` — 84 shared, **84 disagree** — against
+  the real gate's `726 shared, 0 disagree`, from cache files written at 14:30 and 14:32.
+  Delete the two entries and it prints `726  0`. This is the failure `rebase-gate.py`'s
+  GUARD 3 was written to prevent ("the oracle script must have been RUN THIS TIME — no
+  cache; a cached 0 from an hour ago is indistinguishable from a fresh 0"), fixed in
+  `drift-gate.py` and never applied to its sibling. Left alone; not mine. Owner: whoever
+  owns `rebase-scan-oracles.py`.
+- **`rebase-gate-selftest.py`'s `ORACLE_CONFORMANCE` carries a hard-coded `84` for
+  `ga-oracle.py`** (line 58 of its output reads `six states reachable (84 shared row
+  names)`). It should read 726. It sizes only a SYNTHETIC fixture, so the selftest is not
+  lying about the real gate — but the number is a claim and it is stale. Left alone; not
+  mine. Owner: whoever owns the selftest.

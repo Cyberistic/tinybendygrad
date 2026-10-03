@@ -56,7 +56,25 @@ SCRATCH = HERE / "state-audit-scratch"
 
 # `=` with OPTIONAL whitespace on both sides. `\s=\s` matches nothing in either shape and
 # reports a clean zero; this is rule 5, written as a regex instead of a paragraph.
-ROW_RE = re.compile(r"^(?P<name>\S.*?)\s*=\s*(?P<val>\S.*?)\s*$")
+#
+# THE VALUE IS ALLOWED TO BE EMPTY, and that is not cosmetic. Measured on the live tree:
+# with `(?P<val>\S.*?)` this parser returned 537 rows for nv-oracle.py and 1028 for
+# elf_rows.py, against rebase-gate's own rows() at 547 and 1042 -- a silent shortfall of
+# exactly the 10 `nv_*=` and 14 `elf_built_*=` rows whose value is the empty string. Both
+# numbers LOOK like counts. And it fails in the dangerous direction: two lanes that BOTH
+# print an empty value for the same row would be compared by the gate and skipped here, so
+# a disagreement on precisely those rows would be invisible to this file.
+ROW_RE = re.compile(r"^(?P<name>\S.*?)\s*=\s*(?P<val>.*?)\s*$")
+# A SECTION BANNER IS NOT A ROW, and the naive parsers cannot tell. Measured: 13 of
+# prepare-oracle.py's 2535 output lines are banners of the form `== A: TABLES ==`. Split
+# on the first `=` and the "name" is empty (or, with a `\S` anchor, the single character
+# `=`), so the dict collects 13 non-rows as ONE key and reports 2522 rows where there are
+# 2521. rebase-gate.py's `rows()` has the same defect and reports 2522 as well, under a
+# different name for the phantom (`""` rather than `"="`). It changes no verdict here --
+# GUARD 4 compares SHARED NAMES and no port prints a row called `""` -- but an oracle whose
+# banner text collided with a port row name would be compared against a banner. So the
+# name must carry at least one character that is not `=`.
+NOT_A_NAME = re.compile(r"^=*$")
 # The bracketed form, which is how a `g`-style lane names its row NAME when the name itself
 # is a compound: `strip_enc ENC_VOP1 = [VOP1]   py=[VOP1]`. Distinguished by shape, not by
 # file, because the same port can emit either.
@@ -127,14 +145,19 @@ def pick_python(probe):
 
 def census(text):
   """{shape: count}. 'plain' is `name=value`; 'bracket' is `name = [value] ... py=[...]`;
-  'none' is a line with no `=` at all. Printed so a lane that changes shape cannot hide."""
-  out = {"plain": 0, "bracket": 0, "none": 0}
+  'none' is a line with no `=` at all; 'banner' is a `== SECTION ==` heading. Printed so a
+  lane that changes shape cannot hide, and so the banner count is visible rather than
+  quietly absorbed into the row count by the `not_a_name` rule in parse_rows()."""
+  out = {"plain": 0, "bracket": 0, "none": 0, "banner": 0}
   for line in text.splitlines():
     if not line.strip():
       continue
-    if BRACKET_RE.match(line):
+    m = ROW_RE.match(line)
+    if m and NOT_A_NAME.match(m["name"].strip()):
+        out["banner"] += 1
+    elif BRACKET_RE.match(line):
         out["bracket"] += 1
-    elif ROW_RE.match(line):
+    elif m:
         out["plain"] += 1
     else:
         out["none"] += 1
@@ -145,13 +168,13 @@ def parse_rows(text):
   """{row name: value}. Keyed on the WHOLE NAME, never on a row index: an index-comparing
   harness has already reported 0 for every mutation in two separate units. Row names carry
   spaces, so the name is everything up to the first `=` -- which is what makes the bracket
-  shape parse at all."""
+  shape parse at all -- and a name of nothing but `=` is a banner, not a row."""
   out = {}
   for line in text.splitlines():
     if not line.strip() or line.strip() in BEND_MESSAGES:
       continue
     m = ROW_RE.match(line)
-    if m:
+    if m and not NOT_A_NAME.match(m["name"].strip()):
       out[m["name"].strip()] = m["val"].strip()
   return out
 
@@ -314,12 +337,16 @@ def gate_naming(py, scratch, json_out):
       got[key] = int(m.group(1))
   result = next((l.split(":", 1)[1].strip() for l in p.stdout.splitlines()
                  if l.startswith("RESULT:")), None)
-  unadj = re.search(r"RENAME\(S\) WITH NO RULING.*?(\d+)\s+RENAME", p.stdout, re.S)
   ren = re.search(r"RENAMED: (\d+) candidates -> (\d+) unadjudicated", p.stdout)
+  # The unadjudicated entry is the line carrying the `+ affix -> stem` arrow. It sits in
+  # the block that FOLLOWS the "no ruling in the ledger" header, not on the header line, so
+  # matching the header line itself returns nothing and reports "clean" on a FAIL.
+  block = p.stdout.split("NO RULING IN THE LEDGER", 1)[-1]
+  unadj = next((l.strip() for l in block.splitlines() if "->" in l), None)
   return {"gate": "naming-gate", "ran": True, "result": result, **got,
           "renamed_candidates": int(ren.group(1)) if ren else None,
           "renamed_unadjudicated": int(ren.group(2)) if ren else None,
-          "rc": p.returncode}, result is not None
+          "first_unadjudicated": unadj, "rc": p.returncode}, result is not None
 
 
 def gate_tree(py, scratch, json_out):

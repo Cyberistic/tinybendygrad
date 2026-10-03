@@ -164,27 +164,46 @@ def glrow(nm, call, tag):
 
     The gate's row parser splits lane output on newlines, so a row whose value
     contains one is invisible: one whole-file row became 335 fragments whose NAMES
-    are the first token before an `=` inside the generated Python.  The obvious fix
-    -- `cstyle.bend:1760`'s `esc_row`, a newline turned into `\\` `n` -- DOES NOT
-    RUN HERE, and neither does the row it would fix: a `String` is an `SCon` spine
-    (references/bend/bend2/base.bend:1848) and the interpreter has no tail call, so
-    a 16,815-character value is 16,815 nested frames.  Measured: 4,000 characters
-    works, 8,000 overflows, and the real whole-file row succeeded 5 times in 12 --
-    the SAME as the unescaped original, so that flake predates this change.
+    are the first token before an `=` inside the generated Python -- 233 row names
+    for 91 rows, 84 of them shared with the oracle and the other 149 naming text the
+    oracle calls `tag | line`.
+
+    `cstyle.bend:1760`'s `esc_row` -- turn a newline into `\\` `n` -- is the fix that
+    is written down for this, and it does not work here for TWO reasons.  A `String`
+    is an `SCon` spine (references/bend/bend2/base.bend:1848) and the interpreter has
+    no tail call, so the row it would fix -- a 16,815-character value -- is 16,815
+    nested frames: measured, 4,000 characters works and 8,000 is "the machine stack
+    overflowed".  And even handed the lines as a list, `String.join` is O(total
+    length) in depth because base.bend:1980 appends onto a growing prefix
+    (base.bend:1806).  The whole-file row measured 5 successes in 12 runs on the real
+    file WITH NO ESCAPING AT ALL, so that flake predates this change.
 
     So the answer is one row per emitted LINE, which builds no string longer than a
-    line.  The INDEX is the key because the emitted text repeats (four blank lines,
-    `  saddr = SSrcField(31, 24, default=NULL)` in four classes), and the count row
-    the index from hiding a dropped LAST line: `wc` is CPython's count, the port's
-    is its own list length, so a disagreement between them is a real row.
+    line and needs no escaping -- which also retires cstyle's `\\` `n` ambiguity
+    outright, a real concern here because `write_pcode` emits `{code!r}`
+    (generate.py:497) and CPython's own output holds a literal `\\` `n` in a pcode body.
 
-    `want` comes from `O.EMITTED[tag]` -- the oracle's RAW emitted text -- and NOT
-    from a reassembly of the rows above, because every blank line of an emitted file
-    is the row `tag | ` and a name-keyed reassembly loses three of the four blank
+    The INDEX is the key because the emitted text repeats: four blank lines are one
+    name, and `  saddr = SSrcField(31, 24, default=NULL)` appears in four classes.
+    `wc` is the row that stops the index hiding a dropped LAST line -- it is CPython's
+    count against the port's own list length, two numbers from two places.
+
+    `want` is a LIST, spliced from `O.EMITTED[tag]` -- the oracle's RAW text -- and
+    NOT from a reassembly of the rows above, because every blank line of an emitted
+    file is the row `tag | ` and a name-keyed reassembly loses three of the four blank
     separators.  That is not hypothetical: it produced a `py=` literal for `common`
     with no blank line before `class Fmt(Enum):`, a wrong expectation spliced from a
-    correct oracle that disagreed with the RIGHT port."""
-    w("  gl(%s, %s, %s, %s)" % (bq(nm), call, bq(O.EMITTED[tag]), bq(py(tag + " lines"))))
+    correct oracle that disagreed with the RIGHT port.
+
+    A list and not the whole file as one string, measured: walking `want` with
+    `String.take`/`String.drop` (base.bend:1932/1941) recurses over the prefix it
+    consumes, so ONE 177-line file measured 9 successes in 12 while the same 177 rows
+    over two LIST arguments measured 20 of 20.  `write_*` returns a list anyway
+    (generate.py:276-282, :457, :469, :494), so the expectation is written in the
+    shape the function already has."""
+    lines = O.EMITTED[tag].split("\n")
+    w("  gl(%s, %s, [%s], %s)" % (bq(nm), call, ", ".join(bq(l) for l in lines),
+                                  bq(py(tag + " lines"))))
 
 
 def gate():
@@ -199,43 +218,50 @@ def gate():
     w("# those, and they are the renderer convention 2 applied to a GENERATOR: the")
     w("# answer is the FILE, one line at a time.")
     w("#")
-    w("# AND IT MUST BE PER LINE, MEASURED TWICE OVER.")
+    w("# AND IT MUST BE PER LINE, MEASURED TWICE OVER.  The row parser splits lane")
+    w("# output on newlines, so one whole-file row became 335 fragments whose NAMES")
+    w("# are the first token before an `=` inside the generated Python: 233 row names")
+    w("# for 91 rows, 84 shared with the oracle, the other 149 naming text the oracle")
+    w("# calls `tag | line`.  The fix `cstyle.bend:1760` writes down for this --")
+    w("# `esc_row`, a newline turned into a backslash and an `n` -- FAILS TWICE OVER")
+    w("# HERE.  `String.split` is one frame per CHARACTER (base.bend:2009) and the file")
+    w("# is 16,815 characters; and even handed the lines as a list, `String.join` is")
+    w("# O(total length) in stack depth, because base.bend:1980 appends onto a growing")
+    w("# prefix (base.bend:1806).  Probe: 177 lines of 95 characters, 6 of 6 through")
+    w("# `String.concat`, and on the real file 10 of 20 through either join.  THE")
+    w("# ORIGINAL, ONE WHOLE-FILE ROW AND NO ESCAPE AT ALL, WAS 5 OF 12 -- so the flake")
+    w("# predates this change and no lane on this port was reliably runnable.")
     w("#")
-    w("# The row parser splits lane output on newlines, so one whole-file row became 335")
-    w("# fragments whose NAMES are the first token before an `=` inside the generated")
-    w("# Python (`FLAT_LOAD_DWORD`, `encoding`, `saddr`, ...): 233 row names for 91 rows,")
-    w("# 84 shared with the oracle, the other 149 naming text the oracle names")
-    w("# `tag | line`.  The fix `cstyle.bend:1760` suggests -- `esc_row`, a newline turned")
-    w("# into `\\` `n` -- FAILS TWICE OVER.  `String.split` is one frame per CHARACTER")
-    w("# (base.bend:2009) and the file is 16,815 characters; and even given the lines as")
-    w("# a list, `String.join` is O(total length) in stack depth because base.bend:1980")
-    w("# appends onto a prefix that grows (base.bend:1806).  Probe: 177 lines of 95")
-    w("# characters, 6 of 6 through `String.concat`, and the real file 10 of 20 through")
-    w("# either join.  THE ORIGINAL, ONE WHOLE-FILE ROW AND NO ESCAPE AT ALL, WAS 5 OF")
-    w("# 12 -- so the flake predates this change and no lane on this port was reliably")
-    w("# runnable.")
+    w("# A per-line row builds no string longer than one emitted line, so it cannot")
+    w("# reach that ceiling, and it needs no escaping at all -- which also retires")
+    w("# cstyle's escape ambiguity outright.  That ambiguity is a real concern here:")
+    w("# `write_pcode` emits `{code!r}` (generate.py:497), so CPython's OWN output holds")
+    w("# a literal backslash-n inside a pcode body, and an escaping gate cannot tell it")
+    w("# from a line break.")
     w("#")
-    w("# A per-line row builds no string longer than one emitted line, so it cannot reach")
-    w("# that ceiling.  `want` stays ONE literal and is walked in lockstep with `got`:")
-    w("# `String.take` and `String.drop` (base.bend:1932/1941) recurse over the PREFIX")
-    w("# they consume, which is one line, never the file.  And no escaping is needed at")
-    w("# all -- which also removes cstyle's `\\` `n` ambiguity outright, a real concern")
-    w("# here because `write_pcode` emits `{code!r}` (generate.py:497) and CPython's own")
-    w("# output holds a literal `\\` `n` inside a pcode body.")
+    w("# `want` IS A LIST, NOT ONE STRING, and that is measured too: walking `want`")
+    w("# with `String.take`/`String.drop` (base.bend:1932/1941) recurses over the prefix")
+    w("# it consumes, so one 177-line file was 9 of 12 while the same 177 rows over two")
+    w("# list arguments were 20 of 20.  `write_*` RETURNS a list (generate.py:276-282,")
+    w("# :457, :469, :494), so the expectation is written in the shape the function")
+    w("# already has and the two sides are walked in lockstep.")
     w("#")
-    w("# `lines` is not a coverage claim, it is the ONE hole the index opens: an index")
+    w("# `lines` IS NOT A COVERAGE CLAIM.  It is the one hole the index opens: an index")
     w("# cannot see a dropped LAST line.  `wc` is CPython's count and the port's is its")
-    w("# own list length, so they are two numbers from two places.")
-    w("def gl.go(+nm: String, got: List<&2, String>, +w: String, wc: String, +i: Nat) -> IO(Unit):")
-    w("  match got:")
-    w("    case Nil{}:")
+    w("# own list length, so they are two numbers from two places.  The LENGTH MISMATCH")
+    w("# arm is a loud stop, not a row: it prints a name no oracle row carries, so it")
+    w("# cannot be mistaken for agreement.")
+    w("def gl.go(+nm: String, got: List<&2, String>, want: List<&2, String>, wc: String, +i: Nat) -> IO(Unit):")
+    w("  match got, want:")
+    w("    case Nil{}, Nil{}:")
     w("      g(String.concat([nm, \" lines\"]), U32.show(U32.from_nat(i)), wc)")
-    w("    case +h <> t:")
+    w("    case +h <> t, +wh <> wr:")
     w("      do IO<Unit>:")
-    w("      g(String.concat([nm, \" | \", U32.show(U32.from_nat(i))]), h, String.take(w, String.length(h)))")
-    w("      gl.go(nm, t, String.drop(w, Nat.add(String.length(h), 1n)), wc, Nat.add(i, 1n))")
+    w("      g(String.concat([nm, \" | \", U32.show(U32.from_nat(i))]), h, wh)")
+    w("      gl.go(nm, t, wr, wc, Nat.add(i, 1n))")
+    w("    case _, _: IO.print(\"LENGTH MISMATCH -- the port and CPython emitted a different NUMBER of lines\")")
     w()
-    w("def gl(nm: String, got: List<&2, String>, want: String, wc: String) -> IO(Unit):")
+    w("def gl(nm: String, got: List<&2, String>, want: List<&2, String>, wc: String) -> IO(Unit):")
     w("  do IO<Unit>:")
     w("  gl.go(nm, got, want, wc, 0n)")
     w()

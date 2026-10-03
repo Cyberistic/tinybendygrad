@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""dd-cone-variants.py -- build MIRROR trees of tinybendygrad for the cone-fix
-isolation and revert runs.  Never writes the live tree.
+"""dd-cone-variants.py -- build MIRROR trees of tinybendygrad from ONE frozen
+snapshot of the live dtype.bend, each with exactly ONE cone fix reverted.
+
+It never writes the live tree.  `snap` freezes the live file once; every `build`
+derives from that same freeze, so the A/B arms of a revert cannot drift apart
+because a concurrent agent moved the live file between them.
 
 usage:
+  dd-cone-variants.py snap            # freeze the live dtype.bend
   dd-cone-variants.py list
-  dd-cone-variants.py build NAME      # writes .agents/slop/dd-cone-wt/NAME/tinybendygrad
-
-VARIANTS are named sets of edits applied to `.agents/slop/dd-cone-wt/dtype.bend.prefix`
-(the pre-fix live file, sha1 215eca996a99a616d0217255b45827b2c199a14a).  The
-edits are the two cone bugs and their reverts, so a run of the mirror is a run of
-a specific combination -- never a hand-edited file, and never the live tree.
+  dd-cone-variants.py build NAME      # -> .agents/slop/dd-cone-wt/NAME
 """
 import hashlib
 import os
@@ -19,196 +19,55 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WT = os.path.join(ROOT, ".agents", "slop", "dd-cone-wt")
-PREFIX = os.path.join(WT, "dtype.bend.prefix")
+BASE = os.path.join(WT, "dtype.bend.base")
+LIVE = os.path.join(ROOT, "tinybendygrad", "codegen", "decomp", "dtype.bend")
 
-# ---- the two bugs, quoted from the PRE-FIX file, and their fixes -------------
-PUSH_OLD = """# Prepends each src in order, so the head popped is the LAST src, not src[0].
-# TODO: the oracle cone is src[0] first. Reversing this push is the fix; it moves sig rows.
-def dd_rs.push(f: Nat, srcs: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
-  match f:
-    case 0n: st
-    case 1n+q:
-      match srcs:
-        case Nil{}: st
-        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))"""
+# ---- the FIXED text, quoted from the live file, and its revert --------------
+PUSH_FIXED = "        case s <> t: dd_rs.cat(s, dd_rs.push(q, t, st))"
+PUSH_BUGGY = "        case s <> t: dd_rs.push(q, t, dd_rs.cat(s, st))"
 
-PUSH_NEW = """# APPENDS each src in order, so the head popped is src[0], which is what
-# dd-oracle.py's `cone` walks: `for s in v.src: go(s)` is src[0] first.
-# Prepending here would pop src[n] first and reverse every multi-src node's
-# children in `sig`, which is what this did until the TODO at the `add` below
-# was closed.
-def dd_rs.push(f: Nat, srcs: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
-  match f:
-    case 0n: st
-    case 1n+q:
-      match srcs:
-        case Nil{}: st
-        case s <> t: dd_rs.cat(s, dd_rs.push(q, t, st))"""
-
-ADD_OLD = """# PREPENDED, so the push is O(1) and only the one `List.reverse` at the end is
-# O(n). Appending instead makes the walk O(n^2) in list cells on top of `has`.
-
-def dd_rs.add(u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
-  List.append(&2, U32, [u], xs)"""
-
-ADD_NEW = """# PREPENDED, so the push is O(1) and only the one `List.reverse` at the end is
-# O(n). Appending instead makes the walk O(n^2) in list cells on top of `has`.
-# It is also the MEMBERSHIP TEST, not an append: a node reachable from two
-# parents is reachable ONCE, so it is listed once. Unconditional, it listed a
-# shared node once per parent -- `lgwsig` read `CAST/1,CONST/0,CAST/1` where
-# CPython's `cone` dedups by `id` and reads `CAST/1,CONST/0`.
-#
-# The `has` here and the one in `dd_rs.more` are the same walk over the same
-# list, so the fix costs a second pass rather than a second traversal class:
-# `go` already spends one per pop on `more`, and the code above already pays
-# O(n^2) here. Threading ONE test through both consumers needs a pair, and Bend
-# has no pair; re-testing is the smaller change and keeps `more`'s call site --
-# which the M27 anchor quotes verbatim -- untouched.
-#
-# `nat` is a PARAMETER, not a bound value, because Bend's `match` will not
-# scrutinise a local binder ("give it its own def"). `dd_rs.more` is the same
-# shape for the same reason.
-def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
-  match nat:
-    case True{}: xs
-    case False{}: List.append(&2, U32, [u], xs)"""
-
-CALL_OLD = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
-          sn = dd_rs.add(u, seen)
-          dd_rs.go(q, ar, st2, sn)"""
-
-CALL_NEW = """          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
-          sn = dd_rs.add(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), u, seen)
-          dd_rs.go(q, ar, st2, sn)"""
-
-# ---- candidate shapes for the dedup ---------------------------------------
-# (4) keep `more`'s anchor line byte-for-byte by computing `sn` BEFORE `st2`, so
-#     `ar` is read twice before `more` consumes it rather than three times after.
-CALL_REORDER = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          sn = dd_rs.add(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), u, seen)
-          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
-          dd_rs.go(q, ar, st2, sn)"""
-
-# (1) ONE decision, TWO effects: `more` returns the `(st, seen)` pair, which is
-#     the `A & B` return type `helpers.bend:1903` already uses.
-MORE_OLD = """def dd_rs.more(nat: Bool, +ar: O.Arena, +u: U32, st: List<&2, U32>) -> List<&2, U32>:
-  match nat:
-    case True{}: dd_rs.push(U32.to_nat(O.Arena.nsrc(ar, u)), O.Arena.srcs(ar, u), st)
-    case False{}: st"""
-
-MORE_PAIR = """def dd_rs.more(nat: Bool, +ar: O.Arena, +u: U32, st: List<&2, U32>, +seen: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
-  match nat:
-    case True{}: (dd_rs.push(U32.to_nat(O.Arena.nsrc(ar, u)), O.Arena.srcs(ar, u), st), dd_rs.add(u, seen))
-    case False{}: (st, seen)"""
-
-ADD_PAIR = """def dd_rs.add(u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
-  List.append(&2, U32, [u], xs)"""
-
-CALL_PAIR = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          (st2, sn) = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
-          dd_rs.go(q, ar, st2, sn)"""
-
-# (1b) as (1), but the pair is bound to a NAME before it is destructured: the
-#      destructuring itself is a match, and a match may not scrutinise a computed
-#      value -- which is why `Found.of` destructures its PARAMETER `p`.
-CALL_PAIR2 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          r2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest, seen)
-          (st2, sn) = r2
-          dd_rs.go(q, ar, st2, sn)"""
-
-# ---- BISECTION: which of the two new things breaks the cone? --------------
-# T1 changes ONLY the `has` call count on the ADD side: `add` gains an unused
-#     fuel parameter, so `ar` gains one extra read and NOTHING else changes.
-# T2 changes ONLY `add`'s BODY: same call site as the fix, but `add` ignores the
-#     Bool and prepends unconditionally, so it keeps the old (buggy) semantics.
-# If T1 empties the cone the wall is the extra READ of a `+` binder; if T1 passes
-# and T2 empties it, the wall is the `match nat` body.
-ADD_T1 = """def dd_rs.add(f: Nat, u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
-  List.append(&2, U32, [u], xs)"""
-
-CALL_T1 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
-          sn = dd_rs.add(dd_seen(ar), u, seen)
-          dd_rs.go(q, ar, st2, sn)"""
-
-ADD_T2 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
-  List.append(&2, U32, [u], xs)"""
-
-CALL_T2 = """          # TODO: add is unconditional, so a node with two parents is listed twice.
-          # A freshness Bool cannot be read twice ("consumed more than once").
-          st2 = dd_rs.more(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), ar, u, rest)
-          sn = dd_rs.add(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), u, seen)
-          dd_rs.go(q, ar, st2, sn)"""
-
-# T3 isolates the `match` itself (both arms return `xs`, no allocation).
-# T5 keeps the `match` but replaces the `[u]` LITERAL in the allocating arm with
-#     `dd_rs.cat(u, xs)`, which is the same prepend without a fresh list literal.
-ADD_T3 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
-  match nat:
-    case True{}: xs
-    case False{}: xs"""
-
-CALL_T3 = CALL_T2
-
-ADD_T5 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
+ADD_FIXED = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
   match nat:
     case True{}: dd_rs.cat(u, xs)
     case False{}: xs"""
 
-CALL_T5 = CALL_T2
+# The pre-fix `add` AND the pre-fix `go` call site are ONE revert: the old `add`
+# took no Bool, so restoring it without restoring the call would not compile.
+ADD_BUGGY = """def dd_rs.add(u: U32, +xs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, [u], xs)"""
 
-ADD_T6 = """def dd_rs.add(nat: Bool, u: U32, xs: List<&2, U32>) -> List<&2, U32>:
-  match nat:
-    case True{}: xs
-    case False{}: dd_rs.cat(u, xs)"""
+CALL_FIXED = "          sn = dd_rs.add(Bool.not(dd_rs.has(dd_seen(ar), seen, u)), u, seen)"
+CALL_BUGGY = "          sn = dd_rs.add(u, seen)"
 
-CALL_T6 = CALL_T2
+# ---- the CONTROL: a comment line, no semantics (dd-mutate.py RULE C01) -------
+CTL_FIXED = "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:"
+CTL_CTL = ("# CONTROL C01: a comment line, no semantics\n"
+           "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:")
 
-EDITS = {"addT6": (ADD_OLD, ADD_T6), "callT6": (CALL_OLD, CALL_T6), "push": (PUSH_OLD, PUSH_NEW), "add": (ADD_OLD, ADD_NEW), "call": (CALL_OLD, CALL_NEW),
-         "add4": (ADD_OLD, ADD_NEW), "call4": (CALL_OLD, CALL_REORDER),
-         "add1": (ADD_OLD, ADD_PAIR), "more1": (MORE_OLD, MORE_PAIR),
-         "call1": (CALL_OLD, CALL_PAIR), "call1b": (CALL_OLD, CALL_PAIR2),
-         "addT1": (ADD_OLD, ADD_T1), "callT1": (CALL_OLD, CALL_T1),
-         "addT2": (ADD_OLD, ADD_T2), "callT2": (CALL_OLD, CALL_T2),
-         "addT3": (ADD_OLD, ADD_T3), "callT3": (CALL_OLD, CALL_T3),
-         "addT5": (ADD_OLD, ADD_T5), "callT5": (CALL_OLD, CALL_T5)}
+EDITS = {"push": (PUSH_FIXED, PUSH_BUGGY),
+         "add": (ADD_FIXED, ADD_BUGGY),
+         "call": (CALL_FIXED, CALL_BUGGY),
+         "ctl": (CTL_FIXED, CTL_CTL)}
 
-# name -> which of the three edits to apply.  `fix-add`/`fix-push` isolate the two
-# bugs; `revert-*` are the mutation harness's A/B arms; `ctl-comment` is RULE C.
+# name -> the edits to REVERT.  "" is the frozen snapshot itself (both fixes on).
 VARIANTS = {
-    "prefix": [],
-    "fix-add": ["add", "call"],
-    "fix-push": ["push"],
-    "fix-both": ["push", "add", "call"],
-    "shape4": ["push", "add4", "call4"],
-    "T1": ["addT1", "callT1"],
-    "T2": ["addT2", "callT2"],
-    "fix5": ["push", "addT5", "callT5"],
-    "T3": ["addT3", "callT3"],
-    "T5": ["addT5", "callT5"],
-    "T6": ["addT6", "callT6"],
-    "shape1": ["push", "add1", "more1", "call1"],
-    "shape1b": ["push", "add1", "more1", "call1b"],
-    "revert-add": ["push"],
-    "revert-push": ["add", "call"],
-    "revert-both": [],
-    "ctl-comment": ["push", "add", "call", "comment"],
+    "fix-both": [],
+    "revert-push": ["push"],
+    "revert-add": ["add", "call"],
+    "revert-both": ["push", "add", "call"],
+    "ctl-comment": ["ctl"],
+    # M26, re-aimed at the fix: revert `push`.  The `dd-mutate.py` table's M26
+    # quotes the PRE-fix line as its anchor, so on this file it is
+    # PATCH-NOT-APPLIED; see the report.
+    "M26": ["push"],
+    # M27 unchanged: its anchor line is byte-identical in the fixed file.
+    "M27": ["ctl"],
 }
 
-COMMENT_OLD = "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:"
-COMMENT_NEW = ("# CONTROL: a comment line, no semantics.\n"
-               "def dd_cone(n: Nat, +ar: O.Arena, +roots: List<&2, U32>) -> List<&2, U32>:")
 
-
-def apply(name, text):
-    for e in name:
-        old, new = (COMMENT_OLD, COMMENT_NEW) if e == "comment" else EDITS[e]
+def apply(names, text):
+    for e in names:
+        old, new = EDITS[e]
         n = text.count(old)
         if n != 1:
             sys.exit("PATCH DID NOT APPLY (%s): anchor is %d-occurrences" % (e, n))
@@ -217,24 +76,28 @@ def apply(name, text):
 
 
 def main():
-    if sys.argv[1:] == ["list"]:
+    cmd = sys.argv[1]
+    if cmd == "snap":
+        shutil.copy(LIVE, BASE)
+        t = open(BASE).read()
+        print("froze %s  sha1 %s  %d bytes" % (BASE, hashlib.sha1(t.encode()).hexdigest(), len(t)))
+        return
+    if cmd == "list":
         for k, v in VARIANTS.items():
-            print("%-12s %s" % (k, ",".join(v) or "(pre-fix)"))
+            print("%-12s revert: %s" % (k, ",".join(v) or "(nothing -- both fixes on)"))
         return
     name = sys.argv[2]
-    src = os.path.join(ROOT, "tinybendygrad")
+    body = apply(VARIANTS[name], open(BASE).read())
     dest = os.path.join(WT, name)
-    body = apply(VARIANTS[name], open(PREFIX).read())
     if os.path.isdir(dest):
         shutil.rmtree(dest)
-    shutil.copytree(src, dest)
+    shutil.copytree(os.path.join(ROOT, "tinybendygrad"), dest)
     tgt = os.path.join(dest, "codegen", "decomp", "dtype.bend")
     open(tgt, "w").write(body)
-    print("%s  dtype.bend sha1 %s  (%d edits)"
-          % (dest, hashlib.sha1(body.encode()).hexdigest(), len(VARIANTS[name])))
-    r = subprocess.run([os.path.join(ROOT, "bin", "bend"), tgt, "--check-only"],
-                       capture_output=True)
-    print("  --check-only first line: %s" % (r.stdout.decode().splitlines() or ["<none>"])[0])
+    r = subprocess.run([os.path.join(ROOT, "bin", "bend"), tgt, "--check-only"], capture_output=True)
+    first = (r.stdout.decode().splitlines() or ["<none>"])[0]
+    print("%-12s sha1 %s  reverts %d  --check-only: %s"
+          % (name, hashlib.sha1(body.encode()).hexdigest(), len(VARIANTS[name]), first))
 
 
 main()

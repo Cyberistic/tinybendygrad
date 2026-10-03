@@ -1,0 +1,28 @@
+debug-gate: level unset -- 72 rows, 3 lanes identical
+debug-gate: level 0 -- 72 rows, 3 lanes identical
+debug-gate: level 1 -- 72 rows, 3 lanes identical
+debug-gate: level 2 -- 72 rows, 3 lanes identical
+debug-gate: level 3 -- 72 rows, 3 lanes identical
+debug-gate: level discrimination (CPython lane, level 1 vs level 2)
+  mem_plan  level1=1 level2=1 expect_level1=1 OK
+  ar_ring   level1=0 level2=1 expect_level1=0 OK
+  st_bad    level1=0 level2=1 expect_level1=0 OK
+  am185     level1=0 level2=1 expect_level1=0 OK
+  am251     level1=0 level2=1 expect_level1=0 OK
+SOME PROOFS FAIL
+Error: 14 defs rely on unsafe or foreign code:
+- ../../tinybendygrad/dtype.Dt.bf16
+- ../../tinybendygrad/dtype.Dt.fp16
+- ../../tinybendygrad/dtype.Dt.fp8_from
+- ../../tinybendygrad/dtype.Dt.fp8_to
+- ../../tinybendygrad/dtype.Dt.i64_trunc
+- ../../tinybendygrad/dtype.Dt.i64_floor_div
+- ../../tinybendygrad/dtype.Dt.i64_floor_mod
+- ../../tinybendygrad/dtype.Dt.i64_cdiv
+- ../../tinybendygrad/dtype.Dt.i64_cmod
+- ../../tinybendygrad/dtype.Dt.i64_ceildiv
+- ../../tinybendygrad/dtype.float_to_bf16
+- ../../tinybendygrad/dtype.float_to_fp16
+- ../../tinybendygrad/dtype.float_to_fp8
+- ../../tinybendygrad/dtype.fp8_to_float
+debug-gate: 72 shared rows at level 2; 5 levels x 3 lanes; all agree; 7 site rows all move; level-0 control silent

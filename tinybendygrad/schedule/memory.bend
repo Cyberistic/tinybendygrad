@@ -1265,10 +1265,22 @@ def mem_omem(+p: Planned) -> U32:
 def mem_nmem(+p: Planned) -> U32:
   mem_sum_arena(Planned.azs(p))
 
+# THE FOUR NUMBERS AS PARAMETERS, so the `!=` CONDITION IS REACHABLE FROM A ROW.
+#
+# MEASURED BLIND SPOT, AND THIS IS THE FIX. The mutation "drop the `!=`" moved NOTHING
+# (.agents/slop/debug-mutate.txt), and the reason is not a theorem: this file's only
+# plan fixture HAS a saving -- omem 12032 against nmem 11776 -- so the suppressing arm
+# of `keep` is never reached and "print only when there is a saving" and "always
+# print" are the SAME function over every row the gate could ask. `mem_dbg_line` takes
+# the two sums as PARAMETERS so `mem_cond_*` can ask the other question, and CPython is
+# asked it the same way.
+# `omem` AND `nmem` ARE BOTH USED TWICE -- once for the `!=` and once for the text --
+# so they carry `+`. This is the same rule as `gi_of_text`'s `+s`.
+def mem_dbg_line(+omem: U32, +nmem: U32, +nfa: U32, +nar: U32) -> String:
+  mem_dbg_text.keep(mem_dbg_same(omem, nmem), mem_dbg_text.of(omem, nmem, nfa, nar))
+
 def mem_dbg_text(+p: Planned) -> String:
-  mem_dbg_text.keep(mem_dbg_same(mem_omem(p), mem_nmem(p)),
-                    mem_dbg_text.of(mem_omem(p), mem_nmem(p),
-                                    mem_len(Planned.bs(p)), mem_len2(Planned.azs(p))))
+  mem_dbg_line(mem_omem(p), mem_nmem(p), mem_len(Planned.bs(p)), mem_len2(Planned.azs(p)))
 
 def mem_dbg_text.gate(open: Bool, t: String) -> String:
   match open:
