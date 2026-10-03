@@ -527,3 +527,17 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
   by the offending source text, walking back past a blank marked line.
 - `tinybendygrad/runtime/support/elf.bend` has printed 353 rows and 331 rows on different runs
   with no edit between them. Treat a single run's row count as evidence of nothing.
+
+## Pin vs xd1/head (2026-10-03)
+
+- `.agents/slop/pin-tree-oracle.py` — which tree each wired oracle imports, and the
+  GUARD 3/2/4 verdict under the pin (`xd1/pin` = `6c3d401cf324`) and under `xd1/head`.
+  Forces a tree with a `meta_path[0]` finder so a child cannot keep its own insert.
+  Never patches a live tree. Report: `.agents/slop/pin-tree-oracle-report.md`.
+  Snapshots: `runs/pin-tree-oracle/`.
+
+- `.agents/slop/arange-ucache/` — the ARange ucache collision. Probes
+  `probe-fields-3.bend` / `probe-variant-3.bend` show a third field and a new
+  variant are both non-local. `baseline.txt` / `after.txt` / `reverted.txt` /
+  `comment.txt` are the before, after, comparison-reverted, and comment-only
+  lanes. `importers-all.txt` is the 63-importer row count.

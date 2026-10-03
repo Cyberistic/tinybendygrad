@@ -107,12 +107,13 @@ when there is none.
 
 The control's *first* run also found something in bend, not in the tool: two sweeps 16 minutes
 apart with nothing edited disagreed on **1 of 137** files — `runtime/support/elf.bend` at 353
-rows vs 331. `stat` puts its mtime at 14:59:55, before both runs, and 6 further runs gave 353
-every time. **bend emitted a truncated row set with no stderr, no overflow message and exit
-0.** A single run is therefore not evidence for a row count, so `one.sh` now reports the
-**modal** count over repeated runs plus how many **distinct** counts it saw, never lets 0 be
-the agreement, and records void (overflowed) attempts separately so a partial total cannot win
-the mode.
+rows vs 331. `stat` puts its mtime at 14:59:55, before both runs. **bend emitted a truncated
+row set with no stderr, no overflow message and exit 0.** I then ran it **39 more times** (15
+idle back-to-back, 24 under sweep load) and got **353 every time** — so I am reporting one
+observation, not a rate, and could not make it happen on demand. A single run is therefore not
+evidence for a row count, so `one.sh` now reports the **modal** count over repeated runs plus
+how many **distinct** counts it saw, never lets 0 be the agreement, and records void
+(overflowed) attempts separately so a partial total cannot win the mode.
 
 ## Two hazards worth flagging to the coordinator
 

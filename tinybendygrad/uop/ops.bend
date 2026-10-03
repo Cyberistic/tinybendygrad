@@ -1089,8 +1089,15 @@ def CallInfo.of() -> CallInfo:
 type Node is Data:
   Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag}
 
+# `shp` is the RANGE-arg tail shape, the component CPython's ucache key has and
+# `ARange{ids, at}` does not. 0 = flat `(at, *ints)`; N>0 = `arg[1]` nested N
+# times. It is NOT a field of `ARange`: a third field is `a ARange pattern with
+# 3 fields` at every `case ARange{ids, at}`, and a new `Arg` variant is
+# `expected : cases for …` in `render.bend`'s and `upat.bend`'s exhaustive
+# matches. Both measured, `.agents/slop/arange-ucache/`. `UOp.new` stores 0, so
+# every existing constructor is the flat reading.
 type Arena is Data:
-  Arena{nodes: List<&2, Node>}
+  Arena{nodes: List<&2, Node>, shp: List<&2, U32>}
 
 # ===========================================================================
 # ACCESSORS, and the ONE shape rule everything below follows. Bend 2.0.34 has no
@@ -1113,7 +1120,20 @@ type Arena is Data:
 
 def Arena.nodes(x: Arena) -> List<&2, Node>:
   match x:
-    case Arena{nodes}: nodes
+    case Arena{nodes, shp}: nodes
+
+def Arena.shp(x: Arena) -> List<&2, U32>:
+  match x:
+    case Arena{nodes, shp}: shp
+
+def Arena.depth.at(ss: List<&2, U32>, n: Nat) -> U32:
+  match ss n:
+    case Nil{} _: 0
+    case h <> t 0n: h
+    case _ <> t 1n+p: Arena.depth.at(t, p)
+
+def Arena.depth(ar: Arena, i: U32) -> U32:
+  Arena.depth.at(Arena.shp(ar), U32.to_nat(i))
 
 def Node.op(x: Node) -> Op:
   match x:
@@ -1140,7 +1160,7 @@ def Arena.bottom() -> Node:
 # the arena starts with the bottom at index 0, so `Arena.next` is
 # `next(UOp.unique_num)` with the first slot already spent.
 def Arena.empty() -> Arena:
-  Arena{[Arena.bottom()]}
+  Arena{[Arena.bottom()], [0]}
 
 # `UOp.unique_num = itertools.count(0)` is a monotonic slot counter that
 # ops.py:842 says must never be reset, and the arena's length IS that counter.
@@ -1992,18 +2012,31 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
 # the linear scan. `want` is `+` because the key comparison and the next
 # iteration both read it, and a Node is `Data` so the refcount is the only cost.
 
-def intern.find(ns: List<&2, Node>, +k: U32, +want: Node) -> Maybe<&2, U32>:
-  match ns:
-    case Nil{}:
+# `depth` is `arg`'s tail shape. CPython's key is `(op, src, arg, tag, type(arg))`
+# (ops.py:201); both colliding args are tuples, so `type(arg)` does not split
+# them — the tuple structure does. `eq_node` cannot see it (`ARange` has no
+# field for it), so the scan compares it here.
+def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32) -> Maybe<&2, U32>:
+  match ns ss:
+    case Nil{} Nil{}:
       None{}
-    case nd <> t:
-      nxt = intern.find(t, U32.add(k, 1), want)
-      intern.find.pick(eq_node(nd, want), k, nxt)
+    case Nil{} _ <> _:
+      None{}
+    case _ <> _ Nil{}:
+      None{}
+    case nd <> t sh <> st:
+      nxt = intern.find(t, st, U32.add(k, 1), want, depth)
+      intern.find.pick(Bool.and(eq_node(nd, want), U32.is_eq(sh, depth)), k, nxt)
 
 # intern.put: the MISS branch of `ucache.get(key) or ...`, i.e. the append.
+# The public spelling stores depth 0. `transcendental.bend` calls it directly
+# for a CONST; a CONST has no tail shape.
+
+def intern.put.shp(+ar: Arena, +want: Node, depth: U32) -> Arena:
+  Arena{List.append(&2, Node, Arena.nodes(ar), [want]), List.append(&2, U32, Arena.shp(ar), [depth])}
 
 def intern.put(+ar: Arena, +want: Node) -> Arena:
-  Arena{List.append(&2, Node, Arena.nodes(ar), [want])}
+  intern.put.shp(ar, want, 0)
 
 # intern.get: the HIT branch, which hands back the arena untouched.
 
@@ -2013,23 +2046,27 @@ def intern.get(ar: Arena, hit: Maybe<&2, U32>) -> Maybe<&2, U32>:
 # `UOp.make(ar, op, src, arg, tag)` -- the `UOp(...)` call itself, with Python's
 # keyword names flattened into positional ones.
 
-def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> Arena:
+def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node, depth: U32) -> Arena:
   match hit:
     case Some{i}: ar
-    case None{}: intern.put(ar, want)
+    case None{}: intern.put.shp(ar, want, depth)
 
 # and the index of that node, which the Python gets for free because the
 # constructor RETURNS the object.
 
-def UOp.make.intern(+ar: Arena, +want: Node) -> Arena:
-  UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
+def UOp.make.intern(+ar: Arena, +want: Node, +depth: U32) -> Arena:
+  UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want, depth)
+
+def UOp.make.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> Arena:
+  UOp.make.intern(ar, Node{op, src, arg, tag}, depth)
 
 # The five key parameters are all `+`: the two-call constructor reads the key
 # twice, once to intern and once to find the index, and every one of them is
 # `Data`, so the refcount is the only cost. This is the one place in the file
 # where the arena's "no mutable store" bill comes due on every node.
+# Depth 0: the flat tail. Every existing caller is this reading.
 def UOp.make(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Arena:
-  UOp.make.intern(ar, Node{op, src, arg, tag})
+  UOp.make.shp(ar, op, src, arg, tag, 0)
 
 def UOp.of.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> U32:
   match hit:
@@ -2041,11 +2078,14 @@ def UOp.of.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> U32:
 # it is used: the `metadata=` keyword of the constructor and the `metadata`
 # property at ops.py:775.
 
-def UOp.of.intern(+ar: Arena, +want: Node) -> U32:
-  UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
+def UOp.of.intern(+ar: Arena, +want: Node, depth: U32) -> U32:
+  UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want)
+
+def UOp.of.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> U32:
+  UOp.of.intern(ar, Node{op, src, arg, tag}, depth)
 
 def UOp.of(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> U32:
-  UOp.of.intern(ar, Node{op, src, arg, tag})
+  UOp.of.shp(ar, op, src, arg, tag, 0)
 
 # ---------------------------------------------------------------------------
 # The intern key. Flat fields, plus a list of INDICES -- so this is NOT the
@@ -2256,6 +2296,12 @@ def UOp.new.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg
 def UOp.new(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Found:
   UOp.new.of(ar, UOp.make(ar, op, src, arg, tag), op, src, arg, tag)
 
+def UOp.new.shp.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> Found:
+  Found{made, UOp.of.shp(made, op, src, arg, tag, depth)}
+
+def UOp.new.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> Found:
+  UOp.new.shp.of(ar, UOp.make.shp(ar, op, src, arg, tag, depth), op, src, arg, tag, depth)
+
 # ===========================================================================
 # The syntactic sugar of ops.py:557-737, in Python's order, and only the part
 # the arena can already answer. Every one of these is a `UOp(...)` call, so each
@@ -2408,8 +2454,14 @@ def UOp.const(ar: Arena, +v: Const) -> Found:
 # which is `range_str`'s job and is P3 (`uop/render.py`), plus `hcq2.py:498`'s
 # `arg=(u.axis_type, next(ctx))+u.axis_id[1:]`, which is P6 and unported. Both name the
 # field, not the position, which is why they survive the wall.
+# `depth` is how many times `arg[1]` is a tuple. `UOp.range(end, (0, 1), at)`
+# builds `(at, (0, 1))` (ops.py:643); a flat `arg=(at, 0, 1)` is a different
+# ucache key (ops.py:201) with the same ints. `ARange` stores the ints only.
+def UOp.range_shaped(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType, depth: U32) -> Found:
+  UOp.new.shp(ar, OpsRANGE{}, [end], ARange{ids, at}, TNone{}, depth)
+
 def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Found:
-  UOp.new(ar, OpsRANGE{}, [end], ARange{ids, at}, TNone{})
+  UOp.range_shaped(ar, end, ids, at, 0)
 
 # axis_id / axis_type -- ops.py:499-505 upstream, 502-508 at the pin. Both assert
 # `self.op is Ops.RANGE` in Python; the port reads the arg's SHAPE instead, because an
@@ -2433,8 +2485,8 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 #
 # Note what the port CANNOT do here: upstream's `axis_id` is `self.arg[1:]`, a slice of
 # a Python TUPLE of arbitrary length, so a port whose `ARange` holds a `List` answers it
-# only while the list is the whole tail. That is the same shape as every other
-# tuple-to-`List` conversion in this file and it is stated, not hidden.
+# only while the list is the whole tail. Nesting depth is `Arena.depth`, not a second
+# list — `List<U32>` cannot hold `((0, 1),)`. TODO(p3): a reader that needs that tuple.
 def UOp.axis_id(arg: Arg) -> Maybe<&2, List<&2, U32>>:
   match arg:
     case ARange{ids, at}: Some{ids}
@@ -4701,6 +4753,25 @@ def g_rng_twoid() -> Found:
   +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(2)})
   UOp.range_end(Found.ar(c), Found.i(c), [0, 1], AXIS_LOOP{})
 
+# Two RANGE nodes, one arena, same end / ids / axis / tag. The only difference
+# is the tail depth. `Found.i` is the intern index — identity, not the depth
+# argument echoed back.
+# ONE arena. The two indices are identity. Depth is a separate row: folding
+# `Arena.depth(ib) == db` into this bool makes a collision print False (both
+# indices are the first node) and the row no longer moves.
+def Uc.same(+da: U32, +db: U32, +ids: List<&2, U32>) -> Bool:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(4)})
+  +a = UOp.range_shaped(Found.ar(c), Found.i(c), ids, AXIS_WEAK{}, da)
+  +b = UOp.range_shaped(Found.ar(a), Found.i(c), ids, AXIS_WEAK{}, db)
+  U32.is_eq(Found.i(a), Found.i(b))
+
+def Uc.depth(+da: U32, +db: U32, +ids: List<&2, U32>) -> String:
+  +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(4)})
+  +a = UOp.range_shaped(Found.ar(c), Found.i(c), ids, AXIS_WEAK{}, da)
+  +b = UOp.range_shaped(Found.ar(a), Found.i(c), ids, AXIS_WEAK{}, db)
+  String.concat([U32.show(Arena.depth(Found.ar(b), Found.i(a))), ",",
+                 U32.show(Arena.depth(Found.ar(b), Found.i(b)))])
+
 # --- THE AXIS CPYTHON LANE. Row order matches `.agents/slop/ops-oracle.py` EXACTLY and
 # --- the gate is a byte diff, so a row added on one side and not the other is a diff and
 # --- not a silent gap.
@@ -4895,6 +4966,13 @@ def main() -> IO(Unit):
     srow("eqax_diag", U32.show(EqAx.diag(AxisType.live())))
     srow("eqax_diag_all", U32.show(EqAx.diag(AxisType.all())))
     t_mstack_rows()
+    # CPython `is` on the two args `ARange` flattens together. ops.py:201, :643.
+    row("uc_flat_nest", Uc.same(0, 1, [0, 1]))
+    row("uc_int_tup1", Uc.same(0, 1, [0]))
+    row("uc_nest_deep", Uc.same(1, 2, [0, 1]))
+    row("uc_flat_same", Uc.same(0, 0, [0, 1]))
+    row("uc_nest_same", Uc.same(1, 1, [0, 1]))
+    srow("ucdepth_flat_nest", Uc.depth(0, 1, [0, 1]))
 
 # ===========================================================================
 # NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape

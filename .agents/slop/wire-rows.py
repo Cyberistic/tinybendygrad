@@ -13,14 +13,18 @@ Two things this refuses to do:
     straight out of the source, and the two numbers are printed side by side. A runtime
     count alone cannot separate "this port has no main" from "this run died"; the static
     count is an independent witness and where they AGREE the runtime number is credible.
-    Where they disagree, the disagreement is printed rather than resolved -- ten ports in
-    the tree print rows from a helper this regex does not know, and guessing the helper
-    name to make the count match would be fitting the instrument to the answer.
+    Where they disagree, the disagreement is printed rather than resolved. A census of
+    "ten ports" was typed here and is retired: it is a count, and a count in a comment
+    is not re-checked. On the cached set the static regex already missed 22 ports, not
+    10, and that number will move again the moment a helper is inlined. The two numbers
+    are printed; the reader re-measures. Do not put the census back.
 
   usage: python3 .agents/slop/wire-rows.py PORT [PORT...]
          python3 .agents/slop/wire-rows.py --names PORT     (names only, one per line)
 """
-import json, os, pathlib, re, subprocess, sys
+import os, pathlib, re, subprocess, sys
+
+from wire_parse import read_fresh_cache, rows, write_cache
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 CACHE = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "rebase-wired-rows"
@@ -28,20 +32,18 @@ NSET = re.compile(r'(?:row|cnt)\(\s*"([^"]+)"')
 
 
 def bend_rows(port, tries=3):
-  f = CACHE / (port.replace("/", "_") + ".json")
-  if f.exists():
-    return json.loads(f.read_text())
+  src = REPO / port
+  cached, why = read_fresh_cache(CACHE, port, src)
+  if why == "fresh":
+    return cached
+  if why == "stale":
+    print(f"  ({port} cache is older than the source; not using it)", file=sys.stderr)
   for i in range(tries):
-    r = subprocess.run(["./bin/bend", str(REPO / port)], cwd=REPO, capture_output=True, text=True,
+    r = subprocess.run(["./bin/bend", str(src)], cwd=REPO, capture_output=True, text=True,
                        timeout=1800)
-    d = {}
-    for line in r.stdout.splitlines():
-      if "=" in line:
-        k, v = line.split("=", 1)
-        d[k.strip()] = v.strip()
+    d = rows(r.stdout)
     if d:
-      CACHE.mkdir(exist_ok=True)
-      f.write_text(json.dumps(d))
+      write_cache(CACHE, port, d)
       return d
     print(f"  ({port} printed 0 rows on attempt {i + 1}; re-running)", file=sys.stderr)
   return {}

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amd_oracle.py", line 834, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amd_oracle.py", line 830, in main
+    f()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amd_oracle.py", line 126, in t_layout
+    args = [UOp.placeholder((4,), dtypes.u8, 0, device='AMD').getaddr('AMD') for _ in globs]
+                                  ^^^^^^^^^
+AttributeError: 'DTypes' object has no attribute 'u8'

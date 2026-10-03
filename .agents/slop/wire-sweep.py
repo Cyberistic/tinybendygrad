@@ -7,12 +7,18 @@ picks candidates with `re.search(r"(oracle|gate)", p.name)`. Two ports that have
 working CPython oracle for HOURS are invisible to it because their filenames do not contain
 either substring:
 
-    .agents/slop/elf_rows.py     -> tinybendygrad/runtime/support/elf.bend    353 shared, clean
-    .agents/slop/sqtt_spec.py    -> tinybendygrad/renderer/amd/sqtt.bend    1015 shared, clean
+    .agents/slop/elf_rows.py     -> tinybendygrad/runtime/support/elf.bend
+    .agents/slop/sqtt_spec.py    -> tinybendygrad/renderer/amd/sqtt.bend
 
-So the "N ports have no oracle at all" figure counts two ports that have one. The filter is
+So the "N ports have no oracle at all" figure counted two ports that had one. The filter is
 part of why the gap looked as large as it did, and a survey that cannot see an oracle that
 exists is a survey reporting absence as fact.
+
+The shared-row counts that used to sit on those two lines (353 and 1015, both "clean") are
+retired as a control. They were a snapshot. elf.bend's own file is newer than the cache that
+produced 353, and bend has printed 331 rows for that file with no edit in between (see
+bend2-constraints.md, the block that ends at position 14440). A count typed into this
+comment is not re-checked. Re-measure; do not edit a port to make the comment true.
 
 SAFETY, because this EXECUTES 300+ scripts from the tree. Anything whose name says it writes
 (`mutate`, `fix`, `apply`, `plant`, `break`, `gen_main`, `mkrows`) is EXCLUDED and the
@@ -25,34 +31,33 @@ is deliberately over-broad.
 """
 import json, os, pathlib, re, subprocess, sys, time
 
+from wire_parse import read_fresh_cache, rows, stripped_env
+
 REPO = pathlib.Path(__file__).resolve().parents[2]
 SLOP = REPO / ".agents" / "slop"
 BEND = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "rebase-wired-rows"
 WRITE = re.compile(r"(mutate|fix|apply|plant|break|gen_main|mkrows|rmtree|unlink|rm |chmod)")
 EMIT = re.compile(r"^(def (row|prow|R|srow|ubrow|rb)\(|\s*(row|prow|R|srow)\()", re.M)
-UNWIRED = [
-  "tinybendygrad/codegen/decomp/dtype.bend", "tinybendygrad/codegen/kernel.bend",
-  "tinybendygrad/codegen/opt/heuristic.bend", "tinybendygrad/codegen/opt/postrange.bend",
-  "tinybendygrad/device.bend", "tinybendygrad/engine/jit.bend", "tinybendygrad/engine/realize.bend",
-  "tinybendygrad/helpers.bend", "tinybendygrad/mixin/gradient.bend",
-  "tinybendygrad/renderer/amd/generate.bend", "tinybendygrad/renderer/amd/sqtt.bend",
-  "tinybendygrad/renderer/llvmir.bend", "tinybendygrad/renderer/tc_ptx.bend",
-  "tinybendygrad/runtime/ops_amd.bend", "tinybendygrad/runtime/ops_cuda.bend",
-  "tinybendygrad/runtime/ops_null.bend", "tinybendygrad/runtime/ops_python.bend",
-  "tinybendygrad/runtime/ops_qcom.bend", "tinybendygrad/runtime/support/elf.bend",
-  "tinybendygrad/schedule/__init__.bend", "tinybendygrad/schedule/indexing.bend",
-  "tinybendygrad/schedule/multi.bend", "tinybendygrad/schedule/rangeify.bend",
-  "tinybendygrad/uop/render.bend", "tinybendygrad/uop/validate.bend", "tinybendygrad/uop/weak.bend",
-]
 
 
-def rows(text):
-  out = {}
-  for line in text.splitlines():
-    if "=" in line:
-      k, v = line.split("=", 1)
-      out[k.strip()] = v.strip()
-  return out
+def unwired_ports():
+  """Ports with no entry in rebase-gate.py's BASE_ORACLES. Read, not typed: the list
+  this function replaced still named elf, sqtt, tc_ptx, generate and render after they
+  were wired. A typed 'unwired' list is the same trap as a typed disagreement count."""
+  gate = (REPO / ".agents" / "slop" / "rebase-gate.py").read_text()
+  i = gate.find("BASE_ORACLES = {")
+  if i < 0:
+    print("BASE_ORACLES not found in rebase-gate.py; refusing a typed unwired list",
+          file=sys.stderr)
+    return []
+  j = gate.find("\n}\n", i)
+  body = gate[i:j if j > i else None]
+  wired = set(re.findall(r'^\s+"(tinybendygrad/[^"]+\.bend)":', body, re.M))
+  if not wired:
+    print("BASE_ORACLES parsed empty; refusing a typed unwired list", file=sys.stderr)
+    return []
+  return sorted(str(p.relative_to(REPO)) for p in (REPO / "tinybendygrad").rglob("*.bend")
+                if str(p.relative_to(REPO)) not in wired)
 
 
 def candidates():
@@ -79,15 +84,18 @@ def candidates():
 def main():
   a = sys.argv[1:]
   timeout = int(a[a.index("--timeout") + 1]) if "--timeout" in a else 240
-  ports = UNWIRED
+  ports = unwired_ports()
   if "--ports" in a:
     ports = [l.strip() for l in pathlib.Path(a[a.index("--ports") + 1]).read_text().splitlines()
              if l.strip()]
   bend = {}
   for p in ports:
-    f = BEND / (p.replace("/", "_") + ".json")
-    if f.exists():
-      bend[p] = json.loads(f.read_text())
+    cached, why = read_fresh_cache(BEND, p, REPO / p)
+    if why == "stale":
+      print(f"  ({p} cache is older than the source; not a reading)", flush=True)
+      continue
+    if cached is not None:
+      bend[p] = cached
   cands, skipped = candidates()
   print(f"{len(cands)} candidates ({skipped} skipped by the WRITE filter), "
         f"{len(bend)}/{len(ports)} port row-sets\n", flush=True)
@@ -96,7 +104,7 @@ def main():
     t0 = time.time()
     try:
       r = subprocess.run([sys.executable, rel], cwd=REPO, capture_output=True, text=True,
-                         env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"DEV": "NULL"},
+                         env=stripped_env({"DEV": "NULL"}),
                          timeout=timeout)
     except subprocess.TimeoutExpired:
       print(f"  ({rel} TIMED OUT at {timeout}s, treated as no rows)", flush=True)

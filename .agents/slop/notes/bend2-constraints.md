@@ -14518,3 +14518,351 @@ NOT-STARTED, not UNCHANGED, because the lane was not `--record`ed (rule 3 above)
 `compared_pairs` is what shows the 84 agreed; `baseline_for` overwrites the why text
 with "no baseline recorded" whenever the state is NOT-STARTED, so the why line alone
 does not say the lanes agreed.
+
+## DD-CONST. A NOTE THAT NAMES A REFUSAL IS NOT A MEASUREMENT. Cite this position.
+
+Appended after the TREE-VERDICT block ending "does not say the lanes agreed."
+Numbering is not continued; cite this heading.
+
+Measured 2026-10-03 by calling `tinygrad/codegen/decomp/dtype.py` `l2i` (line 21)
+and the live `tinybendygrad/codegen/decomp/dtype.bend` `l2i`. Reproducer:
+`.agents/slop/dd-const-probe.bend` and the `lgv`/`lgw`/`lgx`/`lgu` rows.
+
+`dtypes.long` is `dtypes.i64` (`tinygrad/dtype.py:142`), not a separate dtype.
+`l2i_dt[long]` is `dtypes.int` (`dtype.py:12`). The returned pair is `(lo, hi)`:
+low word, then high word (`dtype.py:31`, `return lo, lo.const_like(0)`).
+
+`l2i(Ops.CAST, dtypes.long, UOp.const(0, dtypes.uint32))` does **not** raise.
+The two-level tree is `(CAST(CAST(C(0))), CAST(C(0)))`, dtypes `i32, i32`.
+The note at the paragraph ending "Verify with the interpreter before believing a
+refusal row." (the `CPython IS THE TIE-BREAKER` sentence) attributed
+`(CAST(C(0)), CAST(C(0)))` to this call. That tree is the **ulong** answer:
+`l2i_dt[ulong]` is `uint`, the source is already `uint32`, and `.cast` folds
+(`mixin/dtype.py:36`). Both words are the same interned node. The port accepts
+both calls and prints those trees (`lgv`, `lgw`). It does not refuse either.
+
+The gate's one `lgN=refused:NotImplementedError` row is `lgn`, op `FLOORDIV`.
+CPython raises `NotImplementedError` there (`dtype.py:81`, `case _`). That
+string is true. The float-target CAST arm (`dtype.py:35-38`) is the other
+shape: CPython returns `WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))` and does not
+raise; the port does not build the arm (header C, the remint is unmodelled).
+Printing `NotImplementedError` for that `None` was a false statement about
+tinygrad. It now prints `refused:unported` (`lgu`). Flipping the `None` arm
+back to `l2i.gone` moves exactly `lgu`, 1 of 164 rows.
+
+Before this change the gate had 147 data rows and 1 `NotImplementedError`
+(`lgn`). After: 164 data rows, still 1 `NotImplementedError` (`lgn`), plus 1
+`unported` (`lgu`). The 17 added rows are `lgv*` `lgw*` `lgx*` `lgu` `lgun`.
+No previously printed row moved.
+
+`lgvsig`/`lgvk` and `lgwsig` disagree with the oracle because `dd_rs.add`
+lists an already-seen node once per parent (the cone bug in this file, not
+this change). The trees agree. Do not "fix" those sigs by copying the bug
+into the oracle.
+
+---
+
+## OPS-PYTHON RENDER ORACLE, 2026-10-03. Appended after the GA-ORACLE block that ends
+## at position ~14520. Cite positions, not numbers.
+
+### 1. `repr()` ON A STRING FIELD IS NOT WHAT THE FIELD CONTAINS, AND FIXING THE PORT TO MATCH IT AGREES ON A WRONG VALUE
+
+`ops-python-render-oracle.py` printed every row with `f'{k}={v!r}'`. For the 12 shared
+integers, `repr` and the value are the same text, so those rows agreed. For the 19 shared
+strings they are not:
+
+    port line:   pyr_cuda_ptx_arch=sm_80
+    oracle line: pyr_cuda_ptx_arch='sm_80'
+
+Called, not transcribed. `PythonRenderer(Target(arch='sm_80', renderer='cuda')).target.arch`
+is the 5-character string `sm_80` (0 quote characters). The quotes are `repr`. The
+assignments that store the value are `tinygrad/runtime/ops_python.py:169` (`renderer="PYTHON"`),
+`:170` (`device="METAL"`), `:172` (`device="AMD"`), `:175` (`device="CUDA"`), `:177`
+(`arch="IMAGE_PITCH_ALIGNMENT=1"`), and the else arm at `:178` which keeps the arch.
+`Target.__repr__` (`tinygrad/helpers.py:216-218`) emits `CUDA:PYTHON:sm_80` with no quotes
+around the arch either. `PythonRenderer.render` (`ops_python.py:180`) emits a base64 pickle,
+not a Python string literal, so there is no emission site that wants the quote characters.
+
+Adding the quotes to the port would have made the 19 rows agree on `'sm_80'`, which is not
+the field. The printer was the side that was wrong. `row()` now prints the value.
+
+### 2. THIS ORACLE DOES NOT NEED `PYTHONPATH=.`
+
+`env -u PYTHONPATH .venv/bin/python .agents/slop/ops-python-render-oracle.py` exited 0 with
+241 rows. The same import succeeds under `/opt/homebrew/bin/python3` with `PYTHONPATH` unset
+(`tinygrad.__file__` is the repo tree). The editable install is why. The earlier reason for
+leaving `ops_python.bend` unwired was this variable, and it was wrong. Wired at 59 shared,
+0 disagree. The other 26 port rows are not CPython outputs (table ids, constructor tags,
+`py-done`, a hardcoded b64 flag, synthetic `core_find` fixtures, and
+`pywma_short_msg_32`, which no core in `tc.metal` emits — every metal core has 2 elements
+per thread, `tc.py:138`).
+
+---
+
+## AMD ORACLE, 2026-10-03. Continues after the generate.bend block at position ~14520.
+## Cite positions, not numbers.
+
+### 1. A LINE NUMBER IS NOT AN IDENTITY, AND THE NAMEERROR NAMES THE WRONG LINE
+
+`amd_oracle.py` eval'd `ops_amd.py` line 858 as the target decomposition. That line is
+now `self.is_usb = isinstance(self.iface, USBIface)` (`ops_amd.py:858`). The eval
+namespace bound `trgt` and `self` only, so `USBIface` was unbound THERE. The class is
+not missing from the module: `class USBIface(PCIIface)` at `ops_amd.py:814`, a Python
+class built at import, not a ctypes struct (`_fields_` absent), not a lazy import.
+`import tinygrad.runtime.ops_amd` binds `M.USBIface` with no device. Instantiating it
+calls `USB3.list_devices` (`ops_amd.py:816`) and needs hardware. Referencing the class
+does not. Injecting `USBIface` into that namespace would eval a bool and then fail the
+`" ".join` of the target triple — the wrong statement, not a fix. The decomposition is
+the unique assignment containing `gfx_target_version']) // 10000`, which is
+`ops_amd.py:862`. Select by text.
+
+The no-device substitute for `isinstance` is `object.__new__(USBIface)`. It sees the
+MRO and does not run `__init__`. It is not a device path. Measured: `USBIface` and
+`MOCKUSBIface` (`_mock(USBIface)`, `ops_amd.py:839` / `:850`) are both
+`isinstance(..., USBIface)` and `isinstance(..., PCIIface)`. `PCIIface` is am and not
+usb. `KFDIface` and both KFD mocks are neither.
+
+### 2. `int(True)` IS NOT `True`, AND ALL 55 DISAGREEMENTS WERE THAT
+
+Bend `row` prints `Bool.show` (`ops_amd.bend:1596`), which is `True`/`False`.
+`str(bool)` is the same string. The oracle printed `int(bool)`, which is `1`/`0`.
+GUARD 4 compares the string. 55 shared rows disagreed, every one `True`/`1` or
+`False`/`0`, same polarity. Not a value. After `bshow`, interpreted/native/oracle
+share 409 of the port's 520 and disagree on 0 (`wire-lanes.py`). The 55 names:
+`amd_arch_ok_{10_00,11_00,12_00,13_00,9_00,9_42,9_43,9_50}`,
+`amd_canrecb_{mockpci,mockusb,pci_vf}`, `amd_is_aql_{default_1,default_2,forced}`,
+`amd_isam_{kfd,mock,mockkfd,mockpci,mockusb,pci,usb}`, `amd_isusb_{kfd,pci,usb}`,
+`amd_key_hit_miss_{devs,lib,same}`, `amd_qb_armb_{compute,sdma0,sdma7}`,
+`amd_qb_ok_{bare_ring,empty,ring_0,ring_7}`, `amd_qb_pref_ring_`,
+`amd_recycled_{ib,plain,prof_dev,prof_host,prog,ring,scratch}`,
+`amd_sq_full_{0,32,33,63}_64`, `amd_sq_refuse_{0,64,65}_64`,
+`amd_wgp_{0_0_0_1,0_0_0_3,0_0_1_c,1_2_0_3,3_5_1_c0000,7_0_3_1f}`.
+
+CPython, called, not transcribed: arch allow-list is the assert test at
+`ops_amd.py:864` (eval'd; `(11,99,9)` is True because major 11 is in `(11, 12)`).
+`is_am` is `ops_amd.py:854`. `is_usb` is `ops_amd.py:858`. `can_recover` is
+`ops_amd.py:860`. `is_aql` default is `getenv("AMD_AQL", int(xccs>1))`
+(`ops_amd.py:883`, `helpers.py:163`); `AMD_AQL` was unset, so default 1 is True and
+default 0 is False. The prefix test is `str.startswith` at `ops_amd.py:945`. Recycle
+is `device.py:280` with `LRU` (plain True, nolru False). SQTT bounds are
+`ops_amd.py:1045` and `:1046`. The WGP rows are the bit test at `ops_amd.py:736`
+(`(bm >> (2*wgp)) & 0x3 == 0x3`); the full method indexes `cu_bitmap` through an
+ioctl and needs a device, so those rows are the bit test, not the device path.
+`urow` rows stay `0`/`1` — 35 shared rows agree as integers, and converting those
+would manufacture disagreements.
+
+### 3. `MOCKUSBIface` IS USB, AND NO SHARED ROW SAYS SO
+
+`isinstance(object.__new__(MOCKUSBIface), USBIface)` is True (`ops_amd.py:858`,
+class at `:814`, mock at `:839`). The port's `is_usb` is `U32.is_eq(iface, IFACE_USB())`
+(`ops_amd.bend:1055`), which is id 2 only. The port does not print
+`amd_isusb_mockusb`. Not in the 409. Owner: whoever holds `ops_amd.bend`. Not fixed
+here — adding the row and changing the def would be writing both sides of a test
+the gate has never seen fail.
+
+### 4. THIS ORACLE DOES NOT HIT THE OBJC SEAM
+
+Importing `tinygrad.runtime.ops_amd` does not load `tinygrad.runtime.ops_cpu`.
+`sel_registerName` / `objc_msgSend` in `libobjc.dylib` (`ops_cpu.py:19/21`) is
+untouched. Owner remains whoever holds `runtime/ops_cpu.py`.
+
+### 5. WIRED, NOT RECORDED. 409 OF 520. SELFTEST 30.
+
+`BASE_ORACLES` and `ORACLE_CONFORMANCE` both gained
+`tinybendygrad/runtime/ops_amd.bend` -> `.agents/slop/amd_oracle.py` (409, live).
+Oracle emits 1010. 111 port rows are ungated (init trace, differently-keyed names
+such as `amd_arch_ok_11_99` vs `amd_arch_ok_11_999`). Not `--record`ed: GUARD 1
+would freeze the 601 ungated oracle rows. Same species as elf at position ~14238.
+
+`rebase-gate-selftest.py`: roster equality PASS, 30 oracles, `amd_oracle.py` six
+states reachable (409).
+
+Control, `gate_port`, `native=False`, `env -u PYTHONPATH`. rc is `main`'s rule
+(`1 if BROKEN else 0`). The plant was a copy of the oracle in `.agents/slop/`,
+one print arm rewritten for `amd_aql_hdr`, then deleted. The port was not edited.
+
+    CLEAN   NOT-STARTED rc=0  compared_pairs 409  disagree=0
+    PLANT   BROKEN      rc=1  1 row named: amd_aql_hdr
+    REMOVED NOT-STARTED rc=0  compared_pairs 409  disagree=0
+
+NOT-STARTED, not UNCHANGED, because the lane was not `--record`ed. `compared_pairs`
+is what shows the 409 agreed; the why line says "no baseline recorded" (same
+overwrite as position ~14518). `wire-lanes.py`: interpreted 520, native 520,
+oracle 1010, all three pairs disagree=0, interpreted vs native shared=520.
+
+---
+
+## WIRE-PAIR CONTROL, 2026-10-03. Appended after the AMD ORACLE block that ends at
+## position 14650. Cite the positions below, not a number.
+
+### 1. A COUNT THAT DEMANDS A FIXED BUG STAY RED IS A TRAP
+
+`wire-pair.py`'s standing control demanded 6 disagreements on
+`renderer/tc_ptx.bend` against `tcptx-oracle.py`. Those 6 were stale `py=`
+literals (`half->float` where `dtypes.half.name` is `"f16"`, dtype.py:120-137;
+the aliases at :140-142 do not change `.name`). The port's owner fixed them.
+Live re-measure this session, two consecutive `./bin/bend` runs, `env -u PYTHONPATH`:
+
+    tc_ptx stage2: bend=333 oracle=333 shared=228 disagree=0
+
+The `$TMPDIR/rebase-wired-rows` cache for that port was written at 14:33, before
+the 14:59 fix, and still holds the 6. A reader that trusts the cache without an
+mtime check resurrects the retired bug and calls it a live disagreement.
+`wire-pair.py`, `wire-rows.py`, `wire-sweep.py` and `wire-survey.py` now refuse
+a cache older than the source.
+
+A count-based control is retired. It asserts a bug, not the instrument. When the
+bug is fixed the control fails for the right reason and invites the wrong repair
+(put the literals back). Do not re-add those rows to make a run red.
+
+### 2. THE STANDING CONTROL IS A COPY, AND IT WAS SEEN RED
+
+`python3 .agents/slop/wire-pair.py --control`. The fixture is generated outside
+`tinybendygrad/` (no relative import; a scratch copy of `tc_ptx.bend` cannot
+resolve `import ./../helpers.bend`). The live tree is not opened for writing.
+
+The row name `control row` contains a space. `^(\S+) = ` drops it. Measured on
+stage2: that regex keeps 12 of 333 names and drops 321, including
+`PTX tensor_cores sm_75`. The parser is `^(.*?)\s=\s(.*)$`, plus the tight
+`name=value` emitter, because elf and sqtt print the tight form and dropping it
+is the same false agreement.
+
+Readings, this session:
+
+    GUARD absent-needle: PATCH DID NOT APPLY  occurrences=0
+    phase clean:     shared=2 disagree=0  CLEAN
+    phase mutated:   shared=2 disagree=2  RED
+      MOVED control row      bend RED-PLANTED  oracle clean
+      MOVED control_tight    bend RED-PLANTED  oracle clean
+    phase restored:  shared=2 disagree=0  CLEAN
+
+A mutation that moves nothing is a broken harness. The guard prints
+`PATCH DID NOT APPLY` rather than `0 rows`.
+
+### 3. OTHER COUNTS IN THE SAME BATCH, MEASURED, NOT RE-FROZEN
+
+`wire-sweep.py` asserted elf 353 shared clean and sqtt 1015 shared clean. Live,
+two consecutive runs, `env -u PYTHONPATH`:
+
+    elf   bend=353 oracle=1042 shared=353 disagree=0
+    sqtt  bend=1033 oracle=1324 shared=1015 disagree=0
+
+The numbers still match. They are no longer a control. elf has also printed 331
+with no edit (the block that ends at position 14440). A comment that demands 353
+will rot on the next truncated run.
+
+`wire-rows.py` asserted "ten ports" whose static regex misses a helper. On the
+cached set the regex already missed 22, not 10. The census is retired; the two
+numbers are printed.
+
+`wire-lanes.py`'s "five ports" sentence is a past-tense account of one malformed
+invocation, not a standing census.
+
+`wire-survey.py` and `wire-sweep.py` typed an UNWIRED list that still named elf,
+sqtt, tc_ptx, generate and render after `BASE_ORACLES` wired them. The list is
+now derived by reading `rebase-gate.py`. A typed unwired list is the same trap.
+
+`wire-snapshot.py` is not this unit's file. It still asserts `claimed=353` and
+`claimed=1015`. Those two still match the live run above. Owner: whoever holds
+`wire-snapshot.py`. Not edited here.
+
+`wire-pair.py`'s "3 of 1042" mixed `ops_cpu`'s intersection with elf's oracle
+size. `cpulink_oracle.py` prints 19 data rows (22 lines, 3 comments). The 3 is
+`rebase-gate.py`'s comment, that file's owner. Not re-typed here.
+
+**Update on rule 9, measured after writing it.** `elf.bend` was then run **39 more times**
+(15 idle back-to-back, then 24 under sweep load): **39 of 39 printed 353 rows with empty
+stderr.** So the 331 is real -- it came out of a real sweep and it is reproducible in the
+sense that it happened -- but it did NOT reproduce on demand, and **I am not claiming a
+rate.** One observation in ~78 total runs is consistent with the ~1-in-20 family and does
+not establish one. The honest statement is: *bend can print a truncated row set with exit 0
+and no diagnostic, I saw it once, and I could not make it happen again.* That is enough to
+justify requiring agreement across runs before reporting a row count, and not enough to
+justify anything stronger.
+
+---
+
+## PIN VS XD1/HEAD, 2026-10-03. Appended after the block that ends at position 14740.
+## Cite the positions below, not a number. Owner: the pin-tree measurement. Full table
+## in `.agents/slop/pin-tree-oracle-report.md`.
+
+### 1. `xd1/head` IS NOT `upstream/master`, AND `opstree` IS `xd1/head`
+
+Blob comparison, `git hash-object` against `git ls-tree`, not a grep on `git show`.
+`xd1/pin` equals `6c3d401cf324` on 229/229 `tinygrad/` blobs. `xd1/head` equals
+`upstream/master` (`91b8cb5fa6c0`) on 215 and differs on 14, including `uop/ops.py`
+(`6f7b9996431e`, neither the pin's `3ffac84bef97` nor upstream's `2c686da7e21e`).
+`.agents/slop/opstree` equals `xd1/head` on 229/229. The ops and search oracles'
+default "upstream archive" is this snapshot. `TOOLS.md`'s sentence that `xd1/head`
+is `git archive upstream/master` is false against current upstream. Owner of that
+sentence: the xd1 unit. Not fixed here.
+
+### 2. THE EDITABLE FINDER LOSES TO `sys.path.insert`, AND `sys.path[0]` IS THE SCRIPT DIR
+
+`.venv` from `/tmp`, `env -u PYTHONPATH`, imports the repo `tinygrad/` (the finder
+is `meta_path[4]`, after `PathFinder`). `sys.path.insert(0, root)` before the import
+wins. System `python3` from `/tmp` cannot import `tinygrad` at all. `rw-oracle.py`
+does not insert a path; the gate does not set `PYTHONPATH`; `sys.path[0]` is `xd1/`,
+which has no package. The gate's run of it imports vendor via the editable fallback,
+not `xd1/head`. A comment that says `PYTHONPATH=<tree>` is not what `run_port` does.
+
+### 3. STANDARDISING ON THE PIN MOVES 16 OF 31 GATE VERDICTS, ALL THE WRONG WAY
+
+Every wired oracle was run natural, forced onto `xd1/pin`, and forced onto `xd1/head`,
+and diffed against the interpreted bend lane. 16 of 31 go from AGREE to BROKEN (9,
+missing `dtypes.f32`/`i32`/`i8`/`u8`/`u64`/`f16`) or DISAGREE (7). Every disagreed
+row has the port on the non-pin side. Zero gates are AGREE only on the pin.
+`elf_built_*` (14 names) differs between two runs of the same tree; not a tree diff.
+`simplify`'s 18 pin-vs-head rows and `ops_python`'s 18 are ungated: the port does not
+print those names, so the verdict does not move.
+
+---
+
+## ARange ucache collision, 2026-10-03. Appended after the paragraph ending
+## "so the verdict does not move." Cite POSITIONS, not numbers. This block
+## starts at the line after that paragraph.
+
+### 1. THE MISSING KEY COMPONENT IS THE TAIL'S NESTING, AND `type(arg)` DOES NOT SPLIT IT
+
+Called, not transcribed (`.agents/slop/arange-ucache/`, and the `uc_*` rows in
+`ops-oracle.py` which call the same constructors):
+
+    UOp.range(4, (0, 1), WEAK).arg == (AxisType.WEAK, (0, 1))     # ops.py:643
+    UOp(Ops.RANGE, arg=(AxisType.WEAK, 0, 1)).arg == (AxisType.WEAK, 0, 1)
+    those two `is` False. Same for (WEAK, 0) vs (WEAK, (0,)) and for
+    (WEAK, (0, 1)) vs (WEAK, ((0, 1),)).
+
+CPython's ucache key is `(op, src, arg, tag, type(arg))` at `tinygrad/uop/ops.py:201`.
+Both args are tuples, so `type(arg)` is the same. The structure of `arg` is the
+component the port dropped: `ARange{ids, at}` stores the flattened ints.
+
+### 2. A THIRD `ARange` FIELD AND A NEW `Arg` VARIANT ARE BOTH NON-LOCAL, MEASURED
+
+`probe-fields-3.bend`: `case ARange{ids, at}` against a 3-field record is
+`a ARange pattern with 3 fields`. That is every `case ARange{ids, at}` in the
+tree (render, fold, spec, upat, rangeify, indexing, gpudims, linearizer,
+realize, multi, validate). Position 2304 holds; position 1606's "fewer fields
+is a wildcard" does not.
+
+`probe-variant-3.bend`: an exhaustive match is `expected : cases for ANest`.
+`render.bend:698` (`arg_repr`) and `upat.bend:397` (`arg_int`) are exhaustive
+and neither file is this unit's. Do not add the variant.
+
+### 3. THE LOCAL CLOSE IS A PARALLEL LIST THE INTERN SCAN COMPARES
+
+`Arena.shp` is one `U32` per node: 0 = flat `(at, *ints)`, N>0 = `arg[1]` nested
+N times. `intern.find` compares it beside `eq_node`. `UOp.new` and the public
+`intern.put` store 0, so every existing constructor — including
+`transcendental.bend`'s direct `intern.put` of a CONST — is unchanged.
+`UOp.range_shaped` is the nested constructor.
+
+Reverting only the comparison (`U32.is_eq(sh, depth)`) moves
+`uc_flat_nest`, `uc_int_tup1`, `uc_nest_deep` from `False` to `True` and
+`ucdepth_flat_nest` from `0,1` to `0,0`. `uc_flat_same` and `uc_nest_same`
+stay `True`: the cache still hits. A comment-only edit reads SAME.
+Folding `Arena.depth(ib) == db` into the identity bool makes a collision
+print `False` (both indices are the first node) and the row no longer moves.
+
+`UOp.axis_id` still returns the flat list. `List<U32>` cannot hold `((0, 1),)`.
+The nested repr is `render.bend`'s `arange_repr`, which reads `ARange` and not
+`Arena.depth`. Not edited — another unit is live there.

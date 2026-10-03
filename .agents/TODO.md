@@ -2464,13 +2464,18 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       the coverage. Narrowing the UPCAST group `range(10)`->`range(9)` moved
       `acts_n` 209->203, `acts_n_padto` 216->210, `acts_zero` 18->17, `zero_up9`
       1->0.
+- [x] **`runtime/ops_amd.bend` oracle wired.** 409 of 520 shared, 0 disagree.
+      `USBIface` was unbound because the oracle eval'd a drifted line number
+      (`ops_amd.py:858` is now `isinstance(..., USBIface)`; the target
+      decomposition is `:862`). Class exists at import (`:814`), not a ctypes
+      struct, instantiation needs a device. Not `--record`ed. `MOCKUSBIface`
+      is isinstance-USB and no shared row covers it.
 - [ ] **NO ORACLE EXISTS, measured against 104 candidates — these are the ports
       the rebase gate genuinely cannot see.** `codegen/kernel.bend` (38 rows,
       3-symbol drift), `codegen/opt/heuristic.bend` (10, 0-symbol drift),
       `codegen/opt/postrange.bend` (48, 4-symbol: `flatten`/`merge_dicts`
       removed, `split_targets` changed), `device.bend` (105, 0-symbol),
-      `engine/realize.bend` (50, `array` removed), `runtime/ops_amd.bend` (520,
-      5-symbol), `runtime/ops_cl.bend` (445), `runtime/ops_cpu_null.bend` (308,
+      `engine/realize.bend` (50, `array` removed), `runtime/ops_cl.bend` (445), `runtime/ops_cpu_null.bend` (308,
       2-symbol), `runtime/ops_qcom.bend` (750, 1-symbol), `schedule/indexing.bend`
       (252, 1-symbol), `schedule/rangeify.bend` (126, 1-symbol).
 - [ ] **THE BASELINE IS NOT RECORDED, DELIBERATELY.** `baseline.json` holds one
@@ -2662,6 +2667,18 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       SGPR/SGPRN/SSRC/SSRCN/SRC9. Fixed to the real widths (8,6,5,7,7,7,8,8,8,9)
       from `generate.py:306-313`. No gate row had reached `field_def` before, which
       is why nothing caught it.
+
+## Session 2026-10-03 — dtype.bend const CAST refusal (measured, not the note)
+
+Progress: `██████████` 1/1
+
+- [x] `l2i(Ops.CAST, long, UOp.const(0, uint32))` called in CPython and in the
+      port. CPython does not raise; the tree is `(CAST(CAST(C(0))), CAST(C(0)))`
+      (`dtype.py:28-32`, `long` = `dtypes.i64` at `dtype.py:142`). The note's
+      `(CAST(C(0)), CAST(C(0)))` is the ulong fold (`mixin/dtype.py:36`). The
+      port already accepted both. Gate 147 → 164 rows. `lgn` (FLOORDIV) stays
+      `NotImplementedError` (dtype.py:81, true). The unported float-target arm
+      prints `unported` (`lgu`), not that name. Each new row moves on a flip.
 
 ## Session 2026-10-03 — `codegen/decomp/dtype.py`
 - [x] `tinybendygrad/codegen/decomp/dtype.bend`, one `.bend` at dtype.py's path, all
@@ -3124,3 +3141,58 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
       agent was editing it) and `tinybendygrad/renderer/__init__.bend` does not compile at all
       (`expected : a term / observed : end of input` at POSITION 821) -- which is why the
       oracle's `init` section cannot be used as a green control either.
+
+---
+
+## Session 2026-10-03 — `ops_python` render oracle quoting
+
+```
+ops-python-render  [##########] 1/1
+```
+
+- [x] **19 `repr()` disagreements fixed on the oracle, not the port, and the lane wired.**
+      CPython's `target.arch` for `sm_80` is the 5-character string (`ops_python.py:175-176`);
+      the oracle's `v!r` was adding the quotes. 59 of 85 port rows shared, 0 disagree.
+      26 left uncovered on purpose (table ids, constructor tags, `py-done`, hardcoded b64,
+      synthetic `core_find`, and `pywma_short_msg_32`). Wired in `BASE_ORACLES` and
+      `ORACLE_CONFORMANCE`. Not `--record`ed.
+
+## Session 2026-10-03 — re-anchor the wire-pair standing control
+
+```
+wire-pair-control  [##########] 1/1
+```
+
+- [x] **Retired the tc_ptx "6 disagreements" control.** The literals were fixed;
+      a live `stage2` pair is shared=228 disagree=0. The standing control is
+      `wire-pair.py --control`: CLEAN / RED / CLEAN on a copy, space in the row
+      name, `PATCH DID NOT APPLY` when the needle is absent. Notes at the end of
+      `.agents/slop/notes/bend2-constraints.md` (the WIRE-PAIR CONTROL block).
+
+## Session 2026-10-03 — which tree the wired gates import
+
+```
+pin-tree-oracle  [##########] 1/1
+```
+
+- [x] **Measured pin vs xd1/head for every wired gate. Do not standardise on the pin.**
+      16 of 31 verdicts move, all from AGREE to BROKEN or DISAGREE, port always on the
+      non-pin side. Report: `.agents/slop/pin-tree-oracle-report.md`. No port edited.
+
+## Session 2026-10-03 — ARange ucache collision
+
+```
+arange-ucache  [##########] 1/1
+```
+
+- [x] **Closed the `ARange` ucache collision in `uop/ops.bend`.** Called, not
+      transcribed: `UOp.range(4, (0, 1), WEAK)` is not
+      `UOp(Ops.RANGE, arg=(WEAK, 0, 1))` (`tinygrad/uop/ops.py:201`, `:643`).
+      The missing key component is the tail's nesting depth. A third `ARange`
+      field and a new `Arg` variant are both non-local (measured). The depth
+      lives in `Arena.shp` and `intern.find` compares it. `uc_flat_nest`,
+      `uc_int_tup1`, `uc_nest_deep` move `False`→`True` when that comparison is
+      reverted; `ucdepth_flat_nest` moves `0,1`→`0,0`. Comment-only reads SAME.
+      63 importers; 62 still print rows. `codegen/__init__.bend` is red on an
+      affine binder in `wr.rebuild.of` — not this change. `render.bend`'s
+      `arange_repr` still cannot see the depth; that file was not edited.

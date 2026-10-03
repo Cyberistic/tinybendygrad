@@ -428,6 +428,21 @@ print(f"mstack2={facts(_m_self.mstack(_m_b, _m_c))}")
 print(f"mstack1={facts(_m_self.mstack(_m_b))}")
 print(f"mstack0={facts(_m_self.mstack())}")
 
+# `UOp.range(end, tuple, at)` nests the tuple as one arg element (ops.py:643).
+# A flat `arg=(at, *ints)` is a different ucache key (ops.py:201) even when the
+# ints are the same. `is` is the identity the port's intern index must match.
+_uc_end = UOp.const(4)
+_uc_flat = UOp(Ops.RANGE, src=(_uc_end,), arg=(AxisType.WEAK, 0, 1))
+_uc_nest = UOp.range(4, (0, 1), AxisType.WEAK)
+_uc_deep = UOp(Ops.RANGE, src=(_uc_end,), arg=(AxisType.WEAK, ((0, 1),)))
+_uc_int = UOp.range(4, 0, AxisType.WEAK)
+_uc_tup = UOp.range(4, (0,), AxisType.WEAK)
+print(f"uc_flat_nest={_uc_flat is _uc_nest}")
+print(f"uc_int_tup1={_uc_int is _uc_tup}")
+print(f"uc_nest_deep={_uc_nest is _uc_deep}")
+print(f"uc_flat_same={_uc_flat is UOp(Ops.RANGE, src=(_uc_end,), arg=(AxisType.WEAK, 0, 1))}")
+print(f"uc_nest_same={_uc_nest is UOp.range(4, (0, 1), AxisType.WEAK)}")
+
 # ---------------------------------------------------------------------------
 # 9. The 22 EXISTING rows. Every one is a BOOLEAN whose Python counterpart is either a
 #    live graph fact or nothing at all; they are listed here so the count of the file's
@@ -492,6 +507,9 @@ BEND_ONLY = [
   ("eqax_diag_all", "as eqax_collide_all"),
   ("mstack_puts_self_first", "the Bool naming the MSTACK self-first regression; the "
                              "CPython-compared half is `mstack2`'s src op sequence"),
+  ("ucdepth", "stored tail depth. CPython keeps it inside `arg` (ops.py:201); the "
+              "port's `ARange` cannot, so `Arena.shp` holds it. The `uc_*` rows are "
+              "the `is` test; this one is the stored component."),
   ("rngspec", "`tinygrad/uop/spec.py`'s matcher, which is P3 and not ported; the oracle "
               "prints it because the PREDICATE moved with the flip and the movement is "
               "the fact (pin rejects `twoid`, upstream accepts it)"),

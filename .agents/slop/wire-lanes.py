@@ -10,22 +10,18 @@ It prints COUNTS AND NAMES and never a row value, because the first version of t
 whole row dicts and a single `state_RDNA3` row is 512 bytes of digits -- the one number a reader
 needs (`disagree=0`) was at the far end of ten thousand characters of noise.
 
+The "five ports" sentence below is a past-tense account of one malformed invocation. It is
+not a standing census and it is not re-checked. Do not treat it as a control.
+
 `--names` prints the disagreement names only, for a lane that is NOT clean.
 
   usage: python3 .agents/slop/wire-lanes.py PORT ORACLE_SPEC
 """
-import json, os, pathlib, subprocess, sys, tempfile
+import pathlib, subprocess, sys, tempfile
+
+from wire_parse import rows, stripped_env
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
-
-
-def rows(text):
-  out = {}
-  for line in text.splitlines():
-    if "=" in line:
-      k, v = line.split("=", 1)
-      out[k.strip()] = v.strip()
-  return out
 
 
 def sh(*a, **kw):
@@ -53,7 +49,7 @@ def main():
   interp, e1 = bend_lane(port, False)
   nat, e2 = bend_lane(port, True)
   o = subprocess.run([sys.executable, *argv], cwd=REPO, capture_output=True, text=True,
-                     env=dict(os.environ, DEV="NULL"), timeout=1800)
+                     env=stripped_env({"DEV": "NULL"}), timeout=1800)
   ora = rows(o.stdout)
   lanes = {"interpreted": interp, "native": nat, "oracle": ora}
   print(f"{port}")

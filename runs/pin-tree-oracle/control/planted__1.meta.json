@@ -1,0 +1,275 @@
+{
+ "rc": 0,
+ "timeout": false,
+ "elapsed": 0.25,
+ "nrows": 85,
+ "bytes": 7789,
+ "imports": [
+  {
+   "name": "tinygrad.helpers",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/helpers.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.dtype",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/dtype.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.runtime.support.memory",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/runtime/support/memory.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.device",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/device.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.dtype",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/dtype.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.ops",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/ops.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.movement",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/movement.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.creation",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/creation.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.elementwise",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/elementwise.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.reduce",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/reduce.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.op",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/op.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.mixin.rand",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/mixin/rand.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.render",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/render.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.spec",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/spec.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.memory",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/memory.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.renderer.tc",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/renderer/tc.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.renderer",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/renderer/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.weak",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/weak.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.renderer.isa",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/renderer/isa/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.late.linearizer",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/late/linearizer.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.gpudims",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/gpudims.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.divandmod",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/divandmod.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.movement",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/movement.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.transcendental",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/decomp/transcendental.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.symbolic",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/symbolic.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.dtype",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/decomp/dtype.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.decomp.op",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/decomp/op.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.late.coalesce",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/late/coalesce.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.opt",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/opt/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.simplify",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/simplify.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.opt.postrange",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/opt/postrange.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.late.gater",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/late/gater.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.allreduce",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/allreduce.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.multi",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/multi.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.indexing",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/indexing.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.prepare",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/prepare.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen.late.regalloc",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/late/regalloc.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule.rangeify",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/rangeify.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.codegen",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/codegen/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.engine.worker",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/engine/worker.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.engine.realize",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/engine/realize.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.runtime.support.hcq2",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/runtime/support/hcq2.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.schedule",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/schedule/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.tensor",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/tensor.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.nn.state",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/nn/state.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.nn",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/nn/__init__.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.nn.optim",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/nn/optim.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.nn.datasets",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/nn/datasets.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.engine.jit",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/engine/jit.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.function",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/function.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.upat",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/uop/upat.py",
+   "tree": "planted"
+  },
+  {
+   "name": "tinygrad.uop.ops",
+   "file": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/pin-tree-oracle/planted/tinygrad/__init__.py",
+   "tree": "planted"
+  }
+ ],
+ "err_tail": ""
+}

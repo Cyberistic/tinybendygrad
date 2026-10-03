@@ -38,10 +38,15 @@ import ./../LAWS/spec.bend as S
 #   rebuild.go (leaf)   -- fold over a node's srcs, looking each up in `repl`
 #   rebuild.of (leaf)   -- record a fresh `Found` in the replace map
 #   rebuild             -- mint a new node with rewritten srcs
-#   step.mint           -- the rule-result match: Some -> record, None -> rebuild
-#   step.go             -- the seen-test match: True -> skip, False -> mint
-#   step                -- per-node entry: seen? scan? mint? rebuild?
+#   step.try_rule       -- the rule-result match: Some -> overwrite, None -> keep
+#   step                -- per-node entry: seen? rebuild, then try rule
 #   go                  -- fold over the toposort list, threading arena + repl
+#
+# The order is: REBUILD THEN RULE. The toposort guarantees all srcs are in
+# `repl` first, so the rebuild mints a new node with the rewritten srcs,
+# then the rule is tried on the rebuilt node. A rule that fires (`Some{}`)
+# overwrites the rebuilt node; a rule that misses (`None{}`) keeps the
+# rebuilt node. This matches Python's `walk_rewrite` (ops.py:1813-1814).
 # ============================================================================
 
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
@@ -53,42 +58,82 @@ def wr.rebuild.go(+srcs: List<&2, U32>, +ar: O.Arena, +u: U32, +repl: Map<&2, U3
     case +s <> t:
       wr.rebuild.go(t, ar, u, repl, List.append(&2, U32, acc, [R.cu32(repl, s)]))
 
-# Record a fresh `Found` in the replace map.
-def wr.rebuild.of(f: O.Found, +u: U32, +repl: Map<&2, U32>) -> Map<&2, U32>:
-  Map.set(&2, U32, repl, U32.show(u), O.Found.i(f))
-
-# Mint a new node with the rewritten srcs. The new U32 is `Found.i` of
-# `O.UOp.new`. The arena is threaded `+` so the result is the new arena.
-def wr.rebuild(+ar: O.Arena, +u: U32, +repl: Map<&2, U32>) -> Map<&2, U32>:
-  wr.rebuild.of(O.UOp.new(ar, O.Arena.op(ar, u), wr.rebuild.go(O.Arena.srcs(ar, u), ar, u, repl, Nil{}), O.Arena.arg(ar, u), O.Arena.tag(ar, u)), u, repl)
-
-# The rule-result match. A rule fired (`Some{new_u}`): record the
-# replacement. No rule fired (`None{}`): rebuild the node with rewritten
-# srcs. `ctx` is threaded to the rule scan because `pm_rewrite_m` now
-# takes it (the rule bodies that read `ctx` are tags 3/4 in
-# `pm_dispatch_m`).
-def wr.step.mint(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, r: Maybe<&2, U32>) -> Map<&2, U32>:
+# The rule-result match. A rule fired (`Some{new_u}`): overwrite the
+# rebuilt node in `repl`. No rule fired (`None{}`): keep the rebuilt
+# node (the map already has `u -> rebuilt` from the rebuild).
+def wr.step.try_rule(+u: U32, r: Maybe<&2, U32>, repl: Map<&2, U32>, rebuilt: U32) -> Map<&2, U32>:
   match r:
     case Some{new_u}: Map.set(&2, U32, repl, U32.show(u), new_u)
-    case None{}: wr.rebuild(ar, u, repl)
+    case None{}: Map.set(&2, U32, repl, U32.show(u), rebuilt)
 
-# The seen-test match. Already in `repl` (`True{}`): skip. Not yet
-# (`False{}`): run the rule scan, then mint-or-rebuild.
-def wr.step.go(seen: Bool, +ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
+# `StepResult` -- a single record holding BOTH the new repl and the
+# new arena. The fold threads a `StepResult` rather than a Sigma,
+# because the Sigma cannot be `+` (Sigma is a Type, not a Data) but
+# a record can, and the affine `+` is what makes the fold well-typed.
+type StepResult is Data:
+  StepResult{ar: O.Arena, repl: Map<&2, U32>}
+
+# Mint a new node with the rewritten srcs. Records the new index in
+# `repl` and returns the new arena. The fold threads the result.
+def wr.rebuild.of(+f: O.Found, +u: U32, +repl: Map<&2, U32>) -> StepResult:
+  StepResult{O.Found.ar(f), Map.set(&2, U32, repl, U32.show(u), O.Found.i(f))}
+
+def wr.rebuild(+ar: O.Arena, +u: U32, +repl: Map<&2, U32>) -> StepResult:
+  wr.rebuild.of(O.UOp.new(ar, O.Arena.op(ar, u), wr.rebuild.go(O.Arena.srcs(ar, u), ar, u, repl, Nil{}), O.Arena.arg(ar, u), O.Arena.tag(ar, u)), u, repl)
+
+# Helpers for the fold: extract the new arena and the new repl from
+# `wr.rebuild`'s Sigma. The substrate `+` rule means we cannot read the
+# Sigma's components in two separate calls without binding the result
+# first, so the fold binds the per-step Sigma to a `+p` and uses these
+# once each. (The `+` on `p` is bend2-constraints R-4: "two reads in
+# one expression" -- here we get one read per def, not in one
+# expression, so the `+` is the substrate's notational choice for
+# "I am threading this through exactly once".)
+def wr.rebuild.ar(+sr: StepResult) -> O.Arena:
+  match sr:
+    case StepResult{ar, repl}: ar
+
+def wr.rebuild.repl(+sr: StepResult) -> Map<&2, U32>:
+  match sr:
+    case StepResult{ar, repl}: repl
+
+# Per-node entry. seen? skip. Else, rebuild, then try the rule on
+# the rebuilt node. The rebuilt map is `repl_after` (with `u ->
+# rebuilt_idx`); the rule's answer overwrites `u`.
+def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
+  (wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, rebuilt, ctx), repl, rebuilt), ar)
+
+# Destructure the rebuild's Sigma into (ar_after, repl_after) and
+# call the rule scan. Sub-defs first (BEND NAMING RULE R-3). Returns
+# the post-step Sigma by threading the new arena into `wr.step.scan`.
+def wr.step.seen.go.scan(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, +repl: Map<&2, U32>, +rebuilt: U32) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
+  wr.step.scan(ar, pm, u, repl, ctx, rebuilt)
+
+def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, p: Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
+  match p:
+    case Tuple{+repl_after, ar_after}:
+      wr.step.seen.go.scan(ar_after, pm, u, ctx, repl_after, R.cu32(repl_after, u))
+
+def wr.step.seen(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, seen: Bool) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
   match seen:
-    case True{}: repl
-    case False{}:
-      wr.step.mint(ar, pm, u, repl, ctx, O.pm_rewrite_m(pm, ar, u, ctx))
+    case True{}: (repl, ar)
+    case False{}: wr.step.seen.go(ar, pm, u, ctx, wr.rebuild(ar, u, repl))
 
-# Per-node entry. seen? scan? mint? rebuild?
-def wr.step(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
-  wr.step.go(R.chas(repl, u), ar, pm, u, repl, ctx)
+def wr.step(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
+  wr.step.seen(ar, pm, u, repl, ctx, R.chas(repl, u))
 
-# Fold over the toposort list. Returns the replace map.
-def wr.go(lst: List<&2, U32>, +ar: O.Arena, +pm: O.PMEntrys, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
+# Fold over the toposort list. Returns the replace map AND the new
+# arena (a Sigma), because the rule body and the rebuild can mint new
+# nodes whose indices point into the new arena. Bind the per-step
+# result so the substrate `+` rule is satisfied (the `+` ar can only
+# be used once per def).
+def wr.go(lst: List<&2, U32>, +ar: O.Arena, +pm: O.PMEntrys, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
   match lst:
-    case Nil{}: repl
-    case +u <> t: wr.go(t, ar, pm, wr.step(ar, pm, u, repl, ctx), ctx)
+    case Nil{}: (repl, ar)
+    case +u <> t: wr.go.of(t, ar, pm, u, repl, ctx, wr.step(ar, pm, u, repl, ctx))
+
+def wr.go.of(lst: List<&2, U32>, +ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +step: Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>) -> Sigma<&1, &1, Map<&2, U32>, _ => O.Arena>:
+  wr.go(lst, wr.rebuild.ar(step), pm, wr.rebuild.repl(step), ctx)
 
 
 # ============================================================================
@@ -214,9 +259,18 @@ def gr_show.sink(ar: O.Arena, sink: U32, repl: Map<&2, U32>) -> String:
   gr_show.of(ar, sink, repl)
 
 
+def main.go.show(+ar: O.Arena, +new_sink: U32) -> IO(Unit):
+  # Direct read of the rebuilt SINK's op/arg, bypassing the
+  # repl-threaded printer (which is a TODO once `walk_rewrite` returns
+  # the repl map rather than just the rebuilt sink).
+  IO.print(String.concat([
+    "op=", O.Ops.name.of(O.Arena.op(ar, new_sink)),
+    " arg=", gr_show.arg(O.Arena.arg(ar, new_sink)),
+    " (new_sink=", U32.show(new_sink), ")"]))
+
 def main.go(r: Maybe<&2, U32>, +ar: O.Arena) -> IO(Unit):
   match r:
-    case Some{new_sink}: IO.print(gr_show.sink(ar, new_sink, Map.new(&2, U32)))
+    case Some{new_sink}: main.go.show(ar, new_sink)
     case None{}: IO.print("codegen/__init__.bend: no rebuilt sink (wall)")
 
 def main.of(+ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -> IO(Unit):

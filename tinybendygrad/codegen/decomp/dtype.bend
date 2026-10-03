@@ -89,7 +89,9 @@
 # `split_l2i` is `l2i_dt[x.dtype]`, an integer. It is also the one place in the
 # file where `_broadcasted`'s weak-CONST REMINT (`elementwise.py:31-32`) turns
 # `2**32` from an integer constant into a FLOAT constant, and that remint is not
-# modelled, so the arm is absent rather than wrong.
+# modelled, so the arm is absent rather than wrong. The gate row is `lgu` and it
+# prints `refused:unported`. CPython does not raise: the answer is
+# `WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))` (dtype.py:35-38, two f32 words).
 #
 # D. NO `float16`, `bfloat16` OR `float64` SOURCE FOR `f2f` / `f2f_clamp`.
 # `f2f_clamp` mints `mx` with `val.const_like(...)` and `val` is `v.bitcast(fr)`,
@@ -1065,7 +1067,9 @@ def l2i.go(+ar: O.Arena, +zero: U32, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List
 
 def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> Maybe<&2, W2>:
   # `zero = UOp.const(0, dt)` at dtype.py:22, BEFORE the arity unpacking at
-  # 23-25 -- so a fixture with one word still interns it and then fails.
+  # 23-25. A one-word CAST does not fail: arms 0 and 1 read `uops[0]`, not `a0`.
+  # An arm that reads `a0` (`:39`, the float-target arm) raises `UnboundLocalError`
+  # on one word. That is not `NotImplementedError`.
   +zero = dd_const.int(ar, 0, dt)
   l2i.go(O.Found.ar(zero), O.Found.i(zero), op, dt, xdt, ws)
 
@@ -2000,11 +2004,18 @@ def Ga.acc(ga: Ga, ar: O.Arena, n: U32, s: String) -> Ga:
 #
 # `<nm>=` the answer's TREE two levels deep, `<nm>n=` the SLOTS MINTED (the
 # window, so this is the interning row), `<nm>sig=` the answer's CONE in pre-order
-# and `<nm>k=` its CONSTS. A refusal names dtype.py's exception, mints nothing and
-# has no cone -- see the CANONICAL ROW header for what that does and does not mean.
+# and `<nm>k=` its CONSTS. A tinygrad refusal names dtype.py's exception
+# (`NotImplementedError`, dtype.py:81). An arm this file does not build names
+# `unported` instead — the same string would be a false statement about tinygrad.
 
+# dtype.py:81, `case _: raise NotImplementedError`. This string is ONLY that raise.
+# An arm the port does not build is `dd_gap` (`unported`), never this name: printing
+# `NotImplementedError` for it would be a statement about tinygrad that is false.
 def dd_ref(ar: O.Arena, from: U32, to: U32, +nm: String) -> String:
   String.concat([nm, "=refused:", "NotImplementedError", "\n", nm, "n=", U32.show(U32.sub(to, from)), "\n"])
+
+def dd_gap(ar: O.Arena, from: U32, to: U32, +nm: String) -> String:
+  String.concat([nm, "=refused:", "unported", "\n", nm, "n=", U32.show(U32.sub(to, from)), "\n"])
 
 def rows.body(+nm: String, ok: Bool, +u: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
   match ok:
@@ -2184,10 +2195,10 @@ def fixtures() -> Ga:
 
 # ---- the `l2i` rows
 #
-# `l2i`'s ONE refusal is `case _: raise NotImplementedError`, and it is a PURE
-# test on the op, so it is asked BEFORE the call -- which is also what keeps the
-# arena live for `rows.put` (dtype.py:22 interns `zero` only for a supported op,
-# because the refusal is the `match` fall-through, not an earlier raise).
+# `l2i`'s ONE tinygrad refusal is `case _: raise NotImplementedError` (dtype.py:81),
+# a PURE test on the op, asked BEFORE the call. `l2i` returning `None` is a
+# different fact: the float-target CAST arm (dtype.py:35-38) is not built, and
+# CPython accepts that call. It prints `unported`, not `NotImplementedError`.
 
 def dd_l2i_ok(op: O.Op) -> Bool:
   match op:
@@ -2252,6 +2263,13 @@ def l2i.gone(nm: String, +ga: Ga) -> Ga:
   match ga:
     case Ga{+ar, +n, +s, +ps, +w, z, o}: Ga{ar, n, String.concat([s, rows.put(nm, False{}, 0, ar, n)]), ps, w, z, o}
 
+# `l2i` returned `None`. Not dtype.py:81. The float-target CAST arm is the only
+# current producer; CPython returns a node there (dtype.py:35-38).
+def l2i.gap(nm: String, +ga: Ga) -> Ga:
+  match ga:
+    case Ga{+ar, +n, +s, +ps, +w, z, o}:
+      Ga{ar, n, String.concat([s, dd_gap(ar, n, O.Arena.next(ar), nm)]), ps, w, z, o}
+
 def l2i.put3(+nm: String, two: Bool, lo: U32, hi: U32, ar: O.Arena, from: U32, +t: String) -> String:
   String.concat([t, l2i.put.put2(nm, two, lo, hi, ar, from)])
 
@@ -2266,7 +2284,7 @@ def l2i.two(nm: String, w: W2, +ga: Ga, from: U32) -> Ga:
 def l2i.got(nm: String, r: Maybe<&2, W2>, +ga: Ga, from: U32) -> Ga:
   match r:
     case Some{w}: l2i.two(nm, w, ga, from)
-    case None{}: l2i.gone(nm, ga)
+    case None{}: l2i.gap(nm, ga)
 
 def l2i.went(nm: String, ok: Bool, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, base: Nat, nw: U32, +ga: Ga) -> Ga:
   match ok:
@@ -2279,7 +2297,20 @@ def l2i.went(nm: String, ok: Bool, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, base: Nat, 
 def l2i.one(nm: String, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, base: Nat, nw: U32, +ga: Ga) -> Ga:
   l2i.went(nm, dd_l2i_ok(op), op, dt, xdt, base, nw, ga)
 
-# THE `l2i` TABLE, index 0..27, in the oracle's order. `base` is the POOL OFFSET
+# `l2i(Ops.CAST, dt, UOp.const(v, xdt))`. The const is minted BEFORE the window,
+# which is what the oracle does: the argument exists before `l2i` is called, and
+# `n=` counts only what the call interns. dtype.py:28-32. `long` is `dtypes.i64`
+# (tinygrad/dtype.py:142); the pair is `(lo, hi)`.
+def l2i.const.put(+nm: String, +dt: S.Dt, +xdt: S.Dt, +c: O.Found, +ga: Ga) -> Ga:
+  match c:
+    case O.Found{+ar, +i}:
+      +from = O.Arena.next(ar)
+      l2i.got(nm, l2i(ar, O.OpsCAST{}, dt, xdt, [i]), ga, from)
+
+def l2i.const(+nm: String, +v: U32, +dt: S.Dt, +xdt: S.Dt, +ga: Ga) -> Ga:
+  l2i.const.put(nm, dt, xdt, dd_const.int(Ga.ar(ga), v, xdt), ga)
+
+# THE `l2i` TABLE, index 0..31, in the oracle's order. `base` is the POOL OFFSET
 # into the TWENTY-FOUR word list -- four `w` words then five `i32` at 4, five
 # `u32` at 9, five `bool` at 14, five `f32` at 19 -- and `nw` the word count. The arms are one per row so a fixture added in the
 # wrong place moves a row instead of silently shortening the table.
@@ -2312,6 +2343,19 @@ def l2i.pick(+i: U32, +ga: Ga) -> Ga:
     case 24: l2i.one("lgq", O.OpsCDIV{}, S.int32(), S.uint32(), 9n, 4, ga)
     case 25: l2i.one("lgr", O.OpsCMOD{}, S.int32(), S.uint32(), 9n, 4, ga)
     case 26: l2i.one("lgs", O.OpsCDIV{}, S.uint32(), S.uint32(), 9n, 4, ga)
+    case 27: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
+    # dtype.py:28-32, source not a float, unsigned: zero-extend. CPython:
+    # `(CAST(CAST(C(0))), CAST(C(0)))`. NOT the note's `(CAST(C(0)), CAST(C(0)))`.
+    case 28: l2i.const("lgv", 0, S.int64(), S.uint32(), ga)
+    # dtype.py:31 and mixin/dtype.py:36. `l2i_dt[ulong]` is `uint`, so the cast
+    # FOLDS and both words are the source const. The note attributed this tree
+    # to `long`. Words are equal; `lgx` is the order-sensitive neighbour.
+    case 29: l2i.const("lgw", 0, S.uint64(), S.uint32(), ga)
+    case 30: l2i.const("lgx", 1, S.uint64(), S.uint32(), ga)
+    # dtype.py:35-38. CPython returns one node,
+    # `WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))`, and does not raise. This arm is
+    # not built (header C). `unported`, not `NotImplementedError`.
+    case 31: l2i.one("lgu", O.OpsCAST{}, S.single(), S.single(), 19n, 2, ga)
     case _: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
 
 def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
@@ -2331,7 +2375,7 @@ def unpack.one(nm: String, +ga: Ga) -> Ga:
   l2i.two(nm, unpack32(Ga.ar(ga), Ga.pool(ga, 9n), S.uint32()), ga, from)
 
 def gate() -> IO(Unit):
-  IO.print(Ga.s(unpack.one("up", l2i.rows(28n, 0, fixtures()))))
+  IO.print(Ga.s(unpack.one("up", l2i.rows(32n, 0, fixtures()))))
 
 def main() -> IO(Unit):
   gate()

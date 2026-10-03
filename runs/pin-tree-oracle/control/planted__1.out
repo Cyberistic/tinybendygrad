@@ -1,0 +1,124 @@
+pyrender const=[ast =X UOp.const(3)]   py=[ast =X UOp.const(3)]
+pyrender cast=[ast =X UOp.const(3).cast(dtypes.f32)]   py=[ast =X UOp.const(3).cast(dtypes.f32)]
+pyrender special=[ast =X UOp.special(4, 'gidx')]   py=[ast =X UOp.special(4, 'gidx')]
+pyrender buffer=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))]   py=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))]
+pyrender copy=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+c2 =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device=('CPU', 'METAL')))
+ast =X c2.copy_to_device('METAL')]   py=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+c2 =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device=('CPU', 'METAL')))
+ast =X c2.copy_to_device('METAL')]
+pyrender cfn=[ast =X UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg=CustomFunction(name='myfn', dtype=dtypes.void))]   py=[ast =X UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg=CustomFunction(name='myfn', dtype=dtypes.void))]
+pyrender reduce=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2._rop(Ops.ADD, (0, 1))]   py=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2._rop(Ops.ADD, (0, 1))]
+pyrender range=[ast =X UOp.range(4, 0, AxisType.WEAK)]   py=[ast =X UOp.range(4, 0, AxisType.WEAK)]
+pyrender range2=[ast =X UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))]   py=[ast =X UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))]
+pyrender cdiv=[ast =X UOp.const(7).alu(Ops.CDIV, UOp.const(2))]   py=[ast =X UOp.const(7).alu(Ops.CDIV, UOp.const(2))]
+pyrender cmod=[ast =X UOp.const(7).alu(Ops.CMOD, UOp.const(2))]   py=[ast =X UOp.const(7).alu(Ops.CMOD, UOp.const(2))]
+pyrender where=[ast =X UOp.const(True).alu(Ops.WHERE, UOp.const(2), UOp.const(3))]   py=[ast =X UOp.const(True).alu(Ops.WHERE, UOp.const(2), UOp.const(3))]
+pyrender nest=[ast =X (UOp.const(1)+UOp.const(2))*(UOp.const(1)+UOp.const(2)*UOp.const(-1))+UOp.const(3)]   py=[ast =X (UOp.const(1)+UOp.const(2))*(UOp.const(1)+UOp.const(2)*UOp.const(-1))+UOp.const(3)]
+pyrender mul3=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 1, AxisType.WEAK)
+ast =X c1.alu(Ops.MUL, c3)]   py=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 1, AxisType.WEAK)
+ast =X c1.alu(Ops.MUL, c3)]
+pyrender xor3=[c1 =X UOp.range(8, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 1, AxisType.WEAK)
+ast =X c1.alu(Ops.XOR, c3)]   py=[c1 =X UOp.range(8, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 1, AxisType.WEAK)
+ast =X c1.alu(Ops.XOR, c3)]
+pyrender sqrt=[ast =X UOp.sqrt()]   py=[ast =X UOp.sqrt()]
+pyrender index=[c2 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp.const(9).index(c2)]   py=[c2 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp.const(9).index(c2)]
+pyrender reduce0=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+ast =X c1.reduce(arg=(Ops.ADD, 0))]   py=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+ast =X c1.reduce(arg=(Ops.ADD, 0))]
+pyrender sub=[ast =X UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))]   py=[ast =X UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))]
+pyrender tagged=[ast =X (UOp.const(1)+UOp.const(2)).rtag('mytag')]   py=[ast =X (UOp.const(1)+UOp.const(2)).rtag('mytag')]
+pyrender shared=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2*UOp(Ops.SUB, (c2, UOp.const(3)))]   py=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2*UOp(Ops.SUB, (c2, UOp.const(3)))]
+pyrender fan=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)]   py=[c2 =X UOp.const(1)+UOp.const(2)
+ast =X c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)]
+pyrender sink=[c2 =X UOp.const(1)+UOp.const(2)
+c4 =X c2*UOp.const(5)
+c5 =X c2.sqrt()
+ast =X c4.sink(c5)]   py=[c2 =X UOp.const(1)+UOp.const(2)
+c4 =X c2*UOp.const(5)
+c5 =X c2.sqrt()
+ast =X c4.sink(c5)]
+pyrender store=[c2 =X UOp.range(4, 0, AxisType.WEAK)
+c3 =X UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, 4, device='CPU'))
+ast =X UOp.const(0).store(c3)]   py=[c2 =X UOp.range(4, 0, AxisType.WEAK)
+c3 =X UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, 4, device='CPU'))
+ast =X UOp.const(0).store(c3)]
+pyrender reduce2=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X c1._rop(Ops.MAX, (0, 1))]   py=[c1 =X UOp.range(16, 0, AxisType.WEAK)
+c3 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X c1._rop(Ops.MAX, (0, 1))]
+pyrender flat1=[ast =X UOp.range(4, 0, AxisType.WEAK)]   py=[ast =X UOp.range(4, 0, AxisType.WEAK)]
+pyrender flat2=[ast =X UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1))]   py=[ast =X UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1))]
+pyrender flat3=[ast =X UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1, 2))]   py=[ast =X UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1, 2))]
+pyrender buflocal=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.LOCAL, device='CPU'))]   py=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.LOCAL, device='CPU'))]
+pyrender bufnodev=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4))]   py=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4))]
+pyrender bufimage=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU', image=(2, 2)))]   py=[c1 =X UOp.range(4, 0, AxisType.WEAK)
+ast =X UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU', image=(2, 2)))]
+pyr_call_noop=[False]   py=[False]
+pyr_call_prog=[True]   py=[True]
+pyr_call_const=[False]   py=[False]
+pyr_call_named=[False]   py=[False]
+pyr_buffer_plain=[False]   py=[False]
+pyr_buffer_held=[True]   py=[True]
+arg_repr ANone=[None]   py=None
+arg_repr ADt=[dtypes.i32]   py=dtypes.i32
+arg_repr AStr=['g']   py='g'
+arg_repr ARng=[(AxisType.GLOBAL, 0)]   py=(AxisType.GLOBAL, 0)
+arg_repr ARed=[(Ops.ADD, 2)]   py=(Ops.ADD, 2)
+arg_repr ATup=[(1, 2)]   py=(1, 2)
+arg_repr ATup1=[(7,)]   py=(7,)
+arg_repr ATup0=[()]   py=()
+arg_repr AInk=[('w', dtypes.f32)]   py=('w', dtypes.f32)
+arg_repr AAllred=[(Ops.ADD, 'METAL')]   py=(Ops.ADD, 'METAL')
+arg_repr ADev=['METAL']   py='METAL'
+arg_repr ACALL=[CallInfo(None, None, False, False)]   py=CallInfo(None, None, False, False)
+arg_repr ACALL2=[CallInfo(None, 'f', False, False)]   py=CallInfo(None, 'f', False, False)
+arg_repr ACALL3=[CallInfo(None, None, False, False)]   py=CallInfo(None, None, False, False)
+arg_repr AParam1=[ParamArg(1, dtypes.f32, 4, device='METAL')]
+arg_repr AParam2=[ParamArg(2, dtypes.i32, name='g')]
+arg_repr AParam3=[ParamArg(3, dtypes.f32, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))]
+arg_repr AKern=[KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)]
+arg_repr AProgr=[ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)]
+dt_repr float=[dtypes.f32]   py=dtypes.f32
+dt_repr int32=[dtypes.i32]   py=dtypes.i32
+addr_repr GLOBAL=[AddrSpace.GLOBAL]   py=AddrSpace.GLOBAL
+dev_repr D1(2)=['METAL']   py='METAL'
+dev_repr Dn=[('CPU', 'METAL')]   py=('CPU', 'METAL')
+tag_str  TStr=[x]   py=x
+tag_repr TStr=['x']   py='x'
+tag_repr TNone=[None]   py=None
+const_repr CInt=[3]   py=3
+const_repr CBool=[True]   py=True
+const_repr CInv=[Invalid]   py=Invalid
+const_repr CFlt=[ConstFloat(2.5)]   py=ConstFloat(2.5)
+ops_repr ADD=[Ops.ADD]   py=Ops.ADD
+syms_of MUL=[*]   py=*
+prec_of MUL=[1]   py=1
+prec_of CDIV=[99]   py=99
+sint_show 0=[0]   py=0
+sint_show 7=[7]   py=7
+sint_show 2**31-1=[2147483647] py=2147483647
+sint_show -3=[-3] py=-3
+sint_show -2**31=[-2147483648] py=-2147483648
+f32_repr 3.0=[3.0]     py=3.0
+f32_repr 1e30=[1e+30]     py=1e+30
+f32_repr 0.1=[0.1]     py=0.1

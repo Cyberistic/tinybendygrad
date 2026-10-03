@@ -95,6 +95,15 @@ def main():
     except Exception as e:
       row(f'pyr_{name}_err', f'{type(e).__name__}: {e}')
 
+  # The port's names for the interface case, and the archs its ladder rows use.
+  # Same call as above; the names are the port's, the values are this call's.
+  r = OP.PythonRenderer(Target(arch='gfx1100', interface='opencl'))
+  row('pyr_gfx1100_iface_arch', r.target.arch)
+  row('pyr_gfx1100_iface_dev', r.target.device)
+  row('pyr_interface_set_dev', r.target.device)
+  for arch in ('gfx1101', 'gfx942', 'sm_74', 'sm_86', 'sm_88'):
+    row(f'pyr_{arch}_ncores', len(OP.PythonRenderer(Target(arch=arch)).tensor_cores))
+
   # IMAGE, which is a getenv constant, so it needs its own process.
   with Context(IMAGE=1):
     r = OP.PythonRenderer(Target())
@@ -119,6 +128,34 @@ def main():
   except Exception as e:
     row('py_emulate_ok', False)
     row('py_emulate_msg', f'{type(e).__name__}: {e}')
+
+  # The port encodes the :167 refusal as a bool. Each value is a fresh process:
+  # getenv is cached at import, so this process cannot answer a second EMULATE.
+  def emulate_refused(emu, arch):
+    code = (
+      'import os, sys\n'
+      'os.environ["EMULATE"] = sys.argv[1]\n'
+      'from tinygrad.helpers import Target\n'
+      'import tinygrad.runtime.ops_python as OP\n'
+      'try:\n'
+      '    OP.PythonRenderer(Target(arch=sys.argv[2]))\n'
+      '    print("ok")\n'
+      'except AssertionError:\n'
+      '    print("raise")\n'
+    )
+    env = {k: v for k, v in os.environ.items() if k not in ('EMULATE', 'PYTHONPATH')}
+    env['EMULATE'] = emu
+    p = subprocess.run([sys.executable, '-c', code, emu, arch],
+                       capture_output=True, text=True, env=env)
+    line = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else ''
+    if line not in ('ok', 'raise') or p.returncode:
+      raise RuntimeError(f'EMULATE probe {emu!r} {arch!r} rc={p.returncode} {line!r} {p.stderr[-200:]}')
+    return line == 'raise'
+
+  row('pyr_emulate_bad', emulate_refused('AMD', 'gfx1100'))
+  row('pyr_emulate_bad_metal', emulate_refused('CUDA', 'METAL'))
+  row('pyr_emulate_bad_empty', emulate_refused('AMD_MFMA', ''))
+  row('pyr_emulate_ok', not emulate_refused('', 'gfx1100'))
 
   # ---- PythonCompiler.compile, ops_python.py:160 ---------------------------
   # base64.b64decode, over inputs chosen to hit every interesting shape: a
@@ -146,6 +183,19 @@ def main():
   row('pysd_sorted', sorted(str(d) for d in sd))
   row('pysd_has_half', 'dtypes.f16' in {str(d) for d in sd})   # half was RENAMED to f16; 'float16' is dead
   row('pysd_super_n', len(OP.Renderer.supported_dtypes(OP.PythonRenderer(Target()))))
+  # ops_python.py:182, the predicate itself, with the version flag as an argument
+  # because this interpreter is one version and the port tests both.
+  from tinygrad.dtype import dtypes
+  keep = lambda d, ge312: d != dtypes.half or ge312
+  row('pysd_keeps_f16_312', keep(dtypes.half, True))
+  row('pysd_drops_f16_311', not keep(dtypes.half, False))
+  row('pysd_keeps_bf16_311', keep(dtypes.bfloat16, False))
+  row('pysd_keeps_f32_311', keep(dtypes.float, False))
+  row('pysd_keeps_bool_311', keep(dtypes.bool, False))
+  row('pysd_keeps_i32_311', keep(dtypes.int32, False))
+  row('pysd_keeps_i64_311', keep(dtypes.int64, False))
+  row('pysd_keeps_f64_311', keep(dtypes.float64, False))
+  row('pysd_keeps_u32_311', keep(dtypes.uint32, False))
 
   # ---- PythonDevice.__init__, :186 ------------------------------------------
   # HostAllocator(self), [PythonRenderer], PythonProgram -- the order and the
@@ -230,6 +280,31 @@ def main():
     except Exception as e:
       row(f'pywma_c{ci}_nomatch_ok', False)
       row(f'pywma_c{ci}_nomatch_msg', f'{type(e).__name__}: {e}')
+
+  # The port's names for the metal table and for :37-38's assertion strings.
+  # `pywma_short_msg_32` is not here: no core in this table has 32 elements per
+  # thread, so CPython never emits that sentence.
+  tcore = r.tensor_cores[0]
+  frags = tcore.frag_coords()
+  n, lanes = len(frags[0][0]), len(frags[0])
+  row('pywma_metal_ncores', len(r.tensor_cores))
+  row('pywma_metal_dims0', tcore.dims[0])
+  row('pywma_metal_threads', tcore.threads)
+
+  def frag(npt):
+    return [[float(lane) for lane in range(lanes)] for _ in range(npt)]
+
+  def assert_msg(inp, warp):
+    try:
+      OP.wmma(r.tensor_cores, (tcore.dims, tcore.dtype_in, tcore.threads), inp, warp)
+    except AssertionError as e:
+      return str(e)
+    raise RuntimeError('wmma accepted an input the assertion must refuse')
+
+  row('pywma_short_msg_A', assert_msg([frag(1), frag(n), frag(n)], tcore.threads))
+  row('pywma_short_msg_B', assert_msg([frag(n), frag(1), frag(n)], tcore.threads))
+  row('pywma_short_msg_C', assert_msg([frag(n), frag(n), frag(1)], tcore.threads))
+  row('pywma_oddwarp_msg', assert_msg([frag(n), frag(n), frag(n)], tcore.threads - 1))
 
   # ---- PythonProgram.__init__, :47-51 ---------------------------------------
   # the two dicts it builds, read off a real program by intercepting a render.

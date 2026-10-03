@@ -767,11 +767,58 @@ BASE_ORACLES = {
   "tinybendygrad/nn/__init__.bend": [".agents/slop/nn-init-gate.py"],             #  24
   "tinybendygrad/codegen/gpudims.bend": [".agents/slop/xd1/rw-gate-oracle.py"],    #  24
   "tinybendygrad/runtime/ops_cpu.bend": [".agents/slop/cpulink_oracle.py"],        #   3
+  # 59 of the port's 85. The other 26 are the port's own encodings (table ids,
+  # constructor tags, a completion sentinel, a hardcoded b64 flag, synthetic
+  # core_find fixtures, and one assertion string no real tensor core emits).
+  # Measured 2026-10-03 with PYTHONPATH unset: the editable install imports, so
+  # the earlier "needs PYTHONPATH=." reason for leaving this unwired was wrong.
+  # The 19 string disagreements were the oracle's repr(), not the port: CPython's
+  # fields contain no quote characters (ops_python.py:169-177).
+  "tinybendygrad/runtime/ops_python.bend": [".agents/slop/ops-python-render-oracle.py"],  # 59
+  # 409 of the port's 520, 0 disagree, measured 2026-10-03. The oracle used to
+  # eval ops_amd.py:858 by number; that line is now `isinstance(..., USBIface)`
+  # and the target decomposition is at :862, selected by text. 111 port rows
+  # are ungated (init trace, differently-keyed names). Not --record'ed: the
+  # oracle emits 601 further rows, and GUARD 1 would freeze them. MOCKUSBIface
+  # is isinstance-USB (`ops_amd.py:858`) and the port's `is_usb` does not say
+  # so; no shared row names that fact, so it is not in the 409.
+  "tinybendygrad/runtime/ops_amd.bend": [".agents/slop/amd_oracle.py"],          # 409
   # 85 shared, 0 disagree, measured against `--gate` (imports xd1/head, prints the
   # port's bracket shape). The vendored tree is a hybrid — ops.py at HEAD, render.py
   # at the pin — and pyrender there disagrees on 18 rows the port gets right. Wiring
   # that tree would be BROKEN on every run. `--gate` is the HEAD call.
   "tinybendygrad/uop/render.bend": [".agents/slop/xd1/render-gate-oracle.py --gate"],  # 85
+  # -- the no-candidate unit, 2026-10-03. Each number is the intersection with
+  #    the port's own rows, measured by running the oracle and the cached port
+  #    rows, then re-checked by the control. A smaller number is the honest one.
+  #    llvmir: 323 of 323. The file was deleted in 668d3194d (`li/li-oracle.py`);
+  #    the filename sweep could not see a file that was no longer on disk. Restored
+  #    as llvmir-oracle.py. It calls renderer.llvmir. Default argv is `rows`.
+  "tinybendygrad/renderer/llvmir.bend": [".agents/slop/llvmir-oracle.py"],       # 323
+  # qcom: 312 of 750. Calls Q.ctz/parity/pkt*/flag/_qreg_exec/_read_lib and
+  # getattr(mesa/kgsl). Omitted: qc_ctz_zero (CPython -1, port 32, ops_qcom.py:43),
+  # the U32 miss sentinels (not a CPython return), and the stage-2 ELF walk
+  # qc_check.py re-derives. qc_regfwd_/qcregreg_ are tautological True and unprinted.
+  "tinybendygrad/runtime/ops_qcom.bend": [".agents/slop/qcom-oracle.py"],        # 312
+  # indexing: 104 of 252. ALWAYS_CONTIGUOUS, data_srcs, broadcast_axes, argsort.
+  # mv_* is arena-slot identity; apply_movement_op does not return those ids.
+  "tinybendygrad/schedule/indexing.bend": [".agents/slop/indexing-oracle.py"],   # 104
+  # dtype: 99 of 164 on the live tree (the 14:33 cache's 147 was stale).
+  # The rest are interning-order rows plus lgu, which the port prints
+  # `refused:unported` where CPython builds a WHERE. Not gated.
+  "tinybendygrad/codegen/decomp/dtype.bend": [".agents/slop/dtype-oracle.py"],   #  99
+  # rangeify: 31 of 126. rf-rows.py calls rangeify and has neither oracle nor gate
+  # in its name, so the filename sweep could not list it. 3 rows are a different
+  # field (AxisType.WEAK vs the axis index) and are not emitted.
+  "tinybendygrad/schedule/rangeify.bend": [".agents/slop/rangeify-oracle.py"],   #  31
+  # jit: 18 of 137. Four rows disagree: DEV=NULL says 'NULL' where the port baked
+  # 'PYTHON', and jit_oracle's cap() returned 'none' for two log lines.
+  "tinybendygrad/engine/jit.bend": [".agents/slop/jit-oracle.py"],               #  18
+  # device: 18 of 105. _canonicalize, ALL_DEVICES, the allow and disk predicates.
+  "tinybendygrad/device.bend": [".agents/slop/device-oracle.py"],                #  18
+  # null: 7 of 180. The five opcodes and two EMULATE messages NullDevice raises.
+  # The other two messages this oracle prints are not rows the port prints.
+  "tinybendygrad/runtime/ops_null.bend": [".agents/slop/null-oracle.py"],        #   7
   # `ops_cpu` is wired on THREE shared row names out of the oracle's 20, and that is named
   # rather than dressed up: 17 of its rows are `findlib_*` HOST answers (where libm and
   # libobjc live on THIS machine) which the port cannot be expected to reproduce off-Mac,

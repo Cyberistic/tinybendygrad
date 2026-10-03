@@ -1,0 +1,57 @@
+{
+ "natural_vs_natural_changed": [],
+ "natural_vs_forced_copy_changed": [],
+ "forced_vs_planted_changed": [
+  "ast",
+  "c2",
+  "c3",
+  "c4",
+  "c5",
+  "pyrender buffer",
+  "pyrender bufimage",
+  "pyrender buflocal",
+  "pyrender bufnodev",
+  "pyrender cast",
+  "pyrender cdiv",
+  "pyrender cfn",
+  "pyrender cmod",
+  "pyrender const",
+  "pyrender copy",
+  "pyrender fan",
+  "pyrender flat1",
+  "pyrender flat2",
+  "pyrender flat3",
+  "pyrender index",
+  "pyrender mul3",
+  "pyrender nest",
+  "pyrender range",
+  "pyrender range2",
+  "pyrender reduce",
+  "pyrender reduce0",
+  "pyrender reduce2",
+  "pyrender shared",
+  "pyrender sink",
+  "pyrender special"
+ ],
+ "forced_vs_planted_n": 36,
+ "natural_trees": [
+  "xd1head"
+ ],
+ "forced_copy_trees": [
+  "head-copy"
+ ],
+ "planted_trees": [
+  "planted"
+ ],
+ "natural_rows": 85,
+ "forced_rows": 85,
+ "planted_rows": 85,
+ "live_untouched": true,
+ "rcs": {
+  "natural_1": 0,
+  "natural_2": 0,
+  "forced_copy_1": 0,
+  "forced_copy_2": 0,
+  "planted": 0
+ }
+}

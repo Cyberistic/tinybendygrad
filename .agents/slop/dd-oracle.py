@@ -293,7 +293,7 @@ def L2I():
         ("lgl", Ops.WHERE, dtypes.int, dtypes.u32, 5),
         ("lgm", Ops.MAX, dtypes.int, dtypes.u32, 4),
         ("lgn", Ops.FLOORDIV, dtypes.int, dtypes.u32, 4),   # the raise arm
-        ("lgo", Ops.CAST, dtypes.long, dtypes.u32, 1),      # one word: the arity raise
+        ("lgo", Ops.CAST, dtypes.long, dtypes.u32, 1),      # one word: CAST reads uops[0], does not raise
         ("lgq", Ops.CDIV, dtypes.int, dtypes.u32, 4),
         ("lgr", Ops.CMOD, dtypes.int, dtypes.u32, 4),
         ("lgs", Ops.CDIV, dtypes.uint, dtypes.u32, 4),
@@ -459,6 +459,34 @@ def main():
     for nm, x in defines():
         r = run(nm, lambda: DD.l2i_define(x))
         print(f"{nm}sz={sizes(uncast(r if r is not None else x))}")
+    # Appended, not inserted: a const built here must not move an earlier row's
+    # `n=`. `long` is `dtypes.i64` (tinygrad/dtype.py:142). The pair is `(lo, hi)`
+    # from dtype.py:31 (`return lo, lo.const_like(0)`), and `.cast` folds only when
+    # the dtypes already agree (mixin/dtype.py:36).
+    print("# l2i const sources")
+    for nm, dt, src in (
+        ("lgv", dtypes.long, UOp.const(0, dtypes.uint32)),
+        ("lgw", dtypes.ulong, UOp.const(0, dtypes.uint32)),
+        ("lgx", dtypes.ulong, UOp.const(1, dtypes.uint32)),
+    ):
+        b = len(ORDER)
+        r = DD.l2i(Ops.CAST, dt, src)
+        print(f"{nm}={tree(r[0])}")
+        print(f"{nm}p={tree(r[1])}")
+        c = cone(list(r))
+        print(f"{nm}n={len(kept(ORDER[b:]))}")
+        print(f"{nm}sig={esig(c)}")
+        print(f"{nm}k={ck(c)}")
+    # dtype.py:35-38. Two f32 words, because the arm reads `a0` and `a1`. One word
+    # is `UnboundLocalError`, not `NotImplementedError`, and not this arm.
+    fa0, fa1 = WPOOL[dtypes.f32][:2]
+    b = len(ORDER)
+    fr = DD.l2i(Ops.CAST, dtypes.float32, fa0, fa1)
+    print(f"lgu={tree(fr)}")
+    cu = cone([fr])
+    print(f"lgun={len(kept(ORDER[b:]))}")
+    print(f"lgusig={esig(cu)}")
+    print(f"lguk={ck(cu)}")
     print("# the three tables: rule counts and reject-set sizes")
     for nm, pm in (("nlong", DD.pm_long_decomp), ("nfloat", DD.pm_float_decomp), ("ndtype", DD.pm_dtype_decomps)):
         print(f"{nm}={len(pm.patterns)}")

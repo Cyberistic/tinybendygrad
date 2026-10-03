@@ -356,9 +356,25 @@ ORACLE_CONFORMANCE = {
   # of a gate is the intersection, so 3 is the number and the comment in BASE_ORACLES says
   # which 3.
   "tinybendygrad/runtime/ops_cpu.bend": (".agents/slop/cpulink_oracle.py", 3, "live"),
+  # 59 of 85. The other 26 are port-internal encodings, not CPython outputs.
+  # PYTHONPATH unset still imports (editable install); measured, not assumed.
+  "tinybendygrad/runtime/ops_python.bend": (".agents/slop/ops-python-render-oracle.py", 59, "live"),
+  # 409 of 520. The other 111 are ungated (init trace, differently-keyed names).
+  # Not a claim about those 111. Measured 2026-10-03, 0 disagreements.
+  "tinybendygrad/runtime/ops_amd.bend": (".agents/slop/amd_oracle.py", 409, "live"),
   # 85 of the port's 86 naive keys. The leftover is `py`, an indented continuation
   # the parser invents; it is port-only and not a claim. HEAD, not the vendored hybrid.
   "tinybendygrad/uop/render.bend": (".agents/slop/xd1/render-gate-oracle.py --gate", 85, "live"),
+  # -- the no-candidate unit. Counts are the measured intersection, not the
+  #    oracle's row count. llvmir is 323 of the port's 323.
+  "tinybendygrad/renderer/llvmir.bend": (".agents/slop/llvmir-oracle.py", 323, "live"),
+  "tinybendygrad/runtime/ops_qcom.bend": (".agents/slop/qcom-oracle.py", 312, "live"),
+  "tinybendygrad/schedule/indexing.bend": (".agents/slop/indexing-oracle.py", 104, "live"),
+  "tinybendygrad/codegen/decomp/dtype.bend": (".agents/slop/dtype-oracle.py", 99, "live"),
+  "tinybendygrad/schedule/rangeify.bend": (".agents/slop/rangeify-oracle.py", 31, "live"),
+  "tinybendygrad/engine/jit.bend": (".agents/slop/jit-oracle.py", 18, "live"),
+  "tinybendygrad/device.bend": (".agents/slop/device-oracle.py", 18, "live"),
+  "tinybendygrad/runtime/ops_null.bend": (".agents/slop/null-oracle.py", 7, "live"),
   "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", 0, "dead"),
   "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", 0, "dead"),
 }

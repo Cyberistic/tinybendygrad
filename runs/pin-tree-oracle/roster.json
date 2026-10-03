@@ -25,6 +25,8 @@
  "tinybendygrad/nn/__init__.bend": ".agents/slop/nn-init-gate.py",
  "tinybendygrad/codegen/gpudims.bend": ".agents/slop/xd1/rw-gate-oracle.py",
  "tinybendygrad/runtime/ops_cpu.bend": ".agents/slop/cpulink_oracle.py",
+ "tinybendygrad/runtime/ops_python.bend": ".agents/slop/ops-python-render-oracle.py",
+ "tinybendygrad/runtime/ops_amd.bend": ".agents/slop/amd_oracle.py",
  "tinybendygrad/uop/render.bend": ".agents/slop/xd1/render-gate-oracle.py --gate",
  "tinybendygrad/dtype.bend": ".agents/slop/oracle/dtype_tables.py",
  "tinybendygrad/renderer/cstyle.bend": ".agents/slop/renderer_oracle.py cstyle"
