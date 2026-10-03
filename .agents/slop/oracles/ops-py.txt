@@ -1,3 +1,12 @@
+blob_interns=True
+blob_len_diff_content=True
+blob_diff_len=True
+blob_count_same=1
+blob_count_len_diff_content=2
+blob_shape=(4,)
+blob_content=97,97,97,97
+blob_sweep=True
+blob_sweep_count=6
 #shared_axis_members=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
 #shared_axis_values=1,2,3,4,5,6,7,8
 #shared_axis_count=8

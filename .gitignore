@@ -36,6 +36,20 @@ _mut_*.bend
 *mut.bend
 probe-*.bend
 probe-*.bend.mut
+# Two scratch names the four lines above MISS, found by asking the question the
+# patterns imply instead of the question they were written for: "does any `.bend`
+# in the tree still look like scratch?". `probe-*.bend` needs the hyphen, so
+# `renderer/csprobe.bend` (774 lines, a stale prefix of `cstyle.bend` -- measured
+# identical for its first 588 lines) slipped through; `_mut_*.bend` needs the
+# word, so `runtime/_p6.bend` (a 4-line F32.bits print) slipped through.
+# `*probe.bend` matches exactly 1 file in the tree and `_*[0-9].bend` exactly 2,
+# all three scratch, so neither pattern can eat a real port.
+#
+# BOTH ARE ALREADY TRACKED, AND A PATTERN WILL NOT UNTRACK THEM: `csprobe.bend`
+# and `_p6.bend` need `rm`, then the deletion committed. Do not read a green
+# `git status` here as fixed -- the same no-op is recorded twice above.
+*probe.bend
+_*[0-9].bend
 
 # comment-realignment pass: the measurement + edit harness (spec*.py, apply.py,
 # final.py, cite.py, dist.py) and the four report artifacts. Never sources; the

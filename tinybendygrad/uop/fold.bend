@@ -1023,9 +1023,11 @@ def noop_ds.go(empty: Bool, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 def noop_ds(ar: O.Arena, i: U32, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   noop_ds.go(U32.is_zero(O.Arena.nsrc(ar, i)), ss)
 
+# `len(self.arg)` (ops.py:365). `ABlob` now holds the BYTES -- ops.py:201's key holds
+# the `bytes` object -- so the length is the list's, not a stored field.
 def binary_n.of(arg: O.Arg) -> U32:
   match arg:
-    case O.ABlob{n}: n
+    case O.ABlob{bs}: U32.from_nat(List.length(&2, U32, bs))
     case _: 0
 
 def binary_n(arg: O.Arg) -> U32:
@@ -4378,6 +4380,133 @@ def ranged(+ar: O.Arena) -> Ranged:
   Ranged.of(ar, UOp.fold(ar))
 
 # ===========================================================================
+# THE `_min_max` WALK -- ops.py:1104's fold, and the last of the three pieces the foot of
+# this file names. `mm.lift` is PURE over `(op, srcs, arg, dtype)`, so what is missing is
+# the pass that PRODUCES the src intervals, and it is the same shape as `rng_sweep` and for
+# the same reason: `UOp.make` only ever names src indices already interned, so every src
+# index is strictly below its consumer's and ONE SWEEP IN ARENA INDEX ORDER reads nothing
+# that is not already in the table. A BACKEDGE is not the exception it looks like --
+# `src[0]` is the node the marker was built from, so it too is below.
+#
+# WHY A SWEEP AND NOT A SEVENTH `Derived` FIELD, which is the one decision here rather
+# than a consequence. `_min_max` needs no shape, no device and no addrspace, so a
+# `Derived` field would be the wrong home for it twice over: a field sees only the node's
+# own srcs, and a `Derived` EXISTS only for a node the dtype/shape ladder answered.
+#
+# THE PRICE, STATED RATHER THAN ASSUMED AWAY: the dtype is read from the MAIN table, so a
+# node `dt_shape` DEFERS has no interval here. Python is total, so this is a real
+# divergence and `mmkx_stage`, `mmkx_reshape` and `mmkx_backedge` name every op in it.
+# It is the same divergence `ranges` already pays, and `rg_absent` is its row there.
+# ===========================================================================
+
+type MBr is Data:
+  MBr{i: U32, b: Maybe<&2, Bnd2>}
+
+type BTable is Data:
+  BTable{es: List<&2, MBr>}
+
+def BTable.es(t: BTable) -> List<&2, MBr>:
+  match t:
+    case BTable{es}: es
+
+def BTable.put(t: BTable, r: MBr) -> BTable:
+  match t:
+    case BTable{es}: BTable{List.append(&2, MBr, es, [r])}
+
+def MBr.i(r: MBr) -> U32:
+  match r:
+    case MBr{i, b}: i
+
+def MBr.b(r: MBr) -> Maybe<&2, Bnd2>:
+  match r:
+    case MBr{i, b}: b
+
+def BTable.get.step(i: U32, +r: MBr, acc: MBr) -> MBr:
+  Bool.pick(MBr, U32.is_eq(i, MBr.i(r)), r, acc)
+
+# THE SAME O(n) SEARCH `Kahn.get` IS, and the default is a REFUSAL rather than an
+# interval: `mm.src2`'s `mm.unbound()` is for a src index past the END of a list, and a
+# node this sweep has not reached is a different thing, so the two must not read alike.
+def BTable.get.go(+i: U32, es: List<&2, MBr>, acc: MBr) -> MBr:
+  match es:
+    case Nil{}: acc
+    case r <> t: BTable.get.go(i, t, BTable.get.step(i, r, acc))
+
+def BTable.get(t: BTable, +i: U32) -> MBr:
+  BTable.get.go(i, BTable.es(t), MBr{i, None{}})
+
+# THE SRCS' INTERVALS, IN SRC ORDER, and the order is the whole of `SUB`'s arm: a walk
+# that appended to the front, or built the list from the node list rather than from
+# `Arena.srcs`, hands the table a reversed pair and `mmk_sub34` moves.
+def mm.gather.step(hit: Maybe<&2, Bnd2>, acc: Maybe<&2, List<&2, Bnd2>>) -> Maybe<&2, List<&2, Bnd2>>:
+  Maybe.bind(&2, Bnd2, List<&2, Bnd2>, hit,
+    b => Maybe.bind(&2, List<&2, Bnd2>, List<&2, Bnd2>, acc, xs => Some{List.append(&2, Bnd2, xs, [b])}))
+
+def mm.gather.go(+t: BTable, ss: List<&2, U32>, acc: Maybe<&2, List<&2, Bnd2>>) -> Maybe<&2, List<&2, Bnd2>>:
+  match ss:
+    case Nil{}: acc
+    case s <> tl: mm.gather.go(t, tl, mm.gather.step(MBr.b(BTable.get(t, s)), acc))
+
+def mm.gather(+t: BTable, ss: List<&2, U32>) -> Maybe<&2, List<&2, Bnd2>>:
+  mm.gather.go(t, ss, Some{Nil{}})
+
+# ONE NODE. A src this sweep could not answer, or a dtype the main fold could not, leaves
+# the node unanswered -- the same one-directional rule as `Kahn.gather`, and the two are
+# the same rule: the reader is a table read and an absent row is a refusal.
+def mm.node.of(d: Maybe<&2, S.Dt>, +ar: O.Arena, +i: U32, ss: Maybe<&2, List<&2, Bnd2>>) -> MBr:
+  match d ss:
+    case Some{dt} Some{xs}: MBr{i, Some{mm.lift(O.Arena.op(ar, i), xs, O.Arena.arg(ar, i), dt)}}
+    case _ _: MBr{i, None{}}
+
+def mm.node(+ar: O.Arena, +main: Table, +t: BTable, +i: U32) -> MBr:
+  mm.node.of(fold.dt(ar, main, i), ar, i, mm.gather(t, O.Arena.srcs(ar, i)))
+
+# THE SWEEP. `k` is the arena INDEX and a parameter rather than `List.length`, for
+# `rng_sweep`'s reason: the node list IS the index space, `Kahn.seed` numbers it the
+# same way, and index 0 is the bottom, which gets a row like any other.
+def mm.sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: BTable) -> BTable:
+  match ns:
+    case Nil{}: t
+    case _ <> tl: mm.sweep.go(ar, main, tl, U32.add(k, 1), BTable.put(t, mm.node(ar, main, t, k)))
+
+def mm.sweep(+ar: O.Arena, +main: Table) -> BTable:
+  mm.sweep.go(ar, main, O.Arena.nodes(ar), 0, BTable{Nil{}})
+
+# THE READERS. `UOp.min_max(ar, bt, i)` and not `UOp.min_max(ar, i)`, for the reason the
+# header gives for `UOp.dtype`: answering one node IS the sweep.
+def UOp.min_max(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd2>:
+  MBr.b(BTable.get(bt, i))
+
+# `vmin` and `vmax` -- ops.py:1100 and ops.py:1102, the two halves by name. They are
+# readers and not arithmetic, so each is `Bnd2.lo`/`Bnd2.hi` and nothing else, and
+# `mmk_vmin`/`mmk_vmax` are the rows that notice a transposition the pair would hide.
+def UOp.vmin(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd>:
+  Maybe.map(&2, Bnd2, Bnd, Bnd2.lo, UOp.min_max(ar, bt, i))
+
+def UOp.vmax(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd>:
+  Maybe.map(&2, Bnd2, Bnd, Bnd2.hi, UOp.min_max(ar, bt, i))
+
+# The main fold ONCE, then the sweep over the FINISHED table, for `Ranged`'s reason: the
+# sweep reads dtypes, and only a complete main table answers one everywhere. The main
+# `Table` is not a field -- the sweep closed over it.
+type MMed is Data:
+  MMed{ar: O.Arena, bt: BTable}
+
+def MMed.ar(x: MMed) -> O.Arena:
+  match x:
+    case MMed{ar, bt}: ar
+
+def MMed.bt(x: MMed) -> BTable:
+  match x:
+    case MMed{ar, bt}: bt
+
+def MMed.of(+ar: O.Arena, +tb: Table) -> MMed:
+  MMed{ar, mm.sweep(ar, tb)}
+
+def min_maxed(+ar: O.Arena) -> MMed:
+  MMed.of(ar, UOp.fold(ar))
+
+# ===========================================================================
 # THE RANGES ROWS. `.agents/slop/oracles/fold-rng-oracle.py` builds the same twelve
 # graphs node for node and prints CPython's own `u.ranges`, so `diff` of the two lanes
 # IS the test. The label is a RANGE's axis, never an index: CPython's interning order
@@ -4773,6 +4902,219 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
                   " nsrc=", U32.show(O.Arena.nsrc(ar, u)),
                   " srcops=", String.join(sig_srcops(ar, O.Arena.srcs(ar, u)), "|")])
 
+# ===========================================================================
+# THE `_min_max` WALK ROWS. `.agents/slop/mm-walk-gate.py` builds the same graphs node
+# for node and prints CPython's own `_min_max`, so `diff` of the two lanes IS the test.
+#
+# EVERY ROW CARRIES THE GRAPH IT IS ABOUT, not only the answer, and that is why `sig4` is
+# reused whole: a fixture built with a swapped pair of srcs or the wrong op hands the
+# table a different graph, and a plausible interval that happens to agree is the failure
+# mode this file's own header records four times over. `n=` counts the same reachable
+# nodes CPython's `toposort` does, so a fixture that reached further or less far is caught
+# before the interval is read.
+#
+# THE PREFIX IS A PARAMETER and not a constant because the `mmkx_` rows are the
+# DIVERGENCE and are NOT gated for equality: the sweep's dtype comes from the main fold's
+# table, so a node `dt_shape` defers has no interval here where CPython has one. Same
+# treatment `rg_absent` and `mv_expsym` get -- the port prints what it does, and the
+# oracle records CPython's real answer in a DIVERGES block.
+#
+#     .venv/bin/python .agents/slop/mm-walk-gate.py | grep '^mmk_' > mm-walk-py.txt
+#     ./bin/bend tinybendygrad/uop/fold.bend      | grep '^mmk_' > mm-walk-bend.txt
+#     diff mm-walk-py.txt mm-walk-bend.txt
+#
+# The `^mmk_` is what excludes the `mmkx_` rows from BOTH sides, which is the same
+# arrangement as `lf`/`lfx`: each lane prints its divergences in full and the diff covers
+# only the claims the two agree on.
+# ===========================================================================
+
+# `ABSENT` is this file's "this fold cannot answer", the same word `rng_str` prints, so a
+# refused interval is not mistakable for a saturated one.
+def mmk_str(m: Maybe<&2, Bnd2>) -> String:
+  match m:
+    case Some{b}: bnd2_show(b)
+    case None{}  : "ABSENT"
+
+def mmk_end(m: Maybe<&2, Bnd>) -> String:
+  match m:
+    case Some{b}: bnd_show(b)
+    case None{}  : "ABSENT"
+
+def mmk_row(pfx: String, nm: String, +x: MMed, +u: U32) -> IO(Unit):
+  IO.print(String.concat([pfx, nm, " ", sig4(MMed.ar(x), u), " ",
+                          mmk_str(UOp.min_max(MMed.ar(x), MMed.bt(x), u))]))
+
+def mmk_of(pfx: String, nm: String, +f: O.Found) -> IO(Unit):
+  mmk_row(pfx, nm, min_maxed(O.Found.ar(f)), O.Found.i(f))
+
+# ---- the fixtures -----------------------------------------------------------------
+def mw_c(ar: O.Arena, n: U32) -> O.Found:
+  O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
+
+# THE `ParamArg` BUILDER, for all three uses -- the plain int32 BUFFER, the int64 one and
+# the bounded PARAM -- so no row spells a thirteen-field record and no two rows can
+# disagree about its order. `vmm` is the `vmin_vmax`, which is the field the Defines arm
+# reads and the only way a fixture gives a node a SHAPE AND A NON-NEGATIVE INTERVAL AT ONCE.
+def mw_pa(dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> O.ParamArg:
+  O.ParamArg{0, dt, Some{4}, vmm, None{}, None{}, S.AGlobal{}, None{},
+    False{}, None{}, None{}, False{}, None{}}
+
+def mw_b(ar: O.Arena) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{mw_pa(S.int32(), None{})}, O.TNone{})
+
+# A BINARY OP OVER TWO CONSTs, as ONE builder for the order pair. `SUB(3,4)` is `(-1,-1)`
+# and `SUB(4,3)` is `(1,1)`, so the two rows differ only in the ARGUMENT ORDER here, and a
+# gather that reversed the list would swap their answers rather than break one of them.
+def mw_bin(op: O.Op, a: U32, b: U32) -> O.Found:
+  +x = mw_c(O.Arena.empty(), a)
+  +y = mw_c(O.Found.ar(x), b)
+  O.UOp.new(O.Found.ar(y), op, [O.Found.i(x), O.Found.i(y)], O.ANone{}, O.TNone{})
+
+# THE TRANSITIVE ROW. `MUL` is at depth 1 and `SUB` at depth 2 under the `ADD`, so a
+# sweep that answered one level and stopped reads `ABSENT` for the root rather than `19`.
+def mw_nested() -> O.Found:
+  +a = mw_c(O.Arena.empty(), 3)
+  +b = mw_c(O.Found.ar(a), 4)
+  +m = O.UOp.new(O.Found.ar(b), O.OpsMUL{}, [O.Found.i(a), O.Found.i(b)], O.ANone{}, O.TNone{})
+  +d = mw_c(O.Found.ar(m), 10)
+  +e = mw_c(O.Found.ar(d), 3)
+  +s = O.UOp.new(O.Found.ar(e), O.OpsSUB{}, [O.Found.i(d), O.Found.i(e)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(s), O.OpsADD{}, [O.Found.i(m), O.Found.i(s)], O.ANone{}, O.TNone{})
+
+# RANGE AND SPECIAL, one builder each, because `UOp.range_end` and `UOp.special` are
+# sugar over an `ARange` and a bare name and a row cannot spell either.
+def mw_rng(end: U32) -> O.Found:
+  +c = mw_c(O.Arena.empty(), end)
+  O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_LOOP{})
+
+def mw_spec(end: U32) -> O.Found:
+  +c = mw_c(O.Arena.empty(), end)
+  O.UOp.special(O.Found.ar(c), O.Found.i(c), "N")
+
+# A STACK OF THREE DIFFERENT VALUES, so `min`/`max` over the srcs cannot be answered by
+# reading src[0] alone.
+def mw_stack() -> O.Found:
+  +a = mw_c(O.Arena.empty(), 1)
+  +b = mw_c(O.Found.ar(a), 4294967294)
+  +c = mw_c(O.Found.ar(b), 5)
+  O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(a), O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# PAD IS IN `GroupOp.Movement` AND DOES NOT PASS THROUGH, and the row that separates those
+# two facts needs a src whose interval is STRICTLY POSITIVE, because a passthrough of a
+# full `int32` window is the same pair either way. A CONST has the interval and no SHAPE,
+# and `pad_ds` refuses an empty `ps`; a `ParamArg` with BOTH `size` and `vmin_vmax` is the
+# one fixture that has each, so the src is a PARAM bounded to `(5,9)` of shape `(4,)`.
+# The passthrough would answer `(5,9)` and CPython answers `(0,9)`.
+def mw_pad() -> O.Found:
+  +p = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},
+    O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(5), H.i64_of_i32(9)}})}, O.TNone{})
+  +o = mw_c(O.Found.ar(p), 0)
+  +z = mw_c(O.Found.ar(o), 11)
+  O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(p), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
+
+# A PARAM WITH `vmin_vmax`, so the Defines arm is reached with NO SRCS at all and the
+# answer can only have come from the arg. The bound is `(-3,7)` because a positive-only
+# pair is the same pair the PAD row needs, and two rows that cannot tell each other apart
+# are one row twice.
+def mw_param() -> O.Found:
+  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},
+    O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(4294967293), H.i64_of_i32(7)}})}, O.TNone{})
+
+# THE TWO WINDOW ROWS, and the reason `weak.bend` waits on this def: `2**64-1` does not
+# fit a signed word, so `uint64`'s ceiling and `int64`'s floor are the rows that say the
+# sign-plus-unsigned-magnitude pair is what `mm.mask64` was written for. `THREEFRY` is in
+# `GroupOp.Binary` and has NO arm in the block, so it reaches the default arm, and
+# `dt_shape` gives it `uint64`; the BUFFER has no `vmin_vmax`, so it reaches that same arm
+# with `int64`.
+def mw_threefry() -> O.Found:
+  +a = mw_c(O.Arena.empty(), 0)
+  +b = mw_c(O.Found.ar(a), 0)
+  +c = mw_c(O.Found.ar(b), 0)
+  O.UOp.new(O.Found.ar(c), O.OpsTHREEFRY{}, [O.Found.i(a), O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+def mw_buf_i64() -> O.Found:
+  O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{mw_pa(S.int64(), None{})}, O.TNone{})
+
+# A VOID DTYPE'S DEFAULT ARM, so `bnd_lim`'s one void arm is reached THROUGH THE SWEEP and
+# not only through a hand-built `lf` row.
+def mw_noop() -> O.Found:
+  +b = mw_b(O.Arena.empty())
+  O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
+
+# A STAGE, and it is ALSO the sibling fixture's unanswerable node rather than a fixture
+# of its own: `dt_shape` has no dtype arm for a STAGE, and CPython's answer is exactly its
+# src's, so this row is the whole of the refusal in one place.
+def mw_stage() -> O.Found:
+  +a = mw_c(O.Arena.empty(), 0)
+  O.UOp.new(O.Found.ar(a), O.OpsSTAGE{}, [O.Found.i(a)], O.ANone{}, O.TNone{})
+
+# THE PER-NODE ROW, and the one a whole-sweep flag cannot pass. The STAGE is unanswerable
+# and this `ADD` is built ON TOP OF ITS ARENA, so the two nodes are one sweep, and a sweep
+# that stopped at the first gap would leave the ADD unanswered. The STAGE is at a LOWER
+# INDEX than the ADD, which is what makes the sweep's index order the thing under test.
+def mw_sibling(st: O.Found) -> O.Found:
+  +b = mw_c(O.Found.ar(st), 2)
+  +c = mw_c(O.Found.ar(b), 5)
+  O.UOp.new(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# THE BACKEDGE, three rows from ONE arena, and the ORDERING CLAIM. `src[0]` is the node
+# the marker was built from, so it is BELOW the marker in index order and a forward sweep
+# reads it -- which is the one case where a sweep by index could read too little. The
+# marker itself is ANSWERED, not refused: `dt_shape`'s `late()` hands the twelve marker ops
+# `void` with no shape, so the dtype is known and the default arm is `(False, True)`.
+def mw_backedge() -> O.Found:
+  +c4 = mw_c(O.Arena.empty(), 4)
+  +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "N")
+  +c5 = mw_c(O.Found.ar(sp), 5)
+  +rg = O.UOp.range_end(O.Found.ar(c5), O.Found.i(c5), [0], O.AXIS_LOOP{})
+  O.UOp.backedge(O.Found.ar(rg), O.Found.i(sp), O.Found.i(rg), O.Found.i(sp))
+
+# A RESHAPE OVER A SYMBOLIC MARG, which is `mv_expsym`'s own wall seen from this side: the
+# interval is a PASSTHROUGH of the BUFFER's, so CPython answers the whole `int32` window
+# and the fold cannot reach the node at all.
+def mw_reshape() -> O.Found:
+  +b = mw_b(O.Arena.empty())
+  +c = mw_c(O.Found.ar(b), 4)
+  +sp = O.UOp.special(O.Found.ar(c), O.Found.i(c), "N")
+  O.UOp.new(O.Found.ar(sp), O.OpsRESHAPE{}, [O.Found.i(b)], O.ATuple{[O.Found.i(sp)]}, O.TNone{})
+
+# `vmin` AND `vmax` AS TWO ROWS on the ONE node whose bounds are 63 bits apart. A pair in
+# one string cannot see them exchanged, and exchanging them is the failure these two
+# readers exist to make impossible -- `commit_int` reads them as two arguments. `mw_buf_i64`
+# spends index 0 on the arena's bottom, so the BUFFER is at 1.
+def mw_vmin() -> IO(Unit):
+  +x = min_maxed(O.Found.ar(mw_buf_i64()))
+  IO.print(String.concat(["mmk_vmin ", sig4(MMed.ar(x), 1), " ",
+                          mmk_end(UOp.vmin(MMed.ar(x), MMed.bt(x), 1))]))
+
+def mw_vmax() -> IO(Unit):
+  +x = min_maxed(O.Found.ar(mw_buf_i64()))
+  IO.print(String.concat(["mmk_vmax ", sig4(MMed.ar(x), 1), " ",
+                          mmk_end(UOp.vmax(MMed.ar(x), MMed.bt(x), 1))]))
+
+# TWO ROWS OUT OF ONE SWEEP, which is what makes the ordering claim a claim at all. A
+# `do IO<Unit>` block can only BIND an `IO`, so the fold and its indices are bound ABOVE
+# it and the block is the prints -- and one fold is what makes them one sweep.
+def mmk_backedge() -> IO(Unit):
+  +f = mw_backedge()
+  +x = min_maxed(O.Found.ar(f))
+  +be = O.Found.i(f)
+  do IO<Unit>:
+    mmk_row("mmk_", "backedge", x, be)
+    mmk_row("mmk_", "backedge_sp", x, O.Arena.src(MMed.ar(x), be, 0))
+    mmk_row("mmk_", "backedge_rg", x, O.Arena.src(MMed.ar(x), be, 1))
+
+# THE SIBLING, and both nodes come out of ONE sweep with the STAGE at the lower index, so
+# `lo=+0:7` beside a `mmkx_sibling_stage` reading `ABSENT` is the per-node claim in one
+# row pair rather than two independent claims.
+def mmk_sibling() -> IO(Unit):
+  +st = mw_stage()
+  +f = mw_sibling(st)
+  +x = min_maxed(O.Found.ar(f))
+  do IO<Unit>:
+    mmk_row("mmkx_", "sibling_stage", x, O.Found.i(st))
+    mmk_row("mmk_", "sibling", x, O.Found.i(f))
+
 # A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1227)
 # and a dim is a non-negative count under 2^31 -- `sint_of`'s own note says so -- so
 # the LOW WORD is the decimal. `lo32` and not a reader of the whole I64, because a
@@ -5151,6 +5493,26 @@ def main() -> IO(Unit):
     rng_of_row("call_cf", rg_f_call_cf())
     rng_of_row("call_c", rg_f_call_c())
     rng_of_row("absent", rg_f_absent())
+    # THE `_min_max` WALK ROWS. The exact gate command is in the section header; the
+    # `mmkx_` rows are the DIVERGENCE and the oracle prints their real answers in a
+    # DIVERGES block rather than in the diffed set.
+    mmk_of("mmk_", "sub34", mw_bin(O.OpsSUB{}, 3, 4))
+    mmk_of("mmk_", "sub43", mw_bin(O.OpsSUB{}, 4, 3))
+    mmk_of("mmk_", "nested", mw_nested())
+    mmk_of("mmk_", "range5", mw_rng(5))
+    mmk_of("mmk_", "special4", mw_spec(4))
+    mmk_of("mmk_", "stack", mw_stack())
+    mmk_of("mmk_", "pad5", mw_pad())
+    mmk_of("mmk_", "param", mw_param())
+    mmk_of("mmk_", "threefry", mw_threefry())
+    mmk_of("mmk_", "buf_i64", mw_buf_i64())
+    mmk_of("mmk_", "noop", mw_noop())
+    mmk_sibling()
+    mmk_backedge()
+    mmk_of("mmkx_", "stage", mw_stage())
+    mmk_of("mmkx_", "reshape", mw_reshape())
+    mw_vmin()
+    mw_vmax()
     lf_row("add_int32_3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
     lf_row("add_int32_-3_4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
     lf_row("add_int32_-3_-4", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(0, 3)}, BndInt{True{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))

@@ -1,0 +1,1 @@
+MOVED	lgs,lgsk,lgsp,lgssig,lgt,lgtk,lgtp,lgtsig

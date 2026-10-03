@@ -131,7 +131,15 @@ class Body(c.Struct):
 row("sname_real_fields", ",".join(e[0] for e in Body._real_fields_))
 row("sname_entry_width", ",".join(str(len(e)) for e in Body._real_fields_))
 row("sname_idx_after", f"{Body.__dict__['a'].idx},{Body.__dict__['b'].idx}")
-row("sname_ctor_idx_given", "0,0")     # both constructed with idx=0
+# THE CTOR-GIVEN `idx`. `__set_name__` OVERWRITES `self.idx` (c.py:64), so on a
+# real class body the value the constructor was handed is ALREADY GONE -- a bare
+# `Field` nobody named is the only place it still exists. The second value is
+# given EXPLICITLY, so the two tokens differ: a changed default moves the first,
+# a dropped `idx=` argument moves the second, and a transposition of the two is
+# visible. (This row was the literal "0,0", which is a belief about the default
+# and could not fail.)
+row("sname_ctor_idx_given",
+    ",".join(str(f.idx) for f in (c.Field(U32, 0), c.Field(U32, 0, idx=5))))
 class BodyBF(c.Struct):
   SIZE = 4
   a = c.Field(U32, 0, 4, 0)

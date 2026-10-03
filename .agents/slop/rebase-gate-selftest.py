@@ -199,11 +199,13 @@ def never_wired_control():
   ok("every WIRED port on disk is comparable, so never_wired does not swallow the roster",
      not unwired_ok, f"swallowed: {unwired_ok}" if unwired_ok
      else f"{len(g.BASE_ORACLES)} wired ports checked")
-  # And the two ports wired ON PURPOSE to be BROKEN must not be classified as never-wired:
-  # their BROKEN verdict is a reachable state, not a missing wiring.
-  dead = [p for p in g.BASE_ORACLES if p.endswith(("dtype.bend", "renderer/cstyle.bend"))]
-  ok("the deliberately-BROKEN pair is still classified comparable, not never-wired",
-     all(g.never_wired(p, REPO / p, g.BASE_ORACLES[p]) is None for p in dead),
+  # And the port wired ON PURPOSE to be BROKEN must not be classified as never-wired: its BROKEN
+  # verdict is a reachable state, not a missing wiring. `dtype.bend` only -- cstyle.bend used to
+  # be named here too and stopped being true the day it was WIRED off `cstyle-rows`, and a
+  # control that keeps asserting a lane is dead after it was opened tests nothing.
+  dead = [p for p in g.BASE_ORACLES if p == "tinybendygrad/dtype.bend"]
+  ok("the deliberately-BROKEN lane is still classified comparable, not never-wired",
+     len(dead) == 1 and all(g.never_wired(p, REPO / p, g.BASE_ORACLES[p]) is None for p in dead),
      f"{dead}")
   return fails
 
@@ -293,23 +295,38 @@ def record_stable_control():
 
 
 # THE LANES THE SUPERSET PROOF RUNS OVER. Four, not the three the brief asked for, and chosen for
-# what they emit rather than for being convenient:
+# what they EMIT rather than for being convenient -- one per row shape, and the F2 shape twice
+# because it is the one the fold changes:
 #
-#   schedule/prepare.bend + prepare-oracle.py   THE LANE THE DEFECT IS ABOUT. prepare-oracle.py
-#       prints 14 `== SECTION ==` banners; split on the FIRST `=` each has an EMPTY name, so all
-#       fourteen landed on ONE key and the oracle reported 2522 rows where it has 2521.
-#   renderer/tc_ptx.bend + tcptx-oracle.py      the OTHER print shape, `name = [v]   py=[w]`, so
-#       the proof covers an emitter with spaces in the name and a second `=` in the value.
-#   uop/fold.bend + mm-lift-gate.py              201 port rows; one of the eight whose ORACLE cache
-#       held `{}`, i.e. the item-1 defect seen through a lens.
-#   renderer/amd/generate.bend + ga-oracle.py    726 port rows against 779 oracle rows, 0 shared
-#       disagreements -- the pair whose stale `84` is item 2.
+#   renderer/cstyle.bend + renderer_oracle.py cstyle-rows    F2, `name = [v]   py=[w]`. The lane
+#       the fold exists for: before it this pair reported 222 shared / 222 disagree on a lane
+#       cstyle-gate.py measures 221-of-227 clean with 0 disagreeing, so it was left unwired.
+#   schedule/multi.bend + multi-rows.py                      F3, `name␣␣value`, NO `=` AT ALL.
+#       The oracle lane read as ZERO rows -- 213 rows of real ground truth compared against
+#       nothing, which reads identically to an oracle that was never run.
+#   schedule/prepare.bend + prepare-oracle.py                F1 with `== SECTION ==` banners:
+#       splitting each on its FIRST `=` yields the name `""`, so all fourteen landed on ONE key
+#       and the oracle reported 2522 rows where it has 2521.
+#   renderer/tc_ptx.bend + tcptx-oracle.py stage2            F2 again, and the pair the fold must
+#       NOT change: BOTH sides carry `py=`, so folding must move neither the shared count nor the
+#       disagreement count. One F2 pair proving the fold works is not enough; one proving it is
+#       inert where both sides carry the tail is.
 SUPERSET_LANES = [
+  ("tinybendygrad/renderer/cstyle.bend", ".agents/slop/renderer_oracle.py cstyle-rows"),
+  ("tinybendygrad/schedule/multi.bend", ".agents/slop/multi-rows.py"),
   ("tinybendygrad/schedule/prepare.bend", ".agents/slop/prepare-oracle.py"),
   ("tinybendygrad/renderer/tc_ptx.bend", ".agents/slop/tcptx-oracle.py stage2"),
-  ("tinybendygrad/uop/fold.bend", ".agents/slop/mm-lift-gate.py"),
-  ("tinybendygrad/renderer/amd/generate.bend", ".agents/slop/ga-oracle.py"),
 ]
+
+# THE LANE THAT MUST KEEP READING AS NOTHING, and the reason the F3 gap is SPACES rather than any
+# whitespace. `.agents/slop/oracle/dtype_tables.py` prints 14,774 TAB-separated lines and not one
+# `=`, and `dtype.bend` is wired to it ON PURPOSE so that GUARD 2 ("compared nothing") is reachable
+# on the real tree. Read a tab as a gap and that lane would manufacture 14,774 row names -- of
+# which every one whose first column happened to be a dtype name would collide with a real
+# cstyle/dtype row and be read by GUARD 4 as evidence. A table is not a row set, and a table's
+# first column is not a row name. This is its own check because it needs NO .bend lane: the port
+# side prints nothing anyway, and the claim is entirely about the oracle's bytes.
+TSV_ORACLE = (".agents/slop/oracle/dtype_tables.py", "tinybendygrad/dtype.bend")
 
 
 def lane_text(argv, port, env=None, timeout=1800):
@@ -339,30 +356,42 @@ def lane_text(argv, port, env=None, timeout=1800):
 
 
 def superset():
-  """ITEM 3's PROOF: the fixed `rows()` RETURNS EVERY ROW THE OLD ONE RETURNED.
+  """THE PROOF: the new `rows()` RETURNS EVERY ROW THE OLD ONE RETURNED, and every value it
+  changes is proven to move NO verdict anywhere.
 
-  `rows()` used to key on the empty string when a line began with `=`, which is what all 14 of
-  prepare-oracle.py's `== SECTION ==` banners do. So it reported 2522 rows where the oracle has
-  2521 -- a count off by one for a STRUCTURAL reason, which is the kind nobody can check by
-  looking at the rows. It is fixed. The question this answers is not "is the new count smaller"
-  (of course it is, by exactly the phantom) but "IS THE NEW PARSER A SUPERSET OF THE OLD ONE",
-  because `rows()` is shared by 38 wired gates and a parser that silently drops or renames a row
-  makes some OTHER gate agree by comparing nothing.
+  `rows()` is shared by 38 wired gates, so the question is not "is the new parser better" but
+  "WHAT ELSE DID IT MOVE". Three movements, and only one of them is safe:
+
+    LOST KEY       the new parser drops a name.  GUARD 4 compares over the keys two lanes SHARE,
+                   so a lost key shrinks the intersection -- below one, BROKEN, but between 1 and
+                   n it is a silently NARROWER comparison.
+    CHANGED VALUE  the new parser returns a different value for a name it already had.  This is
+                   the direction that can turn a real disagreement into AGREEMENT, which is the
+                   outcome this project has paid for six times.
+    MANUFACTURED KEY  it invents a name out of a line that was never a row.
+
+  The old parser found only `name=value`.  It read ZERO rows from `renderer/cstyle-rows`'s
+  `[v]   py=[w]` tail -- no, it read them but could not COMPARE them, 222 shared and 222
+  disagreeing on a lane that is 221-of-227 clean -- and it read ZERO of `multi-rows.py`'s 213
+  whitespace-separated rows, which is indistinguishable from an oracle that was never run. Both
+  fixes change something, so the proof is stated as THREE claims and each is driven:
+
+    1. KEYS.  Every old key survives; the only ones that can go are the empty-named `== SECTION ==`
+       phantoms, which were already gone before this change.
+    2. VALUES.  Every changed value is NAMED and is a `py=` fold.  Asserting "no value changed"
+       would be the easy way to pass and it would be FALSE for the F2 lanes, so the assertion is
+       that every change is a fold of the same line -- never a re-parse of a different line.
+    3. VERDICTS.  For each pair, the shared count and the disagreement count under BOTH parsers.
+       A fold that turned a disagreement into agreement would show up here as disagree falling to
+       zero while shared stayed put, and that is the check that matters.
 
   `rows()` is loaded from the gate, never restated. `rows_before_fix` is the only restatement in
   this file and it is labelled as the control's reference.
 
-  TWO PARTS, and the second is the one that matters:
-
-    1. THE PROPERTY, over synthetic text and over four REAL lane pairs: every key the old parser
-       produced is present in the new one with the SAME value, and the only keys the new parser
-       drops are the empty-named ones.
-    2. THE CONSEQUENCE, driven through the real `gate_port()`: GUARD 4 compares lanes over the keys
-       they SHARE, so removing a key can only SHRINK that intersection. Dropping a phantom
-       therefore cannot turn a real disagreement into a match -- it turns "agreed on a banner"
-       into "compared nothing", and "compared nothing" is BROKEN. Both directions are driven:
-       a pair whose ONLY shared key was a banner, agreeing AND disagreeing, plus a real named row
-       that differs. A one-directional test is half a test.
+  PART 4 is the consequence through the real `gate_port()`: GUARD 4 consults no baseline, so
+  dropping a key cannot launder a disagreement into "no baseline recorded". Both directions are
+  driven -- a pair whose ONLY shared key was a banner, agreeing AND disagreeing, plus a real
+  named row that differs.  A one-directional test is half a test.
   """
   g = load_gate("rebase_gate_superset")
   fixed, old = g.rows, rows_before_fix
@@ -374,30 +403,43 @@ def superset():
       fails.append(name)
 
   def superset_of(text, label):
-    """(ok, detail) for one block of text. Every old key present, same value, and every dropped
-    key EMPTY -- named, because a superset with a non-empty deletion is a different defect and
-    the reader needs to be able to tell them apart."""
-    n, o = fixed(text), old(text)
-    dropped = [k for k in o if k not in n]
-    changed = [k for k in o if k in n and o[k] != n[k]]
-    detail = f"{label}: old={len(o)} new={len(n)} dropped={[k for k in dropped]} changed={changed}"
-    return not dropped or all(not k for k in dropped), not changed, detail
+    """(keys_kept, only_folded, detail) for one block of text.
 
-  # ---- PART 1, synthetic. The three shapes this parser has to survive, in one text.
+    `only_folded` is True when EVERY changed value is the old one with the producer's own `py=`
+    boundary removed: `old == new + PY_TAIL + <the transcription>`. A value that changed for any
+    other reason -- a different line winning the key, a re-parse, a strip -- fails this, which is
+    the point of not asserting the easy thing ("no value changed"), which would be FALSE for every
+    F2 lane and would prove nothing about them."""
+    n, o = fixed(text), old(text)
+    dropped = sorted(k for k in o if k not in n)
+    changed = sorted(k for k in o if k in n and o[k] != n[k])
+    folded = all(o[k].startswith(n[k] + g.PY_TAIL) for k in changed)
+    detail = (f"{label}: old={len(o)} new={len(n)} +{len(set(n) - set(o))} -{len(dropped)} "
+              f"revalued={len(changed)} every_revalue_is_a_py_fold={folded} dropped={dropped[:4]}")
+    return (not dropped or all(not k for k in dropped)), folded, detail
+
+  # ---- PART 1, synthetic. All THREE shapes, plus the two things that must NOT become rows.
   SYNTH = ("== A: TABLES ==\n"                       # empty name -> a phantom under the old rule
-           "PTX tensor_cores sm_75 = [1, 2]   py=[3]\n"   # SPACES in the name, two `=`
-           "load=0\n"                                  # tight, and a value that is not empty
-           "empty value row=0\n"                       # EMPTY VALUE, which IS a row
+           "PTX tensor_cores sm_75 = [1, 2]   py=[3]\n"   # F2: SPACES in the name, two `=`
+           "load=0\n"                                  # F1: tight, and a value that is not empty
+           "empty value row=0\n"                       # F1: EMPTY VALUE, which IS a row
            "= trailing equals in the value\n"          # empty name again
+           "whitespace row  a value\n"                 # F3: no `=` at all
+           "fp8e4m3\t10\t8\t1\n"                       # TSV: a table, NOT a row
+           "ERROR: two  spaces in prose\n"             # prose, NOT a row
            "load=1\n")                                 # a MOVE, to catch value drift
-  keep, same, detail = superset_of(SYNTH, "synthetic")
-  ok("synthetic: the fixed parser is a superset, and every dropped key is empty-named", keep, detail)
-  ok("synthetic: no surviving key's VALUE changed", same)
+  keep, folded, detail = superset_of(SYNTH, "synthetic")
+  ok("synthetic: every old key survives, and the only drops are empty-named", keep, detail)
+  ok("synthetic: every changed value is a `py=` fold and nothing else", folded)
   ok("synthetic: exactly the empty-named lines are dropped, and they were ONE key before",
      set(old(SYNTH)) - set(fixed(SYNTH)) == {""} and len(old(SYNTH)) - len(fixed(SYNTH)) == 1,
      f"old keys {sorted(old(SYNTH))}\n        new keys {sorted(fixed(SYNTH))}")
+  ok("synthetic: the F3 row is READ (0 -> 1 more) and the TSV and prose lines are not",
+     "whitespace row" in fixed(SYNTH) and fixed(SYNTH)["whitespace row"] == "a value"
+     and "fp8e4m3" not in fixed(SYNTH) and "ERROR:" not in fixed(SYNTH),
+     f"new keys {sorted(fixed(SYNTH))}")
 
-  # ---- PART 1, real lanes. Both parsers on the same stdout, both counts printed.
+  # ---- PART 2, real lanes. Both parsers on the same stdout, both counts printed.
   py = oracle_py.resolve()[0]
   env = load_scan().stripped_env({"DEV": "NULL"})  # measured: tcptx-oracle exits 2 without DEV=NULL
   measured = 0
@@ -414,15 +456,70 @@ def superset():
         fails.append(f"superset {label} {pathlib.Path(port).name}: unmeasured")
         continue
       measured += 1
-      keep, same, detail = superset_of(text, f"{port} {label}")
-      ok(f"{pathlib.Path(port).name} {label}: fixed rows() is a superset of the old one", keep, detail)
-      ok(f"{pathlib.Path(port).name} {label}: no surviving key's VALUE changed", same)
-  # A sweep in which nothing ran must not be able to report four quiet passes, which is the
-  # "0 rows is indistinguishable from not started" trap wearing the costume of a passing check.
-  ok(f"the superset proof MEASURED {measured} real lanes, not 0", measured >= 6,
+      keep, folded, detail = superset_of(text, f"{port} {label}")
+      ok(f"{pathlib.Path(port).name} {label}: every old key survives; only phantoms drop", keep, detail)
+      ok(f"{pathlib.Path(port).name} {label}: every changed value is a `py=` fold", folded)
+
+  # ---- PART 3, the VERDICTS, per pair. This is the claim that is actually load-bearing.
+  #   Two invariants, and they are NOT the same claim:
+  #     shared' >= shared      the fold must never NARROW a comparison -- narrowing is the
+  #                            "comparing less and calling it agreement" failure;
+  #     disagree' <= disagree  the fold must never INVENT a disagreement either, or the change
+  #                            would hand every F2 lane a permanent red, which is worse than an
+  #                            unwired one because red on every sweep is what a reader learns to
+  #                            ignore.
+  #   Where BOTH lanes carry the `py=` tail the fold must be INERT -- tc_ptx is that lane, and
+  #   there the assertion is equality, because there is nothing to gain and something to lose.
+  for (port, oracle), (bend_text, oracle_text) in zip(SUPERSET_LANES, texts):
+    if not (bend_text and oracle_text):
+      continue
+    b, o, bo, oo = fixed(bend_text), fixed(oracle_text), old(bend_text), old(oracle_text)
+    sh_o, sh_n = len(set(bo) & set(oo)), len(set(b) & set(o))
+    d_o = sum(1 for k in set(bo) & set(oo) if bo[k] != oo[k])
+    d_n = sum(1 for k in set(b) & set(o) if b[k] != o[k])
+    both_fold = g.PY_TAIL in bend_text and g.PY_TAIL in oracle_text
+    stem = f"{pathlib.Path(port).name} vs {pathlib.Path(oracle.split()[0]).name}"
+    ok(f"{stem}: shared {sh_o} -> {sh_n} (never narrows), disagree {d_o} -> {d_n} (never grows)",
+       sh_n >= sh_o and d_n <= d_o,
+       f"{sh_n} shared of {len(b)} port / {len(o)} oracle rows; {d_n} disagreeing")
+    if both_fold:
+      ok(f"{stem}: both lanes carry `py=`, so the fold is INERT -- shared and disagree unchanged",
+         (sh_n, d_n) == (sh_o, d_o), f"{sh_o}/{d_o} -> {sh_n}/{d_n}")
+
+  # ---- PART 3c, THE CONTROL THE FOLD NEEDS: a lane it fixed must still be able to go RED.
+  # Agreeing-once is what a blind gate looks like. So one row of the cstyle PORT text is
+  # corrupted and the real gate_port() must name it -- which is also deliverable 5's control for
+  # the lane the whole fold exists to wire.
+  csty = next((t for (p, _), t in zip(SUPERSET_LANES, texts) if p.endswith("cstyle.bend")), None)
+  if csty and csty[0]:
+    pm, po = fixed(csty[0]), fixed(csty[1])
+    target = next(k for k in sorted(set(pm) & set(po)) if pm[k] == po[k] and pm[k])
+    poisoned = dict(pm, **{target: pm[target] + "PLANTED"})
+    v = gate_with(load_gate("rebase_gate_fold_control"), {"lanes": {}, "hunks": {}},
+                  {"interpreted": poisoned, "native": poisoned, "cpython:o": po})
+    ok("a PLANTED disagreement in a folded lane is BROKEN and NAMES the row",
+       v["state"] == "BROKEN" and any(target in d for d in v.get("disagreements", [])),
+       f"{v['state']}: {v['why'][:110]}")
+    clean = gate_with(load_gate("rebase_gate_fold_control_clean"), {"lanes": {}, "hunks": {}},
+                      {"interpreted": pm, "native": pm, "cpython:o": po})
+    ok("...and the SAME pair unplanted is AGREE-UNRECORDED, so the plant is what moved it",
+       clean["state"] == "AGREE-UNRECORDED", f"{clean['state']}: {clean['why'][:110]}")
+  else:
+    ok("the folded-lane PLANT control measured its lane", False,
+       "cstyle.bend produced no rows -- UNMEASURED, so the fold is UNPROVEN, not proven good")
+
+  ok(f"the superset proof MEASURED {measured} real lanes, not 0", measured >= 2 * len(SUPERSET_LANES),
      f"{measured} of {2 * len(SUPERSET_LANES)} lanes measured")
 
-  # ---- PART 2, the consequence, through the real gate_port() AND the real rows().
+  # ---- PART 3b, THE NEGATIVE: a table is not a row set, and this is the reason F3 wants SPACES.
+  tsv_spec, tsv_port = TSV_ORACLE
+  tsv = lane_text([py, *tsv_spec.split()], tsv_spec, env=env, timeout=600) or ""
+  ok(f"a {tsv_port.split('/')[-1]} TSV oracle stays at ZERO rows, and does not become 14,774 claims",
+     not tsv or not fixed(tsv),
+     f"{len(tsv.splitlines())} TSV lines -> {len(fixed(tsv))} rows (old parser: "
+     f"{len(old(tsv))}); a gap of TABS is a table cell, not a row name")
+
+  # ---- PART 4, the consequence, through the real gate_port() AND the real rows().
   # THE LANE ROWS ARE BUILT BY CALLING rows() ON TEXT. Handing gate_port() a dict with a "" key
   # in it tests nothing: run_port is stubbed, so rows() never sees the banner and the phantom
   # arrives by the back door. The whole claim is about what the parser does with `== X ==`, so the
@@ -703,6 +800,7 @@ def main():
 
   fails += never_wired_control()
   fails += record_stable_control()
+  fails += planted_lane_control()
 
   print("\nCACHE RULE: a cache is a reading only if it is NEWER than its source and RECORDS "
         "SOMETHING\n")
@@ -789,6 +887,147 @@ def plan_contract():
           if not (REPO / p).exists()]
   ok("every removed EXTRA_PORTS target that names a file still exists under its new name",
      not gone, f"dead: {gone}" if gone else "")
+  return fails
+
+
+def parser_fingerprint():
+  """A hash of `rows()`'s own BYTECODE, plus the shape constants it reads. `rebase-scan-oracles.py`
+  caches row DICTS, not stdout, so a cache written by one parser is a set of keys and values that
+  the next parser will read as if it had produced them.
+
+  ⚠ THAT IS NOT HYPOTHETICAL AND IT IS THE EXACT FAILURE THIS FILE IS BUILT AGAINST. The cache
+  rule is "a cache OLDER than its source is not a reading", and `rows()` is not a source: editing
+  rebase-gate.py changes no .bend and no oracle, so every cached dict stayed "fresh" and
+  measure_roster() would have reported the new parser's verdicts over the old parser's rows. The
+  same argument is why 82 cache files holding `{}` were once believed, and it is the reason a
+  confident number has outlived its input three separate times in this project's history.
+
+  So the fingerprint is written BESIDE the cache and a change wipes it. Wiping is cheap (the lanes
+  re-run) and it is the safe direction; keeping a cache whose meaning has changed is not a speed,
+  it is a lie with a timestamp."""
+  import hashlib
+  scan = load_scan()
+  g = scan.gate
+  src = hashlib.sha256(g.rows.__code__.co_code).hexdigest()
+  src += repr((g.PY_TAIL, g.GAP))
+  return hashlib.sha256(src.encode()).hexdigest()[:16]
+
+
+def parser_cache_guard():
+  """Wipe rebase-scan-oracles.py's row cache when `rows()`'s meaning has changed. Prints what it
+  did, because a silent wipe and a silent reuse are indistinguishable from the outside and only one
+  of them is honest about the numbers that follow."""
+  scan = load_scan()
+  marker = scan.CACHE / "PARSER"
+  fp = parser_fingerprint()
+  try:
+    was = marker.read_text().strip()
+  except OSError:
+    was = None
+  if was == fp:
+    return f"parser {fp}: rebase-scan's row cache is consistent with it"
+  scan.CACHE.mkdir(parents=True, exist_ok=True)
+  for f in scan.CACHE.glob("*.json"):
+    f.unlink()
+  marker.write_text(fp)
+  return (f"parser {was or 'none'} -> {fp}: rebase-scan's row cache was measured by a DIFFERENT "
+          f"rows() and every cached row dict in it has been deleted, so nothing below can be read "
+          f"off the old parser's work")
+
+
+def mutant_lane(spec, row, tmpdir):
+  """A CPython lane that is `spec`'s stdout with ONE row's value corrupted, written into a
+  `$TMPDIR`. Not a mutant ORACLE: it runs the real one and rewrites its output, so the only
+  difference between the two lanes is the corruption and nothing else -- a mutant that re-spelled
+  the values would move many rows and the control would report a disagreement without naming
+  which one it planted.
+
+  It lives in a temp directory rather than in `.agents/slop/` on purpose. A CORRUPTED oracle in
+  the slop directory is a file that outlives the control that made it, and `.agents/slop/` is
+  swept by rebase-scan-oracles.py -- the next sweep would measure it as a candidate and cache it.
+  The recipe is here; the artefact is not."""
+  mut = pathlib.Path(tmpdir) / "mutant-lane.py"
+  mut.write_text(
+    "import os, subprocess, sys\n"
+    f"ROW = {row!r}\n"
+    f"ARGV = {spec.split()!r}\n"
+    "r = subprocess.run([sys.executable, *ARGV], env=dict(os.environ, DEV='NULL'),\n"
+    "                   capture_output=True, text=True)\n"
+    "sys.stderr.write(r.stderr)\n"
+    "hit = [0]\n"
+    "out = []\n"
+    "for line in r.stdout.splitlines():\n"
+    "  if line.split('=', 1)[0].strip() == ROW:\n"
+    "    line = line + 'PLANTED'\n"
+    "    hit[0] += 1\n"
+    "  out.append(line)\n"
+    "if hit[0] != 1:\n"
+    "  sys.stderr.write(f'MUTANT: {ROW} matched {hit[0]} lines, expected exactly 1\\n')\n"
+    "  sys.exit(3)\n"
+    "print('\\n'.join(out))\n")
+  return str(mut)
+
+
+def planted_lane_control():
+  """THE RULE THIS FILE IS BUILT AROUND, DRIVEN ON A REAL PAIR: a lane is not wired until it has
+  been SEEN RED.
+
+  `renderer/cstyle.bend` was WIRED on 2026-10-04 and this is its control. The clean pair must be
+  AGREE-UNRECORDED, and a single corrupted row must make the same pair BROKEN WITH THE ROW NAMED
+  -- through the real `run_port`, so a real .bend lane and a real CPython subprocess, not a dict
+  handed to a stub. A gate that has only ever printed agreement is indistinguishable from a gate
+  that cannot fail, and the planted row is a `tmap` cell, the row family cstyle-gate.py already
+  proved falsifiable.
+
+  The mutant is REFUSED if its row matches anything other than exactly one line, so the control
+  cannot silently degrade into "planted into nothing" -- which would report AGREE on the clean
+  pair and be read as a passing control having proved nothing.
+
+  ⚠ FOUR MODULES, NOT ONE. `gate_with()` REPLACES `g.run_port` and `g.REPO` with a stub, so the
+  real runs and the stubbed verdicts cannot share a module object. Driving the real lanes through
+  a module a previous call stubbed is a control that measures the stub."""
+  port, spec = "tinybendygrad/renderer/cstyle.bend", ".agents/slop/renderer_oracle.py cstyle-rows"
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  # The row is CHOSEN by running the pair, never typed: a typed row name is a name that silently
+  # stops existing when the port is re-cut, and the control would then report "planted into
+  # nothing" as agreement.
+  lanes, now = load_gate("rebase_gate_plant_real").run_port(REPO / port, [spec], True)
+  both = set(now["interpreted"]) & set(now["cpython:renderer_oracle"])
+  ok("the real cstyle lanes ran and shared a row to plant into", bool(both),
+     f"lanes={ {k: v['rc'] for k, v in lanes.items()} } rows={ {k: len(v) for k, v in now.items()} }")
+  if not both:
+    fails.append("planted-lane control: nothing measured")
+    return fails
+  row = next(k for k in sorted(both) if now["interpreted"][k] == now["cpython:renderer_oracle"][k])
+  clean = gate_with(load_gate("rebase_gate_plant_clean"), {"lanes": {}, "hunks": {}}, now)
+  ok(f"clean: cstyle is AGREE-UNRECORDED over {len(both)} shared names, not BROKEN and not "
+     f"NOT-STARTED", clean["state"] == "AGREE-UNRECORDED",
+     f"{clean['state']}: {clean['why'][:120]}")
+  with tempfile.TemporaryDirectory() as td:
+    mlanes, planted = load_gate("rebase_gate_plant_mutant").run_port(
+      REPO / port, [mutant_lane(spec, row, td)], True)
+    ok("the mutant lane exited 0, so it PLANTED rather than died",
+       mlanes["cpython:mutant-lane"]["rc"] == 0,
+       f"rc={mlanes['cpython:mutant-lane']['rc']} "
+       f"{mlanes['cpython:mutant-lane'].get('err', '')[:120]}")
+    v = gate_with(load_gate("rebase_gate_plant_control_red"), {"lanes": {}, "hunks": {}}, planted)
+    named = [d for d in v.get("disagreements", []) if d[2] == row]
+    ok(f"one planted row -> BROKEN, and the message NAMES `{row}`",
+       v["state"] == "BROKEN" and bool(named), f"{v['state']}: {v['why'][:120]}")
+    ok("...and it is ONE row against two of the three lane pairs",
+       len(v.get("disagreements", [])) == 2,
+       f"{len(v.get('disagreements', []))} disagreements: the planted row is shared with 2 of "
+       f"the 3, because interpreted-vs-native is the port against itself")
+    # RESTORE, BY RE-RUN. Nothing on disk was edited, so the restore is proved by the bytes
+    # coming back, not by a hash of a file -- there is no file to hash.
+    again = load_gate("rebase_gate_plant_restored").run_port(REPO / port, [spec], True)[1]
+    ok("the restored pair is BYTE-IDENTICAL to the clean reading", again == now)
   return fails
 
 
@@ -948,64 +1187,60 @@ ORACLE_CONFORMANCE = {
   # BASE_ORACLES and the control that had to pass first is in ORACLE_NOT_WIRED below.
   "tinybendygrad/device.bend": (".agents/slop/device-oracle.py", "live"),
   "tinybendygrad/dtype.bend": (".agents/slop/oracle/dtype_tables.py", "dead"),
-  "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle", "dead"),
+  #    WIRED 2026-10-04, off `renderer_oracle.py cstyle-rows` and NOT off the 15-row `cstyle`
+  #    lane this used to name. 222 shared / 0 disagreeing, and the 222 is the DENOMINATOR: 8 of
+  #    the port's `kern` rows share 6 names under a first-`=` split, and the 3 port-only names are
+  #    cstyle-gate.py's EXCLUDED `buft METAL`, `idx BASE  regadd`, `idx HIP   regadd`. It was
+  #    unwired because `rows()` could not COMPARE the port's `NAME = [v]   py=[w]` against the
+  #    oracle's `NAME = [v]` -- 222 shared / 222 disagreeing, by construction -- and 9 of those
+  #    rows carry the port's marker where CPython raises, which the oracle used to render as a
+  #    sentinel no other lane can read. Both were the READER's problem; see BASE_ORACLES.
+  "tinybendygrad/renderer/cstyle.bend": (".agents/slop/renderer_oracle.py cstyle-rows", "live"),
 }
 
 # NOT WIRES, and named here as well as in BASE_ORACLES because a roster that only records
-# what passed cannot answer "why is this one missing?" -- which is the question the next
-# reader asks about every port that is NOT-STARTED.
+# what passed cannot answer "why is this one missing?" -- which is the question the next reader
+# asks about every port that is NOT-STARTED.
 #
-# ⚠ IT IS EMPTY, AND AN EMPTY ROSTER IS NOT AN ABSENCE OF THE QUESTION. Every one of the 50
-# targets is either wired in BASE_ORACLES or named here; that is what the disjointness
-# assertion below checks, and it is checked so that adding a port to one list and not the
-# other cannot pass. The roster being empty says the QUESTION is now answered for every
-# port, not that no port needs it. As of 2026-10-03, `device.bend` was the only entry; it is
-# gone because the row that blocked it was a real port bug and the bug was fixed:
+# schedule/multi.bend IS THE FIRST ENTRY IN A LONG WHILE, AND IT IS NOT THE SAME KIND OF ENTRY AS
+# THE ONE THAT WAS HERE. `device.bend` sat here until it was WIRED, and the entry named a real
+# blocker: one row, `allow_lower`, disagreeing for a structural reason a transcription cannot see
+# (tinygrad/device.py:30 REBINDS `ix`, so line 31's subject is `PYTHON:1` whatever case arrived).
+# That was fixed and the lane opened. multi.bend's blocker is equally structural and equally real:
 #
-#   THE CONTROL, AND WHY THE ROSTER EXISTS AT ALL. The rule this file is built around is
-#   that a lane is not wired until it has been SEEN RED. So device.bend's control ran all
-#   three readings through the REAL gate (three real bend lanes, a real CPython subprocess,
-#   `main()`'s own rc), and the planted disagreement named the row:
+#   port   `schedule/multi.bend`        321 rows, every name `t_`-prefixed (`t_pm_n`, `t_rd_all_red`)
+#   oracle `.agents/slop/multi-rows.py` 213 rows, no prefix (`pm_len`, `rd_all_red`)
+#   shared, exactly as printed                                     0
 #
-#     1 clean      rebase-gate.py --port tinybendygrad/device.bend
-#                    -> AGREE-UNRECORDED, rc=0. rows interpreted=110 native=110
-#                       cpython:device-oracle=23. 0 disagreements.
-#     2 PLANTED    the same entry, one path swapped for
-#                  .agents/slop/device-oracle-MUTANT.py, which is device-oracle.py with
-#                  exactly one line changed -- allow_lower answers 0 instead of 1, proven to
-#                  be one line by the mutant itself before it prints a row. Nothing else
-#                  touched, and the port not touched at all.
-#                    -> BROKEN, rc=1, why = "2 row(s) disagree with CPython across 3 lane
-#                       pair(s)", and `disagreements` NAMES the row `allow_lower` for
-#                       cpython-vs-interpreted and cpython-vs-native. TWO of the three
-#                       pairs, and that is correct rather than a shortfall: the third is
-#                       interpreted-vs-native, both lanes being the same port, so it
-#                       cannot disagree with itself.
-#     3 restored   entry back to device-oracle.py. The gate's stdout is BYTE-IDENTICAL to
-#                  reading 1, and both edited files hash to their pre-plant values.
+# ⚠ AND A `t_` PREFIX NORMALISATION IS A SECOND SOURCE OF TRUTH, NOT A FIX. MEASURED, not assumed:
+# strip the prefix and the intersection is 26 -- and 21 of those 26 DISAGREE, because the collision
+# is an accident of spelling and not a correspondence of claims:
 #
-#   Reading 2 is the one that matters. A gate that has only ever printed AGREE-UNRECORDED
-#   is indistinguishable from a gate that cannot fail, which is the whole reason this file
-#   exists; and the planted row is the SAME row the port fix moved, so the control would
-#   have caught a regression of the very fix that opened the lane.
+#     bx_none    port `1`   vs oracle `()`    port: "is anything broadcast"  oracle: WHICH axes
+#     pm_rev     port `1`   vs oracle `0`    port: a COUNT row              oracle: tuple.index
+#     fl_mid_n   port `1`   vs oracle `1`    AGREES -- and agrees on the LITERAL `1`
 #
-#   ⚠ THE MECHANISM, because it was looked for and is now FIXED, not merely noted.
-#   `rebase-gate.py --oracle` LOOKS like the way to do this without editing anything, and for
-#   its entire first life it was a NO-OP: main() called targets_of(), which SNAPSHOTS
-#   `tuple(BASE_ORACLES.get(port, []))`, and only then applied `BASE_ORACLES[port] =
-#   [a.oracle]`; the gate loop iterated the snapshot. Measured on this tree: `--port
-#   tinybendygrad/device.bend --oracle .agents/slop/device-oracle.py` printed
-#   `[oracle-override] ... -> device-oracle.py` and then answered `NOT-STARTED ... no oracle
-#   wired in BASE_ORACLES`, and for an ALREADY-WIRED port it ran the BASE oracle anyway. The
-#   flag whose stated reason for existing is "prove a planted disagreement WITHOUT editing
-#   this file" could not do that for any port. The unit that owns rebase-gate.py has since
-#   FIXED it -- `targets = [(port, (a.oracle,))]`, replacing the thing that is ITERATED rather
-#   than the dict the snapshot was taken from -- and credited the measurement above in its own
-#   comment. So the control above was necessarily run by editing the entry and restoring it,
-#   with the restore proved by a HASH; a control written after the fix should use the flag,
-#   and should FIRST assert that the flag changed what the lanes ran, because a flag that
-#   prints its own confirmation while doing nothing is worse than no flag.
-ORACLE_NOT_WIRED: dict[str, str] = {}
+# That third line is the expensive one. A normalisation would manufacture 21 reds and 1 agreement
+# that is not an agreement, and an agreement is what a reader believes. So the prefix stays where
+# the producer put it, and the fix belongs in an oracle that prints the port's own row NAMES with
+# CPython's answer under each -- a different oracle from this one, and not this unit's to write.
+#
+# WHAT WAS THIS UNIT'S, AND IT IS FIXED. `multi-rows.py:265` prints `f"{n.ljust(w)}  {v}"`: a
+# name, TWO SPACES, a value, and no `=` anywhere, so `rows()` read ZERO of its 213 rows -- which is
+# indistinguishable, from outside, from an oracle that was never run. `row()`'s third shape reads
+# all 213 (SUPERSET_LANES measures old=0 new=213 on that stdout). The lane is STILL unwired, for
+# the NAME reason above, and the two are separate claims: a readable FORMAT is necessary for a
+# wireable lane and not sufficient. An F3 lane that reads 213 rows and shares 0 names reports
+# BROKEN "share NO row names", which is the whole point of GUARD 4.
+ORACLE_NOT_WIRED: dict[str, str] = {
+  "tinybendygrad/schedule/multi.bend": (
+    "UNWIRED. 321 port rows against 213 oracle rows, 0 shared names, so GUARD 4 would answer "
+    "'share NO row names' and nothing would ever be compared. A `t_` prefix normalisation is a "
+    "SECOND SOURCE OF TRUTH rather than a fix: it yields 26 collisions, 21 of which DISAGREE "
+    "because the port's `1`-per-op rows and the oracle's axis tuples share a spelling and not a "
+    "claim, and the 1 that agrees agrees on the literal `1`. The FORMAT is read now (213 rows, was "
+    "0); the blocker is the NAME, and the fix is an oracle that prints the port's row names."),
+}
 
 
 def dead_lane_is_broken(port, oracle):
@@ -1081,6 +1316,7 @@ def oracle_template():
   live_pairs = sum(1 for _, k in ORACLE_CONFORMANCE.values() if k == "live")
   print(f"\nMEASURING {live_pairs} live pairs against the tree "
         f"(shared names / disagreements / port rows / oracle rows)\n")
+  print(f"  {parser_cache_guard()}\n")
   t0 = time.monotonic()
   measured, bend_all, orc_all = measure_roster()
   print(f"  measured in {time.monotonic() - t0:.1f}s\n")

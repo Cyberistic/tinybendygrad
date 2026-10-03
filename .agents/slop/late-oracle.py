@@ -115,6 +115,21 @@ def lin_rows(tag, sink):
     flat.append(len(u.ranges))
     flat.extend(int(r.vmax) for r in u.ranges)
   srow(f"{tag}_vm", " ".join(str(x) for x in flat))
+  # THE EDGE LIST, IN THE TOPOSORT'S OWN POSITIONS -- `{tag}_edg`. Every other
+  # `{tag}_*` row reads this graph's nodes by OP and ARG only, and `linearize`
+  # reads `src_without_body` only to COUNT occurrences, so a permutation of any
+  # one node's srcs moves none of them: seven src-swaps of the fixture graph move
+  # 0 of the 128 rows on the Bend side while moving 2, 0, 20, 6, 9, 3 and 10 on
+  # this one (`.agents/slop/order-lin-sweep.sh`). This row is the edges.
+  #
+  # THE ALPHABET IS A POSITION, NOT AN ARENA INDEX, and that is what makes the two
+  # lanes comparable: `pos` comes from CPython's own `toposort`, while the port
+  # derives it from its own arena and its own literal node list. An arena-index
+  # alphabet would not work -- `UOp.const(1, i32)` is ONE node here and TWO in
+  # `ops.bend`, so the ports' index alphabets differ by construction.
+  pos = {u: i for i, u in enumerate(lst)}
+  srow(f"{tag}_edg", " ".join("%d:%s" % (pos[u], " ".join(str(pos[s]) for s in u.src_without_body))
+                              for u in lst))
   prios = {u: prio_of(u) for u in lst}
   with Context(TUPLE_ORDER=0):
     nl = linearize(sink)

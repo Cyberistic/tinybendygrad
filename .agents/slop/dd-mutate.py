@@ -171,9 +171,9 @@ MUTATIONS = [
     ("M04 dd_cast_bool: invert the bool-source test",
      "    case True{}: P.dc_cast(ar, x, S.single())\n    case False{}: O.Found{ar, x}",
      "    case True{}: O.Found{ar, x}\n    case False{}: P.dc_cast(ar, x, S.single())"),
-    ("M05 l2i_cast3.bitc: never fold the uint bitcast",
-     "def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:\n  match isu:\n    case True{}: O.Found{ar, a0}\n    case False{}: T.tx_bitcast(ar, a0, S.uint32())",
-     "def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:\n  match isu:\n    case True{}: T.tx_bitcast(ar, a0, S.uint32())\n    case False{}: T.tx_bitcast(ar, a0, S.uint32())"),
+    ("M05 l2i_cast3.bitc: never bitcast the source to uint32",
+     "def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:\n  dd_bcast(isu, ar, a0, S.uint32())",
+     "def l2i_cast3.bitc(isu: Bool, +ar: O.Arena, +a0: U32) -> O.Found:\n  O.Found{ar, a0}"),
     ("M06 l2i_cast.got: route sel 3 to arm 0 instead of arm 3",
      "def l2i_cast.got(sel: U32, +ar: O.Arena, +a0: U32, +dt: S.Dt, +ldt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:\n  match sel:\n    case 0: Some{l2i_cast0(ar, a0, ldt, Bool.or(dd_is_bool(xdt), dd_is_uint(xdt)), xdt)}\n    case 1: Some{l2i_cast1(ar, a0, ldt, xdt)}\n    case 3: Some{l2i_cast3(ar, a0, dt, xdt)}",
      "def l2i_cast.got(sel: U32, +ar: O.Arena, +a0: U32, +dt: S.Dt, +ldt: S.Dt, +xdt: S.Dt) -> Maybe<&2, W2>:\n  match sel:\n    case 0: Some{l2i_cast0(ar, a0, ldt, Bool.or(dd_is_bool(xdt), dd_is_uint(xdt)), xdt)}\n    case 1: Some{l2i_cast1(ar, a0, ldt, xdt)}\n    case 3: Some{l2i_cast0(ar, a0, ldt, False{}, xdt)}"),
@@ -181,12 +181,12 @@ MUTATIONS = [
      "def dd_bc(isu: Bool, +ar: O.Arena, +x: U32) -> O.Found:\n  match isu:\n    case True{}: O.Found{ar, x}\n    case False{}: T.tx_bitcast(ar, x, S.uint32())",
      "def dd_bc(isu: Bool, +ar: O.Arena, +x: U32) -> O.Found:\n  match isu:\n    case True{}: T.tx_bitcast(ar, x, S.uint32())\n    case False{}: T.tx_bitcast(ar, x, S.uint32())"),
     ("M08 l2i_cast0.sgn: const_like(-1) as 1 instead of -1",
-     "  +cm = dd_clike(O.Found.ar(c), 4294967295, ldt)",
-     "  +cm = dd_clike(O.Found.ar(c), 1, ldt)"),
+     "  +cm = dd_clike(O.Found.ar(c), H.i64_of_i32(4294967295), ldt)",
+     "  +cm = dd_clike(O.Found.ar(c), H.i64_of_i32(1), ldt)"),
     # --- the shift arms ----------------------------------------------------
     ("M09 l2i_shl.hi: OR the halves the other way round",
-     "  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t)))",
-     "  O.Found.i(dd_or(O.Found.ar(t), O.Found.i(t), O.Found.i(s)))"),
+     "  dd_or(O.Found.ar(t), O.Found.i(s), O.Found.i(t))",
+     "  dd_or(O.Found.ar(t), O.Found.i(t), O.Found.i(s))"),
     ("M10 l2i_shl.hi: `>> 31 - n` becomes `>> n`",
      "  +k = dd_rsub31(O.Found.ar(o), n)",
      "  +k = dd_or(O.Found.ar(c1), n, O.Found.i(c1))"),
@@ -204,8 +204,8 @@ MUTATIONS = [
      "  +x1 = dd_mul(O.Found.ar(q), a0, b1)",
      "  +x1 = dd_mul(O.Found.ar(q), a1, b0)"),
     ("M15 l2i_mul.w: shift the product right before left",
-     "  +m16 = T.tx_shl(O.Found.ar(m), O.Found.i(m), 16)",
-     "  +m16 = T.tx_shr(O.Found.ar(m), O.Found.i(m), 16)"),
+     "  +hi = T.tx_shl(mar, mi, 16)",
+     "  +hi = T.tx_shr(mar, mi, 16)"),
     ("M16 l2i_cmplt: swap the two OR halves",
      "  +r = dd_or(O.Found.ar(an), O.Found.i(lt), O.Found.i(an))",
      "  +r = dd_or(O.Found.ar(an), O.Found.i(an), O.Found.i(lt))"),
@@ -219,8 +219,8 @@ MUTATIONS = [
      "  +s = T.tx_alu2(O.Found.ar(r), op, nth(ws, 1n), nth(ws, 3n))",
      "  +s = T.tx_alu2(O.Found.ar(r), O.OpsAND{}, nth(ws, 1n), nth(ws, 3n))"),
     ("M20 dd_rsub31: `31 - n` becomes `31 + n`",
-     "  P.dc_sub(O.Found.ar(c), O.Found.i(c), n)",
-     "  dd_add(O.Found.ar(c), O.Found.i(c), n)"),
+     "  +m = dd_wk(O.Found.ar(c), H.i64_of_i32(4294967295))",
+     "  +m = dd_wk(O.Found.ar(c), H.i64_of_i32(1))"),
     ("M21 unpack32: mask 0xFFFF becomes 0x10000",
      "  +lo = dd_band(O.Found.ar(bc), O.Found.i(bc), 65535)",
      "  +lo = dd_band(O.Found.ar(bc), O.Found.i(bc), 65536)"),
@@ -280,21 +280,32 @@ MUTATIONS = [
     # Same shape as the two mutants that reached origin/master (`l2i_shl.hi`'s
     # OR swap, `reindex.scaled`'s mul swap): operand/arm identity inside a
     # commutative-looking pair.  See dd-mutate-report.md.
-    ("M36 l2i_cdiv.uns: swap the two arms (CDIV must take q, CMOD must take r)",
-     "  match isdiv:\n    case True{}: W2{ar, Cd.r0(c), 0}\n    case False{}: W2{ar, Cd.q0(c), 0}",
-     "  match isdiv:\n    case True{}: W2{ar, Cd.q0(c), 0}\n    case False{}: W2{ar, Cd.r0(c), 0}"),
+    # --- RE-AIMED, 2026-10-04.  The dtype unit FIXED `l2i_cdiv.uns` (dtype.py:74
+    # is `return r if op == Ops.CMOD else q`, and the arms now agree with it), so
+    # the old anchor was the FIXED text and the mutant was the DEFECT: applying it
+    # would have turned the table back into a regression test for correct code.
+    # The anchor is now the fixed line and the mutant re-introduces the bug, so
+    # M36 stays armed at the thing it found.  See dd-mutations-report.md.
+    ("M36 l2i_cdiv.uns: put the remainder back on the CDIV arm (the defect M36 found)",
+     "  match isdiv:\n    case True{}: W2{ar, Cd.q0(c), Cd.q1(c)}\n    case False{}: W2{ar, Cd.r0(c), Cd.r1(c)}",
+     "  match isdiv:\n    case True{}: W2{ar, Cd.r0(c), Cd.r1(c)}\n    case False{}: W2{ar, Cd.q0(c), Cd.q1(c)}"),
 ]
 
 PLAN = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)] + MUTATIONS
 
 # The frozen snapshot this table is measured against.  `dtype.bend` belongs to a
-# CONCURRENT unit that was observed rewriting it mid-run (73b0e1e7 -> a2c68a7e
-# while 39 mutations were in flight), and the new file does not even compile
-# (`expected : H.I64`).  A harness that reads the live file per mutation measures
-# a moving target, so the snapshot is PINNED BY DIGEST and the run asserts it.
-# To retarget: freeze the file, record its sha1 here, and re-run the baseline.
+# CONCURRENT unit that was observed rewriting it mid-run, so the snapshot is PINNED
+# BY DIGEST and the run asserts it.  To retarget: freeze the file, record its sha1
+# here, and re-run the baseline.
+#
+# RE-FROZEN 2026-10-04 at `d01ec094`, with the `hi42` fixture (dtype.py:42's `hi`
+# as a fixture answer) in it.  The previous pin was `73b0e1e7`, which the dtype
+# unit then moved three times and fixed three arena-aliasing defects in -- one of
+# them INSIDE `l2i_shl.hi`, which is why this table's M09 read 0 rows there and
+# reads 3 here.  A 0 measured against a snapshot with a known defect in it is a
+# statement about the snapshot, not about the port.
 FROZEN = os.path.join(HERE, "dd-mutations.frozen.bend")
-FROZEN_SHA1 = "73b0e1e7fd6652c5fc7b49323a1956d44545f230"
+FROZEN_SHA1 = "e4618a7127cedfd04201156fa426facf4ad9ece9"
 
 # The TREE the snapshot is dropped into, pinned for the same reason.  Measured:
 # 097aadb08 and e17d3f7dd both reproduce the 172-row baseline BYTE-IDENTICALLY
@@ -427,8 +438,14 @@ def main():
         out = os.path.join(SCRATCH, "ddmut-%d.txt" % w)
         dest = os.path.join(cache, short + ".txt")
         if os.path.exists(dest):          # resumable: converges over re-runs
-            verdict, moved = open(dest).read().split("\t", 1)
-            return name, verdict, [x for x in moved.split(",") if x], "cached"
+            verdict, rest = open(dest).read().split("\t", 1)
+            # Only MOVED rows have a moved-row list.  For the others the second
+            # field is a DIAGNOSTIC (bend's first error lines), and reading it as
+            # a row list made a cache hit report `DID-NOT-COMPILE  1 rows` where
+            # the fresh run said `0 rows` -- so a re-run was not comparable with
+            # the run it was caching.
+            moved = rest.split(",") if verdict == "MOVED" else []
+            return name, verdict, moved, "cached"
         if not os.path.isdir(tree):
             shutil.copytree(top, tree)
         bake = wtgt + ".ddmut"            # RULE G: written before the first write
@@ -545,6 +562,11 @@ def main():
 
     # The machine-readable sidecar, so the table can be rebuilt without parsing
     # the prose and the classification lives in one place.
+    # The TSV is the machine-readable verdict and is deliberately INDEPENDENT of
+    # the attempt count and of the cache, so a re-run from the cache produces a
+    # byte-identical TSV.  It was not, and the only diff between two runs of the
+    # same table was `1 attempt(s)` vs `cached` -- i.e. the reproducibility check
+    # was comparing provenance, not results.
     tsv = open(sys.argv[2] + ".tsv", "w")
     for name, verdict, moved, _ in rows:
         tsv.write("%s\t%s\t%d\t%s\n"

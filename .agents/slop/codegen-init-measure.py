@@ -1,0 +1,315 @@
+#!/usr/bin/env python3
+"""MEASURE THE TWO STAGES OF `tinybendygrad/codegen/__init__.bend`'s arena
+threading, against CPython called live. Supersedes the first version of this
+file, which could only see the pre-fix tree.
+
+    .venv/bin/python .agents/slop/codegen-init-measure.py
+
+WHAT IS BEING ORDERED, AND WHY THE ORDER IS THE POINT. The port carried a
+`SINK -> Some{self}` rule that upstream's table does not have
+(`tinygrad/schedule/__init__.py:96-101` has exactly two patterns, read off the
+objects by `codegen-init-oracle.py` Q1). Removing it alone made the printed row
+WORSE, because `wr.rebuild` minted through `O.UOp.new` and kept only
+`Found.i` -- an index with no arena to resolve it against, which
+`O.Arena.node` answers as its total out-of-range bottom (`NOOP`). So the
+rule was LOAD-BEARING on a bug. The two stages measured here are:
+
+    BASE      the frozen pre-fix tree (`runs/gr-init/base`), md5-asserted.
+    A-arena   arena threaded, third rule STILL PRESENT.
+    B-both    arena threaded, third rule REMOVED. This is the landed file.
+    C-comment a comment-only edit of B. The CONTROL: every row must be SAME.
+
+If B's rows were not CPython's, then the wall was not the only root cause and
+the third rule is not removable -- and that is a finding, not a failure to be
+patched over.
+
+CPython's values are RE-DERIVED AT RUN TIME by CALLING tinygrad from this
+checkout. Nothing below is transcribed:
+
+    py.new_sink_op           = SINK
+    py.repl                  = PARAM(0)->PARAM(99),PARAM(1)->PARAM(100),ALLOC->BUFFER,SINK->SINK
+    py.new_sink_is_original  = 0
+    py.new_sink_srcs         = PARAM(99),PARAM(100),BUFFER
+    py.n_repl                = 4
+
+THE ARENA-LENGTH SWEEP. `O.Arena` is an immutable record and `O.Arena.node` is
+total, so a single wrong row could be one fixture's arena having been clobbered
+rather than a rebuilt index being out of reach. `M-padK` interns K extra PARAMs
+(distinct slots) before the fixture, making the arena `5 + K` nodes at the
+sink. The row is reported at EVERY length. K=0 is 5 nodes, K=4 is 9; the
+oldest predecessor of this harness swept 11 lengths across 7 distinct arenas
+and saw `SINK->NOOP` at every one.
+
+SCORING. A row's SCORE is the number of characters that differ from CPython's,
+whitespace stripped, so it is a distance in one unit and lower is closer.
+Rows are compared WHOLE, as `name=value` LINES -- a harness that compares row
+names reports 0 for every mutation.
+"""
+from __future__ import annotations
+
+import hashlib
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+PORT = "codegen/__init__.bend"
+PROBE = "codegen-init-probe.bend"
+
+BASE_TREE = ROOT / "runs" / "gr-init" / "base" / "tinybendygrad"
+OLD_PROBE = ROOT / "runs" / "gr-init" / "base" / ".agents-old-probe.bend"
+
+# md5 of the two trees this harness reads. A mismatch is a hard stop, never a
+# silent measurement of something other than what the report claims.
+MD5_BASE_TREE = "083c05ff6013d152ce3f83db4fc62a51"   # the pre-fix port
+MD5_LIVE_TREE = "4055c0eef2170f35c42a41172a25d42e"   # the landed port
+
+# --- the anchors. Every one must appear EXACTLY ONCE or the patch is refused;
+# a silently-unapplied mutation is a zero that reads like a theorem.
+SINK_ENTRY_ANCHOR = 'O.PMEntrys{[O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}'
+SINK_ENTRY_BACK = 'O.PMEntrys{[O.PMEntry{0, [O.OpsSINK{}], Nil{}}, O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}'
+FOUND_AR_ANCHOR = "case O.Found{ar, i}: (ar, Map.set(&2, U32, repl, U32.show(u), i))"
+FOUND_AR_MUT = "case O.Found{ar, i}: (O.Arena.empty(), Map.set(&2, U32, repl, U32.show(u), i))"
+SCAN_U = "wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, u, ctx), repl, rebuilt)"
+SCAN_R = "wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, rebuilt, ctx), repl, rebuilt)"
+COMMENT_ANCHOR = "# A dummy PARAM that the ctx carries."
+COMMENT_EDIT = "# A dummy PARAM that the ctx carries. CONTROL: comment only, no behaviour."
+PAD_ANCHOR = "  ar0 = O.Arena.empty()\n  +p0 = test_param(ar0, 0)"
+
+GATE_ROWS = ("repl", "new_sink_is_original", "new_sink_srcs", "new_sink_op")
+CONTROL_ROW = "n_repl"
+
+
+def pad(k: int) -> str:
+  """K PARAMs with distinct slots interned before the fixture, so the arena is
+  `5 + K` nodes when the sink lands. The chain is linear in `+` binders, so this
+  is a text insertion into the port's `main` and nothing downstream moves."""
+  if not k:
+    return PAD_ANCHOR.replace("\n  +p0 = test_param(ar0, 0)", "")
+  chain = "".join(f"\n  +z{i} = test_param(O.Found.ar(z{i - 1}), {40 + i})" for i in range(1, k))
+  return f"  ar0 = O.Arena.empty()\n  +z0 = test_param(ar0, 40){chain}\n  +p0 = test_param(O.Found.ar(z{k - 1}), 0)"
+
+
+# name -> (tree, probe, [patches]).  `tree` is copied, never mutated in place.
+STAGES: dict[str, tuple[str, str, list]] = {
+    "BASE": ("base", "old", []),
+    "A-arena": ("live", "new", [(SINK_ENTRY_ANCHOR, SINK_ENTRY_BACK)]),
+    "B-both": ("live", "new", []),
+    "C-comment": ("live", "new", [(COMMENT_ANCHOR, COMMENT_EDIT)]),
+    "M-drop-arena": ("live", "new", [(FOUND_AR_ANCHOR, FOUND_AR_MUT)]),
+    "M-u": ("live", "new", [(SCAN_U, SCAN_R)]),
+    "M-u-norule": ("live", "new", [(SCAN_U, SCAN_R), (SINK_ENTRY_ANCHOR, SINK_ENTRY_BACK)]),
+}
+for _k in range(1, 6):
+    STAGES[f"B-pad{_k}"] = ("live", "new", [(PAD_ANCHOR, pad(_k))])
+
+
+def md5(p: pathlib.Path) -> str:
+  return hashlib.md5(p.read_bytes()).hexdigest()
+
+
+def freeze(tree: str, probe: str) -> pathlib.Path:
+  """A temp tree. Nothing here is ever written back to the repo.
+
+  The BASE stage is NOT the whole frozen tree: several agents are live and
+  `uop/ops.bend` moved under `runs/gr-init/base` after it was cut, so the
+  frozen tree no longer reproduces its own numbers (it printed
+  `no rebuilt sink (wall)` for the pre-fix port on a tree that used to print
+  `new_sink=4`). So the substrate is always the LIVE tree and BASE swaps in
+  exactly ONE file -- the port -- plus the probe. The measurement is about
+  that file; every other file is whatever the substrate currently is, which is
+  the only way two numbers here and there are comparable at all.
+  """
+  live = md5(ROOT / "tinybendygrad" / PORT)
+  if live != MD5_LIVE_TREE:
+    raise SystemExit(f"LIVE PORT MOVED: {PORT} md5 {live} != recorded {MD5_LIVE_TREE}")
+  d = pathlib.Path(tempfile.mkdtemp(prefix="gr-init-fix-"))
+  shutil.copytree(ROOT / "tinybendygrad", d / "tinybendygrad", symlinks=True)
+  if tree == "base":
+    src_port = BASE_TREE / PORT
+    got = md5(src_port)
+    if got != MD5_BASE_TREE:
+      raise SystemExit(f"FROZEN BASE PORT MOVED: {PORT} md5 {got} != recorded {MD5_BASE_TREE}")
+    shutil.copy(src_port, d / "tinybendygrad" / PORT)
+  (d / ".agents" / "slop").mkdir(parents=True)
+  src_probe = OLD_PROBE if probe == "old" else ROOT / ".agents" / "slop" / PROBE
+  shutil.copy(src_probe, d / ".agents" / "slop" / PROBE)
+  (d / "bin").mkdir()
+  os.symlink(ROOT / "references", d / "references")
+  os.symlink(ROOT / "bin" / "bend", d / "bin" / "bend")
+  return d
+
+
+def run(d: pathlib.Path, rel: str, stage: str, *want: str, tries: int = 8) -> str:
+  """bend stack-overflows about one run in twenty on a busy machine and prints
+  ZERO rows, which is indistinguishable from 'not started'. Retry, and report
+  how many retries it took -- a retry that changed nothing still happened.
+
+  SEVERAL markers are acceptable, and one of them is the port's own refusal
+  line: a behaviour that collapses the engine to the wall PRINTS that line,
+  so treating it as zero rows would turn a real measurement into a hard stop.
+  The distinction being preserved is `printed something` vs `printed nothing`.
+  """
+  last = ""
+  for n in range(tries):
+    r = subprocess.run([str(d / "bin" / "bend"), str(d / rel)],
+                       capture_output=True, text=True, cwd=str(d), timeout=3600)
+    last = r.stdout
+    if any(w in r.stdout for w in want):
+      if n:
+        print(f"    [{stage}] {rel} took {n + 1} tries (bend stack-overflow, not 'not started')")
+      return r.stdout.strip()
+  raise SystemExit(f"[{stage}] ZERO ROWS AFTER {tries} TRIES for {rel} (want any of {want}):\n{last}\n")
+
+
+def rows(out: str) -> dict:
+  """Whole `name=value` LINES, `name` -> `value`. The port's row is
+  `new_sink=8 repl=...`, which is one line with two facts, so the `repl`
+  value is lifted out of it here rather than compared as a bare number."""
+  got = {}
+  for line in out.splitlines():
+    if "=" not in line or line.startswith("bend "):
+      continue
+    k, _, v = line.partition("=")
+    got[k.strip()] = v.strip()
+  if "repl" in got and "new_sink" in got:
+    got["repl"] = got["repl"].split(" repl=", 1)[1].strip() + " repl=" + got["new_sink"]
+  return got
+
+
+def dist(a: str, b: str) -> int:
+  a, b = re.sub(r"\s", "", a), re.sub(r"\s", "", b)
+  return sum(1 for x, y in zip(a.ljust(len(b)), b.ljust(len(a))) if x != y) + abs(len(a) - len(b))
+
+
+def main() -> int:
+  sys.path.insert(0, str(ROOT))
+  from tinygrad.uop.ops import Ops, ParamArg, RewriteContext, UOp
+  from tinygrad.dtype import dtypes
+  from tinygrad.schedule import pm_post_sched_cache
+
+  def param(slot):
+    return UOp(Ops.PARAM, arg=ParamArg(slot, dtypes.int32, device="PYTHON"))
+
+  root_u = UOp(Ops.SINK, src=(param(0), param(1),
+                              UOp.alloc((1,), dtypes.int32, slot=0, device="PYTHON")))
+  rc = RewriteContext(pm=pm_post_sched_cache, bpm=None, ctx=({}, (param(99), param(100))), enter_calls=False)
+  got = rc.walk_rewrite(root_u)
+
+  def short(u):
+    return f"{u.op.name}({u.arg.slot})" if u.op is Ops.PARAM and hasattr(u.arg, "slot") else f"{u.op.name}"
+
+  order, seen, topo = [], set(), []
+
+  def post(u):
+    if u in seen:
+      return
+    seen.add(u)
+    for x in u.src:
+      post(x)
+    topo.append(u)
+
+  post(root_u)
+  PY = {
+      "repl": ",".join(f"{short(o)}->{short(n)}" for o, n in rc.replace.items()),
+      "new_sink_is_original": "1" if got is root_u else "0",
+      "new_sink_srcs": ",".join(short(s) for s in got.src),
+      "new_sink_op": short(got),
+      "n_repl": str(len(topo)),
+  }
+  print("CPython, CALLED LIVE (no value below is transcribed):")
+  for k, v in PY.items():
+    print(f"    py.{k} = {v}")
+  print()
+  print(f"    (repl order == post-order DFS over the root: {list(rc.replace) == topo})")
+  print()
+
+  print(f"ports md5-verified: base={MD5_BASE_TREE[:12]} live={MD5_LIVE_TREE[:12]}")
+  print("substrate for every stage is the LIVE tree; BASE swaps in one file (the port) and the old probe.")
+  print()
+  print("=" * 122)
+  print(f"{'stage':13} | {'repl (the printed gate row)':44} | d | {'is_orig':9} | {'srcs':31} | {'op':9} | n_repl")
+  print("=" * 122)
+
+  out: dict[str, dict] = {}
+  for name, (tree, probe, subs) in STAGES.items():
+    d = freeze(tree, probe)
+    port = d / "tinybendygrad" / PORT
+    orig = port.read_text()
+    text = orig
+    for old, new in subs:
+      n = text.count(old)
+      if n != 1:
+        raise SystemExit(f"PATCH DID NOT APPLY [{name}]: anchor appears {n}x: {old[:70]!r}")
+      text = text.replace(old, new)
+    if text != orig:
+      port.write_text(text)
+    try:
+      praw = rows(run(d, "tinybendygrad/" + PORT, name, "new_sink=", "no rebuilt sink"))
+      grows = rows(run(d, ".agents/slop/" + PROBE, name, "gr.new_sink_is_original="))
+    finally:
+      if text != orig:
+        port.write_text(orig)
+    shutil.rmtree(d)
+    out[name] = {**grows, **{k: v for k, v in praw.items() if k != "repl"}}
+    out[name]["repl"] = praw.get("repl", "")
+
+  for name in STAGES:
+    r = out[name]
+    got = [r.get(k, "<no row>") for k in GATE_ROWS + (CONTROL_ROW,)]
+    bad = [k for k, g in zip(GATE_ROWS + (CONTROL_ROW,), got) if g != PY[k]]
+    flag = "PASS" if not bad else "FAIL " + ",".join(bad)
+    print(f"{name:13} | {r.get('repl','<no row>'):44} | {dist(r.get('repl',''), PY['repl']):2} | "
+          f"{r.get('new_sink_is_original','<no row>'):9} | {r.get('new_sink_srcs','<no row>'):31} | "
+          f"{r.get('new_sink_op','<no row>'):9} | {r.get('n_repl','<no row>'):9}  {flag}")
+  print()
+  print(f"py.repl (want)              = {PY['repl']}")
+  print(f"py.new_sink_is_original     = {PY['new_sink_is_original']}")
+  print(f"py.new_sink_srcs            = {PY['new_sink_srcs']}")
+  print(f"py.new_sink_op              = {PY['new_sink_op']}")
+  print(f"py.n_repl  (CONTROL)        = {PY['n_repl']}")
+  print()
+
+  print("THE SEQUENCE, on the row that decides it:")
+  print(f"    BASE    gr.new_sink_is_original = {out['BASE']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
+        f"-> FAILS, because the third rule returns `self`")
+  print(f"    A-arena gr.new_sink_is_original = {out['A-arena']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
+        f"-> still FAILS: threading the arena alone changes nothing while the rule is present")
+  print(f"    B-both  gr.new_sink_is_original = {out['B-both']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
+        f"-> PASSES, and the rule is gone")
+  print(f"    C-comment (comment-only control)  = "
+        f"{'SAME as B-both on every row' if all(out['C-comment'].get(k) == out['B-both'].get(k) for k in out['B-both']) else 'MOVED -- the baseline moved'}")
+  print()
+
+  print("THE ARENA-LENGTH SWEEP on B-both (`5 + K` nodes at the sink; `new_sink` IS the grown index):")
+  print(f"    {'K':>2} {'arena at sink':>14} {'new_sink':>9}  repl row")
+  for k in range(0, 6):
+    name = "B-both" if k == 0 else f"B-pad{k}"
+    print(f"    {k:>2} {5 + k:>14} {out[name].get('new_sink','?'):>9}  {out[name].get('repl','?')}")
+  print()
+  print("MUTATIONS, with the rows they moved by name:")
+  for name in ("M-drop-arena", "M-u", "M-u-norule"):
+    moved = [k for k in GATE_ROWS + (CONTROL_ROW,) if out[name].get(k) != out["B-both"].get(k)]
+    print(f"    {name:13} moved {moved if moved else 'NOTHING -- a blind spot, with the reason below'}")
+  print("      M-drop-arena  `wr.rebuild.found` returns `O.Arena.empty()` instead of the grown")
+  print("                    arena: the threading is the ONLY thing carrying the index, so this")
+  print("                    must move the srcs row.")
+  print("      M-u           `pm_rewrite_m(pm, ar, rebuilt, ctx)`: settled as UNOBSERVABLE over")
+  print("                    this table (both upstream patterns are `UPat(Ops.X)` with no `src=`")
+  print("                    clause, and ops.py:1810 hands back `n` itself when `new_src == n.src`).")
+  print("      M-u-norule    the same mutation WITH the third rule present, to show the two are")
+  print("                    not interacting: if it moves nothing here either, the `u`/`rebuilt`")
+  print("                    question is closed for the third time.")
+  print()
+  n_rows, n_stages = len(GATE_ROWS) + 1, len(STAGES)
+  print(f"DENOMINATOR: {n_rows} rows compared per stage, {n_stages} stages, "
+        f"{n_stages * 2} bend invocations, every row asserted non-empty (ZERO ROWS raises).")
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())

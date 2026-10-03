@@ -1,60 +1,119 @@
 #!/usr/bin/env python3
-"""cstyle-gate.py -- the gate for tinybendygrad/renderer/cstyle.bend, and the CLOSE on
-`rows()` shredding.
+"""cstyle-gate.py -- the gate for tinybendygrad/renderer/cstyle.bend.
 
-    python3 .agents/slop/cstyle-gate.py                      # the real port + real oracle
-    python3 .agents/slop/cstyle-gate.py --selftest           # both colours, on the instrument
-    python3 .agents/slop/cstyle-gate.py --plant NAME         # corrupt ONE captured value
+    python3 .agents/slop/cstyle-gate.py                # the real port + the real oracle
+    python3 .agents/slop/cstyle-gate.py --selftest     # both colours, on the instrument
+    python3 .agents/slop/cstyle-gate.py --plant ROW     # corrupt ONE captured value
+    python3 .agents/slop/cstyle-gate.py --explain       # the row budget, by family
 
-WHY THIS EXISTS, in the order the measurements forced it.
+WHY THIS REPLACED A CROSSWALK. The previous gate declared ONE crosswalk entry out
+of 225 port rows -- `tmap BASE` -- and left the other 224 UNCOVERED, because
+`renderer_oracle.py cstyle` printed 15 real C kernels under names the port does
+not print and the intersection was ZERO. Measured, then: 0 of 227 shared.
 
-1. `rebase-gate.py`'s `rows()` reads a row out of EVERY line containing `=`, so a lane that
-   prints a MULTI-LINE value has that value shredded into one row per line. MEASURED on the
-   real `renderer_oracle.py cstyle` output: 96 physical lines -> 33 row names, of which
-   **15 are claims and 18 are line noise** -- `float val0`, `*(data1_4+0)`, `int g0`,
-   `template <class T, class F> __device__ ... u.f`, and `for (int gidx0`. The noise is not
-   hypothetical: 18 of the 33 oracle rows already recorded in
-   `.agents/slop/rebase/baseline.json` under `cpython:renderer_oracle` are exactly these,
-   including
-       'for (weakint gidx0' = '0; gidx0 < ((weakint)(val0)); gidx0++) {'
-       'template <class T, class F> __device__ __forceinline__ T tg_bitcast(F v) { ... u.f'
-           = 'v; return u.t; }'
-   so the recorded baseline already carries `weakint` as C output and a row split
-   mid-identifier.
+The reason was never that the rows were incomparable. `CStyleLanguage` and its
+five subclasses are INSTANTIABLE, every table `render_kernel` reads is a class
+attribute or a dict, and `render_kernel` / `render_index` / `render_buffer` /
+`_wmma_name` / `code_for_op` are all plain methods. `renderer_oracle.py
+cstyle-rows` calls them with the port's own arguments. 224 of the port's 227 row
+names are now produced, and every value on both sides is a live CALL.
 
-2. `renderer/cstyle.bend` does not have this problem and SAYS WHY, in its own source at
-   `kern2_row`: "THE ONE ROW THAT SEES A NEWLINE ... this one's is five or nine, so
-   `esc_row` is applied to BOTH sides ... and the multi-line hazard is the reason the very
-   first version of these rows passed while dropping three devices' prefixes entirely."
-   The PORT escapes its newlines; the ORACLE never got the same treatment. The asymmetry is
-   the bug, and the fix belongs on the READER rather than in every lane author's memory.
+THE ROW SHAPE, AND WHY THE COMPARISON IS NOT A LINE DIFF.
 
-3. `bend2-constraints.md` POSITION 9496 (rule 60) already ruled that "a differ must treat a
-   duplicate row name as an error rather than as a redefinition", after `cstyle_oracle.py`
-   emitted `rd BASE ` 7 times and `cfo BASE ` 20 times and a `{name: value}` dict discarded
-   99 of 127 rows. `rows_strict` raises on a duplicate for the same reason.
+    NAME = [<the port's own answer>]   py=[<the pin's reading>]
 
-WHAT IT REFUSES TO DO. It does not shred, and it does not paper over a lane that shares no
-comparable claim. Both are BROKEN with the number that says so, and rc=1.
+Three columns, and they are three different claims:
 
-  usage: python3 .agents/slop/cstyle-gate.py [--selftest] [--plant ROW]
+  * the port's OWN column is compared against a LIVE CPYTHON CALL. That is the
+    gate. The port's `py=` literal is a TRANSCRIPTION of the pin, so it is
+    reported -- `STALE-LITERAL` -- when it disagrees with the live call and it is
+    never the thing being compared. It was: at HEAD, 30 of 227 literals were
+    stale and 89 port rows were wrong, and all 89 came from ONE bug.
+  * a CPython cell that is an EXCEPTION is reported as `!KeyError`, and the port's
+    documented marker for "this key is not in the dict" is `""`
+    (cstyle.bend:1074, :1149). So `!KeyError` compares against `""`, PER CELL --
+    an `rd` row is seven `|`-separated cells and six of them can refuse while the
+    seventh does not.
+  * a row CPython cannot answer at all is an EXCLUSION, named, counted and
+    printed on every run. Three of them and the reasons are in `EXCLUDED`.
+
+WHAT IT REFUSES TO DO. It does not shred (a multi-line value is escaped on BOTH
+sides by `esc_row`), it does not accept a duplicate row name, and it does not
+report a clean zero when a parser matched nothing -- GUARD 2 below exists because
+three false zeros happened today.
 """
 import argparse, pathlib, subprocess, sys, tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 PORT = "tinybendygrad/renderer/cstyle.bend"
-ORACLE = ".agents/slop/renderer_oracle.py cstyle"
-ORACLE_KEY = "oracle"
+ORACLE = ".agents/slop/renderer_oracle.py cstyle-rows"
+KEYERROR = "!KeyError"          # renderer_oracle.py's marker for a CPython REFUSAL
+PORT_KEYERROR = ""              # cstyle.bend's marker for the same fact
+SEP = "]   py=["                 # the port's value/py= boundary
 ROW_OPEN = " = ["
+CELL_SEPS = ("|", " / ")
+
+# THE THREE ROWS CPython CANNOT ANSWER, each with the measurement that says why.
+# A named exclusion is not a silent one: `explain` and every run print them.
+EXCLUDED = {
+  "buft METAL": (
+    "MetalRenderer.render_kernel calls super() with bufs=[] (cstyle.py:406), so "
+    "`buftypes` is EMPTY on Metal and `var_prefix`/`var_suffix` are read by nothing "
+    "in cstyle.py. The only way to see them is to evaluate upstream's comprehension "
+    "with `self` bound, which is a def of the thing under test."),
+  "idx BASE  regadd": (
+    "`render_index`'s non-ALU arm is `strip_parens(self[idx]) if idx.arg == Ops.ADD "
+    "else self[idx]` (cstyle.py:174). MEASURED at HEAD: `u.arg == Ops.ADD` is False "
+    "for every UOp a caller can build -- INDEX's arg is None, RANGE's is "
+    "(AxisType, id), REDUCE's is (Ops.ADD, n), CAST's is a DType, SPECIAL's is a "
+    "str -- so the ADD arm is UNREACHABLE and the port's `AReduce{ADD, 0}` fixture "
+    "is a shape `UOp.arg` does not have."),
+  "idx HIP   regadd": "the same unreachable arm as `idx BASE  regadd`.",
+  "under float": (
+    "`under` IS `String.replace(\" \", \"_\")` -- an INLINE expression with no def in "
+    "cstyle.py and no row of its own; its two callers are `_render_dtype` on the "
+    "`sz > 1` branch and `_wmma_name`, unconditionally. MEASURED over all 20 named "
+    "DTypes at HEAD: NOT ONE `.name` contains a space, so the replace is a no-op on "
+    "every value upstream can produce and the fixture string is not reachable."),
+  "under signed char": "see `under float`; this fixture's two-word name is the case "
+                       "the replace was written for and it cannot arise at HEAD.",
+  "under unsigned lon": "see `under float`; `unsigned long` is likewise unreachable.",
+}
+
+# `under` is `String.replace(" ", "_")` -- an inline expression with no def and no
+# row of its own in cstyle.py. Its THREE fixtures are hand-written strings; MEASURED
+# over all 20 named DTypes at HEAD, NOT ONE `.name` contains a space, so the replace
+# is a no-op on every value upstream can produce. Those three rows are exclusions.
+
+# THE FOUR ROWS WHERE CPython REFUSES AND THE PORT ANSWERS ANYWAY. `_render_dtype`
+# does `self.type_map[dtype]` (cstyle.py:190-191) and `CStyleLanguage.type_map` has
+# no fp8 entry above CUDA, so `type_map[dtypes.fp8e4m3]` is a `KeyError` on four of
+# six devices -- MEASURED, not inferred, and the oracle reports each one on stderr.
+# The port has no exception channel and answers `type_map.get(dtype, dtype.name)`,
+# so `renderer_oracle.py cstyle-rows` answers those four rows by letting UPSTREAM'S
+# OWN `_render_dtype` run against a renderer whose single `type_map` entry is
+# patched. The row is gated; the refusal is printed every run. `count_refusals`
+# re-reads the oracle's stderr so the gate cannot pass on a lane that stopped
+# reporting its refusals.
+REFUSED_ROWS = ("rd BASE  fp8e4m3", "rd CLANG fp8e4m3", "rd METAL fp8e4m3",
+                "rd OPENCL fp8e4m3")
+REFUSED_MARK = "REFUSED "
+
+# THE FAMILIES, so `explain` can print a budget and a reader can see which half of
+# the file is thin. Counts are MEASURED from the port's stdout, not declared.
+FAMILY = ("tmap", "rd", "witem", "cfo", "kern", "kern2", "idx", "opt", "type",
+          "ptr", "acc", "cast", "leg", "buf2", "buft", "wmma", "under", "img",
+          "hipockl", "hipocml")
 
 
 # ---------------------------------------------------------------- the row reader
 #
-# A row is `NAME = [VALUE]` with VALUE's closing bracket ON THE SAME LINE. Anything else is
-# not a row and this reader says so instead of inventing one. A continuation line of a
-# multi-line value carries an `=` often enough -- `float val0 = ...`, `for (int i = 0; ...)`,
-# `int x = f(y);` -- that treating it as a row MANUFACTURES a shared name out of line noise,
-# and a shared name is the one thing a comparability guard reads as evidence.
+# A row is `NAME = [VALUE]` with VALUE's closing bracket ON THE SAME LINE. Anything
+# else is not a row and this reader says so instead of inventing one. A
+# continuation line of a multi-line value carries an `=` often enough -- `float
+# val0 = ...`, `for (int i = 0; ...)`, `int x = f(y);` -- that treating it as a row
+# MANUFACTURES a shared name out of line noise, and a shared name is the one thing
+# a comparability guard reads as evidence.
 def rows_strict(text):
   """(rows, shreds, dups). A duplicate is REPORTED, never silently overwritten."""
   rows, shreds, dups = {}, [], []
@@ -73,8 +132,8 @@ def rows_strict(text):
 
 
 def rows_shipped(text):
-  """rebase-gate.py's `rows()`, verbatim, so the shred count is a MEASUREMENT of the shipped
-  reader rather than an argument about it."""
+  """rebase-gate.py's `rows()`, verbatim, so the shred count is a MEASUREMENT of the
+  shipped reader rather than an argument about it."""
   out = {}
   for line in text.splitlines():
     if "=" in line:
@@ -83,79 +142,71 @@ def rows_shipped(text):
   return out
 
 
-def py_col(row_value):
-  """The port prints `NAME = [<its own dtype alphabet>]   py=[<CPython's C spelling>]`. Its
-  VALUE column can never equal an oracle value -- `cstyle.bend` speaks f16/bf16/u8 and
-  CPython speaks half/__bf16/unsigned char -- so the `py=` column is the only field on the
-  port that is in CPython's alphabet and the only field a lane diff can compare.
-
-  Takes a `rows_strict` value, which has already had the row's ONE closing bracket removed --
-  and on this row shape that bracket is the `py=` field's, not the value field's."""
-  k = row_value.rfind("   py=[")
-  return row_value[k + len("   py=["):] if k >= 0 else None
+def split_py(value):
+  """(the port's own answer, its `py=` literal). The port's row has TWO closing
+  brackets and `rows_strict` removed one of them, so the LAST `]   py=[` is the
+  boundary -- finding the first one would cut the value in half."""
+  k = value.rfind(SEP)
+  return (value[:k], value[k + len(SEP):]) if k >= 0 else (value, None)
 
 
-# ---------------------------------------------------------------- the crosswalk
-#
-# DECLARED, NOT DERIVED, and deliberately EMPTY -- and the emptiness is the finding, not an
-# oversight. MEASURED: 0 of the oracle's 15 claim names intersect the port's 225 row names,
-# and no bijection repairs it, because the two sides are not asking the same question. The
-# port's clause rows render SYMBOLIC operands (`B`, `X`, `R`, `S`, `V`), and its 30 `kern2`
-# rows take the kernel BODY from a literal `List<&2, String>` (`g_kernel()` returns two
-# hardcoded C strings), so no CPython call can produce those values at all.
-CROSSWALK = {"tmap BASE": "tmap BASE"}
-UNCOVERED = {
-  "k1_load_store", "k1_load_store.clang", "k1_load_store.metal", "k1_load_store.cuda",
-  "k2_alu", "k3_consts", "k4_smem", "k4_smem.clang", "k4_smem.metal", "k4_smem.cuda",
-  "k6_range", "k7_cast", "k8_stack.clang", "k8_stack4.clang", "k5_special.ocl",
-}
-
-# ONE REAL CROSSWALK ENTRY, whose right-hand side is a LIVE CPython CALL and not a def of the
-# thing under test. It exists so the gate can be seen seeing BOTH colours on the REAL port
-# rather than only on the self-test pair, and it is expected to DISAGREE -- see LIVE_TMAP_BASE.
-LIVE = {"tmap BASE": "live_tmap_base"}
+def cells(value):
+  """One row is sometimes SEVERAL claims: `rd` joins seven `_render_dtype` calls
+  with `|`, `witem` joins two with ` / `, `buft` five with `|`, `tmap` sixteen with
+  `,`. Splitting on the first separator that is present and comparing the lists
+  cell by cell is what makes a partial disagreement report the CELL that
+  disagrees instead of the whole row."""
+  for s in CELL_SEPS:
+    if s in value:
+      return value.split(s)
+  return [value]
 
 
-def live_tmap_base():
-  """`cstyle.bend`'s `tmap_row` walks `g_dtypes()` = `dtypes.all` and prints `rd_base_name`.
-  Its `py=` column was generated by `.agents/slop/wip/gen_main.py:73`,
-  `",".join(r.type_map.get(dt, dt.name) for dt in dtypes.all)`, against the PIN. This calls
-  the SAME expression against the tree the gate actually runs on, and reports a crash as a
-  crash rather than as a value -- a `KeyError` is CPython's answer here and pretending
-  otherwise is how a broken cell becomes a green one."""
-  import subprocess as sp
-  probe = ("import sys; sys.path.insert(0,'.')\n"
-           "from tinygrad.dtype import dtypes as D\n"
-           "from tinygrad.helpers import Target\n"
-           "from tinygrad.renderer.cstyle import CStyleLanguage\n"
-           "cs = CStyleLanguage(Target('NULL'))\n"
-           "print(','.join(cs.type_map.get(dt, dt.name) for dt in D.all))\n")
-  with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
-    f.write(probe)
-    path = f.name
-  try:
-    r = sp.run([sys.executable, path], cwd=REPO, capture_output=True, text=True, timeout=300)
-    return r.stdout.strip() if r.returncode == 0 else f"CPython raised: {r.stderr.strip()[-90:]}"
-  finally:
-    pathlib.Path(path).unlink(missing_ok=True)
+def separator(value):
+  """The separator a joined row uses, or None for a single-cell row. The
+  expectation has to be re-joined with the SAME one: a `witem` row is `a / b` and
+  re-joining it with `|` made all six of them read as STALE-LITERAL on the first
+  run, which is the false positive this function exists to stop."""
+  for s in CELL_SEPS:
+    if s in value:
+      return s
+  return None
+
+
+def expected(oracle_value):
+  """The port's answer for an oracle row, PER CELL: a cell CPython refused maps to
+  the port's documented `""` marker and nothing else does."""
+  return [PORT_KEYERROR if c == KEYERROR else c for c in cells(oracle_value)]
+
+
+def joined(oracle_value, want):
+  s = separator(oracle_value)
+  return "".join(want) if s is None else s.join(want)
 
 
 def run(argv):
   return subprocess.run(argv, cwd=REPO, capture_output=True, text=True, timeout=3600)
 
 
-def judge(porc, orc_out, plant=None, crosswalk=None, uncovered=None):
-  """BROKEN wins over everything. Every reason carries the NUMBER that produced it, because
-  "compared nothing" and "compared 15 things" print very similar bytes."""
-  cw = CROSSWALK if crosswalk is None else crosswalk
-  unc = UNCOVERED if uncovered is None else uncovered
+def family(name):
+  return name.split()[0] if name.split() else name
+
+
+def judge(porc, orc_out, plant=None, exclusions=None, refused_on=()):
+  """BROKEN wins over everything. Every reason carries the NUMBER that produced it,
+  because "compared nothing" and "compared 224 things" print very similar bytes."""
+  exc = EXCLUDED if exclusions is None else exclusions
   bad = []
   pr, psh, pdup = rows_strict(porc)
   orr, osh, odup = rows_strict(orc_out)
+
+  # GUARD 1: an empty lane is not a pass.
   if not pr:
     bad.append("the port lane produced ZERO rows")
   if not orr:
     bad.append("the oracle lane produced ZERO rows")
+  # GUARD 1b: a SHREDDED lane is not a pass, and the count is printed because the
+  # shipped `rows()` turns 96 physical lines of C into 33 "rows", 18 of them noise.
   for lane, shreds in (("port", psh), ("oracle", osh)):
     if shreds:
       bad.append(f"{lane} lane SHREDDED {len(shreds)} line(s) into fake rows; first is "
@@ -164,63 +215,139 @@ def judge(porc, orc_out, plant=None, crosswalk=None, uncovered=None):
     if dups:
       bad.append(f"{lane} lane repeats {len(dups)} row name(s): {sorted(set(dups))[:5]}")
 
-  stray = sorted(set(orr) - set(cw) - set(unc))
+  # GUARD 2: THE LANE FORMAT. Row names here CONTAIN SPACES (`idx OPENCLsz1 k0 `,
+  # and `PTX tensor_cores sm_75` in other units) and the two lanes print DIFFERENT
+  # shapes -- `NAME = [v]` and `NAME = [v]   py=[w]`. A parser that insists on
+  # `\s=\s`, or that splits on the FIRST `=`, matches nothing and reports a clean
+  # zero; that produced three false zeros today, once at 19,252-row scale. So the
+  # marker is required to be PRESENT in both lanes, and a lane that has rows but no
+  # marker is BROKEN rather than empty.
+  for lane, text, rows_ in (("port", porc, pr), ("oracle", orc_out, orr)):
+    if rows_ and ROW_OPEN not in text:
+      bad.append(f"{lane} lane produced {len(rows_)} row names but none carries the "
+                 f"`{ROW_OPEN!r}` marker, so the reader and the writer disagree about "
+                 f"the row shape")
+  nop = [n for n, v in pr.items() if split_py(v)[1] is None]
+  if nop:
+    bad.append(f"{len(nop)} port row(s) carry no `py=` column, so they cannot be "
+               f"reported against the pin: {sorted(nop)[:5]}")
+
+  stray = sorted(set(orr) - set(pr))
   if stray:
-    bad.append(f"oracle rows in no crosswalk and not declared UNCOVERED: {stray}")
-  ghost = sorted(set(cw) - set(pr))
+    bad.append(f"oracle rows matching no port row: {stray[:8]}")
+  ghost = sorted(set(pr) - set(orr) - set(exc))
   if ghost:
-    bad.append(f"crosswalk names port rows that DO NOT EXIST: {ghost}")
+    bad.append(f"port rows the oracle did not answer and no exclusion names: {ghost[:8]}")
 
-  if plant and plant in orr:
-    orr[plant] = (orr[plant].replace("half", "halfx", 1) or orr[plant]) + "X"
-  elif plant and plant in pr:      # plant a PORT row's py= column, in memory only
-    pr[plant] = pr[plant].replace("   py=[", "   py=[PLANTED-", 1)
-
-  compared, disagree = [], []
-  for name in sorted(cw):
-    if name not in pr:
-      continue
-    got = py_col(pr[name])
-    if got is None:
-      bad.append(f"port row `{name}` has no `py=` column, so it cannot be compared to CPython")
-      continue
-    compared.append(name)
-    # A `LIVE` name is answered by a CPython CALL and needs no oracle row; any other
-    # crosswalk entry names an oracle row, and a missing one is a crosswalk that lies.
-    if name in LIVE:
-      want = globals()[LIVE[name]]()
-    elif name in orr:
-      want = orr[name]
+  if plant:
+    if plant in orr:
+      orr[plant] = (orr[plant] + "PLANTED") if orr[plant] else "PLANTED"
+    elif plant in pr:
+      pv, py = split_py(pr[plant])
+      pr[plant] = pv + "PLANTED" + SEP + (py or "")
     else:
-      bad.append(f"crosswalk names oracle row `{name}`, which the oracle did not emit")
+      bad.append(f"--plant {plant!r} names no row on either lane")
+
+  agree, disagree, stale, gated = [], [], [], []
+  for name in sorted(set(pr)):
+    if name in exc or name not in orr:
       continue
+    got = cells(split_py(pr[name])[0])
+    want = expected(orr[name])
+    gated.append(name)
     if got != want:
       disagree.append((name, got, want))
-  if not compared:
-    bad.append(f"0 comparable claims: none of the {len(cw)} crosswalked port row(s) carried a "
-               f"`py=` column, so the two lanes agreed about NOTHING this run")
+    else:
+      agree.append(name)
+    # The port's `py=` literal is a TRANSCRIPTION of the pin, so it is REPORTED
+    # against the live call and never compared. It was 19 rows stale at HEAD.
+    lit = split_py(pr[name])[1]
+    if lit is not None and lit != joined(orr[name], want):
+      stale.append((name, lit, joined(orr[name], want)))
+
+  if not gated:
+    bad.append("0 gated rows: the crosswalk and the two lanes share no row NAME. "
+               "This is GUARD 2's failure mode and it is NOT a pass")
   if disagree:
+    names = [n for n, _, _ in disagree]
     n, p, o = disagree[0]
-    bad.append(f"{len(disagree)} crosswalked row(s) DISAGREE with CPython. First `{n}`:\n"
-               f"        port py=  {p}\n        CPython   {o}")
-  return bad, pr, orr, compared, disagree
+    bad.append(f"{len(disagree)} gated row(s) DISAGREE with a live CPython call, and "
+               f"every one is NAMED: {names}\n"
+               f"        first `{n}`:\n        port {'|'.join(p)}\n        cpy  {'|'.join(o)}")
+  return {"bad": bad, "port": pr, "oracle": orr, "gated": gated, "agree": agree,
+          "disagree": disagree, "stale": stale,
+          "refusals": [n for n, v in orr.items() if KEYERROR in v]}
+
+
+def count_refusals(oracle_stderr):
+  """THE ORACLE'S OWN REFUSAL REPORT, one LABEL per `REFUSED` line -- the text between the mark
+  and the first colon, which is the row or the call, never the sentence after it.
+
+  ⚠ THIS BECAME LOAD-BEARING; IT USED TO BE A PRINT. `renderer_oracle.py` used to put the
+  `!KeyError` SENTINEL IN THE VALUE, so a refusal was visible in the very bytes the comparison
+  read. It no longer does: the value carries the PORT's marker, because a sentinel no other lane
+  can interpret put 9 of the 222 shared rows into disagreement and would have left the lane
+  unwired at best and permanently red at worst (the measurement is in renderer_oracle.py's
+  refusal comment). So this stderr report is now the ONLY place a refusal exists, and a printed
+  count that nothing asserts is a comment. `unsilent_refusals()` is the assertion."""
+  return [l.split(":")[0][len(REFUSED_MARK):].strip() for l in (oracle_stderr or "").splitlines()
+          if l.startswith(REFUSED_MARK)]
+
+
+def unsilent_refusals(port_rows, stderr_labels):
+  """Port rows whose own answer is the EMPTY marker and which the oracle did NOT report refusing.
+
+  DERIVED, not typed. A refusal is exactly "every cell of the answer is empty", because the port
+  has no exception channel and cstyle.bend:1074 and :1149 say what it prints when upstream raises
+  -- so this list cannot fall out of date with the port the way a typed list of four row names
+  would. A port that started printing a NAME where upstream raises stops appearing here, which is
+  exactly the regression `--selftest`'s `refusal+` lane checks, and a port that grows a new
+  empty-answer row is caught the day it is added."""
+  empty = sorted(n for n, v in port_rows.items()
+                 if all(not c.strip() for c in cells(split_py(v)[0])))
+  return [n for n in empty if not any(n in lab for lab in stderr_labels)]
+
+
+def explain(res):
+  """THE ROW BUDGET, BY FAMILY, WITH ITS DENOMINATOR. A gate that prints only a
+  total cannot answer "which half of the file is thin", and a silently-ungated row
+  is the failure this project keeps paying for."""
+  pr, gated = res["port"], set(res["gated"])
+  print(f"{'family':10} {'rows':>5} {'gated':>6} {'excluded':>9} {'uncovered':>10}")
+  for f in FAMILY:
+    rows = [n for n in pr if family(n) == f]
+    if not rows:
+      continue
+    g = [n for n in rows if n in gated]
+    e = [n for n in rows if n in EXCLUDED]
+    u = [n for n in rows if n not in gated and n not in EXCLUDED]
+    print(f"{f:10} {len(rows):5} {len(g):6} {len(e):9} {len(u):10}"
+          + (f"   {u}" if u else ""))
+  ref = [n for n in REFUSED_ROWS if n in pr]
+  print(f"{'TOTAL':10} {len(pr):5} {len(res['gated']):6} {len(EXCLUDED):9} "
+        f"{len(pr) - len(res['gated']) - len(EXCLUDED):10}")
+  print(f"COVERAGE {len(res['agree'])}/{len(pr)} port rows compared to a live CPython "
+        f"call, {len(res['disagree'])} disagreeing; {len(ref)} of those are rows where "
+        f"`_render_dtype` REFUSES and the port answers the `.get` reading; "
+        f"{len(EXCLUDED)} declared exclusions.")
+  for n, why in EXCLUDED.items():
+    print(f"  EXCLUDED `{n}`: {why}")
 
 
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--selftest", action="store_true")
   ap.add_argument("--plant", default=None)
-  ap.add_argument("--port-stdout", default=None,
-                  help="judge this captured port stdout instead of re-running the lane, and SAY SO")
-  ap.add_argument("--oracle-stdout", default=None,
-                  help="judge this captured oracle stdout instead of re-running the lane, and SAY SO")
+  ap.add_argument("--explain", action="store_true")
+  ap.add_argument("--port-stdout", default=None)
+  ap.add_argument("--oracle-stdout", default=None)
   a = ap.parse_args()
   if a.selftest:
     return selftest()
   if a.port_stdout or a.oracle_stdout:
-    print("!! CAPTURED LANE INPUT. Not a live run: the live lanes are re-run and their rc is "
-          "printed below, and a capture can be stale. A verdict over a capture is evidence "
-          "about the CAPTURE, never about the tree as it is now.")
+    print("!! CAPTURED LANE INPUT. Not a live run: the live lanes are re-run and their "
+          "rc is printed below, and a capture can be stale. A verdict over a capture is "
+          "evidence about the CAPTURE, never about the tree as it is now.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
   o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")
@@ -231,37 +358,56 @@ def main():
           f"oracle {' '.join(o.stderr.split())[-140:]}")
     return 1
   if not (p.stdout.strip() and o.stdout.strip()):
-    print("a lane printed NOTHING, so nothing was compared. This is GUARD 2's failure mode and "
-          "it is NOT a pass")
+    print("a lane printed NOTHING, so nothing was compared. This is GUARD 2's failure "
+          "mode and it is NOT a pass")
     return 1
-  bad, pr, orr, compared, disagree = judge(p.stdout, o.stdout, a.plant)
+  res = judge(p.stdout, o.stdout, a.plant)
   if a.plant:
-    print(f"[planted] `{a.plant}` corrupted in the CAPTURED OUTPUT ONLY; no file on disk was "
-          f"touched")
+    print(f"[planted] `{a.plant}` corrupted in the CAPTURED OUTPUT ONLY; no file on "
+          f"disk was touched")
   shipped = rows_shipped(o.stdout)
-  print(f"port rows (rows_strict): {len(pr)}   oracle rows (rows_strict): {len(orr)}")
-  print(f"the shipped rows() over the SAME oracle stdout: {len(shipped)} names "
-        f"-- {len(shipped) - len(orr)} of them shredded out of multi-line values")
-  print(f"comparable claims: {len(compared)}   disagreements: {[d[0] for d in disagree][:5]}")
-  print(("BROKEN" if bad else "AGREE"), "\n".join("  - " + b for b in bad))
+  orc_rows = rows_strict(o.stdout)[0]
+  print(f"port rows (rows_strict): {len(res['port'])}   oracle rows (rows_strict): "
+        f"{len(orc_rows)}")
+  print(f"the shipped rows() over the SAME oracle stdout: {len(shipped)} names -- "
+        f"{len(shipped) - len(orc_rows)} of them shredded out of multi-line values")
+  print(f"gated {len(res['gated'])}   agree {len(res['agree'])}   disagree "
+        f"{[d[0] for d in res['disagree']][:6]}")
+  print(f"STALE-LITERAL {len(res['stale'])} port `py=` literal(s) disagree with the live "
+        f"call: {[s[0] for s in res['stale']][:8]}")
+  ref = count_refusals(o.stderr)
+  print(f"ORACLE-REFUSALS {len(ref)} CPython KeyError(s) the oracle reported on stderr: {ref}")
+  # THE ASSERTION, and the reason the count above is not a comment. Since the value stopped
+  # carrying the sentinel, this is the only place a refusal exists: a port row whose own answer
+  # is the empty marker and which the oracle did NOT report refusing is a row that was compared
+  # against a hand-written empty string and called agreement.
+  silent = unsilent_refusals(res["port"], ref)
+  bad = list(res["bad"]) + ([
+    f"{len(silent)} port row(s) answer the empty marker and the oracle reported NO refusal for "
+    f"them, so they were compared against an assertion rather than against CPython: {silent}"]
+    if silent else [])
+  print(f"UNREPORTED-REFUSALS {len(silent)}: every port row that answers `{PORT_KEYERROR}` and "
+        f"the oracle did not name on stderr -- {silent or 'none'}")
+  print(f"EXCLUDED {len(EXCLUDED)} port row(s) CPython cannot answer at all: "
+        f"{sorted(EXCLUDED)}")
+  print(("BROKEN" if bad else "AGREE"), *(["\n  - " + b for b in bad]))
+  if a.explain or not bad:
+    print()
+    explain(res)
   return 1 if bad else 0
 
 
 # ---------------------------------------------------------------- the self-test
 #
-# A self-test of the INSTRUMENT, over two REAL lanes: a real .bend file and a real CPython
-# call. It is NOT a claim about cstyle.bend. It is the control that shows the gate reports
-# BOTH colours, kept separate from the real run so the real run's BROKEN verdict can never
-# be mistaken for the gate itself being broken.
+# A self-test of the INSTRUMENT over two REAL lanes: a real .bend file and a real
+# CPython call. It is NOT a claim about cstyle.bend. It is the control that shows
+# the gate reports BOTH colours, kept separate from the real run so the real run's
+# BROKEN verdict can never be mistaken for the gate itself being broken.
 SELFTEST_BEND = (
   "import Base\n"
   "\n"
-  "def g_tmap() -> List<&2, String>:\n"
-  "  [\"f16\", \"f32\"]\n"
-  "\n"
   "def main() -> IO(Unit):\n"
-  "  do IO<Unit>: IO.print(String.concat([\"st BASE = [\", String.join(g_tmap(), \",\"), "
-  "\"]   py=[half,float]\"]))\n")
+  "  do IO<Unit>: IO.print(String.concat([\"st BASE = [\", \"half,float\",\"]   py=[half,float]\"]))\n")
 
 SELFTEST_ORACLE = (
   "from tinygrad.dtype import dtypes as D\n"
@@ -269,6 +415,25 @@ SELFTEST_ORACLE = (
   "from tinygrad.renderer.cstyle import CStyleLanguage\n"
   "cs = CStyleLanguage(Target('NULL'))\n"
   "print('st BASE = [' + ','.join(cs.type_map[d] for d in (D.f16, D.f32)) + ']')\n")
+
+SELFTEST_BEND_REFUSED = (
+  "import Base\n"
+  "\n"
+  "def main() -> IO(Unit):\n"
+  "  do IO<Unit>: IO.print(String.concat([\"st FP8 = [\", \"\",\"]   py=[half]\"]))\n")
+
+SELFTEST_REFUSED_ORACLE = (
+  "import sys\n"
+  "sys.path.insert(0, '.')\n"
+  "from tinygrad.dtype import dtypes as D\n"
+  "from tinygrad.helpers import Target\n"
+  "from tinygrad.renderer.cstyle import CStyleLanguage\n"
+  "cs = CStyleLanguage(Target('NULL'))\n"
+  "try:\n"
+  "  cs._render_dtype(D.fp8e4m3, 1)\n"
+  "  print('st FP8 = [half]')\n"
+  "except KeyError:\n"
+  "  print('st FP8 = [KEYERROR]')\n".replace("KEYERROR", KEYERROR))
 
 
 def selftest():
@@ -285,20 +450,50 @@ def selftest():
       p, o = run(["./bin/bend", str(bend.relative_to(REPO))]), run([sys.executable, str(ora)])
       assert o.returncode == 0, o.stderr
       for label, plant in (("clean", None), ("planted", "st BASE")):
-        bad, pr, orr, compared, dis = judge(p.stdout, o.stdout, plant,
-                                            crosswalk={"st BASE": "st BASE"})
-        verdict = "BROKEN" if bad else "AGREE"
-        print(f"  {label:<8} -> {verdict:<7} shared={compared} "
-              f"disagreements={[d[0] for d in dis]} "
-              f"shreds={len(rows_strict(p.stdout)[1]) + len(rows_strict(o.stdout)[1])}")
-        if label == "clean" and (bad or not compared or dis):
+        r = judge(p.stdout, o.stdout, plant, exclusions={})
+        bad = r["bad"]
+        print(f"  {label:<8} -> {'BROKEN' if bad else 'AGREE':<7} "
+              f"gated={r['gated']} agree={r['agree']} "
+              f"disagree={[d[0] for d in r['disagree']]}")
+        if label == "clean" and (bad or not r["agree"] or r["disagree"]):
           print("    SELFTEST FAILED: the clean pair must share a name and agree")
           return 1
-        if label == "planted" and (not dis or not bad):
+        if label == "planted" and (not r["disagree"] or not bad):
           print("    SELFTEST FAILED: the planted disagreement was not seen")
           return 1
-      print("SELFTEST OK: the SAME instrument reports AGREE on the clean pair and DISAGREE "
-            "on the planted one")
+      # THE REFUSAL LANE. `!KeyError` must compare against the port's `""` marker and
+      # must NOT compare against anything else -- this is the lane that turns an
+      # exception into a gateable claim instead of a silent skip. The oracle side is
+      # a LIVE `cs._render_dtype(dtypes.fp8e4m3, 1)`, and the `except` is the harness
+      # reporting CPython's answer; nothing here restates cstyle.py.
+      ref = pathlib.Path(td) / "r.py"
+      ref.write_text(SELFTEST_REFUSED_ORACLE)
+      ro = run([sys.executable, str(ref)])
+      bend.write_text(SELFTEST_BEND_REFUSED)
+      pr = run(["./bin/bend", str(bend.relative_to(REPO))])
+      r = judge(pr.stdout, ro.stdout, None, exclusions={"st BASE": ""})
+      ok = r["gated"] == ["st FP8"] and not r["disagree"]
+      print(f"  refusal  -> {'AGREE' if ok else 'BROKEN':<7} gated={r['gated']} "
+            f"disagree={[d[0] for d in r['disagree']]}  (!KeyError -> \"\")")
+      if not ok:
+        print(f"    SELFTEST FAILED: a CPython refusal did not compare against the port's "
+              f"empty marker; oracle said {ro.stdout.strip()!r}")
+        return 1
+      # AND THE NEGATIVE: a port that answered the fp8 cell with a NAME instead of
+      # the marker must be seen. A refusal lane that has never gone red is a lane
+      # that may be accepting everything.
+      bend.write_text(SELFTEST_BEND_REFUSED.replace('["st FP8 = [", "",',
+                                                     '["st FP8 = [", "fp8e4m3",'))
+      pr = run(["./bin/bend", str(bend.relative_to(REPO))])
+      r = judge(pr.stdout, ro.stdout, None, exclusions={"st BASE": ""})
+      print(f"  refusal+ -> {'BROKEN' if r['disagree'] else 'AGREE':<7} "
+            f"disagree={[d[0] for d in r['disagree']]}  (a name where a refusal was)")
+      if not r["disagree"]:
+        print("    SELFTEST FAILED: a CPython refusal accepted a port answer that was not "
+              "the marker")
+        return 1
+      print("SELFTEST OK: the SAME instrument reports AGREE on the clean pair, DISAGREE "
+            "on the planted one, and maps a CPython refusal onto the port's marker")
       return 0
     finally:
       bend.unlink(missing_ok=True)

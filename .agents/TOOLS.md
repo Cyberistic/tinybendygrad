@@ -525,8 +525,34 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
 - A compile error propagates and bend's `Location:` block NEVER NAMES THE FILE, so a red
   count is not a defect count — one planted `def` in `LAWS/spec.bend` reds 87 files. Attribute
   by the offending source text, walking back past a blank marked line.
-- `tinybendygrad/runtime/support/elf.bend` has printed 353 rows and 331 rows on different runs
-  with no edit between them. Treat a single run's row count as evidence of nothing.
+- **`tinybendygrad/runtime/support/elf.bend`'s ROW COUNT IS NOT A CONSTANT — and the failure
+  modes are THREE, not one.** 2026-10-04, full artifact
+  `.agents/slop/runs/elf-run-353rows-2026-10-04.txt`:
+  - **353** proof rows on a complete run (stdout lines carrying `=`, less bend's own
+    `bend 2.0.35 is available...` line) — **which REPRODUCES the 353 already recorded here.**
+  - **331** on another run with no edit between. Unreproduced, still unexplained, and still a
+    reason not to quote a single run.
+  - **246 — RETRACTED, and it was MY error, not the file's.** I read the row count off a
+    background `bend` job that was **still writing**: four reads of one file gave 239, 246, 354
+    and 355 lines. **246 was a partial read of an in-flight run.** Reported here because the
+    retraction is the useful part.
+  - **Rule-dependence is real but smaller than it first looked:** counting `=`-bearing lines
+    reads 354, because my own `done rc=0` shell echo carries an `=` and is not a proof row.
+    **Exclude the harness's own output or you will count your marker as evidence.**
+  - `--check-only` prints `ALL PROOFS CHECK` and **no row count at all** — only `bend <file>`'s
+    stdout carries one (`.agents/slop/runs/elf-checkonly-2026-10-04.txt`).
+
+  **Three rules, and the third is the one that bit me: (1) never quote a row count without the
+  RULE that produced it; (2) never quote one from a job that may still be running — wait for the
+  file's own completion marker (`elf-done=1`) or for the process to exit; (3) a count that grows
+  while you watch it is not an unstable measurement, it is an UNFINISHED one.**
+- **THE NAMING GATE'S `VERBATIM` COUNT IS NOT A CONSTANT EITHER — 283 vs 278.** Six runs 14 s
+  apart were byte-identical md5 at **283**; a window at 19:34-19:36 read **278**, bracketed by
+  283, with files mid-write. **283 is a SETTLED-SUBSTRATE reading and 278 is a
+  SUBSTRATE-IN-FLUX reading; neither is a property of the port.** Any ledger sentence of the form
+  "N VERBATIM of M" must name the two values and the substrate state, or it is a stale count
+  presented as fact. `naming-gate.py` reports `VERBATIM … 283 17.9%` on stdout, and a parser
+  that reads only the leading integer drops the `QUALIFIED` column silently.
 
 ## Pin vs xd1/head (2026-10-03)
 
@@ -707,3 +733,67 @@ Harness rules learned here:
 * **a 0-row port lane is a cold substrate until proven otherwise** — `ops.bend` was written
   14 s before a run and broke the typecheck, and every count-only harness read that as
   "not started". `dd-truth.py` refuses to report a verdict on 0 port rows.
+
+## The mutation-table harness (`codegen/decomp/dtype.bend`, 2026-10-04)
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/dd-mutate.py` | the harness. Builds a MIRROR (`git archive <PINNED REV> tinybendygrad` + the FROZEN `dtype.bend`), asserts the mirror reproduces the snapshot's digest, runs 3 controls + 36 mutations in parallel over per-worker tree copies, and diffs WHOLE `name=value` lines. **Writes the live tree never.** `probe_substrate()` exits unless the unmutated mirror reproduces the baseline's exact shape, and ANY control that is not `SAME` aborts with no table written. Pins: `FROZEN_SHA1` and `TREE_REV` at the top of the file. `DD_WORKERS` (default 6). |
+| `.agents/slop/dd-mutations.frozen.bend` | the pinned snapshot, `73b0e1e7…`. **The live file is a concurrent unit's** and moved under the run. |
+| `.agents/slop/dd-gate-base-172.txt` | the 172-row baseline the table is diffed against. |
+| `.agents/slop/dd-mutations-report.md` | the classified table: 28 MOVED, 5 THEOREM with a proof each, 1 REQUEST with the fixture named, 2 DID-NOT-COMPILE. |
+| `.agents/slop/dd-mut-proof.py` | proves a THEOREM by **renaming the enclosing def**: a rename cannot change semantics or break a type, so a rename that compiles proves nothing resolved the old name. Reports `REACHABLE-WAS` (bend refused, so a caller exists) or `THEOREM` (compiled, output byte-identical). Reads **stderr** to tell a refusal from bend's stack overflow, because both print nothing on stdout. |
+| `.agents/slop/dd-mut-tether.py` | proves a THEOREM by **deleting the arm**: compiles and byte-identical ⇒ the arm was dead. The complement — deleting the *interceptor* and seeing the rows CHANGE — is what attributes the death to the interception rather than to unreachability (M06). |
+| `.agents/slop/dd-mut-reach.py` | the call graph from `main` to every def. **Evidence, not proof** (a regex over source can miss an indirect use), but it names the 81 defs no fixture reaches. |
+| `.agents/slop/dd-mut-deepen.py` | builds a 3-deep `dd_tree` printer (changes 28 baseline rows) and re-measures a mutation against it, to separate "the code does not run" from "the row does not print it". Bend has no mutual recursion, so depth is unrolled into `d1 → d2 → d3` in dependency order. |
+| `.agents/slop/dd-mut-classify.py` | turns the measured `.tsv` into MOVED / THEOREM / REQUEST. It **refuses to emit a verdict with no proof kind behind it**, and a zero with no proof is a REQUEST by construction — there is no fourth bucket. |
+
+Why the bake lives in the mirror and not the live tree: a bake catches a run killed mid-write, so
+it is only meaningful for the tree that run writes. `git archive` carries only tracked files, so a
+mirror can never inherit one — a bake in the live tree guards nothing and blocks every run that
+mirrors it. `stray_bakes()` reports rather than deletes (another unit's mirror may be mid-run).
+
+## The `.bend` CENSUS (2026-10-04) — one number, four definitions, and none of them is "the" count
+
+Measured in the working copy during 2026-10-04. **The tree was being written throughout**, which
+is itself the headline: four reads of one command gave 196,610 -> 196,743 -> 196,724 -> 196,821
+lines before settling (then byte-identical, md5 `640487f2…` on the settled corpus), and the
+`find` file count went **137 -> 138** when another unit landed a `.bend` mid-session, with four
+files mid-edit by live agents. **A census taken while agents are writing is a sample.**
+
+Read the PORT row as a **bracket**, not a point — the file count was rock-stable at 128 across
+every reading while the line count moved, so the count of files is the trustworthy half:
+
+| definition | `tinybendygrad` + `examples` | `tinybendygrad` alone |
+|---|---|---|
+| A. `find … -name '*.bend'` — **the published method** | **137-138 files / ~197.9k lines** | 136-137 / ~196.8k |
+| B. A, git-tracked only (what a clone reproduces) | 133 / ~196.3k | 132 / ~195.2k |
+| C. B minus scratch (`tree-verdict.py`'s `SCRATCH_RE`) | **128 files / 195,016-195,188 lines** | **127 / ~193.9k** |
+| D. A minus B: untracked, gitignored scratch | 4 / 1,598 | 4 / 1,598 |
+
+**State the SET and the RULE, then the number. "137 `.bend` files" without either is
+unreproducible.** The published 137 was *not* wrong — it is `tinybendygrad` + `examples`, which is
+what `bend2-constraints.md` §6 means by it.
+
+**Do not discover `.bend` files with `glob('*.bend')`.** Python's `glob` will not let `*` consume a
+leading dot, so root-level `glob.glob('*.bend')` returns `[]` while `.bend` sits on disk — and it
+did, tracked, 1,890 lines, invisible to `find tinybendygrad`. `os.walk` + `endswith` (what
+`tree-verdict.py` actually does, positions 86-93) sees everything. `find -name` also sees
+everything. **A dot-named port file is the one thing that can hide from a glob.**
+
+## Repo hygiene (2026-10-04)
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/stale-snapshot-detect.py` | finds `.bend` files that are a stale PREFIX of a sibling in the same directory — the shape an in-place mutation harness leaves behind. Prints the shared-prefix length, the ratio, and the tail divergence, because "most of the shorter file matches" is a judgement the reader makes. `--min-ratio` (default 0.70; `csprobe`/`cstyle` is 0.76). Run over `tinybendygrad` + `examples` it finds exactly one pair, so it is a cheap regression check on the tree. |
+| `.agents/slop/hygiene-2026-10-04.md` | this pass's report: the root `.bend` duplicate, the glob proof, the corrected census, per-file scratch verdicts, and every stale number marked unstable. |
+
+**The scratch that is in the tree, and the one that must stay.** 8 files match
+`tree-verdict.py`'s `SCRATCH_RE`; 4 are untracked and already ignored. Of the 4 tracked:
+`renderer/csprobe.bend` (774) is a stale snapshot of `cstyle.bend` and wants `rm`; `runtime/_p6.bend`
+(4) and `uop/probe-bl.bend` (36) / `probe-f32.bend` (10) want `rm`; and **`uop/probe-mmcore.bend`
+(471) MUST STAY**, because `.agents/slop/mm-mutate.py:17` names it `SRC` and `mm-gate.py:12` runs
+it. **`.gitignore`'s "a broken probe in the source tree is a trap, not a fixture" is too broad as
+written — the repo's own "DELIBERATELY NOT IGNORED" doctrine (*a cache-shaped path is not the
+test; "a report cites it" is*) has to be applied first.** A `probe-` prefix is a shape; a citation
+is evidence.

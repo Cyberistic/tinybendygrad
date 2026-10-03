@@ -1,0 +1,9 @@
+blob_content=97,97,97,97
+blob_count_len_diff_content=2
+blob_count_same=1
+blob_diff_len=True
+blob_interns=True
+blob_len_diff_content=True
+blob_shape=(4,)
+blob_sweep_count=6
+blob_sweep=True

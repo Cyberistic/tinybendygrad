@@ -1,0 +1,67 @@
+empty23_g=5 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2
+empty23_d=shape=(2,3) dtype=f32
+empty23h_g=5 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2
+empty23h_d=shape=(2,3) dtype=f16
+empty23i_g=5 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2
+empty23i_d=shape=(2,3) dtype=i32
+empty4_g=1 op=ALLOC nsrc=0 srcops= topo=ALLOC/0
+empty4_d=shape=(4) dtype=f32
+empty0_g=3 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 STACK/0 RESHAPE/2
+empty0_d=shape=() dtype=f32
+emptylike2d_g=4 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2
+emptylike2d_d=shape=(2,2) dtype=f32
+emptylike2dh_g=4 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2
+emptylike2dh_d=shape=(2,2) dtype=f16
+invalids23_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+invalids23_d=shape=(2,3) dtype=bool
+full23i42_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+full23i42_d=shape=(2,3) dtype=i32
+full23f42_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+full23f42_d=shape=(2,3) dtype=f32
+full23b_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+full23b_d=shape=(2,3) dtype=bool
+full23h42_g=10 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+full23h42_d=shape=(2,3) dtype=f16
+full23l42_g=10 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+full23l42_d=shape=(2,3) dtype=i64
+full23big_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+full23big_d=shape=(2,3) dtype=i32
+full_nobuf_g=5 op=EXPAND nsrc=2 srcops=CONST|STACK topo=CONST/0 CONST/0 CONST/0 STACK/2 EXPAND/2
+full_nobuf_t=dtype=weakint
+full_nobuf0_g=1 op=CONST nsrc=0 srcops= topo=CONST/0
+full_nobuf0_d=shape=() dtype=weakint
+full4i7_g=6 op=AFTER nsrc=2 srcops=ALLOC|STORE topo=ALLOC/0 CONST/0 CONST/0 EXPAND/2 STORE/2 AFTER/2
+full4i7_d=shape=(4) dtype=i32
+constlike2d_g=5 op=EXPAND nsrc=2 srcops=CAST|STACK topo=CONST/0 CAST/1 CONST/0 STACK/2 EXPAND/2
+constlike2d_t=dtype=f32
+constlike0d_g=1 op=CONST nsrc=0 srcops= topo=CONST/0
+constlike0d_d=shape=() dtype=weakfloat
+full_like2d_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+full_like2d_d=shape=(2,2) dtype=f32
+full_like2dh_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+full_like2dh_d=shape=(2,2) dtype=f16
+zeros23_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+zeros23_d=shape=(2,3) dtype=f32
+zeros23i_g=10 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+zeros23i_d=shape=(2,3) dtype=i32
+ones23_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 EXPAND/2 STORE/2 AFTER/2
+ones23_d=shape=(2,3) dtype=f32
+ones23i_g=10 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+ones23i_d=shape=(2,3) dtype=i32
+zeros_like2d_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+zeros_like2d_d=shape=(2,2) dtype=f32
+ones_like2d_g=9 op=AFTER nsrc=2 srcops=RESHAPE|STORE topo=ALLOC/0 CONST/0 STACK/2 RESHAPE/2 CONST/0 CAST/1 EXPAND/2 STORE/2 AFTER/2
+ones_like2d_d=shape=(2,2) dtype=f32
+int_full_new=4
+int_full_expand=True
+int_empty_new=2
+int_ones_new=6
+ref_empty_weak=True
+ref_empty_weakint=True
+ref_commit_float=True
+ref_commit_none=True
+ref_commit_i32=True
+alloc_bind=True
+alloc_addr=True
+ctrl_empty23_g=5 op=RESHAPE nsrc=2 srcops=ALLOC|STACK topo=ALLOC/0 CONST/0 CONST/0 STACK/2 RESHAPE/2
+ctrl_empty23_d=shape=(2,3) dtype=f32

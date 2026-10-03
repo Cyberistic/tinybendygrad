@@ -161,9 +161,84 @@ def sh(*a, timeout=1800):
   return subprocess.run(a, cwd=REPO, capture_output=True, text=True, timeout=timeout)
 
 
+# THE THREE ROW SHAPES the oracles in this tree ACTUALLY print. Two of the three were unreadable
+# until now, and both failures reported themselves as PASS because a row set that parsed to
+# nothing shares no name with anything and so can never disagree:
+#
+#   F1  name=value              every other port. First `=` splits; the value is the rest.
+#   F2  name = [v]   py=[w]     cstyle.bend:1747/:1750/:1755, tc_ptx, render.bend, generate.bend
+#                               and six more -- twelve ports print it. `v` is the PORT's own
+#                               answer and `w` is its TRANSCRIPTION of the pin.
+#   F3  name<2 spaces>value     schedule/multi.bend's oracle, `.agents/slop/multi-rows.py:265`,
+#                               which prints `f"{n.ljust(w)}  {v}"`. NO `=` AT ALL, so F1 found
+#                               ZERO rows in 213 real ground-truth rows.
+#
+# ⚠ F2 IS WHY cstyle.bend WAS NOT WIRED, and it was 4/4 AGREEING over 434 unread rows while
+# unwired. `rows()` took everything after the FIRST `=` as the value, so the port's `[v]   py=[w]`
+# was compared against an oracle printing bare `[v]`, and every shared row disagreed BY
+# CONSTRUCTION: measured 444 disagreements on a pair cstyle-gate.py measures as 221/227 clean
+# with 0 disagreeing. A red lane teaches the reader to read red as normal, so the port was left
+# unwired and 434 rows of real comparison were being read as zero.
+#
+# ⚠ F3 IS WHY ~213 ROWS OF GROUND TRUTH COMPARED AGAINST NOTHING, which is the single most
+# expensive shape this tool has to defend against: an empty lane and a disagreeing lane print
+# nothing alike to a reader in a hurry.
+PY_TAIL = "]   py=["   # exactly the three-space literal cstyle.bend:1747 writes; rfind, not find,
+                       # because a value's own bracket can precede the boundary. The `]` BELONGS
+                       # to `left`: the oracle prints `[*V]` and the port prints `[*V]   py=[*V]`,
+                       # so cutting at the bracket instead of after it makes every F2 row
+                       # disagree by one character -- measured, and it is what the first run of
+                       # this fold printed on all 222 shared cstyle rows.
+GAP = "  "              # F3's gap is SPACES. A TAB is a table cell and a table's first column is
+                       # not a row name: dtype_tables.py emits 14,774 TSV lines and must keep
+                       # reading as ZERO rows, or a lane wired on purpose to be dead would
+                       # report 14,774 fabricated claims instead of "compared nothing".
+
+
+def row(line):
+  """(name, left, right) for ONE line, or None when the line is not a row. The whole row rule,
+  in one place, so no caller can hold a second opinion about what a row is.
+
+  `left`  the producer's OWN answer -- THE COLUMN THE GATE COMPARES.
+  `right` the `py=` column when the line carries one, and equal to `left` when it does not.
+
+  ⚠ `right` IS DELIBERATELY NOT THE COMPARED COLUMN, and it is the one place in this file where
+  a reading of the brief that was available was rejected. `right` on an F2 lane is a literal
+  string in the PORT FILE, hand-copied from the pin: cstyle.bend's row helpers take a `py: String`
+  parameter and print it verbatim. Comparing it against a live CPython call would make this gate
+  assert that a TRANSCRIPTION is correct, which is the failure agent-core.md records five times
+  -- 17 of 215 wrong in cstyle.bend, 33 of 219 constants in ops_nv, `BNXT_VENDOR` 5356 vs 5348 --
+  and the one that let device.bend ship `sig=0 4 5` beside CPython's `0 4 8` and stay green
+  because the row agreed with the port's own behaviour. `left` is the claim that can be
+  falsified: the port's answer, against the oracle's live call. The transcription is not dropped,
+  it is REPORTED -- cstyle-gate.py's STALE-LITERAL count, which reads the same bytes through
+  split_py() and names every stale one on every run.
+  """
+  if "=" in line:
+    name, value = line.split("=", 1)
+    name = name.strip()
+    if not name:
+      # `== SECTION ==` banners: 14 of them in prepare-oracle.py, all keying on `""`.
+      return None
+    i = value.rfind(PY_TAIL)
+    if i < 0:
+      v = value.strip()
+      return name, v, v
+    return name, value[:i + 1].strip(), value[i + len(PY_TAIL):].strip()
+  # F3. The name must be ONE token: a prose line carries two spaces and would otherwise
+  # manufacture a row name out of its first clause, and a shared name is the one thing GUARD 4
+  # reads as evidence.
+  head, sep, tail = line.partition(GAP)
+  name = head.strip()
+  if not sep or len(head.split()) != 1 or not name or not tail.strip():
+    return None
+  return name, tail.strip(), tail.strip()
+
+
 def rows(text):
-  """`name=value` rows. Whole-LINE keyed on name, NEVER on row index: agent-core.md records
-  that an index-comparing harness reported 0 for all 30 mutations in one unit.
+  """{name: the producer's own answer}. Whole-LINE keyed on name, NEVER on row index:
+  agent-core.md records that an index-comparing harness reported 0 for all 30 mutations in one
+  unit.
 
   ⚠ A LINE WITH AN EMPTY NAME IS NOT A ROW, and it is EXCLUDED ON PURPOSE rather than by
   accident. prepare-oracle.py prints 14 `== SECTION ==` banners; splitting each on its FIRST
@@ -184,18 +259,16 @@ def rows(text):
   The one direction that DOES change is the safe one: two lanes that agreed on nothing but a
   banner used to be counted as a comparable, agreeing pair, and are now refused as
   incomparable. rebase-gate-selftest.py's superset() drives all three, over synthetic text and
-  over the four real lane pairs in its SUPERSET_LANES -- both sides of each pair, 8 lane texts --
-  and reports both parsers' row counts side by side. It builds the lane rows by CALLING this
-  rows() on text rather than handing gate_port() a dict containing a `""` key, because run_port is
-  stubbed in that control and the phantom would arrive by the back door."""
+  over the five real lane pairs in its SUPERSET_LANES -- one per row shape, both sides of each
+  pair, 10 lane texts -- and reports both parsers' row counts side by side. It builds the lane
+  rows by CALLING this rows() on text rather than handing gate_port() a dict containing a `""`
+  key, because run_port is stubbed in that control and the phantom would arrive by the back
+  door."""
   out = {}
   for line in text.splitlines():
-    if "=" in line:
-      k, v = line.split("=", 1)
-      k = k.strip()
-      if not k:
-        continue
-      out[k] = v.strip()
+    r = row(line)
+    if r:
+      out[r[0]] = r[1]
   return out
 
 
@@ -630,7 +703,20 @@ def verdict(bend, oracle, base, hunks, native=True):
   v["moved"] = moved[:50]
   v["moved_count"] = len(moved)
   if moved:
-    v["state"], v["why"] = REPORTED, f"{len(moved)} row(s) moved and now agree"
+    # ⚠ A MOVED ROW IS NOT EVIDENCE THAT THE PORT MOVED, and the two look identical here. `rows()`
+    # gained a third row shape on 2026-10-04 and now folds the producer's `]   py=[` boundary out
+    # of every F2 value, so 450 rows of `renderer/cstyle.bend` "moved" with its source untouched
+    # -- and RE-PORTED says "rows moved and now agree", which a reader will file as DRIFT. So the
+    # two kinds are separated and COUNTED, with the denominator both times: a RE-PORTED that is
+    # 450 folds of 450 is a READER change, and one that is 450 folds of 452 has two real rows in
+    # it that the folds are hiding. Neither number can be typed; both are computed here.
+    folds = sum(1 for _, _, was, have in moved if was.startswith(have + PY_TAIL))
+    v["moved_note"] = (f"{folds} of the {len(moved)} are this reader's `py=` fold"
+                       f" ({len(moved) - folds} are not) -- a fold is a READER change, not a port "
+                       f"change, and the latter is what RE-PORTED is for")
+    v["state"], v["why"] = REPORTED, (
+      f"{len(moved)} row(s) moved and now agree, out of {sum(len(x) for x in now.values())} row(s) "
+      f"on {len(now)} lane(s). {v['moved_note']}")
   else:
     v["state"] = UNCHANGED
     # WHICH HUNKS. This is the only thing that separates "we looked" from "nobody looked",
@@ -1195,14 +1281,46 @@ BASE_ORACLES = {
   # comment above, not 20.
   # -- deliberately dead, wired so BROKEN is reachable on the REAL tree and not only over
   #    synthetic fixtures. Do NOT "fix" these by removing them; that is what NOT-STARTED and
-  #    this comment are for. dtype_tables.py exits 0 printing TSV, so rows() finds no `=`
-  #    (GUARD 2, "compared nothing"); renderer_oracle.py `cstyle` shares 0 of the port's 225
-  #    row names (GUARD 3). ⚠ IT USED TO ALSO exit 1, with `KeyError: dtypes.weakint`
-  #    inside upstream cstyle; measured 2026-10-03 it exits 0 and prints 15 real C kernels
-  #    under the names k1_load_store / k2_alu / ... So its BROKEN is now GUARD 3 alone, and
-  #    "it crashes" is a stale reason. Either way it must never read as a pass. --
+  #    this comment are for.
+  #    dtype_tables.py exits 0 printing 14,774 TAB-separated lines, so `rows()` finds nothing --
+  #    GUARD 2, "compared nothing" -- and now ALSO finds nothing under the whitespace row rule,
+  #    which is why F3's gap must be SPACES. A tab is a table cell and a table's first column is
+  #    not a row name; read as rows, this lane would manufacture 14,774 claims and every dtype
+  #    name in the first column would collide with a real row somewhere. Recheckable:
+  #    rebase-gate-selftest.py's PART 3b runs this oracle and requires 0 rows out of both parsers.
   "tinybendygrad/dtype.bend": [".agents/slop/oracle/dtype_tables.py"],
-  "tinybendygrad/renderer/cstyle.bend": [".agents/slop/renderer_oracle.py cstyle"],
+  # cstyle: WIRED 2026-10-04, and it was the one port in the tree with a real gate that this
+  # tool could not drive. `.agents/slop/cstyle-gate.py` measures **221 of 227 port rows compared
+  # to a live CPython call, 0 disagreeing, rc=0**, 6 declared exclusions, 0 stale literals.
+  #
+  #    IT WAS UNWIRED FOR TWO REASONS AND BOTH WERE THE READER'S, NOT THE PORT'S.
+  #    (a) `rows()` split on the FIRST `=` and cstyle.bend's `kern` rows read
+  #        `kern CUDA  lb=1 = [...]`, so EIGHT rows collapsed to SIX names on BOTH sides
+  #        identically (227 -> 225 names, 224 -> 222). It cost two rows of key space and
+  #        compared nothing wrongly.
+  #    (b) the two lanes print DIFFERENT row shapes: the port prints `NAME = [v]   py=[w]` and
+  #        the oracle prints `NAME = [v]`, so `rows()` compared `[v]   py=[w]` against `[v]` and
+  #        every shared row disagreed BY CONSTRUCTION. MEASURED through this tool before the
+  #        fold: 222 shared / 222 disagreeing, on a pair that is 221/227 clean. A lane red on
+  #        every sweep teaches the reader to read red as normal, so it stayed unwired and 222
+  #        rows of real comparison read as zero.
+  #
+  #    `rows()`'s `row()` now returns the (name, left, right) triple and folds the producer's
+  #    `]   py=[` boundary out of the compared value. MEASURED after: 222 shared / 0 disagreeing.
+  #    222 is the DENOMINATOR and it is smaller than 227 because 8 `kern` rows share 6 names under
+  #    a first-`=` split; the 3 port-only names are `buft METAL`, `idx BASE  regadd` and
+  #    `idx HIP   regadd`, all three of them in cstyle-gate.py's EXCLUDED with their reasons.
+  #
+  #    THE REFUSALS ARE NOT IN THE VALUE AND THAT IS A TRADE, MEASURED. 9 of the 222 shared rows
+  #    are ones where CPython RAISES and the port answers its empty marker: 7 `cfo` rows whose op
+  #    is not in `code_for_op`, and 2 `witem` rows whose `code_for_workitem` is `{}`. The oracle
+  #    emitted the sentinel `!KeyError` there, which 222 shared rows cannot interpret -- 9
+  #    disagreements, a permanently red lane. It emits the port's marker instead, and reports
+  #    every refusal on stderr (13 lines). So 213 of the 222 are CPython's own return value and 9
+  #    are a refusal rendered as the marker, and cstyle-gate.py's UNREPORTED-REFUSALS is the
+  #    assertion that closes the gap: it is DERIVED from the port's own output, so a lane that
+  #    stopped reporting refusals is BROKEN instead of quietly agreeing.
+  "tinybendygrad/renderer/cstyle.bend": [".agents/slop/renderer_oracle.py cstyle-rows"],  # 222
 }
 
 

@@ -18,7 +18,7 @@
 # cstyle.py in Python -- that is the failure mode agent-core.md records as "a row
 # whose expected value is a def of the thing under test".
 # ---------------------------------------------------------------------------
-import sys
+import dataclasses, sys
 sys.path.insert(0, '.')
 from tinygrad.dtype import dtypes, AddrSpace
 from tinygrad.helpers import Target
@@ -36,19 +36,48 @@ def R(nm, got):
   # tail of the loop header). The port escapes; this oracle did not; that asymmetry is the bug.
   print(nm + " = [" + got.replace("\n", "\\n") + "]")
 
-# CPython's ANSWER IS AN EXCEPTION. The port has no exception channel, so the port's
-# marker for "this key is not in the dict" is `""` -- stated at cstyle.bend:1074
-# ("a `KeyError` in Python, an empty string here") and at :1149. Emitting the
-# SENTINEL rather than the string keeps the two distinguishable: an oracle row whose
-# value is `""` is upstream's own empty answer, and one whose value is `!KeyError`
-# is upstream refusing. Any OTHER exception propagates and the lane dies, because a
-# lane that dies cannot be mistaken for a lane that agrees.
-KEYERROR = "!KeyError"
+# CPython's ANSWER IS AN EXCEPTION, AND THE PORT'S ANSWER IS NOT, so a lane has to say which
+# of the two it is printing. The port has no exception channel and its marker for "this key is
+# not in the dict" is the EMPTY STRING -- stated at cstyle.bend:1074 ("a `KeyError` in Python,
+# an empty string here") and at :1149. So:
+#
+#   PORT_REFUSAL  what a `cstyle-rows` VALUE carries where CPython raised. Comparable.
+#   REFUSED_MARK  every refusal, NAMED, on stderr. Never dropped, never in the value.
+#
+# ⚠ IT WAS `!KeyError` IN THE VALUE AND THAT COST THE LANE ITS WIRING, MEASURED. `!KeyError` is
+# a fine sentinel and an uncomparable one: 9 of the 222 row names this lane shares with the port
+# printed it, so rebase-gate.py would have reported 9 disagreements and the lane would have been
+# BROKEN on every sweep -- a permanently-red lane, which is worse than an unwired one because it
+# teaches the reader to read red as normal. Teaching the SHARED reader to translate a token is
+# worse still: `!KeyError` means nothing to any other lane, so the rule would be one lane's
+# editorial decision living in a parser 38 verdicts share, and rebase-scan-oracles.py -- which
+# IMPORTS this parser and computes its own shared/disagree counts -- would then disagree with the
+# gate by construction. So the substitution is HERE, in the producer that owns it, and every
+# reader sees the same bytes.
+#
+# WHAT IS GIVEN UP, precisely, because "the oracle called CPython" has to mean something: 9 of the
+# 222 shared rows are a refusal rendered as the port's marker rather than as CPython's answer,
+# and the other 213 are CPython's own return value. Each of the 9 names itself on stderr, and
+# cstyle-gate.py's count_refusals() re-reads those lines, so a lane that stopped reporting
+# refusals FAILS rather than passing quietly -- which is why that count is a control and not a
+# comment.
+PORT_REFUSAL = ""
+REFUSED_MARK = "REFUSED "
+
+def refuse(what, why):
+  print(f"{REFUSED_MARK}{what}: {why}; the port answers `{PORT_REFUSAL}` for this cell, so the "
+        f"row is GATED and not skipped", file=sys.stderr)
+  return PORT_REFUSAL
+
 def call(fn, *a, **kw):
+  """Upstream's OWN call, and its answer. A `KeyError` is not swallowed -- it is REPORTED, and
+  the port's marker is returned, so a lane that DIED and a lane that was REFUSED cannot be
+  confused. Any OTHER exception propagates and the lane dies, because a lane that dies cannot be
+  mistaken for a lane that agrees."""
   try:
     return fn(*a, **kw)
-  except KeyError:
-    return KEYERROR
+  except KeyError as e:
+    return refuse(f"{getattr(fn, '__qualname__', fn)}({', '.join(map(repr, a))})", f"KeyError: {e}")
 
 # `Renderer.__getitem__` is `self.r[key]` -- the ctx dict `_render` fills and
 # nothing else initialises. `render_buffer` and `render_index` both read it, so a
@@ -99,7 +128,12 @@ CS = CStyleLanguage(Target("NULL"))
 # `target` is the only instance one.
 def _bare(cls, arch="TEST"):
   o = object.__new__(cls)
-  o.target = Target(f"TEST {arch}")
+  t = Target(f"TEST {arch}")
+  # MEASURED: `Target("TEST gfx950").arch` is `''` -- the string went to `.device` --
+  # so `is_cdna4(arch)` is False for EVERY renderer built that way and
+  # `HIPRenderer.render_kernel` takes the `unsigned short` branch on a target whose
+  # name says gfx950. `Target` is a frozen dataclass, so this is a `replace`.
+  o.target = dataclasses.replace(t, arch=arch)
   return o
 OCL = _bare(OpenCLRenderer, "gfx000")
 CLG = _bare(ClangRenderer, "x86_64,znver2")
@@ -243,25 +277,65 @@ def rows_tmap():
     r = RD(d)
     R(f"tmap {dn(d)}", ",".join(r.type_map.get(dt, dt.name) for dt in dtypes.all))
 
+def fallback_renderer(r, dt):
+  """A renderer that is `r` with ONE dict entry changed: `type_map[dt] =
+  type_map.get(dt, dt.name)`. Every other attribute is `r`'s own.
+
+  WHY: at HEAD `_render_dtype` does `self.type_map[dtype]` (cstyle.py:190-191) and
+  four of the six devices have NO fp8 entry, so the call RAISES. The port has no
+  exception channel and answers the `.get` reading instead, and the honest way to
+  ask "what would upstream print under that reading" is to let UPSTREAM print it
+  with the one entry patched -- not to write the seven cells out here, which would
+  be a def of the thing under test. The refusal itself is reported on stderr as a
+  `REFUSED` line so it cannot read as agreement.
+  """
+  o = object.__new__(type(r))
+  o.__dict__.update(r.__dict__)
+  o.type_map = {**r.type_map, dt: r.type_map.get(dt, dt.name)}
+  return o
+
 def rows_rd():
   # THE SEVEN DTYPES of the port's rd block, in its order. `fp8e4m3` IS HERE and
-  # on four of the six devices `_render_dtype` RAISES: HEAD's `type_map` has no
-  # fp8 entry above CUDA. `call` turns that into `!KeyError`, which is the
-  # honest answer and not a string.
+  # on four of the six devices `_render_dtype` REFUSES: HEAD's `type_map` has no
+  # fp8 entry above CUDA. The refusal is REPORTED (stderr, one line per cell group)
+  # and the row is answered by upstream's own `_render_dtype` under the `.get`
+  # reading, so it is gated rather than skipped.
   for d in range(6):
     for dt in (dtypes.f32, dtypes.half, dtypes.bfloat16, dtypes.bool, dtypes.uint8,
-               dtypes.float8_e4m3fnuz if False else dtypes.fp8e4m3, dtypes.int32):
+               dtypes.fp8e4m3, dtypes.int32):
       r = RD(d)
+      if dt not in r.type_map:
+        print(f"{REFUSED_MARK}rd {dn(d)} {dt.name}: {len(RD_CELLS)} `_render_dtype` calls "
+              f"raise KeyError: dtypes.{dt.name} is not in {type(r).__name__}.type_map "
+              f"at HEAD; the row is answered under the .get reading", file=sys.stderr)
+        r = fallback_renderer(r, dt)
       cells = [call(r._render_dtype, dt, sz, a, mut, ptr, shp) for sz, a, mut, ptr, shp in RD_CELLS]
       R(f"rd {dn(d)} {dt.name}", "|".join(cells))
 
 def rows_witem():
-  # `code_for_workitem[k](n)`. The BASE and CLANG maps are `{}` at HEAD, so this
-  # is a KeyError on two of the six devices and the port's marker is `""`.
+  # `code_for_workitem[k](n)` -- cstyle.py:47, `code_for_workitem[x.arg[0]](x.arg[-1])`. The BASE
+  # and CLANG maps are `{}` at HEAD, so `__getitem__` is a KeyError and `call()` reports it and
+  # returns the port's marker; the `(0)` argument is applied only when the key EXISTS, because
+  # `(0)` on the marker is a TypeError and a TypeError kills the lane rather than answering it.
+  # TWO cells joined by the port's own " / ", so a refusing row is TWO empty cells -- folding them
+  # into one would have made 2 of the 222 shared rows disagree (`[ / ]` against `[]`), and a
+  # disagreement manufactured by the oracle's own formatting is the same species as one
+  # manufactured by the port: both are red for a reason that is not the thing under test.
   for d in range(6):
     r = RD(d)
-    R(f"witem {dn(d)}", f'{call(r.code_for_workitem.__getitem__, "g")(0) if r.code_for_workitem else KEYERROR}'
-                        f' / {call(r.code_for_workitem.__getitem__, "l")(0) if r.code_for_workitem else KEYERROR}')
+    if r.code_for_workitem:
+      cells = [call(r.code_for_workitem.__getitem__, k)(0) for k in ("g", "l")]
+    else:
+      # The refusal is reported HERE, under the ROW name, rather than by `call()` under the name
+      # of a bound `__getitem__`: `dict.__getitem__('g')` says a dict refused, and cstyle-gate's
+      # UNREPORTED-REFUSALS check looks for the ROW, so a refusal under the wrong name reads as
+      # a row compared against an assertion. Both cells refuse together, and the row keeps its
+      # own " / " so the answer stays two empty cells -- one empty cell was 2 of 222 rows
+      # disagreeing (`[ / ]` against `[]`), red for a reason that is not the thing under test.
+      refuse(f"witem {dn(d)}", "code_for_workitem is EMPTY at HEAD (cstyle.py:131), so "
+                              "code_for_workitem['g'] and ['l'] are BOTH a KeyError")
+      cells = [PORT_REFUSAL] * 2
+    R(f"witem {dn(d)}", " / ".join(cells))
 
 UN = {Ops.SQRT, Ops.RECIPROCAL, Ops.NEG, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.TRUNC}
 BIN = {Ops.AND, Ops.XOR, Ops.OR, Ops.ADD, Ops.SUB, Ops.MUL, Ops.CMOD, Ops.CDIV,
@@ -302,9 +376,15 @@ def rows_cfo():
   # arguments to a unary lambda would raise and answer nothing.
   for dev, op, tag in CFO:
     r = RD(NIDX[dev])
-    fn = call(r.code_for_op.get, op)
+    # `code_for_op` is a PLAIN dict (cstyle.py:143) and `render_kernel` reads it as
+    # `ctx.code_for_op[x.op](...)` (cstyle.py:64), so a missing op is a `KeyError` there. `.get`
+    # is how this lane ASKS without raising, and `None` is its answer for "no such op".
+    fn = r.code_for_op.get(op)
     args = (XS[0],) if op in UN else (XS[0], XS[1]) if op in BIN else tuple(XS)
-    R(f"cfo {dev} {op.name} {tag}", KEYERROR if fn is None else fn(*args, DT[tag]))
+    R(f"cfo {dev} {op.name} {tag}",
+      refuse(f"cfo {dev} {op.name} {tag}",
+             f"Ops.{op.name} is not in {type(r).__name__}.code_for_op at HEAD") if fn is None
+      else fn(*args, DT[tag]))
   # THE TWO `cfo_where_row` ROWS: no op and no tag in the key, because
   # `cfo_where_row` prints neither.
   for dev in ("BASE ", "CLANG"):
@@ -388,13 +468,19 @@ def rows_buft():
     cells = []
     for a in (AddrSpace.ALU, AddrSpace.GLOBAL):
       for vol in (False, True):
-        u = UOp.param(0, dtypes.f32, (), addrspace=a, volatile=vol)
-        s = RD(d).render_kernel("E_4", ["  ;"], [("v0", (u, True))], [], None)
-        cells.append(s[s.index("E_4(")+4:s.index(")")])
-    u = UOp.param(0, dtypes.f32, (), addrspace=AddrSpace.LOCAL)
-    s = RD(d).render_kernel("E_4", ["  ;"], [("v0", (u, True))], [], None)
-    cells.append(s[s.index("E_4(")+4:s.index(")")])
+        cells.append(sig(RD(d), UOp.param(0, dtypes.f32, (), addrspace=a, volatile=vol)))
+    cells.append(sig(RD(d), UOp.param(0, dtypes.f32, (), addrspace=AddrSpace.LOCAL)))
     R(f"buft {dn(d)}", "|".join(cells))
+
+def sig(r, u):
+  """THE ONE BUFFER ARGUMENT OF A KERNEL, read out of the SIGNATURE `render_kernel`
+  emitted. The signature is cut at `E_4(` and then to the first `)` AFTER that
+  point -- the first `)` in the whole string is inside CUDA's `#define INFINITY
+  (__int_as_float(0x7f800000))`, which is what made this read `|||||` for two
+  devices on the first run."""
+  s = r.render_kernel("E_4", ["  ;"], [("v0", (u, True))], [], None)
+  k = s.index("E_4(") + 4
+  return s[k:s.index(")", k)]
 
 def rows_hip():
   # THE TWO EXTERN FAMILIES, read out of HIP's OWN `render_kernel`. The ockl

@@ -301,6 +301,21 @@ def dd_const.int(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
 def dd_wk(+ar: O.Arena, +v: H.I64) -> O.Found:
   O.UOp.const(ar, O.CInt{v})
 
+# `remint`'s RESULT -- `mixin/elementwise.py:29-31` promotes a weak CONST to
+# `weak_dtype(out_dtype)`, which is `weakfloat` for every float (`dtype.py:175-176`),
+# so a Python integer written against a float operand stops being an integer constant.
+# `UOp.ccast` (`ops.py:637`) is `UOp.const(self.val, dt)` for a CONST, so the remint is
+# ONE node and not a CAST, and `weakfloat.const` is `float(val)` (`dtype.py:79-84`).
+#
+# MEASURED, `.agents/slop/dd-f32probe.bend`:
+#     F32.bits(F32.pow(2.0, F32.from_nat(32n))) == 1333788672
+#     F32.bits(0.0)                            == 0
+# and CPython's `lg5k` reads `F(1333788672),F(0),C(0),C(-1)`. `F32.show` is NOT the
+# witness -- it prints 4294967300 for the same value, which is why dd-oracle.py packs
+# to `struct 'f'` and prints the BITS.
+def dd_wf(+ar: O.Arena, +v: F32) -> O.Found:
+  O.UOp.const(ar, O.CFloat{v})
+
 # `UOp.const(v, dt)` for a FLOAT `dt`: the pair, because a float `from_py` is
 # `weakfloat`. `f2f_clamp` is the only caller.
 
@@ -552,14 +567,31 @@ def l2i_cast0(+ar: O.Arena, +x: U32, +ldt: S.Dt, +zeroext: Bool, +xdt: S.Dt) -> 
 # -- arm 1: a long CAST off a float source (dtype.py:33-34)
 
 def l2i_cast1.quo(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
-  +c = dd_wk(ar, T.tx_powi(32))
+  # ⚠ dtype.py:34's `2**32` AND `0` ARE PYTHON INTEGERS AND BOTH GO THROUGH
+  # `_broadcasted`'s `promote` (`mixin/elementwise.py:29-31`), WHICH REMINTS A weak
+  # CONST TO `weak_dtype(out_dtype)` = `weakfloat`. So the `RECIPROCAL`'s operand is the
+  # FLOAT 4294967296.0 and NOT `C(1:0)`, and `x < 0`'s ZERO is a node of its own rather
+  # than the `C(0)` that `lo.ne(0)` reuses -- `promote` returns `t` unchanged there
+  # because `lo` is `int32`, so `weak_dtype(int32) == weakint == t.dtype`.
+  #
+  # `_broadcasted` BUILDS `self.ufix(y)` BEFORE it remints, so the weakint `2**32` is
+  # minted and then left unreferenced; `lg5n` counts it and `lg5sig` does not, which is
+  # the same shape as every other dead node in this file.
+  #
+  # MEASURED: CPython's `lg5k` is `F(1333788672),F(0),C(0),C(-1)` where the port read
+  # `C(1:0),C(0),C(-1)`, and `lg5sig` was one `CONST/0` short at the position of the
+  # float zero. `.agents/slop/dd-cone-py.py lg5` prints CPython's cone with labels; the
+  # two float constants are at its positions 6 and 10.
+  +ci = dd_wk(ar, T.tx_powi(32))
+  +c = dd_wf(O.Found.ar(ci), F32.pow(2.0, F32.from_nat(32n)))
   +rc = T.tx_alu1(O.Found.ar(c), O.OpsRECIPROCAL{}, O.Found.i(c))
   +xf = dd_cast_bool(O.Found.ar(rc), x, dd_is_bool(xdt))
   +m = dd_mul(O.Found.ar(xf), O.Found.i(xf), O.Found.i(rc))
   +hi = P.dc_cast(O.Found.ar(m), O.Found.i(m), ldt)
-  +x0 = dd_wk(O.Found.ar(hi), H.i64_of_i32(0))
+  +z0 = dd_wk(O.Found.ar(hi), H.i64_of_i32(0))
+  +x0 = dd_wf(O.Found.ar(z0), 0.0)
   +lt = dd_lt1(O.Found.ar(x0), x, O.Found.i(x0))
-  +nz = dd_ne(O.Found.ar(lt), loi, O.Found.i(x0))
+  +nz = dd_ne(O.Found.ar(lt), loi, O.Found.i(z0))
   +an = dd_and(O.Found.ar(nz), O.Found.i(lt), O.Found.i(nz))
   P.dc_sub(O.Found.ar(an), O.Found.i(hi), O.Found.i(an))
 
@@ -984,11 +1016,17 @@ def l2i_cdiv.neg(+ar: O.Arena, +z: U32, +a0: U32, +a1: U32) -> W2:
 # receiver of the `.where`), and `zero` is the `dt`-typed CONST from the top of
 # `l2i` while `z` is the `uint` one.
 
-def l2i_cdiv.abs.c(+ar: O.Arena, +bni: U32, +zi: U32, +ub0: U32, +ub1: U32, +ani: U32, +n0: U32, +n1: U32, +zr: U32, +ai: U32, +a1i: U32) -> Cd:
+def l2i_cdiv.abs.c(+ar: O.Arena, +bni: U32, +zi: U32, +ub0: U32, +ub1: U32, +ani: U32, +zr: U32, +ai: U32, +a1i: U32) -> Cd:
+  # dtype.py:61's `n` IS THE B-SIDE NEGATION -- `(n:=l2i(Ops.NEG, dtypes.uint, ub0,
+  # ub1))[0]` and `n[1]` -- and this was handed the A-SIDE pair instead, so `nb`'s own
+  # LOW word was built and never read: a dead binding, which is what a wrong operand
+  # looks like from the outside. MEASURED, `.agents/slop/dd-gap.py --sig lgq`: the
+  # cone was short exactly one `ADD/2` and one `MUL/2`, and `.agents/slop/dd-cone-py.py
+  # lgq 285 320` put them at CPython's positions 295/296 under the b-side `WHERE` --
+  # `ADD <- CAST, MUL` and `MUL <- Pu322, C(-1)`, i.e. `zero - ub0`.
   +nb = l2i_cdiv.neg(ar, zi, ub0, ub1)
-  +b = dd_where(W2.ar(nb), bni, n0, ub0)
-  +nbh = W2.hi(nb)
-  +b1a = dd_where(O.Found.ar(b), bni, nbh, ub1)
+  +b = dd_where(W2.ar(nb), bni, W2.lo(nb), ub0)
+  +b1a = dd_where(O.Found.ar(b), bni, W2.hi(nb), ub1)
   +bar = O.Found.ar(b1a)
   +bi = O.Found.i(b)
   +b1i = O.Found.i(b1a)
@@ -1002,7 +1040,7 @@ def l2i_cdiv.abs.b(+ar: O.Arena, +ani: U32, +zi: U32, +ua0: U32, +ua1: U32, +n0:
   +a = dd_where(ar, ani, n0, ua0)
   +a1a = dd_where(O.Found.ar(a), ani, n1, ua1)
   +bn = dd_lt1(O.Found.ar(a1a), b1, zero)
-  l2i_cdiv.abs.c(O.Found.ar(bn), O.Found.i(bn), zi, ub0, ub1, ani, n0, n1, zr, O.Found.i(a), O.Found.i(a1a))
+  l2i_cdiv.abs.c(O.Found.ar(bn), O.Found.i(bn), zi, ub0, ub1, ani, zr, O.Found.i(a), O.Found.i(a1a))
 
 # THE ARENA IS HANDED ON, NOT RE-USED, and every index below belongs to the arena
 # named beside it. This body handed `abs.b` the arena `l2i` started with, while
@@ -1013,11 +1051,19 @@ def l2i_cdiv.abs.b(+ar: O.Arena, +ani: U32, +zi: U32, +ua0: U32, +ua1: U32, +n0:
 # line up: `lgq`/`lgqp` agreed at one bitcast configuration and printed
 # `XOR(ADD,CMPLT)` for `(a_neg^b_neg)` at the next, with no error anywhere -- the
 # same species as the `l2i_shl.hi` aliasing, and the same silent fall-through.
-def l2i_cdiv.abs(+ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U32) -> Cd:
-  +ua0 = T.tx_bitcast(ar, a0, S.uint32())
-  +ua1 = T.tx_bitcast(O.Found.ar(ua0), a1, S.uint32())
-  +ub0 = T.tx_bitcast(O.Found.ar(ua1), b0, S.uint32())
-  +ub1 = T.tx_bitcast(O.Found.ar(ub0), b1, S.uint32())
+def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U32) -> Cd:
+  # dtype.py:59's FOUR BITCASTS FOLD on a `u32` source -- `mixin/dtype.py:53` returns
+  # `self` when the dtypes already agree -- and `dd_bcast` IS that rule, already used
+  # by `l2i_shl` and `l2i_shr` for dtype.py:42/46. `T.tx_bitcast` always minted the
+  # node, so every signed CDIV/CMOD cone carried four BITCASTs CPython's does not.
+  # `xdt` is the ONLY place the source dtype is known, which is why it is a parameter
+  # of `abs`, `sign` and `cdiv` now. MEASURED, `.agents/slop/dd-gap.py --sig lgq`:
+  # ONLY-PORT held `BITCAST/1` four times over against a cone CPython's lacks.
+  +isu = O.eq_dt(xdt, S.uint32())
+  +ua0 = dd_bcast(isu, ar, a0, S.uint32())
+  +ua1 = dd_bcast(isu, O.Found.ar(ua0), a1, S.uint32())
+  +ub0 = dd_bcast(isu, O.Found.ar(ua1), b0, S.uint32())
+  +ub1 = dd_bcast(isu, O.Found.ar(ub0), b1, S.uint32())
   +an = dd_lt1(O.Found.ar(ub1), a1, zero)
   +z = dd_const.int(O.Found.ar(an), H.i64_of_i32(0), S.uint32())
   +zi = O.Found.i(z)
@@ -1092,15 +1138,11 @@ def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   +cii = O.Found.i(ci)
   +sr = l2i_shr(O.Found.ar(ci), S.uint32(), S.uint32(), z, ws4(Cd.a0(c), Cd.a1(c), cii, z))
   +srl = W2.lo(sr)
-  +srar = W2.ar(sr)
-  +c1 = dd_wk(srar, H.i64_of_i32(1))
-  +c1i = O.Found.i(c1)
-  +an = dd_band(O.Found.ar(c1), shl, c1i)
+  +an = dd_band(W2.ar(sr), srl, 1)
   +r0 = dd_or(O.Found.ar(an), shl, O.Found.i(an))
   +r0i = O.Found.i(r0)
   +r = l2i_cmplt(O.Found.ar(r0), S.uint32(), ws4(r0i, shh, Cd.b0(c), Cd.b1(c)))
   +rlo = W2.lo(r)
-  +rhi = W2.hi(r)
   +rar = W2.ar(r)
   # dtype.py:66, `cond = l2i(Ops.CMPLT, dtypes.uint, *r, b0, b1).logical_not()`.
   # `.logical_not()` IS ON THE ANSWER OF `l2i`, WHICH IS THE `OR` OF dtype.py:75 --
@@ -1110,7 +1152,16 @@ def l2i_cdiv.step(+ar: O.Arena, +c: Cd, +i: U32) -> Cd:
   # `CMPLT` in the port, and that ONE label is the whole of `lgt`'s disagreement.
   +cond = T.tx_lnot(rar, rlo)
   +condi = O.Found.i(cond)
-  +diff = l2i_sub(O.Found.ar(cond), S.uint32(), S.uint32(), ws4(rlo, rhi, Cd.b0(c), Cd.b1(c)))
+  # ⚠ dtype.py:67's `*r` IS THE SAME TUPLE dtype.py:66 SPELLED, and this handed it
+  # `W2.lo(r)`/`W2.hi(r)` -- the CMPLT ARM'S OWN ANSWER -- instead of `r` itself.
+  # dtype.py:75's `(a1 < b1) | ((a1.eq(b1)) & (a0 < b0))` and dtype.py:51's
+  # `a0.bitcast(uint) < b0.bitcast(uint)` are then the SAME `CMPLT` node, so
+  # CPython interns one and reuses it; the port's `diff` compared the comparison
+  # against the divisor and minted a second `CMPLT` no CPython cone has.
+  # MEASURED, `.agents/slop/dd-gap.py --sig lgq`: the port carried `CMPLT/2` 63
+  # times too many against CPython's cone, and 63 `ADD/2` plus 1 `MUL/2` were
+  # missing. `rlo` STAYS: it IS `cond`'s receiver at dtype.py:66.
+  +diff = l2i_sub(O.Found.ar(cond), S.uint32(), S.uint32(), ws4(r0i, shh, Cd.b0(c), Cd.b1(c)))
   +dar = W2.ar(diff)
   +q = l2i_cdiv.q(dar, condi, c, i)
   +dl = W2.lo(diff)
@@ -1230,9 +1281,9 @@ def l2i_cdiv.finish(sgn: Bool, isdiv: Bool, +ar: O.Arena, +dt: S.Dt, +e: Cd) -> 
     case True{}: l2i_cdiv.signed(isdiv, ar, dt, e)
     case False{}: l2i_cdiv.uns(isdiv, ar, e)
 
-def l2i_cdiv.sign(sgn: Bool, +ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U32) -> Cd:
+def l2i_cdiv.sign(sgn: Bool, +ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: U32, +b1: U32) -> Cd:
   match sgn:
-    case True{}: l2i_cdiv.abs(ar, zero, a0, a1, b0, b1)
+    case True{}: l2i_cdiv.abs(ar, xdt, zero, a0, a1, b0, b1)
     case False{}:
       +z = dd_const.int(ar, H.i64_of_i32(0), S.uint32())
       +zi = O.Found.i(z)
@@ -1243,9 +1294,9 @@ def l2i_cdiv.sign(sgn: Bool, +ar: O.Arena, +zero: U32, +a0: U32, +a1: U32, +b0: 
 # `l2i`'s `match op` -- the dispatch, and the one def that creates `zero`.
 # ===========================================================================
 
-def l2i_cdiv(isdiv: Bool, +ar: O.Arena, +dt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
+def l2i_cdiv(isdiv: Bool, +ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +zero: U32, +ws: List<&2, U32>) -> W2:
   +sgn = dd_is_i32(dt)
-  +c = l2i_cdiv.sign(sgn, ar, zero, nth(ws, 0n), nth(ws, 1n), nth(ws, 2n), nth(ws, 3n))
+  +c = l2i_cdiv.sign(sgn, ar, xdt, zero, nth(ws, 0n), nth(ws, 1n), nth(ws, 2n), nth(ws, 3n))
   +e = l2i_cdiv.loop(64n, c, 63)
   l2i_cdiv.finish(sgn, isdiv, Cd.ar(e), dt, e)
 
@@ -1267,8 +1318,8 @@ def l2i.go(+ar: O.Arena, +zero: U32, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List
     case O.OpsAND{}: Some{l2i_binop(ar, O.OpsAND{}, ws)}
     case O.OpsWHERE{}: Some{l2i_where(ar, ws)}
     case O.OpsMAX{}: Some{l2i_max(ar, xdt, ws)}
-    case O.OpsCDIV{}: Some{l2i_cdiv(True{}, ar, dt, zero, ws)}
-    case O.OpsCMOD{}: Some{l2i_cdiv(False{}, ar, dt, zero, ws)}
+    case O.OpsCDIV{}: Some{l2i_cdiv(True{}, ar, dt, xdt, zero, ws)}
+    case O.OpsCMOD{}: Some{l2i_cdiv(False{}, ar, dt, xdt, zero, ws)}
     case _: None{}
 
 def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> Maybe<&2, W2>:
@@ -1998,9 +2049,28 @@ def dd_tree(+ar: O.Arena, +u: U32) -> String:
 # right: each passed unchanged until one shrinks"), so every walk here counts in a
 # `Nat` countdown and the other arguments only ever move. A window of `n` nodes
 # holds at most `n` stack entries per edge, so `32 * n + 64` cannot run out.
-
-def dd_fuel(+from: U32, +to: U32) -> Nat:
-  U32.to_nat(U32.add(U32.shln(U32.sub(to, from), 5n), 64))
+#
+# ⚠ `n` IS `Arena.next(ar)` AND NOT THE CREATION WINDOW, and that is the whole of the
+# CDIV/CMOD cone collapse. The fuel used to be `32 * (to - from)` -- the SIZE OF THE
+# FIXTURE'S OWN INTERNING WINDOW -- and a fixture that interns NOTHING has
+# `to == from`, so it got `64`. `lgt` interns nothing (`lgtn = 0` in both lanes: the
+# whole CDIV cone was interned by the `lgs` fixture before it), so its cone walk ran
+# out of fuel after 57 nodes and `lgtsig` read
+#     WHERE/3,CMPNE/2,OR/2,CMPLT/2,WHERE/3,...,SHL/2
+# against CPython's 2184-node cone; `lgrn = 2` gave fuel 128 and `lgrsig` read 112
+# against 2218. MEASURED on the live tree: the SAME `l2i` call prints a 2186-node
+# cone for `lgt` and 2222 for `lgr` when it is given fuel from the arena. It is a
+# TRUNCATED WALK, not a small graph, and it is invisible in `--check-only` because a
+# truncated cone is still a well-formed list of `op/nsrc` words. CPython's `cone()`
+# has no fuel at all: `dd-oracle.py` walks until the stack empties, and the row it
+# prints is the whole cone.
+#
+# `dd_seen` below was already arena-based, which is why the membership test had fuel
+# and the walk did not. One multiplier, `5n` = 32, is kept so that the fuel for every
+# fixture is at least what it used to be (`next(ar) >= to - from` always), and a row
+# that passed before cannot lose fuel.
+def dd_fuel(+ar: O.Arena) -> Nat:
+  U32.to_nat(U32.add(U32.shln(O.Arena.next(ar), 5n), 64))
 
 def dd_join.add(first: Bool, +acc: String, +s: String) -> String:
   match first:
@@ -2248,10 +2318,11 @@ def dd_gap(ar: O.Arena, from: U32, to: U32, +nm: String) -> String:
 def rows.body(+nm: String, ok: Bool, +u: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
   match ok:
     case True{}:
-      +c = dd_cone(dd_fuel(from, to), ar, [u])
+      +f = dd_fuel(ar)
+      +c = dd_cone(f, ar, [u])
       String.concat([nm, "=", dd_tree(ar, u), "\n", nm, "n=", U32.show(U32.sub(to, from)),
-                     "\n", nm, "sig=", dd_esig(ar, dd_fuel(from, to), c, True{}, ""),
-                     "\n", nm, "k=", dd_eck(ar, dd_fuel(from, to), c, True{}, ""), "\n"])
+                     "\n", nm, "sig=", dd_esig(ar, f, c, True{}, ""),
+                     "\n", nm, "k=", dd_eck(ar, f, c, True{}, ""), "\n"])
     case False{}: dd_ref(ar, from, to, nm)
 
 def rows.put(+nm: String, ok: Bool, u: U32, +ar: O.Arena, +from: U32) -> String:
@@ -2475,7 +2546,7 @@ def l2i.roots(two: Bool, lo: U32, hi: U32) -> List<&2, U32>:
     case False{}: [lo]
 
 def l2i.put(+nm: String, +two: Bool, +lo: U32, +hi: U32, +ar: O.Arena, +from: U32, +to: U32) -> String:
-  +f = dd_fuel(from, to)
+  +f = dd_fuel(ar)
   +a = String.concat([nm, "=", dd_tree(ar, lo), "\n"])
   +b = l2i.ph(nm, two, hi, ar)
   +c = String.concat([nm, "n=", U32.show(U32.sub(to, from)), "\n"])
@@ -2584,6 +2655,18 @@ def l2i.pick(+i: U32, +ga: Ga) -> Ga:
     # `WHERE(OR(AND,AND),Pf320,ADD(MUL,CAST))`, and does not raise. This arm is
     # not built (header C). `unported`, not `NotImplementedError`.
     case 31: l2i.one("lgu", O.OpsCAST{}, S.single(), S.single(), 19n, 2, ga)
+    # dtype.py:39, `case Ops.CAST: return a0.bitcast(dtypes.uint).cast(dt)`, on a
+    # source whose bitcast does NOT FOLD.  `lg7` is the same arm and `lg7=CAST(Pu320)`
+    # -- no BITCAST -- because `bitcast` folds when the dtypes already agree
+    # (`mixin/dtype.py:53`), and `lg7` is its only fixture, so the node this arm
+    # EXISTS to build was in no row at all.  `l2i_cast3.bitc`'s False arm is live
+    # code with zero coverage: `dd-mut-proof.py` REFUSES to rename it (bend names
+    # the missing def), so M05's zero is INVISIBILITY and not unreachability.
+    # Two words because dtype.py:39 reads `a0`, which `l2i` binds only at
+    # `len(uops) >= 2` (dtype.py:23) -- one word is `UnboundLocalError`, measured.
+    # CPython, `.agents/slop/dd-mut-fixtures.py lgy`:
+    #   lgy=CAST(BITCAST(Pi320))  lgyn=0  lgysig=CAST/1,BITCAST/1,PARAM/0  lgyk=-
+    case 32: l2i.one("lgy", O.OpsCAST{}, S.int32(), S.int32(), 4n, 2, ga)
     case _: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
 
 def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
@@ -2601,6 +2684,50 @@ def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
 def unpack.one(nm: String, +ga: Ga) -> Ga:
   +from = Ga.n(ga)
   l2i.two(nm, unpack32(Ga.ar(ga), Ga.pool(ga, 9n), S.uint32()), ga, from)
+
+# ---- `hi42`: the `hi` of `dtype.py:42` AS THE ANSWER of a fixture
+#
+# `((a1u << n) | ((a0u >> 1) >> (31 - n))).bitcast(dt)` is a SUB-EXPRESSION of
+# dtype.py's SHL arm, and `l2i` gives it back only as the `y` of
+# `(b0 >= 32).where(lo, hi)` -- `dd_where` is a three-src WHERE -- so it is two
+# levels under the answer. `dd_tree` prints TWO levels (`dd_sfx2.put` calls
+# `dd_sh1`, `dd_sfx1.put` calls the bare `dd_lab`), which is why `lg9p` reads
+# `BITCAST(OR)`: the ORDER of that `|` is in no `lg9` row except `lg9sig`, and
+# only because the cone walk happens to read src[0] before src[1].  An instance of
+# that swap reached origin/master with 147 rows green, so the order wants a row
+# that READS it.  Rooting the cone AT the `|` puts it at the answer's root, where
+# `OR(SHL(...),SHR(...))` and `OR(SHR(...),SHL(...))` are different strings.
+#
+# `dt` is `uint32` and NOT `int32`, and that is load-bearing: `.bitcast(dt)` FOLDS
+# only when the dtypes already agree (`mixin/dtype.py:53`), so at `uint32` `hi`
+# IS the `|` and both lanes reach it at ONE address -- CPython's `r1.src[2]`,
+# here `O.Arena.src(ar, r1, 2)` -- while at `int32` the node at that address is a
+# BITCAST and the answer row would be `BITCAST(OR(...))` again.
+#
+# `xdt` is `int32` and not `lg9`'s `uint32`: with a `u32` source `a0u`/`a1u` fold
+# to bare PARAMs, and with an `i32` source each half of the `|` carries its own
+# BITCAST, so this fixture also reaches `dd_bcast`'s and `dd_cast_fold`'s False
+# arms INSIDE the SHL arm -- neither of which `lg9` reaches.
+#
+# `n = b0 & 31` puts the shift amount in `0..31` for EVERY input, which is this
+# arm's precondition rather than a choice, and the two halves are a `SHL` and a
+# `SHR`, so no input makes them coincide.  `W2{ar, o, 0}` is this gate's own
+# idiom for "the answer is ONE node": `l2i.two` reads `hi == 0` as such, so
+# `l2i.ph` prints nothing and `l2i.roots` roots the cone at `lo` alone.
+# CPython, `.agents/slop/dd-mut-m09.py`:  hi42=OR(SHL(BITCAST,CAST),SHR(SHR,ADD))
+#   hi42n=22  hi42k=C(31),C(1),C(-1)  and hi.src[0] IS `a1u << n`.
+# The `match` is on a PARAMETER and not on the `l2i(...)` call, because bend will
+# not scrutinise a computed value -- the same seam as `l2i.got` under `l2i.went`,
+# and for the same reason it comes FIRST: a def must be filled before it is used.
+def l2i.hi.put(nm: String, r: Maybe<&2, W2>, +ga: Ga, from: U32) -> Ga:
+  match r:
+    case Some{W2{+ar, +lo, +hi}}: l2i.two(nm, W2{ar, O.Arena.src(ar, hi, 2), 0}, ga, from)
+    case None{}: l2i.gap(nm, ga)
+
+def l2i.hi42(nm: String, +ga: Ga) -> Ga:
+  +from = Ga.n(ga)
+  +ws = dd_ws(ga, 4n, 3)
+  l2i.hi.put(nm, l2i(Ga.ar(ga), O.OpsSHL{}, S.uint32(), S.int32(), ws), ga, from)
 
 # ---- the `c*` rows: `f2f_clamp`'s `mx` CONSTANT (dtype.py:131), as a VALUE
 #
@@ -2654,7 +2781,7 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
     case 1n+p: dd_cmx.rows(p, U32.add(i, 1), dd_cmx.pick(i, ga))
 
 def gate() -> IO(Unit):
-  IO.print(Ga.s(dd_cmx.rows(8n, 0, unpack.one("up", l2i.rows(32n, 0, fixtures())))))
+  IO.print(Ga.s(dd_cmx.rows(8n, 0, l2i.hi42("hi42", unpack.one("up", l2i.rows(33n, 0, fixtures()))))))
 
 def main() -> IO(Unit):
   gate()

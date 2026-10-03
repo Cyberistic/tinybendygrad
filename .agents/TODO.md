@@ -4579,9 +4579,55 @@ for :1782/:1808/:1880 in `ops.bend` are where that decision belongs.
 
 ---
 
+## [DONE] Reconcile the gate's verdict with the selftest's number, entry by entry (2026-10-04)
+
+Progress: `[████████████████████] 100%` — mechanism named, `device.bend` cleared 21/21, honest
+BROKEN list published, reconciliation control added. **No `.bend` edited. Nothing committed.**
+
+- **THE CONTRADICTION WAS NOT ONE.** The sweep's state line is the verdict of FOUR GUARDS over
+  fresh lanes and can be `BROKEN` for a reason unrelated to agreement; the selftest's `23 / 0 /
+  110 / 23` is `measure_roster()`'s intersection and disagreement count, and its `PASS` covers
+  six SYNTHETIC states with `run_port()` stubbed — **it never runs the port.** Neither tool was
+  wrong about what it measured; nothing said they measured different things.
+- **`device.bend` IS CLEAN — 21/21, on a substrate that did not move** (`device.bend` 22:49:42,
+  `device-oracle.py` 22:50:23, untouched all session): 15 reps working-copy gate, 3 reps gate at
+  `@-`, 60 interpreted runs (rc 0, exactly 110 rows, every one), 40 compiled-binary runs, 12
+  under 4-way concurrency — **at load 12–107.** The load-flake story did **not** reproduce here.
+- **THE TALLY CAME FROM `@-`.** `cstyle.bend` is unwired in the working copy, so `never_wired()`
+  makes `BROKEN` **unreachable by construction** — yet the quoted tally names it BROKEN. Wired
+  entries: **39 at `@-`**, 38 now. `NOT-STARTED=11` is pinned by the roster in both, so `cstyle`
+  is the discriminating entry. New `.agents/slop/gate-at-rev.py` runs a revision without
+  checking it out (staged in `.agents/slop/`, private module name, deleted in `finally`).
+- **HONEST BROKEN LIST, one reason each:** `dtype.bend` = GUARD 3 then GUARD 2 (14 unfilled laws
+  **and** a TSV oracle — **GUARD 3 fires first, so "compared nothing" is never said**);
+  `codegen/decomp/dtype.bend` = **`native` rc=1 while `interpreted` gave 178 rows, and the file
+  was edited 03:24:28 → 03:30:17 mid-session** — a concurrent agent's real type error
+  (`expected List<&2, U32> / observed U32` at `UOp.mselect`), reported not touched;
+  `renderer/cstyle.bend` = **NOT-STARTED / unwired — a coverage fact, not a disagreement**; its
+  real gate is `cstyle-gate.py`. **The two dtype ports are NOT one port under two spellings**
+  (23,709 vs 128,736 bytes, two oracles, two verdicts); the target list is not doubled.
+- **NEW BUG FOUND: the native lane's path is keyed on STEM, not port.** `run_port()` writes
+  `/tmp/rebase-gate/<stem>.bin`, unlinks it, then **executes whatever is at that path.** 8 stems
+  collide across 136 `.bend` files (`dtype`×3, `__init__`×**14**, `elf`, `op`, `spec`, `memory`,
+  `movement`, `ip`). `rebase-stability.py:284` already shards by stem for this reason;
+  `rebase-gate.py`'s sweep is sequential so it is safe from itself, and `device` is unique —
+  which is why device was never exposed. **Fix belongs in `run_port` (another agent's file): key
+  on `port_key(bend)`.**
+- **CONTROL ADDED: `.agents/slop/gate-reconcile.py --reconcile`** checks each port's gate verdict
+  against the selftest's number, requires the verdict **reproducible over `--reps`**, and
+  requires a **reason and a class** on every verdict. Found a live divergence on its first run.
+  For an unwired port it prints `RECONCILED ... BROKEN is UNREACHABLE for this port by
+  construction, so a BROKEN naming it came from a DIFFERENT wiring` — **that line is the control
+  that would have caught this.** Both tools' own functions are called; there is still one
+  `rows()`. Also new: `gate-roster-arith.py` (roster arithmetic, no lanes).
+
 ## [DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)
 
 Progress: `[████████████████████] 100%` — state restored, controls green, 29 recorded, 9 excluded.
+- **⚠ SUPERSEDED IN PART by the entry above.** `BROKEN=4` on that line included
+  `device.bend`, which is **not** BROKEN (21/21 clean), and `renderer/cstyle.bend`, which is
+  unwired in the working copy and therefore **NOT-STARTED**. The tally was produced by the gate
+  at `@-` (39 wired). Read the entry above for the per-entry reasons.
 
 - **State restored.** `AGREE-UNRECORDED` distinguishes "compared clean, nobody wrote it down"
   from "nobody looked". Full run went `NOT-STARTED=46 / UNCHANGED=1` to
@@ -4828,3 +4874,246 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
 
 - [ ] **OPEN — 242 rows the port does not emit** (five of ten public functions, §above).
       Until they are rowed, "the dtype port is 99% correct" is a statement about `l2i`.
+
+---
+
+## Session 2026-10-04 — `renderer/cstyle.bend`: 225 rows, ZERO verification -> **221 of 227 compared to a live CPython call**
+
+Progress: gates landed `0/38` -> `1/38` for this pair. Coverage of `cstyle.bend`: **0 -> 221/227**.
+
+- [x] **THE FOUR "REASONS" RE-TESTED; NONE OF THEM HELD.**
+      (1) "30 `kern2` rows are unfalsifiable because `g_kernel()` returns two hardcoded C
+      strings" — **FALSE as a reason.** A kernel body is an INPUT to `render_kernel`, not its
+      output: `CStyleLanguage.render_kernel(function_name, kernel, bufs, uops, prefix)` is a
+      plain method on an instantiable class, and the oracle hands it the SAME two body lines and
+      a REAL bufs list and uop list, so CPython computes the signature, the buftypes, the
+      prefix and the framing. `Emit_` (the port's `uses`/`vecs`/`ockl`/`ocml` record) maps onto
+      a uop list one-for-one — `U_sq(f16)`+`U_sq(f32)` for `hip_ocml`, `p4.load()` for a
+      `(f16, 4)` vector count, a SPECIAL for `uses.special`. All 30 now gate.
+      (2) "Clause rows render symbolic operands `(B)[R]`, `sqrt(X)`" — **FALSE.**
+      `render_index` reads `self[buf]`/`self[idx]` out of `self.r`, the ctx dict `_render`
+      fills; setting `r = {buf: "B", idx: "(R)"}` makes `(B+(R))`, `B.x` and `(B)[R]` exactly
+      comparable. `sqrt(X)` is `code_for_op[Ops.SQRT]("X", dtypes.f32)` — the port passes the
+      src-name list `["X","Y","Z"]`, which is precisely what the lambda receives.
+      (3) "`tmap` reads two different trees, 4 cells stale" — **TRUE and sharper than filed.**
+      At HEAD `CStyleLanguage.type_map` has NO fp8 entry above CUDA, so `type_map[fp8e4m3]` is a
+      `KeyError` on four of six devices, and `type_map.get(dt, dt.name)` answers `fp8e4m3…`.
+      (4) "0 shared row names" — **TRUE but it was a NAMES mismatch, not an incomparability:**
+      the old oracle printed 15 real kernels as `k1_load_store`/`k2_alu`/…, names the port does
+      not print.
+
+- [x] **THE REAL BUG, AND IT WAS BIG: `type_map.base()` read `{}`.** `CStyleLanguage.type_map`
+      has FOURTEEN entries (cstyle.py:136-139) and the five device maps are
+      `{**base, ...}` OVERLAYS. Restoring the base and seeding the device maps with it fixed
+      **89 of 227 rows at once** — every one of them a dtype-name cell. See R-6 in
+      `.agents/slop/notes/bend2-constraints.md` (appended at the END).
+      `ocml_extern` also spelled its dtypes with `dt_name` where upstream spells them
+      `self.render_dtype(dt)`, which is the base `type_map`: `f16`/`f32` vs `half`/`float`.
+
+- [x] **A COMMITTED PARSE FAILURE, FIXED.** `b6abeb7f5` committed `type_map.base()` with the
+      chain order and line breaks that Bend 2.0.34 REFUSES; the file did not compile at
+      `3743ad0cc` or `80644ace2` either. MEASURED: only the innermost-first single-line spelling
+      parses, and Bend's `Location:` points at `type_map.cuda` no matter which of the two
+      tables is at fault — **bisect by DELETION**. R-7 in the notes.
+
+- [x] **19 STALE `py=` LITERALS REGENERATED** from live calls by `.agents/slop/cs-fixpy.py
+      --write`, which refuses to write unless the rewritten file still emits 227 rows. STALE-LITERAL
+      is now **0**. R-5 in the notes: the `py=` column is a transcription and is never the thing
+      compared.
+
+- [x] **SIX ROWS MADE VISIBLE AS NAMED EXCLUSIONS, with the measurement for each**, printed on
+      every gate run: `buft METAL` (`MetalRenderer.render_kernel` calls `super()` with
+      `bufs=[]`, so `var_prefix`/`var_suffix` are read by nothing), `idx BASE/HIP regadd`
+      (`idx.arg == Ops.ADD` is False for EVERY UOp HEAD can build, so `strip_parens` is
+      unreachable and the port's `AReduce{ADD,0}` fixture is a shape `UOp.arg` does not have),
+      and the three `under` rows (`.replace(" ", "_")` has no def upstream and NOT ONE of the
+      20 DType names at HEAD contains a space).
+      **FOUR MORE ROWS (`rd <dev> fp8e4m3` on BASE/CLANG/METAL/OPENCL) are GATED, not excluded:**
+      the oracle answers them by letting upstream's own `_render_dtype` run against a renderer
+      whose one `type_map` entry is patched to the `.get` reading, and REPORTS the KeyError on
+      stderr every run.
+
+- [x] **CONTROLS: 18 rows across 18 families planted, every one BROKEN rc=1 naming the row**
+      (`cstyle-gate.py --plant`); clean AGREE rc=0. `cstyle-gate.py --selftest` drives four
+      instrument lanes over two REAL lanes — clean, planted, CPython-refusal mapped to the
+      port's `""` marker, and that lane with a name where a refusal belongs — three seen red.
+      Recorded in `ORACLE_NOT_WIRED` in `rebase-gate-selftest.py`.
+
+- [ ] **OPEN — one caller left on the old lane.** `renderer_oracle.py cstyle` (the 15-row one)
+      still exists and is still referenced by `rebase-gate-selftest.py`'s `dead_lane_is_broken`
+      docstring. It is now unused by `BASE_ORACLES`; delete it and its docstring paragraph when
+      the selftest's fixture set is next touched.
+
+---
+
+## Mutation-table trustworthiness (dd unit, 2026-10-04)
+
+- [x] **M26 RE-AIMED AND FIRING — 27 rows.** Its anchor quoted the PRE-fix `dd_rs.push`
+      line, which occurs 0 times in the fixed file, so it was PATCH-NOT-APPLIED and read as
+      a zero. Re-aimed at the fixed line with the pre-fix line as the mutant. Its name is
+      correct for the first time: against the pre-fix file that edit WAS the base behaviour,
+      which is why it moved rows while testing nothing.
+
+- [x] **THE HARNESS NOW REFUSES TO PRODUCE A BOGUS TABLE.** `probe_substrate()` runs the
+      UNMUTATED mirror and exits unless it reproduces the baseline's exact shape, and ANY
+      control that is not SAME aborts the run with no table written. A run whose substrate
+      stopped compiling had produced 39 DID-NOT-COMPILE rows and a confident summary.
+
+- [x] **TARGET **AND** TREE PINNED.** The live `dtype.bend` moved `73b0e1e7`→`a2c68a7e`
+      mid-run and stopped compiling; `HEAD` moved to `eb16fa874`, a revision whose tree
+      prints ZERO lines with the unchanged file. Freezing the target is necessary and not
+      sufficient. Snapshot `.agents/slop/dd-mutations.frozen.bend`, tree `e17d3f7dd`.
+
+- [x] **THE LIVE-TREE BAKE DELETED.** `tinybendygrad/codegen/decomp/dtype.bend.ddmut` was a
+      14:09 leftover that made RULE G refuse to start for anyone mirroring the live tree.
+      A bake guards the tree being WRITTEN, so in the live tree it guards nothing.
+
+- [x] **FULL TABLE RE-RUN, 36 mutations, 3 controls SAME.** 28 MOVED · 5 THEOREM · 1 REQUEST ·
+      2 DID-NOT-COMPILE · 0 dead anchors. Full table with a proof per THEOREM:
+      `.agents/slop/dd-mutations-report.md`.
+
+- [x] **FIVE THEOREMS PROVED, NOT ASSERTED.** Four by renaming the enclosing def (a rename
+      that compiles proves nothing resolved the old name) and one by DELETING THE ARM.
+      `dd-mut-proof.py` (rename), `dd-mut-tether.py` (delete the arm / the interceptor),
+      `dd-mut-reach.py` (call graph), `dd-mut-classify.py` (MOVED/THEOREM/REQUEST, which
+      cannot emit a verdict with no proof behind it).
+
+- [x] **M09 LEFT AS A REQUEST, WITH THE FIXTURE NAMED.** Not a theorem. Proved NOT a
+      printer-depth problem (a 3-deep printer changes 28 rows and M09 still moves 0) and
+      proved the `hi` site is not reached by any of the 172 fixtures (replacing its left
+      operand with a different node also moves 0). The fixture that closes it is named in
+      the report.
+
+- [ ] **OPEN, OWNER: the dtype unit — `l2i_cdiv.uns` HAS ITS ARMS SWAPPED** (`dtype.bend:971`).
+      `dtype.py:74` is `return r if op == Ops.CMOD else q`; the comment two lines above the
+      arms quotes it correctly and the arms are inverted, so unsigned CDIV returns the
+      REMAINDER and unsigned CMOD returns the QUOTIENT. New mutation **M36 moves 6 rows**,
+      and the port's `lgs`/`lgt` disagree with CPython with each other's answer. Same shape
+      as the two mutants that reached origin/master. R-45 in the notes.
+
+## Session 2026-10-04 — REPO HYGIENE: the dangling citations, the census, and the scratch in the tree
+
+Report: `.agents/slop/hygiene-2026-10-04.md`. **No commit.** Changed: three comment lines, two
+`.gitignore` patterns, this block, an appended note in `bend2-constraints.md`, and two new
+harnesses (`.agents/slop/stale-snapshot-detect.py`, `.agents/slop/hygiene-2026-10-04.md`).
+
+- [x] **THE BRIEF'S PREMISE WAS WRONG AND THE HAZARD IS NOT RESOLVED. `tinybendygrad/.bend`
+      NEVER EXISTED, AND ROOT `.bend` IS STILL THERE, TRACKED, 1,890 LINES.**
+      `git log --all -- 'tinybendygrad/.bend'` is empty; `git ls-files | grep '^\.bend$'` prints
+      `.bend`. It cannot compile — its five imports at `:239-244` are `../helpers.bend`,
+      `../LAWS/spec.bend`, `../dtype.bend`, `../uop/ops.bend`, `../uop/symbolic.bend` and `../`
+      from the repo root escapes the repo. **Reported, not deleted: outside my file grant, and
+      only `rm` + a commit removes a tracked file.**
+
+- [x] **IT IS ALSO A STALE DUPLICATE, WHICH SETTLES THE DELETE.** `diff` against
+      `runtime/ops_python.bend` is 1,590 lines and the direction is unambiguous: root `.bend`'s
+      header says "THE INTERPRETER LOOP IS NOT [here]", `ops_python.bend`'s says
+      "--check-only is clean ... and `-o` builds" with a 28-fixture e2e at 18/10/3; root `.bend`
+      predates the `1n` nat migration. **RECOMMEND: `rm .bend`, commit the deletion.**
+
+- [x] **THE GLOB PROOF. `tree-verdict.py` DOES NOT GLOB — IT `os.walk`s** (`bend_files()` at
+      positions 86-93), so the harness is sound and its own comment at 55-60 says why. The
+      exposure is the CENSUS method: root-level `glob.glob('*.bend')` returns `[]` with `.bend`
+      on disk, because Python's `glob` will not let `*` eat a leading dot. **EXACTLY ONE FILE
+      HIDES FROM THAT GLOB: root `.bend`.** `find` and `os.walk` both see everything.
+
+- [x] **THE CENSUS HAS A BIGGER HOLE IN THE OTHER DIRECTION: 4 `.bend` FILES ON DISK ARE NOT
+      TRACKED** (`runtime/ops_bend.mut.bend` 1,573 · `test/_probe/v5.bend` 25 ·
+      `renderer/_mut_m35.bend` 0 · `renderer/_ptxmut.bend` 0). All four are gitignored scratch.
+      So `find` says 137 and a clone reproduces 133.
+
+- [x] **CORRECTED PORT SIZE, AS A BRACKET — the file count is the trustworthy half.**
+      `tinybendygrad` + `examples`: **128 TRACKED, NON-SCRATCH `.bend` FILES**, lines
+      **195,016-195,188** across this session; the loose `find` census read 137-138 files /
+      ~197.9k, and git-tracked read 133 / ~196.3k. `tinybendygrad` alone: **127 / ~193.9k**.
+      Scratch rule is `tree-verdict.py`'s own `SCRATCH_RE` at position 60.
+      **THE PUBLISHED 137 IS NOT WRONG** — it is `tinybendygrad` + `examples`, which is what
+      `bend2-constraints.md` §6 (position 14370) says it means. The SET is what must be stated,
+      not the number changed. **The file count held at 128 across every reading while the line
+      count moved, so quote files and bracket lines.**
+
+- [x] **THE CENSUS IS UNSTABLE, MEASURED FOUR TIMES IN ONE SESSION:**
+      196,610 -> 196,743 -> 196,724 -> 196,821 lines, and the `find` FILE count went
+      **137 -> 138** when another unit landed a `.bend` mid-session, before settling byte-identical
+      (md5 `640487f2…`). `git status` names five files mid-edit by live agents.
+      **A census taken while agents are writing is a sample, not a measurement.**
+
+- [ ] **OWNER: COORDINATOR — `rm` + COMMIT `renderer/csprobe.bend` (774 lines).** It is a stale
+      snapshot: identical to `renderer/cstyle.bend` for **588 of its 774 lines** (ratio 0.76),
+      diverging exactly where `cstyle.bend` gained the `type_map` table. Same class as the fold
+      snapshots deleted in `b6abeb7f5`, and it makes the census count 774 lines of `cstyle.bend`
+      twice. `.agents/slop/stale-snapshot-detect.py` finds it and finds nothing else.
+      Also `runtime/_p6.bend` (4 lines, a bare `F32.bits` print) and the two EMPTY files
+      `renderer/_mut_m35.bend`, `renderer/_ptxmut.bend`.
+
+- [x] **`.gitignore` GAP CLOSED, AND IT IS THE RIGHT QUESTION.** `probe-*.bend` needs the hyphen
+      so `csprobe.bend` slipped through; `_mut_*.bend` needs the word so `_p6.bend` slipped
+      through. Added `*probe.bend` and `_*[0-9].bend`; verified they match exactly 1 and 2 files in
+      the tree, all scratch. **A PATTERN CANNOT UNTRACK EITHER — `git status` staying dirty here
+      is expected, not a failure.**
+
+- [x] **`uop/probe-mmcore.bend` (471 lines) MUST NOT BE DELETED, DESPITE THE `probe-` PREFIX.**
+      `.agents/slop/mm-mutate.py:17` names it `SRC`; `.agents/slop/mm-gate.py:12` runs it. This
+      is the repo's own "DELIBERATELY NOT IGNORED" doctrine — *a cache-shaped path is not the
+      test; "a report cites it" is* — applied to a file `.gitignore` currently sweeps by pattern.
+      **`.gitignore`'s "a broken probe in the source tree is a trap for the next reader, not a
+      fixture" is therefore too broad as written and needs the citation test added.**
+
+- [x] **THE BRIEF'S FIVE `*_work.bend` FILES ARE NOT IN THE TREE AND WERE NOT TRACKED THERE.**
+      `tinybendygrad/uop/fold2_work.bend` and `fold_mm_work.bend` were deleted in `b6abeb7f5`
+      ("delete 7,935 lines of dead fold snapshots"). What remains is 17 tracked `*_work.bend`
+      files, **all under `.agents/slop/`** (per-unit working trees: `dd-cone-wt/`, `render-wt/`,
+      `proof-close/`, `rf2root/`, `rf2_work.bend`). **`find tinybendygrad` never counted them, so
+      NO PUBLISHED PORT SIZE WAS INFLATED BY THEM.**
+
+- [x] **DANGLING `executor.bend` CITATIONS — 3 REPOINTED, 3 REPORTED.**
+      REPOINTED (comment-only, the three files in my grant):
+      `runtime/ops_bend.bend:10` -> `runtime/ops_python.bend` (which holds the wire header at
+      `:134`) · `runtime/ops_webgpu.bend:673` -> `ops_python.bend:2135` (verified: that IS the
+      "take, not drop, keeps the directory" measurement, same line number today) ·
+      `runtime/ops_python.bend:2285` now names the REAL path (repo root `.bend`) instead of a
+      fiction. REPORTED, NOT FIXED: **`uop/symbolic.bend` has TWO more, at positions 875 and 976**
+      (not 842 — the brief's line number is off), both bare-filename and resolving to nothing;
+      both should read `ops_python.bend`. **`runtime/ops_bend.mut.bend:10` is a fourth copy of the
+      same line — untracked gitignored scratch, REGENERATE not fix.**
+
+- [x] **STALE NUMBERS MARKED UNSTABLE, NOT REWRITTEN. History is not edited to agree.**
+      `VERBATIM` naming count: **283** (six runs, byte-identical md5) vs **278** (19:34-19:36,
+      files mid-write) — 283 is a settled-substrate reading, 278 a substrate-in-flux reading,
+      **neither is a constant**. `elf.bend` rows: **353** (a complete run reproduces the recorded
+      353; artifact `runs/elf-run-353rows-2026-10-04.txt`) vs **331** (unreproduced). **My own
+      THIRD value, 246, IS RETRACTED — it was a partial read of a background `bend` job that was
+      still writing** (four reads of one file: 239, 246, 354, 355), and `--check-only` prints no
+      row count at all. **A count that grows while you watch it is an UNFINISHED measurement, not
+      an unstable one — a third failure mode, distinct from both drift and rule-dependence.**
+
+- [x] **THE `ops_cpu` libm/objc REPORT IS ALREADY RECORDED** at `TODO.md:2831-2842`, open and
+      un-ticked, "TREE DEFECT, REPORTED NOT FIXED — the Metal host kernel cannot link",
+      `OWNER: whoever owns runtime/ops_cpu.bend`. **Not duplicated — cross-referenced only.**
+      The 17 host rows and `findlib_m=/usr/lib/libm.dylib` are `ops_cpu.bend:241-300`, and
+      `cpu.lib_objc() = "/usr/lib/libobjc.dylib"` at `:278` is the library `ops_cpu.py:19,21`
+      fails to link.
+
+- [x] **THE DOTTED-SEGMENT IMPORT RULE IS ALREADY RECORDED AND I RE-MEASURED IT.**
+      `bend2-constraints.md` §38 at **positions 16108-16126**, "bend IMPORT PATHS REJECT ANY SEGMENT
+      CONTAINING A DOT -- SO NOTHING UNDER `.agents/` CAN BE IMPORTED", with the exact error and
+      the corollary that probe scripts live in `.agents/slop/`. **Not duplicated.** Re-measured
+      today with a control: `import ./.dotted/h.bend` fails with "an import path of plain names",
+      and the SAME probe importing `./plain/h.bend` gets PAST the import stage entirely — so the
+      dot is the cause and nothing else.
+
+- [ ] **OWNER: `uop/symbolic.bend`'s agent — two dangling `executor.bend` citations at :875 and
+      :976.** Two comment lines. Not in my grant, so reported rather than edited.
+
+- [ ] **OWNER: whoever owns `.jjconflict-{base,side-0,side-1}/`** — each holds a
+      `tinybendygrad/runtime/executor.bend`. jj conflict residue at the repo root.
+
+- [ ] **THE LEDGER'S OWN COUNTS ARE LIVE, WHICH IS THE POINT.** `TODO.md` measured **4,946 lines,
+      479 checkboxes, 396 ticked, 83 open** (a brief's "4,063 / 422 / 351 / 71" was true earlier
+      today and is now stale in the same way 283 is). **`bend` here is 2.0.35; `agent-core.md`
+      says 2.0.34**, so the 14 unfilled `dtype.bend` laws and every "MEASURED on Bend 2.0.34"
+      note may need re-measuring.
+
+Progress: repo hygiene [##########] DONE — 3 citations repointed, 3 reported, glob proven,
+      2 `.gitignore` patterns added, census corrected, 6 numbers marked unstable,
+      4 deletions handed to the coordinator

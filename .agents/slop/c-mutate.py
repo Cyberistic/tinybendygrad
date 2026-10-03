@@ -201,6 +201,25 @@ MUTATIONS = [
   ('  U32.and(U32.shrn(Field.b2i(Field.bf_size(f), mem, le), U32.to_nat(Field.bit_off(f))), Field.mask(f))'),
   ('  U32.shrn(Field.b2i(Field.bf_size(f), mem, le), U32.to_nat(Field.bit_off(f)))'),
   "`b2i(obj) >> self.bit_off & mask`"),
+
+  ("M25", "`Field.of` DROPS the `idx` it is handed and stores 0",
+   ('def Field.of(typ: U32, off: U32, bit_width: U32, has_bit_width: Bool, bit_off: U32, name: String, idx: U32) -> Field:\n'
+    '  Field{typ, off, bit_width, has_bit_width, bit_off, name, idx}'),
+   ('def Field.of(typ: U32, off: U32, bit_width: U32, has_bit_width: Bool, bit_off: U32, name: String, idx: U32) -> Field:\n'
+    '  Field{typ, off, bit_width, has_bit_width, bit_off, name, 0}'),
+   "D2. `sname_ctor_idx_given` was the literal `0,0` on BOTH lanes, so this "
+   "mutation moved nothing: every Field in the fixture was built with idx=0, so a "
+   "port that ignored the argument was indistinguishable from one that honoured "
+   "it. The row now reads `0,5` -- a Field nobody NAMED, the only place the "
+   "ctor's value survives `__set_name__` (c.py:64), and one value GIVEN."),
+
+  ("M26", "`Field.of` pins `idx` to 1",
+   ('def Field.of(typ: U32, off: U32, bit_width: U32, has_bit_width: Bool, bit_off: U32, name: String, idx: U32) -> Field:\n'
+    '  Field{typ, off, bit_width, has_bit_width, bit_off, name, idx}'),
+   ('def Field.of(typ: U32, off: U32, bit_width: U32, has_bit_width: Bool, bit_off: U32, name: String, idx: U32) -> Field:\n'
+    '  Field{typ, off, bit_width, has_bit_width, bit_off, name, 1}'),
+   "the same row from the other side: a changed `idx=0` DEFAULT, which is the "
+   "claim the hand-typed `0,0` was asserting and could not check"),
 ]
 
 def main():

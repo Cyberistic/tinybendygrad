@@ -243,6 +243,65 @@ def axis_type_str(u) -> str:
 print(f"#shared_tree={TAG}")
 
 # ---------------------------------------------------------------------------
+# 0bis. THE BLOB LANE. `UOpMetaClass.__call__` keys on
+#      `(op, src, arg, tag, type(arg))` (ops.py:201), so a BINARY's key HOLDS the
+#      `bytes` object and dict equality compares bytes CONTENT-WISE. The port spelled
+#      that arg `ABlob{n: U32}` -- the LENGTH -- so two different same-length blobs were
+#      one arena node. These nine rows are the CPython half of the measurement, and
+#      they come from `.agents/slop/blob-intern-oracle.py`, which is the standalone lane
+#      (`sh .agents/slop/blob-intern-gate.sh`) for exactly these rows; this block exists
+#      so the MAIN gate covers them too.
+#
+#      THE FIXTURE IS THE TEST: `b"aaaa"` against `b"bbbb"`, equal length and unequal
+#      content. A fixture of different lengths is satisfied by a length key.
+#
+#      The measured answers, all by CALLING and none transcribed:
+#          (b"aaaa", b"aaaa")  -> is True,  1 node
+#          (b"aaaa", b"bbbb")  -> is False, 2 nodes
+#          (b"aaaa", b"aa")    -> is False, 2 nodes
+#          shape of a BINARY    -> (len(arg),)
+#      and the six-blob sweep's ucache size. Every node is kept alive in `_bkeep`
+#      because `ucache` holds weakrefs and `UOp.__del__` deletes by key BY VALUE.
+# ---------------------------------------------------------------------------
+_bkeep = []
+
+
+def _bcell(x: bytes, y: bytes):
+  """One pair of BINARYs on a FRESH ucache, plus the node COUNT that pair produced.
+
+  The count has to be read INSIDE the cell: the cache accumulates, so a `len` after two
+  cells is the union and not the cell.
+  """
+  O.UOpMetaClass.ucache.clear()
+  u, v = UOp(Ops.BINARY, src=(), arg=x), UOp(Ops.BINARY, src=(), arg=y)
+  _bkeep.append((u, v))
+  return u, v, len(O.UOpMetaClass.ucache)
+
+
+_b_same, _bb_same, _b_n_same = _bcell(b"aaaa", b"aaaa")
+_b_len, _bb_len, _b_n_len = _bcell(b"aaaa", b"bbbb")
+_b_diff, _bb_diff, _b_n_diff = _bcell(b"aaaa", b"aa")
+print(f"blob_interns={_b_same is _bb_same}")
+print(f"blob_len_diff_content={not (_b_len is _bb_len)}")
+print(f"blob_diff_len={not (_b_diff is _bb_diff)}")
+print(f"blob_count_same={_b_n_same}")
+print(f"blob_count_len_diff_content={_b_n_len}")
+print(f"blob_shape={tuple(_b_same.shape)}")
+print("blob_content=" + ",".join(str(b) for b in _b_same.arg))
+_bkeep.clear()
+O.UOpMetaClass.ucache.clear()
+# the sweep: six DISTINCT blobs, lengths 0,1,2,3,4,4 -- the last two the SAME length
+# and different content, because with six distinct lengths a length-summary key passes
+# the sweep outright.
+_bsweep = (b"", b"a", b"ab", b"abc", b"abcd", b"abce")
+_bpairs = [(UOp(Ops.BINARY, src=(), arg=b), UOp(Ops.BINARY, src=(), arg=b)) for b in _bsweep]
+_bkeep.extend(_bpairs)
+print(f"blob_sweep={all(u is v for u, v in _bpairs) and len(O.UOpMetaClass.ucache) == len(_bsweep)}")
+print(f"blob_sweep_count={len(O.UOpMetaClass.ucache)}")
+_bkeep.clear()
+O.UOpMetaClass.ucache.clear()
+
+# ---------------------------------------------------------------------------
 # 0. The DERIVATION. Three rows, and they are what make the axis list above a
 #    measurement: `axn_all` is `AxisType.__members__` order, `axv_all` is the value
 #    sequence for exactly that order, and `ax_all_len` is its length. A port whose
