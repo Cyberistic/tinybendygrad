@@ -498,7 +498,12 @@ def main():
     fh = open(sys.argv[2], "w")
     w = fh.write           # NOT `w`: that is the worker index, still in scope
     w("# dd-mutate.py -- MUTATION TABLE for codegen/decomp/dtype.bend\n")
-    w("# target sha1 %s, asserted EQUAL to the live file (RULE I)\n" % digest)
+    w("# FROZEN target %s\n#   sha1 %s, pinned (RULE I), NOT the live file: the live\n"
+      "#   file belongs to a concurrent unit and moved during the run.\n"
+      % (FROZEN, digest))
+    w("# TREE  git archive %s tinybendygrad, also pinned: HEAD moved to a\n"
+      "#   revision whose tree prints ZERO lines with this dtype.bend.\n"
+      % TREE_REV)
     w("# baseline %d rows, shape (first=%r lines=%d last=%r)\n"
       % (len(base), good[0], good[1], good[2]))
     w("# %d controls SAME | %d mutations MOVED | %d SAME (zeros: REQUEST or "

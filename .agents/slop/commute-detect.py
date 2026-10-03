@@ -208,10 +208,33 @@ def sites_append(text: str) -> list[tuple[int, str, str]]:
         args = split_top(text[m.end():i])
         if len(args) < 2 or not args[-1].strip() or not args[-2].strip():
             continue
+        # ONLY WHEN THE TWO ARGUMENTS HAVE THE SAME SHAPE. Swapping a `String`
+        # accumulator with a `List` is not a behaviour change, it is a type
+        # error, and a site that cannot compile is reported as
+        # `PATCH DID NOT APPLY` and EXCLUDED -- never counted as a zero.
+        if not _same_shape(args[-1], args[-2]):
+            continue
         sw = args[:-2] + [args[-1], args[-2]]
         new = "List.append(" + ",".join(sw) + ")"
         out.append((m.start(), text[m.start():i + 1], new))
     return out
+
+
+def _same_shape(a: str, b: str) -> bool:
+    """Do two `List.append` arguments have the same syntactic shape?
+
+    `[x]` and `[y]` are the same shape (both one-element list literals), as are
+    `acc` and `t` (both bare applications). A `String` and a `List` are not, and
+    swapping them is a compile error rather than a wrong answer.
+    """
+    def shape(x: str) -> str:
+        x = x.strip()
+        if x.startswith("[") and x.endswith("]"):
+            return "list"
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", x):
+            return "bare"
+        return "other"
+    return shape(a) == shape(b) and shape(a) != "other"
 
 
 def apply(text: str, off: int, old: str, new: str) -> str:
@@ -233,6 +256,15 @@ PORTS = {
     "tc_ptx": ["renderer/tc_ptx.bend"],
     "gpudims": ["codegen/gpudims.bend"],
     "codegen/init": ["codegen/__init__.bend"],
+    # The AMD renderer set: this is where the project's two CONFIRMED
+    # commutative/order defects live (`generate.bend`'s `kern.sorted` /
+    # `kern.unsorted` both 16, and `insert`'s `<` vs `>=` also 16). The gates
+    # above are dominated by scalar/total rows and carry almost no commutative
+    # population, so a census that stopped there would have measured nothing.
+    "amd/generate": ["renderer/amd/generate.bend"],
+    "amd/elf": ["renderer/amd/elf.bend"],
+    "amd/dsl": ["renderer/amd/dsl.bend"],
+    "amd/sqtt": ["renderer/amd/sqtt.bend"],
 }
 
 

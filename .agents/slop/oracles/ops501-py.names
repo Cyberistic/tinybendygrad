@@ -5,6 +5,7 @@ s5_base_af
 s5_base_b
 s5_base_bc
 s5_base_c
+s5_base_detach
 s5_base_p
 s5_base_r1
 s5_base_r2
@@ -13,6 +14,7 @@ s5_buf_uop_af
 s5_buf_uop_b
 s5_buf_uop_bc
 s5_buf_uop_c
+s5_buf_uop_detach
 s5_buf_uop_p
 s5_buf_uop_r1
 s5_buf_uop_r2
@@ -28,6 +30,7 @@ s5_hbi_after_af
 s5_hbi_after_b
 s5_hbi_after_bc
 s5_hbi_after_c
+s5_hbi_after_detach
 s5_hbi_after_p
 s5_hbi_after_r1
 s5_hbi_after_r2
@@ -35,6 +38,7 @@ s5_hbi_after_us
 s5_hbi_b
 s5_hbi_bc
 s5_hbi_c
+s5_hbi_detach
 s5_hbi_p
 s5_hbi_r1
 s5_hbi_r2
@@ -55,6 +59,7 @@ s5_storage_base_af
 s5_storage_base_b
 s5_storage_base_bc
 s5_storage_base_c
+s5_storage_base_detach
 s5_storage_base_p
 s5_storage_base_r1
 s5_storage_base_r2
@@ -64,6 +69,7 @@ s5_unsharded_base_af
 s5_unsharded_base_b
 s5_unsharded_base_bc
 s5_unsharded_base_c
+s5_unsharded_base_detach
 s5_unsharded_base_p
 s5_unsharded_base_r1
 s5_unsharded_base_r2
@@ -71,5 +77,6 @@ s5_unsharded_base_us
 s5_wo_after_af
 s5_wo_after_b
 s5_wo_after_c
+s5_wo_after_detach
 s5_wo_after_r1
 s5_wo_after_us

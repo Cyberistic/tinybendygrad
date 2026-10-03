@@ -5614,7 +5614,7 @@ def s5.arena() -> Arena:
     Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}},
     Node{OpsPARAM{}, Nil{}, AParam{s5.pa(2)}, TNone{}},
     Node{OpsALLOC{}, Nil{}, AParam{s5.pa(3)}, TNone{}},
-    Node{OpsRESHAPE{}, [2, 10], ATuple{Nil{}}, TNone{}},
+    Node{OpsRESHAPE{}, [2, 10], ATuple{[0]}, TNone{}},
     Node{OpsRESHAPE{}, [5], ATuple{Nil{}}, TNone{}},
     Node{OpsUNSHARD{}, [2, 11], ATuple{[0]}, TNone{}},
     Node{OpsBITCAST{}, [2], ADt{S.single()}, TNone{}},
@@ -5626,7 +5626,8 @@ def s5.arena() -> Arena:
     Node{OpsADD{}, [1, 1], ANone{}, TNone{}},
     Node{OpsADD{}, [14, 1], ANone{}, TNone{}},
     Node{OpsMUL{}, [1, 14], ANone{}, TNone{}},
-    Node{OpsADD{}, [16, 1], ANone{}, TNone{}}
+    Node{OpsADD{}, [16, 1], ANone{}, TNone{}},
+    Node{OpsDETACH{}, [2], ANone{}, TNone{}}
   ], [0]}
 
 # The nine fixture indices, as a `Data` record so the row table reads them by name
@@ -5754,7 +5755,8 @@ def s5.base(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     g : Unit <- srow("s5_base_r2", s5.walk(fuel, ar, S5.r2(f)))
     h : Unit <- srow("s5_base_us", s5.walk(fuel, ar, S5.us(f)))
     i : Unit <- srow("s5_base_bc", s5.walk(fuel, ar, S5.bc(f)))
-    srow("s5_base_af", s5.walk(fuel, ar, S5.af(f)))
+    j : Unit <- srow("s5_base_af", s5.walk(fuel, ar, S5.af(f)))
+    srow("s5_base_detach", s5.walk(fuel, ar, 18))
 
 def s5.unsharded(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
   do IO<Unit>:
@@ -5766,7 +5768,8 @@ def s5.unsharded(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     g : Unit <- srow("s5_unsharded_base_r2", s5.walk.u(fuel, ar, S5.r2(f)))
     h : Unit <- srow("s5_unsharded_base_us", s5.walk.u(fuel, ar, S5.us(f)))
     i : Unit <- srow("s5_unsharded_base_bc", s5.walk.u(fuel, ar, S5.bc(f)))
-    srow("s5_unsharded_base_af", s5.walk.u(fuel, ar, S5.af(f)))
+    j : Unit <- srow("s5_unsharded_base_af", s5.walk.u(fuel, ar, S5.af(f)))
+    srow("s5_unsharded_base_detach", s5.walk.u(fuel, ar, 18))
 
 def s5.storage(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
   do IO<Unit>:
@@ -5778,7 +5781,8 @@ def s5.storage(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     g : Unit <- srow("s5_storage_base_r2", s5.walk.s(fuel, ar, S5.r2(f)))
     h : Unit <- srow("s5_storage_base_us", s5.walk.s(fuel, ar, S5.us(f)))
     i : Unit <- srow("s5_storage_base_bc", s5.walk.s(fuel, ar, S5.bc(f)))
-    srow("s5_storage_base_af", s5.walk.s(fuel, ar, S5.af(f)))
+    j : Unit <- srow("s5_storage_base_af", s5.walk.s(fuel, ar, S5.af(f)))
+    srow("s5_storage_base_detach", s5.walk.s(fuel, ar, 18))
 
 def s5.woafter(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
   do IO<Unit>:
@@ -5786,7 +5790,8 @@ def s5.woafter(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     b : Unit <- srow("s5_wo_after_b", s5.walk.w(fuel, ar, S5.b(f)))
     e : Unit <- srow("s5_wo_after_r1", s5.walk.w(fuel, ar, S5.r1(f)))
     h : Unit <- srow("s5_wo_after_us", s5.walk.w(fuel, ar, S5.us(f)))
-    srow("s5_wo_after_af", s5.walk.w(fuel, ar, S5.af(f)))
+    i : Unit <- srow("s5_wo_after_af", s5.walk.w(fuel, ar, S5.af(f)))
+    srow("s5_wo_after_detach", s5.walk.w(fuel, ar, 18))
 
 def s5.bufuop(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
   do IO<Unit>:
@@ -5796,7 +5801,8 @@ def s5.bufuop(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     e : Unit <- srow("s5_buf_uop_r1", s5.walk.b(fuel, ar, S5.r1(f)))
     g : Unit <- srow("s5_buf_uop_r2", s5.walk.b(fuel, ar, S5.r2(f)))
     i : Unit <- srow("s5_buf_uop_bc", s5.walk.b(fuel, ar, S5.bc(f)))
-    srow("s5_buf_uop_af", s5.walk.b(fuel, ar, S5.af(f)))
+    j : Unit <- srow("s5_buf_uop_af", s5.walk.b(fuel, ar, S5.af(f)))
+    srow("s5_buf_uop_detach", s5.walk.b(fuel, ar, 18))
 
 # `has_buffer_identity` answers a `Bool`, and BOTH values of `after_ok` are rows:
 # the two differ on exactly one fixture, so a port that dropped the parameter would
@@ -5815,6 +5821,7 @@ def s5.hbi(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     h : Unit <- row("s5_hbi_us", UOp.has_buffer_identity(fuel, False{}, ar, S5.us(f)))
     i : Unit <- row("s5_hbi_bc", UOp.has_buffer_identity(fuel, False{}, ar, S5.bc(f)))
     j : Unit <- row("s5_hbi_af", UOp.has_buffer_identity(fuel, False{}, ar, S5.af(f)))
+    w : Unit <- row("s5_hbi_detach", UOp.has_buffer_identity(fuel, False{}, ar, 18))
     k : Unit <- row("s5_hbi_after_c", UOp.has_buffer_identity(fuel, True{}, ar, S5.c(f)))
     l : Unit <- row("s5_hbi_after_b", UOp.has_buffer_identity(fuel, True{}, ar, S5.b(f)))
     m : Unit <- row("s5_hbi_after_p", UOp.has_buffer_identity(fuel, True{}, ar, S5.p(f)))
@@ -5823,7 +5830,8 @@ def s5.hbi(+fuel: Nat, +ar: Arena, +f: S5) -> IO(Unit):
     q : Unit <- row("s5_hbi_after_r2", UOp.has_buffer_identity(fuel, True{}, ar, S5.r2(f)))
     r : Unit <- row("s5_hbi_after_us", UOp.has_buffer_identity(fuel, True{}, ar, S5.us(f)))
     t : Unit <- row("s5_hbi_after_bc", UOp.has_buffer_identity(fuel, True{}, ar, S5.bc(f)))
-    row("s5_hbi_after_af", UOp.has_buffer_identity(fuel, True{}, ar, S5.af(f)))
+    u : Unit <- row("s5_hbi_after_af", UOp.has_buffer_identity(fuel, True{}, ar, S5.af(f)))
+    row("s5_hbi_after_detach", UOp.has_buffer_identity(fuel, True{}, ar, 18))
 
 # `split_uop` -- the sequence, and the ORDER is the fact. Five fixtures and the
 # middle one is the one that matters: `nest` is ADD[MUL[CONST,ADD[...]],CONST],

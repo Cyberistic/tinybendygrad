@@ -560,10 +560,11 @@ def tm(ks: Kv) -> Map<&2, String>: Kv.go(ks, Map.new(&2, String))
 # LEGACY ATTRIBUTE names, not the name field, and never were -- which is why the
 # comment this file used to carry at :477 is now wrong rather than merely stale.
 def type_map.base() -> Map<&2, String>:
-  tm(Kv{"bool", "bool", Kv{"i8", "signed char", Kv{"u8", "unsigned char", Kv{"i16", "short",
-    Kv{"u16", "unsigned short", Kv{"i32", "int", Kv{"u32", "unsigned int", Kv{"i64", "long",
-    Kv{"u64", "unsigned long", Kv{"f16", "half", Kv{"bf16", "__bf16", Kv{"f32", "float",
-    Kv{"f64", "double", Kv{"void", "void", KvEnd{}}}}}}}}}}})
+  tm(Kv{"bool", "bool", Kv{"i8", "signed char", Kv{"u8", "unsigned char",
+    Kv{"i16", "short", Kv{"u16", "unsigned short", Kv{"i32", "int",
+    Kv{"u32", "unsigned int", Kv{"i64", "long", Kv{"u64", "unsigned long",
+    Kv{"f16", "half", Kv{"bf16", "__bf16", Kv{"f32", "float",
+    Kv{"f64", "double", Kv{"void", "void", KvEnd{}}}}}}}}}}}}}})
 
 # `Kv.go` IS AN OVERLAY ALREADY -- it folds the tail into the map it is handed --
 # so the device maps take the base as their seed and there is no second fold.
@@ -589,20 +590,19 @@ def type_map.cuda() -> Map<&2, String>:
   type_map_over(Kv{"u32", "uint", Kv{"bf16", "nv_bfloat16",
     Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"fp8e5m2", "__nv_fp8_e5m2", KvEnd{}}}})
 
-# cstyle.py:539. `{bfloat16: "hip_bfloat16", **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
+# cstyle.py:542. `{bfloat16: "hip_bfloat16", **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
 # -- and `fp8_index(d) = fp8s.index(d) % 2` with `fp8s` in dtype.py's order
 # (e4m3, e5m2, e4m3fnuz, e5m2fnuz), so the OCP pair and the FNUZ pair are THE
 # SAME pair. That is measured: HIP maps both e4m3 variants to `hip_fp8` and both
 # e5m2 variants to `hip_bf8`, and the duplication is upstream's rather than a
 # port artefact. FIVE entries, then.
 def type_map.hip() -> Map<&2, String>:
-  tm(Kv{"bf16", "hip_bfloat16", Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
+  type_map_over(Kv{"bf16", "hip_bfloat16", Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
     Kv{"fp8e4m3fnuz", "hip_fp8", Kv{"fp8e5m2fnuz", "hip_bf8", KvEnd{}}}}}})
 
 # THE MAP A DEVICE ANSWERS. Six arms and a `_`, and the `_` is the base rather
 # than a hole: every tag below 6 is a real device and the base is the right
-# default for an unknown one because the base is `{}` and every device's
-# deviations are explicit.
+# default for an unknown one because it is a real fourteen-entry dict.
 def type_map.of(+dev: U32) -> Map<&2, String>:
   match dev:
     case 1: type_map.clang()

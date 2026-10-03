@@ -17001,3 +17001,41 @@ match the sweep's glob is not a green file, it is an unmeasured one.** Every "13
 `.bend` files, ALL PROOFS CHECK" statement in this repo is a statement about a glob,
 and a misplaced file is invisible to it in both directions — it cannot fail a sweep
 and it cannot pass one. `sz.py`'s counts have the same shape.
+
+## R-4. PARALLEL AGENTS NEED SEPARATE jj WORKSPACES, NOT A SHARED ONE
+
+A jj working copy is ONE commit. N agents editing different files in the
+same repo all write into it, and the FIRST agent to `jj describe` or commit
+captures everyone's uncommitted hunks under its own message. Measured twice
+in the 2026-10-04 P3 wave:
+
+* The `uop/ops.bend` 1-500 agent: "my first 4 def lines were swept into
+  `ztymkyrx` by the other agent's `jj describe`."
+* The `symbolic.bend` agent: "my edits were swept into `b6abeb7f58f2` by a
+  concurrent agent's commit on the shared working copy before I could commit
+  them. The work is intact and verified, but the commit attribution is
+  wrong."
+
+**NOTHING WAS LOST BOTH TIMES.** The hunks were in the commit, just under
+the wrong message. That is the cheap outcome and it is luck: an agent that
+runs `jj revert` on a path it believes is its own would destroy the other
+agent's work, and one that does a whole-file rewrite from a stale read
+would too. Two agents did nearly collide on `uop/ops.bend` and one saw a
+half-applied signature change (`Nat` to `U32`) mid-flight and correctly
+declined to "fix" it.
+
+**THE FIX, for the next wave:** one `jj workspace add` per agent, each on
+its own bookmark, and each agent commits only in its own workspace.
+
+```sh
+jj workspace add ../wt-<agent> -r <agent-name>
+```
+
+Then `jj -R ../wt-<agent> describe` / `jj -R ../wt-<agent> new` and a
+`jj git push` from the default workspace to land the bookmark. Two agents
+have now been given "do not revert foreign hunks" as a prompt rule; that
+is a mitigation, not a fix.
+
+**THE STANDING RULE FOR A PARALLEL WAVE:** partition by FILE, and if two
+agents must share a file, partition by a NAMED RANGE inside it and say so
+in both prompts. Never let two agents own the same lines.

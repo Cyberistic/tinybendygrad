@@ -67,6 +67,7 @@ r2 = r1.reshape((9,))                                            # s5.r2 two dee
 us = UOp(Ops.UNSHARD, src=(b, rng), arg=(0,))                    # s5.us
 bc = UOp(Ops.BITCAST, src=(b,), arg=dtypes.float32)              # s5.bc
 af = UOp(Ops.AFTER, src=(b,))                                    # s5.af
+dt = UOp(Ops.DETACH, src=(b,))                                  # s5.detach, the `base` peel's DETACH arm
 ks = UOp(Ops.SINK, src=(b,), arg=KernelInfo())                   # s5.gate_kernel
 lin = UOp(Ops.LINEAR, src=(b,), arg=())                          # s5.gate_linear
 
@@ -78,6 +79,10 @@ row("s5_idx", ",".join(nm(u) for u in (c, b, p, al, r1, r2, us, bc, af)))
 # THE BASE FAMILY. Six walks, six op sets, and the rows are the op name each walk
 # LANDS ON. The sets are the whole difference between the defs and the fixtures
 # are chosen so each set boundary has a node on it:
+#   dt  a DETACH: `base` peels it and `without_after` does NOT, so the pair is the
+#       difference between the two sets. It was MISSING at first -- the
+#       `base_drops_detach` mutation moved no row, which is the hole a mutation
+#       exists to find, and adding the node is what closed it.
 #   us  `base` does not strip UNSHARD, `unsharded_base` does
 #   bc  neither strips BITCAST, `storage_base` does
 #   af  only `has_buffer_identity(after_ok=True)` strips it, and that is the only
@@ -86,23 +91,23 @@ row("s5_idx", ",".join(nm(u) for u in (c, b, p, al, r1, r2, us, bc, af)))
 #       RESHAPE; `r2` is two deep and is the row that says it repeats
 #   c   nothing peels, so the FUEL is the only thing that can move a row
 # ---------------------------------------------------------------------------
-for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af)):
+for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af), ('detach', dt)):
   row(f"s5_base_{k}", nm(u.base))
 
-for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af)):
+for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af), ('detach', dt)):
   row(f"s5_unsharded_base_{k}", nm(u.unsharded_base))
 
-for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af)):
+for k, u in (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af), ('detach', dt)):
   row(f"s5_storage_base_{k}", nm(u.storage_base))
 
 # `without_after` strips AFTER and nothing else, so `us` is UNSHARD here while
 # `unsharded_base_us` is BUFFER -- one op, two answers, both rows.
-for k, u in (('c', c), ('b', b), ('r1', r1), ('us', us), ('af', af)):
+for k, u in (('c', c), ('b', b), ('r1', r1), ('us', us), ('af', af), ('detach', dt)):
   row(f"s5_wo_after_{k}", nm(u.without_after))
 
 # `buf_uop` walks PAST a non-buffer to reach the one under it, so `r1` is BUFFER
 # and not RESHAPE. That is the row a peel-shaped reading would get wrong.
-for k, u in (('c', c), ('b', b), ('p', p), ('r1', r1), ('r2', r2), ('bc', bc), ('af', af)):
+for k, u in (('c', c), ('b', b), ('p', p), ('r1', r1), ('r2', r2), ('bc', bc), ('af', af), ('detach', dt)):
   row(f"s5_buf_uop_{k}", nm(u.buf_uop))
 
 # `has_buffer_identity` answers a Bool and BOTH values of `after_ok` are rows. The
@@ -112,7 +117,7 @@ for k, u in (('c', c), ('b', b), ('p', p), ('r1', r1), ('r2', r2), ('bc', bc), (
 # gate is a BYTE diff -- so the ORDER is part of the contract and it is grouped
 # rather than interleaved, which is also the only order a reader can check: the
 # two blocks sit next to each other and the one row that differs is visible.
-HBI = (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af))
+HBI = (('c', c), ('b', b), ('p', p), ('a', al), ('r1', r1), ('r2', r2), ('us', us), ('bc', bc), ('af', af), ('detach', dt))
 # `Bool.show`, which is what the port's `row` prints -- `0`/`1` would be the gate
 # for a different predicate and the two renderings are not interchangeable.
 for k, u in HBI:

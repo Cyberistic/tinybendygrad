@@ -84,7 +84,12 @@ fi
 # is a PREFIX, not `name=`, because two families are prefixes (`rngarg_*`, `rngspec_*`)
 # and one is a prefix of another (`cycle` of `cycle_terminates`). Both are bend-only and
 # both are listed, so prefix matching cannot hide a row that is not already accounted for.
-BEND_ONLY_NAMES=$(.venv/bin/python .agents/slop/ops-oracle.py | sed -n 's/^#bend_only_\([a-zA-Z_]*\)=.*/\1/p' | sort -u)
+# The character class is `[a-zA-Z0-9_]*` and not `[a-zA-Z_]*`: a family name may
+# contain a digit (the `s5` family is the ops.py:501-1928 unit), and the old class
+# silently DROPPED such a name -- the filter then missed its rows and the gate
+# failed on rows that were supposed to be filtered. Widening it is a no-op for every
+# name that was already there, none of which has a digit.
+BEND_ONLY_NAMES=$(.venv/bin/python .agents/slop/ops-oracle.py | sed -n 's/^#bend_only_\([a-zA-Z0-9_]*\)=.*/\1/p' | sort -u)
 BEND_ONLY=$(echo "$BEND_ONLY_NAMES" | awk '{printf "%s^%s", (n++ ? "|" : ""), $0}')
 
 # WHAT IS FILTERED AND WHY. `BEND_ONLY` is the bend-only ROW FAMILIES. The two explicit

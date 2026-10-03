@@ -79,8 +79,16 @@ def gate_wired(spec):
 
   rebase-gate.py now has `--oracle SPEC`, which overrides the wiring for ONE run and writes
   nothing, so the edit this function needed no longer exists to be made. The refusal to combine
-  --oracle with --record lives in the gate: a mutant's rows must never reach the baseline."""
-  r = run([ORACLE_PY, str(GATE), "--port", PORT, "--no-native", "--json", "--oracle", spec])
+  --oracle with --record lives in the gate: a mutant's rows must never reach the baseline.
+
+  ⚠ `--no-native` HAD TO GO, and its removal is a finding rather than a speed trade. This
+  harness passed it because every port was unrecorded, where skipping a lane is harmless. Once
+  ops_nv HAD A BASELINE, GUARD 1 -- an absolute count -- read the un-run lane as
+  `native LOST ROWS: 600 -> 0 (TO ZERO)`, so the SAME CLEAN PAIR came back BROKEN and this
+  control reported that recording hides a disagreement. It does not; a speed flag had stopped
+  the gate looking. The gate now REFUSES `--no-native` for a port whose baseline recorded a
+  native lane, and names the workaround."""
+  r = run([ORACLE_PY, str(GATE), "--port", PORT, "--json", "--oracle", spec])
   return json.loads(r.stdout)["verdicts"][0], r.returncode
 
 
@@ -123,9 +131,9 @@ def main():
 
   v, rc = gate_wired(MUTANT_SPEC)
   check("the MUTANT is BROKEN and NAMES the row", v["state"] == "BROKEN", v["why"][:200])
-  named = [d for d in v.get("disagreements", []) if d[2] == target]
+  named = [d for d in v.get("disagreements", []) if target in d]
   check("the planted row is the one it names",
-        bool(named) and named[0][0] == "interpreted",
+        bool(named) and "interpreted" in named[0],
         f"disagreements[0]={v.get('disagreements', [None])[0]}")
   check("the exit code is 1 on BROKEN", rc == 1, f"rc={rc}")
 
