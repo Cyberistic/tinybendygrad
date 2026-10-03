@@ -679,3 +679,31 @@ Harness rules learned here and worth keeping:
   two agents were mid-edit in `uop/ops.bend` and `uop/fold.bend` for 15 minutes
   of the first run;
 * the freeze asserts md5 per file BEFORE mutating, never after.
+
+## 2026-10-04 — the two-oracle investigation for `codegen/decomp/dtype.bend`
+
+| file | what it does | the number it establishes |
+|---|---|---|
+| `.agents/slop/dd-truth.py` | ONE run of port + `dd-oracle.py` + `dtype-oracle.py`, all parsed with **`rebase-gate.py`'s own `rows()`**; asserts the filter identity; decomposes the disagreements; `--control` runs the mutant | port 174 / dd 416 / dtype 351; **19 vs 1**; 18 not gated; 242 oracle rows unemitted |
+| `.agents/slop/dtype-oracle-MUTANT.py` | `dtype-oracle.py` with `SKIP = set()`, one `diff` block, nothing else | **1 → 19.** Proves the count is a function of SKIP |
+| `.agents/slop/dd-audit.py` | wraps every entry point of `tinygrad.codegen.decomp.dtype` in a counting proxy and RUNS both oracles | `l2i` 1341 / `f2f` 18 / `f2f_clamp` 26 calls; **0** hand-derived arithmetic. Neither oracle re-implements |
+| `.agents/slop/dd-probe.py` | measures decision 1's projection, and re-runs `lg5`'s cone with it OFF | **281** promotion CASTS deleted; `lg5k` is NOT an artifact |
+| `.agents/slop/dd-coverage.py` | the coverage question with NO bend lane, so it survives a cold substrate | **57** of 65 SKIP names are creation-order, **8 are bare answers** |
+| `.agents/slop/dtype-oracle-truth.md` | the argument, with per-family mechanism and CPython line citations | the recommendation to the gate's owner |
+
+Harness rules learned here:
+
+* **a lane must print its own denominator as rows** — `dtype-oracle.py` emits five
+  `dtype_oracle_*` rows named so they can never collide with a port row, and therefore can
+  never be compared or silenced;
+* **count a filter's gap from the STREAM, never from `len(SKIP)`** — a stale SKIP entry
+  silently inflates it, which is the 82-stale-`{}`-cache failure in another costume;
+* **empty the filter to test the filter** — the cheapest possible control for any
+  filter-shaped oracle;
+* **load the gate's parser, do not write one** — a second parser is a second opinion
+  nobody checked;
+* **assert a filter's identity as `FILTERED == PRODUCED - SKIP`**, because the near-miss
+  `(A & B) - C` is vacuous and printed a confident "NOT a pure filter" on a pure filter;
+* **a 0-row port lane is a cold substrate until proven otherwise** — `ops.bend` was written
+  14 s before a run and broke the typecheck, and every count-only harness read that as
+  "not started". `dd-truth.py` refuses to report a verdict on 0 port rows.

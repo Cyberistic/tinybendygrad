@@ -444,6 +444,85 @@ day rediscovering that `2n+p` is not an even-case test.
 
 ## Session 2026-10-04 — P3 parallel wave, and the queue count is NOT a backlog
 
+### THE WAVE'S RESULT, measured at the end
+
+**All ten `uop/` files are `ALL PROOFS CHECK`.** Markers 330 -> 291, and
+the tree SHRANK by 7,935 lines because a dead snapshot was deleted rather
+than 7,935 written. 203,619 -> 196,496.
+
+| file | before | after | what landed |
+|---|---|---|---|
+| `ops.bend` | 192 | 170 | 5 defs (backward_slice family, 14 rows) + 14 defs (base/buf_uop/bufferize/split_uop/sharding/sint_to_uop, 82 rows over three lanes) |
+| `fold.bend` | 46 | 45 | `is_image_shape`; `_ranges`/`ranges` found ALREADY PORTED and relabelled |
+| `symbolic.bend` | 32 | 17 | 10 rules, 30 rows |
+| `weak.bend` | 17 | 16 | `_lower_weak_ops`, 4 rows |
+| the other six | 43 | 43 | untouched |
+
+**THE MARKER COUNT IS NOT THE PROGRESS COUNT.** Across the four agents,
+roughly 20 of the 48 markers they closed were *already done* with a
+stale marker. Every wall is now named with its RULE next to the line, so
+the real remaining work in `uop/` is nearer 150 than 291 -- and a large
+share of that is `fold.bend`'s `_min_max` walk plus `helpers.bend`'s
+missing i64 helpers. Two named dependencies, not 150 unknowns.
+
+### The five bugs the wave found
+
+1. **`dtypes.ints` is 8, not 4 or 6** (symbolic agent; verified against
+   a live `tinygrad`). The dtype-set helpers under-approximated, so rules
+   were SILENTLY SKIPPING signed 64-bit nodes that CPython rewrites. A
+   rewrite that skips nodes disagrees quietly.
+2. **A minting rule body must not re-read `sy_ar(x)`** (symbolic agent).
+   The fold's arena is stale after the first intern, so the second node
+   lands on the first one's slot. The only symptom is `Arena.next`;
+   reading it found three broken fixtures. `sym_3`/`sym_10` still do it
+   and are documented as un-gated.
+3. **Three fp8 dtype limits were wrong in a DEAD file** and the live file
+   had already fixed them -- but `mm-dt-gate.py` read the dead one, so
+   it reported bugs that did not exist. Deleting the snapshot made all
+   three vanish.
+4. **`split_uop` appended a separator's srcs to the ANSWER**, so
+   separators were never descended into. Typechecked, `--check-only`
+   clean, wrong.
+5. **`ALLOC->PARAM(99)` where CPython says `ALLOC->BUFFER(0)`** (mine, and
+   only findable after the printer was taught to NAME ops -- the
+   count-only gate reported AGREE with it live).
+
+**BUG 4 IS THE ONE TO GENERALISE FROM.** A gate that checks the SHAPE of
+an answer passes while the answer's CONTENTS are wrong, and four
+independent agents hit a version of it: `ops_nv` 33/219 constants,
+`base`'s DETACH arm with no fixture, `sharding`'s op test that was not
+load-bearing, and a split that appended to the wrong list. The pattern
+is always a FIXTURE THAT DOES NOT REACH THE BRANCH.
+
+### The one durable process fix
+
+**R-4 in `bend2-constraints.md`: parallel agents need SEPARATE jj
+workspaces.** A jj working copy is ONE commit, so N agents writing into it
+means the first to `jj describe` captures everyone's hunks. Measured
+three times today. **No work was lost, but the history now lies about
+who wrote what**, and an agent that ran `jj revert` on a path it
+believed was its own would have destroyed the others. One agent DID see
+a half-applied signature change mid-flight and correctly declined to
+"fix" it; that was luck, not process.
+
+### The reusable Bend shape the last agent measured
+
+A walk down `src[0]` CANNOT be the self-call -- a self-call must pass a
+subterm of its own parameter, and an arena read is not one. Three shapes
+were measured and refused (`Bool.pick` with the peel in the condition;
+the `.go` split, which R-3 forbids because the sub-def calls the parent;
+a two-scrutinee match on a computed peel). What works is ONE def, ONE
+scrutinee, FUEL FIRST, with the stop encoded in the NODE:
+
+```bend
+case 1n+p: X(p, ar, Bool.pick(<T>, <walks>, Arena.src(ar, self, 0), self))
+```
+
+Six walks in six three-line defs that differ only in the peel set --
+which is the one thing a parameter would carry, and Bend cannot
+parameterise over a function.
+
+
 Four agents, partitioned by FILE so they cannot collide:
 `ops.bend` split at ops.py line 500 (two agents, disjoint ranges), `fold.bend`
 alone, `symbolic.bend` + `weak.bend` together.
@@ -4644,3 +4723,108 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
       the **10360** order-weak rows in `dtype`/`tc_ptx`/`ops_dsp`; and
       commutative fixtures for the 5 gated ports that have none, `linearizer`
       first (its 0.0% is the strongest signal in this census).
+
+---
+
+## Session 2026-10-04 — `dtype.bend`'s TWO ORACLES DISAGREE (19 vs 1), and the 1 is a lie of omission
+
+- [x] **WHICH ORACLE IS TELLING THE TRUTH: `dd-oracle.py`, and the other one is a FILTER.**
+      MEASURED, all three lanes under the pinned `.venv` (3.12.10), the port through
+      `./bin/bend`, every lane parsed with **`rebase-gate.py`'s own `rows()`** (loaded,
+      not copied):
+
+      | lane | rows | shared with the port | disagreements |
+      |---|---|---|---|
+      | the port | **174** | — | — |
+      | `dd-oracle.py` | **416** | **174** | **19** |
+      | `dtype-oracle.py` | 356 (351 + 5 provenance) | **109** | **1** |
+
+      `416 - 65 = 351`, and dtype-oracle.py's printed names are EXACTLY dd-oracle.py's
+      minus its 65-name `SKIP` set — **asserted, not assumed** (`dd-truth.py`). So
+      **the 172-vs-107 (now 174-vs-109) gap is entirely the SKIP set.** The two files do
+      not test different things; one is the other with 65 rows deleted.
+
+- [x] **THE 18 ARE NOT UNCHECKED ROWS. THEY ARE WRONG VALUES THE GATE CANNOT SEE.**
+      All 19 names are in `port ∩ dd-oracle`, so the port emits every one. 18 of them are
+      rows the port prints with a value that differs from CPython, on names
+      dtype-oracle.py never prints. An unchecked row reports itself as a denominator
+      shortfall; **a suppressed disagreement reports itself as an agreement.** The
+      decomposition is printed every run: `1 gated (c7) / 18 not gated`.
+
+- [x] **`SKIP` IS NOT ONLY CREATION-ORDER ROWS, as its header claimed.** `dd-coverage.py`
+      measures: **57** of the 65 are `sig`/`k`/`n`/`p`; **8 are BARE ANSWER ROWS** —
+      `lga lgb lge lgq lgr lgs lgt lgu`. The old header admitted one (`lgu`); the other
+      seven were silently filed as ordering facts. `lgq lgr lgs lgt` agree today only
+      because `tree()` reaches two levels — their `k`/`sig` rows disagree.
+
+- [x] **CONTROL (a), THE ONE THAT SETTLES IT.** `.agents/slop/dtype-oracle-MUTANT.py` is
+      dtype-oracle.py with `SKIP = set()` and NOTHING else changed (one `diff` block).
+      Same port, same CPython, same interpreter, same parser: **live filter 1 of 109,
+      MUTANT 19 of 174.** A filter that suppresses disagreements is indistinguishable
+      from a port that is nearly correct; emptying the filter is the cheapest way to tell
+      them apart. **Run this for every filter-shaped oracle in the repo.**
+
+- [x] **NEITHER ORACLE RE-IMPLEMENTS THE PORT — MEASURED, NOT READ.** `dd-audit.py` wraps
+      every entry point of `tinygrad.codegen.decomp.dtype` with a counting proxy and RUNS
+      both files: **`l2i` 1341, `f2f` 18, `f2f_clamp` 26, `l2i_define` 5, `reindex` 6,
+      `rne` 16, `unpack32` 3**, rule tables read at 13/10/2 patterns, and **0 hits** for
+      hand-derived exponent/mantissa/`unpack32` arithmetic in either. The header claim
+      "nothing here is a reimplementation of it" is TRUE of both.
+      **But `dd-oracle.py` PROJECT rather than reimplement**: its decision 1 drops **281**
+      promotion CASTS the unported `mixin/elementwise.py` inserts (measured per fixture
+      by `dd-probe.py`; 69 in `lgq`, 70 in `lgr`). So its rows are CPython *projected onto
+      the port's buildable subset*. It does NOT mask `lg5k` — verified by re-running that
+      cone with the deletion off: identical constants.
+
+- [x] **THE BIGGER FINDING THAN THE COUNT: 242 of 416 oracle rows have NO port row, and
+      they are five of dtype.py's ten public functions.** `f2f` (dtype.py:101-125, 18
+      fixtures), `f2f_clamp` (:127-134), `rne` (:99), `reindex` (:14-18), `l2i_define`
+      (:83-86), the three rule tables (:148, :181, :218) and `c0..c7`. The gate's
+      109-row denominator covers **`l2i` and `unpack32` and nothing else.**
+
+- [x] **CLOSED ONE REAL DEFECT, AND IT CLOSED ZERO DISAGREEMENTS.**
+      `dtype.bend:1150-1153`, `W2{ar, Cd.q0(c), 0}`. `W2` is `{ar, lo: U32, hi: U32}` and
+      BOTH are arena **indices**; the literal `0` named **arena slot 0**, whose label is
+      `NOOP`. dtype.py:74 returns the PAIR. Now `Cd.q1(c)` / `Cd.r1(c)`.
+      **Fourth instance of this species in this file** (the file's own comments name three
+      more at :1007, :1010, :1187); all four compile, all four run, all four are invisible
+      to `--check-only`, and the shared signature is **the node COUNT barely moves while
+      the CONE collapses** (`lgsn` 1976 vs CPython 1977 — built, but not REACHABLE).
+      Effect: port rows **172 → 174** (`lgsp`, `lgtp` recovered), one row moved
+      (`lgssig`), nothing lost, **19 disagreements stayed 19.**
+
+- [x] **CONTROL (b), ON THE PORT EDIT.** baseline copied aside, fix applied, port run, file
+      restored to its exact baseline hash `8886c0b7…`, port re-run →
+      **`diff` BYTE-IDENTICAL.** The delta is mine and nothing else. `ops.bend` was written
+      by another agent 14 s before one run and broke the typecheck
+      (`match split_uop.sep.of(op, sep):` — a computed scrutinee); that made the port lane
+      print **0 rows**, which every count-only harness reads as "not started".
+      `dd-truth.py` now REFUSES to report a verdict on 0 port rows and says why.
+      **NOT EDITED: `ops.bend`.**
+
+- [x] **`dtype-oracle.py` NOW PRINTS ITS OWN DENOMINATOR** as five `dtype_oracle_*` rows,
+      named so they cannot collide with a port row and therefore cannot be compared or
+      silenced: `of=416 printed=351 suppressed=65 skip_names_unused=0` and
+      `full_disagreements=19 (of which 18 are on rows this filter does not print)`.
+      **`SKIP` IS DELIBERATELY UNCHANGED** — shrinking it to green the gate is the failure
+      this session is correcting, and `rebase-gate.py` is another agent's file.
+
+- [ ] **OPEN — GATE OWNER'S CALL, one line.** Re-wire
+      `tinybendygrad/codegen/decomp/dtype.bend` in `ORACLE_CONFORMANCE` from
+      `dtype-oracle.py` to **`dd-oracle.py`** — that moves the lane from `1 of 109` to
+      `19 of 174`, which is the truth, and it will be RED. Or wire `dd-truth.py` beside it
+      as the diagnostic lane. Full argument, per-family mechanism, CPython line citations
+      and both controls: **`.agents/slop/dtype-oracle-truth.md`**.
+
+- [ ] **OPEN — THE TWO FAMILIES WORTH OPENING NEXT**, both port bugs, neither gated:
+      (a) the **CDIV/CMOD loop**, dtype.py:63-69 — 10 of the 18. CPython interleaves
+      `C(i)` with `2**(i-32)` for i=63..33 (the `UOp.const(i, uint)` shift words of :65
+      and the `shl(cond, i%32)` multipliers of :68); the port emits one leading `C(64)`
+      and then a bare run of powers of two and **never emits the 31 `C(i)` shift words**.
+      `lgtsig` reaches 57 cone nodes against CPython's 2184.
+      (b) **`lg5k`/`lg5n`/`lg5sig`**, dtype.py:34 — tinygrad rewrites `x / 2**32` as
+      `x * RECIPROCAL(CONST_at_f32(2**32))` = **`F(1333788672)`** (0x4f800000 is exactly
+      2^32 in f32); the port builds the divisor at weakint/i64 = **`C(1:0)`**.
+
+- [ ] **OPEN — 242 rows the port does not emit** (five of ten public functions, §above).
+      Until they are rowed, "the dtype port is 99% correct" is a statement about `l2i`.

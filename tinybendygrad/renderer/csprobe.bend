@@ -704,6 +704,71 @@ def is_local(+a: S.Addr) -> Bool:
 # `addrspace in (AddrSpace.LOCAL, AddrSpace.GLOBAL)` -- the SAME set twice in
 # `_render_dtype` (once for the prefix, once for the `*`), so it is one def read
 # by both rather than two spellings that could drift.
+def is_mem_addr(+a: S.Addr) -> Bool: Bool.or(is_local(a), is_global(a))
+
+# `prefix` -- cstyle.py:183-185. LOCAL contributes `smem_prefix` and only when
+# `smem_prefix_for_cast`; GLOBAL contributes `buffer_prefix`; ALU and REG
+# contribute nothing.
+def smem_prefix_for_cast(+dev: U32) -> Bool:
+  match dev:
+    case 4: False{}
+    case 5: False{}
+    case _: True{}
+
+def rd_prefix.of(+dev: U32, +a: S.Addr, forcast: Bool) -> String:
+  match a:
+    case S.ALocal{}: Bool.pick(String, forcast, smem_prefix.of(dev), "")
+    case S.AGlobal{}: buffer_prefix.of(dev)
+    case _: ""
+
+def rd_prefix(+dev: U32, +a: S.Addr) -> String:
+  rd_prefix.of(dev, a, smem_prefix_for_cast(dev))
+
+# `suffix` -- cstyle.py:186-187.
+def rd_suffix(+a: S.Addr, override_ptr: Bool) -> String:
+  Bool.pick(String, Bool.or(is_mem_addr(a), override_ptr), "*", "")
+
+# THE NAME, with the `sz > 1` underscore. `Bool.and(vect, has_space(..))` is
+# exactly Python's `if sz > 1: ..replace(" ", "_")` because the replace is a
+# no-op for a name with no space -- so the conjunction is the same answer and not
+# an approximation of it.
+def rd_name.of(vect: Bool, unders: String, plain: String) -> String:
+  Bool.pick(String, vect, unders, plain)
+def rd_base_name(+dev: U32, +d: S.Dt) -> String: type_name(type_map.of(dev), d)
+
+
+def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String:
+  rd_name.of(Bool.and(vect, has_space(rd_base_name(dev, d))), under(rd_base_name(dev, d)), rd_base_name(dev, d))
+
+# `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE -- so the UNDERSCORED
+# spelling is the `b` arm and the plain one is the `a` arm. This line had them the
+# other way round for one compile cycle, which underscored the four SCALAR
+# columns and left the two `sz > 1` columns alone: `rd BASE unsigned char` came
+# back `unsigned_char*|...|unsigned char4` where CPython says
+# `unsigned char*|...|unsigned_char4`. NO `float` ROW COULD SEE IT -- a name with
+# no space renders the same either way -- which is exactly why the gate carries a
+# `signed char`-shaped row, and it is the same trap `render.bend` hit on
+# `acall_tail` and that `bend2-constraints.md` rule 7 already records.
+
+
+
+def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String:
+  Bool.pick(String, U32.is_gt(sz, 1),
+    String.concat([rd_name(dev, d, True{}), U32.show(sz)]), rd_name(dev, d, False{}))
+
+# `is_image_shape(shape)` -- wall (c), so the test arrives as a `Bool`.
+def rd_image(mutable: Bool) -> String:
+  Bool.pick(String, mutable, "write_only image2d_t", "read_only image2d_t")
+
+# THE WHOLE DEF. Seven parameters because Python's has six plus a `self`, and
+# the `sz > 1` test lives in `rd_body` rather than here so the image arm can
+# return before any of it is computed.
+def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, override_ptr: Bool, img: Bool) -> String:
+  Bool.pick(String, img, rd_image(mutable),
+    String.concat([rd_prefix(dev, a), rd_body(dev, d, sz), rd_suffix(a, override_ptr)]))
+
+# `render_dtype(dt, mutable=True)` -- cstyle.py:203, marked `# LEGACY`. It is
+# `_render_dtype(dt, 1, AddrSpace.REG)`, so the REG address space is the load-
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(U32.show(1))
