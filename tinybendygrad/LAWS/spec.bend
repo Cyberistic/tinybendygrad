@@ -276,15 +276,60 @@ def Shape.drop(s: Shape, n: Nat) -> Shape:
 
 # ===========================================================================
 # Broadcast -- tinyspec: "right-align shapes, element-wise max; each axis must
-# be equal or 1". `zip_max` IS the right-align: when one list runs out the
-# other continues, so the shorter shape keeps its axes.
+# be equal or 1". `zip_max` zips from the HEAD. That coincides with tinygrad's
+# right-align only at equal length: (3,) with (2,3) is (3,3) here and (2,3)
+# in tinygrad. The shorter list's remainder is kept, which is why (2,) with
+# (2,2) is (2,2) either way.
 # ===========================================================================
+
+# tinygrad `_broadcast_shape`: a 1 broadcasts to the other size, including 0.
+# `Nat.max(0n, 1n)` is 1, which is not that rule. Measured:
+# Tensor.ones(2, 0) + Tensor.ones(1, 1) has shape (2, 0), not (2, 1).
+def pick_dim(a: Nat, b: Nat) -> Nat:
+  match a:
+    case 1n: b
+    case _:
+      match b:
+        case 1n: a
+        case _: a
+
+# A value of `AllSN` is the proof a dim list contains no symbolic axis.
+# `SameLen` is the proof two lists have the same length, matchable, so the
+# broadcast law can induct instead of rewriting a Nat equality.
+def AllSN(ds: List<&2, Sdim>) -> Type:
+  match ds:
+    case Nil{}: Unit
+    case SN{_} <> r: AllSN(r)
+    case SS{_} <> _: Empty
+
+def SameLen(a: List<&2, Sdim>, b: List<&2, Sdim>) -> Type:
+  match a:
+    case Nil{}:
+      match b:
+        case Nil{}: Unit
+        case _ <> _: Empty
+    case _ <> ra:
+      match b:
+        case Nil{}: Empty
+        case _ <> rb: SameLen(ra, rb)
+
+# Element-wise non-1-wins. Independent of `zip_max`, so a law that equates
+# them pins the broadcast, not a name.
+def elem_pick(a: List<&2, Sdim>, b: List<&2, Sdim>) -> List<&2, Sdim>:
+  match a:
+    case Nil{}: Nil{}
+    case SN{va} <> ra:
+      match b:
+        case Nil{}: Nil{}
+        case SN{vb} <> rb: SN{pick_dim(va, vb)} <> elem_pick(ra, rb)
+        case SS{_} <> _: Nil{}
+    case SS{_} <> _: Nil{}
 
 def Shape.max_dim(a: Sdim, b: Sdim) -> Sdim:
   match a:
     case SN{va}:
       match b:
-        case SN{vb}: SN{Nat.max(va, vb)}
+        case SN{vb}: SN{pick_dim(va, vb)}
         case SS{p}: SS{p}
     case SS{p}:
       match b:
@@ -292,9 +337,8 @@ def Shape.max_dim(a: Sdim, b: Sdim) -> Sdim:
         case SS{q}: SS{p}
 
 def zip_max(a: List<&2, Sdim>, b: List<&2, Sdim>) -> List<&2, Sdim>:
-  # Right-alignment: the SHORTER shape keeps its own axes, so whichever list
-  # runs out first hands the remainder back untouched. That is what makes
-  # (2,) broadcast with (2,2) to (2,2) rather than truncating to (2,).
+  # Head-zip. The remainder of whichever list is longer is kept. Equal-length
+  # shapes do not care; unequal ones are not tinygrad's right-align.
   match a:
     case Nil{}: b
     case x <> xs:
@@ -819,3 +863,7 @@ def main() -> IO(Unit):
     dn_gate("idx1_456", dn_dims(dn_of(Sp.shape(dn_idx1()))), "5,6")
     dn_gate("red0_456", dn_dims(dn_of(Sp.shape(dn_red(0n)))), "4,5,6")
     dn_gate("red1_456", dn_dims(dn_of(Sp.shape(dn_red(1n)))), "5,6")
+    # tinygrad: (2,0)+(1,1)=(2,0). Nat.max would print 2,1.
+    dn_gate("bc_20_11", dn_dims(dn_of(Sp.shape(SpAdd{SpReshape{SpInvalid{}, SpInvalid{}, [SN{2n}, SN{0n}]}, SpReshape{SpInvalid{}, SpInvalid{}, [SN{1n}, SN{1n}]}}))), "2,0")
+    dn_gate("bc_13_23", dn_dims(dn_of(Sp.shape(SpAdd{SpReshape{SpInvalid{}, SpInvalid{}, [SN{1n}, SN{3n}]}, SpReshape{SpInvalid{}, SpInvalid{}, [SN{2n}, SN{3n}]}}))), "2,3")
+    dn_gate("bc_0_1", dn_dims(dn_of(Sp.shape(SpAdd{SpReshape{SpInvalid{}, SpInvalid{}, [SN{0n}]}, SpReshape{SpInvalid{}, SpInvalid{}, [SN{1n}]}}))), "0")

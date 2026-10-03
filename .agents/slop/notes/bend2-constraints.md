@@ -14121,3 +14121,19 @@ CPython IS THE TIE-BREAKER AND IT WILL OVERTURN A PORT ROW. `l2i(Ops.CAST,
 dtypes.long, UOp.const(0, dtypes.uint32))` does NOT raise upstream -- it returns
 `(CAST(C(0)), CAST(C(0)))`. Verify with the interpreter before believing a
 refusal row.
+
+## P-CLOSE. THE LAST TWO LAWS. NUMBERING CONTINUES AFTER THE G-14 BLOCK; CITE THIS POSITION, NOT A NUMBER.
+
+Measured 2026-10-03, after `drop_n` was already `List.drop` (the other unit's fix; a checkout race restored the old `case 0n: r` arm for a few minutes and then put `List.drop` back). Positions: `tinybendygrad/LAWS/spec.bend` `drop_n` / `pick_dim`; `tinybendygrad/LAWS.bend` `reduce_numel_divides_by_the_reduced_axes` and `broadcast_is_elementwise_max`; `tinybendygrad/PROOF.bend` `split` / `bcast_axes`.
+
+**`%e : P` rewrites `b` to `a` in `e : {a == b}`.** The motive is the CURRENT goal with `_` marking `b`. To replace an occurrence of `a`, `Equal.sym` first. The failed motive is reported as `expected` = the goal, `observed` = what the motive produced. Measured on `nat_mul_dist` before the sym was added.
+
+**A `+` LAW BINDER MUST BE `Data`.** `for +same: S.SameLen(...)` is refused: `expected : Data / observed : Type / Note: +same can be used many times, so its type must be Data.` A proof of a `Type`-returning predicate is an un-plussed binder, used once. `SameLen` and `AllSN` are matched, so the induction does not need a second copy.
+
+**A NAT SCRUTINEE USED TWICE IS `+q = p`, AND THE COPY STILL COUNTS AS DECREASING.** `case 1n+p:` then both `f(p)` and a motive mentioning `p` is `p (consumed more than once)` at the pattern. `+q = p` and using only `q`, including in the recursive call, checks. The goal after the match still prints the original binder name; `q` and that name match.
+
+**THE REDUCE LAW, ONCE `drop_n` IS `List.drop`, IS `prod(drop) * prod(take(n)) == prod`.** `take(n+1)` is the compensation for the old off-by-one and is false once drop is exact (16==4, 600==120). `prod(drop_n)` is the kept product and is false either way (16==4, 900==120). `take(n)` holds for n=0, n=rank, n past the rank, a symbolic axis (both sides 0), and a zero dim. Supersedes the "still unproven" sentence in the DN-1 block above; that block was not edited.
+
+**THE BROADCAST COUNT FORM IS FALSE IN TINYGRAD, NOT ONLY IN THE SPEC.** `Tensor.ones(2, 0) + Tensor.ones(1, 1)` is shape `(2, 0)`, numel 0 < 1. `(2, 3) + (3, 3)` is `IndexError` (neither axis is 1). `Nat.max(0, 1)` is 1, so the spec's old `max_dim` disagreed with that row; `pick_dim` returns the non-1 size and the gate row `bc_20_11=2,0` fails under `Nat.max`. `zip_max` still zips from the head. tinygrad right-aligns (`_align_left` pads on the left). They coincide at equal length, which is why the law's quantifier stops there rather than claiming the unequal-length shapes the spec gets wrong (`(3,)+(2,3)` is `(3,3)` in the spec and `(2,3)` in tinygrad).
+
+**A COMMENT-ONLY CONTROL THAT STAYS GREEN IS SAME, NOT A BLIND SPOT.** A harness that prints BLIND for every GREEN mislabels the control. The control must be reported as SAME.

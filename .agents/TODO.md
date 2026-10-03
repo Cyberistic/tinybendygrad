@@ -4,7 +4,7 @@ The port's state. Progress bars are `[###.....] n/m`.
 
 ```
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
-proofs          [########.] 28/34    oracle-green     [#####.....] 5/5
+proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
 walkthroughs    [######...] 6/7
 ```
 
@@ -38,8 +38,10 @@ walkthroughs    [######...] 6/7
       (10/10 proven; 8 shape-column mutations each killed by their own law.
       Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
-- [ ] `PROOF-ALL.bend` green — still 2 TODOs. Broadcast is false as quantified.
-      The reduce law's term is corrected and unproven, not false.
+- [x] `PROOF-ALL.bend` green — 0 TODOs. Reduce proved as
+      `reduced * prod(take(dims, n)) == numel`. Broadcast restated to the
+      equal-length concrete axis rule (`pick_dim`, a 1 broadcasts to 0) and
+      proved. Delete-one-proof self-check: 0 -> 1.
 - [x] `drop_n` drops `n`, not `n+1`, and the reduce-numel multiplier is
       `List.take(dims, n)`. Index of arity 1 over rank 3 is rank 2.
       Gate: `./bin/bend tinybendygrad/LAWS/spec.bend`.
