@@ -381,6 +381,29 @@ caught the non-idempotent patcher):
 
 ---
 
+## The autogen const audit (2026-10-03, ops_webgpu.bend + ops_cl.bend)
+
+The lesson from `ops_nv`'s 33/219 wrong constants in a file with 590 green rows:
+a green gate tests GRAPHS, the constants answer to a C header nobody read, and the
+fix is a hand-built name map. The smoke-test script `.agents/slop/const-audit.py`
+is documented to be one and reaches only 0-18 of 222 `ops_nv` consts because the
+port invents names; what shipped was a 219-entry hand map. The two device files
+audited in this round use the same recipe.
+
+| tool | why |
+| --- | --- |
+| `.agents/slop/const-audit.py` | the SMOKE TEST. Name-matches the port to the autogen, exact and by a small prefix list (`CLASS_`, `CUDA_`, `CL_`, `HIP_`); refuses to call a name WRONG when the two sides are plainly different concepts. Its **coverage** number is the finding: 0-18/222 on `ops_nv` meant the port invents names and a real audit needs a hand map. |
+| `.agents/slop/ops_webgpu_constmap.py` | the 65-entry hand map for `ops_webgpu.bend` -> `tinygrad/runtime/autogen/webgpu.py`. The 14 header-mapped names (`BIND_*`, `FILTER_*`, `MAP_*`, `FEATURE_*`, `USAGE_*`, `STATUS_SUCCESS`) match byte-for-byte; the 51 PORT_ONLY are `OBJ_*` (13), `CALL_*` (23), `SYNC_*` (11), and four sentinels (`BIND_GROUP_INDEX`, `UNIFORM_SIZE`, `QUERY_COUNT`, `QUERY_BUF_SIZE`). |
+| `.agents/slop/ops_webgpu-const-audit.txt` | the 65-row report. |
+| `.agents/slop/ops_cl_constmap.py` | the 66-entry hand map for `ops_cl.bend` -> `tinygrad/runtime/autogen/opencl.py`. 14 `CL_*` exact, plus `cl_err_n` = 63 and `cl_err_names_n` = 74 verified against the live autogen (74 error names -> 63 unique codes). The 50 PORT_ONLY are the 41 `OP_*` trace tags, `V_CL`, three fold bodies, and seven sentinels/sizes. |
+| `.agents/slop/ops_cl-const-audit.txt` | the 66-row report. |
+
+The third vendor spelling (CUDA, HIP) lives in `ops_cuda.bend` / `ops_hip.bend`
+after the 1:1 file split. They remain queued under the same recipe. **0 source
+edits in this round** because both ports' header-mapped values are correct.
+
+---
+
 ## Env-flag measurement (2026-10-02, owner: the env-flag audit unit)
 
 No new dependency: `bin/bend` plus CPython 3 via `uv run`. The point of these four
@@ -485,3 +508,22 @@ looks exactly like an oracle that emitted nothing — which is what GUARD 2 is f
   blocks a module importing a relative `.mjs`.
 - The WebGPU IDL mixes string enums and numeric bitmasks; WC4 in
   `.agents/slop/notes/bend2-constraints.md` has the measured table.
+
+## Tree verdict (bucketed by cause, not pass/fail)
+
+- `.agents/slop/tree-verdict.py -P 12` — sweeps every `.bend` under `tinybendygrad` +
+  `examples` and reports `green` / `no-main` / `no-rows` / `foreign-code-surface` /
+  `proof-in-progress` / `broken-here` / `broken-in-import` / `no-verdict`. Exit 1 on a real
+  defect or a dead substrate. `--json`, `--only SUBSTR`, `--root DIR` (point it at a COPY for
+  a negative control). Read `.agents/slop/tree-verdict.md`.
+- `.agents/slop/one.sh <file> <outdir>` — the per-file primitive: check-only + run, first
+  diagnostic line as the verdict, modal row count over repeated runs. It NEVER reads bend's
+  exit status, and it is the only place the retry rule lives.
+- `--check-only` exits 1 on a clean file, and WHICH STREAM the verdict arrives on depends on
+  the verdict: success prints to stdout, failure to stderr. A harness reading `check.err`
+  alone calls every green file dead.
+- A compile error propagates and bend's `Location:` block NEVER NAMES THE FILE, so a red
+  count is not a defect count — one planted `def` in `LAWS/spec.bend` reds 87 files. Attribute
+  by the offending source text, walking back past a blank marked line.
+- `tinybendygrad/runtime/support/elf.bend` has printed 353 rows and 331 rows on different runs
+  with no edit between them. Treat a single run's row count as evidence of nothing.
