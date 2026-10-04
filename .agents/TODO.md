@@ -10518,3 +10518,145 @@ census-MATRIX.txt, census-LIVE.txt, NOTES.md}`. Rules `NV-1..NV-9` appended to
       and a canonicalisation whose reason has gone away should go with it.
 
       Markers 563 -> 561. Backlog still 236: these were walls.
+
+## `CSH` — widen `cshape`'s `except`, or prove it cannot be (unit `CSH`, 2026-10-04/05).
+## Progress: [#########.] 9/10
+
+Report **`.agents/slop/CSHAPE.md`**; instruments **`.agents/slop/cshape/`**. Rules
+`CSH-1..9` appended to `notes/bend2-constraints.md`. **Nothing committed. No file outside
+`.agents/slop/cshape/` edited — `graphcmp.py`/`graphcmp.bend` are the `ADev` unit's, and
+`cshape` lives inside `graphcmp.py`, so every widening is applied in-process by
+monkeypatch and nothing on disk carries it.**
+
+- [x] **Per-arm yield, over the 25 corpus graphs PLUS the pattern IR — 316 nodes. The whole
+      outcome census is `290 ok / 25 RuntimeError@ops.py:455 / 1 AssertionError@ops.py:444`.**
+      So `AssertionError` is the one class, and it is the one node.
+- [x] **WHICH WIDENING BOUGHT WHICH OP: `+ AssertionError` buys all three of
+      `CUSTOM CUSTOMI PYLITERAL` and `+ NotImplementedError` / `+ ValueError` / bare
+      `except Exception` buy NOTHING.** The brief's one-arm premise is confirmed and the arm
+      is `AssertionError` and only `AssertionError`. **`CSH-1`.**
+- [x] **WHAT EACH WIDENING COSTS, priced per raising SITE over all 77 ops x 2 arities, not
+      per class:** `except AssertionError` admits FOUR sites and only one is a fact —
+      ops.py:444 (21 ops, real), ops.py:438 `unary ops must have 1 src` (8), ops.py:137
+      `CUSTOM/CUSTOMI arg must be (str, DType)` (2), ops.py:141 `INS arg` (1). `except
+      Exception` adds 22 more op-slots whose only fault is a malformed fixture, and at one
+      src each it swallows **77 of 77**. ops.py:451 `no shape handling for X` — the third
+      fact, the one `R` would be a LIE about — measured **0** occurrences.
+- [x] **THE PRICED WIDENING IS ONE PREDICATIVE (`CSH-1`), and the plant measures it:**
+      `except (RuntimeError, AssertionError)` prints `R` for `UOp(Ops.NEG, src=())`, a node
+      upstream rejects at ops.py:438; scoping the arm to ops.py:444's message refuses it.
+      **Identical over all 316 nodes, different on exactly that row.**
+- [x] **THE `AND`-ROOTED RULE IS UPSTREAM'S, IT IS LOAD-BEARING, AND IT ASSERTS — the
+      question is CLOSED.** Measured over 18 `UPat` shapes: 17 roots `AND`, 1 `CUSTOMI`
+      (upat.py:66's own else-arm), **0 roots `OR`**; the `OR` only ever appears as a child.
+      `upat.py:66` returns `AND`, `:20` wraps the `OR`, `:118` dispatches `pm_proc` on
+      `UPat(Ops.AND)`, and **`:140` is `assert x.op is Ops.AND`.** Nothing in the differ to
+      widen. **`CSH-4`.**
+- [x] **REACHED, py side from upstream's own construction** (`_get_clause(UPat(Ops.ADD),
+      CUSTOMI("uop"))`, 4 nodes, never hand-written). **W0: the emitter DIES** —
+      `row_of` raises out of the whole graph, not "no row". W1/W1s/W4 emit all 4, identically.
+- [x] **THE WIDENING IS NECESSARY AND NOT SUFFICIENT, and the sufficiency failure is TWO
+      PORT DEFECTS, neither of them the `except` arm.** `cs-plantir.bend`'s four separate
+      graphs: **`AND` over two SHAPED consts SETTLES** (the port HAS an `AND` rule), while
+      **`CUSTOMI`/`CUSTOM` with NO srcs do NOT** — so
+      **`uop/fold.bend:2296-2297` answers `None{}` ("no `Derived`") where upstream
+      `ops.py:370-372` answers `None` ("no shape")**, and `OpsPYLITERAL -> late()` renders
+      `4:void 1:R` from the SAME upstream fact, which is the fix already in the port.
+      **`CSH-2`.**
+- [x] **THE `AND` ROOT'S SHAPE HAS NO CORRECT ANSWER ON EITHER SIDE.** `all_shapes`
+      (`fold.bend:875`) refuses exactly as upstream's assert does, so `R` would claim
+      something upstream does not claim and the port's `?` is the honest letter. **This one
+      must NOT be widened away: `AND` over shapeless srcs is not a tensor graph.**
+- [x] **`Arg` has no home for the matcher IR's args in a SHARED spelling:** py
+      `n(suop,Dvoid)` vs bend `in(suop,Dvoid)` (the port's `AInk` IS the pair —
+      `uop/spec.bend:1043-1047` — but `argstr` renders it under INS's prefix), and py
+      `OADD` vs bend `rd(OADD,i0)` because a **bare `Op`** has no `Arg` variant at all.
+      A normal-form decision inside the other unit's file.
+- [x] **VERDICT AS THE HEADLINE. py(W1) vs bend: `DISAGREE`, 9 field mismatches of 24
+      field-records, `?=0/3`, `op`/`depth`/`tag`/`src` agreeing 4/4.** `depth`,`tag`,`src`
+      and `op` all agree — the damage is entirely `dtype`, `shape` and `arg`.
+      **`CSH-3`.**
+- [x] **CORPUS BEFORE/AFTER against 77, both sides, split: LIVE UNCHANGED at
+      61/77/61, `py-only=[] bend-only=[]`, 25 graphs.** Ceiling if `patir` could be added:
+      **64/64/64, `py-only=[] bend-only=[]`, 26 graphs, NEITHER 16 -> 13**
+      (`CUSTOM_FUNCTION GETADDR INS MSELECT MSTACK MULACC PROGRAM REWRITE_ERROR SOURCE
+      STAGE THREEFRY UNSHARD WMMA`). `patir` CANNOT be added: the `GRAPHS` entry and the
+      dispatch arm are the `ADev` unit's. **`MULACC` untouched — device gate
+      `codegen/decomp/op.py:118`, one renderer, `renderer/ptx.py:33`.**
+- [x] **AND THE 64/64/64 IS EXACTLY THE FALSE THEOREM: on the same graph the verdict is
+      DISAGREE at 9 mismatches with `?=3` on the bend side.** The op census counts an op
+      REACHED from the row's `op` column, printed even when dtype AND shape both read `?`.
+      **`flip` reproduced on purpose. `CSH-3`.**
+- [x] **PLANT AND DISARM, DISARM FIRST. Disarm = remove this unit's probes, and it must
+      move NOTHING: census run TWICE byte-equal (sha1 `bca5e35dfb5dd696`), `graphcmp.py` md5
+      `4a0d2467b7e70d701afac68091394f40` unchanged, 25 graphs / 312 rows, verdict PASS.**
+      Measured BEFORE the plant exists, so a disarm carrying a second mutation cannot hide
+      behind it. Blast radius of W1/W1s/W4 on the live corpus: **0 of 312 rows moved, 0
+      graphs lost**, diffed by whole `name=value` LINE. Ledger live: `binblob y=1`,
+      `buffer z=1`, `lin E=1`, `SHAPE_NONE_HITS 0`. **`CSH-6`, `CSH-7`.**
+- [ ] **THE PROPOSAL IS `R` FOR ops.py:444 AND THAT IS WRONG** — `R` means "the op is in
+      upstream's NO-SHAPE LIST", and ops.py:444 means "upstream ASSERTS". The correct
+      widening needs a NEW ATOM (and a `?`-vs-new-letter pair on the bend side, which the
+      port can spell because its fold refuses for the same reason). **Needs `ATOMS`/`LEDGER`
+      in `graphcmp.py` — the other unit's file. NOT APPLIED.** Also open:
+      **`fold.bend:2296-2297` should be `late()`-shaped for the void case** (upstream's first
+      line, no oracle needed — the arm's own "NOT PORTED, deliberately" note covers only the
+      non-void half), and **`in(` vs `n(` for `(String, DType)` is the `ADev` normal-form
+      question**. Left for the units that own those files.
+
+## Session 2026-10-05 — `tanh`'s blocker, characterised rather than guessed at
+
+`quick_gelu` landed in the previous commit. This round tried to fix the held `tanh` and
+found out WHERE the defect is, which is worth more than a rushed fix would have been.
+
+      ### `F32.neg` IS NOT THE PROBLEM, AND NEITHER IS `i64_of_i32`
+
+      `ew_neg` is `self * (-1)` (elementwise.py, `neg()`) and CPython's graph is
+      `CONST/0 CONST/0 MUL/2` -- a MUL, so the port's SHAPE is right. Its const is
+      `CInt{H.i64_of_i32(4294967295)}`, and `i64_of_i32(+x: U32) -> I64` is
+      `I64{match_hi(i32_is_neg(x)), x}` (helpers.bend:1647) -- it takes a **U32** and
+      sign-extends, so `4294967295` really is -1. A five-row probe of `F32.neg` over 1.0,
+      0.5, 2.0, 1.5 and `0.0-1.0` agrees with CPython bit for bit. Both of the obvious
+      suspects are innocent.
+
+      ### THE VALUE 4294967296.0 IS THE TELL
+
+      CPython's negated const is `0xBF800000` = -1.0. The port's is `0x4F800000` =
+      4294967296.0 = **2**32**. That is `1.0 * 2**32`, so the int const was promoted to
+      float as 4294967295.0 -- read UNSIGNED -- and then multiplied.
+
+      ### AND A NEW, BIGGER DIFFERENCE: THE PORT FOLDS WHERE CPYTHON KEEPS
+
+      Probing `Tensor(1.0) * <int const>` for 0, 1, 2, -1 and -2:
+
+      | fixture | port | CPython |
+      |---|---|---|
+      | `* 1` | 2 nodes | 2 nodes |
+      | `* 0`, `* 2`, `* -1`, `* -2` | **2 nodes** | **3 nodes** |
+
+      CPython KEEPS the int const as a node (`CONST/0 CONST/0 MUL/2`); the port FOLDS it
+      into the float operand and the int node disappears. Only `* 1` agrees, because 1 is
+      the one value whose folding is invisible. So the port's promotion path CONST-FOLDS
+      where CPython does not, and that folding is where -1 becomes 2**32.
+
+      **This is a bigger finding than the negation.** It is also why the defect was hard to
+      see: the node the port deletes is the node that carried the value.
+
+      ### AND A THIRD GAP IN MY OWN GATE CHANGE
+
+      `const_bits` prints a FLOAT const's bits and leaves an INT const bare. So `ew_neg`'s
+      own row -- which PASSES -- prints `CONST/0` for the -1, and a port whose const were
+      `CInt{4294967295}` read UNSIGNED would print the same row and pass. **The int const's
+      VALUE is ungated**, and the promotion is exactly where an int const stops being
+      visible. An int const's bits are its `I64`, so the same treatment applies; that is a
+      one-line widening of the rule and it is NOT done yet, deliberately, because it would
+      change every row with an int const and that needs its own review.
+
+      ### WHAT IS NOT CLAIMED
+
+      No fix is landed. The defect is located to the promotion's const-folding, the folding
+      difference is measured across five fixtures, and the honest next step is to decide
+      whether the port SHOULD fold -- CPython's `to_postorder`/simplifier may fold lazily
+      and the 3-node form may be a smaller's-unoptimised graph rather than the contract.
+      **That is a question about intent, and answering it by making the port match a 2-node
+      graph would be guessing.**
