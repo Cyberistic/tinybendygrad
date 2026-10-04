@@ -60,6 +60,17 @@ BUF = UOp(Ops.BUFFER, (C1,), ParamArg(1, dtypes.int32, size=4, name="b"), L)
 ADD = UOp(Ops.ADD, (BUF, C1))   # no axis: the 3rd positional is ARG, not axis_type
 C2 = UOp.const(8)
 
+# The SECOND arena, for the two range rows: the same BUFFER, but an ADD that CONSUMES the
+# RANGE, so the range column is non-empty. CPython's own answers, MEASURED:
+#   BUF  ranges == []   a BUFFER is not ranged by its own CONST src
+#   RANGE  ranges == {itself}
+#   RADD  ranges == {RANGE}   the range REACHES a consumer
+# So `pu_radd`'s list deliberately mixes an empty-range node with a ranged one: the column
+# has to be right for both in the same list, and a sweep that only answered nodes it
+# considered ranged would pass the empty ones.
+RBUF = UOp(Ops.BUFFER, (C1,), ParamArg(1, dtypes.int32, size=4, name="b"), L)
+RADD = UOp(Ops.ADD, (RBUF, RANGE))   # no axis: the 3rd positional is ARG
+
 
 def rows(nm, uops):
   buf = io.StringIO()
@@ -76,6 +87,8 @@ def main():
   rows("pu_const", [ADD, C1])                     # c1 IS, so its VALUE prints
   rows("pu_index", [BUF, ADD, C1])                # both srcs in, so indices print
   rows("pu_constarg", [C1, C2])                   # a PyConst last column
+  rows("pu_rrange", [RANGE])                      # a node that is its own range
+  rows("pu_radd", [RBUF, RADD, C1, RANGE])        # a range REACHES a consumer
   return 0
 
 

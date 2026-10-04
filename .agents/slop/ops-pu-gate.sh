@@ -72,10 +72,10 @@ run_lane "$GT-bn.txt" "$GT.bin"
 # that only diffs would accept a lane that lost rows to a rename, and a lost row is not a
 # smaller diff, it is a missing test.
 n=$(wc -l < "$GT-py.txt" | tr -d ' ')
-[ "$n" = 9 ] || { echo "ops-pu-gate: the oracle has $n rows, expected 9" >&2; exit 1; }
+[ "$n" = 14 ] || { echo "ops-pu-gate: the oracle has $n rows, expected 14" >&2; exit 1; }
 for f in "$GT-bd.txt" "$GT-bn.txt"; do
   m=$(wc -l < "$f" | tr -d ' ')
-  [ "$m" = 9 ] || { echo "ops-pu-gate: $f has $m rows, expected 9" >&2; exit 1; }
+  [ "$m" = 14 ] || { echo "ops-pu-gate: $f has $m rows, expected 14" >&2; exit 1; }
 done
 
 diff "$GT-py.txt" "$GT-bd.txt" || { echo "ops-pu-gate: DISAGREE (interpreted)" >&2; exit 1; }
@@ -85,10 +85,10 @@ diff "$GT-py.txt" "$GT-bn.txt" || { echo "ops-pu-gate: DISAGREE (native)" >&2; e
 # named one -- and the port printed its SECOND line of a two-node row unnamed until this
 # gate existed, so the assertion is the finding and not a formality.
 cut -d'|' -f1 "$GT-py.txt" | sort -u > "$GT-names.txt"
-for nm in pu_range pu_missing pu_const pu_index pu_constarg; do
+for nm in pu_range pu_missing pu_const pu_index pu_constarg pu_rrange pu_radd; do
   grep -q "^$nm$" "$GT-names.txt" || { echo "ops-pu-gate: $nm is MISSING" >&2; exit 1; }
 done
-[ "$(wc -l < "$GT-names.txt" | tr -d ' ')" = 5 ] || {
+[ "$(wc -l < "$GT-names.txt" | tr -d ' ')" = 7 ] || {
   echo "ops-pu-gate: a pu_ row appeared that the gate does not know about" >&2; exit 1; }
 
-echo "ops-pu-gate: 9 rows, 3 lanes byte-identical"
+echo "ops-pu-gate: 14 rows, 3 lanes byte-identical"

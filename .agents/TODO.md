@@ -9026,3 +9026,317 @@ Document: **`.agents/slop/W64.md`** (this unit is named `w64`).
   2 files / 3 functions** (`math.log`, `math.pi`, `math.sqrt`), and those rows
   describe **F32 literal constants**; `math.gcd` is already implemented. **Build F32
   arithmetic and literal constants, not a math module.**
+
+## Session 2026-10-04 (BW) — `graphcmp`: A BACKWARD GRAPH, `?=0/0`, and the corpus's FIRST FLOAT CONST
+
+**Report: `.agents/slop/backward-graph/BW-GRAPH.md`. Evidence in that dir
+(`bw-p1.py`, `bw-p2.{py,txt}`, `bw-p3.{py,txt}`, `bw-census.txt`). Coordination record:
+`.agents/slop/GRAPHCLAIM-bw.txt`. Nothing committed. No `.bend` under `tinybendygrad/`
+was touched at any point.**
+
+### [x] **ONE `bw` GRAPH IN THE DIFFER, `AGREE` AT FIELD-RECORD LEVEL, `?=0/0`**
+
+`(Tensor.empty(4,3) @ Tensor.empty(3,4)).sum().gradient(a, b)`, rooted at a `GROUP` because
+`Tensor.gradient` answers a tuple. **32 nodes per side, 192 field-records, every ledger entry
+0/0** (`RESIDUALS IN THIS RUN: none`), and the two canonical files are **BYTE-IDENTICAL**
+across two runs on each side. `--graph bw` on its own, rc=0.
+
+- [x] **`?` REACHES 0/0** — and the row is asserted, and it is a row that **DID** fire: the
+      first `g_bw` wrote the seed's PERMUTE as the identity `[0,1,2]` instead of `[1,2,0]`,
+      which COMPILED, emitted 32 rows, and had the same 11-op census — **every count in the
+      file read it as the same graph.** The `?` row caught it: `?` came out live on 17 of 32
+      nodes because the MUL then cannot broadcast.
+- [x] **OPS 34 -> 35 of 77, AND ONLY ONE OP IS NEW.** `EXPAND` was in the 43 NOT REACHED and
+      is now `2/1`. `CAST` (`8/3` graphs) and `CONST` (`36/16`) were **already** reached — the
+      brief named three and the honest count is one. Corpus: 16 -> 17 graphs, 189 -> 221
+      nodes/side, 1134 -> 1326 field-records/side. All 17 re-run; `bw` AGREE, `lin`/`loop`
+      DISAGREE **for their own documented port gaps**, read from the named field.
+- [x] **DEFECT 27, IN THE DIFFER'S OWN NORMAL FORM, ON BOTH SIDES AT ONCE.** `bw` is the
+      corpus's first float CONST, and `graphcmp-LIMITS.md` §2 had recorded that arm as
+      untested. Measured, it was wrong twice: py `repr(ConstFloat(1.0))` = `ConstFloat(1.0)`
+      (the **subclass's** repr, inside a structural field) against bend `F32.show(1.0)` = `1`
+      (seven-digit text). Fixed to **IEEE-754 BINARY32 BITS** on both sides, MEASURED equal
+      (`F32.bits(1.0)` == `struct.pack('<f',1.0)` == 1065353216), which is also the only
+      spelling that separates two NaNs — one of the two distinctions `ConstFloat` exists for.
+- [x] **THE PLANT AND A PAIRED DISARM.** `--plant dsexpand` (names the second `EXPAND` by its
+      margin's VALUE, not by index) -> DISAGREE naming **`shape`**, with `?`=0 on both sides;
+      `--plant disarm` (the same rebuild, reaching the same ucache node) -> **AGREE**, stream
+      byte-identical. Same graph, same 32 nodes, same 192 field-records. Three preconditions
+      asserted before either is reported, because `plant_srcswap`'s docstring records the
+      version that returned `pl is ast` and reported AGREE.
+- [x] **THE FIRST PLANT DIED, AND THE DEATH IS THE FINDING.** It dropped a dim instead of
+      changing one, upstream RAISED `ValueError: invalid permutation (1,2,0) of len 4` from
+      inside `cshape`, and the emitter died rather than reporting — LIMITS 13/17 at a THIRD
+      site. Hence the margin changes to a value of the same arity.
+- [x] **ALL THREE NEW `selfcheck` ROWS SHOWN FIRING** (`bw-p3.py`, monkeypatched in-process,
+      **no live `.bend` touched**): A `?=0` on `bw`; B1 py's `repr` back; B2 the two sides
+      disagreeing. B1 and B2 are different defects and the row catches both, because each side
+      is asserted against the LITERAL bits and not merely against the other side
+      (`nv_query_litter`: one mistake copied is not corroboration).
+- [x] **TWO BUGS IN MY OWN PROBE, BOTH CAUGHT BY THE EVIDENCE STANDARD, BOTH RECORDED.** (i)
+      `retitle` used ONE index as both the ROW and the FIELD subscript, so it wrote `?` into
+      an `id` field and the arm reported **OK**; caught only by reading the field back, which
+      the probe now asserts. (ii) `selfcheck` read two different accessors for the same graph,
+      so arm B1 patched one and the other never saw it. Notes **BW-4**.
+- [x] **NOT HALF-REGISTERED.** All five things landed: `GRAPHS`, the graph function, the
+      `?`-ledger rows, `graphcmp.bend`'s builder + dispatch, and the census reads it as a
+      normal 17th row (`bw 32/32 ok 10 … [same]`).
+
+### [ ] **FOR `graphcmp`'s OWNER — six pins that must move, REPORTED NOT APPLIED**
+
+`graphcmp-LIMITS.md` is another unit's live edits and `graphcmp-run.sh`/`-repro.sh` are its
+scripts, so none of these was touched. Full text in `BW-GRAPH.md` §8.
+
+- [ ] §2's float-CONST entry (says "untested"; it is measured and was wrong twice)
+- [ ] §5's `34 of 77` / `189` nodes / `1134` field-records / `16 graphs`; `EXPAND` leaves NOT
+      REACHED (42 remain, all printed by `bw-census.txt`)
+- [ ] §0/§2's "TWO GRAPHS DISAGREE" — still true, and `bw` is a third AGREE
+- [ ] `graphcmp-run.sh` `$ALL`: add `bw:AGREE` + the graph loop (a graph in `GRAPHS` that
+      `$ALL` does not enumerate is a graph no run asserts)
+- [ ] `graphcmp-repro.sh`: `graphs-agree=14` -> **15**, and "sixteen graphs" -> seventeen
+
+### [ ] **NOT CLAIMED**
+
+`bw` is 2 nodes per `EXPAND` — the weakest coverage there is, and the same denominator `END`
+and `ENDIF` have. **`?` is still live on `loop`** (the CALL dtype, `fold.bend`'s `call_dt`),
+which this unit did not close. And "the corpus now compares training graphs" would be false:
+`bw` is the gradient of ONE eager expression, and the scheduler/codegen direction is still
+forward-only.
+
+### [ ] **TWO SUBSTRATE MOVES UNDER THIS RUN, BOTH ANOTHER UNIT'S, NEITHER WORKED AROUND**
+
+`uop/render.bend` was rewritten at 16:51 (this unit took `graphcmp.py` at 16:26) and
+**`tinybendygrad/helpers.bend` was 0 BYTES twice** (17:2x and again later; `jj diff` read
+`2605 ----, 0 insertions`), which makes every `.bend` in the tree fail to resolve `H.I64`.
+Per agent-core.md the response is to say so and wait, which is what happened; the run was
+re-verified in full on the restored tree and every number in `BW-GRAPH.md` was re-measured
+after the substrate settled.
+
+---
+
+## [x] **DEAD-ARM CENSUS — the parts of the tree NO instrument can observe**  (2026-10-04)
+
+**Deliverable: `.agents/slop/DEADARM.md`, tools in `.agents/slop/deadarm/`.** Nothing committed.
+No `.bend` under `tinybendygrad/` edited; no `LAWS/**`, `PROOF*.bend`, `rebase-gate.py`,
+`cstyle-gate.py`, `graphcmp*`, `reader-guard.py`, `reader-contracts.tsv`, or another unit's
+`.agents/slop/` tree touched. Rules appended to `bend2-constraints.md` as `DEAD-1`..`DEAD-9`.
+
+The law: **a dead `try:` arm COSTS 0, so it has no output line to count and is invisible to every
+multiplicity instrument in this project. You cannot find unobservable code by counting observable
+code; you have to count ABSENCE.**
+
+- [x] **Generalised `nvdup-deadarm.py`'s textual `^\s*row(` selector into a SEMANTIC one** — `ast`
+      finds each instrument's sink functions (direct writers, plus functions mutating a global a
+      writer reads), maps each sink call to its innermost enclosing STATEMENT's line, and diffs that
+      against `sys.settrace`. **3230 instruments examined / 1721 with emitting sites / 430
+      traceable / 1129 dead emitting lines, of which 874 sit in a def the lane ENTERED.** 197
+      instruments carry at least one. Both censuses reported side by side (366 duplicate names in the
+      same lanes) because neither substitutes for the other.
+- [x] **Shown to fail, in both directions.** `deadarm.py --selftest` 5/5 (DISARM measured not typed;
+      a `try:`-arm plant 0 -> 1; a LIVE plant stays 0). `--file nvdup/nv-oracle-PREFIX.py` reads
+      **4 dead sites at :1139 :1146 :1154 :1159, rc 1** — the four `NVDUP.md` §2 records, from
+      different code, different selector, different harness.
+- [x] **The port side, which is harder and matters more.** `comp.ts:3055`'s JS name is a reversible
+      address per def, so `bend F.bend -o out.js` + `bun out.js` gives a real dynamic trace.
+      **42399 defs in the tree / 11213 inside a traced lane's closure / 692 reached by no traced
+      lane WHOSE OWN LANE BUILT** (5504 more are UNKNOWN because their own lane failed `bend -o`, and
+      are deliberately NOT counted). **731 dead-arm findings over 61 entries**, per-entry only — the
+      negative set is not in the data and inferring it is the inference this unit distrusts.
+      `bendarm.py --selftest` 6/6 with two plants, one per census, both leaving the rows
+      byte-identical.
+- [x] **`run-kernel.sh:22`'s lesson generalised.** Every artefact in `$TMPDIR`; a **shadow root with
+      the repo's SHAPE, all files symlinks**, because copying an instrument to `$TMPDIR/tmpXXXX/`
+      broke `__file__`-relative resolution and **crashed 1396 of 1714** — `kn-ops-mutate.py` went
+      `crash` -> `lane` with **21 dead sites** once the shadow landed.
+- [x] **The ranked table with "would anything notice?" as the last column**: `.agents/slop/DEADARM.md`
+      §6, T1..T12. **T1** is `cstyle.bend:49`: `def _render` does not exist (14 mentions, all in
+      comments) AND the cstyle lane emits **0** of `fold.bend`'s defs and calls `F.` zero times, so
+      **no row in that gate can observe the SHRINK-dtype gap in either direction.** **T3** is
+      `lintable/lintable-oracle.py:96`, whose dead arm is the accepting side of a semantic difference
+      the file's own row dictionary calls out.
+
+### [ ] **NOT MEASURED, and the reason**
+
+1. **1295 of 1721 instruments could not be censused** (761 `crash` — mostly missing
+   `torch`/`PIL`/`z3`/`hexdump` or an instrument wanting `argv`; 164 `hang`; 81 `harness`; 253
+   `no-lane`). `874` is a **lower** bound on the oracle side.
+2. **5504 port defs are UNKNOWN, not dead** — their own lanes failed `bend -o`. The two largest
+   groups (`schedule/multi.bend` 694, `runtime/support/am/amdev.bend` 475) are entirely in this
+   bucket. **`uop/fold.bend:2864` does not compile right now** (`a declared constructor (unknown:
+   ../helpers.I64)`) — another unit is mid-edit on `helpers.bend`. **NEXT: re-run
+   `bendarm.py --entry` on `schedule/multi.bend`, `runtime/support/am/amdev.bend`, `uop/fold.bend`
+   and `runtime/support/elf.bend` once those builds are green.** That is the single largest
+   outstanding claim in this project and it is 4 commands.
+3. **The arm column is not merged tree-wide**, on purpose: a `case` dead in one entry can be taken
+   in another, and the arms that WERE taken are not in the data.
+4. **`case 0n:` / `case _:` arms are counted as `unmeasured`, never measured** — 149 of `cstyle.bend`'s
+   231 and 15 of `op.bend`'s 59. An arm census that skips them without counting them is the
+   multiplicity census's mistake.
+
+- [x] schedule rule bodies (12 of 15 unported): EIGHT ported, FOUR walled with file:line -- `.agents/slop/SCHEDULE-BODIES.md`
+  - [ ] gate ROWS for the eight: 89 oracle rows built (`sb-oracle.py`), Bend side does not compile in main exhausted do-block
+  - [ ] delete `sc_body`/`sc_store` local copies when ops.bend regains ops.py:562/622
+  - [ ] contiguous_mops_to_view :199 is the binding wall: `src.contiguous_view()` absent from the tree
+  - [ ] replace_input_buffer :248 blocked by `UOp.param_like` TODO(p3) ops.py:1239 (recorded deferral, not a gap)
+
+### [x] **THE PORT CALLS: `runtime/autogen/libclang.bend` answers the oracle's ten rows**
+
+`python3 .agents/slop/clangshim/cl-port-gate.py --plants` -> **FAILURES: 0**, four runs,
+every one with a row census.  Report **`.agents/slop/LIBclang-live.md`**, rules
+**LC-1…LC-9** in `notes/bend2-constraints.md`.
+
+- [x] **STEP 1 — one size.** `clang_Type_getSizeOf` on `int` links, is called and
+      returns.  Port and oracle print the same four `SIZE` rows.  Its C return is
+      `long long` (one of the 16 with no bend type), so the `_run` **refuses** rather
+      than truncates: `v < 0` -> `NEGATIVE_ANSWER raw=<v>` on stderr and `CL_REFUSED`
+      `0x7FFFFFFF`.  **No binding was unproven.**
+- [x] **STEP 2 — `FIELD b`**: `offof_bits=32 offof_bytes=4 sizeOf=1 spelling=char
+      c=char`, `cdecl_off=4`, byte-equal to the oracle.  `-5` for an unknown name is a
+      ROW (`PORT offof_unknown_refused 2147483647`), not a silent number.
+- [x] **STEP 3 — `RECORD CXCursor sizeof=32` LANDED, and 32 is the REAL ABI**, not the
+      `ctypes` artefact it looks like: `_clang_getCursorSpelling` reads offset **24** of
+      its cursor argument, so `data` is `data[3]`.  A 16-byte declaration segfaults
+      inside libclang with no message, which under `bend -o` is
+      `bend: memory fault (machine stack overflow?)`.  **`opaque=_mem_` is NOT emitted
+      and cannot be** — it is `c.py`'s `Struct` byte-array member — so it is the one
+      dropped token, from the oracle's side only, and named in the gate.
+
+**THE FILE WAS RED AND IS NOT.** Five classes of defect, none visible without iterating
+`--check-only` to a fixed point because a batch parse stops at the first: `type U32` and
+`type Unit` redeclared Base's types (`duplicate declaration: U32`, already recorded at
+`agent-core.md:149`); `Ty` was the return of all **60** `ty_*` defs and declared
+nowhere; **13** ABI type names used and not enumerated (`F64`/`I64`/`U64` among them —
+the 16 that still cannot be executed); `type` and `Kind` are bend keywords used as
+parameter names.  `apply-port-lane.py` applies all of it and is idempotent
+(`--check` -> `IN SYNC`), so committed-equals-fresh survives.
+
+**ROWS ARE COUNTED ON EVERY RUN, AND THE COUNT WAS CAUGHT SHORT.** Control: the law is
+still called (green build, rc 0, stderr byte-identical) and only its `IO.print` is
+removed -> **9/10 rows, rc 1**.  A missing row does not read as a pass.
+
+**PLANTS AND THE DISARM.** `plant-long-a` (`int a;` -> `long a;`) moves **5 of 10** rows
+on both sides, the **same** 5, and the two sides still agree under the plant.  The
+**half-plant is CL-9 measured**: source text only -> the oracle prints **7 of 10** and
+exits 1, `FIELD b`/`FIELD c`/`RECORD` **vanish** rather than fail.  `disarm-comment`
+(`int a;` -> `int a; /* 8 */`) leaves the row set **byte-identical** and stderr the same
+2225 B — **nothing moved**.  `plant-div` (`bits / 8` -> `bits / 4`, 2 sites) leaves
+`offof_bits` **unmoved** and moves `offof_bytes` 4->8 and 8->16; `FIELD a` is a
+**theorem** (`0/n == 0`) and is reported as one.
+
+- [ ] **`CXType` and `CXString` have measured sizes (24, 16) and no rows.**  The comments
+      in `libclang-ffi.c` are the only evidence; a `RECORD CXType` row is one law away.
+- [ ] **40 more struct records / their fields.**  41 minus `CXCursor`.
+- [ ] **`clang_getOffsetOfBase`: a `const char *` PARAMETER.**  The `bend_cstr` cons walk
+      is still unbuilt, so every law takes a field SELECTOR or nothing.  This is the
+      last piece of the marshalling surface and it is a `.bend` problem, not a C one.
+- [ ] **311 of the 324 trampolines are still `None{}`.**  The lane replaced none of them:
+      the FFI laws are named for what they MEASURE (`Type_report`, `Field_report`) and
+      take a selector, because a `CXType` is a 24-byte by-value struct bend cannot hold
+      across two calls.  Whether the lane should REPLACE the corresponding trampolines
+      (changing 4 of the 324 signatures) or sit beside them is the coordinator's call --
+      the lane's header says the collision is why they are separate.
+
+- [x] **`backward` step 2: `tensor.bend`'s zip (`TODO(p3) tensor.py:490`).** DONE. The zip
+      and `Tensor.grad_set`'s caller are landed; `tn_bwd_row` is `SIGNATURE | writes=COUNT`
+      and both halves match CPython byte for byte. Two separating mutants measured:
+      `plant_revzip` permutes the signature and leaves the count at 3 (COUNT BLIND);
+      `plant_nowrite` drops `grad_set`'s answer and leaves the signature byte-identical
+      (SIGNATURE BLIND). Harness carries `INCONCLUSIVE (T-1)` on a substrate hash ledger
+      over five closure files and `INCONCLUSIVE (T-3)` on an unproven plant.
+      Record: `.agents/slop/BACKWARD-WALK.md`. 35 rows, 33 pre-existing byte-identical.
+      - [ ] `backward` step 3: `mixin/elementwise.bend` reachability of CAST/CONST/EXPAND
+            and one `graphcmp` graph whose py side is `compute_gradient`. NOT STARTED.
+      - [ ] REPORTED, NOT MINE: `mixin/gradient.bend:1188`'s `dw_keep_test` does not drop a
+            DETACH (walk `[DETACH, REDUCE]` vs CPython `['REDUCE']`); its DETACH term is not
+            exercised by the walk unit's own fixture.
+      - [ ] REPORTED: `tinybendygrad/tensor.bend` carried a leaked `tensor-mutate.py` M2
+            plant (`tn_shape_arg.n` -> `False{}`) for 27+ minutes with no run in flight.
+            Restored by this unit. Whoever owns `tensor-mutate.py` should make the restore
+            unconditional.
+
+## Session 2026-10-04 round 4 — the RANGE COLUMN, and a colour bug that was never a range bug
+
+- [x] **`print_uops`'s range column is gated: `ops-pu-gate` is 14 rows, 3 lanes, byte-identical.**
+      Two new rows, `pu_rrange` and `pu_radd`, over a second arena.
+
+      ### THE FOLD WAS NEVER THE PROBLEM
+
+      The range sweep already answered both rows — `F.UOp.ranges` gives a RANGE its own
+      range AND hands that range to a node that consumes it. What was broken was
+      everything the sweep's ANSWER passed through on the way to the page, which is why
+      the unit needed no fold work at all despite `Kahn.seed` being on the blocker list.
+
+      ### A REAL BUG IN `helpers.bend`, AND IT IS NOT A RANGE BUG
+
+      `esc(u)` emitted the colour code as **one character**. A colour code is 30-37 or
+      90-97 — TWO digits — so `Char.from_u32(31)` is the control character `U+001F` and
+      not the string `"31"`. MEASURED at the byte level: the port wrote
+      `033 [ 037 m 0 033 [ 0 m` where CPython writes `033 [ 3 1 m 0 033 [ 0 m`. `esc` has
+      exactly one caller (`colored`), and `colored` is what **every colour in the tree**
+      goes through — so a range's colour, a device's colour and an op's colour were all
+      writing a control character, and `print_uops` was simply the first place to print one.
+      The fix is `U32.show(u)`: the decimal was already in the tree.
+
+      And `multirange_str` padded by the RAW length where CPython pads by `ansilen`, which
+      is ANSI-aware, so a coloured range came out eight columns short. `H.ansistrip` is the
+      tree's `ansilen` — `viz/serve.bend`'s `pad_name` already used it for exactly this.
+
+      ### THE FIXTURE WAS MISSING AN EDGE, NOT A NODE — THE THIRD TIME
+
+      `pu_ar` already contained a RANGE at node 2. **Nothing consumed it**, so nothing was
+      ever asked for its range. Three fixture-shaped "walls" in a row now: the BUFFER with
+      no CONST src, the RANGE column "gap" that was the port's own mis-indexed RANGE node,
+      and this. **The pattern is the finding: a wall read off a diff is a wall against
+      whatever the diff actually compared, and three times that was my fixture.**
+
+      ### THE UNIT IS RE-APPLIABLE BY SCRIPT, because both files are contended
+
+      `.agents/slop/ops-pu-range-rows.py [--check]` re-applies all four edits and is
+      IDEMPOTENT, keying every "already applied" test on a **def name** and not on a
+      payload. It is a script rather than a patch because a concurrent agent rewrote
+      `render.bend`'s `main` and the rewrite dropped the `pu_rows` call, and a second
+      agent's churn reverted the `helpers.bend` half — a payload-comparing script inserted a
+      **second** `pu_rr` into a file that already had one, and the file stopped compiling
+      with `duplicate declaration: pu_rr`.
+
+      ### A MUTATION HARNESS KILLED MID-RUN LEAVES THE TREE DIRTY
+
+      `trap ... EXIT` covers a red lane and a compile error. It covered **none** of what
+      actually happened: the process was SIGKILLed by a server restart, so the trap never
+      fired and `render.bend` stayed mutated with P04's edit. The gate caught it — it went
+      red, which is the only reason it was noticed — but with `mktemp` the backup was
+      unrecoverable. `ops-pu-mutate.sh` now uses **fixed-name backups and refuses to start
+      if a stale one is present**, printing the restore command. It has now paid for itself
+      twice.
+
+      ### AND THE MUTATION TABLE FOUND A BUG IN ITS OWN HARNESS
+
+      `P06` came back `target-not-found`, and the cause was the signature migration: when
+      `mutate` gained a FILE parameter, the migration rewrote `mutate P0n "` — with a
+      **double** quote — and `P06` was the one entry written with single quotes. So it was
+      never migrated, every argument shifted one place left, and the harness grepped a file
+      named `P06`. A table that reports `9 of 10` and names the tenth is doing its job; the
+      bug it found was in the thing that wrote the table, not in the thing the table tests.
+
+---
+
+## M — the last 64-bit mile. `.agents/slop/W64-MILE.md`
+
+Progress: [########--] 8/10
+
+- [x] **M-1** `dtype.bend`'s six `Dt.i64_*` as PURE Bend. `IO(H.I64)` -> `H.I64`,
+      `dtype.bend` 14 red -> 8. 172 rows vs CPython, plant 7 rows all on `cmod`,
+      disarm 0 rows. Patch staged in `.agents/slop/w64mile/dtype-i64.patch`.
+- [x] **M-2** the 16 blocked libclang bindings over two `U32` halves: **15/16
+      compile, link, run, and every row equals CPython's ctypes answer**.
+      323/324 laws. The 16th is version skew, not a Bend wall.
+- [x] **M-3** what is left, with `file:line`: `i64_mul` absent, `i64_shr` absent,
+      `dtype.c`'s `#ifdef CID(...)` cannot compile, `libclang.bend` still declares
+      its own `I64`/`U64`/`F64`, and `ceildiv(x,0)` is a divergence not a pass.
+- [ ] **M-4** apply `dtype-i64.patch` to the live tree once its substrate is quiet.
+- [ ] **M-5** decide one 64-bit route: pure `H.I64` (M-1), two `U32` halves (M-2),
+      or the `I64`/`U64`/`F64` `libclang.bend` declares now. Three spellings of one
+      thing is the defect the `duplicate declaration: U32` build error records.
+- [ ] **M-6** MEASURE whether one foreign def can return a 64-bit pair as a tuple.
+      `runtime/dtype.c:210` already returns `io_tup(e, hi, lo)`; `W64.md` says it
+      cannot be done. If it can, M-2's per-binding cost halves.

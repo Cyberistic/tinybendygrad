@@ -949,7 +949,7 @@ def multirange_str.n(+sd: Nat, +n: Nat) -> Nat:
   Bool.pick(Nat, Nat.is_le(n, sd), Nat.sub(sd, n), 0n)
 
 def multirange_str.pad(+s: String, sd: U32) -> String:
-  String.concat([s, String.repeat(" ", multirange_str.n(U32.to_nat(sd), String.length(s)))])
+  String.concat([s, String.repeat(" ", multirange_str.n(U32.to_nat(sd), String.length(H.ansistrip(s))))])
 
 def range_at.of(a: O.Arg) -> O.AxisType:
   match a:
@@ -2847,6 +2847,27 @@ def pu_row.emit(line: String) -> IO(Unit): IO.print(line)
 def pu_row(+nm: String, +ar: O.Arena, +uops: List<&2, U32>) -> IO(Unit):
   pu_row.emit(pu_row.go(nm, ar, print_uops(ar, uops), ""))
 
+def pu_rr() -> O.Arena:
+  O.Arena{[
+    O.Arena.bottom(),
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
+    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}},
+    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}},
+    O.Node{O.OpsADD{}, [3, 2], O.ANone{}, O.TNone{}}], [0]}
+
+# `pu_rrange` the RANGE itself: it is its own range, so the column is the coloured index.
+#             This is the row that needs the fold to answer a RANGE.
+# `pu_radd`   an ADD over it: a range REACHES a consumer, so the column carries the same
+#             colour at a node that is not itself a RANGE. Without this row a sweep that
+#             answered only RANGE nodes would pass. Its list deliberately mixes a BUFFER
+#             and a CONST, which have NO ranges, in with the two that do -- CPython's own
+#             answers, measured: BUF has `ranges == []` even with a CONST src, RANGE is its
+#             own range, and the ADD inherits it.
+def pu_rr_rows(+ar: O.Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- pu_row("pu_rrange", ar, [2])
+    pu_row("pu_radd", ar, [3, 4, 1, 2])
+
 def pu_rows(+ar: O.Arena) -> IO(Unit):
   do IO<Unit>:
     a : Unit <- pu_row("pu_range", ar, [3])
@@ -2875,6 +2896,7 @@ def pu_rows(+ar: O.Arena) -> IO(Unit):
 def main() -> IO(Unit):
   do IO<Unit>:
     pu_rows(pu_ar())
+    pu_rr_rows(pu_rr())
     rnd_rows()
     py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
     py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())

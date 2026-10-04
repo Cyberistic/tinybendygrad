@@ -1052,7 +1052,7 @@ def color_code(ci: U32, background: Bool) -> U32:
   (U32.add(U32.add(U32.mul(Bool.to_u32(background), 10), 30), ci) : U32)
 
 def esc(u: U32) -> String:
-  String.from_list([Char.from_u32(27), Char.from_u32(91), Char.from_u32(u), Char.from_u32(109)])
+  String.concat([String.from_list([Char.from_u32(27), Char.from_u32(91)]), U32.show(u), "m"])
 
 def color_of(s: String) -> Maybe<&1, U32>:
   match s:
