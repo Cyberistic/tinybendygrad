@@ -5,7 +5,7 @@
 # TREE  git archive e17d3f7dd48cf84c7a101b3d6aee11c0284a165e tinybendygrad, also pinned: HEAD moved to a
 #   revision whose tree prints ZERO lines with this dtype.bend.
 # baseline 182 rows, shape (first='l2idt0=i64->i32' lines=184 last='')
-# 3 controls SAME | 30 mutations MOVED | 5 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 1 DID-NOT-COMPILE | 0 DEAD ANCHOR
+# 3 controls SAME | 31 mutations MOVED | 5 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 0 DID-NOT-COMPILE | 0 DEAD ANCHOR
 #
 # DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.
 #   (none: every anchor occurs exactly once)
@@ -106,7 +106,7 @@ M05 l2i_cast3.bitc: never bitcast the source to uint32
     lgysig
 
 M06 l2i_cast.got: route sel 3 to arm 0 instead of arm 3
-  SAME  0 rows   << 1 attempt(s)
+  SAME  0 rows   << cached
 
 M07 dd_bc: never fold (ADD/SUB word bitcasts)
   MOVED  15 rows
@@ -289,7 +289,7 @@ M22 unpack32: shift the masked low word instead of the bitcast
     upp
 
 M23 reindex.scaled: swap `i1*mul` to `mul*i1`
-  SAME  0 rows   << 1 attempt(s)
+  SAME  0 rows   << cached
 
 M24 l2i_cdiv: 64 iterations become 63
   MOVED  7 rows
@@ -421,8 +421,32 @@ M29 l2i.gone: print `none` instead of naming the exception
   MOVED  1 rows
     lgn
 
-M30 dd_eck: treat every node as a CONST
-  DID-NOT-COMPILE  0 rows   << SOME PROOFS FAIL | Error: | - expected : an annotated term (cannot infer)
+M30 dd_eck: a node counts as a CONST when its FIRST SRC is one
+  MOVED  24 rows
+    hi42k
+    lg1k
+    lg2k
+    lg3k
+    lg4k
+    lg5k
+    lg6k
+    lg9k
+    lgak
+    lgbk
+    lgdk
+    lgek
+    lgfk
+    lggk
+    lgmk
+    lgok
+    lgqk
+    lgrk
+    lgsk
+    lgtk
+    lgvk
+    lgwk
+    lgxk
+    upk
 
 M31 dd_join.add: join with `-` instead of `,`
   MOVED  48 rows
@@ -617,13 +641,13 @@ M32 l2i.went: never call l2i (the refusal guard always fires)
     upn
 
 M33 l2i_define.size2: stop doubling the size
-  SAME  0 rows   << 1 attempt(s)
+  SAME  0 rows   << cached
 
 M34 f2f.up.tail: always take the non-fnuz arm
-  SAME  0 rows   << 1 attempt(s)
+  SAME  0 rows   << cached
 
 M35 rne.sel: refuse every shift
-  SAME  0 rows   << 1 attempt(s)
+  SAME  0 rows   << cached
 
 M36 l2i_cdiv.uns: put the remainder back on the CDIV arm (the defect M36 found)
   MOVED  8 rows

@@ -797,3 +797,22 @@ it. **`.gitignore`'s "a broken probe in the source tree is a trap, not a fixture
 written — the repo's own "DELIBERATELY NOT IGNORED" doctrine (*a cache-shaped path is not the
 test; "a report cites it" is*) has to be applied first.** A `probe-` prefix is a shape; a citation
 is evidence.
+
+## Order-blind gates (2026-10-04)
+
+Seven tools, all in `.agents/slop/`, all rerunnable, none of which needs the live
+tree patched.
+
+| tool | what it is |
+|---|---|
+| `order-lin-probe.py` | CPython-side src-swap probe. Rebuilds `late-oracle.py`'s `lin_fixture` with one src list permuted and prints the SAME 128 rows, so a diff measures the swap and not a second transcription. `--swap=add\|add2\|end\|range\|sink0\|sinkend\|sinkrev`, driven by `ORDER_LIN_SWAP=`. |
+| `order-lin-sweep.sh` | the sweep. Asserts the probe's unswapped rows equal the committed `late-oracle.txt` FIRST (a probe that does not reproduce is a failure, not a run), then prints which rows moved per swap. Established that CPython moves 2/0/20/6/9/3/10 rows where the port moved 0. |
+| `order-lin-cand.py` | scores CANDIDATE rows by how many swaps they can see, so the fix is chosen on measured movement. `DEGK` (out_degree key order) sees 4 of 7; `EDG` (the edge list) sees 7 of 7. **This is how `lin_edg` was chosen instead of argued for.** |
+| `order-late-move.py` | THE PROOF. Nine mutations over `codegen/late/linearizer.bend` (seven src-swaps + two controls) and two over `regalloc.bend`. Imports `commute-detect.Frozen` rather than copying it, because a `$TMPDIR` scratch file cannot resolve `import ./../../uop/ops.bend`. Pre-flight prints rows from the frozen copy before any mutation; end-of-run prints `SUBSTRATE STABLE` or `SUBSTRATE MOVED`. |
+| `order-late-gate.sh` | `late-gate.sh` with a substrate stamp on BOTH ends over eight `.bend` files, retrying through the ~1-in-20 stack overflow and through a concurrent agent. Prints `SUBSTRATE MOVED -- THESE NUMBERS ARE ABOUT A TREE THAT NO LONGER EXISTS`. **Fired once here and forced a re-run**, so it earns its 20 lines. |
+| `order-gate-probe.py` | D5. Reads the six `pm_move_gates_from_index` pattern OBJECTS and renders a structural fingerprint (`UPat.src` is a tuple OF GROUPS, a group is a tuple of UPats or a bare name string, `None` is `allow_any_len`). Answers: root op 3 of 6 distinct, depth-4 shape **6 of 6 distinct**. |
+| `order-verdicts.py` | the two verdicts. (1) resolves every `ops_bend` sibling-blind family's oracle VALUE ARGUMENT and classifies it CALL vs LITERAL, following one assignment including tuple unpacking and `for` targets: **98 of 98 CALL-derived, so INHERENT**. (2) the hand-typed-row sample: per-oracle counts and a `BELIEF?`/`CONTRAST` split, **224 not 290**, with the 66-row gap attributed to f-string row NAMES being invisible to `unobservable-census.hand_typed`. |
+
+`order-lin-cand.py` is the one to copy first for any future "which row could see
+this" question: it turns an argument about what a row *should* detect into a
+table of what it *does*.

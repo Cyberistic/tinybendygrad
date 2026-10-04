@@ -83,8 +83,41 @@ WORD = {dt: UOp.variable("w", 0, 0, dt) for dt in F2F_DT.values()}
 WPOOL = {dt: tuple(UOp.variable(f"{dt.name}{i}", 0, 0, dt) for i in range(5))
          for dt in (dtypes.i32, dtypes.u32, dtypes.bool, dtypes.f32)}
 
-op = Ops[sys.argv[1] if len(sys.argv) > 1 else "CDIV"]
-dt = {"uint": dtypes.uint, "int": dtypes.int}[sys.argv[2] if len(sys.argv) > 2 else "uint"]
+op = Ops[sys.argv[1]] if len(sys.argv) > 1 and sys.argv[1] in Ops.__members__ else Ops.CDIV
+dt = {"uint": dtypes.uint, "int": dtypes.int}.get(
+    sys.argv[2] if len(sys.argv) > 2 else "", dtypes.uint)
+
+# dd-oracle.py's `main()` PREAMBLE, and it is NOT cosmetic. `main()` prints
+# `u32n=len(L2I()) + ... + len(IDX()) + len(defines())`, and BOTH `IDX()` and
+# `defines()` MINT UOPS when called -- `IDX()` interns `UOp.const(0, u32)` and
+# `UOp.const(1, u32)` -- so the first `l2i` fixture starts with those already in
+# `UOpMetaClass.ucache`. dd-oracle.py's own header says so: "Measured: this file's own
+# `u32n` row calls `IDX()`, which interns `C(0)`/`C(1)` at u32 before the first `l2i`
+# fixture runs." Without this call a `<nm>n=` measured here is a window over a DIFFERENT
+# arena, and `lg1n` reads 11 where the gate reads 10.
+def _preamble():
+    """dd-oracle.py's `main()` PREAMBLE, and it is NOT cosmetic.
+
+    `main()` prints `u32n=len(L2I()) + ... + len(IDX()) + len(defines())`, and BOTH
+    `IDX()` and `defines()` MINT UOPS when called -- `IDX()` interns
+    `UOp.const(0, u32)` and `UOp.const(1, u32)` and a `t` PARAM -- so the first `l2i`
+    fixture starts with those already in `UOpMetaClass.ucache`. dd-oracle.py's own header
+    says so: "Measured: this file's own `u32n` row calls `IDX()`, which interns
+    `C(0)`/`C(1)` at u32 before the first `l2i` fixture runs." Without this call a
+    `<nm>n=` measured here is a window over a DIFFERENT arena, and `lg1n` reads 11 where
+    the gate reads 10. MEASURED both ways on this script.
+    """
+    base = UOp.variable("t", 0, 0, dtypes.u32)
+    zero, one = UOp.const(0, dtypes.u32), UOp.const(1, dtypes.u32)
+    for _ in range(6):
+        UOp(Ops.INDEX, src=(base, zero, one))
+    from tinygrad.uop.ops import ParamArg, AddrSpace
+    for _nm, _dt in (("v", dtypes.long), ("g", dtypes.long), ("h", dtypes.ulong),
+                     ("i", dtypes.long), ("j", dtypes.f32)):
+        UOp(Ops.PARAM, arg=ParamArg(0, _dt, name=_nm, addrspace=AddrSpace.GLOBAL))
+
+
+_preamble()
 
 # THE WHOLE L2I TABLE IN ORDER, not one row: the rows share one interning session and
 # `UOp.const(i, dtypes.uint)` is interned by the first row that needs it, so running
@@ -127,8 +160,16 @@ for nm, o, d, xd, n in TABLE:
         continue
     if want is None or nm == want:
         w = len(ORDER) - b
-        print(f"# {nm} from={b} to={len(ORDER)} n={w}")
+        print(f"# {nm} from={b} to={len(ORDER)} n={w} kept={sum(1 for u in ORDER[b:] if id(u) not in PROMO)}")
         for i in range(w):
             u = ORDER[b + i]
-            print(f"{b + i}={u.op.name}/{len(u.src)}\t{lab(u)}\t<- " +
+            # `*` MARKS A `PROMO` NODE -- the CASTs `mixin/elementwise.py` inserts and the
+            # port cannot build, which `kept()` drops from `<nm>n=` AND which `cone()`'s
+            # `uncast` steps over. Without the mark a reader diffs 15 CPython slots
+            # against 11 port slots and calls 4 of them missing; they are excluded on
+            # purpose and the exclusion is decision 1 of dd-oracle.py.
+            mark = "*" if id(u) in PROMO else " "
+            print(f"{b + i}={u.op.name}/{len(u.src)}{mark}\t{lab(u)}\t<- " +
                   ",".join(f"{s.op.name}:{lab(s)}" for s in u.src))
+# A SECOND COUNT, so `lg1n` can be reconciled without trusting my own transcription of
+# `kept`. It prints the window size AND `len(kept(ORDER[b:]))` for the row named.

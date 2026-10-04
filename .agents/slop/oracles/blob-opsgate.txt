@@ -1,5 +1,5 @@
-bend 2.0.35 is available: run bend update
 ALL PROOFS CHECK
+bend 2.0.35 is available: run bend update
 bend 2.0.35 is available: run bend update
 bend 2.0.35 is available: run bend update
 0a1,5

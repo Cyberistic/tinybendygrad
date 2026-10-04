@@ -4620,6 +4620,24 @@ BROKEN list published, reconciliation control added. **No `.bend` edited. Nothin
   construction, so a BROKEN naming it came from a DIFFERENT wiring` — **that line is the control
   that would have caught this.** Both tools' own functions are called; there is still one
   `rows()`. Also new: `gate-roster-arith.py` (roster arithmetic, no lanes).
+- **THE WHOLE-TREE SWEEP WAS THEN RUN TO COMPLETION (03:36 → 04:2x, `--json`, rc=1) AND IT
+  SAYS `device.bend` = `AGREE-UNRECORDED`, 23 shared / 0 disagree, all four lanes rc=0.** Same
+  tree, same gate, same pinned interpreter. **The selftest's number is the right one; the quoted
+  `device.bend` BROKEN does not reproduce.** Sweep tally:
+  `NOT-STARTED=12 BROKEN=8 UNCHANGED=16 RE-PORTED=7 AGREE-UNRECORDED=7`.
+- **BUT 6 OF THOSE 8 BROKENs WERE ONE EDIT.** `uop/ops.bend` changed `ABlob{n: U32}` →
+  `ABlob{bs: List<&2,U32>}` at **04:18, mid-sweep**; `codegen/simplify`, `schedule/rangeify`,
+  `uop/fold`, `uop/spec`, `codegen/gpudims` and (one import hop out) `engine/jit` all failed with
+  the **identical** `expected U32 / observed List<&2,U32>` at `binary_n.of`. **All six now print
+  `ALL PROOFS CHECK`.** A reader given the bare list sees six port defects and fixes none, because
+  the defect is in none of them. Real remaining BROKENs: `codegen/decomp/dtype.bend` (row `c7`,
+  a **declared refusal**) and top-level `dtype.bend` (declared dead lane, **two** guards fire).
+  New `.agents/slop/dev-tally-classify.py` sorts a `--json` sweep by CAUSE, runs **no lanes**, and
+  prints each entry's mtime so `EDITED DURING THE SWEEP` is visible.
+- **RULE: A BROKEN LIST IS NOT A LIST OF DEFECTS.** Two ports with the same error are one defect;
+  classify by the error's `Context:`/`Location:`, never by the port list. **And a sweep is only a
+  measurement if the tree held still** — bracket it with an mtime manifest and re-run any port
+  whose file moved.
 
 ## [DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)
 
@@ -4769,6 +4787,149 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
       the **10360** order-weak rows in `dtype`/`tc_ptx`/`ops_dsp`; and
       commutative fixtures for the 5 gated ports that have none, `linearizer`
       first (its 0.0% is the strongest signal in this census).
+      -> **ANSWERED for `ops_bend`, see the next section.** The other two stand.
+
+---
+
+## Session 2026-10-04 — ORDER-BLIND GATES, the close-out of the census
+
+Report: this section. Tools: `order-lin-probe.py`, `order-lin-sweep.sh`,
+`order-lin-cand.py`, `order-late-move.py`, `order-late-gate.sh`,
+`order-gate-probe.py`, `order-verdicts.py`. **Ports edited: `codegen/late/linearizer.bend`,
+`runtime/support/c.bend`. Oracles edited: `late-oracle.py`, `c-oracle.py`, `c-mutate.py`.
+`runtime/ops_bend.bend` READ ONLY. Nothing committed.**
+
+- [x] **D11 — THE CENSUS'S DIAGNOSIS WAS WRONG AND THE 0.0% HAD A DIFFERENT CAUSE.**
+      The census asked whether `codegen/late/linearizer`'s fixtures contain a
+      commutative node. **They do** — `ADD(PARAM, CONST/CAST)`, distinguishable
+      children — so that hypothesis is false. Measured over seven src-swaps of
+      the CPython fixture (`order-lin-sweep.sh`): CPython's answer moves in
+      **2, 0, 20, 6, 9, 3, 10** rows. So the information EXISTS and the PORT is
+      blind, which is a different defect with the same symptom.
+      **CAUSE: `lt_lst()`/`lt_vm_lst()` are LITERALS.** Every `lin_*` row reads the
+      arena for a node's OP and ARG only; `lt_deg` walks `src_without_body` but
+      `out_degree` is a COUNT. A mutation aimed at the graph cannot move a row that
+      reads the table. **THE FIX — `lin_edg` / `linc_edg`, two rows, the arena's
+      EDGE LIST in the declared toposort's own POSITIONS.** The alphabet must be a
+      POSITION, not an arena index: CPython's `UOp.const(1, i32)` is ONE node and
+      `ops.bend`'s is TWO, so the index alphabets differ by construction.
+      **PROOF THEY MOVE (`order-late-move.py`, frozen md5-asserted copy, substrate
+      stable):** `lin_edg` moves on **9 of 9** mutations — all seven src-swaps plus
+      two controls — where **0 of 7** moved anything before. `linc_edg` moves on 2
+      (the ADD swap in the CALL graph, and the `lt_pos` control). The `lt_pos`
+      control moves **exactly** the two EDG rows and nothing else. The toposort
+      rotation control moves 20 rows including `lin_edg`, which is the binding
+      between the literal and the arena. `lin_edg`'s `blind_swaps` is **1**, the
+      lowest in the file; `lin_vm`'s is 137.
+      Gate: `codegen/late/{linearizer,regalloc,gater}.bend` **128 -> 130 rows**,
+      `MATCHES the CPython oracle`, `late-oracle.txt` re-derived by CALLING
+      CPython (never typed). **NOTE FOR THE COORDINATOR: `.agents/slop/late-pre-split.bend`
+      is the pre-split 128-row invariant and adding two rows breaks it.**
+      `late-gate.sh --base` will now report 2 added rows and nothing else.
+
+- [x] **D2 — `sname_ctor_idx_given`, HAND-TYPED, WAS WORSE THAN A BAD FIXTURE.**
+      `__set_name__` (c.py:64) does `self.idx = len(owner._real_fields_) - 1`, so on
+      a real class body **the constructor-given `idx` no longer exists** — the row's
+      subject had been deleted by the machinery under test. Fixed on both lanes by
+      reading a `Field` **nobody named**, with the second value **GIVEN** (`idx=5`)
+      so the row is `0,5` and not `0,0` again. Oracle value re-derived from CPython
+      via `c-gate.sh --refresh`. **PROOF IT MOVES (`c-mutate.py` M25/M26, added):**
+      `Field.of` dropping `idx` -> `0,0`, and `Field.of` pinning `idx` to 1 ->
+      `1,1`; **each moves exactly one row and nothing else.** `runtime/support/c`
+      ORDER-DEAD **5 -> 4**.
+
+- [x] **D4 — CLOSED BY SIBLING, WITH THE SIBLING NAMED AND MEASURED.**
+      `ra0_uops`/`ra1_uops` are blind to a permutation of the allocator's
+      instruction stream (blind=46 each). `ra0_lr`, `ra0_a<i>`, `ra0_before`,
+      `ra0_spills` and `rw_none` print INDEXES into that stream, and permuting it
+      moves **27** of them (`order-late-move.py` D4). **Their being byte-identical
+      to each other is CORRECT**: ra0 and ra1 are the same fixture under two
+      `is_two_address` settings, so a row that could tell them apart would assert
+      something false — `ra0_a7` vs `ra1_a7` is the pair that carries the
+      difference, which the oracle's own docstring says at `late-oracle.py:224`.
+      D4b also shows `ra<u>_uops` IS a fixture-identity row: it does move when the
+      op MULTISET changes.
+
+- [x] **D5 — `gt_ops0..5` IS A DECLARED WALL, AND THE CENSUS'S PRESCRIPTION WOULD
+      HAVE ENCODED A LIE.** Measured (`order-gate-probe.py`, off the pattern
+      OBJECTS): the six root op sets are LOAD STORE LOAD STORE WHERE WHERE, so the
+      three pairs the census flagged tie — **the blindness is real**. But the six
+      patterns ARE distinguishable: a structural fingerprint gives **6 of 6
+      distinct** values, because `gt_ops` prints only the ROOT and the pairs differ
+      below it (`{INDEX}` vs `{INDEX,SHRINK}`; and WHERE's load in slot 1 vs slot 2,
+      with `~UPat.gate` expanding to a `CMPNE`/`CONST` subtree). **So this is not
+      `gcd(10000,256)`-style unobservable — a fixture COULD separate them.**
+      **AND IT CANNOT BE WRITTEN AGAINST THIS PORT:** the discriminator is `UPat`'s
+      nested structure, `gater.bend` models op sets only (its own header, ~POSITION
+      18-25, says so), and **`uop/upat.bend` has ZERO `UPat.` builder defs** — `.index()`,
+      `.load()`, `.store()`, `.where()`, `.or_casted()`, `.named()` and `~UPat` are
+      not ported at all. **AND THE CENSUS'S FIX IS WRONG:** "give `gt_ops4` and
+      `gt_ops5` different content" would mean writing different root ops, and CPython
+      says both are `Ops.WHERE` — that is encoding a lie. Its alternative (fold to
+      one `gt_ops_tail=WHERE,WHERE` row) is sound but adds a row that still cannot
+      see the swap, and the risk it names is a HARNESS risk, not a gate risk.
+      **NO ROW ADDED. Verdict: inherent to the ported half; the fix is porting
+      `UPat`'s builders, and that is a different unit.**
+
+- [x] **D9 + THE OTHER `runtime/support/c` ORDER-DEAD ROWS — ALL FOUR CLOSED BY A
+      NAMED SIBLING, none needed a fixture.** `field_sizes=4,4,4` ->
+      `field_offsets=0,4,2` (three DISTINCT and deliberately non-monotonic).
+      `sname_entry_width=3,3` -> `sname_real_fields=a,b`.
+      `sname_bf_entry_width=5,5` -> **`bf_read_abcd=a=11,b=3290,x=305419896`**,
+      NOT the `sname_real_fields` the census named (that is `Body`'s fields, not
+      `BodyBF`'s; it happens to be order-exact too, which is why the wrong answer
+      went unnoticed).
+      `record_size_fields=8,8,_mem_,8` (D9) -> `ics_sizes=0,8`, which the oracle's
+      own comment says "disagree[s] on the first element ON PURPOSE"; the three 8s
+      are equal **by CPython's own construction** (`R8` has one field, `_mem_` =
+      `c_byte*8`, `SIZE=8`), so their transposition is a theorem for this fixture.
+      `init_zip_bound=3,3` -> two facts that coincide (`len == min(len,4) == 3`), a
+      total not an order claim.
+
+- [x] **`runtime/ops_bend`'s 98 SIBLING-BLIND TRANSPOSITIONS: INHERENT, PROVEN.**
+      `order-verdicts.py` resolves each tied family's oracle value ARGUMENT and
+      classifies it. **98 of 98 are CALL-derived**: `b - a` and `a` from
+      `d.pci_dev.mem.sizes[-1]` after `q.write(...)` executed; `e` from
+      `B.BNXT_BACKING_STORE`; `math.ceil(n*size/0x1000)*0x1000`;
+      `" ".join(... for x in insts)`. The equal values come out of
+      `alloc_queue` / `BNXTQueue.write` / `build_pbl` **executing**, so a
+      transposition of two of them is not a behaviour change. **The census's
+      "highest-value REQUEST in the census" is closed, with the opposite answer to
+      the one it expected.**
+
+- [x] **THE 290 HAND-TYPED ROWS, SAMPLED. `--handtyped` FINDS 224, NOT 290.**
+      The 66 are not reproducible by me: `hand_typed` only matches a LITERAL row
+      name, so a row emitted with an f-string NAME is invisible to it. **Both
+      numbers are reported; neither is a coverage claim.** Per oracle:
+      `nv-oracle.py` 65, `bnxt_oracle.py` 34, `amd_oracle.py` 26, `ext_oracle.py`
+      20, `memory_oracle.py` 15, `objc_oracle.py` 14, `amdev_oracle.py` 13,
+      `cs_oracle.py` 12, `dsl_oracle.py` 10, `nv_nvdev_oracle.py` 4,
+      `c-oracle.py` 3 (**2 since D2 landed**), `elf_oracle.py` 3,
+      `indexing-oracle.py` 2, plus 1 each in `qcom-oracle.py`,
+      `wip/cstyle_oracle.py`, `device-oracle-MUTANT.py`.
+      **THE CLASSIFICATION IS A HEURISTIC AND IS LABELLED AS ONE**: **192 of 224**
+      could not be told from a name to be a deliberate CONTRAST arm, so they need
+      a READ before they can be ranked. **Estimate: ~16 h to classify 192, up to
+      ~64 h to convert all of them.** A converted row is one oracle line PLUS,
+      where the value stops being expressible, a fixture change in the `.bend` — so
+      the unit is "read then decide", not "replace a literal". **NOT converted
+      today, and not recommended in bulk:** `nv-oracle.py` is 65 rows and is the
+      oracle whose `nv_query_litter` was wrong in the PORT *and* the ORACLE, where
+      the differ reported 0 disagreements over one mistake made twice.
+
+- [x] **RULES G-L APPENDED to `.agents/slop/notes/bend2-constraints.md`** at the
+      END, citing POSITIONS 17913+ and continuing from letter `F`. The transferable
+      one is **RULE L**: three agents on one tree took `late-gate.sh` through
+      **130 rows -> 0 rows -> 130 rows** with no edit of mine, and `md5 -q` on
+      macOS silently printed nothing for a whole run, so a gate other agents can
+      move needs the hash on BOTH ends.
+
+- [ ] **STILL OPEN.** The **10360** order-weak rows in `codegen/decomp/dtype`,
+      `renderer/tc_ptx` and `runtime/ops_dsp` — not classified, and each needs its
+      own mutation rather than a bulk argument. The **5 gated ports with no
+      commutative fixture** other than `linearizer`, which now has one. Porting
+      `UPat`'s builders to `uop/upat.bend` if D5 is ever to be closed properly.
+      The **192** `BELIEF?` hand-typed rows.
 
 ---
 

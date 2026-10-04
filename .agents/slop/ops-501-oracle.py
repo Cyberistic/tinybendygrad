@@ -169,6 +169,70 @@ row("s5_sharding_none", " ".join(f"{a}:{nm(r)}" for a, r in r1.sharding))
 # `UOp.range` instead of the def.
 row("s5_sint_const", nm(UOp.const(4, dtypes.weakint)))
 
+# ---------------------------------------------------------------------------
+# THE MOVERS, ROUND TWO -- ops.py:761 `copy_to_device`, :844 `getaddr`, :849
+# `device_range_src`. Every value below is printed by CALLING CPython; the only
+# things written by hand are the FIXTURE list and the row names, and the fixture
+# names are the ones `ops.bend`'s `s5.ga.arena` uses at the same positions.
+# ---------------------------------------------------------------------------
+
+# `H.i64_text` is `f"{hi}:{lo}"` and it is how the port prints a RANGE's END,
+# because the port's RANGE `end` is `sint_to_uop(len(device))` -- a CONST whose
+# value IS the count. Printing `Ops.name` alone would read `Ops.RANGE` for one tag
+# and for two, so `len(device)` would be ungated.
+def i64_text(v: int) -> str:
+  return f"{(v >> 32) & 0xFFFFFFFF}:{v & 0xFFFFFFFF}"
+
+
+# `-` for the empty list is `s5.dr`'s `Nil{}` arm. It is a character and not `""`
+# so the row is visible in a diff: an empty right-hand side is a row a byte diff
+# cannot see move.
+def devrange(dev) -> str:
+  rs = UOp.device_range_src(dev)
+  if not rs:
+    return "-"
+  return " ".join(f"{nm(r)}:{i64_text(int(r.src[0].arg))}" for r in rs)
+
+
+row("s5_devrange_single", devrange("PYTHON"))
+row("s5_devrange_one", devrange(("PYTHON",)))
+row("s5_devrange_two", devrange(("PYTHON", "PYTHON")))
+row("s5_copy_single", sig(b.copy_to_device("PYTHON")))
+row("s5_copy_multi", sig(b.copy_to_device(("PYTHON", "PYTHON"))))
+# The `arg` is the MSELECT's shard index, and `assert arg is None or isinstance
+# (self.device, tuple)` is why the subject here is `multi` and not `b`. The two
+# `raise`s `copy_to_device` also has -- `is_disk_device` and the weak-dtype test --
+# are NOT PORTED (they need `fold.device` and the dtype fold) and no row pretends
+# otherwise: what is gated here is the node.
+row("s5_copy_sel", sig(multi.copy_to_device(("PYTHON", "PYTHON"), 1)))
+
+# THE `getaddr` FIXTURES: one per op in the nine-op set, then four that are not --
+# a leaf, a movement op, the AFTER that `without_after` strips, and an ALU op.
+# `src=(b,)` throughout because the port's fixtures are `src=[1]` and the row
+# prints the ANSWER's src sequence. The answer is either the fixture itself or
+# `GETADDR[fixture]`, so the only fixtures whose OWN srcs reach the row are the
+# CONST (none), the RESHAPE (`(b, shape)`) and the ADD (`(b, b)`) -- and those
+# three match the port's literal. Everything else is never descended into.
+# `device="PYTHON"` is passed so every fixture takes the same path: the default
+# reads `self.device`, and `MSELECT` asserts it is a tuple.
+GA = (
+  ('buffer', b),
+  ('alloc', al),
+  ('param', p),
+  ('shrink', UOp(Ops.SHRINK, src=(b, c, c), arg=((0, 9), (0, 9)))),
+  ('bitcast', bc),
+  ('binary', UOp(Ops.BINARY, src=(b, c), arg=Ops.ADD)),
+  ('mstack', UOp(Ops.MSTACK, src=(b, b))),
+  ('mselect', UOp(Ops.MSELECT, src=(multi,), arg=0)),
+  ('linear', lin),
+  ('const', c),
+  ('reshape', r1),
+  ('after', af),
+  ('add', UOp(Ops.ADD, src=(b, b))),
+)
+for k, u in GA:
+  row(f"s5_ga_{k}", sig(u.getaddr("PYTHON")))
+
 # `gate_kernel_sink` is one row per ARM: the two negative tests and the default.
 # A port that collapsed the negatives would answer 1 on one of the first two and
 # the third row would not see it.

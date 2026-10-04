@@ -1058,6 +1058,13 @@ def main():
         print(f"               rows {k}={n}")
       for m in v.get("moved", [])[:8]:
         print(f"               MOVED {m[1]}: {m[2]!r} -> {m[3]!r}")
+      # THE ROWS THAT DISAGREE, NAMED. This line is why the planted-disagreement control can be
+      # run by reading this tool's own stdout: `--json` carries the same field, but a BROKEN that
+      # prints a COUNT and not the rows sends the reader to a diff to find out which of 2 -- or
+      # which of 444 -- is the one that moved, and "2 row(s) disagree" is a number this project
+      # has learned to distrust precisely because it can be produced by comparing nothing.
+      for lane, other, k in v.get("disagreements", [])[:8]:
+        print(f"               DISAGREE {k!r}: `{lane}` vs `{other}`")
       if "hunks_examined" in v:
         print(f"               hunks_examined: {v['hunks_status']}")
         if v.get("hunks_note"):

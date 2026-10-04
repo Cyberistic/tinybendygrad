@@ -18014,3 +18014,69 @@ from "my change is fine".
 > fired once here and forced a re-run. A blank hash is worse than none: `md5 -q`
 > on macOS takes ONE file, so `$SUB` unquoted printed `No such file or directory`
 > and `SUBSTRATE BEFORE` was empty for a whole run. Use `for f in ${=SUB}`.
+
+---
+
+## APPENDED 2026-10-04 ~04:40 — THE WHOLE-TREE SWEEP, RUN TO COMPLETION, AND WHAT IT FOUND
+
+Continues from the section immediately above. New evidence, and it CHANGES the honest BROKEN
+list that section published, so read this one for the list.
+
+**A COMPLETED SWEEP, `.agents/slop/rebase-gate.py --json`, 03:36 → 04:2x, rc=1:**
+
+```
+NOT-STARTED=12  BROKEN=8  UNCHANGED=16  RE-PORTED=7  AGREE-UNRECORDED=7
+```
+
+**`device.bend` IN IT — the answer to the question this whole note was opened for:**
+
+```
+AGREE-UNRECORDED
+  compared clean and UNRECORDED: [('cpython:device-oracle','interpreted',23),
+  ('cpython:device-oracle','native',23), ('interpreted','native',110)] lane pair(s)
+  shared row names and every shared row agreed, but no baseline exists for this port
+  rows: {'interpreted': 110, 'native': 110, 'cpython:device-oracle': 23}
+  lanes: {'check': 0, 'interpreted': 0, 'native': 0, 'cpython:device-oracle': 0}
+```
+
+**So the SELFTEST'S NUMBER IS THE RIGHT ONE, and the sweep's `device.bend` BROKEN is not
+reproducible on this tree.** Same tree, same pinned interpreter (`.venv/bin/python` 3.12.10),
+same gate, minutes apart from the quoted tally. Total device.bend measurements this session:
+**21 reps of `gate_port` + 60 interpreted + 40 native + 12 under 4-way concurrency, all clean,
+at load 12–107.**
+
+### THE HONEST BROKEN LIST, FROM THE COMPLETED SWEEP: 8 ENTRIES, **TWO** CAUSES
+
+`.agents/slop/dev-tally-classify.py` sorts the JSON by CAUSE. It runs no lanes — it reads a
+measurement that already exists, which matters on a machine where load is a confounder.
+
+| # | port | guard | the real cause |
+|---|---|---|---|
+| 1–5 | `codegen/simplify`, `schedule/rangeify`, `uop/fold`, `uop/spec`, `codegen/gpudims` | GUARD 3 | **ONE shared-import break.** All five print the IDENTICAL error — `expected : U32 / observed : List<&2, U32>`, `Location: binary_n.of`, `1028> case O.ABlob{n}: n` — because `uop/ops.bend` changed `ABlob{n: U32}` → `ABlob{bs: List<&2, U32>}` at **04:18, mid-sweep** |
+| 6 | `engine/jit.bend` | GUARD 3 | **the same break, one import hop further out.** Its own error was truncated to the `Program{...}` tail with no `Context:` block, so a text-only classifier files it as port-local. It is not: `--check-only` now says `ALL PROOFS CHECK` and it prints **137 rows** |
+| 7 | `codegen/decomp/dtype.bend` | GUARD 4 | **the only real disagreement: row `c7`, both lanes.** `dtype-oracle.py`'s own header calls `c7` a *DECLARED refusal* (`refused:unported` vs CPython `F(2139095040)`) |
+| 8 | `dtype.bend` (top level) | GUARD 3 then 2 | **declared dead lane, and TWO guards fire.** 14 unfilled laws + no main, and `dtype_tables.py` emits TSV so `rows()` finds no `=` |
+
+**RE-VERIFIED AFTER THE EDIT LANDED: all six of 1–6 print `ALL PROOFS CHECK` on the current
+tree.** Six of eight red entries were one edit to one file. **A reader given the bare list sees
+six port defects and fixes none of them, because the defect is in none of them.**
+
+### RULE 4 (the general one, and the most expensive thing found today)
+
+**A BROKEN LIST IS NOT A LIST OF DEFECTS, AND THE ERROR TEXT IS WHAT SEPARATES THEM.** Two
+ports with the same error are one defect; two ports with different errors are two. Classify by
+the error's `Context:`/`Location:` block, never by the port list — and `tree-verdict.py`'s header
+already says a hardcoded filename list goes stale the first time a unit's scope moves.
+
+**Corollary, and it is the load-bearing one: a sweep is only a measurement if the tree held
+still.** `uop/ops.bend` moved at 04:18 while the sweep ran 03:36–04:2x, and the tally therefore
+mixes two states of the repo into one row of numbers. **Bracket every sweep with an mtime
+manifest and re-run any port whose file moved.** `.agents/slop/dev-tally-classify.py` prints the
+mtime beside every entry for exactly this; three of eight entries here were flagged
+`EDITED DURING THE SWEEP` and the other three of the six were only catchable by re-running.
+
+### THE `--json` VERDICT CARRIES WHAT A TALLY THROWS AWAY
+
+`{"oracle_py", "tinygrad", "python", "tally", "verdicts"}` — every BROKEN above was classified
+from that document with **no lane re-run at all**. The non-`--json` path prints the same
+information and a reader has to reconstruct it by hand. **Always sweep with `--json`.**

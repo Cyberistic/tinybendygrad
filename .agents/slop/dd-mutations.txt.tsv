@@ -30,7 +30,7 @@ M26	MOVED	29	hi42k,hi42sig,lg1k,lg1sig,lg2sig,lg5k,lg5sig,lg6sig,lg9k,lg9sig,lga
 M27	MOVED	8	lgqk,lgqsig,lgrk,lgrsig,lgsk,lgssig,lgtk,lgtsig
 M28	MOVED	36	lg1sig,lg2k,lg2sig,lg3k,lg3sig,lg4k,lg4sig,lg5k,lg5sig,lg6k,lg6sig,lg8sig,lg9k,lg9sig,lgasig,lgbk,lgbsig,lgcsig,lgdsig,lgesig,lgisig,lgjsig,lgksig,lglsig,lgmsig,lgok,lgosig,lgqsig,lgrsig,lgssig,lgtsig,lgvsig,lgxk,lgxsig,upk,upsig
 M29	MOVED	1	lgn
-M30	DID-NOT-COMPILE	0	
+M30	MOVED	24	hi42k,lg1k,lg2k,lg3k,lg4k,lg5k,lg6k,lg9k,lgak,lgbk,lgdk,lgek,lgfk,lggk,lgmk,lgok,lgqk,lgrk,lgsk,lgtk,lgvk,lgwk,lgxk,upk
 M31	MOVED	48	hi42k,hi42sig,lg1k,lg1sig,lg2k,lg2sig,lg3sig,lg4sig,lg5k,lg5sig,lg6k,lg6sig,lg7sig,lg8sig,lg9k,lg9sig,lgak,lgasig,lgbk,lgbsig,lgcsig,lgdsig,lgek,lgesig,lgfsig,lggsig,lghsig,lgisig,lgjsig,lgksig,lglsig,lgmsig,lgosig,lgqk,lgqsig,lgrk,lgrsig,lgsk,lgssig,lgtk,lgtsig,lgvsig,lgwsig,lgxk,lgxsig,lgysig,upk,upsig
 M32	MOVED	138	hi42n,lg1,lg1k,lg1n,lg1p,lg1sig,lg2,lg2k,lg2n,lg2p,lg2sig,lg3,lg3k,lg3n,lg3p,lg3sig,lg4,lg4k,lg4n,lg4p,lg4sig,lg5,lg5k,lg5n,lg5p,lg5sig,lg6,lg6k,lg6n,lg6p,lg6sig,lg7,lg7k,lg7sig,lg8,lg8k,lg8n,lg8p,lg8sig,lg9,lg9k,lg9n,lg9p,lg9sig,lga,lgak,lgan,lgap,lgasig,lgb,lgbk,lgbn,lgbp,lgbsig,lgc,lgck,lgcn,lgcp,lgcsig,lgd,lgdk,lgdn,lgdp,lgdsig,lge,lgek,lgen,lgep,lgesig,lgf,lgfk,lgfn,lgfsig,lgg,lggk,lggn,lggsig,lgh,lghk,lghn,lghsig,lgi,lgik,lgin,lgip,lgisig,lgj,lgjk,lgjn,lgjp,lgjsig,lgk,lgkk,lgkn,lgkp,lgksig,lgl,lglk,lgln,lglp,lglsig,lgm,lgmk,lgmn,lgmp,lgmsig,lgn,lgo,lgok,lgop,lgosig,lgq,lgqk,lgqn,lgqp,lgqsig,lgr,lgrk,lgrn,lgrp,lgrsig,lgs,lgsk,lgsn,lgsp,lgssig,lgt,lgtk,lgtp,lgtsig,lgu,lgvn,lgwn,lgy,lgyk,lgyn,lgysig,upn
 M33	SAME	0	

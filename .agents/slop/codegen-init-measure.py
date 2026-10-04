@@ -155,34 +155,62 @@ def run(d: pathlib.Path, rel: str, stage: str, *want: str, tries: int = 8) -> st
   The distinction being preserved is `printed something` vs `printed nothing`.
   """
   last = ""
+  last_err = ""
   for n in range(tries):
     r = subprocess.run([str(d / "bin" / "bend"), str(d / rel)],
                        capture_output=True, text=True, cwd=str(d), timeout=3600)
-    last = r.stdout
+    last, last_err = r.stdout, r.stderr
     if any(w in r.stdout for w in want):
       if n:
-        print(f"    [{stage}] {rel} took {n + 1} tries (bend stack-overflow, not 'not started')")
+        print(f"    [{stage}] {rel} took {n + 1} tries; earlier attempts returned "
+              f"rc={0 if r.returncode == 0 else r.returncode} (bend stack-overflow, or a "
+              f"concurrent agent's half-written file -- not 'not started')")
       return r.stdout.strip()
-  raise SystemExit(f"[{stage}] ZERO ROWS AFTER {tries} TRIES for {rel} (want any of {want}):\n{last}\n")
+  raise SystemExit(f"[{stage}] ZERO ROWS AFTER {tries} TRIES for {rel} (want any of {want}).\n"
+                   f"stdout:\n{last}\nstderr:\n{last_err}\n"
+                   f"If stderr names a def outside this file, a concurrent agent is mid-edit:\n"
+                   f"this harness measured a substrate in an unbuildable state, not a stage.\n")
 
 
 def rows(out: str) -> dict:
-  """Whole `name=value` LINES, `name` -> `value`. The port's row is
-  `new_sink=8 repl=...`, which is one line with two facts, so the `repl`
-  value is lifted out of it here rather than compared as a bare number."""
-  got = {}
+  """Whole `name=value` LINES -> `name` -> `value`. Three shape facts, all
+  measured here rather than assumed, because each one silently empties the
+  comparison if it is wrong:
+
+    * the port prints TWO facts on ONE line -- `new_sink=8 repl=...` -- so
+      `repl=` inside the value is split into its own row and `new_sink` is
+      appended to it. The arena index IS part of the row: it is the index the
+      fold interned, and it is the one number that proves the arena grew.
+    * the probe prefixes every row with `gr.` and the port does not, so the
+      prefix is stripped. Two rows that both lacked it would compare equal
+      and report nothing.
+    * `IO.print` lines that are not rows (`bend 2.0.35 is available`) carry
+      no `=` and are dropped by the partition below.
+  """
+  got: dict[str, str] = {}
   for line in out.splitlines():
     if "=" not in line or line.startswith("bend "):
       continue
     k, _, v = line.partition("=")
-    got[k.strip()] = v.strip()
-  if "repl" in got and "new_sink" in got:
-    got["repl"] = got["repl"].split(" repl=", 1)[1].strip() + " repl=" + got["new_sink"]
+    k = k.strip().removeprefix("gr.")
+    if k == "new_sink" and " repl=" in v:
+      head, _, tail = v.partition(" repl=")
+      got["repl"] = f"{tail.strip()} repl={head.strip()}"
+      continue
+    got[k] = v.strip()
   return got
 
 
+def norm(s: str) -> str:
+  """Whitespace-free, no trailing separator. Both emitters terminate a list
+  with a separator the oracle does not, so comparing raw strings reports a
+  distance of 2 on a row that is byte-for-byte correct, and a row that is
+  correct-but-for-its-terminator looks as wrong as one that is wrong."""
+  return re.sub(r"\s", "", s).rstrip(",")
+
+
 def dist(a: str, b: str) -> int:
-  a, b = re.sub(r"\s", "", a), re.sub(r"\s", "", b)
+  a, b = norm(a), norm(b)
   return sum(1 for x, y in zip(a.ljust(len(b)), b.ljust(len(a))) if x != y) + abs(len(a) - len(b))
 
 
@@ -235,8 +263,15 @@ def main() -> int:
   print(f"{'stage':13} | {'repl (the printed gate row)':44} | d | {'is_orig':9} | {'srcs':31} | {'op':9} | n_repl")
   print("=" * 122)
 
+  seen_substr: set[str] = set()
   out: dict[str, dict] = {}
   for name, (tree, probe, subs) in STAGES.items():
+    # The substrate is md5-recorded per stage. A concurrent agent editing
+    # `uop/fold.bend` under a measurement is exactly how one of these runs
+    # printed `SOME PROOFS FAIL` for `binary_n.of` -- a def in neither this
+    # file nor the probe -- and that is not a stage result.
+    substrate = md5(ROOT / "tinybendygrad" / "uop" / "ops.bend") + "/" + md5(ROOT / "tinybendygrad" / "uop" / "fold.bend")
+    seen_substr.add(substrate)
     d = freeze(tree, probe)
     port = d / "tinybendygrad" / PORT
     orig = port.read_text()
@@ -261,7 +296,7 @@ def main() -> int:
   for name in STAGES:
     r = out[name]
     got = [r.get(k, "<no row>") for k in GATE_ROWS + (CONTROL_ROW,)]
-    bad = [k for k, g in zip(GATE_ROWS + (CONTROL_ROW,), got) if g != PY[k]]
+    bad = [k for k, g in zip(GATE_ROWS + (CONTROL_ROW,), got) if norm(g) != norm(PY[k])]
     flag = "PASS" if not bad else "FAIL " + ",".join(bad)
     print(f"{name:13} | {r.get('repl','<no row>'):44} | {dist(r.get('repl',''), PY['repl']):2} | "
           f"{r.get('new_sink_is_original','<no row>'):9} | {r.get('new_sink_srcs','<no row>'):31} | "
@@ -274,26 +309,31 @@ def main() -> int:
   print(f"py.n_repl  (CONTROL)        = {PY['n_repl']}")
   print()
 
-  print("THE SEQUENCE, on the row that decides it:")
-  print(f"    BASE    gr.new_sink_is_original = {out['BASE']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
-        f"-> FAILS, because the third rule returns `self`")
-  print(f"    A-arena gr.new_sink_is_original = {out['A-arena']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
-        f"-> still FAILS: threading the arena alone changes nothing while the rule is present")
-  print(f"    B-both  gr.new_sink_is_original = {out['B-both']['new_sink_is_original']}   want {PY['new_sink_is_original']}   "
-        f"-> PASSES, and the rule is gone")
-  print(f"    C-comment (comment-only control)  = "
-        f"{'SAME as B-both on every row' if all(out['C-comment'].get(k) == out['B-both'].get(k) for k in out['B-both']) else 'MOVED -- the baseline moved'}")
+  print("THE SEQUENCE, on the row that decides it. `want` is CPython's, called above.")
+  for stage, note in (("BASE", "the third rule is present; it returns `self`, so the sink reads as its own replacement"),
+                      ("A-arena", "arena threaded, third rule STILL PRESENT -- threading alone moves nothing"),
+                      ("B-both", "arena threaded, third rule REMOVED -- this is the landed file"),
+                      ("M-u-norule", "the `u`->`rebuilt` mutation WITH the third rule put back, for independence")):
+    gotv = out[stage].get("new_sink_is_original", "<no row>")
+    print(f"    {stage:12} gr.new_sink_is_original = {gotv:9} want {PY['new_sink_is_original']}  "
+          f"{'PASS' if gotv == PY['new_sink_is_original'] else 'FAIL'}   {note}")
+  same = all(norm(out["C-comment"].get(k, "")) == norm(out["B-both"].get(k, ""))
+             for k in set(out["B-both"]) | set(out["C-comment"]))
+  print(f"    C-comment  comment-only control: {'SAME as B-both on every row' if same else 'MOVED -- THE BASELINE MOVED, every number here is suspect'}")
   print()
 
   print("THE ARENA-LENGTH SWEEP on B-both (`5 + K` nodes at the sink; `new_sink` IS the grown index):")
   print(f"    {'K':>2} {'arena at sink':>14} {'new_sink':>9}  repl row")
   for k in range(0, 6):
     name = "B-both" if k == 0 else f"B-pad{k}"
-    print(f"    {k:>2} {5 + k:>14} {out[name].get('new_sink','?'):>9}  {out[name].get('repl','?')}")
+    r = out[name]
+    repl = r.get("repl", "<no row>")
+    idx = repl.rsplit(" repl=", 1)[-1] if " repl=" in repl else "<no row>"
+    print(f"    {k:>2} {5 + k:>14} {idx:>9}  {repl}")
   print()
   print("MUTATIONS, with the rows they moved by name:")
   for name in ("M-drop-arena", "M-u", "M-u-norule"):
-    moved = [k for k in GATE_ROWS + (CONTROL_ROW,) if out[name].get(k) != out["B-both"].get(k)]
+    moved = [k for k in GATE_ROWS + (CONTROL_ROW,) if norm(out[name].get(k, "")) != norm(out["B-both"].get(k, ""))]
     print(f"    {name:13} moved {moved if moved else 'NOTHING -- a blind spot, with the reason below'}")
   print("      M-drop-arena  `wr.rebuild.found` returns `O.Arena.empty()` instead of the grown")
   print("                    arena: the threading is the ONLY thing carrying the index, so this")
@@ -308,6 +348,8 @@ def main() -> int:
   n_rows, n_stages = len(GATE_ROWS) + 1, len(STAGES)
   print(f"DENOMINATOR: {n_rows} rows compared per stage, {n_stages} stages, "
         f"{n_stages * 2} bend invocations, every row asserted non-empty (ZERO ROWS raises).")
+  print(f"SUBSTRATE: {len(seen_substr)} distinct (ops.bend, fold.bend) pair(s) seen across the "
+        f"{n_stages} stages -- {len(seen_substr) == 1 and 'the substrate held still' or 'IT MOVED; a concurrent agent edited under a measurement, so stage rows are not all comparable'}.")
   return 0
 
 

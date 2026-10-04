@@ -254,9 +254,14 @@ MUTATIONS = [
     ("M29 l2i.gone: print `none` instead of naming the exception",
      'String.concat([nm, "=refused:", "NotImplementedError", "\\n", nm, "n=", U32.show(U32.sub(to, from)), "\\n"])',
      'String.concat([nm, "=none\\n", nm, "n=", U32.show(U32.sub(to, from)), "\\n"])'),
-    ("M30 dd_eck: treat every node as a CONST",
-     "          +k = dd_ck(ar, u)\n          nf = Bool.and(first, Bool.not(k))\n          s = dd_join.ck(first, k, acc, dd_lab(ar, u))",
-     "          +k = True{}\n          nf = Bool.and(first, Bool.not(k))\n          s = dd_join.ck(first, k, acc, dd_lab(ar, u))"),
+    # RE-AIMED, 2026-10-04.  The old text was `+k = True{}`, which loses the
+    # `Bool` annotation and does not compile: RULE B says a non-program says
+    # nothing about coverage, so it was a bucket and not a test of anything.  The
+    # mutant now asks the same question wrongly instead of not at all -- "is this
+    # node a CONST?" becomes "is its FIRST SRC one?" -- and it compiles.
+    ("M30 dd_eck: a node counts as a CONST when its FIRST SRC is one",
+     "          +k = dd_ck(ar, u)\n",
+     "          +su = O.Arena.src0(ar, u)\n          +k = dd_ck(ar, su)\n"),
     ("M31 dd_join.add: join with `-` instead of `,`",
      '    case False{}: String.concat([acc, ",", s])',
      '    case False{}: String.concat([acc, "-", s])'),
