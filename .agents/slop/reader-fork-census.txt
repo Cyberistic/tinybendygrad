@@ -1,6 +1,6 @@
 control: rebase-gate.py rows()/row(), loaded by path   md5=b6d706e9158f89de56aedd26c9ce298e
 corpus: .agents + runs (this project's own tooling; upstream tinygrad excluded)
-candidates whose NAME says rows: 328   (the DENOMINATOR for everything below)
+candidates whose NAME says rows: 311   (the DENOMINATOR for everything below)
 
 CANONICAL SIGNATURE, by CALLING the gate's rows()
   F1  name=value               'ctl OPENCL sz1 k0=half'                     -> [('ctl OPENCL sz1 k0', "'half'")]
@@ -11,170 +11,133 @@ CANONICAL SIGNATURE, by CALLING the gate's rows()
   F6  TAB gap                  'ctl\ttab\thalf'                             -> []
 
 BY CONTRACT -- the DRIFT DENOMINATOR is the two families that answer a row question
-  not-single-arg     150   drifted=0   (not a row reader: excluded from drift)
+  not-single-arg     151   drifted=0   (not a row reader: excluded from drift)
   NOT-COMPARABLE     83    drifted=0   (not a row reader: excluded from drift)
-  text->mapping      52    drifted=51
+  text->mapping      35    drifted=34
   refused-text       23    drifted=0   (not a row reader: excluded from drift)
   path-reader        12    drifted=0   (not a row reader: excluded from drift)
   line->answer       4     drifted=3
-  not-a-reader       3     drifted=0   (not a row reader: excluded from drift)
+  not-a-reader       2     drifted=0   (not a row reader: excluded from drift)
   value->fold        1     drifted=0
 
 DRIFT, over every function in this corpus that ANSWERS A ROW QUESTION
-  DRIFTED 54 of 57    (52 text readers, 4 per-line, 1 inverse-fold)
+  DRIFTED 37 of 40    (35 text readers, 4 per-line, 1 inverse-fold)
   agree on all six  3
 
-THE THREE-WAY SPLIT OF THE 52 TEXT READERS -- this is what decides
+THE THREE-WAY SPLIT OF THE 35 TEXT READERS -- this is what decides
    which fork can be DELETED. NARROWING = the fork sees a SUBSET of what rows() sees, with
    identical values, so importing rows() can only ADD rows. DIVERGENT = the fork reads
    something rows() does not, and swapping one for the other changes a verdict.
   AGREE        1
-  NARROWING    11
-  DIVERGENT    40
+  NARROWING    14
+  DIVERGENT    20
   of which the control itself (rebase-gate.py's own rows()): 1 -- and it agrees with itself, which is the only reason the other rows are a finding
 
-DISTINCT BEHAVIOURS: 16 different answers to the six shapes, from 52 text readers
+DISTINCT BEHAVIOURS: 15 different answers to the six shapes, from 35 text readers
   A signature is the exact (name, value) answer set on all six shapes, so two readers with
   the same signature are the same reader spelled twice -- which is what makes this a
   fan-out problem with a small number of root causes rather than 51 of them.
   readers excluded from the grouping because the fake stdout gave them a row name that is
   not in the probe text, i.e. the verdict is the harness's and not theirs: 2
 
-  S01 bd1522b6808a  12 reader(s)   verdict=DIVERGENT
-        .agents/slop/codegen-init-measure.py:211  rows(out: str)
-        .agents/slop/commute-detect.py:161  rows_of(out: str)
-        .agents/slop/formblind-audit.py:83  rows_pre_f3(text: str)
-        .agents/slop/ga_controls.py:29  rows(text)
-        .agents/slop/ga_rows.py:22  rows(text)
-        .agents/slop/ga_rows_blast.py:37  rows(text)
-        .agents/slop/pin-tree-oracle.py:44  rows(text: str)
-        .agents/slop/rebase-break.py:29  rows(text)
-        .agents/slop/rebase-oracle-ops.py:45  rows(text)
-        .agents/slop/rebase-probe-oracle.py:16  rows(text)
-        .agents/slop/rebase-shadow.py:33  rows(text)
-        .agents/slop/rows-blast.py:47  rows_old(text)
-
-  S02 65c1d2d043a5  10 reader(s)   verdict=DIVERGENT
-        .agents/slop/drift-gate.py:33  rows(text)
-        .agents/slop/dtype-pri-mutate.py:95  rows_of(text)
-        .agents/slop/ext_mutate.py:177  rows_of_text(t)
-        .agents/slop/hcq2-diff.py:93  rows(text)
-        .agents/slop/helpers-tc-mutate.py:133  rows(text)
-        .agents/slop/mop-mut.py:162  rows(t)
-        .agents/slop/mt_diff.py:44  rows(text)
-        .agents/slop/mutate.py:70  rows(text)
-        .agents/slop/ops-python-mutate.py:84  rows_of(text)
-        .agents/slop/tools/mutate-dm.py:14  rows(txt)
-
-  S03 0c66f485d883  9 reader(s)   verdict=DIVERGENT,NARROWING
+  S01 0c66f485d883  11 reader(s)   verdict=NARROWING
         .agents/slop/amdev_mutate.py:20  rows(text)
         .agents/slop/fold-rng-mutate.py:153  rows(work)
+        .agents/slop/graphcmp.py:2039  bend_loop_rows(dev: str)
         .agents/slop/graphcmp.py:2035  bend_sym_rows(dev: str)
         .agents/slop/hdr_audit.py:164  printed_rows(path)
         .agents/slop/ip_sweep.py:48  rows(src)
         .agents/slop/mm-mutate.py:91  rows(text)
         .agents/slop/multi-mutate.py:70  rows(text)
+        .agents/slop/prepare_rows.py:34  port_rows(text: str)
         .agents/slop/rebase-probe-oracle.py:25  bend_rows(port, native=False)
         .agents/slop/rebase-probe-oracle.py:41  oracle_rows(spec)
 
-  S04 89c26127cd44  3 reader(s)   verdict=DIVERGENT
-        .agents/slop/debug-mutate.py:174  rows_of(out)
-        .agents/slop/tools/mutate-allreduce.py:61  rows(o)
-        .agents/slop/tools/mutate-memory.py:75  rows(stdout)
+  S02 bd1522b6808a  4 reader(s)   verdict=DIVERGENT
+        .agents/slop/codegen-init-measure.py:211  rows(out: str)
+        .agents/slop/formblind-audit.py:83  rows_pre_f3(text: str)
+        .agents/slop/rebase-probe-oracle.py:16  rows(text)
+        .agents/slop/rows-blast.py:47  rows_old(text)
 
-  S05 d85704cdfa5e  3 reader(s)   verdict=DIVERGENT
+  S03 d85704cdfa5e  3 reader(s)   verdict=DIVERGENT
         .agents/slop/formblind-audit.py:113  rows_eq_or_gap_no_tab(text: str)
         .agents/slop/formblind-audit.py:118  rows_eq_then_gap_greedy(text: str)
         .agents/slop/formblind-audit.py:95  rows_name_must_be_one_token(text: str)
 
-  S06 366962e19e5f  2 reader(s)   verdict=DIVERGENT
+  S04 366962e19e5f  2 reader(s)   verdict=DIVERGENT
         .agents/slop/cs-fixpy.py:66  rows_strict(text)
         .agents/slop/cstyle-gate.py:137  rows_strict(text)
 
-  S07 12d6bed6132d  2 reader(s)   verdict=NARROWING
+  S05 65c1d2d043a5  2 reader(s)   verdict=DIVERGENT
+        .agents/slop/drift-gate.py:33  rows(text)
+        .agents/slop/hcq2-diff.py:93  rows(text)
+
+  S06 12d6bed6132d  2 reader(s)   verdict=NARROWING
         .agents/slop/nv_nvdev_gate.py:30  rows(text)
         .agents/slop/nv_nvdev_mutrun.py:63  rows(text)
 
-  S08 a6e0ac31d2cd  1 reader(s)   verdict=DIVERGENT
+  S07 a6e0ac31d2cd  1 reader(s)   verdict=DIVERGENT
         .agents/slop/bnxt_sweep.py:28  rows_of(out)
 
-  S09 1095cdefcc3c  1 reader(s)   verdict=DIVERGENT
+  S08 1095cdefcc3c  1 reader(s)   verdict=DIVERGENT
         .agents/slop/dd-band-mut.py:95  rows(text)
 
-  S10 2d491776b4c5  1 reader(s)   verdict=NARROWING
+  S09 2d491776b4c5  1 reader(s)   verdict=NARROWING
         .agents/slop/formblind-audit.py:640  rows_fold_at_first_tail(text: str)
 
-  S11 80da6790d533  1 reader(s)   verdict=DIVERGENT
+  S10 80da6790d533  1 reader(s)   verdict=DIVERGENT
         .agents/slop/memory-mutate.py:247  rows_of(txt)
 
-  S12 c3ef9f26885a  1 reader(s)   verdict=DIVERGENT
+  S11 c3ef9f26885a  1 reader(s)   verdict=DIVERGENT
         .agents/slop/nv-diff.py:28  rows_of(text)
 
-  S13 b84daa8d9de1  1 reader(s)   verdict=DIVERGENT
+  S12 b84daa8d9de1  1 reader(s)   verdict=DIVERGENT
         .agents/slop/nv_ip_mutate.py:249  rows_of(text)
 
-  S14 e7c34df5ef24  1 reader(s)   verdict=DIVERGENT
+  S13 e7c34df5ef24  1 reader(s)   verdict=DIVERGENT
         .agents/slop/ops-mutate.py:190  rows_of(text)
 
-  S15 a47d3a7d4b13  1 reader(s)   verdict=AGREE
+  S14 a47d3a7d4b13  1 reader(s)   verdict=AGREE
         .agents/slop/rebase-gate.py:458  rows(text)
 
-  S16 887de055ee23  1 reader(s)   verdict=DIVERGENT
+  S15 887de055ee23  1 reader(s)   verdict=DIVERGENT
         .agents/slop/wire_parse.py:17  rows(text)
-  *** NON-DETERMINISTIC on a second run: ['.agents/slop/graphcmp.py:bend_sym_rows', '.agents/slop/graphcmp.py:bend_loop_rows'] ***
 
-TEXT->MAPPING (52) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
+TEXT->MAPPING (35) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
    because a reader can agree on all six shapes and still not be substitutable
   DRIFT .agents/slop/amdev_mutate.py:20    rows(text)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/bnxt_mutate.py:152   rows_of(out)  kinds=dict        DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', "SET['half']"); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "SET[' [half]   py=[half]']"); F3  name<SP><SP>value:('#ctlf3  half', 'SET[]'); F4  name contains '=':('na', "SET['me=value']")
   DRIFT .agents/slop/bnxt_sweep.py:28    rows_of(out)  kinds=dict        DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', "SET['half']"); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "SET[' [half]   py=[half]']"); F4  name contains '=':('na', "SET['me=value']")
   DRIFT .agents/slop/codegen-init-measure.py:211   rows(out: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/commute-detect.py:161   rows_of(out: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/cs-fixpy.py:66    rows_strict(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'half]   py=[half'")
   DRIFT .agents/slop/cstyle-gate.py:137   rows_strict(text)  kinds=dict+extras DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'half]   py=[half'")
   DRIFT .agents/slop/dd-band-mut.py:95    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "' [half]   py=[half]'")
-  DRIFT .agents/slop/debug-mutate.py:174   rows_of(out)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "'[half]   py=[half]'")
   DRIFT .agents/slop/drift-gate.py:33    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/dsl_mutate.py:147   rows(path)  kinds=dict        DIVERGENT: F1  name=value:('- message  : no such file: ctl OPENCL sz1 k0', "'half'"); F2  name = [v]   py=[w]:('- message  : no such file: ctl OPENCL sz1 k0 ', "' [half]   py=[half]'"); F4  name contains '=':('- message  : no such file: na', "'me=value'")
-  DRIFT .agents/slop/dtype-pri-mutate.py:95    rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/ext_mutate.py:177   rows_of_text(t)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/fold-rng-mutate.py:153   rows(work)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/formblind-audit.py:113   rows_eq_or_gap_no_tab(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:118   rows_eq_then_gap_greedy(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:640   rows_fold_at_first_tail(text: str)  kinds=dict        NARROWING: F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/formblind-audit.py:95    rows_name_must_be_one_token(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:83    rows_pre_f3(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/ga_controls.py:29    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/ga_rows.py:22    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/ga_rows_blast.py:37    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/graphcmp.py:2035  bend_sym_rows(dev: str)  kinds=hung/lines  DIVERGENT: F3  name<SP><SP>value:no-mapping; F4  name contains '=':no-mapping
+  DRIFT .agents/slop/graphcmp.py:2039  bend_loop_rows(dev: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
+  DRIFT .agents/slop/graphcmp.py:2035  bend_sym_rows(dev: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/hcq2-diff.py:93    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/hdr_audit.py:164   printed_rows(path)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/helpers-tc-mutate.py:133   rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/ip_sweep.py:48    rows(src)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/memory-mutate.py:247   rows_of(txt)  kinds=lines       DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', 'half'); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', '[half]'); F4  name contains '=':('na', 'me=value')
   DRIFT .agents/slop/mm-mutate.py:91    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/mop-mut.py:162   rows(t)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/mt_diff.py:44    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/multi-mutate.py:70    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/mutate.py:70    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
   DRIFT .agents/slop/nv-diff.py:28    rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 = [half]   py', "'[half]'"); F4  name contains '=':('na=me', "'value'")
   DRIFT .agents/slop/nv_ip_mutate.py:249   rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'"); F3  name<SP><SP>value:('ctlf3  half', "''"); F5  single-space gap:('ctl single half', "''"); F6  TAB gap:('ctl\ttab\thalf', "''")
   DRIFT .agents/slop/nv_nvdev_gate.py:30    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/nv_nvdev_mutrun.py:63    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/ops-mutate.py:190   rows_of(text)  kinds=dict        DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', "'ctl OPENCL sz1 k0=half'"); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "'ctl OPENCL sz1 k0 = [half]   py=[half]'"); F4  name contains '=':('na', "'na=me=value'")
-  DRIFT .agents/slop/ops-python-mutate.py:84    rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/pin-tree-oracle.py:44    rows(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/rebase-break.py:29    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/rebase-oracle-ops.py:45    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
+  DRIFT .agents/slop/prepare_rows.py:34    port_rows(text: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/rebase-probe-oracle.py:25    bend_rows(port, native=False)  kinds=dict+extras NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/rebase-probe-oracle.py:41    oracle_rows(spec)  kinds=dict+extras NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/rebase-probe-oracle.py:16    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/rebase-shadow.py:33    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/rows-blast.py:47    rows_old(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/tools/mutate-allreduce.py:61    rows(o)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "'[half]   py=[half]'")
-  DRIFT .agents/slop/tools/mutate-dm.py:14    rows(txt)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/tools/mutate-memory.py:75    rows(stdout)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "'[half]   py=[half]'")
   DRIFT .agents/slop/wire_parse.py:17    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   ok    .agents/slop/rebase-gate.py:458   rows(text)  kinds=dict        AGREE: 
 
@@ -274,13 +237,12 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/x86/x86_oracle.py:287  row(?)  def-time NameError: name 'dtypes' is not defined
     NOT-COMPARABLE   .agents/slop/x86/x86_oracle.py:324  row(?)  def-time NameError: name 'dtypes' is not defined
     NOT-COMPARABLE   .agents/slop/xb1/device-mutate.py:19  rows(?)  def-time ImportError: reader-fork-census sandbox: 'difflib' not allowed
-    not-a-reader     .agents/slop/f2f-calibrate.py:148  shape_rows(path)  F1  name=value=OTHER -1; F2  name = [v]   py=[w]=OTHER -1; F3  name<SP><SP>value=OTHER -
-    not-a-reader     .agents/slop/graphcmp.py:2039  bend_loop_rows(dev: str)  F1  name=value=SEQ25["'2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1; F2  name = 
+    not-a-reader     .agents/slop/f2f-calibrate.py:149  shape_rows(path)  F1  name=value=OTHER -1; F2  name = [v]   py=[w]=OTHER -1; F3  name<SP><SP>value=OTHER -
     not-a-reader     .agents/slop/ops-mutate.py:208  bend_rows(native)  F1  name=value=HUNG; F2  name = [v]   py=[w]=HUNG; F3  name<SP><SP>value=HUNG
     not-single-arg   .agents/slop/bend_oracle.py:30  rows()  ARITY rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/blob-intern-mutate.py:84  blob_rows()  ARITY blob_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/c-oracle.py:45  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/commute-detect.py:171  diff_rows(a: dict[str, str], b: dict[str, str])  ARITY diff_rows() missing 1 required positional argument: 'b'
+    not-single-arg   .agents/slop/commute-detect.py:173  diff_rows(a: dict[str, str], b: dict[str, str])  ARITY diff_rows() missing 1 required positional argument: 'b'
     not-single-arg   .agents/slop/cpulink_gate.py:81  bend_rows()  ARITY bend_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/dd-truth.py:57  gate_rows()  ARITY gate_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/debug-gate.py:52  row(nm, v)  ARITY row() missing 1 required positional argument: 'v'
@@ -397,6 +359,7 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/oracles/fold-rng-oracle.py:41  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
     not-single-arg   .agents/slop/order-verdicts.py:102  row_source(oracle_py: pathlib.Path, name: str)  ARITY row_source() missing 1 required positional argument: 'name'
     not-single-arg   .agents/slop/qcom-oracle.py:48  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
+    not-single-arg   .agents/slop/reader-fork-convert.py:75  gate_rows()  ARITY gate_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/sqtt_spec.py:45  row(name, val)  ARITY row() missing 1 required positional argument: 'val'
     not-single-arg   .agents/slop/state-gate.py:29  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
     not-single-arg   .agents/slop/tcptx-oracle.py:190  asm_rows()  ARITY asm_rows() takes 0 positional arguments but 1 was given
@@ -452,11 +415,11 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     refused-text     .agents/slop/rebase-scan-oracles.py:138  bend_rows(port)  NameError: name 'read_fresh_cache' is not defined
     refused-text     .agents/slop/rebase-scan-oracles.py:170  oracle_rows(spec)  NameError: name 'read_fresh_cache' is not defined
     refused-text     .agents/slop/spec-citations.py:42  bend_rows(fn)  StopIteration: 
-    refused-text     .agents/slop/staged_mut.py:95  row_digest(r)  AttributeError: 'str' object has no attribute 'items'
-    refused-text     .agents/slop/staged_mut.py:59  rows(text)  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:166  rows(self, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:337  rows(self, retries=5, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:172  try_rows(self, retries=5, args=())  AttributeError: 'str' object has no attribute 'run'
+    refused-text     .agents/slop/staged_mut.py:114  row_digest(r)  AttributeError: 'str' object has no attribute 'items'
+    refused-text     .agents/slop/staged_mut.py:78  rows(text)  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
+    refused-text     .agents/slop/staged_mut.py:195  rows(self, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
+    refused-text     .agents/slop/staged_mut.py:377  rows(self, retries=5, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
+    refused-text     .agents/slop/staged_mut.py:201  try_rows(self, retries=5, args=())  AttributeError: 'str' object has no attribute 'run'
     refused-text     .agents/slop/tools/szfuzz.py:121  bend_rows(out)  NameError: name 'ROW' is not defined
     refused-text     .agents/slop/unobservable-census.py:60  rows_of(path: pathlib.Path)  AttributeError: 'str' object has no attribute 'read_text'
     refused-text     .agents/slop/wire-pair.py:91  bend_rows(port, tries=3)  NameError: name 'read_fresh_cache' is not defined

@@ -153,14 +153,17 @@ run D8-dbg-03.txt   dbg --levels 0,3
 # ---    a real result was that they had been truncated.
 STAB_A="group sym loop gate"
 STAB_PLANT="commute:--plant srcswap"
+#     CHANGED, AND IT REPORTED ITSELF. Two identical FAILURES compare equal: with the
+#     substrate cold, both members of a stability pair wrote the same one-line
+#     `0 rows after 5 attempts` file and `cmp -s` called the pair BYTE-IDENTICAL. So step 09
+#     now labels a one-line side FAILED and re-runs it, and the summary counts plants and
+#     `cross` too -- a step that fails silently is not a step whose failure the health gate
+#     can see. (This is the standing trap in its purest form: a 0-row result is
+#     indistinguishable from "not started", and here it was indistinguishable from "stable".)
 for g in $STAB_A; do
   run "D9-stability-$g-a.txt" diff --graph "$g"
   run "D9-stability-$g-b.txt" diff --graph "$g"
 done
-# QUOTED, or `for c in $STAB` splits on the space in `--plant srcswap` and produces a
-# SIXTH pair named `srcswap`, which is not a graph. MEASURED: the unquoted list did
-# exactly that and `D9-stability-srcswap-a.txt` was an argparse error file -- which is why
-# `stable-pairs` printed 6 for 5 pairs.
 for c in $STAB_PLANT; do
   g=${c%%:*}
   pl=${c#*:}
@@ -169,13 +172,30 @@ for c in $STAB_PLANT; do
   # shellcheck disable=SC2086
   run "D9-stability-$g-b.txt" diff --graph "$g" $pl
 done
-{ for g in $STAB_A commute; do
-    if cmp -s "$D/D9-stability-$g-a.txt" "$D/D9-stability-$g-b.txt"; then
-      echo "$g: 2 runs BYTE-IDENTICAL"
-    else
-      echo "$g: 2 runs DIFFER"; diff "$D/D9-stability-$g-a.txt" "$D/D9-stability-$g-b.txt" | head -20
-    fi
-  done; } > "$D/D9-stability.txt"
+# THREE OUTCOMES, NOT TWO. A stability pair can DIFFER because the OUTPUT moved, or because
+# ONE side was a 0-ROW FAILURE while the substrate was cold -- and those are opposite
+# findings. MEASURED: the failing case above, where a pair of identical FAILURES read
+# BYTE-IDENTICAL. A 0-row side is a one-line `rc=1` file, so `wc -l` is the test, the pair is
+# RE-RUN once, and a side that is still one line is named FAILED rather than compared.
+stability() { # stability <graph> [extra args...]
+  g=$1; shift
+  a="$D/D9-stability-$g-a.txt"; b="$D/D9-stability-$g-b.txt"
+  if [ "$(wc -l < "$a" | tr -d ' ')" -le 1 ] || [ "$(wc -l < "$b" | tr -d ' ')" -le 1 ]; then
+    # shellcheck disable=SC2086
+    run "D9-stability-$g-a.txt" diff --graph "$g" "$@"
+    # shellcheck disable=SC2086
+    run "D9-stability-$g-b.txt" diff --graph "$g" "$@"
+  fi
+  if [ "$(wc -l < "$a" | tr -d ' ')" -le 1 ] || [ "$(wc -l < "$b" | tr -d ' ')" -le 1 ]; then
+    echo "$g: ONE SIDE IS A 0-ROW FAILURE after a retry -- NOT a reproducibility result"
+  elif cmp -s "$a" "$b"; then
+    echo "$g: 2 runs BYTE-IDENTICAL"
+  else
+    echo "$g: 2 runs DIFFER"; diff "$a" "$b" | head -20
+  fi
+}
+{ for g in $STAB_A; do stability "$g"; done
+  stability commute --plant srcswap; } > "$D/D9-stability.txt"
 
 # --- 10 THE 0-ROW GUARD, FIRED ON PURPOSE. `graphcmp-empty.bend` prints nothing, so
 # ---     `emit --side bend` must RAISE rather than answer.
@@ -242,7 +262,11 @@ rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
   echo "graphs-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
   echo "byte-identical=$(grep -c 'BYTE-IDENTICAL' "$D/D2-bytediff.txt" | tr -d ' ')"
   echo "not-comparable=$(grep -c 'NOT COMPARED' "$D/D2-bytediff.txt" | tr -d ' ')"
-  echo "stable-pairs=$(grep -c 'BYTE-IDENTICAL' "$D/D9-stability.txt" | tr -d ' ')"
+  echo "stable-pairs=$(grep -c ': 2 runs BYTE-IDENTICAL$' "$D/D9-stability.txt" | tr -d ' ') of 5"
+  echo "stable-failed=$(grep -c 'ONE SIDE IS A 0-ROW FAILURE' "$D/D9-stability.txt" | tr -d ' ') of 5"
+  echo "stable-differ=$(grep -c ': 2 runs DIFFER$' "$D/D9-stability.txt" | tr -d ' ') of 5"
+  echo "plants-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D5-plant-*.txt | wc -l | tr -d ' ') of 6"
+  echo "cross=$(grep -c 'CROSS VERDICT: OK' "$D/D4-cross-range.txt") of 1"
   echo "selfcheck=$(sed -n '1p' "$D/D0-selfcheck.txt")"
   echo "conflations=$(grep -c 'VERDICT: OK' "$D/D7-conf.txt") of 4"
   # `grep -c` over a GLOB prints ONE COUNT PER FILE; it does not total them. MEASURED: it

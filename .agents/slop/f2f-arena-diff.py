@@ -73,7 +73,7 @@ def rebase(rows, b):
 
 def main():
     a = [x for x in sys.argv[1:] if not x.startswith("--")]
-    only = next((x[3:] for x in sys.argv[1:] if x.startswith("--q")), None)
+    only = next((x[4:] for x in sys.argv[1:] if x.startswith("--q=")), None)
     port, cpy = parse(a[0]), parse(a[1])
 
     tot_nodes = tot_shape = tot_wire = tot_extra = 0

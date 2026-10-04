@@ -2102,15 +2102,19 @@ def selfcheck(dev: str = "CPU") -> int:
   #   * `loop` must answer `?=2` -- one CALL node x two columns -- which keeps the two-column
   #     claim under test on a node that still has the wall, and `loop`'s wall has a DIFFERENT
   #     cause (`call_dt` reads `CallInfo.dtype`, a field CPython does not have).
-  if dict(ledger(bend_sym_rows(dev)))["?"] != 0:
-    bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers "
-               f"?={dict(ledger(bend_sym_rows(dev)))['?']} on the bend side where the port's "
-               f"`fold.bend` `sym_dim.pa` (`fold.bend:1296`) says the symbolic-dim case is "
-               f"closed and `--graph sym` VERDICT is AGREE")
-  if dict(ledger(bend_loop_rows(dev)))["?"] != 2:
-    bad.append("the `?` ledger row does not count both columns of `--graph loop`'s CALL "
-               "(one unsettled node x two columns = 2). The two-column row is the claim; "
-               "`sym` cannot test it any more because its wall is closed.")
+  # HOISTED, because `emit_bend` is a subprocess and the failure message needed the number
+  # too. MEASURED: the first version called it twice and `selfcheck` paid two full probe
+  # runs to format one sentence.
+  qsym = dict(ledger(bend_sym_rows(dev)))["?"]
+  qloop = dict(ledger(bend_loop_rows(dev)))["?"]
+  if qsym != 0:
+    bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers ?={qsym} on the bend "
+               f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1296`) says the "
+               f"symbolic-dim case is closed and `--graph sym` VERDICT is AGREE")
+  if qloop != 2:
+    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`'s CALL, not 2 (one "
+               f"unsettled node x two columns). The two-column row is the claim; `sym` "
+               f"cannot test it any more because its wall is closed.")
   # AND THE PY SIDE CANNOT PRODUCE `?` AT ALL, on any graph -- which is the other half of
   # the same row and the reason `?` is PORT-ONLY rather than a third upstream state.
   if dict(ledger(py_sym_rows()))["?"] != 0:

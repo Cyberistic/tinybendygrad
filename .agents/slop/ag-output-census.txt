@@ -1,0 +1,123 @@
+==============================================================================
+OUTPUT CENSUS -- tinygrad/runtime/autogen/*.py  (the generator's OUTPUT)
+==============================================================================
+
+## 0. THE COUNT, AND WHICH METHOD PRODUCED IT
+  files counted                       : 38
+  TOP-LEVEL defs (method used)        : 4868
+    method: ast.parse, then module tree.body and each ClassDef's .body.
+            Nested defs are NOT counted -- there are none in this corpus.
+  ast.walk count (CONTRAST)           : 4868
+    method: ast.walk over the whole tree.
+  classes                             : 7756
+
+  ON THE '13,480' FIGURE: it is not reproducible here by either method.
+  ast.walk gives 4868, the same as the top-level count, because these
+  are generated one-expression defs with no nested defs at all.  Whatever
+  produced 13,480 counted something other than Python defs (most likely
+  class bodies, or rows of emitted text).  Reported, not reconciled.
+
+  per file:  name  top_defs  classes  lines
+    __init__.py                    4        0     200
+    amd_gpu.py                     0       65   12924
+    amdgpu_drm.py                  0      144    1660
+    amdgpu_kd.py                   0        1      37
+    avcodec.py                     0       30     467
+    bnxt.py                        0       53    5453
+    comgr.py                      64        8     205
+    comgr_3.py                    64        8     205
+    corefoundation.py            105       10     313
+    cuda.py                      535      104    2155
+    ggml_common.py                 0       27     219
+    hip.py                       478      122    2241
+    hsa.py                         0       94    1108
+    io_uring.py                    0       43     904
+    iokit.py                     100        8     275
+    kfd.py                         0       75     819
+    kgsl.py                        0       70     787
+    libc.py                      341       64    4458
+    libclang.py                  324       41    1019
+    libusb.py                     97       25     490
+    llvm.py                     1383       88    3191
+    llvm_qcom.py                   7        7     104
+    mesa.py                      950      267   10533
+    metal.py                       2      172    1725
+    mlx5.py                        0      745   10524
+    nv.py                          0      498    4929
+    nv_570.py                      0     1426   24867
+    nv_580.py                      0     1592   26002
+    nv_610.py                      0     1592   26569
+    nvjitlink.py                  14        1      42
+    nvrtc.py                      21        1      55
+    opencl.py                    113       13     812
+    pci.py                         0        0    1043
+    qcom_dsp.py                    0       56     559
+    rocprof.py                     4       12     170
+    sqtt.py                        0       46     524
+    vfio.py                        0       49     587
+    webgpu.py                    262      199    2609
+
+## 1. DOES THE PORT SIDE EXIST AT ALL?
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/autogen
+  exists = False
+
+## 2. THE DECOMPOSITION -- 4,868 = 4,864 + 4, with NO residue
+
+  @dll.bind trampolines matching the template : 4864
+  top-level defs NOT of that shape            : 4
+    all of them in                            : ['__init__.py']
+      macossdk, load, _extract_deb, __getattr__ -- the hand-written LOADER
+      in __init__.py, not generator output at all.
+
+  CONTROL FLOW, counted over TOP-LEVEL DEF BODIES:
+    defs whose body contains if/for/while/try/with : 1  {'__init__.py': 1}
+    => 4867 of 4868 top-level defs have NO control flow:
+       each is a `def f(...) -> T: ...` line under an `@dll.bind`.
+
+  CORRECTION TO THE TASK BRIEF, which said '3 bodies contain any control
+  flow'.  Measured it is 1 (`load`, the loader def).  3 is not reproducible
+  by top-level parse, by ast.walk over defs, or by ast.walk over files
+  (6 files contain if/for/try SOMEWHERE, but never inside a top-level def
+  body other than `load`).  1 is the number; 3 is not inherited.
+
+## 3. THE TEMPLATE CHECK -- what name-and-arity cannot do
+
+Name-and-arity proves the counterpart def EXISTS and its signature
+AGREES.  It cannot see WHICH FUNCTION a body calls, so a body calling the
+wrong getter at the right arity passes it.  The stronger check is a
+TEMPLATE check: these bodies are generated, so they must match the shape
+autogen.py:240-241 emits.
+
+  THE TEMPLATE, lifted verbatim from autogen.py:240-241:
+    @dll.bind(<ret>, <arg types>)
+    def <name>(<anm>:<hint>, ...) -> <ret>: ...
+
+  @dll.bind lines in corpus                : 4864
+  ...immediately followed by the def line  : 4864
+  RATIO shaped/all                         : 4864/4864
+
+  => ONE TEMPLATE COVERS EVERY BOUND BODY.  A per-def gate would be 4,864
+     copies of this one shape.  The template check is strictly STRONGER
+     than name-and-arity because it also pins the RETURN TYPE, the
+     PARAMETER NAMES, the PARAMETER ANNOTATIONS and the `...` body,
+     none of which a name+arity diff looks at.
+
+## 4. WHAT THE TEMPLATE CANNOT SEE (stated, not hidden)
+  The template pins the SHAPE of the emitted def.  It cannot see:
+    - whether the ctypes TYPE SPELLING tname derived is correct
+      (`c.POINTER[struct_Pair]` vs `ctypes.c_void_p`) -- that is WALL 4,
+      the unported record arm, reproduced at .agents/slop/ag-wall4-repro.bend;
+    - whether the FIELD ORDER inside a struct is right -- the template
+      never sees struct bodies;
+    - whether register_fields OFFSETS are right.
+  So a template check covers the FUNCTION TRAMPOLINES and none of the
+  STRUCT LAYOUTS.  Reported, not papered over.
+
+## 5. COVERAGE versus FUNCTION -- the honest statement
+  These 4,864 defs are device FFI trampolines.  Emitting them moves
+  COVERAGE, not FUNCTION: none can execute without a working device layer,
+  and .agents/slop/e2e.sh still proves exactly ONE matmul on real
+  hardware.  A full port of this region is not reachable anyway -- WALL 4
+  (tname's record arm) is refused by bend's decreasing-self-call rule,
+  and it is refused INDEPENDENTLY of WALL 1, so closing the FFI would not
+  make the generator able to emit.

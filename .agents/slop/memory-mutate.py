@@ -1,26 +1,66 @@
 #!/usr/bin/env python3
-"""Mutation harness for tinybendygrad/runtime/support/memory.bend.
-
-ONE ENTRY PER PORTED RULE. Each mutation is a whole-line `name=value` edit to a
-COPY of the .bend file, and the report is WHICH ROWS MOVED BY NAME -- not
-whether the harness saw anything, because a name-comparing harness has reported
-0 for all 30 mutations in one unit of this project and all 68 in another.
-
-The comparison is `difflib` over the FULL `name=value` lines. A mutation that
-moves nothing is reported as a BLIND SPOT with a reason, never closed with a row
-that encodes the bug.
+"""memory-mutate.py -- mutation harness for tinybendygrad/runtime/support/memory.bend,
+on a STAGED MIRROR.
 
     .agents/slop/memory-mutate.py [name ...]
+    .agents/slop/memory-mutate.py --report FILE
+
+ONE ENTRY PER PORTED RULE.  Each mutation is a whole-line `name=value` edit to a COPY
+of the .bend file, and the report is WHICH ROWS MOVED BY NAME -- not whether the
+harness saw anything, because a name-comparing harness has reported 0 for all 30
+mutations in one unit of this project and all 68 in another.
+
+CONVERTED 2026-10-04.  The old harness wrote `memory.bend.mut` BESIDE the live file
+and deleted it afterwards, which is better than an in-place write and still wrong in
+two measurable ways, both recorded here rather than argued:
+
+  * a file BESIDE a live source is INSIDE ITS IMPORT CLOSURE and inside every
+    `find tinybendygrad -name '*.bend*'` census.  `memory.bend.mut` does not end in
+    `.bend`, so a `*.bend` glob misses it -- but it is a full copy of a source file
+    sitting in `runtime/support/`, and any census or reader that globs `*.bend*` or
+    iterates the directory finds a Bend file it cannot account for.  This harness's
+    staged copy is named `memory.staged-mem-<pid>`: BESIDE the file, so
+    `import ./../../helpers.bend` still resolves (a `$TMPDIR` copy cannot, and that
+    produced 22 phantom blind spots in one unit), and with NO extension, so neither
+    glob can see it.  That is the property `staged_mut` exists to hold, and holding
+    it is the whole difference between this file and the one it replaces.
+
+  * it had NO DIGEST GUARD AT ALL.  It mutated, wrote `.mut`, ran bend on `.mut`, and
+    deleted `.mut` -- with no statement anywhere about whether the live `memory.bend`
+    was the file it started from, and therefore no way to notice if a concurrent
+    agent's edit arrived mid-run.  `staged_mut.Staged` asserts
+    `sha256(jj @) == sha256(live)` at stage time and REPORTS a live digest that moves
+    during the run instead of writing over it.
+
+THE OTHER BUG THIS HARNESS HAD, kept because it was the more expensive one: it read
+bend's `bend 2.0.35 is available: run bend update` notice on STDERR as a BASELINE
+FAILURE and exited 2 before measuring anything, losing all 70 mutations -- and exit 2
+is indistinguishable from "did not compile".  `staged_mut.run()` is STDOUT-ONLY by
+contract, so that liveness test cannot be permanently true, and `try_rows()` re-runs
+the machine-stack-overflow that bend hits about 1 run in 20 rather than reporting it
+as a zero.
+
+THE ANCHORS below are this harness's own declaration and are spliced in VERBATIM from
+the pre-conversion file by a script rather than retyped.  What is re-derived is the
+MEASUREMENT: the row set, the moved rows, the anchor occurrence count, and the
+control.  An anchor that reads `0 occurrences` prints `PATCH-NOT-APPLY` and NO row
+count at all, because a count there is a count of rows the edit never touched.
+
+THE CONTROL IS THE SAME MIRROR WITH NO EDIT, RUN TWICE, compared on the ROW COUNT and
+on a digest over the ROW SET.  A count is equal when one row is lost and another is
+gained, and a baseline can BE the mutant -- frozen digests cover the file being
+mutated, never the file `SAME` is measured against.
 """
-import subprocess, sys, os, re
-import patch_not_apply as PNA
+import pathlib
+import sys
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-BEND = os.path.join(ROOT, 'tinybendygrad/runtime/support/memory.bend')
-WORK = os.path.join(ROOT, '.agents/slop/.mutwork')
-NATIVE = os.path.join(WORK, 'mem')
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import staged_mut as S                                        # noqa: E402
 
-# (id, description, the exact text to find, the replacement, expected-nonempty)
+LIVE = S.ROOT / "tinybendygrad" / "runtime" / "support" / "memory.bend"
+
+# (id, description, the exact text to find, the replacement)
 MUTS = [
  ("M01", "calcsizes: '?' given 4 instead of 1",
   'csz_of(1, "?")', 'csz_of(4, "?")'),
@@ -230,80 +270,195 @@ MUTS = [
   'case s <> t: Bool.pick(U32, U32.is_le(s, rem), s, ladder_pick.go(t, rem, dflt))',
   'case s <> t: Bool.pick(U32, U32.is_le(s, rem), ladder_pick.go(t, rem, s), dflt)'),
 ]
+# A ZERO MAY NOT BE CLOSED WITH A ROW THAT ENCODES THE BUG, and it may not be closed
+# with an unexplained adjective either.  Every zero this table has, with the evidence
+# for it, re-derived on 2026-10-04 rather than inherited from the table's own comments.
+#
+# `note` is printed with the zero either way.  `theorem` decides the CLASS and it is
+# True only where a refutation of "unreachable" is IMPOSSIBLE rather than merely
+# unobserved -- i.e. where two spellings of the port are the same function, or where
+# the value the mutation collides with is one no def emits.  Everything else is
+# PORT-DEFECT, which agent-core.md calls a REQUEST FOR A FIXTURE and NOT a theorem:
+# inventing a theorem for an unexplained zero is the one move that turns this table
+# into a liar.  Both PORT-DEFECT entries below carry the SEPARATING FIXTURE, measured.
+ZERO_NOTES = {
+    "M09": ("the LABELLED `type Mv is Data` field order is not observable: every read of "
+            "Mv is an UNLABELLED positional pattern `case Mv{h, addr, nbytes, fmt}`, and a "
+            "probe reading all four accessors off `Mv{7, 11, 13, 17}` returns 7 11 13 17 "
+            "before AND after the mutation.  Two spellings of one type.", True),
+    "M12": ("same measurement for `type Pa is Data`: `Pa.paddr`/`Pa.psize` return 7 and 11 "
+            "off `Pa{7, 11}` both before and after.  Two spellings of one type.", True),
+    "M13": ("same measurement for `type Vmap is Data`: the accessors return the values the "
+            "positional pattern binds, before and after.  Two spellings of one type.", True),
+    "M38": ("SEPARATING FIXTURE EXISTS, so this is a fixture gap and not a theorem: "
+            "`ladder_hit.go(3, 3, 10)` has c*n = 9 != 10, and the measured row goes "
+            "0 -> 1 under M38.  A `Lad` that `lad_of` builds from a real covers/cnts pair "
+            "cannot be inconsistent, so only a DIRECT call separates it.", False),
+    "M62": ("SEPARATING FIXTURE EXISTS, so this is a fixture gap and not a theorem: "
+            "`pte_first_largest_of(covers_of([9, 7, 4]))` measured 0 and becomes 1 under "
+            "M62, i.e. for that va_shifts the port's own `first_of(covers)` is NOT "
+            "`max(covers)`.  A sweep of 14 va_shifts vectors gives 4 True and 10 False, so "
+            "the existing `pte_first_largest_*` fixtures are all in the True minority.  "
+            "THIS ALSO CONTRADICTS THE WALL AT memory.bend:1728, which asserts that "
+            "`pte_first_largest` is a theorem for every va_shifts CPython accepts; it is "
+            "not, and `pte_first_largest_of` is CALLED (memory.bend:1593 -> :1616) so it "
+            "is reachable, not dead.  Reported, not fixed: the file is read-only here.",
+            False),
+    "M64": ("retagging `PT_SET_ENTRY` 9 -> 8 collides with `PT_SUPPORTS_HUGE`, and "
+            "`PT_SUPPORTS_HUGE()` has ZERO call sites (measured: one mention, the def at "
+            "memory.bend:197, no `PT_SUPPORTS_HUGE()` anywhere else), so no def emits the "
+            "value 8 and every row that counts calls under a shared tag value counts the "
+            "same.  The pair with M69, which retags onto `PT_VALID` and DOES move, is what "
+            "separates 'the tag space is wrong' from 'the tag is wrong'.", True),
+}
 
-def run(path):
-    p = subprocess.run(['./bin/bend', path], cwd=ROOT, capture_output=True, text=True)
-    return p.stdout, p.returncode, p.stderr
+# An anchor that occurs MORE THAN ONCE is refused, and the old harness's behaviour on
+# these two is the reason the refusal exists rather than a stylistic choice.  It did
+# `src.replace(find, repl)` with NO count, so it rewrote every site and reported the
+# result under a description naming ONE of them.
+AMBIGUOUS = {
+    "M10": "the anchor `Bump{size, ptr, base, wrap}` occurs 5x and NONE of the 5 is the "
+           "`type Bump is Data` declaration, which is LABELLED "
+           "(`Bump{size: U32, ptr: U32, base: U32, wrap: Bool}`).  The 5 sites are the "
+           "four accessors' patterns (:488 size, :491 ptr, :494 base, :497 wrap) and "
+           "`bump_at`'s constructor (:504).  Measured: rewriting all 5 swaps TWO POSITIONAL "
+           "BINDERS -- `Bump.base` returns 11 where it returned 13 and `Bump.ptr` 13 where "
+           "it returned 11 -- and moves 13 rows.  So the old number was a 13-row move for "
+           "an edit that is NOT the field-order mutation its description names.  Re-aim at "
+           "the labelled declaration, or at one accessor pattern.",
+    "M52": "the anchor `bitlen1(TLSF_DEF_LV2_CNT())` occurs 5x (:2124 lv2_shift, :2131 "
+           "t_tlsf1, :2135 tlsf_bucket, :2150 a def, :2225 tlsf_req), so replacing all of "
+           "them is five edits and the description names one.  Re-aim.",
+}
 
-# STDERR IS NOT A FAILURE SIGNAL.  `bend` writes `bend 2.0.35 is available: run
-# bend update` to stderr on EVERY run, including a clean one, so "stderr is
-# non-empty" made this harness exit 2 before measuring anything -- and exit 2
-# is indistinguishable from "did not compile".  The signal is the RETURN CODE
-# plus the presence of rows; `agent-core.md` says the same about
-# `--check-only`, which exits 1 on a file that is fine.
-def ok(rc, txt):
-    return rc == 0 and rows_of(txt)
+# The verdict vocabulary is SPELLED THROUGH the two modules that own it rather than
+# invented here, and looked up BY NAME.  `zero-classify.py` prints
+# `UNREACHABLE+proof` and `INVISIBLE-to-reader`, so the query returns five strings that
+# are NOT the five names this table uses; slicing that list by position -- which is
+# exactly what this footer did on its first attempt -- reads `PATCH-NOT-APPLY` when it
+# asks for `INVISIBLE`.  `zero_verdict_map()` refuses a key that does not match exactly
+# one queried verdict, so the vocabulary cannot drift silently underneath the table.
+MOVED = "MOVED"
+V = S.zero_verdict_map()
+UNREACHABLE, PORT_DEFECT, INVISIBLE = V["UNREACHABLE"], V["PORT-DEFECT"], V["INVISIBLE"]
+DID_NOT_COMPILE = __import__("patch_not_apply").NOT_A_PROGRAM
+NO_MUTATION = V["NO-MUTATION-WRITTEN"]
+PATCH_NOT_APPLY = __import__("patch_not_apply").MARKER
 
-def rows_of(txt):
-    out = []
-    for l in txt.split('\n'):
-        l = l.rstrip()
-        if l and '=' in l: out.append(l)
-    return out
+
+def classify(mid, moved, compiled):
+    """One verdict, from the measurement only.
+
+    `compiled` is what separates a zero from a non-program, and conflating the two is
+    how three mutations that never compiled were published as "49 rows moved" each: a
+    harness that counts lines counts bend's `1007>|` parse-error ROWS on stderr.  A
+    `DID-NOT-COMPILE` NEVER contributes a row count, and `moved` is `[]` for it
+    because `try_rows()` returns None rather than an empty dict.
+    """
+    if moved:
+        return MOVED, ""
+    if not compiled:
+        return DID_NOT_COMPILE, "the mutant is not a program"
+    note, theorem = ZERO_NOTES.get(mid, ("no entry in ZERO_NOTES: an unexplained zero "
+                                         "is still a zero", False))
+    return (UNREACHABLE if theorem else PORT_DEFECT), note
+
+
+def cell(v, n=58):
+    """A VALUE clipped for a human.  A 4,000-character `valloc_picks_*` row buries the
+    five rows after it, and a table nobody can read past line three is a table whose
+    later rows go unread -- which is how a DID-NOT-COMPILE at the bottom of a screen
+    goes unnoticed.  The clip is applied to the PRINT only; `moved` and the report
+    carry whole lines."""
+    s = "" if v is None else str(v)
+    return s if len(s) <= n else s[:n] + " ...[%d]" % len(s)
+
 
 def main():
-    only = set(sys.argv[1:])
-    os.makedirs(WORK, exist_ok=True)
-    base_txt, base_rc, base_err = run(BEND)
-    if not ok(base_rc, base_txt):
-        print(f"BASELINE DID NOT RUN (rc={base_rc}):\n" + base_err, file=sys.stderr)
-        sys.exit(2)
-    base = rows_of(base_txt)
-    print(f'baseline rows: {len(base)}')
+    # `--report FILE` takes a VALUE, and a value does not start with `--`.  Collecting
+    # selectors as "everything that is not a flag" therefore put the filename in the
+    # set, every mutation id missed it, and the harness printed `0 mutations:` -- which
+    # is the one output indistinguishable from "did not start".  It did exactly that on
+    # its first run here.  An option's ARGUMENT is removed with the option, by index.
+    argv = list(sys.argv[1:])
+    report = None
+    if "--report" in argv:
+        i = argv.index("--report")
+        report, argv = pathlib.Path(argv[i + 1]), argv[:i] + argv[i + 2:]
+    only = set(argv)
 
-    results = []
-    for mid, desc, find, repl in MUTS:
-        if only and mid not in only: continue
-        src = open(BEND).read()
-        n = src.count(find)
-        if find == 'KEEP' or n == 0:
-            results.append((mid, desc, PNA.not_applied(), [],
-                            f'pattern not found ({n})')); continue
-        open(BEND + '.mut', 'w').write(src.replace(find, repl))
-        txt, rc, err = run(BEND + '.mut')
-        moved = []
-        if ok(rc, txt):
-            bm = {l.split('=', 1)[0]: l for l in base}
-            nm = {l.split('=', 1)[0]: l for l in rows_of(txt)}
-            moved = sorted(k for k in set(bm) | set(nm)
-                           if bm.get(k) != nm.get(k))
-        os.remove(BEND + '.mut')
-        # RULE B: a mutant that is not a PROGRAM is not a zero.  `OK` is reserved
-        # for "it ran and moved rows"; everything else is named for what it is.
-        st = 'MOVED' if moved else ('NOT-A-PROGRAM' if not ok(rc, txt) else 'ZERO')
-        results.append((mid, desc, st, moved, '' if moved else err.strip()[:80]))
+    table, tally = [], {}
+    with S.Staged(LIVE, "mem") as g:
+        g.write(g.origin())
+        c1 = g.rows()
+        g.write(g.origin())
+        c2 = g.rows()
+        S.control(c1, c2, "memory.bend unedited staged mirror, two runs")
+        base = c1
+        print("CONTROL SAME: %d rows, row-set digest %s, both runs"
+              % (len(base), S.row_digest(base)[:16]))
+
+        for mid, desc, find, repl in MUTS:
+            if only and mid not in only:
+                continue
+            occ = g.occurrences(find)
+            if occ != 1:
+                note = ("anchor occurs %dx in the asserted-equal substrate (need exactly 1)"
+                        % occ) + (("  " + AMBIGUOUS[mid]) if mid in AMBIGUOUS else "")
+                print("%s %s  %-56s %s" % (mid, PATCH_NOT_APPLY, desc, note))
+                table.append((mid, desc, NO_MUTATION, [], note))
+                tally[NO_MUTATION] = tally.get(NO_MUTATION, 0) + 1
+                continue
+            g.write(g.origin().replace(find, repl, 1))
+            if g.text() == g.origin():
+                note = "replacement is byte-identical to the anchor"
+                print("%s %s  %s" % (mid, NO_MUTATION, desc))
+                table.append((mid, desc, NO_MUTATION, [], note))
+                tally[NO_MUTATION] = tally.get(NO_MUTATION, 0) + 1
+                continue
+            got = g.try_rows()
+            g.write(g.origin())                   # restore from pristine, not from disk
+            moved = [] if got is None else \
+                sorted(k for k in set(base) | set(got) if base.get(k) != got.get(k))
+            verdict, why = classify(mid, moved, got is not None)
+            tally[verdict] = tally.get(verdict, 0) + 1
+            table.append((mid, desc, verdict, moved, why))
+            print("%s %-18s rows_moved=%-4d %s" % (mid, verdict, len(moved), desc))
+            for k in moved[:6]:
+                print("      %-30s %s -> %s" % (k, cell(base.get(k)), cell(got.get(k))))
+            if len(moved) > 6:
+                print("      ... and %d more" % (len(moved) - 6))
+            if why:
+                print("      reason offered: %s" % why)
+        print()
+        print("SUBSTRATE  live=%s staged=%s  (%d rows)"
+              % (g.live_sha[:16], g.mirror_sha[:16], len(base)))
 
     print()
-    tally = {}
-    for mid, desc, st, moved, why in results:
-        nmv = len(moved)
-        sample = ', '.join(moved[:6]) + (' ...' if nmv > 6 else '')
-        print(f'{mid} {st:14} rows_moved={nmv:4}  {desc}')
-        if nmv: print(f'      {sample}')
-        if why and st != 'PATCH-NOT-APPLY': print(f'      {why}')
-        if st == 'ZERO': tally.setdefault('ZERO', []).append((mid, desc))
-        elif st == 'PATCH-NOT-APPLY': tally.setdefault('PATCH-NOT-APPLY', []).append((mid, desc))
-        elif st == 'NOT-A-PROGRAM': tally.setdefault('NOT-A-PROGRAM', []).append((mid, desc))
-    print(f'\n{len(results)} mutations, {len(results) - len(tally.get("PATCH-NOT-APPLY", []))} '
-          f'had an applicable anchor')
-    # A ZERO is a REQUEST FOR A FIXTURE (agent-core.md), never a coverage claim,
-    # and a NOT-A-PROGRAM is not even a zero (RULE B).  The two are counted
-    # separately because a table whose tally folds them together reports a
-    # compile error as a blind spot at the port.
-    for k in ('PATCH-NOT-APPLY', 'NOT-A-PROGRAM', 'ZERO'):
-        for mid, desc in tally.get(k, []):
-            print(f'  {k} {mid}: {desc}')
+    # `0` IS INDISTINGUISHABLE FROM "did not start", so it is refused rather than
+    # printed.  A table with no rows means the selectors matched nothing, and a
+    # harness that reports that as a result is reporting its own argument parsing.
+    if not table:
+        raise SystemExit("NO MUTATIONS RAN.  selectors=%r matched none of the %d ids in "
+                         "MUTS.  No table is written -- a 0 here means the run never "
+                         "began." % (sorted(only), len(MUTS)))
+    print("%d mutations: %s" % (len(table), ", ".join("%s=%d" % kv for kv in sorted(tally.items()))))
+    for v in (UNREACHABLE, PORT_DEFECT, INVISIBLE, DID_NOT_COMPILE, NO_MUTATION):
+        for mid, desc, verdict, _, why in table:
+            if verdict == v:
+                print("  %-18s %s  %s%s" % (v, mid, desc, ("  -- " + why) if why else ""))
+    if report:
+        report.write_text("\n".join(
+            ["memory-mutate -- STAGED, the live tree is never written",
+             "substrate tinybendygrad/runtime/support/memory.bend",
+             "sha256(mirror)==sha256(live) asserted with jj --ignore-working-copy",
+             "reader rebase-gate.rows() over the WHOLE row set, keyed on NAME",
+             "control SAME on %d rows, row-set digest %s" % (len(base), S.row_digest(base)[:16]),
+             "MUT    VERDICT            ROWS_MOVED  DESCRIPTION"] +
+            ["%-6s %-18s %-11d %s" % (m, v, len(mv), d) for m, d, v, mv, _ in table]) + "\n")
+        print("wrote %s" % report)
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

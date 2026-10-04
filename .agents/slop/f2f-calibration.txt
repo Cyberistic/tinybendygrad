@@ -1,17 +1,17 @@
-FIXED tinybendygrad/codegen/decomp/dtype.bend md5=48732687a99738f9250436d59d06c1aa
-  BASE FORWARD=0 rows=263 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 32, 'q5': 58, 'q7': 30}
+FIXED tinybendygrad/codegen/decomp/dtype.bend md5=3258260a667dcec74f9e7986cbdf1dc6
+  BASE FORWARD=0 rows=261 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 31, 'q5': 58, 'q7': 29}
 
 [1] FALSE POSITIVE -- the INVERTED predicate, same file, same harness
-  inverted FORWARD=257 rows=263 -> does NOT fire everywhere (257/263); the header's account of the inversion is WRONG
-  good     FORWARD=0 rows=263 -> 0/263 rows
+  inverted FORWARD=255 rows=261 -> does NOT fire everywhere (255/261); the header's account of the inversion is WRONG
+  good     FORWARD=0 rows=261 -> 0/261 rows
 
 [2]+[3] FALSE NEGATIVE -- injected defects, per lane
   defect          FORWARD  SHAPE  nodes  verdict
   stale-arena           7     64      6  FORWARD, LABEL(+64)
   stale-found           3    142      3  FORWARD, LABEL(+142)
   stale-name            3     76      3  FORWARD, LABEL(+76)
-  wrong-const           0     19      0  LABEL(+19)
-  wrong-offset          0     91      6  LABEL(+91), COUNT(6/6)
+  wrong-const           0     23      0  LABEL(+23)
+  wrong-offset          0    123      5  LABEL(+123), COUNT(5/6)
   wrong-index           0     19      3  LABEL(+19), COUNT(3/6)
   lane FORWARD caught 3/6: ['stale-arena', 'stale-found', 'stale-name']
   lane LABEL    caught 6/6: ['stale-arena', 'stale-found', 'stale-name', 'wrong-const', 'wrong-offset', 'wrong-index']

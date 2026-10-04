@@ -94,7 +94,7 @@ MUTATIONS = [
   ("M14", "`sym_dim` answers `SU` for EVERY PARAM -- the point arm dropped, so a FIXED dim stays symbolic",
    [("def sym_dim.range(r: Maybe<&2, O.PyRange>, s: U32) -> Maybe<&1, O.Sint>:",
      "def sym_dim.range(r: Maybe<&2, O.PyRange>, +s: U32) -> Maybe<&1, O.Sint>:"),
-    ("        Some{O.SI{lo}}, Bool.pick", "        Some{O.SU{s}}, Bool.pick")], ""),
+    ("        Some{O.SI{lo}}, Bool.pick", "        Some{O.SU{s}}, Bool.pick")]),
 
   ("M15", "A SYMBOLIC DIM RENDERS AS A BARE `U` -- THE FLATTEN-EVERYTHING BUG. Every symbolic dim becomes the same token",
    "    case O.SU{+u}: String.concat([\"U(\", O.Ops.name(O.Arena.op(ar, u)), \":\", dim_str.name(O.Arena.arg(ar, u)), \")\"])",
@@ -105,8 +105,9 @@ MUTATIONS = [
    "  Bool.and(Bool.not(Prod.neg(m)), U32.is_eq(Prod.n(ps), Prod.n(m)))"),
 
   ("M17", "`sym_dim.spec` drops the EMPTY-interval arm -- a SPECIAL over an END OF ZERO now mints a `SU`",
-   "    case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),\n                Some{sint_of(0)}, Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(0)),\n                None{}, Some{O.SU{s}}))",
-   "    case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),\n                Some{sint_of(0)}, Some{O.SU{s}}})"),
+   [("def sym_dim.spec(e: Maybe<&2, H.I64>, s: U32) -> Maybe<&1, O.Sint>:",
+     "def sym_dim.spec(e: Maybe<&2, H.I64>, +s: U32) -> Maybe<&1, O.Sint>:"),
+    ("                None{}, Some{O.SU{s}}))", "                Some{O.SU{s}}, Some{O.SU{s}}))")]),
 
   ("M17b", "`sym_dim.range` drops the `lo <= hi` half of `signable` -- a PARAM with an EMPTY `vmin_vmax` now mints a `SU`",
    "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and(Bool.not(H.i64_is_neg(lo)), H.i64_le(lo, hi))",
@@ -144,12 +145,20 @@ b_rows = rows_of(b_int)
 print(f"baseline: {len(b_rows)} rows, both lanes identical")
 print()
 
-for mid, what, old, new in MUTATIONS:
-  # `old`/`new` are EITHER one (old, new) string pair or a LIST of them, for a mutation
-  # that has to widen a parameter to `+` as well as change its body: Bend spends a
-  # value on the first read, so a body that reads `s` twice needs a shared binder and a
-  # mutation that only edits the body does not compile.
-  edits = list(zip(old, new)) if isinstance(old, list) else [(old, new)]
+for mut in MUTATIONS:
+  mid, what = mut[0], mut[1]
+  # A mutation is EITHER `(id, what, old, new)` -- one (old, new) string pair -- or
+  # `(id, what, [(old, new), ...])`. The list form exists for a mutation that has to
+  # widen a parameter to `+` as well as change its body: Bend spends a value on the
+  # first read, so a body reading `s` twice needs a shared binder and a mutation that
+  # edits only the body does not compile. IT IS A LIST AND NOT A STRING ON BOTH
+  # SIDES: the first version of this took `new` as a string and `zip` silently paired
+  # NOTHING, so M14 was a no-op and reported 0 rows moved -- a harness defect wearing a
+  # blind spot's clothes, which is the exact shape of the L1 defect this table records.
+  if len(mut) == 4:
+    edits = list(zip(mut[2], mut[3])) if isinstance(mut[2], list) else [(mut[2], mut[3])]
+  else:
+    edits = [tuple(e) for e in mut[2]]
   if not edits:
     print(f"{mid}: NOT APPLIED -- the mutation carries NO EDIT, so it is a no-op by "
           f"construction and any 0 it reports is the harness, not the gate")

@@ -138,6 +138,26 @@ def canonical_pairs(text):
   return sorted((str(k), str(v)) for k, v in d.items())
 
 
+def behavior_fingerprint(fn):
+  """A reader's exact answers on the six shapes, hashed. NOT its source text: two readers can
+  agree on everything and be spelled differently, and a fork that was only reformatted must not
+  fail the guard.
+
+  This lives HERE, in the census, and `reader-registry.py` and `reader-guard.py` both call it,
+  because a fingerprint computed three times by three implementations is three chances for the
+  registry and the guard to disagree about what a reader does -- and a registry and a guard that
+  disagree is a guard that reports a regression every run until someone switches it off."""
+  sig = []
+  for _, text in SHAPES:
+    try:
+      r = call(fn, text)
+      pairs, kind, _note = pick_mapping(r)
+      sig.append((kind, pairs if pairs is not None else [repr(r)[:120]]))
+    except Exception as e:
+      sig.append((f"RAISED {type(e).__name__}", [str(e)[:120]]))
+  return hashlib.md5(repr(sig).encode()).hexdigest()[:12]
+
+
 # ── CANDIDATE DISCOVERY ────────────────────────────────────────────────────────────────────
 # A candidate is a FUNCTION whose name says it might read rows. This deliberately over-collects
 # (`rows_moved` is a differ, `rows_e` is a Tensor accessor in vendored MoE code) because the

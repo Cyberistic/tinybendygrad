@@ -5,10 +5,19 @@
 #
 # WHAT THIS FILE IS. The pure half of that generator -- the constant tables,
 # the type-name derivation, and the emission templates -- over a FIXTURE AST.
-# The other half, 200+ `clang_get*` calls through ctypes, is WALL 1.
+# The other half is WALL 1.
+#
+#   THE SIZE OF WALL 1, MEASURED, because "200+ clang_get* calls" was WRONG.
+#   `.agents/slop/ag-wall1-census.py` runs this very generator over 26 real
+#   headers (libc, llvm-c, objc, dispatch, zlib) with a call counter on every
+#   `clang_*` symbol in `libclang.py`.  Result: the generator calls 46
+#   distinct functions over 204,421 call events, out of the 324 that
+#   `libclang.py` binds -- 278 of which it NEVER touches.  A naive port of
+#   `libclang.py` would be 324 symbols of which 278 are dead.
+#   `.agents/slop/ag-wall1-census.txt`.
 #
 # ===========================================================================
-# THE THREE WALLS. Stated once, here, rather than as a TODO per arm.
+# THE FOUR WALLS. Stated once, here, rather than as a TODO per arm.
 #
 # WALL 1 -- the libclang FFI. autogen.py:5-80 is 76 lines of ctypes and every
 #   fact the generator reasons about arrives through it: `nm`, `extent`, `loc`,
@@ -17,6 +26,15 @@
 #   `dtype.bend`'s seam and `ops_webgpu.bend`'s seam make unavailable FFI a
 #   fixture with the seam named. `Ty`/`Cur`/`Fld` below are that fixture's
 #   shape; each field is a fact one `clang_*` call would have returned.
+#
+#   MEASURED BOUNDARY: 0 of the 46 are bound. `c.bend` has 158 top-level defs
+#   and ZERO lines mentioning clang, and no `dlopen`/`dlsym` anywhere in the
+#   tree. This is the same wall class `support/compiler_amd.bend:106` recorded
+#   for comgr -- "Twenty-eight calls into a shared library bend cannot
+#   dlopen." Bend's only FFI is a WHOLE-OPERATION effect
+#   (`def f(..) -> IO(R)` + `import "./x.c"`, registered by `io_eff`), so
+#   "add the clang bindings to c.bend" has no representation: `c.bend` is a
+#   pure Bend file with no foreign effect at all.
 #
 # WALL 2 -- regex. `base_rules` (autogen.py:82) is 13 `re.sub` patterns with a
 #   lookahead (`\b0+(?=\d)`), two backreferences (`\1`), a non-greedy match
@@ -33,6 +51,35 @@
 #   That is a Python SOURCE-EXECUTION feedback loop. Its observable effect is
 #   "drop the extras that do not compile"; the gate below pins the extras the
 #   fixture produces, which is the part that can be checked without CPython.
+#
+# WALL 4 -- `tname`'s RECORD ARM, and it is the wall that DECIDES THE SCOPE
+#   QUESTION, not WALL 1. autogen.py:147-153 resolves `tname` for EACH field
+#   (a descent on the field's TYPE) and then continues with the REMAINING
+#   fields (a descent on the field LIST). TWO DESCENTS IN ONE ARM is refused:
+#   the second self-call has no shrinking argument and bend reports "expected
+#   a decreasing self-call (arguments are read left to right: each passed
+#   unchanged until one shrinks)".
+#
+#   REPRODUCED INDEPENDENTLY at `.agents/slop/ag-wall4-repro.bend`, with the
+#   control in `ag-wall4-control.bend`: the one-descent baseline compiles (ALL
+#   PROOFS CHECK) and only the two-descent arm is refused, with that exact
+#   message. The artifact this file previously CITED at this line did not exist
+#   on disk; the claim has been re-measured rather than inherited, and the
+#   repro now lives in a tracked path (`.agents/slop/agprobe/` is gitignored,
+#   so a citation into it would have pointed at nothing -- the same defect a
+#   second time).
+#
+#   THE THREE ESCAPE HATCHES ARE CLOSED BY THE PROJECT'S OWN RULES: a regex
+#   over the emitted text is WALL 2 and a regex ENGINE is Turing-completeness,
+#   forbidden without approval; `List.foldl`/`List.filter` over a CLOSURE
+#   cannot be written at all because `+` cannot be spelled in a closure TYPE;
+#   and the `List.filter.put`/`List.find.put` accumulator trick used here
+#   (`rep_go2`, `rows_br_go`) resolves ORDER but not the two-descents shape.
+#
+#   WHY THIS MATTERS MORE THAN WALL 1: WALL 4 is INDEPENDENT of WALL 1. A
+#   perfect libclang binding would hand `tname` a real AST and change nothing,
+#   because the arm that turns that AST into emitted source is the one bend
+#   refuses. So closing the FFI does not make the generator able to emit.
 #
 # ===========================================================================
 # MEASURED bend 2.0.34 CONSTRAINTS that shape every def here. All three are
@@ -74,8 +121,8 @@
 #   :107  the `types` dict      PORTED   `Gt{nm, tnm, defd, ln}` and its readers
 #   :273  the main prologue     PORTED   prolog_head, prolog_objc, emit_dll_line
 #   :112  tname, its DISPATCH   WALL 4   the ten-arm `match t.kind` and its
-#                                           record arm -- see WALL 4 below
-#   :5-80 the libclang FFI      WALL 1
+#                                           record arm -- see WALL 4 above
+#   :5-80 the libclang FFI      WALL 1   46 functions MEASURED, 0 bound
 #   :30   all_fields            WALL 4   it is a loop over `fields(t)` calling
 #                                           into tname, so it inherits WALL 4
 #   :73   readext               WALL 1   file IO at a source offset
@@ -455,8 +502,8 @@ def typehint_table() -> List<&2, TH>:
 # field's TYPE) and then continue with the REMAINING fields (a descent on the
 # field LIST). Two descents in one arm is refused -- measured, the second call
 # is reported as "a decreasing self-call (arguments are read left to right: each
-# passed unchanged until one shrinks)" and the repro is
-# `.agents/slop/agprobe/p20.bend`.
+# passed unchanged until one shrinks)" and the repro, with its one-descent
+# control, is `.agents/slop/ag-wall4-repro.bend` / `ag-wall4-control.bend`.
 #
 # The three escape hatches are all closed by the project's own rules:
 #   * a regex over the emitted text -- WALL 2, and a regex ENGINE is

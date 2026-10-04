@@ -9,22 +9,24 @@
 # ALL OF IT AT ONCE: sh .agents/slop/graphcmp-run.sh
 # REPRODUCIBILITY:         sh .agents/slop/graphcmp-repro.sh
 #
-# SUBSTRATE AT CAPTURE TIME (round 3):
-#   tinybendygrad/uop/ops.bend    sha256 REPLACE_ME
-#   tinybendygrad/uop/fold.bend   sha256 REPLACE_ME
-#   .agents/slop/graphcmp.bend    sha256 REPLACE_ME
-#   .agents/slop/graphcmp.py      sha256 REPLACE_ME
-#   .agents/slop/graphcmp-run.sh  sha256 REPLACE_ME
-#   .agents/slop/graphcmp-repro.sh sha256 REPLACE_ME
-#   .agents/slop/graphcmp-p14-sched.py sha256 REPLACE_ME
-# `uop/ops.bend` and `uop/fold.bend` are under SINGLE OWNERSHIP by another unit and moved
-# through at least six digests across rounds 1-2 and then went COLD THREE MORE TIMES during
-# round three (`sym_dim.pa` at :1250 not compiling; `ParamArg`'s field list renamed
-# mid-run). Every artifact here was RE-CAPTURED at the digests above, and
-# `graphcmp-repro.sh` waits for the substrate and accepts a run only if its own summary
-# reads 16 graphs / 13 AGREE / selfcheck OK / census-rc=0. `ALL PROOFS CHECK` on
-# graphcmp.bend is NOT the gate agreeing -- the gate is `E diff --graph NAME`, and it is
-# run below.
+# SUBSTRATE AT CAPTURE TIME (round 3, and the `sym` closure already in):
+#   tinybendygrad/uop/ops.bend    sha256 569dc3af8f71925144cedc8f24cf535c0668c097baf58224cd4d829d9f1cecfd
+#   tinybendygrad/uop/fold.bend   sha256 2eaa3938cb8d18bc285ca1f3405f30aaa1766ea8f525818760021703a9cbf9cc
+#   .agents/slop/graphcmp.bend    sha256 f1249a539b8e639b56ffbf8954a8aa546759ad57606a768575c50a5a8b1960ab
+#   .agents/slop/graphcmp.py      sha256 968c0952de8f30ddeb6f1c297df6d5f97ef8b3fdb7c71d1da815ea3187555bb8
+#   .agents/slop/graphcmp-run.sh  sha256 7ed74e95c83b9007d2e99d0d223f22e2a95adc16d76a6c2f1f6da167d706d162
+#   .agents/slop/graphcmp-repro.sh sha256 d45fbfa1b83d69be27ed8aa87409afd973eddf81651d20c4c150b6c26bfe3f15
+#   .agents/slop/graphcmp-oracle.py sha256 e068b3a44c1ae86815f594e335a0a643b9fd67349e271a635e9a718da397001d
+#   .agents/slop/graphcmp-p14-sched.py sha256 3f6d20c8ff144643610e26d5c2701752fcb5f17b06c0206014d0e96ba6b8c700
+# `uop/ops.bend` and `uop/fold.bend` are under SINGLE OWNERSHIP by another unit. They moved
+# through at least six digests across rounds 1-2, went COLD THREE TIMES during round three
+# (`sym_dim.pa` at :1250 not compiling -- twice; `ParamArg`'s field list renamed mid-run --
+# once), and `fold.bend` GAINED `sym_dim.pa` mid-session, which closed the symbolic-dim wall
+# and moved three pinned numbers in this harness at once (see LIMITS section 3c). Every
+# artifact here was RE-CAPTURED at the digests above, and `graphcmp-repro.sh` waits for the
+# substrate and accepts a run only if its own summary reads 16 graphs / 14 AGREE /
+# selfcheck OK / census-rc=0. `ALL PROOFS CHECK` on graphcmp.bend is NOT the gate agreeing
+# -- the gate is `E diff --graph NAME`, and it is run below.
 #
 # ---------------------------------------------------------------------------
 # THE ARTIFACT. ONE command, ONE argument, ONE verdict line, WITH ITS DENOMINATOR.
@@ -173,12 +175,23 @@ D8b E .venv/bin/python .agents/slop/graphcmp-dbg-oracle.py   D8b-cpython-dbg1-re
       Those 8 are TENSOR fixtures, not graphcmp graphs -- do not read the 8 as a graph
       count. So `dbg` is PORT-AT-LEVEL-A vs PORT-AT-LEVEL-B and not a port-vs-CPython
       comparison, and says so. A 0 of 8 is a statement about 8 fixtures.
-D9  E diff --graph {group|sym|loop|gate|commute --plant srcswap}, twice; `cmp`   D9-stability-*.txt
-      MEASURED: 5 of 5 pairs BYTE-IDENTICAL. Five cases because the interesting shapes
-      differ: the first graph with a shared non-leaf, TWO graphs that DISAGREE (so a report
-      whose disagreements moved would be the one that matters), the widest fan-in in the
-      corpus, and a PLANT (a run killed mid-write once left three D5 files byte-identical
-      to EACH OTHER, which no plant can produce).
+D9  E diff --graph {group|sym|loop|gate|commute --plant srcswap}, twice   D9-stability-*.txt
+      MEASURED: 5 of 5 pairs BYTE-IDENTICAL, 0 failed, 0 differ. Five cases because the
+      interesting shapes differ: the first graph with a shared non-leaf, TWO graphs that
+      DISAGREE (so a report whose disagreements moved would be the one that matters), the
+      widest fan-in in the corpus, and a PLANT (a run killed mid-write once left three D5
+      files byte-identical to EACH OTHER, which no plant can produce).
+      **THREE OUTCOMES, NOT TWO, and the third is the one that had been missing.** MEASURED:
+      with the substrate cold, BOTH members of a pair wrote the same one-line `0 rows after
+      5 attempts` file, so `cmp -s` called the pair `BYTE-IDENTICAL` and the summary read
+      `stable-pairs=5 of 5` on a run in which one pair had never produced a verdict at all.
+      **Two identical FAILURES compare equal.** So a ONE-LINE side is labelled FAILED, the
+      pair is re-run once, and the summary counts the NEGATIVES (`stable-failed=`,
+      `stable-differ=`) beside `stable-pairs=` -- a positive count alone cannot tell "it
+      worked" from "it failed the same way twice". The summary also counts `plants-disagree=`
+      and `cross=` now, because **a step that fails silently is not a step whose failure the
+      health gate can see**: six plants and `cross` were not counted at all, so a cold
+      substrate could kill both and every line the gate read still said healthy.
       MEASURED OVER THE WHOLE DIRECTORY, by `sh .agents/slop/graphcmp-repro.sh`:
       **158 of 158 files identical across two clean runs.** The old claim of the same
       shape was backed by `find | md5 -q`, which on macOS takes exactly ONE file and
@@ -228,7 +241,12 @@ D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
 #     taken on a run that broke part way through -- a concurrent edit landed between graph
 #     12 and graph 13 of one run, so twelve real reports and four 0-row failures were both
 #     "files" and both hashed. `graphcmp-repro.sh` therefore takes a snapshot only from a
-#     run whose own summary reads `graphs=16 graphs-agree=13 selfcheck=OK census-rc=rc=0`.
+#     run whose own summary reads `graphs=16 graphs-agree=14 selfcheck=OK census-rc=rc=0`.
+#     MEASURED: the `graphs-agree` pin MOVED from 13 to 14 mid-session because the `fold`
+#     unit closed the `ssimplify` wall and `sym` started agreeing -- and until it was moved
+#     the gate reported "not healthy" for a run that was entirely CORRECT and sat retrying
+#     it. A gate pinned to a verdict COUNT is a gate that can be wrong in the direction of
+#     refusing to measure.
 #   * the three round-two/round-three findings that are PORT bugs rather than harness bugs
 #     are reported and NOT fixed, because the files are not this unit's: `ParamArg.slot = -1`
 #     two conflicting sentinels (LIMITS section 2) and `fold.bend:1067`'s `call_dt` reading

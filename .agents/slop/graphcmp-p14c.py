@@ -64,5 +64,15 @@ for tag, make in CASES.items():
     except Exception as e:
       print(f"# {tag:18s} FAILED {type(e).__name__}: {str(e)[:120]}")
 
-# ---- a gated store: left to a separate probe (needs a BUFFER, which the corpus already has)
-print("# --- hand-gated store, as `UOp.store(val, gate)` (ops.py:613) ---")
+# ---- a gated store is NOT reachable from any of the nine programs above, and proving THAT
+# ---- is the next probe's job: `.agents/slop/graphcmp-p14d.py` Q1 counts gated STOREs over
+# ---- nine scheduled programs and answers 0, and Q3 takes one by hand through the real
+# ---- `pm_linearize_cleanups`. This file asked the narrower question -- does the SCHEDULER
+# ---- ever leave a gate on an INDEX, a LOAD or a STORE -- and its answer is: on `shrink` it
+# ---- leaves two GATED LOADS (`LOAD(3src)`), which is the READ side; no program above leaves
+# ---- a gated STORE, and `to_program` then REFUSES `shrink` outright ("memory coalescing
+# ---- does not support gated loads/stores").
+print("# Q (this file's whole subject): does the scheduler leave a gate on a STORE?")
+print("#   ANSWER, from the runs above: no. Two GATED LOADS on `shrink` and no gated STORE,")
+print("#   and `to_program` refuses `shrink` for the gated loads. The count with a")
+print("#   denominator is in graphcmp-p14d.py Q1: 0 gated STOREs in 9 scheduled programs.")

@@ -1446,7 +1446,7 @@ def dd_mask1(+k: U32) -> U32:
 # (`x.eq(shl(1, k) - 1)` twice) or ORs it in (`nan_mantissa = shl(1, tm) - 1`) rather
 # than ANDing it. One interned `CONST`; `H.i64_of_i32` of `mask1` is exact because
 # `2**k - 1` is below `2**31` for every `k` dtype.py writes here.
-def f2f.mask1.node(+ar: O.Arena, +k: U32) -> O.Found:
+def dd_mask1.node(+ar: O.Arena, +k: U32) -> O.Found:
   dd_wk(ar, H.i64_of_i32(dd_mask1(k)))
 
 def rne.go(+ar: O.Arena, +v: U32, +s: U32) -> O.Found:
@@ -1627,9 +1627,17 @@ def f2f.qnan.c(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
 # This def REPLACED `f2f.em1`, which built `2**k - 1` as a three-node graph and then
 # handed the SAME arena to `tx_shl`, so `tx_shl`'s `MUL` overwrote the `em1` CONST and
 # its own src0 pointed FORWARD. See `f2f.qnan`.
+# ⚠ THE MASK WAS ROUTED THROUGH `dd_band`'s `U32` THIRD PARAMETER, AND `dc_cint` is
+# `O.CInt{H.i64_of_i32(v)}` -- `H.i64_of_i32` SIGN-EXTENDS. `shl(1, fs - 1)` is `2**31` for a
+# `float32` source, and `2**31` as a `U32` sign-extends to `-2147483648`, so `q7` interned
+# `C(-2147483648)` where CPython has `C(2147483648)` -- and a SECOND, DEAD `C(2147483648)`
+# sat next to it, because `+s` had already interned the correct I64 CONST.
+# MEASURED, `q7k`: port `C(-2147483648)` against CPython `C(2147483648)`, one constant.
+# `+s` IS the mask, so `dc_band`'s own shape is `AND(x, CONST)` and the CONST's INDEX is
+# `O.Found.i(s)` -- the mask VALUE never has to round-trip through `U32` at all.
 def f2f.sign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32, +ts: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
-  +a = dd_band(O.Found.ar(s), v, T.tx_powi32(U32.sub(fs, 1)))
+  +a = T.tx_alu2(O.Found.ar(s), O.OpsAND{}, v, O.Found.i(s))
   +c = P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
   T.tx_shl(O.Found.ar(c), O.Found.i(c), U32.sub(ts, fs))
 
@@ -1711,10 +1719,10 @@ def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Foun
 def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3: Bool) -> O.Found:
   match e4m3:
     case True{}:
-      +m = f2f.mask1.node(ar, U32.add(fm, fe))
+      +m = dd_mask1.node(ar, U32.add(fm, fe))
       dd_eq1(O.Found.ar(m), O.Found.i(ns), O.Found.i(m))
     case False{}:
-      +m = f2f.mask1.node(ar, fe)
+      +m = dd_mask1.node(ar, fe)
       dd_eq1(O.Found.ar(m), O.Found.i(ex), O.Found.i(m))
 
 # ---- NARROWING
@@ -1746,10 +1754,14 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
   +w = f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), O.Found.ar(nq), ns, sg, ex, nm, nq, fe, fm, te, tm)
   T.tx_bitcast(O.Found.ar(w), O.Found.i(w), to)
 
+# ⚠ THE SAME `U32` MASK ROUND-TRIP AS `f2f.sign`, at `2**(ts - 1)`. No fixture the file owns
+# reaches `ts = 32` -- `ts` is the TARGET's width and every narrowing target here is fp8 --
+# so this is a latent defect, fixed because the fix is the same one line and the wrong
+# version is what `f2f.sign` shipped.
 def f2f.down.sign(+ar: O.Arena, +v: O.Found, +fs: U32, +ts: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), U32.sub(fs, ts))
   +b = dd_wk(O.Found.ar(a), T.tx_powi(U32.sub(ts, 1)))
-  dd_band(O.Found.ar(b), O.Found.i(a), T.tx_powi32(U32.sub(ts, 1)))
+  T.tx_alu2(O.Found.ar(b), O.OpsAND{}, O.Found.i(a), O.Found.i(b))
 
 # `v & (shl(1, fs - 1) - 1)`
 # ⚠ THE SAME THREE DEAD BINDERS AS `f2f.nosign`: `dd_band`'s third parameter is the mask
@@ -1806,7 +1818,7 @@ def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S
 # OR'd straight into the `nan`; the port minted `CONST C(8388608)`, `CONST C(1)`,
 # `CONST C(-1)`, `MUL` and `ADD` for the same number.
 def f2f.down.m1(+ar: O.Arena, +tm: U32) -> O.Found:
-  f2f.mask1.node(ar, tm)
+  dd_mask1.node(ar, tm)
 
 def f2f.down.m2(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(ns), U32.sub(fm, tm))
@@ -1839,7 +1851,7 @@ def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, 
 # the single CONST the AND and the EQ both read.
 def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
-  +mc = f2f.mask1.node(O.Found.ar(a), fe)
+  +mc = dd_mask1.node(O.Found.ar(a), fe)
   +b = dd_band(O.Found.ar(mc), O.Found.i(a), dd_mask1(fe))
   dd_eq1(O.Found.ar(b), O.Found.i(b), O.Found.i(mc))
 

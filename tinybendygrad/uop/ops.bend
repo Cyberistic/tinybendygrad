@@ -4645,7 +4645,25 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1361  def launch_dims
 
-# TODO(p3) ops.py:1366  def vals
+#   ops.py:1366  def vals
+#   `tuple(var_vals[k.expr] for k in self.vars)` with a `RuntimeError(f"unbound
+#   Variable {e}")` on a miss. MEASURED: `ProgramInfo(vars=(i,j)).vals({'i':7,
+#   'j':9})` is `(7, 9)` and a miss is `RuntimeError: unbound Variable 'j'`.
+#
+#   EVERY PART IS HERE EXCEPT ONE, and the one is not a def. `ProgramInfo.vars` is
+#   `ops.bend:1408`, `UOp.expr` is `ops.bend:7158` (landed, and it is the reader
+#   `k.expr`), and the `var_vals` dict is already spelled as `VarVals{m:
+#   Map<&2, H.I64>}` at `ops.bend:943`. But `Map` is USED IN SEVEN PLACES AND
+#   DEFINED IN NONE -- `rg '^type Map|^def Map' tinybendygrad/` is zero hits -- so
+#   the lookup has nothing to call.
+#
+#   AND `Map.put` IS NOT `Map.set`, which is the whole reason it is wanted and the
+#   reason it is not free. `render.bend:991` records the measurement: a `put` on a
+#   one-entry `MLeaf` REPLACES the leaf and drops the old key, so three sequential
+#   puts answer `d[1]=three d[2]= d[3]=`. `render.bend:979-994` documents that the
+#   fix is a NEW BEND RULE, filed in the constraints file. `vals` needs the lookup
+#   only, so it needs the TYPE; `pyr_render`'s ctx needs `put` and so needs the
+#   RULE. P3 with the Map, and the Map is a language change rather than a port.
 
 # TODO(p3) ops.py:1400  def __reduce__
 #   # grad_fxn can't be pickled
@@ -4795,9 +4813,36 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # `sh .agents/slop/ops-rra-gate.sh`, with 7 mutations in
 # `.agents/slop/ops-rra-mutate.py` each moving EXACTLY the rows it names.
 #
-# ITS ONE CALLER IS STILL A MARKER: `schedule/prepare.py:186` is the only call
-# site, and that rewrite rule is P3. `ops.bend:764` names the situation this
-# creates -- "This `U32` ladder has NO CALLER in the port. The fix is a caller,
+#   ITS ONE CALLER IS PORTED'S TABLE BUT NOT ITS BODY, and the BLOCKER IS
+#   ARCHITECTURAL RATHER THAN A DEF. `schedule/prepare.py:186` puts it in
+#   `pm_inline_calls` as `UPat(Ops.AFTER, src=(UPat(name="r"), UPat(Ops.SINK,
+#   name="t")), allow_any_len=True)`, and `schedule/prepare.bend`'s TABLE is
+#   already ported -- `pr_inl_table`'s entry 1 is `PMEntry{1, [OpsAFTER],
+#   [OpsSINK]}`, which IS that pattern, and `prepare-gate.sh` diffs 321 rows of it.
+#   What is missing is the rule BODY.
+#
+#   AND THE BODY CANNOT BE WRITTEN WHERE THE RULE LIVES. `PMEntry` is
+#   `{tag, ops, rej}` -- there is no body field, because a Bend `Data` cannot hold
+#   a function value, and `ops.bend:3711`'s `pm_dispatch_m` resolves a tag to a body
+#   through a `match` in ops.bend. `schedule/prepare.bend` IMPORTS ops.bend (for
+#   `O.PMEntrys`, `F.Folded`, `F.Table`) and ops.bend cannot import it back -- the
+#   direction rule ops.bend states at its own NOT PORTED block. So prepare's bodies
+#   would have to live in ops.bend, which makes ops.bend the owner of every unit's
+#   rules and puts two agents on one file for every rule either of them ports.
+#
+#   MEASURED CONSEQUENCE: all 321 `prepare` rows are TABLE STRUCTURE -- `*_n`,
+#   `*_i_ops`, `*_i_rej`, `*_keys`, `*_pd_*` -- and NOT ONE runs a rule body. Five
+#   tables (fma, mop, inl, dsk, ear) and 321 rows, and the bodies are untested
+#   because there is nowhere to put them. That is a real hole in the gate's reach,
+#   and it is a design question rather than a backlog item: either `PMEntry` grows a
+#   body in a form Bend can hold (a def NAME, dispatched by name), or the dispatch
+#   is passed in per unit, or every unit's rules live in ops.bend forever. The first
+#   is the smallest: a `body: String` naming a def, and `pm_dispatch_m` resolving it
+#   through a name ladder. P3, as a DESIGN, before any more rules.
+#
+#   The earlier note on this marker said the fix is "a caller, not a deletion",
+#   which is still true and is now sharper: the caller needs a home, and the home is
+#   the question. ops.bend:764 names the symptom.
 # not a deletion." The def is landed and gated; the rule that uses it is not.
 
 # DELETED -- `contiguous_bitcast_index` does not exist at this pin. `rg` finds

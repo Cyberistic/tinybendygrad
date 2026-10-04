@@ -1,5 +1,6 @@
-# helpers-tc.bend -- THE GATE for the three helpers.bend defs added by the
-# trange/GlobalCounters/Context unit: `trange`, `GlobalCounters`, `Context`.
+# helpers-tc.bend -- THE GATE for the helpers.bend defs this port has added so far:
+# `trange`, `GlobalCounters`, `Context`, and the 64-bit pair block (`i64_or`,
+# `i64_and`, `i64_shl`, `i64_div`, `i64_mod`, `gcd`).
 #
 #   sh .agents/slop/helpers-tc-gate.sh
 #
@@ -10,8 +11,9 @@
 # tinybendygrad/helpers.bend. That matters: an earlier draft of this file DEFINED the
 # three blocks locally and imported helpers.bend only for `Flags`, so it gated a COPY
 # and a mutation of helpers.bend moved nothing. This file defines no `Counters`, no
-# `Ctx`, no `Tqdm` and no `trange` of its own -- `rg '^def (trange|Context|GlobalCounters|H.Counters)'`
-# over this file must find nothing.
+# `Ctx`, no `Tqdm` and no `trange` of its own, and no `I64` arithmetic of its own --
+# `rg '^def (trange|Context|GlobalCounters|H.Counters|i64_|gcd)'` over this file must
+# find nothing.
 import Base
 import ./helpers.bend as H
 
@@ -249,6 +251,82 @@ def nc_rows() -> IO(Unit):
     f : H.Flags <- H.Flags.from_env()
     nc_rows2(f)
 
+# ===========================================================================
+# the 64-bit pair block: i64_or / i64_and / i64_shl / i64_div / i64_mod / gcd
+#
+# Every def under test is reached THROUGH `H`. The fixture is a PAIR OF WORDS rather
+# than a decimal because `H.i64_text` prints the two halves: 2**63 has no `U32`
+# image, so a decimal fixture would have to be transcribed on one side and derived on
+# the other, and a transcription is exactly the kind of constant that is wrong and
+# green. The `_a=` / `_b=` / `_x=` / `_k=` rows print the FIXTURE ITSELF, so a table
+# that drifts between the two lanes shows up as a diff on the input.
+#
+# THE SMALL ROWS ARE THE CONTROL AND NOT THE TEST. A row whose two operands are both
+# below 2**32 reads the same whether the divider carries its 65th bit, whether the
+# shift's high arm comes from `lo` or from `hi`, and whether the floor correction is
+# applied. So the table carries `pm_big` (2**63-1 over 2**62-1), `pm_mini` (-2**63),
+# `pm_maxi` (2**63-1 over -1), `pm_ovf` (the one 64-bit overflow) and the three sign
+# pairs, and `pm_gf` is small ON PURPOSE: it is a Fibonacci pair, so it is the row
+# that reaches the `gcd` fuel bound instead of the 64-bit branches. `pm_gbig` exists
+# because without it the `*_gcd` COLUMN is `0:1` on twelve of the fourteen rows, and a
+# column that is constant over a suite is a column no mutation can move. It answers
+# `1073741823:4294967295` -- a LARGE gcd, not merely a non-1 one -- so the column is
+# wide as well as non-constant.
+# ===========================================================================
+
+def p64(nm: String, x: H.I64) -> IO(Unit):
+  p(nm, H.i64_text(x))
+
+def lit64(hi: U32, lo: U32) -> H.I64:
+  H.i64_of_hi_lo(hi, lo)
+
+def pair_go(+nm: String, ah: U32, al: U32, bh: U32, bl: U32) -> IO(Unit):
+  +a = lit64(ah, al)
+  +b = lit64(bh, bl)
+  do IO<Unit>:
+    p64(String.concat([nm, "_a"]), a)
+    p64(String.concat([nm, "_b"]), b)
+    p64(String.concat([nm, "_or"]), H.i64_or(a, b))
+    p64(String.concat([nm, "_and"]), H.i64_and(a, b))
+    p64(String.concat([nm, "_div"]), H.i64_div(a, b))
+    p64(String.concat([nm, "_mod"]), H.i64_mod(a, b))
+    p64(String.concat([nm, "_gcd"]), H.gcd(a, b))
+
+def shift_go(+nm: String, xh: U32, xl: U32, +k: Nat) -> IO(Unit):
+  +x = lit64(xh, xl)
+  do IO<Unit>:
+    p64(String.concat([nm, "_x"]), x)
+    p(String.concat([nm, "_k"]), Nat.show(k))
+    p64(String.concat([nm, "_shl"]), H.i64_shl(x, k))
+
+def i64_rows() -> IO(Unit):
+  do IO<Unit>:
+    pair_go("pm_zero",  0, 0, 0, 0)
+    pair_go("pm_zerod", 0, 7, 0, 0)
+    pair_go("pm_small", 0, 5, 0, 3)
+    pair_go("pm_big", 2147483647, 4294967295, 1073741823, 4294967295)
+    pair_go("pm_nege", 4294967295, 4294967287, 4294967295, 4294967291)
+    pair_go("pm_nepo", 4294967295, 4294967289, 0, 4)
+    pair_go("pm_pone", 0, 7, 4294967295, 4294967292)
+    pair_go("pm_mini", 2147483648, 0, 0, 3)
+    pair_go("pm_maxi", 2147483647, 4294967295, 4294967295, 4294967295)
+    pair_go("pm_ovf", 2147483648, 0, 4294967295, 4294967295)
+    pair_go("pm_wide", 4294967295, 0, 0, 4294967295)
+    pair_go("pm_gb", 2147483647, 4294967295, 2147483646, 4294967294)
+    pair_go("pm_gbig", 2147483647, 4294967294, 1073741823, 4294967295)
+    pair_go("pm_gneg", 4294967295, 4294967289, 0, 6)
+    pair_go("pm_gf", 0, 2971215073, 0, 472537396)
+    shift_go("sh_k0", 305419896, 2596069104, 0n)
+    shift_go("sh_k1", 305419896, 2596069104, 1n)
+    shift_go("sh_k31", 305419896, 2596069104, 31n)
+    shift_go("sh_k32", 0, 1, 32n)
+    shift_go("sh_k33", 0, 1, 33n)
+    shift_go("sh_k63", 0, 1, 63n)
+    shift_go("sh_k64", 0, 1, 64n)
+    shift_go("sh_neg4", 4294967295, 4294967289, 4n)
+    shift_go("sh_neg33", 4294967295, 4294967289, 33n)
+    shift_go("sh_big63", 2147483647, 4294967295, 63n)
+
 def main() -> IO(Unit):
   do IO<Unit>:
     trange_rows("trange_0", H.trange(0))
@@ -269,3 +347,4 @@ def main() -> IO(Unit):
     ooo_rows()
     disj_rows()
     nc_rows()
+    i64_rows()

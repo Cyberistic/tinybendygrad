@@ -8123,6 +8123,216 @@ function $$$$047helpers$i64_sub$(_a_0, _b_0) {
   return $$$$047helpers$i64_of_hi_lo$(((_x_6 - _borrow_0) >>> 0), _lo_0);
 }
 
+function $$$$047helpers$i64_or$(_a_0, _b_0) {
+  const _x_0 = ($$$$047helpers$hi32$(_a_0));
+  const _x_1 = ($$$$047helpers$hi32$(_b_0));
+  const _x_2 = ($$$$047helpers$lo32$(_a_0));
+  const _x_3 = ($$$$047helpers$lo32$(_b_0));
+  return $$$$047helpers$i64_of_hi_lo$(((_x_0 | _x_1) >>> 0), ((_x_2 | _x_3) >>> 0));
+}
+
+function $$$$047helpers$i64_and$(_a_0, _b_0) {
+  const _x_0 = ($$$$047helpers$hi32$(_a_0));
+  const _x_1 = ($$$$047helpers$hi32$(_b_0));
+  const _x_2 = ($$$$047helpers$lo32$(_a_0));
+  const _x_3 = ($$$$047helpers$lo32$(_b_0));
+  return $$$$047helpers$i64_of_hi_lo$(((_x_0 & _x_1) >>> 0), ((_x_2 & _x_3) >>> 0));
+}
+
+function $$$$047helpers$i64_is_zero$(_x_0) {
+  const _hi_0 = _x_0["hi"];
+  const _lo_0 = _x_0["lo"];
+  return $Bool$and$((_hi_0 === 0), (_lo_0 === 0));
+}
+
+function $$$$047helpers$i64_bit$(_b_0) {
+  return $$$$047helpers$i64_of_hi_lo$(0, _b_0);
+}
+
+function $$$$047helpers$i64_one$() {
+  return $$$$047helpers$i64_bit$(1);
+}
+
+function $$$$047helpers$i64_zero$() {
+  return $$$$047helpers$i64_of_hi_lo$(0, 0);
+}
+
+function $$$$047helpers$i64_not$(_x_0) {
+  const _x_1 = ($$$$047helpers$hi32$(_x_0));
+  const _x_2 = ($$$$047helpers$lo32$(_x_0));
+  return $$$$047helpers$i64_of_hi_lo$((~_x_1 >>> 0), (~_x_2 >>> 0));
+}
+
+function $$$$047helpers$i64_neg$(_neg_0, _x_0) {
+  return $Bool$pick$(_neg_0, ($$$$047helpers$i64_add$(($$$$047helpers$i64_not$(_x_0)), ($$$$047helpers$i64_one$()))), _x_0);
+}
+
+function $$$$047helpers$i64_abs$(_x_0) {
+  return $$$$047helpers$i64_neg$(($$$$047helpers$i64_is_neg$(_x_0)), _x_0);
+}
+
+function $$$$047helpers$i64_shl$lo$(_hi_0, _lo_0, _k_0) {
+  const _x_0 = (32 < _k_0 ? 0 : 32 - _k_0);
+  const _x_1 = (_k_0 >= 32 ? 0 : (_hi_0 << _k_0) >>> 0);
+  const _x_2 = (_x_0 >= 32 ? 0 : (_lo_0 >>> _x_0) >>> 0);
+  return $$$$047helpers$i64_of_hi_lo$(((_x_1 | _x_2) >>> 0), (_k_0 >= 32 ? 0 : (_lo_0 << _k_0) >>> 0));
+}
+
+function $$$$047helpers$i64_shl$hi$(_lo_0, _k_0) {
+  const _x_0 = (_k_0 < 32 ? 0 : _k_0 - 32);
+  return $$$$047helpers$i64_of_hi_lo$((_x_0 >= 32 ? 0 : (_lo_0 << _x_0) >>> 0), 0);
+}
+
+function $$$$047helpers$i64_shl$put$(_low_0, _hi_0, _lo_0, _k_0) {
+  return $Bool$pick$(_low_0, ($$$$047helpers$i64_shl$lo$(_hi_0, _lo_0, _k_0)), ($$$$047helpers$i64_shl$hi$(_lo_0, _k_0)));
+}
+
+function $$$$047helpers$i64_shl$(_x_0, _k_0) {
+  const _x_1 = (_k_0 >>> 0);
+  return $$$$047helpers$i64_shl$put$((_x_1 <= 32), ($$$$047helpers$hi32$(_x_0)), ($$$$047helpers$lo32$(_x_0)), _k_0);
+}
+
+function $$$$047helpers$u64_lt$(_ah_0, _al_0, _bh_0, _bl_0) {
+  const _x_0 = (_ah_0 < _bh_0);
+  const _x_1 = ($Bool$and$((_ah_0 === _bh_0), (_al_0 < _bl_0)));
+  return (_x_0 || _x_1);
+}
+
+function $$$$047helpers$div_bit$(_bh_0, _bl_0, _k_0) {
+  const _x_0 = (_k_0 >>> 0);
+  const _x_1 = (_k_0 >= 32 ? 0 : (_bl_0 >>> _k_0) >>> 0);
+  const _x_2 = (_k_0 < 32 ? 0 : _k_0 - 32);
+  const _x_3 = (_x_2 >= 32 ? 0 : (_bh_0 >>> _x_2) >>> 0);
+  return $Bool$pick$((_x_0 < 32), ((_x_1 & 1) >>> 0), ((_x_3 & 1) >>> 0));
+}
+
+function $$$$047helpers$div_shift$(_s_0, _bit_0) {
+  const _q_0 = _s_0["q"];
+  const _r_0 = _s_0["r"];
+  const _x_0 = ($$$$047helpers$hi32$(_r_0));
+  const _x_1 = ($$$$047helpers$lo32$(_r_0));
+  const _x_2 = (1 >= 32 ? 0 : (_x_0 << 1) >>> 0);
+  const _x_3 = (31 >= 32 ? 0 : (_x_1 >>> 31) >>> 0);
+  const _x_4 = ($$$$047helpers$lo32$(_r_0));
+  const _x_5 = (1 >= 32 ? 0 : (_x_4 << 1) >>> 0);
+  const _x_6 = ($$$$047helpers$hi32$(_r_0));
+  const _x_7 = (31 >= 32 ? 0 : (_x_6 >>> 31) >>> 0);
+  return {$: "../helpers.DivSt", "q": _q_0, "r": ($$$$047helpers$i64_of_hi_lo$(((_x_2 | _x_3) >>> 0), ((_x_5 | _bit_0) >>> 0))), "up": (_x_7 === 1), "sub": false};
+}
+
+function $$$$047helpers$div_fit$put$(_q_0, _r_0, _d_0, _ge_0) {
+  if (_ge_0) {
+    return {$: "../helpers.DivSt", "q": _q_0, "r": ($$$$047helpers$i64_sub$(_r_0, _d_0)), "up": false, "sub": true};
+  } else {
+    return {$: "../helpers.DivSt", "q": _q_0, "r": _r_0, "up": false, "sub": false};
+  }
+}
+
+function $$$$047helpers$div_fit$(_s_0, _d_0) {
+  const _q_0 = _s_0["q"];
+  const _r_0 = _s_0["r"];
+  const _up_0 = _s_0["up"];
+  const _x_0 = ($Bool$not$(($$$$047helpers$u64_lt$(($$$$047helpers$hi32$(_r_0)), ($$$$047helpers$lo32$(_r_0)), ($$$$047helpers$hi32$(_d_0)), ($$$$047helpers$lo32$(_d_0))))));
+  return $$$$047helpers$div_fit$put$(_q_0, _r_0, _d_0, (_up_0 || _x_0));
+}
+
+function $$$$047helpers$div_qbit$(_k_0, _s_0) {
+  const _q_0 = _s_0["q"];
+  const _r_0 = _s_0["r"];
+  const _up_0 = _s_0["up"];
+  const _sub_0 = _s_0["sub"];
+  return {$: "../helpers.DivSt", "q": ($$$$047helpers$i64_or$(_q_0, ($$$$047helpers$i64_shl$(($$$$047helpers$i64_bit$(($Bool$to_u32$(_sub_0)))), _k_0)))), "r": _r_0, "up": _up_0, "sub": false};
+}
+
+function $$$$047helpers$div_step$(_k_0, _s_0, _n_0, _d_0) {
+  return $$$$047helpers$div_qbit$(_k_0, ($$$$047helpers$div_fit$(($$$$047helpers$div_shift$(_s_0, ($$$$047helpers$div_bit$(($$$$047helpers$hi32$(_n_0)), ($$$$047helpers$lo32$(_n_0)), _k_0)))), _d_0)));
+}
+
+function $$$$047helpers$div_loop$($0, $1, $2, $3) {
+  for (;;) {
+    {
+      const _k_0 = $0;
+      const _n_0 = $1;
+      const _d_0 = $2;
+      const _s_0 = $3;
+      if (_k_0 === 0) {
+        const _q_0 = _s_0["q"];
+        const _r_0 = _s_0["r"];
+        return {$: "../helpers.DivMod", "q": _q_0, "r": _r_0};
+      } else {
+        const _p_0 = (_k_0 - 1);
+        $0 = _p_0;
+        $1 = _n_0;
+        $2 = _d_0;
+        $3 = ($$$$047helpers$div_step$(_p_0, _s_0, _n_0, _d_0));
+        continue;
+      }
+    }
+  }
+}
+
+function $$$$047helpers$divmod_q$(_d_0) {
+  const _q_0 = _d_0["q"];
+  return _q_0;
+}
+
+function $$$$047helpers$divmod_r$(_d_0) {
+  const _r_0 = _d_0["r"];
+  return _r_0;
+}
+
+function $$$$047helpers$i64_divmod$up$(_flip_0, _r_0) {
+  return $Bool$and$(_flip_0, ($Bool$not$(($$$$047helpers$i64_is_zero$(_r_0)))));
+}
+
+function $$$$047helpers$i64_divmod$q$(_d_0, _flip_0) {
+  const _r_0 = ($$$$047helpers$divmod_r$(_d_0));
+  return $$$$047helpers$i64_neg$(_flip_0, ($$$$047helpers$i64_add$(($$$$047helpers$divmod_q$(_d_0)), ($$$$047helpers$i64_bit$(($Bool$to_u32$(($$$$047helpers$i64_divmod$up$(_flip_0, _r_0)))))))));
+}
+
+function $$$$047helpers$i64_divmod$r$(_d_0, _flip_0, _bn_0, _mb_0) {
+  const _r_0 = ($$$$047helpers$divmod_r$(_d_0));
+  return $$$$047helpers$i64_neg$(_bn_0, ($Bool$pick$(($$$$047helpers$i64_divmod$up$(_flip_0, _r_0)), ($$$$047helpers$i64_sub$(_mb_0, _r_0)), _r_0)));
+}
+
+function $$$$047helpers$i64_divmod$put$(_d_0, _an_0, _bn_0, _mb_0) {
+  const _flip_0 = (_an_0 !== _bn_0);
+  return {$: "../helpers.DivMod", "q": ($$$$047helpers$i64_divmod$q$(_d_0, _flip_0)), "r": ($$$$047helpers$i64_divmod$r$(_d_0, _flip_0, _bn_0, _mb_0))};
+}
+
+function $$$$047helpers$i64_divmod$of$(_zero_0, _a_0, _b_0, _d_0) {
+  if (_zero_0) {
+    return {$: "../helpers.DivMod", "q": ($$$$047helpers$i64_zero$()), "r": _a_0};
+  } else {
+    return $$$$047helpers$i64_divmod$put$(_d_0, ($$$$047helpers$i64_is_neg$(_a_0)), ($$$$047helpers$i64_is_neg$(_b_0)), ($$$$047helpers$i64_abs$(_b_0)));
+  }
+}
+
+function $$$$047helpers$i64_divmod$(_a_0, _b_0) {
+  return $$$$047helpers$i64_divmod$of$(($$$$047helpers$i64_is_zero$(_b_0)), _a_0, _b_0, ($$$$047helpers$div_loop$(64, ($$$$047helpers$i64_abs$(_a_0)), ($$$$047helpers$i64_abs$(_b_0)), {$: "../helpers.DivSt", "q": ($$$$047helpers$i64_zero$()), "r": ($$$$047helpers$i64_zero$()), "up": false, "sub": false})));
+}
+
+function $$$$047helpers$i64_div$(_a_0, _b_0) {
+  return $$$$047helpers$divmod_q$(($$$$047helpers$i64_divmod$(_a_0, _b_0)));
+}
+
+function $$$$047helpers$i64_mod$(_a_0, _b_0) {
+  return $$$$047helpers$divmod_r$(($$$$047helpers$i64_divmod$(_a_0, _b_0)));
+}
+
+function $$$$047helpers$gcd$go$(_k_0, _a_0, _b_0) {
+  if (_k_0 === 0) {
+    return _a_0;
+  } else {
+    const _p_0 = (_k_0 - 1);
+    return $Bool$pick$(($$$$047helpers$i64_is_zero$(_b_0)), _a_0, ($$$$047helpers$gcd$go$(_p_0, _b_0, ($$$$047helpers$i64_mod$(_a_0, _b_0)))));
+  }
+}
+
+function $$$$047helpers$gcd$(_a_0, _b_0) {
+  return $$$$047helpers$gcd$go$(128, ($$$$047helpers$i64_abs$(_a_0)), ($$$$047helpers$i64_abs$(_b_0)));
+}
+
 function $$$$047helpers$data64_hi$(_r_0) {
   const _hi_0 = _r_0["fst"];
   return _hi_0;
@@ -12571,6 +12781,39 @@ const TAB_0 = [0, 1, 2];export default {
   "../helpers.i64_text": run_lib((a0) => { const r = (run_loop($$$$047helpers$i64_text$((a0)))); (a0); return r; }, 1),
   "../helpers.i64_add": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_add$((a0), (a1)))); (a0); (a1); return r; }, 2),
   "../helpers.i64_sub": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_sub$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_or": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_or$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_and": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_and$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_is_zero": run_lib((a0) => { const r = (run_loop($$$$047helpers$i64_is_zero$((a0)))); (a0); return r; }, 1),
+  "../helpers.i64_bit": run_lib((a0) => { const r = (run_loop($$$$047helpers$i64_bit$((a0)))); (a0); return r; }, 1),
+  "../helpers.i64_one": run_lib(() => { const r = (run_loop($$$$047helpers$i64_one$()));  return r; }, 0),
+  "../helpers.i64_zero": run_lib(() => { const r = (run_loop($$$$047helpers$i64_zero$()));  return r; }, 0),
+  "../helpers.i64_not": run_lib((a0) => { const r = (run_loop($$$$047helpers$i64_not$((a0)))); (a0); return r; }, 1),
+  "../helpers.i64_neg": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_neg$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_abs": run_lib((a0) => { const r = (run_loop($$$$047helpers$i64_abs$((a0)))); (a0); return r; }, 1),
+  "../helpers.i64_shl.lo": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047helpers$i64_shl$lo$((a0), (a1), nat_host(a2)))); (a0); (a1); BigInt(a2); return r; }, 3),
+  "../helpers.i64_shl.hi": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_shl$hi$((a0), nat_host(a1)))); (a0); BigInt(a1); return r; }, 2),
+  "../helpers.i64_shl.put": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$i64_shl$put$((a0), (a1), (a2), nat_host(a3)))); (a0); (a1); (a2); BigInt(a3); return r; }, 4),
+  "../helpers.i64_shl": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_shl$((a0), nat_host(a1)))); (a0); BigInt(a1); return r; }, 2),
+  "../helpers.u64_lt": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$u64_lt$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.div_bit": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047helpers$div_bit$((a0), (a1), nat_host(a2)))); (a0); (a1); BigInt(a2); return r; }, 3),
+  "../helpers.div_shift": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$div_shift$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.div_fit.put": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$div_fit$put$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.div_fit": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$div_fit$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.div_qbit": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$div_qbit$(nat_host(a0), (a1)))); BigInt(a0); (a1); return r; }, 2),
+  "../helpers.div_step": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$div_step$(nat_host(a0), (a1), (a2), (a3)))); BigInt(a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.div_loop": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$div_loop$(nat_host(a0), (a1), (a2), (a3)))); BigInt(a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.divmod_q": run_lib((a0) => { const r = (run_loop($$$$047helpers$divmod_q$((a0)))); (a0); return r; }, 1),
+  "../helpers.divmod_r": run_lib((a0) => { const r = (run_loop($$$$047helpers$divmod_r$((a0)))); (a0); return r; }, 1),
+  "../helpers.i64_divmod.up": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_divmod$up$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_divmod.q": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_divmod$q$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_divmod.r": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$i64_divmod$r$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.i64_divmod.put": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$i64_divmod$put$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.i64_divmod.of": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047helpers$i64_divmod$of$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../helpers.i64_divmod": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_divmod$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_div": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_div$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.i64_mod": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$i64_mod$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../helpers.gcd.go": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047helpers$gcd$go$(nat_host(a0), (a1), (a2)))); BigInt(a0); (a1); (a2); return r; }, 3),
+  "../helpers.gcd": run_lib((a0, a1) => { const r = (run_loop($$$$047helpers$gcd$((a0), (a1)))); (a0); (a1); return r; }, 2),
   "../helpers.data64_hi": run_lib((a0) => { const r = (run_loop($$$$047helpers$data64_hi$((a0)))); (a0); return r; }, 1),
   "../helpers.data64_lo": run_lib((a0) => { const r = (run_loop($$$$047helpers$data64_lo$((a0)))); (a0); return r; }, 1),
   "../helpers.data64": run_lib((a0) => { const r = (run_loop($$$$047helpers$data64$((a0)))); (a0); return r; }, 1),

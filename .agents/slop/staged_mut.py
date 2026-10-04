@@ -22,7 +22,26 @@ belt-and-braces.  `live == git HEAD` is NOT a sufficient guard when the substrat
 is a `git archive HEAD` mirror PLUS A MANUAL OVERLAY: the mirror held a stale
 overlay, `old not in src` fired for an unrelated reason, and it printed the same
 string as a genuinely missing anchor.  A STALE MIRROR AND A STALE ANCHOR ARE
-INDISTINGUISHABLE unless the two texts are asserted equal.  See `verdict()`.
+INDISTINGUISHABLE unless the two texts are asserted equal.
+
+**AND THE ASSERTION WAS VACUOUS UNTIL 11:34 ON 2026-10-04.**  It read the mirror
+with `jj file show -r @`, and in jj **that call SNAPSHOTS the working copy**: the
+edit it was supposed to be compared against is committed into `@` before the
+comparison, so the two digests are equal by construction and `MirrorStale` cannot
+fire for a tracked file.  Measured, on `.agents/slop/mutanchor.py`:
+
+    append a line, then `jj file show -r @`                     -> mirror == live
+    append a line, then `jj --ignore-working-copy file show`     -> mirror != live
+
+`--ignore-working-copy` is what makes the assertion a MEASUREMENT rather than an
+identity.  `live-write-guard.py` re-derives both halves of that claim by CALLing
+jj, and `staged-guard-proof.py` fires both guard branches on real bytes.
+
+The consequence is a deliberate strictness: a file whose working copy carries an
+uncommitted edit is REFUSED, because that edit belongs to whichever agent is
+mid-write and the mutation table would be measuring a substrate nobody is looking
+at.  There is no flag to bypass it.  `ops.bend` and `memory.bend` are both clean
+right now, which is why this suite runs at all.
 
 BESIDE THE FILE, NOT IN $TMPDIR, and not with a `.bend` name.  `regalloc.bend`
 imports `./../../helpers.bend` and `./linearizer.bend`, so a copy outside its own
@@ -131,6 +150,9 @@ class Staged:
     def live_digest(self):
         return digest(self.live.read_bytes())
 
+    def origin_digest(self):
+        return self.live_sha
+
     def text(self):
         return self.path.read_text()
 
@@ -140,6 +162,13 @@ class Staged:
         restores from this, so a `finally` restore can be interrupted without
         leaving a half-old file behind."""
         return self._origin_text
+
+    def occurrences(self, anchor):
+        """How many times `anchor` is in the SUBSTRATE, not in the staged file's
+        current content.  A harness needs `== 1` before it can claim it applied an
+        anchor: `0` is `PATCH-NOT-APPLY` and `> 1` means the edit landed in one of
+        several sites and the run is measuring a choice."""
+        return self._origin_text.count(anchor)
 
     def write(self, text):
         """Write the STAGED copy.  Refuses the live file, by construction."""
@@ -188,24 +217,35 @@ class Staged:
         self.origin_bytes = self.live.read_bytes()          # the ONLY live read
         self.live_sha = digest(self.origin_bytes)
         self._origin_text = self.origin_bytes.decode("utf-8", "surrogateescape")
-        raw = subprocess.run(["jj", "file", "show", "-r", "@", "--",
+        # `--ignore-working-copy` FIRST, before the subcommand.  Without it this
+        # call SNAPSHOTS, so the mirror is the live text by construction and the
+        # assertion below is an identity.  With it the mirror is `@` as it stood
+        # BEFORE this read, which is what makes the comparison a measurement.
+        raw = subprocess.run(["jj", "--ignore-working-copy", "file", "show", "-r", "@", "--",
                               str(self.live.relative_to(ROOT))],
                              cwd=str(ROOT), capture_output=True, timeout=600)
         if raw.returncode:
             raise MirrorStale("jj file show failed: %s" % raw.stderr[:200].decode("utf-8", "replace"))
-        if digest(raw.stdout) != self.live_sha:
+        self.mirror_sha = digest(raw.stdout)
+        if self.mirror_sha != self.live_sha:
             raise MirrorStale(
-                "MIRROR STALE.  sha256(jj @) = %s but sha256(live) = %s for %s.  "
-                "Every 'the anchor is not in the file' verdict below would be "
-                "attributed to a substrate nobody is looking at, so nothing is "
-                "measured." % (digest(raw.stdout)[:16], self.live_sha[:16], self.live))
+                "MIRROR STALE.  sha256(jj @) = %s but sha256(live) = %s for %s (%d vs %d bytes).\n"
+                "  The working copy carries an edit that is not in `@`, so @ is a substrate\n"
+                "  somebody else has since changed.  Every 'the anchor is not in the file'\n"
+                "  verdict measured against it would name a file nobody is looking at, so\n"
+                "  NOTHING is measured.  This is the state `blob-intern-mutate.py` was in when\n"
+                "  its `finally` restore put a dead 6,623-line ops.bend over the live 6,306-line\n"
+                "  one.  Wait for that edit to land, or run against a clean file."
+                % (self.mirror_sha[:16], self.live_sha[:16], self.live,
+                   len(raw.stdout), len(self.origin_bytes)))
         self.path = self.live.parent / ("%s.staged-%s-%d" % (self.live.stem, self.tag, os.getpid()))
         if self.path.exists():
             raise MirrorStale("%s exists -- a previous run was killed; remove it" % self.path.name)
         self.path.write_bytes(raw.stdout)
         # A private name, and a refusal to leave it behind on any exit.
         os.chmod(self.path, 0o600)
-        print("staged %s -> %s\n  sha256(mirror) == sha256(live) == %s  ASSERTED"
+        print("staged %s -> %s\n  sha256(mirror) == sha256(live) == %s  ASSERTED "
+              "(jj --ignore-working-copy, so this is a measurement and not an identity)"
               % (self.live.relative_to(ROOT), self.path.name, self.live_sha[:16]))
         return self
 
@@ -372,6 +412,35 @@ def zero_verdicts():
                          capture_output=True, text=True).stdout.split()
     if len(out) != 5:
         raise SystemExit("zero-classify.py --verdicts printed %r, expected five" % out)
+    return out
+
+
+# The five CANONICAL SHORT NAMES.  They are keys, not positions: zero-classify prints
+# `UNREACHABLE+proof` and `INVISIBLE-to-reader`, so a reader that slices the queried
+# list by index reads `PATCH-NOT-APPLY` when it asked for `INVISIBLE`.  That is not a
+# hypothetical -- it is what this module's first caller did, and it would have written
+# a table cell reading `PATCH-NOT-APPLY` beside rows that moved.  A positional read of
+# an external vocabulary is a transcription wearing a query's clothes.
+ZERO_KEYS = ("UNREACHABLE", "PORT-DEFECT", "INVISIBLE", "PATCH-NOT-APPLY",
+             "NO-MUTATION-WRITTEN")
+
+
+def zero_verdict_map():
+    """`{canonical short name: the exact string zero-classify.py prints for it}`.
+
+    A key that matches ZERO or MORE than one queried verdict is a refusal rather than
+    a preference: the vocabulary moved under us and the honest answer is that this
+    table cannot be spelled today.
+    """
+    got = zero_verdicts()
+    out = {}
+    for k in ZERO_KEYS:
+        hits = [v for v in got if v == k or v.startswith(k + "+") or v.startswith(k + "-to-")]
+        if len(hits) != 1:
+            raise SystemExit("zero-classify.py prints %d verdicts for %r: %r.  Refusing "
+                             "to guess which one this table means."
+                             % (len(hits), k, got))
+        out[k] = hits[0]
     return out
 
 

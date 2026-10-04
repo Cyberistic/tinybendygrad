@@ -288,48 +288,39 @@ q5: port_nodes=57 cpy_nodes=40 delta=17 (port next=57 cpy next=187) FORWARD port
   SHAPE port[40] FLOORDIV FLOORDIV  !=  cpy[39] WHERE WHERE
   WIRE  port[40] FLOORDIV FLOORDIV <- [12, 38]  !=  cpy[39] WHERE WHERE <- [183, 1, 186]
   EXTRA port has 17 slot(s) CPython does not: [41]CONSTC(255), [42]ANDAND, [43]CONSTC(112), [44]CMPLTCMPLT, [45]CONSTC(3), [46]ANDAND, [47]OROR, [48]CONSTC(124), [49]OROR, [50]CASTCAST, [51]CMPNECMPNE, [52]CONSTC(1), [53]CMPNECMPNE, [54]CASTCAST, [55]OROR, [56]WHEREWHERE, [57]WHEREWHERE
-q7: port_nodes=29 cpy_nodes=23 delta=6 (port next=29 cpy next=210) FORWARD port=0 cpy=0
-  SHAPE port[3] CONST C(-2147483648)  !=  cpy[2] AND AND
-  WIRE  port[3] CONST C(-2147483648) <- []  !=  cpy[2] AND AND <- [188, 189]
-  SHAPE port[4] AND AND  !=  cpy[3] CAST CAST
-  WIRE  port[4] AND AND <- [0, 2]  !=  cpy[3] CAST CAST <- [190]
-  SHAPE port[5] CAST CAST  !=  cpy[4] CONST C(1:0)
-  WIRE  port[5] CAST CAST <- [3]  !=  cpy[4] CONST C(1:0) <- []
-  SHAPE port[6] CONST C(1:0)  !=  cpy[5] MUL MUL
-  WIRE  port[6] CONST C(1:0) <- []  !=  cpy[5] MUL MUL <- [191, 192]
-  SHAPE port[7] MUL MUL  !=  cpy[6] AND AND
-  WIRE  port[7] MUL MUL <- [4, 5]  !=  cpy[6] AND AND <- [188, 43]
-  SHAPE port[8] CONST C(2147483647)  !=  cpy[7] CAST CAST
-  WIRE  port[8] CONST C(2147483647) <- []  !=  cpy[7] CAST CAST <- [194]
-  SHAPE port[9] AND AND  !=  cpy[8] FLOORDIV FLOORDIV
-  WIRE  port[9] AND AND <- [0, 7]  !=  cpy[8] FLOORDIV FLOORDIV <- [195, 62]
-  SHAPE port[10] CAST CAST  !=  cpy[9] CONST C(536870912)
-  WIRE  port[10] CAST CAST <- [8]  !=  cpy[9] CONST C(536870912) <- []
-  SHAPE port[11] CONST C(8388608)  !=  cpy[10] MUL MUL
-  WIRE  port[11] CONST C(8388608) <- []  !=  cpy[10] MUL MUL <- [195, 197]
-  SHAPE port[12] FLOORDIV FLOORDIV  !=  cpy[11] CONST C(939524096:0)
-  WIRE  port[12] FLOORDIV FLOORDIV <- [9, 10]  !=  cpy[11] CONST C(939524096:0) <- []
-  SHAPE port[13] CONST C(536870912)  !=  cpy[12] ADD ADD
-  WIRE  port[13] CONST C(536870912) <- []  !=  cpy[12] ADD ADD <- [198, 199]
-  SHAPE port[14] MUL MUL  !=  cpy[13] CONST C(2146435072:0)
-  WIRE  port[14] MUL MUL <- [9, 12]  !=  cpy[13] CONST C(2146435072:0) <- []
-  SHAPE port[15] CONST C(939524096:0)  !=  cpy[14] OR OR
-  WIRE  port[15] CONST C(939524096:0) <- []  !=  cpy[14] OR OR <- [198, 201]
-  SHAPE port[16] ADD ADD  !=  cpy[15] CMPNE CMPNE
-  WIRE  port[16] ADD ADD <- [13, 14]  !=  cpy[15] CMPNE CMPNE <- [196, 64]
-  SHAPE port[17] CONST C(2146435072:0)  !=  cpy[16] CMPNE CMPNE
-  WIRE  port[17] CONST C(2146435072:0) <- []  !=  cpy[16] CMPNE CMPNE <- [203, 18]
-  SHAPE port[18] OR OR  !=  cpy[17] CMPNE CMPNE
-  WIRE  port[18] OR OR <- [13, 16]  !=  cpy[17] CMPNE CMPNE <- [196, 20]
-  SHAPE port[19] CONST C(255)  !=  cpy[18] CMPNE CMPNE
-  WIRE  port[19] CONST C(255) <- []  !=  cpy[18] CMPNE CMPNE <- [205, 18]
-  SHAPE port[20] CMPNE CMPNE  !=  cpy[19] WHERE WHERE
-  WIRE  port[20] CMPNE CMPNE <- [11, 18]  !=  cpy[19] WHERE WHERE <- [204, 202, 200]
-  SHAPE port[21] CONST C(1)  !=  cpy[20] WHERE WHERE
-  WIRE  port[21] CONST C(1) <- []  !=  cpy[20] WHERE WHERE <- [206, 20, 207]
-  SHAPE port[22] CMPNE CMPNE  !=  cpy[21] OR OR
-  WIRE  port[22] CMPNE CMPNE <- [19, 20]  !=  cpy[21] OR OR <- [193, 208]
-  SHAPE port[23] CONST C(0)  !=  cpy[22] BITCAST BITCAST
-  WIRE  port[23] CONST C(0) <- []  !=  cpy[22] BITCAST BITCAST <- [209]
-  EXTRA port has 6 slot(s) CPython does not: [24]CMPNECMPNE, [25]CMPNECMPNE, [26]WHEREWHERE, [27]WHEREWHERE, [28]OROR, [29]BITCASTBITCAST
-TOTAL aligned_slots=256 SHAPE=156 WIRE=167 EXTRA=45 FORWARD port=0 cpy=0
+q7: port_nodes=28 cpy_nodes=23 delta=5 (port next=28 cpy next=210) FORWARD port=0 cpy=0
+  WIRE  port[3] AND AND <- [0, 1]  !=  cpy[2] AND AND <- [188, 189]
+  WIRE  port[4] CAST CAST <- [2]  !=  cpy[3] CAST CAST <- [190]
+  WIRE  port[6] MUL MUL <- [3, 4]  !=  cpy[5] MUL MUL <- [191, 192]
+  SHAPE port[7] CONST C(2147483647)  !=  cpy[6] AND AND
+  WIRE  port[7] CONST C(2147483647) <- []  !=  cpy[6] AND AND <- [188, 43]
+  SHAPE port[8] AND AND  !=  cpy[7] CAST CAST
+  WIRE  port[8] AND AND <- [0, 6]  !=  cpy[7] CAST CAST <- [194]
+  SHAPE port[9] CAST CAST  !=  cpy[8] FLOORDIV FLOORDIV
+  WIRE  port[9] CAST CAST <- [7]  !=  cpy[8] FLOORDIV FLOORDIV <- [195, 62]
+  SHAPE port[10] CONST C(8388608)  !=  cpy[9] CONST C(536870912)
+  SHAPE port[11] FLOORDIV FLOORDIV  !=  cpy[10] MUL MUL
+  WIRE  port[11] FLOORDIV FLOORDIV <- [8, 9]  !=  cpy[10] MUL MUL <- [195, 197]
+  SHAPE port[12] CONST C(536870912)  !=  cpy[11] CONST C(939524096:0)
+  SHAPE port[13] MUL MUL  !=  cpy[12] ADD ADD
+  WIRE  port[13] MUL MUL <- [8, 11]  !=  cpy[12] ADD ADD <- [198, 199]
+  SHAPE port[14] CONST C(939524096:0)  !=  cpy[13] CONST C(2146435072:0)
+  SHAPE port[15] ADD ADD  !=  cpy[14] OR OR
+  WIRE  port[15] ADD ADD <- [12, 13]  !=  cpy[14] OR OR <- [198, 201]
+  SHAPE port[16] CONST C(2146435072:0)  !=  cpy[15] CMPNE CMPNE
+  WIRE  port[16] CONST C(2146435072:0) <- []  !=  cpy[15] CMPNE CMPNE <- [196, 64]
+  SHAPE port[17] OR OR  !=  cpy[16] CMPNE CMPNE
+  WIRE  port[17] OR OR <- [12, 15]  !=  cpy[16] CMPNE CMPNE <- [203, 18]
+  SHAPE port[18] CONST C(255)  !=  cpy[17] CMPNE CMPNE
+  WIRE  port[18] CONST C(255) <- []  !=  cpy[17] CMPNE CMPNE <- [196, 20]
+  WIRE  port[19] CMPNE CMPNE <- [10, 17]  !=  cpy[18] CMPNE CMPNE <- [205, 18]
+  SHAPE port[20] CONST C(1)  !=  cpy[19] WHERE WHERE
+  WIRE  port[20] CONST C(1) <- []  !=  cpy[19] WHERE WHERE <- [204, 202, 200]
+  SHAPE port[21] CMPNE CMPNE  !=  cpy[20] WHERE WHERE
+  WIRE  port[21] CMPNE CMPNE <- [18, 19]  !=  cpy[20] WHERE WHERE <- [206, 20, 207]
+  SHAPE port[22] CONST C(0)  !=  cpy[21] OR OR
+  WIRE  port[22] CONST C(0) <- []  !=  cpy[21] OR OR <- [193, 208]
+  SHAPE port[23] CMPNE CMPNE  !=  cpy[22] BITCAST BITCAST
+  WIRE  port[23] CMPNE CMPNE <- [10, 21]  !=  cpy[22] BITCAST BITCAST <- [209]
+  EXTRA port has 5 slot(s) CPython does not: [24]CMPNECMPNE, [25]WHEREWHERE, [26]WHEREWHERE, [27]OROR, [28]BITCASTBITCAST
+TOTAL aligned_slots=255 SHAPE=151 WIRE=163 EXTRA=44 FORWARD port=0 cpy=0

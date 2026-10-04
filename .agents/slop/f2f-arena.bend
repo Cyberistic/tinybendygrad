@@ -70,7 +70,8 @@ def fwd(b: Bool) -> String:
 #
 # MEASURED, `.agents/slop/f2f-calibrate.py` direction 1, the inverted predicate rebuilt
 # with the two arguments swapped and NOTHING ELSE changed, on the SAME fixed file and the
-# SAME harness: 257 of 263 rows flagged. NOT 263 -- the six rows it misses are the six
+# SAME harness (dtype.bend md5=3258260a667dcec74f9e7986cbdf1dc6): 255 of 261 rows
+# flagged. NOT 261 -- the six rows it misses are the six
 # fixture bottoms (`q1 q2 q3 q4 q5 q7` slot 0), and it misses them because of the very
 # `i != 0` exclusion the correct predicate needs. So the claim "fires on every row
 # including `0 NOOP <- 0,0`" was WRONG IN ITS DETAIL: it fires on every row that is not a

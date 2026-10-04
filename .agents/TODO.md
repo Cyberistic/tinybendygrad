@@ -7230,7 +7230,7 @@ Measure reproducibility: `sh .agents/slop/graphcmp-repro.sh`.
 Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
 unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
 Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
-Progress: normal-form defects [##########] 21 found and fixed (17-21 are this round's)
+Progress: normal-form defects [##########] 23 found and fixed (17-23 are this round's)
 Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
            found a real nondeterminism on its first run
 
@@ -7267,19 +7267,32 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       fill, 1 node of 46) and `loop` (`CallInfo.cdtype` is a port-only field, 1 node of 25).
       `graphcmp-run.sh`'s `$WANT` ASSERTS each one, so a moved verdict is a moved file.
       `sym` was in that list until the `fold` unit closed its wall — see below.
-- [x] **SIX MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM**, of which two would have kept
-      lying. A SINK with `arg=None` **CRASHED** the emitter (17) — thirteen graphs of
-      silence that were a crash, not an agreement. The `tag` column **could not be read at
-      all** (18) because every earlier graph had `tag is None` everywhere. A kernel's NAME
-      is ANSI-coloured text that reached a structural field (19). The two-run byte check was
-      `find | md5 -q`, which on macOS takes ONE file (20) — and once written properly it
-      found a real nondeterminism on its FIRST run. The census counted a dataclass FIELD
-      NAME as an atom letter (21), and the assertion for it is MEASURED TO FIRE.
+- [x] **SEVEN MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-23), of which
+      three would have kept lying. A SINK with `arg=None` **CRASHED** the emitter (17) —
+      thirteen graphs of silence that were a crash, not an agreement. The `tag` column **could
+      not be read at all** (18) because every earlier graph had `tag is None` everywhere. A
+      kernel's NAME is ANSI-coloured text that reached a structural field (19). The two-run
+      byte check was `find | md5 -q`, which on macOS takes ONE file (20) — and once written
+      properly it found a real nondeterminism on its FIRST run. The census counted a
+      dataclass FIELD NAME as an atom letter (21), and its assertion is MEASURED TO FIRE.
+      **TWO IDENTICAL FAILURES COMPARE EQUAL** (22): with the substrate cold both members of a
+      stability pair wrote the same one-line 0-row file, `cmp -s` called it `BYTE-IDENTICAL`,
+      and the summary read `stable-pairs=5 of 5` on a run where one pair had never produced a
+      verdict. Fixed by labelling a one-line side FAILED and re-running it, and — the part that
+      generalises — by **counting the NEGATIVES**, because a positive count cannot tell "it
+      worked" from "it failed the same way twice". Six plants and `cross` were not counted by
+      the summary at all, so **a step that fails silently is not a step whose failure the gate
+      can see.** And `grep -c 'BYTE-IDENTICAL'` over a file that can contain the string inside
+      an embedded `diff` counts LINES, not pairs (23).
 - [x] **REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
-      accepts a run only if its summary reads 16 graphs / 14 AGREE / selfcheck OK /
-      `census-rc=0`, and compares sha256 over non-blank lines. **158 of 158 identical.**
+      accepts a run only if its summary reads 16 graphs / 14 AGREE / byte-identical 14 /
+      not-comparable 0 / selfcheck OK / census-rc 0 / stable 5-0-0 / plants 6 / cross 1 /
+      controls 5 / conflations 4 / oracle OK — **the NEGATIVE counts included**, because a
+      positive count alone cannot distinguish a result from a pair of identical failures —
+      and compares sha256 over non-blank lines. **158 of 158 identical.**
       The health gate is not decoration: a concurrent edit to `uop/ops.bend` landed part way
-      through a run and produced twelve real reports and four 0-row failures.
+      through a run and produced twelve real reports and four 0-row failures, and it is what
+      let defect 22 hide in plain sight.
 - [x] **A LIMIT WAS CLOSED BY ANOTHER UNIT WHILE THIS ROUND RAN, AND THE THREE PINNED
       NUMBERS THAT CLAIMED IT MOVED WITH IT.** `sym` was the corpus's one
       DISAGREE-on-purpose graph because the port could not mint a symbolic dim at all.

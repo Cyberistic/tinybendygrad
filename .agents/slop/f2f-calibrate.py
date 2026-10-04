@@ -74,9 +74,10 @@ INJECT = {
         "  +qm = f2f.qmask(O.Found.ar(a), te, tm)\n  dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))",
         "  +b = T.tx_shl(O.Found.ar(a), f2f.em1.ghost(O.Found.ar(a), te), tm)\n"
         "  dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))"),
-     ("  +q1 = f2f.qmask(O.Found.ar(fn), te, tm)\n  +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))",
+     ("  +q = f2f.qnan.c(O.Found.ar(fn), te, tm)",
         "  +q1 = T.tx_shl(O.Found.ar(fn), f2f.em1.ghost(O.Found.ar(fn), te), tm)\n"
-        "  +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))"),
+        "  +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))\n"
+        "  +q = dd_or(O.Found.ar(qk), O.Found.i(q1), O.Found.i(qk))"),
      ("  +qm = f2f.qmask(O.Found.ar(a), te, tm)\n  +c = dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))",
         "  +b = T.tx_shl(O.Found.ar(a), f2f.em1.ghost(O.Found.ar(a), te), tm)\n"
         "  +c = dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))"),
@@ -94,15 +95,15 @@ INJECT = {
         "    case Some{O.Found{+xa, +xi}}: f2f.down.norm.put(tudt, ar, xi, fr, to)")],
     # A WRONG CONSTANT: position independent, so no pad sweep can see it
     "wrong-const": [(
-        "def f2f.mask1(+k: U32) -> U32:\n  U32.sub(T.tx_powi32(k), 1)",
-        "def f2f.mask1(+k: U32) -> U32:\n  U32.add(T.tx_powi32(k), 1)")],
+        "def dd_mask1(+k: U32) -> U32:\n  U32.sub(T.tx_powi32(k), 1)",
+        "def dd_mask1(+k: U32) -> U32:\n  U32.add(T.tx_powi32(k), 1)")],
     # A WRONG OFFSET: the `- 1` dropped, also position independent
     "wrong-offset": [(
-        "def f2f.mask1(+k: U32) -> U32:\n  U32.sub(T.tx_powi32(k), 1)",
-        "def f2f.mask1(+k: U32) -> U32:\n  T.tx_powi32(k)")],
+        "def dd_mask1(+k: U32) -> U32:\n  U32.sub(T.tx_powi32(k), 1)",
+        "def dd_mask1(+k: U32) -> U32:\n  T.tx_powi32(k)")],
     # A FIXED WRONG INDEX: `dd_band`'s mask argument replaced by an arena INDEX
     "wrong-index": [(
-        "  +b = dd_band(O.Found.ar(a), O.Found.i(a), f2f.mask1(fe))\n"
+        "  +b = dd_band(O.Found.ar(a), O.Found.i(a), dd_mask1(fe))\n"
         "  +c = dd_wk(O.Found.ar(b), H.i64_of_i32(U32.add(U32.sub(T.exponent_bias(fr), T.exponent_bias(to)), 1)))",
         "  +b = dd_band(O.Found.ar(a), O.Found.i(a), O.Found.i(a))\n"
         "  +c = dd_wk(O.Found.ar(b), H.i64_of_i32(U32.add(U32.sub(T.exponent_bias(fr), T.exponent_bias(to)), 1)))")],

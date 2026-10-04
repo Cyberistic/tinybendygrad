@@ -52,10 +52,32 @@ ready() { i=0; while [ "$i" -lt "$WAIT" ]; do
 # direction of refusing to measure; the numbers it pins are named here so a reader can see
 # which claim moved and go and check whether the move was a fix or a break.
 healthy() {
-  [ "$(sed -n '1p' runs/graphcmp/D/D0-run-summary.txt)" = "graphs=16" ] &&
-  [ "$(sed -n '2p' runs/graphcmp/D/D0-run-summary.txt)" = "graphs-agree=14" ] &&
-  grep -q '^selfcheck=# SELFCHECK: OK$' runs/graphcmp/D/D0-run-summary.txt &&
-  grep -q '^census-rc=rc=0$' runs/graphcmp/D/D0-run-summary.txt
+  s=runs/graphcmp/D/D0-run-summary.txt
+  # EVERY LINE IS MATCHED BY ITS CONTENT, NOT BY ITS LINE NUMBER. `sed -n '4p'` was the
+  # first version and it is a positional claim about a file another agent's edits can
+  # renumber -- which is this file's own rule about `smallest changes carry the most risk`
+  # applied to a shell script.
+  grep -q '^graphs=16$' "$s" &&
+  grep -q '^graphs-agree=14$' "$s" &&
+  grep -q '^byte-identical=14$' "$s" &&
+  grep -q '^not-comparable=0$' "$s" &&
+  grep -q '^selfcheck=# SELFCHECK: OK$' "$s" &&
+  grep -q '^census-rc=rc=0$' "$s" &&
+  # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. MEASURED, and this is
+  # the sharpest form of the trap in this project: with the substrate cold, BOTH members of a
+  # stability pair wrote the same one-line `0 rows after 5 attempts` file, so `cmp -s` called
+  # the pair BYTE-IDENTICAL and `stable-pairs` read 5 of 5. **Two identical FAILURES compare
+  # equal.** So the health gate reads the FAILED and DIFFER counts, not the identical one --
+  # a positive count alone cannot distinguish "it worked" from "it failed the same way
+  # twice", and only the negative counts can.
+  grep -q '^stable-pairs=5 of 5$' "$s" &&
+  grep -q '^stable-failed=0 of 5$' "$s" &&
+  grep -q '^stable-differ=0 of 5$' "$s" &&
+  grep -q '^plants-disagree=6 of 6$' "$s" &&
+  grep -q '^cross=1 of 1$' "$s" &&
+  grep -q '^controls=5 of 5$' "$s" &&
+  grep -q '^conflations=4 of 4$' "$s" &&
+  grep -q '^oracle-selfcheck=# ORACLE SELFCHECK: OK$' "$s"
 }
 clean_run() { # clean_run <label>: run until healthy, bounded.
   i=0

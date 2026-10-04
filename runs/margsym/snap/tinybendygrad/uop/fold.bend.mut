@@ -1721,7 +1721,7 @@ def pad_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   pair_ds.of(True{}, pair3.of(True{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
 
 def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  pair_ds.of(False{}, pair3.of(False{}, marg.at(1, ar, i), src_shape(0, ss), marg.at(2, ar, i)), ss)
+  pair_ds.of(False{}, pair3.of(False{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
 
 # ===========================================================================
 # THE TWO CHECKS, ops.py:408-410, and they are ONE walk.
@@ -5418,7 +5418,7 @@ def dim_str.name(a: O.Arg) -> String:
 
 def dim_str(+ar: O.Arena, d: O.Sint) -> String:
   match d:
-    case O.SU{+u}: String.concat(["U(", O.Ops.name(O.Arena.op(ar, u)), ":", dim_str.name(O.Arena.arg(ar, u)), ")"])
+    case O.SU{+u}: "U"
     case O.SI{i}: U32.show(H.lo32(i))
 
 def dims_str.go(+ar: O.Arena, ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>:

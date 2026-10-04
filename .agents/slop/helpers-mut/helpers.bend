@@ -12,6 +12,11 @@
 # GATE. This file has no `main` -- it is imported by 88 others -- so its rows live in
 # `.agents/slop/helpers-tc.bend` and are compared against `.agents/slop/helpers-oracle.py`
 # by `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
+# That gate covers `trange`, `GlobalCounters`, `Context` and the 64-bit pair block
+# (`i64_or`, `i64_and`, `i64_shl`, `i64_div`, `i64_mod`, `gcd`): 199 shared rows.
+# `sh .agents/slop/helpers-i64-mutate.sh` is the mutation table for the last six --
+# twelve mutations, two per helper, plus two commutativity controls that move nothing
+# -- and `.agents/slop/helpers-i64-mutations.txt` is its output.
 #
 # `truncate` is not one of helpers.py's: it is dtype.py:296, it needs `dtypes`,
 # and it lives in ./dtype.bend. See dtype.bend `def truncate`.
@@ -138,6 +143,196 @@ def getenv_str(k: String, d: String) -> IO(String):
   do IO<String>:
     v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
     return getenv_str.go(v, d)
+
+# ===========================================================================
+# `getenv_int` -- THE OTHER ARM OF THE SAME `getenv`. This is NOT a second
+# environment mechanism: `IO.get_env` (base.bend:172) is the only reader and both
+# arms call it. helpers.py:163 is the whole of `getenv`:
+#
+#     @functools.cache
+#     def getenv(key:str, default:Any=0): return type(default)(os.getenv(key, default))
+#
+# so `default` CHOOSES THE COERCION and a default of `""` gives `str` (`getenv_str`
+# above) while a default of `0` gives `int` (here). `DEBUG` is the ContextVar that
+# needs the int arm -- `DEBUG = ContextVar("DEBUG", 0)`, helpers.py:237 -- and
+# `DEBUG >= 2` is a COMPARISON, so a `String` cell cannot carry it. Measured: with
+# `DEBUG="2"` the live object is `<class 'int'> 2`, and `int(DEBUG >= 2)` is 1;
+# `DEBUG=""` and `DEBUG="abc"` both make the IMPORT raise
+# `ValueError: invalid literal for int() with base 10`, which tinygrad does not
+# catch (`.agents/slop/debug_oracle.py`, `dbg_value_*` / `dbg_int_getenv_*` rows).
+#
+# `int()` IS NOT A REGEX. MEASURED, live CPython, 24 probes:
+#   "0" 0   "1" 1   "2" 2   "3" 3   "00" 0   "007" 7   "1_0" 10   "2_0_0" 200
+#   " 2 " 2   "\t2\n" 2   "+2" 2   "-1" -1
+#   "" "_" "1_" "_1" "1__0" "abc" "2.0" "1e3" "0x2"  ALL ValueError
+# So: trim, drop ONE leading `+`/`-`, and require what is left to be digits with
+# `_` STRICTLY BETWEEN them and at least one digit present. `gi_of_text` is that
+# rule as a three-state walk -- PRE (no digit yet), MID (a digit just ended), PEND
+# (a `_` just ended, so the next char MUST be a digit) -- and DEAD once refused,
+# which is what stops a later digit from resurrecting a prefix that already failed.
+#
+# THE ONE MEASURED GAP IS `Char.is_digit`, which is ASCII: CPython's `int("٣")` is
+# 3 and `gi_of_text("٣")` refuses. That is the SAME gap `no_color_of` above already
+# documents for `nc_digits`, and it is left as it is rather than fixed twice.
+#
+# A LEADING `-` REFUSES rather than yielding a negative, and `getenv_int` then
+# answers the DEFAULT. That is a real narrowing of CPython's `int`, so it is
+# measured rather than argued: CPython's `int("-1")` is `-1` and every threshold in
+# tinygrad is `DEBUG >= N` with `N >= 0`, so `-1 >= 2` and the default `0 >= 2` are
+# both False. `debug_ge_neg` in `.agents/slop/debug-gate.bend` holds the two sides
+# of that equivalence down. A `U32` cannot hold `-1` and the alternative -- an
+# `I64` here and a comparison type change at each of the seven sites -- would buy a
+# distinction no site can observe.
+# ===========================================================================
+# PRE 0, MID 1, PEND 2, DEAD 3, and `v` is the digits so far.
+type Gi is Data:
+  Gi{st: U32, v: U32}
+
+# A `match` MAY ONLY SCRUTINEE A PARAMETER OR A FIELD BINDER, and both of these are
+# refused with "a match cannot scrutinize a computed value: give it its own def":
+#   `match gi_dead(st)`        and        `match U32.is_eq(st, 3)`
+# So the whole state transition is ONE indexed read, `gi_tab()[st*3 + kind]`, rather
+# than three one-comparison arms. A 12-entry table is shorter than the four defs it
+# replaces and it cannot drift out of step with them, because there is only one.
+#
+#      kind:  DIG 0   UND 1   OTHER 2
+#   PRE 0  ->  [   1,      3,       3  ]   a LEADING `_` is a refusal
+#   MID 1  ->  [   1,      2,       3  ]   a `_` is legal only between digits
+#   PEND 2 ->  [   1,      3,       3  ]   a `_` must be FOLLOWED by a digit
+#   DEAD 3 ->  [   3,      3,       3  ]   DEAD IS ABSORBING
+def gi_tab() -> List<&2, U32>:
+  [1, 3, 3, 1, 2, 3, 1, 3, 3, 3, 3, 3]
+
+def gi_index(st: U32, kind: Nat) -> U32:
+  U32.add(U32.mul(st, 3), U32.from_nat(kind))
+
+def gi_nxt(st: U32, kind: Nat) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, gi_tab(), U32.to_nat(gi_index(st, kind))), 3)
+
+def gi_acc(v: U32, kind: Nat, d: U32) -> U32:
+  match kind:
+    case 0n: U32.add(U32.mul(v, 10), d)
+    case _: v
+
+def gi_kind.of(dig: Bool, und: Bool) -> Nat:
+  match dig:
+    case True{}: 0n
+    case False{}:
+      match und:
+        case True{}: 1n
+        case _: 2n
+
+def gi_kind(+h: Char) -> Nat:
+  gi_kind.of(Char.is_digit(h), U32.is_eq(Char.to_u32(h), 95))
+
+def gi_step(st: U32, v: U32, +h: Char) -> Gi:
+  Gi{gi_nxt(st, gi_kind(h)), gi_acc(v, gi_kind(h), U32.sub(Char.to_u32(h), 48))}
+
+def Gi.st(g: Gi) -> U32:
+  match g:
+    case Gi{st, v}: st
+
+def Gi.v(g: Gi) -> U32:
+  match g:
+    case Gi{st, v}: v
+
+# `nc_walk` above is the shape: the accumulator is the LAST parameter and the head is
+# destructured `+h <> t`, so the only shrinking argument in the self-call is the tail.
+def gi_go(cs: List<&2, Char>, +g: Gi) -> Gi:
+  match cs:
+    case Nil{}: g
+    case +h <> t: gi_go(t, gi_step(Gi.st(g), Gi.v(g), h))
+
+# `+` ON A STRING PARAMETER IS WHAT MAKES IT REUSABLE, and it is the same annotation
+# `nc_sign` uses on its own `+s`. Without it, reading `t` twice is refused with
+# "expected : t / observed : t (consumed more than once)", which is a DIFFERENT
+# message from the `U32` case above and reads like the same bug.
+def gi_signed(+t: String) -> Bool:
+  Bool.or(String.starts_with(t, "+"), String.starts_with(t, "-"))
+
+def gi_body(sgn: Bool, +t: String) -> List<&2, Char>:
+  match sgn:
+    case True{}: String.to_list(String.drop(t, 1n))
+    case _: String.to_list(t)
+
+def gi_neg(+t: String) -> Bool:
+  String.starts_with(t, "-")
+
+# THE ACCEPTANCE TEST IS `st == MID`, ONE COMPARISON, and that is the whole point of
+# the four-state walk rather than a separate "seen a digit" flag:
+#
+#   MID is reachable from a prefix that is a legal `int` literal AND ends on a digit.
+#   PRE means no digit yet -- only `""` can end here, and `int("")` raises.
+#   PEND means a trailing `_` -- `int("1_")` raises.
+#   DEAD means a refused prefix -- `int("1__0")`, `int("abc")`, `int("2.0")` raise.
+#
+# So `st == 1` and "CPython would have accepted it" are the same predicate over every
+# reachable state. A `U32` is single-use, so a `gi_ok(st)` that needed both `DEAD` and
+# `nodig` could not exist anyway: it would read `st` twice and be refused with
+# "consumed more than once".
+def gi_take(st: U32, v: U32, d: U32) -> U32:
+  match st:
+    case 1: v
+    case _: d
+
+def Gi.take(g: Gi, d: U32) -> U32:
+  match g:
+    case Gi{st, v}: gi_take(st, v, d)
+
+def gi_of_text.walk(+t: String, sgn: Bool, d: U32) -> U32:
+  Gi.take(gi_go(gi_body(sgn, t), Gi{0, 0}), d)
+
+def gi_of_text.go(neg: Bool, sgn: Bool, +t: String, d: U32) -> U32:
+  match neg:
+    case True{}: d
+    case _: gi_of_text.walk(t, sgn, d)
+
+def gi_of_text(+s: String, d: U32) -> U32:
+  gi_of_text.go(gi_neg(s), gi_signed(s), String.trim(s), d)
+
+def getenv_int.go(v: Result<&1, &1, U32 & String, String>, d: U32) -> U32:
+  match v:
+    case Done{value}: gi_of_text(value, d)
+    case Fail{error}: d
+
+def getenv_int(k: String, d: U32) -> IO(U32):
+  do IO<U32>:
+    v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
+    return getenv_int.go(v, d)
+
+# `DEBUG`, at helpers.py:237's own value and helpers.py:163's own coercion. THE
+# NAME IS UPSTREAM'S: the port spells a ContextVar it has decided to thread as the
+# ContextVar's own name, so a reader of `debug()` does not have to know that it was
+# renamed to `getenv_int("DEBUG", 0)` underneath.
+def debug() -> IO(U32):
+  getenv_int("DEBUG", 0)
+
+# THE THRESHOLD, spelled once for all seven sites. `ContextVar.__ge__` is
+# `self.value >= x` (helpers.py:193) and `self.value` is the int `getenv` built, so
+# `DEBUG >= 2` is an INTEGER comparison and nothing else. Six sites pass 2 and
+# `schedule/memory.py:59` passes 1 -- MEASURED, not read off a comment: the oracle
+# extracts the right-hand side out of each site's own source line with
+# `re.search(r"DEBUG\s*>=\s*(\d+)", src)` and prints it as `thr_<site>`, and
+# `thr_mem=1` while `thr_ar=thr_st=thr_am185=thr_am225=thr_am251=thr_am254=2`.
+def debug_ge(dbg: U32, n: U32) -> Bool:
+  U32.is_ge(dbg, n)
+
+# THE PRINT, AND THE HALF OF THE SITE THAT IS NOT A BRANCH. `if DEBUG >= N: print(f"…")`
+# is "build the line iff the gate is open, then write it", and here the two halves are
+# separate defs for a reason that is not stylistic: the gate is a PARAMETER (see
+# `schedule/allreduce.bend`'s header, "THE FLAGS ARE PARAMETERS"), and a def that
+# both branches on a parameter and hands the branch's text onward gives a gate row
+# nothing to diff at level 0 -- the row would simply be absent, which is
+# indistinguishable from a site that was never wired. So each site answers
+# line-or-`""` and this writes it, and `""` writes NOTHING: the level-0 control is a
+# row present with an empty value, not a missing row.
+def debug_print.of(empty: Bool, s: String) -> IO(Unit):
+  match empty:
+    case True{}: IO.pure(Unit, Unit{})
+    case _: IO.print(s)
+
+def debug_print(+s: String) -> IO(Unit):
+  debug_print.of(String.is_empty(s), s)
 
 def Flags.of(nc: String, df: String, di: String, sd: String) -> Flags:
   Flags{no_color_of(nc), df, di, sd}
@@ -1532,6 +1727,274 @@ def i64_sub(+a: I64, +b: I64) -> I64:
   +borrow = Bool.pick(U32, U32.is_lt(lo32(a), lo32(b)), 1, 0)
   i64_of_hi_lo(U32.sub(U32.sub(hi32(a), hi32(b)), borrow), lo)
 
+# ===========================================================================
+# The rest of the 64-bit ALU: bitwise, the shift, the division, the gcd.
+#
+# All four are two's complement pair operations, so the sign is a property of the
+# HIGH WORD and nothing below has to know about it. `i64_add`/`i64_sub` above are
+# the two that had to carry and borrow; these are the rest.
+#
+# `uop/fold.bend`'s `mm.*` block is THIS ARITHMETIC WRITTEN LOCALLY, and its own
+# header asks for these to land here first so that it can be deleted rather than
+# kept in step. `mixin/dtype.bend` records the same wall from the other side: its
+# `Dt.i64_floor_div` / `Dt.i64_cdiv` are `IO(..)` EFFECT SEAMS, so `_min_max`
+# cannot call them, and a pure pair operation is the only shape a fold has.
+# ===========================================================================
+
+# `a | b` and `a & b`, WORD-WISE, and that is exact rather than approximate: the
+# infinite-precision and the 64-bit two's complement readings of `&` and `|` agree
+# bit for bit, and `U32`'s wrap IS the 64-bit one. No sign fixup, ever.
+def i64_or(+a: I64, +b: I64) -> I64:
+  i64_of_hi_lo(U32.or(hi32(a), hi32(b)), U32.or(lo32(a), lo32(b)))
+
+def i64_and(+a: I64, +b: I64) -> I64:
+  i64_of_hi_lo(U32.and(hi32(a), hi32(b)), U32.and(lo32(a), lo32(b)))
+
+# "this pair is zero", which is `AND` and NOT `or`. `or` answers true for (0, 5) as
+# well as for (0, 0), and that is how a zero magnitude reads as nonzero.
+def i64_is_zero(x: I64) -> Bool:
+  match x:
+    case I64{hi, lo}: Bool.and(U32.is_zero(hi), U32.is_zero(lo))
+
+# A single low bit, and the high word is 0 because neither of its three callers can
+# carry into it: the floor correction is at most one, the restoring divider's
+# quotient bit sits at a position below 64, and the negation's `+ 1` cannot reach
+# past the low word.
+def i64_bit(b: U32) -> I64:
+  i64_of_hi_lo(0, b)
+
+def i64_one() -> I64:
+  i64_bit(1)
+
+def i64_zero() -> I64:
+  i64_of_hi_lo(0, 0)
+
+# Two's complement negation is `~x + 1`, and THE `+ 1` CARRIES OUT OF THE LOW WORD
+# into the high one -- which is `i64_add` above, already carrying, rather than a
+# second copy of the arithmetic. Spelled as `i64_of_hi_lo(~hi, ~lo + 1)` it is the
+# plausible version and it is WRONG for every value whose low word is all ones:
+# `|0|` comes out 0xFFFFFFFF_00000000 and `-0` comes out 0xFFFFFFFF_00000001, and
+# those are `pm_wide_div` and `pm_maxi_mod` in the gate.
+#
+# `i64_abs` is the same expression with the sign read off the value, and the two are
+# NOT one def because they disagree on exactly one input: negating the most negative
+# value overflows and taking its magnitude does not.
+def i64_not(+x: I64) -> I64:
+  i64_of_hi_lo(U32.not(hi32(x)), U32.not(lo32(x)))
+
+def i64_neg(neg: Bool, +x: I64) -> I64:
+  Bool.pick(I64, neg, i64_add(i64_not(x), i64_one()), x)
+
+def i64_abs(+x: I64) -> I64:
+  i64_neg(i64_is_neg(x), x)
+
+# ---- THE SHIFT -------------------------------------------------------------
+#
+# `U32.shl` is a ONE-BIT shift and `U32.shln(x, n)` is the n-bit one, so the amount
+# is a `Nat`; and `U32.shln` SATURATES to 0 past 31, which is why an amount of 32 or
+# more is built out of the low word alone rather than by shifting twice.
+#
+# `k == 0` AND `k == 32` ARE THE TWO AMOUNTS WHERE THE TWO FORMS MEET, and both are
+# answered by the SAME arm: `U32.shrn(lo, 32n)` is 0 and `U32.shln(hi, 0n)` is `hi`.
+# That is why the test is `k <= 32` and not `k < 32`.
+#
+# FOR `k >= 32` THE HIGH WORD COMES FROM `lo` AND ONLY FROM `lo`: `a * 2**k` has high
+# word `lo * 2**(k-32)` plus `hi * 2**k` reduced mod 2**32, and the second term is 0
+# for every k past 31. Reading `hi` there drops the low word entirely and answers 0
+# for `1 << 63`.
+#
+# THE AMOUNT IS MODULO 2**64, and that is the WIDTH rather than a choice: `1 << 64` is
+# `2**64` in Python and 0 here, because the pair is 64 bits wide. `Nat.sub`
+# TRUNCATES, so the eagerly-evaluated other arm of the `Bool.pick` is harmless -- for
+# `k > 32` it shifts by 0 and the arm is discarded anyway.
+def i64_shl.lo(+hi: U32, +lo: U32, +k: Nat) -> I64:
+  i64_of_hi_lo(U32.or(U32.shln(hi, k), U32.shrn(lo, Nat.sub(32n, k))), U32.shln(lo, k))
+
+def i64_shl.hi(lo: U32, k: Nat) -> I64:
+  i64_of_hi_lo(U32.shln(lo, Nat.sub(k, 32n)), 0)
+
+def i64_shl.put(low: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
+  Bool.pick(I64, low, i64_shl.lo(hi, lo, k), i64_shl.hi(lo, k))
+
+def i64_shl(+x: I64, +k: Nat) -> I64:
+  i64_shl.put(U32.is_le(U32.from_nat(k), 32), hi32(x), lo32(x), k)
+
+# ===========================================================================
+# THE 64-STEP UNSIGNED RESTORING DIVIDER
+#
+# STEP `k` READS DIVIDEND BIT `k` AND WRITES QUOTIENT BIT `k` -- the same index on
+# both sides, which is the whole of restoring division -- so the walk counts DOWN
+# from 64 and the first bit processed is bit 63 of each.
+#
+# THE 65TH BIT IS CARRIED AND NOT LOST. `r` is below `d` before every step, so
+# `2r + bit` is below `2d` and needs 65 bits; a `U32` shift by 1 drops the top of the
+# high word, and that bit is the one that decides the compare below. EVERY FIXTURE
+# WITH BOTH OPERANDS BELOW 2**32 READS THE SAME WHETHER IT IS CARRIED OR NOT, so
+# `div_2p63_2p62` -- `2**63-1` over `2**62-1` -- is the row that makes this block a
+# test rather than a shape check, and `div_1_neg` is its signed twin.
+# ===========================================================================
+
+type DivSt is Data:
+  DivSt{q: I64, r: I64, up: Bool, sub: Bool}
+
+# `a < b` on the two words, UNSIGNED. The high word decides on its own unless the two
+# are equal, and only then does the low word.
+def u64_lt(+ah: U32, al: U32, +bh: U32, bl: U32) -> Bool:
+  Bool.or(U32.is_lt(ah, bh), Bool.and(U32.is_eq(ah, bh), U32.is_lt(al, bl)))
+
+# STEP `k` READS BIT `k` OF THE DIVIDEND, and `U32.shrn` is a shift and NOT a
+# `& 1`, so both arms mask. `Nat.sub` truncating is what makes the other arm of the
+# pick harmless: for `k < 32` it reads bit 0 of the high word and throws it away.
+def div_bit(bh: U32, bl: U32, +k: Nat) -> U32:
+  Bool.pick(U32, U32.is_lt(U32.from_nat(k), 32), U32.and(U32.shrn(bl, k), 1),
+    U32.and(U32.shrn(bh, Nat.sub(k, 32n)), 1))
+
+# `r = 2r + bit`. `i64_of_hi_lo` rather than a shift of the whole pair because the
+# low word's carry out IS the high word's bit 0, which `U32`'s wrap already computed.
+def div_shift(s: DivSt, bit: U32) -> DivSt:
+  match s:
+    case DivSt{+q, +r, up, sub}:
+      DivSt{q, i64_of_hi_lo(U32.or(U32.shln(hi32(r), 1n), U32.shrn(lo32(r), 31n)),
+        U32.or(U32.shln(lo32(r), 1n), bit)), U32.is_eq(U32.shrn(hi32(r), 31n), 1), False{}}
+
+# `(up, r) >= d`: ONE subtract is enough, because the invariant is `r < d` before the
+# step, so `up` alone already decides the comparison. The compare is `>= d` and NOT
+# `<= d`: subtracting on every step where the remainder is merely BELOW the divisor
+# answers a quotient of all ones for any dividend smaller than the divisor.
+#
+# `i64_sub` IS the wrapping unsigned subtract, and not by luck of the sign bit:
+# two's complement and unsigned subtraction mod 2**64 are the same bit pattern, and
+# the borrow is what keeps the high word right.
+def div_fit.put(q: I64, r: I64, d: I64, ge: Bool) -> DivSt:
+  match ge:
+    case True{}: DivSt{q, i64_sub(r, d), False{}, True{}}
+    case False{}: DivSt{q, r, False{}, False{}}
+
+# The compare is a CALL, so it is a `Bool` PARAMETER and the `match` is in the def
+# below. One level of `.put`, not two: the alternative is a `Bool.pick` over a record
+# it has just built, which needs `+` on both arms for a state nothing else reads.
+def div_fit(s: DivSt, +d: I64) -> DivSt:
+  match s:
+    case DivSt{+q, +r, up, sub}:
+      div_fit.put(q, r, d,
+        Bool.or(up, Bool.not(u64_lt(hi32(r), lo32(r), hi32(d), lo32(d)))))
+
+# THE QUOTIENT BIT IS AT POSITION `k`, so setting it is an OR of `1 << k` -- which
+# REUSES `i64_or` and `i64_shl` above rather than a third shift written here, and an
+# unset bit is an OR of zero. So the two arms of the choice collapse into one
+# expression and the state's own `sub` flag is the whole of the branch.
+def div_qbit(k: Nat, s: DivSt) -> DivSt:
+  match s:
+    case DivSt{+q, +r, up, sub}:
+      DivSt{i64_or(q, i64_shl(i64_bit(Bool.to_u32(sub)), k)), r, up, False{}}
+
+def div_step(+k: Nat, s: DivSt, +n: I64, d: I64) -> DivSt:
+  div_qbit(k, div_fit(div_shift(s, div_bit(hi32(n), lo32(n), k)), d))
+
+# The fuel is the FIRST parameter because the self-call's decreasing argument must
+# come first, and 64 steps read all 64 bits MSB first. `p` is the only argument of the
+# call that is a strict subterm of its parameter, so everything after it is free. The
+# `+` is on the SCRUTINEE and not on the binder: `case 1n+p:` spends `p` on the match
+# and the step needs it twice, once as the fuel and once as the bit index.
+# The answer is UNWRAPPED HERE rather than by a caller, because a `match` on the
+# call's own result is a computed scrutinee and this walk has to return one.
+def div_loop(+k: Nat, +n: I64, +d: I64, s: DivSt) -> DivMod:
+  match k:
+    case 0n:
+      match s:
+        case DivSt{q, r, up, sub}: DivMod{q, r}
+    case 1n+p: div_loop(p, n, d, div_step(p, s, n, d))
+
+# ===========================================================================
+# `floordiv` / `floormod` ON THE PAIR (helpers.py:76-78) and `math.gcd`
+# ===========================================================================
+
+type DivMod is Data:
+  DivMod{q: I64, r: I64}
+
+def divmod_q(d: DivMod) -> I64:
+  match d:
+    case DivMod{q, r}: q
+
+def divmod_r(d: DivMod) -> I64:
+  match d:
+    case DivMod{q, r}: r
+
+# `i64_div` FLOORS, and it does not truncate, and the difference is a whole unit:
+# helpers.py:77 `floordiv(x, y) = x//y` answers -2 for `-7 // 4` where a truncating
+# division answers -1. So the truncated MAGNITUDE quotient is stepped UP by one and
+# the sign set when the division was INEXACT and the two signs DIFFER; for a
+# same-sign division the truncation already IS the floor. That is the same split
+# `floordiv_i32` above makes on one word, and it is a split rather than a formula
+# because the correction is not symmetric in the signs.
+def i64_divmod.up(flip: Bool, r: I64) -> Bool:
+  Bool.and(flip, Bool.not(i64_is_zero(r)))
+
+def i64_divmod.q(+d: DivMod, +flip: Bool) -> I64:
+  +r = divmod_r(d)
+  i64_neg(flip, i64_add(divmod_q(d), i64_bit(Bool.to_u32(i64_divmod.up(flip, r)))))
+
+# THE REMAINDER'S SIGN IS THE DIVISOR'S, which is Python's `%` and NOT a property of
+# the magnitudes: `7 % -4` is -1 and `-7 % -4` is -3 and both are negative. Its
+# MAGNITUDE is `|a| % |b|` except in the one case where the quotient was stepped up,
+# where it is the divisor's magnitude MINUS that remainder -- and that is the only
+# place here the divisor's magnitude is needed, so `mb` is a parameter of this def and
+# not of the one above.
+def i64_divmod.r(d: DivMod, flip: Bool, bn: Bool, mb: I64) -> I64:
+  +r = divmod_r(d)
+  i64_neg(bn, Bool.pick(I64, i64_divmod.up(flip, r), i64_sub(mb, r), r))
+
+def i64_divmod.put(+d: DivMod, an: Bool, +bn: Bool, mb: I64) -> DivMod:
+  +flip = Bool.xor(an, bn)
+  DivMod{i64_divmod.q(d, flip), i64_divmod.r(d, flip, bn, mb)}
+
+# THE ZERO DIVISOR ANSWERS THE DIVIDEND FOR THE REMAINDER AND NOT 0, and that is a
+# claim about helpers.py:78 rather than about arithmetic: `floormod(x, 0)` is
+# `x - floordiv(x,0)*0` and `floordiv(x, 0)` is 0, so the remainder is the dividend.
+# A restoring divider run on a zero divisor answers a quotient of all ones, so the
+# zero case is a `match` on a `Bool` PARAMETER -- `i64_is_zero(b)` is a call and a
+# call cannot be a scrutinee. `div_loop` is evaluated eagerly even for it, which costs
+# 64 steps and is the price of not having two entry points.
+def i64_divmod.of(zero: Bool, a: I64, +b: I64, d: DivMod) -> DivMod:
+  match zero:
+    case True{}: DivMod{i64_zero(), a}
+    case False{}: i64_divmod.put(d, i64_is_neg(a), i64_is_neg(b), i64_abs(b))
+
+# `i64` and NOT `u64` because the signs are read here and nowhere else, and the
+# magnitudes handed to the walk are the only unsigned pair in the block.
+def i64_divmod(+a: I64, +b: I64) -> DivMod:
+  i64_divmod.of(i64_is_zero(b), a, b, div_loop(64n, i64_abs(a), i64_abs(b),
+    DivSt{i64_zero(), i64_zero(), False{}, False{}}))
+
+def i64_div(a: I64, b: I64) -> I64:
+  divmod_q(i64_divmod(a, b))
+
+def i64_mod(a: I64, b: I64) -> I64:
+  divmod_r(i64_divmod(a, b))
+
+# `math.gcd(a, b)`, and it is NOT a signed division: the answer is NON-NEGATIVE, and
+# that is `math.gcd`'s own guarantee rather than a property of the pair, which is why
+# the magnitudes go in. `math.gcd(0, 0)` is 0 and `math.gcd(a)` is `abs(a)`, and both
+# fall out of the loop -- the `b == 0` compare sends them straight to `a`.
+#
+# THE LOOP TESTS `b` AND NOT THE REMAINDER, and that is the load-bearing detail:
+# testing `a % b == 0` reaches `i64_mod(a, 0)`, whose zero-divisor answer is the
+# DIVIDEND, so `gcd(A, 0)` would recurse to `(0, A)` and answer 0.
+#
+# THE FUEL IS NOT DECORATIVE. The self-call's second and third arguments are `b` and
+# `a % b` and BOTH are computed, so no argument of it is a strict subterm of its
+# parameter and the decrease check has nothing to stop at. 128n is the round number
+# above Lamé's 92, which is the bound for a pair of magnitudes below 2**64. And
+# because `Bool.pick` is STRICT the loop always runs to the fuel, which is the cost of
+# not being able to `match` on `i64_is_zero(b)`.
+def gcd.go(k: Nat, +a: I64, +b: I64) -> I64:
+  match k:
+    case 0n: a
+    case 1n+p: Bool.pick(I64, i64_is_zero(b), a, gcd.go(p, b, i64_mod(a, b)))
+
+def gcd(a: I64, b: I64) -> I64:
+  gcd.go(128n, i64_abs(a), i64_abs(b))
+
 # data64 -- `(data >> 32, data & 0xFFFFFFFF)`; data64_le swaps it. Python's >> is
 # arithmetic and the high half of a two's complement 64-bit word IS the
 # arithmetic shift, so the pair already comes out in that order.
@@ -1999,9 +2462,10 @@ def printable(path: String, line: U32) -> IO(String):
 # needs the name.
 # `canonicalize_strides` and `strides_for_shape` are `functools.cache`d over
 # tuples and belong to shape.bend, which owns the layout IR.
-# `getenv` is ported here as `getenv_str` because Flags and the dtype defaults
-# need it; it keeps Python's `type(default)(os.getenv(key, default))` shape only
-# for the string defaults these two files use.
+# `getenv` is ported here as `getenv_str` (the `type(default) is str` arm) and
+# `getenv_int` (the `int` arm), because Flags and the dtype defaults need the first
+# and `DEBUG` needs the second; between them they keep Python's
+# `type(default)(os.getenv(key, default))` shape.
 # `get_child`, `word_wrap`, `pad_bytes`, `pluralize`, `polyN`,
 # `to_function_name`, `select_by_name`, `select_first_inited`,
 # `suppress_finalizing`, `panic`, `stderr_log` and `temp` are string, regex and

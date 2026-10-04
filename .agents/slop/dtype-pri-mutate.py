@@ -92,13 +92,20 @@ MUTATIONS = [
 ]
 
 
-def rows_of(text):
-    out = {}
-    for line in text.splitlines():
-        m = re.match(r"^([^=]+)=(.*)$", line)
-        if m:
-            out[m.group(1)] = m.group(2)
-    return out
+import pathlib
+
+# ── THE ROW READER IS `rebase-gate.py`'s OWN, LOADED BY PATH AND NOT COPIED ──────────────
+# Measured by reader-fork-census.py on this corpus: 51 of 52 text readers disagreed with
+# `rows()` on at least one of six row shapes, and four of them carried a docstring
+# claiming to BE it. This file used to be one of them.
+# ⚠ NOT FREE, and the census prints the load: of 1,440 lane files under .agents/slop
+# (289,262 lines), 44,345 are F2 `py=`-tail lines and 2,370 are F3 two-space lines --
+# so a fork that did not fold the tail was reading a DIFFERENT STRING on ~15% of lanes,
+# and one that skipped F3 was blind to ~0.8%. Those are the sizes of what was wrong.
+_RG = importlib.util.spec_from_file_location("rebase_gate", pathlib.Path(__file__).resolve() / "rebase-gate.py")
+_rebase_gate = importlib.util.module_from_spec(_RG)
+_RG.loader.exec_module(_rebase_gate)
+rows_of = _rebase_gate.rows
 
 
 def run_bend(path):

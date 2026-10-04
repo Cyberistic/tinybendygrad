@@ -142,9 +142,26 @@ MUTATIONS = [
   'def nv.page() -> U32: 8192',
   "the page size doubles -- every round_up and every pte_covers moves"),
  ("covers_not_reversed",
-  'def nv.covers(+v: U32) -> List<&2, U32>: nv.rev.go(nv.shifts_nat(v), nv.va_shifts(v), Nil{})',
-  'def nv.covers(+v: U32) -> List<&2, U32>: nv.pow_shifts(v)',
-  "DROP THE `[::-1]` -- pte_covers stays smallest-first"),
+  'def nv.rev.go(n: Nat, +xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:\n'
+  '  match n:\n'
+  '    case 0n: List.reverse(&2, U32, acc)\n'
+  '    case 1n+m:\n'
+  '      match xs:\n'
+  '        case Nil{}: List.reverse(&2, U32, acc)\n'
+  '        case x <> r: nv.rev.go(m, r, List.append(&2, U32, acc, [nv.pw_of(x)]))',
+  'def nv.rev.go(n: Nat, +xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:\n'
+  '  match n:\n'
+  '    case 0n: acc\n'
+  '    case 1n+m:\n'
+  '      match xs:\n'
+  '        case Nil{}: acc\n'
+  '        case x <> r: nv.rev.go(m, r, List.append(&2, U32, acc, [nv.pw_of(x)]))',
+  "DROP THE `[::-1]` -- pte_covers stays smallest-first.  Re-aimed from "
+  "`nv.covers` -> `nv.pow_shifts` onto `nv.rev.go` ITSELF: `nv.pow_shifts` is "
+  "defined BELOW `nv.covers`, so the old spelling produced NOT-A-PROGRAM "
+  "(`an unfilled law is a dead claim: live code cannot use it`) and ABORTED the "
+  "whole table at entry 19 of 28 without measuring it.  The MEANING is unchanged "
+  "-- still no reversal."),
  ("word_index_not_divided",
   'def nv.word(addr: U32) -> U32: U32.shrn(addr, 2n)',
   'def nv.word(+addr: U32) -> U32: addr',
@@ -154,7 +171,7 @@ MUTATIONS = [
   'def nv.upd_ini(+r: Rgv, ks: List<&2, Kv>, word: U32) -> U32:\n  U32.and(word, U32.not(nv.mask_named(r, ks)))',
   "swap `&`'s operands -- the AND is commutative and the fixture is what catches it"),
  ("update_enc_before_ini",
-  'def nv.upd_w(+r: Rgv, ks: List<&2, Kv>, word: U32) -> U32:\n  U32.or(nv.upd_ini(r, ks, word), nv.enc(r, ks))',
+  'def nv.upd_w(+r: Rgv, +ks: List<&2, Kv>, word: U32) -> U32:\n  U32.or(nv.upd_ini(r, ks, word), nv.enc(r, ks))',
   'def nv.upd_w(+r: Rgv, ks: List<&2, Kv>, word: U32) -> U32:\n  U32.nand(nv.upd_ini(r, ks, word), nv.enc(r, ks))',
   "OR becomes NAND -- clears the written field instead of setting it"),
  ("largebar_strict",

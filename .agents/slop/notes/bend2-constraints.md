@@ -21381,3 +21381,531 @@ were the new gate**: `@-` had moved to a revision that already contained the gua
 (`@`824 / `@--`741 / **`@-----`571 lines, `def reshape` absent**). **`@-----` is the revision
 that reproduces the pre-fix `AGREE` at rc=0.** A revision id is not a pin; the FILE's content
 is the pin, and the check is `grep -c "def reshape"` on the blob you actually loaded.
+
+## GC-7 `sym_dim.of`'s `AParam` ARM IS WHAT A SYMBOLIC DIM LOOKS LIKE, AND IT CLOSED A WALL
+## THAT FOUR HARNESSES HAD PINNED
+
+MEASURED 2026-10-04, late: `uop/fold.bend`'s `sym_dim.of` now reads
+`case O.AParam{pa}: sym_dim.pa(pa, i)` (`fold.bend:1296`) beside its `APy` and `AStr` arms,
+and the port mints a symbolic dim: `--graph sym` reads `?=0` and `VERDICT: AGREE` at 12 of
+12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. Before it, `marg.of`'s CONST arm and its `not
+STACK` arm were the same def and a PARAM dim was `None{}` -- the `ssimplify` wall.
+
+**WHAT IT COST, AND IT IS NOT THE FIX.** Every artefact that PINNED the wall had to move in
+the same direction, and one of them cost a measurement: `graphcmp-repro.sh`'s health gate
+pins `graphs-agree=14`, it pinned `13`, and for a while it sat refusing to measure a run
+that was entirely CORRECT. **A gate pinned to a verdict COUNT is a gate that can be wrong in
+the direction of refusing to measure**, so a gate should pin the things that mean "this run
+produced an answer" (`graphs=16`, `selfcheck=OK`, `census-rc=0`) and take the verdict count
+from a table a human can see move.
+
+The `?` ledger row is the other half. Its claim is "`?` takes `dtype` AND `shape`
+together", and `--graph sym` was its only fixture -- so the assertion moved to `--graph
+loop`'s CALL (`?=2`, one node x two columns) rather than being deleted. **A claim with no
+fixture is a claim with no denominator**, and the two-column bug it guards is invisible on a
+graph where every node settles.
+
+---
+
+## APPENDED 2026-10-04 (dtype.bend `f2f` unit) -- numbering continues from the END of this file; cite POSITIONS, the numbers above already repeat
+
+### The `O.Arena` aliasing class, and its THREE shapes, of which only one is a forward edge
+
+`O.Arena` is an immutable record and `O.Arena.node` is TOTAL -- an out-of-range index
+answers the arena BOTTOM (`NOOP/0`). So handing a stale arena to a node builder does not
+crash and does not read as out of range: it OVERWRITES a slot and reads back as a
+plausible graph. `+ar` means "the callee may rebind this name", NOT "consumed on every
+path", so `f(a(ar), g(ar))` compiles and both calls write the same slot.
+
+Three shapes, all measured in `codegen/decomp/dtype.bend`, all with a detector:
+
+  * **R3, bare `ar` twice in a straight line.** `+z = dd_wk(ar, 0)` then
+    `+a = dd_ne(ar, i(sg), i(z))` -- `a` lands on `z`'s slot and `a`'s src1 is that slot, so
+    `a` points at ITSELF. This is the ONLY shape a FORWARD-EDGE count reliably sees.
+  * **R2, a stale `Found`.** `+n1 = dd_wkf(ar(c), -1.0)` interns a CONST, then
+    `+nm = dd_mul(ar(ne), ...)` -- `ne` is ONE node stale and the `MUL` lands on the CONST's
+    slot with `src1` pointing at itself. `f2f_clamp.mx` read `6 MUL MUL <- 4,6`.
+  * **R1, one line, two builders.** `g(rne(ar, ...), ..., ar, ...)` -- `rne` grows a COPY
+    and the name `ar` is passed on unchanged, so the next builder writes over rne's whole
+    subtree. I PREDICTED a forward count could not see this and was WRONG: with the arena
+    dump the overwrite puts a later slot where a backward edge was, so R1 scores 3 on the
+    FORWARD lane too. **A prediction about what a detector can see is a measurement, and
+    mine was wrong in the direction that flatters the story.**
+
+Static census: `.agents/slop/dd-stalearena.py` (rules R1/R2/R3, with the read-only-def
+false positives listed so the rate is readable). On `dtype.bend` it flags 64 lines, of which
+29 are in `dd_lab`/`dd_esig`/`dd_eck`/`dd_tree`/`dd_rs` -- pure readers, expected -- and 7
+were the real thing. **A census is a request for a look; the read-only prefix list is the
+difference between a rate and a number.**
+
+The fix that removes a whole class rather than a line: take the arena INSIDE the value that
+carries it. `f2f.clamped`/`f2f.clamped.put` lost their `ar` PARAMETER and read
+`case Some{O.Found{+ca, +ci}}` instead, so `f2f.down.has` has no name it can pass stale.
+**Prefer a signature with no parameter over a discipline about how to pass it.**
+
+### `case Some{O.Found{+xa, +xi}}` -- you cannot read a `+` record twice, and the error names the WRONG thing
+
+`O.Found.ar(x)` CONSUMES `x` and passing `x` then consumes it again, so `f(ar(x), x)`
+gives `expected : x` / `observed : x (consumed more than once)` and bend points at the
+first use. Destructure instead: `case Some{O.Found{+xa, +xi}}` hands two independent
+`+` binders. This is the `l2i.hi42` pattern the file already used, arriving for `Found`
+rather than `W2`.
+
+### A PYTHON INT expression is ONE `CONST`, and porting it as a graph costs 2-4 nodes that a cone walk cannot see
+
+`transcendental.py:20` is `shl(x, y) = x * (2**y)` and `shr(x, y) = x // (2**y)`. When
+BOTH arguments are Python ints -- which is every `shl(1, k)`, `shl(tb - fb, tm)` and
+`shl(shl(1, k) - 1, j)` in `dtype.py`'s float half -- the whole expression is evaluated in
+PYTHON and reaches the arena as ONE interned `CONST`. The port built them as graphs:
+
+  * `shl(1, k) - 1` as `ADD(C(2**k), MUL(C(1), C(-1)))`: four nodes, and in
+    `f2f.nosign` / `f2f.down.nosign` / `f2f.down.m1` / `f2f.isnan` / `f2f.down.isnan` the
+    binders that built it were **DEAD** -- `dd_band`'s third parameter is the mask VALUE
+    (`op.bend`'s `dc_band` interns it as `dc_cint`), so nothing read the graph.
+    A dead node is invisible in a cone walk FROM THE ROOT, which is why `q1sig` could be a
+    strict PREFIX of CPython's 27 and still be wrong.
+  * `shl(tb - fb, tm)` in `f2f.norm`: the port passed `O.Found.i(a)` where the Python int
+    belonged, so the graph was `a + (a * 2**tm)` -- a different FUNCTION -- and the
+    `CONST (tb - fb)` it had just interned was dead.
+  * `shl(shl(1, te) - 1, tm)` in `f2f.qnan` / `f2f.down.npat` / `f2f.fnuz`: `(2**te - 1) *
+    2**tm` is one CONST. Measured: `shl(255, 23)` is `C(2139095040)`, and CPython's `q1`
+    slot 15 is that CONST feeding an `OR` -- not a `MUL` by a `CONST 2**tm`.
+  * `shl(shl(1, te) - 1, tm) | shl(1, tm - 1)` in `f2f.fnuz` is one CONST too:
+    `C(2143289344) = 2139095040 | 4194304 = 0x7FC00000`. The port had `C(2139095040)` AND
+    `C(4194304)` and an `OR` over them.
+
+The symptom that names the class: **a port CONST the CPython cone does not have, and a
+CPython CONST the port cone does not have, in the same region.** `k=` (the cone's CONST
+sequence) is the only row that sees a dead node; `sig=` cannot.
+
+### A `+` PARAMETER THAT IS LIVE IN ONLY ONE `match` ARM IS NOT DEAD, and the arena a call grows is not the arena the NAME holds
+
+`f2f.down.norm.g` takes `+ar` and uses it in the `None` arm only. Its `Some` arm must use
+`O.Found.ar(x)` -- the arena `rne` grew -- because `rne` grows a COPY. Passing the
+incoming `ar` wrote over `rne`'s twelve nodes. Bend accepted it because `+` does not
+consume.
+
+### A FIXTURE BUG HID A REAL COUNT BY A FACTOR OF 2.5
+
+`f2f-arena.bend` built its PARAM with `dd_par(ar, nm, fr)` where the receiver dtype must be
+`f2f_dt[fr]` = `f2f.udt(fr)`. With `fr` the two lanes measure different graphs, and the
+FORWARD count read **9** instead of **23**. **A count measured through a fixture that does
+not match the port's own gate is not a smaller version of the right answer; it is a
+different answer.** `f2f-fixtures.py`'s header already documents the `UOp.variable` fourth-
+argument bug for the CPython side; the port probe had the mirror of it.
+
+### A `shl(1, k)` mask is `(1 << k) - 1` even where dtype.py READS it as `shl(1, k)`
+
+`f2f.isnan` compared against `2**(fm + fe)` and `2**fe` -- the mask's power of two, not the
+mask. dtype.py's `- 1` is inside the Python int `shl(1, k) - 1`, so the node is
+`C(2**k - 1)`. Measured on `q1`: CPython's `CMPNE <- 8,6` against `C(127)` where the port
+read `CMPNE <- 12,1` against `C(128)`. **An off-by-one that is a whole CONST value reads
+as a plausible graph**, and only the `k=` row separates it.
+
+### A FOLD THAT ONLY HAPPENS ON A FIXTURE YOU DID NOT MEASURE IS NOT A FOLD
+
+`mixin/dtype.py:53` folds `bitcast` to `self` iff `self.dtype == dt`. Both real `f2f` call
+sites hand over a UINT (`f2f_dt[f] = getattr(dtypes, f"uint{f.bitsize}")`, dtype.py:97), and
+`fr` is a float, so `v.bitcast(fr)` NEVER folds on the narrowing path -- measured 2
+`BITCAST`s in the cone for all three narrowing pairs. The fold appears only when the
+receiver is `v.cast(fr)` from the THREE-ARG `UOp.variable(nm, 0, fr)`, i.e. only in
+`.agents/slop/f2f-padoracle.py` and `.agents/slop/dd-bandpad.bend`'s fixture: 1 BITCAST,
+same node count. **So "CPython folds it" was a statement about the ORACLE's fixture, and
+landing `dd_bcast` for it would have deleted a node CPython builds.** The op SEQUENCE sees
+this (2 vs 1 `BITCAST/1`); the node COUNT does not (56 vs 56).
+
+### The CALIBRATION OF AN ARENA-POSITION SWEEP, MEASURED, WITH A DENOMINATOR
+
+`f2f-pad.sh` prepends `pad` PARAMs at pads `0 1 2 5 17 64` and asks whether a row's value
+moves with `pad`. Measured on the FIXED file with five defects injected
+(`.agents/slop/f2f-calibrate.py`, direction 4; control = the fixed file, 0/3 moved):
+
+  | injected                        | pad-tracking fixtures moved | verdict |
+  |---------------------------------|-----------------------------|---------|
+  | mask argument = an arena INDEX  | 2/3                         | SEEN    |
+  | `mask1` returns `2**k + 1`      | 0/3                         | BLIND   |
+  | `mask1` returns `2**k`          | 0/3                         | BLIND   |
+  | the original `f2f.em1` aliasing | 0/3                         | BLIND   |
+  | `O.Found.ar(ne)` one node stale | 0/3                         | BLIND   |
+  | CONTROL (the fixed file)        | 0/3                         | clean   |
+
+**Detection rate 1/5 = 20%.** 2/3 rather than 3/3 because `w1` is a WIDENING fixture and
+does not reach the narrowing def being mutated. The reason 4/5 are invisible is structural:
+every relative cell compares `Found.i(u)` against `Found.i(v)`, so a UNIFORM SHIFT in how
+an index is read CANCELS -- the fix is an ABSOLUTE row, not more pads. And the sweep is a
+SIX-PAD FUNCTION OF THE FIXTURE, not a function of the defect: one pad has no
+discriminating power at all.
+
+**THE ARGUMENT ORDER OF `f2f-pad.sh` IS `AFTER_BEND [BEFORE_BEND]` AND IT WRITES THE
+BEFORE ROWS TO `$S/f2f-pad-before.txt`.** Passing the injected file first reads back the
+FIXED file's rows and reports 0/6 moved for every defect including one that provably moves
+(`C(40)` at pad 0, `C(41)` at pads 1..64). That is how a calibration harness comes to say
+"the sweep is blind" when it is not. **A calibration that reads the wrong file is worse
+than no calibration, because it is a negative result with a number on it.**
+
+### A GATE THAT PINS A VERDICT COUNT CAN REFUSE TO MEASURE A CORRECT RUN
+
+Measured here: `f2f-pad-diff.py`'s `MIN_ROWS` default is 50 and the `f2f` probe's seven
+fixtures print 26 rows, so `f2f-pad-diff.py A B` exits 2 with "THIN LANE" on a lane that is
+COMPLETE. Pin "this run produced an answer" (a row count you have verified) and take the
+verdict from a table a human can see move. The same shape bit `dd-run.sh`: it demands
+`ROWS * 4` `lg` rows, and asking for 40 makes it refuse all 8 attempts on a file that
+prints 154 `lg` rows.
+
+### `dd-run.sh` CANNOT RUN THE GATE WHILE A SIBLING UNIT IS MID-EDIT, AND THE ERROR NAMES A FILE YOU DO NOT OWN
+
+`./bin/bend tinybendygrad/codegen/decomp/dtype.bend` refused with
+`- expected : m` / `- observed : m (consumed more than once)` at `Location: reshape_ok`
+(`uop/fold.bend:1792`) for the whole of one measurement round. `reshape_ok` is not in
+`dtype.bend`; `dtype.bend` only imports `fold.bend` transitively. `.agents/slop/dd-gate-snap.sh`
+runs the gate against the PINNED `$TMPDIR` snapshot with ONE file overlaid and prints
+`md5` for `dtype.bend`, `ops.bend` AND `fold.bend` on every run -- it is a WORKAROUND, not
+a design, and it is only sound while those digests are printed, because a substrate change
+moves rows and a stale snapshot hides it. Verified: once `fold.bend` recovered, the live-tree
+gate and the snapshot gate produced the SAME `sha256` of non-blank lines.
+
+### `f2f-run.sh`'s THIRD ARGUMENT IS THE `dtype.bend` TO USE, AND THE DEFAULT IS THE SNAPSHOT'S
+
+`f2f-run.sh PROBE OUT [SRCFILE] [MINROWS]` defaults `SRCFILE` to `$SNAP/.../dtype.bend`.
+Omitting it measures the SNAPSHOT and reports the snap/live `md5` mismatch in the same
+three lines, so the output is a valid run of the wrong file. It cost one census: 255 rows,
+identical byte-for-byte to the previous run, and `FORWARD` unchanged at 21 after four real
+fixes had landed. **A harness that names its own default in the same breath as the argument
+that overrides it will be run with the default.**
+
+### A CONE ORDER IS A TOPOSORT AND CANNOT SHOW A FORWARD EDGE
+
+`dd_cone` is `dd_rs.go` REVERSED -- a depth-first walk from the root -- so it renumbers.
+`q1sig`'s first 18 nodes were a strict PREFIX of CPython's 27 and the port was still wrong;
+the aliasing showed up ONLY in the arena, and only as a self-edge. The arena is the
+INTERNING ORDER and it is the only lane that sees one arena handed to two builders. Pair
+the port's arena against CPython's `UOpMetaClass.__call__` hook (the same one
+`.agents/slop/dd-oracle.py` installs) with BOTH sides re-based to the fixture's own PARAM:
+CPython's `ORDER` is ONE list across all fixtures, so `q7` starts at 188, and `ops.bend`'s
+`Arena` carries a BOTTOM slot, so comparing raw indices makes every row of `q2`..`q7` a
+disagreement -- a differ that reports noise on 46 of 46 rows measures nothing.
+
+### THE FINAL MEASUREMENTS FOR THE `f2f` REGION, `dtype.bend` md5=3258260a667dcec74f9e7986cbdf1dc6
+
+FORWARD edges, `f2f-arena.bend` over six fixtures, CPython 0 THROUGHOUT (`.agents/slop/f2f-arena-oracle.py`
+installs `dd-oracle.py`'s own `UOpMetaClass.__call__` hook, so CPython's index into `ORDER` is
+the same integer as the port's arena slot):
+
+    fixture   before   after   cpy     port nodes b->a   cpy nodes
+    q1           2        0      0          32 -> 27          27
+    q2           5        0      0          47 -> 56          52
+    q3           5        0      0          50 -> 57          47
+    q4           4        0      0          36 -> 30          22
+    q5           4        0      0          51 -> 57          40
+    q7           3        0      0          33 -> 28          23
+    TOTAL       23        0      0         254 -> 255         255
+
+**THE BRIEF'S "NINE" WAS A COUNT THROUGH A FIXTURE BUG.** `f2f-arena.bend` built its PARAM
+with `dd_par(ar, nm, fr)`; the receiver dtype must be `f2f.udt(fr)` (= `f2f_dt[fr]`). With
+`fr` the two lanes measure different graphs and the count reads 9 instead of 23. The
+narrowing fixtures go UP in node count (q2 47 -> 56) because the fix put `rne`'s subtree
+BACK -- it had been written over, so the port was CHEAPER than CPython, which is the shape a
+clobbering bug has.
+
+Gate rows vs CPython, `.agents/slop/f2f-gate-diff.py`, 21 scored rows (`=`, `sig`, `k`):
+
+    DISAGREE  12 -> 4      (q2 sig+k, q3 sig+k)
+    ok        9 -> 17
+
+`q1`, `q5` and `q7` now agree on every scored row; `q4` and `q5` reached that during this
+round. Gate total 208 rows, `False` 0, `ALL PROOFS CHECK`, two runs byte-identical by
+`sha256` of non-blank lines. The 195 pre-existing `l2i`/`c*` rows did not move.
+
+Detector calibration, `.agents/slop/f2f-calibrate.py`, all three lanes, denominator 6:
+
+    lane            caught   the three aliasing classes are caught by FORWARD and LABEL;
+                             a wrong CONSTANT by LABEL only; a dropped OFFSET and a wrong
+                             INDEX by LABEL + COUNT.
+
+Pad sweep, direction 4: **1 of 5 = 20%**, control 0/3.
+
+REMAINING, MEASURED AND NOT FIXED (`.agents/slop/f2f-census-after.txt`,
+`.agents/slop/f2f-gate-vs-cpy.txt`):
+
+  * `q2`/`q3` `sig`+`k`: `f2f_clamp`'s `-mx` interns `F(-1.0)` where CPython interns `C(-1)`
+    FIRST and `F(-1.0)` second -- the un-promoted `weakint` CONST is interned before the
+    promotion rewrites it (cpy `q2` slots 32, 33 against the port's 5, 6). Two nodes,
+    swapped, and everything after it is renumbered, which is what the SHAPE/WIRE cascade in
+    the census is. Needs a `promote` that mints the weakint node; the port's operator
+    family deliberately omits promotions ("divergence B"), so this is a policy question and
+    not a one-liner.
+  * `q2`/`q3` node count still +4 / +10 against CPython. The `nan` OR chain
+    (`sign | nan_mantissa | shl(...)`) is flat-three-input in the port and
+    left-associated-two-ORs in CPython, and the port has no promotion CAST for
+    `bool | u32` in `rne`.
+  * `rne`'s `bool | u32` promotion CAST is missing (`mixin/elementwise.py`'s `promote`
+    inserts one; CPython `q2` slot 54 is `CAST/1 CMPNE` and the port has no CAST there).
+    Same policy question as above.
+
+## GC-8 TWO IDENTICAL FAILURES COMPARE EQUAL, AND THAT IS THE STRICTEST FORM OF THE TRAP
+
+MEASURED 2026-10-04: with `tinybendygrad/uop/ops.bend` cold, BOTH members of a stability
+pair wrote the same one-line `0 rows after 5 attempts -- a FAILURE, not a verdict` file,
+`cmp -s` called the pair `BYTE-IDENTICAL`, and the run summary read `stable-pairs=5 of 5`
+on a run in which one pair had never produced a verdict at all.
+
+The standing rule is *"a 0-row result is indistinguishable from not started"*. This is the
+same trap with a different question: not "did it print" but **"did the same thing happen
+twice"** -- and the answer was yes.
+
+Three consequences, and the third generalises:
+* a one-line side must be labelled FAILED and RE-RUN before anything is compared against it;
+* **a POSITIVE count cannot distinguish "it worked" from "it failed the same way twice"; only
+  the NEGATIVE counts can.** So the summary carries `stable-failed=` and `stable-differ=`
+  beside `stable-pairs=`, and the health gate reads the negatives;
+* **a step that fails silently is not a step whose failure a gate can see.** Six plants and
+  `cross` were not counted by the run summary at all, so a cold substrate killed both and
+  every line the gate read still said healthy. Every step that produces a file needs a
+  COUNT in the summary, or it is invisible to the only check that runs the whole thing.
+
+Also in the same family, and recorded because the summary printed it: `grep -c 'TEXT'` over
+a file that can contain `TEXT` inside an embedded `diff` counts LINES, not pairs. Anchor it
+(`': 2 runs BYTE-IDENTICAL$'`) and state the denominator.
+
+## AG-1 A `getattr(obj, f"NAME{x}")` DISPATCHER MAKES STATIC COUNTING IMPOSSIBLE
+
+MEASURED 2026-10-04 on `tinygrad/runtime/support/autogen.py:63-65`, where `nm`, `extent` and
+`loc` are each `getattr(clang, f"clang_get{c.__class__.__name__[2:]}Suffix")`. The bound
+symbol's NAME depends on the runtime class of the argument, so no grep can produce the
+denominator.
+
+Counting it statically is not merely imprecise, it is wrong by 4x: resolving the f-strings
+over the 58 `CX*` wrapper classes in `libclang.py` yields 174 candidate dispatch targets,
+while the generator actually reaches **8**. The other 166 do not exist as calls.
+
+The measurement that settles it is a CALL COUNTER on the real module, not a parser:
+`.agents/slop/ag-wall1-census.py` wraps every `clang_*` callable in
+`tinygrad.runtime.autogen.libclang` and then RUNS the generator over 26 real headers.
+Result: **46 distinct functions called, over 204,421 call events, out of the 324 that
+`libclang.py` binds -- 278 never touched.**
+
+So the load-bearing rule: *when a binding surface is reached through a dynamic dispatch, the
+census must be a runtime counter over a real corpus, and the corpus load is part of the
+number.* The first attempt at that census ran ONE fixture header and emitted 63 lines; it
+reported `n_called = 45`. Widening to 26 real headers moved it to 46 and moved the total
+call events from 3,529 to 204,421 -- a 58x difference in load for a 1-function difference in
+the answer. A count whose corpus is one fixture is a count of the fixture.
+
+## AG-2 A `CTYPES`/`CDLL` PORT IS NOT A BINDING JOB, AND THE PROJECT ALREADY RULED ON IT
+
+MEASURED 2026-10-04. A task asked to "close the libclang FFI wall by adding the clang
+bindings to `runtime/support/c.bend`". The boundary does not exist in the shape the request
+assumes, and three independent facts say so:
+
+1. **`c.bend` has no foreign effect at all.** 158 top-level defs, **zero** lines mentioning
+   `clang`, and no `dlopen`/`dlsym`/`LoadLibrary` anywhere in `tinybendygrad/`.
+2. **Bend's only FFI is a whole-operation effect.** `references/bend/guide/EFFECTS.md`
+   POSITION ~9-20: `def Clock.now() -> IO(U32): import "./clock.c"`, where the `.c` is
+   spliced into the program and registers itself with `io_eff(CID(Clock.now), run, 0)`. The C
+   side receives `Term* f` and returns one `Term`. There is **no per-function binding form**,
+   so "add the bindings" has no representation -- the only expressible shape is a `.c` file
+   that does the whole operation.
+3. **A sibling unit already recorded this wall class.** `runtime/support/compiler_amd.bend`
+   POSITION 106, on comgr: "WALL 1 -- comgr. Twenty-eight calls into a shared library bend
+   cannot dlopen." Identical wall, different library, already ruled.
+
+Add the callback fact and the FFI is closed even in principle: `clang_visitChildren` and
+`clang_Type_visitFields` take a **C function pointer plus client data**, and the generator's
+`children()`/`fields()` accumulate into a captured list. In C that is a static function plus
+a context struct and it works -- but then the AST walk is C, not Bend, which is not a port.
+
+## AG-3 A WALL CAN BE INDEPENDENT OF THE WALL BEFORE IT, AND THE LATER ONE DECIDES
+
+MEASURED 2026-10-04, `runtime/support/autogen.bend`. The file names three walls in its
+header and refers to a **fourth** (WALL 4, `tname`'s record arm) eight times in the body
+while never stating it in the wall list -- the exact failure the standing rule
+("a wall is not a TODO; if you add a fourth, state it there") exists to prevent. It is now
+stated in the header, and the reason it matters is not tidiness:
+
+**WALL 4 is independent of WALL 1.** WALL 1 is the FFI; WALL 4 is that `tname`'s record arm
+needs two descents in one arm and bend refuses the second. Closing the FFI would hand
+`tname` a real AST and change nothing, because the arm that turns that AST into emitted
+source is the refused one. So WALL 1 is NOT the binding constraint on this region, and a
+plan that sequences "close the FFI, then port the region" sequences it in the wrong order.
+
+The refusal is reproduced at `.agents/slop/agprobe/p20.bend`, with the control in `p20a.bend`:
+
+* `walk_a` -- ONE descent, the field list shrinks first: **ALL PROOFS CHECK**;
+* `walk_b` -- a second descent that passes the list UNCHANGED:
+  `expected : a decreasing self-call (arguments are read left to right: each passed unchanged
+  until one shrinks)`.
+
+Two things about that repro worth keeping. First, **the artifact the file CITED did not
+exist on disk** -- `.agents/slop/agprobe/p20.bend` was referenced at header line 459 and was
+absent, so the wall's evidence was unavailable and the claim had to be re-measured rather
+than read. A citation to a measurement is not the measurement. Second, the control is what
+makes it a measurement: without `p20a.bend` compiling, "bend refused my file" is not evidence
+of anything. Two earlier drafts of the repro were also refused for reasons unrelated to the
+claim (`Nil` unknown without `import Base`; a `let` in a match arm is a parse error), and
+both would have been reported as "the wall reproduces" had the control not been run.
+
+Also note the argument order: bend reads self-call arguments left to right and stops at the
+first that shrinks, so the list must be the FIRST parameter (`rows_br_go` and `gtn_find` in
+the same file already do this). Put the type first and even the one-descent baseline is
+refused -- which is a false WALL 4, and it is what the first two drafts produced.
+
+## AG-4 A GENERATED CORPUS DECOMPOSES, AND THE RESIDUE NAMES THE NON-GENERATED PART
+
+MEASURED 2026-10-04 on `tinygrad/runtime/autogen/*.py`, 38 files.
+
+* **4,868 top-level defs**, by `ast.parse` + module `tree.body` + each `ClassDef`'s `.body`.
+  `ast.walk` gives the SAME 4,868, because these are generated one-expression defs with no
+  nested defs at all. So the inherited "13,480" is not reproducible by either method and
+  almost certainly counted class bodies or emitted text rows, not defs.
+* **4,864 of them are `@dll.bind(...)` trampolines** matching ONE template
+  (`autogen.py:240-241`), and **4,864/4,864 = 100%** match it.
+* The residue is **exactly 4**, all in `__init__.py`: `macossdk`, `load`, `_extract_deb`,
+  `__getattr__` -- the hand-written loader, which is not generator output. **No residue is
+  unexplained.**
+* **1** of the 4,868 has control flow in its body (`load`). A task brief said "3 bodies
+  contain any control flow"; 3 is not reproducible by top-level parse, by `ast.walk` over
+  defs, or by `ast.walk` over files (6 files contain `if`/`for`/`try` somewhere, never inside
+  another top-level def body).
+
+So the corpus is **99.98% pure trampolines**, and ONE template check covers 4,864 of them --
+strictly stronger than name-and-arity, because it also pins the return type, the parameter
+names, the parameter annotations and the `...` body. What it cannot see is stated rather than
+papered over: the `tname`-derived ctypes spelling, struct field ORDER, and `register_fields`
+offsets. A template check covers FUNCTION TRAMPOLINES and no STRUCT LAYOUTS.
+
+The general form: *when a count does not decompose, the remainder is the finding.* 4,868
+looked like a scary number until it split 4,864 + 4 with nothing left over, and the 4 turned
+out to be the only non-generated code in the region.
+
+---
+
+## LN-1 A ROW NAME MUST NOT CARRY `=`, AND THE COST IS ROWS, NOT NAMES
+  (renderer/llvmir.bend unit, 2026-10-04. Continues from `GC-8` above; rule NUMBERS have
+  collided across units all session, so cite POSITIONS. Full deliverable:
+  `.agents/slop/llvmir-nameshape-control.md`; guard: `.agents/slop/llvmir-gate.py`:
+  `reshape()`.)
+
+`rebase-gate.py:row` splits a row line at its **FIRST `=`**. So whether a row name CAN carry `=`
+is decided by the lane's own boundary, and where the boundary is ` = ` it can:
+
+* **F1 `name=value`** (79.6% of this tree, 18,443 rows) -- the boundary IS `=`, so the writer has
+  no way to express one. **Structurally immune.** A name with a SPACE cannot survive here either.
+* **F2 `NAME = [v]   py=[w]`** -- the boundary is ` = `, and a name **may** carry `=`. **The only
+  population where the class can exist**, and 7.62% of it does.
+* **F3, no `=` at all** -- 14,766 TSV lines, read as ZERO rows by design.
+
+MEASURED on `renderer/llvmir.bend`, per lane, before its rename: **471 physical rows -> 323
+names**, 157 names carried `=`, **148 rows were unreachable by any name**, and the whole lane
+reported **`disagree=[]` and `AGREE`**. The failure is not a disagreement; it is measurements
+that cannot be JOINED, under a green verdict. `renderer/llvmir.bend` carried **294 of the
+project's 302 reshape rows** -- 97% -- on its own two lane texts.
+
+`cstyle.bend`'s `kern <DEV> lb=<N>` is the same shape (`lb` is the port's own abbreviation and
+already its `kern_row` parameter's name; upstream's `launch_bounds` is `cstyle.py:163`).
+`nir_llvmir.bend` has it as `osx=<bool>` (upstream's identifier is `OSX`, from
+`tinygrad.helpers`, read at `llvmir.py:219`). `uop/render.bend` has 31. **The pattern is three
+ports, and it is the port's LABEL grammar, not any one file.**
+
+**A NAME MAY CONTAIN A SPACE.** `rows()`'s F3 path requires a one-token name and only runs on
+lines with no `=`, so on an F2 lane a space is a separator no reader cuts. Renaming
+`kern CUDA  lb=1` -> `kern CUDA  lb 1` is one character and reads correctly.
+
+**FOUR SUB-RULES THAT EACH SHIPPED A WRONG NUMBER, all four measured here:**
+
+1. **Counting `=` in `rows()`'s OUTPUT is a tautological zero.** `row()` strips the `=`, so a key
+   can never hold one -- over lane text that HAS 157 of them. Count names from the reader that
+   cuts at the lane's own boundary. (`name-census.md` records this as its own defect 1.)
+2. **Count COLLISIONS from the LINES, never from the parsed dict.** The dict has already
+   overwritten the duplicate, so it printed `none` on the one lane that had one. Same family as
+   the census's defect 2.
+3. **`lost` counts ROWS, never KEYS.** A key holding FOUR rows costs THREE; a key count is 1
+   exactly when the loss is largest.
+4. **"How many names were renamed" must be PAIRS ACROSS TWO SIDES.** `x in A|B and
+   reverse(x) in A|B` is true for every name when the two sets agree; it printed **627 on a
+   470-name lane**. `pairs = {n in B : reverse(n) in A}` printed **157**, which is right.
+
+## LN-2 A KEY COLLISION AND A REPEATED NAME ARE DIFFERENT DEFECTS AND MUST NOT SHARE A COUNTER
+  (same unit, same day)
+
+`reshape()` splits keys-with->1-row into `reshaped` (two DIFFERENT physical names on one key --
+what an `=` does) and `repeated` (one name printed twice -- what a copy-paste does), and the
+first version of the counter merged them, so `lt 1 ptr f32` printed twice reported
+`unaddressable 0` AND `CANNOT BE ADDRESSED BY NAME ... rows per key: [('lt 1 ptr f32', 1)]` in
+the same breath: a zero and a complaint about the same row.
+
+Measured, and it is `agent-core.md`'s `nv_query_litter` shape -- **wrong in the PORT and in the
+ORACLE**: `llvmir.bend:981` and `llvmir-oracle.py:647-648` each list the tuple
+`(1, dtypes.f32, True)` TWICE in the same `lt` count/ptr table. The differ reports 0
+disagreements over a mistake made twice. **Deleting a repeat costs no coverage; guessing what it
+was meant to be would invent a row**, so it is REPORTED and a `--drop-dup` control shows the lane
+without it.
+
+## LN-3 TWO LANES THAT PRINT THE SAME BYTES MAKE EVERY VALUE COMPARISON A TAUTOLOGICAL ZERO
+  (same unit, same day)
+
+MEASURED: `renderer/llvmir.bend`'s port stdout and its oracle's stdout are **byte-identical**
+(`md5 f099803f6606c675` before its rename, `74e3e8322e0db301` after). Two sides that print the
+same bytes agree on every value by construction, so a gate's `disagree` is 0 no matter what the
+port computes, and a green `AGREE` over such a lane says nothing about the port's arithmetic.
+
+**So for a byte-identical lane the BYTE DIFF is the gate and a COVERAGE guard is the only thing
+that can be red**, and the gate must SAY SO rather than leave it to be inferred. It is also what
+makes the name-shape control sharp: a NAME plant leaves the byte diff empty, every value equal,
+and `disagree=[]`, and moves the verdict on the name lane alone. **A value plant is structurally
+incapable of that shape** -- it gives `eq=0 unaddressable=0` with the lane BROKEN -- so it is the
+FALSIFICATION of a name check, never evidence for it.
+
+## LN-4 A CONTROL MUST RUN AGAINST A DETECTOR THAT LACKS THE GUARD, AND THAT DETECTOR MUST RUN
+  (same unit, same day; `cstyle-gate.py` lost a round to this)
+
+`cstyle-nameshape-control.md` records the failure: the first attempt read `@-`, which had already
+moved and already contained the new guard, so both sides of the "before/after" were the NEW gate,
+they agreed on everything, and the control proved nothing.
+
+On llvmir there is no pre-guard revision to read -- the gate is new -- so the "before" side was
+built as a **separate running file**, `.agents/slop/llvmir-gate-noguard.py`, with **no
+`reshape()` in it at all**: read both lanes with `rows()`, print the name counts as DECORATION,
+compare values, print `AGREE`. A stub would not do; a control run against itself is not a control.
+
+| gate | bytes | rc | verdict | `eq` | unaddressable | `disagree` | gated |
+|---|---|---|---|---|---|---|---|
+| pre-guard, no reshape | PRE-RENAME | **0** | **AGREE** | -- | -- | `[]` | **323** |
+| guarded | PRE-RENAME | **1** | **BROKEN** | **157** | **148** | `[]` | 470 |
+| guarded | POST-RENAME | 1 | BROKEN (the duplicate only) | **0** | 1 | `[]` | 470 |
+| guarded, duplicate dropped | POST-RENAME | **0** | **AGREE** | 0 | 0 | `[]` | 470 |
+| guarded + **NAME plant**, both lanes | POST-RENAME | **1** | **BROKEN** | 4 | 3 | **`[]`** | 470 |
+| guarded + **VALUE plant** | POST-RENAME | 1 | BROKEN | **0** | 1 | `['lt f32']` | 470 |
+
+`disagree=[]` in rows 1 and 2 is the point: **the value verdict is identical and the gate verdict
+moves.** And `--unrename` (four patterns anchored on the row-name field, so no value and no
+comment can move) reproduces the captured pre-rename stdout **byte for byte** -- so the control
+needs no second oracle and no checked-in pre-rename copy.
+
+## LN-5 A `BEND` FILE'S ROW NAMES EXIST ONLY IN ITS STDOUT, SO A RENAME AUDIT MUST RUN THERE
+  (same unit, same day)
+
+The rows on an F2 lane are not TEXT in the `.bend` file -- a source line is a CALL and the name
+is a string literal inside it. The first version of the rename script asserted name and value
+invariants over the SOURCE and found `rsplit(" = [")` in 3 lines where the port's stdout has 471;
+a check that reads 3 is not a check. Split the two concerns: the script asserts the substitution
+COUNT on the source, and `llvmir-gate.py --compare BEFORE AFTER` does the collision and value
+audit on the stdout, **by multiset, not by eye**.
+
+**The strongest available corroboration is the ORACLE'S OWN SOURCE GENERATOR.** `bend` mode of
+these oracles PRINTS the row-builder source from the same run that prints the gate text. Its
+output changed in **5 lines** and the only tokens that moved were `abi=`->`abi` (77),
+`vol=`->`vol` (70), `stack n=`->`stack n` (10) -- **not one other byte**. So the port's names are
+exactly what the oracle emits, which cannot be said of a diff against my own edit.
+
+## LN-6 THE SAME SUBSTRING CAN BE A ROW LABEL IN ONE FILE AND A KEYWORD ARGUMENT IN ANOTHER
+  (same unit, same day)
+
+The port's rename pattern `" vol="` -> `" vol "` is correct for `llvmir.bend`. Applied to
+`llvmir-oracle.py` it rewrites `def par(slot=0, dtype=None, vol=False, aspace=None)`
+(`:80`) -- a **Python keyword argument** -- to `vol False`, and the oracle stops parsing. The
+oracle's script therefore uses ROW-anchored patterns (`vol={vol}`, `abi={abi}`, `stack n={n}`)
+with their own asserted counts, asserts `par()`'s signature is byte-identical before and after,
+and `compile()`s the result before writing it.
+
+**A substitution asserted at 94/8/2 hits can be exactly right for the rows and fatal for the
+code**, so the two files need two pattern sets, each asserted to its own count.

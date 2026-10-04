@@ -17,13 +17,16 @@ defects in the differ's own normal form. The second added four graphs -- `group`
 `commute`, `indexed`, `sym` -- and four more, of which two were in a check that had been
 reporting `PASS` over nothing. The third (this file's §6) added three graphs -- `lin`,
 `loop`, `gate` -- whose PY side is a call into tinygrad's own scheduler and codegen rather
-than a hand-built expression, and found six more. Current state, MEASURED and printed by
-`runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
+than a hand-built expression, and found SEVEN more -- four in the normal form (17-20), one
+in the census's atom scanner (21) and two in the checks themselves (22-23), where a pair of
+identical FAILURES was being reported as a stable pair. Current state, MEASURED and printed
+by `runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
 
     graphs 16   AGREE 14 (lin/loop DISAGREE, each with a named measured cause)   nodes 189 per side
     ops 34 of 77   commutative ops 7 of 8   symbolic-dim nodes 2 of 189 (BOTH SIDES, see 3b)
     field-records 1134 per side   byte-identical 14 of 16   stable pairs 5 of 5
-    selfcheck OK   oracle-selfcheck OK   controls 5 of 5   conflations 4 of 4   repro 158/158
+    selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 6 of 6   cross 1 of 1
+    conflations 4 of 4   repro 158/158
 
 **THE LIMIT THAT WAS CLOSED WHILE THIS ROUND RAN.** §3b's symbolic-dim wall was OPEN when
 this unit started and is CLOSED now: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the
@@ -428,6 +431,8 @@ three's `lin` happens not to. It is the nearest unclosed gap and it is a graph, 
 
 Same shape as §1: **a field, a CHECK, or a PRINTING that nothing had asked a question.**
 17-20 are the ones that matter, and 17 and 20 are the ones that would have kept lying.
+22-23 are in the CHECKS rather than the differ and are the two that produced a clean-looking
+summary over a run in which half the work never happened.
 
 16. **THIS FILE ASSERTED, IN THREE PLACES, THAT NO NODE IN THE CORPUS HAD MORE THAN ONE
     PARENT. IT IS FALSE, AND THE CENSUS THAT CAUGHT IT IS NOW ON EVERY REPORT.** The
@@ -555,6 +560,33 @@ Same shape as §1: **a field, a CHECK, or a PRINTING that nothing had asked a qu
     version of the assertion printed
     `atoms() counts a dataclass FIELD NAME as an atom letter: ['E','O','X','a','i','o']` and
     exited 1. An assertion that cannot fail is not an assertion.
+
+22. **TWO IDENTICAL FAILURES COMPARE EQUAL, AND THE STABILITY STEP REPORTED THEM AS
+    STABLE.** With the substrate cold, BOTH members of a `D9-stability` pair wrote the same
+    one-line `0 rows after 5 attempts -- a FAILURE, not a verdict` file; `cmp -s` called the
+    pair `BYTE-IDENTICAL`, and `D0-run-summary.txt`'s `stable-pairs` read **5 of 5** on a run
+    in which one pair had never produced a verdict at all. This is the standing trap in its
+    purest form -- *"a 0-row result is indistinguishable from not started"* -- arriving in a
+    place where the question was not "did it print" but "did the same thing happen twice",
+    and the answer was yes. Three changes, all measured:
+    * step 09 now classifies a ONE-LINE side as `FAILED`, re-runs the pair once, and prints
+      `ONE SIDE IS A 0-ROW FAILURE after a retry -- NOT a reproducibility result` rather
+      than comparing anything;
+    * the summary counts the NEGATIVES -- `stable-failed=` and `stable-differ=` beside
+      `stable-pairs=` -- **because a positive count alone cannot distinguish "it worked" from
+      "it failed the same way twice"**;
+    * `graphcmp-repro.sh`'s health gate reads the negative counts, plus `plants-disagree=`,
+      `cross=` and `conflations=`, because **a step that fails silently is not a step whose
+      failure the gate can see.** Before this, six plants and `cross` were not counted by the
+      summary at all, so a cold substrate killed all six and the run still looked healthy on
+      every line the gate read.
+
+23. **`grep -c 'BYTE-IDENTICAL'` OVER A FILE THAT CAN CONTAIN THE STRING INSIDE AN EMBEDDED
+    `diff` IS NOT A COUNT OF PAIRS.** The summary counted lines, and a pair that DIFFERED
+    carries a `diff` whose output is 20 lines of a report that itself says `BYTE-IDENTICAL`.
+    Now anchored (`': 2 runs BYTE-IDENTICAL$'`) and stated as "of 5". Same shape as the
+    `grep -c`-over-a-glob mistake already recorded at step 15: a count that is right about
+    lines and wrong about the thing being counted.
 
 **ONE MORE FINDING THAT IS NOT A DEFECT IN THIS FILE, and is the most useful thing round
 three produced.** `lin`'s SINK DISAGREEs on `applied_opts` and `loop`'s CALL DISAGREEs on

@@ -102,7 +102,7 @@ def vol_rows():
         got = str(L.is_volatile(u))
       except Exception as e:
         got = type(e).__name__
-      out += row(f"is_volatile {op} vol={vol}", got, got)
+      out += row(f"is_volatile {op} vol {vol}", got, got)
   return out
 
 
@@ -208,7 +208,7 @@ def br2_rows():
       ctx = {x: "%v0", idx: "%v1", alt: "%reg_0", pv: "%data0", mask: "%v2"}
       got = call(fn, ctx, x, idx, alt, mask)
       for i, ln in enumerate(got.split("\n")):
-        out += row(f"br2 load vol={vol} {dt.name} [{i}]", ln, ln)
+        out += row(f"br2 load vol {vol} {dt.name} [{i}]", ln, ln)
   return out
 
 
@@ -223,10 +223,10 @@ def br3_rows():
       idx = UOp(Ops.INDEX, (pv, cst(0), cst(1)), dt)
       x = UOp(Ops.LOAD, (idx,), dt)
       got = call(BR[3][1], {x: "%v0", idx: "%v1", pv: "%data0"}, x, idx)
-      out += row(f"br3 load vol={vol} {dt.name}", got, got)
+      out += row(f"br3 load vol {vol} {dt.name}", got, got)
       var = buf(1, dt, 8)
       got = call(BR[4][1], {var: "%v2", idx: "%v1", pv: "%data0"}, idx, var)
-      out += row(f"br4 store vol={vol} {dt.name}", got, got)
+      out += row(f"br4 store vol {vol} {dt.name}", got, got)
   return out
 
 
@@ -246,7 +246,7 @@ def br5_rows():
       ctx[s] = f"%v{k + 1}"
     got = call(fn, ctx, x)
     for i, ln in enumerate(got.split("\n")):
-      out += row(f"br5 stack n={n} {dt.name} [{i}]", ln, ln)
+      out += row(f"br5 stack n {n} {dt.name} [{i}]", ln, ln)
   return out
 
 
@@ -451,14 +451,14 @@ def render_fn_rows():
       r.abi = abi
       got = r._render_fn("mykernel", args, ["  %v0 = fadd", "  %v1 = fmul"])
       for i, ln in enumerate(got.split("\n")):
-        out += row(f"rfn abi={abi} {an} [{i}]", ln, ln)
+        out += row(f"rfn abi {abi} {an} [{i}]", ln, ln)
   # ZERO args -- `", ".join([])` is `""`, so `define ... void @f()` with NO
   # space before the paren. That is the row a `(sargs or " ")` reader gets wrong.
   r = L.LLVMRenderer.__new__(L.LLVMRenderer)
   r.abi = None
   got = r._render_fn("empty", [], ["  %v0 = fadd"])
   for i, ln in enumerate(got.split("\n")):
-    out += row(f"rfn abi=None empty [{i}]", ln, ln)
+    out += row(f"rfn abi None empty [{i}]", ln, ln)
   # a `prefix` list, which is AMD's `f32_to_fp8` -- `prefix or []` and the
   # `+ [define] + kernel + [ret]` concatenation, so a dropped prefix shows as a
   # line that is missing rather than a line that is wrong.
@@ -874,7 +874,7 @@ def bend():
   fs = []
   for op in ("PARAM", "CAST", "BUFFER", "CONST", "AFTER"):
     for vol in (False, True):
-      fs.append(f'r_iv({q(f"is_volatile {op} vol={vol}")}, {b3(op in ("PARAM", "CAST", "AFTER"))}, {b3(vol)}, {q(str(_ivol(op, vol)))})')
+      fs.append(f'r_iv({q(f"is_volatile {op} vol {vol}")}, {b3(op in ("PARAM", "CAST", "AFTER"))}, {b3(vol)}, {q(str(_ivol(op, vol)))})')
   out.append("def r_ivs() -> String:\n  String.concat([" + ", ".join(fs) + "])\n")
 
   # ---------------------------------------------------------- lconst
@@ -940,7 +940,7 @@ def bend():
       got = call(fn, {x: "%v0", idx: "%v1", alt: "%reg_0", pv: "%data0", mask: "%v2"}, x, idx, alt, mask)
       lns = got.split("\n")
       for i, ln in enumerate(lns):
-        fs.append(f'r_br2({q(f"br2 load vol={vol} {dt.name} [{i}]")}, {b3(vol)}, {BT[dt]}, {q("%v0")}, "%v1", {q("%reg_0")}, "%v2", {i}, {q(ln)})')
+        fs.append(f'r_br2({q(f"br2 load vol {vol} {dt.name} [{i}]")}, {b3(vol)}, {BT[dt]}, {q("%v0")}, "%v1", {q("%reg_0")}, "%v2", {i}, {q(ln)})')
   out.append("def r_br2s() -> String:\n  String.concat([" + ", ".join(fs) + "])\n")
 
   # ---------------------------------------------------------- br3 / br4
@@ -950,9 +950,9 @@ def bend():
       pv = par(0, dt, vol)
       idx = UOp(Ops.INDEX, (pv, cst(0), cst(1)), dt)
       x = UOp(Ops.LOAD, (idx,), dt)
-      fs.append(f'r_br3({q(f"br3 load vol={vol} {dt.name}")}, {b3(vol)}, {BT[dt]}, {q("%v0")}, "%v1", {q(call(BR[3][1], {x: "%v0", idx: "%v1", pv: "%data0"}, x, idx))})')
+      fs.append(f'r_br3({q(f"br3 load vol {vol} {dt.name}")}, {b3(vol)}, {BT[dt]}, {q("%v0")}, "%v1", {q(call(BR[3][1], {x: "%v0", idx: "%v1", pv: "%data0"}, x, idx))})')
       var = buf(1, dt, 8)
-      fs.append(f'r_br4({q(f"br4 store vol={vol} {dt.name}")}, {b3(vol)}, {BT[dt]}, {q("%v2")}, "%v1", {q(call(BR[4][1], {var: "%v2", idx: "%v1", pv: "%data0"}, idx, var))})')
+      fs.append(f'r_br4({q(f"br4 store vol {vol} {dt.name}")}, {b3(vol)}, {BT[dt]}, {q("%v2")}, "%v1", {q(call(BR[4][1], {var: "%v2", idx: "%v1", pv: "%data0"}, idx, var))})')
   out.append("def r_br34s() -> String:\n  String.concat([" + ", ".join(fs) + "])\n")
 
   # ---------------------------------------------------------- br5
@@ -968,7 +968,7 @@ def bend():
     names = ", ".join(q(f"%v{k + 1}") for k in range(n))
     sdts = ", ".join(BT[srcs[k].dtype] for k in range(n))
     for i, ln in enumerate(lns):
-      fs.append(f'r_br5({q(f"br5 stack n={n} {dt.name} [{i}]")}, {q("%v0")}, [{sdts}], [{names}], '
+      fs.append(f'r_br5({q(f"br5 stack n {n} {dt.name} [{i}]")}, {q("%v0")}, [{sdts}], [{names}], '
                 f'{x.max_numel()}, {i}, {q(ln)})')
   out.append("def r_br5s() -> String:\n  String.concat([" + ", ".join(fs) + "])\n")
 
@@ -1099,12 +1099,12 @@ def bend():
       args = [("%data0", par(0, dtypes.f32, aspace=aspace)), ("%data1", par(1, dtypes.uint32, aspace=aspace))]
       lns = rfn_lines(abi, "mykernel", args, K2, None)
       for i, ln in enumerate(lns):
-        fs.append(f'r_rfn({q(f"rfn abi={abi} {an} [{i}]")}, {q(abi or "")}, {q("mykernel")}, '
+        fs.append(f'r_rfn({q(f"rfn abi {abi} {an} [{i}]")}, {q(abi or "")}, {q("mykernel")}, '
                   f'{q(", ".join([arg1(aspace, dtypes.f32, "%data0"), arg1(aspace, dtypes.uint32, "%data1")]))}, '
                   f'[{q(K2[0])}, {q(K2[1])}], [], {i}, {q(ln)})')
   args = [("%data0", par(0, dtypes.f32))]
   for i, ln in enumerate(rfn_lines(None, "empty", [], ['  %v0 = fadd'], None)):
-    fs.append(f'r_rfn({q(f"rfn abi=None empty [{i}]")}, {q("")}, {q("empty")}, {q("")}, [{q("  %v0 = fadd")}], [], {i}, {q(ln)})')
+    fs.append(f'r_rfn({q(f"rfn abi None empty [{i}]")}, {q("")}, {q("empty")}, {q("")}, [{q("  %v0 = fadd")}], [], {i}, {q(ln)})')
   args = [("%data0", par(0, dtypes.f32))]
   for i, ln in enumerate(rfn_lines("amdgpu_kernel", "withprefix", args, ['  %v0 = fadd'], ["PREFIX1", "PREFIX2"])):
     fs.append(f'r_rfn({q(f"rfn prefix [{i}]")}, {q("amdgpu_kernel")}, {q("withprefix")}, '

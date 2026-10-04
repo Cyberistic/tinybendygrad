@@ -370,6 +370,28 @@ def main():
     emit(f"bv_w_{tag}", str(width(UOp(Ops.AND, (r_g, UOp.const(k))))))
     emit(f"bv_w_off_{tag}", str(2 ** width(UOp(Ops.AND, (r_g, UOp.const(k))))))
 
+  # ---- 8. THE `c2d` LANE -- `copy_to_device`'s FOUR REFUSALS. ----------------------------
+  # Sourced from `.agents/slop/c2d-refusal-rows.py`, which is the file that OWNS these rows
+  # and says why each fixture is the one `validate.bend` builds. It is loaded and run rather
+  # than copied, because a second copy of a fixture list is a second list to keep in step --
+  # and `agent-core.md` records a row set that was written twice and adjudicated once.
+  #
+  # WHY THEY LIVE HERE AT ALL, and it is a COVERAGE claim rather than tidiness: `validate.bend`
+  # is the only `.bend` this unit owns, `ops.bend` has another owner, and `s5_copy_sel` was a
+  # GREEN row asserting agreement on a node CPython refuses. A refusal needs a fixture with a
+  # positive control one step away, and the fixture set has to live somewhere both lanes can
+  # be run against. This is that somewhere.
+  import importlib.util  # noqa: E402
+
+  c2d_spec = importlib.util.spec_from_file_location("c2d_rows", HERE / "c2d-refusal-rows.py")
+  c2d = importlib.util.module_from_spec(c2d_spec)
+  c2d_spec.loader.exec_module(c2d)
+  _c2d_out = []
+  c2d.out = lambda nm, v: _c2d_out.append(f"{nm}={v}")
+  c2d.main()
+  OUT.extend(_c2d_out)
+  emit("c2d_lane_loaded", int(len(_c2d_out)))
+
   # ---- 7. THE WRAPPED TEXT, so the normalisation above is visible rather than claimed. ----
   s = z3.Solver(ctx=z3.Context())
   z3_idx, z3_mask = uops_to_z3(s, UOp(Ops.AND, (r_g, UOp.const(21))), T)

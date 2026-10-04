@@ -1,0 +1,7 @@
+staged tinybendygrad/runtime/support/nv/nvdev.bend -> nvdev.staged-nv-50051
+  sha256(mirror) == sha256(live) == e7710788ae8fb0e4  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)
+baseline: 794 name= rows, row-set digest c9f18571b35a9b5f
+
+mutation                               rows moved  first rows moved
+--------------------------------------------------------------------------------------------------------------
+[ 0] reg_field_order_reversed ... 

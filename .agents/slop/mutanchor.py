@@ -52,6 +52,31 @@ HANDLE_METHODS = ("write", "writelines", "truncate", "flush", "close")
 # read-only harness look IN-PLAY, which is the same failure in the other
 # direction.
 WRITE_MODES = ("w", "a", "x", "+")
+# `H = [open(P,'w')]` / `H = {'f': open(P,'w')}` -- the handle in a CONTAINER.  The
+# name `H` holds no path, so `H[0].write(s)` has no receiver to resolve and the write
+# vanished.  Only a LITERAL subscript is resolvable (`H[0]`, `H['f']`): `H[i]` for a
+# variable `i` is a name whose value is not in this file, and guessing an index would
+# be the reader inventing a measurement.
+CONTAINERS = ("List", "list", "Tuple", "tuple", "Dict", "dict")
+# A HANDLE PASSED AS AN ARGUMENT: `dump(x, f)` where `f = open(P,'w')`.  Here the
+# writer is the CALLEE and there is no `.write` anywhere in this file to hang a branch
+# on, so it can only be reported as a MAY-write.  It is reported rather than omitted
+# because the two failure directions are not symmetric here: a harness that writes the
+# live tree through a callee is the thing this module exists to name, and a reader who
+# is told `dump(x, f)` MIGHT write can open the callee -- whereas a reader told nothing
+# cannot.  The spelling string says MAY, so the column is never claiming a certainty
+# it does not have.
+# A name bound to a writable handle, passed as a positional argument or as a keyword
+# value.  A method CALL is excluded: `f.write(s)` is already caught by
+# `HANDLE_METHODS`, and counting it twice would inflate the count.
+#
+# SHELL REDIRECTION: `subprocess.run('cat > %s' % SRC, shell=True)`.  The `>` is not a
+# Python write and no AST walk of assignments finds it, so it is read out of the COMMAND
+# STRING instead.  Only `>` and `>>` are read, only when the target is a resolvable path
+# expression, and only for the four runners that actually take a command.
+RUNNERS = ("run", "Popen", "call", "check_call", "check_output", "getoutput", "getstatusoutput")
+SHELLS = ("bash", "sh", "zsh", "dash", "ksh")
+REDIRECT = (">>", ">")
 
 
 def parse(path):
@@ -334,6 +359,183 @@ def target_text(tree, self_name=None, names=TARGET_NAMES):
     return t[0][1] if t else None
 
 
+def containers(tree, self_name=None, env=None):
+    """`{(container name, literal subscript): path}` for handles stored in a container.
+
+    `H = [open(P,'w')]` binds `H` to nothing `path` understands, so `H[0].write(s)`
+    has no receiver to resolve and the write vanished -- one of the holes the
+    `mutanchor-writes-selftest.py` STILL list names.  Only a LITERAL subscript is
+    resolved.  `H[i]` for a variable `i` would need that variable's value, and a
+    reader that guessed an index would be inventing the measurement.
+    """
+    env = _bounds(tree, self_name) if env is None else env
+    out = {}
+    for _ in range(3):
+        grown = dict(out)
+        for n in ast.walk(tree):
+            if not (isinstance(n, ast.Assign) and len(n.targets) == 1
+                    and isinstance(n.targets[0], ast.Name)):
+                continue
+            if isinstance(n.value, (ast.List, ast.Tuple)):
+                pairs = list(enumerate(n.value.elts))
+            elif isinstance(n.value, ast.Dict):
+                # A dict is keyed, and the key is what the reader will write: `H['f']`.
+                # An UNRESOLVABLE key is recorded under its index so the handle is still
+                # attributed to the container, which is the conservative direction.
+                pairs = []
+                for i, (k, v) in enumerate(zip(n.value.keys, n.value.values)):
+                    pairs.append((k.value if isinstance(k, ast.Constant)
+                                  and isinstance(k.value, (int, str)) else i, v))
+            else:
+                pairs = []
+            for k, it in pairs:
+                p = _opened(it, env, self_name)
+                if p:
+                    grown.setdefault((n.targets[0].id, k), p)
+        if grown == out:
+            return out
+        out = grown
+    return out
+
+
+def _subscript(node, ct):
+    """The path a literal `H[0]` / `H['f']` denotes in a container, or None."""
+    if not (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)):
+        return None
+    ix = node.slice
+    k = ix.value if isinstance(ix, ast.Constant) and isinstance(ix.value, (int, str)) else None
+    return None if k is None else ct.get((node.value.id, k))
+
+
+def _command_text(node, env, self_name):
+    """The command string a subprocess argument denotes, or None.
+
+    Four spellings and all four are in the census, because each is a way of naming a
+    destination that `ast.Constant` alone does not see:
+
+      * `'cat > p'`                             a literal
+      * `'cat > %s' % SRC`                      the `%`-form, resolved through `_path`
+      * `'cat > ' + SRC`                        string concatenation
+      * `['bash', '-c', 'cat > p']`             the list form, joined with spaces
+
+    Folding is done on the STRING, not on the AST, and it stops the moment a part is
+    unresolvable -- a command that mixes a literal path with a computed one returns
+    None rather than a partially-known string, because a half-resolved redirect target
+    is a destination nobody can act on.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, (ast.List, ast.Tuple)):
+        parts = [_command_text(e, env, self_name) for e in node.elts]
+        return " ".join(parts) if all(p is not None for p in parts) else None
+    if isinstance(node, ast.BinOp):
+        left, right = node.left, node.right
+        if isinstance(node.op, ast.Mod):
+            t, p = _command_text(left, env, self_name), _path(right, env, self_name)
+            if t is not None and p is not None and t.count("%") == 1:
+                return t % p
+            return None
+        if isinstance(node.op, ast.Add):
+            a, b = _command_text(left, env, self_name), _command_text(right, env, self_name)
+            return a + b if a is not None and b is not None else None
+    return None
+
+
+def _redirect_targets(node, env, self_name):
+    """Paths named after a `>` or `>>` in a command STRING, or None.
+
+    `2>` and `&>` are NOT read: those redirect a DESCRIPTOR rather than the command's
+    stdout, and their target is usually `/dev/null` or a log rather than source.  This
+    is a shape check on a string, not a shell parser, and it is the only shell
+    knowledge here on purpose -- a shell parser here would be a second language in a
+    hazard detector, which is the failure `mutanchor.py` exists to prevent.
+    """
+    text = _command_text(node, env, self_name)
+    if text is None:
+        return None
+    toks = text.split()
+    hits = []
+    for i, t in enumerate(toks[:-1]):
+        if not t.startswith(REDIRECT) or t.endswith("&") or set(t) - set("><"):
+            continue
+        hits.append(_target(toks[i + 1], env, self_name))
+    return [h for h in hits if h]
+
+
+def _target(tok, env, self_name):
+    """The path a redirection target TOKEN names, or None.
+
+    THE TOKEN IS NOT ROUND-TRIPPED THROUGH `ast.parse` FIRST, and that ordering is the
+    whole fix.  `tinybendygrad/uop/ops.bend` parses as an EXPRESSION only by way of the
+    attribute `ops.bend`, so `ast.parse` + `_path` returns None for a perfectly ordinary
+    path and the redirect is missed -- which is what happened on the first attempt at
+    every one of the three shell cases.  A redirect target is a STRING before it is an
+    expression, so it is resolved as one:
+
+      1. exactly a bound constant name (`> SRC`);
+      2. a quoted literal, unquoted (`> "p"`);
+      3. otherwise, parsed as an expression -- which is how `> %s/../x` would arrive.
+
+    A token that does not parse is not a path, and `None` is the answer.  Raising would
+    be the wrong direction: a census that crashes on a sibling harness's odd quoting has
+    told the reader nothing about any file.
+    """
+    if tok in env:
+        return env[tok]
+    if len(tok) > 1 and tok[0] == tok[-1] and tok[0] in "\"'":
+        return tok[1:-1]
+    try:
+        return _path(ast.parse(tok, mode="eval").body, env, self_name)
+    except SyntaxError:
+        return None
+
+
+def _shell_spellings(n, env, self_name):
+    """`[(path, spelling)]` for every redirection destination in a subprocess call.
+
+    A command is SHELL-SHAPED when `shell=True` is passed, or when the first list
+    element is one of the shells.  `run(['cat','>',SRC])` with neither is an argv
+    vector naming a file called `>`, and reading it as a redirect is the false
+    IN-PLAY that teaches a reader to stop believing the column.
+    """
+    f = n.func
+    named = f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else None)
+    if named not in RUNNERS:
+        return []
+    first_is_shell = bool(n.args) and isinstance(n.args[0], (ast.List, ast.Tuple)) \
+        and n.args[0].elts and isinstance(n.args[0].elts[0], ast.Constant) \
+        and n.args[0].elts[0].value in SHELLS
+    if not (first_is_shell or any(k.arg == "shell" for k in n.keywords)):
+        return []
+    out = []
+    for a in list(n.args) + [k.value for k in n.keywords]:
+        for p in _redirect_targets(a, env, self_name) or []:
+            out.append((p, "shell redirect in %s" % named))
+    return out
+
+
+def imports(tree):
+    """`{module name}` for every sibling harness this file imports AT MODULE SCOPE.
+
+    NOT a write detector, and deliberately not offered as one.  A sibling harness's
+    import-time side effect is the one hole on that list a single-file AST cannot
+    close: the write lives in the OTHER file, and closing it needs either cross-file
+    dataflow or executing the import, and this module executes nothing by design.
+
+    What IS closeable is the EDGE.  A census can enumerate which harnesses import
+    which, and the writer is then one `--read` away.  Reporting the edge AS IF it were
+    a write would be the worse failure, because a false IN-PLAY is indistinguishable
+    from a real one once the column has been believed for long enough.
+    """
+    out = set()
+    for n in tree.body:                       # MODULE SCOPE ONLY, on purpose
+        if isinstance(n, ast.Import):
+            out.update(a.name for a in n.names)
+        elif isinstance(n, ast.ImportFrom) and n.module:
+            out.add(n.module)
+    return out
+
+
 def write_spellings(tree, self_name=None):
     """`(zone, destination, spelling)` for every write or destruction.
 
@@ -346,6 +548,7 @@ def write_spellings(tree, self_name=None):
     """
     env = _bounds(tree, self_name)
     hd = handles(tree, self_name, env)
+    ct = containers(tree, self_name, env)
     out = []
     for n in ast.walk(tree):
         if not isinstance(n, ast.Call):
@@ -365,9 +568,11 @@ def write_spellings(tree, self_name=None):
         # 3. open(P, 'w').write(s) AND f.write(s) where f = open(P, 'w') -- the
         #    SPELLINGS THAT WERE MISSED.  The receiver is either the opener CALL
         #    itself or a name bound to one; neither resolves as a path expression.
+        #    `H[0].write(s)` adds the container case: a literal subscript resolves.
         elif isinstance(f, ast.Attribute) and f.attr in HANDLE_METHODS:
             p = _opened(f.value, env, self_name) or \
-                (hd.get(f.value.id) if isinstance(f.value, ast.Name) else None)
+                (hd.get(f.value.id) if isinstance(f.value, ast.Name) else None) or \
+                _subscript(f.value, ct)
             if p:
                 out.append((zone(p), absolve(p), "open(...).%s" % f.attr))
         # 4. os.remove(P) / shutil.rmtree(P) -- a DELETION of the live tree.
@@ -393,6 +598,21 @@ def write_spellings(tree, self_name=None):
             if p:
                 out.append((zone(p), absolve(p), "nested open as %s argument"
                             % (f.id if isinstance(f, ast.Name) else f.attr)))
+        # 7. a WRITABLE HANDLE PASSED AS AN ARGUMENT -- `dump(x, f)`.  The callee
+        #    writes and this file cannot see it, so the claim is a MAY and the
+        #    spelling says so.  A method CALL is excluded because `HANDLE_METHODS`
+        #    already caught it and double-counting inflates the number.
+        if not isinstance(f, ast.Attribute) or f.attr not in HANDLE_METHODS:
+            for sub in list(n.args) + [k.value for k in n.keywords]:
+                p = hd.get(sub.id) if isinstance(sub, ast.Name) else None
+                if p:
+                    out.append((zone(p), absolve(p),
+                                "MAY write: %s passed a writable handle"
+                                % (f.id if isinstance(f, ast.Name) else f.attr)))
+        # 8. SHELL REDIRECTION -- `run('cat > %s' % SRC, shell=True)`.  The `>` is not
+        #    a Python write, so no branch on a call's own attributes can see it.
+        for p, spelling in _shell_spellings(n, env, self_name):
+            out.append((zone(p), absolve(p), spelling))
     return out
 
 
