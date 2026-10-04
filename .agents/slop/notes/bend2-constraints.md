@@ -24344,3 +24344,133 @@ Stage 6 is appended to `e2e.sh` and the appended block's only `*rc` assignment i
 `mm_e2e_failed=0 / PASS`, then `STAGE 6 FAILED`, then
 `--- the script's exit status is STAGE 4's: PASS ---`, and **exited 0**.  A green claim
 must not be made retractable by a stage added after it.
+
+---
+
+## V — the lane-repair pass, 2026-10-04
+
+`V-` numbering continues from nothing and collides with nothing; the `F-` numbers have collided
+three times and the `L-` numbers were taken by the liveness census. Full working:
+`.agents/slop/revive/REVIVE.md`.
+
+**V-1. A COMMENT IS NOT A ROW, AND A GATE THAT READS ONE REPORTED A PORT CHANGE THAT NEVER
+HAPPENED.**  `rebase-gate.py`'s `row()` split on the first `=` and had no `#` guard, so
+`rebase-oracle-ops.py`'s provenance line `#rebase_inner=…` was a row named `#rebase_inner`.
+MEASURED: `uop/ops.bend`'s oracle lane counted **168** rows when the oracle prints **108**, and
+the verdict read
+
+    RE-PORTED  tinybendygrad/uop/ops.bend
+               MOVED #rebase_inner: '… kept=67' -> '… kept=167'
+
+with **no change to the port at all** — the movement was in a comment about the oracle's filter,
+compared against a recorded baseline that had itself been captured from a lane that never ran.
+**A row whose NAME begins with `#` is a comment in every convention this project uses**
+(`ops-oracle.py:13-14` already drops `#shared*` with `grep -v`). Only the NAME is refused, so a
+VALUE containing `#` is untouched. Blast radius over all 39 lanes: four oracles lose comment rows,
+**zero** disagreements change, **zero** lanes go red.
+
+**V-2. `# shared rows` IN A COMMENT IS NOT A MEASUREMENT, AND IT COST A LANE ITS WHOLE DENOMINATOR.**
+`BASE_ORACLES`'s `uop/ops.bend` entry read `#  62` for as long as the lane had never run. The
+MEASURED figure is **108** — 315–319 port rows, 108 oracle rows, 108 shared, 0 disagree, verdict
+UNCHANGED — and the oracle's own provenance line accounts for every number:
+`inner_rows=139 bend_only_families=54 filtered=31 kept=108` out of 198 printed lines.
+**A number in a comment is a claim about a measurement, and it decays silently.** Re-derive it or
+delete it.
+
+**V-3. A WALL NOBODY NAMED SITS BESIDE THE WALL EVERYBODY NAMED.** `rebase-oracle-ops.py:54`
+raised `NameError: name 'importlib' is not defined` because the file imported only `os,
+pathlib, subprocess, sys`. The census named it and stopped. **Fixing only that line revealed a
+second wall on the very next line**: `pathlib.Path(__file__).resolve() / "rebase-gate.py"` joins
+a **file** to a name and yields `…/rebase-oracle-ops.py/rebase-gate.py`, so
+`spec_from_file_location` raised `NotADirectoryError`. `HERE` was already the directory.
+**When a lane has been dead long enough to be described in prose, the prose is a list of the
+FIRST failure, not of all of them. Run it.**
+
+**V-4. "0 DISAGREEMENTS" IS NOT A COVERAGE STATEMENT, AND 7 OF 38 LIVE LANES WERE GREEN BY
+CONSTRUCTION.** Measured over all `BASE_ORACLES` lanes: 7 print **byte-identical** stdout on both
+sides — `renderer/ptx.bend` (281), `renderer/nir_llvmir.bend` (205), `viz/serve.bend` (176),
+`runtime/support/c.bend` (129), `nn/onnx.bend` (123), `nn/__init__.bend` (24),
+`renderer/llvmir.bend` (470) — so `disagree` compares a string with itself and is 0 **whatever
+the port prints**. **1,408 shared row names.** One of the seven said so
+(`llvmir-gate.py:24-32`) and only inside its own gate; `rebase-gate.py`, which runs all seven,
+said nothing. Every lane now carries its own `sha256`/byte-count and the verdict prints
+`⚠ TAUTOLOGICAL` on green and red runs alike. **`md5 -q` on macOS takes exactly ONE file** — use
+`sha256`.
+
+**V-5. TWO RUNS OF THE SAME PORT DO NOT CORROBORATE THE PORT.** `interpreted` and `native` are
+the same `.bend`; a row name they agree on byte-for-byte is agreed by neither. My first version
+of the V-4 stamp counted those names toward "green by construction" and, under a live plant,
+printed `470 of 470 shared row name(s) are green BY CONSTRUCTION` **on the same run where `lt
+f32` had just been reported as disagreeing**. Count only pairs containing a `cpython:` lane; the
+port-vs-port case is a real and separate fact (the compiled lane reproduces the interpreter) and
+is now printed as `SELF-IDENTICAL`. **A caveat that survives the event it is a caveat about is a
+caveat about nothing** — which is why the stamp is computed from a digest and not from a list.
+
+**V-6. A ZERO-ROW LANE IS A RETRY REQUEST, AND `mismatched=` IS WHERE THAT GETS HIDDEN.** Measured
+on `dsl_gate.py` before the fix: a plant that **does not compile**
+(`nat_text(reg_names_n() + 1n)` — `write (a + b : Nat)` needs an annotation) made the port print
+0 rows, and the gate reported `rows port=0 mismatched=1576`: **1,576 mismatches manufactured by a
+port that said nothing.** Exit **2** with the port's stderr now, never 1. Same lesson as
+`portexec`'s `SUBSTRATE` and `rebase-gate.py`'s GUARD 2.
+
+**V-7. `mismatched` = DISAGREE + MISSING + EXTRA, AND THE SUM CAN EXCEED THE SHARED COUNT.**
+`dsl_gate.py` printed `matched=617 mismatched=1503`. Measured against a live oracle:
+**0 of the 617 shared rows differ**; 959 are oracle-only and 544 port-only, and
+`959 + 544 = 1503`. The lane was **value-green and set-red**, and one number hid it. Print
+`VALUES-DIFFER`, `only-in-port`, `only-in-oracle` as three numbers with three names.
+
+**V-8. AN UNREPRODUCIBLE ROW IS EXCLUDED BY MEASURING IT TWICE, NOT BY NAMING IT.**
+`dsl_oracle.txt:1604` embeds a CPython `repr`:
+`fixed_hilo=<…dsl.FixedBitField object at 0x10911a510>.hi,0`. Every launch yields a different
+heap address; re-recording today gives `0x1099ce810`. `BASE_ORACLES` excludes the 14
+`elf_built_*` rows **by name**, which is a typed list and a judgement that goes stale — and
+`fixed_hilo` proves it was missed, because nobody generalised it. **Run the oracle twice and
+exclude every row whose value differs between the two launches, printing the name and both
+values on every run.** A heap address is not a special case; it is one instance of "this row is
+not a function of the source". ⚠ And `0x[0-9a-f]{9,}` is NOT the shape: `dsl_oracle.txt` also
+carries `inst_sdwa=0x3e4000000`, `pos_5=0x4814060a00` and ten other legitimate 64-bit constants
+that a length heuristic would delete.
+
+**V-9. A `.py` IN THE GATE NAMESPACE MUST BE A PROGRAM.** `.agents/slop/helpers-tc-gate.py` was
+**199 lines of recorded `name=value` rows** raising `SyntaxError: invalid syntax` at
+`trange_0_seq=`, written **into the repo** by `helpers-tc-gate.sh`'s own `GT=` prefix. Renamed to
+`helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
+identical, rc=0. `.bd` / `.bn` are fine — those extensions name no language. Similarly
+`nv_gate.py` appends a gate body from `$TMPDIR` into the live port and `tools/reorder-gate.py`
+rewrites a `.bend`: **a file called `-gate` that mutates the port invites exactly this miscount.**
+
+**V-10. KEY A CACHE ON WHAT IT CACHES, OR IT IS A DIFFERENT ANSWER WITH THE SAME NAME.**
+`drift-gate.py` returned `$TMPDIR/drift-gate-cache/<stem>.{native,cpython}.txt` whenever those
+existed, so a default run compared the **live** port against rows a **different revision**
+produced and printed the verdict identically. Now keyed on the port's own sha256, so a stale
+entry is unreachable; every served-from-cache lane says so. PLANT: a **comment** appended to
+`device.bend` — changes the bytes and nothing else — moved the key `edc4d46b…` → `d32673ea…`
+and sent both lanes back to `ran LIVE`; under the old code that same edit served the previous
+revision's rows silently. Note the direction: a comment invalidates the cache, which wastes a
+rebuild. **Failing toward re-running is the right way to waste work.**
+
+**V-11. `--check-only` EXITS 1 FOR 14 OF 136 `.bend` FILES AND 0 FOR THE OTHER 122 — AND 6 OF
+THE 14 ALSO EXIT 1 WHEN RUN.** Measured over every file in the tree. The 8 that only *import*
+`dtype.bend` exit 1 under `--check-only` and **0** when run (`nn/__init__.bend`, `nn/optim.bend`,
+`nn/state.bend`, `nn/onnx.bend`, `runtime/ops_python.bend`, `runtime/zzprobe2.bend`,
+`test/dtype_oracle.bend`, `test/_probe/v5.bend`). The 6 that carry the cause exit 1 on both:
+`dtype.bend` (14 unfilled laws), `sz.bend` (7 foreign defs), `runtime/autogen/libclang.bend`
+(`duplicate declaration: U32`), and the three proof files `LAWS.bend`/`PROOF.bend`/`PROOF2.bend`
+(34/18/16 TODOs). `agent-core.md` used to say "the file run itself exits 0", which is TRUE for
+those 8 and WRONG for those 6 — and one agent lost a 10-minute retry loop to it. **Three of the
+8 are `BASE_ORACLES` ports, so any harness reading a non-zero bend exit as a dead lane calls
+three LIVE lanes dead.** `rebase-gate.py` reads stdout rows and is unaffected.
+
+**V-12. THE BEND IN THIS TREE IS 2.0.34 AND 2.0.35 IS AVAILABLE, NOT INSTALLED.** `bin/bend`
+execs `references/bend/bend2/main.ts`; `--help` prints `Bend 2.0.34` and every failing run
+prints `bend 2.0.35 is available: run bend update`. **A wall recorded "on 2.0.34" describes the
+compiler actually running here; a wall claiming to have been measured on 2.0.35 was measured on
+nothing.**
+
+**V-13. A `L-11` STAYS A `L-11` — INHERIT THE REFUSAL, DO NOT RE-IMPLEMENT IT.** A `.venv` copied
+out of the tree resolves `tinygrad` to the *original* repo through
+`__editable___tinygrad_0_14_0_finder.py`, and `oracle_py.resolve()` refuses (exit 2). Verified in
+both directions after repointing a copy's finder: pointed at the copy it accepts, pointed back at
+the live tree it refuses and names both paths. **`drift-gate.py` used `sys.executable`, so its
+authority depended on the LAUNCHER** — the exact defect `oracle_py.py` was written to end — and
+now calls `resolve()`.

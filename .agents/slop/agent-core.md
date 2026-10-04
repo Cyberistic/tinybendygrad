@@ -135,10 +135,35 @@ rows that encode the bug.
 
 ## TRAPS THAT HAVE COST REAL TIME
 
-- `bend --check-only` **exits 1 even when the file is fine**, because `dtype.bend` has 14
-  permanently unfilled laws (no `F16`/`I64`/`F64`/`U64` in Bend 2.0.34). **Never gate on the
-  exit status.** Read the first line; expect `SOME PROOFS FAIL` naming only those 14. The
-  file run itself exits 0. One agent lost a 10-minute retry loop to this.
+- **`bend --check-only` exits 1 for 14 of the 136 `.bend` files and 0 for the other 122.**
+  Never gate on the exit status; read stderr. **CORRECTED 2026-10-04 — the previous wording of
+  this bullet said "the file run itself exits 0", and that is FALSE for 6 of the 14.** Measured
+  over all 136 files, `find tinybendygrad -name '*.bend' | xargs -P 6 -I{} sh -c './bin/bend
+  {} --check-only; echo {} $?'`, and then `--check-only` rc against plain-run rc per file:
+
+  | file | `--check-only` | plain run | why it is red |
+  |---|---|---|---|
+  | `dtype.bend` | 1 | **1** | its own 14 unfilled laws (no `F16`/`I64`/`F64`/`U64`) |
+  | `nn/__init__.bend` · `nn/optim.bend` · `nn/state.bend` · `nn/onnx.bend` · `runtime/ops_python.bend` · `runtime/zzprobe2.bend` · `test/dtype_oracle.bend` · `test/_probe/v5.bend` | 1 | **0** | `../dtype.Dt.bf16 …` inherited through the import |
+  | `LAWS.bend` (34 TODOs) · `PROOF.bend` (18) · `PROOF2.bend` (16) | 1 | **1** | unfinished proof, not a foreign code |
+  | `runtime/autogen/libclang.bend` | 1 | **1** | `duplicate declaration: U32` — a real defect, not a dtype seam |
+  | `sz.bend` | 1 | **1** | its own 7 foreign defs (`Sz.read_dir`, `Sz.is_dir`, …) |
+
+  So the bullet is true as written for the **8 files that only IMPORT `dtype.bend`** (those exit
+  1 under `--check-only` and **0** when run) and wrong for the **6 that carry the cause
+  themselves** (`dtype.bend`, `sz.bend`, `libclang.bend`, and the three proof files — all 1 on
+  both). One agent lost a 10-minute retry loop to the original version, and the loop was in the
+  wrong file. **A shared instruction that is true for one file and wrong for the next one is a
+  trap with a citation.**
+
+  Three of these are `BASE_ORACLES` ports (`nn/__init__.bend`, `nn/onnx.bend`,
+  `runtime/ops_python.bend`), so any harness that treats a non-zero bend exit as a dead lane
+  will report three LIVE lanes as dead. `rebase-gate.py` does not — it reads stdout rows.
+- **The bend in this tree is 2.0.34 and 2.0.35 is AVAILABLE, not installed.** `bin/bend` execs
+  `references/bend/bend2/main.ts`; `bend --help` prints `Bend 2.0.34` and every failing run
+  prints `bend 2.0.35 is available: run bend update`. Any wall recorded "on 2.0.34" is
+  describing the compiler actually running here; a wall that claims to have been measured on
+  2.0.35 was measured on nothing.
 - `U32.shl` is a **ONE-BIT** shift. `U32.shln(a, n: Nat)` is the n-bit one, so every shift
   **amount** is a `Nat` literal — a bit-packer whose field positions are runtime values is
   **unwritable**.

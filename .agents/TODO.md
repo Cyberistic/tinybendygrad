@@ -12,13 +12,20 @@ gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +2
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
-lane-liveness   [#########.] 9/11    the 39 wired lanes tabulated LIVE/RECORDED/TAUTOLOGICAL.
-                                       **37 of 39 run both sides; 7 of those 37 print
-                                       BYTE-IDENTICAL stdout so `disagree` cannot fail
-                                       (1,408 of 7,809 shared rows); 2 compared ZERO rows.**
-                                       6-lane plant/disarm matrix: 5 ARMED, 1 DISARMED
-                                       (`dtype-gate.py`). See `.agents/slop/LANE-LIVENESS.md`.
-                                       L-1..L-11 appended at bend2-constraints.md 23557+.
+lane-liveness   [###########] 11/11  census: the 39 wired lanes tabulated
+                                       LIVE/RECORDED/TAUTOLOGICAL; repair pass:
+                                       **38 of 39 now run both sides; 31 of those 38
+                                       compare values that CAN differ; 7 print
+                                       BYTE-IDENTICAL stdout (1,408 of 7,917 shared
+                                       rows) and `rebase-gate.py` now SAYS SO on every
+                                       run; 1 lane still compares ZERO rows
+                                       (`dtype.bend`, a PORT defect).**
+                                       6-lane census matrix: 5 ARMED, 1 DISARMED
+                                       (`dtype-gate.py`). 5-lane repair matrix: 5 ARMED.
+                                       See `.agents/slop/LANE-LIVENESS.md` (census) and
+                                       `.agents/slop/revive/REVIVE.md` (repair).
+                                       L-1..L-11 at bend2-constraints.md 23557+,
+                                       V-1..V-13 appended at 24347+.
 dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port, hcq2,
                                        llvmir, tc_ptx, fold-dup, fold-93, guard. 8 CLOSED
                                        or CLASSIFIED, 2 need a `.bend` edit this unit must
@@ -73,11 +80,76 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       shortest honest path for each.
 - [x] Rules `L-1`..`L-11` appended at the END of `notes/bend2-constraints.md`
       (positions 23557+), `L-`-numbered because the `F-` numbers have collided three times.
-- [ ] **NOT DONE — two of these need a one-line fix this unit must not make** (they are
-      other units' files): `rebase-oracle-ops.py:54` needs `import importlib`, which turns
-      `uop/ops.bend`'s lane from dead into 62 measurable rows; and `dtype_tables.py` needs a
-      `name=value` row shape so `dtype.bend`'s zero-row port lane becomes GUARD 2's real
-      finding instead of a shared zero.
+- [x] **`rebase-oracle-ops.py:54` FIXED — `uop/ops.bend`'s lane is LIVE, and it was TWO walls, not
+      one.** `import importlib.util` (the file imported only `os, pathlib, subprocess, sys`, so
+      every invocation raised `NameError`, rc=1, 0 rows) **and** the next line's
+      `pathlib.Path(__file__).resolve() / "rebase-gate.py"`, which uses a FILE as a DIRECTORY and
+      raised `NotADirectoryError`. Fixing only the first would have left the lane dead with a new
+      message. **MEASURED TWICE** (through the gate and through `liveness/measure39.py`, which
+      imports the gate's own `rows`): **port 315–319 rows · oracle 108 · 108 shared · 0 disagree ·
+      UNCHANGED, rc=0.** The `#  62` in `BASE_ORACLES` **was never measured** — it described a
+      lane that had never emitted a row; reconciled to `# 108` with the arithmetic
+      (`inner_rows=139 bend_only_families=54 filtered=31 kept=108` of 198 printed lines).
+- [x] **`row()` WAS READING 60 COMMENT LINES AS ROWS, AND REPORTED A PORT CHANGE.**
+      `rebase-gate.py`'s `row()` now refuses a name beginning with `#` — the convention
+      `ops-oracle.py:13-14` already uses (`grep -v '^#shared'`). MEASURED consequence: the ops
+      oracle lane counted **168** rows when the oracle prints **108**, and the verdict read
+      `RE-PORTED … MOVED #rebase_inner: 'kept=67' -> 'kept=167'` **with no change to the port**.
+      Blast radius over all 39 lanes: 4 oracles lose comment rows, **0** disagreements change,
+      **0** lanes go red, 3 shared sets untouched. The 4 rows no longer counted are named
+      (`#shared_axis_{count,members,sorted,values}`) and agreed while they were counted.
+- [x] **`rebase-gate.py` NOW SAYS SO WHEN `disagree` CANNOT FAIL.** Every lane carries its own
+      `sha256`/byte count; byte-identical pairs print `⚠ TAUTOLOGICAL` on green **and** red runs.
+      MEASURED on the llvmir lane: `⚠ 470 of 470 shared row name(s) … green is BY CONSTRUCTION`.
+      Port-vs-port identity prints separately as `SELF-IDENTICAL`, because two runs of the same
+      `.bend` corroborate each other and not the port — a correction to my own first stamp,
+      caught by the plant. Rules **V-4**, **V-5**.
+- [x] **`agent-core.md`'s `--check-only` wall CORRECTED TO NAME WHICH FILES.** Measured over all
+      136 `.bend` files: **14 exit 1, 122 exit 0**, and **6 of the 14 also exit 1 when run**
+      (`dtype.bend`, `sz.bend`, `libclang.bend`, `LAWS`/`PROOF`/`PROOF2`) while **8 exit 0 when
+      run** (they merely import `dtype.bend`). The old sentence — "the file run itself exits 0" —
+      is true for 8 and wrong for 6, and one agent lost a 10-minute retry loop to it. **Three of
+      the 8 are `BASE_ORACLES` ports**, so a harness reading a non-zero bend exit as a dead lane
+      calls three LIVE lanes dead. Rules **V-11**, **V-12** (bend is **2.0.34**; 2.0.35 is
+      *available*, not installed — every failing run says so).
+- [x] **`dsl_gate.py`: LIVE oracle run TWICE, exclusions derived by MEASUREMENT, zero-row guard.**
+      MEASURED, all three: (a) `dsl_oracle.txt:1604` embeds a heap address (`0x10911a510`,
+      re-recording gives `0x1099ce810`) — caught with **no name list** by running the oracle
+      twice and dropping rows that differ; (b) a non-compiling plant reported
+      `rows port=0 mismatched=1576`, now `THE PORT PRODUCED ZERO ROWS … rc=2 … NOT A
+      DISAGREEMENT` with the port's stderr; (c) the summary read `matched=617 mismatched=1503`,
+      which is unreadable — measured, **0 of 617 shared rows differ**, and `1503 = 959
+      oracle-only + 544 port-only`, so the lane was **value-green and set-red**. Rules **V-6**,
+      **V-7**, **V-8**.
+- [x] **`helpers-tc-gate.py` RENAMED to `helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
+      `$GT.rows`.** It was **199 lines of recorded rows raising `SyntaxError`** at
+      `trange_0_seq=`, written into the repo by its own `GT=` prefix. Re-ran the driver:
+      `237 shared rows, 3 lanes identical`, rc=0. Rule **V-9**.
+- [x] **`drift-gate.py`'s cache is KEYED ON THE PORT'S sha256.** It returned
+      `$TMPDIR/drift-gate-cache/<stem>.{native,cpython}.txt` by default, so a default run compared
+      a live port against a different revision's rows. PLANT: a **comment** appended to
+      `device.bend` moved the key `edc4d46b…` → `d32673ea…` and sent both lanes back to
+      `ran LIVE`; DISARM: a re-run with no edit kept the key and the verdict byte-identical.
+      Also pinned through `oracle_py.resolve()` — **inherits the L-11 refusal** instead of using
+      `sys.executable`, whose value depended on the launcher. Rules **V-10**, **V-13**.
+- [x] **5-lane plant/disarm matrix for this pass, every plant in a `$TMPDIR` copy, every restored
+      file sha256-verified** — `.agents/slop/revive/REVIVE.md` §7, raw captures beside it. ARMED:
+      the `#`-row refusal; the tautology stamp (the llvmir plant **removed** the ⚠ lines, the
+      disarm **restored** them); the dsl zero-row guard; the dsl value comparison; the drift-gate
+      cache key.
+- [x] **THE OTHER TWO `*-gate.py` FILES THAT ARE NOT GATES ARE OTHER UNITS' — reported with
+      `file:line`, not edited.** `nv_gate.py:8,19` appends a gate body from `$TMPDIR` into the
+      live port; `tools/reorder-gate.py:109` rewrites a `.bend`. The six driverless emitters
+      (`mm-gate`, `mm-bl-gate`, `mm-dt-gate`, `mm-walk-gate`, `state-gate`, `nn-gate`) are already
+      recorded as **NOT A GATE** at `LANE-LIVENESS.md:190,194`, the accurate place for that, and
+      are left as-is.
+- [ ] **`dtype.bend` IS A PORT DEFECT AND IS NOT MINE TO FIX.** `rc=1`, 0 stdout lines,
+      `14 defs rely on unsafe or foreign code: - Dt.bf16 … - fp8_to_float`. The 14 are the
+      `F16`/`I64`/`F64`/`U64` constructors Bend 2.0.34 has no syntax for. **No harness change can
+      fix it** and none was attempted; `tinybendygrad/dtype.bend` is under single ownership. The
+      oracle side is separately deliberate: `oracle/dtype_tables.py` emits 14,774 TSV lines so
+      `rows()` finds 0 by the whitespace rule, asserted by `rebase-gate-selftest.py` PART 3b. So
+      **the lane compares nothing for one reason on each side**, and that is the honest report.
 - [ ] `codegen/decomp/dtype.bend`'s `BASE_ORACLES` lane is RED on exactly 1 of 109 shared
       rows, reproducibly: port `c7=refused:unported` vs oracle `c7=F(2139095040)`.
       Named to the owning unit; not adjudicated here (a refusal row, not a wrong number).

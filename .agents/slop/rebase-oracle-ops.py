@@ -31,6 +31,7 @@ all six against this file's own output.
 
     DEV=NULL .venv/bin/python .agents/slop/rebase-oracle-ops.py
 """
+import importlib.util
 import os
 import pathlib
 import subprocess
@@ -51,7 +52,7 @@ PY = REPO / ".venv" / "bin" / "python"
 # (289,262 lines), 44,345 are F2 `py=`-tail lines and 2,370 are F3 two-space lines --
 # so a fork that did not fold the tail was reading a DIFFERENT STRING on ~15% of lanes,
 # and one that skipped F3 was blind to ~0.8%. Those are the sizes of what was wrong.
-_RG = importlib.util.spec_from_file_location("rebase_gate", pathlib.Path(__file__).resolve() / "rebase-gate.py")
+_RG = importlib.util.spec_from_file_location("rebase_gate", HERE / "rebase-gate.py")
 _rebase_gate = importlib.util.module_from_spec(_RG)
 _RG.loader.exec_module(_rebase_gate)
 rows = _rebase_gate.rows

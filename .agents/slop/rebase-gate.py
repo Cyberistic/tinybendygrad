@@ -440,6 +440,19 @@ def row(line):
     if not name:
       # `== SECTION ==` banners: 14 of them in prepare-oracle.py, all keying on `""`.
       return None
+    if name.startswith("#"):
+      # A `#name=value` LINE IS A COMMENT AND IS NOT A ROW, in the one place that decides what a
+      # row is. MEASURED 2026-10-04, and it was not hypothetical: `rebase-oracle-ops.py` prints
+      # its provenance as `#rebase_inner=…` plus one `#bend_only_<family>=<reason>` per filtered
+      # family, and `rows()` read all 55 of them as rows. Two consequences, both observed:
+      #   (a) the lane's oracle row count read 168 when the oracle prints 113 -- a count wrong for
+      #       a STRUCTURAL reason, which is the failure `rows()`'s own docstring is about;
+      #   (b) WORSE, `uop/ops.bend`'s verdict printed `MOVED #rebase_inner: 'inner_rows=82 …' ->
+      #       'inner_rows=198 …'` and the lane reported RE-PORTED. The port did not move. The
+      #       gate reported a port change it had read off a comment about the oracle's filter.
+      # Only a `#` NAME is refused, so a VALUE containing `#` (`hlo=0x1#2`) is untouched, and the
+      # count of the excluded lines is printed by the provenance line that emits them.
+      return None
     i = value.rfind(PY_TAIL)
     if i < 0:
       v = value.strip()
@@ -451,6 +464,8 @@ def row(line):
   head, sep, tail = line.partition(GAP)
   name = head.strip()
   if not sep or len(head.split()) != 1 or not name or not tail.strip():
+    return None
+  if name.startswith("#"):
     return None
   return name, tail.strip(), tail.strip()
 
@@ -493,6 +508,34 @@ def rows(text):
 
 
 _PLAN = None
+
+
+def stamp_text(text):
+  """A LANE ENTRY's view of its OWN stdout, so a verdict can say whether two lanes printed the
+  same BYTES and not merely the same parsed rows.
+
+  ⚠ WHY THIS IS NOT A ROW COMPARISON. `rows()` parses, so two lanes can agree on every row and
+  still differ in bytes -- a dropped line, a comment, a reordered section. And the reverse is the
+  failure that matters: when both sides print byte-identical stdout, `disagree` compares a string
+  with itself and is 0 BY CONSTRUCTION, whatever the port does. MEASURED on 2026-10-04 over all
+  39 lanes: **7 of the 37 live lanes print byte-identical stdout on both sides -- ptx (281 rows),
+  nir_llvmir (205), viz/serve (176), c (129), nn/onnx (123), nn/__init__ (24), llvmir (470) --
+  and 1,408 shared row names whose green cannot be earned by a value comparison.** One of the
+  seven said so (`llvmir-gate.py:24-32`, and only inside its own gate); this tool, which is the
+  instrument that runs all seven, said nothing, so a reader of `rebase-gate.py` saw
+  `7 lanes, 0 disagreements` and was told no more.
+
+  `sha256` and not `md5` because `md5 -q` on macOS takes exactly ONE file and silently does
+  nothing useful on a list of them.
+
+  ⚠ `n_lines` IS `splitlines()` AND NOT `rows()`, deliberately: the whole point is to see the
+  bytes, and a line that `row()` refuses (a `#` comment, a `== SECTION ==` banner) is still a
+  byte that was printed.
+  """
+  import hashlib
+  b = text.encode()
+  return {"text_sha256": hashlib.sha256(b).hexdigest(), "text_bytes": len(b),
+          "n_lines": len(text.splitlines())}
 
 
 def plan_of():
@@ -732,6 +775,7 @@ def run_port(bend, oracle, native=True):
 
   lanes["interpreted"], text = lane(("./bin/bend", str(bend)), BEND_ROW_TRIES)
   r["interpreted"] = rows(text)
+  lanes["interpreted"].update(stamp_text(text))
 
   if native:
     out = native_bin(bend)
@@ -742,6 +786,7 @@ def run_port(bend, oracle, native=True):
       out.chmod(0o755)
       lanes["native"], text = lane((str(out),), BEND_ROW_TRIES)
       r["native"] = rows(text)
+      lanes["native"].update(stamp_text(text))
 
   # GUARD 3's evidence. A lane is keyed `cpython:<STEM>`, which is NOT unique: two oracles
   # with the same stem collide and the second SILENTLY overwrites the first lane's rows, so a
@@ -770,7 +815,7 @@ def run_port(bend, oracle, native=True):
                        env=e, timeout=1800)
     lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:],
                   "row_load1": round(os.getloadavg()[0], 2),
-                  "row_secs": round(time.monotonic() - t0, 2)}
+                  "row_secs": round(time.monotonic() - t0, 2), **stamp_text(c.stdout)}
     r[key] = rows(c.stdout)
   # AFTER every lane, and compared. `substrate` is a LANE ENTRY, not a verdict field, so it
   # reaches the reader on every exit path out of verdict() including the ones that return before
@@ -960,6 +1005,46 @@ def verdict(bend, oracle, base, hunks, native=True):
       shared_all |= shared
       (compared if shared else uncompared).append((lane, other, len(shared)))
       bad += [(lane, other, k) for k in shared if now[lane][k] != now[other][k]]
+  # ⚠ TAUTOLOGY, STAMPED ON **EVERY** VERDICT THAT REACHES HERE, GREEN AND RED ALIKE, because a
+  # lane that stops being byte-identical must stop being labelled tautological -- and a label that
+  # only appears on green runs is a label that cannot be observed changing. A pair is tautological
+  # when both lanes ran (rc 0, so neither is `substrate`/`load`/`check`) and their stdout sha256 is
+  # the same string. `disagree` on such a pair is a string compared with itself: it is 0 whatever
+  # the port prints, so the ONLY live signal is the byte digest, and "0 disagreements" on it is a
+  # statement about the harness, not about the port.
+  #
+  # `tautological_names` IS A SET SIZE AND NOT A SUM OF PAIRS, the same distinction this file
+  # already makes for `compared_names`: on a three-lane run a name shared by all three lanes is one
+  # name. Printing the two on one line as if they were the same kind of number is the defect that
+  # line exists to prevent.
+  #
+  # ⚠ AND IT COUNTS ONLY PAIRS THAT INCLUDE A `cpython:` LANE, which corrects MY OWN first version
+  # of this stamp. `interpreted` and `native` are TWO RUNS OF THE SAME PORT, so a name they agree
+  # on byte-for-byte is corroborated by neither -- their agreement says the compiled lane
+  # reproduces the interpreter, which is a real and separate fact, and says NOTHING about whether
+  # CPython agrees. Counting those names made the summary claim `470 of 470 shared row name(s) are
+  # green BY CONSTRUCTION` on a run where `lt f32` had just been planted to disagree. MEASURED,
+  # with the plant still applied, and fixed by this edit. A caveat that survives the event it is a
+  # caveat about is a caveat about nothing.
+  # `tautological_pairs` vs `self_identical_pairs`, MEASURED: a byte-identical pair is EITHER a
+  # CPython lane agreeing with the port -- which makes the port's rows green by construction --
+  # OR two runs of the SAME port, which makes no CPython claim at all. Reporting both under one
+  # heading printed `interpreted vs native` twice on one run, once as a tautology and once as a
+  # non-corroboration, which is a reader being asked to hold two true statements about one pair
+  # and guess which applies.
+  v["tautological_pairs"], v["self_identical_pairs"], tautological_names = [], [], set()
+  for lane, other, _n in compared:
+    la, lb = lanes.get(lane) or {}, lanes.get(other) or {}
+    if not (la.get("text_sha256") and la["text_sha256"] == lb.get("text_sha256")):
+      continue
+    if lane.startswith("cpython:") or other.startswith("cpython:"):
+      v["tautological_pairs"].append((lane, other, la["text_bytes"]))
+      tautological_names |= set(now[lane]) & set(now[other])
+    else:
+      v["self_identical_pairs"].append((lane, other, la["text_bytes"]))
+  v["tautological_pairs"].sort()
+  v["self_identical_pairs"].sort()
+  v["tautological_names"] = len(tautological_names)
   # ⚠ STAMPED BEFORE EITHER RED RETURN, and that is not tidiness. GUARD 4's own evidence -- which
   # pairs compared, over how many shared names -- was set only on the GREEN path, so every BROKEN
   # by disagreement reached the reader with the denominator MISSING and printed
@@ -1655,6 +1740,28 @@ def main():
               + (f"  [run {loadwatch.stamp(**v['load'])}]" if v.get("load") else ""))
       for m in v.get("moved", [])[:8]:
         print(f"               MOVED {m[1]}: {m[2]!r} -> {m[3]!r}")
+      # ⚠ "0 DISAGREEMENTS" IS NOT A COVERAGE STATEMENT AND THIS LANE SAYS SO ON EVERY RUN.
+      # Measured 2026-10-04 over all 39 lanes: 7 of the 37 live lanes print BYTE-IDENTICAL stdout
+      # on both sides, so `disagree` compares a string with itself and is 0 by construction no
+      # matter what the port prints -- 1,408 shared row names whose green cannot be earned by a
+      # value comparison. One of the seven said so (llvmir-gate.py:24-32) and only inside its own
+      # gate. This line is printed on green AND red runs, on purpose: a caveat that only shows up
+      # when it is needed is a caveat that has to be remembered, and this one has to be read.
+      for lane, other, nbytes in v.get("tautological_pairs", []):
+        sha = (v.get("lanes") or {}).get(lane, {}).get("text_sha256", "")
+        print(f"               ⚠ TAUTOLOGICAL `{lane}` vs `{other}`: both printed the SAME "
+              f"{nbytes} byte(s), sha256 {sha[:16]}… -- `disagree` compared a string with itself "
+              f"and CANNOT FAIL on this pair. THE BYTE DIGEST IS THE GATE; a value comparison "
+              f"here would be 0 for any port at all, including a port that prints nothing")
+      for lane, other, nbytes in v.get("self_identical_pairs", []):
+        sha = (v.get("lanes") or {}).get(lane, {}).get("text_sha256", "")
+        print(f"               SELF-IDENTICAL `{lane}` vs `{other}`: same {nbytes} byte(s), "
+              f"sha256 {sha[:16]}… -- the compiled lane reproduces the interpreter exactly. Not "
+              f"a corroboration: both sides are the same port, so no CPython claim is involved")
+      if v.get("tautological_names"):
+        print(f"               ⚠ {v['tautological_names']} of {v.get('compared_names')} shared row "
+              f"name(s) on this port are corroborated ONLY by a byte-identical CPython lane, so "
+              f"their green is BY CONSTRUCTION, not by merit. Read the sha256 above, not the 0")
       # THE ROWS THAT DISAGREE, NAMED. This line is why the planted-disagreement control can be
       # run by reading this tool's own stdout: `--json` carries the same field, but a BROKEN that
       # prints a COUNT and not the rows sends the reader to a diff to find out which of 2 -- or
@@ -1753,7 +1860,7 @@ def main():
 # the row-name SETS -- and each is recorded with its shared-row count, because a count is what
 # tells a reader whether the pair compares 543 claims or 10:
 #
-#   uop/spec.bend          11    uop/ops.bend             62
+#   uop/spec.bend          11    uop/ops.bend            108
 #   codegen/opt/search.bend 10    runtime/ops_rdma.bend  389
 #   runtime/ops_nv.bend   543    runtime/ops_metal.bend  14
 #   runtime/support/hcq2.bend 157
@@ -1768,7 +1875,18 @@ BASE_ORACLES = {
   "tinybendygrad/runtime/ops_rdma.bend": [".agents/slop/oracle_rdma_gate.py"],      # 389
   "tinybendygrad/runtime/ops_nv.bend": [".agents/slop/nv-oracle.py"],               # 543
   "tinybendygrad/runtime/ops_metal.bend": [".agents/slop/mt_seam_rows.py"],         #  14
-  "tinybendygrad/uop/ops.bend": [".agents/slop/rebase-oracle-ops.py"],             #  62
+  # 108 shared, 0 disagree. THE `62` THIS ENTRY USED TO CARRY WAS NEVER MEASURED: it described a
+  # lane that had never run. `rebase-oracle-ops.py:54` called `importlib.util` while the file
+  # imported only `os, pathlib, subprocess, sys`, so every invocation raised
+  # `NameError: name 'importlib' is not defined`, rc=1, 0 rows; and once that was fixed, the very
+  # next line's `pathlib.Path(__file__).resolve() / "rebase-gate.py"` used a FILE as a DIRECTORY
+  # and raised `NotADirectoryError`. Two one-line walls -- and this comment is the reason nobody
+  # noticed for however long it was wrong: the number LOOKED like a measurement.
+  # MEASURED 2026-10-04 TWICE, once through this gate and once through
+  # .agents/slop/liveness/measure39.py, which imports this file's own `rows` rather than forking
+  # it: port 315-319 rows / oracle 108 rows / 108 shared / 0 disagree. `uop/ops.bend` is the root
+  # of the import closure for much of the tree, so every other lane's denominator rests on it.
+  "tinybendygrad/uop/ops.bend": [".agents/slop/rebase-oracle-ops.py"],             # 108
   "tinybendygrad/uop/spec.bend": [".agents/slop/rebase-oracle-spec.py"],           #  11
   "tinybendygrad/codegen/opt/search.bend": [".agents/slop/rebase-oracle-search.py"],  # 10
   # -- the 2026-10-03 widening, 3 -> 21. Every one measured by rebase-scan-oracles.py, and
