@@ -1,0 +1,77 @@
+import Base
+# cmod/cdiv gate against the LANDED helpers.bend, reached through H.
+# FOUR `..` AND NOT THREE: this copy of the previous unit's generator lives one
+# directory deeper than `.agents/slop/i64mul/`, and a relative import that does not
+# resolve fails with `no such file:` -- which the batched runner silently turns
+# into `rows_present=0` and `852 rows changed`. Same class as the `$TMPDIR`
+# relative-import trap in agent-core.md.
+import ./../../../../tinybendygrad/helpers.bend as H
+
+def cdiv_i64.h(+x: H.I64, +y: H.I64) -> H.I64:
+  H.cdiv_i64(x, y)
+
+def cmod_i64.h(+x: H.I64, +y: H.I64) -> H.I64:
+  H.cmod_i64(x, y)
+
+def cdrow(nm: String, xh: U32, xl: U32, yh: U32, yl: U32) -> IO(Unit):
+  do IO<Unit>:
+    IO.print(String.concat(["cd_", nm, "=",
+      H.i64_text(H.cdiv_i64(H.i64_of_hi_lo(xh, xl), H.i64_of_hi_lo(yh, yl)))]))
+
+def cmrow(nm: String, xh: U32, xl: U32, yh: U32, yl: U32) -> IO(Unit):
+  do IO<Unit>:
+    IO.print(String.concat(["cm_", nm, "=",
+      H.i64_text(H.cmod_i64(H.i64_of_hi_lo(xh, xl), H.i64_of_hi_lo(yh, yl)))]))
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    cdrow("c_-1_-4294967296", 4294967295, 4294967295, 4294967295, 0)
+    cmrow("c_-1_-4294967296", 4294967295, 4294967295, 4294967295, 0)
+    cdrow("c_0_-9223372036854775808", 0, 0, 2147483648, 0)
+    cmrow("c_0_-9223372036854775808", 0, 0, 2147483648, 0)
+    cdrow("c_0_-9223372036854775807", 0, 0, 2147483648, 1)
+    cmrow("c_0_-9223372036854775807", 0, 0, 2147483648, 1)
+    cdrow("c_0_-4611686018427387904", 0, 0, 3221225472, 0)
+    cmrow("c_0_-4611686018427387904", 0, 0, 3221225472, 0)
+    cdrow("c_0_-7", 0, 0, 4294967295, 4294967289)
+    cmrow("c_0_-7", 0, 0, 4294967295, 4294967289)
+    cdrow("c_0_-3", 0, 0, 4294967295, 4294967293)
+    cmrow("c_0_-3", 0, 0, 4294967295, 4294967293)
+    cdrow("c_0_-2", 0, 0, 4294967295, 4294967294)
+    cmrow("c_0_-2", 0, 0, 4294967295, 4294967294)
+    cdrow("c_0_-1", 0, 0, 4294967295, 4294967295)
+    cmrow("c_0_-1", 0, 0, 4294967295, 4294967295)
+    cdrow("c_0_0", 0, 0, 0, 0)
+    cmrow("c_0_0", 0, 0, 0, 0)
+    cdrow("c_0_1", 0, 0, 0, 1)
+    cmrow("c_0_1", 0, 0, 0, 1)
+    cdrow("c_0_2", 0, 0, 0, 2)
+    cmrow("c_0_2", 0, 0, 0, 2)
+    cdrow("c_0_3", 0, 0, 0, 3)
+    cmrow("c_0_3", 0, 0, 0, 3)
+    cdrow("c_0_7", 0, 0, 0, 7)
+    cmrow("c_0_7", 0, 0, 0, 7)
+    cdrow("c_0_4611686018427387904", 0, 0, 1073741824, 0)
+    cmrow("c_0_4611686018427387904", 0, 0, 1073741824, 0)
+    cdrow("c_0_9223372036854775806", 0, 0, 2147483647, 4294967294)
+    cmrow("c_0_9223372036854775806", 0, 0, 2147483647, 4294967294)
+    cdrow("c_0_9223372036854775807", 0, 0, 2147483647, 4294967295)
+    cmrow("c_0_9223372036854775807", 0, 0, 2147483647, 4294967295)
+    cdrow("c_0_4294967296", 0, 0, 1, 0)
+    cmrow("c_0_4294967296", 0, 0, 1, 0)
+    cdrow("c_0_4294967295", 0, 0, 0, 4294967295)
+    cmrow("c_0_4294967295", 0, 0, 0, 4294967295)
+    cdrow("c_0_-4294967296", 0, 0, 4294967295, 0)
+    cmrow("c_0_-4294967296", 0, 0, 4294967295, 0)
+    cdrow("c_1_-9223372036854775808", 0, 1, 2147483648, 0)
+    cmrow("c_1_-9223372036854775808", 0, 1, 2147483648, 0)
+    cdrow("c_1_-9223372036854775807", 0, 1, 2147483648, 1)
+    cmrow("c_1_-9223372036854775807", 0, 1, 2147483648, 1)
+    cdrow("c_1_-4611686018427387904", 0, 1, 3221225472, 0)
+    cmrow("c_1_-4611686018427387904", 0, 1, 3221225472, 0)
+    cdrow("c_1_-7", 0, 1, 4294967295, 4294967289)
+    cmrow("c_1_-7", 0, 1, 4294967295, 4294967289)
+    cdrow("c_1_-3", 0, 1, 4294967295, 4294967293)
+    cmrow("c_1_-3", 0, 1, 4294967295, 4294967293)
+    cdrow("c_1_-2", 0, 1, 4294967295, 4294967294)
+    cmrow("c_1_-2", 0, 1, 4294967295, 4294967294)

@@ -1969,6 +1969,51 @@ def i64_divmod(+a: I64, +b: I64) -> DivMod:
 def i64_div(a: I64, b: I64) -> I64:
   divmod_q(i64_divmod(a, b))
 
+# ===========================================================================
+# THE MAGNITUDE DIVISION, AND WHY IT IS A SECOND ENTRY POINT
+#
+# A MAGNITUDE OF 2**63 HAS NO POSITIVE I64 IMAGE, and that is the whole seam.
+# `i64_abs(int64.min)` is int64.min, whose PAIR is 2**63 -- the right UNSIGNED
+# magnitude, which is why `i64_mul` needed no special case -- but the pair still
+# has BIT 63 SET, and `i64_divmod` READS BIT 63 AS A SIGN. So a magnitude handed
+# to `i64_div` comes back as the floor of a NEGATIVE dividend: it has already
+# stepped down one unit, and a caller that then applies its own sign applies it a
+# SECOND time. That is a quotient wrong by one with a correct divisor, so the
+# error is invisible on every operand below 2**63.
+#
+# WHERE THE QUOTIENT'S BIT 63 LANDS, and why it was lost: `div_qbit` writes
+# quotient bit `k` as `i64_shl(i64_bit(sub), k)`, and for `k = 63` that is
+# `i64_shl.hi(1, 63)` = `U32.shln(1, 31n)` = 2147483648 in the HIGH word. So bit
+# 63 of an unsigned quotient lands in the high word's bit 31 -- which is the SAME
+# 64-bit position as a negative value's sign, and `i64_is_neg` reads those two
+# meanings off one bit. THE DIVIDER IS NOT WRONG: measured, `i64_div` and
+# `i64_mod` disagree with `floordiv`/`floormod` on 0 of 2106 rows, all 36 grid
+# cells with a magnitude at 2**63 included. The divider's own 65th bit -- the
+# `up` flag `div_shift` reads off the top of the high word, so `2r+bit` can be
+# compared against a 64-bit divisor -- is carried, not lost.
+#
+# SO `cdiv_i64` and `gcd` take the signs AS PARAMETERS and the magnitudes AS
+# VALUES, which is the shape `floordiv_i32` and `cdiv_i32_go` already use one word
+# down for the identical reason. Measured on the same 2106 rows: 236 cdiv, 204
+# cmod, 97 gcd disagreements before, 0 after, every one of them a row where
+# int64.min is an operand.
+# ===========================================================================
+
+# The zero divisor answers the DIVIDEND for the remainder, by the same
+# helpers.py:78 argument as `i64_divmod.of` above: the quotient is 0 and the
+# remainder is whatever was divided. Both callers already guard it, so this is
+# here to keep the def total rather than to serve a row.
+def u64_divmod.of(zero: Bool, a: I64, d: DivMod) -> DivMod:
+  match zero:
+    case True{}: DivMod{i64_zero(), a}
+    case False{}: d
+
+# The magnitudes go in UNCHANGED. `i64_abs` already made them; there is no second
+# negation here, and that is the point -- negating 2**63 again is what loses it.
+def u64_divmod(+a: I64, +b: I64) -> DivMod:
+  u64_divmod.of(i64_is_zero(b), a,
+    div_loop(64n, a, b, DivSt{i64_zero(), i64_zero(), False{}, False{}}))
+
 
 # ---- `i64_dec`: Python's `str(int)`, a SIGNED DECIMAL -----------------------
 #
@@ -2009,7 +2054,7 @@ def i64_dec.go(f: Nat, +acc: List<&2, U32>, +d: DivMod) -> List<&2, U32>:
     case 0n:
       acc
     case 1n+g:
-      i64_dec.go(g, List.append(&2, U32, acc, [lo32(divmod_r(d))]), i64_divmod(divmod_q(d), i64_of_i32(10)))
+      i64_dec.go(g, List.append(&2, U32, acc, [lo32(divmod_r(d))]), u64_divmod(divmod_q(d), i64_of_i32(10)))
 
 # `Nil` KEEPS ONE DIGIT, so 0 prints as "0" and not as the empty string. The head
 # test is a `Bool.pick` and not a `match` guard because Bend's `match` takes no
@@ -2038,27 +2083,20 @@ def i64_dec.text(+cs: List<&2, U32>, +acc: String) -> String:
 def i64_dec.put(neg: Bool, +body: String) -> String:
   Bool.pick(String, neg, String.append("-", body), body)
 
-def i64_dec.narrow(+x: I64) -> String:
-  i64_dec.put(i64_is_neg(x),
-    i64_dec.text(i64_dec.trim(List.reverse(&2, U32, i64_dec.go(20n, Nil{}, i64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
-
-# THE ONE VALUE WHOSE MAGNITUDE DOES NOT FIT, and it is ONE value because the range
-# is [-2**63, 2**63-1]: |int64.min| = 2**63, and Bend's `I64` cannot hold 2**63.
-# `i64_abs` therefore answers int64.min FOR int64.min -- MEASURED, it returns
-# `2147483648:0` unchanged and `i64_is_neg` on that is still True -- so the fold
-# would divide a NEGATIVE magnitude and read its digits off a two's complement word.
-# Rather than print a wrong answer, this def answers the `hi:lo` bit pattern, which
-# is what `i64_text` is for and is the same fallback `viz/serve.bend`'s `dec_of`
-# already takes for a value that does not fit.
-#
-# THE TEST IS THE OBSERVED OVERFLOW AND NOT A MAGIC CONSTANT: "negating left the
-# value negative". So it stays true if the range ever widens, and it cannot be
-# satisfied by a value that merely happens to be negative.
-def i64_dec.of(wide: Bool, +x: I64) -> String:
-  Bool.pick(String, wide, i64_text(x), i64_dec.narrow(x))
-
+# `i64_dec` DIVIDES THE MAGNITUDE UNSIGNED, through `u64_divmod` rather than
+# `i64_divmod`, and that is what lets it print int64.min. It used to answer the
+# `hi:lo` bit pattern for that one value and call it a fallback: |int64.min| = 2**63
+# has no positive i64 image, and the fold divided a NEGATIVE magnitude and read
+# its digits off a two's complement word. The magnitude 2**63 IS representable as
+# an UNSIGNED pair -- `i64_abs` already answers the pair `2147483648:0` -- and
+# `u64_divmod` divides that pair without reading bit 63 as a sign, so the fold
+# emits 9223372036854775808 and `i64_dec.put` supplies the "-". MEASURED: the
+# `hi:lo` fallback answered `2147483648:0` where CPython's `str` says
+# `-9223372036854775808`. So the fallback and its `wide` test are DELETED rather
+# than widened: the one value they existed for is now the one value that works.
 def i64_dec(+x: I64) -> String:
-  i64_dec.of(Bool.and(i64_is_neg(x), i64_is_neg(i64_abs(x))), x)
+  i64_dec.put(i64_is_neg(x),
+    i64_dec.text(i64_dec.trim(List.reverse(&2, U32, i64_dec.go(20n, Nil{}, u64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
 def i64_mod(a: I64, b: I64) -> I64:
   divmod_r(i64_divmod(a, b))
 
@@ -2067,8 +2105,16 @@ def i64_mod(a: I64, b: I64) -> I64:
 # the magnitudes go in. `math.gcd(0, 0)` is 0 and `math.gcd(a)` is `abs(a)`, and both
 # fall out of the loop -- the `b == 0` compare sends them straight to `a`.
 #
+# THE STEP IS `u64_divmod` AND NOT `i64_mod`, and it is the SAME cause as
+# `cdiv_i64` below: this loop is handed MAGNITUDES, and `i64_mod` is a signed
+# floormod that would read the magnitude pair's own bit 63 as a sign. For
+# int64.min -- where `i64_abs` answers the pair 2**63 -- that made the answer
+# NEGATIVE, and `math.gcd`'s own guarantee that the answer is non-negative is
+# then violated by the port. MEASURED: `gcd(int64.min, int64.min)` answered
+# -2**63 where CPython answers +2**63, and 97 of 2106 rows disagreed.
+#
 # THE LOOP TESTS `b` AND NOT THE REMAINDER, and that is the load-bearing detail:
-# testing `a % b == 0` reaches `i64_mod(a, 0)`, whose zero-divisor answer is the
+# testing `a % b == 0` reaches a zero-divisor `u64_divmod`, whose remainder is the
 # DIVIDEND, so `gcd(A, 0)` would recurse to `(0, A)` and answer 0.
 #
 # THE FUEL IS NOT DECORATIVE. The self-call's second and third arguments are `b` and
@@ -2080,7 +2126,7 @@ def i64_mod(a: I64, b: I64) -> I64:
 def gcd.go(k: Nat, +a: I64, +b: I64) -> I64:
   match k:
     case 0n: a
-    case 1n+p: Bool.pick(I64, i64_is_zero(b), a, gcd.go(p, b, i64_mod(a, b)))
+    case 1n+p: Bool.pick(I64, i64_is_zero(b), a, gcd.go(p, b, divmod_r(u64_divmod(a, b))))
 
 def gcd(a: I64, b: I64) -> I64:
   gcd.go(128n, i64_abs(a), i64_abs(b))
@@ -2174,10 +2220,14 @@ def i64_mul(+a: I64, +b: I64) -> I64:
 # **THE MULTIPLY NEVER WRAPS INSIDE `cmod`.** `cdiv` divides MAGNITUDES and applies
 # the sign afterwards, so `|cdiv(x,y)*y| = floor(|x|/|y|)*|y| <= |x|`, and the only
 # i64 value whose magnitude is 2**63 is int64.min, for which the product is
-# int64.min itself -- representable. So `i64_mul` is exact wherever `cdiv` is, which
-# is why `cmod` agrees with upstream on all 782 gate rows whose operands do not have
-# bit 63 set. (The 54 rows that do not agree are a PRE-EXISTING `i64_div` defect --
-# its 65th bit is lost whenever a magnitude reaches 2**63 -- and not this block.)
+# int64.min itself -- representable. So `i64_mul` is exact wherever `cdiv` is.
+#
+# **AND THE 54 ROWS THAT USED TO DISAGREE ARE GONE, AND THEY WERE NOT AN `i64_div`
+# DEFECT.** They are fixed above, by `u64_divmod`: the quotient this def needs is
+# the UNSIGNED one, and it used to ask `i64_div` for it, which read the magnitude
+# pair's bit 63 as a sign and floored a dividend that was already unsigned.
+# Measured over 2106 rows: `cdiv_i64` 236 disagreements before and 0 after,
+# `cmod_i64` 204 before and 0 after, `i64_div` 0 before and 0 after.
 # ===========================================================================
 
 def cdiv_i64.of(zero: Bool, neg: Bool, q: I64) -> I64:
@@ -2185,9 +2235,15 @@ def cdiv_i64.of(zero: Bool, neg: Bool, q: I64) -> I64:
     case True{}: i64_zero()
     case False{}: i64_neg(neg, q)
 
+# THE QUOTIENT IS THE UNSIGNED ONE, through `u64_divmod` and NOT `i64_div`. Both
+# operands are MAGNITUDES here and the sign is applied by the line above, so asking
+# `i64_div` for the quotient asks a signed floor division to divide a positive
+# number whose pair still has bit 63 set -- which is 236 rows wrong, every one of
+# them a row with int64.min as an operand. `u64_divmod` is the entry point that
+# takes the signs as parameters instead of reading them off the magnitudes.
 def cdiv_i64(+x: I64, +y: I64) -> I64:
   cdiv_i64.of(i64_is_zero(y), Bool.xor(i64_is_neg(x), i64_is_neg(y)),
-    i64_div(i64_abs(x), i64_abs(y)))
+    divmod_q(u64_divmod(i64_abs(x), i64_abs(y))))
 
 def cmod_i64(+x: I64, +y: I64) -> I64:
   i64_sub(x, i64_mul(cdiv_i64(x, y), y))
