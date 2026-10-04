@@ -1,1 +1,1 @@
-cast BYTE-IDENTICAL (366 bytes both sides)
+cast NOT COMPARED: py=366 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)

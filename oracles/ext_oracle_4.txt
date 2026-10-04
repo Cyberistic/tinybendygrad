@@ -1,0 +1,57 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ext_oracle.py", line 1067, in main
+    try: globals()[ENTRY[nm]]()
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ext_oracle.py", line 822, in cu
+    row(f"cu.esc_{c}", st[2:st.index("m")])
+                            ^^^^^^^^^^^^^
+ValueError: substring not found
+cu.const_jitlinkresult_n=7
+cu.const_jitlinkresult_0=NVJITLINK_SUCCESS
+cu.const_jitlinkresult_1=NVJITLINK_ERROR_UNRECOGNIZED_OPTION
+cu.const_jitlinkresult_2=NVJITLINK_ERROR_MISSING_ARCH
+cu.const_jitlinkresult_3=NVJITLINK_ERROR_INVALID_INPUT
+cu.const_jitlinkresult_4=NVJITLINK_ERROR_PTX_COMPILE
+cu.const_jitlinkresult_5=NVJITLINK_ERROR_NVVM_COMPILE
+cu.const_jitlinkresult_6=NVJITLINK_ERROR_INTERNAL
+cu.const_jitlinkresult_get_0=NVJITLINK_SUCCESS
+cu.const_jitlinkresult_get_15=None
+cu.const_jitlinkresult_get_99=None
+cu.const_jitlinkresult_get_-1=None
+cu.cudapath=''
+cu.root=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+cu.root_is_repo=1
+cu.osx=True
+cu.docker=docker run --rm -i -v /Users/cyberistic/src/tries/2026-09-30-tinybendygrad:/Users/cyberistic/src/tries/2026-09-30-tinybendygrad -e PYTHONPATH=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad ghcr.io/tinygrad/cuda-arm64:v2.3
+cu.FATAL=yes
+env.raw_CC='<unset>'
+env.raw_CUDA_PATH='<unset>'
+env.raw_LLVMOPT='<unset>'
+env.raw_NO_COLOR='1'
+env.raw_CCACHE='<unset>'
+env.raw_CUDA_ARCH='<unset>'
+env.getenv_CC=clang
+env.getenv_CC_bare=0
+env.getenv_CUDA_PATH=
+env.getenv_LLVMOPT=1
+env.OSX=True
+env.NO_COLOR=1
+env.CCACHE=1
+env.colored_blue=X
+cache.before='default'
+cache.after='default'
+cache.os_after='mutated'
+cache.other_default='mutated'
+cache.bare_after=ValueError: invalid literal for int() with base 10: 'mutated'
+cache.cache_info=CacheInfo(hits=2, misses=73, maxsize=None, currsize=72)
+cache.module_before=''
+cache.module_after=''
+cache.getenv_after=''
+cache.env_after='/mutated/after/import'
+cache.os_after_2='mutated'
+META.am.rows=0
+META.cpu.rows=0
+META.ll.rows=0
+META.cu.rows=18
+META.env.rows=14
+META.cache.rows=11

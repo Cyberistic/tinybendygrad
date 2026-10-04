@@ -1,5 +1,0 @@
-########## 9. byte-comparability of the two canonical files ##########
-matmul: rc=0 BYTE-IDENTICAL (18 rows)
-reduce: rc=0 BYTE-IDENTICAL (7 rows)
-buffer: rc=0 BYTE-IDENTICAL (5 rows)
-sink: rc=0 BYTE-IDENTICAL (2 rows)

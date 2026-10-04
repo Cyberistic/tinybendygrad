@@ -1,0 +1,465 @@
+# matmul_sym var_vals={'K': 3}
+# matmul_sym var_vals={'K': 3}
+# specs_attempted=6 controls=1 scheduled_calls=25
+# ==== determinism ====
+# WRONGINPUT_after   run1=5907f0c05ba5aedf run2=5907f0c05ba5aedf DETERMINISTIC=True
+# matmul#0           run1=94757e79551b2634 run2=94757e79551b2634 DETERMINISTIC=True
+# matmul#1           run1=aa29e4fea8925895 run2=aa29e4fea8925895 DETERMINISTIC=True
+# matmul__calls      run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# matmul_sym#0       run1=f6a851f8b3370ab7 run2=f6a851f8b3370ab7 DETERMINISTIC=True
+# matmul_sym#1       run1=7fa7fab2c78595e8 run2=7fa7fab2c78595e8 DETERMINISTIC=True
+# matmul_sym__calls  run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# conv#0             run1=c5714f38e4dcfa11 run2=c5714f38e4dcfa11 DETERMINISTIC=True
+# conv#1             run1=ed1fab7a7f0d1a7b run2=ed1fab7a7f0d1a7b DETERMINISTIC=True
+# conv__calls        run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# elementwise#0      run1=4a4ee1a131edf79a run2=4a4ee1a131edf79a DETERMINISTIC=True
+# elementwise#1      run1=8ee0469c38224b4c run2=8ee0469c38224b4c DETERMINISTIC=True
+# elementwise__calls run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# multi#0            run1=2b1c1c9d5462e5e4 run2=2b1c1c9d5462e5e4 DETERMINISTIC=True
+# multi#1            run1=f5def5ce7f119fab run2=f5def5ce7f119fab DETERMINISTIC=True
+# multi__calls       run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# chain#0            run1=a8cff8b596d9bdb0 run2=a8cff8b596d9bdb0 DETERMINISTIC=True
+# chain#1            run1=257dbc53f3cfc313 run2=257dbc53f3cfc313 DETERMINISTIC=True
+# chain__calls       run1=d4735e3a265e16ee run2=d4735e3a265e16ee DETERMINISTIC=True
+# ==== blocks (run 1) ====
+WRONGINPUT_after sink_n=23
+WRONGINPUT_after sink_op=AFTER
+WRONGINPUT_after sink_nsrc=2
+WRONGINPUT_after sink_ops=[('AFTER', 1), ('ALLOC', 2), ('BUFFER', 1), ('CONST', 4), ('MUL', 1), ('PERMUTE', 2), ('REDUCE', 1), ('RESHAPE', 5), ('STACK', 5), ('STORE', 1)]
+WRONGINPUT_after lin_op=LINEAR
+WRONGINPUT_after lin_nsrc=0
+WRONGINPUT_after lin_nnodes=1
+WRONGINPUT_after lin_ksrc=[]
+WRONGINPUT_after lin_knsrc=[]
+WRONGINPUT_after lin_ktop=[]
+WRONGINPUT_after lin_kmark=[]
+WRONGINPUT_after lin_kinfo=[]
+WRONGINPUT_after tree[  0]=BUFFER nsrc=0 srcs=[]
+WRONGINPUT_after tree[  1]=CONST nsrc=0 srcs=[]
+WRONGINPUT_after tree[  2]=CONST nsrc=0 srcs=[]
+WRONGINPUT_after tree[  3]=STACK nsrc=2 srcs=['CONST', 'CONST']
+WRONGINPUT_after tree[  4]=RESHAPE nsrc=2 srcs=['BUFFER', 'STACK']
+WRONGINPUT_after tree[  5]=ALLOC nsrc=0 srcs=[]
+WRONGINPUT_after tree[  6]=CONST nsrc=0 srcs=[]
+WRONGINPUT_after tree[  7]=STACK nsrc=2 srcs=['CONST', 'CONST']
+WRONGINPUT_after tree[  8]=RESHAPE nsrc=2 srcs=['ALLOC', 'STACK']
+WRONGINPUT_after tree[  9]=CONST nsrc=0 srcs=[]
+WRONGINPUT_after tree[ 10]=STACK nsrc=3 srcs=['CONST', 'CONST', 'CONST']
+WRONGINPUT_after tree[ 11]=RESHAPE nsrc=2 srcs=['RESHAPE', 'STACK']
+WRONGINPUT_after tree[ 12]=ALLOC nsrc=0 srcs=[]
+WRONGINPUT_after tree[ 13]=STACK nsrc=2 srcs=['CONST', 'CONST']
+WRONGINPUT_after tree[ 14]=RESHAPE nsrc=2 srcs=['ALLOC', 'STACK']
+WRONGINPUT_after tree[ 15]=STACK nsrc=3 srcs=['CONST', 'CONST', 'CONST']
+WRONGINPUT_after tree[ 16]=RESHAPE nsrc=2 srcs=['RESHAPE', 'STACK']
+WRONGINPUT_after tree[ 17]=PERMUTE nsrc=1 srcs=['RESHAPE']
+WRONGINPUT_after tree[ 18]=MUL nsrc=2 srcs=['RESHAPE', 'PERMUTE']
+WRONGINPUT_after tree[ 19]=PERMUTE nsrc=1 srcs=['MUL']
+WRONGINPUT_after tree[ 20]=REDUCE nsrc=1 srcs=['PERMUTE']
+WRONGINPUT_after tree[ 21]=STORE nsrc=2 srcs=['RESHAPE', 'REDUCE']
+WRONGINPUT_after tree[ 22]=AFTER nsrc=2 srcs=['RESHAPE', 'STORE']
+matmul#0 sink_n=1
+matmul#0 sink_op=SINK
+matmul#0 sink_nsrc=0
+matmul#0 sink_ops=[('SINK', 1)]
+matmul#0 lin_op=LINEAR
+matmul#0 lin_nsrc=0
+matmul#0 lin_nnodes=1
+matmul#0 lin_ksrc=[]
+matmul#0 lin_knsrc=[]
+matmul#0 lin_ktop=[]
+matmul#0 lin_kmark=[]
+matmul#0 lin_kinfo=[]
+matmul#0 tree[  0]=SINK nsrc=0 srcs=[]
+matmul#1 sink_n=6
+matmul#1 sink_op=SINK
+matmul#1 sink_nsrc=1
+matmul#1 sink_ops=[('AFTER', 1), ('CALL', 1), ('PARAM', 3), ('SINK', 1)]
+matmul#1 lin_op=LINEAR
+matmul#1 lin_nsrc=1
+matmul#1 lin_nnodes=28
+matmul#1 lin_ksrc=['SINK', 'PARAM', 'PARAM', 'PARAM']
+matmul#1 lin_knsrc=[4]
+matmul#1 lin_ktop=['SINK']
+matmul#1 lin_kmark=['<REDUCE>']
+matmul#1 lin_kinfo=['test']
+matmul#1 tree[  0]=PARAM nsrc=0 srcs=[]
+matmul#1 tree[  1]=PARAM nsrc=0 srcs=[]
+matmul#1 tree[  2]=PARAM nsrc=0 srcs=[]
+matmul#1 tree[  3]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+matmul#1 tree[  4]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+matmul#1 tree[  5]=SINK nsrc=1 srcs=['AFTER']
+matmul#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][  1]=CONST nsrc=0 srcs=[]
+matmul#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+matmul#1 k[0][  3]=CONST nsrc=0 srcs=[]
+matmul#1 k[0][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul#1 k[0][  5]=RANGE nsrc=1 srcs=['CONST']
+matmul#1 k[0][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul#1 k[0][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul#1 k[0][  8]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][  9]=CONST nsrc=0 srcs=[]
+matmul#1 k[0][ 10]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul#1 k[0][ 11]=RANGE nsrc=1 srcs=['CONST']
+matmul#1 k[0][ 12]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul#1 k[0][ 13]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul#1 k[0][ 14]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][ 15]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul#1 k[0][ 16]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul#1 k[0][ 17]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul#1 k[0][ 18]=MUL nsrc=2 srcs=['INDEX', 'INDEX']
+matmul#1 k[0][ 19]=REDUCE nsrc=2 srcs=['MUL', 'RANGE']
+matmul#1 k[0][ 20]=STORE nsrc=2 srcs=['INDEX', 'REDUCE']
+matmul#1 k[0][ 21]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+matmul#1 k[0][ 22]=SINK nsrc=1 srcs=['END']
+matmul#1 k[0][ 23]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][ 24]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][ 25]=PARAM nsrc=0 srcs=[]
+matmul#1 k[0][ 26]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+2
+matmul_sym#0 sink_n=1
+matmul_sym#0 sink_op=SINK
+matmul_sym#0 sink_nsrc=0
+matmul_sym#0 sink_ops=[('SINK', 1)]
+matmul_sym#0 lin_op=LINEAR
+matmul_sym#0 lin_nsrc=0
+matmul_sym#0 lin_nnodes=1
+matmul_sym#0 lin_ksrc=[]
+matmul_sym#0 lin_knsrc=[]
+matmul_sym#0 lin_ktop=[]
+matmul_sym#0 lin_kmark=[]
+matmul_sym#0 lin_kinfo=[]
+matmul_sym#0 tree[  0]=SINK nsrc=0 srcs=[]
+matmul_sym#1 sink_n=6
+matmul_sym#1 sink_op=SINK
+matmul_sym#1 sink_nsrc=1
+matmul_sym#1 sink_ops=[('AFTER', 1), ('CALL', 1), ('PARAM', 3), ('SINK', 1)]
+matmul_sym#1 lin_op=LINEAR
+matmul_sym#1 lin_nsrc=1
+matmul_sym#1 lin_nnodes=31
+matmul_sym#1 lin_ksrc=['SINK', 'PARAM', 'PARAM', 'PARAM']
+matmul_sym#1 lin_knsrc=[4]
+matmul_sym#1 lin_ktop=['SINK']
+matmul_sym#1 lin_kmark=['<MAX>']
+matmul_sym#1 lin_kinfo=['test']
+matmul_sym#1 tree[  0]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 tree[  1]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 tree[  2]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 tree[  3]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+matmul_sym#1 tree[  4]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+matmul_sym#1 tree[  5]=SINK nsrc=1 srcs=['AFTER']
+matmul_sym#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][  1]=CONST nsrc=0 srcs=[]
+matmul_sym#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+matmul_sym#1 k[0][  3]=CONST nsrc=0 srcs=[]
+matmul_sym#1 k[0][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul_sym#1 k[0][  5]=RANGE nsrc=1 srcs=['CONST']
+matmul_sym#1 k[0][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul_sym#1 k[0][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul_sym#1 k[0][  8]=CONST nsrc=0 srcs=[]
+matmul_sym#1 k[0][  9]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 10]=CONST nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 11]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul_sym#1 k[0][ 12]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 13]=RANGE nsrc=1 srcs=['PARAM']
+matmul_sym#1 k[0][ 14]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul_sym#1 k[0][ 15]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul_sym#1 k[0][ 16]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 17]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+matmul_sym#1 k[0][ 18]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+matmul_sym#1 k[0][ 19]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+matmul_sym#1 k[0][ 20]=MUL nsrc=2 srcs=['INDEX', 'INDEX']
+matmul_sym#1 k[0][ 21]=REDUCE nsrc=2 srcs=['MUL', 'RANGE']
+matmul_sym#1 k[0][ 22]=MAX nsrc=2 srcs=['CONST', 'REDUCE']
+matmul_sym#1 k[0][ 23]=STORE nsrc=2 srcs=['INDEX', 'MAX']
+matmul_sym#1 k[0][ 24]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+matmul_sym#1 k[0][ 25]=SINK nsrc=1 srcs=['END']
+matmul_sym#1 k[0][ 26]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 27]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 28]=PARAM nsrc=0 srcs=[]
+matmul_sym#1 k[0][ 29]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+2
+conv#0 sink_n=1
+conv#0 sink_op=SINK
+conv#0 sink_nsrc=0
+conv#0 sink_ops=[('SINK', 1)]
+conv#0 lin_op=LINEAR
+conv#0 lin_nsrc=0
+conv#0 lin_nnodes=1
+conv#0 lin_ksrc=[]
+conv#0 lin_knsrc=[]
+conv#0 lin_ktop=[]
+conv#0 lin_kmark=[]
+conv#0 lin_kinfo=[]
+conv#0 tree[  0]=SINK nsrc=0 srcs=[]
+conv#1 sink_n=6
+conv#1 sink_op=SINK
+conv#1 sink_nsrc=1
+conv#1 sink_ops=[('AFTER', 1), ('CALL', 1), ('PARAM', 3), ('SINK', 1)]
+conv#1 lin_op=LINEAR
+conv#1 lin_nsrc=1
+conv#1 lin_nnodes=64
+conv#1 lin_ksrc=['SINK', 'PARAM', 'PARAM', 'PARAM']
+conv#1 lin_knsrc=[4]
+conv#1 lin_ktop=['SINK']
+conv#1 lin_kmark=['<CAST>']
+conv#1 lin_kinfo=['test']
+conv#1 tree[  0]=PARAM nsrc=0 srcs=[]
+conv#1 tree[  1]=PARAM nsrc=0 srcs=[]
+conv#1 tree[  2]=PARAM nsrc=0 srcs=[]
+conv#1 tree[  3]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+conv#1 tree[  4]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+conv#1 tree[  5]=SINK nsrc=1 srcs=['AFTER']
+conv#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][  1]=CONST nsrc=0 srcs=[]
+conv#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][  3]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][  4]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][  5]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+conv#1 k[0][  6]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][  7]=CONST nsrc=0 srcs=[]
+conv#1 k[0][  8]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][  9]=ADD nsrc=2 srcs=['ADD', 'MUL']
+conv#1 k[0][ 10]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+conv#1 k[0][ 11]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 12]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][ 13]=ADD nsrc=2 srcs=['RANGE', 'RANGE']
+conv#1 k[0][ 14]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 15]=CMPLT nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 16]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 17]=CMPNE nsrc=2 srcs=['CMPLT', 'CONST']
+conv#1 k[0][ 18]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 19]=CMPLT nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 20]=AND nsrc=2 srcs=['CMPNE', 'CMPLT']
+conv#1 k[0][ 21]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][ 22]=ADD nsrc=2 srcs=['RANGE', 'RANGE']
+conv#1 k[0][ 23]=CMPLT nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 24]=CMPNE nsrc=2 srcs=['CMPLT', 'CONST']
+conv#1 k[0][ 25]=CMPLT nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 26]=AND nsrc=2 srcs=['CMPNE', 'CMPLT']
+conv#1 k[0][ 27]=AND nsrc=2 srcs=['AND', 'AND']
+conv#1 k[0][ 28]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][ 29]=AND nsrc=2 srcs=['AND', 'AND']
+conv#1 k[0][ 30]=MUL nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 31]=ADD nsrc=2 srcs=['ADD', 'MUL']
+conv#1 k[0][ 32]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 33]=RANGE nsrc=1 srcs=['CONST']
+conv#1 k[0][ 34]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][ 35]=ADD nsrc=2 srcs=['ADD', 'MUL']
+conv#1 k[0][ 36]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 37]=ADD nsrc=2 srcs=['ADD', 'CONST']
+conv#1 k[0][ 38]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 39]=WHERE nsrc=3 srcs=['AND', 'ADD', 'CONST']
+conv#1 k[0][ 40]=INDEX nsrc=2 srcs=['PARAM', 'WHERE']
+conv#1 k[0][ 41]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 42]=WHERE nsrc=3 srcs=['AND', 'INDEX', 'CONST']
+conv#1 k[0][ 43]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][ 44]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][ 45]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+conv#1 k[0][ 46]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][ 47]=ADD nsrc=2 srcs=['ADD', 'MUL']
+conv#1 k[0][ 48]=CONST nsrc=0 srcs=[]
+conv#1 k[0][ 49]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+conv#1 k[0][ 50]=ADD nsrc=2 srcs=['ADD', 'MUL']
+conv#1 k[0][ 51]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+conv#1 k[0][ 52]=MUL nsrc=2 srcs=['WHERE', 'INDEX']
+conv#1 k[0][ 53]=CAST nsrc=1 srcs=['MUL']
+conv#1 k[0][ 54]=REDUCE nsrc=4 srcs=['CAST', 'RANGE', 'RANGE', 'RANGE']
+conv#1 k[0][ 55]=CAST nsrc=1 srcs=['REDUCE']
+conv#1 k[0][ 56]=STORE nsrc=2 srcs=['INDEX', 'CAST']
+conv#1 k[0][ 57]=END nsrc=4 srcs=['STORE', 'RANGE', 'RANGE', 'RANGE']
+conv#1 k[0][ 58]=SINK nsrc=1 srcs=['END']
+conv#1 k[0][ 59]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][ 60]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][ 61]=PARAM nsrc=0 srcs=[]
+conv#1 k[0][ 62]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+2
+elementwise#0 sink_n=1
+elementwise#0 sink_op=SINK
+elementwise#0 sink_nsrc=0
+elementwise#0 sink_ops=[('SINK', 1)]
+elementwise#0 lin_op=LINEAR
+elementwise#0 lin_nsrc=0
+elementwise#0 lin_nnodes=1
+elementwise#0 lin_ksrc=[]
+elementwise#0 lin_knsrc=[]
+elementwise#0 lin_ktop=[]
+elementwise#0 lin_kmark=[]
+elementwise#0 lin_kinfo=[]
+elementwise#0 tree[  0]=SINK nsrc=0 srcs=[]
+elementwise#1 sink_n=7
+elementwise#1 sink_op=SINK
+elementwise#1 sink_nsrc=1
+elementwise#1 sink_ops=[('AFTER', 1), ('CALL', 1), ('PARAM', 4), ('SINK', 1)]
+elementwise#1 lin_op=LINEAR
+elementwise#1 lin_nsrc=1
+elementwise#1 lin_nnodes=27
+elementwise#1 lin_ksrc=['SINK', 'PARAM', 'PARAM', 'PARAM', 'PARAM']
+elementwise#1 lin_knsrc=[5]
+elementwise#1 lin_ktop=['SINK']
+elementwise#1 lin_kmark=['<MAX>']
+elementwise#1 lin_kinfo=['test']
+elementwise#1 tree[  0]=PARAM nsrc=0 srcs=[]
+elementwise#1 tree[  1]=PARAM nsrc=0 srcs=[]
+elementwise#1 tree[  2]=PARAM nsrc=0 srcs=[]
+elementwise#1 tree[  3]=PARAM nsrc=0 srcs=[]
+elementwise#1 tree[  4]=CALL nsrc=5 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM', 'PARAM']
+elementwise#1 tree[  5]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+elementwise#1 tree[  6]=SINK nsrc=1 srcs=['AFTER']
+elementwise#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][  1]=CONST nsrc=0 srcs=[]
+elementwise#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+elementwise#1 k[0][  3]=CONST nsrc=0 srcs=[]
+elementwise#1 k[0][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+elementwise#1 k[0][  5]=RANGE nsrc=1 srcs=['CONST']
+elementwise#1 k[0][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+elementwise#1 k[0][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+elementwise#1 k[0][  8]=CONST nsrc=0 srcs=[]
+elementwise#1 k[0][  9]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 10]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+elementwise#1 k[0][ 11]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 12]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+elementwise#1 k[0][ 13]=ADD nsrc=2 srcs=['INDEX', 'INDEX']
+elementwise#1 k[0][ 14]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 15]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+elementwise#1 k[0][ 16]=MUL nsrc=2 srcs=['ADD', 'INDEX']
+elementwise#1 k[0][ 17]=MAX nsrc=2 srcs=['CONST', 'MUL']
+elementwise#1 k[0][ 18]=STORE nsrc=2 srcs=['INDEX', 'MAX']
+elementwise#1 k[0][ 19]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+elementwise#1 k[0][ 20]=SINK nsrc=1 srcs=['END']
+elementwise#1 k[0][ 21]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 22]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 23]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 24]=PARAM nsrc=0 srcs=[]
+elementwise#1 k[0][ 25]=CALL nsrc=5 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM', 'PARAM']
+2
+multi#0 sink_n=1
+multi#0 sink_op=SINK
+multi#0 sink_nsrc=0
+multi#0 sink_ops=[('SINK', 1)]
+multi#0 lin_op=LINEAR
+multi#0 lin_nsrc=0
+multi#0 lin_nnodes=1
+multi#0 lin_ksrc=[]
+multi#0 lin_knsrc=[]
+multi#0 lin_ktop=[]
+multi#0 lin_kmark=[]
+multi#0 lin_kinfo=[]
+multi#0 tree[  0]=SINK nsrc=0 srcs=[]
+multi#1 sink_n=9
+multi#1 sink_op=SINK
+multi#1 sink_nsrc=2
+multi#1 sink_ops=[('AFTER', 2), ('CALL', 2), ('PARAM', 4), ('SINK', 1)]
+multi#1 lin_op=LINEAR
+multi#1 lin_nsrc=2
+multi#1 lin_nnodes=44
+multi#1 lin_ksrc=['SINK', 'PARAM', 'PARAM', 'PARAM', 'SINK', 'PARAM', 'PARAM']
+multi#1 lin_knsrc=[4, 3]
+multi#1 lin_ktop=['SINK', 'SINK']
+multi#1 lin_kmark=['<REDUCE>', '<MAX>']
+multi#1 lin_kinfo=['test', 'test']
+multi#1 tree[  0]=PARAM nsrc=0 srcs=[]
+multi#1 tree[  1]=PARAM nsrc=0 srcs=[]
+multi#1 tree[  2]=PARAM nsrc=0 srcs=[]
+multi#1 tree[  3]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+multi#1 tree[  4]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+multi#1 tree[  5]=PARAM nsrc=0 srcs=[]
+multi#1 tree[  6]=CALL nsrc=3 srcs=['SINK', 'PARAM', 'PARAM']
+multi#1 tree[  7]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+multi#1 tree[  8]=SINK nsrc=2 srcs=['AFTER', 'AFTER']
+multi#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][  1]=CONST nsrc=0 srcs=[]
+multi#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+multi#1 k[0][  3]=CONST nsrc=0 srcs=[]
+multi#1 k[0][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+multi#1 k[0][  5]=RANGE nsrc=1 srcs=['CONST']
+multi#1 k[0][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+multi#1 k[0][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+multi#1 k[0][  8]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][  9]=CONST nsrc=0 srcs=[]
+multi#1 k[0][ 10]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+multi#1 k[0][ 11]=RANGE nsrc=1 srcs=['CONST']
+multi#1 k[0][ 12]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+multi#1 k[0][ 13]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+multi#1 k[0][ 14]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][ 15]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+multi#1 k[0][ 16]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+multi#1 k[0][ 17]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+multi#1 k[0][ 18]=MUL nsrc=2 srcs=['INDEX', 'INDEX']
+multi#1 k[0][ 19]=REDUCE nsrc=2 srcs=['MUL', 'RANGE']
+multi#1 k[0][ 20]=STORE nsrc=2 srcs=['INDEX', 'REDUCE']
+multi#1 k[0][ 21]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+multi#1 k[0][ 22]=SINK nsrc=1 srcs=['END']
+multi#1 k[0][ 23]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][ 24]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][ 25]=PARAM nsrc=0 srcs=[]
+multi#1 k[0][ 26]=CALL nsrc=4 srcs=['SINK', 'PARAM', 'PARAM', 'PARAM']
+multi#1 k[1][  0]=PARAM nsrc=0 srcs=[]
+multi#1 k[1][  1]=CONST nsrc=0 srcs=[]
+multi#1 k[1][  2]=RANGE nsrc=1 srcs=['CONST']
+multi#1 k[1][  3]=CONST nsrc=0 srcs=[]
+multi#1 k[1][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+multi#1 k[1][  5]=RANGE nsrc=1 srcs=['CONST']
+multi#1 k[1][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+multi#1 k[1][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+multi#1 k[1][  8]=CONST nsrc=0 srcs=[]
+multi#1 k[1][  9]=PARAM nsrc=0 srcs=[]
+multi#1 k[1][ 10]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+multi#1 k[1][ 11]=CONST nsrc=0 srcs=[]
+multi#1 k[1][ 12]=MUL nsrc=2 srcs=['INDEX', 'CONST']
+multi#1 k[1][ 13]=MAX nsrc=2 srcs=['CONST', 'MUL']
+multi#1 k[1][ 14]=STORE nsrc=2 srcs=['INDEX', 'MAX']
+multi#1 k[1][ 15]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+multi#1 k[1][ 16]=SINK nsrc=1 srcs=['END']
+multi#1 k[1][ 17]=PARAM nsrc=0 srcs=[]
+multi#1 k[1][ 18]=PARAM nsrc=0 srcs=[]
+multi#1 k[1][ 19]=CALL nsrc=3 srcs=['SINK', 'PARAM', 'PARAM']
+2
+chain#0 sink_n=1
+chain#0 sink_op=SINK
+chain#0 sink_nsrc=0
+chain#0 sink_ops=[('SINK', 1)]
+chain#0 lin_op=LINEAR
+chain#0 lin_nsrc=0
+chain#0 lin_nnodes=1
+chain#0 lin_ksrc=[]
+chain#0 lin_knsrc=[]
+chain#0 lin_ktop=[]
+chain#0 lin_kmark=[]
+chain#0 lin_kinfo=[]
+chain#0 tree[  0]=SINK nsrc=0 srcs=[]
+chain#1 sink_n=5
+chain#1 sink_op=SINK
+chain#1 sink_nsrc=1
+chain#1 sink_ops=[('AFTER', 1), ('CALL', 1), ('PARAM', 2), ('SINK', 1)]
+chain#1 lin_op=LINEAR
+chain#1 lin_nsrc=1
+chain#1 lin_nnodes=19
+chain#1 lin_ksrc=['SINK', 'PARAM', 'PARAM']
+chain#1 lin_knsrc=[3]
+chain#1 lin_ktop=['SINK']
+chain#1 lin_kmark=['<MUL>']
+chain#1 lin_kinfo=['test']
+chain#1 tree[  0]=PARAM nsrc=0 srcs=[]
+chain#1 tree[  1]=PARAM nsrc=0 srcs=[]
+chain#1 tree[  2]=CALL nsrc=3 srcs=['SINK', 'PARAM', 'PARAM']
+chain#1 tree[  3]=AFTER nsrc=2 srcs=['PARAM', 'CALL']
+chain#1 tree[  4]=SINK nsrc=1 srcs=['AFTER']
+chain#1 k[0][  0]=PARAM nsrc=0 srcs=[]
+chain#1 k[0][  1]=CONST nsrc=0 srcs=[]
+chain#1 k[0][  2]=RANGE nsrc=1 srcs=['CONST']
+chain#1 k[0][  3]=CONST nsrc=0 srcs=[]
+chain#1 k[0][  4]=MUL nsrc=2 srcs=['RANGE', 'CONST']
+chain#1 k[0][  5]=RANGE nsrc=1 srcs=['CONST']
+chain#1 k[0][  6]=ADD nsrc=2 srcs=['MUL', 'RANGE']
+chain#1 k[0][  7]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+chain#1 k[0][  8]=PARAM nsrc=0 srcs=[]
+chain#1 k[0][  9]=INDEX nsrc=2 srcs=['PARAM', 'ADD']
+chain#1 k[0][ 10]=CONST nsrc=0 srcs=[]
+chain#1 k[0][ 11]=MUL nsrc=2 srcs=['INDEX', 'CONST']
+chain#1 k[0][ 12]=STORE nsrc=2 srcs=['INDEX', 'MUL']
+chain#1 k[0][ 13]=END nsrc=3 srcs=['STORE', 'RANGE', 'RANGE']
+chain#1 k[0][ 14]=SINK nsrc=1 srcs=['END']
+chain#1 k[0][ 15]=PARAM nsrc=0 srcs=[]
+chain#1 k[0][ 16]=PARAM nsrc=0 srcs=[]
+chain#1 k[0][ 17]=CALL nsrc=3 srcs=['SINK', 'PARAM', 'PARAM']
+2

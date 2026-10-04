@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/oracle/dtype_tables.py", line 71, in <module>
-    for s in (dtypes.f32, dtypes.bf16, dtypes.f16):
-              ^^^^^^^^^^
-AttributeError: 'DTypes' object has no attribute 'f32'

@@ -27,3 +27,7 @@ def UOp.new(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> F
 
 def answer() -> Bool:
   True{}
+
+def t_const_bool_int_splits() -> Bool:
+  +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+  True{}

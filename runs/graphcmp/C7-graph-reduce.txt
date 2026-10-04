@@ -1,6 +1,0 @@
-emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-  bend attempt 1: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3556 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3557>| pm_r_alloc_m.at(ctx, 2) | ^ 3558 |
-  bend attempt 2: 0 rows, rc=1, stderr tail: sertion order and a pop does not reorder. 4188>| def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>: | ^^^ 4189 | match xs:
-  bend attempt 3: 0 rows, rc=1, stderr tail: sertion order and a pop does not reorder. 4188>| def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>: | ^^^ 4189 | match xs:
-  bend attempt 4: 0 rows, rc=1, stderr tail: sertion order and a pop does not reorder. 4188>| def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>: | ^^^ 4189 | match xs:
-  bend attempt 5: 0 rows, rc=1, stderr tail: sertion order and a pop does not reorder. 4188>| def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>: | ^^^ 4189 | match xs:

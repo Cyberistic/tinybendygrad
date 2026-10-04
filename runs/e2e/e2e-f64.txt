@@ -1,0 +1,154 @@
+
+--------------------------------------------------------------------------------
+== 7/7 AN f64 KERNEL THROUGH THE PORT -- double, not float
+   harness: .agents/slop/portexec/run-kernel.sh mm, UNCHANGED, on a copy
+
+--------------------------------------------------------------------------------
+== 0  THE SUBSTRATE, AND A REPAIR THAT IS CHECKED RATHER THAN ASSERTED
+   live   renderer/cstyle.bend sha256 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+   quoted cstyle-live/run-all.log:5  sha256 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+   substrate-check.sh on the live file: [substrate] /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/renderer/cstyle.bend:
+   >>> NOT MY FILE AND NOT MY VERDICT. It carries nine verbatim copies of every
+.agents/slop/f64/run-f64.sh:102: command not found: BArg.name
+.agents/slop/f64/run-f64.sh:102: command not found: Uses.half
+.agents/slop/f64/run-f64.sh:102: command not found: Emit_.uses
+.agents/slop/f64/run-f64.sh:102: command not found: RkIn.pref
+   >>> derived-fact reader block (, , , 
+.agents/slop/f64/run-f64.sh:103: command not found: bend
+.agents/slop/f64/run-f64.sh:103: command not found: duplicate
+   >>> all nine times) and  refuses it with . The
+   >>> hash MOVED during this session: the same path was bed462b6.. (cold, 3205
+   >>> lines) and is now the value above. The repair below touches ONLY THE COPY
+   >>> and is proven lossless by a byte-identity check against the committed
+   >>> good run, so no number here is attributed to a tree state of mine.
+
+   copy: tinybendygrad + portexec + f64 copied; bin/ references/ tinygrad/ .venv/ symlinked
+     removed 33 adjacent identical block(s):
+     duplicate `def` names remaining: none
+     ./bin/bend -> rc=0  rows=227
+     rows vs committed good run port.txt: IDENTICAL, 0 bytes
+
+--------------------------------------------------------------------------------
+== 1  THE LANE  --  portexec/run-kernel.sh mm, seven named steps
+      PORT PROTOTYPE : extern void mm(double* restrict data0_4, double* restrict data1_4, double* restrict data2_4, double* restrict data3_4);
+      SHIM CALL      : data0_4, data1_4, data2_4, data3_4
+      KERNEL BYTES   : 549
+      INPUT WORDS    : {'A': 64, 'B': 64, 'C': 64}
+      64 WORD lines, identical across two runs, and the buffer Nats are DISTINCT
+      equal  : True   diff bytes: 0   (64/64 words)
+   PASS [64] 64 u32 words bit-identical to CPython, through the port's own runtime
+      RED [bend program: fill B into A's buffer (re-runs bend -o)]
+      RED [shim: never call the kernel (re-runs bend -o)]
+  [lane A] 227 rows
+   -Wincompatible-pointer-types in run.c: 0  (0 required)
+
+--------------------------------------------------------------------------------
+== 2  THE PORT'S C TEXT AGAINST CPython'S OWN render_kernel, diffed EXTERNALLY
+   not read out of the lane: a number taken from the thing that produced it is
+   not a second witness, and e2e_port/run-port-mm.sh:118-131 says so.
+   port    void mm(double* restrict data0_4, double* restrict data1_4, double* restrict data2_4, do
+   cpython void mm(double* restrict data0_4, double* restrict data1_4, double* restrict data2_4, do
+   diff bytes = 0   (IDENTICAL)
+
+--------------------------------------------------------------------------------
+== 3  THE 64/64 u32 WORDS (32 doubles), RECOMPUTED WITH diff AND NOT QUOTED FROM THE LANE
+   ROWS-PRESENT AGAINST ROWS-EXPECTED, every run: a MISSING row and a PASSING row
+   look identical from outside, so the count is printed rather than assumed.
+   rows  port=64  expected=64
+   diff bytes = 0   differing lines = 0
+   first 8 port   : 4096 1072693248 1024 1075314688 512 1076625408 256 1077280768 
+   first 8 CPython: 4096 1072693248 1024 1075314688 512 1076625408 256 1077280768 
+   (words are (lo, hi) pairs in MEMORY order: little-endian, and the lane walks
+    the buffer at a 4-byte stride, so element i is WORD 2i, WORD 2i+1)
+   *** 64/64 MET, diff 0 bytes
+
+--------------------------------------------------------------------------------
+== 4  THE VALUE f32 CANNOT HOLD, WITH CPython's TWO ANSWERS SIDE BY SIDE
+   DELTA         : 2**-40 = 9.094947017729282e-13   fixture literal 9.094947017729282e-13
+   CPython  f64  : out[0] = (lo=0x00001000, hi=0x3ff00000) = 0x3ff0000000001000 = 1.0000000000009095
+   THE PORT      : out[0] = (lo=0x00001000, hi=0x3ff00000) = 0x3ff0000000001000   agree=True
+   CPython  f32  : out[0] = 0x3f800000 = 1.0   == 1.0 exactly: True
+   SO: the f32 lane's word 0 is 0x3f800000 and this lane's
+   is 0x3ff0000000001000. Different numbers, same kernel shape, same
+   harness, same launch -- the WIDTH is real and is not a label.
+
+--------------------------------------------------------------------------------
+== 5  CONTROLS -- a lane that has never failed is not known to work.
+   C0 is mandatory: without a GREEN unmutated copy, nothing below means anything.
+
+   INHERITED, NOT RE-COUNTED: run-kernel.sh mm runs its OWN three plants inside
+   EVERY lane above. Two went RED, VERBATIM on the f64 kernel text, which is why
+   emit-f64.bend keeps the mm body's shape. The third is reported as a THEOREM:
+      THEOREM [kernel: the first dot's 8 taps become 7] -- B is [I_4; 0] so A[i][k]*B[k][j] = 0 for EVERY k >= 4 and for ANY A; dropping the 8th tap cannot move the answer. A THEOREM, not a control.
+      RED [bend program: fill B into A's buffer (re-runs bend -o)]
+      RED [shim: never call the kernel (re-runs bend -o)]
+
+-- C0  the copy, UNPLANTED beyond E1/E2, must be green
+  [C0] 227 rows
+   GREEN [C0 the unmutated copy]
+
+-- P1  THE CONSTANT -- 2**-40 becomes 2**-39 in the KERNEL body. A different sum
+        must move the answer, and this one moves the answer's LOW word: the only
+        word an f32 lane could never have produced. Note WHICH outcome: the oracle
+        REFUSES, because it recomputes from the port's own emitted body and finds
+        numpy float64 and tinygrad DEV=CPU no longer agreeing with the fixture.
+  [P1 the constant 2**-40 -> 2**-39, in the KERNEL] 227 rows
+        AssertionError: numpy float64 and tinygrad DEV=CPU DISAGREE 
+   REFUSED[P1 the constant 2**-40 -> 2**-39, in the KERNEL] -- the ORACLE would not certify, so nothing was compared
+
+-- P1b THE PAIRED DISARM -- the same one-binade shift applied to the ORACLE, with
+        the KERNEL UNTOUCHED. P1 alone cannot tell a correct lane from one that
+        reads its expectation out of its own output, because a self-read passes any
+        kernel plant. P1b is the half that catches it: here the kernel is RIGHT and
+        the expectation is wrong by one binade, and the outcome is a REFUSAL by the
+        oracle's own two-CPython-path cross-check (numpy float64 vs real tinygrad
+        DEV=CPU, both recomputed from the port's emitted body) rather than a red word.
+  [P1b] 227 rows
+        AssertionError: numpy float64 and tinygrad DEV=CPU DISAGREE 
+   REFUSED[P1b the ORACLE is one binade out and the kernel is right] -- the ORACLE would not certify, so nothing was compared
+
+-- P1c ONE BIT OF ONE EXPECTED WORD -- word 37 of the 64, in the ORACLE only. This
+        is the control that exercises the WORD COMPARISON itself, because P1 and
+        P1b are both caught upstream of it. And it says which word: a PREFIX is not
+        a comparison, and 63 agreeing words are not 64.
+  [P1c one bit of expected word 37, and only that word] 227 rows
+           MISMATCH at 1/64 words, first 5: [(37, 1078427648, 1078427649)]
+   RED   [P1c one bit of expected word 37, and only that word] -- wrong WORDS, and the diff names which
+
+-- P2  THE PORT -- S.double() becomes S.single() in the fixture's BArgs, so
+        render_dtype emits float*. Everything else is untouched: same harness,
+        same oracle, same launch. If this is NOT caught, then the lane was
+        checking a WORD COUNT and not the WIDTH, and section 4 is vacuous.
+   the port now says: void mm(float* restrict data0_4, double* restrict data1_4, double* restrict 
+  [P2] 227 rows
+        AssertionError: the port did not emit a double signature 
+   REFUSED[P2 the port emitted float* and the lane still called it f64] -- the ORACLE would not certify, so nothing was compared
+
+--------------------------------------------------------------------------------
+== WHERE THIS STAGE GETS ITS DEVICE, so it cannot be quoted as stronger than it is
+   the port      tinybendygrad/renderer/cstyle.bend render_kernel -> C   PORT
+   the compiler  cc -Wall -Werror on the PORT's kernel.c alone          PORT's text
+   the driver    Bend allocates, fills, LAUNCHES BY POINTER, reads back  Bend
+   the oracle    CPython numpy float64 AND real tinygrad DEV=CPU        CPython
+   NOT in the path: node, a browser, navigator.gpu, a tinygrad scheduler.
+   STILL NOT CLAIMED: that the port SCHEDULED anything. cstyle.bend has no
+   _render; the loop nest is emit-f64.bend's fixture, as g_kernel() at
+   cstyle.bend:1879 is one. This is the portexec claim, one dtype wider.
+
+--------------------------------------------------------------------------------
+STAGE 7 PASS -- 64/64 u32 words (32 doubles) through the port's own renderer,
+               diff 0 bytes, port C text == CPython, every control red.
+(this stage's own exit status: 0)
+   F64-1 words_port=64
+   F64-1 words_expected=64
+   F64-1 diff_bytes=0
+   F64-1 port_out0_lo=4096
+   F64-1 port_out0_hi=1072693248
+   F64-1 cpython_out0_lo=4096
+   F64-1 cpython_out0_hi=1072693248
+   F64-2 kernel_text_diff_bytes=0
+   F64-2 ptrtype_warnings=0
+   F64-3 out0_f64_hex=0x3ff0000000001000
+   F64-3 out0_f32_hex=0x3f800000
+   F64-3 f32_rounds_to_one=True
+   F64-4 port_rows=227

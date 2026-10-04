@@ -1,6 +1,0 @@
-emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-  bend attempt 1: 0 rows, rc=1, stderr tail: d `+want` are both read once per element. 3430>| def op_in_bsl.go(+ar: Arena, want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool: | ^^^^ 3431 | match xs:
-  bend attempt 2: 0 rows, rc=1, stderr tail: d `+want` are both read once per element. 3430>| def op_in_bsl.go(+ar: Arena, want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool: | ^^^^ 3431 | match xs:
-  bend attempt 3: 0 rows, rc=1, stderr tail: d `+want` are both read once per element. 3430>| def op_in_bsl.go(+ar: Arena, want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool: | ^^^^ 3431 | match xs:
-  bend attempt 4: 0 rows, rc=1, stderr tail: d `+want` are both read once per element. 3430>| def op_in_bsl.go(+ar: Arena, want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool: | ^^^^ 3431 | match xs:
-  bend attempt 5: 0 rows, rc=1, stderr tail: d `+want` are both read once per element. 3430>| def op_in_bsl.go(+ar: Arena, want: List<&2, Op>, xs: List<&2, U32>, acc: Bool) -> Bool: | ^^^^ 3431 | match xs:

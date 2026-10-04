@@ -1,0 +1,77 @@
+all_ops_claim_n=77
+all_ops_n=77
+#bend_only_dat_fires: the value is 1/0 and the presence row `dat_fires_n` is the shared one
+dat_fires_n=1
+dat_misses=0
+#bend_only_dat_self: an arena index
+#bend_only_dat_src: an arena index
+#bend_only_dat_src_const: an arena index
+dat_tab_n=1
+dat_tab_ops=1
+#bend_only_dat_tab_pdict: `pdict` is Python's dispatch dict; the port's claim is a list
+dat_tab_rej=0
+dat_tab_tag=40
+#bend_only_dat_zero_src: an arena index
+#bend_only_pick_f_rule: Bool.pick is a bend builtin with no CPython counterpart
+#bend_only_pick_f_some: Bool.pick is a bend builtin with no CPython counterpart
+#bend_only_pick_t_none: Bool.pick is a bend builtin with no CPython counterpart
+#bend_only_pick_t_rule: Bool.pick is a bend builtin with no CPython counterpart
+#bend_only_rat_keeps_untagged: the presence companion `rat_keeps_untagged_n` is the shared row
+rat_keeps_untagged_n=0
+#bend_only_rat_strips: the presence companion `rat_strips_n` is the shared row
+rat_strips_n=1
+rat_tab_n=1
+rat_tab_ops=77
+#bend_only_rat_tab_pdict: `pdict` is Python's dispatch dict; the port's claim is a list
+rat_tab_rej=0
+rat_tab_tag=41
+rat_tag_after=0
+rat_tag_before=1
+#bend_only_rp_binder_slot: reads the port's ParamArg.slot, a port type
+#bend_only_rp_binder_slot5: reads the port's ParamArg.slot, a port type
+#bend_only_rp_binder_slot_nonparam: 4294967295 is the port's bottom for `no slot`
+#bend_only_rp_ctx_head: the value is an arena index; `_n` is the shared row
+#bend_only_rp_ctx_head_p0: the value is an arena index; `_n` is the shared row
+#bend_only_rp_fires_slot0: the value is an arena index; `_n` is the shared row
+rp_fires_slot0_n=1
+#bend_only_rp_fires_slot2: the value is an arena index; `_n` is the shared row
+rp_fires_slot2_n=1
+#bend_only_rp_fires_slot5_oor: the port answers `no rewrite`; CPython raises KeyError
+rp_fires_slot5_oor_n=0
+#bend_only_rp_fires_wrong_op: the value is an arena index; `_n` is the shared row
+rp_fires_wrong_op_n=0
+rp_is_param=1
+#bend_only_rp_param_slot: reads the port's ParamArg.slot, a port type
+#bend_only_rp_param_slot5: reads the port's ParamArg.slot, a port type
+#bend_only_rp_param_slot_nonparam: 4294967295 is the port's bottom for `no slot`
+rp_paramclaim_on_add=0
+#bend_only_rp_slot5_raises_py: CPython-side only: there is no port row, the port is total
+#bend_only_rp_slot_of: reads the port's ParamArg.slot, a port type
+rp_tab_n=1
+rp_tab_ops=1
+#bend_only_rp_tab_pdict: `pdict` is Python's dispatch dict; the port's claim is a list
+rp_tab_rej=0
+rp_tab_tag=42
+#bend_only_sub_answer_on_add: the value is an arena index
+#bend_only_sub_answer_unbound_add: the value is an arena index
+#bend_only_sub_has_on_unbound: Bend's Map.has has no CPython counterpart on a dict
+#bend_only_sub_has_on_zero: Bend's Map.has has no CPython counterpart on a dict
+#bend_only_sub_hit_node: the value is an arena index; `_n` is the shared row
+sub_hit_node_n=1
+#bend_only_sub_key_p2: Bend's Map is String-keyed; CPython's dvars is keyed by the object
+#bend_only_sub_key_p5: Bend's Map is String-keyed; CPython's dvars is keyed by the object
+#bend_only_sub_miss_node: the value is an arena index; `_n` is the shared row
+sub_miss_node_n=0
+#bend_only_sub_node_itself: an arena index
+#bend_only_sub_node_itself_add: an arena index
+sub_tab_n=1
+sub_tab_ops=77
+#bend_only_sub_tab_pdict: `pdict` is Python's dispatch dict; the port's claim is a list
+sub_tab_rej=0
+sub_tab_tag=43
+#bend_only_sub_val: an arena index
+#bend_only_sub_zero_is_a_hit: the value is 0 for BOTH a hit and a miss; `sub_has_*` is the row
+tag_none_on_bool=0
+tag_none_on_int=0
+tag_none_on_none=1
+tag_none_on_str=0

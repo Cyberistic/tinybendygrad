@@ -109,7 +109,7 @@
   2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
   2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
   2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
-  2:i6 5:CONST 9:weakfloat 2:() 2:i0 1:N 17:fConstFloat(-1.0) 3:n()
+  2:i6 5:CONST 9:weakfloat 2:() 2:i0 1:N 11:f3212836864 3:n()
   2:i7 3:MUL 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i6)
   2:i8 6:REDUCE 3:f32 2:() 2:i0 1:N 11:rd(OMAX,i2) 5:n(i7)
   2:i9 3:MUL 3:f32 2:() 2:i0 1:N 1:N 8:n(i8,i6)
@@ -173,24 +173,30 @@
 #   ops.bend:3566-3573        calls any slot but 0/1 'the free Variable sentinel', and uses 4294967295
 
 == Q6 THE CORPUS TALLY: OPS, PER-OP NODE COUNTS, SYMBOLIC DIMS ==
+  alu        14 nodes  ops=['ALLOC', 'CONST', 'DETACH', 'EXP2', 'GROUP', 'LOG2', 'POW', 'RECIPROCAL', 'RESHAPE', 'SIN', 'SQRT', 'STACK', 'TRUNC']  sym=[]
   binblob    19 nodes  ops=['ALLOC', 'BINARY', 'CONST', 'MUL', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
+  bit        10 nodes  ops=['ALLOC', 'CONST', 'FLOORDIV', 'FLOORMOD', 'GROUP', 'RESHAPE', 'SHL', 'SHR', 'STACK']  sym=[]
   buffer      5 nodes  ops=['BUFFER', 'CONST', 'RESHAPE', 'STACK']  sym=[]
+  bw         32 nodes  ops=['ALLOC', 'CAST', 'CONST', 'EXPAND', 'GROUP', 'MUL', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
   cast        6 nodes  ops=['ALLOC', 'CAST', 'CONST', 'RESHAPE', 'STACK']  sym=[]
   commute    14 nodes  ops=['ADD', 'ALLOC', 'AND', 'CMPNE', 'CONST', 'GROUP', 'MAX', 'OR', 'RESHAPE', 'STACK', 'XOR']  sym=[]
+  flip        6 nodes  ops=['ALLOC', 'CONST', 'FLIP', 'RESHAPE', 'STACK']  sym=[]
   gate       14 nodes  ops=['BUFFER', 'CMPLT', 'CONST', 'END', 'ENDIF', 'IF', 'INDEX', 'LINEAR', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
   group       8 nodes  ops=['ADD', 'ALLOC', 'CONST', 'GROUP', 'MUL', 'RESHAPE', 'STACK']  sym=[]
   indexed     7 nodes  ops=['BARRIER', 'CONST', 'INDEX', 'PARAM', 'RANGE', 'SINK']  sym=[]
   lin        46 nodes  ops=['ADD', 'CAST', 'CONST', 'END', 'INDEX', 'LOAD', 'MUL', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
   loop       25 nodes  ops=['ADD', 'AFTER', 'BACKEDGE', 'CALL', 'CAST', 'CMPLT', 'CONST', 'INDEX', 'LOAD', 'NOOP', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
   matmul     18 nodes  ops=['ALLOC', 'CONST', 'MUL', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
+  move       22 nodes  ops=['ALLOC', 'BITCAST', 'CONST', 'CONTIGUOUS_BACKWARD', 'GROUP', 'PAD', 'RESHAPE', 'SHRINK', 'STACK']  sym=[]
   range       2 nodes  ops=['CONST', 'RANGE']  sym=[]
   rangeflat   2 nodes  ops=['CONST', 'RANGE']  sym=[]
   reduce      7 nodes  ops=['ALLOC', 'CONST', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
   sink        2 nodes  ops=['CONST', 'SINK']  sym=[]
   special     2 nodes  ops=['CONST', 'SPECIAL']  sym=[]
   sym        12 nodes  ops=['ALLOC', 'CONST', 'GROUP', 'PARAM', 'RESHAPE', 'STACK']  sym=['8', '11']
-# TOTAL 16 graphs, 189 nodes/side, 34 of 77 ops
-# PER-OP (nodes/graphs): ADD 10/4  AFTER 3/1  ALLOC 10/7  AND 1/1  BACKEDGE 1/1  BARRIER 1/1  BINARY 1/1  BUFFER 2/2  CALL 1/1  CAST 8/3  CMPLT 2/2  CMPNE 1/1  CONST 36/16  END 3/2  ENDIF 1/1  GROUP 3/3  IF 1/1  INDEX 14/4  LINEAR 1/1  LOAD 8/2  MAX 1/1  MUL 8/4  NOOP 1/1  OR 1/1  PARAM 11/5  PERMUTE 5/3  RANGE 7/6  REDUCE 3/3  RESHAPE 17/8  SINK 5/5  SPECIAL 1/1  STACK 16/8  STORE 4/3  XOR 1/1
+  where       8 nodes  ops=['ALLOC', 'CMPLT', 'CONST', 'GROUP', 'RESHAPE', 'STACK', 'WHERE']  sym=[]
+# TOTAL 22 graphs, 281 nodes/side, 53 of 77 ops
+# PER-OP (nodes/graphs): ADD 10/4  AFTER 3/1  ALLOC 18/13  AND 1/1  BACKEDGE 1/1  BARRIER 1/1  BINARY 1/1  BITCAST 1/1  BUFFER 2/2  CALL 1/1  CAST 9/4  CMPLT 3/3  CMPNE 1/1  CONST 55/22  CONTIGUOUS_BACKWARD 1/1  DETACH 1/1  END 3/2  ENDIF 1/1  EXP2 1/1  EXPAND 2/1  FLIP 1/1  FLOORDIV 1/1  FLOORMOD 1/1  GROUP 8/8  IF 1/1  INDEX 14/4  LINEAR 1/1  LOAD 8/2  LOG2 1/1  MAX 1/1  MUL 10/5  NOOP 1/1  OR 1/1  PAD 1/1  PARAM 11/5  PERMUTE 9/4  POW 1/1  RANGE 7/6  RECIPROCAL 1/1  REDUCE 5/4  RESHAPE 31/14  SHL 1/1  SHR 1/1  SHRINK 1/1  SIN 1/1  SINK 5/5  SPECIAL 1/1  SQRT 1/1  STACK 32/14  STORE 4/3  TRUNC 1/1  WHERE 1/1  XOR 1/1
 # COMMUTATIVE 7/8 ['ADD', 'AND', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED ['CMPEQ']
-# SYMBOLIC-DIM NODES 2 of 189; FIELD-RECORDS 1134
-# NOT REACHED (43): REWRITE_ERROR PROGRAM SOURCE GETADDR SHRINK WMMA BITCAST EXP2 LOG2 SIN SQRT RECIPROCAL NEG TRUNC SHL SHR CDIV CMOD CMPEQ THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE MULACC CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION EXPAND PAD FLIP UNSHARD ALLREDUCE PYLITERAL
+# SYMBOLIC-DIM NODES 2 of 281; FIELD-RECORDS 1686
+# NOT REACHED (24): REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA NEG CDIV CMOD CMPEQ THREEFRY SUB FDIV MULACC CUSTOM CUSTOMI INS STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION UNSHARD ALLREDUCE PYLITERAL

@@ -113,20 +113,19 @@ ENV = dict(os.environ)
 # THE FROZEN SHELL ORACLE IS PINNED HERE, IN CODE, AND CHECKED ON EVERY RUN. A pin in a comment is
 # a pin that cannot fail, which is how `checks/differ.py` shipped a CORRECT pin that nothing read.
 #
-# BOTH FILES ARE PINNED, and that is stronger than pinning one. `checks/e2e.sh` is the COMMITTED
-# BODY; `e2epy/oracle-e2e.sh` is the frozen copy the port is diffed against. Pinning only the copy
-# would let the committed body drift away from the thing the port was measured on, so the two are
-# pinned separately and the copy's ONE DOCUMENTED EDIT -- an `E2E_REPO` default in its first `cd`,
-# so the copy can be pointed at a fixture tree -- is named in `ORACLE_EDIT` rather than left
-# implicit for the next reader to guess at.
-ORACLE_PIN = {
-    "e2epy/oracle-e2e.sh":
-        "e0eb23d5cb7340d5bc24000675d80aba44f5b83c9ea1ef3fe3136d610d7f7e04",
-}
-COMMITTED_SHELL = {
-    "checks/e2e.sh":
-        "f222c02c9481d9827dcc94c932177a033ef454514be515ab5b80492c1d42b605",
-}
+# TWO HASHES, AND THE SECOND ONE IS THE POINT. `ORACLE_SHA` is the frozen copy the port is diffed
+# against. `BODY_SHA` is the shell body that copy was frozen FROM, and it is checked against the copy
+# WITH ITS ONE DOCUMENTED EDIT REVERSED -- so the correspondence is proved from the ONE FILE THAT
+# SURVIVES rather than from a second file that must also survive.
+#
+# MEASURED 2026-10-05, AND IT IS WHY: the live cleanup unit `qmyqvmnpsloz` ("THE POLICY IS PYTHON
+# ONLY ... 103 ONE-OFF `.sh` DELETED") DELETED `checks/e2e.sh` from the working tree WHILE THIS PORT
+# WAS BEING WRITTEN, minutes after it had been read and copied. `checks/e2e.sh` is checked as well,
+# but ONLY IF IT IS STILL THERE: a pin on a file another unit is entitled to delete becomes a gate
+# reporting drift about a deletion instead of about a change. THE ORACLE IS THE SURVIVOR, which is
+# the entire reason the migration rule freezes one.
+ORACLE_SHA = "e0eb23d5cb7340d5bc24000675d80aba44f5b83c9ea1ef3fe3136d610d7f7e04"
+BODY_SHA = "f222c02c9481d9827dcc94c932177a033ef454514be515ab5b80492c1d42b605"
 ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}',
                'ROOT=$(cd "$(dirname "$0")/../.." && pwd)')
 
@@ -367,31 +366,35 @@ def main() -> int:
 
 
 def oracle_drift() -> list[str]:
-    """Every frozen oracle's actual sha against its pin, and BOTH directions of the correspondence.
+    """Is the frozen oracle still the thing this port was diffed against? An empty list means yes.
 
-    An empty list means intact. Three questions, and they are three because one hash cannot answer
-    three: is the frozen COPY the thing the port was diffed against (its pin), is the COMMITTED
-    BODY still that script (its own pin), and does REVERSING THE COPY'S ONE DOCUMENTED EDIT
-    REPRODUCE THE COMMITTED BODY (the edit, checked as text rather than assumed). The third is what
-    makes the two pins a correspondence instead of two facts.
+    THREE QUESTIONS, AND ONE HASH CANNOT ANSWER THREE. (1) Does the frozen COPY on disk hash to
+    `ORACLE_SHA`? (2) Does that copy WITH ITS ONE DOCUMENTED EDIT REVERSED hash to `BODY_SHA`, the
+    shell body this port was measured on -- i.e. is the edit still the ONLY difference? (3) IF
+    `checks/e2e.sh` is still on disk -- the live cleanup unit deleted it mid-port, see the pin's
+    comment -- does it also hash to `BODY_SHA`? (3) is deliberately NOT a failure when the file is
+    absent: a pin another unit is entitled to remove would report drift about a deletion, and the
+    oracle already answers (1) and (2) from the one file that survives.
     """
     import hashlib
     bad = []
-    for pins, base in ((ORACLE_PIN, REPO / ".agents/slop"), (COMMITTED_SHELL, REPO)):
-        for name, want in pins.items():
-            path = base / name
-            if not path.exists():
-                bad.append(f"{name}: MISSING -- the frozen oracle is gone")
-                continue
-            got = hashlib.sha256(path.read_bytes()).hexdigest()
-            if got != want:
-                bad.append(f"{name}: {got[:16]} != pinned {want[:16]}")
     copy = REPO / ".agents/slop/e2epy/oracle-e2e.sh"
-    if copy.exists() and not bad:
-        reverted = copy.read_text(errors="replace").replace(*ORACLE_EDIT)
-        if reverted != (REPO / "checks/e2e.sh").read_text(errors="replace"):
-            bad.append("e2epy/oracle-e2e.sh: reverting its one documented edit does NOT reproduce "
-                       "checks/e2e.sh, so the oracle carries an UNDOCUMENTED difference")
+    if not copy.exists():
+        return ["e2epy/oracle-e2e.sh: MISSING -- the frozen oracle is gone"]
+    raw = copy.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != ORACLE_SHA:
+        bad.append(f"e2epy/oracle-e2e.sh: {hashlib.sha256(raw).hexdigest()[:16]} != oracle "
+                   f"{ORACLE_SHA[:16]}")
+    reverted = raw.decode(errors="replace").replace(*ORACLE_EDIT).encode()
+    if hashlib.sha256(reverted).hexdigest() != BODY_SHA:
+        bad.append(f"e2epy/oracle-e2e.sh: reverting its one documented edit gives "
+                   f"{hashlib.sha256(reverted).hexdigest()[:16]}, not the shell body "
+                   f"{BODY_SHA[:16]} this port was diffed against -- so the oracle carries an "
+                   f"UNDOCUMENTED difference, or its edit changed")
+    body = REPO / "checks/e2e.sh"
+    if body.exists() and hashlib.sha256(body.read_bytes()).hexdigest() != BODY_SHA:
+        bad.append(f"checks/e2e.sh: {hashlib.sha256(body.read_bytes()).hexdigest()[:16]} != "
+                   f"{BODY_SHA[:16]} -- the live shell body no longer matches the frozen oracle")
     return bad
 
 

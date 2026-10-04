@@ -1,11 +1,4 @@
-SOME PROOFS FAIL
-Error:
-- expected : a defined name
-- observed : O.ParamArg.no_slot
-Location: u32_none
-278 | def u32_none() -> U32:
-279>|   O.ParamArg.no_slot()
-    |   ^^^^^^^^^^^^^^^^^^
-280 | def kn_slot(+ar: O.Arena, i: U32) -> U32:
+ALL PROOFS CHECK
+Use --verdict for mathematical validity.
 bend 2.0.35 is available: run bend update
-[bounded] WITHIN-LIMITS  rc=1  peak-RSS=260 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/codegen/late/regalloc.bend --check-only
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=644 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/codegen/late/regalloc.bend --check-only

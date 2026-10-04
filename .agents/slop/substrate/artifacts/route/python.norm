@@ -1,0 +1,35 @@
+WARM        tinybendygrad/device.bend  (1605 lines)  [bend --check-only]
+WARM        tinybendygrad/helpers.bend  (2768 lines)  [bend --check-only]
+MISSING     tinybendygrad/runtime/dtype.bend
+COLD        tinybendygrad/sz.bend  (1675 lines)  [bend --check-only]  :: SOME PROOFS FAIL
+WARM        tinybendygrad/renderer/nir.bend  (1716 lines)  [bend --check-only]
+WARM        tinybendygrad/uop/validate.bend  (2856 lines)  [bend --check-only]
+NO INSTRUMENT  tinybendygrad/runtime/dtype.c  (322 lines)  :: cc and a compiling bend C context are both required, and one is absent
+WARM        tinybendygrad/runtime/dtype.js  (211 lines)  [node --check]
+NO INSTRUMENT  .agents/slop/substrate/fixtures/bare.txt  (1 lines)  :: no instrument exists for this file class -- **NOT JUDGED, AND NOT COLD**
+ROUTE   bend=5  cc=0  node=1  no-instrument=2  (of 9 file(s))
+PROVENANCE  port=7  non-port=2   of which not-in-index=1 no-upstream=2   (of 9)
+  no-upstream   tinybendygrad/runtime/dtype.bend
+  no-upstream   tinybendygrad/sz.bend
+  NOT-PORT      tinybendygrad/runtime/dtype.bend
+                :: NOT IN THE INDEX. NO PORT FILE IS UNTRACKED, so this is a probe, a
+                :: mutant, or scratch copy -- whatever it is, it is not in the tree.
+                :: IT IS STILL COUNTED IN `bend=` ABOVE. Silence requires ownership:
+                :: `git add` it, or delete it.
+PORT ALARM  1 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=6, of which non-port=2  =>  the port count to compare against is 4
+NAMES     tinybendygrad/device.bend  (1 modules, 17 refs, 17 exact, 0 suffix-only, 0 unresolved, 254 unseen, 0 unused-import)
+NAMES     tinybendygrad/helpers.bend  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 506 unseen, 0 unused-import)
+NAMES     tinybendygrad/sz.bend  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 381 unseen, 0 unused-import)
+NAMES     tinybendygrad/renderer/nir.bend  (3 modules, 263 refs, 263 exact, 0 suffix-only, 0 unresolved, 161 unseen, 0 unused-import)
+NAMES     tinybendygrad/uop/validate.bend  (4 modules, 663 refs, 663 exact, 0 suffix-only, 0 unresolved, 547 unseen, 0 unused-import)
+NAMES     tinybendygrad/runtime/dtype.c  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 12 unseen, 0 unused-import)
+NAMES     tinybendygrad/runtime/dtype.js  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 20 unseen, 0 unused-import)
+NAMES     .agents/slop/substrate/fixtures/bare.txt  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 0 unseen, 0 unused-import)
+---
+UNRESOLVED  tinybendygrad/runtime/dtype.bend:0: <the file under test>  :: FILE UNDER TEST IS ABSENT
+TOTALS refs=943 exact=943 suffix=0 unresolved=0 unseen=1881 missing_module=0 dead_import=0
+BAD 1
+
+SUBSTRATE NOT CLEAN: 4 finding(s) across 9 file(s) -- empty, missing, cold, or collectively incomplete.
+ANY VERDICT TAKEN AGAINST THESE FILES IS **INCONCLUSIVE**, NOT A RESULT.

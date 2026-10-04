@@ -1,7 +1,0 @@
-########## 8. stability: 6 consecutive diffs ##########
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 1
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 2
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 3
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 4
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 5
-# py rows=18  bend rows=18  plant=none # VERDICT: AGREE   <- run 6

@@ -1,1 +1,1 @@
-matmul BYTE-IDENTICAL (1161 bytes both sides)
+matmul NOT COMPARED: py=1161 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)

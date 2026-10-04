@@ -3022,7 +3022,7 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       80-row red blind spot is FIXED and the acceptance test is a `diff`, not the gate.**
       760 rows, `diff .agents/slop/x86/{i,py1}.txt` **empty**, interpreted and native
       lanes byte-identical, `ALL PROOFS CHECK`. `asm_str` (x86.py:728-749) landed as
-      well, so 372 of 770 Python lines are covered. Five findings worth carrying:
+      well, so 372 of 77 [SUPERSEDED - see CORPUS.md: a per-graph SUM compared against a set]0 Python lines are covered. Five findings worth carrying:
       * **THE EIGHTY `hex.*`/`direct.*` ROWS WERE BARE STRING CONCATENATIONS** — no `Bool`
         in them at all, so "0 False" never covered them and all eighty disagreed. Every
         one is a `Bool` row against CPython's bytes now, with the bytes in the ROW NAME.
@@ -10317,7 +10317,7 @@ Claim: `.agents/slop/adev/CLAIM.md`.  **Nothing committed.**
       bend's flatten a THIRD spelling, `ssCPU,sCPU`.
 - [x] **`g_allred` DISAGREE -> AGREE, denominator unmoved.** BY REAL REVERT of the same
       tree (restore md5-verified): `nodes=9/9 field-records=54` **both** ways;
-      `shared-cores` 7 -> 9, `ONLY-PY`/`ONLY-BEND` 2/2 -> 0/0. Corpus **25 graphs ->
+      `shared-cores` 7 -> 9, `ONLY-PY`/`ONLY-BEND` 2/2 -> 0/0. Corpus **22 graphs [SUPERSEDED: was 25; see CORPUS.md] ->
       23 AGREE / 2 DISAGREE** (`lin`,`loop`, deliberate). `selfcheck OK`, `control OK`.
 - [x] **THE 13 RE-EXAMINED, AGAINST 13.** `emittable: 13 of 14`, `moved by ADEV-1: 1 of 14`
       (only `mselect`). **0 of 13 became emittable — all 13 already were; the decision
@@ -10637,7 +10637,7 @@ monkeypatch and nothing on disk carries it.**
       and `op` all agree — the damage is entirely `dtype`, `shape` and `arg`.
       **`CSH-3`.**
 - [x] **CORPUS BEFORE/AFTER against 77, both sides, split: LIVE UNCHANGED at
-      61/77/61, `py-only=[] bend-only=[]`, 25 graphs.** Ceiling if `patir` could be added:
+      61/77/61, `py-only=[] bend-only=[]`, 22 graphs [SUPERSEDED: was 25; see CORPUS.md].** Ceiling if `patir` could be added:
       **64/64/64, `py-only=[] bend-only=[]`, 26 graphs, NEITHER 16 -> 13**
       (`CUSTOM_FUNCTION GETADDR INS MSELECT MSTACK MULACC PROGRAM REWRITE_ERROR SOURCE
       STAGE THREEFRY UNSHARD WMMA`). `patir` CANNOT be added: the `GRAPHS` entry and the
@@ -10649,7 +10649,7 @@ monkeypatch and nothing on disk carries it.**
       **`flip` reproduced on purpose. `CSH-3`.**
 - [x] **PLANT AND DISARM, DISARM FIRST. Disarm = remove this unit's probes, and it must
       move NOTHING: census run TWICE byte-equal (sha1 `bca5e35dfb5dd696`), `graphcmp.py` md5
-      `4a0d2467b7e70d701afac68091394f40` unchanged, 25 graphs / 312 rows, verdict PASS.**
+      `4a0d2467b7e70d701afac68091394f40` unchanged, 22 graphs [SUPERSEDED: was 25; see CORPUS.md] / 312 rows, verdict PASS.**
       Measured BEFORE the plant exists, so a disarm carrying a second mutation cannot hide
       behind it. Blast radius of W1/W1s/W4 on the live corpus: **0 of 312 rows moved, 0
       graphs lost**, diffed by whole `name=value` LINE. Ledger live: `binblob y=1`,
@@ -11247,7 +11247,7 @@ Unit `NONSHAPE`. **ONE file edited: `tinybendygrad/uop/fold.bend`, +68 lines**
       `noneshape/ns-oparg.bend` **does not compile**: `expected : O.Arg / observed : O.Op`.
       **Reported, not landed** (both files are other units'). MEASURED: item 2 gates ONE
       COLUMN of ONE of the three ops and gates none of their SETTLING.
-- [x] **BLAST RADIUS 0 of 624 rows, 0 of 25 graphs' row counts**, diffed by WHOLE
+- [x] **BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
       `name=value` LINE; `fold.bend`'s own 335-line output **byte-identical** before/after.
 - [x] **THE BASELINE IS PROVEN, NOT CLAIMED**: `noneshape/ns-revert.py` reverses the three
       insertions and reproduces md5 `e372ca226461fe2295b49a9990db0165` EXACTLY, so the
@@ -12041,8 +12041,8 @@ Progress: [=============================-------] 7/7
   (`U32.to_f32`) compiles clean and takes E2E 6/10 -> 1/10 — and moves **0 of 85**
   of the file's own rows, which are all renderer/device half. See OPS-6.
 - [x] **Re-measured the two figures I was told to distrust.** Corpus is
-  **60 of 77** (25 graphs, set UNION; the per-graph sum is 182 and is wrong), not
-  61 and not 35. `bw` itself reaches **10/10 of 77**, `AGREE`, 0 residuals — 35
+  **60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]** (22 graphs [SUPERSEDED: was 25; see CORPUS.md], set UNION; the per-graph sum is 182 and is wrong), not
+  61 and not 35. `bw` itself reaches **10/10 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]**, `AGREE`, 0 residuals — 35
   was never `bw`'s figure. `backward` byte-identical; `walk-row.txt:50`'s
   `AGREE 15 / 15` stands.
 - [x] **Notes.** `.agents/slop/OPSPY.md`, `.agents/slop/opspy/*`, and OPS-1..OPS-6
@@ -12411,7 +12411,7 @@ hits for them are all comments). Nothing calls the twenty registrations.
       (2) `uop/fold.bend:2655` is a standing instruction whose trigger HAS FIRED and was
       never executed — `def mm.u64.*` at `:2681` is a private ladder beside four helpers
       helpers.bend now exports. **U2, `STANDS`.** (3) `opspy/corpus.py:6` says `61 of 77`
-      while the script prints `53 of 77`; notes OPS-3 says `60 of 77`. **Three figures,
+      while the script prints `53 of 77`; notes OPS-3 says `60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]`. **Three figures,
       one quantity, all three in the tree.** `opspy/` is another unit's.
 - [ ] **THE `agent-core.md` ADDITION IS REPORTED, NOT MADE** (`WALL/7`): *a wall in a file
       header is a claim against a file nobody re-reads, which is why `mixin/dtype.bend:52`

@@ -1,0 +1,14 @@
+MISSING     tinybendygrad/device.bend
+tinybendygrad/helpers.bend
+ROUTE   bend=0  cc=0  node=0  no-instrument=0  (of 1 file(s))
+PROVENANCE  port=2  non-port=0   of which not-in-index=0 no-upstream=0   (of 2)
+PORT ALARM  0 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=2, of which non-port=0  =>  the port count to compare against is 2
+NAMES     tinybendygrad/device.bend  (1 modules, 17 refs, 17 exact, 0 suffix-only, 0 unresolved, 254 unseen, 0 unused-import)
+NAMES     tinybendygrad/helpers.bend  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 506 unseen, 0 unused-import)
+---
+TOTALS refs=17 exact=17 suffix=0 unresolved=0 unseen=760 missing_module=0 dead_import=0
+BAD 0
+
+SUBSTRATE NOT CLEAN: 1 finding(s) across 1 file(s) -- empty, missing, cold, or collectively incomplete.
+ANY VERDICT TAKEN AGAINST THESE FILES IS **INCONCLUSIVE**, NOT A RESULT.

@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/llvmir-oracle.py", line 33, in <module>
-    LDT = [dtypes.void, dtypes.bool, dtypes.i8, dtypes.i16, dtypes.i32, dtypes.i64,
-                                     ^^^^^^^^^
-AttributeError: 'DTypes' object has no attribute 'i8'

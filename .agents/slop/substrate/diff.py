@@ -343,8 +343,14 @@ def main() -> int:
     ART.mkdir(parents=True, exist_ok=True)
     print(f"population: tinybendygrad has {len(POP)} files on disk "
           f"({sum(1 for f in POP if f.endswith('.bend'))} .bend)")
-    results = [(n, demanded(compare(n, SETS[n][0], f"set {n}", extra=SETS[n][1]), True, f"set {n}"))
-           for n in a.sets]
+    if a.plants and "smoke" not in a.sets:
+        # `plants()` -> `input_plants()` compares each planted run against the `smoke` ARTIFACT, so
+        # `smoke` has to exist. Without this the fixture plants read a missing file and the
+        # comparison `after != base` is True for the wrong reason -- the same 0-byte-compares-equal
+        # trap, one level up.
+        raise SystemExit("--plants needs `smoke` in --sets (it is the fixture plants' baseline)")
+    results = [(n, demanded(compare(n, SETS[n][0], f"set {n}", extra=SETS[n][1]),
+                            True, f"set {n}")) for n in a.sets]
     ok = all(ok for _, ok in results)
     print(f"VERDICT: {sum(ok for _, ok in results)} of {len(results)} set(s) AGREE with the "
           f"oracle" + ("" if ok else " -- SEE diff.txt"))

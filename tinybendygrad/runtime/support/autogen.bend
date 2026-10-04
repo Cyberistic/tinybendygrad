@@ -736,42 +736,42 @@ def anon_name(g: G, tag: String) -> String:
 # it goes SECOND because bend's descent rule wants the shrinking argument
 # first.
 def colon() -> Char: ':'
-def underscore() -> Char: '_'
-def space() -> Char: ' '
 
 type RS is Data: RS{pend: Bool, cs: List<&2, Char>}
 
 # the four cases of "a colon arrived while a colon was pending"
-def rep_emit2(+pend: Bool, +c1: Char) -> List<&2, Char>:
+def rep_emit2(pend: Bool, c1: Char) -> List<&2, Char>:
   Bool.pick(List<&2, Char>, Char.is_eq(c1, colon()),
-    Bool.pick(List<&2, Char>, pend, [underscore()], Nil{}),
+    Bool.pick(List<&2, Char>, pend, ["_"], Nil{}),
     Bool.pick(List<&2, Char>, pend, [colon(), c1], [c1]))
 
-def rep_pend2(+pend: Bool, +c1: Char) -> Bool:
+def rep_pend2(pend: Bool, c1: Char) -> Bool:
   Bool.pick(Bool, Char.is_eq(c1, colon()), Bool.not(pend), False{})
 
-def rep_step2(+c1: Char, acc: RS) -> RS:
+def rep_step2(c1: Char, acc: RS) -> RS:
   match acc:
-    case RS{+pend, cs}: RS{rep_pend2(pend, c1), List.append(&2, Char, cs, rep_emit2(pend, c1))}
+    case RS{pend, cs}: RS{rep_pend2(pend, c1), List.append(&2, Char, cs, rep_emit2(pend, c1))}
 
 # a lone trailing ':' SURVIVES, because Python's replace only fires on a pair
 def rep_flush2(acc: RS) -> List<&2, Char>:
   match acc:
-    case RS{+pend, +cs}: Bool.pick(List<&2, Char>, pend, List.append(&2, Char, cs, [colon()]), cs)
+    case RS{pend, cs}: Bool.pick(List<&2, Char>, pend, List.append(&2, Char, cs, [colon()]), cs)
 
 def rep_go2(cs: List<&2, Char>, acc: RS) -> List<&2, Char>:
   match cs:
-    case Nil{}: rep_flush2(acc)
+    case Nil{}: List.reverse(rep_flush2(acc))
     case c1 <> rest: rep_go2(rest, rep_step2(c1, acc))
 
 # the one-character form needs no pending state: a fixed stride of one
-def rep_emit1(+c1: Char) -> List<&2, Char>:
-  Bool.pick(List<&2, Char>, Char.is_eq(c1, space()), [underscore()], [c1])
+def rep_emit1(c1: Char) -> List<&2, Char>:
+  Bool.pick(List<&2, Char>, Char.is_eq(c1, space()), ["_"], [c1])
 
 def rep_go1(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
   match cs:
-    case Nil{}: acc
+    case Nil{}: List.reverse(acc)
     case c1 <> rest: rep_go1(rest, List.append(&2, Char, acc, rep_emit1(c1)))
+
+def space() -> Char: ' '
 
 def colons_to_underscores(n: String) -> String:
   String.from_list(rep_go2(String.to_list(n), RS{False{}, Nil{}}))

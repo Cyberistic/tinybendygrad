@@ -1,0 +1,6 @@
+[substrate] tinybendygrad/device.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=3 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/device.bend --check-only
+[substrate] tinybendygrad/helpers.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=199 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/helpers.bend --check-only
+[substrate] tinybendygrad/sz.bend: [bounded] WITHIN-LIMITS  rc=1  peak-RSS=984 MB (ceiling 2048)  5s  :: ./bin/bend tinybendygrad/sz.bend --check-only
+[substrate] tinybendygrad/renderer/nir.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1276 MB (ceiling 2048)  4s  :: ./bin/bend tinybendygrad/renderer/nir.bend --check-only
+[substrate] tinybendygrad/uop/validate.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=369 MB (ceiling 2048)  2s  :: ./bin/bend tinybendygrad/uop/validate.bend --check-only
+[substrate] tinybendygrad/runtime/dtype.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/dtype.js

@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ptx-s3-oracle.py", line 49, in <module>
-    def buf(dt=dtypes.f32, slot=0, addr=AddrSpace.GLOBAL, size=4):
-               ^^^^^^^^^^
-AttributeError: 'DTypes' object has no attribute 'f32'

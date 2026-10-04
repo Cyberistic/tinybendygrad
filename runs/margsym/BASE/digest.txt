@@ -1,6 +1,0 @@
-# PRE-FIX BASELINE -- captured from the working tree BEFORE any edit to fold.bend.
-# md5 fold.bend / ops.bend / graphcmp.bend / graphcmp.py at capture time:
-#   f4ed743878ddf22e181cd21fa9962f06
-#   ad85eb60dad7aa89e54fcb61596042a5
-#   b295ccff79430147c005812fa08c1ead
-#   9d0b53129001000f890fd3661c661eb6

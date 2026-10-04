@@ -1,0 +1,23 @@
+SKIP-VERDICT .agents/slop/substrate/fixtures/tiny.bend  (4 lines, verdict suppressed by -n)
+SKIP-VERDICT .agents/slop/substrate/fixtures/broken.bend  (1 lines, verdict suppressed by -n)
+NO INSTRUMENT  .agents/slop/substrate/fixtures/bare.txt  (1 lines)  :: no instrument exists for this file class -- **NOT JUDGED, AND NOT COLD**
+SKIP-VERDICT tinybendygrad/runtime/dtype.c  (322 lines, verdict suppressed by -n)
+ROUTE   bend=0  cc=0  node=0  no-instrument=1  (of 4 file(s))
+PROVENANCE  port=4  non-port=0   of which not-in-index=0 no-upstream=0   (of 4)
+PORT ALARM  0 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=2, of which non-port=0  =>  the port count to compare against is 2
+NAMES     .agents/slop/substrate/fixtures/tiny.bend  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 1 unseen, 0 unused-import)
+NAMES     .agents/slop/substrate/fixtures/broken.bend  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 0 unseen, 0 unused-import)
+NAMES     .agents/slop/substrate/fixtures/bare.txt  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 0 unseen, 0 unused-import)
+NAMES     tinybendygrad/runtime/dtype.c  (0 modules, 0 refs, 0 exact, 0 suffix-only, 0 unresolved, 12 unseen, 0 unused-import)
+---
+TOTALS refs=0 exact=0 suffix=0 unresolved=0 unseen=13 missing_module=0 dead_import=0
+BAD 0
+
+NO INSTRUMENT: 1 of 4 file(s) were **NOT JUDGED** (no instrument exists, or it produced nothing).
+A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an unmeasured surface.
+NAMES CLEAN: 4 file(s), all non-empty, all cross-file names resolved. **VERDICT NOT TAKEN** (-n).
+(name check is scoped to the IMPORT graph. It cannot see the unaliased `import Base`
+ surface -- List. String. U32. -- which is most qualified refs in the tree. Read the
+ `unseen=` number, not just the verdict: an instrument that hides its own blind spot
+ is the defect this project has catalogued twenty times.)

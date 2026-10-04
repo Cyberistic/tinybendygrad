@@ -1,6 +1,0 @@
-emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-  bend attempt 1: 0 rows, rc=1, stderr tail: on: pm_r_alloc_m 3500 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3501>| pm_r_alloc_m.at(ctx, 2) | ^^^^^^^^^^^^^^^ 3502 |
-  bend attempt 2: 0 rows, rc=1, stderr tail: : U32, +rs: List<&2, U32>, ok: Bool) -> Rng: 4276>| (rs2, ok2) = rng_union.go(ar, t, ss, i, rs, ok) | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 4277 | Rng{i, rs2, ok2}
-  bend attempt 3: 0 rows, rc=1, stderr tail: : U32, +rs: List<&2, U32>, ok: Bool) -> Rng: 4276>| (rs2, ok2) = rng_union.go(ar, t, ss, i, rs, ok) | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 4277 | Rng{i, rs2, ok2}
-  bend attempt 4: 0 rows, rc=1, stderr tail: : U32, +rs: List<&2, U32>, ok: Bool) -> Rng: 4276>| (rs2, ok2) = rng_union.go(ar, t, ss, i, rs, ok) | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 4277 | Rng{i, rs2, ok2}
-  bend attempt 5: 0 rows, rc=1, stderr tail: : U32, +rs: List<&2, U32>, ok: Bool) -> Rng: 4276>| (rs2, ok2) = rng_union.go(ar, t, ss, i, rs, ok) | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 4277 | Rng{i, rs2, ok2}

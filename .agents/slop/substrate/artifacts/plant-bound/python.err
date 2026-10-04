@@ -1,1 +1,0 @@
-[substrate] tinybendygrad/sz.bend: [bounded] KILLED-ON-MEMORY  rc=-9  peak-RSS=196 MB (ceiling 1)  0s  :: ./bin/bend tinybendygrad/sz.bend --check-only

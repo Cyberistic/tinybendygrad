@@ -1,2 +1,0 @@
-[substrate] tinybendygrad/sz.bend: [bounded] WITHIN-LIMITS  rc=1  peak-RSS=1785 MB (ceiling 2048)  3s  :: ./bin/bend tinybendygrad/sz.bend --check-only
-[substrate] tinybendygrad/device.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/device.bend --check-only

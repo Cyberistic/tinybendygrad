@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ew-gate.py", line 91, in <module>
-    i4 = Tensor([1, 2, 3, 4], device='PYTHON', dtype=dtypes.i8)
-                                                     ^^^^^^^^^
-AttributeError: 'DTypes' object has no attribute 'i8'

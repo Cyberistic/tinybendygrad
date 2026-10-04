@@ -1,6 +1,0 @@
-emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-  bend attempt 1: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
-  bend attempt 2: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
-  bend attempt 3: 0 rows, rc=1, stderr tail: | def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32, +rs: List<&2, U32>, ok: Bool) -> Rng: | ^^^^^^^^^ 4274 | rng_union.of(ar, t, ss, i, rs, ok)
-  bend attempt 4: 0 rows, rc=1, stderr tail: f : U32 Location: pm_r_alloc_m 3508 | def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>: 3509>| pm_r_alloc_m.at(ctx, 2) | ^ 3510 |
-  bend attempt 5: 0 rows, rc=1, stderr tail: 2721 | 2722>| def UOp.backward_slice(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>: | ^^^^ 2723 | bsl.go(self, UOp.toposort_nocalls(fuel, ar, self), Nil{})

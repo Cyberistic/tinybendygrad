@@ -434,3 +434,499 @@
                :: rc=127 -- the command was not found
 [p1  216/438] PASS     WITHIN-LIMITS rc=   0     0.9s  .agents/slop/lanedeath-census.py
                :: LANE-DEATH CENSUS.  One question per BROKEN entry: is the def the error names in the PORT,
+[p1  217/438] NOT-RUN  TIMED-OUT     rc=  -9    25.3s  .agents/slop/lanedeath-provenance.py
+               :: TIMED OUT at 25s
+[p1  218/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/lastlaw/sweep.sh
+               :: child rc=1 within both bounds
+[p1  219/438] PASS     WITHIN-LIMITS rc=   0     2.8s  .agents/slop/late-gate.sh
+               :: codegen/late/linearizer.bend  71 rows
+[p1  220/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/late-oracle.py
+               :: rw_tbl_ops=AFTER BACKEDGE BARRIER BITCAST BUFFER CAST CONST END GROUP INS NOOP PARAM RANGE SPECIAL STACK
+[p1  221/438] FAIL     WITHIN-LIMITS rc=   1     0.8s  .agents/slop/lintable/lintable-gate.sh
+               :: lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'
+[p1  222/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/lintable/lintable-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  223/438] PASS     WITHIN-LIMITS rc=   0     1.7s  .agents/slop/llvmir-gate-noguard.py
+               :: gated 470   agree 470   disagree []
+[p1  224/438] FAIL     WITHIN-LIMITS rc=   1     1.8s  .agents/slop/llvmir-gate.py
+               :: port: 1/471 row(s) share a key with another row of the SAME name -- one name printed 2x: ['lt 1 ptr f32']. NO `=` IS INVOLVED, so this is NOT what the
+[p1  225/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/llvmir-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  226/438] NOT-RUN  WITHIN-LIMITS rc=   0     5.5s  .agents/slop/load-census.py
+               :: rc=0 with output but NO verdict token
+[p1  227/438] PASS     WITHIN-LIMITS rc=   0     0.7s  .agents/slop/marker-audit.py
+               :: BACKLOG multi.bend:3494  #   TODO(p3) ops.py:600 multi.py:296  the ALLREDUCE rule, `UOp.allreduce(*red.arg)`
+[p1  228/438] FAIL     WITHIN-LIMITS rc=   2     0.9s  .agents/slop/memory-diff.py
+               :: BEND LANE FAILED
+[p1  229/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/memory_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  230/438] FAIL     WITHIN-LIMITS rc=   1     0.4s  .agents/slop/merge-oracle.py
+               :: IndexError: list index out of range
+[p1  231/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mixin-op-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  232/438] NOT-RUN  KILLED-ON-MEM rc=  -9     5.1s  .agents/slop/mixin-op-gate.sh
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1220MB
+[p1  233/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mm-bl-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  234/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mm-dt-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  235/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mm-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  236/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mm-lift-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  237/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mm-walk-gate.py
+               :: mmk_noop n=2 op=Ops.NOOP nsrc=1 srcops=Ops.BUFFER lo=+0:0 hi=+0:1
+[p1  238/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mmfold/mmfold-rows.py
+               :: ZERO bytes on both streams -- a refusal
+[p1  239/438] PASS     WITHIN-LIMITS rc=   0     1.0s  .agents/slop/mock-oracle.py
+               :: cumsum=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName
+[p1  240/438] FAIL     WITHIN-LIMITS rc=   1     1.0s  .agents/slop/mt_audit2.py
+               :: SyntaxError: unmatched ')'
+[p1  241/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/mt_diff.py
+               :: NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?
+[p1  242/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/mt_oracle.py
+               :: KeyError: 'SELECTORS'
+[p1  243/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/mt_rows.py
+               :: KeyError: 'SELECTORS'
+[p1  244/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/mt_seam_rows.py
+               :: rc=0 with output but NO verdict token
+[p1  245/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/multi-defect-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  246/438] PASS     WITHIN-LIMITS rc=   0     0.4s  .agents/slop/multi-raw-oracle.py
+               :: pbx noop    (0,)
+[p1  247/438] NOT-RUN  WITHIN-LIMITS rc=   0     1.1s  .agents/slop/multi-rows.py
+               :: rc=0 with output but NO verdict token
+[p1  248/438] FAIL     WITHIN-LIMITS rc=   1     0.4s  .agents/slop/multi-verify.py
+               :: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/mi.txt'
+[p1  249/438] PASS     WITHIN-LIMITS rc=   0     0.4s  .agents/slop/name-census.py
+               :: TOTAL over 78 cached lane texts of 39 wired ports:
+[p1  250/438] FAIL     WITHIN-LIMITS rc=   1     0.7s  .agents/slop/naming-gate-ledger-check.py
+               :: FAIL  UNCOVERED RENAME(S):
+[p1  251/438] FAIL     WITHIN-LIMITS rc=   1     0.7s  .agents/slop/naming-gate-ledger.py
+               :: child rc=1 within both bounds
+[p1  252/438] FAIL     WITHIN-LIMITS rc=   1     5.4s  .agents/slop/naming-gate-selftest.py
+               :: 1 CLEAN TREE
+[p1  253/438] FAIL     WITHIN-LIMITS rc=   1     0.6s  .agents/slop/naming-gate.py
+               :: NAMING GATE -- owner ruling: def names match upstream tinygrad exactly
+[p1  254/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/nested/gate.py
+               :: IndexError: list index out of range
+[p1  255/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nir/nir_const_audit.py
+               :: SYMBOL                                     TABLE        PORT     MESA     VERDICT
+[p1  256/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nir/nir_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  257/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nl/nl-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  258/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.6s  .agents/slop/nn-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  259/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nn-init-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  260/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nocolor-diff.py
+               :: exact 18  refusal-answered-False 13  named-boundary 1  DISAGREE 0  of 32 probes
+[p1  261/438] SKIP     WITHIN-LIMITS rc=   0     3.2s  .agents/slop/nocolor-oracle.py
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  262/438] PASS     WITHIN-LIMITS rc=   0     4.3s  .agents/slop/norm/gate_norm.py
+               :: | row | width | CPython (dtype.py, CALLED) | node show / bits | cc show / bits | verdict |
+[p1  263/438] FAIL     WITHIN-LIMITS rc=   1     2.3s  .agents/slop/not-applied-audit.py
+               :: A1 anti-drift (calls the shared reporter) | A2 non-numeric | A3 column
+[p1  264/438] PASS     WITHIN-LIMITS rc=   0     3.9s  .agents/slop/notes/fp16_oracle.py
+               :: ALL AGREE
+[p1  265/438] FAIL     WITHIN-LIMITS rc=   1     1.4s  .agents/slop/notes/fp8_oracle.py
+               :: KeyError: 'fp8e4m3'
+[p1  266/438] PASS     WITHIN-LIMITS rc=   0     0.6s  .agents/slop/notes/grad_oracle.py
+               :: === noop  root=ADD nsrc=2 ngrads=3
+[p1  267/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.6s  .agents/slop/notes/grad_oracle2.py
+               :: rc=0 with output but NO verdict token
+[p1  268/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/notes/mxm-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  269/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/notes/resh-chain-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  270/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/notes/reshape-oracle.py
+               :: resh_noop        shape=('2:int', '3:int') dtype=void srcops=['NOOP', 'STACK']
+[p1  271/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/notes/rz-oracle.py
+               :: AttributeError: 'str' object has no attribute 'name'
+[p1  272/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/notes/sized-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  273/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/notes/weak_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  274/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/nr/nr-oracle.py
+               :: AttributeError: 'Ops' object has no attribute 'op'
+[p1  275/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/null-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  276/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv-constaudit.py
+               :: agree: 75
+[p1  277/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv-constaudit2.py
+               :: smem_cfg shmem=103424   -> min() on an EMPTY sequence: ValueError (a LATENT raise in :293, shmem > 100KB)
+[p1  278/438] PASS     WITHIN-LIMITS rc=   0     1.2s  .agents/slop/nv-diff.py
+               :: AGREE
+[p1  279/438] PASS     WITHIN-LIMITS rc=   0     0.6s  .agents/slop/nv-oracle.py
+               :: nv_errstr_999=999: Unknown error
+[p1  280/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv_gate.py
+               :: rc=0 with output but NO verdict token
+[p1  281/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/nv_ip_diff.py
+               :: IndexError: list index out of range
+[p1  282/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv_ip_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  283/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv_ip_oracle3.py
+               :: rc=0 with output but NO verdict token
+[p1  284/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/nv_ip_oracle4.py
+               :: rc=0 with output but NO verdict token
+[p1  285/438] NOT-RUN  KILLED-ON-MEM rc=  -9     2.9s  .agents/slop/nv_nvdev_gate.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1140MB
+[p1  286/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/nv_nvdev_oracle.py
+               :: TIMED OUT at 25s
+[p1  287/438] PASS     WITHIN-LIMITS rc=   0     0.9s  .agents/slop/nv_order_census.py
+               :: nv_reg_NV_PMC_BOOT_42_maxw           port=10           census=10           ok
+[p1  288/438] FAIL     WITHIN-LIMITS rc=   1     1.6s  .agents/slop/nvrows/nvrows-deadrow-gate.py
+               :: VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows
+[p1  289/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.6s  .agents/slop/objc/objc_diff.py
+               :: rc=0 with output but NO verdict token
+[p1  290/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/objc/objc_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  291/438] NOT-RUN  WITHIN-LIMITS rc=   0     2.8s  .agents/slop/objc/symtab_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  292/438] PASS     WITHIN-LIMITS rc=   0     0.6s  .agents/slop/onnx-gate.py
+               :: onnx_sel_sm0=ERR
+[p1  293/438] FAIL     WITHIN-LIMITS rc=   1     1.5s  .agents/slop/ops-501-gate.sh
+               :: ImportError: cannot import name 'sym' from partially initialized module 'tinygrad.uop.symbolic' (most likely due to a circular import) (/Users/cyberis
+[p1  294/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/ops-501-oracle.py
+               :: ImportError: cannot import name 'sym' from partially initialized module 'tinygrad.uop.symbolic' (most likely due to a circular import) (/Users/cyberis
+[p1  295/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-cl-gate.sh
+               :: rc=127 -- the command was not found
+[p1  296/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-gate.sh
+               :: rc=127 -- the command was not found
+[p1  297/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/ops-oracle.py
+               :: ImportError: cannot import name 'capturing' from partially initialized module 'tinygrad.engine.realize' (most likely due to a circular import) (/Users
+[p1  298/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-pu-gate.sh
+               :: rc=127 -- the command was not found
+[p1  299/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-pu-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  300/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-pu-range-rows.py
+               :: rc=0 with output but NO verdict token
+[p1  301/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.6s  .agents/slop/ops-python-render-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  302/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-render-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  303/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-rnd-gate.sh
+               :: rc=127 -- the command was not found
+[p1  304/438] FAIL     WITHIN-LIMITS rc=   2     0.3s  .agents/slop/ops-rnd-rows.py
+               :: child rc=2 within both bounds
+[p1  305/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.9s  .agents/slop/ops-rows.py
+               :: rc=0 with output but NO verdict token
+[p1  306/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-rra-gate.sh
+               :: rc=127 -- the command was not found
+[p1  307/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-rra-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  308/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-set-gate.sh
+               :: rc=127 -- the command was not found
+[p1  309/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-set-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  310/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-sugar-gate.sh
+               :: rc=127 -- the command was not found
+[p1  311/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-sugar-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  312/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-var-gate.sh
+               :: rc=127 -- the command was not found
+[p1  313/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-var-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  314/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-vrn-gate.sh
+               :: rc=127 -- the command was not found
+[p1  315/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-vrn-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  316/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ops-vv-gate.sh
+               :: rc=127 -- the command was not found
+[p1  317/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ops-vv-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  318/438] SKIP     WITHIN-LIMITS rc=   2     0.3s  .agents/slop/opsbend_milestone_gate.py
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  319/438] NOT-RUN  KILLED-ON-MEM rc=  -9     1.9s  .agents/slop/opspy/verify-dedup.sh
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1048MB
+[p1  320/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle-after-cf.py
+               :: rc=0 with output but NO verdict token
+[p1  321/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle-customfunction.py
+               :: rc=0 with output but NO verdict token
+[p1  322/438] SKIP     WITHIN-LIMITS rc=   2     0.3s  .agents/slop/oracle-live.py
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  323/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle-search.py
+               :: rc=0 with output but NO verdict token
+[p1  324/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle-system.py
+               :: pref_mem_base>>32=0x8 (as passed to PREF_BASE_UPPER32)
+[p1  325/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/oracle/dtype_oracle.py
+               :: AttributeError: 'DTypes' object has no attribute 'single'
+[p1  326/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_npy.py
+               :: rc=0 with output but NO verdict token
+[p1  327/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_npy_torch.py
+               :: raise_is_ImportError = True
+[p1  328/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_py.py
+               :: rc=0 with output but NO verdict token
+[p1  329/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_rdma.py
+               :: rc=0 with output but NO verdict token
+[p1  330/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_rdma_gate.py
+               :: rc=0 with output but NO verdict token
+[p1  331/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracle_torch.py
+               :: rc=0 with output but NO verdict token
+[p1  332/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracles/fold-mvt-oracle.py
+               :: mv_expnoop n=4 op=EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+[p1  333/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracles/fold-mvt-rows.py
+               :: mv_expnoop n=4 op=Ops.EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+[p1  334/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/oracles/fold-rng-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  335/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/order-gate-probe.py
+               :: rc=0 with output but NO verdict token
+[p1  336/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/order-late-gate.sh
+               :: rc=127 -- the command was not found
+[p1  337/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/order-lin-sweep.sh
+               :: rc=127 -- the command was not found
+[p1  338/438] PASS     WITHIN-LIMITS rc=   0     2.8s  .agents/slop/order-verdicts.py
+               :: VERDICT 1 -- runtime/ops_bend's sibling_blind transpositions
+[p1  339/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/pin-tree-oracle.py
+               :: NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?
+[p1  340/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/portexec/census.py
+               :: FileNotFoundError: [Errno 2] No such file or directory: 'port-rows.txt'
+[p1  341/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/portexec/oracle.py
+               :: stage1 agree: True
+[p1  342/438] FAIL     WITHIN-LIMITS rc=   1     0.9s  .agents/slop/pr-actions-oracle.py
+               :: child rc=1 within both bounds
+[p1  343/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/prepare-gate.sh
+               :: rc=127 -- the command was not found
+[p1  344/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/prepare-oracle.py
+               :: ear_pd_REWRITE_ERROR=26
+[p1  345/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/prepare_rows.py
+               :: rc=0 with output but NO verdict token
+[p1  346/438] PASS     WITHIN-LIMITS rc=   0     0.6s  .agents/slop/probe/jit_oracle.py
+               :: msg_names_mismatch=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']
+[p1  347/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/probe/oracle_diff.py
+               :: IndexError: list index out of range
+[p1  348/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ptx-s3-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  349/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/qc_cache_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  350/438] FAIL     WITHIN-LIMITS rc=   1     0.6s  .agents/slop/qc_check.py
+               :: AttributeError: 'D' object has no attribute 'tag'
+[p1  351/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/qc_exec_oracle.py
+               :: AttributeError: 'D' object has no attribute 'tag'
+[p1  352/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/qc_oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  353/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/qcom-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  354/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rangeify-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  355/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/reach/census.py
+               :: #   loop       rows=25   ops=14  {'ADD': 1, 'AFTER': 3, 'BACKEDGE': 1, 'CALL': 1, 'CAST': 1, 'CMPLT': 1, 'CONST': 2, 'INDEX': 4, 'LOAD': 2, 'NOOP': 1,
+[p1  356/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/reach/rows.py
+               :: IndexError: list index out of range
+[p1  357/438] SKIP     WITHIN-LIMITS rc=   0    18.9s  .agents/slop/reader-fork-census.py
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  358/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/rebase-ab-oracle.py
+               :: IndexError: list index out of range
+[p1  359/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/rebase-control-new-oracles.py
+               :: TIMED OUT at 25s
+[p1  360/438] NOT-RUN  KILLED-ON-MEM rc=  -9     6.1s  .agents/slop/rebase-gate-selftest.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1035MB
+[p1  361/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/rebase-gate.py
+               :: TIMED OUT at 25s
+[p1  362/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/rebase-oracle-ops.py
+               :: ImportError: cannot import name 'capturing' from partially initialized module 'tinygrad.engine.realize' (most likely due to a circular import) (/Users
+[p1  363/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rebase-oracle-search.py
+               :: #repro_vendored_import=OK:209
+[p1  364/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rebase-oracle-spec.py
+               :: rc=0 with output but NO verdict token
+[p1  365/438] NOT-RUN  TIMED-OUT     rc=  -9    25.2s  .agents/slop/rebase-portrows.py
+               :: TIMED OUT at 25s
+[p1  366/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rebase-probe-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  367/438] FAIL     WITHIN-LIMITS rc=   1     0.4s  .agents/slop/rebase-rows-cmp.py
+               :: IndexError: list index out of range
+[p1  368/438] NOT-RUN  KILLED-ON-MEM rc=  -9     7.5s  .agents/slop/rebase-scan-oracles.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1058MB
+[p1  369/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rebase_gate_shim.py
+               :: ZERO bytes on both streams -- a refusal
+[p1  370/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/rend_gate.py
+               :: IndexError: list index out of range
+[p1  371/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/renderer_oracle.py
+               :: IndexError: list index out of range
+[p1  372/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rf-arg-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  373/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rf-ct-oracle.py
+               :: # MEASURED DEFECT, reported not fixed: after_all_invalid ends in
+[p1  374/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/rf-rows.py
+               :: rc=0 with output but NO verdict token
+[p1  375/438] NOT-RUN  KILLED-ON-MEM rc=  -9     1.8s  .agents/slop/rows-blast.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1523MB
+[p1  376/438] FAIL     WITHIN-LIMITS rc=   1     0.6s  .agents/slop/runrows.sh
+               :: child rc=1 within both bounds
+[p1  377/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/sched-oracle.py
+               :: IndexError: list index out of range
+[p1  378/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/schedule-bodies/sb-diff.py
+               :: IndexError: list index out of range
+[p1  379/438] FAIL     WITHIN-LIMITS rc=   1     1.4s  .agents/slop/schedule-bodies/sb-gate.sh
+               :: == BASE 81 rows: byte-identical (all present)
+[p1  380/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/schedule-bodies/sb-oracle.py
+               :: asd_none=ok
+[p1  381/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.7s  .agents/slop/shadowtrees/census.py
+               :: rc=0 with output but NO verdict token
+[p1  382/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.7s  .agents/slop/shadowtrees/census2.py
+               :: rc=0 with output but NO verdict token
+[p1  383/438] PASS     WITHIN-LIMITS rc=   0     0.4s  .agents/slop/spec-provenance.py
+               :: #   idx 10: own  ops=ALLREDUCE rej= name=red
+[p1  384/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/state-audit.py
+               :: TIMED OUT at 25s
+[p1  385/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.6s  .agents/slop/state-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  386/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/substrate-audit.py
+               :: ok   S1  a digest over the MUTANT is not a digest over the REFERENCE
+[p1  387/438] SKIP     WITHIN-LIMITS rc=   3     0.3s  .agents/slop/substrate-check.sh
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  388/438] SKIP     WITHIN-LIMITS rc=   3     0.6s  .agents/slop/substrate/oracle-check.sh
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  389/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/system_diff.py
+               :: 439 agree, 0 disagree, 1 rows with no oracle, 440 rows total
+[p1  390/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/tc-audit.py
+               :: rc=0 with output but NO verdict token
+[p1  391/438] PASS     WITHIN-LIMITS rc=   0     0.4s  .agents/slop/tc-diff.py
+               :: agree       : 801
+[p1  392/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/tc-gate.sh
+               :: rc=127 -- the command was not found
+[p1  393/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/tc-rows.py
+               :: IndexError: list index out of range
+[p1  394/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/tcptx-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  395/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/tensor-gate.py
+               :: rc=0 with output but NO verdict token
+[p1  396/438] NOT-RUN  KILLED-ON-MEM rc=  -9     9.5s  .agents/slop/tensor-gate.sh
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1067MB
+[p1  397/438] PASS     WITHIN-LIMITS rc=   0     3.2s  .agents/slop/tools/dm-floor-gate.sh
+               :: ok_ rows: 47 match tinygrad.helpers
+[p1  398/438] NOT-RUN  WITHIN-LIMITS rc=   0     2.9s  .agents/slop/tools/multi-check.sh
+               :: rc=0 with output but NO verdict token
+[p1  399/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/tools/renderer-oracle.py
+               :: IndexError: list index out of range
+[p1  400/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/tools/reorder-gate.py
+               :: IndexError: list index out of range
+[p1  401/438] NOT-RUN  KILLED-ON-MEM rc=  -9    11.7s  .agents/slop/tree-verdict.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1277MB
+[p1  402/438] FAIL     WITHIN-LIMITS rc=   1     1.0s  .agents/slop/tx-oracle.py
+               :: AssertionError: eval with wrong dtype UOp(Ops.EXP2, arg=None, src=(
+[p1  403/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/unobservable-census.py
+               :: TOTAL                                     17626      9  10375        24      2062    14136
+[p1  404/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/unobservable-gr-oracle.py
+               :: VERDICT: THEOREM (as far as a sweep can show) -- the mutation is
+[p1  405/438] NOT-RUN  KILLED-ON-MEM rc=  -9     2.1s  .agents/slop/unwired-audit.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1648MB
+[p1  406/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/usb-constsweep.py
+               :: KeyError: 'no evaluable node at tinygrad/runtime/support/usb.py:214:48'
+[p1  407/438] PASS     WITHIN-LIMITS rc=   0     1.1s  .agents/slop/usb-diff.py
+               :: rows bend=939 oracle=939 disagree=0 oracle_only=0 bend_only=0
+[p1  408/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/usb-oracle-arith.py
+               :: rc=0 with output but NO verdict token
+[p1  409/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/usb-oracle-run.py
+               :: usb_inventory_strerror=libusb_strerror
+[p1  410/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/usb-oracle-strings.py
+               :: usb_msg_bulk_out=bulk OUT 0x02 failed
+[p1  411/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/usb-oracle-trace.py
+               :: usb_inventory_strerror=libusb_strerror
+[p1  412/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/usb-oracle.py
+               :: usb_loglevel_n_LIBUSB_LOG_LEVEL_ERROR=LIBUSB_LOG_LEVEL_ERROR
+[p1  413/438] FAIL     WITHIN-LIMITS rc=   1     0.4s  .agents/slop/validate-gate.py
+               :: ModuleNotFoundError: No module named 'z3'
+[p1  414/438] FAIL     WITHIN-LIMITS rc=   1     0.4s  .agents/slop/validate-oracle.py
+               :: ModuleNotFoundError: No module named 'z3'
+[p1  415/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/vw-alu-census.py
+               :: ModuleNotFoundError: No module named 'z3'
+[p1  416/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/vz/viz_oracle.py
+               :: op_color.NOOP=#ffffff|#ffffff
+[p1  417/438] FAIL     WITHIN-LIMITS rc=   1     1.9s  .agents/slop/vz/vz_gate.py
+               :: -fmt_colored.off=red
+[p1  418/438] FAIL     WITHIN-LIMITS rc=   1     0.7s  .agents/slop/wallrule/wallcheck.py
+               :: id    verdict       truth        witness / how
+[p1  419/438] PASS     WITHIN-LIMITS rc=   0     0.4s  .agents/slop/webgpu_call_oracle.py
+               :: begin pass write ix = 0    <- ops_webgpu.py:116 beginningOfPassWriteIndex=0
+[p1  420/438] FAIL     WITHIN-LIMITS rc=   1     1.4s  .agents/slop/wgsl-cfo-check.py
+               :: OK   _render_dtype uchar global           got=var                    want=var
+[p1  421/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/wgsl-oracle.py
+               :: RuntimeError: can't call to_program on Ops.ADD
+[p1  422/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/wgsl-rows.py
+               :: rc=0 with output but NO verdict token
+[p1  423/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/wip/cstyle_oracle.py
+               :: KeyError: dtypes.fp8e4m3
+[p1  424/438] NOT-RUN  KILLED-ON-MEM rc=  -9     3.5s  .agents/slop/wip/gate.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1541MB
+[p1  425/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/wip/optprobe/diff.py
+               :: IndexError: list index out of range
+[p1  426/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/wip/optprobe/verdict.py
+               :: IndexError: list index out of range
+[p1  427/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/wire-rows.py
+               :: ZERO bytes on both streams -- a refusal
+[p1  428/438] NOT-RUN  TIMED-OUT     rc=  -9    25.2s  .agents/slop/wire-sweep.py
+               :: TIMED OUT at 25s
+[p1  429/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/wk-f32-gate.sh
+               :: rc=127 -- the command was not found
+[p1  430/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/wk-f32-rows.py
+               :: wrote .agents/slop/wk-f32-table.txt and .agents/slop/wk-f32.bend with 18 rows
+[p1  431/438] FAIL     WITHIN-LIMITS rc=   1     0.6s  .agents/slop/x-stgate.py
+               :: IndexError: list index out of range
+[p1  432/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/x-stgate2.py
+               :: lsd_reshape=Shape mismatch in layer `a`: Expected shape (2, 3), but found (3, 2) in state dict.
+[p1  433/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/x86/x86-oracle.py
+               :: render.0-1048576.0000f0ff = [True]   py=[True]761 rows
+[p1  434/438] FAIL     WITHIN-LIMITS rc=   1     1.4s  .agents/slop/x86/x86-sweep.py
+               :: AssertionError: baseline differs from CPython on 1 rows
+[p1  435/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/x86/x86_oracle.py
+               :: render.0-1048576.0000f0ff = [True]   py=[True]761 rows
+[p1  436/438] FAIL     WITHIN-LIMITS rc=   1     1.5s  .agents/slop/x86/x86_sweep.py
+               :: AssertionError: baseline differs from CPython on 1 rows
+[p1  437/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/xb1/hdr-audit.py
+               :: ZERO bytes on both streams -- a refusal
+[p1  438/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/zero-audit.py
+               :: 0 rows is its REQUIRED outcome, not a blind spot.
+
+# PASS 2: 184 NOT-RUN row(s) re-run at 180s/1024MB, still one at a time
+[p2    1/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ag-abi-oracle.py
+               :: rc=0 with output but NO verdict token
+[p2    2/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ag-libclang-rows.py
+               :: rc=0 with output but NO verdict token
+[p2    3/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/amdev_gate.py
+               :: rc=0 with output but NO verdict token
+[p2    4/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/amdev_oracle.py
+               :: rc=0 with output but NO verdict token
+[p2    5/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/backward/run-oracle.sh
+               :: rc=0 with output but NO verdict token
+[p2    6/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/beautiful-mnist-gate.py
+               :: rc=0 with output but NO verdict token
+[p2    7/184] NOT-RUN  KILLED-ON-MEM rc=  -9    14.2s  .agents/slop/beautiful-mnist-gate.sh
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1185MB
+[p2    8/184] NOT-RUN  KILLED-ON-MEM rc=  -9     2.9s  .agents/slop/bend_e2e.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1069MB
+[p2    9/184] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/blob-intern-gate.sh
+               :: rc=127 -- the command was not found
+[p2   10/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/blob-intern-oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   11/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/blob-verify-independent.py
+               :: rc=0 with output but NO verdict token
+[p2   12/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/bnxt_oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   13/184] PASS     WITHIN-LIMITS rc=   0    74.3s  .agents/slop/bnxt_sweep.py
+               :: BNXT_DEBUG                                                0 +1 ->   1 rows  (c_BNXT_DEBUG)
+[p2   14/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/c2d-refusal-rows.py
+               :: rc=0 with output but NO verdict token
+[p2   15/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/cidsweep/cidcensus.py
+               :: rc=0 with output but NO verdict token
+[p2   16/184] NOT-RUN  WITHIN-LIMITS rc=   0    13.5s  .agents/slop/clangfill/gate.py
+               :: rc=0 with output but NO verdict token
+[p2   17/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.4s  .agents/slop/clangshim/oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   18/184] NOT-RUN  KILLED-ON-MEM rc=  -9    35.4s  .agents/slop/coldness/census.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1126MB
+[p2   19/184] NOT-RUN  KILLED-ON-MEM rc=  -9     9.4s  .agents/slop/coldness/sweep.sh
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1145MB
+[p2   20/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/commentpass/audit.py
+               :: rc=0 with output but NO verdict token
+[p2   21/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/cshape/cs-rows.py
+               :: rc=0 with output but NO verdict token
+[p2   22/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.7s  .agents/slop/cstyle-live/cstyle-oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   23/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/cstyle2/preamble-oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   24/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/dc-oracle.py
+               :: rc=0 with output but NO verdict token
+[p2   25/184] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/dd-bandoracle.py
+               :: rc=0 with output but NO verdict token

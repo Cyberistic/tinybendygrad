@@ -1,0 +1,5 @@
+== 1/4 oracle (CPython tinygrad, DEV=CPU)
+PLANT stub: stage1 oracle
+== 2/4 port (pure bend, no GPU)
+bend: 25 rows (attempt 1)
+== 3/4 gpu (real WebGPU adapter, headless Chrome)

@@ -1,1 +1,1 @@
-commute BYTE-IDENTICAL (870 bytes both sides)
+commute NOT COMPARED: py=870 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)

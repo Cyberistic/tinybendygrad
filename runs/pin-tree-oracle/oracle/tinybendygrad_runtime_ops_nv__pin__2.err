@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv-oracle.py", line 149, in <module>
-    addr = UOp.const(0x7fff0000, dtypes.u64)
-                                 ^^^^^^^^^^
-AttributeError: 'DTypes' object has no attribute 'u64'

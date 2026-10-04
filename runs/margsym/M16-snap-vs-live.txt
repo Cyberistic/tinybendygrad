@@ -1,4 +1,0 @@
-uop/fold.bend  snap=e372ca226461fe2295b49a9990db0165 live=0436661fcd65b633c04d6628140fa6bf  ** DIFFERS **
-uop/ops.bend  snap=d61edaf9f970f6b1fe932803f5fab528 live=d61edaf9f970f6b1fe932803f5fab528  SAME
-../helpers.bend  snap=e363013d911aab4eba6a7ce6f924b780 live=e363013d911aab4eba6a7ce6f924b780  SAME
-../LAWS/spec.bend  snap=5b3c3109188cc315d0e6dcb06e063bc2 live=5b3c3109188cc315d0e6dcb06e063bc2  SAME

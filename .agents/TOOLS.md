@@ -1292,3 +1292,88 @@ group are literals on both sides. See NV-2 in the notes.
   + 1 `DUPLICATE`) and answers **identically** under `python3` and `.venv/bin/python`.
 - Report: **`.agents/slop/MMFOLD.md`**. Rules `M-1`..`M-5` at the END of
   `.agents/slop/notes/bend2-constraints.md` (24794+).
+
+## `CSH` (2026-10-04/05) — `cshape`'s `except` arm, the 4 blocked ops
+
+- **`.venv/bin/python .agents/slop/cshape/cs-arms.py`** — every py-side node of the 25
+  corpus graphs PLUS the pattern IR (316 nodes): what `.shape` raises and the EXACT
+  `tinygrad/.../ops.py:LINE` that raised it, then for each candidate widening the nodes
+  rendered, the ops bought, and **every distinct (type, site, message) the arm admits**.
+  Needs `env -u PYTHONPATH LC_ALL=C DEV=CPU`; imports the LIVE `graphcmp.py`, never a copy.
+  → `arms-run0.txt`.
+- **`.venv/bin/python .agents/slop/cshape/cs-opshape.py`** — the same census over all
+  **77 ops at two arities**, which is where a widening's COST lives: `except
+  AssertionError` admits 4 raising sites and only 1 is about shapes. Also checks the
+  `ops.py:331-338` no-shape list against what ops.py:455 actually answers (10 transcribed,
+  **13 measured**). → `opshape-run0.txt`.
+- **`.venv/bin/python .agents/slop/cshape/cs-androot.py`** — calls upstream's `_get_clause`
+  for **18 `UPat` shapes, one per clause branch**, and counts roots. `UPat.__init__` takes
+  `dtype=`/`tag=`/`allow_any_len=`/`src=[...]`, NOT `match_dtype=`/`match_tag=`/
+  `strict_length=`. → `androot-run0.txt`.
+- **`./bin/bend .agents/slop/cshape/cs-patir.bend`** and **`cs-plantir.bend`** — the PORT
+  side, built with `O.UOp.new` and the port's own `Arg` constructors, rendered by
+  **`import ./../graphcmp.bend as GC`** so the rows are the differ's own. Relative depth is
+  `../../../tinybendygrad`. `cs-plantir.bend`'s four SEPARATE graphs (Q1 `AND` over shaped
+  consts / Q2 `CUSTOMI` no srcs / Q3 `CUSTOM` no srcs / Q4 `PYLITERAL` no srcs) are what
+  separate "the port has no rule" from "the port refuses the same assert" — one graph cannot,
+  because one unsettled node looks like both.
+- **`.venv/bin/python .agents/slop/cshape/cs-plant.py`** — DISARM FIRST (census twice with a
+  byte comparison + the live md5 pinned), then the blast radius of each arm on all 312 rows
+  (diffed by whole `name=value` LINE), then PLANT-A (ops.py:438, the attribution between
+  the unscoped and the ops.py:444-scoped arm — ONE predicate apart), PLANT-B (ops.py:444),
+  PLANT-C (the pattern IR both sides, field-by-field, with `?=0/3` and a VERDICT), the
+  per-row ledger by the differ's own `G.LEDGER` + `G.at_value`, and the corpus
+  before/after against 77 with the split. Reads the bend transcript from
+  `patir-bend.txt` and MUST skip the `bend 2.0.35 is available` line. → `plant-run0.txt`.
+- Report: **`.agents/slop/CSHAPE.md`**. Rules `CSH-1..9` at the END of
+  `.agents/slop/notes/bend2-constraints.md`. **Nothing committed; nothing outside
+  `.agents/slop/cshape/` edited — `cshape` lives in `graphcmp.py`, which is another unit's,
+  so every widening is a monkeypatch in this unit's own process.**
+
+## `e2e-js-lane` — the JS dtype lane as `e2e.sh` stage 8
+
+- **`.venv/bin/python .agents/slop/jstage/jsstage.py`** — the only instrument in this unit.
+  `--tree DIR` measures `DIR/tinybendygrad` instead of the repo's (a READER of the
+  substrate, not a way to plant one; it exists because `dtype.bend` was mid-edit). Emits
+  ONE `.bend` with `bend -o` and runs it with **node** — `bend -o` emits JS, it does not
+  build it; the C lane's build is `cc`. Exit **0** pass, **1** fail, **3** refuse.
+- **Node is the runner, `node` v26.8.1.** `runtime/dtype.js` is a real lane: its text is
+  embedded verbatim in the emitted JS (`comp.ts:3385` `effect_srcs(fl, ".js", …)`), so
+  `grep -c asIntN seam.js` = 1 is how you confirm the lane's code is in the binary.
+- **`.venv/bin/python`, never `python3`** — the editable tinygrad install exists only in
+  `.venv` (3.12). PATH's `python3` has no `.pth` and would import a different tree.
+- **`python3` for the shell-level probing only.** Two traps this unit hit: **zsh does not
+  word-split an unquoted `$var`**, so `"$PY" gate.py $FLAGS` passed `--tree /path` as one
+  argument and argparse answered `rc 2`; and **`$(basename …)` inside `echo … rc=$?` resets
+  `$?`**, so a verification loop over five substrates printed `rc=0` for all of them.
+- **`IO.pure(TYPE, value)`** — the first argument is the VALUE type, not a morphism
+  (`IO.pure(Unit, e)` answers `expected : Unit, observed : F32`).
+- **A `do IO<Unit>` block binds an `IO` value with `<-` and will NOT bind a pure one**;
+  a pure `Dt.*` must be lifted. `dtype.bend` moved `Dt.bf16`/`Dt.fp16`/`Dt.fp8_to`
+  between those two shapes mid-session, so the emitter READS the declaration
+  (`SEAM_DECL`) instead of assuming one.
+- **`BigInt.asIntN(64, x)` leaves a 32-bit `x` alone** — the sign lives in the HIGH word,
+  so `i64_of_hi_lo(0, 4294967288)` is `+4294967288`, not `-8`.
+- **`F32.show` prints SEVEN significant digits** (`1.0996094` where CPython prints
+  `1.099609375`); normalise through an f32 round-trip before counting, or the count
+  absorbs format noise.
+- Report: **`.agents/slop/JSTAGE.md`**. Rules `JS8-1..7`. **Nothing committed; no `.bend`,
+  no `runtime/*.c`, no `runtime/dtype.js` edited; every mutation on a `$TMPDIR` copy.**
+- **Canonical float spelling: `.agents/slop/norm/canon.py`** --
+  `canon(value, width)` for a value or a decimal spelling, `canon_bits(pattern,
+  width)` for an IEEE-754 pattern.  The WIDTH IS AN ARGUMENT, so a gate cannot
+  compare at the wrong width by accident, and `canon` REFUSES a NaN spelling
+  (`f32:?nan`) rather than packing it as a payload it never carried.  Enforced by
+  `.agents/slop/norm/lint_norm.py` (exit 1 on a NEW non-round-tripping normaliser;
+  the known ones are a keyed baseline with a reason each).  Reproduce:
+  `python3 .agents/slop/norm/canon.selftest.py`,
+  `python3 .agents/slop/norm/gate_norm.py`, `zsh .agents/slop/norm/lint_demo.sh`.
+  Report: **`.agents/slop/NORM.md`**.  Rules `NORM-1..7`.  **Nothing committed; no
+  `.bend`, no `runtime/**`, no `tinybendygrad/**` edited.**
+
+### Coldness
+
+| tool | why |
+| --- | --- |
+| `zsh .agents/slop/coldness/sweep.sh` | **the only memory-bounded full sweep.** Every `.bend` file's `--check-only`, three at a time, each through `checks/bounded.py --seconds 900 --mb 2048`, raw output kept per file in `coldness/raw/`. It exists because `substrate-check.sh:200` runs bend under `perl -e 'alarm 300; exec @ARGV'` — a time bound and **no memory bound** — which is the idiom that crashed this machine twice on 2026-10-05. `-n` is the safe way to use that guard: it `continue`s at line 193 before any compiler call. |
+| `.venv/bin/python .agents/slop/coldness/coldness.py` | joins the compiler verdicts onto the import graph and prints `TABLE.tsv`: per file, imports / importers / reaches_live / imports_nothing / reached_by_nothing / defs / laws / driven / verdict / shape / symbol / cause_owner, then the cause collapse. **The number to quote is in `COLDNESS.md` §0 and it is 0 cold files**: nothing imports a file it cannot also run, and the 9 that satisfy both are the empty `__init__.bend` markers. Report: **`.agents/slop/coldness/COLDNESS.md`**. Rules `CLD-1..3`. |

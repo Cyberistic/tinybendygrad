@@ -1,5 +1,0 @@
-label=disarm: fixtures restored
-inputs=7
-exit=oracle:1 port:1
-stdout=IDENTICAL (24 lines vs 24)
-verdict+denominator lines=IDENTICAL (20 each)

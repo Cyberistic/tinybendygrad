@@ -1,0 +1,116 @@
+=== 0. TABLE KEYS, read off the PATTERNS and off pdict ===
+ct[0] root=INDEX rej=[] n_op=1
+ct[1] root=AFTER rej=[] n_op=1
+ct[2] root=END rej=[] n_op=1
+ct[3] root=STAGE rej=[] n_op=1
+ct[4] root=STAGE rej=['INDEX'] n_op=1
+ct[5] root=STAGE rej=[] n_op=1
+ct[6] root=INDEX rej=[] n_op=1
+ct[7] root=INDEX rej=['AFTER'] n_op=1
+ct[8] root=INDEX rej=['MSTACK'] n_op=1
+pdict: {'INDEX': [0, 6, 7, 8], 'AFTER': [1], 'END': [2], 'STAGE': [3, 4, 5]}
+
+--- pm_mops alone (prepare.py:76-83), the three FOREIGN tags ---
+mops[0] root=INDEX n_op=1 child_src0_op=(Ops.RESHAPE, Ops.PERMUTE, Ops.EXPAND, Ops.PAD, Ops.FLIP, Ops.SHRINK)
+mops[1] root=AFTER n_op=1 child_src0_op=(Ops.INDEX, Ops.SHRINK, Ops.RESHAPE, Ops.PERMUTE, Ops.EXPAND, Ops.PAD, Ops.FLIP)
+mops[2] root=END n_op=1 child_src0_op=(Ops.RESHAPE, Ops.PERMUTE, Ops.EXPAND, Ops.PAD, Ops.FLIP, Ops.SHRINK)
+mops root-set sizes: [1, 1, 1]
+GroupOp.Movement size: {Ops.RESHAPE, Ops.PERMUTE, Ops.EXPAND, Ops.PAD, Ops.FLIP, Ops.SHRINK}
+
+=== 1. ct_4 -- UPat(Ops.INDEX,name='idx').f(Ops.STAGE,name='b2') ===
+python source: def remove_noop_bufferize(idx,b2):
+   if idx.src[1:] != b2.src[1:]: return None
+   return idx.src[0].shrink(tuple((0,s) for s in b2.shape)) if b2.shape else idx.src[0]
+
+ct4A_stg_of_ix: in=STAGE/nsrc2/srcops=[INDEX,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag4_nbind=1 first_tag=3 out=BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4) claim_n=2
+ct4B_ix_of_stg: in=INDEX/nsrc2/srcops=[STAGE,RANGE]/arg=None tag4_nbind=0 first_tag=None out=None claim_n=0
+ct4C_stg_of_ix_b5: in=STAGE/nsrc2/srcops=[INDEX,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag4_nbind=1 first_tag=3 out=SHRINK/nsrc3/srcops=[BUFFER,CONST,CONST]/arg=None claim_n=2
+ct4D_stg_tail_diff: in=STAGE/nsrc2/srcops=[INDEX,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag4_nbind=1 first_tag=3 out=None claim_n=2
+ct4E_stg_no_rng: in=STAGE/nsrc1/srcops=[INDEX]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag4_nbind=1 first_tag=3 out=BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4) claim_n=2
+ct4_b4_bare: in=BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4) tag4_nbind=0 first_tag=None out=None claim_n=0
+
+-- the body called DIRECTLY, so the pattern and the body are separated --
+ct4A_fn: idx.srcops=[BUFFER,RANGE] b2.srcops=[INDEX,RANGE] b2.shape=(4,) tails_eq=1 out=BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4)
+ct4C_fn: idx.srcops=[BUFFER,RANGE] b2.srcops=[INDEX,RANGE] b2.shape=(4,) tails_eq=1 out=SHRINK/nsrc3/srcops=[BUFFER,CONST,CONST]/arg=None
+ct4D_fn: idx.srcops=[BUFFER,RANGE] b2.srcops=[INDEX,RANGE] b2.shape=(4,) tails_eq=0 out=None
+ct4E_fn: idx.srcops=[BUFFER] b2.srcops=[INDEX] b2.shape=(4,) tails_eq=1 out=BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4)
+
+=== 2. ct_5 -- UPat.cvar('c').or_casted().f(Ops.STAGE,name='b') ===
+python source: lambda c,b: b.const_like(c.val)
+
+ct5_stg_of_const: in=STAGE/nsrc2/srcops=[CONST,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag5_nbind=1 first_tag=3 out=EXPAND/nsrc2/srcops=[CONST,CONST]/arg=None
+ct5_stg_of_cast: in=STAGE/nsrc2/srcops=[CAST,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag5_nbind=1 first_tag=3 out=EXPAND/nsrc2/srcops=[CAST,CONST]/arg=None
+ct5_stg_of_buf: in=STAGE/nsrc2/srcops=[BUFFER,RANGE]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag5_nbind=0 first_tag=3 out=None
+ct5_stg_of_const_norng: in=STAGE/nsrc1/srcops=[CONST]/arg=BufferizeOpts(device=None, addrspace=AddrSpace.GLOBAL, removable=False) tag5_nbind=1 first_tag=3 out=CONST/nsrc0/srcops=[]/arg=4
+-- the body called DIRECTLY --
+ct5_fn_const: c=CONST/nsrc0/srcops=[]/arg=4 c.val=4 out=EXPAND/nsrc2/srcops=[CONST,CONST]/arg=None dtype=dtypes.weakint
+ct5_fn_cast: c=CAST/nsrc1/srcops=[CONST]/arg=dtypes.half c.val=- out=EXPAND/nsrc2/srcops=[CAST,CONST]/arg=None dtype=dtypes.half
+ct5_fn_cast_bare: c=CAST/nsrc1/srcops=[CONST]/arg=dtypes.half c.val=- out=EXPAND/nsrc2/srcops=[CONST,CONST]/arg=None dtype=dtypes.weakint
+
+=== 3. ct_8 -- UPat(Ops.MSTACK,src=(UPat.var('s'),),allow_any_len=True).f(Ops.INDEX,name='idx') ===
+python source: lambda s,idx: idx.replace(src=(s,)+idx.src[1:]) if s.device is None else None
+
+ct8_ix_ms_devless: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None tag8_nbind=1 first_tag=8 out=INDEX/nsrc1/srcops=[CONST]/arg=None is_self=0
+ct8_ix_ms_dev: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None tag8_nbind=1 first_tag=8 out=None is_self=0
+ct8_ix_ms_bufnodev: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None tag8_nbind=1 first_tag=8 out=INDEX/nsrc1/srcops=[BUFFER]/arg=None is_self=0
+ct8_ix_ms_rng: in=INDEX/nsrc2/srcops=[MSTACK,RANGE]/arg=None tag8_nbind=1 first_tag=8 out=INDEX/nsrc2/srcops=[CONST,RANGE]/arg=None is_self=0
+ct8_bare_mstack: in=MSTACK/nsrc2/srcops=[CONST,CONST]/arg=None tag8_nbind=0 first_tag=None out=None is_self=0
+-- s.device, which is the ONLY thing the body tests --
+ct8_devless_s: op=CONST device=None device_is_none=1
+ct8_dev_s: op=BUFFER device='CPU' device_is_none=0
+ct8_bufnodev_s: op=BUFFER device=None device_is_none=1
+-- the body called DIRECTLY --
+ct8_fn_devless: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None s=CONST/nsrc0/srcops=[]/arg=4 out=INDEX/nsrc1/srcops=[CONST]/arg=None is_self=0
+ct8_fn_dev: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None s=BUFFER/nsrc0/srcops=[]/arg=ParamArg(2, dtypes.int, 4, device='CPU') out=None is_self=0
+ct8_fn_rng: in=INDEX/nsrc2/srcops=[MSTACK,RANGE]/arg=None s=CONST/nsrc0/srcops=[]/arg=4 out=INDEX/nsrc2/srcops=[CONST,RANGE]/arg=None is_self=0
+
+=== 4. ct_7 -- UPat(Ops.INDEX,src=(UPat(Ops.AFTER,name='after'),),name='idx') ===
+python source: lambda idx,after: idx.const_like(Invalid) if after_all_invalid(after) else None
+
+ct7_ix_after: in=INDEX/nsrc1/srcops=[AFTER]/arg=None tag7_nbind=1 first_tag=7 out=RAISED AttributeError: 'int' object has no attribute 'eq'
+ct7_ix_after_rng: in=INDEX/nsrc1/srcops=[AFTER]/arg=None tag7_nbind=1 first_tag=7 out=None
+ct7_bare_after: in=AFTER/nsrc2/srcops=[BUFFER,END]/arg=None tag7_nbind=0 first_tag=None out=None
+ct7_fn(ct7_after_norng) RAISED AttributeError: 'int' object has no attribute 'eq'
+ct7_fn(ct7_after_rng) -> False
+# MEASURED DEFECT, reported not fixed: after_all_invalid ends in
+# `resolve(cast(UOp, prod(r.src[0] for r in s.ended_ranges)).eq(buf.numel()), False)`
+# (rangeify.py:113) and `prod()` of an EMPTY ended_ranges is the python int 1,
+# so `.eq` on it raises AttributeError.  A CAST/expand-only END has no RANGE, so
+# an all-invalid AFTER with no ranges CRASHES the rule rather than answering.
+ct7_empty_ended_ranges_prod = 1 int
+ct7_buf_numel = 4 int
+
+=== 6. THE ARG GATE, on the node ct_8 REBUILDS ===
+the old gate could not see an arg because every node a mp_replace rule
+reaches was given ANone.  `UOp` does NOT type-check arg against op, so an
+INDEX may carry an arbitrary arg; prepare.py:70 does exactly that with
+`arg=idx.arg`.  Probed: which args an INDEX accepts, and which SURVIVE the
+ct_8 rebuild.
+
+ct8arg_none: in=INDEX/nsrc1/srcops=[MSTACK]/arg=None out=INDEX/nsrc1/srcops=[CONST]/arg=None arg_is_own=1 arg_is_none=1 claim_n=1 first_tag=8
+ct8arg_range: in=INDEX/nsrc1/srcops=[MSTACK]/arg=(7, AxisType.LOOP) out=INDEX/nsrc1/srcops=[CONST]/arg=(7, AxisType.LOOP) arg_is_own=1 arg_is_none=0 claim_n=1 first_tag=8
+ct8arg_kinfo: in=INDEX/nsrc1/srcops=[MSTACK]/arg=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0) out=INDEX/nsrc1/srcops=[CONST]/arg=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0) arg_is_own=1 arg_is_none=0 claim_n=1 first_tag=8
+ct8arg_parmarg: in=INDEX/nsrc1/srcops=[MSTACK]/arg=ParamArg(0, dtypes.int, 4) out=INDEX/nsrc1/srcops=[CONST]/arg=ParamArg(0, dtypes.int, 4) arg_is_own=1 arg_is_none=0 claim_n=1 first_tag=8
+ct8arg_int: in=INDEX/nsrc1/srcops=[MSTACK]/arg=3 out=INDEX/nsrc1/srcops=[CONST]/arg=3 arg_is_own=1 arg_is_none=0 claim_n=1 first_tag=8
+ct8arg_tup: in=INDEX/nsrc1/srcops=[MSTACK]/arg=(0, 1) out=INDEX/nsrc1/srcops=[CONST]/arg=(0, 1) arg_is_own=1 arg_is_none=0 claim_n=1 first_tag=8
+
+ct8R_ix_arg_range: out=INDEX/nsrc1/srcops=[CONST]/arg=(7, AxisType.LOOP) arg_is_own_range=1 arg_is_none=0
+ct8N_ix_arg_none: out=INDEX/nsrc1/srcops=[CONST]/arg=None arg_is_own_range=0 arg_is_none=1
+
+=== 7. ct_8 WITH RANGES, the src[1:] half -- the rebuild is a real rebuild ===
+ct8R_ix_arg_range_r0: in=INDEX/nsrc2/srcops=[MSTACK,RANGE]/arg=(7, AxisType.LOOP) out=INDEX/nsrc2/srcops=[CONST,RANGE]/arg=(7, AxisType.LOOP) is_self=0
+ct8D_ix_dev_arg_range: in=INDEX/nsrc2/srcops=[MSTACK,RANGE]/arg=(7, AxisType.LOOP) out=None is_self=0
+
+=== 8. THE DISCRIMINATING PAIRS, as the gate will name them ===
+# every pair below differs ONLY in which op is inner vs outer.
+ct4A_claim = 2   ct4A_out = BUFFER/nsrc0/srcops=[]/arg=ParamArg(0, dtypes.int, 4)
+ct4B_claim = 0   ct4B_out = None
+ct5_const_claim = 2 ct5_const_out = EXPAND/nsrc2/srcops=[CONST,CONST]/arg=None
+ct5_cast_claim = 2 ct5_cast_out = EXPAND/nsrc2/srcops=[CAST,CONST]/arg=None
+ct5_buf_claim = 1 ct5_buf_out = None
+ct8_devless_claim = 1 ct8_devless_out = INDEX/nsrc1/srcops=[CONST]/arg=None
+ct8_dev_claim = 1 ct8_dev_out = None
+
+=== 9. CT7B: the reject set is not the claim ===
+ct7b_ix_range_after: in=INDEX/nsrc2/srcops=[RANGE,AFTER]/arg=None ler={AFTER,RANGE} rej=['AFTER'] tag7_nbind=0 claim_n=0 rewrite=None
+ct7a_ix_after:      ler={AFTER} tag7_nbind=1 claim_n=1

@@ -1,15 +1,15 @@
 graphs=16
-graphs-agree=14
-graphs-disagree=2
-byte-identical=14
-not-comparable=0
-stable-pairs=5 of 5
-stable-failed=0 of 5
+graphs-agree=0
+graphs-disagree=0
+byte-identical=0
+not-comparable=16
+stable-pairs=0 of 5
+stable-failed=5 of 5
 stable-differ=0 of 5
-plants-disagree=7 of 7
-cross=1 of 1
-selfcheck=# SELFCHECK: OK
+plants-disagree=0 of 7
+cross=0 of 1
+selfcheck=rc=1
 conflations=4 of 4
-controls=5 of 5
-oracle-selfcheck=# ORACLE SELFCHECK: OK
-census-rc=rc=0
+controls=0 of 5
+oracle-selfcheck=
+census-rc=rc=1
