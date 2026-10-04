@@ -71,6 +71,18 @@ def _check_vocabulary():
 _check_vocabulary()
 
 
+class PatchNotApplied(Exception):
+    """A patch did not apply, and this harness refuses to go on as if it had.
+
+    NOT an AssertionError.  Both `pipe` and `fail` REFUSE -- they decline to
+    build a row or write a record -- which is a control-flow decision, not a
+    claim that turned out false.  Sharing AssertionError with real assertions
+    means one `except AssertionError` anywhere upstream silently converts a
+    refusal into a failed test, and the table still gets written.  The two must
+    stay distinguishable to whoever catches them.
+    """
+
+
 def not_applied(note=""):
     """The marker for a patch that never landed.
 
@@ -78,7 +90,8 @@ def not_applied(note=""):
     because it starts with `PATCH`.  That is the whole point and it is why the
     marker may not be shortened to a numeral or a status letter.
     """
-    assert not MARKER.isdigit(), "a digit marker is the defect, not the fix"
+    if MARKER.isdigit():
+        raise PatchNotApplied("a digit marker is the defect, not the fix")
     return MARKER if not note else "%s: %s" % (MARKER, note)
 
 
@@ -92,7 +105,7 @@ def pipe(cells, width):
     the drift was visible in the first place.
     """
     if len(cells) != width:
-        raise AssertionError(
+        raise PatchNotApplied(
             "patch_not_apply.pipe: %d cells, the table's rows have %d.  A row of "
             "a different width moves the count into another column -- that is "
             "how `ops-python-mutations.txt:7` read `(pattern not found)` as a "
@@ -109,4 +122,4 @@ def fail(note=""):
     which strips `assert` -- and a stale anchor is precisely the thing that must
     not be optimisable away.
     """
-    raise AssertionError(not_applied(note))
+    raise PatchNotApplied(not_applied(note))
