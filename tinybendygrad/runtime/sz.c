@@ -9,6 +9,22 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+// ONE GUARD PER EFFECT, THE WAY runtime/dtype.c DOES IT, AND FOR A REASON THAT
+// IS BIGGER THAN A REGISTRATION. `CID(x)` is not a macro and not C: bend
+// substitutes it AT EMIT TIME for an id it allocates ON DEMAND, so a build that
+// never reaches an effect never `#define`s its id, and the identifier reaches cc
+// undefined. MEASURED, both directions, on two probes in .agents/slop/szlane:
+//   probe-isdir.bend reaches Sz.is_dir alone -> `CID_..._SZ_READ_DIR`,
+//     `CID_NIL` and `CID_CON` all undeclared, cc rc 1
+//   probe-readdir.bend reaches Sz.read_dir alone -> `CID_..._SZ_IS_DIR`
+//     undeclared, cc rc 1
+// SO THE GUARD IS NOT ONLY AROUND `io_eff`. `sz_read_dir_pack` builds a List and
+// names `CID(Nil)`/`CID(Con)`, which are demand-allocated the same way, and
+// `sz_read_dir_run` calls that packer -- so the group that implements ONE effect
+// is the unit that goes inside its guard, or a guarded-out registration leaves an
+// undeclared function behind it.
+#ifdef CID(Sz.read_dir)
+
 // read_dir: the names in `path` except "." and "..", which is what os.walk
 // leaves out of both `filenames` and `dirnames`. A directory that cannot be
 // opened is no names, which is what os.walk answers with one.
@@ -71,6 +87,10 @@ static void __attribute__((constructor)) sz_read_dir_use(void) {
   io_eff(CID(Sz.read_dir), sz_read_dir_run, 0);
 }
 
+#endif
+
+#ifdef CID(Sz.is_dir)
+
 // is_dir: 1 for a directory, 0 for anything else. An lstat that fails is 0,
 // which is what os.path.isdir answers and what os.walk's `entry.is_dir() except
 // OSError: False` asks for.
@@ -95,3 +115,5 @@ Term sz_is_dir_run(Env e, Term* f, IoWork* w) {
 static void __attribute__((constructor)) sz_is_dir_use(void) {
   io_eff(CID(Sz.is_dir), sz_is_dir_run, 0);
 }
+
+#endif
