@@ -248,6 +248,7 @@ and never a verdict (trap 4 above).
 from __future__ import annotations
 
 import argparse
+import collections
 import enum
 import hashlib
 import os
@@ -1053,14 +1054,36 @@ def plant_dtype(ast: UOp) -> UOp:
 
 
 def plant_srcswap(ast: UOp) -> UOp:
-  """Swap the two children of the MUL. MUL is commutative in tinygrad, so this is a
-  SEMANTIC no-op -- exactly why a differ that only counted nodes would miss it. Nothing
-  else is touched, so the report must be the reordered pair ALONE and the pair's own
-  fields must come out clean: `--plant srcswap` failing to flag the reordered pair's own
-  fields is the half of this deliverable that a count-based differ cannot express."""
-  def swap(n: UOp) -> UOp:
-    return UOp(Ops.MUL, src=(n.src[1], n.src[0])) if n.op is Ops.MUL else n
-  return _rebuild_with(ast, Ops.MUL, swap)
+  """Swap the two children of a commutative node. MUL is commutative in tinygrad, so on
+  the matmul this is a SEMANTIC no-op -- exactly why a differ that only counted nodes
+  would miss it. Nothing else is touched, so the report must be the reordered pair ALONE
+  and the pair's own fields must come out clean: `--plant srcswap` failing to flag the
+  reordered pair's own fields is the half of this deliverable that a count-based differ
+  cannot express.
+
+  WHICH commutative node, and why it is measured rather than hardcoded to `MUL`: the plant
+  now runs on `commute` too, and `--equiv`'s whole claim is about the commutative set, so a
+  single MUL swap measured `--equiv` on ONE of the eight ops. MEASURED over the corpus, the
+  op chosen is the FIRST commutative op in toposort order whose node count is exactly 1 --
+  MUL on `matmul` (unchanged behaviour), ADD on `group`, ADD on `commute`, and MUL nowhere
+  else. The "count is exactly 1" test is what keeps the plant from reordering five RESHAPEs
+  in some future graph: a multi-node op would move several nodes at once and the report
+  would no longer be attributable to one pair. It RAISES if there is none, because a plant
+  that quietly finds nothing is a plant that reports AGREE for its own reasons."""
+  # `COMM` holds BARE NAMES (`o.name`), because `Node.op` is the wire text -- so the
+  # membership test here is on `n.op.name` and not on `n.op`. MEASURED: `Ops.ADD in COMM`
+  # is `False`, and `Ops.ADD == "ADD"` is `False` too, so the wrong spelling here answers
+  # an EMPTY list and the plant reports "no commutative op" on a graph built out of six.
+  counts = collections.Counter(n.op.name for n in ast.toposort() if n.op.name in COMM)
+  if not counts:
+    raise SystemExit(f"plant srcswap: no commutative node in the graph at all; COMM has "
+                     f"{len(COMM)} ops and none of them is here")
+  singles = [o for o, c in counts.items() if c == 1]
+  if not singles:
+    raise SystemExit(f"plant srcswap: no commutative op occurs exactly once in "
+                     f"{dict(counts)}")
+  op = next(n.op for n in ast.toposort() if n.op.name in singles)
+  return _rebuild_with(ast, op, lambda n: UOp(op, src=(n.src[1], n.src[0])))
 
 
 def plant_shape(ast: UOp) -> UOp:

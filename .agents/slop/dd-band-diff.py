@@ -33,6 +33,28 @@ rows = rebase_gate.rows
 
 MIN_ROWS = int(os.environ.get("MIN_ROWS", "150"))
 
+# ⚠ `rows` IS `rebase-gate.py:rows()`, AND EVERY COUNT THIS FILE PRINTS IS A FLOOR.
+# That reader is the shared one and nine tools call it, so this is worth naming at the point
+# of use rather than only in its own header. MEASURED on this tree by
+# `.agents/slop/formblind-audit.py --corpus`: across the 771 `.txt` lanes that reader DOES
+# read as rows, it cannot read 3,194 of their lines --
+#
+#     SINGLE-SPACE   2989   a lane that prints `name value` (the gap must be TWO spaces)
+#     TAB              186   refused on purpose: a TSV table's first column is not a row name
+#     EQ-INSIDE-GAP    19   a two-space row whose VALUE carries `=`, which the `=` branch
+#                           claims first and RENAMES -- worse than a floor, because a
+#                           fabricated key can collide with a real one
+#
+# and it cannot see a row whose NAME carries a space at all (F3 requires
+# `len(head.split()) == 1`), which is the shape `multi-rows.py` writes. So:
+#
+#     `shared=`, `port_only=`, `oracle_only=` and `DISAGREE=` are LOWER BOUNDS.
+#
+# MIN_ROWS below is the floor's other half and it is already right: a lane under MIN_ROWS is
+# refused as "not started" rather than reported as agreement, because a 0-row result is
+# indistinguishable from "not started" and bend stack-overflows about one run in twenty.
+# A count that is silently a floor is the defect this whole class keeps re-learning.
+
 
 def main():
     a = sys.argv[1:]

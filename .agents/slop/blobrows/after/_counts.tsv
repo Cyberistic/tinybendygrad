@@ -2,8 +2,8 @@
 1	tinybendygrad/codegen/__init__.bend
 183	tinybendygrad/codegen/decomp/dtype.bend
 146	tinybendygrad/codegen/decomp/op.bend
-891	tinybendygrad/codegen/decomp/transcendental.bend
 878	tinybendygrad/codegen/decomp/transcendental_f32.bend
+891	tinybendygrad/codegen/decomp/transcendental.bend
 24	tinybendygrad/codegen/gpudims.bend
 38	tinybendygrad/codegen/kernel.bend
 2	tinybendygrad/codegen/late/coalesce.bend
@@ -37,11 +37,11 @@
 227	tinybendygrad/renderer/cstyle.bend
 774	tinybendygrad/renderer/isa/x86.bend
 471	tinybendygrad/renderer/llvmir.bend
-102	tinybendygrad/renderer/nir.bend
 205	tinybendygrad/renderer/nir_llvmir.bend
+102	tinybendygrad/renderer/nir.bend
 281	tinybendygrad/renderer/ptx.bend
-286	tinybendygrad/renderer/tc.bend
 334	tinybendygrad/renderer/tc_ptx.bend
+286	tinybendygrad/renderer/tc.bend
 172	tinybendygrad/renderer/wgsl.bend
 520	tinybendygrad/runtime/ops_amd.bend
 432	tinybendygrad/runtime/ops_metal.bend
@@ -62,7 +62,7 @@
 55	tinybendygrad/uop/divandmod.bend
 328	tinybendygrad/uop/fold.bend
 26	tinybendygrad/uop/movement.bend
-220	tinybendygrad/uop/ops.bend
+292	tinybendygrad/uop/ops.bend
 129	tinybendygrad/uop/render.bend
 25	tinybendygrad/uop/spec.bend
 57	tinybendygrad/uop/symbolic.bend
@@ -70,4 +70,4 @@
 18	tinybendygrad/uop/validate.bend
 56	tinybendygrad/uop/weak.bend
 177	tinybendygrad/viz/serve.bend
-TOTAL	12425
+TOTAL	12497

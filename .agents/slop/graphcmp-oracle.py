@@ -46,9 +46,11 @@ def atoms(arg: str) -> set:
 
 def census(lines: list[str]) -> dict:
   ops, res, shapes, depths, atom = set(), set(), set(), set(), set()
+  per_op: collections.Counter = collections.Counter()
   for ln in lines:
     f = G.unchunks(ln)
     ops.add(f[1])
+    per_op[f[1]] += 1
     shapes.add(f[3])
     depths.add(f[4])
     atom |= atoms(f[6])
@@ -56,7 +58,8 @@ def census(lines: list[str]) -> dict:
       if any(G.at_value(f[fi], m) for fi in fis):
         res.add(m)
   return {"nodes": len(lines), "ops": ops, "residual": res, "shapes": shapes,
-          "depths": depths, "atoms": atom, "symdims": symdim_rows(lines)}
+          "depths": depths, "atoms": atom, "symdims": symdim_rows(lines),
+          "per_op": per_op}
 
 
 def symdim_rows(lines: list[str]) -> list[str]:
@@ -80,6 +83,8 @@ def main() -> int:
   tot_atoms: set[str] = set()
   tot_comm: set[str] = set()
   tot_sym = 0
+  tal: collections.Counter = collections.Counter()
+  graphs_of: collections.Counter = collections.Counter()
   all_res: collections.Counter = collections.Counter()
   for g in sorted(G.GRAPHS):
     py = census(G.emit_py(g, None))
@@ -89,6 +94,8 @@ def main() -> int:
     tot_atoms |= py["atoms"] | bd["atoms"]
     tot_comm |= py["ops"] & G.COMM
     tot_sym += len(py["symdims"])
+    tal.update(py["per_op"])
+    graphs_of.update(py["ops"])
     for m in py["residual"] | bd["residual"]:
       all_res[m] += 1
     same = "same" if py["ops"] == bd["ops"] else f"PY-BEND OPs DIFFER: {py['ops'] ^ bd['ops']}"
@@ -118,6 +125,13 @@ def main() -> int:
         f"(--equiv is MEASURED on {len(tot_comm)} of {len(G.COMM)})")
   print(f"# SYMBOLIC-DIM NODES: {tot_sym} of {tot_nodes} py-side nodes carry a `U` dim "
         f"(MEASURED off the shape column of every graph above)")
+  print(f"# FIELD-RECORDS PER SIDE: {tot_nodes} nodes x {len(G.FIELDS)} compared fields = "
+        f"{tot_nodes * len(G.FIELDS)}")
+  print("# PER-OP NODE COUNTS ACROSS THE CORPUS -- the denominator for every op claim:")
+  print("#   " + "  ".join(f"{op} {tal[op]}/{graphs_of[op]}" for op in sorted(tal))
+          + "   (nodes/graphs)")
+  print(f"# NOT REACHED ({len(list(G.Ops)) - len(tal)} of {len(list(G.Ops))}): "
+        + " ".join(o.name for o in G.Ops if o.name not in tal))
   return 0
 
 

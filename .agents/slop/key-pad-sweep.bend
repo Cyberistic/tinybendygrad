@@ -68,6 +68,35 @@ def pad_count(xs: List<&2, Nat>, t1: O.Tag, t2: O.Tag) -> O.Found:
   +u = O.UOp.new(e, O.OpsSINK{}, Nil{}, O.ANone{}, t1)
   O.UOp.new(O.Found.ar(u), O.OpsSINK{}, Nil{}, O.ANone{}, t2)
 
+# THE ABSOLUTE ROW, and it exists because a MEASURED blind spot put it here.
+# `key-pad-mutate.sh` injected four defect classes and the pad sweep was BLIND to two of
+# them -- a wrong CONSTANT (`intern.find` seeded at 1) and a wrong OFFSET
+# (`UOp.of.intern.put` reading `Arena.next - 2`) -- moving 0 lines at every pad, while it
+# caught a stale arena and a dropped field at every pad. The reason is structural and not
+# fixable by adding pads: EVERY cell above compares `Found.i(u)` against `Found.i(v)`, and
+# a uniform shift in how an index is READ cancels in a comparison of two of them. So this
+# row asks for the index of the FIRST candidate in ABSOLUTE terms, which is `n` at pad n,
+# and a shift cannot cancel against a constant.
+#
+# `Arena.next` is absolute too but it measures the ARENA, not the index the constructor
+# hands back, which is exactly the pair C2 desynchronises.
+def abs_first(xs: List<&2, Nat>) -> U32:
+  +e = pad.go(xs, O.Arena.empty(), 0)
+  O.Found.i(O.UOp.new(e, O.OpsSINK{}, Nil{}, O.ANone{}, O.TBool{True{}}))
+
+# AND THE MISS PATH, added for the same reason and MEASURED: with `abs_first` alone, the
+# wrong-OFFSET class STILL moved 0 lines. `UOp.new.of` is `Found{made, UOp.of(made, ...)}`
+# -- make first, then read the index back out of the ALREADY-GROWN arena -- so `UOp.of`
+# always takes the `Some{i}` HIT branch and the `case None{}` arm of `UOp.of.intern.put`,
+# which is the arm that computes `Arena.next - 1`, is NEVER REACHED from `UOp.new` at all.
+# It is reached only by a caller that calls `UOp.of` on an arena that does not yet contain
+# the node, which is what the `sg_*`/`s5_*` sugar rows do. So this row calls `UOp.of`
+# directly on a freshly-made arena, and the index it must return is `n + 1` at pad n.
+def of_first(xs: List<&2, Nat>) -> U32:
+  +e = pad.go(xs, O.Arena.empty(), 0)
+  O.UOp.of(O.UOp.make(e, O.OpsSINK{}, Nil{}, O.ANone{}, O.TBool{True{}}),
+           O.OpsSINK{}, Nil{}, O.ANone{}, O.TBool{True{}})
+
 # The NODE-COUNT half. At pad n a merged pair leaves `n + 1` nodes and a split pair `n + 2`,
 # so these two columns are what catch a comparator that returns the right Bool while still
 # appending a duplicate.
@@ -77,38 +106,52 @@ def merged_next(xs: List<&2, Nat>) -> U32:
 def split_next(xs: List<&2, Nat>) -> U32:
   O.Arena.next(O.Found.ar(pad_count(xs, O.TBool{True{}}, O.TBool{False{}})))
 
-def emit(nm: String, b1: Bool, b2: Bool, b3: Bool, b4: Bool, c1: U32, c2: U32) -> IO(Unit):
+def emit(nm: String, b1: Bool, b2: Bool, b3: Bool, b4: Bool, c1: U32, c2: U32, a1: U32, a2: U32) -> IO(Unit):
   IO.print(String.concat([nm,
                            " bool_int=", Bool.show(b1),
                            " true_false=", Bool.show(b2),
                            " none_zero=", Bool.show(b3),
                            " const_split=", Bool.show(b4),
                            " count_merged=", U32.show(c1),
-                           " count_split=", U32.show(c2), "\n"]))
+                           " count_split=", U32.show(c2),
+                           " abs_first=", U32.show(a1),
+                           " of_first=", U32.show(a2), "\n"]))
 
 def pad0() -> IO(Unit):
   emit("pad0", bool_int(List.range(0n)), true_false(List.range(0n)), none_zero(List.range(0n)),
-       const_split(List.range(0n)), merged_next(List.range(0n)), split_next(List.range(0n)))
+       const_split(List.range(0n)), merged_next(List.range(0n)), split_next(List.range(0n)),
+       abs_first(List.range(0n)),
+       of_first(List.range(0n)))
 
 def pad1() -> IO(Unit):
   emit("pad1", bool_int(List.range(1n)), true_false(List.range(1n)), none_zero(List.range(1n)),
-       const_split(List.range(1n)), merged_next(List.range(1n)), split_next(List.range(1n)))
+       const_split(List.range(1n)), merged_next(List.range(1n)), split_next(List.range(1n)),
+       abs_first(List.range(1n)),
+       of_first(List.range(1n)))
 
 def pad2() -> IO(Unit):
   emit("pad2", bool_int(List.range(2n)), true_false(List.range(2n)), none_zero(List.range(2n)),
-       const_split(List.range(2n)), merged_next(List.range(2n)), split_next(List.range(2n)))
+       const_split(List.range(2n)), merged_next(List.range(2n)), split_next(List.range(2n)),
+       abs_first(List.range(2n)),
+       of_first(List.range(2n)))
 
 def pad5() -> IO(Unit):
   emit("pad5", bool_int(List.range(5n)), true_false(List.range(5n)), none_zero(List.range(5n)),
-       const_split(List.range(5n)), merged_next(List.range(5n)), split_next(List.range(5n)))
+       const_split(List.range(5n)), merged_next(List.range(5n)), split_next(List.range(5n)),
+       abs_first(List.range(5n)),
+       of_first(List.range(5n)))
 
 def pad17() -> IO(Unit):
   emit("pad17", bool_int(List.range(17n)), true_false(List.range(17n)), none_zero(List.range(17n)),
-       const_split(List.range(17n)), merged_next(List.range(17n)), split_next(List.range(17n)))
+       const_split(List.range(17n)), merged_next(List.range(17n)), split_next(List.range(17n)),
+       abs_first(List.range(17n)),
+       of_first(List.range(17n)))
 
 def pad64() -> IO(Unit):
   emit("pad64", bool_int(List.range(64n)), true_false(List.range(64n)), none_zero(List.range(64n)),
-       const_split(List.range(64n)), merged_next(List.range(64n)), split_next(List.range(64n)))
+       const_split(List.range(64n)), merged_next(List.range(64n)), split_next(List.range(64n)),
+       abs_first(List.range(64n)),
+       of_first(List.range(64n)))
 
 # renderer/__init__.bend note 7: a def whose body is a `do` block must be the LAST def in
 # the file, so `main` is last, and its body ends with a BARE TERM rather than a

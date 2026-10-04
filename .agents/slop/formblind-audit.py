@@ -121,21 +121,17 @@ def rows_eq_then_gap_greedy(text: str) -> dict:
     return rows_name_must_be_one_token(text)
 
 
-def unchunks_prefix_space_required(line: str) -> list[str]:
-    """`graphcmp.unchunks` with the space REQUIRED again -- the pre-2026-10-04 reader, which
-    surfaced as "0 trace rows". Reconstructed from graphcmp-LIMITS.md item 5, not from the
-    tool, because a control copied from the tool it checks is the tool."""
-    out, i = [], 0
-    while i < len(line):
-        j = line.index(":", i)
-        n, k = int(line[i:j]), j + 1
-        out.append(line[k:k + n])
-        i = k + n
-        if i < len(line) and line[i] == " ":
-            i += 1
-        else:
-            break                      # REFUSE the line rather than walk off the chunk
-    return out
+def unchunks_split_on_whitespace(line: str) -> list[str]:
+    """THE HISTORICAL BUG, reconstructed from the tool's OWN docstring rather than from its
+    code: 'Splitting on whitespace is what dropped 216 of 228 rows in the pin/HEAD study,
+    because the row NAMES contain spaces' (graphcmp.py:316). And graphcmp-LIMITS.md item 5
+    records the second half: requiring a single space made whitespace STRUCTURAL, which the
+    `<bytecount>:<bytes>` format exists precisely to avoid.
+
+    A control copied out of the tool it checks IS the tool, so this one is written from the
+    writeup. It must not agree with the form-complete answer or A12 cannot fail.
+    """
+    return line.split()
 
 
 #: the `unobservable-census.py --handtyped` regex, VERBATIM, as its own source states it.
@@ -158,40 +154,57 @@ def census_hand_typed_control(text: str) -> list:
     return out
 
 
+def census_hand_typed_no_bare_arm(text: str) -> list:
+    """The same detector with the `bare` f-string arm DELETED. A10's control, and the reason
+    the arm is load-bearing: `f"1"` is matched by `lit`? No -- `lit` is a fullmatch on
+    `"..."`/`'...'`/digits/True/False/None and `f"1"` starts with `f`, so without `bare` this
+    row is invisible. So A10 is a case where the FORM-BLIND reading was right and the census
+    was wrong, and the way to know which is which is to make both answers executable."""
+    return [x for x in census_hand_typed_control(text) if not x[1].startswith("f")]
+
+
 # ---------------------------------------------------------------------------
 # THE AUDITS
 # ---------------------------------------------------------------------------
-#: POLARITIES.
-#:   MISS   the reader must NOT produce the form-complete answer.  The variant is invisible.
-#:   SEE    the reader must produce it.  The variant was already handled; the audit pins that
-#:          so a neighbouring FAIL cannot be satisfied by a reader that stopped reading.
-#:   MANGLE the reader must produce SOMETHING and get it WRONG.  A4's class: a reader that
-#:          does not lose the row but renames it, which is worse than a floor because a
-#:          fabricated key can collide with a real one.
+#: ONE ASSERTION, ELEVEN TIMES: THE READER MUST PRODUCE THE FORM-COMPLETE ANSWER.
+#:
+#: That is the whole claim, and it is the same claim for a reader that has already been fixed
+#: and for one that has not. `status` says which is which TODAY, so a reader that is fixed does
+#: not need a weaker assertion and a reader that is blind cannot quietly acquire one:
+#:
+#:   KNOWN-BLIND  the audit FAILS on this tree.  That is the deliverable: a failing assertion
+#:                that reconstructs the blind variant, in `not-applied-audit.py`'s shape, and
+#:                exits 1 until somebody fixes the reader.  Eleven of them.
+#:   PIN          the audit passes today, on a reader that already handles the variant.  These
+#:                exist so the KNOWN-BLIND ones cannot be satisfied by a reader that stopped
+#:                reading, and so a census that claims blindness where there is none is caught
+#:                too -- A10 is one of these, and it exists because the census was WRONG.
+#:
+#: GETTING THIS BACKWARDS IS HOW A DEFECT AUDIT BECOMES A CENSUS VALIDATOR THAT EXITS 0
+#: FOREVER. A reader that cannot see the thing is a FAILURE OF THE WORLD, not a successful
+#: confirmation of a hypothesis.
 class Audit:
-    def __init__(self, aid, what, subject, src, reader, expect, control, ctl_name,
+    def __init__(self, aid, what, subject, src, reader, status, control, ctl_name,
                  answer, note=""):
         self.aid, self.what, self.subject = aid, what, subject
-        self.src, self.reader, self.expect, self.control = src, reader, expect, control
+        self.src, self.reader, self.status, self.control = src, reader, status, control
         self.ctl_name, self.answer, self.note = ctl_name, answer, note
 
     def run(self):
         want = self.answer(self.subject)
         got = self.reader(self.subject)
         ctl = self.control(self.subject)
-        ok_present = want not in ({}, [], None, 0)
-        if self.expect == "MISS":
-            ok_real = got != want
-        elif self.expect == "SEE":
-            ok_real = got == want
-        elif self.expect == "MANGLE":
-            ok_real = bool(got) and got != want
-        else:
-            raise ValueError(self.expect)
-        # THE CONTROL MUST NOT AGREE WITH THE FORM-COMPLETE ANSWER. That is the whole
-        # contract: an audit that cannot distinguish a wrong reader from a right one is
-        # `not-applied-audit.py`'s failure mode -- an expected value read from the thing
-        # under test, which agrees with itself.
+        # (1) THE SUBJECT IS NOT DEGENERATE. An audit run on an empty string has measured
+        #     nothing. NOTE THAT AN EMPTY FORM-COMPLETE ANSWER IS A LEGITIMATE CLAIM -- A17's
+        #     whole point is that the correct answer for a template file is ZERO rows -- so
+        #     this checks the SUBJECT, never the answer.
+        ok_present = bool(self.subject.strip())
+        # (2) THE ONE ASSERTION.
+        ok_real = got == want
+        # (3) THE CONTROL MUST NOT AGREE. An audit that cannot tell a wrong reader from a right
+        #     one is `not-applied-audit.py`'s bug -- an expected value read from the thing under
+        #     test, which agrees with itself. A control that AGREES is a dead audit even when
+        #     the real reader happens to be broken.
         ok_ctl = ctl != want
         return {"want": want, "got": got, "ctl": ctl,
                 "ok": ok_present and ok_real and ok_ctl,
@@ -222,7 +235,7 @@ def _ans(want):
 add("A1", "rebase-gate.rows(): a row whose NAME carries a space",
     'alpha one  1\n',
     "rowform.any_row -- an independent read-any-shape reader, not a copy of row()",
-    RG.rows, "MISS", rows_name_must_be_one_token,
+    RG.rows, "KNOWN-BLIND", rows_name_must_be_one_token,
     "the one-token-name guard (the shipped reader's own remaining hole)",
     _ans({"alpha one": "1"}),
     "F3 requires len(head.split()) == 1. multi-rows.py's F3 shape is f'{n.ljust(w)}  {v}', so "
@@ -232,7 +245,7 @@ add("A1", "rebase-gate.rows(): a row whose NAME carries a space",
 add("A2", "rebase-gate.rows(): a TAB-separated row",
     'alpha\t1\n',
     "rowform.any_row",
-    RG.rows, "MISS", rows_eq_or_gap_no_tab, "the shipped shapes and nothing else (no TAB)",
+    RG.rows, "KNOWN-BLIND", rows_eq_or_gap_no_tab, "the shipped shapes and nothing else (no TAB)",
     _ans({"alpha": "1"}),
     "A TAB is refused ON PURPOSE -- a TSV table's first column is not a row name, and "
     "dtype_tables.py emits 14,774 TSV lines that must keep reading as zero rows. So this is "
@@ -242,7 +255,7 @@ add("A2", "rebase-gate.rows(): a TAB-separated row",
 add("A3", "rebase-gate.rows(): a SINGLE-space row",
     'alpha 1\n',
     "rowform.any_row",
-    RG.rows, "MISS", rows_pre_f3, "the pre-F3 reader (name=value only)",
+    RG.rows, "KNOWN-BLIND", rows_pre_f3, "the pre-F3 reader (name=value only)",
     _ans({"alpha": "1"}),
     "GAP is two spaces. A lane that prints `name value` reads as zero rows, and zero rows is "
     "indistinguishable from 'not started'.")
@@ -250,7 +263,7 @@ add("A3", "rebase-gate.rows(): a SINGLE-space row",
 add("A4", "rebase-gate.rows(): a two-space row whose VALUE carries an `=`",
     'alpha  x=1\n',
     "rowform.any_row -- the name is `alpha`, the value is `x=1`",
-    RG.rows, "MANGLE", rows_eq_then_gap_greedy, "the shipped ORDER: `=` before the gap",
+    RG.rows, "KNOWN-BLIND", rows_eq_then_gap_greedy, "the shipped ORDER: `=` before the gap",
     _ans({"alpha": "x=1"}),
     "The `=` branch fires FIRST, so this does not vanish: it is RENAMED to `alpha  x`, which "
     "is worse than a floor -- a fabricated key can collide with a real one.")
@@ -259,7 +272,7 @@ add("A5", "rebase-gate.rows(): the F3 gap it DOES claim -- a pin, so A1..A4 cann
     "satisfied by a reader that simply stopped reading",
     'alpha  1\n',
     "rowform.any_row",
-    RG.rows, "SEE", rows_pre_f3, "the pre-F3 reader (zero rows in 213 real ground-truth rows)",
+    RG.rows, "PIN", rows_pre_f3, "the pre-F3 reader (zero rows in 213 real ground-truth rows)",
     _ans({"alpha": "1"}),
     "rebase-gate.py's own header records the F3 discovery: '`schedule/multi.bend`'s oracle "
     "prints `f\"{n.ljust(w)}  {v}\"`. NO `=` AT ALL, so F1 found ZERO rows in 213 real rows.'")
@@ -308,27 +321,38 @@ HT_SOURCES = [
    "115 SEMI of the delta. The regex's `$` under `re.M` makes the call single-line; and worse, "
    "the non-greedy `(.+?)` swallows the second call so the value it reports is `\"1\"), "
    "row(\"b\"`, which is not a literal -- so the pair is invisible twice over."),
-  ('row("a", x)\n', 'row(f"a_{i}", x)  # i == 0\n',
+  ('row("a", 3)\n', 'row(f"a_{i}", 3)  # i == 0\n',
    "an f-string ROW NAME -- one name, two spellings",
    "90 NAME of the delta, and the LARGEST single cause. Every oracle that indexes a family "
    "puts the index in the NAME -- which is the whole sibling_blind thesis -- so the families "
-   "are the majority of rows and are exactly what the regex cannot see."),
+   "are the majority of rows and are exactly what the regex cannot see. The VALUE is a "
+   "literal in both members on purpose: `handtyped-audit` calls a bare unresolvable name "
+   "UNRESOLVED rather than DEFECT, and an UNRESOLVED row is a third class that must not be "
+   "quietly scored as derived."),
   ('row("a", "1")\n', 'row("a", f"1")\n',
    "a bare f-string VALUE -- one string, two spellings",
-   "The `bare` pattern is `f\"[^\"{]*\"`, so an f-string WITH braces is not a bare f-string; "
-   "this is the variant that survives the `bare` arm and dies on `lit`."),
-  ('row("a", x)\n', 'row(\n  "a",\n  x,\n)\n',
-   "a row call WRAPPED across lines -- one call, two layouts", None),
+   "THE CLAIM THAT THIS AUDIT KILLED. `bare` is `f\"[^\"{]*\"`, so `f\"1\"` IS matched and the "
+   "old detector does see it: 578 is not 578+this. Reclassified SEE. The blind sibling is "
+   "`f\"{v}\"`, which is DERIVED and therefore correctly not reported -- the two spellings "
+   "differ in MEANING there, so a form-blind reader is the right answer. Kept as a pin "
+   "because the census classified it blind and it is not, and a census that is not corrected "
+   "is a census that teaches the wrong lesson."),
+  ('row("a", 3)\n', 'row(\n  "a",\n  3,\n)\n',
+   "a row call WRAPPED across lines -- one call, two layouts",
+   "`re.M` + `$` makes the call single-line, and the oracles are heavily wrapped."),
 ]
 
-for i, (_plain, variant, why, _note) in enumerate(HT_SOURCES, start=6):
+for i, (_plain, variant, why, note) in enumerate(HT_SOURCES, start=6):
     add(f"A{i}", f"--handtyped on a spelling of the same row: {why}",
         variant,
         "handtyped-audit.scan (AST) is the form-complete answer; unobservable-census."
         "hand_typed is the reader under test; both are CALLED",
-        hand_typed_names, "MISS", census_hand_typed_control,
-        "the regex detector, inlined from unobservable-census.py",
-        ht_defects, _note)
+        hand_typed_names,
+        "PIN" if i == 10 else "KNOWN-BLIND",       # A10: the claim this audit KILLED, see its note
+        census_hand_typed_control if i != 10 else census_hand_typed_no_bare_arm,
+        "the regex detector, inlined from unobservable-census.py" if i != 10
+        else "the same detector with its `bare` f-string arm REMOVED",
+        ht_defects, note)
 
 # --- A12: graphcmp.unchunks, the one already fixed ------------------------------
 GC = load(HERE / "graphcmp.py", "graphcmp_under_audit")
@@ -341,31 +365,37 @@ _SPACE_CHUNK = " ".join(
 add("A12", "graphcmp.unchunks(): a chunk payload containing a SPACE",
     _SPACE_CHUNK,
     "constructed: the payload is chunk()'d by the tool itself, so the byte counts are its own",
-    GC.unchunks, "SEE", unchunks_prefix_space_required,
-    "the pre-2026-10-04 reader (space REQUIRED), reconstructed from graphcmp-LIMITS.md item 5",
+    GC.unchunks, "PIN", unchunks_split_on_whitespace,
+    "a whitespace SPLITTER -- the historical bug, per graphcmp.py:316",
     _ans(["memory reduced from 0.01 MB -> 0.01 MB, 5 -> 2 bufs", "3"]),
-    "The ONLY audit here whose real reader is expected to SEE. graphcmp-LIMITS.md item 5 is "
-    "the writeup, `unchunks` is the fix, and the control is the bug -- a reader that refuses "
-    "the line instead of walking off the chunk, which is how a reader returning fewer rows "
-    "than the emitter wrote came to be reported as a COUNT ('0 trace rows') rather than as a "
-    "failure. A control copied from the tool it checks is the tool, so this one is written "
-    "from the writeup.")
+    "The ONLY audit here whose real reader is expected to SEE. Two documented bugs are in "
+    "scope and the control is the first of them: 'Splitting on whitespace is what dropped 216 "
+    "of 228 rows in the pin/HEAD study, because the row NAMES contain spaces' (graphcmp.py: "
+    "316). graphcmp-LIMITS.md item 5 is the second: requiring a single space made whitespace "
+    "STRUCTURAL, and a site printing `memory reduced from 0.01 MB -> 0.01 MB, 5 -> 2 bufs` "
+    "walked off the end of the first chunk and REFUSED the line, which surfaced as '0 trace "
+    "rows' -- a reader returning fewer rows than the emitter wrote, reported as a COUNT rather "
+    "than as a failure. A control copied out of the tool it checks IS the tool, so this one is "
+    "written from the writeup.")
 
 # --- A13: dd-band-census.py, the `O.Found.i(` grep -------------------------------
-#: SEVEN dd_band call sites whose MASK argument is an arena index. Five pass it directly and
-#: two route it through a local -- the constructed instance of the blind variant.
+#: NINE index-valued integer slots across THREE callees. Five reach one callee directly, two
+#: reach it through a local bound on the line above, and two reach a callee absent from the
+#: old whitelist -- one of them through a local as well. Both blind variants, constructed.
 _DD_LINES = [
-  "  +a = dd_band(O.Found.ar(s), v, O.Found.i(s))",
+  "  +a = dd_band(O.Found.ar(s), v, O.Found.i(s))",       # direct, whitelisted callee? no
   "  +b = dd_band(O.Found.ar(m), v, O.Found.i(m))",
   "  +c = dd_band(O.Found.ar(b), v, O.Found.i(b))",
   "  +d = dd_band(O.Found.ar(a), v, O.Found.i(a))",
   "  +e = dd_band(O.Found.ar(c), v, O.Found.i(c))",
-  "  +m = O.Found.i(s)",
-  "  +f = dd_band(O.Found.ar(s), v, m)",
-  "  +n = O.Found.i(a)",
-  "  +g = dd_band(O.Found.ar(a), v, n)",
+  "  +m = O.Found.i(s)",                                   # the binder
+  "  +f = dd_band(O.Found.ar(s), v, m)",                   # through a local
+  "  +n = O.Found.i(a)",                                   # the binder
+  "  +g = dd_band(O.Found.ar(a), v, n)",                   # through a local
+  "  +h = U32.shl(O.Found.ar(a), U32.sub(x, 1))",          # whitelisted callee, direct
+  "  +p = dc_band(O.Found.ar(a), v, O.Found.i(a))",        # the OLD NAME for the same callee
 ]
-_DD_SRC = "def probe(+ar, +v):\n" + "\n".join(_DD_LINES) + "\n"
+_DD_SRC = "def probe(+ar, +v, +x):\n" + "\n".join(_DD_LINES) + "\n"
 
 
 def dd_mask_args(src: str) -> list[str]:
@@ -399,9 +429,77 @@ def dd_mask_args(src: str) -> list[str]:
     return out
 
 
+def dd_index_slots(src: str) -> list:
+    """FORM-COMPLETE. Every (line, callee, arg#, argument) where the argument is an arena
+    index -- DIRECTLY (`O.Found.i(...)`) or THROUGH A LOCAL BOUND TO ONE. This file's own
+    balanced-paren walk over the printed source; NOT dd-band-census.py's, because an audit
+    whose expected value comes from the thing under test agrees with itself.
+
+    The through-a-local half is decidable here because the constructed subject BINDS each
+    local to an `O.Found.i(...)` on the line above, and that binding is printed on every run.
+    """
+    # the BINDER NAME on the left of `+m = O.Found.i(...)`, not the argument inside it
+    bound = set(re.findall(r"(?m)^\s*\+(\w+)\s*=\s*O\.Found\.i\(", src))
+    out = []
+    for m in re.finditer(r"(?<![\w.])([A-Za-z_][\w.]*)\s*\(", src):
+        callee = m.group(1)
+        i, depth, j = m.end(), 1, m.end()
+        while depth and j < len(src):
+            if src[j] == "(":
+                depth += 1
+            elif src[j] == ")":
+                depth -= 1
+            j += 1
+        body, args, cur, d = src[i:j - 1], [], "", 0
+        for ch in body:
+            if ch in "([{":
+                d += 1
+            elif ch in ")]}":
+                d -= 1
+            if ch == "," and d == 0:
+                args.append(cur.strip())
+                cur = ""
+            else:
+                cur += ch
+        if cur.strip():
+            args.append(cur.strip())
+        for k, a in enumerate(args[1:], start=1):
+            if "O.Found.i(" in a or (k >= 2 and a in bound):
+                out.append((code_line(src, m.start()), callee, k, a))
+    return out
+
+
+def code_line(src: str, pos: int) -> int:
+    return src.count("\n", 0, pos) + 1
+
+
+#: The rule dd-band-census.py section C shipped before 2026-10-04, reconstructed: a
+#: six-NAME callee whitelist AND the direct spelling only. Both halves are real and both were
+#: found by disagreement with section A, which reads the ARGUMENT.
+OLD_CALLEE_WHITELIST = frozenset({
+    "H.i64_of_i32", "H.i64_sub", "U32.shl", "U32.shr", "U32.shln", "U32.add", "U32.sub",
+    "U32.mul", "U32.div", "U32.mod", "U32.and", "U32.or", "U32.xor", "U32.eq", "U32.lt",
+    "U32.le", "U32.gt", "U32.ge", "U32.is_zero", "U32.from_nat", "U32.to_nat",
+    "T.tx_powi", "T.tx_powi32", "T.exponent_bias",
+})
+
+
+def dd_section_c_pre_fix(src: str) -> int:
+    """THE OLD RULE: an argument counts only if its CALLEE is in a hand-written name list AND
+    it is spelled `O.Found.i(`. Two blind variants in one expression:
+      C-i   the SPELLING -- an index routed through a local is the same index, other spelling;
+      C-ii  the WHITELIST -- an index passed to any other callee is invisible however it is
+            spelled, and a name list goes stale the moment a def is RENAMED. `dtype.bend`'s
+            `dc_band` -> `dd_band` is exactly that, and it is why this rule reported ZERO
+            index-valued mask arguments on a file where section A reported seven."""
+    return len([(c, k, a) for _l, c, k, a in dd_index_slots(src)
+                if c in OLD_CALLEE_WHITELIST and "O.Found.i(" in a])
+
+
 def dd_direct_grep(src: str) -> int:
-    """THE GREP UNDER AUDIT: `if "O.Found.i(" in body`. The census's section C shape."""
-    return sum(1 for m in re.finditer(r"O\.Found\.i\(", src))
+    """THE SPELLING HALF ALONE, which is the variant the brief names. Counts DIRECT
+    spellings only, so an index that reaches the same slot through a local is invisible."""
+    return len([(c, k, a) for _l, c, k, a in dd_index_slots(src) if "O.Found.i(" in a])
 
 
 def dd_local_grep(src: str) -> int:
@@ -423,18 +521,31 @@ def dd_index_sites(src: str) -> int:
     return len(direct) + len(viabind)
 
 
-add("A13", "dd-band-census.py: the `O.Found.i(` grep vs the index routed through a local",
+add("A13", "dd-band-census.py section C: an index routed through a local, AND a callee absent "
+    "from the whitelist",
     _DD_SRC,
-    "constructed: 7 mask arguments are indices, 5 direct and 2 through a local bound on the "
-    "line above; the count is this file's own balanced-paren walk over the printed source",
-    dd_direct_grep, "MISS", dd_local_grep,
-    "a grep for the OTHER spelling (a bare local)",
-    _ans(7),
-    "MEASURED on real data too, through dd-band-census.py itself: on "
-    ".agents/slop/dd-mutations.frozen.bend section A prints `suspect 7` while section C -- "
-    "the `O.Found.i(` grep -- reaches 5 of them. And on today's dtype.bend section C prints "
-    "`hard hits: 0`, which is exactly what a routed-through-a-local index ALSO prints. So a 0 "
-    "from section C is a FLOOR and its header should say so.")
+    "constructed: 10 index-valued integer slots, and `dd_index_slots` is this file's own "
+    "balanced-paren walk over the printed source -- NOT dd-band-census.py's parser, because an "
+    "audit whose expected value comes from the thing under test agrees with itself",
+    dd_section_c_pre_fix, "KNOWN-BLIND", dd_direct_grep,
+    "the SPELLING half alone (a callee list wide enough, the `O.Found.i(` grep still blind)",
+    lambda s: len(dd_index_slots(s)),
+    "TWO BLIND VARIANTS IN ONE EXPRESSION, AND THE SECOND IS THE DOMINANT ONE -- worth saying "
+    "because the brief named the first. C-i THE SPELLING: the old test was "
+    "`if \"O.Found.i(\" in body`, so an index routed through a local was the same index in "
+    "another spelling and was invisible. C-ii THE WHITELIST: the window was "
+    "`H.i64_of_i32|H.i64_sub|U32.\\w+|T.tx_powi|T.tx_powi32|T.exponent_bias` -- six names -- so "
+    "an index passed to any OTHER callee was invisible however it was spelled. A name whitelist "
+    "is a fixture list: dtype.bend's `dc_band` -> `dd_band` rename is precisely what made it "
+    "stale, and A13's last line is that same callee under its old name. MEASURED on real data "
+    "through dd-band-census.py itself: on .agents/slop/dd-mutations.frozen.bend section A "
+    "prints `suspect 7` index-valued `dd_band` mask arguments and the old section C reached "
+    "NONE of them. On today's dtype.bend it printed `hard hits: 0` -- which is also what a "
+    "routed-through-a-local index prints, so 0 was never a clean bill of health. "
+    "FIXED 2026-10-04: section C now walks every argument of every call whose callee is in a "
+    "stated INTEGER_CALLEES set, prints the callee on over-matched hits, and prints its own "
+    "denominator (`N of M calls`) so the coverage is VISIBLE rather than assumed. Re-point "
+    "`reader` at the shipped rule to flip this green; `--corpus` prints what it reaches.")
 
 # --- A14: the s5_ bound-form tally ----------------------------------------------
 #: NINETEEN srow calls. Eighteen carry the `l : Unit <- ` binder and the nineteenth is bare --
@@ -474,7 +585,7 @@ add("A14", "the `s5_` tally that scans for the BOUND form",
     S5,
     "constructed: 19 srow calls, 18 bound and 1 bare; the expected count is `s5_all_tally` "
     "over the SAME printed text, i.e. `grep -c '\"s5_'`",
-    s5_bound_tally, "MISS", s5_position_tally,
+    s5_bound_tally, "KNOWN-BLIND", s5_position_tally,
     "a POSITION-based filter (the other way this tally has been written)",
     s5_all_tally,
     "MEASURED on real data: TODO.md:6097 -- '`s5_copy_*` (3) + `s5_devrange_*` (3) + \"12 "
@@ -517,7 +628,7 @@ add("A15", "the quoted-import grep: `\"ops.bend\"` against Bend's bare-path spel
     IMPORTS,
     "constructed: three Bend imports, and `unquoted_import_grep` is the count over the SAME "
     "printed text. The real number on this tree is measured by `--corpus` below.",
-    quoted_import_grep, "MISS", single_quoted_import_grep,
+    quoted_import_grep, "KNOWN-BLIND", single_quoted_import_grep,
     "a grep for the single-quoted spelling (the third form)",
     unquoted_import_grep,
     "A 0 from a quoted grep is a VACUOUS BLAST RADIUS, and that is the dangerous shape: 0 "
@@ -525,18 +636,74 @@ add("A15", "the quoted-import grep: `\"ops.bend\"` against Bend's bare-path spel
     "spelling'. Every importer-count in this repo that used the quoted spelling has to be "
     "re-read against `import ^\\S*\\.bend`.")
 
-# --- A16: the `py=` fold, whose value can contain the tail -----------------------
-add("A16", "rebase-gate.rows(): a value that itself contains the `]   py=[` tail",
-    'alpha=a]   py=[b\n',
-    "rowform.any_row for the name/value, and the fold itself is `row()`'s own rfind -- this "
-    "audit asserts the NAME survives, because a fold at the wrong bracket renames the row",
-    RG.rows, "SEE", rows_pre_f3, "the pre-F3 reader",
-    _ans({"alpha": "a]   py=[b"}),
+# --- A16: the `py=` fold, and rfind-vs-find when the value carries the tail twice ----
+def rows_fold_at_first_tail(text: str) -> dict:
+    """THE OTHER FOLD. `find` instead of `rfind`: the reading the reader's own header names
+    as the bug -- 'the value's own bracket can precede the boundary ... cutting at the bracket
+    instead of after it makes every F2 row disagree by one character'. A fold that cuts at the
+    FIRST `]   py=[` truncates a value that legitimately contains the tail, and the row's
+    VALUE changes while its NAME stays put, so nothing reports a disagreement of identity."""
+    out = {}
+    for line in text.splitlines():
+        if "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        i = v.find(PY_TAIL_LIT)
+        out[k.strip()] = (v[:i + 1].strip(), v[i + len(PY_TAIL_LIT):].strip())[0] if i >= 0 \
+            else v.strip()
+    return out
+
+
+#: `device-oracle-MUTANT.py`'s own `PLANT_TO` -- the planted-mutant template. A row that
+#: EXISTS ONLY INSIDE A STRING LITERAL.
+MUTANT_PY = '''PLANT_FROM = '  row("allow_lower", allowed(False, "python:1"))'
+PLANT_TO = '  row("allow_lower", 0)  # PLANTED for the control: the ONE wrong answer'
+'''
+
+
+def ht_row_call_sites(text: str) -> list:
+    """CPython's own `ast`, asked a question a TEXT scanner cannot ask: how many `row(...)`
+    CALL SITES are there? Zero for MUTANT_PY, because both occurrences live inside string
+    literals -- one is a `PLANT_TO` template for a control that rewrites a source line, the
+    other is prose. This is the FORM-COMPLETE answer and `ast` is where it comes from, which
+    is the whole reason `handtyped-audit.py` parses instead of matching."""
+    import ast
+    tree = ast.parse(text)
+    return [n.lineno for n in ast.walk(tree)
+            if isinstance(n, ast.Call)
+            and getattr(n.func, "id", getattr(n.func, "attr", None)) in HT.ROW_FUNCS]
+
+
+add("A17", "--handtyped on a `row(...)` that exists ONLY inside a string literal",
+    MUTANT_PY,
+    "CPython's `ast`: the file has ZERO row() CALL SITES. `.agents/slop/device-oracle-MUTANT.py` "
+    "is the real instance -- MEASURED: `ast.walk` finds 0 calls in it",
+    hand_typed_names, "PIN", census_hand_typed_control,
+    "the regex detector, inlined -- it reads TEXT, so a template is a row to it",
+    _ans([]),
+    "THE FIFTH BLIND VARIANT, AND IT WAS FOUND BY A DISAGREEMENT RATHER THAN BY READING EITHER "
+    "TOOL: after --handtyped was corrected to delegate to handtyped-audit.py, exactly ONE row "
+    "the old regex reader had reported vanished -- `device-oracle-MUTANT.py`'s `allow_lower`. "
+    "That file contains NO `row()` call at all; `row(\"allow_lower\", 0)` occurs twice, once in "
+    "a `PLANT_TO` template for a control that rewrites a source line and once in prose. A text "
+    "scanner cannot tell a row from a sentence ABOUT a row, and `ast` can. The direction here "
+    "is the opposite of the other four: the old reader OVER-counted, so this variant makes the "
+    "old 209 too high by one rather than too low by 329.")
+
+PY_TAIL_LIT = "]   py=["
+
+add("A16", "rebase-gate.rows(): an F2 value that ITSELF contains the `]   py=[` tail",
+    'alpha=a]   py=[b]   py=[c\n',
+    "rowform.any_row for the name, and the fold is `row()`'s own rfind -- this audit pins "
+    "rfind-vs-find, so the pin is that a value carrying the tail TWICE survives whole",
+    RG.rows, "PIN", rows_fold_at_first_tail, "a reader that folds at the FIRST tail (`find`)",
+    _ans({"alpha": "a]   py=[b]"}),
     "`rfind`, not `find`: a value's own bracket can precede the boundary, and cutting at the "
-    "bracket instead of after it made every F2 row disagree by one character on the first run "
-    "of that fold. This audit PASSES on the shipped reader and is here so the A1..A4 failures "
-    "are not mistaken for a reader that is simply broken: it reads what it claims to read, "
-    "folds what it claims to fold, and refuses the rest.")
+    "bracket instead of after it made every one of 222 shared cstyle rows disagree by one "
+    "character on the first run of that fold (rebase-gate.py:199-204). This audit PASSES on "
+    "the shipped reader and is here so the A1..A4 failures are not mistaken for a reader that "
+    "is simply broken: it reads what it claims to read, folds at the LAST tail, and refuses "
+    "the rest.")
 
 
 # ---------------------------------------------------------------------------
@@ -551,7 +718,7 @@ def main(argv=None) -> int:
         return corpus_report()
     if a.list:
         for x in AUDITS:
-            print(f"{x.aid:4} {x.expect:5} {x.what}")
+            print(f"{x.aid:4} {x.status:12} {x.what}")
         return 0
     bad = 0
     print("=" * 100)
@@ -560,6 +727,14 @@ def main(argv=None) -> int:
     print("REAL reader's own answer, and a CONTROL reader that is blind on purpose.  The")
     print("control's contract is that it must NOT agree with the form-complete answer: an audit")
     print("that cannot tell a wrong reader from a right one is `not-applied-audit.py`'s bug.")
+    print("")
+    print("POLARITY IS THE POINT.  ONE assertion, sixteen times: THE READER MUST PRODUCE THE")
+    print("FORM-COMPLETE ANSWER.  KNOWN-BLIND means that assertion FAILS on this tree -- a")
+    print("failing reconstruction of the blind variant, in not-applied-audit.py's shape, which")
+    print("exits 1 until somebody fixes the reader.  PIN means it passes today, on a reader")
+    print("that already handles the variant; those are here so the KNOWN-BLIND ones cannot be")
+    print("satisfied by a reader that stopped reading, and so a census that claims blindness")
+    print("where there is NONE is caught too (A10).")
     print("=" * 100)
     for x in AUDITS:
         if a.only and x.aid != a.only:
@@ -567,21 +742,26 @@ def main(argv=None) -> int:
         r = x.run()
         bad += 0 if r["ok"] else 1
         flag = "ok  " if r["ok"] else "FAIL"
-        print(f"\n{flag} {x.aid}  [{x.expect}]  {x.what}")
+        why = "" if r["ok_real"] else \
+            ("   <-- THE READER CANNOT SEE IT" if x.status == "KNOWN-BLIND"
+             else "   <-- THE READER CANNOT SEE IT, and the census said it could")
+        print(f"\n{flag} {x.aid}  [{x.status}]  {x.what}")
         print(f"     expected from : {x.src}")
         print(f"     subject       : {x.subject!r}")
         print(f"     FORM-COMPLETE : {r['want']!r}")
-        print(f"     REAL reader   : {r['got']!r}"
-              f"{'' if r['ok_real'] else '   <-- DOES NOT BEHAVE AS THE CENSUS CLAIMS'}")
-        print(f"     CONTROL       : {r['ctl']!r}  ({x.ctl_name})"
-              f"{'' if r['ok_ctl'] else '   <-- AGREES WITH THE FORM-COMPLETE ANSWER: "
-              "THIS AUDIT CANNOT FAIL'}")
+        print(f"     REAL reader   : {r['got']!r}{why}")
+        ctl_note = "" if r["ok_ctl"] else \
+            "   <-- AGREES WITH THE FORM-COMPLETE ANSWER: THIS AUDIT CANNOT FAIL"
+        print(f"     CONTROL       : {r['ctl']!r}  ({x.ctl_name}){ctl_note}")
         if x.note:
             print(f"     {x.note}")
     print(f"\n{'-' * 100}")
-    print(f"{len(AUDITS) - bad}/{len(AUDITS)} audits hold;  {bad} FAIL")
-    print(f"audited {len(AUDITS)} of {len(AUDITS)} FORM-BLIND findings named by "
-          f"formblind-census.py; a passing audit is a FLOOR on the census, not a proof.")
+    kb = sum(1 for x in AUDITS if x.status == "KNOWN-BLIND")
+    print(f"{len(AUDITS) - bad}/{len(AUDITS)} assertions hold;  {bad} FAIL")
+    print(f"denominator: {len(AUDITS)} constructed variants, {kb} of them KNOWN-BLIND.  This is")
+    print(f"NOT a coverage statement: formblind-census.py names 65 FORM-BLIND tools and this")
+    print(f"file asserts {len(AUDITS)} readers.  Every other FORM-BLIND tool is a FLOOR on the")
+    print("census, not a clearance.")
     return 1 if bad else 0
 
 
@@ -621,8 +801,9 @@ def corpus_report() -> int:
           f"`import <bare>.bend` hits={b1} in {bf1} files")
     print(f"     run2: files={n2}  `\"x.bend\"` hits={q2} in {qf2} files   "
           f"`import <bare>.bend` hits={b2} in {bf2} files")
-    print(f"     {'STABLE across two reads' if (n1, q1, b1) == (n2, q2, b2) else 'MOVED WHILE "
-          "WATCHED -- treat as unfinished, not unstable'}")
+    stable = "STABLE across two reads" if (n1, q1, b1) == (n2, q2, b2) else \
+        "MOVED WHILE WATCHED -- treat as unfinished, not unstable"
+    print(f"     {stable}")
     print(f"     the quoted grep's blast radius is {b1 - q1} imports INVISIBLE to it\n")
 
     from rowform import blind_reason

@@ -1,1 +1,3 @@
-binblob: 2 runs BYTE-IDENTICAL
+group: 2 runs BYTE-IDENTICAL
+sym: 2 runs BYTE-IDENTICAL
+commute: 2 runs BYTE-IDENTICAL

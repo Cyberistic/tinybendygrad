@@ -309,10 +309,29 @@ def Z.num(t: Z) -> Maybe<&1, U32>:
     case _: None{}
 
 # `isinstance(t, z3.IntNumRef)`, as the Bool the three `z3_*` helpers branch on.
+# `isinstance(t, z3.IntNumRef)`, as the Bool the three `z3_*` helpers branch on.
 def Z.is_num(t: Z) -> Bool:
   match t:
     case ZLit{v, b}: Bool.not(b)
     case _: False{}
+
+def Z.is_num2(+a: Z, +b: Z) -> Bool:
+  Bool.and(Z.is_num(b), Bool.not(Z.is_num(a)))
+
+# `a < b` AS z3 CANONICALISES IT. This is the ONLY comparison rewrite in the ported surface,
+# and it has exactly two callers: `z3_alu[MAX]`'s `z3.If(a<b, b, a)` (validate.py:47) and
+# `python_alu[CMPLT]`'s `operator.lt` (ops.py:1428). Both are handed whatever the renderer
+# produced for `x.src[1]`, which for a CONST is `z3.IntVal(x.val)` -- a z3 numeral -- and z3
+# rewrites `a < n` to `n > a` in that case and ONLY in that case. MEASURED, sexpr included,
+# over the 120 ordered pairs of the oracle's `cmpZ_*`/`cmpP_*` rows:
+#     str(i < IntVal(5))  = '5 > i'       sexpr (> 5 i)
+#     str(i < 5)          = 'i < 5'       sexpr (< i 5)
+#     str(i < 100 - 1)    = 'i < 100 - 1'
+# The last two are the reason this is a HELPER and not a printer rule: a Python `int` and an
+# `ArithRef` expression both print unchanged, so `z3_cdiv`'s `a<0` and `z3_shift.fin`'s `b<0`
+# must NOT go through here, and making the printer canonicalise would corrupt both.
+def z3_lt(+a: Z, +b: Z) -> Z:
+  Bool.pick(Z, Z.is_num2(a, b), ZGt{b, a}, ZLt{a, b})
 
 # `BoolVal`'s text is `True` / `False`, and `v` is 1 / 0.
 def z_b(+v: U32) -> String:
@@ -335,32 +354,31 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
   String.concat(["If(", base, " < 0, ", core, " - ", U32.show(U32.shln(1, U32.to_nat(w))), ", ", core, ")"])
 
 # ---------------------------------------------------------------------------
-# THE COMPARISON PRINTER IS THE IDENTITY, AND THAT IS THE WHOLE OF D1 AND D2.
+# THE COMPARISON PRINTER. There are THREE orientation facts and they are all in the
+# AST, never in the printer -- `str()` is the identity on a comparison's sexpr, which is
+# what the 120-pair table below confirms pair by pair.
 #
-#   z3's `str()` prints a comparison IN SOURCE ORDER. Every one of 128 measured pairs does,
-#   and the sexprs confirm it: `(>= 5 i)` prints `5 >= i`, `(<= i 0)` prints `i <= 0`,
-#   `(<= i (- 100 1))` prints `i <= 100 - 1`. There is NO hoist and NO reorientation.
+#   1. PYTHON REFLECTION. A Python `int` on the LEFT tries `int.__le__(ArithRef)`, gets
+#      NotImplemented, and evaluates the reflected `ArithRef.__ge__`, which builds
+#      `GE(right, left)`. validate.py:51's `(vmin <= s)` has a Python `int` `vmin`, so the
+#      AST is `s >= vmin`. MEASURED: `str(0 <= i)` = `'i >= 0'`, `str(i <= 0)` = `'i <= 0'`.
+#      So `create_bounded` builds `ZGe`, and `z3_cdiv`'s `0<b` and `z3_floordiv`'s `b>0`
+#      build `ZGt`.
+#   2. z3's OWN CANONICALISATION, which fires only for a z3 `IntNumRef` on the right: `a OP
+#      n` becomes `n flip(a)` when `n` is a numeral and `a` is not. MEASURED:
+#      `str(i <= IntVal(5))` = `'5 >= i'` but `str(i <= 5)` = `'i <= 5'` and
+#      `str(i <= (100-1))` = `'i <= 100 - 1'`.
+#   3. `UOp._min_max` returns PYTHON ints, so `create_bounded` is outside fact 2 and prints
+#      `s >= vmin` / `s <= vmax` unchanged. That is the whole of old D1 and D2, and it is
+#      ONE rule rather than two guesses.
 #
-# ⚠ SO WHERE DID `i >= 0` COME FROM? From Python's REFLECTED OPERATOR, not from z3. A
-# Python `int` on the LEFT of a comparison tries `int.__le__(ArithRef)`, gets
-# NotImplemented, and evaluates the reflected `ArithRef.__ge__`, which builds `GE(right,
-# left)`. So validate.py:51's `(vmin <= s)`, with `vmin` a Python `int`, is `s >= vmin` in
-# the AST before z3 ever sees it. MEASURED, one process, one context:
-#     str(0 <= i) = 'i >= 0'    sexpr (>= i 0)
-#     str(i <= 0) = 'i <= 0'    sexpr (<= i 0)
-#     str(IntVal(0) <= i) = '0 <= i'   sexpr (<= 0 i)     <- NOT what validate.py evaluates
-# The third line is why this took a session to settle: the two "disagreeing measurements"
-# this header used to record are the SAME rule under two different operand spellings. Rows
-# `refl_*` and `cmpP_*` / `cmpZ_*` in `.agents/slop/validate-oracle.py`.
-#
-# CONSEQUENCE, and it is a real modelling requirement rather than a style note: every
-# `ZLt`/`ZLe` this file builds must be the AST CPython builds, so a comparison with a
-# PYTHON-int left operand is spelled `ZGe`/`ZGt` here. `z3_cdiv`'s `0<b` and `z3_floordiv`'s
-# `b > 0` are the two such places and both are corrected below.
+# `cmpZ_*` (z3 numeral operands), `cmpP_*` (Python int operand) and `refl_*` are rows in
+# `.agents/slop/validate-oracle.py`, and `str()` is the identity on all 120 of them.
 # ---------------------------------------------------------------------------
 
 # THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and
-# validate.py's f-strings print.
+# validate.py's f-strings print. The four comparison arms are inlined because they call
+# `Z.str` and `Z.str` calls them -- mutual recursion, which Bend refuses outright.
 def Z.str(t: Z) -> String:
   match t:
     case ZSym{nm, b}: nm
@@ -376,6 +394,14 @@ def Z.str(t: Z) -> String:
     case ZGe{a, b}: String.concat([Z.str(a), " >= ", Z.str(b)])
     case ZLt{a, b}: String.concat([Z.str(a), " < ", Z.str(b)])
     case ZGt{a, b}: String.concat([Z.str(a), " > ", Z.str(b)])
+    case ZEq{a, b}: String.concat([Z.str(a), " == ", Z.str(b)])
+    case ZNe{a, b}: String.concat([Z.str(a), " != ", Z.str(b)])
+    case ZNeZ{a}: String.concat([Z.str(a), " != 0"])
+    case ZAnd{a, b}: String.concat(["And(", Z.str(a), ", ", Z.str(b), ")"])
+    case ZOr{a, b}: String.concat(["Or(", Z.str(a), ", ", Z.str(b), ")"])
+    case ZXor{a, b}: String.concat(["Xor(", Z.str(a), ", ", Z.str(b), ")"])
+    case ZFresh{nm}: nm
+    case ZBv{k, w, a, b}: ZBv.str(k, w, Z.str(a), Z.str(b))
     case ZEq{a, b}: String.concat([Z.str(a), " == ", Z.str(b)])
     case ZNe{a, b}: String.concat([Z.str(a), " != ", Z.str(b)])
     case ZNeZ{a}: String.concat([Z.str(a), " != 0"])
@@ -486,9 +512,21 @@ def vz_lo(i: H.I64) -> U32:
   match i:
     case H.I64{hi, lo}: lo
 
+# `x.val` FOR A CONST, and the value is `1`/`0` for a BOOL, not just an int.
+# ⚠ `O.CBool` WAS MISSING HERE AND IT COST THE POSITIVE ROW ITS `True`. Rule 7 is
+# `z3.BoolVal(x.val)` if `x.dtype == dtypes.bool` else `z3.IntVal(x.val)` (validate.py:75), and
+# with a `CBool` CONST this returned `None`, so rule 7 MISSED on every bool CONST -- and the
+# gate of every fixture IS one (`UOp.const(True)`). MEASURED with `.agents/slop/mask-probe.bend`
+# on the `dv_and21` fixture: `gate_op=Ops.CONST gate_dtype_isbool=True gate_tag=6` (rule 7
+# fires) and `gate_in_es=None` with `vs_n=1` -- the rewrite reported "a CONST with no value",
+# so nothing was ever added to the solver and `str(solver)` could not end in `True`.
+def vz_cbool(b: Bool) -> U32:
+  Bool.pick(U32, b, 1, 0)
+
 def vz_cint(c: O.Const) -> Maybe<&1, U32>:
   match c:
     case O.CInt{i}: Some{vz_lo(i)}
+    case O.CBool{b}: Some{vz_cbool(b)}
     case _: None{}
 
 def vz_cval.go(a: O.Arg) -> Maybe<&1, U32>:
@@ -601,17 +639,16 @@ def zwhy(+a: ZAt, +b: ZAt) -> String:
 
 # `z3_cdiv(a,b) = If(a<0, If(0<b, (a+(b-1))/b, (a-(b+1))/b), a/b)`
 #
-# `0 < b` IS `ZGt{b, 0}`, NOT `ZLt{0, b}`: the `0` is a Python `int` on the left, so Python
-# reflects and z3 receives `b > 0`. MEASURED: `str(IntVal(0) < i)` is `i > 0`. `a < 0` needs
-# no such change -- a z3 term on the left does not reflect.
+# `0 < b` IS `ZGt{b, 0}`: the `0` is a Python `int` on the left, so Python REFLECTS and calls
+# `ArithRef.__gt__(0)`. MEASURED: `str(0 < i)` is `i > 0` and `str(IntVal(0) < i)` is
+# `0 < i` -- opposite answers, and only the first is what validate.py evaluates.
 def z3_cdiv(+a: Z, +b: Z) -> Z:
   ZIf{ZLt{a, ZLit{0, False{}}},
        ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{ZAdd{a, ZSub{b, ZLit{1, False{}}}}, b},
                                                  ZDiv{ZSub{a, ZAdd{b, ZLit{1, False{}}}}, b}},
        ZDiv{a, b}}
 
-# `z3_floordiv(a,b) = If(b>0, a/b, (-a)/(-b))` -- `b > 0` is written `0 < b` upstream, so
-# the same reflection applies and it is `ZGt` for the same measured reason.
+# `z3_floordiv(a,b) = If(b>0, a/b, (-a)/(-b))` -- written `0 < b` upstream, same reflection.
 def z3_floordiv(+a: Z, +b: Z) -> Z:
   ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{a, b}, ZDiv{ZNeg{a}, ZNeg{b}}}
 
@@ -790,10 +827,36 @@ def ren_7.put(m: Maybe<&1, U32>, is_bool: Bool, +s: Sol) -> Ren:
 def ren_8.put(+x: ZAt, +sb: Bool, +db: Bool, +s: Sol) -> Ren:
   Bool.pick(Ren, ZAt.hit(x), Ren{s, zat.hit(z3_cast(sb, db, ZAt.t(x)))}, Ren{s, x})
 
+# `k` is 1 CMOD, 2 CDIV/FLOORDIV, 3 FLOORMOD -- `ren_9.go`'s tag for the four `z3_alu`
+# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is FLOORMOD, so a tag this
+# ladder does not know becomes FLOORMOD rather than an error; `dv_max` is the row that caught
+# `Ops.MAX` arriving as `k = 0` and being silently floormodded.
+# `k` is 1 CMOD, 2 CDIV/FLOORDIV, 3 FLOORMOD -- `ren_9.go`'s tag for the four `z3_alu`
+# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is FLOORMOD, so a tag this
+# ladder does not know becomes FLOORMOD rather than an error; `dv_max` is the row that caught
+# `Ops.MAX` arriving as `k = 0` and being silently floormodded.
 def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
   Bool.pick(Z, U32.is_eq(k, 2), z3_floordiv(a, b),
     Bool.pick(Z, U32.is_eq(k, 1), ZSub{a, ZMul{z3_cdiv(a, b), b}},
                                    ZSub{a, ZMul{z3_floordiv(a, b), b}}))
+
+# ⚠ A REAL DEFECT WAS HERE AND NO ROW COVERED IT. `Ops.MAX` was reaching this ladder as `k =
+# 0`, which is neither 2 (FLOORDIV) nor 1 (CMOD), so it fell through to the FLOORMOD arm:
+# `validate.py:47`'s `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)` was rendered as
+# `a - floordiv(a,b)*b`. `MAX` is a `z3_alu` key (`n_z3_alu=11` counts it) and `ren_9.go`
+# routed it here, so this was reachable from `uops_to_z3` and INVISIBLE: zero fixtures used
+# MAX, and `Ops.FLOORMOD` is a real key too, so a mistranslation here is invisible to a
+# membership count. `dv_max` is the row, and it is in the oracle.
+def ren_9.mx.mk(+a: Z, +b: Z) -> Z:
+  ZIf{z3_lt(a, b), b, a}
+
+# ⚠ AND THE LESSON, since the shape is tempting to share: `ren_9.b2`, `ren_9.mx` and
+# `ren_10.b2` are three near-identical "read two srcs, apply a builder" bodies that differed
+# ONLY in the term, and a fourth one is exactly how `Ops.MAX` ended up floormodded. They are
+# left as three bodies ON PURPOSE: a shared combinator taking the builder as a parameter needs
+# a function-typed parameter, which is not writable here, and a `k: U32` tag reproduces the
+# defect (an unknown tag silently taking the last arm). `dv_max` is the row that makes a
+# mistyped tag a disagreement instead of a plausible term.
 
 def z3why(+a: ZAt, w: String) -> String:
   Bool.pick(String, ZAt.hit(a), w, ZAt.v(a))
@@ -830,13 +893,17 @@ def z3_alu_ops() -> List<&2, O.Op>:
   [O.OpsCMOD{}, O.OpsCDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsWHERE{},
    O.OpsMAX{}, O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}]
 
-# the four text the integer `python_alu` arms produce. `k` is 1 ADD, 2 SUB,
+# the six terms the integer `python_alu` arms produce. `k` is 1 ADD, 2 SUB,
 # 3 MUL, 4 CMPLT, 5 CMPNE, 6 CMPEQ.
+# k = 4 IS `z3_lt` AND NOT `ZLt`: `python_alu[CMPLT]` is `operator.lt`, and `operator.lt` on a
+# z3 NUMERAL right operand is what z3 canonicalises. MEASURED, and `dv_where` is the only row
+# that sees it: its constraint list ends `8 > v` in CPython where `v < 8` would be the
+# transliteration of `operator.lt(v, z3.IntVal(8))` read without z3's rewrite.
 def ren_10.mk(+k: U32, +a: Z, +b: Z) -> Z:
   Bool.pick(Z, U32.is_eq(k, 1), ZAdd{a, b},
     Bool.pick(Z, U32.is_eq(k, 2), ZSub{a, b},
       Bool.pick(Z, U32.is_eq(k, 3), ZMul{a, b},
-        Bool.pick(Z, U32.is_eq(k, 4), ZLt{a, b},
+        Bool.pick(Z, U32.is_eq(k, 4), z3_lt(a, b),
           Bool.pick(Z, U32.is_eq(k, 5), ZNe{a, b}, ZEq{a, b})))))
 
 def ren_10.b2.put(+k: U32, +a: ZAt, +b: ZAt, +s: Sol) -> Ren:
@@ -930,6 +997,17 @@ def vz_term.of(m: Maybe<&1, Z>) -> String:
   match m:
     case Some{t}: Z.str(t)
     case None{}: ""
+
+# `Maybe<&1, Z>` -> `Z`, and a MISS IS NOT A SYNTHESISED `True`. The gate node is in the
+# toposort and rule 7 always rewrites a CONST to `z3.BoolVal`, so a miss means the walk never
+# reached the gate -- and answering `True` there would put an assertion in the list that no
+# node justifies, which is precisely the class of plausible-but-wrong value this file's rows
+# exist to catch. A FREE SYMBOL named for the failure is the honest middle: it is a legal `Z`,
+# it is unmistakably not a real constraint, and it cannot be mistaken for CPython's `True`.
+def vz_zat(m: Maybe<&1, Z>, i: U32, n: U32) -> Z:
+  match m:
+    case Some{t}: t
+    case None{}: ZSym{String.concat(["dv_mask_missing@", U32.show(i), "/n=", U32.show(n)]), False{}}
 
 # `solver.model()` -- NOT PORTED. It is a solver output and the header calls the
 # solver the wall; a model cannot be rendered without solving.
@@ -1064,7 +1142,10 @@ def ren_9.b2.put(+k: U32, +a: ZAt, +b: ZAt, +s: Sol) -> Ren:
 
 # `z3.If(a<b, b, a)`
 def ren_9.mx(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
-  ren_9.b2.put(0, zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1"), s)
+  Bool.pick(Ren, zall(zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1")),
+            Ren{s, zat.hit(ren_9.mx.mk(ZAt.t(zat.src(ar, s, self, 0, "rule 9 src0")),
+                                       ZAt.t(zat.src(ar, s, self, 1, "rule 9 src1"))))},
+            Ren{s, zat.miss(zwhy(zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1")))})
 
 def ren_9.w3.go(+c: ZAt, +a: ZAt, +b: ZAt, +s: Sol) -> Ren:
   Bool.pick(Ren, Bool.and(ZAt.hit(c), zall(a, b)), Ren{s, zat.hit(ZIf{ZAt.t(c), ZAt.t(a), ZAt.t(b)})},
@@ -1268,6 +1349,27 @@ def vz_one.hit(+acc: Vz, +s: Sol, +a: ZAt, u: U32) -> Vz:
   Bool.pick(Vz, ZAt.hit(a),
             Vz{Sol.put(s, u, ZAt.t(a)), vz_vs(acc)},
             Vz{s, List.append(&2, String, vz_vs(acc), [ZAt.v(a)])})
+
+# `solver.add(z3_mask)` -- validate.py:95, and it is the reason every CPython constraint list
+# ENDS `, True]`. MEASURED, and the addition is what adds it:
+#     str(solver) after uops_to_z3 = [And(v >= 0, v <= 15), 8 > v]
+#     str(solver) after add(mask)  = [And(v >= 0, v <= 15), 8 > v, True]
+# The mask is `z3_mask`, the SECOND value `uops_to_z3` returns, which is the gate node's own
+# rewritten term -- `z3.BoolVal(True)` for `UOp.const(True)`. So it is NOT a synthesised
+# constant: it is a term the walk already produced, and the fix is to move that one term from
+# `es` (the `z3map`) into `cs` (the solver's assertion list). This was defect D5 and it is the
+# whole difference between `[]` and `[True]` on the positive row.
+#
+# `mask` is the index of the gate node, `idx` the index of the node being checked; `uops_to_z3`
+# is called with `(idx, gate)` and returns `[z3_idx, z3_mask]` in that order.
+# `vz_s(acc)` IS READ ONCE, THROUGH A `let`. `vz_s.go` takes its `Vz` BY VALUE
+# (`case Vz{s, vs}: s`, no `+`), so a second read in the same record literal reads a consumed
+# name. `n` is `len(ctx[1])`, the number of `z3map` binds, and it is in the message because a
+# missing lookup with the RIGHT index and the WRONG bind count is the signature of a walk that
+# never reached the node -- which is exactly what the `Found.ar(t)` defect below produced.
+def vz_add_mask(+acc: Vz, +m: U32) -> Vz:
+  +s: Sol = vz_s(acc)
+  Vz{Sol.add(s, vz_zat(Sol.find(s, m), m, Sol.n(s))), vz_vs(acc)}
 
 def validate_index_with_z3(sz: U32, +acc: Vz, idx: U32) -> Rep:
   Rep{sz, vz_vs(acc), cs_str(vz_cs(acc)), vz_term(acc, idx)}
@@ -1542,14 +1644,19 @@ def Rep.term(r: Rep) -> String:
   match r:
     case Rep{sz, vs, cs, term}: term
 
-def vs_str.go(+vs: List<&2, String>, +acc: String) -> String:
+# THE VIOLATION TEXT, joined by `; `. Same separator discipline as `cs_str.go`, and for the
+# same measured reason: the old form took the `acc` arm when the list had ONE element, so a
+# SINGLE violation printed as the empty string next to a count of `1` -- which is how
+# `dv_unsup_stack` and `dv_rank_shr1` reported "1 violation" and showed no message. A reader
+# cannot tell that from a zero-message violation, and the count is the only thing saying
+# anything happened.
+def vs_str.go(+vs: List<&2, String>, +acc: String, sep: String) -> String:
   match vs:
     case Nil{}: acc
-    case h <> t: vs_str.go(t, Bool.pick(String, U32.is_eq(U32.from_nat(List.length(&2, String, vs)), 1),
-                                         acc, String.concat([acc, "; ", h])))
+    case h <> t: vs_str.go(t, String.concat([acc, sep, h]), "; ")
 
 def vs_str(vs: List<&2, String>) -> String:
-  vs_str.go(vs, "")
+  vs_str.go(vs, "", "")
 
 def n_vs(vs: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, vs))
@@ -1669,13 +1776,32 @@ def vz_walk(todo: List<&2, U32>, +ar: O.Arena, +fx: F.Folded, +acc: Vz) -> Vz:
     case Nil{}: acc
     case u <> t: vz_walk(t, ar, fx, vz_one(ar, fx, acc, u))
 
+# `Sol{Nil{}, Nil{}, ms}` -- the min/max table is FIXTURE INPUT (upstream `UOp._min_max`,
+# which `fold.bend` does not have), so it is the one thing in the walk's starting state that
+# is not derived. Nothing else is: `cs` and `es` both start empty and every entry in them is
+# a `Sol.add`/`Sol.put` the walk performed.
+def vz_seed(ms: List<&2, MRng>) -> Vz:
+  Vz{Sol{Nil{}, Nil{}, ms}, Nil{}}
+
 def uops_to_z3.of(+ar: O.Arena, ms: List<&2, MRng>, snk: O.Found) -> Vz:
   vz_walk(vz_drop_sink(vz_topo(O.Arena.budget(ar), ar, F.folded(ar),
                                 VTopo{Nil{}, [VFr{O.Found.i(snk), False{}}]}), ar, Nil{}),
-         ar, F.folded(ar), Vz{Sol{Nil{}, Nil{}, ms}, Nil{}})
+         ar, F.folded(ar), vz_seed(ms))
 
-def uops_to_z3.sink(+ar: O.Arena, ms: List<&2, MRng>, +snk: O.Found) -> Vz:
-  uops_to_z3.of(O.Found.ar(snk), ms, snk)
+# `gate` RIDES THROUGH TO THE `.sink` ARM so the `Sol.add` sees the arena the walk ran
+# against -- `vz_add_mask` reads `vz_s(acc)` for the term, and the term only exists there.
+# `gate` IS BOUND TO A `let` BECAUSE IT IS READ TWICE, and a `let` is shared where a
+# parameter is not: `[idx, gate]` CONSUMES the name. MEASURED -- with the name passed
+# straight through, `vz_add_mask` looked up a gate index that was no longer the gate's and
+# printed `dv_mask_missing` on all 16 rows, while `.agents/slop/mask-probe.bend` read `Some`
+# for the same node out of the same walk by hand. `+gate` is NOT the fix: `+` says the callee
+# may REBIND the name (agent-core's `arena-affine-probe.bend` measured two mints from one
+# arena name both returning index 2 and overwriting each other), so it silences the type error
+# without guaranteeing the value.
+def uops_to_z3.sink(+ar: O.Arena, ms: List<&2, MRng>, idx: U32, gate: U32) -> Vz:
+  +gt: U32 = gate
+  +snk: O.Found = O.UOp.sink(ar, [idx, gt])
+  vz_add_mask(uops_to_z3.of(O.Found.ar(snk), ms, snk), gt)
 
 # `UOp.sink(*uops)` GROWS the arena, so the fold is taken AFTER it -- a `Folded`
 # of the pre-sink arena is a fold of a store that does not contain the node the
@@ -1692,10 +1818,22 @@ def uops_to_z3.sink(+ar: O.Arena, ms: List<&2, MRng>, +snk: O.Found) -> Vz:
 # with no error anywhere. `+snk = ...` then `O.Found.ar(snk)` is the same shape
 # every growing fixture in this port uses.
 def uops_to_z3(+ar: O.Arena, +ms: List<&2, MRng>, idx: U32, gate: U32) -> Vz:
-  uops_to_z3.sink(ar, ms, O.UOp.sink(ar, [idx, gate]))
+  uops_to_z3.sink(ar, ms, idx, gate)
 
-def dv2(nm: String, +t: O.Found, g: O.Found, ms: List<&2, MRng>) -> String:
-  dv.of(nm, uops_to_z3(O.Found.ar(t), ms, O.Found.i(t), O.Found.i(g)), O.Found.i(t))
+# ⚠ THE ARENA IS `Found.ar(g)`, NOT `Found.ar(t)`, AND THAT IS A THIRD ALIASING DEFECT IN
+# THIS FILE'S FIXTURE FAMILY -- the same class as `dv_and.mm`'s, one level up.
+# `t` is interned first and `g = fx_const_bool(Found.ar(t), ...)` is interned SECOND, so
+# `Found.ar(t)` is the store BEFORE `g` exists in it. Handing that store to `uops_to_z3` grows
+# it with a SINK whose src[1] is an index `g` was never given, and the walk reads a node that
+# is not the gate. MEASURED: `dv_mask_missing@5` with `Sol.n == 4` on a 5-node walk -- the
+# index was right, the store was short. `n` is the number of `z3map` binds, so `4` says one
+# node of the walk never reached `Sol.put`. CPython cannot have this bug: `uops_to_z3` takes
+# UOp OBJECTS and tinygrad hash-conses them into one graph.
+#
+# `Found.ar(g)` is the arena AFTER the last mint, so it contains `t` and `g` both, and node
+# indices are append-only so the `ms` table -- keyed by index -- is unaffected.
+def dv2(nm: String, +t: O.Found, +g: O.Found, ms: List<&2, MRng>) -> String:
+  dv.of(nm, uops_to_z3(O.Found.ar(g), ms, O.Found.i(t), O.Found.i(g)), O.Found.i(t))
 
 def dv_const_ok.of(+ar: O.Arena, nm: String) -> String:
   +t = fx_const(ar, 15)

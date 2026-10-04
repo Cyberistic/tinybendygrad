@@ -19711,3 +19711,230 @@ still ran 2.  **A FLAG THAT REPORTS ITS OWN VALUE MUST BE READ BACK, OR IT IS A 
 PRINTED RECEIPT** -- the same failure as `rebase-gate.py`'s `--oracle`, which printed
 `[oracle-override] ...` and changed nothing because `targets_of()` had already snapshotted the
 wiring into the list the loop iterates.
+
+---
+
+## APPENDED 2026-10-04, literal-oracle unit (positions ~19718 onward). Cite these by position.
+
+### P1 (~19720). A STUB SUPPLYING NO ARITHMETIC IS A CALL INTO THE SUBJECT, NOT A CALL INTO A
+### COPY -- AND THE TRAP IS EXACTLY WHERE THE SUBJECT TOUCHES `fd`.
+`tinygrad/runtime/ops_nv.py:42-44` is
+    def nv_iowr(fd:FileIOInterface, nr, args, cmd=None):
+      ret = fd.ioctl(cmd or ((3 << 30) | (ctypes.sizeof(args) & 0x1FFF) << 16 |
+                            (ord('F') & 0xFF) << 8 | (nr & 0xFF)), args)
+      if ret != 0: raise RuntimeError(f"ioctl returned {ret}")
+and `.agents/slop/nv-oracle.py` was TRANSCRIBING both the bit pattern and the f-string.  An
+`fd` object whose `ioctl(cmd, args)` RECORDS `cmd` and RETURNS a chosen value is enough to make
+CPython compute the word and CPython raise its own message, because `fd` is the only thing the
+function needs from the device.  The stub contributes no arithmetic, so this is a call into the
+subject.  **The generalisable rule: when the subject's signature already takes its one external
+object as a parameter, a recording stub of that object upgrades the whole expression from a
+transcription to a measurement -- no monkeypatching, no re-implementation.**
+  The second half: `ctypes.sizeof(args)` is a STRUCT SIZE, so a fixture for "n bytes" must be a
+real ctypes object of that size (`c_uint8 * sz` has `sizeof == sz` for every sz including 0), not
+an int passed where a struct is expected.  MEASURED: `sz=8192` and `sz=0` then produce the SAME
+word, because `& 0x1FFF` truncates -- which is the property `nv_iowr_size_is_same` asserts, so
+that row became two calls compared instead of one hand-copy checked against another.
+
+### P2 (~19736). ISOLATE A BITFIELD BY DIFFERENCING TWO CALLS, NOT BY MASKING ONE.
+`ops_nv.py:47`'s header word is `(typ << 28) | (nvals << 16) | (subc << 13) | (mthd >> 2)`, and
+the oracle wants one row per field.  Writing `(nvm(0,0,0,typ=2)[0] - nvm(0,0,0,typ=0)[0])` types
+NO shift and NO mask, and still fails if upstream moves the field: both sides of the subtraction
+move together and the difference does not.  **A MASK IS A TRANSCRIPTION OF THE LAYOUT WITH THE
+PROVENANCE REMOVED; A DIFFERENCE OF TWO CALLS IS THE LAYOUT, ASKED FOR TWICE.**
+
+### P3 (~19742). A LITERAL BESIDE A HELPER THAT PRODUCES THAT LITERAL IS THE SAME DEFECT AS THE
+### LITERAL ALONE -- AND THE FIX CAN REVEAL THAT THE TWO NEVER AGREED.
+Measured in `.agents/slop/nv-oracle.py`: seven `nv_pc_*` rows were typed `0, 1, 3, 3, 3, 3, 0`
+directly under a `_put` chain, and the block's comment claimed they were "the COUNT of advances".
+`len(_c)` at the three count rows was **1, 2, 3**.  Every literal was CORRECT AGAINST THE PORT and
+WRONG AGAINST THE ORACLE'S OWN STATE, and nothing noticed because nothing read it.  **A ROW THAT
+RESTATES ITS NEIGHBOUR'S OUTPUT IS A CHANGE DETECTOR FOR ITS NEIGHBOUR, AND A CHANGE DETECTOR
+FOR A HELPER IS NOT A TEST OF THE HELPER.**  The fix is to rebuild the chain to the PORT's shape
+(`ops_nv.bend:3453-3459` measures the EMPTY cache before the first put) so each read sits where the
+port's read sits, and then to say plainly that this family bought provenance over the ORACLE'S OWN
+STATE and not over upstream -- `_put` is still a copy of `ops_nv.py:314-318` and `nv_build_program`
+needs a real ELF, so there is no upstream call to make.  **A CONVERSION THAT CANNOT NAME AN
+UPSTREAM CALL MUST NOT BE COUNTED AS ONE.**
+
+### P4 (~19756). A CONVERTED ROW IS NOT A VERIFIED ROW, AND THE NON-MOVING LIST IS THE DELIVERABLE.
+12 mutations of `tinybendygrad/runtime/ops_nv.bend` (`.agents/slop/nv-iowr-mutate.py`): 22 of the 27
+converted row names moved under at least one; **5 moved under none**, and they split four ways:
+  * `nv_iowr_msg_0` -- the **NO-RAISE ARM** of upstream's `if ret != 0: raise`. NOT a defect; this is
+    the `nv-oracle.py` "4 dead sites, all the no-raise arm whose other arm ran" trap in miniature.
+  * `nv_pc_grow_0` -- the count of the EMPTY cache, a structural constant of `PC.of()`.
+  * `nv_pc_miss_3`, `nv_pc_id_0` -- **UNTESTED. NO MUTATION TARGETED THEM.** That is a statement
+    about my choices and must never be reported as insensitivity.
+  * `nv_iowr_explicit_kept` -- the one mutation designed to reach it (`Bool.True{}` where a `U32` is
+    required) FAILED TO COMPILE and emitted 0 rows, so the harness refused it: **INCONCLUSIVE, not
+    counted either way.**  This is the "a mutation that fails to compile reports MOVED=True off ZERO
+    rows" trap, refused by construction.
+**RULE: a row's sensitivity is a MEASUREMENT ABOUT MUTATIONS THAT WERE WRITTEN FOR IT. If you did
+not write one, the honest entry is UNTESTED -- not "did not move".**
+  Also measured here: a mutation can move 0 of 600 rows for a FIXTURE reason -- making the hit arm of
+`pc.put` stamp `PC.miss(p)` into the id field changes nothing because on that fixture
+`misses == next == 3` after three insertions.  **THAT IS NOT A THEOREM AND WAS NOT REPORTED AS ONE.**
+
+### P5 (~19772). AN INSTRUMENT THAT IS ITSELF WRONG CAN AGREE WITH A RIGHT PORT, AND THAT IS
+## WORSE THAN NO INSTRUMENT, BECAUSE IT LOOKS LIKE CORROBORATION.
+`.agents/slop/kn-noop-truth.py` builds its RANGEs by hand as
+`UOp(Ops.RANGE, src=(c4, CONST(0)), arg=AxisType.UPCAST)`.  `UOp.range(4, (0,), AxisType.UPCAST)` --
+the shape `ops_nv.py` actually builds -- is a DIFFERENT node.  MEASURED:
+    kn-noop-truth RANGE    op=RANGE  len(src)=2  arg=AxisType.UPCAST          src_ops=['CONST','CONST']
+    kn-truth UOp.range     op=RANGE  len(src)=1  arg=(AxisType.UPCAST,(0,))  src_ops=['CONST']
+    op NAME identical (so the `ops` row cannot see the difference): True
+So a row that prints op NAMES agreed with a node CPython never constructs.  This is the
+`nv_query_litter` failure one level down: the wrong PORT and the wrong ORACLE said 2 and the truth
+was 3, and the differ reported "0 disagreements" over an error made twice.  **WHEN A ROW'S SPELLING
+CANNOT SEE THE THING THAT IS WRONG, CONVERTING IT FROM A LITERAL TO A CALL ADDS PROVENANCE AND ZERO
+DISCRIMINATIVE POWER** -- and `kn-ops-mutate.py` shows the same for the live `ops` row: it moved
+under M1 (op name) and M2 (a dedup) and NOT under M3 (two srcs swapped), M4 (the axis inside an
+`arg`) or M5 (a slot number).
+
+### P6 (~19788). 7 OF nv-oracle.py's 9 "message" LIES ARE THE NO-RAISE ARM, SO ~15% OF THE SCORE
+### THAT RANKED IT FIRST IS THE FALSE POSITIVE.
+`handtyped-rank.py`'s `lies()` flags a row whose value is a quoted string matching
+`error|msg|warn|refus|raise|Unknown|not available`, and an EMPTY STRING MATCHES. Measured over
+nv's 83 DEFECT rows: 9 `message`, 12 `bare-bool`, 5 `dup-name`, 4 `control` -- and **7 of the 9
+`message` rows have the value `""`** (`nv_reloc_msg_2`, `nv_launch_msg_ok`, `nv_dims_msg_ok`,
+`nv_vid_msg_ok`, `nv_smemcfg_msg_0`, `nv_smemcfg_msg_big`, `nv_reloc_msg_%d`).  **7 x 3 = 21 of
+nv's 144 points.**  **A SCORE THAT RANKS AN ORACLE HIGH BECAUSE OF ITS OWN `try/except` IS NOT A
+RANKING**, and the fix is one line in `lies()`: an empty string is not a message.
+  Two real shadows found alongside: `nv_smemcfg_too_big` is emitted twice, `"False"` at :1139 and
+`"True"` at :1141, and `rows()` keeps the LAST, so **the `"False"` row never reaches the gate**;
+`nv_reloc_bad_refused` is emitted THREE times.  MEASURED: nv prints 574 rows and has **547 distinct
+names** -- 27 emitted rows are invisible to the gate.
+
+### P7 (~19810). `ctypes`-SIZED FIXTURES MAKE `& 0x1FFF` ROWS REAL INSTEAD OF TRANSCRIBED, AND
+## THE MASK ROW IS THE ONE WORTH HAVING.
+`nv_iowr_8192_1` is the row that says `sizeof(args) & 0x1FFF` is 0 for an 8 KiB struct, so the size
+field VANISHES and the word reads as if the struct were empty.  Hand-typed, that row is a comment
+with a number in it; measured through the port it is killed by widening `IOWR_SIZE_MASK` from 8191
+to 16383, which also flips `nv_iowr_size_is_same` from `True` to `False` in the same mutation.
+**THE NEGATIVE CASE AND ITS OPPOSITE BELONG IN ONE MUTATION, BECAUSE THAT IS WHAT MAKES THE MASK
+LOAD-BEARING OBSERVABLE RATHER THAN ASSERTED.**
+
+### P8 (~19820). REPLICATE A SHARED INSTRUMENT'S PREDICATE IN A THROWAWAY SCRIPT; DO NOT EDIT THE
+## INSTRUMENT TO ANSWER A QUESTION ABOUT ONE ORACLE.
+`handtyped-rank.py` and `handtyped-audit.py` are shared and neither prints WHICH rows landed in a
+column. To find out what nv's 31 LIES were, `lies()` was copied into a throwaway script that reads
+`handtyped-audit.scan()`'s row dicts. **The INSTRUMENT STAYS ONE INSTRUMENT; the QUESTION GETS ITS
+OWN SCRIPT.**  (`handtyped-audit.scan(path)` returns dicts with `name`, `lineno`, `name_spelling`,
+`value_src`, `kind`, `defect` -- which is everything `lies()` and `magic()` need.)
+
+### K1 (~19830). A COMPARATOR AGAINST `ops.py:201` FAILS IN BOTH DIRECTIONS, AND "COMPARE EVERY
+## FIELD" IS NOT THE RULE. THE KEY IS `(op, src, arg, tag, type(arg))`: IT HOLDS `arg` AND
+## COMPARES IT WITH THE ELEMENT'S OWN `__eq__`, AND IT CARRIES `type(arg)` AND **NOT**
+## `type(tag)`.  APPEND-only; positions continue from P8 at ~19820.
+`type(arg)` disambiguates the element that IS `arg` and NOTHING BELOW IT.  So the SAME pair of
+values behaves differently at two depths, which makes "compare all fields" the wrong rule:
+
+  * a comparator WEAKER than the record's `__eq__` MERGES two nodes CPython keeps apart -- an
+    UNDER-split, which corrupts every later rewrite;
+  * a comparator STRONGER than Python's `==` SPLITS two nodes CPython merges -- an OVER-split,
+    which defeats hash-consing just as surely.
+
+MEASURED in `ops.bend` (CPython answers from `.agents/slop/ops-oracle.py`, block `0bis3`):
+
+| cell | CPython | what fixes it |
+|---|---|---|
+| `tag=True` vs `tag=1` | ONE node (no `type(tag)`) | cross `eq_tag.TBool`/`TInt` |
+| `UOp(CONST, arg=True)` vs `arg=1` | TWO nodes (`type(arg)`) | keep `eq_const` split |
+| `ParamArg(val=True)` vs `val=1` | ONE node (nested) | `eq_pynest`, NOT `eq_const` |
+| `val=ConstFloat(1.0)` vs `val=1` | TWO nodes | keep the split -- see K2 |
+
+**A COMPARATOR IS RIGHT OR WRONG AGAINST UPSTREAM'S KEY, NOT AGAINST INTUITION ABOUT TYPES.**
+`eq_arg.AFloat` comparing IEEE while `eq_const.CFloat` compares `bits` is not an inconsistency;
+the key holds a BARE `float` in one arm and a `ConstFloat` in the other.
+
+### K2 (~19848). `ConstFloat.__hash__` IS `hash(self.bits)`, SO A `ConstFloat` AND AN EQUAL
+## `int` ARE IN DIFFERENT DICT BUCKETS AND ARE **NEVER COMPARED** -- A VALUE-BASED PORT MUST
+## REPRODUCE THE HASH, NOT THE `__eq__`.
+`dtype.py:16-21`: `__eq__` falls through to `float.__eq__`, so `ConstFloat(1.0) == 1` is True, and
+`__hash__` returns `hash(self.bits)` = `hash(0x3ff0000000000000)` = 4611686018427387904, which is
+NOT `hash(1.0)`.  MEASURED: `ParamArg(val=ConstFloat(1.0))` and `ParamArg(val=1)` are **2 nodes**
+while `val=True` and `val=1` are **1**.  So the nested comparator crosses bool against `int` and
+MUST NOT cross it against `CFloat`, even though `==` says they are equal.  A port that reasons
+from `__eq__` alone gets this backwards.
+
+### K3 (~19858). A PAD SWEEP IS ONE AXIS SAMPLED N TIMES, AND MEASURED IT IS **BLIND TO A WRONG
+## CONSTANT AND A WRONG OFFSET** -- THE TWO CLASSES THAT SHIFT AN INDEX *SELF-CONSISTENTLY*.
+`.agents/slop/key-pad-sweep.bend` (pads 0, 1, 2, 5, 17, 64) with `.agents/slop/key-pad-mutate.sh`
+injecting four classes into `ops.bend` and diffing whole `name=value` lines:
+
+| injected defect | pad sweep | `ops.bend`'s 292 rows |
+|---|---|---|
+| wrong CONSTANT (`intern.find` seeded at 1) | **12 lines** (after adding `abs_first`) | 94 |
+| wrong OFFSET (`UOp.of.intern.put` reads `next - 2`) | **0 lines** | 78 |
+| stale ARENA (the hit branch appends anyway) | 12 lines | 10 |
+| dropped FIELD (`eq_tag`'s bool/int crossing removed) | 12 lines | 2 |
+
+TWO STRUCTURAL REASONS, both worth knowing before writing the next sweep:
+  * EVERY relative cell compares `Found.i(u)` against `Found.i(v)`, and a UNIFORM shift in how an
+    index is READ CANCELS in a comparison of two of them.  The fix is an **absolute** row
+    (`abs_first` == the pad count), not more pads.
+  * `UOp.new.of` is `Found{made, UOp.of(made, ...)}` -- MAKE first, then read the index back out of
+    the ALREADY-GROWN arena -- so `UOp.of` ALWAYS takes the `Some{i}` hit branch, and the
+    `case None{}` arm of `UOp.of.intern.put` is unreachable from `UOp.new` at all.  Calling
+    `UOp.of` directly on a freshly-made arena still HITS, so a sweep cell cannot reach it; only the
+    `sg_*`/`s5_*` sugar builders do.  **A SWEEP THAT CALLS ONLY THE ONE CONSTRUCTOR CANNOT SEE
+    HALF THE CONSTRUCTOR.**
+
+### K4 (~19876). `blobrows-sweep.sh` DOES `mkdir -p` AND NOT `rm -rf`, SO A RE-USED OUTPUT
+## DIRECTORY KEEPS STALE `.txt` CAPTURES AND **A DIRECTORY LISTING IS NOT THE FILE SET**.
+MEASURED: `.agents/slop/blobrows/BEFORE` already existed from an earlier session and still held
+`tinybendygrad__renderer__csprobe.bend.txt` for a file that no longer exists, so `ls *.txt` gave 74
+for a 72-file run.  `_counts.tsv` and `_srchash.txt` ARE overwritten and stay correct (`: >` and
+`>`), so a totals comparison is sound and a per-file comparison keyed on the listing is not.
+**KEY THE COMPARISON ON `_srchash.txt`, WHICH IS THE ONE AUTHORITATIVE LIST.**  It is
+`HASH PATH` in that order -- hash FIRST -- and reading it as `PATH HASH` silently compares hashes.
+
+### K5 (~19884). A `List` IS AFFINE AND A **READ** COUNTS AS A CONSUMPTION, SO A SHARED FIXTURE
+## LIST CANNOT BE PASSED TO N CELLS. SIX `pad*` DEFS ARE THE HONEST SHAPE, NOT A LOOP.
+MEASURED on 2.0.35: `len3(xs)` twice in one body is REFUSED with `expected : xs / observed : xs
+(consumed more than once)`, so `go(n: Nat)` building one `List.range(n)` and handing it to four
+cells does not compile.  Each `pad*` def builds its OWN `List.range`.  Related and measured in the
+same session: a def whose body is a `do` block must be the LAST def in the file and its body must
+end with a BARE TERM rather than a `_ : Unit <- ...` binding (`renderer/__init__.bend` note 7), a
+comment may not sit INSIDE a bracketed argument list, and a self-call is read LEFT TO RIGHT so the
+shrinking argument must come first.
+
+### CORRECTION — the pad-sweep calibration I gave three units was WRONG (2026-10-04)
+
+Earlier today I asserted, and put into three unit briefs, that an arena-size pad
+sweep "catches only a fixed wrong index among four injected defect classes". That
+was my inference from one observation, not a measurement. Measured, with an
+injection harness and an md5-asserted restore:
+
+| injected | pad sweep | ops.bend rows |
+|---|---:|---:|
+| wrong constant   | 12 | 94 |
+| wrong OFFSET     |  0 | 78 |
+| stale arena      | 12 | 10 |
+| dropped field    | 12 |  2 |
+
+It catches THREE of four and is blind to the wrong OFFSET. It was also blind to
+the wrong CONSTANT until an ABSOLUTE row was added. Two structural reasons:
+
+1. Every relative cell compares `Found.i(u)` against `Found.i(v)`, so a UNIFORM
+   shift in how an index is read CANCELS. More pads cannot help; an absolute
+   row can.
+2. `UOp.new.of` is `Found{made, UOp.of(made, ...)}` -- make first, then read the
+   index out of the ALREADY-GROWN arena -- so `UOp.of` always takes `Some{i}`,
+   and `UOp.of.intern.put`'s `None{}` arm is UNREACHABLE from `UOp.new` at all.
+   Only the `sg_*` / `s5_*` sugar builders reach it. A sweep that uses one
+   constructor cannot see half the constructor.
+
+RULE: a detection-rate claim needs an injection harness and a denominator. Mine
+had neither, and I put it in three briefs. A second instance of the general
+failure -- an instrument asserting a property of itself rather than of its
+subject.
+
+Also measured here, and both are traps rather than findings:
+
+- `blobrows-sweep.sh` does `mkdir -p`, not `rm -rf`. `.agents/slop/blobrows/BEFORE`
+  already existed and kept a stale `csprobe.bend.txt` for a DELETED file, so
+  `ls *.txt` returned 74 for a 72-file run. `_counts.tsv` and `_srchash.txt` ARE
+  overwritten and stay sound.
+- `_srchash.txt` is `HASH PATH`. Reading it as `PATH HASH` silently compares
+  hashes to hashes, which always agrees.

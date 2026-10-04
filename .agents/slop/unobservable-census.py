@@ -180,20 +180,44 @@ def hand_typed(oracle_py: pathlib.Path) -> list[tuple[str, str]]:
     default changed to 1 the row would still read `0,0` and still pass. It is not
     a test; it is a belief.
 
-    DETECTED, NOT GUESSED: a `row(...)`/`srow(...)` call whose value argument is a
-    bare string/number literal rather than an expression containing a call, a
-    subscript, or an attribute read. A row whose whole value is an f-string with
-    no expression inside it is the same defect.
+    ⚠ THIS FUNCTION USED TO CARRY ITS OWN REGEX AND IT WAS A FLOOR, NOT A COUNT. The
+    regex was
+
+        r'\\b(?:s?row)\\(\\s*"([^"]+)"\\s*,\\s*(.+?)\\)\\s*(?:#.*)?$'      (re.M)
+
+    and it answered **224** where the truth is **578**, and the 224 was repeated by
+    `handtyped-audit.py`'s own header, which is how a floor became a published figure.
+    Four blind variants, all of them in the direction that makes the number look better
+    than it is:
+
+      NAME    the row name must be a LITERAL string, so `row(f"cls_{c}", 7)` never matches --
+              and every oracle that indexes a family puts the index in the NAME, which is the
+              whole sibling_blind thesis. 90 rows.
+      VALUE   the value must be a bare literal, so an expression over constants is missed. 81.
+      RADIX   the literal pattern is `-?\\d+`, so `0x6996` and `0b11` cannot match AT ALL.
+              69. agent-core.md records `~0x6996` written as 24425 -- one table entry, paid for.
+      SEMI    `re.M` + `$` makes the call single-line, so two `row()` calls on one line are
+              missed -- and worse, the non-greedy `(.+?)` swallows the second call, so the
+              value it reports is `"1"), row("b"` which is not a literal either. 115 rows.
+
+    THE FIX IS DELETION, NOT A BETTER REGEX. This delegates to `handtyped-audit.py`, which
+    parses with `ast`, so a row is a row regardless of how its name is spelled or how the call
+    is wrapped, and which already RESOLVES BARE NAMES. One reader for one question, which is
+    also why a regex here and a parser there could disagree by 354 rows without either
+    complaining. `handtyped-audit.py`'s own header decomposes the delta into the four causes
+    above, and it counts a row it cannot classify as UNRESOLVED rather than folding it into
+    either class.
+
+    THE AUDIT. `.agents/slop/formblind-audit.py` A6..A11 constructs each of the four variants
+    and asserts this function CANNOT see it. Those four assertions FAIL today against the
+    regex above and PASS against the delegation below -- which is the point: the assertion is
+    what makes the fix verifiable rather than asserted, and it fires on the reader under test
+    rather than on a copy of it.
     """
-    text = oracle_py.read_text(errors="replace")
-    out = []
-    for m in re.finditer(r'\b(?:s?row)\(\s*"([^"]+)"\s*,\s*(.+?)\)\s*(?:#.*)?$', text, re.M):
-        name, val = m.group(1), m.group(2).strip()
-        lit = re.fullmatch(r'(?:"[^"]*"|\'[^\']*\'|-?\d+(?:\.\d+)?|True|False|None)', val)
-        bare = re.fullmatch(r'f"[^"{]*"', val)
-        if lit or bare:
-            out.append((name, val))
-    return out
+    from importlib import import_module
+    audit = import_module("handtyped-audit")
+    scan = audit.scan(oracle_py)
+    return [(r["name"], r["value_src"]) for r in scan["rows"] if r["defect"]]
 
 
 WIRED = {
@@ -338,6 +362,13 @@ def q_countgate() -> int:
 def q_handtyped() -> int:
     print("=" * 96)
     print("HAND-TYPED ROWS -- a row whose expected value is a LITERAL, not a CALL")
+    print()
+    print("⚠ READ THIS NUMBER AS A LITERAL COUNT, NOT AS A FLOOR. This used to carry its own")
+    print("  regex and answered 224 where the truth is 578; the 224 was repeated by")
+    print("  handtyped-audit.py's header until both were corrected. It now DELEGATES to")
+    print("  handtyped-audit.py's ast scan, so it is the same number that file prints and")
+    print("  there is no second reader to drift. See hand_typed()'s docstring for the four")
+    print("  named blind variants and formblind-audit.py A6..A11 for the assertions.")
     print("=" * 96)
     total = 0
     seen = set()

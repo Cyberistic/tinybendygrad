@@ -6438,3 +6438,44 @@ oracle that CALLS `uops_to_z3` on `AND(RANGE(0,100), CONST(k))` for k in {15, 21
   prints the expected value rather than deriving it). `kn-noop-truth.py` derives the same 19
   ops from real `UOp(...)` constructors and agrees. The existing oracle should be replaced;
   not edited here because it belongs to another unit.
+
+- [x] **KEY-FIDELITY ROUND ON `tinybendygrad/uop/ops.bend` (sole owner this round). THE
+      AUDIT'S PREMISE WAS HALF WRONG AND BOTH HALVES MATTER.**
+      The four records the sweep called "weak comparators" are **not** weak comparators:
+      `eq_callinfo`/`eq_kernelinfo`/`eq_programinfo` compare **every field their record has**,
+      and the RECORDS are one field short of upstream's frozen dataclasses
+      (`CallInfo` 4/5 at `ops.bend:1000` vs `ops.py:1400`; `KernelInfo` 4/5 vs `ops.py:1342`;
+      `ProgramInfo` 6/7 vs `ops.py:1352`). `aux` is dropped from the RECORD, and
+      `ops.py:549` reads it. **Reported, not fixed**: widening a record reaches past this file
+      (9+18, 7+19, 9+9 sites) and I own one file. All four are `#bend_only_` in
+      `ops-oracle.py` with the CPython answer and the site counts as the reason, so the
+      CPython measurement is reproducible and the gate stays green at rest.
+      **THE REAL DEFECTS ARE OVER-SPLITS, and there were TWO.** `ops.py:201` carries
+      `type(arg)` and NOT `type(tag)`, so `tag=True` and `tag=1` are ONE key --
+      `eq_tag` split them. And `type(arg)` disambiguates only the element that IS `arg`, so
+      `ParamArg.val` (a nested `PyConst`) MERGES `True` with `1` where a CONST's arg SPLITS
+      them -- `eq_paramarg` used `eq_opt_const` and inherited the top-level rule.
+      Both fixed, both with a fixture that differs in EXACTLY ONE field, both CPython-measured:
+      `tag_bool_vs_int_interns=True`, `pynest_bool_vs_int_interns=True`, each moving from
+      `False` to `True` and **no other row moving**. Controls that must not move and did not:
+      `tag_true_vs_false_splits`, `tag_none_vs_zero_interns`, `const_bool_vs_int_splits`,
+      `pynest_int_distinct_interns`, `pynest_none_vs_zero_interns`,
+      `pynest_cfloat_vs_int_interns`, `pynest_signed_zero_interns`.
+      **`ConstFloat.__hash__` is `hash(bits)`, so a `ConstFloat` and an equal `int` are in
+      DIFFERENT dict buckets and are never compared** -- `eq_pynest` crosses bool against
+      `CInt` and MUST NOT cross it against `CFloat`, which is the opposite of what `__eq__`
+      alone suggests. Gate: **112 shared rows, three lanes byte-identical, exit 0, 293 bend
+      rows** (from 103 / 284). Blast radius `12,493 -> 12,502`, **sha256 of non-blank lines
+      over all 72 captures: exactly one changed, `uop/ops.bend`, by nine added rows and
+      nothing else**; `uop/validate.bend` also moved but its SOURCE moved too and the delta
+      is another unit's `symbolic.bend` rebase (`And(i >= 0, i <= 15)` vs `[, i]`), proved
+      not mine by a WITH/WITHOUT comparator diff over ten files including both external
+      `eq_tag` callers (`uop/upat.bend`, `schedule/rangeify.bend`): **zero deltas**.
+      **THE PAD SWEEP'S CALIBRATION IS THE OPPOSITE OF WHAT WAS PREDICTED, AND MEASURED:**
+      `key-pad-sweep.bend` (pads 0/1/2/5/17/64) + `key-pad-mutate.sh` inject four classes --
+      a wrong CONSTANT moves 12 sweep lines, a wrong OFFSET moves **0**, a stale ARENA moves
+      12, a dropped FIELD moves 12; `ops.bend`'s own rows move 94/78/10/2. The offset class
+      is invisible because `UOp.new.of` is `Found{made, UOp.of(made, ...)}`, so `UOp.of`
+      ALWAYS hits and the `None{}` arm of `UOp.of.intern.put` is unreachable from `UOp.new`
+      -- only the `sg_*`/`s5_*` sugar builders reach it. Notes K1-K5 appended at
+      `bend2-constraints.md` ~19830.

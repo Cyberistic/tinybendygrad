@@ -1,0 +1,19 @@
+dv_const_ok | [dv_mask_missing] | 15 |  | 0
+dv_var | [And(i >= 0, i <= 15), dv_mask_missing] | i |  | 0
+dv_var_neg | [And(i >= -5, i <= 10), dv_mask_missing] | i |  | 0
+dv_range_global | [And(r0 >= 0, r0 <= 100 - 1), dv_mask_missing] | r0 |  | 0
+dv_range_loop | [And(r0 >= 0, r0 <= 100 - 1), dv_mask_missing] | r0 |  | 0
+dv_range_m1 | [And(rm1 >= 0, rm1 <= 100 - 1), dv_mask_missing] | rm1 |  | 0
+dv_and15 | [And(r0 >= 0, r0 <= 100 - 1), dv_mask_missing] | r0%16 |  | 0
+dv_and_neg4 | [And(r0 >= 0, r0 <= 100 - 1), dv_mask_missing] | r0 - r0%4 |  | 0
+dv_and21 | [And(r0 >= 0, r0 <= 100 - 1), dv_mask_missing] | If(int_to_bv(r0) & int_to_bv(21) < 0, BV2Int(int_to_bv(r0) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) & int_to_bv(21))) |  | 0
+dv_shr2 | [And(r0 >= 0, r0 <= 64 - 1), dv_mask_missing] | If(2 < 0, invalid_shift, r0/4) |  | 0
+dv_where | [And(v >= 0, v <= 15), And(v >= 0, v <= 15), 8 > v, dv_mask_missing] | v |  | 0
+dv_const_invalid | [dv_mask_missing] | Invalid |  | 0
+dv_unsup_stack | [dv_mask_missing] |  | Ops.STACK is not supported by z3 | 1
+dv_unsup_two | [dv_mask_missing] |  |  | 0
+dv_rank_shr1 | [And(r0 >= 0, r0 <= 8 - 1), dv_mask_missing] |  | rule 9 z3_shift: unknown bounds for src[1] | 1
+dv_bad_dtype_bitcast | [dv_mask_missing] |  |  | 0
+n_z3_alu=11
+done
+bend 2.0.35 is available: run bend update

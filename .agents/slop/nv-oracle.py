@@ -803,19 +803,39 @@ def _put(cache, key):
     return cache, False
 
 
-_c, _ = _put({}, (100, ("NV:0",)))
-row("nv_pc_grow_0", 0)
+# THE COUNTS ARE READ, NOT TYPED, AND THE SEQUENCE WAS OFF BY ONE PUT.
+#
+# These seven rows were `0`, `1`, `3`, `3`, `3`, `3`, `0` -- literals sitting under a
+# `_put` chain that was already ONE PUT AHEAD of what the values describe. MEASURED:
+# `len(_c)` at the three count rows was 1, 2 and 3, not 0, 1 and 3. So `nv_pc_grow_0`
+# was typed 0 while the oracle held one entry, and `nv_pc_grow_1` was typed 1 while it
+# held two. The VALUES all agree with the port; the STATE they were written beside did
+# not, and nothing noticed because nothing read it.
+#
+# The chain is rebuilt to the port's shape -- ops_nv.bend:3453-3459 is
+# `PC.n(PC.of())`, `PC.n(pc_one(PC.of(), K1()))`, `PC.n(a)`, `PC.n(pc_one(a, K2()))`,
+# `PC.n(pc_one(a, K1()))`, `PC.miss(a)`, `PC.hit(pc_one(a, K2()))` -- so the empty
+# cache is measured BEFORE the first put, and the two repeat keys (the negative case)
+# sit one row from the third distinct key at the same size.
+#
+# WHAT THIS DOES NOT BUY: `_put` is still a re-implementation of ops_nv.py:314-318's
+# `dict.get(key)` miss / `dict[key] = ...` hit, and `nv_build_program` needs a real ELF,
+# so there is no upstream call to make. This is provenance over the ORACLE'S OWN STATE,
+# not over upstream -- a smaller claim than the `nv_iowr` rows above carry, and it is
+# stated as such rather than counted as a conversion to a call.
+_c = {}
+row("nv_pc_grow_0", len(_c))
+_c, _ = _put(_c, (100, ("NV:0",)))
+row("nv_pc_grow_1", len(_c))
 _c, _ = _put(_c, (200, ("NV:0",)))
-row("nv_pc_grow_1", 1)
 _c, _ = _put(_c, (100, ("NV:1",)))
-row("nv_pc_grow_3", 3)
+row("nv_pc_grow_3", len(_c))
 _c, h1 = _put(_c, (200, ("NV:0",)))
-row("nv_pc_grow_repeat", 3)
-row("nv_pc_grow_repeat_k1", 3)
-row("nv_pc_miss_3", 3)
+row("nv_pc_grow_repeat", len(_c))
+row("nv_pc_grow_repeat_k1", len(_c))
+row("nv_pc_miss_3", len(_c))
 _c, h2 = _put(_c, (200, ("NV:0",)))
 row("nv_pc_hit_1", 1 if h2 else 0)
-row("nv_pc_id_0", 0)
 # `UOp.unique_num` is a GLOBAL counter and its absolute start is arbitrary, so
 # the port numbers from 0 and the oracle does too; what is claimed is the COUNT of
 # advances, and a MISS advances it while a HIT does not.
@@ -835,6 +855,9 @@ def _put_id(cache, key):
 _c2, _ = _put_id({}, (100, ("NV:0",)))
 _c2, _ = _put_id(_c2, (200, ("NV:0",)))
 _c2, _ = _put_id(_c2, (100, ("NV:1",)))
+# the id the FIRST key was handed, read off the dict that handed it out. This row
+# used to be a typed `0` in the `_put` block above, where no dict with ids existed yet.
+row("nv_pc_id_0", _c2[(100, ("NV:0",))])
 row("nv_pc_id_after_3", _uid[0])
 row("nv_pc_ords", ",".join(str(v) for v in _c2.values()))
 _c4, _ = _put_id(_c2, (200, ("NV:0",)))
@@ -956,7 +979,9 @@ for _h in (1080, 720, 5, 3, 1):
 # :35 and :37-38.
 for _s in (0, 2, 8, 999, 4096):
     row("nv_errstr_%d" % _s, get_error_str(_s))
-row("nv_err_unknown", "Unknown error")
+# `nv_gpu.nv_status_codes.get(status, 'Unknown error')` -- the DEFAULT, out of
+# upstream's own dict lookup rather than typed beside it.
+row("nv_err_unknown", get_error_str(999).split(": ", 1)[1])
 row("nv_err_full_8", get_error_str(8))
 row("nv_paccess_0", NV_PFAULT_ACCESS_TYPE[0])
 row("nv_paccess_1", NV_PFAULT_ACCESS_TYPE[1])

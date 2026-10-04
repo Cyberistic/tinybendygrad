@@ -17,6 +17,17 @@ WHAT THIS FIXTURE SET REACHES, per dtype.py:
     f2  float32 -> fp8e5m2fnuz   the fnuz arm of `f2f.down`, dtype.py:123
     x1  float16 -> bfloat16      dtype.py:125 `else: raise NotImplementedError`
     x2  float32 -> float64       the refusal whose `fe > te and fm == tm` half
+
+⚠ `UOp.variable` is `variable(name, min_val, max_val, dtype=dtypes.weakint,
+multiple_of=1)` (ops.py:1015), so **the dtype is the FOURTH argument**. The three-arg
+form `UOp.variable(nm, 0, fr)` compiles, answers a PARAM, and gives a `weakint` -- and
+`f2f`'s narrowing branch then REFUSES with `bitcast requires concrete dtypes, got
+dtypes.weakint -> dtypes.f32` (dtype.py:116). That is a LIVE fixture bug in
+`.agents/slop/dd-bandoracle.py:133`, which uses the three-arg form and therefore got its
+`n1`/`n2` rows by way of the `v.cast(fr)` on the next line rather than by the fixture it
+claims. The two CASTs that lane shows in `w1sig` (`CAST/1` at position 6) are that
+workaround. Corrected here; `f2f`'s own contract is `v` is a node of dtype `fr`, which is
+what the port's fixture builds too.
 """
 import struct
 import sys
@@ -143,7 +154,7 @@ FIX = (("w1", dtypes.fp8e4m3, dtypes.float32),
 
 def main():
     for nm, fr, to in FIX:
-        v = UOp.variable(nm, 0, fr)
+        v = UOp.variable(nm, 0, 0, fr)
         try:
             ans = DD.f2f(v, fr, to)
         except NotImplementedError as e:

@@ -133,7 +133,30 @@ def rows_strict(text):
 
 def rows_shipped(text):
   """rebase-gate.py's `rows()`, verbatim, so the shred count is a MEASUREMENT of the
-  shipped reader rather than an argument about it."""
+  shipped reader rather than an argument about it.
+
+  ⚠ THE "VERBATIM" IS FALSE AND IT MEASURED FALSE ON THIS TREE. This function is the
+  PRE-F2/PRE-F3 reader: `name=value` only. Called against `rebase-gate.py:rows()` on six
+  shapes, it AGREES on two and DIFFERS on four:
+
+      "alpha  1"              shipped {'alpha': '1'}        here {}          -- the F3 gap
+      "kern=[*V]   py=[*W]"   shipped {'kern': '[*V]'}      here {'kern': '[*V]   py=[*W]'}
+                                                                        -- the F2 fold
+      "== SECTION =="         shipped {}                     here {'': '= SECTION =='}
+      "=v"                    shipped {}                     here {'': 'v'}
+
+  THE LAST TWO ARE THE INTERESTING ONES. `rebase-gate.py:rows()` excludes an empty name ON
+  PURPOSE -- its own docstring says the oracle reported 2522 rows where it has 2521 because
+  fourteen `== SECTION ==` banners landed on ONE key -- and this fork MANUFACTURES exactly
+  that phantom. So the shred count below is not a measurement of the shipped reader; it is a
+  measurement of a reader that stopped existing three fixes ago.
+
+  FIX, NOT DONE HERE: `rows_shipped = rg.rows`. `rebase-gate.py` is owned by another unit this
+  round and this file is not being restructured, so the honest state is that the number is a
+  measurement of a HISTORICAL reader and the docstring said otherwise. `.agents/slop/
+  formblind-audit.py` A5/A16 pin the shipped reader's behaviour on both of the shapes this
+  fork gets wrong, and `.agents/slop/substrate-audit.py` states why this is the OTHER root
+  cause: a tool that measures the right form of the wrong thing."""
   out = {}
   for line in text.splitlines():
     if "=" in line:

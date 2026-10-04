@@ -80,13 +80,23 @@ MUTATIONS = [
   # carries `[OpsSTAGE]` (the sub-pattern's op) while `rf_same_tail` requires
   # `self.op is OpsINDEX`, so `ok` is False and `ct_4` can never fire.
   ("M9", "ct_table[4]: accept set {STAGE} -> {INDEX} (the outer node CPython rewrites)",
-   "O.PMEntry{4, [O.OpsSTAGE{}],     [O.OpsINDEX{}]},          # 118  idx.f(STAGE)",
-   "O.PMEntry{4, [O.OpsINDEX{}],     [O.OpsSTAGE{}]},          # 118  idx.f(STAGE)",
+   # RE-AIMED 2026-10-04: the column padding narrowed 5 -> 3 spaces and
+   # the comment was reworded.  Same ops sets, same entry, same inversion.
+   "O.PMEntry{4, [O.OpsSTAGE{}],   [O.OpsINDEX{}]},          # 118  INDEX.f(STAGE)",
+   "O.PMEntry{4, [O.OpsINDEX{}],   [O.OpsSTAGE{}]},          # 118  INDEX.f(STAGE)",
    "does the gate see ct_4 being UNBLOCKED, or is the subset test inert?"),
 
   ("M10", "ct_table[8]: accept set {MSTACK} -> {INDEX} (the outer node CPython rewrites)",
-   "O.PMEntry{8, [O.OpsMSTACK{}],    [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)",
-   "O.PMEntry{8, [O.OpsINDEX{}],    [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)",
+   # RE-AIMED 2026-10-04, AND THE DIRECTION IS NOW THE OTHER WAY.  This
+   # row was written while ct_table[8] read MSTACK/MSTACK, so the mutation
+   # went defect -> fix and its anchor is the DEFECTIVE text.  ct_table[8]
+   # has since been corrected to INDEX/MSTACK, which is what
+   # `rf-ct-oracle.txt` records for `ct[8]`, so the anchor is inverted
+   # relative to the port and cannot be re-aimed by moving whitespace.
+   # The mutation now asks the question it was always for: does the gate
+   # see ct_table[8] INVERTED?  -- with the fix as the OLD side.
+   "O.PMEntry{8, [O.OpsINDEX{}],   [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)",
+   "O.PMEntry{8, [O.OpsMSTACK{}],   [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)",
    "the same inversion on the deviceless-MSTACK rule"),
 
   # ---- the falsity of the two rows the comments promise ---------------------

@@ -739,12 +739,13 @@ def verdict(bend, oracle, base, hunks, native=True):
   # tinybendygrad/runtime/ops_nv.bend" with rc=0. A crashing gate is a finding; a gate that
   # says NOT-STARTED while the port and CPython visibly disagree is believed. Every port with
   # no baseline recorded could have been hiding a live disagreement in exactly that state.
-  compared, uncompared, bad = [], [], []
+  compared, uncompared, bad, shared_all = [], [], [], set()
   for lane in sorted(now):
     for other in sorted(now):
       if lane >= other:
         continue
       shared = set(now[lane]) & set(now[other])
+      shared_all |= shared
       (compared if shared else uncompared).append((lane, other, len(shared)))
       bad += [(lane, other, k) for k in shared if now[lane][k] != now[other][k]]
   # ⚠ STAMPED BEFORE EITHER RED RETURN, and that is not tidiness. GUARD 4's own evidence -- which
@@ -756,8 +757,15 @@ def verdict(bend, oracle, base, hunks, native=True):
   # could not tell whether they had found two defects or one described twice. Compared is set on
   # every path out of this loop; `bad` is a list of (lane, other, name) triples, so the distinct
   # count is a set of the THIRD element and nothing has to guess.
+  #
+  # ⚠ `compared_names` IS THE SET SIZE AND NOT THE SUM OF THE PAIRS, which is the second half of
+  # the same defect and was still wrong after the first fix: `sum(n for _, _, n in compared)` on a
+  # three-lane run counts a name shared by all three lanes THREE times. MEASURED on
+  # codegen/decomp/dtype.bend: 400 by the sum, and rebase-gate-selftest.py's 109 -- where 109 is
+  # `|port rows INTERSECT oracle rows|`, the number a reader actually wants. Both are printed.
   v["compared_pairs"] = compared
   v["uncompared_pairs"] = uncompared
+  v["compared_names"] = len(shared_all)
   v["disagree_rows"] = sorted({k for _, _, k in bad})
   if uncompared:
     v["state"] = BROKEN
@@ -775,11 +783,12 @@ def verdict(bend, oracle, base, hunks, native=True):
     # codegen/decomp/dtype.bend: `2 row(s) disagree with CPython across 3 lane pair(s)` where
     # `disagreements` held `('cpython:dtype-oracle','interpreted','c7')` and the same for `native`,
     # and the selftest independently said 1 of 109. Two instruments, one defect, and no way for a
-    # reader to tell they were not describing two. Both numbers are printed, each named.
+    # reader to tell they were not describing two. Both numbers are printed, each named, over the
+    # SET denominator the selftest uses.
     v["why"] = (f"{len(v['disagree_rows'])} of "
-                f"{sum(n for _, _, n in compared)} shared row name(s) disagree with CPython "
-                f"across {len(compared)} lane pair(s) -- {len(bad)} pair-instance(s) of the same "
-                f"{len(v['disagree_rows'])} name(s): "
+                f"{v['compared_names']} shared row name(s) disagree with CPython "
+                f"({sum(n for _, _, n in compared)} counted once per lane pair, "
+                f"{len(bad)} pair-instance(s) of the same {len(v['disagree_rows'])} name(s)): "
                 + ", ".join(repr(k)[:60] for k in v["disagree_rows"][:6])
                 + (f" (+{len(v['disagree_rows']) - 6} more)" if len(v["disagree_rows"]) > 6 else ""))
     v["disagreements"] = bad[:20]
@@ -794,10 +803,11 @@ def verdict(bend, oracle, base, hunks, native=True):
     # The shared counts are in `why` because they are the EVIDENCE that this lane was examined;
     # a state that cannot show its evidence is the reason the collapse was invisible.
     v["state"], v["why"] = AGREE_UNRECORDED, (
-      f"compared clean and UNRECORDED: {v['compared_pairs']} lane pair(s) shared row names and "
-      "every shared row agreed, but no baseline exists for this port, so UNCHANGED-vs-RE-PORTED "
-      "cannot be judged. This is NOT a pass and NOT the same as NOT-STARTED, which means "
-      "nothing was compared. Record with --record-stable on a tree known green")
+      f"compared clean and UNRECORDED over {v['compared_names']} shared row name(s) in "
+      f"{len(compared)} lane pair(s) ({v['compared_pairs']}), every shared row agreed, but no "
+      "baseline exists for this port, so UNCHANGED-vs-RE-PORTED cannot be judged. This is NOT a "
+      "pass and NOT the same as NOT-STARTED, which means nothing was compared. Record with "
+      "--record-stable on a tree known green")
     return v, now
 
   if not base:
@@ -962,9 +972,10 @@ def classify(v):
     pairs = v.get("compared_pairs") or []
     names = sorted(v.get("disagree_rows") or {d[2] for d in v["disagreements"]})
     inst = len(v["disagreements"])
+    den = v.get("compared_names") or sum(n for _, _, n in pairs)
     return (CAUSE_DISAGREE, CLASS_OF[CAUSE_DISAGREE],
-            f"{len(names)} of {sum(n for _, _, n in pairs)} shared row NAME(S) disagree, over "
-            f"{len(pairs)} lane pair(s): " + ", ".join(repr(k)[:60] for k in names[:6])
+            f"{len(names)} of {den} shared row NAME(S) disagree, over {len(pairs)} lane pair(s): "
+            + ", ".join(repr(k)[:60] for k in names[:6])
             + (f"  ({inst} pair-instances: a name shared by 2 of 3 lanes is counted ONCE here and "
                f"twice by a per-pair count, so this number and the selftest's are ONE fact with two "
                f"denominators)" if inst > len(names) else "")
@@ -976,7 +987,7 @@ def classify(v):
     return (CAUSE_UNWIRED, CLASS_OF[CAUSE_UNWIRED],
             v["why"] + ". BROKEN is UNREACHABLE for an unwired port BY CONSTRUCTION, so a BROKEN "
                        "naming it came from a DIFFERENT wiring")
-  tot = sum(n for _, _, n in v.get("compared_pairs", []))
+  tot = v.get("compared_names") or sum(n for _, _, n in v.get("compared_pairs", []))
   return (CAUSE_NONE, CLASS_OF[CAUSE_NONE],
           f"{tot} shared row name(s) across {len(v.get('compared_pairs', []))} lane pair(s), "
           "every one agreeing")

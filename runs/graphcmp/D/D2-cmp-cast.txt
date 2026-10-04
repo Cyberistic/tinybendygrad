@@ -1,1 +1,1 @@
-cast BYTE-IDENTICAL
+cast BYTE-IDENTICAL (366 bytes both sides)

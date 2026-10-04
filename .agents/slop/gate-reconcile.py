@@ -261,9 +261,7 @@ def sweep_reconcile(g, scan, sweep_path, lanes_ok=True):
 
   Returns (n_reconciled, n_divergent, lines)."""
   doc = json.loads(pathlib.Path(sweep_path).read_text())
-  base = json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
   by_port = {v["port"]: v for v in doc["verdicts"]}
-  live = {p: s for p, (s, _) in _conformance().items() if s and p in g.BASE_ORACLES}
   lines = [f"sweep       {sweep_path}",
            f"  interpreter {doc.get('oracle_py')}  python {doc.get('python')}",
            f"  TALLY {doc.get('tally')}",
@@ -278,11 +276,19 @@ def sweep_reconcile(g, scan, sweep_path, lanes_ok=True):
       v = g.stamp(dict(v, lanes=v.get("lanes", {}), row_counts=v.get("row_counts", {})))  # same fn
     cause = v["cause"]
     if not g.BASE_ORACLES.get(port):
+      # ⚠ AND IF THE SWEEP SAYS BROKEN HERE, THAT IS THE FINDING. never_wired() returns
+      # NOT-STARTED before any lane runs, so a BROKEN naming an unwired port is unreachable from
+      # this wiring -- it is a verdict pasted from a run whose BASE_ORACLES differed. Counting it
+      # as reconciled would be the reconciliation agreeing with the thing it is checking.
+      hit = v["state"] == g.BROKEN
+      bad += hit
+      good += not hit
       lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "
                    f"{'NOT MEASURED (never_wired runs no lane)':<28} "
-                   f"RECONCILED: BROKEN is UNREACHABLE here, so a BROKEN naming this port came "
-                   f"from a DIFFERENT wiring")
-      good += 1
+                   + ("DIVERGES: BROKEN is UNREACHABLE for an unwired port BY CONSTRUCTION, so "
+                      "this verdict came from a DIFFERENT wiring" if hit else
+                      "RECONCILED: BROKEN is UNREACHABLE here, so a BROKEN naming this port came "
+                      "from a DIFFERENT wiring"))
       continue
     if not lanes_ok:
       lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "

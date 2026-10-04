@@ -31,6 +31,23 @@ INDEX_PARAMS = {"dd_and": 3, "dd_or": 3, "dd_add": 3, "dd_mul": 3, "dd_shl": 3, 
 
 CALL = re.compile(r"(?<![\w.])([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(")
 
+#: The callees whose arguments include an INTEGER POSITION. A NAME SET, and therefore a FLOOR
+#: over that set: section C cannot see an index whose callee is missing here, whatever its
+#: spelling. MEASURED consequence on .agents/slop/dd-mutations.frozen.bend: with `dd_band`
+#: absent, section C reported ZERO index-valued mask arguments while section A reported SEVEN
+#: -- the same seven, read through a different question. `dd_band` is in here now. A whitelist
+#: of names goes stale the moment a def is RENAMED, and dtype.bend's `dc_band` -> `dd_band`
+#: is exactly that; the denominator line under section C exists so the coverage is VISIBLE
+#: rather than assumed.
+INTEGER_CALLEES = (frozenset(VALUE_PARAMS) | frozenset(INDEX_PARAMS) | frozenset({
+    "H.i64_of_i32", "H.i64_sub", "H.i64_of_u32", "U32.shl", "U32.shr", "U32.shln",
+    "U32.and", "U32.or", "U32.xor", "U32.add", "U32.sub", "U32.mul", "U32.div",
+    "U32.mod", "U32.eq", "U32.lt", "U32.le", "U32.gt", "U32.ge", "U32.is_zero",
+    "U32.bitcast", "U32.from_nat", "U32.to_nat", "U32.clz", "U32.popcnt",
+    "T.tx_powi", "T.tx_powi32", "T.tx_shl", "T.tx_shr", "T.tx_alu2", "T.tx_bitcast",
+    "T.exponent_bias", "T.tx_pow2", "P.dc_cast", "P.cast",
+}))
+
 
 def split_args(s):
     out, depth, cur = [], 0, ""
@@ -111,19 +128,66 @@ def main():
         print(f"   L{ln:<5} {nm:<11} shift = {m:<40} {'OK' if ok else 'SUSPECT index'}")
     print(f"   denominator: {len(rows)} call sites; audited {len(rows)}\n")
 
-    print("== C. an INDEX reaching an integer-valued helper -- `O.Found.i(x)` or a bare")
-    print("   one-letter binder inside `H.i64_of_i32`/`U32.*`/`T.tx_powi*`.")
-    print("   The one-letter hits are HAND-CHECKED below, because a `finfo` field")
-    print("   IS a value and a `T.tx_shl` shift amount IS a value, so the heuristic")
-    print("   over-matches by design and each hit is read against its def's parameter.\n")
-    n = 0
-    for m in re.finditer(r"(?<![\w.])(H\.i64_of_i32|H\.i64_sub|U32\.\w+|T\.tx_powi|T\.tx_powi32|T\.exponent_bias)\s*\(([^)]*)\)", code):
-        body = m.group(2).strip()
-        if "O.Found.i(" in body:
-            ln = code.count("\n", 0, m.start()) + 1
-            print(f"   L{ln:<5} INDEX {m.group(1)}({body})")
-            n += 1
-    print(f"   hard hits (an index provably in an integer position): {n}\n")
+    print("== C. AN INDEX IN AN ARGUMENT SLOT -- wherever the callee, whichever spelling.")
+    print("   A `finfo` field IS a value and a `T.tx_shl` shift amount IS a value, so this")
+    print("   over-matches BY DESIGN and every hit is read against its callee's parameter.")
+    print("   It prints the callee precisely so over-matching costs a reader nothing.\n")
+    print("   ⚠ THIS SECTION USED TO HAVE TWO BLIND VARIANTS AND BOTH ARE NAMED, because a")
+    print("   number that cannot see a variant is worse than a number that is small.")
+    print("     C-i   THE SPELLING. The test was `if \"O.Found.i(\" in body`, so an index")
+    print("           routed through a local -- `+m = O.Found.i(s)`, then")
+    print("           `dd_band(O.Found.ar(s), v, m)` -- was invisible. Same index, other")
+    print("           spelling.")
+    print("     C-ii  THE WHITELIST, WHICH IS THE DOMINANT ONE. The window was")
+    print("           `H.i64_of_i32|H.i64_sub|U32.\\w+|T.tx_powi|T.tx_powi32|T.exponent_bias`,")
+    print("           so an index passed to ANY OTHER callee was invisible whatever its")
+    print("           spelling. MEASURED on .agents/slop/dd-mutations.frozen.bend: section A")
+    print("           reports `suspect 7` index-valued `dd_band` mask arguments and the old")
+    print("           window reached NONE of them, because `dd_band` is not one of the six.")
+    print("           A NAME WHITELIST IS A FIXTURE LIST: it is stale the moment someone")
+    print("           writes `dd_band` instead of `dc_band`, which is exactly what happened")
+    print("           when `dtype.bend` was renamed. Section A reads the ARGUMENT and is")
+    print("           the one to trust.")
+    print("   So the old `hard hits: N` was a floor over (six callees) x (one spelling),")
+    print("   presented as a count. On today's dtype.bend it printed 0, and 0 is ALSO what a")
+    print("   routed-through-a-local index prints, so 0 was never a clean bill of health.")
+    print("   Assertion: .agents/slop/formblind-audit.py A13.\n")
+    direct = via = 0
+    covered = seen_all = 0
+    for m in re.finditer(r"(?<![\w.])([A-Za-z_][A-Za-z_0-9_.]*)\s*\(", code):
+        callee = m.group(1)
+        i, depth, j = m.end(), 1, m.end()
+        while depth and j < len(code):
+            if code[j] == "(":
+                depth += 1
+            elif code[j] == ")":
+                depth -= 1
+            j += 1
+        args = split_args(code[i:j - 1])
+        if len(args) < 2:
+            continue
+        seen_all += 1
+        if callee not in INTEGER_CALLEES:
+            continue
+        covered += 1
+        ln = code.count("\n", 0, m.start()) + 1
+        for k, a in enumerate(args[1:], start=1):
+            if "O.Found.i(" in a:
+                print(f"   L{ln:<5} arg{k} of {callee}: {a}")
+                direct += 1
+            elif re.fullmatch(r"[a-z]\w*", a):
+                print(f"   L{ln:<5} arg{k} of {callee}: {a}   -- a bare one-token argument: an "
+                      f"index routed through a binder, or a value. UNRESOLVED.")
+                via += 1
+    print(f"   hits (a FLOOR over the INTEGER_CALLEES set, not a total): {direct + via}")
+    print(f"     spelled `O.Found.i(`: {direct}   reached through a local: {via}")
+    print(f"   denominator: {covered} of {seen_all} calls in this file go to a callee in")
+    print(f"   INTEGER_CALLEES ({len(INTEGER_CALLEES)} names, listed above). The other")
+    print(f"   {seen_all - covered} calls are NOT EXAMINED, and that number is the honest")
+    print(f"   ceiling of this section: an index in an integer position reached through a")
+    print(f"   callee absent from that set is invisible here however it is spelled. Adding a")
+    print(f"   name is the fix and renaming one is what made this section report 0 for")
+    print(f"   `dd_band` while section A reported 7. Assertion: formblind-audit.py A13.\n")
 
     print("== D. DEFS WHOSE `U32` RETURN IS AN INDEX -- so the CALLER cannot tell a slot")
     print("   from a number, and `f2f.up` builds its final node in a different arena")

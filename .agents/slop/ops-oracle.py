@@ -523,6 +523,32 @@ print(f"vmin_vmax_signed_zero_splits={_vm8 is not _vm9}")
 _c0, _c1, _ = _kcell(lambda: (UOp(Ops.CONST, src=(), arg=True), UOp(Ops.CONST, src=(), arg=1)))
 print(f"const_bool_vs_int_splits={_c0 is not _c1}")
 
+# --- `ParamArg.val`, the NESTED `PyConst`. `type(arg)` is `ParamArg` on both sides here, so
+# --- it does NOT do what it does for a CONST, and the same pair of values that splits at the
+# --- top level merges here. Each fixture differs ONLY in `val`.
+#
+# --- The `ConstFloat` row is the one that stops this from being "cross bool against
+# --- everything numeric": `ConstFloat.__hash__` is `hash(self.bits)` (dtype.py:21), and
+# --- `hash(0x3ff0000000000000) != hash(1.0)`, so `ConstFloat(1.0)` and `1` land in different
+# --- dict buckets and are NEVER COMPARED. `__eq__` would call them equal; the hash is what
+# --- keeps them apart.
+
+
+def _mk_val(val):
+  return UOp(Ops.PARAM, src=(), arg=O.ParamArg(slot=0, dtype=dtypes.int32, val=val))
+
+
+_vv0, _vv1, _ = _kcell(lambda: (_mk_val(True), _mk_val(1)))
+print(f"pynest_bool_vs_int_interns={_vv0 is _vv1}")
+_vv2, _vv3, _ = _kcell(lambda: (_mk_val(1), _mk_val(2)))
+print(f"pynest_int_distinct_interns={_vv2 is _vv3}")
+_vv4, _vv5, _ = _kcell(lambda: (_mk_val(None), _mk_val(0)))
+print(f"pynest_none_vs_zero_interns={_vv4 is _vv5}")
+_vv6, _vv7, _ = _kcell(lambda: (_mk_val(ConstFloat(-0.0)), _mk_val(ConstFloat(0.0))))
+print(f"pynest_signed_zero_interns={_vv6 is _vv7}")
+_vv8, _vv9, _ = _kcell(lambda: (_mk_val(ConstFloat(1.0)), _mk_val(1)))
+print(f"pynest_cfloat_vs_int_interns={_vv8 is _vv9}")
+
 # --- `tag`: ops.py:201 carries `type(arg)` and NOT `type(tag)`, so two tags that
 # compare equal are ONE key. `True == 1` and `hash(True) == hash(1)`.
 _tg0, _tg1, _tgn = _kcell(lambda: (UOp(Ops.SINK, src=(), arg=None, tag=True),

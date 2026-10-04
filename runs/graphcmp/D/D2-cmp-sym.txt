@@ -1,0 +1,11 @@
+sym DIFFERS:
+8c8
+< 2:i8 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 8:n(i5,i7)
+---
+> 2:i8 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+11,12c11,12
+< 3:i11 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 9:n(i5,i10)
+< 3:i12 5:GROUP 4:void 1:R 2:i0 1:N 1:N 9:n(i8,i11)
+---
+> 3:i11 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 9:n(i5,i10)
+> 3:i12 5:GROUP 1:? 1:? 2:i0 1:N 1:N 9:n(i8,i11)
