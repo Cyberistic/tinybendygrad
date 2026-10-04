@@ -62,9 +62,9 @@ healthy() {
   # first version and it is a positional claim about a file another agent's edits can
   # renumber -- which is this file's own rule about `smallest changes carry the most risk`
   # applied to a shell script.
-  grep -q '^graphs=16$' "$s" &&
-  grep -q '^graphs-agree=14$' "$s" &&
-  grep -q '^byte-identical=14$' "$s" &&
+  grep -q '^graphs=24$' "$s" &&
+  grep -q '^graphs-agree=22$' "$s" &&
+  grep -q '^byte-identical=21$' "$s" &&
   grep -q '^not-comparable=0$' "$s" &&
   grep -q '^selfcheck=# SELFCHECK: OK$' "$s" &&
   grep -q '^census-rc=rc=0$' "$s" &&

@@ -11,6 +11,11 @@ Run: `E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/grap
 Regenerate everything: `sh .agents/slop/graphcmp-run.sh`
 Check reproducibility: `sh .agents/slop/graphcmp-repro.sh` -- **MEASURED 2026-10-04:
 154 of 154 files byte-identical across two clean runs**, sha256 over non-blank lines.
+⚠ **STALE — denominator aged.** `154` was the artefact count at a 16-graph corpus. The
+corpus is 24 and `graphcmp-repro.sh` regenerates a file set that is no longer 154.
+**NOT RE-MEASURED by `notes-sweep`: re-running the repro gate is a multi-minute full run
+and it is a gate script**, so this is left as a labelled STALE rather than guessed. The
+*form* of the claim (all files identical, sha256 over non-blank lines) is unaffected.
 
 **THE THREE ROUNDS.** The first built 9 graphs / 63 nodes / 13 of 77 ops and found eleven
 defects in the differ's own normal form. The second added four graphs -- `group`,
@@ -19,14 +24,29 @@ reporting `PASS` over nothing. The third (this file's §6) added three graphs --
 `loop`, `gate` -- whose PY side is a call into tinygrad's own scheduler and codegen rather
 than a hand-built expression, and found TEN more -- four in the normal form (17-20), one
 in the census's atom scanner (21) and five in the checks themselves (22-26), where a pair of
-identical FAILURES was being reported as a stable pair. Current state, MEASURED and printed
-by `runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
+identical FAILURES was being reported as a stable pair. **⚠ EVERY NUMBER IN THE BLOCK BELOW IS SUPERSEDED — THIS IS A 16-GRAPH BASELINE AND THE
+CORPUS IS 24.** It was measured and true when written; `notes-sweep` re-measured
+2026-10-04 and the block is kept verbatim as the baseline, because §3c and §5 are written
+*against* it and rewriting it would erase what moved. Current values, measured:
+
+```
+graphs 24   AGREE 22 (lin/loop DISAGREE, forward-only on purpose)   <-- was 16 / 14
+nodes 24 graphs: 21 of 24 byte-identical; the 3 that differ are flip, lin, loop
+ops 59 of 77   commutative ops 8 of 8   <-- was 34 / 7 of 8; CMPEQ is now REACHED (by `late`)
+```
+
+Per-graph `nodes=` and `ops-reached=` are printed on every `diff` run, so the whole block
+below is re-derivable without trusting this file — which is the only reason it is safe to
+leave a stale one lying here with a banner over it. Baseline, verbatim:
 
     graphs 16   AGREE 14 (lin/loop DISAGREE, each with a named measured cause)   nodes 189 per side
     ops 34 of 77   commutative ops 7 of 8   symbolic-dim nodes 2 of 189 (BOTH SIDES, see 3b)
     field-records 1134 per side   byte-identical 14 of 16   stable 5 identical / 0 differ / 0 failed
     selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 7 of 7   cross 1 of 1
     conflations 4 of 4   repro 154/154
+
+**The most useful thing in that diff is the `commutative ops 7 of 8` line: it did not move
+even though §5 asserts it never could.** See §5.
 
 **THE LIMIT THAT WAS CLOSED WHILE THIS ROUND RAN.** §3b's symbolic-dim wall was OPEN when
 this unit started and is CLOSED now: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1273`, the
@@ -50,7 +70,9 @@ The first line of this file used to read:
 > **13 of 77 ops** -- *"These are hand-built graphs, not a kernelized program, and they
 > exercise not one of `INDEX`/`BARRIER`/`GROUP`/`ENDIF`/`BACKEDGE`/`LOAD`/`STORE`."*
 
-**RESOLVED, at 34 of 77 ops.** `INDEX`, `BARRIER` and `GROUP` had been reached by hand in
+**RESOLVED, at 34 of 77 ops** — *was 34, and the corpus is now **59 of 77** over 24
+graphs; the resolution stands, the figure is a 16-graph baseline.*
+`INDEX`, `BARRIER` and `GROUP` had been reached by hand in
 round two; `ENDIF`, `BACKEDGE`, `LOAD` and `STORE` could not be, because they are
 properties of a SCHEDULE and not of an expression. Three graphs closed that, and the
 interesting part is HOW, because the answer was not the obvious one.
@@ -186,6 +208,10 @@ CONST the normal form IS a string comparison. That is the ONE place a `repr` rea
 equality decision and it is deliberate: a Python float has no structure to compare, so
 there is nothing structural to lose. MEASURED: **still 0 of the 189 nodes** across 16
 graphs has a float CONST, so the choice remains untested rather than measured.
+⚠ **Denominator aged (16 graphs / 189 nodes).** **STALE — not re-measured** by
+`notes-sweep`; the claim to re-measure is "no float `CONST` node across the corpus", and
+the honest answer to give is the census, not this number. **The defect it names is
+unaffected either way** — the branch exists and is untested.
 
 **A realized buffer's device object (`z`) -- PRESENCE only.** `Buffer` has no `slot`
 (MEASURED) and the port's is a P6 allocator slot with no runtime behind it. Size, dtype,
@@ -201,6 +227,10 @@ spelling at all. The `y` residual is now exactly this and nothing else.
 **A UOp nested in an arg (`u`) -- identity NOT compared.** MEASURED: `PYLITERAL`'s nested
 UOp is in neither `src` nor `toposort`, so it has no arena index here. Reachable only via
 `--plant pyuop`. STILL 0 of 16 graphs.
+⚠ **Denominator aged (was 16, corpus is 24).** **STALE — not re-measured.** Note the live
+census still names `PYLITERAL` among the **18 ops the corpus does NOT reach**, so the
+op-level claim ("`PYLITERAL` is unreached, hence no nested-UOp arg exists") still holds and
+this row is still unreachable-in-practice. The `0 of N graphs` figure itself is unverified.
 
 **Applied options (`q`) -- a COUNT, and since round three a MEASURED DISAGREEMENT rather
 than a silent equality.** `ops.bend:978` types `applied_opts`/`opts_to_apply` as
@@ -358,6 +388,21 @@ worse than one that never had it:
 | `graphcmp-run.sh`'s `$WANT` | `sym:DISAGREE` | `sym:AGREE` | the verdict assertion is what turns "a reader has to notice" into "a moved file" |
 | `graphcmp-repro.sh`'s health gate | `graphs-agree=13` | `graphs-agree=14` | MEASURED: the gate reported "not healthy" for a run that was entirely CORRECT and sat retrying it |
 
+⚠ **THE THIRD ROW IS STALE AGAIN, AND IT IS THE ONLY PIN IN THIS TABLE.** Re-measured
+2026-10-04 by `notes-sweep`: `VERDICT: AGREE` on **22 of 24** graphs, DISAGREE on `lin`
+and `loop` alone. The pin's correct value is **`22`**, not `14`.
+**RESOLVED 2026-10-04 by the coordinator:** `graphcmp-repro.sh:65-67` carried **three** dead
+pins in a row -- `graphs=16` (now 24), `graphs-agree=14` (now 22), `byte-identical=14` (now 21)
+-- so the gate rejected a fully correct run **three ways at once**. All three repinned. The
+following paragraph describes the defect as it stood and is kept as the record:
+
+`graphcmp-repro.sh:66` still greps `^graphs-agree=14$`, so **the gate now rejects a fully
+correct run** — the identical failure this row was created to document, one corpus-growth
+later. It was moved `13` -> `14` for exactly this reason and then never moved again.
+**A pin that tracks a growing corpus must be re-measured whenever the corpus grows, which
+is precisely when nobody is looking at it.** Gate script, out of scope for this unit:
+**reported, not patched.**
+
 **The two-column `?` claim did NOT die with `sym`, and keeping it alive needed a new
 fixture.** The claim being tested is "`?` takes `dtype` AND `shape` together", and `sym`
 was the only graph that produced it. `--graph loop`'s CALL is now the carrier (`?=2`, one
@@ -380,6 +425,10 @@ is a moved file rather than something a reader has to notice.
 **Two nodes with the same core and a different multiplicity.** `zip` truncates; the count
 is printed (`zip-truncated=`) so it is not silent, but a multiplicity difference is not
 REPORTED as one. MEASURED `0` on every run over 189 nodes.
+⚠ **Denominator aged (was 189 nodes / 16 graphs). STALE — not re-measured.** The count is
+still printed as `zip-truncated=` on every run, so a re-measurement is a grep, not an
+investigation; what is worth re-checking is that it reads `0` on the **24**-graph corpus,
+which nobody has done.
 
 **A rung-2 pairing with no mutual best is DROPPED to rung 3.** Both nodes are printed in
 full, so nothing is hidden, but the difference is reported as "one-sided" rather than named
@@ -412,10 +461,32 @@ level threaded in, so what `dbg` proves is that a LEVEL CHANGE MOVES A NAMED SET
 into its own `O.Arena.empty()`, and `UOp.toposort` fixes the output order, so the two sides'
 ids line up -- MEASURED, 14 of 16 graphs' canonical files are byte-identical. The other two
 are `lin` and `loop`, and each differs on exactly the node named in §0 and §2.
+⚠ **SUPERSEDED 2026-10-04 (was: 14 of 16 over 16). Measured now: 21 of 24 over 24.** The
+three that differ are `flip`, `lin`, `loop` — and `flip` differs in its canonical rows yet
+still **AGREEs**, because `canon_flip` normalises the bool/u32 spelling difference that made
+its md5 move. **So "canonical files differ" and "verdict is DISAGREE" are not the same
+event, and only the second one is a disagreement.**
 
 ---
 
 ## 5. COVERAGE, WITH THE DENOMINATOR THAT PRODUCED IT
+
+> ## ⚠ §5 IS THE MOST STALE SECTION IN THIS FILE. IT IS A 16-GRAPH, 34-OF-77 BASELINE.
+> The current figure is **59 of 77 over 24 graphs**, measured 2026-10-04 by
+> `.agents/slop/hermetic/hermetic-census.py --no-publish` (rc=0), and it is reproduced in
+> full in `.agents/slop/notes-sweep/01-GROUND-TRUTH.md`. **The per-op table and the
+> NOT-REACHED list below are both wrong now**, and so is the commutative count.
+>
+> **The one number in §5 that moved in the OPPOSITE direction from the reader's expectation
+> is `commutative ops 7 of 8`: the corpus now reaches EIGHT OF EIGHT.** `CMPEQ` — which §5
+> below spends a paragraph calling un-reachable — is reached by the `late` graph. §5 was
+> right that no eager graph reaches it, and wrong to stop there: it is reachable by the
+> rewrite route, which is exactly what `.agents/slop/arith/REACH-ARITH.md` found.
+> **"I could not reach it" and "it cannot be reached" are different claims, and this file
+> spent a paragraph on the second while having measured only the first.**
+>
+> The old text is kept below, verbatim and labelled, because §0's table and §3c were written
+> against it.
 
 **34 of 77 ops. That is the coverage number, not "sixteen graphs".** MEASURED by
 `list(Ops)` on this tree, not by reading the enum, and reprinted by `graphcmp-oracle.py` on
@@ -459,15 +530,26 @@ every run:
   AGREE at 14 nodes and 12 ops, which is the strongest single fixture in the corpus and is
   still 1 node per control-flow op.**
 
-**SEVEN of the eight COMMUTATIVE ops.** `--equiv` is measured on `ADD AND CMPNE MAX MUL OR
-XOR` (all of `GroupOp.Commutative` except `CMPEQ`). `CMPEQ` is **not reachable from an eager
-graph at all**, and that is a measured limit rather than a missing fixture: `UOp` has no
+> ⚠ **THIS PARAGRAPH IS NOW FALSE IN ITS CONCLUSION. IT IS KEPT BECAUSE IT IS THE BEST
+> EXAMPLE IN THIS FILE OF A CORRECT MEASUREMENT READ AS A THEOREM.** Re-measured
+> 2026-10-04: the corpus reaches **EIGHT of eight** commutative ops, and `CMPEQ` is
+> reached — by the `late` graph, whose py side runs a late-rewrite pipeline. The reasoning
+> below was never wrong about what it measured: no *eager* graph reaches `CMPEQ`. What was
+> wrong was the jump from that to un-reachability. **"The eager route does not reach it"
+> is a statement about a route, and the route was the only one tried.**
+
+**SEVEN of the eight COMMUTATIVE ops — HISTORICAL, and the eighth has since been reached.**
+`--equiv` is measured on `ADD AND CMPNE MAX MUL OR XOR` (all of `GroupOp.Commutative` except
+`CMPEQ`). `CMPEQ` is **not reachable from an eager graph at all**, and that is a measured
+limit rather than a missing fixture: `UOp` has no
 `cmpeq`/`cmpne` method (`[a for a in dir(UOp) if 'cmp' in a.lower()]` is `[]`, because
 `UOp.__eq__` is overridden for the ucache and answers a Python `bool`), and
 `(Tensor.empty(4,3) == Tensor.empty(4,3)).uop` emits `CMPNE CONST CMPNE`, not a `CMPEQ`.
 **ROUND THREE DID NOT CHANGE THIS, and that is worth saying:** three real kernels later,
 `CMPEQ` is still 0. Reaching it needs a pattern-matched rewrite, which is a different kind
 of fixture from either an eager graph or a scheduled one.
+**AND THEN THE REWRITE ROUTE EXISTED ALL ALONG** — `arith`'s `late` graph reaches `CMPEQ`,
+so the honest reading is *reachable, but not by any route tried before*.
 
 **`ENDIF`/`BACKEDGE`/`LOAD`/`STORE` ARE NOW REACHED -- see §0.** What is still unreached
 from the §4 set is `SHRINK`, which the scheduled corpus reaches easily (the `shrink`
@@ -598,6 +680,11 @@ BY 22's fix.
     `graphcmp.bend --check-only` to read `ALL PROOFS CHECK` **and** then accepts a run only
     if its own summary says sixteen graphs, thirteen AGREE, selfcheck OK and `census-rc=0`.
     **FINAL: 154 of 154 files identical across two clean runs.**
+    ⚠ **BOTH COUNTS STALE.** The health gate's expectations are **sixteen graphs /
+    thirteen AGREE**; measured 2026-10-04 the corpus is **24 graphs / 22 AGREE**. The gate
+    is now wrong in **both** directions at once — too few graphs and too few AGREE — and
+    `154 of 154` is the 16-graph artefact count. Not re-measured by `notes-sweep` (full
+    repro run, and `graphcmp-repro.sh` is a gate script): **STALE, not guessed.**
 
 21. **THE COVERAGE CENSUS COUNTED A DATACLASS FIELD NAME AS AN ATOM LETTER.** `atoms()`
     counted `o` from `Opt(op=EOptOps.SPLIT,...)` and `a` from `axis`, so the census printed
@@ -725,18 +812,53 @@ now carry their disagreement in the verdict line instead of in a comment.
 
 ## 8. WHAT A CLEAN RUN DOES AND DOES NOT ESTABLISH
 
-A clean run establishes: on this substrate, for these 16 graphs, the port's arena and
-CPython's arena agree on op, dtype, shape, depth, tag, a structural arg and the ordered
-child edges for **189 nodes -- 1134 field-records** -- on **14 of 16** graphs, modulo the
-residuals printed above. The two that DISAGREE do so on 1 of 46 and 1 of 25 nodes
-respectively, and each of those disagreements is a NAMED, MEASURED PORT gap: the
-`applied_opts` count and the `CallInfo.dtype` gap. Nothing in the corpus disagrees on a
-field the two implementations both get right.
+⚠ **NUMBERS AGED — this is the 16-graph / 189-node statement; the corpus is 24 graphs.**
+A clean run establishes: on this substrate, for these **24** graphs (was 16), the port's
+arena and CPython's arena agree on op, dtype, shape, depth, tag, a structural arg and the
+ordered child edges for **189 nodes -- 1134 field-records** (was; **STALE — not
+re-measured**, the per-graph `nodes=`/`field-records=` are printed on every `diff` run and
+the sum is derivable, but `notes-sweep` did not sum them) -- on **21 of 24** graphs
+byte-identical (was 14 of 16), modulo the residuals printed above. The two that DISAGREE
+(`lin`, `loop`) do so on 1 of 46 and 1 of 25 nodes respectively, and each of those
+disagreements is a NAMED, MEASURED PORT gap: the `applied_opts` count and the
+`CallInfo.dtype` gap. Nothing in the corpus disagrees on a field the two implementations
+both get right.
 
 It does NOT establish: that the port builds correct graphs (only that they MATCH
-CPython's), that the residual-bearing constructs are right, anything about the 43
-unexercised ops, anything at a device other than CPU, that the port can build a SCHEDULE at
+CPython's), that the residual-bearing constructs are right, anything about the **18**
+unexercised ops (was 43), anything at a device other than CPU, that the port can build a
+SCHEDULE at
 all (§0: `schedule/__init__.bend` DEFERS `__init__.py:82-301`), that `ENDIF` is reachable
 from an eager program (§0: 0 of 9), or anything about EXECUTING a kernel.
 `.agents/slop/e2e.sh` is still the only end-to-end artefact in the project and it still
 proves one matmul.
+---
+
+## LIMITS-ADDENDUM (hermetic unit, 2026-10-04) — what the differ's OWN inputs are worth
+
+Full text: `.agents/slop/HERMETIC.md`. `graphcmp.py` is byte-unchanged by this unit
+(md5 `c7096ee70cdfef447aec10cd784ef3ac`); these are measurements OF it.
+
+- **THE DIFFER CANNOT SEE A CORRUPT INPUT IT IS NOT GIVEN.** The published py row sets this
+  differ's census reads (`arith/both-census.py:39`) disagree with a fresh process for **15 of
+  24 graphs** — same row count, differing only in the `45:`/`46:` `ParamArg` chunk's `slot`
+  field (`graphcmp.py:708`). The coverage number read **59** anyway, because the census reads
+  field 1, the op. **A verdict computed from an input that cannot be reproduced inherits that
+  input's blind spots, and nothing in the verdict says so.** `hermetic-census.py --check
+  --out .agents/slop/arith` names all 15 and exits 3.
+- **`emit_py`'s ids and slots are a FUNCTION OF CALL ORDER, so an emitted row set is not a
+  property of the graph.** MEASURED: `late` alone is `i0,i1`/md5 `16368f03`; after 8
+  predecessors, `i13,i14`/md5 `2990e301`. Any caller that emits more than one graph in one
+  process and compares against a stored row set is comparing against build order.
+- **`--dev` LANDS, AND THE BRIEF THAT SAID IT DID NOT WAS WRONG.** `graphcmp.py:2977` sets
+  `DEV`, `:2978` calls `load_tinygrad()` — the assignment precedes the import. MEASURED:
+  `--dev CPU` → `sCPU`, `--dev NULL` → `sNULL`. The cited `:2769` is `continue` in
+  `split_debug`; it matches the BASELINE copies, where `load_tinygrad()` is `:2770`.
+- **`base()` IS MEMOIZED (`graphcmp.py:1512`) — SO A PROBE THAT CALLS IT FOR PREDECESSORS AND
+  THEN EMITS IS BUILDING WHAT IT THINKS IT IS.** Measured slot consumption differs per graph
+  (`buffer` alone consumes 4), so predecessor choice silently changes a target's ids. My own
+  first plant was a tautology for exactly this reason.
+- **THE WALL IS TRUE AND HAS TWO WORSE FORMS.** No `DEV` in the env + a late assignment asking
+  `NULL` → **`METAL`**. `DEV` already inherited + a late assignment → **`CPU`, silently, no
+  error**. **`oracles/mm-range.py:12`+`:59` is a live instance** (`Device.DEFAULT` MEASURED
+  `METAL`, printed at `:60`); another unit's oracle, reported not fixed.
