@@ -540,6 +540,71 @@ def tn_replace(+t: Tensor, +x: Tensor) -> Maybe<&2, Tensor>:
   tn_replace.of(tn_replace.same(t, x), t, x)
 
 # ===========================================================================
+# `as_param` -- tensor.py:153-154. `def as_param(self, slot): return
+# Tensor(self.uop.param_like(slot))`. TWO LINES, and the whole of it is a rename of a
+# live value into a numbered SLOT.
+#
+# `UOp.param_like` (ops.py:1241) is THREE arms and this ports the third:
+#   1. `self.op is Ops.PARAM and self.addrspace is AddrSpace.ALU` -- re-slot an ALU
+#      scalar, which CLEARS the bound value (`val=None`). Needs `replace` on `ParamArg`
+#      and an ALU addrspace the port does not build.
+#   2. `self.axis is not None and isinstance(self.device, tuple)` -- a SHARDED value
+#      becomes a per-shard sized PARAM wrapped in UNSHARD. Needs shard, which is
+#      WALL 2's neighbour and a named TODO at :1157.
+#   3. `UOp.param(slot, self.dtype, self._shape, self.device, name=None)` -- THE ONE.
+# It is `UOp(Ops.PARAM, src=(), arg=ParamArg(slot, dtype, size=shape, device=device))`
+# with `name` left `None` (ops.py:1018), and for a single device `device_range_src` is
+# `()` (ops.py:851) -- the same fact `g_buf` already relies on and states. So arm 3 is
+# BUILDABLE, and this is the only method in tensor.py's device half that is: the others
+# in that block all need a `Buffer` or a fetch or mutable class state, and this one
+# needs a dtype and a shape, which are fold answers.
+#
+# WHY `as_param` IS NOT TRIVIAL AND THE ROWS PROVE IT. A toposort signature prints the
+# op and the arity and NEVER THE ARG -- this file's own mutation M5 is that lesson, and
+# it is why `tn_rop_arg` exists as a separate row. So `tn_asparam` (the signature) is
+# BLIND to a dropped or wrong `slot`, and `tn_asparam_slot` (the arg) is the row that
+# closes it. Neither is enough alone: the arg row cannot see a missing SRC and the
+# signature row cannot see a wrong SLOT. That pair is the gate.
+# ===========================================================================
+
+# arm 3's `ParamArg(slot, dtype, size=shape, device=device)`. Field names and order are
+# ops.bend's `ParamArg`, not a hand-written list, and the three facts are READ OFF THE
+# SOURCE'S OWN `ParamArg` rather than recomputed: for every node kind that can be
+# `as_param`'d here -- BUFFER, ALLOC, PARAM -- `_shape` IS `ParamArg.size`, `dtype` IS
+# `ParamArg.dtype` and `device` IS `ParamArg.device`, which is exactly what `UOp.param`
+# reads at ops.py:1018 and exactly what the fold answers (`fold.bend:2222 param_ds`). So a
+# source whose arg is not an `AParam` is a source this def DECLINES, and it says so with
+# a `None` instead of inventing a size. `name=None` because `param_like` is called with
+# only a slot; `addrspace=AGLOBAL` because `UOp.param` derives it from the device and this
+# file's `g_buf` already writes that value for a buffer.
+def tn_as_param.of(slot: U32, +src: O.ParamArg) -> O.ParamArg:
+  # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
+  # buffer, bind_on_realize, val. `buffer=None` and `val=None`: a PARAM carries no Buffer
+  # (that is WALL 2, and `ParamArg.buffer` is its one device field, as `g_buf` already
+  # states), and `param_like` CLEARS `val` upstream (ops.py:1243) so re-slotting a bound
+  # Variable drops its binding -- arm 1, a named TODO, and `tn_asparam_slot` is the row
+  # that would move if it were ported.
+  O.ParamArg{slot, O.ParamArg.dtype(src), O.ParamArg.size(src), None{}, None{}, None{},
+    S.AGlobal{}, O.ParamArg.device(src), False{}, None{}, None{}, False{}, None{}}
+
+# `Tensor(self.uop.param_like(slot))`. The `Maybe` is the port's `tn_len` convention: a
+# `None` is a source this def declines, which is Python's first `param_like` arm. The
+# scrutinee gets its own def because a match cannot scrutinize a computed value, and
+# `tn_rop_arg.go` is the same split for the same reason.
+def tn_as_param.go(pa: O.ParamArg, +ar: O.Arena, slot: U32) -> Maybe<&2, Tensor>:
+  +ns = O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+    O.AParam{tn_as_param.of(slot, pa)}, O.TNone{})
+  Some{tn_new(O.Found.ar(ns), O.Found.i(ns))}
+
+def tn_as_param.src(arg: O.Arg, +ar: O.Arena, slot: U32) -> Maybe<&2, Tensor>:
+  match arg:
+    case O.AParam{pa}: tn_as_param.go(pa, ar, slot)
+    case _: None{}
+
+def tn_as_param(+ar: O.Arena, +t: Tensor, slot: U32) -> Maybe<&2, Tensor>:
+  tn_as_param.src(O.Arena.arg(ar, Tensor.u(t)), ar, slot)
+
+# ===========================================================================
 # `shape_to_shape_arg` -- ops.py:106. `src = tuple(x if isinstance(x, UOp) else
 # UOp.const(x) for x in arg); return src[0] if len(src) == 1 else UOp(Ops.STACK,
 # src=src)`. THREE arms, and the middle one is the one that matters: ONE element is
@@ -1559,6 +1624,59 @@ def t_replace_bad() -> IO(Unit):
   t_row("tn_replace_bad", Bool.not(tn_none_t(tn_replace(tn_new(O.Found.ar(b), O.Found.i(a)),
     tn_new(O.Found.ar(b), O.Found.i(b))))))
 
+# --- `as_param` -- tensor.py:153-154. TWO ROWS, and neither is enough alone. ---------
+#
+# `tn_asparam` is the SIGNATURE: `n=1 PARAM/0`, CPython's `Tensor([1.,2.],
+# device='PYTHON').as_param(3).uop.toposort()`. It moves if the op is wrong or if a src
+# is added. It is BLIND to the slot, because a signature prints the op and the arity and
+# never the arg -- this file's own mutation M5 is that lesson and `tn_rop_arg` exists for
+# the same reason.
+#
+# `tn_asparam_slot` is the ARG: the PARAM's own `ParamArg.slot`, `3`. It moves if the slot
+# is dropped or if the SOURCE's slot leaks through (`g_buf`'s is 0, the param's is 3, and
+# those two differ -- so a `tn_as_param` that forwarded `O.ParamArg.slot(src)` prints 0
+# here). `tn_asparam_src` is the matching NEGATIVE: the SOURCE's slot, still 0, so a port
+# that re-slotted in place rather than building a new node would move one row and not the
+# other.
+def tn_param_slot.of(arg: O.Arg) -> U32:
+  match arg:
+    case O.AParam{pa}: O.ParamArg.slot(pa)
+    case _: O.ParamArg.no_slot()
+
+def tn_asparam_sig.slot(m: Maybe<&2, Tensor>) -> String:
+  match m:
+    case Some{+t}:
+      String.concat(["tn_asparam_slot=",
+        U32.show(tn_param_slot.of(O.Arena.arg(Tensor.ar(t), Tensor.u(t))))])
+    case None{}: "tn_asparam_slot=declined"
+
+def tn_asparam_sig.ne(m: Maybe<&2, Tensor>, src: U32) -> String:
+  match m:
+    case Some{+t}: String.concat(["tn_asparam_ne=",
+      Bool.show(Bool.not(U32.is_eq(tn_param_slot.of(O.Arena.arg(Tensor.ar(t), Tensor.u(t))), src)))])
+    case None{}: "tn_asparam_ne=declined"
+
+def tn_asparam_sig.sig(+ar: O.Arena, i: U32) -> String:
+  +xs = O.UOp.toposort(O.Arena.budget(ar), ar, i)
+  tn_sig.go(xs, ar, String.concat([U32.show(U32.from_nat(List.length(&2, U32, xs))), " "]))
+
+def tn_asparam_sig.of(m: Maybe<&2, Tensor>) -> String:
+  match m:
+    case Some{+t}: String.concat(["tn_asparam=", tn_asparam_sig.sig(Tensor.ar(t), Tensor.u(t))])
+    case None{}: "tn_asparam=declined"
+
+def tn_asparam_pair(+m: Maybe<&2, Tensor>, src: U32) -> String:
+  String.concat([tn_asparam_sig.of(m), " ", tn_asparam_sig.slot(m), " ",
+    tn_asparam_sig.ne(m, src)])
+
+def t_asparam.go(ar: O.Arena) -> String:
+  +a = g_buf(ar, 0, 2, S.single())
+  tn_asparam_pair(tn_as_param(O.Found.ar(a), tn_new(O.Found.ar(a), O.Found.i(a)), 3),
+    tn_param_slot.of(O.Arena.arg(O.Found.ar(a), O.Found.i(a))))
+
+def t_asparam() -> IO(Unit):
+  IO.print(t_asparam.go(O.Arena.empty()))
+
 # `backward`'s scope filter, as a COUNT. `Tensor([1.0, 2.0])` is float32, so it is in
 # scope of `x.sum()` and `t.uop in all_uops` is True for it; the scope also holds a
 # CONST, which is `weakint` and so `is_floating_point` is False. The row is the count,
@@ -1704,6 +1822,7 @@ def main() -> IO(Unit):
     aa : Unit <- t_replace()
     ab : Unit <- t_replace_bad()
     ac : Unit <- t_needgrad()
+    ap : Unit <- t_asparam()
     ad : Unit <- t_arena()
     ae : Unit <- t_param_old()
     t_holds()

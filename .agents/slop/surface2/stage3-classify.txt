@@ -1,0 +1,45 @@
+CONTROL (fixture only, no method)  seams=ALLOCATE=0 LAUNCH=0 READBACK=0 MOVE=0  SEAMS ARE QUIET
+
+method             invoke   seams crossed          move      what the caller holds back
+----------------------------------------------------------------------------------------------------------------
+__del__            OK       -                      0         str
+__bool__           RAISED   -                      0         -   <- TypeError: __bool__ on Tensor is not defined
+as_param           OK       -                      0         PARAM shape=(2,)
+call               OK       -                      0         AFTER shape=(2,)
+custom_kernel      RAISED   -                      0         -   <- AssertionError: cannot call a Ops.ADD body, use call_with_outputs for value-
+linear_with_vars   OK       -                      0         tuple
+schedule_linear    OK       -                      0         LINEAR (UOp)
+realize            OK       ALLOCATE,LAUNCH        5         BUFFER shape=(2,)
+_buffer            OK       -                      0         Buffer
+_data              OK       READBACK               0         memoryview
+data               OK       READBACK               0         memoryview
+tolist             OK       READBACK               0         list
+numpy              OK       READBACK               0         ndarray
+clone              OK       -                      2         AFTER shape=(2,)
+to                 OK       -                      0         BUFFER shape=(2,)
+to_                OK       -                      0         BUFFER shape=(2,)
+shard              OK       -                      3         UNSHARD shape=(2,)
+shard_             OK       -                      3         UNSHARD shape=(2,)
+shard_like         OK       -                      0         BUFFER shape=(2,)
+from_blob          OK       ALLOCATE,LAUNCH        2         BUFFER shape=(2,)
+from_url           OK       -                      0         BUFFER shape=(402,)
+manual_seed        OK       -                      0         NoneType
+_next_counter      OK       ALLOCATE               18        BUFFER shape=(2,)
+__setitem__        OK       -                      2         AFTER shape=(2,)
+__delitem__        RAISED   -                      0         -   <- TypeError: Tensor does not support deleting items
+__iadd__           OK       -                      0         AFTER shape=(2,)
+__isub__           OK       -                      0         AFTER shape=(2,)
+__imul__           OK       -                      0         AFTER shape=(2,)
+__itruediv__       OK       -                      0         AFTER shape=(2,)
+__ifloordiv__      OK       -                      0         AFTER shape=(2,)
+__ipow__           OK       -                      0         AFTER shape=(2,)
+__iand__           OK       -                      0         AFTER shape=(2,)
+__ior__            OK       -                      0         AFTER shape=(2,)
+__ixor__           OK       -                      0         AFTER shape=(2,)
+__ilshift__        OK       -                      0         AFTER shape=(2,)
+__irshift__        OK       -                      0         AFTER shape=(2,)
+__imatmul__        OK       -                      4         AFTER shape=(2,)
+__eq__             OK       -                      0         CMPNE shape=(2,)
+decode_hevc_frame  OK       -                      2         AFTER shape=<AttributeError>
+
+methods crossing ZERO of ALLOCATE/LAUNCH/READBACK: 32 of 39

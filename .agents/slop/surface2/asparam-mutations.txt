@@ -1,0 +1,20 @@
+BASE tn_asparam=1 PARAM/0  tn_asparam_slot=3 tn_asparam_ne=True
+
+A21-drop-slot
+  tn_asparam=1 PARAM/0  tn_asparam_slot=0 tn_asparam_ne=False
+  VERDICT: MOVED
+
+A22-forward-src-slot
+  tn_asparam=1 PARAM/0  tn_asparam_slot=0 tn_asparam_ne=False
+  VERDICT: MOVED
+
+A23-wrong-op
+  tn_asparam=1 BUFFER/0  tn_asparam_slot=3 tn_asparam_ne=True
+  VERDICT: MOVED
+
+A24-control
+  tn_asparam=1 PARAM/0  tn_asparam_slot=3 tn_asparam_ne=True
+  VERDICT: NOTHING MOVED
+
+restored: yes
+final  : tn_asparam=1 PARAM/0  tn_asparam_slot=3 tn_asparam_ne=True

@@ -1,0 +1,51 @@
+== A. SET ARITHMETIC ==
+AST total                       : 57
+note PRESENT list length        : 18 and all in AST: True
+note ABSENT list length         : 38
+18 + len(note ABSENT)           : 56   <-- compare to 57
+in AST, in NEITHER list         : ['__del__'] (1)
+PRESENT in note but NOT in AST  : []
+ABSENT in note but NOT in AST   : []
+duplicates in note ABSENT       : []
+
+== the true 39, computed as AST - PRESENT ==
+count: 39
+  __del__                tensor.py:102   <-- MISSING FROM THE NOTE'S LIST
+  __bool__               tensor.py:136
+  as_param               tensor.py:153
+  call                   tensor.py:156
+  custom_kernel          tensor.py:159
+  linear_with_vars       tensor.py:168
+  schedule_linear        tensor.py:212
+  realize                tensor.py:219
+  _buffer                tensor.py:276
+  _data                  tensor.py:285
+  data                   tensor.py:287
+  tolist                 tensor.py:306
+  numpy                  tensor.py:328
+  clone                  tensor.py:344
+  to                     tensor.py:353
+  to_                    tensor.py:369
+  shard                  tensor.py:377
+  shard_                 tensor.py:395
+  shard_like             tensor.py:401
+  from_blob              tensor.py:412
+  from_url               tensor.py:426
+  manual_seed            tensor.py:442
+  _next_counter          tensor.py:460
+  __setitem__            tensor.py:502
+  __delitem__            tensor.py:530
+  __iadd__               tensor.py:536
+  __isub__               tensor.py:537
+  __imul__               tensor.py:538
+  __itruediv__           tensor.py:539
+  __ifloordiv__          tensor.py:540
+  __ipow__               tensor.py:541
+  __iand__               tensor.py:542
+  __ior__                tensor.py:543
+  __ixor__               tensor.py:544
+  __ilshift__            tensor.py:545
+  __irshift__            tensor.py:546
+  __imatmul__            tensor.py:547
+  __eq__                 tensor.py:549
+  decode_hevc_frame      tensor.py:553
