@@ -8998,3 +8998,31 @@ Including one measured **NOT** to report a compiler defect: a generated 25-row
 bracket pins `F32.div(3.0,7.0)` to the exactly-rounded `3edb6db7` with `k_exact`
 the only True row, so **Bend's f32 division is correctly rounded** and the one-ulp
 gap I first saw was my own quotient.  Document: `.agents/slop/MATHLIB.md`.
+
+### [x] `W-1`…`W-8` — `Nat`'s measured range, and one `f64` add
+
+Document: **`.agents/slop/W64.md`** (this unit is named `w64`).
+
+- **`Nat` ceiling is `2^48-1 = 281474976710655`**, exact; `2^48` aborts with
+  `bend: a Nat past the largest immediate 2^48-1`. **The message is right and the
+  circulating "2^51" figure is wrong by 8 binary orders.** Magnitude bound, not
+  parity (`2^47+1` odd survives). Both controls armed.
+- **`Nat` is not a safe `U64` (48 of 64 bits) and not remotely a safe `I64`
+  (Peano, no sign, `sub` saturates).** CPython-computed: **99.998474 %** of `f64`
+  bit patterns do not fit a `Nat`, so the verified f32 bit-pattern route does not
+  generalise to f64.
+- **`f64` add WORKS, bit-exact.** `1.5 + 2.25 = 0x400E000000000000` vs CPython,
+  plant + disarm both passing, carrying operands as **two `U32` halves** so no
+  `double` crosses the FFI. The 17 libclang `double`/`int64` blockers are a
+  **signature** problem, not a transport one.
+- **`Word(64n)` does correct 64-bit integer add** and
+  `type F64 is Data: F64{data: Word(64n)}` typechecks — "no F64/I64/U64" is true
+  of the prelude, not the language.
+- **`dtype.bend`'s 14 need NEITHER types NOR `math.*`.** `H.I64` already exists
+  (`helpers.bend:1648`, `I64{hi: U32, lo: U32}`) and `runtime/dtype.c` + `.js`
+  already implement all eleven (`dtype.js:160-171`). The red is an FFI seam being a
+  seam, so **the 14 are not a backlog.**
+- **The `math.*` concentration does not exist.** The frozen census has **10 rows /
+  2 files / 3 functions** (`math.log`, `math.pi`, `math.sqrt`), and those rows
+  describe **F32 literal constants**; `math.gcd` is already implemented. **Build F32
+  arithmetic and literal constants, not a math module.**
