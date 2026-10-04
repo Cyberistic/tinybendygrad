@@ -1,0 +1,112 @@
+==============================================================================
+0  BASELINE from the live tree, TWICE (a memoized answer is measured twice)
+  rc=1
+    entry points : 324 unique declarations
+    denominator : 552 symbols exported by /Library/Developer/CommandLineTools/usr/lib/libclang.dylib (`nm -gU`)
+    coverage : 320/552 = 58.0% of the binary's exported symbols have a declaration
+    resolve rate : 320/324 = 98.8% of the declarations resolve to an exported symbol
+    declared but NOT exported (4): clang_getOffsetOfBase, clang_getTypePrettyPrinted, clang_isBeforeInTranslationUnit, clang_visitCXXBaseClasses
+    exported but NOT declared (232): clang_BlockCommandComment_getArgText, clang_BlockCommandComment_getCommandName, clang_BlockCommandComment_getNumArgs, clang_BlockCommandComment_getParagraph, clang_CXRewriter_create, clang_CXRewriter_dispose, ... and 226 more
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanical outright : 104 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 17 no Bend type, or past the 2^51-1 Nat window
+    total : 324 the three rows above are disjoint and sum to it
+    no absent-type blocker : 307 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+    second run identical: True   rc=1
+  rc=1
+    entry points : 324 unique declarations
+    denominator : 324 symbols exported by the binary
+    coverage : 324/324 = 100.0%
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanically derivable : 307/324 (95%) have no absent-type blocker
+    need a layout decision : 203 by-value struct or unresolvable type
+==============================================================================
+1  PLANT A -- delete one declaration. PRE-FIX: coverage stays 100.0%.
+    deleted declaration: clang_createIndex
+  rc=1
+    entry points : 323 unique declarations
+    denominator : 323 symbols exported by the binary
+    coverage : 323/323 = 100.0%
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanically derivable : 306/323 (95%) have no absent-type blocker
+    need a layout decision : 203 by-value struct or unresolvable type
+  rc=1
+    entry points : 323 unique declarations
+    denominator : 552 symbols exported by /Library/Developer/CommandLineTools/usr/lib/libclang.dylib (`nm -gU`)
+    coverage : 319/552 = 57.8% of the binary's exported symbols have a declaration
+    resolve rate : 319/323 = 98.8% of the declarations resolve to an exported symbol
+    declared but NOT exported (4): clang_getOffsetOfBase, clang_getTypePrettyPrinted, clang_isBeforeInTranslationUnit, clang_visitCXXBaseClasses
+    exported but NOT declared (233): clang_BlockCommandComment_getArgText, clang_BlockCommandComment_getCommandName, clang_BlockCommandComment_getNumArgs, clang_BlockCommandComment_getParagraph, clang_CXRewriter_create, clang_CXRewriter_dispose, ... and 227 more
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanical outright : 103 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 17 no Bend type, or past the 2^51-1 Nat window
+    total : 323 the three rows above are disjoint and sum to it
+    no absent-type blocker : 306 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+==============================================================================
+2  DISARM A -- append a comment. Nothing may move.
+  rc=1
+    entry points : 324 unique declarations
+    denominator : 552 symbols exported by /Library/Developer/CommandLineTools/usr/lib/libclang.dylib (`nm -gU`)
+    coverage : 320/552 = 58.0% of the binary's exported symbols have a declaration
+    resolve rate : 320/324 = 98.8% of the declarations resolve to an exported symbol
+    declared but NOT exported (4): clang_getOffsetOfBase, clang_getTypePrettyPrinted, clang_isBeforeInTranslationUnit, clang_visitCXXBaseClasses
+    exported but NOT declared (232): clang_BlockCommandComment_getArgText, clang_BlockCommandComment_getCommandName, clang_BlockCommandComment_getNumArgs, clang_BlockCommandComment_getParagraph, clang_CXRewriter_create, clang_CXRewriter_dispose, ... and 226 more
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanical outright : 104 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 17 no Bend type, or past the 2^51-1 Nat window
+    total : 324 the three rows above are disjoint and sum to it
+    no absent-type blocker : 307 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+    identical to the live baseline: True
+==============================================================================
+3  PLANT B -- one c_int64 in the decorator of a NOT-blocked declaration
+  rc=1
+    entry points : 324 unique declarations
+    denominator : 552 symbols exported by /Library/Developer/CommandLineTools/usr/lib/libclang.dylib (`nm -gU`)
+    coverage : 320/552 = 58.0% of the binary's exported symbols have a declaration
+    resolve rate : 320/324 = 98.8% of the declarations resolve to an exported symbol
+    declared but NOT exported (4): clang_getOffsetOfBase, clang_getTypePrettyPrinted, clang_isBeforeInTranslationUnit, clang_visitCXXBaseClasses
+    exported but NOT declared (232): clang_BlockCommandComment_getArgText, clang_BlockCommandComment_getCommandName, clang_BlockCommandComment_getNumArgs, clang_BlockCommandComment_getParagraph, clang_CXRewriter_create, clang_CXRewriter_dispose, ... and 226 more
+    BLOCKED by an absent Bend type or the Nat window (18):
+    mechanical outright : 103 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 18 no Bend type, or past the 2^51-1 Nat window
+    total : 324 the three rows above are disjoint and sum to it
+    no absent-type blocker : 306 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+    BLOCKED moved 17 -> 18: True
+==============================================================================
+4  DISARM B -- add an int64 ARGUMENT to an ALREADY-blocked declaration.
+   The audit lists this as failed plant #1: the blocker set is a SET, and the
+   declaration is already in it, so nothing may move.
+    '@dll.bind(ctypes.c_int64, CXType)\ndef clang_Type_getSizeOf('
+ -> '@dll.bind(ctypes.c_int64, CXType, ctypes.c_int64)\ndef clang_Type_getSizeOf('
+  rc=1
+    entry points : 324 unique declarations
+    denominator : 552 symbols exported by /Library/Developer/CommandLineTools/usr/lib/libclang.dylib (`nm -gU`)
+    coverage : 320/552 = 58.0% of the binary's exported symbols have a declaration
+    resolve rate : 320/324 = 98.8% of the declarations resolve to an exported symbol
+    declared but NOT exported (4): clang_getOffsetOfBase, clang_getTypePrettyPrinted, clang_isBeforeInTranslationUnit, clang_visitCXXBaseClasses
+    exported but NOT declared (232): clang_BlockCommandComment_getArgText, clang_BlockCommandComment_getCommandName, clang_BlockCommandComment_getNumArgs, clang_BlockCommandComment_getParagraph, clang_CXRewriter_create, clang_CXRewriter_dispose, ... and 226 more
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanical outright : 104 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 17 no Bend type, or past the 2^51-1 Nat window
+    total : 324 the three rows above are disjoint and sum to it
+    no absent-type blocker : 307 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+    identical to the live baseline: True
+==============================================================================
+5  FAIL-SAFE -- --dylib at a path that does not exist
+  rc=1
+    entry points : 324 unique declarations
+    denominator : UNAVAILABLE -- no library to read. Pass --dylib PATH,
+    coverage : NOT MEASURABLE. The declaration count is 324, and 324/324 would be a
+    BLOCKED by an absent Bend type or the Nat window (17):
+    mechanical outright : 104 no blocker and no layout decision
+    need a layout decision : 203 by-value struct or unresolvable named type
+    blocked : 17 no Bend type, or past the 2^51-1 Nat window
+    total : 324 the three rows above are disjoint and sum to it
+    no absent-type blocker : 307 = mechanical outright + need a layout decision. NOT 'derivable': the 203 in the middle row are each one layout convention away.
+    any coverage PERCENTAGE printed: False  ([])
+    'NOT MEASURABLE' printed: True

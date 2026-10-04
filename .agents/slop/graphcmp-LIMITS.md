@@ -432,8 +432,25 @@ every run:
     LOG2 SIN SQRT RECIPROCAL NEG TRUNC SHL SHR CDIV CMOD CMPEQ THREEFRY SUB FDIV POW
     FLOORDIV FLOORMOD WHERE MULACC CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE
     COPY MSELECT MSTACK CUSTOM_FUNCTION EXPAND PAD FLIP UNSHARD ALLREDUCE PYLITERAL
-    (CROSSED THROUGH IN ROUND THREE, and these are the ten: NOOP, CALL, LINEAR, AFTER,
-     END, IF, ENDIF, BACKEDGE, LOAD, STORE -- every one of them from `lin`/`loop`/`gate`)
+    (CROSSED THROUGH IN ROUND THREE, and these are the eleven: NOOP, CALL, LINEAR, AFTER,
+     END, IF, ENDIF, BACKEDGE, LOAD, STORE, CMPLT -- every one of them from
+     `lin`/`loop`/`gate`)
+
+  **`CMPLT` WAS MISSING FROM THAT LIST AND THE LIST SAID "ten" WHEN IT NAMED ELEVEN.**
+  MEASURED by asking the census itself, per graph (`census(G.emit_py(g))["ops"]`, the
+  same call the oracle makes -- not a second walk, which is what forks these counts):
+
+  ```
+  NOOP ['loop']      CALL ['loop']       LINEAR ['gate']     AFTER ['loop']
+  END  ['gate','lin'] ENDIF ['gate']     BACKEDGE ['loop']  LOAD ['lin','loop']
+  STORE ['gate','lin','loop']  CMPLT ['gate','loop']
+  ```
+
+  Eleven are reached and ten were named. This file published a denominator about itself
+  and was short by one; `CMPLT` is reached by `gate` and `loop` and had no line here.
+  `unfalsifiable/graphcmp-opcensus-plant.py` re-measures this list OUT OF THIS FILE on
+  every run and reports `REACHED BUT MISSING FROM THE DECLARED LIST`, so the count in
+  the prose and the set in the prose cannot drift apart again.
 
   **A node count of 1 is the weakest coverage there is and the table says so.** Fourteen of
   the 34 are at 1 node in 1 graph; `ENDIF`, `IF`, `BACKEDGE`, `CALL`, `LINEAR` and `NOOP`

@@ -268,33 +268,6 @@ def read_symbol_list(path: str) -> list[str]:
             if ln.strip() and not ln.strip().startswith("#")]
 
 
-# WHERE THE COVERAGE DENOMINATOR COMES FROM, and why it is not the numerator. A
-# ctypes binding is a list of declarations; the shared library it binds to is a
-# different list, produced by `nm` on the binary. Taking the denominator from the
-# binding makes `N/N = 100%` a tautology that survives deleting declarations, which
-# is what it did. Nothing here is a fallback onto the numerator: if no library can be
-# found, coverage is reported NOT MEASURABLE and no percentage is printed.
-DYSLIB_GLOBS = (
-    "/Library/Developer/CommandLineTools/usr/lib/lib{lib}.dylib",
-    "/Applications/Xcode.app/Contents/Developer/Toolchains/"
-    "XcodeDefault.xctoolchain/usr/lib/lib{lib}.dylib",
-    "/opt/homebrew/opt/llvm/lib/lib{lib}.dylib",
-    "/usr/local/opt/llvm/lib/lib{lib}.dylib",
-    "/usr/lib/lib{lib}.dylib",
-    "/usr/local/lib/lib{lib}.dylib",
-)
-
-
-def find_dylib(explicit: str | None, lib: str) -> str | None:
-    if explicit:
-        return explicit if Path(explicit).exists() else None
-    for g in DYSLIB_GLOBS:
-        p = Path(g.format(lib=lib))
-        if p.exists():
-            return str(p)
-    return None
-
-
 # tinygrad's autogen ctypes binding is an EXACT signature source even when the
 # vendor ships no C header, which is the case for Apple's libclang here. The
 # idiom is a @dll.bind(return_ctype, arg_ctype, ...) line immediately above a
@@ -437,58 +410,19 @@ CLASS_NOTE = {
 }
 
 
-def report(fns: list[Fn], lib: str, denom: int | None, origin: str,
-           binary: tuple[list[str], str] | None = None) -> bool:
+def report(fns: list[Fn], lib: str, denom: int | None, origin: str) -> bool:
     names = [f.name for f in fns]
     uniq = sorted(set(names))
     print(f"library        : {lib}")
     print(f"symbols from  : {origin}")
     print(f"entry points  : {len(uniq)} unique declarations")
-    # COVERAGE, AGAINST A POPULATION THIS TOOL DID NOT DERIVE FROM THE NUMERATOR.
-    # It used to be `denominator = len({f.name for f in fns})` on the --pybind path,
-    # which IS `len(uniq)`: the line printed `324/324 = 100.0%` with no binary read,
-    # and the `len(uniq) > denom` guard below was unreachable because the two were the
-    # same set. Deleting one declaration gave `323/323`, still 100.0% -- coverage that
-    # survives the loss of the thing it claims to cover. `binary` is the only accepted
-    # denominator now: `nm -gU` on the shared library the bindings are FOR.
-    if binary is None:
-        print("denominator   : UNAVAILABLE -- no library to read. Pass --dylib PATH,")
-        print("                or run against the .dylib/.so or a --symbols list.")
-        print("coverage      : NOT MEASURABLE. The declaration count is "
-              f"{len(uniq)}, and {len(uniq)}/{len(uniq)} would be a")
-        print("                SELF-COMPARISON, so no percentage is printed rather")
-        print("                than one that cannot go red.")
-    else:
-        exported, where = binary
-        if not exported:
-            print(f"denominator   : UNAVAILABLE -- nm read 0 symbols from {where}")
-            print("coverage      : NOT MEASURABLE (see above)")
-        else:
-            ext = set(exported)
-            shared = sorted(set(uniq) & ext)
-            only_decl = sorted(set(uniq) - ext)
-            only_bin = sorted(ext - set(uniq))
-            print(f"denominator   : {len(ext)} symbols exported by {where} "
-                  f"(`nm -gU`)")
-            print(f"coverage      : {len(shared)}/{len(ext)} = "
-                  f"{100.0 * len(shared) / len(ext):.1f}% of the binary's exported "
-                  f"symbols have a declaration")
-            print(f"resolve rate  : {len(shared)}/{len(uniq)} = "
-                  f"{100.0 * len(shared) / len(uniq):.1f}% of the declarations resolve "
-                  f"to an exported symbol")
-            if only_decl:
-                print(f"  declared but NOT exported ({len(only_decl)}): "
-                      + ", ".join(only_decl[:8])
-                      + (f", ... and {len(only_decl) - 8} more"
-                         if len(only_decl) > 8 else ""))
-            if only_bin:
-                print(f"  exported but NOT declared ({len(only_bin)}): "
-                      + ", ".join(only_bin[:6])
-                      + (f", ... and {len(only_bin) - 6} more"
-                         if len(only_bin) > 6 else ""))
-            if len(uniq) > len(ext):
-                print("  !! more declarations than exported symbols -- the header "
-                      "and the binary disagree; do not trust either count alone")
+    if denom is not None:
+        print(f"denominator   : {denom} symbols exported by the binary")
+        print(f"coverage      : {len(uniq)}/{denom} = "
+              f"{100.0 * len(uniq) / denom:.1f}%")
+        if len(uniq) > denom:
+            print("  !! more declarations than exported symbols -- the header "
+                  "and the binary disagree; do not trust either count alone")
     print()
 
     by_class = Counter(f.max_class for f in fns)
@@ -508,35 +442,12 @@ def report(fns: list[Fn], lib: str, denom: int | None, origin: str,
             print(f"  ... and {len(blocked) - 25} more")
         print()
 
-    # WHAT IS MEASURED, UNDER THE NAME OF WHAT IS MEASURED. This used to read
-    #   `mechanically derivable : 307/324 (95%) have no absent-type blocker`
-    # which is a not-count of blockers wearing the word "derivable": `mechanical`
-    # was `len(uniq) - len(blocked)`, so 203 of the 307 -- two thirds -- were the
-    # CBYVAL/OPAQUE set the same run labels "needs one layout convention" and "per-
-    # struct decision, not mechanical". Nothing was derived. The three buckets below
-    # are what the run can actually distinguish, and they are asserted disjoint and
-    # exhaustive so the label cannot drift from the count again.
-    blocked_names = {f.name for f in blocked}
-    structish_names = {f.name for f in fns if f.max_class in ("CBYVAL", "OPAQUE")}
-    uniq_names = set(uniq)
-    mechanical = sorted(uniq_names - blocked_names - structish_names)
-    overlap = blocked_names & structish_names
-    assert not overlap, f"blocked and layout-decision overlap on {sorted(overlap)}"
-    assert len(mechanical) + len(structish_names) + len(blocked_names) == len(uniq_names), \
-        "the three buckets do not partition the declarations"
-    print(f"mechanical outright     : {len(mechanical)}    no blocker and no layout "
-          f"decision")
-    print(f"need a layout decision  : {len(structish_names)}    by-value struct or "
-          f"unresolvable named type")
-    print(f"blocked                 : {len(blocked_names)}    no Bend type, or past "
-          f"the 2^51-1 Nat window")
-    print(f"{'':23}: {'-' * 7}")
-    print(f"total                   : {len(uniq_names)}    the three rows above are "
-          f"disjoint and sum to it")
-    print(f"no absent-type blocker  : {len(uniq_names) - len(blocked_names)}    = "
-          f"mechanical outright + need a layout decision. NOT 'derivable': the "
-          f"{len(structish_names)} in the middle row are each one layout convention "
-          f"away.")
+    mechanical = len(uniq) - len({f.name for f in blocked})
+    structish = len({f.name for f in fns if f.max_class in ("CBYVAL", "OPAQUE")})
+    print(f"mechanically derivable : {mechanical}/{len(uniq)} "
+          f"({100.0 * mechanical / max(1, len(uniq)):.0f}%) have no absent-type "
+          f"blocker")
+    print(f"need a layout decision : {structish} by-value struct or unresolvable type")
     print()
     print("SIZE, if written:")
     print(f"  Bend law lines : {LAW_LINES_PER_FN * len(uniq)}"
@@ -570,8 +481,6 @@ def main() -> int:
     ap.add_argument("--pybind", action="store_true",
                     help="target is a @dll.bind ctypes binding (exact signatures)")
     ap.add_argument("--lib", help="link flag name (default: derived from target)")
-    ap.add_argument("--dylib", help="the shared library the bindings are FOR; its "
-                                     "exported symbols are the coverage denominator")
     a = ap.parse_args()
 
     t = Path(a.target)
@@ -584,16 +493,9 @@ def main() -> int:
             return 2
         fns = parse_pybind(t.read_text(errors="replace"))
         origin = f"{t} (@dll.bind signatures, {len(fns)} parsed)"
+        denom = len({f.name for f in fns})
         lib = a.lib or "clang"
-        path = find_dylib(a.dylib, lib)
-        if path:
-            symbols, err = symbols_from_dylib(path)
-            binary = (symbols, path) if not err else None
-            if err:
-                print(f"nm failed on {path}: {err}", file=sys.stderr)
-        else:
-            binary = None
-        clean = report(fns, lib, denom, origin, binary)
+        clean = report(fns, lib, denom, origin)
         return 0 if clean else 1
 
     if a.symbols:

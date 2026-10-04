@@ -264,7 +264,17 @@ def main():
   names = [n for n, _ in allspecs]
   for r in range(runs):
     names += [k for k in got[r] if k not in names]
-  print(f"# specs_attempted={len(SPECS)} controls={len(CONTROLS)} scheduled_calls={sum(1 for k in names if not k.endswith('RAISED'))}")
+  # `names` is NOT the set of calls. Measured: it holds 25 keys for six specs --
+  # the 7 spec names, 6 `X#i` duplicate block keys, and 6 `X__calls` bookkeeping
+  # keys -- so `sum(1 for k in names if not k.endswith('RAISED'))` answered
+  # `scheduled_calls=25`, which is 25 KEYS, not 25 calls. The real number of
+  # `create_schedule` calls is the sum of the per-spec `len(_CAPTURED)`, and it is
+  # 12. Both figures are read from the same `per` dict that holds the blocks.
+  ncall = sum(int(per[f"{n}__calls"]) for n, _ in allspecs if f"{n}__calls" in per)
+  nsched = sum(1 for n, _ in allspecs
+               if f"{n}__calls" in per and int(per[f"{n}__calls"]) > 0)
+  print(f"# specs_attempted={len(SPECS)} controls={len(CONTROLS)} "
+        f"specs_scheduled={nsched} scheduled_calls={ncall} block_keys={len(names)}")
   print("# ==== determinism ====")
   for name in names:
     if name not in got[0] or name not in got[1]:

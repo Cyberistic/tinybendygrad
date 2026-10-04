@@ -19,15 +19,34 @@ lane-liveness   [#########.] 9/11    the 39 wired lanes tabulated LIVE/RECORDED/
                                        6-lane plant/disarm matrix: 5 ARMED, 1 DISARMED
                                        (`dtype-gate.py`). See `.agents/slop/LANE-LIVENESS.md`.
                                        L-1..L-11 appended at bend2-constraints.md 23557+.
-dup-rows        [#######...] 7/10   10 = census, usb, ops_nv-oracle, ops_nv-port, hcq2,
-                                       llvmir, tc_ptx, fold-dup, fold-93, guard. 7 CLOSED or
-                                       CLASSIFIED, 3 need a `.bend` edit this unit must not make.
-                                       78 live lane texts / 39 ports: 11 of 78 texts carry a
-                                       duplicate, 48 measurements lost, RECONCILES
-                                       130 = 82 cont + 0 `=` + 48 dup. usb FIXED (75 -> 0,
-                                       oracle-only, 0 names renamed, port bytes unmoved).
-                                       5 rules appended at bend2-constraints.md
-                                       positions 23152-23240.
+dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port, hcq2,
+                                       llvmir, tc_ptx, fold-dup, fold-93, guard. 8 CLOSED
+                                       or CLASSIFIED, 2 need a `.bend` edit this unit must
+                                       not make. 78 live lane texts / 39 ports: 11 of 78
+                                       texts carried a duplicate, 48 measurements lost,
+                                       RECONCILES 130 = 82 cont + 0 `=` + 48 dup. usb FIXED
+                                       (75 -> 0, oracle-only, 0 names renamed, port bytes
+                                       unmoved). **ops_nv ORACLE FIXED 27 -> 0** (see
+                                       NVDUP below), so the tree now reads 21 and RECONCILES
+                                       103 = 82 cont + 0 `=` + 21 dup.
+ nvdup           [#########.] 9/11   `.agents/slop/NVDUP.md` + `nvdup/stage{1,2,3,4}-*.md`.
+                                       FIXED `.agents/slop/nv-oracle.py`: 27 duplicate names
+                                       and 4 DEAD `try:` ARMS; 20 lines deleted, 3 replaced,
+                                       0 added; 574 -> 547 rows; 547 -> 547 distinct names;
+                                       VALUE SET identical; RENAME 0 pairs; lane byte diff
+                                       27 deletions / 0 additions; `rebase-gate.py` UNCHANGED,
+                                       GUARD 1 satisfied at 547; port bytes unmoved.
+                                       **THE BRIEF'S PREMISE WAS WRONG**: `nv_reloc_bad_refused`
+                                       `"False"` at `:1159` is NOT overwritten, it NEVER
+                                       EXECUTES (2 instruments + CPython), so the name is
+                                       emitted `True` and `True`. It is a DEAD ARM costing 0
+                                       measurements, invisible to every multiplicity census —
+                                       hence `nvdup-deadarm.py` and its 4->0 census.
+                                       Reported, not fixed: the port's 11 (do-not-touch
+                                       `.bend`, sha256 24497e96), the residual `nv_reloc_bad_n`
+                                       1-vs-0 semantic dispute, and 2 STALE `dup/**`
+                                       line-number citations. 2 rules appended at
+                                       bend2-constraints.md end as DUP-2, DUP-3.
 arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
                                        8 suspects adjudicated, 4 detectors w/ controls
 ```
@@ -106,6 +125,93 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       captured at all (the 14-unfilled-laws wall, rc=1, 0 rows) and `engine/jit.bend`'s oracle
       dies in `tinygrad/runtime/support/elf.py:13`. The eq cache's copies of the latter two are
       **0 bytes**, so the earlier "78 lane texts" denominator included two empty files.
+
+### The duplicate class, continued — `ops_nv`'s ORACLE closed, and the "lost refusal" corrected
+
+`.agents/slop/NVDUP.md`, stages in `.agents/slop/nvdup/`. `.agents/slop/nv-oracle.py` is the
+only file edited. **Nothing committed.**
+
+- [x] **The 27 oracle-side duplicates of `ops_nv` CLOSED (27 -> 0, 27 measurements).**
+      `574 -> 547` rows, `547 -> 547` distinct names, `VALUE SET identical: True`,
+      `RENAME 0 pair(s)`, **lane byte diff 27 deletions / 0 additions**, and
+      `rebase-gate.py --port tinybendygrad/runtime/ops_nv.bend` -> **`UNCHANGED`** with
+      `rows cpython:nv-oracle=547` so GUARD 1's ABSOLUTE count is **satisfied, not tripped**.
+      The PORT's bytes did not move (`f9b565af…` before and after).
+- [x] **THE BRIEF'S PREMISE MEASURED AND CORRECTED. `nv_reloc_bad_refused="False"` at `:1159`
+      is NOT overwritten with `"True"`; it NEVER EXECUTES.**  The comprehension above it aborts
+      on its second element, so the name is emitted `True` (`:721`, typed) and `True` (`:1161`,
+      from a caught `RuntimeError`). Three instruments agree: `grep` of the captured lane finds
+      the name **twice, both `True`**; `dup-gate.py` says `x2`; `nvdup-trace.py` attributes the
+      two to `:721`/`:1161`. `nvdup-probe.py` asks CPython and shows `reloc_of(16,8,2)` returns
+      while `reloc_of(48,8,3)` raises.
+- [x] **SO IT IS TWO DEFECTS, NOT ONE.** `D1` two sites for one name costs **1** measurement and
+      every multiplicity census sees it. `D2` a dead `try:` arm costs **0** — a line that does
+      not execute has no output line to count — so **D2 is invisible to every duplicate
+      instrument in this project, including this unit's own fixer.** The row it was written to
+      carry, the refusal's negative case, was never emitted and never existed.
+- [x] **A CENSUS FOR IT, because a multiplicity census cannot see it.**
+      `.agents/slop/nvdup/nvdup-deadarm.py` diffs the `row(` lines in the SOURCE against the
+      lines a `sys.settrace` line-tracer saw execute. It reads **4** on the pre-fix oracle and
+      **0** after. The four, verified against the file: `:1139` `nv_smemcfg_too_big="False"`,
+      `:1146` `nv_smemcfg_msg_big=""`, `:1154` `nv_reloc_msg_%d=""`, `:1159`
+      `nv_reloc_bad_refused="False"` — two families, all four structurally dead.
+- [x] **THE REFUSAL IS NOW ADDRESSABLE, NOT MERELY UN-DUPLICATED.** `nv_reloc_bad_refused` and
+      `nv_reloc_msg_0/3/100` are now sourced from **CPython**, not from a typed literal; the
+      rule's negative case is `nv_reloc_ok_refused="False"` at `:718` and **both lanes print it**.
+- [x] **THE BRIEF'S LEAD ANSWERED: the port's 11 and the oracle's 27 are DISJOINT** — empty
+      intersection, 543 shared names overall, and they are not even the same families. The
+      asymmetry is 38 disjoint names, not one defect seen from two ends.
+- [x] **THE PLANT/DISARM MATRIX, and PROOF BOTH SELFTESTS CAN FAIL.**
+      `dup-gate.py --selftest` on `nir_llvmir` (byte-identical): `OK` rc 0, the DISARM
+      `clean AGREE 0/0 True 0`, `value False/1`, `name 1/1 True 0`. **On `ops_nv` it FAILS,
+      rc 1**, base `dup 11/0` — the fix moved the oracle 27 -> 0 and `clean` is still red on the
+      PORT's 11, which is the disarm naming where the red is.
+      `nvdup-deadarm.py --selftest`: `OK` rc 0 with 5 cells, and against
+      `.agents/slop/nvdup/nv-oracle-PREFIX.py` **4 of 5 assertions go red, rc 1**. The `dup` and
+      `longhand` cells are load-bearing: a duplicate is not a dead site, and a row emitted
+      without `row()` escapes the SITE census, so **neither census substitutes for the other.**
+- [ ] **REPORTED, NOT FIXED — the port's 11, in a do-not-touch file.** `ops_nv.bend`
+      `sha256 24497e96ddebc56c802bc8ed9fd36c998c794d066e5ce7b3575cb0f42272062c`, unmodified.
+      `:1687`/`:3857` `nv_iface_count`, `:1688`/`:3858` `nv_encode_names` (a tail re-print),
+      `:3608-3612`/`:3648-3652` **two byte-identical 5-row blocks** (5 names),
+      `:3613`/`:3642` `nv_slmtot_1_48428`, `:3625` via `srow` / `:3643` via `i64row`
+      `nv_slmtot_1_48428_hi` (the only one emitted through two different row-builders),
+      `:3634`/`:3655` `nv_slm_cmd`, and `:3464`/`:3472` `nv_pc_id_after_hit` which is **two
+      different fixtures under one name**.
+- [ ] **REPORTED — the residual `nv_reloc_bad_n` dispute.** `:720`'s `1` measures
+      `reloc_fold`, a helper defined at `:704` of the oracle itself, which BREAKS and keeps the
+      prefix; `:1162`'s `0` models upstream's `NVProgramData.__init__`, which raises and
+      abandons the object (`tinygrad/runtime/ops_nv.py:235`, `:262-266`). **Both render an
+      unobservable state.** The fix deleted the site with no upstream subject; **the surviving
+      `0` is a TYPED model claim, not a CPython answer**, and both lanes printed `0` before and
+      print `0` after, so this was never a `disagree`. Also: `ops_nv.bend:2348` says keeping the
+      prefix answers `2`; with this fixture (`ops_nv.bend:2372`) the prefix is **1**, and `2` is a
+      fold that CONTINUES past the bad element. **Three renderings, one name.**
+- [ ] **REPORTED — 16 of the 21 remaining are ONE-ELEMENT deletions in four `.agents/slop/`
+      lines**, and each un-gates its symmetric port half for free:
+      `llvmir-oracle.py:866` (`(1, f32, True)` twice), `tcptx-oracle.py:394` (`"ret;"` twice),
+      `mm-lift-gate.py:31` (`(-3, 4)` twice), `hcq2-oracle.py` (2 adjacent, oracle-only).
+      **"Symmetric" has the DIRECTION BACKWARDS on `llvmir`/`tc_ptx`/`fold`: the PORT lines are
+      GENERATED from the oracle's fixture** (`llvmir.bend:981` <- `llvmir-oracle.py:866`;
+      `tc_ptx.bend:878` <- `tcptx-oracle.py:394`; `fold.bend`'s `lf_row` text <-
+      `mm-lift-gate.py:207`), so the dup unit's "the duplication is in the PORT" is the other way
+      round for those three.
+- [ ] **REPORTED, and it is NOT a mechanical deletion — `viz`.** `vz/viz_oracle.py:79-80` holds
+      both `"GPU Memory"` and `"GPU Memory "`, and **the trailing space is the only thing
+      distinguishing two rows with different values**; `rebase-gate.py:row()` `.strip()`s the
+      head, so both land on one key. Whoever owns it decides whether the space is a typo (delete
+      the element) or load-bearing (then `.strip()` is the defect). **A trailing space in a
+      producer's fixture list is a row name the reader cannot address.**
+- [ ] **REPORTED — 2 STALE line-number citations into `nv-oracle.py`, both in `.agents/slop/dup/**`
+      which is do-not-touch and stale in the RIGHT direction** (they describe the defect this
+      unit closed): `.agents/slop/dup/REPORT.md` `:720`, and `.agents/slop/dup/stage2-classify.md`
+      `:719-721`. `stage3-multiset.md` §7's `ops_nv` row is stale for the same reason. Every other
+      citation in the tree was checked and survives (`:1162` -> `:1144`, `:688` -> `:684`).
+- [x] **RULES APPENDED** at the END of `.agents/slop/notes/bend2-constraints.md`: **`DUP-2`**
+      (a dead `try:` arm is not an overwrite and costs ZERO duplicate measurements, so every
+      multiplicity census is blind to it; and the P1/P2 value test is not a semantic one) and
+      **`DUP-3`** (a fixture list that names the same thing twice is not "two emission sites",
+      and it is the whole of what is left of this class).
 
 **`E2E-PROVES-COMPUTE` is the bar that was at zero all session.** A port can agree
 with CPython on thirty thousand gate rows and still not add two numbers. There is now
@@ -555,6 +661,89 @@ day rediscovering that `2n+p` is not an even-case test.
       deferred `TODO(p3)` markers that the engine unblocked are still gated
       on the fixpoint.
 
+### `graph_rewrite` — the dispatcher, DONE. Both walls above are closed; the header's reason is CORRECTED, not softened.
+
+Read: `.agents/slop/grw-stage1.md`, `grw-stage2-3.md`, `grw-stage4.md`.
+Gates: `bash .agents/slop/grw-gate.sh` (exit 0),
+`python3 .agents/slop/grw-mut.py`, `python3 .agents/slop/grw-mut-selftest.py`,
+`bash .agents/slop/gr-diff.sh`.
+
+- [x] `graph_rewrite` (the dispatcher, ops.py:1888-1890) — the dispatch rule is
+      a ternary on one `Bool` and it is ported. `unified_rewrite` is a REAL
+      FIXPOINT: it re-runs the fold until the sink index stops moving, and it
+      REPORTS `passes` and `capped` rather than only returning a graph. The
+      stop test is sound because the arena INTERNS (`uop/ops.bend`'s
+      `UOp.make` -> `intern.find`, a hit returns the arena untouched), so two
+      passes handing back the same sink INDEX handed back the same node.
+
+- [x] **27 gate rows, every one calling `graph_rewrite` ITSELF** — never a
+      caller of it and never a driver directly, because a row that gates
+      `walk_rewrite` cannot see the dispatcher's ternary. Two fixtures, and the
+      second exists only because **CPython's `unified_rewrite` RAISES
+      IndexError on the first** (`tinygrad/schedule/__init__.py:98` — the PARAM
+      rule reads `ctx[1][99]` into a two-entry ctx). 6 of 8 comparable rows
+      AGREE with CPython byte-for-byte; 2 have no oracle; 2 are declared
+      divergences. **9 mutations, 9 move rows, 0 blind spots**, and the harness
+      has been shown to REJECT three broken mutations.
+
+- [x] **THE 81 `schedule/__init__.bend` ROWS AND THE 60 `sched-fixture.bend`
+      ROWS ARE BYTE-IDENTICAL** before and after. Baselines captured before
+      the first edit: `.agents/slop/grw-base-sched81.txt`,
+      `grw-base-fixt60.txt`.
+
+- [x] **STAGE 1's COUNT, WITH ITS DENOMINATOR: the port has ZERO call sites of
+      this def.** 132 `.bend` files, 11 non-comment lines naming
+      `graph_rewrite`, and resolution by IMPORT CLOSURE — not by name — puts
+      9 of them on a LOCAL def elsewhere and 0 on this one. The brief's "10
+      files depend on it" is a count of COMMENT lines and `TODO(p3)` markers
+      (86 comments, 22 markers, of 884 in the tree), not of callers.
+      `gr-diff`'s five bare calls in `codegen/decomp/dtype.bend` are the trap: a
+      name-matching classifier reports five call sites and all five are wrong.
+
+- [x] **THE DEFERRAL REASON AT `schedule/__init__.bend:7-13` DOES NOT SURVIVE
+      CONTACT WITH THE MEASUREMENT, and the correction is not a softening.**
+      Read from the AST over the fifteen defs of `__init__.py:82-301`:
+      C1 "every rule in it is a `graph_rewrite`" **FAILS for 9 of 15** (four
+      contain no rewrite at all); C2 "…with a PYTHON ctx DICT" **FAILS for 2
+      of 15** (`contiguous_mops_to_view` and `create_linear_with_vars` pass no
+      ctx on any call); C3 "ctx must be a MUTABLE accumulator" holds for **8 of
+      15** on the direct reading and for **8 of 15** transitively through the
+      matcher tables. **So the reason is CORRECT for seven of fifteen, and the
+      fifteen are blocked by TWO walls and not one** — and the header's OTHER
+      clause, the LINEAR rule table, blocks strictly more of them than ctx does
+      and is the one not being argued. A previous unit's "those two dispatchers
+      block all 15 regardless of their ctx" is CONFIRMED and is why the
+      dispatcher was the right thing to build first.
+
+- [x] **`cycles == 0` IS NOT CLAIMED.** The port has no cycle detector and no
+      `seen` set, so it cannot certify a complete linearization and does not
+      pretend to. `capped=True` means NOT-CONVERGED and nothing finer: it does
+      not separate a genuine rewrite CYCLE from a chain that merely needs more
+      passes, because both are "the sink was still moving when the bound ran
+      out". The cap is REACHED by a gate row, not asserted.
+
+- [x] **STAGE 4's YIELD: 4 of the 15 unblocked, 4 more unblocked-with-a-named-
+      second-wall, 7 still on the mutable-accumulator ctx** — the ctx wall is
+      real and lives in `uop/ops.bend`'s `pm_rewrite_m`, which this unit does not
+      own. Of the 22 `TODO(p3)` walls that name the dispatcher across 14 files,
+      **10 are for OTHER walls** and the dispatcher's removal unblocks none of
+      them; that is the honest yield, and it is larger than nothing and smaller
+      than 22. **STILL WALL, named at the def:** upstream's `bottom_up`/`bpm`
+      TABLE SELECTION (ops.py:1889) has no second table in `uop/ops.bend`, and
+      neither driver honours `enter_calls` (ops.py:1833/1841) — so
+      `schedule/__init__.py:276` and `codegen/__init__.py:492` would be wrong
+      here. The 269 `pm_lower_calls` recursion and the ~40 deferred markers are
+      untouched by this unit.
+
+- [x] **`gr-diff.sh` HAD TO CHANGE and the change found a real defect.** It
+      counted `->` across the whole output, so adding a gate row would have
+      turned a green gate red for an unrelated reason. It now selects its row by
+      name and compares BYTES — and the byte comparison exposed a format
+      mismatch the COUNT had been hiding for the life of the gate: the old
+      oracle printed `PARAM(slot=0)` where the port prints `PARAM(0)`. That is
+      the project's own `ALLOC->PARAM(99)` lesson one level down. One oracle now
+      exists (`grw-oracle.py`).
+
 ## Session 2026-10-04 — P3 parallel wave, and the queue count is NOT a backlog
 
 ### THE WAVE'S RESULT, measured at the end
@@ -702,6 +891,15 @@ of 219 constants wrong.
 `walk_rewrite` runs and agrees; the fixpoint needs the same fold threading
 iterated, so the arena question returns in a harder form. A wall that compiles
 and prints an honest gap beats a fixpoint that lies.
+
+**CLOSED (see the `graph_rewrite` block above).** Both are implemented: the
+fixpoint re-runs the fold until the sink index stops moving — which is sound
+because the arena interns — and it reports `passes` and `capped` so a bound is
+never read as a fixpoint. **The arena question did NOT return in a harder form**,
+which is the finding: threading the arena was already sufficient, because the
+stop test needs no second arena. What is left is `bottom_up`/`bpm` table
+selection (no second table exists in `uop/ops.bend`) and `enter_calls`, both
+named at `unified_rewrite` with their upstream lines.
 
 ### Coordination notes that cost time and should not be paid twice
 
@@ -8116,3 +8314,96 @@ Report: `.agents/slop/CSTYLE-LIVE.md`. Harness: `.agents/slop/cstyle-live/`
       the axis in `arg` and this arena stores `TNone{}`, so that row's two lanes do not
       describe the same node. Values right and layout wrong is why the gate diffs whole
       lines and not a field map.
+
+---
+
+## Session 2026-10-04 — the four headline numbers (owner: the unfalsifiable unit)
+
+Audit: `.agents/slop/audit/{02,03,04}-*.md`. Every entry below has a PLANT that moves the
+number and a DISARM that does not, both measured; transcripts and per-fix reports are in
+`.agents/slop/unfalsifiable/`. Rules **U-1..U-12** appended at `bend2-constraints.md`
+24112+. **NO COMMIT MADE.**
+
+```
+unfalsifiable    [##########] 4/4   the four headline numbers, each with plant+disarm
+```
+
+- [x] **FIX 1 — `sched-cmp.py`'s uncoded-op census.** The detector was a loop that
+      discarded its result while the docstring claimed it printed. **THE HAZARD IS ARMED,
+      and I armed it rather than taking the audit's word**: `Tensor.where(a > b, a, c)`
+      puts a `WHERE` directly into a compared `_kmark` field; `OpsWHERE` exists in the
+      port, so the port answers 0 too. Pre-fix: **`AGREE where_kmark=0`, rc=0, the words
+      `UNCODED` and `WHERE` absent from the output.** Post-fix: `UNCODED ... WHERE=1`,
+      `VERDICT RED UNCODED`, rc=1. The row still reads `AGREE` — the fix makes the same
+      comparison say what the 0 was, it does not invent a disagreement. Census lives in
+      `dig()`, the one funnel all five fields go through. DISARM A: live 6-spec tree
+      `UNCODED 0`, rc=0, twice. DISARM B (scope, 8 specs): `WHERE=1` **not** 2 — the
+      census measures compared fields, not the graph.
+
+- [x] **FIX 2 — the string literals in `sched-cmp.py:123,125`.** `specs_attempted=6` was
+      a literal beside a computed `fields_compared`, and the denominator was `n // 6`.
+      Seventh spec: `specs_attempted 6 -> 7` and `70 fields = 7 specs x 10 fields` (was
+      `6 specs x 11 fields` = 66, printed against 70). **Also found and fixed: the same
+      defect one file over** — `sched-oracle.py:267`'s `scheduled_calls` counted 25
+      *block keys*, not calls; the real figure is 12, and the 25 now prints as
+      `block_keys=25`. Both sides now compute from `len(SPECS)`. DISARM: 6 specs, rc=0.
+
+- [x] **THE STALENESS WINDOW (bonus, invited by the brief).** The comparator now RUNS
+      `./bin/bend` and its stdout is the port side; `sched-port.txt` only decides
+      `SNAPSHOT_FRESH`/`SNAPSHOT_STALE`, and stale is red. The audit's own plant
+      (`Lin.out` -> `List.drop(out, 1n)`, snapshot regenerated from the mutated port) now
+      reads **`fields_agree=24 fields_disagree=36 rc=1`** where the committed comparator
+      read **60/60 rc=0** — reproducing the audit's 24/60 from the tool itself. Reporting
+      the behaviour change: the audit's PLANT 1 (plant the snapshot only) now lands on
+      the STALE channel rather than DISAGREE, because the live port is the subject.
+
+- [x] **FIX 3 — `ffi-port-cost.py`'s `X/X`.** `coverage : 324/324 = 100.0%` with
+      `denom` built from the numerator's own set and **no binary read**; the
+      `len(uniq) > denom` guard below it was unreachable. New denominator: `nm -gU` on
+      `libclang.dylib` = **552** exported symbols -> **`320/552 = 58.0%`**, plus
+      `320/324 = 98.8%` the other way, plus the 4 declared-but-not-exported and the 232
+      exported-but-not-declared by name. PLANT (delete a declaration): pre-fix
+      `323/323 = 100.0%` (**no move**), post-fix `319/552 = 57.8%` (**moved**). DISARM:
+      a comment moves nothing; `--dylib /nonexistent` prints `NOT MEASURABLE` and **no
+      percentage at all**, asserted. `mechanically derivable : 307` is now the asserted
+      partition **17 + 203 + 104 = 324**, disjoint, with the 307 kept under a name that
+      says what it counts. `.agents/slop/ffi-experiment/libclang-cost.txt` REGENERATED.
+
+- [x] **FIX 4 — `graphcmp-LIMITS.md`'s own denominator.** Eleven ops, not ten; `CMPLT` was
+      missing. Verified by asking the CENSUS per graph, not by a second walk (a second
+      reader is how 222 arose). The file now says `eleven`, names `CMPLT`, and a harness
+      parses the list back out of the markdown and checks the file's count word against
+      its own names. **The census now rejects a name it cannot resolve**: PLANT
+      `INVENTED` moves `34 -> 35` and takes `SELFCHECK OK -> FAIL`, rc `0 -> 1`;
+      DISARM restores `34 / 34/34 / OK / 0`.
+
+- [~] **RECORD: `222` is a retired READER's number, not a population.** Corrected in
+      `.agents/slop/unfalsifiable/RECORD-222-is-a-reader-not-a-population.md`, with the
+      exact three-site edit for whoever owns it. **NOT APPLIED: `cstyle-gate.py` is on
+      the DO NOT TOUCH list**, and the brief's instruction to fix those docstrings
+      conflicts with it. DO-NOT-TOUCH wins. The authority is `portexec/README.md:50-55`
+      ("2 of 227 rows have been executed, 225 are still text-only"); the published "222
+      rows / 0.9% executable" is wrong in the population AND built its percentage from a
+      different reader's 224.
+
+### Walls, and what I did not touch
+
+- **`tinybendygrad/uop/ops.bend` is mid-edit by its owning unit and is BROKEN right
+  now** — its first line reads `set_end_none=Ops.AFTER(Ops.BUFFER Ops.STORE)` instead of
+  `ALL PROOFS CHECK`, so `graphcmp.bend` answers `SOME PROOFS FAIL / Error: - expected :
+  n` and `emit_bend` raises after its five attempts. Not mine, not edited. Fix 4's plant
+  is therefore on `emit_py` (pure Python) so the measurement does not depend on it.
+- **`.agents/slop/graphcmp-oracle.py` edited although it is not in my ownership list**,
+  because Fix 4's directive ("make the census reject a name it cannot resolve") can only
+  be done there. Three lines of guard plus comment, changes no number on a clean corpus,
+  and it is not on the DO NOT TOUCH list. Flagged, not done quietly.
+- **`.agents/slop/sched-fixture.bend:50` carries the SAME false claim** the comparator
+  did ("digit 0 ... an uncoded op is visible rather than a silent leading zero"). It is
+  generated by `sched-fixture.py`/`sched-emit.py`, neither of which is mine. Reported.
+- **Six of my own harness bugs, all of the same class as the defects under repair**, and
+  every one caught by an assertion rather than by reading: a plant whose length prefix
+  was not rewritten (reported a green 34); a monkeypatch on a second loaded copy of
+  `graphcmp.py`; a regex that silently dropped `IF` and reported 9 names for a list of
+  10; a `# VERDICT AGREE` printed beside `fields_disagree=36`; a double-`run()` in the
+  harness; a `$TMPDIR` copy without the relative import tree (which the comparator's new
+  `NO_PORT_ROWS` verdict caught instead of crashing).

@@ -1,0 +1,110 @@
+==============================================================================
+0  FIDELITY CONTROL -- bend the LIVE fixture, compare with the committed
+   sched-port.txt. If this is not equal, every later number is suspect.
+   COMPARED ON CONTENT, NOT BYTES: bend prints a blank line after every row
+   (120 lines) and the committed snapshot has them stripped (60 lines), so a
+   byte compare reports a difference that is not one. Same sha256 as
+   sched-stage2.md publishes: 207ee494251e3dcde...
+    bend rc=0, 60 rows, sha=00d22cb6d7b52af8
+    live == committed snapshot (non-blank lines): True
+==============================================================================
+1  PLANT  -- 7th spec `where`, PRE-FIX comparator (the file as committed)
+    # wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/unfals/arm-prefix/.agents/slop/sched-fixture.bend: 652 lines, specs=['where', 'matmul', 'matmul_sym', 'conv', 'elementwise', 'multi', 'chain']
+    bend rc=0, 70 rows, sha=8fbba6b82c41b03f
+  rc=0
+    # specs_attempted=6 specs_scheduled=6 fields_compared=70 fields_agree=70 fields_disagree=0 port_only=0
+    # denominator: 70 fields = 6 specs x 11 fields
+    'AGREE where_kmark=0' present: True
+    the word 'UNCODED' in the output: False
+    the op name 'WHERE' anywhere in the output: False
+    ^ a SILENT ZERO: the field says 0, the run says rc=0, and nothing in
+      the output says the 0 stands for an op neither side has code for.
+==============================================================================
+1b THE SAME 7th SPEC, SEEN BY THE ORACLE'S OWN HEADER. Pre-fix the oracle
+   read `scheduled_calls=25` -- 25 BLOCK KEYS, not 25 calls; the true count
+   is 12. Both sides must now be computed from the same `SPECS` source.
+  LIVE  (6 specs)  # specs_attempted=6 controls=1 specs_scheduled=6 scheduled_calls=12 block_keys=25
+  ARMED (7 specs)  # specs_attempted=7 controls=1 specs_scheduled=7 scheduled_calls=14 block_keys=29
+==============================================================================
+2  THE FIX, SAME COPY -- only the comparator differs
+  rc=1
+    # port side: this run's `./bin/bend` -> 70 rows, rc=0 bend 2.0.35 is available: run bend update
+    # SNAPSHOT_FRESH sched-port.txt matches this run's output
+    # specs_attempted=7 specs_scheduled=7 fields_compared=70 fields_agree=70 fields_disagree=0 port_only=0
+    # denominator: 70 fields = 7 specs x 10 fields
+    # UNCODED 1 distinct name(s) in 1 packed occurrence(s), each read as digit 0 on BOTH sides: WHERE=1
+    # VERDICT UNCODED -- pack is not injective over these: an uncoded op, an empty src sequence and an absent STORE all pack to 0, so the fields naming them agree about nothing. Code the op in DIG and in the port's dig.
+    # VERDICT RED UNCODED
+    census names WHERE: True
+    'AGREE where_kmark=0' still present (the row is unchanged, only reported): True
+    ^ the fix makes the SAME comparison say what the 0 was. It does not
+      invent a disagreement: both sides really do answer 0.
+==============================================================================
+3  DISARM A -- the live 6-spec tree: every packed name is coded
+   DISARMED BY 6 SPECS. The live tree, run twice, must read 6 and must stay
+   green -- otherwise the fix would be a constant red, which proves nothing.
+  rc=0
+    # port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update
+    # SNAPSHOT_FRESH sched-port.txt matches this run's output
+    # specs_attempted=6 specs_scheduled=6 fields_compared=60 fields_agree=60 fields_disagree=0 port_only=0
+    # denominator: 60 fields = 6 specs x 10 fields
+    # UNCODED 0 -- every name packed into a compared field has a code
+    # VERDICT AGREE
+==============================================================================
+4  DISARM B -- SCOPE. 8 specs; `where` ARMS, `where_relu` does NOT, though
+   both graphs contain a WHERE. The census must report ONE occurrence.
+    # wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/unfals/arm-disarm/.agents/slop/sched-fixture.bend: 706 lines, specs=['where', 'where_relu', 'matmul', 'matmul_sym', 'conv', 'elementwise', 'multi', 'chain']
+    bend rc=0, 80 rows, sha=5e3c8675fd5ee138
+  rc=1
+    # port side: this run's `./bin/bend` -> 80 rows, rc=0 bend 2.0.35 is available: run bend update
+    # SNAPSHOT_FRESH sched-port.txt matches this run's output
+    # specs_attempted=8 specs_scheduled=8 fields_compared=80 fields_agree=80 fields_disagree=0 port_only=0
+    # denominator: 80 fields = 8 specs x 10 fields
+    # UNCODED 1 distinct name(s) in 1 packed occurrence(s), each read as digit 0 on BOTH sides: WHERE=1
+    # VERDICT UNCODED -- pack is not injective over these: an uncoded op, an empty src sequence and an absent STORE all pack to 0, so the fields naming them agree about nothing. Code the op in DIG and in the port's dig.
+    # VERDICT RED UNCODED
+     ['AGREE where_kmark=0']
+     ['AGREE where_relu_kmark=16']
+==============================================================================
+5  PLANT B -- THE AUDIT'S PLANT 1: one port ROW changed in the SNAPSHOT only.
+   Pre-fix this was `DISAGREE` (60 -> 59). Post-fix the port side is what
+   THIS RUN produced, so the planted snapshot is reported as STALE instead --
+   still red, and for the truer reason.
+    # wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/unfals/arm-snapplant/.agents/slop/sched-fixture.bend: 600 lines, specs=['matmul', 'matmul_sym', 'conv', 'elementwise', 'multi', 'chain']
+    SNAPSHOT PLANTED: 'matmul_ktop=5' -> 'matmul_ktop=9'
+    bend rc=0, 60 rows, sha=00d22cb6d7b52af8
+  rc=1
+    # port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update
+    # SNAPSHOT_STALE sched-port.txt holds 60 rows, this run produced 60; 1 key(s) differ, first 5: [('matmul_ktop', 9, 5)]
+    # specs_attempted=6 specs_scheduled=6 fields_compared=60 fields_agree=60 fields_disagree=0 port_only=0
+    # denominator: 60 fields = 6 specs x 10 fields
+    # UNCODED 0 -- every name packed into a compared field has a code
+    # VERDICT RED SNAPSHOT_STALE
+     DISAGREE lines: []
+==============================================================================
+6  PLANT C -- THE STALENESS WINDOW, CLOSED. Mutate the PORT in the COPY
+   (`Lin.out` -> `List.drop(out, 1n)`, the audit's own plant), regenerate the
+   snapshot FROM IT, and re-run. Pre-fix the committed comparator reported
+   60/60 rc=0 over this because it never ran the port.
+    # wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/unfals/arm-portplant/.agents/slop/sched-fixture.bend: 600 lines, specs=['matmul', 'matmul_sym', 'conv', 'elementwise', 'multi', 'chain']
+    PORT PLANTED in the COPY: '    case Lin{ar, c, out}: out' -> '    case Lin{ar, c, out}: List.drop(&2, U32, out, 1n)'
+    bend rc=0, 60 rows, sha=273af8d2089055c4
+  rc=1
+    # port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update
+    # SNAPSHOT_FRESH sched-port.txt matches this run's output
+    # specs_attempted=6 specs_scheduled=6 fields_compared=60 fields_agree=24 fields_disagree=36 port_only=0
+    # denominator: 60 fields = 6 specs x 10 fields
+    # UNCODED 0 -- every name packed into a compared field has a code
+    # VERDICT RED DISAGREE
+    DISAGREE rows: 36; first 4: ['DISAGREE chain_kmark cpython=12 port=0', 'DISAGREE chain_knsrc cpython=3 port=0', 'DISAGREE chain_ksrc cpython=6702 port=0', 'DISAGREE chain_ksrc_n cpython=3 port=0']
+==============================================================================
+7  DISARM D -- agent-core's `$TMPDIR` trap, on purpose: a copy WITHOUT the
+   tinybendygrad tree beside it cannot resolve the fixture's imports, so bend
+   prints SOME PROOFS FAIL and 0 rows. The comparator must refuse to call
+   that agreement.
+  rc=1
+    # port side: this run's `./bin/bend` -> 0 rows, rc=1 SOME PROOFS FAIL
+    # VERDICT NO_PORT_ROWS -- the port produced nothing this run, so there is no agreement to report
+    # SNAPSHOT_STALE sched-port.txt holds 60 rows, this run produced 0; 60 key(s) differ, first 5: [('chain_cyc', 0, None), ('chain_gated', 5, None), ('chain_kmark', 12, None), ('chain_knsrc', 3, None), ('chain_ksrc', 6702, None)]
+    # specs_attempted=6 specs_scheduled=6 fields_compared=0 fields_agree=0 fields_disagree=0 port_only=60
+    # denominator: 0 fields = 0 specs x 10 fields
