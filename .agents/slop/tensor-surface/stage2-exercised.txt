@@ -1,0 +1,68 @@
+==============================================================================
+STAGE 2 -- PRESENT vs EXERCISED
+==============================================================================
+
+D1  tensor.bend defs: 174
+    reachable from main():        154
+    NOT reachable (dead in-file): 19
+    exercised by ANOTHER .bend:   15  (refs: 229)
+
+    the dead ones, and what they are:
+      13  the whole `__init__` counterpart (tn_init*, tn_cast*)
+          ['tn_cast.dt_is', 'tn_cast.dt_is.of', 'tn_cast.go', 'tn_cast.node', 'tn_cast.node2', 'tn_cast.of', 'tn_cast.put', 'tn_cast.put.of', 'tn_init', 'tn_init.arm', 'tn_init.keep', 'tn_init.none', 'tn_init.of']
+       2  the `assign` spine's `ib` walk (tn_ib_walk*)
+          ['tn_ib_walk', 'tn_ib_walk.of']
+       4  misc (Tensor.grad_set, Tensors.of, g_t4a, tn_wrap_uop)
+          ['Tensor.grad_set', 'Tensors.of', 'g_t4a', 'tn_wrap_uop']
+
+D2  upstream methods with a port counterpart, and whether the gate runs it
+    denominator = 17 counterpart roots
+
+    upstream     port root        in main() graph used elsewhere verdict
+    __hash__     tn_hash          True            False          EXERCISED
+    __init__     tn_init          False           False          present, NOT exercised
+    __len__      tn_len           True            False          EXERCISED
+    __repr__     tn_repr          True            False          EXERCISED
+    _apply_uop   tn_new           True            True           EXERCISED
+    _mop         tn_mop           True            True           EXERCISED
+    _rop         tn_rop           True            True           EXERCISED
+    _wrap_uop    tn_wrap_uop      False           True           present, NOT exercised
+    alu          tn_alu           True            True           EXERCISED
+    assign       tn_assign_store  True            True           EXERCISED
+    backward     tn_need_grad     True            False          EXERCISED
+    const        tn_const         True            True           EXERCISED
+    device       tn_dev           True            True           EXERCISED
+    dtype        tn_dtype         True            False          EXERCISED
+    is_param_    tn_is_param_     True            True           EXERCISED
+    replace      tn_replace       True            False          EXERCISED
+    shape        tn_dims          True            True           EXERCISED
+
+    EXERCISED by the gate:        15/17  ['__hash__', '__len__', '__repr__', '_apply_uop', '_mop', '_rop', 'alu', 'assign', 'backward', 'const', 'device', 'dtype', 'is_param_', 'replace', 'shape']
+    PRESENT BUT NEVER RUN:       2/17  ['__init__', '_wrap_uop']
+
+    NOTE -- `tn_need_grad` is in main()'s graph, but only through
+    `t_needgrad`, which prints a COUNT (tn_needgrad=2) of the scope filter.
+    `backward`'s own zip -- the call to `gradient` -- is TODO(p3) at
+    tensor.bend:951. So `backward` is exercised AS A FILTER, not AS A
+    BACKWARD PASS. That is a 1-of-2 result, not a pass.
+
+D3  upstream list(Ops) = 77;  port Ops* enum cases = 77
+    missing in port: []
+    extra in port:   []
+    THE ENUM IS COMPLETE. The 43 unreached ops in graphcmp-LIMITS.md §5 are
+    a COVERAGE number over the differ's corpus, not an enum gap.
+
+==============================================================================
+THE BACKWARD DRIVER: measured, not read
+==============================================================================
+  compute_gradient         callers in the whole port tree: 0
+  _deepwalk                callers in the whole port tree: 0
+  reduce_gradient          callers in the whole port tree: 0
+  call_gradient            callers in the whole port tree: 0
+  partial_store_gradient   callers in the whole port tree: 0
+
+  pm_gradient rules ported as defs: 33 (upstream table is 33 entries)
+    ['gr_0', 'gr_1', 'gr_2', 'gr_3', 'gr_4', 'gr_5', 'gr_6', 'gr_7', 'gr_8', 'gr_9', 'gr_10', 'gr_11', 'gr_12', 'gr_13', 'gr_14', 'gr_15', 'gr_16', 'gr_17', 'gr_18', 'gr_19', 'gr_20', 'gr_21', 'gr_22', 'gr_23', 'gr_24', 'gr_25', 'gr_26', 'gr_27', 'gr_28', 'gr_29', 'gr_30', 'gr_31', 'gr_32']
+
+  => the TABLE exists and is gated; the DRIVER that walks the graph applying
+     it does not, and nothing in the tree calls one.
