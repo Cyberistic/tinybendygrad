@@ -19,5 +19,5 @@ for f in ops_cpu ops_null; do
 done
 cat "$OUT/ops_cpu.txt" "$OUT/ops_null.txt" > "$OUT/all.txt"
 echo "--------------------------------------------- union: $(grep -c '=' "$OUT/all.txt") rows"
-diff .agents/slop/ops_cpu_null-pre-split.txt "$OUT/all.txt" && echo "MATCHES the pre-split snapshot"
+diff .agents/slop/ops_cpu_null-pre-split.txt "$OUT/all.txt" && echo "MATCHES the pre-split snapshot" || { echo "DISAGREE with the pre-split snapshot" >&2; exit 1; }
 rm -rf "$OUT"

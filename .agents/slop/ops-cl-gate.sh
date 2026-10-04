@@ -39,7 +39,13 @@
 set -e
 cd "$(dirname "$0")/../.."
 OUT=$(mktemp -d)
-trap 'rm -rf "$OUT"' EXIT
+# THE EXIT TRAP RE-RAISES. `trap 'rm -rf "$OUT"' EXIT` makes the script exit with the
+# STATUS OF `rm`, so a successful cleanup turns any earlier failure into exit 0 -- and this
+# gate's whole job is to fail loudly on a byte difference. `$?` is captured first, the
+# cleanup runs, and the original status is restored. This is the second of the two shapes
+# that let a gate lie here; the first is `diff ... && echo`, which `set -e` does not fire
+# on because the failing command is inside an && list.
+trap 'st=$?; rm -rf "$OUT"; exit $st' EXIT
 for f in ops_cl ops_cuda ops_hip; do
   for i in 1 2 3 4 5; do
     ./bin/bend "tinybendygrad/runtime/$f.bend" > "$OUT/$f.txt" 2>/dev/null || true
@@ -51,8 +57,15 @@ for f in ops_cl ops_cuda ops_hip; do
 done
 cat "$OUT/ops_cl.txt" "$OUT/ops_cuda.txt" "$OUT/ops_hip.txt" > "$OUT/all.txt"
 echo "--------------------------------------------- union: $(grep -c '=' "$OUT/all.txt") rows (445 expected)"
-diff <(sort .agents/slop/runs/base_runtime_ops_cl.bend.txt) <(sort "$OUT/all.txt") \
-  && echo "MATCHES the pre-split snapshot: all 445 name=value lines byte-identical"
+# TEMP FILES, NOT `<( ... )`. The process substitution is a BASHISM, so under `sh` this
+# script did not PARSE -- and because the parse error happened before the EXIT trap's
+# masking mattered, the gate was unrunnable and unreadable at the same time. Two sorted
+# files and an ordinary `diff` are POSIX and say the same thing.
+sort .agents/slop/runs/base_runtime_ops_cl.bend.txt > "$OUT/a.sorted"
+sort "$OUT/all.txt" > "$OUT/b.sorted"
+diff "$OUT/a.sorted" "$OUT/b.sorted" \
+  && echo "MATCHES the pre-split snapshot: all 445 name=value lines byte-identical" \
+  || { echo "DISAGREE with the pre-split snapshot" >&2; exit 1; }
 echo
 echo "== 2. the ordering, and the file each row landed in =="
 python3 .agents/slop/cl_split_rows.py

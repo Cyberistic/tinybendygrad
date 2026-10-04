@@ -90,7 +90,7 @@ echo "    $F   $GOT rows after $i attempt(s)"
 [ "$GOT" = "$WANT" ] || { echo "FAIL: $GOT rows, the oracle has $WANT"; exit 1; }
 
 echo "--- 4. BYTE DIFF, whole name=value lines, against the CPYTHON snapshot"
-diff "$SNAP" "$OUT/int.txt" && echo "    MATCHES CPython, all $WANT rows, byte for byte"
+diff "$SNAP" "$OUT/int.txt" && echo "    MATCHES CPython, all $WANT rows, byte for byte" || { echo "    DISAGREE with the CPython snapshot" >&2; exit 1; }
 
 if [ "$1" = --fp ]; then
   echo "--- 5. the COMPILED lane"
@@ -100,8 +100,8 @@ if [ "$1" = --fp ]; then
   FPR=$(grep -c '=' "$OUT/fp.txt" || true)
   echo "    compiled   $FPR rows"
   [ "$FPR" = "$WANT" ] || { echo "FAIL: compiled lane has $FPR rows, the oracle has $WANT"; exit 1; }
-  diff "$OUT/int.txt" "$OUT/fp.txt" && echo "    BOTH LANES BYTE-IDENTICAL"
-  diff "$SNAP" "$OUT/fp.txt" > /dev/null && echo "    and the COMPILED lane matches CPython too"
+  diff "$OUT/int.txt" "$OUT/fp.txt" && echo "    BOTH LANES BYTE-IDENTICAL" || { echo "    THE TWO LANES DIFFER" >&2; exit 1; }
+  diff "$SNAP" "$OUT/fp.txt" > /dev/null && echo "    and the COMPILED lane matches CPython too" || { echo "    THE COMPILED LANE DISAGREES" >&2; exit 1; }
 fi
 
 if [ "$1" = --mut ]; then

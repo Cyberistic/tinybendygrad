@@ -21,6 +21,6 @@ for f in linearizer regalloc gater; do
 done
 cat "$OUT/linearizer.txt" "$OUT/regalloc.txt" "$OUT/gater.txt" > "$OUT/all.txt"
 echo "--------------------------------------------- union: $(grep -c '=' "$OUT/all.txt") rows"
-diff .agents/slop/late-oracle.txt "$OUT/all.txt" && echo "MATCHES the CPython oracle"
+diff .agents/slop/late-oracle.txt "$OUT/all.txt" && echo "MATCHES the CPython oracle" || { echo "DISAGREE with the CPython oracle" >&2; exit 1; }
 [ "$1" = --base ] && { diff .agents/slop/late-pre-split.txt "$OUT/all.txt" && echo "MATCHES the pre-split snapshot"; }
 rm -rf "$OUT"

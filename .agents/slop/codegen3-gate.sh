@@ -56,8 +56,30 @@ echo "--- diff against the PRE-SPLIT snapshot (54 rows, taken before anything mo
 diff .agents/slop/runs/base_codegen_rewriter.bend.txt "$OUT/all.txt" \
   || echo "(the 5 added gpudims rows are the whole delta -- nothing else moved)"
 echo "--- diff against the POST-FIX snapshot (59 rows). THIS is the gating comparison."
-diff .agents/slop/runs/postfix_codegen_three.txt "$OUT/all.txt" \
-  && echo "MATCHES the post-fix snapshot: the three files, concatenated in Python's order"
+# AND IT NAMED A FILE THAT WAS NEVER CREATED -- `runs/postfix_codegen_three.txt` does not
+# exist, and neither do the five rows its own header promises (`rs_tops`, `gd_tops`,
+# `dv_tops`, `rs_claim_device`, `rs_rewrite_device`). So the comparison this script calls
+# its GATING one could never run, and `diff` against a missing file under `set -e` inside
+# an `&&` list is exactly the masking shape fixed elsewhere in this file. It is now FATAL,
+# which means the gate is RED until the snapshot is regenerated -- and a gate that is red
+# because its baseline is missing is telling the truth, where before it was green and
+# comparing nothing.
+# A MISSING BASELINE EXITS 2, NOT 1, and that is the whole point of the distinction:
+# 1 means THE PORT DISAGREES and 2 means THE BASELINE IS GONE. Collapsing them would
+# train the reader to see "red" and assume the port moved. Before this, the `diff` sat in
+# an `&&` list against a file that has never existed, so the gate exited 0 having compared
+# NOTHING while printing a header that called the comparison its gating one.
+SNAP_POSTFIX=.agents/slop/runs/postfix_codegen_three.txt
+if [ ! -f "$SNAP_POSTFIX" ]; then
+  echo "BASELINE MISSING (exit 2): $SNAP_POSTFIX does not exist, so the post-fix" >&2
+  echo "  comparison could not run. The 5 gpudims rows this header names are not in" >&2
+  echo "  gpudims.bend either. Regenerate the snapshot, or drop the comparison and say" >&2
+  echo "  why -- do NOT leave a header that promises a check the script cannot perform." >&2
+  exit 2
+fi
+diff "$SNAP_POSTFIX" "$OUT/all.txt" \
+  && echo "MATCHES the post-fix snapshot: the three files, concatenated in Python's order" \
+  || { echo "DISAGREE with the post-fix snapshot" >&2; exit 1; }
 
 if [ "$1" = --fp ]; then
   for f in codegen/simplify codegen/late/coalesce codegen/gpudims; do
@@ -67,7 +89,7 @@ if [ "$1" = --fp ]; then
     echo "compiled $f.bend  $(grep -c '=' "$OUT/$n.fp" || echo 0) rows"
   done
   cat "$OUT/simplify.fp" "$OUT/coalesce.fp" "$OUT/gpudims.fp" > "$OUT/all.fp"
-  diff "$OUT/all.txt" "$OUT/all.fp" && echo "BOTH LANES BYTE-IDENTICAL"
+  diff "$OUT/all.txt" "$OUT/all.fp" && echo "BOTH LANES BYTE-IDENTICAL" || { echo "THE TWO LANES DIFFER" >&2; exit 1; }
 fi
 
 if [ "$1" = --reds ]; then

@@ -13,7 +13,11 @@ set -e
 cd "$(dirname "$0")/../.."
 TRIES=${1:-12}
 SUB="tinybendygrad/uop/ops.bend tinybendygrad/uop/fold.bend tinybendygrad/uop/movement.bend tinybendygrad/uop/symbolic.bend tinybendygrad/codegen/decomp/dtype.bend tinybendygrad/codegen/__init__.bend tinybendygrad/dtype.bend tinybendygrad/helpers.bend"
-sub_md5() { for f in ${=SUB}; do md5 -q "$f"; done | tr '\n' ' '; }
+# NOT `${=SUB}`, WHICH IS ZSH-ONLY AND VACUOUS HERE. Under `sh` the `=` splitting does not
+# happen, the loop body never runs, and the substrate-hash guard compares "" to "" and
+# reports UNCHANGED -- so the guard was not failing, it was not RUNNING. `$*` works in
+# both shells and keeps the guard meaningful under `sh`.
+sub_md5() { for f in $*; do md5 -q "$f"; done | tr '\n' ' '; }
 BEFORE=$(sub_md5)
 echo "SUBSTRATE BEFORE  $BEFORE"
 OK=0

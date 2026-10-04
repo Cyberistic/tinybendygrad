@@ -21,6 +21,12 @@ echo "--------------------------------------------- union: $(grep -c '=' "$OUT/a
 # the old `main` printed both stages as ONE `IO.print`, so the two files' output has one
 # frame line between the stages. `grep -v '^$'` drops that line and the snapshot's own
 # trailing newline -- and ONLY those.
-diff <(grep -v '^$' .agents/slop/tc_ptx-pre-split.txt) "$OUT/all.txt" \
-  && echo "MATCHES the pre-split snapshot"
+# TEMP FILES, NOT `<( ... )`: a BASHISM, so under `sh` this script did not parse, and a
+# gate that cannot parse is a gate nobody reads. `grep -v '^$'` drops the one frame line
+# the two stages leave between them and the snapshot's own trailing newline -- and ONLY
+# those, which is why the filter is written out rather than folded into a sort.
+grep -v '^$' .agents/slop/tc_ptx-pre-split.txt > "$OUT/snap.txt"
+diff "$OUT/snap.txt" "$OUT/all.txt" \
+  && echo "MATCHES the pre-split snapshot" \
+  || { echo "DISAGREE with the pre-split snapshot" >&2; exit 1; }
 rm -rf "$OUT"
