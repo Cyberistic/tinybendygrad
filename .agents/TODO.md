@@ -12,9 +12,100 @@ gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +2
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
+lane-liveness   [#########.] 9/11    the 39 wired lanes tabulated LIVE/RECORDED/TAUTOLOGICAL.
+                                       **37 of 39 run both sides; 7 of those 37 print
+                                       BYTE-IDENTICAL stdout so `disagree` cannot fail
+                                       (1,408 of 7,809 shared rows); 2 compared ZERO rows.**
+                                       6-lane plant/disarm matrix: 5 ARMED, 1 DISARMED
+                                       (`dtype-gate.py`). See `.agents/slop/LANE-LIVENESS.md`.
+                                       L-1..L-11 appended at bend2-constraints.md 23557+.
+dup-rows        [#######...] 7/10   10 = census, usb, ops_nv-oracle, ops_nv-port, hcq2,
+                                       llvmir, tc_ptx, fold-dup, fold-93, guard. 7 CLOSED or
+                                       CLASSIFIED, 3 need a `.bend` edit this unit must not make.
+                                       78 live lane texts / 39 ports: 11 of 78 texts carry a
+                                       duplicate, 48 measurements lost, RECONCILES
+                                       130 = 82 cont + 0 `=` + 48 dup. usb FIXED (75 -> 0,
+                                       oracle-only, 0 names renamed, port bytes unmoved).
+                                       5 rules appended at bend2-constraints.md
+                                       positions 23152-23240.
 arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
                                        8 suspects adjudicated, 4 detectors w/ controls
 ```
+
+### Lane liveness — how many of the gated lanes actually RAN the port
+
+- [x] `.agents/slop/LANE-LIVENESS.md` — every lane in the tree classified by reading the code,
+      and the 39 `BASE_ORACLES` lanes **measured** (`.agents/slop/liveness/measure39.py`,
+      using `rebase-gate.py`'s own `row`/`rows()` imported, never forked).
+      **THE GAP, NAMED: 39 wired − 37 that ran both sides = 2 lanes that have never run
+      (`uop/ops.bend`, whose oracle raises `NameError: name 'importlib' is not defined`
+      at `rebase-oracle-ops.py:54`; and `dtype.bend`, whose port lane prints 0 rows with rc=1).
+      AND THE SHARPER NUMBER: 37 − 7 byte-identical = 30 lanes whose `disagree` can fail.
+      Seven lanes print byte-identical stdout — ptx, nir_llvmir, viz/serve, c, onnx,
+      nn/__init__, llvmir — and only llvmir says so, only inside `llvmir-gate.py`.
+- [x] 6-lane plant/disarm matrix in a `$TMPDIR` COPY (`liveness/plant-transcript.md`).
+      ARMED: `device.bend` via `rebase-gate.py` (9 of 110 named), `llvmir.bend`,
+      `cstyle.bend` (64 gated rows named), `fold.bend` (3 of 240 named),
+      `dsl_gate.py` (oracle RECORDED), `nv_nvdev_gate.py` (rc 0→1).
+      **DISARMED: `dtype-gate.py`** — `dtype.bend:381` made genuinely wrong, live port
+      output demonstrably changed, gate printed `14766 rows compared, 1 declared,
+      0 unexpected`, rc=0. Every restored file sha256-verified against the live tree.
+- [x] 13 `CANNOT-BE-MADE-LIVE` entries, each with the obstacle at `file:line`, and the
+      shortest honest path for each.
+- [x] Rules `L-1`..`L-11` appended at the END of `notes/bend2-constraints.md`
+      (positions 23557+), `L-`-numbered because the `F-` numbers have collided three times.
+- [ ] **NOT DONE — two of these need a one-line fix this unit must not make** (they are
+      other units' files): `rebase-oracle-ops.py:54` needs `import importlib`, which turns
+      `uop/ops.bend`'s lane from dead into 62 measurable rows; and `dtype_tables.py` needs a
+      `name=value` row shape so `dtype.bend`'s zero-row port lane becomes GUARD 2's real
+      finding instead of a shared zero.
+- [ ] `codegen/decomp/dtype.bend`'s `BASE_ORACLES` lane is RED on exactly 1 of 109 shared
+      rows, reproducibly: port `c7=refused:unported` vs oracle `c7=F(2139095040)`.
+      Named to the owning unit; not adjudicated here (a refusal row, not a wrong number).
+
+### The duplicate-row-name class — `usb` FIXED, and the census RECONCILES
+
+- [x] `.agents/slop/dup/` — the census, the classification, the fix and the guard.
+      **THE COUNT IS 48 AFTER THE FIX AND 123 BEFORE IT**, which reproduces the `=`-unit's
+      `499 = 82 + 294 + 123` from a second implementation that shares `rebase-gate.py:row()`
+      and `eq-census2.scan()` and adds only the multiplicity. After `eb67a99e` closed the
+      `=`-in-a-name half and this unit closed `usb`, the reader's whole loss over the tree
+      is **`130 = 82 continuation + 0 reshape + 48 duplicate`**.
+- [x] **`runtime/support/usb.bend`'s ORACLE: 75 lost → 0.** `usb-oracle-trace.py` wrote its
+      accumulated row list out TWICE — `:268` with 73 rows and `:340` with 126 — and two
+      names were emitted twice inside its own body, so `73 = 71 + 2` names duplicated and
+      `69*1 + 2*3 = 75` measurements were unreachable. Three lines deleted. The PORT prints
+      940 rows over 940 keys with 0 duplicates, so **no row name changed, no citing file
+      could break, and the port's bytes did not move** — which is why a duplicate EMISSION is
+      fixable where a duplicate NAME is not.
+- [ ] **`ops_nv`'s 38 (27 oracle + 11 port).** The oracle has seven row families emitted at
+      two sites each, and `nv-oracle.py:338-339` says out loud that there is "ONE definition of
+      each" while the foot copies sit beside the body copies. It also emits a NEGATIVE CASE
+      no name can address (`nv_reloc_bad_refused="False"` at `:1159`, overwritten by `"True"`
+      at `:1161`). `.bend` and this oracle are not this unit's to edit.
+- [ ] **`llvmir` 2, `tc_ptx` 2, `fold` 2, `viz` 2, `hcq2` 2** — all SYMMETRIC (both sides
+      print the identical line twice), which is the evidence that the producer is shared: the
+      port's row-builders are their oracle generator's output. Fixing one side un-gates the
+      row instead of gating it twice.
+- [ ] **`uop/fold.bend`'s 93 unaddressable rows.** `fold.bend:4070-4077` prints ONE space and
+      `rebase-gate.py:412`'s `GAP` is TWO, so `row()` refuses all 93. **And they are UNGATED**:
+      `mm-lift-gate.py` prints none of the `mm_*`/`bl_*` families, so 93 measurements have no
+      CPython answer either. Two characters in the port AND the oracle's generator close the
+      first half; the second half is a unit of work.
+- [x] **The guard and its plants, with the disarm.** `dup-gate.py --selftest` over the real
+      captured pair: `clean AGREE dup 0/0 byteIdent True disagree 0` (the DISARM),
+      `value BROKEN dup 0/0 byteIdent False disagree 1`,
+      `name BROKEN dup 1/1 byteIdent True disagree 0`,
+      `collide BROKEN dup 1/1 byteIdent True disagree 0`. **A NAME plant leaves the lanes
+      byte-identical; a VALUE plant cannot.** And on `llvmir`/`viz`/`tc_ptx`/`fold` the base
+      cell is **BROKEN with nothing injected**, so the guard is armed on four live lanes.
+- [x] **Three DEAD lane texts found while re-capturing, and one of them is a live defect.**
+      `uop/ops.bend`'s oracle, `.agents/slop/rebase-oracle-ops.py:54`, raises
+      `NameError: name 'importlib' is not defined` and **exits 0 having printed nothing** —
+      which `rebase-gate.py`'s GUARD 2 names as a FAILED ORACLE. `dtype.bend`'s PORT cannot be
+      captured at all (the 14-unfilled-laws wall, rc=1, 0 rows) and `engine/jit.bend`'s oracle
+      dies in `tinygrad/runtime/support/elf.py:13`. The eq cache's copies of the latter two are
+      **0 bytes**, so the earlier "78 lane texts" denominator included two empty files.
 
 **`E2E-PROVES-COMPUTE` is the bar that was at zero all session.** A port can agree
 with CPython on thirty thousand gate rows and still not add two numbers. There is now
@@ -633,7 +724,7 @@ and prints an honest gap beats a fixpoint that lies.
 | --- | --- | --- | --- |
 | P3 | `uop/` | 12 | [###.........] 3/12 |
 | P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
-| P5 | `codegen/` `renderer/` | 30 | [##.......] 5/30 |
+| P5 | `codegen/` `renderer/` | 30 | [###......] 6/30 |
 | P6 | `runtime/` | 36 | [...........] 3/36 |
 | P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
 | P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [##.......] 1/15 |
@@ -7639,3 +7730,389 @@ Report: `.agents/slop/notes/c2d-refusal-gate.md`. Rules `CT-1`…`CT-5` appended
   they diverge on F2 only, but every conversion changes behaviour, and these are mutation harnesses
   whose numbers other units are reading. Registered with contracts; the conversions are one command.
 - 7 registered forks still carry `NO CONTRACT WRITTEN YET`; they are named in the report.
+
+---
+
+## Session 2026-10-04 — `schedule/__init__.py:82-301` (the "cannot build a schedule" hole)
+
+**THE PREMISE WAS WRONG AND THE FILE NEEDED NO EDIT.** `tinybendygrad/schedule/__init__.bend`
+is byte-identical to its state at session start
+(`sha256 652986d27842d09b63e5579f47b1f135e4747141f2dff2c75102fa115e818edf` before and after).
+`create_schedule` **was already ported**, as `schedule` (`:1051`), with 71 green rows -- its own
+header says so at `:3-5`. The brief's "not one of upstream's 19 entry points is present" is true
+BY NAME (the port prefixes `sc_` and renames `create_schedule` -> `schedule`) and false by MEANING
+for 4 of 19.
+
+- [x] **STAGE 1 — the oracle, BEFORE any port code.** `.agents/slop/sched-oracle.py`, run twice.
+      6 specs + 1 control, 12 `create_schedule` calls, **12/12 deterministic**. Two findings worth
+      more than the table: `create_schedule` VALIDATES NOTHING (an AFTER, or an empty SINK, both
+      answer `UOp(Ops.LINEAR, src=())` with no error -- so `lin_op == LINEAR` is not evidence a
+      schedule was built), and `create_schedule` is only reachable on a **schedule-cache MISS**
+      because `schedule_cache` (`:122`) is read at `:130` before the call at `:135` -- which is why
+      the first `--twice` run reported `DETERMINISTIC=False` on 4 of 7 blocks. Written up in
+      `.agents/slop/sched-stage1.md`.
+- [x] **STAGE 2 — one real spec end to end, then six.** `.agents/slop/sched-emit.py` emits a Bend
+      arena from CPython's OWN object graph (nothing transcribed), `sched-fixture.py` generates
+      `sched-fixture.bend`, `sched-cmp.py` recomputes CPython independently and diffs whole
+      `name=value` lines. **6 specs x 10 fields = 60/60 AGREE, 0 disagree**, deterministic across
+      two runs (`sha256 207ee494...`). matmul: gated 6, root SINK, lin_n 1, lin_op LINEAR,
+      ksrc 241278 = `[SINK,PARAM,PARAM,PARAM]`, knsrc `[4]`, ktop SINK, kmark REDUCE, cyc 0.
+      Written up in `.agents/slop/sched-stage3.md` -> `.agents/slop/sched-stage2.md`.
+- [x] **STAGE 3 — the table.** `.agents/slop/sched-stage3.md`. **4 of 19 present, 15 absent.** The
+      split is total: the 4 are the whole of `:14-80`, the 15 are the whole of `:82-301`.
+- [x] **THE REWRITER EXISTS.** `codegen/__init__.bend:146 walk_rewrite` WORKS (gate green).
+      `graph_rewrite` at `:180-181` is a **5-line stub returning `None{}`**, and `unified_rewrite`
+      at `:176` is single-pass. So the port's stated deferral reason (`schedule/__init__.bend:7-13`,
+      "ctx must be a mutable accumulator") is only HALF the wall; the other half is a stub
+      dispatcher, and it blocks all 15 absent entry points regardless of their `ctx`.
+
+**THE THREE VERDICTS, EACH WITH ITS OBSERVABLE** (`sched-stage2.md`, last table):
+- `_states`' raise (`:22`) — **NO OBSERVABLE CHOSEN.** `sc_states` answers `[s]` for any op.
+- `_split_after`'s raise (`:29`) — **the DROP**, pinned by `split_bad_ks`.
+- the cycle raise (`:79`) — **`cycles(Ctx)`**, the count of non-zero `in_degree` keys. 1 for
+  `fx2`/`fx5`, 0 for `fx1`.
+- **THE UNCLOSED WALL: a fuel-bound stop is NOT separately observable.** `cycles == 0` does not
+  certify a complete linearization, because a fuel-bound stop leaves the same 0. The Kahn loop is
+  `ln_go(fuel, q, l)` and nothing reports whether `fuel` was exhausted. That is exactly the
+  "bound hit reported as a schedule" failure the brief names, and it is still open.
+
+**THE DIFFER'S 85-NODE TAX: BEFORE 85, AFTER 85. IT DID NOT DROP**, and the reason is not
+"we hand-wrote it": `full_rewrite_to_sink` does not exist as a callable (it is a COMMENT at
+`codegen/kernel.bend:71`) and `schedule_linear` needs `get_kernel_graph` + `prepare_rangeify` +
+`transform_to_call`, none of which exist. What DID land is the generator: a new scheduled graph now
+costs **zero hand-written nodes**, where `g_lin` cost 46.
+
+**REPORTED, NOT FIXED (other owners' files):**
+- **`ops.bend` has NO `OpsDIV` variant at all** -- `a declared constructor (unknown: OpsDIV)`.
+  `conv` needs DIV and works around it by never emitting one. One line, single-ownership file.
+- **`KernelInfo` has 4 fields against CPython's 5** (`estimates`, ops.bend:915) and **`CallInfo` 4
+  against 3** (`dtype`, ops.bend:1010). Both make those args unable to agree, by construction.
+- **`gate.mark` (schedule/__init__.bend:1268) is 0 on every real graph** -- all six specs store a
+  rewritten EXPRESSION, never a CONST, and `gate.digit` codes only 1/2/3. Its `fx*_marks` rows only
+  ever see hand-built fixtures.
+- **The naming deviation is real and is a one-commit fix**: `schedule` should be `create_schedule`
+  (a valid Bend identifier -- it is neither `match` nor `where`) and the `sc_` prefixes should go.
+  NOT DONE HERE: it touches 22 gate rows plus five units' line citations.
+- `graphcmp.bend`'s `g_lin` has NO `AFTER` node, so the node `create_schedule` exists to consume is
+  absent from the differ's matmul. Stage 2's six graphs all have one.
+- **`schedule/__init__.bend:153` says "THE GATE. 71 rows" and it PRINTS 81.** Measured by
+      counting the emitted `name=value` lines, twice. The header also says "Both lanes print the
+      same 71 lines" about `.agents/slop/notes/sched-truth.py`, and that script is not in the
+      working copy any more. An undercount in a gate header is small, but it is the same class as
+      the `sig=0 4 5` row: the number a reader trusts is not the number that runs. NOT FIXED HERE
+      -- the file is byte-identical to how this session found it (sha256
+      652986d27842d09b63e5579f47b1f135e4747141f2dff2c75102fa115e818edf) and changing it is a
+      one-line edit the coordinator should make deliberately.
+
+## Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ARE EXECUTION NOW.
+
+- [x] **EXECUTE the port's emitted C through its own renderer.** `zsh .agents/slop/portexec/stage1.sh`
+      -> PASS, `diff bytes: 0`, 3/3 controls red.
+- [x] **CALL that kernel FROM BEND** (the FFI chain, kernel pointer as a `Nat`).
+      `zsh .agents/slop/portexec/run-kernel.sh` -> PASS, 4/4 words, 3/3 controls red.
+- [x] **THE WHOLE 8x8x8x8 MATMUL through the port.** `zsh .agents/slop/portexec/run-kernel.sh mm`
+      -> PASS, **64/64 u32 words bit-identical to `e2e_mm.py`'s CPython answer**, diff 0 bytes,
+      3/3 controls red. The kernel is emitted by the port's own `render_kernel` with FOUR buffers
+      (`emit-mm.bend`); the expectation is `runs/e2e/e2e-mm-oracle.json`'s `answer_u32`, READ and not
+      recomputed. `zsh .agents/slop/portexec/stage1.sh` and `run-kernel.sh mm` are the re-runnable
+      artefacts. Nothing committed.
+- [x] **MEASURE how much of the 227-row gate is text and how much is execution.**
+      `.venv/bin/python .agents/slop/portexec/census.py $TMPDIR/portexec` writes every row to its
+      own file and hands it to `cc`: **216 of 227 (95.2%) are FRAGMENTS, not translation units;
+      11 are C; `cc` accepts 6 (2.6%); 1 (0.44%) has been executed.** So `cstyle-gate.py:554`, which
+      builds BOTH lanes from `CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")`,
+      compares two RECORDED TEXTS and a "227/227" claim covers 2.6% compilable code.
+- [x] **RULE: `render_kernel`'s SIGNATURE is live; its BODY is a fixture.** Reported at
+      `cstyle.bend:49`: `cstyle.bend` has NO `_render` at all, and `cstyle.bend:49` names
+      the wall -- `Ops.SHRINK` has no dtype in `fold.bend`, so `F.fold.dt` answers `None` and
+      `render_type` (needed by every emitted line) cannot be driven from a graph. **That wall is
+      `fold.bend`'s to move.** This unit's claim stops at the kernel interface.
+- [x] **FINDING, reported not fixed: two of the 227 rows assert a string no compiler accepts.**
+      `kern2 BASE alu` and `kern2 CLANG alu` pair an ALU-space SIGNATURE (`const float alu0_1,
+      const float alu1_1`) with the gate's `g_kernel()` BODY, which references `data1_4`/`data0_4`
+      -- `cc: use of undeclared identifier 'data1_4'`. `renderer_oracle.py:551-552` hands upstream
+      the same mismatched pair, so BOTH lanes agree on uncompilable text. The fixture belongs to
+      whoever owns `g_kernel()`; `cstyle.bend` and `renderer_oracle.py` are not this unit's.
+- [x] **FOUND IN MY OWN HARNESS, BY A CONTROL: Stage 2 was green through a SELF-ALIASED call.**
+      `khi`/`klo` read a C static `kmalloc` overwrites; the generated program read `dst_hi`/`dst_lo`
+      after the second allocation, so both buffer slots were one address. A self-aliased call of a
+      one-input kernel returns the CORRECT answer by construction. `run-kernel.sh` STEP 5 now asserts
+      the buffer `Nat`s are DISTINCT. And TWO controls are THEOREMS (aliasing `kern2 CLANG`'s slots
+      either way; dropping input words 1-3) -- reported as theorems in `portexec/STAGE2.md` and NOT
+      counted towards the three. The matmul reads three buffers and has no such theorem.
+- [x] **RULES appended** to `notes/bend2-constraints.md` at the END (PORTEXEC-1..4, positions cited):
+      **`Nat` AND `U32` are BOTH LINEAR** (`U32.add(n, n)` and `Nat.add(n, Nat.add(n, n))` both
+      `consumed more than once`); `+` goes on the BINDER (`+n: U32`), not the type; `Nat.add` takes
+      `n`-suffixed literals; `match` on a `Nat` has no `case 0` arm (use a `List<&2, Nat>` of
+      indices); `is` is a keyword; `IO.pure(Unit, Unit{})` not `()`; `bend -o` INLINES the shim so a
+      plant on it must re-run that step.
+
+---
+
+## AUDIT-CAN-FAIL — "can this headline number go RED?" (2026-10-04)
+
+**Progress: 8/8 numbers audited — 6 CAN-FAIL, 1 NOT-A-COUNT, 4 carry a CANNOT-FAIL
+component. `[███████░░░] 70%`** (the 4 fixable findings below are not yet landed.)
+
+Nobody had asked the project's own headline numbers whether they can fail. They were
+asked, by planting a change to each number's SUBJECT and reporting before/after.
+Full report `.agents/slop/AUDIT-CAN-FAIL.md`; per-number `.agents/slop/audit/01`…`08`.
+
+- [x] **8 headline numbers audited by PLANT and DISARM**, never by grepping a name and never by
+      reading a filter's own prose. Denominator reported: **6 of 8 can be made red.**
+      - `34/34 ALL PROOFS CHECK` — **CAN-FAIL**, 7 plants / 7 reds (proofs are NAME-MATCHED DEFS,
+        not `law` stmts; 18 of 34 `{==}` bodies are reflexive but NOT tautological — `A.neg`→identity
+        goes red).
+      - `34 of 77 ops` — **CAN-FAIL**, 34→23 on dropping `lin`/`loop`/`gate`. But `34` is a UNION and
+        survives a DEAD bend side; `43 of 77` is py-only; `189 nodes per side` is a py-only count.
+      - `60/60 fields agree` — **CAN-FAIL** (60→59). **CANNOT-FAIL:** `specs_attempted=6` is a
+        literal (falsified to 70-from-7); the port side is a STATIC `sched-port.txt`; the
+        "uncoded-op census" its docstring promises is DEAD CODE and the hazard is ARMED.
+      - `307/324 mechanically derivable` — **CAN-FAIL**, 307→306. **CANNOT-FAIL:** the sibling
+        `coverage 324/324 = 100.0%` is `X/X`.
+      - `222 rows` cstyle — **NOT-A-COUNT.** Retired; the tool prints 227/224/221.
+      - `32 of 38 readers drifted` — **CAN-FAIL** (32/38 → 1/3 → 0/0). Denominator is an
+        unverified classifier's opinion over 315 excluded functions.
+      - `E2E PASS 64/64 u32` — **CAN-FAIL cleanly.** One bit in one word of 64 → red.
+      - `234 counts, 0 loads` — 234 **CAN-FAIL**; the **"0" is CANNOT-FAIL** for filename-derived
+        counts, because `qualified()` needs a line number they do not have.
+- [x] **4 FINDINGS, each reported with the plant that proves it, each NOT fixed** (every file is
+      held by a live unit):
+      - [ ] `graphcmp-oracle.py` — assert `tot_ops ⊆ Ops`; append `py≠bd` node counts to `bad`; stop
+            labelling a py-only count "per side". **~3 lines, 3 blind spots.**
+      - [ ] `ffi-port-cost.py:496` — `denom` is `uniq`; take it from the dylib or drop the
+            "symbols exported by the binary" label.
+      - [ ] `sched-cmp.py:132` — implement the uncoded-op census or delete the sentence claiming it
+            exists. Four uncoded ops (12 nodes) are live in the corpus.
+      - [ ] `graphcmp-LIMITS.md:431` — the "ten ops" list is **eleven**; `CMPLT` is missing.
+- [x] **5 of my own plants were green for reasons that were MINE** (`pick_dim = \a->a`; an
+      already-blocked `clang_Type_getSizeOf`; a bare parameter instead of an annotation; the
+      annotation instead of the `@dll.bind` tuple; a `$TMPDIR` copy behind a module global). All
+      five diagnosed by reading the instrument and calling it, never by guessing. **A-10.**
+- [x] **12 rules appended** to `notes/bend2-constraints.md` at the END as **A-1 … A-12** (the `F-`
+      numbers have collided three times). Nothing renumbered.
+- [x] **NOT COMMITTED**, per brief.
+
+---
+
+## Session 2026-10-04 — tensor-surface census (read-only; `.agents/slop/TENSOR-SURFACE.md`)
+
+- [x] **PREMISE TESTED AND CORRECTED.** The brief's name search of `tensor.bend`
+      (0 of `matmul mul add backward zero_grad realize schedule_linear`) was a TRUE
+      name search and a FALSE conclusion, for three independent reasons:
+      `mul`/`add`/`matmul` are **not tensor.py methods** (they are
+      `mixin/elementwise.py:125/:84` and `mixin/op.py:394`) and DO exist in the port
+      as `ew_mul`/`ew_add` (`mixin/elementwise.bend:543-544`); `backward` exists as
+      `tn_need_grad` (`tensor.bend:920-949`, scope filter only); `zero_grad` is
+      **not a `Tensor` method at all** (`hasattr(Tensor,'zero_grad')` is `False`; it is
+      `tinygrad/nn/optim.py:29`) and IS ported as `op_zero_grad.of`
+      (`nn/optim.bend:395`). **Only `realize` and `schedule_linear` are genuinely
+      absent from the port's Tensor layer.** The "I don't know" reading was correct.
+- [x] **THE 2.7x ASYMMETRY RESOLVED, and the answer is NEITHER option.** Classified by
+      line: `tinybendygrad/tensor.bend` is 1,584 lines = **211 blank / 1,225 comment
+      / 148 code**, against upstream's 591 = 81 / 47 / **463**. **The port is 3.1x
+      SMALLER in code.** It is 77% documentation, not renamed and not a different
+      surface — which is why the line count and a name search are both near-zero
+      evidence about the contents.
+- [x] **STAGE 1 — the mapping table, denominator 57.** 57 `def`s in `class Tensor`
+      (`ast.parse`, `tensor.py:44-564`): **18 present / 39 absent**. Public-only:
+      **9 of 28**. Every counterpart found by READING the file and following its own
+      `TODO(p3) tensor.py:<line>` markers. **A WARNING WORTH KEEPING: the obvious
+      count is wrong** — `Tensor.__dict__`'s public list is **226**, not 24, because
+      `tensor.py:588-591` `setattr`s every INHERITED member back onto `Tensor`;
+      filtering `__module__` gives 24 and still misses `@property`/`@rewrite_group`.
+- [x] **STAGE 2 — present vs EXERCISED, with denominators.** `tensor.bend`: 174 defs,
+      154 reachable from `main()`, **19 dead in-file**. **13 of the 19 dead are the
+      entire `__init__` counterpart** (`tn_init*` + all 8 `tn_cast*`), so
+      `Tensor.__init__` is written and never executed by anything. **`Tensor.grad_set`
+      (`:279`) is dead too** — the `.grad` WRITER, with no caller. Of 17 counterpart
+      roots: **15 exercised / 2 never run (`__init__`, `_wrap_uop`)** — but
+      **`backward` is 1 of 2 halves** (the filter is gated, the zip is `TODO(p3)`) and
+      **`assign` is 1 of 9 arms** (the spine is gated). **Ops enum: 77 upstream /
+      77 port / 0 missing** — the "43 of 77 unreached" in `graphcmp-LIMITS.md:422` is
+      a CORPUS number, not an enum gap.
+- [x] **THE GRADIENT DRIVER, measured: 0 callers in the whole port tree** for
+      `compute_gradient`, `_deepwalk`, `reduce_gradient`, `call_gradient`,
+      `partial_store_gradient`. **`pm_gradient`'s rule table is 33/33 ported as
+      `gr_0`..`gr_32` and gated** (`mixin/gradient.bend`, 1,761 lines). The table
+      exists; the walk does not.
+- [x] **STAGE 3 — the path, the scope, the three steps.** `tinygrad/engine.py` does
+      **not** exist; the real path is the **package** `tinygrad/engine/`, and
+      `backward`'s callee is not in it at all — it is `mixin/gradient.py:116
+      compute_gradient` via `mixin/op.py:464` (confirmed by traceback). **CALLING
+      CPython on `DEV=NULL`: `(a*b).sum().gradient(a,b)` runs with NO device and NO
+      realize, and the backward graph introduces exactly THREE ops the forward never
+      reaches — `CAST`, `CONST`, `EXPAND`.** All three are already in the port's enum,
+      so ops are not the gap. 8 missing pieces enumerated with file:line.
+      **THREE ORDERED STEPS: (1) `compute_gradient` in `mixin/gradient.bend`; (2) the
+      `backward` zip at `tensor.bend:951` + wire the dead `grad_set`; (3) `CAST`/
+      `CONST`/`EXPAND` reachability + a `bw` graph in the `graphcmp` corpus.**
+      **`realize`/`run_linear`/`Buffer` are deliberately NOT a step** — a first real
+      backward pass is a GRAPH claim.
+- [x] **STAGE 4 — THE FALSIFICATION SUCCEEDED, AND MY OWN CLAIM WAS WRONG.** Planted
+      `compute_gradient`'s reverse walk in `$TMPDIR` against the port's own
+      `gr_rewrite`/`gr_12` with a control probe. **5 of 5 signature fields AGREE with
+      CPython's `pm_gradient.rewrite`, reproduced twice: `rule=FIRED n=2 solid=2`,
+      `fw=3 CONST/0 CONST/0 MUL/2`, `grad0`/`grad1` the same, `grads_n=2`.**
+      **So "the port cannot build a backward graph" was TRUE AS A CENSUS and FALSE
+      AS A CONCLUSION.** The honest headline is **"the reverse-mode RULE TABLE is
+      33/33 ported and gated; the WALK is absent"** — not "backward is absent". Step
+      1 is a LOOP of ~30 lines, not a missing file. **It still does NOT give the port
+      a backward pass:** one node, one step, an INT seed, and the multi-node
+      accumulation is untested.
+- [x] **FOUR PLANT FAILURES THAT WERE NOT RESULTS** (each a rule the port already
+      records): an absolute `import` AND a **symlink** mirror both break hub
+      detection — a real `cp -R` is required; `Bool.pick` is strict so a tail spent
+      twice is refused; **`Bool.pick(T,cond,a,b)` returns `a` when cond is TRUE** (proved
+      from `tensor.bend:766 tn_rop.ins`) and my inverted hole guard printed
+      `plant_grads_n=0` on a rule that had fired twice; `List.index_of` does not exist
+      and `List.foldl`'s lambda cannot capture a runtime variable.
+- [x] **ONE FAILURE THAT WAS A RESULT: A STALE ARENA CLOBBERED THE SEED.**
+      `plant_seed=4` and `plant_gs0=4` — the gradient and its own seed were one node,
+      and `plant_grad0` printed a 1-node graph against CPython's 3. Cause: passing
+      `ar(m)` (next=4) while the seed was interned at index 4, so `G.gmul` interned
+      the gradient at index 4. **`tensor.bend`'s own rule 5, wearing my bug.** The
+      port's own rows are immune.
+- [x] **CONCURRENCY, REPORTED NOT FIXED: `tinybendygrad/helpers.bend` was mid-edit TWICE**
+      while this unit ran (14:25, and again after 14:30) and failed at
+      `helpers.bend:2552` (`match i64_is_zero(x)`) and `helpers.bend:1830`
+      (`divmod_r`, "an unfilled law is a dead claim"). **Another agent's edits; the
+      file is not this unit's and was not touched.** The Stage 4 control probe is what
+      caught them, and it refuses to print a verdict when the substrate does not
+      compile — without it both would have been reported as walls on the gradient path.
+- [x] **6 rules appended** to `notes/bend2-constraints.md` at the END as **T-1 … T-6**
+      (the `T-` namespace was unused; the `F-` numbers have collided three times).
+      Nothing renumbered.
+- [x] **`tensor.bend` NOT edited.** The brief says to report the mapping and ask for
+      the file; **§1.2 of TENSOR-SURFACE.md IS that mapping and I am asking for the
+      file.** No `.bend` touched at all. `runtime/portexec/**`, `graphcmp*`, `e2e*`,
+      `rebase-gate.py`, `cstyle-gate.py`, `reader-guard.py`, `sched-*`,
+      `helpers.bend`, `LAWS/**`, `PROOF*.bend` all untouched.
+- [x] **NOT COMMITTED**, per brief.
+
+## Session 2026-10-04 — `cstyle-live`: `renderer/cstyle.bend`'s emitted C, COMPILED and RUN
+
+Report: `.agents/slop/CSTYLE-LIVE.md`. Harness: `.agents/slop/cstyle-live/`
+(`stage1.sh`, `stage2.sh`, `stage3.sh`, `convert.py`, logs `stage{1,2,3}.log`,
+`conversion.tsv`). **Never committed.** `renderer/cstyle.bend` NOT edited (sha256
+`07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f` unchanged);
+`.agents/slop/cstyle-gate.py` NOT edited (imported, never forked).
+
+- [x] **STAGE 1 — does the emitted C compile?** **It does NOT, and that is the finding.**
+      The gate's own `kern2 CLANG` row — the Clang device, the one `ops_cpu.py` compiles —
+      gives **6 errors, first at `gate_kern2_clang.c:3:3`:
+      `use of undeclared identifier 'float4'`**. **WHICH STEP BROKE: step 2, `cc`** (step 1
+      `bend` ok, 3/4 never reached). Cause measured, not inferred: `float4` is a tinygrad
+      pseudo-type (`cstyle.py:279`) that only `_render_defines` (`cstyle.py:303-309`) defines,
+      and the `kern2` fixture is `emit_min()` with an EMPTY `vecs` (`cstyle.bend:282`) — a
+      **FIXTURE gap, not a port defect**.
+- [x] **Supplying that one input: the port's text is BYTE-IDENTICAL to CPython's.**
+      `cstyle-oracle.py` captures live (`CCACHE=0`, or `device.py:339-344`'s diskcache means
+      `compile` is never called) what tinygrad's CPU backend hands clang for `(a+1.0)` over
+      four contiguous f32. Both sides sha256
+      `b5a0753d3581bea162a8cccfed4f9e1a2d6841feaab39c8ce773af72f744731d`. `cc -c` then
+      compiles it (384 bytes of object).
+- [x] **STAGE 2 — does it RUN and AGREE?** **YES, diff = 0 bytes.** Two fixtures × two
+      processes each; `CPU` (tinygrad's real backend: `cstyle.py` -> clang -> `mmap` ->
+      `CDLL`, `ops_cpu.py:29-72`) == `PYTHON` == the emitted kernel, bit for bit, and `f64`
+      **differs** so the fixture is dtype-sensitive. Four DISTINCT inputs so a lane-reversed
+      kernel fails. **Negative control: one flipped input bit -> 1 differing byte.**
+- [x] **STAGE 3 — call it FROM BEND.** `law` + `import "./shim3.c"` + `bend -o` + `cc`, all
+      four steps green. **The entry point is carried as a `Nat`** and Bend never names `E_4`.
+      Bend's own four lanes == CPython's, bit for bit. **Control strengthened: the perturbed
+      run is compared against CPython's PERTURBED answer, not merely against the original.**
+- [x] **Allocator: `ops_bend.bend`'s, imported, not rewritten** — `Mem`, `Mem.of`,
+      `Mem.base`, `Mem.nbytes`, `first.of`, `raw_alloc`, `raw_free` all used as they are, and
+      `raw_free`'s no-op measured (`BEND_FREE_NBYTES 16`, `C_FREE_RETURNS_SAME_ADDRESS`).
+      **ONE thing could not be reused and is named, not smuggled: `raw_alloc`'s backing
+      store.** Its `Mem.base` is an index into a `List<&2, U32>` (`ops_bend.bend:1476`) and
+      Bend exposes no address for a `List`; both number spaces are printed side by side
+      (`BEND_LIST_INDEX 0` vs `C_MMAP_ADDR 4307140608`). Same contract, different substrate.
+- [x] **STAGE 4 — the conversion, AS EVIDENCE ONLY.** `convert.py` walks all 227 rows with
+      `cstyle-gate.py`'s **imported** `rows_strict`/`split_py` and puts each through
+      `cc -fsyntax-only`; per-row table in `conversion.tsv`.
+      **227 emitted / 29 are translation units / 12 compile / 0 ran as a row / 1 ran as a
+      kernel and agreed.** **Exactly one row's defect closed: `kern2 CLANG`** — not by
+      rewriting the row, but by calling `render_kernel` with the one argument the fixture
+      withheld. **219 of 227 are fragments, not translation units**, which is why `is_tu` is
+      its own column: a compile rate over this lane is a statement about the SHAPE of the rows.
+      **0 of the 30 `kern2` rows compile as emitted**: 8 `float4` (the fixture gap), 10 HIP
+      (`extern "C"` is C++), 6 CUDA (`template`), 3 OPENCL (`__kernel`), 3 METAL
+      (`metal_stdlib`). **The other 22 need those toolchains — a different unit's budget.**
+- [x] **I DID NOT decide what counts as LIVE-VS-LIVE** (another unit censors per lane and two
+      writers of one ledger collide) and I did not add a row to `cstyle.bend`.
+- [x] **CORRECTION TO THE SLOT'S PREMISE, measured:** `cstyle-gate.py:554` is the CAPTURE
+      path. With no `--port-stdout` the gate runs the port, and right now it prints
+      `live port lane rc=0 live oracle lane rc=0 / gated 221 agree 221 disagree [] / AGREE`.
+      **The lane IS live-vs-live AS TEXT.** The slot's real point survives: all 227
+      measurements are on newline-ESCAPED text, and no lane has ever spent one on a compiler.
+- [x] **8 rules appended** as **C-1 … C-8** at the END of `notes/bend2-constraints.md`
+      (positions 23689+), nothing renumbered, cited by NAME. **C-1 explains why
+      `renderer/cstyle.bend:2373` ends its own `main` with `IO.print("")`** — that line is load-
+      bearing and must not be deleted as cosmetic; its comment there does not say so.
+- [x] **CONCURRENT-AGENT OBSERVATION.** Mid-session the live tree stopped compiling, rc=1 and
+      ZERO rows, naming `i64_dec.go2` at `helpers.bend:2583` — **not my file, DO-NOT-TOUCH,
+      another unit mid-edit**, and later `'a decreasing self-call'` at `i64_dec.go:2596`. A
+      **whole-tree** `$TMPDIR` snapshot taken before it (`helpers.bend` sha256
+      `e91a9cbb…`) reproduced my capture byte-for-byte and stayed green; a single-file scratch
+      copy resolves no relative import and would have produced phantom rows. Live tree
+      recovered by the end (rc=0) and its output is `cmp`-identical to the snapshot. No
+      harness patched the live tree.
+- [ ] **RECOMMENDED, AND IT NEEDS THE COORDINATOR'S CALL.** Make `emit_min()` carry the
+      `typedef float float4 __attribute__((aligned(16),ext_vector_type(4)));` line whenever the
+      body names `float4` (or use a scalar body in the `kern2` fixture), and the gate's own row
+      becomes compilable as it stands. **That is an edit to `renderer/cstyle.bend`, which is
+      mine — but it changes the gate's expectations, so it is NOT made unilaterally.**
+
+## Session 2026-10-04 round 2 — `i64_dec`, the signed-decimal printer
+
+- [x] **`i64_dec` in `helpers.bend`: Python's `str(int)` for an `I64`, gated on 19 rows
+      over three lanes.** `helpers-tc-gate` is **237 shared rows** (was 199), and
+      `helpers-i64-mutate` is **20 of 20** with 7 new entries. `print_uops`'s CONST arm
+      now agrees with CPython exactly: `['--', '4']` against `['--', '4']`.
+
+      **The tree already had `dec_of` (`viz/serve.bend:562`) and it is a stated limit, not
+      a printer**: it answers `U32.show` when `hi == 0` and falls back to `i64_text`
+      otherwise. This is the part that `i64_text` cannot do, so the two compose.
+
+      ### THREE BEND RULES THIS COST, all now written at the def
+
+      1. **A COMPUTED SELF-CALL ARGUMENT IS REFUSED.** "expected : a decreasing self-call
+         (arguments are read left to right: each passed unchanged until one shrinks)". A
+         `match` binder is the only accepted shrink, and there is no binder for a computed
+         quotient — so a decimal loop has no choice: it must reduce on something with a
+         binder, and the only such thing that survives twenty iterations is a **`Nat`
+         fuel** (`case 1n+g`). Eight arrangements were tried and measured, not reasoned
+         about: `go`/`step`, `go`/`acc`/`put2`, a `Bool.pick` zero test, a `match` on a
+         `Bool` parameter for lazy branching, and a `Step` data type. Every one is either
+         mutually recursive or passes a computed argument. **Mutual recursion is the
+         inexpressible core, and `-law` — the block `Nat.show` uses to declare its own
+         `go -> fin -> go` — is BASE-ONLY syntax** (`expected : 'def', 'type' or 'law'`).
+      2. **THE FUEL MUST BE ONE MORE THAN THE DIGIT COUNT, and the surplus is trimmed
+         AFTER the reverse.** 2**63-1 is nineteen digits and the fuel is 20, so the fold
+         always emits 20 and the extras are zeros. Those are the MOST significant, so on
+         a least-significant-first list they are at the TAIL: trimming the head of the
+         unreversed list removes nothing. (Measured: `00000000000000012345`.)
+      3. **`Nat` IS GENUINELY UNARY.** `Nat.mul` is `Nat.add` in a loop, so the obvious
+         "convert to a `Nat` and call `Nat.show`" is not a shortcut — 2**63 is a nine
+         billion deep list. Checked before writing any code, and it is why the fuel above
+         stops at 20.
+
+      ### THE ONE VALUE THAT CANNOT BE ANSWERED, and it is not answered wrongly
+
+      `|int64.min| = 2**63`, which `I64` cannot hold, so `i64_abs` answers int64.min FOR
+      int64.min (measured: it returns `2147483648:0` unchanged and `i64_is_neg` is still
+      true). The fold would divide a *negative* magnitude. So that one value answers the
+      `hi:lo` bit pattern — the same fallback `dec_of` takes — and **the test is the
+      observed overflow, not a magic constant**, so it stays true if the range widens.
+      `d_i64min` is a gate row precisely so the fallback is *pinned* rather than implied.
+
+      ### print_uops is still not gated, and now for three NAMED reasons
+
+      Four of its five fields agree with CPython on VALUE. The gate stays unlanded because
+      the **widths** (`{i:4d}`, `{op:20s}`, `{dtype:40s}`, `{srcs:32s}`) are not
+      implemented, the **range column** is empty until `F.ranged`'s sweep lands, and the
+      **`u.arg` column** has no AxisType arm — CPython's `UOp(Ops.ADD, (BUF, C1), L)` puts
+      the axis in `arg` and this arena stores `TNone{}`, so that row's two lanes do not
+      describe the same node. Values right and layout wrong is why the gate diffs whole
+      lines and not a field map.

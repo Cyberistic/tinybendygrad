@@ -1969,6 +1969,96 @@ def i64_divmod(+a: I64, +b: I64) -> DivMod:
 def i64_div(a: I64, b: I64) -> I64:
   divmod_q(i64_divmod(a, b))
 
+
+# ---- `i64_dec`: Python's `str(int)`, a SIGNED DECIMAL -----------------------
+#
+# `i64_text` (above) is the two-word `hi:lo` form and it is DELIBERATELY not this.
+# It is right for a gate, where `2147483648:0` says more about a bit pattern than a
+# digit string does, and every existing row in the tree prints it. What it cannot do
+# is `str(val)`, and `print_uops` (tinygrad/uop/render.py:18) needs exactly that: it
+# prints `f"{x.val}"` for a CONST src, where `i64_text` on 4 is `0:4` and CPython
+# prints `4`.
+#
+# WHY IT IS NOT A ONE-LINE. Bend has no signed integers (see the 64-bit block header
+# above), so a signed value IS its two's complement bit pattern and the decimal has
+# to be built by dividing a MAGNITUDE, with the sign carried beside it.
+#
+# AND THE FOLD RUNS ON A `Nat` FUEL, WHICH IS THE WHOLE SHAPE. Every step's next
+# value is a CALL -- `i64_divmod(divmod_q(d), 10)` -- and Bend REFUSES a computed
+# self-call argument: "expected : a decreasing self-call (arguments are read left to
+# right: each passed unchanged until one shrinks)". A `match` binder is the only
+# accepted shrink, and there is no binder for a computed quotient. The `Nat` fuel
+# supplies one (`case 1n+g`), and it is cheap because `Nat` only ever reaches 20
+# here. MEASURED, not assumed: eight arrangements were tried -- `go`/`step`, `go`/
+# `acc`/`put2`, a `Bool.pick` zero test, a `match` on a `Bool` parameter for lazy
+# branching, and a `Step` data type -- and every one of them is either mutually
+# recursive (which Bend refuses: "expected : a filled definition") or passes a
+# computed argument. The `-law` block that `Nat.show` uses to declare its own
+# `go -> fin -> go` cycle is BASE-ONLY syntax; the leading `-` marks a builtin, and
+# a user file is told "expected : 'def', 'type' or 'law'".
+#
+# SO THE FUEL IS DELIBERATELY ONE MORE THAN THE DIGIT COUNT. 2**63-1 is nineteen
+# digits and the fuel is 20, so the fold always emits exactly 20 digits and the
+# surplus ones are the surplus ZEROS of the magnitude -- which is why `i64_dec.trim`
+# exists and why it runs on the REVERSED list: the surplus digits are the MOST
+# significant, so on a least-significant-first list they are at the TAIL, and
+# trimming the head of the unreversed list removes nothing. (MEASURED: trimming
+# before the reverse printed `00000000000000012345`.)
+def i64_dec.go(f: Nat, +acc: List<&2, U32>, +d: DivMod) -> List<&2, U32>:
+  match f:
+    case 0n:
+      acc
+    case 1n+g:
+      i64_dec.go(g, List.append(&2, U32, acc, [lo32(divmod_r(d))]), i64_divmod(divmod_q(d), i64_of_i32(10)))
+
+# `Nil` KEEPS ONE DIGIT, so 0 prints as "0" and not as the empty string. The head
+# test is a `Bool.pick` and not a `match` guard because Bend's `match` takes no
+# guard expression, and the `+cs` parameter is the only argument the recursion needs
+# -- the tail `t` IS the shrink, which is the shape `uncast_const.walk.go` uses.
+def i64_dec.trim(+cs: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case Nil{}:
+      [0]
+    case c <> t:
+      Bool.pick(List<&2, U32>, U32.is_zero(c), i64_dec.trim(t), List.append(&2, U32, [c], t))
+
+# Most-significant first, so each digit is APPENDED. A digit is a `U32` and not a
+# `Char` because `U32.show` on a digit renders the NUMBER -- `U32.show(48)` is
+# "48" -- so the character goes through `Char.from_u32` and `String.from_list`.
+# MEASURED: without that, 0 printed as "48".
+def i64_dec.text(+cs: List<&2, U32>, +acc: String) -> String:
+  match cs:
+    case Nil{}:
+      acc
+    case c <> t:
+      i64_dec.text(t, String.append(acc, String.from_list([Char.from_u32(U32.add(c, 48))])))
+
+# THE SIGN IS PREPENDED TO THE WHOLE BODY, and the order matters: pushing a "-" onto
+# the head of a not-yet-reversed list would put it on the LAST character.
+def i64_dec.put(neg: Bool, +body: String) -> String:
+  Bool.pick(String, neg, String.append("-", body), body)
+
+def i64_dec.narrow(+x: I64) -> String:
+  i64_dec.put(i64_is_neg(x),
+    i64_dec.text(i64_dec.trim(List.reverse(&2, U32, i64_dec.go(20n, Nil{}, i64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
+
+# THE ONE VALUE WHOSE MAGNITUDE DOES NOT FIT, and it is ONE value because the range
+# is [-2**63, 2**63-1]: |int64.min| = 2**63, and Bend's `I64` cannot hold 2**63.
+# `i64_abs` therefore answers int64.min FOR int64.min -- MEASURED, it returns
+# `2147483648:0` unchanged and `i64_is_neg` on that is still True -- so the fold
+# would divide a NEGATIVE magnitude and read its digits off a two's complement word.
+# Rather than print a wrong answer, this def answers the `hi:lo` bit pattern, which
+# is what `i64_text` is for and is the same fallback `viz/serve.bend`'s `dec_of`
+# already takes for a value that does not fit.
+#
+# THE TEST IS THE OBSERVED OVERFLOW AND NOT A MAGIC CONSTANT: "negating left the
+# value negative". So it stays true if the range ever widens, and it cannot be
+# satisfied by a value that merely happens to be negative.
+def i64_dec.of(wide: Bool, +x: I64) -> String:
+  Bool.pick(String, wide, i64_text(x), i64_dec.narrow(x))
+
+def i64_dec(+x: I64) -> String:
+  i64_dec.of(Bool.and(i64_is_neg(x), i64_is_neg(i64_abs(x))), x)
 def i64_mod(a: I64, b: I64) -> I64:
   divmod_r(i64_divmod(a, b))
 

@@ -271,3 +271,57 @@ for nm, (xh, xl), k in SHIFTS:
   print(f"{nm}_x={words(x)}")
   print(f"{nm}_k={s(k)}")
   print(f"{nm}_shl={w64(x << k)}")
+
+# ------------------------------------------------------- `i64_dec`, a signed decimal
+# `str(val)` is what `print_uops` (tinygrad/uop/render.py:18) prints for a CONST src,
+# and the port's `H.i64_text` cannot answer it: on 4 it says `0:4`. This is the
+# CPython side of that claim, and it is `str` itself rather than a reimplementation.
+#
+# THE FIXTURE IS A PAIR OF WORDS, not a decimal, for the reason the 64-bit block above
+# states: a decimal would have to be transcribed on one side and derived on the other,
+# and a transcription is exactly the constant that is wrong and green. Each row prints
+# the fixture back as `hi:lo` AND the decimal, so the input and the output are both in
+# the diff.
+#
+# `d_i64min` IS A LIMIT AND NOT A CLAIM. CPython's `str(-2**63)` is
+# `-9223372036854775808`, and the port answers `2147483648:0` -- the bit pattern --
+# because Bend's `I64` cannot hold the magnitude 2**63. So this row is the ONE whose
+# two lanes are EXPECTED to differ, and it is emitted here through the same `fallback`
+# the port uses rather than skipped, so the disagreement is visible in the diff instead
+# of living in a comment.
+DEC_ROWS = [
+    ("d_zero", 0, 0),
+    ("d_one", 0, 1),
+    ("d_nine", 0, 9),
+    ("d_ten", 0, 10),
+    ("d_hundred", 0, 100),
+    ("d_thousand", 0, 1000),
+    ("d_42", 0, 42),
+    ("d_12345", 0, 12345),
+    ("d_i32max", 0, 2147483647),
+    ("d_i32p1", 0, 2147483648),
+    ("d_u32max", 0, 4294967295),
+    ("d_2p32", 1, 0),
+    ("d_1e12", 232, 3567587328),
+    ("d_i64max", 2147483647, 4294967295),
+    ("d_neg1", 4294967295, 4294967295),
+    ("d_neg10", 4294967295, 4294967286),
+    ("d_neg42", 4294967295, 4294967254),
+    ("d_neg1e9", 4294967295, 3294967296),
+    ("d_i64min", 2147483648, 0),
+]
+
+
+def dec_limit(x: int) -> bool:
+  """True where the port cannot hold |x| and answers the bit pattern instead."""
+  return x == -(1 << 63)
+
+
+def dec_rows():
+  for nm, hi, lo in DEC_ROWS:
+    v = signed(hi, lo)
+    print(f"{nm}_x={words(v)}")
+    print(f"{nm}_d={words(v) if dec_limit(v) else v}")
+
+
+dec_rows()

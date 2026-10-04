@@ -299,6 +299,17 @@ def shift_go(+nm: String, xh: U32, xl: U32, +k: Nat) -> IO(Unit):
     p(String.concat([nm, "_k"]), Nat.show(k))
     p64(String.concat([nm, "_shl"]), H.i64_shl(x, k))
 
+# `i64_dec`: Python's `str(int)`, a SIGNED DECIMAL. Two rows per fixture -- `*_x` is
+# the fixture read back as two halves and `*_d` is the claim -- and both come from the
+# SAME word pair, so nothing is transcribed twice. The fuel fold's surplus digits are
+# the reason `d_ten` is here: a loop that tested the quotient instead of the
+# magnitude would print `10` and this row is what says otherwise.
+def dec_go(+nm: String, xh: U32, xl: U32) -> IO(Unit):
+  +x = lit64(xh, xl)
+  do IO<Unit>:
+    p64(String.concat([nm, "_x"]), x)
+    p(String.concat([nm, "_d"]), H.i64_dec(x))
+
 def i64_rows() -> IO(Unit):
   do IO<Unit>:
     pair_go("pm_zero",  0, 0, 0, 0)
@@ -326,9 +337,50 @@ def i64_rows() -> IO(Unit):
     shift_go("sh_neg4", 4294967295, 4294967289, 4n)
     shift_go("sh_neg33", 4294967295, 4294967289, 33n)
     shift_go("sh_big63", 2147483647, 4294967295, 63n)
+    dec_go("d_zero", 0, 0)
+
+    dec_go("d_one", 0, 1)
+
+    dec_go("d_nine", 0, 9)
+
+    dec_go("d_ten", 0, 10)
+
+    dec_go("d_hundred", 0, 100)
+
+    dec_go("d_thousand", 0, 1000)
+
+    dec_go("d_42", 0, 42)
+
+    dec_go("d_12345", 0, 12345)
+
+    dec_go("d_i32max", 0, 2147483647)
+
+    dec_go("d_i32p1", 0, 2147483648)
+
+    dec_go("d_u32max", 0, 4294967295)
+
+    dec_go("d_2p32", 1, 0)
+
+    dec_go("d_1e12", 232, 3567587328)
+
+    dec_go("d_i64max", 2147483647, 4294967295)
+
+    dec_go("d_neg1", 4294967295, 4294967295)
+
+    dec_go("d_neg10", 4294967295, 4294967286)
+
+    dec_go("d_neg42", 4294967295, 4294967254)
+
+    dec_go("d_neg1e9", 4294967295, 3294967296)
+
+    dec_go("d_i64min", 2147483648, 0)
+
+
+
 
 def main() -> IO(Unit):
   do IO<Unit>:
+
     trange_rows("trange_0", H.trange(0))
     trange_rows("trange_1", H.trange(1))
     trange_rows("trange_2", H.trange(2))

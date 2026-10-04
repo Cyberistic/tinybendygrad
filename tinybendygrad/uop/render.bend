@@ -1958,176 +1958,43 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # VALUE, and the arena INDEX) and the last column's `ParamArg` repr. The oracle
 # (`.agents/slop/ops-pu-oracle.py`, five rows) is landed and measured.
 #
-# THREE OF THE FIVE FIELDS NOW AGREE WITH CPYTHON and TWO DO NOT, so the gate is not
-# landed. What changed since the first attempt is worth more than the diff:
+# FOUR OF THE FIVE FIELDS AGREE WITH CPYTHON ON VALUE, and the gate is still not
+# landed because the remaining gaps are real and none of them is a `print_uops` bug.
+# The f-string is one line and it has five fields:
 #
-#   THE `dtype` WALL WAS MY FIXTURE, NOT THE FOLD. A BUFFER CARRIES A CONST SRC --
-#   `g_buf` at fold.bend:3919 is `BUFFER(int32, size=4)` hung off a SPECIAL, and
-#   the fold derives shape and dtype FROM THE SRCS. MEASURED: a srcless BUFFER with
-#   `size=Some{4}` in its arg reads `?` from `UOp.dtype`, while the node ABOVE it
-#   (an ADD over that buffer) reads a real answer -- the fold did not refuse, it had
-#   nothing to derive FROM. CPython's fixtures have the src too. Two rounds of "the
-#   fold cannot answer a BUFFER" were a wrong fixture.
+#   print(f"{i:4d} {str(u.op):20s}: {multirange_str(u.ranges, color=True, pad=10)} "
+#         f"{str(u.dtype):40s} {str(formatted_srcs):32s} {u.arg}")
 #
-# WHAT IS STILL WRONG, and neither is a `print_uops` concern:
+# AGREE, measured against ops-pu-oracle.py:
+#   `str(u.op)`     `Ops.BUFFER`, `Ops.ADD`, `Ops.CONST`
+#   `str(u.dtype)`  `dtypes.i32`, `dtypes.weakint` -- the fold DOES answer a BUFFER
+#   `formatted_srcs` all THREE arms: `--` for a src outside the list, the INDEX for a
+#                   src inside it, and the VALUE for a CONST. The value arm was the one
+#                   `H.i64_text` got wrong and `H.i64_dec` now answers: `['--', '4']`
+#                   against CPython's `['--', '4']`, and the CONST's own `u.arg` reads
+#                   `4` on both sides.
 #
-#   `pu_val` PRINTS `0:4` WHERE CPython PRINTS `4`. `H.i64_text` is the two-word
-#   `hi:lo` form (helpers.bend:1701-1705) and `print_uops` wants Python's
-#   `str(val)`, a SIGNED DECIMAL. There is NO signed-decimal `I64` printer in the
-#   tree -- `rg 'def .*i64.*-> String' tinybendygrad/` finds `i64_show` and
-#   `i64_text` and nothing else -- and helpers.bend:1461 says why: "Bend has no
-#   signed integers, so a signed value is its two's complement bit pattern". So this
-#   is a REAL GAP and not a wrong function call. It is small (a 64-bit divide by ten
-#   plus a sign) and it is wanted by every `str(i64)` in the port, so it belongs on
-#   its own rather than inside a printer that is blocked for a second reason.
+# STILL WRONG, and each is named:
 #
-#   `U32.show(x)` FOR THE SRC INDEX prints the same `0:4` shape, because the index
-#   arm and the value arm share the field and the value arm is what is wrong. Fixing
-#   `pu_val` fixes both, which is a reminder that a row is only as discriminating as
-#   the field it shares.
+#   THE WIDTHS ARE NOT IMPLEMENTED. `{i:4d}` left-pads the counter and this prints `0`
+#   where CPython prints `   0`; `{op:20s}` pads the op and this prints `Ops.ADD:`
+#   where CPython prints `Ops.ADD             :`. The VALUES are right and the LAYOUT is
+#   not, which is why the gate diffs whole lines rather than a field map: a field map
+#   would pass a port that is right about every value and wrong about all four widths.
+#   `H.pad_left` / `H.pad_right` exist (helpers.bend) and the field widths are
+#   composition, not a wall -- but it is four format sites, and a half-done layout that
+#   pads three of them is worse than none.
 #
-#   THE RANGE COLUMN IS STILL EMPTY against CPython's coloured `0`. `UOp.ranges`
-#   needs an `RTable` from `F.ranged(ar)`, and the sweep needs the same Kahn table
-#   for `ended_ranges` -- a second fold unit, and the reason this row is here.
+#   THE RANGE COLUMN IS EMPTY against CPython's coloured `0`. `UOp.ranges` needs an
+#   `RTable` from `F.ranged(ar)`, and the range sweep needs the same `Kahn` table for
+#   `ended_ranges`. That is a second fold unit, and `render.bend:975` (`multirange_str`)
+#   is already there waiting for it.
 #
-# WHAT THIS COST, because it is the part worth keeping: a printing fold CANNOT be
-# written as one def in this substrate. `s5.seps.go` and `rra.filter.go` recurse
-# fine because they RETURN a value; `IO.print` needs a `do IO<Unit>` block, the
-# recursion has to leave that block for a def returning IO, and that def then has no
-# shrinking argument. Five arrangements were tried --
-#   three mutually-recursive defs   (Bend refuses; bend-toposort caught it)
-#   one self-call, nothing shrinking  ("expected : a decreasing self-call")
-#   a String where the binder must be a list   (same message, unhelpful)
-#   the print lifted into its own def, recursing unchanged
-#   fold to a String, print ONCE    <- this one, and it is `Bsl.row`'s shape
-# and the rule that decides it is: A PRINTING FOLD RETURNS A STRING AND PRINTS ONCE.
-# A second rule fell out of the same fight: a self-call's `+` args must come FIRST
-# and the shrinking one after, because Bend reads arguments left to right and `+` is
-# what marks "passed unchanged" (`rra.filter.go` at ops.bend:3611 is the reference).
-#
-# AND THE FIXTURE MUST USE `UOp.range`. `UOp(Ops.RANGE, src, arg, AxisType.LOOP)` takes
-# the axis type as its THIRD argument and sets the TAG, so `axis_id` comes back empty
-# and CPython's own `print_uops` dies in `axis_colors[u.axis_type]` with a KeyError.
-# That is why the ORACLE has a comment about it, and it cost two rounds of "the
-# oracle is broken" before I read the constructor.
-# TODO(p3) render.py:35  def marg_str
-# TODO(p3) render.py:37  def render_marg
-# PORTED, THE FIVE LEAF ARMS -- `rnd_letter`, `rnd_param`, `rnd_const`, `rnd_of`,
-# `rnd_pick.of`, `rnd_leaf`. Nine rows byte-identical to CPython on all three lanes
-# via `sh .agents/slop/ops-rnd-gate.sh`, with TWO DIVERGENCES named in the gate and
-# ASSERTED rather than tolerated.
-#
-# `renderer` is 25 arms (tinygrad/uop/render.py:45-72) and the split is not
-# easy/hard, it is "does the answer read the node's own ARG or does it read
-# `ctx[x.src[k]]`". These six read the arg alone. The other nineteen read the
-# CALLER's fold over the srcs' renderings, which is a SELF-RECURSIVE walk and is the
-# next unit. `Maybe<&2, String>` is what stands in for them: a node no arm claims
-# answers `none`.
-#
-# `none` IS NOT A FALLBACK. CPython's last arm is `(UPat(GroupOp.All), lambda x:
-# str(x))`, so a port that fell back would answer `str(x)` for a NEG where CPython
-# answers "(-1)". Same rule as `UOp.expr`, and the reason `is_variable`'s marker says
-# a partial port is a WRONG ANSWER rather than a partial one.
-#
-# THE TWO DIVERGENCES, both named in the gate and both asserted to be `none`:
-#     rnd_special      upstream's arm is `lambda x: x.arg`, which returns the ARG; for
-#                      a SPECIAL the arg is None and `rewrite` reads None as "no rule
-#                      fired" (ops.py:1618), so it falls through to `str(x)`.
-#     rnd_unclaimed    a GROUP, which no arm claims. NOT an ADD -- an ADD is in `syms`,
-#                      so the binary arm fires and asks for `ctx[x.src[0]]`, which
-#                      RAISES on an empty ctx. "No leaf arm claims it" is not "it falls
-#                      through", and an ADD looked like the clean case until it threw.
-#   Both are MULTI-LINE on the oracle side, so they are excluded WITH THEIR
-#   CONTINUATIONS by `.agents/slop/ops-rnd-rows.py`: a row file is one line per row,
-#   and leaving a continuation behind makes the diff a diff of line counts.
-#
-# TWO THINGS THE FIRST DRAFT GOT WRONG, both caught by the gate and not by review:
-#   `rnd_param` took an `op_is_alloc: Bool` and every caller passed False except
-#   ALLOC, so PARAM and BUFFER shared a "b" and `rnd_param_unnamed` answered `b7`
-#   where CPython says `p7`. The letter is the OP -- upstream has THREE arms -- so it
-#   cannot live in a def that only sees the arg.
-#   the CONST arm used `const_repr`, which is the REPR spelling this file uses for
-#   `x.arg`. The arm is `str(x.val)` and the two differ on exactly one arm:
-#   `str(UOp.const(1.5).arg)` is `1.5` and `const_repr` gives `ConstFloat(1.5)`. A
-#   near-miss that typechecked.
-#
-# NOT PORTED, with the blocker for each:
-#   `render_marg` (:37) and `marg_str` (:35) need `x.marg`, which is SHAPE -- the
-#     same wall `is_variable` and `bounds` are behind, and `Node` has no shape field.
-#   `renderer_infer` (:74) is four arms ON TOP of this table, so it lands with the
-#     nineteen that need the ctx fold.
-# TODO(p3) render.py:74  renderer_infer
-#
-# ===========================================================================
-# THE MEASURED MUTATION TABLE, by `.agents/slop/xd1/mutate.py`. THIRTEEN textual
-# edits, one at a time, each compiled and re-run against the clean 129-row lane
-# and each diffed by WHOLE `name=value` LINES (`.agents/slop/xd1/rowdiff.py`).
-# Every entry is a REVERT of one of this unit's own fixes, so the set a mutation
-# moves IS the set of rows that fix was load-bearing for.
-#
-#   mutation                                          rows moved (BY NAME)
-#   ------------------------------------------------------------------------
-#   M-a  `arange_repr` prints the type LAST             arg_repr ARng,
-#                                                        pyrender flat2, flat3
-#   M-b  rule 4 restored IN FULL (defs AND its arm)    pyrender buffer, buflocal,
-#                                                        bufnodev, bufimage, copy,
-#                                                        store
-#   M-c  `pyr_call` refuses EVERY CALL                 pyr_call_const, named, noop
-#   M-d  `pyr_call` refuses NOTHING                    pyr_call_prog
-#   M-e  the guard is `>= 1` instead of `== 1`         pyrender flat2, flat3
-#   M-f  the guard dropped entirely                    pyrender flat2, flat3
-#   M-g  the body prints the WHOLE id list             NONE -- THEOREM, below
-#   M-h  `u32_tuple_repr` drops the 1-tuple comma      arg_repr ATup1
-#   M-i  `peek_str` reads `List.last` not `List.head`  NONE -- THEOREM, below
-#   M-j  `pyr_buffer.pa` reads `size` not `buffer`     pyr_buffer_plain
-#   M-k  `peek_str` replaced by the constant `0`       pyrender mul3, xor3
-#   M-l  `range_tail`'s `src=` tail dropped            pyrender range2
-#   M-m  `body_prog` tests CUSTOM_FUNCTION             pyr_call_prog
-#
-# ELEVEN OF THIRTEEN MOVE ROWS. The two zeros are THEOREMS, not gaps, and the
-# argument is in `range_one_id`'s comment: `range_pieces` is reachable only on the
-# branch `len(ids) == 1` admits, and on a one-element list `join([x], ", ")` is
-# `U32.show(x)` and `List.head` is `List.last`. No fixture can separate them --
-# there is no input on which they differ.
-#
-# M-h AND M-j MOVED NOTHING BEFORE THEIR FIXTURES EXISTED, and that is the second
-# finding. `ATup` had two elements so the one-element comma had no row, and
-# `g_bufrefused` had `buffer == size == Some{4}` so the two `ParamArg` fields were
-# indistinguishable. Both fixtures were added; `ATup0` and `ATup1` are the two
-# lengths the comma has to tell apart, and `g_bufrefused` now carries `Some{9}`
-# because a buffer's slot index and its element count are different numbers in
-# every real `ParamArg`.
-#
-# M-b ALSO TAUGHT SOMETHING ABOUT DELETIONS. Restoring only the DISPATCH ARM moved
-# nothing, because the arm's fall-through target `pmp.fb` is exactly what a BUFFER
-# already takes -- so "re-add the arm" and "leave it deleted" are the same program
-# until the arm has a body. A deleted rule's arm is not a no-op; a re-added arm
-# that delegates to the fallback is.
-# ===========================================================================
-
-# THE GATE. Every row is a CPython value measured on 2026-09-30 with
-# `.venv/bin/python -c "import sys; sys.path.insert(0,'.'); ..."` against this
-# `tinygrad/` tree; the `py=` text IS the oracle, printed next to the answer so
-# a dropped literal shows up as a STRING DIFFERENCE rather than hidden in a
-# boolean. That matters more here than in any other unit: `String.concat` will
-# happily drop a ", " and yield a plausible wrong string, so the gate is the
-# string and never `arg_repr(..) == "..."`.
-#
-# THE `g_*` FIXTURES ARE ARENA TREES, not values. `pyrender` takes a UOp and walks
-# its toposort, so pinning it needs a graph, and each fixture below rebuilds one
-# CPython `UOp` tree node for node -- same op, same arg, same tag, same src order
-# -- because a `cN` label IS a toposort index and the whole gate is a diff of
-# those labels. `py_row` folds the arena, renders, and prints the result beside
-# the CPython string for the same tree.
-#
-# THE THREE `pa` FIXTURES are the three shapes tinygrad's own repr test
-# exercises, and together they cover the three ORDERINGS of the nine keyword
-# fields: pa1 sets only `device`, pa2 sets only `name` and no size, pa3 sets
-# `addrspace`, `volatile` and `image`. A field-order bug that moved one keyword
-# cannot pass all three.
-# ===========================================================================
-
-# ParamArg(1, dtypes.f32, 4, device='METAL')
+#   THE `u.arg` COLUMN HAS NO AxisType ARM. CPython's `UOp(Ops.ADD, (BUF, C1), L)` puts
+#   the axis in `arg` and prints `AxisType.LOOP`; this arena stores `O.TNone{}` there,
+#   so the port prints `None` on a fixture CPython would print an axis for. The
+#   fixture is the port's and it is WRONG about the shape, and it is the one row where
+#   the port's arena and CPython's do not describe the same node.
 def pa1() -> O.ParamArg:
   O.ParamArg{1, S.single(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
     False{}, None{}, None{}, False{}, None{}}
@@ -2806,7 +2673,7 @@ def pu_in(+xs: List<&2, U32>, x: U32) -> Bool: List.contains(U32, U32.is_eq, xs,
 
 def pu_val.of(arg: O.Arg) -> String:
   match arg:
-    case O.APy{O.CInt{i}}: H.i64_text(i)
+    case O.APy{O.CInt{i}}: H.i64_dec(i)
     case O.APy{O.CBool{b}}: Bool.show(b)
     case O.APy{O.CFloat{f}}: f32_repr(f)
     case _: "?"

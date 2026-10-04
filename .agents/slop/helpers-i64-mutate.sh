@@ -158,6 +158,29 @@ mutate C02 "U32.and(hi32(a), hi32(b)), U32.and(lo32(a), lo32(b))" \
           "U32.and(hi32(b), hi32(a)), U32.and(lo32(b), lo32(a))" \
           "nothing -- AND is commutative" ctl
 
+echo "=== i64_dec ==="
+# The decimal printer is a FOUR-PART design -- fuel, digit, trim, sign -- and each
+# part gets one mutation, because a table where four mutations all move all eighteen
+# decimal rows cannot tell the parts apart. What separates them is WHICH rows move and,
+# for the sign, WHICH do not.
+#
+# `d_i64min` IS IN NO MUTATED SET BELOW, and that is structural rather than lucky: it is
+# the one fixture whose |value| is 2**63, which `I64` cannot hold, so `i64_dec` takes
+# the `hi:lo` fallback and never reaches the fold. Eighteen decimal rows, not nineteen.
+mutate M13 "i64_dec.go(20n," "i64_dec.go(15n," \
+          "the FUEL, at 15 instead of 20: d_i64max_d ALONE, and it is alone for a reason. 2**63-1 is NINETEEN digits, so 20 is one more than the widest value the fold can meet, and 15 truncates exactly the one row with more than fifteen digits. Every other fixture is at most thirteen, so a fuel of 15 is provably enough for them -- which is why this mutation's moved set is a single row and not a broad one."
+mutate M14 "i64_divmod(divmod_q(d), i64_of_i32(10))" "i64_divmod(divmod_q(d), i64_of_i32(9))" \
+          "the DIVISOR, in the RECURSIVE step only: the moved set is a strict SUBSET of the decimal rows, and the reason is where the mutation lands. The FIRST digit comes from the caller's divmod in i64_dec.narrow, which still divides by 10, so a one-digit magnitude prints the same either way -- d_zero, d_one, d_nine and d_neg1 are untouched by construction. What moves is the rows whose magnitude needs a SECOND division, i.e. the multi-digit ones. THE FIRST ATTEMPT AT THE DIGIT FIELD WAS REJECTED AND THE REASON IS WORTH KEEPING: swapping the remainder for the quotient, [lo32(divmod_r(d))] -> [lo32(divmod_q(d))], COMPILES and then goes LANE-RED, because after twenty divide steps the quotient's low word is far outside the character range and the native binary dies on it. A mutation that breaks the lane is a different finding from one that moves rows."
+mutate M15 "U32.is_zero(c), i64_dec.trim(t)" "U32.is_eq(c, 9), i64_dec.trim(t)" \
+          "the TRIM, testing for 9 instead of 0: all eighteen decimal rows, and NOT because the trim is load-bearing on every one but because the fuel's surplus digits ARE zeros -- so a trim that only strips 9s strips nothing and every row keeps its leading zeros. The row this is really about is d_zero_d, which is the only fixture whose most significant digit is a 0; the other seventeen move for the surplus, and the moved set says so."
+mutate M16 "i64_dec.put(i64_is_neg(x)," "i64_dec.put(Bool.not(i64_is_neg(x))," \
+          "the SIGN, inverted: all eighteen decimal rows, and the ASYMMETRY inside that set is the claim. The fourteen positive fixtures GAIN a minus (d_zero_d reads -0, which is a string CPython never produces) and the four negative fixtures LOSE theirs (d_neg1_d reads 1). A sign test that ignored the value's sign would move the same eighteen rows for a different reason, so the moved set alone does not settle it -- the VALUE line does, and the script prints it."
+mutate M17 "i64_divmod(i64_abs(x), i64_of_i32(10))" "i64_divmod(x, i64_of_i32(10))" \
+          "the MAGNITUDE, dividing the SIGNED value: the four negative rows and nothing else. It must NOT move d_i64max_d, and the reason is the pair's structure rather than luck: a positive value is its own magnitude, so dropping i64_abs is a no-op on every row above zero. This is the narrowest mutation in the table and it is the one that pins the ABSOLUTE VALUE."
+
+mutate C03 "U32.add(c, 48)" "U32.add(U32.add(c, 24), 24)" \
+          "nothing -- 24+24 is 48, so this is the same digit written twice" ctl
+
 rm -f "$BD.base" "$BN.err"
 # The tally is the point of the script. A table that only prints a moved-row list
 # reads the same whether 12 mutations are load-bearing or 0, which is exactly how
@@ -169,6 +192,6 @@ echo "=== TALLY ==="
 for v in $VERDICT; do echo "  $v"; done
 bad=$(echo "$VERDICT" | tr ' ' '\n' | grep -cE "BLIND|LEAKED|lane-red|target-not-found|lanes-disagree" || true)
 good=$(echo "$VERDICT" | tr ' ' '\n' | grep -c ":ok" || true)
-echo "helpers-i64-mutate: $good of 14 as expected, $bad not"
+echo "helpers-i64-mutate: $good of 20 as expected, $bad not"
 [ "$bad" -eq 0 ] || exit 1
 echo "helpers-i64-mutate: done"
