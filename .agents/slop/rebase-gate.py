@@ -161,6 +161,7 @@ gate-reconcile.py's control, could leave one port's native lane holding another 
 import argparse, hashlib, json, os, pathlib, re, subprocess, sys, time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import loadwatch
 import oracle_py
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -237,11 +238,19 @@ def sh(*a, timeout=1800):
 # refuses to print a count without the denominator beside it, and `import_closure` raises rather
 # than returning [] when it cannot read a file it was told to read.
 IMPORT_LINE = re.compile(r"^import\s+(\S+?\.bend)(?:\s+as\s+\S+)?", re.M)
-# `Location:` is the header bend puts above the quoted source. Two renderings are in this tree's
-# record -- `Location: t_const_bool_int_splits` (a def NAME) and `Location:\n7001 | def ...` (a
-# LINE) -- so both shapes are read and the DEF NAME is taken from the quoted `def` line, which is
-# the one thing both have.
+# `Location:` is the header bend puts above the quoted source. THREE renderings are in this tree's
+# record, and a reader that handles only one of them answers NO-DEF on real errors -- which is the
+# census's first silent pass, and it is why the ABlob incident reads as "no def named" until the
+# dotted header form is added:
+#
+#   1  Location: t_const_bool_int_splits      then `50 | def t_const_bool_int_splits() -> Bool:`
+#   2  Location: binary_n.of                  then `1028>| case O.ABlob{n}: n`     NO `def` line
+#   3  Location:\n7001 | def UOp.const_factor.seed(fuel: Nat, ...)    NO bare header at all
+#
+# So names come from BOTH the header and any `def` in the quoted lines, and the name to resolve is
+# whichever the rendering carries.
 DEF_HEAD = re.compile(r"\bdef\s+([A-Za-z_][A-Za-z0-9_.]*)")
+LOC_HEAD = re.compile(r"^Location:\s*([A-Za-z_][A-Za-z0-9_.]*)\s*$", re.M)
 
 
 def import_closure(bend):
@@ -251,7 +260,17 @@ def import_closure(bend):
   lane's substrate as smaller than it is, and every count derived from it becomes a smaller
   denominator -- which is the same species as a disagreement count with no denominator, wearing a
   smaller number."""
-  bend = pathlib.Path(bend).resolve()
+  bend = pathlib.Path(str(bend)).resolve()   # `str()`, not `Path(bend)`: rebase-gate-selftest's
+                                            # FakeBend is a test double that implements `__str__`
+                                            # and not `__fspath__`, and it DOES reach here through
+                                            # `dead_lane_is_broken`, which drives the real
+                                            # run_port. MEASURED: the selftest died with
+                                            # `TypeError: ... not 'FakeBend'` before this line
+                                            # existed, so the double's own docstring -- "It is never
+                                            # read -- run_port is replaced" -- is true of the six
+                                            # synthetic states and FALSE of the one real lane, and
+                                            # coercing here is narrower than teaching the double to
+                                            # be a Path.
   seen, stack = set(), [bend]
   while stack:
     cur = stack.pop()
@@ -296,8 +315,11 @@ def error_site(err, closure):
   Resolved by SEARCHING the closure for the def header, not by trusting any file path in the
   message: measured, bend prints no file, and the one rendering that prints a line number prints
   the line number IN THE IMPORTED FILE, which the reader has no way to place. An unresolved name
-  is returned as a hit with file None, and the caller prints the denominator -- a name bend
-  invented, or a file that has since changed, is a finding and not a silent success."""
+  is returned with file None, and the caller prints the denominator -- a name bend invented, a def
+  that has since been deleted, or a file that has since changed is a FINDING, not a silent
+  success.  Two of those three are this project's own recorded failures: `t_const_bool_int_splits`
+  and `UOp.const_factor.seed` are each named by a stored sweep's error and are in no file on the
+  tree, and `lanedeath-census.py` finds both with no prose at all."""
   hits, found = [], {}
   for p in closure:
     try:
@@ -308,11 +330,11 @@ def error_site(err, closure):
       m = DEF_HEAD.search(ln)
       if m:
         found.setdefault(m.group(1), (p, i))
-  for name in DEF_HEAD.findall(err or ""):
-    if name in found:
-      hits.append((name, port_key(found[name][0]), found[name][1]))
-    else:
-      hits.append((name, None, None))
+  # Header first, then quoted `def`s, de-duplicated IN ORDER: the header is what bend itself named
+  # as the location, and a quoted `def` can be context that mentions something else entirely.
+  for name in dict.fromkeys(LOC_HEAD.findall(err or "") + DEF_HEAD.findall(err or "")):
+    hits.append((name, port_key(found[name][0]), found[name][1]) if name in found
+                else (name, None, None))
   return hits
 
 
@@ -331,14 +353,20 @@ def substrate_line(bend, manifest, moved=None):
   if not n:
     return f"    NO SUBSTRATE: the closure of {bend} is empty, so no revision can be named"
   body = "\n".join(f"      {h}  {sz:>8}B  {p}" for p, h, sz in manifest)
-  tail = ""
-  if moved:
-    tail = (f"    ⚠ {len(moved['moved'])} of {n} closure file(s) CHANGED WHILE THIS LANE RAN: "
-            f"{', '.join(moved['moved'])}"
-            + (f"; APPEARED: {', '.join(moved['added'])}" if moved["added"] else "")
-            + (f"; VANISHED: {', '.join(moved['gone'])}" if moved["gone"] else "")
-            + ". The lane did not compile one revision and the tree is not that revision")
-  return f"{head}\n{body}\n{tail}"
+  # A `drift` DICT is truthy even when it is empty -- all three of its keys are empty lists -- so
+  # the zero case printed a ⚠ on every green verdict.  Measured, on `--port uop/spec.bend`:
+  # "⚠ 0 of 5 closure file(s) CHANGED WHILE THIS LANE RAN".  A warning that fires on every clean run
+  # is a warning nobody reads, and this one would have trained the reader to skip the line that
+  # matters.  The zero is still PRINTED, with its denominator, because "nothing moved" over 5 files
+  # is the sentence that makes the non-zero one mean something.
+  changed = (moved or {}).get("moved") or (moved or {}).get("added") or (moved or {}).get("gone") or []
+  if not changed:
+    return (f"{head}\n{body}\n    0 of {n} closure file(s) changed while this lane ran -- the "
+            f"substrate held still for the whole of it")
+  return (f"{head}\n{body}\n"
+          f"    ⚠ {len(changed)} of {n} closure file(s) CHANGED WHILE THIS LANE RAN: "
+          f"{', '.join(changed)}. The lane did not compile one revision and the tree is not that "
+          f"revision")
 
 
 # THE THREE ROW SHAPES the oracles in this tree ACTUALLY print. Two of the three were unreadable
@@ -657,11 +685,19 @@ def lane(argv, tries=1):
 
   `tries` counts ATTEMPTS, not retries, and is recorded on the lane as `row_tries` so a GUARD 2
   verdict can say "zero rows after 2 attempts" instead of "zero rows", which are different
-  claims about the same number."""
+  claims about the same number.
+
+  ⚠ `row_secs` IS RECORDED BECAUSE A STARVED LANE IS THE SLOW LANE, and elapsed time is the one
+  observable a starved run cannot hide. 75 s for 79 rows is not a slow pass, it is a truncated
+  run; without the seconds, `row_counts` alone cannot tell a reader which of the two they are
+  looking at, because 79 is also a plausible row count for a small port."""
   info, text = {}, ""
   for attempt in range(1, tries + 1):
+    t0 = time.monotonic()
     r = sh(*argv)
-    info, text = {"rc": r.returncode, "err": r.stderr[-600:], "row_tries": attempt}, r.stdout
+    info = {"rc": r.returncode, "err": r.stderr[-600:], "row_tries": attempt,
+            "row_secs": round(time.monotonic() - t0, 2), "row_load1": round(os.getloadavg()[0], 2)}
+    text = r.stdout
     if rows(text) or attempt == tries:
       break
     time.sleep(BEND_ROW_BACKOFF)
@@ -692,7 +728,7 @@ def run_port(bend, oracle, native=True):
   closure = import_closure(bend)
   chk = sh("./bin/bend", str(bend), "--check-only")
   first = (chk.stdout.strip().splitlines() or [""])[0]
-  lanes["check"] = {"rc": chk.returncode, "first": first}
+  lanes["check"] = {"rc": chk.returncode, "first": first, "row_load1": round(os.getloadavg()[0], 2)}
 
   lanes["interpreted"], text = lane(("./bin/bend", str(bend)), BEND_ROW_TRIES)
   r["interpreted"] = rows(text)
@@ -729,9 +765,12 @@ def run_port(bend, oracle, native=True):
       lanes[key] = {"rc": 127, "err": "ORACLE SCRIPT MISSING"}
       continue
     e = dict(os.environ, DEV="NULL")
+    t0 = time.monotonic()
     c = subprocess.run([ORACLE_PY, *argv], cwd=REPO, capture_output=True, text=True,
                        env=e, timeout=1800)
-    lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:]}
+    lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:],
+                  "row_load1": round(os.getloadavg()[0], 2),
+                  "row_secs": round(time.monotonic() - t0, 2)}
     r[key] = rows(c.stdout)
   # AFTER every lane, and compared. `substrate` is a LANE ENTRY, not a verdict field, so it
   # reaches the reader on every exit path out of verdict() including the ones that return before
@@ -741,6 +780,20 @@ def run_port(bend, oracle, native=True):
   lanes["substrate"] = {"rc": 0, "manifest": before, "drift": moved,
                         "sites": {k: error_site(l.get("err", ""), closure)
                                   for k, l in lanes.items() if k != "check" and l["rc"] != 0}}
+  # ⚠ THE LOAD, AS A LANE ENTRY, AND IT IS NOT OPTIONAL. Measured 2026-10-04 on
+  # `tinybendygrad/runtime/support/nv/nvdev.bend`: 787 rows in 0.5 s on an idle machine
+  # (NV7, notes/bend2-constraints.md line 12828) and **79 rows in 75 s at load1=10.01 with 2 bend
+  # processes resident** (.agents/slop/lane-load-measurements.tsv, cell A). Same file, same md5. So
+  # `row_counts` below is a function of the run queue as well as of the port, and a count printed
+  # without this entry cannot be read: 79 is not a smaller graph, it is the same graph still being
+  # printed when the observer stopped looking.
+  #
+  # It is a LANE ENTRY for the same reason `substrate` is, and the same reason the selftest's
+  # run_port stubs do not have to learn a third return value: `lanes` already carries `rc`, so a
+  # `rc: 0` entry is invisible to GUARD 3's `died` scan and to the row-count loop, which reads
+  # `now`, not `lanes`. The load reaches the verdict through stamp(), beside the substrate lift.
+  lanes["load"] = {"rc": 0, "snapshot": loadwatch.snapshot(),
+                   "per_lane": {k: v.get("row_secs", 0) for k, v in lanes.items() if v.get("rc") == 0}}
   return lanes, r
 
 
@@ -1082,9 +1135,18 @@ def load_baseline():
 # is nothing to act on at all.
 CAUSE_LANE_DEATH, CAUSE_ZERO_ROWS, CAUSE_INCOMPARABLE = "LANE-DEATH", "ZERO-ROWS", "INCOMPARABLE"
 CAUSE_DISAGREE, CAUSE_ROWS_LOST, CAUSE_UNWIRED, CAUSE_NONE = "DISAGREE", "ROWS-LOST", "UNWIRED", "-"
+# ⚠ STARVED IS THE SIXTEENTH INSTRUMENT FAILURE, and it is the FIRST one this file can detect
+# rather than only explain after the fact. Its class is MEASUREMENT, not DEFECT and not COVERAGE:
+# the port may be perfectly correct and the measurement short. The distinction is not cosmetic --
+# `ROWS-LOST` is a DEFECT, so a sweep that reported four starved lanes as ROWS-LOST would put
+# four ports on the defect list, and "a whole-tree sweep reporting BROKEN=5 where four were
+# substrate rather than port" is a claim about exactly that arithmetic. It is checkable: STARVED
+# requires GUARD 1 to have fired (rows were lost) AND the run's own load to be at or above the
+# measured floor; ROWS-LOST is what GUARD 1 fires at a load below it.
+CAUSE_STARVED = "STARVED"
 CLASS_OF = {CAUSE_DISAGREE: "DEFECT", CAUSE_ROWS_LOST: "DEFECT",
             CAUSE_INCOMPARABLE: "COVERAGE", CAUSE_ZERO_ROWS: "COVERAGE", CAUSE_UNWIRED: "ABSENCE",
-            CAUSE_LANE_DEATH: "INSTRUMENT", CAUSE_NONE: "OK"}
+            CAUSE_LANE_DEATH: "INSTRUMENT", CAUSE_STARVED: "MEASUREMENT", CAUSE_NONE: "OK"}
 
 
 def classify(v):
@@ -1165,6 +1227,23 @@ def classify(v):
                f"twice by a per-pair count, so this number and the selftest's are ONE fact with two "
                f"denominators)" if inst > len(names) else "")
             + ". This is the only BROKEN cause that is a statement about the PORT")
+  if loadwatch.starved_at((v.get("load") or {}).get("load1")) and "LOST ROWS" in v.get("why", ""):
+    # ⚠ BEFORE `ROWS-LOST`, and the ORDER IS THE WHOLE POINT. GUARD 1 fires on
+    # `len(have) < len(was)` and it cannot tell a port that lost rows from a lane that was
+    # starved before it printed them -- both are "fewer rows than the baseline holds". MEASURED:
+    # on nvdev.bend, 787 recorded rows became 79 at load1=10.01, a 90% shortfall with the port
+    # untouched. Before this branch, every one of those was a DEFECT on a port file.
+    #
+    # It is deliberately NARROW. Only GUARD 1 is reclassified, because only GUARD 1 has a
+    # demonstrated mechanism: rows the baseline holds are absent. A DISAGREE under load is NOT
+    # reclassified -- starvation shrinks `compared_names`, which manufactures disagreements, but
+    # a real defect can hide under the same load, and calling that MEASUREMENT would launder a
+    # red. Those stay DEFECT and are marked instead. A MEASUREMENT verdict that swallowed real
+    # defects would be the same class of bug as the "mutation baseline that WAS the mutant".
+    return (CAUSE_STARVED, CLASS_OF[CAUSE_STARVED],
+            f"GUARD 1 fired at {loadwatch.stamp(**v['load'])}, and a starved lane produces a "
+            f"PREFIX: " + v["why"] + ". The rows are missing because the run was short, not "
+            "because the port lost them -- MEASUREMENT, not a defect in the .bend file")
   if "LOST ROWS" in v.get("why", ""):
     return (CAUSE_ROWS_LOST, CLASS_OF[CAUSE_ROWS_LOST],
             "GUARD 1 absolute count: " + v["why"])
@@ -1180,9 +1259,43 @@ def classify(v):
 
 def stamp(v):
   """Attach cause/class/reason to a verdict IN PLACE, so every producer -- main()'s loop,
-  never_wired(), and gate_port()'s own post-processing -- reports the same three fields."""
+  never_wired(), and gate_port()'s own post-processing -- reports the same three fields.
+
+  ⚠ AND THE PROVENANCE FIELDS ARE LIFTED OUT OF `lanes` FIRST, before classify() runs, and that
+  ORDER IS THE WHOLE FIX. They are recorded as a LANE ENTRY (`lanes["substrate"]`) because a
+  verdict that never ran a lane has no closure to describe, and a lane entry is invisible to every
+  reader of `v`: the printed verdict loops over `row_counts`, `disagreements` and
+  `hunks_examined`, none of which mention it. Lifting them AFTER classify() was wrong and was
+  MEASURED wrong -- `classify()` reads `error_sites` to say whether a lane's error lives in the
+  port or in the substrate, so with the lift ordered second it saw `None`, printed no site at all,
+  and the control cell that exists to catch exactly that passed a verdict whose text did not
+  mention the substrate once. classify() reads these fields; therefore they are lifted first.
+  """
+  sub = (v.get("lanes") or {}).get("substrate")
+  if sub:
+    v["substrate"], v["substrate_drift"], v["error_sites"] = (
+      sub.get("manifest"), sub.get("drift"), sub.get("sites"))
+  # THE LOAD, LIFTED BESIDE THE SUBSTRATE AND FOR THE SAME REASON: classify() must be able to
+  # read it, and a field only main()'s print loop can see is a field no guard can consult. This
+  # is the second provenance pair this function lifts, and the ordering argument is identical --
+  # the lift happens BEFORE classify(), never after.
+  ld = (v.get("lanes") or {}).get("load")
+  if ld:
+    v["load"] = ld.get("snapshot") or {}
   cause, cls, why = classify(v)
   v["cause"], v["class"], v["cause_reason"] = cause, cls, why
+  if loadwatch.starved_at((v.get("load") or {}).get("load1")):
+    # ⚠ EVERY VERDICT ABOVE THE MARK IS MARKED, INCLUDING THE GREEN ONES. A starved run can be
+    # reported UNCHANGED -- a starved lane whose rows all still agree is not a smaller graph, it
+    # is a smaller COMPARISON that happened not to disagree -- and an unmarked UNCHANGED at
+    # load1=30 is exactly the plausible-looking number this whole file exists to distrust.
+    # `STARVED` is appended to `why`, which every exit path out of this gate prints, rather than
+    # to a field only the JSON consumer reads.
+    v["mark"] = "STARVED"
+    v["why"] = (f"{v['why']}  || STARVED: {loadwatch.stamp(**v['load'])} -- a run at this load "
+                f"produces a PREFIX of the row set, not the row set (measured: 787 rows in 0.50 s "
+                f"idle vs 79 rows in 75.0 s at load1=10.01 on the same file), so every count on "
+                f"this verdict is a lower bound and every agreement above is a lower bound too")
   return v
 
 
@@ -1457,7 +1570,12 @@ def main():
     targets = [(port, (a.oracle,))]
 
   if a.record:
-    rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}}, 0
+    # ⚠ THE RECORDING CARRIES ITS LOAD. This is the only mechanism that stops the NEXT baseline
+    # from being born without one: every baseline recorded before 2026-10-04 has no load beside
+    # its row counts, and the census in .agents/slop/load-census.py finds 114 such recorded lane
+    # counts, 0 of them load-qualified. A new one written without a load would be a new instance
+    # of the defect this branch exists to end.
+    rev, doc, skipped = upstream_of(targets, plan), {"lanes": {}, "hunks": {}, "load": loadwatch.snapshot()}, 0
     for port, oracles in targets:
       bend = REPO / port
       if not oracles or not bend.exists():
@@ -1505,18 +1623,36 @@ def main():
     # are not six port defects, and `causes` says how many are which without re-deriving it.
     print(json.dumps({"oracle_py": ORACLE_PY, "tinygrad": TINYGRAD_FROM,
                       "python": PY_VERSION, "tally": tally, "causes": causes,
-                      "verdicts": verdicts}, indent=2))
+                      "load": loadwatch.snapshot(),
+                      "revision": revision_id(), "verdicts": verdicts}, indent=2))
   else:
     print(PY_PROVENANCE)
+    # ⚠ THE LOAD OF THE WHOLE RUN, ONCE, BEFORE THE FIRST VERDICT, WITH ITS THRESHOLD. It goes
+    # here rather than only inside each verdict because the TALLY at the bottom of this output is
+    # itself a count of lane-derived verdicts, and it is the number most likely to be quoted out
+    # of context. A reader who copies `TALLY BROKEN 6` without the line above it is repeating the
+    # defect this header exists to close. The threshold is printed with it because a mark with an
+    # unstated cut-off is not a mark.
+    print(f"LOAD  {loadwatch.stamp()}")
     for v in verdicts:
-      print(f"{v['state']:<12} {v['port']}")
+      print(f"{v['state']:<12} {v['port']}" + (f"  [{v['mark']}]" if v.get("mark") else ""))
       # THE CAUSE, ON THE LINE EVERY READER QUOTES. `BROKEN` alone is one word for five things and
       # only one of the five is a defect in a .bend file.
       print(f"             cause={v['cause']} [{v['class']}]")
       print(f"             {v['why']}")
       print(f"             CAUSE: {v['cause_reason']}")
       for k, n in v.get("row_counts", {}).items():
-        print(f"               rows {k}={n}")
+        # ⚠ EVERY ROW COUNT CARRIES ITS LOAD, ON ITS OWN LINE. This is the graph differ's
+        # `graphs= nodes= fields= shared-cores=` pattern extended one step further: those numbers
+        # state a denominator next to the claim, and a row count's second dimension is the run
+        # queue. `rows interpreted=79` and `rows interpreted=79` under load1=0.4 are different
+        # measurements of the same file and print differently here on purpose.
+        ln = (v.get("lanes") or {}).get(k, {})
+        secs = ln.get("row_secs")
+        print(f"               rows {k}={n}"
+              + (f"  (lane load1={ln['row_load1']:.2f}, {secs:.1f}s)"
+                 if ln.get("row_load1") is not None and secs is not None else "")
+              + (f"  [run {loadwatch.stamp(**v['load'])}]" if v.get("load") else ""))
       for m in v.get("moved", [])[:8]:
         print(f"               MOVED {m[1]}: {m[2]!r} -> {m[3]!r}")
       # THE ROWS THAT DISAGREE, NAMED. This line is why the planted-disagreement control can be
@@ -1555,7 +1691,47 @@ def main():
     brk = f"  [{' '.join(f'{k}={v}' for k, v in sorted(causes.items()) if k != CAUSE_NONE)}]" \
       if tally.get(BROKEN) else ""
     print("\nTALLY " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items()))
-          + (f"\n      BROKEN={tally[BROKEN]} BY CAUSE{brk}" if tally.get(BROKEN) else ""))
+          + (f"\n      BROKEN={tally[BROKEN]} BY CAUSE{brk}" if tally.get(BROKEN) else "")
+          + (f"\n      taken at {loadwatch.stamp()}" if any(v.get("mark") for v in verdicts) else "")
+          + (f"\n      {sum(1 for v in verdicts if v.get('mark'))} of {len(verdicts)} verdict(s) "
+             f"were taken at or above the mark and their counts are LOWER BOUNDS, not row sets"
+             if any(v.get("mark") for v in verdicts) else ""))
+    # ⚠ EVERY NON-ZERO EXIT NAMES THE REVISIONS IT RAN AGAINST, ONCE, WITH THE DENOMINATOR.
+    # Before this block a lane-death said which PORT and nothing about which FILE the error came
+    # from or which REVISION anything was, so four victims of one in-flight edit and four
+    # independent defects printed the same bytes. The summary names the distinct FILES the failing
+    # lanes' errors resolve to: ONE name here is the whole claim, and it is counted over a printed
+    # list rather than typed.
+    if tally.get(BROKEN):
+      sites, drifts = {}, []
+      for v in verdicts:
+        for lane, hits in (v.get("error_sites") or {}).items():
+          for name, where, _line in hits:
+            sites.setdefault(where or f"<NOT ON THE TREE: def {name}>", set()).add(v["port"])
+        d = v.get("substrate_drift") or {}
+        if d.get("moved") or d.get("added") or d.get("gone"):
+          drifts.append(f"{v['port']}: "
+                        f"{', '.join(d.get('moved', []) + d.get('added', []) + d.get('gone', []))}")
+      print(f"\n      EXIT 1. working copy {revision_id()}")
+      print(f"      {loadwatch.stamp()}  -- every row count in this exit block is a LOWER BOUND "
+            f"at this load; a port listed as BROKEN below may be short rows, not wrong ones")
+      if sites:
+        print(f"      {len(sites)} distinct FILE(S) the failing lanes' errors resolve to, over "
+              f"{sum(len(v) for v in sites.values())} lane(s):")
+        for where, ports in sorted(sites.items()):
+          print(f"        {where}   <- {len(ports)} lane(s): {', '.join(sorted(ports))}")
+      else:
+        print(f"      0 of {len(verdicts)} BROKEN port(s) had an error naming a def -- so the "
+              f"error text settled nothing about where the defect is")
+      if drifts:
+        print(f"      {len(drifts)} of {len(verdicts)} port(s) compiled a tree that MOVED under "
+              f"them:")
+        for d in drifts:
+          print(f"        {d}")
+      else:
+        print(f"      0 of {len(verdicts)} port(s) saw their import closure change DURING the run, "
+              f"so no death here is substrate drift -- one edit that PREDATES the run is still "
+              f"consistent with every number above, and the FILE list is what settles it")
 
   return 1 if tally.get(BROKEN) else 0
 
