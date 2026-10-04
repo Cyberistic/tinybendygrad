@@ -116,7 +116,7 @@ here rather than in one call site:
                                                  the two deliberately-dead lanes on the real
                                                  tree, plus the plan contract in BOTH shapes
 """
-import argparse, json, os, pathlib, subprocess, sys
+import argparse, json, os, pathlib, subprocess, sys, time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import oracle_py
@@ -124,6 +124,7 @@ import oracle_py
 REPO = pathlib.Path(__file__).resolve().parents[2]
 SLOP = REPO / ".agents" / "slop"
 BASELINE = SLOP / "rebase" / "baseline.json"
+NATIVE_DIR = pathlib.Path("/tmp/rebase-gate")
 
 # The interpreter that runs the CPython lanes, PINNED -- see oracle_py.py's header for the
 # measurement that forced it. Resolved once, at import, so a harness launched by an
@@ -430,6 +431,63 @@ def ports_of(src, plan):
   return out
 
 
+def native_bin(bend):
+  """Where the COMPILED lane's binary goes. ONE port in, ONE path out.
+
+  ⚠ IT WAS `/tmp/rebase-gate/{bend.stem}.bin`, AND A STEM IS NOT A KEY. 131 .bend files carry
+  110 distinct stems -- `__init__` x14, `dtype` x3, and `spec`/`op`/`memory`/`movement`/`ip`/`elf`
+  x2 each (MEASURED, `find tinybendygrad -name '*.bend'`), so fourteen ports wrote one path, and
+  run_port UNLINKED it and then EXECUTED whatever was at it. Two consequences, and only one of
+  them is a warning sign:
+
+    * a lane could measure ANOTHER PORT's binary. Not a silent pass: GUARD 4 compares EVERY lane
+      pair, so interpreted-vs-native is checked and the swap surfaces as BROKEN "N row(s)
+      disagree" -- a MANUFACTURED red over a correct port, which is the same species as the
+      reader bug this header records twice (444 disagreements on a clean pair, 222 on another).
+      Loud is not the same as correct, and a red that names no port's own error is the reader's
+      problem to disprove one port at a time.
+    * 33 stale binaries were on disk under names that do not say which port wrote them, so nothing
+      on that path was ever evidence about anything.
+
+  Keyed on port_key(bend) -- the ONE spelling of a port's name and the same key baseline.json
+  uses -- and on the pid, so two concurrent runs of the SAME port cannot collide either. The
+  directory mirrors the path with `/` -> `__`, so the artefact still says which port it is.
+  """
+  d = NATIVE_DIR / port_key(bend).replace("/", "__")
+  d.mkdir(parents=True, exist_ok=True)
+  return d / f"{os.getpid()}.bin"
+
+
+# A bend lane that parses to NO ROWS is run AGAIN, and the verdict says how many attempts it took.
+# bend's machine stack overflows on roughly 1 run in 20 and prints zero rows with a zero exit
+# status, so ONE empty bend lane is a coin flip and GUARD 2 would report it as the hour-long bug
+# GUARD 2 exists to catch. This is rebase-scan-oracles.py's bend_rows() rule (one re-run) applied
+# at the one place that can otherwise be fooled. THE BACKOFF IS NOT COSMETIC: the failures are
+# depth-dependent, so an immediate re-run collides with the still-deep stack of the first.
+#
+# ONLY THE BEND LANES. A CPython oracle that exits 0 having printed no `name=value` row is a
+# FAILED ORACLE, which is GUARD 2's own words, and re-running it cannot change the answer -- the
+# one wired instance, dtype_tables.py, prints 14,774 TSV lines and is wired on purpose to read as
+# zero, so retrying it would spend two extra oracle launches per sweep to learn nothing.
+BEND_ROW_TRIES, BEND_ROW_BACKOFF = 2, 20
+
+
+def lane(argv, tries=1):
+  """(lane info, raw stdout) for one lane, RE-RUN while it produces no rows.
+
+  `tries` counts ATTEMPTS, not retries, and is recorded on the lane as `row_tries` so a GUARD 2
+  verdict can say "zero rows after 2 attempts" instead of "zero rows", which are different
+  claims about the same number."""
+  info, text = {}, ""
+  for attempt in range(1, tries + 1):
+    r = sh(*argv)
+    info, text = {"rc": r.returncode, "err": r.stderr[-600:], "row_tries": attempt}, r.stdout
+    if rows(text) or attempt == tries:
+      break
+    time.sleep(BEND_ROW_BACKOFF)
+  return info, text
+
+
 def run_port(bend, oracle, native=True):
   """All lanes, no cache. Returns (state_detail, rows_by_lane).
 
@@ -442,22 +500,18 @@ def run_port(bend, oracle, native=True):
   first = (chk.stdout.strip().splitlines() or [""])[0]
   lanes["check"] = {"rc": chk.returncode, "first": first}
 
-  interp = sh("./bin/bend", str(bend))
-  lanes["interpreted"] = {"rc": interp.returncode, "err": interp.stderr[-600:]}
-  r["interpreted"] = rows(interp.stdout)
+  lanes["interpreted"], text = lane(("./bin/bend", str(bend)), BEND_ROW_TRIES)
+  r["interpreted"] = rows(text)
 
   if native:
-    out = pathlib.Path("/tmp/rebase-gate") / f"{bend.stem}.bin"
-    out.parent.mkdir(exist_ok=True)
-    out.unlink(missing_ok=True)
+    out = native_bin(bend)
     b = sh("./bin/bend", str(bend), "-o", str(out))
     if b.returncode or not out.exists():
       lanes["native"] = {"rc": b.returncode or 1, "err": b.stderr[-600:]}
     else:
       out.chmod(0o755)
-      n = sh(str(out))
-      lanes["native"] = {"rc": n.returncode, "err": n.stderr[-600:]}
-      r["native"] = rows(n.stdout)
+      lanes["native"], text = lane((str(out),), BEND_ROW_TRIES)
+      r["native"] = rows(text)
 
   # GUARD 3's evidence. A lane is keyed `cpython:<STEM>`, which is NOT unique: two oracles
   # with the same stem collide and the second SILENTLY overwrites the first lane's rows, so a
@@ -581,7 +635,10 @@ def gate_port(bend, oracles, base, native=True, files=None):
     v["why"] = f"zero rows moved; {v['hunks_status']}"
     v["hunks_note"] = ("the recorded hunks did not name a file, so the diff was recomputed "
                        f"from the plan for {', '.join(files)}")
-  return v, now
+  # STAMPED HERE, AT THE ONE ENTRY POINT, so main()'s loop, never_wired()'s early return and
+  # rebase-gate-selftest.py's direct calls all report the same cause and class. A verdict that
+  # carries its cause only on the main() path is a verdict two readers classify differently.
+  return stamp(v), now
 
 
 def verdict(bend, oracle, base, hunks, native=True):
@@ -611,11 +668,15 @@ def verdict(bend, oracle, base, hunks, native=True):
   empty = [k for k, x in now.items() if not x]
   if empty:
     # Naming the baseline count here is what lets the 210 -> 0 case say
-    # "TO ZERO" instead of the vague "produced zero rows" -- the number is the evidence.
+    # "TO ZERO" instead of the vague "produced zero rows" -- the number is the evidence. So is the
+    # ATTEMPT COUNT: "zero rows" and "zero rows after 2 attempts 20s apart" are different claims,
+    # and only the second one is a property of the port.
     was = {k: len((base or {}).get(k, {})) for k in empty}
+    tries = {k: lanes.get(k, {}).get("row_tries", 1) for k in empty}
     v["state"] = BROKEN
+    v["state_tries"] = tries
     v["why"] = (f"lane(s) produced ZERO rows: "
-                f"{', '.join(f'{k} (baseline {n})' for k, n in was.items())}. "
+                f"{', '.join(f'{k} (baseline {n}, after {tries[k]} attempt(s))' for k, n in was.items())}. "
                 f"An oracle that emits no `name=value` rows compared nothing and agrees "
                 f"with nothing"
                 + ("  (TO ZERO -- the failure that went unnoticed for an hour)"
@@ -748,6 +809,116 @@ def verdict(bend, oracle, base, hunks, native=True):
 
 def load_baseline():
   return json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
+
+
+# ⚠ "BROKEN" IS ONE WORD FOR FIVE THINGS, AND A LIST OF THEM IS UNREADABLE WHEN IT IS.
+# A reader shown `BROKEN 6` finds six port defects and fixes none of them, because the defect is
+# in none of them: `uop/ops.bend` changed `ABlob{n: U32}` to `ABlob{bs: List<&2,U32>}` at 04:18
+# mid-sweep and five unrelated ports printed the identical `expected : U32 / observed :
+# List<&2,U32> Location: binary_n.of` -- five red entries, one edit, zero of them the cause.
+#
+# So every verdict carries a CAUSE, a CLASS, and a DENOMINATOR, and the TALLY line reports the
+# causes rather than only their sum. The five, and what each one is a statement about:
+#
+#   LANE-DEATH   a lane did not run (rc != 0, missing oracle, collided lane name).
+#                A statement about the INSTRUMENT or the machine, not about the port.
+#   ZERO-ROWS    a lane ran, exited 0, and emitted nothing this reader can see. The header's own
+#                GUARD 2 calls this a FAILED ORACLE, and it is still BROKEN -- but it is a
+#                statement about the ORACLE or the WIRE, and `row_tries` says whether one attempt
+#                or two produced the silence.
+#   INCOMPARABLE two lanes share NO row name. THE MOST MISREAD ENTRY IN THE LIST, because it
+#                reads like "they disagree" and it means the opposite: nothing was compared, so
+#                nothing can disagree. It is a COVERAGE fact about the wiring -- `multi.bend`'s
+#                `t_`-prefixed names against an unprefixed oracle -- and no edit to any port
+#                changes it.
+#   DISAGREE     both lanes ran, both printed rows, and a shared row's VALUES differ. THE ONLY
+#                CAUSE THAT IS A STATEMENT ABOUT THE PORT, and the only one whose fix is in a
+#                .bend file.
+#   ROWS-LOST    the live row set is SMALLER than the recorded one. GUARD 1, and the one a
+#                relative check cannot see.
+#   UNWIRED      no oracle in BASE_ORACLES, or no .bend on disk. BROKEN is UNREACHABLE for such
+#                a port BY CONSTRUCTION, so a BROKEN naming it came from a DIFFERENT wiring --
+#                which is the sentence that catches a quoted verdict pasted from another run.
+#   NO-CAUSE     compared clean; the state is UNCHANGED / RE-PORTED / AGREE-UNRECORDED.
+#
+# CLASS is what to act on and is derived from CAUSE, not chosen per entry: DEFECT means fix a
+# .bend, COVERAGE means fix a wire, INSTRUMENT means re-run before believing, ABSENCE means there
+# is nothing to act on at all.
+CAUSE_LANE_DEATH, CAUSE_ZERO_ROWS, CAUSE_INCOMPARABLE = "LANE-DEATH", "ZERO-ROWS", "INCOMPARABLE"
+CAUSE_DISAGREE, CAUSE_ROWS_LOST, CAUSE_UNWIRED, CAUSE_NONE = "DISAGREE", "ROWS-LOST", "UNWIRED", "-"
+CLASS_OF = {CAUSE_DISAGREE: "DEFECT", CAUSE_ROWS_LOST: "DEFECT",
+            CAUSE_INCOMPARABLE: "COVERAGE", CAUSE_ZERO_ROWS: "COVERAGE", CAUSE_UNWIRED: "ABSENCE",
+            CAUSE_LANE_DEATH: "INSTRUMENT", CAUSE_NONE: "OK"}
+
+
+def classify(v):
+  """(cause, class, reason) for ONE verdict, read from the verdict's STRUCTURE.
+
+  Read from the fields verdict() stamps rather than by substring-matching its English, because a
+  stale reason is worse than no reason: `renderer_oracle.py cstyle` was named as BROKEN for hours
+  after it stopped exiting 1, and a message that changes wording must not silently reclassify a
+  defect. `lanes` and `row_counts` are consulted for the guards that return without stamping a
+  field, in the SAME ORDER verdict() runs them, so a verdict cannot be classified by a guard that
+  never fired.
+
+  THE DENOMINATOR IS IN EVERY REASON, and a disagreement count without one is the number this
+  project has paid for most often: "2 row(s) disagree" over "2 of 444 compared" and "2 of 2" are
+  different sentences and the reader cannot tell them apart from the count.
+  """
+  lanes, rows_ = v["lanes"], v.get("row_counts", {})
+  died = sorted(k for k, l in lanes.items() if l["rc"] != 0 and k != "check")
+  if died:
+    detail = "; ".join(f"{k} rc={lanes[k]['rc']}: {' '.join(lanes[k].get('err', '').split())[:90]}"
+                       for k in died)
+    zero = [k for k in died if not rows_.get(k)]
+    return (CAUSE_LANE_DEATH, CLASS_OF[CAUSE_LANE_DEATH],
+            f"{len(died)} of {len(lanes) - 1} runnable lane(s) did not run: {detail}"
+            + ("  (and the dead lane emitted zero rows too, so which finding fired is the ORDER, "
+               "not the port)" if zero else ""))
+  empty = sorted(k for k, x in rows_.items() if not x)
+  if empty:
+    tries = v.get("state_tries") or {k: lanes.get(k, {}).get("row_tries", 1) for k in empty}
+    return (CAUSE_ZERO_ROWS, CLASS_OF[CAUSE_ZERO_ROWS],
+            f"{len(empty)} of {len(rows_)} lane(s) emitted no row: "
+            + ", ".join(f"{k} (0 rows after {tries.get(k, 1)} attempt(s))" for k in empty)
+            + ". An oracle that emits nothing compared nothing and agrees with nothing. This is "
+              "GUARD 2 and it is about the ORACLE, not the port")
+  if v.get("uncompared_pairs"):
+    pairs = v["uncompared_pairs"]
+    return (CAUSE_INCOMPARABLE, CLASS_OF[CAUSE_INCOMPARABLE],
+            f"{len(pairs)} of "
+            f"{len(rows_) * (len(rows_) - 1) // 2} lane pair(s) share NO row name: "
+            + ", ".join(f"`{a}` vs `{b}`" for a, b, _ in pairs)
+            + ". NOTHING was compared, so nothing disagrees -- this is a COVERAGE fact about the "
+              "wiring and no port edit can move it")
+  if v.get("disagreements"):
+    pairs = v.get("compared_pairs") or []
+    tot = sum(n for _, _, n in pairs)
+    names = ", ".join(repr(d[2]) for d in v["disagreements"][:6])
+    return (CAUSE_DISAGREE, CLASS_OF[CAUSE_DISAGREE],
+            f"{len(v['disagreements'])} of {tot} shared row name(s) across {len(pairs)} lane "
+            f"pair(s) DISAGREE with CPython: {names}"
+            + (f" (+{len(v['disagreements']) - 6} more)" if len(v["disagreements"]) > 6 else "")
+            + ". This is the only BROKEN cause that is a statement about the PORT")
+  if "LOST ROWS" in v.get("why", ""):
+    return (CAUSE_ROWS_LOST, CLASS_OF[CAUSE_ROWS_LOST],
+            "GUARD 1 absolute count: " + v["why"])
+  if "NO SUCH FILE" in v.get("why", "") or "no oracle wired" in v.get("why", ""):
+    return (CAUSE_UNWIRED, CLASS_OF[CAUSE_UNWIRED],
+            v["why"] + ". BROKEN is UNREACHABLE for an unwired port BY CONSTRUCTION, so a BROKEN "
+                       "naming it came from a DIFFERENT wiring")
+  tot = sum(n for _, _, n in v.get("compared_pairs", []))
+  return (CAUSE_NONE, CLASS_OF[CAUSE_NONE],
+          f"{tot} shared row name(s) across {len(v.get('compared_pairs', []))} lane pair(s), "
+          "every one agreeing")
+
+
+def stamp(v):
+  """Attach cause/class/reason to a verdict IN PLACE, so every producer -- main()'s loop,
+  never_wired(), and gate_port()'s own post-processing -- reports the same three fields."""
+  cause, cls, why = classify(v)
+  v["cause"], v["class"], v["cause_reason"] = cause, cls, why
+  return v
 
 
 def targets_of(port, srcs, plan):
@@ -896,13 +1067,13 @@ def never_wired(port, bend, oracles):
   if not bend.exists():
     # Named rather than `continue`d: a target that is not a file is not a pass, and a
     # silently dropped port is the exact shape that hid here for an hour.
-    return {"port": port, "state": NOT_STARTED,
-            "why": f"NO SUCH FILE: {bend}. The plan maps an upstream file to a port path that "
-                   "does not exist; nothing was checked"}
+    return stamp({"port": port, "state": NOT_STARTED,
+                  "why": f"NO SUCH FILE: {bend}. The plan maps an upstream file to a port path that "
+                         "does not exist; nothing was checked"})
   if not oracles:
-    return {"port": port, "state": NOT_STARTED,
-            "why": f"no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not "
-                   f"AGREE-UNRECORDED either: {port} has no oracle entry, not a missing recording"}
+    return stamp({"port": port, "state": NOT_STARTED,
+                  "why": f"no oracle wired in BASE_ORACLES -- NOTHING WAS COMPARED, so this is not "
+                         f"AGREE-UNRECORDED either: {port} has no oracle entry, not a missing recording"})
   return None
 
 
@@ -1041,7 +1212,7 @@ def main():
              "they are absent from the file" if skipped else ""))
     return 0
 
-  verdicts, tally, missing = [], {}, []
+  verdicts, tally, causes, missing = [], {}, {}, []
   rev = upstream_of(targets, plan)
   for port, oracles in targets:
     bend = REPO / port
@@ -1051,25 +1222,34 @@ def main():
         missing.append(port)
       verdicts.append(unwired)
       tally[NOT_STARTED] = tally.get(NOT_STARTED, 0) + 1
+      causes[unwired["cause"]] = causes.get(unwired["cause"], 0) + 1
       continue
     v, _ = gate_port(bend, oracles, base, not a.no_native,
                      files={f: plan["api_delta"].get(f, {}) for f in rev[port]})
     verdicts.append(v)
     tally[v["state"]] = tally.get(v["state"], 0) + 1
+    causes[v["cause"]] = causes.get(v["cause"], 0) + 1
     if v.get("hunks_status", "").startswith("NO HUNKS"):
       tally["LOOK-UNRECORDED"] = tally.get("LOOK-UNRECORDED", 0) + 1
 
   if a.json:
     # `oracle_py` travels WITH the verdict, so a published number can always be traced to
     # the interpreter that produced it. The failure this records -- three contradictory
-    # claims in one day, all true somewhere -- is invisible in a bare tally.
+    # claims in one day, all true somewhere -- is invisible in a bare tally. SO DOES `causes`,
+    # because that same failure is invisible in `BROKEN = 6`: a reader has to know that those six
+    # are not six port defects, and `causes` says how many are which without re-deriving it.
     print(json.dumps({"oracle_py": ORACLE_PY, "tinygrad": TINYGRAD_FROM,
-                      "python": PY_VERSION, "tally": tally, "verdicts": verdicts}, indent=2))
+                      "python": PY_VERSION, "tally": tally, "causes": causes,
+                      "verdicts": verdicts}, indent=2))
   else:
     print(PY_PROVENANCE)
     for v in verdicts:
       print(f"{v['state']:<12} {v['port']}")
+      # THE CAUSE, ON THE LINE EVERY READER QUOTES. `BROKEN` alone is one word for five things and
+      # only one of the five is a defect in a .bend file.
+      print(f"             cause={v['cause']} [{v['class']}]")
       print(f"             {v['why']}")
+      print(f"             CAUSE: {v['cause_reason']}")
       for k, n in v.get("row_counts", {}).items():
         print(f"               rows {k}={n}")
       for m in v.get("moved", [])[:8]:
@@ -1091,7 +1271,15 @@ def main():
           for kind in ("added", "removed", "changed"):
             if d.get(kind):
               print(f"                   {kind}: {', '.join(map(str, d[kind]))}")
-    print("\nTALLY " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items())))
+    # THE TALLY, WITH ITS CAUSES BESIDE IT. `TALLY BROKEN 6` on its own is the sentence this unit
+    # was sent to make illegible: a reader counts six defects, and the six are not six of anything.
+    # The parenthetical is the whole deliverable -- BROKEN=6 (DISAGREE=1 ZERO-ROWS=2 ...) says
+    # which of the six to open a .bend file for.
+    brk = f"  [{' '.join(f'{k}={v}' for k, v in sorted(causes.items()) if k != CAUSE_NONE)}]" \
+      if tally.get(BROKEN) else ""
+    print("\nTALLY " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items()))
+          + (f"\n      BROKEN={tally[BROKEN]} BY CAUSE{brk}" if tally.get(BROKEN) else ""))
+
   return 1 if tally.get(BROKEN) else 0
 
 

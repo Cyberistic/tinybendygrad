@@ -628,27 +628,39 @@ and prints an honest gap beats a fixpoint that lies.
 `probe-mmcore.bend`, and — since the rewrite engine landed — the gate on
 `codegen/__init__.bend`, which is its own 0). All 12 are `ALL PROOFS CHECK`.
 
-272 markers remain, and they are **not** 272 tasks. Split by whether a reason is
-written next to the line:
+265 markers remain, and they are **not** 265 tasks. `.agents/slop/marker-audit.py`
+splits them three ways, and only the third is work:
 
-| file | named walls | unexplained |
-| --- | --- | --- |
-| `uop/ops.bend` | 25 | 118 |
-| `uop/fold.bend` | 31 | 11 |
-| `uop/symbolic.bend` | 11 | 6 |
-| `uop/weak.bend` | 4 | 12 |
-| `uop/spec.bend` | 13 | 0 |
-| `uop/divandmod.bend` | 10 | 0 |
-| `uop/render.bend` | 2 | 11 |
-| `uop/upat.bend` | 0 | 3 |
-| `uop/movement.bend` | 1 | 1 |
-| `uop/validate.bend` | 2 | 0 |
-| **total** | **99** | **162** |
+| file | wall | shared | **backlog** |
+| --- | --- | --- | --- |
+| `uop/ops.bend` | 13 | 57 | 69 |
+| `uop/fold.bend` | 41 | 0 | 0 |
+| `uop/symbolic.bend` | 15 | 0 | 0 |
+| `uop/weak.bend` | 14 | 0 | 0 |
+| `uop/spec.bend` | 12 | 0 | 0 |
+| `uop/divandmod.bend` | 10 | 0 | 0 |
+| `uop/render.bend` | 1 | 0 | 5 |
+| `uop/upat.bend` | 3 | 0 | 0 |
+| `uop/movement.bend` | 1 | 0 | 0 |
+| `uop/validate.bend` | 0 | 0 | 2 |
+| **total** | **110** | **57** | **76** |
 
-A *named wall* is a marker whose rule is written beside it — a dependency, a
-missing upstream, a shape the substrate cannot express. Those are closed in the
-only honest sense available: they compile, they print the gap, and nobody
-mistakes them for work in flight. The **162 unexplained** are the real backlog.
+- **wall** — the reason is in the marker's own entry. Closed in the only honest
+  sense available: it compiles, it prints the gap, nobody mistakes it for flight.
+- **shared** — the reason is written once in the file's NOT PORTED block instead of
+  beside each marker. 57 of these are the `UPat` COMPILER (`ops.py:1545`–`1790`),
+  whose wall is stated once and applies to all of them.
+- **backlog** — no reason anywhere. This is the queue.
+
+**I REPORTED 162 BACKLOG AND IT WAS WRONG BY 88.** The classifier I was using
+read 14 raw lines past each marker and counted any line merely *referencing* a
+`TODO(p3)` as if it were a marker. A correct split needs the marker's own
+continuation (stopping at the next marker), and it needs the third category:
+`fold.bend` and `render.bend` looked like 11 backlogs each and are **0** — every
+one of their markers carries a written reason that runs past the window I was
+reading. The real backlog is **76**, not 162. `marker-audit.py` prints its backlog
+unconditionally, because a split that cannot show its own backlog is a split
+nobody can check.
 
 **THE MARKERS' OWN NUMBERS WERE WRONG.** Every `TODO(p3) ops.py:N def NAME`
 marker in `ops.bend` pointed two or three lines off its def, at the decorator.

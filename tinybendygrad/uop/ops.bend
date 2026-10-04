@@ -4290,6 +4290,30 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:674  def reduce
 
 # TODO(p3) ops.py:680  def overflows
+#   `def overflows(self, dtype: DType) -> bool: return self.vmin < dtype.min or
+#   dtype.max < self.vmax`. Two comparisons and no minting, which is why it looks
+#   like the cheapest def on this list. It is not, and the reason is a QUESTION
+#   rather than a wall:
+#
+#   CPython's `vmin`/`vmax` are concrete ints. This port's are
+#   `Maybe<&2, Bnd>` (`uop/fold.bend`:4498), and `Bnd` is
+#   `Bnd{inf} | BndInt{neg, mag} | BndFlt{v}` -- an INTEGER OR A FLOAT OR AN
+#   INFINITY, symbolically. So `vmin < dtype.min` is not one comparison, it is a
+#   comparison over that union, and the honest answer to "is `vmin` below the dtype
+#   minimum" when `vmin` is SYMBOLIC is neither True nor False: it may be undecidable
+#   until the range table resolves it.
+#
+#   `Bool` has no third value, and defaulting unknown to False makes the port assert
+#   a range is SAFE when it has not been shown to be. That is the one failure mode a
+#   dtype fold must not have, and it is why this is not ported as a one-liner with
+#   `Bool.or(lt(...), lt(...))`.
+#
+#   The shape it needs: a THREE-valued predicate over `Bnd` (below / provably not
+#   below / unresolved), and a decision about what the two-valued public answer does
+#   with the third -- almost certainly "not overflowing is a MAYBE, and every caller
+#   that needs certainty has to say so". `dt.min`/`dt.max` are already
+#   `Maybe<&2, U32>` in `LAWS/spec.bend`, so the dtype side is ready; there is no
+#   `Bnd` ordering at all in `fold.bend`, which is the work. P3, with `vmin`/`vmax`.
 
 # TODO(p3) ops.py:689  def unshard
 #   # *** multi-device helpers ***
