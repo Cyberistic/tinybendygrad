@@ -1,0 +1,2 @@
+# command: ./bin/bend .agents/slop/w64/w3_control.bend
+# a Word built from the literal bit pattern of 1 must read back as 1
