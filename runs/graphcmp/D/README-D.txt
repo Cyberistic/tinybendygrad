@@ -1,4 +1,4 @@
-# THE WIDENING, ROUNDS 1 AND 2. Every artifact here, and the exact command that made it.
+# THE WIDENING, ROUNDS 1, 2 AND 3. Every artifact here, and the exact command that made it.
 #
 # env -u PYTHONPATH is REQUIRED (it contaminates a control) and LC_ALL=C is REQUIRED (a
 # locale-colated sort fabricates diffs). DEV=NULL is the rebase gate's own setting; the
@@ -7,18 +7,24 @@
 #
 # E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py
 # ALL OF IT AT ONCE: sh .agents/slop/graphcmp-run.sh
+# REPRODUCIBILITY:         sh .agents/slop/graphcmp-repro.sh
 #
-# SUBSTRATE AT CAPTURE TIME (round 2):
-#   tinybendygrad/uop/ops.bend    sha256 4d9157b89833d11f5ed545b4f40560741f424997bb624f099f9eadfd8beb5ab6
-#   tinybendygrad/uop/fold.bend   sha256 b90f015ea74bb4669d85ee5d18adbb436df205738ddc0c3902fe10939828a107
-#   .agents/slop/graphcmp.bend    sha256 eaaf1eb4ac5fc590424ad3127709cf8897169c11fa2ecc4a73233b32e2997c8c
-#   .agents/slop/graphcmp.py      sha256 3e4a110ea0754763e824d860fc95f12747c42c9ad0e10882431d474040f01fca
-#   .agents/slop/graphcmp-run.sh  sha256 1f6a60e81238e72cc1d8100fa99f5eaa5242f672946144b2e203b5ed0f3736e5
-#   .agents/slop/graphcmp-p13-ops.py  sha256 6afb384fb7f6744ed5307bc50556f3138e847a9bc799cac8c88dca8cb8c21039
+# SUBSTRATE AT CAPTURE TIME (round 3):
+#   tinybendygrad/uop/ops.bend    sha256 REPLACE_ME
+#   tinybendygrad/uop/fold.bend   sha256 REPLACE_ME
+#   .agents/slop/graphcmp.bend    sha256 REPLACE_ME
+#   .agents/slop/graphcmp.py      sha256 REPLACE_ME
+#   .agents/slop/graphcmp-run.sh  sha256 REPLACE_ME
+#   .agents/slop/graphcmp-repro.sh sha256 REPLACE_ME
+#   .agents/slop/graphcmp-p14-sched.py sha256 REPLACE_ME
 # `uop/ops.bend` and `uop/fold.bend` are under SINGLE OWNERSHIP by another unit and moved
-# during the session (round 1 captured `ops.bend` at 496f1607; round 2 at 4d9157b8). Every
-# artifact here was RE-CAPTURED at the digests above. `ALL PROOFS CHECK` on graphcmp.bend
-# is NOT the gate agreeing -- the gate is `E diff --graph NAME`, and it is run below.
+# through at least six digests across rounds 1-2 and then went COLD THREE MORE TIMES during
+# round three (`sym_dim.pa` at :1250 not compiling; `ParamArg`'s field list renamed
+# mid-run). Every artifact here was RE-CAPTURED at the digests above, and
+# `graphcmp-repro.sh` waits for the substrate and accepts a run only if its own summary
+# reads 16 graphs / 13 AGREE / selfcheck OK / census-rc=0. `ALL PROOFS CHECK` on
+# graphcmp.bend is NOT the gate agreeing -- the gate is `E diff --graph NAME`, and it is
+# run below.
 #
 # ---------------------------------------------------------------------------
 # THE ARTIFACT. ONE command, ONE argument, ONE verdict line, WITH ITS DENOMINATOR.
@@ -39,12 +45,19 @@
 #   commute         14/14    11     1      0      3          none        AGREE
 #   indexed          7/7      6     1      0      0          none        AGREE
 #   sym             12/12     6     1      2/0    2          ?=0/6       DISAGREE  <-- ON PURPOSE
+#   lin             46/46    11     1      0      6          E=1/0 q=0/1 DISAGREE  <-- MEASURED
+#   loop            25/25    14     1      0      8          ?=0/2       DISAGREE  <-- MEASURED
+#   gate            14/14    12     1      0     11          none        AGREE
 #   --------------------------------------------------------------------------
-#   TOTAL         104/104   23 distinct ops: ADD ALLOC AND BARRIER BINARY BUFFER CAST
-#                                 CMPNE CONST GROUP INDEX MAX MUL OR PARAM PERMUTE RANGE
-#                                 REDUCE RESHAPE SINK SPECIAL STACK XOR
-#   Commutative ops reached: 7 of 8 (CMPEQ is not reachable from an eager graph).
-#   Symbolic-dim nodes: 2 of 104.   Field-records: 104 x 6 = 624 per side.
+#   TOTAL         189/189   34 distinct ops: ADD AFTER ALLOC AND BACKEDGE BARRIER BINARY
+#                                 BUFFER CALL CAST CMPLT CMPNE CONST END ENDIF GROUP IF
+#                                 INDEX LINEAR LOAD MAX MUL NOOP OR PARAM PERMUTE RANGE
+#                                 REDUCE RESHAPE SINK SPECIAL STACK STORE XOR
+#   Commutative ops reached: 7 of 8 (CMPEQ is not reachable from an eager graph -- and is
+#     STILL not reachable after three REAL kernels, which is the measurement).
+#   Symbolic-dim nodes: 2 of 189.   Field-records: 189 x 6 = 1134 per side.
+#   Byte-identical canonical files: 13 of 16 -- the three that differ are `sym`, `lin` and
+#     `loop`, and each differs on exactly the node named below.
 #
 # Fields: 8 on the wire, 6 IN THE EQUALITY DECISION (dtype shape depth tag arg src).
 # `id` is reporting-only by R1 -- the two arenas number differently, so a differ keyed on
@@ -56,6 +69,25 @@
 # `sym` IS SUPPOSED TO DISAGREE, on 3 of its 12 nodes and on `dtype`/`shape` only: the
 # port's `fold.bend` `marg` cannot `ssimplify` a non-CONST STACK element, so the port
 # cannot build a symbolic dim at all. See LIMITS section 3.
+#
+# `lin`, `loop` and `gate` ARE ROUND THREE, and they are the first graphs here whose PY
+# side is a call into tinygrad's own scheduler and codegen rather than a hand-built
+# expression:
+#   lin   `full_rewrite_to_sink(schedule_linear(matmul))` -- a REAL KERNELIZED PROGRAM.
+#         DISAGREE on 1 node of 46: the SINK's `applied_opts`, which the port can only
+#         answer with one `q` per option (ops.bend:978 types them `List<U32>`; upstream's
+#         elements are `Opt` dataclasses). That residual was documented as a count-only
+#         comparison while it was hypothetical; it is now a measured disagreement.
+#   loop  `hcq_fence(tv, tv, tv, 0)` -- tinygrad's OWN HCQ2 poll-loop kernel, called.
+#         DISAGREE on 1 node of 25: the CALL, whose dtype the port reads from
+#         `CallInfo.cdtype` -- a field CPython's `CallInfo` DOES NOT HAVE (ops.py:130-131
+#         reads `src[0].dtype`). Reported, not fixed; `fold.bend` is another unit's file.
+#   gate  a gated STORE through the REAL `pm_linearize_cleanups` (codegen/__init__.py:403,
+#         the only site in this tree that constructs `Ops.ENDIF`). AGREE at 14 nodes, and
+#         it is the WIDEST FAN-IN in the corpus because its root is a `LINEAR` whose src is
+#         the whole LINE LIST: RANGE#5 has 5 parents.
+#   The BEND side of all three is still hand-built, because `schedule/__init__.bend` DEFERRs
+#   `__init__.py:82-301` and THE PORT CANNOT BUILD A SCHEDULE AT ALL.
 #
 # `range` and `rangeflat` are a PAIR and are only meaningful as one: same op, same dtype,
 # same `()` shape, same `N` tag, and they differ in exactly two of the eight fields.
@@ -79,9 +111,12 @@ D0  E2 .venv/bin/python .agents/slop/graphcmp-oracle.py    D0-coverage-census.tx
       Per graph: nodes on BOTH sides, distinct ops, distinct arg ATOM LETTERS, distinct
       shape texts, distinct depth values, SYMBOLIC-DIM nodes, and which ledger markers are
       LIVE. Then the corpus-wide PER-OP NODE COUNTS (nodes/graphs), which are the
-      denominator for every op claim. MEASURED: 13 graphs, 104 nodes/side, 23 of 77 ops,
-      7 of 8 commutative ops, 2 of 104 symbolic-dim nodes, 3 of 8 ledger markers live,
-      0 unmapped atom letters.
+      denominator for every op claim. MEASURED: 16 graphs, 189 nodes/side, 34 of 77 ops,
+      7 of 8 commutative ops, 2 of 189 symbolic-dim nodes, 5 of 8 ledger markers live,
+      0 unmapped atom letters, `# ORACLE SELFCHECK: OK`, and `rc=0` on the last line --
+      the rc is captured because the oracle calls `emit_bend` and a dead substrate used to
+      leave a nine-row table that read like a census. Its three assertions are the two
+      `atoms()` rows of LIMITS defect 21 and the unmapped-atom row; MEASURED that they fire.
 D0  (the runner's own tally of the run)            D0-run-summary.txt
 D0  E3 .venv/bin/python .agents/slop/graphcmp-p13-ops.py     D0-ops-probe.txt
       THE RAW CPython MEASUREMENTS every coverage claim rests on, and a separate file
@@ -91,17 +126,18 @@ D0  E3 .venv/bin/python .agents/slop/graphcmp-p13-ops.py     D0-ops-probe.txt
       which field (Q4), what is a variable PARAM's slot and does the port have a spelling
       for it (Q5), and the corpus-wide op/node/symbolic-dim tally (Q6). Q2 is the fan-in
       census per graph.
-D1  E diff --graph NAME   (x13)                     D1-graph-*.txt
-D1  (asserts the 13 verdicts)                      D1-verdicts.txt
+D1  E diff --graph NAME   (x16)                     D1-graph-*.txt
+D1  (asserts the 16 verdicts)                      D1-verdicts.txt
 D2  E emit --side py|bend --graph NAME; `cmp`       D2-bytediff.txt + D2-canon-*.txt
-      MEASURED: 12 of 13 BYTE-IDENTICAL, and `sym` DIFFERS on exactly the 3 rows LIMITS
-      section 3 names. The runner COUNTS BYTES on both sides first and prints
+      MEASURED: 13 of 16 BYTE-IDENTICAL, and `sym`, `lin` and `loop` DIFFER on exactly the
+      nodes named above. The runner COUNTS BYTES on both sides first and prints
       `NOT COMPARED` rather than comparing two empty files -- see LIMITS #13, where this
       step had been reporting BYTE-IDENTICAL over 0-byte files for four graphs.
-D3  E control --graph NAME   (matmul, binblob, group)   D3-control-*.txt
-      MEASURED: CONTROL VERDICT OK on all three -- each side against ITSELF. `group` is
-      here because it is the first DAG and a control over a tree-only corpus is a control
-      that has never met a two-parent node.
+D3  E control --graph {matmul,binblob,group,gate,loop}   D3-control-*.txt
+      MEASURED: CONTROL VERDICT OK on all five -- each side against ITSELF. `group` is the
+      first DAG, so a control over a tree-only corpus is a control that has never met a
+      two-parent node. `gate` and `loop` are here because a control that only ever runs on
+      AGREEing fixtures has never had to agree with itself WHILE disagreeing.
 D4  E cross --graph range                          D4-cross-range.txt
       MEASURED: CROSS VERDICT OK -- it disagrees with a DIFFERENT graph.
 D5  E diff --graph matmul --plant P   (x6)          D5-plant-*.txt   ALL rc=1 (DISAGREE)
@@ -133,12 +169,18 @@ D8b E .venv/bin/python .agents/slop/graphcmp-dbg-oracle.py   D8b-cpython-dbg1-re
       Those 8 are TENSOR fixtures, not graphcmp graphs -- do not read the 8 as a graph
       count. So `dbg` is PORT-AT-LEVEL-A vs PORT-AT-LEVEL-B and not a port-vs-CPython
       comparison, and says so. A 0 of 8 is a statement about 8 fixtures.
-D9  E diff --graph {group|sym|commute --plant srcswap}, twice; `cmp`   D9-stability-*.txt
-      MEASURED: 3 of 3 pairs BYTE-IDENTICAL. Three cases because the three interesting
-      shapes differ: the first graph with a shared non-leaf, the one graph that DISAGREES,
-      and a PLANT (a run killed mid-write once left three D5 files byte-identical to EACH
-      OTHER, which no plant can produce). MEASURED SEPARATELY, over the whole directory: two
-      consecutive clean runs of graphcmp-run.sh leave all 126 files here byte-identical.
+D9  E diff --graph {group|sym|loop|gate|commute --plant srcswap}, twice; `cmp`   D9-stability-*.txt
+      MEASURED: 5 of 5 pairs BYTE-IDENTICAL. Five cases because the interesting shapes
+      differ: the first graph with a shared non-leaf, TWO graphs that DISAGREE (so a report
+      whose disagreements moved would be the one that matters), the widest fan-in in the
+      corpus, and a PLANT (a run killed mid-write once left three D5 files byte-identical
+      to EACH OTHER, which no plant can produce).
+      MEASURED OVER THE WHOLE DIRECTORY, by `sh .agents/slop/graphcmp-repro.sh`:
+      **158 of 158 files identical across two clean runs.** The old claim of the same
+      shape was backed by `find | md5 -q`, which on macOS takes exactly ONE file and
+      prints nothing given several -- so it was not a digest, and when the check was
+      written properly it found a real nondeterminism on its FIRST run (a `dict` printed in
+      set-iteration order; LIMITS defect 20).
 D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
       MEASURED: rc=1, "0 rows after 5 attempts -- a FAILURE, not a verdict". The guard is
       SEEN TO FIRE. Before round one the probe flag never reached the `emit` path, so
@@ -147,26 +189,45 @@ D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
 # ---------------------------------------------------------------------------
 # WHAT IS NOT HERE, and why.
 # ---------------------------------------------------------------------------
-# No `D3-control-sym.txt`. `sym` is DISAGREE against the port by construction, so a
-# CONTROL over it would be AGREE (each side against itself) and would say nothing about
-# the disagreement. The py-vs-py control for `sym` is CONFLATION 4 in D7.
+# No `D3-control-sym.txt`, no `D3-control-lin.txt`. Those graphs DISAGREE against the port
+# by construction, so a CONTROL over them would be AGREE (each side against itself) and
+# would say nothing about the disagreement. The py-vs-py control for `sym` is CONFLATION 4
+# in D7. (`loop` IS controlled, deliberately, and that is the difference: a control over a
+# DISAGREEING graph is worth having precisely because the graph disagrees.)
 # No per-op fixture for `CMPEQ`. It is not reachable from an eager graph: `UOp` has no
-# `cmpeq`, and `(a == b).uop` emits `CMPNE CONST CMPNE`. Measured, and recorded as a limit.
-# No graph for `ENDIF`/`BACKEDGE`/`LOAD`/`STORE`. Those need a `STORE` body or a loop, and
-# none is constructible from the eager Tensor API in a few lines. They are the remaining
-# gap and LIMITS section 5 says so.
+# `cmpeq`, and `(a == b).uop` emits `CMPNE CONST CMPNE`. MEASURED, and STILL measured after
+# round three added three real kernels -- so it is a property of the op, not of the corpus.
+# **CLOSED IN ROUND THREE:** there is no longer "no graph for `ENDIF`/`BACKEDGE`/`LOAD`/
+# `STORE`". `lin`, `loop` and `gate` carry them, with per-op node counts in LIMITS 0 and 5.
+# The narrowing that remains is stated rather than hidden: `ENDIF` is reachable ONLY from a
+# hand-spelled gated store, because **0 of 9 scheduled programs** mint one
+# (`.agents/slop/graphcmp-p14d.py` Q1); and `LOAD`/`STORE` need no executor at all -- they
+# are graph ops and `lin`'s six LOADs have never been run.
 #
 # ---------------------------------------------------------------------------
 # CONCURRENCY. `tinybendygrad/uop/ops.bend` and `uop/fold.bend` are being edited by another
-# unit and moved through at least six digests across the two rounds. Two consequences, both
-# recorded rather than worked around:
+# unit and moved through at least six digests across rounds 1-2 and then went COLD THREE
+# MORE TIMES during round three. Every consequence is recorded rather than worked around:
 #   * one failure named a def that is NOT in this unit's files -- `def UOp.huo.go` appeared
 #     TWICE, a duplicate declaration. Reported, not edited: it is not my file.
 #   * `uop/ops.bend:7028 UOp.const_factor.mul` stopped compiling and blocked the coverage
 #     census for one pass. The census was re-run after the tree came back.
-#   * the two round-two findings that are PORT bugs rather than harness bugs are reported
-#     and NOT fixed, because the files are not this unit's: `fold.bend`'s `marg`
-#     `ssimplify` wall (LIMITS 3b) and `ParamArg.slot = -1`'s two conflicting sentinels
-#     (LIMITS section 2).
+#   * ROUND THREE: `sym_dim.pa` at `uop/ops.bend:1250` (`match O.ParamArg.vmin_vmax(pa)` --
+#     a computed-value scrutinee) failed to compile, twice; and `ParamArg`'s field list was
+#     renamed mid-run once. All three were caught by `graphcmp.bend --check-only`'s FIRST
+#     LINE, and `emit_bend`'s 5-attempt guard turned each into
+#     `0 rows after 5 attempts -- a FAILURE, not a verdict`, with `D2-cmp-*` reporting
+#     `NOT COMPARED` rather than `BYTE-IDENTICAL`. **That is the behaviour those guards were
+#     written for and it is worth recording that they worked.**
+#   * MEASURED CONSEQUENCE FOR THE REPRODUCIBILITY CLAIM: the two-run byte check CANNOT be
+#     taken on a run that broke part way through -- a concurrent edit landed between graph
+#     12 and graph 13 of one run, so twelve real reports and four 0-row failures were both
+#     "files" and both hashed. `graphcmp-repro.sh` therefore takes a snapshot only from a
+#     run whose own summary reads `graphs=16 graphs-agree=13 selfcheck=OK census-rc=rc=0`.
+#   * the three round-two/round-three findings that are PORT bugs rather than harness bugs
+#     are reported and NOT fixed, because the files are not this unit's: `fold.bend`'s
+#     `marg` `ssimplify` wall (LIMITS 3b), `ParamArg.slot = -1`'s two conflicting sentinels
+#     (LIMITS section 2), and `fold.bend:1067`'s `call_dt` reading `CallInfo.dtype`, a
+#     field CPython's `CallInfo` does not have (LIMITS section 2, `loop`).
 #   * the artifacts above are all from the final compiling tree at the digests quoted at
 #     the top.

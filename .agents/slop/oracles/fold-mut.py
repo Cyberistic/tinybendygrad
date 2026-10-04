@@ -92,8 +92,9 @@ MUTATIONS = [
    "# a control: this line changes nothing and must move nothing\ndef sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and"),
 
   ("M14", "`sym_dim` answers `SU` for EVERY PARAM -- the point arm dropped, so a FIXED dim stays symbolic",
-   "      Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(lo, hi),\n        Some{O.SI{lo}}, Bool.pick(Maybe<&1, O.Sint>, sym_dim.signable(lo, hi),\n        Some{O.SU{s}}, None{}))",
-   "      Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(lo, hi),\n        Some{O.SU{s}}, Bool.pick(Maybe<&1, O.Sint>, sym_dim.signable(lo, hi),\n        Some{O.SU{s}}, None{}))"),
+   [("def sym_dim.range(r: Maybe<&2, O.PyRange>, s: U32) -> Maybe<&1, O.Sint>:",
+     "def sym_dim.range(r: Maybe<&2, O.PyRange>, +s: U32) -> Maybe<&1, O.Sint>:"),
+    ("        Some{O.SI{lo}}, Bool.pick", "        Some{O.SU{s}}, Bool.pick")], ""),
 
   ("M15", "A SYMBOLIC DIM RENDERS AS A BARE `U` -- THE FLATTEN-EVERYTHING BUG. Every symbolic dim becomes the same token",
    "    case O.SU{+u}: String.concat([\"U(\", O.Ops.name(O.Arena.op(ar, u)), \":\", dim_str.name(O.Arena.arg(ar, u)), \")\"])",
@@ -103,7 +104,11 @@ MUTATIONS = [
    "  Bool.and(Bool.not(Prod.neg(m)),\n    Bool.pick(Bool, Bool.or(Prod.sym(ps), Prod.sym(m)), True{},\n      U32.is_eq(Prod.n(ps), Prod.n(m))))",
    "  Bool.and(Bool.not(Prod.neg(m)), U32.is_eq(Prod.n(ps), Prod.n(m)))"),
 
-  ("M17", "`sym_dim.signable` drops the `lo <= hi` half -- an EMPTY interval mints a `SU`",
+  ("M17", "`sym_dim.spec` drops the EMPTY-interval arm -- a SPECIAL over an END OF ZERO now mints a `SU`",
+   "    case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),\n                Some{sint_of(0)}, Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(0)),\n                None{}, Some{O.SU{s}}))",
+   "    case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),\n                Some{sint_of(0)}, Some{O.SU{s}}})"),
+
+  ("M17b", "`sym_dim.range` drops the `lo <= hi` half of `signable` -- a PARAM with an EMPTY `vmin_vmax` now mints a `SU`",
    "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and(Bool.not(H.i64_is_neg(lo)), H.i64_le(lo, hi))",
    "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.not(H.i64_is_neg(lo))"),
 ]
@@ -140,10 +145,22 @@ print(f"baseline: {len(b_rows)} rows, both lanes identical")
 print()
 
 for mid, what, old, new in MUTATIONS:
-  if old not in base:
-    print(f"{mid}: NOT APPLIED -- the anchor text is not in the file")
+  # `old`/`new` are EITHER one (old, new) string pair or a LIST of them, for a mutation
+  # that has to widen a parameter to `+` as well as change its body: Bend spends a
+  # value on the first read, so a body that reads `s` twice needs a shared binder and a
+  # mutation that only edits the body does not compile.
+  edits = list(zip(old, new)) if isinstance(old, list) else [(old, new)]
+  if not edits:
+    print(f"{mid}: NOT APPLIED -- the mutation carries NO EDIT, so it is a no-op by "
+          f"construction and any 0 it reports is the harness, not the gate")
     continue
-  mutated = base.replace(old, new, 1)
+  if any(o not in base for o, _ in edits):
+    missing = [o for o, _ in edits if o not in base]
+    print(f"{mid}: NOT APPLIED -- the anchor text is not in the file: {missing[0][:60]!r}")
+    continue
+  mutated = base
+  for o, n in edits:
+    mutated = mutated.replace(o, n, 1)
   p = SRC + ".mut"
   open(p, "w").write(mutated)
   try:

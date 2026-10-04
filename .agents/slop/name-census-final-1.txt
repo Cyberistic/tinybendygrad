@@ -1,0 +1,93 @@
+lane                         port                                LINES   READ     F1     F2     F3  NAMES  `=`  DIFFER  LOST
+port                         tinybendygrad/renderer/llvmir.bend    471    471      0    471      0    323  157     157   148   <== READER-DEPENDENT NAME
+cpython:llvmir-oracle        tinybendygrad/renderer/llvmir.bend    471    471      0    471      0    323  157     157   148   <== READER-DEPENDENT NAME
+cpython:render-gate-oracle   tinybendygrad/uop/render.bend         124    124     49     75      0     85   31      31    39   <== READER-DEPENDENT NAME
+port                         tinybendygrad/renderer/nir_llvmir.bend    205    205      0    205      0    201    8       8     4   <== READER-DEPENDENT NAME
+cpython:nl-oracle            tinybendygrad/renderer/nir_llvmir.bend    205    205      0    205      0    201    8       8     4   <== READER-DEPENDENT NAME
+cpython:usb-oracle-run       tinybendygrad/runtime/support/usb.bend   1014   1014   1014      0      0    939    0       0    75 
+port                         tinybendygrad/uop/render.bend         129    129      6    123      0     86    0       0    43 
+cpython:nv-oracle            tinybendygrad/runtime/ops_nv.bend     574    574    574      0      0    547    0       0    27 
+port                         tinybendygrad/runtime/ops_nv.bend     611    611    611      0      0    600    0       0    11 
+cpython:hcq2-oracle          tinybendygrad/runtime/support/hcq2.bend    165    165    165      0      0    163    0       0     2 
+port                         tinybendygrad/renderer/tc_ptx.bend    334    334      0    334      0    333    0       0     1 
+cpython:tcptx-oracle         tinybendygrad/renderer/tc_ptx.bend    334    334      0    334      0    333    0       0     1 
+port                         tinybendygrad/uop/fold.bend           334    241    241      0      0    240    0       0     1 
+cpython:mm-lift-gate         tinybendygrad/uop/fold.bend           131    131    131      0      0    130    0       0     1 
+port                         tinybendygrad/viz/serve.bend          177    177    177      0      0    176    0       0     1 
+cpython:viz_oracle           tinybendygrad/viz/serve.bend          177    177    177      0      0    176    0       0     1 
+port                         tinybendygrad/codegen/decomp/dtype.bend    209    208    208      0      0    208    0       0     0 
+cpython:dtype-oracle         tinybendygrad/codegen/decomp/dtype.bend    356    356    356      0      0    356    0       0     0 
+port                         tinybendygrad/codegen/gpudims.bend     24     24     24      0      0     24    0       0     0 
+cpython:rw-gate-oracle       tinybendygrad/codegen/gpudims.bend     54     54     54      0      0     54    0       0     0 
+port                         tinybendygrad/codegen/opt/search.bend     38     38     38      0      0     38    0       0     0 
+cpython:rebase-oracle-search tinybendygrad/codegen/opt/search.bend     20     20     20      0      0     20    0       0     0 
+port                         tinybendygrad/codegen/simplify.bend     28     28     28      0      0     28    0       0     0 
+cpython:rw-oracle            tinybendygrad/codegen/simplify.bend     60     60     60      0      0     60    0       0     0 
+port                         tinybendygrad/device.bend             110    110    110      0      0    110    0       0     0 
+cpython:device-oracle        tinybendygrad/device.bend              23     23     23      0      0     23    0       0     0 
+port                         tinybendygrad/dtype.bend                0      0      0      0      0      0    0       0     0 
+cpython:dtype_tables         tinybendygrad/dtype.bend            14766      0      0      0      0      0    0       0     0 
+port                         tinybendygrad/engine/jit.bend         137    137    137      0      0    137    0       0     0 
+cpython:jit-oracle           tinybendygrad/engine/jit.bend           0      0      0      0      0      0    0       0     0 
+port                         tinybendygrad/mixin/elementwise.bend     72     72     72      0      0     72    0       0     0 
+cpython:ew-gate              tinybendygrad/mixin/elementwise.bend     71     71     71      0      0     71    0       0     0 
+port                         tinybendygrad/mixin/op.bend            36     36     36      0      0     36    0       0     0 
+cpython:mixin-op-gate        tinybendygrad/mixin/op.bend            32     32     32      0      0     32    0       0     0 
+port                         tinybendygrad/nn/__init__.bend         24     24     24      0      0     24    0       0     0 
+cpython:nn-init-gate         tinybendygrad/nn/__init__.bend         24     24     24      0      0     24    0       0     0 
+port                         tinybendygrad/nn/onnx.bend            123    123    123      0      0    123    0       0     0 
+cpython:onnx-gate            tinybendygrad/nn/onnx.bend            123    123    123      0      0    123    0       0     0 
+port                         tinybendygrad/renderer/amd/generate.bend    726    726      0    726      0    726    0       0     0 
+cpython:ga-oracle            tinybendygrad/renderer/amd/generate.bend    779    779      0    779      0    779    0       0     0 
+port                         tinybendygrad/renderer/amd/sqtt.bend   1033   1033   1033      0      0   1033    0       0     0 
+cpython:sqtt_spec            tinybendygrad/renderer/amd/sqtt.bend   1324   1324   1324      0      0   1324    0       0     0 
+port                         tinybendygrad/renderer/cstyle.bend    227    227      0    227      0    227    0       0     0 
+cpython:renderer_oracle      tinybendygrad/renderer/cstyle.bend    224    224      0    224      0    224    0       0     0 
+port                         tinybendygrad/renderer/ptx.bend       281    281      0    281      0    281    0       0     0 
+cpython:ptx-s3-oracle        tinybendygrad/renderer/ptx.bend       281    281      0    281      0    281    0       0     0 
+port                         tinybendygrad/runtime/ops_amd.bend    520    520    520      0      0    520    0       0     0 
+cpython:amd_oracle           tinybendygrad/runtime/ops_amd.bend   1010   1010   1010      0      0   1010    0       0     0 
+port                         tinybendygrad/runtime/ops_cpu.bend    134    134    134      0      0    134    0       0     0 
+cpython:cpulink_oracle       tinybendygrad/runtime/ops_cpu.bend     22     20     20      0      0     20    0       0     0 
+port                         tinybendygrad/runtime/ops_metal.bend    432    432    432      0      0    432    0       0     0 
+cpython:mt_seam_rows         tinybendygrad/runtime/ops_metal.bend     18     18     18      0      0     18    0       0     0 
+port                         tinybendygrad/runtime/ops_null.bend    180    180    180      0      0    180    0       0     0 
+cpython:null-oracle          tinybendygrad/runtime/ops_null.bend      9      9      9      0      0      9    0       0     0 
+port                         tinybendygrad/runtime/ops_python.bend     85     85     85      0      0     85    0       0     0 
+cpython:ops-python-render-oracle tinybendygrad/runtime/ops_python.bend    241    241    241      0      0    241    0       0     0 
+port                         tinybendygrad/runtime/ops_qcom.bend    750    750    750      0      0    750    0       0     0 
+cpython:qcom-oracle          tinybendygrad/runtime/ops_qcom.bend    312    312    312      0      0    312    0       0     0 
+port                         tinybendygrad/runtime/ops_rdma.bend    389    389    389      0      0    389    0       0     0 
+cpython:oracle_rdma_gate     tinybendygrad/runtime/ops_rdma.bend    389    389    389      0      0    389    0       0     0 
+port                         tinybendygrad/runtime/support/c.bend    129    129    129      0      0    129    0       0     0 
+cpython:c-oracle             tinybendygrad/runtime/support/c.bend    129    129    129      0      0    129    0       0     0 
+port                         tinybendygrad/runtime/support/elf.bend    353    353    353      0      0    353    0       0     0 
+cpython:elf_rows             tinybendygrad/runtime/support/elf.bend   1042   1042   1042      0      0   1042    0       0     0 
+port                         tinybendygrad/runtime/support/hcq2.bend    360    360    360      0      0    360    0       0     0 
+port                         tinybendygrad/runtime/support/usb.bend    940    940    940      0      0    940    0       0     0 
+port                         tinybendygrad/schedule/indexing.bend    253    252    252      0      0    252    0       0     0 
+cpython:indexing-oracle      tinybendygrad/schedule/indexing.bend    104    104    104      0      0    104    0       0     0 
+port                         tinybendygrad/schedule/prepare.bend    322    321    321      0      0    321    0       0     0 
+cpython:prepare-oracle       tinybendygrad/schedule/prepare.bend   2535   2521   2521      0      0   2521    0       0     0 
+port                         tinybendygrad/schedule/rangeify.bend    126    126    126      0      0    126    0       0     0 
+cpython:rangeify-oracle      tinybendygrad/schedule/rangeify.bend     89     89     89      0      0     89    0       0     0 
+port                         tinybendygrad/tensor.bend              33     33     33      0      0     33    0       0     0 
+cpython:tensor-gate          tinybendygrad/tensor.bend              30     30     30      0      0     30    0       0     0 
+port                         tinybendygrad/uop/ops.bend            310    310    310      0      0    310    0       0     0 
+cpython:rebase-oracle-ops    tinybendygrad/uop/ops.bend            109    109    109      0      0    109    0       0     0 
+port                         tinybendygrad/uop/spec.bend            25     25     25      0      0     25    0       0     0 
+cpython:rebase-oracle-spec   tinybendygrad/uop/spec.bend            16     16     16      0      0     16    0       0     0 
+
+TOTAL over 78 cached lane texts of 39 wired ports:
+  38057 lines, 23179 read by rows(), 22672 distinct names
+  LANE SHAPE: 18443 F1 rows (the boundary IS `=`, so a name there CANNOT contain `=` and a space cannot survive either -- 79.6% of the tree)
+              4736 F2 rows (the boundary is ` = `, so a name there CAN contain `=` -- the ONLY population in which the class can exist)
+              0 F3 rows (no `=` at all; `row()` needs two spaces and a ONE-TOKEN head, so a `=` is impossible there -- but rows still collide on a head token)
+  UNREADABLE LINES     : 14878/38057 -- lines rows() refuses outright, e.g. `dtype_tables.py`'s TSV lines, which is GUARD 2 'compared nothing' BY DESIGN
+  NAMES CONTAINING `=`   : 361/4736 of the F2 rows that can carry one = 7.62%   (361/22672 = 1.59% of all names)
+  READER-DEPENDENT NAMES  : 361/4736 = 7.62% of the F2 population -- the two readers do not name these rows the same. Of those, 59 land on a key of their own and are merely MISNAMED, and 302 share a key with another row and so COST a measurement
+  UNADDRESSABLE ROWS      : 507/23179 = 2.19% of the rows the reader accepted. SPLIT BY CAUSE, over the key and not the name:
+      302 row(s) lost to a key holding two rows with DIFFERENT shape-names -- the reshape class
+      205 row(s) lost to a key holding two rows with the SAME name -- a lane printing a row name twice, an older and separate defect no `=` is involved in
+      residual 0 -- MUST BE 0, or the census is not a census. It was 82, then 146, then 349: three separate under-counts in the SPLIT while `lost` itself was right, each one a case of counting KEYS where the quantity is ROWS. An unexplained number in a coverage census is worse than a wrong one, because nobody can check it
+  STARVED lanes (0 rows read of 78 texts): 3 -- [('cpython:dtype_tables', 'tinybendygrad/dtype.bend'), ('cpython:jit-oracle', 'tinybendygrad/engine/jit.bend'), ('port', 'tinybendygrad/dtype.bend')]  a starved lane is PLAUSIBLE

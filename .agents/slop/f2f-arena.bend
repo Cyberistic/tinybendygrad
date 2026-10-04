@@ -60,13 +60,24 @@ def fwd(b: Bool) -> String:
     case False{}: ""
 
 # THE TEST, and its first version was INVERTED. `fwd(Bool.or(is_lt(src, i), ...))` fires on
-# every row, because `src < i` is TRUE for every well-formed edge -- `U32.is_lt(3, 5)` is
-# `T` (`.agents/slop/ilt.bend`, measured). A flag that fires everywhere measures nothing and
-# reads as a clean bill of health. The impossible edge is the other one: `i <= src`, so
+# almost every row, because `src < i` is TRUE for every well-formed edge -- `U32.is_lt(3, 5)`
+# is `T` (`.agents/slop/ilt.bend`, measured). A flag that fires everywhere measures nothing
+# and reads as a clean bill of health. The impossible edge is the other one: `i <= src`, so
 # `not (src < i)` = `is_lt(i, src) or is_eq(i, src)`. A SELF-edge counts: the arena's
 # bottom is at slot 0 with src 0, and `Arena.src` answers 0 for a short tuple, so a real
 # self-reference and a missing src1 are the same index -- which is why the SELF case is
 # excluded by `i != 0`.
+#
+# MEASURED, `.agents/slop/f2f-calibrate.py` direction 1, the inverted predicate rebuilt
+# with the two arguments swapped and NOTHING ELSE changed, on the SAME fixed file and the
+# SAME harness: 257 of 263 rows flagged. NOT 263 -- the six rows it misses are the six
+# fixture bottoms (`q1 q2 q3 q4 q5 q7` slot 0), and it misses them because of the very
+# `i != 0` exclusion the correct predicate needs. So the claim "fires on every row
+# including `0 NOOP <- 0,0`" was WRONG IN ITS DETAIL: it fires on every row that is not a
+# fixture bottom, and the bottom is silent for a reason that is not the inversion. The
+# inversion is still the defect -- 257 flagged rows against CPython's 0 is a page of noise
+# dressed as a report -- and the correction is stated because a calibration number that is
+# quoted from memory is the thing this file exists to stop.
 # BOTH PARAMETERS ARE SPENT, and bend says so at each one in turn: `i` by `Bool.or`'s
 # second argument, then `src` by the `is_eq`. The fix is a local REBIND per use, which is
 # the same shape `arena-affine-probe.bend`'s `case Some{+ar, +i}` uses -- read a value once

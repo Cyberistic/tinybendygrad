@@ -787,7 +787,7 @@ def nv.rev.go(n: Nat, +xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
 # wrapped list, `nv_cover_wide_*` counts how many entries wrapped, and the ORACLE
 # prints both halves so the wall is a measurement and not an excuse.
 
-def nv.covers(+v: U32) -> List<&2, U32>: nv.rev.go(nv.shifts_nat(v), nv.va_shifts(v), Nil{})
+def nv.covers(+v: U32) -> List<&2, U32>: nv.pow_shifts(v)
 
 def nv.cover_inv(+v: U32) -> Bool: nv.ci.go(nv.shifts_nat(v), nv.covers(v), 0)
 
@@ -1322,7 +1322,7 @@ def nv.reg_boot0() -> Rgv: Rgv.of(0, 0, [Fld.of("minor_revision", 0, 3), Fld.of(
 # `t_*` group below is that shape, and it is why the rows are built by `go` folds
 # rather than assigned to locals.
 
-def nv.reg_boot42() -> Rgv: Rgv.of(0, 2560, [Fld.of("minor_extended_revision", 11, 8), Fld.of("minor_revision", 12, 15), Fld.of("major_revision", 16, 19), Fld.of("implementation", 20, 23), Fld.of("architecture", 24, 29), Fld.of("chip_id", 20, 29)])
+def nv.reg_boot42() -> Rgv: Rgv.of(0, 2560, [Fld.of("minor_extended_revision", 8, 11), Fld.of("minor_revision", 12, 15), Fld.of("major_revision", 16, 19), Fld.of("implementation", 20, 23), Fld.of("architecture", 24, 29), Fld.of("chip_id", 20, 29)])
 
 def nv.reg_wpr2() -> Rgv: Rgv.of(0, 2074664, [Fld.of("val", 4, 31)])
 

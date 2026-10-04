@@ -27,10 +27,11 @@ FIXED tinybendygrad/codegen/decomp/dtype.bend md5=48732687a99738f9250436d59d06c1
   CONSTANT and a dropped OFFSET are position independent, so every pad prints the
   same value and the sweep sees nothing. That is the whole calibration, measured
   here per defect rather than quoted.
-  wrong-index    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
-  wrong-const    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
-  wrong-offset   (sweep did not complete: == pads measured: 0 1 2 5 17 64)
-  stale-arena    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
+  wrong-index    pad-tracking fixtures moved: 2/3  -> SEEN (position-dependent)
+  wrong-const    pad-tracking fixtures moved: 0/3  -> BLIND (position-independent)
+  wrong-offset   pad-tracking fixtures moved: 0/3  -> BLIND (position-independent)
+  stale-arena    pad-tracking fixtures moved: 0/3  -> BLIND (position-independent)
+  stale-found    pad-tracking fixtures moved: 0/3  -> BLIND (position-independent)
   NOTE 1: `f2f-pad-oracle.py` still builds its receiver with the THREE-ARG
   `UOp.variable(nm, 0, fr)` -- `ops.py:1015` puts `dtype` FOURTH -- so the sweep's
   CPython lane measures the `v.cast(fr)` workaround, not `f2f_dt[fr]`. Only the

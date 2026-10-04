@@ -1,5 +1,34 @@
 # graphcmp — a canonical graph normal form both sides emit, and a differ over it
 
+**Third pass, 2026-10-04 (the program graphs).** `graphcmp-LIMITS.md` carries the state;
+this file carries the design. What changed: the corpus grew from thirteen graphs / 104
+nodes / 23 of 77 ops to **sixteen graphs / 189 nodes / 34 of 77 ops**, and the three new
+graphs are the first whose **PY side is a call into tinygrad's own scheduler and codegen**
+rather than a hand-built expression. They are `lin`
+(`full_rewrite_to_sink(schedule_linear(matmul))`, 46 nodes), `loop` (`hcq_fence(...)`, 25
+nodes — tinygrad's OWN HCQ2 poll-loop kernel) and `gate` (a gated STORE through the real
+`pm_linearize_cleanups`, 14 nodes). They reach **`ENDIF`, `BACKEDGE`, `LOAD` and `STORE`**,
+which thirteen hand-built graphs could not, because those four are properties of a SCHEDULE
+and not of an expression.
+
+The BEND side of all three is still hand-built node for node, and the reason is a port gap
+rather than a choice: `tinybendygrad/schedule/__init__.bend` DEFERRs
+`tinygrad/schedule/__init__.py:82-301` ("every rule is a `graph_rewrite` with a PYTHON ctx
+DICT"), so **the port cannot build a schedule at all**.
+
+Six more defects in this harness's own normal form were found by the widening and are
+numbered 17-21 in `graphcmp-LIMITS.md` §6. Two of them would have kept lying: a SINK with
+`arg=None` **crashed** the emitter (17), and the `tag` column **could not be read at all**,
+because every one of the thirteen earlier graphs had `tag is None` on every node (18). The
+twenty-first finding is about the CHECK rather than the differ: the two-run byte-identity
+claim was backed by `find | md5 -q`, which on macOS takes exactly ONE file and prints
+nothing given several — and when the check was written properly it found a real
+nondeterminism on its first run.
+
+`sh .agents/slop/graphcmp-run.sh` regenerates every file in `runs/graphcmp/D/`.
+`sh .agents/slop/graphcmp-repro.sh` measures reproducibility: **158 of 158 files
+byte-identical across two clean runs.**
+
 Measured 2026-10-03. Harness: `.agents/slop/graphcmp.py` (the differ and the CPython
 emitter) and `.agents/slop/graphcmp.bend` (the port-side emitter). Artifacts:
 `runs/graphcmp/`. No port file was edited. No live tree was patched.
@@ -644,6 +673,15 @@ E diff                                   # matmul, the real comparison
 E diff --graph reduce
 E diff --graph buffer                    # a REALIZED BUFFER, residual 1
 E diff --graph sink                      # a SINK + the R shape value, residual 2
+E diff --graph lin                       # A REAL LINEARIZED PROGRAM: 46 nodes, LOAD+STORE
+E diff --graph loop                      # hcq_fence, upstream's own poll loop: BACKEDGE
+E diff --graph gate                      # the real pm_linearize_cleanups: IF/ENDIF (AGREE)
+E control --graph gate                   # the widest fan-in in the corpus, against itself
+E control --graph loop                   # a DISAGREEING graph, against itself
+E diff --graph lin --equiv               # --equiv on a real kernel: STILL DISAGREE,
+                                         # because `lin`'s only difference is in `arg`
+                                         # (the applied_opts count) and --equiv forgives a
+                                         # `src` REORDERING and nothing else
 E control                                # each side against itself
 E cross                                  # two different graphs, BOTH sides
 E diff --plant srcswap                   # the reordered pair's OWN fields must stay clean
@@ -658,6 +696,17 @@ E diff --bend-probe runs/graphcmp/graphcmp-empty.bend   # the 0-row guard, fired
 env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python runs/graphcmp/probe/p12-residual-evidence.py
 bin/bend runs/graphcmp/probe/pb-buf-binary.bend      # the ABlob false-interning, port side
 bin/bend .agents/slop/graphcmp-probe-optq.bend      # the three refusal spellings
+
+# WHAT A REAL SCHEDULED PROGRAM CONTAINS -- the probes round three was built on:
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14-sched.py
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14b.py
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14c.py
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14d.py
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14e.py
+
+# THE WHOLE ARTEFACT, AND ITS REPRODUCIBILITY:
+sh .agents/slop/graphcmp-run.sh      # regenerates every file in runs/graphcmp/D/
+sh .agents/slop/graphcmp-repro.sh    # 158 of 158 files identical across two clean runs
 ```
 
 There is **no `--dev-map`**. The device name is not bound at a prompt: the port resolves its

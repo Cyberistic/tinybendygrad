@@ -21067,3 +21067,307 @@ Tooling: `.agents/slop/load-census.py` (`--ledger`, `--guard`, `--starvation`, `
 `--suspect`), `.agents/slop/loadwatch.py` (`--observed`, `--starved`),
 `.agents/slop/baseline-ledger.{md,txt,json}`, `.agents/slop/starvation-retrospective.json`,
 `.agents/slop/lane-load-measurements.tsv`.
+
+================================================================================
+## MUT-1 A `finally` RESTORE IS ONLY SAFE WHEN NOTHING ELSE TOUCHED THE FILE
+
+Numbering continues from the `AN-*` block immediately above. Positions, not numbers, are
+the citation: this block is the last in the file.
+
+Four mutation harnesses rewrote the LIVE tree in place — `open(TARGET,'w').write(...)`
+plus a `finally` restore — with the digest sampled ONCE at start. `blob-intern-mutate.py`'s
+own docstring records it reverting a concurrent agent's commit and putting a dead
+6,623-line `ops.bend` back over the live 6,306-line one. `ops-501-mutate.py` was fixed to
+stage `jj file show -r @` beside the file, and **the fix was never propagated**.
+
+**The part that is easy to get wrong:** a guard that samples the digest once CANNOT
+establish that nothing else touched the file, which is the only condition under which a
+`finally` restore is safe. So the guard does not restore — there is no write to restore.
+The live digest is sampled at ENTRY and at EXIT and the difference is REPORTED. A run
+whose substrate moved underneath it now says so instead of silently describing a revision
+that no longer exists.
+
+Tooling: `.agents/slop/staged_mut.py` (`Staged`, `StagedSet`), installed in `ra-mutate.py`,
+`ra-mutate2.py`, `rf-mut.py`, `nv_mutate.py`.
+
+## MUT-2 `sha256(MIRROR) == sha256(LIVE)` MUST BE ASSERTED, NOT ASSUMED
+
+`live == git HEAD` is **not** a sufficient guard when the substrate is a `git archive HEAD`
+mirror PLUS a manual overlay. A previous unit found one anchor that was never stale
+because the mirror held a stale overlay: `old not in src` fired for an unrelated reason
+and printed the same string as a genuinely missing anchor.
+
+**A STALE MIRROR AND A STALE ANCHOR ARE INDISTINGUISHABLE unless the two texts are
+asserted equal.** Measured here: asserting the digest at stage time turned a
+`20 stale / 8 stale` reading into `5 / 2`, because 21 of the 36 were the reader comparing
+the wrong string (see MUT-4), and it is what makes any remaining STALE verdict attributable.
+
+## MUT-3 A HAZARD DETECTOR THAT MISSES A SPELLING IS WORSE THAN NONE
+
+`mutanchor.writes()` missed `open(P,'w').write(...)`, so three IN-PLAY harnesses read as
+safe. Measured gaps closed: the nested form (`open(P,'w').write`, `writelines`, `truncate`),
+the ALIAS form (`f = open(P,'w')` then `f.write`, and `with open(P,'w') as f:`), the
+`mode=` keyword, `io.open`/`gzip.open`-style Attribute callees, and `os.remove`/`os.unlink`/
+`os.truncate`/`shutil.rmtree` — a **deletion** of the live tree, which the write list did not
+count at all.
+
+`shutil.move(A, LIVE)` was mis-ZONED: reading its FIRST argument reported the SOURCE, so a
+scratch file being moved ONTO the live tree printed `ELSEWHERE`. Destination is `args[-1]`.
+
+**STILL MISSED, and each is a real hole rather than a curiosity** (single-file AST reader,
+no dataflow): a handle passed as an argument to a writer (`dump(x, f)`); a handle stored in
+a container (`H = {'f': open(P,'w')}`); `H[0].write(s)`; shell redirection
+(`subprocess.run('cat > %s' % SRC, shell=True)`); a module-scope side effect at another
+harness's IMPORT. Tooling: `.agents/slop/mutanchor-writes-selftest.py` (19 cases, all
+required to behave as specified, and it PRINTS the ones still missed).
+
+## MUT-4 A READER MUST RUN THE HARNESS'S OWN ANCHOR TRANSFORM, NOT THE RAW LITERAL
+
+`ra-mutate.py` and `ra-mutate2.py` post-process every anchor through `q()` before
+searching, because the 1:1 file split forced an `LT.` qualifier onto cross-file names.
+`anchor-audit.py` compared the RAW literal against the file and reported **36 stale
+anchors; 21 of them were false** and all 74 anchors were present. After `q()` is executed
+from the harness's own AST: **15 stale**, and 15 is the number the runs then confirmed.
+
+`q()` is EXECUTED, not transcribed — a second copy of the qualification list is the thing
+most likely to drift, and this is the harness's rule about names. Only the globals `q`
+actually READS are executed: exec'ing every module-level assignment runs the harness's own
+I/O, and `ra-mutate.py` reads a baseline file that does not exist, so the reader died with
+a `FileNotFoundError` raised from inside a file it claimed only to read.
+
+The vote runs on the TRANSFORMED rows and the report returns the RAW cell: those are two
+different questions. Returning the transformed cell from `anchors()` made `present()`
+transform it a SECOND time, and `q()` is idempotent on an already-qualified name — so the
+raw spelling was never reachable and one anchor stayed STALE while the harness applied it.
+
+## MUT-5 A TRANSFORM IS RIGHT FOR A CALL SITE AND WRONG FOR THE DEF IT DEFINES
+
+`tb_pset.put` is spelled bare in `linearizer.bend` (where it is defined) and `LT.tb_pset`
+in `regalloc.bend` (where it is called). `q()` produces exactly the wrong one of the two
+for its own definition. `StagedSet.spellings` therefore offers the transformed form FIRST
+and the raw form second, and the FILE decides. A reader that checked only the transformed
+form reported that anchor STALE while the harness applied it: the reader and the tool
+disagreeing about the same string, which is the failure mode of every other false report
+in this file.
+
+**A `def` can MOVE BETWEEN FILES of a split unit without changing by one character.** The
+anchor is therefore searched across the whole staged SET and the edit lands in the file
+that holds it; an anchor present in TWO staged files is REFUSED, not guessed.
+
+## MUT-6 BEND'S PARSE ERRORS PRINT AS ROWS, AND STDOUT-ONLY IS THE ONLY LIVENESS TEST
+
+Measured: a mutant with a syntax error prints **nothing on stdout** and writes
+`1007>|     [RaSt.in(...` to STDERR — which rebase-gate's `rows()` parses as a ROW NAMED
+`1007`. The four harnesses this replaced counted that as a moved row, and three of them
+published **49 "rows moved" each including bend's own error line**.
+
+`bend` also writes `bend 2.0.35 is available: run bend update` to stderr on EVERY run,
+including a clean one, so **any liveness test that looks at stderr is permanently true**.
+All four harnesses' retry loops keyed on `(stdout + stderr).strip()` and therefore could
+never fire, even for the machine-stack-overflow (~1 run in 20) they were written for; and
+`memory-mutate.py` read the upgrade notice as a baseline FAILURE and lost 70 completed
+mutations. The test is stdout-only, retried 5x, and an honest `None` after that — never a
+0-row answer, which is indistinguishable from "not started".
+
+## MUT-7 A ZERO AND A REFUSAL MUST NOT SHARE A CELL, AND A PIN MUST NOT BE FABRICATED
+
+Three cells, three different claims, and they are not interchangeable: `PATCH-NOT-APPLY`
+(the edit never landed), `DID-NOT-COMPILE` (the edit landed and the result is not a
+program), and a count. `ops-python-mutate.py` published **170 moved rows that do not
+exist** — M17 and M22 each lost all 85 rows to a run that printed none and printed `85`.
+Re-derived here by applying both anchors to a scratch copy: rc=1 and rc=2, 0 rows each, so
+`DID-NOT-COMPILE` is correct for both.
+
+`pin-tables.py` writes `PIN NOT WRITTEN -- UNSTATED. <reason>` for a table whose figure was
+not measured, because **a fabricated pin is worse than an absent one**: it converts unknown
+into apparently-known. `e3b0c44298fc1c14` — the sha256 of the EMPTY STRING — went into
+`wgsl-mutations.txt` once because a summary line was hashed instead of a row set. Three
+guards now in `pin-tables.py`: a 0-row count or the empty-string digest is REFUSED; a
+second pin for an already-pinned table that DISAGREES is a conflict reported with both
+numbers (a pin is a claim about ONE run, and a reader of the first has no way to know it
+was replaced); and 18 tables that named no revision at all now carry a reason. Measured
+here: 5 pinned before, 12 unstated-with-reason, 8 with no pin whatsoever → every existing
+table now carries one or the other.
+
+## MUT-8 A STATIC READER THAT CANNOT RESOLVE A TARGET REPORTS NOTHING, NOT FAILURE
+
+`LATE / ("%s.bend" % f)` inside a comprehension: `anchor-audit.py` reported
+NO-SUBSTRATE for all three of `ra-mutate.py`, `ra-mutate2.py`, `rf-mut.py` — which
+SILENTLY DISABLES that harness's own anchor check rather than failing, so each looked
+clean while nothing was being checked. `mutanchor` now resolves `Path(__file__).resolve()`
+chains, `.parent`, and single-`%s` formats; and the harnesses NAME their three files
+rather than formatting them. **`Path(x).resolve()` takes no arguments**, so reading
+`node.args` there returned None for every `resolve()` in the directory.
+
+## MUT-9 WRITING YOUR OWN RECORD IS NOT AN IN-PLAY WRITE
+
+Every harness writes its result table under `.agents/slop/`. Calling that IN-PLAY put the
+four GUARDED harnesses back in the danger column after they had been fixed — and a false
+positive in an alarm teaches a reader to ignore the column, which is the same failure as
+missing a spelling. A fifth zone, RECORD, distinguishes "writes a record nobody runs".
+Measured after the fix: all four are RECORD or NONE, and zero are IN-PLAY.
+
+---
+
+# APPENDED 2026-10-04, graphcmp round three. Numbering continues from the MUT-9 block
+# above; cite POSITIONS, never numbers (numbers have collided three times already).
+
+## GC-1 A SPLIT RANGE IS `UOp.new(Ops.RANGE, (bound_const, the_range), (AxisType, id))` --
+## and `range_end` CANNOT BUILD IT
+
+Measured off the py side's own row, building `full_rewrite_to_sink` of a scheduled
+`(4,3)@(3,5)` matmul: the inner RANGE reads
+`RANGE i32 () depth=i0 rg(i0,XWEAK,n(i2)) src=n(i6,i4)` -- `src` has TWO children while
+`axis_id` is the INT `2`, so `depth` is 0 and the flat tail is the ONE-element list `[2]`.
+`O.UOp.range_end(ar, idx, ids, at)` takes ONE src, so this is a bare
+`O.UOp.new(ar, OpsRANGE{}, [bound, inner], ARange{[2], AXIS_WEAK{}}, TNone{})`.
+
+**WHAT IT COST, MEASURED, because `arg` is in the differ's `core`.** The first spelling was
+`range_end(ar, c5i, [2, 1], AXIS_WEAK{})`, which read `rg(i0,XWEAK,n(i2,i1))` against
+`rg(i0,XWEAK,n(i2))` -- a one-element tail against two AND one src against two. The node
+became one-sided and **the eight nodes above it moved with it**: `lin` reported 2 differing
+rows instead of 1, and neither of the two named the RANGE. That is the cascade `argstr`'s
+double encoding of `depth` exists to make visible, and it is the reason a RANGE arg is
+written by hand rather than derived.
+
+## GC-2 `Maybe<&2, String>` IS A LEGAL `ParamArg.name` FIELD, AND A `dt` PARAM IS TOO
+
+`g_lin`'s three device PARAMs are UNNAMED (the scheduler's `ParamArg`s carry `name=None`)
+and `g_loop`'s fourth is unnamed too, so `paramf`'s `Some{nm}` spelling does not cover
+them. `O.ParamArg{slot, dt, Some{size}, ..., None{}, ...}` typechecks and produces the
+`N` in field 6. Likewise `dt` is a `S.Dt` PARAMETER of the helper, so
+`paramd(slot, S.uint64(), 1, Some{"slots"}, True{})` is one call and not three helpers.
+
+## GC-3 `Bool.pick` CHAINS DO NOT COUNT THEIR OWN PARENS FOR YOU
+
+Adding three rungs to `rows.pick3`'s 12-deep `Bool.pick` chain and closing it with 14 `)`
+instead of 15 gives
+`SOME PROOFS FAIL / expected : a term (the keyword 'def' cannot head one) / observed : 'def'`
+**at the NEXT top-level `def`** -- i.e. bend reports the damage at the following
+declaration, not at the unbalanced line. Read the first line, count the `Bool.pick(` and the
+`)` over the chain, and do not go looking at the def the error names.
+
+## GC-4 `OpsLINEAR`/`OpsENDIF`/`OpsIF`/`OpsBACKEDGE`/`OpsAFTER`/`OpsNOOP`/`OpsCALL` ALL
+## EXIST AND ALL TYPECHECK AS A `UOp.new` HEAD
+
+MEASURED on `tinybendygrad/uop/ops.bend` this round: `OpsNOOP` :178, `OpsCALL` :182,
+`OpsLINEAR` :186, `OpsAFTER` :192, `OpsIF` :245, `OpsENDIF` :247, `OpsBACKEDGE` :249. So
+the four ops thirteen hand-built graphs could not reach are reachable -- the barrier was
+never the port's `Op` type, it was that nobody had a SCHEDULE to put them in. Nothing needs
+a kernel executor: `LOAD`/`STORE` args are a `BUFFER` and an `INDEX` and are never run.
+
+**THE SHAPE THAT MATTERS.** `ENDIF`'s only src is the `IF` and **nothing points at the
+`ENDIF`**, so a graph rooted at the SINK that contains one has a toposort that OMITS it --
+MEASURED: 12 nodes where the `LINEAR` root gives 14. A `LINEAR` node whose src is the whole
+LINE LIST is the only root that holds every line, and it is also the only root whose `src`
+field is the PROGRAM ORDER of a kernel.
+
+## GC-5 A SINK WITH `arg=None` IS LEGAL UPSTREAM AND IT SETTLES ON THE PORT
+
+`tinygrad/uop/ops.py:1340`'s `SINK` arg is `KernelInfo|None` and `hcq_fence` builds the
+`None` one (`runtime/support/hcq2.py:412` ends in a bare `.sink()`). On the bend side
+`ANone{}` as a SINK's arg settles: `void` dtype and `R` shape, byte-identical to CPython.
+MEASURED against the port's own `dt_str`/`shape_str`, which have `_shape`-is-`None` and
+`fold-produced-nothing` as two different facts and must stay two different facts.
+
+## GC-6 `uop/fold.bend`'s CALL DTYPE READS A FIELD CPYTHON DOES NOT HAVE -- REPORTED, NOT
+## FIXED
+
+`dtype_from_uop` reads `case Ops.CALL: return src[0].dtype` (`tinygrad/uop/ops.py:130-131`).
+The port reads the ARG instead: `call_dt` is `case O.ACall{ci}: O.CallInfo.dtype(ci)`
+(`fold.bend:1067-1070`), under a comment quoting an OLDER upstream line ("`return
+arg.dtype if isinstance(arg, CallInfo) else dtypes.void`"). CPython's `CallInfo` has NO
+dtype attribute -- MEASURED, `repr` is `CallInfo(None, 'hcq_fence', False, False)`, four
+attributes. So `CallInfo.cdtype` is a port-only field that decides a dtype upstream decides
+from the body, and on a real CALL node the port reads `?` where CPython reads `void`.
+`fold.bend` and `uop/ops.bend` are not graphcmp's files; reported in
+`graphcmp-LIMITS.md` §2 with the node count (1 of 25).
+
+Numbering continues from the position at the END of this file, `## GC-6` (line 21284 before
+this append). CITE POSITIONS, never numbers -- numbers have collided three times.
+
+## GC-7 A ROW NAME MUST NOT CONTAIN `=`, AND THE REASON IS NOT COSMETIC
+
+`rebase-gate.py`'s `row()` cuts a row line at its FIRST `=` and keeps the head as the row NAME.
+So a name containing `=` has ONE NAME PER READER, and **the set of comparable rows becomes a
+property of the reader rather than of the tree.** MEASURED on `renderer/cstyle.bend` before the
+rename, on BOTH lanes: 227 port rows read as 225 names and 224 oracle rows as 222, because
+`kern CUDA  lb=1` and `kern CUDA  lb=4` both read as `kern CUDA  lb`. `rows()` builds a dict,
+so the LATER row silently overwrote the earlier one -- the two `lb=1` measurements were
+**unreachable by any name** while both lanes agreed on all 8 rows. `uop/validate.bend` paid
+the identical bill once (`cmp_i<=5`: 310 printed rows read as 280, 30 collapsed onto 10 names).
+
+**The inverse is the same hazard, and it is why the fix is to RENAME and not to teach the
+reader to cope:** a detector that matches `=` to find the name/value boundary will MIS-SPLIT a
+name that contains one, so the two sides of a lane can be internally consistent and still not
+address the same row. `tcptx-oracle.py:386` shows what that route costs in a sibling lane.
+
+NAMES MAY CONTAIN SPACES. `rows()`'s F3 path (`head, sep, tail = line.partition("  ")`) only
+runs for lines with NO `=`, so on an F2 row a space is a separator no reader cuts. `kern CUDA
+lb 1` is read identically by both. `=` is the ONLY character that makes a name
+reader-dependent, and `validate.bend`'s `<=` is a second instance of it.
+
+## GC-8 A COVERAGE DELTA MUST CHANGE THE VERDICT, AND A DELTA THAT DOES NOT IS DECORATION
+
+The pre-fix `cstyle-gate.py` PRINTED the reshape delta -- `222 names -- 6 only it finds, 8
+only rows_strict finds` -- and then printed **`AGREE`, rc=0**, naming all eight rows one line
+above the verdict. Two further gaps in the same print: it applied the second reader to the
+ORACLE lane only, and it reported the six MANUFACTURED names (`kern CUDA  lb`, which no
+producer ever printed) as "names the shared reader finds". A manufactured name reported as a
+found name is worse than a missing one, because it inflates the denominator of everything
+computed from it.
+
+`reshape()` now runs BEFORE the value comparison and feeds `bad`, so a reshape can never be
+reported as a value verdict. The proof that it is a real detector and not a second opinion on
+values: over the pre-rename pair the gate reports `gated 221 agree 221 disagree []` and
+`BROKEN` -- **the value verdict is identical and only the verdict moves.**
+
+## GC-9 A CONTROL THAT PERTURBS A VALUE CANNOT TEST A NAME
+
+`--plant ROW` appends `PLANTED` to a value; both lanes print the same bytes, so ONE value
+disagrees and **the name sets are untouched**. MEASURED: a value plant leaves `eq=0
+unreachable=0` while the lane is BROKEN on the value comparison. So a green value lane is NOT
+evidence that the shape is clean, and a value plant is structurally incapable of faking the
+shape defect. The control has to rewrite a NAME **on BOTH lanes** -- renaming one side alone
+trips `stray`/`ghost` under `rows_strict` and proves only that `rows_strict` reads names, not
+that the name is reader-independent. Two rows are needed, because a collapse needs two names
+landing on one key. MEASURED, the non-obvious part: **Bend 2 rejects a second `do IO<Unit>:`
+block in one body** (`expected : 'def', 'type' or 'law'`), so a two-row probe must emit both
+rows from ONE `IO.print` -- and a probe that silently prints nothing reads as a starved lane.
+
+## GC-10 COUNT A COVERAGE CENSUS OVER THE POPULATION THAT CAN HAVE THE DEFECT
+
+`= 361 names, 1.59% of all names` was TRUE and USELESS: 18,443 of the tree's 23,179 read rows
+(79.6%) are F1 lanes whose boundary IS `=`, so the writer cannot express a `=` in a name and
+they are STRUCTURALLY IMMUNE. The population that can carry the defect is the 4,736 F2 rows
+(`NAME = [v]`), and **7.62% of those do.** The same census found `renderer/llvmir.bend` at
+**157 of 471 rows (33%)** with **48 of them on one key** (`br2 load vol`), against cstyle's 8
+of 227 (3.5%). A percentage against the wrong denominator understates a defect by an order of
+magnitude and reads as a rounding error.
+
+## GC-11 A CENSUS THAT COUNTS `=` IN THE READER'S OUTPUT IS A TAUTOLOGICAL ZERO
+
+My own census counted `=` in `rebase-gate.rows()`'s KEYS and printed **0 across all 78 lane
+texts, including the eight rows I was sent to fix** -- because `row()` strips the `=` from every
+name it returns, so the count cannot fail. Three further self-defects, each of which produced a
+clean or a wrong number rather than a crash: the reshape/duplicate split counted *distinct keys
+a name produced* when the quantity is *rows behind one key* (0 on a lane with 148 lost); the
+split left an unexplained residual of **82, then 146, then 349 rows** while `lost` itself was
+right the whole time; and a lane-shape-blind reader cut at `" = "` inside a VALUE, reporting 31
+false `=`-names on `uop/render.bend`'s oracle, where the shipped reader never sees that string.
+
+**A CENSUS MUST PRINT ITS RESIDUAL AND ASSERT IT IS ZERO.** 507 unaddressable rows = 302
+reshape + 205 repeated-name, `residual 0`, with the three earlier values recorded in the file.
+**An unexplained number in a coverage census is worse than a wrong one, because nobody can
+check it** -- and 205 of those 507 are a lane printing one row name TWICE, with no `=` involved
+at all, which the `=`-only census would have hidden inside its own total.
+
+## GC-12 25 OF 39 LANES STARVED BECAUSE MY OWN FETCH RAN EIGHT COMPILES AT ONCE
+
+`./bin/bend tinybendygrad/renderer/cstyle.bend` ALONE prints 227 rows. The same command inside
+an 8-way `ThreadPoolExecutor` printed **0** with an empty `--check-only` line. So a first census
+pass reported 25 empty port lanes, which read as "those ports emit no rows" and are in fact
+**my harness**. The fix is `rebase-gate.py`'s own discipline, imported: `BEND_ROW_TRIES`,
+`BEND_ROW_BACKOFF`, `row_tries` and `row_secs` per lane, and every empty lane re-run **alone**.
+All 25 returned rows on try 1. **A starved lane is your harness until proven otherwise** -- the
+second time today that a plausible-looking small number was mine.

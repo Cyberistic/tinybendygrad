@@ -1032,22 +1032,26 @@ emits rows".
 ## `graphcmp` — a CANONICAL GRAPH NORMAL FORM both sides emit, and a differ over it
 
 The one instrument in this repo that compares **graphs** rather than rows, and the one whose
-limits file is the deliverable. Not a library: five files, one command to regenerate all of it.
+limits file is the deliverable. Not a library: seven files, two commands — one to regenerate
+all of it, one to measure whether the regeneration is reproducible.
 
 | file | what it is | how to run |
 | --- | --- | --- |
 | `.agents/slop/graphcmp.py` | the differ. Emits a NORMAL FORM both sides produce — eight fields per node, `id op dtype shape depth tag arg src`, `id` reporting-only because the two arenas number differently — pairs by a structural `core`, and falls back to a dtype-erased `loose` key and then to full node dumps, so a difference is NAMED (`MISMATCH RESHAPE py#8 vs bend#8 shape py=(U,l0:4) bend=?`) rather than counted. `--equiv` is the commutative-canonical mode. `conf` runs the four conflations. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py diff --graph NAME` |
-| `.agents/slop/graphcmp.bend` | the port side. READS `uop/ops.bend` and `uop/fold.bend` and PRINTS; it edits neither and adds nothing to either. Each graph is built node for node into its own `O.Arena.empty()`. | `./bin/bend .agents/slop/graphcmp.bend NAME` |
+| `.agents/slop/graphcmp.bend` | the port side. READS `uop/ops.bend` and `uop/fold.bend` and PRINTS; it edits neither and adds nothing to either. Each graph is built node for node into its own `O.Arena.empty()`. **Every bend-side graph in the corpus is hand-built, including the three program graphs** — `schedule/__init__.bend` DEFERRs `__init__.py:82-301`, so the port cannot build a schedule. | `./bin/bend .agents/slop/graphcmp.bend NAME` |
 | `.agents/slop/graphcmp-p13-ops.py` | the raw CPython probe, and the answer to every coverage claim: does `Ops.GROUP` carry a `params` list (no), which Tensor op emits which NODE op, can two different symbolic dims be separated and by which field, what is a variable PARAM's slot, and the corpus-wide op/node/symbolic-dim/fan-in tally. **Everything is a CALL, never a transcription.** | `env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/graphcmp-p13-ops.py` |
-| `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py` |
-| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 13 graphs, controls, cross, six plants, the ordered/equiv split, the conflations, the DEBUG sweep, three stability pairs, the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. | `sh .agents/slop/graphcmp-run.sh` |
+| `.agents/slop/graphcmp-p14{,-b,-c,-d,-e}.py` | the round-three probes: **what a real SCHEDULED program actually contains**. Q: does `schedule_linear` + `full_rewrite_to_sink` reach LOAD/STORE (yes, 46 nodes); does `hcq_fence` reach BACKEDGE (yes, 25 nodes); **does the scheduler ever mint a GATED STORE, which is the only input to the tree's one `Ops.ENDIF` rule (0 in 9 programs)**; and does the real `pm_linearize_cleanups` turn one into IF/ENDIF (yes, 14 nodes). | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14d.py` |
+| `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. Carries **three assertions of its own** (`# ORACLE SELFCHECK:`), which is where defect 21 is kept from coming back. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py` |
+| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 16 graphs, five controls, cross, six plants, the ordered/equiv split, the conflations, the DEBUG sweep, five stability pairs, the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. | `sh .agents/slop/graphcmp-run.sh` |
+| `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary reads 16 graphs / 13 AGREE / selfcheck OK / `census-rc=0`, then compares sha256 over non-blank lines. MEASURED **158 of 158 files identical**. It exists because the previous claim was backed by `find \| md5 -q`, which on macOS takes ONE file — and the corrected check found a real nondeterminism on its first run. | `sh .agents/slop/graphcmp-repro.sh` |
 
 `E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
 
-Current measurement: **13 graphs, 104 nodes per side, 624 field-records, 23 of 77 ops, 7 of the
-8 commutative ops, 2 symbolic-dim nodes of 104, 12 of 13 `AGREE` (`sym` DISAGREES on purpose),
-12 of 13 byte-identical, 3 of 3 stability pairs, 4 of 4 conflations.** Two consecutive clean
-runs of `graphcmp-run.sh` leave all 126 files in `runs/graphcmp/D/` byte-identical.
+Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
+the 8 commutative ops, 2 symbolic-dim nodes of 189, 13 of 16 `AGREE` (`sym`/`lin`/`loop`
+DISAGREE, each with a named measured cause), 13 of 16 byte-identical, 5 of 5 stability pairs,
+4 of 4 conflations, 5 of 5 controls, both selfchecks OK.** `graphcmp-repro.sh` measures
+**158 of 158 files byte-identical across two clean runs**.
 
 **`.agents/slop/graphcmp-LIMITS.md` is the point of the whole thing** — sixteen defects this
 instrument found in its OWN normal form by widening its corpus, and every limit it does not
@@ -1134,3 +1138,45 @@ its own output** — denominator 234, then 235 seconds later, no edit in between
 
 Ledger: `.agents/slop/baseline-ledger.{md,txt,json}`. Rules: `notes/bend2-constraints.md` **L1**
 at position ~20968.
+
+---
+
+## The row-NAME census (`name-census.py`) — why it needs a SECOND reader to say anything
+
+`.agents/slop/name-census.py` asks whether a row name is **reader-dependent**, and that
+question cannot be answered with one reader. It imports `rebase-gate.py`'s own `row`/`rows`
+(read-only; that file is live and owned elsewhere) and cuts a second name at `" = "`, then
+compares the two name sets. Lane roster is `rebase-gate.py`'s own `BASE_ORACLES` — **39 wired
+ports, 78 lane texts**, so the census cannot drift from what the gate actually drives.
+
+Three commands, and the middle one exists because of the fourth entry below:
+
+```
+--fetch        run every lane once, 8 at a time, cache the text under name-census-lanes/
+--refetch-zero re-run, SERIALLY and ALONE, every PORT lane the parallel fetch left empty
+--names        print every colliding key and every offending name
+```
+
+**The tool that found the defect is the tool that had it.** Three self-measurements, all
+recorded in the file and in `name-census.md`:
+
+- Counting `=` in `rows()`'s keys is a **tautological zero** — `row()` cuts at the first `=`,
+  so a key can never contain one. It printed `0` over all 78 lane texts *including the eight
+  rows the unit was sent to fix*.
+- The reshape/duplicate split counted **keys** where the quantity is **rows behind one key**,
+  and reported `0` on a lane with 148 unaddressable rows.
+- The split's residual went **82 -> 146 -> 349** while `lost` itself was right throughout. It
+  now prints `residual 0` and states the three earlier values, because an unexplained number
+  in a coverage census is worse than a wrong one.
+
+**The lane shape decides the denominator, and getting it wrong understates the defect by an
+order of magnitude.** 79.6% of the tree's read rows are F1 (`name=value`), where the writer
+*cannot* express a `=` in a name. The population at risk is the 20.4% that print `NAME = [v]`,
+and **7.62% of those carry one** -- versus 1.59% of all names. `renderer/llvmir.bend` holds
+157 of its 471 rows in that class, 48 on a single key; cstyle held 8 of 227.
+
+**A starved lane is your harness until proven otherwise.** The 8-way parallel fetch printed 0
+rows for 25 of 39 ports; `./bin/bend tinybendygrad/renderer/cstyle.bend` alone prints 227.
+`--refetch-zero` re-runs each empty lane alone with `rebase-gate.py`'s own
+`BEND_ROW_TRIES`/`BEND_ROW_BACKOFF` and records `row_tries`/`row_secs`. Rules:
+`notes/bend2-constraints.md` **GC-7 .. GC-12** at the END of the file (position ~21284).

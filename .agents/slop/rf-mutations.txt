@@ -23,7 +23,7 @@
 | M17 `dg_3`'s `addrspace is ALU` test flipped | dg_ixpa_ans, dg_ixpg_none | 2 |
 | M18 `claim_full` replaced by `claim_n` (the src half of the claim dropped) | claim_ab_stg3 | 1 |
 | M19 `dg_6`'s RANGE rule given the wrong op set | dg_r0t_ans | 1 |
-| M20 `ct_8`'s MSTACK.f(INDEX) rule DELETED from the table | DID-NOT-COMPILE | 0 |
+| M20 `ct_8`'s MSTACK.f(INDEX) rule DELETED from the table | ct8d_claim, ct8d_srcops, ct8r_arg, ct8r_axis, ct8r_srcops, ct_len | 6 |
 #   rev 7c5e952391e2 | file b2ca777b9dfa3e80 | rows 6c1e76bdb2ab085c (126 rows)
 
 # ======================================================================

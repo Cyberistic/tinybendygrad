@@ -675,6 +675,89 @@ SELFTEST_REFUSED_ORACLE = (
   "  print('st FP8 = [KEYERROR]')\n".replace("KEYERROR", KEYERROR))
 
 
+SHAPE_BEND = (
+  "import Base\n"
+  "\n"
+  "def main() -> IO(Unit):\n"
+  "  do IO<Unit>: IO.print(String.concat([\"st A = [\", \"half,float\",\"]   py=[half,float]\\n"
+  "st B = [\", \"half,float\",\"]   py=[half,float]\"]))\n")
+"""TWO ROWS FROM ONE `IO.print`, because Bend 2 takes a single `do IO<Unit>:` per block --
+MEASURED, not assumed: two of them is a parse error at the second (`expected : 'def', 'type'
+or 'law'`), which produced a probe that printed NOTHING and read as a starved lane."""
+
+SHAPE_ORACLE = (
+  "from tinygrad.dtype import dtypes as D\n"
+  "from tinygrad.helpers import Target\n"
+  "from tinygrad.renderer.cstyle import CStyleLanguage\n"
+  "cs = CStyleLanguage(Target('NULL'))\n"
+  "for n in ('st A', 'st B'):\n"
+  "  print(n + ' = [' + ','.join(cs.type_map[d] for d in (D.f16, D.f32)) + ']')\n")
+
+
+def selftest_reshape(bend):
+  """THE COVERAGE-DELTA LANE: a row NAME that reads differently under the two readers,
+  planted on BOTH sides so every VALUE still agrees. Four sub-lanes over a TWO-ROW probe --
+  two rows because the `collide` lane needs two names to land on one shipped key, and one row
+  cannot demonstrate a loss:
+
+    clean   the unplanted pair                          -> AGREE
+    value   `--plant` a VALUE                           -> BROKEN on the VALUE lane, name sets
+                                                           IDENTICAL. THIS IS THE FALSIFICATION:
+                                                           a value plant cannot see the name-set
+                                                           defect, so a green value lane is not
+                                                           evidence the shape is clean.
+    shape   `--plant-shape` a NAME                      -> BROKEN on the NAME lane, every value
+                                                           agreeing, zero ghost/stray, so
+                                                           `rows_strict` sees a PERFECT lane.
+    collide TWO names onto ONE shipped key             -> BROKEN, and the loss is named as a
+                                                           COUNT OF ROWS, not a flag.
+  MEASURED against the gate as it stood before this guard existed: the `shape` and `collide`
+  lanes both returned rc=0 and `AGREE` over a pair that was 221/227 clean, with 2 unaddressable
+  measurements per side. `ALL PROOFS CHECK IS NOT "THE GATE AGREES."`
+  """
+  ora = pathlib.Path(bend).with_suffix(".shape.py")
+  ora.write_text(SHAPE_ORACLE)
+  try:
+    o = run([sys.executable, str(ora)])
+    bend.write_text(SHAPE_BEND)
+    p = run(["./bin/bend", str(bend.relative_to(REPO))])
+    A2X, B2X = [("st A", "st X=1")], [("st A", "st X=1"), ("st B", "st X=1")]
+    lanes = (("clean", p.stdout, o.stdout, False, True),
+             ("value", p.stdout, o.stdout, True, False),
+             ("shape", plant_shape(p.stdout, A2X), plant_shape(o.stdout, A2X), False, False),
+             ("collide", plant_shape(p.stdout, B2X), plant_shape(o.stdout, B2X), False, False))
+    ok = True
+    for label, pt, ot, value_plant, want_ok in lanes:
+      r = judge(pt, ot, "st A" if value_plant else None, exclusions={})
+      rs = {m["lane"]: m for m in r["reshape"]}
+      want_broken = not want_ok
+      got = bool(r["bad"]) == want_broken
+      shaped = [n for m in rs.values() for n in m["eq"]]
+      print(f"  {label:<8} -> {'BROKEN' if r['bad'] else 'AGREE':<7} "
+            f"names eq={len(shaped)} unreachable={sum(m['unread'] for m in rs.values())} "
+            f"disagree={[d[0] for d in r['disagree']]} {'' if got else '  <-- UNEXPECTED'}")
+      if not got:
+        ok = False
+      if label == "value" and (shaped or any(m["unread"] for m in rs.values())):
+        print("    SELFTEST FAILED: a VALUE plant moved the name-set lane, so the shape lane "
+              "does not isolate what it claims to isolate")
+        ok = False
+      if label == "shape" and not (shaped and any(m["only_strict"] for m in rs.values())):
+        print("    SELFTEST FAILED: a planted NAME did not show as a name-set difference")
+        ok = False
+      if label == "collide" and not any(m["unread"] for m in rs.values()):
+        print("    SELFTEST FAILED: two planted names did not collide onto one shipped key, so "
+              "the loss of a measurement is not measured")
+        ok = False
+    if not ok:
+      return 1
+    print("SELFTEST OK: a planted VALUE leaves the name sets identical (so the name lane is not "
+          "a value check in disguise) and a planted NAME is BROKEN with every value agreeing")
+    return 0
+  finally:
+    ora.unlink(missing_ok=True)
+
+
 def selftest():
   bend = REPO / ".agents/slop/cstyle-selftest-probe.bend"
   with tempfile.TemporaryDirectory() as td:
@@ -733,7 +816,7 @@ def selftest():
         return 1
       print("SELFTEST OK: the SAME instrument reports AGREE on the clean pair, DISAGREE "
             "on the planted one, and maps a CPython refusal onto the port's marker")
-      return 0
+      return selftest_reshape(bend)
     finally:
       bend.unlink(missing_ok=True)
 

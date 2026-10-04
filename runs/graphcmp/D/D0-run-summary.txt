@@ -7,5 +7,5 @@ stable-pairs=5
 selfcheck=# SELFCHECK: FAIL
 conflations=4 of 4
 controls=5 of 5
-oracle-selfcheck=
-census-rc=rc=1
+oracle-selfcheck=# ORACLE SELFCHECK: OK
+census-rc=rc=0

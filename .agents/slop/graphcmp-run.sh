@@ -16,13 +16,22 @@ P=.venv/bin/python
 ALL="matmul reduce buffer sink range rangeflat cast special binblob group commute indexed sym lin loop gate"
 # THE VERDICT EACH GRAPH MUST PRINT. A default is not available here and the reason is
 # LIMITS.md's own lesson: a claim with no denominator, or an expectation that reads a
-# variable, is a claim nobody can check. `sym` DISAGREES because the port cannot mint a
-# symbolic dim at all (fold.bend's `ssimplify` wall). `lin` DISAGREES on ONE node of 46 --
-# its SINK's `applied_opts`, which the port can only answer with one `q` per option.
-# `loop` DISAGREES on ONE node of 25 -- its CALL, whose dtype the port reads from
-# `CallInfo.cdtype`, a field CPython's `CallInfo` does not have (ops.py:130-131 reads
-# `src[0].dtype`). Both are MEASURED causes, not tolerances.
-WANT="matmul:AGREE reduce:AGREE buffer:AGREE sink:AGREE range:AGREE rangeflat:AGREE cast:AGREE special:AGREE binblob:AGREE group:AGREE commute:AGREE indexed:AGREE sym:DISAGREE lin:DISAGREE loop:DISAGREE gate:AGREE"
+# variable, is a claim nobody can check.
+#   `sym` USED TO BE HERE. It DISAGREED on 3 of its 12 nodes because the port could not mint
+#     a symbolic dim at all (`fold.bend`'s `ssimplify` wall), and it was the corpus's one
+#     DISAGREE-on-purpose graph. MEASURED 2026-10-04 late in the day: that wall is CLOSED --
+#     `fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the `AParam` arm of `sym_dim.of`) landed
+#     from the `fold` unit -- `sym` now reads `?=0` and `VERDICT: AGREE` at 12 of 12 nodes,
+#     and the symbolic-dim half of LIMITS.md section 3 is rewritten from RESOLVED-by-other
+#     rather than left claiming a limit that no longer exists.
+#   `lin` DISAGREES on ONE node of 46 -- its SINK's `applied_opts`, which the port can only
+#     answer with one `q` per option (`ops.bend:978` types them `List<U32>`; upstream's are
+#     `Opt` dataclasses).
+#   `loop` DISAGREES on ONE node of 25 -- its CALL, whose dtype the port reads from
+#     `CallInfo.cdtype`, a field CPython's `CallInfo` does not have (`ops.py:130-131` reads
+#     `src[0].dtype`).
+# Both are MEASURED causes, not tolerances.
+WANT="matmul:AGREE reduce:AGREE buffer:AGREE sink:AGREE range:AGREE rangeflat:AGREE cast:AGREE special:AGREE binblob:AGREE group:AGREE commute:AGREE indexed:AGREE sym:AGREE lin:DISAGREE loop:DISAGREE gate:AGREE"
 mkdir -p "$D"
 
 run() { # run <outfile> <args...>
@@ -51,7 +60,7 @@ done
       echo "$g: VERDICT=$got EXPECTED=$want"; bad=1
     fi
   done
-  [ "$bad" = 0 ] && echo "all 16 graphs: verdict as expected (13 AGREE; sym, lin and loop DISAGREE, each with a named cause in the \$WANT comment above)" \
+  [ "$bad" = 0 ] && echo "all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a named cause in the \$WANT comment above)" \
     || echo "AT LEAST ONE GRAPH'S VERDICT MOVED"
 } > "$D/D1-verdicts.txt"
 

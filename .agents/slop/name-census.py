@@ -145,24 +145,122 @@ def refetch(port):
           **info, "err": " ".join(r.stderr.split())[-70:]}
 
 
+MARK = " = "
+
+
+def shape_name(line):
+  """The name a reader that cuts at `" = "` (rather than at `=`) sees, or None if the line
+  has no `= ` boundary at all.
+
+  ⚠ THIS DELIBERATELY IS A SECOND READER, and that is the point of the file: the question
+  is whether a row NAME IS READER-DEPENDENT, and a question about reader-dependence cannot
+  be answered with one reader. The first version of this census counted `=` in
+  `rows_shipped(text)`'s KEYS, which is a TAUTOLOGICAL ZERO -- `row()` splits at the first
+  `=`, so a key can never contain one. MEASURED: it printed `0 names containing `=`` over
+  all 78 lane texts including the eight `kern CUDA  lb=1` names, and 0 is not a finding, it
+  is a measure that cannot fail. That is the same rule the brief states, wearing my own
+  detector: a check that matches a form cannot see the instance that lacks it. So the `=`
+  count is taken from a name this file cuts itself, and the two name sets are compared.
+  """
+  i = line.find(MARK)
+  return line[:i].strip() if i >= 0 else None
+
+
 def measure(text):
-  """The five figures, from `rebase-gate.py`'s own reader and nothing else."""
+  """The figures, split BY LANE SHAPE, because the answer differs by shape and averaging them
+  is how a census produces a number nobody can check.
+
+  `rows_shipped` is the project's reader and the ONLY source of NAMES. Every count that could
+  be tautological is taken from `shape_name` instead.
+
+  F1 -- the lane's own boundary IS `=` (`name=value`). A name here CANNOT contain `=` and a
+        name containing a SPACE cannot survive either: the writer has no way to express one.
+        Structurally immune, and that is a reportable finding, not a pass.
+  F2 -- the lane prints ` = ` as its boundary (`NAME = [v]`). Here a name MAY contain `=` and
+        the two readers can disagree. THE ONLY POPULATION IN WHICH THE CLASS CAN EXIST.
+  F3 -- the lane has no `=` at all (`name  value`), so `row()` falls back to two spaces and a
+        ONE-TOKEN head. Also immune to `=`, but it has its own collapse: many rows land on one
+        head token, and `uop/render.bend` loses 39 of 124 rows to it.
+  """
   lines = [l for l in text.splitlines() if l.strip()]
-  read = [l for l in lines if ROW(l)]
   names = ROWS(text)
-  eq = sorted(n for n in names if "=" in n)
-  empty = sorted(n for n in names if not n)
-  return {"lines": len(lines), "read": len(read), "names": len(names),
-          "eq": eq, "eq_n": len(eq), "lost": len(read) - len(names), "empty": len(empty)}
+  read, cls = 0, {"F1": 0, "F2": 0, "F3": 0}
+  behind = {}                                  # rows() key -> [(shape, shape-name), per line]
+  for line in lines:
+    s = ROW(line)
+    if not s:
+      continue
+    read += 1
+    if " = " in line:                          # F2: the boundary is ` = `, so a name here CAN
+      b = line[:line.find(" = ")].strip()     # contain `=`, and the two readers can disagree
+      cls["F2"] += 1
+    elif "=" in line:                          # F1: the boundary IS `=`, so the writer cannot
+      b = None                                 # express a `=` in a name. Structurally immune.
+      cls["F1"] += 1
+    else:                                      # F3: no `=` at all, so `row()` falls back to two
+      b = None                                 # spaces and a ONE-TOKEN head. Also immune.
+      cls["F3"] += 1
+    behind.setdefault(s[0], []).append((("F2" if b is not None else
+                                          "F1" if "=" in line else "F3"), b))
+  # ⚠ F3 EXISTED ONLY AS A MISCOUNT UNTIL THIS LINE, and it produced the one figure in this
+  # report that was plain wrong. `uop/render.bend`'s oracle is F3: `ast <uop>`, one space, no
+  # `=`. MEASURED: `row()` names those rows `ast`, `c2`, `ast` again -- 124 lines read, 85
+  # names, 39 lost, and every name a single meaningless token. My second reader cut at `" = "`
+  # and found ` = ` inside the VALUE, so it reported `pyrend buffer=[c1` as a "name containing
+  # `=`": 31 of them, on a lane where the shipped reader never sees that string. A lane-shape
+  # blind count is the brief's own rule -- a detector that matches a form cannot see the
+  # instance that lacks it -- aimed at me.
+  eq = sorted({b for bs in behind.values() for _, b in bs if b is not None and "=" in b})
+  collide = {s: bs for s, bs in behind.items() if len(bs) > 1}
+  lost = sum(len(bs) - 1 for bs in behind.values())
+  dupe = sorted((s, bs) for s, bs in collide.items()
+                if all(b is None or b == s for _, b in bs))
+  reshape = sorted((s, bs) for s, bs in collide.items()
+                   if any(b is not None and b != s for _, b in bs))
+  # A NAME IS READER-DEPENDENT WHENEVER THE TWO READERS DISAGREE, and that is a DIFFERENT
+  # question from whether the disagreement COST A ROW. The first version counted only the
+  # colliding ones and so reported 5 for `uop/render.bend`'s oracle where 31 names are
+  # reader-dependent: 26 of them land on a key of their own and are merely misnamed, and a
+  # census that cannot tell "misnamed" from "lost" cannot say how much a rename is worth.
+  cut = {}                                     # shape-name -> the rows() name it is read as
+  for s, bs in behind.items():
+    for _, b in bs:
+      if b is not None:
+        cut.setdefault(b, s)
+  reshaped = sorted(b for b, s in cut.items() if b != s)
+  return {"lines": len(lines), "read": read, "names": len(names), **cls,
+          "eq": eq, "eq_n": len(eq), "reshaped": reshaped, "reshaped_n": len(reshaped),
+          "harmless": len(reshaped) - sum(1 for b in reshaped if b in cut and len(
+              behind[cut[b]]) == 1),
+          "dupe": dupe, "reshape": reshape, "collide": collide,
+          "lost": lost, "unread": len(lines) - read,
+          "empty": sorted(n for n in names if not n)}
 
 
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--fetch", action="store_true")
+  ap.add_argument("--refetch-zero", action="store_true",
+                  help="re-run, SERIALLY and alone, every PORT lane the parallel fetch left "
+                       "empty. A starved lane is my harness until proven otherwise.")
   ap.add_argument("--names", action="store_true")
   a = ap.parse_args()
   CACHE.mkdir(exist_ok=True)
   ports = sorted(RG.BASE_ORACLES)
+
+  if a.refetch_zero:
+    zero = [p for p in ports
+            if (CACHE / (p.replace("/", "_") + ".port.txt")).exists()
+            and not ROWS((CACHE / (p.replace("/", "_") + ".port.txt")).read_text())]
+    print(f"{len(zero)} of {len(ports)} port lanes are empty in the cache; re-running each "
+          f"ALONE, {RG.BEND_ROW_TRIES} tries, {RG.BEND_ROW_BACKOFF}s apart")
+    for p in zero:
+      res = refetch(p)
+      print(f"  {res['port']:<40} names={res['names']:>4} rc={res['rc']} "
+            f"tries={res['row_tries']} secs={res['row_secs']:>6} "
+            f"{'STABLE' if res['stable'] else '!! PORT MOVED'}")
+    print("re-run without --refetch-zero for the census")
+    return 0
 
   if a.fetch:
     print(f"fetching {len(ports)} wired lanes, 8 at a time, no cache reuse")
@@ -184,39 +282,77 @@ def main():
     if not (REPO / port).exists():
       unstable.append(port)
 
-  print(f"{'lane':<28} {'port':<34} {'LINES':>6} {'NAMES':>6} {'EQ':>4} {'LOST':>5}  load")
-  for m in sorted(rows, key=lambda r: (-r["eq_n"], -r["lost"], r["port"])):
-    mark = "" if m["eq_n"] == 0 else "  <== NAME CONTAINS '='"
-    print(f"{m['lane']:<28} {m['port']:<34} {m['lines']:6} {m['names']:6} "
-          f"{m['eq_n']:4} {m['lost']:5}  {m['read']}/{m['lines']} lines read{mark}")
+  print(f"{'lane':<28} {'port':<34} {'LINES':>6} {'READ':>6} {'F1':>6} {'F2':>6} {'F3':>6} "
+        f"{'NAMES':>6} {'`=`':>4} {'DIFFER':>7} {'LOST':>5}")
+  for m in sorted(rows, key=lambda r: (-r["reshaped_n"], -r["lost"], r["port"])):
+    mark = "  <== READER-DEPENDENT NAME" if m["reshaped_n"] else ""
+    print(f"{m['lane']:<28} {m['port']:<34} {m['lines']:6} {m['read']:6} {m['F1']:6} "
+          f"{m['F2']:6} {m['F3']:6} {m['names']:6} {m['eq_n']:4} {m['reshaped_n']:7} "
+          f"{m['lost']:5} "
+          f"{mark}")
   TL = sum(r["lines"] for r in rows)
+  TR = sum(r["read"] for r in rows)
+  TF1 = sum(r["F1"] for r in rows)
+  TF2 = sum(r["F2"] for r in rows)
+  TF3 = sum(r["F3"] for r in rows)
+  TU = sum(r["unread"] for r in rows)
   TN = sum(r["names"] for r in rows)
   TE = sum(r["eq_n"] for r in rows)
+  TRS = sum(r["reshaped_n"] for r in rows)
+  # THE ROW COUNT, NOT THE KEY COUNT. A key holding FOUR rows costs THREE measurements, and
+  # counting keys reported 1 for it -- which is how 349 rows went missing from the split on the
+  # first run of this line. `lost` is Σ(len-1); the split must be Σ(len-1) too or the two do
+  # not add up.
   TLOST = sum(r["lost"] for r in rows)
+  TRESN = sum(len(bs) - 1 for r in rows for _, bs in r["reshape"])
+  TDUP = sum(len(bs) - 1 for r in rows for _, bs in r["dupe"])
   print()
-  print(f"TOTAL over {len(rows)} cached lane texts of {len(ports)} wired ports: "
-        f"{TL} lines, {TN} names, {TE} names containing `=`, {TLOST} rows the reader "
-        f"cannot address by name")
-  print(f"  `=` names as a fraction of NAMES: {TE}/{TN} = "
-        f"{(100.0 * TE / TN if TN else 0):.2f}%")
-  print(f"  unaddressable rows as a fraction of LINES the reader accepted: "
-        f"{TLOST}/{sum(r['read'] for r in rows)} = "
-        f"{(100.0 * TLOST / max(1, sum(r['read'] for r in rows))):.2f}%")
+  print(f"TOTAL over {len(rows)} cached lane texts of {len(ports)} wired ports:")
+  print(f"  {TL} lines, {TR} read by rows(), {TN} distinct names")
+  print(f"  LANE SHAPE: {TF1} F1 rows (the boundary IS `=`, so a name there CANNOT contain `=` "
+        f"and a space cannot survive either -- {100.0 * TF1 / max(1, TR):.1f}% of the tree)")
+  print(f"              {TF2} F2 rows (the boundary is ` = `, so a name there CAN contain `=` "
+        f"-- the ONLY population in which the class can exist)")
+  print(f"              {TF3} F3 rows (no `=` at all; `row()` needs two spaces and a ONE-TOKEN "
+        f"head, so a `=` is impossible there -- but rows still collide on a head token)")
+  print(f"  UNREADABLE LINES     : {TU}/{TL} -- lines rows() refuses outright, e.g. "
+        f"`dtype_tables.py`'s TSV lines, which is GUARD 2 'compared nothing' BY DESIGN")
+  print(f"  NAMES CONTAINING `=`   : {TE}/{TF2} of the F2 rows that can carry one = "
+        f"{100.0 * TE / max(1, TF2):.2f}%   ({TE}/{TN} = {100.0 * TE / max(1, TN):.2f}% of all names)")
+  THR = sum(r["reshaped_n"] for r in rows)
+  print(f"  READER-DEPENDENT NAMES  : {THR}/{TF2} = {100.0 * THR / max(1, TF2):.2f}% of the F2 "
+        f"population -- the two readers do not name these rows the same. Of those, {THR - TRESN} "
+        f"land on a key of their own and are merely MISNAMED, and {TRESN} share a key with "
+        f"another row and so COST a measurement")
+  print(f"  UNADDRESSABLE ROWS      : {TLOST}/{TR} = {100.0 * TLOST / max(1, TR):.2f}% of the "
+        f"rows the reader accepted. SPLIT BY CAUSE, over the key and not the name:\n"
+        f"      {TRESN} row(s) lost to a key holding two rows with DIFFERENT shape-names -- the "
+        f"reshape class\n"
+        f"      {TDUP} row(s) lost to a key holding two rows with the SAME name -- a lane "
+        f"printing a row name twice, an older and separate defect no `=` is involved in\n"
+        f"      residual {TLOST - TRESN - TDUP} -- MUST BE 0, or the census is not a census. It was "
+        f"82, then 146, then 349: three separate under-counts in the SPLIT while `lost` itself "
+        f"was right, each one a case of counting KEYS where the quantity is ROWS. An "
+        f"unexplained number in a coverage census is worse than a wrong one, because nobody "
+        f"can check it")
   starved = [r for r in rows if r["read"] == 0]
   print(f"  STARVED lanes (0 rows read of {len(rows)} texts): {len(starved)} -- "
-        f"{[r['port'] for r in starved]}  a starved lane is PLAUSIBLE, not a defect")
+        f"{sorted({(r['lane'], r['port']) for r in starved})}  a starved lane is PLAUSIBLE")
   if missing:
     print(f"  NOT FETCHED: {len(missing)} lane text(s) -- {[m[1] for m in missing]}")
   if unstable:
     print(f"  ports with no .bend on disk now: {sorted(set(unstable))}")
   if a.names:
     print()
-    for r in sorted(rows, key=lambda r: -r["eq_n"]):
-      if r["eq_n"] or r["lost"]:
-        print(f"{r['port']}  [{r['lane']}]  LINES={r['lines']} NAMES={r['names']} "
-              f"EQ={r['eq_n']} LOST={r['lost']}")
-        for n in r["eq"]:
-          print(f"    EQ  {n!r}")
+    for r in sorted(rows, key=lambda r: -r["reshaped_n"]):
+      if r["reshaped_n"] or r["dupe"]:
+        print(f"{r['port']}  [{r['lane']}]  LINES={r['lines']} READ={r['read']} F1={r['F1']} "
+              f"F2={r['F2']} F3={r['F3']} NAMES={r['names']} EQ={r['eq_n']} DIFFER={r['reshaped_n']} "
+              f"LOST={r['lost']}")
+        for s, bs in sorted(r["collide"].items()):
+          print(f"    KEY  {s!r} <- {len(bs)} row(s) naming it: {bs[:6]}")
+        for s, bs in r["dupe"][:4]:
+          print(f"    DUPE {s!r} <- {bs}")
   (HERE / "name-census.json").write_text(json.dumps(rows, indent=1))
   return 0
 

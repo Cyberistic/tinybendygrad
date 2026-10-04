@@ -64,17 +64,18 @@ def uncast(v):
 
 
 def cone(roots):
-    seen, out = set(), set()
-    st = list(roots)
+    """-> (nodes by id, how many of them are BITCAST). The COUNT matters: there are two
+    bitcasts on the narrowing path (`v.bitcast(fr)` going in and
+    `.bitcast(f2f_dt[fr])` coming out) and only a question about the FIRST one is item 3's.
+    Counting op NAMES would answer "is a BITCAST anywhere" and cannot tell them apart."""
+    seen, st = {}, list(roots)
     while st:
-        v = st.pop()
-        v = uncast(v)
+        v = uncast(st.pop())
         if id(v) in seen:
             continue
-        seen.add(id(v))
-        out.add(v.op.name)
+        seen[id(v)] = v
         st.extend(v.src)
-    return out
+    return seen
 
 
 def f2f_dt_of(fr):
@@ -103,16 +104,19 @@ def build(nm, fr, to, four_arg):
 
 
 def main():
-    print(f"{'fixture':<14} {'receiver':<22} {'BITCAST in cone?':<17} {'nodes':>6}")
+    print(f"{'fixture':<14} {'receiver':<22} {'BITCASTs':>9} {'nodes':>6}")
     for nm, fr, to in FIX:
         for four in (True, False):
             src = build(nm, fr, to, four)
-            ops = cone([DD.f2f(src, fr, to)])
+            nodes = cone([DD.f2f(src, fr, to)])
+            nb = sum(1 for v in nodes.values() if v.op is Ops.BITCAST)
             tag = "f2f_dt[fr] (4-arg)" if four else "v.cast(fr) (3-arg)"
-            n = sum(1 for _ in ops)
-            print(f"{nm:<14} {tag:<22} {'BITCAST' if 'BITCAST' in ops else 'FOLDED':<17} {n:>6}")
+            print(f"{nm:<14} {tag:<22} {nb:>9} {len(nodes):>6}")
     print()
-    print("The NARROWING rows are the ones item 3 is about. `f2f_dt[fr]` is the receiver")
+    print()
+    print("READ IT AS: 2 BITCASTs on a narrowing pair = the incoming `v.bitcast(fr)` was")
+    print("NOT folded (dtype.py's own receiver is a uint). 1 BITCAST = the incoming one")
+    print("folded. The NARROWING rows are the ones item 3 is about. `f2f_dt[fr]` is the receiver")
     print("dtype.py's own two call sites pass; the 3-arg row is what `f2f-padoracle.py` and")
     print("`dd-bandpad.bend` build. A fold that only happens in the 3-arg row is a FIXTURE")
     print("difference, and landing `dd_bcast` for it would delete a node CPython builds.")

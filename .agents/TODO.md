@@ -7215,3 +7215,141 @@ Rules appended to `bend2-constraints.md` as **L1** (position ~20968), at the end
 Ledger: `.agents/slop/baseline-ledger.md` §5 cites the prior-art entries done right — the naming-gate
 count **283 vs 278** and `elf.bend` **353 vs 331** with a third value **246 explicitly retracted**,
 each reported with both observed values and the reason it moves.
+
+## Session 2026-10-04 (gc5) — `graphcmp`: A REAL LINEARIZED PROGRAM, SO `ENDIF` /
+## `BACKEDGE` / `LOAD` / `STORE` ARE COMPARED AT LAST
+
+Entry points unchanged plus two: `.agents/slop/graphcmp-repro.sh` (new — the two-clean-run
+byte check, with a substrate wait and a health gate), `.agents/slop/graphcmp-p14{,-b,-c,-d,
+-e}.py` (new — the raw CPython probes that asked what a real scheduled program contains).
+Regenerate everything: `sh .agents/slop/graphcmp-run.sh`.
+Measure reproducibility: `sh .agents/slop/graphcmp-repro.sh`.
+
+`E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
+
+Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
+unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
+Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
+Progress: normal-form defects [########--] 21 found and fixed (17-21 are this round's)
+Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
+           found a real nondeterminism on its first run
+
+- [x] **THE GAP NAMED IN THE BRIEF, CLOSED: THE CORPUS WAS NOT A KERNELIZED PROGRAM.**
+      Three graphs, and the cost is stated where it is: 85 new BEND nodes, hand-built,
+      because `tinybendygrad/schedule/__init__.bend` DEFERRs `__init__.py:82-301` and the
+      port **cannot build a schedule at all**. What the widening bought is that the PY side
+      now runs three pipelines the corpus had never run. `lin` 46 nodes,
+      `loop` 25, `gate` 14.
+- [x] **`lin` — `full_rewrite_to_sink(schedule_linear(matmul))`.** The first graph here that
+      IS a kernel. 46 nodes; LOAD 6, STORE 1, END 2, INDEX 7, PARAM 3, CAST 6, MUL 5, ADD 7.
+      45 of 46 nodes byte-identical.
+- [x] **`loop` — `hcq_fence(tv, tv, tv, 0)`, tinygrad's OWN HCQ2 poll-loop kernel**
+      (`runtime/support/hcq2.py:405-413`), reached by CALLING it. 25 nodes; BACKEDGE 1,
+      LOAD 2, STORE 2, AFTER 3, CALL 1, NOOP 1. Byte-identical on NULL, CPU and PYTHON
+      (measured). It is the only place in the tree that mints a BACKEDGE outside a
+      hand-written fixture.
+- [x] **`gate` — a gated STORE through the REAL `pm_linearize_cleanups`** (the one rule in
+      this tree that constructs `Ops.IF`/`Ops.ENDIF`, `codegen/__init__.py:403`). 14 nodes,
+      rooted at `LINEAR` because nothing points at the `ENDIF`. **AGREE**, and it is the
+      widest-fan-in fixture in the corpus (RANGE#5 at 5 parents).
+- [x] **`ENDIF`'s ROUTE MEASURED, WITH A DENOMINATOR.** `Ops.ENDIF` has exactly ONE minting
+      site and it needs a GATED STORE, which is `UOp.store(val, gate)` (ops.py:613).
+      **The scheduler never mints one: 0 gated STOREs in 9 scheduled programs**
+      (`graphcmp-p14d.py` Q1). The closest is `shrink`, which leaves 2 GATED LOADs and
+      which `to_program` then REFUSES. So `ENDIF` is reachable and the claim is narrow.
+- [x] **`LOAD`/`STORE` NEED NO KERNEL EXECUTOR — PROVED, NOT ASSUMED.** `lin` is a real
+      kernelized program carrying 6 LOADs and 1 STORE, none of which has ever been run.
+      What needs an executor is making the `Buffer` VALUES agree, and LIMITS §2 already says
+      why they cannot (`Buffer` has no `slot`). `.agents/slop/e2e.sh` is still the only
+      end-to-end artefact and still proves one matmul.
+- [x] **DOES THE DIFFER STILL AGREE? 13 of 16, and the 3 that do not each have a NAMED
+      CAUSE** rather than a tolerance: `sym` (the `ssimplify` wall, by design), `lin`
+      (`applied_opts` is a count the port cannot fill, 1 node of 46), `loop`
+      (`CallInfo.cdtype` is a port-only field, 1 node of 25). `graphcmp-run.sh`'s `$WANT`
+      ASSERTS each one, so a moved verdict is a moved file.
+- [x] **SIX MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM**, of which two would have kept
+      lying. A SINK with `arg=None` **CRASHED** the emitter (17) — thirteen graphs of
+      silence that were a crash, not an agreement. The `tag` column **could not be read at
+      all** (18) because every earlier graph had `tag is None` everywhere. A kernel's NAME
+      is ANSI-coloured text that reached a structural field (19). The two-run byte check was
+      `find | md5 -q`, which on macOS takes ONE file (20) — and once written properly it
+      found a real nondeterminism on its FIRST run. The census counted a dataclass FIELD
+      NAME as an atom letter (21), and the assertion for it is MEASURED TO FIRE.
+- [x] **REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
+      accepts a run only if its summary reads 16 graphs / 13 AGREE / selfcheck OK /
+      `census-rc=0`, and compares sha256 over non-blank lines. **158 of 158 identical.**
+      The health gate is not decoration: a concurrent edit to `uop/ops.bend` landed part way
+      through a run and produced twelve real reports and four 0-row failures.
+- [x] **`graphcmp-LIMITS.md` REWRITTEN WITH NEW DENOMINATORS.** Every claim I resolved
+      carries the number that resolved it; every claim I could NOT resolve is stated at the
+      same strength. `ENDIF`/`BACKEDGE`/`LOAD`/`STORE` are RESOLVED with the op counts and the
+      9-program negative; `CMPEQ` is still a measured limit and now says so after THREE real
+      kernels rather than one eager graph; `SHRINK` is named as the nearest unclosed gap.
+
+**REPORTED, NOT FIXED** (not this unit's files): `uop/fold.bend:1067-1070`'s `call_dt` reads
+`CallInfo.dtype`, a field CPython's `CallInfo` does not have — `ops.py:130-131` reads
+`src[0].dtype` — so the port's CALL dtype/shape reads `?` where CPython reads `void`/`R`.
+`uop/ops.bend` is under single ownership this round and `fold.bend` belongs to the `fold`
+unit. Both names and the node count (1 of 25) are in `graphcmp-LIMITS.md` §2.
+
+**CONCURRENCY, MEASURED TWICE.** `uop/ops.bend` went cold three times while this unit ran
+(`sym_dim.pa` at :1250 not compiling; `ParamArg`'s field list renamed mid-run). The
+`emit_bend` 5-attempt guard turned every one of them into `0 rows after 5 attempts -- a
+FAILURE, not a verdict` and `D2-cmp-*` into `NOT COMPARED` rather than `BYTE-IDENTICAL`,
+which is the behaviour those guards were written for. No port file was edited.
+
+## Session 2026-10-04 (name-shape unit) — A ROW NAME CONTAINING `=` HAS ONE NAME PER READER
+
+- [x] **THE EIGHT `kern` NAMES RENAMED, AND THE RENAME CITES THE VALUE, NOT THE SEPARATOR.**
+      `kern <DEV> lb=<N>` -> `kern <DEV> lb <N>`, one character in `cstyle.bend:1758` and the
+      same f-string in `renderer_oracle.py:396` (ONE coordinate). The value's upstream name is
+      `launch_bounds` (`cstyle.py:163`, sole consumer `.kernel_typedef.format(launch_bounds=)`
+      at `:164`); `lb` is this port's standing abbreviation and is already the `kern_row`
+      PARAMETER's name, so only the separator moved. **NO COLLISION: 227 rows, 227 distinct
+      names, 0 duplicates, and the VALUE MULTISET IS UNCHANGED** (checked by multiset
+      comparison, not by eye). Names MAY contain spaces -- `rows()`'s F3 path only runs on
+      lines with no `=`, so a space is a separator no reader cuts.
+      MEASURED what it was: 227 port rows read as **225** names and 224 oracle rows as **222**,
+      the survivors being the `lb=4` values, so both `lb=1` measurements were unreachable.
+      `.agents/slop/cstyle-rename.md`
+- [x] **`cstyle-gate.py`'s `reshape()` (GUARD 0): A COVERAGE DELTA THAT CHANGES THE VERDICT.**
+      The old parity print NAMED all eight rows and then printed `AGREE`, rc=0. Now the two
+      readers' name sets are compared per lane, on BOTH lanes, before the value comparison, and
+      any of {name contains `=`, two names on one key, a row the shipped reader cannot read at
+      all, name sets differ} is BROKEN. `report_reshape()` prints both lanes' counts every
+      run; `--names` dumps both full sets.
+      `.agents/slop/cstyle-nameshape-control.md`
+- [x] **THE CONTROL A VALUE PLANT CANNOT FAKE: `--plant-shape OLD NEW`, on BOTH lanes.**
+      `--plant` corrupts a VALUE; MEASURED, it leaves `eq=0 unreachable=0` while the lane goes
+      BROKEN on the value comparison -- so a green value lane is not evidence the shape is
+      clean. Renaming on ONE side would only trip `stray`/`ghost`, so the control rewrites the
+      name on both. Live lane, same bytes: **pre-fix gate rc=0 `AGREE`, post-fix rc=1
+      `BROKEN`, `gated 221 agree 221 disagree []` IN BOTH** -- the value verdict is identical
+      and only the verdict moves. Four lanes in `--selftest` (`clean`/`value`/`shape`/
+      `collide`), rc=0.
+- [x] **THE CENSUS, EVERY WIRED LANE, WITH THE DENOMINATOR THAT MATTERS.**
+      39 wired ports, 78 lane texts, 38,057 lines, 23,179 rows read, 22,672 names.
+      **361 names contain `=` = 7.62% of the 4,736 F2 rows THAT CAN CARRY ONE, and only
+      1.59% of all names** -- because 18,443 rows (79.6%) are F1 lanes whose boundary IS `=`
+      and are STRUCTURALLY IMMUNE. 361 reader-dependent names: 59 merely misnamed, **302 cost
+      a measurement**. 507 unaddressable rows = 302 reshape + **205 from lanes printing one row
+      name TWICE, no `=` involved**, `residual 0`.
+      **AND THE CLASS IS NOT CONFINED TO cstyle: `renderer/llvmir.bend` has 157 of 471 rows
+      (33%) with 48 on ONE key, `renderer/nir_llvmir.bend` 8, `uop/render.bend` 31.**
+      `.agents/slop/name-census.md`, `name-census.py`, `name-census-report.txt`
+- [x] **FOUR DEFECTS THE CENSUS FOUND IN ITSELF, three of which reported a CLEAN NUMBER.**
+      `=` counted in `rows()`'s output is a **tautological zero** (`row()` strips the `=`, so
+      the count cannot fail -- it printed 0 over all 78 texts *including the eight*); the
+      reshape/duplicate split counted KEYS where the quantity is ROWS (0 on a lane with 148
+      lost); an unexplained residual went **82 -> 146 -> 349** while `lost` was right; and a
+      lane-shape-blind reader found ` = ` inside a VALUE and reported 31 false `=`-names on
+      `uop/render.bend`'s oracle. The split now prints `residual 0` and asserts it.
+- [x] **MY OWN HARNESS STARVED 25 OF 39 PORT LANES, AND THAT IS THE POINT.**
+      8 concurrent `bend` compiles: `cstyle.bend` alone prints 227 rows, in the pool it printed
+      0 with an empty `--check-only`. `--refetch-zero` re-runs every empty lane ALONE with
+      `rebase-gate.py`'s own `BEND_ROW_TRIES`/`row_secs`; all 25 returned rows on try 1.
+
+**REPORTED, NOT FIXED** (not this unit's files): `rebase-gate.py:1987` carries `# 222` on the
+cstyle lane entry, the pre-rename shared-name count over the oracle lane; it is **224** now
+(live file, another unit's). `jit-oracle.py:44` raises -- the oracle is BROKEN, not starved.
+`renderer/llvmir.bend` and `renderer/nir_llvmir.bend` need the same rename as cstyle.

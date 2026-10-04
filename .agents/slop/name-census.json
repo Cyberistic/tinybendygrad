@@ -1,12 +1,22 @@
 [
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 209,
+  "read": 208,
+  "names": 208,
+  "F1": 208,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 1,
+  "empty": [],
   "port": "tinybendygrad/codegen/decomp/dtype.bend",
   "lane": "port"
  },
@@ -14,21 +24,41 @@
   "lines": 356,
   "read": 356,
   "names": 356,
+  "F1": 356,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/decomp/dtype.bend",
   "lane": "cpython:dtype-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 24,
+  "read": 24,
+  "names": 24,
+  "F1": 24,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/gpudims.bend",
   "lane": "port"
  },
@@ -36,21 +66,41 @@
   "lines": 54,
   "read": 54,
   "names": 54,
+  "F1": 54,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/gpudims.bend",
   "lane": "cpython:rw-gate-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 38,
+  "read": 38,
+  "names": 38,
+  "F1": 38,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/opt/search.bend",
   "lane": "port"
  },
@@ -58,21 +108,41 @@
   "lines": 20,
   "read": 20,
   "names": 20,
+  "F1": 20,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/opt/search.bend",
   "lane": "cpython:rebase-oracle-search"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 28,
+  "read": 28,
+  "names": 28,
+  "F1": 28,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/simplify.bend",
   "lane": "port"
  },
@@ -80,10 +150,20 @@
   "lines": 60,
   "read": 60,
   "names": 60,
+  "F1": 60,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/codegen/simplify.bend",
   "lane": "cpython:rw-oracle"
  },
@@ -91,10 +171,20 @@
   "lines": 110,
   "read": 110,
   "names": 110,
+  "F1": 110,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/device.bend",
   "lane": "port"
  },
@@ -102,10 +192,20 @@
   "lines": 23,
   "read": 23,
   "names": 23,
+  "F1": 23,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/device.bend",
   "lane": "cpython:device-oracle"
  },
@@ -113,10 +213,20 @@
   "lines": 0,
   "read": 0,
   "names": 0,
+  "F1": 0,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/dtype.bend",
   "lane": "port"
  },
@@ -124,21 +234,41 @@
   "lines": 14766,
   "read": 0,
   "names": 0,
+  "F1": 0,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 14766,
+  "empty": [],
   "port": "tinybendygrad/dtype.bend",
   "lane": "cpython:dtype_tables"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 137,
+  "read": 137,
+  "names": 137,
+  "F1": 137,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/engine/jit.bend",
   "lane": "port"
  },
@@ -146,21 +276,41 @@
   "lines": 0,
   "read": 0,
   "names": 0,
+  "F1": 0,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/engine/jit.bend",
   "lane": "cpython:jit-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 72,
+  "read": 72,
+  "names": 72,
+  "F1": 72,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/mixin/elementwise.bend",
   "lane": "port"
  },
@@ -168,21 +318,41 @@
   "lines": 71,
   "read": 71,
   "names": 71,
+  "F1": 71,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/mixin/elementwise.bend",
   "lane": "cpython:ew-gate"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 36,
+  "read": 36,
+  "names": 36,
+  "F1": 36,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/mixin/op.bend",
   "lane": "port"
  },
@@ -190,21 +360,41 @@
   "lines": 32,
   "read": 32,
   "names": 32,
+  "F1": 32,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/mixin/op.bend",
   "lane": "cpython:mixin-op-gate"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 24,
+  "read": 24,
+  "names": 24,
+  "F1": 24,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/nn/__init__.bend",
   "lane": "port"
  },
@@ -212,21 +402,41 @@
   "lines": 24,
   "read": 24,
   "names": 24,
+  "F1": 24,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/nn/__init__.bend",
   "lane": "cpython:nn-init-gate"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 123,
+  "read": 123,
+  "names": 123,
+  "F1": 123,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/nn/onnx.bend",
   "lane": "port"
  },
@@ -234,10 +444,20 @@
   "lines": 123,
   "read": 123,
   "names": 123,
+  "F1": 123,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/nn/onnx.bend",
   "lane": "cpython:onnx-gate"
  },
@@ -245,10 +465,20 @@
   "lines": 726,
   "read": 726,
   "names": 726,
+  "F1": 0,
+  "F2": 726,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/amd/generate.bend",
   "lane": "port"
  },
@@ -256,10 +486,20 @@
   "lines": 779,
   "read": 779,
   "names": 779,
+  "F1": 0,
+  "F2": 779,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/amd/generate.bend",
   "lane": "cpython:ga-oracle"
  },
@@ -267,10 +507,20 @@
   "lines": 1033,
   "read": 1033,
   "names": 1033,
+  "F1": 1033,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/amd/sqtt.bend",
   "lane": "port"
  },
@@ -278,21 +528,41 @@
   "lines": 1324,
   "read": 1324,
   "names": 1324,
+  "F1": 1324,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/amd/sqtt.bend",
   "lane": "cpython:sqtt_spec"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 227,
+  "read": 227,
+  "names": 227,
+  "F1": 0,
+  "F2": 227,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/cstyle.bend",
   "lane": "port"
  },
@@ -300,21 +570,1709 @@
   "lines": 224,
   "read": 224,
   "names": 224,
+  "F1": 0,
+  "F2": 224,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/cstyle.bend",
   "lane": "cpython:renderer_oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
-  "eq": [],
-  "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "lines": 471,
+  "read": 471,
+  "names": 323,
+  "F1": 0,
+  "F2": 471,
+  "F3": 0,
+  "eq": [
+   "br2 load vol=False f32 [0]",
+   "br2 load vol=False f32 [1]",
+   "br2 load vol=False f32 [2]",
+   "br2 load vol=False f32 [3]",
+   "br2 load vol=False f32 [4]",
+   "br2 load vol=False f32 [5]",
+   "br2 load vol=False f32 [6]",
+   "br2 load vol=False f32 [7]",
+   "br2 load vol=False i32 [0]",
+   "br2 load vol=False i32 [1]",
+   "br2 load vol=False i32 [2]",
+   "br2 load vol=False i32 [3]",
+   "br2 load vol=False i32 [4]",
+   "br2 load vol=False i32 [5]",
+   "br2 load vol=False i32 [6]",
+   "br2 load vol=False i32 [7]",
+   "br2 load vol=False u8 [0]",
+   "br2 load vol=False u8 [1]",
+   "br2 load vol=False u8 [2]",
+   "br2 load vol=False u8 [3]",
+   "br2 load vol=False u8 [4]",
+   "br2 load vol=False u8 [5]",
+   "br2 load vol=False u8 [6]",
+   "br2 load vol=False u8 [7]",
+   "br2 load vol=True f32 [0]",
+   "br2 load vol=True f32 [1]",
+   "br2 load vol=True f32 [2]",
+   "br2 load vol=True f32 [3]",
+   "br2 load vol=True f32 [4]",
+   "br2 load vol=True f32 [5]",
+   "br2 load vol=True f32 [6]",
+   "br2 load vol=True f32 [7]",
+   "br2 load vol=True i32 [0]",
+   "br2 load vol=True i32 [1]",
+   "br2 load vol=True i32 [2]",
+   "br2 load vol=True i32 [3]",
+   "br2 load vol=True i32 [4]",
+   "br2 load vol=True i32 [5]",
+   "br2 load vol=True i32 [6]",
+   "br2 load vol=True i32 [7]",
+   "br2 load vol=True u8 [0]",
+   "br2 load vol=True u8 [1]",
+   "br2 load vol=True u8 [2]",
+   "br2 load vol=True u8 [3]",
+   "br2 load vol=True u8 [4]",
+   "br2 load vol=True u8 [5]",
+   "br2 load vol=True u8 [6]",
+   "br2 load vol=True u8 [7]",
+   "br3 load vol=False f32",
+   "br3 load vol=False i8",
+   "br3 load vol=False u64",
+   "br3 load vol=True f32",
+   "br3 load vol=True i8",
+   "br3 load vol=True u64",
+   "br4 store vol=False f32",
+   "br4 store vol=False i8",
+   "br4 store vol=False u64",
+   "br4 store vol=True f32",
+   "br4 store vol=True i8",
+   "br4 store vol=True u64",
+   "br5 stack n=1 f32 [0]",
+   "br5 stack n=2 f32 [0]",
+   "br5 stack n=2 f32 [1]",
+   "br5 stack n=3 bf16 [0]",
+   "br5 stack n=3 bf16 [1]",
+   "br5 stack n=3 bf16 [2]",
+   "br5 stack n=4 u8 [0]",
+   "br5 stack n=4 u8 [1]",
+   "br5 stack n=4 u8 [2]",
+   "br5 stack n=4 u8 [3]",
+   "is_volatile AFTER vol=False",
+   "is_volatile AFTER vol=True",
+   "is_volatile BUFFER vol=False",
+   "is_volatile BUFFER vol=True",
+   "is_volatile CAST vol=False",
+   "is_volatile CAST vol=True",
+   "is_volatile CONST vol=False",
+   "is_volatile CONST vol=True",
+   "is_volatile PARAM vol=False",
+   "is_volatile PARAM vol=True",
+   "rfn abi=None alu [0]",
+   "rfn abi=None alu [1]",
+   "rfn abi=None alu [2]",
+   "rfn abi=None alu [3]",
+   "rfn abi=None alu [4]",
+   "rfn abi=None alu [5]",
+   "rfn abi=None empty [0]",
+   "rfn abi=None empty [1]",
+   "rfn abi=None empty [2]",
+   "rfn abi=None empty [3]",
+   "rfn abi=None empty [4]",
+   "rfn abi=None global [0]",
+   "rfn abi=None global [1]",
+   "rfn abi=None global [2]",
+   "rfn abi=None global [3]",
+   "rfn abi=None global [4]",
+   "rfn abi=None global [5]",
+   "rfn abi=None local [0]",
+   "rfn abi=None local [1]",
+   "rfn abi=None local [2]",
+   "rfn abi=None local [3]",
+   "rfn abi=None local [4]",
+   "rfn abi=None local [5]",
+   "rfn abi=None reg [0]",
+   "rfn abi=None reg [1]",
+   "rfn abi=None reg [2]",
+   "rfn abi=None reg [3]",
+   "rfn abi=None reg [4]",
+   "rfn abi=None reg [5]",
+   "rfn abi=amdgpu_kernel alu [0]",
+   "rfn abi=amdgpu_kernel alu [1]",
+   "rfn abi=amdgpu_kernel alu [2]",
+   "rfn abi=amdgpu_kernel alu [3]",
+   "rfn abi=amdgpu_kernel alu [4]",
+   "rfn abi=amdgpu_kernel alu [5]",
+   "rfn abi=amdgpu_kernel global [0]",
+   "rfn abi=amdgpu_kernel global [1]",
+   "rfn abi=amdgpu_kernel global [2]",
+   "rfn abi=amdgpu_kernel global [3]",
+   "rfn abi=amdgpu_kernel global [4]",
+   "rfn abi=amdgpu_kernel global [5]",
+   "rfn abi=amdgpu_kernel local [0]",
+   "rfn abi=amdgpu_kernel local [1]",
+   "rfn abi=amdgpu_kernel local [2]",
+   "rfn abi=amdgpu_kernel local [3]",
+   "rfn abi=amdgpu_kernel local [4]",
+   "rfn abi=amdgpu_kernel local [5]",
+   "rfn abi=amdgpu_kernel reg [0]",
+   "rfn abi=amdgpu_kernel reg [1]",
+   "rfn abi=amdgpu_kernel reg [2]",
+   "rfn abi=amdgpu_kernel reg [3]",
+   "rfn abi=amdgpu_kernel reg [4]",
+   "rfn abi=amdgpu_kernel reg [5]",
+   "rfn abi=win64cc alu [0]",
+   "rfn abi=win64cc alu [1]",
+   "rfn abi=win64cc alu [2]",
+   "rfn abi=win64cc alu [3]",
+   "rfn abi=win64cc alu [4]",
+   "rfn abi=win64cc alu [5]",
+   "rfn abi=win64cc global [0]",
+   "rfn abi=win64cc global [1]",
+   "rfn abi=win64cc global [2]",
+   "rfn abi=win64cc global [3]",
+   "rfn abi=win64cc global [4]",
+   "rfn abi=win64cc global [5]",
+   "rfn abi=win64cc local [0]",
+   "rfn abi=win64cc local [1]",
+   "rfn abi=win64cc local [2]",
+   "rfn abi=win64cc local [3]",
+   "rfn abi=win64cc local [4]",
+   "rfn abi=win64cc local [5]",
+   "rfn abi=win64cc reg [0]",
+   "rfn abi=win64cc reg [1]",
+   "rfn abi=win64cc reg [2]",
+   "rfn abi=win64cc reg [3]",
+   "rfn abi=win64cc reg [4]",
+   "rfn abi=win64cc reg [5]"
+  ],
+  "eq_n": 157,
+  "reshaped": [
+   "br2 load vol=False f32 [0]",
+   "br2 load vol=False f32 [1]",
+   "br2 load vol=False f32 [2]",
+   "br2 load vol=False f32 [3]",
+   "br2 load vol=False f32 [4]",
+   "br2 load vol=False f32 [5]",
+   "br2 load vol=False f32 [6]",
+   "br2 load vol=False f32 [7]",
+   "br2 load vol=False i32 [0]",
+   "br2 load vol=False i32 [1]",
+   "br2 load vol=False i32 [2]",
+   "br2 load vol=False i32 [3]",
+   "br2 load vol=False i32 [4]",
+   "br2 load vol=False i32 [5]",
+   "br2 load vol=False i32 [6]",
+   "br2 load vol=False i32 [7]",
+   "br2 load vol=False u8 [0]",
+   "br2 load vol=False u8 [1]",
+   "br2 load vol=False u8 [2]",
+   "br2 load vol=False u8 [3]",
+   "br2 load vol=False u8 [4]",
+   "br2 load vol=False u8 [5]",
+   "br2 load vol=False u8 [6]",
+   "br2 load vol=False u8 [7]",
+   "br2 load vol=True f32 [0]",
+   "br2 load vol=True f32 [1]",
+   "br2 load vol=True f32 [2]",
+   "br2 load vol=True f32 [3]",
+   "br2 load vol=True f32 [4]",
+   "br2 load vol=True f32 [5]",
+   "br2 load vol=True f32 [6]",
+   "br2 load vol=True f32 [7]",
+   "br2 load vol=True i32 [0]",
+   "br2 load vol=True i32 [1]",
+   "br2 load vol=True i32 [2]",
+   "br2 load vol=True i32 [3]",
+   "br2 load vol=True i32 [4]",
+   "br2 load vol=True i32 [5]",
+   "br2 load vol=True i32 [6]",
+   "br2 load vol=True i32 [7]",
+   "br2 load vol=True u8 [0]",
+   "br2 load vol=True u8 [1]",
+   "br2 load vol=True u8 [2]",
+   "br2 load vol=True u8 [3]",
+   "br2 load vol=True u8 [4]",
+   "br2 load vol=True u8 [5]",
+   "br2 load vol=True u8 [6]",
+   "br2 load vol=True u8 [7]",
+   "br3 load vol=False f32",
+   "br3 load vol=False i8",
+   "br3 load vol=False u64",
+   "br3 load vol=True f32",
+   "br3 load vol=True i8",
+   "br3 load vol=True u64",
+   "br4 store vol=False f32",
+   "br4 store vol=False i8",
+   "br4 store vol=False u64",
+   "br4 store vol=True f32",
+   "br4 store vol=True i8",
+   "br4 store vol=True u64",
+   "br5 stack n=1 f32 [0]",
+   "br5 stack n=2 f32 [0]",
+   "br5 stack n=2 f32 [1]",
+   "br5 stack n=3 bf16 [0]",
+   "br5 stack n=3 bf16 [1]",
+   "br5 stack n=3 bf16 [2]",
+   "br5 stack n=4 u8 [0]",
+   "br5 stack n=4 u8 [1]",
+   "br5 stack n=4 u8 [2]",
+   "br5 stack n=4 u8 [3]",
+   "is_volatile AFTER vol=False",
+   "is_volatile AFTER vol=True",
+   "is_volatile BUFFER vol=False",
+   "is_volatile BUFFER vol=True",
+   "is_volatile CAST vol=False",
+   "is_volatile CAST vol=True",
+   "is_volatile CONST vol=False",
+   "is_volatile CONST vol=True",
+   "is_volatile PARAM vol=False",
+   "is_volatile PARAM vol=True",
+   "rfn abi=None alu [0]",
+   "rfn abi=None alu [1]",
+   "rfn abi=None alu [2]",
+   "rfn abi=None alu [3]",
+   "rfn abi=None alu [4]",
+   "rfn abi=None alu [5]",
+   "rfn abi=None empty [0]",
+   "rfn abi=None empty [1]",
+   "rfn abi=None empty [2]",
+   "rfn abi=None empty [3]",
+   "rfn abi=None empty [4]",
+   "rfn abi=None global [0]",
+   "rfn abi=None global [1]",
+   "rfn abi=None global [2]",
+   "rfn abi=None global [3]",
+   "rfn abi=None global [4]",
+   "rfn abi=None global [5]",
+   "rfn abi=None local [0]",
+   "rfn abi=None local [1]",
+   "rfn abi=None local [2]",
+   "rfn abi=None local [3]",
+   "rfn abi=None local [4]",
+   "rfn abi=None local [5]",
+   "rfn abi=None reg [0]",
+   "rfn abi=None reg [1]",
+   "rfn abi=None reg [2]",
+   "rfn abi=None reg [3]",
+   "rfn abi=None reg [4]",
+   "rfn abi=None reg [5]",
+   "rfn abi=amdgpu_kernel alu [0]",
+   "rfn abi=amdgpu_kernel alu [1]",
+   "rfn abi=amdgpu_kernel alu [2]",
+   "rfn abi=amdgpu_kernel alu [3]",
+   "rfn abi=amdgpu_kernel alu [4]",
+   "rfn abi=amdgpu_kernel alu [5]",
+   "rfn abi=amdgpu_kernel global [0]",
+   "rfn abi=amdgpu_kernel global [1]",
+   "rfn abi=amdgpu_kernel global [2]",
+   "rfn abi=amdgpu_kernel global [3]",
+   "rfn abi=amdgpu_kernel global [4]",
+   "rfn abi=amdgpu_kernel global [5]",
+   "rfn abi=amdgpu_kernel local [0]",
+   "rfn abi=amdgpu_kernel local [1]",
+   "rfn abi=amdgpu_kernel local [2]",
+   "rfn abi=amdgpu_kernel local [3]",
+   "rfn abi=amdgpu_kernel local [4]",
+   "rfn abi=amdgpu_kernel local [5]",
+   "rfn abi=amdgpu_kernel reg [0]",
+   "rfn abi=amdgpu_kernel reg [1]",
+   "rfn abi=amdgpu_kernel reg [2]",
+   "rfn abi=amdgpu_kernel reg [3]",
+   "rfn abi=amdgpu_kernel reg [4]",
+   "rfn abi=amdgpu_kernel reg [5]",
+   "rfn abi=win64cc alu [0]",
+   "rfn abi=win64cc alu [1]",
+   "rfn abi=win64cc alu [2]",
+   "rfn abi=win64cc alu [3]",
+   "rfn abi=win64cc alu [4]",
+   "rfn abi=win64cc alu [5]",
+   "rfn abi=win64cc global [0]",
+   "rfn abi=win64cc global [1]",
+   "rfn abi=win64cc global [2]",
+   "rfn abi=win64cc global [3]",
+   "rfn abi=win64cc global [4]",
+   "rfn abi=win64cc global [5]",
+   "rfn abi=win64cc local [0]",
+   "rfn abi=win64cc local [1]",
+   "rfn abi=win64cc local [2]",
+   "rfn abi=win64cc local [3]",
+   "rfn abi=win64cc local [4]",
+   "rfn abi=win64cc local [5]",
+   "rfn abi=win64cc reg [0]",
+   "rfn abi=win64cc reg [1]",
+   "rfn abi=win64cc reg [2]",
+   "rfn abi=win64cc reg [3]",
+   "rfn abi=win64cc reg [4]",
+   "rfn abi=win64cc reg [5]"
+  ],
+  "reshaped_n": 157,
+  "harmless": 157,
+  "dupe": [
+   [
+    "lt 1 ptr f32",
+    [
+     [
+      "F2",
+      "lt 1 ptr f32"
+     ],
+     [
+      "F2",
+      "lt 1 ptr f32"
+     ]
+    ]
+   ]
+  ],
+  "reshape": [
+   [
+    "br2 load vol",
+    [
+     [
+      "F2",
+      "br2 load vol=False f32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [7]"
+     ]
+    ]
+   ],
+   [
+    "br3 load vol",
+    [
+     [
+      "F2",
+      "br3 load vol=False f32"
+     ],
+     [
+      "F2",
+      "br3 load vol=False i8"
+     ],
+     [
+      "F2",
+      "br3 load vol=False u64"
+     ],
+     [
+      "F2",
+      "br3 load vol=True f32"
+     ],
+     [
+      "F2",
+      "br3 load vol=True i8"
+     ],
+     [
+      "F2",
+      "br3 load vol=True u64"
+     ]
+    ]
+   ],
+   [
+    "br4 store vol",
+    [
+     [
+      "F2",
+      "br4 store vol=False f32"
+     ],
+     [
+      "F2",
+      "br4 store vol=False i8"
+     ],
+     [
+      "F2",
+      "br4 store vol=False u64"
+     ],
+     [
+      "F2",
+      "br4 store vol=True f32"
+     ],
+     [
+      "F2",
+      "br4 store vol=True i8"
+     ],
+     [
+      "F2",
+      "br4 store vol=True u64"
+     ]
+    ]
+   ],
+   [
+    "br5 stack n",
+    [
+     [
+      "F2",
+      "br5 stack n=1 f32 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=2 f32 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=2 f32 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [2]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [3]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [2]"
+     ]
+    ]
+   ],
+   [
+    "is_volatile AFTER vol",
+    [
+     [
+      "F2",
+      "is_volatile AFTER vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile AFTER vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile BUFFER vol",
+    [
+     [
+      "F2",
+      "is_volatile BUFFER vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile BUFFER vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile CAST vol",
+    [
+     [
+      "F2",
+      "is_volatile CAST vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile CAST vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile CONST vol",
+    [
+     [
+      "F2",
+      "is_volatile CONST vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile CONST vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile PARAM vol",
+    [
+     [
+      "F2",
+      "is_volatile PARAM vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile PARAM vol=True"
+     ]
+    ]
+   ],
+   [
+    "rfn abi",
+    [
+     [
+      "F2",
+      "rfn abi=None global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [4]"
+     ]
+    ]
+   ]
+  ],
+  "collide": {
+   "lt 1 ptr f32": [
+    [
+     "F2",
+     "lt 1 ptr f32"
+    ],
+    [
+     "F2",
+     "lt 1 ptr f32"
+    ]
+   ],
+   "is_volatile PARAM vol": [
+    [
+     "F2",
+     "is_volatile PARAM vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile PARAM vol=True"
+    ]
+   ],
+   "is_volatile CAST vol": [
+    [
+     "F2",
+     "is_volatile CAST vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile CAST vol=True"
+    ]
+   ],
+   "is_volatile BUFFER vol": [
+    [
+     "F2",
+     "is_volatile BUFFER vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile BUFFER vol=True"
+    ]
+   ],
+   "is_volatile CONST vol": [
+    [
+     "F2",
+     "is_volatile CONST vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile CONST vol=True"
+    ]
+   ],
+   "is_volatile AFTER vol": [
+    [
+     "F2",
+     "is_volatile AFTER vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile AFTER vol=True"
+    ]
+   ],
+   "br2 load vol": [
+    [
+     "F2",
+     "br2 load vol=False f32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [7]"
+    ]
+   ],
+   "br3 load vol": [
+    [
+     "F2",
+     "br3 load vol=False f32"
+    ],
+    [
+     "F2",
+     "br3 load vol=False i8"
+    ],
+    [
+     "F2",
+     "br3 load vol=False u64"
+    ],
+    [
+     "F2",
+     "br3 load vol=True f32"
+    ],
+    [
+     "F2",
+     "br3 load vol=True i8"
+    ],
+    [
+     "F2",
+     "br3 load vol=True u64"
+    ]
+   ],
+   "br4 store vol": [
+    [
+     "F2",
+     "br4 store vol=False f32"
+    ],
+    [
+     "F2",
+     "br4 store vol=False i8"
+    ],
+    [
+     "F2",
+     "br4 store vol=False u64"
+    ],
+    [
+     "F2",
+     "br4 store vol=True f32"
+    ],
+    [
+     "F2",
+     "br4 store vol=True i8"
+    ],
+    [
+     "F2",
+     "br4 store vol=True u64"
+    ]
+   ],
+   "br5 stack n": [
+    [
+     "F2",
+     "br5 stack n=1 f32 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=2 f32 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=2 f32 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [2]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [3]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [2]"
+    ]
+   ],
+   "rfn abi": [
+    [
+     "F2",
+     "rfn abi=None global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [4]"
+    ]
+   ]
+  },
+  "lost": 148,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/llvmir.bend",
   "lane": "port"
  },
@@ -322,21 +2280,1821 @@
   "lines": 471,
   "read": 471,
   "names": 323,
-  "eq": [],
-  "eq_n": 0,
+  "F1": 0,
+  "F2": 471,
+  "F3": 0,
+  "eq": [
+   "br2 load vol=False f32 [0]",
+   "br2 load vol=False f32 [1]",
+   "br2 load vol=False f32 [2]",
+   "br2 load vol=False f32 [3]",
+   "br2 load vol=False f32 [4]",
+   "br2 load vol=False f32 [5]",
+   "br2 load vol=False f32 [6]",
+   "br2 load vol=False f32 [7]",
+   "br2 load vol=False i32 [0]",
+   "br2 load vol=False i32 [1]",
+   "br2 load vol=False i32 [2]",
+   "br2 load vol=False i32 [3]",
+   "br2 load vol=False i32 [4]",
+   "br2 load vol=False i32 [5]",
+   "br2 load vol=False i32 [6]",
+   "br2 load vol=False i32 [7]",
+   "br2 load vol=False u8 [0]",
+   "br2 load vol=False u8 [1]",
+   "br2 load vol=False u8 [2]",
+   "br2 load vol=False u8 [3]",
+   "br2 load vol=False u8 [4]",
+   "br2 load vol=False u8 [5]",
+   "br2 load vol=False u8 [6]",
+   "br2 load vol=False u8 [7]",
+   "br2 load vol=True f32 [0]",
+   "br2 load vol=True f32 [1]",
+   "br2 load vol=True f32 [2]",
+   "br2 load vol=True f32 [3]",
+   "br2 load vol=True f32 [4]",
+   "br2 load vol=True f32 [5]",
+   "br2 load vol=True f32 [6]",
+   "br2 load vol=True f32 [7]",
+   "br2 load vol=True i32 [0]",
+   "br2 load vol=True i32 [1]",
+   "br2 load vol=True i32 [2]",
+   "br2 load vol=True i32 [3]",
+   "br2 load vol=True i32 [4]",
+   "br2 load vol=True i32 [5]",
+   "br2 load vol=True i32 [6]",
+   "br2 load vol=True i32 [7]",
+   "br2 load vol=True u8 [0]",
+   "br2 load vol=True u8 [1]",
+   "br2 load vol=True u8 [2]",
+   "br2 load vol=True u8 [3]",
+   "br2 load vol=True u8 [4]",
+   "br2 load vol=True u8 [5]",
+   "br2 load vol=True u8 [6]",
+   "br2 load vol=True u8 [7]",
+   "br3 load vol=False f32",
+   "br3 load vol=False i8",
+   "br3 load vol=False u64",
+   "br3 load vol=True f32",
+   "br3 load vol=True i8",
+   "br3 load vol=True u64",
+   "br4 store vol=False f32",
+   "br4 store vol=False i8",
+   "br4 store vol=False u64",
+   "br4 store vol=True f32",
+   "br4 store vol=True i8",
+   "br4 store vol=True u64",
+   "br5 stack n=1 f32 [0]",
+   "br5 stack n=2 f32 [0]",
+   "br5 stack n=2 f32 [1]",
+   "br5 stack n=3 bf16 [0]",
+   "br5 stack n=3 bf16 [1]",
+   "br5 stack n=3 bf16 [2]",
+   "br5 stack n=4 u8 [0]",
+   "br5 stack n=4 u8 [1]",
+   "br5 stack n=4 u8 [2]",
+   "br5 stack n=4 u8 [3]",
+   "is_volatile AFTER vol=False",
+   "is_volatile AFTER vol=True",
+   "is_volatile BUFFER vol=False",
+   "is_volatile BUFFER vol=True",
+   "is_volatile CAST vol=False",
+   "is_volatile CAST vol=True",
+   "is_volatile CONST vol=False",
+   "is_volatile CONST vol=True",
+   "is_volatile PARAM vol=False",
+   "is_volatile PARAM vol=True",
+   "rfn abi=None alu [0]",
+   "rfn abi=None alu [1]",
+   "rfn abi=None alu [2]",
+   "rfn abi=None alu [3]",
+   "rfn abi=None alu [4]",
+   "rfn abi=None alu [5]",
+   "rfn abi=None empty [0]",
+   "rfn abi=None empty [1]",
+   "rfn abi=None empty [2]",
+   "rfn abi=None empty [3]",
+   "rfn abi=None empty [4]",
+   "rfn abi=None global [0]",
+   "rfn abi=None global [1]",
+   "rfn abi=None global [2]",
+   "rfn abi=None global [3]",
+   "rfn abi=None global [4]",
+   "rfn abi=None global [5]",
+   "rfn abi=None local [0]",
+   "rfn abi=None local [1]",
+   "rfn abi=None local [2]",
+   "rfn abi=None local [3]",
+   "rfn abi=None local [4]",
+   "rfn abi=None local [5]",
+   "rfn abi=None reg [0]",
+   "rfn abi=None reg [1]",
+   "rfn abi=None reg [2]",
+   "rfn abi=None reg [3]",
+   "rfn abi=None reg [4]",
+   "rfn abi=None reg [5]",
+   "rfn abi=amdgpu_kernel alu [0]",
+   "rfn abi=amdgpu_kernel alu [1]",
+   "rfn abi=amdgpu_kernel alu [2]",
+   "rfn abi=amdgpu_kernel alu [3]",
+   "rfn abi=amdgpu_kernel alu [4]",
+   "rfn abi=amdgpu_kernel alu [5]",
+   "rfn abi=amdgpu_kernel global [0]",
+   "rfn abi=amdgpu_kernel global [1]",
+   "rfn abi=amdgpu_kernel global [2]",
+   "rfn abi=amdgpu_kernel global [3]",
+   "rfn abi=amdgpu_kernel global [4]",
+   "rfn abi=amdgpu_kernel global [5]",
+   "rfn abi=amdgpu_kernel local [0]",
+   "rfn abi=amdgpu_kernel local [1]",
+   "rfn abi=amdgpu_kernel local [2]",
+   "rfn abi=amdgpu_kernel local [3]",
+   "rfn abi=amdgpu_kernel local [4]",
+   "rfn abi=amdgpu_kernel local [5]",
+   "rfn abi=amdgpu_kernel reg [0]",
+   "rfn abi=amdgpu_kernel reg [1]",
+   "rfn abi=amdgpu_kernel reg [2]",
+   "rfn abi=amdgpu_kernel reg [3]",
+   "rfn abi=amdgpu_kernel reg [4]",
+   "rfn abi=amdgpu_kernel reg [5]",
+   "rfn abi=win64cc alu [0]",
+   "rfn abi=win64cc alu [1]",
+   "rfn abi=win64cc alu [2]",
+   "rfn abi=win64cc alu [3]",
+   "rfn abi=win64cc alu [4]",
+   "rfn abi=win64cc alu [5]",
+   "rfn abi=win64cc global [0]",
+   "rfn abi=win64cc global [1]",
+   "rfn abi=win64cc global [2]",
+   "rfn abi=win64cc global [3]",
+   "rfn abi=win64cc global [4]",
+   "rfn abi=win64cc global [5]",
+   "rfn abi=win64cc local [0]",
+   "rfn abi=win64cc local [1]",
+   "rfn abi=win64cc local [2]",
+   "rfn abi=win64cc local [3]",
+   "rfn abi=win64cc local [4]",
+   "rfn abi=win64cc local [5]",
+   "rfn abi=win64cc reg [0]",
+   "rfn abi=win64cc reg [1]",
+   "rfn abi=win64cc reg [2]",
+   "rfn abi=win64cc reg [3]",
+   "rfn abi=win64cc reg [4]",
+   "rfn abi=win64cc reg [5]"
+  ],
+  "eq_n": 157,
+  "reshaped": [
+   "br2 load vol=False f32 [0]",
+   "br2 load vol=False f32 [1]",
+   "br2 load vol=False f32 [2]",
+   "br2 load vol=False f32 [3]",
+   "br2 load vol=False f32 [4]",
+   "br2 load vol=False f32 [5]",
+   "br2 load vol=False f32 [6]",
+   "br2 load vol=False f32 [7]",
+   "br2 load vol=False i32 [0]",
+   "br2 load vol=False i32 [1]",
+   "br2 load vol=False i32 [2]",
+   "br2 load vol=False i32 [3]",
+   "br2 load vol=False i32 [4]",
+   "br2 load vol=False i32 [5]",
+   "br2 load vol=False i32 [6]",
+   "br2 load vol=False i32 [7]",
+   "br2 load vol=False u8 [0]",
+   "br2 load vol=False u8 [1]",
+   "br2 load vol=False u8 [2]",
+   "br2 load vol=False u8 [3]",
+   "br2 load vol=False u8 [4]",
+   "br2 load vol=False u8 [5]",
+   "br2 load vol=False u8 [6]",
+   "br2 load vol=False u8 [7]",
+   "br2 load vol=True f32 [0]",
+   "br2 load vol=True f32 [1]",
+   "br2 load vol=True f32 [2]",
+   "br2 load vol=True f32 [3]",
+   "br2 load vol=True f32 [4]",
+   "br2 load vol=True f32 [5]",
+   "br2 load vol=True f32 [6]",
+   "br2 load vol=True f32 [7]",
+   "br2 load vol=True i32 [0]",
+   "br2 load vol=True i32 [1]",
+   "br2 load vol=True i32 [2]",
+   "br2 load vol=True i32 [3]",
+   "br2 load vol=True i32 [4]",
+   "br2 load vol=True i32 [5]",
+   "br2 load vol=True i32 [6]",
+   "br2 load vol=True i32 [7]",
+   "br2 load vol=True u8 [0]",
+   "br2 load vol=True u8 [1]",
+   "br2 load vol=True u8 [2]",
+   "br2 load vol=True u8 [3]",
+   "br2 load vol=True u8 [4]",
+   "br2 load vol=True u8 [5]",
+   "br2 load vol=True u8 [6]",
+   "br2 load vol=True u8 [7]",
+   "br3 load vol=False f32",
+   "br3 load vol=False i8",
+   "br3 load vol=False u64",
+   "br3 load vol=True f32",
+   "br3 load vol=True i8",
+   "br3 load vol=True u64",
+   "br4 store vol=False f32",
+   "br4 store vol=False i8",
+   "br4 store vol=False u64",
+   "br4 store vol=True f32",
+   "br4 store vol=True i8",
+   "br4 store vol=True u64",
+   "br5 stack n=1 f32 [0]",
+   "br5 stack n=2 f32 [0]",
+   "br5 stack n=2 f32 [1]",
+   "br5 stack n=3 bf16 [0]",
+   "br5 stack n=3 bf16 [1]",
+   "br5 stack n=3 bf16 [2]",
+   "br5 stack n=4 u8 [0]",
+   "br5 stack n=4 u8 [1]",
+   "br5 stack n=4 u8 [2]",
+   "br5 stack n=4 u8 [3]",
+   "is_volatile AFTER vol=False",
+   "is_volatile AFTER vol=True",
+   "is_volatile BUFFER vol=False",
+   "is_volatile BUFFER vol=True",
+   "is_volatile CAST vol=False",
+   "is_volatile CAST vol=True",
+   "is_volatile CONST vol=False",
+   "is_volatile CONST vol=True",
+   "is_volatile PARAM vol=False",
+   "is_volatile PARAM vol=True",
+   "rfn abi=None alu [0]",
+   "rfn abi=None alu [1]",
+   "rfn abi=None alu [2]",
+   "rfn abi=None alu [3]",
+   "rfn abi=None alu [4]",
+   "rfn abi=None alu [5]",
+   "rfn abi=None empty [0]",
+   "rfn abi=None empty [1]",
+   "rfn abi=None empty [2]",
+   "rfn abi=None empty [3]",
+   "rfn abi=None empty [4]",
+   "rfn abi=None global [0]",
+   "rfn abi=None global [1]",
+   "rfn abi=None global [2]",
+   "rfn abi=None global [3]",
+   "rfn abi=None global [4]",
+   "rfn abi=None global [5]",
+   "rfn abi=None local [0]",
+   "rfn abi=None local [1]",
+   "rfn abi=None local [2]",
+   "rfn abi=None local [3]",
+   "rfn abi=None local [4]",
+   "rfn abi=None local [5]",
+   "rfn abi=None reg [0]",
+   "rfn abi=None reg [1]",
+   "rfn abi=None reg [2]",
+   "rfn abi=None reg [3]",
+   "rfn abi=None reg [4]",
+   "rfn abi=None reg [5]",
+   "rfn abi=amdgpu_kernel alu [0]",
+   "rfn abi=amdgpu_kernel alu [1]",
+   "rfn abi=amdgpu_kernel alu [2]",
+   "rfn abi=amdgpu_kernel alu [3]",
+   "rfn abi=amdgpu_kernel alu [4]",
+   "rfn abi=amdgpu_kernel alu [5]",
+   "rfn abi=amdgpu_kernel global [0]",
+   "rfn abi=amdgpu_kernel global [1]",
+   "rfn abi=amdgpu_kernel global [2]",
+   "rfn abi=amdgpu_kernel global [3]",
+   "rfn abi=amdgpu_kernel global [4]",
+   "rfn abi=amdgpu_kernel global [5]",
+   "rfn abi=amdgpu_kernel local [0]",
+   "rfn abi=amdgpu_kernel local [1]",
+   "rfn abi=amdgpu_kernel local [2]",
+   "rfn abi=amdgpu_kernel local [3]",
+   "rfn abi=amdgpu_kernel local [4]",
+   "rfn abi=amdgpu_kernel local [5]",
+   "rfn abi=amdgpu_kernel reg [0]",
+   "rfn abi=amdgpu_kernel reg [1]",
+   "rfn abi=amdgpu_kernel reg [2]",
+   "rfn abi=amdgpu_kernel reg [3]",
+   "rfn abi=amdgpu_kernel reg [4]",
+   "rfn abi=amdgpu_kernel reg [5]",
+   "rfn abi=win64cc alu [0]",
+   "rfn abi=win64cc alu [1]",
+   "rfn abi=win64cc alu [2]",
+   "rfn abi=win64cc alu [3]",
+   "rfn abi=win64cc alu [4]",
+   "rfn abi=win64cc alu [5]",
+   "rfn abi=win64cc global [0]",
+   "rfn abi=win64cc global [1]",
+   "rfn abi=win64cc global [2]",
+   "rfn abi=win64cc global [3]",
+   "rfn abi=win64cc global [4]",
+   "rfn abi=win64cc global [5]",
+   "rfn abi=win64cc local [0]",
+   "rfn abi=win64cc local [1]",
+   "rfn abi=win64cc local [2]",
+   "rfn abi=win64cc local [3]",
+   "rfn abi=win64cc local [4]",
+   "rfn abi=win64cc local [5]",
+   "rfn abi=win64cc reg [0]",
+   "rfn abi=win64cc reg [1]",
+   "rfn abi=win64cc reg [2]",
+   "rfn abi=win64cc reg [3]",
+   "rfn abi=win64cc reg [4]",
+   "rfn abi=win64cc reg [5]"
+  ],
+  "reshaped_n": 157,
+  "harmless": 157,
+  "dupe": [
+   [
+    "lt 1 ptr f32",
+    [
+     [
+      "F2",
+      "lt 1 ptr f32"
+     ],
+     [
+      "F2",
+      "lt 1 ptr f32"
+     ]
+    ]
+   ]
+  ],
+  "reshape": [
+   [
+    "br2 load vol",
+    [
+     [
+      "F2",
+      "br2 load vol=False f32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False f32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False i32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=False u8 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True f32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True i32 [7]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [0]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [1]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [2]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [3]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [4]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [5]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [6]"
+     ],
+     [
+      "F2",
+      "br2 load vol=True u8 [7]"
+     ]
+    ]
+   ],
+   [
+    "br3 load vol",
+    [
+     [
+      "F2",
+      "br3 load vol=False f32"
+     ],
+     [
+      "F2",
+      "br3 load vol=False i8"
+     ],
+     [
+      "F2",
+      "br3 load vol=False u64"
+     ],
+     [
+      "F2",
+      "br3 load vol=True f32"
+     ],
+     [
+      "F2",
+      "br3 load vol=True i8"
+     ],
+     [
+      "F2",
+      "br3 load vol=True u64"
+     ]
+    ]
+   ],
+   [
+    "br4 store vol",
+    [
+     [
+      "F2",
+      "br4 store vol=False f32"
+     ],
+     [
+      "F2",
+      "br4 store vol=False i8"
+     ],
+     [
+      "F2",
+      "br4 store vol=False u64"
+     ],
+     [
+      "F2",
+      "br4 store vol=True f32"
+     ],
+     [
+      "F2",
+      "br4 store vol=True i8"
+     ],
+     [
+      "F2",
+      "br4 store vol=True u64"
+     ]
+    ]
+   ],
+   [
+    "br5 stack n",
+    [
+     [
+      "F2",
+      "br5 stack n=1 f32 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=2 f32 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=2 f32 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [2]"
+     ],
+     [
+      "F2",
+      "br5 stack n=4 u8 [3]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [0]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [1]"
+     ],
+     [
+      "F2",
+      "br5 stack n=3 bf16 [2]"
+     ]
+    ]
+   ],
+   [
+    "is_volatile AFTER vol",
+    [
+     [
+      "F2",
+      "is_volatile AFTER vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile AFTER vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile BUFFER vol",
+    [
+     [
+      "F2",
+      "is_volatile BUFFER vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile BUFFER vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile CAST vol",
+    [
+     [
+      "F2",
+      "is_volatile CAST vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile CAST vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile CONST vol",
+    [
+     [
+      "F2",
+      "is_volatile CONST vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile CONST vol=True"
+     ]
+    ]
+   ],
+   [
+    "is_volatile PARAM vol",
+    [
+     [
+      "F2",
+      "is_volatile PARAM vol=False"
+     ],
+     [
+      "F2",
+      "is_volatile PARAM vol=True"
+     ]
+    ]
+   ],
+   [
+    "rfn abi",
+    [
+     [
+      "F2",
+      "rfn abi=None global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=None alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=amdgpu_kernel alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc global [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc reg [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc local [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [4]"
+     ],
+     [
+      "F2",
+      "rfn abi=win64cc alu [5]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [0]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [1]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [2]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [3]"
+     ],
+     [
+      "F2",
+      "rfn abi=None empty [4]"
+     ]
+    ]
+   ]
+  ],
+  "collide": {
+   "lt 1 ptr f32": [
+    [
+     "F2",
+     "lt 1 ptr f32"
+    ],
+    [
+     "F2",
+     "lt 1 ptr f32"
+    ]
+   ],
+   "is_volatile PARAM vol": [
+    [
+     "F2",
+     "is_volatile PARAM vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile PARAM vol=True"
+    ]
+   ],
+   "is_volatile CAST vol": [
+    [
+     "F2",
+     "is_volatile CAST vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile CAST vol=True"
+    ]
+   ],
+   "is_volatile BUFFER vol": [
+    [
+     "F2",
+     "is_volatile BUFFER vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile BUFFER vol=True"
+    ]
+   ],
+   "is_volatile CONST vol": [
+    [
+     "F2",
+     "is_volatile CONST vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile CONST vol=True"
+    ]
+   ],
+   "is_volatile AFTER vol": [
+    [
+     "F2",
+     "is_volatile AFTER vol=False"
+    ],
+    [
+     "F2",
+     "is_volatile AFTER vol=True"
+    ]
+   ],
+   "br2 load vol": [
+    [
+     "F2",
+     "br2 load vol=False f32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False f32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False i32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=False u8 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True f32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True i32 [7]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [0]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [1]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [2]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [3]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [4]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [5]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [6]"
+    ],
+    [
+     "F2",
+     "br2 load vol=True u8 [7]"
+    ]
+   ],
+   "br3 load vol": [
+    [
+     "F2",
+     "br3 load vol=False f32"
+    ],
+    [
+     "F2",
+     "br3 load vol=False i8"
+    ],
+    [
+     "F2",
+     "br3 load vol=False u64"
+    ],
+    [
+     "F2",
+     "br3 load vol=True f32"
+    ],
+    [
+     "F2",
+     "br3 load vol=True i8"
+    ],
+    [
+     "F2",
+     "br3 load vol=True u64"
+    ]
+   ],
+   "br4 store vol": [
+    [
+     "F2",
+     "br4 store vol=False f32"
+    ],
+    [
+     "F2",
+     "br4 store vol=False i8"
+    ],
+    [
+     "F2",
+     "br4 store vol=False u64"
+    ],
+    [
+     "F2",
+     "br4 store vol=True f32"
+    ],
+    [
+     "F2",
+     "br4 store vol=True i8"
+    ],
+    [
+     "F2",
+     "br4 store vol=True u64"
+    ]
+   ],
+   "br5 stack n": [
+    [
+     "F2",
+     "br5 stack n=1 f32 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=2 f32 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=2 f32 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [2]"
+    ],
+    [
+     "F2",
+     "br5 stack n=4 u8 [3]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [0]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [1]"
+    ],
+    [
+     "F2",
+     "br5 stack n=3 bf16 [2]"
+    ]
+   ],
+   "rfn abi": [
+    [
+     "F2",
+     "rfn abi=None global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=None alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=amdgpu_kernel alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc global [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc reg [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc local [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [4]"
+    ],
+    [
+     "F2",
+     "rfn abi=win64cc alu [5]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [0]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [1]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [2]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [3]"
+    ],
+    [
+     "F2",
+     "rfn abi=None empty [4]"
+    ]
+   ]
+  },
   "lost": 148,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/llvmir.bend",
   "lane": "cpython:llvmir-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
-  "eq": [],
-  "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "lines": 205,
+  "read": 205,
+  "names": 201,
+  "F1": 0,
+  "F2": 205,
+  "F3": 0,
+  "eq": [
+   "sd cpullvm LLVM osx=False",
+   "sd cpullvm LLVM osx=True",
+   "sd cpullvm arm osx=False",
+   "sd cpullvm arm osx=True",
+   "sd cpullvm riscv64 osx=False",
+   "sd cpullvm riscv64 osx=True",
+   "sd cpullvm x86_64 osx=False",
+   "sd cpullvm x86_64 osx=True"
+  ],
+  "eq_n": 8,
+  "reshaped": [
+   "sd cpullvm LLVM osx=False",
+   "sd cpullvm LLVM osx=True",
+   "sd cpullvm arm osx=False",
+   "sd cpullvm arm osx=True",
+   "sd cpullvm riscv64 osx=False",
+   "sd cpullvm riscv64 osx=True",
+   "sd cpullvm x86_64 osx=False",
+   "sd cpullvm x86_64 osx=True"
+  ],
+  "reshaped_n": 8,
+  "harmless": 8,
+  "dupe": [],
+  "reshape": [
+   [
+    "sd cpullvm LLVM osx",
+    [
+     [
+      "F2",
+      "sd cpullvm LLVM osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm LLVM osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm arm osx",
+    [
+     [
+      "F2",
+      "sd cpullvm arm osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm arm osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm riscv64 osx",
+    [
+     [
+      "F2",
+      "sd cpullvm riscv64 osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm riscv64 osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm x86_64 osx",
+    [
+     [
+      "F2",
+      "sd cpullvm x86_64 osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm x86_64 osx=False"
+     ]
+    ]
+   ]
+  ],
+  "collide": {
+   "sd cpullvm LLVM osx": [
+    [
+     "F2",
+     "sd cpullvm LLVM osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm LLVM osx=False"
+    ]
+   ],
+   "sd cpullvm x86_64 osx": [
+    [
+     "F2",
+     "sd cpullvm x86_64 osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm x86_64 osx=False"
+    ]
+   ],
+   "sd cpullvm arm osx": [
+    [
+     "F2",
+     "sd cpullvm arm osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm arm osx=False"
+    ]
+   ],
+   "sd cpullvm riscv64 osx": [
+    [
+     "F2",
+     "sd cpullvm riscv64 osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm riscv64 osx=False"
+    ]
+   ]
+  },
+  "lost": 4,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/nir_llvmir.bend",
   "lane": "port"
  },
@@ -344,21 +4102,153 @@
   "lines": 205,
   "read": 205,
   "names": 201,
-  "eq": [],
-  "eq_n": 0,
+  "F1": 0,
+  "F2": 205,
+  "F3": 0,
+  "eq": [
+   "sd cpullvm LLVM osx=False",
+   "sd cpullvm LLVM osx=True",
+   "sd cpullvm arm osx=False",
+   "sd cpullvm arm osx=True",
+   "sd cpullvm riscv64 osx=False",
+   "sd cpullvm riscv64 osx=True",
+   "sd cpullvm x86_64 osx=False",
+   "sd cpullvm x86_64 osx=True"
+  ],
+  "eq_n": 8,
+  "reshaped": [
+   "sd cpullvm LLVM osx=False",
+   "sd cpullvm LLVM osx=True",
+   "sd cpullvm arm osx=False",
+   "sd cpullvm arm osx=True",
+   "sd cpullvm riscv64 osx=False",
+   "sd cpullvm riscv64 osx=True",
+   "sd cpullvm x86_64 osx=False",
+   "sd cpullvm x86_64 osx=True"
+  ],
+  "reshaped_n": 8,
+  "harmless": 8,
+  "dupe": [],
+  "reshape": [
+   [
+    "sd cpullvm LLVM osx",
+    [
+     [
+      "F2",
+      "sd cpullvm LLVM osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm LLVM osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm arm osx",
+    [
+     [
+      "F2",
+      "sd cpullvm arm osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm arm osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm riscv64 osx",
+    [
+     [
+      "F2",
+      "sd cpullvm riscv64 osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm riscv64 osx=False"
+     ]
+    ]
+   ],
+   [
+    "sd cpullvm x86_64 osx",
+    [
+     [
+      "F2",
+      "sd cpullvm x86_64 osx=True"
+     ],
+     [
+      "F2",
+      "sd cpullvm x86_64 osx=False"
+     ]
+    ]
+   ]
+  ],
+  "collide": {
+   "sd cpullvm LLVM osx": [
+    [
+     "F2",
+     "sd cpullvm LLVM osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm LLVM osx=False"
+    ]
+   ],
+   "sd cpullvm x86_64 osx": [
+    [
+     "F2",
+     "sd cpullvm x86_64 osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm x86_64 osx=False"
+    ]
+   ],
+   "sd cpullvm arm osx": [
+    [
+     "F2",
+     "sd cpullvm arm osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm arm osx=False"
+    ]
+   ],
+   "sd cpullvm riscv64 osx": [
+    [
+     "F2",
+     "sd cpullvm riscv64 osx=True"
+    ],
+    [
+     "F2",
+     "sd cpullvm riscv64 osx=False"
+    ]
+   ]
+  },
   "lost": 4,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/nir_llvmir.bend",
   "lane": "cpython:nl-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 281,
+  "read": 281,
+  "names": 281,
+  "F1": 0,
+  "F2": 281,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/ptx.bend",
   "lane": "port"
  },
@@ -366,21 +4256,66 @@
   "lines": 281,
   "read": 281,
   "names": 281,
+  "F1": 0,
+  "F2": 281,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/ptx.bend",
   "lane": "cpython:ptx-s3-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 334,
+  "read": 334,
+  "names": 333,
+  "F1": 0,
+  "F2": 334,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "fmt 'ret;'",
+    [
+     [
+      "F2",
+      "fmt 'ret;'"
+     ],
+     [
+      "F2",
+      "fmt 'ret;'"
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "fmt 'ret;'": [
+    [
+     "F2",
+     "fmt 'ret;'"
+    ],
+    [
+     "F2",
+     "fmt 'ret;'"
+    ]
+   ]
+  },
+  "lost": 1,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/tc_ptx.bend",
   "lane": "port"
  },
@@ -388,10 +4323,45 @@
   "lines": 334,
   "read": 334,
   "names": 333,
+  "F1": 0,
+  "F2": 334,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "fmt 'ret;'",
+    [
+     [
+      "F2",
+      "fmt 'ret;'"
+     ],
+     [
+      "F2",
+      "fmt 'ret;'"
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "fmt 'ret;'": [
+    [
+     "F2",
+     "fmt 'ret;'"
+    ],
+    [
+     "F2",
+     "fmt 'ret;'"
+    ]
+   ]
+  },
   "lost": 1,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/renderer/tc_ptx.bend",
   "lane": "cpython:tcptx-oracle"
  },
@@ -399,10 +4369,20 @@
   "lines": 520,
   "read": 520,
   "names": 520,
+  "F1": 520,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_amd.bend",
   "lane": "port"
  },
@@ -410,10 +4390,20 @@
   "lines": 1010,
   "read": 1010,
   "names": 1010,
+  "F1": 1010,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_amd.bend",
   "lane": "cpython:amd_oracle"
  },
@@ -421,10 +4411,20 @@
   "lines": 134,
   "read": 134,
   "names": 134,
+  "F1": 134,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_cpu.bend",
   "lane": "port"
  },
@@ -432,10 +4432,20 @@
   "lines": 22,
   "read": 20,
   "names": 20,
+  "F1": 20,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 2,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_cpu.bend",
   "lane": "cpython:cpulink_oracle"
  },
@@ -443,10 +4453,20 @@
   "lines": 432,
   "read": 432,
   "names": 432,
+  "F1": 432,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_metal.bend",
   "lane": "port"
  },
@@ -454,10 +4474,20 @@
   "lines": 18,
   "read": 18,
   "names": 18,
+  "F1": 18,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_metal.bend",
   "lane": "cpython:mt_seam_rows"
  },
@@ -465,10 +4495,20 @@
   "lines": 180,
   "read": 180,
   "names": 180,
+  "F1": 180,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_null.bend",
   "lane": "port"
  },
@@ -476,10 +4516,20 @@
   "lines": 9,
   "read": 9,
   "names": 9,
+  "F1": 9,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_null.bend",
   "lane": "cpython:null-oracle"
  },
@@ -487,10 +4537,275 @@
   "lines": 611,
   "read": 611,
   "names": 600,
+  "F1": 611,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "nv_encode_names",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iface_count",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_pc_id_after_hit",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slm_cmd",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_0_48428",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_1024_48428",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_1024_644214",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_1_48428",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_1_48428_hi",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_32_48428",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_slmtot_4096_64828",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "nv_iface_count": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_encode_names": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_pc_id_after_hit": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_0_48428": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_32_48428": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_1024_48428": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_4096_64828": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_1024_644214": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_1_48428": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slmtot_1_48428_hi": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_slm_cmd": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 11,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_nv.bend",
   "lane": "port"
  },
@@ -498,21 +4813,664 @@
   "lines": 574,
   "read": 574,
   "names": 547,
+  "F1": 574,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "nv_bpt_1_48428",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_copy_nsteps_4294967295",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_errstr_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_errstr_2",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_errstr_4096",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_errstr_8",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_errstr_999",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_0_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_1280_2",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_40_43",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_4_1",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_64_44",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_8191_136",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_8192_1",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_8192_255",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_iowr_96_65",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_launch_ok_1024_1024",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_launch_ok_1024_8192",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_paccess_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_paccess_2",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_paccess_4",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_bad_n",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_bad_refused",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_kind_n",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_msg_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_msg_100",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "nv_reloc_msg_3",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "nv_copy_nsteps_4294967295": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_errstr_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_errstr_2": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_errstr_8": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_errstr_999": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_errstr_4096": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_paccess_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_paccess_2": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_paccess_4": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_0_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_4_1": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_64_44": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_40_43": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_96_65": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_8192_255": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_8191_136": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_8192_1": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_iowr_1280_2": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_kind_n": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_msg_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_msg_3": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_msg_100": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_bad_n": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_reloc_bad_refused": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_launch_ok_1024_1024": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_launch_ok_1024_8192": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "nv_bpt_1_48428": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 27,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_nv.bend",
   "lane": "cpython:nv-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 85,
+  "read": 85,
+  "names": 85,
+  "F1": 85,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_python.bend",
   "lane": "port"
  },
@@ -520,10 +5478,20 @@
   "lines": 241,
   "read": 241,
   "names": 241,
+  "F1": 241,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_python.bend",
   "lane": "cpython:ops-python-render-oracle"
  },
@@ -531,10 +5499,20 @@
   "lines": 750,
   "read": 750,
   "names": 750,
+  "F1": 750,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_qcom.bend",
   "lane": "port"
  },
@@ -542,10 +5520,20 @@
   "lines": 312,
   "read": 312,
   "names": 312,
+  "F1": 312,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_qcom.bend",
   "lane": "cpython:qcom-oracle"
  },
@@ -553,10 +5541,20 @@
   "lines": 389,
   "read": 389,
   "names": 389,
+  "F1": 389,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_rdma.bend",
   "lane": "port"
  },
@@ -564,10 +5562,20 @@
   "lines": 389,
   "read": 389,
   "names": 389,
+  "F1": 389,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/ops_rdma.bend",
   "lane": "cpython:oracle_rdma_gate"
  },
@@ -575,10 +5583,20 @@
   "lines": 129,
   "read": 129,
   "names": 129,
+  "F1": 129,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/c.bend",
   "lane": "port"
  },
@@ -586,10 +5604,20 @@
   "lines": 129,
   "read": 129,
   "names": 129,
+  "F1": 129,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/c.bend",
   "lane": "cpython:c-oracle"
  },
@@ -597,10 +5625,20 @@
   "lines": 353,
   "read": 353,
   "names": 353,
+  "F1": 353,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/elf.bend",
   "lane": "port"
  },
@@ -608,10 +5646,20 @@
   "lines": 1042,
   "read": 1042,
   "names": 1042,
+  "F1": 1042,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/elf.bend",
   "lane": "cpython:elf_rows"
  },
@@ -619,10 +5667,20 @@
   "lines": 360,
   "read": 360,
   "names": 360,
+  "F1": 360,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/hcq2.bend",
   "lane": "port"
  },
@@ -630,10 +5688,68 @@
   "lines": 165,
   "read": 165,
   "names": 163,
+  "F1": 165,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "hq2_cfield_gpu_command_flags_at",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "hq2_cfield_gpu_command_flags_sz",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "hq2_cfield_gpu_command_flags_at": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "hq2_cfield_gpu_command_flags_sz": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 2,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/hcq2.bend",
   "lane": "cpython:hcq2-oracle"
  },
@@ -641,10 +5757,20 @@
   "lines": 940,
   "read": 940,
   "names": 940,
+  "F1": 940,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/usb.bend",
   "lane": "port"
  },
@@ -652,21 +5778,1708 @@
   "lines": 1014,
   "read": 1014,
   "names": 939,
+  "F1": 1014,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "usb_ctx_init_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_ctx_n_debug6",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_ctx_n_nodebug",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_ctx_order_debug6",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_ctx_order_nodebug",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_ctx_setoption_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_free_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_getdevlist_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_n_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_n_1_hit",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_n_1_miss",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_n_2_hit",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_ok_norefs",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_order_0",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_order_1_hit",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_order_1_miss",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_order_1_miss_full",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_order_2_hit",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_ref_device_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_refused_2_is_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_refused_5_fires",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_refused_5_is_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_refused_6_raw_no_fire",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_enum_refused_beyond_7",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_alt_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_claim_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_getdevice_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_kdrv_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_n_detach",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_n_nodetach",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_ok_norefs",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_order_detach",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_order_nodetach",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_10_alt",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_1_open",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_4_product",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_5_config",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_5_kdrv",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_6_claim",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_7_alt",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refuse_8_detach",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refused_4",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refused_6",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refused_beyond_10",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_refused_beyond_11",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_setcfg_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_open_strascii_checked",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_alloc_transfer",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_bulk_transfer",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_claim_interface",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_control_transfer",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_detach_kernel_driver",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_free_device_list",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_bus_number",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_device",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_device_address",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_device_descriptor",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_device_list",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_get_string_descriptor_ascii",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_handle_events_timeout",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_init",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_kernel_driver_active",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_open",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_ref_device",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_reset_device",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_set_configuration",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_set_interface_alt_setting",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_set_option",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_strerror",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ],
+   [
+    "usb_sym_libusb_submit_transfer",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "usb_ctx_order_debug6": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_ctx_order_nodebug": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_ctx_setoption_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_ctx_init_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_order_1_hit": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_order_1_miss": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_order_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_ref_device_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_free_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_getdevlist_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_order_detach": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_order_nodetach": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_setcfg_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_claim_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_alt_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_getdevice_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_strascii_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_kdrv_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_refused_5_is_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_refused_6_raw_no_fire": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_1_open": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_4_product": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_5_config": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_6_claim": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_7_alt": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_5_kdrv": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_8_detach": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refuse_10_alt": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refused_4": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refused_6": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refused_beyond_10": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_refused_beyond_11": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_ok_norefs": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_n_nodetach": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_open_n_detach": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_n_0": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_n_1_miss": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_n_1_hit": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_n_2_hit": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_ctx_n_debug6": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_ctx_n_nodebug": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_order_1_miss_full": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_order_2_hit": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_refused_2_is_checked": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_refused_5_fires": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_refused_beyond_7": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_enum_ok_norefs": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_init": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_set_option": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_device_list": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_device_descriptor": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_ref_device": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_bus_number": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_device_address": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_free_device_list": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_open": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_device": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_get_string_descriptor_ascii": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_kernel_driver_active": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_detach_kernel_driver": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_reset_device": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_set_configuration": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_claim_interface": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_set_interface_alt_setting": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_control_transfer": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_bulk_transfer": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_alloc_transfer": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_handle_events_timeout": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_submit_transfer": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ],
+   "usb_sym_libusb_strerror": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 75,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/runtime/support/usb.bend",
   "lane": "cpython:usb-oracle-run"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 253,
+  "read": 252,
+  "names": 252,
+  "F1": 252,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 1,
+  "empty": [],
   "port": "tinybendygrad/schedule/indexing.bend",
   "lane": "port"
  },
@@ -674,21 +7487,41 @@
   "lines": 104,
   "read": 104,
   "names": 104,
+  "F1": 104,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/schedule/indexing.bend",
   "lane": "cpython:indexing-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 322,
+  "read": 321,
+  "names": 321,
+  "F1": 321,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 1,
+  "empty": [],
   "port": "tinybendygrad/schedule/prepare.bend",
   "lane": "port"
  },
@@ -696,21 +7529,41 @@
   "lines": 2535,
   "read": 2521,
   "names": 2521,
+  "F1": 2521,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 14,
+  "empty": [],
   "port": "tinybendygrad/schedule/prepare.bend",
   "lane": "cpython:prepare-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 126,
+  "read": 126,
+  "names": 126,
+  "F1": 126,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/schedule/rangeify.bend",
   "lane": "port"
  },
@@ -718,21 +7571,41 @@
   "lines": 89,
   "read": 89,
   "names": 89,
+  "F1": 89,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/schedule/rangeify.bend",
   "lane": "cpython:rangeify-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 33,
+  "read": 33,
+  "names": 33,
+  "F1": 33,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/tensor.bend",
   "lane": "port"
  },
@@ -740,21 +7613,66 @@
   "lines": 30,
   "read": 30,
   "names": 30,
+  "F1": 30,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/tensor.bend",
   "lane": "cpython:tensor-gate"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 334,
+  "read": 241,
+  "names": 240,
+  "F1": 241,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "lf_sub_int32_-3_4 lo",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "lf_sub_int32_-3_4 lo": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
+  "lost": 1,
+  "unread": 93,
+  "empty": [],
   "port": "tinybendygrad/uop/fold.bend",
   "lane": "port"
  },
@@ -762,21 +7680,66 @@
   "lines": 131,
   "read": 131,
   "names": 130,
+  "F1": 131,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "lf_sub_int32_-3_4 lo",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "lf_sub_int32_-3_4 lo": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 1,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/fold.bend",
   "lane": "cpython:mm-lift-gate"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 310,
+  "read": 310,
+  "names": 310,
+  "F1": 310,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/ops.bend",
   "lane": "port"
  },
@@ -784,21 +7747,477 @@
   "lines": 109,
   "read": 109,
   "names": 109,
+  "F1": 109,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/ops.bend",
   "lane": "cpython:rebase-oracle-ops"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 129,
+  "read": 129,
+  "names": 86,
+  "F1": 6,
+  "F2": 123,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "ast",
+    [
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ]
+    ]
+   ],
+   [
+    "c2",
+    [
+     [
+      "F2",
+      "c2"
+     ],
+     [
+      "F2",
+      "c2"
+     ]
+    ]
+   ],
+   [
+    "c3",
+    [
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ]
+    ]
+   ],
+   [
+    "c4",
+    [
+     [
+      "F2",
+      "c4"
+     ],
+     [
+      "F2",
+      "c4"
+     ]
+    ]
+   ],
+   [
+    "c5",
+    [
+     [
+      "F2",
+      "c5"
+     ],
+     [
+      "F2",
+      "c5"
+     ]
+    ]
+   ],
+   [
+    "py",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "ast": [
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ]
+   ],
+   "c2": [
+    [
+     "F2",
+     "c2"
+    ],
+    [
+     "F2",
+     "c2"
+    ]
+   ],
+   "c3": [
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ]
+   ],
+   "c4": [
+    [
+     "F2",
+     "c4"
+    ],
+    [
+     "F2",
+     "c4"
+    ]
+   ],
+   "c5": [
+    [
+     "F2",
+     "c5"
+    ],
+    [
+     "F2",
+     "c5"
+    ]
+   ],
+   "py": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
+  "lost": 43,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/render.bend",
   "lane": "port"
  },
@@ -806,21 +8225,494 @@
   "lines": 124,
   "read": 124,
   "names": 85,
-  "eq": [],
-  "eq_n": 0,
+  "F1": 49,
+  "F2": 75,
+  "F3": 0,
+  "eq": [
+   "pyrender buffer=[c1",
+   "pyrender bufimage=[c1",
+   "pyrender buflocal=[c1",
+   "pyrender bufnodev=[c1",
+   "pyrender cast=[ast",
+   "pyrender cdiv=[ast",
+   "pyrender cfn=[ast",
+   "pyrender cmod=[ast",
+   "pyrender const=[ast",
+   "pyrender copy=[c1",
+   "pyrender fan=[c2",
+   "pyrender flat1=[ast",
+   "pyrender flat2=[ast",
+   "pyrender flat3=[ast",
+   "pyrender index=[c2",
+   "pyrender mul3=[c1",
+   "pyrender nest=[ast",
+   "pyrender range2=[ast",
+   "pyrender range=[ast",
+   "pyrender reduce0=[c1",
+   "pyrender reduce2=[c1",
+   "pyrender reduce=[c2",
+   "pyrender shared=[c2",
+   "pyrender sink=[c2",
+   "pyrender special=[ast",
+   "pyrender sqrt=[ast",
+   "pyrender store=[c2",
+   "pyrender sub=[ast",
+   "pyrender tagged=[ast",
+   "pyrender where=[ast",
+   "pyrender xor3=[c1"
+  ],
+  "eq_n": 31,
+  "reshaped": [
+   "pyrender buffer=[c1",
+   "pyrender bufimage=[c1",
+   "pyrender buflocal=[c1",
+   "pyrender bufnodev=[c1",
+   "pyrender cast=[ast",
+   "pyrender cdiv=[ast",
+   "pyrender cfn=[ast",
+   "pyrender cmod=[ast",
+   "pyrender const=[ast",
+   "pyrender copy=[c1",
+   "pyrender fan=[c2",
+   "pyrender flat1=[ast",
+   "pyrender flat2=[ast",
+   "pyrender flat3=[ast",
+   "pyrender index=[c2",
+   "pyrender mul3=[c1",
+   "pyrender nest=[ast",
+   "pyrender range2=[ast",
+   "pyrender range=[ast",
+   "pyrender reduce0=[c1",
+   "pyrender reduce2=[c1",
+   "pyrender reduce=[c2",
+   "pyrender shared=[c2",
+   "pyrender sink=[c2",
+   "pyrender special=[ast",
+   "pyrender sqrt=[ast",
+   "pyrender store=[c2",
+   "pyrender sub=[ast",
+   "pyrender tagged=[ast",
+   "pyrender where=[ast",
+   "pyrender xor3=[c1"
+  ],
+  "reshaped_n": 31,
+  "harmless": 0,
+  "dupe": [
+   [
+    "ast",
+    [
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ],
+     [
+      "F2",
+      "ast"
+     ]
+    ]
+   ],
+   [
+    "c2",
+    [
+     [
+      "F2",
+      "c2"
+     ],
+     [
+      "F2",
+      "c2"
+     ]
+    ]
+   ],
+   [
+    "c3",
+    [
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ],
+     [
+      "F2",
+      "c3"
+     ]
+    ]
+   ],
+   [
+    "c4",
+    [
+     [
+      "F2",
+      "c4"
+     ],
+     [
+      "F2",
+      "c4"
+     ]
+    ]
+   ],
+   [
+    "c5",
+    [
+     [
+      "F2",
+      "c5"
+     ],
+     [
+      "F2",
+      "c5"
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "ast": [
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ],
+    [
+     "F2",
+     "ast"
+    ]
+   ],
+   "c2": [
+    [
+     "F2",
+     "c2"
+    ],
+    [
+     "F2",
+     "c2"
+    ]
+   ],
+   "c3": [
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ],
+    [
+     "F2",
+     "c3"
+    ]
+   ],
+   "c4": [
+    [
+     "F2",
+     "c4"
+    ],
+    [
+     "F2",
+     "c4"
+    ]
+   ],
+   "c5": [
+    [
+     "F2",
+     "c5"
+    ],
+    [
+     "F2",
+     "c5"
+    ]
+   ]
+  },
   "lost": 39,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/render.bend",
   "lane": "cpython:render-gate-oracle"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 25,
+  "read": 25,
+  "names": 25,
+  "F1": 25,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/spec.bend",
   "lane": "port"
  },
@@ -828,21 +8720,66 @@
   "lines": 16,
   "read": 16,
   "names": 16,
+  "F1": 16,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [],
+  "reshape": [],
+  "collide": {},
   "lost": 0,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/uop/spec.bend",
   "lane": "cpython:rebase-oracle-spec"
  },
  {
-  "lines": 0,
-  "read": 0,
-  "names": 0,
+  "lines": 177,
+  "read": 177,
+  "names": 176,
+  "F1": 177,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
-  "lost": 0,
-  "empty": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "dev_sort.GPU Memory",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "dev_sort.GPU Memory": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
+  "lost": 1,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/viz/serve.bend",
   "lane": "port"
  },
@@ -850,10 +8787,45 @@
   "lines": 177,
   "read": 177,
   "names": 176,
+  "F1": 177,
+  "F2": 0,
+  "F3": 0,
   "eq": [],
   "eq_n": 0,
+  "reshaped": [],
+  "reshaped_n": 0,
+  "harmless": 0,
+  "dupe": [
+   [
+    "dev_sort.GPU Memory",
+    [
+     [
+      "F1",
+      null
+     ],
+     [
+      "F1",
+      null
+     ]
+    ]
+   ]
+  ],
+  "reshape": [],
+  "collide": {
+   "dev_sort.GPU Memory": [
+    [
+     "F1",
+     null
+    ],
+    [
+     "F1",
+     null
+    ]
+   ]
+  },
   "lost": 1,
-  "empty": 0,
+  "unread": 0,
+  "empty": [],
   "port": "tinybendygrad/viz/serve.bend",
   "lane": "cpython:viz_oracle"
  }

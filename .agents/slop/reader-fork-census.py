@@ -70,11 +70,21 @@ GATE = HERE / "rebase-gate.py"
 CORPUS_ROOTS = (".agents", "runs")
 CORPUS_SKIP = {"__pycache__", ".venv", "node_modules", ".jj", ".git", "opstree", "xd1",
                ".mutwork", "references"}
+# Scratch prefixes a live agent creates mid-run (`.mine-prefix/` showed up while this census was
+# being taken). A corpus that silently changes size between two runs of the same census has two
+# denominators and no finding, so dot-directories BELOW a corpus root are skipped by name.
 
-# THE TWO FAMILIES THAT ANSWER A ROW QUESTION. Everything else -- a producer, a differ, a path
-# runner, a tensor accessor that happens to be called `rows_e` -- is NOT in the drift
+# THE THREE FAMILIES THAT ANSWER A ROW QUESTION. Everything else -- a producer, a differ, a
+# path runner, a tensor accessor that happens to be called `rows_e` -- is NOT in the drift
 # denominator, and saying so with a number is the difference between a census and a count.
-DRIFT_FAMILIES = ("text->mapping", "line->answer")
+DRIFT_FAMILIES = ("text->mapping", "line->answer", "value->fold")
+
+# `split_py`-shaped readers are the INVERSE FOLD: `rows()` returns `left` with the `py=` tail
+# folded away, and a parity reader reads that tail back out. Its input is a VALUE, not a line,
+# and scoring it as a line reader manufactures a disagreement out of the wrong argument. The
+# rule is the PARAMETER NAME -- stated here so it can be argued with -- and the rule is printed
+# next to every verdict rather than applied silently.
+VALUE_ARG_NAMES = {"value", "val", "v", "cell", "payload", "text_right"}
 
 
 # ── THE CONTROL ────────────────────────────────────────────────────────────────────────────
@@ -140,8 +150,10 @@ NAME_RE = re.compile(r"^(?:_?rows?|_?split_py|_?parse_rows|_?rowset|_?read_rows|
 
 def py_files():
   for top in CORPUS_ROOTS:
-    for root, dirs, files in os.walk(REPO / top):
-      dirs[:] = sorted(d for d in dirs if d not in CORPUS_SKIP)
+    base = REPO / top
+    for root, dirs, files in os.walk(base):
+      dirs[:] = sorted(d for d in dirs
+                       if d not in CORPUS_SKIP and not (root != str(base) and d.startswith(".")))
       for f in sorted(files):
         if f.endswith(".py"):
           yield pathlib.Path(root) / f
@@ -222,7 +234,13 @@ SAFE_BUILTINS.update({
 
 SAFE_MODULES = ("re", "string", "json", "math", "itertools", "functools", "collections",
                 "pathlib", "types", "dataclasses", "enum", "operator", "bisect", "textwrap",
-                "io", "ast", "os", "sys", "subprocess", "shutil")
+                "io", "ast", "os", "sys", "subprocess", "shutil", "struct", "time", "array",
+                "binascii", "hashlib", "base64", "codecs", "zlib", "copy", "fnmatch", "glob",
+                "platform", "datetime", "decimal", "fractions", "statistics", "heapq", "uuid")
+# `ctypes` and `tempfile` are DELIBERATELY NOT allowed. Both carry a side-effect surface this
+# sandbox has no reason to expose, and a census that cannot measure a reader must SAY SO rather
+# than quietly widen its own permissions. The oracles that import them are listed as
+# NOT-COMPARABLE with the reason attached, so the gap is a printed number and not a silent one.
 
 # ── THE FAKE FILESYSTEM AND PROCESS LAYER ──────────────────────────────────────────────────
 # WHY A FAKE. Most of these functions are not parsers but RUNNERS: `rows_of(path)` shells out to
@@ -440,6 +458,13 @@ def pick_mapping(result):
     pairs = sorted((str(k), render(v)) for k, v in result[0].items())
     return pairs, "dict+extras", f"{len(result)} return values, mapping is [0]"
   if isinstance(result, (list, tuple)) and all(isinstance(x, str) for x in result):
+    # A LIST of strings is a deferred mapping: the reader returned whole lines and left the
+    # split to its caller. A TUPLE of strings is NOT -- `split_py` returns one, and it is a
+    # per-item answer. Telling the two apart by container is what stops this harness from
+    # re-parsing `split_py`'s (left, right) as if it were a two-row lane, which is how a
+    # 3-entry "mapping" appeared out of a function that never built one.
+    if not isinstance(result, list):
+      return None, "tuple", f"{len(result)} strings in a TUPLE: a per-item answer"
     return canonical_pairs("\n".join(result)), "lines", "returns whole lines; caller splits"
   if isinstance(result, (list, tuple)) and all(
       isinstance(x, (list, tuple)) and len(x) == 2 for x in result):
@@ -508,6 +533,35 @@ OS_ERRORS = (FileNotFoundError, IsADirectoryError, NotADirectoryError, Permissio
 BLOB = "\n".join(t for _, t in SHAPES)
 
 
+def canonical_value(text):
+  """The VALUE half of one line, as the gate's `row()` splits it: everything after the first
+  `=`, or the whole F3 tail. This is what a `split_py`-shaped reader is handed."""
+  r = CANON_ROW(text)
+  return r[1] if r else text
+
+
+def canonical_value_answer(text):
+  """What the gate says the (left, right) split of a VALUE is -- the control for the
+  `value->fold` family. Computed from the gate's own `PY_TAIL`, never restated."""
+  raw = canonical_value(text)
+  i = raw.rfind(GATE_MOD.PY_TAIL)
+  return (raw[:i], raw[i + len(GATE_MOD.PY_TAIL):]) if i >= 0 else (raw, None)
+
+
+def _answers(fn, inputs):
+  """{sid: ('ok', rendered) | ('err', msg)} for the per-line / per-value families."""
+  out = {}
+  for (sid, text), arg in zip(SHAPES, inputs):
+    _FAKE["text"] = text
+    try:
+      out[sid] = ("ok", _render_answer(call(fn, arg)))
+    except _Hung:
+      out[sid] = ("err", "HUNG")
+    except Exception as e:
+      out[sid] = ("err", f"{type(e).__name__}: {e}")
+  return out
+
+
 # ── ONE CANDIDATE, MEASURED ────────────────────────────────────────────────────────────────
 def measure(rel, name, lineno, seg, node):
   src_path = REPO / rel
@@ -542,18 +596,30 @@ def measure(rel, name, lineno, seg, node):
     return _class(rel, name, lineno, sig, "refused-text", errs[0][:90], None, [], blob)
 
   # ── FAMILY 2: one line -> (name, left, right) | None. Control: the gate's `row`.
-  if not (kinds.get("F1") == "pairs" and blob[1] == "dict"):
-    per_line = {}
-    for sid, text in SHAPES:
-      _FAKE["text"] = text
-      try:
-        per_line[sid] = ("ok", _render_answer(call(fn, text)))
-      except _Hung:
-        per_line[sid] = ("err", "HUNG")
-      except Exception as e:
-        per_line[sid] = ("err", f"{type(e).__name__}: {e}")
+  # The discriminator is the SIX-LINE BLOB plus the CONTAINER of what comes back. A
+  # `rows()`-family reader maps the six lines at once -- a dict, a list of (name, value) pairs,
+  # or a list of whole lines. A line reader returns one per-line answer, and a `split_py` reader
+  # returns a 2-TUPLE, which is a per-item answer and not a mapping.
+  mapping_blob = blob[1] in ("dict", "dict+extras", "pairs", "lines")
+  if not mapping_blob:
+    per_line = _answers(fn, [t for _, t in SHAPES])
     if all(v[0] == "ok" for v in per_line.values()) and all(
-        v[1] == "NONE" or v[1].startswith("SEQ2") or v[1].startswith("SEQ3") for v in per_line.values()):
+        v[1] == "NONE" or v[1].startswith(("SEQ2", "SEQ3")) for v in per_line.values()):
+      # ── FAMILY 3 or FAMILY 2? The PARAMETER NAME decides, and the decision is printed.
+      arg0 = None
+      if node.args.args:
+        arg0 = node.args.args[0].arg
+      takes_value = arg0 in VALUE_ARG_NAMES
+      if takes_value:
+        # `row(line)[1:]` -- what `rows()` folded away, as the gate computes it.
+        per_val = _answers(fn, [canonical_value(t) for _, t in SHAPES])
+        want = {sid: _render_answer(canonical_value_answer(t))
+                for sid, t in SHAPES}
+        mm = [sid for sid, v in per_val.items() if v[0] == "ok" and v[1] != want[sid]]
+        return _class(rel, name, lineno, sig, "value->fold",
+                      f"arg is `{arg0}`: inverse-fold contract; "
+                      + (("disagrees on " + " ".join(mm)) if mm else "agrees with row()'s fold"),
+                      bool(mm) or any(v[0] != "ok" for v in per_val.values()), [], blob)
       mismatch = [sid for sid, v in per_line.items() if v[1] != _render_answer(CANON_ROW(dict(SHAPES)[sid]))]
       return _class(rel, name, lineno, sig, "line->answer",
                     ("disagrees on " + " ".join(mismatch)) if mismatch else "",
@@ -562,21 +628,72 @@ def measure(rel, name, lineno, seg, node):
                   "; ".join(f"{k}={v[1][:60]}" for k, v in list(per_line.items())[:3])[:150],
                   None, [], blob)
 
-  # ── FAMILY 1 verdict.
-  mismatch = []
+  # ── FAMILY 1 verdict, and the THREE-WAY SPLIT THAT DECIDES WHETHER A FORK CAN BE DELETED.
+  #   narrowing  every (name, value) the fork produced is ALSO what `rows()` produces. Substituting
+  #             `rows()` can therefore only ADD rows, never change one -- which is why a
+  #             narrowing fork is safe to convert and a divergent one is not.
+  #   divergent  the fork produces a (name, value) `rows()` does NOT. These two readers answer
+  #             different questions, and swapping one for the other would change a verdict.
+  #   phantom    the fork produces a row on a shape `rows()` excludes on purpose -- the `""`
+  #             banner, or a single-space or TAB line. That is a row the gate never believed in.
+  narrowing, divergent, phantom = [], [], []
+  signatures = []
+  untrusted = None
   for sid, text in SHAPES:
-    want = sorted((n, render(v)) for n, v in CANONICAL(text).items())
-    if got[sid][0] != want:
-      mismatch.append(sid)
+    want = set((n, render(v)) for n, v in CANONICAL(text).items())
+    got_p = got[sid][0]
+    signatures.append((sid, tuple(sorted(got_p)) if got_p else ("<none>",)))
+    if got_p is None:
+      divergent.append(f"{sid}:no-mapping")
+      continue
+    # A row NAME the reader invented cannot be a row the lane contained. Under the fake stdout
+    # that happens -- `dsl_mutate.rows` came back with `- message  : no such file: <the probe>`,
+    # a `sed` failure line the harness manufactured. Such a verdict is printed as UNTRUSTED
+    # rather than silently counted as drift, because "drift I caused" and "drift you have" are
+    # different findings.
+    if untrusted is None and any(n and n not in text for n, _ in got_p):
+      untrusted = sid
+    mine = set(got_p)
+    contra = mine - want
+    if contra:
+      (phantom if _looks_like_exclusion(text, contra) else divergent).append(
+        f"{sid}:{sorted(contra)[0]}")
+    elif got_p != sorted(want):
+      divergent.append(f"{sid}:mismatch")
+    missing = want - mine
+    if missing and not contra:
+      narrowing.append(f"{sid}:misses {len(missing)}")
+  verdict = "AGREE" if not (narrowing or divergent or phantom) else (
+    "NARROWING" if not (divergent or phantom) else "DIVERGENT")
+  bad = divergent or phantom
   kinds_seen = sorted(set(kinds.values()))
   return _class(rel, name, lineno, sig, "text->mapping",
-                ("disagrees on " + " ".join(mismatch)) if mismatch else "",
-                bool(mismatch), kinds_seen, blob)
+                (f"{verdict}: " + "; ".join((divergent or phantom or narrowing)[:4])),
+                bool(narrowing or divergent or phantom), kinds_seen, blob,
+                verdict=verdict, narrowing=len(narrowing), divergent=len(divergent + phantom),
+                untrusted=untrusted, signature=hashlib.md5(repr(signatures).encode()).hexdigest()[:12])
 
 
-def _class(rel, name, lineno, sig, contract, note, drift, kinds, blob):
-  return dict(file=rel, func=name, line=lineno, contract=contract, drift=drift, note=note,
-              sig=sig, kinds=kinds, blob_kind=blob[1], blob_n=blob[0] if blob[0] else 0)
+def _looks_like_exclusion(text, contra):
+  """True when the fork's extra row comes from a LINE `rows()` excludes on purpose: a line with
+  no name (an `== SECTION ==` banner), a single-space gap, or a TAB. The distinction matters
+  because a phantom row is a row NOBODY believed in, while a divergent row is a real
+  disagreement the two readers would both act on."""
+  head = text.split("=", 1)[0] if "=" in text else text.split("  ", 1)[0]
+  if not head.strip():
+    return True
+  if "\t" in text:
+    return True
+  if "=" not in text and "  " not in text:
+    return True
+  return bool(contra)
+
+
+def _class(rel, name, lineno, sig, contract, note, drift, kinds, blob, **extra):
+  d = dict(file=rel, func=name, line=lineno, contract=contract, drift=drift, note=note,
+           sig=sig, kinds=kinds, blob_kind=blob[1], blob_n=len(blob[0] or []))
+  d.update(extra)
+  return d
 
 
 def main():
@@ -629,13 +746,53 @@ def main():
     tag = "" if k in DRIFT_FAMILIES else "   (not a row reader: excluded from drift)"
     print(f"  {k:<18} {len(by[k]):<5} drifted={n_drift}{tag}")
 
-  total_rows = sum(len(by[k]) for k in DRIFT_FAMILIES)
-  total_drift = sum(1 for k in DRIFT_FAMILIES for m in by[k] if m["drift"])
+  total_rows = sum(len(by.get(k, [])) for k in DRIFT_FAMILIES)
+  total_drift = sum(1 for k in DRIFT_FAMILIES for m in by.get(k, []) if m["drift"])
+  verdicts = {}
+  for m in by.get("text->mapping", []):
+    verdicts[m.get("verdict", "?")] = verdicts.get(m.get("verdict", "?"), 0) + 1
   print(f"\nDRIFT, over every function in this corpus that ANSWERS A ROW QUESTION")
   print(f"  DRIFTED {total_drift} of {total_rows}"
         f"    ({len(by.get('text->mapping', []))} text readers, "
-        f"{len(by.get('line->answer', []))} per-line readers)")
+        f"{len(by.get('line->answer', []))} per-line, "
+        f"{len(by.get('value->fold', []))} inverse-fold)")
   print(f"  agree on all six  {total_rows - total_drift}")
+  print(f"\nTHE THREE-WAY SPLIT OF THE {len(by.get('text->mapping', []))} TEXT READERS -- this is "
+        f"what decides\n   which fork can be DELETED. NARROWING = the fork sees a SUBSET of what "
+        f"rows() sees, with\n   identical values, so importing rows() can only ADD rows. "
+        f"DIVERGENT = the fork reads\n   something rows() does not, and swapping one for the "
+        f"other changes a verdict.")
+  for k in ("AGREE", "NARROWING", "DIVERGENT"):
+    print(f"  {k:<12} {verdicts.get(k, 0)}")
+  controls = [m for m in by.get("text->mapping", [])
+              if m["file"].endswith("rebase-gate.py") and m["func"] == "rows"]
+  print(f"  of which the control itself (rebase-gate.py's own rows()): {len(controls)}"
+        f" -- and it agrees with itself, which is the only reason the other rows are a finding")
+
+  # ── THE FINDING, WITH ITS DENOMINATOR. 51 forks are not 51 risks. Readers that answer the
+  # six shapes IDENTICALLY are the same reader spelled twice, and the number of DISTINCT
+  # BEHAVIOURS is the number that says how much is actually at stake.
+  sigs = {}
+  for m in by.get("text->mapping", []):
+    if m.get("untrusted"):
+      continue
+    sigs.setdefault(m.get("signature", "?"), []).append(m)
+  print(f"\nDISTINCT BEHAVIOURS: {len(sigs)} different answers to the six shapes, from "
+        f"{len(by.get('text->mapping', []))} text readers")
+  print("  A signature is the exact (name, value) answer set on all six shapes, so two readers "
+        "with\n  the same signature are the same reader spelled twice -- which is what makes "
+        "this a\n  fan-out problem with a small number of root causes rather than 51 of them.")
+  untrusted_n = sum(1 for m in by.get("text->mapping", []) if m.get("untrusted"))
+  print(f"  readers excluded from the grouping because the fake stdout gave them a row name "
+        f"that is\n  not in the probe text, i.e. the verdict is the harness's and not theirs: "
+        f"{untrusted_n}")
+  for i, (k, ms) in enumerate(sorted(sigs.items(), key=lambda kv: -len(kv[1])), 1):
+    vs = sorted({m.get("verdict") for m in ms})
+    print(f"\n  S{i:02d} {k}  {len(ms)} reader(s)   verdict={','.join(vs)}")
+    for m in sorted(ms, key=lambda x: (x["file"], x["func"])):
+      u = "  [UNTRUSTED: invented name]" if m.get("untrusted") else ""
+      print(f"        {m['file']}:{m['line']}  {m['func']}({m['sig']}){u}")
+
   if unstable:
     print(f"  *** NON-DETERMINISTIC on a second run: {unstable} ***")
 

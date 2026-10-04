@@ -2036,6 +2036,10 @@ def bend_sym_rows(dev: str) -> list[str]:
   return emit_bend(dev, "sym")[0]
 
 
+def bend_loop_rows(dev: str) -> list[str]:
+  return emit_bend(dev, "loop")[0]
+
+
 def selfcheck(dev: str = "CPU") -> int:
   """The atom table and the chunk reader, ASSERTED rather than assumed."""
   bad = []
@@ -2079,17 +2083,38 @@ def selfcheck(dev: str = "CPU") -> int:
       bad.append(f"ledger marker {m!r} collides with the absence atom")
     if not fis or not all(0 <= fi < len(WIRE) for fi in fis):
       bad.append(f"ledger marker {m!r} names fields {fis}, outside the {len(WIRE)} fields")
-  # `?` MUST BE COUNTED IN BOTH COLUMNS IT LANDS IN. It is one port-only fact -- the fold
-  # produced no `Derived` -- so it takes `dtype` and `shape` together, and a single-index
-  # row would have counted half of what `--graph sym` emits. MEASURED on `--graph sym`:
-  # `?=0/6` with the two-field row against `?=0/3` with the one-field row, and 6 is the
-  # truth (three nodes x two columns). This is the `--plant opt` defect class again -- a
-  # ledger that misses its own row is worse than no ledger.
+  # THE `?` LEDGER ROW MUST BE COUNTED IN BOTH COLUMNS IT LANDS IN. It is one port-only
+  # fact -- the fold produced no `Derived` -- so it takes `dtype` and `shape` together, and a
+  # single-index row would have counted half of what a `?` node emits. A one-column row is
+  # what this used to assert, and the assertion is now on `loop` rather than on `sym`.
+  #
+  # **IT MOVED BECAUSE THE LIMIT IT NAMED WAS RESOLVED BY ANOTHER UNIT, and that is the
+  # point worth recording.** `sym` used to answer `?=6` (three unsettled nodes x two columns)
+  # because `uop/fold.bend`'s `marg.of` hit the `ssimplify` wall for a STACK element that is
+  # not a CONST. MEASURED 2026-10-04 late in the day: `sym` now answers `?=0` and
+  # `VERDICT: AGREE` at 12 of 12 nodes -- the wall is CLOSED, `fold.bend`'s `sym_dim.pa`
+  # (`fold.bend:1296`, the `AParam` arm of `sym_dim.of`) landed, and a symbolic dim is
+  # mintable in Bend. **An assertion that pins a RESOLVED limit is worse than no assertion,
+  # because it makes the resolution look like a regression**, so the `?=6` row is replaced by
+  # two rows that are each still true for a named reason:
+  #   * `sym` must answer `?=0` -- a REGRESSION ROW on the closure, and its failure text says
+  #     the wall is back rather than saying "expected 6, got 0";
+  #   * `loop` must answer `?=2` -- one CALL node x two columns -- which keeps the two-column
+  #     claim under test on a node that still has the wall, and `loop`'s wall has a DIFFERENT
+  #     cause (`call_dt` reads `CallInfo.dtype`, a field CPython does not have).
+  if dict(ledger(bend_sym_rows(dev)))["?"] != 0:
+    bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers "
+               f"?={dict(ledger(bend_sym_rows(dev)))['?']} on the bend side where the port's "
+               f"`fold.bend` `sym_dim.pa` (`fold.bend:1296`) says the symbolic-dim case is "
+               f"closed and `--graph sym` VERDICT is AGREE")
+  if dict(ledger(bend_loop_rows(dev)))["?"] != 2:
+    bad.append("the `?` ledger row does not count both columns of `--graph loop`'s CALL "
+               "(one unsettled node x two columns = 2). The two-column row is the claim; "
+               "`sym` cannot test it any more because its wall is closed.")
+  # AND THE PY SIDE CANNOT PRODUCE `?` AT ALL, on any graph -- which is the other half of
+  # the same row and the reason `?` is PORT-ONLY rather than a third upstream state.
   if dict(ledger(py_sym_rows()))["?"] != 0:
     bad.append("the `?` ledger row counts something on the py side, which cannot produce it")
-  if dict(ledger(bend_sym_rows(dev)))["?"] != 6:
-    bad.append("the `?` ledger row does not count both columns of `--graph sym` "
-               "(three unsettled nodes x two columns = 6)")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "y") != 1:
     bad.append("at_value does not count a bytes atom at a value position")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "u") != 1:

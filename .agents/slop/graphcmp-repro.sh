@@ -37,13 +37,41 @@ ready() { i=0; while [ "$i" -lt "$WAIT" ]; do
     i=$((i+1)); sleep 60
   done; return 1; }
 
-echo "# waiting for the substrate (graphcmp.bend --check-only == ALL PROOFS CHECK)"
-ready || { echo "SUBSTRATE DID NOT SETTLE in $WAIT minutes -- this is NOT a measurement"; exit 2; }
-sh .agents/slop/graphcmp-run.sh > /dev/null 2>&1 || { echo "RUN A FAILED -- NOT a measurement"; exit 2; }
+# A HEALTHY RUN, not merely a FINISHED one. MEASURED, and this is the whole reason the
+# substrate wait is not enough on its own: `ready` passed, `graphcmp-run.sh` started, and a
+# concurrent edit to `tinybendygrad/uop/ops.bend` landed PART WAY THROUGH -- so the first
+# twelve graphs wrote real reports and the last four wrote "0 rows after 5 attempts". Both
+# halves are files, both halves hash, and the diff between two such runs is a wall of
+# unrelated changes that has nothing to do with reproducibility.
+#
+# **AND THE PINNED NUMBERS MOVE, which is worth stating rather than fixing quietly.** This
+# gate pins `graphs-agree=14`. It pinned `13` an hour earlier, and the reason it changed is
+# that the `fold` unit CLOSED the `ssimplify` wall and `sym` started AGREEING. So the gate
+# reported "not healthy" for a run that was entirely correct and this script sat retrying it.
+# A health gate pinned to a verdict COUNT is therefore a gate that can be wrong in the
+# direction of refusing to measure; the numbers it pins are named here so a reader can see
+# which claim moved and go and check whether the move was a fix or a break.
+healthy() {
+  [ "$(sed -n '1p' runs/graphcmp/D/D0-run-summary.txt)" = "graphs=16" ] &&
+  [ "$(sed -n '2p' runs/graphcmp/D/D0-run-summary.txt)" = "graphs-agree=14" ] &&
+  grep -q '^selfcheck=# SELFCHECK: OK$' runs/graphcmp/D/D0-run-summary.txt &&
+  grep -q '^census-rc=rc=0$' runs/graphcmp/D/D0-run-summary.txt
+}
+clean_run() { # clean_run <label>: run until healthy, bounded.
+  i=0
+  while [ "$i" -lt "$WAIT" ]; do
+    ready && sh .agents/slop/graphcmp-run.sh > /dev/null 2>&1
+    if healthy; then echo "# $1: healthy run"; return 0; fi
+    echo "# $1: run $((i+1)) was NOT healthy (a concurrent edit to uop/ops.bend most likely) -- waiting"
+    i=$((i+1)); sleep 30
+  done
+  echo "# $1: no healthy run in $WAIT attempts -- this is NOT a measurement"; return 1
+}
+
+clean_run "run A" || exit 2
 snap > /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproA.sha
 echo "# run A done: $(wc -l < /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproA.sha | tr -d ' ') files snapshotted"
-ready || { echo "SUBSTRATE DID NOT SETTLE for run B -- this is NOT a measurement"; exit 2; }
-sh .agents/slop/graphcmp-run.sh > /dev/null 2>&1 || { echo "RUN B FAILED -- NOT a measurement"; exit 2; }
+clean_run "run B" || exit 2
 snap > /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproB.sha
 N=$(wc -l < /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproB.sha | tr -d ' ')
 if cmp -s /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproA.sha /private/tmp/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/gcreproB.sha; then
