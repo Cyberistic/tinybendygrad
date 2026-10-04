@@ -23,23 +23,40 @@ import graphcmp as G  # noqa: E402
 
 
 def atoms(arg: str) -> set:
-  """The ATOM LETTERS in an arg. Two conditions, and the first version had only the first
-  and was visibly wrong on screen -- MEASURED, it reported `34DNPSbils` for a `ParamArg`
-  and `)` for a `KernelInfo`, because it counted the SECOND character of every atom and
-  the `)` of the `n()` empty-list spelling:
-    * the letter sits where a VALUE starts -- offset 0, or right after `( , : =` -- so
-      the `D` inside `sDefault` is not an atom; and
-    * the letter is a LETTER and is followed by alnum/underscore or by nothing, and the
-      scan then SKIPS the rest of the token, so `i0` contributes `i` and `Df32`
-      contributes `D`. That also stops `n()` contributing its `n` or its `)`."""
+  """The ATOM LETTERS in an arg. THREE conditions, and the first two versions had fewer and
+  were visibly wrong on screen.
+    * MEASURED, the first counted the SECOND character of every atom and the `)` of the
+      `n()` empty-list spelling -- it reported `34DNPSbils` for a `ParamArg` and `)` for a
+      `KernelInfo` -- so the letter sits where a VALUE starts: offset 0, or right after
+      `( , : =`, and the `D` inside `sDefault` is not an atom;
+    * the letter is a LETTER and is followed by alnum/underscore or by nothing, and the scan
+      then SKIPS the rest of the token, so `i0` contributes `i` and `Df32` contributes `D`.
+      That also stops `n()` contributing its `n` or its `)`.
+    * DEFECT 21 (2026-10-04, `--graph lin`): a token whose LAST character is followed by
+      `=` is a FIELD NAME and not a value, and the two conditions above do not separate
+      them. So the census counted `o` from `Opt(op=EOptOps.SPLIT,axis=i2,...)` and `a` from
+      `axis`, and the coverage report then printed `an unmapped value: o` -- warning about
+      an UNMAPPED ATOM over a string the differ had just rendered correctly. It is the same
+      shape as defect 20 in this same file: correct content under a printing that is wrong,
+      and found only by the widening that produced the corpus's first `Opt`.
+
+      THE `=` IS AT THE END OF THE TOKEN (`op=`, not `=op`), so the test has to run AFTER
+      the token is skipped. MEASURED: the first version tested `arg[i+1] != "="` at the
+      token's FIRST character and changed nothing, because `arg[i+1]` is `p`. The assertion
+      at the bottom of this file is what made that visible in one run instead of one
+      reading.
+  """
   out, i = set(), 0
   while i < len(arg):
     c = arg[i]
     if c.isalpha() and (i == 0 or arg[i - 1] in "(,:=") and (
         i + 1 == len(arg) or arg[i + 1].isalnum() or arg[i + 1] == "_"):
-      out.add(c)
-      while i + 1 < len(arg) and (arg[i + 1].isalnum() or arg[i + 1] == "_"):
-        i += 1
+      j = i
+      while j + 1 < len(arg) and (arg[j + 1].isalnum() or arg[j + 1] == "_"):
+        j += 1
+      if not (j + 1 < len(arg) and arg[j + 1] == "="):
+        out.add(c)
+      i = j
     i += 1
   return out
 
@@ -86,6 +103,7 @@ def main() -> int:
   tal: collections.Counter = collections.Counter()
   graphs_of: collections.Counter = collections.Counter()
   all_res: collections.Counter = collections.Counter()
+  bad: list[str] = []
   for g in sorted(G.GRAPHS):
     py = census(G.emit_py(g, None))
     bd = census(G.emit_bend("CPU", g)[0])
@@ -115,6 +133,19 @@ def main() -> int:
       f"({len(tot_atoms)} distinct = {len(tot_atoms - comp)} atom letters + "
       f"{len(tot_atoms & comp)} composite-form prefixes; a letter that is NEITHER an atom "
       f"nor a composite prefix would be an unmapped value: {''.join(sorted(unknown)) or 'none'})")
+  # DEFECT 21, ASSERTED so it cannot come back. `atoms()` counted the FIELD NAMES of a
+  # dataclass arg -- `op` and `axis` of `Opt(...)` -- as atom letters, so the coverage
+  # report warned about an unmapped value `o` over a string that is itself correct. An
+  # assertion is the only thing that stops a PRINTING defect from being re-introduced by a
+  # fixture change, and `selfcheck`'s `?`-ledger row is the precedent: measured, then
+  # asserted to be able to fire.
+  opt_atoms = atoms("Opt(op=EOptOps.SPLIT,axis=i2,arg=n(i0,XUPCAST))")
+  if {"o", "a"} & opt_atoms:
+    bad.append(f"atoms() counts a dataclass FIELD NAME as an atom letter: {sorted(opt_atoms)}")
+  if "E" not in opt_atoms:
+    bad.append("atoms() lost the ENUM atom `E` after the field-name fix")
+  if unknown:
+    bad.append(f"unmapped arg atom letters: {''.join(sorted(unknown))}")
   print(f"# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: "
         f"{dict(sorted(all_res.items())) or 'none'} of {len(G.LEDGER)} markers")
   print("#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check "
@@ -146,7 +177,10 @@ def main() -> int:
           + "   (nodes/graphs)")
   print(f"# NOT REACHED ({len(list(G.Ops)) - len(tal)} of {len(list(G.Ops))}): "
         + " ".join(o.name for o in G.Ops if o.name not in tal))
-  return 0
+  print("# ORACLE SELFCHECK: " + ("OK" if not bad else "FAIL"))
+  for b in bad:
+    print("#   " + b)
+  return 0 if not bad else 1
 
 
 if __name__ == "__main__":

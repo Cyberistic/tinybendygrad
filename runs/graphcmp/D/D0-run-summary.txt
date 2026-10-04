@@ -1,9 +1,11 @@
 graphs=16
-graphs-agree=6
-graphs-disagree=10
-byte-identical=6
+graphs-agree=14
+graphs-disagree=2
+byte-identical=14
 not-comparable=0
 stable-pairs=5
 selfcheck=# SELFCHECK: FAIL
 conflations=4 of 4
 controls=5 of 5
+oracle-selfcheck=
+census-rc=rc=1

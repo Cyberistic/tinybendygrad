@@ -1,1 +1,1 @@
-indexed NOT COMPARED: py=420 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)
+indexed BYTE-IDENTICAL (420 bytes both sides)

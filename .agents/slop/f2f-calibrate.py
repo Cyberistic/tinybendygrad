@@ -67,16 +67,18 @@ def f2f.em1.ghost(+ar: O.Arena, +k: U32) -> U32:
 """
 
 INJECT = {
-    # the ORIGINAL aliasing, restored at all THREE sites. `f2f.qnan` and `f2f.down.npat`
-    # are separate defs so both anchors exist once each.
+    # the ORIGINAL aliasing, restored VERBATIM at all THREE sites. `f2f.em1` grew three
+    # nodes into a COPY and returned only the last INDEX, so the `tx_shl` that followed
+    # wrote into the pre-`em1` arena -- the definition of one arena, two builders.
     "stale-arena": [(
         "  +qm = f2f.qmask(O.Found.ar(a), te, tm)\n  dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))",
         "  +b = T.tx_shl(O.Found.ar(a), f2f.em1.ghost(O.Found.ar(a), te), tm)\n"
         "  dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))"),
-     ("  +q1 = f2f.qmask(O.Found.ar(fn), te, tm)",
-        "  +q1 = f2f.em1.ghost(O.Found.ar(fn), te)"),
+     ("  +q1 = f2f.qmask(O.Found.ar(fn), te, tm)\n  +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))",
+        "  +q1 = T.tx_shl(O.Found.ar(fn), f2f.em1.ghost(O.Found.ar(fn), te), tm)\n"
+        "  +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))"),
      ("  +qm = f2f.qmask(O.Found.ar(a), te, tm)\n  +c = dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))",
-        "  +qm = f2f.em1.ghost(O.Found.ar(a), te)\n  +b = T.tx_shl(O.Found.ar(a), O.Found.i(qm), tm)\n"
+        "  +b = T.tx_shl(O.Found.ar(a), f2f.em1.ghost(O.Found.ar(a), te), tm)\n"
         "  +c = dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))"),
      ("def f2f.udt(+to: S.Dt) -> S.Dt:\n  f2f.udt.of(f2f_dt(to), S.uint32())",
       "def f2f.udt(+to: S.Dt) -> S.Dt:\n  f2f.udt.of(f2f_dt(to), S.uint32())\n"
@@ -123,6 +125,24 @@ def run_probe(tag, probe_rel, src_rel, minrows=200):
     nodes = {ln.split()[1]: int(ln.split("next=")[1].split()[0])
              for ln in txt.split("\n") if ln.startswith("# ")}
     return {"fwd": fwd, "rows": rows, "nodes": nodes}, ""
+
+
+def trackers(out):
+    """How many fixtures' `sig`/`k` rows DIFFER between pad 0 and the other five pads.
+
+    `dd-bandpad.bend` prints `w1.p0sig=`, `w1.p1sig=` ... in ONE run, so the pads are a
+    within-file comparison and no extra bend invocation is needed.
+    """
+    per = {}
+    for ln in out.split("\n"):
+        m = re.match(r"^(\w+)\.p(\d+)(sig|k)=", ln)
+        if m:
+            per.setdefault((m.group(1), m.group(3)), {})[int(m.group(2))] = ln.split("=", 1)[1]
+    if not per:
+        return None
+    moved = sum(1 for _, pads in per.items()
+                if 0 in pads and len(set(pads.values())) > 1)
+    return {"moved": moved, "n": len(per)}
 
 
 def shape_rows(path):
@@ -222,28 +242,44 @@ def main():
     print("  A clean FORWARD count over a fixed file is NOT evidence for the aliasing")
     print("  fix. The fix's evidence is `stale-arena` going 0 -> N on the SAME harness.")
 
-    # ---- 4  the pad sweep, measured
-    print("\n[4] THE PAD SWEEP, MEASURED (not asserted)")
-    padsh = ".agents/slop/f2f-pad.sh"
-    print(f"  pads 0 1 2 5 17 64; BEFORE = the injected file, AFTER = the fixed file, so a")
-    print(f"  MOVE means the sweep DETECTED the defect.")
-    for cls in ("wrong-index", "wrong-const", "wrong-offset"):
+    # ---- 4  the pad sweep, measured as PAD-TRACKING
+    print("\n[4] THE PAD SWEEP, MEASURED AS PAD-TRACKING (not asserted)")
+    print("  The sweep prepends `pad` PARAMs at pads 0 1 2 5 17 64. A wrong answer that is")
+    print("  an arena INDEX is a function of the fixture's POSITION, so prepending PARAMs")
+    print("  moves it by exactly `pad` and the row's value DIFFERS BETWEEN PADS. A wrong")
+    print("  CONSTANT and a dropped OFFSET are position independent, so every pad prints the")
+    print("  same value and the sweep sees nothing. That is the whole calibration, measured")
+    print("  here per defect rather than quoted.")
+    for cls in ("wrong-index", "wrong-const", "wrong-offset", "stale-arena", "stale-found"):
         dst = S / f"cal-{cls}.bend"
         if not dst.exists():
             continue
-        r = subprocess.run([".agents/slop/" + os.path.basename(padsh), str(dst), str(src)],
-                           cwd=ROOT, capture_output=True, text=True)
-        out = r.stdout
-        m = re.search(r"shared=\d+ A_only=\d+ B_only=\d+ DISAGREE=(\d+)", out)
-        seen = m.group(1) if m else "?"
-        print(f"  {cls:<14} pad-sweep DISAGREE={seen:<4} "
-              f"{'SEEN' if seen not in ('?', '0') else 'BLIND'}")
-        if m is None:
-            print("     (sweep did not complete: " + out.strip().split("\n")[-1][:120] + ")")
-    print("  NOTE: `f2f-pad-oracle.py` still builds its receiver with the THREE-ARG")
-    print("  `UOp.variable(nm, 0, fr)` (ops.py:1015 puts `dtype` FOURTH), so the sweep's")
+        # `f2f-pad.sh AFTER_BEND [BEFORE_BEND]`, and it writes the BEFORE rows to
+        # `$S/f2f-pad-before.txt`. So the INJECTED file goes SECOND. Passing it first --
+        # which the first version of this file did -- reads back the FIXED file's rows and
+        # reports 0/6 moved for every defect including one that provably moves. That is
+        # how a calibration harness comes to say "the sweep is blind" when it is not.
+        r = subprocess.run([".agents/slop/f2f-pad.sh", str(src), str(dst)], cwd=ROOT,
+                           capture_output=True, text=True)
+        # `f2f-pad.sh` writes its rows to FILES, not to stdout, so the pad leg is read
+        # from `$S/f2f-pad-before.txt` -- which is the INJECTED file at all six pads. The
+        # pads are compared WITHIN that one file, so the fixed file is not involved at all
+        # and a MOVE is attributable to the defect alone.
+        pf = S / "f2f-pad-before.txt"
+        got = trackers(pf.read_text()) if pf.exists() and pf.stat().st_size else None
+        if got is None:
+            print(f"  {cls:<14} (sweep did not complete: "
+                  + (r.stdout.strip().split("\n") or [""])[-1][:110] + ")")
+            continue
+        print(f"  {cls:<14} pad-tracking fixtures moved: {got['moved']}/{got['n']}  "
+              f"-> {'SEEN (position-dependent)' if got['moved'] else 'BLIND (position-independent)'}")
+    print("  NOTE 1: `f2f-pad-oracle.py` still builds its receiver with the THREE-ARG")
+    print("  `UOp.variable(nm, 0, fr)` -- `ops.py:1015` puts `dtype` FOURTH -- so the sweep's")
     print("  CPython lane measures the `v.cast(fr)` workaround, not `f2f_dt[fr]`. Only the")
-    print("  port-vs-port MOVE leg above is sound. Report that, do not read it as agreement.")
+    print("  port-vs-port pad leg above is sound; the CPython leg is reported, not trusted.")
+    print("  NOTE 2: the sweep is a SIX-PAD FUNCTION of the fixture, not a function of the")
+    print("  defect, so the detection rate above is a property of BOTH. One pad has no")
+    print("  discriminating power at all.")
     return 0
 
 

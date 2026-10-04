@@ -20964,3 +20964,106 @@ and the state at the end was **COLD**. Three rules follow, and the third is the 
 Tooling: `.agents/slop/cstyle-reader-parity.py` (reader ablation, the pre-fix reader taken from
 `jj file show -r @-` rather than re-typed), `.agents/slop/cstyle-shapes-selftest.py` (one armed/red
 control per shape), `.agents/slop/cstyle-parity/`.
+
+---
+
+## L1 (appended 2026-10-04, continues from the position at end-of-file above): A COUNT MEASURED UNDER UNKNOWN LOAD IS NOT A COUNT — AND A BASELINE WITH NO REVISION CANNOT BE SHOWN TO DESCRIBE THE TREE IT IS JUDGING
+
+Measured over the whole recorded corpus by `.agents/slop/load-census.py`, ledger in
+`.agents/slop/baseline-ledger.md` (234 recorded baseline counts in 13 files).
+
+  * **0 of 234** recorded baseline counts carry a load beside them.
+  * **0 of 234** record an elapsed time. **0 of 234** record a revision.
+  * Across the whole record layer: **92 of 1,816** sensitive recorded counts are load-qualified
+    (**5.1%**). The other **1,724** carry none, and that is not a scan defect — nothing in this
+    project ever recorded one.
+  * `rebase/stability-2026-10-03.json` ran all 38 ports twice and **110 of 110** lane counts were
+    identical. That is evidence of REPRODUCIBILITY and **not** evidence of load: two runs on one
+    machine of unknown loading agree just as happily when both are starved. Hence a separate
+    verdict `RE-MEASURED-ALONGSIDE` rather than a shade of `OK`.
+
+**THE PART THAT IS WORSE THAN "THE LOAD IS MISSING".** `UNCHANGED` means *this port's rows are
+identical to the baseline*, which is only meaningful if the baseline describes **this** tree. With
+no recorded revision there is nothing for the working copy to be compared against, so the test is
+**UNDECIDABLE, not merely unmet**. A ledger whose recoverable class is empty (here **0 of 234**)
+cannot be made actionable by re-reading it. It is actionable only by **measuring forward**, which
+produces a **separate artefact beside** the ledger row and leaves every row standing as a record
+of what was measured at unknown load.
+
+**FIVE RULES, each from a measured instance:**
+
+  * **MARK, NEVER REFRESH.** Re-running a suspect baseline under low load and overwriting it
+    replaces a true record of what was measured with a tidier number, and destroys the ability to
+    say UNCHANGED against the original capture. A baseline recorded under unknown load is still
+    evidence about that moment.
+  * **A STARVED LANE IS THE SLOW LANE, and elapsed time is the one observable a starved run cannot
+    hide.** A starved lane is a **PREFIX**; a prefix has fewer rows, so it trips `ROWS-LOST` — a
+    **DEFECT**-classed cause — even though the port is perfectly healthy and the run queue was not.
+    That is why `rebase-gate.py` records `row_load1` and `row_secs` per lane and prints both on the
+    verdict line, and why `CAUSE_STARVED` is **MEASUREMENT**-classed and kept out of `ROWS-LOST`'s
+    DEFECT class: reporting four starved lanes as `ROWS-LOST` puts substrate damage in the port's
+    column.
+  * **A COUNT WITH NO DENOMINATOR IS NOT A COVERAGE STATEMENT** — this one is ALREADY VIOLATED by
+    the stored sweeps: **4 of 18** stored BROKEN verdicts read `2 row(s) disagree with CPython
+    across 3 lane pair(s)` with **no shared-row denominator**. **0 of 4** carry one.
+  * **A 0-ROW REP IS NOT A STARVED LANE, IT IS A DIFFERENT INSTRUMENT.** The `G_checkonly_f16` cell
+    of `lane-load-measurements.tsv` runs the same file with `--check-only`, which type-checks and
+    never runs `main`, so it prints no rows **by design** (NV7: 0.37 s under 19 concurrent
+    compilers). `lane-load-measurements.tsv` carries **no invocation column**, so the only available
+    discriminator is the observable: a rep that emitted rows is evidence about starvation; a rep
+    that emitted none is **EXCLUDED AND NAMED**. "printed nothing" and "printed nothing because it
+    ran out of time" are different claims and this file cannot tell them apart.
+  * **AN INSTRUMENT MUST NOT APPEAR IN ITS OWN POPULATION.** The ledger's `*baseline*.txt` glob
+    matched `baseline-ledger.txt`, so **the ledger counted its own output**: denominator 234, then
+    **235** seconds later, no edit in between. `load-census.py`'s `SELF` already excluded its own
+    files from the *text* layer and simply was not applied to the ledger's glob. Same omission, two
+    places.
+
+**THREE COUNTING-UNIT COLLISIONS found while doing this, all on the one lane the invariant rests on:**
+
+  * **`787` / `780` / `768`.** `loadwatch.py` `_OBSERVED["full_rows"] = 787` (quoted from NV7, "787
+    rows in 0.5 s"). The stored capture `boot42_baseline_port.txt` holds **780** rows in **780**
+    non-blank lines, of which **768 are distinct names** — six names are emitted **3× each**
+    (`nv_largebar_0000_0000`, `nv_reserve_ptable_0000_0000`, `nv_sysmem_default_0000_0000`,
+    `nv_sysmem_0000_0000_{None,True,False}`) — and its last line is the sentinel `nvdev-done=1`.
+    The baseline layer counts **distinct names** (`len()` over a dict keyed by name); the starvation
+    slope's axis is a **line count**. They differ by **19** on the very lane the whole rule is
+    built on.
+  * **`0.5 s` vs `24 min` for the same 787 rows.** `nv_nvdev_mutrun.py:13` records "`bend <file>`
+    measured 24 min for 787 rows on this machine". Not compatible with NV7's 0.5 s.
+  * **`THRESHOLD = 4.0` is derived from an observation class with ZERO members.** It is defined as
+    "the largest load at which a full 787-row count was actually observed"; in
+    `lane-load-measurements.tsv`, **0 of 18** row-emitting reps reached 787 (max **79**) and
+    `_OBSERVED["max_load_with_full_count"]` is `None`. The threshold may be reasonable; nothing in
+    the corpus establishes it. It is a typed constant wearing a measured provenance.
+
+**TWO STORED BASELINES DISAGREE.** `rebase/baseline.json` (30 ports, 90 counts) and
+`rebase/baseline-DEMO.json` (8 ports, 24 counts) share **7 ports**; of **21** common (port, lane)
+pairs, **7 disagree** — `codegen/opt/search.bend` interpreted/native **38 vs 18**, `uop/ops.bend`
+interpreted/native **115 vs 104** and its oracle **68 vs 63**, `uop/spec.bend` interpreted/native
+**25 vs 21**. `DEMO` is ~23 h older and both `record-2026-10-03.txt` and
+`stability-2026-10-03.json` side with `baseline.json` — but **nothing says which file a reader
+should load**, and neither records a load.
+
+**A "RECORDING OF SILENCE" THAT GOT IN ANYWAY.** `rebase/record-2026-10-03.txt` EXCLUDED
+`renderer/cstyle.bend` **four times** — once per lane pair per run — with the reason "a baseline
+here would be a recording of silence", then recorded `LEFT UNTOUCHED (already recorded, not in the
+qualifying set)`. `baseline.json` still carries `cpython:renderer_oracle = 33` for it;
+`stability-2026-10-03.json` measured the same oracle at **15**. The recorder named the hazard and
+then routed around it because the port was **already in the file** and the "already recorded"
+branch skipped re-qualification. **A re-qualification gate that only inspects NEW candidates cannot
+retire an old one.**
+
+**THE STARVATION RETROSPECT — 0 of 18, and 0 is the finding.** Of the **18** BROKEN verdicts stored
+in `_coord-sweep.json`, `dev-wholetree-2.json` and `rebase/postrecord-2026-10-03.json` (over **14**
+distinct ports), **0** carry a load, **0** carry an elapsed time, so **none** can be reclassified as
+starvation rather than a port defect. Their shapes: `dead-lane` 13, `disagree` 4, `no-shared-name`
+1. **3 of the 18 are `dtype.bend`**, whose 14 permanently-red laws are a documented Bend
+limitation, so the unclassified count is **15 of 18**, not 18. The gap is **not closable by running
+anything** — the numbers were never taken. It is closed only by recording `row_load1`/`row_secs`
+**before** the verdict is written.
+
+Tooling: `.agents/slop/load-census.py` (`--ledger`, `--guard`, `--starvation`, `--vocab`,
+`--suspect`), `.agents/slop/loadwatch.py` (`--observed`, `--starved`),
+`.agents/slop/baseline-ledger.{md,txt,json}`, `.agents/slop/starvation-retrospective.json`,
+`.agents/slop/lane-load-measurements.tsv`.

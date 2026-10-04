@@ -18,3 +18,16 @@
 | the row order moves the per-uop rows first | regalloc.bend | NONE | 0 |
 | the row reads an INDEX where the oracle reads a NAME | regalloc.bend | ra0_a1, ra0_a10, ra0_a11, ra0_a2, ra0_a3, ra0_a4, ra0_a5, ra0_a6, ra0_a7, ra0_a9, ra0_before, ra1_a1, ra1_a10, ra1_a11, ra1_a2, ra1_a3, ra1_a4, ra1_a5, ra1_a6, ra1_a7, ra1_a9, ra1_before, ra2_a1, ra2_a2, ra2_a4, ra2_before | 26 |
 | the register name is replaced by its index | regalloc.bend | ra0_a1, ra0_a10, ra0_a11, ra0_a2, ra0_a3, ra0_a4, ra0_a5, ra0_a6, ra0_a7, ra0_a9, ra0_before, ra0_lr, ra0_spills, ra1_a1, ra1_a10, ra1_a11, ra1_a2, ra1_a3, ra1_a4, ra1_a5, ra1_a6, ra1_a7, ra1_a9, ra1_before, ra1_lr, ra1_spills, ra2_a1, ra2_a2, ra2_a4, ra2_before, ra2_lr, ra2_spills, rw_none | 33 |
+#   rev 2807aba5e902 | file a35f8d9b9f874fac+b20f456b34975f0e+ced1c8063d828f54 | rows f3ec90faa10d853a (130 rows)
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

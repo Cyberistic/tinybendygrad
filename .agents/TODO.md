@@ -7150,3 +7150,68 @@ pre-existing).
 Rules appended to `bend2-constraints.md` as **BAND-22** (position ~20891), after BAND-21's empty
 header at ~20885. Report: `.agents/slop/cstyle-reader.md`, `.agents/slop/cstyle-green.md`,
 `.agents/slop/cstyle-controls.md`.
+
+## Session 2026-10-04 (load unit) — THE BASELINE LEDGER: 0 of 234 recorded counts carry a load, and 0 of 18 stored reds can be reclassified
+
+`load-census [####.....] 4/7` — the ledger, the guard, the retrospective, and the starvation
+sweep are DONE; **3 are OPEN and are NOT this unit's files** (`loadwatch.py`, `baseline.json`).
+
+- [x] **THE LEDGER — `.agents/slop/baseline-ledger.{md,txt,json}`.** Every recorded baseline with
+      its path, revision, row count, load-or-`UNKNOWN` and verdict. **DENOMINATOR 234, in 13
+      files.** `OK 0`, `RE-MEASURED-ALONGSIDE 215`, `SUSPECT 19`. A txt dump is identified against
+      `baseline.json` by **ROW-NAME-SET EQUALITY**, never by a typed port name. **NOTHING WAS
+      RE-RUN** — no lane was executed to produce a number in the ledger.
+- [x] **RECOVERABLE / UNRECOVERABLE: 0 and 234.** A capture records a load in **0 of 234**, an
+      elapsed time in **0 of 234**, a **revision in 0 of 234**. So the "source file unchanged"
+      half of the test is **UNDECIDABLE, not merely unmet** — there is nothing for the working copy
+      to be compared against, so no baseline can be shown to describe the tree it judges. Across
+      the whole record layer: **92 of 1,816** sensitive counts load-qualified (**5.1%**).
+- [x] **THE MECHANICAL TEST — `load-census.py --guard`**, in the style of `parser_cache_guard()`.
+      Names every unqualified capture and **exits 1 by design, forever**: a guard that passed on
+      this corpus would itself be the defect.
+- [x] **THE STARVATION RETROSPECTIVE — 0 of 18, and 0 is the finding.** 18 stored BROKEN verdicts
+      over 14 distinct ports; **0** carry a load, **0** an elapsed time. Shapes `dead-lane` 13,
+      `disagree` 4, `no-shared-name` 1; **3 of the 18 are `dtype.bend`**'s documented 14 red laws,
+      so the unclassified count is **15 of 18**, not 18. **Not closable by running anything** —
+      the numbers were never taken. Cross-checked against `lanedeath-census.py`'s independent 18.
+- [x] **FOUR DEFECTS FOUND IN THE CENSUS ITSELF, all fixed, all recorded:** its header claimed
+      `rebase-gate-selftest.py` carried a `load_guard()` calling `census()` (**it does not, and never
+      did**); the same header's "108 occurrences of `load`" was stale at **176**; `load_guard()` v1
+      printed *"215 of 234 carry a load"* because it computed `total − SUSPECT`, so every
+      `RE-MEASURED-ALONGSIDE` row silently counted as **qualified** and the headline contradicted
+      its own detail table three lines below; and the ledger's `*baseline*.txt` glob matched
+      `baseline-ledger.txt`, so **the ledger counted its own output** (234 → **235**, no edit in
+      between). A fifth, in `starvation_retrospective()`: the `G_checkonly_f16` cell's 0-row reps
+      are the `--check-only` **CONTROL**, which prints no rows by design — a deliberate zero read
+      as a starved lane. Excluded and named: 3 reps.
+- [ ] **OPEN, NOT FIXED — `rebase/baseline.json` is read-only for this unit.**
+      `renderer/cstyle.bend` carries `cpython:renderer_oracle = 33` while
+      `stability-2026-10-03.json` measured the same oracle at **15**, and
+      `rebase/record-2026-10-03.txt` **EXCLUDED this port four times** with the reason "a baseline
+      here would be a recording of silence", then logged `LEFT UNTOUCHED (already recorded, not in
+      the qualifying set)`. **A re-qualification gate that only inspects NEW candidates cannot
+      retire an old one.** This is the only SUSPECT in `baseline.json`'s 90 counts.
+- [ ] **OPEN, NOT FIXED — `loadwatch.py` is not this unit's file.** ⚠ `THRESHOLD = 4.0` is
+      **derived from an observation class with ZERO members**: it is defined as "the largest load at
+      which a full 787-row count was actually observed", and **0 of 18** row-emitting reps reached
+      787 (max **79**), with `_OBSERVED["max_load_with_full_count"] = None`. It is a typed constant
+      wearing a measured provenance.
+- [ ] **OPEN, NOT FIXED — the anchor has three values and no unit.** `787` (NV7 prose) / **780**
+      (rows `boot42_baseline_port.txt` emits) / **768** (DISTINCT names — six names are emitted 3×
+      each). The baseline layer counts distinct names; the starvation slope's axis is a line count.
+      They differ by **19** on the one lane the invariant rests on. Separately
+      `nv_nvdev_mutrun.py:13` records "**24 min** for 787 rows" for the same count NV7 quotes at
+      "0.5 s".
+
+**REPORTED, NOT FIXED:** `rebase/baseline.json` and `rebase/baseline-DEMO.json` both call
+themselves a baseline, share **7 ports**, and **disagree on 7 of 21** common (port, lane) counts —
+`search` 38 vs 18, `uop/ops.bend` 115 vs 104 (oracle 68 vs 63), `spec` 25 vs 21. `DEMO` is ~23 h
+older and both other artefacts side with `baseline.json`, but **nothing says which file a reader
+should load** and neither records a load. Both values are recorded, not harmonised. Also: **4 of
+the 18** stored BROKEN verdicts read `2 row(s) disagree ... across 3 lane pair(s)` with **no
+shared-row denominator** — this project's own rule violated by its own stored artefacts.
+
+Rules appended to `bend2-constraints.md` as **L1** (position ~20968), at the end, unrenumbered.
+Ledger: `.agents/slop/baseline-ledger.md` §5 cites the prior-art entries done right — the naming-gate
+count **283 vs 278** and `elf.bend` **353 vs 331** with a third value **246 explicitly retracted**,
+each reported with both observed values and the reason it moves.

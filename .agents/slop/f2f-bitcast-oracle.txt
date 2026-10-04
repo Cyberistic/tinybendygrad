@@ -1,0 +1,14 @@
+fixture        receiver               BITCAST in cone?   nodes
+narrow-e4m3    f2f_dt[fr] (4-arg)     BITCAST               12
+narrow-e4m3    v.cast(fr) (3-arg)     BITCAST               12
+narrow-e5m2    f2f_dt[fr] (4-arg)     BITCAST               12
+narrow-e5m2    v.cast(fr) (3-arg)     BITCAST               12
+narrow-fnuz    f2f_dt[fr] (4-arg)     BITCAST               12
+narrow-fnuz    v.cast(fr) (3-arg)     BITCAST               12
+wide-f64       f2f_dt[fr] (4-arg)     BITCAST               11
+wide-f64       v.cast(fr) (3-arg)     BITCAST               11
+
+The NARROWING rows are the ones item 3 is about. `f2f_dt[fr]` is the receiver
+dtype.py's own two call sites pass; the 3-arg row is what `f2f-padoracle.py` and
+`dd-bandpad.bend` build. A fold that only happens in the 3-arg row is a FIXTURE
+difference, and landing `dd_bcast` for it would delete a node CPython builds.

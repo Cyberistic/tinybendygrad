@@ -174,7 +174,15 @@ run D10-zerorow-guard.txt emit --side bend --bend-probe .agents/slop/graphcmp-em
 
 # --- 11 THE COVERAGE DENOMINATOR, tabulated. Emits BOTH sides so an op or atom the py side
 # ---     never produces shows up as a per-side difference rather than an absorbed AGREE.
+# ---     THE RC IS CAPTURED. It was not, and that is how a substrate break reads as a
+# ---     census: `graphcmp-oracle.py` calls `emit_bend`, so when a concurrent edit to
+# ---     `tinybendygrad/uop/ops.bend` made every bend emission 0 rows, the oracle DIED at
+# ---     `rangeflat` -- printing a nine-row census and nothing about the seven graphs after
+# ---     it, and the file it wrote was a plausible-looking table. MEASURED: `rc=1` and the
+# ---     file ends mid-table. A step whose output is a table must say whether the table is
+# ---     finished.
 $E $P .agents/slop/graphcmp-oracle.py > "$D/D0-coverage-census.txt" 2>&1
+echo "rc=$?" >> "$D/D0-coverage-census.txt"
 
 # --- 12 WHETHER CPYTHON's OWN `DEBUG >= 1` SITE CAN BE REACHED HERE. It cannot, on 13 real
 # ---     graphs, which is why `dbg` is port-vs-port and says so in its own output.
@@ -232,6 +240,11 @@ rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
   # printed five `filename:1` lines and then `of 5`, so the summary's own total line was
   # five lines long. `-l | wc -l` is the counting form.
   echo "controls=$(grep -l 'CONTROL VERDICT: OK' "$D"/D3-control-*.txt | wc -l | tr -d ' ') of 5"
+  # The oracle's own three assertions -- the two `atoms()` rows of defect 21 and the
+  # unmapped-atom-letter row -- ride in the same summary as the differ's, because a
+  # coverage claim whose printer is broken is a coverage claim about the printer.
+  echo "oracle-selfcheck=$(grep 'ORACLE SELFCHECK' "$D/D0-coverage-census.txt")"
+  echo "census-rc=$(tail -1 "$D/D0-coverage-census.txt")"
 } > "$D/D0-run-summary.txt"
 
 echo "wrote $D"

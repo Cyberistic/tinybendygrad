@@ -70,3 +70,16 @@ M32   :84-86    1            :: xf_take_len_6
 M33   defect 1  38           :: xv_sp.exp32_1008572014 xv_sp.exp32_1029920668 xv_sp.exp32_1047920108 xv_sp.exp32_1060205080 xv_sp.exp32_958467472 xv_sp.exp32_984582707 xv_sp.exp64_1008571739 xv_sp.exp64_1029920839 xv_sp.exp64_1047920112 xv_sp.exp64_1060205080 xv_sp.exp64_804505614 xv_sp.exp64_838010935 xv_sp.exp64_869962549 xv_sp.exp64_900816871 xv_sp.exp64_931128830 xv_sp.exp64_958497930 xv_sp.exp64_984531967 xv_sp.log32_1054865947
 M34   defect 1  7            :: xv_sp.topi_0 xv_sp.topi_1326507024 xv_sp.topi_2102212464 xv_sp.topi_2131351028 xv_sp.topi_2475754826 xv_sp.topi_683565275 xv_sp.topi_920167782
 M35   defect 1  1            :: xv_sp.sin32_miss
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: no source file resolvable from the harness
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

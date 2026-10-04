@@ -65,13 +65,26 @@ def parse(path):
 def _path(node, env, self_name=None):
     """The filesystem path a path-EXPRESSION denotes, or None.
 
-    Handles the four idioms these harnesses actually use -- a literal, `a / b`,
-    `Path(...)` and `os.path.join(...)` -- plus the `os.path.dirname` chain that
-    every one of them uses to find the repo root.  The chain is RESOLVED rather
-    than approximated: `dirname(dirname(dirname(__file__)))` from
-    `.agents/slop/x.py` is the repo root, so counting the `dirname`s names it
-    exactly.  Anything else is None and callers report UNDECIDED rather than
-    guessing -- a wrong path turns an ANCHOR-GONE verdict into a fiction.
+    Handles the idioms these harnesses actually use -- a literal, `a / b`,
+    `Path(...)`, `os.path.join(...)`, and the `os.path.dirname` chain that every
+    one of them uses to find the repo root -- plus the three FORMS a rewrite
+    introduces, each of which cost a real audit:
+
+      * `Path(__file__).resolve().parent.parent.parent` -- a `resolve()` CHAIN, not
+        the `os.path.realpath` call the first version knew.  Without it
+        `ra-mutate.py`, `ra-mutate2.py` and `rf-mut.py` all read NO-SUBSTRATE: their
+        anchor check was silently disabled, which is worse than reporting the
+        harness as unreadable because nothing looks wrong.
+      * `Path(...).parent` -- the pathlib spelling of `dirname`.
+      * `LATE / ("%s.bend" % f)` -- a `%`-formatted filename.  Only the single-`%s`
+        case is resolved, and only when the literal has no directory part, because
+        a general format evaluator would be a second Python in a hazard detector.
+
+    The `os.path.dirname` chain is RESOLVED rather than approximated:
+    `dirname(dirname(dirname(__file__)))` from `.agents/slop/x.py` is the repo root,
+    so counting the `dirname`s names it exactly.  Anything else is None and callers
+    report UNDECIDED rather than guessing -- a wrong path turns an ANCHOR-GONE
+    verdict into a fiction.
     """
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
@@ -80,11 +93,32 @@ def _path(node, env, self_name=None):
         # `dirname(dirname(__file__))` climb resolvable rather than a guess.
         return os.path.join(HERE, self_name) \
             if node.id == "__file__" and self_name else env.get(node.id)
+    if isinstance(node, ast.Attribute) and node.attr == "parent":
+        return os.path.dirname(_path(node.value, env, self_name) or "") or None
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
         return _join(_path(node.left, env, self_name), _path(node.right, env, self_name))
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
+        return _fmt(node.left, _path(node.right, env, self_name))
     if isinstance(node, ast.Call):
         return _call(node, env, self_name)
     return None
+
+
+def _fmt(template, tail):
+    """`DIR + ("%s.bend" % name)` -> `DIR/name.bend`, or None.
+
+    Only `DIR/<literal>` is resolved: the format must hold exactly one `%`
+    conversion and carry no `/` of its own.  A wider rule here would let a
+    `%`-containing path be resolved to something a human would not recognise,
+    which is the failure mode this whole module is about.
+    """
+    if not (isinstance(template, ast.Constant) and isinstance(template.value, str)):
+        return None
+    t, tail = template.value, tail or ""
+    if t.count("%") != 1 or "/" in t or not tail or os.path.isabs(tail):
+        return None
+    d = os.path.dirname(t)
+    return (os.path.join(d, tail) if d else tail)
 
 
 def _join(*parts):
@@ -102,6 +136,12 @@ def _call(node, env, self_name):
     if f.attr in ("dirname", "abspath", "realpath"):
         return _dirname(node, env, self_name) if f.attr == "dirname" \
             else _abspath(node, env, self_name)
+    # `Path(x).resolve()` / `.absolute()` take NO ARGUMENTS -- they resolve the
+    # Path they are called on -- so the RECEIVER is the whole of it.  Reading
+    # `node.args` here returned None for `resolve`, which is why three harnesses
+    # silently read NO-SUBSTRATE.
+    if f.attr in ("resolve", "absolute"):
+        return _path(f.value, env, self_name)
     if f.attr == "Path" and args:
         return args[0]
     if f.attr != "join" or not args:
@@ -233,19 +273,28 @@ def absolve(p):
 
 
 def zone(p):
-    """Where a write destination lands: IN-PLAY / SCRATCH / ELSEWHERE / UNDECIDED.
+    """Where a write destination lands: IN-PLAY / RECORD / SCRATCH / ELSEWHERE /
+    UNDECIDED.
 
     IN-PLAY is the dangerous one and the reason this module exists.  A harness
     that writes into the repo must not be run unless live is byte-identical to
     its snapshot: the snapshot is a `jj restore` gun, and one silently put a
     dead 6,623-line `ops.bend` over the live 6,306-line one and destroyed
     committed work.
+
+    RECORD exists because EVERY harness writes its result table under
+    `.agents/slop/`, and calling that IN-PLAY put the four guarded harnesses back
+    in the danger column after they had been fixed -- a false positive in the
+    alarm teaches a reader to ignore the column, which is the same failure as
+    missing a spelling.  A record is a write into the repo that nobody runs.
     """
     if not p:
         return "UNDECIDED"
     a = os.path.abspath(absolve(p))
     if a.startswith(SCRATCH_ROOT):
         return "SCRATCH"
+    if a.startswith(os.path.join(ROOT, ".agents")):
+        return "RECORD"
     return "IN-PLAY" if a.startswith(ROOT) else "ELSEWHERE"
 
 
@@ -450,20 +499,50 @@ def anchors(tree, texts=(), self_name=None):
     and every row is UNDECLARED, which is the honest answer rather than a guess
     at index 1.  A row with no string at the voted column (a prose-only id, a
     control) is None and stays out of the denominator.
+
+    THE VOTE runs on the TRANSFORMED rows and the RESULT is the RAW cell, because
+    those are two different questions.  The vote asks "which cell will the harness
+    search", and that is the transformed text.  The report asks "what does the
+    harness declare", and that is the literal in the table -- and `present()` is
+    what decides whether the declared anchor is findable, in either spelling.
+    Returning the transformed cell from here made `present()` transform it a SECOND
+    time, and since `q()` is idempotent on an already-qualified name the raw
+    spelling was never reachable: one anchor stayed STALE while the harness applied
+    it.
     """
     v = mutations(tree)
     if v is None:
         return None
     q = transform(tree, self_name)
-    col = anchor_column(v, texts) if texts else None
+    voted = [[q(c) if (q is not None and isinstance(c, str)) else c for c in e]
+             for e in v]
+    col = anchor_column(voted, texts) if texts else None
     out = {}
     for e in v:
         if len(e) > 1 and isinstance(e[0], str):
             c = e[col] if col is not None and col < len(e) else None
-            if isinstance(c, str) and q is not None:
-                c = q(c)
             out[e[0]] = c if isinstance(c, str) else None
     return out
+
+
+def present(tree, anchor, texts, self_name=None):
+    """Is `anchor` in ANY of `texts`, in EITHER spelling the harness would try?
+
+    Two spellings, because a harness transform like `q()` is right for a CALL site
+    and wrong for a `def`'s own header in the file that defines it: `tb_pset.put` is
+    spelled bare in `linearizer.bend` and `q` turns it into a spelling that is
+    nowhere.  `StagedSet` tries transformed-first-then-raw for exactly this reason,
+    and a reader that checked only the transformed form reported that anchor
+    STALE while the harness applied it -- the reader and the tool disagreeing about
+    the same string, which is the failure mode of every other false report here.
+    """
+    if not anchor:
+        return False
+    q = transform(tree, self_name)
+    for text in ([q(anchor), anchor] if q else [anchor]):
+        if any(text in t for t in texts):
+            return True
+    return False
 
 
 def mutations(tree):

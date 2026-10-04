@@ -7452,8 +7452,137 @@ def rra.rows(+ar: Arena) -> IO(Unit):
     h : Unit <- rra.row("rra_samebase", ar, 15, 19)
     srow("rra_arena", rra.count(ar, 5, 14))
 
+# ==== ops.py:1015  `UOp.variable` =========================================
+#
+# `return UOp(Ops.PARAM, arg=ParamArg(-1, dtype, name=name, vmin_vmax=(min_val,
+# max_val), multiple_of=multiple_of, addrspace=AddrSpace.ALU))`, with the comment
+# that says what it is: "a Variable is a scalar ALU PARAM with a name and a value
+# range; binding it sets the val payload on the arg".
+#
+# THIS DEF WAS BLOCKED UNTIL `ParamArg.no_slot` EXISTED, and that name is the whole
+# of the unblocking: CPython writes `slot=-1`, this port's `ParamArg.slot` is a
+# `U32`, and the file that OWNS the field had no name for "no positional slot" while
+# three siblings had each invented one. MEASURED: `variable("i",0,10).arg.slot` is
+# `-1`, and `ParamArg.no_slot()` is that value in a `U32`.
+#
+# `AddrSpace.ALU` is `S.Aalu{}` and it is the ONLY addrspace this def sets, which
+# is why `is_variable` tests it: a PARAM with a range and a name is a Variable only
+# if it is ALU, because a BUFFER carrying a range is a shaped buffer.
+#
+# The thirteen-field rebuild is a `match` and not a second literal, and its scrutinee
+# is a PARAMETER rather than the `ParamArg.of(...)` call -- a match may scrutinise
+# neither a computed value nor a local binder. Same reason `sg.pa.put` takes its
+# record as an argument.
+def UOp.variable.pa.of(base: ParamArg, nm: String, r: PyRange, mo: U32) -> ParamArg:
+  match base:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, size, Some{r}, Some{mo}, Some{nm}, S.Aalu{},
+        device, volatile, image, buffer, bind_on_realize, val}
+
+def UOp.variable.pa(nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> ParamArg:
+  UOp.variable.pa.of(ParamArg.of(ParamArg.no_slot(), dt), nm, PyRange{lo, hi}, mo)
+
+def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> Found:
+  UOp.new(ar, OpsPARAM{}, Nil{}, AParam{UOp.variable.pa(nm, lo, hi, mo, dt)}, TNone{})
+
+# ==== the `vrn_*` rows =====================================================
+#
+# `variable` sets FIVE fields -- slot, name, vmin_vmax, multiple_of, addrspace -- and
+# the other eight keep `ParamArg.of`'s defaults. So a row prints those five plus the
+# src count, and NOTHING else: a row that printed the whole record would move on any
+# of thirteen fields and say nothing about any one of them.
+#
+# The four fixtures differ in ONE input each, and the defaults are CPython's
+# (`dtype=dtypes.weakint`, `multiple_of=1`), so `vrn_default` is the def's own
+# signature rather than a fixture choice. `vrn_neg` and `vrn_multi` are the rows that
+# make the two `H.I64` ends and the `U32` separate: one row printing `(0,10)` cannot
+# tell a swapped pair from a correct one.
+def vrn_optu(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{u}: U32.show(u)
+    case None{}: "-"
+
+def vrn_opts(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case None{}: "-"
+
+def vrn_addr_name(a: S.Addr) -> String:
+  match a:
+    case S.Aalu{}: "ALU"
+    case S.AGlobal{}: "GLOBAL"
+    case S.ALocal{}: "LOCAL"
+    case S.AReg{}: "REG"
+
+def vrn_lo.of(r: PyRange) -> String:
+  match r:
+    case PyRange{lo, hi}: H.i64_text(lo)
+
+# The two range ends are TWO defs, and `Bool.pick` is why: it EVALUATES both
+# branches, so `Bool.pick(H.I64, top, r.hi, r.lo)` is `r.hi` and `r.lo` read as terms
+# outside a match, which Bend rejects. A `top: Bool` parameter would be the terser
+# spelling and it is not available; the two ends are the two arms.
+# `PyRange` has NO accessors, and a `case PyRange{lo}` is not a partial match -- the
+# same all-fields rule `ParamArg` has. So the range is destructured in full and the
+# two ends are read from the BINDERS, which is why these two defs take the payload
+# rather than the `Maybe`: `ops.bend:1503` spells the same destructuring.
+def vrn_lo(m: Maybe<&2, PyRange>) -> String:
+  match m:
+    case Some{r}: vrn_lo.of(r)
+    case None{}: "-"
+
+def vrn_hi.of(r: PyRange) -> String:
+  match r:
+    case PyRange{lo, hi}: H.i64_text(hi)
+
+def vrn_hi(m: Maybe<&2, PyRange>) -> String:
+  match m:
+    case Some{r}: vrn_hi.of(r)
+    case None{}: "-"
+
+def vrn_f5(p: ParamArg) -> Maybe<&2, U32>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
+
+def vrn_f4(p: ParamArg) -> Maybe<&2, PyRange>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
+
+def vrn_f3(p: ParamArg) -> Maybe<&2, String>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+
+# The five field readers, one match each. Seven defs and not one that returns a
+# record, because a record would have to spell all thirteen fields and a
+# thirteen-field literal is the thing `sg.pa.put` exists to avoid.
+def vrn_pa_of(arg: Arg) -> ParamArg:
+  match arg:
+    case AParam{p}: p
+    case _: ParamArg.of(ParamArg.no_slot(), S.weakint())
+
+def vrn_f7(p: ParamArg) -> S.Addr:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
+
+def vrn_row(nm: String, +f: Found) -> IO(Unit):
+  +ar = Found.ar(f)
+  +p = vrn_pa_of(Arena.arg(ar, Found.i(f)))
+  srow(nm, String.concat([
+    "slot=", Bool.pick(String, U32.is_eq(ParamArg.slot(p), ParamArg.no_slot()), "-1", U32.show(ParamArg.slot(p))),
+    " name=", vrn_opts(vrn_f3(p)), " mult=", vrn_optu(vrn_f5(p)), " addr=", vrn_addr_name(vrn_f7(p)),
+    " lo=", vrn_lo(vrn_f4(p)), " hi=", vrn_hi(vrn_f4(p)),
+    " nsrc=", U32.show(Arena.nsrc(ar, Found.i(f)))]))
+
+def vrn_rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- vrn_row("vrn_default", UOp.variable(ar, "i", H.i64_of_i32(0), H.i64_of_i32(10), 1, S.weakint()))
+    b : Unit <- vrn_row("vrn_multi", UOp.variable(ar, "j", H.i64_neg(True{}, H.i64_of_i32(5)), H.i64_of_i32(5), 4, S.weakint()))
+    c : Unit <- vrn_row("vrn_neg", UOp.variable(ar, "m", H.i64_neg(True{}, H.i64_of_i32(100)), H.i64_neg(True{}, H.i64_of_i32(1)), 1, S.weakint()))
+    vrn_row("vrn_int32", UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    y0 : Unit <- vrn_rows(Arena.empty())
     w0 : Unit <- rra.rows(rra.arena())
     v0 : Unit <- vr.expr.rows(vr.arena())
     a0 : Unit <- sg.rows()

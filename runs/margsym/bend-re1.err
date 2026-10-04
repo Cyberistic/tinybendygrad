@@ -1,0 +1,10 @@
+SOME PROOFS FAIL
+Error:
+- expected : a term (the keyword 'def' cannot head one)
+- observed : 'def'
+Location:
+176 | 
+177>| def Ops.name(op: Op) -> String:
+    | ^^^
+178 | 
+bend 2.0.35 is available: run bend update

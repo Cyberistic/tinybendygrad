@@ -1948,7 +1948,48 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # TODO(p3) render.py:18  def print_uops
 # TODO(p3) render.py:35  def marg_str
 # TODO(p3) render.py:37  def render_marg
-# TODO(p3) render.py:45  renderer
+# SCOPED, AND THE ORACLE IS LANDED WITHOUT THE DEF. `renderer` is a 25-arm table
+# (tinygrad/uop/render.py:45-72) and FIVE of its arms are a function of the node's
+# own arg alone: PARAM (`arg.name`, else "p"+slot), BUFFER/ALLOC (`arg.name`, else
+# "b"/"a"+slot), CONST (`str(val)`), SPECIAL (`arg`, see below), and -- measured
+# unreachable -- the RANGE pair. The other twenty read `ctx[x.src[k]]`, which is
+# the caller's fold over the srcs' renderings.
+#
+# `.agents/slop/ops-render-oracle.py` LANDS those eleven rows today, all produced by
+# CALLING `renderer_infer.rewrite(u, {})` the way ops.py:1618 drives the table:
+# rnd_param_named=i, rnd_param_unnamed=p7, rnd_buffer_named=buf,
+# rnd_buffer_unnamed=b2, rnd_alloc_named=out, rnd_alloc_unnamed=a5,
+# rnd_const_int=42, rnd_const_bool=True, rnd_const_float=1.5,
+# rnd_special=UOp(Ops.SPECIAL, arg=None, tag=AxisType.LOOP, src=())
+#
+# THE DEF IS NOT WRITTEN because this FILE DOES NOT COMPILE right now, and not
+# because of anything in it: `render.bend:183` imports `fold.bend`, and the working
+# copy's `fold.bend` is mid-edit and red (`fold.bend:1243`, in `sym_dim.signable`,
+# which is not in master). `master`'s `fold.bend` and `master`'s `render.bend` are
+# both `ALL PROOFS CHECK`, so this is another agent's IN-FLIGHT state and not a
+# regression. A def landed without a compile is exactly the "green rows beside code
+# that does not build" the project's own rule forbids, so the rows wait.
+#
+# WHAT THE FIVE ARMS NEED, so the next agent does not re-derive it: `arg_repr`,
+# `pa_name`, `const_repr` and `range_str` all already exist in THIS file, and
+# `ParamArg.no_slot` is `ops.bend`'s (landed 2026-10-04, `ops.bend:1304`) --
+# `fn_slot.of`'s non-`AParam` arm at `function.bend:165` and kernel.bend's
+# `kn_slot` are the same value under local names, and a renderer that spelled
+# `4294967295` inline would be a fifth copy.
+#
+# A PARTIAL RENDERER MUST NOT FALL BACK. CPython's last arm is
+# `(UPat(GroupOp.All, name="x"), lambda x: str(x))`, and reaching it for an op an
+# earlier arm would have caught -- a NEG, say -- answers `str(x)` where CPython
+# answers "(-1)". So the port's entry point is a `Maybe<&2, String>` and every
+# un-ported arm is an explicit refusal. That is the same rule `UOp.expr` follows,
+# and `UOp.is_variable` is the marker that states why: a partial port that answers
+# is a WRONG ANSWER, not a partial one.
+#
+# THE SPECIAL ARM IS A NO-MATCH UPSTREAM. `lambda x: x.arg` returns the ARG, and
+# for a SPECIAL the arg is `None`, and `rewrite` reads `None` as "no rule fired".
+# So the row is a full `UOp(...)` repr -- the `GroupOp.All` fallback, not the
+# SPECIAL arm. A port that implemented that arm faithfully would answer something
+# CPython never produces. `rnd_special` pins it.
 # TODO(p3) render.py:74  renderer_infer
 #
 # ===========================================================================

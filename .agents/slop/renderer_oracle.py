@@ -392,8 +392,17 @@ def rows_cfo():
     R(f"cfo {dev}", r.code_for_op[Ops.WHERE](*XS, dtypes.f32))
 
 def rows_kern():
+  # ⚠ `lb {lb}`, NOT `lb={lb}`. A ROW NAME MUST NOT CONTAIN `=`, because
+  # rebase-gate.py:437 splits a line on its FIRST `=` and keeps the head as the name:
+  # `kern CUDA  lb=1 = [...]` is then named `kern CUDA  lb` and the lb=1 and lb=4 rows
+  # COLLIDE ON ONE KEY, losing a measurement (MEASURED on the pre-rename port lane:
+  # 227 rows read as 225 names, both survivors being the lb=4 values). The value's
+  # upstream name is `launch_bounds` (cstyle.py:163); `lb` is the token, `=` was the
+  # separator, and the separator was the defect. This string and cstyle.bend's
+  # `kern_row` are ONE coordinate -- renaming one side alone turns 8 green rows
+  # into 8 ghost/stray failures, which is the intended failure, not a regression.
   for d, lb in ((0, 1), (1, 4), (2, 1), (3, 1), (4, 1), (4, 4), (5, 1), (5, 4)):
-    R(f"kern {dn(d)} lb={lb}", call(RD(d).kernel_typedef.format, launch_bounds=lb))
+    R(f"kern {dn(d)} lb {lb}", call(RD(d).kernel_typedef.format, launch_bounds=lb))
 
 def rows_opt():
   # `render_kernel` NEVER reads these three tables, which is why they need rows

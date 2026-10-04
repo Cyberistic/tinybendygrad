@@ -118,20 +118,35 @@ FAMILY = ("tmap", "rd", "witem", "cfo", "kern", "kern2", "idx", "opt", "type",
 # val0 = ...`, `for (int i = 0; ...)`, `int x = f(y);` -- that treating it as a row
 # MANUFACTURES a shared name out of line noise, and a shared name is the one thing
 # a comparability guard reads as evidence.
+#
+# ⚠ FACTORED INTO `row_strict`/`rows_strict` FOR THE SAME REASON rebase-gate.py has
+# `row`/`rows`: the COVERAGE DELTA guard below needs the per-line rule and the whole-text
+# rule to be ONE rule. A second inline copy of the marker test is a second reader, and
+# two readers drift silently because nothing compares them -- which is exactly how the
+# `rows_shipped` fork below shipped claiming to be `rows()` verbatim.
+def row_strict(line):
+  """(name, value) for ONE physical row of this lane's shape, or None."""
+  if not line.strip():
+    return None
+  i = line.find(ROW_OPEN)
+  if i < 0 or not line.rstrip().endswith("]"):
+    return None
+  return line[:i].strip(), line[i + len(ROW_OPEN):].rstrip()[:-1]
+
+
 def rows_strict(text):
   """(rows, shreds, dups). A duplicate is REPORTED, never silently overwritten."""
   rows, shreds, dups = {}, [], []
   for ln, line in enumerate(text.splitlines(), 1):
     if not line.strip():
       continue
-    i = line.find(ROW_OPEN)
-    if i < 0 or not line.rstrip().endswith("]"):
+    r = row_strict(line)
+    if r is None:
       shreds.append((ln, line))
       continue
-    name, value = line[:i].strip(), line[i + len(ROW_OPEN):].rstrip()[:-1]
-    if name in rows:
-      dups.append(name)
-    rows[name] = value
+    if r[0] in rows:
+      dups.append(r[0])
+    rows[r[0]] = r[1]
   return rows, shreds, dups
 
 
@@ -145,7 +160,9 @@ def load(name):
   return mod
 
 
-rows_shipped = load("rebase-gate").rows
+_rebase = load("rebase-gate")
+rows_shipped = _rebase.rows
+row_shipped = _rebase.row
 """THE PROJECT'S ONE ROW READER, IMPORTED. `rebase-gate.py`'s `rows()`, which is what
   `rebase-scan-oracles.py` already calls -- so scan and gate cannot disagree by construction.
 
@@ -172,7 +189,107 @@ rows_shipped = load("rebase-gate").rows
   "carry no `py=` column" -- not a disagreement, an incompatibility between the two readers'
   contracts. So this name is a PARITY READER, used only to say whether the shared reader and
   this gate's own reader see the same rows. `.agents/slop/cstyle-reader-parity.py` measures
-  that, and `.agents/slop/cstyle-shapes-selftest.py` proves both readers reach red."""
+  that, and `.agents/slop/cstyle-shapes-selftest.py` proves both readers reach red.
+
+  ⚠ `row_shipped` IS `rebase-gate.row`, THE FUNCTION `rows()` IS BUILT FROM -- not a second
+  reading of it. `rows()` returns a dict and reports nothing about which physical line became
+  which key, so the coverage delta cannot be measured from `rows()` alone; measuring it needs
+  the per-line rule, and that rule already exists upstream of this file."""
+
+
+def reshape(lane, text):
+  """THE COVERAGE DELTA OF ONE LANE, and whether it is BROKEN. Returns a dict that is
+  PRINTED on every run and ADDED to `bad` when any of its three facts is non-zero.
+
+  ⚠ WHY A VALUE CHECK CANNOT FIND THIS. `rebase-gate.row` splits a row line on its FIRST `=`
+  and keeps the head as the name, so a name containing `=` has ONE NAME PER READER and the
+  set of COMPARABLE rows becomes a property of the reader rather than of the tree. Both lanes
+  printed the same bytes, so every value matched and the whole lane was green. MEASURED on
+  this lane BEFORE the `kern lb=` -> `kern lb ` rename, on BOTH lanes: 227 port rows read as
+  225 names and 224 oracle rows as 222, because `kern CUDA  lb=1` and `kern CUDA  lb=4` both
+  read as `kern CUDA  lb` -- 2 unaddressable measurements per lane, survivors both `lb=4`.
+  `uop/validate.bend` paid the identical bill once: 310 printed rows read as 280, with 30
+  collapsed onto 10 names. The gate PRINTED that delta and then printed `AGREE`.
+
+  The inverse is the same hazard from the other side, which is why the fix is to rename and
+  not to teach a smarter split: a detector that matches `=` to find the name/value boundary
+  will MIS-SPLIT a name that contains one, so the two sides of the lane can both be internally
+  consistent and still not address the same row.
+
+  THREE FACTS, three different failures, each with the count it is a fraction OF:
+
+    eq    names containing `=`            the ROOT CAUSE: `row` cuts there.
+    lost  rows the reader cannot address  two of them landed on one key.
+    set   names the two readers disagree about, BOTH directions -- including a name the
+          shipped reader MANUFACTURES out of a reshape, which no producer ever printed.
+
+  `lost` is the load-bearing one: it is nonzero exactly when measurements exist on stdout that
+  no name can reach, and it stays nonzero even if the name sets happened to be made equal.
+  """
+  strict, _, dups = rows_strict(text)
+  strict_names = set(strict)
+  keys, read, gate_only = {}, 0, []
+  for line in text.splitlines():
+    a, s = row_strict(line), row_shipped(line)
+    if a is None:
+      continue
+    read += 1
+    if s is None:
+      # ⚠ COUNTED, NOT SKIPPED. The first version of this only recorded a key when BOTH
+      # readers read the line, so a row the shipped reader refuses OUTRIGHT was invisible to
+      # the coverage delta -- and that is the strongest form of the defect, a measurement no
+      # name can reach at all. MEASURED on the --plant-shape control before this line existed:
+      # 1 planted name, `=` count 0, unreachable 0, verdict AGREE.
+      gate_only.append(a[0])
+    else:
+      keys.setdefault(s[0], []).append(a[0])
+  shared_names = set(keys)
+  collided = {k: sorted(set(v)) for k, v in keys.items() if len(v) > 1}
+  m = {"lane": lane, "physical": read, "dups": dups, "strict": strict_names,
+       "shared": shared_names, "eq": sorted(n for n in strict_names if "=" in n),
+       "collided": collided, "gate_only": sorted(set(gate_only)),
+       "only_shared": sorted(shared_names - strict_names),
+       "only_strict": sorted(strict_names - shared_names),
+       "unread": read - len(keys)}
+  bad = []
+  if m["gate_only"]:
+    bad.append(f"{lane}: {len(m['gate_only'])}/{read} row(s) the shipped reader CANNOT READ AT "
+               f"ALL -- it is looking at a different row shape: {m['gate_only'][:6]}")
+  if m["eq"]:
+    bad.append(f"{lane}: {len(m['eq'])}/{read} row name(s) CONTAIN `=`, so rebase-gate.row "
+               f"cuts the name there and the two readers name {len(m['eq'])} row(s) "
+               f"differently: {m['eq'][:6]}")
+  if collided:
+    n = sum(len(v) - 1 for v in collided.values())
+    bad.append(f"{lane}: {n}/{read} row(s) CANNOT BE ADDRESSED BY NAME -- two physical names "
+               f"landed on one key of the shipped reader and the later one silently overwrote "
+               f"the earlier: {collided}")
+  if m["only_shared"] or m["only_strict"]:
+    bad.append(f"{lane}: the two readers disagree about the NAME SET -- {len(m['only_strict'])}/"
+               f"{read} only rows_strict finds {m['only_strict'][:6]}, "
+               f"{len(m['only_shared'])}/{read} only the shipped reader finds "
+               f"{m['only_shared'][:6]}; comparable rows depend on which reader is asked")
+  if read == 0:
+    bad.append(f"{lane}: 0 rows read, so the name set is EMPTY and says nothing about "
+               f"coverage. This is not a pass.")
+  m["bad"] = bad
+  return m
+
+
+def report_reshape(rs):
+  """THE NAME SETS, EVERY RUN, WITH THE DENOMINATORS. Two counts and a verdict, because a
+  reshaping name must be a COVERAGE DELTA that changes the answer rather than a line of
+  decoration above an `AGREE`."""
+  print(f"{'lane':<7} {'rows read':>9} {'names (gate)':>13} {'names (shipped)':>16} "
+        f"{'`=`':>4} {'unreachable':>12} {'unreadable':>11}   name sets")
+  for m in rs:
+    same = "IDENTICAL" if not (m["only_shared"] or m["only_strict"]) else "DIFFER"
+    print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):13} {len(m['shared']):16} "
+          f"{len(m['eq']):4} {m['unread']:12} {len(m['gate_only']):11}   {same} "
+          f"({len(m['strict'] & m['shared'])} shared)")
+  for m in rs:
+    for b in m["bad"]:
+      print(f"  {b}")
 
 
 def split_py(value):
@@ -232,6 +349,15 @@ def judge(porc, orc_out, plant=None, exclusions=None, refused_on=()):
   bad = []
   pr, psh, pdup = rows_strict(porc)
   orr, osh, odup = rows_strict(orc_out)
+
+  # GUARD 0, AND IT IS THE ONE NO VALUE CHECK CAN SUPPLY. The two readers must agree about
+  # WHICH ROWS EXIST, not merely about what those rows say. Run BEFORE the value comparison so
+  # a name reshape is never reported as a value verdict: over a lane whose two sides printed
+  # identical bytes every value matched, and the reshaping names below were 2 unreachable
+  # measurements per lane that no disagreement could name.
+  rs = [reshape("port", porc), reshape("oracle", orc_out)]
+  for m in rs:
+    bad.extend(m["bad"])
 
   # GUARD 1: an empty lane is not a pass.
   if not pr:
@@ -308,7 +434,7 @@ def judge(porc, orc_out, plant=None, exclusions=None, refused_on=()):
                f"every one is NAMED: {names}\n"
                f"        first `{n}`:\n        port {'|'.join(p)}\n        cpy  {'|'.join(o)}")
   return {"bad": bad, "port": pr, "oracle": orr, "gated": gated, "agree": agree,
-          "disagree": disagree, "stale": stale,
+          "disagree": disagree, "stale": stale, "reshape": rs,
           "refusals": [n for n, v in orr.items() if KEYERROR in v]}
 
 
@@ -375,11 +501,47 @@ def explain(res):
     print(f"  EXCLUDED `{n}`: {why}")
 
 
+def plant_shape(text, pairs):
+  """THE PORT'S ROW **NAME** RENAMED, VALUES UNTOUCHED. This is the control `--plant`
+  cannot express, and that is the whole point of it.
+
+  ⚠ A VALUE PLANT IS INVISIBLE TO A NAME-SET CHECK, and has to be. `--plant` appends
+  `PLANTED` to a value; a lane whose two sides print the same bytes then disagrees on that
+  ONE value and every other row still matches, so any detector that reads values sees
+  exactly one difference and a detector that reads names sees none at all. The defect this
+  guard exists for is the opposite shape: the two sides print IDENTICAL bytes and the
+  COMPARABLE SET changes. So the control has to rewrite a name, and it has to rewrite it on
+  BOTH lanes -- renaming one side alone trips `stray`/`ghost` under `rows_strict` and proves
+  nothing about reader-independence, it just proves `rows_strict` reads names.
+
+  Applied to the CAPTURED OUTPUT only; no file on disk is touched, same as `--plant`.
+
+  ⚠ THE FIRST VERSION OF THIS REBUILT THE LINE FROM `rows_strict`'s VALUE, and that
+  SILENTLY DESTROYED THE ROW: `rows_strict` strips exactly ONE closing bracket, so on a port
+  row (`... = [V]   py=[V]`) the stripped value does not end in `]` and the rebuilt line
+  failed `endswith("]")` -- the row became a shred and the lane LOST a row, 227 -> 226, for a
+  reason that had nothing to do with the shape being planted. A control must not perturb the
+  thing it is not measuring. So the tail is kept VERBATIM and only the name prefix moves.
+  """
+  out = []
+  for line in text.splitlines():
+    for old, new in pairs:
+      if line.startswith(old + ROW_OPEN):
+        line = new + line[len(old):]
+    out.append(line)
+  return "\n".join(out) + "\n"
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--selftest", action="store_true")
-  ap.add_argument("--plant", default=None)
+  ap.add_argument("--plant", default=None, help="corrupt ONE captured VALUE")
+  ap.add_argument("--plant-shape", nargs=2, action="append", metavar=("OLD", "NEW"),
+                  help="rename a row NAME on BOTH captured lanes, values untouched. "
+                       "Repeatable. The name-set control a value plant cannot fake.")
   ap.add_argument("--explain", action="store_true")
+  ap.add_argument("--names", action="store_true",
+                  help="print each lane's full name set, both sides, every run")
   ap.add_argument("--port-stdout", default=None)
   ap.add_argument("--oracle-stdout", default=None)
   ap.add_argument("--oracle-stderr", default=None)
@@ -420,6 +582,13 @@ def main():
           "is the ONLY place a CPython KeyError exists. Refusing to run rather than reporting "
           "9 phantom disagreements")
     return 1
+  if a.plant_shape:
+    p = subprocess.CompletedProcess([], 0, plant_shape(p.stdout, a.plant_shape), p.stderr)
+    o = subprocess.CompletedProcess([], 0, plant_shape(o.stdout, a.plant_shape), o.stderr)
+    print(f"[planted SHAPE] {len(a.plant_shape)} row NAME(S) reshaped on BOTH captured lanes, "
+          f"values untouched: {[f'{a!r}->{b!r}' for a, b in a.plant_shape]}. The two lanes still "
+          f"agree on every value, so only a NAME-SET check can see it. No file on disk was "
+          f"touched.")
   res = judge(p.stdout, o.stdout, a.plant)
   if a.plant:
     print(f"[planted] `{a.plant}` corrupted in the CAPTURED OUTPUT ONLY; no file on "
@@ -427,19 +596,20 @@ def main():
   orc_rows = rows_strict(o.stdout)[0]
   print(f"port rows (rows_strict): {len(res['port'])}   oracle rows (rows_strict): "
         f"{len(orc_rows)}")
-  # READER PARITY, NOT A SHRED COUNT. The old line subtracted one reader's name count from the
-  # other's and called the difference "shredded rows"; with the fork in place it printed `-2`.
-  # Two readers do not have a shred relationship -- they have a DISAGREEMENT SET, and it is
-  # symmetric, so it is printed as one, with the names, because a count of differences is not a
-  # coverage statement.
-  shared = rows_shipped(o.stdout)
-  only_shared, only_gate = sorted(set(shared) - set(orc_rows)), sorted(set(orc_rows) - set(shared))
-  print(f"the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: "
-        f"{len(shared)} names -- {len(only_shared)} only it finds, {len(only_gate)} only "
-        f"rows_strict finds, {len(set(shared) & set(orc_rows))} in common")
-  if only_shared or only_gate:
-    print(f"  only the shared reader: {only_shared[:8]}")
-    print(f"  only rows_strict     : {only_gate[:8]}")
+  # GUARD 0's REPORT: the shared-name count AND each side's name set, for BOTH lanes, every
+  # run. A reshaping name must be a COVERAGE DELTA that changes the verdict, not a line of
+  # decoration above an `AGREE`. Before this, the delta was printed over the ORACLE lane
+  # only and the verdict did not move: 8 reshaping names per lane printed as `6 only it
+  # finds, 8 only rows_strict finds` and the gate still said AGREE.
+  report_reshape(res["reshape"])
+  if a.names:
+    for m in res["reshape"]:
+      print(f"  {m['lane']} name set, rows_strict ({len(m['strict'])}):")
+      for n in sorted(m["strict"]):
+        print(f"    GATE {n!r}")
+      print(f"  {m['lane']} name set, shipped reader ({len(m['shared'])}):")
+      for n in sorted(m["shared"]):
+        print(f"    SHIP {n!r}")
   print(f"gated {len(res['gated'])}   agree {len(res['agree'])}   disagree "
         f"{[d[0] for d in res['disagree']][:6]}")
   print(f"STALE-LITERAL {len(res['stale'])} port `py=` literal(s) disagree with the live "

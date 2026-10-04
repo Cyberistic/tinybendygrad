@@ -32,23 +32,24 @@ def st23(ar):
 
 
 def dims(ds):
-  """A dim as BOTH lanes can spell it. `U(<OP>:<arg>)` is the agreement: a symbolic
+  """A dim as BOTH lanes can spell it. `U(Ops.<OP>:<arg>)` is the agreement: a symbolic
   dim is named by its OWN arg, not by an arena index, so no lane needs the other's
   numbering. MEASURED, over nine PARAM/SPECIALs (`.agents/slop/margsym-probe2.py`),
   `ssimplify` is the identity on every non-point one and the point value on every
-  point one, so the op and the arg are enough to name the dim on either side. The
-  `?` cover is for a symbolic dim neither lane can name, and `int` is the rest.
+  point one, so the op and the arg are enough to name the dim on either side, and
+  the `Ops.` prefix is `O.Ops.name`'s own spelling so the two lanes differ nowhere.
+  The `:?` cover is for a symbolic dim neither lane can name.
   """
   out = []
   for x in ds:
     if isinstance(x, int):
       out.append(str(x))
     elif x.op is Ops.PARAM:
-      out.append(f"U(PARAM:{x.arg.name})")
+      out.append(f"U(Ops.PARAM:{x.arg.name})")
     elif x.op is Ops.SPECIAL:
-      out.append(f"U(SPECIAL:{x.arg})")
+      out.append(f"U(Ops.SPECIAL:{x.arg})")
     else:
-      out.append(f"U({x.op.name}:?)")
+      out.append(f"U(Ops.{x.op.name}:?)")
   return "(" + ",".join(out) + ")"
 
 
@@ -88,20 +89,75 @@ row("exp1", UOp(Ops.EXPAND, (b4, UOp.const(2))))
 row("exp23", UOp(Ops.EXPAND, (b4, st23(b4))))
 row("expnoop", UOp(Ops.EXPAND, (UOp(Ops.NOOP, (b4,)), UOp.const(2))))
 
-# g_mv_expsym: the `ssimplify` wall. CPython ANSWERS (2, UOp, 4); the fold cannot
-# read a SPECIAL's value, so it does not answer. This row is the DIVERGE and the
-# printed shape is CPython's real answer, not a `RAISE`.
+# g_mv_expsym: a SPECIAL `'N'` over an END OF ZERO, whose interval is `[0,-1]` --
+# EMPTY. CPython ANSWERS (2, UOp, 4) because EXPAND has no check; the fold refuses,
+# because ops.py:408's `all(x >= 0)` is DECIDABLE over an empty interval and
+# `sym_dim` will not guess it. This row is the DIVERGE and the printed shape is
+# CPython's real answer, not a `RAISE`.
 sym = UOp(Ops.SPECIAL, (UOp.const(0),), 'N')
 expsym = UOp(Ops.EXPAND, (b4, UOp(Ops.STACK, (UOp.const(2), sym))))
 print(f"mv_expsym {sig(expsym)} shape={dims(expsym._shape)} dtype={expsym.dtype.name}")
 
 
 # ---------------------------------------------------------------------------
+# SYMBOLIC DIMS. `ssimplify` on a shape-arg element is `as_shape`'s own
+# `s.val if s.op is Ops.CONST else ssimplify(s)` (ops.py:808), and `marg` could not
+# answer it at all until `sym_dim` landed. Four fixtures, one per answer `sym_dim`
+# has: TWO DIFFERENT PARAMs, a POINT-RANGE PARAM, a SPECIAL over a real end, and a
+# BARE PARAM (which is `shape_to_shape_arg`'s one-element spelling, ops.py:108, and
+# so exercises `as_shape`'s third arm rather than the STACK walk).
+# ---------------------------------------------------------------------------
+def var(name, lo=0, hi=0xFFFFFF):
+  return UOp.variable(name, lo, hi)
+
+
+# THE ROW THAT SEPARATES "simplified" FROM "FLATTENED". Two DIFFERENT symbolic dims
+# in ONE shape: `n` and `m` are different UOps and CPython's answer keeps them
+# apart, so a renderer or a simplifier that collapsed both to one token would print
+# `(U(PARAM:?),U(PARAM:?))` or `(U,U)` against CPython's `(U(PARAM:n),U(PARAM:m))`.
+# The src is BUFFER(4) so `prod(ps) = 4` against a marg whose product is
+# `n*m` -- unresolvable, which is ops.py:410's `resolve(..., False)` DEFAULT and
+# therefore NO raise.
+row("reshsym_nm", UOp(Ops.RESHAPE, (b4, UOp(Ops.STACK, (var("n"), var("m"))))))
+# THE OTHER DIRECTION: a PARAM whose interval is a POINT is a CONST by
+# symbolic.py:269 (`x.const_like(x.vmin) if x.vmin == x.vmax`), so `ssimplify` hands
+# back the INT 3 and the shape is `(3, 1)` -- no `U` anywhere. A port that answered
+# `SU` here would fail the product check instead (`3*1` against `3`) and leave the
+# node unanswered, so this row is what says the point arm ran.
+row("reshsym_pt", UOp(Ops.RESHAPE, (buf(3), UOp(Ops.STACK, (var("p", 3, 3), UOp.const(1))))))
+# A SPECIAL with a REAL end: the same op as `mv_expsym` and the opposite answer,
+# because `[0, 98]` is non-empty and `vmin == vmax` is false.
+row("expsym_pos", UOp(Ops.EXPAND, (b4, UOp(Ops.STACK, (UOp.const(2), UOp(Ops.SPECIAL, (UOp.const(99),), 'N'))))))
+# `shape_to_shape_arg` of a ONE-element tuple returns `src[0]` itself (ops.py:108),
+# so `as_shape` takes its THIRD arm -- `(ssimplify(self),)` -- and `marg`'s CONST and
+# `not STACK` arms are the same def. `n` over a BUFFER(4) is `prod 0..0xFFFFFF`
+# against `4`: unresolvable, so no raise and the shape is `(U(PARAM:n))`.
+row("reshbare", UOp(Ops.RESHAPE, (b4, var("n"))))
+# AND THE SAME ARM WITH A POINT: `ssimplify` folds the PARAM to the int 4, the
+# products are 4 and 4, and the shape is `(4)`.
+row("reshbare_pt", UOp(Ops.RESHAPE, (b4, var("q", 4, 4))))
+
+# THE RESIDUAL, NAMED. `resolve(x, False)` is
+# `bool(sx.vmin) if sx.vmin == sx.vmax else False` (ops.py:66), so it is DECIDABLE
+# -- and True, i.e. it RAISES -- when the two products' intervals are DISJOINT. A
+# fold that cannot multiply intervals cannot see that, so `w` over `[0,3]` against a
+# BUFFER(4) is the input class where this port answers and CPython refuses. It is a
+# PLANNED DIVERGE with a named cause, not a hole: `mv_expsym` above is the other.
+disjoint = UOp(Ops.RESHAPE, (b4, var("w", 0, 3)))
+try:
+  print(f"mv_reshbare_dis {sig(disjoint)} shape={dims(disjoint._shape)} dtype={disjoint.dtype.name}")
+except Exception:
+  print(f"mv_reshbare_dis {sig(disjoint)} shape=ABSENT dtype=ABSENT")
+
+
+# ---------------------------------------------------------------------------
 # PAD and SHRINK. `marg` is `tuple(zip(src[1].as_shape, src[2].as_shape))`, and
 # `_mop` builds those two args by `zip(*arg)`, so the OFFSETS are src[1] and the
 # SIZES are src[2] -- the answer `tuple(sz for _,sz in marg)` is src[2]'s shape.
-# A ONE-element arg collapses to a bare CONST (`shape_to_shape_arg`, ops.py:110),
-# which is what makes `pad1` a four-node graph.
+# A ONE-element arg collapses to a bare CONST (`shape_to_shape_arg`, ops.py:108),
+# which is what makes `pad1` a four-node graph. THE ROW ORDER IS `main`'s, so a
+# `diff` of the two files is a diff of VALUES: a reordering here would read as a
+# value difference and hide the two real ones.
 # ---------------------------------------------------------------------------
 def pad(b, o, z):
   return UOp(Ops.PAD, (b, UOp.const(o), UOp.const(z)))
@@ -113,17 +169,17 @@ def shk(b, o, z):
 
 # offset 0, size 6 over a source dim of 4: `o+s<=sz` is `0+4<=6`
 row("pad1", pad(b4, 0, 6))
-# offset 1, size 2: `o+sz<=s` is `1+2<=4`
-row("shr1", shk(b4, 1, 2))
 # the two-dim accepts. RESHAPE needs a BUFFER of SIX (prod((6,)) == prod((2,3))), and
 # the offsets/sizes are two STACKs each -- so the node count is 12 and 10.
 b6 = buf(6)
 r23 = UOp(Ops.RESHAPE, (b6, st23(b6)))
 row("pad23", UOp(Ops.PAD, (r23, shape_to_shape_arg((0, 1)), shape_to_shape_arg((6, 5)))))
-row("shr23", UOp(Ops.SHRINK, (r23, shape_to_shape_arg((0, 1)), shape_to_shape_arg((2, 1)))))
 # the three `raise`s: a LONGER marg than ps, and one failing sum per arm
 row("padr", UOp(Ops.PAD, (b4, shape_to_shape_arg((0, 1)), shape_to_shape_arg((6, 5)))))
 row("padr2", pad(b4, 1, 3))
+# SHRINK, in the order `main` prints them. `o+sz<=s` is `1+2<=4` for `shr1`.
+row("shr1", shk(b4, 1, 2))
+row("shr23", UOp(Ops.SHRINK, (r23, shape_to_shape_arg((0, 1)), shape_to_shape_arg((2, 1)))))
 row("shrbad", shk(b4, 1, 4))
 
 # PERMUTE and FLIP. `marg` for both is `self.arg` (ops.py:818) -- the arena's
@@ -145,7 +201,12 @@ row("fliplen", UOp(Ops.FLIP, (r23,), (True,)))
 
 print("== DIVERGES (CPython answers, the fold refuses; fold.bend prints ABSENT) ==")
 print(f"  mv_expsym: CPython shape {dims(expsym._shape)} -- `s.val if s.op is Ops.CONST "
-      f"else ssimplify(s)` is the wall, and the fold cannot read a SPECIAL's value")
+      f"else ssimplify(s)` over a SPECIAL whose END IS ZERO, whose interval [0,-1] is "
+      f"EMPTY; `sym_dim` refuses an empty interval because ops.py:408's `all(x >= 0)` "
+      f"is then decidable and this file cannot decide it")
+print(f"  mv_reshbare_dis: CPython shape=ABSENT (it RAISES) while fold.bend answers "
+      f"`(U(PARAM:w))` -- `resolve`'s default is only reached when the two products' "
+      f"intervals are NOT disjoint, and this fold cannot multiply intervals")
 
 print()
 print("== THE `raise`s, BY MESSAGE -- the refuse rows' ground truth ==")
@@ -153,9 +214,11 @@ for tag, u in [("padr", UOp(Ops.PAD, (b4, shape_to_shape_arg((0, 1)), shape_to_s
                ("padr2", pad(b4, 1, 3)), ("shrbad", shk(b4, 1, 4)),
                ("permrep", UOp(Ops.PERMUTE, (r23,), (0, 0))),
                ("permlen", UOp(Ops.PERMUTE, (r23,), (1, 0, 2))),
-               ("fliplen", UOp(Ops.FLIP, (r23,), (True,)))]:
+               ("fliplen", UOp(Ops.FLIP, (r23,), (True,))),
+               ("reshbare_dis", disjoint)]:
   try:
     u._shape
     print(f"  mv_{tag}: NO RAISE")
   except Exception as e:
     print(f"  mv_{tag}: {type(e).__name__}: {e}")
+

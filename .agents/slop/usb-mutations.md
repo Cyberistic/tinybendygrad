@@ -45,3 +45,16 @@
 | M43 | 4 | `ep_dir`: `& 128` -> `& 127` | the `LIBUSB_ENDPOINT_IN` bit, which the oracle reads from the header as 128. |
 | M44 | 3 | `pcie_cfg_addr`: drop the `fn << 16` term | :140's FUNCTION nibble. Only the fixtures with a non-zero fn move. |
 | M45 | 2 | `SENTINEL_MASK`: 0xFFFFFF -> 0xFFFFFFFF | :254's mask width, and the row that says why 24 and not 32: the COLLISION fixture at 2^24 moves and the one at 2^23 does not. |
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: `usb-mutate.py`'s target is not resolvable from the harness's own path constants
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

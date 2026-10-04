@@ -30,7 +30,14 @@ import staged_mut as SM
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 LATE = ROOT / "tinybendygrad" / "codegen" / "late"
-FILES = ("linearizer", "regalloc", "gater")
+# Named, not `LATE / ("%s.bend" % f)`: a static reader cannot resolve a
+# comprehension's element, and `anchor-audit.py` reported NO-SUBSTRATE for this
+# harness as a result -- which silently DISABLES its own anchor check rather than
+# failing, so the harness looked clean while nothing was being checked.
+LINEARIZER = LATE / "linearizer.bend"
+REGALLOC = LATE / "regalloc.bend"
+GATER = LATE / "gater.bend"
+FILES = (LINEARIZER, REGALLOC, GATER)
 OUT = ROOT / ".agents/slop/ra2-mutations.txt"
 
 _qpat = re.compile(r'(?<![\w.])(%s)(?![\w])' % '|'.join(re.escape(n) for n in
@@ -110,14 +117,15 @@ MUT = [
 def main():
     lines = ["# ra-mutate2.py -- codegen/late, MEASURED.  rows moved are whole "
              "`name=value` lines.\n"]
-    with SM.StagedSet([LATE / ("%s.bend" % f) for f in FILES], "ra2", transform=q) as unit:
+    with SM.StagedSet(FILES, "ra2", transform=q) as unit:
         base = unit.rows()
         if base is None:
             raise SystemExit("the BASELINE does not compile (%s) -- refusing to measure"
                              % unit.why())
         SM.control(base, unit.rows(), "codegen/late baseline")
         lines.append("# baseline: %d rows over %s, row-set digest %s\n"
-                     % (len(base), ", ".join(FILES), SM.row_digest(base)[:16]))
+                     % (len(base), ", ".join(f.name for f in FILES),
+                        SM.row_digest(base)[:16]))
         lines.append("| mutation | file | rows moved | how many |")
         lines.append("| --- | --- | --- | --- |")
         unapplied, blind, dnc = [], [], []

@@ -299,3 +299,16 @@ and it is the defect the previous unit fixed in the TSV.
   written. Its owner also fixed `l2i_cdiv`'s `*r` aliasing and a `dd_fuel` truncation defect while
   this ran; both are in the snapshot (`dd_fuel`'s own comment records the truncated-cone
   measurement). Not defects of this unit, but the reason the snapshot is pinned.
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: a prose REPORT of `dd-mutate.py`, not a row table, so there is no row set to digest
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

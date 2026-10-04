@@ -67,7 +67,7 @@ def main():
         declared = sorted(k for k, v in anc.items() if v)
         undec = sorted(k for k, v in anc.items() if not v)
         gone = sorted(k for k in declared
-                      if not any(anc[k] in t for t in texts))
+                      if not MA.present(tree, anc[k], texts, base))
         rows.append((base, "OK" if not gone else "STALE",
                      os.path.basename(tgts[0][1]), ",".join(zone),
                      len(declared), len(gone),

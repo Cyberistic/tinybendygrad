@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/oracles/fold-mut.py", line 120, in <module>
+    assert b_int is not None and b_nat is not None, "baseline does not run"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: baseline does not run

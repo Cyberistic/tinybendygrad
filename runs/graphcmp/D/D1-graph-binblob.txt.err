@@ -1,6 +1,0 @@
-emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-  bend attempt 1: 0 rows, rc=1, stderr tail: n(v: O.Const) -> Maybe<&1, O.Sint>: 1276>| match const_i64.go(v): | ^^^^^^^^^^^^^^^ 1277 | case Some{x}: Some{O.SI{x}} bend 2.0.35 is available: run bend update
-  bend attempt 2: 0 rows, rc=1, stderr tail: n(v: O.Const) -> Maybe<&1, O.Sint>: 1276>| match const_i64.go(v): | ^^^^^^^^^^^^^^^ 1277 | case Some{x}: Some{O.SI{x}} bend 2.0.35 is available: run bend update
-  bend attempt 3: 0 rows, rc=1, stderr tail: tion: sym_dim.of 1289 | match a: 1290>| case O.APy{v} : sym_dim.con(v) | ^ 1291 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
-  bend attempt 4: 0 rows, rc=1, stderr tail: tion: sym_dim.of 1289 | match a: 1290>| case O.APy{v} : sym_dim.con(v) | ^ 1291 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
-  bend attempt 5: 0 rows, rc=1, stderr tail: tion: sym_dim.of 1289 | match a: 1290>| case O.APy{v} : sym_dim.con(v) | ^ 1291 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update

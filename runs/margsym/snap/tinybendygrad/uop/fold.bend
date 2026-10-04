@@ -1193,15 +1193,113 @@ def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # for a CONST or a CAST of one. A `CFloat` is not a dim: `shape_to_shape_arg`
 # asserts `dtypes.is_int(x.dtype)`, and `True == 1` as dict keys, so a `CBool`
 # is the 1 or the 0 it is.
-def const_i64.go(a: O.Arg) -> Maybe<&2, H.I64>:
-  match a:
-    case O.APy{O.CInt{i}}       : Some{i}
-    case O.APy{O.CBool{True{}}}: Some{H.i64_of_i32(1)}
-    case O.APy{O.CBool{False{}}}: Some{H.i64_of_i32(0)}
-    case _                      : None{}
+def const_i64.go(v: O.Const) -> Maybe<&2, H.I64>:
+  match v:
+    case O.CInt{i}       : Some{i}
+    case O.CBool{True{}} : Some{H.i64_of_i32(1)}
+    case O.CBool{False{}}: Some{H.i64_of_i32(0)}
+    case _               : None{}
 
 def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
-  const_i64.go(a)
+  match a:
+    case O.APy{v}: const_i64.go(v)
+    case _       : None{}
+
+# ===========================================================================
+# `sym_dim` -- THE `ssimplify` WALL, CLOSED. `as_shape`'s two arms (ops.py:807-808)
+# both end in `ssimplify`, and `marg` reached `None` on every non-CONST element
+# because of it. This is the one def that answers them.
+#
+# WHAT `ssimplify` IS (ops.py:92, ops.py:518-520): `u.simplify()` -- a
+# `graph_rewrite(self, symbolic)` -- then `ret.val if ret.op is Ops.CONST else ret`.
+# This file ports no rule engine, so it cannot RUN it. What it CAN decide is the ONE
+# place in `symbolic` whose pattern names PARAM or a SPECIAL, symbolic.py:269-270:
+#
+#   (UPat({Ops.CMPLT, Ops.CMPNE, Ops.FLOORDIV, Ops.FLOORMOD, Ops.PARAM, Ops.AFTER,
+#         Ops.SPECIAL}, name="x"), lambda x: x.const_like(x.vmin) if x.vmin == x.vmax
+#         else None)
+#
+# and that it is the ONLY one: MEASURED, `rg 'Ops\.PARAM|Ops\.SPECIAL'
+# tinygrad/uop/symbolic.py` returns this line and no other, over the whole of
+# `symbolic_simple + commutative + PatternMatcher(...) + div_and_mod_symbolic +
+# pm_uncast_const`. A PARAM and a SPECIAL both have no rule of their own, so for
+# them `simplify` is EXACTLY that CONST or the IDENTITY -- and which one is decided
+# by `vmin == vmax`, an interval this file reads from the node's own arg.
+#
+# MEASURED, calling CPython, over nine PARAM/SPECIALs (`.agents/slop/margsym-probe2.py`):
+# 0 of 8 NON-POINT ones moved under `simplify`, and the one POINT one became the int.
+# AFTER and ADD and MUL are the counter-examples that keep this narrow: MEASURED,
+# `ssimplify(AFTER(n))` is a PARAM, `ssimplify(n+m)` is a REASSOCIATED ADD, and both
+# are different nodes -- so `SU{s}` would be WRONG for them, and they are refused.
+#
+# SO: `SU{s}` is right for a PARAM or a SPECIAL whose interval is not a point, and
+# it is a DISTINCT answer per dim because `s` IS the node. That is what the
+# `U` shape column cannot carry and `dim_str` below now does.
+# ===========================================================================
+
+# A dim this file can answer `x >= 0` about (ops.py:408's `all(...)`), which is a
+# NON-NEGATIVE and NON-EMPTY interval. `lo > hi` is `vmin > vmax`: the value does
+# not exist, and then ops.py:410's `resolve(..., False)` is DECIDABLE and this
+# file cannot decide it -- so an empty interval is a refusal, not a guess.
+def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:
+  Bool.and(Bool.not(H.i64_is_neg(lo)), H.i64_le(lo, hi))
+
+# ops.py:1146 `GroupOp.Defines and arg.vmin_vmax is not None`, and ops.py:1147's
+# `(Ops.RANGE, Ops.SPECIAL) -> 0, (self.src[0]-1).vmax`. A PARAM with no
+# `vmin_vmax` falls past every later arm to the dtype limits (ops.py:1165) and is
+# not read here: the limits are the PORT's `mm.default`, and this walk cannot
+# reach `mm`, which needs the whole table.
+def sym_dim.range(r: Maybe<&2, O.PyRange>, s: U32) -> Maybe<&1, O.Sint>:
+  match r:
+    case Some{O.PyRange{+lo, +hi}}:
+      Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(lo, hi),
+        Some{O.SI{lo}}, Bool.pick(Maybe<&1, O.Sint>, sym_dim.signable(lo, hi),
+        Some{O.SU{s}}, None{}))
+    case None{}: None{}
+
+def sym_dim.pa(pa: O.ParamArg, s: U32) -> Maybe<&1, O.Sint>:
+  sym_dim.range(O.ParamArg.vmin_vmax(pa), s)
+
+# A SPECIAL's interval is `[0, end-1]`, so `vmin == vmax` is `end == 1` and
+# `vmin > vmax` is `end == 0` -- THREE CASES AND NO ARITHMETIC, which is why this
+# does not need `H.i64_sub` and does not need the end's own interval read back.
+def sym_dim.spec(e: Maybe<&2, H.I64>, s: U32) -> Maybe<&1, O.Sint>:
+  match e:
+    case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),
+                Some{sint_of(0)}, Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(0)),
+                None{}, Some{O.SU{s}}))
+    case None{} : None{}
+
+# `O.UOp.special` always names its end in src[0] and every caller builds it a CONST,
+# so a symbolic end is the refusal rather than the answer.
+def sym_dim.end(+ss: List<&2, U32>, +ar: O.Arena, i: U32) -> Maybe<&1, O.Sint>:
+  match ss:
+    case e <> _: sym_dim.spec(const_i64(O.Arena.arg(ar, e)), i)
+    case Nil{}  : None{}
+
+# `s.val` for a CONST and nothing else, and `const_i64.go`'s answer is the whole of
+# it: a `CFloat` is not a dim, so its `None` is a refusal rather than a value. This
+# is the `Maybe` in carrying to the `Maybe` out, and it is the ONE place a CONST dim
+# becomes a `Sint` -- which is why `marg.of`'s CONST arm and its `not STACK` arm are
+# the same def.
+def sym_dim.val(i: Maybe<&2, H.I64>) -> Maybe<&1, O.Sint>:
+  match i:
+    case Some{v}: Some{O.SI{v}}
+    case None{}  : None{}
+
+# The `APy` arm is `s.val` and the other two are `ssimplify(s)`, so the CONST and
+# the symbolic element are ONE reader. `AStr` is a SPECIAL and nothing else:
+# `Arg`'s other string-bearing variants are `AKernel`/`AProgram`/`AInk`, none of
+# which is a shape dim.
+def sym_dim.of(a: O.Arg, +i: U32, +ar: O.Arena) -> Maybe<&1, O.Sint>:
+  match a:
+    case O.APy{v}    : sym_dim.val(const_i64.go(v))
+    case O.AParam{pa}: sym_dim.pa(pa, i)
+    case O.AStr{s}   : sym_dim.end(O.Arena.srcs(ar, i), ar, i)
+    case _            : None{}
+
+def sym_dim(+ar: O.Arena, +i: U32) -> Maybe<&1, O.Sint>:
+  sym_dim.of(O.Arena.arg(ar, i), i, ar)
 
 # `return tuple(s.val if s.op is Ops.CONST else ssimplify(s) for s in self.src)` --
 # and the `ssimplify` half is the `None`: a STACK built by `shape_to_shape_arg`
@@ -1209,6 +1307,11 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # two halves of one walk, so they are ONE value -- the same `Gathered`/`Sized`
 # rule this file already uses, and for the same reason: Bend refuses mutual
 # recursion, so a walk that appends and a walk that tests cannot be two defs.
+#
+# `sym_dim` BELOW is the `ssimplify` half, and it is the whole of the fix: the
+# `Maybe` an element used to be is now an `O.Sint`, and a symbolic element is an
+# `O.SU` -- the arena index of the dim's own node, which is what `O.Sint.uop`
+# (ops.bend:823) has been for with no caller since it was written.
 type Marg is Data:
   Marg{ds: List<&2, O.Sint>, ok: Bool}
 
@@ -1224,28 +1327,35 @@ def Marg.ok(x: Marg) -> Bool:
 def marg.done(+x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
   some_if(&2, List<&2, O.Sint>, Marg.ok(x), Marg.ds(x))
 
-# ONE READ of the src's arg, which is why the CONST VAL and the flag travel
-# together: `s.val` is read once and the `ssimplify` else is read once.
-def marg.step(v: Maybe<&2, H.I64>, +x: Marg) -> Marg:
-  match v:
-    case Some{i}: Marg{List.append(&2, O.Sint, Marg.ds(x), [O.SI{i}]), Marg.ok(x)}
+# ONE READ of the element's node, which is why the DIM and the flag travel
+# together: `s.val if s.op is Ops.CONST else ssimplify(s)` is one read of `s`.
+def marg.step(d: Maybe<&1, O.Sint>, +x: Marg) -> Marg:
+  match d:
+    case Some{v}: Marg{List.append(&2, O.Sint, Marg.ds(x), [v]), Marg.ok(x)}
     case None{}  : Marg{Marg.ds(x), False{}}
 
+# `marg.step(sym_dim(ar, s))` -- a CONST element reads `s.val` and a symbolic one
+# reads `ssimplify`, both through `sym_dim`'s own CONST arm, so there is ONE element
+# reader and not two.
 def marg.stack.go(ss: List<&2, U32>, +ar: O.Arena, +x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
   match ss:
     case Nil{}   : marg.done(x)
-    case s <> t  : marg.stack.go(t, ar, marg.step(const_i64(O.Arena.arg(ar, s)), x))
+    case s <> t  : marg.stack.go(t, ar, marg.step(sym_dim(ar, s), x))
 
 # `if self.op is Ops.CONST: return (self.val,)`, the one-element shape
 def marg.one(+ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
-  marg.done(marg.step(const_i64(O.Arena.arg(ar, i)), Marg{Nil{}, True{}}))
+  marg.done(marg.step(sym_dim(ar, i), Marg{Nil{}, True{}}))
 
-# `self.src[1]`, the arg `shape_to_shape_arg` built, and the two arms above
+# `self.src[1]`, the arg `shape_to_shape_arg` built. THE CONST ARM AND THE
+# `not STACK` ARM ARE THE SAME DEF: `if self.op is Ops.CONST: return (self.val,)`
+# (ops.py:806) and `if self.op is not Ops.STACK: return (ssimplify(self),)`
+# (ops.py:807) are both a ONE-ELEMENT list holding the element's own value, and
+# `sym_dim` reads the CONST val in the same place it reads a PARAM's name. Only
+# the STACK arm is a walk, and it is the only arm that can be empty.
 def marg.of(k: O.Op, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
   match k:
-    case O.OpsCONST{}: marg.one(ar, i)
     case O.OpsSTACK{}: marg.stack.go(O.Arena.srcs(ar, i), ar, Marg{Nil{}, True{}})
-    case _          : None{}    # `(ssimplify(self),)`: the `ssimplify` wall
+    case _           : marg.one(ar, i)
 
 # `self.src[1]`, the arg `shape_to_shape_arg` built, and the two arms above. `+s`
 # is the shared binding that pays for reading the index once and using it twice.
@@ -1614,82 +1724,90 @@ def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShap
   pair_ds.of(False{}, pair3.of(False{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
 
 # ===========================================================================
-# THE TWO CHECKS, ops.py:410-412, and they are ONE walk.
+# THE TWO CHECKS, ops.py:408-410, and they are ONE walk.
 #
 #   if not all(x >= 0 for x in self.marg): raise ValueError(...)
 #   if resolve(prod(ps) != prod(self.marg), False): raise ValueError(...)
 #
-# Both read the same `SI`s of the same `marg`, so they are one walk: `marg_prod`
-# multiplies them and refuses a negative one, and the refusal is the `>= 0`
-# raise. `prod` is U32 because `sint_of` fixes the bound -- "every count that
-# reaches a shape is a dim or a length, so it is under 2^31" -- and a product of
-# a handful of those fits a U32.
+# Both read the same dims of the same `marg`, so they are one walk: `marg_prod`
+# multiplies them and remembers the two things the walk learned. `prod` is U32
+# because `sint_of` fixes the bound -- "every count that reaches a shape is a dim
+# or a length, so it is under 2^31" -- and a product of a handful of those fits.
 #
-# A `SU` ANYWHERE is None, and that is `resolve`'s own `False` default read from
-# the side that is safe: `prod` of a `SU` is a uop, `x >= 0` on one is a rewrite,
-# so neither check can be RUN, and a check that cannot be run is not a check
-# that passed. Python agrees on the marg -- every symbolic fixture in
-# `.agents/slop/notes/reshape-oracle.py` prints `bad reshape` -- and on a
-# symbolic `ps` `resolve` returns the `False` default, which does not raise, so
-# Python would ANSWER there and this fold leaves the node unanswered instead.
-# Refusing is this file's uniform rule for a rule it cannot port, and the header
-# is explicit that a fold which cannot say "I do not know" is not a fold.
+# TWO FLAGS AND NOT ONE, AND THAT IS THE FIX: the old `bad` conflated a NEGATIVE
+# dim with a SYMBOLIC one, and upstream's two checks then read the SAME flag as
+# opposite things. `all(x >= 0)` RAISES on a negative dim (ops.py:408). `resolve`
+# has a `False` DEFAULT (ops.py:410), so a symbolic dim -- whose `prod` is a UOp
+# and whose `x >= 0` is a rewrite -- is `resolve`'s undecidable case and it does
+# NOT raise. ops.py:409 says so in its own comment ("only reject provably unequal
+# products"). Reading one flag both ways made every symbolic marg refuse, and the
+# refusal WAS the wall: `sym_dim` above now mints the `SU` that made the two cases
+# reachable in the first place.
+#
+# THE RESIDUAL, NAMED, because it is what `sym_dim`'s `signable` does NOT buy:
+# `resolve` is `bool(sx.vmin) if sx.vmin == sx.vmax else False` (ops.py:66), so it
+# is DECIDABLE -- and True -- when the two products' intervals are DISJOINT, and a
+# port that cannot multiply intervals cannot see that. `mv_reshsymdis` in
+# `.agents/slop/oracles/fold-mvt-rows.py` is the measured fixture: CPython raises
+# `bad reshape` and this fold answers. One input class, named, in place of the
+# whole class of symbolic margs that used to refuse.
 # ===========================================================================
 
 # `prod(xs)` over a `Maybe` shape, in ONE self-recursive def: the product of the
-# dims, and `None` for a negative dim (the `all(x >= 0)` raise) or a `SU` dim
-# (neither check runnable). The accumulator starts at 1 because
-# `functools.reduce(operator.mul, xs, 1)` is what `prod` is, and that is what
-# makes `prod(())` 1 -- which is why the GETADDR fixture, whose `ps` is `()`,
-# has product 1 and is unequal to a `(2,2)` marg. A `None` shape is the arm's
-# OTHER `raise`, `raise RuntimeError(f"movement op {self.op} requires shape,
-# ... doesn't have one")` (ops.py:407), and it lands on the same answer.
+# CONCRETE dims, whether any dim was provably negative (ops.py:408's raise), and
+# whether any dim was SYMBOLIC (`n` is MEANINGLESS when `sym` -- a `SU` contributes
+# no factor). The accumulator starts at 1 because `functools.reduce(operator.mul,
+# xs, 1)` is what `prod` is, and that is what makes `prod(())` 1 -- which is why the
+# GETADDR fixture, whose `ps` is `()`, has product 1 and is unequal to a `(2,2)`
+# marg. A `None` shape is the arm's OTHER `raise`, `raise RuntimeError(f"movement op
+# {self.op} requires shape, ... doesn't have one")` (ops.py:405), and it lands on
+# the same answer as `prod(())`.
 #
-# THE PRODUCT AND THE REFUSAL ARE ONE RECORD, for the reason `Gathered` exists:
-# a self-call may not forward-reference, so a walk that multiplies and a walk
-# that tests cannot be two defs of a chain, and `bad` is what carries the test
-# out of the loop. A negative dim and a `SU` dim are the SAME `bad` -- one is
-# Python's `raise`, the other is a check that cannot be run -- so they are one
-# flag and not two.
+# THE PRODUCT AND THE TWO FLAGS ARE ONE RECORD, for the reason `Gathered` exists:
+# a self-call may not forward-reference, so a walk that multiplies and a walk that
+# tests cannot be two defs of a chain, and these are what carry the tests out.
 type Prod is Data:
-  Prod{n: U32, bad: Bool}
+  Prod{n: U32, neg: Bool, sym: Bool}
 
 def Prod.n(p: Prod) -> U32:
   match p:
-    case Prod{n, bad}: n
+    case Prod{n, neg, sym}: n
 
-def Prod.bad(p: Prod) -> Bool:
+def Prod.neg(p: Prod) -> Bool:
   match p:
-    case Prod{n, bad}: bad
+    case Prod{n, neg, sym}: neg
+
+def Prod.sym(p: Prod) -> Bool:
+  match p:
+    case Prod{n, neg, sym}: sym
 
 def marg_prod.mul(+i: H.I64, +p: Prod) -> Prod:
-  Prod{U32.mul(Prod.n(p), H.lo32(i)), Bool.or(Prod.bad(p), H.i64_is_neg(i))}
+  Prod{U32.mul(Prod.n(p), H.lo32(i)), Bool.or(Prod.neg(p), H.i64_is_neg(i)), Prod.sym(p)}
 
 def marg_prod.step(+d: O.Sint, +p: Prod) -> Prod:
   match d:
     case O.SI{i}: marg_prod.mul(i, p)
-    case O.SU{u}: Prod{Prod.n(p), True{}}
+    case O.SU{u}: Prod{Prod.n(p), Prod.neg(p), True{}}
 
-def marg_prod.done(+p: Prod) -> Maybe<&1, U32>:
-  some_if(&1, U32, Bool.not(Prod.bad(p)), Prod.n(p))
-
-def marg_prod.go(ds: List<&2, O.Sint>, +p: Prod) -> Maybe<&1, U32>:
+def marg_prod.go(ds: List<&2, O.Sint>, +p: Prod) -> Prod:
   match ds:
-    case Nil{}  : marg_prod.done(p)
+    case Nil{}  : p
     case d <> t : marg_prod.go(t, marg_prod.step(d, p))
 
 def marg_prod1() -> Prod:
-  Prod{1, False{}}
+  Prod{1, False{}, False{}}
 
-def marg_prod(+m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&1, U32>:
+def marg_prod(+m: Maybe<&2, List<&2, O.Sint>>) -> Prod:
   marg_prod.go(Maybe.default(&2, List<&2, O.Sint>, m, Nil{}), marg_prod1())
 
-# `prod(ps) == prod(self.marg)`: equal is the only reading that does not raise,
-# and a `None` on either side is "unprovable", which is not an equality
-def reshape_ok(a: Maybe<&1, U32>, b: Maybe<&1, U32>) -> Bool:
-  match a b:
-    case Some{p} Some{q}: U32.is_eq(p, q)
-    case _ _             : False{}
+# `if not all(x >= 0 for x in self.marg)` and `if resolve(prod(ps) !=
+# prod(self.marg), False)`: the FIRST is `not Prod.neg(m)` and raises on its own,
+# the SECOND is `resolve`'s DEFAULT, so an unprovable product does NOT raise. The
+# `sym` arm is the whole reason `Prod` grew a second flag -- see the block above.
+def reshape_ok(+ps: Prod, +m: Prod) -> Bool:
+  Bool.and(Bool.not(Prod.neg(m)),
+    Bool.pick(Bool, Bool.or(Prod.sym(ps), Prod.sym(m)), True{},
+      U32.is_eq(Prod.n(ps), Prod.n(m))))
 
 # `self.src[0]._shape` -- the `ps` of `resolve(prod(ps) != prod(self.marg), False)`.
 #
@@ -4752,12 +4870,12 @@ def g_mv_expnoop() -> O.Found:
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(n), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# EXPAND(BUFFER(4), STACK(2, SPECIAL "N")) -- THE `ssimplify` WALL, one level below
-# `marg`: `s.val if s.op is Ops.CONST else ssimplify(s)` meets a src that is not a
-# CONST. CPython ANSWERS a shape with a UOp in it (`(2,UOp(Ops.SPECIAL...),4)`); the
-# fold refuses, because `marg.of`'s third arm is None and a fold that cannot say "I
-# do not know" is not a fold. The row prints `RAISE` and the oracle prints CPython's
-# real answer beside it -- see the DIVERGES block in the oracle.
+# EXPAND(BUFFER(4), STACK(2, SPECIAL "N")) OVER AN END OF ZERO -- the only `ssimplify`
+# DIVERGE left, and its cause is now the interval rather than the op. `SPECIAL 'N'`
+# over end 0 is `[0, -1]`: `vmin > vmax`, so the value does not exist, and then
+# ops.py:408's `all(x >= 0)` is DECIDABLE while `sym_dim` is not, so it refuses.
+# `mv_expsym_pos` below is the same graph with a real end, and the two rows together
+# are what say the refusal is about the interval.
 def g_mv_expsym() -> O.Found:
   +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
   +z = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
@@ -4765,6 +4883,91 @@ def g_mv_expsym() -> O.Found:
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
   +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c), O.Found.i(n)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(k), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# `UOp.variable(name, lo, hi)` -- ops.py:1015-1018 -- is `ParamArg(slot, weakint,
+# name=name, vmin_vmax=(lo, hi), multiple_of=1, addrspace=ALU)`, so this is the whole
+# of it. The NAME is the row: `dim_str` prints it, so two variables with different
+# names are two different dims on this lane AND on CPython's, with no index on
+# either. `slot` is 0 here and `-1` upstream, which LIMITS.md section 2 records as an
+# open owner decision about `ops.bend` and which no `mv_` row prints.
+def g_mv_var(ar: O.Arena, lo: H.I64, hi: H.I64, nm: String) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+    O.AParam{O.ParamArg{0, S.weakint(), None{}, Some{O.PyRange{lo, hi}}, Some{1}, Some{nm},
+      S.Aalu{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+# THE WINDOW `UOp.variable` defaults to when a caller names one: `(0, 0xFFFFFF)`.
+# MEASURED off CPython's own default, not typed.
+def g_mv_var_n(ar: O.Arena, nm: String) -> O.Found:
+  g_mv_var(ar, H.i64_of_i32(0), H.i64_of_i32(16777215), nm)
+
+# RESHAPE(BUFFER(4), STACK(n, m)) -- THE ROW THAT SEPARATES "simplified" FROM
+# "flattened". TWO DIFFERENT symbolic dims in ONE shape, and CPython keeps them apart
+# (`(U(PARAM:n),U(PARAM:m))`), so a simplifier that answered one token for every
+# symbolic dim would print two identical tokens and a renderer that printed none
+# would print `(U,U)`. Both are wrong against this row and both are silent.
+# `prod(ps) = 4` against a marg whose product is `n*m`: unresolvable, which is
+# ops.py:410's `resolve(..., False)` DEFAULT and so no raise.
+def g_mv_reshsym_nm() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +n = g_mv_var_n(O.Found.ar(b), "n")
+  +m = g_mv_var_n(O.Found.ar(n), "m")
+  +k = O.UOp.new(O.Found.ar(m), O.OpsSTACK{}, [O.Found.i(n), O.Found.i(m)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(3), STACK(p, 1)) with `p = variable("p", 3, 3)` -- THE OTHER
+# DIRECTION, and it is the half a "just return SU" fix gets wrong. `vmin == vmax`, so
+# symbolic.py:269 fires and `ssimplify` hands back the INT 3: the shape is `(3,1)`
+# with no `U` in it. A port that answered `SU` here would fail the PRODUCT check
+# (`3` against `SU`) and leave the node unanswered, so this row is what says the
+# point arm ran rather than merely compiled.
+def g_mv_reshsym_pt() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(3)}, O.TNone{})
+  +p = g_mv_var(O.Found.ar(b), H.i64_of_i32(3), H.i64_of_i32(3), "p")
+  +c = O.UOp.const(O.Found.ar(p), O.CInt{H.i64_of_i32(1)})
+  +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(p), O.Found.i(c)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# EXPAND(BUFFER(4), STACK(2, SPECIAL 'N' end 99)) -- `g_mv_expsym`'s op with a REAL
+# end, so the interval is `[0, 98]`: not a point, not empty, `vmin >= 0`. It answers
+# `(2,U(SPECIAL:N),4)` on both lanes, and it is the row that separates "symbolic dims
+# are refusals" (which was true until `sym_dim`) from "symbolic dims are SU".
+def g_mv_expsym_pos() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +e = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(99)})
+  +n = O.UOp.special(O.Found.ar(e), O.Found.i(e), "N")
+  +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
+  +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c), O.Found.i(n)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), n) -- `shape_to_shape_arg` of a ONE-element tuple returns
+# `src[0]` ITSELF (ops.py:108), so `as_shape` takes its THIRD arm,
+# `(ssimplify(self),)`, and `marg`'s CONST arm and its `not STACK` arm are one def.
+# CPython's answer is `(U(PARAM:n))`; `n` over `[0, 0xFFFFFF]` against `prod(ps) = 4`
+# is unresolvable, so no raise.
+def g_mv_reshbare_n() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +n = g_mv_var_n(O.Found.ar(b), "n")
+  O.UOp.new(O.Found.ar(n), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(n)], O.ANone{}, O.TNone{})
+
+# THE SAME THIRD ARM WITH A POINT: `q = variable("q", 4, 4)` folds to the int 4, the
+# products are 4 and 4, and the shape is `(4)` -- an AGREEING row with no `U` in it,
+# which is what says the bare-PARAM arm is answered and not merely refused.
+def g_mv_reshbare_q() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +q = g_mv_var(O.Found.ar(b), H.i64_of_i32(4), H.i64_of_i32(4), "q")
+  O.UOp.new(O.Found.ar(q), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(q)], O.ANone{}, O.TNone{})
+
+# THE RESIDUAL, AND IT IS A PLANNED DIVERGE. `resolve(x, False)` is
+# `bool(sx.vmin) if sx.vmin == sx.vmax else False` (ops.py:66), so it is DECIDABLE --
+# and True, so it RAISES -- exactly when the two products' intervals are DISJOINT.
+# `w` over `[0,3]` and `prod(ps) = 4` are disjoint, so CPython raises `bad reshape`
+# and this fold answers `(U(PARAM:w))`. A fold that cannot multiply intervals cannot
+# see disjointness; the oracle's DIVERGES block names the row and this comment names
+# the cause, and the input class is ONE instead of "every symbolic marg".
+def g_mv_reshbare_w() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +w = g_mv_var(O.Found.ar(b), H.i64_of_i32(0), H.i64_of_i32(3), "w")
+  O.UOp.new(O.Found.ar(w), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(w)], O.ANone{}, O.TNone{})
 
 # `shape_to_shape_arg` of a ONE-element tuple, which returns `src[0]` (ops.py:110) --
 # so a one-dim pad's two shape args are BARE CONSTs and the node is 4 not 5. This is
@@ -5185,41 +5388,64 @@ def mmk_sibling() -> IO(Unit):
     mmk_row("mmkx_", "sibling_stage", x, O.Found.i(st))
     mmk_row("mmk_", "sibling", x, O.Found.i(f))
 
-# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1227)
+# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1704)
 # and a dim is a non-negative count under 2^31 -- `sint_of`'s own note says so -- so
 # the LOW WORD is the decimal. `lo32` and not a reader of the whole I64, because a
 # dim is exactly the case where the high word is zero.
-# A UOp dim renders as a bare `UOp`, with NO index: CPython's arena is numbered
-# differently and the fold refuses every row that could print one, so a digit here
-# would be a number neither oracle nor port means the same thing by.
-def dim_str(d: O.Sint) -> String:
+#
+# A SYMBOLIC DIM IS `U(<OP>:<arg>)` AND THAT IS A FIX, NOT COSMETICS. It used to print
+# a bare `UOp` on the stated ground that "a digit here would be a number neither
+# oracle nor port means the same thing by" -- and that ground was TRUE then and is
+# FALSE now: `sym_dim` answers symbolic dims, so the index is the node the dim IS,
+# and two different symbolic dims are two different nodes. A renderer that prints the
+# same token for both cannot tell "simplified correctly" from "flattened everything",
+# and `mv_reshsym_nm` is the row that depends on the difference. The OP is in the
+# text because a PARAM named `N` and a SPECIAL `'N'` are both one argument and they
+# are not the same dim. The arg is read from the node's OWN arg, so the oracle can
+# print the identical string from CPython's side -- `U(PARAM:n)` needs no index on
+# either lane. `?` is `sym_dim`'s own refusal: a `SU` it did not mint, which cannot
+# happen, and the file's letter for "no answer" if it ever does.
+def dim_str.name.go(n: Maybe<&2, String>) -> String:
+  match n:
+    case Some{s}: s
+    case None{}  : "?"
+
+def dim_str.name(a: O.Arg) -> String:
+  match a:
+    case O.AParam{pa}: dim_str.name.go(O.ParamArg.name(pa))
+    case O.AStr{s}   : s
+    case _            : "?"
+
+def dim_str(+ar: O.Arena, d: O.Sint) -> String:
   match d:
-    case O.SU{u}: "UOp"
+    case O.SU{+u}: String.concat(["U(", O.Ops.name(O.Arena.op(ar, u)), ":", dim_str.name(O.Arena.arg(ar, u)), ")"])
     case O.SI{i}: U32.show(H.lo32(i))
 
-def dims_str.go(ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>:
+def dims_str.go(+ar: O.Arena, ds: List<&2, O.Sint>, acc: List<&2, String>) -> List<&2, String>:
   match ds:
     case Nil{}: acc
-    case d <> t: dims_str.go(t, List.append(&2, String, acc, [dim_str(d)]))
+    case d <> t: dims_str.go(ar, t, List.append(&2, String, acc, [dim_str(ar, d)]))
 
-def dims_str(ds: List<&2, O.Sint>) -> String:
-  String.concat(["(", String.join(dims_str.go(ds, Nil{}), ","), ")"])
+def dims_str(+ar: O.Arena, ds: List<&2, O.Sint>) -> String:
+  String.concat(["(", String.join(dims_str.go(ar, ds, Nil{}), ","), ")"])
 
 # "no entry in the table" is `ABSENT` and "the entry is there and has no shape" is
 # `RAISE` -- this file's own two-`None` distinction from the header. NEITHER is
 # Python's `raise`: a `raise` and a REFUSAL are the same statement in this file's
-# convention, so a diff against CPython cannot tell them apart. The one row where
-# they genuinely differ is `mv_expsym` -- CPython answers a shape holding a UOp and
-# the fold cannot read that UOp's value -- and it says so in its own name and in the
-# oracle's DIVERGES block, rather than being smoothed into an agreeing row.
-def shape_str.go(m: Maybe<&2, List<&2, O.Sint>>) -> String:
+# convention, so a diff against CPython cannot tell them apart. The rows where they
+# genuinely differ are `mv_expsym` -- a SPECIAL `'N'` over an END OF ZERO, whose
+# interval `[0,-1]` is EMPTY, which `sym_dim` refuses because ops.py:408's
+# `all(x >= 0)` is then decidable and this file cannot decide it -- and
+# `mv_reshsymdis`, the disjoint-products `resolve`. Both are named in their own tag
+# and in the oracle's DIVERGES block, not smoothed into an agreeing row.
+def shape_str.go(+ar: O.Arena, m: Maybe<&2, List<&2, O.Sint>>) -> String:
   match m:
-    case Some{ds}: dims_str(ds)
+    case Some{ds}: dims_str(ar, ds)
     case None{}  : "RAISE"
 
-def shape_str(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
+def shape_str(+ar: O.Arena, m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
   match m:
-    case Some{g}: shape_str.go(g)
+    case Some{g}: shape_str.go(ar, g)
     case None{}  : "ABSENT"
 
 # `S.Dt`'s FOURTH FIELD is tinygrad's own `DType.name`; `spec.bend` has no reader for
@@ -5233,11 +5459,12 @@ def dt_str(m: Maybe<&2, S.Dt>) -> String:
     case Some{d}: dt_nm(d)
     case None{}  : "ABSENT"
 
-# ONE FOLD PER ROW, read twice: `+x` and `+u` are what pay for it, and folding twice
-# would be two walks of the whole arena for one answer.
+# ONE FOLD PER ROW, read three times: `+x` and `+u` are what pay for it, and folding
+# twice would be two walks of the whole arena for one answer. The arena is also
+# `dim_str`'s, which is why a symbolic dim's own arg reaches the shape column.
 def mv_row(nm: String, +x: Folded, +u: U32) -> IO(Unit):
   IO.print(String.concat(["mv_", nm, " ", sig4(Folded.ar(x), u),
-                          " shape=", shape_str(UOp.shape(Folded.ar(x), Folded.t(x), u)),
+                          " shape=", shape_str(Folded.ar(x), UOp.shape(Folded.ar(x), Folded.t(x), u)),
                           " dtype=", dt_str(UOp.dtype(Folded.ar(x), Folded.t(x), u))]))
 
 def mv_of(nm: String, +f: O.Found) -> IO(Unit):
@@ -5538,6 +5765,17 @@ def main() -> IO(Unit):
     mv_of("exp23", g_mv_exp23())
     mv_of("expnoop", g_mv_expnoop())
     mv_of("expsym", g_mv_expsym())
+    # THE SYMBOLIC-DIM ROWS. `sym_dim` is what answers them, and the set is one per
+    # answer it has: TWO DIFFERENT dims, a POINT, a SPECIAL over a real end, and the
+    # BARE-PARAM third arm of `as_shape` -- twice, once symbolic and once a point.
+    mv_of("reshsym_nm", g_mv_reshsym_nm())
+    mv_of("reshsym_pt", g_mv_reshsym_pt())
+    mv_of("expsym_pos", g_mv_expsym_pos())
+    mv_of("reshbare", g_mv_reshbare_n())
+    mv_of("reshbare_pt", g_mv_reshbare_q())
+    # THE PLANNED DIVERGE, printed on this lane so the file says which way it is
+    # wrong: this fold answers where CPython raises. See the oracle's DIVERGES.
+    mv_of("reshbare_dis", g_mv_reshbare_w())
     mv_of("pad1", g_mv_pad1())
     mv_of("pad23", g_mv_pad23())
     mv_of("padr", g_mv_padr())

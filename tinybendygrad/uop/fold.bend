@@ -4870,12 +4870,12 @@ def g_mv_expnoop() -> O.Found:
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(n), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# EXPAND(BUFFER(4), STACK(2, SPECIAL "N")) -- THE `ssimplify` WALL, one level below
-# `marg`: `s.val if s.op is Ops.CONST else ssimplify(s)` meets a src that is not a
-# CONST. CPython ANSWERS a shape with a UOp in it (`(2,UOp(Ops.SPECIAL...),4)`); the
-# fold refuses, because `marg.of`'s third arm is None and a fold that cannot say "I
-# do not know" is not a fold. The row prints `RAISE` and the oracle prints CPython's
-# real answer beside it -- see the DIVERGES block in the oracle.
+# EXPAND(BUFFER(4), STACK(2, SPECIAL "N")) OVER AN END OF ZERO -- the only `ssimplify`
+# DIVERGE left, and its cause is now the interval rather than the op. `SPECIAL 'N'`
+# over end 0 is `[0, -1]`: `vmin > vmax`, so the value does not exist, and then
+# ops.py:408's `all(x >= 0)` is DECIDABLE while `sym_dim` is not, so it refuses.
+# `mv_expsym_pos` below is the same graph with a real end, and the two rows together
+# are what say the refusal is about the interval.
 def g_mv_expsym() -> O.Found:
   +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
   +z = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
@@ -4883,6 +4883,91 @@ def g_mv_expsym() -> O.Found:
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
   +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c), O.Found.i(n)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(k), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# `UOp.variable(name, lo, hi)` -- ops.py:1015-1018 -- is `ParamArg(slot, weakint,
+# name=name, vmin_vmax=(lo, hi), multiple_of=1, addrspace=ALU)`, so this is the whole
+# of it. The NAME is the row: `dim_str` prints it, so two variables with different
+# names are two different dims on this lane AND on CPython's, with no index on
+# either. `slot` is 0 here and `-1` upstream, which LIMITS.md section 2 records as an
+# open owner decision about `ops.bend` and which no `mv_` row prints.
+def g_mv_var(ar: O.Arena, lo: H.I64, hi: H.I64, nm: String) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+    O.AParam{O.ParamArg{0, S.weakint(), None{}, Some{O.PyRange{lo, hi}}, Some{1}, Some{nm},
+      S.Aalu{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+# THE WINDOW `UOp.variable` defaults to when a caller names one: `(0, 0xFFFFFF)`.
+# MEASURED off CPython's own default, not typed.
+def g_mv_var_n(ar: O.Arena, nm: String) -> O.Found:
+  g_mv_var(ar, H.i64_of_i32(0), H.i64_of_i32(16777215), nm)
+
+# RESHAPE(BUFFER(4), STACK(n, m)) -- THE ROW THAT SEPARATES "simplified" FROM
+# "flattened". TWO DIFFERENT symbolic dims in ONE shape, and CPython keeps them apart
+# (`(U(PARAM:n),U(PARAM:m))`), so a simplifier that answered one token for every
+# symbolic dim would print two identical tokens and a renderer that printed none
+# would print `(U,U)`. Both are wrong against this row and both are silent.
+# `prod(ps) = 4` against a marg whose product is `n*m`: unresolvable, which is
+# ops.py:410's `resolve(..., False)` DEFAULT and so no raise.
+def g_mv_reshsym_nm() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +n = g_mv_var_n(O.Found.ar(b), "n")
+  +m = g_mv_var_n(O.Found.ar(n), "m")
+  +k = O.UOp.new(O.Found.ar(m), O.OpsSTACK{}, [O.Found.i(n), O.Found.i(m)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(3), STACK(p, 1)) with `p = variable("p", 3, 3)` -- THE OTHER
+# DIRECTION, and it is the half a "just return SU" fix gets wrong. `vmin == vmax`, so
+# symbolic.py:269 fires and `ssimplify` hands back the INT 3: the shape is `(3,1)`
+# with no `U` in it. A port that answered `SU` here would fail the PRODUCT check
+# (`3` against `SU`) and leave the node unanswered, so this row is what says the
+# point arm ran rather than merely compiled.
+def g_mv_reshsym_pt() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(3)}, O.TNone{})
+  +p = g_mv_var(O.Found.ar(b), H.i64_of_i32(3), H.i64_of_i32(3), "p")
+  +c = O.UOp.const(O.Found.ar(p), O.CInt{H.i64_of_i32(1)})
+  +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(p), O.Found.i(c)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# EXPAND(BUFFER(4), STACK(2, SPECIAL 'N' end 99)) -- `g_mv_expsym`'s op with a REAL
+# end, so the interval is `[0, 98]`: not a point, not empty, `vmin >= 0`. It answers
+# `(2,U(SPECIAL:N),4)` on both lanes, and it is the row that separates "symbolic dims
+# are refusals" (which was true until `sym_dim`) from "symbolic dims are SU".
+def g_mv_expsym_pos() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +e = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(99)})
+  +n = O.UOp.special(O.Found.ar(e), O.Found.i(e), "N")
+  +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
+  +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c), O.Found.i(n)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(k), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
+
+# RESHAPE(BUFFER(4), n) -- `shape_to_shape_arg` of a ONE-element tuple returns
+# `src[0]` ITSELF (ops.py:108), so `as_shape` takes its THIRD arm,
+# `(ssimplify(self),)`, and `marg`'s CONST arm and its `not STACK` arm are one def.
+# CPython's answer is `(U(PARAM:n))`; `n` over `[0, 0xFFFFFF]` against `prod(ps) = 4`
+# is unresolvable, so no raise.
+def g_mv_reshbare_n() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +n = g_mv_var_n(O.Found.ar(b), "n")
+  O.UOp.new(O.Found.ar(n), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(n)], O.ANone{}, O.TNone{})
+
+# THE SAME THIRD ARM WITH A POINT: `q = variable("q", 4, 4)` folds to the int 4, the
+# products are 4 and 4, and the shape is `(4)` -- an AGREEING row with no `U` in it,
+# which is what says the bare-PARAM arm is answered and not merely refused.
+def g_mv_reshbare_q() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +q = g_mv_var(O.Found.ar(b), H.i64_of_i32(4), H.i64_of_i32(4), "q")
+  O.UOp.new(O.Found.ar(q), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(q)], O.ANone{}, O.TNone{})
+
+# THE RESIDUAL, AND IT IS A PLANNED DIVERGE. `resolve(x, False)` is
+# `bool(sx.vmin) if sx.vmin == sx.vmax else False` (ops.py:66), so it is DECIDABLE --
+# and True, so it RAISES -- exactly when the two products' intervals are DISJOINT.
+# `w` over `[0,3]` and `prod(ps) = 4` are disjoint, so CPython raises `bad reshape`
+# and this fold answers `(U(PARAM:w))`. A fold that cannot multiply intervals cannot
+# see disjointness; the oracle's DIVERGES block names the row and this comment names
+# the cause, and the input class is ONE instead of "every symbolic marg".
+def g_mv_reshbare_w() -> O.Found:
+  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_mv_pa(4)}, O.TNone{})
+  +w = g_mv_var(O.Found.ar(b), H.i64_of_i32(0), H.i64_of_i32(3), "w")
+  O.UOp.new(O.Found.ar(w), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(w)], O.ANone{}, O.TNone{})
 
 # `shape_to_shape_arg` of a ONE-element tuple, which returns `src[0]` (ops.py:110) --
 # so a one-dim pad's two shape args are BARE CONSTs and the node is 4 not 5. This is
@@ -5680,6 +5765,17 @@ def main() -> IO(Unit):
     mv_of("exp23", g_mv_exp23())
     mv_of("expnoop", g_mv_expnoop())
     mv_of("expsym", g_mv_expsym())
+    # THE SYMBOLIC-DIM ROWS. `sym_dim` is what answers them, and the set is one per
+    # answer it has: TWO DIFFERENT dims, a POINT, a SPECIAL over a real end, and the
+    # BARE-PARAM third arm of `as_shape` -- twice, once symbolic and once a point.
+    mv_of("reshsym_nm", g_mv_reshsym_nm())
+    mv_of("reshsym_pt", g_mv_reshsym_pt())
+    mv_of("expsym_pos", g_mv_expsym_pos())
+    mv_of("reshbare", g_mv_reshbare_n())
+    mv_of("reshbare_pt", g_mv_reshbare_q())
+    # THE PLANNED DIVERGE, printed on this lane so the file says which way it is
+    # wrong: this fold answers where CPython raises. See the oracle's DIVERGES.
+    mv_of("reshbare_dis", g_mv_reshbare_w())
     mv_of("pad1", g_mv_pad1())
     mv_of("pad23", g_mv_pad23())
     mv_of("padr", g_mv_padr())

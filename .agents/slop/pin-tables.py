@@ -55,6 +55,41 @@ UNSTATED = {
                             "with CPython today.  See the report.",
     "rf2-mutations.txt": "not re-run: `rf2-mutate.py`'s mutation list is not a module-level "
                          "literal, so its anchors are UNDECLARED and cannot be checked",
+    # --- ADDED 2026-10-04.  Every table below EXISTS, is a record of mutation
+    # --- results, and named no revision at all -- not even an UNSTATED one.  The
+    # --- rule this file exists for says a pin is only worth writing for a table
+    # --- whose figure was MEASURED, and `UNSTATED. <reason>` is the correct record
+    # --- for a table nobody re-ran.  What is NOT correct is a table with no
+    # --- header: `table-pin.py` reports "NO REVISION" for those, and a reader has
+    # --- no way to tell a table that was never pinned from one that was pinned and
+    # --- the pin was lost.  Absent is fine; unrecorded-as-absent is not.
+    "cs_mutation_report.txt": "not re-run: a prose REPORT of `cs_mutate.py`, not a "
+                              "machine-read row table, so there is no row set to digest",
+    "dd-mutations-classified.txt": "already carries its own classification header; "
+                                   "pinning it here would put two PIN blocks in one file",
+    "dd-mutations-report.md": "not re-run: a prose REPORT of `dd-mutate.py`, not a "
+                              "row table, so there is no row set to digest",
+    "dd-mutations.txt": "not re-run: `dd-mutate.py` runs its gate as a subprocess, so "
+                        "there is no row set on disk to digest (table-pin.py records "
+                        "this as NOT-COMMITTED)",
+    "elf_mutations.txt": "EMPTY (0 bytes): no rows to describe",
+    "helpers-i64-mutations.txt": "not re-run: `helpers-i64-mutate.sh` is a shell "
+                                 "harness with no module-level literal list, so "
+                                 "`mutanchor` declares its anchors UNDECLARED",
+    "ra-mutations.txt": "not re-run: `ra-mutate.py` now GUARDS itself (stage beside, "
+                        "digest-asserted) and could be re-run; it was not re-run here "
+                        "because another unit was editing `codegen/late/*.bend`",
+    "ra2-mutations.txt": "not re-run: same reason as ra-mutations.txt",
+    "rf-mutations.txt": "not re-run: `rf-mut.py` now GUARDS itself and could be "
+                        "re-run; it was not re-run here because `schedule/rangeify.bend` "
+                        "is under active edit by another unit",
+    "tc-mutations.txt": "not re-run: no source file resolvable from the harness",
+    "usb-mutations.md": "not re-run: `usb-mutate.py`'s target is not resolvable from "
+                        "the harness's own path constants",
+    "validate-mutations.txt": "not re-run: no source file resolvable from the harness",
+    "memory-mutations.txt": "SUPERSEDED BY `table-pin.py`, which reports this table's "
+                            "rev/file/rows from the committed baseline; the hand-typed "
+                            "rev here was never verified against a digest",
 }
 HEAD = ("\n# ======================================================================\n"
         "# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.\n"
@@ -69,11 +104,26 @@ HEAD = ("\n# ===================================================================
         "#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.\n")
 
 
+def _existing_pin(body):
+    """The `#   rev ... | file ... | rows ...` line already in a table, or `none`.
+
+    Printed in a conflict message so the reader sees BOTH numbers rather than being
+    told only that a conflict exists.
+    """
+    for line in body.splitlines():
+        if line.startswith("#   rev ") and " | " in line:
+            return line.strip()
+    return "none"
+
+
 def main():
     if "--out" not in sys.argv:
         sys.exit(__doc__)
     measured = dict()
     for a in sys.argv[sys.argv.index("--out") + 2:]:
+        # A `file` field for a three-file SET is `digest+digest+digest`, which
+        # contains no `:`.  A five-field split is what lets a split unit be pinned at
+        # all rather than forcing the single-file shape onto `codegen/late/`.
         t, rev, f, r, n = a.split(":")
         measured[t] = (rev, f, r, n)
     for table in sorted(set(list(measured) + list(UNSTATED))):
@@ -83,11 +133,42 @@ def main():
                      "claim about nothing" % table)
         body = open(p, errors="replace").read()
         if "PIN -- what this table describes" in body:
-            continue
+            # ALREADY PINNED -- but only a skip when the pin on disk MATCHES the one
+            # being offered.  `continue` unconditionally meant a table re-pinned after
+            # its harness was re-run kept the OLD numbers forever, so a second
+            # measurement could never reach the record and a stale pin read as
+            # current.  A pin that disagrees with a fresh measurement is a FINDING and
+            # is reported, not silently preferred.
+            if table not in measured:
+                continue
+            rev, f, r, n = measured[table]
+            live = "#   rev %s | file %s | rows %s (%s rows)" % (rev, f, r, n)
+            if live in body:
+                continue
+            sys.exit("PIN CONFLICT in %s: it already carries a pin and the pin you "
+                     "are offering differs.\n  on disk: %s\n  offered:  %s\n"
+                     "  A pin is a claim about ONE run.  Two runs, two revisions, one "
+                     "table -- write the second to its own file rather than "
+                     "overwriting, because the reader of the first has no way to know "
+                     "it was replaced." % (table, _existing_pin(body), live))
         if table in measured:
             rev, f, r, n = measured[table]
             pin = ("#   rev %s | file %s | rows %s (%s rows)\n%s"
                    % (rev, f, r, n, HEAD))
+            # RULE C, asserted at write time.  `e3b0c44298fc1c14` -- the sha256 of
+            # the EMPTY STRING -- went into `wgsl-mutations.txt` once because a
+            # summary line was hashed instead of a row set, and a zero-row digest is
+            # indistinguishable from a real one to every reader afterwards.  A pin
+            # that names a row count of 0, or a digest equal to the empty string's,
+            # is refused here rather than published.
+            import hashlib
+            EMPTY = hashlib.sha256(b"").hexdigest()[:16]
+            if n == "0" or r == EMPTY or f == EMPTY:
+                sys.exit("REFUSING to pin %s: rev=%r file=%r rows=%r nrows=%r.  A "
+                         "fabricated digest is worse than an absent one, because it "
+                         "converts unknown into apparently-known.  Write "
+                         "`PIN NOT WRITTEN -- UNSTATED` with the reason instead."
+                         % (table, rev, f, r, n))
         else:
             pin = ("# PIN NOT WRITTEN -- UNSTATED.  %s\n%s" % (UNSTATED[table], HEAD))
         open(p, "w").write(body.rstrip("\n") + "\n" + pin)

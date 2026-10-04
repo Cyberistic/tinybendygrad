@@ -24,3 +24,16 @@
 | M18 `claim_full` replaced by `claim_n` (the src half of the claim dropped) | claim_ab_stg3 | 1 |
 | M19 `dg_6`'s RANGE rule given the wrong op set | dg_r0t_ans | 1 |
 | M20 `ct_8`'s MSTACK.f(INDEX) rule DELETED from the table | DID-NOT-COMPILE | 0 |
+#   rev 7c5e952391e2 | file b2ca777b9dfa3e80 | rows 6c1e76bdb2ab085c (126 rows)
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

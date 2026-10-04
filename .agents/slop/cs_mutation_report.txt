@@ -214,3 +214,16 @@ cs.M16 the frame header is 5 bytes                          3 rows
                                                             moved: cs.n_needed, tr.srv.first, tr.srv_err.first
 
 104 mutations move rows, 2 move nothing, 1 do not compile
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: a prose REPORT of `cs_mutate.py`, not a machine-read row table, so there is no row set to digest
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

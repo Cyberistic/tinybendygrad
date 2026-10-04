@@ -36,7 +36,14 @@ import staged_mut as SM
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 LATE = ROOT / "tinybendygrad" / "codegen" / "late"
-FILES = ("linearizer", "regalloc", "gater")
+# Named, not `LATE / ("%s.bend" % f)`: a static reader cannot resolve a
+# comprehension's element, and `anchor-audit.py` reported NO-SUBSTRATE for this
+# harness as a result -- which silently DISABLES its own anchor check rather than
+# failing, so the harness looked clean while nothing was being checked.
+LINEARIZER = LATE / "linearizer.bend"
+REGALLOC = LATE / "regalloc.bend"
+GATER = LATE / "gater.bend"
+FILES = (LINEARIZER, REGALLOC, GATER)
 OUT = ROOT / ".agents/slop/ra-mutations.txt"
 
 # The `LT.` qualifier the split forced, as a regex over the names that actually
@@ -148,11 +155,12 @@ MUT = [
 def main():
     lines = ["# ra-mutate.py -- regalloc.bend, MEASURED.  rows moved are whole "
              "`name=value` lines.\n"]
-    with SM.StagedSet([LATE / ("%s.bend" % f) for f in FILES], "ra", transform=q) as unit:
+    with SM.StagedSet(FILES, "ra", transform=q) as unit:
         base = unit.rows()
         SM.control(base, unit.rows(), "regalloc baseline")
         lines.append("# baseline: %d rows over %s, row-set digest %s\n"
-                     % (len(base), ", ".join(FILES), SM.row_digest(base)[:16]))
+                     % (len(base), ", ".join(f.name for f in FILES),
+                        SM.row_digest(base)[:16]))
         lines.append("| mutation | file | rows moved | how many |")
         lines.append("| --- | --- | --- | --- |")
         unapplied, blind, dnc = [], [], []

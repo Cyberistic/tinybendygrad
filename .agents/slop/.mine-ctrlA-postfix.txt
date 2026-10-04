@@ -1,0 +1,24 @@
+!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the CAPTURE, never about the tree as it is now.
+CAPTURED port lane rc=0   CAPTURED oracle lane rc=0
+port rows (rows_strict): 227   oracle rows (rows_strict): 224
+lane    rows read  names (gate)  names (shipped)  `=`  unreachable  unreadable   name sets
+port          227           227              225    8            2           0   DIFFER (219 shared)
+oracle        224           224              222    8            2           0   DIFFER (216 shared)
+  port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) differently: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4']
+  port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader and the later one silently overwrote the earlier: {'kern CUDA  lb': ['kern CUDA  lb=1', 'kern CUDA  lb=4'], 'kern HIP   lb': ['kern HIP   lb=1', 'kern HIP   lb=4']}
+  port: the two readers disagree about the NAME SET -- 8/227 only rows_strict finds ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'], 6/227 only the shipped reader finds ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']; comparable rows depend on which reader is asked
+  oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) differently: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4']
+  oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader and the later one silently overwrote the earlier: {'kern CUDA  lb': ['kern CUDA  lb=1', 'kern CUDA  lb=4'], 'kern HIP   lb': ['kern HIP   lb=1', 'kern HIP   lb=4']}
+  oracle: the two readers disagree about the NAME SET -- 8/224 only rows_strict finds ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'], 6/224 only the shipped reader finds ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']; comparable rows depend on which reader is asked
+gated 221   agree 221   disagree []
+STALE-LITERAL 0 port `py=` literal(s) disagree with the live call: []
+ORACLE-REFUSALS 13 CPython KeyError(s) the oracle reported on stderr: ['rd BASE  fp8e4m3', 'rd CLANG fp8e4m3', 'rd OPENCL fp8e4m3', 'rd METAL fp8e4m3', 'witem BASE', 'witem CLANG', 'cfo BASE  FDIV f32', 'cfo CLANG EXP2 f32', 'cfo CLANG LOG2 f32', 'cfo CLANG SIN f32', 'cfo CLANG RECIPROCAL f32', 'cfo METAL FDIV f32', 'cfo CUDA  FDIV f32']
+UNREPORTED-REFUSALS 0: every port row that answers `` and the oracle did not name on stderr -- none
+EXCLUDED 6 port row(s) CPython cannot answer at all: ['buft METAL', 'idx BASE  regadd', 'idx HIP   regadd', 'under float', 'under signed char', 'under unsigned lon']
+BROKEN 
+  - port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) differently: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'] 
+  - port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader and the later one silently overwrote the earlier: {'kern CUDA  lb': ['kern CUDA  lb=1', 'kern CUDA  lb=4'], 'kern HIP   lb': ['kern HIP   lb=1', 'kern HIP   lb=4']} 
+  - port: the two readers disagree about the NAME SET -- 8/227 only rows_strict finds ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'], 6/227 only the shipped reader finds ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']; comparable rows depend on which reader is asked 
+  - oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) differently: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'] 
+  - oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader and the later one silently overwrote the earlier: {'kern CUDA  lb': ['kern CUDA  lb=1', 'kern CUDA  lb=4'], 'kern HIP   lb': ['kern HIP   lb=1', 'kern HIP   lb=4']} 
+  - oracle: the two readers disagree about the NAME SET -- 8/224 only rows_strict finds ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4'], 6/224 only the shipped reader finds ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']; comparable rows depend on which reader is asked

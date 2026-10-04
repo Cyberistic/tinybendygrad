@@ -1,0 +1,4 @@
+vrn_default=slot=-1 name=i mult=1 addr=ALU lo=0:0 hi=0:10 nsrc=0
+vrn_multi=slot=-1 name=j mult=4 addr=ALU lo=4294967295:4294967291 hi=0:5 nsrc=0
+vrn_neg=slot=-1 name=m mult=1 addr=ALU lo=4294967295:4294967196 hi=4294967295:4294967295 nsrc=0
+vrn_int32=slot=-1 name=k mult=1 addr=ALU lo=0:1 hi=0:2 nsrc=0

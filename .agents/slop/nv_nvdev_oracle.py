@@ -146,6 +146,12 @@ row("nv_boot42_chipid", "%d:%d" % B42.fields["chip_id"])
 row("nv_boot42_minor_ext", "%d:%d" % B42.fields["minor_extended_revision"])
 row("nv_boot42_minor", "%d:%d" % B42.fields["minor_revision"])
 row("nv_boot42_major", "%d:%d" % B42.fields["major_revision"])
+# THE SPLIT, as SEPARATE rows. `minor_extended_revision` is the one BOOT_42 field
+# the port had no per-element row for, so a transposition of its (start, end) had
+# no row that could name it. Splitting is what makes a row SWAP detectable: the
+# joined string above is unchanged by swapping the two rows, these are not.
+row("nv_boot42_merext_lo", B42.fields["minor_extended_revision"][0])
+row("nv_boot42_merext_hi", B42.fields["minor_extended_revision"][1])
 # `chip_id` (20..29) SPANS BOTH `implementation` (20..23) and `architecture`
 # (24..29), so all three read the SAME register word and three of the six
 # fields alias. A transposed field here is a transposed DEVICE ID.

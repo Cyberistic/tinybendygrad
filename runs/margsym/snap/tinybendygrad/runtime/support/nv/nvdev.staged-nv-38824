@@ -1461,6 +1461,106 @@ def nv.upd_mask(+r: Rgv, ks: List<&2, Kv>) -> U32: nv.mask_of(r, ks)
 
 def nv.fld_of(+r: Rgv, nm: String, which: U32) -> U32: nv.fo.go(Rgv.nat(r), Rgv.fs(r), nm, which, 0)
 
+# --- PER-FIELD ROWS. THE ORDER-INSIDE-A-PAIR CHECK, per SITE.
+#
+# `Se` is `(start, end)` as a VALUE rather than two lookups, and it exists for a
+# linearity reason, not a taste one: a `String` in Bend 2 is consumed by its one
+# use, so a helper that needed the field name twice to read two elements could
+# not exist. One fold, one use of the name, both elements out.
+type Se is Data:
+  Se{s: U32, e: U32}
+
+def Se.of(s: U32, e: U32) -> Se:
+  Se{s, e}
+
+def Se.s(x: Se) -> U32:
+  match x:
+    case Se{+s, e}: s
+
+def Se.e(x: Se) -> U32:
+  match x:
+    case Se{s, +e}: e
+
+def nv.pe.go(n: Nat, +fs: List<&2, Fld>, +nm: String, acc: Se) -> Se:
+  match n:
+    case 0n: acc
+    case 1n+m:
+      match fs:
+        case Nil{}: acc
+        case f <> r: Bool.pick(Se, String.eq(Fld.n(f), nm), Se.of(Fld.s(f), Fld.e(f)), nv.pe.go(m, r, nm, acc))
+
+def nv.fld_se(+r: Rgv, nm: String) -> Se: nv.pe.go(Rgv.nat(r), Rgv.fs(r), nm, Se.of(0, 0))
+
+# THE ROUND TRIP, AND IT NEEDS THE ALL-ONES WORD. Measured: the two naive probes
+# are provably BLIND to a transposition, i.e. as gates they cannot fail --
+#   getb(enc(1))       = 1 under (8,11) AND 1 under (11,8)
+#   getb(enc(pw(w-1))) = 8 under (8,11) AND 0 under (11,8), and the expected
+#                        pw(w-1) is 0 there too, because pw saturates to 0
+# `nv.fenc(4294967295, s)` loses the top s bits, so `getb` of it is `ones(w)`
+# whatever w is. That is the point: the round trip's expected value must come
+# from CPython's `w`, and any probe whose expectation is derived from the SAME
+# (s,e) is a tautology -- the port agreeing with itself.
+
+def nv.se_w(+x: Se) -> U32: nv.wid(Se.s(x), Se.e(x))
+
+def nv.se_abw(+x: Se) -> String:
+  String.concat([U32.show(Se.s(x)), ":", U32.show(Se.e(x)), ":", U32.show(nv.wid(Se.s(x), Se.e(x)))])
+
+def nv.se_max(+x: Se) -> U32: nv.getb(nv.fenc(Se.s(x), 4294967295), Se.s(x), Se.e(x))
+
+def nv.fld_w(r: Rgv, nm: String) -> U32: nv.se_w(nv.fld_se(r, nm))
+
+def nv.fld_abw(r: Rgv, nm: String) -> String: nv.se_abw(nv.fld_se(r, nm))
+
+def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
+
+# ONE ROW GROUP PER FIELD for the WHOLE table, so the check is per SITE and not a
+# property of one lucky register. The expected values are CPython's --
+# nv_nvdev_oracle.py's `(a, b, b - a + 1)`, `B42.mask(nm)` and
+# `getbits(4294967295, a, b)`. Between them a transposition cannot hide: `wid` is
+# not symmetric modulo 2^32 for any w <= 32, so the width row moves on every one.
+#
+# THE ROW NAMES ARE LITERALS AND SO IS THE LOOKUP KEY, because a `String` is
+# consumed by its one use: a def that built `"nv_fld_" ++ nm` and then looked the
+# field up by `nm` could not exist. Fourteen literals per register is cheaper than
+# the alternatives, and it has the property that matters -- a mutation has to be
+# written out per field to be seen, rather than hiding inside a name that a fold
+# rebuilds identically either way.
+def t_flds_b42() -> IO(Unit):
+  do IO<Unit>:
+    IP.srow("nv_fld_minor_extended_revision", nv.fld_abw(nv.reg_boot42(), "minor_extended_revision"))
+    IP.urow("nv_fldmask_minor_extended_revision", nv.mask_of(nv.reg_boot42(), [Kv.of("minor_extended_revision", 1)]))
+    IP.urow("nv_fldwidth_minor_extended_revision", nv.fld_w(nv.reg_boot42(), "minor_extended_revision"))
+    IP.urow("nv_fldmax_minor_extended_revision", nv.fld_max(nv.reg_boot42(), "minor_extended_revision"))
+    IP.srow("nv_fld_minor_revision", nv.fld_abw(nv.reg_boot42(), "minor_revision"))
+    IP.urow("nv_fldmask_minor_revision", nv.mask_of(nv.reg_boot42(), [Kv.of("minor_revision", 1)]))
+    IP.urow("nv_fldwidth_minor_revision", nv.fld_w(nv.reg_boot42(), "minor_revision"))
+    IP.urow("nv_fldmax_minor_revision", nv.fld_max(nv.reg_boot42(), "minor_revision"))
+    IP.srow("nv_fld_major_revision", nv.fld_abw(nv.reg_boot42(), "major_revision"))
+    IP.urow("nv_fldmask_major_revision", nv.mask_of(nv.reg_boot42(), [Kv.of("major_revision", 1)]))
+    IP.urow("nv_fldwidth_major_revision", nv.fld_w(nv.reg_boot42(), "major_revision"))
+    IP.urow("nv_fldmax_major_revision", nv.fld_max(nv.reg_boot42(), "major_revision"))
+    IP.srow("nv_fld_implementation", nv.fld_abw(nv.reg_boot42(), "implementation"))
+    IP.urow("nv_fldmask_implementation", nv.mask_of(nv.reg_boot42(), [Kv.of("implementation", 1)]))
+    IP.urow("nv_fldwidth_implementation", nv.fld_w(nv.reg_boot42(), "implementation"))
+    IP.urow("nv_fldmax_implementation", nv.fld_max(nv.reg_boot42(), "implementation"))
+    IP.srow("nv_fld_architecture", nv.fld_abw(nv.reg_boot42(), "architecture"))
+    IP.urow("nv_fldmask_architecture", nv.mask_of(nv.reg_boot42(), [Kv.of("architecture", 1)]))
+    IP.urow("nv_fldwidth_architecture", nv.fld_w(nv.reg_boot42(), "architecture"))
+    IP.urow("nv_fldmax_architecture", nv.fld_max(nv.reg_boot42(), "architecture"))
+    IP.srow("nv_fld_chip_id", nv.fld_abw(nv.reg_boot42(), "chip_id"))
+    IP.urow("nv_fldmask_chip_id", nv.mask_of(nv.reg_boot42(), [Kv.of("chip_id", 1)]))
+    IP.urow("nv_fldwidth_chip_id", nv.fld_w(nv.reg_boot42(), "chip_id"))
+    IP.urow("nv_fldmax_chip_id", nv.fld_max(nv.reg_boot42(), "chip_id"))
+    # THE SPLIT, for the one field the split rows had skipped. `arch`/`impl`/
+    # `chipid` have lo/hi rows because they were transcribed second; the field
+    # with the defect has none, which IS why no row could name it. `_lo` and
+    # `_hi` are separate rows so that a row that SWAPS them is caught even
+    # though the pair as a joined string would be unchanged.
+    IP.urow("nv_boot42_merext_lo", nv.fld_of(nv.reg_boot42(), "minor_extended_revision", 0))
+    IP.urow("nv_boot42_merext_hi", nv.fld_of(nv.reg_boot42(), "minor_extended_revision", 1))
+    t_end()
+
 def nv.chipid_span() -> U32:
   U32.add(U32.sub(nv.fld_of(nv.reg_boot42(), "chip_id", 1),
     nv.fld_of(nv.reg_boot42(), "implementation", 0)), 1)
@@ -2224,4 +2324,5 @@ def main() -> IO(Unit):
     +i : Unit <- t_setfield()
     +j : Unit <- t_boot()
     +k : Unit <- t_trace()
+    +l : Unit <- t_flds_b42()
     IO.print("nvdev-done=1")

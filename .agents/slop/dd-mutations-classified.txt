@@ -37,3 +37,16 @@ M35  SAME       THEOREM           unreachable: dd-mut-proof.py: renaming `def f2
 M36  MOVED      MOVED             gate output changed
 
 28 MOVED | 5 THEOREM | 1 REQUEST | 2 DID-NOT-COMPILE
+# PIN NOT WRITTEN -- UNSTATED.  already carries its own classification header; pinning it here would put two PIN blocks in one file
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

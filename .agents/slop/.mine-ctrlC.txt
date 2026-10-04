@@ -1,0 +1,15 @@
+!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the CAPTURE, never about the tree as it is now.
+CAPTURED port lane rc=0   CAPTURED oracle lane rc=0
+[planted SHAPE] the row NAME `kern CUDA  lb 1` -> `kern CUDA  lb=1` on BOTH captured lanes, values untouched; the two lanes still agree on every value, so only a NAME-SET check can see it. No file on disk was touched.
+port rows (rows_strict): 226   oracle rows (rows_strict): 223
+lane    rows read  names (gate)  names (shipped)  `=`  unreachable   name sets
+port          226           226              226    0            0   IDENTICAL (226 shared)
+oracle        223           223              223    0            0   IDENTICAL (223 shared)
+gated 220   agree 220   disagree []
+STALE-LITERAL 0 port `py=` literal(s) disagree with the live call: []
+ORACLE-REFUSALS 13 CPython KeyError(s) the oracle reported on stderr: ['rd BASE  fp8e4m3', 'rd CLANG fp8e4m3', 'rd OPENCL fp8e4m3', 'rd METAL fp8e4m3', 'witem BASE', 'witem CLANG', 'cfo BASE  FDIV f32', 'cfo CLANG EXP2 f32', 'cfo CLANG LOG2 f32', 'cfo CLANG SIN f32', 'cfo CLANG RECIPROCAL f32', 'cfo METAL FDIV f32', 'cfo CUDA  FDIV f32']
+UNREPORTED-REFUSALS 0: every port row that answers `` and the oracle did not name on stderr -- none
+EXCLUDED 6 port row(s) CPython cannot answer at all: ['buft METAL', 'idx BASE  regadd', 'idx HIP   regadd', 'under float', 'under signed char', 'under unsigned lon']
+BROKEN 
+  - port lane SHREDDED 1 line(s) into fake rows; first is L129 'kern CUDA  lb=1 = [extern "C" __global__ void __launch_bounds__(' 
+  - oracle lane SHREDDED 1 line(s) into fake rows; first is L129 'kern CUDA  lb=1 = [extern "C" __global__ void __launch_bounds__('

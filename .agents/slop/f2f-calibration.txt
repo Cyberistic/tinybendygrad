@@ -1,0 +1,40 @@
+FIXED tinybendygrad/codegen/decomp/dtype.bend md5=48732687a99738f9250436d59d06c1aa
+  BASE FORWARD=0 rows=263 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 32, 'q5': 58, 'q7': 30}
+
+[1] FALSE POSITIVE -- the INVERTED predicate, same file, same harness
+  inverted FORWARD=257 rows=263 -> does NOT fire everywhere (257/263); the header's account of the inversion is WRONG
+  good     FORWARD=0 rows=263 -> 0/263 rows
+
+[2]+[3] FALSE NEGATIVE -- injected defects, per lane
+  defect          FORWARD  SHAPE  nodes  verdict
+  stale-arena           7     64      6  FORWARD, LABEL(+64)
+  stale-found           3    142      3  FORWARD, LABEL(+142)
+  stale-name            3     76      3  FORWARD, LABEL(+76)
+  wrong-const           0     19      0  LABEL(+19)
+  wrong-offset          0     91      6  LABEL(+91), COUNT(6/6)
+  wrong-index           0     19      3  LABEL(+19), COUNT(3/6)
+  lane FORWARD caught 3/6: ['stale-arena', 'stale-found', 'stale-name']
+  lane LABEL    caught 6/6: ['stale-arena', 'stale-found', 'stale-name', 'wrong-const', 'wrong-offset', 'wrong-index']
+  lane COUNT    caught 5/6: ['stale-arena', 'stale-found', 'stale-name', 'wrong-offset', 'wrong-index']
+  ANY lane caught 6/6; blind to every lane 0/6: []
+  A clean FORWARD count over a fixed file is NOT evidence for the aliasing
+  fix. The fix's evidence is `stale-arena` going 0 -> N on the SAME harness.
+
+[4] THE PAD SWEEP, MEASURED AS PAD-TRACKING (not asserted)
+  The sweep prepends `pad` PARAMs at pads 0 1 2 5 17 64. A wrong answer that is
+  an arena INDEX is a function of the fixture's POSITION, so prepending PARAMs
+  moves it by exactly `pad` and the row's value DIFFERS BETWEEN PADS. A wrong
+  CONSTANT and a dropped OFFSET are position independent, so every pad prints the
+  same value and the sweep sees nothing. That is the whole calibration, measured
+  here per defect rather than quoted.
+  wrong-index    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
+  wrong-const    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
+  wrong-offset   (sweep did not complete: == pads measured: 0 1 2 5 17 64)
+  stale-arena    (sweep did not complete: == pads measured: 0 1 2 5 17 64)
+  NOTE 1: `f2f-pad-oracle.py` still builds its receiver with the THREE-ARG
+  `UOp.variable(nm, 0, fr)` -- `ops.py:1015` puts `dtype` FOURTH -- so the sweep's
+  CPython lane measures the `v.cast(fr)` workaround, not `f2f_dt[fr]`. Only the
+  port-vs-port pad leg above is sound; the CPython leg is reported, not trusted.
+  NOTE 2: the sweep is a SIX-PAD FUNCTION of the fixture, not a function of the
+  defect, so the detection rate above is a property of BOTH. One pad has no
+  discriminating power at all.

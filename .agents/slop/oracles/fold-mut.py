@@ -9,9 +9,17 @@
 #     .venv/bin/python .agents/slop/oracles/fold-mut.py
 import subprocess, sys, os, tempfile
 
-ROOT = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad"
-SRC = os.path.join(ROOT, "tinybendygrad/uop/fold.bend")
-BEND = os.path.join(ROOT, "bin/bend")
+# `FOLD_ROOT` / `FOLD_SRC` let the harness run against a PINNED SNAPSHOT of the tree
+# (`rsync -a tinybendygrad/ <snap>/tinybendygrad/`) instead of the live one. That is
+# not a convenience: `uop/ops.bend` has repeatedly gone COLD mid-edit under its owner
+# (measured 2026-10-04: 7813 lines with `vrn_lo` reading `r.lo`, a projection that
+# does not exist), and a broken `ops.bend` makes EVERY lane of this harness report
+# `CHECK FAILS` from the first mutation on, which reads exactly like sixteen blind
+# spots. A snapshot is a whole `tinybendygrad/` tree so the relative imports resolve.
+ROOT = os.environ.get("FOLD_ROOT", "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad")
+BEND = os.path.join(os.environ.get("FOLD_BEND", os.path.join(
+  "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad", "bin/bend")))
+SRC = os.environ.get("FOLD_SRC", os.path.join(ROOT, "tinybendygrad/uop/fold.bend"))
 
 MUTATIONS = [
   # (id, what it breaks, old, new)
@@ -73,6 +81,31 @@ MUTATIONS = [
   ("M13", "EXPAND/PAD/SHRINK/PERMUTE/FLIP ALL return `void` -- the dtype arm of the whole group",
    "def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:\n  dt_of(src_dt(0, ss), both(marg(ar, i), src_shape(0, ss)))",
    "def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:\n  dt_of(S.void(), both(marg(ar, i), src_shape(0, ss)))"),
+
+  # ---- THE SYMBOLIC-DIM ROWS, and the four ways a `ssimplify` fix can be WRONG ----
+  # M9 above now MOVES: `sym_dim` mints `O.SU`, so `count_of`'s SU arm is a REACHABLE
+  # state instead of a dead one. It is still 0 because no PAD/SHRINK/BITCAST fixture
+  # carries a symbolic dim -- which is a fixture gap, and `mv_padsym` names the wall.
+
+  ("L2", "A NO-OP EDIT (a comment line), and it is the CONTROL for M14-M17",
+   "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and",
+   "# a control: this line changes nothing and must move nothing\ndef sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and"),
+
+  ("M14", "`sym_dim` answers `SU` for EVERY PARAM -- the point arm dropped, so a FIXED dim stays symbolic",
+   "      Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(lo, hi),\n        Some{O.SI{lo}}, Bool.pick(Maybe<&1, O.Sint>, sym_dim.signable(lo, hi),\n        Some{O.SU{s}}, None{}))",
+   "      Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(lo, hi),\n        Some{O.SU{s}}, Bool.pick(Maybe<&1, O.Sint>, sym_dim.signable(lo, hi),\n        Some{O.SU{s}}, None{}))"),
+
+  ("M15", "A SYMBOLIC DIM RENDERS AS A BARE `U` -- THE FLATTEN-EVERYTHING BUG. Every symbolic dim becomes the same token",
+   "    case O.SU{+u}: String.concat([\"U(\", O.Ops.name(O.Arena.op(ar, u)), \":\", dim_str.name(O.Arena.arg(ar, u)), \")\"])",
+   "    case O.SU{+u}: \"U\"") ,
+
+  ("M16", "`reshape_ok` reads `sym` as `False` -- the OLD wall back: an unprovable product is treated as an unequal one",
+   "  Bool.and(Bool.not(Prod.neg(m)),\n    Bool.pick(Bool, Bool.or(Prod.sym(ps), Prod.sym(m)), True{},\n      U32.is_eq(Prod.n(ps), Prod.n(m))))",
+   "  Bool.and(Bool.not(Prod.neg(m)), U32.is_eq(Prod.n(ps), Prod.n(m)))"),
+
+  ("M17", "`sym_dim.signable` drops the `lo <= hi` half -- an EMPTY interval mints a `SU`",
+   "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.and(Bool.not(H.i64_is_neg(lo)), H.i64_le(lo, hi))",
+   "def sym_dim.signable(+lo: H.I64, +hi: H.I64) -> Bool:\n  Bool.not(H.i64_is_neg(lo))"),
 ]
 
 

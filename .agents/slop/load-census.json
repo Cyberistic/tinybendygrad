@@ -1,12 +1,12 @@
 {
  "per_layer": {
   "text": {
-   "files": 1481,
-   "claims": 2486,
-   "sensitive": 1693,
-   "insensitive": 793,
-   "sensitive_load_qualified": 92,
-   "sensitive_unqualified": 1601
+   "files": 1579,
+   "claims": 2583,
+   "sensitive": 1772,
+   "insensitive": 811,
+   "sensitive_load_qualified": 107,
+   "sensitive_unqualified": 1665
   },
   "json": {
    "files": 8,
@@ -110,6 +110,176 @@
   },
   {
    "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 24,
+   "kind": "insensitive",
+   "count": "12",
+   "text": "**234 recorded baseline counts, in 12 files.**",
+   "load_qualified": true,
+   "load_line": 18
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 33,
+   "kind": "sensitive",
+   "count": "30",
+   "text": "| `rebase/baseline.json` | 90 | **the** baseline: 30 ports \u00d7 {interpreted, native, cpython oracle} |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 34,
+   "kind": "sensitive",
+   "count": "38",
+   "text": "| `rebase/stability-2026-10-03.json` | 110 | 38 ports \u00d7 lanes, each lane run **twice** |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 35,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "| `rebase/baseline-DEMO.json` | 24 | 8 ports \u00d7 3 lanes \u2014 see finding F1, it **disagrees** with the above |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 35,
+   "kind": "sensitive",
+   "count": "3",
+   "text": "| `rebase/baseline-DEMO.json` | 24 | 8 ports \u00d7 3 lanes \u2014 see finding F1, it **disagrees** with the above |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 75,
+   "kind": "sensitive",
+   "count": "38",
+   "text": "`rebase/stability-2026-10-03.json` ran all 38 ports twice. **All 110 lane counts were identical",
+   "load_qualified": true,
+   "load_line": 80
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 75,
+   "kind": "sensitive",
+   "count": "110",
+   "text": "`rebase/stability-2026-10-03.json` ran all 38 ports twice. **All 110 lane counts were identical",
+   "load_qualified": true,
+   "load_line": 80
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 115,
+   "kind": "sensitive",
+   "count": "30",
+   "text": "`rebase/baseline.json` (30 ports, 90 counts) and `rebase/baseline-DEMO.json` (8 ports, 24 counts)",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 115,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "`rebase/baseline.json` (30 ports, 90 counts) and `rebase/baseline-DEMO.json` (8 ports, 24 counts)",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 116,
+   "kind": "sensitive",
+   "count": "7",
+   "text": "share **7 ports**. Of their **21** common (port, lane) pairs, **7 disagree**:",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 128,
+   "kind": "sensitive",
+   "count": "7",
+   "text": "neither records a load. A reader who opens `baseline-DEMO.json` gets a different answer for 7 lane",
+   "load_qualified": true,
+   "load_line": 133
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 135,
+   "kind": "sensitive",
+   "count": "787",
+   "text": "`loadwatch.py` `_OBSERVED[\"full_rows\"] = 787`, quoted from NV7 (\"787 rows in 0.5 s\"). The stored",
+   "load_qualified": true,
+   "load_line": 133
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 148,
+   "kind": "sensitive",
+   "count": "787",
+   "text": "**24 min** for 787 rows on this machine\" \u2014 which is not compatible with the \"0.5 s\" the same",
+   "load_qualified": true,
+   "load_line": 146
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 177,
+   "kind": "insensitive",
+   "count": "14",
+   "text": "`SOME PROOFS FAIL` for 14 defs relying on unsafe or foreign code, and `native: Error: no main to",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 184,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "4 of the 18 BROKEN verdicts read `2 row(s) disagree with CPython across 3 lane pair(s)` \u2014 a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 184,
+   "kind": "sensitive",
+   "count": "3",
+   "text": "4 of the 18 BROKEN verdicts read `2 row(s) disagree with CPython across 3 lane pair(s)` \u2014 a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "baseline-ledger.md",
+   "line": 210,
+   "kind": "sensitive",
+   "count": "0",
+   "text": "* **F11.** `starvation_retrospective()` v1 counted the `G_checkonly_f16` reps' **0 rows** as",
+   "load_qualified": true,
+   "load_line": 210
+  },
+  {
+   "layer": "text",
    "file": "brief-port.md",
    "line": 32,
    "kind": "insensitive",
@@ -155,6 +325,106 @@
    "kind": "insensitive",
    "count": "26",
    "text": "The `before/` snapshot (2.0 MB, 26 files) was deleted after the run: it duplicates",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-controls.md",
+   "line": 90,
+   "kind": "insensitive",
+   "count": "227",
+   "text": "(8 of 227 names, from `cstyle.bend:1758` emitting `=` inside a row name) is a *disagreement of",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-green.md",
+   "line": 21,
+   "kind": "insensitive",
+   "count": "222",
+   "text": "the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: 222 names --",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-green.md",
+   "line": 25,
+   "kind": "insensitive",
+   "count": "13",
+   "text": "ORACLE-REFUSALS 13 CPython KeyError(s) the oracle reported on stderr: [13 names]",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-green.md",
+   "line": 27,
+   "kind": "insensitive",
+   "count": "6",
+   "text": "EXCLUDED 6 port row(s) CPython cannot answer at all: [6 names]",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-green.md",
+   "line": 75,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "| **green window** | rc=0, **227 rows**, stdout md5 `e039eeff62ce` | \u2014 |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-reader.md",
+   "line": 43,
+   "kind": "insensitive",
+   "count": "222",
+   "text": "the shipped rows() over the SAME oracle stdout: 222 names -- -2 of them shredded out of multi-line values",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-reader.md",
+   "line": 50,
+   "kind": "insensitive",
+   "count": "222",
+   "text": "the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: 222 names --",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-reader.md",
+   "line": 60,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "substituting one for the other inside `judge()`: **BROKEN on 225 of 227 rows**, all of them",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-reader.md",
+   "line": 65,
+   "kind": "insensitive",
+   "count": "225",
+   "text": "ways.** Over the real port lane the fork and `rows()` agree on **225 of 225 names** and differ on",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "cstyle-reader.md",
+   "line": 66,
+   "kind": "insensitive",
+   "count": "222",
+   "text": "**225 of 225 values**; over the oracle lane (no `py=` tail) they agree on 222 of 222 names *and*",
    "load_qualified": false,
    "load_line": null
   },
@@ -6950,6 +7220,116 @@
   },
   {
    "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 20917,
+   "kind": "insensitive",
+   "count": "225",
+   "text": "fork and `rows()` agreed on **225 of 225 NAMES** and differed on **225 of 225 VALUES**. Reporting",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 20924,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "**BROKEN on 225 of 227 rows** with \"carry no `py=` column\" -- an incompatibility, not a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 20973,
+   "kind": "insensitive",
+   "count": "12",
+   "text": "`.agents/slop/baseline-ledger.md` (234 recorded baseline counts in 12 files).",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 20980,
+   "kind": "sensitive",
+   "count": "38",
+   "text": "* `rebase/stability-2026-10-03.json` ran all 38 ports twice and **110 of 110** lane counts were",
+   "load_qualified": true,
+   "load_line": 20982
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21007,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "the stored sweeps: **4 of 18** stored BROKEN verdicts read `2 row(s) disagree with CPython",
+   "load_qualified": true,
+   "load_line": 20999
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21008,
+   "kind": "sensitive",
+   "count": "3",
+   "text": "across 3 lane pair(s)` with **no shared-row denominator**. **0 of 4** carry one.",
+   "load_qualified": true,
+   "load_line": 21000
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21032,
+   "kind": "sensitive",
+   "count": "787",
+   "text": "* **`0.5 s` vs `24 min` for the same 787 rows.** `nv_nvdev_mutrun.py:13` records \"`bend <file>`",
+   "load_qualified": true,
+   "load_line": 21029
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21033,
+   "kind": "sensitive",
+   "count": "787",
+   "text": "measured 24 min for 787 rows on this machine\". Not compatible with NV7's 0.5 s.",
+   "load_qualified": true,
+   "load_line": 21029
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21040,
+   "kind": "sensitive",
+   "count": "30",
+   "text": "**TWO STORED BASELINES DISAGREE.** `rebase/baseline.json` (30 ports, 90 counts) and",
+   "load_qualified": true,
+   "load_line": 21035
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21041,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "`rebase/baseline-DEMO.json` (8 ports, 24 counts) share **7 ports**; of **21** common (port, lane)",
+   "load_qualified": true,
+   "load_line": 21035
+  },
+  {
+   "layer": "text",
+   "file": "notes/bend2-constraints.md",
+   "line": 21041,
+   "kind": "sensitive",
+   "count": "7",
+   "text": "`rebase/baseline-DEMO.json` (8 ports, 24 counts) share **7 ports**; of **21** common (port, lane)",
+   "load_qualified": true,
+   "load_line": 21035
+  },
+  {
+   "layer": "text",
    "file": "notes/compare/sz.md",
    "line": 3,
    "kind": "insensitive",
@@ -8195,6 +8575,486 @@
    "kind": "insensitive",
    "count": "41",
    "text": "| `dd-zero-aim.tsv` | which site each of the 41 mutations is aimed at |",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-after-rename.txt",
+   "line": 3,
+   "kind": "insensitive",
+   "count": "224",
+   "text": "the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: 224 names -- 0 only it finds, 0 only ro",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-baseline.txt",
+   "line": 3,
+   "kind": "insensitive",
+   "count": "222",
+   "text": "the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: 222 names -- 6 only it finds, 8 only ro",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 7,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 7,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 11,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 19,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 19,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "- port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 22,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 22,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "- oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA-postfix.txt",
+   "line": 23,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped read",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 7,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 7,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 11,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 19,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 19,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "- port: 8/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 2/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 22,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 22,
+   "kind": "sensitive",
+   "count": "8",
+   "text": "- oracle: 8/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 8 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlA.txt",
+   "line": 23,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 2/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped read",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 3,
+   "kind": "sensitive",
+   "count": "1",
+   "text": "[planted SHAPE] 1 row NAME(S) reshaped on BOTH captured lanes, values untouched: [\"'kern CUDA  lb 1'->'kern CU",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 1/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "1",
+   "text": "port: 1/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 1/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 10,
+   "kind": "sensitive",
+   "count": "1",
+   "text": "oracle: 1/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 18,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 1/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 18,
+   "kind": "sensitive",
+   "count": "1",
+   "text": "- port: 1/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 1/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC1.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "1",
+   "text": "- oracle: 1/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 1 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 3,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "[planted SHAPE] 2 row NAME(S) reshaped on BOTH captured lanes, values untouched: [\"'kern CUDA  lb 1'->'kern CU",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 2/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 8,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "port: 2/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s) ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 9,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "port: 1/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader a",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 11,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 2/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 11,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "oracle: 2/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 12,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "oracle: 1/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 2/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 20,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "- port: 2/227 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row(s",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 21,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "- port: 1/227 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped reader",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 23,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 2/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 23,
+   "kind": "sensitive",
+   "count": "2",
+   "text": "- oracle: 2/224 row name(s) CONTAIN `=`, so rebase-gate.row cuts the name there and the two readers name 2 row",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": ".mine-ctrlC2.txt",
+   "line": 24,
+   "kind": "sensitive",
+   "count": "224",
+   "text": "- oracle: 1/224 row(s) CANNOT BE ADDRESSED BY NAME -- two physical names landed on one key of the shipped read",
    "load_qualified": false,
    "load_line": null
   },
@@ -12920,6 +13780,16 @@
   },
   {
    "layer": "text",
+   "file": "cstyle-describe.txt",
+   "line": 32,
+   "kind": "sensitive",
+   "count": "227",
+   "text": "emits `kern CUDA  lb=1 = [...]`, so 8 of 227 row NAMES contain `=`, which reshapes under the other",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
    "file": "cstyle-parity-before.txt",
    "line": 4,
    "kind": "insensitive",
@@ -13937,6 +14807,86 @@
    "text": "META.cache.rows=0",
    "load_qualified": true,
    "load_line": 373
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 2,
+   "kind": "key",
+   "count": "263",
+   "text": "BASE FORWARD=0 rows=263 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 32, 'q5': 58, 'q7': 30}",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 2,
+   "kind": "sensitive",
+   "count": "0",
+   "text": "BASE FORWARD=0 rows=263 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 32, 'q5': 58, 'q7': 30}",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 2,
+   "kind": "sensitive",
+   "count": "0",
+   "text": "BASE FORWARD=0 rows=263 SHAPE=0 nodes={'q1': 28, 'q2': 57, 'q3': 58, 'q4': 32, 'q5': 58, 'q7': 30}",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 5,
+   "kind": "key",
+   "count": "263",
+   "text": "inverted FORWARD=257 rows=263 -> does NOT fire everywhere (257/263); the header's account of the inversion is ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 5,
+   "kind": "sensitive",
+   "count": "257",
+   "text": "inverted FORWARD=257 rows=263 -> does NOT fire everywhere (257/263); the header's account of the inversion is ",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 6,
+   "kind": "key",
+   "count": "263",
+   "text": "good     FORWARD=0 rows=263 -> 0/263 rows",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 6,
+   "kind": "sensitive",
+   "count": "0",
+   "text": "good     FORWARD=0 rows=263 -> 0/263 rows",
+   "load_qualified": false,
+   "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "f2f-calibration.txt",
+   "line": 6,
+   "kind": "sensitive",
+   "count": "263",
+   "text": "good     FORWARD=0 rows=263 -> 0/263 rows",
+   "load_qualified": false,
+   "load_line": null
   },
   {
    "layer": "text",
@@ -18377,6 +19327,26 @@
    "text": "# 81 rows before, 126 after; the 45 below are the new ones. `py=` for every new row comes from",
    "load_qualified": false,
    "load_line": null
+  },
+  {
+   "layer": "text",
+   "file": "starvation-retrospective.txt",
+   "line": 2,
+   "kind": "key",
+   "count": "4,",
+   "text": "evidence carried by those verdicts: dead-lane=13, disagree=4, no-shared-name=1",
+   "load_qualified": true,
+   "load_line": 1
+  },
+  {
+   "layer": "text",
+   "file": "starvation-retrospective.txt",
+   "line": 11,
+   "kind": "sensitive",
+   "count": "0",
+   "text": "EXCLUDED 3 rep(s) that emitted 0 rows (cell(s) G_checkonly_f16) -- those are the --check-only CONTROL,",
+   "load_qualified": true,
+   "load_line": 5
   },
   {
    "layer": "text",

@@ -1312,7 +1312,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # the SYMBOLIC maximum that is `TODO(p3) ops.py:1886`. The SPECIAL filter itself
 # is one string test on the arg -- `arg[0]` of `("l", 0, "lidx0", "l")` is `"l"`
 # -- so it is a `head_char` over an `AStr` once the arena is walkable, and the
-# gate's `kern lb=1` rows are the no-local case it has to agree with.
+# gate's `kern lb 1` rows are the no-local case it has to agree with.
 #   TODO(p3) cstyle.py:157, :160  `local_dims` and `launch_bounds`.
 
 # `case p <> t` on a `String` gives the first CHARACTER (measured, render.bend
@@ -1754,8 +1754,21 @@ def cfo_where_row(nm: String, py: String, dev: U32) -> IO(Unit):
 
 # `kernel_typedef` with the bound, INCLUDING the no-local case: `prod([])` is 1,
 # so a kernel with no local SPECIAL gets `__launch_bounds__(1)` and not 0.
+#
+# ⚠ THE BOUND IS SEPARATED BY A SPACE, NOT BY `=`, and that is load-bearing. A ROW
+# NAME MUST NOT CONTAIN `=`: rebase-gate.py:437 splits a line on its FIRST `=`
+# and keeps the head as the name, so `kern CUDA  lb=1 = [...]` is named
+# `kern CUDA  lb` by that reader and `kern CUDA  lb=1` by this gate's reader --
+# the SAME bytes, TWO name sets. `kern CUDA  lb=1` and `kern CUDA  lb=4` then
+# land on ONE key and the SECOND MEASUREMENT DISAPPEARS (MEASURED at the old
+# spelling: 227 port rows read as 225 names, the survivors being `lb=4`'s
+# values). The value's own name is upstream's: `launch_bounds`
+# (tinygrad/renderer/cstyle.py:163, the sole consumer is
+# `self.kernel_typedef.format(launch_bounds=launch_bounds)` at :164), and
+# `lb` is this file's standing abbreviation for it -- the separator was the
+# problem, not the token.
 def kern_row(nm: String, py: String, dev: U32, +lb: U32) -> IO(Unit):
-  IO.print(String.concat([nm, " lb=", U32.show(lb), " = [", kernel_typedef(dev, lb), "]   py=[", py, "]"]))
+  IO.print(String.concat([nm, " lb ", U32.show(lb), " = [", kernel_typedef(dev, lb), "]   py=[", py, "]"]))
 
 # `_wmma_name`, ON AN `AWmma` ARG AND NOT ON FOUR PARAMETERS. The first version of
 # this row called `wmma_name_of(wmma_dims(dims), ...)` -- which is the INSIDE of

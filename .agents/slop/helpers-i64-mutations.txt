@@ -44,3 +44,16 @@ M12  10 rows  want: the FUEL: one step answers the DIVISOR (not the dividend), s
 C01  MOVES NOTHING (blind)  want: nothing -- OR is commutative
 C02  MOVES NOTHING (blind)  want: nothing -- AND is commutative
 helpers-i64-mutate: done
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: `helpers-i64-mutate.sh` is a shell harness with no module-level literal list, so `mutanchor` declares its anchors UNDECLARED
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.
