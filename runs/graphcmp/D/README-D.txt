@@ -85,7 +85,7 @@ D9  E diff --graph binblob, twice; `cmp`            D9-stability.txt
 D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
       MEASURED: rc=1, "0 rows after 5 attempts -- a FAILURE, not a verdict". The guard is
       SEEN TO FIRE. Before this session the probe flag never reached the `emit` path, so
-      the one command whose job is to emit could not demonstrate the guard (LIMITS #5).
+      the one command whose job is to emit could not demonstrate the guard (LIMITS #4).
 
 # ---------------------------------------------------------------------------
 # CONCURRENCY. `tinybendygrad/uop/ops.bend` is being edited by another unit and went
