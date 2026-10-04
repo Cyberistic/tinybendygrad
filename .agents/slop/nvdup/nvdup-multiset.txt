@@ -1,0 +1,8 @@
+ROWS       574 -> 547 lines; 574 -> 547 read; 547 -> 547 distinct names -- EQUAL distinct counts is the collision check: a rename created no name
+VALUES     same multiset: False   distinct 234 -> 234   only in BEFORE []   only in AFTER []
+VALUE SET  identical: True   instances 574 -> 547 (a duplicate fix removes INSTANCES, so the multiset may differ while the set may not)
+DUPLICATES 27 -> 0 name(s) printed more than once, COUNTED FROM THE LINES and not from `rows()`'s dict (which has already overwritten them): none
+LOST       27 -> 0 measurements unreachable by any name
+RENAME     0 pair(s); 547 name(s) on the BEFORE side have no partner
+BYTES      sha256(nb) 0df379b30cd8 -> 92c9e3a8e135   CHANGED
+AUDIT OK -- no name is printed more than once

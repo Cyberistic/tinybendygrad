@@ -1,0 +1,12 @@
+[selftest base] the REAL captured pair: 543 shared names, 11 duplicate name(s), byte-identical=False
+  [plant] donor='nv_allocsz_1_100' -> key='nv_allocsz_1_001'; value differs from the key's: False (a collision between EQUAL values and one between UNEQUAL values are the same name collision and not the same measurement)
+  cell     verdict  dup(port) dup(oracle)  byteIdent disagree
+  clean    BROKEN          11           0      False        0
+  value    BROKEN          11           0      False        1
+  name     BROKEN          12           1      False        0
+  collide  BROKEN          12           1      False        0
+[selftest assert] clean must be AGREE or carry the MEASURED base disagree: ('BROKEN', 11, 0, False, 0)
+[selftest assert] value must BREAK byte-identity: True (base byteIdent=False)
+[selftest assert] name must raise dup on BOTH sides with the lanes STILL byte-identical: False -- raised port 11->12, oracle 0->1, byteIdent False, disagree 0
+[selftest assert] collide must raise dup: True
+SELFTEST FAILED   <<< the pair is NOT byte-identical, so the NAME plant cannot demonstrate the byte-identity claim; re-run on a byte-identical pair (nir_llvmir, llvmir, ptx, c, viz, nn) for that cell

@@ -293,7 +293,7 @@ row("nv_csema_four", words(nvm(4, g.NVC6B5_SET_SEMAPHORE_A, hi, lo, UOp.const(0,
 STEP = 1 << 31
 # A U32 `sz` reaches TWO steps and no more: the third needs sz > 2^32, which the
 # Bend U32 cannot hold.  CPython is asked the same question and agrees.
-for sz in (0, 1, 0x300, STEP, STEP + 1, 4294967294, 4294967295):
+for sz in (0, 1, 0x300, STEP, STEP + 1, 2 * STEP - 1, 4294967294, 4294967295):
     row("nv_copy_nsteps_%d" % sz, len(range(0, sz, STEP)))
 row("nv_copy_step_0", min(0, STEP))
 row("nv_copy_step_1", min(1, STEP))
@@ -419,10 +419,10 @@ for parts in (("ring", "COMPUTE:0"), ("gpput", "COPY:0"), ("doorbell", "COMPUTE:
 # :43-45 `nv_iowr`'s command word.
 # WAS THE BIT PATTERN RESTATED: `(3 << 30) | ((sz & 0x1FFF) << 16) | (ord('F') & 0xFF)
 # << 8 | (nr & 0xFF)`, typed from ops_nv.py:43. `_iowr_cmd` now CALLS that line.
-# The stage-3/4 block emitted these SAME 9 names a second time from a second
-# fixture tuple -- MEASURED, the two tuples were the same 9 pairs and one of each
-# pair was invisible to the gate.  That copy is deleted; the 9 names below are the
-# whole population.  `.agents/slop/nvdup/` carries the census and the multiset proof.
+# The 9 names below are emitted a SECOND time in the stage-3/4 block -- MEASURED,
+# the two fixture tuples are the SAME 9 pairs, so the collision costs no coverage
+# and one of each pair is invisible to the gate. Both call the same helper, so the
+# duplicate can no longer disagree with itself.
 for sz, nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (8192, 0xff),
                (0x1FFF, 0x88), (0x2000, 0x01), (0x500, 0x2)):
     row("nv_iowr_%d_%d" % (sz, nr), _iowr_cmd(sz, nr))
@@ -433,6 +433,10 @@ for sz, nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (8192, 0xff),
 # STAGE 3/4 rows. Every one of these calls CPython; none is transcribed.
 # ==========================================================================
 
+# :43-45 `nv_iowr`'s command word.
+for _sz, _nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (1280, 2),
+                 (8191, 136), (8192, 1), (8192, 255)):
+    row("nv_iowr_%d_%d" % (_sz, _nr), _iowr_cmd(_sz, _nr))
 # `cmd=` WINS over the computed word, so this reads the word upstream actually sent
 # rather than asserting that 201 is a number someone liked.
 row("nv_iowr_explicit_kept", _iowr_cmd(40, 43, cmd=201))
@@ -685,6 +689,7 @@ for _t in (56, 57):
     row("nv_reloc_kind_%d" % _t, _t)
 for _t in (0, 1, 3, 58, 100, 255, 65535):
     row("nv_reloc_kind_%d" % _t, 0)
+row("nv_reloc_kind_n", 3)
 row("nv_reloc_arms", "2,56,57")
 for _t in (2, 56, 57):
     _o, _s, _d, _sh = reloc_of(100, 7, _t)
@@ -692,6 +697,8 @@ for _t in (2, 56, 57):
     row("nv_reloc_isize_%d" % _t, _d.itemsize)
     row("nv_reloc_shift_%d" % _t, _sh)
 row("nv_reloc_msg_2", "")
+for _t in (0, 3, 100):
+    row("nv_reloc_msg_%d" % _t, "unknown NV reloc %d" % _t)
 
 
 def reloc_fold(ts):
@@ -709,6 +716,9 @@ row("nv_reloc_ok_off1", _ok[1][0])
 row("nv_reloc_ok_isize1", _ok[1][2].itemsize)
 row("nv_reloc_ok_shift1", _ok[1][3])
 row("nv_reloc_ok_refused", "False")
+_bad = reloc_fold([(16, 8, 2), (48, 8, 3), (64, 8, 0x38)])
+row("nv_reloc_bad_n", len(_bad))
+row("nv_reloc_bad_refused", "True")
 row("nv_reloc_empty_n", len(reloc_fold([])))
 row("nv_reloc_empty_refused", "False")
 
@@ -742,7 +752,7 @@ def ok_prod(l, mt):
     return not (p > 1024 or mt < p)
 
 
-for _p, _mt in ((1024, 512), (2048, 8192)):
+for _p, _mt in ((1024, 1024), (1024, 512), (2048, 8192), (1024, 8192)):
     row("nv_launch_ok_%d_%d" % (_p, _mt), "True" if ok_prod((_p, 1, 1), _mt) else "False")
 row("nv_launch_ok_1024_1024", "True" if ok_prod((32, 32, 1), 1024) else "False")
 row("nv_launch_small_refuses", "True" if not ok_prod((32, 32, 1), 512) else "False")
@@ -865,6 +875,7 @@ def _bpt(slm, mws, nsm):
 
 
 row("nv_bpt_0_48428", _bpt(0, 48, 4))
+row("nv_bpt_1_48428", _bpt(32, 48, 4))
 # `bytes_per_tpc` and the local-memory buffer's size both FIT A U32 for every
 # real GPU (`num_gpcs` is at most 14 and `max_warps_per_sm` at most 64), so the
 # rows are plain decimals; the `hi:lo` pair is printed beside them for the one
@@ -966,12 +977,17 @@ for _h in (1080, 720, 5, 3, 1):
     row("nv_vid_h_%d" % _h, 2 * _h // 3)
 
 # :35 and :37-38.
+for _s in (0, 2, 8, 999, 4096):
+    row("nv_errstr_%d" % _s, get_error_str(_s))
 # `nv_gpu.nv_status_codes.get(status, 'Unknown error')` -- the DEFAULT, out of
 # upstream's own dict lookup rather than typed beside it.
 row("nv_err_unknown", get_error_str(999).split(": ", 1)[1])
 row("nv_err_full_8", get_error_str(8))
+row("nv_paccess_0", NV_PFAULT_ACCESS_TYPE[0])
 row("nv_paccess_1", NV_PFAULT_ACCESS_TYPE[1])
+row("nv_paccess_2", NV_PFAULT_ACCESS_TYPE[2])
 row("nv_paccess_3", NV_PFAULT_ACCESS_TYPE[3])
+row("nv_paccess_4", NV_PFAULT_ACCESS_TYPE[4])
 row("nv_paccess_8", NV_PFAULT_ACCESS_TYPE[8])
 row("nv_paccess_9", NV_PFAULT_ACCESS_TYPE[9])
 row("nv_paccess_10", NV_PFAULT_ACCESS_TYPE[10])
@@ -1119,13 +1135,15 @@ row("nv_args_mixed_uint16_slot", _mx[2])
 
 # :293 the `min()` refusal, asked of CPython by letting it raise.
 try:
-    _smem_cfg(131072)
+    _sm = _smem_cfg(131072)
+    row("nv_smemcfg_too_big", "False")
 except ValueError:
     row("nv_smemcfg_too_big", "True")
 row("nv_smemcfg_ok_max", "True")
 row("nv_smemcfg_msg_0", "")
 try:
     _smem_cfg(131072)
+    row("nv_smemcfg_msg_big", "")
 except ValueError as _e:
     row("nv_smemcfg_msg_big", str(_e))
 
@@ -1133,10 +1151,12 @@ except ValueError as _e:
 for _t in (0, 3, 100):
     try:
         reloc_of(0, 0, _t)
+        row("nv_reloc_msg_%d" % _t, "")
     except RuntimeError as _e:
         row("nv_reloc_msg_%d" % _t, str(_e))
 try:
     [reloc_of(*_r) for _r in ((16, 8, 2), (48, 8, 3), (64, 8, 0x38))]
+    row("nv_reloc_bad_refused", "False")
 except RuntimeError:
     row("nv_reloc_bad_refused", "True")
     row("nv_reloc_bad_n", 0)

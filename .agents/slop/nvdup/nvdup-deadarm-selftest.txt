@@ -1,0 +1,15 @@
+[selftest] DISARM first: the UNPLANTED real file.  A control whose base is typed 0 is a
+           control that cannot fire, so the base is measured and printed with the cells.
+  clean      distinct row() LINES in source=337   row() CALLS executed=547 (>= lines: a loop calls one line many times)   DEAD SITES=0   lane rows=547   DUPLICATE NAMES=0
+  dead       distinct row() LINES in source=339   row() CALLS executed=548 (>= lines: a loop calls one line many times)   DEAD SITES=1   lane rows=548   DUPLICATE NAMES=0
+      DEAD SITE  line 1206   a row() that exists in the source and NEVER EXECUTES
+  live       distinct row() LINES in source=338   row() CALLS executed=548 (>= lines: a loop calls one line many times)   DEAD SITES=0   lane rows=548   DUPLICATE NAMES=0
+  dup        distinct row() LINES in source=338   row() CALLS executed=548 (>= lines: a loop calls one line many times)   DEAD SITES=0   lane rows=548   DUPLICATE NAMES=1
+  longhand   distinct row() LINES in source=337   row() CALLS executed=547 (>= lines: a loop calls one line many times)   DEAD SITES=0   lane rows=548   DUPLICATE NAMES=1
+
+  [PASS] DISARM: the unplanted real file has NO dead site (0): True
+  [PASS] DEAD: a row() in an unreachable try-arm IS seen (0 -> 1): True
+  [PASS] LIVE: a row() that DOES execute is not called dead (0): True
+  [PASS] DUP: a duplicate is NOT a dead site -- site census stays 0, LINE census rises to 1: True
+  [PASS] LONGHAND: a duplicate that BYPASSES row() escapes the site census and the LINE census catches it -- the two censuses are not substitutes: True
+DEADARM SELFTEST OK

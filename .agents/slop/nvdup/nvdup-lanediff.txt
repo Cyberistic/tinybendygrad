@@ -1,0 +1,40 @@
+109d108
+< nv_copy_nsteps_4294967295=2
+199,204d197
+< nv_iowr_1280_2=3305129474
+< nv_iowr_0_0=3221243392
+< nv_iowr_4_1=3221505537
+< nv_iowr_64_44=3225437740
+< nv_iowr_40_43=3223864875
+< nv_iowr_96_65=3227534913
+206,208d198
+< nv_iowr_8191_136=3758048904
+< nv_iowr_8192_1=3221243393
+< nv_iowr_8192_255=3221243647
+298d287
+< nv_reloc_kind_n=3
+310,312d298
+< nv_reloc_msg_0=unknown NV reloc 0
+< nv_reloc_msg_3=unknown NV reloc 3
+< nv_reloc_msg_100=unknown NV reloc 100
+319,320d304
+< nv_reloc_bad_n=1
+< nv_reloc_bad_refused=True
+336d319
+< nv_launch_ok_1024_1024=True
+339d321
+< nv_launch_ok_1024_8192=True
+381d362
+< nv_bpt_1_48428=196608
+464,468d444
+< nv_errstr_0=0: NV_OK
+< nv_errstr_2=2: NV_ERR_BUFFER_TOO_SMALL
+< nv_errstr_8=8: NV_ERR_DMA_MEM_NOT_LOCKED
+< nv_errstr_999=999: Unknown error
+< nv_errstr_4096=4096: Unknown error
+471d446
+< nv_paccess_0=READ
+473d447
+< nv_paccess_2=STRONG
+475d448
+< nv_paccess_4=WEAK

@@ -1,0 +1,10 @@
+CENSUS OF DEAD MEASUREMENT SITES IN .agents/slop/nvdup/nv-oracle-PREFIX.py
+  sha256(source) = 995767bf35fb0717
+  .agents/slop/nvdup/nv-oracle-PREFIX.py distinct row() LINES in source=351   row() CALLS executed=574 (>= lines: a loop calls one line many times)   DEAD SITES=4   lane rows=574   DUPLICATE NAMES=27
+      DEAD SITE  line 1139   a row() that exists in the source and NEVER EXECUTES
+      DEAD SITE  line 1146   a row() that exists in the source and NEVER EXECUTES
+      DEAD SITE  line 1154   a row() that exists in the source and NEVER EXECUTES
+      DEAD SITE  line 1159   a row() that exists in the source and NEVER EXECUTES
+
+  a DEAD SITE emits nothing, so it costs 0 duplicate measurements and is invisible to
+  every multiplicity census.  That is why it needs its own census.

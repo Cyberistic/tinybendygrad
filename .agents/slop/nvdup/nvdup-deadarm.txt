@@ -1,0 +1,6 @@
+CENSUS OF DEAD MEASUREMENT SITES IN nv-oracle.py
+  sha256(source) = 6ce19734cb5a865b
+  nv-oracle  distinct row() LINES in source=337   row() CALLS executed=547 (>= lines: a loop calls one line many times)   DEAD SITES=0   lane rows=547   DUPLICATE NAMES=0
+
+  a DEAD SITE emits nothing, so it costs 0 duplicate measurements and is invisible to
+  every multiplicity census.  That is why it needs its own census.

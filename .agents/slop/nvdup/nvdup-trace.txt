@@ -1,0 +1,85 @@
+row() CALLS ATTRIBUTED TO THEIR SOURCE LINE: 574   printed lane lines: 574
+distinct names 547   names emitted more than once 27   surplus rows 27
+  of those: P1 equal-values 26   P2 distinct-values 1
+
+nv_copy_nsteps_4294967295  x2  P1 EQUAL-VALUES
+    nv-oracle.py:297   nv_copy_nsteps_4294967295=2
+    nv-oracle.py:297   nv_copy_nsteps_4294967295=2
+nv_errstr_0  x2  P1 EQUAL-VALUES
+    nv-oracle.py:380   nv_errstr_0=0: NV_OK
+    nv-oracle.py:981   nv_errstr_0=0: NV_OK
+nv_errstr_2  x2  P1 EQUAL-VALUES
+    nv-oracle.py:380   nv_errstr_2=2: NV_ERR_BUFFER_TOO_SMALL
+    nv-oracle.py:981   nv_errstr_2=2: NV_ERR_BUFFER_TOO_SMALL
+nv_errstr_8  x2  P1 EQUAL-VALUES
+    nv-oracle.py:380   nv_errstr_8=8: NV_ERR_DMA_MEM_NOT_LOCKED
+    nv-oracle.py:981   nv_errstr_8=8: NV_ERR_DMA_MEM_NOT_LOCKED
+nv_errstr_999  x2  P1 EQUAL-VALUES
+    nv-oracle.py:380   nv_errstr_999=999: Unknown error
+    nv-oracle.py:981   nv_errstr_999=999: Unknown error
+nv_errstr_4096  x2  P1 EQUAL-VALUES
+    nv-oracle.py:380   nv_errstr_4096=4096: Unknown error
+    nv-oracle.py:981   nv_errstr_4096=4096: Unknown error
+nv_paccess_0  x2  P1 EQUAL-VALUES
+    nv-oracle.py:385   nv_paccess_0=READ
+    nv-oracle.py:986   nv_paccess_0=READ
+nv_paccess_2  x2  P1 EQUAL-VALUES
+    nv-oracle.py:386   nv_paccess_2=STRONG
+    nv-oracle.py:988   nv_paccess_2=STRONG
+nv_paccess_4  x2  P1 EQUAL-VALUES
+    nv-oracle.py:387   nv_paccess_4=WEAK
+    nv-oracle.py:990   nv_paccess_4=WEAK
+nv_iowr_0_0  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_0_0=3221243392
+    nv-oracle.py:439   nv_iowr_0_0=3221243392
+nv_iowr_4_1  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_4_1=3221505537
+    nv-oracle.py:439   nv_iowr_4_1=3221505537
+nv_iowr_64_44  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_64_44=3225437740
+    nv-oracle.py:439   nv_iowr_64_44=3225437740
+nv_iowr_40_43  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_40_43=3223864875
+    nv-oracle.py:439   nv_iowr_40_43=3223864875
+nv_iowr_96_65  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_96_65=3227534913
+    nv-oracle.py:439   nv_iowr_96_65=3227534913
+nv_iowr_8192_255  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_8192_255=3221243647
+    nv-oracle.py:439   nv_iowr_8192_255=3221243647
+nv_iowr_8191_136  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_8191_136=3758048904
+    nv-oracle.py:439   nv_iowr_8191_136=3758048904
+nv_iowr_8192_1  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_8192_1=3221243393
+    nv-oracle.py:439   nv_iowr_8192_1=3221243393
+nv_iowr_1280_2  x2  P1 EQUAL-VALUES
+    nv-oracle.py:428   nv_iowr_1280_2=3305129474
+    nv-oracle.py:439   nv_iowr_1280_2=3305129474
+nv_reloc_kind_n  x2  P1 EQUAL-VALUES
+    nv-oracle.py:692   nv_reloc_kind_n=3
+    nv-oracle.py:1222  nv_reloc_kind_n=3
+nv_reloc_msg_0  x2  P1 EQUAL-VALUES
+    nv-oracle.py:701   nv_reloc_msg_0=unknown NV reloc 0
+    nv-oracle.py:1156  nv_reloc_msg_0=unknown NV reloc 0
+nv_reloc_msg_3  x2  P1 EQUAL-VALUES
+    nv-oracle.py:701   nv_reloc_msg_3=unknown NV reloc 3
+    nv-oracle.py:1156  nv_reloc_msg_3=unknown NV reloc 3
+nv_reloc_msg_100  x2  P1 EQUAL-VALUES
+    nv-oracle.py:701   nv_reloc_msg_100=unknown NV reloc 100
+    nv-oracle.py:1156  nv_reloc_msg_100=unknown NV reloc 100
+nv_reloc_bad_n  x2  P2 DISTINCT-VALUES
+    nv-oracle.py:720   nv_reloc_bad_n=1
+    nv-oracle.py:1162  nv_reloc_bad_n=0
+nv_reloc_bad_refused  x2  P1 EQUAL-VALUES
+    nv-oracle.py:721   nv_reloc_bad_refused=True
+    nv-oracle.py:1161  nv_reloc_bad_refused=True
+nv_launch_ok_1024_1024  x2  P1 EQUAL-VALUES
+    nv-oracle.py:756   nv_launch_ok_1024_1024=True
+    nv-oracle.py:757   nv_launch_ok_1024_1024=True
+nv_launch_ok_1024_8192  x2  P1 EQUAL-VALUES
+    nv-oracle.py:756   nv_launch_ok_1024_8192=True
+    nv-oracle.py:760   nv_launch_ok_1024_8192=True
+nv_bpt_1_48428  x2  P1 EQUAL-VALUES
+    nv-oracle.py:878   nv_bpt_1_48428=196608
+    nv-oracle.py:886   nv_bpt_1_48428=196608
