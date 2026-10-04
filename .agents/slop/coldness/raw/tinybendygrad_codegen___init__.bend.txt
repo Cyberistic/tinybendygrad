@@ -1,0 +1,10 @@
+SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../uop/ops.AOpLit)
+Location:
+713 |     # same expression `areduce_repr`/`aallred_repr` already use for their first field.
+714>|     case O.AOpLit{op}: O.Ops.name(op)
+    |          ^^^^^^^^^^^^
+715 |     case O.AWmma{dims, dt, threads, tc}: awmma_repr(dims, dt, threads, tc)
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=199 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/codegen/__init__.bend --check-only

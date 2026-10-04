@@ -1,0 +1,49 @@
+THE CLAIM, with its denominator
+  substrate measured             /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/dtype.js
+  rows asked for                 20
+  rows that REACH `dtype.js`      0   
+  rows that are pure `dtype.bend` 20   (NOT the JS lane)
+  CIDs `dtype.js` registers that `dtype.bend` no longer calls  10  bf16, fp16, fp8_from, fp8_to, i64_cdiv, i64_ceildiv, i64_cmod, i64_floor_div, i64_floor_mod, i64_trunc
+  rows CPython can answer        19   (1 diverge: CPython raises, so there is no answer -- ceildiv_by0)
+  `node` exit status             0
+  ROWS PRESENT == ROWS EXPECTED  yes   (20/20)
+  node agrees with CPython on    19/19
+
+| row | CPython (called) | node | |
+|---|---|---|---|
+| `trunc_0_7` | `0:7` | `0:7` | ok
+| `trunc_min` | `2147483648:0` | `2147483648:0` | ok
+| `trunc_hi_eq_lo` | `4294967295:4294967295` | `4294967295:4294967295` | ok
+| `trunc_inexact_hi` | `2097153:4294967295` | `2097153:4294967295` | ok
+| `floordiv_neg` | `4294967295:4294967294` | `4294967295:4294967294` | ok
+| `floormod_neg` | `0:0` | `0:0` | ok
+| `cdiv_neg` | `4294967295:4294967295` | `4294967295:4294967295` | ok
+| `cmod_neg` | `4294967295:4294967293` | `4294967295:4294967293` | ok
+| `ceildiv_pos` | `0:2` | `0:2` | ok
+| `cdiv_by0` | `0:0` | `0:0` | ok
+| `ceildiv_by0` | raises | `0:0` |
+| `bf16_1p5` | `1.5` | `1.5` | ok
+| `fp16_1p5` | `1.5` | `1.5` | ok
+| `fp16_1p1` | `1.099609375` | `1.0996094` | ok
+| `fp16_m2p25` | `2.25` | `2.25` | ok
+| `fp16_inv` | `inf` | `inf` | ok
+| `fp8from_1p5` | `60.0` | `60` | ok
+| `fp8to_0x3C` | `1.5` | `1.5` | ok
+| `fp8to_0x7E` | `448.0` | `448` | ok
+| `fp8to_nan` | `nan` | `nan` | ok
+
+THE CONTROL THAT PROVES THIS STAGE CAN GO RED, AND THE ONE THAT PROVES
+IT IS NOT RED BY CONSTRUCTION
+  PLANT  `p.hi`/`p.lo` -> `p.fst`/`p.snd` (ABI-2 as shipped)   moved 0/20
+    rows: 
+  DISARM `<<32n |` -> `* 2**32n +`, BigInt, same function     moved 0/20   -- 0 is the only correct count
+  PLANT  the same in NUMBER arithmetic (NOT a disarm)          moved 0/20
+    rows: 
+  the plant's 20 unmoved rows, attributed -- and every class is a theorem:
+    20 never reach `dtype.js` (pure `dtype.bend`): trunc_0_7, trunc_min, trunc_hi_eq_lo, trunc_inexact_hi, floordiv_neg, floormod_neg, cdiv_neg, cmod_neg, ceildiv_pos, cdiv_by0, ceildiv_by0, bf16_1p5, fp16_1p5, fp16_1p1, fp16_m2p25, fp16_inv, fp8from_1p5, fp8to_0x3C, fp8to_0x7E, fp8to_nan
+    0 reach `dtype.js` by a seam the plant does NOT touch (`i64_of` is one function of seven registered CIDs): 
+    0 go through `i64_of` but already answer `0:0`, and a planted seam answering 0 cannot move a row that is already 0:   (answers )
+
+===== VERDICT: FAIL =====
+  FAIL the plant moved 0 rows, so this stage CANNOT fail on the bug it exists for
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=546 MB (ceiling 2048)  14s  :: .venv/bin/python .agents/slop/jstage/jsstage.py

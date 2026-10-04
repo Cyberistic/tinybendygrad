@@ -1,0 +1,10 @@
+SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : ','
+Location:
+1193 | 
+1194>|     String.concat(["nv_vabits_3", "=", U32.show(nv.va_bits(3))]),
+     |                                                                 ^
+1195 |     String.concat(["nv_vashifts_3", "=", nv.shifts_str(3)]),
+bend 2.0.35 is available: run bend update

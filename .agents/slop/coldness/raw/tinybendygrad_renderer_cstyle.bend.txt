@@ -1,0 +1,10 @@
+SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: BArg.name)
+- observed : 'BArg.name'
+Location:
+195 | # why adding a field to one of these records is a one-line change per reader.
+196>| def BArg.name(b: BArg) -> String:
+    |     ^^^^^^^^^
+197 |   match b:
+bend 2.0.35 is available: run bend update

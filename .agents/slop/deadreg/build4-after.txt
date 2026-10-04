@@ -1,0 +1,38 @@
+READ OUT OF tinybendygrad/runtime/dtype.c, NOT TAKEN ON TRUST
+  io_eff(CID(Dt.<name>)) registrations: 10   bf16, fp16, fp8_from, fp8_to, i64_trunc, i64_floor_div, i64_floor_mod, i64_cdiv, i64_cmod, i64_ceildiv
+  equals the ten named in the brief:  True
+  guarded by #ifdef CID(...):         10 of 10
+
+REACHABILITY OF EACH LAW, FROM dtype.bend's OWN DECLARATION
+  law            dtype.bend dtype.c registration
+  bf16           PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  fp16           PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  fp8_from       PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  fp8_to         PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_trunc      PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_floor_div  PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_floor_mod  PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_cdiv       PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_cmod       PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  i64_ceildiv    PURE       reachable ONLY if some build declares it IO AND imports dtype.c
+  dtype.bend `import "./runtime/dtype.*"` lines: 0
+  dtype.bend `IO(` occurrences:                    0
+
+THE FOUR CONFIGURATIONS, PLUS THE CONTROL THAT MAKES THEIR ZEROS MEAN
+SOMETHING.  `cc -E` COUNTS THE C LANE, because the registrations that land
+in the binary are PREPROCESSED OUTPUT, not source text.  The JS lane is read
+off the EMIT: it has no `#ifdef`, so its question is not "did the guard fire"
+but "is any byte of `dtype.js` in the bundle".
+  config           bend C lines   cc   C regs  JSrc  JS bytes   JS regs    JS fns  dtype.c in the build
+  probe-none          0    2899    0        0     0     12632         0         0  NOT pasted
+  probe-bf16          0    3124    0        0     0     13811         0         0  NOT pasted
+  probe-ceildiv       0    5136    0        0     0     28224         0         0  NOT pasted
+  probe-all           0    9009    0        0     0     56546         0         0  NOT pasted
+  probe-ctl-seam      0    3363    0        1     0     24224        10         4  pasted  ___tree_tinybendygrad_dtype_dt_bf16
+  probe-ctl-disarm    0    3363    0        0     0     24226        10         4  pasted  ___tree_tinybendygrad_dtype_dt_bf16
+
+  FOUR REAL CONFIGURATIONS:  0 C and 0 JS registrations landed, of 10 and 10 declared
+  probe-ctl-seam            1 C, 10 JS  (one law reached; `dtype.js` is ALL-OR-NOTHING)
+  probe-ctl-disarm          0 C, 10 JS  (one law reached; `dtype.js` is ALL-OR-NOTHING)
+  the four zeros read UNREACHABLE, not BROKEN-GUARD: YES -- the positive control fired
+  live tree md5 unchanged: True

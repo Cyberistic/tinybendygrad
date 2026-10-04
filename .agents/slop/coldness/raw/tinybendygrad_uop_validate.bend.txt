@@ -1,0 +1,13 @@
+SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : O.s5.d1
+Context:
+- slot : U32
+- dt   : S.Dt
+Location: c2d_pat
+2545 | def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
+2546>|   O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
+     |                                                                          ^^^^^^^
+2547 |              False{}, None{}, None{}, False{}, None{}}
+bend 2.0.35 is available: run bend update

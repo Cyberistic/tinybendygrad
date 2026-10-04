@@ -1,0 +1,10 @@
+SOME PROOFS FAIL
+Error:
+- expected : S.Dt
+- observed : String
+Location: Gate.rows4
+2311 |    "iszthrm 32 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
+2312>|    "toint float16 = [" ++ Op.to_int("float16") ++ "]   py=[i16]"
+     |                                     ^^^^^^^^^
+2313 |    "toint float32 = [" ++ Op.to_int("float32") ++ "]   py=[i32]"
+bend 2.0.35 is available: run bend update
