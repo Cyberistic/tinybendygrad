@@ -1,0 +1,10 @@
+=== INCONCLUSIVE EVIDENCE 2026-10-04T15:48:28Z ===
+helpers.bend: 0 bytes since 18:38, sha256 e3b0c442... (the empty-string digest)
+every .bend in the tree imports ./../helpers.bend, so the bend lane cannot run at all.
+--- the port's stderr, verbatim ---
+--- git state of the two files I do not own ---
+ M tinybendygrad/helpers.bend
+ M tinybendygrad/uop/ops.bend
+--- is helpers.bend modified vs HEAD? ---
+ tinybendygrad/helpers.bend | 2605 --------------------------------------------
+ 1 file changed, 2605 deletions(-)

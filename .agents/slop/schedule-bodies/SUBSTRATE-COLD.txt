@@ -1,0 +1,10 @@
+=== 1791126018 helpers.bend state ===
+-rw-r--r--@ 1 cyberistic  staff  117263 Oct  4 17:59 tinybendygrad/helpers.bend
+16c12d48ba36ba1eb394a86d9d2f0188d53a82ffca09bbfcd5e5fcfa27f9f1cf  tinybendygrad/helpers.bend
+=== my file ===
+-rw-r--r--@ 1 cyberistic  staff  106608 Oct  4 17:48 tinybendygrad/schedule/__init__.bend
+dc4859f5bd73efc95c031c50d5c569e17ef08a60ea2532c944a56be74a849c34  tinybendygrad/schedule/__init__.bend
+    2213 tinybendygrad/schedule/__init__.bend
+=== ops.bend ===
+-rw-r--r--@ 1 cyberistic  staff  287092 Oct  4 17:49 tinybendygrad/uop/ops.bend
+325ea92dff872782d0af878173cdd0eca24b3ca21bcc5d49966cdf124d0506b6  tinybendygrad/uop/ops.bend
