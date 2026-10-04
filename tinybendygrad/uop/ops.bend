@@ -4650,20 +4650,42 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   Variable {e}")` on a miss. MEASURED: `ProgramInfo(vars=(i,j)).vals({'i':7,
 #   'j':9})` is `(7, 9)` and a miss is `RuntimeError: unbound Variable 'j'`.
 #
-#   EVERY PART IS HERE EXCEPT ONE, and the one is not a def. `ProgramInfo.vars` is
-#   `ops.bend:1408`, `UOp.expr` is `ops.bend:7158` (landed, and it is the reader
-#   `k.expr`), and the `var_vals` dict is already spelled as `VarVals{m:
-#   Map<&2, H.I64>}` at `ops.bend:943`. But `Map` is USED IN SEVEN PLACES AND
-#   DEFINED IN NONE -- `rg '^type Map|^def Map' tinybendygrad/` is zero hits -- so
-#   the lookup has nothing to call.
+#   EVERY PART IS HERE. `ProgramInfo.vars` is `ops.bend:1408`, `UOp.expr` is
+#   landed (and it is the reader `k.expr`), and the dict is already spelled
+#   `VarVals{m: Map<&2, H.I64>}` at `ops.bend:943`.
 #
-#   AND `Map.put` IS NOT `Map.set`, which is the whole reason it is wanted and the
-#   reason it is not free. `render.bend:991` records the measurement: a `put` on a
-#   one-entry `MLeaf` REPLACES the leaf and drops the old key, so three sequential
-#   puts answer `d[1]=three d[2]= d[3]=`. `render.bend:979-994` documents that the
-#   fix is a NEW BEND RULE, filed in the constraints file. `vals` needs the lookup
-#   only, so it needs the TYPE; `pyr_render`'s ctx needs `put` and so needs the
-#   RULE. P3 with the Map, and the Map is a language change rather than a port.
+#   SO THE MAP IS NOT THE BLOCKER, and I had that wrong twice. `Map` is a Bend
+#   STDLIB type from `import Base`: `references/bend/bend2/base.bend:2551` has
+#   `Map.put`, `:2675` `Map.set`, `:2683` `Map.has`, `:2736` `Map.get`. And
+#   `uop/render.bend:1007` and `:1017` were ALREADY calling `Map.set` and
+#   `Map.get` through `Ctx` while the note here said the rule did not exist. A
+#   claim that the LANGUAGE needs changing is a big enough claim to grep first, and
+#   I wrote two of them without grepping either.
+#
+#   THE REAL BLOCKER IS SMALLER AND LOCAL: this file has no `Maybe`-CARRYING FOLD.
+#   `rra.filter.go` folds a LIST and `UOp.huo.go` folds a `Bool`; nothing folds
+#   `Maybe<&2, A>`. `vals` needs one, because Python's `try`/`except KeyError` over
+#   a generator IS that -- collect, and refuse at the FIRST miss rather than at the
+#   end. A fold that kept going would answer a LONGER tuple for a partially-bound
+#   program, and this is a SCHEDULE KEY, so a wrong length is a wrong program and
+#   not a diagnostic.
+#
+#   THE DRAFT WAS TEN DEFS AND DID NOT COMPILE, and the reason is the rule worth
+#   keeping: a def may hold ONE `match`, and a `Maybe` accumulator wants to match
+#   TWICE per step (is the accumulator live, is this lookup live). Every dodge --
+#   `Bool.pick` over a `Maybe`, an `acc_unwrap`/`x_unwrap` pair, a `vals.key` to
+#   unwrap a `Maybe<String>` -- moves the match into a fresh def and costs a LOC,
+#   which is this project's stated measure of quality. Three such dunders already
+#   exist as near-copies: `sg.pa.put`, `rnd_is_set`, and the one this draft added.
+#
+#   The shape that would actually be SMALLER is ONE def folding the LIST with the
+#   `Maybe` as a carried parameter, and the refusal as a `Bool` the caller threads
+#   -- the same trick `UOp.index.pick` and `pm_dispatch_m` use for "one of two
+#   answers, decided by a Bool". It is not written because writing a shared idiom
+#   for ONE caller is how three copies of a presence test happened.
+#
+#   P3, and the precondition is a SECOND caller wanting the same fold -- not the
+#   Map. `pyrender`'s `Ctx` walk is the obvious second one.
 
 # TODO(p3) ops.py:1400  def __reduce__
 #   # grad_fxn can't be pickled
