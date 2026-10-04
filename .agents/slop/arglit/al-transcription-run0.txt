@@ -1,0 +1,60 @@
+# 0 false claim(s), 14 unreached, 41 judged by no rule
+
+### PLANT: the OLD line restored, verbatim from HEAD, in a COPY
+# table claims, read off .agents/slop/arglit/ops-PLANT.bend
+#   ANone     ['SINK', 'STAGE']
+#   ADt       ['BITCAST', 'CAST', 'INS']
+#   APy       ['CONST']
+#   AParam    ['ALLOC', 'BUFFER', 'PARAM']
+#   ACustom   ['CUSTOM_FUNCTION']
+#   ACall     ['CALL']
+#   AKernel   ['SINK']
+#   AProgram  ['PROGRAM']
+#   ARange    ['RANGE']
+#   AReduce   ['REDUCE']
+#   AOpLit    ['PYLITERAL']
+#   AWmma     ['WMMA']
+#   ATuple    ['FLIP', 'PERMUTE', 'UNSHARD']
+#   AStr      ['SOURCE', 'SPECIAL']
+#   AInk      ['CUSTOM', 'CUSTOMI', 'INS']
+#   AAllred   ['ALLREDUCE']
+#   ADev      ['COPY']
+#   ABlob     ['BINARY', 'BYTES']
+#   AFloat    []
+#   ABad      []
+#
+# real upstream graphs built: 133 nodes over 4 graphs
+#
+# ctor      op         measured arg                 verdict
+  ANone     SINK       -                            UNREACHED  (a row that cannot fire)
+  ANone     STAGE      -                            UNREACHED  (a row that cannot fire)
+  ADt       BITCAST    dtypes.f32                   no rule  (not judged)
+  ADt       CAST       dtypes.u32                   no rule  (not judged)
+  ADt       INS        ('nop', dtypes.void)         no rule  (not judged)
+  APy       CONST      4                            no rule  (not judged)
+  AParam    ALLOC      ParamArg(3, dtypes.f32, 16,  no rule  (not judged)
+  AParam    BUFFER     ParamArg(1, dtypes.u32, 2, d no rule  (not judged)
+  AParam    PARAM      -                            UNREACHED  (a row that cannot fire)
+  ACustom   CUSTOM_FUNCTION -                            UNREACHED  (a row that cannot fire)
+  ACall     CALL       -                            UNREACHED  (a row that cannot fire)
+  AKernel   SINK       -                            UNREACHED  (a row that cannot fire)
+  AProgram  PROGRAM    -                            UNREACHED  (a row that cannot fire)
+  ARange    RANGE      -                            UNREACHED  (a row that cannot fire)
+  AReduce   REDUCE     (Ops.ADD, 1)                 no rule  (not judged)
+  AOpLit    PYLITERAL  Ops.ADD                      TRUE 
+  AWmma     WMMA       -                            UNREACHED  (a row that cannot fire)
+  ATuple    FLIP       (True, False)                FALSE
+  ATuple    PERMUTE    (1, 0)                       TRUE 
+  ATuple    PERMUTE    (1, 0)                       TRUE 
+  ATuple    UNSHARD    -                            UNREACHED  (a row that cannot fire)
+  AStr      SOURCE     -                            UNREACHED  (a row that cannot fire)
+  AStr      SPECIAL    -                            UNREACHED  (a row that cannot fire)
+  AInk      CUSTOM     ('{0}.op is {1}', dtypes.... TRUE 
+  AInk      CUSTOMI    ('uop', dtypes.void)         TRUE 
+  AInk      INS        ('nop', dtypes.void)         TRUE 
+  AAllred   ALLREDUCE  -                            UNREACHED  (a row that cannot fire)
+  ADev      COPY       'CPU'                        TRUE 
+  ADev      COPY       'CPU'                        TRUE 
+  ADev      COPY       'CPU'                        TRUE 
+  ABlob     BINARY     -                            UNREACHED  (a row that cannot fire)
+# 1 false claim(s), 14 unreached, 41 judged by no rule

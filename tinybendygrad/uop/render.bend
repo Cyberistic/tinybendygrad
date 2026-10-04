@@ -707,6 +707,11 @@ def arg_repr(a: O.Arg) -> String:
     case O.AProgram{pi}: aprogram_repr(pi)
     case O.ARange{ids, at}: arange_repr(ids, at)
     case O.AReduce{rop, num_axes}: areduce_repr(rop, num_axes)
+    # A BARE `Ops`, and it is the ONLY case that is not a tuple. CPython prints
+    # `repr(UOp(Ops.PYLITERAL, arg=Ops.ADD))` as `UOp(Ops.PYLITERAL, arg=Ops.ADD, src=())`,
+    # so the arg's own text is `Ops.ADD` with no parentheses -- which is `Ops.name` and the
+    # same expression `areduce_repr`/`aallred_repr` already use for their first field.
+    case O.AOpLit{op}: O.Ops.name(op)
     case O.AWmma{dims, dt, threads, tc}: awmma_repr(dims, dt, threads, tc)
     case O.ATuple{ys}: u32_tuple_repr(ys)
     case O.AStr{s}: String.concat(["'", s, "'"])

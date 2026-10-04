@@ -1032,8 +1032,8 @@ type CallInfo is Data:
 #                                     "a Python literal", and it is one of four -- Ops here,
 #                                     a DType (:39), a str (:44) and `self.arg` (:29))
 #   (dims, DType, threads, tc_upcast_axes)   AWmma   WMMA arg
-#   tuple[int, ...]         ATuple     PERMUTE arg (`movement.py:231`), UNSHARD arg
-#                                     (`ops.py:691`: "the tuple of sharded axes, sorted")
+#   tuple[int, ...]         ATuple     PERMUTE/FLIP arg, UNSHARD arg,
+#                                     MSELECT arg, PYLITERAL arg
 #   str                     AStr       SPECIAL name (`gpudims.py:104`), SOURCE text
 #                                     (`codegen/__init__.py:455`)
 #   (str, DType)            AInk       INS arg (`ops.py:622`), CUSTOM/CUSTOMI arg --

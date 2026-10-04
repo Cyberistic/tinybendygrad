@@ -1,0 +1,68 @@
+# ==== 0. PINS ====
+# md5 graphcmp.py                      8072fdbce2f6dafa56d47912d2876b24
+# md5 graphcmp.bend                    b73d9f9f08a43ad23451e4e45f6126ae
+# md5 tinybendygrad/uop/fold.bend      310c3975393ad37ea1c3c5caf9822756
+
+# ==== 1. BLAST RADIUS ON THE LIVE CORPUS, WHOLE `name=value` LINE ====
+# graphs 25   rows now 624   rows base 624
+# rows whose TEXT moved: 0   graphs whose row COUNT moved: 0
+
+# ==== 2. THE SPLIT, AGAINST 77 ====
+# denominator (measured len(list(Ops)))        : 77
+# graphs (live)                                 : 25   (+1 patir, ceiling)
+# reached PY        live 61   +patir 4   union 64
+# reached BEND      live 61   +patir 4   union 64
+# reached BOTH      live 61   +patir 64
+# py-only           live []   +patir []
+# bend-only         live []   +patir []
+# NEITHER (either side)  live 16   +patir 13   ['CUSTOM_FUNCTION', 'GETADDR', 'INS', 'MSELECT', 'MSTACK', 'MULACC', 'PROGRAM', 'REWRITE_ERROR', 'SOURCE', 'STAGE', 'THREEFRY', 'UNSHARD', 'WMMA']
+# ledger live  PY   {'z': 2, 'y': 2, 'u': 0, 'q': 1, 'X!': 0, 'BAD': 0, 'E': 1, '?': 1, 'R': 43}
+# ledger live  BEND {'z': 1, 'y': 1, 'u': 0, 'q': 1, 'X!': 0, 'BAD': 0, 'E': 0, '?': 1, 'R': 21}
+
+# ==== 3. THE VERDICT ON THE PATTERN IR -- THE HEADLINE ====
+
+# BEFORE -- the SAME py rows against `fold.bend` at the pin e372ca22, same probe,
+# so the two verdicts differ by `fold.bend` and by nothing else:
+  -- BEFORE
+  node 1 CUSTOMI    MISMATCH dtype, shape
+#       dtype  py=void   bend=?
+#       shape  py=R   bend=?
+  node 2 PYLITERAL  MISMATCH arg
+#       arg    py=OADD   bend=rd(OADD,i0)
+  node 3 CUSTOM     MISMATCH dtype, shape
+#       dtype  py=void   bend=?
+#       shape  py=R   bend=?
+  node 4 AND        MISMATCH dtype, shape
+#       dtype  py=void   bend=?
+#       shape  py=R   bend=?
+# VERDICT BEFORE: DISAGREE -- 7 field mismatches (of 24 field-records; 17 agree)
+
+# AFTER -- the same py rows against `fold.bend` at 310c3975:
+  -- AFTER
+  node 1 CUSTOMI    AGREE
+  node 2 PYLITERAL  MISMATCH arg
+#       arg    py=OADD   bend=rd(OADD,i0)
+  node 3 CUSTOM     AGREE
+  node 4 AND        MISMATCH dtype, shape
+#       dtype  py=void   bend=?
+#       shape  py=R   bend=?
+# VERDICT AFTER: DISAGREE -- 3 field mismatches (of 24 field-records; 21 agree)
+
+# ledger py   {'z': 0, 'y': 0, 'u': 0, 'q': 0, 'X!': 0, 'BAD': 0, 'E': 0, '?': 0, 'R': 4}
+# ledger bend {'z': 0, 'y': 0, 'u': 0, 'q': 0, 'X!': 0, 'BAD': 0, 'E': 0, '?': 1, 'R': 3}
+# py rows as emitted:
+#   2:i1 7:CUSTOMI 4:void 1:R 2:i0 1:N 14:in(suop,Dvoid) 3:n()
+#   2:i2 9:PYLITERAL 4:void 1:R 2:i0 1:N 4:OADD 3:n()
+#   2:i3 6:CUSTOM 4:void 1:R 2:i0 1:N 24:in(s{0}.op is {1},Dvoid) 8:n(i1,i2)
+#   2:i4 3:AND 4:void 1:R 2:i0 1:N 1:N 5:n(i3)
+# py rows, bend side, AFTER:
+#   2:i1 7:CUSTOMI 4:void 1:R 2:i0 1:N 14:in(suop,Dvoid) 3:n()
+#   2:i2 9:PYLITERAL 4:void 1:R 2:i0 1:N 11:rd(OADD,i0) 3:n()
+#   2:i3 6:CUSTOM 4:void 1:R 2:i0 1:N 24:in(s{0}.op is {1},Dvoid) 8:n(i1,i2)
+#   2:i4 3:AND 1:? 1:? 2:i0 1:N 1:N 5:n(i3)
+# NOTE the `arg` column: it disagrees on `n(` vs `in(` and on `OADD` vs
+# `rd(OADD,i0)`, and BOTH halves of that are the DIFFER's, not the port's --
+# see .agents/slop/NONSHAPE.md sec 3. The dtype and shape columns AGREE on every
+# node this unit's arm covers, which is what `fold.bend` was for; the AND's
+# `?` is the port refusing upstream's assert at ops.py:444, which is upstream's
+# own answer and is NOT widened here.

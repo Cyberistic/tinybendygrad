@@ -1,0 +1,20 @@
+### PLANT A: AOpLit DELETED from ops.bend (arg type hole reopened)
+# md5 ops.bend: f58639eecccf827550ce66bc9a994647
+-- al-oparg.bend --
+SOME PROOFS FAIL
+Error:
+- expected : a declared constructor (../../../tinybendygrad/uop/ops.Arg declares ../../../tinybendygrad/uop/ops.ANone, ../../../tinybendygrad/uop/ops.ADt, ../../../tinybendygrad/uop/ops.APy, ../../../tinybendygrad/uop/ops.AParam, ../../../tinybendygrad/uop/ops.ACustom, ../../../tinybendygrad/uop/ops.ACall, ../../../tinybendygrad/uop/ops.AKernel, ../../../tinybendygrad/uop/ops.AProgram, ../../../tinybendygrad/uop/ops.ARange, ../../../tinybendygrad/uop/ops.AReduce, ../../../tinybendygrad/uop/ops.AWmma, ../../../tinybendygrad/uop/ops.ATuple, ../../../tinybendygrad/uop/ops.AStr, ../../../tinybendygrad/uop/ops.AInk, ../../../tinybendygrad/uop/ops.AAllred, ../../../tinybendygrad/uop/ops.ADev, ../../../tinybendygrad/uop/ops.ABlob, ../../../tinybendygrad/uop/ops.AFloat, ../../../tinybendygrad/uop/ops.ABad)
+- observed : O.AOpLit{O.OpsADD{}}
+-- argstr / arg_repr exhaustiveness --
+SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../tinybendygrad/uop/ops.AOpLit)
+Location:
+713 |     # same expression `areduce_repr`/`aallred_repr` already use for their first field.
+SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ops.AOpLit)
+Location:
+713 |     # same expression `areduce_repr`/`aallred_repr` already use for their first field.
+-- the transcription gate, unaffected by the type (it reads comments) --
+# 0 false claim(s), 14 unreached, 41 judged by no rule
