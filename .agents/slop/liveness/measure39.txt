@@ -1,0 +1,40 @@
+ # port                                               p     o  shared  disagree  ident  oracle
+ 1 runtime/support/hcq2.bend                        360   163     157         0  False  .agents/slop/hcq2-oracle.py
+ 2 runtime/ops_rdma.bend                            389   389     389         0  False  .agents/slop/oracle_rdma_gate.py
+ 3 runtime/ops_nv.bend                              600   547     543         0  False  .agents/slop/nv-oracle.py
+ 4 runtime/ops_metal.bend                           432    18      14         0  False  .agents/slop/mt_seam_rows.py
+ 5 uop/ops.bend                                     319     0       0         0  False  .agents/slop/rebase-oracle-ops.py  port_rc=0 orc_rc=1
+ 6 uop/spec.bend                                     25    16      11         0  False  .agents/slop/rebase-oracle-spec.py
+ 7 codegen/opt/search.bend                           38    20      10         0  False  .agents/slop/rebase-oracle-search.py
+ 8 runtime/support/usb.bend                         940   939     939         0  False  .agents/slop/usb-oracle-run.py
+ 9 schedule/prepare.bend                            321  2521     321         0  False  .agents/slop/prepare-oracle.py
+10 renderer/ptx.bend                                281   281     281         0   True  .agents/slop/ptx-s3-oracle.py
+11 renderer/tc_ptx.bend                             333   333     228         0  False  .agents/slop/tcptx-oracle.py stage2
+12 renderer/nir_llvmir.bend                         205   205     205         0   True  .agents/slop/nl/nl-oracle.py
+13 viz/serve.bend                                   176   176     176         0   True  .agents/slop/vz/viz_oracle.py
+14 runtime/support/c.bend                           129   129     129         0   True  .agents/slop/c-oracle.py
+15 uop/fold.bend                                    240   130     126         0  False  .agents/slop/mm-lift-gate.py
+16 runtime/support/elf.bend                         353  1042     353         0  False  .agents/slop/elf_rows.py
+17 renderer/amd/sqtt.bend                          1033  1324    1015         0  False  .agents/slop/sqtt_spec.py
+18 renderer/amd/generate.bend                       726   779     726         0  False  .agents/slop/ga-oracle.py
+19 nn/onnx.bend                                     123   123     123         0   True  .agents/slop/onnx-gate.py
+20 mixin/elementwise.bend                            72    71      71         0  False  .agents/slop/ew-gate.py
+21 mixin/op.bend                                     36    32      32         0  False  .agents/slop/mixin-op-gate.py
+22 tensor.bend                                       33    30      30         0  False  .agents/slop/tensor-gate.py
+23 codegen/simplify.bend                             28    60      28         0  False  .agents/slop/xd1/rw-oracle.py
+24 nn/__init__.bend                                  24    24      24         0   True  .agents/slop/nn-init-gate.py
+25 codegen/gpudims.bend                              24    54      24         0  False  .agents/slop/xd1/rw-gate-oracle.py
+26 runtime/ops_cpu.bend                             134    20       3         0  False  .agents/slop/cpulink_oracle.py
+27 runtime/ops_python.bend                           85   241      59         0  False  .agents/slop/ops-python-render-oracle.py
+28 runtime/ops_amd.bend                             520  1010     409         0  False  .agents/slop/amd_oracle.py
+29 uop/render.bend                                  104    85      85         0  False  .agents/slop/xd1/render-gate-oracle.py --gate
+30 renderer/llvmir.bend                             470   470     470         0   True  .agents/slop/llvmir-oracle.py
+31 runtime/ops_qcom.bend                            750   312     312         0  False  .agents/slop/qcom-oracle.py
+32 schedule/indexing.bend                           252   104     104         0  False  .agents/slop/indexing-oracle.py
+33 codegen/decomp/dtype.bend                        208   356     109         1  False  .agents/slop/dtype-oracle.py  DISAGREE=['c7']
+34 schedule/rangeify.bend                           126    89      31         0  False  .agents/slop/rangeify-oracle.py
+35 engine/jit.bend                                  137    30      18         0  False  .agents/slop/jit-oracle.py
+36 runtime/ops_null.bend                            180     9       7         0  False  .agents/slop/null-oracle.py
+37 device.bend                                      110    23      23         0  False  .agents/slop/device-oracle.py
+38 dtype.bend                                         0     0       0         0  False  .agents/slop/oracle/dtype_tables.py  port_rc=1 orc_rc=0
+39 renderer/cstyle.bend                             227   224     224         0  False  .agents/slop/renderer_oracle.py cstyle-rows
