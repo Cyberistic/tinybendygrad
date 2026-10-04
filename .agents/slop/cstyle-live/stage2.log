@@ -1,0 +1,51 @@
+=== STEP 0 (bend): the port's emitted text ===
+  unlive: 'live CLANG full' -> /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/live_clang_full.c  (6 physical lines)
+  the exact kernel:
+    | typedef float float4 __attribute__((aligned(16),ext_vector_type(4)));
+    | void E_4(float* restrict data0_4, float* restrict data1_4) {
+    |   float4 val0 = (*((float4*)((data1_4+0))));
+    |   *((float4*)((data0_4+0))) = (float4){(val0[0]+1.0f),(val0[1]+1.0f),(val0[2]+1.0f),(val0[3]+1.0f)};
+    | }
+
+=== BYTE-IDENTITY WITH WHAT CPYTHON ACTUALLY COMPILED AND RAN ===
+  IDENTICAL   port   sha256 b5a0753d3581bea162a8cccfed4f9e1a2d6841feaab39c8ce773af72f744731d
+  IDENTICAL   cpython sha256 b5a0753d3581bea162a8cccfed4f9e1a2d6841feaab39c8ce773af72f744731d
+
+=== STEP 2+3 (cc + link): the emitted text and a host driver, ONE TU ===
+  $ cc -x c -O2 stage2-driver.c -o stage2.out    # driver #includes the emitted text
+  step2 compiled ok;  step3 link ok
+
+=== STEP 4 (run), fixture TIE ===
+  wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/in_TIE.bin: [1.0, 2.0, 3.0, 4.0]
+  $ ./stage2.out in_TIE.bin out_TIE.bin   # TWICE, two processes
+    run1 sha256 1180e36f58837887478f2d0dc12271b6ec4b103f20b533f8af7d44c313e27c18
+    run2 sha256 1180e36f58837887478f2d0dc12271b6ec4b103f20b533f8af7d44c313e27c18
+  run1 vs run2: 0 differing bytes
+  CPython's numbers for the same program (never typed):
+    CPU    0000004000004040000080400000a040  [2.0, 3.0, 4.0, 5.0]
+    PYTHON 0000004000004040000080400000a040  [2.0, 3.0, 4.0, 5.0]
+    f64    0000000000000040000000000000084000000000000010400000000000001440  [2.0, 3.0, 4.0, 5.0]
+    CPU expectation hex: 0000004000004040000080400000a040
+    OK /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/out_TIE_1.bin: got 0000004000004040000080400000a040 [2.0, 3.0, 4.0, 5.0]  want 0000004000004040000080400000a040 [2.0, 3.0, 4.0, 5.0]  differing bytes: 0
+    OK /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/out_TIE_2.bin: got 0000004000004040000080400000a040 [2.0, 3.0, 4.0, 5.0]  want 0000004000004040000080400000a040 [2.0, 3.0, 4.0, 5.0]  differing bytes: 0
+
+=== STEP 4 (run), fixture DISTINCT ===
+  wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/in_DISTINCT.bin: [1.0, 0.10000000149011612, -2.5, 3.75]
+  $ ./stage2.out in_DISTINCT.bin out_DISTINCT.bin   # TWICE, two processes
+    run1 sha256 a078895c70c39d3943510e0822b20347be0e0185dcbece4f363c91ab87e25291
+    run2 sha256 a078895c70c39d3943510e0822b20347be0e0185dcbece4f363c91ab87e25291
+  run1 vs run2: 0 differing bytes
+  CPython's numbers for the same program (never typed):
+    CPU    00000040cdcc8c3f0000c0bf00009840  [2.0, 1.100000023841858, -1.5, 4.75]
+    PYTHON 00000040cdcc8c3f0000c0bf00009840  [2.0, 1.100000023841858, -1.5, 4.75]
+    f64    00000000000000400000009a9999f13f000000000000f8bf0000000000001340  [2.0, 1.1000000014901161, -1.5, 4.75]
+    CPU expectation hex: 00000040cdcc8c3f0000c0bf00009840
+    OK /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/out_DISTINCT_1.bin: got 00000040cdcc8c3f0000c0bf00009840 [2.0, 1.100000023841858, -1.5, 4.75]  want 00000040cdcc8c3f0000c0bf00009840 [2.0, 1.100000023841858, -1.5, 4.75]  differing bytes: 0
+    OK /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/out_DISTINCT_2.bin: got 00000040cdcc8c3f0000c0bf00009840 [2.0, 1.100000023841858, -1.5, 4.75]  want 00000040cdcc8c3f0000c0bf00009840 [2.0, 1.100000023841858, -1.5, 4.75]  differing bytes: 0
+
+=== NEGATIVE CONTROL: a comparison that CAN fail ===
+  flipping one low bit of in[1] (0.1f becomes a different float32):
+  MISMATCH /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live/out_bad.bin: got 00000040ddcc8c3f0000c0bf00009840 [2.0, 1.1000019311904907, -1.5, 4.75]  want 00000040cdcc8c3f0000c0bf00009840 [2.0, 1.100000023841858, -1.5, 4.75]  differing bytes: 1
+  control PASSED (perturbed input -> MISMATCH), so the OKs above mean something.
+
+STAGE 2: PASS

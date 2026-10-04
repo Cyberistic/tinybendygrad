@@ -1,0 +1,177 @@
+import Base
+# ops_bend.bend, IMPORTED. Everything Stage 3 says about memory comes from here: the `Mem`
+# record, `Mem.of`/`Mem.base`/`Mem.nbytes`, `first.of`, and the no-op `raw_free`. Nothing in
+# this file redefines any of them.
+import ./../runtime/ops_bend.bend as OB
+
+# THE ALLOCATOR, ops_bend.bend's own. `raw_alloc` answers a PAIR (a `Mem` and the advanced
+# `Store`) and a pair cannot be destructured at a call site, so `first.of` takes the `Mem`
+# half -- which is exactly what `ops_bend.bend:1499`'s `alloc_mem` does.
+def alloc_mem(nbytes: U32, s: OB.Store) -> OB.Mem:
+  OB.first.of(OB.raw_alloc(nbytes, s))
+
+# ---------------------------------------------------------------------------
+# THE FOREIGN SEAM. Six laws. The memory has to come from C because Bend's Base has no
+# allocator: MEASURED, the whole of Base's IO surface is
+#   args bind die fork get_env join now pass print print_err pure random_u sleep spawn
+#   thread_count try within write
+# and not one of them hands out an address.
+#
+# ⚠ A FOREIGN `def` TAKES UNANNOTATED PARAMETERS. `def alloc_buf(nbytes: U32):` fails with
+#   expected : a name
+#   observed : ':'
+# MEASURED. `e5.bend`'s `def a(x):` is the working shape; the annotation is not accepted.
+# The TYPES live on the `law`, which is where they belong anyway.
+# ---------------------------------------------------------------------------
+law alloc_buf:
+  U32 -> IO(Nat)
+
+def alloc_buf(nbytes):
+  import "./shim3.c"
+
+law free_buf:
+  Nat -> IO(Nat)
+
+def free_buf(addr):
+  import "./shim3.c"
+
+law fill4:
+  Nat -> Nat -> Nat -> Nat -> Nat -> IO(Nat)
+
+def fill4(addr, b0, b1, b2, b3):
+  import "./shim3.c"
+
+law call_e4:
+  Nat -> Nat -> Nat -> IO(Nat)
+
+def call_e4(entry, outp, inp):
+  import "./shim3.c"
+
+law lane:
+  U32 -> IO(Nat)
+
+def lane(i):
+  import "./shim3.c"
+
+law e4_addr:
+  IO(Nat)
+
+def e4_addr():
+  import "./shim3.c"
+
+# THE FILL. Four lanes, DISTINCT values, one of them (0.1f) not representable in float32, so
+# a reversed-lane kernel and a float64 kernel both fail this. The bit patterns arrive as
+# `sed` substitutions for `@IN0@`.. -- computed from CPython's own bytes by `stage3.sh`, so
+# no number in this file was typed by a human.
+#
+# ⚠ FOUR `Nat`s CROSS IN ONE CALL, not four calls, because a `Nat` is LINEAR: an address
+# spelled twice fails at the FIRST binder with "a (consumed more than once)", MEASURED. So
+# `fill4` takes the address once and ANSWERS IT BACK, and `call_e4` answers `outp` back, and
+# the read side addresses by INDEX (`lane`) because by then no `Nat` is still Bend's.
+def fill(a: Nat) -> IO(Nat):
+  do IO<Nat>:
+    r : Nat <- fill4(a, @IN0@n, @IN1@n, @IN2@n, @IN3@n)
+    IO.pure(Nat, r)
+
+# ⚠ `Nat.show` CONSUMES ITS ARGUMENT. MEASURED: the first version of `run` ended with
+# `IO.pure(Nat, b3)` after `IO.print("BEND_LANE 3 " ++ Nat.show(b3))` and the error was
+#   expected : b3
+#   observed : b3 (consumed more than once)
+# naming the LAST binder -- which reads like the linear-argument rule about the binder and
+# is not: the binder is fine, the `Nat.show` already spent it. So a `Nat` that is printed
+# cannot also be returned, and every stage below returns `IO(Unit)` instead of `IO(Nat)`.
+
+# THE TWO NUMBER SPACES, printed side by side so the substrate swap is VISIBLE rather than
+# asserted. ops_bend's `raw_alloc` base is an INDEX into a `List<&2, U32>` and C's `mmap`
+# base is an ADDRESS; both are 16-byte allocations. If these two ever printed the same
+# number the reuse would be a coincidence rather than a measurement.
+#
+# A `Data` record is LINEAR too, so `m` cannot be read twice (`m (consumed more than
+# once)`, MEASURED) and each field is read off its OWN `alloc_mem` call. Two 16-byte
+# allocations that are never freed is harmless here precisely BECAUSE `raw_free` is the
+# no-op `ops_bend.bend:1506` documents.
+#
+# `IO.pure` NAMES ITS TYPE and it must be the type of the value: `IO.pure(U32, <a Mem>)` is
+# `expected : U32 / observed : OB.Mem`. MEASURED.
+def show_bend_space() -> IO(Unit):
+  do IO<Unit>:
+    IO.print("BEND_LIST_INDEX " ++ U32.show(OB.Mem.base(alloc_mem(16, OB.store()))) ++ " nbytes " ++ U32.show(OB.Mem.nbytes(alloc_mem(16, OB.store()))))
+    c : Nat <- alloc_buf(16)
+    IO.print("C_MMAP_ADDR " ++ Nat.show(c))
+    IO.print("")
+
+# THE RUN: allocate, get the entry point as a `Nat`, fill, call THROUGH THE NAT, read back.
+# THE ENTRY POINT AS A `Nat`, printed by Bend. A SECOND `e4_addr()` call rather than a
+# second read of the first binder, because `Nat` is linear: `Nat.show(ent)` spends it and the
+# `call_e4(ent, ...)` below would then be the second use --
+# MEASURED: `expected : ent / observed : ent (consumed more than once)`. Two calls to a
+# nullary `IO(Nat)` law hand out two independent `Nat`s holding the same function address,
+# and C's own `C_E4_ADDR` line on stderr is the third reading of it.
+def entry_row() -> IO(Unit):
+  do IO<Unit>:
+    ent : Nat <- e4_addr()
+    IO.print("ENTRY_NAT " ++ Nat.show(ent))
+    IO.print("")
+
+def run() -> IO(Unit):
+  do IO<Unit>:
+    inp0 : Nat <- alloc_buf(16)
+    outp : Nat <- alloc_buf(16)
+    ent : Nat <- e4_addr()
+    # `fill` ANSWERS THE ADDRESS BACK (that is what `fill4` returns) and the answered-back
+    # `Nat` is the one the call spends -- MEASURED: passing the ORIGINAL binder to both
+    # `fill` and `call_e4` is `expected : inp / observed : inp (consumed more than once)`.
+    inp : Nat <- fill(inp0)
+    _ : Nat <- call_e4(ent, outp, inp)
+    b0 : Nat <- lane(0)
+    IO.print("BEND_LANE 0 " ++ Nat.show(b0))
+    b1 : Nat <- lane(1)
+    IO.print("BEND_LANE 1 " ++ Nat.show(b1))
+    b2 : Nat <- lane(2)
+    IO.print("BEND_LANE 2 " ++ Nat.show(b2))
+    b3 : Nat <- lane(3)
+    IO.print("BEND_LANE 3 " ++ Nat.show(b3))
+    IO.print("")
+
+# ONE `do` BLOCK PER FUNCTION, and that is not style. MEASURED: two of them in one function
+# is a parse error at the second ("expected : 'def', 'type' or 'law'"), and two BARE IO calls
+# stacked directly in one block is also a parse error at the second. So every stage of this
+# program is its own `def`, called from the one block `main` is allowed.
+#
+# ⚠ AND A `do` BLOCK MUST NOT END WITH A `<-` BIND. MEASURED here first, then reduced to
+# `do IO<Unit>: n : U32 <- IO.sleep(1)` on its own; the error is
+#   expected : a term
+#   observed : end of input
+# with the caret on the LAST BINDER, and it is a PARSE error, so it presents as a missing
+# newline rather than as a rule about binders. `renderer/cstyle.bend:2373` ends its own `main`
+# with `IO.print("")` for exactly this reason, and the comment there does not say so -- so
+# this is the note that does.
+# THE FREE, EXERCISED RATHER THAN DECLARED, because `bend -o` only emits a `CID_` for a
+# law REACHABLE from `main` (MEASURED: an uncalled law compiles at step 1 and then fails at
+# step 2 with "use of undeclared identifier CID_FREE_BUF", which names a Bend-level scoping
+# fact as a C error). Both frees are the NO-OPS their own files document --
+# `ops_bend.bend:1504-1506` and `stage3-shim.c`'s `free_buf_run` -- and the rows below are
+# the measurement of that: the extent and the address both survive the call.
+def bend_free_row() -> IO(Unit):
+  do IO<Unit>:
+    m : OB.Mem <- IO.pure(OB.Mem, alloc_mem(16, OB.store()))
+    m2 : OB.Mem <- IO.pure(OB.Mem, OB.raw_free(m))
+    nb : U32 <- IO.pure(U32, OB.Mem.nbytes(m2))
+    IO.print("BEND_FREE_NBYTES " ++ U32.show(nb))
+    IO.print("")
+
+def c_free_row() -> IO(Unit):
+  do IO<Unit>:
+    a : Nat <- alloc_buf(16)
+    a2 : Nat <- free_buf(a)
+    IO.print("C_FREE_RETURNS_SAME_ADDRESS " ++ Nat.show(a2))
+    IO.print("")
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    show_bend_space()
+    bend_free_row()
+    c_free_row()
+    entry_row()
+    run()
+    IO.print("")
