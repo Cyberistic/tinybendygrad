@@ -1,0 +1,380 @@
+{
+  "_about": [
+    "THE DTYPE SEAM ABI -- the single declaration both lanes are checked against.",
+    "",
+    "Four conventions sit between tinybendygrad/runtime/dtype.c and",
+    "tinybendygrad/runtime/dtype.js.  Two of them have already shipped a silent",
+    "bug.  A comment did not prevent either: both lanes were written by reading",
+    "each other's CODE, which is the thing under dispute.  So this file is not",
+    "prose -- abi_gate.py reads it, drives both lanes, and attributes every",
+    "disagreement to one of these four ids.",
+    "",
+    "`site` entries are [file, line, token].  The gate checks that the cited line",
+    "still contains the token.  That is a DANGLING-POINTER check, not a",
+    "behaviour check: it can tell you this document has gone stale, and it can",
+    "NOT tell you a lane conforms.  Conformance is measured, in `rows`.",
+    "",
+    "Generated-file sites (`probe.gen.c`, `probe.js`) are the BEND BACKENDS, not",
+    "the lanes.  They are cited because two of the four conventions are actually",
+    "implemented there and only inherited by the lanes."
+  ],
+  "backend": {
+    "c": {
+      "file": "gen/probe.gen.c",
+      "dispatch": [
+        3133,
+        "io_eff_rows[c].run(e, fs, w)"
+      ],
+      "note": "the frame is Term* fs of n = cid_arity(c) slots; ctr_take at :3136 built it"
+    },
+    "js": {
+      "file": "gen/probe.js",
+      "dispatch": [
+        777,
+        "op.run(...op.args, op.kont)"
+      ],
+      "note": "op.args is a JS array of NATIVE values, passed through with NO conversion"
+    }
+  },
+  "abi": [
+    {
+      "id": "ABI-1",
+      "name": "flat frame, arity is a property of the CID",
+      "statement": [
+        "A seam receives its arguments as a POSITIONAL frame whose length is",
+        "cid_arity(the CID).  `f[i]` is argument i.  An H.I64 argument is ONE",
+        "slot, not two -- it is a constructor node that the lane must OPEN.",
+        "Arity is declared once, in dtype.bend's signature, and both lanes must",
+        "consume exactly that many arguments."
+      ],
+      "shipped_bug": {
+        "was": "static s64 i64_of(Term* f) { return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]); }",
+        "did": "read f[0],f[1] of the ENCLOSING frame, i.e. arg0 + arg1, for a 1-argument seam",
+        "answered": "two allocation addresses, which are plausible pointers",
+        "fixed_at": "tinybendygrad/runtime/dtype.c:205",
+        "patch": ".agents/slop/w64mile/dtype-c-i64.patch:7-13"
+      },
+      "declared_arity": {
+        "_source": "tinybendygrad/dtype.bend:576-614",
+        "Dt.bf16": 1,
+        "Dt.fp16": 1,
+        "Dt.fp8_from": 2,
+        "Dt.fp8_to": 2,
+        "Dt.i64_trunc": 1,
+        "Dt.i64_floor_div": 2,
+        "Dt.i64_floor_mod": 2,
+        "Dt.i64_cdiv": 2,
+        "Dt.i64_cmod": 2,
+        "Dt.i64_ceildiv": 2
+      },
+      "site": {
+        "c": [
+          [
+            "tinybendygrad/runtime/dtype.c",
+            205,
+            "i64_of(Env e, Term t)"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.c",
+            207,
+            "ctr_take(e, t, 2, o)"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.c",
+            216,
+            "i64_of(e, f[0])"
+          ]
+        ],
+        "js": [
+          [
+            "tinybendygrad/runtime/dtype.js",
+            164,
+            "(a) => pack64(i64_of(a))"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            165,
+            "(a, b) => pack64"
+          ]
+        ],
+        "c_backend": [
+          [
+            "gen/probe.gen.c",
+            4317,
+            "io_eff_rows[c].run(e, fs, w)"
+          ]
+        ],
+        "js_backend": [
+          [
+            "gen/probe.js",
+            875,
+            "op.run(...op.args, op.kont)"
+          ]
+        ]
+      },
+      "rows": [
+        "abi1_fp8from_e4m3",
+        "abi1_fp8from_fnuz",
+        "abi1_bf16_1p5",
+        "abi123_trunc_A",
+        "abi123_trunc_B",
+        "abi123_fdiv_b3",
+        "abi123_fdiv_b5",
+        "abi123_fdiv_b1"
+      ],
+      "predicate": [
+        "ARITY-2 LIVENESS: the three abi123_fdiv_* rows vary ONLY the second",
+        "argument, over three values with three distinct CPython answers.  A lane",
+        "that consumed fewer than 2 arguments returns the same answer for all",
+        "three.  Three distinct answers is the only passing count.",
+        "ARITY-1: abi123_trunc_* is the identity on one record, so any frame",
+        "misread -- over or under -- moves it."
+      ]
+    },
+    {
+      "id": "ABI-2",
+      "name": "a record crosses BY FIELD NAME, and the names are hi/lo",
+      "statement": [
+        "An H.I64 crosses the JS boundary as a JS OBJECT carrying its BEND FIELD",
+        "NAMES, {hi, lo}.  It never crosses as positional fst/snd.  There is no",
+        "name at all on the C side: a record is a constructor node and is opened",
+        "POSITIONALLY by ctr_take.  So `p.fst`/`p.snd` and `a[0]`/`a[1]` are BOTH",
+        "wrong, in opposite directions, under the same one CID with the same name.",
+        "The names are load-bearing because they are the only thing the two",
+        "representations share."
+      ],
+      "shipped_bug": {
+        "was": "function i64_of(p) { ... p.fst >>> 0 ... p.snd >>> 0 ... }",
+        "did": "read two fields that do not exist on the incoming object",
+        "answered": "0 for every input: undefined >>> 0 === 0",
+        "consequence": "Dt.i64_trunc, the IDENTITY, is not the identity.  0/30 rows.",
+        "fixed_at": "NOT FIXED.  dtype.js:137 is shipped as-is."
+      },
+      "names": {
+        "_source": "tinybendygrad/helpers.bend:1639-1640",
+        "type": "I64{hi: U32, lo: U32}",
+        "hi": 1639,
+        "lo": 1640
+      },
+      "site": {
+        "c": [
+          [
+            "tinybendygrad/runtime/dtype.c",
+            207,
+            "ctr_take(e, t, 2, o)"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.c",
+            212,
+            "io_tup(e,"
+          ]
+        ],
+        "js": [
+          [
+            "tinybendygrad/runtime/dtype.js",
+            137,
+            "p.fst >>> 0"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            142,
+            "return io_tup("
+          ]
+        ],
+        "js_backend": [
+          [
+            "gen/probe.js",
+            467,
+            "\"hi\": _hi_0"
+          ],
+          [
+            "gen/probe.js",
+            502,
+            "_x_0[\"hi\"]"
+          ]
+        ],
+        "c_backend": [
+          [
+            "gen/probe.gen.c",
+            4242,
+            "io_node(e, CID_TUPLE, a, b)"
+          ]
+        ]
+      },
+      "rows": [
+        "abi123_trunc_A",
+        "abi123_trunc_B",
+        "abi123_fdiv_b3",
+        "abi123_fdiv_b5",
+        "abi123_fdiv_b1"
+      ],
+      "predicate": [
+        "DECISION PROCEDURE on abi123_trunc_* (hi != lo, both nonzero), because the",
+        "shipped answer is not any single wrong value but a TOTALISATION:",
+        "  L(R) == R          -> ABI-2 and ABI-3 both satisfied on this record",
+        "  L(R) == swap(R)    -> ABI-3 VIOLATED (hi and lo exchanged)",
+        "  L(R) neither        -> ABI-2 VIOLATED: the lane is not reading the two",
+        "                           halves of this record at all.  Shipped node",
+        "                           answers ` : ` here, which is the third case."
+      ]
+    },
+    {
+      "id": "ABI-3",
+      "name": "pair order: the value is (hi << 32) | lo",
+      "statement": [
+        "The two U32 words of an I64 are ordered HIGH FIRST.  hi is bits 63..32,",
+        "lo is bits 31..0.  Both lanes, both directions."
+      ],
+      "shipped_bug": {
+        "was": "n/a -- C is right by LAYOUT, not by CONTRACT",
+        "did": "io_tup and H.I64 are both 2-field constructors laid out alike, so",
+        "answered": "C and JS agree on (hi<<32|lo) by coincidence",
+        "fixed_at": "n/a -- nothing is broken yet, which is exactly why nothing checks it"
+      },
+      "site": {
+        "c": [
+          [
+            "tinybendygrad/runtime/dtype.c",
+            208,
+            "<< 32) | (u32)o[1]"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.c",
+            212,
+            "(u64)v >> 32"
+          ]
+        ],
+        "js": [
+          [
+            "tinybendygrad/runtime/dtype.js",
+            137,
+            "<< 32n) | BigInt(p.snd"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            142,
+            "(u >> 32n)"
+          ]
+        ]
+      },
+      "rows": [
+        "abi123_trunc_A",
+        "abi123_trunc_B",
+        "abi123_fdiv_b3",
+        "abi123_fdiv_b5",
+        "abi123_fdiv_b1"
+      ],
+      "predicate": [
+        "Same decision procedure as ABI-2; this is the branch that says SWAPPED.",
+        "Every abi123_* row has hi != lo BY CONSTRUCTION, because when hi == lo the",
+        "order is unobservable and the row could not fail.  That is a theorem about",
+        "the fixture set, not an assumption: the gate prints both words per row."
+      ]
+    },
+    {
+      "id": "ABI-4",
+      "name": "scalar transport: an F32 crosses as its BIT PATTERN",
+      "statement": [
+        "A U32 crosses as itself in both lanes.  An F32 crosses as its 32-bit",
+        "PATTERN in C and as its VALUE under node, and each lane must undo that",
+        "on the way in and NOT undo it on the way out.  Concretely:",
+        "  C   : the frame slot IS the pattern.  Read it with (u32)f[i].  Answer a",
+        "        pattern.  No conversion anywhere.",
+        "  node: op.args carries the VALUE (bend's JS book emits 1.5, not",
+        "        0x3FC00000) and f32_show() consumes the raw RESULT as a value, so",
+        "        the JS lane must answer a VALUE.",
+        "So dtype.js is written in two styles at once -- fp8_decode answers a",
+        "pattern while dtype_bf16/dtype_fp16 answer a value -- and only one of",
+        "them is what the JS backend consumes."
+      ],
+      "shipped_bug": {
+        "was": "function dtype_fp16(x) { return of32(half_to_f32(f16_bits(of32(x)))); }",
+        "did": "of32(x) applies pattern->value to a VALUE: of32(1.5) is 1.4e-45, the",
+        "answered": "smallest f32 subnormal; fp16(1.5) prints 0 under node, 1.5 under cc",
+        "second_site": "dtype.js:83 fp8_decode answers bits32(...) (a pattern) where",
+        "consequence": "dtype.js:119 and :123 answer of32(...) (a value).  Same file,",
+        "fixed_at": "NOT FIXED.  dtype.js:83 and :123 are shipped as-is."
+      },
+      "site": {
+        "c": [
+          [
+            "tinybendygrad/runtime/dtype.c",
+            157,
+            "fp16_encode((u32)f[0])"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.c",
+            174,
+            "u32 x = (u32)f[0];"
+          ]
+        ],
+        "js": [
+          [
+            "tinybendygrad/runtime/dtype.js",
+            123,
+            "f16_bits(of32(x))"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            83,
+            "return bits32(sgn ? -v : v);"
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            119,
+            "return of32("
+          ]
+        ],
+        "js_backend": [
+          [
+            "gen/probe.js",
+            391,
+            "Dt$fp16$(1.5"
+          ],
+          [
+            "gen/probe.js",
+            407,
+            "f32_show(_x_"
+          ]
+        ],
+        "c_backend": [
+          [
+            "gen/probe.gen.c",
+            4317,
+            "io_eff_rows[c].run(e, fs, w)"
+          ]
+        ]
+      },
+      "rows": [
+        "abi4_fp16_1p5",
+        "abi4_fp16_1p1",
+        "abi4_fp16_m2p25",
+        "abi4_fp8to_0x3C"
+      ],
+      "predicate": [
+        "These are the rows whose declared parameter is F32 or whose answer is F32,",
+        "so a disagreement confined to them is an ABI-4 disagreement.  The gate",
+        "confines it by PLANT: an ABI-4 plant in one lane must move these rows and",
+        "no abi1_*/abi123_* row.",
+        "Plant fixture note: the C-side plant reinterprets the pattern as a value",
+        "and back.  That is the identity for EVERY pattern, so the gate uses",
+        "fp16(1.1), whose pattern 0x3F8CCCCD has nonzero low 8 bits and is",
+        "therefore not an exactly-representable f32.  fp16(1.5) cannot move it."
+      ]
+    }
+  ],
+  "undeclared": [
+    [
+      "ABI-5",
+      "Term is u64 (probe.gen.c:171) and a JS number (dtype.js:142 answers Number(...)). Nothing states which parts of a Term are meaningful, or that a U32 argument's upper 32 bits are zero."
+    ],
+    [
+      "ABI-6",
+      "The zero-divisor branch: both lanes answer 0 where tinygrad's helpers raise ZeroDivisionError. The lanes AGREE, so no agreement gate can see it. Counted `diverge`, never `pass`."
+    ],
+    [
+      "ABI-7",
+      "dtype.js's own return-style split (ABI-4's second_site) was not localised when this was written; it is now attributed, but only for fp16 and fp8_to. fp8_from and bf16 were not re-examined against the repaired lane."
+    ]
+  ]
+}
