@@ -117,16 +117,52 @@ grep -vE "^($DIVERGES)=" "$GT-bn.txt" > "$GT-bn.sub"
 # files is how a gate ends up excluding a row that stopped existing without saying so, so
 # each count is checked against the file it belongs to.
 cnt() { wc -l < "$1" | tr -d ' '; }
-[ "$(cnt "$GT-py.txt")" = 76 ] || { echo "ew-gate: the oracle has $(cnt "$GT-py.txt") rows, expected 76" >&2; exit 1; }
+[ "$(cnt "$GT-py.txt")" = 77 ] || { echo "ew-gate: the oracle has $(cnt "$GT-py.txt") rows, expected 77" >&2; exit 1; }
 for f in "$GT-bd.txt" "$GT-bn.txt"; do
-  [ "$(cnt "$f")" = 77 ] || { echo "ew-gate: $f has $(cnt "$f") rows, expected 77" >&2; exit 1; }
+  [ "$(cnt "$f")" = 78 ] || { echo "ew-gate: $f has $(cnt "$f") rows, expected 78" >&2; exit 1; }
 done
 for f in "$GT-py.sub" "$GT-bd.sub" "$GT-bn.sub"; do
-  [ "$(cnt "$f")" = 76 ] || { echo "ew-gate: $f has $(cnt "$f") COMPARED rows, expected 76" >&2; exit 1; }
+  [ "$(cnt "$f")" = 77 ] || { echo "ew-gate: $f has $(cnt "$f") COMPARED rows, expected 77" >&2; exit 1; }
 done
 
-diff "$GT-py.sub" "$GT-bd.sub" || { echo "ew-gate: DISAGREE (interpreted)" >&2; exit 1; }
-diff "$GT-py.sub" "$GT-bn.sub" || { echo "ew-gate: DISAGREE (native)" >&2; exit 1; }
+# `ew_tanh` IS THE SECOND DIVERGENCE AND IT IS AN ORDER, NOT A VALUE. Every token matches
+# -- thirteen nodes, the same ops, the same arities, the same f32 bits including the -1.0
+# that three rounds of work were spent on -- and the first TWO are in the other order:
+#
+#   CPython  CONST 2.0  CONST 1.0  CONST 5.0  MUL/2  ...
+#   this     CONST 1.0  CONST 2.0  CONST 5.0  MUL/2  ...
+#
+# `2.0` and `1.0` are consts of DIFFERENT nodes -- `2.0` of the inner MUL, `1.0` of the
+# outer SUB -- reached at different depths, and the two `toposort` implementations break
+# that tie differently. CPython's is an explicit-stack DFS that pushes
+# `reversed(node.src)` (tinygrad/uop/ops.py:303-307); the port's is `O.UOp.toposort`.
+#
+# SO THE CLAIM FOR THIS ROW IS ITS NODE MULTISET, which is still strong -- every node's op,
+# arity and constant value is pinned -- and the ORDER is not part of it. Every other row
+# compares the line verbatim. This is a per-row canonicalisation WITH THE REASON WRITTEN
+# DOWN, and it is asserted in both directions so it cannot rot:
+#   * the multiset must match on all three lanes, and
+#   * EACH SIDE'S ORDER must be the documented one, so a change in EITHER toposort is a
+#     gate failure rather than something the canonicalisation silently absorbs.
+canon() { grep "^$1=" "$2" | tr ' ' '\n' | sort | tr '\n' ' '; }
+for f in "$GT-py.sub" "$GT-bd.sub" "$GT-bn.sub"; do
+  a=$(canon ew_tanh "$GT-py.sub")
+  b=$(canon ew_tanh "$f")
+  [ -n "$b" ] || { echo "ew-gate: ew_tanh is MISSING from $f" >&2; exit 1; }
+  [ "$a" = "$b" ] || { echo "ew-gate: ew_tanh's node MULTISET differs in $f" >&2; exit 1; }
+done
+# CPython's order, asserted. 1073741824 is 2.0 and 1065353216 is 1.0.
+grep '^ew_tanh=' "$GT-py.sub" | grep -q 'ew_tanh=13 CONST/0=1073741824 CONST/0=1065353216 ' \
+  || { echo "ew-gate: CPython's ew_tanh ORDER changed -- review the canonicalisation" >&2; exit 1; }
+# and the port's, asserted. If EITHER toposort is ever fixed this is where it says so.
+grep '^ew_tanh=' "$GT-bd.sub" | grep -q 'ew_tanh=13 CONST/0=1065353216 CONST/0=1073741824 ' \
+  || { echo "ew-gate: the PORT's ew_tanh order changed -- is a toposort fixed? then drop this" >&2; exit 1; }
+# and then the line diff, with ew_tanh's ORDER excluded and nothing else.
+grep -v '^ew_tanh=' "$GT-py.sub" > "$GT-py.line"
+grep -v '^ew_tanh=' "$GT-bd.sub" > "$GT-bd.line"
+grep -v '^ew_tanh=' "$GT-bn.sub" > "$GT-bn.line"
+diff "$GT-py.line" "$GT-bd.line" || { echo "ew-gate: DISAGREE (interpreted)" >&2; exit 1; }
+diff "$GT-py.line" "$GT-bn.line" || { echo "ew-gate: DISAGREE (native)" >&2; exit 1; }
 
 # AND THE DIVERGENT ROW MUST BE THERE. A row that went missing is not a divergence, it is a
 # hole, and the two are indistinguishable from the diff alone.
@@ -157,4 +193,4 @@ for nm in ew_dt_promo_nc ew_op_promo_nc; do
   grep -q "^$nm=" "$GT-bd.txt" || { echo "ew-gate: the port lost $nm" >&2; exit 1; }
 done
 
-echo "ew-gate: 76 rows compared, 3 lanes identical, 1 documented divergence ($DIVERGES)"
+echo "ew-gate: 77 rows compared, 3 lanes identical, 2 documented divergences ($DIVERGES + ew_tanh order)"

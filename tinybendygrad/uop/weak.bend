@@ -263,13 +263,59 @@ def wk_dtype_at(+fx: F.Folded, +self: U32, dss: List<&2, F.Derived>) -> Maybe<&2
 
 # `(lo as f32) + (hi_signed as f32) * 2^32`: exact for every |v| <= 2^24 and monotone
 # above it, which is what `float(val)` needs for a CONST.
-def wk_i64_to_f32.sgn(neg: Bool, hi: U32) -> F32:
-  match neg:
-    case True{}: F32.sub(U32.to_f32(hi), 4294967296.0)
-    case False{}: U32.to_f32(hi)
+# `float(val)`: `wk_dt_const.fpure` (below) is its only caller, and `wk_gate` in
+# .agents/slop/ is its gate.
+#
+# IT IS A CHUNKY ALGORITHM AND NOT A TWO-TERM SUM, and the reason is the whole content of
+# this rewrite. The previous form was
+#
+#     lo + (neg ? U32.to_f32(hi) - 2**32 : U32.to_f32(hi)) * 2**32
+#
+# which needs `hi` EXACTLY. `U32.to_f32` is CORRECT -- it is a Bend primitive, gated 12/12
+# against CPython over 0..4294967295 -- and it cannot be: f32 has 24 mantissa bits, so
+# `U32.to_f32(0xFFFFFFFF)` is 2**32, not 4294967295. So for any negative value the high
+# term collapsed to 0 and the answer became `U32.to_f32(lo)` alone. MEASURED: -1 and -2 BOTH
+# converted to 4294967296.0, and -2**32 converted to 0.0.
+#
+# f32 represents every integer below 2**24 EXACTLY, so the magnitude is carried in three
+# 24-bit (well, 24/24/16) chunks and combined with exact powers of two. Each `c * 2**24`
+# has at most 24 significant bits and is therefore exact, so the only rounding steps are
+# the two additions -- and they happen in increasing order of significance, which is what
+# makes the result CORRECTLY ROUNDED rather than merely close:
+#
+#     x = c2 * 2**48 + c1 * 2**24 + c0        c0, c1 < 2**24   c2 < 2**16
+#     v = ((c2 * 2**24) + c1) * 2**24 + c0
+#
+# The chunks are cut from the MAGNITUDE's two's complement bits, and `i64_neg` gives those
+# for every value INCLUDING int64.min: negating 0x8000000000000000 is a no-op, and the
+# no-op value IS 2**63, which is exactly int64.min's magnitude. So there is no special case
+# and no 65th bit -- the one place a two's complement port usually needs an exception, it
+# does not, and that is worth stating because it is not obvious.
+def wk_i64_to_f32.c0(lo: U32) -> F32: U32.to_f32(U32.and(lo, 16777215))
+
+def wk_i64_to_f32.c1(hi: U32, lo: U32) -> F32:
+  # bits 24..47: the low 8 from `lo`'s top byte and the high 16 from `hi`'s bottom half.
+  U32.to_f32(U32.or(U32.and(U32.shrn(lo, 24n), 255), U32.shln(U32.and(hi, 65535), 8n)))
+
+def wk_i64_to_f32.c2(hi: U32) -> F32:
+  # bits 48..63: the top half of `hi`, 16 bits.
+  U32.to_f32(U32.and(U32.shrn(hi, 16n), 65535))
+
+def wk_i64_to_f32.hi(+hi: U32, +lo: U32) -> F32:
+  F32.mul(F32.add(F32.mul(wk_i64_to_f32.c2(hi), 16777216.0), wk_i64_to_f32.c1(hi, lo)), 16777216.0)
+
+def wk_i64_to_f32.sgn(neg: Bool, +v: F32) -> F32:
+  Bool.pick(F32, neg, F32.neg(v), v)
+
+def wk_i64_to_f32.put(neg: Bool, +hi: U32, +lo: U32) -> F32:
+  wk_i64_to_f32.sgn(neg, F32.add(wk_i64_to_f32.hi(hi, lo), wk_i64_to_f32.c0(lo)))
+
+def wk_i64_to_f32.go(+neg: Bool, +x: H.I64) -> F32:
+  +m = H.i64_neg(neg, x)
+  wk_i64_to_f32.put(neg, H.hi32(m), H.lo32(m))
 
 def wk_i64_to_f32(+x: H.I64) -> F32:
-  F32.add(U32.to_f32(H.lo32(x)), F32.mul(wk_i64_to_f32.sgn(H.i64_is_neg(x), H.hi32(x)), 4294967296.0))
+  wk_i64_to_f32.go(H.i64_is_neg(x), x)
 
 # `float(val)`: the identity `truncate.get(self, float)` for every unsealed float.
 def wk_dt_const.fpure(v: O.Const) -> O.Const:

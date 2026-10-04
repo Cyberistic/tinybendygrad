@@ -825,23 +825,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # shortest-round-trip one, so f32(log 2) prints `0.693147` here and
 # `0.6931471824645996` there. That is a real difference about a different def and it
 # is NOT gated here; it is its own unit.
-# TODO(p3) elementwise.py:757  tanh         -- `2.0 * ((2.0 * self).sigmoid()) - 1.0`
-# is one line over the landed `sigmoid`, and its constants are NOT the problem. WHAT IS:
-# `ew_neg` negates by MUL by `CInt{H.i64_of_i32(4294967295)}`, and promoting a NEGATIVE int
-# const to a float const produces the WRONG f32.
-# MEASURED, and the signature is the handle: +1 -> 1.0f and +2 -> 2.0f are CORRECT, and
-# BOTH -1 and -2 give the SAME wrong value 0x4F800000 = 4294967296.0 -- so the MAGNITUDE is
-# lost entirely, not merely mis-signed. A mis-signed bug would give -1.0 and -2.0.
-# LOCATION: `wk_i64_to_f32` / `wk_i64_to_f32.sgn`, uop/weak.bend:266-272. The formula READS
-# correct on paper -- a two's complement value is `lo + (hi - 2**32) * 2**32` when negative
-# -- which is exactly why this is a MEASURED LOCATION and not a diagnosis. Next step: a
-# four-row probe of `U32.to_f32(0xFFFFFFFF)`, `wk_i64_to_f32.sgn`, and the two
-# intermediates of the sum.
-# IT IS NOT THE FIXTURE. This blocker SURVIVED a fixture repair: the promotion matrix's
-# missing cell WAS a fixture bug (two operands built as two independent
-# `O.Arena.empty()` roots, so both were node 1) and fixing that made `ew_promo_wf_wi` match
-# byte for byte -- while this one kept failing, for a different reason entirely.
-
 # TODO(p3) elementwise.py:500  cos  -- math.pi/2 is `F32.div(F32.pi(), 2.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
@@ -1190,6 +1173,21 @@ def ew_silu(+t: T.Tensor) -> T.Tensor: ew_swish(t)
 # the signature row is the only thing in this port that can see an operand order at all.
 def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), ew_k.quick_gelu())), False{})), False{})
 
+# `tanh` is `2.0 * ((2.0 * self).sigmoid()) - 1.0` (elementwise.py:757) -- one line over
+# the landed `sigmoid`, and it was HELD for three rounds. The blocker was real and it was
+# NOT in this file: `ew_neg` is `x * CInt{H.i64_of_i32(4294967295)}`, and promoting a
+# NEGATIVE int const to a float const went through a two-term sum
+# `lo + sgn(hi) * 2**32` that needs `hi` EXACTLY. f32 has 24 mantissa bits, so
+# `U32.to_f32(0xFFFFFFFF)` is 2**32 -- correctly rounded -- where the formula needed
+# 4294967295, the high term collapsed to zero, and -1 and -2 BOTH converted to
+# 4294967296.0. MEASURED, and the fix is `wk_i64_to_f32` carrying the magnitude in 24-bit
+# chunks, gated by `.agents/slop/wk-f32-gate.sh` (18 rows, three lanes).
+#
+# BOTH MULs PUT THE CONSTANT ON THE LEFT, as CPython writes `2.0 * self`, and that is
+# `rev=True` -- the same thing sigmoid's ADD needed, and the signature row is the only
+# thing in this port that can see an operand order at all.
+def ew_tanh(+t: T.Tensor) -> T.Tensor: ew_sub(ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), 2.0)), True{})), True{}), ECon{O.CFloat{1.0}}, False{})
+
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 
 # THE MISSING MATRIX CELL, and the fixture pair is chosen so the fold is VISIBLE. `2` and
@@ -1221,6 +1219,7 @@ def g_wf_wi() -> T.Tensor:
 
 def t_promo_wf_wi() -> IO(Unit): ew_sig("ew_promo_wf_wi", ew_mul2(g_f32c(), g_i32c(2, g_f32c()), False{}))
 def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
+def t_tanh() -> IO(Unit): ew_sig("ew_tanh", ew_tanh(g_i32()))
 
 
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
@@ -1513,6 +1512,7 @@ def main() -> IO(Unit):
     bh : Unit <- t_swish()
     bi : Unit <- t_silu()
     bh : Unit <- t_quick_gelu()
+    bh : Unit <- t_tanh()
     bh : Unit <- t_promo_wf_wi()
     v : Unit <- t_contig_bwd()
     w : Unit <- t_recip()

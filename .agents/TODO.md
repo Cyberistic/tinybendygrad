@@ -11518,3 +11518,329 @@ unit: `syntax error ... 'done'` at :245) and every other unit's slop tree untouc
 
       Its body is one line over the landed `sigmoid` and it is CORRECT; it is held solely
       because its row would carry the wrong `-1.0`. The marker says so, and now says why.
+
+## LASTLAW (2026-10-05) — `tinybendygrad/dtype.bend`'s 8 red laws: **8 -> 0**, LANDED. Not committed.
+Unit `.agents/slop/lastlaw/`, prefix `LL-`, notes `.agents/slop/LASTLAW.md`.
+
+### Progress: [##########] 10/10
+
+- [x] **`LL-1` THE SCOPING WAS A STALE DEPENDENCY, NOT A WALL. ALL EIGHT FILL.**
+      `bend tinybendygrad/dtype.bend --check-only`:
+      **`Error: 8 defs rely on unsafe or foreign code`** → **`ALL PROOFS CHECK`, 0**.
+      No law deleted: all eight names still declared once each (`grep -c '^def <n>('` = 1).
+      `import "./runtime/dtype.*"` lines in the file **14 → 0**; `IO(` **7 → 0**. The file
+      now declares **no foreign effect at all** — `agent-core.md`'s proven lane.
+      Whole-tree census (`sweep.sh`, 137 files): **red files 11 → 2**, and the two are
+      `sz.bend` (7, its own) and `runtime/autogen/libclang.bend` (336, its own).
+      All **8 inheritors** of `dtype.bend` (`nn/{__init__,onnx,optim,state}`,
+      `runtime/ops_python`, `runtime/zzprobe2`, `test/dtype_oracle`, `test/_probe/v5`)
+      go from 8 inherited red laws each to **zero**. Re-measured after landing:
+      **138 files, red 2.**
+- [x] **`LL-2` `i64_mul` IS NOT A WALL AND WAS NEVER THE DEPENDENCY OF SEVEN LAWS.**
+      `helpers.bend:2206` carries it; `helpers.bend:2244/:2248` already carry `cdiv_i64`
+      and `cmod_i64` in **upstream's spelling** (`cmod = x - cdiv(x,y)*y`), verified
+      0 disagreements over the fixture set. So `Dt.i64_cdiv`/`Dt.i64_cmod` are **one call
+      each**, and **DTYPEB's multiply-free floor-pair derivation is DELETED rather than
+      kept as a second spelling of one function** — it existed only because Bend had no
+      multiply (`I64MUL.md §4` reaches the same conclusion from the other side).
+- [x] **`LL-3` THE EIGHTH LAW'S BLOCKER WAS NAMED WRONG, AND BOTH NOTES WERE WRONG.**
+      `Dt.fp8_from` did not need `F32.from_bits`. It needed the **encoder**, which was
+      simply never ported: the live file grew a DECODER (`fp8_decode.*`) and kept an
+      imported body for the other direction. **The encoder needs nothing new** — every
+      step is U32 arithmetic on a bit pattern and no `F32` is ever *BUILT*, which is the
+      only thing Bend could not do. `F32.from_bits` is a **decoder** primitive; it
+      retired `Dt.bf16`, `Dt.fp16`, `Dt.fp8_to`. A real missing primitive was attached
+      to the wrong def.
+- [x] **`LL-4` ROWS PASSED AGAINST ROWS EXPECTED: 1330 / 1330, 0 disagreements.**
+      `i64` **102/102** (99 CPython-verified via `tinygrad/helpers.py` `cdiv`/`cmod`/
+      `ceildiv` + Python `//` `%`; **3 `TOTALISE`** at `b == 0` where CPython raises
+      `ZeroDivisionError`, counted, printed, **never counted as passes**). `fp8`
+      **1228/1228** (215 patterns, 122 f32 literals, 40 seeded randoms, ×4 formats,
+      oracle `tinygrad/dtype.py` `float_to_fp8` **CALLED**). Nothing transcribed.
+- [x] **`LL-5` THE HELPER-INVERSION PLANT FIRES: 65 rows.** `PINV` inverts `i64_is_neg`
+      (`helpers.bend:1692-1693`) in the **variant's own copy** of `helpers.bend` — a
+      file this unit does not own, mutated only in a scratch tree. `i64_is_neg` is read
+      directly by `Dt.i64_ceildiv` and indirectly by `cdiv_i64`/`cmod_i64`, so the
+      inversion is invisible to `--check-only` and to a whole-tree sweep. Base 1330/1330;
+      under `PINV` the i64 lane reports **65 disagreements**. **The gate is armed.**
+      `I64MUL.md` rule 5 records the alternative — a gate blind to an inverted sign test
+      for 442 rows while `cdiv` caught it instantly.
+- [x] **`LL-6` 3 DISARMS 0, 3 PLANTS DERIVED-EXACT.** `D1` `i64_trunc` `x`->`x|0` 0;
+      `D2` fp8 `<=` -> `not(> k-1)` 0; `D3` `Bool.pick(zero,..)` -> `match zero` 0.
+      `P1` ceildiv drops the evenness test → **4 rows, 4 derived** (`1_1`, `8_4`,
+      `min_m4`, `min_min`), from `cmod(a,b)==0 and sign(a)==sign(b)` off the oracle.
+      `P2` fp8 exponent mask `255`->`8388607` → **203 rows, 0 outside the 384-row
+      reachability family** (`& 0xFF` removes bit 8 of `pattern>>23` = **bit 31 of the
+      pattern**). `P3` fnuz zero keeps the sign → **33 rows, 33 derived**.
+      Whole `name=value` lines diffed; the differ is never a name comparer.
+- [x] **`LL-7` `P1` MOVED **0 ROWS** ON THE FIRST RUN AND THE REASON WAS A DEFECT IN
+      MY OWN PORT.** The first `P1` deleted `Bool.not(H.i64_is_zero(r))` from
+      `Dt.i64_ceildiv.above`, and it moved nothing because **that test was already
+      there twice** — `above` computed it and `.of` computed it again from the same `r`,
+      and `Dt.i64_ceildiv` asked `H.cmod_i64(a,b)` **twice**. **A plant that moves nothing
+      is a statement about the code under the plant.** Fixed: `above` is now
+      `Bool.not(Bool.xor(an, bn))` and owns no remainder, `.of` owns the evenness test,
+      `cmod_i64` asked once (it is a multiply and a subtract, so the duplicate was a
+      cost too). Re-run: exactly 4 derived rows, 0 others.
+- [x] **`LL-8` THREE MORE HARNESS DEFECTS, ALL MINE, TWO FOUND BY A SUSPECT NUMBER.**
+      (1) `P1`'s derived set was **INVERTED** — it derived `cmod != 0`, the set the plant
+      leaves *alone*. (2) `P3`'s derived set was **EMPTY** beside a plant that moved 33
+      rows: the kind was read as `k.split('][')[1][:-1]`, and
+      `fp8_from[fp8e4m3fnuz][denorm_k1_+0]` splits on `]['` into
+      `['fp8_from[fp8e4m3fnuz', 'denorm_k1_+0]']` — index 1 is the **PATTERN NAME**. Now a
+      regex. (3) `P2`'s family held the `fp8_from` half only, so 86 `float_to_fp8`
+      negative-decimal rows read as "outside the family" — every one has the sign bit set.
+      **A result that contradicts the tool's own error message is a suspect result.**
+- [x] **`LL-9` GUARDS.** `run.py:guard()` **REFUSES** a lane with 0 rows emitted, 0 rows
+      present, rows-expected ≠ rows-present, **0 CPython-verified rows**, **0 `TOTALISE`
+      rows** (the zero divisor would be ungated), or **0 f32 literals**. `sweep.sh`
+      **refuses an empty census** — an inline `xargs -P 6 sh -c … | grep -v '^0 '` walk
+      examined **137 files and printed nothing** with no error, which is a "0 red files"
+      claim about no files. Timeout via `perl -e 'alarm N; exec @ARGV'` (`timeout` is
+      NOT installed). **Live tree never written**: one pristine copy up front, every
+      variant built from THAT (`patch_dtype.py --src:` takes the source as a parameter),
+      md5 of all live files re-verified at the end — and the drift report is
+      **ATTRIBUTED**: `dtype.bend` is fatal, another agent's concurrent edit is reported
+      and not failed on, because a guard that cries wolf gets disabled.
+      Every patch and mutation asserts its anchor appears **exactly once**; DTYPEB's
+      `patch_dtype.py` cut at `HEAD_END = 566`, four hundred lines stale now.
+      The patcher is **idempotent**, so the unit re-gates after landing.
+      `substrate-check.sh` run with `zsh` (shebang `#!/bin/zsh`): live `dtype.bend`
+      **WARM**, 1132 lines, **NAMES CLEAN** (3 modules, 306 refs, 306 exact, 0 suffix,
+      0 unresolved, 0 dead imports).
+- [x] **`LL-10` `Dt.i64_ceildiv` IS THE ONLY ARITHMETRIC WRITTEN HERE, AND IT IS
+      `dtype.c`'s.** No `ceildiv_i64` exists. `helpers.py:66-69`'s `-(num // -amt)` is
+      NOT total — `-x` is unrepresentable at `int64.min`, and
+      `ceildiv(int64.min, int64.min)` is 1 where the negation route answers -1 — so it
+      is `cdiv + (cmod != 0 and sign(a) == sign(b))`, exactly `runtime/dtype.c:262-267`.
+      `min_min` is the row that says so.
+- [x] **`LL-11` REPORTED, NOT FIXED — `runtime/dtype.c`'s registrations are now DEAD.**
+      `#ifdef CID(Dt.fp8_from)` `:283`, `Dt.i64_trunc` `:293`, `Dt.i64_floor_div` `:298`,
+      `Dt.i64_floor_mod` `:303`, `Dt.i64_cdiv` `:308`, `Dt.i64_cmod` `:313`,
+      `Dt.i64_ceildiv` `:318` — with no foreign effect declared in `dtype.bend` no
+      program can define those CIDs, so `fp8_from_run`, `i64_run`, `div64_*_run` are
+      unreachable. `Dt.bf16` `:273`, `Dt.fp16` `:278`, `Dt.fp8_to` `:288` have been dead
+      since FROMBITS. **All 10 are dead now.** Same in `runtime/dtype.js:199-210`.
+      **A live unit owns `runtime/dtype.c`.**
+- [x] **`LL-12` FOUR STALE WALLS, all now false, none of them my file to edit.**
+      `mixin/dtype.bend:52-53` "`MUL` … `i64_mul` NOWHERE" — it is
+      `helpers.bend:2206`. `mixin/dtype.bend:54-57` names the four div/mod defs as
+      `IO(..)` EFFECT SEAMS at `dtype.bend:563-571`; `:50-51` does the same for
+      `Dt.i64_trunc`. `mixin/dtype.bend:61-68`'s TWO-part wall ("`i64_mul` and a shift are
+      missing outright") — **part one is closed**, and the seams it called the *second,
+      harder* part are closed too, so **`UOp._min_max`'s only remaining gap is a 64-bit
+      SHIFT**, and `i64_shl` (`helpers.bend:1819`) takes a `Nat`, which a runtime shift
+      amount cannot be. `helpers.bend:1740-1741` repeats the same false claim.
+      `renderer/__init__.bend:326-327` lists all ten `dtype.bend` seams.
+- [x] **`LL-13` UNCHANGED, PREVIOUSLY REPORTED, STILL TRUE.** `runtime/dtype.c:168-176`
+      (`bf16_run`) has no `isfinite` guard that `dtype.py:230` has; `:97-98` reads as if
+      e5m2 were the only saturating format. The JS lane's NaN collapse is unfixable from
+      any port-side definition (`comp.ts:539` hands the float to JavaScript, whose `NaN`
+      is one value — **0 of 199,999 NaN payloads survive**). `ops_python.bend:274-278`
+      (`w32`/`f32_of`) is still a duplicate of `base.bend`'s `from_bits` and should
+      import it. **No `.c`/`.js` change was made, so there is nothing for `cc` to
+      verify.**
+
+## JSFP8 — the JS fp8 lane (`runtime/dtype.js` + a decode gate). Rule prefix `JFP-`.
+
+[JSFP8 ## fp8 lanes](../../.agents/slop/JSFP8.md) 9/9 |███████████████████| 100%
+
+- [x] **`JFP-1` FINDING 1 FIXED — `runtime/dtype.js:46-48`.** `FP8_CFG`'s
+      `ovf_threshold` restated dtype.py's f64 magnitude as the f32 pattern OF THE
+      VALUE, dropping the `-1` that `dtype.py:238-241` writes on three of four
+      formats. `{0x47700000, 0x43780000, 0x47700000}` ->
+      `{0x476fffff, 0x4377ffff, 0x476fffff}`. Same table as `runtime/dtype.c:43`.
+      **THE REPORT NAMED `:37-38`; IT IS THREE ROWS AND THREE OF THE FOUR ENTRIES
+      WERE THE DEFECT.** `dtype.js:113` (`Math.pow(2, 1 - bias)`) left alone —
+      finding 3 is C-only.
+- [x] **`JFP-2` FINDING 4 FIXED — `runtime/dtype.js:109`.** e4m3's decode NaN is
+      now the bare `0x7fc00000`; `dtype.py:275` is a bare `return math.nan` and is
+      unsigned whatever the code's top bit was. e5m2's, at `:103-104`, keeps its
+      sign — `dtype.py:273`'s `copysign`.
+- [x] **`JFP-3` THE MISSING DECODE GATE, BUILT — `.agents/slop/jsfp8/gate.py`.**
+      `Dt.fp8_to` is PURE (`dtype.bend:916`, no `.js` import), so `dtype.js`'s
+      decoder is unreached from any `.bend` and no gate could ever see finding 4.
+      205,121 rows, every expectation CALLED from `tinygrad/dtype.py`.
+      **BEFORE 7 MISMATCH / AFTER 0**, present 205,121/205,121 both times.
+      Sweep centres come from `tinygrad`'s `_fp8_cfg`, never from `dtype.js`.
+- [x] **`JFP-4` `norm` FIXED — `jslane2/gen_f32_seam.py:100`.** Was
+      `repr(float(s))` with no round trip; now `norm/canon.py`'s `canon(s,"f32")`.
+      New row `fp16_1p1` closes the escape (the defect hid because no `1.1` row was
+      in `CASES`). Fix 5/5, plant 4/5 — `norm_check.py`.
+- [x] **`JFP-5` NAN CENSUS, EXHAUSTIVE, AND IT REFUTES TWO NOTES.**
+      **8,388,608 / 16,777,214 f32 NaN patterns survive `comp.ts:539-546`; the
+      8,388,606 lost are EXACTLY THE SIGNALLING ONES.** Quiet NaNs keep payload
+      and sign, and two quiet NaNs are two different doubles. `base.bend:42-44`'s
+      "JS collapses EVERY NaN onto 0x7FC00000" is **FALSE** for this path;
+      `norm/canon.py:56-62` tested four quiet probes and generalised.
+      **LL-13's "0 of 199,999 NaN payloads survive" is likewise false here.**
+      Both files are DO-NOT-TOUCH / another unit's: reported. **The real,
+      unrepairable loss is the sNaNs and any NaN that goes through JS arithmetic.**
+- [x] **`JFP-6` PLANT AND DISARM — `plants.py`.** BASE proven byte-identical by
+      md5 (`fa61344f1dbecd9afa7563364583ae47`, comments reversed too).
+      **OUT-OF-MECHANISM 0 on all five mutations.** Helper-inversion plant
+      (`kind >= FP8_E4M3FNUZ` -> `>`) moved 1 row and the mechanism determines it:
+      **EXACT**. Both disarms 0. One stated blind spot (no row calls the
+      bf16/fp16/i64 halves) with its reason.
+- [x] **`JFP-7` THE THIRD `norm`, FOUND — `.agents/slop/mm-lift-gate.py:158`.**
+      Carries `"F" + (f"{v:g}" if v.is_integer() else repr(v))`, the SAME
+      expression as `mm-dt-gate.py:60` and `mm-walk-gate.py:44`, and
+      `norm/canon.py:99-102` names only those two. Another unit's tree: reported.
+      `canon.py:87-88` also claims `gen_f32_seam.py` was already on it. **It was
+      not** until this unit.
+- [ ] **`JFP-8` NOT FIXED, NOT MINE — `dtype.js:162` `dtype_fp8_to` is registered
+      (`:202`) for a `Dt.fp8_to` that is PURE.** Its `of32` wrapper and
+      `fp8_decode`'s only JS caller are unreachable. Needs `dtype.bend`, which a
+      live unit owns. **Same dead-registration wall as `LL-11`, now for all ten.**
+- [ ] **`JFP-9` NOT FIXED, PRE-EXISTING — both `jslane2` gates are RED against the
+      live tree, verified on the COMMITTED copies.** `gen_f32_seam.py`: `bend`
+      rejects its `SRC` because `Dt.bf16`/`Dt.fp16` became seams in `dtype.bend`
+      (`dtype.bend:581-583`). `gen_js_seam.py`: its `i64_of` anchor still expects
+      `p.fst`/`p.snd` where the committed `dtype.js:160` reads `p.hi`/`p.lo`. Both
+      causes are in files this unit does not own.
+- [ ] **`JFP-10` NOT SWEPT EXHAUSTIVELY — `dtype.js:83-90`'s subnormal ladder.**
+      The C unit swept all 234,881,032 patterns in that window; here it is covered
+      by the 200,000-row `W` sample and `R`'s exact codes. An exhaustive version is
+      268 M CPython calls per format. `fp8fix`'s sweep already covers the
+      arithmetic; this is a cost, not an oversight.
+- [x] **`ARGL-1` `AOpLit{op: Op}` LANDS — the 20th `Arg` constructor.** `ops.bend`'s
+      `Arg` had NINETEEN and exactly two held an `Op` and BOTH PAIRED it, so
+      `upat.py:26`'s bare `Ops` was unspellable and `ns-oparg.bend` proved it
+      (`expected : O.Arg / observed : O.Op`). **The type could carry it; two
+      hand-written exhaustive `match`es said it could not.** Plus `eq_arg.AOpLit`
+      (the ucache key — a constructor with no comparator interns two PYLITERALs to
+      one node) and its `sel` arm. `arglit/al-oparg.bend` COMPILES;
+      `noneshape/ns-oparg.bend` left failing as the record of the hole.
+- [x] **`ARGL-2` `carg`'s CUSTOM/CUSTOMI ARM LANDS, and `ops.bend:137` is a
+      STRONGER WARRANT THAN ADEV-1'S.** One arm, adjacent to `INS`'s, and upstream
+      ASSERTS the pair for all three ops (`ops.py:136-141`: "CUSTOM/CUSTOMI arg
+      must be (str, DType)" / "INS arg must be (instruction, DType)"). ADEV-1
+      argued no third spelling existed; this one is typed. `in(` was already in
+      `COMPOSITE`, so the arm makes a REGISTERED form reachable rather than adding
+      a spelling.
+- [x] **`ARGL-3` THE TWO FIXES ARE SEPARABLE, MEASURED AS A 2x2.** Denominator
+      **4 py rows x 6 fields = 24 field-records**, printed in all four cells:
+      **5 / 4 / 3 / 2** (py-arm x bend-AOpLit). The `pre-arm` cell is MEASURED, not
+      inferred. They touch DISJOINT nodes — 1 and 3 carry the `(str, DType)` pair,
+      node 2 the bare `Op` — which is the proof. **The 2 that remain are the `AND`
+      and are upstream's `ops.py:444` assert firing; NOT widened.**
+- [x] **`ARGL-4` THE `ops.bend` TABLE HAD THREE LIES IN ONE LINE, NOT ONE.**
+      FLIP's arg is `tuple[bool, ...]` (`movement.py:253`), MSELECT's is a bare
+      `int` (`ops.py:769`), PYLITERAL's is "a Python literal"
+      (`__init__.py:101`). Only PERMUTE and UNSHARD were right. Corrected, with
+      `AOpLit` added and CUSTOM/CUSTOMI moved `AStr` -> `AInk` on `ops.py:137`.
+- [x] **`ARGL-5` THE SAME FALSE TABLE WAS IN A SECOND FILE AND IN A FIXTURE.**
+      `graphcmp.py` QUOTED it as the warrant for its `--plant bool` refusal (the
+      refusal is still correct; the premise was false) — corrected to name the
+      constructor. And `cshape/cs-plantir.bend:56` carries the lie as DATA
+      (`O.ATuple{[0]}` for a PYLITERAL). Another unit's tree: reported.
+- [x] **`ARGL-6` FOUR PLANTS, ALL FIRED.** A: `AOpLit` deleted -> `al-oparg.bend`
+      fails and the compiler **enumerates all 19 survivors**. B: the `carg` arm
+      removed from the real file -> 2 -> 4 of 24, restored with **md5 == pin**.
+      C: `AOpLit{op: U32}` -> `expected : Op / observed : U32`. D: the old table
+      line restored in a copy -> `al-transcription.py` fires, naming FLIP.
+- [x] **`ARGL-7` THE GATE WAS TAUTOLOGICAL FIRST, AND SAYING SO IS THE POINT.**
+      `al-transcription.py`'s first version asked whether a `(0,2,1)` IT built was
+      a tuple of ints, so it printed `ATuple FLIP TRUE` **on the planted line**.
+      Every value now comes from CALLING upstream (`Tensor.flip` -> `(True,
+      False)`). **agent-core.md`'s hand-typed-oracle rule, as a TYPE error.**
+- [x] **`ARGL-8` `uop/render.bend` EDITED — A DELIBERATE DO-NOT-TOUCH EXCEPTION.**
+      `arg_repr:698` matches `Arg` exhaustively, so `AOpLit` turned
+      `codegen/__init__.bend` COLD (`expected : cases for ../uop/ops.AOpLit`),
+      MEASURED by md5-verified revert (`d661068…` -> warm). One arm added, claimed
+      on disk first, value CPython-measured (`repr` of the PYLITERAL is `Ops.ADD`,
+      no parens). **Reverting is one line and costs the 24-field verdict 2 of 24.**
+- [ ] **`ARGL-9` `patir` NOT ADDED TO `GRAPHS`, DELIBERATELY.** The dict is
+      `graphcmp.py:1576-1586` and the dispatch arm is `graphcmp.bend` — **both
+      files were mine tonight** — but the graph's py side only emits rows under the
+      `AssertionError` widening, and **a monkeypatched oracle does not go into the
+      standing corpus.** The 2x2 (ARGL-3) has a denominator; a `64/64/64` union
+      count does not. Live census unchanged at **61/77 both sides**, `py-only=[]`,
+      `bend-only=[]`, `?=1` (the AND). **0 of 624 rows moved.**
+- [ ] **`ARGL-10` NOT FIXED, ANOTHER UNIT'S — `cshape/cs-plantir.bend:56`** builds
+      its PYLITERAL node with `O.ATuple{[0]}`. Needs `O.AOpLit{O.OpsADD{}}`. It
+      cannot be fixed by re-reading upstream: there is no upstream counterpart for
+      an `ATuple` PYLITERAL, because there is no such thing.
+- [ ] **`ARGL-11` STALE-CITATION CLASS, REPORTED NOT SWEPT.** ~25 `ops.bend:NNNN`
+      citations in `graphcmp.py` alone; **four corrected**, the rest left. `ops.bend`
+      moved 33 lines under this unit and more under others', so any count ages the
+      way `agent-core.md`'s own file count already did (136 -> 137). **NAME
+      citations are the durable fix and are what the four corrections use.**
+- [ ] **`ARGL-12` NOT FIXED, BY DESIGN — `frozenset` literals**
+      (`upat.py:25,36,43`): three element types under one Python type, needing a
+      UNION element the `Arg` redesign exists to avoid. **The py side already
+      answers `raw(frozenset)`, which is the honest letter.** NONSHAPE 3b stands.
+- [ ] **`ARGL-13` CORRECTION TO agent-core.md's SUBSTRATE NOTE —**
+      `.agents/slop/substrate-check.sh` **RUNS** (`syntax error … line 245` is
+      stale). Invoked as `perl -e 'alarm 900; exec @ARGV' zsh substrate-check.sh
+      <files>`: `SUBSTRATE CLEAN`, `BAD 0`, `refs=3664 exact=3664`, `unseen=2707`
+      printed beside the verdict. **With NO file arguments it reports `of 0 file(s)`
+      and `SUBSTRATE CLEAN` — green over nothing.**
+
+## Session 2026-10-05 round 6 — the conversion is FIXED and GATED, and `tanh` is IN
+
+- [x] **`wk_i64_to_f32` is a 24-bit-chunk Horner, gated 18 rows / 3 lanes byte-identical.**
+      `.agents/slop/wk-f32-gate.sh`, oracle and driver both GENERATED from one table by
+      `wk-f32-rows.py`.
+- [x] **`tanh` LANDED (elementwise.py:757).** `ew-gate` is 77 rows compared, 3 lanes
+      identical, 2 documented divergences.
+
+      ### THE ALGORITHM, AND WHY IT IS NOT A TWO-TERM SUM
+
+      ```
+      x = c2 * 2**48 + c1 * 2**24 + c0      c0, c1 < 2**24    c2 < 2**16
+      v = ((c2 * 2**24) + c1) * 2**24 + c0
+      ```
+
+      f32 represents every integer below 2**24 EXACTLY, so each `c * 2**24` is exact and
+      **the only rounding steps are the two additions, in increasing order of
+      significance** -- which is what makes the result correctly rounded rather than
+      merely close. The old form needed `hi` exactly; `U32.to_f32(0xFFFFFFFF)` is 2**32
+      (correctly rounded), so the high term collapsed to zero.
+
+      **AND `i64_neg` GIVES THE MAGNITUDE FOR EVERY VALUE INCLUDING int64.min** -- negating
+      0x8000000000000000 is a no-op and the no-op value IS 2**63. So there is no special
+      case and no 65th bit, which is not obvious and is the one place a two's complement
+      port usually needs an exception.
+
+      ### THE 18 ROWS REFUTE IT IN BOTH DIRECTIONS, and the table has a self-check
+
+      `neg1` (-1) and `neg2` (-2) are the rows the old formula made IDENTICAL, and the
+      oracle's two answers are different numbers -- so **the gate asserts they differ**, or
+      a table that let them collapse would not have noticed. The rest are the boundaries:
+      2**24-1 / 2**24 / 2**24+1 (the last exact integer, the first inexact, the first that
+      must round DOWN), 2**32-2 and 2**32-1 (two spellings of ONE f32, so a truncation
+      cannot pass as a rounding), 2**32 and 2**32+1, 2**45 and 2**45+1 (where the low bit
+      is the only thing that rounds), 2**63, int64.max, int64.min, -2**32.
+
+      The status line of the generator goes to **STDERR**, because the gate redirects that
+      script's stdout into the oracle row file and a progress line on stdout becomes a
+      phantom row -- which it did, and it read as a DISAGREE.
+
+      ### `tanh` IS IN, AND WHAT REMAINS IS AN ORDER AND NOT A VALUE
+
+      Every token matches, including the -1.0 that three rounds of work were spent on. The
+      first TWO consts are in the other order: `2.0` and `1.0` are consts of DIFFERENT
+      nodes -- `2.0` of the inner MUL, `1.0` of the outer SUB -- reached at different
+      depths, and the two `toposort` implementations break that tie differently. CPython's
+      is an explicit-stack DFS pushing `reversed(node.src)` (ops.py:303-307); the port's is
+      `O.UOp.toposort`.
+
+      So the claim for that one row is its node MULTISET, and the order is pinned in BOTH
+      DIRECTIONS: CPython's order is asserted, and so is the port's, with a message saying
+      what to do if either changes. **A canonicalisation that is not asserted in both
+      directions is a tolerance that will rot.**
+
+      ### A PARALLEL AUDIT FOUND 12 MORE WALLS OF THE SAME SHAPE
+
+      A read-only subagent scored all 559 wall reasons for limit-asserting language and
+      ranked the 12 likeliest to be false, each with the probe that settles it. Four of the
+      top five are the SAME error in four costumes: **a statement about what one particular
+      file exports, promoted to a statement about the substrate.** `U32.to_f32` being a
+      `law` (which I concluded from myself this session, and measured false) is exactly
+      that error. Two candidates are refuted by the fix THIS PORT ALREADY SHIPS:
+      `tc_ptx.bend:191` claims "Bend has no signed type" and is refuted by `i64_dec`, and
+      `mixin/rand.bend:455` claims `i64_mul`/`i64_div`/`i64_mod` do not exist and they are
+      in `helpers.bend`. The full ranking is in the subagent's report; the cheapest and
+      highest-confidence retirements are those two, plus `tensor.bend:312`'s float-Const
+      wall, which `nn/optim.bend` refutes five times over.

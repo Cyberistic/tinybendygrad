@@ -137,6 +137,7 @@ sig(Tensor(5).uop.sigmoid(), 'ew_sigmoid')
 sig(Tensor(5).uop.swish(), 'ew_swish')
 sig(Tensor(5).uop.silu(), 'ew_silu')
 sig(Tensor(5).uop.quick_gelu(), 'ew_quick_gelu')
+sig(Tensor(5).uop.tanh(), 'ew_tanh')
 
 # cell 8, THE ONE THE MATRIX WAS MISSING: two weak CONSTs of DIFFERENT classes, a
 # weakfloat against a weakint. Cell 1 is two weak int CONSTs; cell 3 is a float
