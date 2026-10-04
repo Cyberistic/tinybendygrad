@@ -1,0 +1,15 @@
+{
+ "rel": ".agents/slop/shadowtrees/census.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.59,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 29,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

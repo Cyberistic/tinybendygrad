@@ -26745,3 +26745,145 @@ Cite POSITIONS, never numbers: rule numbers have collided three times already.
   `U32.to_f32` for `F32.from_bits` moved **0 of 85** own rows and took the E2E gate
   from **6/10 to 1/10** (compiling clean, as FROMBITS also measured).  A file's own
   gate can be 85 rows wide and cover half the file; say which half.
+
+================================================================================
+WALLRULE unit, 2026-10-05.  CONTINUES FROM WHATEVER POSITION PRECEDES THIS BLOCK.
+Cite POSITIONS, never numbers: rule numbers have collided three times already.
+Full rule + instrument: `.agents/slop/wallrule/RULE.md`,
+`.agents/slop/wallrule/walls.tsv`, `.agents/slop/wallrule/walls.truth.tsv`,
+`.agents/slop/wallrule/wallcheck.py`.  Nothing committed.
+
+* **WALL/1 -- A WALL NAMES ITS PREREQUISITE, AND WHEN THE PREREQUISITE LANDS THE WALL IS
+  *STALE*, NOT *RETIRED*.** A WALL SAYS "THIS CANNOT BE DONE"; A STALE WALL SAYS "NOBODY
+  HAS CHECKED SINCE." **THEY LOOK IDENTICAL IN A NOTE AND THE SECOND ONE GETS FORWARDED AS
+  FACT -- MEASURED HERE: NINE WALLS, ONE DAY, ALL TRUE, ALL BELIEVED, TWO FORWARDED INTO THE
+  NEXT BRIEF BY THE COORDINATOR.** Every wall carries **(a) anchor** (a symbol a grep settles,
+  or the command that re-runs it), **(b) reopen** (the check whose result clears it),
+  **(c) date** (of the MEASUREMENT, not of the read). Anchor+reopen+date is a claim; anchor
+  alone is an anecdote with a coordinate; reopen alone is a permanent veto; date alone is a
+  diary. **RETIRED means the capability ARRIVED -- say what landed and where. STALE means the
+  prerequisite landed and nobody re-asked -- ANNOTATE IN PLACE. DO NOT DELETE A WALL BECAUSE IT
+  IS STALE: A DELETED WALL IS A WALL SOMEBODY WILL RE-DERIVE, AT THE SAME COST, IN A LATER
+  SESSION.**
+
+- **WALL/1a -- A WALL IS A CLAIM ABOUT A TREE, SO THE ANCHOR NAMES A FILE. A SCOPE THAT IS
+  READABLE IN NEITHER `work=` NOR `pin=` IS A REFUSAL, NEVER A VERDICT.** MEASURED: the row
+  for "the dtype seam's C lane cannot compile" carried the anchor `runtime/dtype.c emit`, which
+  is NOT A PATH. A grep of a nonexistent file returns nothing, and under `DEFECT` polarity
+  "nothing" reads as "the defect is GONE" -- so a wall with no file behind it was REPORTED AS A
+  MEASUREMENT, for two instrument generations. It is now `NO-SCOPE`, exit 5.
+
+- **WALL/1b -- AN ANCHOR'S POLARITY IS PART OF THE CLAIM, AND AN INVERTED ONE INVERTS THE
+  VERDICT.** `MISSING` (a capability is absent) and `DEFECT` (a defect is present) are
+  OPPOSITE readings of one grep. **THREE OF THE FIRST NINE ROWS WERE INVERTED** and all three
+  read "ABSENT, the wall stands" for capabilities that had landed. A fourth polarity,
+  **`PROSE`**, exists because five of the eighteen walls have a SENTENCE for their subject --
+  `fold.bend:513` is a false claim ABOUT A COMMENT, so filtering comments makes the row
+  unfalsifiable in the safe direction, which is the failure this unit exists against.
+
+- **WALL/1c -- THE WORKING COPY AND `HEAD` ARE TWO TREES, AND `SPLIT` IS A VERDICT THAT MEANS
+  *WAIT*.** MEASURED LIVE: `uop/ops.bend` is **6,306 working lines against HEAD's 8,334**,
+  another unit mid-rewrite, and **FOUR OF NINETEEN ROWS ARE `SPLIT`** because of it. W4
+  (`ParamArg.no_slot`) is at HEAD:1328 with **10** occurrences and has **0** in the working
+  copy. **SO `O.ParamArg.no_slot` IS MISSING *AND PRESENT*, AND WHICH ANSWER YOU GET DEPENDS
+  ON WHICH TREE YOU READ.** The same is true of W8 (`AOpLit{op: Op}`, HEAD:1079) and therefore
+  of `noneshape/ns-oparg.bend`, **which is the record of a FIXED HOLE: THE FILE STILL SAYS NO
+  CONSTRUCTOR EXISTS, ONE NOW DOES, AND BOTH ANSWERS ARE IN THIS TREE RIGHT NOW.** That is why
+  the distinction matters more than the verdict: a wall whose prerequisite landed is a
+  different object from a wall that was never checked, and only one of them can be deleted.
+
+- **WALL/1d -- A WALL IN A FILE HEADER IS A CLAIM AGAINST A FILE NOBODY RE-READS, WHICH IS WHY
+  IT IS WHERE A WALL ROTS FASTEST.** MEASURED: `tinybendygrad/mixin/dtype.bend:52` reads
+  `#   MUL   i64_mul   NOWHERE. Not helpers.bend, not dtype.bend, not any tinygrad .py.`
+  `tinybendygrad/helpers.bend:2206` is `def i64_mul(+a: I64, +b: I64) -> I64`, and `:1819`,
+  `:1969`, `:2100` carry `i64_shl`, `i64_div`, `i64_mod` -- **the wall's own next paragraph
+  (:61) conceded div/mod EXIST.** IT WAS PROPAGATED: `uop/fold.bend:513` and `uop/weak.bend:15`
+  both repeat it. **SO THE WALL IS NOT ONE FILE, IT IS ONE FALSE PREMISE IN THREE, AND TWO OF
+  THE THREE ARE *DECISION* CITATIONS** (WALL/3). `fold.bend:513` uses the false table entry as
+  the warrant for "a dim is not a value this port needs 64-bit arithmetic for" -- **THE
+  DECISION MAY STILL BE RIGHT AND NOBODY CAN TELL FROM THE FILE.** `fold.bend:2655` goes
+  further: it is a STANDING INSTRUCTION ("when helpers.bend grows them these defs go there and
+  the callers do not change") **WHOSE TRIGGER HAS ALREADY FIRED AND WAS NEVER EXECUTED** --
+  `def mm.u64.{of,lt,le,eq,is_zero}` at `:2681` is a private signed+unsigned ladder sitting
+  beside helpers.bend's four. **A WALL THAT PRESCRIBES ITS OWN REMEDY IS STILL A WALL, AND
+  NOTHING POLLS WHETHER THE REMEDY ARRIVED.**
+
+- **WALL/2 -- A COMPRESSED OBSERVATION IS A NEW CLAIM AND IT OWES THE SAME EVIDENCE AS THE
+  OBSERVATION.** `"THE PIPE IS THE TRAP"` COMPRESSED TO "`md5` TAKES ONE FILE" DROPPED THE
+  MECHANISM AND KEPT THE AUTHORITY; `md5 -q a b` WORKS and `find … | md5 -q` is a no-op because
+  `md5` reads stdin. **COMPRESSION IS WHERE TRUTH LOSES ITS FALSIFIER**, and the residue is
+  *wider than the evidence*, so it is wrong exactly where it will be used. Every such rule
+  carries **(a) mechanism** in one testable clause, **(b) a counterexample test** -- the case
+  where it must NOT apply -- and **(c) the command**. A rule that cannot state its mechanism in
+  one testable clause is a slogan, **AND A SLOGAN MUST NOT BE CITED AS THE GROUNDS FOR A
+  DECISION.**
+
+- **WALL/3 -- A CITATION SUPPORTING A *DECISION* IS A DIFFERENT KIND OF CLAIM FROM ONE
+  SUPPORTING A NOTE.** A `file:line` IS A COORDINATE IN A SYSTEM WITH AN OFFSET (a +32-line
+  header moved every body citation in a generated file by exactly +21): **CITE GENERATED
+  FILES BY NAME.** A note citation carries WALL/1's three fields; **a decision citation QUOTES
+  its warrant rather than pointing at it**, because a pointer silently inherits every future
+  edit of the line it names. **A FALSE PREMISE INSIDE A DECISION LOOKS DERIVED, SO NOBODY
+  RE-DERIVES IT** -- which is why the two live instances above are the finding and not the
+  fix.
+
+- **WALL/4 -- COUNT NO NUMBER YOU DID NOT MEASURE YOURSELF.** A count is a measurement of the
+  file it was taken in, at the time it was taken. **MEASURED IN THIS UNIT'S OWN LEDGER: THREE
+  FIGURES LIVE FOR ONE QUANTITY -- `61 of 77` in `opspy/corpus.py:6`, `60 of 77` at
+  notes OPS-3, and `53 of 77` when corpus.py IS RE-RUN over the 22 graphs `graphcmp.GRAPHS`
+  ACTUALLY DECLARES (`graphcmp.py:1388-1392`).** So OPS-3's correction is itself stale, its
+  reproducer contradicts it, and its reproducer's own docstring contradicts the reproducer.
+  **COROLLARY: AN INSTRUMENT THAT CANNOT FAIL IS NOT AN INSTRUMENT, IT IS A COMMENT THAT ADDS
+  UP. REPORT HIT RATE *AND* ERROR RATE AGAINST A STATED DENOMINATOR.**
+
+- **WALL/5 -- A WALL NOBODY WROTE DOWN IS INVISIBLE TO EVERY SWEEP, SO THE LEDGER'S OWN
+  COMPLETENESS IS A WALL ON THE INSTRUMENT.** Found by reading, in no ledger anywhere:
+  **`#ifdef CID(...)`**, the `cc`-rejected `CID` macro (`runtime/sz.c:126`, and SZ-5's
+  "guard must wrap the whole C group"); the **`NV` dead arms** (NV-1's `def t_const`, which the
+  working copy has already dropped and nobody recorded); the **`sz.c` stat/lstat shim**
+  (`sz.bend:51`); and **the `Args` spelling** (`ops_python.bend:1469` declares a local
+  `type Args is Data:` -- a gather row of `path, gx, gy, gz, vals, ok` -- in a file that
+  imports the domain arg type as `O.Arg`; **27 `Args.` uses, 0 `O.Arg`, 47 bare `Arg`, so a
+  grep for `Arg` in that file answers a different question than it appears to**). **A SWEEP
+  REPORTS ITS OWN DENOMINATOR, AND A SWEEP THAT FINDS NOTHING NEW HAS NOT LOOKED HARD ENOUGH
+  TO BE BELIEVED.**
+
+- **WALL/6 -- THE CHAIN REMEMBERS MORE THAN THE PATHSPEC DOES.**
+  `jj bookmark set master -r @-` MOVES MASTER ALONG THE **WHOLE ANCESTRY**, so any leftover
+  uncommitted commit in the chain is published with it: **two leftovers from before a server
+  restart were dragged onto `master`, BOTH INVISIBLE TO `jj split <paths>`.** That is `jj split`
+  being a ledger of the paths you remembered, one level up. **BEFORE MOVING A BOOKMARK, READ
+  THE CHAIN, NOT THE PATHSPEC.**
+
+* **THE INSTRUMENT, AND ITS FIVE FAILURES -- `.venv/bin/python
+  .agents/slop/wallrule/wallcheck.py [ID ...]`** (one grep per wall, working copy AND
+  `git show HEAD:`). **MEASURED: 19 rows, 15 graded against the independently hand-measured
+  `walls.truth.tsv`, 4 refused (3 `RUN`), AGREEMENT 15/15, ERROR RATE 0/15, outcomes 4 LANDED
+  / 3 GONE / 3 SPLIT / 5 STANDS / 4 OUT-OF-SCOPE. FOUR PLANTS ALL FIRED AND ALL FILES WERE
+  RESTORED BYTE-IDENTICAL (`cmp`):** rename `def i64_mul(` -> W1a `LANDED`->`SPLIT`; re-add
+  `import "./runtime/dtype.c"` to `dtype.bend` -> W11 `GONE`->`SPLIT (work only)`, i.e. a
+  **LIVE** defect in the copy that would ship; rename `def mm.u64.of(` -> U2
+  `STANDS`->`SPLIT`. **HIT RATE IS 100% AND THAT IS NOT THE INFORMATIVE NUMBER** -- every
+  anchor matches, so the number that matters is 0/15 against an independent truth file, plus
+  the 4 refusals reported AS refusals. **THE FIVE WAYS IT WAS WRONG:** (1) whole-tree patterns
+  gave `PRESENT` for 11 of 11, several matching the wall's own prose; (2) working copy only
+  called W4/W8 `STANDS` for capabilities at HEAD; (3) the not-a-path scope read `GONE`; (4)
+  **`[[:space:]]` IS A NESTED SET TO PYTHON'S `re`, so one anchor of eighteen could not
+  compile and would have graded FOREVER -- anchors are translated, the ledger is not
+  rewritten**; (5) **`^def (i64_mul|i64_div|i64_mod|i64_shl)\(` READ `work=4` AND A PLANT
+  REMOVING ONE OF THE FOUR MOVED IT TO 3 WITH THE VERDICT UNCHANGED: A COARSE ANCHOR IS AN
+  ANCHOR THAT CANNOT FAIL.** Split into W1a/W1b and the single-symbol plant fires.
+  **ONE LABELLER, STATED: every truth row was measured by the agent that wrote the anchors, so
+  0/15 is a SELF-CONSISTENCY rate and cannot catch an anchor and its truth wrong in the SAME
+  way -- which is this project's dominant failure mode. IT STILL EARNED ITS PLACE IMMEDIATELY:
+  3 OF 18 HAND-LABELS WERE WRONG ON THE FIRST PASS AND THE INSTRUMENT WAS RIGHT ON ALL THREE**
+  (W4/W8 read off the working copy alone; U7 called a def RETIRED because the working copy had
+  half-deleted it while HEAD still carries it).
+
+* **SWEEP RESULT, 2026-10-05: 15 of 19 WALLS CHECKED, 4 REFUSED. RETIRED 7 (W1a, W1b, W2, W6,
+  W7, W10, W11 -- THE CAPABILITY ARRIVED OR THE DEFECT IS FIXED). RE-DATED, NOT DELETED 8
+  (W4, W8, U7 = SPLIT, WAIT FOR THE ops.bend REWRITE; U1, U2, U4, U5, U6 = STANDS, ANNOTATED
+  WITH A NEW DATE AND A RECHECK COMMAND).** STALE-BUT-KEPT is the majority verdict and that is
+  the finding: **THE COMMON FAILURE IS NOT THAT THE WALL WAS WRONG, IT IS THAT NOBODY RE-ASKED
+  THE QUESTION AFTER THE ANSWER ARRIVED.** Full per-row table with both trees' hit counts:
+  `.agents/slop/wallrule/wallcheck.out`; per-row reasoning: `walls.truth.tsv`.

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/flip/py-probe5.py",
+ "base": "py-probe5.py",
+ "stem": "py-probe5",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2027,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/flip/py-probe5.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "ucache objects found: 0\n\n== IS THE CONFLATION SPECIFIC TO FLIP, OR GENERAL TO TUPLE ARGS? ==\n  FLIP     (True, False) then (1, 0): p is q = True   stored = (True, False)\n  PERMUTE  (1, 0) then (True, False): p is q = True   stored = (1, 0)\n\n== A BARE-BOOL ARG IS A DIFFERENT KEY PATH (not a tuple) ==\n  ALLOC bind_on_realize True : False\n  ALLOC bind_on_realize 1    : False\n\n== SO THE PORT'S SPELLING IS A VALUE CPYTHON ITSELF CANNOT HOLD APART ==\n  bool-first: arg= (True, False)  shape= (4, 3)\n  int request is the same node: True\n  int-first : arg= (1, 0)\n  shape=ValueError: bad flip on (4, 3), (1, 0)\n  bool request is the same node: True\n\n  => ops.py:428's guard is INSERTION-ORDER DEPENDENT. Which spelling is\n     stored is decided by which request reached the ucache first.\n",
+ "stderr": "",
+ "secs": 1.84,
+ "verdict": "shape=ValueError: bad flip on (4, 3), (1, 0)",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

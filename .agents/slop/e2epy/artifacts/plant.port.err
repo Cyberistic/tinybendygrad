@@ -1,0 +1,3 @@
+ORACLE DRIFT: e2epy/oracle-e2e.sh: MISSING -- the frozen oracle is gone
+ORACLE DRIFT: checks/e2e.sh: MISSING -- the frozen oracle is gone
+  the frozen shell oracle moved, so this run would compare against nothing. Restore it, or re-freeze it deliberately and update ORACLE_PIN in checks/e2e.py -- do not delete the pin.

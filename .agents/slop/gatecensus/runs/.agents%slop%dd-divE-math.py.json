@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-divE-math.py",
+ "base": "dd-divE-math.py",
+ "stem": "dd-divE-math",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3241,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-divE-math.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "fp8e4m3        py=(15,6) -> 448.0                    F(1138753536)   port=(16,8) num=16 ex=6 -> 1024.0                   F(1149239296)   fixed -> F(1138753536)\nfp8e4m3fnuz    py=(15,7) -> 240.0                    F(1131413504)   port=(16,8) num=16 ex=5 -> 512.0                    F(1140850688)   fixed -> F(1131413504)\nfp8e5m2        py=(30,3) -> 57344.0                  F(1197473792)   port=(30,2) num=6 ex=13 -> 49152.0                  F(1195376640)   fixed -> F(1197473792)\nfp8e5m2fnuz    py=(31,3) -> 57344.0                  F(1197473792)   port=(32,4) num=8 ex=14 -> 131072.0                 F(1207959552)   fixed -> F(1197473792)\nf16            py=(30,1023) -> 65504.0                  F(1199562752)   port=(30,1022) num=2046 ex=5 -> 65472.0                  F(1199554560)   fixed -> F(1199562752)\nbf16           py=(254,127) -> 3.3895313892515355e+38   F(2139029504)   port=(254,126) num=254 ex=120 -> 3.3762391092936863e+38   F(2138963968)   fixed -> F(2139029504)\nf32            py=(254,8388607) -> 3.4028234663852886e+38   F(2139095039)   port=(254,8388606) num=16777214 ex=104 -> 3.4028232635611926e+38   F(2139095038)   fixed -> F(2139095039)\nf64            py=(2046,4503599627370495) -> 1.7976931348623157e+308  F(2139095040)   port=(2046,4503599627370494) num=9007199254740990 ex=971 -> 1.7976931348623155e+308  F(2139095040)   fixed -> F(2139095040)\n\nTHE CONTROL. One factor off the fix at a time, per row. A mutation that moves\nnothing is a blind spot with a reason; both of these move named rows.\n\n  M1 max_exp subtracts 0 on ocp (was 1)  moves 3/8: fp8e4m3, fp8e4m3fnuz, fp8e5m2fnuz\n  M2 max_man keyed on ocp not e4m3       moves 2/8: fp8e4m3fnuz, fp8e5m2fnuz\n",
+ "stderr": "",
+ "secs": 0.39,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

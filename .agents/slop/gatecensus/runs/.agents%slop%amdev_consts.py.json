@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/amdev_consts.py",
+ "base": "amdev_consts.py",
+ "stem": "amdev_consts",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5649,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_consts.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "def MMIOV_FUNC_IDENTIFIER() -> U32: 3557\ndef NV_MAIBOX_CONTROL_TRN_OFFSET_BYTE() -> U32: 14712\ndef MAILBOX_MSGBUF_TRN_DW0() -> U32: 3670\ndef MAILBOX_MSGBUF_RCV_DW0() -> U32: 3674\ndef IDH_REQ_GPU_INIT_ACCESS() -> U32: 1\ndef IDH_REQ_GPU_FINI_ACCESS() -> U32: 3\ndef IDH_READY_TO_ACCESS_GPU() -> U32: 1\ndef MAILBOX_CLEAR_MS() -> U32: 1000\ndef MAILBOX_ACK_TIMEDOUT() -> U32: 500\ndef MAILBOX_MSG_TIMEDOUT() -> U32: 15000\ndef AMDGPU_PTE_VALID() -> U32: 1\ndef AMDGPU_PTE_SYSTEM() -> U32: 2\ndef AMDGPU_VM_PTB() -> U32: 3\ndef AMDGPU_VM_PDB2() -> U32: 0\ndef IP_DISCOVERY() -> U32: 0\ndef HARVEST_INFO() -> U32: 2\ndef GC() -> U32: 1\ndef BINARY_SIGNATURE() -> U32: 673256455\ndef DISCOVERY_TABLE_SIGNATURE() -> U32: 1396985929\ndef HARVEST_TABLE_SIGNATURE() -> U32: 1448231240\ndef MAX_HWIP() -> U32: 35\ndef MP0_HWIP() -> U32: 15\ndef MP1_HWIP() -> U32: 16\ndef GC_HWIP() -> U32: 1\ndef HDP_HWIP() -> U32: 2\ndef MMHUB_HWIP() -> U32: 12\ndef OSSSYS_HWIP() -> U32: 23\ndef NBIO_HWIP() -> U32: 14\ndef SDMA0_HWIP() -> U32: 3\ndef PCI_COMMAND() -> U32: 4\ndef PCI_COMMAND_MASTER() -> U32: 4\ndef AMDEV_VERSION() -> U32: 2684354573\ndef MMRCC_CONFIG_MEMSIZE() -> U32: 3555\ndef TMR_OFF_KB() -> U32: 64\ndef TMR_SZ_KB() -> U32: 10\ndef VRAM_SHIFT() -> U32: 20\ndef VA_BITS() -> U32: 48\ndef BOOT_SIZE() -> U32: 3145728\ndef RESERVED_BIG() -> U32: 402653184\ndef RESERVED_SMALL() -> U32: 67108864\ndef PTE_ADDR_MASK_LO() -> U32: 4294963200\ndef PTE_ADDR_MASK_HI() -> U32: 65535\ndef VRAM_WIN_FLAG() -> U32: 2147483648\ndef VRAM_WIN_MASK() -> U32: 2147483647\ndef RREG_LO() -> U32: 0\ndef RREG_HI() -> U32: 6\ndef RREG_DATA() -> U32: 1\ndef P2S_TABLE_ID_X() -> U32: 1345475416\ndef ASPM_CAP0() -> U32: 52\ndef ASPM_MASK() -> U32: 252\ndef ASPM_LINK_CAP() -> U32: 16\ndef ASPM_LNKCTL() -> U32: 16\ndef ASPM_LNKCTL_MASK() -> U32: 4294967292\ndef RLCG_READ_BIT() -> U32: 1\ndef RLCG_READ_SHIFT() -> U32: 28\ndef RLCG_RSV_MASK() -> U32: 1048575\ndef RLCG_ERR_MASK() -> U32: 251658240\ndef PCIE_AID_MASK() -> U32: 3\ndef PCIE_AID_SHIFT() -> U32: 32\ndef PCIE_EXT_SHIFT() -> U32: 34\ndef PCIE_HI_MASK() -> U32: 255\ndef VRAM_WIN_STEP() -> U32: 4\ndef HARVEST_BYTES() -> U32: 136\ndef HARVEST_ENTS() -> U32: 32\ndef AID_ALIVE_F() -> U32: 15\ndef AID_ALIVE_3() -> U32: 3\ndef AID_ALIVE_C() -> U32: 12\ndef AID_GROUP() -> U32: 4\ndef MAILBOX_NWORDS() -> U32: 4\ndef ADDRSPACE_SYS() -> U32: 2\ndef ADDRSPACE_PHYS() -> U32: 1\ndef VA_SHIFT0() -> U32: 12\ndef VA_SHIFT1() -> U32: 21\ndef VA_SHIFT2() -> U32: 30\ndef VA_SHIFT3() -> U32: 39\ndef PALLOC_NLV() -> U32: 27\ndef PALLOC_LEN() -> U32: 28\ndef PALLOC_BIG_I() -> U32: 9\ndef PALLOC_SMALL() -> U32: 4096\ndef PALLOC_BIG() -> U32: 2097152\n",
+ "stderr": "",
+ "secs": 0.23,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

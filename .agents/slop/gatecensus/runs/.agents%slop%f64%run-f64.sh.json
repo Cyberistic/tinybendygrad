@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/f64/run-f64.sh",
+ "base": "run-f64.sh",
+ "stem": "run-f64",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 27716,
+ "writes": false,
+ "entry": false,
+ "cmd": "./run-f64.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './run-f64.sh'",
+ "stdout": "",
+ "stderr": ""
+}

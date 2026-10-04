@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-band-run.sh",
+ "base": "dd-band-run.sh",
+ "stem": "dd-band-run",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 2140,
+ "writes": false,
+ "entry": false,
+ "cmd": "./dd-band-run.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './dd-band-run.sh'",
+ "stdout": "",
+ "stderr": ""
+}

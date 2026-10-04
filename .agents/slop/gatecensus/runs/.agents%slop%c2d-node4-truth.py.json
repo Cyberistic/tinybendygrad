@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/c2d-node4-truth.py",
+ "base": "c2d-node4-truth.py",
+ "stem": "c2d-node4-truth",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5656,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/c2d-node4-truth.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "node4_op = SHRINK node4_arg = ()\nnode4_nsrc = 1 node4_src0 = BUFFER\nnode1_arg = ParamArg(1, dtypes.i32) node1_oracle_arg = ParamArg(1, dtypes.i32, 9)\nnode1_device = None\nnode4_device = None node4_device_is_tuple = False\nnode2_op = ALLOC node2_arg = ParamArg(2, dtypes.i32) node2_device = None\ns5_copy_sel PORT node4 SHRINK size none = RAISED AssertionError: \ns5_copy_sel PORT node4 SHRINK size 9 = RAISED AssertionError: \ns5_copy_multi PORT node4 SHRINK arg none = ok | UOp(Ops.COPY, arg=('PYTHON', 'PYTHON'), src=(\n  UOp(Ops.SHRINK, arg=(), src=(\n    UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.i32), src=()),)),\n  UOp(Ops.RANGE, arg=(AxisType.DEVICE, 0), src=(\n    UOp(Ops.CONST, arg=2, src=()),)),))\ns5_copy_single PORT node4 SHRINK scalar arg none = ok | UOp(Ops.COPY, arg='PYTHON', src=(\n  UOp(Ops.SHRINK, arg=(), src=(\n    UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.i32), src=()),)),))\nshr_tuple_device = ('PYTHON', 'PYTHON')\ns5_copy_sel SHRINK tuple device arg 1 = ok | UOp(Ops.COPY, arg=('PYTHON', 'PYTHON'), src=(\n  UOp(Ops.MSELECT, arg=1, src=(\n    UOp(Ops.SHRINK, arg=(), src=(\n      UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.i32, addrspace=None, device=('PYTHON', 'PYTHON')), src=()),)),)),\n  UOp(Ops.RANGE, arg=(AxisType.DEVICE, 0), src=(\n    UOp(Ops.CONST, arg=2, src=()),)),))\nmselect_of_node4_direct = ok | UOp(Ops.MSELECT, arg=1, src=(\n  UOp(Ops.SHRINK, arg=(), src=(\n    UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.i32), src=()),)),))\n",
+ "stderr": "",
+ "secs": 0.44,
+ "verdict": "s5_copy_multi PORT node4 SHRINK arg none = ok | UOp(Ops.COPY, arg=('PYTHON', 'PYTHON'), src=(",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-coverage.py",
+ "base": "dd-coverage.py",
+ "stem": "dd-coverage",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6481,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-coverage.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "[cov] dd-oracle.txt rows      416\n[cov] dtype-oracle.py SKIP    65 names\n[cov] names dd prints that the filter suppresses: 0\n[cov] SKIP names dd-oracle.py never printed at all: []\n[cov] no --port-rows=<file>, so the port-side counts are omitted; the dd-side decomposition below is unaffected\n\n[cov] THE FIVE ADMITTED DISAGREEMENTS, and what kind of row each is:\n[cov]   lgu      fixture lgu   kind (the answer itself)\n[cov]   lgun     fixture lgu   kind n\n[cov]   lgvk     fixture lgv   kind k\n[cov]   lgvsig   fixture lgv   kind sig\n[cov]   lgwsig   fixture lgw   kind sig\n[cov] SKIP holds 8 names that are NOT creation-order rows: ['lga', 'lgb', 'lge', 'lgq', 'lgr', 'lgs', 'lgt', 'lgu']\n[cov]   of those, 8 are BARE rows -- the answer itself, not an order fact: ['lga', 'lgb', 'lge', 'lgq', 'lgr', 'lgs', 'lgt', 'lgu']\n\n[cov] the 57 genuinely creation-order names in SKIP are: ['lg1k', 'lg1n', 'lg1sig', 'lg2k', 'lg2n', 'lg2p', 'lg2sig', 'lg5k', 'lg5n', 'lg5sig', 'lg6k', 'lg6n', 'lg6p', 'lg6sig', 'lg9k', 'lg9n', 'lg9p', 'lg9sig', 'lgak', 'lgan', 'lgap', 'lgasig', 'lgbk', 'lgbn', 'lgbp', 'lgbsig', 'lgcsig', 'lgdk', 'lgdsig', 'lgek', 'lgep', 'lgesig', 'lgfn', 'lgfsig', 'lggk', 'lggsig', 'lglsig', 'lgmsig', 'lgqk', 'lgqn', 'lgqp', 'lgqsig', 'lgrk', 'lgrn', 'lgrp', 'lgrsig', 'lgsk', 'lgsn', 'lgssig', 'lgtk', 'lgtn', 'lgtsig', 'lgun', 'lgvk', 'lgvsig', 'lgwsig', 'upsig']\n",
+ "stderr": "",
+ "secs": 0.8,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

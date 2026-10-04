@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/xd2/wgsl_probe.py",
+ "base": "wgsl_probe.py",
+ "stem": "wgsl_probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2635,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd2/wgsl_probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": -11,
+ "stdout": "renderer is now WGSLRenderer\n[add] stopped after capture: IndexError tuple index out of range\n\n===== add: 2 kernel(s)\n------------------------------------------------------------\nfn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }\n@group(0) @binding(0)\nvar<uniform> INFINITY : f32;\n@group(0) @binding(1)var<storage,read_write>data0_4:array<f32>;\n@group(0) @binding(2)var<storage,read_write>data1_4:array<f32>;\n@compute @workgroup_size(1) fn E_4(@builtin(workgroup_id) gindex: vec3<u32>,@builtin(local_invocation_id) lindex: vec3<u32>) {\n  var val0 = data1_4[0];\n  var val1 = data1_4[1];\n  var val2 = data1_4[2];\n  var val3 = data1_4[3];\n  data0_4[0] = (val0+1.0f);\n  data0_4[1] = (val1+1.0f);\n  data0_4[2] = (val2+1.0f);\n  data0_4[3] = (val3+1.0f);\n}\n------------------------------------------------------------\nfn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }\n@group(0) @binding(0)\nvar<uniform> INFINITY : f32;\n@group(0) @binding(1)var<storage,read_write>data0_4:array<f32>;\n@group(0) @binding(2)var<storage,read_write>data1_4:array<f32>;\n@compute @workgroup_size(1) fn E_4(@builtin(workgroup_id) gindex: vec3<u32>,@builtin(local_invocation_id) lindex: vec3<u32>) {\n  var val0 = data1_4[0];\n  var val1 = data1_4[1];\n  var val2 = data1_4[2];\n  var val3 = data1_4[3];\n  data0_4[0] = (val0+1.0f);\n  data0_4[1] = (val1+1.0f);\n  data0_4[2] = (val2+1.0f);\n  data0_4[3] = (val3+1.0f);\n}\n",
+ "stderr": "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 6 leaked semaphore objects to clean up at shutdown\n  warnings.warn('resource_tracker: There appear to be %d '\n",
+ "secs": 11.89,
+ "verdict": "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 6 leaked semaphore",
+ "status": "FAIL",
+ "why": "rc=-11"
+}

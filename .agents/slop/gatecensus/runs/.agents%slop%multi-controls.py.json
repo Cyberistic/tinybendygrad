@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/multi-controls.py",
+ "base": "multi-controls.py",
+ "stem": "multi-controls",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4897,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/multi-controls.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "port rows read from multi.bend: 321\n\nC1  NEGATIVE -- one planted disagreement on a shared fixture\n  PASS  C1a the harness NAMES the planted row\n        INCONSISTENT=[('bx_none', 'bx_none', 1, 0)]\n  PASS  C1b the denominator is reported alongside\n        checked=1 of 1\n  PASS  C1c rc is non-zero\n        len(bad)=1 -> rc=1\n\nC2  NEGATIVE -- the same fixture with the plant removed\n  PASS  C2a reports clean\n        INCONSISTENT=[]\n  PASS  C2b the row was still CHECKED, not skipped to green\n        checked=1\n\nC3  READING -- the real oracle's 213 rows are readable\n  PASS  C3a rows() reads 213\n        got 213 of 213 lines\n\nC4  READING -- a planted F1 disagreement is seen by the same reader\n  PASS  C4a both planted rows read\n        got ['bx_none', 'bx_pad']\n  PASS  C4b the value is the planted one\n        bx_none -> '(0,)'\n\nC5  SELF -- a second, structurally different plant is caught\n  PASS  C5a a count claim over a 3-tuple is INCONSISTENT\n        INCONSISTENT=[('t_a', 't_a', 1, 3)] (len=3 vs asserted 1)\n  PASS  C5b the matching fixture with the same claim is consistent\n        CPython len==1 and the port asserts ==1 -> INCONSISTENT=[]\n\nALL CONTROLS PASS\n",
+ "stderr": "",
+ "secs": 2.5,
+ "verdict": "PASS  C1a the harness NAMES the planted row",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

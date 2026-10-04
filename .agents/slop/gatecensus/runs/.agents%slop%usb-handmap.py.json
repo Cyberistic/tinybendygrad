@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/usb-handmap.py",
+ "base": "usb-handmap.py",
+ "stem": "usb-handmap",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9085,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-handmap.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "usb3_log_level_debug=4\nusb3_timeout=1000\nusb_alt_setting=0\nusb_alt_setting2=0\nUNRESOLVED usb_asm24_size 'no evaluable node at tinygrad/runtime/support/usb.py:226:51'\nusb_bulk_buf=4194304\nusb_cdb_magic_usbc=1128420181\nusb_cfg_ba_mask=4095\nusb_cfg_bus_shift=24\nusb_cfg_dev_shift=19\nusb_cfg_fmt_rd=4\nusb_cfg_fmt_wr=68\nusb_cfg_fn_shift=16\nusb_chunk=261632\nusb_claim_iface=0\nUNRESOLVED usb_copyout_r1 'no evaluable node at tinygrad/runtime/support/usb.py:375:92'\nUNRESOLVED usb_copyout_r2 'no evaluable node at tinygrad/runtime/support/usb.py:375:100'\nUNRESOLVED usb_copyout_sentinel 'no evaluable node at tinygrad/runtime/support/usb.py:375:46'\nusb_cpl_abort=4\nusb_cpl_retry=2\nusb_cpl_unsup=1\nusb_ctrl_buf=4096\nusb_ctrl_rtype_in=192\nusb_ctrl_rtype_out=64\nusb_drain_gt=0\nUNRESOLVED usb_drain_mod 'no evaluable node at tinygrad/runtime/support/usb.py:334:82'\nusb_ep_in=129\nusb_ep_out=2\nusb_fast_p1_mask=223\nusb_fast_p1_val=64\nusb_fast_p2_mask=184\nusb_fast_p2_val=48\nUNRESOLVED usb_go_word 'no evaluable node at tinygrad/runtime/support/usb.py:222:46'\nUNRESOLVED usb_go_word_stop 'no evaluable node at tinygrad/runtime/support/usb.py:222:46'\nusb_half=262144\nusb_host_size_lo32=1572896\nUNRESOLVED usb_link_bytes 'no evaluable node at tinygrad/runtime/support/usb.py:214:48'\nusb_max_stream=1048576\nusb_mode_mask=3\nUNRESOLVED usb_remote_tuple 'no evaluable node at tinygrad/runtime/support/usb.py:387:97'\nusb_reply_len=13\nusb_reply_magic_usbs=1396855637\nusb_reply_timeout=2000\nusb_req_e4=228\nusb_req_e5=229\nusb_req_f0=240\nusb_req_f2=242\nusb_req_power=243\nusb_scratch_word=2\nusb_scsi_slot_mask=255\nusb_scsi_slot_shift=8\nusb_sentinel_block=512\nUNRESOLVED usb_sentinel_magic 'no evaluable node at tinygrad/runtime/support/usb.py:254:57'\nUNRESOLVED usb_sentinel_mask 'no evaluable node at tinygrad/runtime/support/usb.py:254:45'\nusb_setcfg_n=1\nusb_slot=16384\nusb_sram_align=512\nusb_sram_align2=512\nusb_sram_slot=16384\nUNRESOLVED usb_stage_2half 'no evaluable node at tinygrad/runtime/support/usb.py:215:56'\nusb_stage_lo=24\nusb_stream_byte_en=15\nusb_stream_byte_en_rd=15\nusb_stream_fmt_rd=32\nusb_stream_fmt_wr=96\nusb_string_buf=256\nUNRESOLVED usb_table_row_bytes 'no evaluable node at tinygrad/runtime/support/usb.py:321:16'\nUNRESOLVED usb_table_size_off 'no evaluable node at tinygrad/runtime/support/usb.py:321:88'\nUNRESOLVED usb_vram_words 'no evaluable node at tinygrad/runtime/support/usb.py:221:50'\nUNRESOLVED usb_win_cq_hi 'no evaluable node at tinygrad/runtime/support/usb.py:228:53'\nUNRESOLVED usb_win_cq_lo 'no evaluable node at tinygrad/runtime/support/usb.py:228:46'\nUNRESOLVED usb_win_fence_hi 'no evaluable node at tinygrad/runtime/support/usb.py:227:55'\nUNRESOLVED usb_win_fence_lo 'no evaluable node at tinygrad/runtime/support/usb.py:227:49'\nUNRESOLVED usb_win_sram_lo 'no evaluable node at tinygrad/runtime/support/usb.py:229:48'\nusb_xdata_chunk=255\n",
+ "stderr": "# hand map: 74 positions, 20 unresolved\n",
+ "secs": 5.46,
+ "verdict": "UNRESOLVED usb_asm24_size 'no evaluable node at tinygrad/runtime/support/usb.py:226:51'",
+ "status": "FAIL",
+ "why": "rc=1"
+}

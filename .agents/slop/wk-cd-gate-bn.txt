@@ -1,0 +1,7 @@
+cd_big_2p40=i64
+cd_one_2p40=i64
+cd_none=None
+cd_0_10=i32
+cd_neg5_5=i32
+cd_i32full=i32
+cd_strong=i32

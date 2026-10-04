@@ -1,0 +1,14 @@
+{
+ "rel": ".agents/slop/wallrule/wallcheck.sh",
+ "how": "zsh (no exec bit)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.87,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 3,
+ "verdict": "WALLCHECK: 18 row(s), 14 grepped -> 4 STANDS, 6 STALE/RETIRED, 0 STORY, 4 out-of-scope (RUN rows are re-measured by hand).",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

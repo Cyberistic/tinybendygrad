@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/zero-classify.py",
+ "base": "zero-classify.py",
+ "stem": "zero-classify",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 18662,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/zero-classify.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "==============================================================================\nZERO CLASSIFICATION -- ?\nVALID FOR REVISION: UNSTATED\nbaseline 0 rows | oracle 0 rows | 0 DISAGREE with CPython | 0 baseline rows have NO CPython answer\n------------------------------------------------------------------------------\nID    MEASURED  ROWS SITE               VERDICT\n------------------------------------------------------------------------------\nCONTROLS (RULE C -- NOT counted as zeros; `0 rows` is their REQUIRED outcome and they are the guard on every verdict above)\n------------------------------------------------------------------------------\nTALLY of the 0 mutations: UNREACHABLE+proof 0 | PORT-DEFECT 0 | PATCH-NOT-APPLY 0 | INVISIBLE-to-reader 0 | NO-MUTATION-WRITTEN 0\nMOVED (not a zero): 0\nNOT-A-PROGRAM (RULE B, also not a zero): 0\n\nTHE DENOMINATOR -- what was AIMED is not what MOVED\n  defs in the file (the site universe) : 0\n  distinct sites a mutation aimed at    : 0\n  aimed sites NOT a def in this file    : 0  \n  families with NO aimed mutation       : 0  \n  baseline rows UNATTRIBUTED            : 0  \n  baseline rows COVERED (a mutation moved them) : 0 of 0\n  unmoved rows at a site that WAS aimed  : 0  \n  unmoved rows whose family has NO aimed mutation : 0  \n  NOTE: UNREACHABLE+proof unused by this table -- the table does not exercise it\n  NOTE: PORT-DEFECT unused by this table -- the table does not exercise it\n  NOTE: PATCH-NOT-APPLY unused by this table -- the table does not exercise it\n  NOTE: INVISIBLE-to-reader unused by this table -- the table does not exercise it\n  NOTE: NO-MUTATION-WRITTEN unused by this table -- the table does not exercise it\n",
+ "stderr": "",
+ "secs": 0.64,
+ "verdict": "baseline 0 rows | oracle 0 rows | 0 DISAGREE with CPython | 0 baseline rows have NO CPython answer",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

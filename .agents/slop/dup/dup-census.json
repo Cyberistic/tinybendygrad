@@ -84,9 +84,9 @@
   "label": "tinybendygrad_codegen_opt_search.bend.oracle0.txt",
   "shape": "F1",
   "phys": 20,
-  "accepted": 20,
-  "names_strict": 20,
-  "names_shipped": 20,
+  "accepted": 12,
+  "names_strict": 12,
+  "names_shipped": 12,
   "dup_n_strict": 0,
   "dup_rows_strict": 0,
   "lost_strict": 0,
@@ -94,7 +94,48 @@
   "lost_shipped": 0,
   "name_defs_differ": [],
   "dupes": {},
-  "refuse": [],
+  "refuse": [
+   [
+    1,
+    "#repro_tree",
+    "#repro_tree=.agents/slop/opstree"
+   ],
+   [
+    2,
+    "#repro_vendored_import",
+    "#repro_vendored_import=OK:209"
+   ],
+   [
+    14,
+    "#repro_split_UPCAST_top0",
+    "#repro_split_UPCAST_top0=group=10 amt0=10 axes=0|1|2|3|4|5|6|7|8|9"
+   ],
+   [
+    15,
+    "#repro_split_UPCAST_top1",
+    "#repro_split_UPCAST_top1=group=0 amt0=0 axes=-"
+   ],
+   [
+    16,
+    "#repro_split_UNROLL_top0",
+    "#repro_split_UNROLL_top0=AxisType.ABSENT"
+   ],
+   [
+    17,
+    "#repro_split_UNROLL_top1",
+    "#repro_split_UNROLL_top1=AxisType.ABSENT"
+   ],
+   [
+    18,
+    "#repro_split_LOCAL_top0",
+    "#repro_split_LOCAL_top0=group=8 amt0=8 axes=0|1|2|3|4|5|6|7"
+   ],
+   [
+    19,
+    "#repro_split_LOCAL_top1",
+    "#repro_split_LOCAL_top1=group=8 amt0=0 axes=0|1|2|3|4|5|6|7"
+   ]
+  ],
   "cont": [],
   "nob": [],
   "unbal": []
@@ -60365,9 +60406,9 @@
   "label": "tinybendygrad_runtime_ops_cpu.bend.oracle0.txt",
   "shape": "F1",
   "phys": 20,
-  "accepted": 20,
-  "names_strict": 20,
-  "names_shipped": 20,
+  "accepted": 19,
+  "names_strict": 19,
+  "names_shipped": 19,
   "dup_n_strict": 0,
   "dup_rows_strict": 0,
   "lost_strict": 0,
@@ -60375,7 +60416,13 @@
   "lost_shipped": 0,
   "name_defs_differ": [],
   "dupes": {},
-  "refuse": [],
+  "refuse": [
+   [
+    1,
+    "# OSX",
+    "# OSX=True WIN=False"
+   ]
+  ],
   "cont": [],
   "nob": [
    [
@@ -62006,9 +62053,9 @@
   "label": "tinybendygrad_uop_ops.bend.port.txt",
   "shape": "F1",
   "phys": 319,
-  "accepted": 319,
-  "names_strict": 319,
-  "names_shipped": 319,
+  "accepted": 315,
+  "names_strict": 315,
+  "names_shipped": 315,
   "dup_n_strict": 0,
   "dup_rows_strict": 0,
   "lost_strict": 0,
@@ -62016,7 +62063,28 @@
   "lost_shipped": 0,
   "name_defs_differ": [],
   "dupes": {},
-  "refuse": [],
+  "refuse": [
+   [
+    219,
+    "#shared_axis_members",
+    "#shared_axis_members=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER"
+   ],
+   [
+    220,
+    "#shared_axis_values",
+    "#shared_axis_values=1,2,3,4,5,6,7,8"
+   ],
+   [
+    221,
+    "#shared_axis_count",
+    "#shared_axis_count=8"
+   ],
+   [
+    222,
+    "#shared_axis_sorted",
+    "#shared_axis_sorted=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER"
+   ]
+  ],
   "cont": [],
   "nob": [],
   "unbal": []
@@ -62450,9 +62518,9 @@
   "label": "tinybendygrad_uop_spec.bend.oracle0.txt",
   "shape": "F1",
   "phys": 16,
-  "accepted": 16,
-  "names_strict": 16,
-  "names_shipped": 16,
+  "accepted": 11,
+  "names_strict": 11,
+  "names_shipped": 11,
   "dup_n_strict": 0,
   "dup_rows_strict": 0,
   "lost_strict": 0,
@@ -62460,7 +62528,33 @@
   "lost_shipped": 0,
   "name_defs_differ": [],
   "dupes": {},
-  "refuse": [],
+  "refuse": [
+   [
+    9,
+    "#repro_four_src_rule_op",
+    "#repro_four_src_rule_op=PROGRAM"
+   ],
+   [
+    10,
+    "#repro_four_src_reject",
+    "#repro_four_src_reject=BINARY|LINEAR|SINK|SOURCE"
+   ],
+   [
+    11,
+    "#repro_tensor_own_n",
+    "#repro_tensor_own_n=22"
+   ],
+   [
+    12,
+    "#repro_spec_full_own",
+    "#repro_spec_full_own=4"
+   ],
+   [
+    13,
+    "#repro_shared_rejects",
+    "#repro_shared_rejects=15:RANGE"
+   ]
+  ],
   "cont": [],
   "nob": [],
   "unbal": []

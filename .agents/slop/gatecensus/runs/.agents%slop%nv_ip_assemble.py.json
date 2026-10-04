@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_ip_assemble.py",
+ "base": "nv_ip_assemble.py",
+ "stem": "nv_ip_assemble",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 960,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_ip_assemble.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_ip_assemble.py\", line 17, in <module>\n    i, j = s.index(B) + len(B), s.index(E)\n           ^^^^^^^^^^\nValueError: substring not found\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

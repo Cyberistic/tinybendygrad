@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-order.py",
+ "base": "ag-order.py",
+ "stem": "ag-order",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6710,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-order.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-order.py:24: SyntaxWarning: invalid escape sequence '\\`'\n  prose containing unbalanced parentheses -- `whole-operation effect (\\`def\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-order.py\", line 181, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-order.py\", line 126, in main\n    path = pathlib.Path(sys.argv[1])\n                        ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.12,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

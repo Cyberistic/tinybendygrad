@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/notes/sz-snips.py",
+ "base": "sz-snips.py",
+ "stem": "sz-snips",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 1124,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sz-snips.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sz-snips.py\", line 23, in <module>\n    CASES = [line for line in open(sys.argv[1]).read().split('\\n===\\n') if line.strip()]\n                                   ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

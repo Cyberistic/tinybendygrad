@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ffi-experiment/run-all.sh",
+ "base": "run-all.sh",
+ "stem": "run-all",
+ "sh": true,
+ "py": false,
+ "exec": false,
+ "interp": "",
+ "bytes": 4358,
+ "writes": false,
+ "entry": false,
+ "cmd": "zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ffi-experiment/run-all.sh",
+ "how": "zsh",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "=== E1 libc strlen, C-local ===\n  step1 bend -o   ok  (80461 bytes)\n  step2 cc compile ok\n  step3 LINK      ok\n  step4 run       ok  | SLEN 13\nPASS [e1] expected 'SLEN 13'\n\\n=== E3 libc both directions (getenv out, Bend String in) ===\n  step1 bend -o   ok  (86043 bytes)\n  step2 cc compile ok\n  step3 LINK      ok\n  step4 run       ok  | ENV barbaz\nMARSHAL 13\nPASS [e3] expected 'ENV barbaz'\n  step1 bend -o   ok  (86043 bytes)\n  step2 cc compile ok\n  step3 LINK      ok\n  step4 run       ok  | ENV barbaz\nMARSHAL 13\nPASS [e3] expected 'MARSHAL 13'\n\\n=== E5 three laws, ONE shim.c, one import, one link ===\n  step1 bend -o   ok  (81863 bytes)\n  step2 cc compile ok\n  step3 LINK      ok\n  step4 run       ok  | 19\nPASS [e5] expected '19'\n\\n=== E4 libclang via -lclang + rpath ===\n  step1 bend -o ok (78426 bytes)\n  step2 cc compile ok\n  step3 LINK ok\nPASS [e4] | CLANG Apple clang version 17.0.0 (clang-1700.6.3.2)\n\\n=== E13 Metal: C fn, ObjC send, raw objc runtime, property read ===\n  step1 bend -o   ok  (92514 bytes)\n",
+ "stderr": "",
+ "secs": 25.22,
+ "verdict": "step1 bend -o   ok  (80461 bytes)",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

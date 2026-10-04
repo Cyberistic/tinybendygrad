@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dsl_constmap.py",
+ "base": "dsl_constmap.py",
+ "stem": "dsl_constmap",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 19749,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsl_constmap.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "MEASURED base_size(F32I) = 3  (max hi 23 -> (23+8)//8 = 3)  [gate row base_size_F32]\nMEASURED base_size(F64I) = 8  (max hi 63 -> (63+8)//8 = 8)  [gate row base_size_F64]\nMEASURED BitField(63,32).mask = 4294967295  [gate rows bf_63_32]\nMEASURED BitField(31,0).mask = 4294967295  [gate rows bf_31_0]\nMEASURED BitField(23,8).mask = 65535  [gate rows bf_23_8]\nMEASURED the widest mask a U32 holds = 4294967295  [gate rows bf_31_0, bf_mask_31_0]\nMEASURED dsl.py:317 builds `neg_bits |= (1 << bit)`; the PORT stores the MASK because Bend has no bit-shift-as-mask shorthand that survives U32.not\nCHECKED 162   WRONG 0   UNMAPPED 0   DEAD 2\nDEAD: ADJ_WAVE32: 1 -- this port's own marker, and NOTHING reads it\nDEAD: ADJ_IS_CDNA: 1 -- this port's own marker, and NOTHING reads it\n",
+ "stderr": "",
+ "secs": 0.76,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

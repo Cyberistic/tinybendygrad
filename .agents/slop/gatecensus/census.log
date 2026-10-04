@@ -1,0 +1,973 @@
+# DENOMINATOR
+#   .sh/.py files under .agents/slop/ (vendored trees excluded)  1145
+#   DISTINCT by byte content (aliases collapsed)                  1136   [9 aliases]
+#   ATTEMPTED                                                  925
+#   NOT ATTEMPTED (writes/edits tree, or builds a gate's input)  211
+#   named in AGENTS.md or agent-core.md                          13 of 1145
+# RUNNING 925 gates, 10 at a time. Leash by tier: T1=300s T2=90s T3=25s
+[   1/925] SKIP        rc=   2    0.04s leash=90   .agents/slop/ag-diff-rows.py  :: EXIT 0 when the two agree on every non-ignored row, 1 when they differ, 2 when either
+[   2/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/adev/recheck.py  :: rc=1
+[   3/925] PASS        rc=   0    0.11s leash=25   .agents/slop/affine.py  :: tinybendygrad/runtime/support/rdma/bnxtdev.bend: 377 defs, 0 names read twice without `+` (each is a
+[   4/925] FAIL        rc=   1    0.09s leash=90   .agents/slop/ag-diff.py  :: rc=1
+[   5/925] FAIL        rc=   1    0.07s leash=90   .agents/slop/ag-diff2.py  :: rc=1
+[   6/925] FAIL        rc=   1    0.09s leash=90   .agents/slop/ag-diff3.py  :: rc=1
+[   7/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/ag-fix1.py  :: rc=1
+[   8/925] PASS        rc=   0    0.05s leash=25   .agents/slop/ag-fix10.py  :: ok
+[   9/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/ag-fix11.py  :: rc=1
+[  10/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/ag-fix12.py  :: rc=1
+[  11/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/ag-fix2.py  :: rc=1
+[  12/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/ag-fix13.py  :: rc=1
+[  13/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/ag-fix3.py  :: rc=1
+[  14/925] PASS        rc=   0    0.22s leash=25   .agents/slop/adev/probe.py  :: toposort len clean/armed-> 9 / 9
+[  15/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/ag-fix4.py  :: match ints():
+[  16/925] FAIL        rc=   1    0.03s leash=25   .agents/slop/ag-fix6.py  :: rc=1
+[  17/925] PASS        rc=   0    0.04s leash=25   .agents/slop/ag-fix5.py  :: ok
+[  18/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/ag-fix7.py  :: match m:
+[  19/925] PASS        rc=   0    0.05s leash=25   .agents/slop/ag-fix8.py  :: ok
+[  20/925] NOT-RUN     rc=   0    0.26s leash=25   .agents/slop/afloat-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  21/925] PASS        rc=   0    0.04s leash=25   .agents/slop/ag-meas1.py  :: TOTAL source lines (file, minus trailing newline): 289
+[  22/925] PASS        rc=   0    0.07s leash=25   .agents/slop/ag-fix9.py  :: ok
+[  23/925] FAIL        rc=   1    0.31s leash=25   .agents/slop/ag-ast-dump.py  :: rc=1
+[  24/925] NOT-RUN     rc=   0    0.32s leash=25   .agents/slop/ag-abi-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  25/925] NOT-RUN     rc=   0    0.09s leash=90   .agents/slop/ag-libclang-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  26/925] PASS        rc=   0    0.04s leash=25   .agents/slop/ag-meas3.py  :: ### THE MEASURED VERDICT
+[  27/925] PASS        rc=   0    0.05s leash=25   .agents/slop/ag-meas4b.py  :: ops_nv.bend: 33 of 219 hand-typed constants WRONG behind 590 green rows; all eleven CLASS_* ids amon
+[  28/925] NOT-RUN     rc=   0    0.18s leash=25   .agents/slop/ag-meas2b.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  29/925] FAIL        rc=   1    0.24s leash=25   .agents/slop/ag-fixture.py  :: rc=1
+[  30/925] NOT-RUN     rc=   0    0.24s leash=25   .agents/slop/ag-kinds.py  :: zero bytes on both streams -- a refusal, not a pass
+[  31/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/ag-verify.sh  :: could not exec: [Errno 2] No such file or directory: './ag-verify.sh'
+[  32/925] FAIL        rc=   1    0.12s leash=25   .agents/slop/ag-order.py  :: rc=1
+[  33/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/amd_check.py  :: rc=1
+[  34/925] FAIL        rc=   1    0.10s leash=25   .agents/slop/ag-tramp-verify.py  :: FAIL clang_createIndex MISSING from the emitted file
+[  35/925] FAIL        rc=   1    0.26s leash=25   .agents/slop/ag-oracle.py  :: rc=1
+[  36/925] PASS        rc=   0    0.04s leash=90   .agents/slop/amdev_check.py  :: ORACLES DISAGREE on va_shifts: 12|21|30|39 vs |12|21|30|39
+[  37/925] PASS        rc=   0    0.41s leash=25   .agents/slop/ag-meas4.py  :: STATUS_SUCCESS) match `tinygrad/runtime/autogen/webgpu.py` byte-for-byte.
+[  38/925] NOT-RUN     rc=   0    0.23s leash=25   .agents/slop/amdev_drv.py  :: zero bytes on both streams -- a refusal, not a pass
+[  39/925] NOT-RUN     rc=   0    0.23s leash=25   .agents/slop/amdev_consts.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  40/925] PASS        rc=   0    0.34s leash=25   .agents/slop/amd_oracle.py  :: amd_erstate=Device is in error state
+[  41/925] NOT-RUN     rc=   0    0.18s leash=25   .agents/slop/amdev_fw.py  :: zero bytes on both streams -- a refusal, not a pass
+[  42/925] NOT-RUN     rc=   0    0.21s leash=25   .agents/slop/amdev_tables.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  43/925] NOT-RUN     rc=   0    0.82s leash=25   .agents/slop/ag-meas2c.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  44/925] NOT-RUN     rc=   0    0.28s leash=90   .agents/slop/amdev_gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  45/925] NOT-RUN     rc=   0    0.03s leash=25   .agents/slop/ansi_fixture.py  :: zero bytes on both streams -- a refusal, not a pass
+[  46/925] PASS        rc=   0    0.20s leash=25   .agents/slop/ansi_oracle.py  :: ansi_16=red
+[  47/925] NOT-RUN     rc=   0    0.66s leash=25   .agents/slop/amdev_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  48/925] NOT-RUN     rc=   0    1.26s leash=25   .agents/slop/ag-meas2.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  49/925] PASS        rc=   0    0.07s leash=25   .agents/slop/arena-noop-scan.py  :: ARENA NOOP SCAN -- 73 gate outputs, 12720 rows
+[  50/925] PASS        rc=   0    1.03s leash=90   .agents/slop/anchor-audit.py  :: amdev_mutate.py          OK            amdev.bend             IN-PLAY       22     0
+[  51/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/arena-sweep-control.sh  :: could not exec: [Errno 2] No such file or directory: './arena-sweep-control.sh'
+[  52/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/arena-sweep.sh  :: could not exec: [Errno 2] No such file or directory: './arena-sweep.sh'
+[  53/925] PASS        rc=   0    0.43s leash=90   .agents/slop/arena-jit-rows.py  :: BASELINE: 137 rows -- AGREE 0  DISAGREE 2  NO-LANE 3
+[  54/925] PASS        rc=   0    0.13s leash=25   .agents/slop/arglit/al-transcription.py  :: # ctor      op         measured arg                 verdict
+[  55/925] FAIL        rc=   2    0.12s leash=90   .agents/slop/arglit/al-verdict.py  :: al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE
+[  56/925] NOT-RUN     rc=   0    0.84s leash=90   .agents/slop/arena-census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  57/925] NOT-RUN     rc=   0    0.13s leash=25   .agents/slop/arith/probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  58/925] PASS        rc=   0    1.75s leash=90   .agents/slop/ag-wall1-census.py  :: WALL-1 CENSUS -- DYNAMIC PASS.  Every number here was produced by RUNNING
+[  59/925] NOT-RUN     rc=   0    0.22s leash=90   .agents/slop/arith/both-census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  60/925] FAIL        rc=   1    3.24s leash=90   .agents/slop/abi4/abi4_gate.py  :: SOME PROOFS FAIL
+[  61/925] FAIL        rc=   1    3.55s leash=90   .agents/slop/abi/abi_gate.py  :: bend failed emitting probe.js:
+[  62/925] PASS        rc=   0    0.12s leash=25   .agents/slop/backward-graph/bw-p2.py  :: q2_clean_nodes=32 rows=32
+[  63/925] PASS        rc=   0    0.61s leash=25   .agents/slop/backward-graph/bw-p1.py  :: q1e_ledger=?=0 B=0 BAD=0 E=0 X!=0 q=0 u=0 y=0 z=0
+[  64/925] NOT-RUN     rc=   0    0.69s leash=25   .agents/slop/backward/bwd-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  65/925] FAIL        rc=   1    2.38s leash=90   .agents/slop/audit/sched-cmp-audit.py  :: # port side: this run's `./bin/bend` -> 0 rows, rc=1 SOME PROOFS FAIL
+[  66/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/backward/run-oracle.sh  :: could not exec: [Errno 2] No such file or directory: './run-oracle.sh'
+[  67/925] FAIL        rc=   1    0.28s leash=25   .agents/slop/backward/oracle-cg.py  :: rc=1
+[  68/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/beautiful-mnist-gate.sh  :: could not exec: [Errno 2] No such file or directory: './beautiful-mnist-gate.sh'
+[  69/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/bend-toposort.py  :: rc=1
+[  70/925] FAIL        rc=   1    0.10s leash=25   .agents/slop/bend_dedup.py  :: rc=1
+[  71/925] NOT-RUN     rc=   0    3.60s leash=25   .agents/slop/arena-stale.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  72/925] FAIL        rc=   1    0.21s leash=25   .agents/slop/bend_drive.py  :: rc=1
+[  73/925] FAIL        rc=   1    0.10s leash=25   .agents/slop/bend_fix.py  :: rc=1
+[  74/925] PASS        rc=   0    0.05s leash=90   .agents/slop/bend_gate.py  :: # whose expectation is a re-reading of the Python would agree with a port that
+[  75/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/bend_go_first.py  :: zero bytes on both streams -- a refusal, not a pass
+[  76/925] PASS        rc=   0    4.88s leash=90   .agents/slop/ansi_gate.py  :: ALL LANES AGREE on 43 of 44 rows, byte identical; 1 NAMED BOUNDARY: row ansi_29: a
+[  77/925] NOT-RUN     rc=   0    4.92s leash=90   .agents/slop/arena-audit.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  78/925] NOT-RUN     rc=   0    1.42s leash=90   .agents/slop/beautiful-mnist-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  79/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/bend_plus_fix.py  :: rc=1
+[  80/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/bend_topo.py  :: rc=1
+[  81/925] FAIL        rc=   1    1.58s leash=25   .agents/slop/bend_oracle.py  :: rc=1
+[  82/925] FAIL        rc=   1    0.02s leash=90   .agents/slop/bf16fix/reach.sh  :: rc=1
+[  83/925] NOT-RUN     rc=   0    1.05s leash=25   .agents/slop/bend_packets.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  84/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/blob-intern-gate.sh  :: could not exec: [Errno 2] No such file or directory: './blob-intern-gate.sh'
+[  85/925] NOT-RUN     rc=   0    0.46s leash=25   .agents/slop/blob-intern-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  86/925] FAIL        rc=   1    0.14s leash=90   .agents/slop/blob-rows.py  :: rc=1
+[  87/925] NOT-RUN     rc=   0    1.89s leash=90   .agents/slop/bf16fix/gate_bf.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  88/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/blobrows-sweep.sh  :: could not exec: [Errno 2] No such file or directory: './blobrows-sweep.sh'
+[  89/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/bnxt_cmp.py  :: rc=1
+[  90/925] NOT-RUN     rc=   0    0.47s leash=25   .agents/slop/blob-verify-independent.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  91/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/bnxt_gate.sh  :: could not exec: [Errno 2] No such file or directory: './bnxt_gate.sh'
+[  92/925] PASS        rc=   0    0.44s leash=25   .agents/slop/bnxt_constmap.py  :: HANDMAP BNXT_DEBUG                                     py BNXT_DEBUG                                
+[  93/925] FAIL        rc=   1    6.66s leash=90   .agents/slop/audit/ffi-port-cost-audit.py  :: rc=1
+[  94/925] NOT-RUN     rc=   0    0.68s leash=25   .agents/slop/bnxt_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  95/925] NOT-RUN     rc=   0    0.49s leash=25   .agents/slop/bnxt_probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  96/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/c-gate.sh  :: could not exec: [Errno 2] No such file or directory: './c-gate.sh'
+[  97/925] NOT-RUN     rc=   0    0.40s leash=25   .agents/slop/bnxt_structs.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[  98/925] PASS        rc=   0    0.59s leash=25   .agents/slop/c-oracle.py  :: dll_getattr_msg=failed to load library nope: try setting NOPE_PATH?
+[  99/925] PASS        rc=   0    0.44s leash=25   .agents/slop/c2d-node4-truth.py  :: s5_copy_multi PORT node4 SHRINK arg none = ok | UOp(Ops.COPY, arg=('PYTHON', 'PYTHON'), src=(
+[ 100/925] PASS        rc=   0    9.48s leash=90   .agents/slop/ag-output-census.py  :: TEMPLATE check: these bodies are generated, so they must match the shape
+[ 101/925] NOT-RUN     rc=   0    0.05s leash=90   .agents/slop/cidsweep/cidcensus.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 102/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/cidsweep/gate.sh  :: could not exec: [Errno 2] No such file or directory: './gate.sh'
+[ 103/925] NOT-RUN     rc=   0    0.39s leash=90   .agents/slop/c2d-refusal-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 104/925] NOT-RUN     rc=   0    0.16s leash=25   .agents/slop/cl_split.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 105/925] FAIL        rc=   1    0.78s leash=25   .agents/slop/cl_constmap.py  :: rc=1
+[ 106/925] PASS        rc=   0    1.16s leash=90   .agents/slop/cidsweep/census2.py  :: CENSUS v2 — .bend EMPTY BODIES (None{} as a body, not a match arm)
+[ 107/925] FAIL        rc=   1    0.10s leash=25   .agents/slop/cl_split_headers.py  :: rc=1
+[ 108/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/cl_split_noloss.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 109/925] PASS        rc=   0    0.16s leash=25   .agents/slop/cl_split_names.py  :: there is nothing to match. This is the whole reason the
+[ 110/925] PASS        rc=   0    8.73s leash=90   .agents/slop/audit/sched-cmp-audit2.py  :: bend on the clean copy: rc=1 rows=0
+[ 111/925] FAIL        rc=   1    0.08s leash=25   .agents/slop/cl_vendor_scan.py  :: rc=1
+[ 112/925] NOT-RUN     rc=   0    0.22s leash=25   .agents/slop/clangfill/abi.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 113/925] NOT-RUN     rc=   0    4.40s leash=25   .agents/slop/clangfill/fill.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 114/925] PASS        rc=   0    6.24s leash=25   .agents/slop/cl_split_deps.py  :: cl         1315 comp.compile.bad
+[ 115/925] NOT-RUN     rc=   0    0.07s leash=25   .agents/slop/clangshim/clang-analyze.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 116/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/clangshim/clang-cost.py  :: rc=1
+[ 117/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/clangshim/clangshim-gen.py  :: rc=1
+[ 118/925] NOT-RUN     rc=   0    0.83s leash=25   .agents/slop/clangshim/oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 119/925] FAIL        rc=   1    0.13s leash=25   .agents/slop/clangshim/s1.sh  :: rc=1
+[ 120/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/clangshim/s2.sh  :: could not exec: [Errno 2] No such file or directory: './s2.sh'
+[ 121/925] FAIL        rc=   1    0.12s leash=25   .agents/slop/clangshim/s3.sh  :: rc=1
+[ 122/925] PASS        rc=   0    2.60s leash=90   .agents/slop/clangshim/cl-port-gate.py  :: BASE: DIFF 0 port-only, 0 oracle-only -- all 10 rows equal
+[ 123/925] FAIL        rc=   1    0.49s leash=25   .agents/slop/codegen-init-measure.py  :: rc=1
+[ 124/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/codegen3-gate.sh  :: could not exec: [Errno 2] No such file or directory: './codegen3-gate.sh'
+[ 125/925] NOT-RUN     rc=   0    0.44s leash=25   .agents/slop/codegen-init-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 126/925] PASS        rc=   0    0.11s leash=25   .agents/slop/commentpass/arch.py  :: TOTAL                            0       0
+[ 127/925] NOT-RUN     rc=   0    0.30s leash=90   .agents/slop/commentpass/audit.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 128/925] PASS        rc=   0    9.91s leash=90   .agents/slop/cl_split_rows.py  :: runtime/ops_cl.bend  229 rows
+[ 129/925] PASS        rc=   0    0.04s leash=25   .agents/slop/commentpass/cmt.py  :: TOTAL lines 0  comment-only lines 0  trailing 0  blocks 0
+[ 130/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/commentpass/dist.py  :: rc=1
+[ 131/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/commentpass/drift.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 132/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/commentpass/dump.py  :: rc=1
+[ 133/925] PASS        rc=   0    0.06s leash=25   .agents/slop/commentpass/final.py  :: TOTAL lines 0 -> 0 (0)
+[ 134/925] NOT-RUN     rc=   0    0.25s leash=25   .agents/slop/commentpass/fuzz.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 135/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/commentpass/recall.py  :: rc=1
+[ 136/925] FAIL        rc=   1    0.03s leash=25   .agents/slop/commentpass/specA.py  :: rc=1
+[ 137/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/commentpass/specB.py  :: rc=1
+[ 138/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/commentpass/specC.py  :: rc=1
+[ 139/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/commentpass/spec_mu.py  :: rc=1
+[ 140/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/commentpass/spec_mxm.py  :: rc=1
+[ 141/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/commentpass/spec_rd.py  :: rc=1
+[ 142/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/commentpass/spec_rf.py  :: rc=1
+[ 143/925] PASS        rc=   0    0.13s leash=25   .agents/slop/commentpass/todo.py  :: --- PASS SCOPE: 20 files, 384 TODO(p*) markers
+[ 144/925] PASS        rc=   0    0.08s leash=25   .agents/slop/commentpass/todo2.py  :: PASS SCOPE: TODO(p*) markers 0 -> 0; files with a text or count mismatch: 0
+[ 145/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/commentpass/upstream.py  :: rc=1
+[ 146/925] SKIP        rc=   2    0.05s leash=90   .agents/slop/const-audit.py  :: WHY. runtime/ops_nv.bend shipped 606 green gate rows with 33 of 219 constants WRONG:
+[ 147/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/const_sweep.py  :: rc=1
+[ 148/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/const_sweep_far.py  :: rc=1
+[ 149/925] PASS        rc=   0    6.26s leash=25   .agents/slop/commentpass/cite.py  :: `at == patlen`, so a reversed pattern does NOT match.
+[ 150/925] PASS        rc=   0    2.96s leash=90   .agents/slop/cpulink_gate.py  :: libSystem_sel_registerName     HOLDS  got='UNRESOLVED'
+[ 151/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/cpunull-gate.sh  :: could not exec: [Errno 2] No such file or directory: './cpunull-gate.sh'
+[ 152/925] PASS        rc=   0    0.25s leash=25   .agents/slop/cpulink_oracle.py  :: libSystem_sel_registerName=UNRESOLVED
+[ 153/925] NOT-RUN     rc=   0    0.26s leash=25   .agents/slop/cs-dump.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 154/925] PASS        rc=   0    0.17s leash=25   .agents/slop/cs-probe.py  :: ALU param ok: AddrSpace.ALU 1
+[ 155/925] FAIL        rc=   1    0.20s leash=25   .agents/slop/cs-probe2.py  :: raise ValueError(f"size mismatch, can't reshape ({self.shape}) -> ({new_shape})")
+[ 156/925] FAIL        rc=   1    0.20s leash=25   .agents/slop/cs-probe3.py  :: rc=1
+[ 157/925] NOT-RUN     rc= 124   25.01s leash=25   .agents/slop/backward-graph/bw-p3.py  :: OUR alarm at 25s (rc=124)
+[ 158/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/bf16fix/run.sh  :: OUR alarm at 25s (rc=124)
+[ 159/925] PASS        rc=   0    6.82s leash=25   .agents/slop/cs-fixpy.py  :: STALE-LITERAL 0 row(s); the gate is AGREE
+[ 160/925] PASS        rc=   0    0.31s leash=25   .agents/slop/cshape/cs-androot.py  :: src, single match          (upat.py:42)   10 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX 
+[ 161/925] PASS        rc=   0    0.50s leash=25   .agents/slop/cshape/cs-opshape.py  :: #   ok:                             ['CONST', 'GETADDR', 'RANGE', 'SPECIAL', 'STACK']
+[ 162/925] NOT-RUN     rc=   0    0.44s leash=90   .agents/slop/cshape/cs-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 163/925] SKIP        rc=   2    0.71s leash=25   .agents/slop/cstyle-live/convert.py  :: convert.py: error: the following arguments are required: port
+[ 164/925] SKIP        rc=   0    5.02s leash=25   .agents/slop/cs_oracle.py  :: amd.check_7.msg=comgr fail 7, comgr-status-7
+[ 165/925] NOT-RUN     rc=   0    1.73s leash=25   .agents/slop/cstyle-live/cstyle-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 166/925] FAIL        rc=   1    0.40s leash=25   .agents/slop/cstyle-live/extract.py  :: rc=1
+[ 167/925] NOT-RUN     rc=   0    2.42s leash=25   .agents/slop/cstyle-live/cstyle-numbers.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 168/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/cstyle-live/stage1.sh  :: rc=1
+[ 169/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/cstyle-live/stage2-io.py  :: rc=1
+[ 170/925] FAIL        rc=   1    0.08s leash=25   .agents/slop/cstyle-live/stage2.sh  :: rc=1
+[ 171/925] FAIL        rc=   1    0.24s leash=25   .agents/slop/cstyle-live/stage3.sh  :: rc=1
+[ 172/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/cstyle-live/unlive.py  :: rc=1
+[ 173/925] FAIL        rc=   1    2.60s leash=25   .agents/slop/cstyle-reader-parity.py  :: [1b] judge() with rows_strict: BROKEN port=227 oracle=224 gated=221 agree=221 disagree=0 stale=0 bad
+[ 174/925] FAIL        rc=   1    1.63s leash=25   .agents/slop/cstyle-shapes-selftest.py  :: ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK
+[ 175/925] FAIL        rc=   1    0.96s leash=25   .agents/slop/cstyle2/agree.py  :: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle2/agree.py", line 138,
+[ 176/925] SKIP        rc=   2    1.38s leash=25   .agents/slop/cstyle2/convert2.py  :: convert2.py: error: the following arguments are required: port, --preamble
+[ 177/925] FAIL        rc=   1    0.93s leash=25   .agents/slop/cstyle2/derive.py  :: rc=1
+[ 178/925] NOT-RUN     rc=   0    0.58s leash=25   .agents/slop/cstyle2/empty-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 179/925] SKIP        rc=   2    0.62s leash=25   .agents/slop/cstyle2/measure.py  :: measure.py: error: the following arguments are required: bend, port
+[ 180/925] PASS        rc=   0   13.06s leash=90   .agents/slop/cstyle-gate.py  :: gated 221   agree 221   disagree []
+[ 181/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/cstyle2/run-all.sh  :: could not exec: [Errno 2] No such file or directory: './run-all.sh'
+[ 182/925] NOT-RUN     rc=   0    0.73s leash=25   .agents/slop/cstyle2/preamble-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 183/925] NOT-RUN     rc=   0    0.40s leash=25   .agents/slop/dc-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 184/925] PASS        rc=   0   40.21s leash=90   .agents/slop/bendcall-sweep.py  :: === unresolved names: 8 distinct, 16 sites (not counted as examined) ===
+[ 185/925] PASS        rc=   0    0.12s leash=90   .agents/slop/dd-band-census.py  :: L201   mask = 65535                                                OK literal
+[ 186/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-band-fix2.sh  :: could not exec: [Errno 2] No such file or directory: './dd-band-fix2.sh'
+[ 187/925] FAIL        rc=   1    0.03s leash=90   .agents/slop/dd-band-paddiff.py  :: rc=1
+[ 188/925] FAIL        rc=   1    0.23s leash=90   .agents/slop/dd-band-diff.py  :: rc=1
+[ 189/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-band-run.sh  :: could not exec: [Errno 2] No such file or directory: './dd-band-run.sh'
+[ 190/925] NOT-RUN     rc=   0    0.20s leash=90   .agents/slop/dd-band-reach.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 191/925] PASS        rc=   0    0.73s leash=90   .agents/slop/dd-audit.py  :: VERDICT: both oracles CALL tinygrad. Neither re-implements dtype.py's arithmetic.
+[ 192/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-bandpad.sh  :: could not exec: [Errno 2] No such file or directory: './dd-bandpad.sh'
+[ 193/925] FAIL        rc=   1    0.03s leash=90   .agents/slop/dd-cmp.py  :: rc=1
+[ 194/925] NOT-RUN     rc=   0    0.20s leash=25   .agents/slop/dd-cone-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 195/925] NOT-RUN     rc=   0    0.29s leash=25   .agents/slop/dd-bandoracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 196/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-cone-run.sh  :: could not exec: [Errno 2] No such file or directory: './dd-cone-run.sh'
+[ 197/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/dd-cone-variants.py  :: rc=1
+[ 198/925] NOT-RUN     rc=   0    0.54s leash=25   .agents/slop/dd-cdiv-py.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 199/925] NOT-RUN     rc=   0    0.35s leash=25   .agents/slop/dd-cone.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 200/925] FAIL        rc=   1    0.03s leash=90   .agents/slop/dd-divE-check.py  :: rc=1
+[ 201/925] NOT-RUN     rc=   0    0.66s leash=25   .agents/slop/dd-cone-py.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 202/925] NOT-RUN     rc=   0    0.39s leash=25   .agents/slop/dd-divE-math.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 203/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-divE-run.sh  :: could not exec: [Errno 2] No such file or directory: './dd-divE-run.sh'
+[ 204/925] NOT-RUN     rc=   0    0.24s leash=25   .agents/slop/dd-divE-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 205/925] NOT-RUN     rc=   0    0.80s leash=25   .agents/slop/dd-coverage.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 206/925] NOT-RUN     rc=   0    0.40s leash=25   .agents/slop/dd-f1-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 207/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/dd-gap.py  :: rc=1
+[ 208/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/dd-gate-snap.sh  :: could not exec: [Errno 2] No such file or directory: './dd-gate-snap.sh'
+[ 209/925] NOT-RUN     rc=   0    0.52s leash=25   .agents/slop/dd-f2-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 210/925] NOT-RUN     rc=   0    0.33s leash=25   .agents/slop/dd-fresh.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 211/925] NOT-RUN     rc=   0    0.12s leash=25   .agents/slop/dd-probe-intern.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 212/925] NOT-RUN     rc=   0    0.27s leash=25   .agents/slop/dd-probe-ops.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 213/925] NOT-RUN     rc=   0    0.54s leash=25   .agents/slop/dd-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 214/925] PASS        rc=   0    0.19s leash=25   .agents/slop/dd-probe2i.py  :: dtype.py:26:   match op:
+[ 215/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/dd-run.sh  :: could not exec: [Errno 2] No such file or directory: './dd-run.sh'
+[ 216/925] PASS        rc=   0    0.50s leash=25   .agents/slop/dd-probe.py  :: TOTAL PROMO-marked nodes across the 28 l2i fixtures: 281
+[ 217/925] FAIL        rc=   1    0.19s leash=90   .agents/slop/dd-rows.py  :: rc=1
+[ 218/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/dd-stalearena.py  :: rc=1
+[ 219/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/dd-sweep.sh  :: could not exec: [Errno 2] No such file or directory: './dd-sweep.sh'
+[ 220/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/dead-defs.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 221/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/dead-defs2.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 222/925] FAIL        rc=   1    0.40s leash=25   .agents/slop/dd-split.py  :: rc=1
+[ 223/925] NOT-RUN     rc= 124   25.05s leash=25   .agents/slop/cstyle-live/run-all.sh  :: live ./bin/bend tinybendygrad/renderer/cstyle.bend  rc=0  rows=227
+[ 224/925] FAIL        rc=   1    0.19s leash=90   .agents/slop/debug-control-work/.agents/slop/debug-gate-out.4.py  :: rc=1
+[ 225/925] NOT-RUN     rc=   0   59.41s leash=90   .agents/slop/clangfill/gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 226/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/debug-control-work/.agents/slop/debug-gate.sh  :: could not exec: [Errno 2] No such file or directory: './debug-gate.sh'
+[ 227/925] PASS        rc=   0   45.73s leash=90   .agents/slop/cs_check.py  :: ALL CHECKS PASS
+[ 228/925] FAIL        rc=   2   10.95s leash=90   .agents/slop/debug-control-work/.agents/slop/debug-gate.py  :: Fatal Python error: init_fs_encoding: failed to get the Python codec of the filesystem encoding
+[ 229/925] FAIL        rc=   1    0.15s leash=90   .agents/slop/debug-gate-out.0.py  :: rc=1
+[ 230/925] FAIL        rc=   1    0.10s leash=90   .agents/slop/debug-gate-out.1.py  :: rc=1
+[ 231/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/debug-gate-out.2.py  :: rc=1
+[ 232/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/debug-gate-out.3.py  :: rc=1
+[ 233/925] FAIL        rc=   1    0.10s leash=90   .agents/slop/debug-gate-out.5.py  :: rc=1
+[ 234/925] FAIL        rc=   1    0.15s leash=90   .agents/slop/debug-gate-out.6.py  :: rc=1
+[ 235/925] FAIL        rc=   1    0.12s leash=90   .agents/slop/debug-gate-out.7.py  :: rc=1
+[ 236/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/debug-gate-out/debug-gate.0.py  :: rc=1
+[ 237/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/debug-gate-out/debug-gate.1.py  :: rc=1
+[ 238/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/debug-gate-out/debug-gate.2.py  :: rc=1
+[ 239/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/debug-gate-out/debug-gate.3.py  :: rc=1
+[ 240/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/dd-truth.py  :: OUR alarm at 25s (rc=124)
+[ 241/925] NOT-RUN     rc=   0   38.14s leash=90   .agents/slop/deadreg/gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 242/925] PASS        rc=   0   15.57s leash=25   .agents/slop/debug-lvl47-probe.py  :: | loading mesa failed: not found on system
+[ 243/925] NOT-RUN     rc=   0    0.32s leash=90   .agents/slop/denom/census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 244/925] NOT-RUN     rc=   0    2.81s leash=25   .agents/slop/debug_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 245/925] PASS        rc=   0    1.74s leash=25   .agents/slop/denom/denom-probe.py  :: ALLREDUCE        ok         yes  OK       yes     9
+[ 246/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/depord.py  :: rc=1
+[ 247/925] PASS        rc=   0    1.42s leash=25   .agents/slop/denom/yield.py  :: mulacc    ERR    -    -    RuntimeError: Could not infer dtype of <Tensor <UOp CPU (4, 3) f32> on CP
+[ 248/925] NOT-RUN     rc= 124   90.01s leash=90   .agents/slop/audit/graphcmp-census-audit.py  :: OUR alarm at 90s (rc=124)
+[ 249/925] FAIL        rc=   1    0.17s leash=25   .agents/slop/dev-tally-classify.py  :: rc=1
+[ 250/925] NOT-RUN     rc= 124   90.07s leash=90   .agents/slop/bend_e2e.py  :: OUR alarm at 90s (rc=124)
+[ 251/925] PASS        rc=   0    3.78s leash=25   .agents/slop/dev-space-oracle.py  :: FFI FAIL   WEBGPU     -> device=WEBGPU    AttributeError: failed to load library webgpu: try setting
+[ 252/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/differverdict/cmp.py  :: rc=1
+[ 253/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/differverdict/drive.sh  :: could not exec: [Errno 2] No such file or directory: './drive.sh'
+[ 254/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/diffpy/oracle-repro.sh  :: could not exec: [Errno 2] No such file or directory: './oracle-repro.sh'
+[ 255/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/diffpy/oracle-run.sh  :: could not exec: [Errno 2] No such file or directory: './oracle-run.sh'
+[ 256/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/debug-cume-probe.py  :: OUR alarm at 25s (rc=124)
+[ 257/925] NOT-RUN     rc=   0    0.42s leash=25   .agents/slop/dm-floor-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 258/925] NOT-RUN     rc=   0    0.64s leash=25   .agents/slop/dk-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 259/925] SKIP        rc=   2    0.06s leash=90   .agents/slop/dm-sweep.py  :: dm-sweep.py: error: the following arguments are required: --binary
+[ 260/925] PASS        rc=   0    0.04s leash=25   .agents/slop/dobind.py  :: tinybendygrad/runtime/support/rdma/bnxtdev.bend: 36 do-blocks, 0 BAD -> clean after
+[ 261/925] NOT-RUN     rc=   0    1.25s leash=25   .agents/slop/device-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 262/925] NOT-RUN     rc=   0    0.47s leash=25   .agents/slop/dm-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 263/925] SKIP        rc=   2    0.06s leash=90   .agents/slop/drift-gate.py  :: drift-gate.py: error: the following arguments are required: port
+[ 264/925] NOT-RUN     rc=   0    0.76s leash=25   .agents/slop/dsl_constmap.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 265/925] NOT-RUN     rc= 124   90.03s leash=90   .agents/slop/bnxt_sweep.py  :: OUR alarm at 90s (rc=124)
+[ 266/925] NOT-RUN     rc= 124   25.20s leash=25   .agents/slop/debug-roster-intersect.py  :: OUR alarm at 25s (rc=124)
+[ 267/925] PASS        rc=   0    1.14s leash=25   .agents/slop/dsl_oracle.py  :: sgpr_bad_width=REFUSE:SGPRField: field size 10 bits (1024) doesn't match range (0, 127) (128)
+[ 268/925] FAIL        rc=   1    0.90s leash=25   .agents/slop/dsp-gen.py  :: rc=1
+[ 269/925] FAIL        rc=   1    0.12s leash=25   .agents/slop/dsp-refresh.py  :: WHY NOT `dsp-gen.py`: that script rewrote all 496 rows and its line-joining dropped a
+[ 270/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/dsp2-gate.py  :: rc=1
+[ 271/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/dsp_gate_check.py  :: rc=1
+[ 272/925] FAIL        rc=   1    0.81s leash=25   .agents/slop/dsp-rules.py  :: rc=1
+[ 273/925] FAIL        rc=   1    0.93s leash=25   .agents/slop/dsp_oracle.py  :: rc=1
+[ 274/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/dst-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 275/925] FAIL        rc=   1    0.57s leash=25   .agents/slop/dsp_oracle2.py  :: ops_dsp.bend"). 512 rows, `grep -c 'py=\[' tinybendygrad/runtime/ops_dsp.bend` -> 0.
+[ 276/925] PASS        rc=   0    0.57s leash=25   .agents/slop/dt32/dt32-oracle.py  :: consts: 119  rows: 2128
+[ 277/925] PASS        rc=   0    0.34s leash=90   .agents/slop/dtype-gate.py  :: 14766 rows compared, 1 declared, 0 unexpected
+[ 278/925] NOT-RUN     rc=   0    0.79s leash=25   .agents/slop/dtype-pri-customi-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 279/925] PASS        rc=   0    0.96s leash=25   .agents/slop/dtype-pri-m7.py  :: dtype               port   cpython  agree  bit0
+[ 280/925] NOT-RUN     rc=   0    2.06s leash=25   .agents/slop/dtype-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 281/925] PASS        rc=   0    0.77s leash=25   .agents/slop/dtype-pri-oracle.py  :: least_upper_dtype over 400 ordered pairs: 361 OK, 39 KeyError
+[ 282/925] FAIL        rc=   1    0.81s leash=25   .agents/slop/dtypeb/run.py  :: rc=1
+[ 283/925] NOT-RUN     rc=   0   11.67s leash=25   .agents/slop/drift-cstyle-head.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 284/925] NOT-RUN     rc= 124   90.03s leash=90   .agents/slop/coldness/census.py  :: OUR alarm at 90s (rc=124)
+[ 285/925] PASS        rc=   0   11.16s leash=90   .agents/slop/dsl_gate.py  :: VERDICT: AGREE over 617 shared row value(s). 544 port-only and 958 oracle-only row(s) are SET differ
+[ 286/925] FAIL        rc=   2    1.40s leash=90   .agents/slop/dup/dup-gate.py  :: rc=2
+[ 287/925] NOT-RUN     rc=None    0.00s leash=300  .agents/slop/e2e.sh  :: could not exec: [Errno 2] No such file or directory: './e2e.sh'
+[ 288/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/e2e/cc-no-fma.sh  :: could not exec: [Errno 2] No such file or directory: './cc-no-fma.sh'
+[ 289/925] PASS        rc=   0    5.08s leash=90   .agents/slop/dup/dup-census.py  :: TOTAL over 75 lane texts of 39 ports
+[ 290/925] NOT-RUN     rc=   0    3.65s leash=90   .agents/slop/e2e_mm.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 291/925] NOT-RUN     rc=   0    0.62s leash=90   .agents/slop/e2e_mm_gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 292/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/e2e_negctl.sh  :: could not exec: [Errno 2] No such file or directory: './e2e_negctl.sh'
+[ 293/925] FAIL        rc=   1    0.15s leash=90   .agents/slop/e2e_port/coverage.py  :: rc=1
+[ 294/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/e2e_port/run-port-mm.sh  :: could not exec: [Errno 2] No such file or directory: './run-port-mm.sh'
+[ 295/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/dev-native-clobber.py  :: OUR alarm at 25s (rc=124)
+[ 296/925] PASS        rc=   0    1.31s leash=25   .agents/slop/elf_amd_consts.py  :: ok  AMD_ISA_ALIGN_BYTES              file=256                                          cpython=256
+[ 297/925] NOT-RUN     rc=   0    0.79s leash=25   .agents/slop/elf_amd_sort.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 298/925] NOT-RUN     rc=   0    0.14s leash=25   .agents/slop/elf_fixture.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 299/925] NOT-RUN     rc=   0    1.58s leash=25   .agents/slop/elf_amd_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 300/925] PASS        rc=   0    1.03s leash=25   .agents/slop/elf_oracle.py  :: e64_o_jit_sha=ERR
+[ 301/925] NOT-RUN     rc=   0    5.03s leash=90   .agents/slop/e2e_mm_arith.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 302/925] FAIL        rc=   1    0.18s leash=90   .agents/slop/elfdiff.py  :: rc=1
+[ 303/925] PASS        rc=   0    1.12s leash=25   .agents/slop/elf_reloc_probe.py  :: elf_rcp_R_X86_64_PC32_near_words=error
+[ 304/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/elffix.sh  :: could not exec: [Errno 2] No such file or directory: './elffix.sh'
+[ 305/925] FAIL        rc=   1    0.21s leash=25   .agents/slop/elffix.py  :: rc=1
+[ 306/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/elfrun.sh  :: could not exec: [Errno 2] No such file or directory: './elfrun.sh'
+[ 307/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/elford.py  :: rc=1
+[ 308/925] NOT-RUN     rc=   0    1.05s leash=90   .agents/slop/elf_rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 309/925] PASS        rc=   0    0.97s leash=25   .agents/slop/empty-cache-control.py  :: PASS missing   -> (None, 'missing')    (no cache file at all)
+[ 310/925] PASS        rc=   0    1.67s leash=25   .agents/slop/empty-cache-consumers.py  :: CORRECT  wire-rows.bend_rows    returned 2 rows; cache file left holding 2
+[ 311/925] SKIP        rc=   2    0.94s leash=25   .agents/slop/eq/lane.py  :: lane.py: error: the following arguments are required: --out
+[ 312/925] NOT-RUN     rc= 124   25.06s leash=25   .agents/slop/drift-diagnose.py  :: OUR alarm at 25s (rc=124)
+[ 313/925] PASS        rc=   0    3.49s leash=90   .agents/slop/eq/eq-census2.py  :: TOTAL over 76 lane texts of 39 ports
+[ 314/925] NOT-RUN     rc= 124   25.23s leash=25   .agents/slop/dup/dup-capture.py  :: OUR alarm at 25s (rc=124)
+[ 315/925] FAIL        rc=   1    0.30s leash=25   .agents/slop/eq/nl-rename.py  :: tinybendygrad/renderer/nir_llvmir.bend: 'osx=True' -> 'osx True'   found 0, expected 6   MISMATCH --
+[ 316/925] PASS        rc=   0   11.54s leash=25   .agents/slop/eq/nl-control.sh  :: 1. PRE-GUARD gate (no coverage guard) on the PRE-RENAME bytes -- the verdict the tree had
+[ 317/925] NOT-RUN     rc= 124   90.31s leash=90   .agents/slop/deadarm/sweep.sh  :: OUR alarm at 90s (rc=124)
+[ 318/925] NOT-RUN     rc=   0    0.08s leash=25   .agents/slop/ew-consts-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 319/925] NOT-RUN     rc=   0    2.89s leash=90   .agents/slop/ew-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 320/925] NOT-RUN     rc= 124   25.11s leash=25   .agents/slop/env-coercion-table.py  :: OUR alarm at 25s (rc=124)
+[ 321/925] NOT-RUN     rc=   0    2.51s leash=25   .agents/slop/exec_probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 322/925] PASS        rc=   0   24.90s leash=90   .agents/slop/eq/nl-gate-noguard.py  :: gated 205   agree 205   disagree []
+[ 323/925] NOT-RUN     rc=   0    2.53s leash=25   .agents/slop/exec_probe3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 324/925] NOT-RUN     rc=   0    2.70s leash=25   .agents/slop/exec_probe2.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 325/925] PASS        rc=   0    1.43s leash=25   .agents/slop/ext_oracle.py  :: am.mod_gc_9_0_0.kind=ImportError: Failed to import regs.gc 9.0.0
+[ 326/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/f2f-arena-diff.py  :: rc=1
+[ 327/925] PASS        rc=   0   28.16s leash=90   .agents/slop/eq/nl-gate.py  :: gated 205   agree 205   disagree []
+[ 328/925] NOT-RUN     rc=   0    0.59s leash=25   .agents/slop/f2f-arena-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 329/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/f2f-calib.py  :: rc=1
+[ 330/925] PASS        rc=   0    0.74s leash=25   .agents/slop/f2f-bitcast-oracle.py  :: dtype.py's own two call sites pass; the 3-arg row is what `f2f-padoracle.py` and
+[ 331/925] FAIL        rc=   1    0.27s leash=25   .agents/slop/f2f-doc.py  :: rc=1
+[ 332/925] FAIL        rc=   1    0.25s leash=25   .agents/slop/f2f-fixA.py  :: rc=1
+[ 333/925] NOT-RUN     rc=   0    0.83s leash=25   .agents/slop/f2f-fixtures.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 334/925] FAIL        rc=   1    0.21s leash=90   .agents/slop/f2f-gate-diff.py  :: rc=1
+[ 335/925] FAIL        rc=   1   11.57s leash=90   .agents/slop/ew-gate.sh  :: SOME PROOFS FAIL
+[ 336/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/f2f-pad.sh  :: could not exec: [Errno 2] No such file or directory: './f2f-pad.sh'
+[ 337/925] FAIL        rc=   1    1.12s leash=90   .agents/slop/f2f-pad-diff.py  :: rc=1
+[ 338/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/f2f-run.sh  :: could not exec: [Errno 2] No such file or directory: './f2f-run.sh'
+[ 339/925] NOT-RUN     rc=   0    0.86s leash=25   .agents/slop/f2f-padoracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 340/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/f64/run-f64.sh  :: could not exec: [Errno 2] No such file or directory: './run-f64.sh'
+[ 341/925] NOT-RUN     rc=   0    0.98s leash=90   .agents/slop/false-zero-sweep.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 342/925] FAIL        rc=   1    1.31s leash=25   .agents/slop/f64/oracle_f64.py  :: rc=1
+[ 343/925] SKIP        rc=   2    0.22s leash=25   .agents/slop/ffi-port-cost.py  :: ffi-port-cost.py: error: the following arguments are required: target
+[ 344/925] NOT-RUN     rc= 124   90.02s leash=90   .agents/slop/debug-gate-control.py  :: OUR alarm at 90s (rc=124)
+[ 345/925] FAIL        rc=   1   34.02s leash=90   .agents/slop/eq/rn-gate.py  :: port: 144/154 PHYSICAL LINE(S) ARE THE TAIL OF THE ROW ABOVE THEM (`pyrender` answers contain newlin
+[ 346/925] NOT-RUN     rc=   0   12.73s leash=25   .agents/slop/flag-def-scan.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 347/925] NOT-RUN     rc= 124   25.10s leash=25   .agents/slop/f2f-calibrate.py  :: OUR alarm at 25s (rc=124)
+[ 348/925] PASS        rc=   0    0.29s leash=25   .agents/slop/flip/canon-falsify.py  :: ok   FLIP 'n(b1,b0)' -> 'n(i1,i0)' (n=2, want 'n(i1,i0)'/2)
+[ 349/925] NOT-RUN     rc=   0    1.79s leash=25   .agents/slop/flip/py-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 350/925] PASS        rc=   0    1.73s leash=25   .agents/slop/flip/py-probe2.py  :: UOp(Ops.FLIP,(au,),(0,)).shape -> ValueError: bad flip on (4, 3), (0,)
+[ 351/925] NOT-RUN     rc= 124   25.22s leash=25   .agents/slop/ffi-experiment/run-all.sh  :: step1 bend -o   ok  (80461 bytes)
+[ 352/925] NOT-RUN     rc= 124   25.34s leash=25   .agents/slop/flag-consume.py  :: py:324   if AM_DEBUG >= 1 and (err:=self.reg("regSCRATCH_REG1").read(inst=inst, direct=True) & 0xF00
+[ 353/925] FAIL        rc=   1    1.91s leash=25   .agents/slop/flip/py-probe3.py  :: rc=1
+[ 354/925] NOT-RUN     rc= 124   90.25s leash=90   .agents/slop/devgate/devgate.py  :: OUR alarm at 90s (rc=124)
+[ 355/925] PASS        rc=   0    1.66s leash=25   .agents/slop/flip/py-probe4.py  :: .shape       : ValueError: bad flip on (4, 3), (1, 0)
+[ 356/925] PASS        rc=   0    1.84s leash=25   .agents/slop/flip/py-probe5.py  :: shape=ValueError: bad flip on (4, 3), (1, 0)
+[ 357/925] FAIL        rc=   1    1.08s leash=90   .agents/slop/formblind-audit.py  :: control's contract is that it must NOT agree with the form-complete answer: an audit
+[ 358/925] NOT-RUN     rc=   0    2.61s leash=90   .agents/slop/fp8fix/gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 359/925] SKIP        rc=   2    0.35s leash=25   .agents/slop/frombits/expect.py  :: expect.py: error: one of --census --fixtures --classes
+[ 360/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/frombits/gate.sh  :: could not exec: [Errno 2] No such file or directory: './gate.sh'
+[ 361/925] SKIP        rc=   2    1.03s leash=90   .agents/slop/frombits/gate_dtype.py  :: gate_dtype.py: error: the following arguments are required: --lane
+[ 362/925] SKIP        rc=   2    0.19s leash=25   .agents/slop/frombits/run.py  :: run.py: error: the following arguments are required: --lane, --chunk, --expect
+[ 363/925] PASS        rc=   0    0.18s leash=25   .agents/slop/ga-meas1.py  :: TOTAL source lines (file, minus trailing newline): 541
+[ 364/925] PASS        rc=   0    0.44s leash=25   .agents/slop/ga-meas2.py  :: TOTAL source lines: 541
+[ 365/925] NOT-RUN     rc= 124   25.37s leash=25   .agents/slop/flag-divergence-scan.py  :: OUR alarm at 25s (rc=124)
+[ 366/925] FAIL        rc=   1    0.40s leash=25   .agents/slop/ga_controls.py  :: rc=1
+[ 367/925] FAIL        rc=   1    0.26s leash=25   .agents/slop/ga_dedup.py  :: rc=1
+[ 368/925] NOT-RUN     rc= 124   90.05s leash=90   .agents/slop/dtype-pri-treecheck.py  :: OUR alarm at 90s (rc=124)
+[ 369/925] FAIL        rc=   1    0.11s leash=90   .agents/slop/ga_gate.py  :: rc=1
+[ 370/925] FAIL        rc=   1    0.30s leash=25   .agents/slop/ga_ins_add.py  :: rc=1
+[ 371/925] PASS        rc=   0    6.62s leash=25   .agents/slop/ga-oracle.py  :: common | 4 = [  """Enum with clean repr that roundtrips with eval()."""]   py=[  """Enum with clean 
+[ 372/925] FAIL        rc=   1    0.49s leash=25   .agents/slop/ga_plus.py  :: rc=1
+[ 373/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/ga_probe.sh  :: could not exec: [Errno 2] No such file or directory: './ga_probe.sh'
+[ 374/925] FAIL        rc=   1    0.09s leash=90   .agents/slop/ga_rows.py  :: rc=1
+[ 375/925] FAIL        rc=   1    0.34s leash=25   .agents/slop/ga_port_fix.py  :: rc=1
+[ 376/925] FAIL        rc=   1    0.22s leash=90   .agents/slop/ga_rows_blast.py  :: rc=1
+[ 377/925] FAIL        rc=   1    0.17s leash=25   .agents/slop/ga_topo.py  :: rc=1
+[ 378/925] FAIL        rc=   1    0.11s leash=25   .agents/slop/ga_write_operands.py  :: rc=1
+[ 379/925] PASS        rc=   0    7.84s leash=25   .agents/slop/ga_fix.py  :: # are the first token before an `=` inside the generated Python: 233 row names
+[ 380/925] NOT-RUN     rc= 124   90.13s leash=90   .agents/slop/e2e-vacuity.py  :: OUR alarm at 90s (rc=124)
+[ 381/925] NOT-RUN     rc= 124   25.19s leash=25   .agents/slop/flag-literal-scan.py  :: OUR alarm at 25s (rc=124)
+[ 382/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/gr-diff.sh  :: could not exec: [Errno 2] No such file or directory: './gr-diff.sh'
+[ 383/925] PASS        rc=   0    1.44s leash=90   .agents/slop/gate-roster-arith.py  :: wired NOT recorded   (9): a clean lane here reads AGREE-UNRECORDED
+[ 384/925] NOT-RUN     rc=   0    0.82s leash=25   .agents/slop/gr-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 385/925] NOT-RUN     rc= 124   25.07s leash=25   .agents/slop/fp8dec/nanbox.py  :: OUR alarm at 25s (rc=124)
+[ 386/925] NOT-RUN     rc= 124   25.34s leash=25   .agents/slop/fp8fix/run.sh  :: A-disarm     DISARM   predicted   0 rows  (its whole claim is the empty set)
+[ 387/925] PASS        rc=   0    2.54s leash=90   .agents/slop/graphcmp-p13-ops.py  :: # PORT SENTINELS, which DISAGREE (LIMITS section 2):
+[ 388/925] PASS        rc=   0    2.84s leash=90   .agents/slop/graphcmp-p14-sched.py  :: # full_rewrite_to_sink FAILED: RuntimeError UOp verification failed at 0 on Ops.LINEAR dtypes.void 0
+[ 389/925] PASS        rc=   0    4.14s leash=90   .agents/slop/graphcmp-p14b.py  :: # prg pad                   FAILED KernelOptError: 4 can't divide UOp(Ops.CAST, arg=dtypes.i32, src=
+[ 390/925] PASS        rc=   0    3.96s leash=90   .agents/slop/graphcmp-p14c.py  :: # matmul             to_program FAILED RuntimeError: UOp verification failed at 3 on Ops.SPECIAL dty
+[ 391/925] NOT-RUN     rc=   0    1.31s leash=90   .agents/slop/graphcmp-p14e.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 392/925] NOT-RUN     rc=None    0.00s leash=300  .agents/slop/graphcmp-repro.sh  :: could not exec: [Errno 2] No such file or directory: './graphcmp-repro.sh'
+[ 393/925] NOT-RUN     rc=None    0.00s leash=300  .agents/slop/graphcmp-run.sh  :: could not exec: [Errno 2] No such file or directory: './graphcmp-run.sh'
+[ 394/925] SKIP        rc=   2    0.16s leash=300  .agents/slop/graphcmp.py  :: graphcmp.py: error: the following arguments are required: cmd
+[ 395/925] FAIL        rc=   1    3.49s leash=90   .agents/slop/graphcmp-p14d.py  :: # assign-pad-into-view       FAILED ValueError: cannot broadcast (4, 4) to new_shape=(2, 2)
+[ 396/925] PASS        rc=   0    0.26s leash=25   .agents/slop/grw-ctxclaim.py  :: callers that pass ctx                             : 4/15
+[ 397/925] PASS        rc=   0   36.57s leash=90   .agents/slop/formblind-census.py  :: tool                                                  pred  fail  verdict           blind-variant / 
+[ 398/925] NOT-RUN     rc=   0    0.86s leash=25   .agents/slop/grw-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 399/925] PASS        rc=   0   26.55s leash=90   .agents/slop/gate-at-rev.py  :: rep 1 VERDICT : AGREE-UNRECORDED   (25s, load 54.7)
+[ 400/925] NOT-RUN     rc= 124   90.34s leash=90   .agents/slop/ew-consts-gate.sh  :: OUR alarm at 90s (rc=124)
+[ 401/925] FAIL        rc=   1    5.02s leash=90   .agents/slop/grw-gate.sh  :: rc=1
+[ 402/925] FAIL        rc=   1   23.44s leash=300  .agents/slop/graphcmp-oracle.py  :: emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+[ 403/925] NOT-RUN     rc=   0    0.91s leash=25   .agents/slop/hcq2-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 404/925] FAIL        rc=   1    0.96s leash=25   .agents/slop/hcq2-oracle2.py  :: rc=1
+[ 405/925] FAIL        rc=   1    0.87s leash=25   .agents/slop/hcq2-probe.py  :: pack mixed size24 (underflow) -> ('ERR', 'ValueError')
+[ 406/925] FAIL        rc=   1    1.08s leash=25   .agents/slop/hcq2-probe2.py  :: rc=1
+[ 407/925] NOT-RUN     rc=   0   28.78s leash=90   .agents/slop/graphcmp-dbg-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 408/925] FAIL        rc=   1    0.09s leash=25   .agents/slop/hdr_show.py  :: rc=1
+[ 409/925] FAIL        rc=   1    2.80s leash=90   .agents/slop/hdr_audit.py  :: rc=1
+[ 410/925] NOT-RUN     rc=   0    0.96s leash=25   .agents/slop/helpers-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 411/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/helpers-tc-gate.sh  :: could not exec: [Errno 2] No such file or directory: './helpers-tc-gate.sh'
+[ 412/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/helpers-tree-check.sh  :: could not exec: [Errno 2] No such file or directory: './helpers-tree-check.sh'
+[ 413/925] NOT-RUN     rc= 124   90.06s leash=90   .agents/slop/ext_check.py  :: OUR alarm at 90s (rc=124)
+[ 414/925] PASS        rc=   0   23.29s leash=90   .agents/slop/handtyped-audit.py  :: same-file constant-returning def). UNRESOLVED is reported, never counted
+[ 415/925] SKIP        rc=   2    0.26s leash=25   .agents/slop/hermetic/isolate.py  :: isolate.py: error: the following arguments are required: --graph, --side, --dev
+[ 416/925] PASS        rc=   0    1.14s leash=25   .agents/slop/hq-oracle.py  :: hq_refuse_link=unresolved link words on Ops.CALL
+[ 417/925] FAIL        rc=   1    0.11s leash=90   .agents/slop/i64-dec-rows.py  :: rc=1
+[ 418/925] PASS        rc=   0    0.28s leash=25   .agents/slop/i64div/classify.py  :: family    def         expected   present  missing  disagree
+[ 419/925] NOT-RUN     rc= 124   25.15s leash=25   .agents/slop/handtyped-rank.py  :: OUR alarm at 25s (rc=124)
+[ 420/925] PASS        rc=   0   33.07s leash=90   .agents/slop/grw-census.py  :: def kernel_graph_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
+[ 421/925] NOT-RUN     rc=   0    1.16s leash=25   .agents/slop/i64div/oracle_probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 422/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/headtail.py  :: OUR alarm at 25s (rc=124)
+[ 423/925] NOT-RUN     rc=   0    0.88s leash=25   .agents/slop/i64div/repro54/run54.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 424/925] PASS        rc=   0    0.72s leash=25   .agents/slop/i64div/where.py  :: i64_div      pairs=  361  disagree=    0  with_int64.min=    0  without=    0
+[ 425/925] NOT-RUN     rc= 124   25.14s leash=25   .agents/slop/i64div/closure.sh  :: OUR alarm at 25s (rc=124)
+[ 426/925] FAIL        rc=   1   49.88s leash=90   .agents/slop/hcq2-diff.py  :: rc=1
+[ 427/925] NOT-RUN     rc=   0    1.12s leash=25   .agents/slop/ind/dropn-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 428/925] PASS        rc=   0    1.29s leash=25   .agents/slop/ind/p9-tinygrad.py  :: 23_33 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3), (3, 3))
+[ 429/925] NOT-RUN     rc=   0    0.67s leash=25   .agents/slop/indexing-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 430/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ip_check.sh  :: could not exec: [Errno 2] No such file or directory: './ip_check.sh'
+[ 431/925] PASS        rc=   0    0.74s leash=25   .agents/slop/ip_oracle.py  :: amp_ih_enc_names=auto wave error
+[ 432/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/ip_prune.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 433/925] PASS        rc=   0   57.10s leash=90   .agents/slop/harness-audit.py  :: arglit/al-verdict.py                                                                                
+[ 434/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/ip_table.py  :: mut = [l.strip().split('|||') for l in io.open(MUT) if re.match(r'^M\d+\|\|\|', l)]
+[ 435/925] FAIL        rc=   1    1.99s leash=25   .agents/slop/jit-oracle.py  :: if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+[ 436/925] NOT-RUN     rc=   0    0.53s leash=25   .agents/slop/jit-prune-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 437/925] FAIL        rc=   1   53.33s leash=90   .agents/slop/hermetic/audit-hermetic.py  :: PASS  C1 PLANT  predecessors move `late`'s slot: alone slots=['i0', 'i1'] md5=16368f03a2a3 vs after 
+[ 438/925] NOT-RUN     rc= 124   90.06s leash=90   .agents/slop/ga_sweep.py  :: OUR alarm at 90s (rc=124)
+[ 439/925] NOT-RUN     rc= 124   90.27s leash=90   .agents/slop/gate-reconcile.py  :: OUR alarm at 90s (rc=124)
+[ 440/925] PASS        rc=   0    0.64s leash=90   .agents/slop/jsfp8/norm_check.py  :: ok    one f32, two spellings agree        (the defect's pair) the old norm: FAILS
+[ 441/925] FAIL        rc=   1    6.89s leash=90   .agents/slop/jsfix/jsfix_e2e.py  :: SOME PROOFS FAIL
+[ 442/925] PASS        rc=   0   34.01s leash=90   .agents/slop/i64mul/census.py  :: rows_expected=442 rows_present=442 disagree=0
+[ 443/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/lane-load-sweep.sh  :: could not exec: [Errno 2] No such file or directory: './lane-load-sweep.sh'
+[ 444/925] NOT-RUN     rc=   0    0.58s leash=25   .agents/slop/kn-noop-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 445/925] SKIP        rc=   2    0.68s leash=25   .agents/slop/lane-load.py  :: lane-load.py: error: the following arguments are required: --lane
+[ 446/925] PASS        rc=   0    6.11s leash=90   .agents/slop/jsfp8/gate.py  :: FIXED      present 205121/205121  MISMATCH 0
+[ 447/925] FAIL        rc=   1    7.27s leash=90   .agents/slop/jsfix/jsfix_gate.py  :: SOME PROOFS FAIL
+[ 448/925] FAIL        rc=   1    0.02s leash=90   .agents/slop/lastlaw/sweep.sh  :: rc=1
+[ 449/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/late-gate.sh  :: could not exec: [Errno 2] No such file or directory: './late-gate.sh'
+[ 450/925] NOT-RUN     rc=   0    0.20s leash=25   .agents/slop/late-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 451/925] PASS        rc=   0    2.51s leash=90   .agents/slop/lanedeath-census.py  :: LANE-DEATH CENSUS.  One question per BROKEN entry: is the def the error names in the PORT,
+[ 452/925] PASS        rc=   0    5.27s leash=25   .agents/slop/li/li-control.sh  :: 1. PRE-GUARD gate (no reshape) on the PRE-RENAME bytes -- the verdict the tree had
+[ 453/925] NOT-RUN     rc=   0    0.50s leash=25   .agents/slop/li/li-keys.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 454/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/li/li-rename-oracle.py  :: rc=1
+[ 455/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/li/li-rename.py  :: rc=1
+[ 456/925] NOT-RUN     rc=   0    0.57s leash=25   .agents/slop/li/pre-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 457/925] NOT-RUN     rc=   0   49.86s leash=90   .agents/slop/i64div/repro54/gate54.sh  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 458/925] NOT-RUN     rc=   0    0.32s leash=25   .agents/slop/lintable/lintable-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 459/925] FAIL        rc=   1    5.49s leash=90   .agents/slop/lintable/lintable-gate.sh  :: lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'
+[ 460/925] PASS        rc=   0   15.97s leash=25   .agents/slop/late-zero-classify.py  :: row set: 2 rows over __init__.bend, coalesce.bend, gater.bend, linearizer.bend, regalloc.bend
+[ 461/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/jstage/jsstage.py  :: OUR alarm at 25s (rc=124)
+[ 462/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/lastlaw/run.py  :: OUR alarm at 25s (rc=124)
+[ 463/925] NOT-RUN     rc=   0    0.57s leash=25   .agents/slop/llvmir-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 464/925] FAIL        rc=   1   46.63s leash=90   .agents/slop/i64mul/cgate.sh  :: rc=1
+[ 465/925] NOT-RUN     rc=   0    0.23s leash=25   .agents/slop/loadwatch.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 466/925] NOT-RUN     rc=   0    0.55s leash=25   .agents/slop/margsym-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 467/925] PASS        rc=   0    9.25s leash=90   .agents/slop/llvmir-gate-noguard.py  :: gated 470   agree 470   disagree []
+[ 468/925] PASS        rc=   0    0.73s leash=25   .agents/slop/margsym-probe2.py  :: ValueError: bad reshape: (4,) -> (2, UOp(Ops.SPECIAL, arg='N', src=(
+[ 469/925] NOT-RUN     rc=   0    0.63s leash=25   .agents/slop/margsym-probe3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 470/925] PASS        rc=   0    0.22s leash=25   .agents/slop/mathlib/clusters.py  :: TOTAL mentions in comments: 88
+[ 471/925] NOT-RUN     rc=   0    0.08s leash=25   .agents/slop/mathlib/expect.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 472/925] NOT-RUN     rc=   0    0.08s leash=25   .agents/slop/mathlib/expect3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 473/925] PASS        rc=   0    0.07s leash=25   .agents/slop/mathlib/expect4.py  :: FIRST ATTEMPT AT THE DISCRIMINATOR FAILED, and it is worth recording:
+[ 474/925] NOT-RUN     rc=   0    0.18s leash=25   .agents/slop/mathlib/reconstruct.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 475/925] PASS        rc=   0    2.05s leash=90   .agents/slop/marker-audit.py  :: BACKLOG multi.bend:3494  #   TODO(p3) ops.py:600 multi.py:296  the ALLREDUCE rule, `UOp.allreduce(*r
+[ 476/925] NOT-RUN     rc=   0    1.43s leash=25   .agents/slop/mathlib/windows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 477/925] FAIL        rc=   1    9.19s leash=90   .agents/slop/llvmir-gate.py  :: port: 1/471 row(s) share a key with another row of the SAME name -- one name printed 2x: ['lt 1 ptr 
+[ 478/925] FAIL        rc=   1    3.18s leash=25   .agents/slop/measure-search-keys.py  :: if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+[ 479/925] FAIL        rc=   1    3.25s leash=25   .agents/slop/measure-search-dedup.py  :: if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+[ 480/925] FAIL        rc=   1    0.03s leash=25   .agents/slop/merge-oracle.py  :: rc=1
+[ 481/925] NOT-RUN     rc=   0    0.27s leash=25   .agents/slop/memory_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 482/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/mixin-op-gate.sh  :: could not exec: [Errno 2] No such file or directory: './mixin-op-gate.sh'
+[ 483/925] NOT-RUN     rc=   0    0.04s leash=90   .agents/slop/mm-bl-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 484/925] NOT-RUN     rc=   0    0.25s leash=90   .agents/slop/mm-dt-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 485/925] NOT-RUN     rc=   0    0.06s leash=90   .agents/slop/mm-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 486/925] NOT-RUN     rc=   0    1.02s leash=90   .agents/slop/mixin-op-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 487/925] NOT-RUN     rc=   0    0.49s leash=90   .agents/slop/mm-lift-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 488/925] NOT-RUN     rc=   0    0.29s leash=90   .agents/slop/mm-walk-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 489/925] NOT-RUN     rc=   0    0.05s leash=90   .agents/slop/mmfold/mmfold-rows.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 490/925] FAIL        rc=   1   24.20s leash=25   .agents/slop/live-write-guard.py  :: FAIL ag-fix1.py -- LIVE WRITE, not registered
+[ 491/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/mt-table.py  :: rc=1
+[ 492/925] FAIL        rc=   2    3.11s leash=90   .agents/slop/memory-diff.py  :: BEND LANE FAILED
+[ 493/925] PASS        rc=   0    0.84s leash=25   .agents/slop/mt_compile_probe.py  :: error          = 0
+[ 494/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/mt_constmap.py  :: assert m, f"ops_metal.py:{n} does not match {rx!r}: {_line(n).strip()!r}"
+[ 495/925] FAIL        rc=   1    0.04s leash=90   .agents/slop/mt_diff.py  :: rc=1
+[ 496/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/mt_fieldorder.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 497/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/mt_oracle.py  :: rc=1
+[ 498/925] FAIL        rc=   1    0.07s leash=90   .agents/slop/mt_rows.py  :: rc=1
+[ 499/925] PASS        rc=   0    3.27s leash=25   .agents/slop/mock-oracle.py  :: add=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName
+[ 500/925] PASS        rc=   0    0.05s leash=25   .agents/slop/multi-collision.py  :: body: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 1)))), 1)
+[ 501/925] NOT-RUN     rc=   0    0.74s leash=90   .agents/slop/mt_seam_rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 502/925] FAIL        rc=   1    2.94s leash=90   .agents/slop/mt_audit2.py  :: rc=1
+[ 503/925] NOT-RUN     rc=   0    0.04s leash=25   .agents/slop/multi-defect-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 504/925] PASS        rc=   0    0.30s leash=25   .agents/slop/multi-l139.py  :: UNEQUAL-count sharding the two disagree, and CPython is the side that says :139.
+[ 505/925] PASS        rc=   0    0.54s leash=25   .agents/slop/multi-correspond.py  :: scalar   bx_scalar      ((), (2, 3))           cpython=(0, 1)     port asserts 2  projection gives 2
+[ 506/925] NOT-RUN     rc= 124   90.24s leash=90   .agents/slop/hermetic/hermetic-census.py  :: OUR alarm at 90s (rc=124)
+[ 507/925] FAIL        rc=   1    0.38s leash=25   .agents/slop/multi-namelane.py  :: rc=1
+[ 508/925] PASS        rc=   0    0.26s leash=25   .agents/slop/multi-raw-oracle.py  :: prd all     red=(0,) rem=(1,) off=(0,)
+[ 509/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/mutledger/classify.sh  :: could not exec: [Errno 2] No such file or directory: './classify.sh'
+[ 510/925] FAIL        rc=   1    0.22s leash=25   .agents/slop/multi-verify.py  :: rc=1
+[ 511/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/names-ag-baseline.py  :: rc=1
+[ 512/925] PASS        rc=   0    0.27s leash=90   .agents/slop/name-census.py  :: TOTAL over 76 cached lane texts of 39 wired ports:
+[ 513/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/names-ag-candidates.py  :: rc=1
+[ 514/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/names-ag-sites.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 515/925] FAIL        rc=   1    0.98s leash=90   .agents/slop/naming-gate-ledger-check.py  :: FAIL  UNCOVERED RENAME(S):
+[ 516/925] PASS        rc=   0    2.50s leash=25   .agents/slop/multi-controls.py  :: PASS  C1a the harness NAMES the planted row
+[ 517/925] NOT-RUN     rc=   0    1.87s leash=90   .agents/slop/multi-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 518/925] FAIL        rc=   1    0.07s leash=90   .agents/slop/nested/gate.py  :: rc=1
+[ 519/925] PASS        rc=   0    6.52s leash=25   .agents/slop/mmfold/mmfold-lane.py  :: oracle mm-gate.py: 72 rows, 0 unread by either reader, 0 name(s) printed twice
+[ 520/925] NOT-RUN     rc=   0    0.33s leash=25   .agents/slop/nested/mkproof.sh  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 521/925] FAIL        rc=   1    1.88s leash=90   .agents/slop/naming-gate-ledger.py  :: rc=1
+[ 522/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/nir/addplus.py  :: rc=1
+[ 523/925] PASS        rc=   0    0.52s leash=90   .agents/slop/nir/nir_const_audit.py  :: SYMBOL                                     TABLE        PORT     MESA     VERDICT
+[ 524/925] FAIL        rc=   1    1.76s leash=90   .agents/slop/naming-gate.py  :: NAMING GATE -- owner ruling: def names match upstream tinygrad exactly
+[ 525/925] NOT-RUN     rc=   0    0.57s leash=25   .agents/slop/nir/nir_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 526/925] NOT-RUN     rc=   0    0.47s leash=25   .agents/slop/nl/nl-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 527/925] NOT-RUN     rc=   0    0.82s leash=90   .agents/slop/nn-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 528/925] PASS        rc=   0    0.05s leash=90   .agents/slop/nocolor-diff.py  :: exact 18  refusal-answered-False 13  named-boundary 1  DISAGREE 0  of 32 probes
+[ 529/925] NOT-RUN     rc=   0   17.05s leash=90   .agents/slop/load-census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 530/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/noneshape/base.py  :: rc=1
+[ 531/925] NOT-RUN     rc=   0    0.89s leash=90   .agents/slop/nn-init-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 532/925] NOT-RUN     rc=   0    0.22s leash=25   .agents/slop/noneshape/ns-pyarg.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 533/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/noneshape/ns-revert.py  :: rc=1
+[ 534/925] NOT-RUN     rc=   0    0.17s leash=25   .agents/slop/noop-src-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 535/925] NOT-RUN     rc=   0    0.04s leash=25   .agents/slop/norm/canon.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 536/925] NOT-RUN     rc= 124   90.12s leash=90   .agents/slop/i64div/gate.sh  :: OUR alarm at 90s (rc=124)
+[ 537/925] FAIL        rc=   1    6.03s leash=25   .agents/slop/noneshape/ns-corpus.py  :: emit bend: 0 rows after 3 attempts -- a FAILURE, not a verdict:
+[ 538/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/norm/lint_demo.sh  :: could not exec: [Errno 2] No such file or directory: './lint_demo.sh'
+[ 539/925] NOT-RUN     rc=   0    6.74s leash=25   .agents/slop/nocolor-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 540/925] PASS        rc=   0    1.92s leash=25   .agents/slop/norm/lint_norm.py  :: another unit's tree.  AND THE AUTHOR KNEW: the comment at :130 says "`%g` agrees with `H.f32_show` o
+[ 541/925] PASS        rc=   0    0.05s leash=90   .agents/slop/notes-sweep/staleness.py  :: claim                                   notes say   measured  verdict
+[ 542/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/notes/bendall.py  :: rc=1
+[ 543/925] FAIL        rc=   1    0.10s leash=25   .agents/slop/notes/bendfix.py  :: rc=1
+[ 544/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/notes/bendlint.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 545/925] FAIL        rc=   1    9.65s leash=90   .agents/slop/not-applied-audit.py  :: ext_mutate.py              203  stale-anchor shared  -> the source text did not match; re-run with t
+[ 546/925] PASS        rc=   0   16.41s leash=90   .agents/slop/norm/gate_norm.py  :: | row | width | CPython (dtype.py, CALLED) | node show / bits | cc show / bits | verdict |
+[ 547/925] FAIL        rc=   1   24.04s leash=90   .agents/slop/naming-gate-selftest.py  :: 1 CLEAN TREE
+[ 548/925] NOT-RUN     rc=   0    1.72s leash=25   .agents/slop/notes/grad_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 549/925] FAIL        rc=   1    5.43s leash=25   .agents/slop/notes/fp8_oracle.py  :: ok &= check(lambda u, _n=name: to_fp8(val(u), DT[_n]), lambda u: ref_to(name, u),
+[ 550/925] FAIL        rc=   1    0.22s leash=25   .agents/slop/notes/grad_rebind.py  :: AFTER tags claiming this node: [(27, "ERR UPat.match() missing 1 required positional argument: 'stor
+[ 551/925] PASS        rc=   0    0.24s leash=25   .agents/slop/notes/grad_table.py  :: TOTAL 33
+[ 552/925] NOT-RUN     rc=   0    0.35s leash=25   .agents/slop/notes/kn-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 553/925] FAIL        rc=   1    0.33s leash=25   .agents/slop/notes/mop-truth.py  :: rc=1
+[ 554/925] NOT-RUN     rc=   0    0.35s leash=25   .agents/slop/notes/mop-truth3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 555/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/nested/scan.py  :: OUR alarm at 25s (rc=124)
+[ 556/925] NOT-RUN     rc=   0    1.73s leash=25   .agents/slop/notes/grad_oracle2.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 557/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/nested/uops.py  :: OUR alarm at 25s (rc=124)
+[ 558/925] NOT-RUN     rc=   0    0.32s leash=25   .agents/slop/notes/resh-chain-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 559/925] FAIL        rc=   1    0.22s leash=25   .agents/slop/notes/rw-truth.py  :: rc=1
+[ 560/925] PASS        rc=   0    0.43s leash=25   .agents/slop/notes/reshape-oracle.py  :: resh_badprod     shape=RAISE ValueError: bad reshape: (4,) -> (2, 3) dtype=i32 srcops=['BUFFER', 'ST
+[ 561/925] NOT-RUN     rc=   0    0.41s leash=25   .agents/slop/notes/sched-allreduce-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 562/925] FAIL        rc=   1    0.52s leash=25   .agents/slop/notes/rz-oracle.py  :: rc=1
+[ 563/925] NOT-RUN     rc=   0    1.06s leash=25   .agents/slop/notes/mxm-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 564/925] FAIL        rc=   1    0.08s leash=25   .agents/slop/notes/sz-bisect.py  :: rc=1
+[ 565/925] NOT-RUN     rc=   0    0.53s leash=25   .agents/slop/notes/sched-mem-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 566/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/notes/sz-dump.py  :: rc=1
+[ 567/925] NOT-RUN     rc=   0    0.34s leash=25   .agents/slop/notes/sched-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 568/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/notes/sz-first.py  :: rc=1
+[ 569/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/notes/sz-mktrees.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 570/925] PASS        rc=   0    0.04s leash=25   .agents/slop/notes/sz-probe.py  :: bad prefix
+[ 571/925] NOT-RUN     rc=   0    0.65s leash=25   .agents/slop/notes/sched-multi-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 572/925] PASS        rc=   0    0.04s leash=25   .agents/slop/notes/sz-probe2.py  :: fstring conv bad
+[ 573/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/notes/sz-probe3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 574/925] PASS        rc=   0    0.05s leash=25   .agents/slop/notes/sz-probe4.py  :: bad cont 'x = 1 \\ 2\n'
+[ 575/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/notes/sz-probe5.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 576/925] PASS        rc=   0    0.06s leash=25   .agents/slop/notes/sz-probe6.py  :: conversion bad 'x = f"{a!q}"\n'
+[ 577/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/notes/sz-snips.py  :: rc=1
+[ 578/925] NOT-RUN     rc=   0    0.53s leash=25   .agents/slop/notes/sized-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 579/925] PASS        rc=   0    0.04s leash=25   .agents/slop/notes/sz-t5.py  :: b'x -> DType: pass\n' (5, 1) (5, 1)
+[ 580/925] PASS        rc=   0    0.49s leash=25   .agents/slop/notes/sz-fuzz.py  :: edge cases 60 {'ok': 53, 'py-err-only': 7}
+[ 581/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/notes/sz-toks.py  :: rc=1
+[ 582/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/notes/sz-where.py  :: rc=1
+[ 583/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/notes/upat-min.py  :: rc=1
+[ 584/925] NOT-RUN     rc=   0    0.32s leash=25   .agents/slop/notes/weak_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 585/925] FAIL        rc=   1    0.45s leash=25   .agents/slop/nr/nr-oracle.py  :: rc=1
+[ 586/925] NOT-RUN     rc=   0    0.71s leash=25   .agents/slop/null-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 587/925] NOT-RUN     rc= 124   25.03s leash=25   .agents/slop/norm/canon.selftest.py  :: OUR alarm at 25s (rc=124)
+[ 588/925] PASS        rc=   0    0.64s leash=90   .agents/slop/nv-constaudit.py  :: agree: 75
+[ 589/925] NOT-RUN     rc=   0    0.54s leash=90   .agents/slop/nv-constaudit2.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 590/925] PASS        rc=   0    2.72s leash=25   .agents/slop/notes/sz-proto.py  :: total lines: 25665
+[ 591/925] PASS        rc=   0   18.20s leash=25   .agents/slop/notes/fp16_oracle.py  :: ALL AGREE
+[ 592/925] PASS        rc=   0    1.83s leash=25   .agents/slop/nv-oracle.py  :: nv_errstr_999=999: Unknown error
+[ 593/925] FAIL        rc=   1    3.18s leash=25   .agents/slop/nv_bendor.py  :: rc=1
+[ 594/925] NOT-RUN     rc=   0    3.97s leash=25   .agents/slop/nv_bendorder.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 595/925] NOT-RUN     rc=   0    0.07s leash=90   .agents/slop/nv_gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 596/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/nv_ip_assemble.py  :: rc=1
+[ 597/925] FAIL        rc=   1    0.06s leash=90   .agents/slop/nv_ip_diff.py  :: rc=1
+[ 598/925] NOT-RUN     rc=   0    0.75s leash=25   .agents/slop/nv_ip_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 599/925] NOT-RUN     rc=   0    3.65s leash=25   .agents/slop/nv_bendplus.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 600/925] PASS        rc=   0    5.83s leash=90   .agents/slop/nv-diff.py  :: AGREE
+[ 601/925] FAIL        rc=   1    0.05s leash=25   .agents/slop/nv_ip_order.py  :: rc=1
+[ 602/925] NOT-RUN     rc=   0    0.72s leash=25   .agents/slop/nv_ip_oracle3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 603/925] FAIL        rc=   1    0.21s leash=25   .agents/slop/nv_mmustrans.py  :: verdict measured against it would name a file nobody is looking at, so
+[ 604/925] NOT-RUN     rc=   0    0.70s leash=25   .agents/slop/nv_ip_oracle4.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 605/925] PASS        rc=   0    0.68s leash=25   .agents/slop/nv_nvdev_oracle.py  :: nv_d_2_l5_huge_0=ERR:IndexError
+[ 606/925] NOT-RUN     rc=   0    0.05s leash=25   .agents/slop/nv_reshape.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 607/925] PASS        rc=   0    3.45s leash=25   .agents/slop/nv_fixorder.py  :: CLEAN after 0 moves
+[ 608/925] NOT-RUN     rc= 124   90.01s leash=90   .agents/slop/ip_sweep.py  :: OUR alarm at 90s (rc=124)
+[ 609/925] PASS        rc=   0    0.42s leash=25   .agents/slop/nv_table_equiv.py  :: port reg  CPython table (arch from)                      fields  verdict
+[ 610/925] PASS        rc=   0    1.75s leash=25   .agents/slop/nvdup/nvdup-probe.py  :: element 0 (16, 8, 2) -> OK (16, 8, dtypes.u64, 0)
+[ 611/925] PASS        rc=   0    2.13s leash=25   .agents/slop/nvdup/nv-oracle-PREFIX.py  :: nv_errstr_999=999: Unknown error
+[ 612/925] NOT-RUN     rc=   0    1.19s leash=90   .agents/slop/objc/objc_diff.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 613/925] PASS        rc=   0    4.24s leash=90   .agents/slop/nv_order_census.py  :: nv_reg_NV_PMC_BOOT_42_maxw           port=10           census=10           ok
+[ 614/925] NOT-RUN     rc=   0    0.48s leash=25   .agents/slop/objc/objc_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 615/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/one.sh  :: could not exec: [Errno 2] No such file or directory: './one.sh'
+[ 616/925] PASS        rc=   0    0.74s leash=90   .agents/slop/onnx-gate.py  :: onnx_sel_sm0=ERR
+[ 617/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-501-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-501-gate.sh'
+[ 618/925] NOT-RUN     rc=   0    0.27s leash=25   .agents/slop/ops-501-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 619/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-cl-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-cl-gate.sh'
+[ 620/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-gate.sh'
+[ 621/925] NOT-RUN     rc=   0    0.77s leash=25   .agents/slop/ops-key-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 622/925] PASS        rc=   0    0.54s leash=25   .agents/slop/ops-oracle.py  :: axc_DEVICE=green
+[ 623/925] FAIL        rc=   1    2.54s leash=90   .agents/slop/ops-pu-gate.sh  :: SOME PROOFS FAIL
+[ 624/925] NOT-RUN     rc=   0    0.40s leash=25   .agents/slop/ops-pu-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 625/925] NOT-RUN     rc=   0    0.06s leash=90   .agents/slop/ops-pu-range-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 626/925] FAIL        rc=   1    7.96s leash=90   .agents/slop/nvrows/nvrows-deadrow-gate.py  :: VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows
+[ 627/925] NOT-RUN     rc=   0    6.65s leash=25   .agents/slop/objc/symtab_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 628/925] NOT-RUN     rc=   0    0.24s leash=25   .agents/slop/ops-render-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 629/925] NOT-RUN     rc=   0    1.43s leash=25   .agents/slop/ops-python-render-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 630/925] FAIL        rc=   2    0.06s leash=90   .agents/slop/ops-rnd-rows.py  :: rc=2
+[ 631/925] PASS        rc=   0   21.53s leash=25   .agents/slop/notes/sz-tenths.py  :: exhaustive 1196000 bad 0
+[ 632/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-rra-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-rra-gate.sh'
+[ 633/925] NOT-RUN     rc=   0    0.43s leash=25   .agents/slop/ops-rra-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 634/925] FAIL        rc=   1    2.16s leash=90   .agents/slop/ops-rnd-gate.sh  :: SOME PROOFS FAIL
+[ 635/925] NOT-RUN     rc=   0    0.37s leash=25   .agents/slop/ops-set-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 636/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-sugar-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-sugar-gate.sh'
+[ 637/925] NOT-RUN     rc=   0    0.33s leash=25   .agents/slop/ops-sugar-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 638/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/ops-var-gate.sh  :: could not exec: [Errno 2] No such file or directory: './ops-var-gate.sh'
+[ 639/925] NOT-RUN     rc= 124   90.04s leash=90   .agents/slop/lanedeath-provenance.py  :: OUR alarm at 90s (rc=124)
+[ 640/925] NOT-RUN     rc=   0    0.42s leash=25   .agents/slop/ops-var-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 641/925] NOT-RUN     rc=   0    0.27s leash=25   .agents/slop/ops-vrn-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 642/925] NOT-RUN     rc=   0    2.94s leash=90   .agents/slop/ops-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 643/925] NOT-RUN     rc=   0    0.37s leash=25   .agents/slop/ops-vv-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 644/925] FAIL        rc=   1    0.44s leash=25   .agents/slop/ops501-agree.py  :: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops501-agree.py", line 26, i
+[ 645/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/ops501-atrest.sh  :: could not exec: [Errno 2] No such file or directory: './ops501-atrest.sh'
+[ 646/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/ops501-ctl.sh  :: could not exec: [Errno 2] No such file or directory: './ops501-ctl.sh'
+[ 647/925] NOT-RUN     rc= 124   25.03s leash=25   .agents/slop/notes/sz-lexer-proto.py  :: OUR alarm at 25s (rc=124)
+[ 648/925] FAIL        rc=   1    0.50s leash=25   .agents/slop/ops501-names.py  :: rc=1
+[ 649/925] PASS        rc=   0    0.33s leash=25   .agents/slop/ops_cl_constmap.py  :: cl_err_n = 63   | <autogen: unique err codes> = 63   | STATUS: OK
+[ 650/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/opsbend-milestone.sh  :: could not exec: [Errno 2] No such file or directory: './opsbend-milestone.sh'
+[ 651/925] SKIP        rc=   2    0.04s leash=90   .agents/slop/opsbend_milestone_gate.py  :: needs arguments; bare is a different instrument
+[ 652/925] PASS        rc=   0    0.41s leash=25   .agents/slop/ops_webgpu_constmap.py  :: BIND_UNIFORM = 1   | WGPUBufferBindingType_Uniform = 1   | STATUS: OK
+[ 653/925] NOT-RUN     rc=   0    1.21s leash=25   .agents/slop/opspy/corpus.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 654/925] NOT-RUN     rc=   0    0.30s leash=25   .agents/slop/oracle-after-cf.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 655/925] NOT-RUN     rc=   0    0.31s leash=25   .agents/slop/oracle-customfunction.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 656/925] SKIP        rc=   2    0.07s leash=25   .agents/slop/oracle-live.py  :: oracle-live.py: error: the following arguments are required: oracle
+[ 657/925] NOT-RUN     rc=   0    0.33s leash=25   .agents/slop/oracle-search.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 658/925] PASS        rc=   0    0.43s leash=25   .agents/slop/oracle-system.py  :: pref_mem_base>>32=0x8 (as passed to PREF_BASE_UPPER32)
+[ 659/925] FAIL        rc=   1    0.36s leash=25   .agents/slop/oracle/dtype_oracle.py  :: rc=1
+[ 660/925] NOT-RUN     rc=   0    0.44s leash=25   .agents/slop/oracle/dtype_tables.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 661/925] NOT-RUN     rc=   0    0.41s leash=25   .agents/slop/oracle_npy.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 662/925] PASS        rc=   0    0.36s leash=25   .agents/slop/oracle_npy_torch.py  :: free ok (no munmap: no remote attr) = True
+[ 663/925] NOT-RUN     rc=   0    0.19s leash=25   .agents/slop/oracle_py.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 664/925] NOT-RUN     rc=   0    0.35s leash=25   .agents/slop/oracle_rdma.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 665/925] NOT-RUN     rc=   0    0.35s leash=90   .agents/slop/oracle_rdma_gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 666/925] NOT-RUN     rc=   0    0.12s leash=25   .agents/slop/oracle_torch.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 667/925] PASS        rc=   0    0.32s leash=25   .agents/slop/oracles/fold-mvt-oracle.py  :: mv_fliplen: ValueError: bad flip on (4, 3), (True,)
+[ 668/925] PASS        rc=   0    0.40s leash=90   .agents/slop/oracles/fold-mvt-rows.py  :: mv_fliplen: ValueError: bad flip on (2, 3), (True,)
+[ 669/925] PASS        rc=   0    0.35s leash=25   .agents/slop/oracles/fold-probe1.py  :: mop FLIP       n=2 op=FLIP nsrc=1 srcops=BUFFER shape=RAISE ValueError: bad flip on (4,), (0, 1) dty
+[ 670/925] NOT-RUN     rc=   0    0.29s leash=25   .agents/slop/oracles/fold-rng-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 671/925] FAIL        rc=   1    0.53s leash=25   .agents/slop/oracles/mm-range.py  :: rc=1
+[ 672/925] FAIL        rc=   1    0.43s leash=25   .agents/slop/oracles/mm-survey.py  :: rc=1
+[ 673/925] NOT-RUN     rc=   0    0.48s leash=90   .agents/slop/order-gate-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 674/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/order-late-gate.sh  :: could not exec: [Errno 2] No such file or directory: './order-late-gate.sh'
+[ 675/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/order-late-move.py  :: rc=1
+[ 676/925] NOT-RUN     rc=   0    0.40s leash=25   .agents/slop/order-lin-cand.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 677/925] NOT-RUN     rc=   0    0.34s leash=25   .agents/slop/order-lin-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 678/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/order-lin-sweep.sh  :: could not exec: [Errno 2] No such file or directory: './order-lin-sweep.sh'
+[ 679/925] NOT-RUN     rc= 124   25.02s leash=25   .agents/slop/nvdup/nvdup-trace.py  :: OUR alarm at 25s (rc=124)
+[ 680/925] PASS        rc=   0    0.05s leash=25   .agents/slop/paren.py  :: tinybendygrad/runtime/support/rdma/bnxtdev.bend: 381 top-level defs, 0 UNBALANCED -> clean after
+[ 681/925] PASS        rc=   0   36.55s leash=90   .agents/slop/notes/sz-toks-cmp.py  :: files 214 bad 0
+[ 682/925] SKIP        rc=   1    0.05s leash=25   .agents/slop/pin-tables.py  :: MEASURED is passed in, never inferred.  There is no code path in this file that
+[ 683/925] FAIL        rc=   1    0.13s leash=25   .agents/slop/pin-tree-oracle.py  :: rc=1
+[ 684/925] FAIL        rc=   1    0.05s leash=90   .agents/slop/portexec/census.py  :: rc=1
+[ 685/925] FAIL        rc=   1    0.04s leash=25   .agents/slop/portexec/exec_harness.py  :: rc=1
+[ 686/925] NOT-RUN     rc= 124   90.02s leash=90   .agents/slop/liveness/measure39.py  :: # port                                               p     o  shared  disagree  ident  oracle
+[ 687/925] PASS        rc=   0    1.03s leash=25   .agents/slop/portexec/oracle.py  :: stage1 agree: True
+[ 688/925] NOT-RUN     rc= 124   25.04s leash=25   .agents/slop/ops-python-probe.py  :: OUR alarm at 25s (rc=124)
+[ 689/925] PASS        rc=   0   35.21s leash=90   .agents/slop/nv_nvdev_gate.py  :: interpreted lane exit=0 rows=820
+[ 690/925] PASS        rc=   0    0.56s leash=25   .agents/slop/prep-gen-tables.py  :: O.PMEntry{9, [O.OpsALLREDUCE{}], Nil{}},  # 9 ALLREDUCE rej=- slen=1 rlen=1 any=0 nalts=1 name=red
+[ 691/925] PASS        rc=   0   10.15s leash=25   .agents/slop/phantom-run.py  :: BLAST RADIUS PER ERROR CLASS.  4 victim files, all importing the substrate, none of them
+[ 692/925] PASS        rc=   0    0.79s leash=25   .agents/slop/prepare-oracle.py  :: ear_9_name=red
+[ 693/925] NOT-RUN     rc=   0    0.04s leash=90   .agents/slop/prepare_rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 694/925] NOT-RUN     rc=   0    0.04s leash=25   .agents/slop/probe/count.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 695/925] FAIL        rc=   1    3.52s leash=25   .agents/slop/pr-actions-oracle.py  :: rc=1
+[ 696/925] FAIL        rc=   1    0.07s leash=90   .agents/slop/probe/oracle_diff.py  :: rc=1
+[ 697/925] PASS        rc=   0    1.86s leash=25   .agents/slop/probe/jit_oracle.py  :: msg_names_mismatch=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']
+[ 698/925] PASS        rc=   0   11.97s leash=25   .agents/slop/portexec/stage1.sh  :: stage1 agree: True
+[ 699/925] FAIL        rc=   1   24.67s leash=25   .agents/slop/opspy/verify-dedup.sh  :: ** after.own is absent or empty -- no verdict is possible
+[ 700/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/probes/demo.sh  :: could not exec: [Errno 2] No such file or directory: './demo.sh'
+[ 701/925] NOT-RUN     rc=   0    0.03s leash=25   .agents/slop/prune_dead.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 702/925] PASS        rc=   0    0.45s leash=25   .agents/slop/ptx-constmap.py  :: removed, so `pred` -- `types[bool]` -- becomes `red`:
+[ 703/925] NOT-RUN     rc=   0    0.42s leash=25   .agents/slop/ptx-s3-gen.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 704/925] PASS        rc=   0   16.82s leash=90   .agents/slop/order-verdicts.py  :: VERDICT 1 -- runtime/ops_bend's sibling_blind transpositions
+[ 705/925] NOT-RUN     rc=   0    3.82s leash=25   .agents/slop/probe/real.sh  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 706/925] NOT-RUN     rc=   0    0.66s leash=25   .agents/slop/ptx-s3-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 707/925] NOT-RUN     rc=   0    0.85s leash=25   .agents/slop/qc_cache_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 708/925] FAIL        rc=   1    0.59s leash=25   .agents/slop/qc_exec_oracle.py  :: rc=1
+[ 709/925] PASS        rc=   0   15.80s leash=25   .agents/slop/portexec/run-kernel.sh  :: 227 rows
+[ 710/925] NOT-RUN     rc=   0    0.95s leash=25   .agents/slop/qc_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 711/925] NOT-RUN     rc=   0    0.06s leash=25   .agents/slop/qualify.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 712/925] NOT-RUN     rc=   0    0.83s leash=25   .agents/slop/qc_stage3_oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 713/925] FAIL        rc=   1    1.48s leash=90   .agents/slop/qc_check.py  :: rc=1
+[ 714/925] PASS        rc=   0    6.20s leash=25   .agents/slop/probe/plusfix.py  :: CHECK OK after 0 fixes
+[ 715/925] NOT-RUN     rc=   0    0.52s leash=25   .agents/slop/rangeify-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 716/925] NOT-RUN     rc=   0    0.93s leash=25   .agents/slop/qcom-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 717/925] NOT-RUN     rc=   0    1.21s leash=90   .agents/slop/reach/census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 718/925] FAIL        rc=   1    0.53s leash=90   .agents/slop/reach/rows.py  :: rc=1
+[ 719/925] FAIL        rc=   1    1.01s leash=90   .agents/slop/reach/probe2.py  :: rc=1
+[ 720/925] NOT-RUN     rc=   0    1.51s leash=90   .agents/slop/reach/probe-ops.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 721/925] NOT-RUN     rc=   0    0.76s leash=25   .agents/slop/reader-fork-convert.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 722/925] FAIL        rc=   1    0.07s leash=25   .agents/slop/rebase-ab-oracle.py  :: rc=1
+[ 723/925] FAIL        rc=   1    0.06s leash=25   .agents/slop/rebase-case-trap.py  :: rc=1
+[ 724/925] NOT-RUN     rc=   0    1.82s leash=90   .agents/slop/reach/probe3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 725/925] NOT-RUN     rc= 124   25.03s leash=25   .agents/slop/probe/serve.py  :: OUR alarm at 25s (rc=124)
+[ 726/925] NOT-RUN     rc= 124   25.05s leash=25   .agents/slop/reader-guard.py  :: OUR alarm at 25s (rc=124)
+[ 727/925] NOT-RUN     rc= 124   25.03s leash=25   .agents/slop/reader-registry.py  :: OUR alarm at 25s (rc=124)
+[ 728/925] NOT-RUN     rc= 124   25.04s leash=25   .agents/slop/rebase-control-new-oracles.py  :: OUR alarm at 25s (rc=124)
+[ 729/925] PASS        rc=   0    2.77s leash=25   .agents/slop/rebase-oracle-ops.py  :: axc_DEVICE=green
+[ 730/925] NOT-RUN     rc=   0    1.25s leash=25   .agents/slop/rebase-oracle-spec.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 731/925] PASS        rc=   0    5.02s leash=25   .agents/slop/rebase-oracle-search.py  :: #repro_vendored_import=OK:209
+[ 732/925] FAIL        rc=   1    0.14s leash=25   .agents/slop/rebase-pm-fork.py  :: rc=1
+[ 733/925] NOT-RUN     rc= 124   25.35s leash=25   .agents/slop/rebase-nameprobe.py  :: OUR alarm at 25s (rc=124)
+[ 734/925] NOT-RUN     rc=   0    0.17s leash=25   .agents/slop/rebase-probe-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 735/925] NOT-RUN     rc= 124   25.19s leash=25   .agents/slop/rebase-plan.py  :: OUR alarm at 25s (rc=124)
+[ 736/925] FAIL        rc=   1    1.32s leash=90   .agents/slop/rebase-rows-cmp.py  :: rc=1
+[ 737/925] NOT-RUN     rc= 124   90.03s leash=90   .agents/slop/ops-set-gate.sh  :: OUR alarm at 90s (rc=124)
+[ 738/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/rebase-shadow.py  :: rc=1
+[ 739/925] NOT-RUN     rc= 124   90.08s leash=90   .agents/slop/ops-vrn-gate.sh  :: OUR alarm at 90s (rc=124)
+[ 740/925] NOT-RUN     rc= 124   90.05s leash=90   .agents/slop/ops-vv-gate.sh  :: OUR alarm at 90s (rc=124)
+[ 741/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/rebase-try.sh  :: could not exec: [Errno 2] No such file or directory: './rebase-try.sh'
+[ 742/925] NOT-RUN     rc=   0    1.13s leash=90   .agents/slop/rebase_gate_shim.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 743/925] NOT-RUN     rc=   0    0.13s leash=25   .agents/slop/recover_webgpu_call.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 744/925] NOT-RUN     rc= 124   25.17s leash=25   .agents/slop/rebase-remaining.py  :: OUR alarm at 25s (rc=124)
+[ 745/925] FAIL        rc=   1    0.21s leash=90   .agents/slop/rend_gate.py  :: rc=1
+[ 746/925] FAIL        rc=   1    1.52s leash=25   .agents/slop/renderer_oracle.py  :: rc=1
+[ 747/925] FAIL        rc=   1    0.21s leash=25   .agents/slop/reorder-region.py  :: rc=1
+[ 748/925] PASS        rc=   0    1.33s leash=25   .agents/slop/revision-ledger.py  :: anything if someone checks it, and `dd` carries 10 rows that disagree
+[ 749/925] NOT-RUN     rc= 124   90.07s leash=90   .agents/slop/prepare-gate.sh  :: OUR alarm at 90s (rc=124)
+[ 750/925] PASS        rc=   0    0.96s leash=25   .agents/slop/rf-arg-blindspot.py  :: MSTACK arg=ANone        OK -> arg is None
+[ 751/925] NOT-RUN     rc=   0    0.86s leash=25   .agents/slop/rf-arg-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 752/925] NOT-RUN     rc= 124   25.10s leash=25   .agents/slop/rebase-scan-oracles.py  :: OUR alarm at 25s (rc=124)
+[ 753/925] PASS        rc=   0    0.88s leash=25   .agents/slop/rf-claims.py  :: rule 3: OK None
+[ 754/925] NOT-RUN     rc=   0    0.69s leash=25   .agents/slop/rf-ct-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 755/925] NOT-RUN     rc=   0    1.04s leash=25   .agents/slop/rf-names.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 756/925] PASS        rc=   0    0.97s leash=25   .agents/slop/rf-probe-arg.py  :: CALL arg=KernelInfo(): OK, is arg KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estim
+[ 757/925] NOT-RUN     rc=   0    0.88s leash=90   .agents/slop/rf-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 758/925] PASS        rc=   0    0.61s leash=25   .agents/slop/rf-zero-classify.py  :: rf-mutations.txt: 20 rows, 2 moved nothing
+[ 759/925] NOT-RUN     rc=   0    0.99s leash=25   .agents/slop/rf-table.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 760/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/runrows.sh  :: could not exec: [Errno 2] No such file or directory: './runrows.sh'
+[ 761/925] NOT-RUN     rc= 124   25.09s leash=25   .agents/slop/rebase-stability.py  :: OUR alarm at 25s (rc=124)
+[ 762/925] PASS        rc=   0    0.77s leash=25   .agents/slop/rowform.py  :: ok    lane.eq-vs-gap
+[ 763/925] NOT-RUN     rc= 124   25.05s leash=25   .agents/slop/rebase-survey.py  :: OUR alarm at 25s (rc=124)
+[ 764/925] FAIL        rc=   1    0.19s leash=90   .agents/slop/schedule-bodies/sb-diff.py  :: rc=1
+[ 765/925] NOT-RUN     rc= 124   25.13s leash=25   .agents/slop/reimpl-scan.py  :: OUR alarm at 25s (rc=124)
+[ 766/925] FAIL        rc=   1    4.16s leash=25   .agents/slop/sched-oracle.py  :: rc=1
+[ 767/925] NOT-RUN     rc=   0    4.44s leash=25   .agents/slop/sched-fixture.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 768/925] PASS        rc=   0    2.33s leash=25   .agents/slop/schedule-bodies/sb-oracle.py  :: asd_none=ok
+[ 769/925] NOT-RUN     rc=   0    0.22s leash=25   .agents/slop/slop_1to1.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 770/925] NOT-RUN     rc=   0    1.21s leash=25   .agents/slop/shlscope/walk.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 771/925] PASS        rc=   0    0.18s leash=25   .agents/slop/spec-offsets.py  :: OK   tensor_table bump(shared): source=22 expected=22
+[ 772/925] NOT-RUN     rc=   0    0.83s leash=25   .agents/slop/spec-citations.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 773/925] NOT-RUN     rc= 124   90.05s leash=90   .agents/slop/reader-fork-census.py  :: OUR alarm at 90s (rc=124)
+[ 774/925] PASS        rc=   0    1.75s leash=90   .agents/slop/spec-provenance.py  :: #   idx 10: own  ops=ALLREDUCE rej= name=red
+[ 775/925] NOT-RUN     rc= 124   90.09s leash=90   .agents/slop/rebase-gate-selftest.py  :: OUR alarm at 90s (rc=124)
+[ 776/925] NOT-RUN     rc=   0    0.49s leash=25   .agents/slop/split-codegen3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 777/925] NOT-RUN     rc=   0    0.47s leash=25   .agents/slop/split_cpunull.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 778/925] FAIL        rc=   1    0.22s leash=25   .agents/slop/split_tc.py  :: assert 1 <= a <= b <= len(src), f'BAD SLICE {a}..{b} of {len(src)}'
+[ 779/925] NOT-RUN     rc=   0    0.88s leash=25   .agents/slop/split_late.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 780/925] NOT-RUN     rc=   0    2.35s leash=25   .agents/slop/spelling/scratch.sh  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 781/925] NOT-RUN     rc=   0    0.73s leash=25   .agents/slop/sqtt_fix_sets.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 782/925] PASS        rc=   0    1.82s leash=25   .agents/slop/sqtt_spec.py  :: cls_CDNA_INST_PC=encoding,wave,simd,_reserved,err,pc
+[ 783/925] NOT-RUN     rc=   0    1.39s leash=25   .agents/slop/stale-snapshot-detect.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 784/925] NOT-RUN     rc=   0    3.10s leash=90   .agents/slop/state-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 785/925] PASS        rc=   0    3.79s leash=90   .agents/slop/substrate-audit.py  :: ok   S1  a digest over the MUTANT is not a digest over the REFERENCE
+[ 786/925] NOT-RUN     rc=None    0.00s leash=300  .agents/slop/substrate-check.sh  :: could not exec: [Errno 2] No such file or directory: './substrate-check.sh'
+[ 787/925] NOT-RUN     rc=   0    8.84s leash=25   .agents/slop/staged-guard-proof.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 788/925] PASS        rc=   0    0.37s leash=90   .agents/slop/surface2/stage1-recensus.py  :: TOTAL tensor.bend lines: 1896
+[ 789/925] NOT-RUN     rc=   0    0.65s leash=25   .agents/slop/surface2/stage2-sets.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 790/925] PASS        rc=   0    0.34s leash=25   .agents/slop/surface2/stage4-bins.py  :: C __del__            status=OK     seams=-                  move=0  holds=str
+[ 791/925] PASS        rc=   0    2.08s leash=90   .agents/slop/system_diff.py  :: 439 agree, 0 disagree, 1 rows with no oracle, 440 rows total
+[ 792/925] PASS        rc=   0    4.56s leash=25   .agents/slop/surface2/stage3-classify.py  :: __del__            OK       -                      0         str
+[ 793/925] NOT-RUN     rc=   0    4.41s leash=90   .agents/slop/tc-audit.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 794/925] PASS        rc=   0    0.37s leash=90   .agents/slop/tc-diff.py  :: agree       : 801
+[ 795/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/tc-gate.sh  :: could not exec: [Errno 2] No such file or directory: './tc-gate.sh'
+[ 796/925] NOT-RUN     rc= 124   90.55s leash=90   .agents/slop/rebase-gate.py  :: OUR alarm at 90s (rc=124)
+[ 797/925] FAIL        rc=   1    0.32s leash=25   .agents/slop/tc-gen.py  :: rc=1
+[ 798/925] FAIL        rc=   1    0.35s leash=90   .agents/slop/tc-rows.py  :: rc=1
+[ 799/925] NOT-RUN     rc=   0    2.31s leash=25   .agents/slop/tcptx-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 800/925] NOT-RUN     rc= 124   25.74s leash=25   .agents/slop/spelling/roundtrip.py  :: OUR alarm at 25s (rc=124)
+[ 801/925] NOT-RUN     rc=   0    1.63s leash=25   .agents/slop/tcptx/probe_tc.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 802/925] FAIL        rc=   1    1.25s leash=25   .agents/slop/tcptx/probe_tc2.py  :: rc=1
+[ 803/925] NOT-RUN     rc=   0    2.19s leash=25   .agents/slop/tcptx/probe_tc3.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 804/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/tensor-gate.sh  :: could not exec: [Errno 2] No such file or directory: './tensor-gate.sh'
+[ 805/925] FAIL        rc=   1    6.91s leash=25   .agents/slop/tc-value.py  :: if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+[ 806/925] NOT-RUN     rc=   0    3.78s leash=90   .agents/slop/tensor-gate.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 807/925] NOT-RUN     rc= 124   90.02s leash=90   .agents/slop/rebase-portrows.py  :: OUR alarm at 90s (rc=124)
+[ 808/925] FAIL        rc=   1   40.02s leash=90   .agents/slop/sched-cmp.py  :: # port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update
+[ 809/925] FAIL        rc=   1    0.46s leash=25   .agents/slop/tools/amdfix.py  :: rc=1
+[ 810/925] PASS        rc=   0    3.95s leash=25   .agents/slop/tensor-surface/stage3-path.py  :: 3.1  CALLING CPython.  The smallest thing that IS a backward pass:
+[ 811/925] FAIL        rc=   1    0.56s leash=25   .agents/slop/tools/append.py  :: rc=1
+[ 812/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/tools/dm-floor-gate.sh  :: could not exec: [Errno 2] No such file or directory: './dm-floor-gate.sh'
+[ 813/925] FAIL        rc=   1    0.45s leash=25   .agents/slop/tools/dedupe-comments.py  :: rc=1
+[ 814/925] PASS        rc=   0    0.44s leash=25   .agents/slop/tools/migrate-dtype-names.py  :: TOTAL migrated: 0 occurrence(s)
+[ 815/925] NOT-RUN     rc=None    0.00s leash=90   .agents/slop/tools/multi-check.sh  :: could not exec: [Errno 2] No such file or directory: './multi-check.sh'
+[ 816/925] FAIL        rc=   1    0.58s leash=25   .agents/slop/tools/mv.py  :: rc=1
+[ 817/925] FAIL        rc=   1    0.20s leash=25   .agents/slop/tools/order.py  :: rc=1
+[ 818/925] NOT-RUN     rc=   0    8.69s leash=90   .agents/slop/tensor-surface/stage1-census.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 819/925] FAIL        rc=   1    0.61s leash=25   .agents/slop/tools/reorder-bend.py  :: rc=1
+[ 820/925] FAIL        rc=   1    1.70s leash=25   .agents/slop/tools/renderer-oracle.py  :: rc=1
+[ 821/925] FAIL        rc=   1    0.19s leash=25   .agents/slop/tools/reorder.py  :: rc=1
+[ 822/925] FAIL        rc=   1    0.57s leash=90   .agents/slop/tools/reorder-gate.py  :: rc=1
+[ 823/925] FAIL        rc=   1    0.34s leash=25   .agents/slop/tools/share.py  :: rc=1
+[ 824/925] FAIL        rc=   1   44.59s leash=90   .agents/slop/schedule-bodies/sb-gate.sh  :: == BASE 81 rows: byte-identical (all present)
+[ 825/925] PASS        rc=   0   10.17s leash=25   .agents/slop/tensor-surface/stage2-exercised.py  :: upstream     port root        in main() graph used elsewhere verdict
+[ 826/925] FAIL        rc=   1    0.33s leash=25   .agents/slop/tools/topo.py  :: rc=1
+[ 827/925] FAIL        rc=   1    0.35s leash=25   .agents/slop/tools/tcptx-wants.py  :: rc=1
+[ 828/925] PASS        rc=   0    1.28s leash=25   .agents/slop/tools/symprobe.py  :: dt of bare const: dtypes.weakint  bad: dtypes.bool  bt: dtypes.bool
+[ 829/925] FAIL        rc=   1    0.44s leash=25   .agents/slop/tools/toposort-bend.py  :: rc=1
+[ 830/925] NOT-RUN     rc= 124   25.42s leash=25   .agents/slop/table-pin.py  :: OUR alarm at 25s (rc=124)
+[ 831/925] NOT-RUN     rc=   0    1.67s leash=25   .agents/slop/tx-cast.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 832/925] FAIL        rc=   1    7.81s leash=25   .agents/slop/tx-oracle.py  :: rc=1
+[ 833/925] PASS        rc=   0    0.77s leash=90   .agents/slop/unobservable-census.py  :: TOTAL                                     17686      9  10375        24      2122    14136
+[ 834/925] PASS        rc=   0   58.43s leash=90   .agents/slop/shlscope/gate.sh  :: GREEN -- 271/271 compared rows 0 disagreements; 66 divergence rows all saturate as PREDICTED (counte
+[ 835/925] NOT-RUN     rc= 124   25.04s leash=25   .agents/slop/tensor-surface/stage4-falsify.py  :: OUR alarm at 25s (rc=124)
+[ 836/925] PASS        rc=   0    1.83s leash=25   .agents/slop/unobservable-gr-oracle.py  :: VERDICT: THEOREM (as far as a sweep can show) -- the mutation is
+[ 837/925] NOT-RUN     rc= 124   25.35s leash=25   .agents/slop/tools/dmfuzz.py  :: OUR alarm at 25s (rc=124)
+[ 838/925] NOT-RUN     rc= 124   25.21s leash=25   .agents/slop/tools/szfuzz.py  :: OUR alarm at 25s (rc=124)
+[ 839/925] FAIL        rc=   1    0.86s leash=90   .agents/slop/usb-constsweep.py  :: rc=1
+[ 840/925] NOT-RUN     rc= 124   25.44s leash=25   .agents/slop/tools/upatfuzz.py  :: OUR alarm at 25s (rc=124)
+[ 841/925] NOT-RUN     rc= 124   25.26s leash=25   .agents/slop/tx-arena.py  :: OUR alarm at 25s (rc=124)
+[ 842/925] NOT-RUN     rc=   0    0.23s leash=25   .agents/slop/usb-gen-strings.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 843/925] PASS        rc=   0    1.35s leash=25   .agents/slop/usb-gen-tables.py  :: # `val` is the C bit pattern in a U32, so the six negative libusb error codes are
+[ 844/925] PASS        rc=   0    0.38s leash=25   .agents/slop/usb-gen.py  :: sections: 17 rows: 357
+[ 845/925] NOT-RUN     rc=   0    4.83s leash=25   .agents/slop/usb-dead.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 846/925] NOT-RUN     rc=   0    1.68s leash=25   .agents/slop/usb-oracle-arith.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 847/925] FAIL        rc=   1    5.46s leash=25   .agents/slop/usb-handmap.py  :: UNRESOLVED usb_asm24_size 'no evaluable node at tinygrad/runtime/support/usb.py:226:51'
+[ 848/925] PASS        rc=   0    1.99s leash=25   .agents/slop/usb-oracle-run.py  :: usb_msg_bulk_out=bulk OUT 0x02 failed
+[ 849/925] PASS        rc=   0    2.40s leash=25   .agents/slop/usb-oracle-strings.py  :: usb_msg_bulk_out=bulk OUT 0x02 failed
+[ 850/925] NOT-RUN     rc=   0    1.99s leash=25   .agents/slop/usb-oracle-trace.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 851/925] PASS        rc=   0    0.43s leash=25   .agents/slop/usb-seam.py  :: | :129 | `raise RuntimeError(f"TLP error after retries: ret_status={ret_status}, address={address:#x
+[ 852/925] NOT-RUN     rc= 124   25.47s leash=25   .agents/slop/unobservable-gr-move.py  :: OUR alarm at 25s (rc=124)
+[ 853/925] FAIL        rc=   1    0.13s leash=25   .agents/slop/validate-dv-truth.py  :: rc=1
+[ 854/925] NOT-RUN     rc=   0    3.20s leash=25   .agents/slop/usb-oracle.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 855/925] FAIL        rc=   1    0.42s leash=25   .agents/slop/validate-oracle.py  :: rc=1
+[ 856/925] NOT-RUN     rc=   0    3.12s leash=25   .agents/slop/usb-symmap.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 857/925] FAIL        rc=   1    4.24s leash=90   .agents/slop/validate-gate.py  :: ORACLE FAILED rc=1
+[ 858/925] FAIL        rc=   1    2.30s leash=90   .agents/slop/vw-alu-census.py  :: rc=1
+[ 859/925] PASS        rc=   0    2.22s leash=25   .agents/slop/vw-boundaries.py  :: c2d_disk_str 'CPU'=ok
+[ 860/925] NOT-RUN     rc= 124   25.24s leash=25   .agents/slop/unvendored.py  :: OUR alarm at 25s (rc=124)
+[ 861/925] PASS        rc=   0    1.84s leash=25   .agents/slop/vw-refusal-truth.py  :: s5_copy_sel ORACLE multi = ok | UOp(Ops.COPY, arg=('PYTHON', 'PYTHON'), src=(
+[ 862/925] NOT-RUN     rc=   0    2.00s leash=25   .agents/slop/vw-topo-truth.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 863/925] NOT-RUN     rc= 124   90.05s leash=90   .agents/slop/rows-blast.py  :: OUR alarm at 90s (rc=124)
+[ 864/925] PASS        rc=   0    2.75s leash=25   .agents/slop/vz/viz_oracle.py  :: fmt_colored.off=red
+[ 865/925] NOT-RUN     rc= 124   25.21s leash=25   .agents/slop/upstream-delta.py  :: OUR alarm at 25s (rc=124)
+[ 866/925] PASS        rc=   0    3.06s leash=25   .agents/slop/webgpu_call_oracle.py  :: begin pass write ix = 0    <- ops_webgpu.py:116 beginningOfPassWriteIndex=0
+[ 867/925] FAIL        rc=   1    3.38s leash=25   .agents/slop/wg_constmap.py  :: rc=1
+[ 868/925] NOT-RUN     rc=   0    2.47s leash=25   .agents/slop/wgsl-keysets.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 869/925] NOT-RUN     rc=   0    2.37s leash=90   .agents/slop/wgsl-rows.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 870/925] NOT-RUN     rc=   0    0.82s leash=25   .agents/slop/wip/add_readers.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 871/925] FAIL        rc=   1    4.70s leash=25   .agents/slop/wgsl-oracle.py  :: rc=1
+[ 872/925] PASS        rc=   0    4.18s leash=25   .agents/slop/whodefs.py  :: BASELINE: OK
+[ 873/925] FAIL        rc=   1    0.17s leash=25   .agents/slop/wip/mk_table.py  :: rc=1
+[ 874/925] FAIL        rc=   1    0.16s leash=25   .agents/slop/wip/mt_fix3.py  :: rc=1
+[ 875/925] FAIL        rc=   1    0.45s leash=25   .agents/slop/wip/mt_fix4.py  :: rc=1
+[ 876/925] FAIL        rc=   1    0.27s leash=25   .agents/slop/wip/mt_pmb.py  :: i = s.index("def pmb_m1.ok(at: U32) -> Bool:")
+[ 877/925] FAIL        rc=   1    3.40s leash=25   .agents/slop/wip/cstyle_oracle.py  :: rc=1
+[ 878/925] NOT-RUN     rc= 124   90.07s leash=90   .agents/slop/state-audit.py  :: OUR alarm at 90s (rc=124)
+[ 879/925] FAIL        rc=   1    1.79s leash=25   .agents/slop/wip/optprobe/b1.py  :: rc=1
+[ 880/925] FAIL        rc=   1    2.09s leash=25   .agents/slop/wip/optprobe/beam1_probe.py  :: rc=1
+[ 881/925] FAIL        rc=   1    2.83s leash=25   .agents/slop/wip/optprobe/capture.py  :: rc=1
+[ 882/925] FAIL        rc=   1    2.38s leash=25   .agents/slop/wip/optprobe/cnt.py  :: rc=1
+[ 883/925] PASS        rc=   0   34.43s leash=90   .agents/slop/usb-diff.py  :: rows bend=939 oracle=939 disagree=0 oracle_only=0 bend_only=0
+[ 884/925] FAIL        rc=   1    1.94s leash=90   .agents/slop/wip/optprobe/diff.py  :: rc=1
+[ 885/925] FAIL        rc=   1    1.64s leash=25   .agents/slop/wip/optprobe/model.py  :: rc=1
+[ 886/925] NOT-RUN     rc=   0    2.23s leash=25   .agents/slop/wip/optprobe/ren.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 887/925] FAIL        rc=   1    2.24s leash=90   .agents/slop/wip/optprobe/verdict.py  :: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/verdict.py", li
+[ 888/925] NOT-RUN     rc=   0    2.29s leash=25   .agents/slop/wip/wgsl/pure.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 889/925] FAIL        rc=   1    0.64s leash=25   .agents/slop/wire-lanes.py  :: rc=1
+[ 890/925] FAIL        rc=   1    0.61s leash=25   .agents/slop/wire-measure.py  :: rc=1
+[ 891/925] SKIP        rc=   2    1.05s leash=25   .agents/slop/wire-pair.py  :: needs arguments; bare is a different instrument
+[ 892/925] FAIL        rc=   1   24.40s leash=90   .agents/slop/wallrule/wallcheck.sh  :: WALLCHECK: 10 row(s), 8 grepped -> 1 STANDS, 7 STALE/RETIRED, 0 STORY, 2 out-of-scope (RUN rows are 
+[ 893/925] NOT-RUN     rc=   0    0.80s leash=90   .agents/slop/wire-rows.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 894/925] NOT-RUN     rc=   0    0.50s leash=25   .agents/slop/wire-survey.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 895/925] NOT-RUN     rc=   0    7.64s leash=25   .agents/slop/wip/wgsl/probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 896/925] NOT-RUN     rc=   0    0.37s leash=25   .agents/slop/wire_parse.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 897/925] NOT-RUN     rc=   0   13.39s leash=25   .agents/slop/wip/wgsl/gt.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 898/925] PASS        rc=   0    0.48s leash=90   .agents/slop/wk-f32-rows.py  :: wrote .agents/slop/wk-f32-table.txt and .agents/slop/wk-f32.bend with 18 rows
+[ 899/925] NOT-RUN     rc= 124   25.16s leash=25   .agents/slop/wip/optprobe/beam1_count.py  :: OUR alarm at 25s (rc=124)
+[ 900/925] FAIL        rc=   1   35.36s leash=90   .agents/slop/wip/gate.py  :: SOME PROOFS FAIL
+[ 901/925] FAIL        rc=   1    0.73s leash=25   .agents/slop/x86/move.py  :: rc=1
+[ 902/925] FAIL        rc=   1    0.45s leash=25   .agents/slop/x86/topo.py  :: rc=1
+[ 903/925] PASS        rc=   0   10.57s leash=90   .agents/slop/x-stgate2.py  :: lsd_reshape=Shape mismatch in layer `a`: Expected shape (2, 3), but found (3, 2) in state dict.
+[ 904/925] FAIL        rc=   1   15.90s leash=90   .agents/slop/x-stgate.py  :: rc=1
+[ 905/925] NOT-RUN     rc= 124   25.09s leash=25   .agents/slop/wire-snapshot.py  :: OUR alarm at 25s (rc=124)
+[ 906/925] NOT-RUN     rc=   0    5.02s leash=25   .agents/slop/x86/x86-asmdbg.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 907/925] NOT-RUN     rc=   0    3.75s leash=25   .agents/slop/x86/x86-gen.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 908/925] PASS        rc=   0    3.05s leash=25   .agents/slop/x86/x86-oracle.py  :: 761 rows
+[ 909/925] NOT-RUN     rc=   0    3.05s leash=25   .agents/slop/x86/x86-probe.py  :: rc=0 with output but NO verdict token -- not a green I vouch for
+[ 910/925] NOT-RUN     rc=   0    0.41s leash=90   .agents/slop/xb1/hdr-audit.py  :: zero bytes on both streams -- a refusal, not a pass
+[ 911/925] NOT-RUN     rc=None    0.00s leash=25   .agents/slop/xb1/lanes.sh  :: could not exec: [Errno 2] No such file or directory: './lanes.sh'
+[ 912/925] FAIL        rc=   1    2.45s leash=25   .agents/slop/x86_probe.py  :: Target OK ::x86_64
+[ 913/925] FAIL        rc= -11   11.89s leash=25   .agents/slop/xd2/wgsl_probe.py  :: /Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiproc
+[ 914/925] NOT-RUN     rc= 124   90.39s leash=90   .agents/slop/unwired-audit.py  :: OUR alarm at 90s (rc=124)
+[ 915/925] PASS        rc=   0    1.08s leash=90   .agents/slop/zero-audit.py  :: 0 rows is its REQUIRED outcome, not a blind spot.
+[ 916/925] PASS        rc=   0    0.64s leash=25   .agents/slop/zero-classify.py  :: baseline 0 rows | oracle 0 rows | 0 DISAGREE with CPython | 0 baseline rows have NO CPython answer
+[ 917/925] FAIL        rc=   1   18.46s leash=25   .agents/slop/x86/x86-rules.py  :: rc=1
+[ 918/925] FAIL        rc=   1   18.03s leash=90   .agents/slop/x86/x86-sweep.py  :: rc=1
+[ 919/925] PASS        rc=   0    2.21s leash=25   .agents/slop/zero-selftest.py  :: ok   CASE 2  l2i_shl.hi on the DEFECTIVE snapshot               PORT-DEFECT
+[ 920/925] NOT-RUN     rc= 124   25.64s leash=25   .agents/slop/xd2/trace_forward.py  :: OUR alarm at 25s (rc=124)
+[ 921/925] NOT-RUN     rc= 124   90.36s leash=90   .agents/slop/vz/vz_gate.py  :: OUR alarm at 90s (rc=124)
+[ 922/925] NOT-RUN     rc= 124   90.24s leash=90   .agents/slop/wgsl-cfo-check.py  :: OUR alarm at 90s (rc=124)
+[ 923/925] NOT-RUN     rc= 124   90.05s leash=90   .agents/slop/wire-sweep.py  :: [1/75] .agents/slop/amd_oracle.py rc=0 rows=1010 3.5s
+[ 924/925] NOT-RUN     rc= 124   90.50s leash=90   .agents/slop/wk-f32-gate.sh  :: wrote .agents/slop/wk-f32-table.txt and .agents/slop/wk-f32.bend with 18 rows
+[ 925/925] NOT-RUN     rc= 124  300.17s leash=300  .agents/slop/tree-verdict.py  :: OUR alarm at 300s (rc=124)
+#
+# VERDICTS over the 925 ATTEMPTED   (841s wall)
+#   NOT-RUN      422 / 925
+#   FAIL         276 / 925
+#   PASS         207 / 925
+#   SKIP          20 / 925
+#   PASS 207   NON-PASS 718   NOT-ATTEMPTED 211   COVERAGE 925/1136
+# TREE-MUTATION TRIPWIRE: 29 modified, 0 deleted, 4 appeared under tinybendygrad/ during 925 runs
+#     tinybendygrad/codegen/__init__.bend
+#     tinybendygrad/codegen/gpudims.bend
+#     tinybendygrad/codegen/late/coalesce.bend
+#     tinybendygrad/codegen/late/gater.bend
+#     tinybendygrad/codegen/late/linearizer.bend
+#     tinybendygrad/codegen/late/regalloc.bend
+#     tinybendygrad/codegen/simplify.bend
+#     tinybendygrad/helpers.bend
+#     tinybendygrad/renderer/amd/dsl.bend
+#     tinybendygrad/renderer/amd/generate.bend
+#     tinybendygrad/renderer/cstyle.bend
+#     tinybendygrad/renderer/isa/x86.bend
+#     tinybendygrad/renderer/ptx.bend
+#     tinybendygrad/runtime/ops_cpu.bend
+#     tinybendygrad/runtime/ops_disk.bend
+#     tinybendygrad/runtime/ops_dsp.bend
+#     tinybendygrad/runtime/ops_null.bend
+#     tinybendygrad/runtime/ops_python.bend
+#     tinybendygrad/runtime/support/am/ip.bend
+#     tinybendygrad/runtime/support/autogen.bend
+#     tinybendygrad/runtime/support/c.bend
+#     tinybendygrad/runtime/support/compiler_amd.bend
+#     tinybendygrad/runtime/support/compiler_mesa.bend
+#     tinybendygrad/runtime/support/elf.bend.mut
+#     tinybendygrad/runtime/support/nv/ip.bend
+#     tinybendygrad/runtime/support/nv/nvdev.bend
+#     tinybendygrad/uop/ops.bend
+#     tinybendygrad/uop/render.bend
+#     tinybendygrad/uop/spec.bend
+#     tinybendygrad/runtime/support/am/ip_scratch_sweep.bend
+#     tinybendygrad/runtime/support/memory.staged-mem-40079
+#     tinybendygrad/runtime/support/rdma/bnxtdev.bend.sweep
+#     tinybendygrad/uop/ops.staged-blob-36145

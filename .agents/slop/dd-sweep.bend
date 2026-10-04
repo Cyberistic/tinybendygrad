@@ -49,7 +49,7 @@ def row1(+nm: String, r: Maybe<&2, D.W2>, +from: U32) -> String:
     case None{}: String.concat([nm, "REFUSED\n"])
 
 def main() -> IO(Unit):
-  +nd = D.dd_wpool.step(24n, pad(64, O.Arena.empty()), Nil{}, 0, 0)
+  +nd = D.dd_wpool.step(24n, pad(0 1 2 5 17 64, O.Arena.empty()), Nil{}, 0, 0)
   +ps = D.Nd.ns(nd)
   +a0 = D.Nd.ar(nd)
   +u9 = D.ws2(D.nth(ps, 9n), D.nth(ps, 10n))
@@ -117,7 +117,7 @@ def main() -> IO(Unit):
   +f25 = O.Arena.next(a25)
   +f26 = O.Arena.next(a26)
   do IO<Unit>:
-    IO.print(String.concat(["# pad=", U32.show(64), "\n"]))
+    IO.print(String.concat(["# pad=", U32.show(0 1 2 5 17 64), "\n"]))
     IO.print(row1("lgq", g23, f23))
     IO.print(row1("lgr", g24, f23))
     IO.print(row1("lgs", g25, f25))

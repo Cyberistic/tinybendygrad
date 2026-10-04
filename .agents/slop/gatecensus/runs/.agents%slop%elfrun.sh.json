@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/elfrun.sh",
+ "base": "elfrun.sh",
+ "stem": "elfrun",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 3288,
+ "writes": false,
+ "entry": false,
+ "cmd": "./elfrun.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './elfrun.sh'",
+ "stdout": "",
+ "stderr": ""
+}

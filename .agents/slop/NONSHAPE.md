@@ -270,7 +270,7 @@ ledger live PY   {z:2, y:2, q:1, E:1, ?:1, R:43}
 ledger live BEND {z:1, y:1, q:1, ?:1, R:21}
 ```
 
-**BLAST RADIUS: 0 of 624 rows moved, 0 of 25 graphs' row counts moved**, diffed by WHOLE
+**BLAST RADIUS: 0 of 624 rows moved, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts moved**, diffed by WHOLE
 `name=value` LINE. And `fold.bend`'s OWN 335-line row output is **byte-identical** before
 and after (`foldrun-BEFORE.txt` / `foldrun-AFTER.txt`).
 

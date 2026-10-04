@@ -1914,7 +1914,7 @@ function $$$$047$$$047tinybendygrad$047helpers$color_code$(_ci_0, _background_0)
 }
 
 function $$$$047$$$047tinybendygrad$047helpers$esc$(_u_0) {
-  return $String$from_list$({$: "Con", "head": ($Char$from_u32$(27)), "tail": {$: "Con", "head": ($Char$from_u32$(91)), "tail": {$: "Con", "head": ($Char$from_u32$(_u_0)), "tail": {$: "Con", "head": ($Char$from_u32$(109)), "tail": {$: "Nil"}}}}});
+  return $String$concat$({$: "Con", "head": ($String$from_list$({$: "Con", "head": ($Char$from_u32$(27)), "tail": {$: "Con", "head": ($Char$from_u32$(91)), "tail": {$: "Nil"}}})), "tail": {$: "Con", "head": ($U32$show$(_u_0)), "tail": {$: "Con", "head": "m", "tail": {$: "Nil"}}}});
 }
 
 function $$$$047$$$047tinybendygrad$047helpers$color_of$(_s_0) {
@@ -8316,6 +8316,74 @@ function $$$$047$$$047tinybendygrad$047helpers$i64_div$(_a_0, _b_0) {
   return $$$$047$$$047tinybendygrad$047helpers$divmod_q$(($$$$047$$$047tinybendygrad$047helpers$i64_divmod$(_a_0, _b_0)));
 }
 
+function $$$$047$$$047tinybendygrad$047helpers$u64_divmod$of$(_zero_0, _a_0, _d_0) {
+  if (_zero_0) {
+    return {$: "../../tinybendygrad/helpers.DivMod", "q": ($$$$047$$$047tinybendygrad$047helpers$i64_zero$()), "r": _a_0};
+  } else {
+    return _d_0;
+  }
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$u64_divmod$(_a_0, _b_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$u64_divmod$of$(($$$$047$$$047tinybendygrad$047helpers$i64_is_zero$(_b_0)), _a_0, ($$$$047$$$047tinybendygrad$047helpers$div_loop$(64, _a_0, _b_0, {$: "../../tinybendygrad/helpers.DivSt", "q": ($$$$047$$$047tinybendygrad$047helpers$i64_zero$()), "r": ($$$$047$$$047tinybendygrad$047helpers$i64_zero$()), "up": false, "sub": false})));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_dec$go$($0, $1, $2) {
+  for (;;) {
+    {
+      const _f_0 = $0;
+      const _acc_0 = $1;
+      const _d_0 = $2;
+      if (_f_0 === 0) {
+        return _acc_0;
+      } else {
+        const _g_0 = (_f_0 - 1);
+        $0 = _g_0;
+        $1 = ($List$append$(_acc_0, {$: "Con", "head": ($$$$047$$$047tinybendygrad$047helpers$lo32$(($$$$047$$$047tinybendygrad$047helpers$divmod_r$(_d_0)))), "tail": {$: "Nil"}}));
+        $2 = ($$$$047$$$047tinybendygrad$047helpers$u64_divmod$(($$$$047$$$047tinybendygrad$047helpers$divmod_q$(_d_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_of_i32$(10))));
+        continue;
+      }
+    }
+  }
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_dec$trim$(_cs_0) {
+  if (_cs_0.$ === "Nil") {
+    return {$: "Con", "head": 0, "tail": {$: "Nil"}};
+  } else {
+    const _c_0 = _cs_0["head"];
+    const _t_0 = _cs_0["tail"];
+    return $Bool$pick$((_c_0 === 0), ($$$$047$$$047tinybendygrad$047helpers$i64_dec$trim$(_t_0)), ($List$append$({$: "Con", "head": _c_0, "tail": {$: "Nil"}}, _t_0)));
+  }
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_dec$text$($0, $1) {
+  for (;;) {
+    {
+      const _cs_0 = $0;
+      const _acc_0 = $1;
+      if (_cs_0.$ === "Nil") {
+        return _acc_0;
+      } else {
+        const _c_0 = _cs_0["head"];
+        const _t_0 = _cs_0["tail"];
+        const _x_0 = ($String$from_list$({$: "Con", "head": ($Char$from_u32$(((_c_0 + 48) >>> 0))), "tail": {$: "Nil"}}));
+        $0 = _t_0;
+        $1 = (_acc_0 + _x_0);
+        continue;
+      }
+    }
+  }
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_dec$put$(_neg_0, _body_0) {
+  return $Bool$pick$(_neg_0, ("-" + _body_0), _body_0);
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_dec$(_x_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$i64_dec$put$(($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_dec$text$(($$$$047$$$047tinybendygrad$047helpers$i64_dec$trim$(($List$reverse$(($$$$047$$$047tinybendygrad$047helpers$i64_dec$go$(20, {$: "Nil"}, ($$$$047$$$047tinybendygrad$047helpers$u64_divmod$(($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_of_i32$(10)))))))))), "")));
+}
+
 function $$$$047$$$047tinybendygrad$047helpers$i64_mod$(_a_0, _b_0) {
   return $$$$047$$$047tinybendygrad$047helpers$divmod_r$(($$$$047$$$047tinybendygrad$047helpers$i64_divmod$(_a_0, _b_0)));
 }
@@ -8325,12 +8393,78 @@ function $$$$047$$$047tinybendygrad$047helpers$gcd$go$(_k_0, _a_0, _b_0) {
     return _a_0;
   } else {
     const _p_0 = (_k_0 - 1);
-    return $Bool$pick$(($$$$047$$$047tinybendygrad$047helpers$i64_is_zero$(_b_0)), _a_0, ($$$$047$$$047tinybendygrad$047helpers$gcd$go$(_p_0, _b_0, ($$$$047$$$047tinybendygrad$047helpers$i64_mod$(_a_0, _b_0)))));
+    return $Bool$pick$(($$$$047$$$047tinybendygrad$047helpers$i64_is_zero$(_b_0)), _a_0, ($$$$047$$$047tinybendygrad$047helpers$gcd$go$(_p_0, _b_0, ($$$$047$$$047tinybendygrad$047helpers$divmod_r$(($$$$047$$$047tinybendygrad$047helpers$u64_divmod$(_a_0, _b_0)))))));
   }
 }
 
 function $$$$047$$$047tinybendygrad$047helpers$gcd$(_a_0, _b_0) {
   return $$$$047$$$047tinybendygrad$047helpers$gcd$go$(128, ($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_a_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_b_0)));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$pp_core$(_a_0, _b_0) {
+  const _al_0 = ((_a_0 & 65535) >>> 0);
+  const _ah_0 = (16 >= 32 ? 0 : (_a_0 >>> 16) >>> 0);
+  const _bl_0 = ((_b_0 & 65535) >>> 0);
+  const _bh_0 = (16 >= 32 ? 0 : (_b_0 >>> 16) >>> 0);
+  const _p00_0 = (Math.imul(_al_0, _bl_0) >>> 0);
+  const _p01_0 = (Math.imul(_al_0, _bh_0) >>> 0);
+  const _p10_0 = (Math.imul(_ah_0, _bl_0) >>> 0);
+  const _p11_0 = (Math.imul(_ah_0, _bh_0) >>> 0);
+  const _cross_0 = ((_p10_0 + _p01_0) >>> 0);
+  const _x_0 = ($Bool$to_u32$((_cross_0 < _p10_0)));
+  const _x_1 = (16 >= 32 ? 0 : (_cross_0 >>> 16) >>> 0);
+  const _x_2 = (16 >= 32 ? 0 : (_x_0 << 16) >>> 0);
+  const _carry_0 = ((_x_1 + _x_2) >>> 0);
+  const _x_3 = ((_cross_0 & 65535) >>> 0);
+  const _x_4 = (16 >= 32 ? 0 : (_x_3 << 16) >>> 0);
+  const _t_0 = ((_p00_0 + _x_4) >>> 0);
+  const _x_5 = ((_p11_0 + _carry_0) >>> 0);
+  const _x_6 = ($Bool$to_u32$((_t_0 < _p00_0)));
+  return {$: "../../tinybendygrad/helpers.PP", "p00": _p00_0, "p01": _p01_0, "p10": _p10_0, "p11": _p11_0, "cross": _cross_0, "carry": _carry_0, "t": _t_0, "hi": ((_x_5 + _x_6) >>> 0)};
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$u64_mul32$(_p_0) {
+  const _t_0 = _p_0["t"];
+  const _hi_0 = _p_0["hi"];
+  return $$$$047$$$047tinybendygrad$047helpers$i64_of_hi_lo$(_hi_0, _t_0);
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$u64_mul32_of$(_a_0, _b_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$u64_mul32$(($$$$047$$$047tinybendygrad$047helpers$pp_core$(_a_0, _b_0)));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$u64_mul_parts$(_al_0, _ah_0, _bl_0, _bh_0) {
+  const _x_0 = (Math.imul(_al_0, _bh_0) >>> 0);
+  const _x_1 = (Math.imul(_ah_0, _bl_0) >>> 0);
+  return $$$$047$$$047tinybendygrad$047helpers$i64_add$(($$$$047$$$047tinybendygrad$047helpers$u64_mul32_of$(_al_0, _bl_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_of_hi_lo$(((_x_0 + _x_1) >>> 0), 0)));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$u64_mul$(_a_0, _b_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$u64_mul_parts$(($$$$047$$$047tinybendygrad$047helpers$lo32$(_a_0)), ($$$$047$$$047tinybendygrad$047helpers$hi32$(_a_0)), ($$$$047$$$047tinybendygrad$047helpers$lo32$(_b_0)), ($$$$047$$$047tinybendygrad$047helpers$hi32$(_b_0)));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_mul$(_a_0, _b_0) {
+  const _x_0 = ($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_a_0));
+  const _x_1 = ($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_b_0));
+  return $$$$047$$$047tinybendygrad$047helpers$i64_neg$((_x_0 !== _x_1), ($$$$047$$$047tinybendygrad$047helpers$u64_mul$(($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_a_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_b_0)))));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$cdiv_i64$of$(_zero_0, _neg_0, _q_0) {
+  if (_zero_0) {
+    return $$$$047$$$047tinybendygrad$047helpers$i64_zero$();
+  } else {
+    return $$$$047$$$047tinybendygrad$047helpers$i64_neg$(_neg_0, _q_0);
+  }
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$cdiv_i64$(_x_0, _y_0) {
+  const _x_1 = ($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_x_0));
+  const _x_2 = ($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_y_0));
+  return $$$$047$$$047tinybendygrad$047helpers$cdiv_i64$of$(($$$$047$$$047tinybendygrad$047helpers$i64_is_zero$(_y_0)), (_x_1 !== _x_2), ($$$$047$$$047tinybendygrad$047helpers$divmod_q$(($$$$047$$$047tinybendygrad$047helpers$u64_divmod$(($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_abs$(_y_0)))))));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$cmod_i64$(_x_0, _y_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$i64_sub$(_x_0, ($$$$047$$$047tinybendygrad$047helpers$i64_mul$(($$$$047$$$047tinybendygrad$047helpers$cdiv_i64$(_x_0, _y_0)), _y_0)));
 }
 
 function $$$$047$$$047tinybendygrad$047helpers$data64_hi$(_r_0) {
@@ -12100,6 +12234,17 @@ function $Bool$to_u32$(_b_0) {
   }
 }
 
+function $String$concat$(_xs_0) {
+  if (_xs_0.$ === "Nil") {
+    return "";
+  } else {
+    const _h_0 = _xs_0["head"];
+    const _t_0 = _xs_0["tail"];
+    const _x_0 = ($String$concat$(_t_0));
+    return (_h_0 + _x_0);
+  }
+}
+
 function $List$drop$($0, $1) {
   for (;;) {
     {
@@ -12151,17 +12296,6 @@ function $Cmp$is_le$(_c_0) {
     return false;
   } else {
     return true;
-  }
-}
-
-function $String$concat$(_xs_0) {
-  if (_xs_0.$ === "Nil") {
-    return "";
-  } else {
-    const _h_0 = _xs_0["head"];
-    const _t_0 = _xs_0["tail"];
-    const _x_0 = ($String$concat$(_t_0));
-    return (_h_0 + _x_0);
   }
 }
 
@@ -13016,9 +13150,25 @@ const TAB_0 = [0, 1, 2];export default {
   "../../tinybendygrad/helpers.i64_divmod.of": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_divmod$of$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
   "../../tinybendygrad/helpers.i64_divmod": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_divmod$((a0), (a1)))); (a0); (a1); return r; }, 2),
   "../../tinybendygrad/helpers.i64_div": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_div$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.u64_divmod.of": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_divmod$of$((a0), (a1), (a2)))); (a0); (a1); (a2); return r; }, 3),
+  "../../tinybendygrad/helpers.u64_divmod": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_divmod$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.i64_dec.go": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_dec$go$(nat_host(a0), (a1), (a2)))); BigInt(a0); (a1); (a2); return r; }, 3),
+  "../../tinybendygrad/helpers.i64_dec.trim": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_dec$trim$((a0)))); (a0); return r; }, 1),
+  "../../tinybendygrad/helpers.i64_dec.text": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_dec$text$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.i64_dec.put": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_dec$put$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.i64_dec": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_dec$((a0)))); (a0); return r; }, 1),
   "../../tinybendygrad/helpers.i64_mod": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_mod$((a0), (a1)))); (a0); (a1); return r; }, 2),
   "../../tinybendygrad/helpers.gcd.go": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$gcd$go$(nat_host(a0), (a1), (a2)))); BigInt(a0); (a1); (a2); return r; }, 3),
   "../../tinybendygrad/helpers.gcd": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$gcd$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.pp_core": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$pp_core$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.u64_mul32": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_mul32$((a0)))); (a0); return r; }, 1),
+  "../../tinybendygrad/helpers.u64_mul32_of": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_mul32_of$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.u64_mul_parts": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_mul_parts$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
+  "../../tinybendygrad/helpers.u64_mul": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_mul$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.i64_mul": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_mul$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.cdiv_i64.of": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$cdiv_i64$of$((a0), (a1), (a2)))); (a0); (a1); (a2); return r; }, 3),
+  "../../tinybendygrad/helpers.cdiv_i64": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$cdiv_i64$((a0), (a1)))); (a0); (a1); return r; }, 2),
+  "../../tinybendygrad/helpers.cmod_i64": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$cmod_i64$((a0), (a1)))); (a0); (a1); return r; }, 2),
   "../../tinybendygrad/helpers.data64_hi": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$data64_hi$((a0)))); (a0); return r; }, 1),
   "../../tinybendygrad/helpers.data64_lo": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$data64_lo$((a0)))); (a0); return r; }, 1),
   "../../tinybendygrad/helpers.data64": run_lib((a0) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$data64$((a0)))); (a0); return r; }, 1),

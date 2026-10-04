@@ -1,0 +1,1 @@
+range BYTE-IDENTICAL (120 bytes both sides)

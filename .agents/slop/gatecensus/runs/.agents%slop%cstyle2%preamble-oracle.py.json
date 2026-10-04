@@ -1,0 +1,15 @@
+{
+ "rel": ".agents/slop/cstyle2/preamble-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 2,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 2,
+ "peak_mb": 3,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "child rc=2 within both bounds",
+ "pass": 2
+}

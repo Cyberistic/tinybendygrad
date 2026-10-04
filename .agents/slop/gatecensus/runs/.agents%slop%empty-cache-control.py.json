@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/empty-cache-control.py",
+ "base": "empty-cache-control.py",
+ "stem": "empty-cache-control",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 8595,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/empty-cache-control.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "  states built (5): each is a cache file's bytes + its mtime against the source\n\n  PASS missing   -> (None, 'missing')    (no cache file at all)\n  PASS stale     -> (None, 'stale')    (cache older than its source)\n  PASS empty     -> (None, 'empty')    (a crash filed as a measurement)\n  PASS oracle    -> (None, 'empty')    (read_fresh_cache agrees with the sibling, both called)\n  PASS rows      -> ({'PTX tensor_cores sm_75': '2', 'control_tight': 'clean'}, 'fresh')    (real rows still read: both emitters)\n  PASS oracle2   -> ({'PTX tensor_cores sm_75': '2', 'control_tight': 'clean'}, 'fresh')    (the sibling reads the same real rows)\n  PASS both      -> (None, 'stale')    (stale is checked before empty, so it names the older file)\n\n  7/7 assertions hold;  0 FAIL\n  denominator: 5 constructed cache states over 7 assertions, every one\n  of them through `read_fresh_cache` ITSELF. This is NOT a claim about the 82 `{}` files\n  in /tmp/rebase-scan or the live wire caches: nothing here touched them, and a\n  constructed state is not a census.\n",
+ "stderr": "",
+ "secs": 0.97,
+ "verdict": "PASS missing   -> (None, 'missing')    (no cache file at all)",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/debug-roster-intersect.py",
+ "base": "debug-roster-intersect.py",
+ "stem": "debug-roster-intersect",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9868,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/debug-roster-intersect.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "",
+ "stderr": "",
+ "secs": 25.2,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/xd2/trace_forward.py",
+ "base": "trace_forward.py",
+ "stem": "trace_forward",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 12464,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd2/trace_forward.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "",
+ "stderr": "",
+ "secs": 25.64,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/handtyped-rank.py",
+ "base": "handtyped-rank.py",
+ "stem": "handtyped-rank",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9271,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/handtyped-rank.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "",
+ "stderr": "<unknown>:7: SyntaxWarning: invalid escape sequence '\\['\n<unknown>:7: SyntaxWarning: invalid escape sequence '\\['\n<unknown>:7: SyntaxWarning: invalid escape sequence '\\['\n<unknown>:7: SyntaxWarning: invalid escape sequence '\\['\n",
+ "secs": 25.15,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

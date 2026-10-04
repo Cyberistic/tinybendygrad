@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/f2f-pad.sh",
+ "base": "f2f-pad.sh",
+ "stem": "f2f-pad",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 3974,
+ "writes": false,
+ "entry": false,
+ "cmd": "./f2f-pad.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './f2f-pad.sh'",
+ "stdout": "",
+ "stderr": ""
+}

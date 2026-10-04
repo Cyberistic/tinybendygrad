@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cstyle-live/stage3.sh",
+ "base": "stage3.sh",
+ "stem": "stage3",
+ "sh": true,
+ "py": false,
+ "exec": false,
+ "interp": "",
+ "bytes": 9594,
+ "writes": false,
+ "entry": false,
+ "cmd": "zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-live/stage3.sh",
+ "how": "zsh",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-live/stage3.sh:cd:34: no such file or directory: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cstyle-live\n",
+ "secs": 0.24,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

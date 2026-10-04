@@ -1,0 +1,7 @@
+label=set refused
+inputs=0
+exit=oracle:3 port:3
+stdout=IDENTICAL (4 lines vs 4)
+verdict+denominator lines=IDENTICAL (0 each)
+SHAPE: NO VERDICT LINE oracle
+SHAPE: NO VERDICT LINE port

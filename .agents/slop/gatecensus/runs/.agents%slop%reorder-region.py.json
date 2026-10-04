@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/reorder-region.py",
+ "base": "reorder-region.py",
+ "stem": "reorder-region",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2483,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reorder-region.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reorder-region.py\", line 18, in <module>\n    path, start, end = sys.argv[1], sys.argv[2], sys.argv[3]\n                       ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.21,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

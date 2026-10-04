@@ -1,0 +1,377 @@
+== ORACLE (shell) ==
+oracle rc=0  artifacts=151
+== PYTHON ==
+python rc=1  artifacts=3
+== COMPARE ==
+artifact                           both   difflines
+---------------------------------  ----   ---------
+.tmp.D0-selfcheck.txt              PY-ONLY  -
+D0-coverage-census.txt             shell-only  -
+D0-ops-probe.txt                   shell-only  -
+D0-run-summary.txt                 shell-only  -
+D0-selfcheck.txt                   shell-only  -
+D0-selfcheck.txt.err               both  0
+D1-graph-binblob.txt               shell-only  -
+D1-graph-binblob.txt.err           shell-only  -
+D1-graph-buffer.txt                shell-only  -
+D1-graph-buffer.txt.err            shell-only  -
+D1-graph-cast.txt                  shell-only  -
+D1-graph-cast.txt.err              shell-only  -
+D1-graph-commute.txt               shell-only  -
+D1-graph-commute.txt.err           shell-only  -
+D1-graph-gate.txt                  shell-only  -
+D1-graph-gate.txt.err              shell-only  -
+D1-graph-group.txt                 shell-only  -
+D1-graph-group.txt.err             shell-only  -
+D1-graph-indexed.txt               shell-only  -
+D1-graph-indexed.txt.err           shell-only  -
+D1-graph-lin.txt                   shell-only  -
+D1-graph-lin.txt.err               shell-only  -
+D1-graph-loop.txt                  shell-only  -
+D1-graph-loop.txt.err              shell-only  -
+D1-graph-matmul.txt                shell-only  -
+D1-graph-matmul.txt.err            shell-only  -
+D1-graph-range.txt                 shell-only  -
+D1-graph-range.txt.err             shell-only  -
+D1-graph-rangeflat.txt             shell-only  -
+D1-graph-rangeflat.txt.err         shell-only  -
+D1-graph-reduce.txt                shell-only  -
+D1-graph-reduce.txt.err            shell-only  -
+D1-graph-sink.txt                  shell-only  -
+D1-graph-sink.txt.err              shell-only  -
+D1-graph-special.txt               shell-only  -
+D1-graph-special.txt.err           shell-only  -
+D1-graph-sym.txt                   shell-only  -
+D1-graph-sym.txt.err               shell-only  -
+D1-verdicts.txt                    shell-only  -
+D10-zerorow-guard.txt              shell-only  -
+D10-zerorow-guard.txt.err          shell-only  -
+D2-bytediff.txt                    shell-only  -
+D2-canon-bend-binblob.txt          shell-only  -
+D2-canon-bend-buffer.txt           shell-only  -
+D2-canon-bend-cast.txt             shell-only  -
+D2-canon-bend-commute.txt          shell-only  -
+D2-canon-bend-gate.txt             shell-only  -
+D2-canon-bend-group.txt            shell-only  -
+D2-canon-bend-indexed.txt          shell-only  -
+D2-canon-bend-lin.txt              shell-only  -
+D2-canon-bend-loop.txt             shell-only  -
+D2-canon-bend-matmul.txt           shell-only  -
+D2-canon-bend-range.txt            shell-only  -
+D2-canon-bend-rangeflat.txt        shell-only  -
+D2-canon-bend-reduce.txt           shell-only  -
+D2-canon-bend-sink.txt             shell-only  -
+D2-canon-bend-special.txt          shell-only  -
+D2-canon-bend-sym.txt              shell-only  -
+D2-canon-py-binblob.txt            shell-only  -
+D2-canon-py-buffer.txt             shell-only  -
+D2-canon-py-cast.txt               shell-only  -
+D2-canon-py-commute.txt            shell-only  -
+D2-canon-py-gate.txt               shell-only  -
+D2-canon-py-group.txt              shell-only  -
+D2-canon-py-indexed.txt            shell-only  -
+D2-canon-py-lin.txt                shell-only  -
+D2-canon-py-loop.txt               shell-only  -
+D2-canon-py-matmul.txt             shell-only  -
+D2-canon-py-range.txt              shell-only  -
+D2-canon-py-rangeflat.txt          shell-only  -
+D2-canon-py-reduce.txt             shell-only  -
+D2-canon-py-sink.txt               shell-only  -
+D2-canon-py-special.txt            shell-only  -
+D2-canon-py-sym.txt                shell-only  -
+D2-cmp-binblob.txt                 shell-only  -
+D2-cmp-buffer.txt                  shell-only  -
+D2-cmp-cast.txt                    shell-only  -
+D2-cmp-commute.txt                 shell-only  -
+D2-cmp-gate.txt                    shell-only  -
+D2-cmp-group.txt                   shell-only  -
+D2-cmp-indexed.txt                 shell-only  -
+D2-cmp-lin.txt                     shell-only  -
+D2-cmp-loop.txt                    shell-only  -
+D2-cmp-matmul.txt                  shell-only  -
+D2-cmp-range.txt                   shell-only  -
+D2-cmp-rangeflat.txt               shell-only  -
+D2-cmp-reduce.txt                  shell-only  -
+D2-cmp-sink.txt                    shell-only  -
+D2-cmp-special.txt                 shell-only  -
+D2-cmp-sym.txt                     shell-only  -
+D3-control-binblob.txt             shell-only  -
+D3-control-binblob.txt.err         shell-only  -
+D3-control-gate.txt                shell-only  -
+D3-control-gate.txt.err            shell-only  -
+D3-control-group.txt               shell-only  -
+D3-control-group.txt.err           shell-only  -
+D3-control-loop.txt                shell-only  -
+D3-control-loop.txt.err            shell-only  -
+D3-control-matmul.txt              shell-only  -
+D3-control-matmul.txt.err          shell-only  -
+D4-cross-range.txt                 shell-only  -
+D4-cross-range.txt.err             shell-only  -
+D5-plant-bytes.txt                 shell-only  -
+D5-plant-bytes.txt.err             shell-only  -
+D5-plant-dtype.txt                 shell-only  -
+D5-plant-dtype.txt.err             shell-only  -
+D5-plant-opt.txt                   shell-only  -
+D5-plant-opt.txt.err               shell-only  -
+D5-plant-pyuop.txt                 shell-only  -
+D5-plant-pyuop.txt.err             shell-only  -
+D5-plant-shape.txt                 shell-only  -
+D5-plant-shape.txt.err             shell-only  -
+D5-plant-srcswap.txt               shell-only  -
+D5-plant-srcswap.txt.err           shell-only  -
+D5-plant-sym1.txt                  shell-only  -
+D5-plant-sym1.txt.err              shell-only  -
+D6-commute-equiv.txt               shell-only  -
+D6-commute-equiv.txt.err           shell-only  -
+D6-commute-ordered.txt             shell-only  -
+D6-commute-ordered.txt.err         shell-only  -
+D6-srcswap-equiv.txt               shell-only  -
+D6-srcswap-equiv.txt.err           shell-only  -
+D6-srcswap-ordered.txt             shell-only  -
+D6-srcswap-ordered.txt.err         shell-only  -
+D7-conf.txt                        shell-only  -
+D7-conf.txt.err                    shell-only  -
+D8-dbg-012.txt                     shell-only  -
+D8-dbg-012.txt.err                 shell-only  -
+D8-dbg-03.txt                      shell-only  -
+D8-dbg-03.txt.err                  shell-only  -
+D8b-cpython-dbg1-reachability.txt  shell-only  -
+D9-stability-commute-a.txt         shell-only  -
+D9-stability-commute-a.txt.err     shell-only  -
+D9-stability-commute-b.txt         both  37
+D9-stability-commute-b.txt.err     shell-only  -
+D9-stability-gate-a.txt            shell-only  -
+D9-stability-gate-a.txt.err        shell-only  -
+D9-stability-gate-b.txt            shell-only  -
+D9-stability-gate-b.txt.err        shell-only  -
+D9-stability-group-a.txt           shell-only  -
+D9-stability-group-a.txt.err       shell-only  -
+D9-stability-group-b.txt           shell-only  -
+D9-stability-group-b.txt.err       shell-only  -
+D9-stability-loop-a.txt            shell-only  -
+D9-stability-loop-a.txt.err        shell-only  -
+D9-stability-loop-b.txt            shell-only  -
+D9-stability-loop-b.txt.err        shell-only  -
+D9-stability-sym-a.txt             shell-only  -
+D9-stability-sym-a.txt.err         shell-only  -
+D9-stability-sym-b.txt             shell-only  -
+D9-stability-sym-b.txt.err         shell-only  -
+D9-stability.txt                   shell-only  -
+
+TOTAL artifacts union : 152
+both produced         : 2
+LOST  (shell has it, python does not) : 149
+   LOST D0-coverage-census.txt
+   LOST D0-ops-probe.txt
+   LOST D0-run-summary.txt
+   LOST D0-selfcheck.txt
+   LOST D1-graph-binblob.txt
+   LOST D1-graph-binblob.txt.err
+   LOST D1-graph-buffer.txt
+   LOST D1-graph-buffer.txt.err
+   LOST D1-graph-cast.txt
+   LOST D1-graph-cast.txt.err
+   LOST D1-graph-commute.txt
+   LOST D1-graph-commute.txt.err
+   LOST D1-graph-gate.txt
+   LOST D1-graph-gate.txt.err
+   LOST D1-graph-group.txt
+   LOST D1-graph-group.txt.err
+   LOST D1-graph-indexed.txt
+   LOST D1-graph-indexed.txt.err
+   LOST D1-graph-lin.txt
+   LOST D1-graph-lin.txt.err
+   LOST D1-graph-loop.txt
+   LOST D1-graph-loop.txt.err
+   LOST D1-graph-matmul.txt
+   LOST D1-graph-matmul.txt.err
+   LOST D1-graph-range.txt
+   LOST D1-graph-range.txt.err
+   LOST D1-graph-rangeflat.txt
+   LOST D1-graph-rangeflat.txt.err
+   LOST D1-graph-reduce.txt
+   LOST D1-graph-reduce.txt.err
+   LOST D1-graph-sink.txt
+   LOST D1-graph-sink.txt.err
+   LOST D1-graph-special.txt
+   LOST D1-graph-special.txt.err
+   LOST D1-graph-sym.txt
+   LOST D1-graph-sym.txt.err
+   LOST D1-verdicts.txt
+   LOST D10-zerorow-guard.txt
+   LOST D10-zerorow-guard.txt.err
+   LOST D2-bytediff.txt
+   LOST D2-canon-bend-binblob.txt
+   LOST D2-canon-bend-buffer.txt
+   LOST D2-canon-bend-cast.txt
+   LOST D2-canon-bend-commute.txt
+   LOST D2-canon-bend-gate.txt
+   LOST D2-canon-bend-group.txt
+   LOST D2-canon-bend-indexed.txt
+   LOST D2-canon-bend-lin.txt
+   LOST D2-canon-bend-loop.txt
+   LOST D2-canon-bend-matmul.txt
+   LOST D2-canon-bend-range.txt
+   LOST D2-canon-bend-rangeflat.txt
+   LOST D2-canon-bend-reduce.txt
+   LOST D2-canon-bend-sink.txt
+   LOST D2-canon-bend-special.txt
+   LOST D2-canon-bend-sym.txt
+   LOST D2-canon-py-binblob.txt
+   LOST D2-canon-py-buffer.txt
+   LOST D2-canon-py-cast.txt
+   LOST D2-canon-py-commute.txt
+   LOST D2-canon-py-gate.txt
+   LOST D2-canon-py-group.txt
+   LOST D2-canon-py-indexed.txt
+   LOST D2-canon-py-lin.txt
+   LOST D2-canon-py-loop.txt
+   LOST D2-canon-py-matmul.txt
+   LOST D2-canon-py-range.txt
+   LOST D2-canon-py-rangeflat.txt
+   LOST D2-canon-py-reduce.txt
+   LOST D2-canon-py-sink.txt
+   LOST D2-canon-py-special.txt
+   LOST D2-canon-py-sym.txt
+   LOST D2-cmp-binblob.txt
+   LOST D2-cmp-buffer.txt
+   LOST D2-cmp-cast.txt
+   LOST D2-cmp-commute.txt
+   LOST D2-cmp-gate.txt
+   LOST D2-cmp-group.txt
+   LOST D2-cmp-indexed.txt
+   LOST D2-cmp-lin.txt
+   LOST D2-cmp-loop.txt
+   LOST D2-cmp-matmul.txt
+   LOST D2-cmp-range.txt
+   LOST D2-cmp-rangeflat.txt
+   LOST D2-cmp-reduce.txt
+   LOST D2-cmp-sink.txt
+   LOST D2-cmp-special.txt
+   LOST D2-cmp-sym.txt
+   LOST D3-control-binblob.txt
+   LOST D3-control-binblob.txt.err
+   LOST D3-control-gate.txt
+   LOST D3-control-gate.txt.err
+   LOST D3-control-group.txt
+   LOST D3-control-group.txt.err
+   LOST D3-control-loop.txt
+   LOST D3-control-loop.txt.err
+   LOST D3-control-matmul.txt
+   LOST D3-control-matmul.txt.err
+   LOST D4-cross-range.txt
+   LOST D4-cross-range.txt.err
+   LOST D5-plant-bytes.txt
+   LOST D5-plant-bytes.txt.err
+   LOST D5-plant-dtype.txt
+   LOST D5-plant-dtype.txt.err
+   LOST D5-plant-opt.txt
+   LOST D5-plant-opt.txt.err
+   LOST D5-plant-pyuop.txt
+   LOST D5-plant-pyuop.txt.err
+   LOST D5-plant-shape.txt
+   LOST D5-plant-shape.txt.err
+   LOST D5-plant-srcswap.txt
+   LOST D5-plant-srcswap.txt.err
+   LOST D5-plant-sym1.txt
+   LOST D5-plant-sym1.txt.err
+   LOST D6-commute-equiv.txt
+   LOST D6-commute-equiv.txt.err
+   LOST D6-commute-ordered.txt
+   LOST D6-commute-ordered.txt.err
+   LOST D6-srcswap-equiv.txt
+   LOST D6-srcswap-equiv.txt.err
+   LOST D6-srcswap-ordered.txt
+   LOST D6-srcswap-ordered.txt.err
+   LOST D7-conf.txt
+   LOST D7-conf.txt.err
+   LOST D8-dbg-012.txt
+   LOST D8-dbg-012.txt.err
+   LOST D8-dbg-03.txt
+   LOST D8-dbg-03.txt.err
+   LOST D8b-cpython-dbg1-reachability.txt
+   LOST D9-stability-commute-a.txt
+   LOST D9-stability-commute-a.txt.err
+   LOST D9-stability-commute-b.txt.err
+   LOST D9-stability-gate-a.txt
+   LOST D9-stability-gate-a.txt.err
+   LOST D9-stability-gate-b.txt
+   LOST D9-stability-gate-b.txt.err
+   LOST D9-stability-group-a.txt
+   LOST D9-stability-group-a.txt.err
+   LOST D9-stability-group-b.txt
+   LOST D9-stability-group-b.txt.err
+   LOST D9-stability-loop-a.txt
+   LOST D9-stability-loop-a.txt.err
+   LOST D9-stability-loop-b.txt
+   LOST D9-stability-loop-b.txt.err
+   LOST D9-stability-sym-a.txt
+   LOST D9-stability-sym-a.txt.err
+   LOST D9-stability-sym-b.txt
+   LOST D9-stability-sym-b.txt.err
+   LOST D9-stability.txt
+NEW   (python has it, shell does not) : 1
+   NEW  .tmp.D0-selfcheck.txt
+files differing       : 1
+   DIFF D9-stability-commute-b.txt  37 lines
+
+=== VERDICT LINES ===
+shell lines: 69   python lines: 0
+shell-only : 10
+   SHELL-ONLY # CONFLATION 1 VERDICT: OK -- names src on the reordered node (expected DISAGREE naming src; got rc=1)
+   SHELL-ONLY # CONFLATION 2 VERDICT: OK -- names depth (expected DISAGREE naming depth; got rc=1)
+   SHELL-ONLY # CONFLATION 3 VERDICT: OK -- AGREE under --equiv (expected rc=0; got rc=0)
+   SHELL-ONLY # CONFLATION 4 VERDICT: OK -- separates two symbolic dims from one, naming src (expected DISAGREE naming src; got rc=1)
+   SHELL-ONLY # CONFLATION VERDICT: ALL FOUR DISTINGUISHED
+   SHELL-ONLY # CONTROL VERDICT: OK
+   SHELL-ONLY # CROSS VERDICT: OK -- it disagrees
+   SHELL-ONLY # DEBUG VERDICT: the levels are DISTINGUISHABLE and the graph was fixed
+   SHELL-ONLY # VERDICT: AGREE
+   SHELL-ONLY # VERDICT: DISAGREE
+python-only: 0
+both       : 0
+
+=== DENOMINATOR LINES ===
+shell lines: 56   python lines: 0
+shell-only : 38
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 DEBUG0 + 1 DEBUG1)  nodes=7/7  fields=6  field-records=42  shared-cores=6  commutative-ops=8  ops-reached=1/1 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 DEBUG0 + 1 DEBUG3)  nodes=7/7  fields=6  field-records=42  shared-cores=0  commutative-ops=8  ops-reached=1/1 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 DEBUG1 + 1 DEBUG2)  nodes=7/7  fields=6  field-records=42  shared-cores=1  commutative-ops=8  ops-reached=1/1 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=14/14  fields=6  field-records=84  shared-cores=14  commutative-ops=8  ops-reached=12/12 of 77  symbolic-dims=0/0  multi-parent-nodes=11/11
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=19/19  fields=6  field-records=114  shared-cores=19  commutative-ops=8  ops-reached=8/8 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=25/25  fields=6  field-records=150  shared-cores=25  commutative-ops=8  ops-reached=14/14 of 77  symbolic-dims=0/0  multi-parent-nodes=8/8
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=1/1
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 bend range + 1 bend allred)  nodes=2/9  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/7 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=15  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=12/12  fields=6  field-records=72  shared-cores=12  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=2/2  multi-parent-nodes=2/2
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=14/14  fields=6  field-records=84  shared-cores=12  commutative-ops=8  ops-reached=11/11 of 77  symbolic-dims=0/0  multi-parent-nodes=3/3
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=14/14  fields=6  field-records=84  shared-cores=14  commutative-ops=8  ops-reached=11/11 of 77  symbolic-dims=0/0  multi-parent-nodes=3/3
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=14/14  fields=6  field-records=84  shared-cores=14  commutative-ops=8  ops-reached=12/12 of 77  symbolic-dims=0/0  multi-parent-nodes=11/11
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=12  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=15  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=19/18  fields=6  field-records=114  shared-cores=18  commutative-ops=8  ops-reached=8/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=19/19  fields=6  field-records=114  shared-cores=19  commutative-ops=8  ops-reached=8/8 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=2/2  fields=6  field-records=12  shared-cores=2  commutative-ops=8  ops-reached=2/2 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=21/18  fields=6  field-records=126  shared-cores=18  commutative-ops=8  ops-reached=9/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=25/25  fields=6  field-records=150  shared-cores=24  commutative-ops=8  ops-reached=14/14 of 77  symbolic-dims=0/0  multi-parent-nodes=8/8
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=46/46  fields=6  field-records=276  shared-cores=45  commutative-ops=8  ops-reached=11/11 of 77  symbolic-dims=0/0  multi-parent-nodes=6/6
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=5/5  fields=6  field-records=30  shared-cores=5  commutative-ops=8  ops-reached=4/4 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=6/6  fields=6  field-records=36  shared-cores=6  commutative-ops=8  ops-reached=5/5 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=7/7  fields=6  field-records=42  shared-cores=7  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=1/1
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=9/12  fields=6  field-records=54  shared-cores=8  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=1/2  multi-parent-nodes=1/2
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=14/14  fields=6  field-records=84  shared-cores=14  commutative-ops=8  ops-reached=12/12 of 77  symbolic-dims=0/0  multi-parent-nodes=11/11
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=19/19  fields=6  field-records=114  shared-cores=19  commutative-ops=8  ops-reached=8/8 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=25/25  fields=6  field-records=150  shared-cores=25  commutative-ops=8  ops-reached=14/14 of 77  symbolic-dims=0/0  multi-parent-nodes=8/8
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=1/1
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 py range + 1 py allred)  nodes=2/9  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/7 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 rangeflat + 1 range)  nodes=2/2  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/2 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
+   SHELL-ONLY # DENOMINATOR: graphs=2 (1 two-symbolic-dims + 1 one-symbolic-dim)  nodes=12/9  fields=6  field-records=72  shared-cores=8  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=2/1  multi-parent-nodes=2/1
+python-only: 0
+both       : 0
+cmp rc=1

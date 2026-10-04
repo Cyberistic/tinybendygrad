@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/reach/probe2.py",
+ "base": "probe2.py",
+ "stem": "probe2",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4115,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reach/probe2.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 1,
+ "stdout": "# NOT reached (16): ['CUSTOM', 'CUSTOMI', 'CUSTOM_FUNCTION', 'GETADDR', 'INS', 'MSELECT', 'MSTACK', 'MULACC', 'PROGRAM', 'PYLITERAL', 'REWRITE_ERROR', 'SOURCE', 'STAGE', 'THREEFRY', 'UNSHARD', 'WMMA']\n# flip(0)                    rows=6    NEW=[]\n#     census={'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'RESHAPE': 1, 'STACK': 1}\n# shrink                     rows=10   NEW=[]\n#     census={'ALLOC': 1, 'CONST': 4, 'RESHAPE': 1, 'SHRINK': 1, 'STACK': 3}\n# mstack                     rows=8    NEW=[]\n#     census={'ALLOC': 2, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 2, 'STACK': 1}\n# mselect                    WALL TypeError: UOp.mselect() takes 2 positional arguments but 3 were given\n# rewrite_error              rows=6    NEW=['REWRITE_ERROR']\n#     census={'ALLOC': 1, 'CONST': 2, 'RESHAPE': 1, 'REWRITE_ERROR': 1, 'STACK': 1}\n# source                     rows=1    NEW=['SOURCE']\n#     census={'SOURCE': 1}\n# mulacc                     rows=10   NEW=['MULACC']\n#     census={'ALLOC': 3, 'CONST': 2, 'MULACC': 1, 'RESHAPE': 3, 'STACK': 1}\n# custom                     rows=8    NEW=['CUSTOM']\n#     census={'ALLOC': 2, 'CONST': 2, 'CUSTOM': 1, 'RESHAPE': 2, 'STACK': 1}\n# customi                    rows=1    NEW=['CUSTOMI']\n#     census={'CUSTOMI': 1}\n# custom_function            rows=6    NEW=['CUSTOM_FUNCTION']\n#     census={'ALLOC': 1, 'CONST': 2, 'CUSTOM_FUNCTION': 1, 'RESHAPE': 1, 'STACK': 1}\n# cdiv                       rows=10   NEW=[]\n#     census={'ALLOC': 2, 'CAST': 1, 'CONST': 2, 'MUL': 1, 'RECIPROCAL': 1, 'RESHAPE': 2, 'STACK': 1}\n# cmod                       rows=8    NEW=[]\n#     census={'ALLOC': 2, 'CONST': 2, 'FLOORMOD': 1, 'RESHAPE': 2, 'STACK': 1}\n# fdiv-op                    rows=8    NEW=[]\n#     census={'ALLOC': 2, 'CONST': 2, 'FDIV': 1, 'RESHAPE': 2, 'STACK': 1}\n# flip-op                    rows=6    NEW=[]\n#     census={'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'RESHAPE': 1, 'STACK': 1}\n# getaddr                    rows=6    NEW=['GETADDR']\n#     census={'ALLOC': 1, 'CONST': 2, 'GETADDR': 1, 'RESHAPE': 1, 'STACK': 1}\n# stage                      rows=6    NEW=['STAGE']\n#     census={'ALLOC': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1, 'STAGE': 1}\n# unshard                    rows=6    NEW=['UNSHARD']\n#     census={'ALLOC': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1, 'UNSHARD': 1}\n# threefry-op                rows=13   NEW=['THREEFRY']\n#     census={'ALLOC': 3, 'CAST': 3, 'CONST': 2, 'RESHAPE': 3, 'STACK': 1, 'THREEFRY': 1}\n",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reach/probe2.py\", line 67, in <module>\n    probe(\"program\", lambda: __import__(\"tinygrad.uop.ops\", fromlist=[\"x\"]).ProgramInfo(\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reach/probe2.py\", line 34, in probe\n    c = collections.Counter(n.op.name for n in ast.toposort())\n                                               ^^^^^^^^^^^^\nAttributeError: 'ProgramInfo' object has no attribute 'toposort'\n",
+ "secs": 1.01,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

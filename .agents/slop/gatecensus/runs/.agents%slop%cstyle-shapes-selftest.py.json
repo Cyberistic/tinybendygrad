@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cstyle-shapes-selftest.py",
+ "base": "cstyle-shapes-selftest.py",
+ "stem": "cstyle-shapes-selftest",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 8798,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-shapes-selftest.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "control row names: 'ctl OPENCL sz1 k0' (spaces, no '=')   'ctlf3' (F3: single token only)\n\nF1  name=value\n  port lane   'ctl OPENCL sz1 k0=half'\n  oracle lane 'ctl OPENCL sz1 k0=half'\n  ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK\n  RED     shared=['ctl OPENCL sz1 k0']  disagree=['ctl OPENCL sz1 k0']  RED   expected=RED  OK\n          row `ctl OPENCL sz1 k0`  port left='halG'  cpy left='half'\n\nF2  name = [v]   py=[w]\n  port lane   'ctl OPENCL sz1 k0 = [half]   py=[half]'\n  oracle lane 'ctl OPENCL sz1 k0 = [half]'\n  ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK\n  RED     shared=['ctl OPENCL sz1 k0']  disagree=['ctl OPENCL sz1 k0']  RED   expected=RED  OK\n          row `ctl OPENCL sz1 k0`  port left='[halG]'  cpy left='[half]'\n  DISARM case -- the plant is in the NON-COMPARED `py=` column only:\n  port lane   'ctl OPENCL sz1 k0 = [half]   py=[halG]'\n  DISARM  shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK\n\nF3  name<SP><SP>value  (single-token name only)\n  port lane   'ctlf3  half'\n  oracle lane 'ctlf3  half'\n  ARMED   shared=['ctlf3']  disagree=[]  AGREE  expected=AGREE  OK\n  RED     shared=['ctlf3']  disagree=['ctlf3']  RED   expected=RED  OK\n          row `ctlf3`  port left='halG'  cpy left='half'\n\nREAL LANES, through cstyle-gate.py's own judge(), one real F2 row at a time\n  clean gated=221 agree=221 disagree=0 none  *** CONTROL FAILED ***\n  RED   gated=221 agree=220 disagree=1 ['tmap OPENCL']  OK\n  (the row is `tmap OPENCL`; the plant swaps ONE character of the port's own answer, and the unchanged lane agrees 221/221 gated rows)\n\nREADER REACH over the three shapes (rows_strict is judge()'s reader; rows() is the shared one)\n  F1  name=value                                   cstyle rows_strict sees the row: False   rebase-gate rows() sees the row: True\n  F2  name = [v]   py=[w]                          cstyle rows_strict sees the row: True    rebase-gate rows() sees the row: True\n  F3  name<SP><SP>value  (single-token name only)  cstyle rows_strict sees the row: False   rebase-gate rows() sees the row: True\n  -> `cstyle-gate.py`'s judge() CANNOT READ F3. It is not degraded on F3; it reads zero\n     rows there, which its own GUARD 1 would refuse as an empty lane.\n\nSELFTEST FAILED: 1 case(s): one control per shape, each shown ARMED and RED, each run twice\n",
+ "stderr": "",
+ "secs": 1.63,
+ "verdict": "ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK",
+ "status": "FAIL",
+ "why": "rc=1"
+}

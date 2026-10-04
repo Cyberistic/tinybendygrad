@@ -1,0 +1,4 @@
+REFUSED: no files given. A guard invoked with an empty population must not
+report agreement -- that is indistinguishable from a green run over nothing.
+usage: <SELF> <file.bend|file.c|file.js> [more ...]
+       or: find tinybendygrad -name '*.bend' | xargs <SELF>

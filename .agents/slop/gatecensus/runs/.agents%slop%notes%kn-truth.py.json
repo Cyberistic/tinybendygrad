@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/notes/kn-truth.py",
+ "base": "kn-truth.py",
+ "stem": "kn-truth",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 13206,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/kn-truth.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "np_len=1\ncfa_len=1\nal_len=2\nib_len=2\nab_len=1\ntp_len=5\nnp_fresh=1\nnp_slot=3\nnp_next=4\nnp_set=1\nnp_twice=1\nrm=1\nrm_unroll=1\nrm_loop=0\nbitcast=0\nalu_sqrt=1\nalu_sin=1\nalu_add=0\nalu_recip=1\nab_grow=1\nab_nsrc=1\nab_miss=1\nstage_pr1=1\nstage_pr2=2\nstage_pr3=2\nstage_pr4=5\ncfg=12\ncfg_ctx=14\nlw_miss_nsrc=2\nlw_find=1\nlw_hit=1\nlw_sub_1=1\npos=20\ndup=0\npos_same=1\nix=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 \nops=NOOP CONST CONST CONST SPECIAL BUFFER BUFFER PARAM RANGE RANGE SQRT STORE ALLOC REDUCE SINK PROGRAM PROGRAM INS PROGRAM PROGRAM \nab=BUFFER\n",
+ "stderr": "",
+ "secs": 0.35,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

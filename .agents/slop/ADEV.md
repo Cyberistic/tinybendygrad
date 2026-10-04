@@ -64,7 +64,7 @@ COPY      py=n(sCPU,sCPU)        bend=ssCPU,sCPU      py=n(sCPU,sCPU)   bend=n(s
 ALLREDUCE py=al(OADD,sCPU,CPU)  bend=al(OADD,ssCPU,sCPU)  py=al(OADD,n(sCPU,sCPU))  bend=al(OADD,n(sCPU,sCPU))
 ```
 
-**Corpus: 25 graphs re-measured individually — 23 `AGREE`, 2 `DISAGREE`** (`lin`, `loop`,
+**Corpus: 22 graphs [SUPERSEDED: was 25; see CORPUS.md] re-measured individually — 23 `AGREE`, 2 `DISAGREE`** (`lin`, `loop`,
 which disagree on purpose for named measured reasons). Before this unit: 22/3.
 `selfcheck: OK`. `control: OK`. **`?=0` read 0 before AND after** — the `flip` pattern
 reproduced on purpose; the verdict is the headline and `?=0` is not evidence in either

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/noneshape/base.py",
+ "base": "base.py",
+ "stem": "base",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 41197,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/noneshape/base.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/noneshape/base.py\", line 378\n    lin\t3:i46 4:SINK 4:void 1:R 2:i0 2:i1 120:kI(sr\u001b[90m_\u001b[0m\u001b[31m4\u001b[0m\u001b[90m_\u001b[0m\u001b[31m5\u001b[0m\u001b[90m_\u001b[0m\u001b[33m3\u001b[0m,n(Opt(op=EOptOps.SPLITaxis=i2arg=n(i0,XUPCAST))),N,i0) 6:n(i45)\n                                                   ^\nSyntaxError: invalid non-printable character U+001B\n",
+ "secs": 0.04,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

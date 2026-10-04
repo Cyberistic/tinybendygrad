@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ga_controls.py",
+ "base": "ga_controls.py",
+ "stem": "ga_controls",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5198,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ga_controls.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ga_controls.py\", line 38, in <module>\n    _RG = importlib.util.spec_from_file_location(\"rebase_gate\", pathlib.Path(__file__).resolve() / \"rebase-gate.py\")\n          ^^^^^^^^^\nNameError: name 'importlib' is not defined. Did you forget to import 'importlib'?\n",
+ "secs": 0.4,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

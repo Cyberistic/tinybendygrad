@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/xb1/lanes.sh",
+ "base": "lanes.sh",
+ "stem": "lanes",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 1000,
+ "writes": false,
+ "entry": false,
+ "cmd": "./lanes.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './lanes.sh'",
+ "stdout": "",
+ "stderr": ""
+}

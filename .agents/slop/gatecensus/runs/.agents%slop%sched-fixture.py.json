@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/sched-fixture.py",
+ "base": "sched-fixture.py",
+ "stem": "sched-fixture",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 17019,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-fixture.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# matmul_sym var_vals={'K': 3}\n# wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-fixture.bend: 600 lines, specs=['matmul', 'matmul_sym', 'conv', 'elementwise', 'multi', 'chain']\n",
+ "stderr": "",
+ "secs": 4.44,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

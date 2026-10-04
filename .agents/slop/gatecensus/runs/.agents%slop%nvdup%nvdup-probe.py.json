@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nvdup/nvdup-probe.py",
+ "base": "nvdup-probe.py",
+ "stem": "nvdup-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4323,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nvdup/nvdup-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "Q1  DOES nv-oracle.py:1159'S STATEMENT EVER EXECUTE?\n    :1159 is  [reloc_of(*_r) for _r in ((16,8,2),(48,8,3),(64,8,0x38))]\n    :1160 is  row('nv_reloc_bad_refused', 'False')   <- the 'False' the brief names\n    element 0 (16, 8, 2) -> OK (16, 8, dtypes.u64, 0)\n    element 1 (48, 8, 3) -> RAISES RuntimeError(unknown NV reloc 3)   <<< the comprehension aborts HERE\n    element 2 (64, 8, 56) -> OK (68, 8, dtypes.u32, 0)\n    the comprehension RAISED -> :1160 NEVER EXECUTES.  The 'False' row is DEAD CODE.\n    consequence: :1158-1163 can only ever emit 'True'.  An instrument with one reachable arm.\n\nQ2  IS THAT ARM DEAD BY FIXTURE, OR ONLY ON THIS RUN?\n    the `for _t in (0, 3, 100)` loop at :1152-1157 has the same shape:\n    typ 0 -> RAISES (unknown NV reloc 0)   (so :1154/:1155 never run for this typ)\n    typ 3 -> RAISES (unknown NV reloc 3)   (so :1154/:1155 never run for this typ)\n    typ 100 -> RAISES (unknown NV reloc 100)   (so :1154/:1155 never run for this typ)\n    all three fixture types fall through `reloc_of`'s arms to its `raise`, so the\n    empty-string arm is dead for EVERY element of the loop: 3 of 3, structurally.\n\nQ3  IS `nv_reloc_bad_n` 1 OR 0?  ASKED OF CPYTHON.\n    reloc_fold(((16, 8, 2), (48, 8, 3), (64, 8, 56))) = [(16, 8, dtypes.u64, 0)]\n    len(...) = 1   <- :720 prints len(_bad); :1162 prints a TYPED 0\n    CPython says nv_reloc_bad_n = 1.  :1162's literal 0 is WRONG.\n\nQ4  DOES THE LANE ALREADY CARRY THE RULE'S NEGATIVE CASE UNDER A NAME THAT WORKS?\n    reloc_fold([(16,8,2),(32,8,0x38)]) = [(16, 8, dtypes.u64, 0), (36, 8, dtypes.u32, 0)]  -> raises: False\n    :719 emits exactly that under the name `nv_reloc_ok_refused`.  So the REFUSAL RULE's\n    negative case EXISTS and is addressable; the dead arm at :1159-1160 was a REDUNDANT\n    second copy of it under the wrong name, not the only copy.\n",
+ "stderr": "",
+ "secs": 1.75,
+ "verdict": "element 0 (16, 8, 2) -> OK (16, 8, dtypes.u64, 0)",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

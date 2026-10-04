@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/flip/py-probe.py",
+ "base": "py-probe.py",
+ "stem": "py-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1711,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/flip/py-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "== atom letters in graphcmp.py ATOMS ==\n  bool -> see probe 2\n\n== UOp.group(a.flip(0).uop) ==\n  root op      : Ops.FLIP\n  is the FLIP  : True\n  len(toposort): 6\n  census       : {'Ops.ALLOC': 1, 'Ops.CONST': 2, 'Ops.FLIP': 1, 'Ops.RESHAPE': 1, 'Ops.STACK': 1}\n\n== a.flip(0).uop ==\n  arg          : (True, False)\n  arg types    : ['bool', 'bool']\n  arg == (1,0) : True\n\n== upstream REFUSES a non-bool flip arg ==\n  UOp(Ops.FLIP,(a,),(0,)).shape -> AttributeError: 'Tensor' object has no attribute 'src'\n  UOp(Ops.FLIP,(a,),(1, 0)).shape -> AttributeError: 'Tensor' object has no attribute 'src'\n  UOp(Ops.FLIP,(a,),(5, 7)).shape -> AttributeError: 'Tensor' object has no attribute 'src'\n\n== UOp.group elision ==\n  UOp.group(FLIP).op  : Ops.FLIP\n  UOp.group(FLIP,FLIP).op: Ops.GROUP\n  UOp.group().op      : Ops.GROUP nsrc 0\n\n== spec.py:166 accepts both ==\n",
+ "stderr": "",
+ "secs": 1.79,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

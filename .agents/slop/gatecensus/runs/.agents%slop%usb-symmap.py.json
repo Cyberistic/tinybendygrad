@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/usb-symmap.py",
+ "base": "usb-symmap.py",
+ "stem": "usb-symmap",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2051,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-symmap.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "kinds=24 syms=24\n   0 K_INIT             -> libusb_init\n   1 K_SET_OPTION       -> libusb_set_option\n   2 K_GET_DEVLIST      -> libusb_get_device_list\n   3 K_GET_DESC         -> libusb_get_device_descriptor\n   4 K_REF_DEVICE       -> libusb_ref_device\n   5 K_BUS_NUMBER       -> libusb_get_bus_number\n   6 K_DEV_ADDRESS      -> libusb_get_device_address\n   7 K_FREE_DEVLIST     -> libusb_free_device_list\n   8 K_OPEN             -> libusb_open\n   9 K_GET_DEVICE       -> libusb_get_device\n  10 K_STR_ASCII        -> libusb_get_string_descriptor_ascii\n  11 K_KDRV_ACTIVE      -> libusb_kernel_driver_active\n  12 K_DETACH_KDRV      -> libusb_detach_kernel_driver\n  13 K_RESET_DEVICE     -> libusb_reset_device\n  14 K_SET_CONFIG       -> libusb_set_configuration\n  15 K_CLAIM_IFACE      -> libusb_claim_interface\n  16 K_SET_ALT          -> libusb_set_interface_alt_setting\n  17 K_CTRL_XFER        -> libusb_control_transfer\n  18 K_BULK_XFER        -> libusb_bulk_transfer\n  19 K_ALLOC_XFER       -> libusb_alloc_transfer\n  20 K_EVENTS           -> libusb_handle_events_timeout\n  21 K_SUBMIT_XFER      -> libusb_submit_transfer\n  22 K_MEMCPY           -> memcpy\n  23 K_STRERROR         -> libusb_strerror\ninjective=True all_symbols_real=True\n",
+ "stderr": "",
+ "secs": 3.12,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/adev/probe.py",
+ "base": "probe.py",
+ "stem": "probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6133,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/adev/probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "== 1. UPSTREAM'S DECLARED TYPE, and it is one union in FOUR places ==\n   ops.py:758  copy_to_device(self, device:str|tuple[str, ...], arg=None)\n   ops.py:677  allreduce(self, op, device:str|tuple[str, ...])\n   spec.py:140 is_device(d) = isinstance(d,str) or (isinstance(d,tuple) and all strs)\n   ops.py:33   ParamArg.device: str|tuple[str, ...]|None = None\n\n== 2. UPSTREAM STORES IT VERBATIM AND THEN BRANCHES ON IT ==\n   COPY.arg          = ('CPU', 'CPU')   (tuple)\n   ALLREDUCE.arg     = (Ops.ADD, ('CPU', 'CPU'))\n   ALLREDUCE.arg[1] == COPY.arg -> True    <- ONE value, so the two\n                                                        spellings below cannot BOTH be right\n   device_range_src(('CPU','CPU')) -> 1 src\n   device_range_src('CPU')         -> 0 src\n   valid_device_range(('CPU',), ()) = False   <- a TUPLE of any length needs a DEVICE range src\n   valid_device_range('CPU',    ()) = True   <- a STR needs none. Third upstream branch on the union.\n\n== 3. THE FLATTEN WAS NOT INJECTIVE. This is what decided it. ==\n   pre-fix  2 devices ('CPU','CPU')        -> sCPU,CPU               post-fix -> n(sCPU,sCPU)\n   pre-fix  1 device, as a TUPLE ('CPU',)  -> sCPU                   post-fix -> n(sCPU)\n   pre-fix  1 device, as a STR   'CPU'     -> sCPU                   post-fix -> sCPU\n   pre-fix  1 device NAMED 'CPU,CPU'       -> sCPU,CPU               post-fix -> n(sCPU,CPU)\n\n   pre-fix  ('CPU',) == 'CPU'        -> True   <- COLLIDES: upstream's isinstance(device, tuple)\n   post-fix ('CPU',) == 'CPU'        -> False\n   pre-fix  ('CPU,CPU',) == ('CPU','CPU') -> True   <- COLLIDES\n   post-fix ('CPU,CPU',) == ('CPU','CPU') -> False\n\n== 4. THE PORT NEVER LACKED THE REPRESENTATION; the TEXT did ==\n   LAWS/spec.bend:85  type Dev is Data:  D1{tag: U32} | Dn{tags: List<&2,U32>}\n   uop/ops.bend:1070  ADev{dev: S.Dev}     <- the COPY arg, and it holds a PAIR\n   uop/ops.bend:1071  AAllred{rop: Op, dev: S.Dev}\n   graphcmp.bend      g_allred built O.ADev{S.Dn{[0,0]}} and it COMPILED and PRINTED\n                       before ADEV-1. The premise 'a pair has no port representation'\n                       was FALSE about the Arg and TRUE only about graphcmp's renderer.\n\n== 5. THE DISARM NULL: a fresh object of the same value is the SAME ucache node ==\n   rebuilt is r            -> True\n   toposort len clean/armed-> 9 / 9\n   and the emitted py stream is byte-identical: md5 90ec1dda91a8d761f293669aa0a5bd6d\n   for `--plant devdisarm` AND for no plant, against 2580f38166cb2bfc078b3ffca0f03429\n   for `--plant devpair`. (measured with `graphcmp.py emit --side py --graph allred`)\n\n== 6. WHAT py's TWO SPELLINGS WERE, AND WHICH IS WRONG ==\n   pre-fix  COPY      -> n(sCPU,sCPU)    (no carg arm for Ops.COPY -> the generic _carg tuple grammar, which NESTS)\n   pre-fix  ALLREDUCE -> al(OADD,sCPU,CPU)   (carg arm -> the flattening dev)\n   post-fix COPY      -> n(sCPU,sCPU)\n   post-fix ALLREDUCE -> al(OADD,n(sCPU,sCPU))\n   Both pre-fix spellings are ONE value (`c.arg == r.arg[1]` above) in ONE graph, two\n   nodes apart. The GRAPH is not inconsistent -- THE PRINTER WAS. So 'is py's\n   inconsistency upstream's or the differ's?' has one answer: THE DIFFER's, and on BOTH\n   sides -- bend's flatten double-prefixed to `ssCPU,sCPU`, which is a THIRD spelling of\n   the same value and matches neither. Upstream is answerable to neither.\n",
+ "stderr": "",
+ "secs": 0.22,
+ "verdict": "toposort len clean/armed-> 9 / 9",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

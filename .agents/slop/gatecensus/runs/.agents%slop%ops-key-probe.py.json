@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ops-key-probe.py",
+ "base": "ops-key-probe.py",
+ "stem": "ops-key-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10770,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-key-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "#probe_tree=.agents/slop/opstree\naux_written_bufs_splits=True\naux_written_bufs_nodes=5\naux_equal_interns=True\naux_none_vs_obj_splits=True\ngrad_fxn_splits=True\ngrad_fxn_nodes=5\nestimates_splits=True\nestimates_nodes=2\nestimates_equal_interns=True\nestimates_none_splits=True\ntarget_splits=True\ntarget_nodes=5\ntarget_equal_interns=True\nvmin_vmax_int_splits=True\nvmin_vmax_int_nodes=2\nvmin_vmax_float_splits=True\nvmin_vmax_float_nodes=2\nvmin_vmax_float_vs_int_interns=True\nvmin_vmax_bool_vs_int_interns=True\nvmin_vmax_signed_zero_splits=True\nconst_bool_vs_int_splits=True\ntag_bool_vs_int_interns=True\ntag_bool_vs_int_nodes=1\ntag_true_vs_false_splits=True\ntag_none_vs_zero_interns=False\nrtag_default_tag=True\nrtag_type=bool\nrtag_is_rtag=True\n",
+ "stderr": "",
+ "secs": 0.77,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

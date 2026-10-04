@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_bendor.py",
+ "base": "nv_bendor.py",
+ "stem": "nv_bendor",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5264,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_bendor.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "CYCLE among: ['Rgv', 'Rgv.addr', 'Rgv.base', 'Rgv.fs', 'Rgv.nat', 'Rgv.nf', 'Rgv.of', 'Rgv.off', 'Rgv.with_base', 'emit', 'kv.stray', 'kv.stray.go', 'kv.val', 'kv.val.go', 'main', 'nv.arch_val', 'nv.at_field', 'nv.chip_reads', 'nv.chipdet_addr', 'nv.chipid_addr', 'nv.chipid_span', 'nv.cover_at', 'nv.cover_fits', 'nv.cover_inv', 'nv.covers', 'nv.covers_str', 'nv.dec', 'nv.dec.go', 'nv.enc', 'nv.enc.go', 'nv.fld_abw', 'nv.fld_max', 'nv.fld_of', 'nv.fld_se', 'nv.fld_w', 'nv.fmask', 'nv.getb', 'nv.has', 'nv.has.go', 'nv.huge_cover', 'nv.huge_str', 'nv.mask', 'nv.mask.go', 'nv.mask_named', 'nv.mask_of', 'nv.maskn', 'nv.maskn_of', 'nv.maxw', 'nv.maxw.go', 'nv.mk.go', 'nv.named', 'nv.names', 'nv.on_range_mapped', 'nv.one_fld', 'nv.ones', 'nv.pow.go', 'nv.pow_shifts', 'nv.pte_huge_ok', 'nv.pw', 'nv.pw.w', 'nv.pw_of', 'nv.ranges', 'nv.rd', 'nv.reg_boot0', 'nv.reg_boot42', 'nv.reg_inval', 'nv.reg_scratch', 'nv.reg_v2_dpd', 'nv.reg_v2_pde', 'nv.reg_v2_pte', 'nv.reg_v3_dpd', 'nv.reg_v3_pde', 'nv.reg_v3_pte', 'nv.reg_wpr2', 'nv.reg_write', 'nv.rev.go', 'nv.rev_shifts', 'nv.scratch42_addr', 'nv.se_max', 'nv.shift_at', 'nv.trace', 'nv.trace.go', 'nv.upd_ini', 'nv.upd_mask', 'nv.upd_w', 'nv.update', 'nv.vram_read', 'nv.wide', 'nv.wide.go', 'nv.wide_names', 'nv.wpr2_addr', 'nv.wpr2_cfg', 't_arch', 't_boot', 't_chip', 't_encode', 't_flds_b42', 't_mask', 't_mmu', 't_mmu_tables', 't_pte', 't_pte_l', 't_pte_v', 't_reg_boot0', 't_reg_boot42', 't_reg_inval', 't_reg_scratch', 't_reg_wpr2', 't_regs', 't_tr_boot', 't_tr_init', 't_tr_mmu', 't_tr_reads', 't_tr_refuse', 't_tr_writes', 't_trace', 't_update']\n",
+ "stderr": "",
+ "secs": 3.18,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

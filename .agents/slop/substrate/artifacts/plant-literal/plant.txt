@@ -1,0 +1,9 @@
+label=plant: one trailing space in the WARM literal
+exit=oracle:0 port:1 (equal: False)
+the plant's OWN signature present -- a WARM line became COLD: True
+stdout=DIFFERS, and for the stated reason
+verdict lines=DIFFER
+  ORACLE only: WARM        tinybendygrad/device.bend  (1605 lines)  [bend --check-only]
+  ORACLE only: SUBSTRATE CLEAN: 1 file(s), all non-empty, each judged by its OWN instrument, all cross-file names resolved.
+  PORT   only: COLD        tinybendygrad/device.bend  (1605 lines)  [bend --check-only]  :: ALL PROOFS CHECK
+  PORT   only: SUBSTRATE NOT CLEAN: 1 finding(s) across 1 file(s) -- empty, missing, cold, or collectively incomplete.

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/tcptx/probe_tc.py",
+ "base": "probe_tc.py",
+ "stem": "probe_tc",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 798,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tcptx/probe_tc.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "tc_n cuda_81616 = [3]\ntc_n cuda_81632_f8 = [2]\ntc_n cuda_8168_f16 = [2]\ntc_n cuda_8168_tf32 = [1]\ntc_n cuda_sm75 = [2]\ntc_n cuda_sm80 = [6]\ntc_n cuda_sm89 = [8]\ntc_n amd_rdna3 = [4]\ntc_n amd_rdna4 = [4]\ntc_n amd_cdna_161616 = [2]\ntc_n amd_cdna_161632 = [4]\ntc_n amd_cdna_1616128 = [2]\ntc_n amd_cdna3_161632 = [2]\ntc_n amd_cdna3 = [4]\ntc_n amd_cdna4 = [8]\ntc_n metal = [5]\nget_cuda sm_75 = [2]\nget_cuda sm_80 = [6]\nget_cuda sm_86 = [6]\nget_cuda sm_89 = [8]\nget_cuda sm_90 = [8]\nget_amd gfx942 = [4]\nget_amd gfx950 = [8]\nget_amd gfx1200 = [4]\nget_amd gfx1201 = [4]\nget_amd gfx1100 = [4]\nget_amd gfx1100 is rdna3 = [True]\nget_cuda sm_75 is cuda_8168_f16 = [True]\n",
+ "stderr": "",
+ "secs": 1.63,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

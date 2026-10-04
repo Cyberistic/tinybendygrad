@@ -256,7 +256,7 @@ which is the worst combination.
 ## 4. CORPUS, BEFORE AND AFTER, AGAINST 77, BOTH SIDES, WITH THE SPLIT
 
 Live corpus, re-measured at the pin (`plant-run0.txt` §5, and
-`graphcmp-oracle.py` unchanged: `# TOTAL: 25 graphs, 313 nodes per side, 61 distinct ops`,
+`graphcmp-oracle.py` unchanged: `# TOTAL: 22 graphs [SUPERSEDED: was 25; see CORPUS.md], 313 nodes per side, 61 distinct ops`,
 `ORACLE SELFCHECK: OK`):
 
 ```

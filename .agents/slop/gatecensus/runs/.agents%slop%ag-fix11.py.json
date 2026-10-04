@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-fix11.py",
+ "base": "ag-fix11.py",
+ "stem": "ag-fix11",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2265,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix11.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix11.py\", line 3, in <module>\n    a = s.index(\"# autogen.py:117 `nm(t) in types and\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: substring not found\n",
+ "secs": 0.04,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

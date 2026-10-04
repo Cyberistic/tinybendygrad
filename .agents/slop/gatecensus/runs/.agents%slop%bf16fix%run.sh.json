@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/bf16fix/run.sh",
+ "base": "run.sh",
+ "stem": "run",
+ "sh": true,
+ "py": false,
+ "exec": false,
+ "interp": "",
+ "bytes": 2335,
+ "writes": false,
+ "entry": false,
+ "cmd": "zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/bf16fix/run.sh",
+ "how": "zsh",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "TREE /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//bf16fix.sCpua6   live md5 b04ed13da1716b9e757a839fa33da790\nBASE md5 VERIFIED against the live tree\nbuilt 7 trees\n",
+ "stderr": "",
+ "secs": 25.02,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

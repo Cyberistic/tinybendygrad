@@ -1,0 +1,14 @@
+{
+ "rel": ".agents/slop/debug-gate-out/debug-gate.1.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 2,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

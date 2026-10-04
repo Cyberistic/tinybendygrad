@@ -1,0 +1,196 @@
+# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+# len(list(Ops))=77   GroupOp.Commutative=['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']
+
+== Q1 GROUP's ARG: IS THERE A `params` LIST TO COMPARE? ==
+# group.op=GROUP arg=None nsrc=2 dtype=void tag=None
+# hasattr(group,'params')=False   attributes mentioning 'param': ['__dataclass_params__', 'param', 'param_like']
+# UOp.group source (ops.py:558-560): it is `UOp(Ops.GROUP, src=tuple(...), **kwargs)` with NO arg, so `arg` is always None
+# group.shape RAISES: shape requested, but Ops.GROUP doesn't have a shape  (so the shape column is `R`)
+
+== Q2 A NODE WITH MORE THAN ONE PARENT (the `--graph group` claim) ==
+### group: nodes=8 ops=['ADD', 'ALLOC', 'CONST', 'GROUP', 'MUL', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+  2:i7 3:MUL 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+  2:i8 5:GROUP 4:void 1:R 2:i0 1:N 1:N 8:n(i6,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('RESHAPE', 5, 4, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+
+== Q3 WHICH Tensor OP EMITS WHICH NODE OP (the `--graph commute` fixture) ==
+### a + b: nodes=8 ops=['ADD', 'ALLOC', 'CONST', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a + b: ['ADD']
+### a != b: nodes=8 ops=['ALLOC', 'CMPNE', 'CONST', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 5:CMPNE 4:bool 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a != b: ['CMPNE']
+### a.maximum(b): nodes=8 ops=['ALLOC', 'CONST', 'MAX', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 3:MAX 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a.maximum(b): ['MAX']
+### a & b: nodes=8 ops=['ALLOC', 'AND', 'CONST', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 3:AND 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a & b: ['AND']
+### a | b: nodes=8 ops=['ALLOC', 'CONST', 'OR', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 2:OR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a | b: ['OR']
+### a ^ b: nodes=8 ops=['ALLOC', 'CONST', 'RESHAPE', 'STACK', 'XOR']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i2,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+  2:i8 3:XOR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('STACK', 4, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a ^ b: ['XOR']
+### a.max(): nodes=6 ops=['ALLOC', 'CONST', 'REDUCE', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 6:REDUCE 3:f32 2:() 2:i0 1:N 11:rd(OMAX,i2) 5:n(i5)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): []
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a.max(): []
+### a.min(): nodes=9 ops=['ALLOC', 'CONST', 'MUL', 'REDUCE', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:CONST 9:weakfloat 2:() 2:i0 1:N 17:fConstFloat(-1.0) 3:n()
+  2:i7 3:MUL 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i6)
+  2:i8 6:REDUCE 3:f32 2:() 2:i0 1:N 11:rd(OMAX,i2) 5:n(i7)
+  2:i9 3:MUL 3:f32 2:() 2:i0 1:N 1:N 8:n(i8,i6)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('CONST', 6, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a.min(): ['MUL']
+### a.sum(): nodes=6 ops=['ALLOC', 'CONST', 'REDUCE', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 6:REDUCE 3:f32 2:() 2:i0 1:N 11:rd(OADD,i2) 5:n(i5)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): []
+  SYMBOLIC-DIM NODES (op, id, shape): []
+  COMMUTATIVE REACHED BY a.sum(): []
+# UOp has no cmpeq/cmpne method: []  (UOp.__eq__ is the ucache eq)
+# (Tensor == Tensor).uop ops=['ALLOC', 'CMPNE', 'CONST', 'RESHAPE', 'STACK'] -- NO CMPEQ, so CMPEQ is unreachable from an eager graph
+
+== Q4 SYMBOLIC DIMS: REACHABLE, AND DISTINGUISHABLE? ==
+### sym (two symbolic dims): nodes=12 ops=['ALLOC', 'CONST', 'GROUP', 'PARAM', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i5,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:PARAM 7:weakint 2:() 2:i0 1:N 57:P(i-1,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N) 3:n()
+  2:i7 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i6,i2)
+  2:i8 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 8:n(i5,i7)
+  2:i9 5:PARAM 7:weakint 2:() 2:i0 1:N 57:P(i-1,Dweakint,N,r(l0:1,l0:100),i1,sm,SALU,N,b0,N,N,b0,N) 3:n()
+  3:i10 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i9,i2)
+  3:i11 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 9:n(i5,i10)
+  3:i12 5:GROUP 4:void 1:R 2:i0 1:N 1:N 9:n(i8,i11)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('CONST', 2, 3, 3), ('RESHAPE', 5, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): [('RESHAPE', 8, '(U,l0:4)'), ('RESHAPE', 11, '(U,l0:4)')]
+# n is m: False   n == m: False   n.key == m.key: False
+# the two RESHAPEs' shape TEXTS are identical: ['(U,l0:4)', '(U,l0:4)']
+# but their `arg`-bearing PARAMs differ in ParamArg's sixth field (`name`): ['P(i-1,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N)', 'P(i-1,Dweakint,N,r(l0:1,l0:100),i1,sm,SALU,N,b0,N,N,b0,N)']
+### sym1 (plant: both dims collapsed to one): nodes=9 ops=['ALLOC', 'CONST', 'GROUP', 'PARAM', 'RESHAPE', 'STACK']
+  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i5,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  2:i6 5:PARAM 7:weakint 2:() 2:i0 1:N 56:P(i0,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N) 3:n()
+  2:i7 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i6,i2)
+  2:i8 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 8:n(i5,i7)
+  2:i9 5:GROUP 4:void 1:R 2:i0 1:N 1:N 8:n(i8,i8)
+  MULTI-PARENT NODES (op, id, in-edges, distinct parents): [('CONST', 2, 2, 2)]
+  SYMBOLIC-DIM NODES (op, id, shape): [('RESHAPE', 8, '(U,l0:4)')]
+
+== Q5 ParamArg.slot FOR A VARIABLE, AND THE SENTINELS ==
+# UOp.variable('n',1,100).arg = ParamArg(-1, dtypes.weakint, vmin_vmax=(1, 100), multiple_of=1, name='n', addrspace=AddrSpace.ALU)
+# spelled with slot=0        = ParamArg(0, dtypes.weakint, vmin_vmax=(1, 100), multiple_of=1, name='n', addrspace=AddrSpace.ALU)
+# fields differing: ['slot']
+# replace(variable.arg, slot=0) == spelled: True
+# the slot does NOT reach the shape: r1.shape[0] is v = True, r2.shape[0] is n0 = True, and both render '(U,l0:4)'
+# PORT SENTINELS, which DISAGREE (LIMITS section 2):
+#   ops.bend:871              ParamArg{slot: U32, ...}  -- `-1` has no spelling
+#   schedule/__init__.bend:1100  writes slot 0 and says so
+#   ops.bend:3566-3573        calls any slot but 0/1 'the free Variable sentinel', and uses 4294967295
+
+== Q6 THE CORPUS TALLY: OPS, PER-OP NODE COUNTS, SYMBOLIC DIMS ==
+  binblob    19 nodes  ops=['ALLOC', 'BINARY', 'CONST', 'MUL', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
+  buffer      5 nodes  ops=['BUFFER', 'CONST', 'RESHAPE', 'STACK']  sym=[]
+  cast        6 nodes  ops=['ALLOC', 'CAST', 'CONST', 'RESHAPE', 'STACK']  sym=[]
+  commute    14 nodes  ops=['ADD', 'ALLOC', 'AND', 'CMPNE', 'CONST', 'GROUP', 'MAX', 'OR', 'RESHAPE', 'STACK', 'XOR']  sym=[]
+  gate       14 nodes  ops=['BUFFER', 'CMPLT', 'CONST', 'END', 'ENDIF', 'IF', 'INDEX', 'LINEAR', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
+  group       8 nodes  ops=['ADD', 'ALLOC', 'CONST', 'GROUP', 'MUL', 'RESHAPE', 'STACK']  sym=[]
+  indexed     7 nodes  ops=['BARRIER', 'CONST', 'INDEX', 'PARAM', 'RANGE', 'SINK']  sym=[]
+  lin        46 nodes  ops=['ADD', 'CAST', 'CONST', 'END', 'INDEX', 'LOAD', 'MUL', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
+  loop       25 nodes  ops=['ADD', 'AFTER', 'BACKEDGE', 'CALL', 'CAST', 'CMPLT', 'CONST', 'INDEX', 'LOAD', 'NOOP', 'PARAM', 'RANGE', 'SINK', 'STORE']  sym=[]
+  matmul     18 nodes  ops=['ALLOC', 'CONST', 'MUL', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
+  range       2 nodes  ops=['CONST', 'RANGE']  sym=[]
+  rangeflat   2 nodes  ops=['CONST', 'RANGE']  sym=[]
+  reduce      7 nodes  ops=['ALLOC', 'CONST', 'PERMUTE', 'REDUCE', 'RESHAPE', 'STACK']  sym=[]
+  sink        2 nodes  ops=['CONST', 'SINK']  sym=[]
+  special     2 nodes  ops=['CONST', 'SPECIAL']  sym=[]
+  sym        12 nodes  ops=['ALLOC', 'CONST', 'GROUP', 'PARAM', 'RESHAPE', 'STACK']  sym=['8', '11']
+# TOTAL 16 graphs, 189 nodes/side, 34 of 77 ops
+# PER-OP (nodes/graphs): ADD 10/4  AFTER 3/1  ALLOC 10/7  AND 1/1  BACKEDGE 1/1  BARRIER 1/1  BINARY 1/1  BUFFER 2/2  CALL 1/1  CAST 8/3  CMPLT 2/2  CMPNE 1/1  CONST 36/16  END 3/2  ENDIF 1/1  GROUP 3/3  IF 1/1  INDEX 14/4  LINEAR 1/1  LOAD 8/2  MAX 1/1  MUL 8/4  NOOP 1/1  OR 1/1  PARAM 11/5  PERMUTE 5/3  RANGE 7/6  REDUCE 3/3  RESHAPE 17/8  SINK 5/5  SPECIAL 1/1  STACK 16/8  STORE 4/3  XOR 1/1
+# COMMUTATIVE 7/8 ['ADD', 'AND', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED ['CMPEQ']
+# SYMBOLIC-DIM NODES 2 of 189; FIELD-RECORDS 1134
+# NOT REACHED (43): REWRITE_ERROR PROGRAM SOURCE GETADDR SHRINK WMMA BITCAST EXP2 LOG2 SIN SQRT RECIPROCAL NEG TRUNC SHL SHR CDIV CMOD CMPEQ THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE MULACC CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION EXPAND PAD FLIP UNSHARD ALLREDUCE PYLITERAL

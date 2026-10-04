@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/add_readers.py",
+ "base": "add_readers.py",
+ "stem": "add_readers",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2943,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/add_readers.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "inserted readers\n",
+ "stderr": "",
+ "secs": 0.82,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

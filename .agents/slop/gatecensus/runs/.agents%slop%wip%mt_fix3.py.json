@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/mt_fix3.py",
+ "base": "mt_fix3.py",
+ "stem": "mt_fix3",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 4237,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mt_fix3.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mt_fix3.py\", line 43, in <module>\n    assert s.count(OLD_PAT) == 1\n           ^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+ "secs": 0.16,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

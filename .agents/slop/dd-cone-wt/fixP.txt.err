@@ -1,8 +1,0 @@
-SOME PROOFS FAIL
-Error:
-- message  : a match on a parameter or field (this name is a def or a consumed binder: give the value its own def)
-Location:
-1884 |   (st, seen) = r
-1885>|   match f:
-     |         ^
-1886 |     case 0n: seen

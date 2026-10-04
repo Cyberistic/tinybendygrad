@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_reshape.py",
+ "base": "nv_reshape.py",
+ "stem": "nv_reshape",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2792,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_reshape.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "rewrote 20 of 32 t_ bodies\n",
+ "stderr": "",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

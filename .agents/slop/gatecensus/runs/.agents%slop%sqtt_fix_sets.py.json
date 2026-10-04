@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/sqtt_fix_sets.py",
+ "base": "sqtt_fix_sets.py",
+ "stem": "sqtt_fix_sets",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3048,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sqtt_fix_sets.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "NO CHANGE\n",
+ "stderr": "",
+ "secs": 0.73,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

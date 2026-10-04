@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/notes/sched-allreduce-truth.py",
+ "base": "sched-allreduce-truth.py",
+ "stem": "sched-allreduce-truth",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2945,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sched-allreduce-truth.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "== flags ==\nRING <tinygrad.helpers.ContextVar object at 0x1058efd70> ALL2ALL <tinygrad.helpers.ContextVar object at 0x1058efda0> ALLREDUCE_CAST <tinygrad.helpers.ContextVar object at 0x1058efdd0>\nALLREDUCE_NODE_NDEVS 0\nRING_ALLREDUCE_THRESHOLD 256000\n== selection: mode for (ndev, numel, RING, ALL2ALL) ==\n  ndev=2 shape=(100,) RING=1 ALL2ALL=0 -> ('NAIVE', False, False)\n  ndev=4 shape=(100,) RING=1 ALL2ALL=0 -> ('NAIVE', False, False)\n  ndev=4 shape=(300000,) RING=1 ALL2ALL=0 -> ('RING', False, True)\n  ndev=4 shape=(300000,) RING=0 ALL2ALL=0 -> ('NAIVE', False, False)\n  ndev=4 shape=(300000,) RING=0 ALL2ALL=1 -> ('ALL2ALL', True, False)\n  ndev=4 shape=(300000,) RING=0 ALL2ALL=2 -> ('ALL2ALL', True, False)\n  ndev=4 shape=(300000,) RING=2 ALL2ALL=0 -> ('RING', False, True)\n  ndev=4 shape=(300000,) RING=2 ALL2ALL=2 -> ('ALL2ALL', True, False)\n  ndev=3 shape=(300000,) RING=1 ALL2ALL=0 -> ('RING', False, True)\n  ndev=4 shape=<generator object <genexpr> at 0x105d5a8c0> RING=1 ALL2ALL=0 -> ('NAIVE', False, False)\n== chunking: allreduce.py:36-38 ==\n  numel=100 ndev=4 factor=4 base=6 left=1 n=4 chunks=[(0, 28), (28, 52), (52, 76), (76, 100)]\n  numel=128 ndev=4 factor=32 base=1 left=0 n=4 chunks=[(0, 32), (32, 64), (64, 96), (96, 128)]\n  numel=96 ndev=4 factor=32 base=0 left=3 n=4 chunks=[(0, 32), (32, 64), (64, 96), (96, 96)]\n  numel=64 ndev=4 factor=32 base=0 left=2 n=4 chunks=[(0, 32), (32, 64), (64, 64), (64, 64)]\n  numel=1000 ndev=3 factor=8 base=41 left=2 n=3 chunks=[(0, 336), (336, 672), (672, 1000)]\n  numel=100 ndev=7 factor=4 base=3 left=4 n=7 chunks=[(0, 16), (16, 32), (32, 48), (48, 64), (64, 76), (76, 88), (88, 100)]\n  numel=256 ndev=4 factor=32 base=2 left=0 n=4 chunks=[(0, 64), (64, 128), (128, 192), (192, 256)]\n  numel=320 ndev=8 factor=32 base=1 left=2 n=8 chunks=[(0, 64), (64, 128), (128, 160), (160, 192), (192, 224), (224, 256), (256, 288), (288, 320)]\n== the node-local branch, allreduce.py:22-28 ==\n  ndev=8 numel=1000 hdev=4 -> (2, 4, [(0, 250), (250, 500), (500, 750), (750, 1000)])\n  ndev=8 numel=1000 hdev=2 -> (4, 2, [(0, 500), (500, 1000)])\n  ndev=8 numel=1000 hdev=3 -> None\n  ndev=4 numel=100 hdev=4 -> (1, 4, [(0, 25), (25, 50), (50, 75), (75, 100)])\n== ALLREDUCE_CAST, allreduce.py:116 ==\n  bfloat16, half in the cast set: True True\n",
+ "stderr": "",
+ "secs": 0.41,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

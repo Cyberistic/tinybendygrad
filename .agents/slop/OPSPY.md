@@ -136,10 +136,10 @@ resolve this file's four relative imports.
 
 ## 4. THE TWO FIGURES I WAS TOLD NOT TO TRUST, RE-MEASURED
 
-- **Corpus: 60 of 77, not 61.** `.agents/slop/opspy/corpus.py`, over the 25 graphs
+- **Corpus: 60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built], not 61.** `.agents/slop/opspy/corpus.py`, over the 22 graphs [SUPERSEDED: was 25; see CORPUS.md]
   `graphcmp.GRAPHS` declares, by set UNION — the per-graph sum is **182** and is
   wrong, it counts `BUFFER` once per graph. Denominator `len(Ops) = 77` holds.
-- **`bw` reaches 10/10 of 77, not 35.** `bw-census.txt`'s "35 of 77" was a
+- **`bw` reaches 10/10 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built], not 35.** `bw-census.txt`'s "35 of 77" was a
   17-graph corpus figure quoted as the graph's own. `AGREE`, 0 residuals.
 - **`backward`: still byte-identical.** `bwd-oracle.py` output == `bwd-oracle.txt`,
   and `oracle-cg.py`'s 20 reachable rows reproduce byte-identically; `rc=1` is the
@@ -149,8 +149,8 @@ resolve this file's four relative imports.
 **AND A NEAR-MISS WORTH RECORDING: I nearly reported `graphcmp.py:1506`
 (`g_allred`, `NameError: name 'dtypes'`) as another unit's live defect. It is not.
 `graphcmp` defers every tinygrad import into `load_tinygrad()` and injects the
-names into ITS OWN `globals()`; without that call all 25 graphs raise and my union
-printed "0 of 77" beside a healthy denominator.** A defect in a measurement is not
+names into ITS OWN `globals()`; without that call all 22 graphs [SUPERSEDED: was 25; see CORPUS.md] raise and my union
+printed "0 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]" beside a healthy denominator.** A defect in a measurement is not
 a defect in the substrate until it survives a second instrument.
 
 ---

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/jsfix/jsfix_e2e.py",
+ "base": "jsfix_e2e.py",
+ "stem": "jsfix_e2e",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4088,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jsfix/jsfix_e2e.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "no backend emitted: rc=1\n\nSOME PROOFS FAIL\nError:\n- expected : @-R:Type -> @k:(@_:H.I64 -> IO.OP<R>) -> IO.OP<R>\n- observed : H.I64\nLocation: main\n5 |   do IO<Unit>:\n6>|     r : H.I64 <- D.Dt.i64_trunc(H.i64_of_hi_lo(0, 7))\n  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n7 |     IO.print(\"ROW trunc 7,4 = \" ++ H.i64_text(r))\nbend 2.0.35 is available: run bend update\n\n",
+ "secs": 6.89,
+ "verdict": "SOME PROOFS FAIL",
+ "status": "FAIL",
+ "why": "rc=1"
+}

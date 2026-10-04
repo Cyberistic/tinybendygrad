@@ -180,7 +180,7 @@ VERDICT AFTER  : DISAGREE -- 2 field mismatches of 24; 22 agree
 *(3, not 5, is the BEFORE **with** the arm landed — the 5 is `al-verdict.py … pre-arm` and the
 full 2×2 is §2. Both numbers are measured; neither is the other.)*
 
-**BLAST RADIUS ON THE LIVE CORPUS: 0 of 624 rows moved, 0 of 25 graphs' row counts**, diffed by
+**BLAST RADIUS ON THE LIVE CORPUS: 0 of 624 rows moved, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by
 whole `name=value` line (`ns-corpus.py`, run twice, byte-equal apart from the pin line itself).
 The census is **unchanged at 61/77 both sides**, `py-only=[]`, `bend-only=[]`, `?=1` on the bend
 side — the `AND`, and nothing else.

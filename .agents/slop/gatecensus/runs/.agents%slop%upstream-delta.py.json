@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/upstream-delta.py",
+ "base": "upstream-delta.py",
+ "stem": "upstream-delta",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10969,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/upstream-delta.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "",
+ "stderr": "",
+ "secs": 25.21,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/order-lin-cand.py",
+ "base": "order-lin-cand.py",
+ "stem": "order-lin-cand",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3606,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/order-lin-cand.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "DEGK=6 10 16 17 1 15 8 14 13 12 11 3 9 2 4 7 5 0\nDEGK=1 2 6 10 8 3 4 16 17 15 14 13 12 11 9 7 5 0\nEDG=0: 1:0 2:1 3:2 4: 5:4,1 6:3,5,2 7: 8:7 9:4,8 10:3,9,2 11: 12:11 13:12 14:6,13 15:8,14 16:10,15 17:1 18:6,10,16,17\nSK=6 10 16 17\nNLIST=4 0 1 17 2 3 5 11 12 6 13 14 7 8 9 10 15 16 18\nLINEDG=0: 1:0 2:1 3:2 4: 5:4 1 6:3 5 2 7: 8:7 9:4 8 10:3 9 2 11: 12:11 13:12 14:6 13 15:8 14 16:10 15 17:1 18:6 10 16 17\nLINCEDG=0: 1: 2:1 3:0 2 4:3 5:4\n",
+ "stderr": "",
+ "secs": 0.4,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

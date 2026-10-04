@@ -1,4 +1,4 @@
 ALL PROOFS CHECK
 Use --verdict for mathematical validity.
 bend 2.0.35 is available: run bend update
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/base.bend --check-only
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=7 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/base.bend --check-only

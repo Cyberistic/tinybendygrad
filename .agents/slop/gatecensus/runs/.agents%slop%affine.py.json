@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/affine.py",
+ "base": "affine.py",
+ "stem": "affine",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 3244,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/affine.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 377 defs, 0 names read twice without `+` (each is a compile error until fixed) -> none found\n",
+ "stderr": "",
+ "secs": 0.11,
+ "verdict": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 377 defs, 0 names read twice without `+` (each is a compile error until fixed) -> none found",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

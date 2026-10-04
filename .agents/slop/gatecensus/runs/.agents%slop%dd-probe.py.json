@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-probe.py",
+ "base": "dd-probe.py",
+ "stem": "dd-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6487,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "==============================================================================\n1. HOW MUCH OF CPYTHON'S ANSWER DECISION 1 DELETES\n==============================================================================\n  lg1: cone 17, deleted 4 {'CAST': 4}\n  lg5: cone 15, deleted 1 {'CAST': 1}\n  lga: cone 24, deleted 2 {'CAST': 2}\n  lgc: cone 9, deleted 1 {'CAST': 1}\n  lgd: cone 13, deleted 1 {'CAST': 1}\n  lge: cone 45, deleted 6 {'CAST': 6}\n  lgn: REFUSES in CPython too (dtype.py:81) -- no cone to project\n  lgq: cone 2500, deleted 69 {'CAST': 69}\n  lgr: cone 2288, deleted 70 {'CAST': 70}\n  lgs: cone 2459, deleted 63 {'CAST': 63}\n  lgt: cone 2248, deleted 64 {'CAST': 64}\n\n  TOTAL PROMO-marked nodes across the 28 l2i fixtures: 281\n  These are REAL CPython nodes. dd-oracle.py removes them from its answer because\n  mixin/elementwise.py is unported. So dd-oracle.py's 'CPython answer' is CPython\n  MINUS THE PROMOTION CASTS -- a projection onto what the port can build.\n\n==============================================================================\n2. lg5 -- IS CPython's F(1333788672) REAL, OR AN ARTIFACT OF THE DELETION?\n==============================================================================\n  decision 1 OFF (raw CPython)     cone=15   constants in cone order: F(1333788672),F(0),C(0),C(-1)\n  decision 1 ON (dd-oracle)        cone=14   constants in cone order: F(1333788672),F(0),C(0),C(-1)\n\n  CPython's float-source arm is dtype.py:33-34 -- `dt in (long, ulong)` and\n  `uops[0].dtype` IS a float, so line 28's guard fails and line 33 is the arm that\n  runs: `(uops[0] / 2**32).cast(l2i_dt[dt])`. Ask tinygrad directly what\n  `UOp.const(2**32)` becomes under `/` with an f32 receiver:\n    f32 / 2**32                      = MUL(Pq,RECIPROCAL(F(1333788672)))\n    its 2**32 CONST src              = F(1333788672) dtype=weakfloat arg=ConstFloat(4294967296.0)\n    dd-oracle's fbits of it          = F(1333788672)\n    a WEAKINT const 2**32 would be   = C(1:0)\n    struct-check: 0x4f800000 is 2**32 in f32\n  => CPython is RIGHT at F(1333788672) and the PORT is wrong at C(1:0). tinygrad\n     rewrites `x / 2**32` as `x * RECIPROCAL(CONST_at_f32(2**32))`; the port builds\n     the divisor as a weakint/i64 2**32, so its divisor is a DIFFERENT NODE.\n\n==============================================================================\n3. THE `n` ROWS -- ONE OFF-BY-ONE EACH, IN FOUR DIFFERENT DIRECTIONS\n==============================================================================\n  `n` counts nodes INTERNED while the fixture ran, so it is a fact about the\n  session, not about the graph. Measured both ways:\n  lg1: raw CPython cone=17   after-deletion cone=13   CONSTs raw=2 kept=2 CASTs raw=5 kept=1\n  lg5: raw CPython cone=15   after-deletion cone=14   CONSTs raw=4 kept=4 CASTs raw=3 kept=2\n  lg6: raw CPython cone=9    after-deletion cone=9    CONSTs raw=2 kept=2 CASTs raw=4 kept=4\n  lg9: raw CPython cone=24   after-deletion cone=24   CONSTs raw=6 kept=6 CASTs raw=1 kept=1\n  lg2: raw CPython cone=7    after-deletion cone=7    CONSTs raw=2 kept=2 CASTs raw=2 kept=2\n  lg3: raw CPython cone=4    after-deletion cone=4    CONSTs raw=1 kept=1 CASTs raw=2 kept=2\n  lg4: raw CPython cone=4    after-deletion cone=4    CONSTs raw=1 kept=1 CASTs raw=2 kept=2\n  lg7: raw CPython cone=2    after-deletion cone=2    CONSTs raw=0 kept=0 CASTs raw=1 kept=1\n  lg8: raw CPython cone=4    after-deletion cone=4    CONSTs raw=0 kept=0 CASTs raw=0 kept=0\n",
+ "stderr": "",
+ "secs": 0.5,
+ "verdict": "TOTAL PROMO-marked nodes across the 28 l2i fixtures: 281",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

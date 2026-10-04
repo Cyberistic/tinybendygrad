@@ -1,0 +1,26 @@
+binblob BYTE-IDENTICAL (1236 bytes both sides)
+buffer BYTE-IDENTICAL (310 bytes both sides)
+cast BYTE-IDENTICAL (366 bytes both sides)
+commute BYTE-IDENTICAL (870 bytes both sides)
+gate BYTE-IDENTICAL (844 bytes both sides)
+group BYTE-IDENTICAL (469 bytes both sides)
+indexed BYTE-IDENTICAL (420 bytes both sides)
+lin DIFFERS:
+46c46
+< 3:i46 4:SINK 4:void 1:R 2:i0 2:i1 66:kI(sr_4_5_3,n(Opt(op=EOptOps.SPLITaxis=i2arg=n(i0,XUPCAST))),N,i0) 6:n(i45)
+---
+> 3:i46 4:SINK 4:void 1:R 2:i0 2:i1 22:kI(sr_4_5_3,n(q),N,i0) 6:n(i45)
+
+loop DIFFERS:
+25c25
+< 3:i25 4:CALL 4:void 1:R 2:i0 1:N 20:cI(shcq_fence,b0,b0) 18:n(i23,i24,i24,i24)
+---
+> 3:i25 4:CALL 1:? 1:? 2:i0 1:N 26:cI(shcq_fence,b0,b0,Dvoid) 18:n(i23,i24,i24,i24)
+
+matmul BYTE-IDENTICAL (1161 bytes both sides)
+range BYTE-IDENTICAL (120 bytes both sides)
+rangeflat BYTE-IDENTICAL (117 bytes both sides)
+reduce BYTE-IDENTICAL (434 bytes both sides)
+sink BYTE-IDENTICAL (112 bytes both sides)
+special BYTE-IDENTICAL (104 bytes both sides)
+sym BYTE-IDENTICAL (792 bytes both sides)

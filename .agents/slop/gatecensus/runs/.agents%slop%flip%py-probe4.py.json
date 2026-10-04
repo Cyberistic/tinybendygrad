@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/flip/py-probe4.py",
+ "base": "py-probe4.py",
+ "stem": "py-probe4",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2078,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/flip/py-probe4.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "UOp has .reset : False\nUOp cache attr : []\n\n== FRESH CACHE, BOOL ARG FIRST, absolutely nothing interned yet ==\n  arg stored   : (True, False) ['bool', 'bool']\n  .shape       : (4, 3)\n\n== FRESH CACHE, INT ARG FIRST ==\n  arg stored   : (1, 0) ['int', 'int']\n  .shape       : ValueError: bad flip on (4, 3), (1, 0)\n\n== AFTER INT-FIRST, DOES A BOOL REQUEST GET THE INT NODE? ==\n  UOp(FLIP,(bu,),(True,False)).arg : (1, 0)\n  SAME OBJECT as the int node      : True\n\n== fresh(), bool first, then int: SAME OBJECT? ==\n  p.arg : (True, False)  q.arg : (True, False)  p is q: True\n\n== AND THE ELIDED GROUP, on a fresh cache ==\n  root op: Ops.FLIP  n= 6\n  GROUP count in census: 0\n",
+ "stderr": "",
+ "secs": 1.66,
+ "verdict": ".shape       : ValueError: bad flip on (4, 3), (1, 0)",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

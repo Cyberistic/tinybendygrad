@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/split-codegen3.py",
+ "base": "split-codegen3.py",
+ "stem": "split-codegen3",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 12485,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/split-codegen3.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "simplify   21 blocks   660 lines\ncoalesce    3 blocks    24 lines\ngpudims     7 blocks   271 lines\nsubstrate  13 blocks   239 lines\n\nwrote .body extracts to /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode\n",
+ "stderr": "",
+ "secs": 0.49,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

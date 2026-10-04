@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/arith/probe.py",
+ "base": "probe.py",
+ "stem": "probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5993,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/arith/probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# rows_of == emit_py on `matmul`: True   (the two-line copy, asserted)\n# fmod-int     rows=8    WANTED=['CMOD']  census={'ALLOC': 2, 'CMOD': 1, 'CONST': 2, 'RESHAPE': 2, 'STACK': 1}\n# cdiv-int     rows=8    WANTED=['CDIV']  census={'ALLOC': 2, 'CDIV': 1, 'CONST': 2, 'RESHAPE': 2, 'STACK': 1}\n# eq-bool      rows=10   WANTED=[]  census={'ALLOC': 2, 'CMPNE': 2, 'CONST': 3, 'RESHAPE': 2, 'STACK': 1}\n# ne-not-eq    rows=10   WANTED=[]  census={'ALLOC': 2, 'CMPNE': 2, 'CONST': 3, 'RESHAPE': 2, 'STACK': 1}\n# neg-int      rows=7    WANTED=[]  census={'ALLOC': 1, 'CONST': 3, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}\n# neg-float    rows=7    WANTED=[]  census={'ALLOC': 1, 'CONST': 3, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}\n# sub-eager    rows=10   WANTED=[]  census={'ADD': 1, 'ALLOC': 2, 'CONST': 3, 'MUL': 1, 'RESHAPE': 2, 'STACK': 1}\n# recip-float  rows=6    WANTED=[]  census={'ALLOC': 1, 'CONST': 2, 'RECIPROCAL': 1, 'RESHAPE': 1, 'STACK': 1}\n# mulm1-int    rows=7    WANTED=[]  census={'ALLOC': 1, 'CONST': 3, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}\n#\n# reached by an EAGER construction alone: ['CDIV', 'CMOD']\n# still missing: ['CMPEQ', 'FDIV', 'NEG', 'SUB']\n",
+ "stderr": "",
+ "secs": 0.13,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

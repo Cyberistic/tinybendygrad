@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/codegen-init-oracle.py",
+ "base": "codegen-init-oracle.py",
+ "stem": "codegen-init-oracle",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6849,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/codegen-init-oracle.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "==============================================================================\nQ1  UPSTREAM'S RULE TABLE, read off the pattern objects\n==============================================================================\n  tinygrad/schedule/__init__.py:96-101   rule count = 2\n    rule 0: ops=PARAM  name=x  fields=<ABSENT>  srcs=<ABSENT>  body=<lambda>\n    rule 1: ops=ALLOC  name=b  fields=<ABSENT>  srcs=<ABSENT>  body=create_new_buffer\n\n  BOTH patterns are src-free, so neither can read a node's srcs. That\n  is the structural reason `pm_rewrite(n)` and `pm_rewrite(new_n)` are\n  the same call for this table: ops.py:1810 hands back `n` itself\n  whenever `new_src == n.src`, and a src-free node always has that.\n\n==============================================================================\nQ2  UPSTREAM'S ANSWER ON THE PORT'S FIXTURE\n==============================================================================\n  graph        = SINK[PARAM(0), PARAM(1), ALLOC]   (3 srcs)\n  ctx[1]       = (PARAM(99), PARAM(100))\n  walk_rewrite returns op = SINK\n  repl entries           = 4  (root included: True)\n      PARAM(0)     -> PARAM(99)\n      PARAM(1)     -> PARAM(100)\n      ALLOC        -> BUFFER\n      SINK         -> SINK\n\n==============================================================================\nQ3  THE PORT'S OWN ROW, RENDERED BY UPSTREAM  <- diff against the port\n==============================================================================\n  repl order == post-order DFS over the root: True\n      repl order = ['PARAM(0)', 'PARAM(1)', 'ALLOC', 'SINK']\n      DFS  order = ['PARAM(0)', 'PARAM(1)', 'ALLOC', 'SINK']\npy.new_sink_op=SINK\npy.repl=PARAM(0)->PARAM(99),PARAM(1)->PARAM(100),ALLOC->BUFFER,SINK->SINK\n\n  (the port prints `new_sink=<U32 index>`; upstream has no index, so\n   the comparable fact is `new_sink_op`, printed above. The index is\n   NOT comparable: the port's arena numbering is its own.)\n\n==============================================================================\nQ4  THE FACTS THE PORT'S ROW THROWS AWAY\n==============================================================================\n  py.new_sink_is_original = 0\n      ops.py:1810 `new_n = UOp(...) if new_src != n.src else n`: the\n      SINK's srcs WERE rewritten, so walk_rewrite records a NEW node.\n  py.new_sink_srcs = PARAM(99),PARAM(100),BUFFER\n  py.sink_src_slots = 99,100\n  py.alloc_rule_fired = True\n",
+ "stderr": "",
+ "secs": 0.44,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

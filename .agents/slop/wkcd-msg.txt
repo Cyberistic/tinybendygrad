@@ -1,0 +1,57 @@
+wk_commit_dtype LANDED: the reader nine markers said was missing, gated, with one named divergence
+
+`uop/weak.bend` gains `wk_commit_dtype` and its `Bnd` -> `Maybe<I64>` helper, and
+`.agents/slop/wk-cd-gate.sh` gates them: 7 rows, three lanes, 6 byte-identical, 1 documented
+divergence.
+
+THE MARKERS WERE NOT WRONG AND THEIR LABEL WAS. Nine of them read "`commit_dtype` is not
+ported". Both halves of that were wrong in a way worth separating:
+
+  THE ARITHMETIC WAS ALREADY THERE. `D.commit_dtype` (`mixin/dtype.bend:283`) is CPython's
+  `commit_int` under a weakint test and `strong_dtype` otherwise, and it takes the node's
+  dtype and its two bounds ALREADY RESOLVED -- which is CPython's own signature, so the
+  port's is not a workaround for anything.
+
+  THE BOUNDS WERE ALREADY THERE. `UOp.vmin` / `UOp.vmax` (`uop/fold.bend:4708`) are ported
+  over the sweep's `BTable`, and the `_min_max` arithmetic core is at `fold.bend:2648`. The
+  note at the top of weak.bend still called the sweep the biggest piece left in that half of
+  ops.py and listed `i64_mul` / `i64_div` / `i64_mod` as missing; all three now exist.
+
+  WHAT WAS MISSING WAS ONE CALL, and it could not be written where the arithmetic lives.
+  `mixin/dtype.bend` does not import `uop/weak.bend`, and `wk_dt` is here -- so the reader
+  had to go HERE and import dtype.bend. MEASURED, that edge closes NO cycle: `ops.bend`,
+  `fold.bend` and `spec.bend` all do not import `weak.bend`. **So the wall nine markers
+  describe was an IMPORT TOPOLOGY, not a language limit** -- and a wall gets written as a
+  property of the language and read as one.
+
+THE GATE HAS TO CONTAIN TWO ROW-SETS OR IT PROVES NOTHING, and both were found by writing it:
+
+  THE FIXTURE MUST BE A weakint PARAM. A PARAM whose dtype is int32 answers `dtypes.i32` on
+  EVERY row, because the weakint branch is not taken and `commit_dtype` returns
+  `self.dtype`. The first oracle had seven rows of `i32`.
+
+  THE ROWS THAT DISCRIMINATE ARE THE BIG ONES. `commit_int`'s ladder is
+  `(default_int, dtypes.int, dtypes.long, ...)`, so with `default_int = int32` its FIRST
+  rung holds every range inside int32 -- `cd_0_10`, `cd_neg5_5` and `cd_i32full` all answer
+  i32 and say nothing. `cd_big_2p40` ([-2**40, 2**40]) and `cd_one_2p40` ([2**40, 2**40], a
+  POINT range too wide for int32, which also reaches `commit_int`'s `lo == hi` arm) fall
+  through to int64. A control that made the reader ignore its bounds and answer a fixed
+  [0, 0] turns this gate RED, so the rows are load-bearing.
+
+ONE DOCUMENTED DIVERGENCE, `cd_none`, PINNED ON BOTH SIDES. CPython answers `i64`; the port
+answers nothing, because a PARAM with no `vmin_vmax` gives the bounds sweep no interval to
+report. `wk_commit_dtype` is FAITHFUL here -- it hands `D.commit_dtype` exactly what
+`UOp.vmin`/`UOp.vmax` gave it -- so the gap is the sweep's PARAM-with-no-bounds arm and not
+the reader. Both sides' content is asserted, so it cannot change unnoticed in either
+direction, and the message on the port side says what to do if the sweep arm is ever fixed.
+
+A LIFETIME FRICTION WORTH RECORDING, because the tree already answered it. `D.commit_dtype`
+answers `Maybe<&1, S.Dt>` and `F.dt_str` takes `Maybe<&2, S.Dt>`, and there is no `retag`
+helper. The port's own rows MATCH the `Maybe` and hand the inner value to the printer, which
+rebinds at whatever lifetime the scope wants -- so the gate does that, and a retag def would
+have been the wrong answer to a question already answered three times in this tree.
+
+AND THE BLOCK NOTE IS CORRECTED, so the next reader is not sent after a sweep that is already
+landed: the nine markers are now blocked on their own RULE BODIES -- `absorb_weak_src`,
+`lower_weak_node`, `pm_lower_weak` rules 0-2, `cast_consts`, `pm_cast_const` -- and not on a
+reader.

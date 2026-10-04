@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/rebase-try.sh",
+ "base": "rebase-try.sh",
+ "stem": "rebase-try",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "bash",
+ "bytes": 12843,
+ "writes": false,
+ "entry": false,
+ "cmd": "./rebase-try.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './rebase-try.sh'",
+ "stdout": "",
+ "stderr": ""
+}

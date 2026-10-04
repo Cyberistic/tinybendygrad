@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cl_split.py",
+ "base": "cl_split.py",
+ "stem": "cl_split",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 50290,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cl_split.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "3 false claims corrected, with the measurement that corrects each\nt_cross's 11 three-way rows: 11 CL. + 11 CU. + 11 local vend.name cells\nvend.trace(+v, cs) -> vend.trace(cs): 22 cl + 23 cu + 16 hp call sites, plus t_cross's 3 CL. + 1 CU. cross reads\nsafenet: 478 source defs; 0 moved, 3 REMOVED, 2 added by the split\nsafenet: REMOVED = V_CUDA, V_HIP, vend.name.at\nqualifier: ops_cuda got 312 CL. call sites\nqualifier: ops_hip  got 302 CL. + 5 CU. call sites\nwould write tinybendygrad/runtime/ops_cl.bend  2128 lines\nwould write tinybendygrad/runtime/ops_cuda.bend  782 lines\nwould write tinybendygrad/runtime/ops_hip.bend  578 lines\n",
+ "stderr": "",
+ "secs": 0.16,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

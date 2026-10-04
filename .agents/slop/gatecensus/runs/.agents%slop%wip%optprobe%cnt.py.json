@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/optprobe/cnt.py",
+ "base": "cnt.py",
+ "stem": "cnt",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1350,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/cnt.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/cnt.py\", line 22, in <module>\n    case = sys.argv[1]\n           ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 2.38,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

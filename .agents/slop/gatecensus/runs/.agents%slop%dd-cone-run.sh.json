@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-cone-run.sh",
+ "base": "dd-cone-run.sh",
+ "stem": "dd-cone-run",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 1035,
+ "writes": false,
+ "entry": false,
+ "cmd": "./dd-cone-run.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './dd-cone-run.sh'",
+ "stdout": "",
+ "stderr": ""
+}

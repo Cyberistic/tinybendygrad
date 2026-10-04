@@ -1,0 +1,5 @@
+label=disarm: the real port, same inputs
+inputs=2
+exit=oracle:1 port:1
+stdout=IDENTICAL (15 lines vs 15)
+verdict+denominator lines=IDENTICAL (11 each)

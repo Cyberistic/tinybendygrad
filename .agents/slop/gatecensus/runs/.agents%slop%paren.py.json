@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/paren.py",
+ "base": "paren.py",
+ "stem": "paren",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2339,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/paren.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 381 top-level defs, 0 UNBALANCED -> clean after\n",
+ "stderr": "",
+ "secs": 0.05,
+ "verdict": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 381 top-level defs, 0 UNBALANCED -> clean after",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

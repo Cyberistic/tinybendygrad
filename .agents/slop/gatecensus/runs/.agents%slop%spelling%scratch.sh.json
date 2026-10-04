@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/spelling/scratch.sh",
+ "base": "scratch.sh",
+ "stem": "scratch",
+ "sh": true,
+ "py": false,
+ "exec": false,
+ "interp": "",
+ "bytes": 481,
+ "writes": false,
+ "entry": false,
+ "cmd": "zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/spelling/scratch.sh",
+ "how": "zsh",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//spelling\n",
+ "stderr": "",
+ "secs": 2.35,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

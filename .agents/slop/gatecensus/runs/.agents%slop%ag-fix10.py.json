@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-fix10.py",
+ "base": "ag-fix10.py",
+ "stem": "ag-fix10",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 3202,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix10.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "ok\n",
+ "stderr": "",
+ "secs": 0.05,
+ "verdict": "ok",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

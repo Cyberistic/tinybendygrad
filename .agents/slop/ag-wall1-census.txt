@@ -366,7 +366,7 @@ installed on every clang_* symbol in tinygrad.runtime.autogen.libclang.
   actually reaches 8.
 
 ## 5. C.bend BINDING STATE
-  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/support/c.bend
+  /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-10771/tinybendygrad/runtime/support/c.bend
   lines mentioning 'clang' = 0
   clang_* bindings present   = 0
   RATIO bound/needed        = 0/46 = 0.0%

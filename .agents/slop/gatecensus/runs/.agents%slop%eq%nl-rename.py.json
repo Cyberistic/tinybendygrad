@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/eq/nl-rename.py",
+ "base": "nl-rename.py",
+ "stem": "nl-rename",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4509,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/eq/nl-rename.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "  tinybendygrad/renderer/nir_llvmir.bend: 'osx=True' -> 'osx True'   found 0, expected 6   MISMATCH -- ABORTING, THE TREE MOVED\n  tinybendygrad/renderer/nir_llvmir.bend: 'osx=False' -> 'osx False'   found 0, expected 5   MISMATCH -- ABORTING, THE TREE MOVED\n  .agents/slop/nl/nl-oracle.py: 'osx={osx}' -> 'osx {osx}'   found 0, expected 2   MISMATCH -- ABORTING, THE TREE MOVED\nNOTHING WRITTEN. A count that does not match means another unit edited the file between the census and this rename.\n",
+ "stderr": "",
+ "secs": 0.3,
+ "verdict": "tinybendygrad/renderer/nir_llvmir.bend: 'osx=True' -> 'osx True'   found 0, expected 6   MISMATCH -- ABORTING, THE TREE MOVED",
+ "status": "FAIL",
+ "why": "rc=1"
+}

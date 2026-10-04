@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/commentpass/spec_mxm.py",
+ "base": "spec_mxm.py",
+ "stem": "spec_mxm",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 27865,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/spec_mxm.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/spec_mxm.py\", line 401, in <module>\n    json.dump(SPECS, open(sys.argv[1], 'w'), indent=1)\n                          ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

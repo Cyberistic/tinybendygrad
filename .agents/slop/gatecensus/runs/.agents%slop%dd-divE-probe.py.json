@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-divE-probe.py",
+ "base": "dd-divE-probe.py",
+ "stem": "dd-divE-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2463,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-divE-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "c0=fp8e4m3 src=f32src mxval=ConstFloat(448.0) mxdt=weakfloat mxf32=1138753536 mxf64=4646588915539509248 sat=ConstFloat(-1.0) n=2\nc0=fp8e4m3 src=f64src mxval=ConstFloat(448.0) mxdt=weakfloat mxf32=1138753536 mxf64=4646588915539509248 sat=ConstFloat(-1.0) n=2\nc1=fp8e4m3fnuz src=f32src mxval=ConstFloat(240.0) mxdt=weakfloat mxf32=1131413504 mxf64=4642648265865560064 sat=ConstFloat(-1.0) n=2\nc1=fp8e4m3fnuz src=f64src mxval=ConstFloat(240.0) mxdt=weakfloat mxf32=1131413504 mxf64=4642648265865560064 sat=ConstFloat(-1.0) n=2\nc2=fp8e5m2 src=f32src mxval=ConstFloat(57344.0) mxdt=weakfloat mxf32=1197473792 mxf64=4678114112931102720 sat=ConstFloat(-1.0) n=2\nc2=fp8e5m2 src=f64src mxval=ConstFloat(57344.0) mxdt=weakfloat mxf32=1197473792 mxf64=4678114112931102720 sat=ConstFloat(-1.0) n=2\nc3=fp8e5m2fnuz src=f32src mxval=ConstFloat(57344.0) mxdt=weakfloat mxf32=1197473792 mxf64=4678114112931102720 sat=ConstFloat(-1.0) n=2\nc3=fp8e5m2fnuz src=f64src mxval=ConstFloat(57344.0) mxdt=weakfloat mxf32=1197473792 mxf64=4678114112931102720 sat=ConstFloat(-1.0) n=2\nc4=f16 src=f32src mxval=ConstFloat(65504.0) mxdt=weakfloat mxf32=1199562752 mxf64=4679235614791434240 sat=ConstFloat(-1.0) n=3\nc4=f16 src=f64src mxval=ConstFloat(65504.0) mxdt=weakfloat mxf32=1199562752 mxf64=4679235614791434240 sat=ConstFloat(-1.0) n=3\nc5=bf16 src=f32src mxval=ConstFloat(3.3895313892515355e+38) mxdt=weakfloat mxf32=2139029504 mxf64=5183607986731352064 sat=ConstFloat(-1.0) n=3\nc5=bf16 src=f64src mxval=ConstFloat(3.3895313892515355e+38) mxdt=weakfloat mxf32=2139029504 mxf64=5183607986731352064 sat=ConstFloat(-1.0) n=3\nc6=f32 src=f32src mxval=ConstFloat(3.4028234663852886e+38) mxdt=weakfloat mxf32=2139095039 mxf64=5183643170566569984 sat=ConstFloat(-1.0) n=3\nc6=f32 src=f64src mxval=ConstFloat(3.4028234663852886e+38) mxdt=weakfloat mxf32=2139095039 mxf64=5183643170566569984 sat=ConstFloat(-1.0) n=3\nc7=f64 src=f32src mxval=ConstFloat(inf) mxdt=weakfloat mxf32=2139095040 mxf64=9218868437227405312 sat=ConstFloat(-1.0) n=2\nc7=f64 src=f64src mxval=ConstFloat(1.7976931348623157e+308) mxdt=weakfloat mxf32=2139095040 mxf64=9218868437227405311 sat=ConstFloat(-1.0) n=3\n",
+ "stderr": "",
+ "secs": 0.24,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

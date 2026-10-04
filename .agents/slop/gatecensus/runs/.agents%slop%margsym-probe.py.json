@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/margsym-probe.py",
+ "base": "margsym-probe.py",
+ "stem": "margsym-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python",
+ "bytes": 3564,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/margsym-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "== ssimplify, per candidate ==\n  PARAM n          vmin=0 vmax=16777215 -> SAME:PARAM\n  PARAM m          vmin=0 vmax=16777215 -> SAME:PARAM\n  PARAM narrow     vmin=3 vmax=3 -> CONST:3:int\n  SPECIAL N        vmin=0 vmax=-1 -> SAME:SPECIAL\n  SPECIAL 3        vmin=0 vmax=2 -> SAME:SPECIAL\n  AFTER            vmin=0 vmax=16777215 -> OTHER:PARAM\n  FLOORDIV         vmin=0 vmax=4194303 -> SAME:FLOORDIV\n  ADD(n,m)         vmin=0 vmax=33554430 -> OTHER:ADD\n  ADD(n,0)         vmin=0 vmax=16777215 -> OTHER:PARAM\n  ADD(p,p)         vmin=6 vmax=6 -> CONST:6:int\n  MUL(n,2)         vmin=0 vmax=33554430 -> SAME:MUL\n  MUL(n,n)         vmin=0 vmax=281474943156225 -> SAME:MUL\n  MUL(p,1)         vmin=3 vmax=3 -> CONST:3:int\n  CAST i32->i64    vmin=0 vmax=16777215 -> SAME:CAST\n  WHERE            vmin=1 vmax=2 -> SAME:WHERE\n  NEG              vmin=-16777215 vmax=0 -> SAME:MUL\n  MAX(n,1)         vmin=1 vmax=16777215 -> SAME:MAX\n  CMPNE(n,1)       vmin=False vmax=True -> SAME:CMPNE\n\n== THE WALL ROW: what CPython ANSWERS for `as_shape` / marg ==\n  r1._shape = [('PARAM', ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='n', addrspace=AddrSpace.ALU)), 4]\n  r2._shape = [('PARAM', ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='m', addrspace=AddrSpace.ALU)), 4]\n  r1 shape text  = (UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='n', addrspace=AddrSpace.ALU), src=()), 4)\n  r2 shape text  = (UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='m', addrspace=AddrSpace.ALU), src=()), 4)\n  r1.dtype=i32 r2.dtype=i32\n  n is n in r1._shape[0] -> True;  m is m in r2._shape[0] -> True\n  r1._shape[0] is r2._shape[0] -> False\n  marginal(r1) == (n, 4) -> True\n  marg text r1 = [ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='n', addrspace=AddrSpace.ALU), 4]\n\n== BARE PARAM marg: a 1-element shape arg is the PARAM ITSELF (ops.py:108) ==\n  r3._shape = [('PARAM', ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='n', addrspace=AddrSpace.ALU))]\n  r3.src[1].op = PARAM  as_shape = (UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.weakint, vmin_vmax=(0, 16777215), multiple_of=1, name='n', addrspace=AddrSpace.ALU), src=()),)\n  r3.marg[0] is n -> True\n\n== shape_to_shape_arg keeps a UOp verbatim (ops.py:105) ==\n  shape_to_shape_arg((n, 4)).op = STACK\n  shape_to_shape_arg((n,)).op    = PARAM  (src[0] itself)\n",
+ "stderr": "",
+ "secs": 0.55,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

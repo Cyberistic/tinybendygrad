@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/sched-cmp.py",
+ "base": "sched-cmp.py",
+ "stem": "sched-cmp",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 11433,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-cmp.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 1,
+ "stdout": "# matmul_sym var_vals={'K': 3}\n# port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update\n# SNAPSHOT_STALE sched-port.txt holds 0 rows, this run produced 60; 60 key(s) differ, first 5: [('chain_cyc', None, 0), ('chain_gated', None, 18), ('chain_kmark', None, 12), ('chain_knsrc', None, 3), ('chain_ksrc', None, 6702)]\n# specs_attempted=6 specs_scheduled=6 fields_compared=60 fields_agree=54 fields_disagree=6 port_only=0\n# denominator: 60 fields = 6 specs x 10 fields\nDISAGREE chain_gated cpython=5 port=18\nDISAGREE conv_gated cpython=6 port=62\nDISAGREE elementwise_gated cpython=7 port=24\nDISAGREE matmul_gated cpython=6 port=26\nDISAGREE matmul_sym_gated cpython=6 port=30\nDISAGREE multi_gated cpython=9 port=43\nAGREE chain_cyc=0\nAGREE chain_kmark=12\nAGREE chain_knsrc=3\nAGREE chain_ksrc=6702\nAGREE chain_ksrc_n=3\nAGREE chain_ktop=5\nAGREE chain_lin_n=1\nAGREE chain_lin_op=9\nAGREE chain_root_op=5\nAGREE conv_cyc=0\nAGREE conv_kmark=17\nAGREE conv_knsrc=4\nAGREE conv_ksrc=241278\nAGREE conv_ksrc_n=4\nAGREE conv_ktop=5\nAGREE conv_lin_n=1\nAGREE conv_lin_op=9\nAGREE conv_root_op=5\nAGREE elementwise_cyc=0\nAGREE elementwise_kmark=16\nAGREE elementwise_knsrc=5\nAGREE elementwise_ksrc=8686014\nAGREE elementwise_ksrc_n=5\nAGREE elementwise_ktop=5\nAGREE elementwise_lin_n=1\nAGREE elementwise_lin_op=9\nAGREE elementwise_root_op=5\nAGREE matmul_cyc=0\nAGREE matmul_kmark=15\nAGREE matmul_knsrc=4\nAGREE matmul_ksrc=241278\nAGREE matmul_ksrc_n=4\nAGREE matmul_ktop=5\nAGREE matmul_lin_n=1\nAGREE matmul_lin_op=9\nAGREE matmul_root_op=5\nAGREE matmul_sym_cyc=0\nAGREE matmul_sym_kmark=16\nAGREE matmul_sym_knsrc=4\nAGREE matmul_sym_ksrc=241278\nAGREE matmul_sym_ksrc_n=4\nAGREE matmul_sym_ktop=5\nAGREE matmul_sym_lin_n=1\nAGREE matmul_sym_lin_op=9\nAGREE matmul_sym_root_op=5\nAGREE multi_cyc=0\nAGREE multi_kmark=556\nAGREE multi_knsrc=67\nAGREE multi_ksrc=2667138478\nAGREE multi_ksrc_n=7\nAGREE multi_ktop=185\nAGREE multi_lin_n=2\nAGREE multi_lin_op=9\nAGREE multi_root_op=5\n# UNCODED 0 -- every name packed into a compared field has a code\n# alphabet=17 ops, digit 0 reserved for 'no code'\n# VERDICT RED SNAPSHOT_STALE,DISAGREE\n",
+ "stderr": "",
+ "secs": 40.02,
+ "verdict": "# port side: this run's `./bin/bend` -> 60 rows, rc=0 bend 2.0.35 is available: run bend update",
+ "status": "FAIL",
+ "why": "rc=1"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/arglit/al-transcription.py",
+ "base": "al-transcription.py",
+ "stem": "al-transcription",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 7192,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/arglit/al-transcription.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# table claims, read off /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/uop/ops.bend\n#   ANone     ['SINK', 'STAGE']\n#   ADt       ['BITCAST', 'CAST', 'INS']\n#   APy       ['CONST']\n#   AParam    ['ALLOC', 'BUFFER', 'PARAM']\n#   ACustom   ['CUSTOM_FUNCTION']\n#   ACall     ['CALL']\n#   AKernel   ['SINK']\n#   AProgram  ['PROGRAM']\n#   ARange    ['RANGE']\n#   AReduce   ['REDUCE']\n#   AOpLit    ['PYLITERAL']\n#   AWmma     ['WMMA']\n#   ATuple    ['PERMUTE', 'UNSHARD']\n#   AStr      ['SOURCE', 'SPECIAL']\n#   AInk      ['CUSTOM', 'CUSTOMI', 'INS']\n#   AAllred   ['ALLREDUCE']\n#   ADev      ['COPY']\n#   ABlob     ['BINARY', 'BYTES']\n#   AFloat    []\n#   ABad      []\n#\n# real upstream graphs built: 133 nodes over 4 graphs\n#\n# ctor      op         measured arg                 verdict\n  ANone     SINK       -                            UNREACHED  (a row that cannot fire)\n  ANone     STAGE      -                            UNREACHED  (a row that cannot fire)\n  ADt       BITCAST    dtypes.f32                   no rule  (not judged)\n  ADt       CAST       dtypes.u32                   no rule  (not judged)\n  ADt       INS        ('nop', dtypes.void)         no rule  (not judged)\n  APy       CONST      4                            no rule  (not judged)\n  AParam    ALLOC      ParamArg(3, dtypes.f32, 16,  no rule  (not judged)\n  AParam    BUFFER     ParamArg(1, dtypes.u32, 2, d no rule  (not judged)\n  AParam    PARAM      -                            UNREACHED  (a row that cannot fire)\n  ACustom   CUSTOM_FUNCTION -                            UNREACHED  (a row that cannot fire)\n  ACall     CALL       -                            UNREACHED  (a row that cannot fire)\n  AKernel   SINK       -                            UNREACHED  (a row that cannot fire)\n  AProgram  PROGRAM    -                            UNREACHED  (a row that cannot fire)\n  ARange    RANGE      -                            UNREACHED  (a row that cannot fire)\n  AReduce   REDUCE     (Ops.ADD, 1)                 no rule  (not judged)\n  AOpLit    PYLITERAL  Ops.ADD                      TRUE \n  AWmma     WMMA       -                            UNREACHED  (a row that cannot fire)\n  ATuple    PERMUTE    (1, 0)                       TRUE \n  ATuple    PERMUTE    (1, 0)                       TRUE \n  ATuple    UNSHARD    -                            UNREACHED  (a row that cannot fire)\n  AStr      SOURCE     -                            UNREACHED  (a row that cannot fire)\n  AStr      SPECIAL    -                            UNREACHED  (a row that cannot fire)\n  AInk      CUSTOM     ('{0}.op is {1}', dtypes.... TRUE \n  AInk      CUSTOMI    ('uop', dtypes.void)         TRUE \n  AInk      INS        ('nop', dtypes.void)         TRUE \n  AAllred   ALLREDUCE  -                            UNREACHED  (a row that cannot fire)\n  ADev      COPY       'CPU'                        TRUE \n  ADev      COPY       'CPU'                        TRUE \n  ADev      COPY       'CPU'                        TRUE \n  ABlob     BINARY     -                            UNREACHED  (a row that cannot fire)\n# 0 false claim(s), 14 unreached, 41 judged by no rule\n",
+ "stderr": "",
+ "secs": 0.13,
+ "verdict": "# ctor      op         measured arg                 verdict",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

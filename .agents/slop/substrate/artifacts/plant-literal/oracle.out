@@ -1,0 +1,15 @@
+WARM        tinybendygrad/device.bend  (1605 lines)  [bend --check-only]
+ROUTE   bend=1  cc=0  node=0  no-instrument=0  (of 1 file(s))
+PROVENANCE  port=1  non-port=0   of which not-in-index=0 no-upstream=0   (of 1)
+PORT ALARM  0 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=1, of which non-port=0  =>  the port count to compare against is 1
+NAMES     tinybendygrad/device.bend  (1 modules, 17 refs, 17 exact, 0 suffix-only, 0 unresolved, 254 unseen, 0 unused-import)
+---
+TOTALS refs=17 exact=17 suffix=0 unresolved=0 unseen=254 missing_module=0 dead_import=0
+BAD 0
+
+SUBSTRATE CLEAN: 1 file(s), all non-empty, each judged by its OWN instrument, all cross-file names resolved.
+(name check is scoped to the IMPORT graph. It cannot see the unaliased `import Base`
+ surface -- List. String. U32. -- which is most qualified refs in the tree. Read the
+ `unseen=` number, not just the verdict: an instrument that hides its own blind spot
+ is the defect this project has catalogued twenty times.)

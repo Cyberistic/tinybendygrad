@@ -59,7 +59,7 @@ OUTPUT CENSUS -- tinygrad/runtime/autogen/*.py  (the generator's OUTPUT)
 
 ## 1. DOES THE PORT SIDE EXIST AT ALL?
   /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/autogen
-  exists = False
+  exists = True
 
 ## 2. THE DECOMPOSITION -- 4,868 = 4,864 + 4, with NO residue
 

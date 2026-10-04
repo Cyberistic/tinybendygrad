@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wire-lanes.py",
+ "base": "wire-lanes.py",
+ "stem": "wire-lanes",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4085,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wire-lanes.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wire-lanes.py\", line 98, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wire-lanes.py\", line 46, in main\n    port, spec = a[0], a[1]\n                 ~^^^\nIndexError: list index out of range\n",
+ "secs": 0.64,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

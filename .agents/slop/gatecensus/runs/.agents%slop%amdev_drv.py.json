@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/amdev_drv.py",
+ "base": "amdev_drv.py",
+ "stem": "amdev_drv",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 5415,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_drv.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "",
+ "stderr": "",
+ "secs": 0.23,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "zero bytes on both streams -- a refusal, not a pass"
+}

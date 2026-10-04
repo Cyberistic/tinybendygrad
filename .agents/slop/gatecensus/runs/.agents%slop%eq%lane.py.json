@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/eq/lane.py",
+ "base": "lane.py",
+ "stem": "lane",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4253,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/eq/lane.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 2,
+ "stdout": "",
+ "stderr": "usage: lane.py [-h] [--port PORT] [--oracle ORACLE [ORACLE ...]] --out OUT\n               [--tries TRIES]\nlane.py: error: the following arguments are required: --out\n",
+ "secs": 0.94,
+ "verdict": "lane.py: error: the following arguments are required: --out",
+ "status": "SKIP",
+ "why": "needs arguments; bare is a different instrument"
+}
