@@ -4701,6 +4701,102 @@ BROKEN list published, reconciliation control added. **No `.bend` edited. Nothin
   measurement if the tree held still** — bracket it with an mtime manifest and re-run any port
   whose file moved.
 
+## [DONE] rebase-gate: BROKEN is one word for five things — cause, denominator, reconciliation (2026-10-04)
+
+Progress: `[████████████████████] 100%` — 6/6 BROKEN entries classified, `.bin` keyed on the port,
+`BROKEN` printed with its cause histogram, sweep↔selftest reconciled entry by entry, 39 per-lane
+controls run.
+
+**The three numbers that disagreed, and why none of them was wrong.**
+`BROKEN=6` (whole-tree sweep) vs `1 FAILED` (selftest) vs `cstyle = BROKEN` (a `--port` run).
+All three are TRUE and all three measure different things. Now printed on the line you read.
+
+- **`BROKEN=6`, ONE ENTRY AT A TIME, WITH ITS DENOMINATOR** (measured, 11m04s, rc=1):
+  | port | cause | class | rows |
+  |---|---|---|---|
+  | `codegen/decomp/dtype.bend` | `DISAGREE` | DEFECT | **1 of 356** oracle row names, `c7` |
+  | `dtype.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, `dtype_tables` rc=0 |
+  | `schedule/prepare.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 2521 |
+  | `tensor.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 30 |
+  | `uop/render.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 85 |
+  | `viz/serve.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 176 |
+
+  **THE FOUR LANE-DEATHS WERE ONE IN-FLIGHT EDIT, NOT FOUR PORTS.** All four died with the
+  IDENTICAL `expected : Arg / observed : Const` at `UOp.new(Arena.empty(), OpsCONST{}, Nil{},
+  CBool{True{}}, TNone{})`, which is the same signature as the 04:18 `ABlob{n: U32}` →
+  `ABlob{bs: List<&2,U32>}` breakage this file already records. **ALL FOUR RUN CLEAN NOW**, run
+  directly, minutes after the sweep ended: `prepare` rc=0 / 321 rows, `tensor` rc=0 / 33,
+  `uop/render` rc=0 / 129, `viz/serve` rc=0 / 177. **SO A `BROKEN` LIST OF SIX WAS ONE REAL
+  FINDING, ONE DECLARED-DEAD LANE, AND FOUR MEASUREMENTS OF A TREE THAT DID NOT HOLD STILL.**
+
+- **THE `rows {'interpreted': 0, 'cpython:dtype_tables': 0}` ENTRY IS `dtype.bend`, AND IT IS NOT
+  A ZERO-ROWS VERDICT.** GUARD 3 fires BEFORE GUARD 2, so the answer is `LANE-DEATH`, not
+  `ZERO-ROWS`: `interpreted` and `native` both exited **1** ("14 defs rely on unsafe or foreign
+  code") and so did `--check-only`. The 0 rows are a consequence of the lane dying, not a claim
+  that an oracle emitted nothing. This is wired ON PURPOSE — it is the one lane where BROKEN must
+  be reachable on the real tree — and `rebase-gate-selftest.py`'s `dead_lane_is_broken` drives it
+  every run.
+
+  ⚠ **AND THE BRIEF'S PREMISE ABOUT IT IS WRONG, CITED BY POSITION.** `rebase-gate.py`'s header
+  says a 0-row lane is a **FAILED ORACLE** (GUARD 2, header line ~33) and lists "rows went to
+  ZERO" under `BROKEN` (header line ~14). It is NOT-STARTED-for-zero-rows that the header says,
+  and it says it about a *recorded baseline lane with zero rows* (`hollow`, ~line 800) — a
+  different object. **The zero-row rule was left as the header states it**, because moving it to
+  NOT-STARTED would turn a red lane green, which is the failure this unit exists to prevent. What
+  WAS fixed is the substance underneath it: a 0-row bend lane is now re-run (`BEND_ROW_TRIES=2`,
+  20s backoff) because bend stack-overflows ~1 run in 20 and prints 0 rows with rc=0, so one empty
+  lane is a coin flip. **A CPython ORACLE IS NOT RETRIED** — `dtype_tables.py` prints 14,774 TSV
+  lines and is wired to read as zero on purpose.
+
+- **`cstyle` IS NOT BROKEN. `TALLY BROKEN=1` REPRODUCED, AND IT IS THE WRONG ORACLE LANE.**
+  `rebase-gate.py --port tinybendygrad/renderer/cstyle.bend` → **`RE-PORTED`, rc=0**,
+  222 shared / **0** disagreeing, 225/225/222 rows, all four lanes rc=0, md5 `4eb1189ed7c7`
+  unchanged. The whole-tree sweep agrees: cstyle is in `RE-PORTED=8`, not in `BROKEN=6`.
+  `TALLY BROKEN=1` is reproduced by pointing the gate at the 15-row lane:
+  `--oracle ".agents/slop/renderer_oracle.py cstyle"` (not `cstyle-rows`) →
+  `rows interpreted=225 native=225 cpython:renderer_oracle=15`, **0 shared names**, cause
+  **`INCOMPARABLE` [COVERAGE]**. **Nothing was compared, so nothing disagreed** — the opposite of
+  what `BROKEN` reads as. Both numbers are printed side by side, cause first.
+
+- **THE SWEEP AND THE SELFTEST WERE NEVER ASKED THE SAME QUESTION, AND NOW SAY SO.**
+  The sweep's state is FOUR GUARDS over FRESH lanes, so it can be BROKEN for a reason unrelated to
+  agreement. The selftest's numbers are an INTERSECTION and a disagreement count, it has NO
+  BROKEN verdict, and the `PASS` beside them is SIX SYNTHETIC STATES with `run_port()` **STUBBED** —
+  it never runs the port. Both tools now print that on the line above their numbers, and
+  `gate-reconcile.py --sweep SWEEP.json` reconciles them **entry by entry, running no gate lane**,
+  with both denominators and a verdict per row.
+
+- **THE `.bin` PATH IS NOW `port_key(bend)` + PID.** It was `{bend.stem}.bin`: 131 `.bend` files,
+  110 distinct stems, `__init__` ×14, `dtype` ×3. `run_port()` unlinked that path and then
+  executed whatever was at it, so a concurrent run could leave one port's native lane holding
+  another's rows — surfacing as `BROKEN N row(s) disagree` with no error in either port.
+  Control: `rebase-gate-selftest.py`'s `native_bin_control()` (injective over all 131 files, AND
+  the old spelling asserted NOT injective so the check cannot pass vacuously), plus
+  `gate-reconcile.py --control`, which runs the only two wired ports sharing a stem
+  (`dtype.bend` and `codegen/decomp/dtype.bend`) AT THE SAME TIME.
+
+- **"2 DISAGREEMENTS" AND "1 OF 109" ARE ONE DEFECT.** GUARD 4's `bad` list holds one entry per
+  `(lane, other, name)`, so on a three-lane run ONE disagreeing row appears twice. The sweep said
+  `2 row(s) disagree with CPython across 3 lane pair(s)`; its own `disagreements` field held
+  `c7`-vs-`interpreted` and `c7`-vs-`native`; the selftest said `1 of 109`. **Both true, and
+  nothing said so.** Now: `1 of 356 shared row NAME(S) disagree … (2 pair-instances)`, and
+  `compared_pairs` is stamped on every exit path (it used to be set only on the green path, so the
+  red had no denominator at all).
+
+- **RULES APPENDED** at `.agents/slop/notes/bend2-constraints.md` positions ~19636-19713:
+  BAND-11 (a stem is not a key), BAND-12 (count disagreements over names, not pair-instances),
+  BAND-13 (a 0-row lane is re-run, and only for the layer that has the failure mode),
+  BAND-14 (print the cause), BAND-15 (two instruments must be asked the same question),
+  BAND-16 (`REPS = max(1, a.reps)` inside `main()` with no `global` bound a LOCAL, so
+  `--reps 12` printed 12 and the control still ran 2 — a no-op with a printed receipt).
+
+- **STILL OPEN, NOT MINE:** `codegen/decomp/dtype.bend`'s row `c7` (a declared refusal, already
+  open above at "OPEN, NOT MINE — `c7`"), and the 04:xx type error that broke four ports —
+  `def t_const_bool_int_splits() -> Bool: +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{},
+  CBool{True{}}, TNone{})`, `expected : Arg / observed : Const`. That def name is in NO file on
+  the tree (`grep -rn const_bool_int_splits` → nothing), so it was in a file mid-edit during the
+  sweep. Not reproduced; not touched.
+
 ## [DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)
 
 Progress: `[████████████████████] 100%` — state restored, controls green, 29 recorded, 9 excluded.

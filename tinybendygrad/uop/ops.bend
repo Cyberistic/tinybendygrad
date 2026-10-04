@@ -1279,6 +1279,33 @@ def ParamArg.slot(x: ParamArg) -> U32:
   match x:
     case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: slot
 
+# `-1` IS `4294967295` IN A `U32`, and this def is where that is SAID ONCE, in the
+# file that OWNS the field. `ParamArg.slot` is a bare `U32` because a `Maybe` here
+# would change 50 construction literals, 13 accessors and every slot comparison --
+# a substrate change, and one that would invalidate the gate rows this naming
+# exists to enable. The value was never in question; the NAME and its home were.
+#
+# The value is "no POSITIONAL slot": upstream's `variable()` passes `slot=-1`
+# because a Variable is bound by NAME (function.py:15-17), and `param_like` then
+# overwrites it with the call site's index. It does NOT mean "negative" --
+# `from_buffer` (ops.py:860) uses `-id(opaque)` for an unrelated reason -- and a
+# docstring that said "negatives are the no-slot namespace" would silently conflate
+# the two. `from_buffer` is P6, so nothing collides today; saying it now costs one
+# line and a wrong sentinel costs a miscompiled buffer later.
+#
+# WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1166), so
+# `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:269`
+# already argues this for its own copy.
+#
+# Four sibling files had each invented the same literal -- `FN_NEG1`
+# (function.bend:153), `u32_none` (codegen/kernel.bend:274 AND
+# codegen/late/linearizer.bend:329, two independent definitions), and a bare
+# `4294967295` in uop/symbolic.bend:3488. This def is the one they should name.
+def ParamArg.no_slot() -> U32: 4294967295
+
+def ParamArg.has_slot(x: ParamArg) -> Bool:
+  Bool.not(U32.is_eq(ParamArg.slot(x), ParamArg.no_slot()))
+
 def ParamArg.dtype(x: ParamArg) -> S.Dt:
   match x:
     case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: dtype
@@ -1871,9 +1898,33 @@ def eq_tag.TNone(y: Tag) -> Bool:
     case TNone{}: True{}
     case _: False{}
 
+# `ops.py:201`'s key is `(op, src, arg, tag, type(arg))`. It carries `type(arg)` and NOT
+# `type(tag)`, so a `tag` is compared by its OWN value and nothing separates an `int`
+# from a `bool` there. These two arms are therefore CROSSED rather than each matching
+# only its own constructor, and that is the whole of the difference from
+# `eq_const.CBool`/`eq_const.CInt` ten defs up, which DO separate them -- correctly,
+# because a CONST's arg IS the key's `arg` element and `type(arg)` is the fifth element
+# of the key itself.
+#
+# THE CELL THAT PROVES IT, CPython-measured (`.agents/slop/ops-oracle.py`, rows
+# `tag_bool_vs_int_interns` / `tag_true_vs_false_splits` / `tag_none_vs_zero_interns`):
+#     UOp(Ops.SINK, tag=True)   is UOp(Ops.SINK, tag=1)      -> True,  1 node
+#     UOp(Ops.SINK, tag=True)   is UOp(Ops.SINK, tag=False)   -> False, 2 nodes
+#     UOp(Ops.SINK, tag=None)   is UOp(Ops.SINK, tag=0)      -> False, 2 nodes
+# and the control in the same block, `const_bool_vs_int_splits=True`, which says the
+# top-level split must be KEPT. `rtag(self, tag=True)` -- ops.py:258 -- is what makes
+# this reachable rather than theoretical: `x.rtag()` puts a `bool` True in the key, and
+# an `int` 1 built by hand is the same key.
+#
+# `TBool{b}` holds a `Bool` and `TInt{i}` a `U32`, so the crossing is exactly
+# `(b ? 1 : 0) == i`, which is `eq_bool(Bool.not(U32.is_zero(i)), b)`. Written twice
+# rather than shared because the two arms are reached from `eq_tag.sel` in opposite
+# directions and a shared helper would need the pair of tags, which is the value
+# `eq_tag.sel` is holding.
 def eq_tag.TBool(y: Tag, +b: Bool) -> Bool:
   match y:
     case TBool{y1}: eq_bool(b, y1)
+    case TInt{y1}: eq_bool(Bool.not(U32.is_zero(y1)), b)
     case _: False{}
 
 def eq_tag.TStr(y: Tag, +s: String) -> Bool:
@@ -1884,6 +1935,7 @@ def eq_tag.TStr(y: Tag, +s: String) -> Bool:
 def eq_tag.TInt(y: Tag, +i: U32) -> Bool:
   match y:
     case TInt{y1}: U32.is_eq(i, y1)
+    case TBool{y1}: eq_bool(Bool.not(U32.is_zero(i)), y1)
     case _: False{}
 
 def eq_tag.TTuple(y: Tag, +xs: List<&2, U32>) -> Bool:
@@ -4218,7 +4270,11 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   (fold), and `max_shard_shape` is `to_max_shape(shard_shape)`, a fold over a
 #   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
 #   `schedule/multi.bend` is the caller and it inlines what it can today.
-# TODO(p3) ops.py:481  def _ranges
+# PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
+# `Ranged` / `UOp.ranges` (fold.bend:4372), 12 `rg_*` rows byte-identical to
+# CPython. The reason these two carried for a month -- "Dict set algebra over the
+# fold's memo" -- was wrong: the arena interns, so `dict[UOp, None]` IS a list
+# with a membership test, and `ended_ranges` is ported too (fold.bend:4059).
 # TODO(p3) ops.py:495  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
@@ -4278,7 +4334,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:649  def wmma
 
-# TODO(p3) ops.py:652  def _rop
+# PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop` (tensor.bend:868).
 
 # TODO(p3) ops.py:663  def invalid
 
@@ -4311,9 +4367,19 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   The shape it needs: a THREE-valued predicate over `Bnd` (below / provably not
 #   below / unresolved), and a decision about what the two-valued public answer does
 #   with the third -- almost certainly "not overflowing is a MAYBE, and every caller
-#   that needs certainty has to say so". `dt.min`/`dt.max` are already
-#   `Maybe<&2, U32>` in `LAWS/spec.bend`, so the dtype side is ready; there is no
-#   `Bnd` ordering at all in `fold.bend`, which is the work. P3, with `vmin`/`vmax`.
+#   that needs certainty has to say so".
+#
+#   `bnd.lt` DOES exist -- `fold.bend:3306`, with `bnd.eq` at `:3317` -- and an
+#   earlier version of this marker said it did not. That was wrong. The real work is
+#   narrower and stranger than "add an ordering": `bnd.lt` is a TWO-valued TOTAL
+#   answer over `BndInt`, and what is missing is the third.
+#
+#   AND `dt_max` IS NOT A SUBSTITUTE FOR IT. `dtype.bend`'s `dt_max` answers
+#   `int64.max` for `uint64` -- the `i64_max_u` fallthrough, `dtype.bend:379-389` --
+#   which is documented as safe only because that bound is read as `hi <= max`.
+#   `uint64.max` is `2**64-1` and `int64.max` is `2**63-1`, so borrowing the table
+#   here would make every `uint64` bound wrong by a factor of two. This needs `Bnd`.
+#   P3, with `vmin`/`vmax`.
 
 # TODO(p3) ops.py:689  def unshard
 #   # *** multi-device helpers ***
@@ -4338,7 +4404,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# TODO(p3) ops.py:818  def _mop
+# PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop` (tensor.bend:729).
 
 
 
@@ -4601,9 +4667,14 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1600  def __reduce__
 
-# TODO(p3) ops.py:1611  def __add__
+# PORTED BY CONSTRUCTION -- `ops.py:1611 __add__` is
+# `PatternMatcher(self.patterns + more.patterns)`, and the whole self-first order
+# is the LITERAL ORDER of the `PMEntrys` tables, which is what
+# `uop/spec.bend:1526-1528` says. It is a property of the tables, not a def.
 
-# TODO(p3) ops.py:1605  def rewrite
+# PORTED -- `ops.py:1605 PatternMatcher.rewrite` is `pm_rewrite` (ops.bend:3548,
+# `Verdict`) and `pm_rewrite_m` (ops.bend:3665, `Maybe`), driven from
+# `codegen/__init__.bend`. This marker was a stale duplicate of landed code.
 
 # TODO(p3) ops.py:1642  def save_to_diskcache
 
@@ -4623,7 +4694,8 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1766  def __init__
 
-# TODO(p3) ops.py:1783  def pm_rewrite
+# PORTED -- `ops.py:1783 RewriteContext.pm_rewrite` is `pm_rewrite_m`
+# (ops.bend:3665), driven at `codegen/__init__.bend:99`. Stale duplicate.
 #   # no cache needed: pm_rewrite is called at most once per UOp due to the replace dict check in unified_rewrite
 
 # TODO(p3) ops.py:1785  def cached_bpm_rewrite
@@ -4652,7 +4724,9 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1899  def resolve_returned_after
 
-# TODO(p3) ops.py:1907  def contiguous_bitcast_index
+# DELETED -- `contiguous_bitcast_index` does not exist at this pin. `rg` finds
+# zero hits in `tinygrad/`; `ops.py:1907` is `pm_drop_after`. The marker named a
+# def that was already gone upstream, so there was nothing to port.
 
 
 # ===========================================================================
@@ -5312,6 +5386,45 @@ def t_afloat_nan_distinct_intern() -> Bool: afloat_same(F32.div(0.0, 0.0), F32.d
 def t_afloat_same_intern() -> Bool: afloat_same(1.5, 1.5)
 
 def t_afloat_distinct_intern() -> Bool: afloat_same(1.5, 2.5)
+
+# ---------------------------------------------------------------------------
+# THE `type(tag)` LANE. `ops.py:201`'s key carries `type(arg)` and NOT `type(tag)`, so a
+# `bool` tag and an `int` tag of the same value are ONE key. This is the ONLY
+# over-split the port has: every other comparator dispute in this file is a
+# UNDER-split, and the direction is the reason this lane needs its own rows rather
+# than one more field comparison.
+#
+# Same rule as the two lanes above: intern two nodes on ONE arena through `UOp.new`
+# and answer IDENTITY OF THE TWO INDICES, never `eq_tag` read directly.
+# ---------------------------------------------------------------------------
+def tag_same(t1: Tag, t2: Tag) -> Bool:
+  +u = UOp.new(Arena.empty(), OpsSINK{}, Nil{}, ANone{}, t1)
+  +v = UOp.new(Found.ar(u), OpsSINK{}, Nil{}, ANone{}, t2)
+  U32.is_eq(Found.i(u), Found.i(v))
+
+# THE CELL THE FIX IS ABOUT, and it reads TRUE, which is "the two interned to ONE node".
+# `rtag(self, tag=True)` -- ops.py:258 -- is what puts a `bool` True in the key, and
+# `UOp(Ops.SINK, tag=1)` is the same key.
+def t_tag_bool_vs_int_interns() -> Bool: tag_same(TBool{True{}}, TInt{1})
+
+# THE COUNTER-CELL, and it is what makes the row above mean something: an `eq_tag` that
+# answered True for every pair would satisfy it alone. Printed as "did they SPLIT", so
+# this is `Bool.not` of `tag_same` where the `_interns` rows are `tag_same` itself.
+def t_tag_true_vs_false_splits() -> Bool: Bool.not(tag_same(TBool{True{}}, TBool{False{}}))
+
+# AND THE ONE THAT KEEPS `TNone` SEPARATE FROM ZERO, which a `case` arm that stopped
+# matching would answer the other way SILENTLY. `hash(None) != hash(0)`, so this is
+# FALSE -- two nodes -- and the row exists to hold that.
+def t_tag_none_vs_zero_interns() -> Bool: tag_same(TNone{}, TInt{0})
+
+# THE CONTROL THAT PINS THE OTHER HALF, and it is the row that says the fix above is a
+# fix and not a widening: at the TOP level `type(arg)` IS in the key, so a bool CONST
+# and an int CONST of the same value are TWO nodes and must stay two. If this row ever
+# flips, `eq_const` has been changed and `eq_tag` was the wrong place to fix it.
+def t_const_bool_vs_int_splits() -> Bool:
+  +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, APy{CBool{True{}}}, TNone{})
+  +v = UOp.new(Found.ar(u), OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(1)}}, TNone{})
+  Bool.not(U32.is_eq(Found.i(u), Found.i(v)))
 
 # ---------------------------------------------------------------------------
 # MSTACK -- ops.py:770, `UOp(Ops.MSTACK, src=(self,)+srcs) if len(srcs) else self`.
@@ -7094,6 +7207,16 @@ def main() -> IO(Unit):
     row("afloat_nan_distinct_intern", t_afloat_nan_distinct_intern())
     row("afloat_same_intern", t_afloat_same_intern())
     row("afloat_distinct_intern", t_afloat_distinct_intern())
+    # --- THE `type(tag)` LANE. ops.py:201 carries `type(arg)` and NOT `type(tag)`, so
+    # --- `tag=True` and `tag=1` are ONE key. This is the only OVER-split in the file;
+    # --- every other comparator dispute here is an under-split.
+    #
+    # THE ORDER IS THE ORACLE'S: `const_bool_vs_int_splits` first, because it is the
+    # control for the three below and ops-gate.sh diffs whole lines in order.
+    row("const_bool_vs_int_splits", t_const_bool_vs_int_splits())
+    row("tag_bool_vs_int_interns", t_tag_bool_vs_int_interns())
+    row("tag_true_vs_false_splits", t_tag_true_vs_false_splits())
+    row("tag_none_vs_zero_interns", t_tag_none_vs_zero_interns())
     # --- THE AXIS CPYTHON LANE. `#bend_only_mstack_puts_self_first` first, because it is
     # --- the row this file was MISSING: `UOp.after` and `UOp.end` had rows and
     # --- `UOp.mstack` had the same inverse bug fixed in the same commit with none, so a

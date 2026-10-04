@@ -90,6 +90,48 @@ here rather than in one call site:
     selftest that tests a differently-shaped call than production is the same instrument
     lying, one layer down, and it is why this bug survived a selftest that passed.
 
+⚠ BROKEN IS ONE WORD FOR FIVE THINGS, AND THE TALLY QUOTES THE WORD. `BROKEN 6` is not six port
+defects and a reader who believes it is will fix none of them: `uop/ops.bend` changed
+`ABlob{n: U32}` to `ABlob{bs: List<&2,U32>}` at 04:18 mid-sweep and five unrelated ports printed
+the identical `expected : U32 / observed : List<&2,U32> Location: binary_n.of` -- five red entries,
+ONE edit, and the defect in none of the five. So every verdict now carries a CAUSE, a CLASS and a
+DENOMINATOR (`classify()` below), `--json` carries a `causes` histogram, and the TALLY line prints
+`BROKEN=6 BY CAUSE [DISAGREE=1 ZERO-ROWS=2 ...]`. Only DISAGREE and ROWS-LOST are statements about
+a .bend file.
+
+  THE THREE THAT GET READ AS THE SAME THING, because each is BROKEN and each is not a defect:
+
+    ZERO-ROWS     a lane ran, exited 0, emitted nothing this reader can see. GUARD 2's own words
+                  are "an oracle that exits 0 having printed nothing is a FAILED ORACLE". A
+                  COVERAGE fact about the ORACLE. And it is INDISTINGUISHABLE FROM "THE RUN NEVER
+                  HAPPENED": bend's machine stack overflows on roughly 1 run in 20 and prints zero
+                  rows with a zero exit status, so `BEND_ROW_TRIES` re-runs an empty BEND lane
+                  after a backoff and the verdict says how many attempts it took. Only the BEND
+                  lanes are retried: a CPython oracle that emits no `name=value` row is genuinely
+                  a failed oracle and re-running it cannot change the answer.
+    INCOMPARABLE  two lanes share NO row name. THE MOST MISREAD ENTRY IN THE LIST: it reads like
+                  "they disagree" and it means the opposite -- NOTHING was compared, so nothing
+                  can disagree. `schedule/multi.bend` prints 321 `t_`-prefixed names against an
+                  unprefixed oracle's 213: 0 shared, permanently, and no port edit moves it.
+    UNWIRED       no oracle in BASE_ORACLES, or no .bend on disk. BROKEN is UNREACHABLE for such a
+                  port BY CONSTRUCTION, so a BROKEN naming one came from a DIFFERENT wiring. This
+                  is the sentence that catches a verdict pasted from another run.
+
+⚠ THE COMPILED LANE'S PATH WAS A FUNCTION OF THE STEM, WHICH IS NOT A KEY. 131 .bend files carry
+110 distinct stems -- `__init__` x14, `dtype` x3, `spec`/`op`/`memory`/`movement`/`ip`/`elf` x2 --
+and run_port() wrote `/tmp/rebase-gate/{stem}.bin`, UNLINKED it, compiled into it, and then
+EXECUTED whatever was at that path. A sequential sweep was mostly safe BECAUSE of the unlink; a
+concurrent one is not, and this project runs many: a second agent, or two threads of
+gate-reconcile.py's control, could leave one port's native lane holding another port's rows.
+
+  IT WOULD NOT HAVE BEEN A SILENT PASS, and that is the trap rather than the comfort. GUARD 4
+  compares EVERY lane pair, so interpreted-vs-native is checked and the swap surfaces as `BROKEN
+  N row(s) disagree` -- a MANUFACTURED red over correct code, with no error in either port to
+  disprove. That is the same species as the two reader bugs recorded above (444 disagreements on a
+  clean pair, 222 on another), and a red that lands in the sweep's BROKEN count is a red nobody
+  owns. `native_bin()` is keyed on `port_key(bend)` -- the one spelling of a port's name, the same
+  key baseline.json uses -- and on the pid, so two runs of the SAME port cannot collide either.
+
   usage: .venv/bin/python .agents/slop/rebase-gate.py [--batch N] [--port P] [--json]
          [--record | --record-stable STABILITY_JSON]
 
@@ -446,8 +488,9 @@ def native_bin(bend):
       reader bug this header records twice (444 disagreements on a clean pair, 222 on another).
       Loud is not the same as correct, and a red that names no port's own error is the reader's
       problem to disprove one port at a time.
-    * 33 stale binaries were on disk under names that do not say which port wrote them, so nothing
-      on that path was ever evidence about anything.
+    * a flat pile of `<stem>.bin` files whose names do not say which PORT wrote them, in a
+      directory another tool also writes into (`dev-native-clobber.py` uses
+      `device-stress.bin`), so nothing at that path was evidence about any port by name alone.
 
   Keyed on port_key(bend) -- the ONE spelling of a port's name and the same key baseline.json
   uses -- and on the pid, so two concurrent runs of the SAME port cannot collide either. The
@@ -704,6 +747,18 @@ def verdict(bend, oracle, base, hunks, native=True):
       shared = set(now[lane]) & set(now[other])
       (compared if shared else uncompared).append((lane, other, len(shared)))
       bad += [(lane, other, k) for k in shared if now[lane][k] != now[other][k]]
+  # ⚠ STAMPED BEFORE EITHER RED RETURN, and that is not tidiness. GUARD 4's own evidence -- which
+  # pairs compared, over how many shared names -- was set only on the GREEN path, so every BROKEN
+  # by disagreement reached the reader with the denominator MISSING and printed
+  #   "2 row(s) disagree with CPython across 3 lane pair(s)"
+  # where the truth is ONE row name in TWO of three pairs. The selftest counts DISTINCT names and
+  # said 1, the gate counted pair-instances and said 2, and a reader comparing the two instruments
+  # could not tell whether they had found two defects or one described twice. Compared is set on
+  # every path out of this loop; `bad` is a list of (lane, other, name) triples, so the distinct
+  # count is a set of the THIRD element and nothing has to guess.
+  v["compared_pairs"] = compared
+  v["uncompared_pairs"] = uncompared
+  v["disagree_rows"] = sorted({k for _, _, k in bad})
   if uncompared:
     v["state"] = BROKEN
     v["why"] = ("lane pair(s) share NO row names, so they compared nothing: "
@@ -713,10 +768,22 @@ def verdict(bend, oracle, base, hunks, native=True):
     return v, now
   if bad:
     v["state"] = BROKEN
-    v["why"] = f"{len(bad)} row(s) disagree with CPython across {len(compared)} lane pair(s)"
+    # THE COUNT IS OVER ROW NAMES, NOT OVER PAIR-INSTANCES, and the difference is not cosmetic.
+    # `bad` holds one entry per (lane, other, name), so on a three-lane run a single disagreeing
+    # row name appears TWICE -- once against interpreted and once against native -- and
+    # len(bad) printed "2 row(s) disagree with CPython" for ONE row. MEASURED on
+    # codegen/decomp/dtype.bend: `2 row(s) disagree with CPython across 3 lane pair(s)` where
+    # `disagreements` held `('cpython:dtype-oracle','interpreted','c7')` and the same for `native`,
+    # and the selftest independently said 1 of 109. Two instruments, one defect, and no way for a
+    # reader to tell they were not describing two. Both numbers are printed, each named.
+    v["why"] = (f"{len(v['disagree_rows'])} of "
+                f"{sum(n for _, _, n in compared)} shared row name(s) disagree with CPython "
+                f"across {len(compared)} lane pair(s) -- {len(bad)} pair-instance(s) of the same "
+                f"{len(v['disagree_rows'])} name(s): "
+                + ", ".join(repr(k)[:60] for k in v["disagree_rows"][:6])
+                + (f" (+{len(v['disagree_rows']) - 6} more)" if len(v["disagree_rows"]) > 6 else ""))
     v["disagreements"] = bad[:20]
     return v, now
-  v["compared_pairs"] = compared
 
   if base is None:
     # ⚠ THIS RETURNED NOT-STARTED FOR THE WHOLE SESSION AND THAT IS WHAT MADE 46 OF 50 TARGETS
@@ -865,7 +932,7 @@ def classify(v):
   project has paid for most often: "2 row(s) disagree" over "2 of 444 compared" and "2 of 2" are
   different sentences and the reader cannot tell them apart from the count.
   """
-  lanes, rows_ = v["lanes"], v.get("row_counts", {})
+  lanes, rows_ = v.get("lanes") or {}, v.get("row_counts") or {}
   died = sorted(k for k, l in lanes.items() if l["rc"] != 0 and k != "check")
   if died:
     detail = "; ".join(f"{k} rc={lanes[k]['rc']}: {' '.join(lanes[k].get('err', '').split())[:90]}"
@@ -893,12 +960,14 @@ def classify(v):
               "wiring and no port edit can move it")
   if v.get("disagreements"):
     pairs = v.get("compared_pairs") or []
-    tot = sum(n for _, _, n in pairs)
-    names = ", ".join(repr(d[2]) for d in v["disagreements"][:6])
+    names = sorted(v.get("disagree_rows") or {d[2] for d in v["disagreements"]})
+    inst = len(v["disagreements"])
     return (CAUSE_DISAGREE, CLASS_OF[CAUSE_DISAGREE],
-            f"{len(v['disagreements'])} of {tot} shared row name(s) across {len(pairs)} lane "
-            f"pair(s) DISAGREE with CPython: {names}"
-            + (f" (+{len(v['disagreements']) - 6} more)" if len(v["disagreements"]) > 6 else "")
+            f"{len(names)} of {sum(n for _, _, n in pairs)} shared row NAME(S) disagree, over "
+            f"{len(pairs)} lane pair(s): " + ", ".join(repr(k)[:60] for k in names[:6])
+            + (f"  ({inst} pair-instances: a name shared by 2 of 3 lanes is counted ONCE here and "
+               f"twice by a per-pair count, so this number and the selftest's are ONE fact with two "
+               f"denominators)" if inst > len(names) else "")
             + ". This is the only BROKEN cause that is a statement about the PORT")
   if "LOST ROWS" in v.get("why", ""):
     return (CAUSE_ROWS_LOST, CLASS_OF[CAUSE_ROWS_LOST],

@@ -5926,7 +5926,12 @@ def main() -> IO(Unit):
 #   builds a `SymDict`. P3 with `symbolic`.
 # TODO(p3) ops.py:565  def body                 -- PORTED, inlined into `ended_of.call`:
 #   `self.src[0]` for a CALL is the one line, and it is read there.
-# TODO(p3) ops.py:668  def get_idx              -- `self.structurally_legal`; P3.
+# PORTED -- `ops.py:665 get_idx` is ported as `UOp.get_idx`. The reason this line
+# carried named `self.structurally_legal`, a symbol that appears NOWHERE in
+# `tinygrad/` -- `rg -rn structurally_legal tinygrad/` is zero hits -- and it
+# gave the wrong line (668 is `get_valid`, not `get_idx`). Both were wrong and
+# neither was checkable, which is the argument for measuring a marker rather
+# than writing one: a reason you cannot grep is a rumour.
 # TODO(p3) ops.py:718  def axis                 -- `self.arg` for a movement op, so it is
 #   `marg`-shaped and P3 with `marg`.
 # TODO(p3) ops.py:785  def base                 -- PORTED, as `UOp.base` over the table.

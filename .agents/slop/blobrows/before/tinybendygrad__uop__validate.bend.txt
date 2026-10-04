@@ -4,9 +4,9 @@ dv_var_neg | [, i] | i |  | 0
 dv_range_global | [, And(r >= 0, 100 - 1 <= r), r] | r |  | 0
 dv_range_loop | [, And(r >= 0, 100 - 1 <= r), r] | r |  | 0
 dv_range_m1 | [, And(r >= 0, 100 - 1 <= r), r] | r |  | 0
-dv_and15 | [, And(r >= 0, 100 - 1 <= r), r, 15, If(int_to_bv(r) & int_to_bv(15) < 0, BV2Int(int_to_bv(r) & int_to_bv(15)) - 1, BV2Int(int_to_bv(r) & int_to_bv(15)))] | If(int_to_bv(r) & int_to_bv(15) < 0, BV2Int(int_to_bv(r) & int_to_bv(15)) - 1, BV2Int(int_to_bv(r) & int_to_bv(15))) |  | 0
-dv_and_neg4 | [, And(r >= 0, 100 - 1 <= r), r, -4, If(int_to_bv(r) & int_to_bv(-4) < 0, BV2Int(int_to_bv(r) & int_to_bv(-4)) - 1, BV2Int(int_to_bv(r) & int_to_bv(-4)))] | If(int_to_bv(r) & int_to_bv(-4) < 0, BV2Int(int_to_bv(r) & int_to_bv(-4)) - 1, BV2Int(int_to_bv(r) & int_to_bv(-4))) |  | 0
-dv_and21 | [, And(r >= 0, 100 - 1 <= r), r, 21, If(int_to_bv(r) & int_to_bv(21) < 0, BV2Int(int_to_bv(r) & int_to_bv(21)) - 1, BV2Int(int_to_bv(r) & int_to_bv(21)))] | If(int_to_bv(r) & int_to_bv(21) < 0, BV2Int(int_to_bv(r) & int_to_bv(21)) - 1, BV2Int(int_to_bv(r) & int_to_bv(21))) |  | 0
+dv_and15 | [, And(r >= 0, 100 - 1 <= r), r, 15, If(int_to_bv(r) & int_to_bv(15) < 0, BV2Int(int_to_bv(r) & int_to_bv(15)) - 256, BV2Int(int_to_bv(r) & int_to_bv(15)))] | If(int_to_bv(r) & int_to_bv(15) < 0, BV2Int(int_to_bv(r) & int_to_bv(15)) - 256, BV2Int(int_to_bv(r) & int_to_bv(15))) |  | 0
+dv_and_neg4 | [, And(r >= 0, 100 - 1 <= r), r, -4, If(int_to_bv(r) & int_to_bv(-4) < 0, BV2Int(int_to_bv(r) & int_to_bv(-4)) - 256, BV2Int(int_to_bv(r) & int_to_bv(-4)))] | If(int_to_bv(r) & int_to_bv(-4) < 0, BV2Int(int_to_bv(r) & int_to_bv(-4)) - 256, BV2Int(int_to_bv(r) & int_to_bv(-4))) |  | 0
+dv_and21 | [, And(r >= 0, 100 - 1 <= r), r, 21, If(int_to_bv(r) & int_to_bv(21) < 0, BV2Int(int_to_bv(r) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r) & int_to_bv(21)))] | If(int_to_bv(r) & int_to_bv(21) < 0, BV2Int(int_to_bv(r) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r) & int_to_bv(21))) |  | 0
 dv_shr2 | [, And(r >= 0, 64 - 1 <= r), r, 2, If(0 > 2, invalid_shift, r/4)] | If(0 > 2, invalid_shift, r/4) |  | 0
 dv_where | [, v, 8, v < 8, And(v >= 0, v >= 15), v, Invalid, v < 8, v] | v |  | 0
 dv_const_invalid | [] | Invalid |  | 0

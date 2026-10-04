@@ -10,19 +10,54 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
-from tinygrad.uop.ops import UOp, Ops, PatternMatcher, UPat, AxisType
+from tinygrad.uop.ops import UOp, Ops, PatternMatcher, UPat, AxisType, ParamArg, UOpMetaClass
 from tinygrad.dtype import dtypes, AddrSpace
 import tinygrad.codegen as CG
 
-LP, UL = AxisType.LOOP, AxisType.UNROLL
+# `AxisType.UNROLL` WAS NOT A NAME THAT EVER EXISTED. Measured with
+# `oracle-live.py`: this file raised `AttributeError: type object 'AxisType' has no
+# attribute 'UNROLL'` at this line and printed ZERO rows, so every row below -- the
+# literal `ops` row included -- had never been adjudicated against a running oracle.
+# CPython spells the axis the port calls `AXIS_UNROLL` `AxisType.UPCAST`
+# (`.agents/slop/notes/bend2-constraints.md`, appended section: a dtype/axis RENAME is
+# a silent semantic change wherever a pattern matches on the NAME).
+LP, UL = AxisType.LOOP, AxisType.UPCAST
 
 def fixture():
-  """The SAME arena kernel.bend builds, in the SAME interning order."""
+  """The SAME arena kernel.bend builds, in the SAME interning order.
+
+  DEAD UNTIL 2026-10-04. `rows()` never called it, so `oracle-live.py` reports it as
+  a DEAD DEF -- the `unobservable-gr-oracle.py` `q4()` shape, one file over. It is
+  the `kn_fixture` the `ops` row needs, so it is called now; the return value is the
+  node LIST in interning order, not the dict this used to build.
+  """
   C = UOp.const
   c0, c1, c4 = C(0), C(1), C(4)
   sp = UOp.special(4, "0")
-  b7 = UOp(Ops.BUFFER, src=(sp,), arg=UOp(Ops.SINK, src=()).arg) if False else None
-  return dict(c0=c0, c1=c1, c4=c4, sp=sp)
+  b7 = UOp(Ops.BUFFER, src=(sp,), arg=ParamArg(7, None))
+  b3 = UOp(Ops.BUFFER, src=(sp,), arg=ParamArg(3, None))
+  prm = UOp(Ops.PARAM, src=(sp,), arg=ParamArg(0, None))
+  # `UOp.range(end, axis_id, axis_type)` is `UOp(RANGE, src=(end,), arg=(axis_type,
+  # axis_id))` -- the axis tuple lives in `arg`, NOT in `src`. MEASURED: `ru.nsrc` is
+  # 1, not 2. `.agents/slop/kn-noop-truth.py` builds these two by hand as
+  # `RANGE(c4, CONST(0))` with a bare `AxisType` arg, which is a DIFFERENT node with
+  # nsrc 2 -- and it still agreed with the port, because an op NAME cannot see a src
+  # count or an arg shape. That is the `qmd.ver.of` lesson again: provenance added,
+  # discriminative power zero, and the wrong node.
+  ru = UOp.range(4, (0,), UL)
+  rl = UOp.range(4, (1,), LP)
+  sq1 = UOp(Ops.SQRT, src=(c0,))
+  st1 = UOp(Ops.STORE, src=(c0, c1))
+  al1 = UOp(Ops.ALLOC, src=(c1,))
+  rd1 = UOp(Ops.REDUCE, src=(sq1, ru), arg=(Ops.ADD, 1))
+  sk1 = UOp(Ops.SINK, src=(sq1,))
+  pr1 = UOp(Ops.PROGRAM, src=(sk1,))
+  pr2 = UOp(Ops.PROGRAM, src=(sk1, st1))
+  ins0 = UOp(Ops.INS, src=())
+  pr3 = UOp(Ops.PROGRAM, src=(sk1, ins0))
+  pr4 = UOp(Ops.PROGRAM, src=(sk1, st1, c1))
+  return [c0, c1, c4, sp, b7, b3, prm, ru, rl, sq1, st1, al1, rd1, sk1, pr1, pr2,
+          ins0, pr3, pr4]
 
 def rows():
   r = []
@@ -63,21 +98,35 @@ def rows():
   # the same count applied twice gives the same slot
   r.append(("np_twice", int(2 == 2)))
 
-  # ---- build_range_map (__init__.py:42-47) ----
+  # ---- build_range_map (__init__.py:40-45) ----
+  #
+  # WAS A RESTATEMENT, IN TWO WAYS, AND BOTH ARE NOW GONE.
+  #   1. `if x.op is Ops.RANGE and x.axis_type in {AxisType.UNROLL, AxisType.UPCAST}`
+  #      named `AxisType.UNROLL`, which is NOT a member of the enum at the pin --
+  #      `.venv/bin/python -c "import tinygrad.uop.ops as O; print(O.AxisType.__members__)"`
+  #      answers `DEVICE GLOBAL LOCAL LOOP PLACEHOLDER UPCAST WARP WEAK`. The set was
+  #      a GUESS at the port's two-arm predicate, and it is a second reference to a
+  #      name that never existed (the first is at the `LP, UL` line, which raised
+  #      first and HID this one). The author's own port says so at kernel.bend:405 --
+  #      "The UNROLL arm has no upstream counterpart".
+  #   2. `ctx[x.axis_id]` where upstream writes `ctx[x.arg]`. For `UOp.range(4,(0,),t)`
+  #      the arg is `(t, (0,))` and `axis_id` is `x.arg[1:]` == `(0,)`, so the two are
+  #      DIFFERENT KEYS. The count came out 1 either way, which is why nothing caught
+  #      it: a count is not a gate (agent-core.md).
+  # NOW: `rm` is `len(CG.build_range_map(sink))` -- the upstream function, called -- and
+  # the two halves ask the RESULT whether they are in it. No predicate is restated, so
+  # a pin that moves the axis predicate moves these rows without editing this file.
   ru = UOp.range(4, (0,), UL)
   rl = UOp.range(4, (1,), LP)
   sq1 = UOp(Ops.SQRT, src=(UOp.const(0),))
   st1 = UOp(Ops.STORE, src=(UOp.const(0), UOp.const(1)))
   al1 = UOp(Ops.ALLOC, src=(UOp.const(1),))
   rd1 = UOp(Ops.REDUCE, src=(sq1, ru), arg=(Ops.ADD, 1))
-  nodes = [sq1, st1, al1, rd1, ru, rl]
-  ctx = {}
-  for x in nodes:
-    if x.op is Ops.RANGE and x.axis_type in {AxisType.UNROLL, AxisType.UPCAST}:
-      ctx[x.axis_id] = len(ctx)
-  r.append(("rm", len(ctx)))
-  r.append(("rm_unroll", int(ru.op is Ops.RANGE and ru.axis_type in {AxisType.UNROLL, AxisType.UPCAST})))
-  r.append(("rm_loop", int(rl.op is Ops.RANGE and rl.axis_type in {AxisType.UNROLL, AxisType.UPCAST})))
+  # the sink has to REACH both RANGEs: `ru` through `rd1`, `rl` as a direct src.
+  rmap = CG.build_range_map(UOp(Ops.SINK, src=(sq1, st1, al1, rd1, rl)))
+  r.append(("rm", len(rmap)))
+  r.append(("rm_unroll", int(ru.arg in rmap)))
+  r.append(("rm_loop", int(rl.arg in rmap)))
 
   # ---- is_shape_changing_bitcast (__init__.py:226) ----
   r.append(("bitcast", int(sq1.op is Ops.BITCAST)))
@@ -154,17 +203,63 @@ def stage(prg):
   if len(src) == 2: return 4
   return 0
 
+def intern_order(nodes):
+  """Each node's 1-BASED INTERNING RANK among `nodes`, read out of tinygrad's own
+  interning table.
+
+  `UOpMetaClass.__call__` interns on `(op, src, arg, tag, type(arg))` and records the
+  insertion into `UOpMetaClass.ucache`, so the table's INSERTION ORDER is the arena
+  order `kernel.bend`'s `Found.i` reports. The rank is taken among `nodes` alone and
+  NOT as an absolute index, because `ucache` is process-global and already holds
+  whatever `rows()` built above.
+
+  THIS IS A CALL INTO THE THING UNDER TEST'S OWN STRUCTURE, not a transcription and
+  not a copy: the value is read out of the live interning table, so it moves if the
+  fixture's interning order moves. It reaches into a private name, which is the
+  honest cost: a pin bump that renames `ucache` fails LOUDLY here (AttributeError at
+  this line) instead of quietly reverting to a literal.
+  """
+  pos = {id(w()): i for i, w in enumerate(UOpMetaClass.ucache.values())
+         if w() is not None}
+  seen = sorted(pos[id(n)] for n in nodes)
+  rank = {r: i + 1 for i, r in enumerate(seen)}
+  return [rank[pos[id(n)]] for n in nodes]
+
+def dup_at(ix):
+  """The first POSITION whose node repeats the one before it, else 0.
+
+  Same predicate as the port's `k_dup`: a dedup makes two adjacent entries equal.
+  Port spelling needs an `Arena`; CPython's is structural, so here two of the
+  fixture's constructor calls returning the SAME interned object is the dedup.
+  """
+  for i in range(1, len(ix)):
+    if ix[i] == ix[i - 1]:
+      return i
+  return 0
+
 def main():
   for nm, v in rows():
     print(f"{nm}={v}")
-  print("pos=20")
-  print("dup=0")
-  print("pos_same=1")
-  # `ix` is the fixture's node list. kernel.bend builds it with one `+` per node in
-  # the interning order; the values ARE the indices, 0..19, and `pos_same` is what
-  # checks that no `UOp.new` deduplicated one away -- which happened, once.
-  print("ix=" + " ".join(str(i) for i in range(20)) + " ")
-  print("ops=NOOP CONST CONST CONST SPECIAL BUFFER BUFFER PARAM RANGE RANGE SQRT STORE ALLOC REDUCE SINK PROGRAM PROGRAM INS PROGRAM PROGRAM ")
+
+  # ---- DERIVED, NOT LITERAL. All four rows below used to be typed constants. ----
+  #
+  # `ix`, `pos`, `dup` and `pos_same` are read off `fixture()` and `intern_order()`.
+  # `pos` counts the fixture's nodes plus ONE for the port's arena bottom -- the port's
+  # `k_pos` is `List.length` of `K.ix`, whose head is the literal `0` standing in for
+  # CPython's absent `None` UOp, so the sentinel is the PORT's spelling and is stated
+  # here rather than measured.
+  nodes = fixture()
+  ix = intern_order(nodes)
+  print(f"pos={len(ix) + 1}")
+  print(f"dup={dup_at(ix)}")
+  # `pos_same`: the port compares its list length to `Arena.next`. Here it is the
+  # check that the fixture interned 19 DISTINCT nodes -- if a constructor call had
+  # deduplicated onto an earlier one, `ix` would repeat and this would read 0.
+  print(f"pos_same={int(len({id(n) for n in nodes}) == len(nodes))}")
+  print("ix=" + " ".join(["0"] + [str(i) for i in ix]) + " ")
+  # `ops` is the op NAME off each of those same nodes, in the same order. `NOOP` is the
+  # port's arena bottom, which has no CPython counterpart, so the sentinel is stated.
+  print("ops=NOOP " + " ".join(n.op.name for n in nodes) + " ")
   print("ab=BUFFER")
 
 if __name__ == "__main__":

@@ -332,3 +332,4 @@ fmt 'ret;' = ['\tret;']   py=['\tret;']
 fmt '$LDG.E R1, [R2];' = ['$LDG.E R1, [R2];']   py=['$LDG.E R1, [R2];']
 fmt 'shl.b32' = ['\tshl.b32']   py=['\tshl.b32']
 fmt 'ret;' = ['\tret;']   py=['\tret;']
+

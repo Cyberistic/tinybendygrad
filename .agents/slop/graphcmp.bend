@@ -175,9 +175,23 @@ def img2(m: O.Img) -> String:
   match m:
     case O.Img{h, w}: String.concat(["n(", U32.show(h), ",", U32.show(w), ")"])
 
+# `PyRange` is ParamArg's FOURTH field, `vmin_vmax: tuple[int, ...] | None` (ops.py:29), and
+# both members are `H.I64`s -- so the column is `r(l0:1,l0:100)` and NOT `r(0:1,0:100)`.
+#
+# IT WAS THE SECOND ONE, and it is the second measured instance of the same defect in this
+# file: `H.i64_text` is only the `hi:lo` PAIR (helpers.bend:1696-1699) and the `l` that
+# marks it as an I64 is `is64`'s contribution, one line up. So `rng` formatted a pair and
+# forgot the letter. MEASURED by `--graph sym`, the FIRST graph in the corpus with a
+# `Some` `vmin_vmax` -- every ParamArg the nine earlier graphs carried had `vmin_vmax=None`,
+# so this arm of `mm` had never run and `ParamArg`'s fourth field had never been asked a
+# question. Adding `--graph sym` made it `r(0:1,0:100)` against the py side's
+# `r(l0:1,l0:100)`, and because `arg` is in the `core` that turned a PARAM into a
+# one-sided node and every RESHAPE and the GROUP above it with it -- a four-node cascade
+# with the cause in none of them, which is exactly the failure the rung-2/rung-3 design
+# exists to prevent and which a LETTER this file already had a def for prevented.
 def rng(r: O.PyRange) -> String:
   match r:
-    case O.PyRange{lo, hi}: String.concat(["r(", H.i64_text(lo), ",", H.i64_text(hi), ")"])
+    case O.PyRange{lo, hi}: String.concat(["r(", is64(lo), ",", is64(hi), ")"])
 
 def konst(c: O.Const) -> String:
   match c:
@@ -434,10 +448,29 @@ def shape_str(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
     case Some{None{}}: "R"
     case Some{Some{ds}}: dimlist(ds)
 
+# `dt_str`'s UNSETTLED ARM IS `?` AND NOT `R`, and that is a fix found by `--graph sym`.
+#
+# `R` is the FAITHFUL rendering of an upstream raise, and `dtype_from_uop` (ops.py:123-190)
+# is TOTAL over `Ops` -- it names a dtype for every member and its only failure modes are
+# a `raise RuntimeError` on a malformed arg. So on the py side the dtype column is always a
+# real name, and `R` there could never mean anything. On this side `F.UOp.dtype` answers
+# `None` for a node the fold never settled, and it was rendering that `R` -- the SAME
+# letter as `shape_str`'s no-shape case, for a state that is not upstream's.
+#
+# TWO COLLISIONS IN ONE LETTER, which is what `?` exists for: `shape_str` already had the
+# port-only state (`None` = the fold produced no `Derived`), so the dtype column was using
+# one letter for two facts while the shape column used two letters for two facts. The
+# rule the whole ledger rests on is that a letter is ONE fact, so `dt_str`'s `None` is `?`
+# too, and `?` is now registered against BOTH fields in graphcmp.py's LEDGER.
+#
+# MEASURED, and the change is a widening rather than a retune: no graph in the corpus
+# before `sym` emitted `dt_str(None)` at all (every one of the nine earlier graphs settles
+# completely -- the probe header printed `settled=True` for all of them), so nothing that
+# used to read `R` reads `?` now.
 def dt_str(m: Maybe<&2, S.Dt>) -> String:
   match m:
     case Some{d}: dname(d)
-    case None{}: "R"
+    case None{}: "?"
 
 def srcs.go(+ss: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ss:
@@ -623,6 +656,166 @@ def g_sink() -> O.Found:
   +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
   O.UOp.new(O.Found.ar(c4), O.OpsSINK{}, [O.Found.i(c4)], O.AKernel{O.KernelInfo.of()}, O.TNone{})
 
+# ===========================================================================
+# THE FOUR WIDENING GRAPHS (2026-10-04, second pass). Every count, every shape and every
+# `arg` below is the CPython side's OWN output, read off
+# `emit --side py --graph NAME` and not written from prose -- see the graph table in
+# graphcmp.py's header and `runs/graphcmp/D/D1-graph-*.txt`.
+#
+# WHAT THEY ARE FOR, in the order the limits file asked for them:
+#   group    GROUP -- the op that makes a linearized program a GRAPH rather than a tree,
+#            and with it the first node in the corpus with more than one parent.
+#   commute  SEVEN of the eight commutative ops, so `--equiv` stops being measured on one.
+#   indexed  PARAM / INDEX / BARRIER -- the ops that make a program a PROGRAM, and the
+#            first non-WEAK axis type in the corpus.
+#   sym      a SYMBOLIC dim, twice and DIFFERENTLY -- which measures a limit that was
+#            untested, and disagrees on purpose (see `g_sym`).
+#
+# THE CONST shape STACK IS BUILT BY HAND in three of the four rather than by a helper,
+# because `alloc`/`const`/`new` are the only spellings and the ids are load-bearing: the
+# arena indices are the toposort positions, so a node built in a different ORDER is a
+# different file even though it is the same graph.
+
+# `--graph group`: `UOp.group(sh + sh, sh * sh)`, MEASURED at 8 nodes with the op sequence
+# ALLOC CONST CONST STACK RESHAPE ADD MUL GROUP. THE POINT IS THE FAN-IN: `ADD` and `MUL`
+# both take `sh`, so `RESHAPE` has TWO parents and `CONST 4` has TWO as well, and each of
+# ADD/MUL carries the SAME child index TWICE (`src=n(i5,i5)`). No graph in the corpus
+# before this one had any node with more than one parent, so the differ had never placed
+# one -- and a differ that only ever saw trees cannot be said to handle a DAG.
+#
+# `GROUP`'s arg is `None` here (MEASURED: `UOp.group` is `UOp(Ops.GROUP, src=..., **kwargs)`
+# with no arg, ops.py:558-560, and `hasattr(group, 'params')` is `False`), so `ANone` is
+# the whole of it. See `graphcmp-LIMITS.md` on the `params` claim: there is no such field
+# at this tree to ignore.
+def g_group() -> O.Found:
+  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +add = O.UOp.new(O.Found.ar(r43), O.OpsADD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
+  +mul = O.UOp.new(O.Found.ar(add), O.OpsMUL{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(mul)], O.ANone{}, O.TNone{})
+
+# `--graph commute`: `UOp.group(a+b, a!=b, a.maximum(b), a&b, a|b, a^b)`, MEASURED at 14
+# nodes. SIX commutative ops in one graph, each a single elementwise node over the SAME
+# two RESHAPEs -- so each RESHAPE has SIX parents, the widest fan-in in the corpus, and the
+# six ops are the ones `GroupOp.Commutative` names that an eager graph can reach.
+#
+# THE OP NAMES ARE CPython's, MEASURED op by op (`runs/graphcmp/probe/p15-comm.py`), and
+# the port's spelling is `O.OpsADD{}` and so on. Two of the six carry a fact worth
+# recording rather than re-deriving:
+#   * `CMPNE`'s dtype is `bool`, which is the `CMPLT|CMPNE|CMPEQ -> dtypes.bool` arm of
+#     `dtype_from_uop` (ops.py:157-158) and the only bool-dtype node the corpus carried
+#     before `range`; and its shape is the broadcast of the two srcs, so it also exercises
+#     `broadcast_shape` on two equal shapes.
+#   * `AND`/`OR`/`XOR` are `f32` here, not ints: MEASURED, `a ^ b` on two f32 ALLOCs emits
+#     an `XOR` node with dtype `f32` (`promo_dtype` of f32 and f32), so the port's
+#     `promo` path answers f32 and not "the bitwise dtype".
+def g_commute() -> O.Found:
+  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +ra = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(ra), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +rb = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +add = O.UOp.new(O.Found.ar(rb), O.OpsADD{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +ne = O.UOp.new(O.Found.ar(add), O.OpsCMPNE{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +mx = O.UOp.new(O.Found.ar(ne), O.OpsMAX{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +an = O.UOp.new(O.Found.ar(mx), O.OpsAND{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +orr = O.UOp.new(O.Found.ar(an), O.OpsOR{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +xo = O.UOp.new(O.Found.ar(orr), O.OpsXOR{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(xo), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(ne), O.Found.i(mx),
+    O.Found.i(an), O.Found.i(orr), O.Found.i(xo)], O.ANone{}, O.TNone{})
+
+# `UOp.param(0, dtypes.float, 8, device="CPU", name="p0")` -- `ops.py:1235-1239`'s
+# `UOp.param`, MEASURED: `ParamArg(slot=0, dtype=f32, size=8, name='p0', device='CPU')`
+# and everything else at its default. `bind_on_realize` is FALSE on a PARAM (it is the
+# ALLOC's flag, and `g_buffer` measures that reading already) and the buffer slot is
+# absent, so `bufo` answers `N`.
+def paramf(slot: U32, size: U32, nm: String) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, Some{nm}, S.AGlobal{}, Some{S.D1{0}},
+    False{}, None{}, None{}, False{}, None{}}
+
+# `--graph indexed`: `UOp.sink(p.index(UOp.const(0)).barrier(UOp.range(UOp.const(4), 0,
+# AxisType.LOOP)), arg=KernelInfo())`, MEASURED at 7 nodes: PARAM CONST INDEX CONST RANGE
+# BARRIER SINK.
+#
+# THREE FACTS THAT ARE NOT THE OBVIOUS READING, all from the py side's own rows:
+#   * `INDEX`'s dtype is `f32` and its shape is `()`. `ops.py:143-146` returns
+#     `dtypes.float` only when `src[0]` is a PARAM whose shape `is_image_shape`, and
+#     returns `b.dtype` otherwise -- so the image arm is NOT taken here and this graph is
+#     the fixture for the plain arm. The shape is `tuple()` because `index_ds` builds
+#     `src[1:]`'s shapes and then `src[0].shape[1:]`, and `PARAM`'s shape is `(8,)` so
+#     its tail past the first dim is empty.
+#   * `BARRIER` is `void` with NO shape (`ops.py:334`), so its column is `R` -- the second
+#     graph to make `R` live and the first where `R` is neither the root nor a SINK.
+#   * the RANGE carries `AxisType.LOOP`, so `XLOOP` is the first non-`WEAK` axis atom in
+#     the corpus. `WEAK` is what `range`/`rangeflat` already cover; reusing it here would
+#     have looked like coverage and been none.
+def g_indexed() -> O.Found:
+  +p0 = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{}, O.AParam{paramf(0, 8, "p0")}, O.TNone{})
+  +c0 = O.UOp.const(O.Found.ar(p0), O.CInt{H.i64_of_i32(0)})
+  +ix = O.UOp.new(O.Found.ar(c0), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(ix), O.CInt{H.i64_of_i32(4)})
+  +r = O.UOp.range_end(O.Found.ar(c4), O.Found.i(c4), [0], O.AXIS_LOOP{})
+  +bar = O.UOp.new(O.Found.ar(r), O.OpsBARRIER{}, [O.Found.i(ix), O.Found.i(r)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(bar), O.OpsSINK{}, [O.Found.i(bar)], O.AKernel{O.KernelInfo.of()}, O.TNone{})
+
+# A scalar ALU PARAM with a value range and NO size -- `UOp.variable(name, 1, 100)`
+# (ops.py:1014-1018) with the SLOT SPELLED as 0. The spelling is the whole comment, and it
+# belongs HERE as well as on the py side: the port's `ParamArg.slot` is a `U32`
+# (ops.bend:871), so Python's `-1` has no port spelling, and the tree has TWO conflicting
+# sentinels -- `schedule/__init__.bend:1100` writes 0 and says "The slot is `None` in
+# Python's `-1`; nothing in this file reads a slot, so it is 0 here", while
+# `uop/ops.bend:3566` calls any slot but 0/1 "the free Variable sentinel" and uses
+# `4294967295` for its own absent case. 0 is the one a committed port fixture already
+# writes, so it is the one used here; the DISAGREEMENT between the two is reported and not
+# reconciled.
+#
+# `vmin_vmax=(1, 100)` and `multiple_of=1` are `PyRange`/`Some{1}`, `addrspace=ALU` is
+# `S.Aalu{}`, and `dtype=weakint` is `S.weakint()` (spec.bend:720) -- MEASURED off the py
+# side's own row `P(i0,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N)`.
+def var(nm: String) -> O.ParamArg:
+  O.ParamArg{0, S.weakint(), None{}, Some{O.PyRange{H.i64_of_i32(1), H.i64_of_i32(100)}}, Some{1},
+    Some{nm}, S.Aalu{}, None{}, False{}, None{}, None{}, False{}, None{}}
+
+# `--graph sym`: `UOp.group(RESHAPE(a, STACK(n, CONST 4)), RESHAPE(a, STACK(m, CONST 4)))`,
+# MEASURED at 12 nodes, and THIS GRAPH IS EXPECTED TO DISAGREE. That is its job.
+#
+# WHY. `uop/fold.bend`'s `marg.of` answers `None{}` -- upstream's `(ssimplify(self),)`
+# arm, the `ssimplify` wall -- for a STACK element that is not a CONST, because
+# `marg.step`'s `case None{}` clears the `ok` flag; and `shape_str` above spells that
+# `None` as `?`. So the port's two RESHAPEs answer `?` where CPython answers `(U,l0:4)`,
+# ON MATCHING CORES. By graphcmp.py's own measured theorem a rung-1 field mismatch cannot
+# mean "the graphs differ": it means the two `_shape` IMPLEMENTATIONS disagree. So the
+# report names `shape` on exactly 2 of 12 nodes and every other column agrees -- which is
+# the strongest form this finding can take, and it makes the `?` ledger marker live for
+# the first time. `fold.bend:6180` already records the same wall ("nothing in this tree
+# can mint one" -- `O.SU` has a constructor and NO caller); this graph is that claim with
+# a denominator on it.
+#
+# THE OTHER HALF IS WHAT THE DIFFER CAN DO, and it is the answer to the symbolic-dim
+# limit. The two RESHAPEs' `shape` columns are IDENTICAL (`(U,l0:4)` both) -- so the shape
+# field cannot separate them -- but their `arg`/`src` columns do, through ParamArg's sixth
+# field (`sn` against `sm`, ops.py:31) and through the STACK's child cores. So `U` is a
+# hole in the SHAPE COLUMN alone and not in the differ's identity, and
+# `graphcmp.py`'s `conf` measures exactly that (CONFLATION 4).
+def g_sym() -> O.Found:
+  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +pn = O.UOp.new(O.Found.ar(a1), O.OpsPARAM{}, Nil{}, O.AParam{var("n")}, O.TNone{})
+  +sn = O.UOp.new(O.Found.ar(pn), O.OpsSTACK{}, [O.Found.i(pn), O.Found.i(c4)], O.ANone{}, O.TNone{})
+  +rn = O.UOp.new(O.Found.ar(sn), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(sn)], O.ANone{}, O.TNone{})
+  +pm = O.UOp.new(O.Found.ar(rn), O.OpsPARAM{}, Nil{}, O.AParam{var("m")}, O.TNone{})
+  +sm = O.UOp.new(O.Found.ar(pm), O.OpsSTACK{}, [O.Found.i(pm), O.Found.i(c4)], O.ANone{}, O.TNone{})
+  +rm = O.UOp.new(O.Found.ar(sm), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(sm)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(rm), O.OpsGROUP{}, [O.Found.i(rn), O.Found.i(rm)], O.ANone{}, O.TNone{})
+
 # `rows.pick` is a `Bool.pick` chain: `Bool.pick` CHOOSES an arm, it does not SEQUENCE
 # one, so each rung is one more `Bool.pick` and the default is the matmul.
 # `+` on the binder because this body READS `name` TWICE (once per rung). `Bool.pick`
@@ -630,14 +823,19 @@ def g_sink() -> O.Found:
 # counts the two static reads -- MEASURED: without `+` this is
 # "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
 def rows.pick3(+name: String) -> O.Found:
-  Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
-    Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
-      Bool.pick(O.Found, String.eq(name, "range"), g_range(),
-        Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
-          Bool.pick(O.Found, String.eq(name, "special"), g_special(),
-            Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
-              Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
-                Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul()))))))))
+  Bool.pick(O.Found, String.eq(name, "group"), g_group(),
+    Bool.pick(O.Found, String.eq(name, "commute"), g_commute(),
+      Bool.pick(O.Found, String.eq(name, "indexed"), g_indexed(),
+        Bool.pick(O.Found, String.eq(name, "sym"), g_sym(),
+          Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
+            Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
+              Bool.pick(O.Found, String.eq(name, "range"), g_range(),
+                Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
+                  Bool.pick(O.Found, String.eq(name, "special"), g_special(),
+                    Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
+                      Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
+                        Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
+                          g_matmul()))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

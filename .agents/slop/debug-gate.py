@@ -43,7 +43,7 @@ makes "the row moved" a fact: diff level 0 against level 2 and only the site row
 change. Each level is a fresh process because `getenv` is `@functools.cache`d
 (helpers.py:162) and a ContextVar's value is a process-boot constant.
 """
-import os, subprocess, sys
+import os, re, subprocess, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 PY = os.path.join(ROOT, '.venv', 'bin', 'python')
@@ -59,7 +59,16 @@ def row(nm, v): rows.append("%s=%s" % (nm, v))
 # hiding.
 # ===========================================================================
 KEEP = {"ar": (" ALLREDUCE ",), "mem": ("memory reduced from ",),
-        "st": ("WARNING: returning Dummy for ",)}
+        "st": ("WARNING: returning Dummy for ",),
+        "am": ("am ",),
+        # `pin` is the plan's own quantities, and they are read at DEBUG UNSET so the
+        # pin cannot be perturbed by the level even in principle -- the structural half
+        # of "hold the graph fixed by construction". The shell script then DIGESTS the
+        # pin rows across every level and refuses to compare on a mismatch, which is the
+        # half that checks it. `py_nsites`/`py_site_L<n>` count CPython's own site
+        # inventory per level; see the LEVEL-SITE INVENTORY note below.
+        "pin": ("pin_",),
+        "sites": ("py_nsites=", "py_site_", "up_")}
 
 def child(level, body, env_extra=None):
   env = dict(os.environ)
@@ -87,7 +96,7 @@ def keep(lines, key):
 ENV_BODY = """
 from tinygrad.helpers import DEBUG
 print("env_value=%r" % DEBUG.value)
-for n in (1, 2, 3): print("env_ge%d=%d" % (n, int(DEBUG >= n)))
+for n in (1, 2, 3, 4, 5, 6, 7): print("env_ge%d=%d" % (n, int(DEBUG >= n)))
 """
 
 # ===========================================================================
@@ -160,6 +169,18 @@ with Context(ALL2ALL=2): run(FOUR, 100)
 # BODY, so A2 is the STORE DESTINATION and is never collected; DK is on DISK so
 # `_can_plan` (:12) rejects it. Five buffers, two lanes.
 # ===========================================================================
+# THE PLAN'S OWN QUANTITIES, READ OUT OF CPython'S OWN FRAME. `memory_plan_rewrite`
+# returns a UOp, not a plan, so the four numbers the port's `pin_*` rows carry are not
+# in the return value -- `first_appearance`, `nbytes`, `arena_sizes` and `total_memory`
+# are all locals of the frame (memory.py:31/42/45/53). Reading a frame's locals IS
+# calling CPython: nothing here recomputes the recipe, and a re-implementation would
+# be free to agree with a wrong port. `sys.settrace` is the mechanism, and
+# `.agents/slop/x86/x86-oracle.py:93-118` is the precedent in this repository.
+#
+# THE TRACE STOPS AT memory.py:54 -- the LAST line before the arena UOps are built --
+# because at :60 the locals still hold everything and after the `return` the frame is
+# gone. `arena_sizes` is the dict at :53, so `sum(arena_sizes.values())` is the port's
+# `mem_sum_arena` and NOT `sum(nbytes.values())`, which is the port's `tot / 2`.
 MEM_BODY = """
 from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad.dtype import dtypes
@@ -173,7 +194,27 @@ STORE = UOp(Ops.STORE, src=(A2, B2), arg=ParamArg(slot=0, dtype=dtypes.int32))
 lin = UOp(Ops.LINEAR, src=(SINK(STORE, B2), SINK(STORE, C2),
                           SINK(UOp(Ops.ADD, src=(D2, E2)), D2, E2),
                           SINK(UOp(Ops.MUL, src=(D2, F2)), D2, F2)))
-M.memory_plan_rewrite(lin)
+import sys
+CAP = {}
+TARGET = M.memory_plan_rewrite.__code__
+STOP = M.__file__.replace(".pyc", ".py")
+def tracer(frame, event, arg):
+  if frame.f_code is not TARGET: return None
+  if event == "line":
+    l = frame.f_locals
+    if "arena_sizes" in l and "nbytes" in l and "first_appearance" in l and "total_memory" in l:
+      CAP.update(nbytes=sum(l["nbytes"].values()), arenas=sum(l["arena_sizes"].values()),
+                 bufs=len(l["first_appearance"]), narenas=len(l["arena_sizes"]),
+                 tot=l["total_memory"])
+  return tracer
+sys.settrace(tracer)
+try: M.memory_plan_rewrite(lin)
+finally: sys.settrace(None)
+print("pin_bufs=%d" % CAP["bufs"])
+print("pin_narenas=%d" % CAP["narenas"])
+print("pin_arenas=%d" % CAP["arenas"])
+print("pin_tot=%d" % CAP["tot"])
+print("pin_nbytes=%d" % CAP["nbytes"])
 """
 
 # ===========================================================================
@@ -224,12 +265,409 @@ for path, line in SITES:
 AM_TAGS = ("am185", "am225", "am251", "am254")
 AR_TAGS = ("ar_ring", "ar_naive", "ar_a2")
 
+# ===========================================================================
+# UPSTREAM'S `DEBUG >= N` SITES, INVENTORIED BY CALLING CPython -- AND DERIVED, NEVER
+# TYPED. There is no hand-written site table here at all: `upstream_sites()` greps
+# `DEBUG\s*>=\s*(\d+)` over `tinygrad/` and the right-hand side IS the threshold, so a
+# site that is added, moved or re-leveled upstream changes these rows instead of
+# silently changing what a level means. That is the whole reason this is derived: a
+# hand-written threshold is a row that can only ever agree with itself, and
+# agent-core.md's `nv_query_litter` row is what that costs -- the port AND the oracle
+# both said 2, the truth was 3, and the differ reported "0 disagreements" over one
+# mistake made twice.
+#
+# `kind` is what the site DOES, and it is the whole of what a level can be asked for.
+# It is CLASSIFIED FROM THE SITE'S OWN SOURCE LINE by `_PRINTS`, so it cannot drift
+# from the text either:
+#   print  -- writes text, so a gate can compare TEXT
+#   other  -- does not print, so a gate can compare only PRESENCE/ABSENCE
+#
+# MEASURED over this tree, and this is a REPORT not a claim about upstream: of the
+# sites at levels 4..7, three do not print -- `usb.py:25` sets a libusb log level,
+# `ops_dsp.py:283` passes qemu a `-strace` flag, and `viz/cli.py:216` is a render
+# predicate. At level 6 BOTH sites are of that kind or unreachable, which is why
+# level 6's absence is a property of BOTH sides and is stated as such rather than
+# claimed for the port alone.
+#
+# DISTINCT (file, line) PAIRS, not grep occurrences: `viz/cli.py:216` carries both
+# `DEBUG >= 6` and `DEBUG >= 5` on one line, and counting occurrences would report
+# level 5 a site it does not have.
+# ===========================================================================
+_SITE_RE = re.compile(r"\bDEBUG\s*>=\s*(\d+)")
+ALL_LEVELS = (1, 2, 3, 4, 5, 6, 7)
+NEW_LEVELS = (4, 5, 6, 7)
+# Every spelling this repository's own `DEBUG`-gated code uses to reach stdout. A site
+# whose line contains none of them is `other`. The list is checked for TOTALITY below
+# -- every site line must classify, or the run fails rather than guessing.
+_PRINTS = ("print(", "print_uops(", "print_exc", "print_step(", "nir_print_shader",
+           "LLVMPrintModuleToString", "disassemble(", "emit(")
+
+
+def _stmt_block(lines, i):
+  """The whole statement whose head is line `i` (1-based): that line plus every
+  following line indented STRICTLY deeper, blanks included.
+
+  THE BLOCK AND NOT THE LINE, and this is a correction rather than a preference.
+  A line-local classification called `schedule/memory.py:59` `other` and called
+  `schedule/__init__.py:141` `other`, because the `print` is on line 60 and on line 148
+  respectively -- so the print/non-print split UNDERCOUNTED by 2 of 76 sites and the
+  level-1 print count read 11 when it was 13. A per-level denominator that is wrong by
+  two is not a denominator. Both sites are single-line `if`s with a DEEPER body, and
+  the deeper body is what says whether anything is printed.
+  """
+  head = lines[i - 1]
+  ind = len(head) - len(head.lstrip())
+  out = [head]
+  for j in range(i, len(lines)):
+    nxt = lines[j]
+    if not nxt.strip():
+      continue
+    if len(nxt) - len(nxt.lstrip()) <= ind:
+      break
+    out.append(nxt)
+  return out
+
+
+def upstream_sites():
+  """[(level, file, line, kind, text)] sorted, straight out of CPython's own source."""
+  out = []
+  for root, dirs, files in os.walk(os.path.join(ROOT, "tinygrad")):
+    dirs[:] = [d for d in dirs if d != "__pycache__"]
+    for fn in sorted(files):
+      if not fn.endswith(".py"):
+        continue
+      rel = os.path.relpath(os.path.join(root, fn), ROOT)
+      try:
+        text = open(os.path.join(root, fn), encoding="utf-8", errors="replace").read()
+      except OSError:
+        continue
+      lines = text.split("\n")
+      for i, line in enumerate(lines, 1):
+        for m in _SITE_RE.finditer(line):
+          block = "\n".join(_stmt_block(lines, i))
+          kind = "print" if any(p in block for p in _PRINTS) else "other"
+          out.append((int(m.group(1)), rel, i, kind, line.strip()))
+  return out
+
+
+def usite_rows():
+  """NOT ROWS, and this is the point of the function being separate from the rows.
+
+  The upstream inventory is a fact about `tinygrad/`, not about the port, so putting it
+  in the compared row set would manufacture rows that agree because BOTH sides
+  transcribe the same upstream tree -- which is the `nv_query_litter` shape: two copies
+  of one mistake agreeing perfectly. It is printed instead, with denominators, by
+  `--inventory`. The 89 compared rows say something about the PORT; these say something
+  about UPSTREAM, and mixing the two would make the row count mean two things.
+  """
+  return []
+
+
+def inventory():
+  """The `DEBUG` scale as this tree actually defines it, every site, with its kind."""
+  sites = upstream_sites()
+  port = port_site_thresholds()
+  print("%-6s %-9s %-9s %-9s %s" % ("level", "upstream", "print", "non-print", "port"))
+  for L in ALL_LEVELS:
+    at = [s for s in sites if s[0] == L]
+    p = sum(1 for s in at if s[3] == "print")
+    print("%-6d %-9d %-9d %-9d %d" % (L, len(at), p, len(at) - p, port.get(L, 0)))
+  print()
+  print("total upstream sites at levels 1..7: %d of %d print"
+        % (len(sites), sum(1 for s in sites if s[3] == "print")))
+  print("total port sites:                  %d, at thresholds %s"
+        % (sum(port.values()), sorted(port.items())))
+  print()
+  print("THE WHOLE SCALE, site by site. Every cite below was read out of CPython's own")
+  print("source by the grep, so a moved line moves this table:")
+  for L in ALL_LEVELS:
+    for s in [x for x in sites if x[0] == L]:
+      print("  L%d %-8s %-44s:%-4d %s" % (L, s[3], s[1], s[2], s[4][:80]))
+  print()
+  print("WHAT EACH LEVEL CANNOT SHOW, stated rather than left to a zero:")
+  notes = {
+    1: "memory + timings. 14 upstream sites, 11 print.",
+    2: "the seven this repository gates are 7 of the 22 here. 17 print.",
+    3: "NOT covered by this gate's level-3 lane: the port has 0 sites at threshold 3,",
+    4: "GENERATED SOURCE (codegen/__init__.py:462) -- 6 sites in codegen/ alone.",
+    5: "THE UOP LIST, codegen/__init__.py:274 `print(pyrender(ast))`.",
+    6: "NOTHING PRINTABLE on this tree. Both sites are non-printing (usb.py:25",
+    7: "DISASSEMBLY (codegen/__init__.py:464) plus the buffer ledger (device.py).",
+  }
+  for L in ALL_LEVELS:
+    print("  level %d: %s" % (L, notes[L]))
+  print()
+  print("  LEVEL 6 IS A LIMIT OF UPSTREAM, NOT OF THE PORT, and that is worth saying")
+  print("  plainly: the brief's scale says 6 = '+ linearized', and this tree has NO")
+  print("  `DEBUG >= 6` that prints. `schedule/__init__.py:141` prints the SCHEDULED")
+  print("  count at `DEBUG >= 3`, not the linearized graph, and nothing else mentions")
+  print("  a linearized render under DEBUG. So a level-6 gate here can only assert an")
+  print("  absence, and it is an absence UPSTREAM HAS TOO.")
+
+
+def usite_selfcheck():
+  """Complaints about the DERIVED inventory. Empty list is the pass condition.
+
+  Three things are checked, all of them things a derived table can still get wrong:
+  the classification is TOTAL (every site line is one of print/other), every level in
+  1..7 has at least one site upstream (a level with none is a level this gate cannot
+  say anything about, and that has to be visible), and the two sides of a
+  `DEBUG >= 5`/`DEBUG >= 6` line are counted once each.
+  """
+  sites = upstream_sites()
+  bad = [s for s in sites if s[3] not in ("print", "other")]
+  empty = [L for L in ALL_LEVELS if not any(s[0] == L for s in sites)]
+  return [("UNCLASSIFIED", "%s:%d" % (s[1], s[2])) for s in bad] + \
+         [("LEVEL-WITH-NO-UPSTREAM-SITE", str(L)) for L in empty]
+
+
+# ===========================================================================
+# WHAT CPython PRINTS AT EACH OF 4..7, on ONE FIXED END-TO-END PROBE.
+#
+# THE FIXTURE IS FIXED AND THAT IS THE POINT. `DEBUG` changes control flow, so a level
+# comparison over a graph the level can reach is a comparison of two different
+# programs. The probe is ONE small tensor program, written once here and run once per
+# level in a FRESH process (a ContextVar's value is a process-boot constant), so the
+# only difference between two runs is the level.
+#
+# The counts are COUNTS OF NEW LINES relative to level 2, and they are the measured
+# evidence that a level is real upstream. They are NOT row values -- a count alone is
+# not a gate -- so they are printed on the harness's own report and the DENOMINATOR
+# (the level-2 line count they are relative to) is printed with them.
+# ===========================================================================
+PROBE47_BODY = """
+from tinygrad import Tensor
+from tinygrad.helpers import Context
+with Context(DEV="CPU"):
+  a = Tensor([1.0, 2.0, 3.0]).realize()
+  b = Tensor([4.0, 5.0, 6.0]).realize()
+  (a * b + a).realize().numpy()
+print("PROBE-OK")
+"""
+
 
 def at(lines, i):
   return lines[i] if i < len(lines) else ""
 
 
+# ===========================================================================
+# THE SITE INVENTORY, PER LEVEL. "WHICH of the seven gated sites fire when the level
+# is L", as a comma-joined list of their names -- not a COUNT, because a count cannot
+# name the site that stopped firing and the whole question is per-site.
+#
+# CPython's side runs each site's own lane in a fresh process at DEBUG=L and records
+# which produced their line. The port's side calls each of the seven `*_dbg` defs with
+# `dbg = L` and records which answered non-empty. Both sides therefore answer the SAME
+# question with the SAME vocabulary, and the row is the answer.
+#
+# THIS IS THE CUMULATIVITY ROW, and it is measured rather than declared: a port whose
+# `DEBUG=4` behaved as `DEBUG=1` would answer this row with `mem` alone, and would
+# disagree with CPython's `mem,ar,st,am185,am225,am251,am254`.
+# ===========================================================================
+# ===========================================================================
+# WHICH OF THE SEVEN SITES FIRE, IN ONE CHILD PER LEVEL.
+#
+# ONE CHILD, NOT SEVEN, because seven children per level is 56 extra processes per gate
+# run and the gate already spends a minute in them. The tagging below is what makes one
+# child sufficient and is not a shortcut: `builtins.print` is shadowed by a wrapper that
+# prefixes every line with the name of the site currently under test, so a line can be
+# attributed to a site BY ITS OWN TEXT rather than by its position -- and position does
+# not work here, because a site below its gate is ABSENT from stdout rather than blank,
+# so every later site shifts up by one. That is the `am185/am225/am251/am254` rule this
+# repository already records, and a `fires_*` row built on position would be wrong
+# exactly when a site is gated out.
+#
+# EACH SITE GETS ITS OWN EXPECTED PREFIX, because at DEBUG >= 1 CPython prints other
+# things while these lanes run (`device.py:41` "opened device", and
+# `schedule/__init__.py:141` "scheduled" at >= 1 with >1 kernel). Counting "any line
+# tagged mem" would therefore answer a different question than the one the port answers.
+# ===========================================================================
+FIRES_BODY = """
+import builtins, linecache
+_BP = builtins.print
+CUR = ["?"]
+def _tp(*a, **k):
+    _BP("SITE " + CUR[0] + " " + " ".join(str(x) for x in a))
+builtins.print = _tp
+# -- mem: schedule/memory.py:59 ------------------------------------------
+CUR[0] = "mem"
+import tinygrad.schedule.memory as M
+from tinygrad.uop.ops import UOp, Ops, ParamArg
+from tinygrad.dtype import dtypes
+def B(slot, size, dev="CPU", dt=dtypes.int32):
+  return UOp(Ops.BUFFER, arg=ParamArg(slot=slot, dtype=dt, size=size,
+                                      name="B%d" % slot, device=dev))
+def SINK(body, *args): return UOp(Ops.SINK, src=(body, *args))
+A2, B2, C2, D2, E2, F2 = B(2,1024), B(3,2048), B(4,512), B(5,256), B(6,128), B(7,64)
+STORE = UOp(Ops.STORE, src=(A2, B2), arg=ParamArg(slot=0, dtype=dtypes.int32))
+M.memory_plan_rewrite(UOp(Ops.LINEAR, src=(SINK(STORE, B2), SINK(STORE, C2),
+                         SINK(UOp(Ops.ADD, src=(D2, E2)), D2, E2),
+                         SINK(UOp(Ops.MUL, src=(D2, F2)), D2, F2))))
+# -- ar: schedule/allreduce.py:16 ----------------------------------------
+CUR[0] = "ar"
+from tinygrad.helpers import Context
+from tinygrad.schedule.allreduce import handle_allreduce
+def _buf(devs, size, dt=dtypes.float32):
+  return UOp(Ops.BUFFER, arg=ParamArg(slot=0, dtype=dt, size=size, vmin_vmax=(0, size),
+                                      name="b", device=tuple(devs)))
+_r = UOp(Ops.REDUCE, src=(_buf(["CPU:0","CPU:1","CPU:2","CPU:3"], 300000),),
+         arg=(Ops.ADD, "CPU:0"))
+handle_allreduce(_r.src[0], _r)
+# -- st: nn/state.py:260 --------------------------------------------------
+CUR[0] = "st"
+import pickle, os, collections, numpy, tempfile
+from tinygrad.nn.state import torch_load
+_h = pickle.dumps(None) * 3
+_b = pickle.dumps({"a": os.path.join, "b": collections.OrderedDict, "c": numpy.ndarray})
+_f = os.path.join(tempfile.gettempdir(), "debug-fires-gate.pth")
+with open(_f, "wb") as fh: fh.write(_h + _b + pickle.dumps([]))
+torch_load(_f)
+# -- am: amdev.py:185/225/251/254, ONE EXEC PER SITE ----------------------
+from tinygrad.helpers import DEBUG
+class FakeDev: devfmt = "0000:01:00.0"
+for _tag, _line in (("am185", 185), ("am225", 225), ("am251", 251), ("am254", 254)):
+  CUR[0] = _tag
+  _src = linecache.getline(__ROOT__ + "/tinygrad/runtime/support/am/amdev.py", _line).strip()
+  _sc = {"DEBUG": DEBUG, "self": FakeDev(), "ip": type("AM_GFX", (), {}), "print": _tp}
+  _sc["ip"] = _sc["ip"]()
+  exec(_src, _sc)
+""".replace("__ROOT__", repr(ROOT))
+
+# The exact prefix each site must produce. A line counts only when it is tagged with
+# the site's own name AND carries that site's own text, so a neighbour's chatter in the
+# same lane cannot answer this row.
+SITE_PREFIX = {
+    "mem": "memory reduced from ",
+    "ar": "ALLREDUCE ",
+    "st": "WARNING: returning Dummy for ",
+    "am185": "am 0000:01:00.0: Malformed state.",
+    "am225": "am 0000:01:00.0: boot done",
+    "am251": "am 0000:01:00.0: AM_GFX initialized",
+    "am254": "am 0000:01:00.0: Finalizing",
+}
+SITE_NAMES = ("mem", "ar", "st", "am185", "am225", "am251", "am254")
+
+
+def fired_sites_py(n):
+  """CPython: which of the seven sites fire at DEBUG=n, comma-joined, by RUNNING them.
+
+  Attributed by the site's own text and not by position -- see FIRES_BODY for why
+  position cannot work, since a gated-out site is absent from stdout and shifts the rest.
+  """
+  got = child(n, FIRES_BODY)
+  if isinstance(got, str):
+    return got
+  fired = []
+  for nm in SITE_NAMES:
+    tag = "SITE " + nm + " "
+    want = SITE_PREFIX[nm]
+    if any(l.startswith(tag) and want in l[len(tag):] for l in got):
+      fired.append(nm)
+  return ",".join(fired)
+
+
+def port_site_thresholds():
+  """{threshold: how many `H.debug_ge(_, N)` sites the PORT has at N}, by grep.
+
+  This is the port-side DENOMINATOR for "which levels can this gate say anything
+  about". It is a grep over `tinybendygrad/` and not a constant, so adding a port site
+  at level 5 moves the report instead of quietly invalidating it.
+  """
+  out = {}
+  pat = re.compile(r"H\.debug_ge\(\s*[^,]+,\s*(\d+)\s*\)")
+  for root, dirs, files in os.walk(os.path.join(ROOT, "tinybendygrad")):
+    for fn in files:
+      if not fn.endswith(".bend"):
+        continue
+      try:
+        text = open(os.path.join(root, fn), encoding="utf-8", errors="replace").read()
+      except OSError:
+        continue
+      for m in pat.finditer(text):
+        n = int(m.group(1))
+        out[n] = out.get(n, 0) + 1
+  return out
+
+
+def probe_levels():
+  """`--probe-levels`: what CPython prints at 0..7 on ONE fixed end-to-end fixture.
+
+  The DENOMINATOR is printed with every count, because a count alone says nothing about
+  whether the level changed anything: `new=8` against a base of 21 and `new=8` against a
+  base of 3 are not the same claim. MEASURED, and reported, not assumed:
+
+    * levels 0..3 add the ops and the schedule line and NOTHING that prints code;
+    * level 4 adds the GENERATED SOURCE (`codegen/__init__.py:462`);
+    * level 5 adds the UOP LIST (`codegen/__init__.py:274`, `print(pyrender(ast))`);
+    * level 6 adds NOTHING PRINTABLE on this fixture -- its two `DEBUG >= 6` sites are
+      `usb.py:25` (sets a libusb log level) and `viz/cli.py:216` (a render predicate),
+      and NEITHER writes to stdout;
+    * level 7 adds the BUFFER LEDGER (`device.py:171/198`).
+
+  The `sites printing at this level` column is read from UPSTREAM'S OWN SOURCE at the
+  cited lines, with the `DEBUG >= N` right-hand side extracted by regex -- the level
+  number is never typed by hand, because `nv_query_litter` was wrong in the port AND in
+  the oracle and the differ reported zero disagreements over one mistake made twice.
+  """
+  base = None
+  base_n = None
+  sites = upstream_sites()
+  print("%-6s %-7s %-9s %s" % ("level", "lines", "new", "upstream sites printing here"))
+  for n in range(0, 8):
+    got = child(n, PROBE47_BODY)
+    if isinstance(got, str):
+      print("%-6d ERROR   %s" % (n, got))
+      continue
+    lines = [l for l in got if l != "PROBE-OK"]
+    if base is None:
+      base, base_n = lines, len(lines)
+    at = [s for s in sites if s[0] == n]
+    hits = ["%s:%d" % (os.path.basename(s[1]), s[2]) for s in at]
+    np_ = sum(1 for s in at if s[3] == "print")
+    print("%-6d %-7d %-9d %d of %d upstream sites at this level print"
+          % (n, len(lines), len(lines) - base_n, np_, len(at)))
+    if n in NEW_LEVELS:
+      print("         cites: %s" % (" ".join(hits) or "(none)"))
+      print("         new lines vs level 0:")
+      for l in lines:
+        if l not in base:
+          print("           | %s" % l[:132])
+  print()
+  print("DECLARED ABSENCE, with its denominator. These are the levels whose sites are")
+  print("REAL upstream and ABSENT from the port, which is a different fact from a row")
+  print("that agrees on an empty string. The port column is counted by GREPPING THE")
+  print("PORT for `H.debug_ge(_, N)`, so it moves if a port site is ever added:")
+  port = port_site_thresholds()
+  for n in ALL_LEVELS:
+    at = [s for s in sites if s[0] == n]
+    p = sum(1 for s in at if s[3] == "print")
+    print("  level %d: upstream %2d site(s), %2d print and %2d do not | port %d site(s)"
+          % (n, len(at), p, len(at) - p, port.get(n, 0)))
+  print("  port thresholds, all of them: %s" % (sorted(port.items()),))
+  print("  => levels 3, 4, 5, 6 and 7 have NO port site at all, so a row at any of")
+  print("     them cannot be a disagreement about the port's CODE. The existing")
+  print("     level-3 lane is in that set: it runs at DEBUG=3 and reproduces the")
+  print("     level-2 rows, which is CUMULATIVITY and not coverage of level 3.")
+
+
 def main():
+  # THE DERIVED INVENTORY IS CHECKED BEFORE ANY ROW IS PRINTED, and this is a FAILURE
+  # (exit 2), never a verdict. A level upstream has no site for is a level this gate
+  # cannot speak about, and reporting that as agreement is the failure this unit exists
+  # to prevent.
+  complaints = usite_selfcheck()
+  if complaints:
+    print("FATAL: the derived upstream DEBUG inventory is not well-formed:", file=sys.stderr)
+    for kind, what in complaints:
+      print("  %s: %s" % (kind, what), file=sys.stderr)
+    sys.exit(2)
+
+  if len(sys.argv) > 1 and sys.argv[1] == "--probe-levels":
+    probe_levels()
+    return
+  if len(sys.argv) > 1 and sys.argv[1] == "--inventory":
+    inventory()
+    return
   lvl = sys.argv[1] if len(sys.argv) > 1 else "2"
   level = None if lvl == 'unset' else int(lvl)
 
@@ -299,6 +737,26 @@ def main():
     row("st_bad_L%d" % n, at(keep(child(n, ST_BODY), "st"), 0))
     row("am185_L%d" % n, at(child(n, AM_BODY), 0))
     row("am251_L%d" % n, at(child(n, AM_BODY), 2))
+
+  # THE PIN. The plan's own quantities, read at DEBUG UNSET so the level cannot reach
+  # them even in principle -- the structural half of "hold the graph fixed by
+  # construction". The shell script DIGESTS these across every level and exits 2 on a
+  # mismatch, which is the half that checks it.
+  for l in keep(child(None, MEM_BODY), "pin"):
+    rows.append(l)
+
+  # THE UPSTREAM INVENTORY at 4..7, level-INVARIANT: how many `DEBUG >= N` sites
+  # upstream has at each of those levels, and how many of them print. Both sides build
+  # the table from the same grep over the same tree, so a site added or removed
+  # upstream MOVES these rows rather than silently changing what the levels mean.
+  for nm, v in usite_rows():
+    row(nm, v)
+
+  # THE CUMULATIVITY ROW, for each of levels 0..7. Which of the seven gated sites fire
+  # when the level is L. At L >= 2 all seven must fire, which is the measured statement
+  # that levels are cumulative; at L = 1 only `mem`, and at L = 0 none.
+  for n in range(0, 8):
+    row("fires_L%d" % n, fired_sites_py(n))
 
   print("\n".join(rows))
 

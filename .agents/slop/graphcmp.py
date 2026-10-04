@@ -179,7 +179,7 @@ PAIRING, three rungs, so a difference is NAMED rather than counted:
      rather than as an unexplained node.
   3  still unpaired -> ONLY-<side>, printed IN FULL, so nothing is summarised away.
 
-THE NINE GRAPHS, and their node counts are MEASURED by `diff` on every run rather than
+THE THIRTEEN GRAPHS, and their node counts are MEASURED by `diff` on every run rather than
 written down here, because a denominator that lives in a comment rots. `--graph NAME` on
 its own is the whole invocation: ONE command, no other arguments, ONE verdict line.
 
@@ -192,24 +192,47 @@ its own is the whole invocation: ONE command, no other arguments, ONE verdict li
     cast    Tensor.empty(4,3).cast(dtypes.half).uop             6   a bare DType arg
     special UOp.special(4, "inf")                               2   a bare str arg
     binblob UOp(Ops.BINARY, (matmul,), b"tiny")                19   the `y` residual
+    group   UOp.group(sh+sh, sh*sh)                             8   GROUP + a 2-parent node
+    commute UOp.group(a+b, a!=b, a.maximum(b), a&b, a|b, a^b)  14   6 commutative ops
+    indexed UOp.sink(p.index(c0).barrier(loop), arg=KernelInfo()) 7  PARAM/INDEX/BARRIER
+    sym     UOp.group(RESHAPE(a,STACK(n,4)), RESHAPE(a,STACK(m,4))) 12  SYMBOLIC DIMS
+
+`sym` IS SUPPOSED TO DISAGREE, and that is stated here because a graph in this list that
+reports DISAGREE looks exactly like a port bug until you know which one it is: three of its
+twelve nodes read `?` for `dtype` and `shape` because `fold.bend`'s `marg` cannot
+`ssimplify` a non-CONST STACK element, so the port cannot build a symbolic dim at all.
+Every other graph is AGREE. Each `diff` run prints an OPS CENSUS with per-op NODE counts
+and the denominator `of 77`, so the coverage number is recomputed on every run instead of
+being a sentence in this file.
 
 `range` and `rangeflat` are a PAIR and exist together. Before them EVERY node in EVERY
 graph had `depth=i0` on both sides, so R5 was a field that had never been asked a
 question -- and when the first RANGE arrived it turned out to be OFF BY ONE on the py
 side (see `cdepth`). A field that reads equal because both sides are wrong is worse than
 a field that is not compared, and only a graph that reaches the field finds that.
+`group` is the same argument about `src`: before it no node in the corpus had more than
+one parent, so nothing had ever tested that the differ can place a node twice.
 
 USAGE
 
     python3 .agents/slop/graphcmp.py selfcheck
-    python3 .agents/slop/graphcmp.py emit py   --graph matmul  > runs/graphcmp/py.txt
-    python3 .agents/slop/graphcmp.py emit bend                  > runs/graphcmp/bend.txt
+    python3 .agents/slop/graphcmp.py emit --side py   --graph matmul  > runs/graphcmp/py.txt
+    python3 .agents/slop/graphcmp.py emit --side bend --graph matmul  > runs/graphcmp/bend.txt
     python3 .agents/slop/graphcmp.py diff --graph matmul
     python3 .agents/slop/graphcmp.py diff --plant srcswap       # ORDERED: names `src`
     python3 .agents/slop/graphcmp.py diff --plant srcswap --equiv   # EQUIV: AGREE
     python3 .agents/slop/graphcmp.py control
-    python3 .agents/slop/graphcmp.py conf        # the three conflations, one line each
+    python3 .agents/slop/graphcmp.py conf        # the FOUR conflations, one line each
     python3 .agents/slop/graphcmp.py dbg --levels 0,1,2   # across DEBUG, graph held fixed
+
+`--side` IS A FLAG AND NOT A POSITIONAL, and the two USAGE lines above used to say
+`emit py` / `emit bend`. MEASURED: that form exits 2 with `unrecognized arguments: py`,
+and `graphcmp-run.sh`'s byte-identity step ran exactly that -- so both files were EMPTY,
+`cmp -s` on two empty files succeeded, and `runs/graphcmp/D/D2-cmp-*.txt` printed
+`BYTE-IDENTICAL` for four graphs having compared NOTHING. The cheapest check in the file
+was a vacuous pass, and it looked like a pass because a verdict line cannot tell an empty
+comparison from a satisfied one. `graphcmp-run.sh` now refuses a 0-row emit before
+comparing, which is the shape of the fix and not just the spelling.
 
 There is no `--dev-map`. The device name is not bound at a prompt: the port resolves its
 interned tag through its own table (R7) and both sides then carry a NAME. There is no
@@ -823,9 +846,157 @@ def g_binblob():
   return UOp(Ops.BINARY, (base("matmul"),), b"tiny")
 
 
+def g_group():
+  """`UOp.group(sh + sh, sh * sh)` over `sh = Tensor.empty(4,3).uop` -- 8 nodes, and the
+  first graph whose tree is NOT a tree: `GROUP` is the op that makes a linearized program
+  a graph, and before this one NO node in the corpus had more than one parent, so the
+  differ had never had to place a node by two parents.
+
+  MEASURED, calling CPython (`runs/graphcmp/probe/p13-group-probe.py`): the toposort is
+  ALLOC CONST CONST STACK RESHAPE ADD MUL GROUP and **two** nodes have more than one
+  parent -- the RESHAPE (`id 5`, 2 parents) and the CONST 4 (`id 2`, 2 parents, via the
+  ADD's and the MUL's shared `sh`) -- and `ADD` carries the SAME child index twice,
+  `src=n(i5,i5)`. So this fixture exercises a two-parent node, a repeated child index, and
+  `GROUP` itself in one graph, and the denominators are 2 and 1 respectively.
+
+  `UOp.group` takes the ONE-arg identity (`ops.py:558-560`, `if len(srcs) == 1 and
+  isinstance(srcs[0], UOp): return srcs[0]`), which is why the corpus needed at least
+  TWO srcs: a one-src GROUP is not a GROUP at all and would have reached nothing."""
+  from tinygrad import Tensor
+  sh = Tensor.empty(4, 3).uop
+  return UOp.group(sh + sh, sh * sh)
+
+
+def g_commute():
+  """`UOp.group(a+b, a!=b, a.maximum(b), a&b, a|b, a^b)` over two `Tensor.empty(4,3)` --
+  14 nodes, and it takes the commutative coverage from ONE op of eight to SEVEN.
+
+  Every rung was chosen by MEASUREMENT, not by reading `GroupOp.Commutative`: each
+  candidate Tensor operation was emitted and its NODE ops tabulated
+  (`runs/graphcmp/probe/p15-comm.py`), and the table is the reason this graph has six
+  srcs and not one:
+
+      a + b            -> ADD     (and only ADD)
+      a != b           -> CMPNE   (dtype bool, so it also tests the CMPLT/CMPEQ/CMPNE
+                                    arm of `dtype_from_uop`, which no graph reached)
+      a.maximum(b)     -> MAX
+      a & b            -> AND
+      a | b            -> OR
+      a ^ b            -> XOR     (reachable on FLOAT operands here, which is itself
+                                    worth knowing: `a^b` on f32 is an XOR node)
+
+  And the eighth, `CMPEQ`, is NOT reachable from an eager graph at all -- MEASURED:
+  `UOp` has no `cmpeq`/`cmpne` method (`[a for a in dir(UOp) if 'cmp' in a.lower()]` is
+  `[]`, because `UOp.__eq__` is overridden for the ucache and answers a Python `bool`),
+  and `(Tensor.empty(4,3) == Tensor.empty(4,3)).uop` emits `CMPNE CONST CMPNE` rather
+  than a `CMPEQ`. So `--equiv` is now measured on SEVEN of its eight ops and `CMPEQ` is a
+  measured limit rather than an untested one.
+
+  The two ALLOCs are `Tensor.empty(4,3)` twice, so their `ParamArg.slot`s are 0 and 1 --
+  `Tensor.empty` mints from a process-global counter and `base()` builds this graph
+  exactly once. Each RESHAPE has SIX parents, which is the widest fan-in in the corpus."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3).uop
+  b = Tensor.empty(4, 3).uop
+  return UOp.group(a + b, a != b, a.maximum(b), a & b, a | b, a ^ b)
+
+
+def g_indexed():
+  """`UOp.sink(p.index(UOp.const(0)).barrier(UOp.range(UOp.const(4), 0, AxisType.LOOP)),
+  arg=KernelInfo())` over `p = UOp.param(0, dtypes.float, 8, device="CPU", name="p0")` --
+  7 nodes, and the graph that reaches the three ops that make a program a PROGRAM rather
+  than a value: PARAM (a readable slot), INDEX (an addressing op) and BARRIER (a
+  synchronisation op). MEASURED: the op sequence is PARAM CONST INDEX CONST RANGE BARRIER
+  SINK, `INDEX`'s dtype is `f32` and its shape is `()` -- `ops.py:143-146` returns
+  `b.dtype` because `src[0]` is not a PARAM-with-an-image-shape -- and `BARRIER`'s is
+  `void` with NO shape (`ops.py:334`), so its shape column is `R`.
+
+  `AxisType.LOOP` rather than `WEAK` is deliberate: `WEAK` is the spelling the `range`
+  and `rangeflat` pair already carries, and reusing it would have left the new axis type
+  untested while looking like it covered one. `LOOP` also makes this the first graph with
+  a non-WEAK `X` atom in the corpus.
+
+  `KernelInfo()` is the DEFAULT and therefore the only SINK arg both sides can produce;
+  `opts_to_apply` is `None` upstream here, which is the measured reason `g_sink` agrees
+  in its fourth slot."""
+  from tinygrad.uop.ops import KernelInfo
+  p = UOp.param(0, dtypes.float, 8, device="CPU", name="p0")
+  r = UOp.range(UOp.const(4), 0, AxisType.LOOP)
+  return UOp.sink(p.index(UOp.const(0)).barrier(r), arg=KernelInfo())
+
+
+def _variable(name: str, slot: int = 0):
+  """A scalar ALU PARAM with a VALUE RANGE and no size -- what puts a symbolic dim into a
+  shape. It is `UOp.variable(name, 1, 100)` (ops.py:1014-1018) with the SLOT SPELLED.
+
+  WHY THE SLOT IS SPELLED RATHER THAN `UOp.variable(...)`, which is upstream's own
+  spelling and hard-codes `slot=-1`: the port's `ParamArg.slot` is a `U32` (ops.bend:871)
+  so `-1` has NO port spelling at all, and the tree has TWO conflicting sentinels for it
+  -- `schedule/__init__.bend:1100` writes `0` and says "The slot is `None` in Python's
+  `-1`; nothing in this file reads a slot, so it is 0 here", while
+  `uop/ops.bend:3566` calls any slot other than 0/1 "the free Variable sentinel" and
+  uses `4294967295` for its own absent case. The two disagree, so EITHER spelling makes
+  this graph disagree on the `arg` column for a reason that is not the subject under
+  test, and the disagreement CASCADES (a different `arg` is a different `core`, so every
+  consumer of the PARAM moves to rung 3 and the report names nothing).
+
+  MEASURED, so the substitution is not a silent change of subject: the thirteen fields
+  compared one by one differ in EXACTLY ONE (`slot`), i.e.
+  `replace(UOp.variable('n',1,100).arg, slot=0) == the spelled arg` is `True`, and the
+  RESHAPE's dim-0 IS the PARAM object itself either way (`r1.shape[0] is v` and
+  `r2.shape[0] is n0`, both `True`) with the same rendered shape text `(U,l0:4)` and the
+  same dtype -- so the slot does not reach `as_shape`'s `ssimplify` arm at all. (The two
+  RESHAPEs are still UNEQUAL as UOps, because `UOp.__eq__` is the structural eq and the
+  args differ; that is what makes them two arena nodes rather than one.)
+  The graph therefore differs from upstream's by exactly one integer that neither the
+  shape nor the fold reads. The AMBIGUITY ITSELF is reported in `graphcmp-LIMITS.md` as a
+  normal-form defect found by widening and NOT fixed, because choosing a sentinel is an
+  owner decision and not a harness one."""
+  from tinygrad.dtype import AddrSpace
+  from tinygrad.uop.ops import ParamArg
+  return UOp(Ops.PARAM, src=(), arg=ParamArg(slot, dtypes.weakint, None, (1, 100), 1, name,
+                                             AddrSpace.ALU))
+
+
+def g_sym():
+  """`UOp.group(RESHAPE(a, STACK(n, CONST 4)), RESHAPE(a, STACK(m, CONST 4)))` with
+  `a = Tensor.empty(4,3).uop`, `n = _variable("n")` and `m = _variable("m")` -- 12 nodes,
+  and the graph that makes the SYMBOLIC-DIM limit a MEASUREMENT.
+
+  MEASURED, calling CPython (`runs/graphcmp/probe/p14-cand.py`):
+    * the two RESHAPEs' shape columns are `(U,l0:4)` and `(U,l0:4)` -- IDENTICAL, so the
+      shape field alone CANNOT tell them apart, which is the limit the limits file states;
+    * their `src` fields are `n(i5,i7)` and `n(i5,i10)`, whose cores DIFFER because the
+      STACK's children differ, and the PARAMs' `arg` columns differ in ParamArg's sixth
+      field (`sn` against `sm` -- `name`, ops.py:31), so the differ separates the two
+      symbolic dims at RUNG 1 through two independent fields;
+    * so `U` is not a hole in the differ's identity, it is a hole in the SHAPE COLUMN
+      alone, and the resolution of the limit is that exact statement.
+
+  AND THE PORT CANNOT BUILD IT AT ALL, which this graph makes loud rather than asserted.
+  MEASURED: `uop/fold.bend`'s `marg.of` answers `None{}` -- `(ssimplify(self),)`, the
+  `ssimplify` wall -- for any STACK element that is not a CONST (`marg.step`'s
+  `case None{}` sets `ok=False`), and `graphcmp.bend`'s `shape_str` spells that `None` as
+  `?`. So the port's two RESHAPEs read `?` where CPython reads `(U,l0:4)`, on MATCHING
+  cores, which by this file's own measured theorem cannot mean the graphs differ: it
+  means the two `_shape` implementations disagree. The port's OWN ledger at
+  `fold.bend:6180` already records the same wall ("nothing in this tree can mint one" --
+  `O.SU` has a constructor and no caller), so this graph is that claim with a denominator
+  on it. It is also what makes the `?` ledger marker live for the first time.
+
+  CONSEQUENCE FOR THE ARTEFACT, stated rather than buried: `diff --graph sym` is
+  DISAGREE, and it is supposed to be. Every other graph is AGREE and this one is not."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3).uop
+  c4 = UOp.const(4)
+  return UOp.group(UOp(Ops.RESHAPE, (a, UOp.stack(_variable("n"), c4))),
+                   UOp(Ops.RESHAPE, (a, UOp.stack(_variable("m"), c4))))
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
-          "binblob": g_binblob}
+          "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
+          "sym": g_sym}
 
 _BASE: dict[str, UOp] = {}
 
@@ -974,8 +1145,32 @@ def plant_opt(ast: UOp) -> UOp:
   return UOp(Ops.SINK, src=(ast,), arg=ki)
 
 
+def plant_sym1(ast: UOp) -> UOp:
+  """The TWO symbolic dims COLLAPSED INTO ONE -- `--graph sym --plant sym1`.
+
+  This is the controlled experiment for the symbolic-dim limit, and it is a PLANT rather
+  than a second graph on purpose: both PARAMs are replaced by the SAME `_variable("n")`,
+  and because the ucache is structural the two STACKs and the two RESHAPEs each collapse
+  to ONE node. MEASURED: 12 nodes go to 9 (PARAM, STACK and RESHAPE #2 each merge into
+  # their first), and the GROUP's `src` becomes `n(i8,i8)` against the unplanted
+  `n(i8,i11)`.
+
+  So the pair the differ is asked about is: same op, same dtype, same `shape` -- `(U,l0:4)`
+  on both RESHAPEs, which is the LIMIT -- and a different `src`. If the differ reports
+  nothing here, then `U` really is a hole in its identity and the limits file is right to
+  say so. It reports, and CONFLATION 4 in `conf` asserts it.
+
+  IT MUST NOT BE A GRAPH. A second fixture would call `Tensor.empty(4,3)` again and mint
+  the next `ParamArg.slot` from the process-global counter, so the planted graph would
+  differ from the unplanted one in the ALLOC's slot too -- a second difference of a
+  different kind, which is exactly how an attributable measurement becomes a confounded
+  one. Rebuilding from `ast` keeps every other byte identical by construction."""
+  return _rebuild_with(ast, Ops.PARAM, lambda n: _variable("n"))
+
+
 PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap, "shape": plant_shape,
-          "bytes": plant_bytes, "pyuop": plant_pyuop, "opt": plant_opt}
+          "bytes": plant_bytes, "pyuop": plant_pyuop, "opt": plant_opt,
+          "sym1": plant_sym1}
 
 
 def emit_py(graph: str, plant: str | None) -> list[str]:
@@ -1226,34 +1421,44 @@ def devnames(lines: list[str]) -> set[str]:
 # Every entry was MEASURED; the measurement is named in the reason and the probe is under
 # `runs/graphcmp/probe/`. Nothing in this table is an assertion about a docstring.
 #
-# The second element is the FIELD INDEX each marker can appear in, because a marker that
-# lives in `shape` is not in `arg` and scanning the wrong one is a silent zero.
+# The second element is the FIELD INDEX(ES) each marker can appear in, because a marker
+# that lives in `shape` is not in `arg` and scanning the wrong one is a silent zero. It is
+# a TUPLE because MEASURED 2026-10-04: the port's "the fold produced nothing for this node"
+# is a fact about the WHOLE `Derived` record, so it lands in `dtype` and `shape` at once
+# (`graphcmp.bend`'s `dt_str` and `shape_str` both answer `?` for their `None` arm), and a
+# single-index row would have counted one of the two -- which is precisely the "a ledger
+# that misses its own row is worse than no ledger" defect that `--plant opt` already
+# caught once for `E`.
 WIRE = ("id", "op", "dtype", "shape", "depth", "tag", "arg", "src")
 LEDGER = (
-  ("z", 6, "a realized BUFFER: device-object PRESENCE only",
+  ("z", (6,), "a realized BUFFER: device-object PRESENCE only",
    "Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/"
    "device/offset are already ParamArg fields 2/3/8 and ARE compared"),
-  ("y", 6, "a bytes arg: CONTENT compared; the residual is the bytes CONST",
+  ("y", (6,), "a bytes arg: CONTENT compared; the residual is the bytes CONST",
    "MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` "
    "(:1801) compares them, so the column is the full byte list; this row used to say "
    "LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` "
    "(ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), "
    "and graphcmp.bend's `konst` has no bytes arm at all"),
-  ("u", 6, "a UOp nested in an arg: identity NOT compared",
+  ("u", (6,), "a UOp nested in an arg: identity NOT compared",
    "measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no "
    "arena index here; the port's ATuple also spells PERMUTE's literal ints"),
-  ("q", 6, "an applied option the port cannot resolve: COUNT only",
+  ("q", (6,), "an applied option the port cannot resolve: COUNT only",
    "ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are "
    "`Opt` dataclasses and no port file writes a non-empty list"),
-  ("X!", 6, "an AxisType member with no counterpart at this tree",
+  ("X!", (6,), "an AxisType member with no counterpart at this tree",
    "measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps "
    "AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files"),
-  ("BAD", 6, "the port's arena bottom: not a node",
+  ("BAD", (6,), "the port's arena bottom: not a node",
    "ops.bend:1154 -- a read of an index that was never interned"),
-  ("?", 3, "the port's fold produced no shape at all for this node",
+  ("?", (2, 3), "the port's fold produced no Derived for this node, in BOTH columns",
    "PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple "
-   "(ops.py:455), so upstream has no third state. `?` cannot be produced by the py side"),
-  ("E", 6, "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
+   "(ops.py:455) and `dtype_from_uop` (ops.py:123-190) is TOTAL over Ops, so upstream has "
+   "no third state in either column and `?` cannot be produced by the py side. FIRST LIVE "
+   "on `--graph sym`: fold.bend's `marg.of` answers None for a STACK element that is not a "
+   "CONST (the `ssimplify` wall), which unsettles the RESHAPE's whole `Derived` and so "
+   "takes `dtype` with it"),
+  ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
    "attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could "
@@ -1286,22 +1491,23 @@ def at_value(arg: str, marker: str) -> int:
 
 
 def ledger(lines: list[str]) -> dict[str, int]:
-  """`{marker: occurrences}` over the field each marker can appear in. The other seven
-  fields are plain op/dtype/shape/depth/tag/src texts with nothing this file renders
-  lossily in them, and scanning them would be scanning for nothing."""
+  """`{marker: occurrences}` over each field a marker can appear in. The other fields are
+  plain op/dtype/shape/depth/tag/src texts with nothing this file renders lossily in them,
+  and scanning them would be scanning for nothing."""
   out = {m: 0 for m, _, _, _ in LEDGER}
   for ln in lines:
     f = unchunks(ln)
-    for m, fi, _, _ in LEDGER:
-      out[m] += at_value(f[fi], m)
+    for m, fis, _, _ in LEDGER:
+      out[m] += sum(at_value(f[fi], m) for fi in fis)
   return out
 
 
 def ledger_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
   out = ["# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a "
          "fact, not an absence:"]
-  for m, fi, what, why in LEDGER:
-    out.append(f"#   {m:<3} {WIRE[fi]:<5} py={py[m]:<4} bend={bd[m]:<4} {what}")
+  for m, fis, what, why in LEDGER:
+    where = "/".join(WIRE[fi] for fi in fis)
+    out.append(f"#   {m:<3} {where:<11} py={py[m]:<4} bend={bd[m]:<4} {what}")
     out.append(f"#       {why}")
   # THE ONE FIELD WITH NO MARKER, because neither side can write one.
   # `KernelInfo.estimates: Estimates|None` (ops.py:1346) exists upstream, ops.bend DROPPED
@@ -1404,6 +1610,52 @@ def mismatches(a: Node, b: Node, equiv: bool = False) -> list[str]:
   return out
 
 
+def ops_census(nodes: dict[str, "Node"]) -> dict[str, int]:
+  """`{op: number of nodes carrying it}`. A NODE count and not a graph count, because a
+  graph that mentions an op once and a graph that builds it 300 times are different
+  coverage -- `Tensor.matmul` is one MUL, a tiled kernel is thousands, and `AGREE` on one
+  is not the claim `AGREE` on thousands would be."""
+  out: dict[str, int] = {}
+  for n in nodes.values():
+    out[n.op] = out.get(n.op, 0) + 1
+  return out
+
+
+def symdims(nodes: dict[str, "Node"]) -> list["Node"]:
+  """The nodes whose `shape` column carries a SYMBOLIC dim. `cshape` emits `U` for a dim
+  that is a UOp (ops.py:1925, `sint = int|UOp`) and `l<hi>:<lo>` for an int, and a shape is
+  `(` comma-separated dims `)` or one of the three non-tuple spellings -- so `U` at a
+  DIM position is unambiguous and needs no marker.
+
+  WHY IT IS COUNTED ON EVERY REPORT, and the measured reason it was not before: the limits
+  file's symbolic-dim entry said "MEASURED: 0 of the 63 nodes across 9 graphs has a
+  symbolic dim, so this is an untested hole and not a measured one" -- and that sentence
+  was TRUE and would have gone stale the moment a graph changed, because nothing on any
+  report recomputed it. A coverage claim that lives in prose rots; the same claim printed
+  beside the verdict is asserted by the run that says it. `--graph sym` is the graph that
+  makes it non-zero (2 of 12 on the py side)."""
+  out = []
+  for n in nodes.values():
+    if n.shape.startswith("(") and "U" in split_top(n.shape[1:-1]):
+      out.append(n)
+  return out
+
+
+def census_lines(pn: dict[str, "Node"], bn: dict[str, "Node"], lname: str, rname: str) -> list[str]:
+  """THE COVERAGE DENOMINATOR, on every report, for both sides. `len(list(Ops))` is
+  MEASURED by CPython at run time and not written down here, so the denominator cannot rot
+  the way the 77 in the limits file can."""
+  pc, bc = ops_census(pn), ops_census(bn)
+  ps, bs = symdims(pn), symdims(bn)
+  return [f"# OPS REACHED: {lname}={len(pc)} {rname}={len(bc)} of {len(list(Ops))} upstream ops "
+          f"(MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, "
+          f"so the per-op NODE counts follow:",
+          "#   " + "  ".join(f"{op} {pc.get(op, 0)}/{bc.get(op, 0)}"
+                             for op in sorted(set(pc) | set(bc))),
+          f"# SYMBOLIC DIMS: {lname}={len(ps)}/{len(pn)} {rname}={len(bs)}/{len(bn)} nodes "
+          f"carry a `U` dim; ids {lname}={[n.nid for n in ps]} {rname}={[n.nid for n in bs]}"]
+
+
 def report(py: list[str], bd: list[str], plant: str | None,
            lname: str = "py", rname: str = "bend", equiv: bool = False) -> tuple[int, str]:
   """`lname`/`rname` label the two sides in every line they appear in. They are PARAMETERS,
@@ -1491,6 +1743,7 @@ def report(py: list[str], bd: list[str], plant: str | None,
        f"# devices {lname}={sorted(devnames(py))} {rname}={sorted(devnames(bd))}  "
        f"(both sides emit the NAME: CPython's is `Compiled.device`, the port's is "
        f"`uop/render.bend:363` on the tag)"]
+  o += census_lines(pnodes_all, bnodes_all, lname, rname)
   o += residual_lines(ledger(py), ledger(bd))
   o += [f"# SHARED cores={len(shared)}  ONLY-{lname.upper()}={len(only_p)}  "
         f"ONLY-{rname.upper()}={len(only_b)}  "
@@ -1528,13 +1781,24 @@ def report(py: list[str], bd: list[str], plant: str | None,
   o.append(f"# DENOMINATOR: graphs=2 (1 {lname} + 1 {rname})  "
            f"nodes={len(pnodes_all)}/{len(bnodes_all)}  "
            f"fields={len(FIELDS)}  field-records={len(pnodes_all) * len(FIELDS)}  "
-           f"shared-cores={len(shared)}  commutative-ops={len(COMM)}")
+           f"shared-cores={len(shared)}  commutative-ops={len(COMM)}  "
+           f"ops-reached={len(ops_census(pnodes_all))}/{len(ops_census(bnodes_all))} of "
+           f"{len(list(Ops))}  symbolic-dims={len(symdims(pnodes_all))}/"
+           f"{len(symdims(bnodes_all))}")
   o.append(f"# VERDICT: {'AGREE' if same else 'DISAGREE'}")
   return (0 if same else 1), "\n".join(o)
 
 
 # ---------------------------------------------------------------------------
-def selfcheck() -> int:
+def py_sym_rows() -> list[str]:
+  return emit_py("sym", None)
+
+
+def bend_sym_rows(dev: str) -> list[str]:
+  return emit_bend(dev, "sym")[0]
+
+
+def selfcheck(dev: str = "CPU") -> int:
   """The atom table and the chunk reader, ASSERTED rather than assumed."""
   bad = []
   if len(set(ATOMS.values())) != len(ATOMS):
@@ -1570,13 +1834,24 @@ def selfcheck() -> int:
   # it sat -- a scan counted the absent case as a present one AND counted a nested UOp
   # that was not there. Both were MEASURED by writing the scan that way first. The
   # absence is now `N`, uniform with the other six `Maybe` fields of the same record.
-  for m, fi, _, _ in LEDGER:
+  for m, fis, _, _ in LEDGER:
     if m not in ATOMS.values() and m not in ("X!", "BAD", "?"):
       bad.append(f"ledger marker {m!r} is neither an atom letter nor a declared literal")
     if m in ATOMS["none"] and m != ATOMS["none"]:
       bad.append(f"ledger marker {m!r} collides with the absence atom")
-    if not 0 <= fi < len(WIRE):
-      bad.append(f"ledger marker {m!r} names field {fi}, outside the {len(WIRE)} fields")
+    if not fis or not all(0 <= fi < len(WIRE) for fi in fis):
+      bad.append(f"ledger marker {m!r} names fields {fis}, outside the {len(WIRE)} fields")
+  # `?` MUST BE COUNTED IN BOTH COLUMNS IT LANDS IN. It is one port-only fact -- the fold
+  # produced no `Derived` -- so it takes `dtype` and `shape` together, and a single-index
+  # row would have counted half of what `--graph sym` emits. MEASURED on `--graph sym`:
+  # `?=0/6` with the two-field row against `?=0/3` with the one-field row, and 6 is the
+  # truth (three nodes x two columns). This is the `--plant opt` defect class again -- a
+  # ledger that misses its own row is worse than no ledger.
+  if dict(ledger(py_sym_rows()))["?"] != 0:
+    bad.append("the `?` ledger row counts something on the py side, which cannot produce it")
+  if dict(ledger(bend_sym_rows(dev)))["?"] != 6:
+    bad.append("the `?` ledger row does not count both columns of `--graph sym` "
+               "(three unsettled nodes x two columns = 6)")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "y") != 1:
     bad.append("at_value does not count a bytes atom at a value position")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "u") != 1:
@@ -1786,9 +2061,47 @@ def cmd_conf(dev: str) -> int:
              f"(expected rc=0; got rc={rc3})")
   ok = ok and rc3 == 0
 
+  # ---- CONFLATION 4: TWO SYMBOLIC DIMS, COLLAPSED INTO ONE ------------------------
+  # The limit the limits file used to state as untested: "A symbolic dimension's identity
+  # -- MEASURED: 0 of the 63 nodes across 9 graphs has a symbolic dim, so this is an
+  # untested hole". The graph is `sym`; the plant `sym1` replaces both PARAMs with the
+  # SAME variable, so 12 nodes become 8 and the only difference is which PARAM the two
+  # STACKs hang. Both RESHAPEs' `shape` columns read `(U,l0:4)` either way -- so if the
+  # differ can only answer through `shape`, it CANNOT see this and the limit stands.
+  # MEASURED: it can, and it names `src`.
+  s_two, s_one = base("sym"), PLANTS["sym1"](base("sym"))
+  sh_two = sorted(gc_shape(n) for n in s_two.toposort() if "U" in gc_shape(n))
+  sh_one = sorted(gc_shape(n) for n in s_one.toposort() if "U" in gc_shape(n))
+  out.append("# CONFLATION 4 -- TWO DIFFERENT symbolic dims against ONE, on a graph whose "
+             "`shape` columns are IDENTICAL.")
+  out.append(f"#   MEASURED: symbolic-dim nodes two={len(sh_two)} one={len(sh_one)} and the "
+             f"shape texts are {sorted(set(sh_two))} against {sorted(set(sh_one))} -- EQUAL as "
+             f"sets, so the shape column cannot separate them. Node counts "
+             f"{len(list(s_two.toposort()))} against {len(list(s_one.toposort()))}. The "
+             f"PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:31): "
+             f"{[carg(Ops.PARAM, n.arg) for n in s_two.toposort() if n.op is Ops.PARAM]!r}.")
+  rc4, txt4 = report(emit_py("sym", None), emit_py("sym", "sym1"), "sym1",
+                     "two-symbolic-dims", "one-symbolic-dim")
+  for ln in txt4.splitlines():
+    if ln.startswith(("MISMATCH", "    ", "# VERDICT", "# SHARED", "# DENOMINATOR",
+                      "# RUNG", "# SYMBOLIC", "#   ")):
+      out.append(ln)
+  snamed = field_named(txt4, "src")
+  out.append(f"# CONFLATION 4 VERDICT: "
+             + ("OK -- separates two symbolic dims from one, naming src" if rc4 and snamed
+                else "FAIL -- did not name src")
+             + f" (expected DISAGREE naming src; got rc={rc4})")
+  ok = ok and rc4 == 1 and snamed
+
   print("\n".join(out))
-  print(f"# CONFLATION VERDICT: {'ALL THREE DISTINGUISHED' if ok else 'AT LEAST ONE CONFLATION IS NOT DISTINGUISHED'}")
+  print(f"# CONFLATION VERDICT: {'ALL FOUR DISTINGUISHED' if ok else 'AT LEAST ONE CONFLATION IS NOT DISTINGUISHED'}")
   return 0 if ok else 1
+
+
+def gc_shape(n) -> str:
+  """`cshape` reads a UOp, so this thin alias keeps `cmd_conf`'s comprehensions readable
+  without threading the module's globals through a lambda at three call sites."""
+  return cshape(n)
 
 
 def main() -> int:
@@ -1817,7 +2130,7 @@ def main() -> int:
   COMM = commutative()
 
   if a.cmd == "selfcheck":
-    return selfcheck()
+    return selfcheck(a.dev)
   if a.cmd == "conf":
     return cmd_conf(a.dev)
   if a.cmd == "dbg":

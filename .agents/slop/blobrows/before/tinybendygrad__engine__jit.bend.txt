@@ -91,8 +91,8 @@ prune_all=kept=0 once=2 need=0
 prune_none=kept=0 once=2 need=0
 prune_sl=2
 prune_sl_buf=0
-prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP
-prune_sig_once=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP
+prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.CALL
+prune_sig_once=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.BUFFER
 prep_unshard_ix=2
 prep_b0_ix=2
 prep_unshard_is_src0=True

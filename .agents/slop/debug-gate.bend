@@ -179,6 +179,135 @@ def env_rows(+d: U32) -> IO(Unit):
     _ : Unit <- urow("env_ge1", fired_of_ge(d, 1))
     _ : Unit <- urow("env_ge2", fired_of_ge(d, 2))
     _ : Unit <- urow("env_ge3", fired_of_ge(d, 3))
+    _ : Unit <- urow("env_ge4", fired_of_ge(d, 4))
+    _ : Unit <- urow("env_ge5", fired_of_ge(d, 5))
+    _ : Unit <- urow("env_ge6", fired_of_ge(d, 6))
+    _ : Unit <- urow("env_ge7", fired_of_ge(d, 7))
+    IO.print("")
+
+# ===========================================================================
+# THE PIN -- THE GRAPH, HELD FIXED, AND CHECKED.
+#
+# `DEBUG` CHANGES CONTROL FLOW, so a comparison ACROSS LEVELS is only meaningful if the
+# graph cannot move when the level does. `.agents/slop/graphcmp-dbg.bend` solved this for
+# graphs and the method transfers whole: hold the thing fixed BY CONSTRUCTION, then CHECK
+# it rather than promise it.
+#
+# BY CONSTRUCTION: `pin_rows` takes NO LEVEL. It has no `dbg` parameter, so there is no
+# code path on which the level reaches the plan, and the five numbers it prints cannot
+# be a different plan at DEBUG=7 than at DEBUG=0 -- not "should not be", CANNOT be. The
+# level enters only `site_rows`, which is a different function.
+#
+# BY CHECKING: `debug-gate.sh` DIGESTS these five rows plus every other level-invariant
+# row, per level, and exits 2 -- a FAILURE, never a verdict -- if two levels disagree.
+# A guard nobody can see fire is a guard that does not work; this one is a digest the
+# harness recomputes and prints on every run.
+#
+# CPython's side of the same five numbers is read out of `memory_plan_rewrite`'s OWN
+# frame with `sys.settrace` (`debug-gate.py`'s MEM_BODY), because the function returns a
+# UOp and not a plan. Nothing here re-implements the plan: `M.mem_plan` is the ported
+# `memory_plan_rewrite` and `M.proj_of` is the port's own FIXTURE 2, which is the graph
+# `M`'s `p_*` rows already gate.
+#
+# FIVE ROWS AND NOT FOUR, and the fifth is the interesting one. `total_memory` is
+# `sum(nbytes.values()) * 2` (memory.py:45), so CPython's `pin_nbytes` is the SUM read
+# from the frame and this one is `pin_tot / 2`. A row that restated `pin_tot` would
+# agree with a port that had forgotten the `* 2`; dividing makes the factor load-bearing.
+# ===========================================================================
+def pin_rows() -> IO(Unit):
+  do IO<Unit>:
+    +p : M.Planned <- IO.pure(M.Planned, M.mem_plan(M.proj_of()))
+    _ : Unit <- urow("pin_bufs", M.mem_len(M.Planned.bs(p)))
+    _ : Unit <- urow("pin_narenas", M.mem_len2(M.Planned.azs(p)))
+    _ : Unit <- urow("pin_arenas", M.mem_sum_arena(M.Planned.azs(p)))
+    _ : Unit <- urow("pin_tot", M.Planned.tot(p))
+    _ : Unit <- urow("pin_nbytes", U32.div(M.Planned.tot(p), 2))
+    IO.print("")
+
+# ===========================================================================
+# THE FIRES ROWS -- CUMULATIVITY, MEASURED, PER LEVEL, PER SITE.
+#
+# "Which of the seven gated sites fire when the level is L", as a comma-joined list of
+# their names. Not a count: a count cannot name the site that stopped firing, and the
+# whole question is per-site. Each of the seven is reached through its REAL port def --
+# `M.mem_dbg`, `A.red_dbg`, `St.sd_dbg`, `AM.am_dbg_*_of` -- with the level as the
+# threaded `dbg` parameter, so this is the port's own gate and not a harness re-derivation.
+#
+# THE ROW THAT MATTERS MOST IS THE EMPTY ONE. At L = 7 all seven must still fire. A port
+# whose `DEBUG=4` behaved as `DEBUG=1` answers `fires_L7=mem` and CPython answers the
+# full seven, so the level cannot silently stop being cumulative. Levels are cumulative
+# upstream -- MEASURED by calling CPython's own sites at DEBUG=0..7, and every site fires
+# at every level >= its threshold -- and this row is where the port is asked the same
+# question rather than assumed to answer it.
+#
+# THE ORDER OF THE TWO LISTS IS THE CONTRACT: `site_fires` and the name list below are
+# index-paired, and CPython pairs them by NAME. A site moved between the two lists would
+# answer `mem,am185,...` against `ar,am185,...` and go red, which is the point of pairing
+# by name on one side.
+# ===========================================================================
+# `match` CANNOT SCRUTINISE A COMPUTED VALUE, so each predicate gets its own `.of`
+# arm and the wrapper supplies it -- the same two-def shape as `fired`/`fires` above,
+# and MEASURED rather than guessed: `match String.is_empty(acc):` is refused with
+# "a match cannot scrutinize a computed value: give it its own def".
+#
+# `+acc` IS LOAD-BEARING IN BOTH WRAPPERS AND MEASURED. A `String` binder is consumed by
+# a read, so `fire_sep.of(String.is_empty(acc), acc)` -- which reads `acc` once for the
+# predicate and hands it on -- is refused with "acc (consumed more than once)" unless the
+# parameter is `+`. Same for `fire_add`'s arm, which reads `acc` both directly and inside
+# `fire_sep(acc)`.
+def fire_sep.of(e: Bool, +acc: String) -> String:
+  match e:
+    case True{}: ""
+    case _: ","
+
+def fire_sep(+acc: String) -> String:
+  fire_sep.of(String.is_empty(acc), acc)
+
+def fire_add.of(empty: Bool, +acc: String, nm: String) -> String:
+  match empty:
+    case True{}: acc
+    case _: String.concat([acc, fire_sep(acc), nm])
+
+def fire_add(+acc: String, nm: String, v: String) -> String:
+  fire_add.of(String.is_empty(v), acc, nm)
+
+# `ns` COMES FIRST IN THE SIGNATURE AND THE ORDER IS LOAD-BEARING, measured: a self-call's
+# arguments are read LEFT TO RIGHT and each must be passed UNCHANGED until one SHRINKS.
+# With `acc` first, `fire_join.go(fire_add(...), ns2, vs2)` is refused as "expected : a
+# decreasing self-call" -- `ns2` changes in the SECOND slot before anything has shrunk.
+# Putting the shrinking `ns` first makes its own tail `ns2` that first shrink and every
+# later argument is then free to change. This is the same measured constraint
+# `graphcmp-dbg.bend`'s `s_sites.go` records, for the same reason.
+def fire_join.go(ns: List<&2, String>, vs: List<&2, String>, +acc: String) -> String:
+  match ns vs:
+    case Nil{} _: acc
+    case _ Nil{}: acc
+    case n1 <> ns2 v1 <> vs2: fire_join.go(ns2, vs2, fire_add(acc, n1, v1))
+
+def fire_join(ns: List<&2, String>, vs: List<&2, String>) -> String:
+  fire_join.go(ns, vs, "")
+
+# `+n` BECAUSE THE LEVEL IS READ SEVEN TIMES IN ONE LIST LITERAL, and a `U32` binder is
+# consumed by a read: `site_fires(n)` with a bare `n` is refused with
+# "n (consumed more than once)" at the list. `fire_row` reads it once for the row name
+# and once for `site_fires`, so it is `+` too.
+def site_fires(+n: U32) -> List<&2, String>:
+  [mem_plan(n), ar_ring(n), st_bad(n), am_malformed(n), am_boot(n), am_ip(n), am_final(n)]
+
+def fire_row(+n: U32) -> IO(Unit):
+  srow(String.concat(["fires_L", U32.show(n)]),
+       fire_join(["mem", "ar", "st", "am185", "am225", "am251", "am254"], site_fires(n)))
+
+def fires_rows() -> IO(Unit):
+  do IO<Unit>:
+    _ : Unit <- fire_row(0)
+    _ : Unit <- fire_row(1)
+    _ : Unit <- fire_row(2)
+    _ : Unit <- fire_row(3)
+    _ : Unit <- fire_row(4)
+    _ : Unit <- fire_row(5)
+    _ : Unit <- fire_row(6)
+    _ : Unit <- fire_row(7)
     IO.print("")
 
 # ===========================================================================
@@ -370,6 +499,8 @@ def all_rows(+d: U32) -> IO(Unit):
     _ : Unit <- site_rows(d)
     _ : Unit <- thr_rows()
     _ : Unit <- sweep_rows()
+    _ : Unit <- pin_rows()
+    _ : Unit <- fires_rows()
     IO.print("")
 
 def main() -> IO(Unit):

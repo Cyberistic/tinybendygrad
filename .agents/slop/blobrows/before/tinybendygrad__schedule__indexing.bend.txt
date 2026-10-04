@@ -15,6 +15,7 @@ ac_contiguous_backward=False
 ac_store=False
 ac_sink=False
 ac_reshape=False
+
 ds_param_srcs=0
 ds_param_has0=0
 ds_param_has2=0
@@ -84,6 +85,7 @@ ds_const_has2=1
 ds_store_srcs=3
 ds_store_has0=1
 ds_store_has2=1
+
 bax0=0
 bax1=
 bax2=0
@@ -95,6 +97,7 @@ bax7=1
 bax8=0,1,2
 bax9=0,1
 bax_neg=raise
+
 mv_perm0_ids=R0,R1
 mv_perm0_n=2
 mv_perm0_at=LOOP|LOOP
@@ -113,6 +116,7 @@ mv_perm4_at=LOOP|LOOP|LOOP
 mv_perm5_ids=R2,R1,R0
 mv_perm5_n=3
 mv_perm5_at=LOOP|LOOP|LOOP
+
 mv_shrink0_ids=R0,R1
 mv_shrink0_n=2
 mv_shrink0_add=0,0
@@ -128,6 +132,7 @@ mv_shrink3_add=0,1
 mv_shrink4_ids=ADD,R1
 mv_shrink4_n=2
 mv_shrink4_add=1,0
+
 mv_flip0_ids=R0,R1
 mv_flip0_n=2
 mv_flip0_at=LOOP|LOOP
@@ -144,6 +149,7 @@ mv_flip3_ids=ADD,ADD
 mv_flip3_n=2
 mv_flip3_at=?|?
 mv_flip3_add=1,1
+
 mv_expand0_ids=R0,R1,R2,R3
 mv_expand0_n=4
 mv_expand0_at=LOOP|LOOP|LOOP|LOOP
@@ -162,6 +168,7 @@ mv_expand4_at=LOOP|LOOP|LOOP
 mv_expand5_ids=R2
 mv_expand5_n=1
 mv_expand5_at=LOOP
+
 mv_pad0_ids=R0,R1
 mv_pad0_n=2
 mv_pad0_at=LOOP|LOOP
@@ -178,6 +185,7 @@ mv_pad3_ids=WHERE,WHERE
 mv_pad3_n=2
 mv_pad3_at=?|?
 mv_pad3_noop=0,0
+
 mv_reshape0_ids=W3
 mv_reshape0_n=0
 mv_reshape1_ids=W3
@@ -187,6 +195,7 @@ mv_reshape2_n=1
 mv_reshape3_ids=W3
 mv_reshape3_n=0
 mv_add_raises=raise
+
 argsort0=1,0
 argsort1=0,1
 argsort2=1,2,0
@@ -194,6 +203,7 @@ argsort3=2,0,1
 argsort4=0,2,1
 argsort5=2,1,0
 argsort6=3,1,2,0
+
 ss1_len=5
 ss1_h=0
 ss2_len=8
@@ -210,11 +220,19 @@ ss7_len=23
 ss7_h=0
 ss8_len=26
 ss8_h=0
+
+
+
+
+
+
+
 ss_top1=ret
 ss_top7=ret
 ss_top8=ret
 ss_top9=where
 ss_top16=where
+
 nridx_start=0
 nr_1_op=CONST
 nr_1_val=0
@@ -227,6 +245,7 @@ nr_passthru=1
 nr_1_passthru=1
 nr_counter_after_two_ones=0
 nr_counter_after_two_ranges=2
+
 grm_n=4
 par_n=5
 pfd_n=1
@@ -238,6 +257,7 @@ grm_2_ops=MSELECT,MSTACK
 grm_2_rej=-
 grm_3_ops=STORE
 grm_3_rej=-
+
 par_0_ops=REDUCE
 par_0_rej=-
 par_1_ops=PAD
@@ -248,6 +268,9 @@ par_3_ops=W3
 par_3_rej=-
 par_4_ops=EXPAND,FLIP,PAD,PERMUTE,RESHAPE,SHRINK
 par_4_rej=-
+
 pfd_0_ops=STAGE
 pfd_0_rej=-
+
+
 done

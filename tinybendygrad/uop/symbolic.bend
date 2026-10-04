@@ -3485,7 +3485,7 @@ def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
 # and a value range", which is the whole of the `ParamArg` this driver states.
 def fz_var(dt: S.Dt) -> O.Found:
   O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{4294967295, dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{"v"}, S.Aalu{},
+    O.AParam{O.ParamArg{O.ParamArg.no_slot(), dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{"v"}, S.Aalu{},
       None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
 # The four CONST spellings and the four VARIABLE dtypes. A leaf is interned into

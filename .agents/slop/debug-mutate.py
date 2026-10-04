@@ -118,9 +118,48 @@ MUT = [
   "tinybendygrad/runtime/support/am/amdev.bend",
   "  String.concat([\"am \", devfmt, \": \"])",
   "  String.concat([devfmt, \": \"])"),
+  # ---------------------------------------------------------------------------
+  # THE NEW ROWS. Four mutations whose whole purpose is to show that `pin_*`, `fires_*`
+  # and `env_ge4..7` are LOAD-BEARING rather than decoration, and one that plants the
+  # non-cumulative-DEBUG trap the level extension exists to catch.
+  # ---------------------------------------------------------------------------
+  ("pin_nbytes' `div 2` -> `div 1` (the `sum(nbytes) * 2` of memory.py:45 is dropped)",
+   ".agents/slop/debug-gate.bend",
+   "urow(\"pin_nbytes\", U32.div(M.Planned.tot(p), 2))",
+   "urow(\"pin_nbytes\", U32.div(M.Planned.tot(p), 1))"),
+  ("`fire_join`'s seed `\"\"` -> `\"x\"` (every fires row gains a leading name)",
+   ".agents/slop/debug-gate.bend",
+   "  fire_join.go(ns, vs, \"\")",
+   "  fire_join.go(ns, vs, \"x\")"),
+  ("`fire_add` names a site even when it did NOT fire (fires_L0/L1 lose their bite)",
+   ".agents/slop/debug-gate.bend",
+   "def fire_add.of(empty: Bool, +acc: String, nm: String) -> String:\n  match empty:\n    case True{}: acc",
+   "def fire_add.of(empty: Bool, +acc: String, nm: String) -> String:\n  match empty:\n    case True{}: nm"),
+  ("`env_rows`'s `env_ge7` reads threshold 6 (the top of the scale is off by one)",
+   ".agents/slop/debug-gate.bend",
+   "    _ : Unit <- urow(\"env_ge7\", fired_of_ge(d, 7))",
+   "    _ : Unit <- urow(\"env_ge7\", fired_of_ge(d, 6))"),
+  # THE TRAP, PLANTED DIRECTLY. The named failure is "a port where DEBUG=4 behaves as
+  # DEBUG=1", i.e. a DEBUG that STOPS being cumulative as the level rises. Re-levelling
+  # the allreduce threshold-2 site from 2 to 4 is that shape: at DEBUG=3 the site goes
+  # silent, which upstream it does not. `fires_L3` is the row that must catch it -- it is
+  # the only row in this gate whose VALUE is the question "which sites fire at level 3",
+  # so without it the mutation moves only `thr_ar` and `ar_ring_L*`.
+  ("allreduce.py:16's threshold 2 -> 4 (a NON-CUMULATIVE DEBUG: level 2 goes silent)",
+   "tinybendygrad/schedule/allreduce.bend",
+   "  red_dbg_text.gate(H.debug_ge(dbg, 2), red_dbg_text(s, ndev, numel, dt))",
+   "  red_dbg_text.gate(H.debug_ge(dbg, 4), red_dbg_text(s, ndev, numel, dt))"),
 ]
 
-LEVELS = ("0", "1", "2")
+# THE LEVELS, and why not all nine. The table asks "which rows moved", so a level is only
+# worth a run if some mutation can move something there. Levels 0, 1 and 2 carry every
+# threshold mutation; 3 and 4 are where the non-cumulative mutation bites; 7 is the top of
+# the scale, and is where a level stopping firing would be caught. Levels 5 and 6 are
+# omitted for COST, and the omission is named rather than hidden: every row here that
+# reads a level is `>=`-shaped and `fires_L<n>` is a straight function of `n`, so no
+# mutation in this table can move anything differently at 5 than at 4 or at 7. The GATE
+# still runs all nine levels; only this table runs six.
+LEVELS = ("0", "1", "2", "3", "4", "7")
 
 
 def rows_of(out):

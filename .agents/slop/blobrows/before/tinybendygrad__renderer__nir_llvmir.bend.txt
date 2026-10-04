@@ -203,3 +203,4 @@ fp8 prefix[25] = [  %trunc = trunc i32 %packed to i8]   py=[  %trunc = trunc i32
 fp8 prefix[26] = [  ret i8 %trunc]   py=[  ret i8 %trunc]
 fp8 prefix[27] = [}]   py=[}]
 f32show 240.0 = [240]   py=[BEND-ONLY]
+

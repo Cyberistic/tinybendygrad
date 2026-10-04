@@ -12,12 +12,13 @@ row comes from.
 import sys, os, mmap
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+import ctypes
 from tinygrad.helpers import round_up, data64
 from tinygrad.uop.ops import UOp, Ops
 from tinygrad.dtype import dtypes
 from tinygrad.device import TinyELF
 from tinygrad.runtime.support.hcq2 import layout_args, to_name
-from tinygrad.runtime.ops_nv import (nvm, nv_flags, NVKIface, GPFifo, NVDevice,
+from tinygrad.runtime.ops_nv import (nvm, nv_iowr, nv_flags, NVKIface, GPFifo, NVDevice,
                                      NV_PFAULT_FAULT_TYPE, NV_PFAULT_ACCESS_TYPE,
                                      get_error_str, QMD)
 import tinygrad.runtime.autogen.nv_570 as g
@@ -31,6 +32,49 @@ def row(nm, v):
 
 def h64(x):
     return "%d:%d" % ((x >> 32) & 0xFFFFFFFF, x & 0xFFFFFFFF)
+
+
+# --------------------------------------------------------------------------
+# `nv_iowr`'s command word -- ASKED OF UPSTREAM, not restated.
+#
+# ops_nv.py:42-44 is
+#     def nv_iowr(fd:FileIOInterface, nr, args, cmd=None):
+#       ret = fd.ioctl(cmd or ((3 << 30) | (ctypes.sizeof(args) & 0x1FFF) << 16 |
+#                             (ord('F') & 0xFF) << 8 | (nr & 0xFF)), args)
+#       if ret != 0: raise RuntimeError(f"ioctl returned {ret}")
+#
+# `fd` is the ONLY thing it needs from the device, so a stub that RECORDS the word
+# upstream built and answers `ret` makes CPython compute the word and CPython raise
+# its own message. The bit pattern `3<<30 | ...` and the string `ioctl returned {ret}`
+# were BOTH transcribed here before; neither is any more. The stub supplies no
+# arithmetic, so this is a call into the subject, not a call into a copy of it.
+#
+# `sz` is a STRUCT SIZE, and upstream reads it as `ctypes.sizeof(args)`, so the
+# fixture is a real ctypes object of exactly that size -- `c_uint8 * sz` has
+# `sizeof` == sz for every sz, including 0. MEASURED: sz=0 and sz=8192 therefore
+# produce the SAME word, which is what `nv_iowr_size_is_same` asserts, and that row
+# is now two calls compared rather than one transcription compared with another.
+# --------------------------------------------------------------------------
+class _IOWR:
+    """An `fd` for upstream `nv_iowr`: keeps the word it built, returns `ret`."""
+    def __init__(self, ret=0): self.cmd, self.ret = None, ret
+    def ioctl(self, cmd, args): self.cmd = cmd; return self.ret
+
+
+def _iowr_cmd(sz, nr, cmd=None, ret=0):
+    """The word upstream `nv_iowr` built. Raises upstream's own RuntimeError if `ret`."""
+    fd = _IOWR(ret)
+    nv_iowr(fd, nr, ctypes.c_uint8 * sz, cmd=cmd)
+    return fd.cmd
+
+
+def _iowr_msg(sz, nr, ret):
+    """Upstream's own `RuntimeError` text, or "" when `ret` is 0 and it does not raise."""
+    try:
+        _iowr_cmd(sz, nr, ret=ret)
+    except RuntimeError as e:
+        return str(e)
+    return ""
 
 
 # --------------------------------------------------------------------------
@@ -373,10 +417,15 @@ for parts in (("ring", "COMPUTE:0"), ("gpput", "COPY:0"), ("doorbell", "COMPUTE:
         to_name(*parts))
 
 # :43-45 `nv_iowr`'s command word.
+# WAS THE BIT PATTERN RESTATED: `(3 << 30) | ((sz & 0x1FFF) << 16) | (ord('F') & 0xFF)
+# << 8 | (nr & 0xFF)`, typed from ops_nv.py:43. `_iowr_cmd` now CALLS that line.
+# The 9 names below are emitted a SECOND time in the stage-3/4 block -- MEASURED,
+# the two fixture tuples are the SAME 9 pairs, so the collision costs no coverage
+# and one of each pair is invisible to the gate. Both call the same helper, so the
+# duplicate can no longer disagree with itself.
 for sz, nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (8192, 0xff),
                (0x1FFF, 0x88), (0x2000, 0x01), (0x500, 0x2)):
-    row("nv_iowr_%d_%d" % (sz, nr),
-        (3 << 30) | ((sz & 0x1FFF) << 16) | (ord('F') & 0xFF) << 8 | (nr & 0xFF))
+    row("nv_iowr_%d_%d" % (sz, nr), _iowr_cmd(sz, nr))
 
 
 
@@ -384,15 +433,17 @@ for sz, nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (8192, 0xff),
 # STAGE 3/4 rows. Every one of these calls CPython; none is transcribed.
 # ==========================================================================
 
-# :43-45 `nv_iowr`'s command word. The oracle computes the same expression.
+# :43-45 `nv_iowr`'s command word.
 for _sz, _nr in ((0, 0), (4, 1), (64, 0x2c), (40, 0x2b), (96, 0x41), (1280, 2),
                  (8191, 136), (8192, 1), (8192, 255)):
-    row("nv_iowr_%d_%d" % (_sz, _nr),
-        (3 << 30) | ((_sz & 0x1FFF) << 16) | (ord('F') & 0xFF) << 8 | (_nr & 0xFF))
-row("nv_iowr_explicit_kept", 201)
-row("nv_iowr_explicit_0", (3 << 30) | ((40 & 0x1FFF) << 16) | (ord('F') & 0xFF) << 8 | (43 & 0xFF))
+    row("nv_iowr_%d_%d" % (_sz, _nr), _iowr_cmd(_sz, _nr))
+# `cmd=` WINS over the computed word, so this reads the word upstream actually sent
+# rather than asserting that 201 is a number someone liked.
+row("nv_iowr_explicit_kept", _iowr_cmd(40, 43, cmd=201))
+row("nv_iowr_explicit_0", _iowr_cmd(40, 43))
+# the `f"ioctl returned {ret}"` text, caught out of upstream's own raise.
 for _r in (0, 5, 4096):
-    row("nv_iowr_msg_%d" % _r, "" if _r == 0 else "ioctl returned %d" % _r)
+    row("nv_iowr_msg_%d" % _r, _iowr_msg(40, 43, _r))
 
 # :50-94 QMD. A stand-in `dev` object is all `QMD.__init__` reads, and that is the
 # whole point: ops_nv.py:52 is
@@ -1093,10 +1144,9 @@ except RuntimeError:
 # `QMD.set_release` for its return value.
 
 # :45 `if ret != 0: raise` and :700 the viddec `None`, asked of CPython.
-row("nv_iowr_size_is_same", "True" if ((3 << 30) | ((8192 & 0x1FFF) << 16)
-                                        | (ord('F') & 0xFF) << 8 | 1) ==
-                                ((3 << 30) | ((0 & 0x1FFF) << 16)
-                                 | (ord('F') & 0xFF) << 8 | 1) else "False")
+# TWO CALLS COMPARED. `sz` is upstream's `ctypes.sizeof(args)` and it is masked with
+# 0x1FFF, so 8192 and 0 collapse to the same word -- MEASURED, they do.
+row("nv_iowr_size_is_same", "True" if _iowr_cmd(8192, 1) == _iowr_cmd(0, 1) else "False")
 
 # :40-41 the reduce is an OR, so the kwarg order does not matter.
 row("nv_flags_signal_reorder_same", "True" if F_SIG == F_SIG_R else "False")
@@ -1116,11 +1166,25 @@ row("nv_nvals_hilo4", _nvals(hi, lo, hi, lo))
 row("nv_nvals_two", _nvals(0, 1))
 
 # the four header fields, one row each.
-row("nv_hdr_typ2", (2 << 28))
-row("nv_hdr_subc4", 4 << 13)
+#
+# ops_nv.py:47 is
+#     return [(typ << 28) | (sum(v.dtype.itemsize // 4 if isinstance(v, UOp) else 1
+#                              for v in vals) << 16) | (subc << 13) | (mthd >> 2), *vals]
+# so each field is isolated by DIFFERING TWO CALLS with that field moved and nothing
+# else. A difference needs no shift and no mask typed here, and it still fails if
+# upstream moves the field to a different width or a different place: both sides of
+# the subtraction move together and the difference does not.
+_U64 = UOp.const(1, dtypes.uint64)
+row("nv_hdr_typ2", nvm(0, 0, 0, typ=2)[0] - nvm(0, 0, 0, typ=0)[0])
+row("nv_hdr_subc4", nvm(4, 0, 0)[0] - nvm(0, 0, 0)[0])
+# five INTS, so the count is five and not four: `sum(... if isinstance(v, UOp) else 1)`
+# counts an int as ONE word, which is why `nv_hdr_all` below reaches nvals=4 with two
+# uint64 UOps instead (`itemsize // 4` makes a uint64 count TWO).
+row("nv_hdr_nvals5", nvm(0, 0, 0, 0, 0, 0, 0)[0] - nvm(0, 0)[0])
 row("nv_hdr_mthd", g.NVC6B5_OFFSET_IN_UPPER >> 2)
-row("nv_hdr_nvals5", 5 << 16)
-row("nv_hdr_all", (2 << 28) | (4 << 16) | (4 << 13) | (g.NVC6B5_OFFSET_IN_UPPER >> 2))
+# THE WHOLE WORD, ONE CALL. Nothing about it is typed: `typ` defaults to 2, `subc` is
+# 4, `mthd >> 2` is upstream's, and nvals=4 falls out of two uint64 UOps.
+row("nv_hdr_all", nvm(4, g.NVC6B5_OFFSET_IN_UPPER, _U64, _U64)[0])
 
 # :293 the copy step loop. THE THREE ROWS BELOW WERE DELETED AS TAUTOLOGIES:
 # `nv_launch_at_equals` and `nv_launch_shift` were a hand-written `(512 + 0*4) ==

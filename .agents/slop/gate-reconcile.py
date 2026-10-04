@@ -71,23 +71,19 @@ def load(name, path):
 
 # WHY A VERDICT IS NOT A DISAGREEMENT COUNT, AS A CLASSIFICATION.
 #
-# The sweep prints four states and a BROKEN list, and BROKEN collapses five different things
-# into one word. A reader who sees BROKEN cannot tell a port bug from a harness bug, and
-# `cstyle` is the clearest case there is: its lane shares ZERO row names, so nothing was
-# compared, which is a COVERAGE fact about the wiring -- not a row that disagrees, and not a
-# port defect. Lumping it with a real disagreement makes both unreadable: the reader learns
-# to skim the list, and the real entry in it gets skimmed too.
+# The sweep prints four states and a BROKEN list, and BROKEN collapses five different things into
+# one word. A reader who sees BROKEN cannot tell a port bug from a harness bug, and `cstyle` is the
+# clearest case there is: a lane that shares ZERO row names compared NOTHING, which is a COVERAGE
+# fact about the wiring -- not a row that disagrees, and not a port defect. Lumping it with a real
+# disagreement makes both unreadable: the reader learns to skim the list, and the real entry in it
+# gets skimmed too.
 #
-# So every verdict gets a REASON and a CLASS, and the class is the thing to act on.
-#   DEFECT     a claim was compared and came out different. Act on the port.
-#   COVERAGE   two lanes that cannot be compared, or an oracle that emits nothing this
-#              reader can see. Nothing is wrong with the port; the WIRE is.
-#   INSTRUMENT a lane did not run. Could be a real crash or a loaded-machine flake, and the
-#              two are told apart by REPS, not by reading the message.
-#   RECORDING  compared clean, and nobody wrote it down.
-#   ABSENCE    nothing was compared because nothing was wired, or the file is gone.
-CLASS_DEFECT, CLASS_COVERAGE, CLASS_INSTRUMENT = "DEFECT", "COVERAGE", "INSTRUMENT"
-CLASS_RECORDING, CLASS_ABSENCE = "RECORDING", "ABSENCE"
+# ⚠ THE CLASSIFIER LIVES IN rebase-gate.py NOW (`classify()`), NOT HERE. It used to be duplicated
+# here, and two copies of a classifier is two answers to "what is this BROKEN": the sweep stamped
+# nothing, so a reader holding the sweep's line and this file's class had no way to tell that they
+# were looking at the same verdict through two vocabularies. One function, called by both. The
+# names are re-exported so this file's own text still reads the same.
+
 
 
 def port_vs_cpython(now):
@@ -112,47 +108,14 @@ def port_vs_cpython(now):
   return max(out)  # the port lane with the most shared names: the strongest claim
 
 
-def reason_of(v):
-  """(reason, class) for a verdict, read from the verdict's own STRUCTURE.
+def reason_of(g, v):
+  """(cause, class, reason) for a verdict -- rebase-gate.py's OWN classifier, not a second one.
 
-  Read from the fields verdict() sets rather than by substring-matching its English, because
-  a message that changes wording must not silently reclassify a defect -- that is precisely
-  how 'it crashes' outlived the crash it described and became a stale reason. `lanes` and
-  `row_counts` are consulted for the guards that return without stamping a field."""
-  lanes, rows = v["lanes"], v.get("row_counts", {})
-  died = sorted(k for k, l in lanes.items() if l["rc"] != 0 and k != "check")
-  if died:
-    detail = "; ".join(f"{k} rc={lanes[k]['rc']}" for k in died)
-    zero = [k for k in died if not rows.get(k)]
-    # A lane that both failed AND emitted nothing is the more specific of the two findings,
-    # and the distinction matters: `interpreted` rc=1 with SOME PROOFS FAIL and no main is a
-    # declared condition of a seam file, while rc=1 with a stack trace is an instrument.
-    return (f"GUARD 3 lane death: {detail}"
-            + ("  (and the dead lane emitted ZERO rows too)" if zero else ""),
-            CLASS_INSTRUMENT)
-  empty = sorted(k for k, x in rows.items() if not x)
-  if empty:
-    return (f"GUARD 2 empty lane: {', '.join(empty)} emitted no name=value row, so it "
-            "compared nothing and agrees with nothing", CLASS_COVERAGE)
-  if v.get("uncompared_pairs"):
-    pairs = ", ".join(f"{a} vs {b} (0 shared)" for a, b, _ in v["uncompared_pairs"])
-    return f"GUARD 4 incomparable: {pairs}. A NAMES mismatch is not a disagreement and not " \
-           "a port defect -- the wiring cannot compare these two lanes", CLASS_COVERAGE
-  if v.get("disagreements"):
-    named = ", ".join(f"{d[2]!r}" for d in v["disagreements"][:6])
-    return (f"GUARD 4 disagreement: {v['disagreements'].__len__()} row(s), first: {named}",
-            CLASS_DEFECT)
-  if "LOST ROWS" in v.get("why", ""):
-    return f"GUARD 1 absolute count: {v['why']}", CLASS_DEFECT
-  if v["state"] == "AGREE-UNRECORDED":
-    pairs = v.get("compared_pairs", [])
-    tot = sum(n for _, _, n in pairs)
-    return (f"compared clean over {len(pairs)} pair(s), {tot} shared row names, all agreeing; "
-            "no baseline recorded", CLASS_RECORDING)
-  if "NO SUCH FILE" in v.get("why", ""):
-    return v["why"], CLASS_ABSENCE
-  return v.get("why", ""), CLASS_RECORDING if v["state"] in ("UNCHANGED", "RE-PORTED") \
-      else CLASS_ABSENCE
+  It used to be a 40-line copy living in this file while the sweep stamped no cause at all, so a
+  reader holding `TALLY BROKEN=6` and this file's class list had two vocabularies for one verdict
+  and no way to know they were the same one. `classify()` moved into rebase-gate.py and is now
+  called by both; a second classifier is a second answer."""
+  return g.classify(v)
 
 
 def selftest_number(scan, g, port, oracles):
@@ -212,7 +175,7 @@ def reconcile_port(g, scan, port, base):
   if not oracles:
     v = g.never_wired(port, REPO / port, oracles)
     lines += [f"  wired    : NOT IN BASE_ORACLES",
-              f"  GATE     : {v['state']}  [{CLASS_ABSENCE}]",
+              f"  GATE     : {v['state']}  cause={v['cause']} [{v['class']}]",
               f"  reason   : {v['why'][:160]}",
               f"  selftest : NOT MEASURED -- never_wired() returns before any lane runs",
               f"  VERDICT  : RECONCILED -- BROKEN is UNREACHABLE for this port by "
@@ -225,12 +188,12 @@ def reconcile_port(g, scan, port, base):
     seen.append((v, now))
   states = {v["state"] for v, _ in seen}
   v, now = seen[0]
-  reason, cls = reason_of(v)
+  cause, cls, reason = reason_of(g, v)
   ok = True
   lines += [f"  wired    : {list(oracles)}",
             f"  baseline : " + ("recorded " + str({k: len(x) for k, x in sorted(rec.items())})
                                if rec else "NOT RECORDED"),
-            f"  GATE     : {v['state']}  [{cls}]",
+            f"  GATE     : {v['state']}  cause={cause} [{cls}]",
             f"  reason   : {reason[:200]}",
             f"  rows     : {v['row_counts']}",
             f"  lanes    : " + "  ".join(f"{k}=rc{l['rc']}" for k, l in
@@ -265,6 +228,225 @@ def reconcile_port(g, scan, port, base):
 REPS = 2
 
 
+def sweep_reconcile(g, scan, sweep_path, lanes_ok=True):
+  """ENTRY BY ENTRY, an EXISTING sweep against the selftest's numbers. Runs no gate lane.
+
+  ⚠ THIS IS THE RECONCILIATION THAT WOULD HAVE CAUGHT THE 2026-10-04 `BROKEN=6` QUOTED AGAINST
+  A GREEN cstyle GATE. It costs nothing because the sweep is a file, and it is the only mode that
+  compares the two instruments WITHOUT re-running either -- so it is the one a reader can run
+  against a tally somebody else published.
+
+  THE TWO INSTRUMENTS MEASURE DIFFERENT THINGS, and that is the whole content of the table:
+
+    sweep     `rebase-gate.py --json`. Per port: a STATE from FOUR GUARDS over FRESH lanes
+              (reachability, emptiness, comparability+disagreement, absolute count). It can be
+              BROKEN for a reason that has nothing to do with whether the rows agree, and it is
+              the only one of the two that can say UNCHANGED or RE-PORTED.
+    selftest  `measure_roster()`. Per port: an INTERSECTION and a DISAGREEMENT COUNT, from
+              rebase-scan-oracles.py's lane runners and cache. It has five states and no BROKEN,
+              and its `PASS` beside the numbers is about SIX SYNTHETIC STATES driven through
+              gate_port() with run_port() STUBBED -- it never runs the port.
+
+  So "0 disagreements" and "BROKEN" are not contradictory. What IS a defect is the pair
+  disagreeing about the SAME claim, and that is what this asserts, per port:
+
+    selftest disagree == 0   => sweep cause must NOT be DISAGREE. A sweep BROKEN for
+                                ZERO-ROWS / INCOMPARABLE / LANE-DEATH / ROWS-LOST is a
+                                COVERAGE or INSTRUMENT finding and is EXPECTED to differ.
+    selftest disagree  > 0   => sweep cause MUST be DISAGREE. Anything else means one of the
+                                two read something the other did not, and the sweep is red for
+                                the wrong reason.
+    either side UNMEASUREED  => NOT RECONCILABLE, and it says which lane produced 0 rows. A
+                                missing measurement is never rounded to agreement.
+
+  Returns (n_reconciled, n_divergent, lines)."""
+  doc = json.loads(pathlib.Path(sweep_path).read_text())
+  base = json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
+  by_port = {v["port"]: v for v in doc["verdicts"]}
+  live = {p: s for p, (s, _) in _conformance().items() if s and p in g.BASE_ORACLES}
+  lines = [f"sweep       {sweep_path}",
+           f"  interpreter {doc.get('oracle_py')}  python {doc.get('python')}",
+           f"  TALLY {doc.get('tally')}",
+           f"  CAUSES {doc.get('causes', '(this sweep predates the cause stamp)')}",
+           "",
+           f"{'port':<40} {'sweep':<17} {'cause':<13} {'selftest shared/disagree of':<28} verdict",
+           "-" * 132]
+  good = bad = 0
+  for port in sorted(by_port):
+    v = by_port[port]
+    if "cause" not in v:  # a sweep written before the cause stamp: classify it now, with the
+      v = g.stamp(dict(v, lanes=v.get("lanes", {}), row_counts=v.get("row_counts", {})))  # same fn
+    cause = v["cause"]
+    if not g.BASE_ORACLES.get(port):
+      lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "
+                   f"{'NOT MEASURED (never_wired runs no lane)':<28} "
+                   f"RECONCILED: BROKEN is UNREACHABLE here, so a BROKEN naming this port came "
+                   f"from a DIFFERENT wiring")
+      good += 1
+      continue
+    if not lanes_ok:
+      lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "
+                   f"{'FORBIDDEN (--no-lanes)':<28} UNMEASURED -- not a passing reconciliation")
+      bad += 1
+      continue
+    n = selftest_number(scan, g, port, g.BASE_ORACLES[port])[0]
+    num = f"{n['shared']}/{n['disagree']} of {n['n_bend']}+{n['n_oracle']}"
+    if not n["n_bend"] or not n["n_oracle"]:
+      blank = [w for w, c in (("port", n["n_bend"]), ("oracle", n["n_oracle"])) if not c]
+      lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "
+                   f"{num:<28} UNMEASURED: the {' and '.join(blank)} lane produced 0 rows "
+                   f"[{n['src']}]")
+      bad += 1
+      continue
+    if n["disagree"] and cause != g.CAUSE_DISAGREE:
+      verdict = (f"DIVERGES: {n['disagree']} of {n['shared']} shared names disagree but the "
+                 f"sweep's cause is {cause}, so the sweep is red for the WRONG reason")
+      bad += 1
+    elif not n["disagree"] and cause == g.CAUSE_DISAGREE:
+      verdict = (f"DIVERGES: the sweep says {len(v.get('disagreements', []))} disagree while the "
+                 f"selftest measures {n['disagree']} of {n['shared']} -- one read a cache")
+      bad += 1
+    elif not n["disagree"] and cause != g.CAUSE_NONE:
+      verdict = (f"RECONCILED as EXPECTED: selftest 0 disagree vs sweep cause {cause} -- the two "
+                 f"instruments measure different things, and this is what that looks like")
+      good += 1
+    else:
+      verdict = f"RECONCILED: 0 of {n['shared']} shared names disagree, and the sweep agrees"
+      good += 1
+    if n["bad"]:
+      verdict += f"  [{', '.join(repr(k) for k in n['bad'][:3])}]"
+    lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} {num:<28} {verdict}")
+  lines.append("-" * 132)
+  reds = [(c, doc.get("causes", {}).get(c, 0)) for c in (g.CAUSE_DISAGREE, g.CAUSE_ZERO_ROWS,
+                                                         g.CAUSE_INCOMPARABLE, g.CAUSE_LANE_DEATH,
+                                                         g.CAUSE_ROWS_LOST)]
+  reds = [f"{c}={n}" for c, n in reds if n]
+  lines.append(f"{good} reconciled, {bad} divergent, of {len(by_port)} sweep entries. "
+               f"BROKEN BY CAUSE {reds or '(none)'} -- of which only DISAGREE is a defect in a "
+               f".bend file")
+  return good, bad, lines
+
+
+def _conformance():
+  """rebase-gate-selftest.py's ORACLE_CONFORMANCE, imported not restated: it is one of the two
+  rosters under reconciliation, and a second copy is a third answer."""
+  return load("gate_reconcile_st", HERE / "rebase-gate-selftest.py").ORACLE_CONFORMANCE
+
+
+def lane_control(g, port, st):
+  """THE PER-LANE CONTROL: clean -> AGREE rc=0, ONE PLANTED ROW -> BROKEN rc=1 NAMED, restore
+  BYTE-IDENTICAL. Through the REAL run_port, real .bend lanes and real CPython subprocesses.
+
+  The row is CHOSEN by running the pair and taking the first shared name whose two lanes AGREE, so
+  the plant cannot land in nothing and a control that degraded into "planted into no row" would
+  report a clean pair as clean. The mutant lane is rebase-gate-selftest.py's OWN `mutant_lane` --
+  a wrapper that runs the real oracle and rewrites exactly one line -- so the only difference
+  between the two lanes is the corruption. Nothing on disk is edited, which is why the restore is
+  checked by the ROWS coming back rather than by a hash of a file: there is no file to hash.
+
+  ⚠ AND IT IS ALSO THE CONTROL FOR THE COMPILED LANE'S PATH. `dtype.bend` and
+  `codegen/decomp/dtype.bend` are the only two WIRED ports sharing a stem, and run them at the
+  same time, so if `native_bin()` were still keyed on the stem one of them would execute the
+  other's binary and `interpreted != native` -- which GUARD 4 would report as a manufactured
+  BROKEN. A control that only ever runs one port at a time cannot see that bug at all.
+  """
+  import tempfile
+  oracles = g.BASE_ORACLES[port]
+  bend = REPO / port
+  lanes, clean = g.run_port(bend, list(oracles), True)
+  counts = {k: len(v) for k, v in clean.items()}
+  out = [f"{port}", f"  lanes  {counts}  " + "  ".join(f"{k}=rc{l['rc']}" for k, l in
+                                                          sorted(lanes.items()) if k != 'check')]
+  v = gate_with(g, {"lanes": {}, "hunks": {}}, clean)
+  out.append(f"  clean  -> {v['state']} cause={v['cause']} [{v['class']}]  {v['cause_reason'][:110]}")
+  if _conformance_kind(port) == "dead":
+    # Wired ON PURPOSE to a lane that cannot compare. Its control is that it IS red: a lane that
+    # stopped being BROKEN is the failure, not a green. There is nothing to plant into, because
+    # there is nothing agreeing to plant into.
+    return out, v["state"] == g.BROKEN
+  ok = v["state"] in (g.AGREE_UNRECORDED, g.UNCHANGED) and bool(clean["interpreted"])
+  cps = [k for k in clean if k.startswith("cpython:")]
+  shared = sorted(set(clean["interpreted"]) & set(clean[cps[0]])) if cps else []
+  row = next((k for k in shared
+              if clean["interpreted"][k] == clean[cps[0]][k] and clean["interpreted"][k]), None)
+  out.append(f"  clean  -> rc=0 required; shared(interpreted,{cps[0] if cps else '-'})="
+             f"{len(shared)} of {len(clean['interpreted'])} port rows, "
+             f"{len(clean[cps[0]]) if cps else 0} oracle rows")
+  if row is None:
+    out.append("  plant  -> FAIL: the pair shared no row whose two lanes AGREE, so the plant had "
+               "nothing to corrupt and this control proved nothing")
+    return out, False
+  with tempfile.TemporaryDirectory() as td:
+    _, planted = g.run_port(bend, [st.mutant_lane(oracles[0], row, td)], True)
+  p = gate_with(g, {"lanes": {}, "hunks": {}}, planted)
+  named = [d for d in p.get("disagreements", []) if d[2] == row]
+  out.append(f"  plant  -> {p['state']} cause={p['cause']} rc=1 required, NAMES {row!r}: "
+             f"{bool(named)}  {p['cause_reason'][:100]}")
+  ok = ok and p["state"] == g.BROKEN and bool(named)
+  same = g.run_port(bend, list(oracles), True)[1] == clean
+  out.append(f"  restore-> byte-identical to the clean reading: {same} (nothing on disk was "
+             "edited, so this compares ROW SETS, not a file digest)")
+  return out, ok and same
+
+
+def _conformance_kind(port):
+  return _conformance().get(port, (None, None))[1]
+
+
+def gate_with(g, doc, rows_by_lane):
+  """gate_port() with run_port() REPLACED for the duration of the call, for reading a verdict off
+  rows ALREADY COLLECTED here.
+
+  ⚠ IT MUTATES `g` AND PUTS IT BACK, because a function's globals are its DEFINING module's dict:
+  a `types.ModuleType` copy with `__dict__.update(g.__dict__)` leaves `gate_port`'s `__globals__`
+  pointing at `g`, so the stub is never called and the caller silently measures the LIVE tree.
+  rebase-gate-selftest.py's docstring records the same trap ("FOUR MODULES, NOT ONE") and pays for
+  it with four module loads; a save/restore is one line and one module, and the restore is in a
+  `finally` so a raised verdict cannot leave the gate stubbed for the next port."""
+  was = g.run_port
+  g.run_port = lambda *a, **k: ({n: {"rc": 0} for n in rows_by_lane}, rows_by_lane)
+  try:
+    return g.gate_port(REPO / "tinybendygrad/probe.bend", ["o"], doc, native=True)[0]
+  finally:
+    g.run_port = was
+
+
+def _selftest():
+  return load("gate_reconcile_selftest", HERE / "rebase-gate-selftest.py")
+
+
+def run_controls(g, ports, workers):
+  """Every wired lane, clean / planted / restored, CONCURRENTLY and independently reported.
+
+  Concurrency is here because the control is three real gate runs per port over 39 ports, and
+  serially that is an hour nobody will sit through. It is also the honest way to exercise the
+  control: the lanes are separate OS processes, so two ports in flight is the condition under
+  which a stem-keyed binary path could hand one port another's rows -- and `dtype.bend` and
+  `codegen/decomp/dtype.bend`, the only two wired ports sharing a stem, are BOTH in this list.
+  `workers` is printed with the load at both ends, because a loaded machine produces red here too
+  and an unexplained red on a control is indistinguishable from a control that worked.
+  """
+  import concurrent.futures as cf
+  st = _selftest()
+  ok_n, fails = 0, []
+  print(f"PER-LANE CONTROL: {len(ports)} wired lane(s), {workers} in flight, "
+        f"load {os.getloadavg()[0]:.2f}\n")
+  with cf.ThreadPoolExecutor(max_workers=workers) as pool:
+    for lines, ok in pool.map(lambda p: lane_control(g, p, st), ports):
+      print("\n".join(lines))
+      print(f"  {'PASS' if ok else 'FAIL'}  {lines[0]}")
+      ok_n += ok
+      if not ok:
+        fails.append(lines[0])
+      print()
+  print("=" * 100)
+  print(f"{ok_n}/{len(ports)} lanes: clean -> AGREE rc=0, one planted row -> BROKEN rc=1 naming "
+        f"it, restore byte-identical.  load {os.getloadavg()[0]:.2f}")
+  if fails:
+    print(f"{len(fails)} FAILED: {', '.join(fails)}")
+  return 1 if fails else 0
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("ports", nargs="*", default=None)
@@ -281,7 +463,26 @@ def main():
                   help="the CONTROL: for each port, check the gate's verdict against the "
                        "selftest's number and require both to be reproducible and "
                        "self-consistent. Non-zero exit on any divergence")
+  ap.add_argument("--sweep", default=None, metavar="SWEEP_JSON",
+                  help="reconcile an EXISTING `rebase-gate.py --json` sweep against the "
+                       "selftest's numbers, entry by entry, running no gate lane. This is the "
+                       "mode that catches a quoted BROKEN list, because it costs nothing and "
+                       "compares the two instruments that disagreed")
+  ap.add_argument("--no-lanes", action="store_true",
+                  help="in --sweep, refuse to RUN any lane. Every port then reports UNMEASURED, "
+                       "which FAILS: a reconciliation that passes by measuring nothing is the "
+                       "failure this file exists to prevent")
+  ap.add_argument("--control", action="store_true",
+                  help="the PER-LANE CONTROL: for each wired port, clean -> AGREE rc=0, then ONE "
+                       "planted disagreement -> BROKEN rc=1 naming the row, then restore "
+                       "byte-identical. Expensive: three real gate runs per port")
+  ap.add_argument("--workers", type=int, default=4,
+                  help="ports in flight for --control. 1 is serial; the lanes are independent "
+                       "processes, and a loaded machine is itself a source of red (load 19.43 has "
+                       "produced 7 stack-overflow flakes in this tree), so this is a knob that "
+                       "changes what you measure, not a speed flag")
   a = ap.parse_args()
+  global REPS
   REPS = max(1, a.reps)
 
   g = load("gate_reconcile_gate", GATE)
@@ -301,6 +502,14 @@ def main():
     print(f"\nNOT-STARTED is pinned at {unpinned} by the roster alone "
           f"(50 targets - {len(set(g.BASE_ORACLES) | set(base.get('lanes') or {}))} known)")
     return 0
+
+  if a.sweep:
+    good, bad, lines = sweep_reconcile(g, scan, a.sweep, not a.no_lanes)
+    print("\n".join(lines))
+    return 1 if bad else 0
+
+  if a.control:
+    return run_controls(g, sorted(g.BASE_ORACLES), a.workers)
 
   ports = a.ports or DEFAULT_PORTS
 
@@ -333,9 +542,8 @@ def main():
           str({k: len(v) for k, v in sorted(rec.items())}) if rec else "NOT RECORDED"))
     if not oracles:
       v = g.never_wired(port, REPO / port, oracles)
-      reason, cls = (v["why"], CLASS_ABSENCE if "NO SUCH FILE" in v["why"] else CLASS_ABSENCE)
-      print(f"  GATE         : {v['state']}  [{cls}]")
-      print(f"  reason       : {reason}")
+      print(f"  GATE         : {v['state']}  cause={v['cause']} [{v['class']}]")
+      print(f"  reason       : {v['cause_reason']}")
       print(f"  selftest num : NOT MEASURED -- never_wired() returns before any lane runs, so "
             f"there is nothing to reconcile")
       print()
@@ -349,8 +557,8 @@ def main():
       verdicts.append((before, time.monotonic() - t0, v, now))
     print(f"  load / secs  : " + ", ".join(f"{b:.1f}/{d:.0f}s" for b, d, _, _ in verdicts))
     for before, _, v, now in verdicts:
-      reason, cls = reason_of(v)
-      print(f"  GATE         : {v['state']}  [{cls}]")
+      cause, cls, reason = reason_of(g, v)
+      print(f"  GATE         : {v['state']}  cause={cause} [{cls}]")
       print(f"  reason       : {reason}")
       print(f"  rows         : {v['row_counts']}")
       print(f"  lanes        : " + "  ".join(f"{k}=rc{l['rc']}" for k, l in

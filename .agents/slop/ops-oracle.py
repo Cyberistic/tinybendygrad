@@ -81,8 +81,15 @@ sys.path.insert(0, TG_TREE)
 
 import tinygrad.uop.ops as O  # noqa: E402
 from tinygrad.uop import Ops  # noqa: E402
-from tinygrad.dtype import dtypes  # noqa: E402
+from tinygrad.dtype import dtypes, ConstFloat  # noqa: E402
 from tinygrad.uop.ops import UOp, AxisType, CallInfo, axis_letters, axis_colors, range_start  # noqa: E402
+# The REAL field types for the key-fidelity lane, never stand-ins: what decides whether
+# a field is in the key is the dataclass `__eq__` of the record that HOLDS it, so `aux`
+# is measured with hcq2's real `HCQInfo` (the only thing upstream ever puts there) and
+# `target` with the real `Target`.
+from tinygrad.runtime.support.hcq2 import HCQInfo  # noqa: E402
+from tinygrad.renderer import Estimates  # noqa: E402
+from tinygrad.device import Target  # noqa: E402
 
 TAG = f"TG_TREE={TG_TREE}"
 
@@ -400,6 +407,140 @@ print(f"afloat_nan_distinct_intern={_af_nan[0] is _af_nan[1]}")
 print(f"afloat_same_intern={_af_same[0] is _af_same[1]}")
 print(f"afloat_distinct_intern={_af_diff[0] is _af_diff[1]}")
 _afkeep.clear()
+O.UOpMetaClass.ucache.clear()
+
+# ---------------------------------------------------------------------------
+# 0bis3. THE KEY-FIDELITY LANE -- `(op, src, arg, tag, type(arg))` at ops.py:201.
+#       The key HOLDS `arg`, so dict equality compares it by the element's OWN
+#       `__eq__`, and it carries `type(arg)` and NOT `type(tag)`. Two consequences,
+#       and they fail in OPPOSITE directions, so neither is a monotone "more fields":
+#
+#         * a comparator WEAKER than the record's `__eq__` MERGES two nodes CPython
+#           keeps apart -- `CallInfo`(5 fields)/`KernelInfo`(5)/`ProgramInfo`(7) are
+#           all frozen dataclasses and all three are one field short in the port;
+#         * a comparator STRONGER than Python's `==` SPLITS two nodes CPython
+#           merges -- `tag=True` and `tag=1` are ONE key, because `hash(True) ==
+#           hash(1)` and there is no `type(tag)` to separate them.
+#
+#       `tag_*` is the lane that can be GATED, because `Tag` is a port record that
+#       already models both `bool` and `int` and only `eq_tag` separates them. The
+#       four record lanes are measured and printed here so the port's answer is on
+#       record even where the port cannot yet match it; they are `#bend_only_` and
+#       each says why in its own reason line.
+#
+#       FIXTURES DIFFER IN EXACTLY ONE FIELD. A pair differing in some other field
+#       would be satisfied by a comparator that drops the field under test, which is
+#       the whole failure being looked for.
+# ---------------------------------------------------------------------------
+_KKEEP = []
+
+
+def _kcell(build):
+  """One pair on a FRESH ucache, plus the node COUNT that pair produced."""
+  O.UOpMetaClass.ucache.clear()
+  u, v = build()
+  _KKEEP.append((u, v))
+  return u, v, len(O.UOpMetaClass.ucache)
+
+
+# --- `aux` and `grad_fxn`: `CallInfo` (ops.py:1400) is a frozen dataclass with FIVE
+# fields and `ops.py:549` READS `arg.aux` (`hasattr(aux:=arg.aux, "written_bufs")`),
+# so `aux` is not inert. hcq2's real `HCQInfo` is what upstream stores there.
+def _mk_call(aux, grad_fxn=None):
+  return UOp(Ops.CALL, src=(UOp.sink(UOp.const(1, dtypes.int32)),),
+             arg=O.CallInfo(name="k", precompile=False, precompile_backward=False,
+                            aux=aux, grad_fxn=grad_fxn))
+
+
+def _gf_a():
+  return None
+
+
+def _gf_b():
+  return None
+
+
+_aux0, _aux1, _auxn = _kcell(lambda: (_mk_call(HCQInfo(device=("0:0",), written_bufs=(0,))),
+                                     _mk_call(HCQInfo(device=("0:0",), written_bufs=(1,)))))
+print(f"aux_written_bufs_splits={_aux0 is not _aux1}")
+_aux2, _aux3, _ = _kcell(lambda: (_mk_call(HCQInfo(device=("0:0",), written_bufs=(0, 1))),
+                                  _mk_call(HCQInfo(device=("0:0",), written_bufs=(0, 1)))))
+print(f"aux_equal_interns={_aux2 is _aux3}")
+_aux4, _aux5, _ = _kcell(lambda: (_mk_call(HCQInfo(device=("0:0",))), _mk_call(None)))
+print(f"aux_none_vs_obj_splits={_aux4 is not _aux5}")
+_gf0, _gf1, _gfn = _kcell(lambda: (_mk_call(None, grad_fxn=None), _mk_call(None, grad_fxn=_gf_b)))
+print(f"grad_fxn_splits={_gf0 is not _gf1}")
+
+
+# --- `estimates`: `KernelInfo` (ops.py:1342) is a frozen dataclass with FIVE fields.
+def _mk_kernel(estimates):
+  return UOp(Ops.SINK, src=(), arg=O.KernelInfo(name="k", applied_opts=(), opts_to_apply=None,
+                                                  estimates=estimates, beam=0))
+
+
+_est0, _est1, _estn = _kcell(lambda: (_mk_kernel(Estimates(ops=1)), _mk_kernel(Estimates(ops=2))))
+print(f"estimates_splits={_est0 is not _est1}")
+_est2, _est3, _ = _kcell(lambda: (_mk_kernel(Estimates(ops=1)), _mk_kernel(Estimates(ops=1))))
+print(f"estimates_equal_interns={_est2 is _est3}")
+_est4, _est5, _ = _kcell(lambda: (_mk_kernel(Estimates(ops=1)), _mk_kernel(None)))
+print(f"estimates_none_splits={_est4 is not _est5}")
+
+
+# --- `target`: `ProgramInfo` (ops.py:1352) is a frozen dataclass with SEVEN fields.
+def _mk_program(target):
+  return UOp(Ops.PROGRAM, src=(UOp.sink(UOp.const(1, dtypes.int32)),),
+             arg=O.ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(),
+                               globals=(), outs=(), ins=(), target=target))
+
+
+_tgt0, _tgt1, _tgtn = _kcell(lambda: (_mk_program(Target(arch="sm_120")), _mk_program(Target(arch="sm_90"))))
+print(f"target_splits={_tgt0 is not _tgt1}")
+_tgt2, _tgt3, _ = _kcell(lambda: (_mk_program(Target(arch="sm_120")), _mk_program(Target(arch="sm_120"))))
+print(f"target_equal_interns={_tgt2 is _tgt3}")
+
+# --- `vmin_vmax`: `ParamArg.vmin_vmax: tuple[PyConst, PyConst]|None` (ops.py:30) with
+# `PyConst = float|int|bool` (dtype.py:38). `type(arg)` is `ParamArg` for both
+# candidates, so it does NOT split a nested int from a nested float -- the opposite of
+# the top-level CONST cell, and the cell that decides whether a `Const`-valued `PyRange`
+# compared with `eq_const` would OVER-split.
+
+
+def _mk_param(vm, dtype=dtypes.int32):
+  return UOp(Ops.PARAM, src=(), arg=O.ParamArg(slot=0, dtype=dtype, vmin_vmax=vm))
+
+
+_vm0, _vm1, _vmn = _kcell(lambda: (_mk_param((0, 1)), _mk_param((0, 2))))
+print(f"vmin_vmax_int_splits={_vm0 is not _vm1}")
+_vm2, _vm3, _ = _kcell(lambda: (_mk_param((0, 1.0)), _mk_param((0, 2.0))))
+print(f"vmin_vmax_float_splits={_vm2 is not _vm3}")
+_vm4, _vm5, _ = _kcell(lambda: (_mk_param((0, 1.0)), _mk_param((0, 1))))
+print(f"vmin_vmax_float_vs_int_interns={_vm4 is _vm5}")
+_vm6, _vm7, _ = _kcell(lambda: (_mk_param((False, True)), _mk_param((0, 1))))
+print(f"vmin_vmax_bool_vs_int_interns={_vm6 is _vm7}")
+_vm8, _vm9, _ = _kcell(lambda: (_mk_param((0, ConstFloat(-0.0)), dtypes.float32),
+                               _mk_param((0, ConstFloat(0.0)), dtypes.float32)))
+print(f"vmin_vmax_signed_zero_splits={_vm8 is not _vm9}")
+_c0, _c1, _ = _kcell(lambda: (UOp(Ops.CONST, src=(), arg=True), UOp(Ops.CONST, src=(), arg=1)))
+print(f"const_bool_vs_int_splits={_c0 is not _c1}")
+
+# --- `tag`: ops.py:201 carries `type(arg)` and NOT `type(tag)`, so two tags that
+# compare equal are ONE key. `True == 1` and `hash(True) == hash(1)`.
+_tg0, _tg1, _tgn = _kcell(lambda: (UOp(Ops.SINK, src=(), arg=None, tag=True),
+                                  UOp(Ops.SINK, src=(), arg=None, tag=1)))
+print(f"tag_bool_vs_int_interns={_tg0 is _tg1}")
+_tg2, _tg3, _ = _kcell(lambda: (UOp(Ops.SINK, src=(), arg=None, tag=True),
+                                UOp(Ops.SINK, src=(), arg=None, tag=False)))
+print(f"tag_true_vs_false_splits={_tg2 is not _tg3}")
+_tg4, _tg5, _ = _kcell(lambda: (UOp(Ops.SINK, src=(), arg=None, tag=None),
+                                UOp(Ops.SINK, src=(), arg=None, tag=0)))
+print(f"tag_none_vs_zero_interns={_tg4 is _tg5}")
+
+# --- `rtag(self, tag=True)` -- ops.py:258. What the no-argument form produces.
+_rtg = UOp.sink(UOp.const(1, dtypes.int32)).rtag()
+print(f"rtag_default_tag={_rtg.tag!r}")
+print(f"rtag_type={type(_rtg.tag).__name__}")
+
+_KKEEP.clear()
 O.UOpMetaClass.ucache.clear()
 
 # ---------------------------------------------------------------------------
@@ -776,6 +917,40 @@ BEND_ONLY = [
          "and `sh .agents/slop/ops-var-gate.sh`, with the mutation table at "
          "`.agents/slop/ops-var-mutate.py`. A four-row unit does not belong in a "
          "103-row gate whose row ORDER is the contract for a different unit."),
+  # --- THE KEY-FIDELITY WALLS, `(op, src, arg, tag, type(arg))` at ops.py:201. All
+  # --- four are UNDER-splits: the port's record is missing a field upstream's frozen
+  # --- dataclass `__eq__` compares, so two nodes CPython keeps apart become one. They
+  # --- are `#bend_only_` because the fix is a RECORD WIDENING, and Bend refuses a
+  # --- record pattern whose width is not the constructor's, so each one reaches past
+  # --- this file. The CPython answer is printed here and is reproducible; the site
+  # --- counts are the blast radius of the fix, not of a green row.
+  ("aux", "`CallInfo` (ops.py:1400) is a frozen dataclass with FIVE fields and the "
+          "port's at ops.bend has FOUR: `aux` is not a field at all, so `eq_callinfo` "
+          "cannot compare it -- the comparator is sound for the record and the RECORD is "
+          "short. ops.py:549 READS it (`hasattr(aux:=arg.aux, \"written_bufs\")`), so it "
+          "is not inert. Widening: 9 sites in ops.bend + 18 in 6 other files."),
+  ("grad_fxn", "as aux: `CallInfo.grad_fxn` is a Python function object; a Bend closure "
+               "is single-use and is a `Type`, so it cannot be a `Data` field. P7 with "
+               "`tinygrad/nn/gradient.py`."),
+  ("estimates", "`KernelInfo` (ops.py:1342) is a frozen dataclass with FIVE fields and "
+                "the port's has FOUR: `estimates` is absent. Widening: 7 sites in "
+                "ops.bend + 19 in 8 other files."),
+  ("target", "`ProgramInfo` (ops.py:1352) is a frozen dataclass with SEVEN fields and "
+             "the port's has SIX: `target` is absent, already listed as P6 in "
+             "helpers.bend. Widening: 9 sites in ops.bend + 9 in 4 other files."),
+  ("vmin_vmax", "`ParamArg.vmin_vmax: tuple[PyConst, PyConst]|None` (ops.py:30) with "
+                "`PyConst = float|int|bool` (dtype.py:38), and the port spells it "
+                "`PyRange{lo: H.I64, hi: H.I64}` -- so a float bound is not "
+                "REPRESENTABLE and the signed zeros `ConstFloat` keeps apart are merged. "
+                "`type(arg)` does not split a nested int from a nested float either "
+                "(the `float_vs_int` and `bool_vs_int` cells), which is the cell that "
+                "says a `Const`-valued PyRange compared with `eq_const` would "
+                "over-split. Widening: 11 destructuring sites in 7 other files + 8 "
+                "construction sites."),
+  ("rtag", "`rtag(self, tag=True)` -- ops.py:258. The port has no `rtag`; `replace` and "
+           "its `if (op, src, arg, tag) == new_args: return self` guard are with it. "
+           "Its default is a `bool`, which is what makes the `tag_bool_vs_int_interns` "
+           "row above reachable."),
 ]
 print("#bend_only_count=" + str(len(BEND_ONLY)))
 for r, why in BEND_ONLY:

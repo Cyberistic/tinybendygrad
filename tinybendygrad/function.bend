@@ -149,8 +149,10 @@ def fn_src(+f: O.Found, n: U32) -> U32:
 #
 # `-1` IS `4294967295` IN A `U32`, and the ROW NAMES say so, because a gate that
 # prints `0` next to a comment saying `-1` is a gate that needs mental
-# arithmetic to read.
-def FN_NEG1() -> U32: 4294967295
+# arithmetic to read. The VALUE is `O.ParamArg.no_slot()`, named once in the file
+# that owns the field; this is the local spelling `function.py` code reads best
+# against, kept because renaming the call sites is churn with no gate value.
+def FN_NEG1() -> U32: O.ParamArg.no_slot()
 
 # `x.arg.slot`. `ParamArg` always HAS a slot, so this is a two-arm read, and the
 # non-ParamArg arm answers `FN_NEG1()` -- the same value a node with no slot at

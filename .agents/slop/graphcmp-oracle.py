@@ -52,11 +52,19 @@ def census(lines: list[str]) -> dict:
     shapes.add(f[3])
     depths.add(f[4])
     atom |= atoms(f[6])
-    for m, fi, _, _ in G.LEDGER:
-      if G.at_value(f[fi], m):
+    for m, fis, _, _ in G.LEDGER:
+      if any(G.at_value(f[fi], m) for fi in fis):
         res.add(m)
   return {"nodes": len(lines), "ops": ops, "residual": res, "shapes": shapes,
-          "depths": depths, "atoms": atom}
+          "depths": depths, "atoms": atom, "symdims": symdim_rows(lines)}
+
+
+def symdim_rows(lines: list[str]) -> list[str]:
+  """The ids of the nodes whose `shape` column carries a symbolic dim. `symdims` counts
+  over built `Node`s, which needs the whole differ; this reads the same `U` at a dim
+  position straight off the wire so the census has no dependency on `build`."""
+  return [G.unchunks(ln)[0][1:] for ln in lines
+          if G.unchunks(ln)[3].startswith("(") and "U" in G.split_top(G.unchunks(ln)[3][1:-1])]
 
 
 def main() -> int:
@@ -66,10 +74,12 @@ def main() -> int:
   import tinygrad
   print(f"# tree={tinygrad.__file__}")
   print(f"# {'graph':<10} {'nodes':>5} {'cnt':>4} {'ops':>4} {'arg-atoms':>9} "
-        f"{'shapes':>6} {'depths':>6}  live-ledger")
+        f"{'shapes':>6} {'depths':>6} {'sym':>5}  live-ledger")
   tot_nodes = 0
   tot_ops: set[str] = set()
   tot_atoms: set[str] = set()
+  tot_comm: set[str] = set()
+  tot_sym = 0
   all_res: collections.Counter = collections.Counter()
   for g in sorted(G.GRAPHS):
     py = census(G.emit_py(g, None))
@@ -77,12 +87,15 @@ def main() -> int:
     tot_nodes += py["nodes"]
     tot_ops |= py["ops"] | bd["ops"]
     tot_atoms |= py["atoms"] | bd["atoms"]
+    tot_comm |= py["ops"] & G.COMM
+    tot_sym += len(py["symdims"])
     for m in py["residual"] | bd["residual"]:
       all_res[m] += 1
     same = "same" if py["ops"] == bd["ops"] else f"PY-BEND OPs DIFFER: {py['ops'] ^ bd['ops']}"
     print(f"  {g:<10} {py['nodes']:>2}/{bd['nodes']:<2} {'ok' if py['nodes'] == bd['nodes'] else 'BAD':>4} "
           f"{len(py['ops']):>4} {''.join(sorted(py['atoms'])) or '-':>9} "
-          f"{len(py['shapes']):>6} {len(py['depths']):>6}  "
+          f"{len(py['shapes']):>6} {len(py['depths']):>6} "
+          f"{len(py['symdims']):>2}/{len(bd['symdims']):<2} "
           f"{','.join(sorted(py['residual'] | bd['residual'])) or '-'}  [{same}]")
   print(f"# TOTAL: {len(G.GRAPHS)} graphs, {tot_nodes} nodes per side, "
         f"{len(tot_ops)} distinct ops: {' '.join(sorted(tot_ops))}")
@@ -100,6 +113,11 @@ def main() -> int:
   print(f"# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: "
         f"{[m for m, _, _, _ in G.LEDGER if m not in all_res] or 'none'}")
   print(f"# COMMUTATIVE OPS (read from CPython): {sorted(G.COMM)}")
+  print(f"# COMMUTATIVE OPS REACHED BY A NODE: {len(tot_comm)}/{len(G.COMM)} "
+        f"{sorted(tot_comm)}; NOT REACHED {sorted(G.COMM - tot_comm)} "
+        f"(--equiv is MEASURED on {len(tot_comm)} of {len(G.COMM)})")
+  print(f"# SYMBOLIC-DIM NODES: {tot_sym} of {tot_nodes} py-side nodes carry a `U` dim "
+        f"(MEASURED off the shape column of every graph above)")
   return 0
 
 

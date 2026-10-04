@@ -1619,7 +1619,7 @@ def f2f.qnan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Foun
 
 # `fnuz_nan = sign.ne(0) & nosign.eq(0)`; `qnan = shl(shl(1, te) - 1, tm) | shl(1, tm - 1)`
 
-def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +te: U32, +tm: U32) -> U32:
+def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +te: U32, +tm: U32) -> O.Found:
   +z = dd_wk(ar, H.i64_of_i32(0))
   +a = dd_ne(ar, O.Found.i(sg), O.Found.i(z))
   +b = dd_eq1(O.Found.ar(a), O.Found.i(ns), O.Found.i(z))
@@ -1630,7 +1630,7 @@ def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Foun
   +e = dd_eq1(O.Found.ar(q), O.Found.i(ex), O.Found.i(z))
   +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(nm))
   +s = dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w))
-  O.Found.i(dd_where(O.Found.ar(s), O.Found.i(fn), O.Found.i(q), O.Found.i(s)))
+  dd_where(O.Found.ar(s), O.Found.i(fn), O.Found.i(q), O.Found.i(s))
 
 # `is_nan = nosign.eq(shl(1, fm + fe) - 1)` for `fp8e4m3` else `exp.eq(shl(1, fe) - 1)`
 
@@ -1645,15 +1645,15 @@ def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3
 
 # ---- NARROWING
 
-def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32) -> U32:
+def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32) -> O.Found:
   +i = f2f.isnan(ar, ns, ex, fe, fm, e4m3)
   +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
   +e = dd_eq1(O.Found.ar(z), O.Found.i(ex), O.Found.i(z))
   +iu = dd_where(O.Found.ar(e), O.Found.i(i), O.Found.i(nn), O.Found.i(nm))
   +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(iu))
-  O.Found.i(dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w)))
+  dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w))
 
-def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> U32:
+def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> O.Found:
   match fnuz:
     case True{}: f2f.fnuz(ar, ns, sg, ex, nm, te, tm)
     case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm)
@@ -1670,7 +1670,8 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
   +ex = T.tx_shr(O.Found.ar(ns), O.Found.i(ns), fm)
   +nm = f2f.norm(O.Found.ar(ex), ns, fm, tm, fr, to)
   +nq = f2f.qnan(O.Found.ar(nm), ns, fm, tm, te)
-  T.tx_bitcast(O.Found.ar(nq), f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), ar, ns, sg, ex, nm, nq, fe, fm, te, tm), to)
+  +w = f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), O.Found.ar(nq), ns, sg, ex, nm, nq, fe, fm, te, tm)
+  T.tx_bitcast(O.Found.ar(w), O.Found.i(w), to)
 
 def f2f.down.sign(+ar: O.Arena, +v: O.Found, +fs: U32, +ts: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), U32.sub(fs, ts))

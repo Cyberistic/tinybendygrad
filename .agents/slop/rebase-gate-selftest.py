@@ -677,6 +677,61 @@ def capture(fn, *a):
   return buf.getvalue()
 
 
+def native_bin_control():
+  """THE COMPILED LANE'S PATH MUST BE A FUNCTION OF THE PORT. It used to be a function of the
+  STEM, and there are 14 `__init__` ports and 3 `dtype` ones.
+
+  `run_port()` wrote `/tmp/rebase-gate/{bend.stem}.bin`, UNLINKED it, compiled into it, and then
+  EXECUTED whatever was at that path. So two ports sharing a stem shared one artefact, and a
+  concurrent run -- another agent, or two threads of gate-reconcile.py's -- could leave one port's
+  native lane holding ANOTHER port's rows.
+
+  It is not a silent pass, and that is the trap: GUARD 4 compares EVERY lane pair, so
+  interpreted-vs-native is checked and the swap surfaces as `BROKEN  N row(s) disagree`. A red that
+  names no error in either port is the reader's problem to disprove one port at a time, and the
+  sweep's BROKEN count would carry it. Manufactured red over correct code is the same species as
+  the cstyle reader bug in rebase-gate.py's header.
+
+  THREE assertions, and the SECOND is the one that keeps the first from being vacuous:
+
+    1. `native_bin` is INJECTIVE over every .bend on the tree -- the property being claimed.
+    2. the OLD spelling, `{stem}.bin`, is NOT injective over the same tree -- so the control
+       would have been RED before the fix and is not a tautology today. The old spelling is the
+       control's REFERENCE and it is deliberately not moved into rebase-gate.py: a second reader
+       of what a path used to be is a second source of truth about a bug that is fixed.
+    3. every wired port gets its own directory, so `--port A` and `--port B` can be run at the
+       same time without sharing anything.
+  """
+  g = load_gate("rebase_gate_native_bin")
+  ports = sorted(p.relative_to(REPO) for p in REPO.glob("tinybendygrad/**/*.bend"))
+  fails = []
+
+  def ok(name, cond, detail=""):
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}" + (f"\n        {detail}" if detail else ""))
+    if not cond:
+      fails.append(name)
+
+  paths = {p: g.native_bin(REPO / p) for p in ports}
+  clashed = {p: q for p, q in
+             ((p, q) for i, p in enumerate(ports) for q in ports[i + 1:]
+              if paths[p] == paths[q])}
+  ok(f"native_bin is INJECTIVE over all {len(ports)} .bend files on the tree",
+     not clashed, f"collisions: {sorted(clashed)[:4]}" if clashed else
+     f"{len(set(map(str, paths.values())))} distinct paths")
+  old = {p: g.NATIVE_DIR / f"{p.stem}.bin" for p in ports}
+  dup = sorted({p.stem for p in ports if sum(1 for q in ports if q.stem == p.stem) > 1})
+  ok("...and it would have been RED before the fix: the OLD {stem}.bin spelling is NOT injective",
+     len(set(map(str, old.values()))) < len(ports),
+     f"{len(set(map(str, old.values())))} distinct paths for {len(ports)} files; colliding stems "
+     f"({len(dup)}): {dup}")
+  wired = sorted(g.BASE_ORACLES)
+  dirs = {g.native_bin(REPO / p).parent for p in wired}
+  ok(f"every WIRED port ({len(wired)}) has its own artefact directory, so two `--port` runs "
+     f"cannot share one", len(dirs) == len(wired),
+     f"{len(dirs)} directories for {len(wired)} wired ports")
+  return fails
+
+
 def main():
   fails = []
 
@@ -822,6 +877,9 @@ def main():
   fails += never_wired_control()
   fails += record_stable_control()
   fails += planted_lane_control()
+
+  print("\nCOMPILED LANE PATH: a function of the PORT, not of its stem\n")
+  fails += native_bin_control()
 
   print("\nCACHE RULE: a cache is a reading only if it is NEWER than its source and RECORDS "
         "SOMETHING\n")
@@ -1355,6 +1413,29 @@ def oracle_template():
     print(f"  PASS  ORACLE_NOT_WIRED is disjoint from the wired roster "
           f"({len(ORACLE_NOT_WIRED)} named, with reasons)")
 
+  # ⚠ WHAT THIS SECTION MEASURES, PRINTED BEFORE ANY NUMBER IN IT, because a whole-tree sweep
+  # once said `BROKEN 6` while this file said 1 FAILED on a different row and a reader could not
+  # tell that the two instruments had never been asked the same question:
+  #
+  #   THIS FILE measures an INTERSECTION and a DISAGREEMENT COUNT per port, from
+  #   rebase-scan-oracles.py's lane runners and cache. It has NO BROKEN verdict and it cannot
+  #   produce one -- a disagreement count is not a verdict, and 0 of 0 is not a pass.
+  #   THE SWEEP measures a STATE per port from FOUR GUARDS over FRESH lanes, and can be BROKEN
+  #   for a reason that has nothing to do with whether the rows agree (a lane that did not run, a
+  #   lane that emitted nothing, a pair sharing no row name, a row set smaller than the baseline).
+  #   THE `PASS` LINES BELOW ARE ABOUT SIX SYNTHETIC STATES with run_port() STUBBED. This file
+  #   NEVER RUNS THE PORT for them.
+  #
+  # So "0 disagreements" here and "BROKEN" there are not contradictory, and gate-reconcile.py
+  # --sweep is what makes that legible ENTRY BY ENTRY with both denominators.
+  print("  NOTE  this section measures SHARED/DISAGREE per port -- an intersection, not a "
+        "verdict.\n        The `six states reachable` PASSes below are SYNTHETIC, with "
+        "run_port() STUBBED: this\n        file NEVER RUNS THE PORT for them. A sweep's BROKEN "
+        "is one of FOUR GUARDS over fresh\n        lanes and can fire on zero rows, a dead lane, "
+        "or no shared name -- none of which is a\n        disagreement. Reconcile the two entry "
+        "by entry with:\n          .venv/bin/python .agents/slop/gate-reconcile.py --sweep "
+        "SWEEP.json")
+
   # THE SHARED-ROW COUNTS ARE MEASURED HERE, EVERY RUN, and printed whether or not they agree
   # with anything -- so the number a reader sees is a number about this tree, not a number typed
   # in a file that outlived its input. 1 disagreement on a live pair is a FAILURE: it is the same
@@ -1434,21 +1515,38 @@ def oracle_template():
     agree = synth({"interpreted": dict(port_rows),
                    "cpython:o": {k: v for k, v in list(port_rows.items())[1:]}}, ok_lanes)
 
-    cases = [("dead lane", dead, "BROKEN", "lane"),
-             ("empty output", empty, "BROKEN", "compared nothing"),
-             ("no shared row name", noshare, "BROKEN", "share NO row names"),
-             ("a shared name differs", differ, "BROKEN", "disagree"),
-             ("agreement", agree, "UNCHANGED", "zero rows moved")]
-    bad = [f"{pathlib.Path(oracle.split()[0]).name}: {nm}" for nm, v, ws, wt in cases
-           if not (v["state"] == ws and wt.lower() in v.get("why", "").lower())]
+    # THE CAUSE IS ASSERTED ALONGSIDE THE STATE, on all six, for all 38 oracles -- and that is the
+    # cheapest possible place to make "BROKEN IS ONE WORD FOR FIVE THINGS" impossible to get
+    # wrong, because the six states are already being produced here. A cause that silently absorbs
+    # a neighbouring one is how a COVERAGE finding gets filed as a DEFECT and six ports get
+    # "fixed" when the defect is in none of them. `agreement` is the control in the other
+    # direction: a green verdict must NOT carry a red cause.
+    cases = [("dead lane", dead, "BROKEN", "lane", g_all.CAUSE_LANE_DEATH),
+             ("empty output", empty, "BROKEN", "compared nothing", g_all.CAUSE_ZERO_ROWS),
+             ("no shared row name", noshare, "BROKEN", "share NO row names",
+              g_all.CAUSE_INCOMPARABLE),
+             ("a shared name differs", differ, "BROKEN", "disagree", g_all.CAUSE_DISAGREE),
+             ("agreement", agree, "UNCHANGED", "zero rows moved", g_all.CAUSE_NONE)]
+    bad = [f"{pathlib.Path(oracle.split()[0]).name}: {nm}" for nm, v, ws, wt, wc in cases
+           if not (v["state"] == ws and wt.lower() in v.get("why", "").lower()
+                   and v.get("cause") == wc)]
+
     g.run_port = lambda *a, **k: (ok_lanes, {"interpreted": dict(port_rows),
                                              "cpython:o": dict(port_rows)})
     bad_doc = g.baseline_for({"interpreted": dict(port_rows)}, port)
     if bad_doc[0] is not None or "MALFORMED" not in bad_doc[2] or bad_doc[3]:
       bad.append(f"{pathlib.Path(oracle.split()[0]).name}: malformed baseline")
     print(f"  {'PASS' if not bad else 'FAIL'}  {pathlib.Path(oracle.split()[0]).name}: six "
-          f"states reachable (shared_n={shared_n} MEASURED)")
+          f"states reachable, each with its own CAUSE (shared_n={shared_n} MEASURED; the states "
+          f"are SYNTHETIC and run_port() is STUBBED -- this NEVER RUNS THE PORT)")
+    if bad:
+      for nm, v, ws, wt, wc in cases:
+        if not (v["state"] == ws and wt.lower() in v.get("why", "").lower()
+                and v.get("cause") == wc):
+          print(f"        {nm}: wanted {ws}/{wc} containing {wt!r}, got {v['state']}/"
+                f"{v.get('cause')}: {v.get('why', '')[:100]}")
     fails += bad
+
   return fails
 
 

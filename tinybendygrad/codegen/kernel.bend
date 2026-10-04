@@ -270,9 +270,13 @@ def kn_slot.of(a: O.Arg, none: U32) -> U32:
 # "unset". `kn_slot_missing` is the row for that decision, and the alternative --
 # answering 0 for a non-PARAM -- would make `x.arg.slot != -1` TRUE for every
 # CONST and the rule would try to renumber them. `u32_none` is WRAPPED rather than
-# arithmetic because 0 - 1 in a `U32` is not guaranteed to be the top word.
+# arithmetic because 0 - 1 in a `U32` is not guaranteed to be the top word. The
+# VALUE now comes from `O.ParamArg.no_slot()`, which is the same `U32` and lives in
+# the file that owns the field -- `codegen/late/linearizer.bend` had its own
+# independent copy of this def, and two spellings of one sentinel is two places to
+# drift.
 def u32_none() -> U32:
-  4294967295
+  O.ParamArg.no_slot()
 def kn_slot(+ar: O.Arena, i: U32) -> U32:
   kn_slot.of(kn_arg(ar, i), u32_none())
 

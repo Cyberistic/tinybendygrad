@@ -469,3 +469,4 @@ is_rdna4 gfx1200x = [False]   py=[False]
 is_rdna4 gfx120 = [False]   py=[False]
 is_rdna4 gfx12012 = [False]   py=[False]
 is_rdna4 gfx1201:xnack- = [True]   py=[True]
+

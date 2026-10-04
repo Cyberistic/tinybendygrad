@@ -201,6 +201,8 @@ type Z is Data:
   ZIf{c: Z, a: Z, b: Z}             # z3.If(c, a, b)
   ZLt{a: Z, b: Z}                   # a < b
   ZLe{a: Z, b: Z}                   # a <= b
+  ZGt{a: Z, b: Z}                   # a > b
+  ZGe{a: Z, b: Z}                   # a >= b
   ZEq{a: Z, b: Z}                   # a == b
   ZNe{a: Z, b: Z}                   # a != b
   ZNeZ{a: Z}                        # a != 0
@@ -291,6 +293,8 @@ def Z.is_b(t: Z) -> Bool:
     case ZXor{a, b}: True{}
     case ZLt{a, b}: True{}
     case ZLe{a, b}: True{}
+    case ZGt{a, b}: True{}
+    case ZGe{a, b}: True{}
     case ZEq{a, b}: True{}
     case ZNe{a, b}: True{}
     case ZNeZ{a}: True{}
@@ -303,15 +307,6 @@ def Z.num(t: Z) -> Maybe<&1, U32>:
   match t:
     case ZLit{v, b}: Some{v}
     case _: None{}
-
-# A BARE free symbol, which is the only thing z3's LE printer hoists a numeral
-# against: MEASURED, `Le(0, i)` prints `i >= 0` and `Le(r, 99)` prints
-# `r <= 99`, so the rule is "hoist iff the OTHER side is a symbol", not "hoist
-# iff this side is a numeral".
-def Z.is_sym(t: Z) -> Bool:
-  match t:
-    case ZSym{nm, b}: Bool.not(b)
-    case _: False{}
 
 # `isinstance(t, z3.IntNumRef)`, as the Bool the three `z3_*` helpers branch on.
 def Z.is_num(t: Z) -> Bool:
@@ -326,14 +321,6 @@ def z_b(+v: U32) -> String:
 def ZLit.str(+v: U32, is_b: Bool) -> String:
   Bool.pick(String, is_b, z_b(v), z_i(v))
 
-# `ZLit.str` is a two-argument def because a reader over a two-field constructor
-# has to name BOTH fields, and `Z.le` needs the value with the sort already
-# known -- so the `Z`-taking wrapper is separate and lives NEXT TO IT.
-def ZLit.str.of(a: Z) -> String:
-  match a:
-    case ZLit{v, b}: ZLit.str(v, b)
-    case _: ""        # only ever called under `Z.is_num`, so this is a cover
-
 # z3's signed `BV2Int`, as `str()` prints it. The `<< 0` is `w`: MEASURED,
 # width 5 gives the offset 32, so it is `2**w` and not `2**(w-1)`.
 # `k` is a `U32`, and a `U32` has no constructors for a `match` to cover --
@@ -347,14 +334,33 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
   +core = String.concat(["BV2Int(", base, ")"])
   String.concat(["If(", base, " < 0, ", core, " - ", U32.show(U32.shln(1, U32.to_nat(w))), ", ", core, ")"])
 
-# THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and
-# validate.py's f-strings print. Three measured orientation rules, in the
-# header.
+# ---------------------------------------------------------------------------
+# THE COMPARISON PRINTER IS THE IDENTITY, AND THAT IS THE WHOLE OF D1 AND D2.
 #
-# `Z.le` AND `Z.lt` ARE INLINED RATHER THAN BEING DEFS, and that is forced:
-# they call `Z.str` and `Z.str` calls them, so two defs would be MUTUAL
-# RECURSION, which Bend refuses outright. The two orientation rules are
-# therefore the two longest arms of this one ladder.
+#   z3's `str()` prints a comparison IN SOURCE ORDER. Every one of 128 measured pairs does,
+#   and the sexprs confirm it: `(>= 5 i)` prints `5 >= i`, `(<= i 0)` prints `i <= 0`,
+#   `(<= i (- 100 1))` prints `i <= 100 - 1`. There is NO hoist and NO reorientation.
+#
+# ⚠ SO WHERE DID `i >= 0` COME FROM? From Python's REFLECTED OPERATOR, not from z3. A
+# Python `int` on the LEFT of a comparison tries `int.__le__(ArithRef)`, gets
+# NotImplemented, and evaluates the reflected `ArithRef.__ge__`, which builds `GE(right,
+# left)`. So validate.py:51's `(vmin <= s)`, with `vmin` a Python `int`, is `s >= vmin` in
+# the AST before z3 ever sees it. MEASURED, one process, one context:
+#     str(0 <= i) = 'i >= 0'    sexpr (>= i 0)
+#     str(i <= 0) = 'i <= 0'    sexpr (<= i 0)
+#     str(IntVal(0) <= i) = '0 <= i'   sexpr (<= 0 i)     <- NOT what validate.py evaluates
+# The third line is why this took a session to settle: the two "disagreeing measurements"
+# this header used to record are the SAME rule under two different operand spellings. Rows
+# `refl_*` and `cmpP_*` / `cmpZ_*` in `.agents/slop/validate-oracle.py`.
+#
+# CONSEQUENCE, and it is a real modelling requirement rather than a style note: every
+# `ZLt`/`ZLe` this file builds must be the AST CPython builds, so a comparison with a
+# PYTHON-int left operand is spelled `ZGe`/`ZGt` here. `z3_cdiv`'s `0<b` and `z3_floordiv`'s
+# `b > 0` are the two such places and both are corrected below.
+# ---------------------------------------------------------------------------
+
+# THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and
+# validate.py's f-strings print.
 def Z.str(t: Z) -> String:
   match t:
     case ZSym{nm, b}: nm
@@ -366,18 +372,10 @@ def Z.str(t: Z) -> String:
     case ZMod{a, b}: String.concat([Z.str(a), "%", Z.str(b)])
     case ZNeg{a}: String.concat(["-", Z.str(a)])
     case ZIf{c, a, b}: String.concat(["If(", Z.str(c), ", ", Z.str(a), ", ", Z.str(b), ")"])
-    # `a <= b` with a NUMERAL on the RIGHT prints `b >= a`; on the left, as is.
-    # `+a +b` because the nested `Bool.pick` reads BOTH in each of its arms.
-    case ZLe{+a, +b}:
-      Bool.pick(String, Z.is_num(a),
-                Bool.pick(String, Z.is_sym(b), String.concat([Z.str(b), " >= ", ZLit.str.of(a)]),
-                                            String.concat([ZLit.str.of(a), " <= ", Z.str(b)])),
-                String.concat([Z.str(a), " <= ", Z.str(b)]))
-    # `a < b` with a NUMERAL on the LEFT prints `b > a`; on the right, as is.
-    case ZLt{+a, +b}:
-      Bool.pick(String, Z.is_num(a), String.concat([Z.str(b), " > ", ZLit.str.of(a)]),
-                                 String.concat([Z.str(a), " < ", Z.str(b)]))
-
+    case ZLe{a, b}: String.concat([Z.str(a), " <= ", Z.str(b)])
+    case ZGe{a, b}: String.concat([Z.str(a), " >= ", Z.str(b)])
+    case ZLt{a, b}: String.concat([Z.str(a), " < ", Z.str(b)])
+    case ZGt{a, b}: String.concat([Z.str(a), " > ", Z.str(b)])
     case ZEq{a, b}: String.concat([Z.str(a), " == ", Z.str(b)])
     case ZNe{a, b}: String.concat([Z.str(a), " != ", Z.str(b)])
     case ZNeZ{a}: String.concat([Z.str(a), " != 0"])
@@ -388,18 +386,21 @@ def Z.str(t: Z) -> String:
     case ZBv{k, w, a, b}: ZBv.str(k, w, Z.str(a), Z.str(b))
 
 # `str(solver)` -- the assertion list, which is the PORTABLE half of validate.py's
-# sat message. `[And(i >= 0, i <= 15), True]` is a real measured row. The
-# `first` flag is the separator, because a fold that re-measures the list
-# length is O(n^2) and the length is not the question being asked. The `.go` is
-# the LEAF and comes first: a def may only call defs written above it.
-def cs_str.go(+cs: List<&2, Z>, +acc: String, first: Bool) -> String:
+# sat message. `[And(i >= 0, i <= 15), True]` is a real measured row.
+#
+# `sep` IS THE WHOLE FIX and it replaced a `Bool` flag that was reading the list it was
+# building: the flag made the FIRST element take the `acc` arm, so the head of every
+# assertion list was DROPPED (`dv_var` printed `[, i]`, `dv_const_ok` printed `[]` where
+# CPython prints `[True]`). A separator cannot drop an element, and it is one parameter
+# shorter. MEASURED against CPython's `str(solver)` for all 16 fixtures; see
+# `.agents/slop/validate-oracle.py`.
+def cs_str.go(+cs: List<&2, Z>, +acc: String, sep: String) -> String:
   match cs:
     case Nil{}: String.concat(["[", acc, "]"])
-    case h <> t:
-      cs_str.go(t, Bool.pick(String, first, acc, String.concat([acc, ", ", Z.str(h)])), False{})
+    case h <> t: cs_str.go(t, String.concat([acc, sep, Z.str(h)]), ", ")
 
 def cs_str(cs: List<&2, Z>) -> String:
-  cs_str.go(cs, "", True{})
+  cs_str.go(cs, "", "")
 
 def Sol.empty() -> Sol:
   Sol{Nil{}, Nil{}, Nil{}}
@@ -439,8 +440,13 @@ def Sol.find.go(+es: List<&2, Bind>, +k: U32) -> Maybe<&1, Z>:
 def Sol.find(+s: Sol, u: U32) -> Maybe<&1, Z>:
   Sol.find.go(Sol.es(s), u)
 
+# `z3map[u] = z3_rewritten` -- validate.py:88. THE MAP ONLY: CPython's `z3map` is a
+# `dict[UOp, ExprRef]` and NOTHING in it is ever added to the solver. This used to append the
+# term to `cs` as well, which put every rewritten node's VALUE into the assertion list; that
+# was defect D4, and MEASURED against CPython it is the whole of `dv_var`'s `[, i]` field --
+# the `i` in there is a term, not an assertion.
 def Sol.put(+s: Sol, u: U32, +t: Z) -> Sol:
-  Sol{List.append(&2, Z, Sol.cs(s), [t]), List.append(&2, Bind, Sol.es(s), [Bind{u, t}]), Sol.ms(s)}
+  Sol{Sol.cs(s), List.append(&2, Bind, Sol.es(s), [Bind{u, t}]), Sol.ms(s)}
 
 def Sol.add(+s: Sol, +c: Z) -> Sol:
   Sol{List.append(&2, Z, Sol.cs(s), [c]), Sol.es(s), Sol.ms(s)}
@@ -522,19 +528,21 @@ def vz_mm(ar: O.Arena, s: Sol, +i: U32) -> Maybe<&1, MM>:
 def vz_max0(+v: U32) -> U32:
   Bool.pick(U32, U32.is_eq(U32.and(v, 2147483648), 0), v, 0)
 
-# `range_str` (ops.py:97): the axis IDS joined by `_`, negatives as `m<n>`.
+# `range_str` (ops.py:95): the axis IDS joined by `_`, negatives as `m<n>`.
 # NOT the axis type -- see the header, and `n_axis_type_invisible`.
 #
-# The two `acc` reads need `+` and the head needs `+` too, because
-# `Bool.pick` evaluates both arms.
+# ONE SEPARATOR, AND NO FLAG, for the reason `cs_str.go` gives: the flag form took the `acc`
+# arm on the first id and so DROPPED it, which is why every `dv_range_*` row printed the
+# symbol `r` where CPython prints `r0` (defect D3). MEASURED against `range_str` itself:
+# axis id `0` -> `0`, `-1` -> `m1`, `(0, 1)` -> `0_1`, and the axis TYPE is invisible.
 def rs_one(+v: U32) -> String:
   Bool.pick(String, U32.is_eq(U32.and(v, 2147483648), 0), U32.show(v),
             String.concat(["m", U32.show(U32.sub(0, v))]))
 
-def empty_str.chars(cs: List<&2, Char>) -> Bool:
-  match cs:
-    case Nil{}: True{}
-    case _: False{}
+def rs_ids.go(+ids: List<&2, U32>, +acc: String, sep: String) -> String:
+  match ids:
+    case Nil{}: acc
+    case h <> t: rs_ids.go(t, String.concat([acc, sep, rs_one(h)]), "_")
 
 def zat.miss(v: String) -> ZAt:
   # a `Some{v}` with an unused binder is REFUSED, so a miss carries `ZLit` zero
@@ -592,21 +600,33 @@ def zwhy(+a: ZAt, +b: ZAt) -> String:
   Bool.pick(String, ZAt.hit(a), ZAt.v(b), ZAt.v(a))
 
 # `z3_cdiv(a,b) = If(a<0, If(0<b, (a+(b-1))/b, (a-(b+1))/b), a/b)`
+#
+# `0 < b` IS `ZGt{b, 0}`, NOT `ZLt{0, b}`: the `0` is a Python `int` on the left, so Python
+# reflects and z3 receives `b > 0`. MEASURED: `str(IntVal(0) < i)` is `i > 0`. `a < 0` needs
+# no such change -- a z3 term on the left does not reflect.
 def z3_cdiv(+a: Z, +b: Z) -> Z:
   ZIf{ZLt{a, ZLit{0, False{}}},
-       ZIf{ZLt{ZLit{0, False{}}, b}, ZDiv{ZAdd{a, ZSub{b, ZLit{1, False{}}}}, b},
+       ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{ZAdd{a, ZSub{b, ZLit{1, False{}}}}, b},
                                                  ZDiv{ZSub{a, ZAdd{b, ZLit{1, False{}}}}, b}},
        ZDiv{a, b}}
 
-# `z3_floordiv(a,b) = If(b>0, a/b, (-a)/(-b))`
+# `z3_floordiv(a,b) = If(b>0, a/b, (-a)/(-b))` -- `b > 0` is written `0 < b` upstream, so
+# the same reflection applies and it is `ZGt` for the same measured reason.
 def z3_floordiv(+a: Z, +b: Z) -> Z:
-  ZIf{ZLt{ZLit{0, False{}}, b}, ZDiv{a, b}, ZDiv{ZNeg{a}, ZNeg{b}}}
+  ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{a, b}, ZDiv{ZNeg{a}, ZNeg{b}}}
 
-# `m > 0 and m & (m-1) == 0` -- "m is a power of two", the test `z3_and` uses
-# twice. Bitwise is DOTTED, hence `U32.and`.
+# `m > 0 and m & (m-1) == 0` -- "m is a power of two", the test `z3_and` uses twice.
+# Bitwise is DOTTED, hence `U32.and`.
+#
+# ⚠ `m > 0` IS `m != 0` OVER EVERY INTEGER, and this is a THEOREM rather than a re-reading:
+# `m & (m-1) == 0` says every bit of m but its lowest is clear, so m is a power of two, so
+# m is positive; m = 0 is the single value the bit test admits and `m > 0` rejects. The port
+# wrote the sign BIT where Python has `m > 0`, which is False for every positive m, so
+# `pow2` answered False for all eight positive powers of two in the oracle's window and the
+# bit-blast arm fired for `r & 15` and `r & -4` (defect D6). The theorem is checked as
+# `pow2_fn_agree` over the 22-value window in `.agents/slop/validate-oracle.py`.
 def pow2(+m: U32) -> Bool:
-  Bool.and(Bool.not(U32.is_eq(U32.and(m, 2147483648), 0)),
-           U32.is_eq(U32.and(m, U32.sub(m, 1)), 0))
+  Bool.and(Bool.not(U32.is_zero(m)), U32.is_eq(U32.and(m, U32.sub(m, 1)), 0))
 
 def bv_max(+a: U32, +b: U32) -> U32:
   Bool.pick(U32, U32.is_gt(a, b), a, b)
@@ -673,9 +693,18 @@ def vz_dt.of(m: Maybe<&2, S.Dt>) -> S.Dt:
 # `solver.add((vmin <= s) & (s <= vmax))`, answer `s`. ONE add of an `And`, and
 # the symbol comes back BARE -- which is why the row for `UOp.param(0, int, 16)`
 # prints `null` in the constraint list and not a bounded expression.
+#
+# ⚠ IT IS `ZGe` AND NOT `ZLe` ON THE LEFT, and that is the ROOT CAUSE of the old D1 and D2.
+# `vmin` at both call sites is a PYTHON `int`, so `vmin <= s` REFLECTS: Python tries
+# `int.__le__(ArithRef)`, gets NotImplemented, and evaluates `ArithRef.__ge__` instead, so the
+# AST holds `s >= vmin`. MEASURED in one process, one context: `str(0 <= i)` is `i >= 0` and
+# `str(i <= 0)` is `i <= 0`. The right conjunct is `s <= vmax` with a z3 operand and needs no
+# reflection. So the port's old `ZLe{vmin, sym}` built an AST CPython never builds, and the
+# printer was then asked to paper over the difference -- which it did in the wrong direction
+# for `r0 <= 100 - 1`. Rows `refl_*` in the oracle.
 def create_bounded(+s: Sol, +nm: String, vmin: Z, vmax: Z) -> Ren:
-  Ren{Sol.add(s, ZAnd{ZLe{vmin, ZSym{nm, False{}}}, ZLe{vmax, ZSym{nm, False{}}}}),
-      zat.hit(ZSym{nm, False{}})}
+  +sym: Z = ZSym{nm, False{}}
+  Ren{Sol.add(s, ZAnd{ZGe{sym, vmin}, ZLe{sym, vmax}}), zat.hit(sym)}
 
 def create_var.bound(+s: Sol, m: Maybe<&1, MM>, nm: String, miss: String) -> Ren:
   match m:
@@ -1586,19 +1615,12 @@ def n_z3_alu() -> U32:
 def dv_and.mm(+ar: O.Arena, +t: O.Found) -> List<&2, MRng>:
   dv_and.mm2(ar, t)
 
-def empty_str(acc: String) -> Bool:
-  empty_str.chars(String.to_list(acc))
-
-def rs_ids.go(+ids: List<&2, U32>, +acc: String) -> String:
-  match ids:
-    case Nil{}: acc
-    case h <> t:
-      rs_ids.go(t, Bool.pick(String, empty_str(acc), acc,
-                String.concat([acc, "_", rs_one(h)])))
+def rs_ids.acc(ids: List<&2, U32>) -> String:
+  rs_ids.go(ids, "", "")
 
 def range_str.go(a: O.Arg) -> String:
   match a:
-    case O.ARange{ids, at}: rs_ids.go(ids, "")
+    case O.ARange{ids, at}: rs_ids.acc(ids)
     case _: ""
 
 def range_str(ar: O.Arena, i: U32) -> String:

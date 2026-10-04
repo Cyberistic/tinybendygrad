@@ -19628,3 +19628,86 @@ line 1, so a control that silently read the wrong tree is visible in the output.
 measured in the same file: `report()` returns a LIST, and `0 if bad1 + bad2 == 0 else 1` is
 LIST CONCATENATION, so a clean pair printed `rc=1` -- a permanently-red verdict over 0
 inconsistencies, which is the exact failure this lane exists to prevent.
+
+### BAND-11 (position ~19636). A STEM IS NOT A KEY, AND A `BROKEN` WITH NO ERROR IN EITHER
+### PORT IS A MANUFACTURED RED -- LOUD IS NOT CORRECT.
+`run_port()` in `.agents/slop/rebase-gate.py` wrote its compiled lane to
+`/tmp/rebase-gate/{bend.stem}.bin`, UNLINKED it, compiled into it, then EXECUTED whatever was at
+that path.  131 `.bend` files carry 110 distinct stems -- `__init__` x**14**, `dtype` x3, and
+`spec`/`op`/`memory`/`movement`/`ip`/`elf` x2 each (`find tinybendygrad -name '*.bend' | xargs -n1
+basename | sort | uniq -c`).  So 21 files shared one artefact path.  A SEQUENTIAL sweep was mostly
+safe only because of the unlink; a CONCURRENT one is not, and this tree runs many (one per agent,
+plus `gate-reconcile.py --control`'s thread pool).  **IT WOULD NOT HAVE BEEN A SILENT PASS** --
+GUARD 4 compares every lane pair, so interpreted-vs-native is checked and the swap surfaced as
+`BROKEN  N row(s) disagree` with no error in either port to disprove.  **A RED THAT LANDS IN A
+SWEEP'S BROKEN COUNT IS A RED NOBODY OWNS**, which is the same failure as a reader bug: 444
+disagreements on a pair measured clean at 221/227, and 222 on another.  Fixed by keying on
+`port_key(bend)` -- the one spelling of a port's name and the key `baseline.json` itself uses --
+AND ON THE PID, so two runs of the SAME port cannot collide either.  Control:
+`rebase-gate-selftest.py`'s `native_bin_control()`, which asserts injectivity over all 131 files
+AND asserts the OLD `{stem}.bin` spelling is NOT injective, so the check cannot pass vacuously.
+
+### BAND-12 (position ~19652). ONE DISAGREEING ROW IS COUNTED ONCE PER LANE PAIR; COUNT IT OVER
+### ROW NAMES OR TWO INSTRUMENTS DESCRIBE ONE DEFECT WITH DIFFERENT DENOMINATORS.
+GUARD 4's `bad` list holds one entry per `(lane, other, name)`, so on a three-lane run a single
+disagreeing row name appears TWICE -- once against `interpreted`, once against `native`.
+MEASURED on `codegen/decomp/dtype.bend`: the sweep printed `2 row(s) disagree with CPython across
+3 lane pair(s)` while its own `disagreements` field held `('cpython:dtype-oracle','interpreted',
+'c7')` and the identical triple for `native`, and `rebase-gate-selftest.py` independently printed
+`1 of 109 shared row names`.  **BOTH NUMBERS WERE TRUE AND A READER COULD NOT TELL THEY WERE NOT
+TWO DEFECTS.**  Worse, `compared_pairs` was set only on the GREEN path, so the red had no
+denominator at all.  **ALWAYS COUNT DISAGREEMENTS OVER DISTINCT ROW NAMES, PUBLISH THE PAIR-
+INSTANCE COUNT BESIDE IT, AND STAMP THE COMPARISON EVIDENCE ON EVERY EXIT PATH** -- the missing
+stamp is what made "2" and "1" look like a disagreement between two instruments rather than two
+spellings of one fact.
+
+### BAND-13 (position ~19670). A 0-ROW LANE IS INDISTINGUISHABLE FROM A RUN THAT NEVER HAPPENED,
+### SO IT IS RE-RUN BEFORE IT IS BELIEVED -- BUT ONLY FOR THE LANE THAT HAS THAT FAILURE MODE.
+bend's machine stack overflows on roughly 1 run in 20 and prints ZERO rows with a **zero exit
+status**.  A single empty bend lane is therefore a coin flip, and `rebase-gate.py`'s GUARD 2
+("an oracle that exits 0 having printed nothing is a FAILED ORACLE") would report it as the
+hour-long bug GUARD 2 exists to catch.  `BEND_ROW_TRIES = 2` re-runs an empty **bend** lane after a
+20s backoff -- the backoff is not cosmetic, the failures are depth-dependent, so an immediate
+re-run collides with the still-deep stack of the first -- and the verdict prints
+`after N attempt(s)`.  **A CPython ORACLE IS NOT RETRIED**: an oracle that emits no `name=value`
+row is genuinely a failed oracle, and the one wired instance (`oracle/dtype_tables.py`, 14,774 TSV
+lines) is wired ON PURPOSE to read as zero, so retrying it spends two extra oracle launches per
+sweep to learn nothing.  A RETRY RULE MUST BE ATTRIBUTED TO THE LAYER THAT HAS THE FAILURE MODE,
+NOT TO THE SYMPTOM.
+
+### BAND-14 (position ~19686). A TALLY THAT QUOTES THE WORD IS THE PROBLEM: PRINT THE CAUSE.
+`BROKEN = 6` is not six port defects.  On this tree, one sweep's six were **one** genuine
+disagreement (`codegen/decomp/dtype.bend`, row `c7`, a declared refusal) and **five** lane deaths
+(`dtype.bend`, `schedule/prepare.bend`, `tensor.bend`, `uop/render.bend`, `viz/serve.bend`, all
+`lane(s) failed to run: interpreted, native`).  Six reds, one edit in none of them, and a reader who
+believes the word fixes none.  Every verdict now carries `cause`, `class` and a DENOMINATOR
+(`rebase-gate.py`'s `classify()`), `--json` carries a `causes` histogram, and the TALLY line
+prints `BROKEN=6 BY CAUSE [...]`.  **OF THE FIVE CAUSES, EXACTLY TWO ARE STATEMENTS ABOUT A .bend
+FILE** -- `DISAGREE` and `ROWS-LOST`.  `ZERO-ROWS` and `INCOMPARABLE` are facts about the ORACLE or
+the WIRE, and `INCOMPARABLE` is the most misread of all: two lanes sharing no row name is the
+OPPOSITE of a disagreement, because nothing was compared and so nothing can disagree
+(`schedule/multi.bend`, 321 `t_`-prefixed names against an unprefixed oracle's 213: 0 shared,
+permanently, and no port edit moves it).
+
+### BAND-15 (position ~19702). TWO INSTRUMENTS THAT PRINT A NUMBER ABOUT THE SAME LANE MUST BE
+### ASKED THE SAME QUESTION, OR THE OUTPUT MUST SAY WHY THEY CANNOT BE.
+`rebase-gate.py --json` prints a STATE from FOUR GUARDS over FRESH lanes -- reachability,
+emptiness, comparability+disagreement, absolute count -- so it can be BROKEN for a reason that has
+nothing to do with whether the rows agree.
+`rebase-gate-selftest.py` prints an INTERSECTION and a DISAGREEMENT COUNT from
+`rebase-scan-oracles.py`'s lane runners, has NO BROKEN verdict, and the `PASS` beside its numbers
+is about SIX SYNTHETIC STATES driven through `gate_port()` with `run_port()` **STUBBED** -- it never
+runs the port.  **"0 disagreements" AND "BROKEN" ARE NOT CONTRADICTORY; THEY ARE ANSWERS TO
+DIFFERENT QUESTIONS, AND NEITHER TOOL SAID WHICH ONE A READER WAS HOLDING.**  `gate-reconcile.py
+--sweep SWEEP.json` is the reconciliation: entry by entry, no gate lane, both denominators, and a
+verdict per row.  **A PER-LANE `PASS` THAT DOES NOT SAY WHAT IT DID NOT MEASURE IS A PASS THAT
+CAN BE MISQUOTED AS COVERAGE**, so both tools now print it on the line above the numbers.
+
+### BAND-16 (position ~19718). A `global` MISSING ON A MODULE-LEVEL KNOB MAKES A FLAG A NO-OP,
+### AND THE REPORT MODE SILENTLY KEEPS THE DEFAULT.
+`.agents/slop/gate-reconcile.py` had `REPS = max(1, a.reps)` inside `main()` with no `global`, so
+it bound a LOCAL: `--reps 12` printed "reps per port 12" and the control it was supposed to drive
+still ran 2.  **A FLAG THAT REPORTS ITS OWN VALUE MUST BE READ BACK, OR IT IS A NO-OP WITH A
+PRINTED RECEIPT** -- the same failure as `rebase-gate.py`'s `--oracle`, which printed
+`[oracle-override] ...` and changed nothing because `targets_of()` had already snapshotted the
+wiring into the list the loop iterates.

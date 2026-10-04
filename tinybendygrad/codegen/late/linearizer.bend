@@ -325,9 +325,12 @@ def tb_new() -> RaTb:
 # lands LAST. Measured: `rc_*` rows, `lt_emit`'s `newlst`, and `lt_se`'s END chain.
 # `u32_none()` IS Python's `None` for this port, and it is the same convention
 # kernel.bend uses: `UOp.is_none` is index 0 and every "unset" here is 0xFFFFFFFF,
-# which is a value no table in this file ever stores as a KEY.
+# which is a value no table in this file ever stores as a KEY. Same value as
+# kernel.bend's `u32_none` and as `O.ParamArg.no_slot()`; this def used to be an
+# INDEPENDENT second copy of kernel.bend's, which is the shape of bug where two
+# files agree until one of them is edited.
 def u32_none() -> U32:
-  4294967295
+  O.ParamArg.no_slot()
 
 def b2u(+b: Bool) -> U32:
   Bool.pick(U32, b, 1, 0)

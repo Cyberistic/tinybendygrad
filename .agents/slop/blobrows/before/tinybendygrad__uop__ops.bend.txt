@@ -1,3 +1,48 @@
+vr_expr_param=some:i
+vr_expr_buffer=some:buf
+vr_expr_unnamed=none
+vr_expr_nonparam=none
+sg_body_call=some:Ops.SINK
+sg_body_add=none:RuntimeError
+sg_inline_call=some:True
+sg_inline_pre=some:False
+sg_inline_body=some:False
+sg_inline_kernel=some:False
+sg_inline_cfun=none:AttributeError
+sg_inline_aft=some:False
+sg_inline_add=some:False
+sg_huo_alloc=True
+sg_huo_bind=False
+sg_huo_buffer=False
+sg_huo_src0=False
+sg_huo_unshard=True
+sg_huo_noncall=False
+sg_huo_op=False
+sg_invalid=Ops.CONST/ cinvalid t=none
+sg_isinv_ci=True
+sg_isinv_c0=False
+sg_reduce_some=Ops.REDUCE/Ops.BUFFER reduce:Ops.ADD/0 t=none
+sg_reduce_none=Ops.REDUCE/Ops.BUFFER none t=none
+sg_reduce_two=Ops.REDUCE/Ops.BUFFER Ops.CONST reduce:Ops.MAX/0 t=none
+sg_cconst_i32=Ops.CAST/Ops.CONST dt:i32 t=none
+sg_cconst_f32=Ops.CAST/Ops.CONST dt:f32 t=none
+sg_index_hit1=True
+sg_index_hit0=True
+sg_index_hitmiss=False
+sg_index_plain=Ops.INDEX/Ops.BUFFER none t=none
+sg_index_one=Ops.INDEX/Ops.BUFFER Ops.CONST none t=none
+sg_index_two=Ops.INDEX/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_index_nc=Ops.INDEX/Ops.STACK Ops.BUFFER none t=none
+sg_index_st2=Ops.INDEX/Ops.STACK Ops.CONST Ops.CONST none t=none
+sg_store_nogate=Ops.STORE/Ops.BUFFER Ops.CONST none t=none
+sg_store_gate=Ops.STORE/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_ins_tag=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=9
+sg_ins_none=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=none
+sg_wmma=Ops.WMMA/Ops.BUFFER Ops.CONST Ops.ADD wmma:32/i32 t=none
+sg_ufix_uop=Ops.CONST
+sg_ufix_lit=Ops.CONST/ cint t=none
+sg_ufix_miss=True
+sg_idx=Ops.CONST,Ops.CONST,Ops.CONST,Ops.CONST,Ops.BUFFER,Ops.ADD,Ops.ALLOC,Ops.ALLOC,Ops.UNSHARD,Ops.STACK,Ops.SINK,Ops.SINK,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.ADD,Ops.ADD,Ops.AFTER,Ops.ADD,
 s5_idx=Ops.CONST,Ops.BUFFER,Ops.PARAM,Ops.ALLOC,Ops.RESHAPE,Ops.RESHAPE,Ops.UNSHARD,Ops.BITCAST,Ops.AFTER
 s5_base_c=Ops.CONST
 s5_base_b=Ops.BUFFER
@@ -77,6 +122,25 @@ s5_mselect=Ops.MSELECT/Ops.BUFFER
 s5_sharding_us=0:Ops.RANGE
 s5_sharding_none=
 s5_sint_const=Ops.CONST
+s5_devrange_single=-
+s5_devrange_one=Ops.RANGE:0:1
+s5_devrange_two=Ops.RANGE:0:2
+s5_copy_single=Ops.COPY/Ops.BUFFER
+s5_copy_multi=Ops.COPY/Ops.BUFFER Ops.RANGE
+s5_copy_sel=Ops.COPY/Ops.MSELECT Ops.RANGE
+s5_ga_buffer=Ops.GETADDR/Ops.BUFFER
+s5_ga_alloc=Ops.GETADDR/Ops.ALLOC
+s5_ga_param=Ops.GETADDR/Ops.PARAM
+s5_ga_shrink=Ops.GETADDR/Ops.SHRINK
+s5_ga_bitcast=Ops.GETADDR/Ops.BITCAST
+s5_ga_binary=Ops.GETADDR/Ops.BINARY
+s5_ga_mstack=Ops.GETADDR/Ops.MSTACK
+s5_ga_mselect=Ops.GETADDR/Ops.MSELECT
+s5_ga_linear=Ops.GETADDR/Ops.LINEAR
+s5_ga_const=Ops.CONST
+s5_ga_reshape=Ops.RESHAPE/Ops.BUFFER Ops.STACK
+s5_ga_after=Ops.GETADDR/Ops.AFTER
+s5_ga_add=Ops.ADD/Ops.BUFFER Ops.BUFFER
 s5_gate_linear=False
 s5_gate_kernel=False
 s5_gate_plain=True
@@ -107,6 +171,19 @@ cfun_dtype_splits=True
 cfun_name_splits=True
 cfun_arg=sel_registerName|u64
 cfun_of=sel_registerName|void
+blob_interns=True
+blob_len_diff_content=True
+blob_diff_len=True
+blob_count_same=1
+blob_count_len_diff_content=2
+blob_shape=(4,)
+blob_content=97,97,97,97
+blob_sweep=True
+blob_sweep_count=6
+afloat_zeros_intern=True
+afloat_nan_distinct_intern=False
+afloat_same_intern=True
+afloat_distinct_intern=False
 mstack_puts_self_first=True
 #shared_axis_members=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
 #shared_axis_values=1,2,3,4,5,6,7,8
