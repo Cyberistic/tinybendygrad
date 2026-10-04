@@ -11456,3 +11456,65 @@ unit: `syntax error ... 'done'` at :245) and every other unit's slop tree untouc
       because the fourth patch-in-place edit to this file is what caused the damage.
 
       Markers 561 -> 559. Backlog still 236.
+
+## Session 2026-10-05 round 5 — `wk_i64_to_f32`'s FORMULA is unsound, and it is not a wrong function
+
+- [ ] **`tanh`'s blocker is DIAGNOSED, not merely located.** `wk_i64_to_f32` (uop/weak.bend:271)
+      is not calling the wrong thing. Its ARITHMETIC cannot work in f32.
+
+      ### FOUR PIECES, ALL MEASURED, AND THE BUG IS THE FORMULA
+
+      ```
+      wk_i64_to_f32(x) = U32.to_f32(lo32(x)) + sgn(hi32(x)) * 2**32
+      sgn(neg, hi)     = neg ? U32.to_f32(hi) - 2**32 : U32.to_f32(hi)
+      ```
+
+      | piece | verdict |
+      |---|---|
+      | `F32.neg` | CORRECT -- 5/5 against CPython (1.0, 0.5, 2.0, 1.5, 0.0-1.0) |
+      | `i64_of_i32` | CORRECT -- takes a U32 and sign-extends, so 4294967295 IS -1 |
+      | `U32.to_f32` | CORRECT -- 12/12 against CPython, 0 through 4294967295 |
+      | **the two-term sum** | **UNSOUND** |
+
+      For -1 the high word is `0xFFFFFFFF`. `U32.to_f32(0xFFFFFFFF)` is `1333788672` =
+      **2**32 -- and that is CORRECT, because f32 has 24 mantissa bits and cannot represent
+      4294967295, so it rounds to 2**32. So `sgn` computes `2**32 - 2**32 = 0` where the
+      exact answer is `4294967295 - 2**32 = -1`, and the whole conversion collapses to
+      `U32.to_f32(lo32(x))` = 2**32. **Which is exactly the measured 4294967296.0, and
+      exactly why -1 and -2 agree: both high words are 0xFFFFFFFF, and the low word's own
+      rounding to 2**32 makes them indistinguishable.**
+
+      **THE FORMULA NEEDS `hi` EXACTLY AND f32 CANNOT HOLD A 32-BIT INTEGER EXACTLY ABOVE
+      2**24.** The decomposition is arithmetically invalid in this type. No choice of
+      function fixes it; it needs a different ALGORITHM.
+
+      ### A HYPOTHESIS FORMED AND RETIRED IN THE SAME ROUND
+
+      I read `U32.to_f32` being a `law` in base.bend (1548) and concluded this was a BEND
+      PRIMITIVE bug the port inherits. The twelve-value probe refuted that immediately.
+      **"It is a `law` therefore it is a language bug" is the same mistake as "it is a
+      `def` therefore it is mine"** -- a declaration site's kind is not evidence about who
+      owns the behaviour, and a `law` in base.bend is still a spec the compiler must meet.
+
+      ### THE ALGORITHM THAT WOULD BE CORRECT, and it is not a one-liner
+
+      f32 represents every integer below 2**24 exactly, so the value must be carried in
+      CHUNKS OF 24 BITS and combined with exact powers of two:
+
+      ```
+      x = c2 * 2**48 + c1 * 2**24 + c0        with c0, c1, c2 < 2**24
+      v = ((c2 * 2**24) + c1) * 2**24 + c0
+      ```
+
+      Each `c * 2**24` has 24 significant bits and is therefore EXACT in f32; the additions
+      are the only rounding steps, and they happen in the right order. This needs the three
+      chunk extractions from an `I64` (shifts and masks, all of which the port has) and it
+      needs its own gate over the same twelve magnitudes plus the boundaries. **It is a
+      separate unit and is NOT started here** -- a conversion primitive is exactly the place
+      where a plausible-looking patch that is one ulp out is worse than no patch, because
+      every downstream number inherits the error.
+
+      ### AND `tanh` IS STILL NOT LANDED
+
+      Its body is one line over the landed `sigmoid` and it is CORRECT; it is held solely
+      because its row would carry the wrong `-1.0`. The marker says so, and now says why.
