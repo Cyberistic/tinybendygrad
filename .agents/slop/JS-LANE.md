@@ -1,5 +1,23 @@
 # JS-LANE — the JS lane is CORRECT, and the two lanes do not share an ABI
 
+> ## REFUTED BY `JS-LANE-GATE.md`. READ THAT INSTEAD.
+>
+> **The claim below — "`i64_of` reads the two halves of one record. That is exactly right" —
+> IS FALSE, AND IT WAS NEVER EXECUTED.** A record crosses to JS **by name**: the instrumented
+> keys are `["$","hi","lo"]`. `H.I64` is `I64{hi: U32, lo: U32}` (`helpers.bend:1639-1640`),
+> so `p.fst` and `p.snd` are **both `undefined`**, and **`undefined >>> 0 === 0`** — which
+> makes **`i64_of` identically 0 for every input**, so **`Dt.i64_trunc`, the identity
+> function, is not the identity.** 30 rows present, **0/30 agree**; the shipped column
+> prints `:` on every row.
+>
+> **The finding that survives is the one about the ABI**, and it is now worse, not better:
+> there are **four** undeclared conventions, not two. C's bug was the **argument count**;
+> **JS's is the field names.**
+>
+> **What went wrong here was reasoning from a call site instead of running it.** The `p` in
+> `(a) => pack64(i64_of(a))` *looks* like one structured value and I read it as one that
+> matches `fst`/`snd`. **It is one value — with the wrong field names.**
+
 The unit dispatched to this job wrote one 4 KB seed file and **completed without a text
 response**. Everything below was measured by the coordinator afterwards.
 

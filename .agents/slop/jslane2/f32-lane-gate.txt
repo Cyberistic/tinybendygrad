@@ -1,0 +1,27 @@
+ROWS PRESENT vs ROWS EXPECTED
+  node  present  6 / expected 6
+  cc    present  6 / expected 6
+
+| seam | in / out | CPython (dtype.py) | node | cc | lanes agree |
+|---|---|---|---|---|---|
+| `bf16_1p5` | U32 -> F32 | `1.5` | `1.5` | `1.5` | yes |
+| `fp16_1p5` | F32 -> F32 | `1.5` | `0` | `1.5` | ** NO ** |
+| `fp8from_1p5` | U32 -> U32 | `60.0` | `60` | `60` | yes |
+| `fp8to_0x3C` | U32 -> F32 | `1.5` | `1` | `1.5` | ** NO ** |
+| `fp8to_0x7E` | U32 -> F32 | `448.0` | `448` | `448` | yes |
+| `fp8to_0x7F_e5m2` | U32 -> F32 | `nan` | `2143289300` | `nan` | ** NO ** |
+
+node agrees with CPython on 3/6   (compared as floats, so `448` == `448.0`)
+cc   agrees with CPython on 6/6
+lanes disagree on 3/6: ['fp16_1p5', 'fp8to_0x3C', 'fp8to_0x7F_e5m2']
+
+WHAT THE DATA SUPPORTS, and it is LESS than the rule this gate was
+written to test.  The rule was 'a seam taking U32 agrees, a seam whose
+F32 crosses disagrees'.  `fp8_to(U32, U32) -> F32` REFUTES it: it takes
+two U32s and still disagrees on 2 of 3 rows.  What survives:
+  * the two U32->U32 seams agree exactly;
+  * `fp16` disagrees, and the reason is INSTRUMENTED IN BOTH LANES --
+    C's `fp16_run` receives f[0] = 1069547520 (the BITS of 1.5) while
+    node's `dtype_fp16` receives x = 1.5 (the VALUE);
+  * `fp8_to`'s divergence is measured (2 of 3 rows) but NOT localised, and
+    is deliberately not guessed at here.
