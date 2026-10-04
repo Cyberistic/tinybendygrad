@@ -1,0 +1,95 @@
+--- origin/tinybendygrad/runtime/ops_cpu.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/ops_cpu.bend	2026-10-04 22:19:06
+@@ -229,55 +229,9 @@
+ def cpu.wait_timeout_ms() -> U32: 30000
+ 
+ # ops_cpu.py:19, `DLL('m', 'm')`. The second name is a constant and the first is
+-# the platform arm. MEASURED on this host, `DLL.findlib('m','m')` answers
+-# `/usr/lib/libm.dylib`, so the name in this row DOES reach a library.
++# the platform arm.
+ def cpu.lib_m() -> String: "m"
+ 
+-# ===========================================================================
+-# THE OBJC LIBRARY -- A PORT-LEVEL FIX THAT UPSTREAM DOES NOT HAVE, and the only
+-# place in this file where the port is deliberately NOT a transcription.
+-#
+-# THE BUG, MEASURED. ops_cpu.py:21 builds the loader's search set as
+-# `link_libs=[self.libm, self.rt_lib]`, and `link_sym` (elf.py:9-13) walks it left
+-# to right and raises `RuntimeError(f'Attempting to relocate against an undefined
+-# symbol {sym}')` when none of them has the symbol. On this host:
+-#
+-#   dyld_info -exports /usr/lib/libSystem.dylib | grep -c sel_registerName   -> 0
+-#   dyld_info -exports /usr/lib/libobjc.dylib   | grep -c sel_registerName   -> 1
+-#
+-# and that is a real undefined reference, not a theoretical one: `cstyle.py:268`
+-# emits `extern void sel_registerName();` into a generated host kernel and
+-# `ops_metal.py:86` binds `metal.dll.sel_registerName` and `objc_msgSend`, so an
+-# objc-using kernel's ELF `.strtab` holds BOTH as undefined and the loader dies.
+-#
+-# WHY THE ROW IS A PATH AND NOT A NAME. `link_sym` takes `ctypes.CDLL` HANDLES, so
+-# what the set needs is whatever produces a handle that resolves. The obvious
+-# spelling, `DLL('objc', 'objc')`, does NOT work, and that is measured, not
+-# assumed:
+-#
+-#   DLL.findlib('objc','objc')  -> None       <- it never opens
+-#   ctypes.util.find_library('objc') -> /usr/lib/libobjc.dylib
+-#   ctypes.CDLL('/usr/lib/libobjc.dylib').sel_registerName -> 0x1801ac730
+-#
+-# `/System/Library/Frameworks/objc.framework` is not a directory on this host, so
+-# `findlib`'s darwin arm has nothing to match and answers None -- adding the bare
+-# name "objc" would add a library that never opens, which is the failure mode this
+-# row exists to avoid. The path is named instead, and the oracle proves it opens
+-# and resolves.
+-#
+-# THE RELATED FINDING, CORRECTED. `c.py:102-103` tests
+-# `pathlib.Path(p).is_file()`, which is FALSE for `/usr/lib/libSystem.dylib`
+-# because that path lives in the dyld shared cache. But `DLL` still loads
+-# libSystem, because the darwin arm also tries
+-# `/System/Library/Frameworks/System.framework/System` and accepts a SYMLINK
+-# there, and that path opens: MEASURED, `DLL.findlib('rt','System')` answers
+-# `/System/Library/Frameworks/System.framework/System` and `ctypes.CDLL` of it
+-# succeeds. So the shared-cache `is_file()` miss does not stop libSystem, and
+-# nothing here depends on it.
+-# ===========================================================================
+-def cpu.lib_objc() -> String: "/usr/lib/libobjc.dylib"
+-
+-# ===========================================================================
+ # ops_cpu.py:19, `'System' if OSX else 'kernel' if WIN else 'gcc_s'`. The two
+ # nested ternaries are TWO PICKS and not a three-arm `match`: the second and
+ # third cells of that match would both be `cpu.rt_lib_name.os(win)`, so writing
+@@ -287,19 +241,7 @@
+ 
+ def cpu.rt_lib_name(osx: Bool, win: Bool) -> String:
+   Bool.pick(String, osx, "System", cpu.rt_lib_name.os(win))
+-
+-# THE LINK SET, IN ORDER, and the order is the policy: `link_sym` returns the
+-# FIRST handle that has the symbol, so a library that shadows another must come
+-# later. Upstream has TWO entries; this has THREE, and the third is the fix
+-# above. `n` counts the entries because the size of a fix is the thing a reader
+-# checks first.
+-def cpu.link_libs(osx: Bool, win: Bool) -> List<&2, String>:
+-  [cpu.lib_m(), cpu.rt_lib_name(osx, win), cpu.lib_objc()]
+-
+-def cpu.link_libs_n(osx: Bool, win: Bool) -> U32:
+-  U32.from_nat(List.length(&2, String, cpu.link_libs(osx, win)))
+ 
+-
+ # ops_cpu.py:21, `libc.ELFMAG.encode()` == b'\x7fELF'. WALL 2 says four bytes
+ # cannot be compared in Bend, so they are NAMED rather than spelled as a
+ # comparison: the port carries the ANSWER and this is the auditable statement of
+@@ -1226,15 +1168,6 @@
+     urow("cpu_wr_flags", cpu.wr_flags())
+     urow("cpu_wait_timeout_int", cpu.wait_timeout_ms())
+     srow("cpu_lib_m", cpu.lib_m())
+-    srow("cpu_lib_objc", cpu.lib_objc())
+-    # THE LINK SET, JOINED. One row per platform cell, and the join pins the ORDER
+-    # as well as the contents -- `link_sym` walks it left to right, so a set with
+-    # the right three names in the wrong order is a different set.
+-    rlist("cpu_link_libs_00", cpu.link_libs(False{}, False{}))
+-    rlist("cpu_link_libs_10", cpu.link_libs(True{}, False{}))
+-    rlist("cpu_link_libs_01", cpu.link_libs(False{}, True{}))
+-    rlist("cpu_link_libs_11", cpu.link_libs(True{}, True{}))
+-    urow("cpu_link_libs_n", cpu.link_libs_n(True{}, False{}))
+     srow("cpu_rtlib_00", cpu.rt_lib_name(False{}, False{}))
+     srow("cpu_rtlib_10", cpu.rt_lib_name(True{}, False{}))
+     srow("cpu_rtlib_01", cpu.rt_lib_name(False{}, True{}))

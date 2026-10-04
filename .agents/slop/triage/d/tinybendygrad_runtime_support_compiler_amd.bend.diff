@@ -1,0 +1,20 @@
+--- origin/tinybendygrad/runtime/support/compiler_amd.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/support/compiler_amd.bend	2026-10-04 22:19:06
+@@ -253,7 +253,7 @@
+ def h.options(arch: String) -> String:
+   String.join(["-O3", "-mcumode", "--hip-version=6.0.32830", "-DHIP_VERSION_MAJOR=6",
+     "-DHIP_VERSION_MINOR=0", "-DHIP_VERSION_PATCH=32830", "-D__HIPCC_RTC__",
+-    "-std=c++14", "-nogpuinc", "-Wno-gnu-line-marker", "-Wno-missing-prototypes",
++    "-std=c++14", "-nogpuinc", "-Wno-gnu-line-marker",
+     String.concat(["--offload-arch=", arch]), "-I/opt/rocm/include",
+     "-Xclang", "-disable-llvm-passes", "-Xclang", "-aux-triple", "-Xclang",
+     "x86_64-unknown-linux-gnu"], " ")
+@@ -364,7 +364,7 @@
+ def C.join_extra(extra: List<&2, String>) -> String: String.join(extra, " ")
+ 
+ def C.hipcc_key(arch: String, hex8: String, nohipcc: Bool) -> String:
+-  String.concat(["compile_hipcc_", arch, "_", hex8, Bool.pick(String, nohipcc, "_nohipcc", "")])
++  String.concat(["compile_hipcc_", arch, "_", hex8, Bool.pick(String, nohipcc, "", "")])
+ 
+ # :96 `if self.no_hipcc: return b""` -- no spawn, no temp file, no artifact
+ def C.short_circuit(nohipcc: Bool) -> U32: Bool.to_u32(nohipcc)

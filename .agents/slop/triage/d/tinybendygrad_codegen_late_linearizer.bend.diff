@@ -1,0 +1,112 @@
+--- origin/tinybendygrad/codegen/late/linearizer.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/codegen/late/linearizer.bend	2026-10-04 22:19:06
+@@ -325,12 +325,9 @@
+ # lands LAST. Measured: `rc_*` rows, `lt_emit`'s `newlst`, and `lt_se`'s END chain.
+ # `u32_none()` IS Python's `None` for this port, and it is the same convention
+ # kernel.bend uses: `UOp.is_none` is index 0 and every "unset" here is 0xFFFFFFFF,
+-# which is a value no table in this file ever stores as a KEY. Same value as
+-# kernel.bend's `u32_none` and as `O.ParamArg.no_slot()`; this def used to be an
+-# INDEPENDENT second copy of kernel.bend's, which is the shape of bug where two
+-# files agree until one of them is edited.
++# which is a value no table in this file ever stores as a KEY.
+ def u32_none() -> U32:
+-  O.ParamArg.no_slot()
++  4294967295
+ 
+ def b2u(+b: Bool) -> U32:
+   Bool.pick(U32, b, 1, 0)
+@@ -998,65 +995,7 @@
+ 
+ def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
+   String.join(lt_srcs.go(ar, ix, Nil{}), " ")
+-
+-# ===========================================================================
+-# `lin_edg` -- THE EDGE LIST, IN THE DECLARED TOPOSORT'S OWN POSITIONS. THIS IS
+-# THE ROW `lin_srcs` COULD NOT BE.
+-#
+-# The defect, measured and not argued. `lt_lst()` and `lt_vm_lst()` are LITERALS
+-# read off CPython, and every other row reads the arena only for a node's OP and
+-# ARG (`lt_lab`, `lt_extra`, `lt_addr_of`). `lt_deg` walks `Arena.src_without_body`
+-# but `out_degree` is a COUNT OF OCCURRENCES (linearizer.py:11,16-17), so a
+-# permutation of one node's srcs leaves it identical. The consequence: swapping
+-# any src list in `lt_fix()` -- an SINK's, an END's, a RANGE's, either ADD's --
+-# moves NOTHING, while CPython's answer over the same seven graphs moves in 2, 0,
+-# 20, 6, 9, 3 and 10 rows (`.agents/slop/order-lin-sweep.sh`). The gate was green
+-# over an arena that was not the graph its own table describes.
+-#
+-# THE ALPHABET IS A POSITION, NOT AN ARENA INDEX, and that is the whole design.
+-# CPython derives positions from its OWN `toposort`; the port derives them from
+-# its OWN arena plus its OWN literal. Neither side borrows the other's fixture,
+-# and CPython's three-node CONST/CAST interning divergence (`lin_fixture`'s
+-# comment: `UOp.const(1, i32)` is one node here and two in `ops.bend`) stops
+-# mattering, because a position is a position either way.
+-# ===========================================================================
+-# A src the declared toposort does not NAME answers `4294967295`, which is what
+-# `LtKey.ex`'s "no extra" sentinel already is. A disagreement between the arena
+-# and `lt_lst` therefore prints a sentinel rather than a plausible number.
+-def lt_pos.of(ix: List<&2, U32>, +u: U32, +n: U32, missing: U32) -> U32:
+-  match ix:
+-    case Nil{}   : missing
+-    case v <> +r : Bool.pick(U32, U32.is_eq(v, u), n, lt_pos.of(r, u, U32.add(n, 1), missing))
+ 
+-def lt_pos(ix: List<&2, U32>, u: U32) -> U32:
+-  lt_pos.of(ix, u, 0, 4294967295)
+-
+-# ONE NODE'S SRCS, each already a position. `lt_u32s` is the same fold over the
+-# numbers themselves, so this is that fold with `lt_pos` in the step.
+-def lt_epos.go(+ix: List<&2, U32>, +ar: O.Arena, xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+-  match xs:
+-    case Nil{}   : acc
+-    case s <> +r : lt_epos.go(ix, ar, r, List.append(&2, String, acc, [U32.show(lt_pos(ix, s))]))
+-
+-# `<position>:<src positions>`, one node per piece. A node with no srcs is
+-# `5:` and the trailing colon is what says so -- `String.join(xs, "")` would drop
+-# it and make an edgeless node indistinguishable from a missing one.
+-def lt_epos(ix: List<&2, U32>, +ar: O.Arena, xs: List<&2, U32>) -> String:
+-  String.join(lt_epos.go(ix, ar, xs, Nil{}), " ")
+-
+-def lt_edg.piece(ix: List<&2, U32>, +ar: O.Arena, +n: U32, u: U32) -> String:
+-  String.concat([U32.show(n), ":", lt_epos(ix, ar, O.Arena.src_without_body(ar, u))])
+-
+-def lt_edg.go(+ix: List<&2, U32>, rest: List<&2, U32>, +ar: O.Arena, +n: U32,
+-              +acc: List<&2, String>) -> List<&2, String>:
+-  match rest:
+-    case Nil{}   : acc
+-    case u <> +r : lt_edg.go(ix, r, ar, U32.add(n, 1),
+-                 List.append(&2, String, acc, [lt_edg.piece(ix, ar, n, u)]))
+-
+-def lt_edg(+ar: O.Arena, +ix: List<&2, U32>) -> String:
+-  String.join(lt_edg.go(ix, ix, ar, 0, Nil{}), " ")
+-
+ def lt_is_sink(op: O.Op) -> Bool:
+   lt_op_is(op, O.OpsSINK{})
+ 
+@@ -1262,12 +1201,6 @@
+ def lt_linc_vm() -> String:
+   lt_vm_print(lt_vm_call())
+ 
+-def lt_lin_edg() -> String:
+-  lt_edg(F.Folded.ar(KER.K.fx(lt_fix())), lt_lst())
+-
+-def lt_linc_edg() -> String:
+-  lt_edg(F.Folded.ar(KER.K.fx(lt_fix())), lt_lst_call())
+-
+ def lt_linc_nkey() -> String:
+   lt_u32s(lt_lin_nkey.go(lt_lst_call(), 0, lt_srt_call(), Nil{}))
+ 
+@@ -1899,7 +1832,6 @@
+     r : Unit <- srow("lin_srcs", lt_lin_srcs())
+     s : Unit <- row("lin_n", lt_lin_n())
+     t : Unit <- srow("lin_vm", lt_lin_vm())
+-    t2 : Unit <- srow("lin_edg", lt_lin_edg())
+     u : Unit <- srow("lin_nkey", lt_lin_nkey())
+     v : Unit <- srow("lin_ord", lt_srcs(F.Folded.ar(KER.K.fx(lt_fix())), lt_srt_idx()))
+     w : Unit <- lt_rows("lin", linearize(F.Folded.ar(KER.K.fx(lt_fix())), lt_lst(), lt_vm_lst(), 19),
+@@ -1909,7 +1841,6 @@
+     p1 : Unit <- srow("linc_srcs", lt_linc_srcs())
+     p2 : Unit <- row("linc_n", lt_linc_n())
+     p3 : Unit <- srow("linc_vm", lt_linc_vm())
+-    p3b : Unit <- srow("linc_edg", lt_linc_edg())
+     p4 : Unit <- srow("linc_nkey", lt_linc_nkey())
+     p5 : Unit <- srow("linc_ord", lt_srcs(F.Folded.ar(KER.K.fx(lt_fix())), lt_srt_call_idx()))
+     p6 : Unit <- lt_linc_rows()

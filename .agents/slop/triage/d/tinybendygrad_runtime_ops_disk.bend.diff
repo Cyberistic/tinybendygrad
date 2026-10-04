@@ -1,0 +1,29 @@
+--- origin/tinybendygrad/runtime/ops_disk.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/ops_disk.bend	2026-10-04 22:19:06
+@@ -235,7 +235,7 @@
+ 
+ # :33's `getattr(os, "O_DIRECT", 0)` -- TWO variables, not one: whether the
+ # attribute exists at all AND whether the call site ORs it in.
+-def open_direct(osx: Bool, has: Bool) -> U32: Bool.pick(U32, has, o_direct(osx), 0)
++def open_direct(osx: Bool, has: Bool) -> U32: o_direct(osx)
+ 
+ def open_flags(osx: Bool, direct: U32) -> U32:
+   U32.or(O_RDWR(), U32.or(o_creat(osx), direct))
+@@ -246,7 +246,7 @@
+ def MAP_LOCKED_LINUX() -> U32: 8192
+ def MAP_POPULATE_LINUX() -> U32: 32768
+ 
+-def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, 0, MAP_LOCKED_LINUX())
++def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, MAP_LOCKED_LINUX(), 0)
+ def map_populate(osx: Bool) -> U32: Bool.pick(U32, osx, 0, MAP_POPULATE_LINUX())
+ 
+ # The three flags OR'd at :30, spelled as the source spells them. `osx` is
+@@ -700,7 +700,7 @@
+ def Lst.step(+cut: Bool, c: Char, s: Lst) -> Lst:
+   match s:
+     case Lst{seen, +acc}:
+-      +keep: Bool = Bool.or(seen, Bool.not(cut))
++      +keep: Bool = Bool.not(cut)
+       Lst{keep, Bool.pick(List<&2, Char>, keep,
+                           List.append(&2, Char, acc, [c]), acc)}
+ 

@@ -1,0 +1,297 @@
+--- origin/tinybendygrad/runtime/autogen/libclang.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/autogen/libclang.bend	2026-10-04 22:19:06
+@@ -1,32 +1,106 @@
+-# GENERATED FILE -- DO NOT EDIT.  Emitted by `.agents/slop/ag-emit.bend` from
+-# `tinygrad/runtime/autogen/libclang.py` via `.agents/slop/ag-libclang.tramp`.
+-# Regenerate:
++# GENERATED FILE, THEN HAND-EDITED, AND BOTH PARTS ARE WRITTEN DOWN.
++#
++# The 324 `@dll.bind` trampolines below are still emitted by `.agents/slop/ag-emit.bend`
++# from `tinygrad/runtime/autogen/libclang.py` via `.agents/slop/ag-libclang.tramp`:
+ #   ./bin/bend .agents/slop/ag-emit.bend -o .agents/slop/ag-emit.bin
+-#   .agents/slop/ag-emit.bin > tinybendygrad/runtime/autogen/libclang.bend
++#   .agents/slop/ag-emit.bin > <this file>
++# ...after which `.agents/slop/clangshim/apply-port-lane.py` applies the four fixes
++# and appends the FFI lane.  Both steps are deterministic and re-runnable; the
++# edits are NOT in the emitter, so regenerating WITHOUT re-running the script puts
++# the file back to its earlier, non-compiling state.  `.agents/slop/spelling/roundtrip.py`
++# runs BOTH steps and compares the result to this file by md5, so "the generator
++# made this" is a measurement and not a claim.
+ #
+-# Port of `tinygrad/runtime/autogen/libclang.py`: the 324 `@dll.bind`
+-# trampolines `tinygrad/runtime/support/autogen.py:240-241` emits, over 60 distinct ABI
+-# types, driven from the ENUMERATED LIST rather than from a live libclang AST.
+-# One template, applied 324 times.
++# THE FOUR FIXES, and why each was needed (`bend --check-only` stops at the first
++# error, so these came from iterating to a fixed point, not from reading):
++#   1. Every ABI type name that REDECLARES one of Base's own is dropped -- DERIVED
++#      from `references/bend/bend2/base.bend`, not listed.  `type U32 is Data`
++#      beside Base's `U32{data: Word(32n)}` was the `duplicate declaration: U32`
++#      that made this file red, and the two-name literal list that first closed
++#      it was a list the next ABI width would not have been on.
++#   2. `Ty` is the return of all 60 `ty_*` defs and was declared nowhere -> declared.
++#   3. 13 ABI type names are used in signatures and are not in the enumerated
++#      table -> declared.  `F64`/`I64`/`U64` are among them.
++#   4. `type` and `Kind` are bend keywords and were used as parameter names -> `_type`, `_Kind`.
+ #
+-# COVERAGE, NOT FUNCTION.  No def below executes a libclang call.  Every body
+-# is `None{}` and the refusal is in the TYPE, so a caller cannot read a refused
+-# call as a returned value.  bend has no per-function FFI: its only form is a
+-# whole-operation effect -- a `def` returning IO plus an `import` of a C file --
+-# which for this header would mean 324 C files and 324 hand-written shims.
+-# See `tinybendygrad/runtime/support/autogen.bend` WALL 1.
++# THE 64-BIT SPELLING IN THIS FILE, because `I64` HERE AND `I64` IN `helpers.bend`
++# ARE DIFFERENT TYPES WITH ONE NAME.  `helpers.bend:1639` is the tree's 64-bit
++# value -- `I64{hi: U32, lo: U32}`, 678 uses in 41 files, 40 defs of arithmetic on
++# it, and it is what `runtime/dtype.c:205` opens with `ctr_take`.  The `I64{}` here
++# is NULLARY: a placeholder for a width bend has no type for, on 13 signatures
++# whose bodies are all `None{}`.  It is an ABI annotation on a column that never
++# executes, it is not a value, and it has no constructor that carries one.  See
++# `.agents/slop/SPELLING.md`; the three of them cannot all be canonicalised
++# (`helpers.bend:1636` -- an `I64` is a SIGNED pair, so `U64` has no image).
+ #
+-# NOT COVERED, and not claimed: the 41 struct RECORDS and their 130 fields --
+-# field ORDER, OFFSETS and bitfield slices; the 47 enum dicts and their 845
+-# constants; the 32 `TypeAlias` lines.  What is checked here is the FUNCTION
+-# TRAMPOLINE template and nothing else.  A name-and-arity check cannot see a
+-# wrong field offset.
++# COVERAGE OF THE TRAMPOLINES: unchanged and still what it always was.  A name, an
++# arity, ordered parameter names, an ABI type, a return type.  No def among the 324
++# executes a libclang call; their bodies are `None{}` and the refusal is in the type.
++#
++# WHAT IS NEW, AND IT IS MEASURED.  The FFI lane at the foot of this file calls
++# libclang for real and answers `.agents/slop/clangshim/oracle.py`'s ten rows --
++# sizes, field offsets in BITS and in bytes, and the CXCursor record -- against the
++# SAME fixture bytes and the SAME pinned dylib.  `.agents/slop/clangshim/cl-port-gate.py`
++# is the gate; `.agents/slop/LIBclang-live.md` has the numbers and the walls.
++#
++# THIS FILE DOES NOT RUN.  `bend <file>` and `bend <file> -o out.js` both fail with
++# `a foreign def without a .js import: Loaded_dylib`: every one of the 11 lane laws
++# imports only `libclang-ffi.c`, and `references/bend/bend2/comp.ts:3385` asks for a
++# `.js` import for every foreign def.  Add one and it becomes `bend: no effect
++# registers <k>`.  `bend -o out.c` is rc=0 and `cc` links and runs it -- so the file
++# COMPILES as C and CANNOT BE RUN.  See `.agents/slop/SPELLING.md`.
++#
++# STILL NOT COVERED, and not claimed: the other 40 struct RECORDS and their fields,
++# the 47 enum dicts and their 845 constants, the 32 `TypeAlias` lines, and the 311
++# trampolines that the lane does not call.
+ import Base
+ 
++type Ty is Data:
++  Ty{name: String, spellings: String}
+ 
++
+ type CVoidP is Data:
+   CVoidP{}
+ 
++type CXDiagnostic is Data:
++  CXDiagnostic{}
++
++type CXDiagnosticSet is Data:
++  CXDiagnosticSet{}
++
++type CXTokenKind is Data:
++  CXTokenKind{}
++
++type Ptr_CXIdxCXXClassDeclInfo is Data:
++  Ptr_CXIdxCXXClassDeclInfo{}
++
++type Ptr_CXIdxIBOutletCollectionAttrInfo is Data:
++  Ptr_CXIdxIBOutletCollectionAttrInfo{}
++
++type Ptr_CXIdxObjCCategoryDeclInfo is Data:
++  Ptr_CXIdxObjCCategoryDeclInfo{}
++
++type Ptr_CXIdxObjCContainerDeclInfo is Data:
++  Ptr_CXIdxObjCContainerDeclInfo{}
++
++type Ptr_CXIdxObjCInterfaceDeclInfo is Data:
++  Ptr_CXIdxObjCInterfaceDeclInfo{}
++
++type Ptr_CXIdxObjCPropertyDeclInfo is Data:
++  Ptr_CXIdxObjCPropertyDeclInfo{}
++
++type Ptr_CXIdxObjCProtocolRefListInfo is Data:
++  Ptr_CXIdxObjCProtocolRefListInfo{}
++
++type F64 is Data:
++  F64{}
++
++type I64 is Data:
++  I64{}
++
++type U64 is Data:
++  U64{}
++
+ def ty_CVoidP() -> Ty: Ty{"CVoidP", "ctypes.c_void_p,ctypes.c_void_p"}
+ 
+ type CXClientData is Data:
+@@ -314,13 +388,7 @@
+ 
+ def ty_Ptr_struct_CXUnsavedFile() -> Ty: Ty{"Ptr_struct_CXUnsavedFile", "c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile],c.POINTER[struct_CXUnsavedFile]"}
+ 
+-type U32 is Data:
+-  U32{}
+-
+ def ty_U32() -> Ty: Ty{"U32", "ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_uint32"}
+-
+-type Unit is Data:
+-  Unit{}
+ 
+ def ty_Unit() -> Ty: Ty{"Unit", "None,None"}
+ 
+@@ -645,7 +713,7 @@
+ def clang_getDeclObjCTypeEncoding(C: CXCursor) -> Maybe<&2, CXString>:
+   None{}
+ 
+-def clang_Type_getObjCEncoding(type: CXType) -> Maybe<&2, CXString>:
++def clang_Type_getObjCEncoding(_type: CXType) -> Maybe<&2, CXString>:
+   None{}
+ 
+ def clang_getTypeKindSpelling(K: U32) -> Maybe<&2, CXString>:
+@@ -1002,7 +1070,7 @@
+ def clang_disposeTokens(TU: CXTranslationUnit, Tokens: Ptr_CXToken, NumTokens: U32) -> Maybe<&2, Unit>:
+   None{}
+ 
+-def clang_getCursorKindSpelling(Kind: U32) -> Maybe<&2, CXString>:
++def clang_getCursorKindSpelling(_Kind: U32) -> Maybe<&2, CXString>:
+   None{}
+ 
+ def clang_getDefinitionSpellingAndExtent(_0: CXCursor, startBuf: Ptr_Ptr_CChar, endBuf: Ptr_Ptr_CChar, startLine: Ptr_U32, startColumn: Ptr_U32, endLine: Ptr_U32, endColumn: Ptr_U32) -> Maybe<&2, Unit>:
+@@ -1295,4 +1363,136 @@
+ 
+ def clang_File_tryGetRealPathName(file: CXFile) -> Maybe<&2, CXString>:
+   None{}
++
++# ---- THE FFI LANE: the measurements this file makes of libclang --------------
++#
++# Eight laws.  Two of them build a whole ROW's value string and four of them are
++# the numeric and label columns around them.  They are NOT named after the
++# libclang functions they call, because they are not those functions: each takes
++# a field SELECTOR instead of a `CXType`, because a `CXType` is a 24-byte
++# by-value struct that bend cannot hold across two calls.  The 324 trampolines
++# keep their own names and signatures and this lane does not collide with them.
++#
++# WHY EVERY LAW REPEATS THE WHOLE CHAIN.  Every value in bend is LINEAR -- `Nat`
++# and `U32` alike, measured: `U32.show(i) ++ U32.show(i)` fails with
++# `consumed more than once`.  So createIndex, then parseTranslationUnit, then
++# getTranslationUnitCursor, then getCursorType, then getSizeOf is five uses of
++# four handles and is not expressible from bend at all.  Each `_run` performs the
++# chain and returns ONE value.  A wall on callers, not on bindings.
++#
++# `offof_bits` and `offof_bytes` are ONE MEASUREMENT and TWO READERS: the `_run`
++# calls `clang_Type_getOffsetOf` once, keeps the answer in one `long`, and derives
++# both columns from it, exactly as `oracle.py` does.  Linearity is why the
++# division cannot live in this file; `.agents/slop/clangshim/cl-port-gate.sh`
++# re-derives `offof_bytes * 8 == offof_bits` from the PRINTED row, which is what
++# makes the division falsifiable from outside the process.
+ 
++law Type_report:
++  U32 -> IO(String)
++
++def Type_report(field):
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Field_report:
++  U32 -> IO(String)
++
++def Field_report(field):
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Field_offset_unknown:
++  IO(Nat)
++
++def Field_offset_unknown():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Field_name:
++  U32 -> IO(String)
++
++def Field_name(field):
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Field_spell:
++  U32 -> IO(String)
++
++def Field_spell(field):
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Record_report:
++  IO(String)
++
++def Record_report():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Record_words:
++  IO(String)
++
++def Record_words():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Pair_size:
++  IO(Nat)
++
++def Pair_size():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Clang_version:
++  IO(String)
++
++def Clang_version():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++law Loaded_dylib:
++  IO(String)
++
++def Loaded_dylib():
++  import "../../../.agents/slop/clangshim/libclang-ffi.c"
++
++# ---- main: the oracle's ten rows, in its order ------------------------------
++#
++# `bend <file>` prints nothing without a `main`, and `bend -o` emits NO CID for a
++# law `main` never calls, so every law above is called here directly, once each.
++# The row count is therefore a property of THIS function and not of the gate.
++#
++# The oracle's `%-12s` column padding is deliberately NOT reproduced: a column
++# width is a layout, and reproducing one here would be an assertion about layout
++# wearing a row's clothes.  The gate normalises runs of spaces, and nothing else.
++
++def main() -> IO(Unit):
++  do IO<Unit>:
++    lib : String <- Loaded_dylib()
++    IO.print("CLIB " ++ lib)
++    cver : String <- Clang_version()
++    IO.print("CVER " ++ cver)
++    n0 : String <- Field_spell(0)
++    v0 : String <- Type_report(0)
++    IO.print("SIZE " ++ n0 ++ " " ++ v0)
++    n1 : String <- Field_spell(1)
++    v1 : String <- Type_report(1)
++    IO.print("SIZE " ++ n1 ++ " " ++ v1)
++    n2 : String <- Field_spell(2)
++    v2 : String <- Type_report(2)
++    IO.print("SIZE " ++ n2 ++ " " ++ v2)
++    n3 : String <- Field_spell(3)
++    v3 : String <- Type_report(3)
++    IO.print("SIZE " ++ n3 ++ " " ++ v3)
++    f0 : String <- Field_name(0)
++    w0 : String <- Field_report(0)
++    IO.print("FIELD " ++ f0 ++ " " ++ w0)
++    f1 : String <- Field_name(1)
++    w1 : String <- Field_report(1)
++    IO.print("FIELD " ++ f1 ++ " " ++ w1)
++    f2 : String <- Field_name(2)
++    w2 : String <- Field_report(2)
++    IO.print("FIELD " ++ f2 ++ " " ++ w2)
++    rec : String <- Record_report()
++    IO.print("RECORD CXCursor " ++ rec)
++    # ---- port-only rows, AFTER the shared ten and on rows the oracle does not
++    # ---- claim.  The oracle's `opaque=_mem_` is a ctypes artefact with no C
++    # ---- counterpart: `tinygrad/runtime/support/c.py`'s `Struct` exposes ONE
++    # ---- byte-array member and keeps the real ones in `_real_fields_`.
++    pair : Nat <- Pair_size()
++    IO.print("PORT Pair_size " ++ Nat.show(pair))
++    nope : Nat <- Field_offset_unknown()
++    IO.print("PORT offof_unknown_refused " ++ Nat.show(nope))
++    words : String <- Record_words()
++    IO.print("PORT RECORD_words CXCursor " ++ words)

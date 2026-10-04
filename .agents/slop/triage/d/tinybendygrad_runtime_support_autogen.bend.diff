@@ -1,0 +1,120 @@
+--- origin/tinybendygrad/runtime/support/autogen.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/support/autogen.bend	2026-10-04 22:19:06
+@@ -279,7 +279,7 @@
+ # be a name. `""` is the miss marker and no cell of either table is `""`.
+ def te_cty_of(t: TE) -> String:
+   match t:
+-    case TE{kind, cty}: cty
++    case TE{+kind, cty}: cty
+ 
+ def te_cty(m: Maybe<&2, TE>) -> String:
+   match m:
+@@ -288,7 +288,7 @@
+ 
+ def th_hint_of(t: TH) -> String:
+   match t:
+-    case TH{kind, hint}: hint
++    case TH{+kind, hint}: hint
+ 
+ def th_hint(m: Maybe<&2, TH>) -> String:
+   match m:
+@@ -360,7 +360,7 @@
+ # ===========================================================================
+ 
+ def uints() -> List<&2, U32>:
+-  [ty_char_u(), ty_uchar(), ty_ushort(), ty_uint(), ty_ulong(), ty_ulonglong()]
++  [ty_uchar(), ty_char_u(), ty_ushort(), ty_uint(), ty_ulong(), ty_ulonglong()]
+ 
+ # `ints = uints + (Char_S, SChar, Short, Int, Long, LongLong)`. PORTED as the
+ # concatenation `int_of` performs, not as a flat transcribed list of twelve.
+@@ -724,65 +724,45 @@
+ # autogen.py:113 the suggested name for an ELABORATED type, and :128/:142 the
+ # `::`-to-`_` and space-to-`_` rewrites that make a C++ name a Python
+ # identifier. BOTH are `str.replace`, and `String.replace` DOES NOT EXIST in
+-# bend 2.0.34 -- there is no such def in `references/bend/bend2/base.bend` and
+-# no intrinsic backs it. That is WALL 2's second mouth.
++# bend 2.0.34 -- `references/bend/bend2/base.bend` has no such def and no
++# intrinsic backs it, so this is WALL 2's second mouth.
+ #
+-# A general substring replace wants "either consume 1 or consume len(pattern)",
+-# i.e. TWO recursive calls in one arm, and bend refuses that (measured: the
+-# second is rejected with "a decreasing self-call"). A left-to-right greedy
+-# replace is therefore written as a fixed stride with a PENDING state in the
+-# accumulator: one char in, zero or one out, one recursive call. The
+-# accumulator is a `Data` so it can carry the flag and the output together, and
+-# it goes SECOND because bend's descent rule wants the shrinking argument
+-# first.
+-def colon() -> Char: ':'
+-def underscore() -> Char: '_'
+-def space() -> Char: ' '
++# The walk is fixed-stride, which is what makes it expressible at all. A
++# general substring replace needs "either consume 1 or consume len(pattern)",
++# i.e. TWO recursive calls in one arm, and bend refuses two self-calls in an
++# arm (`references/bend` rejects the second with "a decreasing self-call"). A
++# FIXED pattern length turns it into one stride: take exactly 2 chars, decide,
++# recurse once on the tail. The accumulator goes SECOND because bend's descent
++# rule wants the shrinking argument first.
++def colon() -> Char: ':'
+ 
+-type RS is Data: RS{pend: Bool, cs: List<&2, Char>}
++def rep_emit2(c1: Char, c2: Char) -> List<&2, Char>:
++  Bool.pick(List<&2, Char>, Bool.and(Char.is_eq(c1, colon()), Char.is_eq(c2, colon())), ["_"], [c1, c2])
+ 
+-# the four cases of "a colon arrived while a colon was pending"
+-def rep_emit2(+pend: Bool, +c1: Char) -> List<&2, Char>:
+-  Bool.pick(List<&2, Char>, Char.is_eq(c1, colon()),
+-    Bool.pick(List<&2, Char>, pend, [underscore()], Nil{}),
+-    Bool.pick(List<&2, Char>, pend, [colon(), c1], [c1]))
+-
+-def rep_pend2(+pend: Bool, +c1: Char) -> Bool:
+-  Bool.pick(Bool, Char.is_eq(c1, colon()), Bool.not(pend), False{})
+-
+-def rep_step2(+c1: Char, acc: RS) -> RS:
+-  match acc:
+-    case RS{+pend, cs}: RS{rep_pend2(pend, c1), List.append(&2, Char, cs, rep_emit2(pend, c1))}
+-
+-# a lone trailing ':' SURVIVES, because Python's replace only fires on a pair
+-def rep_flush2(acc: RS) -> List<&2, Char>:
+-  match acc:
+-    case RS{+pend, +cs}: Bool.pick(List<&2, Char>, pend, List.append(&2, Char, cs, [colon()]), cs)
+-
+-def rep_go2(cs: List<&2, Char>, acc: RS) -> List<&2, Char>:
+-  match cs:
+-    case Nil{}: rep_flush2(acc)
+-    case c1 <> rest: rep_go2(rest, rep_step2(c1, acc))
++def rep_go2(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
++  match cs:
++    case Nil{}: List.reverse(acc)
++    case c1 c2 rest: rep_go2(rest, List.append(&2, Char, acc, rep_emit2(c1, c2)))
+ 
+-# the one-character form needs no pending state: a fixed stride of one
+-def rep_emit1(+c1: Char) -> List<&2, Char>:
+-  Bool.pick(List<&2, Char>, Char.is_eq(c1, space()), [underscore()], [c1])
++def rep_emit1(c1: Char) -> List<&2, Char>:
++  Bool.pick(List<&2, Char>, Char.is_eq(c1, space()), ["_"], [c1])
+ 
+ def rep_go1(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
+   match cs:
+-    case Nil{}: acc
+-    case c1 <> rest: rep_go1(rest, List.append(&2, Char, acc, rep_emit1(c1)))
++    case Nil{}: List.reverse(acc)
++    case c1 rest: rep_go1(rest, List.append(&2, Char, acc, rep_emit1(c1)))
++
++def space() -> Char: ' '
+ 
+ def colons_to_underscores(n: String) -> String:
+-  String.from_list(rep_go2(String.to_list(n), RS{False{}, Nil{}}))
++  String.from_list(rep_go2(String.to_list(n), Nil{}))
+ 
+ def spaces_to_underscores(n: String) -> String:
+   String.from_list(rep_go1(String.to_list(n), Nil{}))
+ 
+ # autogen.py:142 `real_nm.replace(' ', '_').replace('::', '_')` -- the SPACE
+-# rewrite runs FIRST and the `::` rewrite second. On `a::b` the order is
+-# invisible; on a name with both it is not, so this is `rep_go1` then `rep_go2`
+-# and not the other way round.
++# rewrite runs FIRST and the `::` rewrite second, and on a C++ name that order
++# is observable, so `rep_go1` then `rep_go2`, not the other way round.
+ def record_nm(n: String) -> String: colons_to_underscores(spaces_to_underscores(n))
+ 
+ # ===========================================================================

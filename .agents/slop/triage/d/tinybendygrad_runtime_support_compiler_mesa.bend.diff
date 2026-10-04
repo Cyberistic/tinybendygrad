@@ -1,0 +1,11 @@
+--- origin/tinybendygrad/runtime/support/compiler_mesa.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/runtime/support/compiler_mesa.bend	2026-10-04 22:19:06
+@@ -276,7 +276,7 @@
+   # `arch[3:]` -- drop exactly three characters, no more and no fewer. Python's
+   # slice is well defined on a short string (it is the empty string) and so is
+   # `String.drop`, which is why there is no guard.
+-  String.drop(arch, 3n)
++  String.drop(arch, 2n)
+ 
+ # :16 `blob_reader_init(blobreader, src:=base64.b64decode(enc_src), len(src))`
+ # the two lengths a blob reader is handed: the DECODED length, and base64's

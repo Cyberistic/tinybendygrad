@@ -7,8 +7,11 @@
 # it leaves the signed-64 range. Two numbers decide the port:
 #   OVER_I64 = nodes where |bound| > 2**63-1  (unrepresentable in the pair)
 #   MAX_BITS = the largest bit_length seen
-import sys, collections
+import os, sys, collections
 sys.path.insert(0, '.')
+# DEV MUST BE SET BEFORE `tinygrad` IS IMPORTED: Device.DEFAULT is resolved at import time, so a
+# later assignment is a comment, not a setting. MEASURED: asking NULL here -> METAL, silently.
+os.environ['DEV'] = 'NULL'
 from tinygrad import Tensor, dtypes            # noqa: E402
 from tinygrad.uop.ops import UOp, Ops          # noqa: E402
 
@@ -55,8 +58,6 @@ def go(tag, root):
 
 # --- a spread of real graphs -------------------------------------------------
 from tinygrad import Device  # noqa: E402
-import os
-os.environ['DEV'] = 'NULL'
 print("device:", Device.DEFAULT)
 
 go("cast", Tensor([1, 2, 3]).cast(dtypes.f32))

@@ -1,0 +1,11 @@
+--- origin/tinybendygrad/codegen/gpudims.bend	2026-10-04 22:19:06
++++ working/tinybendygrad/codegen/gpudims.bend	2026-10-04 22:19:06
+@@ -192,7 +192,7 @@
+ # negative case matters: WARP, LOOP, WEAK, DEVICE and the two dead members all
+ # MISS, and a one-armed test would claim them. `rs_claim_*` below are those.
+ def rs_claimed(+at: O.AxisType) -> Bool:
+-  Bool.or(O.eq_axis(at, O.AXIS_GLOBAL{}), O.eq_axis(at, O.AXIS_LOCAL{}))
++  Bool.or(O.eq_axis(at, O.AXIS_GLOBAL{}), Bool.and(False{}, False{}))
+ 
+ def rs_name(+at: O.AxisType, id: U32) -> String:
+   String.concat([Bool.pick(String, O.eq_axis(at, O.AXIS_GLOBAL{}), "g", "l"),
