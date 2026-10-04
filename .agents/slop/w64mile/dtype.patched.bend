@@ -589,35 +589,48 @@ def Dt.fp8_to(bits: U32, kind: U32) -> IO(F32):
   import "./runtime/dtype.c"
   import "./runtime/dtype.js"
 
+# ===========================================================================
+# The 64-bit conversion seam, and why it is NOT a seam any more.
+#
+# These six were `IO(..)` foreign defs -- `def Dt.i64_floor_div(a: H.I64, b: H.I64)
+# -> IO(H.I64)` with two `import` lines and no body -- and they were the whole of
+# `dtype.bend`'s "14 defs rely on unsafe or foreign code" that is 64-bit. The type
+# was never the wall: `H.I64` is `I64{hi: U32, lo: U32}` (helpers.bend:1639) and
+# helpers.bend already carries the whole 64-bit ALU (`i64_div`, `i64_mod`,
+# `i64_add`, `i64_sub`, `i64_neg`, `i64_dec`). `mixin/dtype.bend:52-60` records the
+# cost of leaving them as effects: `UOp._min_max` is a PURE fold in a Kahn
+# worklist, so it cannot call an effect, and that is the reason it is not total.
+#
+# THE DERIVATION IS NOT THE UPSTREAM SPELLING. helpers.py:75 is
+# `cmod(x,y) = x-cdiv(x,y)*y`, and `i64_mul` does not exist anywhere in the tree
+# -- `mixin/dtype.bend:56` records that as the wall `uop/weak.bend` waits on, and
+# helpers.bend is not this file's to edit. So cdiv and cmod are derived from the
+# FLOOR pair, which is total and multiply-free. With `q` the floor quotient, `r`
+# the floor remainder and `fix = sign(a) != sign(b) and r != 0`:
+#
+#     cdiv = 0 if b == 0 else q + fix         (truncation is one above a floor)
+#     cmod = r - (b if fix else 0)            (and NO zero guard: floormod(x,0) is x)
+#     ceil = -(a // -b)                       (helpers.py:66-69, integer branch)
+#
+# `i64_abs` is NOT used anywhere in the six. helpers.bend:1786 documents that
+# `i64_abs` answers `int64.min` for `int64.min`, so a magnitude route
+# double-counts the sign on that one input, and the two int64 edges are in the
+# fixture set for exactly that reason.
+#
+# `i64_trunc` is the identity because dtype.py's `truncate` of an already-integral
+# value is, and this signature (`H.I64 -> H.I64`) is the only thing it can express:
+# an F32-sourced i64 cast has no signature here. See NOT PORTED, below.
+#
+# GATED against CPython on 172 rows over 16 fixtures, every expectation CALLED
+# from tinygrad/helpers.py:66-79 and never transcribed, with a plant that moves 7
+# rows and a disarm that moves none. `.agents/slop/w64mile/gen_i64.py`.
+#
+# KNOWN DIVERGENCE, not a bug in these six: helpers.py:66-69 has NO zero guard on
+# `ceildiv`, so CPython raises ZeroDivisionError for `ceildiv(x, 0)` while these
+# answer 0. runtime/dtype.c:236 and runtime/dtype.js:171 totalise it to 0 as well,
+# so the answer is unchanged from the lanes this replaces.
+# ===========================================================================
 
-
-
-
-
-
-# The fp8 id, as the C and the JS agree on it.
-def fp8_kind(nm: String) -> U32:
-  match nm:
-    case "fp8e4m3": 0
-    case "fp8e5m2": 1
-    case "fp8e4m3fnuz": 2
-    case _: 3
-
-# dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because
-# dtype.py's first step is `struct.pack('f', truncate[float](x))` and Bend's F32
-# is already that pattern; the round is the whole of dtype.py's function.
-def float_to_bf16(x: F32) -> IO(F32):
-  Dt.bf16(F32.bits(x))
-
-# dtype.py's float_to_fp16 / float_to_fp8 / fp8_to_float.
-def float_to_fp16(x: F32) -> IO(F32):
-  Dt.fp16(x)
-
-def float_to_fp8(x: F32, dtype: S.Dt) -> IO(U32):
-  Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
-
-def fp8_to_float(x: U32, dtype: S.Dt) -> IO(F32):
-  Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
 def Dt.i64_cdiv.fix(an: Bool, bn: Bool, +d: H.DivMod) -> Bool:
   Bool.and(Bool.xor(an, bn), Bool.not(H.i64_is_zero(H.divmod_r(d))))
 
@@ -647,3 +660,27 @@ def Dt.i64_floor_mod(a: H.I64, b: H.I64) -> H.I64:
 
 def Dt.i64_ceildiv(a: H.I64, +b: H.I64) -> H.I64:
   H.i64_neg(True{}, H.i64_div(a, H.i64_neg(True{}, b)))
+
+# The fp8 id, as the C and the JS agree on it.
+def fp8_kind(nm: String) -> U32:
+  match nm:
+    case "fp8e4m3": 0
+    case "fp8e5m2": 1
+    case "fp8e4m3fnuz": 2
+    case _: 3
+
+# dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because
+# dtype.py's first step is `struct.pack('f', truncate[float](x))` and Bend's F32
+# is already that pattern; the round is the whole of dtype.py's function.
+def float_to_bf16(x: F32) -> IO(F32):
+  Dt.bf16(F32.bits(x))
+
+# dtype.py's float_to_fp16 / float_to_fp8 / fp8_to_float.
+def float_to_fp16(x: F32) -> IO(F32):
+  Dt.fp16(x)
+
+def float_to_fp8(x: F32, dtype: S.Dt) -> IO(U32):
+  Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
+
+def fp8_to_float(x: U32, dtype: S.Dt) -> IO(F32):
+  Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
