@@ -25,6 +25,7 @@ against the clean union. Every file is restored from a byte copy afterwards and 
 restore is verified, so a mutation cannot leak into the tree.
 """
 import os, shutil, subprocess, sys, tempfile
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, 'bin/bend')
@@ -91,7 +92,8 @@ if __name__ == '__main__':
     for label, path, reps in MUTATIONS:
         p = os.path.join(ROOT, path); t = open(p).read()
         for old, new in reps:
-            assert old in t, 'anchor not found in %s: %r' % (path, old[:60])
+            if old not in t:
+                PNA.fail("anchor not found in %s: %r" % (path, old[:60]))
             t = t.replace(old, new)
         open(p, 'w').write(t)
         mut = union()

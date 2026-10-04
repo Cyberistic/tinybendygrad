@@ -11,6 +11,7 @@ mutation. MEASURED, and it is why this writes into the tree and puts the
 original back.
 """
 import subprocess, os, shutil
+import patch_not_apply as PNA
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, 'bin', 'bend')
 F = os.path.join(ROOT, 'tinybendygrad', 'nn', '__init__.bend')
@@ -105,7 +106,7 @@ print('| --- | --- | --- |')
 for name, old, new in MUT:
   n = base_src.count(old)
   if n != 1:
-    print('| %s | SKIPPED (pattern occurs %d times) | |' % (name, n))
+    print(PNA.pipe([name, PNA.not_applied("pattern occurs %d times" % n), ""], 3))
     continue
   got, allout = rows(base_src.replace(old, new))
   if not got:

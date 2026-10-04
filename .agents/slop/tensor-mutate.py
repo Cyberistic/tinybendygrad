@@ -11,6 +11,7 @@ A mutation that moves NOTHING is reported as such. That is not a broken mutation
 a measurement of what the gate does NOT see, and it is the most useful row in the table.
 """
 import subprocess, sys, os, re, difflib
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 F = os.path.join(ROOT, 'tinybendygrad', 'tensor.bend')

@@ -226,10 +226,19 @@ silently invalidate every one of them.
 | RF5 | 8192 | **A CALL THAT FORGETS ONE ARGUMENT TO A `def X.n` READS AS A PARTIAL APPLICATION, AND RENAMING EVERYTHING DOES NOT CHANGE THE MESSAGE** |
 | RF6 | 8200 | **A RULE BODY WITH NO PATTERN TEST OF ITS OWN IS A HOLE, AND THE MUTATION THAT FINDS IT MAKES A REJECT SET VACUOUS** |
 | RF7 | 8210 | **A STUB ARM THAT IS A CONSTANT IS A CLAIM ABOUT THE WHOLE DATATYPE, AND `Bool.not` OF IT INVERTS THE TEST** |
+| Z1 | 18898 | **A REFUSAL PRINTED WHERE A MEASUREMENT BELONGS IS NOT A REFUSAL -- and the first TOKEN of the cell is what a column reader parses, not the whole cell** |
+| Z2 | 18911 | **A REPORT CANNOT SAY WHICH BRANCH PRODUCED ITS OWN FIGURE -- the 29 stale-anchor guards are identical on the `if` line and the marker is in the body** |
+| Z3 | 18919 | **DISCOVERY KEYED ON THE SHAPE OF THE `if` MISSES EVERY AUTHOR WHO PHRASED IT DIFFERENTLY, AND A WHITELIST OF VARIABLE NAMES IS ALWAYS STALE** |
+| Z4 | 18934 | **AN AUDITOR THAT CHECKS A THING AGAINST ITSELF IS NOT A CHECK -- the expected width must come from the enclosing scope, not from the row under test** |
+| Z5 | 18944 | **A UNIFORM MARKER MUST NOT BE BOUGHT WITH A LOUD FAILURE, and RULE D binds only where a COUNT is published** |
+| Z6 | 18954 | **A DIGEST PROTECTS THE MUTANT, NOT THE REFERENCE -- a mutation table must digest its ROW SET too** |
+| Z7 | 18963 | **A COUNT COLUMN MAY NOT BE NARROWER THAN ITS OWN REFUSAL -- derive the width from `len(MARKER)`** |
 
 **11 numbers repeat: 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 32.**  The seven rules measured
 while fixing `schedule/rangeify.bend`'s `ct` table are numbered `RF1`-`RF7` and start
-at LINE 8146 of this file, because the integers in the series above are taken.
+at LINE 8146 of this file, because the integers in the series above are taken.  The
+`Z1`-`Z7` series (added 2026-10-04) is about how a result is REPORTED rather than about
+Bend, and starts at LINE 18898.
 
     ./bin/bend FILE.bend              # check, then run main (interpreted)
     ./bin/bend FILE.bend -o FILE      # compile to a native binary, run it
@@ -18818,3 +18827,350 @@ failed — not the size of the diff and not carelessness about ordering.
 sequence** — s1, verify, then s2, verify. One owner at a time, each
 landing before the next starts. That is slower and it is the only thing
 that is correct.
+
+## CONE-AND-SESSION UNIT, 2026-10-04. `codegen/decomp/dtype.bend`: six rules. Numbering
+## continues the `### R-N` / `## R-N` series above (last was `## R-7` at POSITION 18784);
+## the INDEX at the top of this file says rule NUMBERS have collided, so cite POSITIONS.
+## Every measurement below is a diff of two `name=value` rows, on the same parser
+## (`.agents/slop/dd-cmp.py`) and the same oracle run (`.agents/slop/dd-oracle.py`).
+
+### R-1 (position ~18822). A DEAD BINDING IS A WRONG OPERAND, AND `sig` CANNOT SEE IT.
+`dtype.py:65` is `r = (r[0] | l2i(Ops.SHR, ...)[0] & 1), r[1]`. `l2i_cdiv.step` bound
+`srl = W2.lo(sr)` from the `l2i(SHR, ...)` call and then ANDed `shl` -- the `l2i(SHL, ...)`
+result -- instead. `srl` was bound and never read, which is what a wrong operand looks
+like from the outside. The same line also passed `O.Found.i(c1)` as `dd_band`'s THIRD
+argument, which `op.bend`'s `dc_band` treats as a CONSTANT VALUE (`dc_cint(ar, k)`), so
+the AND's mask was the arena INDEX of `C(1)`. Measured: the port's arena held a brand-new
+`CONST C(27)` at the slot where `C(1)` lives, and `C(27)` is absent from the cone's
+constant list at the position `C(63)` should hold.
+
+### R-2 (position ~18840). `dd_*`/`dc_*` HELPERS TAKE A VALUE WHERE `U32` IS ALSO A NODE INDEX.
+`U32` is the port's node index AND a machine word, so `dd_band(ar, x, k: U32)` cannot tell
+them apart at the type level and a caller that passes `O.Found.i(...)` compiles and is
+wrong. `dc_band`'s body is `dc_cint(ar, k)` then `dc_alu2(..., x, dc_int.i)`. The tell is
+a CONST whose value equals a plausible slot number. `dtype.bend` has five MORE call sites
+that pass `O.Found.i(...)` as `k` (lines ~1489, 1499, 1577, 1585, 1625 at this revision);
+their rows agree, so each is either right by coincidence or a latent defect of this kind.
+NOT AUDITED -- reported, not fixed.
+
+### R-3 (position ~18858). A `for`-LIKE WALK'S FUEL MUST BE A FUNCTION OF THE ARENA, NOT OF THE WINDOW.
+`dd_fuel(+from, +to) = 32 * (to - from)` is the CREATION WINDOW, and a fixture that
+interns NOTHING has `to == from`, so it got fuel 64. `lgt` interns nothing (`lgtn = 0` in
+both lanes -- the whole CDIV cone was interned by the `lgs` fixture before it), so
+`lgtsig` printed 57 nodes where CPython's `cone()` prints 2184; `lgrn = 2` gave fuel 128 and
+`lgrsig` printed 112 against 2218. The SAME `l2i` call prints a 2186-node cone when it is
+given fuel from `Arena.next(ar)`. A truncated cone is still a well-formed list of `op/nsrc`
+words, so `--check-only` cannot see it and `dd-cmp.py` calls it a disagreement rather than
+a lie. `32 * next(ar) + 64 > 3 * next(ar)` for every `next(ar) >= 0` (WHERE has the
+largest arity, 3), and `next(ar) >= to - from` always, so the arena-based fuel never
+STARVES a row that used to have enough.
+
+### R-4 (position ~18876). `<nm>n=` IS A PROPERTY OF THE SESSION, AND THE ORACLE'S OWN PREAMBLE MINTS NODES.
+`UOpMetaClass.ucache` (`ops.py:201`) interns on `(op, src, arg, tag, type(arg))`, so the
+slot count is a property of everything the process ever built. dd-oracle.py's `main()`
+prints `u32n=len(L2I()) + ... + len(IDX()) + len(defines())` and BOTH `IDX()` and
+`defines()` build UOps WHEN CALLED -- `IDX()` interns `UOp.const(0, dtypes.u32)`,
+`UOp.const(1, dtypes.u32)` and a `t` PARAM -- so its session starts with five nodes
+dd-oracle's module-level `WORD`/`WPOOL` do not contain, and the port's `fixtures()`
+reproduces only the module level. dd-oracle.py's own header states the consequence. The
+control that settles it changes NOTHING in the port:
+`.agents/slop/dd-slotprobe.bend`'s `pre` switch adds those three nodes to the PORT's
+session and `lg1n` 11 -> 10, `lg6n` 5 -> 4, `lg9n` 18 -> 17, all three exactly CPython's.
+A `<nm>n=` row is therefore a comparison of two SESSIONS, not of two ports, and "close is
+not equal" is the expected reading of `lgtn = 0` (exact) beside `lgan = 9` (exact).
+
+### R-5 (position ~18894). A FIX THAT OMITS A PROMOTION CAST MAKES THE ARENA INTERN MORE, NOT LESS.
+`lgqn`'s residue after R-4 is 2494 against CPython's 2496: the port is MISSING two nodes.
+They are `MUL(Pu320, C(-1))` and `MUL(Pu321, C(-1))`, which CPython mints inside `lgq`
+because its `lg1` minted `MUL(<promo cast over Pu320>, C(-1))` -- a different node -- while
+the port, which does not build `_broadcasted`'s promotion CASTs (its declared divergence
+B), minted `MUL(Pu320, C(-1))` in `lg1` and `lgq` REUSED it. Deleting a node from the graph
+can therefore INCREASE interning collisions elsewhere in the window, and a slot-count
+disagreement can be a second-order effect of a divergence that is declared on purpose.
+Building the CASTs would add 69 nodes per window and break every `*sig` row.
+
+### R-6 (position ~18912). A SIZE SWEEP IS THE ONLY WAY TO KNOW A FIX IS NOT ADDRESS-DEPENDENT.
+`.agents/slop/dd-sweep.sh` prepends `k` PARAMs to `dtype.bend`'s arena and re-runs rows
+0..27 of `l2i.pick` on one threaded arena, printing the four cone sizes and constant lists
+that have already failed once. Measured at `k = 0, 1, 2, 5, 17, 64` (arena 25..89 nodes):
+`lgq` 2431, `lgr` 2218, `lgs` 2396, `lgt` 2184 -- CPython's four cone sizes EXACTLY, and
+byte-identical across all six configurations. R-1 is the reason this sweep is mandatory
+rather than decorative: the defect it replaced put an arena INDEX on the wire, so it would
+read `C(27 + k)` at `k != 0`.
+
+## ZERO-VERBOSITY UNIT, 2026-10-04. One marker for a patch that did not apply.
+## Numbering continues the `## R-N` / `## A-N` series above (last was `## R-7` at
+## POSITION 18784 and `## A-4` at POSITION 18728); the INDEX at the top of this file
+## says rule NUMBERS have collided, so cite POSITIONS.  These are `## Z-N` because
+## they are about how a result is REPORTED, not about Bend.
+
+### Z-1 (position 18898). A REFUSAL PRINTED WHERE A MEASUREMENT BELONGS IS NOT A REFUSAL.
+`ops-python-mutate.py:106` printed `0` when its anchor was absent, and the row sat in
+the committed record at `ops-python-mutations.txt:7` as a coverage fact.  A bare `0` in
+a count column is INDISTINGUISHABLE from a measurement to a reader and to a `sum()` over
+that column.  The same row also had FOUR `|`-cells where every other row had three, so a
+parser reading column 3 as the count read `(pattern not found)` there instead -- the cell
+COUNT moved the figure out from under the reader and nothing failed.  A refusal must
+therefore satisfy THREE properties at once, and each is a property of the STRING, not of a
+promise in a comment: (1) NON-NUMERIC, so `int(cell.split()[0])` raises -- note the FIRST
+TOKEN, not the whole cell, because `hcq2-mutate.py` shipped `0 -- EDIT DID NOT APPLY` in
+the count column and a whole-cell `int()` test calls that safe; (2) the SAME cell count as
+the normal row, so the figure stays in its column; (3) ONE spelling, shared.
+
+### Z-2 (position 18911). A REPORT CANNOT SAY WHICH BRANCH PRODUCED ITS OWN FIGURE.
+The 29 stale-anchor guards in `.agents/slop` are textually IDENTICAL on the `if` line --
+`if old not in src:` -- and the marker lives in the BODY, on the next line.  So a grep of
+the `if` finds every site and tells you nothing about any of them, and a count of "how many
+harnesses handle this correctly" cannot be got by reading the test.  Instrument the
+PRODUCER.  Measured consequence: the census could not be read off the sources by pattern
+and had to be taken from the AST branch bodies.
+
+### Z-3 (position 18919). DISCOVERY KEYED ON THE SHAPE OF THE `if` MISSES EVERY AUTHOR
+### WHO PHRASED IT DIFFERENTLY, AND A WHITELIST OF VARIABLE NAMES IS ALWAYS STALE.
+Two measured rounds.  Round one matched only `count(x) == 0` and found 24 of 30 sites,
+reporting the other six as UNGUARDED; they were guarded, as `if src.count(old) != 1` --
+the same question as an INEQUALITY, because a two-occurrence anchor is as unusable as a
+zero-occurrence one.  Round two dropped the guard-test shape entirely and kept a
+hand-maintained list of "names that hold file text" (`src`, `s`, `base`, `original`); that
+list was wrong immediately, because `cs_mutate.py` reads into `orig`, `rf2-mutate.py` into
+`BASE_SRC` and `debug-mutate.py` into `green`, and all three were reported unguarded.
+A whitelist of names is a fixture list.  The working shape is BROAD DISCOVERY plus a real
+scope filter: the COMPARISON identifies the guard (`count(...)` against a count that means
+wrong), and a separate predicate -- does this scope publish a COUNT anywhere -- decides
+which branches can actually be misread.  Broad discovery plus a filter beats narrow
+discovery plus a hopeful list.
+
+### Z-4 (position 18934). AN AUDITOR THAT CHECKS A THING AGAINST ITSELF IS NOT A CHECK.
+The first column-parity assertion read the expected width from the branch under audit,
+which holds exactly one row, so it agreed with itself and a 4-cell row in a 3-column table
+passed.  The width has to come from the ENCLOSING SCOPE's other rows -- the header, the
+`| --- |` rule, the sibling data rows -- with the branch itself EXCLUDED, or the row being
+checked defines the width it is checked against.  The same auditor then reported every
+3-column table in the directory as 4 wide, because it counted cells by SCANNING for `|`
+plus a cell and so double-counted each row's own leading delimiter; counting by SPLIT and
+dropping the ends is the fix.  Both bugs failed in the direction of looking like work.
+
+### Z-5 (position 18944). A UNIFORM MARKER MUST NOT BE BOUGHT WITH A LOUD FAILURE.
+`codegen3-mut.py` and `ptx-s3-mutate.py` ABORT on a stale anchor rather than writing a
+table.  That is better than a marker, not a different spelling of one, so the shared
+reporter has a `fail()` that keeps them refusing while sharing the vocabulary -- and it is
+an explicit `raise`, not an `assert` statement, because `python -O` strips `assert` and a
+stale anchor is exactly what must not be optimisable away.  RULE D also binds only where a
+COUNT is published: a tool that prints no count anywhere cannot have its refusal misread as
+a measurement, so demanding a marker there is a uniformity fetish.  Measured: 47
+stale-anchor branches publish no count and are listed as out-of-scope rather than dropped.
+
+### Z-6 (position 18954). A DIGEST PROTECTS THE MUTANT, NOT THE REFERENCE.
+Every frozen-digest assertion in this project covers the file being MUTATED.  That proves
+the edit landed in the file you meant and says nothing about whether the rows you are
+diffing against describe that file -- and the gap is measured, not hypothetical: swapping
+`hi42`'s two shape args (the exact M09 defect) leaves `shape()`'s three fields unchanged,
+so a file digest cannot see it.  A mutation table must therefore name the digest of its
+ROW SET as well as of its file.  Measured over the 22 committed tables: 9 have a file
+digest available, 5 have a row-set digest, and 20 name no revision at all.
+
+### Z-7 (position 18963). A COUNT COLUMN MAY NOT BE NARROWER THAN ITS OWN REFUSAL.
+`wgsl-mutate.py` and `amdev_mutate.py` printed their refusals into a fixed-width column
+sized for a count (`%-7s`, `%11s`).  The marker is 16 characters, so substituting it either
+truncates the marker or widens the column and shifts every following field on that one row
+-- and in a space-aligned table the width IS the column definition, so the shift is
+invisible.  The column width must be DERIVED from `len(MARKER)`, not chosen.  Same shape as
+Z-1's cell-count rule: a fixed-width table that cannot fit its own refusal loses its
+positional meaning on exactly the rows that matter most.
+
+## BLOB-INTERN UNIT, 2026-10-04. `uop/ops.bend`: the `ABlob` intern key and the
+## measurement of its blast radius. Numbering continues the `## R-N` / `## A-N` / `## Z-N`
+## series above (last was `## Z-7` at POSITION 18963); the INDEX at the top of this file
+## says rule NUMBERS have collided, so every rule below cites a POSITION. These are `## B-N`
+## because they are about BLOB IDENTITY and about how a blast radius is proved, not about
+## Bend syntax.
+
+### B-1 (position 18988). BEND IMPORTS ARE UNQUOTED, SO A QUOTED IMPORT GREP FINDS ZERO
+### IMPORTERS AND MEASURES A VACUOUS BLAST RADIUS.
+Bend writes an import as `import ./ops.bend as O` or `import ../uop/ops.bend as O` -- NO
+quotes, NO semicolon.  Measured on this tree:
+    grep -rlE 'import ".*ops\.bend"' tinybendygrad --include='*.bend' | wc -l   ->  0
+    grep -rlE '^import .*(^|/)ops\.bend'  tinybendygrad --include='*.bend' | wc -l -> 59
+The first pattern matches nothing, and a blast radius computed against an EMPTY importer set
+is `0` for every file -- the most dangerous false green available, because it is
+indistinguishable from "nothing changed" and it is what a reader checks first.  This is the
+SAME failure shape as the documented "a 0-row result is indistinguishable from not started":
+both are an EMPTY SET that reads as a clean measurement.  Five spellings are in use
+(`./ops.bend`, `./uop/ops.bend`, `./../uop/ops.bend`, `./../../uop/ops.bend`,
+`../uop/ops.bend`), so a prefix-anchored pattern must also tolerate `../`.  The 72-file set
+that `ops.py` gates through is `59 direct + 12 transitive + ops.bend itself`, which reconciles
+to 72 exactly -- the 12 are `tinybendygrad/{__init__,device}.bend`,
+`codegen/decomp/transcendental_f32.bend`, `engine/worker.bend`, `renderer/amd/elf.bend`,
+`renderer/isa/x86.bend`, `runtime/ops_{amd,metal,nv,webgpu}.bend`,
+`runtime/support/{hcq2,nv/ip}.bend`.
+
+### B-2 (position 19007). A CONCURRENT GATE RUN TRUNCATES A SHARED LANE FILE, SO A
+### 0-ROW LANE FILE HAS A THIRD CAUSE BESIDES THE STACK OVERFLOW.
+`blob-intern-gate.sh` writes its lanes with `> "$F-bd.txt"`, i.e. it TRUNCATES before it
+writes.  A second agent running the same gate at the same moment therefore exposes a
+0-byte `blob-bd.txt` for the whole duration of the write.  Measured: a diff against
+`blob-bd.txt` reported `1,9d0` -- all nine rows "missing" -- and three reads seconds later
+were `9,9,9` and byte-identical to the independent oracle.  The two causes already recorded
+for a 0-row file (bend's ~1-in-20 machine stack overflow, and a file whose `main` prints
+nothing) do NOT include this one, and this one is the only cause that is PROVABLE after the
+fact, because the other two leave the file at 0 rows while this one leaves it at 0 rows for
+about a second and then correct.  A lane reader that reacts to 0 rows by re-running is right
+for the wrong reason here; a reader that reacts by believing 0 rows is wrong.
+
+### B-3 (position 19020). PROVE LOCALITY BY THE ROW NAME ACROSS EVERY CAPTURE, NOT BY THE
+### TOTAL, AND NOT BY THE PER-FILE COUNT.
+The `ABlob` fix adds nine `blob_*` rows to `ops.bend` and the nine-row delta reconciles
+against the corpus total exactly: `+9 (ops.bend) + 20 (fold) + 183 (dtype) + 2 (linearizer)
+= +214`, the measured `12211 -> 12425`.  But of the four non-`ops.bend` files, NONE mentions
+`blob` or `ABlob` anywhere in its diff, and `grep -l 'blob_' after/*.txt` returns EXACTLY ONE
+file -- `tinybendygrad__uop__ops.bend.txt`.  Locality is therefore a statement about row
+NAMES over all 72 captures, and it is the only form of the claim that survives the corpus
+drifting under three other units mid-measurement.  Fold's `+20` is `mmk_*`/`mmkx_*` (the
+`_min_max`/`vmin`/`vmax` unit, commit `7765e90e`), dtype's `+183` is `l2idt*`/`f2fdt*`/`lg5*`,
+linearizer's is `lin_*`/`ix_*`, regalloc's is `ra0_*`, gater's is `gt_*` -- five unrelated
+name spaces, none of them blob-shaped.
+
+### B-4 (position 19033). A PER-FILE ROW COUNT IS NOT A CONTENT DIFF: ONE FILE CHANGED ITS
+### ANSWER WITHOUT CHANGING ITS COUNT.
+`tinybendygrad/codegen/__init__.bend` holds ONE row in the `before` capture and ONE row in
+the `after` capture, so a count comparison reports no delta -- and the row changed:
+`new_sink=4` became `new_sink=8`.  Every count-based blast-radius report in this project is
+blind to exactly this class of change, and this is the fourth independent measurement of it
+(after `renderer/cstyle.bend`'s name-comparing harness, `fold.bend`'s, and
+`nir_llvmir`'s 79-of-205).  The harness discipline that catches it is to diff whole
+`name=value` LINES per file, which is what `_srchash.txt` plus the per-file `.txt` captures
+are for; the counts alone are a summary in the same way the LENGTH key was a summary in B-5.
+
+### B-5 (position 19044). `ucache`'s WEAKREF + `__del__`-BY-VALUE MAKES `len(ucache)` READ
+### THE DEFECT'S OWN ANSWER, AND A SECOND ORACLE MUST OBSERVE A DIFFERENT THING.
+`UOpMetaClass.ucache` holds WEAKREFS and `UOp.__del__` (ops.py:248) runs
+`del ucache[(op, src, arg, tag, type(arg))]` -- delete BY KEY, BY VALUE.  So
+`u = UOp(...a); u = UOp(...b)` evaluates the RIGHT side first, registering b's key, and only
+then releases the old `u`, whose `__del__` deletes the key it JUST registered; `len(ucache)`
+then reads `1` for two DISTINCT blobs -- precisely the number the length-key defect produces.
+Both oracles here keep every node in a `HELD` list and never rebind the holding name.
+`agent-core.md`'s rule ("agreement between a port and a hand-typed oracle is one mistake
+copied") is what forces the SECOND oracle, and the second oracle must differ in its
+OBSERVATION, not its spelling: `blob-verify-independent.py` reads the cache KEYS
+(`sorted(repr(k) for k in ucache)`) where `blob-intern-oracle.py` reads `len(ucache)`.  That
+choice pays for itself immediately, because the printed key is the proof the brief demanded
+and no row can state:
+    (Ops.BINARY, (), b'aaaa', None, <class 'bytes'>)
+    (Ops.BINARY, (), b'bbbb', None, <class 'bytes'>)
+The key HOLDS THE BYTES.  So "do not use a digest" is CHECKABLE rather than argued -- a
+digest is still a summary, and this key is not one; and it is `len(b'aaaa')==len(b'bbbb') ->
+True` alongside `b'aaaa'==b'bbbb' -> False` that names the defect in one line.  All nine rows
+agree across two runs, both Bend lanes, and the gate's own CPython lane.
+
+### B-6 (position 19065). A 0-ROW BEFORE-CAPTURE IS INCONSISTENT WITH ITS OWN COUNTS FILE,
+### SO PART OF A BASELINE RESTS ON A SUMMARY ALONE.
+`.agents/slop/blobrows/before/` holds row captures for all 73 files, and FOUR of them are
+EMPTY: `codegen__late__gater`, `codegen__late__linearizer`, `codegen__late__regalloc`,
+`renderer__csprobe`.  `csprobe` at 0 rows agrees with its `_counts.tsv` entry of `0`, but
+the other three are recorded there as `11`, `69` and `48`.  So for those three files the
+baseline exists ONLY as a number in `_counts.tsv` and there are no rows to diff.  This does
+not change the conclusion in B-3 -- the empty `before` and the populated `after` differ by
+`gt_*`, `lin_*`/`ix_*` and `ra0_*` rows, which are plainly other units' name spaces -- but a
+claim about those files' BEFORE state rests on a summary, and B-4 is the reason a summary is
+not enough.  A sweep that writes `_counts.tsv` and the row captures must write them from the
+SAME `.tmp` file, or record the disagreement instead of silently keeping both.
+
+### O-1 (position 19078). `jj file show -r @` READS THE WORKING COPY, SO A GATE RED "AT REST"
+### CANNOT BE FOUND BY ASKING `@`, AND THE FIX IS IN FLIGHT WHILE YOU LOOK.
+`ops-501-gate.sh` was reported RED at rest -- 101 oracle `s5_*` rows against 82 in the Bend.
+Asking `@` said GREEN, 101/101/101, exit 0, six times out of six.  The two facts are not in
+conflict: in Jujutsu `@` IS the working-copy commit, so `jj file show -r @ <file>` and
+`cat <file>` are the same bytes, and `@-` is the last committed state.  THE AT REST STATE IS
+`@-`.  Measured there: `jj file show -r @- tinybendygrad/uop/ops.bend | grep -c '"s5_'` = 82
+and the same command at `@` = 101.  A unit had ported `copy_to_device` / `getaddr` /
+`device_range_src` into the working copy ~10 minutes earlier, so the question "is this gate
+red at rest" was being answered about a file that was not at rest.
+**THE GENERAL RULE: a gate on a file another unit is editing has no state until you name the
+REVISION, and the revision is `@-`.**  Two harnesses exist for it and both MATERIALISE THE
+REVISION IN PLACE, never `$TMPDIR`: `ops.bend` imports `./../helpers.bend` (line 168) and
+`./../LAWS/spec.bend` (line 169), so a copy outside `tinybendygrad/uop/` cannot resolve them
+and prints a phantom 0 rows.  `ops501-atrest.sh` / `ops501-ctl.sh` stage to
+`tinybendygrad/uop/ops-*.bend`, ASSERT the digest against `jj file show`, and delete in a
+trap.  `ops-501-gate.sh` grew `OPS501_PORT` for the same reason: a gate never seen red is not
+known to work, and this one was red for its whole life.
+
+### O-2 (position 19097). A RED GATE THAT IS A MISSING-ROW FAILURE HAS NEVER EXERCISED A
+### VALUE FAILURE, SO ITS VALUE PATH IS UNTESTED. PLANT ONE.
+`ops-501-gate.sh` was red ONLY because the PORT lacked 19 rows (`s5_copy_*`, `s5_devrange_*`,
+`13 x s5_ga_*` for `ops.py:758 copy_to_device`, `:846 device_range_src`, `:841 getaddr`,
+which were three `TODO(p3)` markers).  82 of 101 names shared and 0 of them disagreed.  That
+never runs the `diff "$F-py.txt" "$F-bd.txt"` arm, so dropping one op out of `getaddr`'s
+nine-op ladder is the control that matters: it must make the gate say DISAGREE **and name the
+row**.  Measured (`ops501-plant.sh`, staged copy, live `ops.bend` byte-identical after):
+    clean   rc=0   101 shared names, 0 disagreements
+    planted rc=1   ROW DISAGREE s5_ga_param: cpython=Ops.GETADDR/Ops.PARAM  bd=Ops.PARAM
+  A missing-row failure and a wrong-value failure are DIFFERENT STATES and both read as
+"the gate is red".  Report which one you are looking at.
+
+### O-3 (position 19110). `bend --check-only` PUTS ITS FAILURE DIAGNOSTICS ON STDERR AND ITS
+### SUCCESS LINE ON STDOUT, SO `bend ... --check-only | head -1` NAMES NO REASON FOR ANY
+### FAILURE IT EVER REPORTED.
+Measured on a file that does not check: stdout is EMPTY and stderr carries `SOME PROOFS
+FAIL`, `Error:`, `- expected :`, `- observed :` and the offending source line.  On a file that
+does check, stdout's first line is `ALL PROOFS CHECK` and stderr's is the `bend 2.0.x is
+available` banner.  So the idiomatic `--check-only | head -1` -- which agent-core.md's trap
+note blesses, correctly, for the EXIT STATUS -- silently produces the empty string for the
+reason, and `ops-501-gate.sh` printed `--check-only says ''` every single time it refused.
+`2>&1 | grep -m1 -v -e '^bend 2\.0\.' -e '^$'` names it (`--check-only says 'SOME PROOFS
+FAIL'`).  Two separate lessons: a diagnostic reader that cannot report a reason should be
+treated as having no failure path, and the fix is to test that path, not to assume it.
+
+### O-4 (position 19123). `CMD | grep '^s5_' > OUT` UNDER `set -e` IS A SILENT FAILURE, AND
+### A 0-ROW LANE IS INDISTINGUISHABLE FROM "NOT STARTED".
+`grep` exits 1 on no match, `set -e` kills the script, and the reader sees a bare `rc=1` with
+nothing on stderr -- identical to a real disagreement and to a crash, and bend stack-overflows
+about one run in twenty.  Counting is done in the lane, BY LANE NAME, and the count is the
+verdict: `ops-501-gate: lane bd printed 82 s5_ rows`.  Note the pairing with O-2: a gate that
+refuses loudly on zero rows AND names the row on a wrong value is the only shape that
+distinguishes all three states.
+
+### O-5 (position 19132). A MUTATION HARNESS THAT WRITES THE PORT IN PLACE DESTROYS A
+### CONCURRENT UNIT'S EDIT, AND ITS `finally` RESTORE MAKES THE DESTRUCTION PERMANENT.
+`.agents/slop/ops-501-mutate.py` did `OPS.write_text(text.replace(old, new, 1))` on
+`tinybendygrad/uop/ops.bend` and `OPS.write_text(text)` in the `finally`.  `ops.bend` was
+being edited by another unit at the time, so a read-then-write whose window straddles their
+save SILENTLY DROPS EVERYTHING THEY WROTE, and a kill inside the window leaves the mutant on
+disk.  It is now the same shape as O-1: `jj file show -r @` staged into the port's OWN
+directory under a private name, digest asserted, `finally` unlinks it, and the live file's
+digest is compared at the end and REPORTED if it moved.  Its own header already warned that
+`ops.bend` is "SHARED with another agent working on a different line range" and then wrote to
+it anyway.
+
+### O-6 (position 19144). AN ANCHOR MUST BE UNIQUE OR THE MUTATION EDITS A DIFFERENT LADDER:
+### `case OpsPARAM{}: True{}` OCCURS FOUR TIMES IN `ops.bend`, AND A 3-LINE WINDOW SIX.
+Measured, on the nine-op `UOp.getaddr.op` ladder that the 13 `s5_ga_*` rows read:
+    `    case OpsPARAM{}: True{}`                                    4 occurrences
+    `case MSELECT/PARAM/LINEAR` (3 lines)                            7
+    `case PARAM/LINEAR/case _:` (3 lines)                           62
+    the WHOLE ladder INCLUDING its `def UOp.getaddr.op(op: Op) -> Bool:` header   1
+So a mutation keyed on ladder text alone is ambiguous, and `str.replace` picks the first --
+which is `buf_uop.cont`'s, not `getaddr`'s.  **PUT THE `def` HEADER IN THE ANCHOR.**  The
+original table's own failure mode was already in the file: a `text.count(old) != 1` check that
+printed `PATTERN NOT UNIQUE` and carried on, so an ambiguous anchor read as a mutant that
+moved nothing.
+
+### O-7 (position 19157). A ROW COUNT IS NOT A COVERAGE STATEMENT, AND THE SIDE THAT OWNS THE
+### MISSING ROWS IS THE SIDE THAT OWNS THE BEHAVIOUR.
+`ops-501-gate.sh` reported `101 vs 82`.  That number alone leaves three live hypotheses -- port
+missing behaviour, oracle declaring rows upstream lacks, or the two using different names --
+and the third is the one nobody is looking for.  What settles it is three numbers, not one:
+oracle denominator, port denominator, SHARED names, plus each side's one-sided set BY NAME.
+Measured: `101 | 82 | 82 shared | 19 oracle-only | 0 port-only | 0 disagreements on shared`.
+The third hypothesis is then ELIMINATED rather than assumed away, and the 19 are all three
+upstream defs the port carried as `TODO(p3)` markers.  Reported in the roster's vocabulary as
+19 rows MISSING FROM THE PORT, not "the oracle has extra rows".
+
+### O-8 (position 19168). A PRIOR UNIT'S ROW LIST CAN BE OFF BY ONE BECAUSE ONE ROW IS SPELLED
+### DIFFERENTLY, AND THE TALLY IS WHAT HIDES IT.
+`TODO.md`'s account of these 19 named `s5_copy_multi/single/sel` (3), `s5_devrange_one/
+single/two` (3) "and 12 `s5_ga_*`" -- 3 + 3 + 12 = 18, against a stated 19.  The missing one
+is `s5_ga_add`, and it is missing for a mechanical reason: in `ops.bend`'s `s5.garows` every
+row is bound (`l : Unit <- srow("s5_ga_after", ...)`) EXCEPT the last, which is a bare
+`srow("s5_ga_add", s5.ga(ar, fuel, 13))`.  A tally taken by scanning for the bound form finds
+twelve.  **WHEN A COUNT AND A LIST DISAGREE, THE LIST IS WRONG -- re-derive it from the lane
+text, do not adjust the count.**

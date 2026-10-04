@@ -16,6 +16,7 @@ M1-M20 are the previous table, re-measured here because the substrate moved (the
 `ct` table's op sets, the fixture, and two rule bodies).  M21-M35 are this unit's.
 """
 import os, re, shutil, subprocess, sys, tempfile
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, "bin", "bend")
@@ -178,7 +179,8 @@ print(f"baseline: {len(base)} rows, {check(ORIG)}")
 rows = []
 for mid, old, new, what in MUT:
   if BASE_SRC.count(old) != 1:
-    rows.append((mid, what, f"SKIP (pattern occurs {BASE_SRC.count(old)}x)", [])); continue
+    rows.append((mid, what, PNA.not_applied("pattern occurs %dx"
+                                             % BASE_SRC.count(old)), [])); continue
   open(WORK, "w").write(BASE_SRC.replace(old, new))
   st = check(WORK)
   if st != "ALL PROOFS CHECK":

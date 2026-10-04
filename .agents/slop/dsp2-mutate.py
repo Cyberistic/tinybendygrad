@@ -16,6 +16,7 @@ imports. A mutation whose scratch lane prints fewer rows than the baseline is re
 as BLIND -- that is bend's stack overflow, or a parse error, and neither is a result.
 """
 import os
+import patch_not_apply as PNA
 import shutil
 import subprocess
 import sys
@@ -144,8 +145,10 @@ def main():
     path = prep()
     src = path.read_text()
     if src.count(old) != 1:
-      results.append((mid, f"SKIP n={src.count(old)}", [], what))
-      print(f"{mid:6} {'SKIP':10} anchor found {src.count(old)}x -- fix the mutation")
+      results.append((mid, PNA.not_applied("anchor found %dx" % src.count(old)),
+                      [], what))
+      print("%-6s %-10s anchor found %dx -- fix the mutation"
+            % (mid, PNA.not_applied(), src.count(old)))
       continue
     path.write_text(src.replace(old, new))
     text = run(path)

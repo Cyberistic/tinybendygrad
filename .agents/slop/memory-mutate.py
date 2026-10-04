@@ -12,7 +12,8 @@ that encodes the bug.
 
     .agents/slop/memory-mutate.py [name ...]
 """
-import subprocess, sys, os, re, shutil, difflib
+import subprocess, sys, os, re
+import patch_not_apply as PNA
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 BEND = os.path.join(ROOT, 'tinybendygrad/runtime/support/memory.bend')
@@ -90,9 +91,10 @@ MUTS = [
   'def cfmt_sz.go(+cs: List<&2, Csz>, +want: U32, +at: U32, acc: Nat) -> Nat:\n'
   '  match cs:\n    case Nil{}: acc\n    case c <> t: cfmt_sz.go(t, want, U32.add(at, 1), Bool.pick(Nat, U32.is_eq(Csz.sz(c), want), Nat.add(1n, U32.to_nat(at)), acc))'),
 
+ # RE-AIMED 2026-10-04.  `frag_lowbit` gained a `+` binder; same edit, same site.
  ("M26", "frag_lowbit: x - 2x instead of x & (~x + 1)",
-  'def frag_lowbit(x: U32) -> U32: U32.and(x, U32.add(U32.not(x), 1))',
-  'def frag_lowbit(x: U32) -> U32: U32.sub(x, U32.add(x, x))'),
+  'def frag_lowbit(+x: U32) -> U32: U32.and(x, U32.add(U32.not(x), 1))',
+  'def frag_lowbit(+x: U32) -> U32: U32.sub(x, U32.add(x, x))'),
  ("M27", "frag_va_div: no `va > 0` sentinel (raw lowbit for va == 0)",
   'def frag_va_div(+va: U32) -> U32: Bool.pick(U32, U32.is_gt(va, 0), frag_lowbit(va), LOWBIT_ZERO())',
   'def frag_va_div(+va: U32) -> U32: frag_lowbit(va)'),
@@ -175,8 +177,9 @@ MUTS = [
  ("M55", "valloc ladder: LAST match instead of FIRST",
   'case s <> t: Bool.pick(U32, U32.is_le(s, rem), s, ladder_pick.go(t, rem, dflt))',
   'case s <> t: Bool.pick(U32, U32.is_le(s, rem), ladder_pick.go(t, rem, s), s)'),
+ # RE-AIMED 2026-10-04.  The ladder call's second argument was renamed `t` -> `ss`.
  ("M56", "valloc ladder: the remainder is not decremented",
-  'valloc_picks.fuel(p, U32.sub(rem, ladder_pick(rem, t)), stop_sizes(rem, ss), append_sz(rem, ss, acc))',
+  'valloc_picks.fuel(p, U32.sub(rem, ladder_pick(rem, ss)), stop_sizes(rem, ss), append_sz(rem, ss, acc))',
   'valloc_picks.fuel(p, rem, stop_sizes(rem, ss), append_sz(rem, ss, acc))'),
 
  ("M57", "vm_psize_sum: reads p[0] instead of p[1] (the :211 vs :279 pair swap)",
@@ -232,6 +235,15 @@ def run(path):
     p = subprocess.run(['./bin/bend', path], cwd=ROOT, capture_output=True, text=True)
     return p.stdout, p.returncode, p.stderr
 
+# STDERR IS NOT A FAILURE SIGNAL.  `bend` writes `bend 2.0.35 is available: run
+# bend update` to stderr on EVERY run, including a clean one, so "stderr is
+# non-empty" made this harness exit 2 before measuring anything -- and exit 2
+# is indistinguishable from "did not compile".  The signal is the RETURN CODE
+# plus the presence of rows; `agent-core.md` says the same about
+# `--check-only`, which exits 1 on a file that is fine.
+def ok(rc, txt):
+    return rc == 0 and rows_of(txt)
+
 def rows_of(txt):
     out = []
     for l in txt.split('\n'):
@@ -242,9 +254,10 @@ def rows_of(txt):
 def main():
     only = set(sys.argv[1:])
     os.makedirs(WORK, exist_ok=True)
-    base_txt, _, base_err = run(BEND)
-    if base_err.strip():
-        print("BASELINE FAILED:\n" + base_err, file=sys.stderr); sys.exit(2)
+    base_txt, base_rc, base_err = run(BEND)
+    if not ok(base_rc, base_txt):
+        print(f"BASELINE DID NOT RUN (rc={base_rc}):\n" + base_err, file=sys.stderr)
+        sys.exit(2)
     base = rows_of(base_txt)
     print(f'baseline rows: {len(base)}')
 
@@ -256,30 +269,40 @@ def main():
         if find == 'KEEP' or n == 0:
             results.append((mid, desc, PNA.not_applied(), [],
                             f'pattern not found ({n})')); continue
-        shutil.copy(BEND, BEND + '.mut')
         open(BEND + '.mut', 'w').write(src.replace(find, repl))
         txt, rc, err = run(BEND + '.mut')
         moved = []
-        if rc == 0 and not err.strip():
-            new = rows_of(txt)
+        if ok(rc, txt):
             bm = {l.split('=', 1)[0]: l for l in base}
-            nm = {l.split('=', 1)[0]: l for l in new}
+            nm = {l.split('=', 1)[0]: l for l in rows_of(txt)}
             moved = sorted(k for k in set(bm) | set(nm)
                            if bm.get(k) != nm.get(k))
         os.remove(BEND + '.mut')
-        results.append((mid, desc, 'OK' if (moved or rc != 0) else 'ZERO', moved, ''))
+        # RULE B: a mutant that is not a PROGRAM is not a zero.  `OK` is reserved
+        # for "it ran and moved rows"; everything else is named for what it is.
+        st = 'MOVED' if moved else ('NOT-A-PROGRAM' if not ok(rc, txt) else 'ZERO')
+        results.append((mid, desc, st, moved, '' if moved else err.strip()[:80]))
 
     print()
-    zeros = []
+    tally = {}
     for mid, desc, st, moved, why in results:
-        if st == 'ZERO': zeros.append((mid, desc))
         nmv = len(moved)
         sample = ', '.join(moved[:6]) + (' ...' if nmv > 6 else '')
-        print(f'{mid} {st:5} rows_moved={nmv:4}  {desc}')
+        print(f'{mid} {st:14} rows_moved={nmv:4}  {desc}')
         if nmv: print(f'      {sample}')
-        if why: print(f'      {why}')
-    print(f'\n{len(results)} mutations, {len(zeros)} moved nothing')
-    for mid, desc in zeros: print(f'  BLIND SPOT {mid}: {desc}')
+        if why and st != 'PATCH-NOT-APPLY': print(f'      {why}')
+        if st == 'ZERO': tally.setdefault('ZERO', []).append((mid, desc))
+        elif st == 'PATCH-NOT-APPLY': tally.setdefault('PATCH-NOT-APPLY', []).append((mid, desc))
+        elif st == 'NOT-A-PROGRAM': tally.setdefault('NOT-A-PROGRAM', []).append((mid, desc))
+    print(f'\n{len(results)} mutations, {len(results) - len(tally.get("PATCH-NOT-APPLY", []))} '
+          f'had an applicable anchor')
+    # A ZERO is a REQUEST FOR A FIXTURE (agent-core.md), never a coverage claim,
+    # and a NOT-A-PROGRAM is not even a zero (RULE B).  The two are counted
+    # separately because a table whose tally folds them together reports a
+    # compile error as a blind spot at the port.
+    for k in ('PATCH-NOT-APPLY', 'NOT-A-PROGRAM', 'ZERO'):
+        for mid, desc in tally.get(k, []):
+            print(f'  {k} {mid}: {desc}')
     return 0
 
 if __name__ == '__main__':

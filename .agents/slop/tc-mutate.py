@@ -27,6 +27,7 @@ A zero is reported with its CLASS:
   unfixable        a predicate identical over every possible answer
 """
 import os, re, subprocess, sys, tempfile, time
+import patch_not_apply as PNA
 from concurrent.futures import ThreadPoolExecutor
 
 SRC = 'tinybendygrad/codegen/transcendental_f32.bend'
@@ -191,7 +192,7 @@ def one(entry):
   mid, pline, what, (old, new), tags = entry
   src = open(SRC).read()
   if old not in src:
-    return (mid, pline, what, None, None, 'EDIT-NOT-APPLIED', '')
+    return (mid, pline, what, None, None, PNA.not_applied(), '')
   t0 = time.time()
   base = baseline(tags)
   got = run(lane(src.replace(old, new, 1), tags), mid)

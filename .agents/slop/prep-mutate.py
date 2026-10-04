@@ -9,6 +9,7 @@ BLIND SPOT and is printed as one with its reason; it is never closed with a row.
 Run:  python3 .agents/slop/prep-mutate.py
 """
 import os, re, shutil, subprocess, sys, tempfile
+import patch_not_apply as PNA
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, "tinybendygrad/schedule/prepare.bend")
 ORACLE = os.path.join(ROOT, ".agents/slop/prepare-oracle.txt")

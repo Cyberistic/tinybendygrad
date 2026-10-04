@@ -21,6 +21,7 @@ them, so the harness here diffs bytes.
     DEV=NULL .venv/bin/python .agents/slop/c-mutate.py
 """
 import pathlib, re, subprocess, sys, tempfile
+import patch_not_apply as PNA
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 BEND = REPO / "tinybendygrad/runtime/support/c.bend"
@@ -236,8 +237,9 @@ def main():
   try:
     for mid, what, old, new, rule in MUTATIONS:
       if old not in src:
-        print("%-5s SKIPPED -- the target text is not in the file (the file moved on)" % mid)
-        zeros.append(mid + " (target text gone)")
+        print("%-5s %s -- the target text is not in the file (the file moved on)"
+              % (mid, PNA.not_applied()))
+        zeros.append(mid + " (" + PNA.not_applied() + ")")
         continue
       mut = src.replace(old, new, 1)
       out, rc = run(mut)

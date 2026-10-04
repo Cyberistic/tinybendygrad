@@ -32,6 +32,7 @@ as markers, so the reversal needs nothing but this script:
     that fixture came and went inside this unit; absent from a tree is not an error.
 """
 import os
+import patch_not_apply as PNA
 import shutil
 import sys
 
@@ -114,9 +115,9 @@ def off(src: str) -> str:
   for label, on, revert in EDITS + OPTIONAL:
     if src.count(on) == 0:
       if any(label == o[0] for o in OPTIONAL):
-        print(f'blob-fix-toggle: {label} is not in this tree; skipped')
+        print(f'blob-fix-toggle: {label} {PNA.not_applied("-- not in this tree")}')
         continue
-      raise AssertionError(f'{label}: the with-fix text occurs {src.count(on)}x')
+      PNA.fail(f'{label}: the with-fix text occurs {src.count(on)}x')
     assert src.count(on) == 1, (label, src.count(on))
     src = src.replace(on, revert)
   for start, end in ((BLOB_BANNER, MSTACK_BANNER), (WIRING, "    # --- THE AXIS CPYTHON LANE.")):

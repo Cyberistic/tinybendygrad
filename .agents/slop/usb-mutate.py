@@ -16,6 +16,8 @@ and `found != len` are the same predicate over every possible answer).
 Usage: usb-mutate.py [id ...]     (no ids runs all)
 """
 import io
+
+import patch_not_apply as PNA
 import os
 import re
 import subprocess
@@ -325,7 +327,7 @@ def main():
         ok = True
         for old, new in edits:
             if old not in src:
-                print(f"{mid}: EDIT NOT FOUND: {old[:70]!r}")
+                print("%s: %s: %r" % (mid, PNA.not_applied(), old[:70]))
                 ok = False
                 break
             src = src.replace(old, new, 1)

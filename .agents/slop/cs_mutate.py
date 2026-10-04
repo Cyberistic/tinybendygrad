@@ -9,6 +9,7 @@ a reason -- it is not a claim that the row class is covered.
   rows moved, named
 """
 import pathlib, re, subprocess, sys
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SLOP = ROOT / ".agents/slop"
@@ -332,7 +333,7 @@ def main():
     p = SUPPORT / f"{f}.bend"
     orig = p.read_text()
     if orig.count(old) != 1:
-      table.append((label, f"ANCHOR x{orig.count(old)}", []))
+      table.append((label, PNA.not_applied("anchor x%d" % orig.count(old)), []))
       zeros += 1
       continue
     try:

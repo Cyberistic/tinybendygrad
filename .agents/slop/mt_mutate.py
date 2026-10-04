@@ -9,6 +9,7 @@ useful column is "rows MOVED": a mutation that moves nothing measures what the
 gate does NOT see, and those are reported rather than hidden.
 """
 import subprocess, sys, pathlib, shutil, re
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 # an optional first argument is the FILE, and it must not be mistaken for a
@@ -165,7 +166,7 @@ def sweep():
     src = BASE.read_text()
     n = src.count(old)
     if n != 1:
-      print(f"| {mid} | {what} | **PATTERN MATCHES {n}x -- NOT RUN** | |")
+      print(PNA.pipe([mid, what, PNA.not_applied("anchor occurs %dx" % n), ""], 4))
       continue
     MUT.write_text(src.replace(old, new))
     got, err = run_gate(MUT)

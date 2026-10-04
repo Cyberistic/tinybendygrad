@@ -66,16 +66,23 @@ M = [
   ("M12", 'Bool.pick(Tr, wait_ready,\n    Tr.mb_wr(1, 2,\n      Tr.wait(MB_WAIT_READY(), MAILBOX_MSG_TIMEDOUT(),\n        mb.poll(0, True{}, Tr.mb_wr(0, 0, t)))),\n    Tr.mb_wr(0, 0, t))',
          'Bool.pick(Tr, wait_ready,\n    Tr.mb_wr(1, 2,\n      Tr.wait(MB_WAIT_READY(), MAILBOX_MSG_TIMEDOUT(),\n        mb.poll(0, True{}, Tr.mb_wr(0, 0, t)))),\n    t)',
          ':276 `vf_mailbox[0] = 0` is UNCONDITIONAL -- only the ready wait and the ack are behind `if wait_ready:`. This mutation drops the FALSE arm\'s store.'),
-  ('M13', 'def rv.hi(caddr) -> U32: U32.shrn(caddr, 31n)', 'def rv.hi(caddr) -> U32: U32.shrn(caddr, 32n)',
+  # RE-AIMED 2026-10-04.  M13/M14/M16 said EDIT NOT FOUND in the committed
+  # record.  None of them moved: `rv.hi`/`rv.lo` gained an explicit `caddr: U32`
+  # annotation, and M16's anchor carried ONE CLOSING PAREN TOO MANY -- the call
+  # spans three lines, so the anchor stops at the `Bool.and` close.  Same sites,
+  # same edits; the mutations were never wrong, only aimed at text that moved.
+  # M16's REPLACEMENT needed the same paren fixed, or the re-aimed mutant does
+  # not parse (RULE B: a non-program is not a zero).
+  ('M13', 'def rv.hi(caddr: U32) -> U32: U32.shrn(caddr, 31n)', 'def rv.hi(caddr: U32) -> U32: U32.shrn(caddr, 32n)',
          ':351 `wreg(0x06, caddr >> 31)` -- the high address bit, off by one.'),
-  ('M14', 'def rv.lo(caddr) -> U32: U32.or(U32.and(caddr, VRAM_WIN_MASK()), VRAM_WIN_FLAG())',
-         'rv.lo(caddr) -> U32: U32.or(U32.and(caddr, VRAM_WIN_MASK()), 0)',
+  ('M14', 'def rv.lo(caddr: U32) -> U32: U32.or(U32.and(caddr, VRAM_WIN_MASK()), VRAM_WIN_FLAG())',
+         'def rv.lo(caddr: U32) -> U32: U32.or(U32.and(caddr, VRAM_WIN_MASK()), 0)',
          ':352 `(caddr & 0x7FFFFFFF) | 0x80000000` -- dropping the mask keeps the address bit that selects the window half.'),
   ("M15", 'Bool.pick(Tr, pre, Bool.pick(Tr, more,\n    Tr.rd_cfg(U32.add(cap, 1), 1, Tr.rd_cfg(cap, 1, t)),\n    Tr.rd_cfg(cap, 1, t)), t)',
          'Bool.pick(Tr, pre, Bool.pick(Tr, more,\n    Tr.rd_cfg(cap, 1, Tr.rd_cfg(U32.add(cap, 1), 1, t)),\n    Tr.rd_cfg(cap, 1, t)), t)',
          'the ASPM probe ORDER: `cap` then `cap + 1`. The inner call is evaluated first, so the argument that reads LAST must be the OUTER one. Invisible on every fixture with one read per step.'),
-  ('M16', 'Bool.pick(Tr, Bool.and(U32.is_ne(cap, 0), Bool.not(aspm.seen(cap, seen)))),',
-         'Bool.pick(Tr, Bool.and(U32.is_ne(cap, 0), Bool.or(aspm.seen(cap, seen), False{}))),',
+  ('M16', 'Bool.pick(Tr, Bool.and(U32.is_ne(cap, 0), Bool.not(aspm.seen(cap, seen))),',
+         'Bool.pick(Tr, Bool.and(U32.is_ne(cap, 0), Bool.or(aspm.seen(cap, seen), False{})),',
          ':154 `if cap and cap not in seen` -- `not` against `or`.'),
   ("M17", 'U32.and(raw, ASPM_LNKCTL_MASK())', 'ASPM_LNKCTL_MASK()',
          ':154 writes `read_config(...) & ~3`, NOT the mask itself; writing the mask would clear every other Link Control bit.'),

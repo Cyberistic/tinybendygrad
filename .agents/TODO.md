@@ -6,6 +6,10 @@ The port's state. Progress bars are `[###.....] n/m`.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
+gate-disagree   [#########] 9/10    dtype rows 182, 7 disagreements (was 19)
+mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
+false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
+row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
 ```
 
 **`E2E-PROVES-COMPUTE` is the bar that was at zero all session.** A port can agree
@@ -609,12 +613,56 @@ and prints an honest gap beats a fixpoint that lies.
 
 | phase | directory | files | status |
 | --- | --- | --- | --- |
-| P3 | `uop/` | 10 | [####......] 4/10 |
+| P3 | `uop/` | 12 | [###.........] 3/12 |
 | P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
 | P5 | `codegen/` `renderer/` | 30 | [##.......] 5/30 |
 | P6 | `runtime/` | 36 | [...........] 3/36 |
 | P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
 | P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [##.......] 1/15 |
+
+### P3 — the honest count, and why a marker is not a backlog
+
+`uop/` is 12 files, not 10, and **3 are at zero markers** (`__init__.bend`,
+`probe-mmcore.bend`, and — since the rewrite engine landed — the gate on
+`codegen/__init__.bend`, which is its own 0). All 12 are `ALL PROOFS CHECK`.
+
+272 markers remain, and they are **not** 272 tasks. Split by whether a reason is
+written next to the line:
+
+| file | named walls | unexplained |
+| --- | --- | --- |
+| `uop/ops.bend` | 25 | 118 |
+| `uop/fold.bend` | 31 | 11 |
+| `uop/symbolic.bend` | 11 | 6 |
+| `uop/weak.bend` | 4 | 12 |
+| `uop/spec.bend` | 13 | 0 |
+| `uop/divandmod.bend` | 10 | 0 |
+| `uop/render.bend` | 2 | 11 |
+| `uop/upat.bend` | 0 | 3 |
+| `uop/movement.bend` | 1 | 1 |
+| `uop/validate.bend` | 2 | 0 |
+| **total** | **99** | **162** |
+
+A *named wall* is a marker whose rule is written beside it — a dependency, a
+missing upstream, a shape the substrate cannot express. Those are closed in the
+only honest sense available: they compile, they print the gap, and nobody
+mistakes them for work in flight. The **162 unexplained** are the real backlog.
+
+**THE MARKERS' OWN NUMBERS WERE WRONG.** Every `TODO(p3) ops.py:N def NAME`
+marker in `ops.bend` pointed two or three lines off its def, at the decorator.
+98 are now renumbered from the AST. 16 are left ALONE because the name is
+ambiguous across classes — `__init__`, `__reduce__`, `rewrite`, `param`,
+`ufix` all appear twice, and a base-name index resolves them to whichever it saw
+first, so "renumbering" `ops.py:1588 def __init__` to 220 would point it at a
+different class's `__init__`. 12 name a def `ops.py` has deleted and need a
+decision, not a number. A marker whose number and label name different defs is
+not an index, and a count built on it counts the wrong thing.
+
+**THE MEASURE THAT IS NOT A COUNT.** Across the four-agent wave, ~20 of 48
+closed markers turned out to be *stale* — the def was already ported and the
+marker never came off. So a count cannot tell `PARAM->PARAM` from
+`PARAM->BUFFER`. Every landed def in this phase carries a CPython-confirmed gate
+row, and the mutation table is what says the row is load-bearing.
 
 ### P4 — `schedule/`
 
@@ -5741,3 +5789,338 @@ Progress: `uop/ops.bend` loose ends [###.] BLOCKED ON A CONCURRENT OVERWRITE —
       TREE, red again only via the overwrite · C: no live owner, rows kept · **the live
       file lost both the ABlob fix and these rows to another unit's copy, and the oracle
       was written and restored in the same window**
+
+## MUTATION-ZERO VERBOSITY — one marker for a patch that did not apply (2026-10-04)
+
+- [x] **CENSUS: what does each stale-anchor branch print today?** Taken from the AST
+      branch BODIES, not the `if` lines, because all 29 guards read `if old not in src:`
+      and a grep of the test cannot say which branch produced a figure. `.agents/slop/
+      not-applied-audit.py` prints it and exits non-zero on any violation. Denominator:
+      **30 in-scope stale-anchor branches across 29 files; 7 loud aborts kept; 55
+      out-of-scope branches listed.** The brief's 28 was an undercount from a 4-spelling
+      regex; the measured number is 30 plus 7 loud.
+
+- [x] **ONE SHARED REPORTER.** `.agents/slop/patch_not_apply.py` — `MARKER`,
+      `not_applied()`, `pipe(cells, width)`, `fail()`. `MARKER` is
+      `zero-classify.py`'s `V_PATCH` **queried** via its `--verdicts` flag, not
+      transcribed, and a rename there raises at import. `pipe()` refuses a row of the
+      wrong width, so cell-count parity is structural. `fail()` is an explicit `raise`,
+      not `assert`, because `python -O` strips `assert`.
+
+- [x] **CONVERTED 34 files**, including a **second live instance of the `0` defect the
+      brief did not list**: `hcq2-mutate.py` printed `0 -- EDIT DID NOT APPLY` in the
+      COUNT column, which `int(cell.split()[0])` still reads as `0`. **LEFT LOUD (7):**
+      `codegen3-mut.py`, `ptx-s3-mutate.py`, `ga_write_operands.py`, `ag-fix{4,6,7,12,13}.py`
+      — converting them to a quiet marker would trade a loud abort for a quiet record,
+      which is the one trade not worth making.
+
+- [x] **MECHANICAL AUDIT THAT CANNOT BE FOOLED.** `not-applied-audit.py`, four
+      assertions: **A1** anti-drift (the branch body must CALL the reporter, so a literal
+      is a failure), **A2** non-numeric on the cell's FIRST TOKEN, **A3** column parity
+      against the enclosing scope's own rows with the branch excluded, **A4** vocabulary
+      queried not transcribed. `--dir D` points it at other sources. **Proven to fail:**
+      run against reconstructions of the pre-fix sources it exits 1 and fires A1, A2 and
+      A3 on three different real defects; against the fixed tree it exits 0.
+
+- [x] **TWO BUGS THE AUDITOR FOUND IN ITSELF, both recorded as Z-4** (position 18934):
+      the width check originally read the expected width FROM THE BRANCH UNDER TEST, so
+      it agreed with itself and a 4-cell row in a 3-column table passed; and the cell
+      counter double-counted each row's leading `|`, reporting every 3-column table as 4
+      wide. It also caught **my own** wrong conversion at `mt_mutate.py:168`.
+
+- [x] **SWEEP OF PUBLISHED RECORDS.** `.agents/slop/false-zero-sweep.py`. **32 committed
+      rows carry a bare-`0` count across 21 records; 0 are UNMARKED now** (14 were). Each
+      is classified `MEASURED?` / `UNMARKED` / `NO-GUARD` / `ANCHOR-GONE` from the
+      PRODUCER's source, never from the record. `ops-python-mutations.txt:7` was already
+      fixed; the honest fix for any future one is `PATCH-NOT-APPLY`, never a re-run.
+
+- [x] **PER-TABLE REVISION LEDGER.** `.agents/slop/revision-ledger.py`. **22 tables: 2
+      name a revision, 20 name none; 9 have a file digest, 5 have a row-set digest.**
+      `dd` pins `e4618a71` / tree `e17d3f7dd48cf84c` and is itself stale against live.
+      Records TWO digests per table because a digest protects the MUTANT, not the
+      REFERENCE — the `hi42` order swap leaves `shape()`'s three fields unchanged.
+      Live moved three times while the ledger was being written.
+
+Progress: MUTATION-ZERO VERBOSITY [######.] census 30 in-scope + 7 loud · reporter
+      `patch_not_apply.py` · 34 files converted · A1/A2/A3/A4 hold and the auditor is
+      proven to fail on the pre-fix sources · 0 unmarked published zeros · revision ledger
+      22 tables, 2 pinned. Rules appended as `## Z-1..Z-7` in `bend2-constraints.md`
+      (positions 18898-18963, indexed at the top).
+
+---
+
+## Session 2026-10-04 (late) — INSTRUMENTS FIXED, AND THE TALLY OF WHAT THEY GOT WRONG
+
+Progress: session deliverables [#########] 9/10  (the tenth is the `ops.bend`
+substrate, which blocks 72 importers and is owned by a unit in flight)
+
+### The theme, stated once
+
+**Nine separate findings this session were instruments returning something other
+than the thing under test.** Only two were "code was wrong". The rest:
+
+| the thing that lied | instance |
+|---|---|
+| the **reader** | `rows()` matched `name=value`; `multi` prints `name␣␣value`, so 213 rows compared against nothing |
+| the **oracle** | `ucache` weakrefs + `__del__` deleting by value reproduced the false-intern it was built to detect |
+| the **oracle** | `dd-oracle.py` mints UOps *before* the first row, inventing 4 slot-count disagreements |
+| the **walker** | `dd_fuel` = `32*(to-from)` truncated a cone to 57 nodes and it read as a small graph |
+| the **digest** | frozen hashes cover the file *mutated*, not the file `SAME` is measured against |
+| the **cache** | row dicts read "fresh" because `rows` is not a file |
+| the **binary path** | `/tmp/rebase-gate/<stem>.bin`, 14 `__init__` ports, 33 stale files on disk |
+| the **selftest** | `PASS` from six synthetic states with `run_port()` stubbed |
+| the **mutation baseline** | was the M09 mutant, twice |
+
+**A green lane has never once been sufficient evidence in this project.**
+
+### Closed
+
+- [x] `rows()` reads all three lane formats. **Superset proof over all 39 wired
+      pairs: 0 keys gained or dropped, every `shared` count identical, `disagree`
+      moved on exactly one pair (cstyle 222 -> 0).** The other 32 were `+0 -0`.
+- [x] `renderer/cstyle.bend` WIRED — 222 shared / 0 disagree. Given up
+      precisely: 9 of 222 are a refusal rendered as the marker.
+- [x] `schedule/multi.bend` format readable (0 -> 213) but LEFT UNWIRED. A `t_`
+      prefix normalisation gives 26 collisions of which **21 DISAGREE**; that is
+      a second source of truth and the agreement is the expensive direction.
+- [x] `dtype.bend` **19 -> 7** disagreements. Four cone defects; **A1's proof is
+      a phantom `CONST C(27)` at slot 58 where `C(1)` lives at 27** — `U32` is
+      both an index and a word, so an index passed as a value typechecks.
+- [x] `lg5k` — the port never modelled `_broadcasted`'s weak-CONST remint.
+      `F(1333788672)` measured, not typed.
+- [x] M09 **MOVED, 8 rows**. `hi42` makes the `|` the row's own text. The REQUEST
+      was a misdiagnosis: `l2i_shl.hi` is called unconditionally and the zero was
+      a statement about a defective snapshot.
+- [x] Mutation zero classifier: **5 verdicts**, `WRONG` asked before `VISIBLE`.
+      Same site, same rows, different snapshot, different verdict.
+- [x] One `PATCH-NOT-APPLY` reporter, 30 stale-anchor branches converted,
+      **0 unmarked false zeros** (was 14) across 21 records. 7 harnesses left
+      LOUD on purpose.
+- [x] Arena threaded through the rewrite engine; the spurious SINK rule is
+      removable **only in that order** — threading alone moved nothing observable.
+- [x] Order-blind gates: all closed. `linearizer`'s 0.0% hit rate was the READER
+      (`lt_lst` is a literal), not the fixture. The 98 sibling-blind rows are
+      INHERENT — 98 of 98 CALL-derived.
+- [x] `device.bend` is **not broken**; the quoted BROKEN never reproduced.
+
+### Refused — and two of these were MY error, corrected by the unit
+
+- [x] `eq_arg.AFloat` "one-word fix" **REFUSED**: it is a double regression.
+      `ConstFloat` overrides `__eq__` AND `__hash__`; `AFloat` is a bare float.
+      Both comparators are correct, differently.
+- [x] **Comparing the `py=` column REFUSED** — it is a literal in the PORT file,
+      so comparing it asserts a transcription is correct. `device.bend`'s
+      `sig=0 4 5` shipped green that way.
+- [x] `gt_ops4`/`gt_ops5` **DECLARED A WALL.** A fixture could separate them
+      (6 of 6 fingerprints) but CPython says both root ops are `Ops.WHERE`; the
+      prescribed fix would have encoded a lie.
+- [x] The 5 slot counts were an **ORACLE bug**, not a port defect.
+
+### OPEN, and named
+
+- [ ] **`uop/ops.bend` DOES NOT COMPILE** — `DRng.of` is an unfilled law. **72
+      importers cannot be gated at all.** Highest priority; owned by a live unit.
+- [ ] **`ABlob` false-intern is LOST from source.** The fix was never committed
+      and a concurrent 5-step rewrite overwrote it. Preserved as committed
+      evidence (`.agents/slop/afloat-ops-bend.bend`); the MERGE is undone.
+      `eq_arg.ABlob(y: Arg, +n: U32)` — length only.
+- [ ] **Four comparators weaker than upstream's key**: `eq_callinfo` substitutes
+      `dtype` for `aux` and **`ops.py:549` reads `arg.aux`**, so it is not
+      inert; `eq_kernelinfo` drops `estimates`; `eq_programinfo` drops `target`;
+      `eq_pyrange` compares `H.I64` against a key holding `float|int|bool`.
+- [ ] **Five `dd_band` call sites pass `O.Found.i(...)` as the mask** — the A1
+      species. Their rows AGREE, which is coincidence or latent, not evidence.
+- [ ] **25 of 30 mutation zeros still unclassified**; **20 of 22 tables name no
+      revision**, so a reader cannot tell whether a table describes what is on
+      disk.
+- [ ] **224 hand-typed oracle rows, 192 never read.** `hand_typed` matches only
+      literal row names, so f-string-named rows are invisible to it.
+- [x] `ops-501-gate.sh` red at rest — 101 oracle `s5_*` rows vs 82 in the Bend.
+      **DIAGNOSED, not guessed — see `[DONE] ops-501-gate: THE PORT WAS MISSING THREE
+      DEFS` at the END of this file. `101 | 82 | 82 shared | 19 oracle-only | 0 port-only |
+      0 disagreements on shared`: the THIRD hypothesis (different row names) is ELIMINATED,
+      and the 19 are `ops.py:758/:841/:846`, which the port carried as `TODO(p3)`.
+- [ ] Gate cluster (`kxrmluuw`) committed but **unverified** while `ops.bend`
+      does not compile. Its commit message says so rather than claiming a pass.
+- [ ] `c7`, `lgu`, `lgun` — declared refusals. `c7 = F(2139095040)`, confirmed
+      four times independently.
+
+### Process, learned the hard way
+
+- **A working copy shared by eight agents is not a preservation mechanism.**
+  Three correct fixes were destroyed by concurrent overwrites today
+  (`codegen/__init__.bend`, the `ABlob` fix, and one unit's six `dtype` fixes
+  swept into `e049d6ecb`). Commit verified work *before* the next agent starts.
+- **Three `jj` traps, each of which silently did nothing:** `jj describe` has no
+  `-f`; `JJ_EDITOR="cat f"` prints but does not write (use `cp`); and the
+  bookmark auto-drags forward when a live agent writes, so `bookmark set` needs
+  `--allow-backwards`. All three present as "won't push commit, no description",
+  which points at the wrong thing.
+- **Line count is not an identity.** A reconstruction with the right 361 lines
+  had the wrong md5. The md5 assertion is the check.
+- **An unfinished measurement masquerades as an unstable one.** Four reads of one
+  file gave 239 / 246 / 354 / 355 rows while a background job was still writing.
+
+## Session 2026-10-04 (substrate unit) — the `ABlob` intern key is GREEN and PROVEN, and `ops.bend` is being edited faster than it can be gated
+
+- [x] **`eq_arg.ABlob` compares CONTENT, not LENGTH.** `ABlob{bs: List<&2, U32>}`
+      (:1062) and `eq_arg.ABlob` (:1801) compare with the file's existing `eq_u32`, the
+      same def `eq_arg.ATuple` uses. **9 `blob_*` rows, 3 lanes identical**
+      (`sh .agents/slop/blob-intern-gate.sh`, expectations CALLED from CPython). The
+      fixture is `b"aaaa"` against `b"bbbb"` — equal length, unequal content — because an
+      all-different-length fixture is satisfied by a length key, which is how the original
+      bug sat in a green gate.
+- [x] **The key holds the BYTES, and that is now CHECKABLE rather than argued.**
+      `.agents/slop/blob-verify-independent.py` reads `ucache`'s KEYS where
+      `blob-intern-oracle.py` reads `len(ucache)`, and prints
+      `(Ops.BINARY, (), b'aaaa', None, <class 'bytes'>)` /
+      `(Ops.BINARY, (), b'bbbb', None, <class 'bytes'>)`. A digest is still a summary; this
+      key is not one. Both oracles agree on all nine rows across two runs.
+- [x] **CONTROL, measured on a MIRROR, never on the live tree.**
+      `.agents/slop/blob-control-mirror.py` rebuilds `.agents/slop/mirror/` from the live
+      tree on every run, asserts the two digests match, and re-asserts the LIVE digest
+      before and after every mutation. M1 (length-only, the bug restated) moves 4 rows
+      including `blob_count_len_diff_content: 2 -> 1` — the defect's own signature. M2
+      (first byte) 3, M3 (never equal) 3, M4 (always equal) 5; the table moves 7 of 9 rows.
+      The 2 that never move are `blob_shape` and `blob_content`, which no comparator can
+      change — a real blind spot with a reason.
+- [x] **Blast radius is PROVABLY LOCAL.** Against the recorded 12,429 baseline the corpus is
+      12,489 (+60) and **exactly one of the 72 files changed**: `uop/ops.bend`, 224 -> 284.
+      The other 71 are byte-identical on their non-blank rows (checked by sha256, not by
+      count). Historically the fix itself is +9 rows in `ops.bend` and `grep -l 'blob_'`
+      across all 73 captures returns exactly ONE file.
+- [x] **The 72 = 59 direct + 12 transitive + `ops.bend`.** Bend imports are UNQUOTED
+      (`import ./ops.bend as O`), so a quoted grep finds **0** importers and measures a
+      vacuous blast radius — the same empty-set-reads-as-clean failure as a 0-row result.
+- [ ] **`ops.bend` is under concurrent edit at ~7 writes / 2 minutes and the blocker
+      is RECURRING, not fixed.** Observed in this session: `SOME PROOFS FAIL` naming
+      `DRng.of`, then `a ParamArg pattern with 13 fields` (:6882, a 3-field pattern
+      against the 13-field `ParamArg` — the width rule, verbatim), then
+      `duplicate declaration: UOp.unbound.go`, then `ALL PROOFS CHECK`. Each error was
+      fixed by the owning unit within ~30 s of my reading it. **Not one edit was made by
+      this unit**: at that write rate an edit is either clobbered or clobbers, and the
+      `ABlob` fix has already been destroyed once by exactly this. Filed for the owner.
+- [ ] **`.agents/slop/blob-intern-mutate.py` IS A LIVE WEAPON and should not be run
+      as-is.** It mutates `tinybendygrad/uop/ops.bend` IN PLACE and restores from a
+      snapshot in a `finally`; its stale-snapshot guard runs ONCE at start, so a
+      concurrent edit landing mid-run is silently reverted at exit. Its own docstring
+      records a restore putting a dead 6623-line file over the live 6306-line one.
+      `blob-control-mirror.py` replaces it. Do not run the old one on this tree.
+
+## [DONE] ops-501-gate: THE PORT WAS MISSING THREE DEFS, and `@` is not "at rest" (2026-10-04)
+
+Progress: `[████████████████████] 100%` — which side named with denominators, the 19 named and
+classified, four real defects fixed in MY files, 3 controls green, 23/23 mutations. **`uop/ops.bend`
+not edited** — it belongs to the unit porting `ops.py[701,1000]`. Nothing committed.
+
+- **THE PORT IS THE WRONG SIDE, and the third hypothesis is ELIMINATED rather than assumed
+  away.** `101 | 82 | 82 shared | 19 oracle-only | 0 port-only | 0 disagreements on shared`,
+  measured at `@-`. Same names, same values, on every row the two sides share — so this is
+  **19 rows MISSING FROM THE PORT**, not 19 spurious oracle rows and not a naming split.
+- **WHY ASKING `@` SAID GREEN SIX TIMES OUT OF SIX: `@` IS THE WORKING-COPY COMMIT.** The at-rest
+  state is `@-`. `jj file show -r @- tinybendygrad/uop/ops.bend | grep -c '"s5_'` = **82**; the
+  same at `@` = 101. A unit ported `copy_to_device` / `getaddr` / `device_range_src` into the
+  working copy minutes before, so the question "is this gate red at rest" was being asked about
+  a file that was not at rest. **`bend2-constraints.md` O-1** (position 19078).
+- **THE 19 ARE THREE `TODO(p3)` MARKERS, not 19 bugs.** At rest, `ops.bend:4319/4336/4338` read
+  `# TODO(p3) ops.py:761 def copy_to_device` / `:844 def getaddr` / `:849 def device_range_src`.
+  **MEASURED def lines are `tinygrad/uop/ops.py:758`, `:841`, `:846`**, identical in the vendored
+  pin and in `.agents/slop/opstree` (the two trees differ in ONE line, at 1333, outside every
+  range an `s5_` row touches — which is why both trees give byte-identical 101-row output).
+  **THE REPO'S `ops.py` CITATIONS ARE A UNIFORM +3 IN THE 500–850 BAND AND NOT ELSEWHERE:**
+  `without_after` 623 vs 620, `barrier` 624 vs 621, `bufferize` 679 vs 676, `allreduce` 680 vs 677,
+  `split_uop` 685 vs 682, `sharding` 707 vs 704, `mselect` 772 vs 769, `base` 785 vs 782,
+  `unsharded_base` 792 vs 789, `storage_base` 801 vs 798, `buf_uop` 925 vs 922 — then
+  `has_buffer_identity` 952 vs 954 is −2 and `gate_kernel_sink` 1901 vs 1909 is −8. **A citation
+  band with a constant offset inside it and a different one outside it means the basis is a
+  different tinygrad revision, not a typo.** Left alone (other units' files), recorded as
+  **O-3-adjacent / found-not-fixed**.
+- **EACH OF THE 19 CHECKED AGAINST THE upstream SOURCE, not just against a count.** `getaddr`
+  (`ops.py:841`) mints GETADDR iff `self.without_after.op` is in the nine-op set
+  `{BUFFER, ALLOC, SHRINK, BITCAST, BINARY, MSTACK, MSELECT, PARAM, LINEAR}` — the 13 `s5_ga_*`
+  fixtures are 9 in-set, 3 out (`CONST`, `RESHAPE`, `ADD`) and **`AFTER` which peels to BUFFER
+  and therefore MINTS**, which is the row that makes the `without_after` in the PEEK load-bearing.
+  `copy_to_device` (`ops.py:758`) `src=(inp, *device_range_src(device))`, which is why
+  `s5_copy_sel` is `COPY/MSELECT Ops.RANGE` and `s5_copy_multi` is `COPY/BUFFER Ops.RANGE`.
+  `device_range_src` (`ops.py:846`) is `()` for a `str` and one RANGE for a tuple.
+- **THE PRIOR UNIT'S LIST OF THE 19 WAS OFF BY ONE, MECHANICALLY.** `TODO.md`'s account named
+  `s5_copy_*` (3) + `s5_devrange_*` (3) + "12 `s5_ga_*`" = 18 against a stated 19. The missing
+  one is **`s5_ga_add`**, and it is missing because in `ops.bend`'s `s5.garows` every row is
+  bound (`l : Unit <- srow("s5_ga_after", …)`) EXCEPT the last, a bare `srow("s5_ga_add", …)`.
+  A tally taken by scanning for the bound form finds twelve. **`bend2-constraints.md` O-8**
+  (position 19168): when a count and a list disagree, the LIST is wrong — re-derive from lane text.
+- **FOUR REAL DEFECTS FIXED, ALL IN FILES THIS UNIT OWNS, all with before/after:**
+  1. **`ops-501-oracle.py`: TWO ROWS EXPECTED A RE-IMPLEMENTATION OF THE THING UNDER TEST.**
+     `gate_kernel_sink` was a hand-written copy of `ops.py:1909` (3 rows) and `split()` was a
+     hand-written worklist copy of `split_uop` (`ops.py:682`, 6 rows) — the `device.bend`
+     `sig=0 4 5` hazard, and `nv_query_litter` wrong in BOTH port and oracle. Both now CALL
+     upstream. **NO ROW MOVED** (101/101, byte-identical md5), which is the correct outcome and
+     not a tautology: the transcription was right and the rows are now CPython's own answers.
+     **The nine rows they govern are covered by 6 existing mutations** (`gks_drops_linear`,
+     `gks_drops_kernelinfo`, `split_pushes_to_back`, `split_appends_to_out`, and
+     `without_after_drops_after`, which also moves `s5_ga_after`).
+  2. **`ops-501-gate.sh` NAMED NO REASON FOR ANY FAILURE IT EVER REPORTED.** Measured: on a file
+     that does not check, `--check-only` writes **nothing to stdout** and puts `SOME PROOFS FAIL`,
+     `Error:` and the offending line on **stderr**, so `bend … | head -1` read empty and printed
+     `--check-only says ''`. Now `2>&1 | grep -m1 -v -e '^bend 2\.0\.' -e '^$'`; measured
+     `--check-only says 'SOME PROOFS FAIL'`. (`bend2-constraints.md` O-3, position 19110.)
+  3. **`ops-501-gate.sh`: `CMD | grep '^s5_' > OUT` UNDER `set -e` IS A SILENT FAILURE** — a bare
+     `rc=1` with nothing on stderr, indistinguishable from a crash, and bend stack-overflows
+     ~1 run in 20. Each lane now reports its own count by name and a zero-row lane is refused by
+     name. (O-4, position 19123.)
+  4. **`ops-501-mutate.py` WROTE THE LIVE `ops.bend`** — `OPS.write_text(...)` plus a `finally`
+     that restored it. `ops.bend` was being edited by another unit, so a read-then-write whose
+     window straddles their save **permanently destroys their work**. It now stages
+     `jj file show -r @` beside the real file, asserts the digest, unlinks in `finally`, and
+     REPORTS if the live digest moved. Its second reader is gone (now `rebase-gate.py`'s `rows()`).
+     **23/23 mutations move the rows they name**, live `ops.bend` byte-identical before and after.
+- **THE 19 ROWS HAD NO MUTATION AT ALL.** They were oracle-only for the gate's whole life, so
+  nothing said any of them read the port. **7 added**: `devrange_hardcodes_one`,
+  `ga_drops_param/mstack/linear/bitcast`, `ga_peel_reads_self`, `copy_sel_drops_mselect`,
+  `copy_drops_device_range`. **Their anchors carry the `def UOp.getaddr.op(op: Op) -> Bool:`
+  header** — `case OpsPARAM{}: True{}` alone occurs **4** times in `ops.bend` and a 3-line window
+  **6–62** times, so an unanchored `str.replace` edits `buf_uop.cont` or `hbi`'s set instead. (O-6.)
+- **THE CONTROLS, all three, and the red path is the one a missing-row failure cannot supply:**
+
+  | control | measured |
+  |---|---|
+  | clean, live file, **both trees** | rc=**0**, `101 rows, 101 shared row names, 3 lanes identical` |
+  | **AT REST `@-`**, staged copy, through the REAL gate script | rc=**1**, `py=101 bd=82 shared=82`, **19 row names printed** |
+  | **planted** one op out of `getaddr`'s ladder, staged copy | clean rc=0, planted rc=**1**, `ROW DISAGREE s5_ga_param: cpython=Ops.GETADDR/Ops.PARAM bd=Ops.PARAM` |
+  | restore | live `ops.bend` md5 identical before and after every one |
+
+  The at-rest failure was a **MISSING-ROW** failure and so never ran the value-diff arm; the
+  planted one is the control that proves that arm works. **A red gate and a broken gate are
+  different states and both read as "the gate is red."** Repeatability: at-rest control **3/3**
+  identical (`rc=1, shared=82, disagreements=0`); oracle md5 **3/3** on each of the two trees.
+
+- **STATE OF THE GATE NOW, HONESTLY: `AGREE`, on a file that is still being written.** 101 rows,
+  101 shared names, 0 disagreements, three lanes identical, exit 0, on the upstream tree and on
+  `TG_TREE=.` — and **GREEN AT TWO DIFFERENT REVISIONS** (`ops.bend` md5 `99ab4691…` at 06:12 and
+  `19205b9a…` at 06:20, both rc=0), so the result is not one lucky snapshot. **Neither digest is
+  durable**, and that is why the measurement is stated as a revision: the file changed **six
+  times** during this unit (46d4f3f7 → d1a40c4b → dc2955e9 → 674f4857 → a9c8063b → 99ab4691 →
+  19205b9a), was caught mid-edit not checking at all (`duplicate declaration: UOp.unbound.go`,
+  then `a Some pattern with 1 field`), and two of this unit's own controls only passed because
+  they ran against a STAGED copy rather than the live path. **The GREEN is a property of a
+  revision, not of the gate.** Re-run `sh .agents/slop/ops-501-gate.sh`.
+
+### Found, not fixed
+
+- **Repo-wide `ops.py` citation offset** in the 500–850 band (+3 uniformly, −2 and −8 above it):
+  a different tinygrad revision is the basis. Every citation, not just these three.
+- **Seven `## Z-` entries in `bend2-constraints.md` cite positions that are wrong by exactly 9**
+  (`Z-1` cites 18898, real line 18907; … `Z-7` cites 18963, real 18972 — measured with a script
+  that reads each header and compares its cited position to its own line number). **Left alone —
+  renumbering another unit's entries is what "append-only, do NOT renumber" forbids.** The `## B-`
+  and `## O-` entries are all correct.
+- **`.agents/slop/ops501-atrest.sh` is redundant** with `ops501-ctl.sh` and has no caller.
+- **The CPython lane was observed printing 0 rows once**, in a `| grep '^s5_'` pipeline, rc=1.
+  **It did not reproduce in 25 consecutive runs** (3/3 rc=0 + 20/20 at 101 rows + 5/5 in the
+  original form), so it is an UNEXPLAINED single observation and not a confirmed flake — but
+  it is the reason fix 3 exists: under the old gate a 0-row lane exited 1 with no message.
+- **The two `raise`s inside `copy_to_device` are still not ported** (`is_disk_device` needs
+  `uop/fold.bend`'s table read; `inp.dtype in dtypes.weaks` needs the dtype fold). The port's
+  own comment at `ops.bend:6703-6708` declares this and `s5_copy_*` does not pretend otherwise.
+  **They are also `AssertionError`/`RuntimeError` paths, so a refusal here is a truncated trace
+  and the `s5_` rows would need a negative case before those two TODO(p3)s can close.**

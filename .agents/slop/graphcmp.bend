@@ -322,6 +322,14 @@ def i64s.go(+ys: List<&2, H.I64>, acc: List<&2, String>) -> List<&2, String>:
 def i64s(ys: List<&2, H.I64>) -> String:
   String.concat(["n(", String.join(i64s.go(ys, Nil{}), ","), ")"])
 
+def bs.go(+bs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match bs:
+    case Nil{}: acc
+    case b <> r: bs.go(r, List.append(&2, String, acc, [i(b)]))
+
+def blobstr(bs: List<&2, U32>) -> String:
+  String.concat(["y n(", String.join(bs.go(bs, Nil{}), ","), ")"])
+
 # `ProgramInfo.global_size` is `tuple[int|float, ...]` (ops.bend:1352) so its elements are
 # `H.I64`; the float case is a `sint`'s and is recorded on `sint_of` there, not here.
 def prog_info(pi: O.ProgramInfo) -> String:
@@ -355,10 +363,14 @@ def argstr(a: O.Arg, depth: U32) -> String:
     case O.AInk{ins, idt}: String.concat(["in(", bstr(ins), ",", dt(idt), ")"])
     case O.AAllred{arop, adev}: String.concat(["al(", opx(arop), ",", dev(adev), ")"])
     case O.ADev{dd}: dev(dd)
-    # `ABlob` is `bytes`, and ops.bend:913 says "only its length is read" -- there is no
-    # byte STRING in the port to compare, so the normal form compares the LENGTH on both
-    # sides and the loss is recorded rather than hidden.
-    case O.ABlob{n2}: String.concat(["y", U32.show(n2)])
+    # `ABlob` is `bytes` and it HOLDS THE BYTES (ops.bend:1062 `ABlob{bs: List<&2, U32>}`
+    # -- the 2026-10-03 change from a length, recorded at :1793 with the reason), so the
+    # CONTENT is compared and not a summary of it. This arm used to be `U32.show(n2)`
+    # over a `n2` field that no longer exists -- which is why the probe stopped compiling
+    # when `ops.bend` moved, and the fix is a widening rather than a cast: MEASURED,
+    # `eq_arg.ABlob` (:1801) compares `bs` element-wise, so the port can answer the
+    # question the column is asking.
+    case O.ABlob{bs}: blobstr(bs)
     case O.AFloat{f2}: String.concat(["f", F32.show(f2)])
     # THE BOTTOM. ops.bend:1154 calls this "a read of an index that was never interned".
     # It is not a node, so it must not read as an agreeing one.
@@ -471,8 +483,12 @@ def alloc(slot: U32, size: U32) -> O.ParamArg:
   O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, True{}, None{}}
 
-def g_matmul() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+# `matmul_of` TAKES AN ARENA and `g_matmul` supplies an empty one, because `--graph
+# binblob` hangs a BINARY off this SAME 18-node graph and must not build it twice: two
+# builds are two arenas, the ids do not line up, and the report is then a cascade of
+# `src` differences with the cause in none of them.
+def matmul_of(+ar: O.Arena) -> O.Found:
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -490,6 +506,52 @@ def g_matmul() -> O.Found:
   +mul = O.UOp.new(O.Found.ar(p021), O.OpsMUL{}, [O.Found.i(r413), O.Found.i(p021)], O.ANone{}, O.TNone{})
   +p201 = O.UOp.new(O.Found.ar(mul), O.OpsPERMUTE{}, [O.Found.i(mul)], O.ATuple{[2, 0, 1]}, O.TNone{})
   O.UOp.new(O.Found.ar(p201), O.OpsREDUCE{}, [O.Found.i(p201)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
+
+def g_matmul() -> O.Found:
+  matmul_of(O.Arena.empty())
+
+# `--graph range` / `--graph rangeflat`: the pair R5 exists for. `Arena.shp` is the
+# RANGE-arg tail's nesting COUNT and `ARange{ids, at}` holds the tail's INTS (ops.bend:2500
+# "ARange stores the ints only"), so `(ids, depth)` is the whole representation and there
+# is no third field. These are the two readings, and CPython's are MEASURED by calling it
+# -- `UOp.range(4, (0,1))` is `arg=(AxisType.WEAK, (0, 1))` and `UOp.range(4, 0)` is
+# `arg=(AxisType.WEAK, 0)` -- so `range` carries depth 1 and `rangeflat` carries 0.
+def g_range() -> O.Found:
+  +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  O.UOp.range_shaped(O.Found.ar(c4), O.Found.i(c4), [0, 1], O.AXIS_WEAK{}, 1)
+
+def g_rangeflat() -> O.Found:
+  +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  O.UOp.range_end(O.Found.ar(c4), O.Found.i(c4), [0], O.AXIS_WEAK{})
+
+# `--graph cast`: `Tensor.empty(4,3).cast(dtypes.half).uop`, 6 nodes, MEASURED on the py
+# side. It is the ONLY fixture in which a `DType` is the WHOLE arg -- every other `D<name>`
+# in the corpus is a `ParamArg` FIELD -- so it is the fixture for graphcmp.bend's
+# `case O.ADt{ad}: dt(ad)`, which no other graph reached.
+def g_cast() -> O.Found:
+  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(r43), O.OpsCAST{}, [O.Found.i(r43)], O.ADt{S.half()}, O.TNone{})
+
+# `--graph special`: `UOp.special(4, "inf")`, 2 nodes, MEASURED. `AStr` on a node that is
+# not a `SINK`, so the bare string atom is separated from `KernelInfo.name`'s use of one.
+def g_special() -> O.Found:
+  +c4 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  O.UOp.new(O.Found.ar(c4), O.OpsSPECIAL{}, [O.Found.i(c4)], O.AStr{"inf"}, O.TNone{})
+
+# `--graph binblob`: `UOp(Ops.BINARY, (matmul,), b"tiny")`, 19 nodes, MEASURED on the py
+# side. It exists so the `y` residual is a NUMBER and not a 0: four graphs shipped with
+# `bytes py=0 bend=0`, which is a fact about the fixture and not about the port. The blob
+# is `ABlob{bs}` with the BYTES (ops.bend:1062 -- `ABlob{bs: List<&2, U32>}`, which is the
+# 2026-10-03 CHANGE from a length) so the port CAN now tell two same-length blobs apart and
+# `argstr`'s `y` arm renders the LENGTH, which is the one field of the pair still compared
+# only as a count. 116/105/110/121 is `b"tiny"`.
+def g_binblob() -> O.Found:
+  +r = matmul_of(O.Arena.empty())
+  O.UOp.new(O.Found.ar(r), O.OpsBINARY{}, [O.Found.i(r)], O.ABlob{[116, 105, 110, 121]}, O.TNone{})
 
 # `Tensor.empty(4,8).sum(axis=1).uop` -- 7 nodes, MEASURED by running the py side, not
 # written from the docstring's expectation. Two facts here are worth stating because both
@@ -568,9 +630,14 @@ def g_sink() -> O.Found:
 # counts the two static reads -- MEASURED: without `+` this is
 # "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
 def rows.pick3(+name: String) -> O.Found:
-  Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
-    Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
-      Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul())))
+  Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
+    Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
+      Bool.pick(O.Found, String.eq(name, "range"), g_range(),
+        Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
+          Bool.pick(O.Found, String.eq(name, "special"), g_special(),
+            Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
+              Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
+                Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(), g_matmul()))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

@@ -59,11 +59,12 @@ lanes() {
 lanes || { echo "baseline lane red -- fix that first"; exit 1; }
 cp "$BD" "$BD.base"
 
-mutate() {  # $1 = id, $2 = from, $3 = to, $4 = what it should move
-  id=$1; from=$2; to=$3; want=$4
+mutate() {  # $1 = id, $2 = from, $3 = to, $4 = what it should move, $5 = "ctl"
+  id=$1; from=$2; to=$3; want=$4; kind=${5:-mut}
   if ! grep -qF "$from" "$HB"; then
-    echo "$id: MUTATION TARGET NOT FOUND -- $from"
-    exit 1
+    echo "$id  MUTATION TARGET NOT FOUND -- $from"
+    VERDICT="$VERDICT $id:target-not-found"
+    return 0
   fi
   perl -0pi -e "s/\Q$from\E/$to/" "$HB"
   if lanes; then
@@ -71,22 +72,37 @@ mutate() {  # $1 = id, $2 = from, $3 = to, $4 = what it should move
       moved=$(diff "$BD.base" "$BD" | grep '^<' | sed 's/^< //' | cut -d= -f1 | tr '\n' ' ')
       if [ -z "$moved" ]; then
         echo "$id  MOVES NOTHING (blind)  want: $want"
+        if [ "$kind" = ctl ]; then
+          VERDICT="$VERDICT $id:ok(control-blind)"
+        else
+          VERDICT="$VERDICT $id:BLIND"
+        fi
       else
         first=$(echo "$moved" | cut -d' ' -f1)
         before=$(grep "^$first=" "$BD.base" || true)
         after=$(grep "^$first=" "$BD" || true)
-        echo "$id  $(echo "$moved" | wc -w | tr -d ' ') rows  want: $want"
+        n=$(echo "$moved" | wc -w | tr -d ' ')
+        echo "$id  $n rows  want: $want"
         echo "     $moved"
         echo "     $first's VALUE: $before -> $after"
+        if [ "$kind" = ctl ]; then
+          VERDICT="$VERDICT $id:CONTROL-LEAKED($n)"
+        else
+          VERDICT="$VERDICT $id:ok($n)"
+        fi
       fi
     else
       echo "$id  INTERPRETED AND COMPILED LANES DISAGREE"
+      VERDICT="$VERDICT $id:lanes-disagree"
     fi
   else
     echo "$id  LANE RED (did not compile or run)"
+    VERDICT="$VERDICT $id:lane-red"
   fi
   cp "$BAK" "$HB"
 }
+
+VERDICT=
 
 echo "=== i64_or ==="
 mutate M01 "U32.or(hi32(a), hi32(b)), U32.or(lo32(a), lo32(b))" \
@@ -137,10 +153,22 @@ mutate M12 "gcd.go(128n, i64_abs(a), i64_abs(b))" "gcd.go(1n, i64_abs(a), i64_ab
 echo "=== CONTROLS (must move NOTHING) ==="
 mutate C01 "U32.or(hi32(a), hi32(b)), U32.or(lo32(a), lo32(b))" \
           "U32.or(hi32(b), hi32(a)), U32.or(lo32(b), lo32(a))" \
-          "nothing -- OR is commutative"
+          "nothing -- OR is commutative" ctl
 mutate C02 "U32.and(hi32(a), hi32(b)), U32.and(lo32(a), lo32(b))" \
           "U32.and(hi32(b), hi32(a)), U32.and(lo32(b), lo32(a))" \
-          "nothing -- AND is commutative"
+          "nothing -- AND is commutative" ctl
 
 rm -f "$BD.base" "$BN.err"
+# The tally is the point of the script. A table that only prints a moved-row list
+# reads the same whether 12 mutations are load-bearing or 0, which is exactly how
+# this harness managed to report 14/14 BLIND for a month: the list was empty every
+# time and nothing said so. Exit non-zero on any blind mutation, any control that
+# leaked, and any lane that went red.
+echo
+echo "=== TALLY ==="
+for v in $VERDICT; do echo "  $v"; done
+bad=$(echo "$VERDICT" | tr ' ' '\n' | grep -cE "BLIND|LEAKED|lane-red|target-not-found|lanes-disagree" || true)
+good=$(echo "$VERDICT" | tr ' ' '\n' | grep -c ":ok" || true)
+echo "helpers-i64-mutate: $good of 14 as expected, $bad not"
+[ "$bad" -eq 0 ] || exit 1
 echo "helpers-i64-mutate: done"

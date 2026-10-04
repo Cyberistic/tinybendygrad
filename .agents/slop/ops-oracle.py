@@ -766,6 +766,16 @@ BEND_ONLY = [
   ("axl_UNROLL", "as axv_REDUCE"),
   ("axc_REDUCE", "as axv_REDUCE: upstream deleted the axis_colors entry too"),
   ("axc_UNROLL", "as axv_REDUCE"),
+  ("sg", "as s5: the ops.py:501-700 SUGAR UNIT (`body`, `inline_call`, "
+         "`has_unbound_outputs`, `cint`, `pa`, `ci`, `seps`). Its 41 rows have their "
+         "OWN CPython lane and their own gate -- `.agents/slop/ops-sugar-oracle.py` and "
+         "`sh .agents/slop/ops-sugar-gate.sh` -- for the same reason `s5` is listed "
+         "above. Filtered here, gated there."),
+  ("vr", "as sg: the ops.py:1029 `UOp.expr` unit, four rows for the three answers "
+         "`expr` can give. Its own lane and gate -- `.agents/slop/ops-var-oracle.py` "
+         "and `sh .agents/slop/ops-var-gate.sh`, with the mutation table at "
+         "`.agents/slop/ops-var-mutate.py`. A four-row unit does not belong in a "
+         "103-row gate whose row ORDER is the contract for a different unit."),
 ]
 print("#bend_only_count=" + str(len(BEND_ONLY)))
 for r, why in BEND_ONLY:

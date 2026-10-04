@@ -11,6 +11,7 @@ the opencode temp dir. Resume-safe: a finished attempt is not re-run.
 from __future__ import annotations
 
 import ast
+import patch_not_apply as PNA
 import hashlib
 import json
 import os
@@ -643,7 +644,8 @@ def phase_control() -> None:
     old = 'return \'\\n\'.join([f"{k} = {strip_parens(v)}" for k,v in ret.items()])'
     new = 'return \'\\n\'.join([f"{k} =X {strip_parens(v)}" for k,v in ret.items()])'
     if old not in src:
-        raise SystemExit("plant anchor missing in render.py copy -- refusing to guess")
+        raise SystemExit(PNA.not_applied(
+            "plant anchor missing in render.py copy -- refusing to guess"))
     target.write_text(src.replace(old, new, 1))
     # confirm live tree was not touched
     live = (XD1_HEAD / "tinygrad" / "uop" / "render.py").read_text()

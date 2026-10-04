@@ -14,6 +14,7 @@
 #
 # Usage: python3 .agents/slop/nv_mutate.py [n]
 import re, subprocess, sys, os
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, "bin", "bend")

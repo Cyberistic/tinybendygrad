@@ -11,6 +11,7 @@ defects and a rules sweep finds all of them, so both are run and the constants
 blind list is reported as the deliverable rather than as coverage.
 """
 import sys, os, subprocess, difflib
+import patch_not_apply as PNA
 SRC = 'tinybendygrad/renderer/ptx.bend'
 OUT = '.agents/slop/ptxown'
 PY = OUT + '/s3py.txt'
@@ -111,7 +112,7 @@ MUT = [
 
 def apply(tag, old, new):
   if old == new: return BASE
-  assert old in BASE, "M%s: pattern not found" % tag
+  if old not in BASE: PNA.fail("M%s: pattern not found" % tag)
   return BASE.replace(old, new, 1)
 
 print("MUTATION TABLE  (one textual edit at a time, whole-line diff)")

@@ -6,6 +6,7 @@ for every mutation in two units.
 Usage: python3 .agents/slop/mutate_webgpu_call.py
 """
 import os, re, subprocess, sys, shutil, tempfile
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(ROOT, "tinybendygrad", "runtime", "webgpu_call.bend")
@@ -91,12 +92,14 @@ MUTATIONS = [
 
 def apply_edit(text, old, new):
   if old is None:
-    return text, True
+    return text, None
   # tolerate the call site as well as the def: replace EVERY occurrence
   n = text.count(old)
   if n == 0:
-    return text, False
-  return text.replace(old, new), True
+    # WHY, not a bool.  The marker travels with the failure, so the call site
+    # cannot re-spell it, which is the whole point of one shared reporter.
+    return text, PNA.not_applied("pattern absent")
+  return text.replace(old, new), None
 
 
 def main():
@@ -114,9 +117,9 @@ def main():
     if old is None:
       print(f"| {mid} | a comment-only edit | 0 -- THE CONTROL |")
       continue
-    mutated, ok = apply_edit(base_text, old, new)
-    if not ok:
-      print(f"| {mid} | NOT APPLIED (pattern absent) | -- |")
+    mutated, why = apply_edit(base_text, old, new)
+    if why:
+      print(PNA.pipe([mid, why, "--"], 3))
       print(f"    {what}")
       continue
     tmp = os.path.join(MIRROR, "runtime", "webgpu_call.bend")

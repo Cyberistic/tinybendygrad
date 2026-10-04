@@ -60,6 +60,7 @@ The live tree is never opened for writing.
          PORT is a .bend path, ORACLE_SPEC is `path` or `path arg` exactly as BASE_ORACLES.
 """
 import hashlib, os, pathlib, subprocess, sys
+import patch_not_apply as PNA
 
 from wire_parse import read_fresh_cache, rows, stripped_env, write_cache
 
@@ -131,7 +132,7 @@ def plant(text, needle, repl):
   as '0 rows', which is indistinguishable from a fixture bend never started."""
   n = text.count(needle)
   if n != 1:
-    print(f"PATCH DID NOT APPLY  needle={needle!r} occurrences={n}")
+    print("%s  needle=%r occurrences=%d" % (PNA.not_applied(), needle, n))
     return None
   return text.replace(needle, repl, 1)
 

@@ -883,3 +883,31 @@ tree patched.
 `order-lin-cand.py` is the one to copy first for any future "which row could see
 this" question: it turns an argument about what a row *should* detect into a
 table of what it *does*.
+
+## MUTATION-ZERO VERBOSITY — the four tools that make a dead patch unable to read as a zero
+
+| tool | what it is, and the one thing about it worth copying |
+|---|---|
+| `patch_not_apply.py` | **THE SHARED REPORTER**, and the only place the marker is spelled. `not_applied(note="")` for a count or verdict cell, `pipe(cells, width)` for a `\|` row, `fail(note="")` to ABORT. `pipe()` raises on a width mismatch, so cell-count parity is structural rather than a promise; `fail()` is an explicit `raise`, not `assert`, because `python -O` strips `assert` and a stale anchor is exactly what must not be optimisable away. `MARKER` is `zero-classify.py`'s `V_PATCH`, **queried** through that file's `--verdicts` flag and checked at import, so the two cannot drift without one of them failing loudly. |
+| `not-applied-audit.py` | RULE D over harness SOURCES, never over reports, because a report cannot say which branch produced its own figure. Four assertions: **A1** the branch body must CALL the reporter (so an inlined literal is a failure, not a style nit), **A2** no emitted cell whose FIRST TOKEN parses as an integer, **A3** a `\|` row's width equals the enclosing scope's own rows with the branch EXCLUDED, **A4** the marker is in the queried vocabulary. `--dir D` audits another directory. **Use `--dir` against reconstructed pre-fix sources before trusting a green run** — an auditor that has only seen correct code has not been tested. |
+| `false-zero-sweep.py` | The same question asked of the COMMITTED TABLES instead of the sources, and the answer comes from the producer's branch body. A row is `MEASURED?` (the producer can only write a count there), `UNMARKED`/`NO-GUARD` (the record cannot say which branch produced its own figure), or `ANCHOR-GONE` (the anchor is absent from the file the harness names TODAY, so the figure cannot be re-derived — a REPRODUCIBILITY finding, **not** a claim the number was wrong). Imports its predicates from `not-applied-audit.py` rather than re-implementing them; two copies of "what is a stale-anchor branch" is two answers. |
+| `revision-ledger.py` | Which revision each committed table is valid for. Records **two** digests per table — the file it patches AND the baseline ROW SET — because a digest protects the MUTANT, not the REFERENCE: the `hi42` order swap (the exact M09 defect) leaves `shape()`'s three fields unchanged. Over 22 tables: 2 name a revision, 20 name none, 9 have a file digest, 5 have a row-set digest. |
+
+The generalisable lesson, and it cost this pass two wrong rounds of its own: **discovery
+keyed on the SHAPE of the `if` line misses every author who phrased it differently, and a
+whitelist of variable names is a fixture list that is stale the moment someone calls a
+variable `green`.** Broad discovery plus a real scope filter — the COMPARISON identifies the
+guard, and a separate predicate asks whether that scope publishes a count anywhere — beats
+narrow discovery plus a hopeful list. Both rounds are recorded as `## Z-3` in
+`bend2-constraints.md` (position 18919).
+
+### `ops501-*` — diagnosing a red-at-rest gate on a file another unit is editing
+
+| tool | what it is for |
+|---|---|
+| `ops501-atrest.sh [REV]` | The `s5_` rows of a REVISION of `uop/ops.bend`, default `@-`. **The at-rest state is `@-`, not `@`** — in Jujutsu `@` IS the working-copy commit, so `jj file show -r @ f` and `cat f` are the same bytes. Asking `@` here reported GREEN 6/6 while `@-` reported 82 rows against the oracle's 101. Stages beside the real file (never `$TMPDIR`: `ops.bend:168` imports `./../helpers.bend`), asserts the digest, deletes in a trap. |
+| `ops501-ctl.sh [REV] [TG_TREE]` | The three-lane comparison against a revision, printing **denominators and one-sided name sets**. `101 vs 82` is not a coverage statement; `101 | 82 | 82 shared | 19 oracle-only | 0 port-only | 0 disagreements on shared` is, and it eliminates the "different row names" hypothesis instead of assuming it away. |
+| `ops501-names.py PY PORT` | The same three numbers, from two lane files. Calls `rebase-gate.py`'s `rows()` — do not write a second reader. |
+| `ops501-agree.py PY BD BN` | AGREE / DISAGREE over whole `name=value` lines, **naming every disagreeing row** and every row present on one side only. |
+| `ops501-plant.sh [REV]` | **The control a missing-row failure cannot supply.** Plants one op out of `UOp.getaddr.op`'s nine-op ladder in a staged copy; requires clean rc=0 AND planted rc=1, and asserts the live file's digest is unchanged. Measured: `ROW DISAGREE s5_ga_param: cpython=Ops.GETADDR/Ops.PARAM bd=Ops.PARAM`. |
+| `ops-501-mutate.py` | 23 mutations, all moving the rows they name. **Stages `jj file show -r @` and never writes `ops.bend`** — the previous version did, and its `finally` restore would have permanently destroyed a concurrent unit's edit. Its anchors carry the `def` header: `case OpsPARAM{}: True{}` alone occurs 4 times in `ops.bend` and a 3-line window 6–62 times, so an unanchored replace edits a different ladder. |

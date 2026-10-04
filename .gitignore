@@ -51,6 +51,15 @@ probe-*.bend.mut
 *probe.bend
 _*[0-9].bend
 
+# ops501-atrest.sh stages a REVISION of ops.bend at its own relative path, because
+# a copy elsewhere cannot resolve `./../helpers.bend` and prints a phantom 0 rows.
+# So the stage is necessarily inside the source tree, and two traps follow from
+# that: a `for f in tinybendygrad/uop/*.bend` sweep counts it as a port and calls
+# it RED when the RED is the OLD revision (observed: `ops-ATREST-20808.bend` in a
+# 12-file `--check-only` sweep), and one careless `jj split` commits a whole stale
+# ops.bend. Matches 0 real files.
+tinybendygrad/**/*ATREST-*.bend
+
 # comment-realignment pass: the measurement + edit harness (spec*.py, apply.py,
 # final.py, cite.py, dist.py) and the four report artifacts. Never sources; the
 # 2.0 MB before/ snapshot it produced was deleted so this stays under 0.5 MB.

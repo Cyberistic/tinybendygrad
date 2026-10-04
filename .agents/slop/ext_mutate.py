@@ -15,6 +15,7 @@ two kinds of zero are distinguished the way agent-core requires:
   REQUEST   it is a MISSING FIXTURE, and the fixture is named.
 """
 import pathlib, subprocess, sys, time
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SLOP = ROOT / ".agents/slop"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # helpers-oracle.py -- the CPython side of the `trange` / `GlobalCounters` /
-# `Context` gate for tinybendygrad/helpers.bend.
+# `Context` / 64-bit-pair gate for tinybendygrad/helpers.bend.
 #
 #   DEFAULT_FLOAT=f16 DEFAULT_INT=i64 NO_COLOR=0 \
 #     .venv/bin/python .agents/slop/helpers-oracle.py
@@ -8,8 +8,10 @@
 #   sh .agents/slop/helpers-tc-gate.sh        # runs it, both Bend lanes, and diffs
 #
 # EVERY row is produced by CALLING the real defs in tinygrad/helpers.py:637
-# (`trange`), :319 (`GlobalCounters`) and :187 (`Context`). Nothing here is typed
-# from memory; `cat` the file if you want to check a row.
+# (`trange`), :319 (`GlobalCounters`), :187 (`Context`) and :76-78 (`floordiv`,
+# `floormod`). Nothing here is typed from memory; `cat` the file if you want to
+# check a row. The 64-bit block at the foot adds `math.gcd` and Python's own `|`,
+# `&` and `<<`, which is the same statement about the same words.
 #
 # WALL 2, MEASURED AND HONOURED: `getenv` is `@functools.cache`d (helpers.py:162),
 # so a `ContextVar`'s value is read from the environment ONCE at import and every
@@ -25,8 +27,9 @@
 # NOT PORTED in helpers.bend), `ContextVar._cache`'s key set (61 ContextVars
 # upstream, 4 in this file's `Flags`), and `time_sum_s` after an increment, which
 # is `F32.add` -- a LAW at base.bend:1556, which live code may not call.
+import math
 import sys
-from tinygrad.helpers import trange, GlobalCounters, Context, ContextVar
+from tinygrad.helpers import trange, GlobalCounters, Context, ContextVar, floordiv, floormod
 
 def s(v) -> str: return str(v)
 def un(tag: str, v) -> None: print(f"#ungated {tag}={s(v)}", file=sys.stderr)
@@ -174,3 +177,97 @@ print(f"ctx_empty_exit={s(int(bool(ContextVar._cache['NO_COLOR'].value)))}")
 # 61 ContextVars upstream; this file's `Flags` holds 4. Measured, not gated.
 un("ctx_key_count", len(ContextVar._cache))
 un("ctx_keys", ",".join(sorted(ContextVar._cache)))
+
+# ------------------------------------------------------- the 64-bit pair block
+# `i64_or` / `i64_and` / `i64_shl` / `i64_div` / `i64_mod` / `gcd`, on a two's
+# complement 64-bit word. helpers.py:76-78 for the division and `math.gcd` for the
+# gcd, and the BITWISE and the SHIFT are Python's own operators on the same integer.
+#
+# THE FIXTURE IS A PAIR OF WORDS AND NOT A DECIMAL, and that is not a printing
+# choice: `H.i64_text` prints the two halves, so both sides read the same 64 bits
+# and a value like 2**63 -- which has no `U32` image and would have to be
+# TRANSCRIBED -- never appears anywhere in this file. The `_a=` and `_b=` and `_x=`
+# and `_k=` rows below print the FIXTURE ITSELF, so a table that drifts between the
+# two lanes shows up as a diff on the input rather than as a diff nobody can explain.
+#
+# ONE REDUCTION, STATED ONCE. `i64_div` / `i64_mod` / `i64_shl` are 64-bit
+# operations and their answer is reduced mod 2**64 and read back as signed, which is
+# the contract `i64_add` / `i64_sub` have had since their borrow was fixed. CPython's
+# `//`, `%` and `<<` are UNBOUNDED, so `as_i64` applies that reduction to Python's
+# answer rather than Python being wrong: on every row but `pm_ovf` and `sh_k64` it is
+# the identity, and on those two it is the whole claim.
+MASK64 = (1 << 64) - 1
+def as_i64(x: int) -> int:
+  v = x & MASK64
+  return v - (1 << 64) if v >> 63 else v
+def signed(hi: int, lo: int) -> int: return as_i64((hi << 32) | lo)
+def words(x: int) -> str:
+  v = as_i64(x) & MASK64
+  return f"{v >> 32}:{v & 0xFFFFFFFF}"
+def w64(x: int) -> str: return words(as_i64(x))
+
+# (name, a, b) as WORD PAIRS. The small rows are the CONTROL and they are not what
+# makes the divider a test: every row whose two operands are below 2**32 reads the
+# same whether the 65th bit is carried, whether the shift's high arm comes from `lo`
+# or from `hi`, and whether the floor correction is applied. The rows that reach
+# those branches are the ones with a non-zero HIGH WORD -- `pm_big` is 2**63-1 over
+# 2**62-1, `pm_mini` is -2**63, `pm_maxi` is 2**63-1, and `pm_nege`/`pm_nepo`/
+# `pm_pone`/`pm_gneg` are the three sign pairs plus a negative gcd. `pm_gf` is the
+# one row with small operands ON PURPOSE: it is a Fibonacci pair, so it is the row
+# that reaches the `gcd` fuel bound rather than the 64-bit branches.
+#
+# `pm_gbig` exists because the `*_gcd` COLUMN was constant over twelve of the
+# fourteen rows -- everything but `pm_zero` and `pm_zerod` answers `0:1` -- and a
+# column that is constant over a suite is a column no mutation can move. It is
+# `gcd(2**63-2, 2**62-1) = 2**62-1`, so it is a LARGE answer and not just a non-1
+# one, and a two-step Euclid over 64-bit operands. Twelve rows are still `0:1`
+# because that is what the gcd of most pairs is, and the three that are not are the
+# rows the column exists for: `pm_zero_gcd=0:0`, `pm_zerod_gcd=0:7`, `pm_gbig_gcd`.
+PAIRS = [
+  ("pm_zero",  (0, 0),          (0, 0)),
+  ("pm_zerod", (0, 7),          (0, 0)),
+  ("pm_small", (0, 5),          (0, 3)),
+  ("pm_big",   (0x7FFFFFFF, 0xFFFFFFFF), (0x3FFFFFFF, 0xFFFFFFFF)),
+  ("pm_nege",  (0xFFFFFFFF, 0xFFFFFFF7), (0xFFFFFFFF, 0xFFFFFFFB)),
+  ("pm_nepo",  (0xFFFFFFFF, 0xFFFFFFF9), (0, 4)),
+  ("pm_pone",  (0, 7),          (0xFFFFFFFF, 0xFFFFFFFC)),
+  ("pm_mini",  (0x80000000, 0), (0, 3)),
+  ("pm_maxi",  (0x7FFFFFFF, 0xFFFFFFFF), (0xFFFFFFFF, 0xFFFFFFFF)),
+  ("pm_ovf",   (0x80000000, 0), (0xFFFFFFFF, 0xFFFFFFFF)),
+  ("pm_wide",  (0xFFFFFFFF, 0), (0, 0xFFFFFFFF)),
+  ("pm_gb",    (0x7FFFFFFF, 0xFFFFFFFF), (0x7FFFFFFE, 0xFFFFFFFE)),
+  ("pm_gbig",  (0x7FFFFFFF, 0xFFFFFFFE), (0x3FFFFFFF, 0xFFFFFFFF)),
+  ("pm_gneg",  (0xFFFFFFFF, 0xFFFFFFF9), (0, 6)),
+  ("pm_gf",    (0, 2971215073), (0, 472537396)),
+]
+for nm, (ah, al), (bh, bl) in PAIRS:
+  a, b = signed(ah, al), signed(bh, bl)
+  print(f"{nm}_a={words(a)}")
+  print(f"{nm}_b={words(b)}")
+  print(f"{nm}_or={w64(a | b)}")
+  print(f"{nm}_and={w64(a & b)}")
+  print(f"{nm}_div={w64(floordiv(a, b))}")
+  print(f"{nm}_mod={w64(floormod(a, b))}")
+  print(f"{nm}_gcd={w64(math.gcd(a, b))}")
+
+# (name, x, k). `k = 0`, `k = 32` and `k = 64` are the three amounts where a shift's
+# two forms meet or the word runs out, and `sh_neg33` is the one that reaches the
+# `k >= 32` arm on a NEGATIVE value -- where the high word must come from `lo` and
+# only from `lo`, and reading `hi` there answers 0.
+SHIFTS = [
+  ("sh_k0",    (0x12345678, 0x9ABCDEF0), 0),
+  ("sh_k1",    (0x12345678, 0x9ABCDEF0), 1),
+  ("sh_k31",   (0x12345678, 0x9ABCDEF0), 31),
+  ("sh_k32",   (0, 1),        32),
+  ("sh_k33",   (0, 1),        33),
+  ("sh_k63",   (0, 1),        63),
+  ("sh_k64",   (0, 1),        64),
+  ("sh_neg4",  (0xFFFFFFFF, 0xFFFFFFF9), 4),
+  ("sh_neg33", (0xFFFFFFFF, 0xFFFFFFF9), 33),
+  ("sh_big63", (0x7FFFFFFF, 0xFFFFFFFF), 63),
+]
+for nm, (xh, xl), k in SHIFTS:
+  x = signed(xh, xl)
+  print(f"{nm}_x={words(x)}")
+  print(f"{nm}_k={s(k)}")
+  print(f"{nm}_shl={w64(x << k)}")

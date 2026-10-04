@@ -11,6 +11,7 @@
 #   * a THEOREM               -- two spellings are the same function, so no fixture separates them
 #   * GENUINELY UNFIXABLE      -- the predicate cannot fail over any possible answer
 import re
+import patch_not_apply as PNA
 import subprocess
 import sys
 
@@ -118,7 +119,9 @@ def main():
   zeros = 0
   for label, find, repl in MUTATIONS:
     if src.count(find) != 1:
-      print(f"| {label} | -- | ANCHOR NOT UNIQUE ({src.count(find)} matches): not run |")
+      print(PNA.pipe([label, PNA.not_applied("anchor occurs %d times"
+                                              % src.count(find)),
+                       "not run"], 3))
       zeros += 1
       continue
     open(SRC + ".mut", "w").write(src.replace(find, repl))

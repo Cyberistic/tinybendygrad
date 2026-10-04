@@ -18,6 +18,7 @@ The repair passes each rule's OWN node's arg. `ANone{}` is the obvious wrong
 answer, and M6 -- passing a DIFFERENT node's arg -- is the one that distinguishes
 "preserves its own arg" from "passes some arg"."""
 import subprocess, sys, shutil, os, re
+import patch_not_apply as PNA
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # the mutated file MUST sit beside the real one: a copy in another directory

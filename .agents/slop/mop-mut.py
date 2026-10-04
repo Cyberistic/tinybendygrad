@@ -20,6 +20,7 @@ table, because "26 rows moved" for M6 is a symptom, not a finding.
     python3 .agents/slop/mop-mut.py
 """
 import subprocess, sys, os, shutil, time
+import patch_not_apply as PNA
 
 import tempfile
 SANDBOX = tempfile.mkdtemp(prefix='mop-mut-')

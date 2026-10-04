@@ -16,6 +16,7 @@ mutation is applied to the BUILT file (not the parts) and the file is restored f
 a copy, so no build step can launder a mutation into a no-op.
 """
 import os, subprocess, sys
+import patch_not_apply as PNA
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
@@ -190,16 +191,18 @@ def main():
       if isinstance(old, list):
         if any(src.count(a) != 1 for a, _ in old):
           bad = [src.count(a) for a, _ in old]
-          print('%-24s %5s  SITE COUNTS %s -- fix the mutation, do not run it' % (label, '-', bad))
-          results.append((label, -1, 'BROKEN'))
+          print('%-24s %5s  %s SITE COUNTS %s -- fix the mutation, do not run it'
+                % (label, '-', PNA.not_applied(), bad))
+          results.append((label, -1, PNA.not_applied("SITE COUNTS %s" % bad)))
           continue
         mut = src
         for a, b in old:
           mut = mut.replace(a, b, 1)
       elif src.count(old) != 1:
-        print('%-24s %5s  MATCHES %d TIMES -- fix the mutation, do not run it'
-              % (label, '-', src.count(old)))
-        results.append((label, -1, 'BROKEN'))
+        print('%-24s %5s  %s MATCHES %d TIMES -- fix the mutation, do not run it'
+              % (label, '-', PNA.not_applied(), src.count(old)))
+        results.append((label, -1, PNA.not_applied("MATCHES %d TIMES"
+                                                   % src.count(old))))
         continue
       else:
         mut = src.replace(old, new, 1)

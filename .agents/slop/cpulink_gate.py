@@ -34,6 +34,7 @@ gate:
     .venv/bin/python .agents/slop/cpulink_gate.py --mutate
 """
 import difflib
+import patch_not_apply as PNA
 import os
 import subprocess  # noqa: F401  (documented: see the note below)
 import sys
@@ -146,8 +147,8 @@ def mutate():
   moved, zeros = [], []
   for name, old, new in MUTATIONS:
     if src.count(old) != 1:
-      print("%-70s SKIP (anchor x%d)" % (name, src.count(old)))
-      zeros.append((name, "anchor x%d" % src.count(old)))
+      print("%-70s %s (anchor x%d)" % (name, PNA.not_applied(), src.count(old)))
+      zeros.append((name, PNA.not_applied("anchor x%d" % src.count(old))))
       continue
     open(PORT, "w").write(src.replace(old, new))
     got = kv(bend_rows())

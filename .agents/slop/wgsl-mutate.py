@@ -60,8 +60,12 @@ MUTATIONS = [
      '")-", U32.show(rc_half(bits)), ")"]', '")+0)"]'),
     ("M16", "the f16 enablement is dropped",
      '"enable f16;\\n", "")', '"")'),
+    # RE-AIMED 2026-10-04.  The old anchor carried the OPENING QUOTE, and the
+    # literal grew a `@group(0) @binding(0)\n` prefix, so the quote is no longer
+    # the first character of the string.  Anchoring on `var<uniform> ... f32;` is
+    # the same edit at the same site: it is the one substring the mutation acts on.
     ("M17", "the INFINITY uniform is spelled with a space before the colon",
-     '"var<uniform> INFINITY : f32;\\n"', '"var<uniform> INFINITY:f32;\\n"'),
+     'var<uniform> INFINITY : f32;\\n"', 'var<uniform> INFINITY:f32;\\n"'),
     ("M18", "the nan() helper is dropped from the prologue",
      'String.concat([rk_f16(Scan.half(sc)), rk_nan(), rk_inf()',
      'String.concat([rk_f16(Scan.half(sc)), rk_inf()'),
@@ -89,8 +93,11 @@ MUTATIONS = [
      "Nat.sub(U32.to_nat(nan_bs(dt)), 1n)", "U32.to_nat(nan_bs(dt))"),
     ("M30", "type_map sends uchar to i32",
      "case 2 : \"u32\"", "case 2 : \"i32\""),
+    # RE-AIMED 2026-10-04.  The literal moved into `wi_axis.of`, which wraps it
+    # in `Some{}`, so the old anchor no longer exists.  Same site, same edit: the
+    # axis letter `case 1` answers is still the thing this mutation changes.
     ("M31", "code_for_workitem's axis letter is always x",
-     "case 1: \"y\"", "case 1: \"x\""),
+     "case 1: Some{\"y\"}", "case 1: Some{\"x\"}"),
     ("M32", "supported_dtypes always includes half",
      "sd_go(String.contains(arch, \"shader-f16\"),", "sd_go(True{},"),
     ("M33", "_render_dtype spells the WGSL type instead of the storage class",

@@ -9,6 +9,7 @@ A mutation that moves NOTHING is information about the GATE, not a passing test
 either a control (M0/M13) or a MISSING ROW that the comment names.
 """
 import shutil, subprocess, sys, os, tempfile
+import patch_not_apply as PNA
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 F = os.path.join(REPO, "tinybendygrad", "nn", "onnx.bend")

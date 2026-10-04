@@ -1,0 +1,94 @@
+# py range rows=2  py binblob rows=19  plant=range-vs-binblob  mode=ORDERED
+# devices py range=[] py binblob=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: y=0/1 (a bytes arg: CONTENT compared; the residual is the bytes CONST) -- agreement below does NOT cover these.
+# SHARED cores=1  ONLY-PY RANGE=1  ONLY-PY BINBLOB=18  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
+# ONLY ON THE PY RANGE SIDE (1), IN FULL:
+  py range#2 RANGE dtype=weakint shape=() depth=i1 tag=N arg=rg(i1,XWEAK,n(i0,i1)) src=['1']
+# ONLY ON THE PY BINBLOB SIDE (18), IN FULL:
+  py binblob#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  py binblob#3 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:3 src=[]
+  py binblob#4 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['2', '3']
+  py binblob#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+  py binblob#6 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:1 src=[]
+  py binblob#7 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['2', '6', '3']
+  py binblob#8 RESHAPE dtype=f32 shape=(l0:4,l0:1,l0:3) depth=i0 tag=N arg=N src=['5', '7']
+  py binblob#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  py binblob#10 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:5 src=[]
+  py binblob#11 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['3', '10']
+  py binblob#12 RESHAPE dtype=f32 shape=(l0:3,l0:5) depth=i0 tag=N arg=N src=['9', '11']
+  py binblob#13 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['6', '3', '10']
+  py binblob#14 RESHAPE dtype=f32 shape=(l0:1,l0:3,l0:5) depth=i0 tag=N arg=N src=['12', '13']
+  py binblob#15 PERMUTE dtype=f32 shape=(l0:1,l0:5,l0:3) depth=i0 tag=N arg=n(i0,i2,i1) src=['14']
+  py binblob#16 MUL dtype=f32 shape=(l0:4,l0:5,l0:3) depth=i0 tag=N arg=N src=['8', '15']
+  py binblob#17 PERMUTE dtype=f32 shape=(l0:3,l0:4,l0:5) depth=i0 tag=N arg=n(i2,i0,i1) src=['16']
+  py binblob#18 REDUCE dtype=f32 shape=(l0:4,l0:5) depth=i0 tag=N arg=rd(OADD,i1) src=['17']
+  py binblob#19 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y n(i116,i105,i110,i121) src=['18']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+#   z   arg   py=0    bend=0    a realized BUFFER: device-object PRESENCE only
+#       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
+#   y   arg   py=0    bend=1    a bytes arg: CONTENT compared; the residual is the bytes CONST
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#   u   arg   py=0    bend=0    a UOp nested in an arg: identity NOT compared
+#       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
+#   q   arg   py=0    bend=0    an applied option the port cannot resolve: COUNT only
+#       ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are `Opt` dataclasses and no port file writes a non-empty list
+#   X!  arg   py=0    bend=0    an AxisType member with no counterpart at this tree
+#       measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files
+#   BAD arg   py=0    bend=0    the port's arena bottom: not a node
+#       ops.bend:1154 -- a read of an index that was never interned
+#   ?   shape py=0    bend=0    the port's fold produced no shape at all for this node
+#       PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple (ops.py:455), so upstream has no third state. `?` cannot be produced by the py side
+#   E   arg   py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
+#       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
+#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# DENOMINATOR: graphs=2 (1 py range + 1 py binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8
+# VERDICT: DISAGREE
+# bend range rows=2  bend binblob rows=19  plant=range-vs-binblob  mode=ORDERED
+# devices bend range=[] bend binblob=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
+# RESIDUALS IN THIS RUN: y=0/1 (a bytes arg: CONTENT compared; the residual is the bytes CONST) -- agreement below does NOT cover these.
+# SHARED cores=1  ONLY-BEND RANGE=1  ONLY-BEND BINBLOB=18  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
+# ONLY ON THE BEND RANGE SIDE (1), IN FULL:
+  bend range#2 RANGE dtype=weakint shape=() depth=i1 tag=N arg=rg(i1,XWEAK,n(i0,i1)) src=['1']
+# ONLY ON THE BEND BINBLOB SIDE (18), IN FULL:
+  bend binblob#1 ALLOC dtype=f32 shape=(l0:12) depth=i0 tag=N arg=P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  bend binblob#3 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:3 src=[]
+  bend binblob#4 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['2', '3']
+  bend binblob#5 RESHAPE dtype=f32 shape=(l0:4,l0:3) depth=i0 tag=N arg=N src=['1', '4']
+  bend binblob#6 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:1 src=[]
+  bend binblob#7 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['2', '6', '3']
+  bend binblob#8 RESHAPE dtype=f32 shape=(l0:4,l0:1,l0:3) depth=i0 tag=N arg=N src=['5', '7']
+  bend binblob#9 ALLOC dtype=f32 shape=(l0:15) depth=i0 tag=N arg=P(i1,Df32,i15,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) src=[]
+  bend binblob#10 CONST dtype=weakint shape=() depth=i0 tag=N arg=l0:5 src=[]
+  bend binblob#11 STACK dtype=weakint shape=(l0:2) depth=i0 tag=N arg=N src=['3', '10']
+  bend binblob#12 RESHAPE dtype=f32 shape=(l0:3,l0:5) depth=i0 tag=N arg=N src=['9', '11']
+  bend binblob#13 STACK dtype=weakint shape=(l0:3) depth=i0 tag=N arg=N src=['6', '3', '10']
+  bend binblob#14 RESHAPE dtype=f32 shape=(l0:1,l0:3,l0:5) depth=i0 tag=N arg=N src=['12', '13']
+  bend binblob#15 PERMUTE dtype=f32 shape=(l0:1,l0:5,l0:3) depth=i0 tag=N arg=n(i0,i2,i1) src=['14']
+  bend binblob#16 MUL dtype=f32 shape=(l0:4,l0:5,l0:3) depth=i0 tag=N arg=N src=['8', '15']
+  bend binblob#17 PERMUTE dtype=f32 shape=(l0:3,l0:4,l0:5) depth=i0 tag=N arg=n(i2,i0,i1) src=['16']
+  bend binblob#18 REDUCE dtype=f32 shape=(l0:4,l0:5) depth=i0 tag=N arg=rd(OADD,i1) src=['17']
+  bend binblob#19 BINARY dtype=u8 shape=(l0:4) depth=i0 tag=N arg=y n(i116,i105,i110,i121) src=['18']
+# LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
+#   z   arg   py=0    bend=0    a realized BUFFER: device-object PRESENCE only
+#       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
+#   y   arg   py=0    bend=1    a bytes arg: CONTENT compared; the residual is the bytes CONST
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#   u   arg   py=0    bend=0    a UOp nested in an arg: identity NOT compared
+#       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
+#   q   arg   py=0    bend=0    an applied option the port cannot resolve: COUNT only
+#       ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are `Opt` dataclasses and no port file writes a non-empty list
+#   X!  arg   py=0    bend=0    an AxisType member with no counterpart at this tree
+#       measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files
+#   BAD arg   py=0    bend=0    the port's arena bottom: not a node
+#       ops.bend:1154 -- a read of an index that was never interned
+#   ?   shape py=0    bend=0    the port's fold produced no shape at all for this node
+#       PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple (ops.py:455), so upstream has no third state. `?` cannot be produced by the py side
+#   E   arg   py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
+#       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
+#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
+# shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
+# DENOMINATOR: graphs=2 (1 bend range + 1 bend binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8
+# VERDICT: DISAGREE
+# CROSS VERDICT: OK -- it disagrees
+rc=0

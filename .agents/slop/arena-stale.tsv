@@ -1,0 +1,25 @@
+file	line	def	call	arena_expr	index_expr	found_src	params
+tinybendygrad/uop/ops-CTL-29437.bend	4718	t_after_puts_self_first	O.Arena.src	ar	Found.i(a)	a	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	4719	t_after_puts_self_first	O.Arena.src	ar	Found.i(a)	a	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	4728	t_end_puts_self_first	O.Arena.src	ar	Found.i(e2)	e2	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	4729	t_end_puts_self_first	O.Arena.src	ar	Found.i(e2)	e2	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	5313	t_mstack_puts_self_first	O.Arena.src	ar	Found.i(f)	f	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	5314	t_mstack_puts_self_first	O.Arena.src	ar	Found.i(f)	f	) -> Bool
+tinybendygrad/uop/ops-CTL-29437.bend	5496	Uc.depth	O.Arena.depth	Found.ar(b)	Found.i(a)	a	da|db|ids|U32>) -> String
+tinybendygrad/uop/ops-CTL-29437.bend	6087	s5.minted.of	O.Arena.op	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops-CTL-29437.bend	6087	s5.minted.of	O.Arena.srcs	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops.bend	4700	t_after_puts_self_first	O.Arena.src	ar	Found.i(a)	a	) -> Bool
+tinybendygrad/uop/ops.bend	4701	t_after_puts_self_first	O.Arena.src	ar	Found.i(a)	a	) -> Bool
+tinybendygrad/uop/ops.bend	4710	t_end_puts_self_first	O.Arena.src	ar	Found.i(e2)	e2	) -> Bool
+tinybendygrad/uop/ops.bend	4711	t_end_puts_self_first	O.Arena.src	ar	Found.i(e2)	e2	) -> Bool
+tinybendygrad/uop/ops.bend	5295	t_mstack_puts_self_first	O.Arena.src	ar	Found.i(f)	f	) -> Bool
+tinybendygrad/uop/ops.bend	5296	t_mstack_puts_self_first	O.Arena.src	ar	Found.i(f)	f	) -> Bool
+tinybendygrad/uop/ops.bend	5478	Uc.depth	O.Arena.depth	Found.ar(b)	Found.i(a)	a	da|db|ids|U32>) -> String
+tinybendygrad/uop/ops.bend	6074	s5.minted.of.go	O.Arena.op	ar	Found.i(f)	f	ar|f|srcs|U32>) -> String
+tinybendygrad/uop/ops.bend	6075	s5.minted.of.go	O.Arena.op	ar	Found.i(f)	f	ar|f|srcs|U32>) -> String
+tinybendygrad/uop/ops.bend	6078	s5.minted.of	O.Arena.srcs	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops.bend	6524	sg.minted.of	O.Arena.op	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops.bend	6524	sg.minted.of	O.Arena.srcs	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops.bend	6525	sg.minted.of	O.Arena.arg	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/ops.bend	6525	sg.minted.of	O.Arena.tag	ar	Found.i(f)	f	ar|f
+tinybendygrad/uop/validate.bend	1575	dv_and.mm2	O.Arena.src	ar	O.Found.i(t)	t	ar|t

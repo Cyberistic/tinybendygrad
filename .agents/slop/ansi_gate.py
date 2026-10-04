@@ -32,6 +32,7 @@ shaped. `ansi_29` is the row that separates "re.sub re-reads a failed run's body
 from "the port flushes it", and it is a NAMED BOUNDARY below.
 """
 import difflib
+import patch_not_apply as PNA
 import os
 import subprocess
 import sys
@@ -164,8 +165,8 @@ def mutate():
   moved, zeros = [], []
   for name, old, new in MUTATIONS:
     if src.count(old) != 1:
-      print("%-74s SKIP (anchor x%d)" % (name, src.count(old)))
-      zeros.append((name, "anchor does not occur exactly once"))
+      print("%-74s %s (anchor x%d)" % (name, PNA.not_applied(), src.count(old)))
+      zeros.append((name, PNA.not_applied("anchor does not occur exactly once")))
       continue
     open(PORT, "w").write(src.replace(old, new))
     rc, out, err = run(["./bin/bend", PROBE])

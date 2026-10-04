@@ -1,0 +1,41 @@
+sg_body_call=some:Ops.SINK
+sg_body_add=none:RuntimeError
+sg_inline_call=some:True
+sg_inline_pre=some:False
+sg_inline_body=some:False
+sg_inline_kernel=some:False
+sg_inline_cfun=none:AttributeError
+sg_inline_aft=some:False
+sg_inline_add=some:False
+sg_huo_alloc=True
+sg_huo_bind=False
+sg_huo_buffer=False
+sg_huo_src0=False
+sg_huo_unshard=True
+sg_huo_noncall=False
+sg_huo_op=False
+sg_invalid=Ops.CONST/ cinvalid t=none
+sg_isinv_ci=True
+sg_isinv_c0=False
+sg_reduce_some=Ops.REDUCE/Ops.BUFFER reduce:Ops.ADD/0 t=none
+sg_reduce_none=Ops.REDUCE/Ops.BUFFER none t=none
+sg_reduce_two=Ops.REDUCE/Ops.BUFFER Ops.CONST reduce:Ops.MAX/0 t=none
+sg_cconst_i32=Ops.CAST/Ops.CONST dt:i32 t=none
+sg_cconst_f32=Ops.CAST/Ops.CONST dt:f32 t=none
+sg_index_hit1=True
+sg_index_hit0=True
+sg_index_hitmiss=False
+sg_index_plain=Ops.INDEX/Ops.BUFFER none t=none
+sg_index_one=Ops.INDEX/Ops.BUFFER Ops.CONST none t=none
+sg_index_two=Ops.INDEX/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_index_nc=Ops.INDEX/Ops.STACK Ops.BUFFER none t=none
+sg_index_st2=Ops.INDEX/Ops.STACK Ops.CONST Ops.CONST none t=none
+sg_store_nogate=Ops.STORE/Ops.BUFFER Ops.CONST none t=none
+sg_store_gate=Ops.STORE/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_ins_tag=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=9
+sg_ins_none=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=none
+sg_wmma=Ops.WMMA/Ops.BUFFER Ops.CONST Ops.ADD wmma:32/i32 t=none
+sg_ufix_uop=Ops.CONST
+sg_ufix_lit=Ops.CONST/ cint t=none
+sg_ufix_miss=True
+sg_idx=Ops.CONST,Ops.CONST,Ops.CONST,Ops.CONST,Ops.BUFFER,Ops.ADD,Ops.ALLOC,Ops.ALLOC,Ops.UNSHARD,Ops.STACK,Ops.SINK,Ops.SINK,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.ADD,Ops.ADD,Ops.AFTER,Ops.ADD,

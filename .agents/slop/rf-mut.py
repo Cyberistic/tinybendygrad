@@ -6,6 +6,7 @@ clean gate.  A mutation that does not compile is reported as such, because "the
 refused edit" is a result too.
 """
 import subprocess, sys, os, shutil
+import patch_not_apply as PNA
 
 F = 'tinybendygrad/schedule/rangeify.bend'
 BAK = '/tmp/rf_orig.bend'

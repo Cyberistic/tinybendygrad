@@ -1,4 +1,5 @@
 import re, subprocess, sys, shutil
+import patch_not_apply as PNA
 # POST-SPLIT, same prologue as ra-mutate.py: the written file is
 # `codegen/late/regalloc.bend`, `run()` prints all three files in Python's order, and
 # `q()` re-qualifies each ENTRY with the `LT.` the split forced on a call site.

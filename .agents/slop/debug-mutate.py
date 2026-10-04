@@ -26,6 +26,7 @@ name-comparing harness reported 0 for all 30 mutations in one unit -- so the who
 line is the key, and rows present in one side only count as moved.
 """
 import os, shutil, subprocess, sys
+import patch_not_apply as PNA
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SCRATCH = os.path.join(ROOT, '.agents', 'slop', 'debug-mut-work')
@@ -169,8 +170,9 @@ def main():
       green = f.read()
     n = green.count(old)
     if n != 1:
-      print("| (NOT APPLIED -- pattern occurs %d times) %s | - | - |"
-            % (n, label[:60]))
+      print(PNA.pipe(["(%s -- pattern occurs %d times) %s" % (PNA.not_applied(),
+                                                              n, label[:60]),
+                      "-", "-"], 3))
       continue
     with open(path, 'w') as f:
       f.write(green.replace(old, new, 1))

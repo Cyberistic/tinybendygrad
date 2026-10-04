@@ -93,6 +93,14 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
                   the one thing this rule exists to forbid, and the header then claimed the
                   slot was compared when MEASURED `Buffer` has no `slot` at all. See
                   `paramarg`.
+                * a `bytes` arg is the FULL byte list, MEASURED 2026-10-04 against the
+                  port: `ABlob{bs: List<&2, U32>}` (ops.bend:1062) HOLDS the bytes and
+                  `eq_arg.ABlob` (:1801) compares them element-wise. It used to be the
+                  LENGTH, on a reason ("the port cannot fill it") that was true when
+                  written and is false now -- and the cost was measurable: `--plant
+                  bytes` hangs `b"aaaa"` and `b"bbbb"` off the matmul and the length-only
+                  column printed `arg=y4` for BOTH, so a graph differing only in blob
+                  content scored identical.
                 * `CallInfo` (ops.py:1400) is not even a dataclass -- a plain class whose
                   `__repr__` prints `id(self.grad_fxn)`, a per-process address
                   (ops.py:1408-1410). So it is field-by-field too, and a CALL's difference
@@ -171,17 +179,44 @@ PAIRING, three rungs, so a difference is NAMED rather than counted:
      rather than as an unexplained node.
   3  still unpaired -> ONLY-<side>, printed IN FULL, so nothing is summarised away.
 
+THE NINE GRAPHS, and their node counts are MEASURED by `diff` on every run rather than
+written down here, because a denominator that lives in a comment rots. `--graph NAME` on
+its own is the whole invocation: ONE command, no other arguments, ONE verdict line.
+
+    matmul  (Tensor.empty(4,3) @ Tensor.empty(3,5)).uop         18 nodes
+    reduce  Tensor.empty(4,8).sum(axis=1).uop                    7
+    buffer  Tensor.empty(4,3).realize().uop                      5   the `z` residual
+    sink    UOp(Ops.SINK, (UOp.const(4),), KernelInfo())         2   `kI` + `R` shape
+    range   UOp.range(4, (0, 1))                                2   THE ONLY NON-ZERO depth
+    rangeflat UOp.range(4, 0)                                   2   the depth-0 twin
+    cast    Tensor.empty(4,3).cast(dtypes.half).uop             6   a bare DType arg
+    special UOp.special(4, "inf")                               2   a bare str arg
+    binblob UOp(Ops.BINARY, (matmul,), b"tiny")                19   the `y` residual
+
+`range` and `rangeflat` are a PAIR and exist together. Before them EVERY node in EVERY
+graph had `depth=i0` on both sides, so R5 was a field that had never been asked a
+question -- and when the first RANGE arrived it turned out to be OFF BY ONE on the py
+side (see `cdepth`). A field that reads equal because both sides are wrong is worse than
+a field that is not compared, and only a graph that reaches the field finds that.
+
 USAGE
 
     python3 .agents/slop/graphcmp.py selfcheck
     python3 .agents/slop/graphcmp.py emit py   --graph matmul  > runs/graphcmp/py.txt
     python3 .agents/slop/graphcmp.py emit bend                  > runs/graphcmp/bend.txt
-    python3 .agents/slop/graphcmp.py diff
-    python3 .agents/slop/graphcmp.py diff --plant srcswap
+    python3 .agents/slop/graphcmp.py diff --graph matmul
+    python3 .agents/slop/graphcmp.py diff --plant srcswap       # ORDERED: names `src`
+    python3 .agents/slop/graphcmp.py diff --plant srcswap --equiv   # EQUIV: AGREE
     python3 .agents/slop/graphcmp.py control
+    python3 .agents/slop/graphcmp.py conf        # the three conflations, one line each
+    python3 .agents/slop/graphcmp.py dbg --levels 0,1,2   # across DEBUG, graph held fixed
 
 There is no `--dev-map`. The device name is not bound at a prompt: the port resolves its
-interned tag through its own table (R7) and both sides then carry a NAME.
+interned tag through its own table (R7) and both sides then carry a NAME. There is no
+`--plant-side` either: it was ACCEPTED AND NEVER READ, which is the same defect as the
+`--graph` default this file was already measured to have, so it is gone rather than
+documented. Planting the bend side would mean writing six DAG rewrites in Bend against a
+graph the port builds node for node -- a second implementation of the tree, not a plant.
 
 Exit status: 0 when the two sides agree on every core and every field, 1 when they do not,
 2 when the comparison was NOT WELL-POSED or a side produced nothing -- which is a FAILURE
@@ -197,9 +232,16 @@ import pathlib
 import subprocess
 import sys
 
+# The commutative op set, filled from CPython by `commutative()` once tinygrad is
+# imported. It is a module global because `Node.key` is a method and threading it
+# through every node would be noise; `selfcheck` asserts it is non-empty, so a
+# run that forgot to fill it fails loudly rather than making `--equiv` the identity.
+COMM: frozenset = frozenset()
+
 REPO = pathlib.Path(__file__).resolve().parents[2]
 SLOP = REPO / ".agents" / "slop"
 BEND_PROBE = SLOP / "graphcmp.bend"
+BEND_DBG = SLOP / "graphcmp-dbg.bend"
 BEND = REPO / "bin" / "bend"
 
 # `tinygrad.helpers.DEV` is resolved when tinygrad is IMPORTED, so `--dev` has to be decided
@@ -211,8 +253,25 @@ BEND = REPO / "bin" / "bend"
 def load_tinygrad() -> None:
   import tinygrad.dtype as dtm
   import tinygrad.uop.ops as opm
+  from tinygrad.uop import GroupOp
   globals().update(AddrSpace=dtm.AddrSpace, DType=dtm.DType, dtypes=dtm.dtypes,
-                   AxisType=opm.AxisType, Ops=opm.Ops, ParamArg=opm.ParamArg, UOp=opm.UOp)
+                   AxisType=opm.AxisType, Ops=opm.Ops, ParamArg=opm.ParamArg, UOp=opm.UOp,
+                   GroupOp=GroupOp)
+
+
+def commutative() -> frozenset:
+  """The ops whose CHILD ORDER carries no meaning, READ FROM CPython rather than typed.
+  MEASURED both sides on 2026-10-04 and they agree on all eight:
+    CPython `GroupOp.Commutative` (tinygrad/uop/__init__.py:121)
+      = ADD AND CMPEQ CMPNE MAX MUL OR XOR
+    the port's `GroupOp.commutative` (ops.bend:521-530)
+      = ADD MUL MAX CMPNE CMPEQ XOR AND OR
+  Typing the list into the harness would be a second place for it to be wrong, and two
+  copies of an op classification disagreeing is exactly the class of defect this file
+  exists to find -- so the harness asks CPython. `selfcheck` asserts the answer is
+  non-empty, because an empty one would make `--equiv` silently the identity and print
+  AGREE for everything, which is the shape of the failure this whole file is about."""
+  return frozenset(o.name for o in GroupOp.Commutative)
 
 
 # THE ATOM TABLE. One letter per value KIND and no letter reused, because a collision
@@ -245,16 +304,25 @@ def chunk(s: str) -> str:
 
 def unchunks(line: str) -> list[str]:
   """Walk the counts. Splitting on whitespace is what dropped 216 of 228 rows in the
-  pin/HEAD study, because the row NAMES contain spaces."""
+  pin/HEAD study, because the row NAMES contain spaces.
+
+  THE SEPARATOR IS OPTIONAL AND THAT IS A FIX, not a loosening. MEASURED 2026-10-04: the
+  reader used to REQUIRE a single space after every chunk, so it made whitespace
+  structural -- the one thing the `<bytecount>:<bytes>` format exists to avoid. Nothing
+  caught it because every field the eight-field wire carried was an ATOM text, and no atom
+  contains a space. The DEBUG rows broke it: a site prints `memory reduced from 0.01 MB ->
+  0.01 MB, 5 -> 2 bufs`, so the `arg` chunk contains spaces and the reader walked off the
+  end of the first chunk and then REFUSED the line, which surfaced as "0 trace rows" -- a
+  reader returning fewer rows than the emitter wrote, reported as a count rather than as a
+  failure. The counts are authoritative, so the reader now steps over AT MOST one space and
+  does not insist on one. It cannot lose information: every chunk's length is stated."""
   out, i = [], 0
   while i < len(line):
     j = line.index(":", i)
     n, k = int(line[i:j]), j + 1
     out.append(line[k:k + n])
     i = k + n
-    if i < len(line):
-      if line[i] != " ":
-        raise ValueError(f"chunks not space-separated at {i}: {line[max(0, i - 10):i + 10]!r}")
+    if i < len(line) and line[i] == " ":
       i += 1
   return out
 
@@ -330,10 +398,12 @@ def carg(op: Ops, x) -> str:
   if op is Ops.CONST:
     return konst(x)
   if op is Ops.RANGE:
-    ids, k = x[1:], 0
-    while isinstance(ids, tuple):
-      ids, k = ids[0], k + 1
-    return f"rg({u(k)},{ATOMS['axis']}{x[0].name},{tup([u(i) for i in (x[1:] if k else (x[1],))])})"
+    # `depth` first, then the axis type, then the FLATTENED id tail. The flattening is
+    # `flat()`'s job and the reason is in `cdepth`: the port holds the tail as a flat
+    # `List<U32>` plus a DEPTH, so `flat(axis_id)` + `depth` is the only rendering both
+    # sides can produce, and the old `str(tuple)`-inside-a-`u32` spelling was a repr
+    # wearing a structural field's clothes.
+    return f"rg({u(argdepth(x))},{ATOMS['axis']}{x[0].name},{tup([u(i) for i in flat(x[1])])})"
   if op is Ops.REDUCE:
     return f"rd({ATOMS['ops']}{x[0].name},{u(x[1])})"
   if op is Ops.WMMA:
@@ -447,17 +517,27 @@ def _carg(x) -> str:
   if isinstance(x, str):
     return bstr(x)
   if isinstance(x, bytes):
-    # LENGTH only, and so does the port (ops.bend:913: "bytes BINARY arg; only its length
-    # is read"). Comparing the content would be a field the port can never fill, and
-    # comparing the length is a real comparison both sides can make.
+    # CONTENT, and this is a WIDENING rather than a retune. It used to be
+    # `ATOMS["bytes"] + str(len(x))`, on the stated reason that "the port cannot fill
+    # it" -- a reason that was TRUE when this line was written and is FALSE now.
+    # MEASURED 2026-10-04 in `tinybendygrad/uop/ops.bend`: `ABlob{bs: List<&2, U32>}`
+    # (:1062) holds the BYTES, not the length -- the header at :1793 records the change
+    # and why ("`ABlob{n: U32}` -- the LENGTH -- and two different same-length blobs were
+    # then the same node"), and `eq_arg.ABlob` (:1801) compares `bs` element-wise. So the
+    # port CAN now tell `b"aaaa"` from `b"bbbb"` and a length-only column was refusing a
+    # comparison the port is able to make.
     #
-    # NOT NEUTRAL, and the ledger says so on every report. MEASURED, both sides:
-    #   upstream `UOp(Ops.BINARY, (), b"aaaa")` and `..., b"bbbb")` are DIFFERENT objects
-    #   with different keys, and the port interns the SAME arena node for the two
-    #   (index 1 twice, `Arena.next` 2). So the loss is not "we compare less than the
-    #   printer would": the port's IDENTITY does not see the bytes, and two graphs that
-    #   upstream calls different this gate can only report as equal. See `--plant bytes`.
-    return ATOMS["bytes"] + str(len(x))
+    # WHAT IT COST TO LEAVE IT, measured on `--plant bytes`, which hangs `b"aaaa"` and
+    # `b"bbbb"` off the matmul: the two differ upstream (different ucache keys,
+    # ops.py:201) and this column printed `arg=y4` for BOTH, so a graph differing only in
+    # blob content scored identical. Two same-length blobs are now two different `arg`
+    # texts and the differ names them.
+    #
+    # WHAT IS STILL NOT COMPARABLE, and is now the whole of the `y` residual: a bytes
+    # CONST. Upstream's `PyConst` includes `bytes` (ops.py:122) and the port's `Const`
+    # does NOT -- `ops.bend:810-811` is `CBool{} | CInt{} | CFloat{} | CInvalid{}` and
+    # graphcmp.bend's `konst` has no bytes arm, so there is no port spelling at all.
+    return ATOMS["bytes"] + " n(" + ",".join(u(b) for b in x) + ")"
   if isinstance(x, (tuple, list)):
     return tup([_carg(e) for e in x])
   if isinstance(x, UOp):
@@ -569,15 +649,58 @@ def cshape(n: UOp) -> str:
   return "(" + ",".join("U" if isinstance(d, UOp) else i64(d) for d in shp) + ")"
 
 
-def cdepth(n: UOp) -> int:
-  """R5. Only a RANGE's `axis_id` can nest (`UOp.range`, ops.py:643); `UOp.new` stores 0 for
-  everything else (ops.bend:1097)."""
-  if n.op is not Ops.RANGE:
-    return 0
-  ids, k = n.arg[1:], 0
+def flat(x) -> list:
+  """Flatten nested int tuples into one list of ints. R5's axis-id tail is the ONE arg
+  that nests (ops.py:643 `arg=(axis_type, axis_id)`), and the port cannot hold the
+  nesting -- `ARange{ids: List<&2, U32>}` plus `Arena.shp`'s DEPTH is its whole
+  representation (ops.bend:2500 "ARange stores the ints only", and :1097-1101). So the
+  faithful common normal form for a RANGE arg is `flat(axis_id)` plus `depth`, which is
+  exactly the pair the port stores and nothing either side has to invent.
+
+  BEFORE this, the nested case was rendered by `str(tuple)` INSIDE a `u32` atom --
+  `u((0,1))` is the six characters `i(0, 1)` -- which is Python's repr doing the work
+  inside a structural field. MEASURED on the old spelling: `UOp.range(4, (0,1))` emitted
+  `rg(i2,XWEAK,n(i(0, 1)))`, a shape the port cannot produce for any ids at all."""
+  if isinstance(x, tuple):
+    return [e for t in x for e in flat(t)]
+  return [x]
+
+
+def argdepth(x) -> int:
+  """How many times a RANGE arg's `axis_id` -- `x[1]`, the second slot of `arg` -- is
+  NESTED. Split out of `cdepth` because `carg` needs it too (R5 is in the `arg` text AND
+  in its own field, deliberately, so a disagreement in either place is a disagreement)."""
+  ids, k = x[1], 0
   while isinstance(ids, tuple):
     ids, k = ids[0], k + 1
   return k
+
+
+def cdepth(n: UOp) -> int:
+  """R5. Only a RANGE's `axis_id` can nest; `UOp.new` stores 0 for everything else.
+
+  MEASURED 2026-10-04, and this was WRONG BY ONE until the first graph reached a RANGE.
+  The old body walked `n.arg[1:]`, and `arg` is a 2-TUPLE, so `arg[1:]` is a tuple for
+  EVERY RANGE -- it counts the tuple-ness of the ARG, not the nesting of `axis_id`, and
+  the port's `Arena.depth` (ops.bend:1097-1101) counts the latter. MEASURED over four
+  fixtures, calling CPython for both numbers:
+
+      axis_id    graphcmp (old)   Arena.depth   u.arg
+      0           1                 0             (AxisType.WEAK, 0)
+      (0,)        2                 1             (AxisType.WEAK, (0,))
+      (0, 1)      2                 1             (AxisType.WEAK, (0, 1))
+      ((0, 1),)   3                 2             (AxisType.WEAK, ((0, 1),))
+
+  Off by one on all four. It was invisible for a measured reason and not a lucky one:
+  NO graph emitted before 2026-10-04 contained a RANGE, so `cdepth` returned 0 on the py
+  side and `Arena.depth` returned 0 on the bend side and THE TWO ERRORS CANCELLED. A
+  field that reads equal because both sides are wrong is worse than a field that is not
+  compared, and the only thing that found it was adding a graph that reaches the field.
+  The port's own header already had the right definition in prose ("0 = flat
+  `(at, *ints)`; N>0 = `arg[1]` nested N times", ops.bend:1097) and this file did not
+  match it. Now it does: `arg[1]`, walked while it is a tuple.
+  """
+  return argdepth(n.arg) if n.op is Ops.RANGE else 0
 
 
 def ctag(t) -> str:
@@ -636,7 +759,63 @@ def g_sink():
   return UOp(Ops.SINK, (UOp.const(4),), KernelInfo())
 
 
-GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink}
+def g_range():
+  """`UOp.range(4, (0, 1))` -- 2 nodes, and the FIRST graph whose `depth` field is
+  non-zero on EITHER side. MEASURED, calling CPython: `cdepth` is 1 and `u.arg` is
+  `(AxisType.WEAK, (0, 1))`. Every graph above reads `depth=i0` on both sides, so R5 was
+  a field that had never been asked a question."""
+  return UOp.range(4, (0, 1))
+
+
+def g_rangeflat():
+  """`UOp.range(4, 0)` -- 2 nodes, `depth` 0, the flat reading. It exists to be
+  COMPARED WITH `g_range` (`cross`): same op, same dtype, same `()` shape, same `N` tag,
+  and the pair differs in exactly two of the eight fields -- `depth` and `arg`."""
+  return UOp.range(4, 0)
+
+
+def g_cast():
+  """`Tensor.empty(4,3).cast(dtypes.half).uop` -- 6 nodes. MEASURED, calling CPython: the
+  new node is a `CAST` whose arg is a BARE `DType` (`Df16`), which is the `ADt` arm of
+  the arg taxonomy. No graph before this one emitted a `DType` as a WHOLE arg -- every
+  `D<name>` was a `ParamArg` FIELD -- so `carg`'s `isinstance(x, DType)` arm had no
+  fixture, and neither did graphcmp.bend's `case O.ADt{ad}`. The second dtype in the
+  graph also makes R3's `name` (`f16`, not `float`) load-bearing rather than uniform."""
+  from tinygrad import Tensor
+  return Tensor.empty(4, 3).cast(dtypes.half).uop
+
+
+def g_special():
+  """`UOp.special(4, "inf")` -- 2 nodes, and the `AStr` arm on a node that is not a
+  `SINK`. MEASURED: the arg is `sinf`, so a bare string atom is separated from
+  `KernelInfo.name`'s use of one (which sits inside `kI(..)`)."""
+  return UOp.special(4, "inf")
+
+
+def g_binblob():
+  """`UOp(Ops.BINARY, (matmul,), b"tiny")` -- 19 nodes, and the graph that makes the `y`
+  residual LIVE instead of 0. Four graphs shipped with the `bytes` ledger row reading
+  `py=0 bend=0`, which is a fact about the fixture and not about the port. This fixture
+  carries a blob. MEASURED, calling CPython: the BINARY's shape is `(4,)` -- `ops.py:365`
+  `case Ops.BINARY: return (len(self.arg),)` -- its dtype is `u8` and its arg is `y4`.
+
+  It is BINARY UNDER the matmul rather than beside it, so the denominator is 19 nodes and
+  not 1: `AGREE` on one node is not a claim.
+
+  `base("matmul")` AND NOT `g_matmul()`, and that is measured rather than stylistic.
+  `Tensor.empty` mints a FRESH `ParamArg.slot` from a process-global counter, so building
+  the matmul twice in one process gives ALLOCs slots (0,1) and then (1,2) -- and the port
+  emits slots (0,1) because it has one arena. MEASURED: emitting `binblob` after
+  `matmul` in the same process reported `ONLY-BEND` ALLOCs on a `slot` field and nothing
+  else, which is the harness disagreeing with itself about the fixture rather than the
+  port disagreeing with tinygrad. `base` is the cache that makes the emission
+  order-independent, and `cross` needs that: it compares two graphs in ONE process."""
+  return UOp(Ops.BINARY, (base("matmul"),), b"tiny")
+
+
+GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
+          "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
+          "binblob": g_binblob}
 
 _BASE: dict[str, UOp] = {}
 
@@ -866,11 +1045,49 @@ class Node:
     self.nid = nid
     self.op, self.dtype, self.shape, self.depth, self.tag, self.arg, self.src = f[1:]
     self.cores: dict[str, str] = {}
+    # The child's COMMUTATIVE-CANONICAL core. A parent's `src` comparison under `equiv`
+    # must use these and not `cores`, because a non-commutative parent of a commutative
+    # child (the matmul's two PERMUTEs and its REDUCE) would otherwise still see the
+    # child's ORDERED key and the reorder would propagate up the graph -- MEASURED, before
+    # this existed `--equiv` left 2 rung-2 pairs disagreeing on `src` for PERMUTE#17 and
+    # REDUCE#18 after it had already paired the MUL correctly.
+    self.ecores: dict[str, str] = {}
     self.kidop: dict[str, str] = {}
     self.side = ""
+    self.core = ""
 
   def __repr__(self) -> str:
     return f"<{self.op}#{self.nid}>"
+
+  def key(self, equiv: bool) -> str:
+    """`equiv=False` is `core` -- order-sensitive. `equiv=True` is the
+    COMMUTATIVE-CANONICAL key: a commutative op's children contribute their cores SORTED,
+    so `MUL(a, b)` and `MUL(b, a)` are ONE node and nothing else changes.
+
+    This is the second of the two answers one fixture has to be able to give, and it is
+    what makes "reordered but equivalent" something the differ EXPRESSES rather than
+    guesses. Both answers are printed by `report`, because a differ that could only give
+    one would be conflating "identical" with "equivalent" -- and those are different
+    claims: `MUL(a,b)` and `MUL(b,a)` have the same `repr(arg)` (it is `repr(None)`), so a
+    differ keying on `repr` calls them equal, which is the RIGHT answer for equivalence and
+    the WRONG one for identity. MEASURED on `--plant srcswap`: `diff` reports the `src`
+    field on `MUL py#16 vs bend#16`, `diff --equiv` reports AGREE.
+
+    THE CANONICAL FORM MUST BE CANONICAL ALL THE WAY DOWN, and that was the second
+    measured defect in `--equiv`. The first version sorted only the node's OWN children
+    out of their ORDERED cores, so the MUL paired and then PERMUTE#17 -- a
+    NON-commutative parent of the commutative MUL -- still carried the MUL's ordered key
+    into its own key and still disagreed, and REDUCE#18 with it. Canonicalising only the
+    node you are looking at propagates the difference upward, which is why the child's
+    `ecore` is read here and not its `core`.
+    """
+    if not equiv:
+      return self.core
+    ks = [self.ecores[c] for c in self.src]
+    if self.op in COMM:
+      ks = sorted(ks)
+    return hashlib.sha256((f"{self.op}\x00{self.depth}\x00{self.tag}\x00{self.arg}\x00"
+                           + "|".join(ks)).encode()).hexdigest()
 
   @property
   def loose(self) -> str:
@@ -883,7 +1100,7 @@ class Node:
     # differ must never give for a node that is present on both sides. Measured: with the
     # child ops in order, `--plant srcswap` printed `ONLY-PY=1 / ONLY-BEND=1` for the MUL
     # and never named its `src`.
-    return (f"{self.op}\x00{self.depth}\x00{self.tag}\x00{erase(self.arg)}\x00"
+    return (f"{self.op}\x00{self.tag}\x00{erase_depth(erase(self.arg))}\x00"
             + ",".join(sorted(self.kidop[c] for c in self.src)))
 
   def full(self, side: str) -> str:
@@ -928,6 +1145,26 @@ def erase(arg: str) -> str:
     i = b
   out.append(arg[i:])
   return "".join(out)
+
+
+def erase_depth(arg: str) -> str:
+  """`rg(i3,XWEAK,n(i0,i1))` -> `rg(i*,XWEAK,n(i0,i1))` -- the RANGE arg's DEPTH SLOT and
+  nothing else.
+
+  It exists because RUNG 2 COULD NOT NAME A DEPTH DIFFERENCE, which is MEASURED and is the
+  third thing a differ has to get right. `loose` below erased the dtype and nothing else,
+  and the two RANGE graphs differ in the depth AND in the axis-id list, so their `loose`
+  keys differed, so they fell to rung 3 and were printed as two separate "ONLY ON THE ...
+  SIDE" blocks -- the reader had to diff two lists BY EYE to see that the one difference
+  was `depth`, which is the exact failure the whole file exists to remove. Erasing the
+  depth slot pairs them, and `mismatches` then names `depth` and `arg` separately.
+
+  Only the depth slot, and not every `i<digits>`: the axis ids in `n(i0,i1)` are also
+  `u32` atoms, and erasing them too would make any two RANGEs pair, which is a weaker
+  claim than it looks."""
+  if not arg.startswith("rg(i"):
+    return arg
+  return "rg(i*" + arg[arg.index(","):]
 
 
 def split_top(s: str) -> list[str]:
@@ -986,9 +1223,12 @@ LEDGER = (
   ("z", 6, "a realized BUFFER: device-object PRESENCE only",
    "Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/"
    "device/offset are already ParamArg fields 2/3/8 and ARE compared"),
-  ("y", 6, "a bytes arg: LENGTH only",
-   "upstream gives two same-length blobs different keys; the port interns them as ONE "
-   "node (measured) -- this is a port IDENTITY divergence, not only a normal-form loss"),
+  ("y", 6, "a bytes arg: CONTENT compared; the residual is the bytes CONST",
+   "MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` "
+   "(:1801) compares them, so the column is the full byte list; this row used to say "
+   "LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` "
+   "(ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), "
+   "and graphcmp.bend's `konst` has no bytes arm at all"),
   ("u", 6, "a UOp nested in an arg: identity NOT compared",
    "measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no "
    "arena index here; the port's ATuple also spells PERMUTE's literal ints"),
@@ -1078,10 +1318,12 @@ def residual_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
           " -- agreement below does NOT cover these."]
 
 
-def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]]:
-  """(nodes by id, nodes by core). The core is computed from the CHILDREN's cores, so the
-  walk is a topological one; `order` is derived here rather than trusted from the emitter,
-  and a cycle is a loud failure instead of a recursion."""
+def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node],
+                                                dict[str, Node]]:
+  """(nodes by id, nodes by core, nodes by commutative-canonical core). The core is
+  computed from the CHILDREN's cores, so the walk is a topological one; `order` is derived
+  here rather than trusted from the emitter, and a cycle is a loud failure instead of a
+  recursion."""
   recs = {}
   for ln in lines:
     f = unchunks(ln)
@@ -1093,7 +1335,7 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
     for c in cs:
       if c not in recs:
         raise SystemExit(f"{side}: node {nid} names an unknown child {c}")
-  node, bycore, done, order, path = {}, {}, set(), [], set()
+  node, bycore, byequiv, done, order, path = {}, {}, {}, set(), [], set()
 
   def go(nid):
     if nid in done:
@@ -1113,35 +1355,47 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
     node[nid] = n
     for c in kids[nid]:
       n.cores[c] = node[c].core
+      n.ecores[c] = node[c].key(True)
       n.kidop[c] = node[c].op
     n.core = hashlib.sha256((f"{n.op}\x00{n.depth}\x00{n.tag}\x00{n.arg}\x00"
                              + "|".join(n.cores[c] for c in kids[nid])).encode()).hexdigest()
     bycore.setdefault(n.core, []).append(n)
+    byequiv.setdefault(n.key(True), []).append(n)
 
   for nid in recs:
     go(nid)
-  return node, bycore
+  return node, bycore, byequiv
 
 
 FIELDS = ("dtype", "shape", "depth", "tag", "arg", "src")
 
 
-def mismatches(a: Node, b: Node) -> list[str]:
+def mismatches(a: Node, b: Node, equiv: bool = False) -> list[str]:
   """NAMES the fields that differ, never a count. `src` is compared as the ordered list of
   the two sides' CORE keys, so a swap reads as an `src` difference on the PARENT and as
-  nothing at all on the children -- the property `--plant srcswap` exists to show."""
+  nothing at all on the children -- the property `--plant srcswap` exists to show. Under
+  `equiv` a commutative parent's `src` is compared SORTED, which is the whole difference
+  between "identical" and "equivalent" and is why both modes are runnable."""
   out = []
   for f in FIELDS:
     if f == "src":
-      if [a.cores[c] for c in a.src] != [b.cores[c] for c in b.src]:
-        out.append(f"src  py={[a.cores[c][:8] for c in a.src]} bend={[b.cores[c][:8] for c in b.src]}")
+      # `equiv` compares the children's CANONICAL keys, sorted for a commutative parent.
+      # Both halves are needed: canonical-without-sorting still makes a commutative
+      # parent disagree, and sorted-without-canonical still lets a NON-commutative parent
+      # of a commutative child disagree.
+      cm = (lambda n: [n.ecores[c] for c in n.src]) if equiv else (lambda n: [n.cores[c] for c in n.src])
+      ka, kb = cm(a), cm(b)
+      if equiv and a.op in COMM:
+        ka, kb = sorted(ka), sorted(kb)
+      if ka != kb:
+        out.append(f"src  py={[x[:8] for x in ka]} bend={[x[:8] for x in kb]}")
     elif getattr(a, f) != getattr(b, f):
       out.append(f"{f:<5} py={getattr(a, f)} bend={getattr(b, f)}")
   return out
 
 
 def report(py: list[str], bd: list[str], plant: str | None,
-           lname: str = "py", rname: str = "bend") -> tuple[int, str]:
+           lname: str = "py", rname: str = "bend", equiv: bool = False) -> tuple[int, str]:
   """`lname`/`rname` label the two sides in every line they appear in. They are PARAMETERS,
   not the literals "py"/"bend", because MEASURED: hardcoding them made `cross` and `control`
   -- which deliberately compare a side against ITSELF and one graph against another -- print
@@ -1149,9 +1403,14 @@ def report(py: list[str], bd: list[str], plant: str | None,
   report is not cosmetic here: `cross` is the check that decides whether the differ can see
   a difference at all, and a reader who is told the wrong side sent a node stops trusting
   the rest of the block. Defaulted to the two real sides so every existing call is unchanged.
+
+  `equiv=True` pairs on the COMMUTATIVE-CANONICAL core and compares a commutative parent's
+  `src` sorted. See `Node.key`. It is a mode and not a second differ, so there is one
+  implementation of "compare two graphs" and the mode is the only thing that varies.
   """
-  _, pcore = build(py, lname)
-  _, bcore = build(bd, rname)
+  pnodes_all, pcore, pequiv = build(py, lname)
+  bnodes_all, bcore, bequiv = build(bd, rname)
+  pcore, bcore = (pequiv, bequiv) if equiv else (pcore, bcore)
   pnodes = {n.nid: n for ns in pcore.values() for n in ns}
   bnodes = {n.nid: n for ns in bcore.values() for n in ns}
 
@@ -1162,8 +1421,15 @@ def report(py: list[str], bd: list[str], plant: str | None,
   hard, soft = [], []
   for k in shared:
     for a, b in zip(pcore[k], bcore[k]):
-      for d in mismatches(a, b):
+      for d in mismatches(a, b, equiv):
         hard.append(f"MISMATCH {a.op:<9} {lname}#{a.nid} vs {rname}#{b.nid}  {d}")
+  # MEASURED, and it is a limit worth naming: `zip` PAIRS IN ORDER and TRUNCATES, so two
+  # sides with the same set of cores and a different MULTIPLICITY would lose the extra
+  # copies silently. No graph built here reaches it -- a core is a hash of the node's whole
+  # subtree, and two identical subtrees are the same arena node on the port by
+  # construction -- but it is a place where "no disagreement" would be a truncation rather
+  # than an agreement, so it is counted and printed rather than left to be discovered.
+  trunc = sum(min(len(pcore[k]), len(bcore[k])) for k in shared) - len(shared)
 
   # RUNG 2, ONE-TO-ONE. Pairing every leftover with every other leftover that shares a
   # `loose` key produces a cartesian product: all five RESHAPEs of this graph share one
@@ -1177,30 +1443,58 @@ def report(py: list[str], bd: list[str], plant: str | None,
     cands = [b for b in only_b if b.loose == a.loose and id(b) not in taken_b]
     if not cands:
       continue
-    scored = sorted(((len(mismatches(a, b)), b) for b in cands), key=lambda p: (p[0], p[1].nid))
+    scored = sorted(((len(mismatches(a, b, equiv)), b) for b in cands),
+                    key=lambda p: (p[0], p[1].nid))
     if len(scored) > 1 and scored[0][0] == scored[1][0]:
       continue                              # ambiguous: no mutual best, so no claim
     pairs.append((a, scored[0][1]))
     taken_b.add(id(scored[0][1]))
   for a, b in pairs:
     soft.append(f"MISMATCH {a.op:<9} py#{a.nid} vs {b.side}#{b.nid}  (no shared core; paired "
-                f"one-to-one on the dtype-erased arg)")
-    soft += ["    " + d for d in mismatches(a, b)]
+                f"one-to-one on the dtype- and depth-erased arg)")
+    soft += ["    " + d for d in mismatches(a, b, equiv)]
   only_p = [n for n in only_p if not any(n is a for a, _ in pairs)]
   only_b = [n for n in only_b if id(n) not in taken_b]
 
-  o = [f"# {lname} rows={len(pnodes)}  {rname} rows={len(bnodes)}  plant={plant or 'none'}",
+  # RUNG 3.5 -- SAME OP, UNPAIRED, DIFFED FIELD BY FIELD. It exists because of a MEASURED
+  # failure of this file's own report: the two RANGE graphs (`--graph range` and
+  # `--graph rangeflat`) differ in `depth` AND in the axis-id list, so rung 2 cannot pair
+  # them -- correctly, their `arg`s really are different -- and rung 3 printed them as two
+  # separate "ONLY ON THE ... SIDE" blocks. A reader then had to diff two lists BY EYE to
+  # learn that the one difference was `depth`, which is precisely the reading this file
+  # exists to replace. So the leftovers are cross-referenced where the pairing is
+  # UNAMBIGUOUS (one node of that op on each side) and the fields are named. Nothing is
+  # summarised away: both nodes are still printed in full by rung 3 below.
+  cross = []
+  for a in list(only_p):
+    cands = [b for b in only_b if b.op == a.op]
+    if len(cands) != 1:
+      continue
+    b = cands[0]
+    ds = mismatches(a, b, equiv)
+    if ds:
+      cross.append(f"#   {a.op} {lname}#{a.nid} vs {rname}#{b.nid}  (same op, unpaired)")
+      cross += ["#     " + d for d in ds]
+
+  o = [f"# {lname} rows={len(pnodes_all)}  {rname} rows={len(bnodes_all)}  "
+       f"plant={plant or 'none'}  mode={'EQUIV' if equiv else 'ORDERED'}",
        f"# devices {lname}={sorted(devnames(py))} {rname}={sorted(devnames(bd))}  "
        f"(both sides emit the NAME: CPython's is `Compiled.device`, the port's is "
        f"`uop/render.bend:363` on the tag)"]
   o += residual_lines(ledger(py), ledger(bd))
   o += [f"# SHARED cores={len(shared)}  ONLY-{lname.upper()}={len(only_p)}  "
         f"ONLY-{rname.upper()}={len(only_b)}  "
-        f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"]
+        f"field-mismatches={len(hard)}  rung2-pairs={sum(1 for x in soft if x.startswith('MIS'))}"
+        f"  rung3.5-crossrefs={len(cross) // 2}  zip-truncated={trunc}"]
   o += hard
   if soft:
-    o.append("# RUNG 2 -- paired on the dtype-erased arg, so these ARE the same node:")
+    o.append("# RUNG 2 -- paired on the dtype- and depth-erased arg, so these ARE the same node:")
     o += soft
+  if cross:
+    o.append(f"# RUNG 3.5 -- {len(cross) // 2} node(s) present on both sides, same op, "
+             f"NOT pairable on the arg, and their differing FIELDS are named here so the "
+             f"two rung-3 blocks below do not have to be read against each other by eye:")
+    o += cross
   if only_p:
     o.append(f"# ONLY ON THE {lname.upper()} SIDE ({len(only_p)}), IN FULL:")
     o += [n.full(lname) for n in sorted(only_p, key=lambda n: int(n.nid))]
@@ -1215,6 +1509,16 @@ def report(py: list[str], bd: list[str], plant: str | None,
   o.append(f"# shape-N hits py={SHAPE_NONE_HITS} (expected 0: `UOp.shape` RAISES instead "
            f"of returning None, ops.py:455 -- probed over all 12 no-shape ops)")
   same = not hard and not soft and not only_p and not only_b
+  # THE VERDICT CARRIES ITS DENOMINATOR, and that is a rule rather than a nicety.
+  # `AGREE` on 2 nodes and `AGREE` on 19 are different claims and printing them the same
+  # way is how a thin comparison gets read as a broad one -- six findings today were
+  # "compared nothing" reporting as agreement. So the one line states NODES, FIELDS and
+  # GRAPHS, and a comparison whose denominator is small says so in the same line the
+  # reader is already looking at.
+  o.append(f"# DENOMINATOR: graphs=2 (1 {lname} + 1 {rname})  "
+           f"nodes={len(pnodes_all)}/{len(bnodes_all)}  "
+           f"fields={len(FIELDS)}  field-records={len(pnodes_all) * len(FIELDS)}  "
+           f"shared-cores={len(shared)}  commutative-ops={len(COMM)}")
   o.append(f"# VERDICT: {'AGREE' if same else 'DISAGREE'}")
   return (0 if same else 1), "\n".join(o)
 
@@ -1234,6 +1538,16 @@ def selfcheck() -> int:
       bad.append(f"chunk round-trip failed for {s!r}: {got!r}")
   if chunk("PTX tensor_cores sm_75").split(":", 1)[0] != "22":
     bad.append("the count is not a byte count")
+  # A CHUNK THAT CONTAINS A SPACE, which the reader used to refuse. MEASURED: the first
+  # DEBUG row is `arg=smem|memory reduced from 0.01 MB -> 0.01 MB, 5 -> 2 bufs` and the
+  # old reader raised `chunks not space-separated`, so the DEBUG lane reported "0 trace
+  # rows" -- a reader that returned fewer rows than the emitter wrote, as a COUNT.
+  if unchunks(chunk("memory reduced from 0.01 MB")) != ["memory reduced from 0.01 MB"]:
+    bad.append("a chunk containing spaces does not survive the reader")
+  if unchunks(chunk("a b") + " " + chunk("c")) != ["a b", "c"]:
+    bad.append("two chunks, the first containing spaces, do not round-trip")
+  if unchunks(chunk("a") + " " + chunk("PTX tensor_cores sm_75")) != ["a", "PTX tensor_cores sm_75"]:
+    bad.append("a row name with spaces does not survive as the second chunk")
   for s in ["é", "\u00ff"]:
     try:
       chunk(s)
@@ -1261,44 +1575,255 @@ def selfcheck() -> int:
     bad.append("at_value counted a marker inside a string payload")
   if at_value("op=EOptOps.TC", "E") != 1:
     bad.append("at_value misses a dataclass value after '=' (--plant opt counted 0)")
+  # `--equiv`'s whole answer depends on this set being non-empty and on `MUL` being in
+  # it, because MUL is the op `plant_srcswap` reorders. An EMPTY set would make `--equiv`
+  # the identity and print AGREE for the reordered pair -- which is the shape of the
+  # failure this file is about, so it is asserted rather than assumed.
+  if not COMM:
+    bad.append("COMM is empty: `--equiv` would be the identity and AGREE for everything")
+  if "MUL" not in COMM:
+    bad.append(f"MUL is not in the commutative set {sorted(COMM)}: `--plant srcswap` "
+               f"reorders a MUL, so `--equiv` could not answer for it")
   print("# SELFCHECK: " + ("OK" if not bad else "FAIL"))
   for b in bad:
     print("#   " + b)
   return 0 if not bad else 1
 
 
+# ============================================================================
+# THE COMMANDS. `diff` is the artifact: one command, no arguments beyond the graph name,
+# one unambiguous verdict line. Everything else here exists to make that one line
+# trustworthy -- `control` shows it is quiet against itself, `cross` and `conf` show it is
+# loud against something else, `dbg` runs it across DEBUG levels on a FIXED graph, and
+# `selfcheck` asserts the pieces it rests on.
+def debug_run(dev: str, level: int, tries: int = 5) -> tuple[list[str], list[str]]:
+  """ONE bend process at ONE `DEBUG` level, with the 0-row re-run guard `emit_bend` has.
+
+  `DEBUG` GOES IN THE ENVIRONMENT and not in an argument, because that is where the port
+  reads it: `H.debug()` is `IO(U32)` over `getenv_int("DEBUG", 0)` (helpers.bend:307-308).
+  Threading it as a parameter instead would test a second mechanism -- there is a standing
+  rule in this repo that `DEBUG` is a ContextVar and therefore a PARAMETER
+  (`schedule/allreduce.bend`'s header, "THE FLAGS ARE PARAMETERS"), and the two readings
+  are both legitimate, so the probe reads the ENV and the sites are still reached through
+  the port's own `*_dbg*` defs with `d` threaded in. Which of the two is under test is
+  stated rather than blurred: this exercises the ENV READ and the seven gates."""
+  rows, notes = [], []
+  for attempt in range(1, tries + 1):
+    e = clean_env(dev)
+    e["DEBUG"] = str(level)
+    c = subprocess.run([str(BEND), str(BEND_DBG)], cwd=REPO, capture_output=True, text=True,
+                       env=e, timeout=1800)
+    lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
+    got = [ln for ln in lines if not ln.startswith("#")]
+    if got:
+      notes.append(f"DEBUG={level} attempt {attempt}: {len(got)} rows")
+      return got, notes
+    notes.append(f"DEBUG={level} attempt {attempt}: 0 rows, rc={c.returncode}, "
+                 f"stderr tail: {' '.join(c.stderr.split())[-160:] or '(empty)'}")
+  raise SystemExit("emit debug: 0 rows after %d attempts -- a FAILURE, not a verdict:\n  %s"
+                   % (tries, "\n  ".join(notes)))
+
+
+def split_debug(rows: list[str]) -> tuple[list[str], list[str]]:
+  """(graph rows, trace rows). The `SITE` op is the discriminator, and it is a COLUMN
+  rather than a prefix because a prefix would be a second wire format in one file."""
+  graph, trace = [], []
+  for ln in rows:
+    try:
+      f = unchunks(ln)
+    except ValueError:
+      continue                       # a blank separator line, not a row
+    (trace if len(f) == 8 and f[1] == "SITE" else graph).append(ln)
+  return graph, trace
+
+
+def cmd_dbg(dev: str, levels: list[int], graph: str) -> int:
+  """THE DEBUG-LEVEL COMPARISON, and the reason it is well-posed is the PRECONDITION.
+
+  `DEBUG` CHANGES CONTROL FLOW, so comparing a graph emitted at level 0 against one
+  emitted at level 2 would be comparing two different programs and calling the delta a
+  defect. So the graph is built ONCE inside the probe (`GC.matmul_of`, imported from
+  graphcmp.bend rather than copied) and every run prints that graph's own rows; this
+  function DIGESTS them per level and REFUSES to compare if two digests differ. Exit 2 on
+  a mismatch, which is a FAILURE and never a verdict -- the same rule as the 0-row guard.
+
+  The graph is FIXED BY CONSTRUCTION as well as by check: the probe's `main` builds the
+  graph once and hands the SAME `Found` to both the row printer and the trace walk, so
+  there is no code path on which the level could reach the graph at all.
+  """
+  digs, traces, notes = {}, {}, []
+  for L in levels:
+    rows, nt = debug_run(dev, L)
+    notes += nt
+    graph, trace = split_debug(rows)
+    if not graph or not trace:
+      raise SystemExit(f"DEBUG={L}: {len(graph)} graph rows and {len(trace)} trace rows -- "
+                       f"a FAILURE, not a verdict (both must be non-empty)")
+    digs[L] = hashlib.sha256("\n".join(graph).encode()).hexdigest()
+    traces[L] = trace
+  uniq = sorted(set(digs.values()))
+  for n in notes:
+    print("# " + n)
+  print(f"# DEBUG LEVELS COMPARED: {levels}  (the ONLY difference between the runs is DEBUG)")
+  print(f"# GRAPH HELD FIXED: digest per level " +
+        " ".join(f"{L}={d[:12]}" for L, d in digs.items()) +
+        f"  distinct={len(uniq)}" + ("" if len(uniq) == 1 else
+                                     "  -- NOT WELL-POSED, and this is NOT a verdict"))
+  if len(uniq) != 1:
+    print("# The graph moved with the level, so a difference below would be a difference "
+          "between two different programs. Exit 2.", file=sys.stderr)
+    return 2
+  rc = 0
+  for a, b in zip(levels, levels[1:]):
+    print(f"# ---- DEBUG {a} vs DEBUG {b} ----")
+    r, txt = report(traces[a], traces[b], None, f"DEBUG{a}", f"DEBUG{b}")
+    print(txt)
+    rc |= r
+  print(f"# DEBUG VERDICT: {'the levels are DISTINGUISHABLE and the graph was fixed' if rc else 'NO LEVEL DISTINGUISHES ANYTHING -- see the residual ledger'}")
+  return 0 if rc else 1
+
+
+# ============================================================================
+# THE THREE CONFLATIONS, as one command with one verdict line each. A differ that has
+# only ever printed AGREE is unverified -- it may be comparing nothing, or comparing the
+# same object to itself -- and these are the three cases that separate "it works" from
+# "it agrees".
+def field_named(txt: str, field: str) -> bool:
+  """Is `field` reported AS A NAMED FIELD rather than merely appearing somewhere?
+
+  The distinction is the whole point and the loose version got it wrong: `"depth" in txt`
+  is satisfied by the rung-3 full dump, which prints `depth=i0` for EVERY node it dumps,
+  so CONFLATION 2 passed for a report that had named nothing. MEASURED: the strict form
+  below and the loose form disagree on exactly that case. The `#` must come off first --
+  these are comment lines, so `.strip()` alone leaves the marker and every prefix test
+  fails."""
+  return any(ln.lstrip("#").strip().startswith(field + " ") for ln in txt.splitlines())
+
+
+def cmd_conf(dev: str) -> int:
+  """Each case states the CONFLATION, the EXPECTED answer and the ANSWER, and prints the
+  denominator for it. None of the three is a row whose expectation is a copy of the
+  implementation's own behaviour: two of them are measured off CPython (`repr(arg)`, the
+  `depth` pair) and the third is checked against the op's own commutativity, read from
+  `GroupOp.Commutative` rather than typed."""
+  ok = True
+  out = []
+
+  # ---- CONFLATION 1: `repr(arg)` EQUAL, STRUCTURE DIFFERENT ---------------------
+  # `--plant srcswap` on the REAL two-sided diff, because a difference planted on the
+  # py side and seen by the bend side is the strongest form: the two ARENAS are separate
+  # objects in separate processes and the disagreement names a node in each.
+  m0 = base("matmul")
+  swapped = PLANTS["srcswap"](m0)
+  mul0 = [n for n in m0.toposort() if n.op is Ops.MUL][0]
+  mul1 = [n for n in swapped.toposort() if n.op is Ops.MUL][0]
+  out.append("# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.")
+  out.append(f"#   MEASURED: repr(arg) before={mul0.arg!r} after={mul1.arg!r} "
+             f"equal={mul0.arg.__repr__() == mul1.arg.__repr__()}  "
+             f"and the normal form's arg text before={carg(Ops.MUL, mul0.arg)!r} "
+             f"after={carg(Ops.MUL, mul1.arg)!r}")
+  out.append("#   So a differ keying on `repr` would report NO difference here, and a "
+             "differ keying on structure must report the `src` field.")
+  rc, txt = report(emit_py("matmul", None), emit_py("matmul", "srcswap"), "srcswap",
+                   "ordered", "srcswap")
+  for ln in txt.splitlines():
+    if ln.startswith(("MISMATCH", "    ", "# VERDICT", "# SHARED", "# DENOMINATOR",
+                      "# RUNG", "#   ")):
+      out.append(ln)
+  named = field_named(txt, "src")
+  out.append(f"# CONFLATION 1 VERDICT: {'OK -- names src on the reordered node' if rc and named else 'FAIL -- did not name src'} "
+             f"(expected DISAGREE naming src; got rc={rc})")
+  ok = ok and rc == 1 and named
+
+  # ---- CONFLATION 2: SAME `arg`, DIFFERENT `depth` ------------------------------
+  # Two RANGEs, one flat and one nested. The differ must name `depth`, and it must do so
+  # on a graph where the two sides' OTHER fields agree, or the naming is not attributable.
+  r_flat, r_nest = base("rangeflat"), base("range")
+  out.append("# CONFLATION 2 -- the same op with a different `depth`, on a graph whose "
+             "other fields agree.")
+  out.append(f"#   MEASURED: rangeflat arg={r_flat.arg!r} depth={cdepth(r_flat)}   "
+             f"range arg={r_nest.arg!r} depth={cdepth(r_nest)}")
+  rc2, txt2 = report(emit_py("rangeflat", None), emit_py("range", None), "depth-pair",
+                     "rangeflat", "range")
+  for ln in txt2.splitlines():
+    if ln.startswith(("MISMATCH", "    ", "# VERDICT", "# SHARED", "# DENOMINATOR",
+                      "# RUNG", "#   ")):
+      out.append(ln)
+  dnamed = field_named(txt2, "depth")
+  out.append(f"# CONFLATION 2 VERDICT: {'OK -- names depth' if rc2 and dnamed else 'FAIL -- did not name depth'} "
+             f"(expected DISAGREE naming depth; got rc={rc2})")
+  ok = ok and rc2 == 1 and dnamed
+  # AND the negative control that makes the naming attributable: each RANGE agrees with
+  # the PORT against itself, so `depth` is not a field that merely reads unequal.
+  out.append("#   CONTROL (see cmd_diff for the run): `diff --graph range` and "
+             "`diff --graph rangeflat` each report AGREE against the port, so the depth "
+             "difference above is between two graphs and not a field the port always gets "
+             "wrong. Recorded in runs/graphcmp/D/C2b-*.txt.")
+
+  # ---- CONFLATION 3: REORDERED BUT EQUIVALENT -----------------------------------
+  out.append("# CONFLATION 3 -- the SAME reordered pair under the commutative-canonical "
+             "key. Expected: AGREE.")
+  rc3, txt3 = report(emit_py("matmul", None), emit_py("matmul", "srcswap"), "srcswap",
+                     "ordered", "srcswap", equiv=True)
+  for ln in txt3.splitlines():
+    if ln.startswith(("# VERDICT", "# SHARED", "# DENOMINATOR", "# ordered rows")):
+      out.append(ln)
+  out.append(f"#   commutative ops READ FROM CPython: {sorted(COMM)}")
+  out.append(f"# CONFLATION 3 VERDICT: {'OK -- AGREE under --equiv' if rc3 == 0 else 'FAIL -- still disagrees'} "
+             f"(expected rc=0; got rc={rc3})")
+  ok = ok and rc3 == 0
+
+  print("\n".join(out))
+  print(f"# CONFLATION VERDICT: {'ALL THREE DISTINGUISHED' if ok else 'AT LEAST ONE CONFLATION IS NOT DISTINGUISHED'}")
+  return 0 if ok else 1
+
+
 def main() -> int:
   ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-  ap.add_argument("cmd", choices=["emit", "diff", "control", "cross", "selfcheck"])
+  ap.add_argument("cmd", choices=["emit", "diff", "control", "cross", "selfcheck", "dbg",
+                                  "conf"])
   ap.add_argument("--graph", choices=sorted(GRAPHS), default="matmul")
   ap.add_argument("--side", choices=["py", "bend"], default="py")
   ap.add_argument("--plant", choices=sorted(PLANTS), default=None)
-  # CPU, NOT `os.environ.get("DEV")`. The port's graph fixture pins the ALLOC device at
-  # tag 0, which `uop/render.bend:361` names CPU and `schedule/__init__.bend:1095` says so
-  # in words; upstream's default device is whichever of `ALL_DEVICES` opens first
-  # (device.py:55-58), which is METAL on this machine and NULL under `DEV=NULL`, so an
-  # inherited DEV silently compares the port's CPU graph against a different device. The
-  # comparison is only well-posed at a PINNED device, and CPU is the one tag 0 names.
-  ap.add_argument("--dev", default="CPU")
-  ap.add_argument("--plant-side", choices=["py", "bend"], default="py",
-                  help="which side --plant edits; always ONE side's copy, never the tree")
+  ap.add_argument("--dev", default="CPU",
+                  help="CPU is the one device the port's arena tag 0 names; see the "
+                       "argument's own comment in git history for why this is not "
+                       "`os.environ.get('DEV')`")
+  ap.add_argument("--equiv", action="store_true",
+                  help="compare on the COMMUTATIVE-CANONICAL core: a commutative op's "
+                       "children are matched as a multiset, so MUL(a,b) and MUL(b,a) "
+                       "AGREE. Without it the pair DISAGREES on `src`")
+  ap.add_argument("--levels", default="0,1,2",
+                  help="DEBUG levels for `dbg`; the only difference between the runs")
   ap.add_argument("--bend-probe", default=None,
                   help="override the port-side probe; used to SEE the 0-row re-run guard fire")
   a = ap.parse_args()
-  # ONE `--dev` GOVERNS BOTH SIDES, and it must be in the environment before tinygrad is
-  # imported (`load` above). `clean_env` then hands the same value to the bend child.
+  global COMM
   os.environ["DEV"] = a.dev
   load_tinygrad()
+  COMM = commutative()
 
   if a.cmd == "selfcheck":
     return selfcheck()
+  if a.cmd == "conf":
+    return cmd_conf(a.dev)
+  if a.cmd == "dbg":
+    return cmd_dbg(a.dev, [int(x) for x in a.levels.split(",")], a.graph)
   if a.cmd == "emit":
     if a.side == "py":
       import tinygrad
       print(f"# graph={a.graph} plant={a.plant or 'none'} tree={tinygrad.__file__}", file=sys.stderr)
       print("\n".join(emit_py(a.graph, a.plant)))
     else:
-      rows, notes = emit_bend(a.dev, a.graph)
+      # `probe` REACHES THIS CALL. It did not, and that is the THIRD instance of the same
+      # defect in this file's flags -- `--graph` defaulted, `--plant-side` was never read,
+      # and `--bend-probe` was read once and handed only to `diff`/`control`/`cross`, so
+      # `emit --side bend --bend-probe <a file that prints nothing>` ran the REAL probe and
+      # answered with 18 rows. MEASURED: the guard is meant to be SEEN TO FIRE
+      # (`emit_bend`'s `probe` argument exists for exactly that) and the one command whose
+      # job is to emit could not show it. A guard that only one of three commands can
+      # exercise is a guard that will rot.
+      rows, notes = emit_bend(a.dev, a.graph, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
       print("\n".join("# " + n for n in notes), file=sys.stderr)
       print("\n".join(rows))
     return 0
@@ -1315,7 +1840,7 @@ def main() -> int:
     ok = True
     for name, get in (("py", lambda: emit_py(a.graph, a.plant)),
                       ("bend", lambda: emit_bend(a.dev, a.graph, probe=probe)[0])):
-      rc, txt = report(get(), get(), a.plant, name, name)
+      rc, txt = report(get(), get(), a.plant, name, name, a.equiv)
       print(f"== CONTROL {name} vs itself: rc={rc}\n{txt}")
       ok = ok and rc == 0
     print(f"# CONTROL VERDICT: {'OK' if ok else 'THE DIFFER DISAGREES WITH ITSELF'}")
@@ -1362,7 +1887,7 @@ def main() -> int:
           f"in the port's table at all, that is a port gap to report, not a flag to set.",
           file=sys.stderr)
     return 2
-  rc, txt = report(py, bd, a.plant)
+  rc, txt = report(py, bd, a.plant, equiv=a.equiv)
   print("\n".join("# " + n for n in notes))
   print(txt)
   return rc

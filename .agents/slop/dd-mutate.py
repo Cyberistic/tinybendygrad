@@ -57,6 +57,7 @@ usage: dd-mutate.py BASELINE.txt OUT.txt [id ...]
 env:   DD_WORKERS (default 6)   DD_KEEP (leave the mirror behind)
 """
 import hashlib
+import patch_not_apply as PNA
 import os
 import shutil
 import subprocess
@@ -351,9 +352,9 @@ def edit(src, old, new):
         return src, "no-op (byte-identical rewrite)"
     n = src.count(old)
     if n == 0:
-        return None, "PATCH DID NOT APPLY: anchor absent (0 occurrences)"
+        return None, PNA.not_applied("anchor absent (0 occurrences)")
     if n > 1:
-        return None, "PATCH DID NOT APPLY: anchor is %d-AMBIGUOUS" % n
+        return None, PNA.not_applied("anchor is %d-AMBIGUOUS" % n)
     return src.replace(old, new, 1), "applied"
 
 

@@ -21,7 +21,7 @@ import sys
 TG_TREE = os.environ.get('TG_TREE', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'opstree'))
 sys.path.insert(0, TG_TREE)
 
-from tinygrad.uop.ops import UOp, Ops, AxisType, ParamArg, KernelInfo  # noqa: E402
+from tinygrad.uop.ops import UOp, Ops, AxisType, ParamArg, KernelInfo, gate_kernel_sink  # noqa: E402
 from tinygrad.dtype import dtypes  # noqa: E402
 
 rows = []
@@ -132,12 +132,14 @@ for k, u in HBI:
 # three CONSTs and back-push answers `CONST CONST ADD`, both length three.
 # ---------------------------------------------------------------------------
 def split(u: UOp, sep: Ops) -> str:
-  out, stack = [], [u]
-  while stack:
-    n = stack.pop(0)
-    if n.op is sep: stack = list(n.src) + stack
-    else: out.append(nm(n))
-  return " ".join(out)
+  """`UOp.split_uop` (ops.py:682) CALLED, not re-spelled.
+
+  This was a Python worklist that reproduced the generator by hand, which made six
+  `s5_split_*` expectations a TRANSCRIPTION of the thing under test -- the one failure
+  agent-core.md names twice, and the one `device.bend` shipped at `sig=0 4 5` beside
+  CPython's `0 4 8`. `split_uop` is an `Iterator`, so the row is `list(...)`.
+  """
+  return " ".join(nm(n) for n in u.split_uop(sep))
 
 
 add2 = UOp(Ops.ADD, src=(c, c))
@@ -236,12 +238,14 @@ for k, u in GA:
 # `gate_kernel_sink` is one row per ARM: the two negative tests and the default.
 # A port that collapsed the negatives would answer 1 on one of the first two and
 # the third row would not see it.
-def gate_kernel_sink(x: UOp) -> bool:
-  if x.op is Ops.LINEAR: return False
-  if x.op is Ops.SINK and isinstance(x.arg, KernelInfo): return False
-  return True
-
-
+#
+# ops.py:1909 CALLED, not re-spelled. This block used to be a hand-written copy of those
+# three lines, so all three rows asserted a TRANSCRIPTION of the thing under test --
+# the failure agent-core.md names as the one that shipped `device.bend` at `sig=0 4 5`
+# beside CPython's `0 4 8` and stayed green. The copy was byte-identical to upstream on
+# this pin AND on `.agents/slop/opstree`, so calling the real one moves NO row, which is
+# the point: a transcription that happens to be right is indistinguishable from one that
+# is wrong until it is wrong.
 row("s5_gate_linear", bs(gate_kernel_sink(lin)))
 row("s5_gate_kernel", bs(gate_kernel_sink(ks)))
 row("s5_gate_plain", bs(gate_kernel_sink(b)))

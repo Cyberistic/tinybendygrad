@@ -15,6 +15,7 @@ HARNESS RULES, all three learned the hard way in this repo:
     is itself the answer for some of them.
 """
 import os
+import patch_not_apply as PNA
 import pathlib
 import re
 import subprocess
@@ -221,8 +222,8 @@ def main(only=None):
     rows = []
     for mid, desc, find, repl, why in MUTS:
         if src.count(find) != 1:
-            rows.append((mid, desc, why,
-                         "NOT APPLIED: anchor appears %d times" % src.count(find)))
+            rows.append((mid, desc, why, PNA.not_applied(
+                "anchor appears %d times" % src.count(find))))
             continue
         got = run(src.replace(find, repl, 1))
         if got == "STACK":

@@ -26,6 +26,7 @@ DISCIPLINE, all of it borrowed rather than reinvented:
 from __future__ import annotations
 
 import hashlib
+import patch_not_apply as PNA
 import importlib.util
 import pathlib
 import sys
@@ -135,8 +136,8 @@ def main() -> int:
   try:
     for mid, what, (old, new) in MUTATIONS:
       if old not in src:
-        print(f"{mid:4} SKIPPED -- target text is gone (the file moved on)")
-        zeros.append(mid + " (target text gone)")
+        print(f"{mid:4} {PNA.not_applied('target text is gone (the file moved on)')}")
+        zeros.append(mid + " (" + PNA.not_applied() + ")")
         continue
       p.write_text(src.replace(old, new, 1))
       try:
@@ -188,7 +189,7 @@ def main() -> int:
   try:
     for mid, what, (old, new) in REG_MUTATIONS:
       if old not in rsrc:
-        print(f"{mid:4} SKIPPED -- target text is gone (the file moved on)")
+        print(f"{mid:4} {PNA.not_applied('target text is gone (the file moved on)')}")
         continue
       rp.write_text(rsrc.replace(old, new, 1))
       try:

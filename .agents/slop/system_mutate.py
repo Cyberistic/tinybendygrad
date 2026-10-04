@@ -13,6 +13,7 @@ effect is a changed value, and every mutation in this file changes a value.
 finding (rule 6 of the `1..10` series).
 """
 import re, subprocess, sys, os, pathlib
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = ROOT / "tinybendygrad" / "runtime" / "support" / "system.bend"

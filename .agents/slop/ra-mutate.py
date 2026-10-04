@@ -1,4 +1,5 @@
 import re, subprocess, sys, os, shutil
+import patch_not_apply as PNA
 # POST-SPLIT. `codegen/late.bend` was ONE file for linearizer.py + regalloc.py +
 # gater.py and the 1:1 ruling gave each upstream .py its own file at its own path.
 # Every MUTATION below is a REGALLOC rule, so the file written is

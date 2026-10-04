@@ -15,6 +15,7 @@ rather than silently doing half the work.
 Run:  python3 .agents/slop/ga_port_fix.py <file.bend>
 """
 import pathlib
+import patch_not_apply as PNA
 import re
 import sys
 
@@ -250,7 +251,7 @@ def main(path):
         if new and new in s:
             continue            # already applied: idempotent by construction
         if old not in s:
-            missing.append((why, old.split("\n")[0][:70]))
+            missing.append((why, PNA.not_applied("anchor: " + old.split("\n")[0][:70])))
             continue
         s = s.replace(old, new, 1)
     if missing:

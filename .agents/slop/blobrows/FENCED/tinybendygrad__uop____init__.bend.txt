@@ -1,0 +1,5 @@
+n_ops=77
+first_value=1
+last_value=77
+last_name=Ops.PYLITERAL
+done
