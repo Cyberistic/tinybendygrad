@@ -138,8 +138,22 @@ def main.show(+ar: O.Arena, +sink: U32, r: Maybe<&2, U32>) -> IO(Unit):
 def main.call.of(+ar: O.Arena, +sink: U32, r: Maybe<&2, U32>) -> IO(Unit):
   main.show(ar, sink, r)
 
+# `walk_rewrite` returns the GROWN arena alongside the result and the repl map
+# (codegen/__init__.bend:146). Printing against the arena that came back, not the
+# one that went in, is the same defect `main` had in the port.
+#
+# A tuple destructuring on the left of `=` IS a match, so it may not scrutinise a
+# computed value: the triple has to arrive as a PARAMETER, which is why
+# `wr.step.rebuild(u, p)` destructures `p` rather than a call (codegen/__init__.bend:94).
+def main.call.of.walk(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), sink: U32) -> IO(Unit):
+  (ar2, r2, repl) = p
+  main.show(ar2, sink, r2)
+
+def main.call.walk(+ar: O.Arena, +sink: U32, pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  G.walk_rewrite(ar, sink, pm, ctx)
+
 def main.call(+ar: O.Arena, +sink: U32, pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
-  main.call.of(ar, sink, G.walk_rewrite(ar, sink, pm, ctx))
+  main.call.of.walk(main.call.walk(ar, sink, pm, ctx), sink)
 
 def main() -> IO(Unit):
   # THE PORT'S OWN FIXTURE, rebuilt here so the probe does not have to reach into
