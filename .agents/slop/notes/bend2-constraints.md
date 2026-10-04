@@ -19174,3 +19174,314 @@ row is bound (`l : Unit <- srow("s5_ga_after", ...)`) EXCEPT the last, which is 
 `srow("s5_ga_add", s5.ga(ar, fuel, 13))`.  A tally taken by scanning for the bound form finds
 twelve.  **WHEN A COUNT AND A LIST DISAGREE, THE LIST IS WRONG -- re-derive it from the lane
 text, do not adjust the count.**
+
+---
+
+## THE HAND-TYPED EXPECTED VALUE — measured by the handtyped-audit unit
+
+Numbering continues from O-8 (position ~19190). Cite POSITIONS; the numbers above
+repeat across units and have collided before.
+
+### O-9 (position ~19200). A ROW-VALUE DETECTOR WRITTEN AS A REGEX IS A DETECTOR FOR THE
+### SPELLING YOU HAPPENED TO USE, AND ITS BLIND SPOT IS NOT A COUNTING ERROR.
+`unobservable-census.py --handtyped` reports **224** rows whose expected value is a literal.
+Its regex is
+  `\b(?:s?row)\(\s*"([^"]+)"\s*,\s*(.+?)\)\s*(?:#.*)?$`   (re.M)
+and `.agents/slop/handtyped-audit.py` (ast-based) reports **578** over **4002** row call
+sites in 44 oracles: **+354**, decomposing into four measured causes.
+
+| cause | rows | what it is |
+|---|---|---|
+| `NAME` | 90 | the row NAME is not a constant string -- `row(f"cls_{c}", 7)` never matches |
+| `VALUE` | 81 | the value is an EXPRESSION over constants -- `3 << 20`, `512 + 12 * 4` |
+| `RADIX` | 69 | **hex and binary did not match the token pattern AT ALL** |
+| `SEMI` | 115 | two `row(...)` calls share one line, so `$` after the first `)` never matches |
+
+**THE ONE THE BRIEF NAMES IS NOT THE BIGGEST ONE.** The f-string-name blind spot is real and
+it is the SECOND largest; reporting only it would have hidden 265 rows.  **WHEN A FINDING
+NAMES ITS OWN CAUSE, MEASURE THE OTHER CAUSES TOO BEFORE REPEATING IT.**
+
+`RADIX` is the consequential one: the old token pattern was `-?\d+(?:\.\d+)?`, so **every
+hexadecimal constant in every oracle in this project was invisible to the census**, and the
+two worst hand-typed incidents this project has paid for were both hex (`BNXT_VENDOR` 5356
+against 5348; `~0x6996` written as 24425).  **A SCAN THAT CANNOT SEE A CLASS OF LITERAL IS
+NOT A LOW COUNT ON THAT CLASS. IT IS NO INFORMATION.**
+
+### O-10 (position ~19220). `ast.unparse` DESTROYS THE SPELLING YOU ARE MEASURING.
+Classifying `ast.Constant` values with `ast.unparse` renders `0xde3` as `3555`.  The RADIX
+column then reads **0** for the whole corpus while 69 hex rows sit in `RADIX`'s place --
+a plausible-looking zero produced by the measuring instrument, not by the corpus.
+**USE `ast.get_source_segment(src, node)` FOR ANY SCAN THAT LOOKS AT HOW A LITERAL IS
+SPELLED.**  Related: an `IfExp` value like `"True" if g.ADA in SET else "False"` has two
+literal arms and one derived TEST; a classifier that reads only the arms called 31 of
+`nv-oracle.py`'s rows LITERAL when every one of them reads a real constant out of
+`tinygrad.runtime.autogen.nv_570`.  **A CONDITIONAL IS NOT CONSTANT UNLESS ITS TEST IS.**
+
+### O-11 (position ~19240). A ROW THAT CALLS A DEF WHICH COPIES THE UPSTREAM FORMULA IS WORSE
+### THAN A LITERAL, BECAUSE IT LOOKS DERIVED.
+`nv-oracle.py:688` reads
+  `def _bpt(slm, mws, nsm): return round_up(round_up(slm * 32, 0x200) * mws * nsm, 0x8000)`
+and `tinygrad/runtime/ops_nv.py:693` reads
+  `bytes_per_tpc = round_up(round_up(self.slm_per_thread * 32, 0x200) * self.max_warps_per_sm * self.num_sm_per_tpc, 0x8000)`
+Character for character.  Eleven such expressions exist in `nv-oracle.py` across nine defs
+(`_bpt`, `_smem_cfg`, `_max_threads`, `_min_cbuf0`, `_cbuf0_len`, `_top`, `_unk_size`,
+`_coloc`, `sass`) and **22 of its row sites lean on one of them**.  A regex sees a call and
+clears the row.  This is the `unobservable-gr-oracle.py` `q4()` defect wearing a different
+hat: correct values, false provenance.
+
+`.agents/slop/reimpl-scan.py` finds them by CANONICAL FORM -- every identifier and attribute
+name collapsed to `N`, literals and operator kinds kept -- so `slm` lines up with
+`self.slm_per_thread`.  Measured **94 candidate expressions across 16 oracles**.  Two things
+about the tool itself are worth keeping:
+
+  * **the upstream file list must come from the oracle's IMPORTS, not its docstring.**
+    `nv-oracle.py`'s docstring names the PORT (`tinybendygrad/runtime/ops_nv.bend`) and its
+    upstream appears only in dotted import form, so a header regex found ZERO upstream files
+    for the one oracle that holds `_bpt` -- a detector failing in the direction that loses.
+  * **a canonical match is a SIGNAL, not a verdict.** Every hit prints both lines.  `round_up(x, 0x200)`
+    is a one-liner that occurs in many places.
+
+### O-12 (position ~19260). A HAND-TYPED ROW IS NOT ALWAYS A DEFECT; A NO-RAISE ARM OF A
+### `try/except` IS A FIXTURE, AND A RANKING THAT SAYS OTHERWISE RANKS BY SPELLING.
+Across the corpus, **115 of the 168 SEMI-caught rows and a large share of `elf_oracle.py`'s
+28, `dsl_oracle.py`'s 19 and `prepare-oracle.py`'s 17 are the `""` / `"-"` / `"NOFAIL"` /
+`1` arm of a deliberate positive-negative pair.**  The PAIR is the assertion; the literal arm
+is a fixture.  Two false-positive classes had to be removed before the ranking meant
+anything, and both were found by reading rows rather than by reading the tool:
+
+  * **opposite arms of one `try/except` cannot both run.** Counting them as shadowed names put
+    `elf_oracle.py` second with seven "shadows" that hide nothing.
+  * **`if cond: row(...); return` cannot fall through**, so a row after it is in a different
+    path. `prepare-oracle.py`'s `sr_{nm}_ret` has three sites (:401 except arm, :404 guarded
+    return, :405 fall-through) and all three are reachable-exclusively; modelling only
+    `try/except` called all three shadows and put that oracle THIRD on thirteen names that
+    hide nothing.
+
+Fixed, the order moved `elf_oracle` 2 -> 13, `dsl_oracle` 3 -> 21, `prepare-oracle` 4 -> 23.
+**A CONSEQUENCE RANKING IS ONLY AS GOOD AS THE FALSE POSITIVES IN ITS SCORE, AND A SCORE THAT
+RANKS AN ORACLE HIGH BECAUSE OF ITS OWN try/except IS NOT A RANKING.**
+
+### O-13 (position ~19280). A CONVERSION IS NOT DONE UNTIL THE ROW IS SHOWN TO FAIL WHEN THE
+### PORT IS WRONG, AND A PROVENANCE CHANGE MUST NOT CHANGE A VALUE.
+Converting 27 `nv-oracle.py` rows off hand-typed values moved **0** of 547 distinct row names
+and produced **0 value disagreements** (`rebase-gate.py`'s `rows()`, keyed on the NAME --
+row names contain spaces and this is the only sanctioned reader).  That is the only evidence
+that provenance changed and answers did not.  Seven mutations of the COPY of
+`tinybendygrad/runtime/ops_nv.bend`, `$TMPDIR` and never the live tree, `md5 -q` asserted
+equal before and after:
+
+| mutation | rows moved | verdict |
+|---|---|---|
+| M3 `qmd.prog_shift` 4 -> 3 | `nv_qmd_prog_shift5` 4->3 | KILLED |
+| M4 `qmd.rel_size` signal/timestamp arms swapped | `nv_qmd_rel_size_signal` 2->0 AND `nv_qmd_rel_size_timestamp` 0->2 | KILLED, both |
+| M6 `qmd.slot` inner pick 1 -> 2 | `nv_qmd_slot_0` 1->2 | KILLED |
+| M7 `qmd.slot.ok` `and` -> `or` | `nv_qmd_release_ok_one` True->False | KILLED |
+| M1 `qmd.ver.of` `>=` -> `>` | `nv_qmd_ver_bwa` 5->3 only | KILLED BY `bwa`, NOT by ada/bwb |
+| M2 `qmd.cbuf_shift` `>= 4` -> `>= 5` | none | **THEOREM** |
+| M5 `qmd.payload64b` `>= 4` -> `>= 5` | none | **THEOREM** |
+
+M2 and M5 are theorems, not fixture requests: `ops_nv.py:52` assigns `QMD.ver` exactly `(5)`
+or `(3)`, so `ver >= 4` and `ver >= 5` are the SAME PREDICATE over every reachable input and
+no fixture can separate them.  M1 is the uncomfortable one and belongs here: **converting
+`nv_qmd_ver_ada` and `nv_qmd_ver_bwb` to CPython calls did NOT make them see the `>=`/`>`
+mutation**, because ada sits below the boundary and bwb above it.  The row that sees it is
+`nv_qmd_ver_bwa`, which was ALREADY derived.  **A CONVERSION IMPROVES PROVENANCE; IT DOES NOT
+ADD SENSITIVITY, AND THE TWO ARE REPORTED SEPARATELY OR THE SECOND IS IMPLIED BY THE FIRST.**
+
+### O-14 (position ~19300). FOUR ROW NAMES IN `nv-oracle.py` WERE EMITTED TWICE, AND THE
+### HAND-TYPED COPY WON.
+`nv_qmd_wide_v3`, `nv_qmd_straddle_v3`, `nv_qmd_wide_v5`, `nv_qmd_straddle_v5` were each
+emitted once DERIVED from the field table `QMD.__init__` builds (at `nv-oracle.py:417-420`)
+and then again as a hand-typed `0` four lines later, plus `nv_qmd_release_ok_free`,
+`nv_qmd_release_ok_one` and `nv_qmd_release_refuses` emitted from `_slot` at :452-458 and
+again from a SECOND hand copy of the same scan, `_free_slot`, 600 lines down.  The gate's
+reader keeps one value per name, so one of each pair was unobservable and the hand-typed copy
+was the one that survived.  `nv-diff.py` listed all four `qmd_wide/straddle` names under
+"oracle rows the gate does not print", which is the correct reading: **four rows asserted a
+number nothing checked, and the file said so in its own output.**
+**WHEN AN ORACLE EMITS A NAME TWICE, ONE OF THE TWO IS DEAD. GREP THE NAME, COUNT IT, AND
+DELETE THE LITERAL RATHER THAN TRUSTING THE ORDER.**
+
+---
+
+# APPENDED 2026-10-04, graphcmp unit. Numbering continues from position ~19303 above;
+# as the index at the top says, cite POSITIONS.
+
+### GC-1 (position ~19325). `Bool.pick(T, c, k, f(k))` READS `k` TWICE AND BEND COUNTS BOTH.
+`site_ix.of` wrote `Bool.pick(U32, String.eq(n1, nm), k, site_ix.of(r, nm, U32.add(k, 1)))`
+and the error is `expected : k / observed : k (consumed more than once)`.  `Bool.pick`
+CHOOSES an arm, so only one branch is ever evaluated, and bend still counts both static
+reads.  **THE FIX IS NOT TO TRUST `Bool.pick`'s arm-selection; IT IS TO SPLIT THE DEF so the
+binder is read once per arm**, e.g. `site_ix.at(hit, r, nm, k)` with `match hit`.  This is
+the same class as the `Bool.pick`-is-not-an-`if` rule already in this file: **`Bool.pick` is
+weaker than it looks in BOTH directions -- it does not sequence, and it does not forgive a
+double read.**
+
+### GC-2 (position ~19340). A `match` MAY NOT RE-SCRUTINISE A PARAMETER AFTER AN OUTER
+### `match` HAS ALREADY BEEN WRITTEN OVER THE SAME NAMES.
+`s_sites.go` matched `ns thrs txts` and then wrote a NESTED `match fuel:` on its own first
+parameter.  The error is `a match on a parameter or field (this name is a def or a consumed
+binder: give the value its own def)`.  Two separate refusals, both measured, and they are
+NOT the same rule:
+  * `match String.eq(a, b)` on a COMPUTED value is a compile error;
+  * `match` on a value BOUND BY A LET is `a match cannot scrutinize a local binder`;
+  * `match` on a PARAMETER works in a `do` block but NOT inside an arm of another `match`
+    that already consumed the enclosing binders.
+**THE PRACTICAL SHAPE: ONE `match` OVER EVERYTHING YOU NEED TO DISPATCH ON, with `_` in the
+positions you do not care about.**  `match fuel ns thrs txts:` with
+`case Nil{} _ _:` / `case _ Nil{} _:` / `case _ _ Nil{}:` terminated a four-list walk with no
+second match at all.
+
+### GC-3 (position ~19355). A SELF-CALL'S ARGUMENTS ARE READ LEFT TO RIGHT AND EACH MUST BE
+### PASSED UNCHANGED UNTIL ONE SHRINKS.
+The error is `expected : a decreasing self-call (arguments are read left to right: each
+passed unchanged until one shrinks)`.  A walk whose first argument is a COUNTER that GROWS
+(`ix`) is refused however correct it is, and the fix is ORDERING: put the shrinking argument
+(a tail list, or a `Nat` fuel) FIRST and every later argument is then free to change.  The
+refusal names the rule but not the fix, and the fix is visible only in the signature order.
+**WHEN A SELF-CALL IS REFUSED, REORDER THE PARAMETERS BEFORE YOU REWRITE THE BODY.**
+
+### GC-4 (position ~19370). A `def` CALLED ONLY FROM ANOTHER FILE IS A DEAD CLAIM UNLESS IT
+### HAS A FILLED DEFINITION.
+`site_ix` was a plain helper in `graphcmp.bend` called only from `graphcmp-dbg.bend`, and
+the error is `expected : a filled definition (an unfilled law is a dead claim: live code
+cannot use it)` naming the helper.  Inside its own file it compiles; from the importing file
+it does not.  **A HELPER SHARED ACROSS TWO HARNESS FILES MAY NEED AN IN-FILE CALLER, AND THE
+CHEAPEST ANSWER IS USUALLY TO DELETE IT:** the reason it existed was a name-to-index lookup,
+and carrying the index through the walk removes the lookup entirely -- which is both fewer
+defs and no lookup to get wrong.
+
+### GC-5 (position ~19385). `H.debug()` IS `IO(U32)` AND MUST BE BOUND IN THE `do`, AND IT
+### MUST BE A BARE BIND.
+`helpers.bend:307` is `def debug() -> IO(U32)`, so `s_sites(H.debug(), root)` is
+`expected : U32 / observed : ... -> IO.OP<R>`.  In the `do` block it is `d : U32 <- H.debug()`
+and **NOT** `+d <- H.debug()`, which is refused with `expected : a bound variable` (this is
+recorded in `debug-gate.bend`'s own header too, independently).  So the flag is read ONCE and
+threaded as a plain parameter, and every site is still reached through the port's own
+`*_dbg*` def.  **A `H.debug()`-GATED PROBE HAS EXACTLY ONE SPELLING AND IT IS THE ENV READ;
+AN INDIRECTION THROUGH A PARAMETER TESTS A DIFFERENT MECHANISM AND MUST BE LABELLED AS ONE.**
+
+### GC-6 (position ~19400). `+` ON A BINDER IS LOAD-BEARING WHEREVER THE VALUE IS READ TWICE,
+### AND THE COMPILER SAYS WHICH READ.
+`+x : F.Folded <- IO.pure(F.Folded, F.folded(...))` is required when the next line reads
+both `F.Folded.ar(x)` and `F.Folded.t(x)`; a bare `x :` bind is
+`expected : x / observed : x (consumed more than once)`.  The same applies to a `+`
+PARAMETER of a `do IO` def that is handed to two calls.  **`+` IS NOT OPTIONAL ANNOTATION AND
+IT IS NOT ONLY FOR `String`: it is the ONLY way a linear binder survives two reads, and the
+error names the binder, not the read, so the message does not tell you which of the two
+lines is the second read.**
+
+### GC-7 (position ~19415). A PYTHON HARNESS'S `<bytecount>:<bytes>` READER MUST NOT MAKE THE
+### SEPARATOR STRUCTURAL, EVEN WHEN EVERY CURRENT FIELD IS SPACE-FREE.
+`unchunks` walked the counts correctly and then RAISED if the character after a chunk was not
+a single space.  Every one of the eight graph fields was an atom text, and no atom contains a
+space, so nothing caught it for weeks.  The first field that did -- a DEBUG trace line
+containing `memory reduced from 0.01 MB -> 0.01 MB, 5 -> 2 bufs` -- made the reader walk off
+the end of the first chunk and REFUSE the line, and that surfaced as **`0 trace rows`, a
+COUNT, not as a parse failure.**  The counts are authoritative, so the reader steps over AT
+MOST one space and does not insist on one.  **THIS IS THE ROW-NAMES-WITH-SPACES TRAP ONE
+LEVEL DEEPER: not "do not split on whitespace" but "do not REQUIRE whitespace either".  AND
+A READER THAT DROPS ROWS REPORTS A SMALLER COUNT, WHICH LOOKS LIKE A FINDING.**
+
+### GC-8 (position ~19430). A FIELD THAT READS EQUAL BECAUSE BOTH SIDES ARE WRONG IS WORSE
+### THAN A FIELD THAT IS NOT COMPARED.
+Not a Bend rule, but it is the rule this unit's graphs were widened for, and it is the one
+that generalises past Bend.  `graphcmp.py`'s `cdepth` counted `arg[1:]`, and `arg` is a
+2-tuple, so it counted the tuple-ness of the ARG instead of the nesting of `axis_id` -- off by
+one against the port's `Arena.depth` on all four fixtures tried.  **IT WAS INVISIBLE BECAUSE
+NO GRAPH EMITTED BEFORE THAT DAY CONTAINED A RANGE**, so the py side returned 0, the port
+returned 0, and the field agreed.  The port's own header (`ops.bend:1097-1101`) had the right
+definition in prose and the harness did not match it.  **A FIELD THAT IS CONSTANT ON EVERY
+FIXTURE IS NOT A FIELD THAT WAS TESTED; COUNT THE FIXTURES THAT REACH IT AND PRINT THAT
+COUNT, BECAUSE A GREEN `0` AND AN UNREACHED FIELD LOOK IDENTICAL IN A VERDICT LINE.**
+
+### GC-9 (position ~19445). A FLAG THAT REACHES NOTHING IS THE SAME DEFECT AS A FLAG THAT
+### REACHES THE WRONG THING, AND A FILE HAD THREE OF THEM.
+`--graph` defaulted to `"matmul"` while also being the DEFAULT `--graph`, so it was correct
+for the default invocation and no test of the default invocation could see it.  `--plant-side`
+was parsed and never read.  `--bend-probe` was read once and handed only to `diff`,
+`control` and `cross`, so `emit --side bend --bend-probe <a probe that prints nothing>` ran
+the REAL probe and answered 18 rows -- and `emit` is the one command whose job is to emit.
+**THE TEST THAT FIRES FOR THE THIRD ONE IS "RUN THE FLAG THROUGH THE COMMAND WHOSE JOB IT
+DESCRIBES", NOT "RUN IT THROUGH A COMMAND THAT HAPPENS TO USE IT".  A FLAG NOBODY CAN REACH
+THE CODE IT NAMES IS A COMMENT WITH A COMMAND-LINE SYNTAX.**
+
+## ARENA ALIASING -- numbered from GC-9 above (position ~19407). Six rules, all MEASURED on
+## this tree with bend 2.0.34, and the first one RETRACTS a safety argument that had been
+## carried by 589 call sites.
+
+### ARENA-1 (position ~19420). THE `+` MARKER ON AN ARENA IS **NOT** AN OWNERSHIP MARKER,
+### AND EVERY SAFETY ARGUMENT BUILT ON IT IS WRONG. THIS IS THE BIG ONE.
+`+ar: O.Arena` in bend 2.0.34 means **"the callee may REBIND this name"**, not "this name is
+consumed on every path".  Two consequences, both measured by
+`.agents/slop/arena-affine-probe.bend`, which COMPILED AND RAN:
+
+  * **A READ AFTER A SPEND IS PERMITTED.** `+f = O.UOp.cconst(ar, ...)` then
+    `Arena.at(ar, Found.i(f))` type-checks and answers **`None`** -- the callee rebound its
+    own `ar`, the caller's `ar` still names the PRE-mint arena, and the fresh index is past
+    its end.  `Arena.node` would have answered the NOOP bottom.
+  * **TWO MINTS FROM ONE ARENA NAME ARE PERMITTED, AND THEY OVERWRITE EACH OTHER.**
+    `+f = cconst(ar, 1)` and `+g = cconst(ar, 2)` from the SAME `+ar` both answer
+    **index 2**, and slot 1 reads back as `CONST/0:1` in `Found.ar(f)` and `CONST/0:2` in
+    `Found.ar(g)`.  That is the overwrite the rules already name -- "handing the same arena
+    to two node builders makes the second overwrite the first" -- and nothing enforces it.
+
+**SO: A READ WHOSE ARENA IS THE DEF'S OWN `+ar` PARAM IS *LATENT*, NOT SAFE.**  The
+discipline that actually holds those 589 sites is the CALLER threading `Found.ar` out of the
+mint, which is a CONVENTION with no compiler support.  `codegen/__init__.bend`'s header
+relies on `+` doing exactly this job and it does not do it.
+
+### ARENA-2 (position ~19440). `Arena.node` IS TOTAL, SO THE DETECTOR MUST READ `Arena.at`.
+`O.Arena.at` (ops.bend:1187) is the only reader in the file that can answer "this index does
+not exist": `None{}` instead of `Arena.bottom()`.  A detector built on `Arena.node` cannot
+fail, because `Arena.node` cannot.  **WHEN A LOOKUP MUST BE ABLE TO REPORT A MISMATCH, GIVE IT
+THE PARTIAL READER; THE TOTAL ONE IS FOR READS THAT ARE ALLOWED TO BE WRONG.**
+
+### ARENA-3 (position ~19455). INDEX 0 IS THE ARENA BOTTOM, SO "ANY NOOP IS A BUG" HAS A
+### FALSE POSITIVE IN EVERY GRAPH DUMP.
+`Arena.empty()` interns the bottom at slot 0 (ops.bend:1166) and the bottom is
+`Node{OpsNOOP{}, ...}`, so a row that prints EVERY index always prints one NOOP.  Exclude it
+by READING THE INDEX OFF THE ROW, never by a list of names.  Measured: 16 of the 60 NOOP rows
+in this tree's 12720 gate rows are exactly this, and all 16 are in one file's graph dumps.
+
+### ARENA-4 (position ~19470). A NOOP INSIDE A REPR IS A SPELLING, NOT A READ.
+`jit.bend:415` holds the STRING `"UOp(Ops.NOOP, arg=None, src=())"`, which three rows quote
+verbatim.  Measured: excluding it by SHAPE (`arg=None, src=()`) takes that file's suspect
+count from 5 to 2, and the 2 it leaves are the real defect.  **A DETECTOR'S EXCLUSIONS MUST BE
+MECHANICAL AND COUNTED; A HAND LIST HIDES THE THING IT WAS WRITTEN TO HIDE.**
+
+### ARENA-5 (position ~19485). PREPENDING `k` NODES TO AN ARENA IS A MUCH WEAKER DETECTOR
+### THAN IT LOOKS, AND IT WAS MEASURED ON FOUR INJECTIONS BEFORE BEING TRUSTED.
+Padding shifts EVERY index by `k`, so it only resolves a defect whose answer depends on how
+many nodes PRECEDE the index.  Measured on `engine/jit.bend`, all four at k = 0,1,2,5,17,64:
+
+  * wrong CONSTANT (append `[0]`, the arena bottom)  -> **CONSTANT**.  Correct behaviour of
+    the technique, not a flaw in it: index 0 is the bottom at every size.
+  * wrong OFFSET (append `[h+1]`)                   -> **CONSTANT**.  Same relative node.
+  * STALE ARENA (read a fresh index out of a pre-mint arena) -> **CONSTANT**.  The pre-mint
+    arena never contains the index at any `k`.
+  * FIXED WRONG INDEX (append the literal `[2]`)      -> **SIZE-SENSITIVE**: `k=0` reads
+    `BUFFER`, the other five read `NOOP`.
+
+**SO PADDING DETECTS ONE SHAPE OUT OF FOUR.**  It is not a general arena-aliasing detector and
+a clean padding sweep is not evidence about a wrong constant, a wrong offset, or a stale
+arena.  Those belong to ARENA-2's NOOP scan.  (`.agents/slop/arena-sweep-control.sh A|B|C|D`
+runs all four; none of them patches the live tree, and it asserts BOTH md5 digests differ.)
+
+### ARENA-6 (position ~19510). A ROW THAT PRINTS A COUNT CANNOT SEE A WRONG VALUE.
+`pl_step` appended the arena bottom `0` instead of the node, so `kept` was a 1-element list
+either way and `prune_hit=kept=1 once=1 need=2` was IDENTICAL before the fix and after it.
+The only rows that moved were the two that print the SOURCE'S OP.  **A FIXED-OFFSET SUBSTITUTION
+IS INVISIBLE TO EVERY COUNT ROW AND TO EVERY SIZE SWEEP** -- it needs a row that prints an
+identity, and in that file the identity rows were PORT-ONLY, so the whole defect was invisible
+to every gate in the tree.
+
+### ARENA-7 (position ~19525). A HARNESS THAT READS A FRESH INDEX OUT OF THE ARENA THAT WENT
+### IN REPRODUCES THE BUG IT IS SUPPOSED TO BE LOOKING FOR.
+The first version of `arena-sweep-jit.bend` called
+`j_sig(Fx.ar(x), Found.i(pl_replace(Fx.ar(x), ...)))` -- a fresh index out of the STALE arena,
+`codegen/__init__.bend:117` verbatim -- and printed `n=0 op=Ops.NOOP`.  **THE ONLY THING THAT
+CAUGHT IT WAS THE ORACLE ASSERTION**, because the sweep checks its own `k=0` block against the
+committed gate BEFORE it compares sizes.  A sweep that diffed first would have reported "no
+rows moved" over a probe reading nothing, which is the exact failure `rebase-gate.py` exists to
+distinguish.  **ASSERT THE ORACLE BEFORE THE DIFF, IN EVERY HARNESS, INCLUDING YOUR OWN PROBE.**

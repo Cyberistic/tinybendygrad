@@ -21,8 +21,8 @@
 # ambiguity is the census target in miniature.
 set -eu
 SCRATCH=/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode
-F=$SCRATCH/dd-band-fixsrc/tinybendygrad/codegen/decomp/dtype.bend
-[ -f "$F" ] || { echo "no source tree at $F -- copy dd-band-snap there first" >&2; exit 2; }
+F=${1:-$SCRATCH/dd-band-fixsrc/tinybendygrad/codegen/decomp/dtype.bend}
+[ -f "$F" ] || { echo "no such file: $F" >&2; exit 2; }
 
 python3 - "$F" <<'PY'
 import sys

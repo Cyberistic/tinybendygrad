@@ -71,7 +71,17 @@ import dataclasses
 row("nv_iface_count", len(NVDevice.ifaces))
 row("nv_iface_names", ",".join(c.__name__ for c in NVDevice.ifaces))
 row("nv_sleep_ms", NVDevice.sleep_timeout_ms)
-row("nv_encode_count", 4)
+# `pm_encode` is a real `PatternMatcher` on the class, so its length is a CALL and
+# not the number 4. `nv_encode_names` below is still typed, because the custom
+# function name is compiled into the matcher and is not readable off a UPat --
+# so the four rule LOCATIONS are printed as a COMMENT rather than as a row,
+# because `nv-diff.py`'s own rule is that a row with no port counterpart belongs
+# in a comment and not in the differ's unpaired list, where it would train a
+# reader to skip that section. If a rule moves upstream these four numbers move.
+row("nv_encode_count", len(NVDevice.pm_encode.patterns))
+print("#  nv_encode_lines = %s" % ",".join(str(f.__code__.co_firstlineno)
+                                        for _, f in NVDevice.pm_encode.patterns),
+      file=sys.stderr)
 row("nv_encode_names", ",".join(
     ["submit_nv_compute", "submit_nv_copy", "submit_nv_encdec", "submit_nv_raw"]))
 

@@ -1,3 +1,0 @@
-#!/bin/sh
-# bend 2.0.34, run from the reference checkout. See references/ in README.md.
-exec bun "$(dirname "$0")/../references/bend/bend2/main.ts" "$@"

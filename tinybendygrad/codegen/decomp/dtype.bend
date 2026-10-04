@@ -1571,11 +1571,23 @@ def f2f.em1(+ar: O.Arena, +k: U32) -> U32:
   +d = P.dc_sub(O.Found.ar(m1), O.Found.i(s), O.Found.i(m1))
   O.Found.i(d)
 
+# `shl(1, k)` is `1 * 2**k`, a PYTHON INT (transcendental.py:20), and a Python int
+# written against a mask is a CONSTANT -- NOT the arena index of the node `f2f.em1`
+# built for it. `dd_band`'s third parameter is `op.bend`'s `dc_band`, which interns it
+# as `dc_cint(ar, k)`, so this is the VALUE half and `f2f.em1` is the INDEX half.
+def f2f.mask1(+k: U32) -> U32:
+  U32.sub(T.tx_powi32(k), 1)
+
+# the SAME number as an I64, for the `dd_eq1` of dtype.py:122, which reads one interned
+# CONST node on BOTH sides of the equation.
+def f2f.em1.i64(+k: U32) -> H.I64:
+  H.i64_sub(T.tx_powi(k), H.i64_of_i32(1))
+
 # `shl((v & shl(1, fs-1)).cast(f2f_dt[to]), ts - fs)`
 
 def f2f.sign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32, +ts: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
-  +a = dd_band(O.Found.ar(s), v, O.Found.i(s))
+  +a = dd_band(O.Found.ar(s), v, T.tx_powi32(U32.sub(fs, 1)))
   +c = P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
   T.tx_shl(O.Found.ar(c), O.Found.i(c), U32.sub(ts, fs))
 
@@ -1585,7 +1597,7 @@ def f2f.nosign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
   +m1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
   +m = P.dc_sub(O.Found.ar(m1), O.Found.i(s), O.Found.i(m1))
-  +a = dd_band(O.Found.ar(m), v, O.Found.i(m))
+  +a = dd_band(O.Found.ar(m), v, f2f.mask1(U32.sub(fs, 1)))
   P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
 
 # `shl(nosign, tm - fm) + shl(tb - fb, tm)`. `tb - fb` is a Python int, so both
@@ -1663,7 +1675,7 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
 def f2f.down.sign(+ar: O.Arena, +v: O.Found, +fs: U32, +ts: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), U32.sub(fs, ts))
   +b = dd_wk(O.Found.ar(a), T.tx_powi(U32.sub(ts, 1)))
-  dd_band(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
+  dd_band(O.Found.ar(b), O.Found.i(a), T.tx_powi32(U32.sub(ts, 1)))
 
 # `v & (shl(1, fs - 1) - 1)`
 
@@ -1671,7 +1683,7 @@ def f2f.down.nosign(+ar: O.Arena, +v: O.Found, +fs: U32) -> O.Found:
   +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
   +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
   +m = P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
-  dd_band(O.Found.ar(m), O.Found.i(v), O.Found.i(m))
+  dd_band(O.Found.ar(m), O.Found.i(v), f2f.mask1(U32.sub(fs, 1)))
 
 # `(rne(nosign, fm - tm) - shl(fb - tb, tm)).cast(f2f_dt[to])`
 
@@ -1694,8 +1706,7 @@ def f2f.down.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to
 
 def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
-  +m = f2f.em1(O.Found.ar(a), fe)
-  +b = dd_band(O.Found.ar(a), O.Found.i(a), m)
+  +b = dd_band(O.Found.ar(a), O.Found.i(a), f2f.mask1(fe))
   +c = dd_wk(O.Found.ar(b), H.i64_of_i32(U32.add(U32.sub(T.exponent_bias(fr), T.exponent_bias(to)), 1)))
   dd_lt1(O.Found.ar(c), O.Found.i(b), O.Found.i(c))
 
@@ -1708,10 +1719,7 @@ def f2f.down.m1(+ar: O.Arena, +tm: U32) -> O.Found:
 
 def f2f.down.m2(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(ns), U32.sub(fm, tm))
-  +s = dd_wk(O.Found.ar(a), T.tx_powi(tm))
-  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
-  +m = P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
-  dd_band(O.Found.ar(c1), O.Found.i(a), O.Found.i(m))
+  dd_band(O.Found.ar(a), O.Found.i(a), f2f.mask1(tm))
 
 # `(sign | nan_mantissa | shl(shl(1, te) - 1, tm)).cast(f2f_dt[to])`
 
@@ -1732,9 +1740,9 @@ def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, 
 
 def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
-  +m = f2f.em1(O.Found.ar(a), fe)
-  +b = dd_band(O.Found.ar(a), O.Found.i(a), m)
-  dd_eq1(O.Found.ar(b), O.Found.i(b), m)
+  +mc = dd_wk(O.Found.ar(a), f2f.em1.i64(fe))
+  +b = dd_band(O.Found.ar(mc), O.Found.i(a), f2f.mask1(fe))
+  dd_eq1(O.Found.ar(b), O.Found.i(b), O.Found.i(mc))
 
 # `sign.cast(f2f_dt[to]) | norm`, which the fnuz return wraps.
 

@@ -17,9 +17,12 @@ So each site lands in exactly one of:
 
   SAFE    arena and index provably come from the same value, in this def, with no
           cross-def step in between.
-  LATENT  index and arena are threaded from the caller and CANNOT be mismatched by the
-          affine rules (the arena is `+`, so it is consumed once and a `Found` that grows
-          it forces the grown value back through), but nothing local proves it.
+  LATENT  arena and index are threaded from the caller. NOT protected by the `+` marker:
+          MEASURED, `arena-affine-probe.bend` shows bend ACCEPTS a read of an arena after a
+          mint has spent it (answering `None`), and ACCEPTS two mints from one arena name,
+          which return the same index and overwrite each other. `+ar` means "the callee may
+          rebind", not "this name is consumed on every path", so the discipline that actually
+          holds these sites is the caller threading `Found.ar` -- a CONVENTION.
   EXPOSED the index is bound from `Found.i(f)` while the arena is some OTHER expression, or
           the arena is a non-affine copyable parameter. Both are reachable by a caller.
   DEFECT  both bounds are local and they disagree -- decided here, not at a call site.
@@ -147,9 +150,9 @@ def classify(reader, args, params, body_lines):
       return "SAFE", arena, idx, f"`{arena}` bound from Found.ar({src}) in this def"
     # is ARENA a parameter? then the caller decides -- EXPOSED
     if arena in allparam:
-      return ("SAFE" if arena in affine else "EXPOSED"), arena, idx, \
-        (f"`{arena}` is a +affine+ arena param: consumed once, so the caller cannot have read "
-         f"a node it minted into a DIFFERENT copy"
+      return ("LATENT" if arena in affine else "EXPOSED"), arena, idx, \
+        (f"`{arena}` carries the + marker; MEASURED it does not prevent a read after a spend "
+         f"or a second mint from one arena name (arena-affine-probe.bend). Held by convention."
          if arena in affine else
          f"`{arena}` is a NON-affine (copyable) arena param: a caller can pass the same arena "
          f"to two builders and the second overwrites the first")
@@ -191,10 +194,10 @@ def classify(reader, args, params, body_lines):
     if arena == idx:
       return "SAFE", arena, idx, "index == arena name is not an index; def reads its own arena"
     if arena in affine:
-      return "SAFE", arena, idx, \
-        (f"`{arena}` is affine (+): it is consumed exactly once on this path, so any node the "
-         f"caller minted for `{idx}` was minted into this same arena. The linear rules, not a "
-         f"row, are the proof.")
+      return "LATENT", arena, idx, \
+        (f"`{arena}` carries the + marker, which MEASURED does NOT stop a read after a "
+         f"spend (arena-affine-probe.bend ctl2) nor a second mint from one arena name "
+         f"(ctl1: both mints answer index 2 and overwrite each other). Held by convention.")
     if arena in allparam:
       return "EXPOSED", arena, idx, f"`{arena}` is copyable; nothing stops a caller passing two arenas"
     return "LATENT", arena, idx, f"index `{idx}` is a parameter, arena `{arena}` is computed here"

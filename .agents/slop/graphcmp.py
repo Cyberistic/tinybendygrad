@@ -293,6 +293,16 @@ ATOMS = {"none": "N", "u32": "i", "i64": "l", "float": "f", "bool": "b", "str": 
          "bytes": "y", "dtype": "D", "ops": "O", "axis": "X", "addr": "S", "invalid": "v",
          "buf": "z", "uop": "u", "opt": "q", "enum": "E"}
 
+# THE COMPOSITE ARG FORMS, and their PREFIXES, enumerated because nothing else enumerates
+# them and a census that reports them as unmapped values is reporting a category error.
+# MEASURED: `carg`'s per-op arms here and `argstr`'s arms in graphcmp.bend spell exactly
+# these ten two-or-more-character openers, and each is a NESTED grammar -- the inside is the
+# ordinary atom grammar. `P(` is `ParamArg`'s thirteen fields in declaration order.
+# Without this list a coverage census reads `r` and `k` out of `rd(OADD,i1)` and `rg(i1,..)`
+# and calls them unmapped ATOMS, which they are not: they are structure, and the atoms are
+# the `O` and the `i` inside.
+COMPOSITE = ("P(", "al(", "cF(", "cI(", "in(", "kI(", "pI(", "rd(", "rg(", "wm(")
+
 
 def chunk(s: str) -> str:
   """`<bytecount>:<bytes>` -- BYTES, because bytes are what the reader walks."""

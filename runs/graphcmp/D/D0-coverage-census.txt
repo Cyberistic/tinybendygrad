@@ -1,0 +1,18 @@
+# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+# graph      nodes  cnt  ops arg-atoms shapes depths  live-ledger
+  binblob    19/19   ok    8 DNOSbilrs     14      1  y  [same]
+  buffer      5/5    ok    4   DNSbils      4      1  z  [same]
+  cast        6/6    ok    5   DNSbils      4      1  -  [same]
+  matmul     18/18   ok    7 DNOSbilrs     13      1  -  [same]
+  range       2/2    ok    2      Xilr      1      2  -  [same]
+  rangeflat   2/2    ok    2      Xilr      1      1  -  [same]
+  reduce      7/7    ok    6 DNOSbilrs      6      1  -  [same]
+  sink        2/2    ok    2      ikls      2      1  -  [same]
+  special     2/2    ok    2        ls      1      1  -  [same]
+# TOTAL: 9 graphs, 63 nodes per side, 13 distinct ops: ALLOC BINARY BUFFER CAST CONST MUL PERMUTE RANGE REDUCE RESHAPE SINK SPECIAL STACK
+# FIELDS COMPARED PER NODE: 8 on the wire, 6 in the equality decision (dtype, shape, depth, tag, arg, src); `id` is reporting-only by R1
+# COMPOSITE ARG FORMS SPELLED BY BOTH SIDES: ['P(', 'al(', 'cF(', 'cI(', 'in(', 'kI(', 'pI(', 'rd(', 'rg(', 'wm(']
+# DISTINCT ARG ATOM LETTERS REACHED: DNOSXbiklrs (11 distinct = 8 atom letters + 3 composite-form prefixes; a letter that is NEITHER an atom nor a composite prefix would be an unmapped value: none)
+# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: {'y': 1, 'z': 1} of 8 markers
+# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: ['u', 'q', 'X!', 'BAD', '?', 'E']
+# COMMUTATIVE OPS (read from CPython): ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']

@@ -10,6 +10,8 @@ gate-disagree   [#########] 9/10    dtype rows 182, 7 disagreements (was 19)
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
+arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
+                                       8 suspects adjudicated, 4 detectors w/ controls
 ```
 
 **`E2E-PROVES-COMPUTE` is the bar that was at zero all session.** A port can agree
@@ -6124,3 +6126,149 @@ not edited** — it belongs to the unit porting `ops.py[701,1000]`. Nothing comm
   own comment at `ops.bend:6703-6708` declares this and `s5_copy_*` does not pretend otherwise.
   **They are also `AssertionError`/`RuntimeError` paths, so a refusal here is a truncated trace
   and the `s5_` rows would need a negative case before those two TODO(p3)s can close.**
+
+---
+
+## Session 2026-10-04 (gc3) — `graphcmp`: WIDENED TO NINE GRAPHS, A DEBUG-LEVEL
+## COMPARISON, AND A PROOF THAT THE DIFFER CAN FAIL
+
+Entry points: `.agents/slop/graphcmp.py` (the differ), `.agents/slop/graphcmp.bend` (the port
+side), `.agents/slop/graphcmp-dbg.bend` (the DEBUG probe),
+`.agents/slop/graphcmp-oracle.py` (the coverage census),
+`.agents/slop/graphcmp-dbg-oracle.py` (the CPython reachability oracle),
+`.agents/slop/graphcmp-run.sh` (every artifact, one command),
+`.agents/slop/graphcmp-LIMITS.md` (**the honest limits -- read this one**),
+`runs/graphcmp/D/README-D.txt` (the artifact index with every command and its denominator).
+
+`E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
+
+- [x] **RE-VERIFIED THE FOUR EXISTING GRAPHS ONCE, THEN MOVED ON.** matmul 18 nodes, reduce
+      7, buffer 5, sink 2 -- all `AGREE`. The previous session's `runs/graphcmp/C2/C7` files
+      held 0-ROW FAILURES because `graphcmp.bend:361` still read `O.ABlob{n2}` and the port's
+      field is `bs`; one line fixed it and the whole lane came back. (GC: the BLOCKER was in
+      the HARNESS, not in the 72 ungateable importers.)
+- [x] **WIDENED 4 -> 9 GRAPHS. All nine `AGREE`, each printed with its denominator:**
+      matmul 18/18 nodes 108 field-records · reduce 7/7 · buffer 5/5 · sink 2/2 ·
+      range 2/2 · rangeflat 2/2 · cast 6/6 · special 2/2 · binblob 19/19.
+      **TOTAL 63 nodes per side, 378 field-records, 13 of 77 ops.** `AGREE` on 2 and `AGREE`
+      on 19 no longer print the same way: every report carries
+      `graphs= nodes= fields= field-records= shared-cores= commutative-ops=`.
+      The five new ones each reach something no existing graph reached: `range`/`rangeflat`
+      are the **only non-zero `depth` anywhere**; `cast` is the only bare-`DType` arg;
+      `special` is a bare str outside a `KernelInfo`; `binblob` makes the `y` residual LIVE.
+- [x] **THE DEBUG-LEVEL COMPARISON.** `E dbg --levels 0,1,2` runs the port probe once per
+      level with `DEBUG` as the ONLY difference, diffs the seven gated sites' traces through
+      the same differ, and **holds the graph fixed by construction AND by check**: the probe
+      builds ONE graph (`GC.matmul_of`, IMPORTED from graphcmp.bend, not copied) and prints its
+      own rows every run; `dbg` DIGESTS them per level and exits 2 (a FAILURE, never a
+      verdict) if two digests differ. MEASURED: digest `c8baceda7b61` at levels 0, 1 and 2,
+      `distinct=1`. MEASURED: 0 vs 1 moves exactly the ONE level-1 site (`mem`, named with its
+      full line); 1 vs 2 moves exactly the six level-2 sites; 0 vs 3 moves all seven. The
+      trace rows' `depth` column carries each site's THRESHOLD, so `thr_mem=1` against six
+      `i2`s is visible inside the diff itself.
+- [x] **THE DIFFER CAN FAIL, AND IT NAMES THE NODE.** All six plants `DISAGREE`. The
+      two-sided planted case: `MISMATCH MUL py#16 vs bend#16 ... src py=['bd57da94',
+      '2b7d1a7e'] bend=['2b7d1a7e','bd57da94']` -- two arenas in two processes, and the
+      disagreement names the node on each side.
+- [x] **THE THREE CONFLATIONS, `E conf`, one verdict line each, `ALL THREE DISTINGUISHED`.**
+      (a) same `repr(arg)` / different structure: MEASURED `repr(arg)` is `None` on both
+      sides and the differ names `src`. (b) same `arg` at a different depth: **NOT
+      REPRESENTABLE** -- the depth is encoded twice on purpose, and what IS shown is that the
+      differ NAMES a depth difference (`range` vs `rangeflat`, rung 3.5 prints `depth` and
+      `arg` by name, and each graph separately agrees with the port). (c) reordered but
+      equivalent: `--equiv` did not exist before today; `diff --plant srcswap` DISAGREES and
+      `diff --plant srcswap --equiv` AGREES on 18 nodes / 108 field-records.
+- [x] **THE LIMITS ARE WRITTEN DOWN WITH THEIR REASONS.** `.agents/slop/graphcmp-LIMITS.md`:
+      11 defects found by widening (all in this unit's own normal form, all measured), then
+      what is not compared, then what CANNOT be done structurally, then the three conflations,
+      then what a clean run does and does not establish.
+- [x] **REPRODUCIBLE BYTE-FOR-BYTE.** `D9-stability.txt`: two runs of `diff --graph binblob`
+      are byte-identical, and four graphs' canonical files are byte-identical py vs bend.
+
+### Found, not fixed
+
+- **`uop/ops.bend` STOPPED COMPILING mid-session** (another unit, at digest
+  `fbf2de82781b3bac9e4c6927d2f14f981e8654bd1ac73b175e842ef91d5486b8`, failing at
+  `UOp.const_factor.mul`, ops.bend:7028). **Reported, not edited** -- it is not my file.
+  All of `D0`-`D10` was captured on a COMPILING tree; the coverage census
+  (`graphcmp-oracle.py`) is the one artifact BLOCKED on it, recorded as
+  `runs/graphcmp/D/D0-coverage-census.BLOCKED.txt` with the command and the digest.
+- **CPython's own `DEBUG >= 1` memory line (`memory.py:59-60`) fired on 0 of 8 real graphs**
+  (`D8b-cpython-dbg1-reachability.txt`). So `dbg` has NO CPython lane for the trace text and
+  is a port-vs-port comparison across levels. Stated in the tool's own output and in LIMITS.
+- **`--equiv` is MEASURED on ONE of its eight commutative ops.** Only MUL is reached by any
+  graph or plant, so ADD/AND/MAX/CMPNE/CMPEQ/XOR/OR are unexercised. A fixture with an `ADD`
+  would close it.
+- **A symbolic dim and a float CONST are both UNTESTED, not measured-safe**: 0 of 63 nodes has
+  either. Both are places where the normal form compares less than it could (`U` and
+  `repr(x)`), and neither has a fixture.
+- **Six of the eight ledger markers are live on NO graph** (`u`, `q`, `X!`, `BAD`, `?`, `E`);
+  they are reachable only through plants. `?` cannot be produced by the py side at all.
+- **The rung-2 "no mutual best" rule DROPS some real field differences to rung 3**, where they
+  are printed in full but not NAMED. Deliberate (five matmul RESHAPEs share one `loose` key),
+  and a real cost.
+
+---
+
+## ARENA ALIASING SWEEP — `O.Arena.node` is TOTAL, so a wrong index is a plausible value
+
+Progress: `[##........] 2/10` · **1100** arena read sites audited · **1 DEFECT found and
+fixed** (2 rows moved, expected value called from CPython) · **8 detector suspects
+adjudicated** (0 remaining) · **4 detectors, each with a measured control** · rules
+`ARENA-1`..`ARENA-7` appended at `.agents/slop/notes/bend2-constraints.md` positions
+19413-19486.
+
+### Done
+
+- [x] **CENSUS.** `arena-audit.py` walks all 1100 `O.Arena.{node,src,src0,op,arg,tag,srcs,
+      next,nsrc,src_from,src_to,src_without_body,depth,at,budget}` reads in
+      `tinybendygrad/**` and records `(arena_expr, index_expr, def, params)` per site.
+      Result: **155 SAFE / 933 LATENT / 12 EXPOSED / 0 DEFECT-by-static-shape.**
+      `arena-stale.py` narrows the within-expression risk shape (index is `Found.i(f)` but the
+      arena is a different expression) from 1111 to **24**, all of which are gate printers
+      that thread `Found.ar` from the same `Found`.
+- [x] **DEFECT FOUND AND FIXED: `engine/jit.bend` `pl_step`.** Both arms appended the arena
+      bottom `0` where `tinygrad/engine/jit.py:19,21` appends the NODE `si`. Both
+      `prune_sig_*` rows therefore read `srcops=Ops.NOOP`. Two rows moved
+      (`srcops=Ops.NOOP -> Ops.CALL` / `Ops.BUFFER`), 137 rows, none lost, and
+      `.agents/slop/jit-prune-truth.py` calls `prune_linear` on the same fixture for the
+      expected values (run twice, identical).
+- [x] **DETECTOR, `arena-noop-scan.py`,** over the 73 committed gate outputs / 12720 rows.
+      60 rows mention NOOP; 16 excluded mechanically (index 0 is the bottom), 33 by row name,
+      3 as a quoted repr string; **8 suspects, all adjudicated against CPython, 0 left.**
+- [x] **DETECTOR, `arena-noop-probe.bend`,** the `at`-based one, with a NEGATIVE CONTROL that
+      prints `ctl_pre=None ctl_post=Some` for one index read out of two arenas.
+- [x] **THE `+` MARKER IS NOT AN OWNERSHIP MARKER** (`arena-affine-probe.bend`). Two
+      measurements that RETRACT the safety argument for 589 sites:
+      `ctl2_read=None` (a read after a spend is permitted) and
+      `ctl1_f=2 ctl1_g=2 ctl1_f_1=CONST/0:1 ctl1_g_1=CONST/0:2` (two mints from one arena
+      name return the same index and overwrite each other). Re-labelled LATENT.
+- [x] **SIZE SWEEP at k = 0,1,2,5,17,64** (`arena-sweep.sh` + `arena-sweep-jit.bend`), which
+      **asserts its k=0 block against the committed gate AND against CPython before it
+      diffs**, and which its own control proved catches 1 of 4 injected defect shapes.
+
+### Found, not fixed
+
+- **`codegen/decomp/dtype.bend` holds 142 of the 24 stale-arena candidates' neighbours** and is
+  owned by another unit; `uop/ops.bend` was mid-edit by another unit for ~6 minutes of this
+  sweep (cold-compile failure at `UOp.const_factor.mul`, ops.bend:7028, and a duplicate
+  `GroupOp.defines` at :6990), during which four probes could not run. Both recovered on retry;
+  the `jit.bend` fix was re-verified afterwards on the settled substrate.
+- **PADDING IS A WEAKER DETECTOR THAN IT LOOKS.** Measured on four injections: it resolves a
+  FIXED wrong index and misses a wrong constant, a wrong offset, and a stale arena. See
+  `ARENA-5`. A clean padding sweep must not be reported as evidence for those three.
+- **THE 12 EXPOSED SITES** (`ar` is a non-affine, therefore copyable, parameter) are reachable
+  by a caller passing one arena to two builders. Not fixed: each is a 2-line signature change
+  with no row that distinguishes the change, and inventing one would be a tautological test.
+- **`function.bend`'s `callu_ops`, `nn/optim.bend`'s seven `unverified_*`, and
+  `schedule/prepare.bend`'s `ear_26_ops` all print NOOP and are KNOWN RECORDED WALLS**, not
+  latent defects: `function.bend:876` (a dedup-order bug in read-only `helpers.bend`),
+  `nn/optim.bend:1371` (a CONST interned into a different arena than its consumer, named as
+  tensor.bend rule 5), and `prepare.bend`'s NOOP is a genuine `PatternMatcher` table key.
+- **`rng_loopfn`'s `Ops.NOOP` is CPython's own**: `tinygrad/uop/ops.py:645` is
+  `UOp(Ops.RANGE, src=(UOp(Ops.NOOP),), ...)`. Called and confirmed in
+  `noop-src-truth.py`; the detector excludes it by OPERATION, not by a name list.
+- **`codegen/kernel.bend`'s `ops` row oracle is a HARDCODED LITERAL** (`kn-truth.py:167`
+  prints the expected value rather than deriving it). `kn-noop-truth.py` derives the same 19
+  ops from real `UOp(...)` constructors and agrees. The existing oracle should be replaced;
+  not edited here because it belongs to another unit.

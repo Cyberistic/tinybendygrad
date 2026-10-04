@@ -66,48 +66,62 @@ def uses(text, names):
     return found
 
 
+
+
 def sort_file(path, write=True):
     text = open(path).read()
     lines = text.split('\n')
     spans = blocks(lines)
 
     # Every top-level name, and the block that declares it.
-    owner, decl_re = {}, []
+    owner = {}
     for idx, (a, b) in enumerate(spans):
-        head = lines[a:b + 1]
-        body = '\n'.join(l for l in head if not l.startswith('#'))
-        m = DEF.match(body.lstrip('\n')) or DEF_BARE.match(body.lstrip('\n')) or TYPE.match(body.lstrip('\n'))
-        if m:
-            owner.setdefault(m.group(1), idx)
-            decl_re.append(m.group(1))
+        body = [l for l in lines[a:b + 1] if not l.startswith('#')]
+        for l in body:
+            m = DEF.match(l) or DEF_BARE.match(l) or TYPE.match(l)
+            if m:
+                owner.setdefault(m.group(1), idx)
+                break
     names = sorted(owner, key=len, reverse=True)
+    used = [uses('\n'.join(l for l in lines[a:b + 1] if not l.startswith('#')), names)
+            for a, b in spans]
 
-    # edge: user -> used, so used sorts first
-    adj = {i: set() for i in range(len(spans))}
-    indeg = {i: 0 for i in range(len(spans))}
-    for idx, (a, b) in enumerate(spans):
-        body = '\n'.join(l for l in lines[a:b + 1] if not l.startswith('#'))
-        for nm in uses(body, names):
-            j = owner[nm]
-            if j != idx and idx not in adj[j]:
-                adj[j].add(idx)
-                indeg[idx] += 1
-
-    # Kahn, smallest original index first: that is what makes it stable.
-    import heapq
-    ready = [i for i in range(len(spans)) if indeg[i] == 0]
-    heapq.heapify(ready)
-    order = []
-    while ready:
-        i = heapq.heappop(ready)
-        order.append(i)
-        for k in sorted(adj[i]):
-            indeg[k] -= 1
-            if indeg[k] == 0:
-                heapq.heappush(ready, k)
-    if len(order) != len(spans):
-        stuck = [names_of(i) for i in range(len(spans)) if i not in order]
-        sys.exit(f"CYCLE among {len(stuck)} blocks: {stuck[:8]}")
+    # FIXPOINT SWAPS, not a topological sort. A block that uses a name declared
+    # LATER is moved down to just after the block that declares it; repeat until no
+    # block moves.
+    #
+    # This is less code than Tarjan, and it needs no cycle handling for the case
+    # that matters: a block whose only late dependency is ITSELF is already fine, so
+    # self-recursion needs no special case at all.
+    #
+    # What it cannot do is a MUTUAL cycle -- `A` uses `B` and `B` uses `A` -- because
+    # the two constraints contradict and the pass oscillates. That is detected rather
+    # than looped on: `budget` bounds the passes, and a file that has not converged is
+    # reported and NOT WRITTEN. A fuel-bounded fold is mutual by nature and its
+    # members' order is the author's, so silently rewriting it would be the one thing
+    # this tool must never do.
+    order = list(range(len(spans)))
+    pos = {b: i for i, b in enumerate(order)}
+    budget = 4 * len(spans) + 16
+    while budget:
+        budget -= 1
+        moved = 0
+        for b in list(order):          # a snapshot: the loop body reorders `order`
+            for nm in used[b]:
+                d = owner[nm]
+                if d == b or pos[d] < pos[b]:
+                    continue        # self-recursion, or already declared above
+                order.remove(d)
+                order.insert(order.index(b), d)
+                pos = {x: i for i, x in enumerate(order)}
+                moved += 1
+                break
+        if not moved:
+            break
+    else:
+        late = sorted({nm for b in order for nm in used[b] if pos[owner[nm]] > pos[b]})
+        sys.exit(f"{path}: did not converge in {4 * len(spans) + 16} passes, so there is "
+                 f"a MUTUAL cycle. NOT WRITTEN. Still out of order: {late[:8]}")
 
     if order == list(range(len(spans))):
         print(f"{path}: already ordered ({len(spans)} blocks), byte-identical")

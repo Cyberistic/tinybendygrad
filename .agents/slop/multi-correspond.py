@@ -38,6 +38,12 @@ def load(name, path):
   return mod
 
 
+# rebase-gate.py's OWN row reader, imported at MODULE SCOPE so multi-controls.py drives the
+# same object this file does. Loaded inside main() it was unreachable from outside, which
+# would have made every control in this lane a re-implementation.
+rgm = load("rg_shared", "rebase-gate.py")
+
+
 def port_bodies():
   """{row: the one-line body after `-> U32:`}, parsed out of multi.bend. Nothing transcribed."""
   out = {}

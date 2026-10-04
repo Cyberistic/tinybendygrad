@@ -6970,6 +6970,54 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
     c : Unit <- vr.expr.row("vr_expr_unnamed", ar, 3)
     vr.expr.row("vr_expr_nonparam", ar, 4)
 
+# TODO(p3) ops.py:1060  def const_factor
+#   `def const_factor(self) -> int: """largest known int that divides self"""` --
+#   five arms, a `math.gcd` over the STACK and ADD srcs, and a positional read for
+#   MUL. Four of the five arms are one `match` each and are trivially expressible.
+#
+#   THE BLOCKER IS THE OTHER TWO, AND IT IS NOT A PORTING DIFFICULTY: computing
+#   `x.const_factor()` for a src means CALLING this def, and this def's STACK/ADD
+#   arms are a FOLD over the srcs, so the def and its fold are MUTUALLY recursive.
+#   Bend cannot express that. Measured, not assumed -- a two-def probe where `a`
+#   calls `b` and `b` calls `a`:
+#
+#       def a(n: U32) -> U32: ... case _: b(n)
+#       def b(n: U32) -> U32: ... case _: U32.add(1, a(n))
+#
+#   is `expected : a filled definition (an unfilled law is a dead claim)`. Whichever
+#   of the two is written first, the other's call reads as an unfilled law, and
+#   there is no third order.
+#
+#   Every fold already in this file is SELF-recursive for this reason -- `UOp.base`,
+#   `UOp.unsharded_base`, `UOp.storage_base`, `UOp.huo.go` -- one def with the
+#   `match fuel` inside it and a non-recursive `.peel` above. `const_factor` cannot
+#   be written that way, because its recursion is over a DIFFERENT node per step
+#   (each src) while its arm is decided per node: fusing them means one def that
+#   both picks the arm and walks the list, which is a worklist rewrite of the
+#   shape `UOp.base` uses for a single peel.
+#
+#   So the wall is real and it is a substrate limit, not a missing thought. It also
+#   blocks ops.py:1069 `divides`, ops.py:1085 `gcd` and ops.py:1091 `divide_exact`,
+#   which all call it, and those in turn block ops.py:1046 `unbind_all` and
+#   ops.py:1049 `variables`. That is five of this file's markers on one wall.
+#   `.agents/slop/bend-toposort.py` detects the cycle and refuses to write rather
+#   than oscillating, which is how this was found.
+
+# TODO(p3) ops.py:1069  def divides
+#   `if v==1: return self; if CONST: const_like(val//v) if val%v==0 else None; ...`
+#   Calls `const_factor`'s sibling `const_like` (ops.py:600, not ported) and does
+#   `//` and `%` on an `H.I64`, plus `UOp.__floordiv__` for the Defines arm.
+#   Gated on all three.
+
+# TODO(p3) ops.py:1085  def gcd
+#   `zip(*[u.pop_const(Ops.MUL) for u in uops])`, a `Counter` intersection of
+#   `split_uop(Ops.MUL)` terms, and `math.gcd` over `const_factor`s. Needs
+#   `collections.Counter` as a fold and `const_factor` above.
+
+# TODO(p3) ops.py:1091  def divide_exact
+#   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
+
+
 def main() -> IO(Unit):
   do IO<Unit>:
     v0 : Unit <- vr.expr.rows(vr.arena())
