@@ -1,0 +1,74 @@
+CENSUS -- every float normaliser in the tree's gates, and the one question
+
+  DOES THIS NORMALISER ROUND-TRIP THROUGH THE VALUE'S OWN WIDTH?
+
+  scanned 1015 .py gate files under /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-17146/.agents/slop  (out-of-scope trees and this
+  unit's own plants excluded -- see the module docstring for which and why)
+
+  `!!` = does NOT round-trip and is NOT on the baseline -> THE LINT FAILS
+  `BB` = on the baseline: a known defect in a file this unit may not touch
+  `oo` = `repr(float(...))` BUILDING AN ORACLE, which is a different job; the
+        line that puts it on the helper is named in `ORACLE_BUILDERS` below
+  blank = round-trips, or is `canon` itself
+
+oo abi/abi_gate.py:108                              repr(float(          BUILDS AN ORACLE; its own `norm` at :132 is `repr(struct.unpack("<f", struct.p...
+oo abi/abi_gate.py:109                              repr(float(          BUILDS AN ORACLE; its own `norm` at :132 is `repr(struct.unpack("<f", struct.p...
+oo abi/abi_gate.py:110                              repr(float(          BUILDS AN ORACLE; its own `norm` at :132 is `repr(struct.unpack("<f", struct.p...
+oo abi/abi_gate.py:111                              repr(float(          BUILDS AN ORACLE; its own `norm` at :132 is `repr(struct.unpack("<f", struct.p...
+oo abi/abi_gate.py:112                              repr(float(          BUILDS AN ORACLE; its own `norm` at :132 is `repr(struct.unpack("<f", struct.p...
+   beautiful-mnist-gate.py:68                       bits-via-hex         yes -- f32 bits
+BB dc-oracle.py:135                                 %g                   NO -- SIX significant digits
+   jslane2/gen_f32_seam.py:182                      canon                yes -- it IS the helper
+oo jstage/jsstage.py:315                            repr(float(          BUILDS AN ORACLE; another unit's tree; its `f32` at :308 round-trips both side...
+BB mm-dt-gate.py:60                                 %g                   NO -- SIX significant digits
+BB mm-lift-gate.py:158                              %g                   NO -- SIX significant digits
+BB mm-walk-gate.py:44                               %g                   NO -- SIX significant digits
+
+## THE BASELINE, A DEBT LEDGER, AND WHY EACH IS NOT MIGRATED
+
+  dc-oracle.py:135   [present]
+    another unit's tree.  AND THE AUTHOR KNEW: the comment at :130 says "`%g` agrees with `H.f32_show` on 1.0 -- the only float CONST in this file -- and would NOT agree on a non-integral one."  Shipped the gap anyway.
+  mm-dt-gate.py:60   [present]
+    another unit's tree.  One of THREE byte-identical copies of `"F" + (f"{v:g}" if v.is_integer() else repr(v))` -- the other two are mm-walk-gate.py:44 and mm-lift-gate.py:158.  The snippet fixes the `448`-vs-`448.0` half of the trap and leaves the `1.0996094`-vs-`1.099609375` half open.
+  mm-lift-gate.py:158   [present]
+    another unit's tree.  Copy 3 of 3, same line.  THREE copies of twelve characters is the argument for `canon.py` better than any note is.
+  mm-walk-gate.py:44   [present]
+    another unit's tree.  Copy 2 of 3, same line.
+
+## `repr(float(...))` THAT BUILDS AN ORACLE RATHER THAN NORMALISING ONE
+
+  abi/abi_gate.py
+    its own `norm` at :132 is `repr(struct.unpack("<f", struct.pack("<f", v))[0])`, which round-trips BOTH sides, and the file is EXPLICITLY DO-NOT-TOUCH.
+  abi4/abi4_gate.py
+    same shape at :240, EXPLICITLY DO-NOT-TOUCH.
+  jslane2/gen_f32_seam.py
+    THIS UNIT'S GATE, moved onto `canon` already: `norm` at :181 is `CANON.canon(s, "f32")`.  The only remaining `repr(float(` here is the PLANT inside `both`'s docstring and in `norm`'s own JFP-1 history, and both are prose.
+  jstage/jsstage.py
+    another unit's tree; its `f32` at :308 round-trips both sides and its `agree` at :328 handles NaN with `math.isnan`.
+
+## WHAT A READER SHOULD TAKE FROM THE CENSUS
+
+  THE THREE INSTANCES NAMED IN THE BRIEF ARE NOT THREE DEFECTS.  They are ONE
+  defect wearing three coats, and the census finds the same SHAPE in four more
+  sites across four more files: a normaliser that handles HALF the trap and
+  leaves the other half.  `repr(float(s))` re-formats `448` as `448.0` --
+  JSL2-7's half -- and cannot touch the shortest-form half.  `mm-dt-gate.py`,
+  `mm-walk-gate.py` and `mm-lift-gate.py` carry the SAME LINE and it special-
+  cases the integral float and leaves the non-integral one.  `dc-oracle.py` says
+  so in its own comment and shipped the gap anyway.  `cstyle-numbers.py:5`
+  states the whole argument for hex, and is right.
+
+  AND THE MISSING FIXTURE IS PART OF THE DEFECT, NOT A SEPARATE MATTER.
+  `dc-oracle.py`'s only float CONST is `1.0`, which is precisely the one value
+  `%g` cannot get wrong; `mm-dt-gate.py`'s rows are dtype limits, which are all
+  integral.  Every gate on the baseline has a fixture set that cannot fail on
+  its own normaliser.  `norm/fixtures.txt` is the list.
+
+## WHAT THIS LINT FAILS ON, AND HOW THAT IS SHOWN
+
+  It fails on a non-round-tripping site that is not on the baseline.
+  `norm/lint_demo.sh` plants one in a `$TMPDIR` copy of the tree and runs this
+  file against it, so both branches of the exit status are measurements.
+
+  baseline present 4/4   NEW 0 []
+  exit 0

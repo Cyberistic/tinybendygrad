@@ -70,11 +70,12 @@ def split_stages(stdout: str) -> list[tuple[str, list[str]]]:
     return out
 
 
-def run(cmd: list[str], cwd: Path, env: dict[str, str], tag: str) -> tuple[int, str, str]:
-    """One SIDE. Blocks to completion -- this is what makes two `bend` processes impossible here."""
+def run(cmd: list[str], env: dict[str, str], tag: str) -> tuple[int, str, str]:
+    """One SIDE. `subprocess.run` BLOCKS to completion, and it is the only way a process is started
+    here, which is what makes two concurrent `bend` processes impossible in this driver."""
     out, err = ART / f"{tag}.out", ART / f"{tag}.err"
     with open(out, "wb") as o, open(err, "wb") as e:
-        rc = subprocess.run(cmd, cwd=cwd, env=env, stdout=o, stderr=e).returncode
+        rc = subprocess.run(cmd, cwd=ROOT, env=env, stdout=o, stderr=e).returncode
     return rc, out.read_text(errors="replace"), err.read_text(errors="replace")
 
 
@@ -83,10 +84,17 @@ def verdicts_of(stdout: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in (VERDICT.match(ln) for ln in stdout.splitlines()) if m}
 
 
-def compare(tag: str, cwd: Path, env: dict[str, str], show: int) -> list[str]:
-    """ONE PAIR, ORACLE FIRST THEN PORT, SEQUENTIALLY, and the per-stage report."""
-    orc, oout, oerr = run(["zsh", str(ROOT / ORACLE)], ROOT, env, f"{tag}.oracle")
-    prc, pout, perr = run([PY, str(ROOT / PORT)], ROOT, env, f"{tag}.port")
+def compare(tag: str, env: dict[str, str], show: int) -> list[str]:
+    """ONE PAIR, ORACLE FIRST THEN PORT, SEQUENTIALLY, and the per-stage report.
+
+    `zsh` IS INVOKED BY ABSOLUTE PATH so the `plant-no-zsh` plant can withhold it from the PATH the
+    oracle sees -- that is the only way to compare what the gate does when `zsh` is unavailable,
+    rather than what the driver does when it cannot find its own interpreter. Both sides are invoked
+    from the REPOSITORY ROOT and differ only in their environment; each script `cd`s to `E2E_ROOT`
+    itself, so the pair stays a fair test.
+    """
+    orc, oout, oerr = run([ZSH, str(ROOT / ORACLE)], env, f"{tag}.oracle")
+    prc, pout, perr = run([PY, str(ROOT / PORT)], env, f"{tag}.port")
     lines = [f"## {tag}   exit: oracle={orc}  port={prc}"
              f"{'' if orc == prc else '   *** EXIT STATUS DIFFERS ***'}"]
     ov, pv = verdicts_of(oout), verdicts_of(pout)
@@ -99,11 +107,21 @@ def compare(tag: str, cwd: Path, env: dict[str, str], show: int) -> list[str]:
     # A STAGE BLOCK IS A HEADER AND EVERYTHING UP TO THE NEXT ONE. Present on one side and absent on
     # the other is its own outcome: a gate that lost a stage has lost reproducibility without saying
     # so, and a byte diff alone would bury that.
-    ob, pb = [h for h, _ in split_stages(oout)], [h for h, _ in split_stages(pout)]
-    for h in ob:
-        lines.append(f"  block  oracle-only  {h}")
-    for h in pb:
-        lines.append(f"  block  port-only    {h}")
+    # A STAGE BLOCK IS A HEADER AND EVERYTHING UP TO THE NEXT ONE. Present on one side and absent on
+    # the other is its own outcome: a gate that lost a stage has lost reproducibility without saying
+    # so, and a byte diff alone would bury that. Matched blocks are compared IN ORDER, because the
+    # order is the order the claims come in.
+    ob, pb = split_stages(oout), split_stages(pout)
+    if len(ob) != len(pb):
+        lines.append(f"  *** STAGE BLOCK COUNT DIFFERS: oracle={len(ob)} port={len(pb)}")
+    for i, ((ha, ba), (hb, bb)) in enumerate(zip(ob, pb)):
+        state = "IDENTICAL" if (ha, ba) == (hb, bb) else "DIFFERS"
+        lines.append(f"  block {i} {state:<10} {ha}"
+                     + ("" if state == "IDENTICAL" else f"   *** port says: {hb}"))
+    for i in range(min(len(ob), len(pb)), max(len(ob), len(pb))):
+        extra = ob[i] if len(ob) > len(pb) else pb[i]
+        lines.append(f"  block {i} MISSING ON {'PORT' if len(ob) > len(pb) else 'ORACLE'}: "
+                     f"{extra[0]}   *** A LOST STAGE IS NOT A BYTE DIFF ***")
     for name, a, b in (("stdout", oout, pout), ("stderr", oerr, perr)):
         same = a == b
         lines.append(f"  {name}: {'IDENTICAL' if same else 'DIFFERS'} "
@@ -121,82 +139,115 @@ def _hunks(a: str, b: str, show: int) -> list[str]:
 
 
 # ------------------------------------------------------------------ the input sets
-# `live` is THE REPOSITORY, and it is the run the migration rule is about.
-SETS = {"live": (ROOT, ENV)}
+# `live` is THE REPOSITORY, and it is the run the migration rule is about. Everything else is a
+# PLANT: the substrate moved out from under a stage, with not one byte of the port or the oracle
+# edited, so each branch is COMPARED rather than argued about. No real `bend`, `cc`, `node` or `zsh`
+# runs in any plant, and nothing is copied from the live tree -- every stub is a few lines, because
+# a plant that copies the thing it is meant to displace cannot prove anything.
+SETS = {"live": ENV}
+# `codes` is the exit status of, IN ORDER: stage 1's oracle, stage 4's gate, stage 5's ops_bend,
+# stage 6's port mm, stage 7's run-f64, stage 8's jsstage. `bend` is how many `name=value` rows the
+# stub compiler emits: 25 PASSES stage 2's `> 20 rows` denominator, 5 does not and drives the RETRY
+# PATH to its `set -e` abort, 0 emits nothing and exits 0 -- which is the exact failure `bend_run`
+# exists for, since bend stack-overflows on roughly one run in twenty and prints nothing.
+# `hide` drops ONE tool from PATH, which is how the two availability SKIPs are reached: no `node` is
+# stage 3's skip, and no `zsh` is stage 7's `rc 127` skip AND stage 6's plain `FAIL rc=127` -- an
+# asymmetry in the shell, and the one place a missing tool is a failure in one stage and a skip in
+# the next, so it is compared rather than tidied.
+PLANTS = {
+    "plant-pass":      dict(codes="0,0,0,0,0,0", bend=25),
+    "plant-passskip":  dict(codes="0,0,0,0,3,0", bend=25),
+    "plant-refuse":    dict(codes="0,0,1,1,3,0", bend=25),
+    "plant-stage8red": dict(codes="0,0,0,0,0,1", bend=25),
+    "plant-no-node":   dict(codes="0,0,0,0,0,0", bend=25, hide="node"),
+    "plant-no-zsh":    dict(codes="0,0,0,0,0,0", bend=25, hide="zsh"),
+    "plant-thin":      dict(codes="0,0,0,0,0,0", bend=5),
+    "plant-deadbend":  dict(codes="0,0,0,0,0,0", bend=0),
+    "plant-stage1red": dict(codes="3,0,0,0,0,0", bend=25),
+}
+# EVERY TOOL THE ORACLE ITSELF NEEDS, so a `hide` removes the ONE under test. A `hide` that also
+# removed `grep` or `sed` would not be testing availability, it would be testing a broken plant.
+SHELL_TOOLS = ("grep", "sed", "head", "tail", "cat", "mkdir", "sleep", "rm", "wc", "tr", "diff",
+               "ls", "env", "chmod", "cp", "mv")
+FX = ROOT / ".agents/slop/e2epy/fixtures"
+ZSH = shutil.which("zsh") or "/bin/zsh"
 
-# `plant` MOVES THE SUBSTRATE OUT FROM UNDER STAGE 7 and stage 8 without editing one byte of the
-# port or the oracle, so the THIRD OUTCOME can be compared instead of argued about. The fixture tree
-# holds a `.agents/slop/f64/run-f64.sh` that refuses with 3, and a `jstage/jsstage.py` that refuses
-# with 3, so both `SKIP` branches are reachable in two seconds and no real `bend` runs at all.
-FX = ROOT / ".agents/slop/e2epy/fixtures/plant"
 
-
-def _build_plant() -> Path:
-    """The plant tree: every stage script is a stub that exits with a code the SET chooses, so the
-    eight branches of `main()` are all reachable without a compiler, a browser or a GPU. NOTHING
-    HERE IS COPIED FROM THE LIVE TREE -- each stub is four lines -- because a plant that copies the
-    thing it is meant to displace cannot prove anything."""
-    if FX.exists():
-        shutil.rmtree(FX)
-    for sub in (".venv/bin", "bin", ".agents/slop/e2e_port", ".agents/slop/f64",
+def _build_plant(tag: str, spec: dict) -> Path:
+    """The plant tree. `spec` says what every stage answers; the STUBS are the only thing in it."""
+    fx = FX / tag
+    if fx.exists():
+        shutil.rmtree(fx)
+    for sub in (".venv/bin", "bin", "sandbox", ".agents/slop/e2e_port", ".agents/slop/f64",
                 ".agents/slop/jstage", "runs/e2e"):
-        (FX / sub).mkdir(parents=True, exist_ok=True)
-    codes = os.environ.get("PLANT_CODES", "0,0,0,0,3,0").split(",")
-    # `plant` SET CODES: stage4, stage5, stage6, stage7, stage8, and a spare. Only the two that
-    # matter are non-zero, and BOTH refusals are what the shell names as SKIP.
+        (fx / sub).mkdir(parents=True, exist_ok=True)
+    codes = spec["codes"].split(",")
+
     def stub(name: str, body: str) -> None:
-        p = FX / name
+        p = fx / name
         p.write_text(body)
         p.chmod(0o755)
+
     stub(".venv/bin/python", f"""#!/bin/sh
-# STUB for $ROOT/.venv/bin/python. It answers each of the four scripts the gate runs with the exit
-# code PLANT_CODES names, and prints one identifiable line so the artifact shows which stub ran.
+# STUB for $ROOT/.venv/bin/python: it answers each of the three scripts the gate runs with the exit
+# code this plant names, and prints one identifiable line so the artifact shows which stub ran.
 case "$1" in
-  *e2e_mm.py)     echo "PLANT stub: stage1 oracle";  exit {codes[0]} ;;
+  *e2e_mm.py)      echo "PLANT stub: stage1 oracle"; exit {codes[0]} ;;
   *e2e_mm_gate.py) echo "PLANT stub: stage4 gate, 20/20 rows vs CPython"; exit {codes[1]} ;;
-  *jsstage.py)    echo "PLANT stub: stage8 jsstage, substrate would not compile"; exit {codes[4]} ;;
-  *)              echo "PLANT stub: $1"; exit 0 ;;
+  *jsstage.py)     echo "PLANT stub: stage8 jsstage"; exit {codes[5]} ;;
+  *)               echo "PLANT stub: $1"; exit 0 ;;
 esac
 """)
-    stub("bin/bend", """#!/bin/sh
-# STUB bend: emits 25 `name=value` rows, so stage 2's `> 20 rows` denominator is MET on attempt 1.
-i=0; while [ $i -lt 25 ]; do echo "PLANT.row$i=$i"; i=$((i+1)); done
+    stub("bin/bend", f"""#!/bin/sh
+# STUB bend: {spec["bend"]} `name=value` rows, so stage 2's `> 20 rows` denominator is
+# {'MET on attempt 1' if spec["bend"] > 20 else 'NOT met, so the run is retried 8 times'}.
+i=0; while [ $i -lt {spec["bend"]} ]; do echo "PLANT.row$i=$i"; i=$((i+1)); done
 exit 0
 """)
     stub(".agents/slop/opsbend-milestone.sh",
-         f"#!/bin/sh\necho 'PLANT stub: stage5 ops_bend milestone'\necho 'expected: 1 2 3'\n"
-         f"echo 'PACKET.out: 1 2 3'\nexit {codes[2]}\n")
+         f"#!/bin/sh\necho 'PLANT stub: stage5 ops_bend milestone'\n"
+         f"echo 'expected: 1 2 3'\necho 'PACKET.out: 1 2 3'\nexit {codes[2]}\n")
     stub(".agents/slop/e2e_port/run-port-mm.sh",
          f"#!/bin/sh\necho 'PLANT stub: stage6 port matmul, 64/64 words'\nexit {codes[3]}\n")
-    stub(".agents/slop/f64/run-f64.sh",
-         f"#!/bin/sh\necho 'PLANT stub: run-f64.sh'\n"
-         f"[ {codes[4]} -eq 3 ] && echo 'REFUSED[ cold substrate: renderer/amd/generate.bend is 0 bytes ]'\n"
-         f"exit {codes[4]}\n")
-    return FX
+    # `run-f64.sh` PRINTS THE LINES STAGE 7 FILTERS FOR, so stage 7's `grep -E` is compared and not
+    # skipped: a filter that matches nothing on both sides would diff IDENTICAL and prove nothing.
+    stub(".agents/slop/f64/run-f64.sh", f"""#!/bin/sh
+echo 'PLANT stub: run-f64.sh'
+[ {codes[4]} -eq 3 ] && echo 'REFUSED[ cold substrate: renderer/amd/generate.bend is 0 bytes ]'
+[ {codes[4]} -eq 0 ] && {{ echo '   STAGE 7 PASS'; echo '   64/64 MET'; echo '   GREEN [C0]'; }}
+exit {codes[4]}
+""")
+    box = fx / "sandbox"
+    for t in [x for x in SHELL_TOOLS if shutil.which(x)] + \
+             [x for x in ("node", "zsh") if x != spec.get("hide") and shutil.which(x)]:
+        (box / t).symlink_to(shutil.which(t))
+    return fx
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog=__file__, description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--sets", nargs="+", default=["live"], choices=sorted(SETS) + ["plant"],
-                    help="input classes: the live repository, or the plant tree (both refusals)")
+    ap.add_argument("--sets", nargs="+", default=["live"], choices=sorted(SETS) + sorted(PLANTS),
+                    help="input classes: the live repository, or a named plant")
     ap.add_argument("--show", type=int, default=6, help="diff hunks per stream")
     opts = ap.parse_args()
     ART.mkdir(parents=True, exist_ok=True)
-    sets = dict(SETS)
-    if "plant" in opts.sets:
-        fx = _build_plant()
-        sets["plant"] = (fx, ENV | {"E2E_ROOT": str(fx)})
-    bad = 0
+    sets = {k: v for k, v in SETS.items() if k in opts.sets}
+    for tag in [t for t in opts.sets if t in PLANTS]:
+        fx = _build_plant(tag, PLANTS[tag])
+        # THE SANDBOX PATH, plus the plant's `E2E_ROOT`. Both sides get the identical environment, so
+        # the pair differs in exactly one thing: which program is reading it.
+        sets[tag] = ENV | {"E2E_ROOT": str(fx), "PATH": f"{fx}/sandbox"}
+    bad = []
     for tag in opts.sets:
-        cwd, env = sets[tag]
-        lines = compare(tag, cwd, env, opts.show)
+        lines = compare(tag, sets[tag], opts.show)
         for ln in lines:
             print(ln)
         if any("DIFFERS" in ln or "***" in ln for ln in lines):
-            bad += 1
-    print(f"\n{bad} of {len(opts.sets)} set(s) disagree.  artifacts: "
-          f"{ART.relative_to(ROOT)}/")
+            bad.append(tag)
+    print(f"\n{len(bad)} of {len(opts.sets)} set(s) disagree"
+          + (f": {', '.join(bad)}" if bad else "")
+          + f".  artifacts: {ART.relative_to(ROOT)}/")
     return 1 if bad else 0
 
 

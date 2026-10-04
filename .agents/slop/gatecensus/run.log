@@ -366,3 +366,71 @@
                :: rc=0 with output but NO verdict token
 [p1  182/438] NOT-RUN  TIMED-OUT     rc=  -9   300.1s  .agents/slop/graphcmp-repro.sh
                :: TIMED OUT at 300s
+[p1  183/438] NOT-RUN  WITHIN-LIMITS rc=   0   261.6s  .agents/slop/graphcmp-run.sh
+               :: rc=0 with output but NO verdict token
+[p1  184/438] SKIP     WITHIN-LIMITS rc=   2     0.3s  .agents/slop/graphcmp.py
+               :: printed usage/REFUSED; bare is a different instrument
+[p1  185/438] PASS     WITHIN-LIMITS rc=   0     3.4s  .agents/slop/grw-census.py
+               :: 2  DEF (codegen engine, 5-arg, walk:Bool)
+[p1  186/438] FAIL     WITHIN-LIMITS rc=   1     0.9s  .agents/slop/grw-gate.sh
+               :: child rc=1 within both bounds
+[p1  187/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/grw-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  188/438] PASS     WITHIN-LIMITS rc=   0     2.8s  .agents/slop/handtyped-audit.py
+               :: HAND-TYPED AUDIT -- ast-based. DEFECT = LITERAL + LOCAL (a call into a
+[p1  189/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/harness-audit.py
+               :: TIMED OUT at 25s
+[p1  190/438] NOT-RUN  KILLED-ON-MEM rc=  -9     5.1s  .agents/slop/hcq2-diff.py
+               :: KILLED ON MEMORY at 1024MB ceiling, peak 1033MB
+[p1  191/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/hcq2-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  192/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/hcq2-oracle2.py
+               :: AttributeError: 'HCQInfo' object has no attribute 'nargs'
+[p1  193/438] FAIL     WITHIN-LIMITS rc=   1     0.9s  .agents/slop/hdr_audit.py
+               :: IndexError: list index out of range
+[p1  194/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/helpers-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  195/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/helpers-tc-gate.py
+               :: SyntaxError: invalid syntax
+[p1  196/438] FAIL     WITHIN-LIMITS rc=   1     5.0s  .agents/slop/helpers-tc-gate.sh
+               :: child rc=1 within both bounds
+[p1  197/438] NOT-RUN  TIMED-OUT     rc=  -9    25.3s  .agents/slop/helpers-tree-check.sh
+               :: TIMED OUT at 25s
+[p1  198/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/hermetic/audit-hermetic.py
+               :: isolate: late/py emitted 0 rows, rc=1, stderr tail: _py ast = base(graph) ^^^^^^^^^^^ File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agen
+[p1  199/438] NOT-RUN  TIMED-OUT     rc=  -9    25.1s  .agents/slop/hermetic/hermetic-census.py
+               :: TIMED OUT at 25s
+[p1  200/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/hq-oracle.py
+               :: hq_refuse_link=unresolved link words on Ops.CALL
+[p1  201/438] FAIL     WITHIN-LIMITS rc=   1     0.3s  .agents/slop/i64-dec-rows.py
+               :: AssertionError: the i64_dec rows are already in the driver
+[p1  202/438] NOT-RUN  TIMED-OUT     rc=  -9    25.2s  .agents/slop/i64div/gate.sh
+               :: TIMED OUT at 25s
+[p1  203/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/i64div/oracle_probe.py
+               :: rc=0 with output but NO verdict token
+[p1  204/438] NOT-RUN  WITHIN-LIMITS rc=   0     7.1s  .agents/slop/i64div/repro54/gate54.sh
+               :: rc=0 with output but NO verdict token
+[p1  205/438] PASS     WITHIN-LIMITS rc=   0     5.2s  .agents/slop/i64mul/census.py
+               :: rows_expected=442 rows_present=442 disagree=0
+[p1  206/438] PASS     WITHIN-LIMITS rc=   0     7.6s  .agents/slop/i64mul/cgate.sh
+               :: ALL CMOD/CDIV ROWS AGREE
+[p1  207/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ind/dropn-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  208/438] NOT-RUN  WITHIN-LIMITS rc=   0     0.3s  .agents/slop/indexing-oracle.py
+               :: rc=0 with output but NO verdict token
+[p1  209/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/ip_check.sh
+               :: rc=127 -- the command was not found
+[p1  210/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/ip_oracle.py
+               :: amp_ih_enc_names=auto wave error
+[p1  211/438] NOT-RUN  TIMED-OUT     rc=  -9    25.2s  .agents/slop/ip_sweep.py
+               :: TIMED OUT at 25s
+[p1  212/438] FAIL     WITHIN-LIMITS rc=   1     0.6s  .agents/slop/jit-oracle.py
+               :: RuntimeError: Attempting to relocate against an undefined symbol sel_registerName
+[p1  213/438] PASS     WITHIN-LIMITS rc=   0     1.1s  .agents/slop/jsfp8/gate.py
+               :: FIXED      present 205121/205121  MISMATCH 0
+[p1  214/438] PASS     WITHIN-LIMITS rc=   0     0.3s  .agents/slop/jsfp8/norm_check.py
+               :: ok    one f32, two spellings agree        (the defect's pair) the old norm: FAILS
+[p1  215/438] NOT-RUN  WITHIN-LIMITS rc= 127     0.3s  .agents/slop/lane-load-sweep.sh
+               :: rc=127 -- the command was not found
+[p1  216/438] PASS     WITHIN-LIMITS rc=   0     0.9s  .agents/slop/lanedeath-census.py
+               :: LANE-DEATH CENSUS.  One question per BROKEN entry: is the def the error names in the PORT,

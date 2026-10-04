@@ -1,0 +1,118 @@
+==============================================================================
+STAGE 1 -- THE CENSUS.  upstream tinygrad/tensor.py  vs  tinybendygrad/tensor.bend
+==============================================================================
+
+upstream `class Tensor` methods (ast, L44-564): 57
+   by kind: {'dunder': 21, 'private': 8, 'public': 28}
+upstream module-level defs: 4 -> ['_apply_map_to_tensors', '_tensor_holds', '_fromnp', '_metadata_wrapper']
+Tensor.__dict__ entries with __module__=='tinygrad.tensor', public: 31
+   (the raw `Tensor.__dict__` public list is 226 -- TRACEMETA setattr pollution)
+
+port tensor.bend defs: 174 names / 174 def lines
+port TODO(p3) markers naming a tensor.py method: 49 over 49 names
+
+------------------------------------------------------------------------------
+THE 57.  Every upstream method, its port counterpart, and the evidence.
+------------------------------------------------------------------------------
+upstream             kind     upstream L   port counterpart           evidence
+
+__init__             dunder   57-99        tn_init.arm/.none/.keep + tn_cast + tn_new port:448-507 built; :1047 TODO on the None arm
+__del__              dunder   102-102      -- ABSENT --               no `__del__` in Bend; WALL 1, registry is threaded (port:18-24)
+_apply_uop           private  104-113      tn_alu / tn_new / tn_wrap_uop port:286-301 -- tail only; :295 TODO on `fxn`
+alu                  public   116-116      tn_alu / tn_alu.of / tn_alu.put port:255-287, FULL
+_uop                 private  118-118      Tensor.u                   port:194, FULL
+_wrap_uop            private  120-120      tn_wrap_uop                port:300, FULL
+const                public   122-122      tn_const                   port:311 built; :304 TODO -- no dtype arg, bare CONST
+is_param_            public   124-126      tn_is_param_               port:316, FULL (returns new record; DIVERGENCE)
+__repr__             dunder   128-131      tn_repr + tn_repr.of/.dt/.dims/.grad/.devname port:365-422, FULL
+__hash__             dunder   134-134      tn_hash                    port:323, FULL (rule differs; DIVERGENCE)
+__bool__             dunder   136-136      -- ABSENT --               port:327 -- deliberately the ABSENCE; no raise in Bend
+__len__              dunder   138-140      tn_len / .of / .first      port:335-346, FULL as Maybe
+device               public   143-143      tn_device / tn_dev / .go/.of/.put port:198-245, FULL
+shape                public   146-146      tn_shape / tn_dims / .go/.of/.put port:201-226, FULL
+dtype                public   149-149      tn_dtype                   port:204, FULL
+as_param             public   153-154      -- ABSENT --               port:1048 TODO -- `UOp.param_like` is ops.py:1239, P3
+call                 public   156-157      -- ABSENT --               port:1049 TODO -- `call_with_output` + `grad_fxn` kwarg
+custom_kernel        public   159-165      -- ABSENT --               port:1050 TODO
+linear_with_vars     public   168-210      -- ABSENT --               port:1023 TODO -- SCHEDULE+WALL2+WALL3, 43 upstream lines
+schedule_linear      public   212-216      -- ABSENT --               port:1031 TODO -- same wall as linear_with_vars
+realize              public   219-225      -- ABSENT --               port:1036 TODO -- `needs_storage` + engine/realize.py run_linear
+replace              public   227-234      tn_replace / .of / .same / .same.of / .same.go port:517-536, FULL
+assign               public   236-274      tn_assign_store + tn_ib_walk port:889-905 -- SPINE ONLY; :907 TODO on 8 arms
+_buffer              private  276-283      -- ABSENT --               port:1051 TODO -- WALL 2 Buffer
+_data                private  285-285      -- ABSENT --               port:1052 TODO -- memoryview
+data                 public   287-303      -- ABSENT --               port:1053 TODO -- WALL 2 + dtypes.fmt
+tolist               public   306-326      -- ABSENT --               port:1054 TODO -- WALL 2 + nested tree printer refused
+numpy                public   328-342      -- ABSENT --               port:1057 TODO -- WALL 2 + foreign module
+clone                public   344-351      -- ABSENT --               port:1058 TODO -- `UOp.clone` ops.py:882
+to                   public   353-367      -- ABSENT --               port:1062 TODO -- canonicalize_device/is_disk_device/copy_to_device
+to_                  public   369-375      -- ABSENT --               port:1064 TODO -- `to` + `replace`
+shard                public   377-393      -- ABSENT --               port:1065 TODO -- `UOp.shard` ops.py:757 + _resolve_dim
+shard_               public   395-399      -- ABSENT --               port:1067 TODO
+shard_like           public   401-407      -- ABSENT --               port:1068 TODO
+from_blob            public   412-423      -- ABSENT --               port:1069 TODO -- external pointer
+from_url             public   426-436      -- ABSENT --               port:1070 TODO -- helpers.fetch
+manual_seed          public   442-457      -- ABSENT --               port:1071 TODO -- class-level mutable state
+_next_counter        private  460-471      -- ABSENT --               port:1072 TODO
+backward             public   475-495      tn_need_grad / .go/.put/.wanted/.is_float.go port:920-949 -- SCOPE FILTER ONLY; :951 TODO on the zip
+_mop                 private  499-499      tn_mop + tn_mop.* (17)     port:645-730, FULL (hoisted from ops.py:821)
+_rop                 private  500-500      tn_rop + tn_rop.* (16)     port:766-869, FULL-with-GAP (WALL 5, t_rop_gap prints True)
+__setitem__          dunder   502-528      -- ABSENT --               port:1073 TODO
+__delitem__          dunder   530-531      -- ABSENT --               port:1076 TODO -- raise TypeError, __bool__'s wall
+__iadd__             dunder   536-536      -- ABSENT --               port:984 TODO -- assign + elementwise.py:101
+__isub__             dunder   537-537      -- ABSENT --               port:985 TODO
+__imul__             dunder   538-538      -- ABSENT --               port:986 TODO
+__itruediv__         dunder   539-539      -- ABSENT --               port:987 TODO
+__ifloordiv__        dunder   540-540      -- ABSENT --               port:988 TODO
+__ipow__             dunder   541-541      -- ABSENT --               port:989 TODO
+__iand__             dunder   542-542      -- ABSENT --               port:990 TODO
+__ior__              dunder   543-543      -- ABSENT --               port:991 TODO
+__ixor__             dunder   544-544      -- ABSENT --               port:992 TODO
+__ilshift__          dunder   545-545      -- ABSENT --               port:993 TODO
+__irshift__          dunder   546-546      -- ABSENT --               port:994 TODO
+__imatmul__          dunder   547-547      -- ABSENT --               port:995 TODO -- matmul is a WMMA (mixin/op.py:394)
+__eq__               dunder   549-549      -- ABSENT --               port:996 TODO
+decode_hevc_frame    public   553-564      -- ABSENT --               port:1077 TODO
+
+upstream methods  : 57
+port counterparts : 18  (32%)
+genuinely absent  : 39  (68%)
+DENOMINATOR = 57 (every `def` in `class Tensor`, tensor.py:44-564)
+
+restricted to PUBLIC methods only: 9/28 present
+   absent public: ['as_param', 'call', 'clone', 'custom_kernel', 'data', 'decode_hevc_frame', 'from_blob', 'from_url', 'linear_with_vars', 'manual_seed', 'numpy', 'realize', 'schedule_linear', 'shard', 'shard_', 'shard_like', 'to', 'to_', 'tolist']
+
+------------------------------------------------------------------------------
+THE SEVEN NAMES IN THE BRIEF.  Each located by CALLING tinygrad, then read.
+------------------------------------------------------------------------------
+matmul           upstream home: ['mixin/op.py']
+                 port def with that exact name: none
+                 port TODO(p3) marker: False
+mul              upstream home: ['mixin/elementwise.py']
+                 port def with that exact name: ['tinybendygrad/mixin/rand.bend', 'tinybendygrad/codegen/decomp/op.bend', 'tinybendygrad/codegen/decomp/op.bend', 'tinybendygrad/uop/ops.bend', 'tinybendygrad/uop/probe-mmcore.bend', 'tinybendygrad/uop/divandmod.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/engine/realize.bend', 'tinybendygrad/engine/realize.bend']
+                 port TODO(p3) marker: False
+add              upstream home: ['mixin/elementwise.py']
+                 port def with that exact name: ['tinybendygrad/helpers.bend', 'tinybendygrad/renderer/__init__.bend', 'tinybendygrad/renderer/cstyle.bend', 'tinybendygrad/mixin/rand.bend', 'tinybendygrad/mixin/rand.bend', 'tinybendygrad/runtime/ops_python.bend', 'tinybendygrad/runtime/support/elf.bend', 'tinybendygrad/runtime/support/system.bend', 'tinybendygrad/codegen/decomp/op.bend', 'tinybendygrad/codegen/decomp/dtype.bend', 'tinybendygrad/codegen/decomp/dtype.bend', 'tinybendygrad/codegen/decomp/transcendental.bend', 'tinybendygrad/codegen/decomp/transcendental.bend', 'tinybendygrad/codegen/decomp/transcendental.bend', 'tinybendygrad/uop/ops.bend', 'tinybendygrad/uop/probe-mmcore.bend', 'tinybendygrad/uop/validate.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/fold.bend']
+                 port TODO(p3) marker: False
+backward         upstream home: ['tensor.py']
+                 port def with that exact name: none
+                 port TODO(p3) marker: True
+zero_grad        upstream home: ['ABSENT FROM tinygrad ENTIRELY']
+                 port def with that exact name: ['tinybendygrad/nn/optim.bend']
+                 port TODO(p3) marker: False
+realize          upstream home: ['tensor.py']
+                 port def with that exact name: ['tinybendygrad/schedule/indexing.bend']
+                 port TODO(p3) marker: True
+schedule_linear  upstream home: ['tensor.py']
+                 port def with that exact name: none
+                 port TODO(p3) marker: True
+assign           upstream home: ['tensor.py']
+                 port def with that exact name: none
+                 port TODO(p3) marker: True
+
+READING:
+  mul/add/matmul are NOT tensor.py methods -- they are ElementwiseMixin and
+  OpMixin methods, and the port has ew_mul/ew_add (mixin/elementwise.bend:543-544).
+  A name search of tensor.bend can NEVER find them, and its absence is not a fact
+  about tensor.bend at all.  zero_grad is not a Tensor method at all (it is
+  tinygrad/nn/optim.py, 2 hits) -- searching for it on Tensor is a phantom.

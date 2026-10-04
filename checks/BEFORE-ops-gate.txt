@@ -1,0 +1,8 @@
+ALL PROOFS CHECK
+bend 2.0.35 is available: run bend update
+bend 2.0.35 is available: run bend update
+bend 2.0.35 is available: run bend update
+ops-gate: 112 shared rows, 3 lanes identical
+ops-gate: 54 bend-only row families, each with a #bend_only_ reason in the oracle
+bend 2.0.35 is available: run bend update
+ops-gate: total bend rows = 315

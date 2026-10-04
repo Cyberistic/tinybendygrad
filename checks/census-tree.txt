@@ -1,0 +1,105 @@
+lane                                                phys shape     py=    F1    F2  cont  names   ship  `=`  LOST  reshp  dupe  contL
+tinybendygrad_codegen_decomp_dtype.bend.dtype-oracle.txt   356    F1       0   356     0     0    356    356    0     0      0     0      0
+tinybendygrad_codegen_decomp_dtype.bend.port.txt     208    F1       0   208     0     0    208    208    0     0      0     0      0
+tinybendygrad_codegen_gpudims.bend.port.txt           24    F1       0    24     0     0     24     24    0     0      0     0      0
+tinybendygrad_codegen_gpudims.bend.rw-gate-oracle.txt    54    F1       0    54     0     0     54     54    0     0      0     0      0
+tinybendygrad_codegen_opt_search.bend.port.txt        38    F1       0    38     0     0     38     38    0     0      0     0      0
+tinybendygrad_codegen_opt_search.bend.rebase-oracle-search.txt    20    F1       0    20     0     0     20     20    0     0      0     0      0
+tinybendygrad_codegen_simplify.bend.port.txt          28    F1       0    28     0     0     28     28    0     0      0     0      0
+tinybendygrad_codegen_simplify.bend.rw-oracle.txt     60    F1       0    60     0     0     60     60    0     0      0     0      0
+tinybendygrad_device.bend.device-oracle.txt           23    F1       0    23     0     0     23     23    0     0      0     0      0
+tinybendygrad_device.bend.port.txt                   110    F1       0   110     0     0    110    110    0     0      0     0      0
+tinybendygrad_dtype.bend.dtype_tables.txt              0    F3       0     0     0     0      0      0    0     0      0     0      0
+tinybendygrad_dtype.bend.port.txt                      0    F3       0     0     0     0      0      0    0     0      0     0      0
+tinybendygrad_engine_jit.bend.jit-oracle.txt           0    F3       0     0     0     0      0      0    0     0      0     0      0
+tinybendygrad_engine_jit.bend.port.txt                10    F1       0    10     0   127     10    137    0     0      0     0      0
+tinybendygrad_mixin_elementwise.bend.ew-gate.txt      71    F1       0    71     0     0     71     71    0     0      0     0      0
+tinybendygrad_mixin_elementwise.bend.port.txt         72    F1       0    72     0     0     72     72    0     0      0     0      0
+tinybendygrad_mixin_op.bend.mixin-op-gate.txt         32    F1       0    32     0     0     32     32    0     0      0     0      0
+tinybendygrad_mixin_op.bend.port.txt                  36    F1       0    36     0     0     36     36    0     0      0     0      0
+tinybendygrad_nn___init__.bend.nn-init-gate.txt       24    F1       0    24     0     0     24     24    0     0      0     0      0
+tinybendygrad_nn___init__.bend.port.txt               24    F1       0    24     0     0     24     24    0     0      0     0      0
+tinybendygrad_nn_onnx.bend.onnx-gate.txt             123    F1       0   123     0     0    123    123    0     0      0     0      0
+tinybendygrad_nn_onnx.bend.port.txt                  123    F1       0   123     0     0    123    123    0     0      0     0      0
+tinybendygrad_renderer_amd_generate.bend.ga-oracle.txt   778    F2     778     0   778     0    778    779    0     0      0     0      0
+tinybendygrad_renderer_amd_generate.bend.port.txt    726    F2     726     0   726     0    726    726    0     0      0     0      0
+tinybendygrad_renderer_amd_sqtt.bend.port.txt       1033    F1       0  1033     0     0   1033   1033    0     0      0     0      0
+tinybendygrad_renderer_amd_sqtt.bend.sqtt_spec.txt  1324    F1       0  1324     0     0   1324   1324    0     0      0     0      0
+tinybendygrad_renderer_cstyle.bend.port.txt          227    F2     227     0   227     0    227    227    0     0      0     0      0
+tinybendygrad_renderer_cstyle.bend.renderer_oracle.txt   224    F1       0   224     0     0    224    224    0     0      0     0      0
+tinybendygrad_renderer_llvmir.bend.llvmir-oracle.txt   471    F2     471     0   471     0    470    323  157   148    147     1      0
+tinybendygrad_renderer_llvmir.bend.port.txt          471    F2     471     0   471     0    470    323  157   148    147     1      0
+tinybendygrad_renderer_nir_llvmir.bend.nl-oracle.txt   205    F2     205     0   205     0    205    205    0     0      0     0      0
+tinybendygrad_renderer_nir_llvmir.bend.port.txt      205    F2     205     0   205     0    205    205    0     0      0     0      0
+tinybendygrad_renderer_ptx.bend.port.txt             281    F2     281     0   281     0    281    281    0     0      0     0      0
+tinybendygrad_renderer_ptx.bend.ptx-s3-oracle.txt    281    F2     281     0   281     0    281    281    0     0      0     0      0
+tinybendygrad_renderer_tc_ptx.bend.port.txt          334    F2     334     0   334     0    333    333    0     1      0     1      0
+tinybendygrad_renderer_tc_ptx.bend.tcptx-oracle.txt   334    F2     334     0   334     0    333    333    0     1      0     1      0
+tinybendygrad_runtime_ops_amd.bend.amd_oracle.txt   1010    F1       0  1010     0     0   1010   1010    0     0      0     0      0
+tinybendygrad_runtime_ops_amd.bend.port.txt          520    F1       0   520     0     0    520    520    0     0      0     0      0
+tinybendygrad_runtime_ops_cpu.bend.cpulink_oracle.txt    20    F1       0    20     0     0     20     20    0     0      0     0      0
+tinybendygrad_runtime_ops_cpu.bend.port.txt          134    F1       0   134     0     0    134    134    0     0      0     0      0
+tinybendygrad_runtime_ops_metal.bend.mt_seam_rows.txt    18    F1       0    18     0     0     18     18    0     0      0     0      0
+tinybendygrad_runtime_ops_metal.bend.port.txt        432    F1       0   432     0     0    432    432    0     0      0     0      0
+tinybendygrad_runtime_ops_null.bend.null-oracle.txt     9    F1       0     9     0     0      9      9    0     0      0     0      0
+tinybendygrad_runtime_ops_null.bend.port.txt         180    F1       0   180     0     0    180    180    0     0      0     0      0
+tinybendygrad_runtime_ops_nv.bend.nv-oracle.txt      574    F1       0   574     0     0    547    547    0    27      0    27      0
+tinybendygrad_runtime_ops_nv.bend.port.txt           611    F1       0   611     0     0    600    600    0    11      0    11      0
+tinybendygrad_runtime_ops_python.bend.ops-python-render-oracle.txt   241    F1       0   241     0     0    241    241    0     0      0     0      0
+tinybendygrad_runtime_ops_python.bend.port.txt        85    F1       0    85     0     0     85     85    0     0      0     0      0
+tinybendygrad_runtime_ops_qcom.bend.port.txt         750    F1       0   750     0     0    750    750    0     0      0     0      0
+tinybendygrad_runtime_ops_qcom.bend.qcom-oracle.txt   312    F1       0   312     0     0    312    312    0     0      0     0      0
+tinybendygrad_runtime_ops_rdma.bend.oracle_rdma_gate.txt   389    F1       0   389     0     0    389    389    0     0      0     0      0
+tinybendygrad_runtime_ops_rdma.bend.port.txt         389    F1       0   389     0     0    389    389    0     0      0     0      0
+tinybendygrad_runtime_support_c.bend.c-oracle.txt    129    F1       0   129     0     0    129    129    0     0      0     0      0
+tinybendygrad_runtime_support_c.bend.port.txt        129    F1       0   129     0     0    129    129    0     0      0     0      0
+tinybendygrad_runtime_support_elf.bend.elf_rows.txt  1042    F1       0  1042     0     0   1042   1042    0     0      0     0      0
+tinybendygrad_runtime_support_elf.bend.port.txt      353    F1       0   353     0     0    353    353    0     0      0     0      0
+tinybendygrad_runtime_support_hcq2.bend.hcq2-oracle.txt   165    F1       0   165     0     0    163    163    0     2      0     2      0
+tinybendygrad_runtime_support_hcq2.bend.port.txt     360    F1       0   360     0     0    360    360    0     0      0     0      0
+tinybendygrad_runtime_support_usb.bend.port.txt      940    F1       0   940     0     0    940    940    0     0      0     0      0
+tinybendygrad_runtime_support_usb.bend.usb-oracle-run.txt  1014    F1       0  1014     0     0    939    939    0    75      0    75      0
+tinybendygrad_schedule_indexing.bend.indexing-oracle.txt   104    F1       0   104     0     0    104    104    0     0      0     0      0
+tinybendygrad_schedule_indexing.bend.port.txt        252    F1       0   252     0     0    252    252    0     0      0     0      0
+tinybendygrad_schedule_prepare.bend.port.txt         321    F1       0   321     0     0    321    321    0     0      0     0      0
+tinybendygrad_schedule_prepare.bend.prepare-oracle.txt  2535    F1       0  2535     0     0   2521   2521    0     0      0     0      0
+tinybendygrad_schedule_rangeify.bend.port.txt        126    F1       0   126     0     0    126    126    0     0      0     0      0
+tinybendygrad_schedule_rangeify.bend.rangeify-oracle.txt    89    F1       0    89     0     0     89     89    0     0      0     0      0
+tinybendygrad_tensor.bend.port.txt                    33    F1       0    33     0     0     33     33    0     0      0     0      0
+tinybendygrad_tensor.bend.tensor-gate.txt             30    F1       0    30     0     0     30     30    0     0      0     0      0
+tinybendygrad_uop_fold.bend.mm-lift-gate.txt         131    F1       0   131     0     0    130    130    0     1      0     1      0
+tinybendygrad_uop_fold.bend.port.txt                 241    F1       0   241     0     0    240    240    0     1      0     1      0
+tinybendygrad_uop_ops.bend.port.txt                  310    F1       0   310     0     0    310    310    0     0      0     0      0
+tinybendygrad_uop_ops.bend.rebase-oracle-ops.txt     109    F1       0   109     0     0    109    109    0     0      0     0      0
+tinybendygrad_uop_render.bend.port.txt                80    F2      54     0    80    49     80     97    0    43      0     0     43
+tinybendygrad_uop_render.bend.render-gate-oracle.txt    80    F2      54     0    80    44     80     85    0    39      0     0     39
+tinybendygrad_uop_spec.bend.port.txt                  25    F1       0    25     0     0     25     25    0     0      0     0      0
+tinybendygrad_uop_spec.bend.rebase-oracle-spec.txt    16    F1       0    16     0     0     16     16    0     0      0     0      0
+tinybendygrad_viz_serve.bend.port.txt                175    F1       0   175     0     2    174    176    0     1      0     1      0
+tinybendygrad_viz_serve.bend.viz_oracle.txt          175    F1       0   175     0     2    174    176    0     1      0     1      0
+
+TOTAL over 78 lane texts of 39 ports
+  ROWS the writer emitted (a line with a boundary): 22968
+  LANE SHAPE, which is what decides whether the class CAN exist:
+      F1 18495  the writer glued the value on, so the FIRST `=` IS the boundary and a name cannot contain one -- STRUCTURALLY IMMUNE (80.5% of rows)
+      F2 4473  the boundary is ` = [` or `=[`, so a name MAY contain `=` -- the only population in which the class exists (19.5% of rows)
+      F3 0  no `=` at all; `row()` needs two spaces and a ONE-TOKEN head
+  ROW NAMES CONTAINING `=`: 314 of the 4473 F2 rows that can carry one (7.02%)
+  NAMES AS A PRODUCER PRINTED THEM: 22831   LINES `row()` ACCEPTS: 23190   DISTINCT KEYS `rows()` PRODUCES: 22691   so a name can address 22691 of 23190 lines (97.8%)
+  CONTINUATION lines `row()` reads as rows of their own: 224 -- a physical line inside a bracketed value. A DIFFERENT defect with the same arithmetic; no separator rename touches it
+  and, over MY rows only (continuations excluded), 294 to a reshape (an `=` in a name) + 123 to a duplicate name (one name printed twice, NO `=` involved)
+  ROWS `row()` ACCEPTS THAT NO NAME CAN ADDRESS: 499 = (accepted 23190 − distinct keys 22691)
+        82 a CONTINUATION line landed on a key another line already held (a multi-line value; NO `=` involved)
+       294 an `=` in a NAME put two differently-named rows on one key (THE CLASS)
+       123 one NAME printed twice (NO `=` involved, and no separator change fixes it)
+      attribution 82 + 294 + 123 = 499 against a measured total of 499: RECONCILES
+  THE TRACKER'S CONTROL: 5/78 texts report a continuation and 73/78 report none. The 5 are ['tinybendygrad_engine_jit.bend.port.txt', 'tinybendygrad_uop_render.bend.port.txt', 'tinybendygrad_uop_render.bend.render-gate-oracle.txt', 'tinybendygrad_viz_serve.bend.port.txt', 'tinybendygrad_viz_serve.bend.viz_oracle.txt']
+  !! tinybendygrad_codegen_decomp_dtype.bend.port.txt: 1 line(s) the writer's boundary is not on: [(12, 'F3: no `=` on the line')]
+  !! tinybendygrad_dtype.bend.dtype_tables.txt: 14766 line(s) the writer's boundary is not on: [(1, 'F3: no `=` on the line'), (2, 'F3: no `=` on the line')]
+  !! tinybendygrad_engine_jit.bend.port.txt: LANE ENDS +2 bracket(s) UNCLOSED over LNone -- either a producer prints an unbalanced value or the tracker is wrong; both are findings
+  !! tinybendygrad_runtime_ops_cpu.bend.cpulink_oracle.txt: 2 line(s) the writer's boundary is not on: [(2, 'F3: no `=` on the line'), (9, 'F3: no `=` on the line')]
+  !! tinybendygrad_schedule_indexing.bend.port.txt: 1 line(s) the writer's boundary is not on: [(276, 'F3: no `=` on the line')]
+  !! tinybendygrad_schedule_prepare.bend.port.txt: 1 line(s) the writer's boundary is not on: [(335, 'F3: no `=` on the line')]
+  !! tinybendygrad_uop_fold.bend.port.txt: 93 line(s) the writer's boundary is not on: [(201, 'F3: no `=` on the line'), (202, 'F3: no `=` on the line')]
+  !! tinybendygrad_viz_serve.bend.port.txt: LANE ENDS +2 bracket(s) UNCLOSED over LNone -- either a producer prints an unbalanced value or the tracker is wrong; both are findings
+  !! tinybendygrad_viz_serve.bend.viz_oracle.txt: LANE ENDS +2 bracket(s) UNCLOSED over LNone -- either a producer prints an unbalanced value or the tracker is wrong; both are findings

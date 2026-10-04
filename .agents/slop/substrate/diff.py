@@ -160,9 +160,14 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
     # (This harness was bitten by the same shape one level down: the plant-literal mutant printed
     # ZERO BYTES because its ORACLE PIN could not resolve from `artifacts/mutant/`, and a bare
     # `o != p` called that a passing plant.)
+    # THE `refused` SET HAS AN EMPTY STDOUT ON BOTH SIDES -- a refusal is four lines, so this shape
+    # guard was flagging the ONE set whose whole point is a short output, and `ok` came back False
+    # for a set whose stdout is byte-identical. So the guard is scoped to what it is for: a
+    # VERDICT-BEARING stream with no verdict line in it. That is the 0-row failure shape, and it
+    # is invisible to a byte compare precisely because two empty files are equal.
     shapes = [f"EMPTY {dest.name}/{side}.out" for side in ("oracle", "python")
-              if (dest / f"{side}.out").stat().st_size == 0] \
-        + [f"NO VERDICT LINE {side}" for side, v in (("oracle", vo), ("port", vp)) if not v]
+              if (dest / f"{side}.out").stat().st_size == 0 and files] \
+        + [f"NO VERDICT LINE {side}" for side, v in (("oracle", vo), ("port", vp)) if not v and files]
     body = [f"label={label}", f"inputs={len(files)}", f"exit=oracle:{rc_o} port:{rc_p}",
             f"stdout={'IDENTICAL' if same_txt else 'DIFFERS'} "
             f"({len(o.splitlines())} lines vs {len(p.splitlines())})",
@@ -185,10 +190,52 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
     # sub-checks moved when one did.
     print(f"{'AGREE  ' if ok else 'DISAGREE'}  {name:<22} {body[2]}  {body[3]}")
     if not ok:
-        print(f"           moved: " + "; ".join(
+        print("           moved: " + "; ".join(
             f"{k}={'ok' if v else 'MOVED'}" for k, v in
             (("exit", same_rc), ("stdout", same_txt), ("verdicts", vo == vp),
              ("shapes", not shapes))) + ("" if not shapes else f"  {[s for s in shapes]}"))
+    return ok
+
+
+def input_plants() -> bool:
+    """TWO PLANTS ON THE FIXTURES THEMSELVES, and they are here because the first two plants only
+    exercise the PORT'S OWN CODE PATH -- they cannot tell whether the fixtures still MEAN what the
+    set claims they mean.
+
+    PLANT 3, THE COLD FIXTURE GOES GREEN. `fixtures/broken.bend` is `def f(:`, a syntax error. If
+    it ever stops being one, `smoke` loses its only COLD row and the set passes while judging
+    nothing -- the "a gate that measures nothing must not report agreement" failure, one level
+    below the empty-argument refusal.
+
+    PLANT 4, THE EMPTY FIXTURE IS THE TRAP THIS GATE EXISTS FOR. `--check-only` answers
+    `ALL PROOFS CHECK` for a 0-byte file, so the ONLY thing standing between an empty file and a
+    green run is the EMPTY verdict. Making the empty fixture non-empty must move the output, and
+    making it empty again must move it back -- a paired arm/disarm in the strict sense, with both
+    directions asserted.
+    """
+    # **THESE PLANTS COMPARE AGAINST THE BASELINE, NOT AGAINST THE ORACLE.** The first version
+    # demanded they DISAGREE with the oracle and both answered AGREE -- correctly, and for a
+    # reason worth stating: planting a defect in a fixture makes the ORACLE report it too, so
+    # oracle-vs-port is still identical. A fixture plant answers a DIFFERENT question: "does the
+    # set still MEASURE what it claims to measure". The test is that the set's own output MOVED,
+    # which is why the baseline is compared to the planted run and the oracle is carried along
+    # only to prove the two drivers still track each other.
+    broken, empty = ROOT / f"{FX}/broken.bend", ROOT / f"{FX}/empty.bend"
+    good, hollow = b"def f(:\n", b""
+    base = (ART / "smoke" / "oracle.out").read_text(errors="replace")
+    base_port = (ART / "smoke" / "python.out").read_text(errors="replace")
+    ok = True
+    for label, body, path in (("broken.bend green", b"def f(x: U32) -> U32:\n  return x\n", broken),
+                              ("empty.bend non-empty", good, empty)):
+        path.write_bytes(body)
+        compare(f"plant-{path.stem}", SMOKE, f"plant: {label}")
+        after = (ART / f"plant-{path.stem}" / "oracle.out").read_text(errors="replace")
+        after_p = (ART / f"plant-{path.stem}" / "python.out").read_text(errors="replace")
+        ok &= demanded(after != base and after_p != base_port, True, f"{path.stem} moved")
+    broken.write_bytes(good)
+    empty.write_bytes(hollow)
+    print(f"DISARMED  fixtures restored: broken={broken.read_bytes()!r} empty={len(empty.read_bytes())}B")
+    ok &= demanded(compare("disarmed-smoke", SMOKE, "disarm: fixtures restored"), True, "smoke")
     return ok
 
 
@@ -222,11 +269,18 @@ def plants() -> bool:
           "ceiling plant must be set against a file that actually allocates)")
     # PLANT 2 NEEDS THE ORACLE ON THE SAME INPUT, and must not depend on the `disarmed` run
     # having happened first -- so it asks for its own.
-    p2 = demanded(run_mutant(warm), False, "plant-literal")
+    # NOTE THE INVERTED WORD. `run_mutant` answers "did the two DISAGREE", so its True is the plant
+    # WORKING, and `demanded(..., False)` was scoring a success as a failure. It cost one
+    # confusing run and it is exactly the shape `checks/disarm.sh` warns about -- a paired control
+    # whose off-switch is never exercised reads as broken in one direction and as working in the
+    # other. `compare` answers "did the two AGREE", so it is demanded True; `run_mutant` answers
+    # the other question, so it is demanded True TOO, and the two helpers do not share a polarity.
+    p2 = demanded(run_mutant(warm), True, "plant-literal")
     print(f"DISARMED  the mutant copy is deleted: {not (ART / 'mutant').exists()}")
     p3 = demanded(compare("disarmed", heavy + warm, "disarm: the real port, same inputs"),
                   True, "disarmed")
-    return p1 and p2 and p3   # reported by main(); see the note there
+    p4 = input_plants()          # FIXTURE-side, same polarity question, same reporting
+    return p1 and p2 and p3 and p4   # reported by main(); see the note there
 
 
 def run_mutant(files: list[str]) -> bool:
@@ -264,6 +318,12 @@ def run_mutant(files: list[str]) -> bool:
         f"the plant's OWN signature present -- a WARM line became COLD: {named}",
         f"stdout={'DIFFERS, and for the stated reason' if ok else 'PLANT NOT LOAD-BEARING'}",
         f"verdict lines={'DIFFER' if vo != vp else 'IDENTICAL -- THE PLANT IS NOT LOAD-BEARING'}",
+        # TWO IDENTICAL FAILURES COMPARE EQUAL. Were the port to refuse on EVERY input (which it
+        # did, when the mutant could not resolve the oracle pin) BOTH sides would exit non-zero,
+        # `cmp` would call them identical, and a diff reading only the exit status would report a
+        # passing plant. Recorded so the next reader knows why exit equality is printed here and
+        # is not the test.
+        "note: exit equality is printed but is NOT the test -- two failures compare equal.",
         *(f"  ORACLE only: {ln}" for ln in vo if ln not in vp),
         *(f"  PORT   only: {ln}" for ln in vp if ln not in vo)]) + "\n")
     print(f"{'DISAGREE' if ok else 'AGREE  '}  {'plant-literal':<22} "

@@ -1,0 +1,117 @@
+NVROWS DEAD-ROW CENSUS MATRIX -- generated 2026-10-04T20:53Z, bend Bend 2.0.34: check, run, build and publish Bend programs.
+
+########## 1. LIVE
+==============================================================================
+DEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend
+==============================================================================
+bend rc                 : 0
+row call sites in source: 374
+row LINES printed       : 811
+SITES THAT EXECUTED     : 368
+SITES THAT NEVER RAN    : 6
+DISARM OUTPUT-NEUTRAL   : True
+   DEAD  S070:  nvdev.bend:1274
+   DEAD  S071:  nvdev.bend:1275
+   DEAD  S072:  nvdev.bend:1276
+   DEAD  S073:  nvdev.bend:1277
+   DEAD  S074:  nvdev.bend:1278
+   DEAD  S075:  nvdev.bend:1279
+VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows
+rc=1
+
+########## PLANT=ORPHAN
+==============================================================================
+DEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend PLANT=ORPHAN
+==============================================================================
+bend rc                 : 0
+row call sites in source: 377
+row LINES printed       : 811
+SITES THAT EXECUTED     : 368
+SITES THAT NEVER RAN    : 9
+DISARM OUTPUT-NEUTRAL   : True
+   DEAD  S021:  nvdev.bend:1188
+   DEAD  S022:  nvdev.bend:1189
+   DEAD  S023:  nvdev.bend:1190
+   DEAD  S073:  nvdev.bend:1280
+   DEAD  S074:  nvdev.bend:1281
+   DEAD  S075:  nvdev.bend:1282
+   DEAD  S076:  nvdev.bend:1283
+   DEAD  S077:  nvdev.bend:1284
+   DEAD  S078:  nvdev.bend:1285
+VERDICT: 9 DEAD SITE(S) -- the file's gate is short that many rows
+rc=1
+
+########## PLANT=SELF
+==============================================================================
+DEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend PLANT=SELF
+==============================================================================
+bend rc                 : 0
+row call sites in source: 373
+row LINES printed       : 810
+SITES THAT EXECUTED     : 367
+SITES THAT NEVER RAN    : 6
+DISARM OUTPUT-NEUTRAL   : True
+   DEAD  S069:  nvdev.bend:1274
+   DEAD  S070:  nvdev.bend:1275
+   DEAD  S071:  nvdev.bend:1276
+   DEAD  S072:  nvdev.bend:1277
+   DEAD  S073:  nvdev.bend:1278
+   DEAD  S074:  nvdev.bend:1279
+VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows
+rc=1
+
+########## PLANT=REVIVE
+==============================================================================
+DEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend PLANT=REVIVE
+==============================================================================
+bend rc                 : 0
+row call sites in source: 374
+row LINES printed       : 817
+SITES THAT EXECUTED     : 374
+SITES THAT NEVER RAN    : 0
+DISARM OUTPUT-NEUTRAL   : True
+VERDICT: CLEAN
+rc=0
+
+########## PLANT=STRIP
+==============================================================================
+DEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend PLANT=STRIP
+==============================================================================
+bend rc                 : 1
+row call sites in source: 0
+row LINES printed       : 0
+SITES THAT EXECUTED     : UNKNOWN -- the file did not run
+VERDICT: INCONCLUSIVE -- bend rc 1. The compile lane owns this file;
+         a row census cannot speak about a program that never ran.
+rc=2
+
+########## ORIGIN COPY
+==============================================================================
+DEAD-ROW CENSUS -- .agents/slop/strays/origin/tinybendygrad/runtime/support/nv/nvdev.bend
+==============================================================================
+bend rc                 : 0
+row call sites in source: 374
+row LINES printed       : 811
+SITES THAT EXECUTED     : 368
+SITES THAT NEVER RAN    : 6
+DISARM OUTPUT-NEUTRAL   : True
+   DEAD  S070:  nvdev.bend:1274
+   DEAD  S071:  nvdev.bend:1275
+   DEAD  S072:  nvdev.bend:1276
+   DEAD  S073:  nvdev.bend:1277
+   DEAD  S074:  nvdev.bend:1278
+   DEAD  S075:  nvdev.bend:1279
+VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows
+rc=1
+
+########## STRAY (the triage's DAMAGE)
+==============================================================================
+DEAD-ROW CENSUS -- .agents/slop/strays/working/tinybendygrad/runtime/support/nv/nvdev.bend
+==============================================================================
+bend rc                 : 1
+row call sites in source: 61
+row LINES printed       : 0
+SITES THAT EXECUTED     : UNKNOWN -- the file did not run
+VERDICT: INCONCLUSIVE -- bend rc 1. The compile lane owns this file;
+         a row census cannot speak about a program that never ran.
+rc=2
