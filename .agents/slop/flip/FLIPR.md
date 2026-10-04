@@ -10,8 +10,18 @@ three files touched.
 
 | # | difference | where it is minted | whose defect |
 |---|---|---|---|
-| **A** | the extra `GROUP` wrapper | **`.agents/slop/graphcmp.bend:1274`** | **the differ's fixture** |
-| **B** | `FLIP`'s arg atom `b` vs `i` | **`.agents/slop/graphcmp.bend:1273`** (spelling) over **`tinybendygrad/uop/ops.bend:1066`** (the vocabulary) | **neither the graph's** — a port vocabulary gap, over-reported |
+| **A** | the extra `GROUP` wrapper | **`g_flip` in `.agents/slop/graphcmp.bend`** (was cited `:1274`) | **the differ's fixture** |
+| **B** | `FLIP`'s arg atom `b` vs `i` | **`g_flip`'s `O.ATuple{[1, 0]}`** (was cited `:1273`) over **`tinybendygrad/uop/ops.bend:1066`** (the vocabulary, ✅ still correct) | **neither the graph's** — a port vocabulary gap, over-reported |
+
+> ⚠ **CITATIONS INTO `graphcmp.bend` MOVED, re-verified 2026-10-04 by `notes-sweep`.** This
+> unit's own table cited `graphcmp.bend:1274` and `:1273`; those lines are now prose *about*
+> this fix rather than the code it names. By name, in today's file: **`def g_flip` is at
+> `:1289`**, the `O.ATuple{[1, 0]}` arg is at **`:1295`**, and the repaired call is
+> **`O.UOp.group(...)` at `:1296`** — the fix is visible at the call. `ops.bend:1066` is
+> **still exactly right** (`ATuple{ys: List<&2, U32>}`), and `ops.bend:2486` has moved to
+> **`:2486` = `def UOp.group.of`** (the citation was right; the surrounding prose cites
+> `2486-2495` and the def starts there). **`graphcmp.bend` is a generated file and its body
+> shifted by a header edit — cite `g_flip` by name.**
 
 ### A. The GROUP
 
@@ -39,6 +49,11 @@ def UOp.group.of(srcs, ar, nar) -> Found:
 So the port was never wrong. **The fixture was**: `g_flip` built the root with
 `O.UOp.new(..., O.OpsGROUP{}, [fl], ...)` — reaching past the port's own `UOp.group`
 to the raw constructor, so the singleton arm never ran.
+⚠ **CITATIONS RE-VERIFIED 2026-10-04 by `notes-sweep`: `ops.py:558-560` is ✅ STILL
+CORRECT** (`def group` at `:558`, the singleton early-return at `:559`, the GROUP
+constructor at `:560`). The py-side census citations below have **moved**: `graphcmp.py:1355`
+is ✅ still `g_flip`'s docstring, but `graphcmp.bend:1241-1242` is now the `--graph flip`
+comment that *already records the corrected* `ALLOC=1 CONST=2 FLIP=1 RESHAPE=1 STACK=1`.
 
 MEASURED (`.agents/slop/flip/py-probe.py`), calling CPython:
 
@@ -148,7 +163,8 @@ verdict was wrong; the gap is real and stays on the port's own wall.**
 
 Two edits, both in the three files I claim.
 
-1. **`.agents/slop/graphcmp.bend:1274`** — `O.UOp.new(..., OpsGROUP{}, [fl], ...)` →
+1. **`g_flip` in `.agents/slop/graphcmp.bend`** (this said `:1274`; that line has moved — see
+   the citation banner above) — `O.UOp.new(..., OpsGROUP{}, [fl], ...)` →
    **`O.UOp.group(ar, [fl])`**. The port's own elision now runs.
 2. **`.agents/slop/graphcmp.py`** — **`FLIPR-1`, `canon_flip(op, arg)`**: a FLIP's
    flag tuple is canonicalised to the `u32` atom on both sides, counted per node, and
@@ -199,6 +215,11 @@ $ diff runs/BEFORE.txt runs/AFTER.txt
 ```
 
 **One line. `flip`. Every other denominator and verdict byte-identical.**
+⚠ **STALE COUNT, re-measured 2026-10-04 by `notes-sweep`: 22 AGREE / 2 DISAGREE over 24
+graphs** (this was 20/2 over the 22-graph corpus; `cdiv` and `late` have since landed, both
+AGREE). The *shape* of the claim is unchanged — `lin` and `loop` still disagree on purpose
+and nothing else does.
+
 20 AGREE, 2 DISAGREE (`lin`, `loop` — REACH.md records those as disagreeing **on
 purpose**, for named measured reasons).
 
@@ -281,7 +302,8 @@ Baselines: `.agents/slop/flip/*.BASELINE`, md5 in `CLAIM.md`.
 
 * Not a claim that the port can rewrite, or that any rewrite rule is ported. `g_flip`
   is an eager graph; `lin`/`loop` still DISAGREE on purpose.
-* Not a claim of corpus coverage beyond **the emitter**. 53 of 77 ops, and nothing here
+* Not a claim of corpus coverage beyond **the emitter**. **59 of 77** ops (this unit
+  measured **53 of 77**; the corpus moved while it was open), and nothing here
   says anything about `schedule -> render -> compile`.
 * Not a claim that the port's bool gap is closed. **It is not.** `ATuple` is still
   `List<&2, U32>` and `ops.py:428`'s `isinstance` half is still unimplementable. What

@@ -25393,3 +25393,1355 @@ leaving the call gives a **green build, rc 0, unchanged stderr, and one row shor
 `error: use of undeclared identifier 'CID_RECORD_REPORT'`.  Only the first is the
 interesting control, and it is why the gate's ROWS line is a checked number on every
 run and not a summary printed when something else already went wrong.
+
+---
+## APPENDED 2026-10-04 by the `backward` zip unit (continues from whatever is last; cite by NAME)
+
+- **G-A `+x = <expr>` BINDINGS MUST BE CONTIGUOUS AT THE TOP OF AN `-> IO(Unit)` BODY.**
+  MEASURED, and the diagnostic names only the `+`: `+ts = <call>` placed AFTER an
+  `IO.print` gives `expected : 'def', 'type' or 'law' / observed : '+'`, which reads like a
+  bad name and is not. Two rules that fall out of it: inside an EXPLICIT `do IO<Unit>:`
+  block the `+x =` form is NOT available at all (`expected : a pattern` /
+  `observed : {a : IO(Unit)}`), and a `+x =` binding's RIGHT-HAND SIDE may not be split
+  across lines. `mixin/gradient.bend`'s gate is the shape that does work: one PURE
+  `def t_x() -> String|U32` per row, printed from `main` by `row`/`srow`.
+
+- **G-B A QUALIFIED `Alias.Type` IS NOT A NAME, BUT A QUALIFIED `Alias.def` IS.** In a
+  caller that does `import ./x.bend as A`, `A.Tensor` fails with
+  `expected : 'def', 'type' or 'law' / observed : 'A'` while `A.tn_sig(...)` on the same
+  line is accepted. Workaround: read a cross-file `Data` record's fields through one of its
+  OWN accessors (`Tensor.u(d)`, `F.UOp.dtype(...)`) and never name the type.
+
+- **G-C `is` IS A BEND KEYWORD.** agent-core names two (`match`, `where`); `is` is a third
+  on 2.0.34, and it is not a parse error at the binder — it is
+  `expected : a term (the keyword 'is' cannot head one)`, which points at the `+`, not at
+  the name.
+
+- **G-D `+` BINDINGS ARE NEEDED ON A *MATCH BINDER* TOO, NOT ONLY ON A PARAMETER.**
+  `case g <> t: f(g) ++ g` needs `case +g <> t:` and reports
+  `expected : g / observed : g (consumed more than once)`. `tensor.bend`'s `tn_sig.go`
+  already did this; the trap is that the first compile error after adding a two-read binder
+  is usually about the PARAMETER, so the binder is diagnosed second.
+
+- **G-E A LIST-BUILDING RECURSION HAS AN ORDER, AND BOTH SPELLINGS OF `List.append` ARE
+  IDIOMATIC.** `List.append(a, A, acc, [x])` is `acc ++ [x]` (APPEND) and
+  `List.append(a, A, [x], acc)` is `[x] ++ acc` (PREPEND). Which one preserves ORDER
+  depends on WHERE the self-call sits, and getting it wrong is INVISIBLE TO EVERY COUNT:
+  - `List.append(A, acc, [f(x)])` with **no self-call at all** is the worst case: it is
+    typechecked, it compiles, and it returns a ONE-element list. It typechecked here.
+  - `List.append(A, <self-call(t, acc)>, [x])` REVERSES the list (the tail is built first
+    and `x` lands after it).
+  - `List.append(A, [x], <self-call(t, acc)>)` is the in-order one.
+  A two-scrutinee `match` walk that also builds a second list in lockstep needs the SAME
+  answer in both, and the two can disagree with each other without any row noticing.
+
+- **G-F A `match` CANNOT SCRUTINIZE A COMPUTED VALUE.** `match tn_bwd_fix():` and
+  `match U32.is_zero(g):` are both refused —
+  `a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its
+  own def)`. Bind it with `+x = <call>` first (see G-A), or pass the value as a parameter
+  and let the def's own `match` do the work.
+
+- **G-H A `Data` FIELD IS A POINTER TO THE WHOLE RECORD, SO A `Bwd{ar, gs, ts}` BUILT
+  INSIDE `tn_backward` MUST CARRY THE ARENA `compute_gradient` RETURNED.** This is
+  `tensor.bend`'s own rule 5 (`THE ARENA A BUILD RETURNS IS NOT THE ARENA THAT WENT IN`),
+  reached from the other direction: the gradient values are indices into the arena the WALK
+  produced, and reading them against the incoming arena yields a plausible one-node
+  signature that is not the graph.
+
+## M- (2026-10-04, w64mile) -- the last 64-bit mile
+
+Numbering continues from the `S-` block's tail; these are NEW positions at the END of
+this file. Cite positions, never numbers, as always.
+
+### M-1: `#ifdef CID(x)` CANNOT GUARD A `CID` REGISTRATION
+
+`runtime/dtype.c:246` and every sibling use `#ifdef CID(Dt.bf16)` around an
+`io_eff`. **That form cannot compile.** `CID` is an object-like-looking macro and
+the preprocessor does NOT expand an `#ifdef` operand that looks like an invocation,
+so the condition is false for every binding and the emitted error is
+`CID(Dt.bf16) names no constructor or def`. `clangshim-gen.py` gets away with a bare
+`io_eff(CID(x), ...)` for all 308 bindings only because it declares all 308 laws in
+ONE `.bend`, so all 308 `CID`s exist. **So: one `.bend` per program, or one `.c`
+per program.** Consequence worth knowing: the C lane of the dtype seam has never
+been built, because its guards cannot work.
+
+### M-2: PASSING AN IMPORTED `.c` TO `cc` A SECOND TIME BREAKS IT
+
+`bend f.bend -o out.c` **inlines** `f`'s imported `.c` into `out.c`, after the
+runtime typedefs (`Env` at ~176, `Term`/`u32` at ~171). Adding that `.c` as a second
+argument to `cc` compiles it as its own translation unit where `Env`, `Term`, `u32`
+and `CID` do not exist: `unknown type name 'Env'`, then six more. **The build line
+is one file, not two**, and the wall is the build line, not the shim.
+
+### M-3: A LAW'S PARAMETER TYPE DECIDES HOW THE ZERO ARGUMENT IS SPELLED
+
+There is **no `Nat` -> `U32` coercion** at a call site: passing `U32.from_nat(0n)`
+to a law whose parameter is `Nat` is `expected : Nat / observed : U32`. Spell the
+literal in the law's own type -- `0n` for a `Nat`, `""` for a `String` -- which
+means the argument text has to come from the plan row, not from a fixed string.
+
+### M-4: `Bool.pick`'s CONDITION MAY BE A NESTED CALL, BUT `i64_neg` READS DIFFERENTLY
+
+`i64_neg(neg, x)` negates `x` **when `neg` is true**, so `i64_neg(i64_is_neg(b), b)`
+is `|b|` and not `-b`. Written the other way round it is the negation; the type
+signature is identical and there is no error. Found by a gate row, not by the
+compiler: `i64_ceildiv(7,4)` printed `-1` where CPython says `2`.
+
+### M-5: A 64-BIT PAIR MIGHT FIT IN ONE FOREIGN DEF, AND IT IS UNMEASURED
+
+`W64.md` records that "a Bend `Nat` is linear -- one value cannot serve two calls --
+so the pair cannot be returned as two values without knowing that marshalling path",
+and `w4_f64add.bend` therefore uses a C global plus a second foreign def.
+**`runtime/dtype.c:210` returns `io_tup(e, hi, lo)` -- a tuple Term.** So a
+one-def form may exist and is NOT measured here. M-2 uses the two-def shape because
+that is the shape W-4 ran. Cheapest open question in that unit.
+
+### M-6: A DEF NOTHING CALLS IS AN FFI SEAM THAT CANNOT BE CHECKED
+
+`clangshim-gen.py` blocks 16 bindings on `I64`/`F64`. **11 of the 16 have no call
+site anywhere in `tinygrad/` or `tinybendygrad/`**; 5 are called from 7 sites in
+`tinygrad/runtime/support/autogen.py`, and every 64-bit operation those sites
+perform (`// 8`, `% 8`, decimal rendering) is already pure in `helpers.bend`. A
+blocked name is not a wall, and a census that scans `name(` misses
+`autogen.py:159`, which selects one of two accessors with a conditional and calls
+the RESULT -- **scan the bare name and skip comment lines.**
+
+---
+# f64-KERNEL (FK), continuing from `M-6` at position 25490. `FK-` was free.
+
+### FK-1: A HARNESS THAT PARSES ITS OWN SIGNATURE IS DTYPE-GENERAL EXCEPT WHERE IT ISN'T
+
+`portexec/gen_ffi.py` derives the `extern` prototype (:186), the function-pointer
+typedef (:36 via `ptypes`) and the launch argument order (:205-206) **by parsing the
+port's emitted C**, so all three follow `S.double()` to `double*` with no dtype
+written in the harness. Its `:188` `spread` line does **not**: it casts every buffer
+to a literal `(float*)`. MEASURED, and it is the shape worth remembering: the cast is
+a no-op on the *address*, so the call still runs and the lane fails **on the answer**
+rather than on the mismatch. `cc -c run.c` at `run-kernel.sh:100` runs **without
+`-Werror`** ("bend's own runtime warns"), so the four `-Wincompatible-pointer-types`
+warnings it emits do not stop anything. Three dtype-aware sites and one hard-coded
+literal in the same function; the odd one out is invisible until the answer is wrong.
+**Derive the cast from the parse you already did.**
+
+### FK-2: `(lo, hi)` IS NOT `(hi, lo)`, AND A BYTE-SWAPPED OPERAND PRODUCES A PLAUSIBLE ANSWER
+
+`fill.go` walks a buffer at a 4-byte stride (`gen_ffi.py:118-124`) and an f64 element
+is two consecutive `U32` words, so writing a float64 buffer as `U32` pairs needs the
+order `struct.unpack('<2I', struct.pack('<d', x))` gives: **`(lo, hi)`**, because
+little-endian puts the low word first. The first version of `oracle_f64.py` returned
+`(hi, lo)` with a comment asserting "on this host the HIGH word is the even one",
+which is false. MEASURED: every operand became a denormal (`A[0]` read back as
+`5.3e-315`), every product was zero, and the kernel returned **exactly `DELTA` for
+all 32 elements** -- 32 plausible-looking doubles, not an error. The only reason it
+was caught in one run is that "the answer is the additive constant and nothing else"
+is a shape no correct matmul has. **A round-trip assert on the pack/unpack pair is
+the whole check; the comment was the thing that was wrong.**
+
+### FK-3: AN ORACLE THAT REFUSES IS A STRONGER OUTCOME THAN A RED, AND IT IS A DIFFERENT OUTCOME
+
+Three ways to break this project and they are not interchangeable: the lane answered
+**wrongly** (`MISMATCH at N/64 words`), the oracle **refused** (an `AssertionError`
+naming the defect, so nothing was compared), or the thing **fell over** (`SOME PROOFS
+FAIL`, a `cc` error, an empty log). Only the first two are catches. Classifying the
+second as a fall-over -- because it exits non-zero -- discards real evidence;
+classifying it as a red -- because it stopped the comparison -- claims a comparison
+that did not happen. `run-f64.sh`'s `expect_red` accepts the two and rejects the
+third, and prints which one it got. The brief for this unit said "a control that
+falls over reports NOT A CATCH, not a pass"; the sharper form is that **it is also not
+a red**.
+
+### FK-4: A PLANT MAY BE A THEOREM, AND SAYING SO IS CHEAPER THAN ENGINEERING AROUND IT
+
+`run-kernel.sh:205` plants `k < 8` -> `k < 7` in the first dot of its matmul body.
+That is a control for the **f32** fixture. On the f64 fixture it went GREEN, and the
+reason is a property of the FIXTURE: `B` is `[I_4 ; 0]`, so `B[k][j] = 0` for every
+`k >= 4` and `A[i][k] * B[k][j] = 0` for every `k >= 4` **for any `A` whatsoever**. No
+choice of `A` fixes it, and making `A` dense forces `B` dense, which stops
+`A@B == diag(2,1,1,1)`, which is what makes `out[0] = 1.0 + 2**-40` **exact** rather
+than the root of a rounded solve. So the exactness of the discriminating value and the
+viability of that inherited control are in direct trade. The committed harness already
+sets the precedent for this at `:215-222` ("A control that cannot fail is reported as
+a theorem, not quietly counted towards the three"), so `run-f64.sh` replaces the `ctl`
+line with a `THEOREM` line **in the copy**, in the open, and does not count it.
+
+### FK-5: `render_dtype`'s f64 IS IN NO GATE ROW, SO 227 GREEN ROWS ARE SILENT ABOUT IT
+
+`renderer/cstyle.bend:2984-3015` calls `rd_row` for exactly SEVEN dtypes -- f32, f16,
+bf16, bool, u8, fp8e4m3, i32 -- across six devices. `S.double()` is
+`Dt{15, 64, CFloat{}, "f64"}` (`spec.bend:742`) and `S.single()` is the only float
+among the seven, so **`render_dtype` on f64 has never been a row in this file**.
+`tmap CLANG` does contain the NAME `double`, and `cfo * SQRT/TRUNC f64` rows exist, so
+a reader scanning for "f64" in `port.txt` finds six lines and may reasonably conclude
+f64 is covered. It is not: a name in a type map is not a `double*` in a signature a
+compiler accepted and a machine ran. That gap is what `.agents/slop/f64/` closes, and
+it is the reason it is a separate stage rather than a footnote on stage 6.
+
+---
+
+## SUB — a file that PARSES can still be collectively INCOMPLETE
+
+*Appended 2026-10-04, continuing after M-6. All measured on Bend 2.0.34 in this tree.*
+
+`bend --check-only` is a question about **one file**. The failure of 2026-10-04 was
+the other question:
+
+```
+tinybendygrad/uop/ops.bend      --check-only  ->  ALL PROOFS CHECK  (6,305 lines)
+tinybendygrad/runtime/ops_python.bend         ->  expected : a defined name
+                                                 observed : O.ParamArg.no_slot
+```
+
+`uop/ops.bend` had been rewritten uncommitted and lost 2,367 lines, including
+`UOp.body`/`UOp.store` and `O.ParamArg.no_slot`. The preserved artifact
+`.agents/slop/partials/ops.bend.partial` is **still on disk** and is still
+`ALL PROOFS CHECK`; measured against the live file it is 6,305 of 8,313 lines and
+**2,413 live lines are absent from it**.
+
+### SUB-1: `ALL PROOFS CHECK` IS NOT A CLOSEDNESS CLAIM, ONLY A PARSE
+
+An empty file passes it (`substrate-check.sh` half 1, written for this). So does a
+file that is missing every name its callers use. **A green verdict on a provider is
+compatible with the provider being incomplete.** The only check that sees this is
+resolving `<Mod>.<name>` at the CALL SITE against what the module declares.
+
+### SUB-2: THE DECLARED NAME IS THE FULL DOTTED PATH, NOT A PREFIX
+
+`O.ParamArg.no_slot` resolves to `def ParamArg.no_slot` in `ops.bend`; `O.OpsADD{}`
+resolves to the bare variant `OpsADD{}` nested in `type Op is Data:`; `L.reshape_
+preserves_numel` resolves to `law reshape_preserves_numel`. Measured over all 136
+`.bend` files: **36,084 cross-file references, 36,071 matched a declaration verbatim
+and 0 needed anything looser.** So the resolver uses only exact dotted paths and
+reports a suffix match separately rather than quietly accepting it.
+
+### SUB-3: THE DECLARATION SET IS FOUR COLUMN-0 FORMS AND THE VARIANTS INSIDE THEM
+
+Measured: `def` 27,661, `type` 804, `import` 457, `law` 44, all at column 0, and
+**zero indented `def`/`type`**. A `type X is Data:` block's variants are at
+arbitrary indent (913 at 2, 32 at 4, 23 at 6, 21 at 7, 14 at 5, 4 at 8) — they are
+NOT at a fixed indent, so a resolver that hardcodes 2 spaces under-collects. **A
+resolver that forgets `law` produces 37 false positives across `PROOF.bend` and
+`PROOF2.bend` alone.**
+
+### SUB-4: AN EMPTY PROVIDER IS ALSO A COLLECTIVE FAILURE, AND HALF 1 CANNOT SEE IT
+
+`: > helpers.bend` → `helpers.bend --check-only` is `ALL PROOFS CHECK`, and so is
+every file under test. But every call into it goes unresolved:
+`UNRESOLVED codegen/kernel.bend:1003: H.i64_of_i32`. Deleting the file instead is
+caught as `MODULE FILE IS ABSENT`. **Truncation is a missing-name bug wearing a
+green verdict.**
+
+### SUB-5: WHAT THE NAME CHECK CANNOT SEE, WITH THE COUNT
+
+49,134 of the 85,218 qualified references in the tree are an uppercase `Foo.bar`
+whose `Foo` is **not** an import alias — the unaliased `import Base` surface
+(`List.`, `String.`, `U32.`). `import Base` carries no alias and no path, so those
+references are **completely invisible**: a typo in a `Base` name is not caught. It is
+a completeness check on the IMPORT graph, not on the language. Any report of it must
+print that `unseen=` number next to the verdict.
+
+### SUB-6: FOUND BY IT, UNFIXED — `renderer/ptx.bend:657` CALLS `P.r`
+
+`P` is `renderer/tc_ptx.bend`, which declares no `r`. `r` is `renderer/tc.bend:83`
+(`def r(+nm: String, +got: String, +want: String) -> String:`), imported as `T` — and
+`ptx.bend` uses `T.r(` correctly at lines 623 and 628. Line 657's 13 uses of `P.r(`
+are in a `BEGIN GENERATED FIXTURES` block, are an **uncommitted working-copy change**
+(mtime 18:27, `jj status` shows `M`), and make the file COLD with bend's own
+`expected : a defined name / observed : P.r`. Reported, not fixed: read-only file.
+
+---
+
+## W64M — appended 2026-10-04 by the W64-MILE re-run. Continues the `SUB-`/`M-`
+## numbering above; cite these by the `W64M-` prefix, the numbers repeat per unit.
+
+### W64M-1: A RECORD ARGUMENT ARRIVES BOXED. THE FRAME IS NOT THE ARGUMENT.
+
+MEASURED. A foreign effect whose parameter is a user record with two `U32` fields
+(`H.I64 = I64{hi, lo}`, `helpers.bend:1639`) receives it as **ONE** Term that
+points at the record, not as two consecutive words of the argument frame.
+
+The discriminator needs no oracle, and that is the part worth keeping:
+`Dt.i64_trunc` is the **identity** on a pair, so the seam's own contract says the
+answer equals its input. Apply two different readers to the SAME received bytes and
+exactly one is the identity — so *which* one is a measurement, and nothing has to
+say in advance what the wrong answer looks like.
+
+`.agents/slop/w64mile/t1_wire.c` + `gen_wire.py`, 32 rows:
+
+| reader | reads | identity on 8 fixtures |
+|---|---|---|
+| `boxed` | `ctr_take(e, f[0], 2, o)` | **yes** |
+| `same`  | `boxed` with `U32.or(x,0)` | **yes** (required: it is the stated equivalence) |
+| `swap`  | `ctr_take`, halves transposed | no |
+| `flat`  | `f[0], f[1]` | **no** — answers ~5.14e7, i.e. two allocation addresses |
+
+`flat` is what `tinybendygrad/runtime/dtype.c:205-206` does, so all six `Dt.i64_*`
+were reading the two **operands** where they expected the two **halves** of one.
+`pack64` (`dtype.c:209-211`, `io_tup(e, hi, lo)`) is CORRECT and is the reason only
+the argument direction was ever in doubt.
+
+### W64M-2: `#ifdef CID(x)` **DOES** WORK, AND THAT REFUTES A RECORDED WALL
+
+`.agents/slop/W64-MILE.md` build fact 1 and item 4 say the guard at
+`runtime/dtype.c:246` "does not work", that every binding's guard is false, and
+therefore "the C lane of the dtype seam has therefore never been built".
+
+BOTH FALSE, measured on Bend 2.0.34. Bend *inlines* an imported `.c` into the
+emitted C **after** textually expanding `CID(x)` into the mangled macro name, so
+the C preprocessor never sees an invocation — it sees `#ifdef CID__________TINYBENDYGRAD_DTYPE_DT_BF16`,
+which is a valid test. Evidence, three ways:
+
+1. A program that calls ONE seam emits `dtype.c` with all 11 guards present and
+   defines exactly 2 CIDs. `bend -o` rc=0, `cc` rc=0, the binary runs.
+2. In that emitted C, `dtype_i64_floor_div_use` survives and its 8 siblings are
+   compiled out — so the guard is discriminating, not vacuously true.
+3. A program that calls NO seam does not inline `dtype.c` at all (0 occurrences of
+   `bf16_run`), so the "unbuilt C lane" claim has no mechanism behind it.
+
+**The lesson is the general one.** A wall recorded as "`#ifdef` on a macro
+invocation cannot work" is true of C and false of a pipeline that expands macros
+first. The record was made about the emitted file while the test was run on a
+separately-compiled `.c` — which is a different thing, and is W64-MILE's own build
+fact 2. **Gating both answers instead of reconciling them is what surfaced this.**
+
+### W64M-3: A SEAM CAN BE WRONG WITHOUT EVER BEING EXERCISED
+
+`.agents/slop/W64-MILE.md` describes the six `Dt.i64_*` as blocked, and the fix it
+ships is to replace them with 71 lines of pure Bend. Both halves of that are true
+and the more important half is easy to miss: **they were not blocked, they were
+returning wrong answers**, and nothing in the tree ever called them.
+
+| reader | agrees with `tinygrad/helpers.py:65-75` |
+|---|---|
+| as shipped | **0 / 30** |
+| `i64_of` fixed (see `dtype-c-i64.patch`) | **30 / 30** |
+
+30 rows = 6 defs x 5 fixtures, incl. `int64.min` and every sign combination. Plant
+(the shipped reader) moves 30/30. Disarm (`| 0u`, the same function re-expressed)
+moves 0.
+
+So there are two independent routes to a correct `Dt.i64_*`, and they are not
+alternatives to be chosen on taste:
+- **pure Bend** (`dtype-i64.patch`, 71 lines) — necessary, because `UOp._min_max`
+  is a pure fold and cannot call an effect at all (`mixin/dtype.bend:52-60`);
+- **a fixed seam** (`dtype-c-i64.patch`, 6 lines) — necessary, because the fp8/f16
+  seams are 32-bit and will stay effects forever, so the lane has to be correct.
+
+Fixing the wire is **not** a substitute for the pure defs, and the pure defs are
+**not** a fix for the wire. Reporting either alone understates the work.
+
+### W64M-4: A FROZEN WALL CAN BE REFUTED BY A DIFFERENT LANE, NOT A BIGGER ONE
+
+`--check-only` on `dtype.bend` reports "14 defs rely on unsafe or foreign code".
+Every one of the 14 is by construction outside Bend's proof system, so that
+count moves only when the defs change, and a count is not a measurement. The
+lanes that actually know things are: `bend -o` + `cc` + run (does the C lane
+build?), and the def's own contract (does the identity hold?). **Both of those
+moved, and the proof count could not have told me either.**
+
+---
+
+## `JSL2-` — the JS FFI lane (appended 2026-10-04, unit `JSL2`)
+
+Numbering continues from nothing: this is a NEW prefix, not a continuation of any
+existing series, because the rules are about a different surface (the **JS**
+emitter and the FFI ABI) rather than about Bend syntax.
+
+Reproduce: `python3 .agents/slop/jslane2/gen_js_seam.py` (rc 0) and
+`python3 .agents/slop/jslane2/gen_f32_seam.py` (rc 1). Report:
+`.agents/slop/JS-LANE-GATE.md`.
+
+- **`JSL2-1` — `-o out.js` is a REAL lane, not a stub.** `main.ts:361` writes
+  `Comp.js_book` for `.js`/`.cjs`, and `comp.ts:3385` inlines every
+  `import "./x.js"` **verbatim** (`effect_srcs(fl, ".js", ...)`). `node` runs the
+  result. So "no gate executes the JS lane" was a gap in the *gates*, not in the
+  toolchain — worth checking before assuming a lane is inexpressible.
+
+- **`JSL2-2` — A RECORD CROSSES THE FFI BOUNDARY BY NAME IN JS AND BY LAYOUT IN
+  C, and this is invisible from either side.** Measured by instrumenting a
+  `$TMPDIR` copy of both lanes:
+
+  ```
+  JS  i64_of got keys=["$","hi","lo"]  p={"$":"...I64","hi":0,"lo":7}
+  JS  pack64 -> {"$":"Tuple","fst":0,"snd":0}
+  C   fp16_run f[0] = 1069547520      (the BITS of 1.5)
+  JS  dtype_fp16 x=1.5                (the VALUE 1.5)
+  ```
+
+  Three consequences, each measured on all 30 rows:
+  1. `a.fst`/`a.snd` is **wrong** for a Bend record in JS — the fields are `hi`
+     and `lo`. `undefined >>> 0 === 0`, so `i64_of` is the **constant 0** and
+     `Dt.i64_trunc`, the identity, answers `0`. The C reader's bug was the
+     *argument count*; the JS reader's is the *field names*. **Same tokens,
+     opposite defects.**
+  2. `io_tup(...)` (`{"$":"Tuple","fst":..,"snd":..}`) is not a `H.I64`
+     (`{hi, lo}`), so a record RETURNED from a JS seam is unreadable too.
+  3. **The same `io_tup` in `dtype.c:212` WORKS**, because `io_tup` and `H.I64`
+     are both 2-field constructors with the same layout. **C is right by
+     LAYOUT, not by contract** — a third coincidence, on top of the pair order.
+
+- **`JSL2-3` — `F32` crosses as a bit pattern in C and as a VALUE in JS.**
+  `fp16_run` receives `f[0] = 1069547520`; `dtype_fp16` receives `x = 1.5`. So
+  `dtype.js`'s `of32(x)` reinterprets the *value* 1.5 as the *pattern* 1, which
+  is the smallest f32 subnormal, and `fp16(1.5)` is `0` under node and `1.5`
+  under `cc`. **But this does NOT generalise**: `fp8_to(U32, U32) -> F32` takes
+  two `U32` and still diverges on 2 of 3 rows, so "U32 seams agree" is FALSE.
+  Measured, mechanism for `fp8_to` NOT localised.
+
+- **`JSL2-4` — `BigInt.asIntN(64,·)` and `(s64)` CANNOT be made to differ.** They
+  are the same function over every operand either lane can receive, and the gate
+  measures it: the repaired JS arm is byte-identical to C on 30/30 rows including
+  `int64.min`. **Report this as a theorem, not as an unfound gap.**
+
+- **`JSL2-5` — but the ARITHMETIC AROUND IT differs, and `BigInt` is
+  load-bearing.** `BigInt.asIntN(64, BigInt(h * 4294967296 + l))` moves **15 of
+  30 rows**. A double has 53 mantissa bits and the spacing on `[2^63, 2^64)` is
+  `2^11`, so `h * 2^32` is exact only for `h == 0`, `h < 2^21`, or `h` a power of
+  two. `h = 0xFFFFFFFF` rounds up to `2^64` and `asIntN(64, ...)` answers `0`.
+  **`(h << 32n) | l` and `h * 2^32n + l` are the same function; `h * 2^32 + l` in
+  `Number` is not.**
+
+- **`JSL2-6` — A DISARM IS ONLY A DISARM AFTER IT HAS MOVED 0 IN FACT.**
+  `h * 2**32 + l` in `Number` arithmetic looks like a re-spelling of
+  `(h << 32n) | l`. It moved 15 rows. Asserting "0 is the only correct count"
+  without running it would have shipped a **false theorem**, which is worse than
+  no gate: it would have licensed the exact rewrite that breaks 15 rows.
+
+- **`JSL2-7` — `U32` LITERALS DO NOT PARSE AS `U32 n`.** `Dt.bf16(U32 3286365652)`
+  gives `expected : U32 / observed : Data`. Use `F32.bits(x)` and an `H.i64`
+  helper instead (this is why `gen_seam.py` passes bare numerals).
+
+- **`JSL2-8` — `F32.show` prints `448`; CPython prints `448.0`.** Normalise before
+  counting, or the count absorbs a **format** difference as if it were a value
+  miss. This alone moved `cc` from a false 5/6 to a true 6/6.
+
+- **`JSL2-9` — A ROW'S VALUE MUST NOT BE THE ONLY THING THAT DISTINGUISHES IT
+  FROM A MISSING ROW.** The shipped JS lane prints `SEAM trunc =  : ` on all 30
+  rows. A harness that regexes for `\d+:\d+` counts **0 present** and calls it
+  dead; it is 30 present and 30 WRONG. Emit a row index — `SEAM <def> #<k> = <v>`
+  — so presence is countable independently of correctness. (The `r = 0 with zero
+  bytes` trap, in a new costume.)
+
+---
+
+## HERM-1 (2026-10-04) — hermeticity rules, continued from the index above
+
+Numbering continues from the end of this file; cite POSITIONS, not numbers (numbers have
+collided three times). Full measurements and the six controls: `.agents/slop/HERMETIC.md`.
+
+- **HERM-1. A PROCESS-GLOBAL COUNTER REACHES YOUR ROW STREAM, AND A RESET IS NOT THE SAME
+  KIND OF FIX AS A PROCESS.** `UOp.unique_num` (`tinygrad/uop/ops.py:839`, a module-level
+  `itertools.count`; the brief's `:842` is `getaddr`) is consumed per `Tensor.empty`
+  (`tinygrad/mixin/creation.py:41`) and emitted at `graphcmp.py:708`. MEASURED: one graph
+  alone gets slots `i0,i1`; after 8 predecessors, `i13,i14` — **same row count, same op
+  census, different bytes**. A counter reset matches a fresh process on all 24 graphs and is
+  still wrong, because it is right only if the globals that reach a row are the ones you
+  enumerated, and an enumeration fails by being incomplete. A process resets all of them
+  without naming them. It costs `0.08 s`/graph. **Only pick the reset if you can name the
+  complete set, and say in the comment that you are betting on that list.**
+- **HERM-2. A FRESH PROCESS IS ONLY WORTH ANYTHING IF IT IS DETERMINISTIC — MEASURE THAT,
+  DO NOT ASSUME IT.** Otherwise it trades one non-reproducibility for another. Two
+  independent full runs here are byte-identical across 48 row sets. What makes it safe on
+  this corpus: `paramarg`'s buffer field is PRESENCE-ONLY (`graphcmp.py:717`) and
+  `trace_num` is never read (`:697`), so no `id()`-derived value reaches a row. **Look for
+  your own `id()`/`object.__repr__` leaks before trusting process isolation.**
+- **HERM-3. A CACHE THAT FEEDS A NUMBER MUST NOT BE ON THE VERDICT PATH.** The stale-arity
+  cache was invisible because the census reads field 1 (the op) and the corruption lived in
+  field 8 (`slot`): **15 of 24 row sets were corrupt and the number still read 59.** Fix by
+  structure (always emit; the artifact is write-only; `--check` is the only reader, exits 3),
+  not by re-emitting to compare — verify-on-read costs the same emit PLUS a comparison, so it
+  is structure plus a tamper check you can get for free. **A number that survives a corrupt
+  input has not been verified; ask what field the census actually reads.**
+- **HERM-4. A PLANT WHOSE TWO SPELLINGS COLLIDE IS A TAUTOLOGY, AND SLOT-CONSUMPTION IS HOW
+  YOU FIND OUT.** My first C1 plant compared a graph after `matmul` against the same graph
+  after `reduce,cast`: byte-identical, because those sets consume exactly TWO slots each and
+  the target landed on `2/3` either way. **Print the field, not just the digest, and choose
+  predecessor sets of provably different sizes.** Same shape as the `flip` and `lin`/`loop`
+  lessons: two spellings that agree for a reason nobody chose.
+- **HERM-5. READING AN `itertools.count` CONSUMES IT — YOUR INSTRUMENT PERTURBS WHAT IT
+  MEASURES.** Asserting "the parent minted no slot" read 0 then 1 and looked like a failure
+  on a correct tree. The fix is the reasoning, not the expectation: start read 0 proves
+  nothing minted before it; end read 1 proves nothing minted in between, because the only
+  consumer since is the start read. **A reset could only re-establish that number; only a
+  measurement can assert it.**
+- **HERM-6. A LATE ENV ASSIGNMENT UNDER AN INHERITED ENV IS INERT, NOT AN ERROR — WHICH IS
+  WORSE.** MEASURED, two modes: with no `DEV` in the env, asking `NULL` after the import
+  gives **`METAL`**; with `DEV` already inherited, the same late assignment gives **`CPU`**
+  and **raises nothing**. It reads as if it took effect. **Put the flag in the child's
+  environment at process birth and the ordering stops being a convention a reader must
+  honour.** And one graph is not a corpus: check the device token in EVERY emitted file.
+- **HERM-7. A `DEV`-STYLE AUDITOR THAT MATCHES ANY LINE CONTAINING THE NAME COUNTS READS AS
+  WRITES.** My first version flagged 17 files, **16 false positives**, because upstream's own
+  `tinygrad/device.py` (`DEV = ContextVar(...)`, `os.getenv` at `:59`) is a READ. **A read is
+  not a write** — match the assignment spellings. And **gate on the corpus path only**: my
+  one true positive (`oracles/mm-range.py:12`+`:59`, MEASURED `METAL`) is another unit's
+  oracle, so it is reported with `file:line`, and a gate that can never go green is a gate
+  nobody reads.
+- **HERM-8. A FIXED-WIDTH FIELD SLICE IN AN INSTRUMENT MISREPORTS.** A 2-char slice of the
+  slot printed `i1` for BOTH two-digit slots (`i10`,`i11`), reading as a collision that is
+  not there. Split the token. **An instrument that misreports is worse than none, because it
+  will be believed.**
+- **HERM-9. A STALE `file:line` IN A BRIEF IS A FINDING, NOT A NIT.** `graphcmp.py:2769` was
+  cited as a late-`DEV` site; it is now `continue` in `split_debug`, and the assignment is at
+  **`:2977`, before the import at `:2978`** — the briefed defect DID NOT EXIST, and the
+  baseline it matched (`:2769` with `load_tinygrad()` at `:2770`) was correct too. **Re-read
+  the line you were told about; the tool that moves is the file, not the bug.**
+- **HERM-10. `import` AT THE START OF A SHELL LINE IS IMAGEMAGICK ON THIS BOX.** An `echo`
+  block beginning with `import` dumped ImageMagick's usage banner into the output. Harmless
+  but it buries a real result. Keep shell lines from starting with `import`.
+
+---
+## S- — SPELLING. Continues from `HERM-10` above (this file's numbering is collided; cite POSITIONS).
+
+- **S-1. A LITTERAL BLOCKLIST OF NAMES IS NOT A RULE, AND IT IS HOW THE WALL SHIPPED.**
+  `apply-port-lane.py` closed `duplicate declaration: U32` with
+  `DROPPED = ["type U32 …", "type Unit …"]` — two exact strings. The emitter mints one
+  nullary `type X is Data: X{}` per ctypes spelling with no way to know Base already speaks
+  for the name, so the wall was a list-length problem wearing a fix's clothes. Derived from
+  `references/bend/bend2/base.bend` it covers all 11 of Base's names, present and future.
+  **The rule must run LAST**: with it before the `EXTRA` mint, a planted `F32` survives
+  (measured), because the mint re-introduces what the rule removed.
+- **S-2. A REMOVAL RULE MUST BE TESTED AGAINST A NAME THE OLD LIST NEVER NAMED.** The list
+  held `U32` and `Unit`; `F32` (`base.bend:60`) is in neither the list nor `EXTRA`, so
+  only a plant on `F32` can tell a rule from the list it replaced.
+- **S-3. `--check` CANNOT ANSWER "DID THE GENERATOR MAKE THIS FILE".** It compares `fix()`
+  to the file, so a product HAND-EDITED until it agreed with the fix satisfies it exactly
+  as well. Only re-running the emitter and comparing bytes answers it. Measured here:
+  `emitter -> fix -> product` identical at `04199adf44475397189de8aa36e4b943`, 71324 B.
+- **S-4. A HEADER-ONLY CHANGE TO A GENERATED FILE INVALIDATES EVERY `file:line` INTO ITS
+  BODY.** `69800 -> 71324 B`, all comments, moved `type I64 is Data` `:77 -> :98` and
+  `clang_getEnumConstantDeclValue` `:617 -> :638`; emitted C `cmp`-identical. **Cite a
+  generated body by NAME.** This is the fourth stale-citation event in this project and the
+  first one caused by a repair rather than by an edit.
+- **S-5. `bend -o out.c` AND `bend <file>` ARE DIFFERENT QUESTIONS.** The file compiles:
+  `bend -o out.c` rc 0, `cc` rc 0, 13 correct rows. `bend <file>` and `-o out.js` both
+  fail with `a foreign def without a .js import: <k>` — `references/bend/bend2/comp.ts:3385`
+  asks for a `.js` import for EVERY foreign def. Add an empty `.js` and it becomes
+  `bend: no effect registers <k>`, once per def. **`substrate-check.sh`'s COLD verdict
+  therefore does not say which of the two failed.**
+- **S-6. AN ESM `import`/`export` IN AN IMPORTED `.js` IS A `SyntaxError`, AND THE PROBE
+  THAT PROVES IT NEVER RUNS.** Bend inlines an imported `.js` verbatim into ONE CJS scope.
+  Write the probe in `runtime/dtype.js`'s dialect (plain functions + `io_eff(CID(X), f)`).
+  Same shape as the `.c` rule at `W64M-2`: **the emitted file's module system is the
+  dialect, and nothing in the `.bend` says so.**
+- **S-7. `a : H.I64 <- …` INSIDE A `do IO<Unit>:` BLOCK DOES NOT PARSE ON 2.0.34.**
+  `expected : @-R:Type -> @k:(@_:H.I64 -> IO.OP<R>) -> IO.OP<R>` / `observed : H.I64`, with
+  the location reported at the `do` line. The same def with the annotation removed compiles.
+  Inline the argument instead. (`tinybendygrad/dtype.bend` never hits it — it has no `main`.)
+- **S-8. `bend --check-only` NAMES THE FIRST ERROR, SO A CONTROL THAT ASKS FOR N>1
+  COLLISIONS CANNOT FAIL.** Planting both `type U32` and `type Unit` into one file and
+  demanding both be named reports FAIL: it named `Unit` and stopped. Plant one per run.
+  (Same fact as `agent-core.md` at its "batch parse" position, re-derived as a control.)
+- **S-9. A DERIVED RULE IS A HYPOTHESIS ABOUT Base's SHAPE.** `^type (\w+)` over
+  `base.bend` finds 11 names and is what makes the rule total today. It is a REGEX over a
+  file `bin/bend` execs, and `bend base --types` is the compiler's own answer to the same
+  question — so a future `base.bend` that stops matching `^type` would silently narrow the
+  rule rather than fail. The closing `assert not left` catches the symptom, not the cause.
+- **S-10. TWO CONTROLS OF MINE MOVED AND NEITHER WAS A FAILED DISARM.** One set
+  `DROPPED = []` (REMOVES the fix rather than re-expressing it; 56-byte diff, reported
+  FAIL). The other ADDED `drop_base_types()` at the top while leaving the real call in
+  place (proved nothing, reported FAIL). **A disarm is only a disarm after it has moved 0
+  in fact, and a control that proves nothing reports FAIL and PASS identically.**
+- **S-11. `undefined >>> 0 === 0` IS A SILENT TOTALISATION, AND A FIXTURE WITH `hi == 0`
+  IS AN ACCIDENTAL PASS.** The shipped `dtype.js:137` reader is 0 on 4 of 4 fixtures, but
+  `0:1` alone would have looked right. The `H.I64` argument crosses as
+  `{"$":"tinybendygrad/helpers.I64","hi":…,"lo":…}` — **by NAME** — measured. The
+  discriminator needs no oracle: `Dt.i64_trunc` is the identity, so exactly one of two
+  readers is it.
+
+---
+# APPENDED 2026-10-04 by unit `DENOM` — numbering continues from S-11 above.
+# Full report and instruments: `.agents/slop/DENOMINATOR.md`,
+# `.agents/slop/denom/{denom-probe,census,emittable,yield}.py`. Prefix is `DENOM-` so these
+# cannot collide with a sibling unit's numbering. Nothing committed.
+
+- **DENOM-1. `tinygrad/uop/__init__.py:85`'s `# ** 6 -- ops that don't exist in programs **`
+  IS NOT A REACHABILITY ORACLE, AND IS FALSIFIED BY TWO MEMBERS OF ITS OWN SECTION.**
+  That section holds `STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION UNSHARD` — nine of the 18 ops
+  under study — and also `CONTIGUOUS_BACKWARD` and `DETACH` (`:88`), which the corpus already
+  REACHES. **An enum section comment is a label nobody voted on**, the same failure as `flip`'s
+  stale `7/7`. A header that is wrong about 2 of its own 11 members cannot decide 9 others.
+
+- **DENOM-2. "NO `UOp` IS EVER CONSTRUCTED WITH IT" HAS A MEASURED HIT RATE OF ZERO ON THIS
+  SET — DO NOT USE IT TO SHRINK A DENOMINATOR WITHOUT CALLING THE CONSTRUCTION.**
+  All 18 unreached ops are constructible, carry a real `UOp`, and land in `toposort()`
+  (`denom-probe.py`: `CONSTRUCTIBLE=18 CARRIED=18 INTOPO=18` of 18). And **TWO of the 18 have
+  no `UOp(Ops.X, …)` site at all** — `MULACC` and `THREEFRY` — because they are minted through
+  `UOp.alu` (`ops.py:627`). **A construction search that reads `UOp(Ops.` misses a live site;
+  `alu` is the same constructor with the op as a parameter.**
+
+- **DENOM-3. `graphcmp.py:750` CATCHES `RuntimeError`; `ops.py:442` RAISES
+  `AssertionError`. A NODE WHOSE `.shape` RAISES ANYTHING ELSE IS UNCANNONICALISABLE AND
+  READS AS A CRASH.** Measured: `issubclass(AssertionError, RuntimeError)` is `False`;
+  `cshape(AND)` raises `AssertionError: None input shape not supported for Ops.AND`, because
+  `AND` is in `GroupOp.Broadcastable` and its srcs are shapeless. **And `upat.py:66` makes
+  EVERY pattern-compiler IR `AND`-rooted by construction** —
+  `return UOp(Ops.AND, src=tuple(and_clause)) if and_clause else UOp(Ops.CUSTOMI, arg=("True", …))`
+  — so **that one `except` arm gates `CUSTOM`, `CUSTOMI` and `PYLITERAL` together.** A
+  `try/except` that lists one exception class is a denominator, not a parser.
+
+- **DENOM-4. A GRAPH IS ONLY A DENOMINATOR SAMPLE IF `cshape` RENDERS EVERY ONE OF ITS
+  NODES. MEASUREURE EMITTABLE-BEFORE-YOU-COUNT-YIELD.** `emittable.py` reports `patir` as
+  `NEW=3` on the raw op census and `NO` on emittability — the same graph, two answers, because
+  the census reads `op` and the emitter reads `shape` too. **The census and the emitter are
+  different instruments and they disagree, and only one of them is the thing being measured.**
+
+- **DENOM-5. GREP A DATATYPE FOR ITS COMPOSITE CASES, NOT ITS ATOMS.** `Arg`'s `ADev`
+  (`ops.bend:1070`) holds `S.Dev = D1 | Dn`, and **`D1` was exercised by all 24 graphs while
+  `Dn` by NONE** — so `graphcmp.bend:390`'s `dev(dd)` → `devs` (`graphcmp.bend:156-158`) had
+  never rendered a device TUPLE. The first graph with one (`--graph allred`) DISAGREEs on
+  exactly that field: `py=n(sCPU,sCPU)` vs `bend=ssCPU,sCPU`. **A variant that has only ever
+  been used one way is an untested variant, and it is the composite one that goes untested
+  because the atom is common and the tuple is rare.**
+
+================================================================================
+`DTB-` — from `.agents/slop/DTYPEB.md` (unit `dtypeb`). Continues after `DENOM-5`.
+CITATIONS ARE LINE POSITIONS IN THE FILE NAMED, NOT RULE NUMBERS.
+
+- **DTB-1. A SHIFTER WHOSE AMOUNT IS COMPUTED IS WRITABLE AFTER ALL, AND THE COST IS
+  ONE LINE.** `U32.shl`/`U32.shr` are ONE-BIT and `U32.shln`/`U32.shrn` take a `Nat`, which
+  the constraint list has twice read as "a bit-packer whose field positions are runtime
+  values is unwritable". MEASURED on 2.0.34: `U32.shln(3, U32.to_nat(4))` = 48 and
+  `U32.shrn(4294967295, U32.to_nat(4))` = 268435455. **A runtime `Nat` works.** The `Nat` is
+  Peano, so the amount must be SMALL: `U32.to_nat(4294967295)` asks for 2^32 cells. In a shaper
+  the amounts are `1..4` and `19/20/21/23/31`, and the one place where a WRAPPING `U32`
+  subtraction produces a huge one (`sh = 1 - exp` in `fp8_encode`, where `exp` is
+  `exp_field - 127 + bias` and goes to `4294967293`..`4294967295`) must be turned into a
+  `match` on the exponent FIRST, not converted.
+
+- **DTB-2. `U32.to_f32` IS THE NUMERIC CONVERSION, NOT A BITCAST. `F32.from_bits` DOES NOT
+  EXIST ON 2.0.34.** MEASURED: `F32.bits(1.0)` = 1065353216 = 0x3F800000 (a bitcast),
+  `U32.to_f32(3)` = 3 and `U32.to_f32(1065353216)` = 1065353216 (numeric), and
+  `F32.from_bits(...)` is "expected : a defined name". **SO BEND CAN TAKE A FLOAT APART AND
+  CANNOT PUT ONE BACK TOGETHER.** Anything whose last step is `U32 -> F32` as bits needs a
+  foreign seam. That is one primitive and it is the whole of `tinybendygrad/dtype.bend`'s
+  remaining six red laws, three of which are pure wrappers with no arithmetic at all.
+
+- **DTB-3. A `match` MAY NOT SCRUTINISE A COMPUTED VALUE OR A LOCAL BINDER — BUT IT MAY
+  SCRUTINISE A PARAMETER.** MEASURED, all three of these are hard errors:
+      match U32.is_eq(a, 1): ...            # a match cannot scrutinize a computed value
+      match k:  ...   where  k = f(t)        # a match cannot scrutinize a local binder
+  while `def g(k: U32): match k: ...` compiles. The message says "give it its own def", and
+  that is literal: **lift the condition into a def whose PARAMETER is the scrutinee.** A `do`
+  block inside `def main` may also not be a statement, so 1,228 gate rows are 13 `def chunkN`
+  functions the `main` do-block calls.
+
+- **DTB-4. A `match` CAN DESTRUCTURE A RECORD, AND `cfg.field` IS NOT A NAME.** MEASURED:
+  `case Fp8{bias, sig, ...}:` binds all seven fields, and `cfg.denorm` is "expected : a
+  defined name". So the cheapest way to read N fields of a record is ONE reader that
+  destructures and indexes by position (11 lines for 7 fields) rather than N accessors.
+
+- **DTB-5. EVERYTHING IS LINEAR, INCLUDING `U32` AND `Bool`.** "consumed more than once" fires
+  on `res: U32` used in three `Bool.pick` arms and on `cfg: Fp8` used twice. The fix is a `+`
+  on the PARAMETER (`def f(+a: U32)`), on the local binder (`+hu = ...`), and on the do-block
+  bind. There is no zero-cost option: a `Bool.pick(A, c, a, b)` is strict, so a four-arm ladder
+  written as nested `Bool.pick` evaluates every arm.
+
+- **DTB-6. `def`s MUST PRECEDE THEIR USE, AND AN UNFILLED LAW IS A DEAD CLAIM — NOT A
+  FORWARD REFERENCE.** `fp8_enc.sub` calling `fp8_enc.sh`, declared below it, is
+  "expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)".
+
+- **DTB-7. A GATE BUILT ON A CALLED ORACLE FINDS WHAT A GATE BUILT ON A TRANSCRIBED ONE
+  CANNOT — THREE OF THESE, IN ONE LANE.** (a) dropping `dtype.c:48`'s `& 0xFFu` from the
+  exponent field, 236 rows; (b) a three-rung subnormal shift ladder where the window is FOUR
+  exponents wide, because `absx > denorm` compares the whole MAGNITUDE and so `denorm`'s own
+  exponent field is in the branch whenever its mantissa is nonzero — 43 rows; (c) a defect in
+  `runtime/dtype.c:40`, which restates three of `dtype.py:236-241`'s `ovf_threshold`s without
+  their trailing `-1` and then compares with `>`, so it disagrees with CPython on exactly
+  `absx == 0x47700000`. **A port's table of constants restated from an f64 source into an f32
+  one is a lossy restatement, and the loss is invisible until an oracle with the f64 constants
+  is in the loop.**
+
+- **DTB-8. `ceildiv` IS NOT PORTABLE AS `-((-x)//y)` INTO A FIXED-WIDTH PAIR.** `-x` is not
+  representable when `x` is `int64.min`, so the negation route answers `-1` where CPython
+  answers `1` for `ceildiv(int64.min, int64.min)`. The total form is
+  `cdiv(a,b) + (r != 0 and sign(a) == sign(b))`, which is `dtype.c:240-242`'s direct
+  computation and agrees with CPython on both int64 edges. **The fixture that separates them is
+  `(int64.min, int64.min)`, and it is the only one that does.**
+
+---
+
+# SZ — appended 2026-10-04 by the szlane unit. Rule numbers are `SZ-`, they do NOT
+# continue any other unit's numbering (agent-core.md: numbers collide across units;
+# cite positions, never numbers). Every claim here is measured in
+# `.agents/slop/szlane/` on Bend 2.0.34 + Apple clang 21.0.0, and every one is
+# reproducible from the three probes in that directory.
+
+- **SZ-1. `CID(x)` IS NOT A MACRO. IT IS A TEXTUAL SUBSTITUTION BEND PERFORMS AT EMIT
+  TIME — AND THE SUBSTITUTED NAME IS MANGLED BY IMPORT PATH AND RENUMBERED PER BUILD.**
+  Measured on `sz.bend`'s emit (119,075 lines): **0** occurrences of the literal `CID(`.
+  `CID(Sz.read_dir)` → `CID_SZ_READ_DIR`; the same effect imported from a probe →
+  `CID__________TINYBENDYGRAD_SZ_SZ_READ_DIR` (ten underscores = `/`), and its value was
+  44 in one build and 16 in another. **SO NOTHING MAY EVER DEPEND ON AN ID'S VALUE OR
+  SPELLING, ONLY ON `CID(...)`.** This is also why `#ifdef CID(X)` works at all: bend
+  substitutes *inside* the directive, so the preprocessor only ever sees `#ifdef CID_X`.
+
+- **SZ-2. BEND ALLOCATES EFFECT **AND CONSTRUCTOR** IDS ON DEMAND, AND A FOREIGN `.c`
+  FILE NAMES AN ID IT DID NOT ALLOCATE.** MEASURED, both directions, on two 10-line
+  probes that differ only in which of `Sz.c`'s two seams they reach:
+    probe reaches `Sz.is_dir` alone  -> `CID_NIL`, `CID_CON` and `CID_..._SZ_READ_DIR`
+                                       all undeclared, `cc` rc 1
+    probe reaches `Sz.read_dir` alone -> `CID_..._SZ_IS_DIR` undeclared, `cc` rc 1
+  Preamble size tracks use exactly: 51 `#define CID_*` for `sz.bend`, **15** for the
+  `is_dir` probe, **14** for a probe that reaches nothing. **CONSTRUCTOR IDS ARE NOT A
+  SEPARATE MECHANISM FROM EFFECT IDS — `CID(Nil)`/`CID(Con)` go undefined for the same
+  reason an effect id does, which is why a guard that wraps only `io_eff` is not enough.**
+
+- **SZ-3. `bend -o <file>.c` RETURNS rc 0 FOR CODE THAT DOES NOT COMPILE. IT EMITS C; IT
+  DOES NOT BUILD IT.** Measured: all four builds in `szlane` were rc 0 under `bend -o`,
+  including the two whose emits were rejected by `cc` with undeclared identifiers. **THE
+  INSTRUMENT FOR A FOREIGN-FRAGMENT DEFECT IS `cc -fsyntax-only` ON THE EMIT, OR
+  `bend -o <path-with-no-extension>`, WHICH INVOKES `cc` AND `ld`.** This is agent-core.md's
+  "`-o` success does not contradict `--check-only` failure, and neither is the other",
+  wearing a third hat: `-o`'s rc is not a compile verdict at all.
+
+- **SZ-4. `#ifdef` DOES NOT MACRO-EXPAND ITS OPERAND, WHICH IS WHY `#define CID(x) 0`
+  MAKES EVERY `#ifdef CID(...)` TRUE RATHER THAN COMPILING THE BODY OUT.** `#ifdef`
+  tests whether the macro **named** `CID` is defined; the trailing `(Sz.read_dir)` is
+  reported by clang as `extra tokens at end of #ifdef directive` and otherwise ignored. So
+  a guard shimming `CID` away takes the **permissive** branch for every guard, which is the
+  correct direction and is why a syntax error injected inside a guarded region is still
+  caught (measured: COLD, at the right line, both guarded and unguarded). **A SHIM THAT
+  EXPANDS TO A CONSTANT DOES NOT NEUTRALISE AN `#ifdef` GUARD — IT MAKES EVERY GUARD
+  PASS.** The shim's real blind spots are narrower than "it cannot see `CID`": an id that no
+  emit defines, and **registration identity** (`io_eff(0, …)` twice is indistinguishable
+  from two distinct ids, so a double registration across two `.c` files is invisible).
+
+- **SZ-5. A `#ifdef CID(X)` GUARD MUST WRAP THE WHOLE C GROUP THAT IMPLEMENTS X, NOT
+  ONLY ITS `io_eff` — MEASURED, NOT STYLISTIC.** `sz_read_dir_pack` names `CID(Nil)` and
+  `CID(Con)`, and `sz_read_dir_run` calls that packer, so guarding only the registration
+  leaves an *undeclared function* behind it: the same defect, one step later.
+  `runtime/dtype.c` guards only its constructors, and it can, because none of its run
+  functions name a demand-allocated id. **The unit inside a guard is the effect's whole
+  implementation, and that is a property of the file, not a style choice.**
+
+## NV-NUMBERED RULES -- APPENDED 2026-10-04 BY THE "NVROWS" UNIT
+
+Numbering continues from the `LT-` block above and uses its own prefix, because
+rule NUMBERS REPEAT across units and the index at the top of this file is why.
+Cite these by PREFIX (`NV-4`), never by a bare number. All measured on
+`tinybendygrad/runtime/support/nv/nvdev.bend` with `Bend 2.0.34`.
+Instrument: `.agents/slop/nvrows/nvrows-deadrow-gate.py`. Full matrix:
+`.agents/slop/nvrows/census-MATRIX.txt`. Report: `.agents/slop/NVROWS.md`.
+
+- **NV-1. A ROW SITE INSIDE A `def` NOTHING CALLS IS DEAD, AND IT IS INVISIBLE TO EVERY
+  OUTPUT-COUNTING INSTRUMENT.** `nvdev.bend` has **374** `IP.{,u,s}row(` call sites and
+  **368 execute**; the 6 that do not are the whole body of
+  `def t_const()` at **`nvdev.bend:1272`**, which has **0 call sites** -- `grep -n t_const`
+  returns exactly one line, the `def`. Meanwhile `nv_nvdev_gate.py` printed
+  **`GATE PASS`** (558 rows compared, 0 disagreements), `bend` was **rc 0**, and the
+  printed row count was **811, unchanged**. A dead site emits nothing, so it costs
+  **0 duplicate measurements** and reads as clean to every multiplicity census. This is
+  the same finding as `.agents/slop/nvdup/nvdup-deadarm.txt` (`DEAD SITES=0` for
+  `nv-oracle.py`), now measured on the port side. **COUNT ABSENCE: a dead row is a
+  missing name, and only an instrument that asks "did this NAME appear" can see it.**
+
+- **NV-2. `Bool.pick` CANNOT PLANT THIS DEFECT, AND MEASURING THAT IS THE POINT.** The
+  brief named `Bool.pick` as the suspect because it "cannot plant a dead arm". That is
+  correct, and it is why the suspect is wrong: the 6 rows sit in a `do IO<Unit>:` block
+  whose enclosing `def` is never *entered*, so no arm is reached and none is skipped.
+  Control never gets inside `t_const` at all. `Bool.pick` appears **45 times** in the
+  file, all in value-returning positions, and moved nothing. **A construct proven
+  incapable of a failure cannot be its cause; the omission is the cause.**
+
+- **NV-3. BEND HAS NO `sys.settrace`, SO A DEAD-SITE CENSUS MUST TAG THE NAME.** The
+  Bend analogue of a line tracer: give every row call site a unique prefix on its NAME
+  argument (`Snnn:`), run, and look for that prefix in stdout. Two syntactic forms
+  exist and both are rewritten bracket-balanced so no other argument is touched --
+  `IP.urow("name", v)` -> `IP.urow(String.concat(["S001:", "name"]), v)` (**322 sites**)
+  and `IP.urow(String.concat([...]), v)` -> insert the tag as the first element
+  (**52 sites**). It is a SITE census (a call site the tracer never saw), not a LINE
+  census (a name printed more than once), because the second cannot see the first.
+
+- **NV-4. A DISARM THAT MOVES SOMETHING IS A DEFECT THAT HAS NOT BEEN NAMED YET -- AND
+  TWO OF THE THREE FAILS ON THE WAY HERE WERE FAILS OF THE INSTRUMENT.** (a) The
+  neutrality check compared the instrumented run's *non-tag* subset against the *whole*
+  baseline: 10 lines against 821, so it printed `False` forever. It must compare the
+  instrumented stdout with the tag **stripped**, line for line. (b) `^(S\d{3}):` puts
+  the colon OUTSIDE the capture group, so `m.group(1)[:-1]` ate the last digit and all
+  374 sites read dead while 811 tag lines sat in the output. (c) The closure resolver
+  retried a missing `../../../helpers.bend` against the fallback ROOT instead of the
+  fallback's equivalent directory, escaped the tree, and reported INCONCLUSIVE on a
+  file that is fine. **Each of the three printed a confident wrong number.**
+
+- **NV-5. A FILE THAT DOES NOT RUN IS INCONCLUSIVE, NOT CLEAN.** The triage's real
+  damage (`strays/working/.../nvdev.bend`, 61 of 374 sites left, **374 - 61 = 313** --
+  the triage's arithmetic is exact) does **not compile**: `bend` rc 1, first dangling
+  `,` at `:1194`. A reproduction that turned every `IP.{,u,s}row(` into a bare
+  `String.concat(` also fails to compile, because `String.concat` takes a `List`. So
+  **the 313 dead rows were never a silent wrong answer; they were a loud one, and the
+  compile lane caught them.** The census returns rc 2 for this cell, distinct from both
+  pass and fail. **A mutation that removes a row CALL is loud; a mutation that removes
+  a row CALLER is silent. Only the second is this project's dangerous class.**
+
+- **NV-6. A SANDBOX MUST MIRROR THE IMPORT CLOSURE, AND `import Base` RESOLVES AGAINST
+  THE PACKAGE ROOT, NOT THE FILE'S DIRECTORY.** Measured in this file: `nvdev.bend:187`
+  is `import ./ip.bend as IP` (file-relative) while `ip.bend:371` is `import Base` and
+  `LAWS/spec.bend:48` is `import Base` (**package-root**-relative, i.e. against the
+  directory named `tinybendygrad`). The closure here is **6 files**:
+  `Base.bend`, `LAWS/spec.bend`, `device.bend`, `helpers.bend`,
+  `runtime/support/nv/ip.bend`, `runtime/support/nv/nvdev.bend`. Copying only the file
+  under test produces `no such file` and turns every site into a phantom -- the
+  22-phantom-blind-spot failure, met again. Find the package root **by name**, not by
+  counting `parents`: `next(p for p in path.parents if p.name == "tinybendygrad")`.
+
+- **NV-7. A DEF NOTHING CALLS IS NOT ALWAYS AN ACCIDENT -- AND THE FILE KNOWS THE
+  DIFFERENCE, WHICH IS WHY THE UNANNOTATED ONE IS A BUG.** `nvdev.bend:2329`
+  (`nv.pow_shifts`) carries the note *"it has no caller, which is stated here rather
+  than left to be discovered"*, and `:2317` says it exists only so a mutation has an
+  alternative to swap in. So this file has a **stated** convention for intentional dead
+  code. `t_const` at `:1272` carries no such note and has been uncalled since the
+  **first** commit `c00db572e` (342 sites) through `b8897fd48` (368) to `fde0fc1a8`
+  (374) -- always at **line 1272**, `main` never listing it among its 11 then 12 then
+  12 groups. **Unannotated + never called + green = rot, not shape.**
+
+- **NV-8. `emit` IS A RESERVED-NAMED, UNFILLED LAW IN BEND 2.0.34, SO `nvdev.bend:1770`'s
+  OWN `def emit(xs: List<&2, String>)` IS DEAD *AND UNCALLABLE*.** Calling bare
+  `emit(...)` gives `expected : a filled definition (an unfilled law is a dead claim:
+  live code cannot use it) / observed : emit` -- the name does not resolve to the
+  local def. `grep -n '\bemit('` on the file returns 10 hits: 9 are `IP.Tr.emit`, the
+  10th is the `def` itself. And `nvdev.bend`'s comment at `:1318` describes `emit` as
+  the printer its `t_*` groups are "built by `go` folds" for, which no group uses.
+  **`IP.emit` from `ip.bend:1174` is the working one.** A def that exists, is never
+  called, and cannot be called is the same class one line-class over.
+
+- **NV-9. WIRING A DEAD ROW GROUP BACK IS NECESSARY AND NOT SUFFICIENT: CHECK THE ORACLE
+  FOR A COUNTERPART FIRST.** `nv_nvdev_oracle.py` emits **2176** rows and **0** of the
+  six names `t_const` would print. So a revived group lands in the gate's *"PORT ROWS
+  WITH NO ORACLE COUNTERPART"* bucket -- 241 rows already there -- and prints while
+  nothing checks it. Two of the six (`nv_sf_addrkey_2000`, `nv_sf_addrkey_2000_v3`) are
+  the **identical call** `nv.pte_addrkey(3, 0)`: two rows, one measurement. Upstream
+  `nvdev.py:45` admits four keys (`address`, `address_small`, `address_sys`,
+  `address_small_sys`); the file probes 2, one of them twice. **Reviving buys 4
+  measurements, not 6.**
+
+- **CSH-1. A WIDENING'S COST IS THE SET OF RAISING SITES IT SWALLOWS, AND ONE EXCEPTION
+  CLASS IS RARELY ONE SITE.** Priced by running it over the OP SPACE, not over the corpus:
+  `except AssertionError` at `tinygrad/uop/ops.py` admits **four** sites and only one is a
+  fact -- **:444** `None input shape not supported for X` (21 ops, real),
+  **:438** `assert len(self.src) == 1` (8 ops, a WRONG FIXTURE), **:137**
+  `CUSTOM/CUSTOMI arg must be (str, DType)` (2), **:141** `INS arg` (1). `except Exception`
+  adds **22** more op-slots whose only fault is a malformed fixture (IndexError/AttributeError/
+  TypeError from `UOp(op, src=())`), and at ONE src each it swallows **77 of 77**. A third
+  fact exists at **:451** `NotImplementedError: no shape handling for X with Y` -- "upstream
+  has NO RULE", for which `R` would be a lie. Measured **0** occurrences over the corpus and
+  over all 77 ops x 2 arities, so `+ NotImplementedError` buys nothing and a bare `except`
+  is a live lie waiting for a node nobody has built.
+
+- **CSH-2. `except AssertionError` IS NECESSARY AND NOT SUFFICIENT, AND THE SUFFICIENCY
+  FAILURE IS TWO PORT DEFECTS, NOT THE ARM.** `tinybendygrad/uop/fold.bend:2296-2297`
+  answers `None{}` -- "this node has NO `Derived`" -- where upstream `ops.py:370-372`
+  (`case Ops.CUSTOM | Ops.CUSTOMI: if self.dtype is dtypes.void: return None`) answers `None`
+  -- "this node has NO SHAPE". `None` and `None{}` are the port-only `?` and upstream's `R`,
+  conflated one level down in the ladder. **MEASURED, with four SEPARATE graphs so one
+  unsettled node cannot be mistaken for a missing rule: `AND` over two SHAPED consts
+  SETTLES (`settled=True`, `7:weakint 2:()`) so the port HAS an `AND` rule; `CUSTOMI` and
+  `CUSTOM` with ZERO srcs do NOT settle, so the Broadcastable assert is not even reached;
+  and `PYLITERAL` with zero srcs SETTLES to `4:void 1:R` from the SAME upstream fact via
+  `late() = Some{DtShape{S.void(), None{}}}` (fold.bend:1040-1041).** The fix is already in
+  the port, on the port's own op. The arm's own note ("NOT PORTED, deliberately: it needs
+  its own `_broadcast_shape` oracle") covers only the NON-void half.
+
+- **CSH-3. AN OP CENSUS COUNTS AN OP REACHED FROM A ROW'S `op` COLUMN, WHICH IS PRINTED
+  EVEN WHEN dtype AND shape BOTH READ `?`.** MEASURED: adding the pattern IR takes the
+  corpus from `61/61/61, py-only=[], bend-only=[]` to a clean-looking `64/64/64,
+  py-only=[], bend-only=[]` -- while the verdict on that same graph is **DISAGREE at 9
+  field mismatches of 24** with **`?=3` on the bend side**. **A reach count is not
+  agreement, and `?=0` is not agreement** (`flip` read `?=0` on both sides while
+  disagreeing at 6/7). Report the VERDICT first; a clean reach count with `?=0` is the
+  `flip` pattern reproduced on purpose and it would have shipped.
+
+- **CSH-4. "EVERY PATTERN IR IS `AND`-ROOTED" IS UPSTREAM'S RULE, IT IS LOAD-BEARING FOR
+  MATCHING, AND IT IS ENFORCED BY AN ASSERT.** `tinygrad/uop/upat.py:66` returns
+  `UOp(Ops.AND, ...)` or `UOp(Ops.CUSTOMI, arg=("True", void))`; `:20` wraps the `OR`
+  inside an `AND` for `is_any`; `:118` is `pm_proc = PatternMatcher([(UPat(Ops.AND,
+  name="a"), do_process_and)], compiled=False)` -- matching is DISPATCHED on `Ops.AND`; and
+  **`:140` is `assert x.op is Ops.AND`**, after `:139` normalises a bare `CUSTOMI` into an
+  `AND`. MEASURED over 18 `UPat` shapes (one per clause branch of `:25-64`): **17 roots
+  `AND`, 1 `CUSTOMI`, 0 roots `OR`; the `OR` appears only as a CHILD.** So a graph needing an
+  `OR` root or an atom root is inexpressible through upstream's own compiler, and there is
+  nothing in the differ to widen. Note `UPat.__init__` spells these `dtype=`/`tag=`/`src=[...]`/
+  `allow_any_len=`, NOT `match_dtype=`/`match_tag=`/`strict_length=`; the last two are derived
+  attributes, and passing them is a `TypeError`.
+
+- **CSH-5. `R` MEANS "THE OP IS IN UPSTREAM'S NO-SHAPE LIST", AND THE LIST IN THE COMMENTS
+  IS INCOMPLETE.** `cshape`'s docstring and `graphcmp.bend`'s `shape_str` comment both say
+  "the ten ops that have no shape (ops.py:331-338)". ops.py:331-334 does list exactly ten,
+  and **MEASURED at zero srcs THIRTEEN ops answer through ops.py:455**: `NOOP`, `PYLITERAL`
+  and `UNSHARD` reach it through their OWN `_shape` arms (:344's RESHAPE-on-NOOP case,
+  :375, and UNSHARD's own arm). The LETTER is right; the list behind it is a stale comment
+  nobody voted on.
+
+- **CSH-6. THE EMITTER DYING IS NOT A MISSING ROW, AND BOTH PRINT AS PROGRESS.** Under the
+  live arm the pattern IR kills `row_of` with an `AssertionError` out of the WHOLE graph
+  (3 of 4 nodes printed, then a traceback). Under every widened arm it prints 4 rows of which
+  **3 carry a field the other side cannot produce**. A row count and a `py-only`/`bend-only`
+  pair are silent about both. **Print the op count per `except` arm and the per-field
+  mismatch list, or the instrument's permissiveness is invisible.** Corollary: ask `cshape`
+  DIRECTLY for a plant, not `row_of` -- `row_of` reaches `.dtype` first and a zero-src `NEG`
+  dies in `promo_dtype(())` at ops.py before `cshape` is called.
+
+- **CSH-7. WHEN A FILE IS BEING EDITED BY ANOTHER UNIT, MONKEYPATCH IT AND PIN ITS MD5.**
+  `graphcmp.py` moved `026c1cd8...` -> `4a0d2467...` under one unit's session, and a
+  `selfcheck` run died with `NameError: name 'dev' is not defined` at `:734` mid-edit (the
+  `ADev` unit was removing the `dev` renderer). Pin the md5, re-run the census **twice with a
+  byte comparison**, and say which pin a number belongs to. Relatedly: **`DENOMINATOR.md` §3
+  cites `ops.py:442` for the assert and it is `ops.py:444`** -- a line number into a file
+  that is being rewritten is a claim with a shelf life.
+
+- **CSH-8. `import "./graphcmp.bend" as GC` WORKS, AND IT IS HOW A PROBE GETS THE DIFFER'S
+  OWN RENDERER.** `.agents/slop/cshape/cs-patir.bend` and `cs-plantir.bend` use it, so every
+  bend-side row they print is `graphcmp.bend`'s text and not a re-implementation -- the
+  `g_flip` lesson (a hand-built fixture disagreed with the port and the port got blamed).
+  Three traps on the way: (a) a relative import from `.agents/slop/cshape/` needs
+  **`../../../tinybendygrad`**, and the wrong depth gives `no such file: .../.agents/
+  tinybendygrad/uop/ops.bend` -- the same class as the `$TMPDIR`-copy failure; (b) a `do`
+  block needs a final value-producing statement or it reports `expected : a term /
+  observed : end of input`; (c) in `def show(name: String, +f: O.Found)` the LINEAR binder
+  is `+f` and **not** `+name`, or the compiler says `expected : f / observed : f (consumed
+  more than once)`.
+
+- **CSH-9. `bend` WRITES ITS UPGRADE NOTICE TO STDOUT, AND A PROBE READING A TRANSCRIPT
+  MUST DROP IT.** `bend 2.0.35 is available: run bend update` is neither a `#` comment nor a
+  row, so a chunk parser raises `ValueError: invalid literal for int() with base 10: 'bend
+  2.0.35 is available'`. Same family as `graphcmp.py`'s `--dev NULL` producing 0 bytes on
+  stdout when captured: an instrument's own noise, arriving where a datum is expected.
+
+- **CSH-10. zsh READS A SCRIPT INCREMENTALLY, SO EDITING ONE WHILE IT RUNS CORRUPTS IT
+  INSTEAD OF FAILING.** Measured 2026-10-05 on `.agents/slop/substrate-check.sh` over 138
+  files: a block was inserted above the point the running shell had already read, and the
+  run printed a correct `ROUTE bend=138  cc=0 ...`, then died with
+  `substrate-check.sh:309: parse error near ()'` — because the shell resumed at a byte
+  offset computed against the PREVIOUS text and landed inside an embedded `python3 -c`
+  string. **141 lines of output, half a verdict, and `grep -c COLD` still answers.** A
+  truncated instrument is indistinguishable from a clean one unless you read its tail. This
+  is the shell-language member of the family `agent-core.md` keeps cataloguing (a `$c:t`
+  eaten as the `:t` modifier, `git diff` and pipes swallowing exit status): **the failure
+  mode of an instrument is a plausible number.** The remedy that generalises is not a
+  discipline note but a shape — put the runnable artifact somewhere it cannot be edited
+  under itself (`.agents/slop/probes/demo.sh` regenerates the whole demonstration), and
+  check the LAST line of any instrument's output, not just the verdict.
+
+- **CSH-11. A DENOMINATOR THAT MOVES BY ONE STILL LOOKS LIKE A DENOMINATOR.** Measured
+  2026-10-05: `find tinybendygrad -name '*.bend'` = 138, the port is 137, and the whole
+  discrepancy is `probe_f32lit.bend`. `substrate-check.sh` printed `bend=137` in both
+  worlds, because it counted whatever it was handed and had no way to say otherwise; three
+  units dropped probes into the source tree today and two were deleted before anyone read
+  the number, so the count RETURNED to its old value and the movement left no trace. The
+  fix is a **derived** criterion, never a declared one: port iff `git ls-files` knows the
+  path (a registry the router reads — a `PROBES.md`, a list of scratch names — reproduces
+  the defect one level down, because the probe that moves the count is the probe nobody
+  remembered to register). The property worth keeping is the DIRECTION OF THE OFF-SWITCH:
+  **silence requires ownership.** The only act that quiets the alarm is `git add`, so a
+  probe cannot be quiet unless it has been committed, by a named author, on purpose.
+  Corollary already measured: `.gitignore` cannot be that mechanism, because it cannot
+  untrack (its own `.gitignore:48-50` records that no-op as looking exactly like success),
+  because `probe-*.bend` needs a hyphen so `probe_f32lit.bend` slipped through, and because
+  the router's population comes from `find`, which never consults git at all.
+
+---
+
+## NON-1..NON-8 — unit `NONSHAPE`, 2026-10-05. Continues from CSH-11 above (last entry
+## in the file at the time of writing). Full text with every measurement:
+## `.agents/slop/NONSHAPE.md`. One file edited: `tinybendygrad/uop/fold.bend`, +68 lines.
+
+- **NON-1. `None` AND `None{}` ARE TWO FACTS AND NO SITE MAKES THEM THE SAME ONE.**
+  Measured over the CUSTOM arm's neighbourhood: `tinygrad/uop/ops.py:336, 340, 349, 371,
+  372, 374, 375, 399, 392, 455` — ten sites answer `None` and **every one means "NO
+  SHAPE"**. The outer `None` in `fold.bend`'s `dt_shape` means "this file produced NO
+  `Derived`", is PORT-ONLY, and the differ already spent a distinct letter on it (`?` vs
+  `R`, `graphcmp.bend`'s `shape_str`). `fold.bend:2364-2365` answered the outer `None` for
+  `CUSTOM`/`CUSTOMI` and made a node upstream describes happily read as a node the port
+  knows nothing about. **A `Maybe` in a port's fold is NOT automatically upstream's
+  `|None`.** Check which before matching on it.
+
+- **NON-2. THE PORT ALREADY HAD THE ANSWER, ON ITS OWN OP.** `OpsPYLITERAL -> late()`
+  (`fold.bend:2278`) rendered `4:void 1:R` from `ops.py:375`'s identical `return None`
+  while `CUSTOM`/`CUSTOMI` rendered `1:? 1:?` from `ops.py:371-372`'s identical `None`.
+  **Two ops, one upstream rule, two port answers** — the cheapest possible proof that an
+  arm is a MISSING ARM and not a missing capability. Before calling anything unreachable,
+  look for the sibling that already answers.
+
+- **NON-3. `if x: return None` THEN `... if xs else None` IS TWO LINES BECAUSE THE FIRST
+  IS CHECKED FIRST, AND THE ORDER IS THE WHOLE ARM.** `ops.py:371` precedes `:372`;
+  measured, a void `CUSTOM` over a SHAPED src has `_shape = None`, NOT the broadcast. An
+  implementation that arms "no shape" without arming the order answers the wrong thing on
+  exactly one graph, and no all-same fixture can see it.
+
+- **NON-4. A MISSING ARM AND A MISSING CONSTRUCTOR LOOK IDENTICAL FROM THE OUTPUT AND NEED
+  OPPOSITE FIXES.** `n(...)` vs `in(...)` was one line in `graphcmp.py`'s `carg`;
+  `OADD` vs `rd(OADD,i0)` was a hole in `O.Arg` that no arm can fill. **Separate them by
+  asking the compiler**: a probe passing a bare `Op` where an `Arg` is wanted fails with
+  `expected : O.Arg / observed : O.Op`, which is a TYPE claim, and a spelling question has
+  no such witness. MEASURED: `O.Arg` (uop/ops.bend:1054) has 19 constructors and exactly
+  TWO hold an `Op` — `AReduce{rop, num_axes}` and `AAllred{rop, dev}` — and BOTH PAIR IT.
+
+- **NON-5. "IT GATES THE OP" AND "IT GATES THE COLUMN" ARE DIFFERENT CLAIMS.** The
+  `PYLITERAL` arm does not read its arg, so `PYLITERAL` SETTLED before any of this
+  (`settled=True`, `4:void 1:R`, at the pre-fix pin). Measure the settle flag before
+  attributing an op to a blocker — a blocker claimed to gate three ops that actually gates
+  one column of one of them gets the same number and none of the credit.
+
+- **NON-6. A BASELINE TAKEN FROM A FILE YOU HAVE ALREADY CHANGED IS A CLAIM UNTIL ITS MD5
+  IS CHECKED.** Reverse the edit programmatically, print the md5, compare against the pin
+  (`e372ca226461fe2295b49a9990db0165`, reproduced EXACTLY). That is the only reason a
+  before/after pair is attributable to the edit and to nothing else, and it needs no VCS
+  checkout of a file six units are reading.
+
+- **NON-7. A SEPARATOR INSIDE YOUR OWN ROW IS A SEPARATOR YOU MUST ESCAPE.** A baseline
+  written `graph + ",".join(rows)` and read back with `split(",")` shredded **2230 rows
+  into 611 fragments** and reported **24 of 25 graphs** as having moved their row count —
+  a blast radius of 611 on a change that moved **0**. Row text contains commas
+  (`P(i0,Df32,i12,…)`, `rg(i0,XDEVICE,n(i0))`), so one row per line, and note that a
+  harness which cannot parse its own baseline produces a diff that looks exactly like a
+  plant. Same family as `flip`'s `byte-identical over two 0-byte files`: **the failure mode
+  of an instrument is a plausible number.**
+
+- **NON-8. `--check-only`'s `ALL PROOFS CHECK` IS NOT A GATE; THE PROBE IS.** The three
+  insertions into `fold.bend` typechecked on the first `--check-only` run and the arm was
+  still wrong — two Bend rejects followed (a `match` on a value computed from a parameter,
+  and a `match` on a call). What settled it was eight graphs whose `settled` flag and
+  rendered rows are the answer. `ALL PROOFS CHECK` also passes an EMPTY file.
+
+FB-1..FB-12 appended by the `frombits` unit (continues from NON-8). Positions, not
+numbers; rule numbers have collided three times.
+
+- **FB-1. A DEF MUST BE DECLARED BEFORE ITS CALLER.** `bend2/base.bend`'s own
+  `U32.divmod.go` reads leaf-first, so the intuition is the opposite. The error is
+  `expected : a filled definition (an unfilled law is a dead claim: live code cannot
+  use it)` and it names the CALLEE, not the caller, which reads backwards until you
+  have been bitten by it. MEASURED: 11 separate reorderings across one fp16 and one
+  fp8 ladder in `dtype.bend`.
+
+- **FB-2. A `U32` LITERAL IS A `U32` ONLY WHERE THE TYPE SAYS SO, AND `U32.sub(31, x)`
+  IS NOT THE PROBLEM — THE `31` IS.** `U32.sub(a: U32, b: U32)`; `31n` is rejected
+  ("expected : U32 / observed : Nat") and bare `31` is accepted, so a shift amount
+  passed to `U32.shln`/`U32.shrn` must be `Nat`-suffixed while a value passed to
+  `U32.sub`/`U32.add` must not. `U32.log2 -> Nat` and `U32.to_nat` is `U32 -> Nat`, so
+  there is NO `Nat -> U32` and `U32.from_nat` is the only bridge. That asymmetry is
+  why `fp16_f32.norm` needs `U32.from_nat(U32.log2(m))` on one side and
+  `U32.to_nat(...)` on the other.
+
+- **FB-3. `match` CANNOT SCRUTINISE A COMPUTED VALUE, A LOCAL BINDER, OR A `let`.** All
+  three are separate messages. Every `if` in a port becomes a def taking the Bool as a
+  PARAMETER, which is why the ladders in `dtype.bend` are `sat -> sat2 -> sat3 -> ...`
+  with a Bool first. Also: there is no `let`, only `x = expr`, and a `do IO<T>:`
+  block's binds are `x : T <- act`, never `let x = ...`.
+
+- **FB-4. LINEARITY: A PARAMETER OR A LOCAL BINDER READ TWICE IS AN ERROR, AND `+` IS
+  THE ONLY FIX.** "consumed more than once". It applies to `Bool` and `Nat` too, and
+  `+name = expr` at a local binder copies. This is most of the friction in porting
+  arithmetic, which reads every operand twice by construction.
+
+- **FB-5. TWO QUADRATIC TRAPS IN THE OUTPUT PATH, BOTH FREE IN JAVASCRIPT.** A linear
+  `String` accumulator carried down a recursion is REBUILT at each step, and so is a
+  `String.concat([acc, row])` fold. MEASURED in the C lane: 1024 patterns 2.0 s, 2048
+  7.6 s, 4096 30 s, 8192 did not finish. The JS lane ran 463360 rows over the same
+  driver without noticing either, because JS strings are ropes. **A green JS run is not
+  evidence about the C lane.** The fix is not "use a list" but "concatenate ONCE, at
+  the end" — `String.concat` over a list is a single pass.
+
+- **FB-6. `List.append(a, A, xs, ys)` IS `xs ++ ys` AND IS NOT CHEAP TO REPEAT.** It
+  walks its FIRST argument, so consing a small list onto a growing accumulator is O(1)
+  and the rows come out REVERSED — which is `List.append`'s documented behaviour being
+  useful for once. `List.reverse` is tail-recursive with an accumulator, so reversing
+  at the end is O(n) and fine.
+
+- **FB-7. A `Word(n)` LADDER IS THE ONLY FUEL FOR A LOOP THAT CANNOT BE A `Nat`
+  COUNT.** Bend has no tail call, so a recursion's DEPTH is its iteration count and the
+  depth ceiling is the loop bound: MEASURED, `bend x.bend -o out.c` overflows the
+  COMPILER at `Word.zero(40000n)` while still generating, and the JS runtime overflows
+  at 40000 patterns (20000 ran). `U32` is not structural so a U32 counter cannot drive
+  a recursive call at all ("expected : a decreasing self-call"). `case 1n+p WCon{b,
+  rest}` over `Word.zero(N)` is the working shape and the fuel is a runtime `Nat`
+  (`U32.to_nat`), so N comes from `IO.get_env` and not from a literal.
+
+- **FB-8. A `$TMPDIR` TREE DOES NOT COMPILE, AND SYMLINKING DOES NOT FIX IT.**
+  `book_load` realpaths every file (bend.ts:960) and derives an import's NAME as
+  `path.relative(top, file)` with `top` = the CWD, then demands
+  `/^(\/|(\.\.\/)*)(Name\/)*Name$/` (bend.ts:967). So a mutated copy in `$TMP` resolves
+  its neighbours to nothing, symlinks still come out as `../../var/folders/...`, and
+  `bend` blames the hub: `expected : an import path of plain names (the hub's files
+  import the hub's)`. **Copy the tree and run `bend` from inside the copy.**
+
+- **FB-9. `U32.shrn` AND `U32.shln` TAKE A `Nat`, AND `U32.shrn`/`U32.shl` ARE
+  ONE-BIT.** `Map.bit.u(x, k)` (`base.bend:2442`) is `U32.is_ne(U32.and(U32.shrn(x, k),
+  1), 0)` and is the bit test to reuse rather than re-deriving.
+
+- **FB-10. `Bool.or` EXISTS AND `U32.or` SHADOWS IT IN A `Bool`-TYPED CONTEXT.** The
+  error is `expected : U32 / observed : Bool` pointing at `U32.or`, which reads like a
+  missing def and is really a resolution order.
+
+- **FB-11. `List.foldl`'s ARGUMENTS ARE `~a, ~A, ~B, ~f` AND ALL FOUR ARE TYPED
+  APPLICATIONS**, not bare values: `List.foldl(~&2, ~String, ~String, f, xs, "")`.
+  `String(<quant>)` is not a type and gives `expected : a function type / observed :
+  Data`.
+
+- **FB-12. `IO.try` DOES NOT UNWRAP A `Sigma`, AND `IO.get_env`'s SUCCESS VALUE IS A
+  `String`.** `IO.get_env(name) -> IO(Result<&1,&1, U32 & String, String>)` puts the
+  PAIR IN THE ERROR SLOT. Use `helpers.bend:299 getenv_int(k, d)`, which already
+  parses one; re-deriving it is what this cost.
+
+- **JFP-1. A SWEEP CENTRE READ OUT OF THE CODE UNDER TEST IS A TRANSCRIPT.**
+  `fp8fix/gen_fp8.py:35` builds its overflow-threshold sweep from `dtype.c`'s own
+  `OVF`, so the defect it was built to catch was IN the fixture; it worked only
+  because `t-1,t,t+1,t+2` happens to include `t`. `.agents/slop/jsfp8/gate.py`
+  derives its centres from `tinygrad`'s `_fp8_cfg` and sweeps **both** f32
+  spellings of each, so a tree that moves back is counted rather than
+  accommodated.
+
+- **JFP-2. `math.nextafter` IN f64 IS A NO-OP AFTER A CAST TO f32.** The f64 ULP
+  is ~2^-42 relative and the f32 ULP ~2^-15, so asking for "the f64 neighbour"
+  and then casting gives the SAME pattern and a fixture that claims a two-point
+  coverage it does not have. The predecessor must be taken in the **f32** domain —
+  for a positive finite pattern, `p - 1`. This is how `0x47700000` and
+  `0x476fffff` are the two spellings of dtype.py's threshold, and the pair the C
+  lane stores.
+
+- **JFP-3. `_fp8_cfg`'s magnitudes are f64 BIT PATTERNS AS INTS, not floats.**
+  `dtype.py:237-242` stores `0x407D000000000000` and `struct.pack("<f", …)` on
+  that int encodes the *bit pattern* as a float, so the sweep silently centres on
+  `0x5e80fa00` instead of `0x43e80000`. `struct.unpack("<d",
+  struct.pack("<Q", t))` first. Every row then reads MISMATCH, so the bug is loud
+  — which is the only reason it is worth stating.
+
+- **JFP-4. `Object.is(NaN, NaN)` IS TRUE FOR EVERY PAIR OF NaNs, so an
+  `Object.is` test of NaN identity CANNOT FAIL.** `.agents/slop/jsfp8/
+  nan_census.mjs` measured a `true` from a tautological assertion before
+  replacing it with a `DataView` read of the two doubles' own 64-bit patterns.
+  A change-detector test considered harmful, committed anyway by a first draft.
+
+- **JFP-5. THE JS LANE DOES KEEP QUIET NaN PAYLOADS AND SIGNS ON THE TYPED-ARRAY
+  PATH, AND LOSES EXACTLY THE SIGNALLING ONES.** Measured EXHAUSTIVELY over every
+  f32 NaN pattern (`comp.ts:539-546`, copied in verbatim):
+  **8,388,608 / 16,777,214 kept; `signallingKept` 0 of 8,388,606.** Two quiet
+  NaNs are two different JS doubles. So `tinybendygrad/base.bend:42-44`'s "JS
+  collapses EVERY NaN onto `0x7FC00000` — payload and sign both gone" is FALSE on
+  node v26.8.1 (darwin), and `norm/canon.py:56-62`'s generalisation from four
+  quiet probes is true for quiet and false for signalling. `base.bend` is
+  DO-NOT-TOUCH; reported. **The unrepairable part is real: the f32→f64 widening
+  quiets an sNaN, and a NaN produced by JS ARITHMETIC is canonical — both are in
+  the runtime, so no port-side definition can repair them.**
+
+- **JFP-6. A SEAM WHOSE RESULT IS PURE IS A DEAD REGISTRATION, AND A GATE THAT
+  DRIVES IT IS A GATE ON NOTHING.** `dtype.bend:916 def Dt.fp8_to(bits, +kind) ->
+  F32` imports no `.js`, so `runtime/dtype.js:202 io_eff(CID(Dt.fp8_to), …)` can
+  never be looked up: no program defines that CID. `runtime/dtype.js:187-190`'s
+  bf16/fp16 registrations are the same shape. **A `.js`/`.c` unit gate must reach
+  the FUNCTION, not the seam** — `jsfp8/drive.mjs` loads the live file under node
+  and appends exactly one line, and `gate.py` ASSERTS the appended text equals
+  that line so "we drove the tree" is checked.
+
+## ARGL-1..ARGL-8 — unit `ARGLIT`, 2026-10-05. Continues from NON-8 above (the last
+## entry in this file at the time of writing). Full text with every measurement and every
+## transcript path: `.agents/slop/ARGLIT.md`. FOUR files edited: `uop/ops.bend`
+## (`AOpLit` + the corrected `Arg` table), `uop/render.bend` (ONE arm, a stated
+## DO-NOT-TOUCH exception), `.agents/slop/graphcmp.py` (the `carg` arm), and
+## `.agents/slop/graphcmp.bend` (one arm).
+
+* **ARGL-1. A MISSING ARM AND A MISSING CONSTRUCTOR DIFFER BY WHETHER THE COMPILER CAN
+  NAME IT — AND A TYPE CHANGE'S BLAST RADIUS IS THE IMPORTERS, NOT THE DECLARER.**
+  `O.Arg` had 19 constructors, exactly two held an `Op` and both PAIRED it, so
+  `upat.py:26`'s bare `Ops` was unspellable (`ns-oparg.bend`: `expected : O.Arg /
+  observed : O.Op`). **The type could carry it; two hand-written exhaustive `match`es said
+  it could not.** Adding the 20th turned `codegen/__init__.bend` COLD — not at the change,
+  but three files away, because `render.bend:698`'s `arg_repr` matches `Arg` exhaustively
+  and `codegen/__init__.bend:57` imports it. MEASURED by md5-verified revert
+  (`d6610683274a9b809703f7c83a4768fa` == the pre-edit pin -> `ALL PROOFS CHECK`).
+  **WHEN A TYPE GAINS A CONSTRUCTOR, THE FIRST INSTRUMENT IS `--check-only` OVER EVERY
+  IMPORTER, NOT THE DECLARING FILE.**
+* **ARGL-2. `ALL PROOFS CHECK` IS NOT A GATE; THE PLANT IS. AND A PLANTED *CONSTRUCTOR*
+  NAMES THE HOLE AS A LIST.** Deleting `AOpLit` makes the compiler print
+  `expected : a declared constructor (...Arg declares ANone, ...ABad)` — all nineteen
+  survivors, enumerated. That single line is worth more than any prose description of the
+  hole. Three plants fired: the deleted constructor (this line), the removed `carg` arm
+  (verdict 2 -> 4 of 24, restored with md5 == pin, checked in a `finally`), and
+  `AOpLit{op: U32}` (`expected : Op / observed : U32`, `Context: y1 : U32`).
+* **ARGL-3. A GATE THAT FEEDS THE CODE UNDER TEST ITS OWN INPUT CANNOT FAIL, AND IT WILL
+  LOOK LIKE IT CAN.** `al-transcription.py`'s first version asked whether a `(0,2,1)` IT had
+  just constructed was a tuple of ints, and printed `ATuple FLIP TRUE` **on the planted
+  line**. This is `agent-core.md`'s "generate every `py=` expectation BY CALLING CPYTHON"
+  arriving as a TYPE error rather than a value error: build the value by calling upstream
+  (`Tensor.flip` -> `(True, False)`) and the gate fired on the first try.
+* **ARGL-4. A TRANSCRIPTION IS A CLAIM ABOUT ELEMENT TYPES, NOT ABOUT "IS IT A TUPLE".**
+  FLIP's arg IS a tuple — of bools (`movement.py:253`) — so `isinstance(x, tuple)` PASSES the
+  mis-transcribed line. `tuple[bool, ...]` and `tuple[int, ...]` are different claims and that
+  test cannot tell them apart. The only form that fires is
+  `all(isinstance(e, int) and not isinstance(e, bool) for e in arg)`. **This is the Bend-side
+  spelling of "a `Bool` is not an `Int`", and it is the reason `eq_arg.ABlob`'s comment
+  distinguishes content from length.**
+* **ARGL-5. TWO FIXES ARE SEPARABLE WHEN THEIR MISMATCHES ARE DIFFERENT ROWS — MEASURE IT AS
+  A 2x2 WITH THE DENOMINATOR IN EVERY CELL.** Marginal sums cannot distinguish "additive"
+  from "one fix masking the other". Here: **5 / 4 / 3 / 2 of 24 field-records**
+  (`4 py rows x 6 fields`), the `pre-arm` cell measured rather than inferred, and the two
+  fixes touching DISJOINT nodes — 1 and 3 carry the `(str, DType)` pair, node 2 the bare
+  `Op`. **Two fixes in one arm would have measured a sum with no way to attribute it.**
+* **ARGL-6. AN EXHAUSTIVE `match` IS A SPECIFICATION, AND A COMMENT QUOTING IT IS A SECOND
+  COPY.** `graphcmp.py` justified a live refusal by quoting `ops.bend`'s `Arg` table line,
+  and the quote was FALSE — one mis-transcription load-bearing in two files. **When a
+  comment cites a table, the table is duplicated and both copies rot. Fix the table and grep
+  for the quotation, in both directions.** Also found: a FIXTURE had copied the wrong VALUE,
+  `cshape/cs-plantir.bend:56` building a PYLITERAL node as `O.ATuple{[0]}`.
+* **ARGL-7. AN UNREACHABLE ROW IS NEITHER A PASS NOR A FAILURE.** 14 of `ops.bend`'s op names
+  are UNREACHED by the three real graphs available; `AReduce`/`AParam`/`ABlob` have no rule
+  in this gate. Both are printed and counted apart, and reported next to the verdict.
+  **Printing a gate's denominator without its unreached count turns an unmeasured claim into
+  an apparent measurement.**
+* **ARGL-8. A REFUSAL CAN REST ON A FALSE PREMISE AND STILL BE RIGHT.** `graphcmp.py`'s
+  `--plant bool` node was correct — the port's `ATuple` is `List<&2, U32>` and cannot spell a
+  bool — while the comment citing `ops.bend` for it was wrong. **When a citation is corrected,
+  check whether the conclusion it supported survives; do not assume either way.** Related and
+  measured: `substrate-check.sh` reports `SUBSTRATE CLEAN ... of 0 file(s)` **and no file
+  arguments**, and NONSHAPE's note that it does not run (`syntax error … line 245`) is stale.
+  Invoke it as `perl -e 'alarm N; exec @ARGV' zsh substrate-check.sh <files>`.
+
+================================================================================
+NORM unit, 2026-10-05.  CONTINUES FROM WHATEVER POSITION PRECEDES THIS BLOCK.
+Cite POSITIONS, never numbers: rule numbers have collided three times already.
+
+- **`F32.show` IS `f32_show` WITH NO `.0`.** `references/bend/bend2/bend.ts:1197`
+  ends `f32_show` with `.replace(/^-?\d+(?=e|$)/, "$&.0")`, and that IS the emitted
+  function -- but the `.0` you see in a `.bend` diagnostic comes from a DIFFERENT
+  call site, `references/bend/bend2/comp.ts:788`, the printer `io_exit` hands to.
+  MEASURED through a compiled probe: `F32.show(1.0)` is `1` and
+  `F32.show(448.0)` is `448`.  Do not "fix" a gate that compares `448` to `448.0`
+  by adding a point; route both sides through one canonical spelling instead.
+
+- **`f32_show` PRINTS THE SHORTEST FORM THAT READS BACK, UP TO 9 DIGITS**, and the
+  loop cannot exit until the round trip holds (`bend.ts:1197`:
+  `for (p = 1; x === x && p <= 9 && f32_round(s) !== x; p += 1)`).  That is WHY a
+  Python gate may parse an `F32.show` string and re-round it at f32 and get the
+  original pattern back: MEASURED over 647,170 stratified patterns, 0 lost
+  (`.agents/slop/norm/canon.selftest.py`).  A re-spelling of `f32_show` is not
+  needed and is not safe -- `JSL2-5` records `h * 2**32 + l` looking like a
+  re-spelling and moving 15 of 30 rows.
+
+- **`F32.bits(F32.from_bits(p)) == p` FOR EVERY NaN, ON BOTH LANES, ON THIS
+  SUBSTRATE.** `tinybendygrad/base.bend:42` says the JS lane collapses every NaN
+  onto `0x7FC00000`.  MEASURED with `node` v26.8.1 and with `cc`: `0x7FC00001`
+  reads back as `2143289345` on both.  The typed-array round trip at
+  `comp.ts:537-542` carries the payload.  What does NOT carry it is a NaN
+  MANUFACTURED BY JAVASCRIPT: `0/0` packs as `0x7fc00000`.  So the rule is
+  NARROWER than base.bend states and it is the one a gate may rely on: A NaN THAT
+  CROSSED AS A PATTERN KEEPS ITS PAYLOAD; A NaN MADE BY ARITHMETIC DOES NOT, AND
+  NOTHING DOWNSTREAM CAN TELL THEM APART.  `base.bend` is not this unit's file --
+  reported, not edited.
+
+- **`IO.pure(F32, ...)` DOES NOT COMPILE.** `IO.pure(-A: Type, x: A)` and `F32` in
+  EXPRESSION position is the CONSTRUCTOR, so the error is `expected : F32 /
+  observed : @-R:Type -> @k:(@_:F32 -> IO.OP<R>) -> IO.OP<R>`.  A PURE call needs no
+  lift in an ARGUMENT position -- `IO.print(f(IO.pure_def()))` compiles and
+  `v : F32 <- IO.pure_def()` does not.  `jstage/jsstage.py:218` emits
+  `IO.pure({ty}, {ex})` with `ty = "F32"`, so that lane has the same shape in it.
+
+- **A BEND PARAMETER IS CONSUMED BY ITS FIRST USE**, and `+v` is how you read it
+  twice: `def row(+v: F32) -> String: String.concat([F32.show(v), U32.show(F32.bits(v))])`
+  compiles where `v : F32` used twice is `expected : v / observed : v (consumed
+  more than once)`.  So a driver that needs BOTH `F32.show` and `F32.bits` of one
+  value must take it in a `+` binder or read it through two one-use helpers.
+
+- **`rows` RECURS ONCE PER PATTERN AND NODE'S STACK IS THE LIMIT.** A 65,536-row
+  sweep of `f32show.bend` dies with `bend: memory fault (machine stack overflow?)`;
+  4,096 rows per process runs.  `frombits/gate_dtype.bend:8-13` measured the same
+  shape of cost for the same reason, and JavaScript's rope strings make the
+  quadratic-accumulator traps free -- so a JS-lane sweep this size would not have
+  noticed either.
+
+- **CS2-1 -- AN EMPTY C FILE IS A VALID TRANSLATION UNIT, SO `cc` EXITS 0 ON A REFUSAL.**
+  Any "cc accepts" count over rows whose answer can be `""` counts the empties as
+  compiling.  Measured over `renderer/cstyle.bend`'s 227 rows: **5 of 8** naive
+  acceptances were refusals (`Ops.FDIV` on four devices, and the four ops
+  `ClangRenderer` deletes at `tinygrad/renderer/cstyle.py:291`).  Subtract them and
+  print how many you subtracted, or the number is a count of nothing.
+
+- **CS2-2 -- `aligned_alloc(64, n)` REQUIRES `n` TO BE A MULTIPLE OF 64** (C11
+  7.22.3.1).  Asking for 16 bytes of 64-byte alignment returns NULL, and every
+  kernel row then died on `SIGSEGV` (`rc=-11`), which reads as "the kernel
+  crashed" and is really "the harness asked for something illegal".
+
+- **CS2-3 -- A KERNEL THAT STORES THROUGH `float4*` INTO A `float buf[N]` STACK ARRAY
+  LOSES THE STORE AT `-O2`.** Two causes at once: `buf` is not 16-byte aligned, so
+  the store is UB; and nothing in the TU says the callee's store reaches the later
+  read of `buf[0]`, so clang may answer that read from the register the initialiser
+  left there.  The observed symptom is the INPUT's own bits coming back -- the
+  harness looked like it was proving the kernel wrong.  `aligned_alloc` removes the
+  whole class, because the compiler cannot reason about it.
+
+- **CS2-4 -- `-ffreestanding` REMOVES THE C BUILTINS, AND `CStyleLanguage` EMITS BARE
+  `sqrt(X)`.**  Upstream's CPU flags include `-ffreestanding`
+  (`tinygrad/runtime/support/compiler_cpu.py:14-17`) and its own CPU renderer
+  replaces the base table's math with `__builtin_*` (`cstyle.py:293-294`), so **no
+  real device ever compiles a bare `sqrt(X)`** and `render_kernel` emits no
+  `#include` for it.  A harness instantiating a BASE `cfo` row must supply
+  `math.h` itself, and should say so in its output.
+
+- **CS2-5 -- A ROW'S VALUE CAN NAME IDENTIFIERS ITS OWN SIGNATURE DOES NOT DECLARE.**
+  `g_bs_alu()` builds scalar parameters while `g_kernel()` reads `data1_4`/`data0_4`,
+  so `kern2 BASE alu` and `kern2 CLANG alu` are byte-identical with CPython and still
+  describe a program that does not exist; `cc` says `use of undeclared identifier
+  'data1_4'`.  A row agreeing with an oracle byte-for-byte is not evidence the row
+  is well-formed.
+
+- **CS2-6 -- A ROW'S OP AND ITS DTYPE TAG CANNOT MEET.**  `AND`, `CMOD`, `OR`, `SHL`,
+  `SHR`, `XOR` on an `f32` tag: `cc` says *"invalid operands to binary expression
+  ('float' ...)"*.  Upstream never renders those pairings.  The five that DO compile
+  and run (`CDIV`, `FDIV`, `CMPEQ`, `CMPLT`, `CMPNE`) compute a FLOAT operation while
+  appearing to test an integer one: a row that agrees because both sides computed
+  something ELSE is a row that tests nothing.  Label it; do not count it silently.
+
+- **OPS-1 -- A COLD FILE THAT IMPORTS A COLD FILE HAS TWO CAUSES, AND THE FIXTURE
+  IS THE SUBSTRATE MOVING UNDER A MEASUREMENT.**  `runtime/ops_python.bend` was
+  COLD with **zero own laws**: all 8 red defs were `../dtype.*`, name for name
+  identical to `dtype.bend`'s own 8.  Mid-measurement the unit owning `dtype.bend`
+  filled all eight and the file went WARM, taking `nn/{__init__,optim,state,onnx}`,
+  `runtime/zzprobe2`, `test/dtype_oracle`, `test/_probe/v5` and `dtype.bend` itself
+  with it: **the tree's cold set went 14 of 137 -> 6 of 137.**  So a cold verdict
+  is only valid with the *inheriting* file named, and the inherited set has to be
+  read off `--check-only` at the moment of the verdict, not recalled from a note.
+  `dtype.bend` 8 -> 0 also means agent-core.md's 14-file table is stale: `uop/upat.bend`
+  is now cold and `upat.bend:397 arg_int` (`expected : cases for ops.AOpLit`) is a
+  completeness defect, NOT a foreign-code notice -- a third verdict the two
+  instruments do not share.
+- **OPS-2 -- AN UNCALLED INHERITED LAW IS AN UNUSED DOOR, AND A CLOSED ISLAND OF
+  THEM IS ONE CAUSE WITH A NAME.**  Of `dtype.bend`'s 8: `Dt.i64_trunc`,
+  `Dt.i64_floor_div`, `Dt.i64_floor_mod`, `Dt.i64_cdiv`, `Dt.i64_cmod`,
+  `Dt.i64_ceildiv` and `float_to_fp8` had **ZERO call sites** treewide -- every
+  grep hit was the declaration or prose in another file's header -- and
+  `Dt.fp8_from` had exactly ONE, from inside `float_to_fp8`.  **Seven of eight
+  walls, plus the one door, were one island rooted at a function nothing calls.**
+  Count call sites before calling a red set a wall: `grep -rn` over `*.bend` and
+  subtract the declaration line, or you will read an unreachable island as 8 causes.
+- **OPS-3 -- THE FIGURE `BW-GRAPH.md` QUOTES FOR `bw` WAS NEVER `bw`'s.**  `bw`
+  reaches **ops-reached=10/10 of 77** (re-measured, `AGREE`, 0 residuals); 35 was a
+  17-GRAPH CORPUS figure.  The corpus over the 25 graphs `graphcmp.GRAPHS` declares
+  today is **60 of 77**, by set UNION (the per-graph sum is 182 and is wrong --
+  it counts `BUFFER` once per graph).  Reproduce with
+  `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/opspy/corpus.py`.
+  **Two ways to get that script wrong, both measured:** `graphcmp` defers every
+  tinygrad import into `load_tinygrad()` and injects the names into ITS OWN
+  `globals()`, so a caller that imports the module without calling it gets
+  `NameError: name 'UOp' is not defined` from all 25 graphs -- and reports
+  **"0 of 77" beside a perfectly healthy denominator**; and `build()` returns
+  THREE dicts, so `a, b = build(...)` raises and looks like a broken graph.
+- **OPS-4 -- A HARNESS THAT PRINTS A ROW COUNT AFTER A COMPILE ERROR IS THE PLANT
+  DISARMED.**  Three measured in one run of `opspy/mutate.sh`: (a) `bend -o` on a
+  file that does not compile leaves the PREVIOUS exe in place, so an E2E lane was
+  handed the baseline build and reported "6/10" for a mutation that never ran;
+  (b) `--check-only` naming 4 red defs instead of 8 was counted as "moved=85 of
+  85" -- a whole-file failure read as 85 changed answers; (c) `diff` against a
+  MISSING file prints to stderr, yields no output lines, and `grep -c '^[<>]'`
+  answers **0**, i.e. "BYTE-IDENTICAL" for a run that never happened.  So: `rm -f`
+  the exe before every build, gate the row count on the *derived* baseline red
+  count, and assert every compared file is non-empty before comparing it.
+- **OPS-5 -- BEND REFUSES A FORWARD REFERENCE, SO A DISARM RESTORED IN PLACE MUST
+  BE RESTORED WHERE IT WAS.**  `opspy/verify-dedup.sh` put the pre-dedup `w32`/
+  `f32_of` pair back by APPENDING it; both call sites sit at `:551`/`:611` and the
+  pair has to sit above them, so the "BEFORE" arm never built and the first run
+  reported the dedup as `**DIFFERS**` -- a movement manufactured by the harness.
+  A respelling that does not compile is not a measurement.
+- **OPS-6 -- THE FILE'S OWN 85-ROW GATE IS BLIND TO THE BITCAST, AND THE E2E GATE
+  IS NOT.**  `ops_python.bend`'s `gate()` rows are all `pyr_*`/`pyc_*`/`pywma_*`/
+  `pyd_*` -- the RENDERER/DEVICE half (`render.of`, `cores_of`, `supported.keep`,
+  `core_find`, `B64_EQ`) -- and none of them reaches `f_of` or `elem_c`.  Planting
+  `U32.to_f32` for `F32.from_bits` moved **0 of 85** own rows and took the E2E gate
+  from **6/10 to 1/10** (compiling clean, as FROMBITS also measured).  A file's own
+  gate can be 85 rows wide and cover half the file; say which half.

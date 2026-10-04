@@ -4,6 +4,10 @@
 `GRAPHS`, built node-for-node in `.agents/slop/graphcmp.bend`, and it reaches **`AGREE` at
 field-record level with every ledger entry at 0/0**. All 17 graphs re-run; the corpus is
 **35 of 77 ops**.
+**⚠ THAT LAST FIGURE IS A 17-GRAPH BASELINE AND THE CORPUS IS NOW 24 GRAPHS / 59 of 77**
+(re-measured 2026-10-04 by `notes-sweep`; see `../notes-sweep/01-GROUND-TRUTH.md`). `bw`
+itself re-measured **AGREE 32/32** and is unchanged; only the corpus-wide figure beside it
+aged. **The command below still reproduces this graph's own numbers exactly.**
 
     $ env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py diff --graph bw
     # py rows=32  bend rows=32  plant=none  mode=ORDERED
@@ -275,7 +279,12 @@ field would have taken six arguments happily and written a wrong graph.
 4. **§0's "TWO GRAPHS DISAGREE" still holds** (`lin`, `loop`), and `bw` is a THIRD AGREE.
 5. **`graphcmp-run.sh`'s `$ALL` needs `bw:AGREE` and its graph loop needs `bw`** — a graph in
    `GRAPHS` that `$ALL` does not enumerate is a graph no run asserts.
-6. **`graphcmp-repro.sh`'s health gate reads `graphs-agree=14`** and must become **15**, and
+6. **⚠ SUPERSEDED HANDOFF ITEM — do not act on "must become 15".** Re-measured 2026-10-04
+   by `notes-sweep`: the pin's correct value is **`22`**, not 15 and not 14 (22 AGREE of 24
+   graphs; DISAGREE on `lin` and `loop` only). **The pin also has two siblings that are
+   equally wrong** — `graphs=16` (now **24**) and `byte-identical=14` (now **21**) — so the
+   gate refuses a correct run for three reasons at once.
+   **`graphcmp-repro.sh`'s health gate reads `graphs-agree=14`** and must become **15**, and
    its "sixteen graphs" text becomes seventeen. MEASURED in §6 that all 17 re-run correctly
    with `bw` in place.
 

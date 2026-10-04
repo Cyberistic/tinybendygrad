@@ -178,6 +178,77 @@ the 16, `clang_EvalResult_getAsDouble`, has **zero call sites** in `tinygrad/` a
 `tinybendygrad/`. That is the `math.pi` shape `W64.md` found for `math.*`: a
 blocked name with nothing behind it.
 
+## ADDENDUM — a re-run, and two of this file's own walls refuted
+
+Re-ran on **Bend 2.0.34**, 2026-10-04. **Both gates reproduce**: `gen_i64.py`
+prints `BASE PASS pass=170 diverge=2 fail=0`, `PLANT 7 rows moved, all on cmod`,
+`DISARM 0 rows moved`, `rows present 173 / rows expected 173`; `emit_halves.py`
+under `LIBCLANG_PATH=/Library/Developer/CommandLineTools/usr/lib/libclang.dylib`
+prints `built 15/16`, `port line == CPython line: 15 of 15`, `PLANT 1 row moved`,
+`DISARM 0 rows moved`. So items 1-7 below stand as written.
+
+Two claims in the section above did not survive, and both were load-bearing.
+
+### REFUTED 1 — "the C lane has therefore never been built" (item 4, build fact 1)
+
+**It builds, links, and runs.** Bend inlines an imported `.c` into the emitted C
+*after* textually expanding `CID(x)` to the mangled macro name, so the C
+preprocessor sees `#ifdef CID__________TINYBENDYGRAD_DTYPE_DT_BF16` — a valid test
+— and not an invocation. Three measurements, in `notes/bend2-constraints.md`
+`W64M-2`: a one-seam program emits all 11 guards with exactly 2 CIDs defined,
+`bend -o` rc=0 and `cc` rc=0, and the one called seam's `io_eff` registration
+survives while its 8 siblings are compiled out; a zero-seam program does not inline
+`dtype.c` at all.
+
+**And that flips the item's conclusion from safe to dangerous.** If the C lane had
+truly never been built, the reader below could not have been exercised either. It
+can, and it is wrong.
+
+### REFUTED 2 — "blocked on being `IO(..)`" was true, and still was not the whole defect
+
+The six `Dt.i64_*` were not blocked; they were **returning wrong numbers**.
+`runtime/dtype.c:205-206` reads an `H.I64` argument as `f[0], f[1]` — two words of
+the argument frame. It receives instead **one Term pointing at the record**, so it
+reads the two **operands** where it expected the two **halves** of one.
+
+```
+Dt.i64_trunc(H.i64_of_hi_lo(0, 7))   ->   51413338:51413722     (two allocation addresses)
+```
+
+Measured against `tinygrad/helpers.py:65-75` over 30 rows (6 defs x 5 fixtures,
+incl. `int64.min` and every sign combination), `notes` `W64M-1`/`W64M-3`:
+
+| reader | agrees with CPython |
+|---|---|
+| as shipped | **0 / 30** |
+| `i64_of` fixed | **30 / 30** |
+
+Plant (the shipped reader) moves 30/30; disarm (`| 0u`, same function) moves 0.
+The discriminator is derived and needs no oracle: `i64_trunc` is the **identity**,
+so apply two readers to the same bytes and exactly one is it.
+
+`pack64` (`dtype.c:209-211`, `io_tup(e, hi, lo)`) is **correct** — which is why
+only the argument direction was ever in doubt, and why the earlier reading of this
+file ("a pair cannot be returned from one foreign def", item 6) is wrong on its
+second half too: a pair can be *returned*, just not *received*.
+
+### TWO ROUTES, NOT ONE — pick both
+
+- **`dtype-i64.patch` (71 lines of pure Bend)** — still required. `UOp._min_max` is
+  a pure fold in a Kahn worklist and cannot call an effect at all
+  (`mixin/dtype.bend:52-60`), so removing the effects is the only way that wall
+  closes.
+- **`dtype-c-i64.patch` (6 lines: `i64_of` takes `Env`+`Term`, uses `ctr_take`,
+  and 7 call sites take `f[0]`/`f[1]`)** — also required. The fp8/f16/bf16 seams
+  are 32-bit and another unit's, so the C lane stays, and a lane that is present
+  and wrong is worse than one that is absent. **NEITHER PATCH IS APPLIED TO THE
+  LIVE TREE.** Both are beside this file; both are verified by `gen_seam.py` on a
+  copy.
+
+`tinybendygrad/runtime/dtype.js:136-138` reads `p.fst`/`p.snd`, the same flat
+assumption, and is **not executed** by either gate — reported from the source
+alone, and it is the next thing to measure.
+
 ## What is left, with `file:line`
 
 1. **`i64_mul` does not exist.** `mixin/dtype.bend:56`. Upstream `cmod` is
@@ -192,10 +263,12 @@ blocked name with nothing behind it.
 3. **`clang_getOffsetOfBase` is absent from libclang 17.0.0.** Library version,
    not a language wall. `tinygrad/runtime/autogen/libclang.py` is
    `CINDEX_VERSION_MINOR = 64`.
-4. **`runtime/dtype.c`'s `#ifdef CID(...)` guards cannot compile** (M-2 build fact
-   1). Reported, not fixed: that file is read-only for this unit. The C lane of
-   the dtype seam has therefore never been built, which is worth knowing before
-   anyone reads a green `--check-only` as a green C lane.
+4. ~~**`runtime/dtype.c`'s `#ifdef CID(...)` guards cannot compile** (M-2 build
+   fact 1).~~ **REFUTED BY THE ADDENDUM — do not act on this row.** The guards
+   work and the C lane builds, links and runs. The live consequence is worse than
+   what this row claimed: `runtime/dtype.c:205-206` reads the six `Dt.i64_*`
+   arguments wrongly and they agree with CPython on **0 of 30** rows. Fix:
+   `.agents/slop/w64mile/dtype-c-i64.patch`.
 5. **`runtime/autogen/libclang.bend` still declares `I64` / `U64` / `F64`** at
    `libclang.bend:617,620,644,647,746,752,764,770,773,782,806,1121,1151,1157,1160,1334`.
    That is a *third* route beside M-1's pure `H.I64` and M-2's two `U32` halves,
@@ -203,11 +276,15 @@ blocked name with nothing behind it.
    U32`). The emitter mints one `type` row per ctypes spelling, which is the known
    recorded defect, but the **declarations** are still there. Someone should decide
    which of the three routes is the port's.
-6. **`W64.md`'s claim that a 64-bit pair cannot be returned from one foreign def
-   is contradicted by `runtime/dtype.c:210`**, which returns `io_tup(e, hi, lo)` —
-   a tuple Term. M-2 uses the two-def shape because that is the shape W-4 ran, and
-   a one-def form would halve the cost. **Not measured.** That is the cheapest
-   open question in this unit.
+6. **`W64.md`'s claim that a 64-bit pair cannot cross one foreign def in EITHER
+   direction is contradicted by `runtime/dtype.c:209-211`**, which RETURNS a pair
+   as `io_tup(e, hi, lo)` and which `gen_wire.py` measures to be **correct** on all
+   8 fixtures. M-2 uses the two-def shape because that is the shape W-4 ran, and a
+   one-def form would halve the cost. **The return half is now measured; the
+   one-def *form* is still not built.** Note the asymmetry the addendum pins down:
+   a pair can be RETURNED as one tuple Term and cannot be RECEIVED as two frame
+   words — so a one-def form is not simply `io_tup`, it is `io_tup` in and
+   `ctr_take` out.
 7. **`ceildiv(x, 0)` is a divergence, not a pass.** `tinygrad/helpers.py:66-69`
    has no zero guard, so CPython raises `ZeroDivisionError`; `runtime/dtype.c:236`
    and `runtime/dtype.js:171` answer 0 and so do the new pure defs. Counted as

@@ -20,6 +20,27 @@ tree's canonical 64-bit value. It is the only one of the three that is a value.*
 | two `U32` halves over FFI | `runtime/dtype.c:205`, `runtime/dtype.js:136` | one seam, 7 defs | none — **it is not a type.** `helpers.bend:2099` already names it: `data64(x: I64) -> U32 & U32` |
 | nullary `I64`/`U64`/`F64` | `runtime/autogen/libclang.bend:95,98,101` | **13 uses, 1 file, 0 elsewhere** | **none.** `I64{}` has no constructor that carries a value |
 
+**⚠ THE TWO COUNTS IN THE `H.I64` ROW ARE NOW WRONG, AND THE CITATIONS ARE NOT.**
+Re-measured 2026-10-04 by `notes-sweep`: **678 qualified `H.I64` uses is ✅ still exactly
+678**, but the file count is **39, not 41** (`grep -rl 'H\.I64' tinybendygrad --include='*.bend' | wc -l`).
+The **`40 defs`** is stale and was not reproduced: `grep -cE '^def i64_[a-z0-9_]*\('
+tinybendygrad/helpers.bend` reads **23**, and "40" would have to count nested `def`s too —
+**STALE — not re-measured, not guessed.** **So: the numerator that mattered (678 uses)
+held, the smaller denominator next to it did not, and the "40 defs" is unverified.** Same
+shape as `agent-core.md`'s `14 of the 136`. Also note the `libclang.bend:95,98,101`
+citation is now **wrong** — those lines are a `Ty` record, a `CXIdxLoc{}` and a blank;
+**STALE — not re-measured** which lines now carry the nullary uses (16 tokens: `I64` 11,
+`U64` 4, `F64` 1).
+
+**THE `i64_*` LINE NUMBERS RE-VERIFIED 2026-10-04 by `notes-sweep` — ALL EIGHT ARE STILL
+CORRECT**, which is worth stating because `helpers.bend` is four units' code and this is the
+only note in the tree that cites it by line. `i64_cmp` `:1688`, `i64_add` `:1720`,
+`i64_sub` `:1725`, `i64_neg` `:1785`, `i64_shl` `:1819`, `i64_div` `:1969`, `i64_dec`
+`:2060`, `i64_mod` `:2062`, and `data64` `:2099` (`-> U32 & U32`, as this row says). ✅
+**The two `runtime/dtype.*` citations were NOT re-verified — `runtime/dtype.js` is owned by
+another live unit that is editing it right now, and `notes-sweep` will not certify a line in
+a file that is moving. STALE by construction; re-read before citing.**
+
 The middle row is not a rival at all: `dtype.c:205` already *opens* it as
 `ctr_take(e, t, 2, o)` on an `H.I64`, so the two halves are `H.I64`'s two **fields** in
 transport. The e2e `f64` stage is the same fact one level down — a `double` in a WebGPU
@@ -182,6 +203,18 @@ readings to the same bytes and exactly one of them is it.
 | S-5 | `agent-core.md:149`'s `duplicate declaration: U32` is **stale**: the wall was closed and the file now reports only its 11 foreign defs | `agent-core.md:149` vs `tinybendygrad/runtime/autogen/libclang.bend` today |
 | S-6 | `renderer/amd/dsl.bend:64` cites `helpers.bend:1167` for `I64{hi: U32, lo: U32}`. Line 1167 is a comment about run emission; the declaration is at `:1639-1640` | `renderer/amd/dsl.bend:64` |
 | S-7 | `ffi-lane.bend:20` points the reader at `.agents/slop/clangshim/cl-port-gate.sh`, which **does not exist**. The gate is `cl-port-gate.py` | `.agents/slop/clangshim/ffi-lane.bend:20` |
+
+**BOTH S-6 AND S-7 RE-VERIFIED 2026-10-04 by `notes-sweep` — both are STILL TRUE, and the
+defects they name are STILL LIVE.** Checked against the tree, not against a note:
+`tinybendygrad/renderer/amd/dsl.bend:64` still reads
+``# 2. `H.I64` EXISTS (helpers.bend:1167, `I64{hi: U32, lo: U32}`)``;
+`helpers.bend:1167` is still the run-emission comment; and `helpers.bend:1639-1640` is
+``type I64 is Data:`` / `I64{hi: U32, lo: U32}` — **the declaration, at the cited
+correction.** `.agents/slop/clangshim/ffi-lane.bend:20` still names `cl-port-gate.sh`, and
+`ls .agents/slop/clangshim/` shows `cl-port-gate.py` and **no `.sh`**.
+**Neither file is this unit's to edit (`.bend` is out of scope), so both are reported
+unfixed — which is the correct outcome for a note whose content is a true claim about a
+defect someone else owns.**
 | S-8 | `a : H.I64 <- …` inside a `do IO<Unit>:` block does not parse on 2.0.34 — `expected : … @k:(@_:H.I64 -> IO.OP<R>) -> IO.OP<R>`. Inline the argument instead | measured in `$TMPDIR`, `tinybendygrad/probe.bend` |
 | S-9 | the 16 that "CANNOT be executed" (`libclang.bend`'s own old header, `:18-19`) — **15 of them do**: they compile, link, run and match CPython. The header text was corrected | `.agents/slop/W64-MILE.md:100-104`; header now says so |
 | S-10 | `clang_getOffsetOfBase` is absent from libclang 17.0.0 (`nm -gU` → 0) against `CINDEX_VERSION_MINOR = 64`. Version skew, not a language wall | `tinygrad/runtime/autogen/libclang.py`; not re-measured here |
