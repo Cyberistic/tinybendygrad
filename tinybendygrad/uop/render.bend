@@ -932,6 +932,12 @@ def u32_ins(+ar: O.Arena, +x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 def u32_isort.go(+ar: O.Arena, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: acc
+    # NO `List.reverse` HERE, and the file has a decoy for it: `U32s.go`
+    # (ops.bend) folds BACKWARDS and reverses at the end, so the shape is
+    # copyable -- and here it is wrong, because `print_uops` walks `uops` in
+    # ENUMERATION order and must PRINT in that order. With the reverse the
+    # rows came out last-first and every `pu_*` list looked mis-indexed. The
+    # decoy cost a wrong-fixture diagnosis before the order was checked.
     case h <> t: u32_isort.go(ar, t, u32_ins(ar, h, acc))
 
 def u32_isort(ar: O.Arena, xs: List<&2, U32>) -> List<&2, U32>: u32_isort.go(ar, xs, Nil{})
@@ -1945,7 +1951,65 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 #   `ids: List<&2, U32>` so the guard is reachable at all.
 #
 # TODO(p3) render.py:6   def pretty_print
-# TODO(p3) render.py:18  def print_uops
+# PARTIAL, AND THE GATE IS NOT LANDED, so nothing here claims to be ported.
+#
+# The def COMPILES and three of the five fields are right: the op name, the `{i:4d}`
+# counter, the src column's three arms (`--` for a src not in the list, the CONST's
+# VALUE, and the arena INDEX) and the last column's `ParamArg` repr. The oracle
+# (`.agents/slop/ops-pu-oracle.py`, five rows) is landed and measured.
+#
+# THREE OF THE FIVE FIELDS NOW AGREE WITH CPYTHON and TWO DO NOT, so the gate is not
+# landed. What changed since the first attempt is worth more than the diff:
+#
+#   THE `dtype` WALL WAS MY FIXTURE, NOT THE FOLD. A BUFFER CARRIES A CONST SRC --
+#   `g_buf` at fold.bend:3919 is `BUFFER(int32, size=4)` hung off a SPECIAL, and
+#   the fold derives shape and dtype FROM THE SRCS. MEASURED: a srcless BUFFER with
+#   `size=Some{4}` in its arg reads `?` from `UOp.dtype`, while the node ABOVE it
+#   (an ADD over that buffer) reads a real answer -- the fold did not refuse, it had
+#   nothing to derive FROM. CPython's fixtures have the src too. Two rounds of "the
+#   fold cannot answer a BUFFER" were a wrong fixture.
+#
+# WHAT IS STILL WRONG, and neither is a `print_uops` concern:
+#
+#   `pu_val` PRINTS `0:4` WHERE CPython PRINTS `4`. `H.i64_text` is the two-word
+#   `hi:lo` form (helpers.bend:1701-1705) and `print_uops` wants Python's
+#   `str(val)`, a SIGNED DECIMAL. There is NO signed-decimal `I64` printer in the
+#   tree -- `rg 'def .*i64.*-> String' tinybendygrad/` finds `i64_show` and
+#   `i64_text` and nothing else -- and helpers.bend:1461 says why: "Bend has no
+#   signed integers, so a signed value is its two's complement bit pattern". So this
+#   is a REAL GAP and not a wrong function call. It is small (a 64-bit divide by ten
+#   plus a sign) and it is wanted by every `str(i64)` in the port, so it belongs on
+#   its own rather than inside a printer that is blocked for a second reason.
+#
+#   `U32.show(x)` FOR THE SRC INDEX prints the same `0:4` shape, because the index
+#   arm and the value arm share the field and the value arm is what is wrong. Fixing
+#   `pu_val` fixes both, which is a reminder that a row is only as discriminating as
+#   the field it shares.
+#
+#   THE RANGE COLUMN IS STILL EMPTY against CPython's coloured `0`. `UOp.ranges`
+#   needs an `RTable` from `F.ranged(ar)`, and the sweep needs the same Kahn table
+#   for `ended_ranges` -- a second fold unit, and the reason this row is here.
+#
+# WHAT THIS COST, because it is the part worth keeping: a printing fold CANNOT be
+# written as one def in this substrate. `s5.seps.go` and `rra.filter.go` recurse
+# fine because they RETURN a value; `IO.print` needs a `do IO<Unit>` block, the
+# recursion has to leave that block for a def returning IO, and that def then has no
+# shrinking argument. Five arrangements were tried --
+#   three mutually-recursive defs   (Bend refuses; bend-toposort caught it)
+#   one self-call, nothing shrinking  ("expected : a decreasing self-call")
+#   a String where the binder must be a list   (same message, unhelpful)
+#   the print lifted into its own def, recursing unchanged
+#   fold to a String, print ONCE    <- this one, and it is `Bsl.row`'s shape
+# and the rule that decides it is: A PRINTING FOLD RETURNS A STRING AND PRINTS ONCE.
+# A second rule fell out of the same fight: a self-call's `+` args must come FIRST
+# and the shrinking one after, because Bend reads arguments left to right and `+` is
+# what marks "passed unchanged" (`rra.filter.go` at ops.bend:3611 is the reference).
+#
+# AND THE FIXTURE MUST USE `UOp.range`. `UOp(Ops.RANGE, src, arg, AxisType.LOOP)` takes
+# the axis type as its THIRD argument and sets the TAG, so `axis_id` comes back empty
+# and CPython's own `print_uops` dies in `axis_colors[u.axis_type]` with a KeyError.
+# That is why the ORACLE has a comment about it, and it cost two rounds of "the
+# oracle is broken" before I read the constructor.
 # TODO(p3) render.py:35  def marg_str
 # TODO(p3) render.py:37  def render_marg
 # PORTED, THE FIVE LEAF ARMS -- `rnd_letter`, `rnd_param`, `rnd_const`, `rnd_of`,
@@ -2702,8 +2766,258 @@ def rnd_rows() -> IO(Unit):
     j : Unit <- rnd_row("rnd_special", ar, 10)
     rnd_row("rnd_unclaimed", ar, 11)
 
+# ==== render.py:18  `print_uops` ===========================================
+#
+#     uops_index = {u:i for i,u in enumerate(uops)}
+#     for i,u in enumerate(uops):
+#       formatted_srcs = [(uops_index[x] if x.op is not Ops.CONST else f"{x.val}")
+#                         if x in uops else "--" for x in u.src]
+#       print(f"{i:4d} {str(u.op):20s}: {multirange_str(u.ranges, color=True, pad=10)} "
+#             f"{str(u.dtype):40s} {str(formatted_srcs):32s} {u.arg}")
+#
+# A DEBUG PRINTER, and the only def in this file that reads the RANGE table and the
+# DTYPE table at once. Both are assembled by one call each: `F.ranged(ar)` runs the
+# range sweep and `F.UOp.fold(ar)` the dtype table, and `pyrender` below already
+# threads the second one.
+#
+# THE HEADER OF THIS FILE LISTED THIS DEF AS GAP (a) -- "NO `sprintf`, NO
+# field-width specifier" -- and said the gap is "CLOSED by composition". It is, and
+# the composition is the file's own: `H.pad_left` / `H.pad_right` (helpers.bend:1036,
+# :1039) for every `:20s` / `:40s` / `:32s`, and `multirange_str`'s own `pad`
+# argument for the `pad=10`. Nothing new is written here for the widths.
+#
+# THE COLOURING IS NOT OPTIONAL. `range_str.color` calls `H.colored` on the axis
+# colour unconditionally and `print_uops` passes `color=True`, so the answer carries
+# ANSI escapes even under `NO_COLOR`. MEASURED: the first oracle draft set
+# `NO_COLOR=1` expecting bare text and got `\x1b[31m0\x1b[0m`. Stripping them would
+# be a port that does not print what CPython prints.
+#
+# `H.Flags.defaults()` is `no_color: False`, which is CPython's answer with `DEBUG`
+# unset. `Flags.from_env()` is the reader, and it is IO -- so the flag is a
+# PARAMETER here, exactly as `multirange_str` already takes it.
+def pu_in(+xs: List<&2, U32>, x: U32) -> Bool: List.contains(U32, U32.is_eq, xs, x)
+
+# `(uops_index[x] if x.op is not Ops.CONST else f"{x.val}") if x in uops else "--"`.
+# THREE arms, and the two tests are in the OPPOSITE order from how they read: the
+# membership test is OUTER, so a CONST that is NOT in the list is `--` and not its
+# value. `pu_const` is the row for the inner arm and `pu_missing` for the outer, and
+# a def that swaps them passes one of the two and fails the other.
+
+
+def pu_val.of(arg: O.Arg) -> String:
+  match arg:
+    case O.APy{O.CInt{i}}: H.i64_text(i)
+    case O.APy{O.CBool{b}}: Bool.show(b)
+    case O.APy{O.CFloat{f}}: f32_repr(f)
+    case _: "?"
+
+# The op test is a separate def because `Arena.op(ar, x)` is a computed value and a
+# `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
+# `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
+# by a test of something computed".
+
+
+# `(uops_index[x] if x.op is not Ops.CONST else f"{x.val}") if x in uops else "--"`.
+# THREE arms, and the two tests are in the OPPOSITE order from how they read: the
+# membership test is OUTER, so a CONST that is NOT in the list is `--` and not its
+# value. `pu_const` is the row for the inner arm and `pu_missing` for the outer, and
+# a def that swaps them passes one of the two and fails the other.
+def pu_val(+ar: O.Arena, +x: U32) -> String:
+  pu_val.of(O.Arena.arg(ar, x))
+
+
+# The op test is a separate def because `Arena.op(ar, x)` is a computed value and a
+# `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
+# `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
+# by a test of something computed".
+def pu_src(+ar: O.Arena, +uops: List<&2, U32>, +x: U32) -> String:
+  Bool.pick(String, pu_in(uops, x),
+    Bool.pick(String, O.eq_op(O.Arena.op(ar, x), O.OpsCONST{}), pu_val(ar, x), U32.show(x)),
+    "--")
+
+
+# `str(formatted_srcs)` is PYTHON'S REPR OF A LIST -- `['--', '4']`, with quotes, a
+# comma and a SPACE. It is not this file's list-join idiom, and getting the space
+# wrong is a whole-file diff rather than one row, so the space is in `pu_srcs_str`.
+# ONE DEF, because the first draft was three and MUTUALLY RECURSIVE:
+# `tail` -> `str` -> `of` -> `tail`. Bend refuses that and `bend-toposort` reported
+# the cycle rather than writing, correctly. The separator carries the position --
+# `"['"` on the first element and `"', "` on the rest -- so the fold needs no second
+# pass and no helper.
+def pu_srcs.go(+ar: O.Arena, +uops: List<&2, U32>, +t: List<&2, U32>, +acc: String, first: Bool) -> String:
+  match t:
+    case Nil{}: String.concat([acc, "]"])
+    case +h <> r:
+      pu_srcs.go(ar, uops, r, String.concat([acc, Bool.pick(String, first, "['", ", '"), pu_src(ar, uops, h), "'"]), False{})
+
+
+def pu_srcs(+ar: O.Arena, uops: List<&2, U32>, +u: U32) -> String:
+  pu_srcs.go(ar, uops, O.Arena.srcs(ar, u), "", True{})
+
+# THE DTYPE, and it is a `Maybe<&2, S.Dt>` because `UOp.dtype` is one -- the fold
+# does not know a dtype for every node. `dt_repr` gives `dtypes.i32`, which is
+# CPython's `str(u.dtype)`, and the `?` arm says "the fold does not know" rather than
+# printing a width-padded empty string.
+
+
+def pu_dtype.of(m: Maybe<&2, S.Dt>) -> String:
+  match m:
+    case Some{d}: dt_repr(d)
+    case None{}: "?"
+
+# ONE LINE, AND THE WIDTHS ARE THE POINT. `20s` on the op, `40s` on the dtype and
+# `32s` on the srcs are all in CPython's f-string, so a port with the right VALUES
+# and the wrong widths is a different FORMAT and the gate's line-for-line diff
+# catches it. That is why the rows are whole lines and not a name-to-value map.
+
+
+# THE DTYPE, and it is a `Maybe<&2, S.Dt>` because `UOp.dtype` is one -- the fold
+# does not know a dtype for every node. `dt_repr` gives `dtypes.i32`, which is
+# CPython's `str(u.dtype)`, and the `?` arm says "the fold does not know" rather than
+# printing a width-padded empty string.
+def pu_dtype(+tb: F.Table, +ar: O.Arena, +u: U32) -> String:
+  pu_dtype.of(F.UOp.dtype(ar, tb, u))
+
+
+# ONE LINE, AND THE WIDTHS ARE THE POINT. `20s` on the op, `40s` on the dtype and
+# `32s` on the srcs are all in CPython's f-string, so a port with the right VALUES
+# and the wrong widths is a different FORMAT and the gate's line-for-line diff
+# catches it. That is why the rows are whole lines and not a name-to-value map.
+def pu_line(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<&2, U32>, +i: U32, +u: U32) -> String:
+  String.concat([
+    H.pad_right(Nat.show(U32.to_nat(i)), 4), " ",
+    H.pad_left(O.Ops.name(O.Arena.op(ar, u)), 20), ": ",
+    multirange_str(f, ar, F.Rng.rs(F.UOp.ranges(ar, rt, u)), 10), " ",
+    H.pad_left(pu_dtype(tb, ar, u), 40), " ",
+    H.pad_left(pu_srcs(ar, uops, u), 32), " ",
+    arg_repr(O.Arena.arg(ar, u))])
+
+
+def pu_line.go(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<&2, U32>, +t: List<&2, U32>, +acc: List<&2, String>, +i: U32) -> List<&2, String>:
+  match t:
+    case Nil{}: acc
+    case +h <> r: pu_line.go(f, rt, tb, ar, uops, r, List.append(&2, String, acc, [pu_line(f, rt, tb, ar, uops, i, h)]), U32.add(i, 1))
+
+
+def print_uops(+ar: O.Arena, +uops: List<&2, U32>) -> List<&2, String>:
+  pu_line.go(H.Flags.defaults(), F.Ranged.rt(F.ranged(ar)), F.UOp.fold(ar), ar, uops, uops, Nil{}, 0)
+
+
+# ==== the `pu_*` rows =====================================================
+#
+# The same FIVE fixtures as `.agents/slop/ops-pu-oracle.py`, built here as ONE arena
+# and printed as whole LINES, because the widths are part of the answer:
+# `{i:4d}`, `:20s`, `:40s`, `:32s` and `pad=10` are all in CPython's f-string, so a
+# port with the right VALUES and the wrong widths is a different FORMAT and a
+# name-to-value gate would not see it.
+#
+#   1 RANGE(4)   via `UOp.range` -- see the note below
+#   2 CONST 4    the CONST whose VALUE the src column prints
+#   3 BUFFER      a ParamArg, so the last column is a record
+#   4 ADD[3,2]    two srcs, one in the list and one CONST
+#
+# THE RANGE MUST BE BUILT WITH `UOp.range`. `UOp(Ops.RANGE, src, arg, AxisType.LOOP)`
+# takes the axis type as its THIRD argument and sets the TAG -- so `axis_id` comes
+# back empty and `print_uops` dies in `axis_colors[u.axis_type]` with a KeyError.
+# MEASURED, after two rounds of "the oracle is broken".
+# A THIRTEEN-FIELD LITERAL and not `ParamArg.of`, which takes two arguments and
+# defaults the other eleven. `size=4` and `name="b"` are the two this fixture
+# needs, and the last column of the row is this record, so the ones that are NOT
+# default would change the row text and `pu_argrepr` would need a reason.
+def pu_pa(slot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), Some{4}, None{}, None{}, Some{"b"}, S.AGlobal{},
+    None{}, False{}, None{}, None{}, False{}, None{}}
+
+def pu_ar() -> O.Arena:
+  O.Arena{[
+    O.Arena.bottom(),
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
+    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}},
+    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}},
+    O.Node{O.OpsADD{}, [3, 1], O.ANone{}, O.TNone{}},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(8)}}, O.TNone{}}], [0]}
+# `pu_range`   one BUFFER with a RANGE: the baseline, and the `--` src arm.
+# `pu_missing` an ADD whose CONST src is NOT in the list: `--` and not its value.
+#              A def that dropped the OUTER membership test answers `4` here.
+# `pu_const`   the same ADD with the CONST IN THE LIST: its VALUE, and not its index.
+#              A def that dropped the INNER op test answers `1`.
+# `pu_index`   BOTH srcs in the list: the INDEX arm, which only this row exercises.
+# `pu_constarg` two CONSTs: the last column is a PyConst and not a ParamArg.
+# ONE RECURSIVE DEF, and the shape is the point. The first draft was THREE --
+# pu_row -> pu_row.go -> pu_row.line -> pu_row.go -- which is MUTUALLY recursive,
+# and Bend refuses that: `bend-toposort` reported the cycle and declined to write,
+# the fourth time this session that refusal has caught a real defect rather than an
+# inconvenience.
+#
+# The way out is the file's own: recurse into YOURSELF and let a PURE helper take
+# the head. `pu_row.tail` and `pu_row.one` never call back, so there is no cycle,
+# and the print is a `do IO<Unit>` arm rather than a sibling def.
+# `s5.seps.go`'s EXACT shape (ops.bend): one `+` arg, then the LIST as a plain
+# binder, then the shrinking tail. The first attempt had `line: String` between
+# them, and a String is not a list so the binder was read as "nothing shrinks" --
+# "expected : a decreasing self-call", not a type error, which is the unhelpful way
+# to say it.
+# ONE DEF. There were three -- `step` -> `line` -> `head` -- and every arrangement
+# of them was either MUTUALLY recursive (Bend refuses) or an R-3 ordering problem
+# (whichever called the other had to be declared first). This is `s5.seps.go`'s
+# shape verbatim (ops.bend): one `+` arg, the list as a plain binder, the shrinking
+# tail, and the accumulator threaded through.
+# ONE FOLD AND ONE EMITTER, in that order because the fold CALLS the emitter and
+# R-3 wants the callee first. There were three defs before this and every
+# arrangement was either mutually recursive (Bend refuses) or an ordering problem.
+# The shape is `s5.seps.go` (ops.bend) with the print lifted into its own def only
+# because a `do IO<Unit>` block cannot be an expression.
+# THE FOLD RETURNS A STRING AND THE PRINT HAPPENS ONCE, which is `Bsl.row`'s shape
+# (ops.bend) and the reason none of the previous four arrangements worked.
+#
+# A printing fold cannot be written as one def here. `s5.seps.go` recurses fine
+# because it RETURNS a String; putting `IO.print` in the match arm needs a `do
+# IO<Unit>` block, and the recursion then has to leave that block for a def that
+# returns IO, and THAT def has no shrinking argument left. Five attempts:
+# three mutually-recursive defs, one self-call with nothing shrinking, and one with
+# a String where the binder had to be a list.
+#
+# So: fold to a String, join, print once. The fold is `s5.seps.go` with a newline
+# instead of a space, and `IO.print` is one call at the end.
+def pu_row.go(+ar: O.Arena, xs: List<&2, String>, +acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: pu_row.go(ar, t, String.concat([acc, h, "\n"]))
+
+def pu_row.emit(line: String) -> IO(Unit): IO.print(line)
+
+def pu_row(nm: String, +ar: O.Arena, +uops: List<&2, U32>) -> IO(Unit):
+  pu_row.emit(String.concat([nm, "|", pu_row.go(ar, print_uops(ar, uops), ""), "\n"]))
+
+def pu_rows(+ar: O.Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- pu_row("pu_range", ar, [3])
+    b : Unit <- pu_row("pu_missing", ar, [4])
+    c : Unit <- pu_row("pu_const", ar, [4, 1])
+    d : Unit <- pu_row("pu_index", ar, [3, 4, 1])
+    pu_row("pu_constarg", ar, [1, 6])
+
+# ONE DEF, not three. \`pu_row\` -> \`pu_row.go\` -> \`pu_row.line\` -> \`pu_row.go\` is
+# MUTUALLY RECURSIVE and Bend refuses it; `bend-toposort` reported the cycle and
+# declined to write, which is the fourth time this session that refusal has been the
+# thing that caught a real defect rather than an inconvenience. The print is a
+# \`do IO<Unit>\` block, so the row and the emission are ONE def and the fold carries
+# the counter.
+# ONE RECURSIVE DEF, and the shape is the point. The first draft was THREE --
+# pu_row -> pu_row.go -> pu_row.line -> pu_row.go -- which is MUTUALLY recursive,
+# and Bend refuses that: `bend-toposort` reported the cycle and declined to write,
+# the fourth time this session that refusal has caught a real defect rather than an
+# inconvenience.
+#
+# The way out is the file's own: recurse into YOURSELF and let a PURE helper take
+# the head. `pu_row.tail` and `pu_row.one` never call back, so there is no cycle, and
+# the print is a `do IO<Unit>` arm rather than a sibling def. `ar` and `uops` are
+# `+`-bound because the recursion reuses them; nothing reads them twice otherwise.
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    pu_rows(pu_ar())
     rnd_rows()
     py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
     py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())
@@ -2841,5 +3155,3 @@ def main() -> IO(Unit):
 # called it, which is the answer to "could any row have caught site 4": no, and
 # the reason is structural rather than an oversight of fixture choice.
 # ===========================================================================
-
-
