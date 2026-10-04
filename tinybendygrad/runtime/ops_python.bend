@@ -255,6 +255,7 @@
 # TODO(p3) runtime/ops_python.py:138 -- the float lane's input for an int dtype.
 
 import Base
+import ../base.bend as F
 import ../helpers.bend as H
 import ../LAWS/spec.bend as S
 import ../dtype.bend as D
@@ -262,20 +263,22 @@ import ../uop/ops.bend as O
 import ../uop/symbolic.bend as SY
 
 # ===========================================================================
-# F32 AND U32 SHARE A WORD. Bend reads an F32's bits with `F32.bits` and the
-# constructor takes the Word payload, so both directions are pure. dtype.c calls
-# the pair of them "the conversion seam"; the seam exists only because those
-# helpers go through half and fp8, and v1 has neither.
+# F32 AND U32 SHARE A WORD, so the bitcast has a NAME and this file does not
+# carry one: `F.F32.from_bits` (`../base.bend:54`). It is one destructuring and
+# one constructor -- both payloads are the same type `Word(32n)`, so the
+# constructor `F32{..}` WAS already the bitcast -- and its inverse is
+# `F32.bits` (the `law` at `base.bend:1697`), which is where `bits_of` and
+# `Prog.cast.dt` below read. ONE name per direction: importing both is what
+# stops this file disagreeing with `base.bend` about either. This used to be a
+# local `w32`/`f32_of` pair and is now a duplicate retired; the measurement
+# that decided it is in .agents/slop/OPSPY.md.
 #
-# MEASURED: `F32{w32(1065353216)}` prints `1`, so the payload really is the
-# pattern and `f32_of`/`F32.bits` are inverses.
+# `U32.to_f32` IS NOT THIS. It is the NUMERIC conversion -- `U32.to_f32(3)` is
+# 3.0 -- so reaching for it answers a plausible float for the wrong reason.
+# dtype.c calls the pair of the real names "the conversion seam"; the seam
+# exists only because the dtype.c helpers go through half and fp8, and v1 has
+# neither.
 # ===========================================================================
-
-def w32(+u: U32) -> Word(32n):
-  match u:
-    case U32{data}: data
-
-def f32_of(+u: U32) -> F32: F32{w32(u)}
 
 # ===========================================================================
 # THE VALUE DOMAIN. `values[u]` in Python is a list over `warp_size` whose
@@ -547,7 +550,7 @@ def ex_i64_of(+uns: Bool, +b: U32) -> H.I64:
   Bool.pick(H.I64, uns, H.i64_of_hi_lo(0, b), H.i64_of_i32(b))
 
 def elem_c.dt(+d: S.Dt, +b: U32) -> O.Const:
-  Bool.pick(O.Const, S.Dt.is_float(d), O.CFloat{f32_of(b)},
+  Bool.pick(O.Const, S.Dt.is_float(d), O.CFloat{F.F32.from_bits(b)},
     Bool.pick(O.Const, S.Dt.is_bool(d), O.CBool{U32.is_ne(b, 0)},
       O.CInt{ex_i64_of(S.Dt.is_unsigned(d), b)}))
 
@@ -593,18 +596,18 @@ def b_of(+e: Elem) -> U32:
 
 # THE LANE INPUT IS A VALUE, NOT A BIT PATTERN. ops.py:1425 picks the lane from
 # the PYTHON TYPE of the operand, so an int32 operand reaches `math.sqrt` as the
-# NUMBER 16 -- and `U32.to_f32(16)` is 16.0 while `f32_of(16)` is the denormal
-# whose bit pattern happens to be 16. MEASURED, and this is exec_gate's
-# KNOWN-FAIL row: `alu1f(SQRT, single, Sc{16, int32})` answered 456459507 with
-# `f32_of` and answers F32.bits(F32.sqrt(16.0)) = 1082130432 with this one. A
-# float operand keeps the bit reading (`F32{b}` IS the value it was stored as),
-# an int is read as a signed or unsigned integer, and `2^32 - b` has no U32
-# spelling -- so the magnitude is `0 - b`, which wraps to exactly that.
+# NUMBER 16 -- and `U32.to_f32(16)` is 16.0 while `F32.from_bits(16)` is the
+# denormal whose bit pattern happens to be 16. MEASURED, and this is exec_gate's
+# KNOWN-FAIL row: `alu1f(SQRT, single, Sc{16, int32})` answered 456459507 through
+# the bit reading and answers F32.bits(F32.sqrt(16.0)) = 1082130432 with this one.
+# A float operand keeps the bit reading (`F32.from_bits(b)` IS the value it was
+# stored as), an int is read as a signed or unsigned integer, and `2^32 - b` has
+# no U32 spelling -- so the magnitude is `0 - b`, which wraps to exactly that.
 def f32_i32(+b: U32) -> F32:
   Bool.pick(F32, U32.is_ge(b, 2147483648), F32.neg(U32.to_f32(U32.sub(0, b))), U32.to_f32(b))
 
 def f_of.dt(+d: S.Dt, +b: U32) -> F32:
-  Bool.pick(F32, S.Dt.is_float(d), f32_of(b),
+  Bool.pick(F32, S.Dt.is_float(d), F.F32.from_bits(b),
     Bool.pick(F32, S.Dt.is_unsigned(d), U32.to_f32(b), f32_i32(b)))
 
 def f_of(+e: Elem) -> F32:
