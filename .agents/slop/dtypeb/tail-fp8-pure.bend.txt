@@ -1,0 +1,202 @@
+# ===========================================================================
+# float_to_fp8, and WHY IT IS PURE WHILE THE THREE BELOW IT ARE NOT.
+#
+# `float_to_fp8` was `-> IO(U32)` and its whole body was one call to
+# `Dt.fp8_from`, which was a seam. It was red only because of that call: its own
+# arithmetic is `F32.bits` (pure, and the one float direction Bend has) and
+# `fp8_kind`. Both are pure here, because EVERY step of the encoder is U32
+# arithmetic on a bit pattern -- no F32 is ever BUILT, and building one is the
+# only thing this file cannot do.
+#
+# dtype.c:44-87 `fp8_encode` is that algorithm and this is it, arm for arm.
+# GATED against CPython -- `tinygrad/dtype.py:float_to_fp8` CALLED, never
+# transcribed -- over 384 rows. See `.agents/slop/dtypeb/DTYPEB.md`.
+# ===========================================================================
+
+type Fp8 is Data:
+  Fp8{bias: U32, sig: U32, mant: U32, denorm: U32, ovf: U32, max_norm: U32, min_norm: U32}
+
+# dtype.py's `_fp8_cfg` (dtype.py:236-241), four rows, in decimal.
+#
+# `ovf` IS NOT dtype.py's `ovf_threshold`. It is the LAST f32 MAGNITUDE dtype.py
+# still sends to the normal branch, and the difference is load-bearing on three of
+# the four formats: dtype.py writes three of those thresholds with a trailing `-1`,
+# i.e. one f64 ULP BELOW the value, so `absx > threshold` is already true at exactly
+# that value. runtime/dtype.c:40 restates all four as the f32 pattern of the value
+# itself -- 0x47700000, 0x43780000, 0x47700000 -- and dtype.c:70 then compares with
+# `>`, which loses the `-1`. Measured: at absx == 0x47700000 dtype.py answers 123
+# for fp8e5m2 and 127 for fp8e4m3fnuz (both `max_norm`) and the C's comparison
+# answers 124 and 128. `ovf` here is the threshold with the `-1` already applied, so
+# the `>` below is dtype.py's `>` and not a restatement of it. REPORTED, not fixed:
+# runtime/dtype.c is not this file's.
+def fp8_cfg(kind: U32) -> Fp8:
+  match kind:
+    case 0: Fp8{7, 4, 7, 981467136, 1139277824, 126, 1015021568}
+    case 1: Fp8{15, 3, 3, 922746880, 1198522367, 123, 947912704}
+    case 2: Fp8{8, 4, 7, 973078528, 1131937791, 127, 1006632960}
+    case _: Fp8{16, 3, 3, 914358272, 1198522367, 127, 939524096}
+
+# THE ONE READER. Bend has no `cfg.field` accessor -- `cfg.denorm` is
+# "expected : a defined name", measured -- so a record field is reachable only by
+# destructuring. This destructures once and indexes, so seven constants cost one
+# def instead of seven, and the index is the field's position in the record.
+def Fp8.at(+cfg: Fp8, i: U32) -> U32:
+  match cfg:
+    case Fp8{bias, sig, mant, denorm, ovf, max_norm, min_norm}:
+      match i:
+        case 0: bias        # the exponent bias
+        case 1: sig         # the fp8 significand width, 4 or 3
+        case 2: mant        # the significand mask, 7 or 3
+        case 3: denorm      # at or below this the answer is zero
+        case 4: ovf         # above this the answer is max_norm; see fp8_cfg
+        case 5: max_norm
+        case _: min_norm    # at or above this the value is a normal
+
+# A shift by a RUNTIME amount. `U32.shl`/`U32.shr` are one-bit and
+# `U32.shln`/`U32.shrn` take a `Nat`, so without these a shaper whose shift amount
+# is computed could not be written at all -- which is why dtype.c computes `sh`.
+# The amount is `U32.to_nat` of a SMALL U32 on every path (1..4, or 19/20/21/23/31),
+# never of a wrapped one: a Nat is Peano and `U32.to_nat(4294967295)` would ask it
+# for 2^32 cells.
+def fp8_enc.shl(a: U32, n: U32) -> U32: U32.shln(a, U32.to_nat(n))
+def fp8_enc.shr(a: U32, n: U32) -> U32: U32.shrn(a, U32.to_nat(n))
+
+def fp8_enc.is_fnuz(kind: U32) -> Bool: U32.is_ge(kind, 2)
+
+# the tie bit: where the fp8 significand's rounding bit sits inside the f32
+# pattern, `1 << (23 - sig)`
+def fp8_enc.hu(+cfg: Fp8) -> U32: fp8_enc.shl(1, U32.sub(23, Fp8.at(cfg, 1)))
+
+# the exponent field, and the mantissa field as the fp8 significand keeps it
+def fp8_enc.exp_field(xb: U32) -> U32: U32.and(fp8_enc.shr(xb, 23), 255)
+def fp8_enc.absx(xb: U32) -> U32: U32.and(xb, 2147483647)
+def fp8_enc.exp(+cfg: Fp8, xb: U32) -> U32: U32.add(U32.sub(fp8_enc.exp_field(xb), 127), Fp8.at(cfg, 0))
+def fp8_enc.mant(+cfg: Fp8, xb: U32) -> U32: U32.and(fp8_enc.shr(xb, U32.sub(24, Fp8.at(cfg, 1))), Fp8.at(cfg, 2))
+
+# ROUND-HALF-TO-EVEN ON A DROPPED REMAINDER, one function for both rounding sites,
+# because dtype.c:76 and dtype.c:88 differ only in which remainder and which tie
+# they hand it: up when the dropped bits exceed the tie, or equal it and the kept
+# value is odd.
+def fp8_enc.round(+rb: U32, +tie: U32, +res: U32) -> U32:
+  Bool.pick(U32, U32.is_gt(rb, tie), U32.add(res, 1),
+    Bool.pick(U32, U32.is_eq(rb, tie), U32.add(res, Bool.to_u32(U32.is_eq(U32.and(res, 1), 1))), res))
+
+# dtype.py's three non-finite cases, in its order (dtype.c:59-67). fnuz has neither
+# inf nor nan and answers 0x80; e4m3 has no inf and answers jax's 0x7f/0xff; e5m2
+# has a full nan and inf.
+def fp8_enc.nonfinite(+kind: U32, +xb: U32, +sgn: U32) -> U32:
+  Bool.pick(U32, fp8_enc.is_fnuz(kind), 128,
+    Bool.pick(U32, U32.is_eq(kind, 0), Bool.pick(U32, U32.is_zero(sgn), 127, 255),
+      U32.or(Bool.pick(U32, U32.is_zero(U32.and(xb, 8388607)), 124, 127), sgn)))
+
+# The normal branch (dtype.c:73-77). The parity test rides on `res` rather than on
+# `mant` because `sig - 1 >= 2`, so the exponent field contributes no low bit.
+def fp8_enc.norm(+cfg: Fp8, +xb: U32, +exp: U32, +mant: U32) -> U32:
+  +hu = fp8_enc.hu(cfg)
+  fp8_enc.round(U32.and(xb, U32.sub(fp8_enc.shl(hu, 1), 1)), hu, U32.or(fp8_enc.shl(exp, U32.sub(Fp8.at(cfg, 1), 1)), mant))
+
+# `1 - exp` where `exp` is `exp_field - 127 + bias` in WRAPPING U32 arithmetic, so
+# the subnormal rungs are 1, 2, 3, 4 and the negative exps are 4294967295,
+# 4294967294 and 4294967293. THE WINDOW IS FOUR EXPONENTS WIDE, not three:
+# `absx > denorm` compares the whole magnitude, so the denorm threshold's OWN
+# exponent field is in the branch whenever its mantissa is above zero. exp = -3 is
+# reached on e4m3 and on fnuz-e4m3 -- and a three-rung ladder answers 1 there, which
+# is the second gate finding of this unit. The catch-all is the exp == 0 rung, and
+# it is exhaustive: the branch is entered with absx strictly below min_norm and
+# strictly above denorm, so exp is one of exactly these four.
+def fp8_enc.sh(exp: U32) -> U32:
+  match exp:
+    case 4294967293: 4
+    case 4294967294: 3
+    case 4294967295: 2
+    case _: 1
+
+def fp8_enc.sub(+cfg: Fp8, +xb: U32, +exp: U32, +mant: U32) -> U32:
+  +sh = fp8_enc.sh(exp)
+  +half = fp8_enc.shl(fp8_enc.hu(cfg), sh)
+  +res = fp8_enc.shr(U32.or(mant, fp8_enc.shl(1, U32.sub(Fp8.at(cfg, 1), 1))), sh)
+  fp8_enc.round(U32.and(U32.or(xb, 8388608), U32.sub(fp8_enc.shl(half, 1), 1)), half, res)
+
+# The magnitude ladder (dtype.c:70-72). Zero at or below the denormal line, the
+# largest normal above the overflow line, and the two rounding branches between.
+def fp8_enc.res(+cfg: Fp8, +absx: U32, +exp: U32, +mant: U32) -> U32:
+  Bool.pick(U32, U32.is_le(absx, Fp8.at(cfg, 3)), 0,
+    Bool.pick(U32, U32.is_gt(absx, Fp8.at(cfg, 4)), Fp8.at(cfg, 5),
+      Bool.pick(U32, U32.is_ge(absx, Fp8.at(cfg, 6)), fp8_enc.norm(cfg, absx, exp, mant),
+        fp8_enc.sub(cfg, absx, exp, mant))))
+
+def fp8_enc.put(+kind: U32, +res: U32, +sgn: U32) -> U32:
+  # fnuz has no negative zero, so a zero result carries no sign (dtype.c:86)
+  Bool.pick(U32, fp8_enc.is_fnuz(kind), Bool.pick(U32, U32.is_zero(res), 0, U32.or(res, sgn)), U32.or(res, sgn))
+
+def fp8_enc(+cfg: Fp8, +kind: U32, +xb: U32) -> U32:
+  +sgn = fp8_enc.shl(U32.and(fp8_enc.shr(xb, 31), 1), 7)
+  +exp = fp8_enc.exp(cfg, xb)
+  +res = fp8_enc.res(cfg, fp8_enc.absx(xb), exp, fp8_enc.mant(cfg, xb))
+  Bool.pick(U32, U32.is_eq(fp8_enc.exp_field(xb), 255), fp8_enc.nonfinite(kind, xb, sgn),
+    fp8_enc.put(kind, res, sgn))
+
+def Dt.fp8_from(bits: U32, +kind: U32) -> U32: fp8_enc(fp8_cfg(kind), kind, bits)
+
+# ===========================================================================
+# THE SEAM THAT IS LEFT: three laws, and they are three because of ONE missing
+# primitive, not three missing ones.
+#
+# MEASURED on Bend 2.0.34 (`./bin/bend`): `F32.bits` exists and is a bitcast --
+# `F32.bits(1.0)` = 1065353216 = 0x3F800000. `F32.from_bits` does NOT exist
+# ("expected : a defined name / observed : F32.from_bits"). And the near miss is
+# not a near miss: `U32.to_f32` is the NUMERIC conversion, not a bitcast --
+# `U32.to_f32(3)` = 3 and `U32.to_f32(1065353216)` = 1065353216. So Bend can take
+# a float apart and cannot put one back together.
+#
+# All three of these end in exactly that step:
+#     Dt.bf16      f32 bits -> bf16 bits -> F32       (dtype.c:168-176)
+#     Dt.fp16      f32 -> half bits -> F32              (dtype.c:156-158, via fp16_f32)
+#     Dt.fp8_to    fp8 code -> f32 bits -> F32          (dtype.c:160-162, via fp8_decode)
+# and the three pure wrappers below them are red only because of these three --
+# `float_to_bf16`, `float_to_fp16` and `fp8_to_float` have no arithmetic of their
+# own at all. Six red laws, one missing primitive.
+#
+# WHAT WOULD CLOSE IT: a `F32.from_bits(bits: U32) -> F32` in base.bend. Every one
+# of the three bodies is already written in U32 in runtime/dtype.c and is a port
+# away -- `fp16_encode`, `fp16_f32` and `fp8_decode` are pure U32 except for
+# dtype.c:105-110's `f32_rewrap`, which IS that bitcast. This is a LANGUAGE wall
+# and base.bend is not this file's.
+# ===========================================================================
+
+def Dt.bf16(bits: U32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.fp16(x: F32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+def Dt.fp8_to(bits: U32, kind: U32) -> IO(F32):
+  import "./runtime/dtype.c"
+  import "./runtime/dtype.js"
+
+# The fp8 id, as the C and the JS agree on it.
+def fp8_kind(nm: String) -> U32:
+  match nm:
+    case "fp8e4m3": 0
+    case "fp8e5m2": 1
+    case "fp8e4m3fnuz": 2
+    case _: 3
+
+# dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because
+# dtype.py's first step is `struct.pack('f', truncate[float](x))` and Bend's F32
+# is already that pattern; the round is the whole of dtype.py's function.
+def float_to_bf16(x: F32) -> IO(F32):
+  Dt.bf16(F32.bits(x))
+
+# dtype.py's float_to_fp16.
+def float_to_fp16(x: F32) -> IO(F32):
+  Dt.fp16(x)
+
+# dtype.py's float_to_fp8 / fp8_to_float. The first is pure: see the header.
+def float_to_fp8(x: F32, dtype: S.Dt) -> U32:
+  Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
+
+def fp8_to_float(x: U32, dtype: S.Dt) -> IO(F32):
+  Dt.fp8_to(x, fp8_kind(dt_name(dtype)))

@@ -1,0 +1,101 @@
+# ===========================================================================
+# The 64-bit conversions, and why they are NOT seams.
+#
+# These six were `IO(..)` foreign defs -- a signature and two `import` lines and
+# no body -- and they were six of this file's fourteen "defs rely on unsafe or
+# foreign code". THE TYPE WAS NEVER THE WALL: `H.I64` is `I64{hi: U32, lo: U32}`
+# (helpers.bend:1639) and helpers.bend already carries the whole 64-bit ALU
+# (`i64_divmod`, `i64_add`, `i64_sub`, `i64_neg`, `i64_is_neg`, `i64_is_zero`,
+# `i64_zero`, `i64_bit`). What blocked them was being effects.
+#
+# WHY BEING AN EFFECT WAS THE WALL, against the CALL GRAPH and not taste.
+# `UOp._min_max` is a pure fold that `uop/fold.bend` computes in a Kahn worklist
+# (`mixin/dtype.bend:38-60` is the standing record), and a fold cannot run an
+# effect. There are exactly two ways out and only one of them is this file's:
+#
+#   (a) make the fold effectful -- that changes `fold.bend`'s `Folded`/`Table`
+#       data type from a value to an `IO` value, propagates through every
+#       consumer of the fold, and is `uop/fold.bend`'s call, not this file's;
+#   (b) remove the effect from the LEAF, so the arithmetic stays exactly where
+#       it is and the fold keeps calling a pure function.
+#
+# This file takes (b). The arithmetic does not move and the fold does not change
+# type: what moved is the EFFECT BOUNDARY, out of the callee and nowhere. That is
+# the opposite of making a fold effectful to make a gate pass -- the fold is
+# still pure, and it is still `fold.bend`'s.
+#
+# THE DERIVATION IS NOT UPSTREAM'S SPELLING, and one op is the reason.
+# helpers.py:75 is `cmod(x,y) = x - cdiv(x,y)*y`, and `i64_mul` does not exist
+# anywhere in the tree -- `mixin/dtype.bend:56` records that and helpers.bend is
+# not this file's to edit. So cdiv/cmod are derived from the FLOOR pair, which is
+# total and multiply-free. With `q` the floor quotient, `r` the floor remainder
+# and `fix = sign(a) != sign(b) and r != 0`:
+#
+#     cdiv = 0 if b == 0 else q + fix      (truncation is one above a floor)
+#     cmod = r - (b if fix else 0)         (and NO zero guard: floormod(x,0) is x)
+#     ceil = cdiv + (r != 0 and sign(a) == sign(b))    -- see Dt.i64_ceildiv
+#
+# `i64_abs` is deliberately NOT used: helpers.bend:1786 records that `i64_abs`
+# answers `int64.min` for `int64.min`, so a magnitude route double-counts the sign
+# on that one input, and both int64 edges are in the fixture set for that reason.
+#
+# `i64_trunc` is the identity because dtype.py's `truncate` of an already-integral
+# value is, and `H.I64 -> H.I64` is the only thing this signature can express: an
+# F32-sourced i64 cast has no signature here. See the note below the def.
+#
+# GATED against CPython -- `tinygrad/helpers.py` CALLED, never transcribed -- over
+# 96 rows of 16 fixtures x 6 defs, with a plant and a disarm. See
+# `.agents/slop/dtypeb/DTYPEB.md`.
+# ===========================================================================
+
+def Dt.i64_cdiv.fix(+an: Bool, +bn: Bool, +d: H.DivMod) -> Bool:
+  Bool.and(Bool.xor(an, bn), Bool.not(H.i64_is_zero(H.divmod_r(d))))
+
+def Dt.i64_cdiv.of(zero: Bool, +an: Bool, +bn: Bool, +d: H.DivMod) -> H.I64:
+  Bool.pick(H.I64, zero, H.i64_zero(), H.i64_add(H.divmod_q(d), H.i64_bit(Bool.to_u32(Dt.i64_cdiv.fix(an, bn, d)))))
+
+def Dt.i64_cdiv(+a: H.I64, +b: H.I64) -> H.I64:
+  Dt.i64_cdiv.of(H.i64_is_zero(b), H.i64_is_neg(a), H.i64_is_neg(b), H.i64_divmod(a, b))
+
+def Dt.i64_cmod.put(fix: Bool, +b: H.I64, +d: H.DivMod) -> H.I64:
+  Bool.pick(H.I64, fix, H.i64_sub(H.divmod_r(d), b), H.divmod_r(d))
+
+def Dt.i64_cmod.of(+an: Bool, +bn: Bool, +b: H.I64, +d: H.DivMod) -> H.I64:
+  Dt.i64_cmod.put(Dt.i64_cdiv.fix(an, bn, d), b, d)
+
+def Dt.i64_cmod(+a: H.I64, +b: H.I64) -> H.I64:
+  Dt.i64_cmod.of(H.i64_is_neg(a), H.i64_is_neg(b), b, H.i64_divmod(a, b))
+
+def Dt.i64_trunc(x: H.I64) -> H.I64:
+  x
+
+def Dt.i64_floor_div(a: H.I64, b: H.I64) -> H.I64:
+  H.i64_div(a, b)
+
+def Dt.i64_floor_mod(a: H.I64, b: H.I64) -> H.I64:
+  H.i64_mod(a, b)
+
+# The ceiling is `cdiv` plus one exactly when the division did not come out even
+# and the operands shared a sign -- which is what dtype.c:240-242 computes, and it
+# is what makes the def TOTAL where the spelling above is not. helpers.py:66-69 is
+# `-((-x)//y)`, and `-x` is not representable when x is int64.min: for
+# `ceildiv(int64.min, int64.min)` CPython answers 1 and the negation answers -1,
+# because `-b` wraps back to int64.min and the def computes 1 // 1 and negates it.
+# The fixture `min_min` is that row. An earlier spelling of this def did the
+# negation and disagreed with CPython there; it is the second gate finding of this
+# unit, after the fp8 one.
+def Dt.i64_ceildiv.above(+an: Bool, +bn: Bool, +d: H.DivMod) -> Bool:
+  Bool.and(Bool.not(Bool.xor(an, bn)), Bool.not(H.i64_is_zero(H.divmod_r(d))))
+
+def Dt.i64_ceildiv.of(+zero: Bool, +an: Bool, +bn: Bool, +d: H.DivMod) -> H.I64:
+  Bool.pick(H.I64, zero, H.i64_zero(), H.i64_add(Dt.i64_cdiv.of(zero, an, bn, d), H.i64_bit(Bool.to_u32(Dt.i64_ceildiv.above(an, bn, d)))))
+
+def Dt.i64_ceildiv(+a: H.I64, +b: H.I64) -> H.I64:
+  Dt.i64_ceildiv.of(H.i64_is_zero(b), H.i64_is_neg(a), H.i64_is_neg(b), H.i64_divmod(a, b))
+
+# KNOWN DIVERGENCE, in these six and not in the ones they replace: helpers.py:66-69
+# has NO zero guard on `ceildiv`, so CPython raises ZeroDivisionError for
+# `ceildiv(x, 0)` while `i64_div` answers 0 here. runtime/dtype.c:239 and
+# runtime/dtype.js:171 totalise it to 0 as well, so the answer is unchanged from
+# the lanes this replaces. The gate counts those rows as `diverge` against the
+# port's own 0 and NEVER as a pass.
