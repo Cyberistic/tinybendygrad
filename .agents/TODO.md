@@ -7230,7 +7230,7 @@ Measure reproducibility: `sh .agents/slop/graphcmp-repro.sh`.
 Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
 unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
 Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
-Progress: normal-form defects [##########] 23 found and fixed (17-23 are this round's)
+Progress: normal-form defects [##########] 24 found and fixed (17-24 are this round's)
 Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
            found a real nondeterminism on its first run
 
@@ -7267,7 +7267,7 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       fill, 1 node of 46) and `loop` (`CallInfo.cdtype` is a port-only field, 1 node of 25).
       `graphcmp-run.sh`'s `$WANT` ASSERTS each one, so a moved verdict is a moved file.
       `sym` was in that list until the `fold` unit closed its wall — see below.
-- [x] **SEVEN MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-23), of which
+- [x] **EIGHT MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-24), of which
       three would have kept lying. A SINK with `arg=None` **CRASHED** the emitter (17) —
       thirteen graphs of silence that were a crash, not an agreement. The `tag` column **could
       not be read at all** (18) because every earlier graph had `tag is None` everywhere. A
@@ -7283,7 +7283,7 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       worked" from "it failed the same way twice". Six plants and `cross` were not counted by
       the summary at all, so **a step that fails silently is not a step whose failure the gate
       can see.** And `grep -c 'BYTE-IDENTICAL'` over a file that can contain the string inside
-      an embedded `diff` counts LINES, not pairs (23).
+      an embedded `diff` counts LINES, not pairs (23). And the plant count carried a STALE DENOMINATOR — it said 6 and printed 7, because the seventh is `sym1` (24): a right count under a wrong claim, printed by the same line, which is why nothing could see it.
 - [x] **REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
       accepts a run only if its summary reads 16 graphs / 14 AGREE / byte-identical 14 /
       not-comparable 0 / selfcheck OK / census-rc 0 / stable 5-0-0 / plants 6 / cross 1 /
@@ -7386,3 +7386,85 @@ guards were written for. No port file was edited.
 cstyle lane entry, the pre-rename shared-name count over the oracle lane; it is **224** now
 (live file, another unit's). `jit-oracle.py:44` raises -- the oracle is BROKEN, not starved.
 `renderer/llvmir.bend` and `renderer/nir_llvmir.bend` need the same rename as cstyle.
+
+## Session 2026-10-04 (c2d unit) — `s5_copy_sel` GATED A NODE CPYTHON REFUSES, AND THE FIXTURE
+## WAS WRONG THREE TIMES OVER. THE REUSAL IS A RETURN-TYPE CHANGE.
+
+Progress: `c2d` lane `[########--]` 41 shared rows, **7 RED ON PURPOSE** · 12 identity green ·
+10 counts green · 5 oracle-only reported · 24 fixtures / 19 shared outcomes · 4 upstream
+refusals re-derived by exhaustion · `uop/ops.bend` **untouched** (single ownership).
+Report: `.agents/slop/notes/c2d-refusal-gate.md`. Rules `CT-1`…`CT-5` appended at the END of
+`bend2-constraints.md`, numbering continues from `LN-6`.
+
+- [x] **READ CPYTHON'S OWN TEXT, THEN CALL IT: `ops.py:761` IS A BARE `assert`.** `raise` at
+      `:760` and `:763` (RuntimeError, WITH messages); `assert arg is None or isinstance(
+      self.device, tuple)` at `:761` with NO message, so its observable is `AssertionError`
+      with an **empty string**. **FOUR refusals, not three** -- `ops.py:892`'s MSELECT assert
+      has a **message** where 761 has none, and fires **lazily** (`mselect(1)` CONSTRUCTS; the
+      first `.device` READ raises). `ops.bend:6998`'s "THE TWO `raise`s" under-counts.
+- [x] **THE BRIEF'S FIXTURE WAS FALSE, AND MEASURED, NOT INHERITED.** "`node 4` is
+      `ParamArg.of(2, int32)`" -> node 4 of **`s5.ga.arena()`** (the arena `s5.devrows` is
+      handed, `ops.bend:7095`, NOT `s5.arena()`) is `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`
+      (`ops.bend:6435`): a **SHRINK**, nsrc 1, src0 BUFFER, arg `ATuple` and **not an
+      `AParam`**. `ParamArg(2, int32)` is node **2** (`ops.bend:6433`) -- the SLOT was read as
+      the INDEX. BOTH arenas have an index 4.
+- [x] **THE REFUSAL SURVIVES, BY A ROUTE NOBODY HAD.** `UOp.device` (`ops.py:887-899`) has NO
+      SHRINK arm, so a SHRINK falls through to `for x in self.src: if x.device is not None:
+      return x.device` / `return None`, and node 1's BUFFER is `ParamArg(1, int32)` with
+      `device=None`. MEASURED `node4_device = None`. A `None` from the fall-through, not from a
+      `ParamArg` field: **a port that special-cases `AParam` gets this fixture wrong.**
+- [x] **THE ORACLE'S FIXTURE WAS A THIRD THING, AND `sig()` CANNOT SEE ANY OF IT.**
+      `s5_copy_sel`'s CPython side is `ops-501-oracle.py:209` on `multi`
+      (`ops-501-oracle.py:164`) = `Ops.ALLOC`, `ParamArg(3, int32, 4, device=(...))` --
+      differing from the port's node in OP, SLOT, SIZE and DEVICE. `sig()`
+      (`ops-501-oracle.py:45`) prints the root op and the src op SEQUENCE, so all four print
+      identically. MEASURED: `PORT fixture = RAISED AssertionError:` against
+      `ORACLE fixture = ok | COPY/MSELECT RANGE`. **A green row comparing an ACCEPTED node
+      against a REFUSED one, and its own printer could not see it.**
+- [x] **TWELVE FIXTURE-IDENTITY ROWS, because a signature is not an identity.**
+      `c2d_selrow_{op,nsrc,src0,arg_is_tuple,arg_is_param,src0_slot,src0_size_is_none,
+      src0_device_is_none}` + `c2d_node2_{op,arg_is_param,slot,device_is_none}`. All 12 green.
+      `c2d_selrow_arg_is_param = False` makes "node 4 is a `ParamArg`" REFUTABLE rather than a
+      comment.
+- [x] **`s5_copy_sel` REPLACED BY A ROW I OWN, AND IT IS RED.**
+      `c2d_761 selrow = REFUSED AssertionError:` against the port's
+      `BUILT Ops.COPY/Ops.MSELECT Ops.RANGE`. `s5_copy_sel` itself is `ops.bend:7022` +
+      `ops-501-oracle.py:209`, both other units'; **REPORTED with `file:line` for removal**
+      (`ops.bend:7031`), not edited.
+- [x] **19 SHARED OUTCOME ROWS, 7 RED / 12 GREEN, DENOMINATOR NAMED.** Every red has its
+      positive control ONE STEP AWAY, and `c2d_761 tupledev` (same node, only `device` changed)
+      is the one that catches a guard refusing everything AND pins the guard to `self.device`
+      rather than the `device` ARGUMENT. `AssertionError`/`RuntimeError` are inside the row
+      VALUE, so a name-keyed diff cannot miss the class.
+- [x] **`arg=0` REFUSES -- A BOUNDARY THE FIRST DRAFT DID NOT HAVE.** `arg is None` is an
+      IDENTITY test; `Maybe<&2, U32>` invites "an empty shard index means no shard", which
+      passes an `arg=1` fixture and fails `c2d_761 argzero`.
+- [x] **BOUNDARIES RE-DERIVED BY EXHAUSTION, `vw-boundaries.py` 131 rows, md5 stable twice.**
+      `dtypes.weaks` = **2 of 20** dtypes (so 763 has 18 positives, and `dtypes.all` does NOT
+      contain `weaks`; `char` is `uint8`, so the raw sum is 21 and the dedup is 20) · **EVERY
+      `UOp.range` is `weakint` over ALL EIGHT `AxisType`s** (`distinct=1`), so a RANGE cannot be
+      a positive 763 fixture · `is_disk_device` is an exact case-folded `:`-split HEAD match
+      (`'NODISK'`/`'DISKX'`/`'0DISK'` build, `'disk'`/`'DISK:0'` refuse) · the 761 table is 2 of 4
+      quadrants, `arg in {None,0,1,-1}` measured.
+- [x] **6 ROWS THE PORT CANNOT PRINT, REPORTED NOT HIDDEN** (`c2d_oracle_only_n = 5` + the load
+      row): four DISK SPELLINGS, because `S.Dev` is a TAG (`spec.bend:85-87`) with no name to
+      case-fold or `:`-split, and `c2d_892 deviceread`, because `UOp.device` is not ported.
+- [x] **THE CHANGE `ops.bend` NEEDS: A RETURN-TYPE CHANGE, NOT A `Bool` GUARD.**
+      `ops.bend:7009` answers `Found` and a refusal is not a `Found`, so closing
+      `ops.py:761` means `Found | Refusal` and retyping all three callers
+      (`ops.bend:7020-7031`). It first needs **`UOp.device` (`ops.py:887-899`), which is NOT
+      PORTED AT ALL** -- grep for `def UOp.device` finds only `device_range_src`. `ops.py:763`
+      needs the dtype fold (`fold.bend`, live unit). `ops.py:759` is blocked on a contradiction
+      measured below.
+
+**REPORTED, NOT FIXED** (not this unit's files):
+- `device.bend:340`'s `tag_of` gives DISK tag **6**; `schedule/memory.bend:999` says
+  `disk() = S.D1{1}`. **Two ported tag spaces that disagree**, so the DISK guard is not
+  decidable, and `ops.bend:6427`'s `s5.dn(n)` fills every tag with `1`.
+- `ops.bend:7009`'s `UOp.copy_to_device` returns `Found` where CPython can raise -- the wall
+  `ops.bend:6998` calls "cannot change the node".
+- **13 of `validate.bend`'s 20 red rows are PRE-EXISTING, and PROVEN so**: staging `@--`'s
+  `validate.bend` beside the live one and running `validate-gate.py` gives `142 shared /
+  13 disagree` against `183 / 20` now. This unit's change to `validate.bend` **removes zero
+  lines** (`jj diff` reports 0 deletions). They are the z3-normalisation and raise-vs-list
+  residuals `validate-oracle.py`'s own header documents.

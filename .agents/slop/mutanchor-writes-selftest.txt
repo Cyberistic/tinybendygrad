@@ -1,0 +1,60 @@
+SPELLING                                       SEEN?     ZONES / spelling detected
+--------------------------------------------------------------------------------------------------------------
+open(P,'w').write(s)          MISSED BEFORE    yes       IN-PLAY via open(...).write
+open(SRC, "w").write(s)      MISSED BEFORE     yes       IN-PLAY via open(...).write
+open(SRC,'w').writelines(s)   MISSED BEFORE    yes       IN-PLAY via open(...).writelines
+h = open(SRC,'w'); h.write(s) MISSED BEFORE    yes       IN-PLAY via open(...).write
+with open(SRC,'w') as f:      MISSED BEFORE    yes       IN-PLAY via open(...).write
+open(SRC,'a').write(s)        append           yes       IN-PLAY via open(...).write
+open(SRC,'r+').write(s)       read-write       yes       IN-PLAY via open(...).write
+open(SRC, mode='w').write(s)  keyword mode     yes       IN-PLAY via open(...).write
+io.open(SRC,'w').write(s)     io module        yes       IN-PLAY via open(...).write
+gzip.open(SRC,'wb').write(s)  gzip module      yes       IN-PLAY via open(...).write
+SRC.write_text(s)             already caught   yes       IN-PLAY via write_text
+shutil.copy(BAK, SRC)         already caught   yes       IN-PLAY via shutil.copy
+os.remove(SRC)                DELETION, missed before yes       IN-PLAY via os.remove
+shutil.rmtree(D)              DELETION, missed before yes       IN-PLAY via shutil.rmtree
+shutil.move(A, SRC)           missed before    yes       IN-PLAY via shutil.move
+json.dump(x, open(SRC,'w'))   nested argument  yes       IN-PLAY via nested open as dump argument
+print(x, file=open(SRC,'w'))  keyword argument yes       IN-PLAY via nested open as print argument
+dump(x, f)                    MAY, handle as argument yes       IN-PLAY via MAY write: dump passed a writable handle
+dump(x, handle=f)             MAY, keyword argument yes       IN-PLAY via MAY write: dump passed a writable handle
+H[0].write(s)                 handle in a LIST yes       IN-PLAY via open(...).write
+H['f'].write(s)               handle in a DICT yes       IN-PLAY via open(...).write
+run('cat > %s' % SRC, shell=True)   shell redirect yes       IN-PLAY via shell redirect in run
+run('cat >> SRC', shell=True)        append redirect, literal yes       IN-PLAY via shell redirect in run
+run(['bash','-c','cat > x'])   bash -c form    yes       IN-PLAY via shell redirect in run
+open(SRC).read()              MUST NOT be a write no        -
+open(SRC,'rb')                MUST NOT be a write no        -
+s.replace(a,b)                MUST NOT be a write no        -
+dst.write_text(s) scratch     SCRATCH not IN-PLAY yes       SCRATCH via write_text
+read handle as argument       MUST NOT be a write no        -
+handle in a list, only READ   MUST NOT be a write no        -
+H[i] for a VARIABLE index     MUST NOT be resolved no        -
+'2> log' descriptor redirect  MUST NOT be read as a file write no        -
+no shell=True, no sh -c       MUST NOT be read as a redirect no        -
+a method call is not a MAY    MUST NOT be double counted yes       IN-PLAY via open(...).write
+--------------------------------------------------------------------------------------------------------------
+34/34 cases behave as required
+
+NO DESTINATION IS REPORTED TWICE FOR ONE FILE (a double count inflates a total)
+  0 of 34 fixtures double count
+
+STILL MISSED, each a REAL hole and each naming what closing it would need:
+  import-time side effect of a SIBLING harness             detected=NOTHING
+      the write is in ANOTHER FILE.  Needs cross-file dataflow, or executing the import -- and mutanchor executes nothing by design.  `imports()` enumerates the EDGE so the other file is one read away, but it does not resolve the write.
+  a handle in a container at a VARIABLE index, H[i].write(s) detected=NOTHING
+      needs the VALUE of i.  Guessing index 0 would be the reader inventing the measurement, so this is left open rather than closed with a guess.
+  a handle stored in an object attribute, self.f.write(s)  detected=NOTHING
+      needs an object model.  Outside a single-file AST.
+  a write via an alias of an alias, f = g = open(P,'w')    detected=NOTHING
+      REACHABLE and cheap: `_bounds` already iterates to a fixpoint over Assign, but it stops when `_path` cannot read the RIGHT-HAND side, and `f = g` needs a handle-to-handle edge.  Not closed here.
+  a redirect built at runtime, cmd = 'cat > ' + P          detected=NOTHING
+      the command is a NAME, so the string is not in this AST.  Closing it needs the constant folder, i.e. dataflow.
+  a redirect through a nested shell, sh -c 'sh -c ... > P' detected=NOTHING
+      quoting.  A string shape check is not a shell parser and will not be one.
+
+THE IMPORT EDGE, which is closeable even though the write is not:
+  module-scope imports of h4.py: ['patch_not_apply', 'staged_mut', 'zero_classify']
+  ...the function-local `import hashlib` is correctly NOT listed: a sibling's
+     import-time write only matters at module scope.

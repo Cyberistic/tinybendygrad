@@ -4489,7 +4489,22 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1010  def is_realized
 
-# TODO(p3) ops.py:1015  def variable
+# PORTED -- `ops.py:1015 UOp.variable` is `UOp.variable` (this file), four `vrn_*`
+# rows byte-identical to CPython on all three lanes via
+# `sh .agents/slop/ops-vrn-gate.sh`, with six mutations in
+# `.agents/slop/ops-vrn-mutate.py` each moving EXACTLY the rows it names.
+#
+# IT WAS BLOCKED ON A NAME, NOT ON A SUBSTRATE. CPython writes `slot=-1` and this
+# file's `ParamArg.slot` is a `U32`, so the def needed a name for "no POSITIONAL
+# slot" and the file that OWNS the field had none -- while `function.bend`,
+# `codegen/kernel.bend`, `codegen/late/linearizer.bend` and `uop/symbolic.bend` had
+# each invented one. `ParamArg.no_slot()` (this file) is the single name, landed the
+# commit before, and this def is the first thing it unblocked.
+#
+# `is_variable` (ops.py:1020) is STILL BLOCKED and this does not change that: its
+# fifth conjunct is `self._shape == ()` and `Node{op, src, arg, tag}` has no shape
+# field. The `vrn_*` rows print `nsrc` as the closest honest proxy and the `is_
+# variable` marker says why that is not the same question.
 
 
 
@@ -4630,7 +4645,25 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1361  def launch_dims
 
-# TODO(p3) ops.py:1366  def vals
+#   ops.py:1366  def vals
+#   `tuple(var_vals[k.expr] for k in self.vars)` with a `RuntimeError(f"unbound
+#   Variable {e}")` on a miss. MEASURED: `ProgramInfo(vars=(i,j)).vals({'i':7,
+#   'j':9})` is `(7, 9)` and a miss is `RuntimeError: unbound Variable 'j'`.
+#
+#   EVERY PART IS HERE EXCEPT ONE, and the one is not a def. `ProgramInfo.vars` is
+#   `ops.bend:1408`, `UOp.expr` is `ops.bend:7158` (landed, and it is the reader
+#   `k.expr`), and the `var_vals` dict is already spelled as `VarVals{m:
+#   Map<&2, H.I64>}` at `ops.bend:943`. But `Map` is USED IN SEVEN PLACES AND
+#   DEFINED IN NONE -- `rg '^type Map|^def Map' tinybendygrad/` is zero hits -- so
+#   the lookup has nothing to call.
+#
+#   AND `Map.put` IS NOT `Map.set`, which is the whole reason it is wanted and the
+#   reason it is not free. `render.bend:991` records the measurement: a `put` on a
+#   one-entry `MLeaf` REPLACES the leaf and drops the old key, so three sequential
+#   puts answer `d[1]=three d[2]= d[3]=`. `render.bend:979-994` documents that the
+#   fix is a NEW BEND RULE, filed in the constraints file. `vals` needs the lookup
+#   only, so it needs the TYPE; `pyr_render`'s ctx needs `put` and so needs the
+#   RULE. P3 with the Map, and the Map is a language change rather than a port.
 
 # TODO(p3) ops.py:1400  def __reduce__
 #   # grad_fxn can't be pickled
@@ -4780,9 +4813,36 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # `sh .agents/slop/ops-rra-gate.sh`, with 7 mutations in
 # `.agents/slop/ops-rra-mutate.py` each moving EXACTLY the rows it names.
 #
-# ITS ONE CALLER IS STILL A MARKER: `schedule/prepare.py:186` is the only call
-# site, and that rewrite rule is P3. `ops.bend:764` names the situation this
-# creates -- "This `U32` ladder has NO CALLER in the port. The fix is a caller,
+#   ITS ONE CALLER IS PORTED'S TABLE BUT NOT ITS BODY, and the BLOCKER IS
+#   ARCHITECTURAL RATHER THAN A DEF. `schedule/prepare.py:186` puts it in
+#   `pm_inline_calls` as `UPat(Ops.AFTER, src=(UPat(name="r"), UPat(Ops.SINK,
+#   name="t")), allow_any_len=True)`, and `schedule/prepare.bend`'s TABLE is
+#   already ported -- `pr_inl_table`'s entry 1 is `PMEntry{1, [OpsAFTER],
+#   [OpsSINK]}`, which IS that pattern, and `prepare-gate.sh` diffs 321 rows of it.
+#   What is missing is the rule BODY.
+#
+#   AND THE BODY CANNOT BE WRITTEN WHERE THE RULE LIVES. `PMEntry` is
+#   `{tag, ops, rej}` -- there is no body field, because a Bend `Data` cannot hold
+#   a function value, and `ops.bend:3711`'s `pm_dispatch_m` resolves a tag to a body
+#   through a `match` in ops.bend. `schedule/prepare.bend` IMPORTS ops.bend (for
+#   `O.PMEntrys`, `F.Folded`, `F.Table`) and ops.bend cannot import it back -- the
+#   direction rule ops.bend states at its own NOT PORTED block. So prepare's bodies
+#   would have to live in ops.bend, which makes ops.bend the owner of every unit's
+#   rules and puts two agents on one file for every rule either of them ports.
+#
+#   MEASURED CONSEQUENCE: all 321 `prepare` rows are TABLE STRUCTURE -- `*_n`,
+#   `*_i_ops`, `*_i_rej`, `*_keys`, `*_pd_*` -- and NOT ONE runs a rule body. Five
+#   tables (fma, mop, inl, dsk, ear) and 321 rows, and the bodies are untested
+#   because there is nowhere to put them. That is a real hole in the gate's reach,
+#   and it is a design question rather than a backlog item: either `PMEntry` grows a
+#   body in a form Bend can hold (a def NAME, dispatched by name), or the dispatch
+#   is passed in per unit, or every unit's rules live in ops.bend forever. The first
+#   is the smallest: a `body: String` naming a def, and `pm_dispatch_m` resolving it
+#   through a name ladder. P3, as a DESIGN, before any more rules.
+#
+#   The earlier note on this marker said the fix is "a caller, not a deletion",
+#   which is still true and is now sharper: the caller needs a home, and the home is
+#   the question. ops.bend:764 names the symptom.
 # not a deletion." The def is landed and gated; the rule that uses it is not.
 
 # DELETED -- `contiguous_bitcast_index` does not exist at this pin. `rg` finds
@@ -7452,8 +7512,137 @@ def rra.rows(+ar: Arena) -> IO(Unit):
     h : Unit <- rra.row("rra_samebase", ar, 15, 19)
     srow("rra_arena", rra.count(ar, 5, 14))
 
+# ==== ops.py:1015  `UOp.variable` =========================================
+#
+# `return UOp(Ops.PARAM, arg=ParamArg(-1, dtype, name=name, vmin_vmax=(min_val,
+# max_val), multiple_of=multiple_of, addrspace=AddrSpace.ALU))`, with the comment
+# that says what it is: "a Variable is a scalar ALU PARAM with a name and a value
+# range; binding it sets the val payload on the arg".
+#
+# THIS DEF WAS BLOCKED UNTIL `ParamArg.no_slot` EXISTED, and that name is the whole
+# of the unblocking: CPython writes `slot=-1`, this port's `ParamArg.slot` is a
+# `U32`, and the file that OWNS the field had no name for "no positional slot" while
+# three siblings had each invented one. MEASURED: `variable("i",0,10).arg.slot` is
+# `-1`, and `ParamArg.no_slot()` is that value in a `U32`.
+#
+# `AddrSpace.ALU` is `S.Aalu{}` and it is the ONLY addrspace this def sets, which
+# is why `is_variable` tests it: a PARAM with a range and a name is a Variable only
+# if it is ALU, because a BUFFER carrying a range is a shaped buffer.
+#
+# The thirteen-field rebuild is a `match` and not a second literal, and its scrutinee
+# is a PARAMETER rather than the `ParamArg.of(...)` call -- a match may scrutinise
+# neither a computed value nor a local binder. Same reason `sg.pa.put` takes its
+# record as an argument.
+def UOp.variable.pa.of(base: ParamArg, nm: String, r: PyRange, mo: U32) -> ParamArg:
+  match base:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, size, Some{r}, Some{mo}, Some{nm}, S.Aalu{},
+        device, volatile, image, buffer, bind_on_realize, val}
+
+def UOp.variable.pa(nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> ParamArg:
+  UOp.variable.pa.of(ParamArg.of(ParamArg.no_slot(), dt), nm, PyRange{lo, hi}, mo)
+
+def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> Found:
+  UOp.new(ar, OpsPARAM{}, Nil{}, AParam{UOp.variable.pa(nm, lo, hi, mo, dt)}, TNone{})
+
+# ==== the `vrn_*` rows =====================================================
+#
+# `variable` sets FIVE fields -- slot, name, vmin_vmax, multiple_of, addrspace -- and
+# the other eight keep `ParamArg.of`'s defaults. So a row prints those five plus the
+# src count, and NOTHING else: a row that printed the whole record would move on any
+# of thirteen fields and say nothing about any one of them.
+#
+# The four fixtures differ in ONE input each, and the defaults are CPython's
+# (`dtype=dtypes.weakint`, `multiple_of=1`), so `vrn_default` is the def's own
+# signature rather than a fixture choice. `vrn_neg` and `vrn_multi` are the rows that
+# make the two `H.I64` ends and the `U32` separate: one row printing `(0,10)` cannot
+# tell a swapped pair from a correct one.
+def vrn_optu(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{u}: U32.show(u)
+    case None{}: "-"
+
+def vrn_opts(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case None{}: "-"
+
+def vrn_addr_name(a: S.Addr) -> String:
+  match a:
+    case S.Aalu{}: "ALU"
+    case S.AGlobal{}: "GLOBAL"
+    case S.ALocal{}: "LOCAL"
+    case S.AReg{}: "REG"
+
+def vrn_lo.of(r: PyRange) -> String:
+  match r:
+    case PyRange{lo, hi}: H.i64_text(lo)
+
+# The two range ends are TWO defs, and `Bool.pick` is why: it EVALUATES both
+# branches, so `Bool.pick(H.I64, top, r.hi, r.lo)` is `r.hi` and `r.lo` read as terms
+# outside a match, which Bend rejects. A `top: Bool` parameter would be the terser
+# spelling and it is not available; the two ends are the two arms.
+# `PyRange` has NO accessors, and a `case PyRange{lo}` is not a partial match -- the
+# same all-fields rule `ParamArg` has. So the range is destructured in full and the
+# two ends are read from the BINDERS, which is why these two defs take the payload
+# rather than the `Maybe`: `ops.bend:1503` spells the same destructuring.
+def vrn_lo(m: Maybe<&2, PyRange>) -> String:
+  match m:
+    case Some{r}: vrn_lo.of(r)
+    case None{}: "-"
+
+def vrn_hi.of(r: PyRange) -> String:
+  match r:
+    case PyRange{lo, hi}: H.i64_text(hi)
+
+def vrn_hi(m: Maybe<&2, PyRange>) -> String:
+  match m:
+    case Some{r}: vrn_hi.of(r)
+    case None{}: "-"
+
+def vrn_f5(p: ParamArg) -> Maybe<&2, U32>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
+
+def vrn_f4(p: ParamArg) -> Maybe<&2, PyRange>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
+
+def vrn_f3(p: ParamArg) -> Maybe<&2, String>:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+
+# The five field readers, one match each. Seven defs and not one that returns a
+# record, because a record would have to spell all thirteen fields and a
+# thirteen-field literal is the thing `sg.pa.put` exists to avoid.
+def vrn_pa_of(arg: Arg) -> ParamArg:
+  match arg:
+    case AParam{p}: p
+    case _: ParamArg.of(ParamArg.no_slot(), S.weakint())
+
+def vrn_f7(p: ParamArg) -> S.Addr:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
+
+def vrn_row(nm: String, +f: Found) -> IO(Unit):
+  +ar = Found.ar(f)
+  +p = vrn_pa_of(Arena.arg(ar, Found.i(f)))
+  srow(nm, String.concat([
+    "slot=", Bool.pick(String, U32.is_eq(ParamArg.slot(p), ParamArg.no_slot()), "-1", U32.show(ParamArg.slot(p))),
+    " name=", vrn_opts(vrn_f3(p)), " mult=", vrn_optu(vrn_f5(p)), " addr=", vrn_addr_name(vrn_f7(p)),
+    " lo=", vrn_lo(vrn_f4(p)), " hi=", vrn_hi(vrn_f4(p)),
+    " nsrc=", U32.show(Arena.nsrc(ar, Found.i(f)))]))
+
+def vrn_rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- vrn_row("vrn_default", UOp.variable(ar, "i", H.i64_of_i32(0), H.i64_of_i32(10), 1, S.weakint()))
+    b : Unit <- vrn_row("vrn_multi", UOp.variable(ar, "j", H.i64_neg(True{}, H.i64_of_i32(5)), H.i64_of_i32(5), 4, S.weakint()))
+    c : Unit <- vrn_row("vrn_neg", UOp.variable(ar, "m", H.i64_neg(True{}, H.i64_of_i32(100)), H.i64_neg(True{}, H.i64_of_i32(1)), 1, S.weakint()))
+    vrn_row("vrn_int32", UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    y0 : Unit <- vrn_rows(Arena.empty())
     w0 : Unit <- rra.rows(rra.arena())
     v0 : Unit <- vr.expr.rows(vr.arena())
     a0 : Unit <- sg.rows()

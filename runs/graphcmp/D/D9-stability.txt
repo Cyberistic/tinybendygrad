@@ -1,5 +1,9 @@
 group: 2 runs BYTE-IDENTICAL
-sym: 2 runs BYTE-IDENTICAL
+sym: 2 runs DIFFER
+32d31
+< rc=0
 loop: 2 runs BYTE-IDENTICAL
 gate: 2 runs BYTE-IDENTICAL
 commute: 2 runs BYTE-IDENTICAL
+36
+< rc=1

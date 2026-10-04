@@ -21909,3 +21909,287 @@ and `compile()`s the result before writing it.
 
 **A substitution asserted at 94/8/2 hits can be exactly right for the rows and fatal for the
 code**, so the two files need two pattern sets, each asserted to its own count.
+
+---
+
+## CT-1 A `match` CANNOT SCRUTINISE A COMPUTED VALUE **OR** A LOCAL BINDER
+  (uop/validate.bend `c2d` lane, 2026-10-04. Numbering continues from `LN-6`; cite POSITIONS.)
+
+The rule is stated twice, in two different words, and the second word is the one that costs the
+time. Measured, in this order, on the same construct:
+
+    match O.Arena.arg(ar, O.Arena.src(ar, 4, 0)):     -> "a match cannot scrutinize a
+                                                          computed value: give it its own def"
+    a = O.Arena.arg(ar, O.Arena.src(ar, 4, 0))
+    match a:                                          -> "a match cannot scrutinize a local
+                                                          binder: give it its own def"
+
+So **each reader over one computed `Arg` is TWO defs**: one that fetches the value and one that
+takes it as a parameter and reads it. Four readers of one `Arg` is eight defs, and the eight
+must be ABOVE their first caller (R-3) or the error is `a filled definition` -- a fourth
+message, for a cause that looks like nothing to do with `match`.
+
+Two more measured facts from the same block, both of which cost a compile cycle:
+
+  * **`case O.ATuple{}` and `case O.AParam{}` ARE ERRORS**: `a ops.ATuple pattern with 1 field`
+    and `a ops.AParam pattern with 1 field`. Even a pattern that BINDS NOTHING must name the
+    field. `case O.ATuple{ys}` / `case O.AParam{pa}` is the spelling, and an unused `ys` is fine.
+  * **`==` IS NOT AN EXPRESSION OPERATOR**: `... Maybe.default(&2, Bool, O.ParamArg.size(pa), False{}) == None{}`
+    parses as `expected : 'def', 'type' or 'law'`. To ask "is this `Maybe` empty", `match` it.
+
+And one that is about `Found` rather than `match`:
+
+  * **`O.s5.minted.go(ar, f)` READS `f` TWICE, so a wrapper that also reads `f` is
+    `f (consumed more than once)`.** `Found` is a RECORD, so it is NOT implicitly copyable and
+    R-3's `+` is required on the wrapper's own parameter. `def c2d_sig(+f: O.Found) -> String`
+    is the shape that compiles; the same def without `+` does not.
+
+## CT-2 A REFUSAL IS NOT A RETURN VALUE, SO GATING IT IS A RETURN-TYPE CHANGE
+  (uop/validate.bend `c2d` lane, 2026-10-04)
+
+`UOp.copy_to_device` (`ops.bend:7009`) answers `Found`. CPython's `copy_to_device`
+(`ops.py:758-765`) can REFUSE on three of its five lines, and a refusal is not a `Found`.
+**There is therefore no `Bool` guard that closes ops.py:761** -- adding one either means a
+silent default node or a widened return type, and the two are different ports. The gate rows
+have to be written against the widened shape, so the honest state of the lane while the guard is
+absent is **7 red rows out of 19 shared outcome rows**, and the twelve that must keep building
+are what catch a guard that refuses everything.
+
+`ops.bend:6998`'s comment counts TWO refusals. There are FOUR, and the difference is
+mechanism, not just count:
+
+| upstream | mechanism | observable |
+|---|---|---|
+| `ops.py:760` | `raise RuntimeError(msg)` | `RuntimeError` **with** a message |
+| `ops.py:761` | **bare `assert`, no message** | `AssertionError` with an **EMPTY** string |
+| `ops.py:763` | `raise RuntimeError(f"...")` | `RuntimeError` **with** a message |
+| `ops.py:892` | `assert cond, f"msg"` | `AssertionError` **with** a message, and LAZY |
+
+**A bare `assert` and a `raise` are different upstream behaviours and a row that accepts either
+is testing neither**, so the class belongs INSIDE the row's value rather than in a row of its own
+where a diff of row NAMES would never see it. And `ops.py:892` fires on the first `.device`
+READ, not at construction (`UOp.mselect(1)` on a scalar-device node CONSTRUCTS), so it needs two
+rows -- the same laziness `validate-oracle.py` already records for `dv_bad_dtype_bitcast`.
+
+## CT-3 A FIXTURE IDENTITY IS NOT A SIGNATURE, AND A PORTED ARENA IS NOT THE ARENA YOU THINK
+  (uop/validate.bend `c2d` lane, 2026-10-04)
+
+Three claims about ONE fixture (`s5.selrow`'s index 4) were in circulation and two were wrong:
+
+  * "`s5.arena()`" -- wrong arena. `s5.devrows` is handed **`s5.ga.arena()`** (`ops.bend:7095`).
+    Both arenas have an index 4, they hold different nodes (`s5.arena()`'s 4 is `Ops.ALLOC` with
+    no srcs; `s5.ga.arena()`'s 4 is `Ops.SHRINK` with one src), and the fixture table was read
+    off the wrong one.
+  * "`ParamArg.of(2, int32)` with `device=None`" -- that node EXISTS (`s5.ga.arena()` index 2,
+    `ops.bend:6433`) and it is not index 4. The SLOT was read as the INDEX.
+  * the node's device is `None` -- RIGHT, and by a route nobody had: **`UOp.device`
+    (`ops.py:887-899`) has no SHRINK arm**, so a SHRINK falls through to `for x in self.src: if
+    x.device is not None: return x.device` then `return None`. A port that special-cases
+    `AParam` would get the `ParamArg` case right and this one wrong.
+
+**And the row was green because `sig()` CANNOT SEE ANY OF IT.** `sig()`
+(`ops-501-oracle.py:45`) prints the root op and the src op SEQUENCE; the oracle's fixture
+(`ops-501-oracle.py:164`'s `multi`) differs from the port's in op, slot, size AND device, and all
+four print identically. So the fix is not a better signature -- it is **rows about the fixture's
+identity**: op, nsrc, src0, `isinstance(arg, tuple)`, `isinstance(arg, ParamArg)`, src0's slot,
+size and device. Twelve of them, all green, and all refutable.
+
+## CT-4 A `Maybe<&2, U32>` PAYLOAD OF ZERO IS NOT ABSENCE
+  (uop/validate.bend `c2d` lane, 2026-10-04)
+
+`ops.py:761` is `assert arg is None or isinstance(self.device, tuple)` -- an **IDENTITY** test.
+MEASURED, live: `copy_to_device(dev, 0)` on a scalar-device node **REFUSES**, and so does
+`copy_to_device(dev, 1)`. So a Bend guard written as "an empty shard index means no shard",
+which is the natural reading of a `Maybe<&2, U32>` payload of `0`, **passes a fixture using
+`arg=1` and fails the fixture using `arg=0`.** The negative row for a `Maybe` boundary has to
+include a `Some{0}`, not only a `Some{1}`.
+
+The same shape bites a `Maybe` on the DEVICE side: `S.Dev` is `D1{tag: U32}` / `Dn{tags}`,
+a TAG, not a NAME (`LAWS/spec.bend:85-87`), so `is_disk_device`'s case fold and `:`-split are
+**not representable** and the four spelling rows are oracle-only. And there are TWO ported tag
+spaces that DISAGREE on DISK: `device.bend:340`'s `tag_of` says 6, `schedule/memory.bend:999`
+says `disk() = S.D1{1}`. Until one is chosen the DISK guard is not decidable, and a lane that
+printed a DISK refusal without saying which tag it meant would be asserting a coincidence.
+
+## CT-5 A COUNT ROW MUST NAME THE LANE THAT CAN ANSWER IT, OR IT IS A CONSTANT IN TWO PLACES
+  (uop/validate.bend `c2d` lane, 2026-10-04)
+
+A count that both lanes print must be a fact about the AGREED FIXTURE SET -- `c2d_fixture_n=24`,
+`c2d_identity_n=12`, `c2d_shared_n=19` -- because a count of either lane's OUTPUT cannot agree
+by construction and would go red for no reason. A count of ONE lane's behaviour is lane-only
+(`c2d_port_built_n` on the port, `c2d_refused_n` on the oracle) and the gate reports it as
+`port_only` / `oracle_only`, which is a COVERAGE fact rather than a pass.
+
+And a shared tally must be COMPUTED FROM THE ROWS, not written next to them:
+`c2d_shared_refused_n` intersects the nineteen shared names against the rows already emitted, so
+adding a fixture cannot leave it stale. `c2d_lane_loaded` carries the load -- 53 oracle rows
+against 42 port rows, of which 41 shared -- because "0 disagreements" without a load beside it
+is how a starved lane reports 115 where a loaded one reports 787.
+
+================================================================================
+## LW-1 `jj file show -r @` SNAPSHOTS, SO A `sha256(@) == sha256(live)` GUARD IS AN IDENTITY
+
+Numbering continues from the `GC-*` block immediately above.  Positions, not numbers,
+are the citation: this block is the last in the file.
+
+`staged_mut.py` asserted `sha256(mj@) == sha256(live)` at stage time and I took it for a
+guard.  **It is a tautology.**  `jj file show -r @` snapshots the working copy, so it
+commits the very edit it is about to be compared against into `@` before the comparison
+runs.  Measured on `.agents/slop/mutanchor.py`, one appended line:
+
+    live bytes                                    51
+    sha256(jj file show -r @)          SNAPSHOTS -> 5d2a13b8962e92be
+    sha256(jj --ignore-working-copy ...)          fa4bc8abe6f09703
+
+The flag goes FIRST, before the subcommand.  Two consequences, both worth more than the
+fix: the `MirrorStale` branch was unreachable for any tracked file, so every "the mirror
+is stale" refusal anyone believed this module had made was vacuous; and the fix makes
+the assertion STRICT, so a file with an uncommitted working-copy edit is now refused
+outright.  **A read that normalises its own subject cannot be an assertion about that
+subject.**  The general form: `staged-guard-proof.py` fires both guard branches on real
+bytes and reports **8/8**, and the order of its two `jj` calls IS the measurement --
+read the snapshotting spelling second, or both halves agree for the wrong reason, which
+is what happened on the first attempt.
+
+## LW-2 A `.bend` SUFFIX IS NOT A MARKER, AND A DEBRIS RULE THAT FIRES ON THE HEALTHY TREE GETS DELETED
+
+The debris rule was `name.endswith(('.bend', '.mut', ...))`.  `ops.bend` ends in `.bend`,
+so it fired on all **131** real source files.  A rule that fires on a healthy tree is a
+rule nobody reads.  What makes a copy a copy is a MARKER, and there are two spellings:
+**appended** (`elf.bend.mut`) and **inserted** (`ops_bend.mut.bend`, 80,583 bytes, dated
+2026-10-02, VISIBLE to `find tinybendygrad -name '*.bend'` and therefore counted as a
+port by any `.bend` census).
+
+## LW-3 `NAME.staged-TAG-<pid>` ENDS IN ITS PID, SO "DEBRIS?" IS A QUESTION WITH AN ANSWER
+
+Six units are live on six `.bend` files.  While I was writing the debris check the list
+grew from two items to six with four `nvdev.staged-*` copies SECONDS old -- four units'
+in-flight mirrors -- and my first version called all six debris.  `os.kill(pid, 0)`:
+alive is `IN-FLIGHT`, gone is `DEBRIS`.  Measured, 12:10: `nvdev.staged-mmut-69554` and
+`nvdev.staged-nv-50051` alive; `nvdev.staged-nv-85779` and `nvdev.staged-nv1-8831` gone.
+A guard that fails on a running unit's staged mirror gets switched off within the hour.
+
+## LW-4 A GUARD'S OWN SELFTEST MUST NAME THE LIVE PATH AND WRITE NOTHING
+
+The first version of `live-write-guard.py --selftest` pointed its fixtures at a temp
+directory, so every fixture zoned `SCRATCH` and the guard reported **`no live write` for
+an in-place writer with a `finally` restore** -- the guard that would have shipped
+`blob-intern-mutate.py` unchanged.  Fix, and it is free: `mutanchor` only ever PARSES, so
+a fixture that names `tinybendygrad/uop/ops.bend` in a source string writes no byte
+anywhere.  **That is what makes a write-hazard guard a routine gate rather than something
+that needs a quiet machine.**  7/7 fixtures fire correctly now.
+
+## LW-5 `_path` DID NOT KNOW `+`, AND THAT IS THE SPELLING `memory-mutate.py` USED
+
+`open(SRC + '.mut', 'w')` is the second-most-common write spelling in this corpus after
+a bare name, and `mutanchor._path` handled `BinOp(Div)` and `BinOp(Mod)` and NOTHING
+else, so the whole family was invisible.  Adding `BinOp(Add)` found a 28th live writer
+(`mm-mutate.py`, writing `uop/probe-mmcore.bend.mut`).  **`+` on a path is not
+`os.path.join` and has no separator** -- treating it as one would invent a directory.
+
+## LW-6 A REDIRECT TARGET IS A STRING BEFORE IT IS AN EXPRESSION
+
+`tinybendygrad/uop/ops.bend` parses as an expression only by way of the attribute
+`ops.bend`, so `ast.parse(target)` + `_path` returns `None` for a perfectly ordinary path
+and the shell-redirect case was missed three times in a row.  Resolution order: an exact
+bound constant name, then a quoted literal, then an expression, then -- if nothing
+resolved -- **the token IS the literal**, gated on `_looks_like_path` (a `/` or a source
+extension) so `run('cat > p', shell=True)` does not become a destination in the repo
+root.  And `2>`/`&>` are deliberately NOT read: those redirect a descriptor, not stdout.
+The selftest is 34/34 with **0 of 34 double-counted**, because a MAY-write and a definite
+write of the same file would make the total wrong for a structural reason.
+
+## LW-7 `zero_verdicts()[:3]` PUT `PATCH-NOT-APPLY` IN THE `INVISIBLE` CELL
+
+`zero-classify.py --verdicts` prints `UNREACHABLE+proof, PORT-DEFECT, PATCH-NOT-APPLY,
+INVISIBLE-to-reader, NO-MUTATION-WRITTEN`.  A query is not a keyed lookup.  My own
+conversion sliced it by position and would have written a table cell reading
+`PATCH-NOT-APPLY` beside rows that moved.  `staged_mut.zero_verdict_map()` looks up by
+NAME and **refuses a key that matches zero or more than one** queried verdict.  Same
+shape as `IN-PLAY` vs `RECORD`: the guard and the table must read one source.
+
+## LW-8 AN OPTION'S ARGUMENT IS NOT A FLAG, AND `--report FILE` PRINTED `0 mutations:`
+
+The converted `memory-mutate.py` collected selectors as "everything in argv that is not a
+flag", so `--report`'s VALUE landed in the set, every id missed, and it printed
+`0 mutations:` and exited 0 -- the one output indistinguishable from "did not start", hit
+by my own conversion on its first run.  **`0` IS NOW A `SystemExit` WITH NO TABLE.**  The
+rule generalises past shell tools: any parser that filters arguments by prefix must
+remove an option's value WITH the option, by index.
+
+## LW-9 THE ANCHOR THAT OCCURS 5x IS NOT A FIELD-ORDER MUTATION, AND `replace()` WITH NO COUNT HID IT
+
+`memory-mutate.py`'s M10 is described as "Bump: the field order size,ptr,base,wrap ->
+size,base,ptr,wrap".  Its anchor `Bump{size, ptr, base, wrap}` occurs **5x and NONE of
+the 5 is the `type Bump is Data` declaration**, which is LABELLED
+(`Bump{size: U32, ptr: U32, base: U32, wrap: Bool}`).  The old harness did
+`src.replace(find, repl)` with NO count.  Measured: rewriting all five swaps TWO
+POSITIONAL BINDERS -- `Bump.base` returns 11 where it returned 13, `Bump.ptr` 13 where
+it returned 11 -- and moves **13 rows**.  **So the published number was real and it
+described an edit the anchor does not perform.**  An ambiguous anchor is two candidate
+mutants and choosing one is the reader inventing a measurement; refuse it, print
+`PATCH-NOT-APPLY`, and say how many sites and which.
+
+## LW-10 A LABELLED `type X is Data` DECLARATION ORDER IS NOT OBSERVABLE, AND TWO ROWS THAT ASSERT IT ARE UNFALSIFIABLE
+
+Every `type X is Data` in `memory.bend` is LABELLED; every read is an UNLABELLED
+POSITIONAL pattern `case X{a, b, c}`.  Measured with a probe reading every accessor off
+`Mv{7, 11, 13, 17}`: `7 11 13 17` before AND after reordering the declaration.  M09,
+M12 and M13 are therefore **THEOREMS** -- two spellings of one type -- and their zeros
+are not fixture gaps.
+
+And the rows that were supposed to hold the field order are
+`srow("mmio_init_fields", "mv addr nbytes fmt")` (`memory.bend:1310`) and
+`srow("bump_init_fields", "size ptr base wrap")` (`:1311`): **a string literal asserted
+against nothing**, so no mutation of either declaration can move them.  Same shape as
+`device.bend`'s `sig=0 4 5`.  A row that cannot fail is worse than no row, and a
+`bump_init_fields` row is why M09's zero looked like coverage.
+
+## LW-11 TWO ZEROS THAT LOOK LIKE THEOREMS HAVE THE FIXTURE SITTING IN THE FILE ALREADY
+
+`memory.bend:1728` asserts that `pte_ladder` and `pte_first_largest` "are THEOREMS for
+every `va_shifts` CPython accepts" and offers three rows as the checkable form.  Measured
+with a sweep of **14** `va_shifts` vectors: `pte_first_largest_of` is **0 for 10 of 14**,
+so for `[9, 7, 4]` the port's own `first_of(covers)` is not `max(covers)` and M62's two
+spellings ARE distinguishable.  `ladder_hit.go(3, 3, 10)` is the same for M38 (measured
+`0 -> 1` under M38).  Both are **PORT-DEFECT -- a request for a fixture** -- and the wall
+is false.  **Do not inherit a theorem from a comment; produce the separating input.**  A
+14-vector sweep with a printed denominator took four minutes and settled two zeros that
+the comment had closed.
+
+## LW-12 A FILE DIGEST FIRES ON A 3 KB EDIT THAT CHANGES NO ROW; A ROW-SET DIGEST DOES NOT
+
+At 12:04 `ops.bend` was 369,504 bytes / `569dc3af8f719251`.  At 12:19 a concurrent unit
+landed **3,103 bytes** on it.  The converted harness re-staged the new substrate and the
+control's row-SET digest was `f703511baf9e9491` on BOTH, with all four verdicts and their
+row movements identical (4/3/3/5).  The old harness would have taken that edit and put
+the 369,504-byte file back over it in its `finally`.  A guard that alarms on a difference
+that means nothing is a guard that gets switched off -- **and the substrate-moving
+branch is only trustworthy if the quiet case stays quiet.**
+
+## LW-13 A REGISTRY LINE IS NOT A REGISTRY ENTRY, AND A GUARD THAT COUNTS ITS OWN PROSE STILL PRINTS A NUMBER
+
+`live-write-guard.py` was red at 12:05 with `0 registered, 27 failing`.  Two minutes after
+its own `.md` was written it reported **`20 registered, 9 failing`** -- with the registry
+file visibly unchanged.  `registered()` took the first whitespace-token of every non-`#`
+line, so the registry's own PROSE registered twenty harnesses: the word `A`, the word
+`harness`, and the module name `staged_mut.Staged`.  An entry is now a `.py` filename at
+column 0, TWO spaces, a reason, and the file must exist in the corpus; seven registry
+fixtures gate it, run against the real file and restored in a `finally`.
+
+**The general form, and this is the third time in one unit: a filter that does not know
+what it is filtering will read its author's prose as data.**  `--report FILE`'s value read
+as a selector made the harness print `0 mutations:`; a `\d`-keyed census counts `0`
+forever; a registry line reads as a registration.  **Every filter needs a fixture that is
+NOT the thing it is looking for**, or the first thing it finds is its own documentation.
+
+## LW-14 THE KILL-WINDOW DEBRIS IS SELF-HEALING AND THE PRE-GUARD DEBRIS IS NOT
+
+At 12:10: 4 DEBRIS and 2 IN-FLIGHT under `tinybendygrad/`.  At 12:31: **2 DEBRIS and 0
+IN-FLIGHT** -- both `nvdev.staged-*` kills were removed by their owners' runs COMPLETING,
+because `Staged.__exit__` unlinks.  The two survivors have no PID to check:
+`ops_bend.mut.bend` (80,583 B, VISIBLE to `find -name '*.bend'`) and `elf.bend.mut`
+(255,934 B), both from harnesses that predate the staged guard.  **The list that will
+still be here tomorrow is exactly the one that predates the conversion**, so the number to
+watch is not the debris count but the `IN-FLIGHT` count: a nonzero IN-FLIGHT is units
+working, and a DEBRIS that keeps not growing is debris that nobody is producing.

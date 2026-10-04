@@ -584,6 +584,22 @@ def _answers(fn, inputs):
 
 # ── ONE CANDIDATE, MEASURED ────────────────────────────────────────────────────────────────
 def measure(rel, name, lineno, seg, node):
+  """Measure ONE candidate. `probe_twice` runs the six shapes twice and compares, because a
+  reader that gives two different answers to the same text cannot be given a signature at all --
+  and that is a finding, not a measurement to be averaged."""
+  m = measure_once(rel, name, lineno, seg, node)
+  m2 = measure_once(rel, name, lineno, seg, node)
+  keys = ("contract", "drift", "note", "kinds", "blob_kind", "blob_n", "verdict")
+  m["unstable"] = any(m.get(k) != m2.get(k) for k in keys)
+  if m["unstable"] and m["contract"] in DRIFT_FAMILIES:
+    m["contract"] = "non-deterministic"
+    m["drift"] = None
+    m["note"] = ("ANSWERED THE SAME TEXT TWO DIFFERENT WAYS across two runs in one process. "
+                 "No fingerprint can be taken of a function that does not answer to itself.")
+  return m
+
+
+def measure_once(rel, name, lineno, seg, node):
   src_path = REPO / rel
   try:
     src = src_path.read_text()
@@ -728,19 +744,26 @@ def main():
   if args.only:
     cands = [c for c in cands if args.only in c[0]]
 
+  # `measure()` ALREADY runs every candidate twice and compares -- the per-candidate check, which
+  # is the one that matters, because a reader that answers the same text two ways cannot be given
+  # a signature at all. This SECOND pass over the whole list is the process-level check, and the
+  # two are not the same experiment: the first catches a reader with internal nondeterminism,
+  # this one catches a HARNESS that is order-dependent or time-dependent.
   measured = [measure(*c) for c in cands]
-
-  # Every case run TWICE and the two answers compared: a measurement run once is a measurement
-  # whose determinism is an assumption. The readers here are pure by construction, and the
-  # second run is what proves it rather than asserts it.
-  measured2 = [measure(*c) for c in cands]
 
   def sig_of(m):
     return (m.get("contract"), m.get("drift"), m.get("note"), m.get("kinds"),
             m.get("blob_kind"), m.get("blob_n"))
 
+  measured2 = [measure(*c) for c in cands]
   unstable = [f"{m['file']}:{m['func']}" for m, n in zip(measured, measured2)
               if sig_of(m) != sig_of(n)]
+  # A candidate the per-candidate check already caught is reported by `measure()` as
+  # `non-deterministic`, and it is not ALSO counted here: two names for one defect is a
+  # denominator that does not add up, which is the mistake this file exists to correct.
+  unstable = [u for u in unstable
+              if next(m for m in measured if f"{m['file']}:{m['func']}" == u)["contract"]
+              != "non-deterministic"]
 
   by = {}
   for m in measured:
@@ -831,9 +854,18 @@ def main():
             f"  kinds={'/'.join(m['kinds']) or '-':<11} {m['note']}")
 
   other = [m for m in measured if m["contract"] not in DRIFT_FAMILIES]
-  print(f"\nNOT ROW READERS ({len(other)}) -- excluded from the drift denominator, listed so "
-        f"the\n   exclusion is checkable rather than asserted")
-  for m in sorted(other, key=lambda x: (x["contract"], x["file"], x["func"])):
+  nondet = [m for m in other if m["contract"] == "non-deterministic"]
+  if nondet:
+    print(f"\nNON-DETERMINISTIC ({len(nondet)}) -- excluded from the drift denominator BECAUSE "
+          f"they cannot be\n   given one. A reader that answers the same text two different ways "
+          f"has no fingerprint,\n   and a fingerprint that changes per run is a guard that fails "
+          f"every run until it is ignored.")
+    for m in sorted(nondet, key=lambda x: x["file"]):
+      print(f"    {m['file']}:{m['line']}  {m['func']}({m['sig']})")
+  print(f"\nNOT ROW READERS ({len(other) - len(nondet)}) -- excluded from the drift denominator, "
+        f"listed so the\n   exclusion is checkable rather than asserted")
+  for m in sorted((x for x in other if x["contract"] != "non-deterministic"),
+                  key=lambda x: (x["contract"], x["file"], x["func"])):
     print(f"    {m['contract']:<16} {m['file']}:{m['line']}  {m['func']}({m.get('sig', '?')})"
           f"  {(m.get('note') or '')[:88]}")
   return 0

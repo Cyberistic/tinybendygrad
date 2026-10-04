@@ -36,3 +36,4 @@ MISMATCH GROUP     py#9 vs bend#12  (no shared core; paired one-to-one on the dt
 # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=9/12  fields=6  field-records=54  shared-cores=8  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=1/2  multi-parent-nodes=1/2
 # VERDICT: DISAGREE
 rc=1
+rc=1

@@ -1948,48 +1948,50 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # TODO(p3) render.py:18  def print_uops
 # TODO(p3) render.py:35  def marg_str
 # TODO(p3) render.py:37  def render_marg
-# SCOPED, AND THE ORACLE IS LANDED WITHOUT THE DEF. `renderer` is a 25-arm table
-# (tinygrad/uop/render.py:45-72) and FIVE of its arms are a function of the node's
-# own arg alone: PARAM (`arg.name`, else "p"+slot), BUFFER/ALLOC (`arg.name`, else
-# "b"/"a"+slot), CONST (`str(val)`), SPECIAL (`arg`, see below), and -- measured
-# unreachable -- the RANGE pair. The other twenty read `ctx[x.src[k]]`, which is
-# the caller's fold over the srcs' renderings.
+# PORTED, THE FIVE LEAF ARMS -- `rnd_letter`, `rnd_param`, `rnd_const`, `rnd_of`,
+# `rnd_pick.of`, `rnd_leaf`. Nine rows byte-identical to CPython on all three lanes
+# via `sh .agents/slop/ops-rnd-gate.sh`, with TWO DIVERGENCES named in the gate and
+# ASSERTED rather than tolerated.
 #
-# `.agents/slop/ops-render-oracle.py` LANDS those eleven rows today, all produced by
-# CALLING `renderer_infer.rewrite(u, {})` the way ops.py:1618 drives the table:
-# rnd_param_named=i, rnd_param_unnamed=p7, rnd_buffer_named=buf,
-# rnd_buffer_unnamed=b2, rnd_alloc_named=out, rnd_alloc_unnamed=a5,
-# rnd_const_int=42, rnd_const_bool=True, rnd_const_float=1.5,
-# rnd_special=UOp(Ops.SPECIAL, arg=None, tag=AxisType.LOOP, src=())
+# `renderer` is 25 arms (tinygrad/uop/render.py:45-72) and the split is not
+# easy/hard, it is "does the answer read the node's own ARG or does it read
+# `ctx[x.src[k]]`". These six read the arg alone. The other nineteen read the
+# CALLER's fold over the srcs' renderings, which is a SELF-RECURSIVE walk and is the
+# next unit. `Maybe<&2, String>` is what stands in for them: a node no arm claims
+# answers `none`.
 #
-# THE DEF IS NOT WRITTEN because this FILE DOES NOT COMPILE right now, and not
-# because of anything in it: `render.bend:183` imports `fold.bend`, and the working
-# copy's `fold.bend` is mid-edit and red (`fold.bend:1243`, in `sym_dim.signable`,
-# which is not in master). `master`'s `fold.bend` and `master`'s `render.bend` are
-# both `ALL PROOFS CHECK`, so this is another agent's IN-FLIGHT state and not a
-# regression. A def landed without a compile is exactly the "green rows beside code
-# that does not build" the project's own rule forbids, so the rows wait.
+# `none` IS NOT A FALLBACK. CPython's last arm is `(UPat(GroupOp.All), lambda x:
+# str(x))`, so a port that fell back would answer `str(x)` for a NEG where CPython
+# answers "(-1)". Same rule as `UOp.expr`, and the reason `is_variable`'s marker says
+# a partial port is a WRONG ANSWER rather than a partial one.
 #
-# WHAT THE FIVE ARMS NEED, so the next agent does not re-derive it: `arg_repr`,
-# `pa_name`, `const_repr` and `range_str` all already exist in THIS file, and
-# `ParamArg.no_slot` is `ops.bend`'s (landed 2026-10-04, `ops.bend:1304`) --
-# `fn_slot.of`'s non-`AParam` arm at `function.bend:165` and kernel.bend's
-# `kn_slot` are the same value under local names, and a renderer that spelled
-# `4294967295` inline would be a fifth copy.
+# THE TWO DIVERGENCES, both named in the gate and both asserted to be `none`:
+#     rnd_special      upstream's arm is `lambda x: x.arg`, which returns the ARG; for
+#                      a SPECIAL the arg is None and `rewrite` reads None as "no rule
+#                      fired" (ops.py:1618), so it falls through to `str(x)`.
+#     rnd_unclaimed    a GROUP, which no arm claims. NOT an ADD -- an ADD is in `syms`,
+#                      so the binary arm fires and asks for `ctx[x.src[0]]`, which
+#                      RAISES on an empty ctx. "No leaf arm claims it" is not "it falls
+#                      through", and an ADD looked like the clean case until it threw.
+#   Both are MULTI-LINE on the oracle side, so they are excluded WITH THEIR
+#   CONTINUATIONS by `.agents/slop/ops-rnd-rows.py`: a row file is one line per row,
+#   and leaving a continuation behind makes the diff a diff of line counts.
 #
-# A PARTIAL RENDERER MUST NOT FALL BACK. CPython's last arm is
-# `(UPat(GroupOp.All, name="x"), lambda x: str(x))`, and reaching it for an op an
-# earlier arm would have caught -- a NEG, say -- answers `str(x)` where CPython
-# answers "(-1)". So the port's entry point is a `Maybe<&2, String>` and every
-# un-ported arm is an explicit refusal. That is the same rule `UOp.expr` follows,
-# and `UOp.is_variable` is the marker that states why: a partial port that answers
-# is a WRONG ANSWER, not a partial one.
+# TWO THINGS THE FIRST DRAFT GOT WRONG, both caught by the gate and not by review:
+#   `rnd_param` took an `op_is_alloc: Bool` and every caller passed False except
+#   ALLOC, so PARAM and BUFFER shared a "b" and `rnd_param_unnamed` answered `b7`
+#   where CPython says `p7`. The letter is the OP -- upstream has THREE arms -- so it
+#   cannot live in a def that only sees the arg.
+#   the CONST arm used `const_repr`, which is the REPR spelling this file uses for
+#   `x.arg`. The arm is `str(x.val)` and the two differ on exactly one arm:
+#   `str(UOp.const(1.5).arg)` is `1.5` and `const_repr` gives `ConstFloat(1.5)`. A
+#   near-miss that typechecked.
 #
-# THE SPECIAL ARM IS A NO-MATCH UPSTREAM. `lambda x: x.arg` returns the ARG, and
-# for a SPECIAL the arg is `None`, and `rewrite` reads `None` as "no rule fired".
-# So the row is a full `UOp(...)` repr -- the `GroupOp.All` fallback, not the
-# SPECIAL arm. A port that implemented that arm faithfully would answer something
-# CPython never produces. `rnd_special` pins it.
+# NOT PORTED, with the blocker for each:
+#   `render_marg` (:37) and `marg_str` (:35) need `x.marg`, which is SHAPE -- the
+#     same wall `is_variable` and `bounds` are behind, and `Node` has no shape field.
+#   `renderer_infer` (:74) is four arms ON TOP of this table, so it lands with the
+#     nineteen that need the ctx fold.
 # TODO(p3) render.py:74  renderer_infer
 #
 # ===========================================================================
@@ -2559,8 +2561,150 @@ def g_call_named() -> O.Found:
   +n = O.UOp.new(O.Arena.empty(), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
   f_call(O.Found.ar(n), n, ci_named())
 
+def rnd_is_set(m: Maybe<&2, String>) -> Bool:
+  match m:
+    case Some{_}: True{}
+    case None{}: False{}
+
+
+def rnd_named(p: O.ParamArg) -> Maybe<&2, String>:
+  match p:
+    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+
+# THE THREE ARMS, and they are three arms rather than one because the OPS differ:
+# PARAM is its own pattern upstream, BUFFER and ALLOC share one, and CONST is a
+# third. `rnd_alloc_*` and `rnd_buffer_*` are the pair that makes the LETTER
+# load-bearing -- a def that answered "b" for both would pass every other row.
+
+# THE LETTER IS THE OP, and this is the SECOND version of this def. The first took
+# an `op_is_alloc: Bool` and every caller passed `False{}` except ALLOC, so PARAM and
+# BUFFER shared a "b" and `rnd_param_unnamed` answered `b7` where CPython says `p7`.
+# Upstream has THREE arms -- PARAM is its own pattern -- and the letter is not a fact
+# about the ARG at all, so it cannot live in a def that only sees the arg.
+def rnd_letter(op: O.Op) -> String:
+  match op:
+    case O.OpsPARAM{}: "p"
+    case O.OpsALLOC{}: "a"
+    case _: "b"
+
+def rnd_param(op: O.Op, +p: O.ParamArg) -> Maybe<&2, String>:
+  Bool.pick(Maybe<&2, String>, Bool.not(rnd_is_set(rnd_named(p))),
+    Some{String.concat([rnd_letter(op), U32.show(O.ParamArg.slot(p))])},
+    rnd_named(p))
+
+# `rnd_named` is the `arg.name` of a `ParamArg`, and the `Maybe` is the SAME
+# spelling `UOp.expr` uses for "no name". Upstream's BUFFER/ALLOC arm adds an
+# `isinstance(x.arg, ParamArg)` guard, which here is the `AParam` arm of the match
+# in `rnd_arg`.
+
+# `str(x.val)` AND NOT `const_repr(c)`. Those differ on exactly one arm and the
+# first run of the gate found it: `str(UOp.const(1.5).arg)` is `1.5` where
+# `const_repr` gives `ConstFloat(1.5)`, because `const_repr` is the REPR spelling
+# this file uses for `x.arg` and the arm wants Python's `str`. Reusing the
+# near-miss was a guess, and a guess that typechecked.
+def rnd_const(c: O.Const) -> String:
+  match c:
+    case O.CBool{b}: Bool.show(b)
+    case O.CInt{i}: sint_i64(i)
+    case O.CFloat{f}: f32_repr(f)
+    case O.CInvalid{}: "Invalid"
+
+# THE LADDER. Five arms, in upstream's order, and the order is load-bearing only in
+# the sense that PARAM and BUFFER/ALLOC share a shape: upstream's PARAM arm has no
+# `isinstance` guard because `x.arg.name` is a plain attribute on every UOp, while
+# BUFFER/ALLOC's does. Here BOTH go through `rnd_arg`'s `AParam` arm, which is why
+# `rnd_alloc` with a non-`AParam` arg is unreachable rather than untested.
+
+def rnd_of(op: O.Op, arg: O.Arg) -> Maybe<&2, String>:
+  match arg:
+    case O.AParam{p}: rnd_param(op, p)
+    case O.APy{v}: Some{rnd_const(v)}
+    case _: None{}
+
+# THE ENTRY, and `op` and `arg` arrive as PARAMETERS because `O.Arena.op(ar, i)` is a
+# computed value and a match may scrutinise neither it nor a local binder.
+def rnd_pick.of(op: O.Op, arg: O.Arg) -> Maybe<&2, String>: rnd_of(op, arg)
+
+def rnd_leaf(+ar: O.Arena, +i: U32) -> Maybe<&2, String>:
+  rnd_pick.of(O.Arena.op(ar, i), O.Arena.arg(ar, i))
+
+
+# ==== the `rnd_*` fixture and rows =========================================
+#
+# One arena, and the node ORDER is the row order so `rnd` rows are the port's
+# emission order and the gate can diff without a sort.
+#
+#   1 PARAM    named      the `name` branch of the PARAM arm
+#   2 PARAM    unnamed    the `p<slot>` branch -- and slot 7, so a def that
+#                          printed 0 would pass a slot-0 fixture
+#   3 BUFFER   named      the `name` branch of the BUFFER/ALLOC arm
+#   4 BUFFER   unnamed    the `b<slot>` branch, slot 2
+#   5 ALLOC    named      the `a<slot>` branch's OPPOSITE name branch
+#   6 ALLOC    unnamed    the `a<slot>` branch, slot 5
+#   7 CONST 42            the CInt arm
+#   8 CONST True          the CBool arm
+#   9 CONST 1.5           the CFloat arm
+#  10 SPECIAL             the arm that is a NO-MATCH upstream
+#  11 GROUP              not one of the five -> the refusal. GROUP and not ADD:
+#                          an ADD is in , so upstream's binary arm fires and asks
+#                          for ctx[x.src[0]] -- it does NOT fall through, it raises.
+#
+# 4 and 6 are the PAIR that makes the letter load-bearing: both are unnamed, so a
+# def that answered "b" for both would move 6 and pass everything else. And 5 and 6
+# are the pair that makes the ALLOC branch of `rnd_pick.of` reachable at all.
+def rnd_pa.put(p: O.ParamArg, nm: Maybe<&2, String>) -> O.ParamArg:
+  match p:
+    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+
+def rnd_pa(slot: U32, nm: Maybe<&2, String>) -> O.ParamArg:
+  rnd_pa.put(O.ParamArg.of(slot, S.int32()), nm)
+
+def rnd_ar() -> O.Arena:
+  O.Arena{[
+    O.Arena.bottom(),
+    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(3, Some{"i"})}, O.TNone{}},
+    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(7, None{})}, O.TNone{}},
+    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(1, Some{"buf"})}, O.TNone{}},
+    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(2, None{})}, O.TNone{}},
+    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(4, Some{"out"})}, O.TNone{}},
+    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(5, None{})}, O.TNone{}},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(42)}}, O.TNone{}},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CBool{True{}}}, O.TNone{}},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{1.5}}, O.TNone{}},
+    O.Node{O.OpsSPECIAL{}, Nil{}, O.AStr{"gidx"}, O.TNone{}},
+    O.Node{O.OpsGROUP{}, [1], O.ANone{}, O.TNone{}}], [0]}
+
+# `none` is BARE, not `none:AttributeError`: this `Maybe` is the refusal of an
+# arm this subset does not have, which is a different thing from a raise. The
+# SPECIAL row is the sharp case -- upstream REFUSES nothing there, it falls through
+# to a full repr -- and the gate names it as expected-to-diverge.
+def rnd_show(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case None{}: "none"
+
+def rnd_row(nm: String, +ar: O.Arena, i: U32) -> IO(Unit):
+  IO.print(String.concat([nm, "=", rnd_show(rnd_leaf(ar, i))]))
+
+def rnd_rows() -> IO(Unit):
+  +ar = rnd_ar()
+  do IO<Unit>:
+    a : Unit <- rnd_row("rnd_param_named", ar, 1)
+    b : Unit <- rnd_row("rnd_param_unnamed", ar, 2)
+    c : Unit <- rnd_row("rnd_buffer_named", ar, 3)
+    d : Unit <- rnd_row("rnd_buffer_unnamed", ar, 4)
+    e : Unit <- rnd_row("rnd_alloc_named", ar, 5)
+    f : Unit <- rnd_row("rnd_alloc_unnamed", ar, 6)
+    g : Unit <- rnd_row("rnd_const_int", ar, 7)
+    h : Unit <- rnd_row("rnd_const_bool", ar, 8)
+    i : Unit <- rnd_row("rnd_const_float", ar, 9)
+    j : Unit <- rnd_row("rnd_special", ar, 10)
+    rnd_row("rnd_unclaimed", ar, 11)
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    rnd_rows()
     py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
     py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())
     py_row("pyrender special ", "ast = UOp.special(4, 'gidx')", g_special())

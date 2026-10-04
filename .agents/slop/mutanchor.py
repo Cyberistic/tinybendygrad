@@ -14,6 +14,7 @@ proves the point the hard way, by asserting a digest.
 import ast
 import os
 import re
+import warnings
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -80,9 +81,20 @@ REDIRECT = (">>", ">")
 
 
 def parse(path):
-    """The harness's AST, or None.  A harness that will not parse is UNREADABLE."""
+    """The harness's AST, or None.  A harness that will not parse is UNREADABLE.
+
+    `warnings` is suppressed for the READ, not for the reader's output.  Several sibling
+    harnesses carry a backslash-dot and a backslash-bracket in their own docstrings,
+    which is a SyntaxWarning in Python 3.12 and later; eleven of them printed twelve
+    warnings each before this corpus's first row, which is enough noise to teach a
+    reader to skip the header of the very table the warnings precede.  (This docstring had
+    to be reworded rather than made raw for the same reason: quoting the very sequences
+    it describes would warn about itself.)
+    """
     try:
-        return ast.parse(open(path, errors="replace").read())
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            return ast.parse(open(path, errors="replace").read())
     except (OSError, SyntaxError):
         return None
 
@@ -124,6 +136,15 @@ def _path(node, env, self_name=None):
         return _join(_path(node.left, env, self_name), _path(node.right, env, self_name))
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
         return _fmt(node.left, _path(node.right, env, self_name))
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        # STRING CONCATENATION.  `open(SRC + '.mut', 'w')` and `open(BEND + '.bend', 'w')`
+        # are the second-most-common write spelling in this corpus after the bare name --
+        # `memory-mutate.py` used exactly this to put `memory.bend.mut` beside the live
+        # file -- and `_path` read BinOp Add as nothing at all, so the whole family was
+        # invisible.  `+` on paths is NOT `os.path.join`, and treating it as one would
+        # invent a separator: `SRC + '.mut'` is a suffix.
+        a, b = _path(node.left, env, self_name), _path(node.right, env, self_name)
+        return (a + b) if a and b else None
     if isinstance(node, ast.Call):
         return _call(node, env, self_name)
     return None
@@ -436,8 +457,11 @@ def _command_text(node, env, self_name):
                 return t % p
             return None
         if isinstance(node.op, ast.Add):
-            a, b = _command_text(left, env, self_name), _command_text(right, env, self_name)
-            return a + b if a is not None and b is not None else None
+            # A side of a concatenation is either more command text or a PATH: `'> ' +
+            # SRC` is the ordinary spelling and only a string-only fold misses it.
+            parts = [_command_text(s, env, self_name) or _path(s, env, self_name)
+                     for s in (left, right)]
+            return "".join(parts) if all(p is not None for p in parts) else None
     return None
 
 
@@ -469,25 +493,52 @@ def _target(tok, env, self_name):
     whole fix.  `tinybendygrad/uop/ops.bend` parses as an EXPRESSION only by way of the
     attribute `ops.bend`, so `ast.parse` + `_path` returns None for a perfectly ordinary
     path and the redirect is missed -- which is what happened on the first attempt at
-    every one of the three shell cases.  A redirect target is a STRING before it is an
-    expression, so it is resolved as one:
+    all three shell cases.  A redirect target is a STRING before it is an expression, so
+    it is resolved as one:
 
       1. exactly a bound constant name (`> SRC`);
       2. a quoted literal, unquoted (`> "p"`);
-      3. otherwise, parsed as an expression -- which is how `> %s/../x` would arrive.
+      3. otherwise parsed as an expression (`> %s/../x`).
 
-    A token that does not parse is not a path, and `None` is the answer.  Raising would
-    be the wrong direction: a census that crashes on a sibling harness's odd quoting has
+    And every branch is put through `_looks_like_path`, because the alternative is a
+    false IN-PLAY on an ordinary command: `run('cat > p', shell=True)` names a FILE
+    called `p`, and without the shape test that is a destination in the repo root.
+
+    A token that does not parse is not a path and `None` is the answer.  Raising would
+    be the wrong direction: a census that crashes on a sibling harness's quoting has
     told the reader nothing about any file.
     """
-    if tok in env:
-        return env[tok]
-    if len(tok) > 1 and tok[0] == tok[-1] and tok[0] in "\"'":
-        return tok[1:-1]
-    try:
-        return _path(ast.parse(tok, mode="eval").body, env, self_name)
-    except SyntaxError:
-        return None
+    cand = env.get(tok)
+    if cand is None and len(tok) > 1 and tok[0] == tok[-1] and tok[0] in "\"'":
+        cand = tok[1:-1]
+    if cand is None:
+        # `warnings` is suppressed HERE and not at the top of the module because a
+        # sibling harness's `\"` in a command string is a normal thing to read, and a
+        # census that prints twelve SyntaxWarnings before its first row has taught the
+        # reader to skip the header.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            try:
+                cand = _path(ast.parse(tok, mode="eval").body, env, self_name)
+            except SyntaxError:
+                cand = None
+    # The token did not RESOLVE to a path expression, so it IS the literal.  This is
+    # the branch an ordinary path takes: `ops.bend` only parses as an expression by
+    # way of the attribute `ops.bend`, which is a Python attribute and not a file.
+    if cand is None:
+        cand = tok
+    return cand if _looks_like_path(cand) else None
+
+
+def _looks_like_path(s):
+    """Does this string NAME A FILE, rather than being a word in a command?
+
+    A directory separator or a source extension, and nothing else.  `bend f.bend 2> log`
+    must not yield `log`, and `cat > p` must not yield a destination in the repo root --
+    both are ordinary shell lines, and a hazard detector that reads them as writes is
+    worse than one that misses a quoting style.
+    """
+    return "/" in s or os.path.splitext(s)[1] in SOURCE_EXT
 
 
 def _shell_spellings(n, env, self_name):

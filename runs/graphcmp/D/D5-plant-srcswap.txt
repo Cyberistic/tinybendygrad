@@ -36,3 +36,4 @@ MISMATCH MUL       py#16 vs bend#16  (no shared core; paired one-to-one on the d
 # DENOMINATOR: graphs=2 (1 py + 1 bend)  nodes=18/18  fields=6  field-records=108  shared-cores=15  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
 # VERDICT: DISAGREE
 rc=1
+rc=1

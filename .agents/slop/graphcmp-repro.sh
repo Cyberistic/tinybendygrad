@@ -73,7 +73,7 @@ healthy() {
   grep -q '^stable-pairs=5 of 5$' "$s" &&
   grep -q '^stable-failed=0 of 5$' "$s" &&
   grep -q '^stable-differ=0 of 5$' "$s" &&
-  grep -q '^plants-disagree=6 of 6$' "$s" &&
+  grep -q '^plants-disagree=7 of 7$' "$s" &&
   grep -q '^cross=1 of 1$' "$s" &&
   grep -q '^controls=5 of 5$' "$s" &&
   grep -q '^conflations=4 of 4$' "$s" &&

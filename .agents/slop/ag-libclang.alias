@@ -1,0 +1,32 @@
+AL ~ CXIndex ~ ctypes.c_void_p
+AL ~ CXTargetInfo ~ c.POINTER[struct_CXTargetInfoImpl]
+AL ~ CXTranslationUnit ~ c.POINTER[struct_CXTranslationUnitImpl]
+AL ~ CXClientData ~ ctypes.c_void_p
+AL ~ CXVersion ~ struct_CXVersion
+AL ~ CXIndexOptions ~ struct_CXIndexOptions
+AL ~ CXFile ~ ctypes.c_void_p
+AL ~ size_t ~ ctypes.c_uint64
+AL ~ CXDiagnostic ~ ctypes.c_void_p
+AL ~ CXDiagnosticSet ~ ctypes.c_void_p
+AL ~ CXTUResourceUsageEntry ~ struct_CXTUResourceUsageEntry
+AL ~ CXTUResourceUsage ~ struct_CXTUResourceUsage
+AL ~ CXPlatformAvailability ~ struct_CXPlatformAvailability
+AL ~ CXCursorSet ~ c.POINTER[struct_CXCursorSetImpl]
+AL ~ CXCursorVisitor ~ c.CFUNCTYPE[ctypes.c_uint32, [CXCursor, CXCursor, ctypes.c_void_p]]
+AL ~ CXCursorVisitorBlock ~ c.POINTER[struct__CXChildVisitResult]
+AL ~ CXPrintingPolicy ~ ctypes.c_void_p
+AL ~ CXModule ~ ctypes.c_void_p
+AL ~ CXTokenKind ~ ctypes.c_uint32
+AL ~ CXCompletionString ~ ctypes.c_void_p
+AL ~ CXInclusionVisitor ~ c.CFUNCTYPE[None, [ctypes.c_void_p, c.POINTER[CXSourceLocation], ctypes.c_uint32, ctypes.c_void_p]]
+AL ~ CXEvalResult ~ ctypes.c_void_p
+AL ~ CXRemapping ~ ctypes.c_void_p
+AL ~ CXCursorAndRangeVisitor ~ struct_CXCursorAndRangeVisitor
+AL ~ CXCursorAndRangeVisitorBlock ~ c.POINTER[struct__CXCursorAndRangeVisitorBlock]
+AL ~ CXIdxClientFile ~ ctypes.c_void_p
+AL ~ CXIdxClientEntity ~ ctypes.c_void_p
+AL ~ CXIdxClientContainer ~ ctypes.c_void_p
+AL ~ CXIdxClientASTFile ~ ctypes.c_void_p
+AL ~ CXIndexAction ~ ctypes.c_void_p
+AL ~ CXFieldVisitor ~ c.CFUNCTYPE[ctypes.c_uint32, [CXCursor, ctypes.c_void_p]]
+AL ~ time_t ~ ctypes.c_int64

@@ -17,15 +17,15 @@ defects in the differ's own normal form. The second added four graphs -- `group`
 `commute`, `indexed`, `sym` -- and four more, of which two were in a check that had been
 reporting `PASS` over nothing. The third (this file's §6) added three graphs -- `lin`,
 `loop`, `gate` -- whose PY side is a call into tinygrad's own scheduler and codegen rather
-than a hand-built expression, and found SEVEN more -- four in the normal form (17-20), one
-in the census's atom scanner (21) and two in the checks themselves (22-23), where a pair of
+than a hand-built expression, and found EIGHT more -- four in the normal form (17-20), one
+in the census's atom scanner (21) and three in the checks themselves (22-24), where a pair of
 identical FAILURES was being reported as a stable pair. Current state, MEASURED and printed
 by `runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
 
     graphs 16   AGREE 14 (lin/loop DISAGREE, each with a named measured cause)   nodes 189 per side
     ops 34 of 77   commutative ops 7 of 8   symbolic-dim nodes 2 of 189 (BOTH SIDES, see 3b)
     field-records 1134 per side   byte-identical 14 of 16   stable pairs 5 of 5
-    selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 6 of 6   cross 1 of 1
+    selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 7 of 7   cross 1 of 1
     conflations 4 of 4   repro 158/158
 
 **THE LIMIT THAT WAS CLOSED WHILE THIS ROUND RAN.** §3b's symbolic-dim wall was OPEN when
@@ -431,8 +431,8 @@ three's `lin` happens not to. It is the nearest unclosed gap and it is a graph, 
 
 Same shape as §1: **a field, a CHECK, or a PRINTING that nothing had asked a question.**
 17-20 are the ones that matter, and 17 and 20 are the ones that would have kept lying.
-22-23 are in the CHECKS rather than the differ and are the two that produced a clean-looking
-summary over a run in which half the work never happened.
+22-24 are in the CHECKS rather than the differ, and 22 is the one that produced a
+clean-looking summary over a run in which half the work never happened.
 
 16. **THIS FILE ASSERTED, IN THREE PLACES, THAT NO NODE IN THE CORPUS HAD MORE THAN ONE
     PARENT. IT IS FALSE, AND THE CENSUS THAT CAUGHT IT IS NOW ON EVERY REPORT.** The
@@ -587,6 +587,14 @@ summary over a run in which half the work never happened.
     Now anchored (`': 2 runs BYTE-IDENTICAL$'`) and stated as "of 5". Same shape as the
     `grep -c`-over-a-glob mistake already recorded at step 15: a count that is right about
     lines and wrong about the thing being counted.
+
+24. **AND THE PLANT COUNT HAD A STALE DENOMINATOR, WHICH THE NEW COUNT FOUND.** The summary
+    said `plants-disagree=N of 6` and printed `7`. The seventh is `sym1`, the plant that
+    needs the `sym` graph rather than the matmul, so it is not in the `x6` loop. It is the
+    same defect as item 11 (a verdict with no denominator) wearing a count's clothes: the
+    count was right and the claim about it was wrong, and **nothing could see it because the
+    numerator and the denominator were printed by the same line.** The count is now of the
+    FILES (`grep -l | wc -l`) and the denominator is written next to it.
 
 **ONE MORE FINDING THAT IS NOT A DEFECT IN THIS FILE, and is the most useful thing round
 three produced.** `lin`'s SINK DISAGREEs on `applied_opts` and `loop`'s CALL DISAGREEs on

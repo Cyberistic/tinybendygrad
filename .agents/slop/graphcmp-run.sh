@@ -265,7 +265,11 @@ rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
   echo "stable-pairs=$(grep -c ': 2 runs BYTE-IDENTICAL$' "$D/D9-stability.txt" | tr -d ' ') of 5"
   echo "stable-failed=$(grep -c 'ONE SIDE IS A 0-ROW FAILURE' "$D/D9-stability.txt" | tr -d ' ') of 5"
   echo "stable-differ=$(grep -c ': 2 runs DIFFER$' "$D/D9-stability.txt" | tr -d ' ') of 5"
-  echo "plants-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D5-plant-*.txt | wc -l | tr -d ' ') of 6"
+  # SEVEN, NOT SIX, and the seventh is `sym1` -- the plant that needs the `sym` graph rather
+  # than the matmul, so it is not in the `x6` loop above. MEASURED: the denominator said 6
+  # and the numerator said 7, which is the shape of a claim with a stale denominator, so the
+  # count is of the FILES (`grep -l ... | wc -l`) and the denominator is written down.
+  echo "plants-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D5-plant-*.txt | wc -l | tr -d ' ') of 7"
   echo "cross=$(grep -c 'CROSS VERDICT: OK' "$D/D4-cross-range.txt") of 1"
   echo "selfcheck=$(sed -n '1p' "$D/D0-selfcheck.txt")"
   echo "conflations=$(grep -c 'VERDICT: OK' "$D/D7-conf.txt") of 4"

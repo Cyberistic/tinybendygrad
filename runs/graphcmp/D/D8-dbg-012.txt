@@ -86,3 +86,4 @@
 # VERDICT: DISAGREE
 # DEBUG VERDICT: the levels are DISTINGUISHABLE and the graph was fixed
 rc=0
+rc=0

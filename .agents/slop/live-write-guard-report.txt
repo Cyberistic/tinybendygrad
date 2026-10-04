@@ -1,0 +1,66 @@
+FAIL ag-fix1.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix10.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix11.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix12.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix13.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix2.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix3.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix4.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix5.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix6.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix7.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix8.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-fix9.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL ag-mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+       IN-PLAY  tinybendygrad/runtime/support/autogen.bend  via open(...).write
+FAIL amdev_mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/am/_amdev_mut.bend  via open(...).write
+       IN-PLAY  tinybendygrad/runtime/support/am/_amdev_mut.bend  via os.remove
+FAIL fixplus.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/codegen/late.bend  via open(...).write
+FAIL fold-lift-mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+FAIL fold2-mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+       IN-PLAY  tinybendygrad/uop/fold.bend  via open(...).write
+FAIL ga_mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/renderer/amd/generate.bend  via write_text
+       IN-PLAY  tinybendygrad/renderer/amd/generate.bend  via write_text
+FAIL ip_prune.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/am/ip.bend  via open(...).write
+FAIL ip_table.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/am/ip.bend  via open(...).write
+FAIL mm-mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/uop/probe-mmcore.bend.mut  via open(...).write
+FAIL nv_gate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/nv/nvdev.bend  via open(...).write
+FAIL nv_reshape.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/runtime/support/nv/nvdev.bend  via open(...).write
+FAIL ptx-s3-gen.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/renderer/ptx.bend  via open(...).write
+FAIL ptx-s3-mutate.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/renderer/_ptxs3mut.bend  via open(...).write
+       IN-PLAY  tinybendygrad/renderer/_ptxs3mut.bend  via os.remove
+FAIL tc-build.py -- LIVE WRITE, not registered
+       IN-PLAY  tinybendygrad/codegen/transcendental_f32.bend  via open(...).write
+FAIL debris tinybendygrad/runtime/ops_bend.mut.bend -- 80583 bytes, 1.6 days old, DEBRIS
+FAIL debris tinybendygrad/runtime/support/elf.bend.mut -- 255934 bytes, 0.9 days old, DEBRIS
+
+GUARD FAILED: 29 problem(s).

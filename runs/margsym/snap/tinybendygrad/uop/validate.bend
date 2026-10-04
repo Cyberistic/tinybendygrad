@@ -2474,6 +2474,347 @@ def bv_w.of15() -> U32:
 def bv_w.ofneg() -> U32:
   dv_w(O.OpsAND{}, O.Arena.empty(), 100, 4294967292)
 
+# ===========================================================================
+# `c2d` -- `copy_to_device`'s REFUSALS, ops.py:759/761/763, AS GATE ROWS.
+#
+# WHY A `validate.py` LANE CARRIES THEM. The refusals belong to `ops.bend`, which has an owner
+# this round, so what can be delivered here is the thing that makes the owner's change
+# falsifiable: the fixture set, with CPython's own outcome attached to each fixture, and a
+# positive control one step away from every negative. The refusals are FOUR distinct upstream
+# behaviours and only three of them are the ones the port's own comment names:
+#
+#   ops.py:759  `if is_disk_device(device): raise RuntimeError("COPY to DISK is not allowed;
+#               use STORE to an explicit disk buffer")`               a `raise`, WITH a message
+#   ops.py:761  `assert arg is None or isinstance(self.device, tuple)` a BARE `assert`,
+#               NO message -- so `AssertionError` and an EMPTY string, which is why
+#               `c2d_761 selrow` and `c2d_759 disk` must be told apart BY CLASS
+#   ops.py:763  `if inp.dtype in dtypes.weaks: raise RuntimeError(...)` a `raise`, WITH a message
+#   ops.py:892  `assert isinstance(self.src[0].device, tuple), f"mselect must be on tuple
+#               device, getting {...}"`   a FOURTH one, not in the port's comment, and it has a
+#               MESSAGE where 761 has none
+#
+# `ops.bend:6998` says "THE TWO `raise`s ARE NOT PORTED", which UNDER-COUNTS by one `assert`
+# and misses the fourth entirely. `vw-boundaries.py` exhausts all four and this lane turns the
+# result into rows; `c2d-refusal-rows.py` is the CPython side and every value there is CALLED.
+#
+# ----------------------------------------------------------------------------
+# WHAT IS GREEN AND WHAT IS RED, WITH THE DENOMINATOR. 12 identity rows and 19 outcome rows
+# are shared with the oracle. Of the 19, CPython REFUSES SEVEN (`c2d_shared_refused_n`), so
+# SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:6989-7012` implements none of the four refusals, so
+# every one of them answers `BUILT <sig>`. Seven reds out of nineteen shared outcome rows, and
+# the other twelve are green -- which is the number that says a fix that refuses everything
+# will be caught, because thirteen green outcomes must keep building.
+# ----------------------------------------------------------------------------
+# ⚠ A GREEN ROW HERE IS A CLAIM ABOUT A NODE CPython BUILDS. The defect this lane exists to
+# close was `s5_copy_sel` = `Ops.COPY/Ops.MSELECT Ops.RANGE`, green on both lanes, where the
+# port's fixture was `s5.ga.arena()`'s node 4 and the oracle's was `ops-501-oracle.py:164`'s
+# `multi` -- two DIFFERENT nodes differing in op, slot, size and device. `sig()` prints the op
+# and the src op SEQUENCE, so it can see none of those four, and both answered
+# `COPY/MSELECT RANGE`. So the twelve identity rows are the ones that close it: they print the
+# node's OP, NSRC, SRC0, whether its arg is a `ParamArg`, its src0's SLOT, SIZE and DEVICE, and
+# the neighbouring node 2's -- because a fixture identity is checkable and a signature is not.
+#
+# THE BOUNDARIES ARE RE-DERIVED, NOT INHERITED. `vw-boundaries.py` enumerates them by CALLING
+# and three of its results change what a fixture has to be:
+#   * `dtypes.weaks` is a set of size 2 out of 20 dtypes, so 763 has EIGHTEEN positive dtypes
+#     and not one. `c2d_763` prints four of them and both negatives.
+#   * EVERY `UOp.range` is `weakint` over all eight `AxisType`s, so a RANGE CANNOT be a
+#     positive 763 fixture -- which is what the first draft of the boundary got wrong, and a
+#     positive row written from belief is a positive row FOR a refusal.
+#   * `arg=0` REFUSES on a scalar device, so ops.py:761 tests `is None` and not truth. The
+#     port's `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard"
+#     passes `c2d_761 argzero`. That row is here for that reason alone.
+# ----------------------------------------------------------------------------
+# ⚠ `S.Dev` IS A TAG, NOT A NAME, AND THAT BOUNDS THIS LANE. `device.bend:340`'s `tag_of`
+# gives DISK the tag 6, so `c2d_759 disk` is `S.D1{6}` and `c2d_759 disktuple` is
+# `S.Dn{[6, 0]}`. The port cannot spell `'disk'`, `'DISK:0'`, `'NODISK'` or `'DISKX'`, because
+# `S.D1{tag: U32}` has no name to case-fold or colon-split, so those four rows are ORACLE-ONLY
+# (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
+# and disagrees: `schedule/memory.bend:999` says `disk() = S.D1{1}`. Until one is chosen the
+# DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
+# ===========================================================================
+
+# `ParamArg.of(slot, dtype)` -- ops.bend:6110 -- is `s5.pa`, so the fixtures reuse the port's
+# OWN constructor and cannot drift from `s5.ga.arena()` on any default.
+def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
+
+# THE TUPLE-DEVICE SPELLING, `ParamArg(1, dtypes.int32, None, None, None, None, None, ('CPU',
+# 'METAL'))` in CPython. `ParamArg.of` hard-codes `device: None{}` (ops.bend:1368) so the
+# positive control for the 761 guard needs the thirteen-field literal, and every field that is
+# not the device is `ParamArg.of`'s own default.
+def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
+             False{}, None{}, None{}, False{}, None{}}
+
+def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{c2d_pa(slot, dt)}, O.TNone{})
+
+def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
+
+# node 4 of `s5.ga.arena()` -- ops.bend:6435 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
+# here over a `c2d_buf` so the arena is this file's own and no index is inherited.
+def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
+
+# THE OUTCOME VOCABULARY. Two values, and the refusal CLASS is inside the value rather than in
+# a row of its own so it cannot be dropped from a comparison: `AssertionError` from a bare
+# `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
+# accepted either would be testing neither.
+#
+# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (ops.bend:7009) answers `Found`,
+# so the port cannot refuse; the `REFUSED` arm arrives with the owner's guard, which changes
+# `copy_to_device`'s return type because a refusal is not a `Found`. When it does, this def is
+# the one line to change and the twenty-four rows are the ones that go green.
+def c2d_sig(+f: O.Found) -> String: O.s5.minted.go(O.Found.ar(f), f)
+
+def c2d_built(+f: O.Found) -> String: String.concat(["BUILT ", c2d_sig(f)])
+
+def c2d_row(nm: String, v: String) -> String: String.concat([nm, " = ", v, "\n"])
+
+# ---------------------------------------------------------------- THE IDENTITY ROWS (12)
+# Read off `s5.ga.arena()` ITSELF rather than off a fixture built here, because the claim is
+# about the node `s5.selrow` calls and not about a re-typed copy of it.
+# ---------------------------------------------------------------- THE IDENTITY ROWS' READERS
+# Bend 2's `match` scrutinises a PARAMETER or a FIELD and neither a computed value nor a local
+# binder (measured: "a match cannot scrutinize a computed value: give it its own def" and then
+# "a match cannot scrutinize a local binder: give it its own def" on the same construct), and
+# R-3 wants a def ABOVE its first caller. So the four readers over one `Arg` are four defs that
+# take the `Arg`, each with its `Maybe` test below it, and the row defs come after all eight.
+def c2d_arg_is_tuple(a: O.Arg) -> Bool:
+  match a:
+    case O.ATuple{ys}: True{}
+    case _: False{}
+
+def c2d_arg_is_param(a: O.Arg) -> Bool:
+  match a:
+    case O.AParam{pa}: True{}
+    case _: False{}
+
+# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, ops.bend:6110. `ops-501-oracle.py:164`'s
+# `multi` is `ParamArg(3, ...)`, so this is one of the four differences `sig()` cannot see.
+def c2d_arg_slot(a: O.Arg) -> U32:
+  match a:
+    case O.AParam{pa}: O.ParamArg.slot(pa)
+    case _: O.ParamArg.no_slot()
+
+def c2d_u32_is_none(m: Maybe<&2, U32>) -> Bool:
+  match m:
+    case None{}: True{}
+    case _: False{}
+
+# `ParamArg.size is None` -- `s5.pa` leaves `size` unset (ops.bend:1363) and
+# `ops-501-oracle.py:61` sets 9. The second of the four differences.
+def c2d_arg_size_is_none(a: O.Arg) -> Bool:
+  match a:
+    case O.AParam{pa}: c2d_u32_is_none(O.ParamArg.size(pa))
+    case _: False{}
+
+def c2d_dev_is_none(m: Maybe<&2, S.Dev>) -> Bool:
+  match m:
+    case None{}: True{}
+    case _: False{}
+
+# `ParamArg.device is None` on node 4's src0. `UOp.device` (ops.py:887-899) has no SHRINK arm,
+# so a SHRINK's device is its FIRST SRC's device or `None`, and this is the fact the
+# fall-through lands on -- which is why `c2d_761 selrow` refuses.
+def c2d_arg_device_is_none(a: O.Arg) -> Bool:
+  match a:
+    case O.AParam{pa}: c2d_dev_is_none(O.ParamArg.device(pa))
+    case _: True{}
+
+# ---------------------------------------------------------------- THE IDENTITY ROWS (12)
+def c2d_selrow_op() -> String:
+  c2d_row("c2d_selrow_op", O.Ops.name(O.Arena.op(O.s5.ga.arena(), 4)))
+
+def c2d_selrow_nsrc() -> String:
+  c2d_row("c2d_selrow_nsrc", U32.show(O.Arena.nsrc(O.s5.ga.arena(), 4)))
+
+def c2d_selrow_src0() -> String:
+  c2d_row("c2d_selrow_src0",
+          O.Ops.name(O.Arena.op(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0))))
+
+# `isinstance(node.arg, tuple)` -- ops.bend:6435's `ATuple{Nil{}}` against the `AParam` a
+# `ParamArg`-bearing node would carry. This is the row that makes "node 4 is a `ParamArg`" a
+# REFUTABLE claim rather than a comment: it reads False, and so does CPython.
+def c2d_selrow_arg_is_tuple() -> String:
+  c2d_row("c2d_selrow_arg_is_tuple", Bool.show(c2d_arg_is_tuple(O.Arena.arg(O.s5.ga.arena(), 4))))
+
+def c2d_selrow_arg_is_param() -> String:
+  c2d_row("c2d_selrow_arg_is_param", Bool.show(c2d_arg_is_param(O.Arena.arg(O.s5.ga.arena(), 4))))
+
+def c2d_selrow_src0_slot() -> String:
+  c2d_row("c2d_selrow_src0_slot",
+          U32.show(c2d_arg_slot(O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
+
+def c2d_selrow_src0_size_is_none() -> String:
+  c2d_row("c2d_selrow_src0_size_is_none",
+          Bool.show(c2d_arg_size_is_none(
+            O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
+
+def c2d_selrow_src0_device_is_none() -> String:
+  c2d_row("c2d_selrow_src0_device_is_none",
+          Bool.show(c2d_arg_device_is_none(
+            O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
+
+# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:6433 -- so a reader sees that
+# the node a BRIEF named (`ParamArg(2, int32)`, device None) EXISTS in this arena and is NOT
+# the node `s5.selrow` calls. Both arenas have an index 4 and only one is the arena received.
+def c2d_node2_op() -> String: c2d_row("c2d_node2_op", O.Ops.name(O.Arena.op(O.s5.ga.arena(), 2)))
+
+def c2d_node2_arg_is_param() -> String:
+  c2d_row("c2d_node2_arg_is_param", Bool.show(c2d_arg_is_param(O.Arena.arg(O.s5.ga.arena(), 2))))
+
+def c2d_node2_slot() -> String:
+  c2d_row("c2d_node2_slot", U32.show(c2d_arg_slot(O.Arena.arg(O.s5.ga.arena(), 2))))
+
+def c2d_node2_device_is_none() -> String:
+  c2d_row("c2d_node2_device_is_none",
+          Bool.show(c2d_arg_device_is_none(O.Arena.arg(O.s5.ga.arena(), 2))))
+
+def c2d_identity() -> String:
+  String.concat([c2d_selrow_op(), c2d_selrow_nsrc(), c2d_selrow_src0(),
+                 c2d_selrow_arg_is_tuple(), c2d_selrow_arg_is_param(),
+                 c2d_selrow_src0_slot(), c2d_selrow_src0_size_is_none(),
+                 c2d_selrow_src0_device_is_none(), c2d_node2_op(),
+                 c2d_node2_arg_is_param(), c2d_node2_slot(), c2d_node2_device_is_none()])
+
+# ---------------------------------------------------------------- ops.py:761, THE BARE assert
+# `s5.selrow`'s OWN call, verbatim -- `O.s5.ga.arena()`, index 4, `Some{1}`, `s5.dn(2)` -- so
+# this row is the claim `s5_copy_sel` makes, and CPython REFUSES it.
+def c2d_761_selrow() -> String:
+  +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, Some{1}, O.s5.dn(2))
+  c2d_row("c2d_761 selrow", c2d_built(f))
+
+# POSITIVE CONTROL one step away in the `arg` coordinate: the SAME node, `arg=None`. The `None`
+# alone satisfies `arg is None or ...`, so the SHRINK's `None` device is harmless here and this
+# row must KEEP BUILDING once the guard lands. A guard that refuses unconditionally is caught
+# here and not by any negative row.
+def c2d_761_argnone() -> String:
+  +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, None{}, O.s5.dn(2))
+  c2d_row("c2d_761 argnone", c2d_built(f))
+
+# POSITIVE CONTROL one step away in the `device` coordinate: the SAME op, slot, size and arg,
+# over a BUFFER whose device IS a tuple. ONLY `device` differs from `c2d_761 selrow`, and this
+# is what pins the guard to `self.device` rather than to the `device` ARGUMENT -- a guard that
+# read the argument would refuse this, and this row would go red for the wrong reason.
+def c2d_761_tupledev() -> String:
+  +b = c2d_buft(O.Arena.empty(), 1, S.int32())
+  +s = c2d_shr(O.Found.ar(b), O.Found.i(b))
+  +f = O.UOp.copy_to_device(O.Found.ar(s), O.Found.i(s), Some{1}, O.s5.dn(2))
+  c2d_row("c2d_761 tupledev", c2d_built(f))
+
+# `Some{0}` REFUSES: `arg is None` is an IDENTITY test, so a falsy index is still an index.
+# `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard" builds this.
+def c2d_761_argzero() -> String:
+  +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, Some{0}, O.s5.dn(2))
+  c2d_row("c2d_761 argzero", c2d_built(f))
+
+# The fourth quadrant on the BUFFER rather than the SHRINK, so a guard that keys on the OP as
+# well as the device is separated from one that does not.
+def c2d_761_scalardevargone() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), Some{1}, O.s5.dn(2))
+  c2d_row("c2d_761 scalardevargone", c2d_built(f))
+
+def c2d_761_scalarnone() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, O.s5.dn(2))
+  c2d_row("c2d_761 scalarnone", c2d_built(f))
+
+def c2d_761_tupleargzero() -> String:
+  +b = c2d_buft(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), Some{0}, O.s5.dn(2))
+  c2d_row("c2d_761 tupleargzero", c2d_built(f))
+
+def c2d_761_tupleargnone() -> String:
+  +b = c2d_buft(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, O.s5.dn(2))
+  c2d_row("c2d_761 tupleargnone", c2d_built(f))
+
+def c2d_761() -> String:
+  String.concat([c2d_761_selrow(), c2d_761_argnone(), c2d_761_tupledev(), c2d_761_argzero(),
+                 c2d_761_scalardevargone(), c2d_761_scalarnone(), c2d_761_tupleargzero(),
+                 c2d_761_tupleargnone()])
+
+# ---------------------------------------------------------------- ops.py:759, THE DISK raise
+# DISK is tag 6 (`device.bend:340`'s `tag_of`), so the fixtures are `S.D1{6}` and
+# `S.Dn{[6, 0]}`. The two positives are the SAME node and device with the tag changed.
+def c2d_759_disk() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, S.D1{6})
+  c2d_row("c2d_759 disk", c2d_built(f))
+
+def c2d_759_disktuple() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, S.Dn{[6, 0]})
+  c2d_row("c2d_759 disktuple", c2d_built(f))
+
+def c2d_759_cpu() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, O.s5.d1(0))
+  c2d_row("c2d_759 cpu", c2d_built(f))
+
+def c2d_759_cputuple() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, O.s5.dn(2))
+  c2d_row("c2d_759 cputuple", c2d_built(f))
+
+def c2d_759() -> String:
+  String.concat([c2d_759_disk(), c2d_759_disktuple(), c2d_759_cpu(), c2d_759_cputuple()])
+
+# ---------------------------------------------------------------- ops.py:763, THE WEAK DTYPE
+# One op, one arity, one device, and the DTYPE is the only thing that moves. The positives are
+# drawn from the eighteen of twenty dtypes outside `dtypes.weaks` and include a FLOAT and a
+# BOOL, so the boundary is not "integer versus weak" by accident. No RANGE appears on either
+# side: every `UOp.range` is `weakint`, so a RANGE is a refusal fixture and using one as a
+# positive is the mistake this lane was written to prevent.
+def c2d_763(dt: S.Dt, tag: String) -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, dt)
+  +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), None{}, O.s5.d1(0))
+  c2d_row(String.concat(["c2d_763 ", tag]), c2d_built(f))
+
+def c2d_763_i32() -> String: c2d_763(S.int32(), "i32")
+def c2d_763_f32() -> String: c2d_763(S.single(), "f32")
+def c2d_763_bool() -> String: c2d_763(S.boolean(), "bool")
+def c2d_763_void() -> String: c2d_763(S.void(), "void")
+def c2d_763_weakint() -> String: c2d_763(S.weakint(), "weakint")
+def c2d_763_weakfloat() -> String: c2d_763(S.weakfloat(), "weakfloat")
+
+def c2d_763_rows() -> String:
+  String.concat([c2d_763_i32(), c2d_763_f32(), c2d_763_bool(),
+                 c2d_763_void(), c2d_763_weakint(), c2d_763_weakfloat()])
+
+# ---------------------------------------------------------------- ops.py:892, THE OTHER assert
+# `UOp.mselect(self, arg)` -- ops.bend's own def -- CONSTRUCTS on this fixture. CPython's own
+# assert at ops.py:892 fires on the first `.device` READ, not at construction, so
+# `c2d_892 construct` is `BUILT` and `c2d_892 deviceread` is a refusal. `UOp.device` is NOT
+# ported, so `deviceread` is ORACLE-ONLY, and that is why the two are separate rows: collapsing
+# them would repeat the error `validate-oracle.py` records for `dv_bad_dtype_bitcast`.
+def c2d_892_construct() -> String:
+  +b = c2d_buf(O.Arena.empty(), 1, S.int32())
+  +s = c2d_shr(O.Found.ar(b), O.Found.i(b))
+  +m = O.UOp.mselect(O.Found.ar(s), O.Found.i(s), 1)
+  c2d_row("c2d_892 construct", c2d_built(m))
+
+# ---------------------------------------------------------------- THE COUNTS, WITH THEIR LOAD
+# Every count names the lane that can answer it. `c2d_oracle_only_n` is printed here so the
+# PORT's five missing rows are visible from the port side rather than only from the gate's
+# `oracle only` list, and `c2d_port_built_n` is the load for the nineteen shared outcomes.
+def c2d_counts() -> String:
+  String.concat([
+    c2d_row("c2d_fixture_n", "24"),
+    c2d_row("c2d_identity_n", "12"),
+    c2d_row("c2d_outcome_761_n", "8"),
+    c2d_row("c2d_outcome_759_n", "8"),
+    c2d_row("c2d_outcome_763_n", "6"),
+    c2d_row("c2d_outcome_892_n", "2"),
+    c2d_row("c2d_shared_n", "19"),
+    c2d_row("c2d_oracle_only_n", "5"),
+    c2d_row("c2d_weaks_n", "2"),
+    c2d_row("c2d_dtypes_n", "20"),
+    c2d_row("c2d_port_built_n", "19")])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(dv_const_ok())
@@ -2506,4 +2847,10 @@ def main() -> IO(Unit):
     IO.print(String.concat(["bv_w_off_and21=", U32.show(U32.shln(1, U32.to_nat(bv_w.of21())))]))
     IO.print(String.concat(["bv_w_and15=", U32.show(bv_w.of15())]))
     IO.print(String.concat(["bv_w_and_neg4=", U32.show(bv_w.ofneg())]))
+    IO.print(c2d_identity())
+    IO.print(c2d_761())
+    IO.print(c2d_759())
+    IO.print(c2d_763_rows())
+    IO.print(c2d_892_construct())
+    IO.print(c2d_counts())
     IO.print("done")

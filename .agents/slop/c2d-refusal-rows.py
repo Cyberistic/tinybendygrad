@@ -92,6 +92,8 @@ def main(emit=out):
   module and folds its rows into its own list: overriding `out` from outside would leave
   `ROWS` empty and the `c2d_shared_refused_n` tally below -- which reads `ROWS` -- would count
   nothing. MEASURED: `KeyError: 'c2d_761 selrow'` on the overridden-sink path."""
+  got = []
+  put = lambda nm, v: (got.append((nm, v)), emit(nm, v))
   # `s5.pa(1)` -- ops.bend:6110 -- `ParamArg.of(1, int32)`. `s5.ga.arena()`'s node 1
   # (ops.bend:6432), and it is what node 4's `device` falls through to.
   buf = UOp(Ops.BUFFER, src=(), arg=pa(1, dtypes.int32))
@@ -104,44 +106,44 @@ def main(emit=out):
   PY2, ONE = ("PYTHON", "PYTHON"), 1
 
   # ---- FIXTURE IDENTITY (12). Green on both sides, and the reason they exist. ------------
-  out("c2d_selrow_op", nm(shr))
-  out("c2d_selrow_nsrc", str(len(shr.src)))
-  out("c2d_selrow_src0", nm(shr.src[0]))
-  out("c2d_selrow_arg_is_tuple", str(isinstance(shr.arg, tuple)))
-  out("c2d_selrow_arg_is_param", str(isinstance(shr.arg, ParamArg)))
-  out("c2d_selrow_src0_slot", str(shr.src[0].arg.slot))
-  out("c2d_selrow_src0_size_is_none", str(shr.src[0].arg.size is None))
-  out("c2d_selrow_src0_device_is_none", str(shr.src[0].arg.device is None))
+  put("c2d_selrow_op", nm(shr))
+  put("c2d_selrow_nsrc", str(len(shr.src)))
+  put("c2d_selrow_src0", nm(shr.src[0]))
+  put("c2d_selrow_arg_is_tuple", str(isinstance(shr.arg, tuple)))
+  put("c2d_selrow_arg_is_param", str(isinstance(shr.arg, ParamArg)))
+  put("c2d_selrow_src0_slot", str(shr.src[0].arg.slot))
+  put("c2d_selrow_src0_size_is_none", str(shr.src[0].arg.size is None))
+  put("c2d_selrow_src0_device_is_none", str(shr.src[0].arg.device is None))
   # AND the node a BRIEF named, so a reader sees it exists in this arena and is NOT the node
   # `s5.selrow` calls: `s5.ga.arena()`'s node 2 is `s5.pa(2)` = `ParamArg(2, int32)`.
   node2 = UOp(Ops.ALLOC, src=(), arg=pa(2, dtypes.int32))
-  out("c2d_node2_op", nm(node2))
-  out("c2d_node2_arg_is_param", str(isinstance(node2.arg, ParamArg)))
-  out("c2d_node2_slot", str(node2.arg.slot))
-  out("c2d_node2_device_is_none", str(node2.device is None))
+  put("c2d_node2_op", nm(node2))
+  put("c2d_node2_arg_is_param", str(isinstance(node2.arg, ParamArg)))
+  put("c2d_node2_slot", str(node2.arg.slot))
+  put("c2d_node2_device_is_none", str(node2.device is None))
 
   # ---- ops.py:761, THE BARE `assert`. Eight shared rows: four quadrants, two arg spellings.
-  out("c2d_761 selrow", outcome(lambda: shr.copy_to_device(PY2, ONE)))
-  out("c2d_761 argnone", outcome(lambda: shr.copy_to_device(PY2)))
-  out("c2d_761 tupledev", outcome(lambda: shr_t.copy_to_device(PY2, ONE)))
+  put("c2d_761 selrow", outcome(lambda: shr.copy_to_device(PY2, ONE)))
+  put("c2d_761 argnone", outcome(lambda: shr.copy_to_device(PY2)))
+  put("c2d_761 tupledev", outcome(lambda: shr_t.copy_to_device(PY2, ONE)))
   # `arg=0` REFUSES: `arg is None` is an IDENTITY test, so a falsy index is still an index.
   # The port's `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard"
   # passes this row.
-  out("c2d_761 argzero", outcome(lambda: shr.copy_to_device(PY2, 0)))
-  out("c2d_761 scalardevargone", outcome(lambda: buf.copy_to_device(PY2, ONE)))
-  out("c2d_761 scalarnone", outcome(lambda: buf.copy_to_device(PY2)))
-  out("c2d_761 tupleargzero", outcome(lambda: buf_t.copy_to_device(PY2, 0)))
-  out("c2d_761 tupleargnone", outcome(lambda: buf_t.copy_to_device(PY2)))
+  put("c2d_761 argzero", outcome(lambda: shr.copy_to_device(PY2, 0)))
+  put("c2d_761 scalardevargone", outcome(lambda: buf.copy_to_device(PY2, ONE)))
+  put("c2d_761 scalarnone", outcome(lambda: buf.copy_to_device(PY2)))
+  put("c2d_761 tupleargzero", outcome(lambda: buf_t.copy_to_device(PY2, 0)))
+  put("c2d_761 tupleargnone", outcome(lambda: buf_t.copy_to_device(PY2)))
 
   # ---- ops.py:759, THE DISK `raise`. Four shared, four oracle-only. ---------------------
-  out("c2d_759 disk", outcome(lambda: buf.copy_to_device("DISK")))
-  out("c2d_759 disktuple", outcome(lambda: buf.copy_to_device(("DISK", "PYTHON"))))
-  out("c2d_759 cpu", outcome(lambda: buf.copy_to_device("PYTHON")))
-  out("c2d_759 cputuple", outcome(lambda: buf.copy_to_device(PY2)))
-  out("c2d_759 disklower", outcome(lambda: buf.copy_to_device("disk")))
-  out("c2d_759 disksuffix", outcome(lambda: buf.copy_to_device("DISK:0")))
-  out("c2d_759 nodisk", outcome(lambda: buf.copy_to_device("NODISK")))
-  out("c2d_759 diskx", outcome(lambda: buf.copy_to_device("DISKX")))
+  put("c2d_759 disk", outcome(lambda: buf.copy_to_device("DISK")))
+  put("c2d_759 disktuple", outcome(lambda: buf.copy_to_device(("DISK", "PYTHON"))))
+  put("c2d_759 cpu", outcome(lambda: buf.copy_to_device("PYTHON")))
+  put("c2d_759 cputuple", outcome(lambda: buf.copy_to_device(PY2)))
+  put("c2d_759 disklower", outcome(lambda: buf.copy_to_device("disk")))
+  put("c2d_759 disksuffix", outcome(lambda: buf.copy_to_device("DISK:0")))
+  put("c2d_759 nodisk", outcome(lambda: buf.copy_to_device("NODISK")))
+  put("c2d_759 diskx", outcome(lambda: buf.copy_to_device("DISKX")))
 
   # ---- ops.py:763, THE WEAK-DTYPE `raise`. Six shared rows; the dtype is the ONLY mover. --
   # The positives are drawn from the eighteen of twenty dtypes outside `dtypes.weaks` and
@@ -151,7 +153,7 @@ def main(emit=out):
   for tag, dt in (("i32", dtypes.int32), ("f32", dtypes.float32), ("bool", dtypes.bool),
                   ("void", dtypes.void), ("weakint", dtypes.weakint),
                   ("weakfloat", dtypes.weakfloat)):
-    out(f"c2d_763 {tag}",
+    put(f"c2d_763 {tag}",
         outcome(lambda dt=dt: UOp(Ops.BUFFER, src=(), arg=pa(1, dt)).copy_to_device("PYTHON")))
 
   # ---- ops.py:892, THE OTHER `assert`, which the port's comment does not name. ------------
@@ -160,33 +162,33 @@ def main(emit=out):
   # it fires LAZILY -- on the first `.device` READ, not at construction. Two rows because
   # collapsing them would repeat the error `validate-oracle.py` records for
   # `dv_bad_dtype_bitcast`.
-  out("c2d_892 construct", outcome(lambda: shr.mselect(ONE)))
-  out("c2d_892 deviceread", outcome(lambda: shr.mselect(ONE).device))
+  put("c2d_892 construct", outcome(lambda: shr.mselect(ONE)))
+  put("c2d_892 deviceread", outcome(lambda: shr.mselect(ONE).device))
 
   # ---- THE COUNTS, EACH NAMING THE LANE THAT CAN ANSWER IT. ---------------------------
   # Shared, and each about the AGREED FIXTURE SET rather than about either lane's output, so
   # the two lanes agree on them by construction and cannot go stale against each other.
-  out("c2d_fixture_n", "24")
-  out("c2d_identity_n", "12")
-  out("c2d_outcome_761_n", "8")
-  out("c2d_outcome_759_n", "8")
-  out("c2d_outcome_763_n", "6")
-  out("c2d_outcome_892_n", "2")
-  out("c2d_shared_n", "19")
-  out("c2d_oracle_only_n", "5")
-  out("c2d_weaks_n", str(len(dtypes.weaks)))
+  put("c2d_fixture_n", "24")
+  put("c2d_identity_n", "12")
+  put("c2d_outcome_761_n", "8")
+  put("c2d_outcome_759_n", "8")
+  put("c2d_outcome_763_n", "6")
+  put("c2d_outcome_892_n", "2")
+  put("c2d_shared_n", "19")
+  put("c2d_oracle_only_n", "5")
+  put("c2d_weaks_n", str(len(dtypes.weaks)))
   seen = []
   for d in tuple(dtypes.all) + tuple(dtypes.weaks) + (dtypes.void, dtypes.char):
     if all(str(d) != str(s) for s in seen):
       seen.append(d)
-  out("c2d_dtypes_n", str(len(seen)))
+  put("c2d_dtypes_n", str(len(seen)))
 
   # ORACLE-ONLY, because only CPython can be asked these and putting them on the port side
   # would mean hand-writing numbers the port has no way to compute.
-  out("c2d_refused_n", str(sum(1 for line in ROWS if "=REFUSED " in line)))
-  out("c2d_built_n", str(sum(1 for line in ROWS if "=BUILT " in line)))
-  out("c2d_refused_assertion_n", str(sum(1 for line in ROWS if "=REFUSED AssertionError" in line)))
-  out("c2d_refused_runtime_n", str(sum(1 for line in ROWS if "=REFUSED RuntimeError" in line)))
+  put("c2d_refused_n", str(sum(1 for _, v in got if v.startswith("REFUSED "))))
+  put("c2d_built_n", str(sum(1 for _, v in got if v.startswith("BUILT "))))
+  put("c2d_refused_assertion_n", str(sum(1 for _, v in got if v.startswith("REFUSED AssertionError"))))
+  put("c2d_refused_runtime_n", str(sum(1 for _, v in got if v.startswith("REFUSED RuntimeError"))))
   # THE SEVEN, counted from the NINETEEN shared rows rather than from this prose. `shared` is
   # every row whose name the port lane also prints, so the shared-refusal count is computed by
   # intersecting rather than by a list someone has to keep in step.
@@ -195,9 +197,9 @@ def main(emit=out):
             "c2d_761 tupleargnone", "c2d_759 disk", "c2d_759 disktuple", "c2d_759 cpu",
             "c2d_759 cputuple", "c2d_763 i32", "c2d_763 f32", "c2d_763 bool", "c2d_763 void",
             "c2d_763 weakint", "c2d_763 weakfloat", "c2d_892 construct"]
-  by_name = dict(line.split("=", 1) for line in ROWS)
-  out("c2d_shared_refused_n", str(sum(1 for k in shared if by_name[k].startswith("REFUSED "))))
-  out("c2d_shared_built_n", str(sum(1 for k in shared if by_name[k].startswith("BUILT "))))
+  by_name = dict(got)
+  put("c2d_shared_refused_n", str(sum(1 for k in shared if by_name[k].startswith("REFUSED "))))
+  put("c2d_shared_built_n", str(sum(1 for k in shared if by_name[k].startswith("BUILT "))))
 
   for line in ROWS:
     print(line)

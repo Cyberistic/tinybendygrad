@@ -130,6 +130,7 @@
 #
 # ===========================================================================
 import ../helpers.bend as H
+import ./ops_python.bend as OP
 
 # ===========================================================================
 # THE LANE TABLE. `LANES: frozenset = {int, uint, float, bool}` -- four lanes,
@@ -1450,6 +1451,7 @@ def main() -> IO(Unit):
     m5 : Unit <- t_call()
     m6 : Unit <- t_misc()
     m7 : Unit <- t_parse()
+    IO.print(String.concat(["probe_hex=", OP.hex_str2(64)]))
     IO.print("bend-done=1")
 
 # ===========================================================================

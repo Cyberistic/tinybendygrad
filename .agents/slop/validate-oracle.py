@@ -370,7 +370,22 @@ def main():
     emit(f"bv_w_{tag}", str(width(UOp(Ops.AND, (r_g, UOp.const(k))))))
     emit(f"bv_w_off_{tag}", str(2 ** width(UOp(Ops.AND, (r_g, UOp.const(k))))))
 
-  # ---- 8. THE `c2d` LANE -- `copy_to_device`'s FOUR REFUSALS. ----------------------------
+  # ---- 8. THE WRAPPED TEXT, so the normalisation above is visible rather than claimed. ----
+  s = z3.Solver(ctx=z3.Context())
+  z3_idx, z3_mask = uops_to_z3(s, UOp(Ops.AND, (r_g, UOp.const(21))), T)
+  s.add(z3_mask)
+  emit("#raw_and21", repr(str(z3_idx)))
+  emit("#wrap_and21", str(str(z3_idx).count("\n")))
+  # THE ONE NAMED RESIDUAL, WITH ITS EVIDENCE. `dv_cmod4_term` is the only row where the port and
+  # `_term` differ, and it differs by ONE SPACE: the raw text below ends `r0/4)*\n4`, so z3 put a
+  # newline where it printed no space and collapsing the wrap to a space invents one. MEASURED --
+  # and it is why `norm_ns` is not emitted either: z3 also wraps after a comma, so that encoding
+  # invents the OPPOSITE error on five rows where the port is right.
+  cs2, term2 = row_of(UOp(Ops.CMOD, (UOp.range(100, 0, AxisType.GLOBAL), UOp.const(4))), T)
+  emit("#raw_cmod4", repr(term2))
+  emit("#wrap_cmod4", str(term2.count("\n")))
+
+  # ---- 7. THE `c2d` LANE -- `copy_to_device`'s FOUR REFUSALS. ----------------------------
   # Sourced from `.agents/slop/c2d-refusal-rows.py`, which is the file that OWNS these rows
   # and says why each fixture is the one `validate.bend` builds. It is loaded and run rather
   # than copied, because a second copy of a fixture list is a second list to keep in step --
@@ -387,25 +402,9 @@ def main():
   c2d = importlib.util.module_from_spec(c2d_spec)
   c2d_spec.loader.exec_module(c2d)
   _c2d_out = []
-  c2d.out = lambda nm, v: _c2d_out.append(f"{nm}={v}")
-  c2d.main()
+  c2d.main(emit=lambda nm, v: _c2d_out.append((nm, v)))
   OUT.extend(_c2d_out)
   emit("c2d_lane_loaded", int(len(_c2d_out)))
-
-  # ---- 7. THE WRAPPED TEXT, so the normalisation above is visible rather than claimed. ----
-  s = z3.Solver(ctx=z3.Context())
-  z3_idx, z3_mask = uops_to_z3(s, UOp(Ops.AND, (r_g, UOp.const(21))), T)
-  s.add(z3_mask)
-  emit("#raw_and21", repr(str(z3_idx)))
-  emit("#wrap_and21", str(str(z3_idx).count("\n")))
-  # THE ONE NAMED RESIDUAL, WITH ITS EVIDENCE. `dv_cmod4_term` is the only row where the port and
-  # `_term` differ, and it differs by ONE SPACE: the raw text below ends `r0/4)*\n4`, so z3 put a
-  # newline where it printed no space and collapsing the wrap to a space invents one. MEASURED --
-  # and it is why `norm_ns` is not emitted either: z3 also wraps after a comma, so that encoding
-  # invents the OPPOSITE error on five rows where the port is right.
-  cs2, term2 = row_of(UOp(Ops.CMOD, (UOp.range(100, 0, AxisType.GLOBAL), UOp.const(4))), T)
-  emit("#raw_cmod4", repr(term2))
-  emit("#wrap_cmod4", str(term2.count("\n")))
 
   for nm, v in OUT:
     print(f"{nm}={v}")
