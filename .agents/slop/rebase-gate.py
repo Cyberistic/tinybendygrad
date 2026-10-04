@@ -186,6 +186,15 @@ def sh(*a, timeout=1800):
 # a reader in a hurry. `schedule/multi.bend` is still UNWIRED after this change, for a DIFFERENT
 # reason -- 0 shared row names -- and GUARD 4 answering "share NO row names" is the correct verdict
 # rather than a failure of it. See ORACLE_NOT_WIRED in rebase-gate-selftest.py.
+#
+# ⚠ AND "0 SHARED NAMES" IS NOT THE WHOLE BLOCKER, WHICH THE ENTRY ABOVE NOW RECORDS. Stripping
+# the port's `t_` gives 26 collisions, and 21 of them DISAGREE -- and all 21 are CORRECT rows:
+# `multi.bend` prints `eq(a, b)` (multi.bend:2220) and this oracle prints the QUANTITY, so on 17
+# of the 26 the oracle's value is not a boolean and `1` vs `()` is two ENCODINGS of one claim.
+# Measured with .agents/slop/multi-collision.py: 26 CONSISTENT of 26. **A LANE IS NOT COMPARABLE
+# UNLESS BOTH SIDES ANSWER THE SAME QUESTION, AND A NAME IS NOT EVIDENCE THAT THEY DO** -- a
+# `t_` strip here would manufacture 21 reds over right code, which is the cstyle.bend failure
+# this same header records above.
 PY_TAIL = "]   py=["   # exactly the three-space literal cstyle.bend:1747 writes; rfind, not find,
                        # because a value's own bracket can precede the boundary. The `]` BELONGS
                        # to `left`: the oracle prints `[*V]` and the port prints `[*V]   py=[*V]`,

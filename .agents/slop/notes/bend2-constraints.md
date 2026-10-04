@@ -19485,3 +19485,146 @@ CAUGHT IT WAS THE ORACLE ASSERTION**, because the sweep checks its own `k=0` blo
 committed gate BEFORE it compares sizes.  A sweep that diffed first would have reported "no
 rows moved" over a probe reading nothing, which is the exact failure `rebase-gate.py` exists to
 distinguish.  **ASSERT THE ORACLE BEFORE THE DIFF, IN EVERY HARNESS, INCLUDING YOUR OWN PROBE.**
+
+### BAND-1 (position ~19489). `U32` IS BOTH "arena slot" AND "the number", AND A `U32`
+### PARAMETER CANNOT SAY WHICH. THE CALL SITE IS THE ONLY WITNESS.
+`dd_band`'s THIRD parameter is a CONSTANT (`op.bend:239 dc_band` interns it with
+`dc_cint(ar, k)`), so passing `O.Found.i(n)` interns `CONST <the slot number of n>`.  The
+site typechecks because `U32` is both.  This is A1 in `l2i_cdiv.step`, now closed, and it is
+not the only instance: seven more sat in `f2f`, at the time UNREACHABLE from `main`.
+**A PARAMETER TYPE THAT IS BOTH A SLOT AND A NUMBER IS THE DEFECT, NOT THE CALL.**
+`T.tx_shl`/`T.tx_shr` are the same trap with the ARGUMENTS SWAPPED: their FIRST argument is a
+node index and their THIRD is a shift amount, which is a value.  So `dd_band`'s 3rd and
+`tx_shl`'s 3rd are values, `tx_shl`'s 2nd is an index, and the three look identical.
+
+### BAND-2 (position ~19500). "A MASK THAT IS AN INDEX" IS A FUNCTION OF THE FIXTURE'S
+### POSITION, SO ONLY A SIZE SWEEP CAN CATCH IT -- AND NO FIXTURE ON THE SAME INPUT EVER WILL.
+Measured, `.agents/slop/dd-bandpad.sh`, `pad` PARAMs prepended to the arena, on `f2f`
+(fp8e4m3 -> float32, float32 -> fp8e4m3, float32 -> fp8e5m2):
+
+    pad        0     1     2     5    17    64      (BEFORE: the wrong mask CONST)
+    n1 mask   C(43) C(44) C(44) C(44) C(44) C(44)
+    n1 mask   C(15) C(16) C(16) C(16) C(16) C(16)
+    n1 mask   C(34) C(35) C(35) C(35) C(35) C(35)
+    n2 mask   C(46) C(47) C(47) C(47) C(47) C(47)
+
+Each wrong CONST rises by EXACTLY `pad`; after the fix all six read `C(255)`/`C(128)`/
+`C(2147483647)` at EVERY pad.  **A value does not move with `pad`; a slot does.**  This is the
+cheapest available detector for the species and it costs one extra fixture family.
+Corollary, and it is the sharp one: a wrong-index mask eventually stops being a submask of
+anything, at which point `f2f` becomes a CONSTANT function of its input's POSITION.  **A
+defect whose wrong answer is a CONSTANT is the worst kind, because it is stable: it passes
+every fixture the file happens to own, forever.**
+
+### BAND-3 (position ~19519). "NO ROW MOVES" CAN MEAN `f2f` WAS NEVER CALLED.
+`.agents/slop/dd-band-mut.py` replaced all seven mask sites with `4242`, one at a time, and
+all 182 rows read SAME -- which the prior unit's note took as "right by coincidence or
+latent".  The truth is a THIRD thing: `.agents/slop/dd-band-reach.py` (a static closure over
+the file's own defs, from `main`) shows `f2f`, `f2f.up`, `f2f.down`, `f2f_clamp`,
+`f2f.narrow`, `f2f_load`, `f2f_store`, `f2f_rewrite` and `rne` are all UNREACHABLE, and so
+are 84 defs in all.  The `c0..c7` rows reach `f2f_clamp_max`, which is a pure VALUE function
+of `dt`; the file's own comment at `dtype.bend:2772` says so.  **BEFORE CALLING A ZERO A
+BLIND SPOT, ASK WHETHER THE THING IS REACHABLE AT ALL.**  A blind spot is a live path that
+nothing can separate; an unreachable path is a different defect wearing the same mask.
+
+### BAND-4 (position ~19530). A MASK-BROKEN CONE CAN LOOK LIKE AN ARENA ALIASING, AND THE
+### ARENA DUMP IS WHAT SEPARATES THEM. THE DUMP IS ~40 LINES.
+`O.Arena.node` is TOTAL, so a wrongly-built node reads back as `NOOP` and a wrongly-ROOTED
+one reads back as a perfectly well-formed node pointing somewhere else.  Neither the cone
+size nor the op sequence distinguishes the two.  `.agents/slop/dd-bandarena.bend` prints
+`slot \t op/nsrc \t label \t<- src0,src1` for EVERY slot, and it is the only thing that named
+the masks outright:
+
+    3  CONST  C(2)     <- NOOP,NOOP
+    4  AND    AND      <- Pv1,C(2)          # `f2f.sign`'s mask, and 2 is SLOT 2
+    12 CONST  C(11)    <- NOOP,NOOP
+    13 AND    AND      <- Pv1,C(11)         # `f2f.nosign`'s mask, and 11 is SLOT 11
+
+**`slot <n>  CONST  C(n)` IS AN INDEX PASSED AS A VALUE, AND IT IS LEGIBLE ON THE FACE OF
+THE DUMP.**  The same dump also found a genuine forward reference -- slot 22 `MUL <- OR(23)`
+-- which an append-only arena cannot contain, so the two defects were told apart by evidence
+rather than by argument.
+
+### BAND-5 (position ~19548). A `U32`-TYPED HELPER THAT DOES DOUBLE DUTY IS A LATENT BUG IN
+### ITSELF, AND THE FIX IS A SIBLING, NOT A CHANGE.
+`f2f.em1` returns `O.Found.i(d)` -- a SLOT -- typed `U32`, and it had FIVE call sites needing
+TWO different things: `dd_band` wants the NUMBER (a Python int, because
+`shl(x,y) = x * (2**y)` with both operands Python ints), while `T.tx_shl`'s src0 wants a node.
+Changing `em1`'s return would have broken the sites that were RIGHT.  **WHEN A HELPER'S
+RETURN IS AMBIGUOUS, COUNT ITS CALL SITES BY WHAT THEY NEED BEFORE CHANGING ANYTHING.**
+`.agents/slop/dd-band-census.py` section D lists the three defs whose `U32` return is an index
+(`f2f.em1`, `f2f.fnuz`, `f2f.ocp`); `fnuz`/`ocp` are the `f2f.up.tail` arms and they are why
+`f2f.up` answers `BITCAST(C(-1))` with a 2-node cone against CPython's 29 -- **a def that
+returns an index but not the ARENA that owns it leaves the caller reading the index in a
+different arena**, which is the same "count barely moves, cone collapses" shape four times
+over.
+
+### BAND-6 (position ~19562). AN ORACLE THAT INSERTS ITS OWN `cast` CHANGES WHAT IT IS
+### MEASURING, AND THE FIXTURE MUST AGREE WITH IT ON WHETHER IT INSERTS ONE.
+`f2f`'s receiver is already dtype `fr` (`f2f_store`, dtype.py:142), so the port's fixture is
+a bare `dd_par(ar, nm, fr)`.  A CPython fixture written as
+`UOp.variable(nm,0,dtypes.float).cast(fr)` puts an EXTRA `CAST` in the cone and the two lanes
+stop being comparable -- for `fr = float32` the cast folds and the mistake is invisible, and
+for `fr = fp8e4m3` it is not.  **WRITE THE ORACLE'S INPUT TO MATCH THE PORT'S RECEIVER, NOT
+TO MATCH WHAT THE PYTHON READS.**  Measured: the oracle's first draft read `CAST/1` at
+position 2 of `w1sig` and the port had no such node.
+
+
+### BAND-7 (position ~19572). A BOOLEAN ROW AND A VALUE ROW THAT SHARE A NAME ARE NOT A
+### DISAGREEMENT; MEASURE THE PORT'S CLAIM AGAINST CPython's VALUE BEFORE CALLING IT RED.
+`schedule/multi.bend`'s rows print `eq(a, b)` -- `1`/`0` -- while `.agents/slop/multi-rows.py`
+prints the QUANTITY.  So for 17 of the 26 name collisions the port's `1` means "`len` is 0"
+and the oracle's `()` is the same fact: **21 "disagreements" were 26 CORRECT rows.**
+`.agents/slop/multi-collision.py` reads each colliding row's OWN body out of multi.bend,
+recovers the projection it applies (`bx_a0` / `bx_n` / `mu_len`, named at multi.bend:2558-2561
+and :2666), evaluates that projection on CPython's value, and finds **26 CONSISTENT of 26**.
+The two encodings are distinguishable WITHOUT a second source of truth: `t_bx_exp` and
+`t_bx_exp_n` differ ONLY in which reader they call, so a name-based rule cannot separate them
+and a body-based one can.  **A COMPARISON OF TWO LANES MUST FIRST ESTABLISH THAT THEY ANSWER
+THE SAME QUESTION; OTHERWISE IT MANUFACTURES RED OVER CODE THAT IS RIGHT, WHICH IS THE FAILURE
+`rebase-gate.py`'s own header records for `cstyle.bend` (222 shared / 222 disagreeing on a
+pair `cstyle-gate.py` measures 221/227 clean).**
+
+### BAND-8 (position ~19580). `let` IS NOT A BINDING IN THIS BEND; A `U32` PARAMETER IS
+### CONSUMED, SO A HELPER CALLED TWICE NEEDS ITS ARGUMENTS SPELLED TWICE.
+`let r = f(x)` in a def body is a PARSE ERROR ("expected : a term"), and a bare `nm = expr` is
+a `do`-block binder that does not work outside one.  Separately: a `U32` parameter may be
+read ONCE.  A probe that called `rs_rev(acc, w)` twice for the index and the found-flag was
+refused with "expected : w / observed : w (consumed more than once)", and the obvious workarounds
+`U32.add(na, 0)` and reusing a list literal are refused the same way.  **THE FIX IS TO SPELL
+THE ARGUMENT AGAIN IN THE CALL**, which is why `.agents/slop/multi-defect-probe.bend`'s
+`rstierow` takes `(a, b, w, a2, b2, w2)` and nothing else.  Two more of the same, both
+measured: a `Data` record's three readers each CONSUME it (`Rd.red`/`Rd.rem`/`Rd.off`), so the
+three lists come out of ONE `match` on the record rather than three `shrd` calls; and a `match`
+may not scrutinise a CALL -- `match rsplit(a,b,c,d,na):` is refused with "a parameter or field
+scrutinee", so the call gets its own def first and the `match` reads the parameter.
+
+### BAND-9 (position ~19588). UPSTREAM'S LEAKED LOOP VARIABLES ARE PART OF THE SPEC, AND A
+### PORT THAT "FIXES" THEM DIVERGES WHERE NO FIXTURE DISTINGUISHES THE TWO.
+`tinygrad/schedule/multi.py:139` is
+`new_shape = tuple(s//(int(rng.vmax)+1) if a in new_axs else s for a,s in enumerate(new_shape))`
+and `rng` is the loop variable of `for ax, rng in multi.sharding:` at :131, never rebound in
+between.  So :139 divides EVERY sharded axis by the LAST range's count, not by its own.
+`multi.bend`'s `rs_local` (multi.bend:1313-1319) divides each axis by ITS OWN count, through
+`ns_count` (multi.bend:1279-1283).  **MEASURED by executing :139 verbatim, extracted from the
+installed tinygrad by `inspect` and run through `exec` (`.agents/slop/multi-l139.py`): the two
+readings differ on 3 of 4 UNEQUAL-count shardings.**  A distinct-axis UNSHARD with unequal
+counts is CONSTRUCTIBLE (`UOp.unshard((0,1), (UOp.range(2,...), UOp.range(4,...)))` answers
+counts `[2, 4]`), so the case is reachable in principle.  It is a blind spot, NOT a fixed
+defect: every port fixture for `rs_local` uses EQUAL counts except `t_rs_loc_both`
+(`axes=(0,1) counts=(2,3)`), and on THAT one the two readings agree at the index the row reads
+(index 1: both 2) and differ only at index 0.  **WHEN A PORT ROWS OVER A LIST, A FIXTURE THAT
+READS ONE INDEX CANNOT SEPARATE TWO FUNCTIONS THAT AGREE AT THAT INDEX** -- `t_rs_loc_both`
+reads `mu_at(..., 1n)` and `t_rs_loc0` reads index 0 but with ONE axis, so no leak is possible.
+
+### BAND-10 (position ~19596). A `sys.argv = [...]` INSIDE AN `importlib` LOADER DESTROYS THE
+### CALLER'S argv, AND A PLANT CONTROL THAT CANNOT REACH ITS OWN FIXTURE PASSES WHILE GREEN.
+`.agents/slop/multi-correspond.py`'s `load()` set `sys.argv = [path]` before `exec_module`, so
+`main(sys.argv[1])` read back the ORACLE's path instead of the planted `multi.bend`'s and the
+plant control compared the LIVE tree -- it reported `rc=0` over a planted disagreement.  The
+plant was visible in the file the whole time.  **SAVE AND RESTORE `sys.argv` IN ANY LOADER, AND
+ASSERT THE CONTROL READ WHAT IT WAS TOLD TO READ** -- the fix prints `read from <path>` on
+line 1, so a control that silently read the wrong tree is visible in the output.  Related and
+measured in the same file: `report()` returns a LIST, and `0 if bad1 + bad2 == 0 else 1` is
+LIST CONCATENATION, so a clean pair printed `rc=1` -- a permanently-red verdict over 0
+inconsistencies, which is the exact failure this lane exists to prevent.

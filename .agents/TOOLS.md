@@ -911,3 +911,29 @@ narrow discovery plus a hopeful list. Both rounds are recorded as `## Z-3` in
 | `ops501-agree.py PY BD BN` | AGREE / DISAGREE over whole `name=value` lines, **naming every disagreeing row** and every row present on one side only. |
 | `ops501-plant.sh [REV]` | **The control a missing-row failure cannot supply.** Plants one op out of `UOp.getaddr.op`'s nine-op ladder in a staged copy; requires clean rc=0 AND planted rc=1, and asserts the live file's digest is unchanged. Measured: `ROW DISAGREE s5_ga_param: cpython=Ops.GETADDR/Ops.PARAM bd=Ops.PARAM`. |
 | `ops-501-mutate.py` | 23 mutations, all moving the rows they name. **Stages `jj file show -r @` and never writes `ops.bend`** — the previous version did, and its `finally` restore would have permanently destroyed a concurrent unit's edit. Its anchors carry the `def` header: `case OpsPARAM{}: True{}` alone occurs 4 times in `ops.bend` and a 3-line window 6–62 times, so an unanchored replace edits a different ladder. |
+
+### `graphcmp-*` — comparing GRAPHS (not printers) between the port and CPython
+
+| tool | what it is for |
+|---|---|
+| `graphcmp.py` | The differ. `diff --graph NAME` is **the artifact**: one command, one argument, one `# VERDICT:` line, and a `# DENOMINATOR:` line above it. Nine graphs (63 nodes/side, 13 of 77 ops). Also `control` (each side against itself), `cross` (one graph against another, BOTH sides), `conf` (the three conflations), `dbg --levels` (across DEBUG on a fixed graph), `selfcheck`, `emit`. Compares on an 8-field normal form with `repr` **excluded from the equality decision**, plus `--equiv` for commutative-canonical agreement. `runs/graphcmp/D/README-D.txt` is the index; `.agents/slop/graphcmp-LIMITS.md` is the honest limits. |
+| `graphcmp.bend` | The port side of the same wire format. **Imports nothing it could copy**: `graphcmp-dbg.bend` reaches `matmul_of`, `row`, `rows.of`, `chunk`, `i`, `us` through it rather than re-implementing the graph builder or the wire grammar. |
+| `graphcmp-dbg.bend` | The DEBUG-level probe. Builds ONE graph and varies only `H.debug()`, reaching all seven gated sites through the port's own `*_dbg*` defs (`memory.py:59`, `allreduce.py:16`, `state.py:260`, `amdev.py:185/225/251/254`). Emits each site as ONE named row in the graph wire format so the trace diff is a first-class diff rather than an eyeball comparison. |
+| `graphcmp-oracle.py` | The coverage denominator, tabulated: per graph the node count on BOTH sides, distinct ops, distinct arg atom letters, distinct shapes, distinct depths, and which ledger markers are LIVE. Emits both sides so a port-only op shows up as a per-side difference instead of being absorbed into an AGREE. |
+| `graphcmp-dbg-oracle.py` | Whether CPython's own `DEBUG >= 1` site (`memory.py:59-60`) can be reached on this host. Measured **0 of 8 real graphs**, which is why `dbg` is a port-vs-port comparison and says so in its own output. |
+| `graphcmp-run.sh` | Every artifact, one command. Stamps `rc=` into each output and compares the py and bend canonical files with `cmp`. |
+
+Three findings from it generalise past this repo, and all three are in
+`bend2-constraints.md` as `GC-1`…`GC-9` (positions ~19325–19445):
+
+- **A field that reads equal because BOTH sides are wrong is worse than a field that is not
+  compared.** `cdepth` was off by one against the port's `Arena.depth` on all four fixtures,
+  and NO graph emitted before that day contained a RANGE — so both sides returned 0 and the
+  field agreed. Only a graph that reaches the field finds that.
+- **A length-counted wire reader that DROPS rows reports a smaller COUNT, which looks like a
+  finding.** `unchunks` required a space between chunks; every graph field was a space-free
+  atom so nothing caught it until a DEBUG line with spaces in it made the reader refuse the
+  line and the lane print "0 trace rows".
+- **A flag that reaches nothing is a comment with a command-line syntax.** This file had
+  three: `--graph` (defaulted to the default), `--plant-side` (never read), `--bend-probe`
+  (not reaching `emit`, the one command whose job it describes).

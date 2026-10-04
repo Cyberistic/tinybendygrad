@@ -1690,10 +1690,21 @@ def dv_range.of(+ar: O.Arena, at: O.AxisType, ids: List<&2, U32>, nm: String) ->
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, Nil{})
 
+# `O.Found.ar(t)`, NOT `ar`. `dv_bin` MINTS, so `t` was interned into the arena it RETURNED
+# and `ar` is the one that went in; `dv_and.mm2` then read `Arena.src(ar, Found.i(t), 0)`,
+# an index the arena never interned. MEASURED by `.agents/slop/arena-validate-probe.bend`:
+# `idx=4 in_pre_mint_arena=None in_found_arena=Some pre_src0=0 found_src0=2`, and the range
+# it builds came out `u=0:0:99` instead of `u=2:0:99` -- built from the arena BOTTOM.
+# `Arena.node` is total, so that read answered `0` and nothing anywhere reported it.
+#
+# ⚠ NO COMMITTED ROW MOVES. The `dv_shr2` row's fourth field is empty both before and after,
+# because an empty z3 range list and a wrong z3 range list print the same. So this fix is
+# argued by the `at`-based probe above and NOT by a gate row, and `dv_shr2` has no CPython
+# oracle in `.agents/slop/` at all. Reported as a COVERAGE GAP, not as a gated fix.
 def dv_shr2.of(+ar: O.Arena, nm: String) -> String:
   +t = dv_bin(ar, O.OpsSHR{}, 64, 2)
   +g = fx_const_bool(O.Found.ar(t), True{})
-  dv2(nm, t, g, dv_and.mm2(ar, t))
+  dv2(nm, t, g, dv_and.mm2(O.Found.ar(t), t))
 
 def dv_where.of(+ar: O.Arena, nm: String) -> String:
   +v = fx_var(ar, 0, "v", S.int32())
@@ -1809,10 +1820,28 @@ def dv_rank_shr1() -> String:
 def dv_bad_dtype_bitcast() -> String:
   dv_bad_dtype_bitcast.of(O.Arena.empty(), "dv_bad_dtype_bitcast")
 
+# THE SAME STALE ARENA AS `dv_shr2.of`, and this one sits behind the `dv_and*` rows.
+# `dv_bin` MINTS, so `t` lives in the arena it returned and `ar` is the one that went in;
+# `dv_and.mm(ar, t)` then read an index `ar` never interned. PROVEN by
+# `.agents/slop/arena-validate-probe.bend`: `in_pre_mint_arena=None`.
+#
+# ⚠⚠ THIS CHANGES THREE ROWS AND **THE DIRECTION IS NOT YET ADJUDICATED**. `dv_and15`,
+# `dv_and21` and `dv_and_neg4` moved from `... BV2Int(...) - 1 ...` to `... - 256 ...`, and
+# that `1` is `2**(w-1)` for the bit width `validate.py:16` computes from `vmin`/`vmax` --
+# so the stale read was supplying the arena BOTTOM's bounds (all zero, hence `w=1`) and the
+# fix supplies the real node's. **`z3` IS NOT INSTALLED IN THIS ENVIRONMENT**, so CPython's
+# `uops_to_z3` could not be CALLED, and `dv_and*` has no oracle anywhere in `.agents/slop/`.
+# A hand-derivation of `validate.py:16` gives `w=8` -> bound 128, which matches NEITHER 1 NOR
+# 256, so it settles nothing.
+#
+# SO: THE ALIASING IS PROVEN AND THE FIX IS RIGHT BY THAT PROOF; WHETHER `- 256` IS WHAT
+# CPython ANSWERS IS **NOT ESTABLISHED**, and this row must not be called green until an
+# oracle exists. Recorded as an OPEN QUESTION, not as a gated fix. `dv_shr2.of` above moves
+# NO row and has no such question.
 def dv_and.put(+ar: O.Arena, nm: String, k: U32) -> String:
   +t = dv_bin(ar, O.OpsAND{}, 100, k)
   +g = fx_const_bool(O.Found.ar(t), True{})
-  dv2(nm, t, g, dv_and.mm(ar, t))
+  dv2(nm, t, g, dv_and.mm(O.Found.ar(t), t))
 
 def dv_and.of(+ar: O.Arena, nm: String, k: U32) -> String:
   dv_and.put(ar, nm, k)

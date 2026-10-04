@@ -1689,7 +1689,8 @@ def cmd_dbg(dev: str, levels: list[int], graph: str) -> int:
     r, txt = report(traces[a], traces[b], None, f"DEBUG{a}", f"DEBUG{b}")
     print(txt)
     rc |= r
-  print(f"# DEBUG VERDICT: {'the levels are DISTINGUISHABLE and the graph was fixed' if rc else 'NO LEVEL DISTINGUISHES ANYTHING -- see the residual ledger'}")
+  print("# DEBUG VERDICT: " + ("the levels are DISTINGUISHABLE and the graph was fixed"
+                               if rc else "NO LEVEL DISTINGUISHES ANYTHING"))
   return 0 if rc else 1
 
 
@@ -1741,8 +1742,10 @@ def cmd_conf(dev: str) -> int:
                       "# RUNG", "#   ")):
       out.append(ln)
   named = field_named(txt, "src")
-  out.append(f"# CONFLATION 1 VERDICT: {'OK -- names src on the reordered node' if rc and named else 'FAIL -- did not name src'} "
-             f"(expected DISAGREE naming src; got rc={rc})")
+  out.append("# CONFLATION 1 VERDICT: "
+             + ("OK -- names src on the reordered node" if rc and named
+                else "FAIL -- did not name src")
+             + f" (expected DISAGREE naming src; got rc={rc})")
   ok = ok and rc == 1 and named
 
   # ---- CONFLATION 2: SAME `arg`, DIFFERENT `depth` ------------------------------

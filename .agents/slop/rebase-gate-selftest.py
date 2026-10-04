@@ -1233,34 +1233,55 @@ ORACLE_CONFORMANCE = {
 #   oracle `.agents/slop/multi-rows.py` 213 rows, no prefix (`pm_len`, `rd_all_red`)
 #   shared, exactly as printed                                     0
 #
-# ⚠ AND A `t_` PREFIX NORMALISATION IS A SECOND SOURCE OF TRUTH, NOT A FIX. MEASURED, not assumed:
-# strip the prefix and the intersection is 26 -- and 21 of those 26 DISAGREE, because the collision
-# is an accident of spelling and not a correspondence of claims:
+# ⚠ AND A `t_` PREFIX NORMALISATION IS A SECOND SOURCE OF TRUTH, NOT A FIX -- BUT THE REASON THIS
+# FILE GAVE FOR THAT WAS WRONG, AND THE CORRECTION MATTERS MORE THAN THE VERDICT.
 #
-#     bx_none    port `1`   vs oracle `()`    port: "is anything broadcast"  oracle: WHICH axes
-#     pm_rev     port `1`   vs oracle `0`    port: a COUNT row              oracle: tuple.index
-#     fl_mid_n   port `1`   vs oracle `1`    AGREES -- and agrees on the LITERAL `1`
+# WHAT IT SAID: "strip the prefix and the intersection is 26 -- and 21 of those 26 DISAGREE,
+# because the collision is an accident of spelling and not a correspondence of claims."
 #
-# That third line is the expensive one. A normalisation would manufacture 21 reds and 1 agreement
-# that is not an agreement, and an agreement is what a reader believes. So the prefix stays where
-# the producer put it, and the fix belongs in an oracle that prints the port's own row NAMES with
-# CPython's answer under each -- a different oracle from this one, and not this unit's to write.
+# ⚠ THE 26 AND THE 21 ARE BOTH REAL AND THE INFERENCE IS NOT. `multi.bend`'s rows print
+# `eq(a, b)` -- `1` or `0` (multi.bend:2220) -- while `multi-rows.py` prints the QUANTITY. For
+# 17 of the 26 collisions the oracle's value is NOT a boolean, so `1` versus `()` is not two
+# answers to one question: the port answers "`bx_n == 0`, which is true" and the oracle answers
+# "the list is empty". `.agents/slop/multi-collision.py` reads each colliding row's OWN BODY out
+# of multi.bend, recovers the projection it applies (`bx_a0` / `bx_n` / `mu_len`, named at
+# multi.bend:2558-2561 and :2666), and evaluates that projection on CPython's own value:
+#
+#     26 CONSISTENT of 26 collisions, 0 INCONSISTENT.
+#
+# So all 21 "disagreements" were CORRECT ROWS. The conclusion -- do not normalise, do not wire --
+# stands, and the reason is STRONGER than the one recorded here: normalising would manufacture 21
+# reds over code that is right, which is precisely the cstyle.bend failure in this file's own
+# header. What it is NOT is a naming problem. Nothing is misnamed; two lanes answer in two
+# different ENCODINGS.
+#
+# THE ENCODINGS ARE DISTINGUISHABLE WITHOUT A SECOND SOURCE OF TRUTH, and this is the part worth
+# keeping: `t_bx_exp` and `t_bx_exp_n` differ ONLY in which reader they call, so no name-based
+# rule can separate them and a body-based one can. A future oracle may therefore print the
+# port's own row names WITH CPython's value under each, and the pair becomes comparable -- but
+# that is a NEW oracle, and the port is not edited to suit it.
 #
 # WHAT WAS THIS UNIT'S, AND IT IS FIXED. `multi-rows.py:265` prints `f"{n.ljust(w)}  {v}"`: a
 # name, TWO SPACES, a value, and no `=` anywhere, so `rows()` read ZERO of its 213 rows -- which is
 # indistinguishable, from outside, from an oracle that was never run. `row()`'s third shape reads
 # all 213 (SUPERSET_LANES measures old=0 new=213 on that stdout). The lane is STILL unwired, for
-# the NAME reason above, and the two are separate claims: a readable FORMAT is necessary for a
+# the ENCODING reason above, and the two are separate claims: a readable FORMAT is necessary for a
 # wireable lane and not sufficient. An F3 lane that reads 213 rows and shares 0 names reports
 # BROKEN "share NO row names", which is the whole point of GUARD 4.
 ORACLE_NOT_WIRED: dict[str, str] = {
   "tinybendygrad/schedule/multi.bend": (
     "UNWIRED. 321 port rows against 213 oracle rows, 0 shared names, so GUARD 4 would answer "
     "'share NO row names' and nothing would ever be compared. A `t_` prefix normalisation is a "
-    "SECOND SOURCE OF TRUTH rather than a fix: it yields 26 collisions, 21 of which DISAGREE "
-    "because the port's `1`-per-op rows and the oracle's axis tuples share a spelling and not a "
-    "claim, and the 1 that agrees agrees on the literal `1`. The FORMAT is read now (213 rows, was "
-    "0); the blocker is the NAME, and the fix is an oracle that prints the port's row names."),
+    "SECOND SOURCE OF TRUTH rather than a fix: it yields 26 collisions of which 21 'disagree', "
+    "BUT THAT IS AN ENCODING MISMATCH AND NOT A VALUE MISMATCH. The port prints `eq(a, b)` -- "
+    "1 or 0 -- and the oracle prints the quantity, so on 17 of the 26 the oracle's value is not "
+    "a boolean at all and `1` versus `()` are two answers to the same question in two "
+    "encodings. MEASURED by .agents/slop/multi-collision.py, which reads each colliding row's own "
+    "body out of multi.bend and evaluates its projection on CPython's value: 26 CONSISTENT of "
+    "26, 0 INCONSISTENT. So a normalisation would manufacture 21 reds over CORRECT rows, which "
+    "is the cstyle.bend failure in rebase-gate.py's own header. The correct fix is a NEW oracle "
+    "printing the port's row NAMES with CPython's value under each -- not a rename, and not an "
+    "edit to the port. The FORMAT is read now (213 rows, was 0)."),
 }
 
 

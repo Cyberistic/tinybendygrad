@@ -31,10 +31,22 @@ from tinygrad.uop.ops import broadcast_axes  # noqa: E402
 
 
 def load(name, path):
+  """Import a sibling oracle by path.
+
+  ⚠ `sys.argv` IS SAVED AND RESTORED. The first version assigned `sys.argv = [path]`, which
+  SILENTLY DESTROYED the caller's argv -- so `main(sys.argv[1])` read the oracle's own path
+  back instead of the plant's, and the plant control reported the LIVE tree and came back
+  CLEAN. A control that cannot point the harness at a broken copy cannot show it going red,
+  and this one looked like it could. `multi-rows.py` reads no argv today; the save/restore is
+  here so that cannot change without this breaking loudly."""
   spec = importlib.util.spec_from_file_location(name, HERE / path)
   mod = importlib.util.module_from_spec(spec)
+  saved = sys.argv
   sys.argv = [path]
-  spec.loader.exec_module(mod)
+  try:
+    spec.loader.exec_module(mod)
+  finally:
+    sys.argv = saved
   return mod
 
 
@@ -44,10 +56,16 @@ def load(name, path):
 rgm = load("rg_shared", "rebase-gate.py")
 
 
-def port_bodies():
-  """{row: the one-line body after `-> U32:`}, parsed out of multi.bend. Nothing transcribed."""
+def port_bodies(bend=None):
+  """{row: the one-line body after `-> U32:`}, parsed out of multi.bend. Nothing transcribed.
+
+  `bend` overrides WHICH FILE is read, and that override exists for ONE reason: the plant
+  control. A control that cannot point the harness at a deliberately broken copy cannot show
+  the harness going red, and a harness never seen red is not known to work. The default is
+  the live tree, and no control ever writes to it."""
   out = {}
-  for line in (REPO / "tinybendygrad" / "schedule" / "multi.bend").read_text().splitlines():
+  path = pathlib.Path(bend) if bend else (REPO / "tinybendygrad" / "schedule" / "multi.bend")
+  for line in path.read_text().splitlines():
     m = re.match(r"def t_(\w+)\(\) -> U32: (.*)$", line)
     if m:
       out[m.group(1)] = m.group(2)
@@ -140,9 +158,10 @@ def projection_of(pbody, cpython_value):
   return None
 
 
-def main():
-  bodies = port_bodies()
-  print(f"port rows   {len(bodies)}")
+def main(bend=None):
+  bodies = port_bodies(bend)
+  src = pathlib.Path(bend).name if bend else "multi.bend (live tree)"
+  print(f"port rows   {len(bodies)}   read from {src}")
   mr = load("mr", "multi-rows.py")
 
   # ---- bx_*: (src_shape, out_shape) -> broadcast_axes, ops.py:87.
@@ -191,12 +210,21 @@ def main():
   n2, bad2, c2 = report("rd_*: reduce_multi red/rem split -- multi.py:107-123",
                         rd_orc, rd_port)
 
+  # ⚠ `bad1 + bad2` was CONCATENATION, not addition: `report()` returns a LIST of
+  # inconsistencies, so `bad1 + bad2` is a list that is non-empty whenever EITHER family
+  # had one, and `0 if <non-empty list> == 0 else 1` printed rc=1 over 0 inconsistencies --
+  # a permanently-red verdict on a clean pair, which is the exact failure this lane exists
+  # to prevent. `len()` on both sides, and the count is printed with the verdict.
+  nbad = len(bad1) + len(bad2)
+  nchk = c1 + c2
   print(f"\n=== FIXTURE-KEYED SHARED: bx {n1} of {len(bx_orc)} oracle bx rows, "
         f"rd {n2} of {len(rd_orc)} oracle rd rows ===")
   print(f"=== INCONSISTENT (port asserts something CPython's value contradicts): "
-        f"{len(bad1)+len(bad2)} of {c1+c2} CHECKED ===")
-  return 0 if bad1 + bad2 == 0 else 1
+        f"{nbad} of {nchk} CHECKED ===")
+  return 0 if nbad == 0 else 1
 
 
 if __name__ == "__main__":
-  raise SystemExit(main())
+  # argv[1] names an alternative multi.bend, used ONLY by the plant control. Absent means
+  # the live tree, which is what every analysis run reads.
+  raise SystemExit(main(sys.argv[1] if len(sys.argv) > 1 else None))

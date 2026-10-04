@@ -6212,11 +6212,11 @@ side), `.agents/slop/graphcmp-dbg.bend` (the DEBUG probe),
 
 ## ARENA ALIASING SWEEP — `O.Arena.node` is TOTAL, so a wrong index is a plausible value
 
-Progress: `[##........] 2/10` · **1100** arena read sites audited · **1 DEFECT found and
-fixed** (2 rows moved, expected value called from CPython) · **8 detector suspects
-adjudicated** (0 remaining) · **4 detectors, each with a measured control** · rules
-`ARENA-1`..`ARENA-7` appended at `.agents/slop/notes/bend2-constraints.md` positions
-19413-19486.
+Progress: `[###.......] 3/10` · **1100** arena read sites audited · **3 stale/bogus reads
+found, 2 files touched** (3 rows moved with a CPython-called expectation, 3 rows moved with
+an UNVERIFIABLE direction, 0 rows moved) · **8 detector suspects adjudicated** (0 remaining) ·
+**4 detectors, each with a measured control** · rules `ARENA-1`..`ARENA-7` appended at
+`.agents/slop/notes/bend2-constraints.md` positions 19413-19486.
 
 ### Done
 
@@ -6233,6 +6233,14 @@ adjudicated** (0 remaining) · **4 detectors, each with a measured control** · 
       (`srcops=Ops.NOOP -> Ops.CALL` / `Ops.BUFFER`), 137 rows, none lost, and
       `.agents/slop/jit-prune-truth.py` calls `prune_linear` on the same fixture for the
       expected values (run twice, identical).
+- [x] **DEFECT FOUND, NOT FULLY GATED: `uop/validate.bend` `dv_shr2.of` / `dv_and.put`.**
+      Both pass the PRE-mint `ar` to a helper that indexes a node minted into the RETURNED
+      arena. `.agents/slop/arena-validate-probe.bend` proves it:
+      `idx=4 in_pre_mint_arena=None in_found_arena=Some pre_src0=0 found_src0=2`, and the
+      z3 range came out `u=0:0:99` (built from the arena BOTTOM) instead of `u=2:0:99`.
+      Fixed by passing `O.Found.ar(t)`. `dv_shr2` moves 0 rows. **`dv_and15`/`dv_and21`/
+      `dv_and_neg4` move 3 rows, `- 1` -> `- 256`, AND THAT DIRECTION IS NOT ADJUDICATED** --
+      see the open question below.
 - [x] **DETECTOR, `arena-noop-scan.py`,** over the 73 committed gate outputs / 12720 rows.
       60 rows mention NOOP; 16 excluded mechanically (index 0 is the bottom), 33 by row name,
       3 as a quoted repr string; **8 suspects, all adjudicated against CPython, 0 left.**
@@ -6246,6 +6254,20 @@ adjudicated** (0 remaining) · **4 detectors, each with a measured control** · 
 - [x] **SIZE SWEEP at k = 0,1,2,5,17,64** (`arena-sweep.sh` + `arena-sweep-jit.bend`), which
       **asserts its k=0 block against the committed gate AND against CPython before it
       diffs**, and which its own control proved catches 1 of 4 injected defect shapes.
+
+### OPEN QUESTION -- `dv_and*`'s `1` -> `256` is UNVERIFIABLE TODAY
+
+`validate.py:16` computes the bit width `w` from `vmin`/`vmax`, and the row prints
+`2**(w-1)`. The stale arena supplied the arena BOTTOM's bounds (all zero, so `w=1`, bound
+`1`); the fix supplies the real node's. **z3 IS NOT INSTALLED IN THIS ENVIRONMENT**, so
+CPython's `uops_to_z3` cannot be CALLED, and `dv_and*` has **no oracle anywhere in
+`.agents/slop/`** -- the three rows are PORT-ONLY. A hand-derivation of `validate.py:16` gives
+`w=8` -> bound `128`, which matches NEITHER `1` NOR `256` and therefore settles nothing.
+
+**So the ALIASING is proven and the fix is right by that proof; whether `- 256` is what
+CPython answers is NOT established, and those three rows must not be called green until an
+oracle exists.** Whoever picks this up needs `z3-solver` installed and a `validate-dv-truth`
+oracle that CALLS `uops_to_z3` on `AND(RANGE(0,100), CONST(k))` for k in {15, 21, -4}.
 
 ### Found, not fixed
 

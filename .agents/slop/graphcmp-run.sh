@@ -38,11 +38,17 @@ for g in matmul range cast binblob; do
   $E $P .agents/slop/graphcmp.py emit py --graph "$g" > "$D/D2-canon-py-$g.txt" 2>/dev/null
   # shellcheck disable=SC2086
   $E $P .agents/slop/graphcmp.py emit bend --graph "$g" > "$D/D2-canon-bend-$g.txt" 2>/dev/null
+  # PER-GRAPH FILE, THEN CONCATENATED ONCE. Both wrong shapes were tried: `>>` accumulates
+  # the same four lines once per run until the file reads like a coverage table when it is
+  # one line repeated, and `>` inside the loop leaves only the LAST graph's line. One file
+  # per graph and one `cat` is the shape that is right for both reasons.
   { cmp -s "$D/D2-canon-py-$g.txt" "$D/D2-canon-bend-$g.txt" \
       && echo "$g BYTE-IDENTICAL" || { echo "$g DIFFERS:"; \
            diff "$D/D2-canon-py-$g.txt" "$D/D2-canon-bend-$g.txt" | head -20; }; } \
-    >> "$D/D2-bytediff.txt"
+    > "$D/D2-cmp-$g.txt"
 done
+
+cat "$D"/D2-cmp-*.txt > "$D/D2-bytediff.txt"
 
 # --- 03 CONTROL: each side against ITSELF. A differ never seen to agree with itself is
 # ---    not known to work.
@@ -82,5 +88,13 @@ cmp -s "$D/D9-stability-a.txt" "$D/D9-stability-b.txt" \
 # --- 10 THE 0-ROW GUARD, FIRED ON PURPOSE. `graphcmp-empty.bend` prints nothing, so
 # ---     `emit bend` must RAISE rather than answer.
 run D10-zerorow-guard.txt emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
+
+# --- 11 THE COVERAGE DENOMINATOR, tabulated. Emits BOTH sides so an op or atom the py side
+# ---     never produces shows up as a per-side difference rather than an absorbed AGREE.
+$E $P .agents/slop/graphcmp-oracle.py > "$D/D0-coverage-census.txt" 2>&1
+
+# --- 12 WHETHER CPYTHON's OWN `DEBUG >= 1` SITE CAN BE REACHED HERE. It cannot, on 8 real
+# ---     graphs, which is why `dbg` is port-vs-port and says so in its own output.
+$E $P .agents/slop/graphcmp-dbg-oracle.py > "$D/D8b-cpython-dbg1-reachability.txt" 2>&1
 
 echo "wrote $D"

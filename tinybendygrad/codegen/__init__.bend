@@ -153,13 +153,26 @@ def walk_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>)
 # link the new node's replacement back to `n`). A `bpm` (bottom-up) table
 # may fire to a fixed point per node.
 #
-# The minimal Bend port is the same fold re-run after each pass. The
-# recursive shape runs into affine `+` rules (the toposort consumes the
-# arena, the engine mints into it, and re-running needs a fresh arena
-# AND a fresh toposort, both of which are `+`). The 4-hour wall is to ship
-# the wall: a single pass that always returns the same as `walk_rewrite`.
-# A wall that compiles and a gate that runs is more useful than a
-# fixpoint that doesn't.
+# The minimal Bend port is the same fold re-run after each pass, which would
+# need a fresh arena AND a fresh toposort on every pass. The 4-hour wall is to
+# ship the wall: a single pass that always returns the same as `walk_rewrite`.
+# A wall that compiles and a gate that runs is more useful than a fixpoint that
+# doesn't.
+#
+# An earlier version of this comment claimed `+` is what forces that freshness.
+# It does not. `+ar` means "the callee may REBIND this name", not "consumed on
+# every path" -- measured by `.agents/slop/arena-affine-probe.bend`, which
+# compiles and runs:
+#
+#   ctl2_read=None                 a read AFTER a spend is permitted, and
+#                                  silently sees the PRE-mint arena
+#   ctl1_f=2 ctl1_g=2              two mints from one arena NAME both return
+#                                  index 2, and the second overwrites the first
+#
+# So single-pass correctness here rests on the arena being threaded explicitly
+# through every signature below, NOT on `+`. Where this file writes `(ar, +repl)
+# = p`, the `+` is inside the destructuring because a tuple parameter cannot
+# carry it -- that is the only reason it is there.
 def unified_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite(ar, sink, pm, ctx)
 
