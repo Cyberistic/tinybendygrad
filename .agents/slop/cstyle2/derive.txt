@@ -1,0 +1,30 @@
+STATIC  row-emitting calls in cstyle.bend's main()   227
+OBSERVED rows parsed by cstyle-gate.py's rows_strict  227
+        lines the reader shredded (not rows)          0
+        duplicate row NAMES the reader saw            0 []
+
+family     static  observed  delta
+acc             2         2     +0
+buf2            9         9     +0
+buft            6         6     +0
+cast            2         2     +0
+cfo            70        70     +0
+hipockl         1         1     +0
+hipocml         1         1     +0
+idx            20        20     +0
+img             3         3     +0
+kern            8         8     +0
+kern2          30        30     +0
+leg             3         3     +0
+opt             4         4     +0
+ptr             2         2     +0
+rd             42        42     +0
+tmap            6         6     +0
+type            5         5     +0
+under           3         3     +0
+witem           6         6     +0
+wmma            4         4     +0
+TOTAL         227       227     +0
+
+static family multiset == observed family multiset, so the denominator is DERIVED,
+not transcribed, and the run carried every row main asks for.

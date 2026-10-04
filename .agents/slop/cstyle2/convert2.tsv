@@ -1,0 +1,228 @@
+row	family	device	added	gate1_cc	gate2_run	gate3_agree	bits	note
+acc  BASE  plain	acc	BASE						not a family this conversion wraps; see measure.py's cause table
+acc  BASE  stk4	acc	BASE						not a family this conversion wraps; see measure.py's cause table
+buf2 BASE  LOC	buf2	BASE						not a family this conversion wraps; see measure.py's cause table
+buf2 CUDA  GLOB	buf2	CUDA						no CUDA installation
+buf2 CUDA  LOC	buf2	CUDA						no CUDA installation
+buf2 HIP   LOC	buf2	HIP						not a family this conversion wraps; see measure.py's cause table
+buf2 HIP   sz16	buf2	HIP						not a family this conversion wraps; see measure.py's cause table
+buf2 METAL GLOB	buf2	METAL						no `-x metal` in Apple clang
+buf2 METAL LOC	buf2	METAL						no `-x metal` in Apple clang
+buf2 OPENCLGLOB	buf2	BASE						not a family this conversion wraps; see measure.py's cause table
+buf2 OPENCLLOC	buf2	BASE						not a family this conversion wraps; see measure.py's cause table
+buft BASE	buft	BASE						not a family this conversion wraps; see measure.py's cause table
+buft CLANG	buft	CLANG						not a family this conversion wraps; see measure.py's cause table
+buft CUDA	buft	CUDA						no CUDA installation
+buft HIP	buft	HIP						not a family this conversion wraps; see measure.py's cause table
+buft METAL	buft	METAL						no `-x metal` in Apple clang
+buft OPENCL	buft	OPENCL						not a family this conversion wraps; see measure.py's cause table
+cast BASE  half	cast	BASE						not a family this conversion wraps; see measure.py's cause table
+cast CLANG half	cast	CLANG						not a family this conversion wraps; see measure.py's cause table
+cfo BASE	cfo	BASE						no host C type for the row's dtype tag 'BASE'
+cfo BASE  ADD f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		00009840	
+cfo BASE  AND f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo BASE  CDIV f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		c54eec3e	
+cfo BASE  CMOD f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo BASE  CMPEQ f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		00000000	
+cfo BASE  CMPLT f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		0000803f	
+cfo BASE  CMPNE f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		0000803f	
+cfo BASE  EXP2 f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		f3043540	
+cfo BASE  FDIV f32	cfo	BASE						not a family this conversion wraps; see measure.py's cause table
+cfo BASE  LOG2 f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		1ac0153f	
+cfo BASE  MUL f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		00009c40	
+cfo BASE  NEG f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		0000c0bf	
+cfo BASE  OR f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo BASE  RECIPROCAL f16	cfo	BASE	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry	1	1		5539	
+cfo BASE  RECIPROCAL f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		abaa2a3f	
+cfo BASE  SHL f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo BASE  SHR f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo BASE  SIN f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		d55b7f3f	
+cfo BASE  SQRT f16	cfo	BASE	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry	1	1		e63c	
+cfo BASE  SQRT f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		71c49c3f	
+cfo BASE  SQRT f64	cfo	BASE	#include <math.h>; one double per identifier the value names (X)	1	1		2e2109148e98f33f	
+cfo BASE  SUB f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	1	1		0000e0bf	
+cfo BASE  TRUNC f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X)	1	1		0000803f	
+cfo BASE  XOR f32	cfo	BASE	#include <math.h>; one float per identifier the value names (X, Y)	0				invalid operands to binary expression ('float' and 'float')
+cfo CLANG	cfo	CLANG						no host C type for the row's dtype tag 'CLANG'
+cfo CLANG ADD f32	cfo	CLANG	#include <math.h>; one float per identifier the value names (X, Y)	1	1		00009840	
+cfo CLANG EXP2 f32	cfo	CLANG						not a family this conversion wraps; see measure.py's cause table
+cfo CLANG FDIV f32	cfo	CLANG	#include <math.h>; one float per identifier the value names (X, Y)	1	1		c54eec3e	
+cfo CLANG LOG2 f32	cfo	CLANG						not a family this conversion wraps; see measure.py's cause table
+cfo CLANG RECIPROCAL f32	cfo	CLANG						not a family this conversion wraps; see measure.py's cause table
+cfo CLANG SIN f32	cfo	CLANG						not a family this conversion wraps; see measure.py's cause table
+cfo CLANG SQRT f16	cfo	CLANG	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry	1	1		e63c	
+cfo CLANG SQRT f32	cfo	CLANG	#include <math.h>; one float per identifier the value names (X)	1	1		71c49c3f	
+cfo CLANG SQRT f64	cfo	CLANG	#include <math.h>; one double per identifier the value names (X)	1	1		2e2109148e98f33f	
+cfo CLANG TRUNC f32	cfo	CLANG	#include <math.h>; one float per identifier the value names (X)	1	1		0000803f	
+cfo CLANG TRUNC f64	cfo	CLANG	#include <math.h>; one double per identifier the value names (X)	1	1		000000000000f03f	
+cfo CUDA  EXP2 bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  EXP2 f16	cfo	CUDA						no CUDA installation
+cfo CUDA  FDIV f32	cfo	CUDA						no CUDA installation
+cfo CUDA  LOG2 bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  LOG2 f16	cfo	CUDA						no CUDA installation
+cfo CUDA  RECIPROCAL bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  RECIPROCAL f16	cfo	CUDA						no CUDA installation
+cfo CUDA  RECIPROCAL f32	cfo	CUDA						no CUDA installation
+cfo CUDA  SIN bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  SIN f16	cfo	CUDA						no CUDA installation
+cfo CUDA  SQRT bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  SQRT f16	cfo	CUDA						no CUDA installation
+cfo CUDA  SQRT f32	cfo	CUDA						no CUDA installation
+cfo CUDA  SQRT f64	cfo	CUDA						no CUDA installation
+cfo CUDA  TRUNC bf16	cfo	CUDA						no CUDA installation
+cfo CUDA  TRUNC f16	cfo	CUDA						no CUDA installation
+cfo CUDA  TRUNC f32	cfo	CUDA						no CUDA installation
+cfo HIP   EXP2 f16	cfo	HIP	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry; plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   LOG2 f32	cfo	HIP	#include <math.h>; one float per identifier the value names (X); plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   RECIPROCAL f32	cfo	HIP	#include <math.h>; one float per identifier the value names (X)	1	0			LINK: linker command failed with exit code 1 (use -v to see in
+cfo HIP   SIN f32	cfo	HIP	#include <math.h>; one float per identifier the value names (X); plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   SQRT bf16	cfo	HIP						no host C type for the row's dtype tag 'bf16'
+cfo HIP   SQRT f16	cfo	HIP	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry; plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   SQRT f32	cfo	HIP	#include <math.h>; one float per identifier the value names (X); plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   SQRT f64	cfo	HIP	#include <math.h>; one double per identifier the value names (X); plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo HIP   TRUNC bf16	cfo	HIP						no host C type for the row's dtype tag 'bf16'
+cfo HIP   TRUNC f16	cfo	HIP	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry; plus the `__ocml_*` declarations from this run's `hipocml` row	0				unknown type name 'half'
+cfo METAL FDIV f32	cfo	METAL						no `-x metal` in Apple clang
+cfo METAL SIN f16	cfo	METAL						no `-x metal` in Apple clang
+cfo METAL SIN f32	cfo	METAL						no `-x metal` in Apple clang
+cfo METAL SQRT f32	cfo	METAL						no `-x metal` in Apple clang
+cfo OPENCL SIN f32	cfo	OPENCL	#include <math.h>; one float per identifier the value names (X)	0				pointers to functions are not allowed
+cfo OPENCL SQRT f16	cfo	OPENCL	#include <math.h>; one half per identifier the value names (X); `#define half _Float16`, which the port's own HIP kern2 rows carry	0				pointers to functions are not allowed
+hipockl	hipockl	BASE						not a family this conversion wraps; see measure.py's cause table
+hipocml	hipocml	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  lane	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  regadd	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  regnoad	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  sz1 k0	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  sz1 k1	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  sz1 k3	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx BASE  sz8 k0	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx CLANG lane	idx	CLANG						not a family this conversion wraps; see measure.py's cause table
+idx CLANG sz1 k0	idx	CLANG						not a family this conversion wraps; see measure.py's cause table
+idx CLANG sz8 k0	idx	CLANG						not a family this conversion wraps; see measure.py's cause table
+idx CUDA  sz16k0	idx	CUDA						no CUDA installation
+idx CUDA  sz8 k0	idx	CUDA						no CUDA installation
+idx CUDA  sz8 k1	idx	CUDA						no CUDA installation
+idx CUDA  sz8 k3	idx	CUDA						no CUDA installation
+idx HIP   lane	idx	HIP						not a family this conversion wraps; see measure.py's cause table
+idx HIP   regadd	idx	HIP						not a family this conversion wraps; see measure.py's cause table
+idx HIP   sz1 k0	idx	HIP						not a family this conversion wraps; see measure.py's cause table
+idx METAL sz1 k0	idx	METAL						no `-x metal` in Apple clang
+idx OPENCLsz1 k0	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+idx OPENCLsz8 k0	idx	BASE						not a family this conversion wraps; see measure.py's cause table
+img BASE  read	img	BASE						not a family this conversion wraps; see measure.py's cause table
+img BASE  write	img	BASE						not a family this conversion wraps; see measure.py's cause table
+img OPENCLwrite	img	BASE						not a family this conversion wraps; see measure.py's cause table
+kern BASE  lb 1	kern	BASE						not a family this conversion wraps; see measure.py's cause table
+kern CLANG lb 4	kern	CLANG						not a family this conversion wraps; see measure.py's cause table
+kern CUDA  lb 1	kern	CUDA						no CUDA installation
+kern CUDA  lb 4	kern	CUDA						no CUDA installation
+kern HIP   lb 1	kern	HIP						not a family this conversion wraps; see measure.py's cause table
+kern HIP   lb 4	kern	HIP						not a family this conversion wraps; see measure.py's cause table
+kern METAL lb 1	kern	METAL						no `-x metal` in Apple clang
+kern OPENCL lb 1	kern	OPENCL						not a family this conversion wraps; see measure.py's cause table
+kern2 BASE	kern2	BASE	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 BASE  alu	kern2	BASE						no pointer parameter, so the kernel has nothing a host can observe
+kern2 BASE  pref0	kern2	BASE	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 BASE  pref2	kern2	BASE	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 BASE  vol	kern2	BASE	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 CLANG	kern2	CLANG	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 CLANG alu	kern2	CLANG						no pointer parameter, so the kernel has nothing a host can observe
+kern2 CLANG vol	kern2	CLANG	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	1	1		00002040	
+kern2 CUDA  all	kern2	CUDA						no CUDA installation
+kern2 CUDA  bf16	kern2	CUDA						no CUDA installation
+kern2 CUDA  fp8	kern2	CUDA						no CUDA installation
+kern2 CUDA  half	kern2	CUDA						no CUDA installation
+kern2 CUDA  pref2	kern2	CUDA						no CUDA installation
+kern2 CUDA  vecs	kern2	CUDA						no CUDA installation
+kern2 HIP	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   bf16	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   bf16h	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   cdna4	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   half	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   inf	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   ockl	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   pref2	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   spec	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 HIP   vecs	kern2	HIP	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				'amdgpu_flat_work_group_size' attribute only applies to kernel f
+kern2 METAL	kern2	METAL						no `-x metal` in Apple clang
+kern2 METAL alu	kern2	METAL						no `-x metal` in Apple clang
+kern2 METAL pref2	kern2	METAL						no `-x metal` in Apple clang
+kern2 OPENCL	kern2	OPENCL	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				casting '__global float *' to type '__private float4 *' changes 
+kern2 OPENCL f16	kern2	OPENCL	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				casting '__global float *' to type '__private float4 *' changes 
+kern2 OPENCL pref2	kern2	OPENCL	the one vector prefix upstream's _render_defines emits; 2 parameter(s) copied from the row's own signature, 1 lane(s) from the highest val0[k] its body reads, 4-float aligned buffers	0				casting '__global float *' to type '__private float4 *' changes 
+leg  BASE   f32	leg	BASE						not a family this conversion wraps; see measure.py's cause table
+leg  CLANG  bool	leg	CLANG						not a family this conversion wraps; see measure.py's cause table
+leg  CLANG  f16	leg	CLANG						not a family this conversion wraps; see measure.py's cause table
+opt barrier	opt	BASE						not a family this conversion wraps; see measure.py's cause table
+opt devname	opt	BASE						not a family this conversion wraps; see measure.py's cause table
+opt f4style	opt	BASE						not a family this conversion wraps; see measure.py's cause table
+opt infnan	opt	BASE						not a family this conversion wraps; see measure.py's cause table
+ptr  BASE  bitcast	ptr	BASE						not a family this conversion wraps; see measure.py's cause table
+ptr  BASE  stk4	ptr	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  bf16	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  bool	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  f16	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  f32	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  fp8e4m3	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  i32	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd BASE  u8	rd	BASE						not a family this conversion wraps; see measure.py's cause table
+rd CLANG bf16	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG bool	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG f16	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG f32	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG fp8e4m3	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG i32	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CLANG u8	rd	CLANG						not a family this conversion wraps; see measure.py's cause table
+rd CUDA  bf16	rd	CUDA						no CUDA installation
+rd CUDA  bool	rd	CUDA						no CUDA installation
+rd CUDA  f16	rd	CUDA						no CUDA installation
+rd CUDA  f32	rd	CUDA						no CUDA installation
+rd CUDA  fp8e4m3	rd	CUDA						no CUDA installation
+rd CUDA  i32	rd	CUDA						no CUDA installation
+rd CUDA  u8	rd	CUDA						no CUDA installation
+rd HIP   bf16	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   bool	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   f16	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   f32	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   fp8e4m3	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   i32	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd HIP   u8	rd	HIP						not a family this conversion wraps; see measure.py's cause table
+rd METAL bf16	rd	METAL						no `-x metal` in Apple clang
+rd METAL bool	rd	METAL						no `-x metal` in Apple clang
+rd METAL f16	rd	METAL						no `-x metal` in Apple clang
+rd METAL f32	rd	METAL						no `-x metal` in Apple clang
+rd METAL fp8e4m3	rd	METAL						no `-x metal` in Apple clang
+rd METAL i32	rd	METAL						no `-x metal` in Apple clang
+rd METAL u8	rd	METAL						no `-x metal` in Apple clang
+rd OPENCL bf16	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL bool	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL f16	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL f32	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL fp8e4m3	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL i32	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+rd OPENCL u8	rd	OPENCL						not a family this conversion wraps; see measure.py's cause table
+tmap BASE	tmap	BASE						not a family this conversion wraps; see measure.py's cause table
+tmap CLANG	tmap	CLANG						not a family this conversion wraps; see measure.py's cause table
+tmap CUDA	tmap	CUDA						no CUDA installation
+tmap HIP	tmap	HIP						not a family this conversion wraps; see measure.py's cause table
+tmap METAL	tmap	METAL						no `-x metal` in Apple clang
+tmap OPENCL	tmap	OPENCL						not a family this conversion wraps; see measure.py's cause table
+type BASE  regidx	type	BASE						not a family this conversion wraps; see measure.py's cause table
+type BASE  scalar	type	BASE						not a family this conversion wraps; see measure.py's cause table
+type BASE  stk4	type	BASE						not a family this conversion wraps; see measure.py's cause table
+type METAL glob	type	METAL						no `-x metal` in Apple clang
+type OPENCLglob	type	BASE						not a family this conversion wraps; see measure.py's cause table
+under float	under	BASE						not a family this conversion wraps; see measure.py's cause table
+under signed char	under	BASE						not a family this conversion wraps; see measure.py's cause table
+under unsigned lon	under	BASE						not a family this conversion wraps; see measure.py's cause table
+witem BASE	witem	BASE						not a family this conversion wraps; see measure.py's cause table
+witem CLANG	witem	CLANG						not a family this conversion wraps; see measure.py's cause table
+witem CUDA	witem	CUDA						no CUDA installation
+witem HIP	witem	HIP						not a family this conversion wraps; see measure.py's cause table
+witem METAL	witem	METAL						no `-x metal` in Apple clang
+witem OPENCL	witem	OPENCL						not a family this conversion wraps; see measure.py's cause table
+wmma 16_16_128 fp8	wmma	BASE						not a family this conversion wraps; see measure.py's cause table
+wmma 16_16_16 half	wmma	BASE						not a family this conversion wraps; see measure.py's cause table
+wmma 16_16_16 i8	wmma	BASE						not a family this conversion wraps; see measure.py's cause table
+wmma 8_8_32   bf16	wmma	BASE						not a family this conversion wraps; see measure.py's cause table

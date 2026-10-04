@@ -1,0 +1,68 @@
+=== the live tree, hashed before anything runs ===
+  renderer/cstyle.bend 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+
+=== BASELINE (clean snapshot) ===
+  GATE 1  cc accepted the built translation unit   31/227
+  GATE 2  it linked and ran                        30/227
+EVERY ROW THAT CROSSED GATE 1, BY NAME
+GATE 3   AGREE 29   DISAGREE 1   NO-REFERENCE 0   of 30 rows that ran
+  TEXT      cc rejected the value, no toolchain blamed   161/227
+  COMPILES  cc accepted the value (rc from the process)  3/227
+  EXECUTES  a host binary ran it                         0/227   see run-gate.py
+  AGREES    that output equalled tinygrad's               0/227   see run-gate.py
+
+=== PLANT ===
+plant: 1 token changed in g_kernel(); cstyle.bend 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f -> 3052b7d87423d1f960c86b186357ce7b972d98a2ac9fe2d03d0971dda7ab9411
+  GATE 1  cc accepted the built translation unit   31/227
+  GATE 2  it linked and ran                        30/227
+EVERY ROW THAT CROSSED GATE 1, BY NAME
+GATE 3   AGREE 23   DISAGREE 7   NO-REFERENCE 0   of 30 rows that ran
+  TEXT      cc rejected the value, no toolchain blamed   161/227
+  COMPILES  cc accepted the value (rc from the process)  3/227
+  EXECUTES  a host binary ran it                         0/227   see run-gate.py
+  AGREES    that output equalled tinygrad's               0/227   see run-gate.py
+
+=== DISARM ===
+disarm: restored, hash back to 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+  GATE 1  cc accepted the built translation unit   31/227
+  GATE 2  it linked and ran                        30/227
+EVERY ROW THAT CROSSED GATE 1, BY NAME
+GATE 3   AGREE 29   DISAGREE 1   NO-REFERENCE 0   of 30 rows that ran
+  TEXT      cc rejected the value, no toolchain blamed   161/227
+  COMPILES  cc accepted the value (rc from the process)  3/227
+  EXECUTES  a host binary ran it                         0/227   see run-gate.py
+  AGREES    that output equalled tinygrad's               0/227   see run-gate.py
+
+=== WHAT MOVED, BY ROW NAME (never by row index) ===
+-- four-col.tsv: rows whose value in any column differs between clean and planted
+   rows present clean=227 planted=227   rows whose record differs: 0
+-- convert2.tsv: rows whose value in any column differs between clean and planted
+   rows present clean=227 planted=227   rows whose record differs: 6
+     'kern2 BASE'                 columns changed: bits
+     'kern2 BASE  pref0'          columns changed: bits
+     'kern2 BASE  pref2'          columns changed: bits
+     'kern2 BASE  vol'            columns changed: bits
+     'kern2 CLANG'                columns changed: bits
+     'kern2 CLANG vol'            columns changed: bits
+
+=== PLANT 2 -- aimed at the FIRST gate, to show it is load-bearing too ===
+.agents/slop/cstyle2/plant.sh:122: command not found: sig_args
+     joins the kernel's parameters with ", "; changed to "; ". That is a
+    one-token edit that makes every kern2 signature invalid C, so cc must notice.
+plant2: sig_args now joins with "; "; cstyle.bend 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f -> 5568fd2c9417af541b93b252eefc2afd2750db23531d44234252d522dc105892
+  GATE 1  cc accepted the built translation unit   25/227
+  GATE 2  it linked and ran                        24/227
+EVERY ROW THAT CROSSED GATE 1, BY NAME
+GATE 3   AGREE 23   DISAGREE 1   NO-REFERENCE 0   of 24 rows that ran
+  TEXT      cc rejected the value, no toolchain blamed   161/227
+  COMPILES  cc accepted the value (rc from the process)  3/227
+disarm: restored, hash back to 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+  GATE 1  cc accepted the built translation unit   31/227
+  GATE 2  it linked and ran                        30/227
+EVERY ROW THAT CROSSED GATE 1, BY NAME
+GATE 3   AGREE 29   DISAGREE 1   NO-REFERENCE 0   of 30 rows that ran
+   plant2 moved 19 rows: ['kern2 BASE', 'kern2 BASE  pref0', 'kern2 BASE  pref2', 'kern2 BASE  vol', 'kern2 CLANG', 'kern2 CLANG vol', 'kern2 HIP', 'kern2 HIP   bf16']
+
+=== THE LIVE TREE, hashed after ===
+  renderer/cstyle.bend 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f
+  UNTOUCHED: the plant never left $TMPDIR

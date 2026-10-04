@@ -1,0 +1,34 @@
+rows convert2.py reports as RAN: 30
+
+  cfo BASE  ADD f32          port 00009840           tinygrad-CPU 00009840           tinygrad-PYTHON 00009840           AGREE
+  cfo BASE  CDIV f32         port c54eec3e           tinygrad-CPU c54eec3e           tinygrad-PYTHON c64eec3e           AGREE  [NOTE: integer CDIV rendered as a float divide]
+  cfo BASE  CMPEQ f32        port 00000000           tinygrad-CPU 00000000           tinygrad-PYTHON 00000000           AGREE  [NOTE: comparison as a float 0/1]
+  cfo BASE  CMPLT f32        port 0000803f           tinygrad-CPU 0000803f           tinygrad-PYTHON 0000803f           AGREE  [NOTE: comparison as a float 0/1]
+  cfo BASE  CMPNE f32        port 0000803f           tinygrad-CPU 0000803f           tinygrad-PYTHON 0000803f           AGREE  [NOTE: comparison as a float 0/1]
+  cfo BASE  EXP2 f32         port f3043540           tinygrad-CPU f3043540           tinygrad-PYTHON f3043540           AGREE
+  cfo BASE  LOG2 f32         port 1ac0153f           tinygrad-CPU 1ac0153f           tinygrad-PYTHON 1ac0153f           AGREE
+  cfo BASE  MUL f32          port 00009c40           tinygrad-CPU 00009c40           tinygrad-PYTHON 00009c40           AGREE
+  cfo BASE  NEG f32          port 0000c0bf           tinygrad-CPU 0000c0bf           tinygrad-PYTHON 0000c0bf           AGREE
+  cfo BASE  RECIPROCAL f16   port 5539               tinygrad-CPU 5539               tinygrad-PYTHON 5539               AGREE
+  cfo BASE  RECIPROCAL f32   port abaa2a3f           tinygrad-CPU abaa2a3f           tinygrad-PYTHON abaa2a3f           AGREE
+  cfo BASE  SIN f32          port d55b7f3f           tinygrad-CPU d45b7f3f           tinygrad-PYTHON d55b7f3f           *** DISAGREE ***
+  cfo BASE  SQRT f16         port e63c               tinygrad-CPU e63c               tinygrad-PYTHON e63c               AGREE
+  cfo BASE  SQRT f32         port 71c49c3f           tinygrad-CPU 71c49c3f           tinygrad-PYTHON 71c49c3f           AGREE
+  cfo BASE  SQRT f64         port 2e2109148e98f33f   tinygrad-CPU 2e2109148e98f33f   tinygrad-PYTHON 2e2109148e98f33f   AGREE
+  cfo BASE  SUB f32          port 0000e0bf           tinygrad-CPU 0000e0bf           tinygrad-PYTHON 0000e0bf           AGREE
+  cfo BASE  TRUNC f32        port 0000803f           tinygrad-CPU 0000803f           tinygrad-PYTHON 0000803f           AGREE
+  cfo CLANG ADD f32          port 00009840           tinygrad-CPU 00009840           tinygrad-PYTHON 00009840           AGREE
+  cfo CLANG FDIV f32         port c54eec3e           tinygrad-CPU c54eec3e           tinygrad-PYTHON c64eec3e           AGREE  [NOTE: float divide]
+  cfo CLANG SQRT f16         port e63c               tinygrad-CPU e63c               tinygrad-PYTHON e63c               AGREE
+  cfo CLANG SQRT f32         port 71c49c3f           tinygrad-CPU 71c49c3f           tinygrad-PYTHON 71c49c3f           AGREE
+  cfo CLANG SQRT f64         port 2e2109148e98f33f   tinygrad-CPU 2e2109148e98f33f   tinygrad-PYTHON 2e2109148e98f33f   AGREE
+  cfo CLANG TRUNC f32        port 0000803f           tinygrad-CPU 0000803f           tinygrad-PYTHON 0000803f           AGREE
+  cfo CLANG TRUNC f64        port 000000000000f03f   tinygrad-CPU 000000000000f03f   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 BASE                 port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 BASE  pref0          port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 BASE  pref2          port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 BASE  vol            port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 CLANG                port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+  kern2 CLANG vol            port 00002040   tinygrad-CPU 00002040   tinygrad-PYTHON 000000000000f03f   AGREE
+
+GATE 3   AGREE 29   DISAGREE 1   NO-REFERENCE 0   of 30 rows that ran
