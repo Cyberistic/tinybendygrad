@@ -1182,9 +1182,20 @@ def ew_silu(+t: T.Tensor) -> T.Tensor: ew_swish(t)
 def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), ew_k.quick_gelu())), False{})), False{})
 
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
+
+# THE MISSING MATRIX CELL, and the fixture pair is chosen so the fold is VISIBLE. `2` and
+# not `1`, because a reminted `1.0` hash-conses with the `1.0` already there and the two
+# graphs are indistinguishable -- `Tensor(1.0) * 1` is 2 nodes on BOTH sides and a matrix
+# built only from it would look correct and be blind. Two CONSTs of different weak classes
+# is a cell the other seven do not reach.
+def g_f32c() -> T.Tensor: ew_ct(ew_cf(O.Arena.empty(), 1.0))
+def g_i32c(v: U32) -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), v))
+
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
 def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))def t_swish() -> IO(Unit): ew_sig("ew_swish", ew_swish(g_i32()))
-def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
+def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))
+def t_promo_wf_wi() -> IO(Unit): ew_sig("ew_promo_wf_wi", ew_mul2(g_f32c(), g_i32c(2), False{}))
+def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
 
 
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
@@ -1477,6 +1488,7 @@ def main() -> IO(Unit):
     bh : Unit <- t_swish()
     bi : Unit <- t_silu()
     bh : Unit <- t_quick_gelu()
+    bh : Unit <- t_promo_wf_wi()
     v : Unit <- t_contig_bwd()
     w : Unit <- t_recip()
     x : Unit <- t_trunc()

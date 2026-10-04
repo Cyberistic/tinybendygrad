@@ -137,6 +137,15 @@ sig(Tensor(5).uop.sigmoid(), 'ew_sigmoid')
 sig(Tensor(5).uop.swish(), 'ew_swish')
 sig(Tensor(5).uop.silu(), 'ew_silu')
 sig(Tensor(5).uop.quick_gelu(), 'ew_quick_gelu')
+
+# cell 8, THE ONE THE MATRIX WAS MISSING: two weak CONSTs of DIFFERENT classes, a
+# weakfloat against a weakint. Cell 1 is two weak int CONSTs; cell 3 is a float
+# BUFFER against a weakint CONST, which is the remint cell and passes. Nothing
+# else has a float CONST meeting an int CONST -- and that is where this port folds
+# the int const away where CPython keeps it. `2` and not `1`: a reminted 1.0
+# hash-conses with the 1.0 already present, so `Tensor(1.0) * 1` is 2 nodes on both
+# sides and a matrix built only from it would look correct and be BLIND.
+sig(Tensor(1.0).uop * 2, 'ew_promo_wf_wi')
 sig(u4.uop.alu(Ops.CONTIGUOUS_BACKWARD), 'ew_contig_bwd')
 sig(u4.uop.alu(Ops.RECIPROCAL), 'ew_recip')
 sig(u4.uop.alu(Ops.TRUNC), 'ew_trunc')

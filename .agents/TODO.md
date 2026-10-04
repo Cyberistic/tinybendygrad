@@ -10660,3 +10660,136 @@ found out WHERE the defect is, which is worth more than a rushed fix would have 
       and the 3-node form may be a smaller's-unoptimised graph rather than the contract.
       **That is a question about intent, and answering it by making the port match a 2-node
       graph would be guessing.**
+
+---
+
+## i64mul unit (IM-1..IM-6) -- `i64_mul` DERIVED, GATED, LANDED. Not committed.
+
+Report: `.agents/slop/I64MUL.md`. Gate + generator + mutation table:
+`.agents/slop/i64mul/`.
+
+`tinybendygrad/helpers.bend` **2605 -> 2712 lines** (+107), **116479 -> 121924 bytes**,
+`ALL PROOFS CHECK`, md5 `903224131723a0f774471fe89ad29042`. ONLY that file was edited.
+
+- [x] **IM-1 `i64_mul` derived from `H.I64`'s two `U32` halves, every intermediate
+      printed.** 16-bit limbs, four exact partial products. `U32.mul` WRAPS mod 2^32
+      (measured `0xFFFFFFFF*0xFFFFFFFF = 1`), so exactness is a property of the
+      OPERANDS. Two carries are load-bearing and both are now commented: the carry out
+      of `cross` is re-entered at bit **16** not bit 0, and the carry out of the
+      low-word add. `p11 + carry + carry2 <= 0xFFFFFFFE`, so the high word never wraps.
+- [x] **IM-2 Overflow semantics stated, and upstream's `*` CALLED not assumed.**
+      Upstream is CPython `int.__mul__` -- exact, unbounded (`2^63*2^63` = bitlen 127).
+      This port is mod 2^64. Same where the product fits, different beyond it. PROVED
+      the wrap never fires inside `cmod`: `|cdiv(x,y)*y| = floor(|x|/|y|)*|y| <= |x|`, and
+      the one i64 of magnitude `2^63` gives product `int64.min`, representable.
+- [x] **IM-3 Gate: rows-present vs rows-expected, every run, against a CALLED oracle.**
+      **442/442, 0 disagree.** 221 fixtures: both extremes x both signs, 0/1/-1, the
+      `2^k +- 1` ladder (k up to 63), 15 carry-out-of-bit-63 products, 80 seeded random.
+      Every expectation called from CPython; no fixture hand-typed.
+- [x] **IM-4 `cmod` upstream's way, and the redundancy verdict.**
+      `cmod_i64 = i64_sub(x, i64_mul(cdiv_i64(x,y), y))` -- lands and is gated.
+      **782/782 rows agree with upstream wherever `int64.min` is not an operand.**
+      The floor-pair derivation becomes **unnecessary, not merely redundant** -- it
+      existed only because Bend had no multiply. Cost it does NOT remove: `cdiv_i64`
+      must read the sign as XOR of sign bits, never `i64_mul(x,y) < 0`, because the
+      product wraps (`2^62*4 -> 0`, and `0 < 0` is False).
+- [x] **IM-5 Plant and disarm, disarm first.** 8 disarms ALL move rows (66/66/538/134/
+      642/158/396/792). 2 plants move 442/442. One plant moves 0 -- and it is a
+      THEOREM, not a blind spot: `i64_mul` is identically `u64_mul` (two's complement
+      IS residue mod 2^64; 0 disagreements over 500k random pairs). Reported as the
+      `ops_amd` case rather than closed with a row that encodes nothing.
+- [x] **IM-6 The `hi == lo` census.** Only 4 of 221 fixtures have BOTH operands
+      `hi == lo`; 217 do not. `0 -> 0:0` and `-1 -> 4294967295:4294967295` are
+      `hi == lo` (blind to a half-swap); `int64.min -> 2147483648:0` is not. So the
+      half-swap disarm is caught by 538 rows, not by the sentinels.
+
+### FOUND, REPORTED, NOT FIXED -- a PRE-EXISTING `i64_div` DEFECT
+
+**`i64_div` loses its 65th bit whenever an operand's magnitude reaches `2^63`.**
+`i64_div(1, 2^63)` answers `-1` where CPython says `0`; `2^63 // 2^63 = 1` and
+`2^63 // 3` are correct. Measured 26 disagreements on a 36-cell grid, **every one with
+bit 63 set**. This is why 54 of the 852 `cmod` rows disagree, and it is the sole cause:
+rows with no `int64.min` are 782/782.
+
+It is NOT `i64_mul`, and `i64_dec` depends on `i64_divmod`, so I did not touch it.
+**This is the next blocking gap for the 64-bit div/mod family**, and it is invisible to
+the committed gate because `pm_mini` uses `int64.min` only as a DIVIDEND over 3 -- and
+`helpers-oracle.py`'s `words()` prints the unsigned high word, so the row is self-
+consistent either way. **Whoever owns it: the fix is in `div_shift`/`div_fit`, and the
+gate needs a row where the DIVISOR's magnitude is `2^63`.**
+
+### TWO OF MY OWN MISTAKES, RECORDED BECAUSE BOTH NEARLY SHIPPED
+
+1. **A mutation harness that re-copies its backup INSIDE the loop backs up a MUTATION.**
+   Mine left a stray `, 1)` in `pp_core`'s high word and **it passed a 442/442 green
+   gate** before failing the next run. `mutate.sh` now takes one pristine copy up front
+   and verifies the md5 after restoring.
+2. **I retyped `i32_is_neg` as `U32.is_lt` where `helpers.bend:1465` has `U32.is_ge`.**
+   An inverted sign test that `i64_mul`'s own 442-row gate was **completely blind to**,
+   and that `cdiv` caught on the first run. **Do not retype a committed def into a
+   scratch copy -- splice it.**
+
+## Session 2026-10-05 round 2 — the promotion matrix's MISSING CELL, and it is a real defect
+
+- [ ] **`ew_promo_wf_wi` is a NAMED, PINNED divergence: the weak-const promotion FOLDS where
+      `promote` says REMINT.** `tanh` is held on this one cause. `ew-gate` is 75 rows
+      compared, 3 lanes identical, 2 documented divergences.
+
+      ### THE MATRIX HAD SEVEN CELLS AND NONE OF THEM WAS THIS ONE
+
+      `promote` (elementwise.py:29-33) is a 7-cell table and every cell was gated except
+      **two weak CONSTs of DIFFERENT classes** — a weakfloat against a weakint. Cell 1 is
+      two weak int CONSTs; cell 3 is a float BUFFER against a weakint CONST, which is the
+      remint cell and passes. Nothing had a float CONST meeting an int CONST, and that is
+      exactly where the port folds.
+
+      ```
+      CPython  3 nodes:  CONST 1.0f   CONST 2.0f   MUL/2
+      this     2 nodes:  CONST 1.0f               MUL/2
+      ```
+
+      `promote` says the int const takes `remint(t._uop, dt)`, which **MINTS A NEW CONST**,
+      and the float const is returned UNTOUCHED because
+      `weak_dtype(weakfloat) == weakfloat == t.dtype`. So CPython keeps both and the port
+      keeps one: the port's weak-const arm folds the reminted side into the float operand
+      instead of minting the const `remint` names. **That is the same folding that turns
+      `tanh`'s `-1` into 2**32**, so `tanh` has ONE cause and it is here.
+
+      ### AND THE FOLDING DELETES THE NODE THAT CARRIED THE VALUE
+
+      The same fixture with three different int consts:
+
+      | int const | port | CPython |
+      |---|---|---|
+      | 1 | 2 nodes | 2 nodes |
+      | 2 | 2 nodes | 3 nodes |
+      | 3 | 2 nodes | 3 nodes |
+
+      **The port's row is IDENTICAL for 1, 2 and 3.** It cannot tell `1.0 * 1` from
+      `1.0 * 2` — different graphs, different values, same signature. CPython tells them
+      apart, and it can only do that because it keeps the int const as a node.
+
+      So the row is BLIND TO THE INT CONST, and that has a consequence for the gate: **the
+      pin I wrote fixes both sides' CONTENT but cannot detect a change to the port's
+      FIXTURE**, because the defect deletes the node the fixture would show. The control
+      proved it — swapping the port's fixture from 2 to 1 leaves the gate green. That is a
+      property of the defect, not a weakness in the assertion, and it is worth knowing before
+      anyone reads a green run as "the fixture is pinned".
+
+      ### THE FIXTURE IS `2` AND NOT `1`, ON PURPOSE
+
+      `1` is the one value whose folding is invisible: a reminted `1.0` hash-conses with the
+      `1.0` already there, so both sides read 2 nodes and a matrix built only from it would
+      look correct and be blind. The oracle's comment says so at the row.
+
+      ### AND A GATE BUG THIS FOUND IN MY OWN SCRIPT
+
+      The divergence list filtered the PORT and not the ORACLE, so `diff` compared an
+      unfiltered oracle against a filtered port — which compares exactly the row known to
+      differ. **That is how a divergence list stops working: it filters one side.** Both
+      sides are filtered now. And the "is DIVERGES stale" test fired on
+      `ew_promo_wf_wi`, which the oracle is SUPPOSED to emit: the two divergences have
+      DIFFERENT relationships to the oracle (one must be absent, one must be present) and a
+      single staleness test cannot express both. Each is asserted on its own terms now, and
+      there are THREE row counts — 76 oracle, 77 port, 75 compared — because the port
+      carries one row the oracle deliberately omits.

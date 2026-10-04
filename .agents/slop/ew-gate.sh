@@ -42,8 +42,26 @@ cd "$(dirname "$0")/../.."
 GT=.agents/slop/ew-gate
 mkdir -p "$GT"
 
-ROWS=75
-DIVERGES='ew_promo_nc'
+ROWS=76
+DIVERGES='ew_promo_nc|ew_promo_wf_wi'
+
+# `ew_promo_wf_wi` IS A REAL DEFECT, NAMED. It is the promotion matrix's missing cell -- two
+# weak CONSTs of DIFFERENT classes, a weakfloat against a weakint -- and the other seven
+# cells do not reach it, so nothing tested it until now.
+#
+#   CPython  3 nodes: CONST 1.0f, CONST 2.0f, MUL/2
+#   this     2 nodes: CONST 1.0f,            MUL/2
+#
+# `promote` (elementwise.py:29-33) says the int const takes `remint(t._uop, dt)`, which MINTS
+# A NEW CONST, and the float const is returned UNTOUCHED because
+# `weak_dtype(weakfloat) == weakfloat == t.dtype`. So CPython keeps both and the port drops
+# one: the port's weak-const promotion arm FOLDS the reminted side into the float operand
+# instead of minting the const `remint` names. That is the same folding that turns `tanh`'s
+# `-1` into 2**32, so `tanh` stays held on this ONE cause.
+#
+# The row is EXCLUDED so the gate is runnable, and it is PINNED -- both sides' exact content
+# is asserted below -- so it is a standing, checked divergence and not a tolerance. The
+# moment the folding is fixed the row changes and this gate says so.
 
 check_line=$(./bin/bend tinybendygrad/mixin/elementwise.bend --check-only | head -1)
 if [ "$check_line" != "ALL PROOFS CHECK" ]; then
@@ -74,31 +92,70 @@ run_lane "$GT-bn.txt" "$GT.bin"
 
 # A REGEX ALTERNATION and not a comma list, for the reason ops-rnd-gate.sh records:
 # `grep -v "^a,b="` matches nothing and the gate then diffs a row it meant to drop.
+# BOTH SIDES ARE FILTERED. `ew_promo_nc` exists only on the port, so filtering it from the
+# oracle is a no-op -- but `ew_promo_wf_wi` is in BOTH files and is the one that diverges, so
+# diffing an unfiltered oracle against a filtered port would compare exactly the row that
+# is known to differ. That is how a divergence list stops working: it filters one side.
+grep -vE "^($DIVERGES)=" "$GT-py.txt" > "$GT-py.sub"
 grep -vE "^($DIVERGES)=" "$GT-bd.txt" > "$GT-bd.sub"
 grep -vE "^($DIVERGES)=" "$GT-bn.txt" > "$GT-bn.sub"
 
 # THE ROW COUNT IS ASSERTED, not assumed: 71 on all three. A lane that lost rows to a rename
 # would otherwise produce a SMALLER diff, and a smaller diff is not a passing test.
-n=$(wc -l < "$GT-py.txt" | tr -d ' ')
-[ "$n" = "$ROWS" ] || { echo "ew-gate: the oracle has $n rows, expected $ROWS" >&2; exit 1; }
-for f in "$GT-py.txt" "$GT-bd.sub" "$GT-bn.sub"; do
-  m=$(wc -l < "$f" | tr -d ' ')
-  [ "$m" = "$ROWS" ] || { echo "ew-gate: $f has $m rows, expected $ROWS" >&2; exit 1; }
+# THREE COUNTS, because the two sides emit a DIFFERENT number of rows and that is now a
+# fact about the port rather than an accident:
+#
+#   76  the oracle:  75 agreeing rows + ew_promo_wf_wi (which the port disagrees with)
+#   77  the port:    the same 75, PLUS ew_promo_nc, PLUS ew_promo_wf_wi
+#   75  what is COMPARED, on both sides, after the two exclusions
+#
+# The port-only row is `ew_promo_nc`, which the oracle deliberately omits because a
+# signature for a non-constant promotion is unfalsifiable. Asserting one number for all three
+# files is how a gate ends up excluding a row that stopped existing without saying so, so
+# each count is checked against the file it belongs to.
+cnt() { wc -l < "$1" | tr -d ' '; }
+[ "$(cnt "$GT-py.txt")" = 76 ] || { echo "ew-gate: the oracle has $(cnt "$GT-py.txt") rows, expected 76" >&2; exit 1; }
+for f in "$GT-bd.txt" "$GT-bn.txt"; do
+  [ "$(cnt "$f")" = 77 ] || { echo "ew-gate: $f has $(cnt "$f") rows, expected 77" >&2; exit 1; }
+done
+for f in "$GT-py.sub" "$GT-bd.sub" "$GT-bn.sub"; do
+  [ "$(cnt "$f")" = 75 ] || { echo "ew-gate: $f has $(cnt "$f") COMPARED rows, expected 75" >&2; exit 1; }
 done
 
-diff "$GT-py.txt" "$GT-bd.sub" || { echo "ew-gate: DISAGREE (interpreted)" >&2; exit 1; }
-diff "$GT-py.txt" "$GT-bn.sub" || { echo "ew-gate: DISAGREE (native)" >&2; exit 1; }
+diff "$GT-py.sub" "$GT-bd.sub" || { echo "ew-gate: DISAGREE (interpreted)" >&2; exit 1; }
+diff "$GT-py.sub" "$GT-bn.sub" || { echo "ew-gate: DISAGREE (native)" >&2; exit 1; }
 
 # AND THE DIVERGENT ROW MUST BE THERE. A row that went missing is not a divergence, it is a
 # hole, and the two are indistinguishable from the diff alone.
 grep -qE "^($DIVERGES)=" "$GT-bd.txt" || { echo "ew-gate: $DIVERGES is MISSING from the port" >&2; exit 1; }
 grep -qE "^($DIVERGES)=" "$GT-bn.txt" || { echo "ew-gate: $DIVERGES is MISSING from the native lane" >&2; exit 1; }
-# and the oracle must NOT have grown a second one, or `DIVERGES` is stale and the exclusion
-# is excluding nothing while claiming to exclude something.
-if grep -qE "^($DIVERGES)=" "$GT-py.txt"; then
-  echo "ew-gate: the oracle now emits $DIVERGES, so DIVERGES is STALE" >&2
+# THE TWO DIVERGENCES HAVE DIFFERENT RELATIONSHIPS TO THE ORACLE, and a single
+# "is DIVERGES stale" test cannot express both -- it fired on `ew_promo_wf_wi`, which the
+# oracle is SUPPOSED to emit. So each is asserted on its own terms:
+#   ew_promo_nc      the oracle must NOT have it. It is a port-only row, and if the oracle
+#                    grew one then `DIVERGES` is excluding a row that now agrees, which is
+#                    a tolerance that has stopped being one.
+#   ew_promo_wf_wi   the oracle MUST have it, and the port must disagree on it. That is the
+#                    promotion defect; a gate where it stopped being a divergence would be
+#                    either fixed (good) or broken (worse), and only an assertion says which.
+if grep -qE "^ew_promo_nc=" "$GT-py.txt"; then
+  echo "ew-gate: the oracle now emits ew_promo_nc, so that exclusion is STALE" >&2
   exit 1
 fi
+grep -qE "^ew_promo_wf_wi=" "$GT-py.txt" || {
+  echo "ew-gate: the oracle LOST ew_promo_wf_wi -- the promotion defect's row is gone" >&2
+  exit 1
+}
+
+# THE PINNED HALVES OF THE PROMOTION DEFECT. Asserting the exact content is what makes
+# this a checked divergence: `promote` names a remint that MINTS a const, so the port's row
+# is one node short, and the specific short node is the claim.
+grep -q "^ew_promo_wf_wi=3 CONST/0=1065353216 CONST/0=1073741824 MUL/2 $" "$GT-py.txt" \
+  || { echo "ew-gate: CPython's ew_promo_wf_wi CHANGED -- the divergence needs review" >&2; exit 1; }
+grep -q "^ew_promo_wf_wi=2 CONST/0=1065353216 MUL/2 $" "$GT-bd.txt" \
+  || { echo "ew-gate: the port's ew_promo_wf_wi CHANGED -- is the fold fixed?" >&2; exit 1; }
+grep -q "^ew_promo_wf_wi=" "$GT-bd.txt" \
+  || { echo "ew-gate: ew_promo_wf_wi is MISSING from the port" >&2; exit 1; }
 
 # The two halves the oracle DOES check for that graph must be present on the port side, or
 # the exclusion above has quietly removed the whole claim rather than its unfalsifiable part.
@@ -107,4 +164,4 @@ for nm in ew_dt_promo_nc ew_op_promo_nc; do
   grep -q "^$nm=" "$GT-bd.txt" || { echo "ew-gate: the port lost $nm" >&2; exit 1; }
 done
 
-echo "ew-gate: 75 rows, 3 lanes identical, 1 documented divergence ($DIVERGES)"
+echo "ew-gate: 75 rows, 3 lanes identical, 2 documented divergences ($DIVERGES)"
