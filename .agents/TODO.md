@@ -184,6 +184,37 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
                                        8 suspects adjudicated, 4 detectors w/ controls
 ```
 
+### Coldness — the three numbers, and the one that is allowed to be written bare
+
+- [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
+      MEASURED.** `14 of 137` (`agent-core.md` §2), `6 of 137` (`OPSPY.md`), `COLD 35 of 139`
+      (`substrate-check.sh`). `.agents/slop/coldness/COLDNESS.md` — `COLD` quoted from
+      `substrate-check.sh:199-206` (a **`head -1` string compare, not an exit code**), each
+      number's definition, the 138-row `TABLE.tsv`, and the cause collapse.
+      **RE-MEASURED 2026-10-05 14:19 OVER 138 `.bend` FILES: `COLD 35`, `BAD 46`,
+      `unresolved=50`, `dead_import=37` — the guard's own last output reproduced EXACTLY,
+      so `35` is correct and `139` is not a `.bend` count (138 `.bend` + 1 `.js`).**
+      **THE DENOMINATOR HAS FOUR VALUES: 138 on disk · 137 in the index · 113 1:1 with an
+      upstream `.py` · 139 arguments handed. IT WAS 136 AT 05:47 AND 137 AT 06:16 TODAY.**
+- [x] **`OPSPY.md`'s `6 of 137` IS WRONG TWICE — ITS OWN LIST REMOVES 9 OF THE 14, LEAVING 5,
+      AND 6 OF THOSE 9 ARE `COLD` AGAIN FOR A DIFFERENT CAUSE** (`O.ParamArg.no_slot` is
+      declared nowhere; `uop/ops.bend` must declare it). `35` red FILES are **`15` causes**;
+      **one** missing def reddens **19** files. `dtype.bend` is **WARM** and declares 0 laws.
+- [x] **`agent-core.md` §2's TABLE REPLACED** with what became of each of the 14 (3 WARM,
+      5 unchanged own-cause, 6 COLD again under a new cause), and the rule added:
+      **A COLDNESS NUMBER MAY NOT BE WRITTEN WITHOUT ITS POPULATION, ITS INSTRUMENT, AND
+      WHETHER IT COUNTS FILES OR CAUSES.**
+- [x] **THE ONE TRUE NUMBER: THE PORT HAS 0 COLD FILES.** Defined as `indeg == 0 ∧
+      imports == 0 ∧ ¬driven` — nothing imports it and `bend` has nothing to run it on.
+      **9 files satisfy it and all 9 are the empty `__init__.bend` markers with 0 defs and
+      0 laws.** 41 of 138 are WIRED, 120 of 138 are DRIVEN.
+- [x] **`BAD 46` IS 1 PROBLEM.** Every one of the 46 sites reads `NOT DECLARED IN
+      tinybendygrad/uop/ops.bend`; **41 of the 46 are in `uop/validate.bend`, which nothing
+      imports.** 2 distinct defects, 1 owner. `Error: N TODOs found.` is `book.hols > 0`
+      (`references/bend/bend2/main.ts:815`), so **`grep -c TODO` is 0 and wrong** —
+      `PROOF.bend` reports 18 and has no `TODO` string. CLD-1..CLD-3 appended at
+      `bend2-constraints.md` 26748+.
+
 ### Lane liveness — how many of the gated lanes actually RAN the port
 
 - [x] `.agents/slop/LANE-LIVENESS.md` — every lane in the tree classified by reading the code,
@@ -12307,3 +12338,144 @@ Progress: [=============================-------] 7/7
       Per its own `--help`, `run` GENERATES and `repro` GATES, so the health check lives in
       `repro`; but a reader who runs `run` alone sees exit 0 and a summary of zeroes, which
       is the most convincing-looking failure output available.
+
+## deadreg (2026-10-05) — `e2e.sh` STAGE 8's DENOMINATOR IS **0**, AND THE ANSWER IS
+## TO RETIRE THE STAGE, NOT TO REACH THE ROWS
+
+`.agents/slop/deadreg/`. Owns `runtime/dtype.c` + `runtime/dtype.js` and NOTHING else.
+Appended at the end; nothing above was renumbered.
+
+**`e2e-js-lane` (above, line 109) IS NOW STALE IN ITS OWN NUMBER.** It records "only
+12 of the 20 REACH `dtype.js`". **The measured figure is 0 of 20.** `dtype.bend` now
+declares 0 `IO(` laws and imports `./runtime/dtype.*` **0** times, so all ten `Dt.*`
+laws are pure, and 0 `.bend` in the tree imports `runtime/dtype.{c,js}` (the 6 textual
+hits for them are all comments). Nothing calls the twenty registrations.
+
+- [x] Classify the 10 C + 10 JS registrations dead-or-reachable, over FOUR
+      configurations (`szlane`'s shape) counted with `cc -E` and off the emit:
+      **0 and 0 in all four**, beside a positive control that fires (**1 C, 10 JS**)
+      and a disarm that does not. **`.agents/slop/deadreg/build4.py`.**
+- [x] `build4.py` also corrects two instrument defects found on the way: a raw
+      `io_eff(` count reads **2 in `probe-none`** (the emitted runtime registers
+      `IO.print` for itself), and an `io_eff(CID_…)` count reads **0 where the
+      registration is PRESENT** — `bend -o` rewrites `CID(Dt.bf16)` to
+      `CID____TREE_TINYBENDYGRAD_DTYPE_DT_BF16` and `#define`s it to `14`.
+- [x] **PLANT + DISARM** (`.agents/slop/deadreg/plant.py`): deleting the twenty
+      registrations moves **nothing** in every reachable configuration and turns the
+      one reached configuration from exit 0 into `bend: an alien request` / `Error:
+      bend: no effect registers …/Dt.bf16` — **at RUN time, with `cc` still 0**. The
+      whitespace-only DISARM counts identically, so the plant's 0 is a measurement.
+- [x] **REMOVED: nothing load-bearing.** The registrations cost 0 registered effects
+      today and are the lane's only entry point; removing them buys no measurable
+      effect. What WAS removed is the documentation that described ten retired
+      foreign laws as existing — `dtype.c`'s "WHY AN EFFECT AT ALL" (false since
+      `F32.from_bits` landed) and `dtype.js`'s ABI paragraph (`Dt.bf16 -> IO(F32)` and
+      two others no longer declared). Comment-only diff, +76/-14, and the ten `#ifdef`
+      plus ten `io_eff` are untouched, so no `file:line` in `dtype.bend` was renumbered.
+- [ ] **`e2e.sh` STAGE 8 ITSELF — NOT MINE, REPORTED.** Its denominator is 0 and its
+      plant cannot fire, which is the correct behaviour of an honest gate. The 20 rows
+      now measure `dtype.bend`'s pure arithmetic, which `.agents/slop/lastlaw/run.py`
+      already covers at **1330/1330** (102 i64 + 1228 fp8) against the same CPython
+      callables — so keeping stage 8 is a 19-row echo of a larger gate. Re-point it
+      only if a `Dt.*` law becomes a seam again; otherwise retire it. **`jsstage.py`
+      and `e2e.sh` are not mine to edit.**
+- [ ] **THE ASYMMETRY, IF A LAW IS EVER RE-SEAMED** (recorded, not fixed):
+      `dtype.c` guards each registration with `#ifdef CID(...)` and registers **one
+      law at a time**; `dtype.js` has no guard and would register **all ten** from any
+      single reached law. One law: 1 C, 10 JS. A latent defect in a file nothing reads.
+
+## 2026-10-05 — WALLRULE unit: a wall names its prerequisite, and nine walls that did were believed
+
+- [x] **THE RULE WRITTEN AND THE INSTRUMENT MEASURED.** `.agents/slop/wallrule/RULE.md`
+      (`WALL/1`..`WALL/7`), `walls.tsv` (19 rows), `walls.truth.tsv` (independently
+      hand-measured), `wallcheck.py`. **19 rows -> 15 graded -> AGREEMENT 15/15, ERROR RATE
+      0/15; 4 refused rather than guessed; 4 plants fired, all files restored byte-identical.**
+      Appended to `notes/bend2-constraints.md` as the `WALLRULE unit` block.
+- [x] **THE NINE WALLS SWEPT. RETIRED 7, RE-DATED 8, NONE DELETED-BECAUSE-STALE.**
+      Retired: `W1a` `i64_mul`, `W1b` `i64_div`/`i64_mod`, `W2` `Dt.fp8_from`,
+      `W6` `substrate-check.sh`, `W7` the `CID` site, `W10` `UPat.is_any`,
+      `W11` dtype.bend's 14 seams. Re-dated: `W4`/`W8`/`U7` (SPLIT — WAIT for the
+      `ops.bend` rewrite), `U1`/`U2`/`U4`/`U5`/`U6` (STANDS — annotated with a date and
+      a recheck command). **`STALE-BUT-KEPT` is the majority and that is the finding: the
+      common failure is not that a wall was wrong, it is that nobody re-asked the question
+      after the answer arrived.**
+- [x] **`noneshape/ns-oparg.bend` REPORTED, NOT EDITED — IT IS THE POINT OF THE RULE.**
+      The file says no constructor exists; `AOpLit{op: Op}` is at `HEAD:1079` and absent
+      from the working copy. **Both answers are true right now**, which is why `SPLIT` is a
+      verdict meaning WAIT rather than a rounding of `LANDED`.
+- [ ] **TWO WALLS NOBODY CAN CLEAR TODAY, AND ONE IS A DECISION I CANNOT UNMAKE.**
+      (1) `uop/fold.bend:513`'s warrant — *"`helpers.bend` has `i64_add` and `i64_sub`
+      but no `i64_mul` or `i64_div`"* — is FALSE (`helpers.bend:2206`, `:1969`), and it
+      is the stated reason "a dim is not a value this port needs 64-bit arithmetic for".
+      **The decision may still be right; nobody can tell from the file. NOT MINE TO EDIT.**
+      (2) `uop/fold.bend:2655` is a standing instruction whose trigger HAS FIRED and was
+      never executed — `def mm.u64.*` at `:2681` is a private ladder beside four helpers
+      helpers.bend now exports. **U2, `STANDS`.** (3) `opspy/corpus.py:6` says `61 of 77`
+      while the script prints `53 of 77`; notes OPS-3 says `60 of 77`. **Three figures,
+      one quantity, all three in the tree.** `opspy/` is another unit's.
+- [ ] **THE `agent-core.md` ADDITION IS REPORTED, NOT MADE** (`WALL/7`): *a wall in a file
+      header is a claim against a file nobody re-reads, which is why `mixin/dtype.bend:52`
+      survived while `helpers.bend:2206` declared the thing it says is NOWHERE — and why
+      the same false premise is live in `fold.bend:513` and `weak.bend:15`.* That file is
+      owned by the unit reconciling the three coldness numbers.
+- [ ] **A COLD SET IS A WALL AND IT IS NOT SELF-REFreshing.** W11's retirement rests on
+      `dtype.bend` importing no `.c`/`.js` (0 at work and at HEAD) — re-measured, but the
+      moment a seam is re-added the 14-file cold table moves again, and `OPS-1` already
+      records the tree's cold set going `14 of 137 -> 6 of 137` **mid-measurement**.
+      **Re-run `wallcheck.py` on load; do not read the verdict.**
+
+## Session 2026-10-05 round 12 — a wall that is TRUE and attached to the WRONG SUBJECT
+
+- [ ] **NINE markers in `uop/weak.bend` are one missing reader, and the wall is an IMPORT
+      TOPOLOGY rather than a language limit.** Full finding in
+      `.agents/slop/commit-dtype-finding.md`.
+
+      ### EVERY ONE OF THE NINE IS ACCURATE AND THE LABEL IS WRONG
+
+      `commit_dtype` is NOT missing -- the arithmetic is ported at `mixin/dtype.bend:283`
+      (`commit_int` under a weakint test, `strong_dtype` otherwise, taking the node's dtype
+      and its two bounds ALREADY RESOLVED). What is missing is the NODE-LEVEL READER that
+      gets them off the node, and that is the whole of the nine markers:
+
+      ```
+      weak.py:48  absorb_weak_src   s.commit_dtype(dtypes.i32) on the weakint-over-bool-or-float arm
+      weak.py:53  lower_weak_node   reads commit_dtype (line 57) ...
+      weak.py:73  pm_lower_weak r1  two commit_dtype reads
+      weak.py:75  pm_lower_weak r2  one commit_dtype read
+      weak.py:92  cast_consts       UOp.cconst(s.val, s.commit_dtype(dtypes.i32))
+      weak.py:98  pm_cast_const     the whole table; see cast_consts
+      ```
+
+      **AND THE WALL IS ABOUT THE IMPORT GRAPH.** `D.commit_dtype` is in
+      `mixin/dtype.bend` (imports `ops.bend`, `fold.bend`; does NOT import `weak.bend`), and
+      `wk_dt` plus the node's vmin/vmax readers are in `uop/weak.bend` (imports `ops.bend`,
+      `fold.bend`; does NOT import `mixin/dtype.bend`). The two halves sit on OPPOSITE SIDES
+      of the import graph, so every call site pays by hand -- `creation.bend` has
+      `cr_bounds` for a Const and threads `self_dt`/`m`/`m2` through `cr_committed`.
+
+      **So there is no `Maybe` problem, no `Data`-field problem and no Bend rule here. Two
+      readers that already exist are in two files that do not import each other.**
+
+      ### AND THE FIX IS VERIFIED AVAILABLE -- the one thing worth acting on
+
+      MEASURED, the edge `weak.bend -> mixin/dtype.bend` closes NO cycle:
+      `ops.bend`, `fold.bend` and `spec.bend` all do NOT import `weak.bend`. So the reader
+      belongs in `uop/weak.bend` -- it has `wk_dt` there and can see `commit_dtype` -- as
+
+      ```
+      def wk_commit_dtype(fx: F.Folded, u: U32) -> Maybe<&1, S.Dt>
+      ```
+
+      **ONE DEF, NINE MARKERS, AND THREE FILES CURRENTLY SPELLING THE SAME EXTRACTION BY
+      HAND.** `creation.bend`'s `cr_committed` path then becomes de-duplication rather than a
+      workaround, which is what its own comment already says it is. Not landed here: the def
+      needs the node's exact vmin/vmax reader names and a gate row. **This is the largest
+      single fan-out available in the tree and it is the next unit.**
+
+      ### THE LESSON THAT EXTENDS THE LAST FIVE ROUNDS
+
+      Five walls this session claimed the SUBSTRATE could not do something; four were false.
+      This one claims the substrate cannot do something and is TRUE -- **but not because of
+      the substrate.** Before believing a wall, ASK WHICH LAYER IT IS ABOUT: the language,
+      the port's own arithmetic, or the import graph. The third is invisible in a marker's
+      phrasing, because a wall is written as a property of the language and read as one.
