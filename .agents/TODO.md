@@ -8407,3 +8407,107 @@ unfalsifiable    [##########] 4/4   the four headline numbers, each with plant+d
   10; a `# VERDICT AGREE` printed beside `fields_disagree=36`; a double-`run()` in the
   harness; a `$TMPDIR` copy without the relative import tree (which the comparator's new
   `NO_PORT_ROWS` verdict caught instead of crashing).
+
+---
+
+## Session 2026-10-04 — e2e-through-port: `e2e.sh` STAGE 6, THE MATMUL RUN THROUGH THE PORT
+
+- [x] **STAGE 6 ADDED, NOTHING REPLACED.** `.agents/slop/e2e.sh:122-161` is the whole
+      change and `head -121` is **byte-identical** (`sha256 86c465e9…` before and after);
+      the appended block's only `*rc` assignment is `psrc=$?` and the exit is still
+      `exit "$rc"`, stage 4's. **MEASURED, not asserted:** with `run-port-mm.sh` renamed
+      away so stage 6 could not start, the script printed `mm_e2e_failed=0 / PASS` then
+      `STAGE 6 FAILED` then `--- the script's exit status is STAGE 4's: PASS ---` and
+      **exited 0**. `./.agents/slop/e2e.sh` -> `PASS`, 96 s.
+- [x] **THE JOIN.** `zsh .agents/slop/e2e_port/run-port-mm.sh` -> exit 0. The same
+      `(A @ B) @ Cm` with **no Node, no browser, no `navigator.gpu`, no tinygrad Python
+      scheduler in the execution path**: `cstyle.bend`'s `render_kernel` emits the C,
+      `cc` takes it (with `-Wall -Werror`, **zero warnings**), `bend -o` compiles the
+      driver, Bend allocates/fills/**launches the kernel by pointer**/reads back.
+      **64/64 u32 words, `diff bytes: 0`**, measured twice by different code -- the lane's
+      own python list compare, and then `awk` + the external `diff` byte-counted in stage
+      6 so the answer is not read out of the instrument that produced it.
+- [x] **THE COVERAGE STATEMENT, IN THE ARTIFACT'S OWN OUTPUT.** `e2e_port/coverage.py`
+      counts it every run: **227 rows is the denominator; 216 (95.15%) are text-only
+      fragments; 11 are C; `cc` accepts 6 (2.64%) and rejects 5; 1 (0.44%) is EXECUTED and
+      compared against CPython; 226 of 227 (99.56%) are STILL TEXT.** Both lanes are run
+      in stage 6 precisely so the 1 is measured in this run and not quoted from a prior
+      commit.
+- [x] **7 NEGATIVE CONTROLS, 7 RED.** 4 new: **C0** the unmutated copy must be GREEN
+      (without it the rest prove nothing); **C1 THE PORT** -- `cstyle.bend:1363`
+      `buftypes.go` accumulates at the head, so `render_kernel` emits the buffers
+      REVERSED, and all 64 words come back `0` (`MISMATCH at 64/64 words`); **C2 VACUITY**
+      -- the second dot reads `data1_4` instead of `tmp`, so a REAL matmul `A@C` runs, and
+      the lane must still refuse; **C3 THE EXPECTATION** -- one bit of `answer_u32[37]`
+      -> `MISMATCH at 1/64 words … [(37, …)]`, index 37 and no other; **C4** the same port
+      plant on the one-input row. 3 inherited from `run-kernel.sh` (kernel body, fill
+      target, skip the call) and reported, not re-counted. **C1 is the first port-side
+      plant ever run on any execution lane.** A control that FALLS OVER is reported NOT A
+      CATCH; a substrate short-count is reported `SUBSTRATE` with the port's own stderr, on
+      controls too.
+- [x] **THE `kern2 alu` UNFALSIFIABLE PAIR IS NOT TOUCHED AND NOT COUNTED**, and the
+      script says so in its own output. My stage's executed kernel is `emit-mm.bend`'s
+      four-buffer `mm`, which is **not one of the 227 rows**, so it has no `py=` twin to
+      agree with it. The pair's real positions are **`cstyle.bend:2367-2368`** and
+      **`renderer_oracle.py:563-565`** (ALU buffers built at `:516-522`) -- the
+      `renderer_oracle.py:551-552` I was handed is the `vol` pair.
+- [x] **6 FINDINGS REPORTED, NOT FIXED** (every file is held by a live unit) --
+      `.agents/slop/E2E-THROUGH-PORT.md` §6. The one that matters:
+      **`portexec/README.md:53` says "2 of 227 rows have been executed. 225 are still
+      text-only"** and the true sentence is **1 of 227, 226 of 227 still text, plus one
+      executed kernel outside the set**. Also: `STAGE3.md:98-101` claims the aliasing
+      plant "is the plant used for `mm`" and no such plant is in `run-kernel.sh:204-224`;
+      `census.py:54`'s 90-char truncation keeps only the temporary path, so its rejection
+      column carries no message; and **`bend2-constraints.md`'s index promise that
+      positions are "unique and stable" has decayed** -- it points `List.append` at 1590,
+      which is a different rule; the rule is at 1824.
+- [x] **10 RULES appended** to `notes/bend2-constraints.md` at the END as **X-1 … X-10**,
+      positions **24240-24346**, cited by NAME (the `F-` numbers have collided three
+      times). `X-1` is the generalisation of the `2 of 227` denominator error.
+
+## Session 2026-10-04 round 3 — `print_uops` GATED, and three of five bugs were formatting
+
+- [x] **`print_uops` (render.py:18) is gated: 9 rows, 3 lanes, byte-identical.** The gate is
+      `.agents/slop/ops-pu-gate.sh`, the oracle `ops-pu-oracle.py`, and the mutation table
+      `ops-pu-mutate.sh` is **7 of 7**. There is NO divergence list — the partial's wall is
+      gone, because there is nothing left to be honest about except one thing (below).
+
+      ### EVERY BUG THIS GATE FOUND WAS A FORMATTING BUG
+
+      That is the finding, and it is why the gate diffs WHOLE LINES and not a name-to-value
+      map. A value gate would have been green through all of them.
+
+      1. **All four pads were INVERTED.** `{i:4d}` pads a NUMBER on the LEFT and the three
+         `:<width>s` pad STRINGS on the RIGHT; this used `pad_left` for the strings and
+         `pad_right` for the number. I had picked the direction from the NAME of the helper
+         instead of from the SPEC. Individually each is a plausible value.
+      2. **The index was the src's ARENA SLOT, not its position in `uops`.** CPython builds
+         `uops_index = {u:i for i,u in enumerate(uops)}`. Both are `U32` and both read as
+         "an index", and they AGREE whenever the row's list happens to be the arena's own
+         order — which is why `pu_index` caught it and `pu_const` could not have.
+      3. **The index was QUOTED.** The fold quoted every element, so `['3', '4']` against
+         CPython's `[0, '4']`. Python's `repr` leaves an `int` bare. Quoting now lives in
+         the ARMS and the separator is `", "` rather than `"', '"`.
+      4. **A node with no srcs never wrote the `[`** and the `Nil` arm closed one anyway, so
+         every CONST line ended in `]`. The fold already carried `first`; at the `Nil` arm
+         `first` means "no element was written", so the arm is a pick on the flag it has.
+      5. **The row name went on only the FIRST line.** `pu_constarg` printed its first CONST
+         named and its second bare, and the bare line had nothing to diff against.
+
+      ### THE WALL I WROTE WAS AGAINST THE WRONG THING
+
+      It said the range column was empty "against CPython's coloured `0`" and needed
+      `F.ranged`'s sweep. **It was not a fold gap at all.** MEASURED: CPython's BUF, ADD and
+      C1 all have `ranges == []` in this fixture, and `multirange_str(..., pad=10)` answers
+      TEN SPACES for that. The coloured `0` I had been reading as CPython's was **the port's
+      own RANGE node**, printed because the row indices still pointed at node 2 of the arena.
+
+      **A wall written from a diff of a MISINDEXED FIXTURE is a wall against the wrong
+      thing**, and it cost a fold unit of planning before the fixture turned out to be the
+      defect. Same shape as the earlier BUFFER "wall" that was a missing CONST src.
+
+      ### WHAT IS STILL NOT GATED, and it is one thing
+
+      The range column in its EMPTY case. A node that actually HAS ranges is not in this
+      fixture, and that claim needs the range sweep; `multirange_str` and `range_str` are
+      already in `render.bend` for it.

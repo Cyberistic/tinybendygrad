@@ -56,8 +56,8 @@ L = AxisType.LOOP
 # a RANGE over it, an ADD over that, and two bare CONSTs.
 C1 = UOp.const(4)
 RANGE = UOp.range(4, 0, AxisType.LOOP)
-BUF = UOp(Ops.BUFFER, (C1,), ParamArg(1, dtypes.int32, size=4), L)
-ADD = UOp(Ops.ADD, (BUF, C1), L)
+BUF = UOp(Ops.BUFFER, (C1,), ParamArg(1, dtypes.int32, size=4, name="b"), L)
+ADD = UOp(Ops.ADD, (BUF, C1))   # no axis: the 3rd positional is ARG, not axis_type
 C2 = UOp.const(8)
 
 

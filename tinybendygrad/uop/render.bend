@@ -865,7 +865,6 @@ def range_str.go(ids: List<&2, U32>) -> List<&2, String>:
 def range_str.of(at: O.AxisType, +ids: List<&2, U32>) -> String:
   String.join(range_str.go(ids), "_")
 
-
 # `colored(ret, axis_colors[u.axis_type])`. `H.colored` needs the `Flags` record
 # (NO_COLOR is a ContextVar there), and `color=False` in Python is exactly
 # "return ret unchanged", so the flag is the parameter.
@@ -1429,9 +1428,6 @@ def chas(m: Map<&2, U32>, u: U32) -> Bool:
 type Cons is Data:
   Cons{seen: Map<&2, U32>, cnt: Map<&2, U32>, who: Map<&2, U32>}
 
-
-
-
 # ===========================================================================
 # `to_render` -- render.py:151-164, the decision of which nodes get their own
 # `cN = ...` line.
@@ -1550,49 +1546,19 @@ def rws_ren.pick(intr: Bool, +ren: String, +last: U32, +i: U32, +u: U32, +ctx: C
 def rws_ren.of(intr: Bool, +ren: String, last: U32, i: U32, +u: U32, +ctx: Ctx, +ret: List<&2, Bind>, +dep: Map<&2, U32>, +trn: Map<&2, U32>) -> RWS:
   rws_ren.pick(intr, ren, last, i, u, ctx, ret, dep, trn)
 
-
-
-
 def rws_ret(st: RWS) -> List<&2, Bind>:
   match st:
     case RWS{ctx, ret, dep, trn}: ret
 
-
-
-
-
-
 def last_of(xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.last(&2, U32, xs), 0)
-
-
-
 
 # `1 + max([depth.get(s, 0) for s in u.src], default=0)` -- `default=0` is the
 # Nil arm and `depth.get`'s 0 is the fold's identity, so they are the same 0.
 def op_depth(+ar: O.Arena, u: U32, +dep: Map<&2, U32>) -> U32:
   U32.add(1, op_depth.go(O.Arena.srcs(ar, u), dep, 0))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 def pmp.cast(+ar: O.Arena, +tb: F.Table, ctx: Ctx, +u: U32) -> String:
   pmp.cast.of(dt_same(tb, ar, u), ar, tb, ctx, u)
-
-
-
-
-
-
 
 def arg_clause(+a: O.Arg) -> String:
   arg_clause.of(ismeta_of(a), a)
@@ -1709,7 +1675,6 @@ def rws.go(lst: List<&2, U32>, +ar: O.Arena, +tb: F.Table, +last: U32, +i: U32, 
 def render_with_splits(+ar: O.Arena, +tb: F.Table, +lst: List<&2, U32>, +trn: Map<&2, U32>) -> List<&2, Bind>:
   rws_ret(rws.go(lst, ar, tb, last_of(lst), 0, RWS{ctx_new(), Nil{}, Map.new(&2, U32), trn}))
 
-
 # `f"{k} = {strip_parens(v)}" for k,v in ret.items()`
 def ret_row.of(k: String, +v: String) -> String:
   String.concat([k, " = ", Bool.pick(String, H.is_wrapped(v), H.strip_parens(v), v)])
@@ -1725,29 +1690,6 @@ def ret_rows.go(ps: List<&2, Bind>) -> List<&2, String>:
     case p <> t: ret_row(p) <> ret_rows.go(t)
 
 def ret_rows(ps: List<&2, Bind>) -> List<&2, String>: ret_rows.go(ps)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def Cons.seen(c: Cons) -> Map<&2, U32>:
   match c:
@@ -1798,22 +1740,6 @@ def consumers.go(lst: List<&2, U32>, +ar: O.Arena, +c: Cons) -> Cons:
 def consumers.new(+ar: O.Arena, lst: List<&2, U32>) -> Cons:
   consumers.go(lst, ar, consumers.empty())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # `len([x for x in list(cmap[u].keys())[0].src if x is u])` -- how many times the
 # one consumer lists u.
 def uses(+ar: O.Arena, v: U32, u: U32) -> U32: uses.go(O.Arena.srcs(ar, v), u, 0)
@@ -1836,13 +1762,6 @@ def tr_keep.of(op: O.Op, +ar: O.Arena, +u: U32, +tr: Map<&2, U32>, +c: Cons) -> 
 # the `continue` test, in Python's order
 def tr_keep(op: O.Op, +ar: O.Arena, u: U32, +tr: Map<&2, U32>, +c: Cons) -> Map<&2, U32>:
   tr_keep.of(op, ar, u, tr, c)
-
-
-
-
-
-
-
 
 # a SINK adds ALL its srcs; a STORE adds src[1]; a REDUCE adds src[0]
 # THE LIST IS FIRST. The self-call is `tr_all(t, ar, tr_set(tr, s))` and the
@@ -1878,8 +1797,6 @@ def to_render.go(lst: List<&2, U32>, +ar: O.Arena, +cs: Cons, +tr: Map<&2, U32>)
 
 def to_render(+ar: O.Arena, +lst: List<&2, U32>, ast: U32) -> Map<&2, U32>:
   to_render.go(lst, ar, consumers.new(ar, lst), tr_set(Map.new(&2, U32), ast))
-
-
 
 def pyrender.of(+ar: O.Arena, +tb: F.Table, +ast: U32, +lst: List<&2, U32>) -> String:
   String.join(ret_rows(render_with_splits(ar, tb, lst, to_render(ar, lst, ast))), "\n")
@@ -1958,43 +1875,56 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # VALUE, and the arena INDEX) and the last column's `ParamArg` repr. The oracle
 # (`.agents/slop/ops-pu-oracle.py`, five rows) is landed and measured.
 #
-# FOUR OF THE FIVE FIELDS AGREE WITH CPYTHON ON VALUE, and the gate is still not
-# landed because the remaining gaps are real and none of them is a `print_uops` bug.
-# The f-string is one line and it has five fields:
+# GATED, and the gate is `.agents/slop/ops-pu-gate.sh`: nine rows, three lanes, all
+# byte-identical against CPython's real `print_uops`. Every field of the f-string is
+# measured against the reference rather than against a reimplementation of it, and there
+# is NO divergence list -- the earlier partial had a wall here and now has none.
 #
 #   print(f"{i:4d} {str(u.op):20s}: {multirange_str(u.ranges, color=True, pad=10)} "
 #         f"{str(u.dtype):40s} {str(formatted_srcs):32s} {u.arg}")
 #
-# AGREE, measured against ops-pu-oracle.py:
-#   `str(u.op)`     `Ops.BUFFER`, `Ops.ADD`, `Ops.CONST`
-#   `str(u.dtype)`  `dtypes.i32`, `dtypes.weakint` -- the fold DOES answer a BUFFER
-#   `formatted_srcs` all THREE arms: `--` for a src outside the list, the INDEX for a
-#                   src inside it, and the VALUE for a CONST. The value arm was the one
-#                   `H.i64_text` got wrong and `H.i64_dec` now answers: `['--', '4']`
-#                   against CPython's `['--', '4']`, and the CONST's own `u.arg` reads
-#                   `4` on both sides.
+# THE GATE DIFFS WHOLE LINES AND NOT A FIELD MAP, and that is the whole reason the four
+# pads are pinned. All four were INVERTED when the gate was written -- `{i:4d}` pads a
+# NUMBER on the LEFT and the three `:<width>s` pad STRINGS on the RIGHT -- and every one
+# of them was individually a plausible value. A name-to-value gate would have been green
+# through all of it.
 #
-# STILL WRONG, and each is named:
+# THREE OF THE FIVE BUGS THE GATE FOUND WERE INVISIBLE AS VALUES, which is the argument
+# for the line diff and not a preference:
 #
-#   THE WIDTHS ARE NOT IMPLEMENTED. `{i:4d}` left-pads the counter and this prints `0`
-#   where CPython prints `   0`; `{op:20s}` pads the op and this prints `Ops.ADD:`
-#   where CPython prints `Ops.ADD             :`. The VALUES are right and the LAYOUT is
-#   not, which is why the gate diffs whole lines rather than a field map: a field map
-#   would pass a port that is right about every value and wrong about all four widths.
-#   `H.pad_left` / `H.pad_right` exist (helpers.bend) and the field widths are
-#   composition, not a wall -- but it is four format sites, and a half-done layout that
-#   pads three of them is worse than none.
+#   THE INDEX IS THE POSITION IN `uops`, NOT THE SRC'S ARENA SLOT. CPython builds
+#   `uops_index = {u:i for i,u in enumerate(uops)}` and prints the place in the PRINTED
+#   LIST. This printed the arena slot. Both are `U32`, both read as "an index", and they
+#   agree whenever the row's list happens to be the arena's own order -- which is why
+#   `pu_index` (whose list is `[BUFFER, ADD, CONST]`) caught it and `pu_const` did not.
 #
-#   THE RANGE COLUMN IS EMPTY against CPython's coloured `0`. `UOp.ranges` needs an
-#   `RTable` from `F.ranged(ar)`, and the range sweep needs the same `Kahn` table for
-#   `ended_ranges`. That is a second fold unit, and `render.bend:975` (`multirange_str`)
-#   is already there waiting for it.
+#   THE INDEX IS AN `int` AND PYTHON'S `repr` LEAVES AN `int` BARE. The fold quoted every
+#   element, so the port printed `['3', '4']` against CPython's `[0, '4']`. Quoting now
+#   lives in the ARMS -- a `--` and a CONST's value are strings and quote themselves, an
+#   index is an int and does not -- and the separator is a plain ", " instead of "', '".
 #
-#   THE `u.arg` COLUMN HAS NO AxisType ARM. CPython's `UOp(Ops.ADD, (BUF, C1), L)` puts
-#   the axis in `arg` and prints `AxisType.LOOP`; this arena stores `O.TNone{}` there,
-#   so the port prints `None` on a fixture CPython would print an axis for. The
-#   fixture is the port's and it is WRONG about the shape, and it is the one row where
-#   the port's arena and CPython's do not describe the same node.
+#   A NODE WITH NO SRCS NEVER WROTE THE `[`, and the `Nil` arm closed one anyway, so every
+#   CONST line ended in `]` where CPython ends in `[]`. The fold already carries `first`,
+#   and `first` at the `Nil` arm means "no element was written", so the arm is a pick on
+#   the flag it has rather than a second test.
+#
+# AND THE ROW NAME BELONGS ON **EVERY** LINE, not once on the first: the prefix used to
+# wrap the whole fold, so `pu_constarg` printed its first CONST named and its second bare
+# and the second line had no name to diff against. The gate now asserts the row count and
+# the row NAMES, because a lost row is not a smaller diff -- it is a missing test.
+#
+# WHAT THIS GATE DOES NOT COVER, and it is one thing. The range column is gated in its
+# EMPTY case: CPython's `multirange_str(..., pad=10)` answers TEN SPACES for a node with
+# no ranges, and MEASURED, BUF, ADD and C1 all have `ranges == []` here. A node that
+# actually HAS ranges is not in this fixture, and that claim needs `F.ranged`'s sweep --
+# `render.bend`'s `multirange_str` and `range_str` are already there for it.
+#
+# THE EARLIER CLAIM ON THIS LINE WAS WRONG AND IT IS THE ONE WORTH REMEMBERING. It said
+# the range column was empty here "against CPython's coloured 0", and that read as a fold
+# gap needing a sweep. It was not: the coloured `0` was the PORT'S OWN RANGE node, printed
+# because the row indices still pointed at node 2 of the arena. CPython never coloured
+# anything in this fixture. A wall written from a diff of a MISINDEXED fixture is a wall
+# against the wrong thing, and the fixture was the thing that was wrong.
 def pa1() -> O.ParamArg:
   O.ParamArg{1, S.single(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
     False{}, None{}, None{}, False{}, None{}}
@@ -2497,7 +2427,6 @@ def rnd_is_set(m: Maybe<&2, String>) -> Bool:
     case Some{_}: True{}
     case None{}: False{}
 
-
 def rnd_named(p: O.ParamArg) -> Maybe<&2, String>:
   match p:
     case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
@@ -2558,7 +2487,6 @@ def rnd_pick.of(op: O.Op, arg: O.Arg) -> Maybe<&2, String>: rnd_of(op, arg)
 
 def rnd_leaf(+ar: O.Arena, +i: U32) -> Maybe<&2, String>:
   rnd_pick.of(O.Arena.op(ar, i), O.Arena.arg(ar, i))
-
 
 # ==== the `rnd_*` fixture and rows =========================================
 #
@@ -2670,7 +2598,6 @@ def pu_in(+xs: List<&2, U32>, x: U32) -> Bool: List.contains(U32, U32.is_eq, xs,
 # value. `pu_const` is the row for the inner arm and `pu_missing` for the outer, and
 # a def that swaps them passes one of the two and fails the other.
 
-
 def pu_val.of(arg: O.Arg) -> String:
   match arg:
     case O.APy{O.CInt{i}}: H.i64_dec(i)
@@ -2683,7 +2610,6 @@ def pu_val.of(arg: O.Arg) -> String:
 # `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
 # by a test of something computed".
 
-
 # `(uops_index[x] if x.op is not Ops.CONST else f"{x.val}") if x in uops else "--"`.
 # THREE arms, and the two tests are in the OPPOSITE order from how they read: the
 # membership test is OUTER, so a CONST that is NOT in the list is `--` and not its
@@ -2692,20 +2618,71 @@ def pu_val.of(arg: O.Arg) -> String:
 def pu_val(+ar: O.Arena, +x: U32) -> String:
   pu_val.of(O.Arena.arg(ar, x))
 
+# The op test is a separate def because `Arena.op(ar, x)` is a computed value and a
+# `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
+# `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
+# by a test of something computed".
+
+# THE INDEX ARM PRINTS THE POSITION IN `uops` AND NOT THE ARENA SLOT, and printing the
+# slot was wrong while LOOKING right -- both are `U32`, both read as "an index", and the
+# slot is the number the fold already had in hand. CPython builds the map it prints from:
+# `uops_index = {u:i for i,u in enumerate(uops)}`, so the value is the place in the
+# PRINTED LIST. MEASURED on `pu_index`: the port said `['3', '4']` where CPython says
+# `[0, '4']`, and 3 is the BUFFER's arena slot while 0 is where the BUFFER sits in that
+# row's list. The two agree only when the list happens to be the arena's own order, which
+# is why the row that caught it is the one whose list is `[BUFFER, ADD, CONST]` and not
+# `[ADD, CONST]`.
+def pu_pos.go(+xs: List<&2, U32>, +x: U32, +n: U32) -> U32:
+  match xs:
+    case Nil{}: n
+    case h <> t: Bool.pick(U32, U32.is_eq(h, x), n, pu_pos.go(t, x, U32.add(n, 1)))
+
+def pu_pos(+xs: List<&2, U32>, +x: U32, +n: U32) -> U32: pu_pos.go(xs, x, n)
+
+
+# A `--` AND a CONST's value are STRINGS and so repr with single quotes; the index is an
+# `int` and so repr WITHOUT them. That is why the quotes live HERE, in the arms, and not
+# in the fold: a fold that quotes every element can only ever print a list of strings,
+# and CPython's list holds one int and some strs. MEASURED: `['0', '4']` against
+# CPython's `[0, '4']`.
+def pu_src(+ar: O.Arena, +uops: List<&2, U32>, +x: U32) -> String:
+  Bool.pick(String, pu_in(uops, x),
+    Bool.pick(String, O.eq_op(O.Arena.op(ar, x), O.OpsCONST{}),
+      String.concat(["'", pu_val(ar, x), "'"]), U32.show(pu_pos(uops, x, 0))),
+    "'--'")
+
+# `(uops_index[x] if x.op is not Ops.CONST else f"{x.val}") if x in uops else "--"`.
+# THREE arms, and the two tests are in the OPPOSITE order from how they read: the
+# membership test is OUTER, so a CONST that is NOT in the list is `--` and not its
+# value. `pu_const` is the row for the inner arm and `pu_missing` for the outer, and
+# a def that swaps them passes one of the two and fails the other.
 
 # The op test is a separate def because `Arena.op(ar, x)` is a computed value and a
 # `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
 # `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
 # by a test of something computed".
-def pu_src(+ar: O.Arena, +uops: List<&2, U32>, +x: U32) -> String:
-  Bool.pick(String, pu_in(uops, x),
-    Bool.pick(String, O.eq_op(O.Arena.op(ar, x), O.OpsCONST{}), pu_val(ar, x), U32.show(x)),
-    "--")
+
+# `(uops_index[x] if x.op is not Ops.CONST else f"{x.val}") if x in uops else "--"`.
+# THREE arms, and the two tests are in the OPPOSITE order from how they read: the
+# membership test is OUTER, so a CONST that is NOT in the list is `--` and not its
+# value. `pu_const` is the row for the inner arm and `pu_missing` for the outer, and
+# a def that swaps them passes one of the two and fails the other.
+
+# The op test is a separate def because `Arena.op(ar, x)` is a computed value and a
+# `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
+# `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
+# by a test of something computed".
 
 
 # `str(formatted_srcs)` is PYTHON'S REPR OF A LIST -- `['--', '4']`, with quotes, a
 # comma and a SPACE. It is not this file's list-join idiom, and getting the space
 # wrong is a whole-file diff rather than one row, so the space is in `pu_srcs_str`.
+#
+# AND THE `Nil` ARM OPENS THE BRACKET, because a node with no srcs never runs an arm and
+# so never wrote the `[`. It closed one instead: every CONST line ended in `]` where
+# CPython ends in `[]`. The fold carries `first` already, and `first` at the `Nil` arm is
+# exactly "no element was written", so the arm is a `Bool.pick` on the flag it already
+# has rather than a second test.
 # ONE DEF, because the first draft was three and MUTUALLY RECURSIVE:
 # `tail` -> `str` -> `of` -> `tail`. Bend refuses that and `bend-toposort` reported
 # the cycle rather than writing, correctly. The separator carries the position --
@@ -2713,10 +2690,9 @@ def pu_src(+ar: O.Arena, +uops: List<&2, U32>, +x: U32) -> String:
 # pass and no helper.
 def pu_srcs.go(+ar: O.Arena, +uops: List<&2, U32>, +t: List<&2, U32>, +acc: String, first: Bool) -> String:
   match t:
-    case Nil{}: String.concat([acc, "]"])
+    case Nil{}: String.concat([acc, Bool.pick(String, first, "[]", "]")])
     case +h <> r:
-      pu_srcs.go(ar, uops, r, String.concat([acc, Bool.pick(String, first, "['", ", '"), pu_src(ar, uops, h), "'"]), False{})
-
+      pu_srcs.go(ar, uops, r, String.concat([acc, Bool.pick(String, first, "[", ", "), pu_src(ar, uops, h)]), False{})
 
 def pu_srcs(+ar: O.Arena, uops: List<&2, U32>, +u: U32) -> String:
   pu_srcs.go(ar, uops, O.Arena.srcs(ar, u), "", True{})
@@ -2725,7 +2701,6 @@ def pu_srcs(+ar: O.Arena, uops: List<&2, U32>, +u: U32) -> String:
 # does not know a dtype for every node. `dt_repr` gives `dtypes.i32`, which is
 # CPython's `str(u.dtype)`, and the `?` arm says "the fold does not know" rather than
 # printing a width-padded empty string.
-
 
 def pu_dtype.of(m: Maybe<&2, S.Dt>) -> String:
   match m:
@@ -2737,7 +2712,6 @@ def pu_dtype.of(m: Maybe<&2, S.Dt>) -> String:
 # and the wrong widths is a different FORMAT and the gate's line-for-line diff
 # catches it. That is why the rows are whole lines and not a name-to-value map.
 
-
 # THE DTYPE, and it is a `Maybe<&2, S.Dt>` because `UOp.dtype` is one -- the fold
 # does not know a dtype for every node. `dt_repr` gives `dtypes.i32`, which is
 # CPython's `str(u.dtype)`, and the `?` arm says "the fold does not know" rather than
@@ -2745,30 +2719,40 @@ def pu_dtype.of(m: Maybe<&2, S.Dt>) -> String:
 def pu_dtype(+tb: F.Table, +ar: O.Arena, +u: U32) -> String:
   pu_dtype.of(F.UOp.dtype(ar, tb, u))
 
-
 # ONE LINE, AND THE WIDTHS ARE THE POINT. `20s` on the op, `40s` on the dtype and
 # `32s` on the srcs are all in CPython's f-string, so a port with the right VALUES
 # and the wrong widths is a different FORMAT and the gate's line-for-line diff
 # catches it. That is why the rows are whole lines and not a name-to-value map.
+# THE FOUR PADS ARE DIRECTIONAL AND ALL FOUR WERE INVERTED, which is the whole of the
+# layout gap this line had. CPython's `f"{x:20s}"` pads a STRING ON THE RIGHT and its
+# `f"{i:4d}"` pads a NUMBER ON THE LEFT -- `:<width>` is a string spec and the trailing
+# `d` is a number spec, and they pad opposite ways. So:
+#
+#   `{i:4d}`          4   NUMBER   -> H.pad_left    (was pad_right)
+#   `{str(u.op):20s}` 20  STRING   -> H.pad_right   (was pad_left)
+#   `{str(u.dtype):40s}` 40 STRING -> H.pad_right   (was pad_left)
+#   `{str(srcs):32s}` 32  STRING   -> H.pad_right   (was pad_left)
+#
+# `H.pad_left` prepends the blank and `H.pad_right` appends it (helpers.bend:1036-1040),
+# so the names read the way they act, and the mistake was using the NAME to decide the
+# direction instead of the SPEC. Three of the four were the same mistake and one was the
+# mirror of it, which is why the row read as one shifted field rather than four.
 def pu_line(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<&2, U32>, +i: U32, +u: U32) -> String:
   String.concat([
-    H.pad_right(Nat.show(U32.to_nat(i)), 4), " ",
-    H.pad_left(O.Ops.name(O.Arena.op(ar, u)), 20), ": ",
+    H.pad_left(Nat.show(U32.to_nat(i)), 4), " ",
+    H.pad_right(O.Ops.name(O.Arena.op(ar, u)), 20), ": ",
     multirange_str(f, ar, F.Rng.rs(F.UOp.ranges(ar, rt, u)), 10), " ",
-    H.pad_left(pu_dtype(tb, ar, u), 40), " ",
-    H.pad_left(pu_srcs(ar, uops, u), 32), " ",
+    H.pad_right(pu_dtype(tb, ar, u), 40), " ",
+    H.pad_right(pu_srcs(ar, uops, u), 32), " ",
     arg_repr(O.Arena.arg(ar, u))])
-
 
 def pu_line.go(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<&2, U32>, +t: List<&2, U32>, +acc: List<&2, String>, +i: U32) -> List<&2, String>:
   match t:
     case Nil{}: acc
     case +h <> r: pu_line.go(f, rt, tb, ar, uops, r, List.append(&2, String, acc, [pu_line(f, rt, tb, ar, uops, i, h)]), U32.add(i, 1))
 
-
 def print_uops(+ar: O.Arena, +uops: List<&2, U32>) -> List<&2, String>:
   pu_line.go(H.Flags.defaults(), F.Ranged.rt(F.ranged(ar)), F.UOp.fold(ar), ar, uops, uops, Nil{}, 0)
-
 
 # ==== the `pu_*` rows =====================================================
 #
@@ -2847,15 +2831,21 @@ def pu_ar() -> O.Arena:
 #
 # So: fold to a String, join, print once. The fold is `s5.seps.go` with a newline
 # instead of a space, and `IO.print` is one call at the end.
-def pu_row.go(+ar: O.Arena, xs: List<&2, String>, +acc: String) -> String:
+# THE ROW NAME GOES ON **EVERY** LINE, not once on the first. It went on the first as a
+# `String.concat([nm, "|", ...])` wrapped around the WHOLE fold, which reads the same for
+# a one-node row and is wrong for every row after it: `pu_constarg` printed its first
+# CONST named and its second CONST bare, so the diff had one line to compare and one it
+# could not name. The prefix is inside the fold for that reason, and `nm` is a `+`
+# parameter because the fold reads it once per line.
+def pu_row.go(+nm: String, +ar: O.Arena, xs: List<&2, String>, +acc: String) -> String:
   match xs:
     case Nil{}: acc
-    case +h <> t: pu_row.go(ar, t, String.concat([acc, h, "\n"]))
+    case +h <> t: pu_row.go(nm, ar, t, String.concat([acc, nm, "|", h, "\n"]))
 
 def pu_row.emit(line: String) -> IO(Unit): IO.print(line)
 
-def pu_row(nm: String, +ar: O.Arena, +uops: List<&2, U32>) -> IO(Unit):
-  pu_row.emit(String.concat([nm, "|", pu_row.go(ar, print_uops(ar, uops), ""), "\n"]))
+def pu_row(+nm: String, +ar: O.Arena, +uops: List<&2, U32>) -> IO(Unit):
+  pu_row.emit(pu_row.go(nm, ar, print_uops(ar, uops), ""))
 
 def pu_rows(+ar: O.Arena) -> IO(Unit):
   do IO<Unit>:
@@ -3001,8 +2991,6 @@ def main() -> IO(Unit):
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
-
-
 
 # ===========================================================================
 # `pyrender` -- render.py:143-167. `lst = list(ast.toposort())`, the to_render
