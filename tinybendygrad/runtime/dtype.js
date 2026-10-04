@@ -31,12 +31,21 @@ const FP8_E4M3FNUZ = 2;
 const FP8_E5M2FNUZ = 3;
 
 // (bias, sig_bits, mant_mask, min_denorm_half, ovf_threshold, max_norm, min_norm)
-// dtype.py's _fp8_cfg with the f64 magnitude patterns as f32 patterns.
+// dtype.py's _fp8_cfg. denorm and min_norm are the f32 patterns of dtype.py's f64
+// values, bit for bit. ovf is NOT: dtype.py writes it an f64 ULP LOW on three of the
+// four formats (dtype.py:239-241), which is how `absx > ovf_threshold` includes the
+// value it names -- and the f32 pattern of `61439.99999999999` is 61440's own, so
+// restating the value drops the -1 and loses one boundary row per affected format.
+// ovf therefore holds the LAST f32 magnitude dtype.py still rounds normally, and the
+// `>` in fp8_encode is dtype.py's own `>`. e4m3 is the fourth threshold dtype.py
+// writes without the -1, and its entry is the value itself. Same table as
+// dtype.c:43; .agents/slop/JSFP8.md records how the wrong one shipped in two
+// languages at once.
 const FP8_CFG = [
   [7, 4, 0x7, 0x3a800000, 0x43e80000, 0x7e, 0x3c800000],
-  [15, 3, 0x3, 0x37000000, 0x47700000, 0x7b, 0x38800000],
-  [8, 4, 0x7, 0x3a000000, 0x43780000, 0x7f, 0x3c000000],
-  [16, 3, 0x3, 0x36800000, 0x47700000, 0x7f, 0x38000000],
+  [15, 3, 0x3, 0x37000000, 0x476fffff, 0x7b, 0x38800000],
+  [8, 4, 0x7, 0x3a000000, 0x4377ffff, 0x7f, 0x3c000000],
+  [16, 3, 0x3, 0x36800000, 0x476fffff, 0x7f, 0x38000000],
 ];
 
 function of32(u) {
@@ -94,7 +103,10 @@ function fp8_decode(x, kind) {
       return mant ? (sgn ? 0xffc00000 : 0x7fc00000)
                   : (sgn ? 0xff800000 : 0x7f800000);
     }
-    if (mant === mantMax) return sgn ? 0xffc00000 : 0x7fc00000;
+    // dtype.py:275 signs NEITHER of e4m3's answers -- a bare `return math.nan`, so
+    // it is unsigned whatever the code's top bit was. e5m2's above are the signed
+    // ones (dtype.py:273 `copysign`).
+    if (mant === mantMax) return 0x7fc00000;
   }
   const bias = FP8_CFG[kind][0];
   const v = exp === 0
