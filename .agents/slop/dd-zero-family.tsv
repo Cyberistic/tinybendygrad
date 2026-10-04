@@ -1,0 +1,26 @@
+# dd-zero-family.tsv -- WHICH FAMILY each baseline row belongs to.
+# TAB-separated, exactly one tab per line.
+#
+# The point is to answer "is this site in any row?" MECHANICALLY.  dd-mut-proof.py
+# answers "is this site reachable?" by renaming the def; this answers the other
+# half -- "if it IS reachable, does the READER print it?" -- which is the
+# distinction between PORT-DEFECT and INVISIBLE-to-reader.
+#
+# The families are read off the GATE's own structure in the frozen snapshot:
+#   l2idt*, f2fdt*   dd_text.head -> dd_l2i.row / dd_f2f.row   (dtype.py:12, :97)
+#   lg*, hi42*       l2i.rows / l2i.hi42                      (dtype.py:21-81)
+#   up*              unpack.one -> unpack32                    (dtype.py:13)
+#   c*               dd_cmx.rows -> f2f_clamp_max              (dtype.py:139)
+#
+# `l2i` is deliberately COARSE: every `lg*` row is a `l2i` arm, and the fine
+# attribution -- which arm reads which site -- is what the per-mutation MOVED row
+# lists already record.  Coarse here means "a site inside l2i is visible to the
+# l2i family", which is the CONSERVATIVE direction: it can only under-report
+# INVISIBLE-to-reader, never invent one.  zero-classify.py's `inside()` treats
+# `l2i_shl.hi` as inside `l2i` by the dotted prefix, so one line covers the tree.
+^l2idt\d	l2i_dt
+^f2fdt\d	f2f_dt
+^lg	l2i
+^hi42	l2i
+^up	unpack32
+^c\d	f2f_clamp_max

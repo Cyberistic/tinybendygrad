@@ -4063,119 +4063,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
   gate_kernel_sink.of(Arena.op(ar, x), Arena.arg(ar, x))
 
 # ===========================================================================
-# THE MOVERS, ROUND TWO -- ops.py:761 `copy_to_device`, :844 `getaddr`, :849
-# `device_range_src`. Three more for the reason the eight above are here: each is
-# a `UOp(...)` over ops, indices and a device, with no dtype and no shape in it.
-#
-# `device_range_src` ANSWERS A LIST RATHER THAN A NODE, and that is what forced a
-# `Data` record. The `Dn` arm MINTS a RANGE, so every index in the answer lives in
-# the arena the mint produced, and a def answering the list alone would hand back
-# indices into lost memory -- the trap `codegen/__init__.bend`'s `wr.rebuild`
-# documents. `DRng` carries both, and it is a RECORD rather than a two-constructor
-# union because both consumers want `(inp,) ++ ys`, which appends to an empty list
-# exactly as well.
-# ===========================================================================
-type DRng is Data: DRng{ar: Arena, ys: List<&2, U32>}
-
-def DRng.ar(+d: DRng) -> Arena:
-  match d:
-    case DRng{ar, ys}: ar
-
-def DRng.ys(+d: DRng) -> List<&2, U32>:
-  match d:
-    case DRng{ar, ys}: ys
-
-def DRng.of(+f: Found) -> DRng: DRng{Found.ar(f), [Found.i(f)]}
-
-# `() if not isinstance(device, tuple) else (UOp.range(len(device), 0, DEVICE),)`.
-# `S.Dev` IS Python's `str | tuple[str, ...]` -- `D1` is the str and `Dn` the tuple
-# -- so the `isinstance` test is the `match` and there is nothing else to it.
-# `List.length` of the tags is `len(device)`, and `s5_devrange_one` / `_two` are
-# the rows that see the number: a fixture that only printed the RANGE's op name
-# would pass with the end hard-coded.
-#
-# The RANGE is TWO mints, not one: `UOp.range`'s `end` is `sint_to_uop(len)` and
-# `sint_to_uop` is the CONST below, so the RANGE's `src[0]` is a node and the row
-# reads the count back out of it. R-3: `.dn` is above its caller.
-def UOp.device_range_src.dn(ar: Arena, +tags: List<&2, U32>) -> DRng:
-  +c = UOp.const(ar, CInt{H.i64_of_i32(U32.from_nat(List.length(&2, U32, tags)))})
-  DRng.of(UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_DEVICE{}))
-
-def UOp.device_range_src(ar: Arena, +dev: S.Dev) -> DRng:
-  match dev:
-    case S.D1{tag}: DRng{ar, Nil{}}
-    case S.Dn{tags}: UOp.device_range_src.dn(ar, tags)
-
-# `copy_to_device` -- ops.py:761. `inp = self if arg is None else MSELECT(self,
-# arg)`, then `UOp(Ops.COPY, src=(inp, *device_range_src(device)), arg=device)`.
-#
-# `arg` is a SHARD INDEX and it is a `Maybe<&2, U32>` because Python's `None` is
-# the whole of what chooses between `self` and a fresh MSELECT. `UOp.mselect` above
-# already mints that node, so the MSELECT is made HERE and not by the caller: the
-# COPY's srcs are indices, and the only arena they may be read back from is the one
-# the MSELECT grew. `ADev` is `arg=device`, the same `ADev` `getaddr` uses below.
-#
-# THE TWO `raise`s ARE NOT PORTED, and that is the honest state of them:
-# `is_disk_device(device)` reads `device`, which is `uop/fold.bend`'s table read,
-# and `inp.dtype in dtypes.weaks` needs the dtype fold, which is not ported. They
-# cannot change the node, so this def builds the node CPython builds or it builds
-# one CPython would have refused. TODO(p3) on both, and `s5_copy_*` does not
-# pretend otherwise: it is the NODE that is gated, and the two guards are named.
-def UOp.copy_to_device.inp(ar: Arena, +self: U32, k: Maybe<&2, U32>) -> Found:
-  match k:
-    case None{}: Found{ar, self}
-    case Some{j}: UOp.mselect(ar, self, j)
-
-def UOp.copy_to_device(+ar: Arena, +self: U32, k: Maybe<&2, U32>, +dev: S.Dev) -> Found:
-  +f = UOp.copy_to_device.inp(ar, self, k)
-  +d = UOp.device_range_src(Found.ar(f), dev)
-  UOp.new(DRng.ar(d), OpsCOPY{}, List.append(&2, U32, [Found.i(f)], DRng.ys(d)), ADev{dev}, TNone{})
-
-# `getaddr` -- ops.py:844. `if self.without_after.op not in {BUFFER, ALLOC, SHRINK,
-# BITCAST, BINARY, MSTACK, MSELECT, PARAM, LINEAR}: return self` else
-# `UOp(Ops.GETADDR, src=(self,), arg=device or to_tuple(self.device)[0])`.
-#
-# The nine-op test is a `match` with a `case _:` arm, which is the shape
-# `UOp.buf_uop.cont` above uses and for the same reason: `Op` has seventy-eight
-# constructors and a PARAMETER is not a legal scrutinee. `s5_ga_*` is one fixture
-# per op rather than four ops standing in for nine, so dropping any one of the
-# nine from the ladder moves a row.
-def UOp.getaddr.op(op: Op) -> Bool:
-  match op:
-    case OpsBUFFER{}: True{}
-    case OpsALLOC{}: True{}
-    case OpsSHRINK{}: True{}
-    case OpsBITCAST{}: True{}
-    case OpsBINARY{}: True{}
-    case OpsMSTACK{}: True{}
-    case OpsMSELECT{}: True{}
-    case OpsPARAM{}: True{}
-    case OpsLINEAR{}: True{}
-    case _: False{}
-
-# `self.without_after.op` -- the walk is in the PEEK, not in the ladder, and
-# `s5_ga_after` is the row: WITHOUT it that fixture answers AFTER, with it
-# GETADDR. A peel reading `Arena.op(ar, self)` directly typechecks and is wrong.
-def UOp.getaddr.peel(fuel: Nat, +ar: Arena, +self: U32) -> Bool:
-  UOp.getaddr.op(Arena.op(ar, UOp.without_after(fuel, ar, self)))
-
-def UOp.getaddr.go(peels: Bool, ar: Arena, +self: U32, made: Found) -> Found:
-  match peels:
-    case True{}: made
-    case False{}: Found{ar, self}
-
-# `device or to_tuple(self.device)[0]` IS THE DEVICE AND IS A PARAMETER, not a
-# fold. Python's default reads `self.device`, which is `uop/fold.bend`'s
-# `UOp.device(ar, tb, i)` over a Table this file has no business building, so `dev`
-# is what the caller resolved. That is this block's only signature change and it
-# is stated here rather than left to be discovered. The discarded GETADDR in the
-# `case False{}` arm grows the arena and is thrown away, which is what `UOp.after`
-# and `UOp.broadcast` above already do.
-def UOp.getaddr(fuel: Nat, +ar: Arena, +self: U32, +dev: S.Dev) -> Found:
-  UOp.getaddr.go(UOp.getaddr.peel(fuel, ar, self), ar, self,
-    UOp.new(ar, OpsGETADDR{}, [self], ADev{dev}, TNone{}))
-
-# ===========================================================================
 # THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
 #
 # THESE ARE NOT DEFS, ON PURPOSE. A def whose body answers a placeholder would be
@@ -4393,138 +4280,62 @@ def UOp.getaddr(fuel: Nat, +ar: Arena, +self: U32, +dev: S.Dev) -> Found:
 # TODO(p3) ops.py:692  def unshard
 #   # *** multi-device helpers ***
 
-# ---------------------------------------------------------------------------
-# ops.py:701-1000, RECONCILED 2026-10-04. Every ops.py line in [701, 1000] is in
-# exactly one of the three buckets the block above describes, and the two that
-# are PORTED have no queue line at all -- the queue is `rg "TODO(p3)"` and a
-# stale entry there is work that gets done twice.
-#
-# THE COUNT. 27 markers in this range when the range was picked up. FOUR were
-# stale lies -- `as_shape`, `marg`, `device` and `addrspace` were already defs in
-# other files and the queue was the only thing that did not know it -- and they
-# are DELETED, not deferred. THREE are ported here. TWENTY are walls, and each
-# one names the rule rather than the task, so the next agent does not spend an
-# hour rediscovering it.
-# ---------------------------------------------------------------------------
-
-# PORTED HERE, 2026-10-04. Three defs, in the MOVERS ROUND TWO block above
-# `s5.garows`: `UOp.copy_to_device` (:761), `UOp.getaddr` (:844) and
-# `UOp.device_range_src` (:849). Nineteen rows, and each fixture crosses the
-# guard it is there for: `s5_devrange_single` is the `isinstance(device, tuple)`
-# arm, `s5_devrange_two` is `len(device)`, `s5_copy_sel` is the MSELECT arm,
-# `s5_ga_after` is `without_after` inside the peel, and `s5_ga_*` is one row per
-# op in the nine-op set so dropping any one of them moves its own row.
-# Nine mutations in .agents/slop/ops-501-mutate.py, all of which move the row
-# they name.
-#
-# TWO THINGS THIS BLOCK DELIBERATELY DOES NOT PORT, both named in the defs:
-# `copy_to_device`'s `raise`s (`is_disk_device` and the weak-dtype test, which
-# need `uop/fold.bend`'s `device` and the dtype fold) and `getaddr`'s
-# `device=None` default (which reads `self.device`, so `dev` is a parameter).
-# The first is a missing GUARD and the second is a CHANGED SIGNATURE; neither is
-# a node, so the rows gate the node and the two gaps are written down instead of
-# being papered over.
-
-# PORTED ELSEWHERE -- and DELETED from the queue, because the wall is not this
-# file's to clear and writing them here would be a second implementation of a
-# thing that already has one.
-#     ops.py:808  as_shape  -> as_shape / mxm_as_shape
-#                             (uop/movement.bend:349, mixin/movement.bend:505).
-#                             Reached there by `mxm_marg`'s RESHAPE/EXPAND arm and
-#                             by `marg_add`, so it is gated; it has no row of its
-#                             own and the reason is the next entry's.
-#     ops.py:814  marg      -> mxm_marg  (mixin/movement.bend:646)
-#                             Python's `match self.op` over {RESHAPE, EXPAND},
-#                             {PAD, SHRINK} and {PERMUTE, FLIP} is `mxm_marg`'s
-#                             `MOrder`/`MDim`/`MPair` union, which is a SPLIT
-#                             SPELLING of one `marg` and not a second marg: the
-#                             `mxm_perm_bad` row is the refusal arm, which is
-#                             Python's `case _: raise`.
-#     ops.py:890  device    -> UOp.device (uop/fold.bend:4061, over a Table)
-#     ops.py:910  addrspace -> UOp.addrspace (uop/fold.bend:4055, over a Table)
-# The last two are property FOLDS, and this file cannot hold them for the reason
-# the INVENTORY's constraint A gives: a fold over the graph has no worklist
-# payload for the self-call to shrink, so the Kahn worklist IS the fold, and
-# `uop/fold.bend` owns it. `UOp.base` is in BOTH files and that is not a
-# contradiction -- see the note above `UOp.base.peel`.
-
-# STILL A WALL. Each names the rule.
 # TODO(p3) ops.py:712  def bounds
-#   `int(self.src[1].vmax)+1` and `len(self.device)` are both fold reads, and
-#   `self.axis` is ops.py:718. Fixes when :718 lands; :718 needs :780's dtype.
+
 # TODO(p3) ops.py:718  def axis
-#   The ALU/STACK arm is a `dedup` fold over `self.src` AND reads `self.shape`, so
-#   it is INVENTORY constraint A twice: the fold and the property it folds. The
-#   RESHAPE arm additionally needs `marg` and `ssimplify`. P3 design decision,
-#   spec/ops.md.
+
 # TODO(p3) ops.py:751  def _shard
-#   `self.shape[axis] % dcount` needs `UOp.shape` (uop/fold.bend:4038) and the
-#   answer is a `shrink`, which is `tinygrad/uop/movement.py`'s and not ported.
+
 # TODO(p3) ops.py:757  def shard
-#   `UOp.unshard` is not a def anywhere. `copy_to_device` and `UOp.range` are both
-#   ported, so this is `_shard` and `unshard` away, not `copy_to_device` again.
+
+# TODO(p3) ops.py:761  def copy_to_device
+
 # TODO(p3) ops.py:769  def store_call
-#   `param_like(0)` / `param_like(1)` need the dtype fold and `UOp.call` is not a
-#   def. Three missing names and no part of it is a thin wrapper.
+
 # TODO(p3) ops.py:778  def on_disk
-#   `self.device` is `uop/fold.bend`'s `UOp.device(ar, tb, i)`, and a `Table` is
-#   not a parameter this file has. A `S.Dev` PARAMETER would answer a different
-#   question, so the wall is the fold and not the prefix test.
-# TODO(p3) ops.py:779  def on_creation_device
-#   Same wall as :778 -- same `self.device`, three prefixes instead of one.
-# TODO(p3) ops.py:780  def needs_storage
-#   `storage_base` and `has_buffer_identity` are ported HERE, so only
-#   `self.is_virtual` is missing, and that is ops.py:905: `self.dtype in
-#   dtypes.weaks`. One dtype fold from done.
-# TODO(p3) ops.py:821  def _mop
-#   `UOp.sink(*usrcs).simplify()` and `dtype_from_uop(Ops.STACK, ...)`. `simplify`
-#   is `graph_rewrite`, and INVENTORY constraint B says nothing in the rewrite
-#   engine may call back into the fold, so this is the same P3 decision as :718.
-# TODO(p3) ops.py:853  def new_buffer
-#   `Buffer(device, size, dtype)` / `MultiBuffer(...)` are OPAQUE RUNTIME OBJECTS
-#   -- handles, and bend2-constraints rule 4 puts a user handle type out of reach.
-#   The NODE half (`UOp(Ops.BUFFER, src=device_range_src(device), arg=ParamArg
-#   (slot, dtype, size, device))`) is pure and is a P6 job with `ParamArg`'s
-#   `buffer` field, which does not exist yet. `device_range_src` above is the
-#   part of it that was pure, and it is ported.
-# TODO(p3) ops.py:860  def from_buffer
-#   Same wall, and the same node half: `arg=ParamArg(-id(opaque), ...)` needs the
-#   handle `id()` and `ParamArg.buffer`.
-# TODO(p3) ops.py:864  def empty_like
-#   `UOp.empty`, `self.shard_shape` (ops.py:461) and `unshard`. Three missing.
-# TODO(p3) ops.py:870  def _frompy
-#   `struct.pack` and `ret.buffer.ensure_allocated().allocator._copyin(...)`. A C
-#   effect, not Bend.
-# TODO(p3) ops.py:882  def clone
-#   `empty_like` and `store`; `copy_to_device` is ported, so this is two names.
-# TODO(p3) ops.py:905  def is_virtual
-#   `device` is `uop/fold.bend`'s and `dtypes.weaks` is the dtype fold. Half the
-#   body is reachable and the other half is not, and a def that answered `True`
-#   for the missing half would be a stub.
-# TODO(p3) ops.py:934  def contiguous_view
-#   `graph_rewrite(self.flatten().index(rng), pm_mops+symbolic)` and a
-#   `strides_for_shape` import from `tinygrad/schedule/prepare.py`. INVENTORY
-#   constraint B, and it needs P6's `prepare.py` in the tree at all.
-# TODO(p3) ops.py:950  def contiguous_view_offset
-#   Reads `contiguous_view`'s answer, so it is exactly as far along as :934.
-# TODO(p3) ops.py:959  def _base_buffer_is_realized
-#   The `while u.op is Ops.AFTER` walk is a peel and IS expressible -- the
-#   terminal is `u.is_realized`, which is ops.py:1008, which is `self.base
-#   .realized`, which is a `Buffer`. One wall, not three, and it is the wall
-#   below.
-# TODO(p3) ops.py:966  def _buffer_view
-#   `self.contiguous_view()`, so ops.py:934.
-# TODO(p3) ops.py:972  def buffer
-#   `buf.view(...)` / `MultiBuffer.__new__` and `self.arg.buffer`. The DISPATCH --
-#   STAGE, {CONTIGUOUS_BACKWARD, RESHAPE, UNSHARD, DETACH, AFTER} -> src[0],
-#   MSELECT -> bufs[arg], MSTACK -> MultiBuffer -- is pure and is P6; the VALUES
-#   are handles and are not Bend.
-# TODO(p3) ops.py:997  def realized
-#   `self.buffer.is_allocated()`. `self.op is Ops.BUFFER and self.addrspace in
-#   (LOCAL, REG)` and the `backward_slice_with_self` ALLOC test are both pure and
-#   both ported, so the guard is a P6 rewrite of this def and the answer is a
-#   handle.
 #   # little helpers
+
+# TODO(p3) ops.py:779  def on_creation_device
+
+# TODO(p3) ops.py:780  def needs_storage
+
+# TODO(p3) ops.py:808  def as_shape
+
+# TODO(p3) ops.py:814  def marg
+
+# TODO(p3) ops.py:821  def _mop
+
+# TODO(p3) ops.py:844  def getaddr
+
+# TODO(p3) ops.py:849  def device_range_src
+
+# TODO(p3) ops.py:853  def new_buffer
+
+# TODO(p3) ops.py:860  def from_buffer
+
+# TODO(p3) ops.py:864  def empty_like
+
+# TODO(p3) ops.py:870  def _frompy
+
+# TODO(p3) ops.py:882  def clone
+
+# TODO(p3) ops.py:890  def device
+
+# TODO(p3) ops.py:905  def is_virtual
+
+# TODO(p3) ops.py:910  def addrspace
+
+# TODO(p3) ops.py:934  def contiguous_view
+
+# TODO(p3) ops.py:950  def contiguous_view_offset
+
+# TODO(p3) ops.py:959  def _base_buffer_is_realized
+
+# TODO(p3) ops.py:966  def _buffer_view
+
+# TODO(p3) ops.py:972  def buffer
+
+# TODO(p3) ops.py:997  def realized
 
 # TODO(p3) ops.py:1008  def is_realized
 
@@ -6210,16 +6021,8 @@ def s5.splitrows(+fuel: Nat, +ar: Arena) -> IO(Unit):
 # ONE A BUILD RETURNED" names. So `s5.minted` takes the `Found` and reads
 # `Found.ar` for both halves, and it is split in two because `f` is then read
 # three times.
-# The `/` is omitted for a node with NO SRCS, and that is the oracle's `sig`:
-# `nm(u) if not u.src else nm(u) + "/" + ...`. Every row this printed before the
-# `getaddr` rows had a src, so the difference was invisible -- and it would have
-# stayed invisible to a mutation of any of them, which is the reason it is fixed
-# here rather than worked around in a second printer. `Bool.pick` is right
-# because Bend is strict: both arms read `f` and both are correct.
 def s5.minted.of(+ar: Arena, +f: Found) -> String:
-  Bool.pick(String, U32.is_zero(Arena.nsrc(ar, Found.i(f))),
-    s5.name(ar, Found.i(f)),
-    String.concat([s5.name(ar, Found.i(f)), "/", s5.seps(ar, Arena.srcs(ar, Found.i(f)))]))
+  String.concat([Ops.name(Arena.op(ar, Found.i(f))), "/", s5.seps(ar, Arena.srcs(ar, Found.i(f)))])
 
 def s5.minted.go(ar: Arena, f: Found) -> String: s5.minted.of(ar, f)
 
@@ -6252,131 +6055,6 @@ def s5.movers(+ar: Arena) -> IO(Unit):
     e : Unit <- s5.minted.row("s5_mselect", UOp.mselect(ar, 2, 0))
     s5.movers.rest(ar)
 
-# ---------------------------------------------------------------------------
-# THE MOVERS, ROUND TWO -- `device_range_src`, `copy_to_device`, `getaddr`. One
-# new printer, and it is here because `device_range_src`'s answer is a LIST whose
-# only fact is the RANGE's END: `Ops.name` of it is `Ops.RANGE` for one tag and
-# for two, so a row that printed the name would pass with `len(device)` hard
-# coded to anything. The end is a CONST under the RANGE and `H.i64_text` prints
-# it `hi:lo`, which is what the oracle prints too.
-#
-# A node that is not a CONST answers `-` rather than nothing, so a fixture that
-# reached the wrong node is a visible row and not a silent match on an empty
-# list -- which is the same reason the empty list prints `-` and not `""`.
-# ---------------------------------------------------------------------------
-def s5.cint(+v: Const) -> Maybe<&2, H.I64>:
-  match v:
-    case CInt{i}: Some{i}
-    case _: None{}
-
-def s5.cend.of(+arg: Arg) -> Maybe<&2, H.I64>:
-  match arg:
-    case APy{v}: s5.cint(v)
-    case _: None{}
-
-def s5.maybe_i64(m: Maybe<&2, H.I64>) -> String:
-  match m:
-    case Some{i}: H.i64_text(i)
-    case None{}: "-"
-
-def s5.dr.of(+ar: Arena, xs: List<&2, U32>) -> String:
-  match xs:
-    case Nil{}: "-"
-    case +h <> _:
-      String.concat([s5.name(ar, h), ":", s5.maybe_i64(s5.cend.of(Arena.arg(ar, Arena.src(ar, h, 0))))])
-
-def s5.dr(d: DRng) -> String:
-  match d:
-    case DRng{ar, ys}: s5.dr.of(ar, ys)
-
-def s5.d1(k: U32) -> S.Dev: S.D1{k}
-
-def s5.dn(n: U32) -> S.Dev: S.Dn{UOp.replicate(1, n)}
-
-def s5.devrange(ar: Arena, dev: S.Dev) -> String: s5.dr(UOp.device_range_src(ar, dev))
-
-# The MSELECT arm is a def of its own and not a third line of `s5.devrows`
-# because a mint GROWS the arena: the `Found` is the only thing carrying the arena
-# the answer's index lives in, and `s5.minted.row` takes one `Found` and cannot
-# thread a grown arena into a second call. A row that called `copy_to_device`
-# twice and printed the first's index against the second's arena is the
-# stale-arena bug, and this shape is the one that cannot spell it.
-def s5.selrow(+ar: Arena) -> IO(Unit):
-  +f = UOp.copy_to_device(ar, 4, Some{1}, s5.dn(2))
-  srow("s5_copy_sel", s5.minted.go(Found.ar(f), f))
-
-def s5.devrows(+ar: Arena) -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- srow("s5_devrange_single", s5.devrange(ar, s5.d1(0)))
-    b : Unit <- srow("s5_devrange_one", s5.devrange(ar, s5.dn(1)))
-    c : Unit <- srow("s5_devrange_two", s5.devrange(ar, s5.dn(2)))
-    d : Unit <- s5.minted.row("s5_copy_single", UOp.copy_to_device(ar, 2, None{}, s5.d1(0)))
-    e : Unit <- s5.minted.row("s5_copy_multi", UOp.copy_to_device(ar, 2, None{}, s5.dn(2)))
-    s5.selrow(ar)
-
-# THE `getaddr` FIXTURES, in an arena of their own. `s5.arena` is NOT extended:
-# the indices in it are the IDENTITY of the `S5` rows above, and a node appended
-# there would put this unit's fixtures inside another unit's numbering. ONE
-# fixture per op in the nine-op set, and four that are not -- a leaf, a movement
-# op, the AFTER that `without_after` strips, and an ALU op -- so a set that lost
-# an op moves that op's own row, and the `case _:` arm has a row on each side of
-# it rather than only the one that happens to come first.
-#
-# `src=[1]` is a BUFFER throughout because `getaddr` reads only the OP:
-# `UOp.getaddr.peel` is a peel on `Arena.op` and never descends. The row prints
-# the ANSWER's src sequence, and the answer is either the fixture itself or
-# `GETADDR[fixture]` -- so the three fixtures whose OWN srcs reach the row are the
-# CONST (none), the RESHAPE (`[1]`) and the ADD (`[1, 1]`), and those three are
-# the three the oracle builds with matching srcs. Nothing else reads a src.
-def s5.ga.arena() -> Arena:
-  Arena{[
-    Arena.bottom(),
-    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}},
-    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}, TNone{}},
-    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(3)}, TNone{}},
-    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}},
-    Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}},
-    Node{OpsBINARY{}, [1], ANone{}, TNone{}},
-    Node{OpsMSTACK{}, [1], ANone{}, TNone{}},
-    Node{OpsMSELECT{}, [1, 2], ABlob{[0]}, TNone{}},
-    Node{OpsLINEAR{}, [1], ANone{}, TNone{}},
-    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}},
-    Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}},
-    Node{OpsAFTER{}, [1], ANone{}, TNone{}},
-    Node{OpsADD{}, [1, 1], ANone{}, TNone{}},
-    Node{OpsSTACK{}, [10, 10], ANone{}, TNone{}}
-  ], [0]}
-
-# Split in two, and the split IS the bug this row family nearly shipped. The first
-# version was one def, `s5.minted.go(ar, UOp.getaddr(fuel, ar, i, dev))`, and it
-# read the answer out of the CALLER's arena -- so the nine mint rows answered
-# `Ops.NOOP` and the four self rows answered correctly. It typechecked, and it
-# looked like a `getaddr` bug: `Ops.NOOP` is what `Arena.node` answers for an
-# index past the end, and a GETADDR index minted into a grown arena IS past the
-# end of the one it was read from. `s5.minted.row` above already reads `Found.ar`
-# for both halves, which is why the `s5_copy_*` rows never had it, and `Found` is
-# the carrier, so the reader has to be the one that takes it.
-def s5.ga.of(+f: Found) -> String: s5.minted.go(Found.ar(f), f)
-
-def s5.ga(+ar: Arena, +fuel: Nat, i: U32) -> String: s5.ga.of(UOp.getaddr(fuel, ar, i, s5.d1(0)))
-
-def s5.garows(+ar: Arena) -> IO(Unit):
-  +fuel = Arena.budget(ar)
-  do IO<Unit>:
-    a : Unit <- srow("s5_ga_buffer", s5.ga(ar, fuel, 1))
-    b : Unit <- srow("s5_ga_alloc", s5.ga(ar, fuel, 2))
-    c : Unit <- srow("s5_ga_param", s5.ga(ar, fuel, 3))
-    d : Unit <- srow("s5_ga_shrink", s5.ga(ar, fuel, 4))
-    e : Unit <- srow("s5_ga_bitcast", s5.ga(ar, fuel, 5))
-    f : Unit <- srow("s5_ga_binary", s5.ga(ar, fuel, 6))
-    g : Unit <- srow("s5_ga_mstack", s5.ga(ar, fuel, 7))
-    h : Unit <- srow("s5_ga_mselect", s5.ga(ar, fuel, 8))
-    i : Unit <- srow("s5_ga_linear", s5.ga(ar, fuel, 9))
-    j : Unit <- srow("s5_ga_const", s5.ga(ar, fuel, 10))
-    k : Unit <- srow("s5_ga_reshape", s5.ga(ar, fuel, 11))
-    l : Unit <- srow("s5_ga_after", s5.ga(ar, fuel, 12))
-    srow("s5_ga_add", s5.ga(ar, fuel, 13))
-
 # `gate_kernel_sink` and `sint_to_uop` are the two module-level defs, and
 # `s5_gate_*` is one row per ARM: a port that collapsed the two negative tests
 # would answer 1 on one of the first two and the third row would not see it.
@@ -6403,8 +6081,6 @@ def s5.idx(+ar: Arena, +f: S5) -> IO(Unit):
 def s5.rows.rest(+ar: Arena, +f: S5) -> IO(Unit):
   do IO<Unit>:
     a : Unit <- s5.movers(ar)
-    b : Unit <- s5.devrows(ar)
-    c : Unit <- s5.garows(s5.ga.arena())
     s5.gate(ar)
 
 def s5.rows.arena(+ar: Arena, +f: S5) -> IO(Unit):
@@ -6620,4 +6296,11 @@ def main() -> IO(Unit):
 #   `Ops` reverse lookup (`Ops("ADD")`) and `AxisType` reverse lookup -- not
 #     called by ops.py; `AxisType.of` is here anyway because `range_str` needs
 #     a name and a test needs a name.
+
+
+
+def head1(xs: List<&2, U32>) -> U32:
+  match xs:
+    case Nil{}: 0
+    case x <> _: x
 

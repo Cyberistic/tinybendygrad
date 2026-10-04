@@ -99,6 +99,10 @@ def restore() -> None:
   shutil.copyfile(PRISTINE, REAL)
 
 
+def same_as_snapshot() -> bool:
+  return os.path.exists(PRISTINE) and open(PRISTINE, 'rb').read() == open(REAL, 'rb').read()
+
+
 def main() -> None:
   if '--snapshot' in sys.argv:
     assert os.path.exists(REAL)
@@ -109,6 +113,21 @@ def main() -> None:
     restore()
     print('blob-intern-mutate: restored')
     return
+
+  # THE STALE-SNAPSHOT GUARD, and it is here because it bit this unit. The harness
+  # mutates `ops.bend` IN PLACE and restores from `PRISTINE`, so a `PRISTINE` taken
+  # before a concurrent agent's edit silently REVERTS that edit when the run ends. It
+  # happened: the snapshot was taken while another agent's ~130-line `s5` "MOVERS,
+  # ROUND TWO" was in the tree, that change was rebased out, and the restore put the
+  # dead 6623-line file back over the live 6306-line one. A restore that can undo
+  # somebody else's work must refuse to run on a tree it does not recognise.
+  if not same_as_snapshot():
+    print(f"blob-intern-mutate: REFUSING. The live tree is not the snapshot:\n"
+          f"  live      {open(REAL, 'rb').read().__len__()} bytes\n"
+          f"  snapshot  {os.path.getsize(PRISTINE)} bytes\n"
+          f"Re-run with --snapshot to accept the live tree, or --restore to overwrite it.",
+          file=sys.stderr)
+    return 1
 
   try:
     restore()
@@ -134,5 +153,5 @@ def main() -> None:
     print('\nblob-intern-mutate: restored the fixed tree')
 
 
-if __name__ == '__main__':
-  main()
+if __name__ == "__main__":
+  sys.exit(main() or 0)

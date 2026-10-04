@@ -1,0 +1,52 @@
+# dd-zero-aim.tsv -- WHICH SITE each mutation is aimed at, for zero-classify.py.
+#
+# The second column is the DEF, which is the unit a zero is about.  A zero with
+# no def here is NO-MUTATION-WRITTEN, and that is the denominator: 11 of the
+# previous table's 23 unmoved rows (`l2idt0 l2idt1 f2fdt0..8`) were in this
+# bucket, not in a coverage bucket.
+#
+# `dd-zero-family.tsv` is the other half: it maps a ROW NAME to the site that
+# produces it, so a site can be asked "is it in any row?" without an argument.
+# Both are declarations, and both are checked against the file by the anchors
+# dd-mutate.py already asserts exactly-once.
+M01	dd_cast_sel
+M02	dd_cast_sel
+M03	dd_cast_fold
+M04	dd_cast_bool
+M05	l2i_cast3.bitc
+M06	l2i_cast.got
+M07	dd_bc
+M08	l2i_cast0.sgn
+M09	l2i_shl.hi
+M10	l2i_shl.hi
+M11	l2i_shr.fill
+M12	l2i_shr.fill
+M13	l2i_shl.ge
+M14	l2i_mul.p
+M15	l2i_mul.w
+M16	l2i_cmplt
+M17	l2i_where
+M18	l2i_max
+M19	l2i_binop
+M20	dd_rsub31
+M21	unpack32
+M22	unpack32
+M23	reindex.scaled
+M24	l2i_cdiv
+M25	l2i_cast0.pick
+M26	dd_rs.push
+M27	dd_rs.has
+M28	l2i.roots
+M29	l2i.gone
+M30	dd_eck
+M31	dd_join.add
+M32	l2i.went
+M33	l2i_define.size2
+M34	f2f.up.tail
+M35	rne.sel
+M36	l2i_cdiv.uns
+M37	l2i_dt.wide
+M38	l2i_dt
+M39	f2f_dt.w
+M40	f2f_dt.w
+M41	f2f_dt.of

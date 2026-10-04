@@ -61,12 +61,15 @@ PORT = "codegen/__init__.bend"
 PROBE = "codegen-init-probe.bend"
 
 BASE_TREE = ROOT / "runs" / "gr-init" / "base" / "tinybendygrad"
+# The PRE-FIX port, as ONE frozen FILE. `base/tinybendygrad/` is a live mirror
+# of the tree that tracks whatever the port currently is; it is not an archive.
+PREFIX_PORT = ROOT / "runs" / "gr-init" / "base" / ".agents-prefix-port.bend"
 OLD_PROBE = ROOT / "runs" / "gr-init" / "base" / ".agents-old-probe.bend"
 
-# md5 of the two trees this harness reads. A mismatch is a hard stop, never a
+# md5 of the two ports this harness reads. A mismatch is a hard stop, never a
 # silent measurement of something other than what the report claims.
-MD5_BASE_TREE = "083c05ff6013d152ce3f83db4fc62a51"   # the pre-fix port
-MD5_LIVE_TREE = "4055c0eef2170f35c42a41172a25d42e"   # the landed port
+MD5_BASE_TREE = "083c05ff6013d152ce3f83db4fc62a51"   # the pre-fix port, 361 lines
+MD5_LIVE_TREE = "df922fb5ce15b4ad8428a723950ba568"   # the landed port, 317 lines
 
 # --- the anchors. Every one must appear EXACTLY ONCE or the patch is refused;
 # a silently-unapplied mutation is a zero that reads like a theorem.
@@ -79,6 +82,32 @@ SCAN_R = "wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, rebuilt, ctx), repl, rebuil
 COMMENT_ANCHOR = "# A dummy PARAM that the ctx carries."
 COMMENT_EDIT = "# A dummy PARAM that the ctx carries. CONTROL: comment only, no behaviour."
 PAD_ANCHOR = "  ar0 = O.Arena.empty()\n  +p0 = test_param(ar0, 0)"
+
+# A DELETION is the strongest control there is and it is here as one. The
+# landed file drops `gr_show.topo.k`/`.k.of`/`.topo` and `gr_show.repl.kv`,
+# four defs that nothing in the tree calls (`grep -rn` over `tinybendygrad/`,
+# `.agents/` and `runs/` returns only their own definitions and two OTHER
+# units' frozen ancestor trees under `.agents/slop/dd-cone-wt/`, which are
+# not live code). A dead def is invisible to every row -- it compiles, it
+# proves, and nothing observes it -- so re-inserting it must move NOTHING.
+DEAD_REINSERT = """
+def gr_show.repl.kv(k: String, v: U32) -> String:
+  String.concat([k, "->", U32.show(v)])
+
+def gr_show.topo.k(rest: List<&2, U32>, acc: String) -> String:
+  match rest:
+    case Nil{}: acc
+    case v <> t: gr_show.topo.k(t, String.concat([acc, U32.show(v), ","]))
+
+def gr_show.topo.k.of(t: List<&2, U32>, acc: String, u: U32) -> String:
+  gr_show.topo.k(t, String.concat([acc, U32.show(u), ","]))
+
+def gr_show.topo(topo: List<&2, U32>) -> String:
+  match topo:
+    case Nil{}: ""
+    case u <> t: gr_show.topo.k.of(t, "", u)
+"""
+DEAD_ANCHOR = "\n# A node's printable form is `OP(slot=N)` for PARAM and the bare"
 
 GATE_ROWS = ("repl", "new_sink_is_original", "new_sink_srcs", "new_sink_op")
 CONTROL_ROW = "n_repl"
@@ -107,6 +136,7 @@ STAGES: dict[str, tuple[str, str, list]] = {
     "A-arena": ("live", "new", [(SINK_ENTRY_ANCHOR, SINK_ENTRY_BACK)]),
     "B-both": ("live", "new", []),
     "C-comment": ("live", "new", [(COMMENT_ANCHOR, COMMENT_EDIT)]),
+    "C-deadcode": ("live", "new", [(DEAD_ANCHOR, DEAD_REINSERT + DEAD_ANCHOR)]),
     "M-drop-arena": ("live", "new", [(FOUND_AR_ANCHOR, FOUND_AR_MUT)]),
     "M-u": ("live", "new", [(SCAN_U, SCAN_R)]),
     "M-u-norule": ("live", "new", [(SCAN_U, SCAN_R), (SINK_ENTRY_ANCHOR, SINK_ENTRY_BACK)]),
@@ -137,11 +167,10 @@ def freeze(tree: str, probe: str) -> pathlib.Path:
   d = pathlib.Path(tempfile.mkdtemp(prefix="gr-init-fix-"))
   shutil.copytree(ROOT / "tinybendygrad", d / "tinybendygrad", symlinks=True)
   if tree == "base":
-    src_port = BASE_TREE / PORT
-    got = md5(src_port)
+    got = md5(PREFIX_PORT)
     if got != MD5_BASE_TREE:
-      raise SystemExit(f"FROZEN BASE PORT MOVED: {PORT} md5 {got} != recorded {MD5_BASE_TREE}")
-    shutil.copy(src_port, d / "tinybendygrad" / PORT)
+      raise SystemExit(f"FROZEN PRE-FIX PORT MOVED: md5 {got} != recorded {MD5_BASE_TREE}")
+    shutil.copy(PREFIX_PORT, d / "tinybendygrad" / PORT)
   (d / ".agents" / "slop").mkdir(parents=True)
   src_probe = OLD_PROBE if probe == "old" else ROOT / ".agents" / "slop" / PROBE
   shutil.copy(src_probe, d / ".agents" / "slop" / PROBE)
@@ -264,7 +293,8 @@ def main() -> int:
   print()
 
   print(f"ports md5-verified: base={MD5_BASE_TREE[:12]} live={MD5_LIVE_TREE[:12]}")
-  print("substrate for every stage is the LIVE tree; BASE swaps in one file (the port) and the old probe.")
+  print("substrate for every stage is the LIVE tree; BASE swaps in the frozen PRE-FIX port\n"
+        "(`runs/gr-init/base/.agents-prefix-port.bend`) and the old probe.")
   print()
   print("=" * 122)
   print(f"{'stage':13} | {'repl (the printed gate row)':44} | d | {'is_orig':9} | {'srcs':31} | "
@@ -340,6 +370,12 @@ def main() -> int:
     print(f"    {k:>2} {5 + k:>14} {r.get('new_sink','<no row>'):>9}  "
           f"{'OK ' if norm(repl) == norm(PY['repl']) else 'BAD'} {repl}")
   print()
+  dead_same = all(norm(out["C-deadcode"].get(k, "")) == norm(out["B-both"].get(k, ""))
+                  for k in set(out["B-both"]) | set(out["C-deadcode"]))
+  print(f"    C-deadcode  re-inserting the 4 DELETED defs: "
+        f"{'MOVED NOTHING, so they were dead' if dead_same else 'MOVED A ROW -- they were NOT dead'}")
+  print()
+
   print("MUTATIONS, with the rows they moved by name:")
   for name in ("M-drop-arena", "M-u", "M-u-norule"):
     moved = [k for k in GATE_ROWS + (CONTROL_ROW,) + PORT_ONLY

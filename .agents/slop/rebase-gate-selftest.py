@@ -413,7 +413,11 @@ def superset():
     n, o = fixed(text), old(text)
     dropped = sorted(k for k in o if k not in n)
     changed = sorted(k for k in o if k in n and o[k] != n[k])
-    folded = all(o[k].startswith(n[k] + g.PY_TAIL) for k in changed)
+    # `left` already carries the `]` that PY_TAIL opens with, so the boundary as a SUFFIX of it is
+    # PY_TAIL minus that bracket. Asserting the wrong one reports 0 folds out of 450 folds, which
+    # is a check that fails to check -- and it did, once.
+    mark = g.PY_TAIL.removeprefix("]")
+    folded = all(o[k].startswith(n[k]) and o[k][len(n[k]):].startswith(mark) for k in changed)
     detail = (f"{label}: old={len(o)} new={len(n)} +{len(set(n) - set(o))} -{len(dropped)} "
               f"revalued={len(changed)} every_revalue_is_a_py_fold={folded} dropped={dropped[:4]}")
     return (not dropped or all(not k for k in dropped)), folded, detail
@@ -424,20 +428,27 @@ def superset():
            "load=0\n"                                  # F1: tight, and a value that is not empty
            "empty value row=0\n"                       # F1: EMPTY VALUE, which IS a row
            "= trailing equals in the value\n"          # empty name again
-           "whitespace row  a value\n"                 # F3: no `=` at all
+           "pm_len          25\n"                 # F3: ONE token, a two-space gap, no `=`
            "fp8e4m3\t10\t8\t1\n"                       # TSV: a table, NOT a row
            "ERROR: two  spaces in prose\n"             # prose, NOT a row
            "load=1\n")                                 # a MOVE, to catch value drift
   keep, folded, detail = superset_of(SYNTH, "synthetic")
   ok("synthetic: every old key survives, and the only drops are empty-named", keep, detail)
   ok("synthetic: every changed value is a `py=` fold and nothing else", folded)
-  ok("synthetic: exactly the empty-named lines are dropped, and they were ONE key before",
-     set(old(SYNTH)) - set(fixed(SYNTH)) == {""} and len(old(SYNTH)) - len(fixed(SYNTH)) == 1,
+  ok("synthetic: the ONLY key dropped is the one empty-named `== SECTION ==` key, and the ONLY key "
+     "gained is the F3 row -- both stated by NAME, because a count here was what hid the "
+     "off-by-one for an hour",
+     set(old(SYNTH)) - set(fixed(SYNTH)) == {""}
+     and set(fixed(SYNTH)) - set(old(SYNTH)) == {"pm_len"},
      f"old keys {sorted(old(SYNTH))}\n        new keys {sorted(fixed(SYNTH))}")
-  ok("synthetic: the F3 row is READ (0 -> 1 more) and the TSV and prose lines are not",
-     "whitespace row" in fixed(SYNTH) and fixed(SYNTH)["whitespace row"] == "a value"
-     and "fp8e4m3" not in fixed(SYNTH) and "ERROR:" not in fixed(SYNTH),
+  ok("synthetic: the F3 row is READ (0 -> 1 more), and the TSV and prose lines are not",
+     fixed(SYNTH).get("pm_len") == "25" and "fp8e4m3" not in fixed(SYNTH)
+     and "ERROR:" not in fixed(SYNTH) and "load" in fixed(SYNTH),
      f"new keys {sorted(fixed(SYNTH))}")
+  ok("synthetic: a MULTI-token 'name' with a two-space gap is NOT a row -- otherwise the gap and "
+     "the name are the same character and the row has no name",
+     "multi" not in {k.split()[0] for k in fixed(SYNTH + "two words  a value\n")},
+     f"parsed {sorted(fixed(SYNTH + 'two words  a value\\n'))}")
 
   # ---- PART 2, real lanes. Both parsers on the same stdout, both counts printed.
   py = oracle_py.resolve()[0]
@@ -512,12 +523,22 @@ def superset():
      f"{measured} of {2 * len(SUPERSET_LANES)} lanes measured")
 
   # ---- PART 3b, THE NEGATIVE: a table is not a row set, and this is the reason F3 wants SPACES.
+  # RUN RAW, NOT THROUGH lane_text(). lane_text() RE-RUNS A LANE UNTIL IT PARSES NON-EMPTY and
+  # returns "" otherwise -- correct for a lane being measured, and exactly wrong here: the whole
+  # claim is that this lane parses to nothing, so lane_text() would discard 14,774 real lines and
+  # the check would then pass VACUOUSLY on an empty string, reporting "0 lines" where the truth is
+  # 14,774. A check that can pass by measuring nothing is the thing this file exists to prevent.
   tsv_spec, tsv_port = TSV_ORACLE
-  tsv = lane_text([py, *tsv_spec.split()], tsv_spec, env=env, timeout=600) or ""
-  ok(f"a {tsv_port.split('/')[-1]} TSV oracle stays at ZERO rows, and does not become 14,774 claims",
-     not tsv or not fixed(tsv),
-     f"{len(tsv.splitlines())} TSV lines -> {len(fixed(tsv))} rows (old parser: "
-     f"{len(old(tsv))}); a gap of TABS is a table cell, not a row name")
+  raw = load_scan().run([py, *tsv_spec.split()], env=env, timeout=600)
+  tsv = raw.stdout if raw is not None else ""
+  n_tsv, n_old = len(fixed(tsv)), len(old(tsv))
+  ok(f"the {tsv_port.split('/')[-1]} TSV oracle really ran, so its 0 is a MEASUREMENT",
+     bool(tsv) and raw.returncode == 0, f"rc={raw.returncode if raw else 'TIMEOUT'}")
+  ok(f"a TSV oracle stays at ZERO rows and does not become {len(tsv.splitlines())} claims",
+     bool(tsv) and n_tsv == 0 and n_old == 0,
+     f"{len(tsv.splitlines())} TSV lines -> {n_tsv} rows (old parser {n_old}); a gap of TABS is a "
+     f"table cell, not a row name. Unwitnessed: the lane is wired ON PURPOSE to be dead, and "
+     f"dtype.bend's own port prints nothing either")
 
   # ---- PART 4, the consequence, through the real gate_port() AND the real rows().
   # THE LANE ROWS ARE BUILT BY CALLING rows() ON TEXT. Handing gate_port() a dict with a "" key

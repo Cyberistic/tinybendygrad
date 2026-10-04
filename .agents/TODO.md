@@ -4718,6 +4718,60 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
       **The file is being rewritten by another agent RIGHT NOW** (268 -> 306 lines,
       printer changed mid-session), so REPORTED, NOT EDITED.
 
+- [x] **THE FIX ORDER WAS RIGHT AND IT IS NOW DONE: ARENA THREADED, THEN THE
+      SPURIOUS SINK RULE DROPPED. `codegen/__init__.bend` 361 -> 317 lines.**
+      Both stages MEASURED in order, not predicted
+      (`.agents/slop/codegen-init-measure.py`, 13 stages, every expectation
+      CALLED from CPython at run time):
+
+      | stage | `gr.new_sink_is_original` | `gr.new_sink_srcs` | printed `repl` row |
+      |---|---|---|---|
+      | BASE (pre-fix) | **1** FAIL | `PARAM(0),PARAM(1),ALLOC,` | `...SINK->SINK` |
+      | A-arena (threaded, rule PRESENT) | **1** FAIL | `PARAM(0),PARAM(1),ALLOC,` | `...SINK->SINK` |
+      | B-both (threaded, rule DROPPED) | **0** PASS | `PARAM(99),PARAM(100),BUFFER,` | `...SINK->SINK` |
+
+      **The printed row is byte-identical at all three stages** -- exactly the
+      blind spot the brief describes -- so the printed row alone could not
+      have ordered the work. `gr.new_sink_is_original` is what ordered it, and
+      it says the arena ALONE moves NOTHING: A-arena is still 1. The rule had
+      to go, and it could only go second.
+
+      **The signature.** `wr.rebuild` `-> Map<&2, U32>` became
+      `-> (O.Arena & Map<&2, U32>)`; `walk_rewrite`/`unified_rewrite`/
+      `graph_rewrite` `-> Maybe<&2, U32>` became
+      `-> (O.Arena & Maybe<&2, U32> & Map<&2, U32>)`. Three wrappers exist only
+      because a `match` may not destructure a computed value or a local binder:
+      `wr.rebuild.found`, `wr.step.rebuild`, `wr.step.of`. The known blockers
+      were real and all three named ones appeared: `(ar, +repl) = p` needs the
+      `+` INSIDE the destructuring (two reads), `R-3` forced the new sub-defs
+      ahead of their callers, and `+sink` was needed on `walk_rewrite.put`.
+
+      **The arena-length sweep** (`5 + K` nodes at the sink, K=0..5): the row is
+      CPython's at all six, and `new_sink` reads **8, 9, 10, 11, 12, 13** -- the
+      index tracking the arena length, which is the direct readout that the
+      threading is real. BASE swept the same lengths and printed `SINK->NOOP` at
+      every one.
+
+      **CONTROLS.** `C-comment` (comment-only edit): SAME on every row.
+      `C-deadcode` (re-inserting 4 deleted defs): MOVED NOTHING, so they were
+      dead -- `gr_show.topo.k`/`.k.of`/`.topo` and `gr_show.repl.kv`, 18 lines,
+      called by nothing in the tree.
+
+      **MUTATIONS.** `M-drop-arena` (`wr.rebuild.found` returns
+      `O.Arena.empty()`) moves `repl`, `new_sink_is_original`, `new_sink_srcs`,
+      `new_sink_op`, `new_sink` -- all five. `M-u` and `M-u-norule` move nothing,
+      which is the pre-existing closed case, re-measured on the FIXED file.
+
+      **A NEAR-MISS WORTH RECORDING.** The pre-fix port was never committed (it
+      was the previous unit's working copy), and refreshing `runs/gr-init/base`
+      to the landed file destroyed the only copy of the "before" state. It was
+      recovered BYTE-EXACT from an earlier scratch tree and md5-verified back to
+      `083c05ff6013` -- and the reconstruction I first typed by hand had the
+      right 361 lines and the WRONG md5, which is why the md5 assertion is the
+      check and the line count is not. It now lives as ONE frozen FILE,
+      `runs/gr-init/base/.agents-prefix-port.bend`; `base/tinybendygrad/` is a
+      live mirror of the tree, not an archive.
+
 - [x] **THE FIXTURE, LANDED IN MY OWN FILE: `gr.sink_srcs`.**
       `.agents/slop/unobservable-gr-probe.bend` imports the port and prints the
       op+slot sequence of the node the engine RETURNS. Expected value CALLED from
@@ -4726,6 +4780,31 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
       `PARAM(0),PARAM(1),ALLOC`, `u`->`rebuilt` `-`, SINK-rule-dropped `-`.
       **3 distinct answers, so the row MOVES.** None matches CPython yet, which is
       the point: the probe exposes the spurious rule AND the arena wall at once.
+      **It now reads CPython's answer.** After the arena threading + the rule
+      drop, the same probe prints `PARAM(99),PARAM(100),BUFFER,` -- verified in
+      a scratch tree, `rc 0`.
+      **ACTION FOR ITS OWNER (NOT MINE, NOT EDITED):**
+      `unobservable-gr-probe.bend:141-142` calls
+      `main.call.of(ar, sink, G.walk_rewrite(ar, sink, pm, ctx))` and no longer
+      typechecks -- `walk_rewrite` returns the grown arena with the sink, and
+      that arena is the one the srcs row must be read against. Three-line fix,
+      MEASURED WORKING:
+
+          # `G.walk_rewrite` now returns the fold's GROWN arena with the sink,
+          # because a bare index names nothing outside the arena that interned
+          # it. That arena is also the one the srcs row must be read against.
+          def main.call.of2(+ar: O.Arena, r: Maybe<&2, U32>) -> IO(Unit):
+            main.show.of(ar, r, 0)
+
+          def main.call.fold(sink: U32, p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>)) -> IO(Unit):
+            (ar, (r, _)) = p
+            main.call.of2(ar, r)
+
+          def main.call(+ar: O.Arena, +sink: U32, pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
+            main.call.fold(sink, G.walk_rewrite(ar, sink, pm, ctx))
+
+      Note `sink` becomes UNUSED in `main.call.fold` -- that is correct, the
+      sink index is not needed to read the srcs of the returned node.
 
 - [x] **`u` vs `rebuilt` IS A CLOSED CASE UPSTREAM, WITH A PROOF.**
       `unobservable-gr-oracle.py` transcribes upstream's driver with ONE token

@@ -1,28 +1,45 @@
 # tinybendygrad/codegen/__init__.bend -- port of tinygrad/codegen/__init__.py
 #
 # ============================================================================
-# STATUS: WALL PARTIALLY BROKEN. The rewrite engine's MLIR-style
-# `walk_rewrite` (single-pass driver) compiles and runs. `unified_rewrite`
-# (the fixpoint driver) ships as a wall: it always returns `walk_rewrite`'s
-# result, no actual fixpoint. The 3-stage worklist is a future unit. The
-# test fixture, the rule body, and the engine's `pm_post_sched_cache`
-# table are in this commit; the gate prints the rebuilt graph op/src/arg
-# per node, byte-for-byte comparable to the CPython oracle.
+# STATUS. `walk_rewrite` (the MLIR-style single-pass driver) runs over an
+# arena and returns the rebuilt sink ADDRESSED IN THAT ARENA. `unified_rewrite`
+# (the fixpoint driver) ships as a wall: it returns `walk_rewrite`'s result,
+# no actual fixpoint. The 3-stage worklist is a future unit.
 #
 # This file is the rewrite engine's SHAPE. The `pm_rewrite_m`/
 # `pm_dispatch_m` family in `uop/ops.bend` returns `Maybe<&2, U32>` (the
-# new node, or `None{}`); the engine in this file drives that family over
-# a toposorted graph and rebuilds the result. `pm_post_sched_cache` is
-# the smallest test case (PARAM and ALLOC) and is the spec's example for
-# this unit.
+# new node, or `None{}`); the engine here drives that family over a toposorted
+# graph and rebuilds the result. `pm_post_sched_cache` is the smallest test
+# case (PARAM and ALLOC) and the spec's example.
 #
-# BEND NAMING RULE, observed (and appended to bend2-constraints.md as
-# R-3): a sub-namespace def (`name.subname`) must be declared BEFORE the
-# parent `def name` that calls it. The reverse order compiles, but every
-# call to the sub-def is reported as "an unfilled law is a dead claim:
-# live code cannot use it" -- a useful error once you know what it
-# means, hostile until you do. The order below obeys this rule (leaves
-# first, parents last).
+# AN INDEX IS ONLY MEANINGFUL IN THE ARENA THAT PRODUCED IT. `O.UOp.new` is
+# `+`: it grows the arena and hands back `O.Found{ar, i}` with the GROWN
+# arena in `ar`. So the fold's accumulator is `(O.Arena & Map<&2, U32>)` and
+# `walk_rewrite` returns `(O.Arena & Maybe<&2, U32> & Map<&2, U32>)` -- one
+# arena, one fold, so every index printed is read out of the arena that
+# interned it. Returning the index ALONE was the bug this shape exists to
+# prevent: `O.Arena.node` is TOTAL (`at(i)` or the arena bottom), so a stale
+# index does not fail -- it reads back as `NOOP`, no srcs, which is a
+# plausible value and a silently wrong answer. `.agents/slop/` has four
+# measurements of that same wall in `codegen/decomp/dtype.bend`.
+#
+# THE REBUILD ORDER IS REBUILD THEN RULE, but the rule is tried on `u`, the
+# ORIGINAL node. Upstream tries it on the REBUILT one (ops.py:1812). For
+# `pm_post_sched_cache` the two arguments are the same object, so it is
+# unobservable: both of upstream's patterns are bare `UPat(Ops.X)` with no
+# `src=` clause (so neither can read a src), and ops.py:1810 hands back `n`
+# itself whenever `new_src == n.src`, which is every src-free node. MEASURED
+# over a 10-fixture sweep, the two spellings are byte-identical on all 10
+# (`.agents/slop/unobservable-gr-oracle.py` Q1). No fixture over this table
+# can separate them, so the divergence is recorded here rather than fixed.
+#
+# A rule that fires (`Some{}`) overwrites `u` in `repl`; a rule that misses
+# (`None{}`) leaves the rebuilt node there instead.
+#
+# BEND NAMING RULE, observed (and appended to bend2-constraints.md as R-3):
+# a sub-namespace def (`name.subname`) must be declared BEFORE the parent
+# `def name` that calls it. The order below obeys this rule (leaves first,
+# parents last).
 # ============================================================================
 
 import Base
@@ -33,63 +50,15 @@ import ./../LAWS/spec.bend as S
 
 
 # ============================================================================
-# THE HELPER NAMESPACE `wr.*`. The BEND NAMING RULE requires every sub-def
-# to be declared BEFORE its caller, so the order is bottom-up:
-#   rebuild.go (leaf)   -- fold over a node's srcs, looking each up in `repl`
-#   step.try_rule       -- the rule-result match: Some -> overwrite, None -> keep
-#   step.scan (sub)     -- try the rule on `u`
-#   step.seen.go (sub)  -- call scan, handing on the rebuilt node
-#   step.seen (sub)     -- seen? skip / rebuild + rule
-#   step (parent)       -- per-node entry
-#   go (parent)         -- fold over the toposort list
+# THE HELPER NAMESPACE `wr.*`. Bottom-up (R-3): every sub-def before its
+# caller.
 #
-# WHAT THE CODE DOES, which is not what an earlier version of this comment
-# said. The order is REBUILD THEN RULE, but the rule is tried on `u`, the
-# ORIGINAL node -- `wr.step.scan` passes `u` to `pm_rewrite_m`, and the
-# `rebuilt` node is only what `try_rule` falls back to. Upstream tries the
-# rule on the rebuilt node (ops.py:1812). For THIS table the two arguments
-# are the same object, so it is unobservable: both `pm_post_sched_cache`
-# patterns are bare `UPat(Ops.X)` with no `src=` clause (so neither can read
-# a src), and ops.py:1810 hands back `n` itself whenever `new_src == n.src`,
-# which is every src-free node. MEASURED over a 10-fixture sweep, the two
-# spellings are byte-identical on all 10
-# (`.agents/slop/unobservable-gr-oracle.py` Q1). No fixture over this table
-# can separate them, so the divergence is recorded here rather than fixed.
-#
-# A rule that fires (`Some{}`) overwrites `u` in `repl`; a rule that misses
-# (`None{}`) leaves the rebuilt node there instead.
-#
-# ARENA GROWTH WALL, and what it forces on the rule table. `O.UOp.new` is `+`
-# and returns `O.Found{ar, i}` with the GROWN arena; `wr.rebuild` below keeps
-# only `Found.i`, so a rebuilt index addresses an arena the engine no longer
-# holds and reads back as the arena bottom (`NOOP`, no srcs). Upstream's
-# `new_n` is a live object, so this costs nothing there.
-#
-# THE THIRD RULE EXISTS ONLY BECAUSE OF THAT WALL. `pm_post_sched_cache` here
-# carries a `SINK -> Some{self}` entry that upstream's table does not have
-# (upstream's is exactly two rules -- see the table at the bottom of this
-# file). It records `repl[sink] = sink`, which is what stops the lost-arena
-# index from printing as `SINK->NOOP`. So it is load-bearing for the printed
-# row and wrong on the facts that row throws away:
-#
-#   row                          CPython    BASE      M-norule
-#   repl's SINK pair             SINK->SINK SINK->SINK SINK->NOOP   <- removal is WORSE
-#   new_sink_is_original         0          1         0          <- removal is BETTER
-#   new_sink_srcs                PARAM(99), PARAM(0),  -           <- blocked on the wall
-#                                PARAM(100) PARAM(1),  (unreadable)
-#                                BUFFER     ALLOC
-#
-# All three columns are MEASURED against CPython called live
-# (`.agents/slop/codegen-init-oracle.py`, values re-derived per run by
-# `.agents/slop/codegen-init-measure.py`, which patches a frozen copy in
-# `runs/gr-init/base`, never this tree). Removing the third entry is the
-# upstream-faithful move and it fixes the identity; it cannot be landed
-# alone, because `rebuilt` is unreadable until the arena is threaded out of
-# `wr.rebuild`. THAT is the wall to break, and its name is
-# `walk_rewrite`'s return type: a bare `Maybe<&2, U32>` cannot carry the arena
-# `UOp.new` grew. The type `(O.Arena & Map<&2, U32>)` typechecks for the
-# fold, so the fix is mechanical and mechanical-sized -- but it changes this
-# engine's whole interface, so it is a rewrite-engine unit, not a comment fix.
+# The fold's state is the PAIR `(ar, repl)` because `wr.rebuild` mints. Three
+# wrappers exist only because a `match` may not destructure a computed value
+# or a local binder -- a pair is destructurable only as a PARAMETER:
+#   wr.rebuild.found -- `O.Found` -> `(ar, repl)`, out of `O.UOp.new`
+#   wr.step.rebuild  -- `(ar, repl)` -> `(ar, rebuilt, repl)`
+#   wr.step.of       -- that triple -> `(ar, repl)` with the rule applied
 # ============================================================================
 
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
@@ -101,6 +70,16 @@ def wr.rebuild.go(+srcs: List<&2, U32>, +ar: O.Arena, +u: U32, +repl: Map<&2, U3
     case +s <> t:
       wr.rebuild.go(t, ar, u, repl, List.append(&2, U32, acc, [R.cu32(repl, s)]))
 
+# Mint a new node with the rewritten srcs, and record `u -> i` in the map.
+# The grown arena is the `Found.ar` half of `O.UOp.new` and it is THREADED,
+# not dropped (see the header).
+def wr.rebuild.found(f: O.Found, u: U32, repl: Map<&2, U32>) -> (O.Arena & Map<&2, U32>):
+  match f:
+    case O.Found{ar, i}: (ar, Map.set(&2, U32, repl, U32.show(u), i))
+
+def wr.rebuild(+ar: O.Arena, +u: U32, +repl: Map<&2, U32>) -> (O.Arena & Map<&2, U32>):
+  wr.rebuild.found(O.UOp.new(ar, O.Arena.op(ar, u), wr.rebuild.go(O.Arena.srcs(ar, u), ar, u, repl, Nil{}), O.Arena.arg(ar, u), O.Arena.tag(ar, u)), u, repl)
+
 # The rule-result match. A rule fired (`Some{new_u}`): overwrite the
 # rebuilt node in `repl`. No rule fired (`None{}`): keep the rebuilt
 # node (the map already has `u -> rebuilt` from the rebuild).
@@ -109,34 +88,35 @@ def wr.step.try_rule(+u: U32, r: Maybe<&2, U32>, repl: Map<&2, U32>, rebuilt: U3
     case Some{new_u}: Map.set(&2, U32, repl, U32.show(u), new_u)
     case None{}: Map.set(&2, U32, repl, U32.show(u), rebuilt)
 
-# Mint a new node with the rewritten srcs. Returns the new repl map
-# with `u -> O.Found.i(new_node)` recorded. The grown arena is in
-# `Found.ar`; the engine discards it (see ARENA GROWTH WALL in the
-# header).
-def wr.rebuild(+ar: O.Arena, +u: U32, +repl: Map<&2, U32>) -> Map<&2, U32>:
-  Map.set(&2, U32, repl, U32.show(u), O.Found.i(O.UOp.new(ar, O.Arena.op(ar, u), wr.rebuild.go(O.Arena.srcs(ar, u), ar, u, repl, Nil{}), O.Arena.arg(ar, u), O.Arena.tag(ar, u))))
+# `rebuilt` is `repl[u]` read in the REBUILD'S OWN map -- which is why it is
+# read here and not carried out of `wr.rebuild`: the map is the record of the
+# interned node, so one lookup answers it and the pair stays a pair.
+def wr.step.rebuild(u: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & U32 & Map<&2, U32>):
+  (ar, +repl) = p
+  (ar, R.cu32(repl, u), repl)
 
-# Per-node entry. seen? skip. Else, rebuild, then try the rule -- ON `u`, the
-# ORIGINAL node, which is what upstream tries it on only when `new_src` was
-# unchanged (ops.py:1810 hands back `n` itself, so for this table the two
-# spellings coincide; see the header). `rebuilt` is NOT what the rule reads;
-# it is only what `try_rule` falls back to when no rule fires. The rebuilt
-# map is `repl_after` (with `u -> rebuilt_idx`); the rule's answer overwrites
-# `u`.
 def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, u, ctx), repl, rebuilt)
 
 def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.scan(ar, pm, u, repl, ctx, rebuilt)
 
-def wr.step(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
-  wr.step.seen.go(ar, pm, u, repl, ctx, R.cu32(wr.rebuild(ar, u, repl), u))
+# The triple in, the pair out, with the rule applied. `rebuilt` is NOT what the
+# rule reads; it is only what `try_rule` falls back to when no rule fires. The
+# rule is tried on `u`, the ORIGINAL node (see the header).
+def wr.step.of(+pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, p: (O.Arena & U32 & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+  (+ar, rebuilt, repl) = p
+  (ar, wr.step.seen.go(ar, pm, u, repl, ctx, rebuilt))
 
-# Fold over the toposort list. Returns the replace map.
-def wr.go(lst: List<&2, U32>, +ar: O.Arena, +pm: O.PMEntrys, +repl: Map<&2, U32>, +ctx: List<&2, U32>) -> Map<&2, U32>:
+def wr.step(+pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+  (ar, repl) = acc
+  wr.step.of(pm, u, ctx, wr.step.rebuild(u, wr.rebuild(ar, u, repl)))
+
+# Fold over the toposort list. Returns the grown arena and the replace map.
+def wr.go(lst: List<&2, U32>, +pm: O.PMEntrys, +ctx: List<&2, U32>, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
   match lst:
-    case Nil{}: repl
-    case +u <> t: wr.go(t, ar, pm, wr.step(ar, pm, u, repl, ctx), ctx)
+    case Nil{}: acc
+    case +u <> t: wr.go(t, pm, ctx, wr.step(pm, u, ctx, acc))
 
 
 # ============================================================================
@@ -148,15 +128,23 @@ def walk_rewrite.of(sink: U32, u: U32) -> Maybe<&2, U32>:
     case 0: None{}
     case _: Some{u}
 
-# `walk_rewrite` is the MLIR-style single-pass driver. Returns the rebuilt sink.
-def walk_rewrite(+ar: O.Arena, +sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -> Maybe<&2, U32>:
-  # `ctx` is a `List<&2, U32>` here because the engine does not yet own
-  # a typed context record. The codegen pipeline passes the real `ctx`
-  # as a single arena-indexed U32 (the `ctx[0]` from Python's
-  # `RewriteContext`), and the rule bodies read it back as such. This
-  # untyped `List<&2, U32>` is the wall-passing shape until the typed
-  # `CTX` record lands.
-  walk_rewrite.of(sink, R.cu32(wr.go(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), ar, pm, Map.new(&2, U32), ctx), sink))
+# The rebuilt sink, in the fold's arena, plus the replace map. All three
+# come from ONE `wr.go` call: two calls off the same starting arena would
+# each grow their own copy, and the two copies number their new nodes
+# differently.
+def walk_rewrite.put(+sink: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  (ar, +repl) = p
+  (ar, (walk_rewrite.of(sink, R.cu32(repl, sink)), repl))
+
+# `walk_rewrite` is the MLIR-style single-pass driver (ops.py:1790).
+#
+# `ctx` is a `List<&2, U32>` here because the engine does not yet own a typed
+# context record. The codegen pipeline passes the real `ctx` as a single
+# arena-indexed U32 (the `ctx[0]` from Python's `RewriteContext`), and the
+# rule bodies read it back as such. This untyped `List<&2, U32>` is the
+# wall-passing shape until the typed `CTX` record lands.
+def walk_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  walk_rewrite.put(sink, wr.go(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), pm, ctx, (ar, Map.new(&2, U32))))
 
 
 # `unified_rewrite` -- the fixpoint driver. WALL. The Python driver is a
@@ -172,45 +160,39 @@ def walk_rewrite(+ar: O.Arena, +sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -
 # the wall: a single pass that always returns the same as `walk_rewrite`.
 # A wall that compiles and a gate that runs is more useful than a
 # fixpoint that doesn't.
-def unified_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -> Maybe<&2, U32>:
+def unified_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite(ar, sink, pm, ctx)
 
 # `graph_rewrite` -- the dispatcher. Wall.
-def graph_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>, walk: Bool) -> Maybe<&2, U32>:
-  None{}
+def graph_rewrite(ar: O.Arena, sink: U32, pm: O.PMEntrys, ctx: List<&2, U32>, walk: Bool) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  (ar, (None{}, Map.new(&2, U32)))
 
 
 # ============================================================================
 # THE GATE: build the smallest `pm_post_sched_cache` fixture, run
 # `walk_rewrite` over it, and print the repl map (old_index ->
-# new_index). The CPython oracle at `.agents/slop/gr-oracle.py` prints
-# the same shape for the same fixture; the diff is the gate.
+# new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`
+# prints the same shape for the same fixture; the diff is the gate.
 # ============================================================================
 
-# The rule table. THREE entries here, TWO upstream -- and the third is the
-# whole of the divergence, so it is named rather than counted away.
+# The rule table. TWO entries, and TWO upstream: `pm_post_sched_cache` at
+# `tinygrad/schedule/__init__.py:96-101` is a `PatternMatcher` of exactly two
+# patterns, read off the objects and not off the text
+# (`codegen-init-oracle.py` Q1), and neither carries a `src=` clause. The
+# reject sets here are empty, which is also upstream's: both of its `UPat`s
+# are field-less.
 #
 #   tag 3 PARAM  upstream rule 0: `UPat(Ops.PARAM)`, `ctx[1][slot] if slot >= 0 else None`
 #   tag 4 ALLOC  upstream rule 1: `UPat(Ops.ALLOC)`, `create_new_buffer`
-#   tag 0 SINK   THE PORT'S. `pm_dispatch_m`'s case 0 -> `pm_r_sink_m` ->
-#                `Some{self}`, i.e. "a SINK rewrites to itself".
-#
-# Upstream's table is `tinygrad/schedule/__init__.py:96-101` and has exactly
-# two patterns, read off the objects rather than off the text: PARAM then
-# ALLOC, neither with a `src=` clause. The reject sets here are empty, which
-# is also upstream's: both of its `UPat`s are field-less.
-#
-# The SINK entry exists to hide ARENA GROWTH WALL (see the header): without
-# it the SINK's rebuilt index is unreadable and the gate prints `SINK->NOOP`.
-# It is measurably wrong on the two facts the printed row cannot see, and
-# measurably load-bearing on the one it can. The header carries the table.
 def pm_post_sched_cache() -> O.PMEntrys:
-  O.PMEntrys{[O.PMEntry{0, [O.OpsSINK{}], Nil{}}, O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}
+  O.PMEntrys{[O.PMEntry{3, [O.OpsPARAM{}], Nil{}}, O.PMEntry{4, [O.OpsALLOC{}], Nil{}}]}
 
 # A dummy PARAM that the ctx carries. The minimal printable form is
 # `AParam{slot=N, dtype=int32, ...}`; the rest of the fields default to
 # `None{}`/`False{}`. Two of these (slots 99 and 100) are the "A" and
-# "B" in the test ctx.
+# "B" in the test ctx. IDENTICAL to `test_param` below; they are the same
+# def under the two names the two call sites use, kept apart because the
+# fixture's slot and the ctx's slot are different facts.
 def ctx_param(ar: O.Arena, slot: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
     O.AParam{O.ParamArg{slot, S.int32(),
@@ -239,10 +221,7 @@ def test_buffer(ar: O.Arena) -> O.Found:
 def fixture.sink(ar: O.Arena, p0: U32, p1: U32, a: U32) -> O.Found:
   O.UOp.sink(ar, [p0, p1, a])
 
-def gr_show.repl.kv(k: String, v: U32) -> String:
-  String.concat([k, "->", U32.show(v)])
-
-# A node's printable form is `OP(slot=N)` for PARAM and BUFFER and the bare
+# A node's printable form is `OP(slot=N)` for PARAM and the bare
 # OP name otherwise, which is CPython's `uop_short` in `gr-oracle.py`. The
 # printer needs the ARENA to read the op and the arg, so it is threaded
 # through: an arena index alone names nothing outside this file, and the
@@ -289,32 +268,14 @@ def gr_show.repl.go(ar: O.Arena, +m: Map<&2, U32>, topo: List<&2, U32>) -> Strin
 
 # Print the repl map as a comma-separated list of `OP(slot)->OP(slot)` pairs,
 # one per toposort node. NAMES, not indices: the oracle prints names, so an
-# index would be a diff of two unrelated numberings.
+# index would be a diff of two unrelated numberings. The arena is the FOLD'S
+# grown arena -- the map's values are indexes into it.
 def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   gr_show.repl.go(ar, m, topo)
 
-# Show the toposort as a comma-separated list of U32s. A direct
-# recursive fold on the list. The recursion is on `rest` (the
-# smaller tail), which is a subterm of `t` (R-4's "passed
-# unchanged until one shrinks"). The accumulator `acc` threads
-# through without violating the `+` affine rule.
-def gr_show.topo.k(rest: List<&2, U32>, acc: String) -> String:
-  match rest:
-    case Nil{}: acc
-    case v <> t: gr_show.topo.k(t, String.concat([acc, U32.show(v), ","]))
-
-def gr_show.topo.k.of(t: List<&2, U32>, acc: String, u: U32) -> String:
-  gr_show.topo.k(t, String.concat([acc, U32.show(u), ","]))
-
-def gr_show.topo(topo: List<&2, U32>) -> String:
-  match topo:
-    case Nil{}: ""
-    case u <> t: gr_show.topo.k.of(t, "", u)
-
 # Build the full fixture and the ctx; the gate runs `walk_rewrite` and
-# prints the repl map. The `+ar` is consumed once per `walk_rewrite`
-# /`wr.go`/`toposort` call, so the three calls each take a `+ar` and
-# the per-step result is bound through a sub-def.
+# prints the repl map. `walk_rewrite` hands back the fold's grown arena with
+# the sink and the map, so ONE call prints every row from one arena.
 def main.run.show.go(r: Maybe<&2, U32>, repl_s: String) -> IO(Unit):
   match r:
     case Some{new_sink}: IO.print(String.concat(["new_sink=", U32.show(new_sink), " repl=", repl_s]))
@@ -326,17 +287,12 @@ def main.run.show.of(r: Maybe<&2, U32>, repl_s: String) -> IO(Unit):
 def main.run.show(+ar: O.Arena, r: Maybe<&2, U32>, repl: Map<&2, U32>, topo: List<&2, U32>) -> IO(Unit):
   main.run.show.of(r, gr_show.repl(ar, repl, topo))
 
-def main.run.call.of.show(+ar: O.Arena, r: Maybe<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
-  main.run.show(ar, r, repl, topo)
+def main.run(t: List<&2, U32>, p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>)) -> IO(Unit):
+  (ar, (r, repl)) = p
+  main.run.show(ar, r, repl, t)
 
-def main.run.call.of(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, repl: Map<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
-  main.run.call.of.show(ar, walk_rewrite(ar, sink, pm, ctx), repl, topo)
-
-def main.run.call(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +topo: List<&2, U32>) -> IO(Unit):
-  main.run.call.of(ar, sink, pm, ctx, wr.go(topo, ar, pm, Map.new(&2, U32), ctx), topo)
-
-def main.run(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
-  main.run.call(ar, sink, pm, ctx, O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink))
+def main.walk(t: List<&2, U32>, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
+  main.run(t, walk_rewrite(ar, sink, pm, ctx))
 
 def main() -> IO(Unit):
   # Build the fixture: a SINK[PARAM{0}, PARAM{1}, ALLOC]. `ar` grows as
@@ -350,12 +306,13 @@ def main() -> IO(Unit):
   # Build the ctx: [A, B, buf]. A and B are dummy PARAMs (slots 99 and
   # 100) that the PARAM rule returns when the original node's slot is
   # 0 or 1. `buf` is a pre-minted BUFFER that the ALLOC rule returns.
-  # The engine cannot mint in a rule body (the new arena is lost in
-  # the fold), so all rule-replacement nodes must be pre-minted and
-  # threaded through `ctx`.
+  # The engine cannot mint in a rule body (`pm_rewrite_m` consumes the
+  # arena and returns only a `Maybe`), so all rule-replacement nodes must
+  # be pre-minted and threaded through `ctx`.
   +ca = ctx_param(O.Found.ar(sk), 99)
   +cb = ctx_param(O.Found.ar(ca), 100)
   +bf = test_buffer(O.Found.ar(cb))
   ctx: List<&2, U32> = [O.Found.i(ca), O.Found.i(cb), O.Found.i(bf)]
 
-  main.run(O.Found.ar(bf), O.Found.i(sk), pm_post_sched_cache(), ctx)
+  main.walk(O.UOp.toposort(U32.to_nat(O.Arena.next(O.Found.ar(bf))), O.Found.ar(bf), O.Found.i(sk)),
+            O.Found.ar(bf), O.Found.i(sk), pm_post_sched_cache(), ctx)

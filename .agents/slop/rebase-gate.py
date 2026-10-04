@@ -710,7 +710,11 @@ def verdict(bend, oracle, base, hunks, native=True):
     # two kinds are separated and COUNTED, with the denominator both times: a RE-PORTED that is
     # 450 folds of 450 is a READER change, and one that is 450 folds of 452 has two real rows in
     # it that the folds are hiding. Neither number can be typed; both are computed here.
-    folds = sum(1 for _, _, was, have in moved if was.startswith(have + PY_TAIL))
+    # `left` ALREADY CARRIES the `]` that PY_TAIL opens with, so the boundary as a SUFFIX of
+    # `left` is PY_TAIL without it. Getting this wrong reports 0 folds out of 450 folds, which is
+    # the failure a control exists to prevent -- it is stated here because it happened.
+    folds = sum(1 for _, _, was, have in moved
+                if was.startswith(have) and was[len(have):].startswith(PY_TAIL.removeprefix("]")))
     v["moved_note"] = (f"{folds} of the {len(moved)} are this reader's `py=` fold"
                        f" ({len(moved) - folds} are not) -- a fold is a READER change, not a port "
                        f"change, and the latter is what RE-PORTED is for")

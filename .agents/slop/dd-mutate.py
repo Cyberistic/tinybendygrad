@@ -294,6 +294,29 @@ MUTATIONS = [
     ("M36 l2i_cdiv.uns: put the remainder back on the CDIV arm (the defect M36 found)",
      "  match isdiv:\n    case True{}: W2{ar, Cd.q0(c), Cd.q1(c)}\n    case False{}: W2{ar, Cd.r0(c), Cd.r1(c)}",
      "  match isdiv:\n    case True{}: W2{ar, Cd.r0(c), Cd.r1(c)}\n    case False{}: W2{ar, Cd.q0(c), Cd.q1(c)}"),
+    # --- THE TWO SITES THAT HAD NO MUTATION AT ALL.  `l2idt0 l2idt1` and
+    # `f2fdt0..8` are 11 of the 23 rows the previous table's "ROWS NO MUTATION
+    # MOVED" section could only describe as "no mutation aimed at them", which is a
+    # gap in the TABLE and not a fact about the gate.  Both sites are LIVE --
+    # dd-mut-proof.py REFUSES to rename `l2i_dt` or `f2f_dt` -- so a zero here
+    # would have been a real zero about a live site.  The previous report CLAIMED a
+    # value swap "would move" them; that claim is MEASURED here rather than
+    # inherited.  See dd-mutations-report.md.
+    ("M37 l2i_dt.wide: swap the SIGNED and UNSIGNED answers",
+      "        case S.CSint{}: Some{S.int32()}\n        case S.CUint{}: Some{S.uint32()}",
+      "        case S.CSint{}: Some{S.uint32()}\n        case S.CUint{}: Some{S.int32()}"),
+    ("M38 l2i_dt: the 64-bit test answers the 32-bit half",
+      "    case S.Dt{pri, +bits, +cls, nm}: l2i_dt.wide(U32.is_eq(bits, 64), cls)",
+      "    case S.Dt{pri, +bits, +cls, nm}: l2i_dt.wide(U32.is_eq(bits, 32), cls)"),
+    ("M39 f2f_dt.w: swap the 8-bit and 16-bit answers",
+      "    case 8: Some{S.uint8()}\n    case 16: Some{S.uint16()}",
+      "    case 8: Some{S.uint16()}\n    case 16: Some{S.uint8()}"),
+    ("M40 f2f_dt.w: swap the 32-bit and 64-bit answers",
+      "    case 32: Some{S.uint32()}\n    case 64: Some{S.uint64()}",
+      "    case 32: Some{S.uint64()}\n    case 64: Some{S.uint32()}"),
+    ("M41 f2f_dt.of: the float test never refuses",
+      "def f2f_dt.of(ok: Bool, m: Maybe<&2, S.Dt>) -> Maybe<&2, S.Dt>:\n  match ok:\n    case True{}: m\n    case False{}: None{}",
+      "def f2f_dt.of(ok: Bool, m: Maybe<&2, S.Dt>) -> Maybe<&2, S.Dt>:\n  match ok:\n    case True{}: m\n    case False{}: m"),
 ]
 
 PLAN = [("C%02d %s" % (i, n), o, w) for i, (n, o, w) in enumerate(CONTROLS)] + MUTATIONS

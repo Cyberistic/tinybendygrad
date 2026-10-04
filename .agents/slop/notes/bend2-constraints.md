@@ -18204,3 +18204,217 @@ caller. It says nothing about an ARM, and for an arm the honest test is a pair: 
 `case 3` measured `THEOREM` and 137 of 184 lines when `l2i_cast.ldt`'s `case 3` was removed. One
 direction without the other is half a proof, and the half you skip is the half that says whether
 the zero would stay a zero.
+## ARENA-GROWTH UNIT, 2026-10-04. `codegen/__init__.bend`: five rules, each with its
+## measurement. The `### N (DUP)` numbering continues from the M-series above; the
+## file's INDEX at the top says to cite POSITIONS, so each rule names its own file and
+## line rather than trusting a number that has collided four times.
+
+Nothing here is about Bend's syntax. It is about what makes a gate answer a question.
+
+### 1 (DUP). A TOTAL READER MAKES A STALE INDEX LOOK LIKE A PLAUSIBLE ANSWER
+
+`O.Arena.node(ar, i)` is `Maybe.default(&1, Node, Arena.at(ar, i), Arena.bottom())`. It is
+TOTAL: an index that was never interned does not fail, it reads back as the arena bottom,
+which is `NOOP` with no srcs. `codegen/__init__.bend`'s `wr.rebuild` minted through
+`O.UOp.new` (which is `+`, grows the arena, returns `O.Found{ar, i}`) and kept only
+`Found.i`. The engine then held an index with no arena to resolve it against, and every
+read of it succeeded with the wrong value.
+
+The signature that admits this IS the defect: `-> Maybe<&2, U32>` on `walk_rewrite`. A UOp
+index is a PAIR and the function returned one half. Fixed to
+`-> (O.Arena & Maybe<&2, U32> & Map<&2, U32>)`, with the fold's accumulator as
+`(O.Arena & Map<&2, U32>)`. `ALL PROOFS CHECK` before and after — the checker never saw
+it, and neither did the printed row.
+
+**The generalisation: for any total reader, ask what a wrong argument answers. If the
+answer is in the type's domain, the bug is invisible by construction and only a second,
+independent row finds it.** Here the second row was `gr.new_sink_is_original`, and it
+existed only because an earlier unit had been told to add one.
+
+### 2 (DUP). A `match` CANNOT DESTRUCTURE A COMPUTED VALUE OR A LOCAL BINDER — AND THE
+###     `+` GOES INSIDE THE DESTRUCTURING, NOT ON THE PARAMETER
+
+Threading a pair out of a fold needs three wrappers, one per hop, and the `+` placement is
+the part that is not obvious. `(ar, repl) = p` where `repl` is read TWICE afterwards
+compiles only as:
+
+    def walk_rewrite.put(+sink: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+      (ar, +repl) = p
+      (ar, (walk_rewrite.of(sink, R.cu32(repl, sink)), repl))
+
+`+` on `p` is NOT the spelling (`+` needs `Data`, and a tuple is not). The `+` is on the
+binder INSIDE the destructuring. And `+sink` is needed separately because `sink` is read
+twice in the body. Both are ordinary type errors, not silent ones — which is worth
+noting, because the rest of this unit's bug was silent.
+
+Three wrappers, no more, and the count is forced: `wr.rebuild.found` (Found → pair),
+`wr.step.rebuild` (pair → triple), `wr.step.of` (triple → pair). A fourth would be a
+refactor; there is no shape that gets from a triple back to a call without one.
+
+### 3 (DUP). A RULE UPSTREAM DOES NOT HAVE CAN BE LOAD-BEARING — AND THE ORDER OF THE
+###     FIX IS NOT THE ORDER OF THE FIXTURE
+
+`codegen/__init__.bend`'s `pm_post_sched_cache` carried a third entry, `SINK -> Some{self}`.
+Upstream's table is exactly two patterns, read OFF THE OBJECTS
+(`.agents/slop/codegen-init-oracle.py` Q1: `len(pm_post_sched_cache.patterns) == 2`,
+`fields=<ABSENT>` on both — which is the structural statement "cannot read anything but the
+op"). Removing the third entry made the printed row WORSE (`SINK->SINK` → `SINK->NOOP`),
+because it was masking the arena wall of rule 1.
+
+Both stages, measured in order, never transcribed:
+
+| stage | `gr.new_sink_is_original` (want 0) | `gr.new_sink_srcs` (want `PARAM(99),PARAM(100),BUFFER`) | printed `repl` row |
+|---|---|---|---|
+| BASE | **1** FAIL | `PARAM(0),PARAM(1),ALLOC,` | `...SINK->SINK` |
+| arena threaded, rule PRESENT | **1** FAIL | `PARAM(0),PARAM(1),ALLOC,` | `...SINK->SINK` |
+| arena threaded, rule DROPPED | **0** PASS | `PARAM(99),PARAM(100),BUFFER,` | `...SINK->SINK` |
+
+**The printed row is byte-identical at all three stages.** It could not have ordered the
+work, and neither could the char-distance (0 at all three). Only the identity row could,
+and its answer is the surprising one: **the arena fix alone moves nothing** — the middle
+row is still 1 — because the spurious rule's `Some{self}` overwrites the rebuilt node
+before anything can observe it.
+
+**So: when a gate disagrees and a fix makes it worse, the fix is probably right and the
+gate is insufficient — but verify by MEASURING the intermediate state, not by reasoning
+that it must be better.** The intermediate state is a stage nobody budgets for, and here
+it is the stage that proves the order.
+
+### 4 (DUP). A FROZEN SNAPSHOT TREE GOES STALE UNDER CONCURRENT AGENTS, AND THE
+###     STALENESS READS AS A STAGE RESULT
+
+`runs/gr-init/base` was cut when `uop/ops.bend` was at one md5. Other agents moved it, and
+the frozen tree then printed `codegen/__init__.bend: no rebuilt sink (wall)` for the
+PRE-FIX port — a tree that had printed `new_sink=4` when it was cut. Two units could
+have read that as a stage regression.
+
+The fix is to freeze the FILE and not the TREE: the substrate is always the live tree and
+BASE swaps in exactly one file plus its probe. Alongside it, the harness md5-records
+`(ops.bend, fold.bend)` once per stage and PRINTS THE COUNT OF DISTINCT PAIRS. One
+distinct pair over 13 stages is the statement "the substrate held still"; two means the
+rows are not comparable and the number is not a stage result. Related: a mid-edit
+`uop/fold.bend` produced `SOME PROOFS FAIL` for `binary_n.of` — a def in neither file —
+and the harness's `run()` now says so in its error text rather than reporting zero rows.
+
+### 5 (DUP). A DELETION IS THE STRONGEST CONTROL, AND A COMPARISON MUST NORMALISE THE
+###     TERMINATOR BEFORE IT CALLS A ROW WRONG
+
+Two harness bugs that would each have reported a false FAIL on a correct port, both found
+by running the thing rather than reading it:
+
+- Both emitters terminate a list with a separator the oracle does not. Compared raw, a
+  byte-for-byte correct row scored distance **2**. A row that is right-but-for-its-
+  terminator looked as wrong as one that is wrong.
+- `new_sink=<index>` was folded into the compared `repl` row. Upstream has no arena
+  numbering, so the index has NO ORACLE SIDE; folding it in made a correct port FAIL
+  forever. It is now a separate PORT-ONLY column, and it is the column the sweep reads —
+  it is 8, 9, 10, 11, 12, 13 across arena lengths 5..10, which is the direct readout
+  that the threading is real.
+
+And the control worth copying: deleting dead code and then RE-INSERTING it as a stage.
+`gr_show.topo.k`/`.k.of`/`.topo` and `gr_show.repl.kv` (18 lines) were called by nothing
+in `tinybendygrad/`, `.agents/` or `runs/`; re-inserting all four moved no row, which is
+the proof that they were dead rather than the opinion that they were. **A dead def is
+invisible to every row — it compiles, it proves, and nothing observes it — so a deletion
+needs a stage that puts it back.**
+### 6 (DUP). AN INTERN KEY THAT STORES A SUMMARY OF ITS ARG INSTEAD OF THE ARG IS A
+###     MISSING FIXTURE, NOT A COMPARATOR — AND THE FIXTURE MUST BE EQUAL-LENGTH
+
+The `uop/ops.bend` unit (`ABlob`). Measured, not argued:
+
+- `Arg` spelled a BINARY's `bytes` as `ABlob{n: U32}` -- the LENGTH -- and
+  `eq_arg.ABlob` compared `n`. `ops.py:201` keys on `(op, src, arg, tag, type(arg))`,
+  so the key HOLDS the `bytes` object and dict equality compares it content-wise. Two
+  different same-length blobs were therefore one arena node: measured on the pristine
+  tree, two BINARY nodes with 4-byte args interned to index `1,1` with
+  `Arena.next - 1 == 1`, where CPython answers `False` and `2`.
+- **THE FIXTURE IS THE WHOLE TEST.** `b"aaaa"` against `b"bbbb"`. A fixture of
+  DIFFERENT lengths is satisfied by a length key, which is exactly why this sat in a
+  green gate: the existing BINARY fixtures were `ABlob{4}` and `ABlob{1}`, so every pair
+  that ever met differed in length. A third cell of a different length is still wanted,
+  because "different length" and "different content" are separate claims and a
+  first-byte-only comparator passes one and fails the other (measured: mutation M2
+  moves `blob_diff_len` and `blob_sweep` and leaves `blob_len_diff_content` True).
+- **A CONTENT COMPARISON HAS TWO DIRECTIONS AND BOTH NEED A ROW.** M3 (`Never equal`)
+  moves `blob_interns`/`blob_count_same`; M4 (`Always equal`) moves
+  `blob_len_diff_content`/`blob_diff_len`. A row family that only pins "these two are
+  the same node" cannot see a key that separates everything.
+- **ONE CONFIGURATION IS ONE POINT.** The sweep is six blobs whose lengths run
+  0,1,2,3,4,4 with the last two EQUAL-LENGTH AND DIFFERENT-CONTENT, each interned
+  twice, and it is one Bool. With six DISTINCT lengths (0..5) the length-summary
+  mutation moved `blob_len_diff_content` and `blob_sweep_count` but left `blob_sweep`
+  True -- a pure count sweep is invisible to the bug it was written for.
+- **THE PORT'S SENTINEL BELONGS IN THE ROW, NOT IN A FILTER.** `Arena.next` counts the
+  bottom node CPython does not have, so the node-count rows subtract it and print the
+  integer `len(ucache)` prints. A row that needs a `#bend_only` filter to line up with
+  the oracle is a row that can drift from it silently.
+- Representation: `ABlob{bs: List<&2, U32>}` -- CONTENT ONLY, compared with `eq_u32`,
+  the same structural list equality `eq_arg.ATuple` and `eq_tag.TTuple` already use.
+  Content-only and arity-ONE are both load-bearing: keeping a second `n: U32` field is
+  a denormalisation of `List.length(bs)`, and it also costs an arity change, and Bend
+  REFUSES a record pattern whose width is not the constructor's (measured:
+  `case ABlob{n}` against a two-field `ABlob` is `a ABlob pattern with 2 fields`). So
+  `ABlob{bs}` leaves `uop/upat.bend`'s `case O.ABlob{_}` and `uop/spec.bend`'s
+  `arg_blob` arm UNTOUCHED, and `uop/fold.bend`'s `binary_n` and `uop/render.bend`'s
+  repr each need exactly one `List.length` wrapper.
+- **AN IN-PLACE MUTATION HARNESS'S SNAPSHOT IS A `jj restore` GUN.** It happened here:
+  the snapshot was taken while a concurrent agent's ~130 lines were in `ops.bend`, that
+  change was rebased out, and the harness's final restore put the dead 6623-line file
+  back over the live 6306-line one. `blob-intern-mutate.py` now REFUSES to run unless
+  the live tree is byte-identical to its snapshot. A restore that can undo somebody
+  else's work must not run on a tree it does not recognise.
+
+### 7 (DUP). A WEAKREF CACHE CANNOT BE COUNTED BY REBINDING THE HOLDING NAME
+
+CPython's `ucache` holds weakrefs and `UOp.__del__` (ops.py:248) does
+`del ucache[(op, src, arg, tag, type(arg))]` -- BY VALUE. So
+
+    u = UOp(Ops.BINARY, src=(), arg=b"aaaa"); u = UOp(Ops.BINARY, src=(), arg=b"bbbb")
+
+evaluates the right side FIRST, registering `b'bbbb'`'s key, and only then releases the
+old `u`, whose `__del__` deletes a key BY VALUE and so deletes the key it just
+registered. Measured: `len(ucache)` reads **1** for two DISTINCT blobs -- the same wrong
+answer as the bug under test, produced by the measuring apparatus. Every cell must keep
+its nodes alive in a list and must never rebind the name holding them. The first draft
+of `.agents/slop/blob-intern-oracle.py` got this wrong and reported `1` for
+`same_len_diff_content`.
+
+## R-6. TWO AGENTS ON ONE FILE CANNOT BE MERGED BY REBASE OR BY COPY — ONLY BY ONE OWNER
+
+R-4 said use separate workspaces. R-5 said a file copy is not a merge and
+the operation is `jj rebase`. **Both are wrong when a THIRD agent is editing
+the same file in the default workspace**, which is the actual situation on
+2026-10-04: three agents had `uop/ops.bend` open at once (two in
+workspaces on disjoint line ranges, one in the default workspace with an
+uncommitted `BLOB_*` block).
+
+Measured, in order:
+
+* **A file copy reverts the uncommitted work.** Copying a workspace's
+  `ops.bend` over the tree dropped the default workspace's 18 `BLOB_*` defs.
+  Nine dependent `uop/` files went red. The copy typechecked and ran; the
+  only symptom was a DEPENDENT file failing.
+* **A rebase does not merge it either.** `jj rebase -d @ -s <agent commit>`
+  reported "Rebased 2 commits to destination" and the result STILL LACKED the
+  `BLOB_*` block, because the BLOB work was never committed and a rebase of
+  an older commit onto a working copy cannot see uncommitted hunks. The
+  rebased commit landed on a *divergent line* (`rytpxyvx/3`, hidden), not
+  on the working copy, so the working copy was unchanged and the merge was
+  a no-op that LOOKED like a success.
+
+**THE RULE, and it is the only one that holds:** **one owner per file per
+wave.** Not one owner per line range — one owner per FILE. Disjoint line
+ranges is a mitigation that works only while nobody else touches the file,
+and in this repo something always does: a rebase, a restore, a concurrent
+`jj describe`.
+
+If two units genuinely need the same file, they are ONE unit, split by
+marker or by def, and the second waits. The cost of serialising is one
+agent; the cost of not serialising is a merge that cannot be performed
+correctly by either party.
+
+**AND THE COORDINATOR'S ORDER MATTERS.** All three of these units reported
+success, and at the moment of the last report ZERO of the three were in the
+tree the gate reads. A finished agent in a workspace is an unmerged pull
+request, and "the gate is green" in the agent's own workspace is not
+evidence about the tree.

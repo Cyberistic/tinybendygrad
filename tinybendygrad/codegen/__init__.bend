@@ -101,8 +101,9 @@ def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +c
 def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.scan(ar, pm, u, repl, ctx, rebuilt)
 
-# `rebuilt` is NOT what the rule reads; it is only what `try_rule` falls back
-# to when no rule fires. The rule is tried on `u`, the ORIGINAL node (header).
+# The triple in, the pair out, with the rule applied. `rebuilt` is NOT what the
+# rule reads; it is only what `try_rule` falls back to when no rule fires. The
+# rule is tried on `u`, the ORIGINAL node (see the header).
 def wr.step.of(+pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, p: (O.Arena & U32 & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
   (+ar, rebuilt, repl) = p
   (ar, wr.step.seen.go(ar, pm, u, repl, ctx, rebuilt))
@@ -189,7 +190,9 @@ def pm_post_sched_cache() -> O.PMEntrys:
 # A dummy PARAM that the ctx carries. The minimal printable form is
 # `AParam{slot=N, dtype=int32, ...}`; the rest of the fields default to
 # `None{}`/`False{}`. Two of these (slots 99 and 100) are the "A" and
-# "B" in the test ctx.
+# "B" in the test ctx. IDENTICAL to `test_param` below; they are the same
+# def under the two names the two call sites use, kept apart because the
+# fixture's slot and the ctx's slot are different facts.
 def ctx_param(ar: O.Arena, slot: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
     O.AParam{O.ParamArg{slot, S.int32(),
@@ -217,9 +220,6 @@ def test_buffer(ar: O.Arena) -> O.Found:
 # (grown arena, sink index) pair.
 def fixture.sink(ar: O.Arena, p0: U32, p1: U32, a: U32) -> O.Found:
   O.UOp.sink(ar, [p0, p1, a])
-
-def gr_show.repl.kv(k: String, v: U32) -> String:
-  String.concat([k, "->", U32.show(v)])
 
 # A node's printable form is `OP(slot=N)` for PARAM and the bare
 # OP name otherwise, which is CPython's `uop_short` in `gr-oracle.py`. The
@@ -272,24 +272,6 @@ def gr_show.repl.go(ar: O.Arena, +m: Map<&2, U32>, topo: List<&2, U32>) -> Strin
 # grown arena -- the map's values are indexes into it.
 def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   gr_show.repl.go(ar, m, topo)
-
-# Show the toposort as a comma-separated list of U32s. A direct
-# recursive fold on the list. The recursion is on `rest` (the
-# smaller tail), which is a subterm of `t` (R-4's "passed
-# unchanged until one shrinks"). The accumulator `acc` threads
-# through without violating the `+` affine rule.
-def gr_show.topo.k(rest: List<&2, U32>, acc: String) -> String:
-  match rest:
-    case Nil{}: acc
-    case v <> t: gr_show.topo.k(t, String.concat([acc, U32.show(v), ","]))
-
-def gr_show.topo.k.of(t: List<&2, U32>, acc: String, u: U32) -> String:
-  gr_show.topo.k(t, String.concat([acc, U32.show(u), ","]))
-
-def gr_show.topo(topo: List<&2, U32>) -> String:
-  match topo:
-    case Nil{}: ""
-    case u <> t: gr_show.topo.k.of(t, "", u)
 
 # Build the full fixture and the ctx; the gate runs `walk_rewrite` and
 # prints the repl map. `walk_rewrite` hands back the fold's grown arena with
