@@ -135,10 +135,11 @@ rows that encode the bug.
 
 ## TRAPS THAT HAVE COST REAL TIME
 
-- **`bend --check-only` exits 1 for 14 of the 136 `.bend` files and 0 for the other 122.**
-  Never gate on the exit status; read stderr. **CORRECTED 2026-10-04 — the previous wording of
+- **`bend --check-only` exits 1 for 14 of the 137 `.bend` files and 0 for the other 123.**
+  Never gate on the exit status; read stderr. **CORRECTED 2026-10-04 (twice; see the second
+  correction on the denominator below) — the previous wording of
   this bullet said "the file run itself exits 0", and that is FALSE for 6 of the 14.** Measured
-  over all 136 files, `find tinybendygrad -name '*.bend' | xargs -P 6 -I{} sh -c './bin/bend
+  over all 137 files, `find tinybendygrad -name '*.bend' | xargs -P 6 -I{} sh -c './bin/bend
   {} --check-only; echo {} $?'`, and then `--check-only` rc against plain-run rc per file:
 
   | file | `--check-only` | plain run | why it is red |
@@ -148,6 +149,15 @@ rows that encode the bug.
   | `LAWS.bend` (34 TODOs) · `PROOF.bend` (18) · `PROOF2.bend` (16) | 1 | **1** | unfinished proof, not a foreign code |
   | `runtime/autogen/libclang.bend` | 1 | **1** | **STALE CAUSE, CORRECTED 2026-10-04:** it is now `11 defs rely on unsafe or foreign code: - Type_report, ...`, **NOT** `duplicate declaration: U32` -- **and the 11 foreign laws are S-1, a `.bend` importing `.c` only.** **TWO INSTRUMENTS, TWO QUESTIONS, BOTH TRUE:** `--check-only` rc 1 ("does this file stand alone?") while `bend -o` + `cc` are **rc 0** and emit 5,503 lines ("can it be built and run?"). **`-o` SUCCESS DOES NOT CONTRADICT `--check-only` FAILURE, AND NEITHER IS THE OTHER.** seam |
   | `sz.bend` | 1 | **1** | its own 7 foreign defs (`Sz.read_dir`, `Sz.is_dir`, …) |
+
+  **RE-MEASURED 2026-10-04 by the `notes-sweep` unit, and THE NUMERATOR HELD WHILE BOTH
+  DENOMINATORS MOVED -- which is the whole lesson of this bullet in one measurement.** The
+  bullet said **14 of the 136**, and 0 for the other **122**. It now reads **14 of the 137**,
+  and 0 for the other **123**: `total 137  rc=1: 14  rc=0: 123`, no third rc. **The 14 are
+  the same 14, member for member** -- the table below is still exactly the cold set, so the
+  `plain run` column and the 8/6 split are untouched. What aged is only the file count: a
+  `.bend` file was added and the note kept the old denominator, which is the most ordinary
+  way a number in this tree goes false.
 
   So the bullet is true as written for the **8 files that only IMPORT `dtype.bend`** (those exit
   1 under `--check-only` and **0** when run) and wrong for the **6 that carry the cause
@@ -262,3 +272,20 @@ The underlying reason is not accidental: `S.Dt`'s first three fields **cannot di
 
 Do not trust a green gate here. A gate that passed before the rename and passes after it has
 told you nothing about whether the arms still match.
+
+
+## `checks/bounded.py` — RUN THE COMPILER UNDER BOTH BOUNDS, NOT ONE
+
+`perl -e 'alarm N; exec @ARGV'` bounds **TIME** and nothing else. On 2026-10-05, twice in one
+afternoon, two `references/bend/bend2/main.ts` processes took all system memory — swap 1.6 of
+2.0 GB, free pages ~19 MB — and crashed the machine. **`ulimit` appeared ZERO times in this file,
+in `substrate-check.sh`, and in `e2e.sh` combined.** The runaway was a **spawned grandchild**, so
+watching the process you launched is not enough.
+
+```sh
+.venv/bin/python checks/bounded.py --seconds 900 --mb 4096 -- ./bin/bend FILE --check-only
+```
+
+- exit **0** within both bounds · **3** KILLED-ON-MEMORY · **4** TIMED-OUT · prints **peak RSS**
+- **`rc=142` is `SIGALRM` — YOUR OWN alarm. A run that ended that way PROVES NOTHING.**
+- `sh checks/bounded-selftest.sh` — shows *both* bounds firing, and the grandchild case.
