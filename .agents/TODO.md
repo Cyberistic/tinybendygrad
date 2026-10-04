@@ -12254,3 +12254,56 @@ Progress: [=============================-------] 7/7
       redundant. **READ THE EXISTING GATES BEFORE DIAGNOSING BY HAND.** The `run`/`repro`/
       `snap` split is also worth internalising: `run` GENERATES and `repro` GATES, so `run`
       exiting 0 is by design and `repro` is the thing that would have noticed.
+
+## Session 2026-10-05 round 11 — the 0-byte files are REPAIRED, and one of them was my fault
+
+- [x] **All four 0-byte files restored.** `helpers.bend` is byte-identical to master again,
+      125,668 bytes, 5 `i64_dec` defs, `ALL PROOFS CHECK`; `compiler_mesa.bend` and
+      `graphcmp.py` back to 39,514 and 170,623. Full log in
+      `.agents/slop/RECOVERY-0BYTE.md`.
+
+      ### I BROKE ONE OF THEM MYSELF, AND THE SHELL SAID NOTHING
+
+      `jj restore` reported "modified 3 files", so I assumed `rf2root/helpers.bend` was
+      unrestored and went to fix it. **It is a SYMLINK to
+      `../../../tinybendygrad/helpers.bend`**, and my repair was
+
+      ```
+      git show HEAD:.agents/slop/rf2root/helpers.bend > .agents/slop/rf2root/helpers.bend
+      ```
+
+      **which wrote THROUGH the symlink and replaced `tinybendygrad/helpers.bend` with the
+      stub's own text.** No error, no warning -- writing through a symlink is not a failure.
+      It was caught only because `helpers.bend --check-only` then said
+      `expected : 'def', 'type' or 'law'` / `observed : '.'` on line 1.
+
+      **THE LESSON, AND IT IS THE THIRD TIME THIS SESSION: NEVER REDIRECT INTO A PATH
+      WITHOUT `ls -la` FIRST.** `cp` behaves the same way. A symlink in a tree of generated
+      slop is not exotic -- this one dates from October 2nd -- and the failure is silent,
+      total, and destroys the file it points at. The habit: when a path is unexpected, look
+      at what it IS before writing, and stage into a temporary file before moving anything
+      into place. Repaired by fetching to `/tmp` and `cp`-ing onto the real path.
+
+      ### AND THE TRAP WAS DEMONSTRATED WHILE DIAGNOSING IT
+
+      The command that established the tree was broken printed, in its own output:
+
+      ```
+      does the substrate typecheck now? ALL PROOFS CHECK      <- on a 0-byte helpers.bend
+      ```
+
+      **So the tree was not merely broken -- it was broken in the one way that makes every
+      unit that checks the substrate report it WARM.** `substrate-check.sh` MEASURED that
+      `--check-only` answers `ALL PROOFS CHECK` for an empty file and for one holding only a
+      comment, and that `helpers.bend` has now been truncated FOUR times, each by a unit
+      that then saw green. This was the fourth.
+
+      ### AND `differ.py run` REPORTED exit 0 WITH EVERY COUNT ZERO
+
+      16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+      `census-rc=rc=1` -- because `graphcmp.py` was the module `graphcmp-oracle.py` imports
+      as `G`, so `G.load_tinygrad()` was an AttributeError and every artifact was 5 bytes.
+      **That is the lying-gate class for the third time today, now in the primary driver.**
+      Per its own `--help`, `run` GENERATES and `repro` GATES, so the health check lives in
+      `repro`; but a reader who runs `run` alone sees exit 0 and a summary of zeroes, which
+      is the most convincing-looking failure output available.
