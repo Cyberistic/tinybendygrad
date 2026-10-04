@@ -36,6 +36,15 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `.agents/slop/diffpy/`.
 - `e2e.sh` — the 8-stage end-to-end gate, green. Do not rewrite it to tidy it.
 - `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
+- `gates/*.py` — per-def gates, and they are **Python, never shell**. `.agents/slop/` is being
+  pruned, so nothing new goes there. A gate names its `.bend` driver and its CPython oracle,
+  which stay in `.agents/slop/` beside every other oracle; its OUTPUT goes to
+  `gates/artifacts/`. The shared plumbing is `gates/gatekit.py` and it holds nothing but the
+  three lanes, the row counts and the diff — the rows, the divergences and the pins are the
+  gate's own. `gates/README.md` records why the shell form is retired, with the four ways a
+  shell gate failed here (`&&` masking a diff under `set -e`; an `EXIT` trap returning `rm`'s
+  status; `<( )` not parsing under `sh`; `${=SUB}` never expanding and a hash guard comparing
+  `""` to `""`).
 
 
 When using Python:
