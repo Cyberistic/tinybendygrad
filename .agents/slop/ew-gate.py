@@ -123,6 +123,8 @@ sig(u4.uop.alu(Ops.DETACH), 'ew_detach')
 # wall -- a wall ew-consts-gate.sh REFUTED. `Tensor(5)`, the same fixture as every
 # other unary row, so the row compares the method and not the operand.
 sig(Tensor(5).uop.sigmoid(), 'ew_sigmoid')
+sig(Tensor(5).uop.swish(), 'ew_swish')
+sig(Tensor(5).uop.silu(), 'ew_silu')
 sig(u4.uop.alu(Ops.CONTIGUOUS_BACKWARD), 'ew_contig_bwd')
 sig(u4.uop.alu(Ops.RECIPROCAL), 'ew_recip')
 sig(u4.uop.alu(Ops.TRUNC), 'ew_trunc')

@@ -839,8 +839,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:757  tanh  -- 2.0 and -1.0 are available (`F32.neg(1.0)`; a negative literal is not a term). UNDIAGNOSED
 # TODO(p3) elementwise.py:769  quick_gelu  -- 1.702 is `ew_k.quick_gelu()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:779  gelu  -- sqrt(2/pi) and 0.044715 are `ew_k.sqrt_2_over_pi()` and `ew_k.gelu()`, both bit-exact -- the first is a LITERAL, the composite is one ulp off. `erf` is the remainder
-# TODO(p3) elementwise.py:796  swish        -- self.sigmoid()
-# TODO(p3) elementwise.py:808  silu         -- swish()
 # TODO(p3) elementwise.py:854  atanh        -- .log()
 # TODO(p3) elementwise.py:866  asinh        -- .log()
 # TODO(p3) elementwise.py:878  acosh        -- .log()
@@ -1137,9 +1135,21 @@ def ew_sigmoid(+t: T.Tensor) -> T.Tensor:
 
 def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, e, False{})
 
+
+# `swish` is `self * self.sigmoid()` (elementwise.py:801) and `silu` is `self.swish()`
+# (:814), so both are one line over something that now exists -- which is the whole
+# return on landing `sigmoid` first. `sigmoid` is called on the SAME tensor, so the
+# MUL's two srcs are the tensor and the sigmoid of the tensor, and the signature row is
+# what says so: a version that hoisted the sigmoid into its own binding would be a
+# DIFFERENT graph and the row would catch it.
+def ew_swish(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(t), False{})
+def ew_silu(+t: T.Tensor) -> T.Tensor: ew_swish(t)
+
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
-def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))
+def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))def t_swish() -> IO(Unit): ew_sig("ew_swish", ew_swish(g_i32()))
+def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))
+
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
 def t_recip() -> IO(Unit): ew_sig("ew_recip", g_unary(URecip{}))
 def t_trunc() -> IO(Unit): ew_sig("ew_trunc", g_unary(UTrunc{}))
@@ -1427,6 +1437,8 @@ def main() -> IO(Unit):
     s : Unit <- t_eq()
     u : Unit <- t_detach()
     t : Unit <- t_sigmoid()
+    bh : Unit <- t_swish()
+    bi : Unit <- t_silu()
     v : Unit <- t_contig_bwd()
     w : Unit <- t_recip()
     x : Unit <- t_trunc()

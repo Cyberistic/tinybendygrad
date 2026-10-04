@@ -53,6 +53,59 @@ dtype-js-abi    [##########] 3/3    `runtime/dtype.js` read `p.fst`/`p.snd` agai
                                         five**: only `ceildiv` raises, because
                                         tinygrad/helpers.py:74,:77 guard `cdiv`/`floordiv`.
                                         `.agents/slop/jsfix/`, JSF-1..JSF-9.
+dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no net line
+                                         count in `runtime/dtype.js`: the `of32` on
+                                         `dtype_fp16`'s F32 ARGUMENT deleted, the
+                                         `of32` inside `fp8_decode` deleted, one
+                                         `of32` added to `dtype_fp8_to`'s answer.
+                                         57/98 -> **98/98** on `abi4_gate.py`
+                                         (98 rows x 15 arms, tinygrad CALLED).
+                                         **WHICH OF THE THREE IS ABI-4, BY ROW:**
+                                         `NEEDS`/`FIXES` = 10/10 (B, the INBOUND
+                                         crossing), 40/10 (C, the OUTBOUND), 30/0 (A,
+                                         `NEEDS(A) SUBSET NEEDS(C)` -- NOT separable
+                                         from C by ANY fixture, so A is the error
+                                         class one call INSIDE the lane, load-bearing
+                                         but not a seam crossing). `FIXES(C)`'s 10
+                                         rows are `fp8_decode`'s EARLY nan/inf
+                                         returns, which never build `v` -- and
+                                         `abi_gate.py`'s ONE fp8_to row needs A AND
+                                         C, so its old FAIL was a FIXTURE
+                                         entanglement before it was an arm
+                                         entanglement.
+                                         The ALT spelling (convert inside
+                                         `fp8_decode`) is red on exactly
+                                         `FIXES(C)`: the conversion is FORCED onto
+                                         the seam, measured.
+                                         3 disarms 0/0/0; 3 plants (2nd mutations,
+                                         not copies) 30/8/40; 0 rows moved outside
+                                         `abi4_*`; a CONTENT fence now runs over all
+                                         15 arms and catches an entangled arm at the
+                                         BYTE level (planted: rc 1 on both fences).
+                                         **A dangling paren passed 98/98 here and
+                                         `abi_gate.py` called the DEAD lane
+                                         12/12-green**: both measure a patched COPY
+                                         and neither checked node's exit status, so
+                                         absent rows counted as agreement. Both now
+                                         exit on node's rc or a short row set.
+                                         `abi_gate.py`'s pointer check now reads the
+                                         `undeclared` block too (1 stale live ref
+                                         fixed; an entry may declare itself
+                                         historical -- ABI-8 does -- because a guard
+                                         red on a class of entries is worth less
+                                         than its red). `abi_gate.py` 27/0 rc 0,
+                                         `jsfix_gate.py` 18/0 rc 0 @30/30,
+                                         `jsfix_e2e.py` rc 0, `e2e.sh` 7/7 rc 0,
+                                         `jslane2/gen_f32_seam.py` 3/6 -> **6/6 rc 0**
+                                         on its first re-run.
+                                         **GENERATORS:** `gen_js_seam.py` QUARANTINED
+                                         BY SUPERSESSION (aborts on ABI-2's dead
+                                         anchor; `jsfix_gate.py` reproduces and
+                                         exceeds it -- do NOT re-anchor);
+                                         `gen_f32_seam.py` RUNS AND IS GREEN.
+                                         Neither edited: `jslane2/` is not this
+                                         unit's. `.agents/slop/abi4/`,
+                                         `.agents/slop/DTYPE-ABI.md`, ABI4-1..6.
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
@@ -10181,3 +10234,97 @@ claim + md5s **`.agents/slop/denom/CLAIM.md`**. Rules `DENOM-1..5` appended to
       measure, and let the number decide. The pattern is now strong enough to be a rule for
       the remaining 200-odd markers: **a claim about what the substrate cannot do is not
       evidence until something has measured it.**
+
+## Session 2026-10-04 — unit `ADEV`: the `COPY`/device NORMAL FORM. `g_allred` now AGREEs.
+
+      [##########] 10/10   DECIDED, PORTED, PLANTED, DISARMED, RE-MEASURED
+
+Report: `.agents/slop/ADEV.md`.  Evidence: `.agents/slop/adev/{probe,recheck}.py`.
+Claim: `.agents/slop/adev/CLAIM.md`.  **Nothing committed.**
+
+- [x] **DECIDE against upstream, not taste.** A device PAIR is canonical.
+      `ops.py:765` stores `device` VERBATIM as a COPY's `arg`; `ops.py:846-848`,
+      `ops.py:679`, `ops.py:701`, `spec.py:30-34`, `spec.py:140` all branch on the
+      `str|tuple[str,...]` union. A flattened device is **not injective** — MEASURED
+      `('CPU',)` == `'CPU'` and `('CPU,CPU',)` == `('CPU','CPU')` pre-fix.
+- [x] **MAKE IT REPRESENTABLE — no new `Arg` variant.** The premise was WRONG about the
+      port: `LAWS/spec.bend:85` `type Dev` is already `D1{tag} | Dn{tags}` and
+      `ops.bend:1070` `ADev{dev: S.Dev}` holds the pair; DENOM's own
+      `O.ADev{S.Dn{[0,0]}}` compiled and printed before this unit started. The blocker was
+      the differ's TEXT. On py the fix is a DELETION: `dev` existed only to flatten, so it is
+      gone and both call sites say `_carg`. On bend `devs` becomes the `n(..)` grammar —
+      which also kills a **double-`s`** (`bstr` around already-`bstr`'d members) that made
+      bend's flatten a THIRD spelling, `ssCPU,sCPU`.
+- [x] **`g_allred` DISAGREE -> AGREE, denominator unmoved.** BY REAL REVERT of the same
+      tree (restore md5-verified): `nodes=9/9 field-records=54` **both** ways;
+      `shared-cores` 7 -> 9, `ONLY-PY`/`ONLY-BEND` 2/2 -> 0/0. Corpus **25 graphs ->
+      23 AGREE / 2 DISAGREE** (`lin`,`loop`, deliberate). `selfcheck OK`, `control OK`.
+- [x] **THE 13 RE-EXAMINED, AGAINST 13.** `emittable: 13 of 14`, `moved by ADEV-1: 1 of 14`
+      (only `mselect`). **0 of 13 became emittable — all 13 already were; the decision
+      blocked them PROCEDURALLY, not mechanically.** And **`DENOMINATOR.md` §8 says "the
+      other 13" and names TWELVE**; the 13th is `mulacc`, and `patir` is a 15th of
+      `emittable.py`'s `CANDS` (ADEV-5).
+- [x] **PLANT + DISARM as a paired experiment.** `devpair` DISAGREE naming `arg`
+      (`n(sCPU)` vs `n(sCPU,sCPU)`); `devdisarm` AGREE, stream **byte-identical**
+      (md5 `90ec1dda…` both). Planted on `ALLREDUCE` not `COPY` **because `spec.py:174-175`
+      couples a COPY's device to its DEVICE RANGE src** — a COPY plant would be TWO edits
+      (the `js-repair-abi4` entanglement).
+- [x] **MY FIRST PLANT REPORTED AGREE.** `_rebuild_with` skips the ROOT
+      (`par[ast] = None`), and the ALLREDUCE **is** the root of `allred`. Recorded as ADEV-3.
+- [x] **REFUSED THE CLAIM.** The corpus does NOT compare training graphs. `bw` is the
+      gradient of ONE eager expression; `schedule -> render -> compile` is FORWARD-ONLY;
+      `late` and `allred` are graphs the port **REPRODUCES and does not PRODUCE**.
+      Reproducing and producing are different claims and a corpus of reproducible graphs
+      looks identical to a corpus of producible ones.
+- [x] **OPEN, NOT MINE:** `cshape`'s one-arm `except` still gates `CUSTOM`/`CUSTOMI`/
+      `PYLITERAL` together (DENOM-3); `MULACC` still needs an NVIDIA device. Neither was
+      touched.
+
+## Session 2026-10-04 round 8 — `swish` and `silu`: THREE methods for one composition
+
+- [x] **`swish` (elementwise.py:801) and `silu` (:814) LANDED. `ew-gate` is 74 rows, 3 lanes
+      identical**, both markers retired, both rows confirmed load-bearing by control.
+
+      `swish` is `self * self.sigmoid()` and `silu` is `self.swish()`. So the three
+      methods are ONE graph: `CONST CONST CONST MUL/2 EXP2/1 ADD/2 RECIPROCAL/1 MUL/2`, and
+      `silu`'s row is `swish`'s row plus a name. **That is the return on landing `sigmoid`
+      first** — the other two were not two units, they were two lines over something that
+      existed, and the row is what proves the composition is the same graph rather than an
+      equivalent one.
+
+      ### FIVE ROUNDS ON TWO ONE-LINERS, AND EVERY ONE WAS MY OWN EDIT
+
+      The bodies are `ew_mul2(t, ew_sigmoid(t), False{})` and `ew_swish(t)`. Getting there
+      cost five compile errors, and the causes are worth listing because four of the five
+      are mistakes I have now made elsewhere in this session:
+
+      | error | cause | rule it gives |
+      |---|---|---|
+      | `expected : a name` | `def` signature written in CALL form | a signature is not a call |
+      | `duplicate declaration: t_sigmoid` | a block prepended with the anchor it inserted after | an insert block is the NEW text only |
+      | `('b', 'h') : Unit <- t_swish()` | a helper returned a PAIR and the f-string interpolated the tuple | join it before it goes in a name |
+      | `a decreasing self-call` ×2 | the body built with the DEF's own name, so the def called itself | a body names the BUILDER, never the def |
+      | `a filled definition ... ew_sigmoid` | the related defs inserted ABOVE the one they compose | related defs go UNDER what they use |
+
+      The self-call one is the expensive lesson: `call('ew_swish', ...)` inside
+      `def ew_swish` typechecks as a self-call and bend says "decreasing self-call", which
+      reads like a substrate constraint and is actually a name I typed wrong. **A name
+      collision between a def and the builder it wraps is silent until the type checker
+      catches it, and the message will be about recursion.**
+
+      ### main's BINDING SCHEME IS `a`-`z` THEN `aa`, `ba`, `bb` ...
+
+      Asking for a free single letter found none — all 26 are spent — and inventing a third
+      scheme for two rows would make the next reader guess. So the next name is DERIVED from
+      the last one in `main`: `bg` -> `bh` -> `bi`. Deriving beats allocating, and it cannot
+      collide with a name someone else is about to add.
+
+      ### AND THE CONTROLS, one of which was aimed at the wrong string
+
+      `ew_swish(t) -> ew_sigmoid(t)` turns the gate RED. The first control for `silu` aimed at
+      the string `ew_silu(t)`, which occurs in the ROW EMITTER and not in the def body, so
+      the mutation never applied — the fifth time a "the gate did not notice" reading has
+      turned out to be "the gate was never asked". The loop now checks the target exists
+      before mutating and says TARGET MISSING rather than reporting a result.
+
+      Markers 565 -> 563. Backlog still 236: these were walls, not queue.
