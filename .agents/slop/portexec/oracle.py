@@ -132,10 +132,22 @@ def main():
          "clang_kernel_vol0": emit_kernel("CLANG", vol0=True),
          "clang_kernel_caller": emit_kernel("CLANG", prefix=CALLER),
          "vec4_typedef": vec4_typedef()}
-  # THE E2E MATMUL INPUT, three 8x8 f32 matrices of DYADIC quarters, so every
-  # product and every partial sum is EXACTLY representable in f32 and the
-  # comparison can be bit-for-bit with no tolerance. THE SEED AND THE LIST ARE
-  # e2e_mm.py's, read from it rather than retyped.
+  # THE E2E MATMUL, AND EVERY WORD OF IT COMES FROM `e2e_mm.py`'s OWN RECORD.
+  # `runs/e2e/e2e-mm-oracle.json` is that script's output: `mats.A/B/Cm` are the
+  # three 8x8 f32 inputs as u32 bit patterns and `answer_u32` is the 64-word answer
+  # for `(A @ B) @ Cm`. Re-running `e2e_mm.py` is left to `e2e.sh`; this lane READS
+  # the record rather than recomputing, so the two lanes cannot drift.
+  e2e = ROOT / "runs/e2e/e2e-mm-oracle.json"
+  if e2e.exists():
+    d = json.loads(e2e.read_text())
+    res["mm_A"], res["mm_B"], res["mm_C"] = d["mats"]["A"], d["mats"]["B"], d["mats"]["Cm"]
+    res["mm_expect_words"] = d["answer_u32"]
+    res["mm_source"] = str(e2e.relative_to(ROOT))
+  else:
+    # NO e2e RECORD: say so loudly rather than quietly substituting our own
+    # matmul, which would make the comparison against "e2e_mm.py's words" a
+    # comparison against a different program.
+    res["mm_missing"] = f"{e2e} is absent -- run .agents/slop/e2e_mm.py first"
   dy = [-2.0, -1.5, -0.75, -0.5, -0.25, 0.25, 0.5, 1.5]
   mat = [[dy[(r * 8 + c) % 8] for c in range(8)] for r in range(8)]
   res["mm_mat"] = mat
@@ -143,8 +155,6 @@ def main():
   res["stage1_in_words"] = words_of([-2.0, 1.5, 0.25, -0.75])
   res["stage1_expect_words"] = expect_words("CLANG", res["stage1_in_words"])
   res["tinygrad_stage1_words"] = tinygrad_words(res["stage1_in_words"])
-  res["mm_expect_words"] = words_of((np.array(mat, dtype=np.float32) @ np.array(mat, dtype=np.float32) @
-                                     np.array(mat, dtype=np.float32)).reshape(-1))
   (out / "oracle.json").write_text(json.dumps(res, indent=1))
   for k in ("clang_kernel", "base_kernel", "vec4_typedef"):
     (out / f"cpython-{k}.c").write_text(res[k] + "\n")
@@ -154,6 +164,10 @@ def main():
   print("stage1 CPython expect:", res["stage1_expect_words"])
   print("stage1 tinygrad/DEV=CPU:", res["tinygrad_stage1_words"])
   print("stage1 agree:", res["stage1_expect_words"] == res["tinygrad_stage1_words"])
+  if "mm_expect_words" in res:
+    print("mm words from :", res["mm_source"], "->", len(res["mm_expect_words"]), "answer words")
+  else:
+    print("mm NO RECORD  :", res["mm_missing"])
 
 
 if __name__ == "__main__":

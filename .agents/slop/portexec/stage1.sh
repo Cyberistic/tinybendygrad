@@ -47,16 +47,24 @@ EOF
 print -r -- "\n== STEP 1  port: ./bin/bend cstyle.bend"
 # bend stack-overflows on roughly one run in twenty and prints NOTHING, and an
 # empty capture is indistinguishable from "not started". So ROW COUNT is
-# checked, not the exit status.
+# checked, not the exit status. 12 attempts, and the port's own STDERR IS PRINTED
+# before giving up -- MEASURED 2026-10-04: an 8-attempt loop exhausted itself
+# here and the real cause was a CONCURRENT AGENT's edit to
+# `tinybendygrad/helpers.bend:2551` (`i64_dec.go`/`i64_dec.step`, a mutual
+# recursion Bend refuses), which `renderer/cstyle.bend` imports transitively.
+# Naming the wall is the difference between a SUBSTRATE report and a silent stall,
+# and it keeps another agent's mid-edit from reading as this lane's verdict.
 i=0; rows=0
-while [ $i -lt 8 ]; do
+while [ $i -lt 12 ]; do
   i=$((i+1))
   ./bin/bend tinybendygrad/renderer/cstyle.bend > "$WORK/port-rows.txt" 2> "$WORK/port-rows.err"
   rows=$(grep -c '\]   py=\[' "$WORK/port-rows.txt")
   [ "$rows" -ge 220 ] && break
-  print -r -- "   attempt $i gave $rows rows, retrying" >&2; sleep 1
+  print -r -- "   attempt $i gave $rows rows, retrying" >&2; sleep 2
 done
-[ "$rows" -ge 220 ] || fail 1 "port produced $rows rows in 8 attempts"
+[ "$rows" -ge 220 ] || { print -r -- "   --- the port's own stderr ---" >&2
+  head -c 400 "$WORK/port-rows.err" >&2
+  fail 1 "SUBSTRATE: $rows rows in 12 attempts; if that stderr names a def outside renderer/, another agent is mid-edit"; }
 print -r -- "   port rows: $rows"
 
 # ---------------------------------------------------------------- STEP 2

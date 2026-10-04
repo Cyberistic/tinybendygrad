@@ -123,50 +123,64 @@ def fill.go(xs: List<&2, U32>, +hi: U32, +lo: U32, +off: U32) -> IO(Unit):
       _ : U32 <- kstore(hi, lo, off, h)
       fill.go(t, hi, lo, U32.add(off, 4))
 
-def dump.go(is: List<&2, Nat>, +hi: U32, +lo: U32, +off: U32) -> IO(Unit):
-  match is:
+def dump.go(ixs: List<&2, Nat>, +hi: U32, +lo: U32, +off: U32) -> IO(Unit):
+  match ixs:
     case Nil{{}}: IO.pure(Unit, Unit{{}})
     case i <> t:
       do IO<Unit>:
       v : U32 <- kread(hi, lo, off)
       IO.print("WORD " ++ Nat.show(i) ++ " " ++ U32.show(v))
       dump.go(t, hi, lo, U32.add(off, 4))
-
-def bend_run(nwords, nbytes, launch_nats, lawndecls):
-  """THE WHOLE ORCHESTRATION IS IN BEND: allocate, split, fill, LAUNCH THE KERNEL
-  BY POINTER, read the words back, print them.  The C side holds no words."""
-  tail = """
-def run() -> IO(Unit):
-  do IO<Unit>:
-  k : Nat <- kaddr()
-  IO.print("KERNEL_NAT " ++ Nat.show(k))
-  dst : Nat <- kmalloc(NBYTES)
-  IO.print("DST_NAT " ++ Nat.show(dst))
-  src : Nat <- kmalloc(NBYTES)
-  IO.print("SRC_NAT " ++ Nat.show(src))
-  dst_hi : U32 <- khi()
-  dst_lo : U32 <- klo()
-  src_hi : U32 <- khi()
-  src_lo : U32 <- klo()
-  fill.go(in_words(), src_hi, src_lo, 0)
-  _ : U32 <- klaunch(LAUNCHARGS)
-  dump.go(out_ix(), dst_hi, dst_lo, 0)
-  IO.print("DONE 1")
 """
-  s = BEND.format(lawndecls=lawndecls, words=WORDS,
-                  ixs=", ".join(f"{i}n" for i in range(nwords))) + tail
-  return (s.replace("NBYTES", str(nbytes))
-           .replace("LAUNCHARGS", ", ".join(["k"] + list(launch_nats))))
+
+
+def bend_run(nwords, nbytes, inputs, launch_nats, lawndecls):
+  """THE WHOLE ORCHESTRATION IS IN BEND: allocate, split, fill, LAUNCH THE KERNEL
+  BY POINTER, read the words back, print them.  The C side holds no words.
+
+  `inputs` is `[(binder, [words]), ...]` -- one entry per input buffer, so the
+  NUMBER OF BUFFERS IS THE PORT'S SIGNATURE and not a constant here."""
+  tail = ["\ndef go() -> IO(Unit):", "  do IO<Unit>:",
+          "  +k : Nat <- kaddr()", '  IO.print("KERNEL_NAT " ++ Nat.show(k))']
+  tail += ["  +dst : Nat <- kmalloc(NBYTESn)", '  IO.print("DST_NAT " ++ Nat.show(dst))']
+  # THE (hi, lo) PAIR IS TAKEN IMMEDIATELY, BEFORE THE NEXT ALLOCATION. `khi`/`klo`
+  # read a C static that `kmalloc` OVERWRITES, so reading them after the next
+  # allocation makes two buffers the SAME pointer. MEASURED: the first version of
+  # this program did exactly that and the lane was GREEN for the wrong reason --
+  # the kernel was self-aliased, and a self-aliased call of a one-input kernel
+  # returns the correct answer by construction. Only the "fill the wrong buffer"
+  # negative control exposed it, because that control was supposed to turn the
+  # lane red and did not.
+  tail += ["  +dst_hi : U32 <- khi()", "  +dst_lo : U32 <- klo()"]
+  for tag, _ in inputs:
+    tail += [f"  +{tag} : Nat <- kmalloc(NBYTESn)", f'  IO.print("{tag.upper()}_NAT " ++ Nat.show({tag}))',
+             f"  +{tag}_hi : U32 <- khi()", f"  +{tag}_lo : U32 <- klo()",
+             f"  fill.go(in_{tag}(), {tag}_hi, {tag}_lo, 0)"]
+  tail += [f"  _ : U32 <- klaunch(LAUNCHARGS)",
+           f"  dump.go(out_ix(), dst_hi, dst_lo, 0)", '  IO.print("DONE 1")', "",
+           "def main() -> IO(Unit):", "  do IO<Unit>:", "  _ : Unit <- go()", '  IO.print("")']
+  return ("\n".join(tail)
+          .replace("NBYTESn", str(nbytes) + "n")
+          .replace("LAUNCHARGS", ", ".join(["k"] + list(launch_nats))))
 
 
 def main():
     out = pathlib.Path(sys.argv[1])
     row = sys.argv[2] if len(sys.argv) > 2 else "kern2 CLANG      "
-    wordkey = sys.argv[3] if len(sys.argv) > 3 else "stage1_in_words"
-    global WORDS
+    mode = sys.argv[3] if len(sys.argv) > 3 else "row"
     orc = json.loads((out / "oracle.json").read_text())
-    WORDS = ", ".join(str(w) for w in orc[wordkey])
-    kernel = port_rows(out / "port-rows.txt")[row]
+    if mode == "mm":
+        # THE KERNEL COMES FROM `emit-mm.bend`, WHICH CALLED THE PORT'S OWN
+        # `render_kernel` WITH FOUR BUFFERS. Read out of that file between the two
+        # markers; nothing here is transcribed.
+        t = (out / "mm-rows.txt").read_text()
+        kernel = t[t.index("KERNEL_BEGIN") + 12:t.index("KERNEL_END")].strip("\n")
+        words = {"A": orc["mm_A"], "B": orc["mm_B"], "C": orc["mm_C"]}
+        inputs = [(k, words[k]) for k in ("A", "B", "C")]
+    else:
+        key = row if row != "kern2 CLANG      " else "stage1_in_words"
+        kernel = port_rows(out / "port-rows.txt")[row]
+        inputs = [("src", orc[key if key in orc else "stage1_in_words"])]
     fname, args = signature(kernel)
     names = [b for _, b in args]
     proto = f"extern void {fname}({', '.join(a + ' ' + b for a, b in args)});"
@@ -176,7 +190,7 @@ def main():
     # `kaddr` needs the kernel's own address, which lives in the KERNEL object.
     # The replace target carries SINGLE braces because `.format` has already
     # unescaped the template's `{{` by this point -- an earlier version searched
-    # for `{{` and silently inserted nothing.
+    # for `{{` and silently inserted nothing, which an assert now catches.
     shim = SHIM_HEAD.format(proto=proto, ptypes=ptypes, spread=spread).replace(
         "static void __attribute__((constructor)) shim_use(void) {",
         "extern void* port_kernel_addr(void);\n"
@@ -188,16 +202,26 @@ def main():
     (out / "kernel.c").write_text(orc["vec4_typedef"] + "\n" + kernel +
                                   f"\n/* the address of the PORT's own emitted symbol */\n"
                                   f"void* port_kernel_addr(void) {{ return (void*)&{fname}; }}\n")
+    launch_ty = "Nat -> " + " -> ".join(["U32"] * (2 * len(args))) + " -> IO(U32)"
+    launch_ps = ", ".join(["kp"] + [f"b{k}_{h}" for k in range(len(args)) for h in ("hi", "lo")])
     lawndecls = "\n".join(f"law {n}:\n  {t}\n\ndef {n}({p}):\n  import \"./shim.c\"\n"
-                          for n, t, p in LAWS)
-    nwords = len(orc[wordkey])
-    nbytes = nwords * 4
-    hi_lo = ["dst_hi", "dst_lo", "src_hi", "src_lo"][:2 * len(names)]
-    (out / "run-kernel.bend").write_text(bend_run(nwords, nbytes, hi_lo, lawndecls))
-    print("PORT ROW       :", row.strip())
+                          for n, t, p in LAWS + [("klaunch", launch_ty, launch_ps)])
+    decls = "".join(f"def in_{t}() -> List<&2, U32>: [{', '.join(str(w) for w in ws)}]\n\n"
+                    for t, ws in inputs)
+    nwords = len(inputs[0][1])
+    hi_lo = (["dst_hi", "dst_lo"] + [f"{t}_{h}" for t, _ in inputs for h in ("hi", "lo")])
+    body = BEND.format(lawndecls=lawndecls,
+                       words=", ".join(str(w) for w in inputs[0][1]),
+                       ixs=", ".join(f"{i}n" for i in range(nwords)))
+    body = body.replace("def in_words() -> List<&2, U32>: [" +
+                        ", ".join(str(w) for w in inputs[0][1]) + "]", "")
+    (out / "run-kernel.bend").write_text(body + decls +
+                                         bend_run(nwords, nwords * 4, inputs, hi_lo, lawndecls))
+    print("PORT ROW       :", row if mode != "mm" else "emit-mm.bend (the port's own render_kernel, 4 bufs)")
     print("PORT PROTOTYPE :", proto)
     print("SHIM CALL      :", ", ".join(names))
     print("KERNEL BYTES   :", len(kernel))
+    print("INPUT WORDS    :", {t: len(ws) for t, ws in inputs})
 
 
 if __name__ == "__main__":
