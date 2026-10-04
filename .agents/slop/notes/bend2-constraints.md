@@ -24474,3 +24474,315 @@ both directions after repointing a copy's finder: pointed at the copy it accepts
 the live tree it refuses and names both paths. **`drift-gate.py` used `sys.executable`, so its
 authority depended on the LAUNCHER** — the exact defect `oracle_py.py` was written to end — and
 now calls `resolve()`.
+
+---
+
+## Session 2026-10-04, the libclang shim unit — **S-numbers, continuing from zero**
+
+`F-` numbers have collided three times, so these are `S-`. Everything below was
+measured on **bend 2.0.35** (`bend --help` prints 2.0.34; every run prints
+`bend 2.0.35 is available`). Artefacts: `.agents/slop/clangshim/{STAGE1..4}.md`,
+`clangshim-gen.py`, `clang-cost.py`; reproduce with `zsh $TMPDIR/clangshim/s{1,2,3}.sh`.
+
+**S-1. EVERY `Nat` IN BEND IS LINEAR — NOT ONLY FOREIGN ONES.**
+`def addn(a: Nat, b: Nat) -> Nat: (a + b : Nat)`, then `p : Nat = addn(1n, 2n)` and
+`addn(p, p)` →
+```
+- expected : p
+- observed : p (consumed more than once)
+```
+`p` never touched C. `ffi-experiment/EXPECTED.md` records this as "foreign values
+are linear"; it is **every** `Nat`. A value may be used **exactly once**, whatever
+produced it. `def dup(x: Nat) -> Nat: x` is **not** an escape: passing `ix` to
+`dup` is itself the one use, so `ix` is spent. **Consequence for FFI:** a handle
+cannot be printed *and* passed, and **no two-call libclang round trip is
+expressible from Bend** — `setGlobalOptions(ix, v)` then `getGlobalOptions(ix)`
+needs `ix` twice. Fuse the sequence inside one foreign law. Reproduce:
+`.agents/slop/clangshim/STAGE3.md`.
+
+**S-2. `bend -o` EMITS NO `CID_*` FOR A FOREIGN DEF `main` NEVER CALLS.** Three
+laws, `main` calls two:
+```
+#define CID_CREATEINDEX 14      <- called by main
+                               <- no CID_DISPOSEINDEX at all
+g.c:  error: use of undeclared identifier 'CID_DISPOSEINDEX'
+```
+So `io_eff(CID(k), run, 0)` in an imported `.c` for a law outside `main`'s call
+graph produces **C that does not compile**. A shim library cannot be a library:
+**every law needs a caller in `main`.** And a law with no row in `main` is a TODO,
+so `bend -o` refuses the file outright (`Error: 20 TODOs found`) — **exit
+status is not a gate here either.** Reproduce:
+`.agents/slop/clangshim/s3.c` vs `.agents/slop/clangshim/t2/a.bend`.
+
+**S-3. `Error: an arity over 247` IS A LIMIT ON LIVE BINDERS, NOT ON FOREIGN
+DEFS.** 308 laws all typecheck; 308 binders held at once in one `do IO<Unit>`
+block do not (`WIDE = 247` in `comp.ts:141`). Interleaving — bind one, consume it,
+bind the next — compiles. **A census over N laws must not accumulate N binders.**
+
+**S-4. A NULLARY `type X is Data: X{}` IS A SINGLETON AND CANNOT CARRY A VALUE.**
+One constructor, no fields ⇒ exactly one inhabitant, so no pointer can live in it.
+`tinybendygrad/runtime/autogen/libclang.bend` declares **all 60** of its ABI types
+that way. It is a type-level fact, not a measurement: a foreign law therefore
+cannot reuse them as parameter types and must flatten to `Nat`/`String`/`Unit`.
+**The cost is real: a wrong argument type is then caught by the process dying,
+not by the typechecker.**
+
+**S-5. `IO.print` ABORTS THE WHOLE RUN ON A `Nat` ABOVE 2^51.** Printing 308
+foreign answers in one program dies with
+`bend: a Nat past the largest immediate 2^48-1` on the first one over the
+window — and most pointer answers are over it. **Bind the answer and drop it**;
+an unused binder is legal. A value lane belongs in a program of its own.
+
+**S-6. A BARE INTEGER LITERAL IS `U32`, NOT `Nat`.** `def mk: Nat -> IO(Nat)` with
+`mk(1)` is `expected : Nat / observed : U32`. `mk(1n)` compiles. Generated laws
+whose parameter is a `Nat` must be called with `0n`. (Also: `a + b` needs an
+annotation — "a type for this operator (write `(a + b : Nat)`)".)
+
+**S-7. A NULLARY LAW HAS NO DOMAIN AND NO ARROW.** `law cver: IO(String)` is
+right; emitting `  -> IO(Nat)` gives `expected : a name / observed : '>'`.
+
+**S-8. `type` IS A BEND KEYWORD, AND THE libclang PARAMETER NAMES ARE A SEPARATE
+NAMESPACE FROM tinygrad's DEF NAMES.** `agent-core.md` measures two collisions
+(`match`, `where`) among tinygrad **def** names. Over the **138 distinct parameter
+names** in `.agents/slop/ag-libclang.tramp` the collisions are a **different
+list**, and `type` is in it:
+`def clang_Type_getObjCEncoding(type):` →
+`expected : a name (got the keyword 'type')`. Full list:
+`def type law match case do return for exs where is import Type Data Kind Quant`
+(`bend.ts:1503`). A parameter name is only a Bend binder — the C side reads `f[]`
+positionally — so the rename is Bend-side only.
+
+**S-9. `fork()` DUPLICATES AN UNFLUSHED `stdout` BUFFER INTO THE CHILD.** A shim
+whose `_run` forks on every call prints each line once **per fork that followed
+it** — 2,129 lines where 264 were expected, and the duplicates looked like real
+rows. `fflush(NULL)` before `fork()`, once, in the shared helper.
+
+**S-10. A COWORKER ARRAY THAT ENCODES SUCCESS MUST NOT START AT ZERO.** `why == 0`
+meant "the call returned"; a zero-initialised array therefore reported **305/305
+green** alongside 15 `bend: memory fault` lines on stderr. Two more defects were
+in the same harness: the attribution was written **after** `return shim_*` (dead
+code), so nothing ever recorded. Use an explicit `NEVER-RUN` sentinel and write
+the attribution **before** the return. **This is `nv_nvdev_gate.py`'s shape**: a
+lane that cannot fail.
+
+**S-11. A FORKED HEAP IS COPY-ON-WRITE, SO A `Term` THE CHILD ALLOCATED IS NOT A
+`Term` IN THE PARENT.** `io_str` in a child hands back a pointer into the child's
+copy-on-write heap. An answer must travel back as **bytes** through a pipe and be
+rebuilt in the parent's heap; that is why a `const char*` return is piped as bytes
+rather than as a word. `(measured while building the 305-row census: the naive
+form returns garbage for every string law and the fault is silent.)`
+
+**S-12. THE 324-libclang REFUSAL IS MEASURABLY WRONG IN BOTH HALVES.**
+`tinybendygrad/runtime/autogen/libclang.bend:15-16` says a per-function FFI "would
+mean 324 C files and 324 hand-written shims". Measured: **one** `.c`, **one**
+`import`, **one** `cc`, **zero** hand-written shims, at **6 Bend + 6.7 C lines**
+per binding (12.7 marginal, 14.2 all-in) — and the *estimate* of ~3 + ~3 = 6 that
+`ffi-port-cost.py` prints is **2.1× low**, because a law block is six lines and
+the `extern` declaration is a third C line nobody counted. 305/324 link, 290 call
+and return. **The remaining 16 are a missing TYPE (`F64`, `I64`), not a missing
+INTERFACE**, which is the distinction the refusal was making.
+
+**S-13. TWO SPELLING TABLES ARE HOW A CLASSIFIER REPORTS A CLEAN 308 OVER A PORT
+THAT WOULD NOT COMPILE.** `ffi-port-cost.py`'s `Types.resolve` leaves
+`ctypes.c_char` uncanonicalised, so `classify` never sees `*char`, so **every
+`const char*` parameter and return came out as a pointer** and `bend_cstr`/`io_str`
+were never emitted at all. Separately its CFUNCTYPE branch
+(`re.match(r"^c\.CFUNCTYPE\[.*\[(.+)\]\]", t)`) captures the **argument list** for
+a multi-argument callback, so `T.resolve("CXInclusionVisitor")` is a
+comma-separated string. **Neither changes its counts** (a pointer and a callback
+are both unblocked), so its 307/17 stands — but its per-argument *spelling* is
+unusable. **Verify a classifier by COMPILING its output, not by counting.**
+
+**S-14. `md5 -q` TAKES ONE FILE; `sha256` FOR MULTIPLE.** Already known; recorded
+here because it was re-learned while re-running this unit's cost measurement.
+
+**W-1. A MARKER COUNT IN THIS PROJECT IS MEANINGLESS WITHOUT ITS COUNTING RULE.** Four
+instruments count "markers" in `tinybendygrad/` and none agrees with another, because each
+picked a different side of the same trade-off — how far past the marker line the claim is
+allowed to reach. Measured on one frozen tree (2026-10-04T13:00:35Z, manifest in
+`.agents/slop/wallmap/`):
+
+| rule | count |
+|---|---|
+| the string `TODO(p3)` anywhere (`rg -o`) | **1023** |
+| the comment line BEGINS with the tag (`^\s*#\s*TODO\(`) | **817** |
+| in a comment, tag not inside backticks (`grw-census.py`) | **880** |
+| `^\s*#\s*TODO\(p3\)`, continuation to the NEXT MARKER (`marker-audit.py`) | **815** |
+
+`marker-audit.py`'s own docstring records the first version reading a fixed 14-line window and
+reporting 162 unexplained markers where the truth is 76; `grw-census.py`'s records the opposite
+failure. **Write the rule in the same sentence as the count or the count will be quoted forever,
+which is what has happened to every headline number in this project.**
+
+**W-2. `rg` NEEDS `-a` IN THIS TREE, AND THE COUNT IS 1,028 NOT 1,026.**
+`tinybendygrad/runtime/ops_dsp.bend` trips ripgrep's binary heuristic: `rg` prints `WARNING:
+stopped searching binary file after match (found "\0" byte...)` and silently truncates the
+file. `rg -a -o 'TODO\((p[0-9]|pN|delete)\)' tinybendygrad/ | wc -l` = **1028** in 82 files;
+without `-a` it is 1026. A warning on stderr is not a failure a script will notice.
+
+**W-3. A BARE BASENAME IS NOT AN ADDRESS. `__init__.py` EXISTS IN 29 PLACES.**
+`TODO(p3) __init__.py:26` inside `renderer/__init__.bend` means `tinygrad/renderer/__init__.py:26`,
+by the one-file-per-upstream-.py-at-the-same-path rule — NOT `tinygrad/__init__.py`, which is 12
+lines long. Ranking candidates by exact match first produces 25 phantom "line past EOF"
+verdicts. Two resolvers are needed: the port file's own upstream sibling wins for a bare
+basename, and a citation that DOES carry a path is an address (strip the `tinygrad/` prefix
+first). Where neither disambiguates, resolve by CONTENT: `__init__.py:411 replaced.get` is
+`codegen/__init__.py`, `:26 from_uops` is `renderer/__init__.py`, `:22 _states` is
+`schedule/__init__.py`.
+
+**W-4. AN `ALREADY-CLOSED` MARKER IS INVISIBLE TO ANY CENSUS OF THE LIVE TREE.** It is absent
+by definition. Closure is observable only as a DIFF against a dated copy of the tree.
+`runs/gr-init/base` is a full copy of `tinybendygrad/` (mtime 2026-10-04 05:18) and is the only
+artifact in the tree that makes closure measurable; diffing it against the live tree is how all
+5 `ALREADY-CLOSED` verdicts in `.agents/slop/WALLMAP.md` were found. **Any backlog number
+produced by reading the current tree is a lower bound that can never decrease.**
+
+**W-5. DELETION IS NOT CLOSURE.** Of 79 claim lines deleted between 05:18 and 13:00, 5 landed,
+34 moved or deduplicated, and **48 were deleted with no def landing and no surviving claim at
+their upstream address.** 21 of the 48 are `ops.py:1526-1777`, and `.agents/TODO.md:944` says
+that band's wall "is stated once" — checked, it is now stated NOWHERE:
+`rg 'TODO\(p3\)\s+ops\.py:1[5-7][0-9][0-9]' tinybendygrad/uop/ops.bend` returns 0. **A marker
+whose wall lives in a comment that has since been deleted is not a closed marker; it is a
+silent gap, and nothing in the tree will ever report it again.**
+
+**W-6. `TODO(pN)`, `TODO(delete)`, `TODO(p1)`, `TODO(p4)`, `TODO(p6)` ARE THREE KINDS OF THING
+IN ONE NAMESPACE, AND NONE IS DEFINED AT THE POINT OF USE.** `p1`/`p4`/`p6` are PHASES of the
+port plan, defined only in `.agents/TODO.md:917-928` (P3 `uop/`, P4 `schedule/ engine/`,
+P5 `codegen/ renderer/`, P6 `runtime/`, P7 `tensor mixin/ nn/`, P8 `llm/ viz/ function.py
+device.py`). `pN` is an unnumbered placeholder and says so (`mixin/rand.bend:32`). `delete` is a
+DISPOSITION, not a priority. `engine/jit.bend:1091` glosses `p3` as "a phase owns this" —
+**falsified by the tree: only 214 of 1023 `TODO(p3)` markers (20.9%) are in P3's directory, so
+`p3` is a DEFAULT, not a phase, and a default on 99.5% of items orders nothing.** There is no
+`TODO(p2)` and no `TODO(p5)` anywhere despite both phases existing and P5 owning 30 files.
+
+**W-7. A KEYWORD PATTERN OVER WALL PROSE IS A FALSE-POSITIVE GENERATOR, AND ONE OF MINE WAS.**
+Ranking by blocker keyword: the pattern `mixin method|belongs to another file|second
+port|elementwise` reported **68** claim lines under one wall, and reading 6 of them showed the
+match was the token `elementwise` in `mixin/elementwise.bend`'s OWN file name. The truth for
+that concentration is **31** under `math.*`. 43 of the 68 were `mixin/elementwise.bend`
+transcendentals. **Read a sample of every bucket before ranking it, and record the rejected
+pattern next to the accepted one** — a rejected pattern that survived would have been a false
+finding, and a false finding here costs the ranking.
+
+## G-1..G-8 — the `compute_gradient` walk unit, 2026-10-04
+
+Numbering continues from nothing: **the `G-` namespace was unused** before this block, so
+`G-1` is the first `G-` and cites the `T-` and `C-` blocks above only for continuity.
+**Cite by NAME (`G-n`) and by the POSITION of this block's end (24665 lines); the `F-`
+numbers have collided three times and `GC-` twice.** Every rule below was MEASURED on
+`tinybendygrad/mixin/gradient.bend` while writing `_deepwalk` and `compute_gradient`. Full
+transcript in `.agents/slop/BACKWARD-WALK.md`.
+
+### G-1 A `case Some{sl}:` BINDER CANNOT CALL A DEF DECLARED LATER IN THE FILE
+
+Six lines, `bend 2.0.34`:
+
+```bend
+type Slot is Data: Slot{at: Nat, w: U32}
+def add(+sl: Slot, +v: U32) -> U32: 5
+def put.of(hit: Maybe<&2, Slot>, +v: U32) -> U32:
+  match hit:
+    case Some{sl}: add(sl, v)      # <- moving `add` ABOVE `put.of` is the whole fix
+    case None{}: 0
+```
+
+is `ALL PROOFS CHECK`, and with the two defs swapped it is
+
+```
+- expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+- observed : add
+```
+
+**The message is the trap.** It names the CALLER's `match` condition, says an "unfilled
+law" is a "dead claim", and mentions recursion nowhere — so it reads as a mutually-recursive
+def with an empty body. It is not: it is **declaration order**, and it is ABSOLUTE
+(`calc_deps` resolves `Rule::Var` to the LAST name in the same state). It fires without any
+recursion at all (`cg_sum.grow -> cg_sum.done` and `cg_outer.of -> cg_fire` both had to be
+written callee-first). **The fan-out is 1:1 with every callee, and it is invisible in the
+error, so "mutual recursion" is the wrong diagnosis to carry away from it.**
+
+Corollary: the `.of`/`.go`/`name.phase` convention that reads as if it were call-site-first
+must actually be written LEAF-FIRST. In this file the chain came out
+`cg_sum.done -> cg_sum.grow -> cg_sum.noop -> cg_sum.add -> cg_sum.put -> cg_hole.of ->
+cg_puts.step -> cg_puts`, which is exactly the reverse of how it reads.
+
+### G-2 A TWO-SCRUTINEE `match`'s SCRUTINEES MUST BE IN PARAMETER ORDER
+
+`def rd.go(fs: List<&2, Bool>, ns: List<&2, U32>, x: U32)` with `match ns fs:` is refused
+with
+
+```
+- message  : a match on a parameter or field (this name is a def or a consumed binder)
+- Location: ... |  match ns fs:  ^^^^^^^^^^^
+```
+
+**The caret points at the SECOND scrutinee and the message never mentions the mismatch**,
+so it reads as a consumed binder from `fs`. Declare the parameters in the order you will
+scrutinise them. (`O.eq_u32`'s `match ys zs:` over `(ys, zs, …)` works for the same
+reason.)
+
+### G-3 WITH PARALLEL LISTS IN LOCKSTEP THE POSITION INDEX IS NOT NEEDED
+
+`dw_read.go(ns, fs, x)` walks both lists with `match ns fs: case h <> t f <> u:` and reads
+`f` — the flag — directly, with **no** counter parameter, because the two lists are
+appended together and so the head of `fs` IS `flags[i]`. The obvious version threads a
+`U32` position and does `List.get(&2, Bool, f, U32.to_nat(i))`, which is both more code and
+one more way to be off by one. **If you are walking two lists together, do not index them.**
+
+### G-4 A GROWING ACCUMULATOR MUST BE THE LAST PARAMETER OF A SELF-CALL
+
+`dw_flags(ar, targets, dw_push(p, x, …), t)` is refused with
+
+```
+- expected : a decreasing self-call (arguments are read left to right: each passed unchanged until one shrinks)
+```
+
+and `dw_flags(ar, targets, t, dw_push(p, x, …))` compiles. So the rule the note at position
+612 states ("each passed unchanged until one shrinks") means a **CHANGED** argument also
+stops the scan: an accumulator in third place makes the third argument "not unchanged" and
+the list in fourth place is never reached. **This is stricter than "a list self-call must
+shrink its first argument" (position 1922): a changed non-shrinking argument is as fatal
+as a growing one, and the fix is the same — accumulator last.**
+
+### G-5 A `Data` RECORD NEEDS `+` ON EVERY PARAMETER THAT IS READ TWICE, AND THE ERROR SAYS "consumed more than once"
+
+`expected : d / observed : d (consumed more than once)`. Seen on: a `U32` (`dw_read.go`'s
+`x`, used in both the test and the self-call), a `String` (`dag_join`'s `acc`, inside one
+`Bool.pick`), an `O.Arena`, a `Dag`, a `Grads`, a `CState`, and a `Bool`. **Two of them are
+read-only values** — an arena index and a string are not consumable — so "consumed" in the
+message is a misuse and the fix is `+` on both. Same message, same fix, ~15 sites; treat
+it as the default response and do not go looking for a shared-readability rule.
+
+### G-6 `size(fuel, ar, todo, acc)` IS `1 + sum(size(s))` AND IS **NOT** A TOPOSORT COUNT
+
+`O.UOp.toposort` deduplicates a shared subtree; `gradient.bend`'s `size` does not. They agree
+on every `*_n` row in that file **because every one of those fixtures is a tree**. The
+first fixture with SHARING answers `7` where CPython's `len(u.toposort())` answers `5` —
+`grads[a] = seed + (b*seed)`, whose two operands share `seed`. **The error is entirely in
+the shared PREFIX, and the row still looked like a signature** (`5 root=ADD/2` vs
+`7 root=ADD/2`). Any row that claims to be CPython's `len(ts)` must count
+`List.length(List.get…)` over `O.UOp.toposort`, not `size1`; `mixin/elementwise.bend`'s
+`ew_nnodes` already does.
+
+**Generalise:** a hand-rolled tree-size fold and a `toposort` agree until the graph is a
+DAG, and the DAG is precisely where a *walk* is being tested.
+
+### G-7 A `Maybe`/table read OUT OF THE WRONG ARENA ANSWERS `Arena.bottom()` AND LOOKS LIKE A SIGNATURE
+
+Reading a `grads` VALUE index out of the FIXTURE arena when the walk minted it in a GROWN
+one gives `Arena.at` -> `None` -> `Arena.bottom()`, i.e. a NOOP with no srcs, and the row
+prints `1 root=NOOP/0`. This is notes T-4's shape (`+` does not enforce that an index is
+meaningful in the arena that produced it) reached from the READ side, and it is
+**indistinguishable from a real answer** because `NOOP/0` is a well-formed token. The
+arena has to be threaded out of whatever produced the value, not re-read from the fixture.
+
+### G-8 `case _ _:` FIRST IS DEAD CODE, AND A DEAD DESCENT IS SILENT
+
+`cg_puts` with the cover arm first returns the state untouched on the FIRST pair, every
+time, and prints `walk_grads_n=1 walk_skip_n=2` where CPython prints `6` and `0`. Nothing
+in the compile, the run, or the row format says a descent did not happen. This is position
+1620 again, and the new fact is **what it costs**: one dead arm in one two-scrutinee match
+turned the whole walk into a no-op that produced a *plausible, self-consistent, wrong*
+answer, and the only thing that named it was carrying `skip_n` as a SEPARATE row from
+`grads_n`. **A walk's "did every iteration happen" counter is not redundant with its
+result count; here the result count was wrong in a direction the counter caught.**

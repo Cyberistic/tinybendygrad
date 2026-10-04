@@ -1,0 +1,727 @@
+[
+ {
+  "f": "renderer/csprobe.bend",
+  "i": 434,
+  "label": [
+   "ADDR",
+   [
+    [
+     "cstyle.py",
+     55
+    ]
+   ]
+  ],
+  "verdict": "NOT-LANDED",
+  "was": "#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs"
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5499,
+  "label": "get_idx",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:668  def get_idx              -- `self.structurally_legal`; P3.",
+  "still_claimed_at": [
+   [
+    "uop/ops.bend",
+    4405
+   ]
+  ]
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5508,
+  "label": "as_shape",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:808  def as_shape             -- PORTED for CONST and STACK-OF-CONST,"
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5514,
+  "label": "marg",
+  "verdict": "LANDED-HERE",
+  "was": "# TODO(p3) ops.py:814  def marg                 -- ALL THREE ARMS PORTED, and the second"
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5536,
+  "label": "vmin",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, and the BOUND",
+  "still_claimed_at": [
+   [
+    "uop/ops.bend",
+    4595
+   ]
+  ]
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5538,
+  "label": "vmax",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1102 def vmax                 -- `self._min_max[1]`, same.",
+  "still_claimed_at": [
+   [
+    "uop/ops.bend",
+    4597
+   ]
+  ]
+ },
+ {
+  "f": "uop/fold.bend",
+  "i": 5539,
+  "label": "_min_max",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1104 def _min_max             -- THE BOUND, THE OP TABLE AND",
+  "still_claimed_at": [
+   [
+    "uop/ops.bend",
+    4599
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4193,
+  "label": "_ranges",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:483  def _ranges",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6172
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4199,
+  "label": "axis_id",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:502  def axis_id",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6183
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4201,
+  "label": "axis_type",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:507  def axis_type",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6186
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4223,
+  "label": "body",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:565  def body",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6201
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4225,
+  "label": "is_inline_call",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:570  def is_inline_call",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4227,
+  "label": "has_unbound_outputs",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:573  def has_unbound_outputs",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4229,
+  "label": "unbound_outputs",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:578  def unbound_outputs",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4231,
+  "label": "index",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:581  def index"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4241,
+  "label": "vconst_like",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:606  def vconst_like",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4247,
+  "label": "barrier",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:624  def barrier"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4253,
+  "label": "const",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:632  def const"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4255,
+  "label": "ccast",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:640  def ccast",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4260,
+  "label": "range",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:645  def range",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4262,
+  "label": "loop",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:648  def loop"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4266,
+  "label": "_rop",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:655  def _rop",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4274,
+  "label": "get_valid",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:671  def get_valid",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4291,
+  "label": "copy_to_device",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:761  def copy_to_device",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4302,
+  "label": "as_shape",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:808  def as_shape"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4304,
+  "label": "marg",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:814  def marg"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4306,
+  "label": "_mop",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:821  def _mop",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4308,
+  "label": "getaddr",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:844  def getaddr",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4310,
+  "label": "device_range_src",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:849  def device_range_src",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4322,
+  "label": "device",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:890  def device",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6235
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4326,
+  "label": "addrspace",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:910  def addrspace",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6239
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4342,
+  "label": "variable",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1013  def variable",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6242
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4344,
+  "label": "is_variable",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1018  def is_variable",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4346,
+  "label": "is_bound_var",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1023  def is_bound_var",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4348,
+  "label": "expr",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1027  def expr",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4350,
+  "label": "bind",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:1030  def bind"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4352,
+  "label": "unbound",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1037  def unbound",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4354,
+  "label": "unbind",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1041  def unbind",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4356,
+  "label": "unbind_all",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1044  def unbind_all",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4358,
+  "label": "variables",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1047  def variables",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6245
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4393,
+  "label": "set",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1222  def set",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4433,
+  "label": "vals",
+  "verdict": "LANDED-HERE",
+  "was": "# TODO(p3) ops.py:1364  def vals"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4438,
+  "label": "safe_exp2",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1408  def safe_exp2",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6353
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4441,
+  "label": "safe_pow",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1412  def safe_pow",
+  "still_claimed_at": [
+   [
+    "uop/fold.bend",
+    6355
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4443,
+  "label": "exec_alu",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:1427  def exec_alu"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4445,
+  "label": "get_location",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1438  def get_location",
+  "still_claimed_at": [
+   [
+    "uop/upat.bend",
+    1646
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4490,
+  "label": "_broadcasted",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1526  def _broadcasted",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4492,
+  "label": "__floordiv__",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1530  def __floordiv__",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4493,
+  "label": "__rfloordiv__",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1531  def __rfloordiv__",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4494,
+  "label": "mod",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1532  def mod",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4500,
+  "label": [
+   "ADDR",
+   [
+    [
+     "ops.py",
+     1464
+    ]
+   ]
+  ],
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1464  permutations, arity >= 3"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4502,
+  "label": "match",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1537  def match",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4504,
+  "label": "deconstruct_function",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1556  def deconstruct_function",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4506,
+  "label": "names",
+  "verdict": "LANDED-ELSEWHERE",
+  "was": "# TODO(p3) ops.py:1558  def names"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4509,
+  "label": "upat_interpret",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1566  def upat_interpret",
+  "still_claimed_at": [
+   [
+    "uop/upat.bend",
+    1642
+   ]
+  ]
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4511,
+  "label": "universal_match",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1569  def universal_match",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4513,
+  "label": "universal_match",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1574  def universal_match",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4515,
+  "label": "upat_deferred_compile",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1580  def upat_deferred_compile",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4517,
+  "label": "lazy_compile",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1581  def lazy_compile",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4523,
+  "label": "__add__",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1603  def __add__",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4525,
+  "label": "rewrite",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1605  def rewrite",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4537,
+  "label": "rewrite",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1699  def rewrite",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4527,
+  "label": "save_to_diskcache",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1642  def save_to_diskcache",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4529,
+  "label": "add_trace_group",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1646  def add_trace_group",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4531,
+  "label": "rewrite_group",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1652  def rewrite_group",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4533,
+  "label": "_decorator",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1654  def _decorator",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4535,
+  "label": "__wrapper",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1655  def __wrapper",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4539,
+  "label": "print_match_stats",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1733  def print_match_stats",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4541,
+  "label": "launch_viz",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1749  def launch_viz",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4545,
+  "label": "pm_rewrite",
+  "verdict": "LANDED-HERE",
+  "was": "# TODO(p3) ops.py:1775  def pm_rewrite"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4548,
+  "label": "cached_bpm_rewrite",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1777  def cached_bpm_rewrite",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4570,
+  "label": "to_max_shape",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1886  def to_max_shape",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4572,
+  "label": "resolve_returned_after",
+  "verdict": "LANDED-HERE",
+  "was": "# TODO(p3) ops.py:1891  def resolve_returned_after"
+ },
+ {
+  "f": "uop/ops.bend",
+  "i": 4574,
+  "label": "contiguous_bitcast_index",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) ops.py:1907  def contiguous_bitcast_index",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/render.bend",
+  "i": 1948,
+  "label": "print_uops",
+  "verdict": "LANDED-HERE",
+  "was": "# TODO(p3) render.py:18  def print_uops"
+ },
+ {
+  "f": "uop/render.bend",
+  "i": 1949,
+  "label": "marg_str",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) render.py:35  def marg_str",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/render.bend",
+  "i": 1950,
+  "label": "render_marg",
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) render.py:37  def render_marg",
+  "still_claimed_at": []
+ },
+ {
+  "f": "uop/render.bend",
+  "i": 1951,
+  "label": [
+   "ADDR",
+   [
+    [
+     "render.py",
+     45
+    ]
+   ]
+  ],
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) render.py:45  renderer"
+ },
+ {
+  "f": "uop/render.bend",
+  "i": 1952,
+  "label": [
+   "ADDR",
+   [
+    [
+     "render.py",
+     74
+    ]
+   ]
+  ],
+  "verdict": "NOT-LANDED",
+  "was": "# TODO(p3) render.py:74  renderer_infer"
+ }
+]

@@ -6,6 +6,19 @@ The port's state. Progress bars are `[###.....] n/m`.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
+clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
+                                        **324 bindings -> 308 laws -> 305 LINKED ->
+                                        290 CALLED**, each step measured twice.
+                                        Stage 3 falsifiable row 8/8, with the plant
+                                        (set 0/5/7 -> get 0/5/7) AND its paired
+                                        disarm (5 twice -> 5). Stage 1 one
+                                        function. Stage 4 all 19 drops attributed.
+                                        **Not a device runtime: E2E-PROVES-COMPUTE
+                                        is still 1/1 and these are signatures that
+                                        link and return values.**
+                                        See `.agents/slop/clangshim/CLANGSHIM.md`.
+                                        S-1..S-14 appended at bend2-constraints.md
+                                        24580+.
 gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +28 `f2f` rows:
                                         the whole float-decomp region, previously UNREACHABLE
                                         from `main` and therefore ungated for a whole session.
@@ -8583,3 +8596,139 @@ unfalsifiable    [##########] 4/4   the four headline numbers, each with plant+d
       The range column in its EMPTY case. A node that actually HAS ranges is not in this
       fixture, and that claim needs the range sweep; `multirange_str` and `range_str` are
       already in `render.bend` for it.
+
+---
+
+## slop(wallmap) — a census and a RANKING of every refusal recorded in the port
+
+`.agents/slop/WALLMAP.md`, with the machine-readable census in
+`.agents/slop/wallmap/census.tsv` (1,028 rows) and the frozen tree + sha256 manifest beside it.
+
+**This is a census, not another port. It counts, classifies, deduplicates and RANKS the
+backlog, and it found the backlog is not the thing the marker count said it was.**
+
+### [x] COUNT — from DATA, against a FROZEN tree
+
+`runs/` holds live units and `uop/ops.bend` was being edited mid-census, so the whole census
+ran against a `tar` of the 134 tracked `.bend` files with a per-file sha256 manifest,
+**verified identical on extract (134/134)**. Frozen `2026-10-04T13:00:35Z`.
+
+```
+markers                          1,028   in 82 files
+  TODO(p3) 1,023  p1 1  p4 1  p6 1  pN 1  delete 1
+  of which the comment BEGINS with the tag (a claim)      817   79.5%
+  of which the tag appears MID-LINE (a cross-reference)    211   20.5%
+```
+
+**The count is 1,028, not the 1,026 on the board**, and the reason is a trap worth keeping:
+`rg` needs `-a` because `runtime/ops_dsp.bend` trips its binary heuristic and is silently
+truncated. Also excluded: `runtime/ops_bend.mut.bend`, 2 markers, a mutation harness's scratch
+copy dated Oct 2, tracked only because it predates `.gitignore:36`'s `*mut.bend`.
+
+### [x] CLASSIFY — and the headline is that **closure is structurally invisible**
+
+| population | STILL-A-WALL | ALREADY-CLOSED | NEVER-WAS | SUPERSEDED | UNVERIFIABLE | not-a-claim |
+|---|---|---|---|---|---|---|
+| **A. the 1,028 in the tree** | **799** | **0** | **1** | 0 | 17 | 211 |
+| **B. the 79 claim lines deleted 05:18→13:00** | — | **5** | **48 void-deleted** | 34 | 10 by-name-only | — |
+
+**`ALREADY-CLOSED` is 0 in population A and cannot be otherwise** — a closed marker is absent
+from the tree by definition, so closure is observable ONLY as a diff against a dated copy. Every
+`ALREADY-CLOSED` in this project has ever been found that way.
+
+The 5, with commits (`git log -S'<marker text>'`, not a name search):
+`ProgramInfo.vals` -> **`ae8d290ea`** *"land ProgramInfo.vals"*; `print_uops` -> **`77a598240`**,
+gated `64493ca32`; `pm_rewrite`, `resolve_returned_after` -> `7fe55a593`; `marg` -> `21286a571`.
+**Two of the five have a commit that names the landing; those two are the only ones credited.**
+
+**642 of the 813 claims are verified TRUE by a check that can fail** (the upstream subject is
+declared nowhere in the port). **132 are not verified and are not claimed to be** — 60 own-file
+(the container landed, the marker is a residual arm) and 72 in a different file only (**a name
+is not a binding; the project has four measured instances of that**).
+
+**NEVER-WAS-A-WALL is 1** and declares itself: `renderer/__init__.bend:415`,
+`TODO(p3) __init__.py:11 with_storage (done; kept for the line map)`.
+
+### [x] THE 48 VOID-DELETED — the actual news
+
+48 markers were deleted in 7h40m with **no def landing and no surviving claim at their upstream
+address**. **21 sit in `ops.py:1526-1777`**, and `.agents/TODO.md:944` says of exactly that
+band: *"whose wall is stated once and applies to all of them."* Checked — it is now stated
+NOWHERE. `rg 'TODO\(p3\)\s+ops\.py:1[5-7][0-9][0-9]' tinybendygrad/uop/ops.bend` -> **0**;
+`rg '1545|1790' tinybendygrad/uop/*.bend` -> **0**. **A marker whose wall lives in a comment that
+was itself deleted is not closed; it is a silent gap, and nothing in the tree will report it.**
+
+### [x] RANK by blast radius, MEASURED — `n_lines` is not the denominator
+
+Per `grw-stage4.md`'s discipline (of 22 dispatcher-named walls, 10 were for other walls), every
+root wall is scored on **n_targets** = distinct upstream symbols, not on marker count.
+**lines-per-target is 0.5-1.1 for all 14 walls** — there is **no one-sentence-many-markers
+collapse in the p3 population at all**, so `n_targets` IS the blast radius and ranks directly.
+
+| # | wall | targets | actionable? |
+|---|---|---|---|
+| 1 | **no `math.*`** — transcendentals + float helpers | **35** | **YES. Largest actionable concentration in the port.** `mixin/elementwise.bend` alone: 45 claim lines |
+| 2 | no function values (`Callable`) | 21 | no — language |
+| 3 | a def cannot raise | 20 | no — language |
+| 4 | symbolic substitution / the matcher machinery | 19 | yes |
+| 5 | no regex, no 64-bit float repr | 18 | partly |
+| 6 | no process/IO seam (`stdin`/`os.environ`/`atexit`) | 16 | no — language |
+| 7 | no set algebra, no mutable dict as a value | 15 | no — language |
+| 8 | the `UPat` pattern COMPILER | 14 | **but see below** |
+| 9 | the rewrite dispatcher | 10 | already landed |
+| 10-14 | autogen import · process-wide mutable singleton · sha256/rotate/popcount · mutable `ctx` accumulator · no loop | 10/7/7/4/4 | mostly no — language |
+
+**Six of the fourteen root walls are Bend-LANGUAGE walls covering ~83 targets — about a quarter
+of the tree — and no work on this project moves any of them.** A plan that counts them as backlog
+is wrong by ~83. **Rank 1, `math.*`, is worth more than any other unit on the board.**
+
+Rank 8 (`UPat`) is the one to distrust: it is #1 in `grw-stage4.md`'s ordering and it is right
+that the header omits it — but its 21 markers were **deleted this morning** and the shared wall
+that was to cover them **no longer exists**. Ranking it ranks a phantom.
+
+### [x] THE TAG NAMESPACES — five tags, three kinds of thing, **none defined at the point of use**
+
+The p-scale IS defined, as **phases of the port plan**, in `.agents/TODO.md:917-928` and
+nowhere else. `engine/jit.bend:1091` gives the only gloss in the tree — *"A `# TODO(p3)` in the
+tree means 'a phase owns this'"* — **and it is falsified by the tree's own layout: only 214 of
+1,023 `TODO(p3)` markers (20.9%) are in P3's directory.** So:
+
+- **`p3` is a DEFAULT, not a phase.** 99.5% of markers carry it, in every directory.
+- **`p1`** (1 marker, `ops_metal.bend`) = *"this file ports a superseded upstream"* — a severity.
+- **`p4`** (1 marker, `helpers.bend`) = *"needs the engine's clock"*; `ops.bend:2894` calls a
+  rewrite-rule visitor "a P4 concern". Two unrelated meanings, neither in P4's directory.
+- **`p6`** (1 marker, `helpers.bend`) = a `ContextVar` KeyError; `fold.bend:6140` says "P3/P6"
+  about `sym_infer`. **Two different things.**
+- **`pN`** (1 marker) says in its own words: *"Each `TODO(pN)` below is the tracker."* Unnumbered.
+- **`delete`** (1 marker) is a **disposition**, not a priority — the only tag that says what to do.
+- **No `TODO(p2)` and no `TODO(p5)` exist**, though both phases do and P5 owns 30 files.
+
+**An undefined priority scale is why 1,026 markers have no order.** To sort this tree you must
+first decide what `p3` means, and the only definition in existence is 617 KB away in a different
+file and is falsified by the tree's layout.
+
+### [x] THE PLAN-AGAINST NUMBER
+
+> ### **~790**
+> Live claim lines that are real claims. `1,028` − `211` cross-references − `17` that name no
+> address − `1` that declares itself done. Of those, **~83 are blocked on six Bend language
+> features and no work here moves them**; **~35 wait on one absent `math.*` library**; the rest
+> is Phase work spread at 0.5-1.1 markers per distinct target.
+
+### [x] AND ONE NUMBER THAT IS NOT A COUNT
+
+The **48** claims deleted this morning against a shared wall that no longer exists. Nothing in
+the tree will ever report those again.
+
+### [x] FIX THE INSTRUMENT DISAGREEMENT — 4 rules, 4 counts, one quantity
+
+`rg -o` -> **1023** · `^\s*#\s*TODO\(` -> **817** · `grw-census.py` -> **880** ·
+`marker-audit.py` -> **815**. Each picked a different side of "how far past the marker line may the
+claim reach", and `marker-audit.py`'s own docstring records it getting this wrong once (162 vs a
+true 76) while `grw-census.py`'s records the opposite failure. **Put the counting rule in the same
+sentence as the count.** Rules W-1…W-7 appended to
+`.agents/slop/notes/bend2-constraints.md`.
+
+**Two numbers on the board are wrong and both are in circulation: the marker count is 1,028 not
+1,026, and the `graph_rewrite` blast radius is 6 claim lines / 10 targets, not 22 across 14
+files.** The 22 is `grw-census.py` reading to the *next marker*, so it inherits the shared wall.

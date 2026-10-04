@@ -1,0 +1,107 @@
+[
+ {
+  "wall": "MATH-LIB",
+  "n_lines": 31,
+  "n_files": 12,
+  "n_targets": 35,
+  "what": "no `math.*` def: the transcendentals and float helpers"
+ },
+ {
+  "wall": "ONNX-NODE-BODY",
+  "n_lines": 1,
+  "n_files": 1,
+  "n_targets": 2,
+  "what": "ONNX node bodies are one-line calls into another file"
+ },
+ {
+  "wall": "AUTOGEN-IMPORT",
+  "n_lines": 10,
+  "n_files": 5,
+  "n_targets": 10,
+  "what": "the autogen Python modules have no Bend import surface"
+ },
+ {
+  "wall": "NO-STDIO/PROC",
+  "n_lines": 16,
+  "n_files": 9,
+  "n_targets": 16,
+  "what": "no process/IO seam in a pure def"
+ },
+ {
+  "wall": "NO-CALLABLE",
+  "n_lines": 16,
+  "n_files": 11,
+  "n_targets": 21,
+  "what": "Bend has no function values"
+ },
+ {
+  "wall": "SYMBOLIC-SUBST",
+  "n_lines": 16,
+  "n_files": 8,
+  "n_targets": 19,
+  "what": "symbolic substitution needs the matcher machinery"
+ },
+ {
+  "wall": "NO-STRING/FLOAT",
+  "n_lines": 18,
+  "n_files": 12,
+  "n_targets": 18,
+  "what": "no regex, no 64-bit float repr"
+ },
+ {
+  "wall": "NO-RAISE",
+  "n_lines": 16,
+  "n_files": 12,
+  "n_targets": 20,
+  "what": "a Bend def cannot raise"
+ },
+ {
+  "wall": "NO-SET/DICT",
+  "n_lines": 7,
+  "n_files": 3,
+  "n_targets": 15,
+  "what": "no set algebra, no mutable dict as a value"
+ },
+ {
+  "wall": "UPAT-COMPILER",
+  "n_lines": 9,
+  "n_files": 6,
+  "n_targets": 14,
+  "what": "the UPat pattern COMPILER"
+ },
+ {
+  "wall": "GRAPH-REWRITE",
+  "n_lines": 6,
+  "n_files": 6,
+  "n_targets": 10,
+  "what": "the rewrite dispatcher"
+ },
+ {
+  "wall": "NO-BIGINT/HASH",
+  "n_lines": 6,
+  "n_files": 6,
+  "n_targets": 7,
+  "what": "no sha256/rotate/popcount"
+ },
+ {
+  "wall": "NO-GLOBAL/MUT",
+  "n_lines": 4,
+  "n_files": 3,
+  "n_targets": 7,
+  "what": "a process-wide mutable singleton"
+ },
+ {
+  "wall": "NO-LOOP/FUEL",
+  "n_lines": 3,
+  "n_files": 3,
+  "n_targets": 4,
+  "what": "Bend has no loop"
+ },
+ {
+  "wall": "NO-MUTABLE-CTX",
+  "n_lines": 3,
+  "n_files": 3,
+  "n_targets": 4,
+  "what": "the rewrite ctx must be a mutable accumulator"
+ }
+]
