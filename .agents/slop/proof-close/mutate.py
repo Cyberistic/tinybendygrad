@@ -1,10 +1,20 @@
-"""Mutation harness for the two new proofs. Copies the proof set; never writes the live tree."""
+"""Mutation harness for the two new proofs. Copies the proof set; never writes the live tree.
+
+`MUT` SITS UNDER A DIRECTORY WHOSE NAME IS THE WARNING. It was `proof-close/mut`,
+renamed to `proof-close/MUTANT` because `mut` is three characters a reading eye
+skips, and these are ~290 files that shadow the real port file-for-file. The ONLY
+reason a rename can work is that this constant is the sole code reference to the
+path (measured: every other mention in the repo is prose or a comment). IF YOU
+RENAME THE DIRECTORY, CHANGE THIS LINE; otherwise `fresh()` rmtree's the old name,
+`copytree` rebuilds it, and the mutant tree you just renamed returns unlabelled.
+See .agents/slop/MUT-LEDGER.md.
+"""
 import shutil
 import subprocess
 from pathlib import Path
 
 LIVE = Path("tinybendygrad")
-MUT = Path(".agents/slop/proof-close/mut/tinybendygrad")
+MUT = Path(".agents/slop/proof-close/MUTANT/tinybendygrad")
 BEND = "./bin/bend"
 
 def fresh():

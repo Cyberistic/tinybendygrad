@@ -1,0 +1,3 @@
+NOT A LANE. NOT THE PORT. 287 mutated/stale copies of real port files.
+Do not import, edit, or read as port source. Read MUTANT-TREE.md first.
+Full ledger: .agents/slop/MUT-LEDGER.md
