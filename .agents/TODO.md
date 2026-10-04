@@ -38,6 +38,21 @@ clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
 gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +28 `f2f` rows:
                                         the whole float-decomp region, previously UNREACHABLE
                                         from `main` and therefore ungated for a whole session.
+dtype-js-abi    [##########] 3/3    `runtime/dtype.js` read `p.fst`/`p.snd` against a record
+                                        whose fields are `hi`/`lo` (helpers.bend:1639-1640) and
+                                        answered with `io_tup` = `Tuple{fst,snd}`. **BOTH
+                                        DIRECTIONS.** `undefined >>> 0 === 0` made the read a
+                                        TOTALISATION, so `Dt.i64_trunc`, the identity, was not
+                                        the identity: node **0/30** vs `jslane2`, **9/12** vs
+                                        `abi`. Fixed at `dtype.js:154` (in) and `:162` (out).
+                                        Now **30/30** (`jsfix_e2e.py`) and **12/12** after ABI-4.
+                                        10-arm gate, every arm matched to an EXACT Python model
+                                        on all 30; 3 disarms moved 0. **ABI-4 is now LOCAL**
+                                        -- the old FAIL was `js-repair-abi4` bundling ABI-2's
+                                        edits, not an ABI-4 escape. **ABI-6 is ONE row, not
+                                        five**: only `ceildiv` raises, because
+                                        tinygrad/helpers.py:74,:77 guard `cdiv`/`floordiv`.
+                                        `.agents/slop/jsfix/`, JSF-1..JSF-9.
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
@@ -9340,3 +9355,384 @@ Progress: [########--] 8/10
 - [ ] **M-6** MEASURE whether one foreign def can return a 64-bit pair as a tuple.
       `runtime/dtype.c:210` already returns `io_tup(e, hi, lo)`; `W64.md` says it
       cannot be done. If it can, M-2's per-binding cost halves.
+
+---
+
+## SUB — collective completeness: does a PARSING file still have the NAMES its callers need?
+
+Progress: [#####.....] 5/5
+
+- [x] **SUB-1** `substrate-check.sh` keeps half 1 (size first, verdict second). VERIFIED
+      on the empty-file cases that motivated it: `EMPTY ... THE VERDICT IS MEANINGLESS`.
+- [x] **SUB-2** half 2 resolves every `<Mod>.<name>` a file references against what the
+      imported modules declare, and reports `file:line` + the module it looked in.
+      `-n` runs half 2 alone. Exit non-zero on any unresolved or absent module.
+- [x] **SUB-3** IT REPORTS ITS OWN COVERAGE, printed next to the verdict.
+      136 files @ 2026-10-04 20:03:47: **36,084 refs / 36,071 exact / 0 suffix-only /
+      13 unresolved / 49,134 UNSEEN / 0 missing modules / 37 unused imports.** The
+      `unseen=` count is the `import Base` stdlib surface, which this check is blind to.
+- [x] **SUB-4** PLANT + PAIRED DISARM, in `$TMPDIR`, whole-tree copy so relative imports
+      resolve. Rename `ParamArg.no_slot` -> `ParamArg.no_slot_x` **inside
+      `uop/ops.bend` only**: provider stays `ALL PROOFS CHECK` (8,313 lines, half 1 says
+      nothing wrong) and the guard names `kernel.bend:279: O.ParamArg.no_slot`.
+      DISARM = comment the one call site -> `BAD 0`, silent. RE-ARM by one character.
+- [x] **SUB-5** IT WOULD HAVE CAUGHT TODAY'S FAILURE, using the artifact that is still
+      on disk: `.agents/slop/partials/ops.bend.partial` is `ALL PROOFS CHECK` on its own
+      and the guard reports `kernel.bend:279: O.ParamArg.no_slot` against it.
+      SUB-1..SUB-6 appended at `bend2-constraints.md` 25578+.
+- [ ] **SUB-6** REPORTED, NOT FIXED: `renderer/ptx.bend:657` has 13 `P.r(` where `r` is
+      `renderer/tc.bend:83`, imported as `T` (`T.r(` is used correctly at 623 and 628).
+      `renderer/ptx.bend` is an **uncommitted working-copy change** by another unit
+      (mtime 18:27, `jj status` `M`) and is COLD today. Also NOT in agent-core's
+      recorded 14-file red list -- **that list is stale or the file is mid-edit; ask
+      the owner which before trusting it.**
+
+---
+
+## F — the f64 KERNEL, not the f64 scalar. `.agents/slop/F64-KERNEL.md`
+
+Progress: [#########-] 9/10
+
+`W64` proved `f64` as a scalar over two `U32` halves. This unit ran it as a KERNEL,
+through the port's own `render_kernel` + `cc` + a launch by pointer from Bend, and
+wires it into `e2e.sh` as **stage 7** (additive: 0 lines removed, 45 added; the whole
+artifact runs 7 stages, 0 failed, 0 skipped, exit 0).
+
+- [x] **F-1** an `f64` KERNEL through the port's own renderer. The port emits
+      `void mm(double* restrict data0_4, …)`; `cc -Wall -Werror` compiles it; BEND
+      allocates, fills, **launches by pointer**, reads back. No Node, no browser,
+      no `navigator.gpu`, no tinygrad scheduler.
+- [x] **F-2** the 64/64 bar, with `f64` operands: **64 words, diff 0 bytes** against
+      CPython, recomputed with an EXTERNAL `diff` out of the lane. 64 words = 32
+      doubles, because an f64 element is two `U32` words at the stride `fill.go`
+      already walks — so **no `double` ever crossed the FFI** and the harness needed
+      no dtype change. Bonus: the port's C text is **byte-identical (diff 0)** to
+      upstream's own `ClangRenderer.render_kernel` on `dtypes.f64`.
+- [x] **F-3** the row only `f64` can have: `out[0] = 1.0 + 2**-40 = 0x3FF0000000001000`,
+      which is exactly `1.0` (`0x3F800000`) in f32. CPython's two answers are printed
+      side by side, never asserted apart.
+- [x] **F-4** the plant and the paired disarm: P1 the constant in the KERNEL and P1b
+      the same shift in the ORACLE; P1c one bit of expected word 37; P2 the PORT's own
+      dtype narrowed to `float*`. C0 green; two inherited plants red verbatim; the
+      third reported as a **THEOREM**, with its price named.
+- [x] **F-5** wired into `e2e.sh` as stage 7, additively, with a `SKIP` path for a
+      stage that could not run (exit 3) so a cold substrate is never laundered.
+- [x] **F-6** `renderer/cstyle.bend:2984-3015` calls `rd_row` for SEVEN dtypes and
+      **`f64` is not one of them** — all 227 rows are silent about `double*`. This
+      lane is the first execution of `render_dtype` on `S.double()` in the project.
+      **A gap in the gate, not a gap in the port.**
+- [x] **F-7** WALL, `portexec/gen_ffi.py:188`: the launch casts every buffer to a
+      literal `(float*)` while the prototype, the typedef and the argument order all
+      come from **parsing** the port's signature. The cast is a no-op on the address,
+      so the lane failed on the ANSWER rather than on the mismatch, and
+      `run-kernel.sh:100` compiles `run.c` without `-Werror` so its four
+      `-Wincompatible-pointer-types` warnings stopped nothing. Three dtype-aware sites
+      and one hard-coded literal in the same function.
+- [x] **F-8** REPORTED, NOT FIXED: `renderer/cstyle.bend` was at `bed462b6…` and would
+      not compile — nine verbatim copies of every derived-fact reader block. It is
+      WARM again at `07ae2766…`; a mutation script under
+      `.agents/slop/proof-close/mut/` is the likely writer. `repair-dupes.py` repairs a
+      SNAPSHOT ONLY and checks itself twice: it compiles (227 rows) **and** the rows
+      are byte-identical to the committed good run (diff 0).
+- [x] **F-9** two bugs that were MINE, both silent and both kept: `(lo, hi)` is not
+      `(hi, lo)` on little-endian — byte-swapped operands made the kernel return
+      exactly `DELTA` for all 32 elements, 32 plausible doubles and no error; and
+      `np.array` temporaries built inside a generator were freed before tinygrad's
+      `prog` was called, returning 32 plausible garbage floats.
+- [ ] **F-10** OPEN, and it is the cheap one: `render_dtype` on `f64` is still not a
+      GATE ROW. Six devices x one dtype is six `rd_row` calls at
+      `cstyle.bend:2984-3015`, and a 227-row gate that is silent about `double*` is
+      one rename away from being wrong about it.
+- [x] **W64M-A** DONE: `tinybendygrad/runtime/dtype.c:205-206` reads an `H.I64`
+      ARGUMENT as two words of the argument frame. It arrives as ONE Term
+      pointing at the record, so the six `Dt.i64_*` were reading the two
+      OPERANDS where they expected the two HALVES of one. **0 of 30 rows agree
+      with `tinygrad/helpers.py:65-75`; the fixed reader agrees on 30 of 30.**
+      `Dt.i64_trunc` is the identity, so `Dt.i64_trunc(H.i64_of_hi_lo(0, 7))`
+      answered `51413338:51413722` — two allocation addresses. Fix is 6 lines
+      (`i64_of` takes `Env`+`Term`, uses `ctr_take`, 7 call sites take
+      `f[0]`/`f[1]`): `.agents/slop/w64mile/dtype-c-i64.patch`, gated by
+      `gen_seam.py` (30 rows, plant 30/30, disarm 0). **NOT APPLIED** — the live
+      tree is shared and three units were editing it during this session.
+- [x] **W64M-B** DONE: refuted two of our own walls rather than reconciling them,
+      per `agent-core.md`. (i) `W64-MILE.md` item 4 / build fact 1 — "`#ifdef
+      CID(x)` does not work, so the C lane has never been built" is FALSE: bend
+      expands `CID(x)` to the mangled macro name when it inlines the `.c`, so the
+      preprocessor sees a valid `#ifdef`; measured 3 ways. (ii) `W64.md`'s "a 64-bit
+      pair cannot be returned from one foreign def" is FALSE on the return
+      direction: `pack64`/`io_tup` is correct on 8 of 8 fixtures. Both are now
+      marked in place rather than deleted.
+- [x] **W64M-C** DONE by unit `JSL2` — report `.agents/slop/JS-LANE-GATE.md`,
+      gates `.agents/slop/jslane2/gen_js_seam.py` (rc 0) + `gen_f32_seam.py` (rc 1).
+      **The premise is INVERTED.** `dtype.js` does not carry "the same flat
+      assumption"; it carries a *different* one, and it is wrong. A `H.I64` record
+      crosses into JS **by NAME** — instrumented: `i64_of got keys=["$","hi","lo"]
+      p={"$":"...I64","hi":0,"lo":7}`. `dtype.js:137` reads `p.fst`/`p.snd`, both
+      `undefined`, and `undefined >>> 0 === 0`, so **`i64_of` ≡ 0 for every input
+      and `Dt.i64_trunc`, the identity, is not the identity.** `pack64` then returns
+      `io_tup(...)` = `{"$":"Tuple","fst":..,"snd":..}` where the caller reads
+      `{hi,lo}`. **Shipped JS lane agrees with CPython on 0/30**, rows present 30/30.
+      Repaired (scratch only, NOT applied) it is 30/30 and byte-identical to C.
+      `ceildiv(x,0)` unchanged: still `diverge`, never `pass`.
+- [ ] **W64M-D** OPEN: choose ONE of the three 64-bit routes and delete the other
+      two declarations. (a) pure `H.I64` in Bend (M-1, 71 lines), (b) two `U32`
+      halves over the FFI (M-2, 15/16 bindings), (c) the nullary `I64`/`U64`/`F64`
+      declarations still emitted at `runtime/autogen/libclang.bend:617,620,644,647,746,752,764,770,773,782,806,1121,1151,1157,1160,1334`
+      — (c) is the one that makes the emitted file fail. Three live spellings of
+      one idea is the defect; the count `16 of 324` is a symptom.
+
+
+## JSL2 — the JS dtype lane gate (unit `JSL2`, 2026-10-04)
+
+Progress: `[####################] 100%` — both gates built, both reproducible, both
+red on the shipped tree; nothing committed; 4 files under test byte-unchanged.
+
+- [x] **JSL2-1** Does the JS lane execute? **YES** — `bend -o out.js` embeds
+      `dtype.js` verbatim (`comp.ts:3385`, `main.ts:361`), `node` v26.8.1 runs it,
+      and it printed `SEAM trunc =  : ` where `cc` printed `0:7`. The `dtype.js`
+      header's "a `.bend` cannot tell which one it got" is **refuted by
+      measurement: the lanes differ on 30 of 30 rows.**
+- [x] **JSL2-2** 30-row gate on `w64mile/gen_seam.py`'s exact 6 DEFS, 5 FIXTURES
+      (incl. `int64.min`) and oracle (`tinygrad/helpers.py`, **called**).
+      Rows present 30/30 in every arm. Rows print as `SEAM <def> #<k> = <v>` so
+      ABSENT and PRESENT-AND-WRONG cannot print the same thing.
+- [x] **JSL2-3** Can `BigInt.asIntN(64,·)` and `(s64)` be made to differ?
+      **NO — a THEOREM, not an unfixed gap.** Same function over every reachable
+      operand; measured 30/30 byte-identical between the repaired JS arm and C.
+      The lane does diverge, but **one step earlier**: `h * 2**32 + l` in `Number`
+      arithmetic moves 15/30 (doubles have 53 mantissa bits; exact only for
+      `hi == 0`, `hi < 2**21`, or `hi` a power of two). **BigInt is load-bearing.**
+- [x] **JSL2-4** Disarm first, and it must move 0. DISARM `h * 2n**32n + l`
+      **moved 0/30**. PLANT (halves swapped to `lo<<32|hi`) moved **23/30**; the
+      7 unmoved are a theorem — swapping is invisible exactly when `hi == lo`, and
+      the gate prints the `hi`/`lo` of each. SECOND PLANT 15/30, attributed per
+      operand.
+- [x] **JSL2-5** F32 seams, `gen_f32_seam.py`, 6 rows: node 3/6, cc 6/6, lanes
+      disagree on 3/6. `fp16` is instrumented in both lanes (C `f[0] = 1069547520`
+      = the BITS of 1.5; node `x = 1.5` = the VALUE). **`fp8_to`'s divergence is
+      measured (2 of 3) and NOT localised — reported, not guessed.**
+- [ ] **JSL2-6** OPEN, for the coordinator, not for this unit: **declare the ABI
+      once, in the type system.** Four undeclared conventions in two languages.
+      `dtype.c:212` `pack64` uses the SAME `io_tup` as the JS and still works, so
+      C's correctness is a THIRD coincidence (`io_tup` and `H.I64` are both 2-field
+      constructors laid out alike) — C is right by LAYOUT, not by contract.
+- [ ] **JSL2-7** OPEN: `ceildiv(x, 0)` answers `0` in both lanes where CPython
+      raises. Still counted `diverge`, never `pass`.
+- [ ] **JSL2-8** OPEN: **no gate in this tree runs `node`.** Two now exist; nothing
+      stops the JS lane rotting silently again.
+
+A derived rule of mine was REFUTED and is recorded as such: "a seam taking `U32`
+agrees, a seam whose `F32` crosses disagrees" survived 2 rows and died on the third
+(`fp8_to` takes two `U32` and still disagrees). See `JS-LANE-GATE.md` §6.
+
+### FLIPR — `flip`'s DISAGREE located, split into two causes, and closed (`nodes=6/7` -> `6/6`)
+
+- [x] Locate the extra `GROUP`: **`.agents/slop/graphcmp.bend:1274`**, the fixture calling
+      raw `O.UOp.new` instead of the port's own `O.UOp.group` — whose elision is committed
+      at `tinybendygrad/uop/ops.bend:2486-2495` and matches `tinygrad/uop/ops.py:558-560`.
+      **A fixture defect; the port was never wrong.** Fixed.
+- [x] Locate the `FLIP` arg atom: **`.agents/slop/graphcmp.bend:1273`** over
+      **`tinybendygrad/uop/ops.bend:1066`** (`ATuple{ys: List<&2, U32>}`). **A port
+      vocabulary gap, over-reported.** Correct the brief: `b` is the BOOL atom (`buf` is
+      `z`), so py `n(b1,b0)` is `(True, False)`, and the shape agrees on both sides.
+- [x] Settle defect-vs-presentation WITHOUT hedging, by measuring what upstream does:
+      `UOp(Ops.FLIP,src,(True,False)) is UOp(Ops.FLIP,src,(1,0))` -> **True** in both
+      request orders and for PERMUTE. One node, so the guard at `ops.py:428` is
+      insertion-order dependent and the differ was reporting a FALSE POSITIVE.
+- [x] `flip` reads **AGREE at `nodes=6/6`** (NOT 7/7 — the `GROUP=1` census printed at
+      `graphcmp.py:1355` and `graphcmp.bend:1241` was stale and is where the `7` came
+      from). `shared-cores=6 ONLY-PY=0 ONLY-BEND=0`.
+- [x] Denominator before/after reported, and the other 21 graphs proved unmoved by a
+      whole-line diff against swapped-in baselines: **one line, `flip`.**
+- [x] Canonicalisation made countable and falsifiable (`canon_flip`, `B` ledger row,
+      `INJECTED` set, `report` raises if `B` ever appears as text) and shown NOT to blind
+      the differ (`flip/canon-falsify.py`, all `ok`).
+- [x] Pins held: unresolvable names still rejected; `selfcheck: OK`; `control` and
+      `cross` still discriminate.
+- [x] Report: `.agents/slop/flip/FLIPR.md`, addendum in `.agents/slop/REACH.md`.
+- [ ] **OPEN, for the port's owner, not mine:** `ATuple` still cannot express
+      `tuple[bool, ...]`, so `tinygrad/uop/ops.py:428`'s `isinstance(x, bool)` half stays
+      unimplementable. Harmless to the graph (the guard can only turn an answer into a
+      refusal, so the port is strictly MORE PERMISSIVE) and already recorded at
+      `tinybendygrad/uop/fold.bend:6488-6492`. Not fixed; `uop/**` is not my file.
+
+---
+
+## 2026-10-04 — `arith`: the six arithmetic ops. Ops reached 53 -> 59 of 77, BOTH SIDES.
+
+Report `.agents/slop/arith/REACH-ARITH.md`; claim `.agents/slop/arith/CLAIM.md`;
+baselines `.agents/slop/arith/baseline/`. **Nothing committed.**
+
+- [x] **Re-measure FIRST, both sides, with the `py-only`/`bend-only` split.**
+      `.agents/slop/arith/both-census.py`. The old census (`reach/census.py:20`) counts the
+      **py side only**, so the 53 was never measured by an instrument that could see the two
+      sides differ. BEFORE 53/53/53, split `[]`/`[]`, 24 unreached. AFTER 59/59/59, split
+      still `[]`/`[]`, 18 unreached. BEFORE recomputed from the pre-edit row cache, not from
+      a remembered terminal line.
+- [x] **CDIV + CMOD from the EAGER path**, no rewrite: `a.fmod(b)` and
+      `a.div(b, rounding_mode="trunc")` on int, i.e. `elementwise.py:226` and `:251`. New
+      graph `cdiv`, **AGREE 10/10**, `ALLOC2 CDIV1 CMOD1 CONST2 GROUP1 RESHAPE2 STACK1`.
+- [x] **SUB + NEG + CMPEQ + FDIV, and the finding that they are REWRITE-ONLY.** Each eager
+      spelling is the exact LHS of the rule that mints the op (`elementwise.py:123`, `:82`,
+      `:336-337`, `:255` against `codegen/decomp/op.py:105`, `:106`, `:117`, `:124-125`).
+      New graph `late`, **AGREE 12/12**. `g_commute`'s "CMPEQ is NOT reachable from an eager
+      graph" is **true and incomplete** — reported back, not reconciled.
+- [x] **`supported_ops` read from `Device.default.renderer.code_for_op`**, upstream's own
+      spelling at `codegen/__init__.py:350`, and `bool(DISABLE_FAST_IDIV)`. MEASURED: CPU's
+      `ClangRenderer` wants all four, `NullRenderer` three (no FDIV). **My first docstring
+      claimed `diff --dev NULL` would report that; it CANNOT — the gate at
+      `graphcmp.py:2869` exits 2 and prints 0 bytes when captured. Corrected in both files.**
+- [x] **`late` documented as REPRODUCIBLE-NOT-PRODUCIBLE**: the port writes the rewritten
+      graph into its arena; it does not implement `get_late_rewrite_patterns`. Same shape as
+      `g_gate`.
+- [x] **Every ledger marker `0/0` on both graphs** (`z y u q X! BAD E ?`), `RESIDUALS: none`,
+      `control` OK, `cross` loud, `SELFCHECK: OK`, `ALL PROOFS CHECK`, all 22 prior verdicts
+      intact (`lin`/`loop` still DISAGREE on purpose, `flip` now AGREE).
+- [x] **Three mutations, both modes, named rows**: M1 `SUB` children swapped, M2
+      `CMOD`/`CDIV` swapped in the GROUP, M3 `CDIV` built with ONE child. All DISAGREE in
+      ordered AND `--equiv`. **M3 is the `flip` lesson one level down: the mutation is in the
+      CDIV and `field-mismatches` still reads 0** (`shared-cores 10 -> 8`,
+      `ONLY-PY=1 ONLY-BEND=1`, `rung2-pairs=1`, `rung3.5-crossrefs=1`), and the headline
+      mismatch lands on the GROUP, not the mutated node.
+- [x] **`graphcmp.bend` reverted byte-for-byte after every mutation run**, md5 asserted in the
+      script rather than by eye.
+- [x] **COLLISION, REPORTED NOT PAPERED OVER.** The `flip` unit added `canon_flip` to
+      `graphcmp.py` (`grep -c`: 0 in my baseline, 6 now) inside the same window this unit
+      edited the same contested file. Merge verified clean; `flip`'s DISAGREE 6/7 in
+      `REACH.md` is stale and is flagged as such in the addendum.
+- [x] Eight walls written up with `file:line`, including three of my own: `unchunks(r[1:])`
+      vs `unchunks(r)` (`reach/census.py:24`), `DEV` set after the `tinygrad` import
+      (`graphcmp.py:2769`), and a `Bool.pick` paren count reported at the *next* `def`.
+- [ ] **NOT MINE, REPORTED:** `graphcmp-LIMITS.md` still carries `13 of 77`, `34 of 77` and
+      `NOT REACHED (43 of 77)`. It is now **59 reached / 18 NOT REACHED**, and §2/§5's
+      per-op table has not been re-derived. `reach/census.py` is still a **py-side-only**
+      instrument with a filename that does not say so.
+
+- [x] **hermetic: corpus results independent of process and cache.** `UOp.unique_num`
+      (`tinygrad/uop/ops.py:839`, NOT `:842`) leaks into rows via `graphcmp.py:708`; fixed by
+      ONE PROCESS PER GRAPH (`.agents/slop/hermetic/isolate.py`), chosen over a counter reset
+      because a reset's soundness depends on an enumeration nobody can check, and it costs
+      0.08 s/graph. Cache: NO CACHE ON THE VERDICT PATH; the artifact is write-only and
+      `--check` exits 3. `DEV`: the briefed defect did not exist (`graphcmp.py:2977` precedes
+      `:2978`); the wall is true and now fixed structurally by inheriting `DEV` at process
+      birth. 15/24 arith py row sets MEASURED stale. 59 SURVIVES, re-measured 3x, 2 runs
+      byte-identical. Six controls, `audit-hermetic.py` rc 0. `.agents/slop/HERMETIC.md`.
+- [ ] **NOT MINE, REPORTED — `arith/both-census.py:39` STILL READS THE STALE CACHE.** Its
+      15 stale py row sets are still on disk and its default still trusts them; deleting or
+      re-publishing them is the owner's call. `hermetic-census.py --check --out
+      .agents/slop/arith` names every one, rc 3.
+- [ ] **NOT MINE, REPORTED — `.agents/slop/oracles/mm-range.py:12`+`:59` is a LIVE late-`DEV`.**
+      Module-scope tinygrad import, then `DEV='NULL'`; MEASURED `Device.DEFAULT` is `METAL`
+      and `:60` prints it. Also dies at `:69` on `Tensor.floordiv` (separate rot).
+- [ ] **NOT MINE, REPORTED — two STALE `file:line` in `arith/REACH-ARITH.md` §5.** Wall 6 says
+      `ops.py:842`; the counter is `:839`. Wall 3 says `graphcmp.py:2769` is a late-`DEV` site;
+      the assignment is `:2977` and is *before* the import.
+
+## S- — SPELLING: one 64-bit spelling for the tree
+
+- [x] **Ruling, against evidence.** `H.I64` (`helpers.bend:1639-1640`, `I64{hi: U32, lo: U32}`)
+      is canonical: **678 qualified uses / 41 files / 40 defs of arithmetic**. The
+      two-`U32`-halves route is not a rival type — it is `H.I64`'s two fields in
+      transport (`dtype.c:205` opens them with `ctr_take`), and `helpers.bend:2099`
+      already names it `data64`. The nullary `I64`/`U64`/`F64` is the 13-use, 1-file,
+      0-elsewhere placeholder.
+- [x] **WHAT IT COSTS, measured.** Canonicalisation of `libclang.bend` is IMPOSSIBLE, not
+      expensive: `helpers.bend:1633-1635` + `dtype.bend:384-386` — an `I64` is SIGNED, so
+      the four `U64` uses have no canonical image and `F64` has no pair type at all.
+      Renaming the nullary `I64` does NOT close the name hazard either (PLANT-C: imports
+      are namespaced; `U32` collided because it collides with **Base**, which is
+      namespaces-blind).
+- [x] **THE BRIEFED PREMISE WAS FALSE.** The nullary 64-bit declarations do not make the
+      file fail; `duplicate declaration: U32` was a DIFFERENT pair of declarations, closed
+      before this unit. Deleting the nullary ones makes it worse
+      (`observed : I64`, `libclang.bend:638`). `agent-core.md:149` is stale.
+- [x] **The file COMPILES: `bend -o out.c` rc 0, `cc` rc 0, 13 correct rows.** It cannot
+      be RUN: `a foreign def without a .js import: Loaded_dylib`, then
+      `bend: no effect registers <k>` x11. `ffi-lane.bend` imports `.c` only; `comp.ts:3385`.
+      NOT MINE, REPORTED to the clangshim unit.
+- [x] **The fix is in the generator, not the product.** `apply-port-lane.py`'s two-entry
+      `DROPPED` literal list replaced by a rule derived from `base.bend`, run LAST, with a
+      closing assertion. `roundtrip.py` proves emitter -> fix -> product is
+      **byte-for-byte identical** (`04199adf…`, 71324 B). The product change is
+      **header-only**: emitted C is `cmp`-identical and both run 13 identical rows.
+- [x] **THE JS LANE MUST READ `hi`/`lo`, IN BOTH DIRECTIONS.** Measured by execution on 4
+      fixtures incl. `int64.min`: the argument crosses as `["$","hi","lo"]`, `p.fst`/`p.snd`
+      are `undefined`, `i64_of` is 0 on 4/4, `i64_trunc` is not the identity on 4/4; and
+      `pack64`'s `io_tup` returns `Tuple{fst,snd}` where the caller reads `{hi,lo}`.
+      Discriminator needs no oracle (the identity IS the oracle).
+      **NOT MINE — `runtime/dtype.js`/`.c` byte-unchanged.**
+- [x] **Plants and disarms: 5 controls, all PASS, plus 3 controls that MOVED and were
+      defects.** My first DISARM-A removed the fix instead of re-expressing it (56-byte
+      diff, reported FAIL); my first PLANT-B[first] ADDED the call instead of MOVING it, so
+      it proved nothing; PLANT-A demanded `bend` name both duplicates when it stops at the
+      first (`agent-core.md:49-51`). A probe that raised twice before it ran is a harness
+      defect, not a result.
+- [x] `.agents/slop/SPELLING.md` + `.agents/slop/spelling/{NOTES.md,roundtrip.py,jslane-probe.js,jslane-probe.bend,scratch.sh}`.
+- [ ] **NOT MINE, REPORTED — the generated body is now cited by line again after a header-only
+      change (`type I64 is Data` `:77` -> `:98`; `clang_getEnumConstantDeclValue` `:617` ->
+      `:638`).** Cite a generated body by NAME.
+- [ ] **NOT MINE, REPORTED — two more STALE `file:line`.** `renderer/amd/dsl.bend:64` cites
+      `helpers.bend:1167` for `I64{hi: U32, lo: U32}`; the declaration is `:1639-1640` and
+      `:1167` is a comment about run emission. And `.agents/slop/clangshim/ffi-lane.bend:20`
+      points at `cl-port-gate.sh`, which does not exist — the gate is `cl-port-gate.py`.
+- [ ] **NOT MINE, REPORTED — `libclang.bend` needs a `.js` half.** Its 10 FFI laws import
+      `libclang-ffi.c` only, so the lane cannot be run or JS-emitted. `dtype.bend:577-578`
+      has both. Writing `libclang-ffi.js` that re-registers all 11 effects is the clangshim
+      unit's lane.
+
+## Session 2026-10-04 round 5 — an F32 CONSTANT WALL THAT WAS NEVER TRUE
+
+- [x] **REFUTED AND GATED: `.agents/slop/ew-consts-gate.sh`, 21 rows, 3 lanes byte-identical.**
+      Plus eight named constants in `elementwise.bend` (`ew_k.*`) and **22 of its markers
+      rewritten** with what actually remains.
+
+      ### THE WALL WAS A REASON WRITTEN WITHOUT A MEASUREMENT
+
+      It read: *"no float literal anywhere in the port, because `F32` is `F32{data:
+      Word(32n)}`, `Word` is not exported, and `U32.to_f32` is an unfilled LAW which live
+      code may not call"* — and it held up a dozen methods at a time. All three halves are
+      false: a literal works, `F32.pi()` is a constant, and `U32.to_f32` is a base law that
+      `F32.from_nat` itself calls. **A claim about what the substrate CANNOT do is the one
+      kind of claim a compiler will not check for you.** Four of my last five "walls" were
+      my own fixture or my own untested premise, so this is now a pattern, not a coincidence.
+
+      ### THREE OBVIOUS SPELLINGS MEASURED WRONG — AND MORE DIGITS IS NOT MORE ACCURATE
+
+      This is the part worth keeping, because it is the opposite of the intuition:
+
+      | constant | written | measured | right |
+      |---|---|---|---|
+      | log10(2) | `0.30102999` (8 digits) | 0x3E9A209A | **`0.30103` — FIVE digits** |
+      | selu gamma | `1.0507009` (8 digits) | one ulp off | **`1.050701` — SEVEN** |
+      | sqrt(2/pi) | `F32.sqrt(F32.div(2.0, F32.pi()))` | one ulp off | **a literal** |
+
+      The sqrt is a COMPOSITE, so it rounds twice — once for the quotient, once for the sqrt
+      — where CPython rounds once at the end. **A literal cannot double-round.** So that
+      constant is a literal, and the general rule is: in f32, a composition of f32 ops is
+      not the f32 of the composed real expression.
+
+      ### THE GATE IS BIT PATTERNS, AND NOT DECIMALS
+
+      The port has no `F64` (`rg '^type F64'` is zero hits), so 32 bits is the only place
+      two sides can meet. A decimal gate would also pass on a transcription that is wrong in
+      the ninth place and still rounds correctly — which is the constants' actual failure
+      mode, and it bit three of them. `F32.pi()` is spelled `3.14159265` in base.bend, a
+      TRUNCATION, and it is still bit-equal to f32(pi); that is asserted rather than assumed.
+
+      Negative controls: `0.30103 → 0.30102999` and `1.050701 → 1.0507009` both turn the
+      gate RED. `0.7978846 → 0.79788456` stays green, and that is CORRECT — they are the
+      same f32, so a rounding gate must not distinguish them.
+
+      ### `H.f32_show` IS A SIX-DECIMAL-PLACE FORMATTER AND THAT IS NOT GATED
+
+      f32(log 2) prints `0.693147` here and `0.6931471824645996` in CPython. A real
+      difference, about a different def. My first driver printed the decimal and all 21 rows
+      differed — but for two reasons, and the first was my own error: it compared CPython's
+      original **double** against the port's **f32**, two different quantities. Underneath
+      that error the printer gap is real, and it is its own unit rather than something this
+      gate asserts.
+
+      ### ALSO MEASURED: INF IS PRODUCIBLE
+
+      `isinf`'s marker named `float("inf")` as its own blocker. `F32.div(1.0, 0.0)` is
+      `0x7F800000`.

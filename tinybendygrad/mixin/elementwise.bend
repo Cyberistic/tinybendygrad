@@ -739,38 +739,124 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 # terms. `p3` is the phase that owns the method surface.
 # ===========================================================================
 
-# an `F32` CONST -- no float literal anywhere in the port, because `F32` is
-# `F32{data: Word(32n)}`, `Word` is not exported, and `U32.to_f32` is an unfilled
-# LAW which live code may not call. `ops.bend`'s `UOp.const` and `dtype.bend`'s
-# `truncate` are the two halves of this and both are named.
-# TODO(p3) elementwise.py:500  cos          -- math.pi/2, an F32 literal
-# TODO(p3) elementwise.py:511  exp          -- 1/math.log(2)
-# TODO(p3) elementwise.py:840  log          -- math.log(2)
-# TODO(p3) elementwise.py:852  log10        -- math.log10(2)
-# TODO(p3) elementwise.py:613  isinf        -- float("inf")
-# TODO(p3) elementwise.py:623  isfinite     -- isinf + 0.0
-# TODO(p3) elementwise.py:633  isclose      -- rtol=1e-05, atol=1e-08
-# TODO(p3) elementwise.py:654  ceil         -- b+1 is fine, but `round` is not: see 890
-# TODO(p3) elementwise.py:685  sigmoid      -- 1/math.log(2)
-# TODO(p3) elementwise.py:709  hardswish    -- (1/6)
-# TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6, beta=0.5
-# TODO(p3) elementwise.py:744  leaky_relu   -- neg_slope=0.01 (a Tensor slope is fine)
-# TODO(p3) elementwise.py:757  tanh         -- 2.0, -1.0
-# TODO(p3) elementwise.py:769  quick_gelu   -- 1.702
-# TODO(p3) elementwise.py:779  gelu         -- math.sqrt(2/math.pi), 0.044715, erf
+# ===========================================================================
+# the F32 CONSTANTS, and the wall above them was FALSE
+# ===========================================================================
+#
+# The marker block that follows says "no float literal anywhere in the port, because
+# `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and `U32.to_f32` is an unfilled
+# LAW which live code may not call". MEASURED, all three halves of that are wrong:
+#
+#   A LITERAL WORKS. `0.044715` compiles and `F32.bits` of it is the f32 CPython's
+#   `struct.pack('f', 0.044715)` gives. Seventeen literals were measured and all seventeen
+#   land on CPython's exact bit pattern -- see .agents/slop/ew-consts-gate.sh, which is a
+#   three-lane diff of the bit patterns, not of the decimals.
+#   `F32.pi()` IS A CONSTANT, in base.bend, spelled `3.14159265` -- a TRUNCATED literal --
+#   and it still rounds to CPython's f32(pi) = 0x40490fdb, because the truncation is under
+#   half an ulp. `F32.div(F32.pi(), 2.0)` is therefore exactly f32(pi/2), and halving a
+#   normal f32 is exact.
+#   `U32.to_f32` IS a `law`, and a base law is callable: `F32.from_nat` (base.bend) calls
+#   it. "An unfilled law which live code may not call" is true of a law someone left EMPTY
+#   and false of this one.
+#
+# So the constants were never the wall. What they were is a REASON WRITTEN WITHOUT A
+# MEASUREMENT, and it held up a dozen methods at a time -- which is the failure this block
+# exists to prevent a second time: a named wall is a CLAIM, and a claim about what the
+# substrate cannot do is the one kind of claim a compiler cannot check for you.
+#
+# ONLY THE TRANSCRIPTIONS GET A NAME. A constant with an exact short spelling is written
+# where it is used -- `0.5`, `1.0`, `2.0`, `-1.0`, `0.01`, `1e-05`, `1e-08`, and `pi/2` are
+# all exact in decimal and a named def for each would be a name to keep in sync with
+# nothing. An IRRATIONAL is named because a transcription is a silent-typo surface:
+# `0.6931472` for log(2) and `0.044715` for gelu's cubic are both wrong in the ninth
+# decimal place and both still round to the right f32, so nothing but the gate catches a
+# typo. That is the whole criterion, and it is why this block is eight defs and not
+# seventeen.
+def ew_k.log2() -> F32: 0.6931472
+
+def ew_k.log10_2() -> F32: 0.30103
+
+def ew_k.inv_log2() -> F32: F32.div(1.0, ew_k.log2())
+
+def ew_k.sqrt_2() -> F32: F32.sqrt(2.0)
+
+def ew_k.sqrt_2_over_pi() -> F32: 0.7978846
+
+def ew_k.gelu() -> F32: 0.044715
+
+def ew_k.quick_gelu() -> F32: 1.702
+
+def ew_k.selu_alpha() -> F32: 1.6732632
+
+def ew_k.selu_gamma() -> F32: 1.050701
+
+# ===========================================================================
+# THE `F32` CONST WALL WAS REFUTED. It read: "no float literal anywhere in the
+# port, because `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and
+# `U32.to_f32` is an unfilled LAW which live code may not call".
+# ===========================================================================
+#
+# ALL THREE HALVES ARE FALSE, and the measurement is `.agents/slop/ew-consts-gate.sh`:
+# 21 constants, three lanes, byte-identical on the f32 BIT PATTERNS. What the gate
+# established, in the order it established it:
+#
+#   A LITERAL WORKS. `0.044715` compiles, and its `F32.bits` is the f32 CPython's
+#   `struct.pack('f', 0.044715)` gives. So the "no float literal" claim needs no
+#   `Word` and no `U32.to_f32`: a literal is not a constructor call.
+#   `F32.pi()` IS A CONSTANT, spelled `3.14159265` in base.bend -- a TRUNCATION -- and it
+#   is still bit-equal to f32(pi) = 0x40490FDB, because the truncation is under half
+#   an ulp. `F32.div(F32.pi(), 2.0)` is therefore exactly f32(pi/2), halving a normal
+#   f32 being exact.
+#   `U32.to_f32` IS a `law`, and a base law is callable: `F32.from_nat` calls it. "An
+#   unfilled law which live code may not call" describes a law someone left EMPTY, and
+#   this one is not that.
+#   EVEN INF IS PRODUCIBLE, which the `isinf` marker below had as its own reason:
+#   `F32.div(1.0, 0.0)` is 0x7F800000. So `float("inf")` is not a wall either.
+#
+# AND THREE OF THE OBVIOUS SPELLINGS MEASURED WRONG, which is the part worth keeping:
+#   `0.30102999` for log10(2) is one ulp LOW and `0.30103` -- FIVE digits -- is right.
+#   `1.0507009` for selu's gamma is wrong and `1.050701` is right. **More digits is not
+#   more accurate in f32**, and the intuition that it is is what wrote the first two.
+#   `F32.sqrt(F32.div(2.0, F32.pi()))` is one ulp off, because it rounds twice where
+#   CPython rounds once. A LITERAL cannot double-round, so that constant is a literal.
+#
+# So the markers below are no longer blocked on a constant. Each says what is actually
+# left, and where that is "undiagnosed" it says THAT rather than borrowing the old
+# excuse -- refuting a stated reason is not the same as landing the method, and a
+# marker that keeps a reason which has been measured false is worse than no marker.
+#
+# `H.f32_show` IS A SIX-DECIMAL-PLACE FORMATTER where CPython's `repr` is a
+# shortest-round-trip one, so f32(log 2) prints `0.693147` here and
+# `0.6931471824645996` there. That is a real difference about a different def and it
+# is NOT gated here; it is its own unit.
+# TODO(p3) elementwise.py:500  cos  -- math.pi/2 is `F32.div(F32.pi(), 2.0)`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:852  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
+# TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. the RULE BODY is the remainder; UNDIAGNOSED
+# TODO(p3) elementwise.py:623  isfinite  -- was `isinf + 0.0`; both are now available, so the remainder is the rule body. UNDIAGNOSED
+# TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
+# TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
+# TODO(p3) elementwise.py:685  sigmoid  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:757  tanh  -- 2.0 and -1.0 are available (`F32.neg(1.0)`; a negative literal is not a term). UNDIAGNOSED
+# TODO(p3) elementwise.py:769  quick_gelu  -- 1.702 is `ew_k.quick_gelu()`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:779  gelu  -- sqrt(2/pi) and 0.044715 are `ew_k.sqrt_2_over_pi()` and `ew_k.gelu()`, both bit-exact -- the first is a LITERAL, the composite is one ulp off. `erf` is the remainder
 # TODO(p3) elementwise.py:796  swish        -- self.sigmoid()
 # TODO(p3) elementwise.py:808  silu         -- swish()
 # TODO(p3) elementwise.py:854  atanh        -- .log()
 # TODO(p3) elementwise.py:866  asinh        -- .log()
 # TODO(p3) elementwise.py:878  acosh        -- .log()
-# TODO(p3) elementwise.py:890  round        -- 0.5, 2.0
+# TODO(p3) elementwise.py:890  round  -- 0.5 and 2.0 are available. THE REMAINDER IS NOT A CONSTANT: it is the rounding mode, and it still is
 # TODO(p3) elementwise.py:921  tan          -- .cos()
-# TODO(p3) elementwise.py:931  asin         -- polyN, math.pi/2
-# TODO(p3) elementwise.py:944  acos         -- math.pi/2, asin
-# TODO(p3) elementwise.py:954  atan         -- math.sqrt(2), asin
-# TODO(p3) elementwise.py:964  elu          -- alpha=1.0
-# TODO(p3) elementwise.py:976  celu         -- alpha=1.0
-# TODO(p3) elementwise.py:988  selu         -- alpha, gamma
+# TODO(p3) elementwise.py:931  asin  -- math.pi/2 is available; `polyN` and the arcsine series are the remainder
+# TODO(p3) elementwise.py:944  acos  -- math.pi/2 is available; `asin` is the remainder
+# TODO(p3) elementwise.py:954  atan  -- math.sqrt(2) is `ew_k.sqrt_2()`, bit-exact; `asin` is the remainder
+# TODO(p3) elementwise.py:964  elu  -- alpha=1.0 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:976  celu  -- alpha=1.0 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:988  selu  -- alpha and gamma are `ew_k.selu_alpha()` and `ew_k.selu_gamma()` = 1.050701, bit-exact -- NOT 1.0507009. UNDIAGNOSED
 # TODO(p3) elementwise.py:1000 softplus     -- beta=1.0
 # TODO(p3) elementwise.py:1010 mish         -- softplus()
 # TODO(p3) elementwise.py:1022 logsigmoid   -- softplus()
