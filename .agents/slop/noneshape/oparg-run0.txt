@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- expected : O.Arg
+- observed : O.Op
+Location: main
+34 |       # `arg=Ops.ADD` upstream. There is no `Arg` constructor that takes one `Op` alone.
+35>|       O.OpsADD{}, O.TNone{}))
+   |       ^^^^^^^^^^
+36 |     IO.pure(Unit, Unit{})
