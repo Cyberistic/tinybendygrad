@@ -93,7 +93,7 @@ upstream constructor**, and their union reaches **73 of 77** — 14 of the 18.
 * **`CUSTOM CUSTOMI PYLITERAL` — `AND`'s shape raises `AssertionError`, and
   `graphcmp.py:750` catches only `RuntimeError`.** MEASURED:
   `issubclass(AssertionError, RuntimeError)` is `False`; `cshape(AND)` raises
-  `AssertionError: None input shape not supported for Ops.AND` (`ops.py:442`, because `AND`
+  `AssertionError: None input shape not supported for Ops.AND` (**`ops.py:444`**, CORRECTED from `:442`, because `AND`
   is in `GroupOp.Broadcastable` and its srcs are shapeless). And `upat.py:66` makes **every**
   pattern-compiler IR `AND`-rooted by construction:
   `return UOp(Ops.AND, src=tuple(and_clause)) if and_clause else UOp(Ops.CUSTOMI, arg=("True", …))`.
@@ -194,7 +194,7 @@ rewrite *runs on*, which is a smaller claim.
   ZERO on this set.** Before using it to shrink a denominator, call each construction and
   check `.toposort()`. Two of the 18 (`MULACC`, `THREEFRY`) have *no* `UOp(Ops.X, …)` site
   at all and are both fully constructible, through `UOp.alu` (`ops.py:627`).
-* **DENOM-3. `graphcmp.py:750` catches `RuntimeError`, and `ops.py:442` raises
+* **DENOM-3. `graphcmp.py:750` catches `RuntimeError`, and `ops.py:444` raises
   `AssertionError`.** Any node whose `.shape` raises anything else is uncannonicalisable and
   reads as a CRASH, not a difference. `cshape`'s `except` must widen before a graph
   containing a shapeless `AND` can be compared at all — and `upat.py:66` makes every

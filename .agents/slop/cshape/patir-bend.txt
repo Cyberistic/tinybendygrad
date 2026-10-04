@@ -1,0 +1,6 @@
+# root=4 nodes=5 settled=False
+2:i1 7:CUSTOMI 1:? 1:? 2:i0 1:N 14:in(suop,Dvoid) 3:n()
+2:i2 9:PYLITERAL 4:void 1:R 2:i0 1:N 11:rd(OADD,i0) 3:n()
+2:i3 6:CUSTOM 1:? 1:? 2:i0 1:N 24:in(s{0}.op is {1},Dvoid) 8:n(i1,i2)
+2:i4 3:AND 1:? 1:? 2:i0 1:N 1:N 5:n(i3)
+bend 2.0.35 is available: run bend update
