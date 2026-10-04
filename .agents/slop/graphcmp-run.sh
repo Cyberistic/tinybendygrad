@@ -274,7 +274,7 @@ rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt" "$D"/D9-stability-srcswap-
 # ---     reported 16 apparent deltas on a run where 16 were blank lines -- while a
 # ---     hash-of-the-whole-file would call a blank line a difference too. This form asks
 # ---     the question "did any CONTENT move", which is the question.
-# ---     MEASURED 2026-10-04: **158 of 158 files identical**, and the first time it was run
+# ---     MEASURED 2026-10-04: **154 of 154 files identical**, and the first time it was run
 # ---     it found exactly ONE file that was not (`D0-coverage-census.txt`, a `dict` printed
 # ---     in set-iteration order -- now defect 20 in graphcmp-oracle.py). That is the whole
 # ---     argument for the check existing: the defect it found was invisible to `selfcheck`,

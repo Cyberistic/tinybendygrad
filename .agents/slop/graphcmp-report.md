@@ -26,7 +26,7 @@ nothing given several — and when the check was written properly it found a rea
 nondeterminism on its first run.
 
 `sh .agents/slop/graphcmp-run.sh` regenerates every file in `runs/graphcmp/D/`.
-`sh .agents/slop/graphcmp-repro.sh` measures reproducibility: **158 of 158 files
+`sh .agents/slop/graphcmp-repro.sh` measures reproducibility: **154 of 154 files
 byte-identical across two clean runs.**
 
 **THREE MORE FINDINGS FROM THE CHECKS RATHER THAN THE DIFFER, and the chain between them is
@@ -729,7 +729,7 @@ env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14e.
 
 # THE WHOLE ARTEFACT, AND ITS REPRODUCIBILITY:
 sh .agents/slop/graphcmp-run.sh      # regenerates every file in runs/graphcmp/D/
-sh .agents/slop/graphcmp-repro.sh    # 158 of 158 files identical across two clean runs
+sh .agents/slop/graphcmp-repro.sh    # 154 of 154 files identical across two clean runs
 ```
 
 There is **no `--dev-map`**. The device name is not bound at a prompt: the port resolves its

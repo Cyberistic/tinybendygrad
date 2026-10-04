@@ -10,7 +10,7 @@ Run: `E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/grap
 (`E` is also the prefix in `runs/graphcmp/D/README-D.txt`.)
 Regenerate everything: `sh .agents/slop/graphcmp-run.sh`
 Check reproducibility: `sh .agents/slop/graphcmp-repro.sh` -- **MEASURED 2026-10-04:
-158 of 158 files byte-identical across two clean runs**, sha256 over non-blank lines.
+154 of 154 files byte-identical across two clean runs**, sha256 over non-blank lines.
 
 **THE THREE ROUNDS.** The first built 9 graphs / 63 nodes / 13 of 77 ops and found eleven
 defects in the differ's own normal form. The second added four graphs -- `group`,
@@ -26,7 +26,7 @@ by `runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
     ops 34 of 77   commutative ops 7 of 8   symbolic-dim nodes 2 of 189 (BOTH SIDES, see 3b)
     field-records 1134 per side   byte-identical 14 of 16   stable 5 identical / 0 differ / 0 failed
     selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 7 of 7   cross 1 of 1
-    conflations 4 of 4   repro 158/158
+    conflations 4 of 4   repro 154/154
 
 **THE LIMIT THAT WAS CLOSED WHILE THIS ROUND RAN.** §3b's symbolic-dim wall was OPEN when
 this unit started and is CLOSED now: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1273`, the
@@ -580,7 +580,7 @@ BY 22's fix.
     FAILURE is still not a reproducibility measurement. So `graphcmp-repro.sh` waits for
     `graphcmp.bend --check-only` to read `ALL PROOFS CHECK` **and** then accepts a run only
     if its own summary says sixteen graphs, thirteen AGREE, selfcheck OK and `census-rc=0`.
-    **FINAL: 158 of 158 files identical across two clean runs.**
+    **FINAL: 154 of 154 files identical across two clean runs.**
 
 21. **THE COVERAGE CENSUS COUNTED A DATACLASS FIELD NAME AS AN ATOM LETTER.** `atoms()`
     counted `o` from `Opt(op=EOptOps.SPLIT,...)` and `a` from `axis`, so the census printed

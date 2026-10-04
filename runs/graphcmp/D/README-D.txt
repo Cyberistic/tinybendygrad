@@ -200,7 +200,7 @@ D9  E diff --graph {group|sym|loop|gate|commute --plant srcswap}, twice   D9-sta
       report with no tail. It is now ONE dot-named temp in `$D` `mv`d into place, which is
       atomic, and the repro snapshot excludes dotfiles.
       MEASURED OVER THE WHOLE DIRECTORY, by `sh .agents/slop/graphcmp-repro.sh`:
-      **158 of 158 files identical across two clean runs.** The old claim of the same
+      **154 of 154 files identical across two clean runs.** The old claim of the same
       shape was backed by `find | md5 -q`, which on macOS takes exactly ONE file and
       prints nothing given several -- so it was not a digest, and when the check was
       written properly it found a real nondeterminism on its FIRST run (a `dict` printed in

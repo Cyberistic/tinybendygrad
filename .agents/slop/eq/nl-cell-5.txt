@@ -1,0 +1,14 @@
+!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the CAPTURE, never about the tree as it is now.
+CAPTURED port rc=0 md5=4f221ed7   CAPTURED oracle rc=0 md5=4f221ed7
+[planted] `ldt f32` corrupted on the PORT LANE ONLY, in the CAPTURED OUTPUT; the tail of the row is kept verbatim and no file on disk was touched
+port rows (rows_strict): 205   oracle rows (rows_strict): 205   the two lanes are BYTE-IDENTICAL: False
+lane    rows read  names (gate)  names (shipped)  `=` unaddressable  unreadable  dup names   name sets
+port          205           205              205    0             0           0          0   IDENTICAL (205 shared)
+oracle        205           205              205    0             0           0          0   IDENTICAL (205 shared)
+gated 205   agree 204   disagree ['ldt f32']
+STALE-LITERAL 0 `py=` literal(s) disagree with the other lane's answer: []
+BROKEN 
+  - 1 gated row(s) DISAGREE and every one is NAMED: ['ldt f32']
+        first `ldt f32`:
+        port 'floatPLANTED'
+        cpy  'float'

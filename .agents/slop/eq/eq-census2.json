@@ -1,83 +1,31 @@
 [
  {
-  "label": ".agents/slop/eq/nl-port-pre.txt",
-  "phys": 205,
+  "label": ".agents/slop/eq/rn-port.txt",
+  "phys": 80,
   "F1": 0,
-  "F2": 205,
+  "F2": 80,
   "lane_shape": "F2",
-  "lane_n2": 205,
-  "lane_n": 205,
-  "lost_reader": 4,
-  "lost_cont": 0,
+  "lane_n2": 54,
+  "lane_n": 96,
+  "lost_reader": 43,
+  "lost_cont": 43,
   "F3": 0,
-  "cont": 0,
+  "cont": 49,
   "nob": [],
   "unbal": [],
-  "names": 205,
-  "shipped_names": 201,
+  "names": 80,
+  "shipped_names": 97,
   "refuse": [],
-  "accepted": 205,
-  "eq": [
-   "sd cpullvm LLVM osx=False",
-   "sd cpullvm LLVM osx=True",
-   "sd cpullvm arm osx=False",
-   "sd cpullvm arm osx=True",
-   "sd cpullvm riscv64 osx=False",
-   "sd cpullvm riscv64 osx=True",
-   "sd cpullvm x86_64 osx=False",
-   "sd cpullvm x86_64 osx=True"
-  ],
-  "eq_n": 8,
-  "differ": [
-   "sd cpullvm LLVM osx=False",
-   "sd cpullvm LLVM osx=True",
-   "sd cpullvm arm osx=False",
-   "sd cpullvm arm osx=True",
-   "sd cpullvm riscv64 osx=False",
-   "sd cpullvm riscv64 osx=True",
-   "sd cpullvm x86_64 osx=False",
-   "sd cpullvm x86_64 osx=True"
-  ],
-  "collide": {
-   "sd cpullvm LLVM osx": [
-    "sd cpullvm LLVM osx=True",
-    "sd cpullvm LLVM osx=False"
-   ],
-   "sd cpullvm x86_64 osx": [
-    "sd cpullvm x86_64 osx=True",
-    "sd cpullvm x86_64 osx=False"
-   ],
-   "sd cpullvm arm osx": [
-    "sd cpullvm arm osx=True",
-    "sd cpullvm arm osx=False"
-   ],
-   "sd cpullvm riscv64 osx": [
-    "sd cpullvm riscv64 osx=True",
-    "sd cpullvm riscv64 osx=False"
-   ]
-  },
-  "reshape": {
-   "sd cpullvm LLVM osx": [
-    "sd cpullvm LLVM osx=True",
-    "sd cpullvm LLVM osx=False"
-   ],
-   "sd cpullvm x86_64 osx": [
-    "sd cpullvm x86_64 osx=True",
-    "sd cpullvm x86_64 osx=False"
-   ],
-   "sd cpullvm arm osx": [
-    "sd cpullvm arm osx=True",
-    "sd cpullvm arm osx=False"
-   ],
-   "sd cpullvm riscv64 osx": [
-    "sd cpullvm riscv64 osx=True",
-    "sd cpullvm riscv64 osx=False"
-   ]
-  },
+  "accepted": 140,
+  "eq": [],
+  "eq_n": 0,
+  "differ": [],
+  "collide": {},
+  "reshape": {},
   "dupes": {},
-  "lost_reshape": 4,
+  "lost_reshape": 0,
   "lost_dupe": 0,
-  "lost": 4,
+  "lost": 0,
   "immune": 0
  }
 ]

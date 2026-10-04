@@ -198,7 +198,7 @@ def sd_rows():
     for osx in (True, False):
       L.OSX = osx
       got = j(sorted(d.name for d in CPU(Target(interface="", device="CPU", arch=arch)).supported_dtypes()))
-      out += row(f"sd cpullvm {arch} osx={osx}", got, got)
+      out += row(f"sd cpullvm {arch} osx {osx}", got, got)
   L.OSX = True
   # AMD: `d not in fp8s or d in amd_fp8s(arch)`. gfx942 is the only arch here
   # whose `amd_fp8s` is non-empty, and it is the FNUZ pair.
@@ -438,7 +438,7 @@ def bend():
     for osx in (True, False):
       L.OSX = osx
       got = j(sorted(d.name for d in CPU(Target(interface="", device="CPU", arch=arch)).supported_dtypes()))
-      parts.append(f'r_sdcpu({q(f"{arch} osx={osx}")}, {"True{}" if x86 else "False{}"}, {"True{}" if osx else "False{}"}, {q(got)})')
+      parts.append(f'r_sdcpu({q(f"{arch} osx {osx}")}, {"True{}" if x86 else "False{}"}, {"True{}" if osx else "False{}"}, {q(got)})')
   L.OSX = True
   # AMD reads ONE thing: membership in `amd_fp8s(arch)`, whose only non-empty
   # answer on this tree is gfx942's FNUZ pair.

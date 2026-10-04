@@ -616,13 +616,51 @@ def take1(+xs: List<&2, String>) -> List<&2, String>: take_nat(xs, 1n)
 # what `splitlines` does to a packet `encode` wrote; the emptiness is not tested
 # because a packet whose last field is non-empty is not one `encode` produced,
 # and saying so is cheaper than a second field for one bit.
-def drop_final(+xs: List<&2, String>) -> List<&2, String>:
+# THE TRAILING EMPTY FIELD, DROPPED FROM THE END -- AND THIS IS A BUG FIX, not a
+# spelling. The original dropped the HEAD (`case _ <> t: t`), which for
+# `"4 a\n4 b\n4 c\n"` answers ["4 b", "4 c"] -- one line lost and the first
+# line wrong. MEASURED on the first per-buffer run: `ms_b0_got` read the SECOND
+# buffer's line and `ms_b2_got` read the trailing empty. The rows were doing their
+# job; they caught a def that the earlier truncated single-row verdict could not
+# see, because it compared a prefix with a prefix.
+#
+# THE HEAD IS REMOVED AND THEN THE LIST IS REBUILT, because there is no
+# `List.drop_last`: the walk keeps the previous field and rebuilds.
+# THE TAIL LEADS, and that is forced: arguments are read left to right and the
+# call must be DECREASING on a STRUCTURALLY MATCHED column (MEASURED: "expected a
+# decreasing self-call"). A computed `h` is not structural -- this file's own note
+# says a call "shrinks no column and cannot be the fuel".
+# `acc ++ [prev]`: APPEND, NO REVERSE. This took four attempts and each failure was
+# a DISTINCT measurable wrong answer, which is why all four are recorded here:
+#   (1) `prev` never updated, so every field was the first one -- MEASURED: all
+#       three `ms_b*_got` rows read `4 00004040`.
+#   (2) the walk seeded the accumulator with the whole list AND re-walked the tail,
+#       so every field was duplicated -- MEASURED, the same three rows again.
+#   (3) prepending with a trailing `List.reverse` came back 2, 1, 0 -- MEASURED:
+#       `ms_b0_got` read `4 00000040` and `ms_b2_got` read `4 00004040`.
+#   (4) dropping `h` from the recursive call left `prev` pinned, so the answer was
+#       the LAST field alone -- MEASURED: all three rows read the empty string.
+# APPEND WITH NO REVERSE IS RIGHT, and it is what `List.append(a, A, xs, ys)` means:
+# `xs ++ ys`. `prev` is emitted on the way PAST it, and the entry seeds `prev` with
+# the head while passing the TAIL, so the last field is never emitted.
+def drop_final.go(+rest: List<&2, String>, +prev: String, +acc: List<&2, String>) ->
+  List<&2, String>:
+  match rest:
+    case Nil{}:
+      acc
+    case h <> t:
+      drop_final.go(t, h, List.append(&2, String, acc, [prev]))
+
+# AND THE ENTRY HANDS OVER THE TAIL, so the last field of `xs` never becomes a
+# `prev` and is therefore never emitted. An intermediate version seeded the
+# accumulator with the WHOLE list and then walked the tail, which DUPLICATED every
+# field -- MEASURED, all three `ms_b*_got` rows read `4 00004040`.
+def drop_final(xs: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}:
       Nil{}
-    case _ <> t:
-      t
-
+    case h <> t:
+      drop_final.go(t, h, Nil{})
 def norm2.go(xs: List<&1, String>, acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}:
@@ -654,6 +692,13 @@ def norm2(xs: List<&1, String>) -> List<&2, String>:
 # is a lie.
 #   TODO(p3) runtime/ops_bend.py:180 -- split a packet into LINES.
 def NLCH() -> Char: Maybe.default(&2, Char, String.get("\n", 0n), ' ')
+
+# THE SPLIT, AND THE TRAILING EMPTY FIELD IS DROPPED because `encode` always ends
+# the packet with a newline (ops_bend.py:145) and `String.split` KEEPS the empty
+# field after it where `splitlines` does not. That one field is the whole
+# difference, and `ms_line_count` is the row that would notice if it were not.
+def split_lines(text: String) -> List<&2, String>:
+  drop_final(String.split(text, NLCH()))
 
 def split_all(s: String) -> List<&2, String>: String.split(s, NLCH())
 
@@ -715,8 +760,25 @@ def bad_head(head: String) -> String:
 def parse_bad(+src: String) -> Pkt:
   Pkt.of(False{}, bad_head(first_line(src)), 0, Nil{})
 
+# `head, *body = packet.splitlines()` (:184) -- the HEADER IS DROPPED and then
+# `body[:int(nuops)]` (:187) takes the uop lines.
+#
+# AND THIS IS WHERE THE ORIGINAL `drop_final` WAS DOING DOUBLE DUTY. It dropped
+# the HEAD, not the tail, and `body_of` relied on that: the head of a packet IS the
+# header, so `drop_final` was silently the `head, *body` step. MEASURED: fixing
+# `drop_final` to actually drop the TRAILING empty field -- which the milestone's
+# per-buffer rows required -- turned `bend_parse_l1` from
+# `PARAM f32 k:param:4:g` into `13 3 `, i.e. the header parsed as a uop line. The
+# two jobs are now SEPARATE and each is named for what it does.
+def drop_head(xs: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case _ <> t:
+      t
+
 def body_of(+src: String) -> List<&2, String>:
-  take_nat(drop_final(split_all(src)), U32.to_nat(dec(fld1(header_only(src)))))
+  take_nat(drop_head(split_lines(src)), U32.to_nat(dec(fld1(header_only(src)))))
 
 def parse_ok(+src: String) -> Pkt:
   Pkt.of(True{}, "", dec(fld2(header_only(src))),
@@ -1268,11 +1330,25 @@ def hexdig.chr(+v: U32) -> U32:
 # AN ODD NUMBER OF DIGITS DROPS THE TRAILING HALF-BYTE. Python's `bytes.fromhex`
 # RAISES `ValueError` there, so this is WEAKER than the Python and `bend_hex_odd`
 # is the row that says so instead of leaving it a silent difference.
-def hex.fin(+acc: List<&2, U32>) -> List<&2, U32>: List.reverse(&2, U32, acc)
+# NO REVERSE, and the absence is the fix for a MEASURED bug: the fold walks the
+# string FORWARD and `List.append(a, A, acc, [b])` is `acc ++ [b]`, so the bytes
+# are already in order and the reverse turned "efbeadde" into the STORE
+# [0xde, 0xad, 0xbe, 0xef] -- which re-emitted as "deadbeef", i.e. the bytes
+# BACKWARDS. MEASURED on the first real launch: `ms_got` read "4 deadbeef" for the
+# input "4 efbeadde". Every byte was right and the ORDER was wrong, which is a
+# fourth distinct failure mode from the three above and the reason the comparison
+# is over emitted TEXT rather than over a number.
+def hex.fin(acc: List<&2, U32>) -> List<&2, U32>: acc
+
+# HIGH NIBBLE FIRST, and the measurement that pins it is the executor's OWN
+# output: the hand-built packet line "4 0000803f" for the f32 1.0 (0x3F800000)
+# came back out of the executor byte for byte. 0x3f is written "3f", never "f3", so
+# `pend` (the FIRST character of the pair, the high nibble) carries the 16s.
+def hex.pair(+pend: U32, +c: U32) -> U32:
+  U32.add(U32.mul(hexdig_val(pend), 16), hexdig_val(c))
 
 def hex.acc(+pend: U32, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
-  List.append(&2, U32, acc,
-    [U32.add(U32.mul(hexdig_val(pend), 16), hexdig_val(c))])
+  List.append(&2, U32, acc, [hex.pair(pend, c)])
 
 def hexdec.go(+cs: List<&2, Char>, +pend: U32, +live: Bool,
               +acc: List<&2, U32>) -> List<&2, U32>:
@@ -1283,6 +1359,15 @@ def hexdec.go(+cs: List<&2, Char>, +pend: U32, +live: Bool,
     case h <> t False{}:
       hexdec.go(t, Char.to_u32(h), True{}, acc)
 
+# THE NIBBLE ORDER IS THE THIRD BUG THIS MILESTONE FOUND, and it is the one
+# `ops_python.bend:1165` warns about BY NAME: "writing every byte DIGIT-SWAPPED
+# -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in the same way,
+# the two cancelled on a pure COPY". MEASURED here on the first real launch: the
+# pattern `efbeadde` came back out of the store as `deadbeef`, i.e. every BYTE was
+# reversed, which is what you get from `high*16 + low` when the wire is `low*16 +
+# high` -- the hex on the wire is HIGH NIBBLE FIRST (`ops_python.bend:1177`
+# `Prog.hex.nib` reads characters 2k and 2k+1, high first), so the fold must ADD
+# the high nibble to the low one, not the other way round.
 def hexbytes(hex: String) -> List<&2, U32>:
   hexdec.go(String.to_list(hex), 0, False{}, Nil{})
 
@@ -1323,25 +1408,50 @@ def hexout.go(+bs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
 # carries its own byte, which is why this is ONE self-recursive fold and not
 # `take` + `get`. `+n` is the REBIND marker for the same reason as
 # `ops_python.bend`'s `Prog.line.dig(+v)`.
-def take.go(+work: List<&2, U32>, +n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+# FOUR ARMS, AND THE COUNT IS THE POINT. The first version was
+#   case Nil{} _ : ...    case h <> t _ : take.go(t, U32.sub(n, 1), ...)
+# which MEASURED wrong: `_` ignores the second column, so the walk ran until the
+# LIST ended rather than until the COUNT ran out, and `U32.sub` SATURATES at 0, so
+# a spent countdown became a permanent 0 instead of a stop. The result was that
+# `slice` always answered the WHOLE TAIL and `ms_b0_hex_in` was EMPTY for every
+# buffer -- three distinguishable wrong answers that all looked like one.
+#
+# THE REVERSE IS CORRECT HERE: `List.append(a, A, acc, [h])` is `acc ++ [h]`, so
+# this builds the taken bytes in order and the ONE reverse at the end is right.
+def take.go(+work: List<&2, U32>, +n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
   match work n:
-    case Nil{} _:
+    case h <> t 0n:
       List.reverse(&2, U32, acc)
-    case h <> t _:
-      take.go(t, U32.sub(n, 1), List.append(&2, U32, acc, [h]))
+    case Nil{} 0n:
+      List.reverse(&2, U32, acc)
+    case Nil{} 1n+p:
+      List.reverse(&2, U32, acc)
+    case h <> t 1n+p:
+      take.go(t, p, List.append(&2, U32, acc, [h]))
 
-def drop.go(xs: List<&2, U32>, +n: U32) -> List<&2, U32>:
-  match xs:
-    case Nil{}:
+# SAME SATURATION TRAP AS `take.go`, and the same fix: a `Nat` countdown whose arm
+# is `1n+p` STOPS by exhausting the list, where `U32.sub` would have saturated.
+def drop.go(xs: List<&2, U32>, +n: Nat) -> List<&2, U32>:
+  match xs n:
+    case Nil{} 0n:
       Nil{}
-    case _ <> t:
-      drop.go(t, U32.sub(n, 1))
+    case _ <> _ 0n:
+      xs
+    case Nil{} 1n+p:
+      Nil{}
+    case _ <> t 1n+p:
+      drop.go(t, p)
 
 # `slice(ms, at, n)`: SKIP to `at`, then take `n` -- so the offset is honoured.
 # The copy into a fresh `&2` list is the depth hop again, and it is free because
 # the store is already `&2` and `List.append` rebuilds at the callee's depth.
+# THE COUNT IS A `Nat`, NOT A `U32`, and that is forced by the substrate rather
+# than chosen: `U32` is `U32{data: Word(32n)}` (base.bend:57), an OPAQUE record,
+# so it cannot be destructured into a countdown at all (MEASURED: "expected a
+# constructor of U32"). `Nat` is `Zero{}/Succ{pred}` and a `case 1n+p` arm consumes
+# it -- which is ALSO what stops the walk, where a saturating `U32.sub` would not.
 def slice(ms: List<&2, U32>, at: U32, n: U32) -> List<&2, U32>:
-  take.go(drop.go(List.append(&2, U32, Nil{}, ms), at), n, Nil{})
+  take.go(drop.go(List.append(&2, U32, Nil{}, ms), U32.to_nat(at)), U32.to_nat(n), Nil{})
 
 def Mem.to_hex(+s: Store, +m: Mem) -> String:
   String.concat(hexout.go(slice(Store.ms(s), Mem.base(m), Mem.nbytes(m)), Nil{}))
@@ -1590,10 +1700,17 @@ def mem_at(+ms: List<&2, Mem>, i: Nat) -> Mem:
 # give it its own def"), so three chained `(m, s) = raw_alloc(..)` need three
 # wrapper defs to launder the pair through a parameter. One call computes the
 # pair ONCE and destructures it once.
+# NO REVERSE, and that is the fix for a MEASURED bug this milestone found: the
+# first version prepended with `List.append` and then called `List.reverse`, but
+# `List.append(a, A, xs, ys)` is `xs ++ ys` -- it APPENDS -- so the two cancelled
+# into a REVERSED buffer list. MEASURED: `ms_b0_base=8`, `ms_b1_base=4`,
+# `ms_b2_base=0` for three 4-byte buffers, which is the allocation order backwards.
+# The gate row `ms_b0_base` is what caught it, and it is why the diagnostics run
+# BEFORE the launch.
 def alloc_all.go(+sizes: List<&2, U32>, +top: U32,
                  +acc: List<&2, Mem>) -> List<&2, Mem>:
   match sizes:
-    case Nil{}: List.reverse(&2, Mem, acc)
+    case Nil{}: acc
     case n <> t: alloc_all.go(t, U32.add(top, n),
       List.append(&2, Mem, acc, [Mem.of(top, n)]))
 
@@ -1770,35 +1887,51 @@ def run_exe() -> IO(Unit):
 # boolean over a string can be true while the string is wrong. `EXPECTED()` is the
 # expectation written down BEFORE the run in
 # `.agents/slop/ops_bend-milestone-expected.txt`.
-def ms_verdict(+got: String, +want: String) -> IO(Unit):
-  # THE THREE ROWS, and the TEXT before the BOOLEAN deliberately: "the emitted
-  # text is a gate, not a boolean" (this file's own rule) -- `ms_got`/`ms_want`
-  # are the gate and `ms_pass` is the summary, so a reader who disagrees can see
-  # WHICH side moved without re-running anything.
+# THE VERDICT, AND IT IS PER BUFFER BECAUSE `IO.print` STOPS AT A NEWLINE.
+# MEASURED: the first version printed the whole of PACKET.out as one row and the
+# row read `ms_got=4 00004040` -- the FIRST line and nothing else. So `ms_pass` was
+# comparing one line against a three-line string, i.e. a row that could only be
+# False; it read True for the wrong reason, because the port's own `EXPECTED()`
+# string was truncated the same way and the two agreed on a prefix. That is
+# shotgun parsing in miniature, and a row that cannot fail is worse than no row.
+#
+# SO: THREE ROWS, one per buffer, each a single line with no newline in it, and the
+# `ms_b*` rows are the gate while `ms_pass` is the summary.
+def line_at(+ls: List<&2, String>, i: Nat) -> String:
+  Maybe.default(&2, String, List.get(&2, String, ls, i), "")
+
+def EXPECT0() -> String: "4 00004040"
+def EXPECT1() -> String: "4 0000803f"
+def EXPECT2() -> String: "4 00000040"
+
+def ms_buf_row(+nm: String, +got: String, +want: String) -> IO(Unit):
   do IO<Unit>:
-    srow("ms_got", got)
-    srow("ms_want", want)
-    row("ms_pass", String.eq(got, want))
+    srow(String.concat([nm, "_got"]), got)
+    srow(String.concat([nm, "_want"]), want)
+    row(nm, String.eq(got, want))
 
-# ONE ROW PER DEF, and that is forced rather than stylistic: `ms` is a
-# `List<&2, Mem>`, it is AFFINE, and a `do` block of eleven rows reads it eleven
-# times. MEASURED: "expected : Store / observed : Mem", which names the FIRST
-# disagreement and not the count. So each fact gets its own def and each def
-# consumes the list once. It also means a failing row localises to a def.
-def say_base(nm: String, v: U32) -> IO(Unit): urow(nm, v)
+# THE THREE LINES OF PACKET.out, AND THE SPLIT NOW WORKS. This file's own header
+# called it a WALL: "String.split(s, NLCH()) does not split a packet on its
+# newlines". MEASURED AGAIN on the current substrate, and IT IS FIXED:
+# String.split("a\nb\nc\n", NLCH()) answers FOUR fields -- "a", "b", "c", "" --
+# which is exactly `splitlines()` plus the trailing empty. The 40 rows the header
+# blamed on this wall are now GREEN (see THE LINE SPLIT IS NOT A WALL below).
+def out_lines(+text: String) -> IO(Unit):
+  IO.bind(Unit, Unit, ms_buf_row("ms_b0", line_at(split_lines(text), 0n), EXPECT0()), _ =>
+    IO.bind(Unit, Unit, ms_buf_row("ms_b1", line_at(split_lines(text), 1n), EXPECT1()), _ =>
+      IO.bind(Unit, Unit, ms_buf_row("ms_b2", line_at(split_lines(text), 2n), EXPECT2()), _ =>
+        row("ms_line_count", U32.is_eq(
+          U32.from_nat(List.length(&2, String, split_lines(text))), 3)))))
 
-# ONE ROW PER CALL, CALLED FROM `milestone.main`. That is not a workaround, it is
-# the only shape that satisfies the affine discipline: a `List<&2, Mem>` may be
-# consumed ONCE, so five rows over three buffers cannot live in one def. MEASURED
-# alternatives, both rejected: a `do` block of N rows is "expected Store /
-# observed Mem"; and threading the list through `IO.bind` needs every link to
-# ANSWER the list, which is "consumed more than once" the moment a link both reads
-# and answers it. So EVERY def here ANSWERS `IO(List<&2, Mem>)` and the chain
-# hands each link a list to consume. One print per def, one bind per hand-off.
-# THE LIST IS THE FIRST ARGUMENT, and that is forced by argument order: arguments
+def ms_verdict(text: String) -> IO(Unit): out_lines(text)
+
+# ONE ROW PER DEF, AND THE LIST IS THE FIRST ARGUMENT. Two forced choices, both
+# MEASURED. (1) A `List<&2, Mem>` is AFFINE, so a `do` block of N rows over it is
+# "expected Store / observed Mem"; five rows cannot share one def. (2) Arguments
 # are read LEFT TO RIGHT, so `ms_row("...", Mem.base(mem_at(ms, 0n)), ms)` consumes
-# `ms` inside `mem_at` and then tries to hand the same list on again. Putting the
-# list FIRST makes it the last thing the row def consumes.
+# `ms` inside `mem_at` and then cannot hand the same list on -- hence the list
+# FIRST. Every def ANSWERS `IO(List<&2, Mem>)` and the chain hands each link a list
+# to consume, which is the only shape in which an affine list survives five uses.
 def ms_row(ms: List<&2, Mem>, nm: String, v: U32) -> IO(List<&2, Mem>):
   IO.bind(Unit, List<&2, Mem>, urow(nm, v), _ => IO.pure(List<&2, Mem>, ms))
 
@@ -1841,8 +1974,6 @@ def ms_row_top(+s: Store, ms: List<&2, Mem>) -> IO(List<&2, Mem>):
       urow("ms_store_len", U32.from_nat(List.length(&2, U32, Store.ms(s)))),
       _ => IO.pure(List<&2, Mem>, ms)))
 
-# THE CHAIN, in the order the rows print. Each link answers the list the next one
-# consumes, so the whole group is ONE affine walk with no list ever read twice.
 def ms_stage2a(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
   ms_row_top(s, ms)
 
@@ -1863,6 +1994,12 @@ def ms_stage2e(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
   IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_line(ms, s), a =>
     ms_row_free(a, s))
 
+# THE TERMINAL. `ms_die_unit` DISCARDS the finished walk, and it is
+# `IO.die(Unit, 0, "")` rather than a `Unit` VALUE because Bend has no `Unit`
+# inhabitant -- every spelling of one is refused (MEASURED: "expected Unit /
+# observed Type"). Nothing meaningful is discarded: the verdict came from `text`.
+def ms_die_unit(_: List<&2, Mem>) -> IO(Unit): IO.die(Unit, 0, "")
+
 def ms_stage2f(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
   IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2a(ms, s), a =>
     IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2b(a, s), b =>
@@ -1870,85 +2007,46 @@ def ms_stage2f(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
         IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2d(c, s), d =>
           ms_stage2e(d, s)))))
 
-# THE VERDICT COMES FIRST, and that ordering is deliberate: `ms_pass` is the row a
-# reader looks at, and it is printed before the diagnostic rows that explain it if
-# it is False. Then the five stage-2 groups, in call order, which is what makes the
-# affine threading read top-to-bottom.
-# `ms_stage2f` ALREADY ANSWERS `IO(List<&2, Mem>)`, so this def IS the Unit
-# wrapper -- there is no `IO.pure(Unit, ...)` to write, and that is why the shape
-# is a def rather than a bind. An earlier version tried to bind on `Unit` and was
-# refused with "expected Unit / observed Type", because `Unit` in a bind's second
-# position is the FUNCTION's parameter list.
-# AND THE `Unit` PROBLEM, which cost three attempts and is worth recording because
-# it is a substrate rule with no analogue in the rest of this file. Bend has no
-# `Unit` VALUE: `IO.pure(Unit, x)` wants an inhabitant of `Unit`, and every
-# attempt is refused -- `IO` is a function, `Nil{}` does not have type `Unit`
-# (MEASURED: "expected Unit / observed Type"). The answer is to make the
-# continuation IGNORE its argument: a lambda whose parameter is `_` binds at any
-# type, so `_ => File.close(f)` -- which is what `ops_python.bend` does everywhere
-# it needs to discard -- is the whole idiom. Nothing here discards a MEANINGFUL
-# value: the `List<&2, Mem>` at the end of the walk is read by nothing downstream,
-# because the verdict was already computed from `text`.
-# `ms_after` DISCARDS the finished walk. `IO.die(Unit, 0, "")` rather than a
-# `Unit` value, because Bend has no `Unit` inhabitant and this is the one place a
-# value must be produced: a zero-code halt that closes cleanly. It is reached only
-# after every row has printed, and `ms_gate_rows` carries the real verdict.
-def ms_after(_: List<&2, Mem>) -> IO(Unit): IO.die(Unit, 0, "")
+def on_rows(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  IO.bind(List<&2, Mem>, Unit, ms_stage2f(ms, s), ms_die_unit)
 
-def ms_stage2g(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
-  IO.bind(List<&2, Mem>, Unit, ms_stage2f(ms, s), ms_after)
-
-# THE VERDICT, THEN THE DIAGNOSTICS. `ms_verdict` comes FIRST so `ms_pass` is
-# printed before the rows that explain it when it is False. `text` is bound once
-# and used once -- `String` is affine too, which is why `EXPECTED()` is inlined
-# rather than carried.
 def on_out(ms: List<&2, Mem>, +s: Store, text: String) -> IO(Unit):
-  IO.bind(Unit, Unit, ms_verdict(text, EXPECTED()), _ => ms_stage2g(ms, s))
+  IO.bind(Unit, Unit, ms_verdict(text), _ => on_rows(ms, s))
 
-# THE THREE IO STEPS, and the SHAPE is one `do` block with a single `out` bind --
-# which works because `on_out` answers `Unit` here and the diagnostic rows hang
-# off it. (An earlier chain threaded `List<&2, Mem>` through four binds and every
-# link had to re-answer the list; MEASURED, "expected Unit -> IO / observed
-# List<&2, Mem> -> IO". One `do` block and one call is strictly less code and the
-# rows are in the SAME order either way.) `pkt_out` runs AFTER `run_exe` because
-# the executor WRITES PACKET.out beside the packet -- the read must see the result.
-# THE DIAGNOSTICS RUN BEFORE THE LAUNCH, and that ordering is a correction, not a
-# style: MEASURED, a refused launch `IO.die`s and every row after it is LOST, so
-# a milestone that failed at the launch reported nothing about the allocator --
-# which is precisely the state a reader needs. Now the bases, the extents, the
-# store length and the hex all print before the executor is asked anything.
-def on_packet(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
-  IO.bind(List<&2, Mem>, List<&2, Mem>, write_file(PKT_IN(), pkt_in(ms, s)), a =>
-    IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2f(a, s), b =>
-      IO.bind(List<&2, Mem>, Unit, run_exe(), c =>
-        IO.bind(String, List<&2, Mem>, pkt_out(), out => on_out(b, s, out)))))
+# THE THREE IO STEPS, AND THE DIAGNOSTICS RUN BETWEEN THE WRITE AND THE LAUNCH.
+# That ordering is a CORRECTION, measured: a refused launch `IO.die`s and every row
+# after it is LOST, so the first version of this milestone reported NOTHING about
+# the allocator when the launch failed -- which is exactly the state a reader
+# needs. Now the bases, the extents, the store length and the hex all print BEFORE
+# the executor is asked anything, so a refusal is diagnosable rather than silent.
+def on_launch(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  do IO<Unit>:
+    r : Unit <- run_exe()
+    out : String <- pkt_out()
+    on_out(ms, s, out)
 
-# THE ENTRY. `ms_state` is a COMPUTED pair and a pair cannot be a bind argument
-# (MEASURED: "expected Sigma / observed Sigma" -- the two sides disagree on the
-# depth), so the pair is bound as the result of an IO effect and split inside.
-# `ms_after_state` then hands the SPLIT pair to `on_state`, which does the three
-# IO steps. The `+ms`/`+s` on every hop is the rebind marker, which is what lets a
-# name be read once per def instead of once per use.
-# THE ENTRY. `ms_state` answers a COMPUTED pair, and a computed pair cannot be a
-# bind argument (MEASURED: "expected Sigma<&1,&1,List<&2,Mem>,Store> / observed
-# Sigma" -- the depth annotation is what disagrees), so `IO.bind` names the PAIR
-# type and the continuation splits it. `on_state` is the def the continuation
-# hands it to, which is why `ms_after_state` exists at all: a lambda cannot destructure.
-# THE ENTRY, and the pair is laundered through a ONE-ARG def because a pair with
-# a depth annotation cannot be an `IO.bind` argument (MEASURED). `ms_start` binds
-# on the LIST -- which `ms_state`'s first component already is -- and `on_start`
-# takes the store as its own parameter, so the two are threaded as ordinary
-# arguments rather than as a computed Sigma.
-def on_start(ms: List<&2, Mem>, +s: Store) -> IO(Unit): on_packet(ms, s)
+# WRITE, THEN DIAGNOSE, THEN LAUNCH -- and the second bind's B type is `Unit`
+# because `on_launch` answers `Unit` (MEASURED: naming `List<&2, Mem>` there is
+# "expected Unit -> IO / observed List<&2, Mem> -> IO").
+def on_diag(+ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  IO.bind(Unit, Unit, write_file(PKT_IN(), pkt_in(ms, s)), _ =>
+    IO.bind(List<&2, Mem>, Unit, ms_stage2f(ms, s), _ => on_launch(ms, s)))
 
-def ms_start(p: (List<&2, Mem> & Store)) -> IO(Unit):
-  (ms, s) = p
-  on_start(ms, s)
+def on_packet(ms: List<&2, Mem>, +s: Store) -> IO(Unit): on_diag(ms, s)
 
+# THE ENTRY. `ms_state(store())` answers a COMPUTED Sigma and a computed Sigma
+# cannot be an `IO.bind` argument (MEASURED: "expected Sigma<&1,&1,List<&2,Mem>,
+# Store> / observed Sigma" -- the DEPTH ANNOTATION is what disagrees), so it is
+# lifted into an `IO.pure` first and the continuation destructures it. That is
+# also why `on_state` exists: a lambda cannot destructure a pair.
 def ms_io() -> IO((List<&2, Mem> & Store)): IO.pure(List<&2, Mem> & Store, ms_state(store()))
 
+def on_state(p: (List<&2, Mem> & Store)) -> IO(Unit):
+  (ms, s) = p
+  on_packet(ms, s)
+
 def milestone() -> IO(Unit):
-  IO.bind(List<&2, Mem> & Store, Unit, ms_io(), ms_start)
+  IO.bind(List<&2, Mem> & Store, Unit, ms_io(), on_state)
 
 # THE ALLOCATOR AND CODEC ROWS. `bend_alloc_*` reads the bump with NOTHING
 # written, so a bug in the copy-in cannot be mistaken for a bug in the allocator;

@@ -1,0 +1,15 @@
+staged tinybendygrad/runtime/support/nv/nvdev.bend -> nvdev.staged-mmut-3107
+  sha256(mirror) == sha256(live) == e7710788ae8fb0e4  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)
+baseline: 794 name= rows, row-set digest c9f18571b35a9b5f
+
+register     mutation                                       moved     rows
+----------------------------------------------------------------------------------------------------
+v2_pte       2-bit field -> (2,1)                           0         
+v2_pde       2-bit field -> (2,1)                           0         
+v2_dpd       2-bit field -> (2,1)                           0         
+v3_pte       4-bit field -> (11,8), BOOT_42's exact shape   3         nv_reg_NV_MMU_VER3_PTE_maxw,nv_reg_NV_MMU_VER3_PTE_wide,nv_reg_NV_MMU_VER3_PTE_wide_names
+v3_pde       3-bit field -> (5,3)                           3         nv_reg_NV_MMU_VER3_PDE_maxw,nv_reg_NV_MMU_VER3_PDE_wide,nv_reg_NV_MMU_VER3_PDE_wide_names
+v3_dpd       3-bit field -> (5,3)                           3         nv_reg_NV_MMU_VER3_DUAL_PDE_maxw,nv_reg_NV_MMU_VER3_DUAL_PDE_wide,nv_reg_NV_MMU_VER3_DUAL_PDE_wide_names
+boot42-ctl   CONTROL: BOOT_42 has a `_ranges` row           22        nv_boot42_chipid_over,nv_decode_arch_1a,nv_decode_arch_1b,nv_decode_arch_3f,nv_decode_boot42_full,nv_decode_impl_d
+boot0-1bit-ctl CONTROL: s==e widened to (8,9) -- a WIDTH edit, not a swap 1         nv_reg_NV_PMC_BOOT_0_ranges
+live nvdev.bend: byte-identical (e7710788ae8fb0e4) -- this harness never wrote it

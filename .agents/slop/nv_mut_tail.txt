@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_one_mutation.py", line 72, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_one_mutation.py", line 39, in main
+    with SM.Staged(SRC, "nv1") as unit:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/staged_mut.py", line 231, in __enter__
+    raise MirrorStale(
+staged_mut.MirrorStale: MIRROR STALE.  sha256(jj @) = e7710788ae8fb0e4 but sha256(live) = 054e2829094aa50f for /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/support/nv/nvdev.bend (114264 vs 115412 bytes).
+  The working copy carries an edit that is not in `@`, so @ is a substrate
+  somebody else has since changed.  Every 'the anchor is not in the file'
+  verdict measured against it would name a file nobody is looking at, so
+  NOTHING is measured.  This is the state `blob-intern-mutate.py` was in when
+  its `finally` restore put a dead 6,623-line ops.bend over the live 6,306-line
+  one.  Wait for that edit to land, or run against a clean file.

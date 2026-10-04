@@ -146,6 +146,46 @@ CONTRACTS = {
   ("blob-rows.py", "rows_of"):
     "A RUNNER: runs a lane twice to prove the lane is STABLE and returns (rows, stderr). The "
     "stability check is its contract; rows() has no such notion and cannot stand in for it.",
+
+  # ── THE 157th READER, CAUGHT BY THE GUARD WHILE THIS WAS BEING BUILT. `eq/nl-gate.py` appeared
+  # in the tree at 13:04, DURING this census, carrying all three of cstyle-gate.py's readers in a
+  # new file. That is the guard's entire purpose demonstrated rather than asserted: the number
+  # went from 156 to 157 while the machinery was being finished, and reader-guard.py named it on
+  # its first run with no registry row for it. NOT CONVERTED -- another unit owns that file and it
+  # was mid-write; registered so the guard can hold it to a stated contract from here.
+  ("eq/nl-gate.py", "rows_strict"):
+    "PARITY reader, third instance of this contract (cstyle-gate.py's and cs-fixpy.py's are the "
+    "other two). Demands the `py=` column and a closing `]`, returns (rows, unread, dups) so a "
+    "duplicate is REPORTED, and REFUSES ambiguity rather than resolving it: `row_strict` returns "
+    "a REASON string for a row it will not read, so the caller prints a number instead of quietly "
+    "reading a different row. Measured DIVERGENT from rows() on F1/F2/F3 and unreachable on F3. "
+    "OWED: import cstyle-gate.py's rows_strict, or state what is different about this copy.",
+  ("eq/nl-gate.py", "row_strict"):
+    "PER-LINE rule, third instance (cstyle-gate.py, cs-fixpy.py, and this). Returns "
+    "(name, value, why) -- a THREE-tuple with a refusal reason, which neither of the other two "
+    "has. The reason is the contract: ambiguity is refused, not resolved.",
+  ("eq/nl-gate.py", "split_py"):
+    "INVERSE FOLD, third instance. Same contract as cstyle-gate.py's: read the `]   py=[` tail "
+    "back OUT of a value, by rfind because a value's own bracket can precede the boundary. Its "
+    "docstring names the concrete case -- `gep %v3 f32x1 i32`'s answer carries two brackets -- "
+    "which is the reason this is not `find`.",
+  # ── rn-gate.py, the FOURTH and FIFTH copies, written after nl-gate.py and carrying the same
+  # three readers. Measured: `render.bend:2148` prints the same `NAME = [...]   py=[...]` shape,
+  # and its own docstring reports that 31 of the `=`-bearing names a census found were FALSE
+  # POSITIVES -- readers that cut at the ` = ` INSIDE THE VALUE. That is the exact failure this
+  # whole census is about, reached independently from a different lane, and it is why the registry
+  # exists: five files now hold the same three readers and none of them had to know about the
+  # other four.
+  ("eq/rn-gate.py", "rows_strict"):
+    "PARITY reader, FOURTH instance (cstyle-gate.py, cs-fixpy.py, nl-gate.py, this). Demands the "
+    "`py=` column and a closing `]`; returns (rows, unread, dups) so a duplicate is REPORTED. "
+    "MEASURED DIVERGENT from rows(). OWED: import one of the other three rather than adding a "
+    "fourth spelling of the same rule.",
+  ("eq/rn-gate.py", "row_strict"):
+    "PER-LINE rule, FOURTH instance. Returns (name, value, why) with a refusal reason so "
+    "ambiguity is reported rather than resolved.",
+  ("eq/rn-gate.py", "split_py"):
+    "INVERSE FOLD, FOURTH instance. Reads the `]   py=[` tail back out by rfind.",
 }
 
 # Every reader that IS the gate's rows(), imported. Kept as data so R3 has something to check.

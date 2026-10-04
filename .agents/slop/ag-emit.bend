@@ -105,12 +105,6 @@ def ty_ups(+t: Ty) -> String:
     case Ty{bend, ups}: ups
 
 
-def ty_all_ups.go(+xs: List<&2, Ty>) -> String:
-  match xs:
-    case Nil{}: ""
-    case Ty{bend, ups} <> rest: String.concat([ups, "|", ty_all_ups.go(rest)])
-
-
 # membership over a COMMA-joined spelling set.  Substring search would be wrong:
 # `c.POINTER[CXString]` contains `CXString`, and an empty set contains
 # everything.
@@ -118,8 +112,8 @@ def ty_in(+s: String, +set: String) -> Bool:
   Bool.or(String.eq(s, set), String.contains(String.concat([",", set, ","]), String.concat([",", s, ","])))
 
 
-# `String.drop(s, n)` drops n LEADING chars.
-def enc_strip(+s: String, pre: Nat, suf: Nat) -> String: String.drop(String.drop(s, pre), suf)
+def enc_strip.go(+d: String, suf: Nat) -> String:
+  String.reverse(String.take(String.reverse(d), Nat.sub(String.length(d), suf)))
 
 
 def enc_bracketed(+s: String) -> Bool: Bool.and(String.starts_with(s, "["), String.ends_with(s, "]"))
@@ -223,12 +217,6 @@ def tr_ps(+t: Tr) -> List<&2, Pm>:
     case Tr{nm, rty, ret, ps}: ps
 
 
-def ty_find(+xs: List<&2, Ty>, +b: String) -> Maybe<&2, Ty>:
-  match xs:
-    case Nil{}: None{}
-    case Ty{bend, ups} <> rest: List.find.put(Ty, Ty{bend, ups}, ty_find(rest, b), String.eq(bend, b))
-
-
 def emit_head(+nt: Nat, +ntr: Nat) -> String: String.concat([
 "# GENERATED FILE -- DO NOT EDIT.  Emitted by `.agents/slop/ag-emit.bend` from\n",
 "# `tinygrad/runtime/autogen/libclang.py` via `.agents/slop/ag-libclang.tramp`.\n",
@@ -287,6 +275,14 @@ def read_lines.go(m: File & Result<&1, &1, U32 & String, String>) -> IO(String):
     IO.pure(String, s)
 
 
+# `String.drop(s, n)` drops n LEADING chars and there is NO `drop_end` in
+# base.bend, so the trailing characters come off through a reverse. Dropping
+# them from the FRONT instead costs ten characters of `c.POINTER[` and yields
+# `Ptr_types.c_char]` -- a name that still typechecks, so nothing complains.
+def enc_strip(+s: String, pre: Nat, suf: Nat) -> String:
+  enc_strip.go(String.drop(s, pre), suf)
+
+
 def ty_le(+x: Ty, +y: Ty) -> Bool: String.is_le(ty_bend(x), ty_bend(y))
 
 
@@ -304,9 +300,6 @@ def ty_prims() -> List<&2, Ty>:
    ty("CBool", "ctypes.c_bool,bool"),
    ty("CWChar", "ctypes.c_wchar,str"),
    ty("Unit", "None")]
-
-
-def enc_arg(+s: String) -> String: Bool.pick(String, enc_bracketed(s), enc_strip(s, 1n, 1n), s)
 
 
 def enc_fn_parts.go(+xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
@@ -374,10 +367,13 @@ def emit_binds_up.go(+xs: List<&2, Pm>) -> List<&2, String>:
     case p <> rest: List.append(&2, String, emit_binds_up.go(rest), [pm_hint(p)])
 
 
-def ty_add.put(+found: Maybe<&2, Ty>, +acc: List<&2, Ty>, +b: String) -> List<&2, Ty>:
-  match found:
-    case Some{value}: List.append(&2, Ty, acc, [Ty{b, String.concat([ty_ups(value), ",", b])}])
-    case None{}: List.append(&2, Ty, acc, [Ty{b, b}])
+# Adding a spelling to the row for a Bend name REPLACES that row. Appending
+# instead leaves a second row behind and NOTHING upstream complains: the first
+# run emitted `type CXFile is Data` THREE times, once per occurrence of the
+# spelling, and bend accepts that. A NAME-SET check is what sees it.
+def ty_add.at(hit: Bool, +cur: Ty, +rest: List<&2, Ty>, +b: String) -> List<&2, Ty>:
+  Bool.pick(List<&2, Ty>, hit, [Ty{b, String.concat([ty_ups(cur), ",", b])}],
+            List.append(&2, Ty, rest, [cur]))
 
 
 def emit_ty(+t: Ty) -> String: String.concat(["type ", ty_bend(t), " is Data:\n  ", ty_bend(t), "{}\n"])
@@ -398,7 +394,13 @@ def read_lines(path: String) -> IO(String):
     read_lines.go(m)
 
 
-def ty_all_ups() -> String: String.concat(["|", ty_all_ups.go(ty_prims()), "|"])
+def enc_arg(+s: String) -> String: Bool.pick(String, enc_bracketed(s), enc_strip(s, 1n, 1n), s)
+
+
+def ty_add.put(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>:
+  match xs:
+    case Nil{}: [Ty{b, b}]
+    case Ty{bend, ups} <> rest: ty_add.at(String.eq(bend, b), Ty{bend, ups}, rest, b)
 
 
 # the RESULT type then the ARGUMENT types of a `c.CFUNCTYPE[...]`, brackets off
@@ -435,9 +437,6 @@ def emit_binds_up(+t: Tr) -> List<&2, String>:
   List.append(&2, String, emit_binds_up.go(tr_ps(t)), [tr_ret(t)])
 
 
-def ty_add(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>: ty_add.put(ty_find(xs, b), xs, b)
-
-
 # every ABI type a row mentions, the return first, then each parameter -- the
 # order autogen.py:240 builds `[rt] + ats` in.
 def tr_bends(+t: Tr) -> List<&2, String>:
@@ -460,6 +459,9 @@ def emit_tys(+xs: List<&2, Ty>) -> IO(Unit):
     case t <> rest:
       IO.bind(Unit, Unit, IO.print(emit_ty(t)),
         _ => IO.bind(Unit, Unit, IO.print(emit_ty_row(t)), _ => emit_tys(rest)))
+
+
+def ty_add(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>: ty_add.put(xs, b)
 
 
 def parse_row.at(+cs: List<&2, String>) -> Trr:
@@ -492,16 +494,16 @@ def emit_bind(+t: Tr) -> String: String.concat([tr_nm(t), " = ", String.join(emi
 def emit_bind_up(+t: Tr) -> String: String.concat([tr_nm(t), " = ", String.join(emit_binds_up(t), ", ")])
 
 
-def tys_go(+xs: List<&2, String>, +acc: List<&2, Ty>) -> List<&2, Ty>:
-  match xs:
-    case Nil{}: acc
-    case b <> rest: tys_go(rest, ty_add(acc, b))
-
-
 def tys_sort(+xs: List<&2, Ty>) -> List<&2, Ty>:
   match xs:
     case Nil{}: Nil{}
     case h <> rest: tys_sort.ins(rest, h)
+
+
+def tys_go(+xs: List<&2, String>, +acc: List<&2, Ty>) -> List<&2, Ty>:
+  match xs:
+    case Nil{}: acc
+    case b <> rest: tys_go(rest, ty_add(acc, b))
 
 
 def parse_row(+line: String) -> Trr: parse_row.at(String.split(line, '|'))
@@ -522,17 +524,17 @@ def enc1.fn.parts(+xs: List<&2, String>, +acc: String) -> String:
     case p <> tail: enc1.fn.parts(tail, String.concat([acc, "_", enc0(enc_arg(p))]))
 
 
-def trs_fold(+xs: List<&2, Tr>, +acc: List<&2, Ty>) -> List<&2, Ty>:
-  match xs:
-    case Nil{}: tys_sort(acc)
-    case t <> rest: trs_fold(rest, tys_go(tr_bends(t), acc))
-
-
 def emit_defs(+xs: List<&2, Tr>) -> IO(Unit):
   match xs:
     case Nil{}: IO.pure(Unit, Unit{})
     case t <> rest:
       IO.bind(Unit, Unit, IO.print(emit_def(t)), _ => emit_defs(rest))
+
+
+def trs_fold(+xs: List<&2, Tr>, +acc: List<&2, Ty>) -> List<&2, Ty>:
+  match xs:
+    case Nil{}: tys_sort(acc)
+    case t <> rest: trs_fold(rest, tys_go(tr_bends(t), acc))
 
 
 def enc1.fn(+s: String) -> String: enc1.fn.parts(enc_fn_parts(s), "Fn_")
@@ -573,10 +575,15 @@ def enc(+s: String) -> String: enc2(s)
 def to_tr(+t: Trr) -> Tr: Tr{trr_nm(t), enc(trr_rb(t)), enc(trr_rh(t)), group(trr_cells(t))}
 
 
+# `String.lines` KEEPS the empty string after a file's final newline, so a 324
+# row file yields 325 rows and the extra one parses to an empty NAME. Emitting it
+# produced `type  is Data:` and `def ty_()`, and both typecheck.
 def trs_map(+xs: List<&2, String>) -> List<&2, Tr>:
   match xs:
     case Nil{}: Nil{}
-    case l <> rest: List.append(&2, Tr, trs_map(rest), [to_tr(parse_row(l))])
+    case l <> rest:
+      Bool.pick(List<&2, Tr>, String.is_empty(l), trs_map(rest),
+                List.append(&2, Tr, trs_map(rest), [to_tr(parse_row(l))]))
 
 
 def main.go(+lines: List<&2, String>) -> IO(Unit):

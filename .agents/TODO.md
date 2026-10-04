@@ -7299,7 +7299,7 @@ Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file na
 unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
 Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
 Progress: normal-form defects [##########] 26 found and fixed (17-26 are this round's)
-Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
+Progress: reproducibility [##########] DONE — 154 of 154 files identical, and the check
            found a real nondeterminism on its first run
 
 - [x] **THE GAP NAMED IN THE BRIEF, CLOSED: THE CORPUS WAS NOT A KERNELIZED PROGRAM.**
@@ -7379,7 +7379,7 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       not-comparable 0 / selfcheck OK / census-rc 0 / stable 5-0-0 / plants 6 / cross 1 /
       controls 5 / conflations 4 / oracle OK — **the NEGATIVE counts included**, because a
       positive count alone cannot distinguish a result from a pair of identical failures —
-      and compares sha256 over non-blank lines. **158 of 158 identical.**
+      and compares sha256 over non-blank lines. **154 of 154 identical.**
       The health gate is not decoration: a concurrent edit to `uop/ops.bend` landed part way
       through a run and produced twelve real reports and four 0-row failures, and it is what
       let defect 22 hide in plain sight.

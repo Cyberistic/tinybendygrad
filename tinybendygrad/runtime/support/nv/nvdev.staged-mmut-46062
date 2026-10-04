@@ -1514,18 +1514,20 @@ def nv.fld_abw(r: Rgv, nm: String) -> String: nv.se_abw(nv.fld_se(r, nm))
 
 def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
 
-# ONE ROW GROUP PER FIELD for the WHOLE table, so the check is per SITE and not a
-# property of one lucky register. The expected values are CPython's --
-# nv_nvdev_oracle.py's `(a, b, b - a + 1)`, `B42.mask(nm)` and
-# `getbits(4294967295, a, b)`. Between them a transposition cannot hide: `wid` is
-# not symmetric modulo 2^32 for any w <= 32, so the width row moves on every one.
+# ONE ROW GROUP PER FIELD for the WHOLE BOOT_42 table, so the check is per SITE and
+# not a property of one lucky field. The expected values are CPython's --
+# nv_nvdev_oracle.py's `(a, b, b - a + 1)`, `B42.mask(nm)` and `(1 << (b - a + 1)) - 1`.
+# Between them a transposition cannot hide: all six of these fields have s != e, and
+# `wid(s,e) = e - s + 1` WRAPS, so `wid(e,s)` is ~2^32 and differs from `wid(s,e)` for
+# every one of them. (`s == e` fields are the other 33 sites in the file and no
+# transposition exists there -- see t_mmu's comment for the one shape that IS invisible.)
 #
 # THE ROW NAMES ARE LITERALS AND SO IS THE LOOKUP KEY, because a `String` is
 # consumed by its one use: a def that built `"nv_fld_" ++ nm` and then looked the
-# field up by `nm` could not exist. Fourteen literals per register is cheaper than
-# the alternatives, and it has the property that matters -- a mutation has to be
-# written out per field to be seen, rather than hiding inside a name that a fold
-# rebuilds identically either way.
+# field up by `nm` could not exist. Twenty-six literal rows is cheaper than the
+# alternatives, and it has the property that matters -- a mutation has to be written
+# out per field to be seen, rather than hiding inside a name that a fold rebuilds
+# identically either way.
 def t_flds_b42() -> IO(Unit):
   do IO<Unit>:
     IP.srow("nv_fld_minor_extended_revision", nv.fld_abw(nv.reg_boot42(), "minor_extended_revision"))
@@ -1798,6 +1800,21 @@ def t_regs() -> IO(Unit):
 
 def t_mmu() -> IO(Unit):
   do IO<Unit>:
+    # THE SIX `_ranges` ROWS, AND THEY ARE NOT REDUNDANT WITH `_maxw`/`_wide`.
+    # MEASURED (nv_mmustrans.py): transposing `aperture` `(1,2)`->`(2,1)` in
+    # v2_pte / v2_pde / v2_dpd moved NOTHING. `nv.wid(s,e) = e - s + 1` wraps, and for
+    # a 2-BIT field the swapped width is `1 - 2 + 1 = 0` -- small, so neither `_maxw`
+    # (the register max comes from `address_sys`) nor `_wide` (0 is not > 32) nor
+    # `_names`/`_nf`/`_wide_names` moves. Every WIDER field's swapped width is
+    # ~2^32, which `_maxw` and `_wide` do catch, so the blind set is exactly the
+    # 2-bit fields. `_ranges` closes all of it and stops the coverage being an
+    # accident of which fields happen to be wide.
+    IP.srow("nv_reg_NV_MMU_VER2_PTE_ranges", nv.ranges(nv.reg_v2_pte()))
+    IP.srow("nv_reg_NV_MMU_VER2_PDE_ranges", nv.ranges(nv.reg_v2_pde()))
+    IP.srow("nv_reg_NV_MMU_VER2_DUAL_PDE_ranges", nv.ranges(nv.reg_v2_dpd()))
+    IP.srow("nv_reg_NV_MMU_VER3_PTE_ranges", nv.ranges(nv.reg_v3_pte()))
+    IP.srow("nv_reg_NV_MMU_VER3_PDE_ranges", nv.ranges(nv.reg_v3_pde()))
+    IP.srow("nv_reg_NV_MMU_VER3_DUAL_PDE_ranges", nv.ranges(nv.reg_v3_dpd()))
     IP.srow("nv_reg_NV_MMU_VER2_PTE_names", nv.names(nv.reg_v2_pte()))
     IP.urow("nv_reg_NV_MMU_VER2_PTE_nf", Rgv.nf(nv.reg_v2_pte()))
     IP.urow("nv_reg_NV_MMU_VER2_PTE_maxw", nv.maxw(nv.reg_v2_pte()))

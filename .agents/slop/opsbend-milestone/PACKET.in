@@ -12,6 +12,6 @@ bendexec1 13 3
 11: ADD f32 - 7 9
 12: STORE void - 10 11
 13: SINK void - 12
-4 
-4 
-4 
+4 efbeadde
+4 0000803f
+4 00000040

@@ -36,6 +36,12 @@ nv_reg_NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_ranges=pdb_aperture=1:1;pdb_addr=
 nv_reg_NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_maxw=28
 nv_reg_NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_wide=0
 
+nv_reg_NV_MMU_VER2_PTE_ranges=valid=0:0;aperture=1:2;vol=3:3;encrypted=4:4;privilege=5:5;read_only=6:6;atomic_disable=7:7;address_sys=8:53;address_vid=8:32;address_vid_peer=33:35;comptagline=36:55;kind=56:63
+nv_reg_NV_MMU_VER2_PDE_ranges=is_pte=0:0;is_pde=0:0;valid=0:0;aperture=1:2;vol=3:3;no_ats=5:5;address_sys=8:53;address_vid=8:32;address_vid_peer=33:35
+nv_reg_NV_MMU_VER2_DUAL_PDE_ranges=is_pte=0:0;is_pde=0:0;valid=0:0;aperture_big=1:2;vol_big=3:3;no_ats=5:5;address_big_sys=4:53;address_big_vid=4:32;address_big_vid_peer=33:35;aperture_small=65:66;vol_small=67:67;address_small_sys=72:117;address_small_vid=72:96;address_small_vid_peer=97:99
+nv_reg_NV_MMU_VER3_PTE_ranges=valid=0:0;aperture=1:2;pcf=3:7;kind=8:11;address=12:51;address_sys=12:51;address_peer=12:51;address_vid=12:39;peer_id=61:63
+nv_reg_NV_MMU_VER3_PDE_ranges=is_pte=0:0;valid=0:0;aperture=1:2;pcf=3:5;address=12:51
+nv_reg_NV_MMU_VER3_DUAL_PDE_ranges=is_pte=0:0;valid=0:0;aperture_big=1:2;pcf_big=3:5;address_big=8:51;aperture_small=65:66;pcf_small=67:69;address_small=76:115
 nv_reg_NV_MMU_VER2_PTE_names=valid,aperture,vol,encrypted,privilege,read_only,atomic_disable,address_sys,address_vid,address_vid_peer,comptagline,kind
 nv_reg_NV_MMU_VER2_PTE_nf=12
 nv_reg_NV_MMU_VER2_PTE_maxw=46
