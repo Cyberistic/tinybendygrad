@@ -76,4 +76,47 @@ rc=$?
 set -e
 cat "$RUN/e2e-mm-gate.txt"
 if [ "$rc" -eq 0 ]; then echo "PASS"; else echo "FAIL"; fi
+
+# ---------------------------------------------------------------------------
+# STAGE 5, THE PORT'S OWN DEVICE. ADDED, NOT SUBSTITUTED: everything above is
+# UNCHANGED and its PASS/FAIL is what this script still returns. Read stage 5 as a
+# SEPARATE claim with its own verdict, because it answers a different question.
+#
+# STAGES 1-4 ask: does the port build a matmul program and does a REAL WebGPU
+# adapter run it? The adapter is the BROWSER's, reached over
+# `.agents/slop/e2e/webgpu_call.js`. Nothing in the port's own runtime is in that
+# path.
+#
+# STAGE 5 asks: does the PORT'S OWN `ops_bend` runtime execute? It allocates three
+# buffers in Bend's memory, writes a known pattern, launches
+# `tinybendygrad/runtime/ops_python.bend` -- which IS the executor, and which
+# `ops_bend.py:151` builds with `./bin/bend ... -o` -- reads PACKET.out back, and
+# compares it against an expectation written down BEFORE any run
+# (`.agents/slop/ops_bend-milestone-expected.txt`). No Node, no browser, no adapter,
+# and no tinygrad Python scheduler in the path.
+#
+# It is NOT COMPOSED WITH STAGES 1-4 ON PURPOSE. This stage does not run a matmul;
+# it runs ONE elementwise add over three f32 scalars. Joining them would need the
+# render side to emit Bend source, and NOTHING DOES -- MEASURED: the only three
+# files under `tinybendygrad/` that mention `bendexec` are `ops_python.bend` (the
+# executor), `ops_bend.bend` (this port) and `ops_bend.mut.bend` (a scratch copy).
+# The renderers in `tinybendygrad/renderer/` emit C, PTX, WGSL, LLVM IR and NIR;
+# there is no Bend renderer. That is the wall, and it is named rather than worked
+# around.
+# ---------------------------------------------------------------------------
+echo "== 5/5 port's own device (the port's ops_bend runtime executes)"
+set +e
+./.agents/slop/opsbend-milestone.sh > "$RUN/e2e-opsbend.txt" 2>&1
+msrc=$?
+set -e
+tail -3 "$RUN/e2e-opsbend.txt"
+if [ "$msrc" -eq 0 ]; then
+  echo "PASS (stages 1-4 and stage 5)"
+else
+  echo "STAGE 5 FAILED -- stages 1-4 verdict above stands on its own"
+  # THE EXIT STATUS IS STAGE 4's, NOT STAGE 5's. A failure here must not retract a
+  # green matmul: the two claims are independent and conflating them would make the
+  # stronger claim weaker, which is the same mistake this script's own header warns
+  # about at stage 4.
+fi
 exit "$rc"

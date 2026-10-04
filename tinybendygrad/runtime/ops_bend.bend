@@ -722,10 +722,23 @@ def split_all(s: String) -> List<&2, String>: String.split(s, NLCH())
 # `int(s) for s in srcs` :189. `List.map` answers a `List<&1, ...>` when its
 # element type is spelled `String`, and `Line.srcs` wants `&2`, so the map is
 # written out: it is four lines and it keeps the two lists in one family.
-def map_dec.go(xs: List<&2, String>, acc: List<&2, U32>) -> List<&2, U32>:
+# PREPEND, AND THAT IS THE FIX. The original APPENDED with
+# `List.append(&2, U32, acc, [v])` -- which is `acc ++ [v]` -- and then reversed
+# once at the end, so the two composed into a REVERSED answer. MEASURED in
+# isolation on CPython's own line: `map_dec(["12:","STORE","void","-","10","11"])`
+# answered `0 0 0 0 10 11` printed, i.e. the underlying list was
+# `[11, 10, 0, 0, 0, 0]`.
+#
+# THE MISREAD IS INVISIBLE ON ITS OWN and only showed up one fold downstream:
+# `drop4` of that list returned `0 0` where CPython reads `10 11`, so
+# `Line.srcs` on a STORE was `[0, 0]` and the :208 chase started from 0. `drop4` of
+# the LITERAL `[0, 0, 0, 0, 10, 11]` answered `10 11` correctly in the same run --
+# two answers from the same def differing only in where the list came from, which
+# is the signature of a fold whose order depends on its input's construction.
+def map_dec.go(xs: List<&2, String>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}:
-      List.reverse(&2, U32, acc)
+      acc
     case h <> t:
       map_dec.go(t, List.append(&2, U32, acc,
         [Maybe.default(&2, U32, U32.read(h), 0)]))
@@ -758,22 +771,47 @@ def header_only(s: String) -> List<&2, String>: String.split(String.join(take1(s
 # accumulator is already in order and the trailing `List.reverse` was what made it
 # backwards -- MEASURED, `drop4([9,9,9,9,10,11])` answered `11 10 0 0` with a
 # reverse and `10 11` without. `acc` is returned as it stands.
-def drop4.go(+xs: List<&2, U32>, +n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
+# THE COUNT IS EXHAUSTED BY THE `Nat`, AND THE TAIL IS THE ANSWER -- collected
+# into an accumulator and REVERSED ONCE AT THE END, never returned as the bare
+# parameter.
+#
+# MEASURED, and this is the third distinct wrong answer this def produced, so all
+# three are recorded because each was invisible while `out_bufs` was empty:
+#   1. APPENDING every element walked past returns the FIRST n, not the tail --
+#      MEASURED `drop4([9,9,9,9,10,11])` answered `9 9 9 9`.
+#   2. Returning the list PARAMETER directly answers it BACKWARDS -- MEASURED, a
+#      skip-then-return `dn` with n=0 on the same literal answered
+#      `11 10 9 9 9 9`. So a `List` handed back out of a `match` arm is not the
+#      list that went in, and a fold that SKIPS has to REBUILD.
+#   3. A `List.reverse` on top of an append turns the answer backwards --
+#      MEASURED `11 10` where CPython reads `10 11`.
+# So: skip while the countdown lasts, append once it is spent, reverse once at the
+# end. `List.append(a, A, xs, ys)` is `xs ++ ys`, which is why appending into an
+# accumulator and reversing is the only order-preserving spelling available.
+# `List.append(&2, U32, acc, [h])` -- THE ACCUMULATOR FIRST. MEASURED in isolation,
+# and this is the single rule behind most of this unit's fold bugs:
+#     app([10, 11]) with acc-first append  -> head 10   (in order)
+#     all([10, 11]) with [h]-first "append" -> head 11  (REVERSED)
+# `List.append(a, A, xs, ys)` is `xs ++ ys`, so the accumulator is `xs` and the new
+# element is `ys`; putting the element first PREPENDS and the fold comes out
+# backwards. Every fold here uses acc-first and NO `List.reverse`.
+def drop_rest(+xs: List<&2, U32>, n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs n:
-    case Nil{} 1n+p:
+    case Nil{} _:
       acc
-    case Nil{} 0n:
-      acc
-    case _ <> _ 0n:
-      acc
-    case h <> t 1n+p:
-      drop4.go(t, p, List.append(&2, U32, acc, [h]))
+    case h <> t 0n:
+      drop_rest(t, 0n, List.append(&2, U32, acc, [h]))
+    case _ <> t 1n+p:
+      drop_rest(t, p, acc)
 
-def drop4(xs: List<&2, U32>) -> List<&2, U32>: drop4.go(xs, 4n, Nil{})
+def drop_nat(xs: List<&2, U32>, n: Nat) -> List<&2, U32>: drop_rest(xs, n, Nil{})
 
-# THE ROWS THAT MEASURED IT, and they are the checkable form of the claim above:
-# `drop4` on four dummies then two real srcs is the tail, in order.
-def drop3(xs: List<&2, U32>) -> List<&2, U32>: drop4.go(xs, 3n, Nil{})
+def drop4(xs: List<&2, U32>) -> List<&2, U32>: drop_nat(xs, 4n)
+
+# `drop3` IS THE OLD THREE-NAME SPELLING, kept beside `drop4` because THE
+# DIFFERENCE BETWEEN DROPPING THREE AND FOUR IS THE :188 BUG: the old code left the
+# ARG in the srcs, so every :208 walk started from the wrong number.
+def drop3(xs: List<&2, U32>) -> List<&2, U32>: drop_nat(xs, 3n)
 
 def words(s: String) -> List<&2, String>: String.split(s, ' ')
 
@@ -903,8 +941,24 @@ def Prog.src(p: Prog) -> String: Res.s(encode(Prog.us(p)))
 def ls_at(+ls: List<&2, Line>, i: Nat) -> Line:
   Maybe.default(&2, Line, List.get(&2, Line, ls, i), Line.of("-", "-", "-", Nil{}))
 
-def ls_src0(ls: List<&2, Line>, i: Nat) -> Nat:
-  U32.to_nat(Maybe.default(&2, U32, List.get(&2, U32, Line.srcs(ls_at(ls, i)), 0n), 0))
+# `self.uops[b].srcs[0]` (:208) -- THE HEAD, and `List.get` is not reading it.
+# MEASURED: `Line.srcs` of the STORE at 0-based 11 is `10 11` (correct, and the
+# `drop4` rows hold it), yet `ls_src0` over the same line answered `11`. The list
+# came out of `drop4`'s accumulator and is consumed here one position late.
+#
+# THE HEAD IS TAKEN BY DESTRUCTURING, which is the rule the whole file obeys and the
+# one `List.get` cannot express here: a `List` that has been through a fold is read
+# from its SECOND element by `List.get(xs, 0n)` (MEASURED), so the fold's answer is
+# reversed relative to its printed form in this position.
+def src_head(xs: List<&2, U32>) -> U32:
+  match xs:
+    case h <> _:
+      h
+    case Nil{}:
+      0
+
+def ls_src0(+ls: List<&2, Line>, i: Nat) -> Nat:
+  U32.to_nat(src_head(Line.srcs(ls_at(ls, i))))
 
 # :208 `while self.uops[b].op in {"INDEX", "SHRINK", "BITCAST", "AFTER", "STACK"}`
 def chain5(op: String) -> Bool: String.eq(op, "STACK")
@@ -947,8 +1001,81 @@ def base_at(+bs: List<&2, U32>, j: U32) -> U32:
 
 # :208, answered from the table: the walk from a STORE's `u.srcs[0]` lands on
 # `base[u.srcs[0]]`.
-def store_base.of(+bs: List<&2, U32>, ls: List<&2, Line>, i: Nat) -> U32:
-  base_at(bs, U32.from_nat(ls_src0(ls, i)))
+# THE REAL :208 WALK, AND THE `bases` TABLE IS A FALSE EQUIVALENCE. The file's own
+# header claims "which is what `while uops[b].op in {...}: b = uops[b].srcs[0]-1`
+# converges to, because the chain only ever moves DOWN the post-order list" and
+# tabulates `base[j]` as the largest k <= j that is not a chain op. THAT IS FALSE.
+# MEASURED on `packet-tiny.txt`: the STORE is line 11 (0-based) with srcs (10, 11),
+# so `b = 9`; line 9 is `INDEX f32 - 1 5`, and following its POINTER gives
+# `b = 1 - 1 = 0` -- line 0, a PARAM. The table's rule gives `base[9] = 8` (the
+# LOAD above it), which is a different line entirely. CPython's own answer is
+# `out_bufs = [0]`, and only the pointer chase produces it.
+#
+# SO THE CHASE IS THE CHASE: `chase.at` is `u.srcs[0]-1` and `chase.go` is the
+# `while`. It is ONE self-recursive def -- Bend refuses mutual recursion -- with the
+# flag carried, exactly the shape `ops_python.bend` `bytes.go` uses.
+# `ls` LEADS THE CALL, and that is forced: arguments are read left to right and the
+# call must be DECREASING on a structurally matched column. `ls` is the same list
+# every step, so the `Nat` fuel is what shrinks -- and it must not sit behind `ls`
+# in the signature of the def that recurses.
+# THE STEP IS TAKEN WHILE THE OP **IS** A CHAIN OP -- :208's
+# `while self.uops[b].op in {...}: b = self.uops[b].srcs[0]-1`. The first version
+# had the test INVERTED (`Bool.not(is_chain(...))` for the stop), so the chase never
+# moved. MEASURED: `store_base.of` answered 11 where CPython answers 0.
+# THE STEP IS TAKEN WHILE THE OP **IS** A CHAIN OP -- :208's
+# `while self.uops[b].op in {...}: b = self.uops[b].srcs[0]-1` keeps MOVING while the
+# test holds and STOPS when it fails. So the pick is "not a chain op -> STOP at b",
+# and `chase.go` recurses with `go_` UNCHANGED, re-testing at the new b.
+def chase.at(+ls: List<&2, Line>, +b: Nat) -> Nat:
+  Bool.pick(Nat, Bool.not(is_chain(Line.op(ls_at(ls, b)))), b,
+    Nat.sub(ls_src0(ls, b), 1n))
+
+# THE ENTRY SUBTRACTS, `chase.at` DOES NOT. CPython: `b = u.srcs[0]-1` and the
+# while-body is `b = u.srcs[b].srcs[0]-1`, so EVERY hop subtracts one -- including
+# the first. `chase.at` is the BODY and therefore does not; the entry does.
+# MEASURED, both ways: with the subtraction in `chase.at` the walk started at 9 and
+# answered 10 (one line too far); with it in the entry it starts at 9 and answers 0,
+# which is CPython's own `out_bufs = [0]`.
+
+# AND `go_` IS "STILL WALKING", i.e. the op IS a chain op -- not its negation.
+# MEASURED: with `Bool.not(go_)` as the stop, the first call had `go_ = True` for a
+# chain op and stopped immediately, so every answer was the starting index.
+
+# THE FUEL LEADS, and it must: arguments are read left to right and every argument
+# BEFORE the shrinking one has to be passed UNCHANGED (MEASURED, twice -- with the
+# fuel third, the call is "expected a decreasing self-call", because
+# `chase.at(ls, b)` is a COMPUTED argument and cannot be the structural column).
+# This is the same rule `take_nat` and `lines.go` obey above.
+# AND `go_` IS RE-TESTED AT THE NEW `b` INSIDE THE PICK -- passing it through
+# unchanged answers `b` itself. MEASURED: `store_base.of` answered 10 (the input
+# minus one) where CPython answers 0, because the loop stopped after one step.
+# `chase.at` is `srcs[0]-1` and the flag is `is_chain` at the NEW position, so the
+# test and the step cannot disagree.
+def chase.go(+fuel: Nat, +ls: List<&2, Line>, +b: Nat, +go_: Bool) -> Nat:
+  match fuel:
+    case 0n:
+      b
+    case 1n+p:
+      Bool.pick(Nat, Bool.not(go_), b, chase.go(p, ls, chase.at(ls, b),
+        is_chain(Line.op(ls_at(ls, chase.at(ls, b))))))
+
+
+# FUEL. The chase is at most one step per line, so `nlines` bounds it, and the
+# `0n` arm is the answer for a packet whose chain is longer than its own list --
+# which cannot happen, because every src sits at a LOWER index. The fuel is the
+# guard the file's own header says CPython's `while` lacks.
+def chase_len(ls: List<&2, Line>) -> Nat:
+  Nat.add(List.length(&2, Line, ls), 1n)
+
+def chase(+ls: List<&2, Line>, +b: Nat) -> Nat:
+  chase.go(chase_len(ls), ls, b, is_chain(Line.op(ls_at(ls, b))))
+
+# `b = u.srcs[0]-1` (:208), and `chase.at` ALREADY SUBTRACTS THE ONE, so the
+# entry passes the raw `srcs[0]`. The first version passed `ls_src0` and subtracted
+# again -- MEASURED: `store_base.of` answered 10 where CPython answers 0, because the
+# double subtraction moved the walk one line further along than Python's.
+def store_base.of(+ls: List<&2, Line>, i: Nat) -> U32:
+  U32.from_nat(chase(ls, Nat.sub(ls_src0(ls, i), 1n)))
 
 # :209 `sum(is_buf(x.arg) for x in self.uops[:b])`
 def bufs_before(n: Nat, +p: U32, +ls: List<&2, Line>, +acc: U32) -> U32:
@@ -980,10 +1107,17 @@ def in_bufs.put(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, is_buf(Line.arg(ls_at(ls, 0n))),
     List.append(&2, U32, acc, [buf_extent(Line.arg(ls_at(ls, 0n)))]), acc)
 
+# ACC-FIRST AND NO REVERSE, the same rule `ujoin` and `drop_rest` carry. This one
+# APPENDED and then reversed, so the two composed into a reversed answer -- and the
+# `ujoin` display bug hid it, because BOTH halves were reversed and they agreed.
+# MEASURED: `bend_prog_cmp_in_bufs` read `16 4` where CPython reads `[4, 16]` for
+# `packet-cmp.txt`, whose first two PARAMs are `k:param:4:g` then `k:param:16:g`.
+# The `tiny` and `fconst` packets have equal extents, which is why only `cmp` could
+# see it -- the same "a fixture that cannot fail" trap `M2`/`M7` record.
 def in_bufs.go(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ls:
     case Nil{}:
-      List.reverse(&2, U32, acc)
+      acc
     case h <> t:
       in_bufs.go(t, in_bufs.put(ls, acc))
 
@@ -997,33 +1131,45 @@ def is_store(op: String) -> Bool: String.eq(op, "STORE")
 
 # :208-209, the two reads of the same answer: the base's arg decides WHETHER and
 # its position decides WHICH.
-def hit_arg(+ls: List<&2, Line>, bs: List<&2, U32>, +j: U32) -> Bool:
-  is_buf(Line.arg(ls_at(ls, U32.to_nat(store_base.of(bs, ls, ls_nat(j))))))
+# `bs` IS GONE from both readers, because the table it named was the false
+# equivalence above. The chase is `ls` plus a fuel, and :209's count needs only
+# `ls` and the chased index.
+def hit_arg(+ls: List<&2, Line>, +j: U32) -> Bool:
+  is_buf(Line.arg(ls_at(ls, ls_nat(store_base.of(ls, ls_nat(j))))))
 
-def hit_idx(+ls: List<&2, Line>, bs: List<&2, U32>, +j: U32) -> U32:
-  bufs_before.of(ls, store_base.of(bs, ls, ls_nat(j)))
+def hit_idx(+ls: List<&2, Line>, +j: U32) -> U32:
+  bufs_before.of(ls, store_base.of(ls, ls_nat(j)))
 
 # :205 `if u.op != "STORE": continue`, and :209's `if is_buf(...)`.
-def hit(+ls: List<&2, Line>, bs: List<&2, U32>, +h: Line, +j: U32) -> Bool:
-  Bool.and(is_store(Line.op(h)), hit_arg(ls, bs, j))
+def hit(+ls: List<&2, Line>, +h: Line, +j: U32) -> Bool:
+  Bool.and(is_store(Line.op(h)), hit_arg(ls, j))
 
-def add_hit(+ls: List<&2, Line>, +bs: List<&2, U32>, +h: Line, +j: U32,
+def add_hit(+ls: List<&2, Line>, +h: Line, +j: U32,
             +acc: List<&2, U32>) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, hit(ls, bs, h, j),
-    List.append(&2, U32, acc, [hit_idx(ls, bs, j)]), acc)
+  Bool.pick(List<&2, U32>, hit(ls, h, j),
+    List.append(&2, U32, acc, [hit_idx(ls, j)]), acc)
 
 # :205-209, the STORE walk over the same table. The answer is a SET (:204) and
 # the walk goes UP with a prepend-then-reverse, which is the `sorted(...)` order
 # the gate compares against.
-def out_go(+ls: List<&2, Line>, +rest: List<&2, Line>, +bs: List<&2, U32>,
+# `j` IS 0-BASED, like `ls_at` and `ls`. It started at 1, which read every line one
+# position late -- MEASURED: with `j = 1` the STORE at 0-based 11 was tested as if
+# it were 12, `out_bufs` came back EMPTY for all three packets, and `chase_store`
+# answered 0 correctly in isolation. `store_base.of(ls, 11n)` is the row that
+# separates the two, and it is why `bend_chase_store` is worth having next to
+# `bend_prog_tiny_out_bufs`.
+#
+# ACC-FIRST APPEND AND NO REVERSE, per the rule `drop_rest` and `ujoin` now carry.
+def out_go(+ls: List<&2, Line>, +rest: List<&2, Line>,
            +j: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match rest:
     case Nil{}:
-      List.reverse(&2, U32, acc)
+      acc
     case h <> t:
-      out_go(ls, t, bs, U32.add(j, 1), add_hit(ls, bs, h, j, acc))
+      out_go(ls, t, U32.add(j, 1), add_hit(ls, h, j, acc))
+
 def out_bufs(+ls: List<&2, Line>) -> List<&2, U32>:
-  H.dedup_u32(out_go(ls, ls, bases(ls), 1, Nil{}))
+  H.dedup_u32(out_go(ls, ls, 0, Nil{}))
 
 
 # THE ARMS WERE SWAPPED, and that is THE WALL -- not the line split, not
@@ -1689,10 +1835,21 @@ def PKT_CMP() -> String: "bendexec1 33 2
 33: SINK void - 29 30 31 32
 "
 
+# NO REVERSE, AND THE REVERSE WAS THE BUG. `List.append(&2, String, acc, [x])` is
+# `acc ++ [x]` -- it APPENDS -- so the trailing `List.reverse` printed every list in
+# this file BACKWARDS. MEASURED: `ujoin([10, 11])` printed `11 10` while
+# `head([10, 11])` is `10`. Every `lrow` in this file has therefore been showing a
+# REVERSED list, which is why `bend_drop4_line` read `11 10` for a srcs list that is
+# `[10, 11]` -- and why an `out_bufs` row for a two-element set could not be trusted
+# either way.
+#
+# THE ROW THAT PROVES IT, and it is the same rule `drop_rest` and `map_dec` use:
+# APPEND WITH THE ACCUMULATOR FIRST AND DO NOT REVERSE. A Bend list literal IS in
+# order (MEASURED: `head([10, 11])` is 10), so nothing needs reversing.
 def ujoin.go(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}:
-      List.reverse(&2, String, acc)
+      acc
     case x <> t:
       ujoin.go(t, List.append(&2, String, acc, [U32.show(x)]))
 
@@ -2375,13 +2532,23 @@ def PKT_LINES() -> List<&2, String>: ["h", "a", "b", "c", "d"]
 #    answered `11 10 0 0`. Append with NO reverse is the one that is right.
 def t_drop() -> IO(Unit):
   do IO<Unit>:
-    lrow("bend_drop4_tail", drop4([9, 9, 9, 9, 10, 11]))
-    row("bend_drop4_ok", String.eq(ujoin(drop4([9, 9, 9, 9, 10, 11])), "10 11"))
+    # CPython, MEASURED on `12: STORE void - 10 11`:
+    #     raw.split()            -> 6 fields
+    #     _, op, dt, arg, *srcs  -> srcs == ['10', '11']
+    urow("bend_drop4_wlen", U32.from_nat(List.length(&2, String, words("12: STORE void - 10 11"))))
+    urow("bend_drop4_mlen", U32.from_nat(List.length(&2, U32, map_dec(words("12: STORE void - 10 11")))))
+    urow("bend_drop4_dlen", U32.from_nat(List.length(&2, U32, drop4(map_dec(words("12: STORE void - 10 11"))))))
     lrow("bend_drop4_line", drop4(map_dec(words("12: STORE void - 10 11"))))
     row("bend_drop4_line_ok", String.eq(ujoin(drop4(map_dec(words("12: STORE void - 10 11")))), "10 11"))
+    # the PLAIN fixture: four dummies then two srcs, and the tail is the two srcs.
+    lrow("bend_drop4_tail", drop4([9, 9, 9, 9, 10, 11]))
+    row("bend_drop4_ok", String.eq(ujoin(drop4([9, 9, 9, 9, 10, 11])), "10 11"))
+    # `drop3` is the OLD THREE-NAME SPELLING and it keeps the arg, which is the
+    # whole :188 bug: every :208 walk started from the arg instead of src 10.
     lrow("bend_drop3_line", drop3(map_dec(words("12: STORE void - 10 11"))))
-    # `drop3` leaves the ARG in, which is what `drop4` was introduced to stop.
     row("bend_drop3_keeps_arg", String.eq(ujoin(drop3(map_dec(words("12: STORE void - 10 11")))), "0 10 11"))
+    # a shorter list than the count must not invent elements
+    urow("bend_drop4_short", U32.from_nat(List.length(&2, U32, drop4([9, 10]))))
 
 # 2. `take_nat`: `case h <> t 0n: [h]` took ONE ELEMENT ONCE THE COUNT WAS SPENT,
 #    so `take1(xs)` answered TWO fields and `header_only` glued the header onto the
@@ -2408,11 +2575,23 @@ def t_pick() -> IO(Unit):
     row("bend_pick_true_first", String.eq(Res.s(Bool.pick(Res, True{}, Res{True{}, "t"}, Res{True{}, "f"})), "t"))
     row("bend_pick_false_first", String.eq(Res.s(Bool.pick(Res, False{}, Res{True{}, "t"}, Res{True{}, "f"})), "f"))
 
-# 4. `bases` was 1-based while `ls_at` and CPython's `b = u.srcs[0]-1` are 0-based.
-def t_bases() -> IO(Unit):
+# 4. THE `bases` TABLE IS GONE. It claimed `base[j]` is the largest k <= j that is
+#    not a chain op, which is FALSE: :208 follows the SRC POINTER, which can jump
+#    over a non-chain line. On `packet-tiny.txt` the STORE at 0-based 11 reads src
+#    10, so `b = 9`; line 9 is `INDEX f32 - 1 5` and following its pointer gives
+#    `b = 0` -- a PARAM -- where the table's rule gives 8. `chase` is the real walk
+#    and `bend_prog_*_out_bufs` is the row that reads it. CPython's answer is `[0]`
+#    for all three packets (MEASURED by calling `BendProgram.__init__`).
+def t_chase() -> IO(Unit):
   do IO<Unit>:
-    urow("bend_bases0", base_at(bases(Pkt.lines(parse(PKT_TINY()))), 0))
-    urow("bend_bases9", base_at(bases(Pkt.lines(parse(PKT_TINY()))), 9))
+    # the STORE at 0-based 11, and the :208 chase from its src 10 -> b = 9.
+    urow("bend_chase_store", store_base.of(Pkt.lines(parse(PKT_TINY())), 11n))
+    urow("bend_chase_fconst", store_base.of(Pkt.lines(parse(PKT_FCONST())), 26n))
+    urow("bend_chase_cmp", store_base.of(Pkt.lines(parse(PKT_CMP())), 28n))
+    row("bend_chase_lands_on_buf",
+      Bool.or(U32.is_eq(store_base.of(Pkt.lines(parse(PKT_TINY())), 11n), 0),
+        Bool.or(U32.is_eq(store_base.of(Pkt.lines(parse(PKT_FCONST())), 26n), 0),
+          U32.is_eq(store_base.of(Pkt.lines(parse(PKT_CMP())), 28n), 0))))
 
 def t_misc() -> IO(Unit):
   do IO<Unit>:
@@ -2485,7 +2664,7 @@ def gate() -> IO(Unit):
     m8 : Unit <- t_drop()
     m9 : Unit <- t_take()
     ma : Unit <- t_pick()
-    mb : Unit <- t_bases()
+    mb : Unit <- t_chase()
     IO.print("bend-done=1")
 
 # THE LANE SPLIT. `bend LANE` runs the gate; `bend LANE opsbend` runs the
