@@ -25048,3 +25048,66 @@ Asserting `bits == cdecl_off * 8` turns that into rc 1 with 7 of 10 rows printed
 and **no `FIELD b`/`FIELD c` row emitted at all**.  Printing the disagreement
 instead would put a self-contradicting row in the file that a differ scores as a
 port bug.
+
+---
+
+## APPENDED 2026-10-04 by the `math.*` unit — `M-1`…`M-6`
+
+Numbering continues from the end of this file; `M-` is new, cited by NAME because
+the `F-` numbers have collided three times. Companion document, with every command
+and row: `.agents/slop/MATHLIB.md`.
+
+**M-1 — F32 LITERALS WORK. THE PORT-WIDE CLAIM THAT THEY DO NOT IS FALSE.**
+`tinybendygrad/mixin/elementwise.bend`'s band header says "**no float literal
+anywhere in the port**, because `F32` is `F32{data: Word(32n)}`, `Word` is not
+exported, and `U32.to_f32` is an unfilled LAW".  **MEASURED FALSE on Bend 2.0.34:**
+`F32.div(1.0, 2.0)` equals the literal `0.5`; `F32.div(2.0, 3.0)` equals the
+literal `0.6666666666666666`; the literal `3.141592653589793` is usable and
+`F32.trunc` of it is 3.  Reproduce: `./bin/bend .agents/slop/mathlib/lit_probe2.bend`
+(11 rows, all True) and `const_probe.bend` (10 rows).  A `math` library would
+therefore be a *second* spelling of constants the port can already write.
+
+**M-2 — THERE IS NO EXPONENT LITERAL, AND AN INTEGER LITERAL IS NOT AN F32.**
+`1e30` is a parse error: *"expected : a numeric literal (NUMBER is U32, NUMBER n
+is Nat)"*.  So every f32 constant must be longhand decimal, which is why
+`0.044715` appears verbatim in the gelu marker.  Separately `F32.trunc(3)` is a
+**type error** while `F32.trunc(3.0)` compiles — integers are `U32`.  **This, not
+the `Word` export, is the real reason a port cannot write `1/2`.**  And a bare `+`
+on two f32 literals is a type error (*"a type for this operator (write `(a + b :
+Nat)`)"*); use `F32.add`.
+
+**M-3 — BEND'S F32 DIVISION IS CORRECTLY ROUNDED. DO NOT REPORT IT AS A DEFECT.**
+A 25-row bracket (`find_q.bend`, ladder generated not typed) pins `F32.div(3.0,
+7.0)` to `3edb6db7`, the exactly-rounded value, with `k_exact` the **only** True
+row.  A one-ulp discrepancy you will hit against CPython is **plain floating
+point in your own quotient**, not the compiler: the f32 values of `sqrt(2)` and
+`sqrt(pi)` are not the values whose ratio is `sqrt(2/pi)`, and exact rational
+rounding gives `3f4c4229` where `f32(sqrt(2/pi))` is `3f4c422a`.  **Corollary for
+any future `math` module: every transcendental must be HARDCODED as a longhand
+decimal, never computed, because computing it loses an ulp.**
+
+**M-4 — AN f32 CANNOT BE PRINTED OR BIT-INSPECTED. PIN IT BY COMPARING IT.**
+`F32.show` is an axiom with no body (`tinybendygrad/helpers.bend:893`) and
+`F32.to_u32` **TRUNCATES** — `F32.to_u32(0.5)` is 0 and
+`F32.to_u32(F32.trunc(pi))` is 3 — so it is **not** a bitcast despite reading like
+one.  The only way to pin an f32 is `F32.is_eq` against another expression.  This
+is the honest shape for any f32 gate row, not a workaround.
+
+**M-5 — `inf` EQUALS ITSELF; `nan` DOES NOT. A ROW NAMED FOR ONE TESTS THE OTHER.**
+I asserted `inf != inf` and it came back False.  Measured: `inf` is equal to
+itself, `nan` is not, and `inf * 0` is `nan`.  A row named `inf_is_nan` that
+compares inf to inf is a **tautology in a trenchcoat**.
+
+**M-6 — A DISCRIMINATOR BUILT FROM TWO DECIMALS CANNOT FAIL UNLESS THE DECIMALS
+ARE ADJACENT f32 NEIGHBOURS — AND THEY USUALLY ARE NOT.**
+I built a 3/7 discriminator from `0.42857143` and `0.42857142857142855`, assuming
+they were neighbouring f32s.  **Both round to `3edb6db7`, the same f32 as the
+exact quotient**, so the pair could not have failed and the run's "both False"
+looked like a compiler defect.  Fix: **search** for literals that land on the
+neighbouring bit patterns (`expect4.py`) instead of choosing them.  This is
+agent-core.md's "a list row whose elements are all equal cannot fail on an
+ordering bug" wearing a new costume, and it nearly became a false compiler bug
+report.  Related and also measured this session: **two of my hand-typed
+expectations were wrong while the constants they wrapped were right** — I wrote
+`sqrt(2)/pi` for `sqrt(2/pi)`, and `inf != inf` for a NaN test.  Only CPython's
+`struct` and `fractions.Fraction` caught either; reading did not.

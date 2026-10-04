@@ -1,0 +1,10 @@
+3/7 correctly rounded f32                        3edb6db7
+3/7 as the decimal 0.42857143                    3edb6db7
+3/7 as the decimal 0.42857142857142855           3edb6db7
+sqrt(2)/sqrt(pi) is IRRATIONAL -- see below      (needs a real sqrt -- see expect3.py)
+2.5/1.25                                         40000000
+6/3                                              40000000
+
+exact_3_7       3edb6db7
+lo_neighbour    3edb6db6  literal 0.42857141
+hi_neighbour    3edb6db8  literal 0.42857145

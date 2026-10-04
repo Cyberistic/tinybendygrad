@@ -8901,3 +8901,100 @@ SIGSEGV, rc **139**, with no traceback (**CL-4**). Reproduced the `| tee` trap
 exactly: rc 1 direct, **rc 0** through `| tee`.
 
 Rules **CL-1…CL-9** appended to `.agents/slop/notes/bend2-constraints.md`.
+
+---
+
+## Session 2026-10-04 (mathlib unit) — RANK 1 IS NOT A MISSING LIBRARY. `math.*` IS 91 COMMENTS AND 0 CALL SITES.
+
+### [x] THE QUESTION — is `math.*` an absent stdlib, an unstarted module, or CPython?
+
+**It is CPython, quoted in prose. 91 mentions, 0 outside a `#` comment, 0 imports.**
+
+```bash
+rg -a -o --no-heading -N 'math\.' tinybendygrad/ | wc -l                                    # 91
+rg -a -n 'math\.' --glob '*.bend' tinybendygrad/ | grep -v -E ':[0-9]+:\s*#' | wc -l       # 0
+rg -a -n 'import math' --glob '*.bend' tinybendygrad/ | wc -l                             # 0
+```
+
+**So there is no call site, and writing a `math` module would unblock ZERO targets.**
+The port already resolved it: `codegen/decomp/transcendental.bend:1088-1090` mints
+`tx_inf`/`tx_ninf`/`tx_nan` as `F32.div(1.0,0.0)` / its neg / `F32.div(0.0,0.0)`, and
+`uop/ops.bend` says in prose that `math.inf` "is `F32.div(1, 0)`".  Where the name
+came from: `bend guide` teaches module imports with a demo file **called `math.bend`**
+whose only def is `square`.  That is a filename in a tutorial, not a stdlib.
+
+### [x] THE COUNT — 35 IS NOT REPRODUCIBLE, AND THE HONEST DENOMINATOR IS 20
+
+**The `MATH-LIB` classifier was not preserved** (`rg -a -l 'MATH-LIB' .agents/` →
+only `rank.json` and `WALLMAP.md`).  `mathlib/windows.py` sweeps the two knobs:
+
+| window / pattern | n_lines | n_files | n_targets |
+|---|---|---|---|
+| own-block / `math\.` | 16 | 7 | 14 |
+| to-next-marker / `math\.` | **28** | **13** | **20** |
+| to-next-marker / loose | 30 | 14 | 22 |
+| **WALLMAP §3 claims** | **31** | **12** | **35** |
+
+**Nearest reconstruction is 20 targets, not 35**, and `lines/target` is **1.4**, not
+WALLMAP's 0.9.  **RANK 1 SHOULD BE RE-RANKED OUT OF THE TOP 14** — and note the
+ranking rested on a keyword match against prose, which WALLMAP §6 concedes.
+
+### [x] THE HONEST INTERSECTION — **0 of 20 need a `math` library**
+
+Because the markers **name their own real blocker**, this did not have to be inferred:
+
+| cluster | n | the blocker the comment itself states |
+|---|---|---|
+| **f32 CONSTANTS** | **10** | an F32 literal — **and literals WORK, see below**; gated on `UOp.const` → `dtypes.from_py` + `truncate` (`uop/ops.bend`, which says so) |
+| `gcd` on I64 | 4 | **a variadic reduce + `_min_max` + `simplify`** — `uop/divandmod.bend:883` literally reads `WALL: gcd, _min_max, simplify` |
+| f32 rounding / classification | 4 | **`F32.trunc` already exists** (`uop/weak.bend:1078`); `isnan` already solved (`uop/fold.bend:3791`); the rest needs `.bitcast`/`.alu` graph sugar |
+| `_min_max` | 3 | is **`uop/symbolic.bend`'s own item #1**; gcd is its #3 |
+
+### [x] THE FALSIFIED CLAIM — **f32 LITERALS WORK; THE BAND HEADER SAYS THEY DO NOT**
+
+`mixin/elementwise.bend`'s band header: "**no float literal anywhere in the port**,
+because `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and `U32.to_f32`
+is an unfilled LAW".  **MEASURED FALSE on Bend 2.0.34.**  `mathlib/lit_probe2.bend`
+11 rows all True; `mathlib/const_probe.bend` builds the band's constants in the
+`CFloat{f: F32}` shape `uop/ops.bend:810` provides.  Determinism: 3 runs each,
+byte-identical, sha256 recorded.
+
+### [x] `dtype.bend`'s 14 — **TYPES, not `math.*`. AND THE SPLIT IS 8/6, NOT 14.**
+
+`rg -a -c 'math\.' tinybendygrad/dtype.bend` → **0**.  Signatures (`dtype.bend:576-637`):
+
+- **8 are 32-bit** — `Dt.bf16(U32)->IO(F32)`, `Dt.fp16`, `Dt.fp8_from/to`,
+  `float_to_bf16`, `float_to_fp16`, `float_to_fp8`, `fp8_to_float`. **bf16 is 16
+  bits and fp8 is 8, so the w64 unit's 64-bit/f64 finding CANNOT MOVE THESE EIGHT.**
+  Pure `U32` word bit-twiddling feeding `F32`.
+- **6 are `H.I64`** — the `i64_*` group, and only these are the 64-bit question.
+  **Not investigated here; that is the w64 unit's, per the brief.**
+
+**So the other unit's finding gates 6 of 14, not 14.**  And `dtype.bend` is on the
+critical path of the 10-target constant cluster too, which makes it **the
+highest-leverage file in this report**.
+
+### [x] WHAT TO BUILD FIRST, AND THE SMALLEST PROOF
+
+**Not a `math` module.** `agent-core.md`'s hard rule is one `.bend` per upstream
+`.py` at the same path; **CPython's `math` has no `tinygrad/math.py`**, so
+`tinybendygrad/math.bend` would be an orphan whose every "caller" is a comment.
+
+**Build the 10 `mixin/elementwise.bend` constants** — the only cluster with no
+co-wall.  **Smallest proof: ONE rule body, `cos`** (`elementwise.py:500`,
+`(x * (math.pi/2)).cos()`), whose only missing piece is
+`CFloat{F32.div(3.141592653589793, 2.0)}`.  `cos` over the rest of the cluster
+because it needs one new constant and no transcendental decomposition: `exp` also
+wants a fold, `gelu` also wants `erf`.
+
+**Negative control, reported as a blind spot not closed with a row:** mutating
+`3.141592653589793` → `3.14159265358979` moves NOTHING (both round to the same f32).
+The mutation that DOES move it is `/2.0` → `/1.0`, and that row is the gate — it is
+the only thing separating `math.pi/2` from `math.pi`.
+
+### [x] RULES `M-1`…`M-6` appended to `bend2-constraints.md`
+
+Including one measured **NOT** to report a compiler defect: a generated 25-row
+bracket pins `F32.div(3.0,7.0)` to the exactly-rounded `3edb6db7` with `k_exact`
+the only True row, so **Bend's f32 division is correctly rounded** and the one-ulp
+gap I first saw was my own quotient.  Document: `.agents/slop/MATHLIB.md`.
