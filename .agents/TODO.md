@@ -5260,13 +5260,49 @@ Progress: gates landed `0/38` -> `1/38` for this pair. Coverage of `cstyle.bend`
       the oracle names none of them. **GIVEN UP, PRECISELY: 9 of 222 shared rows are a refusal
       rendered as the marker; the other 213 are CPython's own return value.**
 
-- [x] **`schedule/multi.bend` IS STILL UNWIRED, AND THE REASON IS A NAME, NOT A FORMAT.**
-      321 port rows, 213 oracle rows, **0 shared names** — a `t_` prefix normalisation yields 26
-      collisions of which **21 DISAGREE**, because the port's `1`-per-op rows and the oracle's
-      axis tuples share a spelling and not a claim, and the one that agrees agrees on the literal
-      `1`. That is a second source of truth, not a fix. The format IS read now (0 → 213 rows);
-      GUARD 4's "share NO row names" is the correct verdict. Recorded in `ORACLE_NOT_WIRED` with
-      the numbers. R-3 in the notes.
+- [x] **`schedule/multi.bend` IS STILL UNWIRED — AND THE PRIOR REASON WAS WRONG IN A WAY THAT
+      MATTERED. It is an ENCODING, not a NAME.**
+      321 port rows, 213 oracle rows, **0 shared names**. Stripping `t_` yields 26 collisions of
+      which **21 "disagree" — and all 21 are CORRECT ROWS**. `multi.bend` prints `eq(a, b)`,
+      i.e. `1`/`0` (multi.bend:2220); `multi-rows.py` prints the QUANTITY. On **17 of the 26**
+      the oracle's value is not a boolean at all, so `1` vs `()` is two encodings of one claim.
+      Measured by `.agents/slop/multi-collision.py`, which reads each colliding row's OWN body out
+      of multi.bend and evaluates its projection (`bx_a0`/`bx_n`/`mu_len`, multi.bend:2558-2561,
+      :2666) on CPython's value: **26 CONSISTENT of 26, 0 INCONSISTENT**. So the earlier note —
+      "they share a spelling and not a claim" — is false; the claims DO correspond.
+      **THE VERDICT IS UNCHANGED AND THE REASON IS STRONGER:** a `t_` strip manufactures 21 reds
+      over right code, which is the `cstyle.bend` failure in `rebase-gate.py`'s own header. Fix
+      belongs in a NEW oracle printing the port's row names with CPython's value under each — not
+      a rename, not an edit to the port. The encodings ARE separable without a second source of
+      truth: `t_bx_exp`/`t_bx_exp_n` differ only in which reader they call, so a body-based rule
+      separates what no name-based rule can. **NOT WIRED, and that is now recorded as an encoding
+      reason rather than a naming one.** R-3, BAND-7 in the notes.
+
+- [x] **`multi.py:139`'s LEAKED LOOP VARIABLE IS A BLIND SPOT IN `rs_local`, MEASURED AND NOT
+      FIXED.** `new_shape = tuple(s//(int(rng.vmax)+1) …)` divides EVERY sharded axis by the LAST
+      range's count — `rng` is the loop variable of `for ax, rng in multi.sharding:` at :131 and
+      is never rebound. `multi.bend`'s `rs_local` (multi.bend:1313-1319) divides each axis by its
+      OWN count via `ns_count` (multi.bend:1279-1283). Measured by executing :139 **verbatim**,
+      `inspect`-extracted from the installed tinygrad and run through `exec`
+      (`.agents/slop/multi-l139.py`): the two readings differ on **3 of 4 unequal-count
+      shardings**, and a distinct-axis UNSHARD with unequal counts is constructible. Not a fixed
+      defect: every port fixture uses equal counts except `t_rs_loc_both` (`axes=(0,1)`,
+      `counts=(2,3)`), and there the two readings AGREE at the index the row reads (index 1, both
+      `2`) and differ only at index 0 — while `t_rs_loc0` reads index 0 with ONE axis, where no
+      leak is possible. **A fixture reading one index cannot separate two functions that agree at
+      that index.** REPORTED, NOT FIXED. BAND-9 in the notes.
+
+- [x] **TWO HARNESS BUGS FOUND BY RUNNING THE CONTROLS, BOTH OF WHICH MADE A VERDICT WRONG.**
+      (a) `multi-correspond.py`'s `load()` did `sys.argv = [path]`, so the plant control read the
+      LIVE tree and returned `rc=0` over a planted disagreement; `sys.argv` is now saved and
+      restored, and line 1 prints which file was read. (b) `report()` returns a LIST and
+      `0 if bad1 + bad2 == 0 else 1` is CONCATENATION, so a clean pair printed `rc=1` — a
+      permanently-red verdict over 0 inconsistencies. BAND-10 in the notes.
+
+- [x] **CONTROLS: clean `rc=0`, one planted disagreement → `rc=1` NAMING `bx_none`, restore
+      byte-identical.** Plus `multi-controls.py` C1–C5, all PASS: two structurally DIFFERENT
+      plants both go red, the denominator is printed beside every verdict, and the F3 reader
+      still reads 213 of 213 rows.
 
 ---
 
