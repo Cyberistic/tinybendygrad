@@ -33,6 +33,7 @@
 import Base
 import ./LAWS/spec.bend as S
 import ./helpers.bend as H
+import ./base.bend as F
 
 # ===========================================================================
 # The twenty dtypes, under tinygrad's ATTRIBUTE names.
@@ -565,27 +566,357 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
     commit_int.i32fit(lo, hi))
 
 # ===========================================================================
-# The conversion seam. See ./runtime/dtype.c for why these are effects: Bend
-# reads an F32's bits (F32.bits) but cannot build an F32 from a bit pattern, and
-# every conversion here runs bits in both directions.
+# The conversion seam. `runtime/dtype.c` wrote all seven of these as effects and
+# said why in its own header: "Bend's only float is F32, and it can read an F32's
+# bits (F32.bits) but cannot build an F32 from a bit pattern."
+#
+# THAT SENTENCE IS NOW FALSE, and only its second half was ever true.
+# `./base.bend` adds `F32.from_bits`, and it is not a compiler intrinsic: `U32`
+# and `F32` are both `{data: Word(32n)}`, so the constructor `F32{..}` already
+# takes the pattern. `runtime/ops_python.bend:274-278` had measured that
+# (`w32`/`f32_of`) and could not hand it to this file, because it IMPORTS this
+# file.
+#
+# So the three laws whose arithmetic is a rewrap -- `Dt.bf16`, `Dt.fp16`,
+# `Dt.fp8_to` -- are pure defs here, and with them the three wrappers that have
+# no arithmetic at all (`float_to_bf16`, `float_to_fp16`, `fp8_to_float`). Six
+# laws retired. `Dt.fp8_from` and the six 64-bit div/mod laws are NOT in this
+# file's reach and keep the seam; see FROMBITS.md for the count.
 #
 # The `kind` argument is the fp8 id the C and the JS share, so the two lanes
 # cannot drift on which format is which.
 # ===========================================================================
 
-def Dt.bf16(bits: U32) -> IO(F32):
-  import "./runtime/dtype.c"
-  import "./runtime/dtype.js"
+# dtype.py's float_to_bf16, in bits: round the f32 pattern to bf16 with
+# round-half-to-even. bf16 IS the top half of an f32 pattern, so there is no
+# rebias.
+#
+# THE `isfinite` GUARD IS NOT OPTIONAL, and `runtime/dtype.c:168-176` DOES NOT
+# HAVE IT -- `bf16_run` rounds every pattern, so on a non-finite input it answers
+# +infinity where dtype.py:230 answers x unchanged. `dtype.bend`'s gate against
+# CPython measured it: at 0x7F800001 the C's line gives 0x7F800000 and dtype.py
+# gives 0x7F800001. REPORTED, NOT FIXED -- dtype.c is not this file's. bf16
+# exists to keep a NaN's payload, and rounding is what destroys it.
+#
+# `math.isfinite` is "exponent is not all ones", i.e. `(bits & 0x7F800000) !=
+# 0x7F800000` on the pattern.
+def bf16.round(+bits: U32) -> U32:
+  U32.and(U32.add(U32.add(bits, 32767), U32.and(U32.shrn(bits, 16n), 1)),
+          4294901760)
 
-def Dt.fp16(x: F32) -> IO(F32):
-  import "./runtime/dtype.c"
-  import "./runtime/dtype.js"
+def Dt.bf16(+bits: U32) -> F32:
+  F.F32.from_bits(Bool.pick(U32, U32.is_eq(U32.and(bits, 2139095040),
+                                           2139095040), bits,
+                             bf16.round(bits)))
+
+# dtype.py's float_to_fp16, in bits: `fp16_encode` then `fp16_f32`
+# (`dtype.c:117-153`), which is a rebias and a shift, not a value computation.
+# `dtype.c:143` says a half subnormal is `m * 2^-24`, always an f32 NORMAL, so
+# the DECODE side needs no denormal path; the encode side does.
+#
+# THE ONE ARITHMETIC SUBSTITUTION, and it is forced by the type: the C writes
+# `int exp = (int)e - 127 + 15` and tests `exp >= 0x1f`, `exp <= 0`, `exp < -10`.
+# `U32.sub` SATURATES AT 0 (base.bend:1251 `Word.sub`), so `exp` cannot be
+# formed as a U32 at all -- every `e` under 112 would read 0 and "too small to
+# represent" would be indistinguishable from "subnormal". Every test is
+# therefore restated against `e` itself, which is exact:
+#
+#     exp = e - 112        exp >= 31  <=>  e >= 143
+#                         exp <= 0   <=>  e <= 112
+#                         exp < -10  <=>  e <= 101
+#                         shift = 14 - exp = 126 - e, 15..24 over that arm
+#
+# `fp16_encode` takes the three fields `dtype.c:118-120` reads -- sign, exponent,
+# mantissa -- and answers the half, sign already in half position. The arms are
+# `dtype.c:121-138` in the order the C tests them; each is its own def because
+# Bend will not match on a computed Bool. A def must be declared before its
+# caller, so the arms run bottom-up.
+#
+# TWO OF THE C's FOUR TESTS ARE GONE, and both are subsumed rather than
+# dropped-by-accident:
+#   `if (e == 0 && m == 0) return s;` (:122) -- e is 0, which is <= 101, so the
+#     underflow arm answers `s` too. The C needs the early exit; the ladder does
+#     not.
+#   `if (exp < -10) return s;` (:129) -- kept, deliberately. The subnormal arm
+#     happens to agree out here (half is 0 and rem cannot reach halfway), but
+#     only because `U32.shln(1, 126)` SATURATES to 0 and the mask then saturates
+#     too. Depending on that is depending on a cliff.
+
+# Round-half-to-even: the tie is `rem == halfway` and then the LOW bit of what
+# is being kept decides (`dtype.c:132`, `:137`). `half` may carry, so the
+# increment is added, not or-ed in -- `dtype.c:137`'s comment says so.
+def fp16_encode.round(+half: U32, +rem: U32, +halfway: U32) -> U32:
+  Bool.pick(U32, Bool.or(U32.is_gt(rem, halfway),
+                         Bool.and(U32.is_eq(rem, halfway),
+                                  U32.is_ne(U32.and(half, 1), 0))),
+            U32.add(half, 1), half)
+
+def fp16_encode.sub(+s: U32, +e: U32, +m: U32) -> U32:
+  # m |= 0x800000; shift = 126 - e; then round-half-to-even on the dropped bits.
+  # `e` is in 102..112 here so `sh` is 15..24, which is why the C's `shift - 1`
+  # needed no guard and why `1 << sh` cannot saturate.
+  +big = U32.or(m, 8388608)
+  +sh = U32.to_nat(U32.sub(126, e))
+  U32.or(s, fp16_encode.round(U32.shrn(big, sh),
+                              U32.and(big, U32.sub(U32.shln(1, sh), 1)),
+                              U32.shrn(U32.shln(1, sh), 1n)))
+
+def fp16_encode.norm(+s: U32, +e: U32, +m: U32) -> U32:
+  # half = (exp << 10) | (m >> 13); the increment may carry into the exponent,
+  # which is why it is added before the return rather than masked after.
+  U32.or(s, fp16_encode.round(U32.add(U32.shln(U32.sub(e, 112), 10n),
+                                      U32.shrn(m, 13n)), U32.and(m, 8191),
+                              4096))
+
+def fp16_encode.arm(sub: Bool, +s: U32, +e: U32, +m: U32) -> U32:
+  match sub:
+    case True{}: fp16_encode.sub(s, e, m)
+    case False{}: fp16_encode.norm(s, e, m)
+
+def fp16_encode.small(sub: Bool, +s: U32, +e: U32, +m: U32) -> U32:
+  match sub:
+    case True{}: s
+    case False{}: fp16_encode.arm(U32.is_le(e, 112), s, e, m)
+
+# dtype.py catches OverflowError to answer copysign(inf, x), which is exactly
+# "saturate to a signed infinity" -- the sign is still `s`.
+def fp16_encode.ovf(ovf: Bool, +s: U32, +e: U32, +m: U32) -> U32:
+  match ovf:
+    case True{}: U32.or(s, 31744)
+    case False{}: fp16_encode.small(U32.is_le(e, 101), s, e, m)
+
+def fp16_encode.of(inf_nan: Bool, +s: U32, +e: U32, +m: U32) -> U32:
+  match inf_nan:
+    # `struct.pack('e', x)` on a non-finite x is a WIDENING-NARROWING of the
+    # same pattern, not a constant: the quiet bit is forced on and the mantissa
+    # is TRUNCATED by the 13-bit difference, so `0xFFFFFFFF` (f32 mantissa all
+    # ones) becomes half `0xFFFF`, not half `0xFE00`. MEASURED against CPython
+    # for 0xFFFFFFFF, 0x7F800001, 0x7FC00000 and 0xFFC00000. Dropping the
+    # `m >> 13` -- which is what `runtime/dtype.c:121` does, it ORs only the
+    # quiet bit -- collapses every NaN payload to one pattern on the way IN, and
+    # `fp16_f32` then cannot recover it on the way out either.
+    case True{}: U32.or(s, Bool.pick(U32, U32.is_ne(m, 0),
+                                     U32.or(31744, U32.or(512,
+                                                         U32.shrn(m, 13n))),
+                                     31744))
+    case False{}: fp16_encode.ovf(U32.is_ge(e, 143), s, e, m)
+
+def fp16_encode(+s: U32, +e: U32, +m: U32) -> U32:
+  fp16_encode.of(U32.is_ge(e, 255), s, e, m)
+
+# A half subnormal is `m * 2^-24`, so the f32 normal it becomes has exponent
+# `k + 103` where k is `31 - clz(m)` -- which is exactly `31 - floor(log2 m)`, so
+# `U32.log2` stands in for the C's `__builtin_clz` (`dtype.c:151`). The fraction
+# is shifted LEFT by `23 - k` into place.
+def fp16_f32.norm(s: U32, +m: U32) -> U32:
+  U32.or(U32.shln(s, 31n),
+         U32.or(U32.shln(U32.add(U32.sub(31, U32.from_nat(U32.log2(m))), 103), 23n),
+                U32.and(U32.shln(m, U32.to_nat(U32.sub(23,
+                  U32.from_nat(U32.log2(m))))), 8388607)))
+
+def fp16_f32.sub(z: Bool, s: U32, m: U32) -> U32:
+  match z:
+    case True{}: U32.shln(s, 31n)
+    case False{}: fp16_f32.norm(s, m)
+
+def fp16_f32.e(sub: Bool, s: U32, e: U32, +m: U32) -> U32:
+  match sub:
+    case True{}: fp16_f32.sub(U32.is_eq(m, 0), s, m)
+    case False{}: U32.or(U32.shln(s, 31n),
+                         U32.or(U32.shln(U32.add(e, 112), 23n),
+                                U32.shln(m, 13n)))
+
+def fp16_f32.go(inf_nan: Bool, s: U32, +e: U32, +m: U32) -> U32:
+  match inf_nan:
+    # The mirror of `fp16_encode.of`'s nan arm: the fraction is shifted back UP
+    # by the same 13. `dtype.c:147` keeps only the quiet bit, which is the same
+    # payload loss from the other side.
+    case True{}: U32.or(U32.shln(s, 31n),
+                        Bool.pick(U32, U32.is_ne(m, 0),
+                                  U32.or(2139095040, U32.shln(m, 13n)),
+                                  2139095040))
+    case False{}: fp16_f32.e(U32.is_eq(e, 0), s, e, m)
+
+# The f32 pattern of a half value (`dtype.c:145`). NOT a zero extension: the
+# exponent widths and biases differ (f32 8/127, half 5/15), so the exponent is
+# rebased and the fraction shifted.
+def fp16_f32(+h: U32) -> U32:
+  fp16_f32.go(U32.is_eq(U32.and(U32.shrn(h, 10n), 31), 31),
+              U32.and(U32.shrn(h, 15n), 1), U32.and(U32.shrn(h, 10n), 31),
+              U32.and(h, 1023))
+
+def Dt.fp16(+x: F32) -> F32:
+  F.F32.from_bits(fp16_f32(fp16_encode(U32.and(U32.shrn(F32.bits(x), 16n), 32768),
+                                   U32.and(U32.shrn(F32.bits(x), 23n), 255),
+                                   U32.and(F32.bits(x), 8388607))))
+
+# The four fp8 formats, as `dtype.c:36-42` and `:27-31` give them. `fp8_pick`
+# comes first because it is the only one of the five with no dependency.
+#
+# `fp8_sig` is the SIGNIFICANT bits, so the fraction holds `sig - 1` of them --
+# which is why `exp_max` is `2^(8 - sig) - 1` and `mant_max` is `2^(sig - 1) - 1`
+# and NOT the other way round. Swapping those two is the mistake this table's
+# shape is built to make hard.
+def fp8_pick(kind: U32, k0: U32, k1: U32, k2: U32, k3: U32) -> U32:
+  match kind:
+    case 0: k0
+    case 1: k1
+    case 2: k2
+    case _: k3
+
+def fp8_bias(kind: U32) -> U32:
+  fp8_pick(kind, 7, 15, 8, 16)
+
+def fp8_sig(kind: U32) -> U32:
+  fp8_pick(kind, 4, 3, 4, 3)
+
+def fp8_exp_max(kind: U32) -> U32:
+  U32.sub(U32.shln(1, U32.to_nat(U32.sub(8, fp8_sig(kind)))), 1)
+
+def fp8_mant_max(kind: U32) -> U32:
+  U32.sub(U32.shln(1, U32.to_nat(U32.sub(fp8_sig(kind), 1))), 1)
+
+def fp8_is_fnuz(kind: U32) -> Bool:
+  U32.is_ge(kind, 2)
+
+# ---------------------------------------------------------------------------
+# dtype.py's fp8_to_float, as the f32 PATTERN (`dtype.c:90-111`), which is what
+# `Dt.fp8_to` is declared to answer.
+#
+# The C computes `v` in floating point and rewaps it. It CAN, because an fp8 has
+# at most four significant bits and every one of the 256 codes is exactly
+# representable in f32 -- so the value arm is arithmetic that never rounds, and
+# the honest translation is the PATTERN those bits have. The C's own comment says
+# so at :106. Writing it as a float expression would import `F32.div` and
+# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2323).
+#
+#   normal    (dtype.c:109) (1 + mant/2^(sig-1)) * 2^(exp - bias)
+#               = 1.f * 2^(exp - bias), and `1.f`'s top bit is exactly bit
+#                 sig-1, so the f32 exponent field is 127 + exp - bias and the
+#                 fraction is `mant` shifted up by 23 - (sig-1). NO
+#                 normalisation: exp >= 1 already pins the leading bit.
+#   subnormal (dtype.c:107) (mant / 2^(sig-1)) * 2^(1 - bias)
+#               = mant * 2^(2 - bias - sig), and `mant` here is NOT normalised --
+#                 mant=1 and mant=7 of e4m3 differ by three in the leading bit --
+#                 so this one DOES need `U32.log2`, exactly as `fp16_f32.norm`
+#                 does, and its exponent field is 129 - bias - sig + log2(mant).
+# ---------------------------------------------------------------------------
+
+# The subnormal arm's `1.f` -> f32 pattern, shared with nothing: `bias` and
+# `sig` are read once each so the exponent reads as one expression.
+def fp8_decode.sub_pat(sgn: U32, +mant: U32, bias: U32, sig: U32) -> U32:
+  +k = U32.from_nat(U32.log2(mant))
+  U32.or(U32.shln(sgn, 31n),
+         U32.or(U32.shln(U32.add(U32.sub(U32.sub(129, bias), sig), k), 23n),
+                U32.and(U32.shln(mant, U32.to_nat(U32.sub(23, k))), 8388607)))
+
+def fp8_decode.norm_pat(sgn: U32, exp: U32, +mant: U32, bias: U32, sig: U32) -> U32:
+  U32.or(U32.shln(sgn, 31n),
+         U32.or(U32.shln(U32.add(U32.sub(U32.add(exp, 127), bias), 0), 23n),
+                U32.shln(mant, U32.to_nat(U32.sub(24, sig)))))
+
+def fp8_decode.value(sub: Bool, +sgn: U32, +exp: U32, +mant: U32, +bias: U32,
+                     +sig: U32) -> U32:
+  match sub:
+    case True{}: fp8_decode.sub_pat(sgn, mant, bias, sig)
+    case False{}: fp8_decode.norm_pat(sgn, exp, mant, bias, sig)
+
+# dtype.py:272-277 is ONE guard and THREE answers inside it, and the third is a
+# FALL-THROUGH:
+#     if dtype not in dtypes.fp8_fnuz and exp == exp_max:
+#       if dtype == dtypes.fp8e5m2: return copysign(nan if mantissa else inf, ...)
+#       if mantissa == mant_max: return math.nan
+#     val = ...                                   <- e4m3, mant != mant_max
+#
+# So an e4m3 code with the top exponent and any mantissa OTHER than all-ones is
+# an ordinary finite value: e4m3 has no infinity, which is why the mantissa is
+# there at all. Two wrong readings were measured by the gate and both are fixed
+# here: putting `kind == e5m2` in the GUARD answered a finite number for 0x7F
+# and 0xFF (where dtype.py says nan), and answering nan/inf for the whole arm
+# answered infinity for 0x78..0x7E where dtype.py says 464.0, 480.0, ... -- 15
+# codes per sign per format.
+#
+# dtype.py:273 signs BOTH of e5m2's answers (`copysign(..., -1 if sign else 1)`)
+# and dtype.py:275 signs NEITHER of e4m3's -- it is a bare `return math.nan` and
+# a bare `math.inf` never reaches it, so e4m3's nan is UNSIGNED whatever the code's
+# top bit was. MEASURED: `fp8_to_float(0xFF, dtypes.fp8e4m3)` is `nan`, pattern
+# 0x7FC00000, and the port answered 0xFFC00000. So the sign is e5m2's alone.
+def fp8_decode.inf_nan(e5m2: Bool, nan: Bool, inf_: Bool, +sgn: U32) -> U32:
+  Bool.pick(U32, nan, Bool.pick(U32, Bool.and(e5m2, U32.is_eq(sgn, 1)),
+                                4290772992, 2143289344),
+            Bool.pick(U32, inf_, Bool.pick(U32, U32.is_eq(sgn, 1), 4286578688,
+                                           2139095040), 0))
+
+def fp8_decode.sat5(any_: Bool, e5m2: Bool, nan: Bool, inf_: Bool, +sgn: U32,
+                    +exp: U32, +mant: U32, bias: U32, sig: U32) -> U32:
+  match any_:
+    case True{}: fp8_decode.inf_nan(e5m2, nan, inf_, sgn)
+    case False{}: fp8_decode.value(U32.is_eq(exp, 0), sgn, exp, mant, bias, sig)
+
+def fp8_decode.sat4(+e5m2: Bool, +nan: Bool, +inf_: Bool, +sgn: U32, +exp: U32,
+                    +mant: U32, bias: U32, sig: U32) -> U32:
+  fp8_decode.sat5(Bool.or(nan, inf_), e5m2, nan, inf_, sgn, exp, mant, bias, sig)
+
+def fp8_decode.sat3(+e5m2: Bool, +mant_nz: Bool, +mant_all: Bool, +sgn: U32,
+                    +exp: U32, +mant: U32, bias: U32, sig: U32) -> U32:
+  fp8_decode.sat4(e5m2, Bool.pick(Bool, e5m2, mant_nz, mant_all),
+                  Bool.and(e5m2, Bool.not(mant_nz)), sgn, exp, mant, bias, sig)
+
+def fp8_decode.sat2(sat: Bool, +e5m2: Bool, +mant_nz: Bool, +mant_all: Bool,
+                    +sgn: U32, +exp: U32, +mant: U32, bias: U32,
+                    sig: U32) -> U32:
+  match sat:
+    case True{}: fp8_decode.sat3(e5m2, mant_nz, mant_all, sgn, exp, mant, bias,
+                                 sig)
+    case False{}: fp8_decode.value(U32.is_eq(exp, 0), sgn, exp, mant, bias, sig)
+
+
+def fp8_decode.sat(e5m2: Bool, sat: Bool, +sgn: U32, +exp: U32, +mant: U32,
+                   bias: U32, sig: U32, mant_max: U32) -> U32:
+  fp8_decode.sat2(sat, e5m2, U32.is_ne(mant, 0), U32.is_eq(mant, mant_max), sgn,
+                  exp, mant, bias, sig)
+
+
+# The three fields dtype.py:274 reads off x, then the saturating arm -- whose
+# GUARD is `dtype not in dtypes.fp8_fnuz and exp == exp_max` and nothing else.
+def fp8_decode.exp_max(+fnuz: Bool, +x: U32, +kind: U32) -> U32:
+  +sig = fp8_sig(kind)
+  +exp = U32.and(U32.shrn(x, U32.to_nat(U32.sub(sig, 1))), fp8_exp_max(kind))
+  fp8_decode.sat(U32.is_eq(kind, 1),
+                 Bool.and(Bool.not(fnuz), U32.is_eq(exp, fp8_exp_max(kind))),
+                 U32.shrn(U32.and(x, 128), 7n), exp,
+                 U32.and(x, fp8_mant_max(kind)), fp8_bias(kind), sig,
+                 fp8_mant_max(kind))
+
+# `x & 0x7f == 0` is zero or the fp8's own denormal and the answer is the f32
+# signed zero -- the bit is already in f32 position, hence the 24.
+def fp8_decode.zero(z: Bool, +neg_zero: U32, +x: U32, +kind: U32) -> U32:
+  match z:
+    case True{}: U32.shln(neg_zero, 24n)
+    case False{}: fp8_decode.exp_max(fp8_is_fnuz(kind), x, kind)
+
+def fp8_decode.finite(+neg_zero: U32, +x: U32, +kind: U32) -> U32:
+  fp8_decode.zero(U32.is_eq(U32.and(x, 127), 0), neg_zero, x, kind)
+
+# `dtype.c:92` tests `x == 0x80u`, the WHOLE byte -- not `x & 0x80u`. That is a
+# real difference and the gate caught it: at x = 0xFF the masked test is true and
+# dtype.py answers the finite -0.0068359375 (pattern 0xC3700000), so the masked
+# form returned a NaN for 127 codes per fnuz format that are ordinary numbers.
+def fp8_decode.nz(nan: Bool, neg_zero: U32, +x: U32, +kind: U32) -> U32:
+  match nan:
+    case True{}: 2143289344
+    case False{}: fp8_decode.finite(neg_zero, x, kind)
+
+def fp8_decode.pre(fnuz: Bool, neg_zero: U32, +x: U32, +kind: U32) -> U32:
+  fp8_decode.nz(Bool.and(fnuz, U32.is_eq(x, 128)), neg_zero, x, kind)
+
+def fp8_decode(+x: U32, +kind: U32) -> U32:
+  fp8_decode.pre(fp8_is_fnuz(kind), U32.and(x, 128), x, kind)
+
+def Dt.fp8_to(bits: U32, +kind: U32) -> F32:
+  F.F32.from_bits(fp8_decode(U32.and(bits, 255), kind))
 
 def Dt.fp8_from(bits: U32, kind: U32) -> IO(U32):
-  import "./runtime/dtype.c"
-  import "./runtime/dtype.js"
-
-def Dt.fp8_to(bits: U32, kind: U32) -> IO(F32):
   import "./runtime/dtype.c"
   import "./runtime/dtype.js"
 
@@ -621,18 +952,20 @@ def fp8_kind(nm: String) -> U32:
     case "fp8e4m3fnuz": 2
     case _: 3
 
-# dtype.py's float_to_bf16, through the seam. `bf16` takes the pattern because
-# dtype.py's first step is `struct.pack('f', truncate[float](x))` and Bend's F32
-# is already that pattern; the round is the whole of dtype.py's function.
-def float_to_bf16(x: F32) -> IO(F32):
+# dtype.py's float_to_bf16. `bf16` takes the pattern because dtype.py's first
+# step is `struct.pack('f', truncate[float](x))` and Bend's F32 is already that
+# pattern; the round is the whole of dtype.py's function.
+def float_to_bf16(x: F32) -> F32:
   Dt.bf16(F32.bits(x))
 
-# dtype.py's float_to_fp16 / float_to_fp8 / fp8_to_float.
-def float_to_fp16(x: F32) -> IO(F32):
+# dtype.py's float_to_fp16 / float_to_fp8 / fp8_to_float. `fp8_from` keeps the
+# seam -- it is the one conversion whose f32 restatement is NOT a rewrap, and
+# `runtime/dtype.c:12-17` says why at length.
+def float_to_fp16(x: F32) -> F32:
   Dt.fp16(x)
 
 def float_to_fp8(x: F32, dtype: S.Dt) -> IO(U32):
   Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
 
-def fp8_to_float(x: U32, dtype: S.Dt) -> IO(F32):
+def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
   Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
