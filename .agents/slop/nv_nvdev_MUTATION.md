@@ -128,3 +128,95 @@ not read the second table as a coverage claim.
 #         swapping `hi42`'s two shape args leaves `shape()`'s three fields
 #         unchanged.  RULE C caught that twice in one day.
 #   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.
+
+---
+
+# ADDENDUM 2026-10-04 — THE TABLE HAS NOW BEEN RUN, ALL 28, AND SEVEN ANCHORS HAD TO BE
+# RE-AIMED FIRST
+
+The paragraph above ("ENUMERATED AND THEN NOT RUN TO COMPLETION") is still true of the run
+it describes. This addendum is a **completed** run, on a different and much less loaded
+machine, and it supersedes the "7 stale anchors" note rather than inheriting it.
+
+**Substrate, asserted on both sides, every run:** `sha256(mirror) == sha256(live)`, the live
+file opened read-only exactly once, the staged copy unlinked in a `finally`, and the live
+digest re-read at exit. Runs 1–2 printed `live nvdev.bend: byte-identical (d00afaf6628bfa6d)
+-- this harness never wrote it`. Three earlier runs were **REFUSED** by `staged_mut` with
+`MirrorStale` because `jj @` had not yet snapshotted a live edit, which is the guard working.
+
+## THE SEVEN ENTRIES THAT COULD NOT BE MEASURED AS WRITTEN, AND WHY
+
+| # | the entry | what was wrong | re-aimed to |
+|---|---|---|---|
+| 6 | `encode_shift_zero` | anchor absent: `nv.fenc(+s: …)` vs the file's `nv.fenc(s: …)` | dropped the `+` |
+| 14 | `pte_uncfield_pde_ver_swapped` | anchor absent: `(+v: U32, lv: U32)` vs `(+v: U32, +lv: U32)` | added the `+` |
+| 17 | `cfg_clear_becomes_set` | anchor absent: `nv.cfgclear(+c: …)` vs `nv.cfgclear(c: …)` | dropped the `+` |
+| 20 | `word_index_not_divided` | anchor absent: `nv.word(+addr: …)` vs `nv.word(addr: …)` | dropped the `+` |
+| 22 | `update_enc_before_ini` | anchor PRESENT, mutant **NOT-A-PROGRAM**: `U32.nand` does not exist in Bend 2.0.35's `U32` | `U32.not(U32.and(a, b))` — same NAND, ops that exist |
+| 19 | `covers_not_reversed` | anchor PRESENT, mutant **NOT-A-PROGRAM**: `nv.pow_shifts` is defined **BELOW** `nv.covers`, and Bend's definition order is load-bearing | `nv.rev.go` itself — same meaning, still no reversal |
+| 25 | `trace_rreg_wreg_swapped` | anchor PRESENT, and it ran — but it is listed here because it was the 7th entry the previous note counted, and its **description** was wrong (see the table) | — |
+
+**FIVE of the seven were a `+` LINEARITY ANNOTATION added or removed by an edit, and nothing
+else.** All five are one character. A stale-anchor count that is reported without the cause
+is a number; `re-aimed: + on `s`, `lv`, `c`, `addr`, `ks`` is a fix.
+
+**TWO of the seven were NOT-A-PROGRAM, and that is the dangerous class**: the entry's text
+looks perfect, `find in original` succeeds, and the harness prints `NOT-A-PROGRAM` — which
+reads like a mutation that broke the file rather than a mutation that never ran. Both
+ABORTED the whole table at their entry (19 and 22 of 28), so the table could not reach 28 at
+all until they were re-aimed. **`nv_mutate.py` should not abort the table on NOT-A-PROGRAM;
+it should record the entry and continue.**
+
+## THE MEASURED TABLE — 28 of 28, no entry skipped
+
+| # | mutation | rows moved | note |
+|---|---|---|---|
+| 0 | `reg_field_order_reversed` | **22** | the `minor_extended_revision` transposition; moves all 6 new per-field rows + both split rows |
+| 1 | `reg_field_names_swapped` | 24 | |
+| 2 | `reg_field_list_reversed` | 4 | every name and every count survives; only ORDER moves |
+| 3 | `reg_off_by_one_word` | 12 | |
+| 4 | `mask_wid_plus_one` | 57 | |
+| 5 | `mask_of_ignores_names` | 9 | |
+| 6 | `encode_shift_zero` | 77 | |
+| 7 | `ones_uses_shln` | **0** | **THEOREM** — `shln(1,w)` and `pw(w)` agree for EVERY `w` (see below) |
+| 8 | `chip_family_dict_dropped` | 7 | |
+| 9 | `chip_mmu_boundary_off_by_one` | 2 | |
+| 10 | `mmu_shifts_dropped_last` | 55 | |
+| 11 | `pte_ispage_bound_off_by_one` | 2 | |
+| 12 | `pte_dual_bound_off_by_one` | 31 | |
+| 13 | `pte_sys_uses_or_as_if` | 12 | |
+| 14 | `pte_uncfield_pde_ver_swapped` | 6 | |
+| 15 | `pte_uncval_pde_uses_uncached` | 2 | |
+| 16 | `inval_high_bit_wrong` | 2 | |
+| 17 | `cfg_clear_becomes_set` | 7 | |
+| 18 | `roundup_to_one_page` | 23 | |
+| 19 | `covers_not_reversed` | 22 | re-aimed; was aborting the table |
+| 20 | `word_index_not_divided` | 15 | |
+| 21 | `update_ini_swapped_operands` | **0** | **THEOREM** — `&` is commutative; the entry's own description claimed a fixture would catch it, and NO fixture can |
+| 22 | `update_enc_before_ini` | 4 | re-aimed; was aborting the table |
+| 23 | `largebar_strict` | 4 | |
+| 24 | `sysmem_false_confused_with_none` | 1 | |
+| 25 | `trace_rreg_wreg_swapped` | 13 | its description said "a swap is invisible to a count"; 13 rows move |
+| 26 | `tagname_delegation_dropped` | 7 | |
+| 27 | `pwid_double_pw` | **49** | moves **all six** new `nv_fldmax_*` rows — the round trip also pins the doubling base |
+
+**26 of 28 moved at least one row. The two zeros are THEOREMS, and both are proved, not
+hoped:**
+
+- **[7] `ones_uses_shln`.** `shln(1, w)` and `pw(w)` agree for every `w`. For `w <= 31`
+  both are `2^w`. For `w >= 32`, `pw` doubles `1` until it reaches `2^32 = 0 mod 2^32`,
+  and `shln` **saturates** to 0. So `ones` is `0xffffffff` under both spellings at every
+  width, and no register in this file — or any other — can separate them. **The previous
+  description of this entry ("`1<<56` becomes 0") described a bug that this file's `pw`
+  already fixed, and the mutation was checking that the fix stayed.**
+- **[21] `update_ini_swapped_operands`.** `and(not(m), w)` and `and(w, not(m))` are the same
+  function over every input. Two spellings of one function. **A fixture request here would
+  be a request for a row that encodes the bug.**
+
+## A MUTATION THAT COSTS 21 MINUTES IS A FINDING, NOT A HARNESS PROBLEM
+
+Entry [0] creates a field of width `4294967294`, and `nv.ones` DOUBLES `w` times, so one
+`bin/bend` run of entry [0] takes **21 min 12 s** against **3.05 s** for the unmutated file —
+**417x** — while printing the same 814 rows. A wall-clock budget reads that as a timeout and
+a timeout reads as "the harness is broken". Budget ~21 min for any mutation that makes a
+field's width wrap, and note that the slow one is the one that matters most.

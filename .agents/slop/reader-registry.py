@@ -205,6 +205,7 @@ CONTRACTS = {
     "which is why rfind and not find.",
 
   # ── prepare_rows.py, and the NARROWING verdict is the interesting part.
+  
   ("prepare_rows.py", "port_rows"):
     "PREPARATION, not verification: named `port_rows` because it reads the PORT lane before the "
     "gate compares anything, to reshape names. NARROWING against rows() -- it sees a subset with "
@@ -230,6 +231,22 @@ IMPORTS = {
 }
 
 DROP = {("mop-mut.py", "rows"), ("ext_mutate.py", "rows_of")}  # both converted; see IMPORTS
+
+# The seven with no contract get this, and every field in it is MEASURED rather than asserted.
+# `reader-guard.py` treats the token `unmeasurable` as a failure; these carry a real fingerprint,
+# so the guard CAN check them and WILL fail if they move -- which is the difference between a
+# reader nobody has looked at and one that has been looked at and not yet judged.
+NO_CONTRACT = (
+  "NO CONTRACT WRITTEN YET -- OWED. MEASURED {verdict} against rebase-gate.py's rows() on six "
+  "shapes (result {kinds}); {note}. NOT CONVERTED because every conversion of this reader CHANGES "
+  "ITS OUTPUT and the numbers it prints are read by other units: it is either a mutation harness "
+  "whose counts are quoted, or a gate on another unit's lane. Importing rows() is a one-line "
+  "change (`reader-fork-convert.py --apply` does it) and it is the RIGHT direction -- a NARROWING "
+  "fork can only ADD rows -- but adding rows is a behaviour change and this project has been "
+  "burned six times by a row that agreed with the wrong thing, so the decision belongs to whoever "
+  "owns the numbers. This row exists so the guard can MEASURE it and fail when its answer moves; "
+  "it is a measurement, not an endorsement."
+)
 
 
 def fingerprint(fn):
@@ -299,9 +316,9 @@ def main():
     contract = CONTRACTS.get((bare, func))
     if contract is None:
       uncontracted += 1
-      contract = ("NO CONTRACT WRITTEN YET. Measured divergent from rows() -- see the census. "
-                  "This row exists so the guard can MEASURE it and fail when its answer moves; "
-                  "it is NOT an endorsement, and the next reader here deserves one.")
+      contract = (NO_CONTRACT.format(rel=rel, func=func, verdict=m.get("verdict", "?"),
+                                     kinds="/".join(m.get("kinds") or ["-"]),
+                                     note=m.get("note", "")[:120]))
     rows.append((rel, func, "own-contract", fingerprint_of(m, fn), contract))
 
   rows.sort()

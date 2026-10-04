@@ -238,8 +238,9 @@ def main():
     print("  rt all-ones probe MOVES between the two orders          : %d" % sum(r["rt_ones_moves"] for r in rows))
     print("  rt low-bit probe MOVES between the two orders          : %d" % sum(r["rt_lowbit_moves"] for r in rows))
     print("  rt top-bit probe MOVES between the two orders          : %d" % sum(r["rt_topbit_moves"] for r in rows))
-    print("  NOT REACHABLE: 0 -- every site is a literal in this file and")
-    print("  `nv.fld_se` reads all six of the ported BOOT_42 fields by name.")
+    print("  UNREACHABLE IN THE PORT: 0 -- every one of the %d is a literal in this" % n)
+    print("  file, and `nv.fld_se` reads all six ported BOOT_42 fields by name.  That")
+    print("  number is about THIS FILE only; the CPython-side reachability is below.")
 
     # -- the CPython-side census, which is the bigger denominator ------------
     print()
@@ -264,8 +265,21 @@ def main():
     print("  width-PRESERVING (the brief's premise)                : %d of %d" % (widp, n_py_fields))
     print("  rt all-ones probe MOVES                               : %d of %d" % (rtm, n_py_fields))
     print("  rt low-bit probe MOVES                                : %d of %d" % (rtl, n_py_fields))
-    print("  s > 31 (out of a U32 shift's reach)                   : %d of %d"
+    print("  s > 31 (out of a U32 SHIFT's reach, so no mask is buildable): %d of %d"
           % (len(degenerate), n_py_fields))
+    n_tables_ported = 11
+    print("  in tables THIS FILE ports                            : %d of %d tables"
+          % (n_tables_ported, len(py)))
+    print("  in tables this file does NOT port (nothing to gate)  : %d of %d tables, "
+          "%d fields" % (len(py) - n_tables_ported, len(py),
+                         n_py_fields - sum(len(r["fields"]) for r in py
+                                           if r["reg"] in ("NV_PMC_BOOT_0", "NV_PMC_BOOT_42",
+                                                           "NV_PFB_PRI_MMU_WPR2_ADDR_HI",
+                                                           "NV_PGC6_AON_SECURE_SCRATCH_GROUP_42",
+                                                           "NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE",
+                                                           "NV_MMU_VER2_PTE", "NV_MMU_VER2_PDE",
+                                                           "NV_MMU_VER2_DUAL_PDE", "NV_MMU_VER3_PTE",
+                                                           "NV_MMU_VER3_PDE", "NV_MMU_VER3_DUAL_PDE"))))
     if degenerate:
         print("    e.g. %s" % "; ".join("%s/%s/%s s=%d e=%d" % d for d in degenerate[:4]))
 

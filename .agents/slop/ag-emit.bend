@@ -12,11 +12,11 @@
 # generated defs -- is at `.agents/slop/ag-libclang.meta`.
 #
 # WHY IT NEEDS NO LIBCLANG.  The template's inputs are the RESULT NAME, the
-# ORDERED parameter names, each parameter's ABI type, and the return type. All
+# ORDERED parameter names, each parameter's ABI type, and the return type.  All
 # four are already enumerated, as data, in `tinygrad/runtime/autogen/
 # libclang.py`, which is the generator's own committed output for this header.
 # So the FFI that autogen.py needs in order to walk an AST is replaced by
-# reading the list. WALL 1 blocks deriving a list; it does not block reading one.
+# reading the list.  WALL 1 blocks deriving a list; it does not block reading one.
 #
 # INPUT   .agents/slop/ag-libclang.tramp   one row per `@dll.bind` def:
 #            name|retbind|rethint|[pname|pbind|phint]*
@@ -27,48 +27,56 @@
 # OUTPUT  tinybendygrad/runtime/autogen/libclang.bend
 #         ./bin/bend .agents/slop/ag-emit.bend > tinybendygrad/runtime/autogen/libclang.bend
 #
-# SIX MEASURED bend 2.0.35 CONSTRAINTS shape every def below.  All are quoted
+# SEVEN MEASURED bend 2.0.35 CONSTRAINTS shape every def below.  All are quoted
 # at `.agents/slop/notes/bend2-constraints.md`.
 #
 #   1. DECLARATION ORDER IS LOAD-BEARING.  A def must PRECEDE every def it uses,
 #      and mutual recursion is refused outright:
 #        expected : a filled definition (an unfilled law is a dead claim)
-#      This file is written in topological order and
+#      This file is written in topological order, and
 #      `.agents/slop/ag-order.py` CHECKS that order rather than trusting it.
 #   2. A def may call ITSELF and nothing else.  Every recursion here is
 #      self-recursion over a STRUCTURALLY SHRINKING argument.
 #   3. A self-call's arguments are read left to right, and each must be passed
-#      UNCHANGED until one shrinks.  So in `group.go(rest, group.step(g, c))`
-#      the LIST is first: with the state first, the first argument is computed
-#      and not shrinking, and the call is refused.
+#      UNCHANGED until one shrinks.  In `group.go(rest, group.step(g, c))` the
+#      LIST is therefore first: with the state first, the first argument is
+#      computed and not shrinking, and the call is refused.
 #   4. A `match` may only scrutinise a PARAMETER or a FIELD, never a computed
 #      value, so every computed discriminator is bound by the caller.
 #   5. A PARAMETER IS LINEAR unless marked `+`.  `String` and `List` parameters
 #      read more than once carry `+`.  When a parameter shares a name with a
-#      record FIELD the error names the FIELD's name, not the parameter's --
+#      record FIELD the error names the FIELD's name, not the parameter's:
 #      `def ty_in(s: String, ups: String)` reports `expected : ups`, and the
-#      parameter is renamed rather than the field.
-#   6. `List.map`, `List.filter`, `List.sort` and `List.foldl` all take a
-#      closure, and a closure type cannot spell `+`.  Nothing here reflects.
+#      PARAMETER was renamed rather than the field.
+#   6. `List.map`, `List.filter`, `List.sort` and `List.foldl` all take a closure,
+#      and a closure type cannot spell `+`.  Nothing here reflects over a list.
+#   7. `List.append(a, A, xs, ys)` is `xs ++ ys`, so it APPENDS `ys`.  Four walks
+#      here wanted a prepend and were first written as if it appended the other
+#      way, which silently REVERSED the trampoline order and the parameter order
+#      and put the return type last in the reconstructed `@dll.bind` payload.
+#      `agent-core.md` records the same trap as a head/tail swap.
 # ===========================================================================
 import Base
 
 # ===========================================================================
-# SECTION 1 -- THE TYPES.  One row per Bend type name, carrying every upstream
-# spelling that resolves to it.
+# SECTION 1 -- THE TYPES.
 #
-# The mapping is MANY-TO-ONE, and that is not an accident: `typehint` and `tmap`
-# deliberately disagree about the same value.  autogen.py:108-109 spells
-# `CXType_Int` as the annotation `int`; autogen.py:94-95 spells it as the ctypes
-# ABI type `ctypes.c_int32`.  One Bend name, two upstream spellings -- so the row
-# holds a spelling SET.  One row per spelling would collide on `I32`; one row per
-# Bend name without the set would drop the annotation the verifier checks.
+# `Ty` is the type table: one row per Bend type name, carrying every upstream
+# spelling that resolves to it.  The mapping is MANY-TO-ONE and that is not an
+# accident -- `typehint` and `tmap` deliberately disagree about the same value.
+# autogen.py:108-109 spells `CXType_Int` as the annotation `int`;
+# autogen.py:94-95 spells it as the ctypes ABI type `ctypes.c_int32`.  One Bend
+# name, two upstream spellings, so the row holds a spelling SET: one row per
+# spelling would collide on `I32`, and one row per Bend name without the set
+# would drop the annotation the verifier has to check.
 #
-# `U32` is the ONE real Bend type in the table (base.bend:57, a 32-bit word,
-# exactly `ctypes.c_uint32`).  Every other row is an EMPTY Data named for the C
-# width it stands for, because bend 2.0.35 declares only `U32` and `F32` -- no
-# signed integer, no 64-bit integer, no F64 -- and an empty value is the only
-# honest thing a REFUSED trampoline can return.
+# `Pm` and `Tr` hold RAW upstream spellings.  Encoding them at construction time
+# loses the spelling, and `Ty.ups` IS the spelling set -- a table built from
+# encoded names records `Ptr_CChar` as its own upstream spelling.  `enc` is
+# applied where a Bend NAME is needed and nowhere else.
+#
+# `Pb` is one ABI type in BOTH spellings, because the type row is keyed on the
+# Bend name and carries the upstream spelling, and one `String` cannot hold two.
 #
 # `Gs` exists because autogen.py:239 groups each parameter's three facts --
 # NAME, ABI type, `typehint` annotation -- out of a flat cell list, and the state
@@ -87,6 +95,9 @@ type Trr is Data: Trr{nm: String, rb: String, rh: String, cells: List<&2, String
 
 
 type Tr is Data: Tr{nm: String, rty: String, ret: String, ps: List<&2, Pm>}
+
+
+type Pb is Data: Pb{bend: String, up: String}
 
 
 type Gs is Data: Gs{st: Nat, nm: String, ty: String, hd: String, acc: List<&2, Pm>}
@@ -112,8 +123,12 @@ def ty_in(+s: String, +set: String) -> Bool:
   Bool.or(String.eq(s, set), String.contains(String.concat([",", set, ","]), String.concat([",", s, ","])))
 
 
+# `String.drop(s, n)` drops n LEADING chars and base.bend has NO `drop_end`, so
+# the trailing characters come off by keeping a prefix.  Dropping them from the
+# FRONT instead costs ten characters of `c.POINTER[` and yields
+# `Ptr_types.c_char]` -- a name that still typechecks, so nothing complains.
 def enc_strip.go(+d: String, suf: Nat) -> String:
-  String.reverse(String.take(String.reverse(d), Nat.sub(String.length(d), suf)))
+  String.take(d, Nat.sub(String.length(d), suf))
 
 
 def enc_bracketed(+s: String) -> Bool: Bool.and(String.starts_with(s, "["), String.ends_with(s, "]"))
@@ -129,6 +144,44 @@ def enc_trim(+s: String) -> String: String.trim(s)
 
 def enc_fn_parts.put(+s: String, +acc: List<&2, String>) -> List<&2, String>:
   Bool.pick(List<&2, String>, String.is_empty(s), acc, List.append(&2, String, acc, [s]))
+
+
+def trr_nm(+t: Trr) -> String:
+  match t:
+    case Trr{nm, rb, rh, cells}: nm
+
+
+def trr_rb(+t: Trr) -> String:
+  match t:
+    case Trr{nm, rb, rh, cells}: rb
+
+
+def trr_rh(+t: Trr) -> String:
+  match t:
+    case Trr{nm, rb, rh, cells}: rh
+
+
+def trr_cells(+t: Trr) -> List<&2, String>:
+  match t:
+    case Trr{nm, rb, rh, cells}: cells
+
+
+def pm(+n: String, +t: String, +h: String) -> Pm: Pm{n, t, h}
+
+
+def pm_nm(+p: Pm) -> String:
+  match p:
+    case Pm{nm, ty, hint}: nm
+
+
+def pm_ty(+p: Pm) -> String:
+  match p:
+    case Pm{nm, ty, hint}: ty
+
+
+def pm_hint(+p: Pm) -> String:
+  match p:
+    case Pm{nm, ty, hint}: hint
 
 
 def gs(st: Nat, nm: String, ty: String, hd: String, acc: List<&2, Pm>) -> Gs: Gs{st, nm, ty, hd, acc}
@@ -159,41 +212,6 @@ def gs_acc(g: Gs) -> List<&2, Pm>:
     case Gs{st, nm, ty, hd, acc}: acc
 
 
-def pm_nm(+p: Pm) -> String:
-  match p:
-    case Pm{nm, ty, hint}: nm
-
-
-def pm_ty(+p: Pm) -> String:
-  match p:
-    case Pm{nm, ty, hint}: ty
-
-
-def pm_hint(+p: Pm) -> String:
-  match p:
-    case Pm{nm, ty, hint}: hint
-
-
-def trr_nm(+t: Trr) -> String:
-  match t:
-    case Trr{nm, rb, rh, cells}: nm
-
-
-def trr_rb(+t: Trr) -> String:
-  match t:
-    case Trr{nm, rb, rh, cells}: rb
-
-
-def trr_rh(+t: Trr) -> String:
-  match t:
-    case Trr{nm, rb, rh, cells}: rh
-
-
-def trr_cells(+t: Trr) -> List<&2, String>:
-  match t:
-    case Trr{nm, rb, rh, cells}: cells
-
-
 def tr_nm(+t: Tr) -> String:
   match t:
     case Tr{nm, rty, ret, ps}: nm
@@ -212,6 +230,19 @@ def tr_ret(+t: Tr) -> String:
 def tr_ps(+t: Tr) -> List<&2, Pm>:
   match t:
     case Tr{nm, rty, ret, ps}: ps
+
+
+def pb(+b: String, +u: String) -> Pb: Pb{b, u}
+
+
+def pb_bend(+p: Pb) -> String:
+  match p:
+    case Pb{bend, up}: bend
+
+
+def pb_up(+p: Pb) -> String:
+  match p:
+    case Pb{bend, up}: up
 
 
 def emit_head(+nt: Nat, +ntr: Nat) -> String: String.concat([
@@ -272,14 +303,6 @@ def read_lines.go(m: File & Result<&1, &1, U32 & String, String>) -> IO(String):
     IO.pure(String, s)
 
 
-# `String.drop(s, n)` drops n LEADING chars and there is NO `drop_end` in
-# base.bend, so the trailing characters come off through a reverse. Dropping
-# them from the FRONT instead costs ten characters of `c.POINTER[` and yields
-# `Ptr_types.c_char]` -- a name that still typechecks, so nothing complains.
-def enc_strip(+s: String, pre: Nat, suf: Nat) -> String:
-  enc_strip.go(String.drop(s, pre), suf)
-
-
 def ty_le(+x: Ty, +y: Ty) -> Bool: String.is_le(ty_bend(x), ty_bend(y))
 
 
@@ -299,12 +322,6 @@ def ty_prims() -> List<&2, Ty>:
    ty("Unit", "None")]
 
 
-def enc_fn_parts.go(+xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: List.reverse(&2, String, acc)
-    case h <> rest: enc_fn_parts.go(rest, enc_fn_parts.put(enc_trim(h), acc))
-
-
 def enc_prim.find(+xs: List<&2, Ty>, +s: String) -> Maybe<&2, Ty>:
   match xs:
     case Nil{}: None{}
@@ -317,6 +334,16 @@ def enc_prim.of(+m: Maybe<&2, Ty>, +s: String) -> String:
     case None{}: s
 
 
+def enc_strip(+s: String, pre: Nat, suf: Nat) -> String:
+  enc_strip.go(String.drop(s, pre), suf)
+
+
+def enc_fn_parts.go(+xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: List.reverse(&2, String, acc)
+    case h <> rest: enc_fn_parts.go(rest, enc_fn_parts.put(enc_trim(h), acc))
+
+
 def parse_row.h(+r1: List<&2, String>, +acc: Trr) -> Trr:
   match r1:
     case Nil{}: acc
@@ -326,17 +353,23 @@ def parse_row.h(+r1: List<&2, String>, +acc: Trr) -> Trr:
 def group.at(+g: Gs, st: Nat) -> Gs: gs(st, gs_nm(g), gs_ty(g), gs_hd(g), gs_acc(g))
 
 
-def emit_param(+p: Pm) -> String: String.concat([pm_nm(p), ": ", pm_ty(p)])
+# ONE cell in: stage 0 takes a NAME, stage 1 the ABI type, stage 2 the annotation
+# AND closes the parameter.
+def group.step.at(st: Nat, +g: Gs, +c: String) -> Gs:
+  match st:
+    case 0n: gs(1n, c, gs_ty(g), gs_hd(g), gs_acc(g))
+    case 1n: gs(2n, gs_nm(g), c, gs_hd(g), gs_acc(g))
+    case _s: gs(0n, gs_nm(g), gs_ty(g), c, List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), c)]))
 
 
-# the `@dll.bind(...)` payload of autogen.py:240, RECONSTRUCTED from the same
-# row rather than stored beside it.  A template check has to catch a body that
-# calls the WRONG GETTER AT THE RIGHT ARITY, and a stored second copy of the
-# payload could not.
-def emit_binds.go(+xs: List<&2, Pm>) -> List<&2, String>:
-  match xs:
-    case Nil{}: Nil{}
-    case p <> rest: List.append(&2, String, [pm_ty(p)], emit_binds.go(rest))
+# A truncated final triple still yields its parameter.  autogen.py:239 spells the
+# fallback `'_' + str(i)`, and a row read from a truncated file is exactly the
+# case where a silently dropped parameter would be invisible.
+def group.flush.at(st: Nat, +g: Gs) -> List<&2, Pm>:
+  match st:
+    case 0n: gs_acc(g)
+    case 1n: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), "")])
+    case _s: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), gs_hd(g))])
 
 
 def emit_binds_up.go(+xs: List<&2, Pm>) -> List<&2, String>:
@@ -345,12 +378,12 @@ def emit_binds_up.go(+xs: List<&2, Pm>) -> List<&2, String>:
     case p <> rest: List.append(&2, String, [pm_hint(p)], emit_binds_up.go(rest))
 
 
-# Adding a spelling to the row for a Bend name REPLACES that row. Appending
-# instead leaves a second row behind and NOTHING upstream complains: the first
-# run emitted `type CXFile is Data` THREE times, once per occurrence of the
-# spelling, and bend accepts that. A NAME-SET check is what sees it.
-def ty_add.at(hit: Bool, +cur: Ty, +tail: List<&2, Ty>, +b: String) -> List<&2, Ty>:
-  Bool.pick(List<&2, Ty>, hit, [Ty{b, String.concat([ty_ups(cur), ",", b])}],
+# Adding an upstream spelling to the row for a Bend name REPLACES that row.
+# Appending instead leaves a second row behind and NOTHING upstream complains:
+# the first run emitted `type CXFile is Data` THREE times, once per occurrence
+# of the spelling, and bend accepts that.  A NAME-SET check is what sees it.
+def ty_add.at(hit: Bool, +cur: Ty, +tail: List<&2, Ty>, +up: String) -> List<&2, Ty>:
+  Bool.pick(List<&2, Ty>, hit, [Ty{ty_bend(cur), String.concat([ty_ups(cur), ",", up])}],
             List.append(&2, Ty, [cur], tail))
 
 
@@ -372,26 +405,17 @@ def read_lines(path: String) -> IO(String):
     read_lines.go(m)
 
 
+def enc_prim(+s: String) -> String: enc_prim.of(enc_prim.find(ty_prims(), s), s)
+
+
 # the `[...]` around a CFUNCTYPE's argument list carries no name of its own, so
 # it is stripped here rather than in the splitter
 def enc_arg(+s: String) -> String: Bool.pick(String, enc_bracketed(s), enc_strip(s, 1n, 1n), s)
 
 
-# The recursion is over `rest` INSIDE the arm.  A version that stopped at the
-# head compiled, ran, and built a table of the FIRST type only -- and the
-# symptom was a 12-line emitted file, not an error.
-def ty_add.put(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>:
-  match xs:
-    case Nil{}: [Ty{b, b}]
-    case Ty{bend, ups} <> rest: ty_add.at(String.eq(bend, b), Ty{bend, ups}, ty_add.put(rest, b), b)
-
-
 # the RESULT type then the ARGUMENT types of a `c.CFUNCTYPE[...]`, brackets off
 def enc_fn_parts(+s: String) -> List<&2, String>:
   enc_fn_parts.go(String.split(enc_trim(enc_strip(s, 12n, 1n)), ','), Nil{})
-
-
-def enc_prim(+s: String) -> String: enc_prim.of(enc_prim.find(ty_prims(), s), s)
 
 
 def parse_row.b(+r0: List<&2, String>, +acc: Trr) -> Trr:
@@ -400,25 +424,23 @@ def parse_row.b(+r0: List<&2, String>, +acc: Trr) -> Trr:
     case rb <> r1: parse_row.h(r1, Trr{trr_nm(acc), rb, "", Nil{}})
 
 
-def emit_params(+xs: List<&2, Pm>) -> List<&2, String>:
-  match xs:
-    case Nil{}: Nil{}
-    case p <> rest: List.append(&2, String, [emit_param(p)], emit_params(rest))
+def group.step(+g: Gs, +c: String) -> Gs: group.step.at(gs_st(g), g, c)
 
 
-# `[rt] + ats`, autogen.py:240's own order: the RETURN TYPE FIRST.
-def emit_binds(+t: Tr) -> List<&2, String>:
-  List.append(&2, String, [tr_rty(t)], emit_binds.go(tr_ps(t)))
+def group.flush(+g: Gs) -> List<&2, Pm>: group.flush.at(gs_st(g), g)
 
 
 def emit_binds_up(+t: Tr) -> List<&2, String>:
   List.append(&2, String, [tr_ret(t)], emit_binds_up.go(tr_ps(t)))
 
 
-# every ABI type a row mentions, the return first, then each parameter -- the
-# order autogen.py:240 builds `[rt] + ats` in.
-def tr_bends(+t: Tr) -> List<&2, String>:
-  List.append(&2, String, [tr_rty(t)], emit_binds.go(tr_ps(t)))
+# The recursion is over `rest` INSIDE the arm.  A version that stopped at the head
+# compiled, ran, and built a table of the FIRST type only -- and the symptom was a
+# 12-line emitted file, not an error.
+def ty_add.put(+xs: List<&2, Ty>, +b: String, +up: String) -> List<&2, Ty>:
+  match xs:
+    case Nil{}: [Ty{b, up}]
+    case Ty{bend, ups} <> rest: ty_add.at(String.eq(bend, b), Ty{bend, ups}, ty_add.put(rest, b, up), up)
 
 
 # insertion sort on the Bend name.  `List.sort` needs a closure.
@@ -439,7 +461,7 @@ def emit_tys(+xs: List<&2, Ty>) -> IO(Unit):
         _ => IO.bind(Unit, Unit, IO.print(emit_ty_row(t)), _ => emit_tys(rest)))
 
 
-def ty_add(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>: ty_add.put(xs, b)
+def enc0(+s: String) -> String: enc_prim(s)
 
 
 def parse_row.at(+cs: List<&2, String>) -> Trr:
@@ -448,18 +470,20 @@ def parse_row.at(+cs: List<&2, String>) -> Trr:
     case n0 <> r0: parse_row.b(r0, Trr{n0, "", "", Nil{}})
 
 
-def enc0(+s: String) -> String: enc_prim(s)
-
-
-def emit_def(+t: Tr) -> String:
-  String.concat(["def ", tr_nm(t), "(", String.join(emit_params(tr_ps(t)), ", "),
-                 ") -> Maybe<&2, ", tr_rty(t), ">:\n  None{}\n"])
-
-
-def emit_bind(+t: Tr) -> String: String.concat([tr_nm(t), " = ", String.join(emit_binds(t), ", ")])
+# THE CELL LIST COMES FIRST, THE STATE SECOND.  bend reads a self-call's arguments
+# left to right and wants each passed UNCHANGED until one shrinks.  With the state
+# first, the first argument is `group.step(g, c)` -- computed, and not shrinking --
+# so the call is refused even though `rest` shrinks.
+def group.go(+cs: List<&2, String>, +g: Gs) -> List<&2, Pm>:
+  match cs:
+    case Nil{}: group.flush(g)
+    case c <> rest: group.go(rest, group.step(g, c))
 
 
 def emit_bind_up(+t: Tr) -> String: String.concat([tr_nm(t), " = ", String.join(emit_binds_up(t), ", ")])
+
+
+def ty_add(+xs: List<&2, Ty>, +b: String, +up: String) -> List<&2, Ty>: ty_add.put(xs, b, up)
 
 
 def tys_sort(+xs: List<&2, Ty>) -> List<&2, Ty>:
@@ -468,52 +492,50 @@ def tys_sort(+xs: List<&2, Ty>) -> List<&2, Ty>:
     case h <> rest: tys_sort.ins(rest, h)
 
 
-def tys_go(+xs: List<&2, String>, +acc: List<&2, Ty>) -> List<&2, Ty>:
-  match xs:
-    case Nil{}: acc
-    case b <> rest: tys_go(rest, ty_add(acc, b))
-
-
-def parse_row(+line: String) -> Trr: parse_row.at(String.split(line, '|'))
-
-
 def enc1.ptr(+s: String) -> String: String.concat(["Ptr_", enc0(enc_strip(s, 10n, 1n))])
 
 
-# `List.append(&2, String, [x], acc)` APPENDS, and the accumulator here is the
-# name built so far, so the order is the order the parts were split in: result
-# type first, then the arguments, which is autogen.py:119's order.
+# the accumulator is the name built so far and `List.append` puts `x` at its END,
+# which is the order the parts were split in: result type first, then the
+# arguments, which is autogen.py:119's order.
 def enc1.fn.parts(+xs: List<&2, String>, +acc: String) -> String:
   match xs:
     case Nil{}: acc
     case p <> tail: enc1.fn.parts(tail, String.concat([acc, "_", enc0(enc_arg(p))]))
 
 
-def emit_defs(+xs: List<&2, Tr>) -> IO(Unit):
-  match xs:
-    case Nil{}: IO.pure(Unit, Unit{})
-    case t <> rest:
-      IO.bind(Unit, Unit, IO.print(emit_def(t)), _ => emit_defs(rest))
+def parse_row(+line: String) -> Trr: parse_row.at(String.split(line, '|'))
 
 
-def trs_fold(+xs: List<&2, Tr>, +acc: List<&2, Ty>) -> List<&2, Ty>:
+def group(+cs: List<&2, String>) -> List<&2, Pm>: group.go(cs, gs(0n, "", "", "", Nil{}))
+
+
+def tys_go(+xs: List<&2, Pb>, +acc: List<&2, Ty>) -> List<&2, Ty>:
   match xs:
-    case Nil{}: tys_sort(acc)
-    case t <> rest: trs_fold(rest, tys_go(tr_bends(t), acc))
+    case Nil{}: acc
+    case p <> rest: tys_go(rest, ty_add(acc, pb_bend(p), pb_up(p)))
 
 
 def enc1.fn(+s: String) -> String: enc1.fn.parts(enc_fn_parts(s), "Fn_")
 
 
-def main.rows(+trs: List<&2, Tr>, +tys: List<&2, Ty>) -> IO(Unit):
-  IO.bind(Unit, Unit,
-          IO.print(emit_head(List.length(&2, Ty, tys), List.length(&2, Tr, trs))),
-    _ => IO.bind(Unit, Unit, emit_tys(tys), _ => emit_defs(trs)))
+def to_tr(+t: Trr) -> Tr: Tr{trr_nm(t), trr_rb(t), trr_rh(t), group(trr_cells(t))}
 
 
 def enc1(+s: String) -> String:
   Bool.pick(String, String.starts_with(s, "c.POINTER["), enc1.ptr(s),
     Bool.pick(String, String.starts_with(s, "c.CFUNCTYPE["), enc1.fn(s), enc0(s)))
+
+
+# `String.lines` KEEPS the empty string after a file's final newline, so a 324-row
+# file yields 325 rows and the extra one parses to an empty NAME.  Emitting it
+# produced `type  is Data:` and `def ty_()`, and both typecheck.
+def trs_map(+xs: List<&2, String>) -> List<&2, Tr>:
+  match xs:
+    case Nil{}: Nil{}
+    case l <> rest:
+      Bool.pick(List<&2, Tr>, String.is_empty(l), trs_map(rest),
+                List.append(&2, Tr, [to_tr(parse_row(l))], trs_map(rest)))
 
 
 def enc2.ptr(+s: String) -> String: String.concat(["Ptr_", enc1(enc_strip(s, 10n, 1n))])
@@ -537,66 +559,73 @@ def enc2(+s: String) -> String:
 def enc(+s: String) -> String: enc2(s)
 
 
-# `pm` is where a cell becomes a Bend TYPE.  Omitting the two `enc` calls here
-# compiles, runs, and emits `c.POINTER[CXIndexOptions]` as the Bend type name --
-# a name with dots and brackets in it -- and the first run did exactly that.
-def pm(+n: String, +t: String, +h: String) -> Pm: Pm{n, enc(t), enc(h)}
+def emit_param(+p: Pm) -> String: String.concat([pm_nm(p), ": ", enc(pm_ty(p))])
 
 
-# ONE cell in: stage 0 takes a NAME, stage 1 the ABI type, stage 2 the
-# annotation AND closes the parameter.
-def group.step.at(st: Nat, +g: Gs, +c: String) -> Gs:
-  match st:
-    case 0n: gs(1n, c, gs_ty(g), gs_hd(g), gs_acc(g))
-    case 1n: gs(2n, gs_nm(g), c, gs_hd(g), gs_acc(g))
-    case _s: gs(0n, gs_nm(g), gs_ty(g), c, List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), c)]))
-
-
-# A truncated final triple still yields its parameter.  autogen.py:239 spells the
-# fallback `'_' + str(i)`, and a row read from a truncated file is exactly the
-# case where a silently dropped parameter would be invisible.
-def group.flush.at(st: Nat, +g: Gs) -> List<&2, Pm>:
-  match st:
-    case 0n: gs_acc(g)
-    case 1n: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), "")])
-    case _s: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), gs_hd(g))])
-
-
-def group.step(+g: Gs, +c: String) -> Gs: group.step.at(gs_st(g), g, c)
-
-
-def group.flush(+g: Gs) -> List<&2, Pm>: group.flush.at(gs_st(g), g)
-
-
-# THE CELL LIST COMES FIRST, THE STATE SECOND.  bend reads a self-call's
-# arguments left to right and wants each passed UNCHANGED until one shrinks.  With
-# the state first, the first argument is `group.step(g, c)` -- computed, and not
-# shrinking -- so the call is refused even though `rest` shrinks.
-def group.go(+cs: List<&2, String>, +g: Gs) -> List<&2, Pm>:
-  match cs:
-    case Nil{}: group.flush(g)
-    case c <> rest: group.go(rest, group.step(g, c))
-
-
-def group(+cs: List<&2, String>) -> List<&2, Pm>: group.go(cs, gs(0n, "", "", "", Nil{}))
-
-
-def to_tr(+t: Trr) -> Tr: Tr{trr_nm(t), enc(trr_rb(t)), enc(trr_rh(t)), group(trr_cells(t))}
-
-
-# `String.lines` KEEPS the empty string after a file's final newline, so a 324
-# row file yields 325 rows and the extra one parses to an empty NAME. Emitting it
-# produced `type  is Data:` and `def ty_()`, and both typecheck.
-def trs_map(+xs: List<&2, String>) -> List<&2, Tr>:
+# the `@dll.bind(...)` payload of autogen.py:240, RECONSTRUCTED from the same row
+# rather than stored beside it.  A template check has to catch a body that calls
+# the WRONG GETTER AT THE RIGHT ARITY, and a stored second copy of the payload
+# could not.
+def emit_binds.go(+xs: List<&2, Pm>) -> List<&2, String>:
   match xs:
     case Nil{}: Nil{}
-    case l <> rest:
-      Bool.pick(List<&2, Tr>, String.is_empty(l), trs_map(rest),
-                List.append(&2, Tr, [to_tr(parse_row(l))], trs_map(rest)))
+    case p <> rest: List.append(&2, String, [enc(pm_ty(p))], emit_binds.go(rest))
 
 
-def main.go(+lines: List<&2, String>) -> IO(Unit):
-  main.rows(trs_map(lines), trs_fold(trs_map(lines), Nil{}))
+# Every ABI type a row mentions, the return first then each parameter -- the order
+# autogen.py:240 builds `[rt] + ats` in -- each as a (BEND NAME, UPSTREAM
+# SPELLING) PAIR, because the type row is keyed on the Bend name and its `ups`
+# column is the upstream spelling SET.
+def tr_binds.go(+xs: List<&2, Pm>, +r: String) -> List<&2, Pb>:
+  match xs:
+    case Nil{}: [pb(enc(r), r)]
+    case p <> rest: List.append(&2, Pb, [pb(enc(r), r)], tr_binds.go(rest, pm_ty(p)))
+
+
+def emit_params(+xs: List<&2, Pm>) -> List<&2, String>:
+  match xs:
+    case Nil{}: Nil{}
+    case p <> rest: List.append(&2, String, [emit_param(p)], emit_params(rest))
+
+
+def emit_binds(+t: Tr) -> List<&2, String>:
+  List.append(&2, String, [enc(tr_rty(t))], emit_binds.go(tr_ps(t)))
+
+
+def tr_bends(+t: Tr) -> List<&2, Pb>: tr_binds.go(tr_ps(t), tr_rty(t))
+
+
+def emit_def(+t: Tr) -> String:
+  String.concat(["def ", tr_nm(t), "(", String.join(emit_params(tr_ps(t)), ", "),
+                 ") -> Maybe<&2, ", enc(tr_rty(t)), ">:\n  None{}\n"])
+
+
+def emit_bind(+t: Tr) -> String: String.concat([tr_nm(t), " = ", String.join(emit_binds(t), ", ")])
+
+
+def trs_fold(+xs: List<&2, Tr>, +acc: List<&2, Ty>) -> List<&2, Ty>:
+  match xs:
+    case Nil{}: tys_sort(acc)
+    case t <> rest: trs_fold(rest, tys_go(tr_bends(t), acc))
+
+
+def emit_defs(+xs: List<&2, Tr>) -> IO(Unit):
+  match xs:
+    case Nil{}: IO.pure(Unit, Unit{})
+    case t <> rest:
+      IO.bind(Unit, Unit, IO.print(emit_def(t)), _ => emit_defs(rest))
+
+
+def main.ty(+trs: List<&2, Tr>, +tys: List<&2, Ty>) -> IO(Unit):
+  IO.bind(Unit, Unit,
+          IO.print(emit_head(List.length(&2, Ty, tys), List.length(&2, Tr, trs))),
+    _ => IO.bind(Unit, Unit, emit_tys(tys), _ => emit_defs(trs)))
+
+
+def main.rows(+trs: List<&2, Tr>) -> IO(Unit): main.ty(trs, trs_fold(trs, Nil{}))
+
+
+def main.go(+lines: List<&2, String>) -> IO(Unit): main.rows(trs_map(lines))
 
 
 # The `do` block binds `raw` but NOT `trs` or `tys`: a `do`-block binder takes a

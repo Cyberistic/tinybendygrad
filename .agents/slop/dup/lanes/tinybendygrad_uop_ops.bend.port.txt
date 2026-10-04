@@ -1,0 +1,319 @@
+set_end_none=Ops.AFTER(Ops.BUFFER Ops.STORE)
+set_end_one=Ops.AFTER(Ops.BUFFER Ops.END)
+set_end_two=Ops.AFTER(Ops.BUFFER Ops.END)
+set_end_two_src=Ops.AFTER(Ops.BUFFER Ops.END)
+vv_two=(0:7,0:9)
+vv_one=(0:7)
+vv_zero=(0:0)
+vv_none=()
+vv_miss_second=none
+vrn_default=slot=-1 name=i mult=1 addr=ALU lo=0:0 hi=0:10 nsrc=0
+vrn_multi=slot=-1 name=j mult=4 addr=ALU lo=4294967295:4294967291 hi=0:5 nsrc=0
+vrn_neg=slot=-1 name=m mult=1 addr=ALU lo=4294967295:4294967196 hi=4294967295:4294967295 nsrc=0
+vrn_int32=slot=-1 name=k mult=1 addr=ALU lo=0:1 hi=0:2 nsrc=0
+rra_val=some:Ops.CONST
+rra_param=some:Ops.AFTER
+rra_unshard=some:Ops.CONST
+rra_none_zero=none
+rra_none_two=none
+rra_none_empty=none
+rra_mixed=some:Ops.CONST
+rra_samebase=some:Ops.CONST
+rra_arena=1
+vr_expr_param=some:i
+vr_expr_buffer=some:buf
+vr_expr_unnamed=none
+vr_expr_nonparam=none
+sg_body_call=some:Ops.SINK
+sg_body_add=none:RuntimeError
+sg_inline_call=some:True
+sg_inline_pre=some:False
+sg_inline_body=some:False
+sg_inline_kernel=some:False
+sg_inline_cfun=none:AttributeError
+sg_inline_aft=some:False
+sg_inline_add=some:False
+sg_huo_alloc=True
+sg_huo_bind=False
+sg_huo_buffer=False
+sg_huo_src0=False
+sg_huo_unshard=True
+sg_huo_noncall=False
+sg_huo_op=False
+sg_invalid=Ops.CONST/ cinvalid t=none
+sg_isinv_ci=True
+sg_isinv_c0=False
+sg_reduce_some=Ops.REDUCE/Ops.BUFFER reduce:Ops.ADD/0 t=none
+sg_reduce_none=Ops.REDUCE/Ops.BUFFER none t=none
+sg_reduce_two=Ops.REDUCE/Ops.BUFFER Ops.CONST reduce:Ops.MAX/0 t=none
+sg_cconst_i32=Ops.CAST/Ops.CONST dt:i32 t=none
+sg_cconst_f32=Ops.CAST/Ops.CONST dt:f32 t=none
+sg_index_hit1=True
+sg_index_hit0=True
+sg_index_hitmiss=False
+sg_index_plain=Ops.INDEX/Ops.BUFFER none t=none
+sg_index_one=Ops.INDEX/Ops.BUFFER Ops.CONST none t=none
+sg_index_two=Ops.INDEX/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_index_nc=Ops.INDEX/Ops.STACK Ops.BUFFER none t=none
+sg_index_st2=Ops.INDEX/Ops.STACK Ops.CONST Ops.CONST none t=none
+sg_store_nogate=Ops.STORE/Ops.BUFFER Ops.CONST none t=none
+sg_store_gate=Ops.STORE/Ops.BUFFER Ops.CONST Ops.CONST none t=none
+sg_ins_tag=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=9
+sg_ins_none=Ops.INS/Ops.CONST Ops.CONST ink:x/i32 t=none
+sg_wmma=Ops.WMMA/Ops.BUFFER Ops.CONST Ops.ADD wmma:32/i32 t=none
+sg_ufix_uop=Ops.CONST
+sg_ufix_lit=Ops.CONST/ cint t=none
+sg_ufix_miss=True
+sg_idx=Ops.CONST,Ops.CONST,Ops.CONST,Ops.CONST,Ops.BUFFER,Ops.ADD,Ops.ALLOC,Ops.ALLOC,Ops.UNSHARD,Ops.STACK,Ops.SINK,Ops.SINK,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.CALL,Ops.ADD,Ops.ADD,Ops.AFTER,Ops.ADD,
+s5_idx=Ops.CONST,Ops.BUFFER,Ops.PARAM,Ops.ALLOC,Ops.RESHAPE,Ops.RESHAPE,Ops.UNSHARD,Ops.BITCAST,Ops.AFTER
+s5_base_c=Ops.CONST
+s5_base_b=Ops.BUFFER
+s5_base_p=Ops.PARAM
+s5_base_a=Ops.ALLOC
+s5_base_r1=Ops.BUFFER
+s5_base_r2=Ops.BUFFER
+s5_base_us=Ops.UNSHARD
+s5_base_bc=Ops.BITCAST
+s5_base_af=Ops.AFTER
+s5_base_detach=Ops.BUFFER
+s5_unsharded_base_c=Ops.CONST
+s5_unsharded_base_b=Ops.BUFFER
+s5_unsharded_base_p=Ops.PARAM
+s5_unsharded_base_a=Ops.ALLOC
+s5_unsharded_base_r1=Ops.BUFFER
+s5_unsharded_base_r2=Ops.BUFFER
+s5_unsharded_base_us=Ops.BUFFER
+s5_unsharded_base_bc=Ops.BITCAST
+s5_unsharded_base_af=Ops.AFTER
+s5_unsharded_base_detach=Ops.BUFFER
+s5_storage_base_c=Ops.CONST
+s5_storage_base_b=Ops.BUFFER
+s5_storage_base_p=Ops.PARAM
+s5_storage_base_a=Ops.ALLOC
+s5_storage_base_r1=Ops.BUFFER
+s5_storage_base_r2=Ops.BUFFER
+s5_storage_base_us=Ops.BUFFER
+s5_storage_base_bc=Ops.BUFFER
+s5_storage_base_af=Ops.BUFFER
+s5_storage_base_detach=Ops.BUFFER
+s5_wo_after_c=Ops.CONST
+s5_wo_after_b=Ops.BUFFER
+s5_wo_after_r1=Ops.RESHAPE
+s5_wo_after_us=Ops.UNSHARD
+s5_wo_after_af=Ops.BUFFER
+s5_wo_after_detach=Ops.DETACH
+s5_buf_uop_c=Ops.CONST
+s5_buf_uop_b=Ops.BUFFER
+s5_buf_uop_p=Ops.PARAM
+s5_buf_uop_r1=Ops.BUFFER
+s5_buf_uop_r2=Ops.BUFFER
+s5_buf_uop_bc=Ops.BUFFER
+s5_buf_uop_af=Ops.BUFFER
+s5_buf_uop_detach=Ops.BUFFER
+s5_hbi_c=False
+s5_hbi_b=True
+s5_hbi_p=True
+s5_hbi_a=True
+s5_hbi_r1=True
+s5_hbi_r2=True
+s5_hbi_us=True
+s5_hbi_bc=False
+s5_hbi_af=False
+s5_hbi_detach=False
+s5_hbi_after_c=False
+s5_hbi_after_b=True
+s5_hbi_after_p=True
+s5_hbi_after_a=True
+s5_hbi_after_r1=True
+s5_hbi_after_r2=True
+s5_hbi_after_us=True
+s5_hbi_after_bc=False
+s5_hbi_after_af=True
+s5_hbi_after_detach=False
+s5_split_const=Ops.CONST
+s5_split_add=Ops.CONST Ops.CONST
+s5_split_nest=Ops.CONST Ops.CONST Ops.MUL
+s5_split_diamond=Ops.CONST Ops.ADD
+s5_split_mismatch=Ops.ADD
+s5_split_left=Ops.MUL
+s5_barrier=Ops.BARRIER/Ops.BUFFER
+s5_bufferize=Ops.STAGE/Ops.BUFFER
+s5_bufferize_arg=Ops.STAGE/Ops.BUFFER Ops.CONST
+s5_allreduce=Ops.ALLREDUCE/Ops.ALLOC
+s5_mselect=Ops.MSELECT/Ops.BUFFER
+s5_sharding_us=0:Ops.RANGE
+s5_sharding_none=
+s5_sint_const=Ops.CONST
+s5_devrange_single=-
+s5_devrange_one=Ops.RANGE:0:1
+s5_devrange_two=Ops.RANGE:0:2
+s5_copy_single=Ops.COPY/Ops.BUFFER
+s5_copy_multi=Ops.COPY/Ops.BUFFER Ops.RANGE
+s5_copy_sel=Ops.COPY/Ops.MSELECT Ops.RANGE
+s5_ga_buffer=Ops.GETADDR/Ops.BUFFER
+s5_ga_alloc=Ops.GETADDR/Ops.ALLOC
+s5_ga_param=Ops.GETADDR/Ops.PARAM
+s5_ga_shrink=Ops.GETADDR/Ops.SHRINK
+s5_ga_bitcast=Ops.GETADDR/Ops.BITCAST
+s5_ga_binary=Ops.GETADDR/Ops.BINARY
+s5_ga_mstack=Ops.GETADDR/Ops.MSTACK
+s5_ga_mselect=Ops.GETADDR/Ops.MSELECT
+s5_ga_linear=Ops.GETADDR/Ops.LINEAR
+s5_ga_const=Ops.CONST
+s5_ga_reshape=Ops.RESHAPE/Ops.BUFFER Ops.STACK
+s5_ga_after=Ops.GETADDR/Ops.AFTER
+s5_ga_add=Ops.ADD/Ops.BUFFER Ops.BUFFER
+s5_gate_linear=False
+s5_gate_kernel=False
+s5_gate_plain=True
+hashcons=True
+float_zeros_differ=True
+float_nan_interns=True
+dtype_key=True
+cycle=True
+after_puts_self_first=True
+end_puts_self_first=True
+toposort=True
+cycle_terminates=True
+key_eq=True
+eq_dt=True
+eq_dt_disjoint=True
+weakfloat_interns=True
+eq_addr=True
+addr_interns=True
+ops_name=True
+var_interns=True
+broadcast_repeats=True
+required_len=True
+alu_permutes=True
+early_reject=True
+ler_len=True
+cfun_interns=True
+cfun_dtype_splits=True
+cfun_name_splits=True
+cfun_arg=sel_registerName|u64
+cfun_of=sel_registerName|void
+blob_interns=True
+blob_len_diff_content=True
+blob_diff_len=True
+blob_count_same=1
+blob_count_len_diff_content=2
+blob_shape=(4,)
+blob_content=97,97,97,97
+blob_sweep=True
+blob_sweep_count=6
+afloat_zeros_intern=True
+afloat_nan_distinct_intern=False
+afloat_same_intern=True
+afloat_distinct_intern=False
+const_bool_vs_int_splits=True
+pynest_bool_vs_int_interns=True
+pynest_int_distinct_interns=False
+pynest_none_vs_zero_interns=False
+pynest_signed_zero_interns=False
+pynest_cfloat_vs_int_interns=False
+tag_bool_vs_int_interns=True
+tag_true_vs_false_splits=True
+tag_none_vs_zero_interns=False
+mstack_puts_self_first=True
+#shared_axis_members=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
+#shared_axis_values=1,2,3,4,5,6,7,8
+#shared_axis_count=8
+#shared_axis_sorted=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
+axv_DEVICE=1
+axn_DEVICE=DEVICE
+axl_DEVICE=d
+axc_DEVICE=green
+axv_GLOBAL=2
+axn_GLOBAL=GLOBAL
+axl_GLOBAL=g
+axc_GLOBAL=blue
+axv_LOCAL=3
+axn_LOCAL=LOCAL
+axl_LOCAL=l
+axc_LOCAL=cyan
+axv_WARP=4
+axn_WARP=WARP
+axl_WARP=w
+axc_WARP=CYAN
+axv_WEAK=5
+axn_WEAK=WEAK
+axl_WEAK=L
+axc_WEAK=red
+axv_LOOP=6
+axn_LOOP=LOOP
+axl_LOOP=L
+axc_LOOP=red
+axv_UPCAST=7
+axn_UPCAST=UPCAST
+axl_UPCAST=u
+axc_UPCAST=yellow
+axv_PLACEHOLDER=8
+axn_PLACEHOLDER=PLACEHOLDER
+axl_PLACEHOLDER=!KeyError
+axc_PLACEHOLDER=!KeyError
+axv_REDUCE=9
+axn_REDUCE=REDUCE
+axl_REDUCE=!KeyError
+axc_REDUCE=!KeyError
+axv_UNROLL=10
+axn_UNROLL=UNROLL
+axl_UNROLL=!KeyError
+axc_UNROLL=!KeyError
+axs_NOOP=!KeyError
+axs_CALL=1
+axs_LINEAR=0
+axs_END=1
+axs_STAGE=1
+axs_REDUCE=1
+rng_weak1=2 Ops.RANGE/1 Ops.CONST
+rngarg_weak1=((0,),WEAK)/len=2
+axid_weak1=(0,)/len=1
+axt_weak1=WEAK
+rng_loop1=2 Ops.RANGE/1 Ops.CONST
+rngarg_loop1=((0,),LOOP)/len=2
+axid_loop1=(0,)/len=1
+axt_loop1=LOOP
+rng_dev3=2 Ops.RANGE/1 Ops.CONST
+rngarg_dev3=((0,),DEVICE)/len=2
+axid_dev3=(0,)/len=1
+axt_dev3=DEVICE
+rng_loopfn=2 Ops.RANGE/1 Ops.NOOP
+rngarg_loopfn=((7,),WEAK)/len=2
+axid_loopfn=(7,)/len=1
+axt_loopfn=WEAK
+rng_twoid=2 Ops.RANGE/1 Ops.CONST
+rngarg_twoid=((0,1),LOOP)/len=2
+axid_twoid=(0,1)/len=2
+axt_twoid=LOOP
+axlt_sorted=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
+axlt_revsorted=DEVICE,GLOBAL,LOCAL,WARP,WEAK,LOOP,UPCAST,PLACEHOLDER
+axlt_lt=False
+axlt_gt=True
+eqax_collide=0
+eqax_collide_all=0
+eqax_diag=8
+eqax_diag_all=10
+mstack2=5 Ops.MSTACK/3 Ops.RANGE Ops.CONST Ops.CONST
+mstack1=4 Ops.MSTACK/2 Ops.RANGE Ops.CONST
+mstack0=2 Ops.RANGE/1 Ops.CONST
+uc_flat_nest=False
+uc_int_tup1=False
+uc_nest_deep=False
+uc_flat_same=True
+uc_nest_same=True
+ucdepth_flat_nest=0,1
+bsl_chain=5 Ops.CONST Ops.RANGE Ops.CONST Ops.ADD Ops.CONST
+bsws_chain=6 Ops.ADD Ops.CONST Ops.RANGE Ops.CONST Ops.ADD Ops.CONST
+bsop_chain_add=True
+bsop_chain_mul=False
+bsl_call=1 Ops.CONST
+bsws_call=2 Ops.CALL Ops.CONST
+bsop_call_call=True
+bsl_nest=3 Ops.CONST Ops.CALL Ops.CONST
+bsws_nest=4 Ops.ADD Ops.CONST Ops.CALL Ops.CONST
+bsop_nest_pair=True
+bsl_backedge=3 Ops.CONST Ops.RANGE Ops.CONST
+bsws_backedge=4 Ops.BACKEDGE Ops.CONST Ops.RANGE Ops.CONST
+bsop_backedge_backedge=True
+bsop_backedge_range=True

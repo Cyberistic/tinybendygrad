@@ -57,13 +57,6 @@ CENSUS = HERE / "reader-fork-census.py"
 CORPUS_ROOTS = (".agents", "runs")
 CORPUS_SKIP = {"__pycache__", ".venv", "node_modules", ".jj", ".git", "opstree", "xd1",
                ".mutwork", "references"}
-READER_NAMES = {"rows", "row", "rows_of", "rows_of_text", "rows_old", "rows_strict",
-                "row_strict", "split_py", "parse_rows", "rows_cstyle", "rows_init",
-                "rows_tmap", "rows_rd", "rows_witem", "rows_cfo", "rows_kern", "rows_opt",
-                "rows_misc", "rows_wmma", "rows_buft", "rows_hip", "rows_kern2", "rows_idx",
-                "rows_all", "printed_rows", "bend_rows", "oracle_rows", "read_rows", "rowset"}
-
-
 def load(name, path):
   spec = importlib.util.spec_from_file_location(name, str(path))
   m = importlib.util.module_from_spec(spec)
@@ -72,8 +65,12 @@ def load(name, path):
 
 
 def py_files():
+  # An ABSOLUTE entry is used as-is, which is what lets `--self-test` point the walk at a scratch
+  # directory and exercise the real discovery path. Without it the self-test's plant was walked as
+  # `REPO + "/private/var/..."`, found nothing, and reported a false FAIL -- a self-test that
+  # cannot see its own plant.
   for top in CORPUS_ROOTS:
-    base = REPO / top
+    base = pathlib.Path(top) if os.path.isabs(top) else REPO / top
     for root, dirs, files in os.walk(base):
       dirs[:] = sorted(d for d in dirs
                        if d not in CORPUS_SKIP
@@ -100,20 +97,6 @@ def read_registry():
       raise ValueError(f"{REGISTRY.name}:{i} has {len(f)} fields, expected 5 "
                        f"(file, func, kind, signature, contract)")
     out[(f[0], f[1])] = (f[2], f[3], "\t".join(f[4:]))
-  return out
-
-
-def defs_in(path):
-  """[(func, lineno, node, src)] for every READER-SHAPED def in one file."""
-  try:
-    src = path.read_text()
-    tree = ast.parse(src)
-  except (SyntaxError, OSError, UnicodeDecodeError):
-    return []
-  out = []
-  for n in ast.walk(tree):
-    if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in READER_NAMES:
-      out.append((n.name, n.lineno, n, src))
   return out
 
 
@@ -150,11 +133,28 @@ def bindings_in(path, func):
   return out
 
 
-def fingerprint(fn, shapes):
-  """Kept as a name because a reader of this file will look for one. It is the CENSUS's, called
-  through -- three implementations of a fingerprint is three chances for the registry and the
-  guard to disagree about what a reader does."""
-  return load("reader_fork_census", CENSUS).behavior_fingerprint(fn)
+def _measure(census):
+  """{(rel, func): measured} over CORPUS_ROOTS, using the census's own candidate discovery and
+  classifier. `_scan` is the same walk the guard's R1 loop uses, so the self-test exercises the
+  real code path rather than a re-implementation of it."""
+  return {(rel, func): census.measure(rel, func, line, seg, node)
+          for rel, func, line, seg, node in census.candidates()}
+
+
+def _scan(roots=None):
+  """{(rel, func)} for every reader the census finds. `roots` overrides the census's corpus --
+  and it must override the CENSUS's, not this file's: the census owns `candidates()`, so setting
+  `reader-guard.CORPUS_ROOTS` alone pointed the walk at the real tree and the self-test's plant was
+  never looked at. That is the second time this self-test failed on its own harness."""
+  census = load("reader_fork_census", CENSUS)
+  saved = census.CORPUS_ROOTS
+  if roots is not None:
+    census.CORPUS_ROOTS = roots
+  try:
+    return {(rel, func) for rel, func, line, seg, node in census.candidates()
+            if census.measure(rel, func, line, seg, node)["contract"] in census.DRIFT_FAMILIES}
+  finally:
+    census.CORPUS_ROOTS = saved
 
 
 def self_test(reg):
@@ -196,20 +196,27 @@ def self_test(reg):
   # differently and answer identically, and a fingerprint that fires on a reformat is a
   # fingerprint that gets switched off.
   #
-  # The plant appends `+ ['']` to the returned list, which adds an EMPTY row name -- and an empty
-  # name is precisely the `""` phantom `rebase-gate.py`'s docstring records removing 14 banners for.
-  # So the plant is a REAL bug of the shape this project has already paid for, and an earlier
-  # version of this self-test used a comment instead and reported a false pass for two runs.
+  # The plant adds ONE row the lane never contained -- `phantom=y` -- which is the shape of bug this
+  # project has paid for twice: a reader that manufactures a name, and GUARD 4 reading a shared
+  # name as EVIDENCE.
+  #
+  # ⚠ THE PLANT IS `phantom=y` AND NOT `''` ON PURPOSE, and the reason is a real limitation of this
+  # fingerprint rather than a detail of the test. A LINE-FILTER reader returns whole lines and this
+  # harness re-parses them with the CANONICAL parser to compare them, so a difference visible ONLY
+  # on lines `rows()` rejects -- an extra banner, an extra blank -- is INVISIBLE to the signature.
+  # An earlier version planted `''` and the self-test reported a false PASS for two runs: adding an
+  # empty name to a list of whole lines changes nothing the canonical parser can see. The blind spot
+  # is recorded rather than hidden: for a line filter, the fingerprint pins what its lines MEAN, not
+  # which lines it passed through. Converting these readers -- which is what the registry's 19
+  # import-form rows did -- removes the blind spot by removing the re-parse.
   body = ast.get_source_segment(src, node)
   ret = next((ln for ln in body.splitlines() if ln.strip().startswith("return ")), None)
   if ret is None:
     cases.append(("R2 red (a behaviour change is caught)", False))
   else:
-    planted_body = body.replace(ret, ret.rstrip() + " + ['']", 1)
-    red = src.replace(body, planted_body, 1)
-    got = fingerprint_of(red)
-    armed = fingerprint_of(src)
-    cases.append((f"R2 red (a behaviour change is caught; planted reader {rel}:{func})",
+    red = src.replace(body, body.replace(ret, ret.rstrip() + " + ['phantom=y']", 1), 1)
+    got, armed = fingerprint_of(red), fingerprint_of(src)
+    cases.append((f"R2 red (a manufactured row is caught; planted {rel}:{func})",
                   got is not None and armed is not None and got != armed))
   # R1 RED: an unregistered reader is exactly "a candidate in a drift family with no registry
   # row", which is the state a 157th reader arrives in. Asserted against the live registry rather
@@ -229,6 +236,22 @@ def self_test(reg):
                 not unbound))
   # The registry is not empty, and the control is in it. An absent registry is a failure, not an
   # empty result -- that distinction is the whole reason read_registry() returns None.
+
+  # R1 RED, ON A REAL TREE DIRECTORY. The 157th reader is a new FILE, so the check has to create
+  # one -- in a scratch corpus under tempfile, with the registry rewritten to match, and then
+  # require the R1 loop to name it. Creating it in `.agents/slop/` would be creating a fork in the
+  # live tree to prove the guard works, which is the one thing this unit must not do while six
+  # other units are working here.
+  import tempfile
+  with tempfile.TemporaryDirectory() as td:
+    planted = pathlib.Path(td) / "planted-fork.py"
+    planted.write_text('"""A planted fork."""\n\n\ndef rows(text):\n  return {}\n')
+    found = _scan(roots=(td,))
+    named = (str(planted), "rows") in found
+    # And the registry must NOT have a row for it, which is what makes it a finding.
+    cases.append(("R1 red (a NEW forked reader in a NEW file is found by the scan)", named))
+    cases.append(("R1 red (...and has no registry row, so the guard reports it)",
+                  (str(planted), "rows") not in reg))
   cases.append(("registry present and non-empty", bool(reg)))
   cases.append(("control registered",
                 (str((HERE / "rebase-gate.py").relative_to(REPO)), "rows") in reg))
@@ -269,12 +292,9 @@ def main():
   # switched off, and a guard that is switched off has cost more than the 156 readers did.
   # The census already draws the line -- three families answer a row question and the rest do not
   # -- so the guard asks the census.
-  measured = {}
-  for rel, func, line, seg, node in census.candidates():
-    measured[(rel, func)] = census.measure(rel, func, line, seg, node)
+  measured = _measure(census)
 
   findings = []
-  notes = []
   seen = set()
   # `rebase-gate.py` IS the control. It defines the reader every other row is measured against,
   # so asking it to import itself (R3) or to match a signature it is the source of (R2) is the

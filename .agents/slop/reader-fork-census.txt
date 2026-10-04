@@ -10,7 +10,8 @@ CANONICAL SIGNATURE, by CALLING the gate's rows()
   F5  single-space gap         'ctl single half'                            -> []
   F6  TAB gap                  'ctl\ttab\thalf'                             -> []
 
-BY CONTRACT -- the DRIFT DENOMINATOR is the two families that answer a row question
+BY CONTRACT -- the DRIFT DENOMINATOR is the three families that answer a row question
+   (text->mapping, line->answer, value->fold); everything below them is not one
   not-single-arg     142   drifted=0   (not a row reader: excluded from drift)
   NOT-COMPARABLE     75    drifted=0   (not a row reader: excluded from drift)
   runner             68    drifted=0   (not a row reader: excluded from drift)

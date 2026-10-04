@@ -4614,7 +4614,42 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1219  def placeholder_like
 
-# TODO(p3) ops.py:1224  def set
+# PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). Four `set_*` rows
+# byte-identical to CPython on all three lanes via `sh .agents/slop/ops-set-gate.sh`,
+# with TWO negative controls that are the two bugs below.
+#
+#   # set is store+end+after
+#   def set(self:UOp, val:UOp|ConstType, end:UOp|tuple[UOp, ...]|list[UOp]=()) -> UOp:
+#     return self.src[0].after(self.store(val).end(*argfix(end)))
+#
+# Upstream's own comment says the whole of it, so the def has no logic: it is a
+# COMPOSITION, and the only things a row can test are that the three pieces are
+# wired in this ORDER and that `argfix`'s empty arm is honoured. The number of
+# `end` operands is the only input that varies, so it is the only thing the family
+# varies. `argfix` is already ported as `argfix1`/`argfix2`/`argfix_seq`
+# (helpers.bend:539-546), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
+#
+# TWO BUGS, AND BOTH COMPILED.
+#
+#   THE STALE ARENA. The first draft was
+#       +e = UOp.end(ar, Found.i(s), ...)          -- `ar`, the CALLER's
+#   and `UOp.store` MINTS, so `s` lives in a GROWN arena and `Found.i(s)` read out
+#   of `ar` indexes the wrong arena. It typechecked and answered
+#   `Ops.AFTER(Ops.BUFFER Ops.AFTER)` where CPython answers
+#   `Ops.AFTER(Ops.BUFFER Ops.STORE)`. That is the failure mode bend2-constraints
+#   names, and `UOp.copy_to_device` above is the fix in one line: thread the
+#   previous step's `Found.ar`. The first negative control reintroduces it.
+#
+#   THE SUBJECT IS A STORE. The first fixture was a BUFFER and CPython raised
+#   `IndexError: tuple index out of range`, because `set` is called ON a store and
+#   `src[0]` is the store's target. A fixture that does not reach the code is a
+#   fixture that cannot fail, and this one looked like a red gate.
+#
+# AND A PRINTER THAT WAS THREE DRAFTS WORSE THAN IT NEEDED TO BE: a recursive
+# `deep` needing a closer that knows its own depth, a `Bool.pick` for the first
+# separator, and a fold that opened a paren in the accumulator. The file already
+# had the shape under another name (`Rng.srcops.go`'s `+first` flag). Grep for
+# the IDIOM before writing the INSTANCE.
 #   # set is store+end+after
 
 # TODO(p3) ops.py:1229  def param
@@ -7698,10 +7733,19 @@ def UOp.set.end(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
 # `val` is a node, because `argfix`/`UOp.const` turns a bare Python int into one
 # before this point and the port takes the CONST. The `set_val_int` row is what
 # proves the CAST was folded upstream of here rather than here.
+# THE ARENA IS THREADED, NOT REUSED, and the first draft reused it:
+#   +e = UOp.end(ar, Found.i(s), ...)   -- `ar`, the CALLER's
+# `UOp.store` MINTS, so `s` lives in a GROWN arena and `Found.i(s)` read out of
+# `ar` is an index into the wrong arena. It typechecked and answered
+# `Ops.AFTER(Ops.BUFFER Ops.AFTER)` where CPython answers
+# `Ops.AFTER(Ops.BUFFER Ops.STORE)` -- the stale node read back as whatever the
+# caller's arena holds at that index, which is exactly the failure mode
+# `bend2-constraints` names and `UOp.copy_to_device` above demonstrates the fix
+# for. Every step takes the PREVIOUS step's `Found.ar`.
 def UOp.set(+ar: Arena, +self: U32, val: U32, end: Maybe<&2, List<&2, U32>>) -> Found:
   +s = UOp.store(ar, self, val, None{})
-  +e = UOp.end(ar, Found.i(s), UOp.set.end(end))
-  UOp.after(Found.ar(e), Arena.src(ar, self, 0), [Found.i(e)])
+  +e = UOp.end(Found.ar(s), Found.i(s), UOp.set.end(end))
+  UOp.after(Found.ar(e), Arena.src(Found.ar(s), self, 0), [Found.i(e)])
 
 # ==== the `set_*` fixture and rows =========================================
 #
@@ -7715,6 +7759,12 @@ def UOp.set(+ar: Arena, +self: U32, val: U32, end: Maybe<&2, List<&2, U32>>) -> 
 #   4 CONST 7   the value the rows store
 #   5 CONST 9   the first end
 #   6 CONST 3   the second end
+#
+# THE PRINTER IS TWO LEVELS DEEP, not the oracle's three, and that is a fact about
+# the ROW rather than a gap: the answer is an AFTER over the END over the STORE, and
+# naming the answer and its DIRECT children already separates all four answers. The
+# oracle prints to the leaves because CPython's `deep` is a one-liner and there the
+# depth was free. A printer deeper than the rows need is cost for nothing.
 #
 # `set_end_none` and `set_end_one` are the PAIR that makes `argfix`'s empty arm
 # load-bearing: with no end the STORE's src count is one and with one end it is two,
@@ -7743,7 +7793,24 @@ def set_ar() -> Arena:
 # separator, and a fold that opened a paren in the accumulator. The file already had
 # the right shape under a different name, which is the recurring lesson of this
 # session: grep for the IDIOM before writing the INSTANCE.
-def set_deep(+ar: Arena, i: U32) -> String: Rng.srcops.seeded(ar, Arena.srcs(ar, i))
+# THE NODE ITSELF IS PART OF THE ROW. `Rng.srcops.seeded(ar, xs)` prints the ops of
+# a SRC LIST, so passing `Arena.srcs(ar, i)` answers the CHILDREN and the answer's own
+# op never appears -- the first run printed `Ops.BUFFER Ops.AFTER` where CPython
+# prints `AFTER(...)`, and the missing AFTER is the whole of what the row is for.
+# The concat puts the node's own name in front of its children.
+# NO TRAILING SEPARATOR, and the first draft emitted one -- `Ops.AFTER(Ops.BUFFER
+# Ops.STORE )` against CPython's `Ops.AFTER(Ops.BUFFER Ops.STORE)`. The separator is
+# appended BEFORE each element rather than after, which is the same thing
+# `Rng.srcops.go`'s `+first` flag does and for the same reason.
+def set_deep.go(+ar: Arena, xs: List<&2, U32>, +acc: String, first: Bool) -> String:
+  match xs:
+    case Nil{}: acc
+    case +i <> t:
+      set_deep.go(ar, t, Bool.pick(String, first, String.concat([acc, Ops.name(Arena.op(ar, i))]),
+        String.concat([acc, " ", Ops.name(Arena.op(ar, i))])), False{})
+
+def set_deep(+ar: Arena, +i: U32) -> String:
+  String.concat([Ops.name(Arena.op(ar, i)), "(", set_deep.go(ar, Arena.srcs(ar, i), "", True{}), ")"])
 
 def set_row(nm: String, +ar: Arena, subj: U32, val: U32, end: Maybe<&2, List<&2, U32>>) -> IO(Unit):
   +f = UOp.set(ar, subj, val, end)
@@ -7753,9 +7820,8 @@ def set_rows(+ar: Arena) -> IO(Unit):
   do IO<Unit>:
     a : Unit <- set_row("set_end_none", ar, 3, 4, None{})
     b : Unit <- set_row("set_end_one", ar, 3, 4, Some{[5]})
-    c : Unit <- set_row("set_end_seq", ar, 3, 4, Some{[5, 6]})
-    d : Unit <- set_row("set_val_int", ar, 3, 4, None{})
-    set_row("set_two_stores", ar, 3, 4, None{})
+    c : Unit <- set_row("set_end_two", ar, 3, 4, Some{[5, 6]})
+    set_row("set_end_two_src", ar, 3, 4, Some{[6, 5]})
 
 def main() -> IO(Unit):
   do IO<Unit>:

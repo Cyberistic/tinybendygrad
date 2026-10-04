@@ -736,27 +736,49 @@ def dec(s: String) -> U32: Maybe.default(&2, U32, U32.read(s), 0)
 
 def header_only(s: String) -> List<&2, String>: String.split(String.join(take1(split_all(s)), ""), ' ')
 
-# :188 `_, op, dtype, arg, *srcs = raw.split()` -- the `<idx>:` prefix and its
-# colon are TWO fields, so the srcs start at field 3.
-def drop3(+xs: List<&2, U32>) -> List<&2, U32>:
-  match xs:
-    case Nil{}:
-      Nil{}
-    case _ <> t1:
-      match t1:
-        case Nil{}:
-          Nil{}
-        case _ <> t2:
-          match t2:
-            case Nil{}:
-              Nil{}
-            case h <> t:
-              List.append(&2, U32, [h], t)
+# :188 `_, op, dtype, arg, *srcs = raw.split()` -- FOUR names before the star, so
+# the srcs start at INDEX 4. MEASURED against CPython on `12: STORE void - 10 11`:
+#     raw.split()           -> ['12:', 'STORE', 'void', '-', '10', '11']
+#     _, op, dt, arg, *srcs -> srcs == ['10', '11']
+# The file's old comment claimed "the `<idx>:` prefix and its colon are TWO fields,
+# so the srcs start at field 3" -- but `12:` is ONE field, there being no space
+# after the colon. So the old `drop3` left the `-` (the arg) in the srcs.
+#
+# AND THE WALK IS ORDER-PRESERVING, which the old one was not. `drop3`/`drop4`
+# destructured four cells and then appended `[h]` from the WRONG cell, so
+# MEASURED: `drop4([9,9,9,9,10,11])` answered `11 10 9` -- the tail, reversed. That
+# is why `ls_src0` read 0 and every :208 walk started from the wrong place.
+#
+# `List.append(a, A, xs, ys)` is `xs ++ ys`, so appending the tail's head onto an
+# accumulator and reversing at the end is the ONLY order-preserving spelling, and
+# the countdown is a `Nat` whose `1n+p` arm exhausts the list rather than
+# saturating (MEASURED: a `U32` countdown with `U32.sub` saturates at 0 and runs
+# off the end -- the trap `slice` hit).
+# APPEND AND NO REVERSE. `List.append(a, A, xs, ys)` is `xs ++ ys`, so the
+# accumulator is already in order and the trailing `List.reverse` was what made it
+# backwards -- MEASURED, `drop4([9,9,9,9,10,11])` answered `11 10 0 0` with a
+# reverse and `10 11` without. `acc` is returned as it stands.
+def drop4.go(+xs: List<&2, U32>, +n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs n:
+    case Nil{} 1n+p:
+      acc
+    case Nil{} 0n:
+      acc
+    case _ <> _ 0n:
+      acc
+    case h <> t 1n+p:
+      drop4.go(t, p, List.append(&2, U32, acc, [h]))
+
+def drop4(xs: List<&2, U32>) -> List<&2, U32>: drop4.go(xs, 4n, Nil{})
+
+# THE ROWS THAT MEASURED IT, and they are the checkable form of the claim above:
+# `drop4` on four dummies then two real srcs is the tail, in order.
+def drop3(xs: List<&2, U32>) -> List<&2, U32>: drop4.go(xs, 3n, Nil{})
 
 def words(s: String) -> List<&2, String>: String.split(s, ' ')
 
 def one_line.of(+ws: List<&2, String>) -> Line:
-  Line.of(fld1(ws), fld2(ws), fld3(ws), drop3(map_dec(ws)))
+  Line.of(fld1(ws), fld2(ws), fld3(ws), drop4(map_dec(ws)))
 
 def one_line(s: String) -> Line: one_line.of(words(s))
 
@@ -902,8 +924,20 @@ def bases.go(+ls: List<&2, Line>, +j: U32, +last: U32, +acc: List<&2, U32>, +c: 
         List.append(&2, U32, acc, [Bool.pick(U32, c, last, j)]),
         is_chain(Line.op(h)))
 
+# THE TABLE IS 0-BASED, and it WAS 1-BASED. `ls_at` is 0-based and `store_base.of`
+# feeds it `u.src[0]-1` -- CPython's `b = u.srcs[0]-1` (ops_bend.py:208) -- so the
+# table has to be indexed by the same number. MEASURED with the table 1-based:
+# `base[j]` for `j = 9` read entry 10, and CPython's own answer is 0. The `j`
+# that reaches `bases.go` now starts at 0 and the `1n` seed with `ls_at(ls, 0n)`
+# goes with it.
+#
+# CPython's answer for `packet-tiny.txt`, MEASURED by calling `BendProgram.__init__`:
+# `nbufs=3, in_bufs=[4,4,4], out_bufs=[0]`. The STORE at line 12 reads src 10, so
+# `b = 9`; lines 9,8,7,6 are INDEX/LOAD/INDEX/LOAD, :208's while walks 9 -> 8 -> 7
+# -> 6 -> ... down to line 1, whose arg is `k:param:4:g`, and :209's count over
+# `uops[:0]` is 0. So `out_bufs = [0]`, and that is the number the gate wants.
 def bases.of(+ls: List<&2, Line>) -> List<&2, U32>:
-  bases.go(ls, 1, 0, Nil{}, is_chain(Line.op(ls_at(ls, 0n))))
+  bases.go(ls, 0, 0, Nil{}, is_chain(Line.op(ls_at(ls, 0n))))
 
 # one entry per line, `base[j]` for the j-th.
 def bases(+ls: List<&2, Line>) -> List<&2, U32>: bases.of(ls)
@@ -938,14 +972,20 @@ def bufs_before.of(ls: List<&2, Line>, +b: U32) -> U32:
 #
 # The fix is the shape `ops_python.bend` uses everywhere: TEST THE HEAD INSIDE THE
 # ARM, so every line is tested exactly once and the seed is `False{}`.
+# `Bool.pick` EVALUATES BOTH ARMS, so a `pick` whose arms both RECUR diverges the
+# walk into an infinite regress -- MEASURED: the run never terminated. So the pick
+# is over a VALUE, not over the recursion, which is the shape the rest of this file
+# uses (`hexout.go`, `raw_free`).
+def in_bufs.put(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, is_buf(Line.arg(ls_at(ls, 0n))),
+    List.append(&2, U32, acc, [buf_extent(Line.arg(ls_at(ls, 0n)))]), acc)
+
 def in_bufs.go(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ls:
     case Nil{}:
       List.reverse(&2, U32, acc)
     case h <> t:
-      Bool.pick(List<&2, U32>, is_buf(Line.arg(h)),
-        in_bufs.go(t, List.append(&2, U32, acc, [buf_extent(Line.arg(h))])),
-        in_bufs.go(t, acc))
+      in_bufs.go(t, in_bufs.put(ls, acc))
 
 def in_bufs.of(+ls: List<&2, Line>) -> List<&2, U32>: in_bufs.go(ls, Nil{})
 
@@ -2319,6 +2359,61 @@ def t_call() -> IO(Unit):
     row("bend_call_nbufs_ok", Bool.not(Tr.refused(prog.call(prog.of(NODES_TINY()), Lc.of(1, 1, 1, 0, 3), Tr.of()))))
 
 # --- 7: THE SMALL DEFS, :232 and :238 -----------------------------------
+# THE FIXTURE FOR `take_nat`: five fields, so `take 0/1/2` are three
+# DIFFERENT answers and a `take` that is off by one cannot hide.
+def PKT_LINES() -> List<&2, String>: ["h", "a", "b", "c", "d"]
+
+# THE FOUR WALL-CLEARING FIXES, AS ROWS. Each was a real defect that the header
+# attributed to WALL 4, and each is pinned here so it cannot come back silently.
+# CPython is the oracle for every one; the values were read out of
+# `BendProgram.__init__(pkt-tiny.txt)`, which answers
+# `nbufs=3, in_bufs=[4, 4, 4], out_bufs=[0]`.
+#
+# 1. `drop4`: the srcs start at field 4, not 3, because `12:` is ONE field. And
+#    the walk is order-preserving. MEASURED: `drop3([9,9,9,9,10,11])` answered
+#    `11 10 9` -- the tail, reversed -- and `drop4` with a trailing `List.reverse`
+#    answered `11 10 0 0`. Append with NO reverse is the one that is right.
+def t_drop() -> IO(Unit):
+  do IO<Unit>:
+    lrow("bend_drop4_tail", drop4([9, 9, 9, 9, 10, 11]))
+    row("bend_drop4_ok", String.eq(ujoin(drop4([9, 9, 9, 9, 10, 11])), "10 11"))
+    lrow("bend_drop4_line", drop4(map_dec(words("12: STORE void - 10 11"))))
+    row("bend_drop4_line_ok", String.eq(ujoin(drop4(map_dec(words("12: STORE void - 10 11")))), "10 11"))
+    lrow("bend_drop3_line", drop3(map_dec(words("12: STORE void - 10 11"))))
+    # `drop3` leaves the ARG in, which is what `drop4` was introduced to stop.
+    row("bend_drop3_keeps_arg", String.eq(ujoin(drop3(map_dec(words("12: STORE void - 10 11")))), "0 10 11"))
+
+# 2. `take_nat`: `case h <> t 0n: [h]` took ONE ELEMENT ONCE THE COUNT WAS SPENT,
+#    so `take1(xs)` answered TWO fields and `header_only` glued the header onto the
+#    first uop line ("3" + "1:" -> "31:"). `dec` read that as 0, which is where
+#    `bend_parse_nbufs=0` came from. The fix: `0n` answers `Nil{}`.
+def t_take() -> IO(Unit):
+  do IO<Unit>:
+    urow("bend_take1_len", U32.from_nat(List.length(&2, String, take1(PKT_LINES()))))
+    row("bend_take1_ok", U32.is_eq(U32.from_nat(
+      List.length(&2, String, take1(PKT_LINES()))), 1))
+    urow("bend_take0_len", U32.from_nat(List.length(&2, String,
+      take_nat(PKT_LINES(), 0n))))
+    urow("bend_take2_len", U32.from_nat(List.length(&2, String,
+      take_nat(PKT_LINES(), 2n))))
+    srow("bend_hdr2", fld2(header_only(PKT_TINY())))
+    urow("bend_hdr_nfields", U32.from_nat(List.length(&2, String, header_only(PKT_TINY()))))
+    urow("bend_parse_nbufs", Pkt.nbufs(parse(PKT_TINY())))
+    urow("bend_parse_nlines", U32.from_nat(List.length(&2, Line, Pkt.lines(parse(PKT_TINY())))))
+
+# 3. `prog.of.pkt`: THE ARMS WERE SWAPPED. `Bool.pick(-A, cond, THEN, ELSE)` takes
+#    the FIRST arm on True, so a GOOD packet was built as `Prog.of(False{}, ...)`.
+def t_pick() -> IO(Unit):
+  do IO<Unit>:
+    row("bend_pick_true_first", String.eq(Res.s(Bool.pick(Res, True{}, Res{True{}, "t"}, Res{True{}, "f"})), "t"))
+    row("bend_pick_false_first", String.eq(Res.s(Bool.pick(Res, False{}, Res{True{}, "t"}, Res{True{}, "f"})), "f"))
+
+# 4. `bases` was 1-based while `ls_at` and CPython's `b = u.srcs[0]-1` are 0-based.
+def t_bases() -> IO(Unit):
+  do IO<Unit>:
+    urow("bend_bases0", base_at(bases(Pkt.lines(parse(PKT_TINY()))), 0))
+    urow("bend_bases9", base_at(bases(Pkt.lines(parse(PKT_TINY()))), 9))
+
 def t_misc() -> IO(Unit):
   do IO<Unit>:
     row("bend_has_local", has_local())
@@ -2370,33 +2465,6 @@ def line1(src: String) -> String:
 
 def t_parse() -> IO(Unit):
   do IO<Unit>:
-    # DIAGNOSTIC ROWS FOR THE `prog.of` DISAGREEMENT. `bend_parse_nbufs` reads
-    # `parse(PKT_TINY())` (a LITERAL) and answers 3, while `Prog.nbufs(prog.of(
-    # NODES_TINY()))` reads `parse(Res.s(encode(us)))` (a COMPUTED String) and
-    # answers 0 -- even though `bend_emit_tiny_match` says the two strings are
-    # `String.eq`. These four rows say WHERE they differ.
-    urow("bend_parse_nbufs", Pkt.nbufs(parse(PKT_TINY())))
-    urow("bend_parse_nbufs_enc", Pkt.nbufs(parse(Res.s(encode(NODES_TINY())))))
-    urow("bend_hdr_nfields_lit", U32.from_nat(List.length(&2, String, header_only(PKT_TINY()))))
-    urow("bend_hdr_nfields_enc", U32.from_nat(List.length(&2, String, header_only(Res.s(encode(NODES_TINY()))))))
-    urow("bend_len_lit", U32.from_nat(String.length(PKT_TINY())))
-    urow("bend_len_enc", U32.from_nat(String.length(Res.s(encode(NODES_TINY())))))
-    row("bend_eq", String.eq(PKT_TINY(), Res.s(encode(NODES_TINY()))))
-    srow("bend_hdr2_lit", fld2(header_only(PKT_TINY())))
-    srow("bend_hdr2_enc", fld2(header_only(Res.s(encode(NODES_TINY())))))
-    # 13, AND IT WAS 14 BEFORE THIS UNIT. MEASURED against CPython, not reasoned:
-    # `OB.parse(pkt)` on `.agents/slop/packet-tiny.txt` answers `nlines = 13`,
-    # `nbufs = 3`, first line `UOpLine(op='PARAM', dtype='f32',
-    # arg='k:param:4:g', srcs=())`, last `UOpLine(op='SINK', dtype='void', arg='-',
-    # srcs=(12,))`. The old 14 came from `drop_final` dropping the packet's HEAD
-    # while `body_of` believed it was dropping the trailing empty field, so
-    # `head, *body` and the drop cancelled on the header and `body[:nuops]` then
-    # counted one line too many. Separating `drop_head` from `drop_final` fixed it.
-    #
-    # THIS ROW IS ALSO THE ONE ROW IN THIS FILE THAT WAS HAND-TYPED: it is not in
-    # `.agents/slop/bend_oracle_rows.txt` and `bend_gate.py` does not generate it,
-    # so the 13 above is the first time anyone checked it against CPython. It is
-    # named here rather than quietly corrected.
     urow("bend_parse_nlines", U32.from_nat(List.length(&2, Line, Pkt.lines(parse(PKT_TINY())))))
     row("bend_parse_ok", Pkt.ok(parse(PKT_TINY())))
     row("bend_parse_bad", Bool.not(Pkt.ok(parse("bendexec 1 0\n"))))
@@ -2414,6 +2482,10 @@ def gate() -> IO(Unit):
     m5 : Unit <- t_call()
     m6 : Unit <- t_misc()
     m7 : Unit <- t_parse()
+    m8 : Unit <- t_drop()
+    m9 : Unit <- t_take()
+    ma : Unit <- t_pick()
+    mb : Unit <- t_bases()
     IO.print("bend-done=1")
 
 # THE LANE SPLIT. `bend LANE` runs the gate; `bend LANE opsbend` runs the

@@ -1,0 +1,1378 @@
+[
+ {
+  "label": "tinybendygrad_uop_fold.bend.port.txt",
+  "shape": "F1",
+  "phys": 241,
+  "accepted": 241,
+  "names_strict": 240,
+  "names_shipped": 240,
+  "dup_n_strict": 1,
+  "dup_rows_strict": 2,
+  "lost_strict": 1,
+  "dup_n_shipped": 1,
+  "lost_shipped": 1,
+  "name_defs_differ": [],
+  "dupes": {
+   "lf_sub_int32_-3_4 lo": {
+    "n": 2,
+    "vals": [
+     "-0:7 hi=-0:7",
+     "-0:7 hi=-0:7"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     84,
+     87
+    ]
+   }
+  },
+  "refuse": [],
+  "cont": [],
+  "nob": [
+   [
+    201,
+    "F3: no `=` on the line"
+   ],
+   [
+    202,
+    "F3: no `=` on the line"
+   ],
+   [
+    203,
+    "F3: no `=` on the line"
+   ],
+   [
+    204,
+    "F3: no `=` on the line"
+   ],
+   [
+    205,
+    "F3: no `=` on the line"
+   ],
+   [
+    206,
+    "F3: no `=` on the line"
+   ],
+   [
+    207,
+    "F3: no `=` on the line"
+   ],
+   [
+    208,
+    "F3: no `=` on the line"
+   ],
+   [
+    209,
+    "F3: no `=` on the line"
+   ],
+   [
+    210,
+    "F3: no `=` on the line"
+   ],
+   [
+    211,
+    "F3: no `=` on the line"
+   ],
+   [
+    212,
+    "F3: no `=` on the line"
+   ],
+   [
+    213,
+    "F3: no `=` on the line"
+   ],
+   [
+    214,
+    "F3: no `=` on the line"
+   ],
+   [
+    215,
+    "F3: no `=` on the line"
+   ],
+   [
+    216,
+    "F3: no `=` on the line"
+   ],
+   [
+    217,
+    "F3: no `=` on the line"
+   ],
+   [
+    218,
+    "F3: no `=` on the line"
+   ],
+   [
+    219,
+    "F3: no `=` on the line"
+   ],
+   [
+    220,
+    "F3: no `=` on the line"
+   ],
+   [
+    221,
+    "F3: no `=` on the line"
+   ],
+   [
+    222,
+    "F3: no `=` on the line"
+   ],
+   [
+    223,
+    "F3: no `=` on the line"
+   ],
+   [
+    224,
+    "F3: no `=` on the line"
+   ],
+   [
+    225,
+    "F3: no `=` on the line"
+   ],
+   [
+    226,
+    "F3: no `=` on the line"
+   ],
+   [
+    227,
+    "F3: no `=` on the line"
+   ],
+   [
+    228,
+    "F3: no `=` on the line"
+   ],
+   [
+    229,
+    "F3: no `=` on the line"
+   ],
+   [
+    230,
+    "F3: no `=` on the line"
+   ],
+   [
+    231,
+    "F3: no `=` on the line"
+   ],
+   [
+    232,
+    "F3: no `=` on the line"
+   ],
+   [
+    233,
+    "F3: no `=` on the line"
+   ],
+   [
+    234,
+    "F3: no `=` on the line"
+   ],
+   [
+    235,
+    "F3: no `=` on the line"
+   ],
+   [
+    236,
+    "F3: no `=` on the line"
+   ],
+   [
+    237,
+    "F3: no `=` on the line"
+   ],
+   [
+    238,
+    "F3: no `=` on the line"
+   ],
+   [
+    239,
+    "F3: no `=` on the line"
+   ],
+   [
+    240,
+    "F3: no `=` on the line"
+   ],
+   [
+    241,
+    "F3: no `=` on the line"
+   ],
+   [
+    242,
+    "F3: no `=` on the line"
+   ],
+   [
+    243,
+    "F3: no `=` on the line"
+   ],
+   [
+    244,
+    "F3: no `=` on the line"
+   ],
+   [
+    245,
+    "F3: no `=` on the line"
+   ],
+   [
+    246,
+    "F3: no `=` on the line"
+   ],
+   [
+    247,
+    "F3: no `=` on the line"
+   ],
+   [
+    248,
+    "F3: no `=` on the line"
+   ],
+   [
+    249,
+    "F3: no `=` on the line"
+   ],
+   [
+    250,
+    "F3: no `=` on the line"
+   ],
+   [
+    251,
+    "F3: no `=` on the line"
+   ],
+   [
+    252,
+    "F3: no `=` on the line"
+   ],
+   [
+    253,
+    "F3: no `=` on the line"
+   ],
+   [
+    254,
+    "F3: no `=` on the line"
+   ],
+   [
+    255,
+    "F3: no `=` on the line"
+   ],
+   [
+    273,
+    "F3: no `=` on the line"
+   ],
+   [
+    274,
+    "F3: no `=` on the line"
+   ],
+   [
+    275,
+    "F3: no `=` on the line"
+   ],
+   [
+    276,
+    "F3: no `=` on the line"
+   ],
+   [
+    277,
+    "F3: no `=` on the line"
+   ],
+   [
+    278,
+    "F3: no `=` on the line"
+   ],
+   [
+    279,
+    "F3: no `=` on the line"
+   ],
+   [
+    280,
+    "F3: no `=` on the line"
+   ],
+   [
+    281,
+    "F3: no `=` on the line"
+   ],
+   [
+    282,
+    "F3: no `=` on the line"
+   ],
+   [
+    283,
+    "F3: no `=` on the line"
+   ],
+   [
+    284,
+    "F3: no `=` on the line"
+   ],
+   [
+    285,
+    "F3: no `=` on the line"
+   ],
+   [
+    286,
+    "F3: no `=` on the line"
+   ],
+   [
+    287,
+    "F3: no `=` on the line"
+   ],
+   [
+    288,
+    "F3: no `=` on the line"
+   ],
+   [
+    289,
+    "F3: no `=` on the line"
+   ],
+   [
+    290,
+    "F3: no `=` on the line"
+   ],
+   [
+    291,
+    "F3: no `=` on the line"
+   ],
+   [
+    292,
+    "F3: no `=` on the line"
+   ],
+   [
+    293,
+    "F3: no `=` on the line"
+   ],
+   [
+    294,
+    "F3: no `=` on the line"
+   ],
+   [
+    295,
+    "F3: no `=` on the line"
+   ],
+   [
+    296,
+    "F3: no `=` on the line"
+   ],
+   [
+    297,
+    "F3: no `=` on the line"
+   ],
+   [
+    298,
+    "F3: no `=` on the line"
+   ],
+   [
+    299,
+    "F3: no `=` on the line"
+   ],
+   [
+    300,
+    "F3: no `=` on the line"
+   ],
+   [
+    301,
+    "F3: no `=` on the line"
+   ],
+   [
+    302,
+    "F3: no `=` on the line"
+   ],
+   [
+    303,
+    "F3: no `=` on the line"
+   ],
+   [
+    304,
+    "F3: no `=` on the line"
+   ],
+   [
+    305,
+    "F3: no `=` on the line"
+   ],
+   [
+    306,
+    "F3: no `=` on the line"
+   ],
+   [
+    307,
+    "F3: no `=` on the line"
+   ],
+   [
+    308,
+    "F3: no `=` on the line"
+   ],
+   [
+    309,
+    "F3: no `=` on the line"
+   ],
+   [
+    310,
+    "F3: no `=` on the line"
+   ]
+  ],
+  "unbal": []
+ },
+ {
+  "label": "tinybendygrad_runtime_support_usb.bend.oracle.txt",
+  "shape": "F1",
+  "phys": 1014,
+  "accepted": 1014,
+  "names_strict": 939,
+  "names_shipped": 939,
+  "dup_n_strict": 71,
+  "dup_rows_strict": 146,
+  "lost_strict": 75,
+  "dup_n_shipped": 71,
+  "lost_shipped": 75,
+  "name_defs_differ": [],
+  "dupes": {
+   "usb_enum_refused_5_is_checked": {
+    "n": 4,
+    "vals": [
+     "True",
+     "True",
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     718,
+     744,
+     791,
+     817
+    ]
+   },
+   "usb_enum_refused_6_raw_no_fire": {
+    "n": 4,
+    "vals": [
+     "False",
+     "False",
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     719,
+     746,
+     792,
+     819
+    ]
+   },
+   "usb_ctx_init_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     702,
+     775
+    ]
+   },
+   "usb_ctx_n_debug6": {
+    "n": 2,
+    "vals": [
+     "2",
+     "2"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     739,
+     812
+    ]
+   },
+   "usb_ctx_n_nodebug": {
+    "n": 2,
+    "vals": [
+     "1",
+     "1"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     740,
+     813
+    ]
+   },
+   "usb_ctx_order_debug6": {
+    "n": 2,
+    "vals": [
+     "libusb_init,libusb_set_option,",
+     "libusb_init,libusb_set_option,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     699,
+     772
+    ]
+   },
+   "usb_ctx_order_nodebug": {
+    "n": 2,
+    "vals": [
+     "libusb_init,",
+     "libusb_init,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     700,
+     773
+    ]
+   },
+   "usb_ctx_setoption_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     701,
+     774
+    ]
+   },
+   "usb_enum_free_checked": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     707,
+     780
+    ]
+   },
+   "usb_enum_getdevlist_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     708,
+     781
+    ]
+   },
+   "usb_enum_n_0": {
+    "n": 2,
+    "vals": [
+     "2",
+     "2"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     735,
+     808
+    ]
+   },
+   "usb_enum_n_1_hit": {
+    "n": 2,
+    "vals": [
+     "6",
+     "6"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     737,
+     810
+    ]
+   },
+   "usb_enum_n_1_miss": {
+    "n": 2,
+    "vals": [
+     "3",
+     "3"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     736,
+     809
+    ]
+   },
+   "usb_enum_n_2_hit": {
+    "n": 2,
+    "vals": [
+     "10",
+     "10"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     738,
+     811
+    ]
+   },
+   "usb_enum_ok_norefs": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     748,
+     821
+    ]
+   },
+   "usb_enum_order_0": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list,libusb_free_device_list,",
+     "libusb_get_device_list,libusb_free_device_list,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     705,
+     778
+    ]
+   },
+   "usb_enum_order_1_hit": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_free_device_list,",
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_free_device_list,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     703,
+     776
+    ]
+   },
+   "usb_enum_order_1_miss": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_free_device_list,",
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_free_device_list,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     704,
+     777
+    ]
+   },
+   "usb_enum_order_1_miss_full": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_free_device_list,",
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_free_device_list,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     741,
+     814
+    ]
+   },
+   "usb_enum_order_2_hit": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_free_device_list,",
+     "libusb_get_device_list,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_get_device_descriptor,libusb_ref_device,libusb_get_bus_number,libusb_get_device_address,libusb_free_device_list,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     742,
+     815
+    ]
+   },
+   "usb_enum_ref_device_checked": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     706,
+     779
+    ]
+   },
+   "usb_enum_refused_2_is_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     743,
+     816
+    ]
+   },
+   "usb_enum_refused_5_fires": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     745,
+     818
+    ]
+   },
+   "usb_enum_refused_beyond_7": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     747,
+     820
+    ]
+   },
+   "usb_open_alt_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     714,
+     787
+    ]
+   },
+   "usb_open_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     711,
+     784
+    ]
+   },
+   "usb_open_claim_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     713,
+     786
+    ]
+   },
+   "usb_open_getdevice_checked": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     715,
+     788
+    ]
+   },
+   "usb_open_kdrv_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     717,
+     790
+    ]
+   },
+   "usb_open_n_detach": {
+    "n": 2,
+    "vals": [
+     "10",
+     "10"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     734,
+     807
+    ]
+   },
+   "usb_open_n_nodetach": {
+    "n": 2,
+    "vals": [
+     "7",
+     "7"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     733,
+     806
+    ]
+   },
+   "usb_open_ok_norefs": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     732,
+     805
+    ]
+   },
+   "usb_open_order_detach": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     709,
+     782
+    ]
+   },
+   "usb_open_order_nodetach": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     710,
+     783
+    ]
+   },
+   "usb_open_refuse_10_alt": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     727,
+     800
+    ]
+   },
+   "usb_open_refuse_1_open": {
+    "n": 2,
+    "vals": [
+     "libusb_open,",
+     "libusb_open,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     720,
+     793
+    ]
+   },
+   "usb_open_refuse_4_product": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     721,
+     794
+    ]
+   },
+   "usb_open_refuse_5_config": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     722,
+     795
+    ]
+   },
+   "usb_open_refuse_5_kdrv": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     725,
+     798
+    ]
+   },
+   "usb_open_refuse_6_claim": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     723,
+     796
+    ]
+   },
+   "usb_open_refuse_7_alt": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_set_configuration,libusb_claim_interface,libusb_set_interface_alt_setting,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     724,
+     797
+    ]
+   },
+   "usb_open_refuse_8_detach": {
+    "n": 2,
+    "vals": [
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,",
+     "libusb_open,libusb_get_device,libusb_get_device_descriptor,libusb_get_string_descriptor_ascii,libusb_kernel_driver_active,libusb_detach_kernel_driver,libusb_reset_device,libusb_set_configuration,"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     726,
+     799
+    ]
+   },
+   "usb_open_refused_4": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     728,
+     801
+    ]
+   },
+   "usb_open_refused_6": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     729,
+     802
+    ]
+   },
+   "usb_open_refused_beyond_10": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     730,
+     803
+    ]
+   },
+   "usb_open_refused_beyond_11": {
+    "n": 2,
+    "vals": [
+     "False",
+     "False"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     731,
+     804
+    ]
+   },
+   "usb_open_setcfg_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     712,
+     785
+    ]
+   },
+   "usb_open_strascii_checked": {
+    "n": 2,
+    "vals": [
+     "True",
+     "True"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     716,
+     789
+    ]
+   },
+   "usb_sym_libusb_alloc_transfer": {
+    "n": 2,
+    "vals": [
+     "libusb_alloc_transfer",
+     "libusb_alloc_transfer"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     768,
+     841
+    ]
+   },
+   "usb_sym_libusb_bulk_transfer": {
+    "n": 2,
+    "vals": [
+     "libusb_bulk_transfer",
+     "libusb_bulk_transfer"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     767,
+     840
+    ]
+   },
+   "usb_sym_libusb_claim_interface": {
+    "n": 2,
+    "vals": [
+     "libusb_claim_interface",
+     "libusb_claim_interface"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     764,
+     837
+    ]
+   },
+   "usb_sym_libusb_control_transfer": {
+    "n": 2,
+    "vals": [
+     "libusb_control_transfer",
+     "libusb_control_transfer"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     766,
+     839
+    ]
+   },
+   "usb_sym_libusb_detach_kernel_driver": {
+    "n": 2,
+    "vals": [
+     "libusb_detach_kernel_driver",
+     "libusb_detach_kernel_driver"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     761,
+     834
+    ]
+   },
+   "usb_sym_libusb_free_device_list": {
+    "n": 2,
+    "vals": [
+     "libusb_free_device_list",
+     "libusb_free_device_list"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     756,
+     829
+    ]
+   },
+   "usb_sym_libusb_get_bus_number": {
+    "n": 2,
+    "vals": [
+     "libusb_get_bus_number",
+     "libusb_get_bus_number"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     754,
+     827
+    ]
+   },
+   "usb_sym_libusb_get_device": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device",
+     "libusb_get_device"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     758,
+     831
+    ]
+   },
+   "usb_sym_libusb_get_device_address": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_address",
+     "libusb_get_device_address"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     755,
+     828
+    ]
+   },
+   "usb_sym_libusb_get_device_descriptor": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_descriptor",
+     "libusb_get_device_descriptor"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     752,
+     825
+    ]
+   },
+   "usb_sym_libusb_get_device_list": {
+    "n": 2,
+    "vals": [
+     "libusb_get_device_list",
+     "libusb_get_device_list"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     751,
+     824
+    ]
+   },
+   "usb_sym_libusb_get_string_descriptor_ascii": {
+    "n": 2,
+    "vals": [
+     "libusb_get_string_descriptor_ascii",
+     "libusb_get_string_descriptor_ascii"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     759,
+     832
+    ]
+   },
+   "usb_sym_libusb_handle_events_timeout": {
+    "n": 2,
+    "vals": [
+     "libusb_handle_events_timeout",
+     "libusb_handle_events_timeout"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     769,
+     842
+    ]
+   },
+   "usb_sym_libusb_init": {
+    "n": 2,
+    "vals": [
+     "libusb_init",
+     "libusb_init"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     749,
+     822
+    ]
+   },
+   "usb_sym_libusb_kernel_driver_active": {
+    "n": 2,
+    "vals": [
+     "libusb_kernel_driver_active",
+     "libusb_kernel_driver_active"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     760,
+     833
+    ]
+   },
+   "usb_sym_libusb_open": {
+    "n": 2,
+    "vals": [
+     "libusb_open",
+     "libusb_open"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     757,
+     830
+    ]
+   },
+   "usb_sym_libusb_ref_device": {
+    "n": 2,
+    "vals": [
+     "libusb_ref_device",
+     "libusb_ref_device"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     753,
+     826
+    ]
+   },
+   "usb_sym_libusb_reset_device": {
+    "n": 2,
+    "vals": [
+     "libusb_reset_device",
+     "libusb_reset_device"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     762,
+     835
+    ]
+   },
+   "usb_sym_libusb_set_configuration": {
+    "n": 2,
+    "vals": [
+     "libusb_set_configuration",
+     "libusb_set_configuration"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     763,
+     836
+    ]
+   },
+   "usb_sym_libusb_set_interface_alt_setting": {
+    "n": 2,
+    "vals": [
+     "libusb_set_interface_alt_setting",
+     "libusb_set_interface_alt_setting"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     765,
+     838
+    ]
+   },
+   "usb_sym_libusb_set_option": {
+    "n": 2,
+    "vals": [
+     "libusb_set_option",
+     "libusb_set_option"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     750,
+     823
+    ]
+   },
+   "usb_sym_libusb_strerror": {
+    "n": 2,
+    "vals": [
+     "libusb_strerror",
+     "libusb_strerror"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     771,
+     844
+    ]
+   },
+   "usb_sym_libusb_submit_transfer": {
+    "n": 2,
+    "vals": [
+     "libusb_submit_transfer",
+     "libusb_submit_transfer"
+    ],
+    "distinct_vals": 1,
+    "identical": true,
+    "lines": [
+     770,
+     843
+    ]
+   }
+  },
+  "refuse": [],
+  "cont": [],
+  "nob": [],
+  "unbal": []
+ },
+ {
+  "label": "tinybendygrad_runtime_support_usb.bend.port.txt",
+  "shape": "F1",
+  "phys": 940,
+  "accepted": 940,
+  "names_strict": 940,
+  "names_shipped": 940,
+  "dup_n_strict": 0,
+  "dup_rows_strict": 0,
+  "lost_strict": 0,
+  "dup_n_shipped": 0,
+  "lost_shipped": 0,
+  "name_defs_differ": [],
+  "dupes": {},
+  "refuse": [],
+  "cont": [],
+  "nob": [],
+  "unbal": []
+ }
+]

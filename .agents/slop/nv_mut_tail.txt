@@ -1,16 +1,257 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_one_mutation.py", line 72, in <module>
-    sys.exit(main())
-             ^^^^^^
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_one_mutation.py", line 39, in main
-    with SM.Staged(SRC, "nv1") as unit:
-         ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/staged_mut.py", line 231, in __enter__
-    raise MirrorStale(
-staged_mut.MirrorStale: MIRROR STALE.  sha256(jj @) = e7710788ae8fb0e4 but sha256(live) = 054e2829094aa50f for /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/support/nv/nvdev.bend (114264 vs 115412 bytes).
-  The working copy carries an edit that is not in `@`, so @ is a substrate
-  somebody else has since changed.  Every 'the anchor is not in the file'
-  verdict measured against it would name a file nobody is looking at, so
-  NOTHING is measured.  This is the state `blob-intern-mutate.py` was in when
-  its `finally` restore put a dead 6,623-line ops.bend over the live 6,306-line
-  one.  Wait for that edit to land, or run against a clean file.
+staged tinybendygrad/runtime/support/nv/nvdev.bend -> nvdev.staged-nv1-89411
+  sha256(mirror) == sha256(live) == d00afaf6628bfa6d  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)
+baseline: 800 name= rows, row-set digest dff5d58c142b9e41
+
+[22] update_enc_before_ini -- OR becomes NAND -- clears the written field instead of setting it.  Re-aimed from `U32.nand(a, b)` to `U32.not(U32.and(a, b))`: there is NO `U32.nand` in Bend 2.0.35's U32 -- the whole file spells only add/and/div/from_nat/is_*/max/mod/mul/not/or/shln/shrn/sub/to_nat -- so the old spelling was NOT-A-PROGRAM and ABORTED the table at entry 22 of 28.  Same NAND, spelled in ops that exist.
+    4 rows moved:
+      nv_upd_u1_w
+          was  4292870143
+          now  4294967295
+      nv_upd_u2_w
+          was  436207616
+          now  4294967295
+      nv_upd_u3_w
+          was  3735490287
+          now  4294967295
+      nv_upd_u4_w
+          was  454035968
+          now  4294967295
+
+[23] largebar_strict -- >= becomes > -- an exactly-sized BAR stops counting as large
+    4 rows moved:
+      nv_largebar_0000_0000
+          was  1
+          now  0
+      nv_reserve_ptable_0000_0000
+          was  0
+          now  1
+      nv_sysmem_0000_0000_None
+          was  0
+          now  1
+      nv_sysmem_default_0000_0000
+          was  0
+          now  1
+
+[24] sysmem_false_confused_with_none -- None and False collapse -- a caller passing False gets the None branch
+    1 rows moved:
+      nv_sysmem_0000_0001_False
+          was  0
+          now  1
+
+[25] trace_rreg_wreg_swapped -- the read and write call ids collide -- a swap is invisible to a count
+    13 rows moved:
+      nv_tag_11
+          was  rreg
+          now  ?
+      nv_tag_12
+          was  wreg
+          now  rreg
+      nv_tr_fini
+          was  wreg(0,0,0),wreg(0,0,1)
+          now  rreg(0,0,0),rreg(0,0,1)
+      nv_tr_init
+          was  wreg(1,0,0),wreg(2,0,0),wreg(1,1,0),wreg(2,1,0)
+          now  rreg(1,0,0),rreg(2,0,0),rreg(1,1,0),rreg(2,1,0)
+      nv_tr_inval
+          was  wreg(640,2147483715,0)
+          now  rreg(640,2147483715,0)
+      nv_tr_mixed
+          was  barrier(1,2,3),wreg(1024,7,0)
+          now  barrier(1,2,3),rreg(1024,7,0)
+      nv_tr_refuse_inval
+          was  wreg(640,2147483715,0)
+          now  rreg(640,2147483715,0)
+      nv_tr_rw
+          was  wreg(640,436207616,0),rreg(640,0,0)
+          now  rreg(640,436207616,0),rreg(640,0,0)
+      nv_tr_upd
+          was  wreg(640,436207616,0)
+          now  rreg(640,436207616,0)
+      nv_upd_u1_tr
+          was  wreg(640,4292870143,0)
+          now  rreg(640,4292870143,0)
+      nv_upd_u2_tr
+          was  wreg(640,436207616,0)
+          now  rreg(640,436207616,0)
+      nv_upd_u3_tr
+          was  wreg(640,3735490287,0)
+          now  rreg(640,3735490287,0)
+      nv_upd_u4_tr
+          was  wreg(640,454035968,0)
+          now  rreg(640,454035968,0)
+
+[26] tagname_delegation_dropped -- the extension stops DELEGATING to ip.bend -- an id<11 call renders as rreg
+    7 rows moved:
+      nv_tag_0
+          was  send
+          now  rreg
+      nv_tag_11
+          was  rreg
+          now  ?
+      nv_tr_chip
+          was  rreg(0,0,0),rreg(640,0,0)
+          now  ?(0,0,0),?(640,0,0)
+      nv_tr_rw
+          was  wreg(640,436207616,0),rreg(640,0,0)
+          now  wreg(640,436207616,0),?(640,0,0)
+      nv_tr_vram
+          was  rreg(286953,0,0)
+          now  ?(286953,0,0)
+      nv_tr_wait
+          was  rreg(0,0,0),rreg(640,0,0),waitreset(0,0,0)
+          now  ?(0,0,0),?(640,0,0),waitreset(0,0,0)
+      nv_tr_wpr2
+          was  rreg(518666,0,0),cfgw(4,2,2),reset(0,0,0),cfgw(4,6,2)
+          now  ?(518666,0,0),cfgw(4,2,2),reset(0,0,0),cfgw(4,6,2)
+
+[27] pwid_double_pw -- the doubling base is 2, so every power of two is doubled
+    49 rows moved:
+      nv_boot42_chipid_over
+          was  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=15,architecture=63,chip_id=1023
+          now  minor_extended_revision=0,minor_revision=0,major_revision=16,implementation=31,architecture=127,chip_id=2047
+      nv_cover_bot_2
+          was  4096
+          now  8192
+      nv_cover_bot_3
+          was  4096
+          now  8192
+      nv_covers_2
+          was  0,0,536870912,2097152,4096
+          now  0,0,1073741824,4194304,8192
+      nv_covers_3
+          was  0,0,0,536870912,2097152,4096
+          now  0,0,0,1073741824,4194304,8192
+      nv_d_2_l2_huge_cover
+          was  536870912
+          now  1073741824
+      nv_d_2_l3_huge_200000
+          was  1
+          now  0
+      nv_d_2_l3_huge_cover
+          was  2097152
+          now  4194304
+      nv_d_2_l4_huge_12345000
+          was  1
+          now  0
+      nv_d_2_l4_huge_cover
+          was  4096
+          now  8192
+      nv_d_3_l3_huge_cover
+          was  536870912
+          now  1073741824
+      nv_d_3_l4_huge_200000
+          was  1
+          now  0
+      nv_d_3_l4_huge_cover
+          was  2097152
+          now  4194304
+      nv_d_3_l5_huge_12345000
+          was  1
+          now  0
+      nv_d_3_l5_huge_cover
+          was  4096
+          now  8192
+      nv_decode_arch_1b
+          was  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=0,architecture=27,chip_id=432
+          now  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=16,architecture=27,chip_id=432
+      nv_decode_arch_3f
+          was  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=0,architecture=63,chip_id=1008
+          now  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=16,architecture=63,chip_id=1008
+      nv_decode_boot0_full
+          was  minor_revision=15,major_revision=15,architecture_1=1,implementation=15,architecture_0=31
+          now  minor_revision=31,major_revision=31,architecture_1=1,implementation=31,architecture_0=31
+      nv_decode_boot42_full
+          was  minor_extended_revision=15,minor_revision=15,major_revision=15,implementation=15,architecture=63,chip_id=1023
+          now  minor_extended_revision=31,minor_revision=31,major_revision=31,implementation=31,architecture=63,chip_id=1023
+      nv_decode_impl_d
+          was  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=13,architecture=0,chip_id=13
+          now  minor_extended_revision=0,minor_revision=0,major_revision=16,implementation=13,architecture=0,chip_id=13
+      nv_fldmask_architecture
+          was  1056964608
+          now  2130706432
+      nv_fldmask_chip_id
+          was  1072693248
+          now  2146435072
+      nv_fldmask_implementation
+          was  15728640
+          now  32505856
+      nv_fldmask_major_revision
+          was  983040
+          now  2031616
+      nv_fldmask_minor_extended_revision
+          was  3840
+          now  7936
+      nv_fldmask_minor_revision
+          was  61440
+          now  126976
+      nv_fldmax_architecture
+          was  63
+          now  127
+      nv_fldmax_chip_id
+          was  1023
+          now  2047
+      nv_fldmax_implementation
+          was  15
+          now  31
+      nv_fldmax_major_revision
+          was  15
+          now  31
+      nv_fldmax_minor_extended_revision
+          was  15
+          now  31
+      nv_fldmax_minor_revision
+          was  15
+          now  31
+      nv_mask_all
+          was  1073741568
+          now  2147483392
+      nv_mask_arch
+          was  1056964608
+          now  2130706432
+      nv_mask_chipid
+          was  1072693248
+          now  2146435072
+      nv_mask_impl
+          was  15728640
+          now  32505856
+      nv_mask_one
+          was  3840
+          now  7936
+      nv_mask_two_adj
+          was  1072693248
+          now  2146435072
+      nv_mask_two_far
+          was  1056968448
+          now  2130714368
+      nv_maskinv_all
+          was  minor_extended_revision=15,minor_revision=15,major_revision=15,implementation=15,architecture=63,chip_id=1023
+          now  minor_extended_revision=31,minor_revision=31,major_revision=31,implementation=31,architecture=127,chip_id=2047
+      nv_maskinv_impl
+          was  minor_extended_revision=0,minor_revision=0,major_revision=0,implementation=15,architecture=0,chip_id=15
+          now  minor_extended_revision=0,minor_revision=0,major_revision=16,implementation=31,architecture=1,chip_id=31
+      nv_maskinv_two_far
+          was  minor_extended_revision=15,minor_revision=0,major_revision=0,implementation=0,architecture=63,chip_id=1008
+          now  minor_extended_revision=31,minor_revision=1,major_revision=0,implementation=16,architecture=127,chip_id=2032
+      nv_upd_u1_ini
+          was  4279238655
+          now  4262461439
+      nv_upd_u1_mask
+          was  15728640
+          now  32505856
+      nv_upd_u1_tr
+          was  wreg(640,4292870143,0)
+          now  wreg(640,4276092927,0)
+      nv_upd_u1_w
+          was  4292870143
+          now  4276092927
+      nv_upd_u2_mask
+          was  1056964608
+          now  2130706432
+      nv_upd_u3_mask
+          was  1044480
+          now  2093056
+      nv_upd_u4_mask
+          was  1072693248
+          now  2146435072
+
+live nvdev.bend: byte-identical (d00afaf6628bfa6d) -- this harness never wrote it

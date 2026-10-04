@@ -53,9 +53,9 @@ from tinygrad.dtype import AddrSpace
 # CPython dtype name -> the port's `S.Dt` constructor. `S.single()` is f32
 # (graphcmp.bend:824 uses it for the f32 PARAMs), and every dtype these six specs
 # reach is f32 or weakint.
-DT = {"f32": "S.single()", "f16": "S.float16()", "i32": "S.int32()",
+DT = {"f32": "S.single()", "f16": "S.half()", "i32": "S.int32()",
       "u32": "S.uint32()", "bf16": "S.bfloat16()", "i64": "S.int64()",
-      "u64": "S.uint64()", "f64": "S.float64()", "bool": "S.bool()",
+      "u64": "S.uint64()", "f64": "S.float64()", "bool": "S.boolean()",
       "weakint": "S.weakint()", "i8": "S.int8()", "u8": "S.uint8()",
       "i16": "S.int16()", "u16": "S.uint16()"}
 
@@ -96,29 +96,69 @@ def arg_of(u):
     if dt is None:
       raise KeyError(f"dtype {a.dtype} not in DT table")
     nm = "None{}" if a.name is None else f"Some{{{a.name!r}}}".replace("'", '"')
-    ad = {"GLOBAL": "S.AGlobal{}", "ALU": "S.AAlu{}"}
+    # MEASURED: the port spells the ALU addrspace `Aalu`, not `AAlu` -- the
+    # compiler prints the declared constructors: AGlobal, ALocal, AReg, Aalu.
+    ad = {"GLOBAL": "S.AGlobal{}", "ALU": "S.Aalu{}"}
     return (f"O.AParam{{O.ParamArg{{{a.slot}, {dt}, "
             + (f"Some{{{a.size}}}" if a.size is not None else "None{}") + ", "
-            + (f"Some{{O.PyRange{{{a.vmin_vmax[0]}, {a.vmin_vmax[1]}}}}}" if a.vmin_vmax is not None else "None{}") + ", "
+            + (("Some{O.PyRange{H.i64_of_i32(" + str(a.vmin_vmax[0]) + "), H.i64_of_i32(" + str(a.vmin_vmax[1]) + ")}}") if a.vmin_vmax is not None else "None{}") + ", "
             + (f"Some{{{a.multiple_of}}}" if a.multiple_of is not None else "None{}") + ", "
             + nm + ", "
             + ad.get(a.addrspace.name, "S.AGlobal{}") + ", "
             + (f"Some{{S.D1{{{0}}}}}" if a.device is not None else "None{}") + ", "
-            + f"{a.volatile}, None{{}}, None{{}}, False{{}}, "
-            + ("None{}" if a.val is None else f"Some{{O.CInt{{H.i64_of_i32({a.val})}}}}") + "}}}")
+            + ("btrue()" if a.volatile else "bfalse()") + ", None{}, None{}, bfalse(), "
+            + ("None{}" if a.val is None else f"Some{{O.CInt{{H.i64_of_i32({a.val})}}}}")
+            # `}}}` would be THREE closing braces -- one too many. `AParam{` and
+            # `ParamArg{` are TWO, and the first emit produced a file Bend refused
+            # with "expected : a term". The mismatch is silent in Python.
+            + "}}")
   if type(a).__name__ == "CallInfo":
     # PORT HAS FOUR FIELDS AGAINST CPYTHON'S THREE: `dtype: S.Dt` (ops.bend:1010)
     # has no CPython counterpart. `graphcmp.bend:963` documents this as a REPORTED
     # disagreement by construction, and `S.void()` is the spelling it used.
     nm = "None{}" if a.name is None else f"Some{{\"{a.name}\"}}"
-    return (f"O.ACall{{O.CallInfo{{{nm}, {a.precompile}, "
-            f"{a.precompile_backward}, S.void()}}}}")
+    pc = "btrue()" if a.precompile else "bfalse()"
+    pb = "btrue()" if a.precompile_backward else "bfalse()"
+    # a Bool LITERAL is a PATTERN in Bend and is refused in a term position,
+    # so `False` cannot be written here. See sched-fixture.py's `bfalse`.
+    return "O.ACall{O.CallInfo{" + nm + ", " + pc + ", " + pb + ", S.void()}}"
   if isinstance(a, KernelInfo):
     # PORT HAS 4 FIELDS, CPYTHON 5: `estimates` is not ported (ops.bend:915-917).
     return (f'O.AKernel{{O.KernelInfo{{{a.name!r}, Nil{{}}, None{{}}, {a.beam}}}}}'
             .replace("'", '"'))
-  if u.op is Ops.CONST and isinstance(a, int):
-    return f"O.APy{{O.CInt{{H.i64_of_i32({a})}}}}"
+  if type(a).__name__ == "DType":
+    # `ADt` -- CAST/BITCAST arg, and INS src[1]. `DType` is a class, so the key
+    # comes off `a.name`, which for these specs is `dtypes.f32`.
+    key = a.name.split(".")[-1]
+    if key not in DT:
+      raise KeyError(f"DType {a.name} (key {key!r}) not in DT table; have {sorted(DT)}")
+    return f"O.ADt{{{DT[key]}}}"
+  if u.op is Ops.CONST:
+    # FOUR shapes reach here and all four were found by RUNNING this file, not by
+    # reading `Const` (ops.bend:807): `CInt` from `ConstLike(int, ...)`, `CFloat`
+    # from `ConstFloat(0.0)` -- which is what `relu`, `exp` and `pow` put in a
+    # CONST -- `CBool` and `CInvalid`. `CInvalid` arrives as `InvalidType('Invalid')`
+    # from the fold of an empty buffer's size.
+    tn = type(a).__name__
+    if tn == "ConstFloat":
+      # `ConstFloat(float)` (dtype.py:8) -- a SUBCLASS, so `a` IS the number. My
+      # first two attempts read `a.val` and it is not there; `float(a)` is.
+      return f"O.APy{{O.CFloat{{{float(a)}}}}}"
+    if tn == "InvalidType":
+      return "O.APy{O.CInvalid{}}"
+    if isinstance(a, bool):
+      # SAME RULE AS `ParamArg.volatile`: `CBool{b: Bool}` holds a Bool, and a
+      # Bool LITERAL is a PATTERN in Bend. `CBool{True}` is refused in a term
+      # position ("expected : a defined name, observed : True").
+      return f"O.APy{{O.CBool{{{('btrue()' if a else 'bfalse()')}}}}}"
+    if isinstance(a, int):
+      # Bend has no negative integer LITERAL -- `H.i64_of_i32(-9)` is refused
+      # with "expected : a term" (helpers.bend:1647 takes a U32), so a negative
+      # CONST is spelled as a wrapping subtract from zero.
+      if a < 0:
+        return f"O.APy{{O.CInt{{H.i64_sub(H.i64_of_i32(0), H.i64_of_i32({-a}))}}}}"
+      return f"O.APy{{O.CInt{{H.i64_of_i32({a})}}}}"
+    raise KeyError(f"cannot spell CONST arg {tn} {a!r}")
   if u.op is Ops.RANGE:
     at, ids = a
     # MEASURED: `UOp.range_end`'s arg is `(AxisType, int)` -- a BARE int, not a

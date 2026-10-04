@@ -198,7 +198,14 @@ def candidates():
       if not seg:
         # One-line bodies and decorators are the usual cause; fall back to the line range.
         seg = "\n".join(lines[node.lineno - 1:node.end_lineno])
-      out.append((str(p.relative_to(REPO)), node.name, node.lineno, seg, node))
+      # `relative_to(REPO)` fails for a file outside the repo, which happens whenever
+      # `reader-guard.py --self-test` points the walk at a scratch directory. The absolute path is
+      # used in that case, so the key is stable and the self-test can name its own plant.
+      try:
+        rel = str(p.relative_to(REPO))
+      except ValueError:
+        rel = str(p)
+      out.append((rel, node.name, node.lineno, seg, node))
   return out
 
 
@@ -885,7 +892,8 @@ def main():
   for sid, text in SHAPES:
     print(f"  {sid:<28} {text!r:<44} -> {[(n, render(v)) for n, v in CANONICAL(text).items()]}")
 
-  print("\nBY CONTRACT -- the DRIFT DENOMINATOR is the two families that answer a row question")
+  print("\nBY CONTRACT -- the DRIFT DENOMINATOR is the three families that answer a row "
+        "question\n   (text->mapping, line->answer, value->fold); everything below them is not one")
   for k in sorted(by, key=lambda k: -len(by[k])):
     n_drift = sum(1 for m in by[k] if m["drift"])
     tag = "" if k in DRIFT_FAMILIES else "   (not a row reader: excluded from drift)"

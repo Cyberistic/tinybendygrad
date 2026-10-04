@@ -7142,6 +7142,39 @@ Rules appended to `bend2-constraints.md` as **DEBUG-1..DEBUG-7** (positions ~202
       (the register max is 46, from `address_sys`) NOR `_wide` NOR any name row.
       Notes NV-3. A census that greps for a name the file does not use reports an artefact.
 
+- [x] **AND THE BLIND SPOT IS MEASURED, EXACTLY CHARACTERISED, AND CLOSED.**
+      `nv_mmustrans.py` transposes ONE field in each of the six `MMU_VER` structs, with two
+      controls. **Before: v2_pte / v2_pde / v2_dpd moved 0 rows; v3_pte / v3_pde / v3_dpd
+      moved 3 each.** Both controls were non-zero (BOOT_42 22 rows; an `s == e` site widened
+      to `(8,9)`, 1 row), so the zeros were real zeros and not a broken substrate.
+
+      **THE RULE, and it is exact.** `nv.wid(s,e) = e - s + 1` wraps, so a transposition
+      gives `s - e + 1` — which is ~2^32 (and so trips `_maxw` and `_wide`) for every field
+      **except a 2-bit one**, where it is `1 - 2 + 1 = 0`: small, so neither moves. The
+      blind set is therefore **exactly the 2-bit fields in registers with no `_ranges` row** —
+      6 sites, one `aperture`/`aperture_big` per MMU struct.
+
+      **CLOSED BY SIX ROWS** — `nv_reg_NV_MMU_VER{2,3}_{PTE,PDE,DUAL_PDE}_ranges` — and
+      re-measured: the three zeros became **1, 1, 1** and the three threes became **4, 4, 4**,
+      with both controls unchanged. Gate compared rows **552 -> 558**, disagreements still 0,
+      both lanes byte-identical.
+
+- [x] **`nv_mutate.py`: 7 ENTRIES COULD NOT BE MEASURED AS WRITTEN. 5 WERE A `+`, AND 2
+      WERE `NOT-A-PROGRAM` THAT ABORTED THE WHOLE TABLE.**
+      Five anchors had a linearity annotation added or removed by an edit — `nv.fenc(+s`,
+      `nv.pte_uncfield_pde(+v, lv)`, `nv.cfgclear(+c)`, `nv.word(+addr)`, `nv.upd_w(+r, ks)`
+      — one character each. **Two had a perfectly good anchor and a mutant that does not
+      compile**: [19] swapped `nv.covers`'s body for `nv.pow_shifts`, which is defined BELOW
+      it (Bend's definition order is load-bearing), and [22] used `U32.nand`, **which does
+      not exist in Bend 2.0.35's `U32`**. Both aborted the table at entry 19 and 22 of 28,
+      so 28 was unreachable. **`nv_mutate.py` should record a `NOT-A-PROGRAM` entry and
+      CONTINUE, not abort.**
+
+      **ALL 28 NOW RUN: 26 moved rows, 2 zeros, and both zeros are THEOREMS.** [7]
+      `shln(1,w)` and `pw(w)` agree for EVERY `w`; [21] `&` is commutative, and that entry's
+      own description had claimed a fixture would catch it — no fixture can. Full table with
+      rows moved by name in `.agents/slop/nv_nvdev_MUTATION.md`.
+
 - [x] **17 OF 24 TABLES NOW PIN WHAT THEY DESCRIBE — and the 7 that do not say so in
       writing.** `table-pin.py` computes rev + FILE digest + ROWS digest per table;
       `pin-tables.py` writes them, and takes the measurements as ARGUMENTS so that it has no
@@ -7558,3 +7591,51 @@ Report: `.agents/slop/notes/c2d-refusal-gate.md`. Rules `CT-1`…`CT-5` appended
   13 disagree` against `183 / 20` now. This unit's change to `validate.bend` **removes zero
   lines** (`jj diff` reports 0 deletions). They are the z3-normalisation and raise-vs-list
   residuals `validate-oracle.py`'s own header documents.
+
+## Session 2026-10-04 (reader-fork unit) — 156 FORKED READERS, AND 32 OF 38 HAVE DRIFTED
+
+- [x] **THE CENSUS, WITH THE DRIFT MEASURED AND A DENOMINATOR ON EVERY NUMBER.**
+      `.agents/slop/reader-fork-census.py` CALLS each candidate on six row shapes against
+      `rebase-gate.py`'s own `rows()` (loaded by path, never re-typed) and compares (name, value)
+      PAIRS. 343 candidates; **38 answer a row question**; **32 of those 38 have drifted**; the
+      29 text readers carry **15 distinct behaviours**. So 156 was right about the shape and wrong
+      about the size -- and a fan-out of 38 with 29 root causes is a much smaller thing than 156.
+      Census output: `.agents/slop/reader-fork-census.txt`.
+- [x] **19 FORKS CONVERTED TO AN IMPORT** (`reader-fork-convert.py`, mechanical + a parse check
+      over every file it touched). **Four of them carried a docstring claiming to BE `rows()`
+      verbatim and none of them were**: `ga_controls.py`, `ga_rows_blast.py`,
+      `pin-tree-oracle.py`, `rebase-oracle-ops.py`. Probed before/after on 9 texts: **all 19
+      changed behaviour**, in four specific ways -- the `py=` tail folded away, F3 read,
+      the `""` banner dropped, names/values stripped -- each with its LOAD printed
+      (of 1,440 lane files / 289,262 lines under `.agents/slop`: 44,345 are F2 `py=`-tail lines,
+      2,370 are F3, 188 are banners).
+- [x] **THE FORKS I KEPT, EACH WITH ITS CONTRACT** in `.agents/slop/reader-contracts.tsv`.
+      The interesting ones: `rows_strict` (6 instances) CANNOT read F3 -- measured 0 rows where
+      `rows()` reads 1 -- so substituting would turn cstyle.bend's 225 gated rows into 227 BROKEN;
+      `split_py` (4 instances) is the INVERSE FOLD and its input is a value, not a line;
+      `multi-mutate` reads `t_\w+=-?\d+` and casts to **int**; `mm-mutate` reads `mm_NAME value`
+      with no `=` at all; `nv-diff` splits at the **LAST** `=` so it shares zero row names with
+      any other reader; `nv_ip_mutate` reads EVERY line and manufactures 1 phantom row each on
+      the single-space and TAB shapes; `rows_old` is rows-blast.py's own control.
+- [x] **THE GUARD**: `.agents/slop/reader-guard.py`, in the shape of `parser_cache_guard()` --
+      measures, acts, prints what it did. **R1** an unregistered reader fails. **R2** a
+      registered fork whose BEHAVIOUR moved fails (fingerprint = its exact answers on the six
+      shapes, so a reformat does not fire it). **R3** an import-form reader that does not really
+      bind the gate fails, and a registry row with no reader behind it fails. rc=0 on this tree.
+- [x] **THE GUARD IS SHOWN ARMED AND RED**, in `--self-test` (8 cases) and by a LIVE fire on
+      `wire_parse.py`: one appended ` + ' PLANT'` in a value, rc 0 -> 1, named, restored, rc 0.
+
+**OWED, REPORTED NOT FIXED** (not this unit's files, or not safely mine):
+- `cstyle-gate.py`, `cs-fixpy.py`, `llvmir-gate.py`, `eq/nl-gate.py`, `eq/rn-gate.py` hold SIX
+  `rows_strict` / `row_strict` / `split_py` triples with the SAME contract. `llvmir-gate.py`'s is
+  **byte-identical in behaviour** to `eq/nl-gate.py`'s (same census signature `1e9d42d3d219`).
+  Four of the five files are other units' live gates.
+- `cstyle-shapes-selftest.py`'s "REAL LANES" case currently FAILS, and **not because of this
+  unit**: `cstyle-gate.py`'s `judge()` returns 6 `bad` entries naming 8 of cstyle.bend's 227 row
+  NAMES as containing `=`, which is the name-shape unit's finding, not a reader regression. The
+  reader work here does not touch that. Worth the coordinator knowing before re-running it.
+- `dd-band-mut.py`, `drift-gate.py`, `hcq2-diff.py`, `mt_diff.py`, `mop-mut.py`, `ops-python-mutate.py`,
+  `helpers-tc-mutate.py`, `tools/mutate-dm.py`, `tools/mutate-allreduce.py` were left as forks:
+  they diverge on F2 only, but every conversion changes behaviour, and these are mutation harnesses
+  whose numbers other units are reading. Registered with contracts; the conversions are one command.
+- 7 registered forks still carry `NO CONTRACT WRITTEN YET`; they are named in the report.
