@@ -10,23 +10,25 @@
 # REPRODUCIBILITY:         sh .agents/slop/graphcmp-repro.sh
 #
 # SUBSTRATE AT CAPTURE TIME (round 3, and the `sym` closure already in):
-#   tinybendygrad/uop/ops.bend    sha256 569dc3af8f71925144cedc8f24cf535c0668c097baf58224cd4d829d9f1cecfd
-#   tinybendygrad/uop/fold.bend   sha256 2eaa3938cb8d18bc285ca1f3405f30aaa1766ea8f525818760021703a9cbf9cc
+#   tinybendygrad/uop/ops.bend    sha256 680644c6bfb6212bf1c7c4a33bdf9476cec842b4a244f815f2afcd43e3ed41a9
+#   tinybendygrad/uop/fold.bend   sha256 e8c7bdc8c27e22722dfa478144b85fc38ecd617501611d24bb573bc786c33b38
 #   .agents/slop/graphcmp.bend    sha256 f1249a539b8e639b56ffbf8954a8aa546759ad57606a768575c50a5a8b1960ab
-#   .agents/slop/graphcmp.py      sha256 968c0952de8f30ddeb6f1c297df6d5f97ef8b3fdb7c71d1da815ea3187555bb8
-#   .agents/slop/graphcmp-run.sh  sha256 7ed74e95c83b9007d2e99d0d223f22e2a95adc16d76a6c2f1f6da167d706d162
-#   .agents/slop/graphcmp-repro.sh sha256 d45fbfa1b83d69be27ed8aa87409afd973eddf81651d20c4c150b6c26bfe3f15
+#   .agents/slop/graphcmp.py      sha256 2fc685921ca83494c59d1caf16b9bf8f0e324fd47fa4ab3d7c8e71e3cfd968d4
+#   .agents/slop/graphcmp-run.sh  sha256 0a0b6f8b0c2a5852acc477b66141cf21f3d9a1f4b631db1c05d688087a66a150
+#   .agents/slop/graphcmp-repro.sh sha256 887e79605152f520f74c4144d9a46ed77c9ce5c4c4f9506ecbb22085998479d8
 #   .agents/slop/graphcmp-oracle.py sha256 e068b3a44c1ae86815f594e335a0a643b9fd67349e271a635e9a718da397001d
 #   .agents/slop/graphcmp-p14-sched.py sha256 3f6d20c8ff144643610e26d5c2701752fcb5f17b06c0206014d0e96ba6b8c700
-# `uop/ops.bend` and `uop/fold.bend` are under SINGLE OWNERSHIP by another unit. They moved
-# through at least six digests across rounds 1-2, went COLD THREE TIMES during round three
-# (`sym_dim.pa` at :1250 not compiling -- twice; `ParamArg`'s field list renamed mid-run --
-# once), and `fold.bend` GAINED `sym_dim.pa` mid-session, which closed the symbolic-dim wall
-# and moved three pinned numbers in this harness at once (see LIMITS section 3c). Every
-# artifact here was RE-CAPTURED at the digests above, and `graphcmp-repro.sh` waits for the
-# substrate and accepts a run only if its own summary reads 16 graphs / 14 AGREE /
-# selfcheck OK / census-rc=0. `ALL PROOFS CHECK` on graphcmp.bend is NOT the gate agreeing
-# -- the gate is `E diff --graph NAME`, and it is run below.
+# THE TWO `uop/` DIGESTS ARE A SNAPSHOT, NOT A CLAIM THAT THEY WILL HOLD. They are under
+# SINGLE OWNERSHIP by another unit, they moved through at least six digests across rounds 1-2,
+# they went COLD THREE TIMES during round three (`sym_dim.pa` at :1250 not compiling -- twice;
+# `ParamArg`'s field list renamed mid-run -- once), and `fold.bend` GAINED `sym_dim.pa`
+# mid-session, which closed the symbolic-dim wall and moved three pinned numbers in this
+# harness at once (LIMITS 3c). Every artifact here was RE-CAPTURED at the digests above.
+# `graphcmp-repro.sh` waits for the substrate and accepts a run only if its own summary reads
+# 16 graphs / 14 AGREE / byte-identical 14 / not-comparable 0 / selfcheck OK / census-rc 0 /
+# stable 5-0-0 / plants 7 / cross 1 / controls 5 / conflations 4 / oracle OK.
+# `ALL PROOFS CHECK` on graphcmp.bend is NOT the gate agreeing -- the gate is
+# `E diff --graph NAME`, and it is run below.
 #
 # ---------------------------------------------------------------------------
 # THE ARTIFACT. ONE command, ONE argument, ONE verdict line, WITH ITS DENOMINATOR.
@@ -189,9 +191,14 @@ D9  E diff --graph {group|sym|loop|gate|commute --plant srcswap}, twice   D9-sta
       pair is re-run once, and the summary counts the NEGATIVES (`stable-failed=`,
       `stable-differ=`) beside `stable-pairs=` -- a positive count alone cannot tell "it
       worked" from "it failed the same way twice". The summary also counts `plants-disagree=`
-      and `cross=` now, because **a step that fails silently is not a step whose failure the
-      health gate can see**: six plants and `cross` were not counted at all, so a cold
-      substrate could kill both and every line the gate read still said healthy.
+      (of SEVEN, not six: `sym1` is the seventh) and `cross=` now, because **a step that
+      fails silently is not a step whose failure the health gate can see**.
+      **AND MAKING A DIFFERING PAIR VISIBLE FOUND THE LAST DEFECT HERE (LIMITS 25):** the
+      first pair to name itself was `sym: 2 runs DIFFER`, `32d31 < rc=0` -- one file 32
+      lines, the other 31, and the missing line was the `rc=` stamp. `run()` appended
+      `rc=$?` to the file the child had just written, so a kill in that window left a
+      report with no tail. It is now ONE dot-named temp in `$D` `mv`d into place, which is
+      atomic, and the repro snapshot excludes dotfiles.
       MEASURED OVER THE WHOLE DIRECTORY, by `sh .agents/slop/graphcmp-repro.sh`:
       **158 of 158 files identical across two clean runs.** The old claim of the same
       shape was backed by `find | md5 -q`, which on macOS takes exactly ONE file and

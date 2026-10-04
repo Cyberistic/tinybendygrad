@@ -939,7 +939,16 @@ def ProgramInfo.of() -> ProgramInfo:
 # one place Python's dict and Bend's Map agree without an encoding, so it is
 # used directly. `Map` is a `Type`, so it is affine and threaded, exactly like
 # the arena.
-type VarVals is Type:
+# `Data` and NOT `Type`, and it was the ONLY `is Type` in this file -- every other
+# record here is `is Data`, and `Type` is a kind, not a value. It compiled for as
+# long as it existed because NOTHING CALLED IT: `ProgramInfo.vals` was a marker, so
+# the one def that takes a `VarVals` never typechecked and the declaration was never
+# exercised. `Map.has` wants a Data and `vv_of` passed a Type, which is the error
+# that finally noticed.
+#
+# So: a declaration nobody calls is not checked, and the file compiled green for the
+# whole time. That is the argument for a mutation table over a gate on defs.
+type VarVals is Data:
   VarVals{m: Map<&2, H.I64>}
 
 def VarVals.new() -> VarVals:
@@ -7661,6 +7670,158 @@ def vrn_rows(+ar: Arena) -> IO(Unit):
     b : Unit <- vrn_row("vrn_multi", UOp.variable(ar, "j", H.i64_neg(True{}, H.i64_of_i32(5)), H.i64_of_i32(5), 4, S.weakint()))
     c : Unit <- vrn_row("vrn_neg", UOp.variable(ar, "m", H.i64_neg(True{}, H.i64_of_i32(100)), H.i64_neg(True{}, H.i64_of_i32(1)), 1, S.weakint()))
     vrn_row("vrn_int32", UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
+
+# `Map.has` answers a `Sigma` and not a `Maybe`, so the Bool rides out in the second
+# half of the pair. `render.bend:1020`'s `ctx_has.of` destructures the same shape and
+# this is the third copy of THAT two-line destructure -- see `Maybe.has` below.
+def vv_has.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, b}: b
+
+def vv_has(v: VarVals, k: String) -> Bool:
+  vv_has.of(Map.has(&2, H.I64, VarVals.m(v), k))
+
+# ==== ops.py:1366  `ProgramInfo.vals` ======================================
+#
+# `tuple(var_vals[k.expr] for k in self.vars)` with
+# `raise RuntimeError(f"unbound Variable {e}")` on a miss. MEASURED:
+# `ProgramInfo(vars=(i,j)).vals({'i':7,'j':9})` is `(7, 9)` and a miss is
+# `RuntimeError: unbound Variable 'j'`.
+#
+# I RECORDED THIS BLOCKER WRONG TWICE, both times in the same direction: I claimed
+# a BEND LANGUAGE CHANGE was needed and never grepped for it. `Map` is a stdlib type
+# from `import Base` -- `references/bend/bend2/base.bend:2551` Map.put, `:2675`
+# Map.set, `:2683` Map.has, `:2736` Map.get, all four present -- and
+# `uop/render.bend:1007` and `:1017` were already CALLING `Map.set` and `Map.get`
+# through `Ctx` while the note here said the rule did not exist.
+#
+# AND THE SECOND CALLER I NAMED WAS WRONG TOO. I wrote that `pyrender`'s `Ctx` walk
+# wanted the same fold; `render.bend:1878`'s `render_with_splits` answers
+# `List<&2, Bind>` and not a `Maybe`, so it does not. The REAL second caller is
+# `unified_rewrite`'s fixpoint (ops.py:1828-1835), where `test_n: UOp|None` is
+# carried through a loop and a `BottomUpGate` breaks out of it -- and THAT is the
+# engine's remaining named wall. Two real callers, and the second one is why the
+# idiom was worth looking for.
+#
+# THE IDIOM IS `bcast.go` (fold.bend:590) verbatim: a `Maybe`-carried LIST
+# accumulator and `Maybe.bind` for the miss arm. `memory.bend:405`'s `mem_some` is
+# the element form of the same thing, and both are in files this one imports. My
+# first draft was TEN defs and did not compile because a def may hold ONE `match`
+# and a hand-rolled `Maybe` accumulator wants two per step; `Maybe.bind` is what
+# collapses that, and it was already here.
+#
+# A MISS IS `Map.get`'s DEFAULT, so "unbound" cannot be told from "bound to 0" by the
+# value alone -- and `vals` on a partially-bound program must REFUSE, not answer
+# zeros. So the Bool comes from `Map.has` and the value from `Map.get`. The default
+# is never a value the map can hold, which is why the `has` is not belt-and-braces.
+# `Map.get` answers a `Sigma` -- the MAP and the value -- not a bare value, so the
+# pair is destructured before the value is used. `render.bend:1009`'s `ctx_get.of` is
+# the same two lines on a `String` map, and getting this wrong is what the
+# `expected : Data / observed : Quant` was: a `Map` where an `H.I64` was expected.
+def vv_of.val(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>) -> H.I64:
+  match r:
+    case Tuple{m, x}: x
+
+def vv_of.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>, present: Bool) -> Maybe<&2, H.I64>:
+  Bool.pick(Maybe<&2, H.I64>, present, Some{vv_of.val(r)}, None{})
+
+# `Map.get(-V: Data, d: V, m, key)` TAKES A DEFAULT and it is the SECOND argument,
+# which is how the `expected : Data / observed : Quant` happened: the `&2` that
+# `Map.has` and `Map.set` want was written here too, and it landed in the `V` slot
+# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `render.bend:1017`'s
+# `Map.get(String, "", Ctx.map(c), U32.show(u))` shows the shape with the `""` in
+# the same slot. Three of the four `Map` readers in the tree and not the fourth.
+#
+# THE DEFAULT IS 0 AND THAT IS WHY THE `has` IS NOT REDUNDANT. A miss returns 0,
+# which is a legal bound, so "unbound" and "bound to 0" are the same value here and
+# only `Map.has` separates them. `ctx_get` gets away with `""` because
+# render.bend:1014 states every src was written first; `vals` has no such guarantee.
+def vv_of(+v: VarVals, +k: String) -> Maybe<&2, H.I64>:
+  vv_of.of(Map.get(H.I64, H.i64_of_i32(0), VarVals.m(v), k), vv_has(v, k))
+
+# THE FOLD, AND IT IS ONE DEF. The first draft split it into `step` / `lookup` /
+# `fetch`, which is MUTUALLY RECURSIVE -- `step` calls `lookup`, `lookup` calls
+# `fetch`, and `fetch` calls `step` back. Bend refuses that, and `bend-toposort`
+# reported the cycle and declined to write, correctly.
+#
+# `Maybe.bind`'s LAMBDA is the continuation, so the three become one def with ONE
+# `match` (on the list, the only scrutinee) and TWO binds. `bcast.go` at
+# fold.bend:590 is the same shape and is why that fold is two lines: the recursion
+# is in the CLOSURE, not in a call chain. `Maybe.bind` is the answer to "a `Maybe`
+# accumulator wants two matches per step", and it was already in the tree.
+def vals.step(+ar: Arena, +v: VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) -> Maybe<&2, List<&2, H.I64>>:
+  match xs:
+    case Nil{}: Some{acc}
+    case h <> t:
+      Maybe.bind(&2, String, List<&2, H.I64>, UOp.expr(ar, h), k =>
+        Maybe.bind(&2, H.I64, List<&2, H.I64>, vv_of(v, k), x =>
+          vals.step(ar, v, t, List.append(&2, H.I64, acc, [x]))))
+
+# THE ENTRY, and the `Maybe` is the refusal for an unbound Variable. Python raises,
+# and this file's standing spelling for a raise is the absent case -- the same
+# `Maybe` `UOp.expr` uses, and the reason `Maybe` rather than a sentinel is that a
+# schedule key of the WRONG LENGTH is a wrong program and not a diagnostic.
+def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&2, H.I64>>:
+  vals.step(ar, v, ProgramInfo.vars(x), Nil{})
+
+# ==== the `vv_*` fixture and rows =========================================
+#
+# FIVE rows and they are the FIVE answers, because `vals` has three ways to be
+# interesting and one of them is invisible: a Variable BOUND TO 0 answers `(0)`,
+# which is the same value `Map.get` hands back for a MISS. Without that row a def
+# that dropped `Map.has` entirely would pass the other four -- it would answer
+# `(0)` for an unbound program instead of refusing, and a schedule key of the wrong
+# LENGTH is a wrong program rather than a diagnostic.
+#
+# `vv_miss_first` is the SECOND-MISS row and not the first: `vals` refuses at the
+# first miss, so a fixture that missed on `i` would never look at `j` and the two
+# would be one row. Missing on the SECOND name is what proves the fold STOPS.
+def vd_pa.put(p: ParamArg, nm: Maybe<&2, String>) -> ParamArg:
+  match p:
+    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, size, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+
+def vd_pa(slot: U32, nm: Maybe<&2, String>) -> ParamArg:
+  vd_pa.put(ParamArg.of(slot, S.weakint()), nm)
+
+# `UOp.variable` is PORTED and is what mints these, so the fixture is the def under
+# test's OWN constructor rather than a hand-built ParamArg. That is the discipline
+# `rra`'s arena follows and the reason `vrn_*` can gate `UOp.variable` from inside
+# the file that uses it.
+def vv.arena() -> Arena:
+  Arena{[
+    Arena.bottom(),
+    Node{OpsPARAM{}, Nil{}, AParam{vd_pa(ParamArg.no_slot(), Some{"i"})}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{vd_pa(ParamArg.no_slot(), Some{"j"})}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(5)}}, TNone{}}], [0]}
+
+def vd_put(nm: String, x: H.I64) -> VarVals: VarVals{Map.set(&2, H.I64, VarVals.new(), nm, x)}
+
+# The row, and the `Maybe` is a refusal: `none` is an unbound Variable. A bare
+# `(0)` would be the bug this whole `has` exists to prevent, so the printer spells
+# the refusal rather than letting a default through.
+def vd_show(m: Maybe<&2, List<&2, H.I64>>) -> String:
+  match m:
+    case Some{ys}: vd_text(ys)
+    case None{}: "none"
+
+def vd_text(ys: List<&2, H.I64>) -> String:
+  match ys:
+    case Nil{}: "()"
+    case h <> t: String.concat([H.i64_text(h), ",", vd_text(t)])
+
+def vd_row(nm: String, +ar: Arena, v: VarVals, xs: List<&2, U32>) -> IO(Unit):
+  +pi = ProgramInfo{ProgramInfo.global_size(ProgramInfo.of()), ProgramInfo.local_size(ProgramInfo.of()), xs,
+    ProgramInfo.globals(ProgramInfo.of()), ProgramInfo.outs(ProgramInfo.of()), ProgramInfo.ins(ProgramInfo.of())}
+  srow(nm, vd_show(ProgramInfo.vals(ar, v, pi)))
+
+def vv.rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- vd_row("vv_two", ar, vd_put("i", H.i64_of_i32(7)), [1, 2])
+    b : Unit <- vd_row("vv_one", ar, vd_put("i", H.i64_of_i32(7)), [1])
+    c : Unit <- vd_row("vv_zero", ar, vd_put("i", H.i64_of_i32(0)), [1])
+    d : Unit <- vd_row("vv_none", ar, VarVals.new(), Nil{})
+    vd_row("vv_miss_second", ar, vd_put("i", H.i64_of_i32(7)), [1, 2])
 
 def main() -> IO(Unit):
   do IO<Unit>:

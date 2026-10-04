@@ -1,0 +1,24 @@
+== THE BASELINE, for reference: one RESHAPE over a symbolic marg ==
+  RESHAPE(a, STACK(n,4))           n=8 op=RESHAPE nsrc=2 shape=(U(PARAM:n),4) dtype=f32
+
+== A RESHAPE CHAINED OVER A SYMBOLIC RESHAPE: `prod(ps)` is symbolic TOO ==
+  RESHAPE(RESHAPE(a,STACK(n,4)), STACK(4,n))     n=10 op=RESHAPE nsrc=2 shape=(4,U(PARAM:n)) dtype=f32
+  RESHAPE(RESHAPE(a,STACK(n,4)), STACK(n,4))     n=9 op=RESHAPE nsrc=2 shape=(U(PARAM:n),4) dtype=f32
+  EXPAND(RESHAPE(a,STACK(n,4)), STACK(4,n))      n=10 op=EXPAND nsrc=2 shape=(4,U(PARAM:n),U(PARAM:n),4) dtype=f32
+  PERMUTE(RESHAPE(a,STACK(n,4)), (1,0))          n=9 op=PERMUTE nsrc=1 shape=(4,U(PARAM:n)) dtype=f32
+  FLIP(RESHAPE(a,STACK(n,4)), (True,False))      n=9 op=FLIP nsrc=1 shape=(U(PARAM:n),4) dtype=f32
+  CAST(RESHAPE(a,STACK(n,4)) -> f32)             n=9 op=CAST nsrc=1 shape=(U(PARAM:n),4) dtype=f32
+  ADD(RESHAPE(a,STACK(n,4)), CONST(1))           n=10 op=ADD nsrc=2 shape=(U(PARAM:n),4) dtype=f32
+  MUL(RESHAPE(a,STACK(n,4)), RESHAPE(a,STACK(m,4))) n=12 op=MUL nsrc=2 shape=RAISE:IndexError dtype=f32
+  PAD(RESHAPE(a,STACK(n,4)), 0, n)               n=10 op=PAD nsrc=3 shape=RAISE:ValueError dtype=f32
+  SHRINK(RESHAPE(a,STACK(n,4)), 0, n)            n=10 op=SHRINK nsrc=3 shape=RAISE:ValueError dtype=f32
+  INDEX(RESHAPE(a,STACK(n,4)), n)                n=9 op=INDEX nsrc=2 shape=(4) dtype=f32
+  REDUCE(RESHAPE(a,STACK(n,4)), (1,), Ops.ADD, i32) n=10 op=REDUCE nsrc=2 shape=RAISE:ValueError dtype=f32
+  GROUP(RESHAPE n, RESHAPE m)                    n=12 op=GROUP nsrc=2 shape=RAISE:TypeError dtype=void
+
+== TWO GRAPHS WHOSE SHAPE COLUMNS ARE BOTH `(U,4)` -- are they the same graph? ==
+  g1 nodes=12 g2 nodes=9
+  g1 toposort: ['ALLOC', 'CONST', 'CONST', 'STACK', 'RESHAPE', 'PARAM', 'STACK', 'RESHAPE', 'PARAM', 'STACK', 'RESHAPE', 'GROUP']
+  g2 toposort: ['ALLOC', 'CONST', 'CONST', 'STACK', 'RESHAPE', 'PARAM', 'STACK', 'RESHAPE', 'GROUP']
+  the SHAPE COLUMNS of g1's two RESHAPEs: [('4', '3'), ('U(PARAM:n)', '4'), ('U(PARAM:m)', '4')]
+  and of g2's:                               [('4', '3'), ('U(PARAM:n)', '4')]

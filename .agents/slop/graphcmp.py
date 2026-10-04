@@ -197,13 +197,15 @@ its own is the whole invocation: ONE command, no other arguments, ONE verdict li
     indexed UOp.sink(p.index(c0).barrier(loop), arg=KernelInfo()) 7  PARAM/INDEX/BARRIER
     sym     UOp.group(RESHAPE(a,STACK(n,4)), RESHAPE(a,STACK(m,4))) 12  SYMBOLIC DIMS
 
-`sym` IS SUPPOSED TO DISAGREE, and that is stated here because a graph in this list that
-reports DISAGREE looks exactly like a port bug until you know which one it is: three of its
-twelve nodes read `?` for `dtype` and `shape` because `fold.bend`'s `marg` cannot
-`ssimplify` a non-CONST STACK element, so the port cannot build a symbolic dim at all.
-Every other graph is AGREE. Each `diff` run prints an OPS CENSUS with per-op NODE counts
-and the denominator `of 77`, so the coverage number is recomputed on every run instead of
-being a sentence in this file.
+`sym` USED TO BE SUPPOSED TO DISAGREE, and that is recorded here because a graph in this
+list that reports DISAGREE looks exactly like a port bug until you know which one it is.
+It DID: three of its twelve nodes read `?` for `dtype` and `shape` because `fold.bend`'s
+`marg` could not `ssimplify` a non-CONST STACK element, so the port could not build a
+symbolic dim at all. `fold.bend`'s `sym_dim` and `reshape_ok` closed it (TWO defects, and
+reverting either puts the graph back -- `runs/margsym/M16-sym-DISAGREE.txt`), so `sym` is
+AGREE now and `graphcmp-run.sh`'s `$WANT` asserts it. Every other graph here is AGREE.
+Each `diff` run prints an OPS CENSUS with per-op NODE counts and the denominator `of 77`,
+so the coverage number is recomputed on every run instead of being a sentence in this file.
 
 `range` and `rangeflat` are a PAIR and exist together. Before them EVERY node in EVERY
 graph had `depth=i0` on both sides, so R5 was a field that had never been asked a
@@ -1018,19 +1020,28 @@ def g_sym():
     * so `U` is not a hole in the differ's identity, it is a hole in the SHAPE COLUMN
       alone, and the resolution of the limit is that exact statement.
 
-  AND THE PORT CANNOT BUILD IT AT ALL, which this graph makes loud rather than asserted.
-  MEASURED: `uop/fold.bend`'s `marg.of` answers `None{}` -- `(ssimplify(self),)`, the
+  AND THE PORT USED TO BE UNABLE TO BUILD IT AT ALL, which this graph made loud rather than
+  asserted and which is now RESOLVED. THE BEFORE, because the row's value is in the
+  distance: `uop/fold.bend`'s `marg.of` answered `None{}` -- `(ssimplify(self),)`, the
   `ssimplify` wall -- for any STACK element that is not a CONST (`marg.step`'s
-  `case None{}` sets `ok=False`), and `graphcmp.bend`'s `shape_str` spells that `None` as
+  `case None{}` set `ok=False`), and `graphcmp.bend`'s `shape_str` spells that `None` as
   `?`. So the port's two RESHAPEs read `?` where CPython reads `(U,l0:4)`, on MATCHING
-  cores, which by this file's own measured theorem cannot mean the graphs differ: it
-  means the two `_shape` implementations disagree. The port's OWN ledger at
-  `fold.bend:6180` already records the same wall ("nothing in this tree can mint one" --
-  `O.SU` has a constructor and no caller), so this graph is that claim with a denominator
-  on it. It is also what makes the `?` ledger marker live for the first time.
+  cores, which by this file's own measured theorem cannot mean the graphs differ: it meant
+  the two `_shape` implementations disagreed. The port's OWN ledger recorded the same wall
+  ("nothing in this tree can mint one" -- `O.SU` had a constructor and no caller), so this
+  graph was that claim with a denominator on it, and it is what made the `?` ledger marker
+  live for the first time.
+  THE AFTER, MEASURED: `fold.bend`'s `sym_dim` (fold.bend:1243) mints the `O.SU`, its
+  `dim_str` prints `U(Ops.PARAM:n)` so the two dims are NAMED rather than both blank, and
+  `reshape_ok` reads `resolve`'s `False` default instead of demanding a provable product.
+  `diff --graph sym` is AGREE at 12 of 12 with `?=0`, and the port builds the graph node
+  for node -- 12 on both sides, and the canonical files are byte-identical. **It was two
+  port defects**: reverting `reshape_ok`'s `sym` arm alone puts this graph back to
+  `?=0/6` and DISAGREE, which is `runs/margsym/M16-sym-DISAGREE.txt`.
 
-  CONSEQUENCE FOR THE ARTEFACT, stated rather than buried: `diff --graph sym` is
-  DISAGREE, and it is supposed to be. Every other graph is AGREE and this one is not."""
+  CONSEQUENCE FOR THE ARTEFACT, stated rather than buried: `diff --graph sym` was
+  DISAGREE-on-purpose while the wall was open and is AGREE now, and `graphcmp-run.sh`'s
+  `$WANT` asserts which of the two it is on every run."""
   from tinygrad import Tensor
   a = Tensor.empty(4, 3).uop
   c4 = UOp.const(4)
@@ -1656,9 +1667,13 @@ LEDGER = (
    "PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple "
    "(ops.py:455) and `dtype_from_uop` (ops.py:123-190) is TOTAL over Ops, so upstream has "
    "no third state in either column and `?` cannot be produced by the py side. FIRST LIVE "
-   "on `--graph sym`: fold.bend's `marg.of` answers None for a STACK element that is not a "
-   "CONST (the `ssimplify` wall), which unsettles the RESHAPE's whole `Derived` and so "
-   "takes `dtype` with it"),
+   "on `--graph sym`: fold.bend's `marg.of` answered None for a STACK element that is not a "
+   "CONST (the `ssimplify` wall), which unsettled the RESHAPE's whole `Derived` and so took "
+   "`dtype` with it. NO LONGER LIVE THERE -- `sym_dim` and `reshape_ok` closed it and `sym` "
+   "reads `?=0`; the row is kept and asserted on `--graph loop`, whose CALL has a different "
+   "and still-open cause (`call_dt` reads `CallInfo.dtype`, which CPython's `CallInfo` does "
+   "not have). **It was TWO port defects, not one**: the revert of either half puts `sym` back "
+   "to `?=0/6` and DISAGREE (measured, `runs/margsym/M16-sym-DISAGREE.txt`)"),
   ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
@@ -2093,7 +2108,7 @@ def selfcheck(dev: str = "CPU") -> int:
   # because `uop/fold.bend`'s `marg.of` hit the `ssimplify` wall for a STACK element that is
   # not a CONST. MEASURED 2026-10-04 late in the day: `sym` now answers `?=0` and
   # `VERDICT: AGREE` at 12 of 12 nodes -- the wall is CLOSED, `fold.bend`'s `sym_dim.pa`
-  # (`fold.bend:1296`, the `AParam` arm of `sym_dim.of`) landed, and a symbolic dim is
+  # (`fold.bend:1273`, the `AParam` arm of `sym_dim.of` at `fold.bend:1308`) landed, and a symbolic dim is
   # mintable in Bend. **An assertion that pins a RESOLVED limit is worse than no assertion,
   # because it makes the resolution look like a regression**, so the `?=6` row is replaced by
   # two rows that are each still true for a named reason:
@@ -2109,7 +2124,7 @@ def selfcheck(dev: str = "CPU") -> int:
   qloop = dict(ledger(bend_loop_rows(dev)))["?"]
   if qsym != 0:
     bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers ?={qsym} on the bend "
-               f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1296`) says the "
+               f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1273`) says the "
                f"symbolic-dim case is closed and `--graph sym` VERDICT is AGREE")
   if qloop != 2:
     bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`'s CALL, not 2 (one "

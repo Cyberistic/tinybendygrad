@@ -17,20 +17,23 @@ defects in the differ's own normal form. The second added four graphs -- `group`
 `commute`, `indexed`, `sym` -- and four more, of which two were in a check that had been
 reporting `PASS` over nothing. The third (this file's §6) added three graphs -- `lin`,
 `loop`, `gate` -- whose PY side is a call into tinygrad's own scheduler and codegen rather
-than a hand-built expression, and found EIGHT more -- four in the normal form (17-20), one
-in the census's atom scanner (21) and three in the checks themselves (22-24), where a pair of
+than a hand-built expression, and found TEN more -- four in the normal form (17-20), one
+in the census's atom scanner (21) and five in the checks themselves (22-26), where a pair of
 identical FAILURES was being reported as a stable pair. Current state, MEASURED and printed
 by `runs/graphcmp/D/D0-run-summary.txt` and `D0-coverage-census.txt`:
 
     graphs 16   AGREE 14 (lin/loop DISAGREE, each with a named measured cause)   nodes 189 per side
     ops 34 of 77   commutative ops 7 of 8   symbolic-dim nodes 2 of 189 (BOTH SIDES, see 3b)
-    field-records 1134 per side   byte-identical 14 of 16   stable pairs 5 of 5
+    field-records 1134 per side   byte-identical 14 of 16   stable 5 identical / 0 differ / 0 failed
     selfcheck OK   oracle-selfcheck OK   controls 5 of 5   plants 7 of 7   cross 1 of 1
     conflations 4 of 4   repro 158/158
 
 **THE LIMIT THAT WAS CLOSED WHILE THIS ROUND RAN.** §3b's symbolic-dim wall was OPEN when
-this unit started and is CLOSED now: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the
-`AParam` arm of `sym_dim.of`) landed from the `fold` unit, `--graph sym` reads `?=0` and
+this unit started and is CLOSED now: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1273`, the
+`AParam` arm of `sym_dim.of` at `fold.bend:1308`) and `reshape_ok`'s two-flag read both
+landed from the `fold` unit -- **and §3b records the measurement that EITHER ONE ALONE
+leaves `sym` DISAGREEING**, because a one-line port of the first would have looked like a
+fix on a port that still disagreed on 3 of 12 nodes. `--graph sym` reads `?=0` and
 `VERDICT: AGREE` at 12 of 12, and the port now mints a symbolic dim. Three pinned numbers
 moved with it -- `selfcheck`'s `?=6` row, `graphcmp-run.sh`'s `sym:DISAGREE`, and
 `graphcmp-repro.sh`'s `graphs-agree=13` -- and §3c is the table of what moved and why. **A
@@ -300,10 +303,24 @@ was MEASURED, and it was a PORT LIMIT rather than a harness one, and the port's 
 recorded it: `fold.bend` said "`O.SU` is a shape dim for a SYMBOLIC size, and **nothing in
 this tree can mint one** ... `rg 'SInt\.uop'` finds the constructor and NO caller".
 
-**MEASURED 2026-10-04, LATE IN THE DAY: THAT LIMIT IS GONE.** `uop/fold.bend`'s
+**MEASURED 2026-10-04, LATE IN THE DAY: THAT LIMIT IS GONE -- AND IT WAS **TWO** DEFECTS,
+NOT ONE, WHICH THIS SECTION GOT HALF RIGHT THE FIRST TIME.** `uop/fold.bend`'s
 `sym_dim.of` now has an `AParam` arm -- `case O.AParam{pa}: sym_dim.pa(pa, i)`
-(`fold.bend:1296`) -- which is the symbolic-dim-as-a-PARAM case the `ssimplify` wall was
-refusing, and the consequence is visible in this harness's own output:
+(`fold.bend:1308` calling `sym_dim.pa` at `fold.bend:1273`) -- which is the
+symbolic-dim-as-a-PARAM case the `ssimplify` wall was refusing. **That arm ALONE is NOT
+ENOUGH, and the measurement is the proof rather than an argument:** with `sym_dim.pa`
+landed and `reshape_ok`'s `sym` arm reverted, `diff --graph sym` reads `?=0/6`, prints the
+SAME six rung-1 field mismatches it printed before any of this, and answers
+`VERDICT: DISAGREE` (`runs/margsym/M16-sym-DISAGREE.txt`). The second defect was
+`Prod`'s single `bad` flag, which read a NEGATIVE dim and a SYMBOLIC dim as the same
+thing -- and upstream's two checks then read that one flag as opposite things, because
+`all(x >= 0)` (ops.py:408) RAISES on it while `resolve(prod(ps) != prod(marg), False)`
+(ops.py:410) is a call with a `False` DEFAULT, so an unprovable product does NOT raise.
+`Prod` now carries `neg` and `sym` as two flags and `reshape_ok` is `resolve`'s default.
+**A harness that watched only one of the two would have declared the wall closed on a
+port that still disagreed on 3 of 12 nodes**, which is the whole reason this file's
+denominators are printed rather than narrated. The consequence is visible in this
+harness's own output:
 
     diff --graph sym  ->  VERDICT: AGREE     12 of 12 nodes, 72 field-records
     # RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
@@ -314,6 +331,21 @@ So: **`sym` is AGREE**, `?` is no longer produced by it, and the port builds a s
 what this unit contributed is the fixture and the denominator that made the closure visible
 and checkable. That is the whole division of labour the harness was built for, and it is
 worth recording as a result rather than as a footnote.
+
+**(b′) WHAT IS STILL NOT ANSWERED, and the harness CANNOT SEE EITROW.** This is the half of
+§3b that belongs to the port and not to this file, and it is stated here because §3b now
+says "resolved" and a resolved limit with an unnamed remainder is a lie. `fold.bend`'s
+`sym_dim` refuses a PARAM or SPECIAL whose interval is **EMPTY** (`vmin > vmax`, which a
+SPECIAL `'N'` over an END OF ZERO has) or negative, because ops.py:408's `all(x >= 0)` is
+then DECIDABLE and this fold is not; and `reshape_ok` answers `resolve`'s DEFAULT without
+deciding its VALUE, so it does not raise when the two products' intervals are **DISJOINT**,
+which is the case where CPython raises. Two rows in `.agents/slop/oracles/fold-mvt-rows.py`
+name them and both are in that file's DIVERGES block: `mv_expsym` (the fold REFUSES where
+CPython answers) and `mv_reshbare_dis` (the fold ANSWERS where CPython raises). **Neither
+input class occurs in this corpus** -- no graph here carries a SPECIAL dim or a disjoint
+product -- so the census cannot move and the differ's `?=0` is not evidence about them.
+They are port-side rows, not differ-side ones, and they are the honest reason §3b reads
+"resolved" rather than "complete".
 
 **(c) WHAT HAD TO CHANGE BECAUSE OF (b), and it is the part that is easy to get wrong.**
 Three things in this file and its neighbours were pinned to the OLD limit, and all three had
@@ -431,8 +463,9 @@ three's `lin` happens not to. It is the nearest unclosed gap and it is a graph, 
 
 Same shape as §1: **a field, a CHECK, or a PRINTING that nothing had asked a question.**
 17-20 are the ones that matter, and 17 and 20 are the ones that would have kept lying.
-22-24 are in the CHECKS rather than the differ, and 22 is the one that produced a
-clean-looking summary over a run in which half the work never happened.
+22-26 are in the CHECKS rather than the differ, and 22 is the one that produced a
+clean-looking summary over a run in which half the work never happened. 25 was found only
+BY 22's fix.
 
 16. **THIS FILE ASSERTED, IN THREE PLACES, THAT NO NODE IN THE CORPUS HAD MORE THAN ONE
     PARENT. IT IS FALSE, AND THE CENSUS THAT CAUGHT IT IS NOW ON EVERY REPORT.** The
@@ -595,6 +628,43 @@ clean-looking summary over a run in which half the work never happened.
     count was right and the claim about it was wrong, and **nothing could see it because the
     numerator and the denominator were printed by the same line.** The count is now of the
     FILES (`grep -l | wc -l`) and the denominator is written next to it.
+
+25. **AND FIXING 22 FOUND 26: A TRUNCATED REPORT IS NOT A REPRODUCIBILITY DIFFERENCE.**
+    Once a differing pair named itself, the first one to appear was `sym: 2 runs DIFFER`,
+    `32d31 < rc=0` -- one file thirty-two lines, the other thirty-one, and the missing line
+    was `rc=0`. **`run()` appended `rc=$?` to the SAME file the child had just written, and a
+    run killed between the two left a report with no stamp and a tail missing.** This is
+    LIMITS #13's mid-write truncation one layer up, and it had been in the harness since
+    round one; round one only survived it because the pair it broke was one nobody read.
+    The fix is ATOMIC rather than careful: `run()` now writes the report AND the stamp into
+    one dot-named temp inside `$D` and `mv`s it into place, so a kill leaves either the
+    previous complete file or no file, never a half one. `graphcmp-repro.sh`'s snapshot
+    excludes dotfiles, because a temp left by a kill is a difference in the harness's
+    STAGING and not in the artefact.
+    **The chain is the finding: 22 (two identical failures compare equal) -> the fix made a
+    differing pair visible -> 25 (the difference was a truncated file).** Neither was
+    reachable from the other. The same shape as item 13 and item 16: **a prose claim, a
+    printing, or a check written to justify something is a claim with no denominator, and it
+    is wrong in the direction that flatters the artefact.** Round three found four of them
+    (16's false multi-parent claim is inherited; 17-20 and 22-25 are new).
+
+26. **AND A HEALTH GATE THAT READS A SUMMARY IS A GATE THAT TRUSTS A SUMMARY.** MEASURED:
+    with `not-comparable=0`, `stable-pairs=5 of 5`, `plants-disagree=7 of 7` and both
+    selfchecks OK -- every line the gate read -- one `D2-canon-bend-*.txt` in the run's
+    snapshot was **0 bytes**, and `D5-plant-sym1.txt` and `D8-dbg-012.txt` differed between
+    two runs the gate had both accepted. The cause is not a wrong number: step 02 writes the
+    two canonical files with a BARE redirect (it needs stdout in two files, so it cannot use
+    `run()`), and a step that can fail makes the summary and the files two different claims
+    about the same attempt. `graphcmp-repro.sh` therefore now checks the **SHAPE of every
+    artefact** as well as the summary: no `D*.txt` may be empty, and none of the `diff`
+    REPORTS (`D1-graph-*`, `D3-control-*`, `D5-plant-*`, `D6-*`, `D9-stability-*`) may be a
+    single line, because a one-line `rc=N` file IS the 0-row failure shape. The other
+    artefacts are legitimately one line -- `D2-cmp-*` is a verdict line and `D1-verdicts.txt`
+    is an assertion line -- so the rule is stated over the reports BY NAME. **A rule that
+    flags a correct file is a rule that always fails, and then it is not a rule.**
+    A fourth summary-shaped defect went with it: `D9-stability-srcswap-{a,b}.txt` were
+    argparse ERROR files left in the directory by an earlier unquoted `for c in $STAB`, and
+    nothing caught them because `D1-verdicts.txt` looks at verdicts and not at file NAMES.
 
 **ONE MORE FINDING THAT IS NOT A DEFECT IN THIS FILE, and is the most useful thing round
 three produced.** `lin`'s SINK DISAGREEs on `applied_opts` and `loop`'s CALL DISAGREEs on

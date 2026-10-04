@@ -1042,7 +1042,7 @@ all of it, one to measure whether the regeneration is reproducible.
 | `.agents/slop/graphcmp-p13-ops.py` | the raw CPython probe, and the answer to every coverage claim: does `Ops.GROUP` carry a `params` list (no), which Tensor op emits which NODE op, can two different symbolic dims be separated and by which field, what is a variable PARAM's slot, and the corpus-wide op/node/symbolic-dim/fan-in tally. **Everything is a CALL, never a transcription.** | `env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/graphcmp-p13-ops.py` |
 | `.agents/slop/graphcmp-p14{,-b,-c,-d,-e}.py` | the round-three probes: **what a real SCHEDULED program actually contains**. Q: does `schedule_linear` + `full_rewrite_to_sink` reach LOAD/STORE (yes, 46 nodes); does `hcq_fence` reach BACKEDGE (yes, 25 nodes); **does the scheduler ever mint a GATED STORE, which is the only input to the tree's one `Ops.ENDIF` rule (0 in 9 programs)**; and does the real `pm_linearize_cleanups` turn one into IF/ENDIF (yes, 14 nodes). | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14d.py` |
 | `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. Carries **three assertions of its own** (`# ORACLE SELFCHECK:`), which is where defect 21 is kept from coming back. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py` |
-| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 16 graphs, five controls, cross, six plants, the ordered/equiv split, the conflations, the DEBUG sweep, five stability pairs classified into **three** outcomes (identical / differ / **one side is a 0-row failure**), the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. Its summary counts every step, because a step that fails silently is not a step whose failure a gate can see. | `sh .agents/slop/graphcmp-run.sh` |
+| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 16 graphs, five controls, cross, seven plants, the ordered/equiv split, the conflations, the DEBUG sweep, five stability pairs classified into **three** outcomes (identical / differ / **one side is a 0-row failure**), the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. Every output is written to a dot-named temp and `mv`d into place, so a run killed mid-write cannot leave a truncated file. Its summary counts every step — **a step that fails silently is not a step whose failure a gate can see**. | `sh .agents/slop/graphcmp-run.sh` |
 | `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary reads 16 graphs / 14 AGREE / byte-identical 14 / not-comparable 0 / selfcheck OK / census-rc 0 / **stable 5-0-0** / plants 6 / cross 1 / controls 5 / conflations 4 / oracle OK — the **negative** counts included, because a positive count alone cannot tell "it worked" from "it failed the same way twice" — then compares sha256 over non-blank lines. MEASURED **158 of 158 files identical**. It exists because the previous claim was backed by `find \| md5 -q`, which on macOS takes ONE file — and the corrected check found a real nondeterminism on its first run. | `sh .agents/slop/graphcmp-repro.sh` |
 
 `E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
@@ -1050,11 +1050,13 @@ all of it, one to measure whether the regeneration is reproducible.
 Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
 the 8 commutative ops, 2 symbolic-dim nodes of 189 on BOTH sides, 14 of 16 `AGREE`
 (`lin`/`loop` DISAGREE, each with a named measured port gap), 14 of 16 byte-identical, 5 of
-5 stability pairs, 4 of 4 conflations, 5 of 5 controls, both selfchecks OK.**
-`graphcmp-repro.sh` measures **158 of 158 files byte-identical across two clean runs**.
-**A limit closed mid-round:** the `ssimplify` wall that made `sym` DISAGREE was closed by
-the `fold` unit (`fold.bend:1296`), which moved three pinned numbers in this harness at
-once — including a health gate that then refused to measure a correct run.
+5 stability pairs identical with 0 differing and 0 failed, 7 of 7 plants, 5 of 5 controls,
+4 of 4 conflations, `cross` 1 of 1, both selfchecks OK.** `graphcmp-repro.sh` measures
+**158 of 158 files byte-identical across two clean runs**. **A limit closed mid-round:** the
+`ssimplify` wall that made `sym` DISAGREE was closed by the `fold` unit
+(`fold.bend:1296`), which moved three pinned numbers in this harness at once — including a
+health gate that then refused to measure a correct run, which is why the gate now reads
+negative counts (`stable-failed=`, `stable-differ=`) rather than only positive ones.
 
 **`.agents/slop/graphcmp-LIMITS.md` is the point of the whole thing** — sixteen defects this
 instrument found in its OWN normal form by widening its corpus, and every limit it does not
@@ -1183,3 +1185,29 @@ rows for 25 of 39 ports; `./bin/bend tinybendygrad/renderer/cstyle.bend` alone p
 `--refetch-zero` re-runs each empty lane alone with `rebase-gate.py`'s own
 `BEND_ROW_TRIES`/`BEND_ROW_BACKOFF` and records `row_tries`/`row_secs`. Rules:
 `notes/bend2-constraints.md` **GC-7 .. GC-12** at the END of the file (position ~21284).
+
+---
+
+## `nv` register tables — the order-inside-a-pair census
+
+- **`.agents/slop/nv_order_census.py`** — the per-site order-sensitivity census for every
+  `Fld.of` in `tinybendygrad/runtime/support/nv/nvdev.bend` and for all 119 `NVReg` tables
+  reachable from `nvdev.py`'s own `include()` calls (383 fields). **Its arithmetic is
+  asserted against the port's own published `nv_mask_*` / `nv_fldmax_*` / `nv_fld_*` rows
+  BEFORE it is used, and the control caught a real error of mine** — `nv.mask` is an
+  OR-fold (`nvdev.py:28` is `functools.reduce(int.__or__, ...)`) and I first wrote it as a
+  sum. A census whose arithmetic disagrees with the port measures nothing.
+  Writes `nv_order_census.json`.
+- **`.agents/slop/nv_mmustrans.py`** — transposes ONE field in each of the six `MMU_VER`
+  structs and reports the rows that moved, plus two controls (BOOT_42, which has a
+  `_ranges` row, and an `s == e` site widened to `(8,9)`, which is a width edit rather than
+  a swap). Each transposition costs ~21 min: see NV-1 in the notes.
+- **`.agents/slop/nv_one_mutation.py`** — one `nv_mutate.py` entry, full row list with
+  before/after values. `nv_mutate.py` prints only the first three moved rows, and a mutation
+  that moves 22 and reports 3 is a table nobody can read.
+- **`.agents/slop/boot42_inversion.md`** — the before/after of the `minor_extended_revision`
+  transposition, by whole `name=value` line, with both row-set digests.
+
+**A `String` in Bend 2 is consumed by its one use**, so a gate row that must build its own
+name from a value cannot also use that value as a lookup key. Row names in the new per-field
+group are literals on both sides. See NV-2 in the notes.

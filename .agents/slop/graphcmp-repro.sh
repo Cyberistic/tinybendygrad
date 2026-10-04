@@ -22,7 +22,12 @@ set -u
 cd "$(dirname "$0")/../.." || exit 2
 WAIT=${1:-9}
 snap() {
-  find runs/graphcmp/D -type f | sort | while read -r f; do
+  # DOTFILES ARE EXCLUDED, and that is not cosmetic: `run()` stages each output as
+  # `$D/.tmp.<name>` and `mv`s it into place, so a run killed mid-write leaves a temp behind.
+  # A temp that exists in one snapshot and not the other is a difference in the HARNESS's
+  # staging, not in the artefact. `find -name '.*' -prune` skips the dotfiles and their
+  # directories.
+  find runs/graphcmp/D -name '.*' -prune -o -type f -print | sort | while read -r f; do
     printf '%s  %s\n' "$(grep -v '^[[:space:]]*$' "$f" | shasum -a 256 | cut -d' ' -f1)" "$f"
   done
 }
@@ -79,12 +84,53 @@ healthy() {
   grep -q '^conflations=4 of 4$' "$s" &&
   grep -q '^oracle-selfcheck=# ORACLE SELFCHECK: OK$' "$s"
 }
+# THE ARTEFACTS THEMSELVES, not the summary about them. MEASURED, and this is the fourth
+# time in this file that a summary line was the wrong thing to gate on:
+#   * `D2-canon-bend-*.txt` is written by a BARE redirect in step 02 (it needs stdout in two
+#     files, so it cannot use `run()`), so a 0-byte bend side there is caught only by the
+#     byte-count guard downstream -- and a whole RUN's snapshot was taken with one of them
+#     empty, which `not-comparable=0` in the summary did not describe;
+#   * `run()` is now atomic (LIMITS 25), so a 1-line `rc=N` file can only be a genuine
+#     0-row FAILURE -- and two identical ones compared equal (LIMITS 22).
+# A gate that reads the summary trusts that the summary and the files were written at the
+# same time by the same attempt. They were not, when a step can fail. So this counts the
+# SHAPE of every artefact: no `D*.txt` may be empty, and none may be a single `rc=` line.
+# `*.err` files are legitimately empty (stderr was empty) and are excluded -- and that
+# exclusion is the other half of the rule, because a gate that flagged them would be a gate
+# that always fails.
+artefacts_ok() {
+  # EVERY artefact must be non-empty. MEASURED: `D2-canon-bend-indexed.txt` was 0 bytes in a
+  # run whose summary said `not-comparable=0`.
+  find runs/graphcmp/D -name '*.txt' ! -name '*.err' | while read -r f; do
+    [ -s "$f" ] || echo "EMPTY $f"
+  done
+  # A `diff` REPORT must have more than one line -- a one-line `rc=N` file IS the 0-row
+  # failure shape, and two of them compared equal. The other artefacts are legitimately one
+  # line (`D2-cmp-*` is a verdict line, `D1-verdicts.txt` is an assertion line,
+  # `D8-dbg-012.txt` is a verdict line), so the rule is stated over the `diff` reports by
+  # name rather than over every file: a rule that flags a correct file is a rule that always
+  # fails, and then it is not a rule.
+  find runs/graphcmp/D \( -name 'D1-graph-*.txt' -o -name 'D3-control-*.txt' \
+    -o -name 'D5-plant-*.txt' -o -name 'D6-*.txt' -o -name 'D9-stability-*.txt' \) \
+    ! -name '*.err' | while read -r f; do
+    [ "$(wc -l < "$f" | tr -d ' ')" -le 1 ] && echo "ONE-LINE $f"
+  done
+}
+
 clean_run() { # clean_run <label>: run until healthy, bounded.
   i=0
   while [ "$i" -lt "$WAIT" ]; do
     ready && sh .agents/slop/graphcmp-run.sh > /dev/null 2>&1
-    if healthy; then echo "# $1: healthy run"; return 0; fi
-    echo "# $1: run $((i+1)) was NOT healthy (a concurrent edit to uop/ops.bend most likely) -- waiting"
+    if healthy; then
+      bad=$(artefacts_ok)
+      if [ -z "$bad" ]; then
+        echo "# $1: healthy run, and every artefact has a body"
+        return 0
+      fi
+      echo "# $1: summary healthy but $(echo "$bad" | wc -l | tr -d ' ') malformed artefact(s): $(echo "$bad" | head -2 | tr '\n' ' ')"
+    else
+      echo "# $1: run $((i+1)) summary was NOT healthy -- waiting"
+    fi
     i=$((i+1)); sleep 30
   done
   echo "# $1: no healthy run in $WAIT attempts -- this is NOT a measurement"; return 1

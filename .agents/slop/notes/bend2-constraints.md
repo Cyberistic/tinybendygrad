@@ -22193,3 +22193,308 @@ because `Staged.__exit__` unlinks.  The two survivors have no PID to check:
 still be here tomorrow is exactly the one that predates the conversion**, so the number to
 watch is not the debris count but the `IN-FLIGHT` count: a nonzero IN-FLIGHT is units
 working, and a DEBRIS that keeps not growing is debris that nobody is producing.
+
+## GC-9 A TRUNCATED FILE IS NOT A REPRODUCIBILITY DIFFERENCE, AND `>>` AFTER A REDIRECT IS
+## THE WINDOW
+
+MEASURED 2026-10-04: `sym: 2 runs DIFFER`, and the diff was `32d31 < rc=0` -- one file
+thirty-two lines, the other thirty-one, and the missing line was the `rc=` stamp.
+
+The shape was
+
+    $E $P harness.py "$@" > "$D/$out" 2>"$D/$out.err"
+    echo "rc=$?" >> "$D/$out"
+
+Two writes to one file, so a run killed between them leaves a report with no tail and no
+stamp. It has been in this harness since round one; round one only survived it because the
+pair it broke was one nobody read. **A child that writes a file and a parent that then
+appends to the SAME file is two writes, not one.**
+
+The fix is ATOMIC, not careful:
+
+    { cmd > "$D/.tmp.$out" 2>...; echo "rc=$?" >> "$D/.tmp.$out"; }
+    mv "$D/.tmp.$out" "$D/$out"
+
+so a kill leaves either the previous complete file or no file, never a half one. Keep the
+temp in the SAME directory (so `mv` is same-filesystem and therefore atomic), dot-named, and
+have any scanner that walks the directory exclude dotfiles -- a temp left by a kill is a
+difference in the HARNESS's staging and not in the artefact.
+
+**AND THE CHAIN IS THE FINDING.** The pair only NAMED ITSELF because a different fix (one
+that stopped treating two identical 0-row failures as a stable pair) made a differing pair
+visible. Neither finding was reachable from the other: the classification fix exposed the
+truncation, and the truncation was what the classification fix was looking for.
+
+## NV-1 A TRANSPOSITION INSIDE A FIELD IS NOT WIDTH-PRESERVING IN A WRAPPING WIDTH
+## FORMULA, AND THE ROUND TRIP THAT CATCHES IT NEEDS THE ALL-ONES WORD
+
+MEASURED 2026-10-04, `tinybendygrad/runtime/support/nv/nvdev.bend`. Position: see the end of
+this file; numbering continues from `GC-9` immediately above. Cite the rule by its POSITION,
+never by a number -- the numbers in this file repeat across units.
+
+`nvdev.bend` had `Fld.of("minor_extended_revision", 11, 8)` where CPython says `(8, 11)`
+(`tinygrad/runtime/autogen/nv_regs/nv_ref.py:61`, and confirmed by CALLING
+`B42.fields["minor_extended_revision"]` and by `NVReg.read_bitfields()` on `0xdeadbeef`,
+which answers 14). The port's `nv.wid(s, e) = U32.add(U32.sub(e, s), 1)` is a WRAPPING
+width, so
+
+    wid(8, 11)  =  4
+    wid(11, 8)  =  4294967294          # 8 - 11 + 1 = -2, mod 2^32
+
+**So the premise "the field is 4 bits either way, so a count cannot see it" is FALSE here,
+and believing it is what makes the bug look undetectable.** The mask goes from `0x00000f00`
+(4 bits) to `0xfffff800` (24 bits), and the rows that caught it include two COUNT-shaped
+ones -- `nv_reg_NV_PMC_BOOT_42_maxw` (10 -> 4294967294) and `..._wide` (0 -> 1). What
+actually survived is narrower and worth stating exactly:
+
+    nv_reg_*_base, _off, _nf, _names   read NO bit position and NO width, so they are
+                                        blind to ANY edit of the field table.
+
+That is the real blind set: four rows per register, and the fix is per-FIELD rows rather
+than per-register aggregates.
+
+### THE THREE NAIVE ROUND TRIPS ARE BLIND, AND ONE OF THEM IS NOT
+
+Measured over all 86 `Fld.of` sites in the file (`.agents/slop/nv_order_census.py`, whose
+arithmetic is asserted against the port's own `nv_mask_*` / `nv_fldmax_*` rows before it is
+used -- the control caught a real error of mine, `mask` being an OR-fold and not a sum):
+
+| probe                                   | sites where it MOVES between the two orders |
+|-----------------------------------------|--------------------------------------------|
+| `getb(enc(1), s, e)` -- the low bit     | **19 of 86**                               |
+| `getb(enc(pw(w-1)), s, e)` -- top bit    | **28 of 86**                               |
+| `getb(fenc(0xffffffff, s), s, e)`       | **40 of 86**  == order-sensitivity exactly |
+
+The first two cannot be gates. `getb(enc(1))` reads `1` under `(8,11)` AND `1` under
+`(11,8)`; the top-bit probe reads `8` vs `0` and its expectation is `pw(w-1)`, which is `0`
+in the mutant because `pw` saturates, so `0 == 0` and it PASSES the defect.
+
+The all-ones word works because `fenc(s, 0xffffffff)` loses the top `s` bits, so `getb` of
+it is `ones(w)` whatever the order -- and the two orders have DIFFERENT `w`. Gated as
+`nv_fldmax_<field>`.
+
+**THE GENERAL RULE: a round trip whose expected value is derived from the SAME `(s,e)` it is
+testing is a tautology.** The expected value must come from CPython, or the check is the
+port agreeing with itself. Only 6 of the 86 sites in this file have a field whose round-trip
+moves -- they are BOOT_42's six -- and those six are the ones now gated per field.
+
+### A NEGATIVE WIDTH IS ALSO A 417x SLOWDOWN, WHICH IS A FINDING AND NOT A FOOTNOTE
+
+`nv.ones(w) = nv.pw_of(w) - 1`, and `nv.pw` DOUBLES `w` times. With `w = 4294967294` that is
+4.29e9 iterations, and `nv.ones` is called once per field per `mask`/`encode`/`decode` row.
+Measured on the same machine, same file, one `bin/bend` run each:
+
+    (8,11)  fixed       3.05 s      814 rows
+    (11,8)  transposed  21 min 12 s  814 rows          # 417x
+
+**So this species is not only a silently wrong register write; on the real driver it turns
+`NVReg.mask/encode/decode` -- which `nvdev.py` runs per page-table entry -- from
+microseconds into minutes.** A mutation harness with a wall-clock budget will report this
+mutation as a TIMEOUT, and a timeout reads as "harness problem", not "the port has a field
+with a negative width". Budget ~21 minutes for any mutation that creates one.
+
+### MEASURED PARTITION OF THE 86 `Fld.of` SITES, WITH THE DENOMINATOR
+
+    A. s == e, 33 sites   -- NO second order exists, the swap is a NO-OP.  A THEOREM,
+                            not a blind spot: there is nothing to detect.
+    B. s != e, s <= 31, 40 sites -- order-sensitive, and every one of them is inside
+                            either a printed `_ranges` row or one of the six new
+                            `nv_fld*` rows.
+    C. s > 31, s != e, 13 sites -- the 32-bit SHIFT WALL (`U32.shln` saturates past 31);
+                            a different species, gated by `nv_reg_*_wide`.
+    A+B+C = 86.
+
+Over CPython's own tables -- all 119 `NVReg` tables reachable from `nvdev.py`'s own
+`include()` calls, 383 fields -- order-sensitivity is **159 of 383** and 94 have `s > 31`.
+
+### THE RESIDUAL BLIND SPOT, MEASURED NOT GUESSED
+
+**The six `MMU_VER` structs print NO field-table row at all.** `nv_reg_*_ranges` exists for
+exactly five registers (BOOT_0, BOOT_42, WPR2, MMU_INVALIDATE, and the scratch one), and
+for the six MMU structs the only row is `nv_addr_v2_pte`-style, an address. So 22 of the 40
+class-B sites sit in registers with no per-field range row. `.agents/slop/nv_mmustrans.py`
+transposes one field in each of the six and reports the rows that moved; a `0` there is a
+blind spot with its reason attached, never a pass.
+
+## NV-2 A `String` IS CONSUMED BY ITS ONE USE, SO A ROW NAME AND ITS LOOKUP KEY CANNOT
+## SHARE A BINDER -- AND `+` ON A PARAM IS WHAT DECIDES HOW MANY USES ARE LEGAL
+
+MEASURED 2026-10-04 while adding per-field rows to `nvdev.bend`. Four distinct compile
+errors, in this order, each of which names the binder and not the concept:
+
+1. `nm (consumed more than once)` on `def f(nm: String) -> String: String.concat([nm, "-", nm])`.
+   A `String` CANNOT be used twice. Confirmed with a standalone probe, not inferred.
+2. `r (consumed more than once)` on `def nv.fld_se(r: Rgv, nm: String)` which called
+   `Rgv.nat(r)` and `Rgv.fs(r)`. The fix is `+r: Rgv`, which is what every sibling def in
+   the file already had. **`+` IS NOT A STYLE ANNOTATION HERE: without it a use is a move.**
+3. `a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its
+   own def)` on `match nv.fld_se(r, nm):`. So a helper returning a pair cannot be destructured
+   inline; it needs `def nv.se_abw(+x: Se)` between.
+4. `a filled definition (an unfilled law is a dead claim: live code cannot use it)` --
+   **DEFINITION ORDER IS LOAD-BEARING.** `nv.fld_w` calling `nv.se_w` must come AFTER it,
+   and `t_fld` calling `t_fld_a` must come after `t_fld_a`. This is also what killed
+   `nv_mutate.py` entry 19: it swapped `nv.covers`'s body for `nv.pow_shifts`, which is
+   defined LATER in the file, so the mutant was NOT-A-PROGRAM rather than a measurement.
+
+**THE CONSEQUENCE FOR GATE ROWS: when a row name must be BUILT from a value, the value is
+spent, and the row has to be written with LITERALS on both sides.**
+
+    IP.urow("nv_fldmax_minor_extended_revision", nv.fld_max(nv.reg_boot42(), "minor_extended_revision"))
+
+Fourteen literals per register is cheaper than the alternatives, and it has the property
+that matters: a mutation has to be spelled out per field to be seen, instead of hiding
+inside a name a fold rebuilds identically either way. This is a SECOND reason the ported
+table is written as literals rather than generated -- a generated name is a name the
+mutation cannot reach.
+
+### A `+` PARAM MAY STILL BE READ MANY TIMES, BUT ONLY THROUGH A NON-LINEAR ACCESSOR
+
+`nv.ranges(+r)` calls `Rgv.nat(r)` and `Rgv.fs(r)` and compiles; `nv.fld_of(+r, nm, w)` is
+called twice on one `r` and does not. The difference is that `Rgv.nat`/`Rgv.fs` are
+accessors that COPY, while `nv.fld_of` is a def that CONSUMES what it is given. So the rule
+is not "a linear binder may be read N times" -- it is "a linear binder may be passed to N
+accessors, and to at most as many consuming defs as it has copies".
+
+---
+
+## APPENDED 2026-10-04, `uop/fold.bend`'s symbolic-dim unit. CONTINUES FROM position 22356.
+
+Positions, not numbers: the numbering above is 1..N with collisions across units.
+
+### 1. A `match` SCRUTINEE MUST BE A PARAMETER OR A FIELD. A `+` BINDER IS NEITHER.
+
+MEASURED, four distinct errors from one four-line def, in this order:
+
+    match O.ParamArg.vmin_vmax(pa):   -> "a parameter or field scrutinee (a match cannot
+                                        scrutinize a computed value: give it its own def)"
+    +a = O.Arena.arg(ar, i) / match a: -> "...cannot scrutinize a LOCAL BINDER..."
+    match O.Arena.srcs(ar, i):        -> same as the first
+    case Some{r}: ... r.lo           -> there is no `.field` sugar AT ALL
+
+So the shape that works is a def whose FIRST PARAMETER is the value being dispatched on,
+and the caller passes `O.Arena.arg(ar, i)` into it. It is the same rule as
+`def X.of` preceding `def X`, one level down: give every dispatch its own parametered
+entry point and the scrutinee is a parameter by construction.
+
+### 2. A `+` ON A PARAMETER IS SHARED; A `+` ON A PATTERN BINDER IS SHARED ONLY IF THE FIELD IS READ TWICE IN THE SAME ARM.
+
+    case Some{O.PyRange{lo, +hi}}:   compiles -- `hi` is shared, `lo` is not
+    case Some{O.PyRange{+lo, +hi}}:  compiles -- both shared
+    case Some{+v}: ... v, v           compiles
+    case H.I64{h, l}: ... h, h        "h (consumed more than once)" -- `+` on a PATTERN
+                                      binder does not survive a use outside the binder
+                                      list; the idiom that does is a shared PARAMETER
+                                      (`def f(+lo: H.I64, +hi: H.I64)`, which is what
+                                      `fold.bend`'s `mm.i64.*` already did)
+
+Reading an `H.I64` twice is therefore `Bool.and(Bool.not(H.i64_is_neg(lo)), H.i64_le(lo, hi))`
+with `+lo` AND `+hi` on the parameters, and not `Bool.and(a, b)` with a `+` on a local.
+
+### 3. A DOT IN A DEF NAME IS A NAMESPACE AND THE COMPILER TREATS IT AS AN IMPORT.
+
+    def sym_dim.py(...)   ->  "expected : a filled definition ... observed : sym_dim.py"
+
+`.py` in `fold.bend` parses as a module reference. Use `sym_dim.val`, `sym_dim.con`, or
+any non-extension suffix. The same trap is waiting for `sym_dim.c`, `sym_dim.h` and
+`sym_dim.m`.
+
+### 4. A DEF CALLER MUST PRECEDE ITS CALLEE, AND THE ERROR SAYS "AN UNFILLED LAW".
+
+`def sym_dim.of` calling `sym_dim.val` while `sym_dim.val` is defined LATER gives
+"expected : a filled definition (an unfilled law is a dead claim: live code cannot use
+it) -- observed : sym_dim.val", which reads like a proof obligation and is not one. The
+defs of one block go in DEPENDENCY order, and `.of` is the last of them.
+
+### 5. `Bool.pick(TYPE, cond, then, else)` EVALUATES BOTH ARMS AND IS NOT A LAZY IF.
+
+`Bool.pick(Maybe<&1, O.Sint>, hit, Some{a}, None{})` computes `a` either way, which is
+why `reshape_ok` can write `Bool.pick(Bool, sym, True{}, U32.is_eq(n1, n2))` without an
+intermediate def -- and also why it is WRONG wherever a branch would be ill-typed or
+would consume a value twice. `maybe`-shaped picks read as a silent `if` and are not one.
+
+### 6. A HARNESS THAT TAKES ITS EDITS AS A LIST MUST TAKE THE REPLACEMENTS AS A LIST TOO.
+
+MEASURED, and it cost a whole mutation table: `edits = list(zip(old_list, ""))` is `[]`,
+so the mutation edited NOTHING, compiled fine, and printed `0 row(s) moved` with the
+`*** BLIND SPOT ***` banner -- a harness defect wearing a gate gap's clothes, on the ONE
+mutation that was supposed to be the headline. The zero was real and it meant nothing.
+**A 0 that no reader can distinguish from "the edit did not apply" is not a measurement.**
+The harness now refuses an empty edit list by name, and there is a NO-OP CONTROL (`L2`) in
+the same table whose only job is to be 0.
+
+### 7. A PINNED SNAPSHOT IS NOT A CONVENIENCE WHEN A DEPENDENCY IS UNDER ANOTHER OWNER.
+
+MEASURED twice in one session: `uop/ops.bend` went to 7813 lines with a `vrn_lo` reading
+`r.lo` -- a projection that does not exist -- and EVERY bend lane in this tree went to
+zero rows. `bend.bend` exiting 1 and printing nothing is indistinguishable from "not
+started", and `fold-mut.py` reported all sixteen of its mutations as `CHECK FAILS in both
+lanes`, which reads exactly like sixteen blind spots. Fix: `rsync -a tinybendygrad/
+runs/<unit>/snap/tinybendygrad/` (the WHOLE tree, so the relative imports resolve -- the
+`$TMPDIR` scratch copy cannot), run against the snapshot, and PRINT snap-vs-live md5 for
+every file in the import cone next to the result. `runs/margsym/snap-vs-live.sh` is the
+one to copy.
+
+### 8. TWO `Maybe`s OF DIFFERENT `Type` ARGUMENTS ARE STILL THE SAME SHAPE TO THE MATCHER, AND `O.SI{i}` HAS NO `of`.
+
+`Maybe.map(&2, H.I64, O.Sint, O.SI.of, x)` is refused twice over -- `Sint.of` exists but
+`SI.of` does not, and `Maybe.map` is not the arity used elsewhere in the tree. The shape
+that works is a named def that MATCHES the `Maybe` and builds the record:
+
+    def sym_dim.val(i: Maybe<&2, H.I64>) -> Maybe<&1, O.Sint>:
+      match i:
+        case Some{v}: Some{O.SI{v}}
+        case None{}  : None{}
+
+### 9. A FIX THAT MAKES A NODE ANSWER CAN STILL LEAVE THE ANSWER UNREACHABLE, AND THE SECOND HALF IS A DIFFERENT DEF.
+
+`marg` minting a symbolic dim is necessary and NOT sufficient: the consumer's own check
+had conflated "negative" with "symbolic" and read one flag as two opposite rules. The
+measurement that separates the halves is the revert: drop the second and the differ's
+report is BYTE-FOR-BYTE the pre-fix one, on a port that now builds the dim. A fix whose
+first half is visible in the arena and whose second half is visible only in the consumer
+is one change and two claims, and the harness sees only one of them.
+
+### 10. `md5 -q` ON macOS TAKES EXACTLY ONE FILE AND PRINTS NOTHING GIVEN SEVERAL.
+
+Restating position because it cost a loop again: `md5 -q a b` prints NOTHING and exits 0,
+which reads as "the files match" and is not a measurement at all. One file per call, or
+`md5 -q a; md5 -q b`.
+
+## NV-3 CORRECTION TO NV-1's LAST PARAGRAPH: THE MMU STRUCTS ARE NOT UNGATED, THEY ARE
+## MISSING EXACTLY SIX ROWS, AND I OVERSTATED IT THE FIRST TIME
+
+MEASURED 2026-10-04, and the correction is the point. NV-1 said "the six `MMU_VER`
+structs print NO field-table row at all. So 22 of the 40 class-B sites sit in registers
+with no per-field range row." **The first sentence is FALSE and I wrote it after grepping
+for `nv_reg_v2_pte_*` -- a name the port does not use.** The port uses CPython's own full
+register name, so `grep` found nothing and I reported a gap that is 6 rows wide.
+
+What the port actually prints for all six `MMU_VER` structs, which I verified by running
+it and listing every `nv_reg_*` row (65 of them):
+
+    _names  _nf  _maxw  _wide  _wide_names          <-- present for all six
+    _ranges                                          <-- ABSENT for all six
+
+and `_ranges` for BOOT_0, BOOT_42, WPR2, MMU_INVALIDATE and the scratch register. The
+oracle emits `nv_reg_NV_MMU_VER2_PTE_ranges` and its five siblings, so the gap is
+**6 oracle rows the port does not answer**, and it is a COVERAGE GAP, not 22 blind sites.
+
+**The blind spot is nevertheless real, and narrower than I said.** Take `v2_pte`'s
+`aperture`, `(1, 2)`. Transposed to `(2, 1)`: `wid` goes 2 -> 0, so `_maxw` is unchanged
+(the register's max is 46, from `address_sys`), `_wide` is unchanged (neither 2 nor 0
+exceeds 32), `_names`, `_nf` and `_wide_names` are unchanged. **So that transposition moves
+NOTHING.** Six `_ranges` rows close it.
+
+**THE LESSON, and it is the same one `agent-core.md` records about the port census: a
+census that greps for a name the file does not use reports a gap that is an artefact of
+the grep.** The denominator was right (22 sites, in 6 registers) and the verdict was
+wrong. Enumerate what the program PRINTS and compare it to what the oracle EMITS; never
+infer a row's absence from a pattern you assumed.
+
+### THE FIELD TABLES ARE NOW ALL CHECKED, AND THE TRANSPOSITION WAS THE ONLY ONE
+
+`nv_table_equiv.py` compares every `Fld.of` literal in nvdev.bend against the `NVReg`
+table CPython holds, field for field and IN ORDER -- so a transposed pair, a renamed field,
+a reordered list and a wrong offset are four distinguishable failures.
+
+    tables compared : 11        fields compared : 86        MISMATCHING TABLES : 0

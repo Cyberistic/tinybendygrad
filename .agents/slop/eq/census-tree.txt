@@ -1,0 +1,38 @@
+lane                                                phys    F1    F2    F3  cont  names   ship  `=`  LOST  reshp  dupe
+tinybendygrad_codegen_decomp_dtype.bend.port.txt     208   208     0     0     0    208    208    0     0      0     0
+tinybendygrad_dtype.bend.dtype_tables.txt              0     0     0     0     0      0      0    0     0      0     0
+tinybendygrad_engine_jit.bend.port.txt                10     5     5     0   127     10    137    3     0      0     0
+tinybendygrad_renderer_llvmir.bend.llvmir-oracle.txt   471     0   471     0     0    470    323  157   147    147     0
+tinybendygrad_renderer_llvmir.bend.port.txt          471     0   471     0     0    470    323  157   147    147     0
+tinybendygrad_renderer_nir_llvmir.bend.nl-oracle.txt   205     0   205     0     0    205    201    8     4      4     0
+tinybendygrad_renderer_nir_llvmir.bend.port.txt      205     0   205     0     0    205    201    8     4      4     0
+tinybendygrad_runtime_ops_cpu.bend.cpulink_oracle.txt    20    20     0     0     0     20     20    0     0      0     0
+tinybendygrad_schedule_indexing.bend.port.txt        252   252     0     0     0    252    252    0     0      0     0
+tinybendygrad_schedule_prepare.bend.port.txt         321   321     0     0     0    321    321    0     0      0     0
+tinybendygrad_uop_fold.bend.port.txt                 241   230    11     0     0    240    240    0     0      0     0
+tinybendygrad_uop_render.bend.port.txt                85     5    80     0    44     81     86    0     0      0     0
+tinybendygrad_uop_render.bend.render-gate-oracle.txt    80     0    80     0    44     80     85    0     0      0     0
+tinybendygrad_viz_serve.bend.port.txt                175   158    17     0     2    174    176    0     0      0     0
+tinybendygrad_viz_serve.bend.viz_oracle.txt          175   158    17     0     2    174    176    0     0      0     0
+
+TOTAL over 78 lane texts of 39 ports
+  ROWS the writer emitted (a line with a boundary): 22974
+  LANE SHAPE, which is what decides whether the class CAN exist:
+      F1 18133  the writer glued the value on, so the FIRST `=` IS the boundary and a name cannot contain one -- STRUCTURALLY IMMUNE (78.9% of rows)
+      F2 4841  the boundary is ` = [` or `=[`, so a name MAY contain `=` -- the only population in which the class exists (21.1% of rows)
+      F3 0  no `=` at all; `row()` needs two spaces and a ONE-TOKEN head
+  ROW NAMES CONTAINING `=`: 333 of the 4841 F2 rows that can carry one (6.88%)
+  NAMES AS A PRODUCER PRINTED THEM: 22833   DISTINCT KEYS `rows()` PRODUCES: 22672   so a name can address 22672 of 22974 rows (98.7%)
+  CONTINUATION lines `row()` reads as rows of their own: 219 -- a physical line inside a bracketed value. A DIFFERENT defect with the same arithmetic; no separator rename touches it
+  UNADDRESSABLE ROWS: 302 = 302 to a reshape (an `=` in a name) + 0 to a duplicate name (one name printed twice, NO `=` involved)
+  RECONCILIATION: rows 22974 - distinct keys 22672 = 302, and the split says 302. EQUAL
+  THE TRACKER'S CONTROL: 5/78 texts report a continuation and 73/78 report none. The 5 are ['tinybendygrad_engine_jit.bend.port.txt', 'tinybendygrad_uop_render.bend.port.txt', 'tinybendygrad_uop_render.bend.render-gate-oracle.txt', 'tinybendygrad_viz_serve.bend.port.txt', 'tinybendygrad_viz_serve.bend.viz_oracle.txt']
+  !! tinybendygrad_codegen_decomp_dtype.bend.port.txt: 1 line(s) the writer's boundary is not on: [(12, 'F3: no `=` on the line')]
+  !! tinybendygrad_dtype.bend.dtype_tables.txt: 14766 line(s) the writer's boundary is not on: [(1, 'F3: no `=` on the line'), (2, 'F3: no `=` on the line')]
+  !! tinybendygrad_engine_jit.bend.port.txt: LANE ENDS +2 bracket(s) UNCLOSED over 10 -- either a producer prints an unbalanced value or the tracker is wrong; both are findings
+  !! tinybendygrad_runtime_ops_cpu.bend.cpulink_oracle.txt: 2 line(s) the writer's boundary is not on: [(2, 'F3: no `=` on the line'), (9, 'F3: no `=` on the line')]
+  !! tinybendygrad_schedule_indexing.bend.port.txt: 1 line(s) the writer's boundary is not on: [(276, 'F3: no `=` on the line')]
+  !! tinybendygrad_schedule_prepare.bend.port.txt: 1 line(s) the writer's boundary is not on: [(335, 'F3: no `=` on the line')]
+  !! tinybendygrad_uop_fold.bend.port.txt: 93 line(s) the writer's boundary is not on: [(201, 'F3: no `=` on the line'), (202, 'F3: no `=` on the line')]
+  !! tinybendygrad_viz_serve.bend.port.txt: LANE ENDS +2 bracket(s) UNCLOSED over 175 -- either a producer prints an unbalanced value or the tracker is wrong; both are findings
+  !! tinybendygrad_viz_serve.bend.viz_oracle.txt: LANE ENDS +2 bracket(s) UNCLOSED over 175 -- either a producer prints an unbalanced value or the tracker is wrong; both are findings

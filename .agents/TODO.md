@@ -214,8 +214,22 @@ day rediscovering that `2n+p` is not an even-case test.
       (not fold properties — the arena already split `ARange{ids, at}`). Both lanes green,
       no `@unsafe`, eleven fold rows all True, mutations run both ways. The rest of
       `ops.py` is a `TODO(p3)` line per property with the wall it waits for.
+      **THE `ssimplify` WALL IS CLOSED — AND IT WAS TWO DEFECTS IN TWO DEFS, which is the
+      finding.** `sym_dim` (fold.bend:1243) mints the `O.SU` a symbolic dim is, and
+      `Prod`'s single `bad` flag was reading a NEGATIVE dim and a SYMBOLIC dim as one thing
+      while upstream's two checks read that flag as opposite things (`all(x >= 0)` RAISES,
+      `resolve(..., False)` is a DEFAULT and does not). **MEASURED that either half alone
+      leaves the differ DISAGREEING**: reverting `reshape_ok`'s `sym` arm puts
+      `diff --graph sym` back to `?=0/6` and the same six rung-1 mismatches
+      (`runs/margsym/M16-sym-DISAGREE.txt`). `dim_str` had to change with them — a symbolic
+      dim now prints `U(Ops.PARAM:n)` instead of a bare `UOp`, because a renderer with one
+      token for every symbolic dim cannot tell "simplified" from "flattened" (mutation M15
+      moves four rows, and `mv_reshsym_nm`'s two dims are DIFFERENT on purpose).
+      **22 `mv_*` rows, 20 byte-identical to CPython**, the two exceptions being named
+      DIVERGES with their interval arithmetic in the oracle's DIVERGES block. The 328
+      pre-existing rows are BYTE-IDENTICAL before and after.
       **THE FIVE ARMS: `expand_ds`, `pad_ds`, `shrink_ds`, `perm_ds`, `flip_ds`,**
-      answering ops.py:414-431. 16 `mv_*` rows, FOUR FACTS PLUS THE ANSWER AS ONE
+      answering ops.py:412-428. 16 `mv_*` rows, FOUR FACTS PLUS THE ANSWER AS ONE
       STRING each (`n= op= nsrc= srcops= shape= dtype=`), and **15 of 16 byte-identical
       to CPython**, the one exception being the declared `ssimplify` divergence. The
       eleven original rows are BYTE-IDENTICAL to the pre-change file.
@@ -7074,6 +7088,60 @@ Rules appended to `bend2-constraints.md` as **DEBUG-1..DEBUG-7** (positions ~202
       The field is 4 bits either way, so a COUNT gate cannot see it and `nv_reg_*_nf=6` stays
       green — the exact M09 shape. Reported, not fixed: `nvdev.bend` is not this unit's file.
 
+- [x] **THAT DEFECT IS NOW MINE, FIXED, GATED, AND THE PREMISE WAS WRONG.**
+      `nvdev.bend`'s `minor_extended_revision` read `11, 8`. Verified independently by
+      CALLING CPython twice — `B42.fields["minor_extended_revision"]` and
+      `NVReg.read_bitfields()` on `0xdeadbeef`, which answers 14 — against
+      `tinygrad/runtime/autogen/nv_regs/nv_ref.py:61`. CPython says `(8, 11)`. Fixed.
+
+      **"The field is 4 bits either way, so a COUNT gate cannot see it" is FALSE, and the
+      false premise is what made it look undetectable.** `nv.wid(s,e) = e - s + 1` WRAPS, so
+      `wid(11,8) = 4294967294`, not 4: the mask goes `0x00000f00` -> `0xfffff800`, 4 bits ->
+      24. Two COUNT-shaped rows moved (`..._maxw` 10 -> 4294967294, `..._wide` 0 -> 1). What
+      survived is exactly the four rows per register that read no bit position and no width:
+      `_base`, `_off`, `_nf`, `_names`.
+
+      GATE: 26 new rows, all six of BOOT_42's fields, per SITE —
+      `nv_fld_<f>` = `a:b:width`, `nv_fldmask_<f>`, `nv_fldwidth_<f>`, and `nv_fldmax_<f>`,
+      the ROUND TRIP; plus split `nv_boot42_merext_lo`/`_hi`, because the field that had the
+      defect was the one BOOT_42 field with no per-element row. Compared rows **526 -> 552**,
+      disagreements **15 -> 0**, both lanes byte-identical.
+
+      **THE ROUND TRIP NEEDS THE ALL-ONES WORD; two of the three naive probes are provably
+      blind and would have been controls that cannot fail.** Measured over all 86 `Fld.of`
+      sites: `getb(enc(1))` moves at 19/86, `getb(enc(pw(w-1)))` at 28/86, and
+      `getb(fenc(0xffffffff))` at **40/86 — exactly the order-sensitive count.**
+
+      **AND IT IS A 417x DoS, not only a wrong answer:** `nv.ones` doubles `w` times, so a
+      negative width is 4.29e9 iterations. One `bin/bend` run: **3.05 s fixed, 21 min 12 s
+      transposed**, same file, same 814 rows. On the real driver that is
+      `NVReg.mask/encode/decode` per page-table entry.
+
+      CENSUS (`nv_order_census.py`, arithmetic asserted against the port's own rows first —
+      the control caught my own OR-fold-as-sum error). Of 86 `Fld.of` sites: **33 have s == e,
+      where no second order exists and the swap is a NO-OP (a theorem, not a gap); 40 are
+      order-sensitive; 13 are the s > 31 shift wall.** Over CPython's 119 tables / 383
+      fields: 159 order-sensitive, 94 with s > 31.
+      `.agents/slop/boot42_inversion.md`, `nv_order_census.json`, notes NV-1 and NV-2.
+
+- [x] **AND THE WHOLE FIELD TABLE IS NOW CHECKED, NOT JUST THE ONE PAIR.**
+      `nv_table_equiv.py` compares every `Fld.of` literal in `nvdev.bend` against the
+      `NVReg` table CPython holds, field for field and IN ORDER, reaching CPython through
+      `include()` (`nvdev.py:162`) rather than by reading the generated header.
+      **11 tables, 86 fields, 0 mismatching tables.** The transposition was the only
+      field-table defect in the file.
+
+- [x] **A CORRECTION I HAD TO MAKE TO MYSELF, KEPT IN WRITING BECAUSE I GOT IT WRONG.**
+      I first reported "the six `MMU_VER` structs print no field-table row at all, so 22
+      sites are ungated". **The first clause is false**: I grepped for `nv_reg_v2_pte_*`,
+      a name the port does not use — it uses CPython's full register name. Enumerating
+      what the port PRINTS (65 `nv_reg_*` rows) shows all six have `_names`, `_nf`,
+      `_maxw`, `_wide`, `_wide_names`, and are missing exactly **`_ranges`** — 6 oracle
+      rows unanswered. The blind spot is real but narrower than I said: `v2_pte`'s
+      `aperture` `(1,2)` -> `(2,1)` changes `wid` 2 -> 0, which moves NEITHER `_maxw`
+      (the register max is 46, from `address_sys`) NOR `_wide` NOR any name row.
+      Notes NV-3. A census that greps for a name the file does not use reports an artefact.
+
 - [x] **17 OF 24 TABLES NOW PIN WHAT THEY DESCRIBE — and the 7 that do not say so in
       writing.** `table-pin.py` computes rev + FILE digest + ROWS digest per table;
       `pin-tables.py` writes them, and takes the measurements as ARGUMENTS so that it has no
@@ -7230,7 +7298,7 @@ Measure reproducibility: `sh .agents/slop/graphcmp-repro.sh`.
 Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
 unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
 Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
-Progress: normal-form defects [##########] 24 found and fixed (17-24 are this round's)
+Progress: normal-form defects [##########] 26 found and fixed (17-26 are this round's)
 Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
            found a real nondeterminism on its first run
 
@@ -7267,7 +7335,7 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       fill, 1 node of 46) and `loop` (`CallInfo.cdtype` is a port-only field, 1 node of 25).
       `graphcmp-run.sh`'s `$WANT` ASSERTS each one, so a moved verdict is a moved file.
       `sym` was in that list until the `fold` unit closed its wall — see below.
-- [x] **EIGHT MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-24), of which
+- [x] **TEN MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-26), of which
       three would have kept lying. A SINK with `arg=None` **CRASHED** the emitter (17) —
       thirteen graphs of silence that were a crash, not an agreement. The `tag` column **could
       not be read at all** (18) because every earlier graph had `tag is None` everywhere. A
@@ -7283,7 +7351,29 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       worked" from "it failed the same way twice". Six plants and `cross` were not counted by
       the summary at all, so **a step that fails silently is not a step whose failure the gate
       can see.** And `grep -c 'BYTE-IDENTICAL'` over a file that can contain the string inside
-      an embedded `diff` counts LINES, not pairs (23). And the plant count carried a STALE DENOMINATOR — it said 6 and printed 7, because the seventh is `sym1` (24): a right count under a wrong claim, printed by the same line, which is why nothing could see it.
+      an embedded `diff` counts LINES, not pairs (23). And the plant count carried a STALE
+      DENOMINATOR — it said 6 and printed 7, because the seventh is `sym1` (24): a right
+      count under a wrong claim, printed by the same line, which is why nothing could see
+      it. **AND FIXING 22 FOUND 25** (25): once a differing pair named itself, the first one
+      was `sym: 2 runs DIFFER`, `32d31 < rc=0` — one file 32 lines, the other 31, and the
+      missing line was the `rc=` stamp. `run()` appended `rc=$?` to the file the child had
+      just written, so a run killed in that window left a report with no tail and no stamp:
+      LIMITS #13's mid-write truncation one layer up, present since round one. Fixed
+      ATOMICALLY — one dot-named temp inside `D`, `mv` into place — because **neither
+      finding was reachable from the other**: 22 made 25 visible, and 25 was the difference
+      22 was looking for. **AND A HEALTH GATE THAT READS A SUMMARY IS A GATE THAT TRUSTS A
+      SUMMARY** (26): with `not-comparable=0`, `stable-pairs=5 of 5`, `plants-disagree=7 of
+      7` and both selfchecks OK — every line the gate read — one `D2-canon-bend-*.txt` in the
+      snapshot was **0 bytes**, because step 02 writes the two canonical files with a BARE
+      redirect (it needs stdout in two files, so it cannot use `run()`) and a step that can
+      fail makes the summary and the files two different claims about the same attempt. So
+      the gate now checks the SHAPE of every artefact: no `D*.txt` may be empty, and none of
+      the `diff` reports may be a single line — **stated over the reports BY NAME, because a
+      rule that flags a correct file is a rule that always fails, and then it is not a rule.**
+      (`D2-cmp-*` is legitimately one line; `D1-verdicts.txt` is legitimately one line.) A
+      fourth summary-shaped defect went with it: `D9-stability-srcswap-{a,b}.txt` were
+      argparse ERROR files left by an earlier unquoted `for c in $STAB`, and nothing caught
+      them because `D1-verdicts.txt` looks at verdicts and not at file NAMES.
 - [x] **REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
       accepts a run only if its summary reads 16 graphs / 14 AGREE / byte-identical 14 /
       not-comparable 0 / selfcheck OK / census-rc 0 / stable 5-0-0 / plants 6 / cross 1 /

@@ -244,10 +244,12 @@ def main():
 
 
 def fingerprint_of(m, fn):
-  """The census's OWN fingerprint function, called on the same sandboxed function the census
-  measured. Not a second implementation: `reader-guard.py` calls `C.behavior_fingerprint` too,
-  and a registry and a guard that compute a fingerprint differently is a guard that reports a
-  regression on every run until someone switches it off."""
+  """The census's OWN fingerprint function, on the same sandboxed function the census measured.
+
+  A reader the census could not classify -- a RUNNER that does real work -- has NO fingerprint,
+  and the registry says `unmeasurable` rather than inventing one. `reader-guard.py` treats that
+  token as a FAILURE, which is the point: a registry row whose drift is unknown must not read as
+  a registry row whose drift is zero."""
   return C.behavior_fingerprint(fn) if fn is not None else "unmeasurable"
 
 

@@ -130,7 +130,6 @@
 #
 # ===========================================================================
 import ../helpers.bend as H
-import ./ops_python.bend as OP
 
 # ===========================================================================
 # THE LANE TABLE. `LANES: frozenset = {int, uint, float, bool}` -- four lanes,
@@ -1078,7 +1077,327 @@ def has_local() -> Bool: False{}
 # device record is what is left: the allocator is a HostAllocator over the host
 # pointer, which is WALL 3's neighbour and is not modelled.
 type Dev is Data:
-  Dev{name: String, has_local: Bool}# ==========================================================================
+  Dev{name: String, has_local: Bool}
+
+# ===========================================================================
+# THE ALLOCATOR, AND MILESTONE 1: A BUFFER, A KERNEL, THE EXPECTED BYTES.
+#
+# Everything above this line is the port of ops_bend.py's ENCODER. What follows
+# is what makes the BEND device a DEVICE rather than a formatter: device memory,
+# and a launch. The two were absent -- `buffer_from`, `buffer_to`, `raw_alloc`
+# and `raw_free` appear nowhere in this file, and `prog.call`'s six SEAM steps
+# were steps in a trace with nothing behind them.
+#
+# ---------------------------------------------------------------------------
+# WHAT "BEND'S OWN MEMORY" IS HERE, and why the allocator is this shape
+# ---------------------------------------------------------------------------
+# Bend has no `malloc` and no pointer. Its mutable memory is `Array`, and an
+# `Array` is AFFINE -- the rule `ops_python.bend` is built around: "A `Data`
+# record cannot hold a `List` or an `Array`; both are `Type`", so a store cannot
+# be a field either. So the port cannot port `HostAllocator._alloc`, which is
+# `mmap.mmap(-1, size)` and returns a raw address -- and there is no address.
+#
+# What IS ported is the CONTRACT: one byte store, a base offset per buffer, and
+# an extent. `Buf` in `ops_python.bend:819` is exactly `Buf{base, w, e}` and
+# `Mem.byte`/`Mem.put` at :855/:858 are exactly the read and the write. So the
+# allocator here has the SAME shape as the executor's, deliberately: the wire is
+# one wire, and two disagreeing memory models over it would be a second silent
+# failure waiting to happen. `Buf` is not imported because a buffer allocated by
+# the LAUNCHER and a buffer allocated by the EXECUTOR are different objects in
+# different processes -- `executor()` is a `subprocess.run` at ops_bend.py:222 --
+# and they agree only through the packet's hex.
+#
+# ---------------------------------------------------------------------------
+# THE ALLOCATOR'S HONEST LIMITS, named before the rows rather than after
+# ---------------------------------------------------------------------------
+# `raw_alloc` BUMPS and `raw_free` is a NO-OP. That is not a shortcut, it is what
+# `HostAllocator._free` (device.py:307) IS: it touches storage only under
+# `if (remote:=getattr(self.dev, "remote", None)) is not None`, and BEND has no
+# `remote`, so on this device Python's free releases nothing. A port that
+# implemented reuse would be asserting behaviour the Python does not have.
+#
+# The one thing this CANNOT be is a real allocator with a free list, and that is
+# a property of the substrate rather than of the port: Bend's `Array` is affine,
+# so there is no second owner to hand a freed range to. Named, not hidden.
+# ===========================================================================
+
+# THE STORE. One flat byte list, one bump pointer, travelling together in one
+# record -- the shape `ops_python.bend`'s `Prog` uses for the same reason ("`Data`
+# FIELDS MUST BE `Data`... So a program table is NOT a field of a record: it is a
+# `List` threaded beside the arena").
+type Store is Data:
+  Store{ms: List<&2, U32>, top: U32}
+
+def Store.of(ms: List<&2, U32>, top: U32) -> Store: Store{ms, top}
+
+def Store.ms(+s: Store) -> List<&2, U32>:
+  match s:
+    case Store{ms, top}: ms
+
+def Store.top(+s: Store) -> U32:
+  match s:
+    case Store{ms, top}: top
+
+# A buffer: a base offset and an extent in BYTES. `Mem.nbytes` is what `in_bufs`
+# (:200) carries and what `buf_extent` :178 parses, so the allocator hands back
+# the SAME quantity the packet carries -- not a length in elements.
+type Mem is Data:
+  Mem{base: U32, nbytes: U32}
+
+def Mem.of(base: U32, nbytes: U32) -> Mem: Mem{base, nbytes}
+
+def Mem.base(+m: Mem) -> U32:
+  match m:
+    case Mem{base, nbytes}: base
+
+def Mem.nbytes(+m: Mem) -> U32:
+  match m:
+    case Mem{base, nbytes}: nbytes
+
+# THE EMPTY STORE: no bytes, bump at 0. A `HostAllocator` over a fresh device has
+# nothing mapped either, so 0 is the honest starting answer and not a sentinel.
+def store() -> Store: Store.of(Nil{}, 0)
+
+# `zeros(n)` -- the `bytearray(n)` at ops_python.py:104, which is what a `BUFFER`
+# and a `REG` PARAM get. It PREPENDS and REVERSES, because `List.append` is
+# `xs ++ ys` (the rule this file's `src_text.go` was written around) and that is
+# the only order-preserving spelling available.
+def zeros.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: List.reverse(&2, U32, acc)
+    case 1n+p: zeros.go(p, List.append(&2, U32, acc, [0]))
+
+def zeros(n: Nat) -> List<&2, U32>:
+  match n:
+    case 0n: Nil{}
+    case 1n+p: zeros.go(Nat.sub(n, 1n), [0])
+
+# THE BYTE STORE, read and written. SPELLED here rather than imported because a
+# store allocated by the launcher is a DIFFERENT object from the executor's store
+# (see THE ALLOCATOR'S HONEST LIMITS). `Maybe.default` with 0 is
+# `ops_python.bend`'s own default, and it is load-bearing: an oob read must not
+# halt the machine, because `Prog.bad` is a SEPARATE flag there, and conflating
+# the two would make an oob read indistinguishable from a refused op.
+def Mem.byte(+s: Store, at: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, Store.ms(s), U32.to_nat(at)), 0)
+
+def Mem.put(+s: Store, at: U32, v: U32) -> Store:
+  Store.of(List.set(&2, U32, Store.ms(s), U32.to_nat(at), v), Store.top(s))
+
+# `raw_alloc(nbytes)`: ONE buffer off the bump pointer, and the store grows by
+# exactly that many bytes. The answer is a PAIR because Bend has no mutable
+# local: `Store` in, `Store` out, and the caller threads it.
+def raw_alloc(nbytes: U32, +s: Store) -> (Mem & Store):
+  # `nbytes` is BOUND ONCE because a parameter read more than once is "consumed
+  # more than once" (MEASURED) -- the same reason `ops_python.bend` binds a UOp's
+  # fields into locals before a fold. The `+` is what makes the binder a REBIND,
+  # not a second read of the parameter, and that is the whole point of `+ar`.
+  +nb : U32 = nbytes
+  (Mem.of(Store.top(s), nb),
+   Store.of(List.append(&2, U32, Store.ms(s), zeros(U32.to_nat(nb))),
+            U32.add(Store.top(s), nb)))
+
+# THE SPLIT, because a PAIR cannot be destructured at a call site: both
+# "Bend refuses to destructure a computed product" (`Pkt` above) and, MEASURED
+# here, "a match cannot scrutinize a computed value: give it its own def". So
+# the pair is a PARAMETER and the two halves are two one-line defs -- which is
+# what `ops_python.bend`'s `take(...)` inside `rd` does for `Array.get`.
+def first.of(p: (Mem & Store)) -> Mem:
+  (m, _) = p
+  m
+
+def second.of(p: (Mem & Store)) -> Store:
+  (_, t) = p
+  t
+
+def alloc_mem(nbytes: U32, s: Store) -> Mem: first.of(raw_alloc(nbytes, s))
+
+def alloc_store(nbytes: U32, s: Store) -> Store: second.of(raw_alloc(nbytes, s))
+
+# `raw_free`: a NO-OP, and the row says so. See THE ALLOCATOR'S HONEST LIMITS.
+# It answers the same `Mem`, so a caller that frees the last buffer and reads it
+# back gets the bytes rather than a crash -- which is what Python does too.
+def raw_free(+m: Mem) -> Mem: m
+
+# THE HEX CODEC, and WHY IT IS SPELLED HERE RATHER THAN IMPORTED FROM
+# `ops_python.bend`. That is a measured decision, not a preference:
+#
+#   * `ops_python.bend:261` does `import ../uop/ops.bend as O`, so importing
+#     anything from it makes `ops_bend.bend` DEPEND ON `uop/ops.bend` -- which is
+#     under single ownership and was MID-EDIT during this unit: its `vals.step` at
+#     line 7686 refuses `match t:` with "a match on a parameter or field (this
+#     name is a def or a consumed binder)". This file compiled clean before that
+#     import and must not become hostage to another unit's transient breakage.
+#     The dependency bought ONE nine-line fold. REPORTED, not fixed: `uop/ops.bend`
+#     is not this unit's to touch.
+#   * `ops_python.bend:398`'s `hexdig_str` is DEAD and WRONG -- see THE FINDING
+#     above -- so reusing that side of the codec was never an option.
+#
+# THE NIBBLE RULES ARE `ops_python.bend:382-396` verbatim in shape: three range
+# tests tell a digit from a lower-case letter from an upper-case one, and
+# `hexdig_val` answers 0-15 for a hex character.
+# `+c` ON EVERY ONE, because `Bool.and`/`Bool.or` read both operands and a
+# parameter read twice is "consumed more than once" (MEASURED). This is why
+# `ops_python.bend:382` spells its three range tests as ONE-ARGUMENT helpers with
+# the `+`, rather than inlining the ranges.
+def hexdig_digit(+c: U32) -> Bool: Bool.and(U32.is_ge(c, 48), U32.is_le(c, 57))
+
+def hexdig_lower(+c: U32) -> Bool: Bool.and(U32.is_ge(c, 97), U32.is_le(c, 102))
+
+def hexdig_upper(+c: U32) -> Bool: Bool.and(U32.is_ge(c, 65), U32.is_le(c, 70))
+
+def hexdig_ok(+c: U32) -> Bool:
+  Bool.or(hexdig_digit(c), Bool.or(hexdig_lower(c), hexdig_upper(c)))
+
+def hexdig_val(+c: U32) -> U32:
+  Bool.pick(U32, hexdig_digit(c), U32.sub(c, 48),
+    Bool.pick(U32, hexdig_lower(c), U32.sub(c, 87), U32.sub(c, 55)))
+
+# ONE NIBBLE TO ITS CHARACTER, and it is a LEAF because `Bool.pick` CHOOSES an arm
+# and a parameter read in both arms is "consumed more than once" (MEASURED). The
+# `+` is the REBIND marker, which is what makes the two reads legal -- the same
+# use as `ops_python.bend`'s `Prog.line.dig(+v)`.
+def hexdig.chr(+v: U32) -> U32:
+  Bool.pick(U32, U32.is_lt(v, 10), U32.add(v, 48), U32.add(v, 87))
+
+# THE FOLD. TWO CHARACTERS per byte, HIGH NIBBLE FIRST, prepended and reversed
+# once at the end -- `List.append` is `xs ++ ys`, the rule `src_text.go` above
+# exists to demonstrate. `live` says a high nibble is WAITING, which is why the
+# fold has two arms rather than one.
+#
+# AN ODD NUMBER OF DIGITS DROPS THE TRAILING HALF-BYTE. Python's `bytes.fromhex`
+# RAISES `ValueError` there, so this is WEAKER than the Python and `bend_hex_odd`
+# is the row that says so instead of leaving it a silent difference.
+def hex.fin(+acc: List<&2, U32>) -> List<&2, U32>: List.reverse(&2, U32, acc)
+
+def hex.acc(+pend: U32, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, acc,
+    [U32.add(U32.mul(hexdig_val(pend), 16), hexdig_val(c))])
+
+def hexdec.go(+cs: List<&2, Char>, +pend: U32, +live: Bool,
+              +acc: List<&2, U32>) -> List<&2, U32>:
+  match cs live:
+    case Nil{} _: hex.fin(acc)
+    case h <> t True{}:
+      hexdec.go(t, 0, False{}, hex.acc(pend, Char.to_u32(h), acc))
+    case h <> t False{}:
+      hexdec.go(t, Char.to_u32(h), True{}, acc)
+
+def hexbytes(hex: String) -> List<&2, U32>:
+  hexdec.go(String.to_list(hex), 0, False{}, Nil{})
+
+# ONE NIBBLE TO TEXT, and `hexdig_str2` is named for what it is rather than
+# shadowing the broken `hexdig_str` this file deliberately does not reproduce.
+def hexdig_str2(v: U32) -> String:
+  String.from_list([Char.from_u32(hexdig.chr(v))])
+
+# THE EMITTED ORDER is high nibble first, low byte first -- the order
+# `ops_python.bend:1165` measured the hard way ("writing every byte
+# DIGIT-SWAPPED -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in
+# the same way, the two cancelled on a pure COPY"). The reader and the writer are
+# therefore INDEPENDENT above, and `bend_hexbyte_*` pins the writer against
+# literals rather than against the reader.
+def hexbyte(+b: U32) -> String:
+  String.concat([hexdig_str2(U32.div(b, 16)), hexdig_str2(U32.mod(b, 16))])
+
+def hexout.go(+bs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match bs:
+    case Nil{}: List.reverse(&2, String, acc)
+    case b <> t: hexout.go(t, List.append(&2, String, acc, [hexbyte(b)]))
+
+# `slice(ms, at, n, i)`: `n` bytes from `at`. Written as a fold over the INDEX
+# rather than a `List.get` loop because the list is affine and cannot be both
+# walked and indexed in one def.
+# `slice(ms, at, n, i)`: `n` bytes from `at`. NOT a `Bool.pick` recursion --
+# MEASURED: "expected a decreasing self-call", because a pick over an `i` that
+# GROWS has no argument that shrinks. The fuel is a DESTRUCTURED copy of the
+# store, which is the shape `take_nat` above uses for the same reason.
+# ONE SELF-RECURSIVE FOLD, not two mutually recursive ones: Bend REFUSES mutual
+# recursion (MEASURED here -- "expected a filled definition", the same refusal
+# `ops_python.bend`'s `bytes` note records: "It is ONE self-recursive def -- Bend
+# refuses mutual recursion"). So the tail IS the fuel and the countdown is
+# dropped, which is exactly why `p` cannot be bound separately.
+# THE BYTE RIDES THE ACCUMULATOR, because a destructured tail and a `List.get`
+# over the same list is "consumed more than once" (MEASURED): binding `t` walks
+# `xs`, so nothing else may read `xs`. So the walk is destructive and each step
+# carries its own byte, which is why this is ONE self-recursive fold and not
+# `take` + `get`. `+n` is the REBIND marker for the same reason as
+# `ops_python.bend`'s `Prog.line.dig(+v)`.
+def take.go(+work: List<&2, U32>, +n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match work n:
+    case Nil{} _:
+      List.reverse(&2, U32, acc)
+    case h <> t _:
+      take.go(t, U32.sub(n, 1), List.append(&2, U32, acc, [h]))
+
+def drop.go(xs: List<&2, U32>, +n: U32) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case _ <> t:
+      drop.go(t, U32.sub(n, 1))
+
+# `slice(ms, at, n)`: SKIP to `at`, then take `n` -- so the offset is honoured.
+# The copy into a fresh `&2` list is the depth hop again, and it is free because
+# the store is already `&2` and `List.append` rebuilds at the callee's depth.
+def slice(ms: List<&2, U32>, at: U32, n: U32) -> List<&2, U32>:
+  take.go(drop.go(List.append(&2, U32, Nil{}, ms), at), n, Nil{})
+
+def Mem.to_hex(+s: Store, +m: Mem) -> String:
+  String.concat(hexout.go(slice(Store.ms(s), Mem.base(m), Mem.nbytes(m)), Nil{}))
+
+# `Mem.to_line` -- `<nbytes> <hex-bytes>`, which is ONE line of PACKET.out and
+# nothing else. The milestone's comparison is over these lines, whole.
+def Mem.to_line(+s: Store, +m: Mem) -> String:
+  String.concat([U32.show(Mem.nbytes(m)), " ", Mem.to_hex(s, m), "\n"])
+
+# `paint(at, ms, bs, n)`: copy `bs` onto `ms` at `at`, truncating or zero-filling
+# to `n`. The zero-fill is `bytes(n)` and the truncation is `views[i][:] = ...`,
+# both of which raise in Python on a length mismatch -- so this is a WEAKER
+# function than the Python and the row below names the case.
+# `paint(at, ms, bs, n)`: copy `bs` onto `ms` at `at`, stopping after `n` bytes.
+# THE FUEL LEADS AND IT IS THE STRUCTURAL TAIL: arguments are read left to right
+# and the call must be DECREASING (MEASURED: "expected a decreasing self-call"),
+# and only a destructured binder passed UNCHANGED counts -- this file's own note
+# says a call "shrinks no column and cannot be the fuel", which is why the
+# `_work_tail` spelling above it did not compile either. So `bs` is destructured
+# and its tail `t` leads, and `at` walks up through the store.
+def paint.go(+bs: List<&2, U32>, +at: U32, ms: List<&2, U32>, +n: Nat) -> List<&2, U32>:
+  match bs n:
+    case h <> t 1n+p:
+      paint.go(t, U32.add(at, 1), List.set(&2, U32, ms, U32.to_nat(at), h), p)
+    case h <> t 0n:
+      ms
+    case Nil{} 0n:
+      ms
+    case Nil{} 1n+p:
+      ms
+
+def paint(at: U32, ms: List<&2, U32>, bs: List<&2, U32>, n: Nat) -> List<&2, U32>:
+  paint.go(bs, at, ms, n)
+
+def Mem.write_bytes(+s: Store, +m: Mem, bs: List<&2, U32>) -> Store:
+  Store.of(paint(Mem.base(m), Store.ms(s), bs, U32.to_nat(Mem.nbytes(m))), Store.top(s))
+
+# `buffer_from(nbytes, hex)` :214 -- `to_mv(b, nb)`, which this file's own header
+# already called a VIEW and not a seam: "the port keeps the extent, which is what
+# `in_bufs` is, and drops the pointer." So this is the COPY-IN, as hex text,
+# because the wire carries hex text.
+# `m` and `s1` ARE RENAMED, and that is the trap this file's own notes warn
+# about: "A record binder shadows a same-named parameter and nothing says so. A
+# leading `+` does not help; rename the parameter." `(m, Mem.write_bytes(..))`
+# rebinds `m`, so the parameter cannot also be spelled `m`.
+def rebase(+m0: Mem, s1: Store, +s: Store, +hex: String) -> (Mem & Store):
+  (m0, Mem.write_bytes(s1, m0, hexbytes(hex)))
+
+def paint_mem(p: (Mem & Store), +s: Store, +hex: String) -> (Mem & Store):
+  (m, s1) = p
+  rebase(m, s1, s, hex)
+
+def buffer_from(nbytes: U32, hex: String, +s: Store) -> (Mem & Store):
+  paint_mem(raw_alloc(nbytes, s), s, hex)
+
+# ==========================================================================
 # THE GATE. Every expectation below is CPython output, read out of
 # `.agents/slop/` by `tools`-less generator `.agents/slop/bend_gate.py`, which
 # takes it from `nodes-<case>.txt`, `packet-<case>.txt` and
@@ -1195,6 +1514,446 @@ def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def lrow(nm: String, v: List<&2, U32>) -> IO(Unit): srow(nm, ujoin(v))
+
+# ===========================================================================
+# THE LAUNCHER. This is where the six SEAM steps of `prog.call` stop being steps.
+#
+# `subprocess.run([exe, pkt, gx, gy, gz, vals...])` at ops_bend.py:222 is a SEAM
+# in the port above, and this is what it is instead. `Process.run` is in
+# `references/bend/bend2/base.bend:182` and is a WHOLE-OPERATION FFI -- one
+# `import "./effs/process_run.c"` for the whole call, with no per-function binding
+# and no `dlopen`. That is the one class of foreign code this port is allowed,
+# and MEASURED working: `Process.run("/bin/echo", ["hello","bend"], ...)` answers
+# `code=0`, `out="hello bend\n"`, `err=""`.
+#
+# SO: `ops_bend` CAN launch an executor with no CPython in the path. That is the
+# wall the brief predicted -- "Bend cannot bind to C at function granularity" --
+# and it is TRUE, and it is also not the wall for THIS device, because a launch
+# is one operation rather than several thousand.
+#
+# WHAT IS STILL A SEAM, and is not claimed otherwise: the `--check-only` note at
+# the top of this file says `executor()` is a build plus a cache, and the BUILD
+# (`bend ... -o`) is still driven by the harness in `.agents/slop/`. Only the
+# LAUNCH is here.
+# ===========================================================================
+
+def PKT_DIR() -> String: ".agents/slop/opsbend-milestone"
+def PKT_IN() -> String: String.concat([PKT_DIR(), "/PACKET.in"])
+def PKT_OUT() -> String: String.concat([PKT_DIR(), "/PACKET.out"])
+def PKT_EXE() -> String: String.concat([PKT_DIR(), "/bend-executor"])
+
+# `bend-executor PACKET gx gy gz vals...` -- the v1.1 command line, which is
+# `LOCAL SIZE IS NOT A v1 ARGUMENT` (ops_python.bend's own header): the executor
+# is warp 1 and reads every `lidxK` as 0. So the argv is the packet and the GRID,
+# and nothing else. `Prog.nout` is 1 for the milestone -- one work item -- so
+# `grid(1, ...)` runs the body exactly once, which is what "one trivial kernel
+# over the buffer" means.
+def PKT_GRID() -> List<String>: ["1", "1", "1"]
+
+# argv is `PACKET gx gy gz`, and there is no `String.append`, so the four fields
+# are ONE literal. `List.append` is `xs ++ ys` -- which is why this is a literal
+# and not a concat: the packet must come FIRST and a concat gets that backwards.
+def PKT_ARGV() -> List<String>: [".agents/slop/opsbend-milestone/PACKET.in", "1", "1", "1"]
+
+# WRITE THE PACKET: the uop block (`encode`, byte-identical to
+# `packet-tiny.txt`) followed by ONE buffer line per PARAM, in uop order -- the
+# order `pbufs` pops them (A1). The three lines are the INPUT pattern from
+# `.agents/slop/ops_bend-milestone-expected.txt`, which was written BEFORE any run:
+#
+#     buffer 0   4 efbeadde   a sentinel no correct ADD can produce
+#     buffer 1   4 0000803f   1.0f
+#     buffer 2   4 00000040   2.0f
+def IN_HEX() -> List<&2, String>: ["efbeadde", "0000803f", "00000040"]
+
+def EXPECTED() -> String: "4 00004040\n4 0000803f\n4 00000040\n"
+
+# THE PATTERN, as ONE hex string, and that is not a simplification: a bump
+# allocator makes the three buffers CONTIGUOUS (bases 0, 4, 8), so the store is
+# exactly the three patterns end to end. One paint instead of three is the same
+# write, and the milestone's readback slices each buffer back out -- so a bug in
+# the copy-in shows up as a wrong BUFFER rather than a wrong store.
+def PATTERN() -> String: String.concat(["efbeadde", "0000803f", "00000040"])
+
+def mem_at(+ms: List<&2, Mem>, i: Nat) -> Mem:
+  Maybe.default(&2, Mem, List.get(&2, Mem, ms, i), Mem.of(0, 0))
+
+# STAGE 1: the packet's THREE buffers, allocated in ONE call. This is not a
+# convenience -- it is what `prog.in_bufs` (:200) IS: a LIST of extents, handed
+# over in that order, so "allocate the launch's buffers" is one operation and a
+# `List<&2, Mem>` is the honest answer. The bases are the thing worth gating:
+# three buffers all at base 0 is an allocator that does not advance, and a kernel
+# over it would read the wrong bytes for reasons the milestone alone cannot
+# localise.
+#
+# ONE CALL rather than three, and the reason is measured: a Bend def cannot
+# destructure a computed product ("a match cannot scrutinize a computed value:
+# give it its own def"), so three chained `(m, s) = raw_alloc(..)` need three
+# wrapper defs to launder the pair through a parameter. One call computes the
+# pair ONCE and destructures it once.
+def alloc_all.go(+sizes: List<&2, U32>, +top: U32,
+                 +acc: List<&2, Mem>) -> List<&2, Mem>:
+  match sizes:
+    case Nil{}: List.reverse(&2, Mem, acc)
+    case n <> t: alloc_all.go(t, U32.add(top, n),
+      List.append(&2, Mem, acc, [Mem.of(top, n)]))
+
+def total_u32(+sizes: List<&2, U32>, +acc: U32) -> U32:
+  match sizes:
+    case Nil{}: acc
+    case n <> t: total_u32(t, U32.add(acc, n))
+
+def grow.to(+nbytes: U32, +s: Store) -> Store:
+  Store.of(List.append(&2, U32, Store.ms(s), zeros(U32.to_nat(nbytes))),
+           U32.add(Store.top(s), nbytes))
+
+def alloc_pair(p: (List<&2, Mem> & U32), +s: Store, +sizes: List<&2, U32>) ->
+  (List<&2, Mem> & Store):
+  (ms, n) = p
+  (ms, grow.to(n, s))
+
+# `+sizes` is the REBIND marker and it is load-bearing twice over: the list is
+# read by BOTH `alloc_all.go` and `total_u32`, and `Data`/list values are
+# otherwise affine.
+def raw_alloc_all(+sizes: List<&2, U32>, +s: Store) -> (List<&2, Mem> & Store):
+  alloc_pair((alloc_all.go(sizes, Store.top(s), Nil{}), total_u32(sizes, 0)), s, sizes)
+
+def SIZES3() -> List<&2, U32>: [4, 4, 4]
+
+def alloc3(s0: Store) -> (List<&2, Mem> & Store):
+  raw_alloc_all(SIZES3(), s0)
+
+# STAGE 2: the pattern. Twelve bytes, and `Mem.byte` is the read the executor's
+# own `Mem.byte` is, so the two memory models agree by construction.
+def ms_paint(+s1: Store) -> Store:
+  # `+s1` for the same reason as `grow.to`'s `+nbytes`: `Store.ms(s1)` and
+  # `Store.top(s1)` are two reads of the same name.
+  Store.of(paint(0, Store.ms(s1), hexbytes(PATTERN()), 12n), Store.top(s1))
+
+# THE WHOLE INPUT STATE, in one step: three buffers allocated and the pattern
+# written. `milestone` then has exactly two facts to carry -- the store and the
+# buffer list -- and nothing else, which is what keeps the launch a trace of
+# three values rather than of eight.
+# `alloc3` ALREADY answers a `List<&2, Mem>` -- it is `raw_alloc_all`'s own
+# answer -- so this only paints, and the `[ms]` re-wrap that was here first was a
+# type error rather than a design.
+def ms_state_pair(p: (List<&2, Mem> & Store)) -> (List<&2, Mem> & Store):
+  (ms, s1) = p
+  (ms, ms_paint(s1))
+
+def ms_state(s0: Store) -> (List<&2, Mem> & Store):
+  ms_state_pair(alloc3(s0))
+
+# PACKET.in = the uop block, then one `<nbytes> <hex>` line per buffer. The uop
+# block is `encode(NODES_TINY())`, which the `bend_emit_tiny_match` row already
+# pins byte-for-byte against CPython's `packet-tiny.txt`.
+def pkt_in(+ms: List<&2, Mem>, +s: Store) -> String:
+  String.concat([Res.s(encode(NODES_TINY())), Mem.to_line(s, mem_at(ms, 0n)),
+    Mem.to_line(s, mem_at(ms, 1n)), Mem.to_line(s, mem_at(ms, 2n))])
+
+# FILE I/O, and the SHAPE is `ops_python.bend`'s -- `Prog.launch.pkt.go` and
+# `Prog.write` -- rather than mine. That is reuse of a spelling measured to
+# typecheck. TWO THINGS LEARNED HERE, both by hitting them:
+#   * `match` HEADS A DEF BODY, so a `Result` is dispatched by a def whose body
+#     IS the match and each arm an IO term.
+#   * `IO.pass(File, r)` is WRONG for a read. Its signature is
+#     `IO.pass(-A: Type, r: Result<&1, &1, U32 & String, A>)`, so `A` is the
+#     RESULT's payload; with a read result the payload is `String`, not `File`,
+#     and the compiler says so. `match` on `Done`/`Fail` sidesteps it.
+# THE SIGNATURES ARE `references/bend/bend2/base.bend:264-299`:
+#   File.open -> IO(Result<&1, &1, U32 & String, File>)
+#   File.read -> IO(File & Result<&1, &1, U32 & String, String>)
+# `IO.die` on a `Fail` is what turns a MISSING PACKET.out into a refusal instead
+# of an empty string, and an empty string would compare unequal to the expectation
+# for a reason that has nothing to do with the kernel.
+def read_at(f: File, r: Result<&1, &1, U32 & String, String>) -> IO(String):
+  match r:
+    case Done{text}:
+      IO.bind(Unit, String, File.close(f), _ => IO.pure(String, text))
+    case Fail{error}:
+      IO.bind(Unit, String, File.close(f), _ => IO.die(String, 1, "BEND milestone: PACKET.out could not be read"))
+
+def Prog.read.go(m: (File & Result<&1, &1, U32 & String, String>)) -> IO(String):
+  (f, r) = m
+  read_at(f, r)
+
+def read_open(f: File, max: U32) -> IO(String):
+  IO.bind(File & Result<&1, &1, U32 & String, String>, String, File.read(f, max), Prog.read.go)
+
+def read_after(r: Result<&1, &1, U32 & String, File>, max: U32) -> IO(String):
+  match r:
+    case Done{f}: read_open(f, max)
+    case Fail{error}: IO.die(String, 1, "BEND milestone: could not open the file for reading")
+
+def read_file(path: String, max: U32) -> IO(String):
+  IO.bind(Result<&1, &1, U32 & String, File>, String, File.open(path, "r"),
+    r => read_after(r, max))
+
+# ONE DEF FOR THE WHOLE WRITE, and that is a simplification rather than a
+# dodge: `ops_python.bend`'s `Prog.write.open` -> `Prog.write.put` ->
+# `Prog.write.close` is three because each `IO.bind` adds a continuation, and
+# here the three are only ever chained. `File.close` runs on BOTH arms, which is
+# what `Prog.write.put`'s `m => Prog.write.close(m)` does.
+def Prog.put.go(m: (File & Result<&1, &1, U32 & String, Unit>)) -> IO(Unit):
+  (f, _) = m
+  File.close(f)
+
+def put_open(f: File, text: String) -> IO(Unit):
+  IO.bind(File & Result<&1, &1, U32 & String, Unit>, Unit, File.write(f, text),
+    Prog.put.go)
+
+def put_after(r: Result<&1, &1, U32 & String, File>, text: String) -> IO(Unit):
+  match r:
+    case Done{f}: put_open(f, text)
+    case Fail{error}: IO.die(Unit, 1, "BEND milestone: could not open PACKET.in for writing")
+
+def write_file(path: String, text: String) -> IO(Unit):
+  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(path, "w"),
+    r => put_after(r, text))
+
+# THE LAUNCH, and the refusal at ops_bend.py:224 becomes REAL: a non-zero exit is
+# a DIE carrying the executor's own stderr, which is what `subprocess.run` raises
+# on at :224-225. `IO.die` rather than a printed row, because a launch that
+# failed must not be able to print `ms_pass=True` over an empty readback.
+# A `match` ON A BOOL PARAMETER rather than a `Bool.pick`, and that is measured:
+# a `Bool.pick` whose arms are IO terms is refused with "a type for this operator
+# (write (a < b : Nat))" and the note "operators demand annotation".
+# `ops_python.bend` `Prog.done.go2.bad` is the same shape -- a def that MATCHES a
+# flag and whose arms are the two IO terms.
+def launch.ok(cd: U32, +so: String, +se: String) -> IO(Unit): urow("ms_exit", cd)
+
+def launch.bad(cd: U32, +so: String, +se: String) -> IO(Unit):
+  IO.die(Unit, 1, String.concat(["the Bend executor exited ", U32.show(cd),
+    ": ", so, se]))
+
+# AND THE FLAG IS A PARAMETER, because "a match cannot scrutinize a computed
+# value: give it its own def" (MEASURED) -- which is why `ops_python.bend` passes
+# `Prog.bad(pr)` into `Prog.done.go2` rather than matching on it there.
+def launch.zero(cd: U32, +so: String, +se: String, +bad: Bool) -> IO(Unit):
+  match bad:
+    case True{}: launch.bad(cd, so, se)
+    case False{}: launch.ok(cd, so, se)
+
+def launch(+cd: U32, so: String, se: String) -> IO(Unit):
+  launch.zero(cd, so, se, U32.is_ne(cd, (0 : U32)))
+
+def on_run(r: Result<&1, &1, U32 & String, U32 & (String & String)>) -> IO(Unit):
+  match r:
+    case Done{value}:
+      (cd, (so, se)) = value
+      launch(cd, so, se)
+    case Fail{(cd, message)}:
+      IO.die(Unit, 1, String.concat(["Process.run could not launch the executor: ", message]))
+
+def run_exe() -> IO(Unit):
+  # argv is `PACKET gx gy gz` -- the packet FIRST -- and `List.append` is `xs ++ ys`,
+  # so the packet is `xs`. ONE work item, because `Prog.nout` is 1 for the
+  # milestone: `grid(1, ...)` runs the body exactly once.
+  IO.bind(Result<&1, &1, U32 & String, U32 & (String & String)>, Unit,
+    Process.run(PKT_EXE(), PKT_ARGV(), "",
+      1048576, 600000), on_run)
+
+# THE READBACK. `buffer_to` in the executor's own form: PACKET.out is TEXT, so the
+# copy-back is a PARSE of one line per buffer, through the SAME hex codec the
+# copy-in used -- and DELIBERATELY not a symmetric one, because
+# `ops_python.bend:1165` measured what symmetry buys: a reader and a writer wrong
+# in the SAME way cancel on a pure copy, so every copy fixture passes while every
+# arithmetic one computes on nonsense. So the comparison below is over the emitted
+# TEXT, not over a re-parse.
+# THE COMPARISON, and it is the whole of the milestone. `ms_got` is the TEXT
+# because "the emitted text is a gate, not a boolean" (this file's own rule): a
+# boolean over a string can be true while the string is wrong. `EXPECTED()` is the
+# expectation written down BEFORE the run in
+# `.agents/slop/ops_bend-milestone-expected.txt`.
+def ms_verdict(+got: String, +want: String) -> IO(Unit):
+  # THE THREE ROWS, and the TEXT before the BOOLEAN deliberately: "the emitted
+  # text is a gate, not a boolean" (this file's own rule) -- `ms_got`/`ms_want`
+  # are the gate and `ms_pass` is the summary, so a reader who disagrees can see
+  # WHICH side moved without re-running anything.
+  do IO<Unit>:
+    srow("ms_got", got)
+    srow("ms_want", want)
+    row("ms_pass", String.eq(got, want))
+
+# ONE ROW PER DEF, and that is forced rather than stylistic: `ms` is a
+# `List<&2, Mem>`, it is AFFINE, and a `do` block of eleven rows reads it eleven
+# times. MEASURED: "expected : Store / observed : Mem", which names the FIRST
+# disagreement and not the count. So each fact gets its own def and each def
+# consumes the list once. It also means a failing row localises to a def.
+def say_base(nm: String, v: U32) -> IO(Unit): urow(nm, v)
+
+# ONE ROW PER CALL, CALLED FROM `milestone.main`. That is not a workaround, it is
+# the only shape that satisfies the affine discipline: a `List<&2, Mem>` may be
+# consumed ONCE, so five rows over three buffers cannot live in one def. MEASURED
+# alternatives, both rejected: a `do` block of N rows is "expected Store /
+# observed Mem"; and threading the list through `IO.bind` needs every link to
+# ANSWER the list, which is "consumed more than once" the moment a link both reads
+# and answers it. So EVERY def here ANSWERS `IO(List<&2, Mem>)` and the chain
+# hands each link a list to consume. One print per def, one bind per hand-off.
+# THE LIST IS THE FIRST ARGUMENT, and that is forced by argument order: arguments
+# are read LEFT TO RIGHT, so `ms_row("...", Mem.base(mem_at(ms, 0n)), ms)` consumes
+# `ms` inside `mem_at` and then tries to hand the same list on again. Putting the
+# list FIRST makes it the last thing the row def consumes.
+def ms_row(ms: List<&2, Mem>, nm: String, v: U32) -> IO(List<&2, Mem>):
+  IO.bind(Unit, List<&2, Mem>, urow(nm, v), _ => IO.pure(List<&2, Mem>, ms))
+
+def ms_srow(ms: List<&2, Mem>, nm: String, v: String) -> IO(List<&2, Mem>):
+  IO.bind(Unit, List<&2, Mem>, srow(nm, v), _ => IO.pure(List<&2, Mem>, ms))
+
+def ms_row_base0(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_row(ms, "ms_b0_base", Mem.base(mem_at(ms, 0n)))
+
+def ms_row_base1(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_row(ms, "ms_b1_base", Mem.base(mem_at(ms, 1n)))
+
+def ms_row_base2(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_row(ms, "ms_b2_base", Mem.base(mem_at(ms, 2n)))
+
+def ms_row_nbytes(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_row(ms, "ms_b0_nbytes", Mem.nbytes(mem_at(ms, 0n)))
+
+def ms_row_hex0(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_srow(ms, "ms_b0_hex_in", Mem.to_hex(s, mem_at(ms, 0n)))
+
+def ms_row_hex1(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_srow(ms, "ms_b1_hex_in", Mem.to_hex(s, mem_at(ms, 1n)))
+
+def ms_row_hex2(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_srow(ms, "ms_b2_hex_in", Mem.to_hex(s, mem_at(ms, 2n)))
+
+def ms_row_line(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_srow(ms, "ms_b0_line_in", Mem.to_line(s, mem_at(ms, 0n)))
+
+# `raw_free(mem_at(ms, 0n))` renders the FREED buffer, so this row proves the
+# no-op by CONTENT rather than by a boolean about it -- which is why `raw_free`
+# answers the same `Mem` instead of discarding it.
+def ms_row_free(+ms: List<&2, Mem>, s: Store) -> IO(List<&2, Mem>):
+  ms_srow(ms, "ms_free_noop", Mem.to_line(s, raw_free(mem_at(ms, 0n))))
+
+def ms_row_top(+s: Store, ms: List<&2, Mem>) -> IO(List<&2, Mem>):
+  IO.bind(Unit, List<&2, Mem>, urow("ms_store_top", Store.top(s)), _ =>
+    IO.bind(Unit, List<&2, Mem>,
+      urow("ms_store_len", U32.from_nat(List.length(&2, U32, Store.ms(s)))),
+      _ => IO.pure(List<&2, Mem>, ms)))
+
+# THE CHAIN, in the order the rows print. Each link answers the list the next one
+# consumes, so the whole group is ONE affine walk with no list ever read twice.
+def ms_stage2a(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  ms_row_top(s, ms)
+
+def ms_stage2b(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_base0(ms, s), a =>
+    IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_base1(a, s), b =>
+      ms_row_base2(b, s)))
+
+def ms_stage2c(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  ms_row_nbytes(ms, s)
+
+def ms_stage2d(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_hex0(ms, s), a =>
+    IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_hex1(a, s), b =>
+      ms_row_hex2(b, s)))
+
+def ms_stage2e(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  IO.bind(List<&2, Mem>, List<&2, Mem>, ms_row_line(ms, s), a =>
+    ms_row_free(a, s))
+
+def ms_stage2f(ms: List<&2, Mem>, +s: Store) -> IO(List<&2, Mem>):
+  IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2a(ms, s), a =>
+    IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2b(a, s), b =>
+      IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2c(b, s), c =>
+        IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2d(c, s), d =>
+          ms_stage2e(d, s)))))
+
+# THE VERDICT COMES FIRST, and that ordering is deliberate: `ms_pass` is the row a
+# reader looks at, and it is printed before the diagnostic rows that explain it if
+# it is False. Then the five stage-2 groups, in call order, which is what makes the
+# affine threading read top-to-bottom.
+# `ms_stage2f` ALREADY ANSWERS `IO(List<&2, Mem>)`, so this def IS the Unit
+# wrapper -- there is no `IO.pure(Unit, ...)` to write, and that is why the shape
+# is a def rather than a bind. An earlier version tried to bind on `Unit` and was
+# refused with "expected Unit / observed Type", because `Unit` in a bind's second
+# position is the FUNCTION's parameter list.
+# AND THE `Unit` PROBLEM, which cost three attempts and is worth recording because
+# it is a substrate rule with no analogue in the rest of this file. Bend has no
+# `Unit` VALUE: `IO.pure(Unit, x)` wants an inhabitant of `Unit`, and every
+# attempt is refused -- `IO` is a function, `Nil{}` does not have type `Unit`
+# (MEASURED: "expected Unit / observed Type"). The answer is to make the
+# continuation IGNORE its argument: a lambda whose parameter is `_` binds at any
+# type, so `_ => File.close(f)` -- which is what `ops_python.bend` does everywhere
+# it needs to discard -- is the whole idiom. Nothing here discards a MEANINGFUL
+# value: the `List<&2, Mem>` at the end of the walk is read by nothing downstream,
+# because the verdict was already computed from `text`.
+# `ms_after` DISCARDS the finished walk. `IO.die(Unit, 0, "")` rather than a
+# `Unit` value, because Bend has no `Unit` inhabitant and this is the one place a
+# value must be produced: a zero-code halt that closes cleanly. It is reached only
+# after every row has printed, and `ms_gate_rows` carries the real verdict.
+def ms_after(_: List<&2, Mem>) -> IO(Unit): IO.die(Unit, 0, "")
+
+def ms_stage2g(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  IO.bind(List<&2, Mem>, Unit, ms_stage2f(ms, s), ms_after)
+
+# THE VERDICT, THEN THE DIAGNOSTICS. `ms_verdict` comes FIRST so `ms_pass` is
+# printed before the rows that explain it when it is False. `text` is bound once
+# and used once -- `String` is affine too, which is why `EXPECTED()` is inlined
+# rather than carried.
+def on_out(ms: List<&2, Mem>, +s: Store, text: String) -> IO(Unit):
+  IO.bind(Unit, Unit, ms_verdict(text, EXPECTED()), _ => ms_stage2g(ms, s))
+
+def on_packet(+ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  do IO<Unit>:
+    w : Unit <- write_file(PKT_IN(), pkt_in(ms, s))
+    r : Unit <- run_exe()
+    out : String <- pkt_out()
+    ms_stage2f(ms, s)
+
+def on_state(p: (List<&2, Mem> & Store)) -> IO(Unit):
+  (ms, s) = p
+  on_packet(ms, s)
+
+def milestone() -> IO(Unit):
+  IO.bind(List<&2, Mem> & Store, Unit, ms_state(store()), on_state)
+
+# THE ALLOCATOR AND CODEC ROWS. `bend_alloc_*` reads the bump with NOTHING
+# written, so a bug in the copy-in cannot be mistaken for a bug in the allocator;
+# `bend_hexbyte_*` pins the writer against LITERALS rather than against the reader,
+# which is the whole point of the asymmetry noted above.
+def ms_gate_rows() -> IO(Unit):
+  do IO<Unit>:
+    urow("bend_alloc_bump0", Mem.base(alloc_mem(4, store())))
+    urow("bend_alloc_bump1", Store.top(alloc_store(4, store())))
+    urow("bend_alloc_bump2", Store.top(alloc_store(4, alloc_store(4, store()))))
+    urow("bend_alloc_nbytes", Mem.nbytes(alloc_mem(16, store())))
+    urow("bend_alloc_len1", U32.from_nat(List.length(&2, U32,
+      Store.ms(alloc_store(4, store())))))
+    urow("bend_alloc_len3", U32.from_nat(List.length(&2, U32,
+      Store.ms(alloc_store(4, alloc_store(4, store()))))))
+    row("bend_alloc_advances", U32.is_ne(Mem.base(alloc_mem(4, store())), 0))
+    row("bend_free_is_noop", U32.is_eq(Mem.base(raw_free(alloc_mem(4, store()))),
+      Mem.base(alloc_mem(4, store()))))
+    srow("bend_hexbyte_ef", hexbyte(239))
+    srow("bend_hexbyte_00", hexbyte(0))
+    srow("bend_hexbyte_ff", hexbyte(255))
+    srow("bend_hexbyte_3f", hexbyte(63))
+    srow("bend_hexbyte_40", hexbyte(64))
+    srow("bend_hexdig_0", hexdig_str2(0))
+    srow("bend_hexdig_9", hexdig_str2(9))
+    srow("bend_hexdig_a", hexdig_str2(10))
+    srow("bend_hexdig_f", hexdig_str2(15))
+    row("bend_hex_ok_digit", hexdig_ok(48))
+    row("bend_hex_ok_lower", hexdig_ok(102))
+    row("bend_hex_ok_upper", hexdig_ok(70))
+    row("bend_hex_ok_g", hexdig_ok(103))
+    row("bend_hex_odd_drops", U32.is_eq(U32.from_nat(List.length(&2, U32,
+      hexbytes("abc"))), 1))
+    urow("bend_hexval_f", hexdig_val(102))
+    urow("bend_hexval_A", hexdig_val(65))
+
+def milestone.main() -> IO(Unit):
+  do IO<Unit>:
+    ms_gate_rows()
+    p : Unit <- milestone()
+    IO.print("ms-done=1")
+
 
 # --- 1: THE LANE TABLE, :90, both directions -----------------------------
 #
@@ -1441,7 +2200,7 @@ def t_parse() -> IO(Unit):
     # the FIRST line of the packet, back out of `parse`. `Line.of.of` is
     srow("bend_parse_l1", line1(PKT_TINY()))
     srow("bend_parse_l1_py", "PARAM f32 k:param:4:g")
-def main() -> IO(Unit):
+def gate() -> IO(Unit):
   do IO<Unit>:
     m0 : Unit <- t_lanes()
     m1 : Unit <- t_dtypes()
@@ -1451,8 +2210,21 @@ def main() -> IO(Unit):
     m5 : Unit <- t_call()
     m6 : Unit <- t_misc()
     m7 : Unit <- t_parse()
-    IO.print(String.concat(["probe_hex=", OP.hex_str2(64)]))
     IO.print("bend-done=1")
+
+# THE LANE SPLIT. `bend LANE` runs the gate; `bend LANE opsbend` runs the
+# milestone. The split is on the SECOND argument and not on the first, because
+# `bend <file>` always spends argv[0] on the program's own path -- so a split on
+# argv[0] would take the milestone branch for a plain gate run.
+def main.at(+lane: String) -> IO(Unit):
+  Bool.pick(IO<Unit>, String.eq(lane, "gate"), gate(), milestone.main())
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    as : List<String> <- IO.args()
+    lane : String <- IO.pure(String, Maybe.default(&2, String,
+      List.get(&2, String, as, 1n), "gate"))
+    main.at(lane)
 
 # ===========================================================================
 # THE MUTATION TABLE. Every number is `.agents/slop/bend_mutate.py`'s output,

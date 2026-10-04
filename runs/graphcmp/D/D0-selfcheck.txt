@@ -1,3 +1,2 @@
 # SELFCHECK: OK
 rc=0
-rc=0

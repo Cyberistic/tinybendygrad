@@ -524,7 +524,14 @@ def probe(fn, text):
       return None, "arity", f"arity: {e}", f"ARITY {e}"
     return None, "raised", "", f"TypeError: {e}"
   except _Hung:
-    return None, "hung", "", "HUNG: wall-clock alarm tripped"
+    # A TIMED-OUT reader is its own contract, permanently. It is a runner: it does real work
+    # (a subprocess, a graph walk) whose duration is not this harness's to bound, so whether it
+    # answers inside 2 seconds is a property of the MACHINE and not of the reader. Classifying
+    # it as `not-a-reader` on a fast run and `text->mapping` on a slow one made the guard's own
+    # finding count change between two runs on the same tree, which is worse than not
+    # measuring it: a denominator that moves is not a denominator.
+    return None, "timed-out", "", ("HUNG: exceeded PROBE_TIMEOUT seconds. The reader does real "
+                                  "work whose duration is not a property of this harness.")
   except Exception as e:
     return None, "raised", "", f"{type(e).__name__}: {e}"
 
@@ -569,14 +576,17 @@ def canonical_value_answer(text):
 
 
 def _answers(fn, inputs):
-  """{sid: ('ok', rendered) | ('err', msg)} for the per-line / per-value families."""
+  """{sid: ('ok', rendered) | ('err', msg)} for the per-line / per-value families. A TIMED-OUT
+  call is `('timed-out', '')` rather than an error string, so the caller can tell "this reader
+  refused" from "this reader did not finish" -- the two have opposite implications and a harness
+  that conflates them reports a refusal as though it were a disagreement."""
   out = {}
   for (sid, text), arg in zip(SHAPES, inputs):
     _FAKE["text"] = text
     try:
       out[sid] = ("ok", _render_answer(call(fn, arg)))
     except _Hung:
-      out[sid] = ("err", "HUNG")
+      out[sid] = ("timed-out", "")
     except Exception as e:
       out[sid] = ("err", f"{type(e).__name__}: {e}")
   return out
@@ -591,11 +601,18 @@ def measure(rel, name, lineno, seg, node):
   m2 = measure_once(rel, name, lineno, seg, node)
   keys = ("contract", "drift", "note", "kinds", "blob_kind", "blob_n", "verdict")
   m["unstable"] = any(m.get(k) != m2.get(k) for k in keys)
-  if m["unstable"] and m["contract"] in DRIFT_FAMILIES:
+  # A reader whose CLASSIFICATION moves between two runs on the same tree cannot be given a
+  # fingerprint either, because a fingerprint is only meaningful for a fixed contract. This is
+  # not hypothetical: `graphcmp.py`'s `bend_sym_rows` reads as a `text->mapping` reader on a
+  # loaded machine and as `not-a-reader` on a busy one, so the registry gained and lost its row
+  # between two runs and the guard's finding count moved with it. A denominator that moves
+  # between runs of one tree is not a denominator, so this is its own class.
+  if m["unstable"]:
     m["contract"] = "non-deterministic"
     m["drift"] = None
-    m["note"] = ("ANSWERED THE SAME TEXT TWO DIFFERENT WAYS across two runs in one process. "
-                 "No fingerprint can be taken of a function that does not answer to itself.")
+    m["note"] = ("CLASSIFICATION OR ANSWER MOVED between two runs in one process, so no "
+                 "fingerprint of it is meaningful. Excluded from the drift denominator rather "
+                 "than scored with the run that happened to be slower.")
   return m
 
 
@@ -622,6 +639,10 @@ def measure_once(rel, name, lineno, seg, node):
   errs = [r[3] for r in got.values() if r[3]]
   blob = probe(fn, BLOB)
 
+  if any(k == "timed-out" for k in kinds.values()):
+    # Checked BEFORE arity and OS errors on purpose: a runner that times out is a runner
+    # whatever else it does, and the machine's mood on the day is not its contract.
+    return _class(rel, name, lineno, sig, "runner", errs[0][:110], None, [], blob)
   if any(k == "arity" for k in kinds.values()):
     return _class(rel, name, lineno, sig, "not-single-arg",
                   next(e for e in errs if e), None, [], blob)
@@ -639,6 +660,10 @@ def measure_once(rel, name, lineno, seg, node):
   mapping_blob = blob[1] in ("dict", "dict+extras", "pairs", "lines")
   if not mapping_blob:
     per_line = _answers(fn, [t for _, t in SHAPES])
+    if any(v[0] == "timed-out" for v in per_line.values()):
+      return _class(rel, name, lineno, sig, "runner",
+                    f"did not finish inside PROBE_TIMEOUT on at least one shape; it is a runner",
+                    None, [], blob)
     if all(v[0] == "ok" for v in per_line.values()) and all(
         v[1] == "NONE" or v[1].startswith(("SEQ2", "SEQ3")) for v in per_line.values()):
       # ── FAMILY 3 or FAMILY 2? The PARAMETER NAME decides, and the decision is printed.

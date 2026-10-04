@@ -20,7 +20,7 @@ ALL="matmul reduce buffer sink range rangeflat cast special binblob group commut
 #   `sym` USED TO BE HERE. It DISAGREED on 3 of its 12 nodes because the port could not mint
 #     a symbolic dim at all (`fold.bend`'s `ssimplify` wall), and it was the corpus's one
 #     DISAGREE-on-purpose graph. MEASURED 2026-10-04 late in the day: that wall is CLOSED --
-#     `fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the `AParam` arm of `sym_dim.of`) landed
+#     `fold.bend`'s `sym_dim.pa` (`fold.bend:1273`, the `AParam` arm of `sym_dim.of`) landed
 #     from the `fold` unit -- `sym` now reads `?=0` and `VERDICT: AGREE` at 12 of 12 nodes,
 #     and the symbolic-dim half of LIMITS.md section 3 is rewritten from RESOLVED-by-other
 #     rather than left claiming a limit that no longer exists.
@@ -36,10 +36,25 @@ mkdir -p "$D"
 
 run() { # run <outfile> <args...>
   out=$1; shift
+  # ONE FILE, ONE WRITE, ONE ATOMIC MOVE. MEASURED 2026-10-04, and this is the SECOND time
+  # this project has been bitten by it: the version that appended `rc=$?` to the SAME file
+  # the child had just written left a window between the two, and a run killed in that window
+  # produced a report MISSING its last line and with no `rc=` stamp at all -- which the
+  # stability step then reported as `sym: 2 runs DIFFER`, `32d31 < rc=0`, i.e. a
+  # reproducibility difference where the difference was "the second file is shorter". It is
+  # the same shape as LIMITS #13's mid-write truncation, one layer up, and it was only
+  # VISIBLE because defect 22's fix made a differing pair name itself instead of being
+  # swallowed.
+  #
+  # The temp is INSIDE `$D` and dot-named, so `mv` is same-directory and therefore atomic, and
+  # `graphcmp-repro.sh`'s snapshot filters dotfiles so a temp left by a kill is not compared.
+  # It is removed at the start and the end of the run.
   # shellcheck disable=SC2086
-  $E $P .agents/slop/graphcmp.py "$@" > "$D/$out" 2>"$D/$out.err"
-  echo "rc=$?" >> "$D/$out"
+  { $E $P .agents/slop/graphcmp.py "$@" > "$D/.tmp.$out" 2>"$D/$out.err"
+    echo "rc=$?" >> "$D/.tmp.$out"; }
+  mv "$D/.tmp.$out" "$D/$out"
 }
+rm -f "$D"/.tmp.*
 
 # --- 00 THE SELFCHECK, and the COMM and LEDGER assertions it grew -------------------
 run D0-selfcheck.txt selfcheck
@@ -228,7 +243,14 @@ $E $P .agents/slop/graphcmp-p13-ops.py > "$D/D0-ops-probe.txt" 2>&1
 # ---     and its `BYTE-IDENTICAL` verdicts were vacuous (step 02's comment); the old
 # ---     `D9-stability-{a,b}.txt` were the binblob pair. Leaving them would leave a
 # ---     PASS-shaped file in the directory that no command in this script produces.
-rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
+# --- 14 REMOVE THE STALE FILES. `D9-stability-{a,b}.txt` were the binblob pair before the
+# ---     list gained names. MEASURED: an earlier unquoted `for c in $STAB` split on the
+# ---     space in `--plant srcswap` and produced a SIXTH pair named `srcswap`, which is not
+# ---     a graph -- so `D9-stability-srcswap-{a,b}.txt` sat in the directory as argparse
+# ---     ERROR files, and a directory carrying a PASS-shaped file no command produces is
+# ---     exactly what step 14 exists to prevent. `D1-verdicts.txt` is the only thing that
+# ---     caught it, and it does not look at file NAMES.
+rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt" "$D"/D9-stability-srcswap-* "$D"/.tmp.*
 
 # --- 15 WHAT A CLEAN RUN OF THIS SCRIPT ESTABLISHES, IN ONE PLACE, because every other
 # ---     statement about it is somewhere else.

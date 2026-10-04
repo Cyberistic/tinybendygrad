@@ -1,7 +1,30 @@
-staged tinybendygrad/runtime/support/nv/nvdev.bend -> nvdev.staged-nv-50051
+staged tinybendygrad/runtime/support/nv/nvdev.bend -> nvdev.staged-nv-63317
   sha256(mirror) == sha256(live) == e7710788ae8fb0e4  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)
 baseline: 794 name= rows, row-set digest c9f18571b35a9b5f
 
 mutation                               rows moved  first rows moved
 --------------------------------------------------------------------------------------------------------------
-[ 0] reg_field_order_reversed ... 
+[ 0] reg_field_order_reversed ... 22 moved: nv_boot42_chipid_over, nv_boot42_merext_hi, nv_boot42_merext_lo
+[ 1] reg_field_names_swapped ... 24 moved: nv_boot42_chipid_over, nv_boot42_merext_hi, nv_boot42_merext_lo
+[ 2] reg_field_list_reversed ... 4 moved: nv_decode_boot0_full, nv_decode_order_boot0, nv_reg_NV_PMC_BOOT_0_names
+[ 3] reg_off_by_one_word ... 12 moved: nv_boot42_reg_off, nv_chipdet_addr, nv_reg_NV_PMC_BOOT_42_off
+[ 4] mask_wid_plus_one ... 57 moved: nv_boot42_chipid_over, nv_decode_arch_1b, nv_decode_arch_3f
+[ 5] mask_of_ignores_names ... 9 moved: nv_upd_u1_ini, nv_upd_u1_tr, nv_upd_u1_w
+[ 6] encode_shift_zero ... 77 moved: nv_arch_17, nv_arch_18, nv_arch_19
+[ 7] ones_uses_shln ... 0 moved: 
+[ 8] chip_family_dict_dropped ... 7 moved: nv_archmap_1b, nv_chipname_1b_00, nv_chipname_1b_0d
+[ 9] chip_mmu_boundary_off_by_one ... 2 moved: nv_fmcboot_1a, nv_mmuver_1a
+[10] mmu_shifts_dropped_last ... 55 moved: nv_cover_bot_3, nv_covers_3, nv_d_3_l0_huge_lvmin
+[11] pte_ispage_bound_off_by_one ... 2 moved: nv_d_2_l4_ispage, nv_d_3_l5_ispage
+[12] pte_dual_bound_off_by_one ... 31 moved: nv_d_2_l2_addrkey, nv_d_2_l2_dual, nv_d_2_l2_idx0
+[13] pte_sys_uses_or_as_if ... 12 moved: nv_d_2_l0_addrkey, nv_d_2_l0_sys, nv_d_2_l1_addrkey
+[14] pte_uncfield_pde_ver_swapped ... 6 moved: nv_sf_pde_l0_2, nv_sf_pde_l0_3, nv_sf_pde_l3_2
+[15] pte_uncval_pde_uses_uncached ... 2 moved: nv_sf_pdeval_2, nv_sf_pdeval_3
+[16] inval_high_bit_wrong ... 2 moved: nv_inval_hi, nv_tr_inval_hi
+[17] cfg_clear_becomes_set ... 7 moved: nv_cfg_clear_0000, nv_cfg_clear_0002, nv_cfg_clear_0004
+[18] roundup_to_one_page ... 23 moved: nv_page, nv_pages_0000, nv_pages_1001
+[19] covers_not_reversed ... 22 moved: nv_cover_bot_2, nv_cover_bot_3, nv_cover_top_2
+[20] word_index_not_divided ... 15 moved: nv_tr_chip, nv_tr_inval, nv_tr_mixed
+[21] update_ini_swapped_operands ... 0 moved: 
+[22] update_enc_before_ini ... live nvdev.bend: byte-identical (e7710788ae8fb0e4) -- this harness never wrote it
+nvdev.staged-nv-63317 produced no output at all

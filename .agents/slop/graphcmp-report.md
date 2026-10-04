@@ -29,6 +29,16 @@ nondeterminism on its first run.
 `sh .agents/slop/graphcmp-repro.sh` measures reproducibility: **158 of 158 files
 byte-identical across two clean runs.**
 
+**THREE MORE FINDINGS FROM THE CHECKS RATHER THAN THE DIFFER, and the chain between them is
+the point.** A stability pair can report `BYTE-IDENTICAL` when *both* members are the same
+one-line 0-row failure — two identical failures compare equal — so a one-line side is now
+labelled FAILED and re-run, and the run summary counts the NEGATIVES beside the positive.
+Making a differing pair visible then found the next one: `sym: 2 runs DIFFER`, `32d31 <
+rc=0`, i.e. the second file was thirty-one lines because `run()` appended `rc=$?` to the
+file the child had just written and a kill in that window left no tail. Output is now
+written to a dot-named temp and `mv`d into place, which is atomic. Neither finding was
+reachable from the other.
+
 **A LIMIT WAS CLOSED WHILE THIS ROUND RAN, AND THE THREE PINNED NUMBERS THAT CLAIMED IT
 MOVED WITH IT.** `sym` was the corpus's one DISAGREE-on-purpose graph because the port could
 not mint a symbolic dim at all (`uop/fold.bend`'s `ssimplify` wall). MEASURED late on
