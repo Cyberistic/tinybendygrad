@@ -1211,3 +1211,84 @@ rows for 25 of 39 ports; `./bin/bend tinybendygrad/renderer/cstyle.bend` alone p
 **A `String` in Bend 2 is consumed by its one use**, so a gate row that must build its own
 name from a value cannot also use that value as a lookup key. Row names in the new per-field
 group are literals on both sides. See NV-2 in the notes.
+
+## The libclang shim unit — `.agents/slop/clangshim/`
+
+- **`clangshim-gen.py`** — the generator. Reads `.agents/slop/ag-libclang.tramp`
+  (324 rows of ctypes spellings) plus `tinygrad/runtime/autogen/libclang.py` for
+  the TypeAlias graph and struct `SIZE`s, and emits **ONE `shim.c` + ONE
+  `shim.bend`** covering 308 of the 324. The ctypes resolver is **imported** from
+  `ffi-port-cost.py`, never re-implemented. `--probe` adds the 305-fork CALL
+  census; `--exclude` drops a binding the LINKER named. `--list` prints the
+  blocked table.
+- **`clang-cost.py`** — splits the GENERATED files into "shared, written once"
+  and "marginal, one per binding", so the per-function cost is measured rather
+  than estimated. `ffi-port-cost.py`'s `LAW_LINES_PER_FN = 3` is 2.1× low.
+- **`clang-analyze.py`** — the type/arity census over all 324, and the
+  name/arity cross-check against the committed `libclang.bend`
+  (**324 defs, 0 missing, 0 arity disagreements** — that is what licenses the
+  generation).
+- **`leaf.c`** — the census failures' leaf cause, called with **no bend runtime
+  in the process** (`rc=139`, SIGSEGV, on a zeroed struct). The census's own
+  `FAILED-child-nonzero-exit` says `exit 1`, which on its own does not say *why*.
+- **`s1.sh` / `s2.sh` / `s3.sh`** — the three stages, four named steps each, run
+  from `$TMPDIR`. `s2.sh`'s link step is a **loop**: it greps the undefined
+  symbols out of the linker's own output and regenerates without exactly those,
+  printing each exclusion.
+- **`libclang` facts re-measured here, on bend 2.0.35** — every `Nat` is LINEAR;
+  `bend -o` emits no `CID_*` for a law `main` never calls; `an arity over 247` is
+  a limit on live binders; a nullary `Data` is a singleton and cannot carry a
+  handle; a bare integer literal is `U32` not `Nat`. Rules `S-1`..`S-14` at the
+  END of `.agents/slop/notes/bend2-constraints.md`, cited by NAME because `F-`
+  numbers have collided three times.
+
+## Backward walk (2026-10-04) — `mixin/gradient.bend`, step 1 of 3
+
+- **`.venv/bin/python .agents/slop/backward/oracle-cg.py`** — the CPython side of
+  `compute_gradient`'s walk. **TWENTY reachable rows per run, and `main()` DIES at line
+  116**, so `oracle_pmul`, `oracle_pmul0/1`, `oracle_seed` and the three
+  `oracle_fwdwalk*` lines are NEVER EMITTED. Its second fixture drives CPython's own
+  `compute_gradient` into `RuntimeError: cannot broadcast ... into ()` at
+  `tinygrad/mixin/gradient.py:133` — **a place CPython itself raises**, which is why the
+  shaped-edge reduce has no oracle at all. Run it with the repo's `.venv`, never
+  `python3` (agent-core position 1733).
+- **`sh .agents/slop/backward/run-oracle.sh`** — refuses, strictly, if the `.venv` still
+  points at an original tree by absolute path. Prints only `RESOLVED=<tinygrad.__file__>`;
+  **the expectation is in the `.txt`, not on stdout.**
+- **`sh .agents/slop/backward/walk-mutate.sh <arm>`** — the plant/disarm harness. Arms
+  `base plant_reverse plant_noguard disarm_comment disarm_name`. Every arm runs in
+  `$TMPDIR` over a **real `cp -R`** (a symlink mirror breaks hub detection and then
+  refuses an ordinary `import`), compiles a **control** first, and prints
+  `INCONCLUSIVE (T-1)` with stderr on a substrate failure rather than a verdict. Its
+  `apply` asserts **the bytes on disk differ** and contain the new text — because
+  `s.count(old)` without `s.replace` is a vacuous plant that reports "1 occurrence
+  replaced" and "0 rows moved", which this harness did once.
+- **`.agents/slop/backward/walk-row.txt` / `walk-plant.md`** — the row table and the
+  transcript, both generated from the runs rather than transcribed. Summary:
+  `.agents/slop/BACKWARD-WALK.md`. Rules `G-1`..`G-8` at the END of
+  `.agents/slop/notes/bend2-constraints.md` (24665+).
+
+## The 93 one-space rows (2026-10-04) — `uop/fold.bend`'s `mm_*` / `bl_*` families
+
+- **`.venv/bin/python .agents/slop/mmfold/mmfold-lane.py`** — the driver
+  `LANE-LIVENESS.md:281` said did not exist. Runs `bin/bend tinybendygrad/uop/fold.bend` and
+  both oracles, unions `rebase-gate.py`'s `rows()` with the one-space reader below, and asserts
+  the two key sets are **disjoint**. `--port OTHER.bend` points it at a substitute port.
+  **110 rows compared, 0 disagreements.** A child that fails prints `DIED` and exits **2** —
+  never a zero, never a green verdict over nothing.
+- **`.agents/slop/mmfold/mmfold-rows.py::rows_f3one`** — the ONE-SPACE F3 reader, registered in
+  `reader-contracts.tsv` (signature `7c471b64d6f5`, computed by the census). Reads
+  `ctl single half` → 1 row; refuses F1, F2, F3-two-space, F4 and F6-TAB → 0 rows each. Reads
+  **0** of `oracle/dtype_tables.py`'s 14,766 TSV lines, which is why `rebase-gate.py:412`'s
+  `GAP = "  "` did not and must not change.
+- **`.venv/bin/python .agents/slop/mmfold/mmfold-plant.py`** — the plant and the disarm, over
+  `copytree`s in `$TMPDIR`; the live tree is read and never written. Plant drops
+  `mm.u64.add`'s carry (moves `mm_add_2p31`, `mm_add_carryhi`, `mm_add_carrylo`); disarm swaps
+  two `bl_row` lines and must move nothing. Three preconditions: the anchor occurs once, the
+  mutant compiles, and the port's stdout **sha256 moved**.
+- **`.venv/bin/python .agents/slop/mm-lift-gate.py --selfcheck`** — drives **both** of
+  `oracle_py.resolve()`'s refusals in a `$TMPDIR` tree and requires `DIED` on STDOUT with rc 2.
+  Plain `--selfcheck` is not enough: the gate also prints **132** rows (127 `lf_` + 4 `satcp_`
+  + 1 `DUPLICATE`) and answers **identically** under `python3` and `.venv/bin/python`.
+- Report: **`.agents/slop/MMFOLD.md`**. Rules `M-1`..`M-5` at the END of
+  `.agents/slop/notes/bend2-constraints.md` (24794+).

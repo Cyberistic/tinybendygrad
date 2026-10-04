@@ -4,6 +4,22 @@ The port's state. Progress bars are `[###.....] n/m`.
 
 ```
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
+backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
+                                        `mixin/gradient.bend`. **15/15 rows AGREE with
+                                        CPython**, headline `walk_row=MUL/2 ADD/2 ADD/2 |
+                                        grads_n=6` == `oracle_dag_walk` +
+                                        `oracle_dag_grads_n`. 72 pre-existing rows
+                                        BYTE-IDENTICAL. `plant_reverse` moves 7 rows,
+                                        `plant_noguard` moves 3, TWO DISARMS move 0 --
+                                        and `plant_noguard` LEAVES `walk_grads_n` AT 6,
+                                        which is the measured reason the row is a
+                                        signature and not a count.
+                                        `.agents/slop/BACKWARD-WALK.md`,
+                                        `.agents/slop/backward/walk-{row.txt,plant.md}`,
+                                        `walk-mutate.sh`. G-1..G-8 appended at
+                                        bend2-constraints.md 24665+.
+                                        **STEPS 2 AND 3 (`grad_set`, the `bw` graph) ARE
+                                        NOT DONE AND ARE NOT THIS UNIT.**
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
@@ -191,11 +207,52 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       print the identical line twice), which is the evidence that the producer is shared: the
       port's row-builders are their oracle generator's output. Fixing one side un-gates the
       row instead of gating it twice.
-- [ ] **`uop/fold.bend`'s 93 unaddressable rows.** `fold.bend:4070-4077` prints ONE space and
+- [x] **`uop/fold.bend`'s 93 unaddressable rows.** `fold.bend:4070-4077` prints ONE space and
       `rebase-gate.py:412`'s `GAP` is TWO, so `row()` refuses all 93. **And they are UNGATED**:
       `mm-lift-gate.py` prints none of the `mm_*`/`bl_*` families, so 93 measurements have no
       CPython answer either. Two characters in the port AND the oracle's generator close the
       first half; the second half is a unit of work.
+      → **DONE, `.agents/slop/MMFOLD.md`, 2026-10-04.** Both halves were the WRONG diagnosis and
+      the second one was free: **the 93 never needed the port's gap changed, and they never lacked
+      a CPython answer.** `mm-gate.py` (72 `mm_*`) and `mm-bl-gate.py` (38 `bl_*`) are pure CPython
+      with no tinygrad import and have existed since 2026-10-02; what was missing was a DRIVER,
+      which `LANE-LIVENESS.md:190`/`:281` already recorded ("NO automated driver exists") and
+      `.agents/slop/mmfold/mmfold-lane.py` now supplies. **`GAP` untouched** (two spaces stays;
+      `rows_f3one` reads **0** of `oracle/dtype_tables.py`'s 14,766 TSV lines, measured).
+      **Denominator: 110 ungated before → 0 after, 0 compared → 110 compared, 0 disagreements.**
+      110 and not 93, because the 17 `mm_div_*` rows print `q=… r=…` (F1, so `rows()` reads them)
+      and were equally unwired. Contract row appended to `reader-contracts.tsv` (58 rows; census
+      signature `7c471b64d6f5` computed, not written); `reader-guard.py` before 358/39/57 rc=1 and
+      after 359/40/58 rc=1 with the **same single pre-existing** `dsl_gate.py:87` finding and zero
+      mentions of `mmfold`; `--self-test` 8/8 with `R2 armed`. Plant/disarm measured:
+      dropping `mm.u64.add`'s carry moved exactly `mm_add_2p31`, `mm_add_carryhi`, `mm_add_carrylo`
+      (and **my predicted victim set was wrong twice** — `add_maxmax` overflows either way, so it
+      cannot fail); swapping two `bl_row` lines moved the bytes and nothing else.
+      **Two corrections to the brief, both measured:** (a) the 93 were missing from **a lane that
+      was never whole**, not from a lane that was otherwise green — the `lf_` lane was green over
+      its 127 rows the entire time `mm-lift-gate.py` was dead; (b) `mm-lift-gate.py` gates the
+      `lf_` family ONLY, so its 0 could never have been evidence about the 93 in either direction.
+      **Wall left for the coordinator: `fold.bend:5865` duplicates `:5862`**, so the lane prints
+      334 lines carrying 333 names. Root cause `mm-lift-gate.py:31` (`(-3, 4)` twice, already
+      REPORTED at line 278); **invisible to `diff` and to every name-keyed reader**, because both
+      lanes carry the duplicate. Reported by `mm-lift-gate.py`'s new `DUPLICATE` line and by
+      `mmfold-lane.py`'s `printed twice`, NOT deleted — deleting trades a duplicated measurement
+      for an unexplained port row.
+- [x] **`mm-lift-gate.py` WAS DEAD, NOT ZERO.** `mm-lift-gate.py:179`'s `from tinygrad import
+      dtypes` raises `ModuleNotFoundError` under PATH's `python3` (3.14, no `.pth`; the editable
+      install is only in `.venv`'s 3.12) and prints **0 lines**, rc 1 — measured before and after.
+      Now `oracle_py.resolve()` pins and the file `os.execv`s into it, so **both launchers print
+      byte-identical stdout** (132 lines = 127 `lf_` + 4 `satcp_` + 1 `DUPLICATE`), and a run that
+      cannot happen prints **`DIED` on STDOUT with rc 2**, carrying `resolve()`'s own diagnosis.
+      `--selfcheck` **drives both** refusals in a `$TMPDIR` tree (missing `.venv`; a `.venv` whose
+      python cannot import tinygrad) and requires rc 2 + one `DIED` line each; disarm is the same
+      file under a working interpreter printing 0 `DIED` lines. All 127 `lf_` rows **agree** with
+      `fold.bend`, and `--emit-bend` reproduces its 127 `lf_row` names byte-for-byte.
+- [ ] **STILL UNWIRED, and NOT this unit's:** `mm-dt-gate.py` (the 24 `bl_dt_*` F1 rows, read by
+      `rows()` and compared against nothing) and `mm-walk-gate.py`. Same cause as the row above
+      and now the same fix shape: one driver each, as `mmfold-lane.py` is for `mm-gate`/`mm-bl-gate`.
+      `LANE-LIVENESS.md:190`/`:281`. This also refutes that file's `CANNOT-BE-MADE-LIVE` verdict
+      for the two gates that DO now have a driver.
 - [x] **The guard and its plants, with the disarm.** `dup-gate.py --selftest` over the real
       captured pair: `clean AGREE dup 0/0 byteIdent True disagree 0` (the DISARM),
       `value BROKEN dup 0/0 byteIdent False disagree 1`,
@@ -8243,6 +8300,41 @@ Full report `.agents/slop/AUDIT-CAN-FAIL.md`; per-number `.agents/slop/audit/01`
       1 is a LOOP of ~30 lines, not a missing file. **It still does NOT give the port
       a backward pass:** one node, one step, an INT seed, and the multi-node
       accumulation is untested.
+- [x] **STAGE 5 (2026-10-04) — STEP 1 IS LANDED: `compute_gradient` + `_deepwalk` are
+      REAL DEFS, not a planted walk.** `mixin/gradient.bend` now carries `Itp`,
+      `dw_read`/`dw_src`/`dw_any`/`dw_flags`/`dw_walk`, `Deep`, `_deepwalk`, `Grads`/
+      `GSlot`/`gslot`/`gput`, `CState` and `cg_puts`/`cg_hole`/`cg_sum`/`cg_ctx`/
+      `cg_turn`/`cg_fire`/`cg_step`, and `compute_gradient` itself with upstream's name and
+      argument order. **`--check-only` is `ALL PROOFS CHECK`; 88 rows; the 72 PRE-EXISTING
+      rows are BYTE-IDENTICAL before and after; 16 new `walk_*` rows and 15 of them are
+      the oracle's own bytes.**
+      Headline `walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6`, which IS
+      `oracle_dag_walk` + `oracle_dag_grads_n`. Fixture is the oracle's `build1` DAG node
+      for node, because it is the only shape that reaches the ACCUMULATE
+      (gradient.py:138) -- `walk_grad_a=5 root=ADD/2` where a fresh insert answers
+      `4 root=MUL/2`. Plants: `reversed(walk)` removed -> **7 rows move**; `inpath` guard
+      dropped -> **3 rows move** and `walk_grads_n` **STAYS AT 6**, which is the measured
+      reason the row carries a signature and not just a count. Disarms: a comment's text
+      and a local parameter name -> 0 rows move, port-file sha256 CHANGED both times.
+      **THE HARNESS WAS VACUOUS TWICE BEFORE IT WAS ANYTHING ELSE** -- counting
+      `s.count(old)` and never calling `s.replace` reported "1 occurrence replaced" and
+      "0 rows moved" for mutants that had never applied; and asserting `old in back`
+      rejects any `new` that merely extends `old`.  Assertions are now on the BYTES.
+      **THE SUBSTRATE MOVED ONCE, FOR REAL**: `uop/ops.bend` (another unit) was mid-edit
+      at `ops.bend:3972 case _ <: t:` and the harness correctly printed
+      `INCONCLUSIVE (T-1)` instead of a verdict.  `.agents/slop/BACKWARD-WALK.md`,
+      `.agents/slop/backward/walk-row.txt`, `walk-plant.md`, `walk-mutate.sh`. Rules
+      `G-1..G-8` appended at bend2-constraints.md **24665+**.
+      **STILL WALLS, and one of them is a place CPython ITSELF raises:** the shaped-edge
+      reduce (gradient.py:132-133, needs `broadcast_axes`+`sum_acc_dtype`) -- the oracle's
+      SECOND fixture dies there with `RuntimeError: cannot broadcast ... into ()`, so that
+      line has no CPython answer at all; the backward-metadata pass (gradient.py:140-144,
+      reads `all_metadata`, no effect on `grads`); and `call_gradient` (five subsystems).
+      **NAMED LOSSES in the row set:** the `srcs=` multiset of CPython's `osig` (it sorts
+      ALPHABETICALLY and `Ops.value` is DECLARATION order), and the oracle's SEVEN
+      unreachable rows -- `main()` dies at `oracle-cg.py:116`, so `oracle_pmul*`,
+      `oracle_seed` and all three `oracle_fwdwalk*` are NEVER EMITTED.
+      **STEPS 2 AND 3 ARE NOT DONE.** See the header's `backward-walk [#########] 1/3`.
 - [x] **FOUR PLANT FAILURES THAT WERE NOT RESULTS** (each a rule the port already
       records): an absolute `import` AND a **symlink** mirror both break hub
       detection — a real `cp -R` is required; `Bool.pick` is strict so a tail spent

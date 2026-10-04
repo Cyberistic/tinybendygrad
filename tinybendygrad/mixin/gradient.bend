@@ -828,49 +828,54 @@ def gr_32(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 
 
 # ===========================================================================
-# THE DRIVER -- `compute_gradient` (gradient.py:116-145), `_deepwalk` (:109-114),
-# `reduce_gradient` (:8-18) and `call_gradient` (:20-50). ALL FOUR ARE WALLS, and the
-# reasons are DIFFERENT, which is why they are stated separately rather than as one
-# "not ported" note.
+# THE DRIVER -- `reduce_gradient` (gradient.py:8-18) and `call_gradient` (:20-50) are
+# STILL WALLS, and `_deepwalk` / `compute_gradient` are NOT (they landed above this
+# block). The three notes are kept separate because the reasons are different, and the
+# two that closed are kept with their reasons CLOSED so the next reader does not
+# rediscover them.
 #
-# `_deepwalk` -- gradient.py:109. `root.topovisit(lambda u: any(in_target_path[x] or x
-# in targets for x in u.src), in_target_path)`. The walk itself is `O.UOp.topovisit`
-# (ops.bend:2310) and the visitor is a PYTHON CALLABLE closing over a dict, which is the
-# P4 concern every rewrite rule in tinygrad shares and which no rule in this file has.
-# The `in_target_path` map is a `List`-backed table here rather than a dict, exactly as
-# `fold.bend`'s `Table` is, and the `targets` set is a `List<U32>` membership test.
-# TODO(p3) mixin/gradient.py:109  _deepwalk -- `topovisit`'s VISITOR is a Callable
-#   closing over a dict; Bend has no closures in a datatype field (notes, "A CLOSURE IN A
-#   DATATYPE FIELD MUST TAKE ALL-AFFINE ARGUMENTS"). The alternative -- a fold over
-#   `O.UOp.toposort`'s order carrying a `Data` table -- is `fold.bend`'s own shape and is
-#   writable, and is P3 because it wants the `Bool` lattice (a node is in the target path
-#   iff ANY src is, with DETACH excluded, gradient.py:114).
+# `_deepwalk` -- gradient.py:109 -- LANDED. `root.topovisit(lambda u: any(in_target_path[x]
+# or x in targets for x in u.src), in_target_path)` was called a wall because "the VISITOR
+# is a PYTHON CALLABLE closing over a dict, which is the P4 concern every rewrite rule in
+# tinygrad shares". That was TRUE OF THE SPELLING AND FALSE OF THE PROBLEM: the visitor
+# reads only each node's SRCS, and a src is always EARLIER in a toposort, so ONE forward
+# pass carrying a `Data` pair of parallel lists computes the same lattice. That is
+# `fold.bend`'s own Kahn argument, and the pass is `dw_flags` above. The `Bool` lattice
+# ("a node is on the target path iff ANY src is, with DETACH excluded", gradient.py:114)
+# is `dw_any` and `dw_keep_test`. `topovisit`'s Callable is still not ported -- nothing in
+# `ops.py` calls it -- and `O.UOp.topovisit` (ops.bend:2846) still answers the plain
+# toposort, which is the order this file drives.
 #
-# `compute_gradient` -- gradient.py:116-145. The WALK is fine; two things are not.
-#
-#   (a) `grads: dict[UOp, UOp]` is keyed by a UOp and the port's key is a `U32` arena
-#       index, which is a different thing only in one place: interning means two UOps are
-#       `==` iff their indices are, so the map is a `List<(U32, U32)>` and every lookup is
-#       a linear scan. `fold.bend` pays exactly this and calls it "slow and checkable
-#       beats fast and unprovable". That part is PORTABLE and is not the wall.
-#   (b) `grads[k] = grads[k] + v` and the SINK/SINK zip (gradient.py:136-137) both need an
-#       UPDATE BY KEY on an affine structure. A `List` cannot be updated in place and a
-#       `Data` record holding one is copied whole, so each update is an O(n) rebuild --
-#       again `fold.bend`'s trade, and again PORTABLE.
-#   (c) THE WALL: gradient.py:132-133, the shaped-edge reduce
+# `compute_gradient` -- gradient.py:116-145 -- LANDED, with THREE named omissions.
+#   (a) and (b) below were recorded as "PORTABLE, and not the wall", and they were:
+#       `grads` is a `Data` pair of parallel lists with an IN-PLACE update (`gput.at`),
+#       which is what makes it dict-shaped, and every update is an O(n) copy -- the same
+#       trade `fold.bend` pays and calls "slow and checkable beats fast and unprovable".
+#   (c) THE WALL THAT IS STILL A WALL: gradient.py:132-133, the shaped-edge reduce
 #           v = v.cast(sum_acc_dtype(v.dtype))._rop(Ops.ADD, broadcast_axes(k.shape, v.shape)).reshape(k.shape).cast(v.dtype)
 #       needs `broadcast_axes` (ops.py:89), which reads `resolve(s == 1)` and
 #       `resolve(out_shape[nleft+i] != 1)` on a `Sint` -- SYMBOLIC comparisons, and
 #       `symbolic.py`'s `resolve` is not ported. It also needs `sum_acc_dtype` (dtype.py:220),
 #       which is `least_upper_dtype` against `getenv("SUM_DTYPE")`, and `Config` is a P6
 #       concern (`uop/symbolic.py` is also P3).
+#       **AND IT IS WORSE THAN A WALL: IT IS A PLACE CPTHON ITSELF RAISES.** The committed
+#       oracle's second fixture drives `compute_gradient` into
+#       `RuntimeError: cannot broadcast (UOp(Ops.ADD, ...)) into ()` at gradient.py:133,
+#       so that line has no CPython answer to gate against on a shaped edge at all.
 # TODO(p3) mixin/gradient.py:132  compute_gradient -- the shaped-edge reduce needs
 #   `broadcast_axes` (ops.py:89) and `sum_acc_dtype` (dtype.py:220), both of which read
 #   `resolve` on a `Sint` or `Config`. Phase P3 owns `symbolic`; P6 owns `Config`.
-#   The WALK, the grads map and the accumulation around it are all writable as
-#   `fold.bend`-shaped `Data` tables and are deliberately NOT marked as walls.
+#   The walk, the `grads` table and the accumulation AROUND it are LANDED above and are
+#   gated by sixteen rows against CPython (see the gate's WALK block).
+#   (d) gradient.py:140-144, the BACKWARD-METADATA pass, reads `all_metadata` (ops.py's
+#   module-level dict). It has no effect on `grads`, so no row in this gate can see it;
+#   it is a NAMED OMISSION rather than a silent one.
+#   (e) `call_gradient` (:20-50) is NOT reachable from here -- a CALL in the walk is the
+#   one node shape whose gradient this port cannot produce, and `cg_fire.pick` reaches
+#   gradient.py:127's refusal instead. STATED so nobody reads a short `walk_grads_n` as
+#   "the walk ran on a graph with a CALL".
 #
-# `call_gradient` -- gradient.py:20-50, and this is the BIGGEST of the four. It reads
+# `call_gradient` -- gradient.py:20-50, and this is the BIGGEST of what is left. It reads
 # `k.arg.grad_fxn` (a CALLBACK on a `CallArg`), `fxn.src[0].unsharded_base.arg.slot`
 # (an axis-normalised slot), `st.src[1].param_like(len(args)+i)`, `params` from
 # `fxn.toposort(enter_calls=False)`, `view_as` + `shard_shape` + `sharding` +
@@ -1053,6 +1058,421 @@ def gr_scan(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32,
 # `RuntimeError(f"failed to compute gradient for {t0.op}")` at gradient.py:127.
 def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
   gr_scan(ts, ar, ctx, self, O.PMEntrys.es(ts), GSkip{})
+
+# ===========================================================================
+# THE WALK -- `compute_gradient` (gradient.py:116-145) and `_deepwalk` (:109-114).
+#
+# WHAT LANDED AND WHAT DID NOT, and the split is the one upstream's own source
+# dictates rather than one chosen here. THREE of upstream's five pieces ported:
+#
+#   (a) `_deepwalk`'s `in_target_path` LATTICE (:112) -- ported as a forward pass over
+#       `O.UOp.toposort`, which is sound for the reason `fold.bend`'s Kahn is: a node's
+#       flag reads only its SRCS' flags, and a src is always EARLIER in a toposort, so
+#       one pass in post-order IS the fixpoint. `topovisit`'s VISITOR is a Python lambda
+#       and Bend has no closures in a datatype field, so the lambda becomes the fold and
+#       the dict becomes a `Data` pair of parallel lists (notes, T-6).
+#   (b) THE WALK (:114) -- `[node for node in in_target_path if node.op is not
+#       Ops.DETACH and in_target_path[node]]`, i.e. a FILTER over the same pair. PORTED.
+#   (c) `grads` AND THE ACCUMULATION (:118, :129-139) -- a `Data` pair of parallel
+#       lists with an IN-PLACE update, which is what makes it dict-shaped: append is
+#       last-wins, and Python's `grads[k] = grads[k] + v` overwrites while keeping
+#       `k`'s INSERTION position. Both are stated where they are written.
+#
+# TWO THINGS DID NOT LAND, and both are the walls already recorded in the header of this
+# file (see the `TODO(p3) mixin/gradient.py:132` note below, which is RETAINED):
+#   * the SHAPED-EDGE REDUCE (:132-133), which needs `broadcast_axes` and
+#     `sum_acc_dtype`. It is not merely deferred here -- MEASURED, it is a place where
+#     CPython ITSELF raises: `oracle-cg.py`'s second fixture drives `compute_gradient`
+#     into `RuntimeError: cannot broadcast ... into ()` at gradient.py:133, so the
+#     fixture cannot gate a port of that line either. The walk is gated on the fixture
+#     that does NOT reach it, and every node in that fixture is a SCALAR, so the guard
+#     `k._shape is not None and v._shape is not None and k._shape != v._shape` is FALSE
+#     throughout -- the port omits a branch that is not taken, which is stated rather
+#     than hidden.
+#   * the BACKWARD-METADATA pass (:140-144), which reads `all_metadata` (ops.py's
+#     module-level dict). It has no observable effect on `grads`, so omitting it changes
+#     no row in this gate; that is a NAMED OMISSION, not a silent one.
+# `call_gradient` (:20-50) stays a wall under `grad_30`'s block and is NOT called here:
+# a CALL in the walk is the one node shape whose gradient this port cannot produce, and
+# `cg_run` states that rather than pretending.
+# ===========================================================================
+
+# `in_target_path: dict[UOp, bool]` (gradient.py:111), as a `Data` pair of PARALLEL
+# LISTS. Notes T-6: `List<&2, (U32, Bool)>` is refused outright (a tuple is a `Sigma`,
+# the field must be `Data`), and this file already states the cost of the shape at
+# `compute_gradient`'s wall note -- every update is an O(n) copy. `fold.bend`'s `Table`
+# is the same choice.
+type Itp is Data:
+  Itp{nodes: List<&2, U32>, flags: List<&2, Bool>}
+
+def Itp.nodes_of(x: Itp) -> List<&2, U32>:
+  match x:
+    case Itp{nodes, flags}: nodes
+
+def Itp.flags_of(x: Itp) -> List<&2, Bool>:
+  match x:
+    case Itp{nodes, flags}: flags
+
+# `in_target_path[x]` -- the dict read, by walking the key list and indexing the value
+# list at the SAME POSITION. `None{}` for a key the table has not reached, which
+# `Itp.at` then reads as `False{}`; upstream would `KeyError` there and cannot, because a
+# src is always earlier in a toposort.
+def dw_read.of(hit: Bool, f: Bool, rest: Maybe<&2, Bool>) -> Maybe<&2, Bool>:
+  match hit:
+    case True{}: Some{f}
+    case _: rest
+
+# THE FLAG IS THE HEAD, not `flags[i]`. The two lists are in LOCKSTEP, so walking them
+# together makes the position implicit -- and that is the whole reason a `Data` pair beats
+# a list of pairs here (notes, T-6: a tuple field must be `Data`, so a
+# `List<&2, (U32, Bool)>` is refused outright).
+#
+# TWO SCRUTINEES because the two lists shrink TOGETHER and a self-call must shrink an
+# argument (notes, position 612), and THE PARAMETER ORDER MUST BE THE SCRUTINEE ORDER --
+# MEASURED here: `match ns fs:` over `(fs, ns, ...)` is refused with "a match on a
+# parameter or field (this name is a def or a consumed binder)", which names the SECOND
+# scrutinee and not the mismatch.
+def dw_read.go(ns: List<&2, U32>, fs: List<&2, Bool>, +x: U32) -> Maybe<&2, Bool>:
+  match ns fs:
+    case h <> t f <> u: dw_read.of(U32.is_eq(h, x), f, dw_read.go(t, u, x))
+    case _ _: None{}
+
+def dw_read_of(+p: Itp, x: U32) -> Bool:
+  Maybe.default(&2, Bool, dw_read.go(Itp.nodes_of(p), Itp.flags_of(p), x), False{})
+
+# `x in targets` -- the `targets` SET, which is a `List<U32>` membership scan here and a
+# linear scan is honest about it (notes: "a `List` table is O(n^2) and `Array` cannot
+# fix it").
+def dw_hit(targets: List<&2, U32>, x: U32) -> Bool:
+  List.contains(U32, U32.is_eq, targets, x)
+
+# `in_target_path[x] or x in targets` -- gradient.py:112's one conjunct, for one src.
+def dw_src(+p: Itp, targets: List<&2, U32>, +x: U32) -> Bool:
+  Bool.or(dw_read_of(p, x), dw_hit(targets, x))
+
+# `any(... for x in u.src)` -- gradient.py:112. A `match` on the `Bool`, NOT a
+# `Bool.pick`: `pick` EVALUATES BOTH ARMS (notes, LW-15 and T-3), so it would recurse
+# down the whole src list and then choose -- correct here by luck and a lost tail by
+# construction if the guard were ever written inverted. The polarity is stated where the
+# arms are: `True{}` is the ALREADY-TRUE accumulator and `False{}` is the tail.
+def dw_any.of(pick: Bool, rest: Bool) -> Bool:
+  match pick:
+    case True{}: True{}
+    case _: rest
+
+def dw_any.go(+p: Itp, +targets: List<&2, U32>, srcs: List<&2, U32>) -> Bool:
+  match srcs:
+    case Nil{}: False{}
+    case s <> t: dw_any.of(dw_src(p, targets, s), dw_any.go(p, targets, t))
+
+# `cache[node] = visitor(node)` -- `topovisit`'s one line (ops.py:320), as a push.
+def dw_push(+p: Itp, +x: U32, +f: Bool) -> Itp:
+  Itp{List.append(&2, U32, Itp.nodes_of(p), [x]), List.append(&2, Bool, Itp.flags_of(p), [f])}
+
+# THE FLAG PASS. ONE forward pass over the toposort, and the FLAG IS COMPUTED ON THE
+# TABLE AS IT STANDS BEFORE THE PUSH -- the argument `dw_push(p, x, dw_any(...))` is
+# evaluated before `dw_push` branches, which is notes rule 5 ("BEND IS STRICT: AN
+# ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES") and is what makes the one-line arm
+# legal.
+#
+# THE ACCUMULATOR IS THE LAST PARAMETER, and that is not taste. `dw_flags(ar, targets,
+# dw_push(...), t)` is REFUSED with "expected : a decreasing self-call (arguments are
+# read left to right: each passed unchanged until one shrinks)": a third argument that
+# CHANGED reads as consumed, and the list only shrinks in the fourth.
+def dw_flags(+ar: O.Arena, +targets: List<&2, U32>, todo: List<&2, U32>, +p: Itp) -> Itp:
+  match todo:
+    case Nil{}: p
+    case +x <> t: dw_flags(ar, targets, t, dw_push(p, x, dw_any.go(p, targets, O.Arena.srcs(ar, x))))
+
+# `node.op is not Ops.DETACH and in_target_path[node]` -- gradient.py:114's predicate.
+def dw_keep_test(ar: O.Arena, x: U32, f: Bool) -> Bool:
+  Bool.and(f, Bool.not(O.op_is(ar, x, O.OpsDETACH{})))
+
+def dw_walk.put(test: Bool, acc: List<&2, U32>, +x: U32) -> List<&2, U32>:
+  match test:
+    case True{}: List.append(&2, U32, acc, [x])
+    case _: acc
+
+# THE WALK, a FILTER over the pair. `_ _` is the cover and it covers BOTH ragged arms
+# (notes, rule 4 at position 1260) -- a `Nil` on one side with a `h <> t` on the other is
+# a ragged list, which `flags` can never be because `dw_flags` pushes both together.
+def dw_walk.go(+ar: O.Arena, ns: List<&2, U32>, fs: List<&2, Bool>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns fs:
+    case +x <> t f <> u: dw_walk.go(ar, t, u, dw_walk.put(dw_keep_test(ar, x, f), acc, x))
+    case _ _: acc
+
+def dw_walk(ar: O.Arena, +p: Itp, ns: List<&2, U32>, fs: List<&2, Bool>) -> List<&2, U32>:
+  dw_walk.go(ar, ns, fs, Nil{})
+
+# `_deepwalk` RETURNS A TUPLE and Bend does not have one, so the pair is a `Data`
+# record and the def keeps upstream's name.
+type Deep is Data:
+  Deep{itp: Itp, walk: List<&2, U32>}
+
+def Deep.itp_of(d: Deep) -> Itp:
+  match d:
+    case Deep{itp, walk}: itp
+
+def Deep.walk_of(d: Deep) -> List<&2, U32>:
+  match d:
+    case Deep{itp, walk}: walk
+
+def Deep.fill(ar: O.Arena, +p: Itp) -> Deep:
+  Deep{p, dw_walk(ar, p, Itp.nodes_of(p), Itp.flags_of(p))}
+
+def _deepwalk.vis(+ar: O.Arena, targets: List<&2, U32>, root: U32) -> Itp:
+  dw_flags(ar, targets, O.UOp.toposort(O.Arena.budget(ar), ar, root), Itp{Nil{}, Nil{}})
+
+# `_deepwalk(root, targets)` -- gradient.py:109-114. `O.UOp.toposort` is `topovisit`
+# without the visitor (ops.bend:2846 records that `topovisit`'s body IS the toposort),
+# and `Arena.budget` is the exact pop bound, so the pass cannot be cut short.
+def _deepwalk(root: U32, targets: List<&2, U32>, +ar: O.Arena) -> Deep:
+  Deep.fill(O.Arena.empty(), _deepwalk.vis(ar, targets, root))
+
+# ---------------------------------------------------------------------------
+# `grads: dict[UOp, UOp]` (gradient.py:118) -- TWO PARALLEL LISTS and an IN-PLACE
+# update. The in-place update is the whole reason this is dict-shaped and not a bag:
+# `grads[k] = grads[k] + v` (gradient.py:138) OVERWRITES and keeps `k`'s INSERTION
+# POSITION, and `oracle_dag_keys` is an insertion-order row, so an append-only table
+# that always lost would print the right COUNT and the wrong ORDER.
+# ---------------------------------------------------------------------------
+type Grads is Data:
+  Grads{ks: List<&2, U32>, vs: List<&2, U32>}
+
+def Grads.ks_of(g: Grads) -> List<&2, U32>:
+  match g:
+    case Grads{ks, vs}: ks
+
+def Grads.vs_of(g: Grads) -> List<&2, U32>:
+  match g:
+    case Grads{ks, vs}: vs
+
+def Grads.n(g: Grads) -> Nat: List.length(&2, U32, Grads.ks_of(g))
+
+# `grads[k]` AS A SLOT: the key's POSITION and its value in one walk, because `Maybe`
+# is read once and cannot be `+` (notes, position 1517) so "test it and use it" is two
+# defs -- and `slot.at` is what the in-place update needs anyway.
+type GSlot is Data:
+  GSlot{at: Nat, v: U32}
+
+def GSlot.at_of(s: GSlot) -> Nat:
+  match s:
+    case GSlot{at, v}: at
+
+def GSlot.v_of(s: GSlot) -> U32:
+  match s:
+    case GSlot{at, v}: v
+
+def gslot.of(hit: Bool, i: U32, v: U32, rest: Maybe<&2, GSlot>) -> Maybe<&2, GSlot>:
+  match hit:
+    case True{}: Some{GSlot{U32.to_nat(i), v}}
+    case _: rest
+
+def gslot.go(+vs: List<&2, U32>, ks: List<&2, U32>, +k: U32, +i: U32) -> Maybe<&2, GSlot>:
+  match ks:
+    case Nil{}: None{}
+    case h <> t: gslot.of(U32.is_eq(h, k), i, Maybe.default(&2, U32, List.get(&2, U32, vs, U32.to_nat(i)), 0), gslot.go(vs, t, k, U32.add(i, 1)))
+
+def gslot(+g: Grads, k: U32) -> Maybe<&2, GSlot>:
+  gslot.go(Grads.vs_of(g), Grads.ks_of(g), k, 0)
+
+# THE IN-PLACE UPDATE. Two-scrutinee `match` with one pattern per scrutinee; `0n` is
+# the element itself and `1n+p` is "keep the head, p to go" (notes, position 1260, and
+# `Kahn.dec.go` is the same countdown with the same polarity).
+def gput.at.go(vs: List<&2, U32>, at: Nat, +v: U32) -> List<&2, U32>:
+  match vs at:
+    case _ <> t 0n: v <> t
+    case h <> t 1n+p: h <> gput.at.go(t, p, v)
+    case _ _: Nil{}
+
+def gput.at(+g: Grads, at: Nat, +v: U32) -> Grads: Grads{Grads.ks_of(g), gput.at.go(Grads.vs_of(g), at, v)}
+
+def gput.new(+g: Grads, +k: U32, +v: U32) -> Grads:
+  Grads{List.append(&2, U32, Grads.ks_of(g), [k]), List.append(&2, U32, Grads.vs_of(g), [v])}
+
+# ---------------------------------------------------------------------------
+# THE WALK STATE. `skip` and `hole` are the two counters `oracle_*_skip_n` and
+# `oracle_*_hole_n` read, and they are CARRIED rather than recomputed so they cannot be
+# a second transcription of upstream's loop. There is NO `rest` FIELD: the unconsumed
+# walk is a PARAMETER of the loop, because a field nothing reads is a dead field and the
+# final state must not carry the walk's own position.
+# ---------------------------------------------------------------------------
+type CState is Data:
+  CState{ar: O.Arena, g: Grads, skip: U32, hole: U32}
+
+def CState.ar_of(s: CState) -> O.Arena:
+  match s:
+    case CState{ar, g, skip, hole}: ar
+
+def CState.g_of(s: CState) -> Grads:
+  match s:
+    case CState{ar, g, skip, hole}: g
+
+def CState.skip_of(s: CState) -> U32:
+  match s:
+    case CState{ar, g, skip, hole}: skip
+
+def CState.hole_of(s: CState) -> U32:
+  match s:
+    case CState{ar, g, skip, hole}: hole
+
+def CState.with_g(s: CState, g: Grads) -> CState:
+  match s:
+    case CState{ar, gg, skip, hole}: CState{ar, g, skip, hole}
+
+def CState.with_ar(s: CState, ar: O.Arena) -> CState:
+  match s:
+    case CState{aa, g, skip, hole}: CState{ar, g, skip, hole}
+
+# gradient.py:120's `continue` -- the counter `oracle_*_skip_n` reads.
+def CState.one_skip(s: CState) -> CState:
+  match s:
+    case CState{ar, g, skip, hole}: CState{ar, g, U32.add(skip, 1), hole}
+
+# gradient.py:130's `continue` -- the counter `oracle_*_hole_n` reads.
+def CState.one_hole(s: CState) -> CState:
+  match s:
+    case CState{ar, g, skip, hole}: CState{ar, g, skip, U32.add(hole, 1)}
+
+# `sink_of(r)` is `GSkip{} -> Nil{}` and `GFired{gs, ...} -> gs`, i.e. `lgrads` itself.
+def sink_of(r: GRes) -> List<&2, U32>:
+  match r:
+    case GSkip{}: Nil{}
+    case GFired{gs, ar}: gs
+
+# `grads[k] = grads[k] + v` -- one `gadd`, and the GROWN ARENA IS HANDED ON. This is
+# `tensor.bend` rule 5 / notes T-4 from the other side: passing the arena captured
+# BEFORE the accumulation would intern the sum onto the seed's own slot.
+def cg_sum.done(+d: O.Found, at: Nat, +s: CState) -> CState:
+  CState.with_ar(CState.with_g(s, gput.at(CState.g_of(s), at, O.Found.i(d))), O.Found.ar(d))
+
+def cg_sum.grow(+sl: GSlot, +s: CState, +v: U32) -> CState:
+  cg_sum.done(gadd(CState.ar_of(s), GSlot.v_of(sl), v), GSlot.at_of(sl), s)
+
+# `grads[k].op is not Ops.NOOP` -- read off the SLOT's value, so it is the same read the
+# update uses. A NOOP gradient lands in the `else` arm, which is upstream's
+# `else: grads[k] = v`.
+def cg_sum.noop(is_noop: Bool, +sl: GSlot, +s: CState, +v: U32) -> CState:
+  match is_noop:
+    case True{}: CState.with_g(s, gput.at(CState.g_of(s), GSlot.at_of(sl), v))
+    case _: cg_sum.grow(sl, s, v)
+
+def cg_sum.add(+sl: GSlot, +s: CState, +v: U32) -> CState:
+  cg_sum.noop(O.op_is(CState.ar_of(s), GSlot.v_of(sl), O.OpsNOOP{}), sl, s, v)
+
+# `if k in grads and grads[k].op is not Ops.NOOP: grads[k] = grads[k] + v
+#  else: grads[k] = v` -- gradient.py:134-139. THE ACCUMULATE IS THE `Some{}` ARM and it
+# is the only reason the fixture is a DAG: a node with two parents is written twice, and
+# `oracle_dag_grad_a` answers `root=ADD/2` where a fresh insert would answer the MUL.
+#
+# *** THE ORDER OF THIS CHAIN IS NOT COSMETIC. *** `done -> grow -> noop -> add -> put`
+# is the only order that compiles: a `case Some{sl}:` binder cannot call a def declared
+# LATER in the file. MEASURED in six lines -- a `put.of` whose `Some{sl}` arm calls a
+# following `add` is refused with "expected : a filled definition (an unfilled law is a
+# dead claim: live code cannot use it)", which names the CALLER'S condition and not a
+# recursion. Moving `add` above `put.of` makes the identical program `ALL PROOFS CHECK`.
+def cg_sum.put(hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U32) -> CState:
+  match hit:
+    case Some{sl}: cg_sum.add(sl, s, v)
+    case None{}: CState.with_g(s, gput.new(CState.g_of(s), k, v))
+
+# `if v is None: continue` -- gradient.py:130. `gs` HOLES are index 0, which is the
+# arena's bottom node and therefore tinygrad's own `None` (see this file's header).
+def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U32) -> CState:
+  match is_hole:
+    case True{}: CState.one_hole(s)
+    case _: cg_sum.put(hit, s, k, v)
+
+# THE INNER LOOP, gradient.py:129-139: `for k, v in zip(t0.src, lgrads)`. ONE
+# self-recursive def and the two lists shrink together.
+#
+# THE SHAPE IS THE POINT AND IT COST FOUR EDGES TO FIND. The obvious spelling -- `cg_puts`
+# calls a `cg_hole` that calls `cg_puts` back -- is a MUTUAL RECURSION and this compiler
+# refuses the pair with "expected : a filled definition". Lifting the recursion OUT of
+# the branch is what works: `step` answers the state after ONE (k, v) pair and `go` owns
+# the descent over the tails. `fold.bend`'s `Kahn.gather.go` is the same arrangement.
+def cg_puts.step(+s: CState, +k: U32, +v: U32) -> CState:
+  cg_hole.of(U32.is_zero(v), gslot(CState.g_of(s), k), s, k, v)
+
+# *** THE COVER ARM GOES LAST, AND GETTING IT WRONG IS SILENT. *** With `case _ _:` first
+# it catches EVERY two-scrutinee match -- the arm below it is dead code and the compiler
+# does not say so (notes, rule 1 at position 1620) -- so `cg_puts` returned the state
+# untouched on the first pair and `walk_grads_n` answered 1 with `walk_skip_n` 2 instead
+# of 6 and 0. A wrong walk and a dead arm are the same silence; the two counters are what
+# told them apart.
+def cg_puts(srcs: List<&2, U32>, gs: List<&2, U32>, +s: CState) -> CState:
+  match srcs gs:
+    case +k <> t +v <> u: cg_puts(t, u, cg_puts.step(s, k, v))
+    case _ _: s
+
+# `grads[t0]`, with 0 ANSWERING BOTH WAYS `continue` FIRES (gradient.py:120): absent,
+# and present-but-NOOP. ONE WALK, not two, so the `Bool` and the value cannot disagree.
+def cg_ctx.noop(is_noop: Bool, v: U32) -> U32:
+  match is_noop:
+    case True{}: 0
+    case _: v
+
+def cg_ctx.live(+s: GSlot, ar: O.Arena) -> U32:
+  cg_ctx.noop(O.op_is(ar, GSlot.v_of(s), O.OpsNOOP{}), GSlot.v_of(s))
+
+def cg_ctx.of(hit: Maybe<&2, GSlot>, ar: O.Arena) -> U32:
+  match hit:
+    case Some{s}: cg_ctx.live(s, ar)
+    case None{}: 0
+
+# `pm_gradient.rewrite(t0, ctx=grads[t0])` -- gradient.py:126. THE ARENA IS HANDED ON
+# TWICE: the rules GROW it and the `GRes` carries the grown one, which is the only way a
+# rule that mints three nodes can be followed by one that reads them.
+#
+# *** THE ONE PLACE THE PORT DIVERGES FROM UPSTREAM, AND IT IS NAMED. ***
+# gradient.py:127 is `if lgrads is None: raise RuntimeError(...)`. The port CANNOT
+# raise, so a node no rule claims STOPS the walk: `cg_step` is not re-entered and the
+# grads built so far stand. "No answer after this point" is the honest reading of both,
+# and the alternative -- inserting nothing and carrying on -- would be a DIFFERENT
+# function that silently under-counts. The fixtures below claim every node they walk, so
+# no row here depends on which of the two it is; the divergence is recorded so nobody
+# reads a short `walk_grads_n` as "the walk ran".
+def cg_fire.pick(skipped: Bool, +r: GRes, +s: CState, +t0: U32) -> CState:
+  match skipped:
+    case True{}: s
+    case _: cg_puts(O.Arena.srcs(gs_ar(r), t0), sink_of(r), CState.with_ar(s, gs_ar(r)))
+
+def cg_fire.of(+r: GRes, +s: CState, +t0: U32) -> CState:
+  cg_fire.pick(gs_is_skip(r), r, s, t0)
+
+def cg_fire.go(+t0: U32, +s: CState, ctx: U32) -> CState:
+  cg_fire.of(gr_rewrite(gr_table(), CState.ar_of(s), ctx, t0), s, t0)
+
+def cg_fire(+t0: U32, +s: CState) -> CState:
+  cg_fire.go(t0, s, cg_ctx.of(gslot(CState.g_of(s), t0), CState.ar_of(s)))
+
+def cg_outer.of(gone: Bool, +t0: U32, +s: CState) -> CState:
+  match gone:
+    case True{}: CState.one_skip(s)
+    case _: cg_fire(t0, s)
+
+# ONE TURN OF THE OUTER LOOP, gradient.py:119-120.
+def cg_turn(+t0: U32, +s: CState) -> CState:
+  cg_outer.of(U32.is_zero(cg_ctx.of(gslot(CState.g_of(s), t0), CState.ar_of(s))), t0, s)
+
+# `for t0 in reversed(walk)` -- gradient.py:119. The REVERSAL IS NOT AN OPTIMISATION: it
+# is what makes `gput`'s append-and-replace table behave like a dict, because upstream
+# writes each key once per parent and the LAST write must be the one a later read sees
+# (notes, T-6). `grads` is SEEDED AT THE ROOT -- gradient.py:118 -- and the root is the
+# LAST node the toposort completes, so `reversed` reaches it first and a walk in forward
+# order would skip every other node (`oracle_fwdwalk_n` is CPython's own number for the
+# counterfactual, though the committed oracle dies before printing it).
+def cg_step(srcs: List<&2, U32>, +s: CState) -> CState:
+  match srcs:
+    case Nil{}: s
+    case +t0 <> tail: cg_step(tail, cg_turn(t0, s))
+
+# `compute_gradient(root, root_grad, targets)` -- gradient.py:116-145. The NAME and the
+# ARGUMENT ORDER are upstream's; the answer is a `CState` because Bend has no dict, and
+# `CState.g_of` is the `grads`.
+def compute_gradient(+root: U32, +root_grad: U32, targets: List<&2, U32>, +ar: O.Arena) -> CState:
+  cg_step(List.reverse(&2, U32, Deep.walk_of(_deepwalk(root, targets, ar))),
+          CState{ar, gput.new(Grads{Nil{}, Nil{}}, root, root_grad), 0, 0})
 
 # ===========================================================================
 # THE GATE. Rows print `name=1|0` and Bend has no assertion form, so the gate is that
@@ -1682,9 +2102,265 @@ def t_rej_gate() -> U32:
 def t_rej_len27() -> U32:
   U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(gr_e27())))
 
+# ---- the WALK rows: `compute_gradient`'s control flow, gated on CPython ---------
+#
+# THE FIXTURE IS THE ORACLE'S, NODE FOR NODE. `.agents/slop/backward/oracle-cg.py`'s
+# `build1` is a DAG and not a tree ON PURPOSE, and the two shapes a tree cannot reach are
+# the two this file's rows are for:
+#
+#   * gradient.py:134-138 `if k in grads: grads[k] = grads[k] + v else: grads[k] = v`
+#     -- the ACCUMULATE. Only a node with TWO parents is written twice, and only
+#     `oracle_dag_grad_a` answers `root=ADD/2` where a fresh insert answers `root=MUL/2`.
+#   * gradient.py:120 `if t0 not in grads ... continue` -- the SKIP, and
+#     `oracle_dag_skip_n` is its counter.
+#
+#     a = BUFFER(0)   b = BUFFER(1)   c = BUFFER(2)
+#     p = MUL(a, b)        <- one parent of a
+#     q = ADD(a, c)        <- the OTHER parent of a, so `a` is written twice
+#     r = ADD(p, q)        <- root, seed CONST 1.0
+#   targets = {a, b, c}, `root_grad = UOp.const(1.0, dtypes.float32)`.
+#
+# *** THE DENOMINATOR, AND IT IS NOT 2/2. *** The committed oracle prints twenty rows for
+# this fixture and then DIES: its SECOND fixture (`build2`, the EXPAND) drives CPython's
+# own `compute_gradient` into `RuntimeError: cannot broadcast ... into ()` at
+# gradient.py:133, so the rows after `main()`'s `one("hole", ...)` call -- including its
+# `pmul`, `fwdwalk` and forward-walk-counterfactual lines -- are NEVER EMITTED. That is
+# why this file's rows are the ten that oracle DOES print, and why the EXPAND fixture --
+# the one that would exercise gradient.py:130's HOLE and gradient.py:120's SKIP for real
+# -- is not a fixture here. The hole/skip counters are gated at 0, which is the truth for
+# THIS fixture and no coverage statement about the other.
+type Dag is Data:
+  Dag{ar: O.Arena, a: U32, b: U32, c: U32, p: U32, q: U32, r: U32, seed: U32}
+
+def Dag.ar_of(d: Dag) -> O.Arena:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: ar
+
+def Dag.a_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: a
+
+def Dag.b_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: b
+
+def Dag.c_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: c
+
+def Dag.p_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: p
+
+def Dag.q_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: q
+
+def Dag.r_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: r
+
+def Dag.seed_of(d: Dag) -> U32:
+  match d:
+    case Dag{ar, a, b, c, p, q, r, seed}: seed
+
+# THE THREE BUFFERS ARE ON DISTINCT SLOTS (ParamArg 0/1/2), which is what makes `a` and
+# `b` DIFFERENT NODES -- interning would otherwise collapse them and `grad_b` would be
+# `root=MUL/2` over the wrong buffer. `fx_pa`/`fx_buf` are the fixture builders above.
+def dag() -> Dag:
+  +n0 = fx_buf(O.Arena.empty(), 0)
+  +n1 = fx_buf(O.Found.ar(n0), 1)
+  +n2 = fx_buf(O.Found.ar(n1), 2)
+  +m = gnew(O.Found.ar(n2), O.OpsMUL{}, [O.Found.i(n0), O.Found.i(n1)], O.ANone{})
+  +s = gnew(O.Found.ar(m), O.OpsADD{}, [O.Found.i(n0), O.Found.i(n2)], O.ANone{})
+  +t = gnew(O.Found.ar(s), O.OpsADD{}, [O.Found.i(m), O.Found.i(s)], O.ANone{})
+  +sd = gconst(O.Found.ar(t), k_fone())
+  Dag{O.Found.ar(sd), O.Found.i(n0), O.Found.i(n1), O.Found.i(n2), O.Found.i(m),
+      O.Found.i(s), O.Found.i(t), O.Found.i(sd)}
+
+def dag_targets(+d: Dag) -> List<&2, U32>: [Dag.a_of(d), Dag.b_of(d), Dag.c_of(d)]
+
+# `UOp.const(1.0, dtypes.float32)` is `CAST(CONST)` -- TWO nodes -- and `gconst` is that
+# pair, which is why `oracle_dag_grad_c` is `2 root=CAST/1` and not 1.
+def dag_grads(+d: Dag) -> CState:
+  compute_gradient(Dag.r_of(d), Dag.seed_of(d), dag_targets(d), Dag.ar_of(d))
+
+# `OPS.name.of(op) + "/" + nsrc` -- the token the oracle prints, and `O.Ops.name.of` (not
+# `O.Ops.name`) because the oracle prints `x.op.name` and the port's other spelling has
+# the `Ops.` prefix.
+def dag_one(+ar: O.Arena, +k: U32) -> String:
+  String.concat([O.Ops.name.of(O.Arena.op(ar, k)), "/", U32.show(O.Arena.nsrc(ar, k))])
+
+# THE SPACE RULE, and `Bool.pick` RETURNS THE FIRST ARM WHEN THE CONDITION IS TRUE
+# (notes, T-3), so "acc is empty" is the `acc ++ tok` arm. BOTH ARMS ARE EVALUATED --
+# `pick` is a value selector and not a guard (notes, LW-15) -- which is harmless here
+# because both are pure concatenations, and it is why the polarity is written beside the
+# call instead of being left for the next reader to infer.
+def dag_join(+tok: String, +acc: String) -> String:
+  Bool.pick(String, U32.is_zero(U32.from_nat(String.length(acc))),
+            String.concat([acc, tok]), String.concat([acc, " ", tok]))
+
+def dag_walk_sig.go(xs: List<&2, U32>, +ar: O.Arena, +acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case +u <> t: dag_walk_sig.go(t, ar, dag_join(dag_one(ar, u), acc))
+
+# THE WALK'S SIGNATURE -- `oracle_dag_walk`, byte for byte.
+def dag_walk_sig.of(+d: Dag) -> String:
+  dag_walk_sig.go(Deep.walk_of(_deepwalk(Dag.r_of(d), dag_targets(d), Dag.ar_of(d))), Dag.ar_of(d), "")
+
+def dag_walk_sig() -> String: dag_walk_sig.of(dag())
+
+# `len(root.toposort())` -- `oracle_dag_n_toposort`.
+def dag_n_topo() -> U32:
+  +d = dag()
+  U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(Dag.ar_of(d)), Dag.ar_of(d), Dag.r_of(d))))
+
+# `len(walk)` -- `oracle_dag_walk_n`.
+def dag_walk_n.of(+d: Dag) -> U32:
+  U32.from_nat(List.length(&2, U32, Deep.walk_of(_deepwalk(Dag.r_of(d), dag_targets(d), Dag.ar_of(d)))))
+
+def dag_walk_n() -> U32: dag_walk_n.of(dag())
+
+# `len(grads)` -- `oracle_dag_grads_n`. Six: the root plus the five nodes the walk
+# reached, and NOT the two targets that never receive a gradient.
+def dag_grads_n.of(+d: Dag) -> U32:
+  U32.from_nat(Grads.n(CState.g_of(dag_grads(d))))
+
+def dag_grads_n() -> U32: dag_grads_n.of(dag())
+
+# *** THE HEADLINE ROW, AND IT IS ONE VALUE CARRYING BOTH HALVES OF THE PROOF. ***
+# THE WALK'S SIGNATURE (`oracle_dag_walk`) AND THE COUNT OF GRADIENTS PRODUCED
+# (`oracle_dag_grads_n`), in one string. A wrong walk cannot produce the right count by
+# accident: CPython's own forward-order counterfactual (`oracle_fwdwalk_n`) leaves almost
+# nothing, and the three tokens here are the only three nodes a reverse walk can reach
+# from a root that has two children. `walk_row`'s two halves are the two oracle lines it
+# is built from, so a diff against the `.txt` is a diff, not an interpretation.
+def dag_row.of(+d: Dag) -> String:
+  String.concat([dag_walk_sig.of(d), " | grads_n=", U32.show(dag_grads_n.of(d))])
+
+def dag_row() -> String: dag_row.of(dag())
+
+# `in_target_path` OVER THE TOPOSORT -- `oracle_dag_inpath`, and it is the ROW THAT SEES
+# THE LATTICE. `oracle_dag_inpath=0 0 1 0 1 1` is NOT the walk: `a` and `b` are TARGETS
+# and are answered `0`, because the rule is `any(src is on the path)` and they have no
+# srcs, while `p` at position 2 is `1` because `a` IS a target. A port that answered "in
+# targets" instead of "on the path" prints `1 1 1 0 1 1` and this row is what says so.
+def dag_inpath.go(ns: List<&2, U32>, fs: List<&2, Bool>, +acc: String) -> String:
+  match ns fs:
+    case _ <> t f <> u: dag_inpath.go(t, u, dag_join(U32.show(b32(f)), acc))
+    case _ _: acc
+
+def dag_inpath.put(+p: Itp) -> String: dag_inpath.go(Itp.nodes_of(p), Itp.flags_of(p), "")
+
+def dag_inpath.of(+d: Dag) -> String:
+  dag_inpath.put(_deepwalk.vis(Dag.ar_of(d), dag_targets(d), Dag.r_of(d)))
+
+def dag_inpath() -> String: dag_inpath.of(dag())
+
+# `sum(1 for x in ts if in_target_path[x])` -- `oracle_dag_n_inpath`.
+def dag_count.add(f: Bool, +n: U32) -> U32: Bool.pick(U32, f, U32.add(n, 1), n)
+
+def dag_count.go(ns: List<&2, U32>, fs: List<&2, Bool>, acc: U32) -> U32:
+  match ns fs:
+    case _ <> t f <> u: dag_count.go(t, u, dag_count.add(f, acc))
+    case _ _: acc
+
+def dag_count.of(+p: Itp) -> U32: dag_count.go(Itp.nodes_of(p), Itp.flags_of(p), 0)
+
+def dag_n_inpath.of(+d: Dag) -> U32:
+  dag_count.of(_deepwalk.vis(Dag.ar_of(d), dag_targets(d), Dag.r_of(d)))
+
+def dag_n_inpath() -> U32: dag_n_inpath.of(dag())
+
+# `compute_gradient`'s two counters -- `oracle_dag_skip_n` and `oracle_dag_hole_n`. Both
+# are 0 ON THIS FIXTURE and that is a MEASUREMENT, not a stub: `p`, `q` and `r` are all in
+# `grads` by the time the walk reaches them, and none of their rules answers a hole. The
+# EXPAND fixture is the one that makes `hole_n` non-zero and CPython cannot compute it at
+# all (see the DENOMINATOR note above), so 0 here is a fact about THIS walk and no
+# coverage statement about the other.
+def dag_skip_n() -> U32: CState.skip_of(dag_grads(dag()))
+
+def dag_hole_n() -> U32: CState.hole_of(dag_grads(dag()))
+
+# `oracle_dag_keys` -- the `grads` KEY SET IN INSERTION ORDER, which is the row that says
+# the table is dict-shaped rather than a bag: an append-only table that lost would print
+# the same six keys in the toposort order instead.
+def dag_keys.go(+ks: List<&2, U32>, +ar: O.Arena, +acc: String) -> String:
+  match ks:
+    case Nil{}: acc
+    case +k <> t: dag_keys.go(t, ar, dag_join(dag_one(ar, k), acc))
+
+def dag_keys() -> String:
+  +d = dag()
+  dag_keys.go(Grads.ks_of(CState.g_of(dag_grads(d))), Dag.ar_of(d), "")
+
+# ONE GRADIENT'S SIGNATURE, `oracle_dag_grad_<x>` WITHOUT ITS `srcs=` FIELD. The oracle
+# sorts the src tokens ALPHABETICALLY, which is a STRING order, and reproducing it would
+# need an alphabetical rank for all sixty ops -- `Ops.value` is DECLARATION order and
+# disagrees with it (`BUFFER` is 2 and `ADD` is late), so it is not a substitute. This row
+# prints the node COUNT and the ROOT's op and arity and stops there. **THE `srcs=`
+# MULTISET IS A NAMED LOSS**, stated here rather than quietly dropped: two of the
+# oracle's three `osig` fields are gated and the third is not. Those two are the ones
+# that separate all four cases (`grad_a` accumulated -> `5 root=ADD/2`, `grad_b` fresh ->
+# `4 root=MUL/2`, and `grad_c`/`_p`/`_q`/`_r` the seed verbatim -> `2 root=CAST/1`).
+# *** `size1` IS NOT A TOPOSORT COUNT, AND HERE IS WHERE IT SHOWS. *** `size` is
+# `1 + sum(size(s) for s in u.src)`, so it counts a SHARED subtree ONCE PER PATH. CPython's
+# `len(u.toposort())` counts it once. The two agree on every `*_n` row above because
+# every one of those fixtures is a TREE, and they part company the moment the walk's
+# ACCUMULATE makes `grads[a] = seed + (b*seed)` -- whose two operands share `seed`. This
+# row read `7` where CPython reads `5`, with the correct `root=ADD/2` either way, so the
+# count was wrong by exactly the shared prefix. The rows below therefore count
+# `O.UOp.toposort`, and `size1` is NOT used for anything that claims to be CPython's `n`.
+def dag_nnodes(+ar: O.Arena, k: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, k)))
+
+def dag_grad_root.put2(+ar: O.Arena, +sl: GSlot) -> String:
+  String.concat([U32.show(dag_nnodes(ar, GSlot.v_of(sl))), " root=", dag_one(ar, GSlot.v_of(sl))])
+
+def dag_grad_root.of(hit: Maybe<&2, GSlot>, +ar: O.Arena) -> String:
+  match hit:
+    case Some{+sl}: dag_grad_root.put2(ar, sl)
+    case None{}: "NONE"
+
+# THE FIXTURE IS BUILT ONCE AND PASSED IN, not built twice. `dag_grads(dag())` beside
+# `Dag.a_of(dag())` would read a KEY INDEX out of one arena and a VALUE INDEX out of
+# another -- notes T-4's shape exactly -- and it would work here only because `dag()` is
+# deterministic. `main` holds the one `Dag` every `dag_grad_*` row shares.
+#
+# *** AND THE READS COME OUT OF THE WALK'S OWN ARENA, NOT THE FIXTURE'S. *** `grads`'s
+# VALUES for `a` and `b` are nodes the walk MINTED, so their indices are past the end of
+# the fixture arena: `size1` on an index `Arena.at` cannot find answers `Arena.bottom()`,
+# which is `1 root=NOOP/0`. That is what the first run printed for `walk_grad_a` and
+# `walk_grad_b` -- two rows that were wrong by reading the wrong arena, not by a wrong
+# walk, and they read as a plausible signature.
+def dag_grad_root.at(+s: CState, k: U32) -> String:
+  dag_grad_root.of(gslot(CState.g_of(s), k), CState.ar_of(s))
+
+def dag_grad_root.put(+d: Dag, k: U32) -> String:
+  dag_grad_root.at(dag_grads(d), k)
+
+def dag_grad_a(+d: Dag) -> String: dag_grad_root.put(d, Dag.a_of(d))
+def dag_grad_b(+d: Dag) -> String: dag_grad_root.put(d, Dag.b_of(d))
+def dag_grad_c(+d: Dag) -> String: dag_grad_root.put(d, Dag.c_of(d))
+def dag_grad_p(+d: Dag) -> String: dag_grad_root.put(d, Dag.p_of(d))
+def dag_grad_q(+d: Dag) -> String: dag_grad_root.put(d, Dag.q_of(d))
+def dag_grad_r(+d: Dag) -> String: dag_grad_root.put(d, Dag.r_of(d))
+
+# ONE FIXTURE FOR THE SIX `walk_grad_*` ROWS, so every one of them reads the SAME arena's
+# key indices and the same arena's value indices (see `dag_grad_root.put`).
+def walk_dag() -> Dag: dag()
+
 # ---- the gate ----------------------------------------------------------------
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
+
+# A STRING ROW, because the walk's SIGNATURE is text and CPython's is text too: a
+# signature packed into a `U32` would need an op-code table, and one invented here would
+# be a table the oracle cannot check. These rows are `name=<the oracle's own bytes>` and
+# the differ is a `diff`, not an interpretation.
+def srow(nm: String, v: String) -> IO(Unit):
+  IO.print(String.concat([nm, "=", v]))
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -1760,3 +2436,19 @@ def main() -> IO(Unit):
     row("cast_solid", t_cast_solid())
     row("bitcast_len", t_bitcast_len())
     row("bitcast_solid", t_bitcast_solid())
+    srow("walk_row", dag_row())
+    srow("walk_sig", dag_walk_sig())
+    srow("walk_inpath", dag_inpath())
+    srow("walk_keys", dag_keys())
+    srow("walk_grad_a", dag_grad_a(walk_dag()))
+    srow("walk_grad_b", dag_grad_b(walk_dag()))
+    srow("walk_grad_c", dag_grad_c(walk_dag()))
+    srow("walk_grad_p", dag_grad_p(walk_dag()))
+    srow("walk_grad_q", dag_grad_q(walk_dag()))
+    srow("walk_grad_r", dag_grad_r(walk_dag()))
+    row("walk_n_toposort", dag_n_topo())
+    row("walk_walk_n", dag_walk_n())
+    row("walk_n_inpath", dag_n_inpath())
+    row("walk_grads_n", dag_grads_n())
+    row("walk_skip_n", dag_skip_n())
+    row("walk_hole_n", dag_hole_n())

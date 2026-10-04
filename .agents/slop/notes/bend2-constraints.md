@@ -24786,3 +24786,95 @@ turned the whole walk into a no-op that produced a *plausible, self-consistent, 
 answer, and the only thing that named it was carrying `skip_n` as a SEPARATE row from
 `grads_n`. **A walk's "did every iteration happen" counter is not redundant with its
 result count; here the result count was wrong in a direction the counter caught.**
+
+---
+
+## M-SERIES — added 2026-10-04 by the `mmfold` unit. Continues from the `W-` series above; it does NOT continue the `F-` numbers, which have collided three times.
+
+**M-1. A GATE THAT CANNOT RUN MUST PRINT `DIED` ON STDOUT, NOT ZERO ROWS ON STDOUT.** Measured on
+this tree, four separate instruments in one day returned something other than their subject and
+reported it as a result:
+
+| instrument | what it did | how it was read |
+|---|---|---|
+| `.agents/slop/mm-lift-gate.py:179` (before) | `from tinygrad import dtypes` raised `ModuleNotFoundError`; **rc=1, STDOUT 0 lines** under `python3` | "93 measurements have no CPython answer" |
+| `.agents/slop/nv_nvdev_gate.py` | crashed on a 3-value unpack | **15 disagreements hidden behind a traceback** |
+| `.agents/slop/rebase-oracle-ops.py:54` | `NameError: importlib`, **exits 1 having printed nothing** | a dead lane |
+| `dtype_tables.py` + `rows()` | exits 0, emits 14,766 TSV lines, `rows()` reads 0 | correctly ZERO — *this* one is deliberate |
+
+Three reasons a harness cannot tell the two apart by exit code or by line count: PATH's `python3`
+is 3.14 and the editable tinygrad install exists only in `.venv` (3.12), so **the same file dies or
+answers depending on the launcher**; several harnesses here read STDOUT and count lines; and a
+zero-row lane is a legitimate, wanted outcome somewhere else in the same tree. So the vocabulary
+is: **`DIED` on STDOUT and rc 2** for "this run never happened" (`oracle_py.refuse()` already
+reserves rc 1 for "the run happened and found a broken port"), and `COMPARED ZERO ROWS` printed as
+words when a lane *ran* and its output held nothing either reader claims. `mm-lift-gate.py
+--selfcheck` drives **both** of `oracle_py`'s refusals (missing `.venv`, and a `.venv` whose python
+cannot import tinygrad) in a `$TMPDIR` tree and requires rc 2 plus exactly one `DIED` line; its
+disarm is the same file under a working interpreter printing **0** `DIED` lines. A `DIED` that is
+always printed is not a signal.
+
+**M-2. THE PIN IS NOT A DETECTION, AND `oracle_py.resolve()` ALREADY EXISTS.** `oracle_py.py`
+documents why: a *detection* still lets the run proceed under a different interpreter, so the
+verdict still varies with the launcher; a *pin* makes `python3 gate.py` and `.venv/bin/python
+gate.py` answer identically, which is the property the gate was missing. Measured after the fix:
+both launchers print byte-identical stdout (sha256[:16] `05a529c728405c01`). `resolve()` also
+refuses an interpreter whose tinygrad resolves **outside** this tree, and that refusal is the
+L-11 trap — a `.venv` copied out of the repo still carries
+`MAPPING = {'tinygrad': '/abs/path/to/the/original/tinygrad'}` in
+`__editable___tinygrad_0_14_0_finder.py`, so it imports *successfully* and measures every row
+against a tree the port is not ported from. **Do not invent a second mechanism; import this one.**
+
+**M-3. A FIXTURE LIST WITH A REPEATED ENTRY IS INVISIBLE TO `diff` AND TO EVERY NAME-KEYED
+READER.** `.agents/slop/mm-lift-gate.py:31` — `SUB`'s pair list holds `(-3, 4)` at positions 1 and
+4 — produces 8 `sub` fixtures with **7** distinct names, and because `fold.bend`'s `lf_row` lines
+are GENERATED from that list, `fold.bend:5862` and `fold.bend:5865` print the same
+`lf_sub_int32_-3_4` twice. What makes it invisible is that **both lanes carry the duplicate**, so:
+
+- `diff` of the two lanes' whole lines: **GREEN** — the line multisets match;
+- a `{name: value}` dict comparison: **GREEN** — the dict keeps the last and the first is gone with
+  nothing saying so;
+- `rows()` keyed on name: **GREEN** — same reason.
+
+Only **lines-claimed minus distinct-names** sees it. `.agents/slop/mmfold/mmfold-lane.py` reports
+`printed twice` beside every row count for that reason, and the correct response to a duplicated
+fixture is to **REPORT IT, NOT TO DELETE IT**: deleting the entry makes the generator stop emitting
+a line the port still prints, which trades a duplicated measurement for an unexplained port row.
+(`.agents/TODO.md:278` had the duplication recorded; what it did not record is that nothing could
+see it.) Related and measured in the same run: `--emit-bend` reproduces `fold.bend`'s 127 `lf_row`
+names **byte-for-byte**, so the "generated, not transcribed" claim holds.
+
+**M-4. TWO DELIBERATE, OPPOSITE ROW FORMATS ARE A CONTRACT COLLISION, AND THE RESOLUTION IS A
+DECLARED CONTRACT.** `tinybendygrad/uop/fold.bend:4071` prints `mm_row` with **exactly one space**
+and `rebase-gate.py:412` reads F3 with `GAP = "  "`, **two spaces**, and the reader's reason is not
+optional either: a TAB is a table cell, so `oracle/dtype_tables.py`'s TSV must keep reading as zero
+rows. **Neither is a defect. `GAP` must not change** — measured, `rows_f3one` reads **0** of that
+oracle's 14,766 non-empty TAB lines, and changing `GAP` would reclassify all of them as rows and
+break a lane wired on purpose to be dead. The project's own precedent for 38 other readers is
+`.agents/slop/reader-contracts.tsv`, so this unit registered a **supplement** reader
+(`.agents/slop/mmfold/mmfold-rows.py::rows_f3one`, census signature `7c471b64d6f5`, computed by
+calling `behavior_fingerprint`, never written by hand) whose six-shape behaviour is
+**complementary**: reads F5 `single-space gap` → 1 row; refuses F1, F2, F3-two-space, F4 and
+F6-TAB → 0 rows each. Two rules make a new fork acceptable rather than a seventh way to disagree:
+
+1. **THE LANE ASSERTS THE TWO READERS' KEY SETS ARE DISJOINT.** Two readers both claiming a name
+   is two answers to what a line means, and a union that silently preferred one of them is exactly
+   the phantom row `reader-fork-census.py` exists to count.
+2. **THE CONTRACT NAMES WHO MAY USE IT AND WHAT SUBSTITUTING IT BREAKS, IN BOTH DIRECTIONS.**
+   Substituting `rows_f3one` for `rows()` turns cstyle.bend's 225 F2 rows into 225 BROKEN — the
+   same 227-BROKEN outcome `cstyle-gate.py`'s `rows_strict` is forbidden for, reached from the
+   opposite direction. Substituting `rows()` for it re-breaks the 93.
+
+**M-5. "NO ORACLE ANSWER" AND "NO LANE" ARE DIFFERENT CLAIMS, AND THE SECOND IS THE USUAL ONE.**
+An emitter that imports nothing from the project cannot be the reason a family is ungated.
+`mm-gate.py` (72 `mm_*` rows) and `mm-bl-gate.py` (38 `bl_*` rows) are **pure CPython with no
+tinygrad import**, so `ModuleNotFoundError` was never their failure mode; they were ungated
+because **no driver existed**, which `.agents/slop/LANE-LIVENESS.md:190`/`:281` and
+`.agents/slop/revive/REVIVE.md:222` already recorded ("NO automated driver exists") and which this
+unit's `mmfold-lane.py` now refutes by running: 110 compared, 0 disagreements. Per
+`agent-core.md` a contradiction with a sibling's recorded wall is **reported, not reconciled** —
+`LANE-LIVENESS.md` is not this unit's file. The general form: **before writing "X has no CPython
+answer", check whether X's oracle can even fail that way.** It usually can, and the real gap is
+the wiring. And the population to report is the one with **no lane**, not the one a given reader
+cannot see: here that was **110** (93 unreadable by the shared reader + 17 `mm_div_*` rows that are
+F1 and equally unwired), and only **0** of them were ever compared.
