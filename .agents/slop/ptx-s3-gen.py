@@ -150,7 +150,7 @@ def fn_block(rows):
   out = 'def r_fns() -> String: String.concat(['
   for t in ins:
     q = "'" + t + "'"
-    out += 'P.r(String.concat(["to_function_name ", %s]), fn_name(%s), %s), ' % (
+    out += 'T.r(String.concat(["to_function_name ", %s]), fn_name(%s), %s), ' % (
       bq(q), bq(t), bq(rows[('fn', q)]))
   return out[:-2] + '])'
 
