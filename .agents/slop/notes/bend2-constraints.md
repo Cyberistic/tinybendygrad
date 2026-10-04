@@ -25111,3 +25111,285 @@ report.  Related and also measured this session: **two of my hand-typed
 expectations were wrong while the constants they wrapped were right** — I wrote
 `sqrt(2)/pi` for `sqrt(2/pi)`, and `inf != inf` for a NaN test.  Only CPython's
 `struct` and `fractions.Fraction` caught either; reading did not.
+
+---
+
+## W-1…W-8 — measured by unit `w64`; see `.agents/slop/W64.md`
+
+**W-1. `Nat` is a 48-bit UNSIGNED word, and it is not a `U64` or an `I64`.**
+Runtime ceiling is exactly `2^48-1 = 281474976710655`; `2^48` aborts with
+`bend: a Nat past the largest immediate 2^48-1`. The message is CORRECT. The
+figure "works to 2^51-1, aborts at 2^52-1" that was circulating is wrong by 8
+binary orders. Two riders worth keeping: the bound is a **magnitude** bound and
+not a parity bound (`2^47+1` is odd and survives) — a doubling ladder alone cannot
+tell those apart, it needs a parity row; and the ceiling applies wherever the
+value is *produced*, including `Word.to_nat(64n, w)`, so a readback through `Nat`
+dies even when the `Word` is fine.
+
+**W-2. `Nat` has no sign.** `type Nat is Data: Zero{} | Succ{pred: Nat}` and
+`Nat.sub(0n, b)` returns `0n` — it saturates. Every negative `I64` is
+unrepresentable. CPython-computed: **99.998474 % of the 2^64 `f64` bit patterns
+cannot be carried in a `Nat`**, so the measured "`f32` crosses the FFI as a `Nat`
+bit pattern" route does **not** generalise from f32 to f64.
+
+**W-3. The 64-bit CONTAINER exists; `bend base --types` understates this.**
+`Word(p)` is `Word.Con{head: Bool, tail: Word(p)}` with the **low bit at the
+head** (LSB-first), and Base ships `Word.add/sub/mul/inc/adc/shl/shr/cmp/and/or/
+xor/not`. MEASURED `Word.add(64n, 0x0123456789abcdee, 0x1111111111111110)` =
+`0x123456789abcdefe`, matching CPython. `type F64 is Data: F64{data: Word(64n)}`
+typechecks as a user declaration. **So "Bend has no F64/I64/U64" is true of the
+PRELUDE and false of the language.**
+
+**W-4. A `def` carrying a `.c` import must be UNTYPED.** Types live on a separate
+`law` of the same name. A typed `def … -> IO(U32)` with a `.c` import is rejected
+with `Error: a foreign def without a .js import: <name>`. Related: `import` is
+**not admissible inside a `law`** (`expected : 'def', 'type' or 'law'`), and a
+foreign def **cannot be run by `bend <file>`** — it needs `bend <file> -o out.c`
+then `cc`. A `.js` effect source registers itself with
+`io_eff(CID(name), name_run, need)`; `export` is a syntax error, it is a plain
+script.
+
+**W-5. `f64` arithmetic is not blocked in Bend, and no `double` need cross the
+FFI.** Carrying each operand as **two `U32` halves** and reassembling the double
+inside C, MEASURED bit-exact against CPython: `1.5 + 2.25 = 0x400E000000000000`,
+with a plant (`1.0+0.5` must move the answer) and a disarm (`0.0+0.0`) both
+passing. Overflow, inf, nan and subnormals are the host FPU's. This is why the 17
+libclang bindings blocked on `int64`/`uint64`/`double` are a **signature** problem
+and not a transport problem.
+
+**W-6. There is no `Nat`→`U32` coercion.** `(0n : U32)` gives `expected : U32 /
+observed : Nat` pointing at the literal; `U32.from_nat(n)` is the only route, and
+being a `def` it cannot be bound inside a `do` block, so it goes inline.
+
+**W-7. A `do` block binds IO operations ONLY.** `v : Nat <- <pure expr>` gives
+`expected : @-R:Type -> @k:(@_:Nat -> IO.OP<R>) -> IO.OP<R>` — which reads like a
+mystery and only means "that expression is not an IO op"; `v = <pure expr>` gives
+`expected : a pattern`. Pure arithmetic goes inline into the `IO.print`
+argument, or into a pure `def`. Same trap fires on `pick`, which is a reserved
+builtin: renaming the def to `cand` changes the error into a *type* error, so the
+name collision is invisible until you look it up.
+
+**W-8. A result that contradicts the tool's own error message is a suspect
+result.** A ladder built on `2^16*(2^32-1)` written down as `2^48` reported "2^48
+printed and 2^49 died" — a ceiling *above* the stated bound. The contradiction was
+the only signal that the hand arithmetic, not the compiler, was wrong. Re-derive
+before believing a boundary. Related: eight separate generator/parse bugs in this
+unit presented as language failures, and every one was caught only because the
+harness's failure branch printed captured stderr — a branch that prints "FAILED"
+without the reason converts a bug in the harness into a wall in the language.
+
+---
+
+## BW — four rules, append-only, continuing from line 25179. `.agents/slop/backward-graph/BW-GRAPH.md`
+
+**BW-1. A `UOp.new(ar, op, src, arg, tag)` ARITY MISTAKE IS A TYPE ERROR BECAUSE `arg` AND
+`tag` ARE SEPARATE TYPES, AND THE ERROR NAMES NEITHER THE EXTRA ARGUMENT NOR THE LINE.**
+MEASURED in `.agents/slop/graphcmp.bend`'s `g_bw`: 24 sibling calls in the same function take
+five arguments, one had six, and the checker said `expected : O.Tag / observed : O.Arg` with
+the whole binder context dumped and **no location inside the expression**. The extra `ANone`
+pushed `TNone` off the end so the 5th read as an `Arg`. It took three passes. **A builder
+whose arg were ONE field would have taken six arguments cheerfully and written a wrong
+graph**, so this is the seam paying for itself — and it is also a reminder that the error text
+pointed at a type and not at an arity.
+
+**BW-2. `Bool.pick` CHAINS ARE A DEPTH BOUND AND `g_bw` WAS ADDED AT THE TOP.** 16 rungs to
+18. MEASURED: `Bool.pick` CHOOSES an arm, so a new graph is one more nesting level, not one
+more line. Nothing here is new information — it is here because the chain now has 18 rungs and
+the next unit will add a 19th.
+
+**BW-3. A PYTHON `float` SUBCLASS'S `repr` REACHES A STRUCTURAL FIELD IF YOU CALL `repr` ON
+IT, AND `F32.show` IS NOT A SUBSTITUTE.** `tinygrad/dtype.py:12` `class ConstFloat(float)`
+defines `__repr__ = f"ConstFloat({float.__repr__(self)})"`, so `repr(x)` on a CONST is the
+SUBCLASS's repr; and `F32.show` (base.bend:1697, a `law`) is seven-significant-digit
+shortest-roundtrip text, so `F32.show(1.0)` is `1`. MEASURED both, and `F32.bits(1.0)` ==
+1065353216 == `struct.unpack('<I', struct.pack('<f', 1.0))[0]`, so **a `float` in a structural
+field wants its IEEE-754 BITS** and both sides can produce them. A harness that compares two
+*implementations* must compare them by a value both can compute, not by each one's own
+printing; the printing is what this project has been removing for a day.
+
+**BW-4. A MUTATION THAT PATCHES THE WRONG COLUMN READS AS A ROW THAT CANNOT FIRE.**
+MEASURED in this unit's own `bw-p3.py`: `retitle(rows, idx, new)` used ONE index as both the
+ROW subscript and the FIELD subscript, so it wrote `?` into a row's **`id`** while the `?`
+check scans fields 2 and 3 — and the arm reported `# SELFCHECK: OK`. Two generalisations,
+both measured: (a) **an index that means two things will silently mean the wrong one**, so
+give it two names; (b) **an arm must READ BACK the field it claims to have written** before
+its verdict is believed — the verdict was green and the patch was in the wrong column, and
+only the read-back caught it. This is LIMITS 13 / 17 / 25's shape at a fourth site: a check
+that reports on the wrong subject is not a weak check, it is a **misleading** one.
+
+---
+
+## DEADARM — counting ABSENCE.  Appended 2026-10-04 by the dead-arm census unit.
+
+Numbering continues from nothing and is prefixed `DEAD-` because `F-` has collided three times.
+Cite by NAME.  Every rule here has a reproducer in `.agents/slop/deadarm/` and a wall in
+`.agents/slop/DEADARM.md` §7.
+
+**DEAD-1 — `comp.ts:3055`'s JS NAME IS A REVERSIBLE ADDRESS FOR EVERY DEF, SO THE PORT IS
+TRACEABLE WITHOUT A TRACER.**  `bend F.bend -o out.js` emits `function $fold$(...)` for
+`def fold(...)` — `.` becomes `$`, every other non-word char becomes `$` + its three-digit code —
+and `bun out.js` runs the lane's `main` in ~0.1 s against ~2.5 s for `bend F.bend`.  **The
+three-digit codes decode FIRST and the dots SECOND**; doing it the other way round turns
+`../LAWS/spec.bfloat16` into `...047LAWS.047spec.bfloat16`, a name that resolves to nothing and
+reads as an unreachable def.  `comp.ts:3374` roots the emitted book at `main`, so **a def the
+emitter did not write is a def nothing in that entry's call graph can reach, decided by the
+compiler before any of your code runs.**
+
+**DEAD-2 — AN ARM'S IDENTITY IS `(def, constructor)`, NOT A SOURCE LINE, AND THAT IS WHY NO
+ALIGNMENT IS NEEDED.**  Two arms of one def cannot share a constructor, so `(def, tag)` IS the
+arm.  A census that pairs the Nth emitted `if (x.$ === "T")` with the Nth source `case` has to
+assume the emitter preserves order; keying on `(def, tag)` assumes nothing.  **But `case _:` is a
+CATCH-ALL, not a constructor** — classifying it as one puts a `_` tag in the key space and, since
+`_` is unreachable by construction, makes every def with a catch-all read as carrying a dead arm.
+That is a tool inventing a finding out of its own selector.
+
+**DEAD-3 — `Bool.pick` CANNOT PLANT A DEAD ARM, AND THE REASON IS STRICTNESS.**  `base.bend:504`
+is `def Bool.pick(-A: Type, c: Bool, a: A, b: A) -> A: match c: case False{}: b  case True{}: a`
+and **Bend's arguments are strict, so both arms are evaluated before `pick` chooses between them.**
+`Bool.pick(String, Bool.not(True{}), dev_name(d), "CLANG")` still CALLS `dev_name`.  This is
+`agent-core.md`'s "`Bool.pick` **chooses** an arm; it does not **sequence** one", reached from a new
+angle: not even a dead arm's ARGUMENTS are skipped.  **A dead arm has to hang off an existing
+`match` over a PARAMETER**, because `match True{}:` is refused ("an undestructed scrutinee") and
+`match deadarm_flag():` is refused ("a match cannot scrutinize a computed value: give it its own
+def").
+
+**DEAD-4 — `match` ON A `U32` PARAMETER IS THE CHEAPEST WAY TO OWN A DEAD ARM.**  Add
+`case 6: f(dev)` to a `match dev:` whose fixtures only pass `0..5`, and declare `f` BEFORE the def
+that calls it (a forward reference is "an unfilled law").  `f` is EMITTED — bend's book is rooted
+at `main` and the reference is there — and NEVER ENTERED.  Measured: NOT-ENTERED 0 → 1 and the
+lane's 227 rows byte-identical.
+
+**DEAD-5 — ADDING A CONSTRUCTOR TO A `Data` TYPE AND A `case` FOR IT IS A DEAD-ARM PLANT, AND THE
+LANE DOES NOT MOVE.**  `cstyle.bend`'s own `Kv` has two variants; `KvDead{}` plus
+`case KvDead{}: m` in `Kv.go` — a def the lane DOES enter — is a dead arm that costs **zero rows**
+(227 before, 227 after, stdout byte-identical) and **zero def-level movement**.  Every `match` over
+a `Data` type must then stay exhaustive, so the sibling arms need the new variant too.
+
+**DEAD-6 — A LANE'S EXISTENCE IS NOT ITS FILE'S EXISTENCE, AND A WORKTREE SNAPSHOT HAS A
+`def main` TOO.**  `.agents/slop/` holds **1,427** `.bend` files and **~1,300** of them are nested
+WORKTREE COPIES (`proof-close/mut*/`, `dd-cone-wt/revert-*/`, `xd1/wt/`, `ddcheck/tree/`), each a
+near-copy of `tinybendygrad/` with its own `def main`.  A population built from "files with
+`def main`" is therefore **1,342 entries of which 1,300 are copies**, and the denominator rots into
+a pile of snapshots.  The test that separates them is DEPTH: `.agents/slop/<dir>/<name>.bend` is a
+probe a unit wrote; anything deeper is a tree.
+
+**DEAD-7 — `-o out.js` IS A LANE, NOT A BUILD, AND IT IS FASTER THAN `bend F.bend`.**  The `.mjs`
+build (`-o out.mjs`) emits a LIBRARY and does **not** run `main`, so it prints nothing and looks
+like a lane that produced no rows; `-o out.js` (`js_book`, `comp.ts:3405`) appends the driver and
+prints them.  Measured on `renderer/cstyle.bend`: 227 rows from the JS build, byte-identical to the
+bend run's 227.
+
+**DEAD-8 — AN INSTRUMENTED LANE MUST BE BYTE-IDENTICAL TO THE PLAIN ONE, ON EVERY ENTRY.**  `__hit`
+and `__arm` return their arguments unchanged, so the only thing that can move the lane is the
+instrumentation.  88 of 282 entries passed that control and 174 failed `bend -o`; the entries that
+failed are dropped, because a lane whose output moved under instrumentation is measuring a different
+program — the `py=`-column plant shape.
+
+**DEAD-9 — A COMPILE FAILURE IS NOT A FINDING.**  `schedule/multi.bend` (694 defs) and
+`runtime/support/am/amdev.bend` (475) were the two largest "defs no lane reaches" groups, and both
+files' own lanes FAILED `bend -o` in the same run.  Merging per-entry verdicts without splitting
+the entries that built from the entries that did not turns a concurrent agent's mid-edit compile
+error into a result about the port.
+
+---
+
+## LC — the port calls libclang: rules measured on `runtime/autogen/libclang.bend`
+
+New prefix `LC`.  It does **not** continue `CL` (that note is the ctypes/oracle side and
+is CL-1…CL-9) and it collides with nothing: the prefixes live in this file are `BW CL LT
+M R S U V W X`, and `F G L C T G-` were reported as live-or-collided elsewhere, so `LC`
+was picked as a pair that is unused here and unlikely to be chosen next.  Every number
+below was measured on bend **2.0.35**, arm64 macOS, against
+`/Library/Developer/CommandLineTools/usr/lib/libclang.dylib` (Apple clang 17.0.0,
+`clang-1700.6.3.2`).  Gate: `.agents/slop/clangshim/cl-port-gate.py --plants`, 0 failures.
+Report: `.agents/slop/LIBclang-live.md`.
+
+**LC-1 — `CXCursor` IS 32 BYTES, `{int kind; int xdata; const void *data[3]}`, AND A
+16-BYTE DECLARATION SEGFAULTS INSIDE LIBCLANG WITH NO MESSAGE.**  The only reliable
+evidence is the DYLIB, not a header, and the header does not exist on this machine:
+
+```
+otool -tvV -p _clang_getCursorSpelling libclang.dylib
+  movq 0x18(%rcx), %rdi      rcx = 0x10(%rbp)   -> OFFSET 24 of the cursor argument
+otool -tvV -p _clang_Type_getSizeOf libclang.dylib
+  movq 0x8(%rax), %r14 ; movq 0x10(%rax), %rax -> offsets 8, 16 of a 24-byte CXType
+otool -tvV -p _clang_Type_getOffsetOf libclang.dylib
+  movaps 0x10(%rbp), %xmm0   -> 16 of the 24 CXType bytes
+  movq   0x20(%rbp), %rax    -> the const char* is the SECOND argument
+```
+
+An argument passed in MEMORY (not registers) is larger than 16 bytes, so
+`_clang_getCursorKind` reading `0x10(%rbp)` already says so.  Declaring
+`const void *data` makes libclang read 24 bytes of a 16-byte object and the process dies
+with **rc 139 and zero C-side output** -- which under `bend -o` is
+`bend: memory fault (machine stack overflow?)`, the same string STAGE4.md:119 recorded
+for 15 different laws.  **So that message is not evidence about arguments; it is
+evidence about a by-value struct.**  It is also the third time a "memory fault" in this
+project has had to be re-attributed with bend absent from the process.
+Also measured, same way: `CXType` = 24 (`kind@0`, `data@8,16`), `CXString` = 16.
+
+**LC-2 — A `CXType` POINTS INTO THE TRANSLATION UNIT, SO DISPOSING THE TU BEFORE
+ASKING THE TYPE ANYTHING IS A USE-AFTER-FREE.**  It presents as the same
+`bend: memory fault (machine stack overflow?)` with `SAW` lines stopping at the moment
+of the dispose.  The shape that works: the helper RETURNS the translation unit alongside
+the type and the CALLER disposes it after its last use.  Spelling copied out before the
+dispose; a `const char*` from libclang is its own allocation and survives, but the
+`CXString` must not be used afterwards by habit.
+
+**LC-3 — `Nat` IS NOT THE ONLY LINEAR TYPE: `U32` IS TOO, AND SO IS THE POINT.**
+Measured here, not inherited: `def two(i: U32) -> String: U32.show(i) ++ U32.show(i) ++
+U32.show(i)` fails with `expected : i / observed : i (consumed more than once)`.  So a
+`U32` **selector cannot be passed to four laws**: the usual "one law per libclang
+function" shape needs one parameter per function, which the linearity forbids.  What
+works and is what `libclang.bend` does: **one law returns a whole row's value string**,
+so one `U32` in and one `String` out, with the pure `def`s of the row template kept out
+of the `do` block (a pure `def` body may not call an `IO` law -- it type-errors with the
+law's own signature quoted back).
+
+**LC-4 — `offof_bytes` CANNOT BE COMPUTED IN THE `.bend`, AND THE GATE IS WHAT MAKES
+THE DIVISION CHECKABLE ANYWAY.**  "one measurement, two readers" is not expressible with
+a linear value, so `Field_report` keeps libclang's answer in one C `long` and derives
+both columns from it -- which is structurally what `oracle.py` does.  The falsifier is
+outside the process: plant `bits / 8` -> `bits / 4` in the C and require `offof_bits` to
+**stay** while `offof_bytes` **moves** (measured: FIELD b 4 -> 8, FIELD c 8 -> 16,
+`offof_bits` 32 and 64 unmoved).  **FIELD a is a THEOREM, not a zero:** it sits at bit 0
+and `0/n == 0` for every divisor, so no fixture and no wrong divisor can separate it.
+Report it as a theorem; do not close it with a row that encodes the bug.
+
+**LC-5 — A GENERATED `.bend` THAT REDECLARES A BUILTIN IS RED FOR A REASON NOBODY
+READ.**  `runtime/autogen/libclang.bend` carried `type U32 is Data: U32{}` and `type Unit
+is Data: Unit{}`, so it could not be compiled at all; behind those, in order, `Ty` was
+the return of all **60** `ty_*` defs and was declared **nowhere**, **13** ABI type names
+were used in signatures and were not in the enumerated table (including `F64`/`I64`/
+`U64`, the 16 that have no bend type), and **two** parameters were keywords (`type`,
+`Kind`).  **A batch parse stops at the first error, so the count of a file's defects is
+not the number of errors you see.**  All five classes are found by iterating
+`--check-only` to a FIXED POINT -- see LC-6 for the iteration's one real trap.
+
+**LC-6 — BEND'S ERROR CARET IS `NNN >|`, WITH A SPACE BEFORE THE `>`.**  A regex of
+`(\d+)\|>` matches nothing and an iteration loop over `bend --check-only` then renames
+one parameter forever.  Measured: `od -c` of the output shows `6 4 2 ' ' > |`.  Use
+`(\d+)\s*>\|`.
+
+**LC-7 — A `.c` IMPORT IS INLINED INTO THE GENERATED C AND `cc` RESOLVES ITS OWN
+`#include`s AGAINST THE DIRECTORY `cc` RUNS IN.**  `bend x.bend -o out/x.gen.c` copies
+the `.c` verbatim, so `#include "fixture.h"` inside it needs `fixture.h` beside the
+GENERATED file, not beside the `.c` it came from.  The gate copies both into the build
+directory.  And a relative import resolves against the **importing `.bend`**, not the
+cwd: `import "../../../.agents/slop/clangshim/libclang-ffi.c"` from
+`tinybendygrad/runtime/autogen/` reaches the repo root, which is how a gate that COPIES
+the `.bend` to a scratch tree has to rewrite the import.
+
+**LC-8 — A `.c`-IMPORTED LANE CANNOT RUN INTERPRETED, AND THE MESSAGE IS ABOUT A `.js`
+IMPORT.**  `bend tinybendygrad/runtime/autogen/libclang.bend` (no `-o`) prints
+`Error: a foreign def without a .js import: Loaded_dylib` and prints no rows.  Not a
+defect in the file: a lane whose effect is a C file needs `bend -o`.  Every run in the
+gate uses `-o`.
+
+**LC-9 — `bend -o` EMITS NO `CID` FOR A LAW `main` NEVER CALLS, SO A LAW THAT IS
+DEFINED BUT UNCALLED IS A BUILD ERROR IN ITS HELPER.**  Removing one `IO.print` while
+leaving the call gives a **green build, rc 0, unchanged stderr, and one row short**
+(measured 9/10); removing the call as well gives
+`error: use of undeclared identifier 'CID_RECORD_REPORT'`.  Only the first is the
+interesting control, and it is why the gate's ROWS line is a checked number on every
+run and not a summary printed when something else already went wrong.
