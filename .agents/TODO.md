@@ -857,6 +857,36 @@ Gates: `bash .agents/slop/grw-gate.sh` (exit 0),
       block all 15 regardless of their ctx" is CONFIRMED and is why the
       dispatcher was the right thing to build first.
 
+- [x] **THE LINEAR RULE TABLE IS BUILT, and C3 WAS THE WRONG WALL — it is now
+      MEASURED that 12 of the 15 were never behind it.** `uop/ops.bend:3746-4008`
+      holds `tinygrad/uop/ops.py`'s four `PatternMatcher`s (`ops.py:1896` `_substitute`,
+      `:1897` `_pm_resolve_params`, `:1904` `remove_all_tags`, `:1907` `pm_drop_after`)
+      as four `PMEntrys` on tags 40-43, with the bodies `pm_r_drop_m`, `pm_r_rp_m`,
+      `pm_r_tag_m` and `pm_sub_m`. `pm_dispatch_m` went from THREE reachable bodies
+      to FIVE. Gate: `sh .agents/slop/lintable/lintable-gate.sh` — **36 rows, 3 lanes
+      identical** (CPython, bend interpreted, bend native), plus a plant that moves 7
+      rows and makes the gate red, with its paired disarm restoring the baseline
+      exactly. Write-up: `.agents/slop/LINEAR-TABLE.md` and
+      `.agents/slop/lintable/0*.md`.
+
+      **TWO NEW FAMILIES, AND EACH IS FORCED BY A TYPE, NOT BY LINEARITY** (this is
+      the correction to `:7-13`): `_sub` because **Bend's `Map` is String-keyed** and
+      `_substitute` is a `dict[UOp,UOp]`; `_f` because tag 41 **mints** and `UOp.new`
+      returns `Found{ar,i}`, so `pm_rewrite_m`'s `Maybe<&2,U32>` cannot carry it.
+      `_f` is the first table here whose rule can hand back a grown arena.
+
+      **UNBLOCKED: 3 of the 15** — `transform_to_call` (`:261`, uses `remove_all_tags`
+      at `:267`), `resolve_linear_call` (`:103`, `_pm_resolve_params` inlined at
+      `:98`) and `create_new_buffer` (`:90`, `_substitute` as `ctx[0].get`). Plus
+      `pm_post_sched_cache` (`:96`) outside the 15. **THE OTHER 12 WERE NEVER BEHIND
+      THE TABLE** — so the remaining order is **rule bodies → ctx** and `CallifyCtx`
+      is the next thing to measure, not the table. Denominator recounted at 15 defs;
+      `apply_binds` (`:110`) is INDENTED, so a `^def ` grep is short by exactly the
+      nested ones.
+
+      **THE DENOMINATOR AUDIT WAS RIGHT AND MY FIRST PASS WAS WRONG** (14 vs 15) —
+      recorded because the error was a pattern, not arithmetic.
+
 - [x] **`cycles == 0` IS NOT CLAIMED.** The port has no cycle detector and no
       `seen` set, so it cannot certify a complete linearization and does not
       pretend to. `capped=True` means NOT-CONVERGED and nothing finer: it does

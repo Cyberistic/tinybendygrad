@@ -3715,8 +3715,112 @@ def pm_r_alloc_m.at(+ctx: List<&2, U32>, n: Nat) -> Maybe<&2, U32>:
 def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_alloc_m.at(ctx, 2n)
 
+# ===========================================================================
+# THE OPS.PY RULE TABLES -- ops.py:1896, 1897, 1904, 1907. These four are the
+# WHOLE of `PatternMatcher` surface in ops.py, and until now `pm_dispatch_m`
+# could reach none of them: it answered three placeholder bodies (SINK, NOOP,
+# CAST) and codegen's two. `engine/realize.bend:1072-1080` records the wall this
+# creates -- "a `PMEntrys` built in THIS file can only ever reach those three
+# bodies" -- and the cost is that eleven files in this tree each grew their own
+# scan. What follows puts the four in the table that already exists.
+#
+# `ops.py:1602-1606` is where a `PMEntry` comes from, and it is three lines:
+#
+#     entry: list = [p, None, p.early_reject]
+#     entry[1] = upat_deferred_compile(p, fxn, entry) if compiled else upat_interpret(p, fxn)
+#     for uop in p.op: self.pdict.setdefault(uop, []).append(entry)
+#
+# `p.early_reject` is field three and `entry[1]` -- the compiled function -- is
+# the TAG. `for uop in p.op` is the fan-out that makes `PMEntry.ops` a CLAIMED
+# SET, and it is `ops.py:1614`'s `self.pdict.get(uop.op, [])`, which `pm_claimed`
+# already reads.
+#
+# ALL FOUR REJECT SETS ARE EMPTY, and that is ops.py's arithmetic rather than a
+# shortcut. `ops.py:1480-1483` is
+#
+#     upat_match = [src] if isinstance(src, UPat) else ([] if src is None else self.src[0])
+#     self.early_reject = {pp.op[0] for pp in upat_match if pp.op is not None and len(pp.op) == 1}
+#
+# and all four patterns are built with `src=` OMITTED, so `src is None`, so
+# `upat_match == []`, so `early_reject == set()`. `ops.py:1617`'s
+# `if not early_reject.issubset(ler): continue` therefore never skips any of
+# them, and `PMEntry.rej` is `Nil{}` four times. A non-empty reject set here
+# would be an invention.
+# ===========================================================================
+
+# `tuple(Ops)` -- the claim of ops.py:1896's `UPat(tuple(Ops), name="x")` and of
+# ops.py:1904's `UPat(GroupOp.All, name="x")`. `GroupOp.All` IS `set(Ops)`
+# (tinygrad/uop/__init__.py:135), measured by CPython: `len(tuple(Ops))` is 77
+# and `GroupOp.All == set(Ops)` is `True`. So one list serves both rules, and it
+# is the same 77 for both.
+#
+# `pm_claimed` SCANS (`op_in`), so the ORDER IS FREE. This is Python's
+# enumeration order only so the literal can be diffed against CPython entry by
+# entry; `all_ops_n` in `.agents/slop/lintable/03-PROBE.md` re-measures both the
+# count and the set against `from tinygrad.uop import Ops`.
+def all_ops() -> List<&2, Op>:
+  [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
+   OpsSINK{} OpsAFTER{} OpsGROUP{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
+   OpsBITCAST{} OpsEXP2{} OpsLOG2{} OpsSIN{} OpsSQRT{} OpsRECIPROCAL{} OpsNEG{} OpsTRUNC{} OpsADD{} OpsMUL{} OpsSHL{},
+   OpsSHR{} OpsCDIV{} OpsMAX{} OpsCMOD{} OpsCMPLT{} OpsCMPNE{} OpsCMPEQ{} OpsXOR{} OpsOR{} OpsAND{} OpsTHREEFRY{},
+   OpsSUB{} OpsFDIV{} OpsPOW{} OpsFLOORDIV{} OpsFLOORMOD{} OpsWHERE{} OpsMULACC{} OpsBARRIER{} OpsRANGE{} OpsIF{} OpsEND{},
+   OpsENDIF{} OpsBACKEDGE{} OpsCONST{} OpsCUSTOM{} OpsCUSTOMI{} OpsINS{} OpsCONTIGUOUS_BACKWARD{} OpsDETACH{} OpsSTAGE{} OpsCOPY{} OpsMSELECT{},
+   OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsFLIP{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
+
+# `x.tag is not None` -- the guard of ops.py:1904's
+# `lambda x: x.replace(tag=None) if x.tag is not None else None`. `Tag`'s bottom
+# is `TNone{}` (this file's `type Tag is Data`, whose five constructors are
+# TNone/TBool/TStr/TInt/TTuple), so Python's `None` IS `TNone{}` and the guard is
+# the other four. The same shape as `eq_tag.TNone` above, which is why it is a
+# separate def and not a fold: a fold over the constructors is the mutual
+# recursion the `Tag` header says it would force on `eq_tag`.
+def tag_is_none(t: Tag) -> Bool:
+  match t:
+    case TNone{}: True{}
+    case _: False{}
+
+# TAG 40 -- ops.py:1907. `pm_drop_after`:
+#     pm_drop_after = PatternMatcher([(UPat(Ops.AFTER, name="a"), lambda a: a.src[0])])
+# The body is `a.src[0]`, which is an EXISTING node, so this family answers
+# `Maybe<&2, U32>` and needs no arena of its own -- it is the one ops.py rule in
+# this file that a rebuilding-rule-free table can already carry.
+#
+# `ctx` is unused because ops.py's lambda takes one and does not read it. The
+# claim (`OpsAFTER`) is `PMEntry.ops`, not a guard in here.
+def pm_r_drop_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  Some{Arena.src(ar, self, 0)}
+
+# TAG 42 -- ops.py:1897. `_pm_resolve_params`:
+#     _pm_resolve_params = PatternMatcher([(UPat(Ops.PARAM, name="p"), lambda ctx,p: ctx[p.arg.slot] if p.arg.slot >= 0 else None)])
+#
+# TWO DIFFERENCES FROM `pm_r_param_m` (tag 3) above, and both are the source:
+#   * tag 3 answers `ctx[0]` and `ctx[1]` ONLY and `None{}` for every other slot,
+#     because it is the codegen fixture. ops.py indexes WHATEVER slot the PARAM
+#     carries, so this one is `List.get` and no slot is special.
+#   * `p.arg.slot >= 0` is TRUE for EVERY Python `int`, so in Python the guard is
+#     vacuous; the only thing it can be excluding is an arg that is not an
+#     `AParam` at all, and `p.arg.slot` would raise there. So the port's guard is
+#     the `AParam` match, and the bottom below stands for "no slot".
+# `4294967295` is `U32`'s top and cannot be a real slot (`ParamArg.slot` counts
+# program inputs), so it is the bottom. It is matched EXPLICITLY rather than left
+# to `List.get`, because `U32.to_nat` on the top is a `Nat` no `List.get` answers
+# and the out-of-range behaviour would then be an accident of that fold.
+def pm_r_rp_m.slot(arg: Arg) -> U32:
+  match arg:
+    case AParam{pa}: ParamArg.slot(pa)
+    case _: 4294967295
+
+def pm_r_rp_m.at(+ctx: List<&2, U32>, slot: U32) -> Maybe<&2, U32>:
+  match slot:
+    case 4294967295: None{}
+    case _: List.get(&2, U32, ctx, U32.to_nat(slot))
+
+def pm_r_rp_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  pm_r_rp_m.at(ctx, pm_r_rp_m.slot(Arena.arg(ar, self)))
+
 # dispatch by tag. Tags 0/1/2 are the same as `pm_dispatch.go`. Tags 3/4
 # are the codegen pipeline's `pm_post_sched_cache` rules and read `ctx`.
+# Tags 40/42 are ops.py's own, above.
 def pm_dispatch_m.go(tag: U32, ar: Arena, self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
   match tag:
     case 0: pm_r_sink_m(ctx, ar, self)
@@ -3724,6 +3828,8 @@ def pm_dispatch_m.go(tag: U32, ar: Arena, self: U32, +ctx: List<&2, U32>) -> May
     case 2: pm_r_cast_m(ctx, ar, self)
     case 3: pm_r_param_m(ctx, ar, self)
     case 4: pm_r_alloc_m(ctx, ar, self)
+    case 40: pm_r_drop_m(ctx, ar, self)
+    case 42: pm_r_rp_m(ctx, ar, self)
     case _: None{}
 
 def pm_dispatch_m(tag: U32, ar: Arena, self: U32, ctx: List<&2, U32>) -> Maybe<&2, U32>:
@@ -3755,6 +3861,151 @@ def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, ac
 
 def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>:
   pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
+
+# ===========================================================================
+# TWO MORE TABLES, AND EACH EXISTS BECAUSE OF A TYPE, NOT A PREFERENCE.
+#
+# ONE TABLE CANNOT HOLD ALL FOUR of ops.py's rules, and the blocker is not
+# linearity. `ops.py:1888` types the pass's `ctx` as `ctx=None` and each lambda
+# reads whatever shape it likes off it, so Python has no reason for the four to
+# agree. A Bend parameter has a type, so:
+#
+#     _pm_resolve_params   ctx[p.arg.slot]      -> List<&2, U32>   tag 42, above
+#     _substitute          ctx.get(x)           -> Map<&2, U32>    tag 43, `_sub`
+#     remove_all_tags      (ctx unused)         -> List<&2, U32>   tag 41, `_f`
+#     pm_drop_after        (ctx unused)         -> List<&2, U32>   tag 40, above
+#
+# And there is a second, sharper blocker, which is the one `pm_r_alloc_m` above
+# already paid for: `remove_all_tags` MINTS. `ops.py:253-257`'s `replace` returns
+# a NEW UOp, so `UOp.new` returns `Found{ar, i}` and the arena it grew is part of
+# the answer. `pm_rewrite_m` answers `Maybe<&2, U32>` -- an INDEX and no arena --
+# so a rebuilding rule cannot be carried by that family at all. Hence `_f`, whose
+# answer is `Maybe<&2, Found>` and which is the first table in this file whose
+# rule can hand back a grown arena.
+#
+# `_sub` is the opposite problem: one rule, one entry, and a ctx type of its own,
+# so it gets a THREE-DEF family and no scan at all -- a one-entry scan is
+# `pm_try_m` with a different ctx type, and spelling that out is two lines worse
+# than reading the one entry.
+# ===========================================================================
+
+# TAG 41 -- ops.py:1904. `remove_all_tags`:
+#     remove_all_tags = PatternMatcher([(UPat(GroupOp.All, name="x"), lambda x: x.replace(tag=None) if x.tag is not None else None)])
+#
+# `ops.py:253-257` is what `replace(tag=None)` is:
+#     new_args = (kwargs.pop("op", self.op), kwargs.pop("src", self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))
+#     if (self.op, self.src, self.arg, self.tag) == new_args: return self
+#     return UOp(*new_args)
+# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in
+# the tag slot -- which is `ops.bend:6594`'s inline `replace`, already written.
+#
+# THE MINT IS EAGER, and that is safe rather than lazy. `Bool.pick` CHOOSES an arm
+# and does not SEQUENCE one, so the `UOp.new` runs on both paths. For an
+# already-untagged node that is a NO-OP and not a leak: `UOp.make.intern.put` is
+# `case Some{i}: ar` (`UOp.make.intern`, this file) -- a structurally identical
+# node returns the index it already has and the arena does NOT grow. So `None{}`
+# for a tagged node is the only answer that can lose information, and eager
+# evaluation cannot produce it.
+# THE PARAMETER IS NAMED `untagged`, NOT `tagged`, and the first draft called it
+# `tagged` while passing it `tag_is_none(...)`. That compiled, typechecked, answered
+# CORRECTLY for every input, and the probe's `pick_t_rule`/`pick_f_rule` pair is what
+# found it: those two rows are written from ops.py:1904's guard -- "True means the
+# node HAS a tag, so it gets a replacement" -- and the implementation answered the
+# other way round, so the row and the code disagreed and the ROW was right about
+# what the name claims. A name that is the negation of the value it holds is the
+# same defect as a shadowed binder with better manners: both compile, both report
+# their flag correctly, and both mislead whoever writes the next mutation.
+def pm_r_tag_m.of(untagged: Bool, made: Found) -> Maybe<&2, Found>:
+  Bool.pick(Maybe<&2, Found>, untagged, None{}, Some{made})
+
+def pm_r_tag_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, Found>:
+  pm_r_tag_m.of(tag_is_none(Arena.tag(ar, self)),
+    UOp.new(ar, Arena.op(ar, self), Arena.srcs(ar, self), Arena.arg(ar, self), TNone{}))
+
+# TAG 43 -- ops.py:1896. `_substitute`:
+#     _substitute = PatternMatcher([(UPat(tuple(Ops), name="x"), lambda ctx,x: ctx.get(x,None))])
+#
+# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:530`), so it is keyed by the NODE
+# and not by a slot. Bend's `Map` is STRING-keyed -- `Map.set(a, -V, m, key:
+# String, x)` and `Map.has(-a, -V, m, key: String)` in the compiler's `base.bend`
+# -- so the key is `U32.show(self)`, which is the arena index in string form and
+# is what `uop/render.bend:1419` and `:1426` already do for a node-keyed map.
+#
+# `ctx.get(x, None)` IS ONE LOOKUP, and `Map.get` needs a default because a miss
+# is indistinguishable from a value of 0 by the value alone. `Map.has` is what
+# tells them apart, exactly as `vv_of` above says it must.
+# BOTH READERS ANSWER A `Sigma`, not a bare value -- `Map.get` returns the map and
+# the value and `Map.has` returns the map and the Bool (`base.bend`'s signatures:
+# `Map.has(...) -> Map<a, V> & Bool`, `Map.get(...) -> Map<&2, V> & V`). So the
+# destructuring is a TWO-SCRUTINEE match, which is `uop/render.bend`'s `cu32`/`chas`
+# on the same map type. `U32, Bool` would be one scrutinee and is not the shape.
+def pm_sub_m.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>, s: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Maybe<&2, U32>:
+  match r, s:
+    case Tuple{m, v}, Tuple{n, b}: Bool.pick(Maybe<&2, U32>, b, Some{v}, None{})
+
+def pm_sub_m(+ctx: Map<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  pm_sub_m.of(Map.get(U32, 0, ctx, U32.show(self)), Map.has(&2, U32, ctx, U32.show(self)))
+
+# THE THREE TABLES. Each is `ops.py`'s own `PatternMatcher(...)` as a literal,
+# and each entry's three fields are `ops.py:1604`'s `[p, None, p.early_reject]`
+# with the compiled function's PLACE taken by the tag.
+#
+# THE TAG IS GLOBAL AND THE TABLE IS NOT. Every `PMEntry` in the tree numbers its
+# own rules from 0 -- `codegen/__init__.bend:318`'s tag 0 is `_pm_resolve_params`
+# and `engine/realize.bend:1150`'s tag 0 is `pm_flatten_linear` -- because the
+# scan that reads a table and the dispatch that reads a tag live in DIFFERENT
+# files. That is the "a name is not a binding" trap one level down: the same
+# `PMEntry{0, ...}` means a different rule in every one of them. Tags 40-43 are
+# the ops.py four, so the numbers here are the ones `pm_dispatch_m` above can
+# reach; tags 0-32 and 999 are already taken somewhere in the tree.
+def pm_substitute() -> PMEntrys:
+  PMEntrys{[PMEntry{43, all_ops(), Nil{}}]}
+
+def pm_resolve_params() -> PMEntrys:
+  PMEntrys{[PMEntry{42, [OpsPARAM{}], Nil{}}]}
+
+def pm_remove_all_tags() -> PMEntrys:
+  PMEntrys{[PMEntry{41, all_ops(), Nil{}}]}
+
+def pm_drop_after_table() -> PMEntrys:
+  PMEntrys{[PMEntry{40, [OpsAFTER{}], Nil{}}]}
+
+# `_f` IS THE `_m` FAMILY WITH A DIFFERENT ANSWER, so it is the same five defs in
+# the same order -- `pm_rewrite_f`, `pm_scan_f`, `pm_try_f`, `pm_try_f.of`,
+# `pm_try_f.go` against `pm_rewrite_m`, `pm_scan_m`, `pm_try_m`, `pm_try_m.of`,
+# `pm_try_m.go`. First-wins is `pm_scan_m`'s accumulator match and it is unchanged:
+# a `Some{}` in the accumulator stops the fold, so the table order IS the rule
+# order (ops.py:1618's `return ret` on the first non-None).
+#
+# DECLARATION ORDER IS THE OTHER HALF OF THAT. `pm_rewrite_f` is LAST because a
+# def may only call defs declared ABOVE it, and putting it first fails with
+# "expected : a filled definition" -- measured, not remembered.
+#
+# `.of`/`.go` is not decoration. `pm_try_f.of` computes `Bool.and(claimed, early)`
+# and HANDS IT OVER; `pm_try_f.go` matches the parameter. Folding the `match`
+# into `.of` is refused -- "a match cannot scrutinize a computed value" -- and
+# that is measured here, not remembered: it was the first compile of this block.
+def pm_try_f.go(ok: Bool, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, Found>:
+  match ok:
+    case True{}: pm_r_tag_m(ctx, ar, self)
+    case False{}: None{}
+
+def pm_try_f.of(claimed: Bool, early: Bool, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, Found>:
+  pm_try_f.go(Bool.and(claimed, early), ar, self, ctx)
+
+def pm_try_f(ts: PMEntrys, +ar: Arena, +self: U32, +e: PMEntry, +ctx: List<&2, U32>) -> Maybe<&2, Found>:
+  pm_try_f.of(pm_claimed(PMEntry.ops(e), ar, self), pm_early(ts, ar, self, PMEntry.rej(e)), ar, self, ctx)
+
+def pm_scan_f(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc: Maybe<&2, Found>, +ctx: List<&2, U32>) -> Maybe<&2, Found>:
+  match todo:
+    case Nil{}: acc
+    case e <> t:
+      match acc:
+        case Some{value}: acc
+        case None{}: pm_scan_f(ts, ar, self, t, pm_try_f(ts, ar, self, e, ctx), ctx)
+
+def pm_rewrite_f(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, Found>:
+  pm_scan_f(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
 
 # one rule: does it claim this op, and does `early_reject` pass?
@@ -4614,7 +4865,10 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1219  def placeholder_like
 
-# PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). Four `set_*` rows
+# PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). The def, its fixture,
+# its four rows and its gate landed inside a CONCURRENT agent's commit rather than
+# one of mine, so the history does not attribute them; the write-up is here and at
+# the gate, which is where a reader lands anyway. Four `set_*` rows
 # byte-identical to CPython on all three lanes via `sh .agents/slop/ops-set-gate.sh`,
 # with TWO negative controls that are the two bugs below.
 #

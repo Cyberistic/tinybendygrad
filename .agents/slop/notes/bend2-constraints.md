@@ -24878,3 +24878,75 @@ answer", check whether X's oracle can even fail that way.** It usually can, and 
 the wiring. And the population to report is the one with **no lane**, not the one a given reader
 cannot see: here that was **110** (93 unreadable by the shared reader + 17 `mm_div_*` rows that are
 F1 and equally unwired), and only **0** of them were ever compared.
+
+
+## LT-1 .. LT-9 — the ops.py LINEAR RULE TABLE (`uop/ops.bend`, 2026-10-04)
+
+Numbering continues from this file's end; the `F-` numbers have collided three times,
+so cite these BY NAME. All of them are measured in
+`.agents/slop/lintable/03-PROBE.md` and `05-TOTALITY.md`.
+
+**LT-1 — ONE RULE TABLE CANNOT HOLD TWO RULES WHOSE ctx HAS DIFFERENT TYPES, and the
+blocker is the ctx TYPE and not linearity.** `ops.py:1888` types the pass's `ctx` as
+`ctx=None` and each lambda reads whatever shape it likes off it, so Python has no
+reason for the rules to agree. A Bend parameter has a type. `uop/ops.py`'s four
+`PatternMatcher`s therefore split into THREE families: `_pm_resolve_params` indexes by
+slot (`List<&2, U32>`), `_substitute` is keyed by the node (`Map<&2, U32>`), and the
+other two read no ctx. **The "one linear table" of `schedule/__init__.bend:7-13` is
+therefore not blocked by linearity at all**, which is a correction to that header's
+stated order.
+
+**LT-2 — A RULE THAT MINTS CANNOT BE CARRIED BY A FAMILY THAT ANSWERS AN INDEX.**
+`UOp.new` returns `Found{ar, i}` (`ops.bend:2431`, `:2451`), so a rebuilding rule's
+answer includes the grown arena. `pm_rewrite_m` answers `Maybe<&2, U32>` — an index
+and no arena — so `remove_all_tags` needs `Maybe<&2, Found>`. That family (`_f`) is
+the first in the file whose rule can hand back a grown arena. `ops.bend:3698-3706`
+records the same wall for `pm_r_alloc_m`.
+
+**LT-3 — BEND'S `Map` IS STRING-KEYED.** `Map.set(a, -V, m, key: String, x)` and
+`Map.has(-a, -V, m, key: String)` in the compiler's `bend2/base.bend`; both `get` and
+`has` answer a **`Sigma`** (the map AND the value / Bool), so the destructuring is a
+two-scrutinee match. A `dict[UOp, UOp]` is therefore `Map<&2, U32>` keyed by
+`U32.show(node)` — the arena index in string form, which is what
+`uop/render.bend:1419` and `:1426` already do for a node-keyed map. **A node-keyed map
+is only meaningful INSIDE ONE ARENA**: two fixtures built from two `Arena.empty()`s
+both sit at index 0 and collide, which is measured — a miss answered the hit's value.
+
+**LT-4 — A PARAMETER NAME THAT IS THE NEGATION OF ITS VALUE IS THE SHADOWED-BINDER
+DEFECT WITH BETTER MANNERS.** `pm_r_tag_m.of`'s parameter was named `tagged` and was
+passed `tag_is_none(...)`. It compiled, typechecked, reported its flag correctly, and
+answered right for every input. What caught it was a probe row written from the
+upstream GUARD's reading of the name ("True means it has a tag, so it gets a
+replacement") — the row and the code disagreed, and the row was right about the name.
+**A two-spellings probe is not only for shadowing; a probe written from the SOURCE's
+reading of a name catches a name that lies.**
+
+**LT-5 — `U32.show(x)` PRINTED IS THE DECIMAL SPELLING OF `x`, SO A "KEY vs VALUE"
+PAIR IS AN IDENTITY.** Printing a String prints its characters, so such a pair agrees at
+every index — 13 beside 13. **A WIDER FIXTURE CANNOT SEPARATE AN IDENTITY**, and
+trying one is the measurement that proves the pair vacuous rather than badly chosen.
+Same shape as a plant that leaves a sha256 identical because the other operand was
+already true. What works: apply the key function to TWO nodes in one arena.
+
+**LT-6 — ELEVEN IDENTICAL FILLER NODES ARE ONE NODE.** The arena interns, so a chain of
+eleven `OpsNOOP` mints holds a single node and a fixture's target index lands where a
+two-node fixture would put it. Same family as the trap list's "a list row whose
+elements are all equal cannot fail on an ordering bug". `UOp.make.intern.put` is
+`case Some{i}: ar` (`ops.bend:2204-2207`).
+
+**LT-7 — A `do IO<Unit>` BLOCK REFUSES ITS TWENTY-SIXTH BIND**, and the whole chain
+collapses into one line naming every row. Measured at 26; four blocks of twenty is the
+shape that compiles.
+
+**LT-8 — A NESTED `{}` CONSTRUCTOR IS REFUSED AS A CALL ARGUMENT.** `tag_is_none(O.TBool{True{}})`
+fails to parse ("expected : a term") while `O.TBool{True{}}` as a def's RETURN VALUE is
+`ALL PROOFS CHECK`. Bind the constructor with a one-line def first.
+
+**LT-9 — A `TAG` IN A `PMEntry` IS GLOBAL WHILE THE TABLE IS NOT, AND THE SAME
+`PMEntry{0, ...}` MEANS A DIFFERENT RULE IN EVERY FILE.** `codegen/__init__.bend:318`
+tag 0 is `_pm_resolve_params`; `engine/realize.bend:1150` tag 0 is
+`pm_flatten_linear`, because the scan that reads a table and the dispatch that reads a
+tag live in different files. This is the "a name is not a binding" trap one level
+down. Measured in-use tags across the tree: **0..32, 40-43, 999** — and the ONE
+consumer that reaches `ops.bend`'s dispatch at all is `codegen/__init__.bend:108`,
+whose tables use tags 3 and 4.
