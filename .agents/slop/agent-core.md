@@ -156,6 +156,25 @@ rows that encode the bug.
   wrong file. **A shared instruction that is true for one file and wrong for the next one is a
   trap with a citation.**
 
+  - **THAT TABLE IS A SNAPSHOT, NOT AN ORACLE, AND IT HAS ALREADY BEEN WRONG ONCE.**
+    Measured 2026-10-04: `renderer/ptx.bend` was **cold and NOT ON THE LIST** -- a live
+    one-line defect (`P.r(` where `P` is `tc_ptx.bend`, which declares no `r`; `r` is
+    `tc.bend:83`, imported as `T`), and `bend` named it exactly:
+    `expected : a defined name / observed : P.r`. It surfaced only because
+    `substrate-check.sh`'s second half walks the import graph.
+    **A FILE'S ABSENCE FROM A LIST OF KNOWN-COLD FILES IS NOT EVIDENCE THAT IT IS WARM.**
+    Re-measure the file you are about to edit; `substrate-check.sh` does it in under a second
+    and prints its own blind spot beside the verdict.
+  - **THE TWO DTYPE LANES DO NOT SHARE AN ABI, AND THEY AGREE BY COINCIDENCE.**
+    `dtype.js:164` passes ONE structured argument (`a.fst`/`a.snd` = the record's halves).
+    `dtype.c:214` receives a FLAT FRAME (`Term* f`), so `f[0]` is the whole record and must
+    be opened with `ctr_take` -- which is the bug just fixed at `dtype.c:205`. Both now
+    produce `(hi << 32 | lo)`, so they agree, but **NOTHING STATES OR CHECKS THE ORDER.**
+    The header's "a `.bend` that runs under both lanes cannot tell which one it got" is an
+    **ASSERTION, NOT A MEASUREMENT**, and no gate executes the JS lane at all.
+    **DO NOT "FIX" `dtype.js` TO MATCH `dtype.c`. The missing thing is the ABI, and it is
+    missing from the type system rather than from the code.** See `.agents/slop/JS-LANE.md`.
+
   Three of these are `BASE_ORACLES` ports (`nn/__init__.bend`, `nn/onnx.bend`,
   `runtime/ops_python.bend`), so any harness that treats a non-zero bend exit as a dead lane
   will report three LIVE lanes as dead. `rebase-gate.py` does not — it reads stdout rows.
