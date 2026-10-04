@@ -4655,250 +4655,39 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # TODO(p3) ops.py:1361  def launch_dims
 
 #   ops.py:1366  def vals
-#   `tuple(var_vals[k.expr] for k in self.vars)` with a `RuntimeError(f"unbound
-#   Variable {e}")` on a miss. MEASURED: `ProgramInfo(vars=(i,j)).vals({'i':7,
-#   'j':9})` is `(7, 9)` and a miss is `RuntimeError: unbound Variable 'j'`.
+# PORTED -- `ProgramInfo.vals` is `ProgramInfo.vals` (this file). Five `vv_*` rows
+# byte-identical to CPython on all three lanes via `sh .agents/slop/ops-vv-gate.sh`,
+# with TWO negative controls: drop `Map.has` and the gate reds; flip the fold's
+# order and the gate reds.
 #
-#   EVERY PART IS HERE. `ProgramInfo.vars` is `ops.bend:1408`, `UOp.expr` is
-#   landed (and it is the reader `k.expr`), and the dict is already spelled
-#   `VarVals{m: Map<&2, H.I64>}` at `ops.bend:943`.
+# I GOT THIS BLOCKER WRONG TWICE before landing it, and both errors were the same
+# shape: a claim about a LANGUAGE, written without grepping. First that `Map` was
+# undefined in the tree; it is a Bend stdlib type from `import Base` with put, set,
+# has and get all present, and `uop/render.bend:1007`/`:1017` were ALREADY calling
+# two of them. Then that `Map.put` needed a new Bend RULE; `Map.set` IS that rule
+# and it exists. The cost of those two was four compile rounds chasing arity, and
+# the arity is the interesting part:
 #
-#   SO THE MAP IS NOT THE BLOCKER, and I had that wrong twice. `Map` is a Bend
-#   STDLIB type from `import Base`: `references/bend/bend2/base.bend:2551` has
-#   `Map.put`, `:2675` `Map.set`, `:2683` `Map.has`, `:2736` `Map.get`. And
-#   `uop/render.bend:1007` and `:1017` were ALREADY calling `Map.set` and
-#   `Map.get` through `Ctx` while the note here said the rule did not exist. A
-#   claim that the LANGUAGE needs changing is a big enough claim to grep first, and
-#   I wrote two of them without grepping either.
+#   Map.set(a, -V: Kind(a), m, key, x)   quantifier SECOND, after the linearity
+#   Map.has(-a: Quant, -V: Kind(a), m, key)
+#   Map.get(-V: Data, d, m, key)         NO linearity parameter, and a DEFAULT
+# Three readers, three shapes, and a stray `&2` lands in the NEXT parameter's slot
+# so the error names a TYPE rather than an arity. All three are spelled correctly
+# in `render.bend` already.
 #
-#   THE REAL BLOCKER IS SMALLER AND LOCAL: this file has no `Maybe`-CARRYING FOLD.
-#   `rra.filter.go` folds a LIST and `UOp.huo.go` folds a `Bool`; nothing folds
-#   `Maybe<&2, A>`. `vals` needs one, because Python's `try`/`except KeyError` over
-#   a generator IS that -- collect, and refuse at the FIRST miss rather than at the
-#   end. A fold that kept going would answer a LONGER tuple for a partially-bound
-#   program, and this is a SCHEDULE KEY, so a wrong length is a wrong program and
-#   not a diagnostic.
+# `VarVals` WAS `is Type` AND IS NOW `is Data`, and it is the only record in this
+# file that was ever a Type. It compiled for as long as it existed because NOTHING
+# CALLED IT -- `vals` was a marker, so the one def that takes a `VarVals` never
+# typechecked. A declaration nobody calls is not checked, and this file was green
+# the whole time.
 #
-#   THE DRAFT WAS TEN DEFS AND DID NOT COMPILE, and the reason is the rule worth
-#   keeping: a def may hold ONE `match`, and a `Maybe` accumulator wants to match
-#   TWICE per step (is the accumulator live, is this lookup live). Every dodge --
-#   `Bool.pick` over a `Maybe`, an `acc_unwrap`/`x_unwrap` pair, a `vals.key` to
-#   unwrap a `Maybe<String>` -- moves the match into a fresh def and costs a LOC,
-#   which is this project's stated measure of quality. Three such dunders already
-#   exist as near-copies: `sg.pa.put`, `rnd_is_set`, and the one this draft added.
-#
-#   The shape that would actually be SMALLER is ONE def folding the LIST with the
-#   `Maybe` as a carried parameter, and the refusal as a `Bool` the caller threads
-#   -- the same trick `UOp.index.pick` and `pm_dispatch_m` use for "one of two
-#   answers, decided by a Bool". It is not written because writing a shared idiom
-#   for ONE caller is how three copies of a presence test happened.
-#
-#   P3, and the precondition is a SECOND caller wanting the same fold -- not the
-#   Map. `pyrender`'s `Ctx` walk is the obvious second one.
+# AND THE `Maybe`-FOLD I SAID WAS MISSING WAS NOT. It is `Maybe.bind`, it was
+# already here, and `bcast.go` (fold.bend:590) is a Maybe-carried List accumulator
+# using it. My first draft was TEN defs and was MUTUALLY RECURSIVE; the lambda in
+# `Maybe.bind` IS the continuation, so the whole fold is one def with one `match`
+# and two binds. Three near-identical presence-test dunders (`sg.pa.put`,
+# `rnd_is_set`, and the one that draft added) were the cost of not finding it.
 
-# TODO(p3) ops.py:1400  def __reduce__
-#   # grad_fxn can't be pickled
-
-# TODO(p3) ops.py:1414  def safe_exp2
-#   # ******** ops in python ********
-
-# TODO(p3) ops.py:1418  def safe_pow
-
-# TODO(p3) ops.py:1433  def exec_alu
-
-# TODO(p3) ops.py:1444  def get_location
-#   # ***** pattern matcher *****
-
-# `UPat` IS PORTED -- the type, the pattern arena, the intern, the `src`
-# normalisation, and every constructor except the five below. See the section at
-# ops.py:1447. The pattern ARENA is the load-bearing decision and it is recorded
-# at the type: `src` holds INDICES, so `eq_upat` is a flat walk instead of the
-# mutual recursion a recursive pattern type would demand, and both sides of a
-# match are read-only `Data`, so no arena is threaded.
-#
-# PORTED  __init__     -> UPat.of / alts_of / strict_of / required_of / early_of
-# PORTED  dtype        -> UPat.dtype
-# PORTED  named        -> UPat.named
-# PORTED  any          -> UPat.any
-# PORTED  or_casted    -> UPat.or_casted
-# PORTED  or_bitcasted -> UPat.or_bitcasted
-# PORTED  or_after     -> UPat.or_after
-# PORTED  var          -> UPat.var        (functools.cache is the intern)
-# PORTED  cvar         -> UPat.cvar       (functools.cache is the intern)
-# PORTED  const        -> UPat.const
-# PORTED  f            -> UPat.f
-# PORTED  sink         -> UPat.sink
-# PORTED  index        -> UPat.index
-# PORTED  cast         -> UPat.cast       (the no-op short-circuit is kept)
-# PORTED  bitcast      -> UPat.bitcast
-# PORTED  load         -> UPat.load
-# PORTED  store        -> UPat.store
-# PORTED  reduce       -> UPat.reduce
-# PORTED  broadcast    -> UPat.broadcast  (src=self, so ONE unbounded alt)
-# PORTED  after        -> UPat.after
-# PORTED  end          -> UPat.end
-# PORTED  backedge     -> UPat.backedge
-# PORTED  alu          -> UPat.alu        (Commutative read off Ops.value)
-#
-# TODO(p3) ops.py:1482  def __reduce__
-#   # CPython frame introspection. `location` is deliberately not a field: a
-#   # field the port cannot read is a field that would silently always be None.
-
-# The five left are ONE deferral, not five. `_broadcasted` is
-# `self, y = self.ufix(y)`, and `ufix` is `UPat.cvar(arg=x) if not isinstance(x,
-# UPat) else x` -- the only place in the class that accepts a value which is NOT
-# already a pattern. In an arena that is a two-armed sum over `ConstType`, and
-# the arm would be threaded through all five methods rather than tested once.
-# Every one of the five is a caller of `ufix` and nothing else.
-
-# TODO(p3) ops.py:1534  def _broadcasted
-# TODO(p3) ops.py:1529  def ufix
-# TODO(p3) ops.py:1538  def __floordiv__
-# TODO(p3) ops.py:1539  def __rfloordiv__
-# TODO(p3) ops.py:1540  def mod
-
-# `itertools.permutations` is exact at arity 1 and 2 and REFUSES 3 or more by
-# yielding no alternatives, so a 3-ary commutative pattern matches nothing
-# rather than matching wrongly. Unreachable from ops.py -- every member of
-# `GroupOp.Commutative` is binary -- and the only other caller is `spec.py`.
-# TODO(p3) ops.py:1464  permutations, arity >= 3
-
-# TODO(p3) ops.py:1545  def match
-
-# TODO(p3) ops.py:1564  def deconstruct_function
-
-# TODO(p3) ops.py:1558  def names
-#   # globals can be referenced from arbitrarily nested code objects (comprehensions/lambdas, pre PEP 709)
-
-# TODO(p3) ops.py:1574  def upat_interpret
-
-# TODO(p3) ops.py:1569  def universal_match
-
-# TODO(p3) ops.py:1574  def universal_match
-
-# TODO(p3) ops.py:1588  def upat_deferred_compile
-
-# TODO(p3) ops.py:1581  def lazy_compile
-
-# TODO(p3) ops.py:1588  def __init__
-
-# TODO(p3) ops.py:1600  def __reduce__
-
-# PORTED BY CONSTRUCTION -- `ops.py:1611 __add__` is
-# `PatternMatcher(self.patterns + more.patterns)`, and the whole self-first order
-# is the LITERAL ORDER of the `PMEntrys` tables, which is what
-# `uop/spec.bend:1526-1528` says. It is a property of the tables, not a def.
-
-# PORTED -- `ops.py:1605 PatternMatcher.rewrite` is `pm_rewrite` (ops.bend:3548,
-# `Verdict`) and `pm_rewrite_m` (ops.bend:3665, `Maybe`), driven from
-# `codegen/__init__.bend`. This marker was a stale duplicate of landed code.
-
-# TODO(p3) ops.py:1642  def save_to_diskcache
-
-# TODO(p3) ops.py:1654  def add_trace_group
-
-# TODO(p3) ops.py:1660  def rewrite_group
-
-# TODO(p3) ops.py:1654  def _decorator
-
-# TODO(p3) ops.py:1655  def __wrapper
-
-# TODO(p3) ops.py:1699  def rewrite
-
-# TODO(p3) ops.py:1733  def print_match_stats
-
-# TODO(p3) ops.py:1749  def launch_viz
-
-# TODO(p3) ops.py:1766  def __init__
-
-# PORTED -- `ops.py:1783 RewriteContext.pm_rewrite` is `pm_rewrite_m`
-# (ops.bend:3665), driven at `codegen/__init__.bend:99`. Stale duplicate.
-#   # no cache needed: pm_rewrite is called at most once per UOp due to the replace dict check in unified_rewrite
-
-# TODO(p3) ops.py:1785  def cached_bpm_rewrite
-#   The `bpm_cache` memo. `unified_rewrite` calls it once per node per pass, and
-#   its whole body is "have I seen this node on an earlier pass" -- which is the
-#   `repl` map the engine already threads. It is a wall until the fixpoint lands,
-#   because with a single pass there is nothing to cache.
-
-# PORTED ELSEWHERE -- `codegen/__init__.bend` is the engine, and these three are
-# where its remaining walls are named from the Python's side.
-#     ops.py:1782 walk_rewrite    -> walk_rewrite    (codegen/__init__.bend:111)
-#                                    LANDED and gated: 82 rows over three lanes,
-#                                    `sh .agents/slop/ops-501-gate.sh`.
-#     ops.py:1808 unified_rewrite  -> unified_rewrite  (codegen/__init__.bend:139)
-#                                    WALL -- ships as a pass-through, no fixpoint.
-#     ops.py:1880 graph_rewrite    -> graph_rewrite    (codegen/__init__.bend:143)
-#                                    WALL -- the dispatcher over the two above.
-# THE DIRECTION IS codegen CALLS ops.bend, never the reverse. `ops.bend` is the
-# arena and every reader; `codegen/__init__.bend` is the pipeline that drives
-# them. So `ops.bend` cannot import the engine without a cycle, and the three
-# markers above are REFERENCES to where the work lives, not pending work here.
-# What is still genuinely pending IN THIS FILE is `to_max_shape` and
-# `resolve_returned_after` below, and the 150 other markers.
-
-# TODO(p3) ops.py:1894  def to_max_shape
-
-# PORTED -- `ops.py:1899 resolve_returned_after` is `resolve_returned_after`
-# (ops.bend), 9 `rra_*` rows byte-identical to CPython on all three lanes via
-# `sh .agents/slop/ops-rra-gate.sh`, with 7 mutations in
-# `.agents/slop/ops-rra-mutate.py` each moving EXACTLY the rows it names.
-#
-#   ITS ONE CALLER IS PORTED'S TABLE BUT NOT ITS BODY, and the BLOCKER IS
-#   ARCHITECTURAL RATHER THAN A DEF. `schedule/prepare.py:186` puts it in
-#   `pm_inline_calls` as `UPat(Ops.AFTER, src=(UPat(name="r"), UPat(Ops.SINK,
-#   name="t")), allow_any_len=True)`, and `schedule/prepare.bend`'s TABLE is
-#   already ported -- `pr_inl_table`'s entry 1 is `PMEntry{1, [OpsAFTER],
-#   [OpsSINK]}`, which IS that pattern, and `prepare-gate.sh` diffs 321 rows of it.
-#   What is missing is the rule BODY.
-#
-#   AND THE BODY CANNOT BE WRITTEN WHERE THE RULE LIVES. `PMEntry` is
-#   `{tag, ops, rej}` -- there is no body field, because a Bend `Data` cannot hold
-#   a function value, and `ops.bend:3711`'s `pm_dispatch_m` resolves a tag to a body
-#   through a `match` in ops.bend. `schedule/prepare.bend` IMPORTS ops.bend (for
-#   `O.PMEntrys`, `F.Folded`, `F.Table`) and ops.bend cannot import it back -- the
-#   direction rule ops.bend states at its own NOT PORTED block. So prepare's bodies
-#   would have to live in ops.bend, which makes ops.bend the owner of every unit's
-#   rules and puts two agents on one file for every rule either of them ports.
-#
-#   MEASURED CONSEQUENCE: all 321 `prepare` rows are TABLE STRUCTURE -- `*_n`,
-#   `*_i_ops`, `*_i_rej`, `*_keys`, `*_pd_*` -- and NOT ONE runs a rule body. Five
-#   tables (fma, mop, inl, dsk, ear) and 321 rows, and the bodies are untested
-#   because there is nowhere to put them. That is a real hole in the gate's reach,
-#   and it is a design question rather than a backlog item: either `PMEntry` grows a
-#   body in a form Bend can hold (a def NAME, dispatched by name), or the dispatch
-#   is passed in per unit, or every unit's rules live in ops.bend forever. The first
-#   is the smallest: a `body: String` naming a def, and `pm_dispatch_m` resolving it
-#   through a name ladder. P3, as a DESIGN, before any more rules.
-#
-#   The earlier note on this marker said the fix is "a caller, not a deletion",
-#   which is still true and is now sharper: the caller needs a home, and the home is
-#   the question. ops.bend:764 names the symptom.
-# not a deletion." The def is landed and gated; the rule that uses it is not.
-
-# DELETED -- `contiguous_bitcast_index` does not exist at this pin. `rg` finds
-# zero hits in `tinygrad/`; `ops.py:1907` is `pm_drop_after`. The marker named a
-# def that was already gone upstream, so there was nothing to port.
-
-
-# ===========================================================================
-# THE GATE. `main` builds a small graph in the arena and checks the four things
-# the master plan says the trial run has to prove, so the answer is printed and
-# can be diffed rather than asserted in prose.
-#
-#   1. HASH-CONSING. The same (op, src, arg, tag) twice is ONE node and the
-#      index is the same number. This is `UOpMetaClass.ucache`, and it is what
-#      makes `UOp.__eq__` identity.
-#   2. THE KEY SEPARATES DTYPES. "a CONST's dtype is the type of its arg, and
-#      True{} == 1 as dict keys" -- CBool and CInt are two nodes.
-#   3. A CYCLE. A node whose src is a LATER index is a legal arena state. That
-#      is the back-edge the range graph makes and the whole reason this is an
-#      index and not a tree.
-#   4. A TOPOSORT over the acyclic part in DFS postorder, and the same walk over
-#      a cycle TERMINATING instead of looping.
-# ===========================================================================
-
-# CONST(3) interned, and the arena that holds it.
 def g_const() -> Found:
   UOp.const(Arena.empty(), CInt{H.i64_of_i32(3)})
 
@@ -7795,6 +7584,9 @@ def vd_arena() -> Arena:
     Node{OpsPARAM{}, Nil{}, AParam{vd_pa(ParamArg.no_slot(), Some{"j"})}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(5)}}, TNone{}}], [0]}
 
+def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
+  VarVals{Map.set(&2, H.I64, VarVals.m(base), nm, x)}
+
 # THE THREE `Map` READERS TAKE THEIR QUANTIFIER IN THREE DIFFERENT PLACES, and
 # getting it wrong is a `expected : Map<&2, H.I64> / observed: VarVals` rather than a
 # clean arity error, because the stray value lands in the next parameter.
@@ -7803,7 +7595,10 @@ def vd_arena() -> Arena:
 #   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
 # `render.bend:1007` and `:1017` already spell all three correctly; this cost three
 # compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
-def vd_put(nm: String, x: H.I64) -> VarVals: VarVals{Map.set(&2, H.I64, VarVals.m(VarVals.new()), nm, x)}
+# `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
+# the three `Map` readers in the tree disagree about that -- `Map.has` takes it
+# first, `Map.get` has NO linearity parameter. A stray `&2` lands in the next
+# parameter's slot and the error names a type rather than an arity.
 
 # The row, and the `Maybe` is a refusal: `none` is an unbound Variable. A bare
 # `(0)` would be the bug this whole `has` exists to prevent, so the printer spells
@@ -7816,22 +7611,32 @@ def vd_put(nm: String, x: H.I64) -> VarVals: VarVals{Map.set(&2, H.I64, VarVals.
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-def vd_text.go(xs: List<&2, H.I64>, acc: String) -> String:
-  match xs:
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:5738): collect the
+# pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
+# the file's own idiom --
+#   1. a `+acc` String that COMPILED and answered `()` for every input, because a
+#      `+` accumulator starting as a bare `Nil{}` literal never accumulates
+#   2. `String.drop_last` to strip the trailing comma, and there is no
+#      `String.drop_last` in helpers.bend
+# So the list is built, reversed and joined, and nothing is stripped.
+# APPEND-AT-THE-TAIL and not at the head, which is what `ax_names_str.go` does --
+# and that difference is the whole of `vv_two` coming out `(0:9,0:7)`. This fold
+# APPENDS, so the list is in SOURCE order already and must NOT be reversed. A
+# reader copying `ax_names_str`'s trailing `List.reverse` gets the wrong answer
+# with no compile error, which is the fourth time this unit produced a row that
+# compiled and was wrong.
+def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>:
+  match ys:
     case Nil{}: acc
-    case +h <> t: vd_text.go(t, String.concat([acc, H.i64_text(h), ","]))
+    case h <> t: vd_text.go(t, List.append(&2, String, acc, [H.i64_text(h)]))
 
-def vd_text(xs: List<&2, H.I64>) -> String:
-  match xs:
-    case Nil{}: "()"
-    case +_ <> _: vd_text.of(vd_text.go(xs, ""))
-
-def vd_text.of(acc: String) -> String: vd_text.of2(String.drop_last(&1, acc))
-
-def vd_text.of2(m: Maybe<&1, String>) -> String:
-  match m:
-    case Some{s}: String.concat(["(", s, ")"])
-    case None{}: "()"
+# NO `match` HERE, and that is the fourth attempt's only content. A match on
+# `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
+# handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
+# parentheses is "()". `ax_names_str` at ops.bend:5737 is the same shape and it has
+# no `match` either.
+def vd_text(ys: List<&2, H.I64>) -> String:
+  String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
 
 def vd_show(m: Maybe<&2, List<&2, H.I64>>) -> String:
   match m:
@@ -7854,11 +7659,11 @@ def vd_row(nm: String, +ar: Arena, v: VarVals, xs: List<&2, U32>) -> IO(Unit):
 
 def vd_rows(+ar: Arena) -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- vd_row("vv_two", ar, vd_put("i", H.i64_of_i32(7)), [1, 2])
-    b : Unit <- vd_row("vv_one", ar, vd_put("i", H.i64_of_i32(7)), [1])
-    c : Unit <- vd_row("vv_zero", ar, vd_put("i", H.i64_of_i32(0)), [1])
+    a : Unit <- vd_row("vv_two", ar, vd_put("j", H.i64_of_i32(9), vd_put("i", H.i64_of_i32(7), VarVals.new())), [1, 2])
+    b : Unit <- vd_row("vv_one", ar, vd_put("i", H.i64_of_i32(7), VarVals.new()), [1])
+    c : Unit <- vd_row("vv_zero", ar, vd_put("i", H.i64_of_i32(0), VarVals.new()), [1])
     d : Unit <- vd_row("vv_none", ar, VarVals.new(), Nil{})
-    vd_row("vv_miss_second", ar, vd_put("i", H.i64_of_i32(7)), [1, 2])
+    vd_row("vv_miss_second", ar, vd_put("i", H.i64_of_i32(7), VarVals.new()), [1, 2])
 
 def main() -> IO(Unit):
   do IO<Unit>:
